@@ -19,3 +19,16 @@ load_config() {
   : "${COLAB_BACKUP_MAX_AGE_MIN:=1500}"
   : "${COLAB_BACKUP_RETENTION_DAYS:=14}"
 }
+
+# ── 프로파일 ────────────────────────────────────────────────────────────────
+# 체인이 분리이므로(CLAUDE.md §3-3) 백업도 분리다. 한 산출물이 두 DB 를 덮는 척하지 않는다.
+#   COLAB_BACKUP_PROFILES="platform ai"
+#   프로파일별 재정의: COLAB_BACKUP_DB_<p> · COLAB_BACKUP_MIN_TABLES_<p> · COLAB_BACKUP_MIN_ROWS_<p>
+# 미설정이면 구 단일대상 설정(COLAB_BACKUP_PG_DB)을 프로파일 `platform` 하나로 읽는다 — 기존 fixture 호환.
+backup_profiles() {
+  if [ -n "${COLAB_BACKUP_PROFILES:-}" ]; then printf '%s\n' ${COLAB_BACKUP_PROFILES}; else echo platform; fi
+}
+_pvar() { local n="$1"; eval "printf '%s' \"\${$n:-}\""; }
+profile_db()         { local v; v="$(_pvar "COLAB_BACKUP_DB_$1")";         [ -n "$v" ] && printf '%s' "$v" || printf '%s' "${COLAB_BACKUP_PG_DB:-}"; }
+profile_min_tables() { local v; v="$(_pvar "COLAB_BACKUP_MIN_TABLES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$COLAB_BACKUP_MIN_TABLES"; }
+profile_min_rows()   { local v; v="$(_pvar "COLAB_BACKUP_MIN_ROWS_$1")";   [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$COLAB_BACKUP_MIN_ROWS"; }

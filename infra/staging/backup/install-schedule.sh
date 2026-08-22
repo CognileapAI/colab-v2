@@ -13,8 +13,9 @@ CMD="${1:-show}"
 block() {
   echo "$BEGIN"
   cat "$HERE/schedule.crontab" | sed 's/^/# /' | sed 's/^# #/#/'
-  echo "30 3 * * * \"$HERE/backup.sh\" >> \"$LOG\" 2>&1"
-  echo "10 4 * * 1 \"$HERE/latest-check.sh\" >> \"$LOG\" 2>&1"
+  echo "MAILTO=\"\""
+  echo "30 3 * * * \"$HERE/run-scheduled.sh\" backup.sh >> \"$LOG\" 2>&1"
+  echo "10 4 * * 1 \"$HERE/run-scheduled.sh\" latest-check.sh >> \"$LOG\" 2>&1"
   echo "$END"
 }
 current() { crontab -l 2>/dev/null | sed "/$BEGIN/,/$END/d"; }

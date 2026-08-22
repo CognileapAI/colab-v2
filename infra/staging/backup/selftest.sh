@@ -94,6 +94,28 @@ CFG
 expect_red "F7 대상 미연결(TARGET=none) 을 성공으로 기록하지 않는다" \
   env COLAB_BACKUP_CONFIG="$W/none.env" "$HERE/backup.sh"
 
+# F9 두 체인 중 **한쪽만** 백업된 상태를 성공으로 기록하지 않는다.
+#    platform 은 실제로 떠지고 ai 는 없는 DB 를 가리킨다 → 부분 성공이므로 전체가 RED 여야 한다.
+#    (살아 있는 staging 은 pg_dump 로 읽기만 한다. 산출물은 일회용 디렉터리에 떨어진다)
+if command -v docker >/dev/null 2>&1 && docker inspect colab_v2_staging_pg >/dev/null 2>&1; then
+  mkdir -p "$W/partial"
+  cat > "$W/partial.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_BACKUP_PG_CONTAINER=colab_v2_staging_pg
+COLAB_BACKUP_PG_USER=postgres
+COLAB_BACKUP_PROFILES="platform ai"
+COLAB_BACKUP_DB_platform=colab_platform
+COLAB_BACKUP_DB_ai=colab_ai_does_not_exist
+COLAB_BACKUP_MIN_TABLES_ai=4
+COLAB_BACKUP_MIN_ROWS_ai=1
+COLAB_BACKUP_DIR=$W/partial
+CFG
+  expect_red "F9 두 체인 중 한쪽만 백업된 상태 (부분 성공 ≠ 성공)" \
+    env COLAB_BACKUP_CONFIG="$W/partial.env" "$HERE/backup.sh"
+else
+  echo "──────── F9 건너뜀 — staging postgres 가 없다. 이 fixture 는 실행되지 않았다(증명 미완)"; BAD=$((BAD+1))
+fi
+
 # F8 복원은 exit 0 인데 DB 가 비었다 — "성공한 빈 복원"
 if command -v docker >/dev/null 2>&1; then
   docker rm -f d1_pg_selftest >/dev/null 2>&1 || true
