@@ -157,6 +157,39 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 - 이 디렉터리는 **선언만 있는 상태**다. state 파일이 없고, 따라서 레포는 아직
   "지금 뭐가 적용된 상태인지"를 스스로 증명하지 못한다.
 
+## 5-1. state 를 잃었을 때 — 복구 절차 (WU-IS4)
+
+`terraform.tfstate` 는 이 호스트 로컬에만 있고 레포엔 없다(§2 "알려진 한계"). 호스트가
+사라졌을 때 레포 클론 하나로 여기까지 돌아오는 절차:
+
+```bash
+# 자격증명은 §3 과 동일하게 레포 밖 0600 파일에서 주입한다
+set -a; . ~/.colab-v2-staging.env; set +a
+export TF_VAR_cloudflare_api_token="$CF_API_TOKEN"
+export TF_VAR_cloudflare_account_id="$CF_ACCOUNT_ID"
+export TF_VAR_tunnel_id="$CF_TUNNEL_ID"
+
+terraform init
+terraform import cloudflare_zero_trust_tunnel_cloudflared_config.staging \
+  "$CF_ACCOUNT_ID/$CF_TUNNEL_ID"
+terraform plan
+```
+
+`import` 직후 첫 `plan` 은 문자 그대로 "No changes." 가 아니라
+`account_id`/`tunnel_id` 의 **민감도 표시만 갱신**되는 `1 to change` 로 뜬다(값은 불변,
+`ingress_rule` 블록은 `unchanged block hidden`). 이건 정상이다 — `ingress_rule` 안에서
+실제 값이 바뀌거나 `destroy`/`replace` 가 보이면 그때 중단한다(§4 롤백 규칙과 동일).
+민감도 표시를 정착시키려면 `terraform apply` 를 한 번 더 거쳐야 문자 그대로
+"No changes." 가 뜬다.
+
+레포에 없는 값 4개(`CF_API_TOKEN`·`CF_ACCOUNT_ID`·`CF_TUNNEL_ID`·`CF_TUNNEL_TOKEN`)의
+출처와, 이 절차를 **실제로 실행해 검증한 리허설 기록**(무엇을 안전하게 근사했고 무엇을
+시연하지 않았는지)은 `dev-package/sessions/IS4.md` 에 있다.
+
+**이건 임시형이다.** 진짜 해법(S3+DynamoDB 원격 백엔드)은 AWS 계정(I0)이 열려야
+착수 가능하고, `WORK-UNITS.md` IS4 행에 후속 WU 로 이미 걸려 있다 — "나중에" 로
+흘려두는 게 아니라 진입조건 대기 상태다.
+
 ## 6. IS2 완료 오라클
 
 > **레포에서 라우팅을 재적용해 동일 상태 재현** (`dev-package/WORK-UNITS.md` IS2 행)
