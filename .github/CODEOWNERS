@@ -1,0 +1,32 @@
+# 소유는 레포가 아니라 디렉터리로 가른다 (dev-package/REPO.md §2)
+# 팀 핸들은 R1에서 실제 GitHub 팀으로 교체한다. 그 전까지는 개인 핸들.
+
+# 기본
+*                           @sungwooHa
+
+# 계약 권위체 — 변경 시 필수 리뷰. 여기가 드리프트의 유일한 발원지다.
+/contracts/                 @sungwooHa
+/gates/                     @sungwooHa
+
+# 플랫폼 개발
+/services/core-api/         @sungwooHa
+/services/pipeline-worker/  @sungwooHa
+/services/viz-render/       @sungwooHa
+/db/platform/               @sungwooHa
+
+# AI 엔지니어링
+/services/ai-service/       @sungwooHa
+/db/ai/                     @sungwooHa
+/eval/                      @sungwooHa
+
+# 수문학 도메인 — 온톨로지의 의미 체계는 개발 판단이 아니다
+/services/ai-service/ontology/  @sungwooHa
+
+# 프론트엔드
+/frontend/                  @sungwooHa
+
+# 인프라
+/infra/                     @sungwooHa
+
+# 오케스트레이션
+/dev-package/               @sungwooHa

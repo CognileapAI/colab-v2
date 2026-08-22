@@ -1,0 +1,38 @@
+# 파이썬
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# 노드
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# 환경
+.env
+.env.*
+!.env.example
+
+# IaC
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# 도구
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.log
+
+# 생성물 — 커밋 대상이다. 무시하지 않는다.
+# (generated-up-to-date 게이트가 diff로 검증하므로 반드시 추적해야 한다)

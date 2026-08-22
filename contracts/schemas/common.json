@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colab.cognileap.ai/schemas/common.json",
+  "title": "CoLAB v2 공통 모델",
+  "$defs": {
+    "Ulid": {
+      "description": "정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26).",
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "minLength": 26,
+      "maxLength": 26
+    },
+    "Timestamp": {
+      "description": "UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "ErrorEnvelope": {
+      "description": "모든 4xx/5xx 응답의 공통 형태.",
+      "type": "object",
+      "required": ["code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "object" }
+      }
+    }
+  }
+}

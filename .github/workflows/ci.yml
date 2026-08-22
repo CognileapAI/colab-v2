@@ -1,0 +1,115 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # 어떤 경로가 바뀌었는지 판정한다. 모노레포지만 배포는 5개 단위로 독립이므로
+  # 영향받은 것만 빌드·검증한다. contracts 변경은 전체를 깨울 수 있는 유일한 경로다.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      contracts: ${{ steps.filter.outputs.contracts }}
+      core-api: ${{ steps.filter.outputs.core-api }}
+      pipeline-worker: ${{ steps.filter.outputs.pipeline-worker }}
+      viz-render: ${{ steps.filter.outputs.viz-render }}
+      ai-service: ${{ steps.filter.outputs.ai-service }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      infra: ${{ steps.filter.outputs.infra }}
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            contracts:
+              - 'contracts/**'
+              - 'gates/**'
+            core-api:
+              - 'services/core-api/**'
+              - 'contracts/**'
+              - 'db/platform/**'
+            pipeline-worker:
+              - 'services/pipeline-worker/**'
+              - 'contracts/**'
+            viz-render:
+              - 'services/viz-render/**'
+              - 'contracts/**'
+            ai-service:
+              - 'services/ai-service/**'
+              - 'contracts/**'
+              - 'db/ai/**'
+            frontend:
+              - 'frontend/**'
+              - 'contracts/**'
+            infra:
+              - 'infra/**'
+            db:
+              - 'db/**'
+
+  # ─────────────────────────────────────────────────────────────
+  # 게이트. WU-D3에서 실제 검사를 채운다.
+  # 지금은 골격이며, 각 스텝은 "아직 없음"을 명시적으로 알린다 —
+  # 조용히 green이 되는 게이트는 게이트가 아니다.
+  # ─────────────────────────────────────────────────────────────
+
+  contract-gates:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: seam 스펙 린트
+        run: ./gates/run.sh contract-lint
+      - name: 파괴적 변경 탐지 (emit vs frozen seam)
+        run: ./gates/run.sh contract-breaking
+      - name: 생성물 최신성
+        run: ./gates/run.sh generated-up-to-date
+
+  boundary-gates:
+    needs: changes
+    if: needs.changes.outputs.core-api == 'true' || needs.changes.outputs.ai-service == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 도메인 import 경계
+        run: ./gates/run.sh import-boundary
+      - name: core-api geo 라이브러리 금지
+        run: ./gates/run.sh banned-import
+      - name: D10 → D4 쓰기 경로 부재 (음성)
+        run: ./gates/run.sh ai-no-lineage-write
+
+  schema-gates:
+    needs: changes
+    if: needs.changes.outputs.db == 'true' || needs.changes.outputs.core-api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 마이그레이션 single-head (platform / ai 각각)
+        run: ./gates/run.sh migration-single-head
+      - name: 선언 스키마 ↔ 적용 DB diff
+        run: ./gates/run.sh schema-diff
+      - name: RLS 커버리지
+        run: ./gates/run.sh rls-coverage
+
+  # 게이트가 실제로 red를 낼 수 있는지 증명한다.
+  # 이 잡이 없으면 "전부 green"이 "전부 무력"과 구분되지 않는다.
+  gate-selftest:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 전 게이트 fail-closed 증명
+        run: ./gates/run.sh selftest
