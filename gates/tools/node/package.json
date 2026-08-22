@@ -1,0 +1,10 @@
+{
+  "name": "colab-v2-gate-node-tools",
+  "private": true,
+  "version": "0.0.0",
+  "description": "event-lint 게이트 전용 도구 핀. contracts/package.json 은 계약 동결분이라 게이트 도구를 거기 얹지 않는다 — 게이트의 도구는 게이트가 고정한다. npx 최신 끌어오기 금지.",
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  }
+}

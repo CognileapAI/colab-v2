@@ -6,6 +6,8 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 |---|---|
 | `contract-lint` | seam 스펙 오류 |
 | `contract-breaking` | emit된 스펙이 frozen seam과 충돌 |
+| `event-lint` | 이벤트 계약(`contracts/events/**`)의 스키마 오류 · `$ref` 미해석 · 인스턴스 계약 위반 |
+| `event-breaking` | 이벤트 계약의 `$defs` 단위 파괴적 변경 (규칙표 = `dev-package/sessions/D2b.md §2`) |
 | `generated-up-to-date` | 생성물이 계약보다 낡음 |
 | `import-boundary` | 도메인 간 직접 참조 |
 | `banned-import` | core-api의 geo 라이브러리 |
@@ -14,7 +16,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 (**체인별로 각각** — `COLAB_APPLIED_DB_URL_PLATFORM` · `_AI` 둘 다 필요) |
 | `rls-coverage` | allow-list 밖 테이블의 RLS 누락 |
 | `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
-| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · boundary · db 증명 셋) |
+| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db 증명 셋) |
 
 ## selftest가 있는 이유
 
@@ -29,6 +31,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 |---|---|---|
 | `planning-freshness` | ✅ 구현 (WU-G1) | — green |
 | `contract-lint` · `contract-breaking` | ✅ 구현 (WU-D2) | — green |
+| `event-lint` · `event-breaking` | ✅ 구현 (WU-D2b) | — green |
 | `import-boundary` · `banned-import` · `ai-no-lineage-write` | ✅ 구현 (WU-D3) | **red — `services/` 에 코드가 없다** |
 | `migration-single-head` · `rls-coverage` | ✅ 구현 (WU-D3) | — green (P0 이 `db/` 를 채웠다) |
 | `schema-diff` | ✅ 구현 (WU-D3) · 체인별 URL 로 수정 | 체인별 적용 DB URL 을 **둘 다** 주면 green. 하나라도 없으면 red |
@@ -43,6 +46,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | 셋 | 케이스 | 의존 |
 |---|---|---|
 | `contract-selftest` | **15** | docker(oasdiff) · spectral |
+| `event-selftest` | **33** | node + ajv (`gates/tools/node`) |
 | `boundary-selftest` | **30** | python venv |
 | `db-selftest` | **43** | docker(postgres) — 24 는 docker 없이도 돈다 |
 | `selftest` | 위 셋 전부 | |

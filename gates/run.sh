@@ -23,6 +23,21 @@ case "$GATE" in
     # seam 계약의 파괴적 변경 검출 (oasdiff, 기준=git HEAD 판 · 대상=워킹트리 판).
     exec "$REPO_ROOT/gates/tools/contract-breaking.sh"
     ;;
+  event-lint)
+    # 이벤트 계약(contracts/events/**) — ajv 로 스키마 유효성 + 인스턴스 픽스처 검증.
+    # contract-lint(spectral)는 seams 만, contract-breaking(oasdiff)은 OpenAPI 만 본다.
+    # 이 게이트가 없으면 이벤트 계약은 아무도 보지 않는 사각지대다 (WU-D2b).
+    exec "$REPO_ROOT/gates/tools/event-lint.sh"
+    ;;
+  event-breaking)
+    # 이벤트 계약의 $defs 단위 파괴적 변경 검출 (기준=git HEAD 판 · 대상=워킹트리 판).
+    # 파괴의 정의(규칙표) = dev-package/sessions/D2b.md §2.
+    exec "$REPO_ROOT/gates/tools/event-breaking.sh"
+    ;;
+  event-selftest)
+    # 위 두 게이트가 red fixture로 fail-closed임을 증명한다.
+    exec "$REPO_ROOT/gates/tools/event-selftest.sh"
+    ;;
   contract-selftest)
     # 위 두 게이트가 red fixture로 fail-closed임을 증명한다.
     exec "$REPO_ROOT/gates/tools/contract-selftest.sh"
@@ -66,7 +81,7 @@ case "$GATE" in
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     rc=0
-    for s in contract-selftest boundary-selftest db-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

@@ -74,6 +74,10 @@ jobs:
         run: ./gates/run.sh contract-lint
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
         run: ./gates/run.sh contract-breaking
+      - name: 이벤트 계약 린트 (ajv — 스키마 + 인스턴스 픽스처)
+        run: ./gates/run.sh event-lint
+      - name: 이벤트 계약 파괴적 변경 탐지 ($defs 단위)
+        run: ./gates/run.sh event-breaking
       - name: 생성물 최신성
         run: ./gates/run.sh generated-up-to-date
 

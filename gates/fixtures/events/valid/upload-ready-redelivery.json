@@ -1,0 +1,23 @@
+{
+  "eventId": "01HZX0AB1CDEFGHJKMNP0QRSTY",
+  "type": "upload.ready",
+  "schemaVersion": "1.0",
+  "source": "pipeline-worker",
+  "occurredAt": "2026-08-23T02:11:04.512Z",
+  "labId": "01HZX0AB1CDEFGHJKMNP0QRSTV",
+  "actorAccountId": "01HZX0AB1CDEFGHJKMNP0QRSTW",
+  "uploadId": "01HZX0AB1CDEFGHJKMNP0QRSTX",
+  "idempotencyKey": "upload.ready:01HZX0AB1CDEFGHJKMNP0QRSTX",
+  "delivery": {
+    "attempt": 3,
+    "maxAttempts": 5,
+    "firstPublishedAt": "2026-08-23T02:11:04.600Z",
+    "publishedAt": "2026-08-23T02:19:44.100Z",
+    "redelivery": true,
+    "deadLettered": false
+  },
+  "payload": {
+    "renderable": true,
+    "metadataComplete": false
+  }
+}

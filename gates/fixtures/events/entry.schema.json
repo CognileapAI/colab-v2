@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://colab.cognileap.ai/gates/event-entry.json",
+  "title": "event-lint 인스턴스 검증 진입 스키마",
+  "description": "소비자가 큐에서 꺼낸 메시지를 검증하는 지점과 같다 — core-pipeline.json#/$defs/AnyEvent. 계약이 아니라 게이트의 도구이므로 contracts/ 가 아니라 gates/ 에 둔다.",
+  "$ref": "https://colab.cognileap.ai/events/core-pipeline.json#/$defs/AnyEvent"
+}

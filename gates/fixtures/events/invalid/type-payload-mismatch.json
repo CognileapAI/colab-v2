@@ -1,0 +1,33 @@
+{
+  "eventId": "01HZX0AB1CDEFGHJKMNP0QRSTY",
+  "type": "upload.ready",
+  "schemaVersion": "1.0",
+  "source": "pipeline-worker",
+  "occurredAt": "2026-08-23T02:11:04.512Z",
+  "labId": "01HZX0AB1CDEFGHJKMNP0QRSTV",
+  "actorAccountId": "01HZX0AB1CDEFGHJKMNP0QRSTW",
+  "uploadId": "01HZX0AB1CDEFGHJKMNP0QRSTX",
+  "idempotencyKey": "file.header-parsed:01HZX0AB1CDEFGHJKMNP0QRSTX",
+  "delivery": {
+    "attempt": 1,
+    "maxAttempts": 5,
+    "firstPublishedAt": "2026-08-23T02:11:04.600Z",
+    "publishedAt": "2026-08-23T02:11:04.600Z",
+    "redelivery": false
+  },
+  "payload": {
+    "variables": [
+      "prcp",
+      "tmax"
+    ],
+    "period": {
+      "start": "2020-01-01T00:00:00Z",
+      "end": "2020-12-31T23:59:59Z"
+    },
+    "crs": "EPSG:5179",
+    "grid": "1km 정사각",
+    "byteSizeTotal": 10485760,
+    "unreadableFiles": [],
+    "sourceLabel": "ASOS"
+  }
+}
