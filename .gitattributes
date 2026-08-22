@@ -1,0 +1,21 @@
+# 줄바꿈 정규화 — 개발환경이 Windows·WSL을 오가도 파일이 흔들리지 않게 한다.
+# 계기: WSL 전환 중 Windows 편집기가 gates/run.sh 를 CRLF 로 저장했다.
+#       .sh 가 CRLF 면 리눅스 러너에서 `bad interpreter` 로 죽는다 — 게이트가 통째로 무력화된다.
+
+* text=auto eol=lf
+
+# 실행 스크립트는 예외 없이 LF
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# 바이너리 — 손대지 않는다
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.pdf   binary
+*.zip   binary
+*.xlsx  binary
+*.docx  binary
+*.tif   binary
+*.tiff  binary
