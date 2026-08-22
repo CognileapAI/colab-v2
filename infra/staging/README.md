@@ -1,6 +1,25 @@
-# infra/staging — CoLAB v2 staging 자리표시 오리진
+# infra/staging — CoLAB v2 staging
 
-## 이게 무엇인가
+## 지금 서빙되는 것 (WU-I2 이후)
+
+**walking skeleton 이다.** 5개 배포 단위(core-api · pipeline-worker · viz-render · ai-service · frontend)
++ postgres(두 체인) + 엣지 nginx. 절차·근거·증거는 `dev-package/sessions/I2.md`.
+
+```bash
+./deploy.sh      # 자리표시 → walking skeleton  (compose.i2.yml)
+./rollback.sh    # walking skeleton → 자리표시   (compose.yml, 직전 서빙 상태)
+```
+
+두 스크립트가 같은 프로젝트·같은 컨테이너 이름을 쓴다 — 앞뒤 교체가 대칭이고 DNS·터널을 건드리지 않는다.
+`rollback.sh` 는 pgdata 를 지우지 않는다.
+
+공개 헬스 경로: `/healthz`(엣지) · `/healthz/{core-api,pipeline-worker,viz-render,ai-service,frontend}`.
+
+아래 절은 **직전 릴리스(자리표시 오리진, `compose.yml`)** 의 기록이다. 롤백 대상이라 남겨 둔다.
+
+---
+
+## 자리표시 오리진 — 이게 무엇인가
 
 WSL 호스트 위에서 도는 **최소 오리진**이다. PoC 철거로 비어 버린 Cloudflare 터널 뒤에
 v2 staging 오리진을 다시 붙여 `www.colab-hydro.com` 의 530 을 해소한다.
@@ -9,7 +28,8 @@ v2 staging 오리진을 다시 붙여 `www.colab-hydro.com` 의 530 을 해소�
 - **데이터 저장소가 없다.** postgres·minio·redis 를 재현하지 않는다. 빈 오리진이다.
 - **PoC 애플리케이션 코드를 계승하지 않는다.** `dev-package/reference/poc-deploy/` 의 nginx conf 는
   라우팅 "모양"의 참조일 뿐이며, 프록시 블록을 옮겨오지 않았다 (`CLAUDE.md §5`).
-- **P0/I2 에서 실제 v2 서비스로 교체될 자리표시다.** walking skeleton 이 올라오면 이 구성은 대체된다.
+- **P0/I2 에서 실제 v2 서비스로 교체될 자리표시다.** → **I2 에서 실제로 대체됐다**(`compose.i2.yml`).
+  이 파일은 지우지 않는다 — 롤백 대상이기 때문이다.
 
 ## 터널 연결 구조
 
@@ -70,9 +90,9 @@ PoC 에서 5432·8100 이 의도와 달리 `0.0.0.0` 에 열려 있던 문제를
 
 ## 아직 남은 것
 
-- 터널 ingress 규칙의 정본이 여전히 **Cloudflare 대시보드에만** 있다.
-  IaC 선언은 `tunnel/` 에 준비돼 있으나 **적용 전**이다 (WU-IS2, API 토큰 대기).
-- 백업 **기구**는 `backup/` 에 세웠다(WU-IS3) — fail-closed 검사와 왕복 실증까지 끝났다.
-  다만 **백업 대상은 아직 붙어 있지 않다**(저장소가 없다). I2 로 postgres 가 올라오면 설정 한 줄로 붙이고,
-  스케줄은 **그때 건다** — 대상 없이 걸어 두면 매일 실패가 쌓여 알람 피로가 된다.
+- 터널 ingress 규칙의 정본은 이제 `tunnel/` 이다 (WU-IS2 적용 완료 · `terraform plan` = No changes.).
+- 백업 **기구**는 `backup/` 에 세웠다(WU-IS3). **대상은 I2 로 열렸다** — `colab_v2_staging_pg` 의
+  `colab_platform`. 붙이는 설정 4줄은 `dev-package/sessions/I2.md §6`. 붙이기·스케줄은 IS3 의 몫이다.
+- 비밀·환경값은 홈의 `.colab-v2-staging.env`(0600) 하나에 모인다 — 터널 토큰 · Cloudflare 3종 ·
+  DB 비밀 3종 · postgres 데이터 디렉터리 경로.
 - 호스트가 WSL2 머신 1대다. 재부팅·업데이트가 곧 중단이다.

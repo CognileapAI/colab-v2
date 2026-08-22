@@ -32,6 +32,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.session_factory = make_session_factory(engine)
     app.state.subjects = SubjectRegistry.from_file(settings.subjects_file)
 
+    # liveness — 배포 배관이다. 계약(fe-core.yaml) 밖 경로이므로 API_PREFIX 아래에 두지 않는다.
+    # 라우트 표 오라클(tests/test_route_table.py)은 API_PREFIX 로 시작하는 라우트만 세므로 34 는 그대로다.
+    # **DB 를 건드리지 않는다** — 프로세스 생존과 DB 도달성은 다른 질문이고, 섞으면
+    # DB 가 잠깐 흔들릴 때 오케스트레이터가 멀쩡한 프로세스를 죽인다.
+    @app.get("/healthz", include_in_schema=False)
+    def _healthz() -> dict:
+        return {"unit": "core-api", "status": "alive", "implemented": True}
+
     for router in (identity.router, catalog.router, project.router):
         app.include_router(router, prefix=API_PREFIX)
     not_implemented.register(app, prefix=API_PREFIX)
