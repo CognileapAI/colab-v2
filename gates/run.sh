@@ -5,9 +5,15 @@
 #       v1에서 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 반복하지 않는다.
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="${1:-}"
 
 case "$GATE" in
+  planning-freshness)
+    # 기획 정본 패키지 HTML의 임베드 md ↔ 원본 md 일치 검사.
+    # 정본이 마운트되지 않으면 skip이 아니라 red다 (CLAUDE.md §4 green-by-skip 금지).
+    exec python3 "$REPO_ROOT/dev-package/tools/check-package-freshness.py"
+    ;;
   contract-lint|contract-breaking|generated-up-to-date|\
   import-boundary|banned-import|ai-no-lineage-write|\
   migration-single-head|schema-diff|rls-coverage|selftest)

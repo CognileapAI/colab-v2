@@ -13,6 +13,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `migration-single-head` | 마이그레이션 head 분기 (platform / ai 각각) |
 | `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 |
 | `rls-coverage` | allow-list 밖 테이블의 RLS 누락 |
+| `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** |
 
 ## selftest가 있는 이유
@@ -23,3 +24,6 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 ## 현재 상태
 
 `run.sh`는 골격이며 **미구현 게이트는 red를 낸다.** WU-D3에서 채운다.
+
+예외로 **`planning-freshness` 는 구현돼 있다** (WU-G1). 실행체는 `dev-package/tools/check-package-freshness.py` —
+표준 라이브러리만 쓰고, `--selftest` 로 변조 fixture·정본 부재 두 경우 모두 red 를 냄을 증명한다.
