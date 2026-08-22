@@ -106,7 +106,18 @@
 | 3 | **온톨로지 범위 (수문학 소유자 시간)** | K 트랙 전체 |
 | 4 | ~~CI 실행 환경 결제~~ | **해소** (2026-08-22) — public 전환으로 GitHub Actions 무료 러너 사용. R1에서 CI 1회 완주 확인 |
 | 5 | 전달 패키지 재빌드 (기획 소유자) | P0 |
-| 6 | ~~기획 정본(G:) 미마운트~~ | **해소** (2026-08-22) — WSL에 `sudo mount -t drvfs G: /mnt/g` 로 마운트. 260818 정본 읽기 확인. **환경을 옮길 때마다 재확인할 것** — 레포는 따라오지만 레포 밖 자산은 따라오지 않는다 |
+| 6 | **기획 정본(G:) 마운트** — WSL 재시작마다 풀린다(영구화 안 됨). `ls /mnt/g` 가 비면 정본을 못 읽는다 | **T-G 전체**(G1·G1b·G3·G4·G5·G7). 아래 §6 진입조건 참조 |
+
+## 4.5 다음 세션 진입조건 (WSL — 작업 시작 전 확인)
+
+| # | 확인 | 명령 | 실패하면 |
+|---|---|---|---|
+| 1 | **기획 정본이 읽히는가** | `ls /mnt/g` 에 `내 드라이브` 가 보인다 | `sudo mkdir -p /mnt/g && sudo mount -t drvfs G: /mnt/g` — **sudo라 사람이 실행한다.** Google Drive 데스크톱이 켜져 있어야 한다 |
+| 2 | 레포가 원격과 같은가 | `git status -sb` 가 clean + ahead/behind 0 | `git pull` |
+| 3 | gh 인증 | `gh auth status` | `gh auth login` (환경별 키링 — Windows 인증은 WSL로 안 넘어온다) |
+
+> **1번이 이 프로젝트의 반복 함정이다.** 레포는 환경을 옮겨도 따라오지만 **레포 밖 자산(G: 정본)은 따라오지 않는다.**
+> 영구화하려면 `/etc/wsl.conf` 의 `[automount] mountFsTab` 또는 `/etc/fstab` 에 `G: /mnt/g drvfs defaults 0 0`.
 
 ## 5. PLAN 이탈 기록
 
