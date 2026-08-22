@@ -1,0 +1,496 @@
+name: colab-poc
+services:
+  backend:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC
+      dockerfile: infra/Dockerfile
+      target: api
+    depends_on:
+      elasticmq:
+        condition: service_healthy
+        required: true
+      localstack:
+        condition: service_healthy
+        required: true
+      minio:
+        condition: service_healthy
+        required: true
+      minio-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      ADMIN_BOOTSTRAP_PASSWORD: <REDACTED>
+      ADMIN_BOOTSTRAP_USERNAME: admin
+      APP_ENV: production
+      APP_NAME: CoLAB Hydro
+      AWS_ACCESS_KEY_ID: <REDACTED>
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: <REDACTED>
+      BACKUP_OFFSITE_REMOTE: ""
+      BACKUP_OFFSITE_RETENTION_DAYS: "30"
+      BACKUP_OFFSITE_SKIP_MINIO: "0"
+      CF_TUNNEL_TOKEN: <REDACTED>
+      COLAB_DATA_ROOT: /mnt/colab-data
+      CORS_ORIGINS: '["https://www.colab-hydro.com","https://colab-hydro.com"]'
+      DATABASE_URL: postgresql+asyncpg://colab:<REDACTED>@postgres:5432/colab
+      DATABASE_URL_SYNC: postgresql+psycopg2://colab:<REDACTED>@postgres:5432/colab
+      DEBUG: "false"
+      ENV: production
+      JWT_ACCESS_TTL_MIN: "60"
+      JWT_REFRESH_TTL_DAYS: "14"
+      JWT_SECRET: <REDACTED>
+      LOG_LEVEL: INFO
+      MINIO_PUBLIC_ENDPOINT: https://www.colab-hydro.com
+      MOCK_PROCESSING_RESULT_ENABLED: "false"
+      OPENAI_API_KEY: <REDACTED>
+      POSTGRES_DB: colab
+      POSTGRES_PASSWORD: <REDACTED>
+      POSTGRES_USER: colab
+      PROCESSING_TIMEOUT_SECONDS: "1200"
+      PUBLIC_URL: https://www.colab-hydro.com
+      REDIS_PASSWORD: <REDACTED>
+      REDIS_URL: redis://:<REDACTED>@redis:6379/0
+      S3_BUCKET: colab-data
+      SQS_ENDPOINT_URL: http://elasticmq:9324
+      SQS_QUEUE_URL: http://elasticmq:9324/queue/colab-processing
+      TELEGRAM_BOT_TOKEN: <REDACTED>
+      TELEGRAM_CHAT_ID: "5812414614"
+      VITE_ALLOW_DEMO_MODE: "1"
+      VITE_API_URL_V2: /api/v2
+      VITE_CESIUM_TOKEN: <REDACTED>
+      VITE_SHOW_ADMIN: "true"
+      VITE_SHOW_DEMO_HINT: ""
+      VITE_VIZ_URL: http://localhost:8100
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/health')
+      timeout: 30s
+      interval: 10s
+      retries: 5
+      start_period: 1m0s
+    networks:
+      default: null
+      internal: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /mnt/colab-data
+        target: /mnt/colab-data
+        read_only: true
+        bind: {}
+  celery_worker:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC
+      dockerfile: infra/Dockerfile
+      target: api
+    command:
+      - celery
+      - -A
+      - app.celery_app
+      - worker
+      - -l
+      - info
+      - -Q
+      - processing
+      - --concurrency=2
+    depends_on:
+      minio:
+        condition: service_healthy
+        required: true
+      minio-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      ADMIN_BOOTSTRAP_PASSWORD: <REDACTED>
+      ADMIN_BOOTSTRAP_USERNAME: admin
+      APP_ENV: production
+      APP_NAME: CoLAB Hydro
+      AWS_ACCESS_KEY_ID: <REDACTED>
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: <REDACTED>
+      BACKUP_OFFSITE_REMOTE: ""
+      BACKUP_OFFSITE_RETENTION_DAYS: "30"
+      BACKUP_OFFSITE_SKIP_MINIO: "0"
+      CF_TUNNEL_TOKEN: <REDACTED>
+      COLAB_DATA_ROOT: /mnt/colab-data
+      CORS_ORIGINS: '["https://www.colab-hydro.com","https://colab-hydro.com"]'
+      DATABASE_URL: postgresql+asyncpg://colab:<REDACTED>@postgres:5432/colab
+      DATABASE_URL_SYNC: postgresql+psycopg2://colab:<REDACTED>@postgres:5432/colab
+      DEBUG: "false"
+      ENV: production
+      JWT_ACCESS_TTL_MIN: "60"
+      JWT_REFRESH_TTL_DAYS: "14"
+      JWT_SECRET: <REDACTED>
+      LOG_LEVEL: INFO
+      MINIO_PUBLIC_ENDPOINT: https://www.colab-hydro.com
+      MOCK_PROCESSING_RESULT_ENABLED: "false"
+      OPENAI_API_KEY: <REDACTED>
+      POSTGRES_DB: colab
+      POSTGRES_PASSWORD: <REDACTED>
+      POSTGRES_USER: colab
+      PROCESSING_TIMEOUT_SECONDS: "1200"
+      PUBLIC_URL: https://www.colab-hydro.com
+      REDIS_PASSWORD: <REDACTED>
+      REDIS_URL: redis://:<REDACTED>@redis:6379/0
+      S3_BUCKET: colab-data
+      SQS_ENDPOINT_URL: http://elasticmq:9324
+      SQS_QUEUE_URL: http://elasticmq:9324/queue/colab-processing
+      TELEGRAM_BOT_TOKEN: <REDACTED>
+      TELEGRAM_CHAT_ID: "5812414614"
+      VITE_ALLOW_DEMO_MODE: "1"
+      VITE_API_URL_V2: /api/v2
+      VITE_CESIUM_TOKEN: <REDACTED>
+      VITE_SHOW_ADMIN: "true"
+      VITE_SHOW_DEMO_HINT: ""
+      VITE_VIZ_URL: http://localhost:8100
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1
+      timeout: 10s
+      interval: 30s
+      retries: 3
+      start_period: 20s
+    networks:
+      default: null
+      internal: null
+    restart: unless-stopped
+  cloudflared:
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - <REDACTED_CF_TUNNEL_TOKEN>
+    container_name: colab_cloudflared
+    depends_on:
+      nginx:
+        condition: service_started
+        required: true
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    image: cloudflare/cloudflared:latest
+    networks:
+      default: null
+    restart: unless-stopped
+  elasticmq:
+    container_name: colab_elasticmq
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider 'http://localhost:9324/?Action=ListQueues' || exit 1
+      timeout: 5s
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    image: softwaremill/elasticmq-native:latest
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 9324
+        published: "9324"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/ttlhi10/projects/CoLAB-PoC/infra/elasticmq/elasticmq.conf
+        target: /opt/elasticmq.conf
+        read_only: true
+        bind: {}
+  localstack:
+    environment:
+      AWS_ACCESS_KEY_ID: <REDACTED>
+      AWS_SECRET_ACCESS_KEY: <REDACTED>
+      DEFAULT_REGION: us-east-1
+      SERVICES: s3
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:4566/_localstack/health
+      timeout: 5s
+      interval: 5s
+      retries: 10
+      start_period: 20s
+    image: localstack/localstack:3.0
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 4566
+        published: "4566"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/ttlhi10/projects/CoLAB-PoC/infra/localstack-init.sh
+        target: /etc/localstack/init/ready.d/init.sh
+        read_only: true
+        bind: {}
+  minio:
+    command:
+      - server
+      - /data
+      - --console-address
+      - :9001
+    container_name: colab_minio
+    environment:
+      MINIO_ROOT_PASSWORD: <REDACTED>
+      MINIO_ROOT_USER: 7d483892307b32de0a2a
+    healthcheck:
+      test:
+        - CMD
+        - mc
+        - ready
+        - local
+      timeout: 5s
+      interval: 10s
+      retries: 10
+      start_period: 30s
+    image: minio/minio:latest
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 9001
+        published: "9001"
+        protocol: tcp
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 9000
+        published: "9000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /mnt/colab-data/minio
+        target: /data
+        bind: {}
+      - type: bind
+        source: /mnt/colab-data/backups/minio
+        target: /data-mirror
+        bind: {}
+  minio-init:
+    depends_on:
+      minio:
+        condition: service_healthy
+        required: true
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$AWS_ACCESS_KEY_ID" "$$AWS_SECRET_ACCESS_KEY"
+        mc mb --ignore-existing local/"$$S3_BUCKET"
+        mc anonymous set none local/"$$S3_BUCKET"
+        echo "MinIO bucket ready: $$S3_BUCKET"
+    environment:
+      AWS_ACCESS_KEY_ID: <REDACTED>
+      AWS_SECRET_ACCESS_KEY: <REDACTED>
+      S3_BUCKET: colab-data
+    image: minio/mc:latest
+    networks:
+      default: null
+  nginx:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC
+      dockerfile: infra/Dockerfile.frontend
+      args:
+        VITE_ALLOW_DEMO_MODE: "1"
+        VITE_API_URL_V2: /api/v2
+        VITE_CESIUM_TOKEN: <REDACTED>
+    depends_on:
+      backend:
+        condition: service_healthy
+        required: true
+    networks:
+      default: null
+      internal: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "3000"
+        protocol: tcp
+    restart: unless-stopped
+  postgres:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC
+      dockerfile: infra/Dockerfile.postgres
+    environment:
+      POSTGRES_DB: colab
+      POSTGRES_PASSWORD: <REDACTED>
+      POSTGRES_USER: colab
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U colab -d colab -h localhost -p 5432
+      timeout: 5s
+      interval: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /home/ttlhi10/projects/CoLAB-PoC/infra/init-db.sql
+        target: /docker-entrypoint-initdb.d/01-init.sql
+        bind: {}
+      - type: bind
+        source: /mnt/colab-data/postgres
+        target: /pgdata
+        bind: {}
+  redis:
+    command:
+      - sh
+      - -c
+      - redis-server --requirepass $${REDIS_PASSWORD:-changeme_redis}
+    environment:
+      REDIS_PASSWORD: <REDACTED>
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a $${REDIS_PASSWORD:-changeme_redis} ping
+      timeout: 3s
+      interval: 5s
+      retries: 10
+      start_period: 5s
+    image: redis:7-alpine
+    networks:
+      internal: null
+    restart: unless-stopped
+  viz:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC/viz-service
+      dockerfile: Dockerfile
+    environment:
+      VIZ_ALLOWLIST_HOSTS: localhost,backend,colab-hydro.com,*.amazonaws.com,minio
+      VIZ_CACHE_MAX_ENTRIES: "200"
+      VIZ_CACHE_TTL_SEC: "1800"
+      VIZ_CORS_ORIGINS: http://localhost:5173,https://www.colab-hydro.com
+      VIZ_MAIN_BACKEND_BASE_URL: http://backend:8000
+      VIZ_MAX_UPLOAD_BYTES: "524288000"
+      VIZ_PORT: "8100"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8100/viz/health').status==200 else 1)
+      timeout: 5s
+      interval: 30s
+      retries: 3
+    mem_limit: "4294967296"
+    networks:
+      internal: null
+    ports:
+      - mode: ingress
+        target: 8100
+        published: "8100"
+        protocol: tcp
+    restart: unless-stopped
+    tmpfs:
+      - /tmp/viz:size=2G
+  worker:
+    build:
+      context: /home/ttlhi10/projects/CoLAB-PoC
+      dockerfile: infra/Dockerfile
+      target: worker
+    depends_on:
+      elasticmq:
+        condition: service_healthy
+        required: true
+      localstack:
+        condition: service_healthy
+        required: true
+      minio:
+        condition: service_healthy
+        required: true
+      minio-init:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      ADMIN_BOOTSTRAP_PASSWORD: <REDACTED>
+      ADMIN_BOOTSTRAP_USERNAME: admin
+      APP_ENV: production
+      APP_NAME: CoLAB Hydro
+      AWS_ACCESS_KEY_ID: <REDACTED>
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: <REDACTED>
+      BACKUP_OFFSITE_REMOTE: ""
+      BACKUP_OFFSITE_RETENTION_DAYS: "30"
+      BACKUP_OFFSITE_SKIP_MINIO: "0"
+      CF_TUNNEL_TOKEN: <REDACTED>
+      COLAB_DATA_ROOT: /mnt/colab-data
+      CORS_ORIGINS: '["https://www.colab-hydro.com","https://colab-hydro.com"]'
+      DATABASE_URL: postgresql+asyncpg://colab:<REDACTED>@postgres:5432/colab
+      DATABASE_URL_SYNC: postgresql+psycopg2://colab:<REDACTED>@postgres:5432/colab
+      DEBUG: "false"
+      ENV: production
+      JWT_ACCESS_TTL_MIN: "60"
+      JWT_REFRESH_TTL_DAYS: "14"
+      JWT_SECRET: <REDACTED>
+      LOG_LEVEL: INFO
+      MINIO_PUBLIC_ENDPOINT: https://www.colab-hydro.com
+      MOCK_PROCESSING_RESULT_ENABLED: "false"
+      OPENAI_API_KEY: <REDACTED>
+      POSTGRES_DB: colab
+      POSTGRES_PASSWORD: <REDACTED>
+      POSTGRES_USER: colab
+      PROCESSING_TIMEOUT_SECONDS: "1200"
+      PUBLIC_URL: https://www.colab-hydro.com
+      REDIS_PASSWORD: <REDACTED>
+      REDIS_URL: redis://:<REDACTED>@redis:6379/0
+      S3_BUCKET: colab-data
+      SQS_ENDPOINT_URL: http://elasticmq:9324
+      SQS_QUEUE_URL: http://elasticmq:9324/queue/colab-processing
+      TELEGRAM_BOT_TOKEN: <REDACTED>
+      TELEGRAM_CHAT_ID: "5812414614"
+      VITE_ALLOW_DEMO_MODE: "1"
+      VITE_API_URL_V2: /api/v2
+      VITE_CESIUM_TOKEN: <REDACTED>
+      VITE_SHOW_ADMIN: "true"
+      VITE_SHOW_DEMO_HINT: ""
+      VITE_VIZ_URL: http://localhost:8100
+    networks:
+      default: null
+    restart: unless-stopped
+networks:
+  default:
+    name: colab-poc_default
+  internal:
+    name: colab-poc_internal
+    driver: bridge
