@@ -1,0 +1,35 @@
+-- 리허설용 씨앗 데이터. **staging 실데이터가 아니다.**
+-- db/platform/schema.sql 의 제약(ULID 도메인 · CHECK · FK)을 실제로 통과하는 값만 쓴다.
+INSERT INTO d1_lab (id, name, opened_at) VALUES
+  ('01JB0KAB000000000000000001', '수문학연구실', '2024-03-01T00:00:00Z'),
+  ('01JB0KAB000000000000000002', '수자원공학실', '2025-09-01T00:00:00Z');
+
+INSERT INTO d1_lab_profile (lab_id, university, department, principal_investigator, research_field, introduction) VALUES
+  ('01JB0KAB000000000000000001', '한국대학교', '토목공학과', '김교수', '수문 모델링', '유역 강우-유출 연구'),
+  ('01JB0KAB000000000000000002', '한국대학교', '환경공학과', '이교수', '수자원 계획', '가뭄 지표 연구');
+
+INSERT INTO d1_account (id, lab_id, name, email) VALUES
+  ('01JB0ACC000000000000000001', '01JB0KAB000000000000000001', '김교수', 'pi1@example.ac.kr'),
+  ('01JB0ACC000000000000000002', '01JB0KAB000000000000000001', '박연구원', 'r1@example.ac.kr'),
+  ('01JB0ACC000000000000000003', '01JB0KAB000000000000000002', '이교수', 'pi2@example.ac.kr');
+
+INSERT INTO d2_member_role (account_id, lab_id, role) VALUES
+  ('01JB0ACC000000000000000001', '01JB0KAB000000000000000001', '교수'),
+  ('01JB0ACC000000000000000002', '01JB0KAB000000000000000001', '연구원'),
+  ('01JB0ACC000000000000000003', '01JB0KAB000000000000000002', '교수');
+
+INSERT INTO d3_dataset (id, lab_id, owner_account_id, uploader_account_id, source_label) VALUES
+  ('01JB0DS0000000000000000001', '01JB0KAB000000000000000001', '01JB0ACC000000000000000001', '01JB0ACC000000000000000002', '기상청 ASOS'),
+  ('01JB0DS0000000000000000002', '01JB0KAB000000000000000001', '01JB0ACC000000000000000002', '01JB0ACC000000000000000002', NULL),
+  ('01JB0DS0000000000000000003', '01JB0KAB000000000000000002', '01JB0ACC000000000000000003', '01JB0ACC000000000000000003', 'K-water');
+
+INSERT INTO d3_dataset_description (dataset_id, lab_id, name) VALUES
+  ('01JB0DS0000000000000000001', '01JB0KAB000000000000000001', '한강 유역 시간 강우 2015-2024'),
+  ('01JB0DS0000000000000000002', '01JB0KAB000000000000000001', '한강 유역 일 유출량 산출본'),
+  ('01JB0DS0000000000000000003', '01JB0KAB000000000000000002', '낙동강 저수지 수위');
+
+INSERT INTO d6_project (id, lab_id, type, name, description, period_start, period_end) VALUES
+  ('01JB0PRJ000000000000000001', '01JB0KAB000000000000000001', '국가과제', '도시 홍수 예측 고도화', '한강 유역 대상', '2025-03-01', '2027-02-28'),
+  ('01JB0PRJ000000000000000002', '01JB0KAB000000000000000002', '논문', '가뭄 지표 비교 연구', NULL, NULL, NULL);
+
+INSERT INTO alembic_version_platform (version_num) VALUES ('rehearsal_head');
