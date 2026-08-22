@@ -24,10 +24,13 @@ import sys
 import tempfile
 
 # 정본 루트의 기본 위치 — 이 상수 하나에서만 파생된다.
+# 절대경로를 박지 않는다 (CLAUDE.md §5) — 레포 위치에서 상대로 푸다.
+#   <작업공간>/30 CoLAB-v2/dev-package/tools/  →  <작업공간>/40 COLAB-기획/<정본>
 # 위치의 문서화 자리는 `planning/README.md §1` 이다.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_PLANNING_ROOT = os.path.join(
-    "/mnt/g", "내 드라이브", "01.Cognileap", "02.Planning",
-    "CoLab_ver2_1차마일스톤_목업패키지_260818_이태헌",
+    os.path.dirname(_REPO_ROOT), "40 COLAB-기획",
+    "Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌",
 )
 EPICS_DIRNAME = "에픽"          # 에픽
 ENV_VAR = "COLAB_PLANNING_ROOT"
@@ -58,18 +61,40 @@ def resolve_root(argv_root):
     return argv_root or os.environ.get(ENV_VAR) or DEFAULT_PLANNING_ROOT
 
 
+class Unreadable(Exception):
+    """정본 파일이 *있는데* 읽히지 않는다 — 낡음과 구분해야 하는 실패다."""
+
+
 def read(path):
-    with open(path, "rb") as f:
-        return f.read().decode("utf-8")
+    # 목록은 되고 읽기만 실패하는 상태가 실재했다(외부 드라이브 스트리밍 사본, OSError 5).
+    # 그대로 두면 traceback 으로 죽어 "패키지가 낡았다"는 오탐으로 읽힌다. red 는 red 이되 이유를 말한다.
+    try:
+        with open(path, "rb") as f:
+            raw = f.read()
+    except OSError as e:
+        raise Unreadable("파일이 보이는데 읽히지 않는다 (%s): %s\n"
+                         "   → 정본 폴더가 제자리인지 본다 (planning/README.md §1). "
+                         "낡음이 아니라 **읽기 실패**다." % (e.__class__.__name__, path))
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise Unreadable("UTF-8 로 읽히지 않는다: %s (%s)" % (path, e))
 
 
 def check(root):
     """(rows, errors) 반환. rows = (epic, block, source, verdict, version, sha8)"""
+    try:
+        return _check(root)
+    except Unreadable as e:
+        return [], ["정본 읽기 실패 — %s" % e]
+
+
+def _check(root):
     rows, errors = [], []
     epics_dir = os.path.join(root, EPICS_DIRNAME)
     if not os.path.isdir(epics_dir):
         errors.append(
-            "정본 폴더를 읽을 수 없다 (마운트 확인 — planning/README.md §1): %s" % epics_dir)
+            "정본 폴더가 없다 (위치 확인 — planning/README.md §1): %s" % epics_dir)
         return rows, errors
 
     epics = sorted(d for d in os.listdir(epics_dir)
@@ -167,6 +192,22 @@ def selftest():
                 print("            %s" % e)
             if not errs2:
                 failures.append("변조된 패키지에 green 이 나왔다")
+
+            # ③ 파일이 있는데 읽히지 않음 → traceback 이 아니라 **진단된 red** 여야 한다.
+            #    (목록은 되고 읽기만 실패하는 상태가 실재했다 — PLAN-SoT §9-㉕)
+            os.chmod(html, 0)
+            try:
+                _, errs3 = check(fake_root)
+            finally:
+                os.chmod(html, 0o644)
+            diagnosed = any("읽기 실패" in e for e in errs3)
+            print("[selftest 3] 읽기 불가 fixture → %s" % (
+                "red OK (진단됨)" if diagnosed else
+                ("red 이지만 진단 문구 없음" if errs3 else "GREEN (자격 없음)")))
+            if not errs3:
+                failures.append("읽히지 않는 정본에 green 이 나왔다")
+            elif not diagnosed:
+                failures.append("읽기 실패를 낡음과 구분하지 못한다 (오탐 red)")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

@@ -1,15 +1,18 @@
 # planning — 기획 정본 안내
 
 > **이 폴더에 기획 문서를 복사해 두지 않는다.** 사본을 만들면 두 개가 갈라진다.
-> 정본은 G: 드라이브에 있고, 이 문서는 그 위치와 상태만 가리킨다.
+> 정본은 이 레포 밖 **같은 작업공간의 형제 폴더**에 있고, 이 문서는 그 위치와 상태만 가리킨다.
+>
+> **경로 표기 규칙.** 아래 `<작업공간>` 은 이 레포(`30 CoLAB-v2`)의 **부모 폴더**다.
+> 절대경로를 적지 않는다(`CLAUDE.md §5`) — 환경이 바뀌면 절대경로가 먼저 거짓말을 한다.
 
 ---
 
 ## 1. 정본 위치
 
 ```
-G:\내 드라이브\01.Cognileap\02.Planning\
-└─ CoLab_ver2_1차마일스톤_목업패키지_260818_이태헌\
+<작업공간>/40 COLAB-기획/
+└─ Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌/
    ├─ 에픽\
    │   ├─ E-00_공통_기반          documents(DataModel v1.8 · Policy v1.4) · package    ※ 목업 없음
    │   ├─ E-01_역할과_권한        documents(Policy v1.3) · package                     ※ 목업 없음
@@ -25,7 +28,7 @@ G:\내 드라이브\01.Cognileap\02.Planning\
 
 ## 2. ⚠ 정본 폴더에 **없는** 인덱스 문서 5종
 
-아래는 260808판에만 있다 — `F:\00_Project\00 CoLAB\01 CoLAB-Plan\reference\v2_1차마일스톤_기획_260808\`
+아래는 260808판에만 있다 — `<작업공간>/01 CoLAB-Plan/reference/v2_1차마일스톤_기획_260808/`
 
 | 문서 | 무엇이 들었나 |
 |---|---|
@@ -82,7 +85,7 @@ G:\내 드라이브\01.Cognileap\02.Planning\
 ```
 
 원본 md 를 고치고 패키지를 다시 만들지 않으면 이 게이트가 **red** 를 낸다.
-정본이 마운트돼 있지 않아도 **red** 다 (skip 하지 않는다 — `CLAUDE.md §4`).
+정본 폴더가 보이지 않아도 **red** 다 (skip 하지 않는다 — `CLAUDE.md §4`).
 검사기는 `dev-package/tools/check-package-freshness.py`, 자기 fail-closed 증명은 `--selftest`.
 
 > 이 게이트는 **문서 임베드만** 본다. 위 표의 오른쪽 열(목업·화면)은 판정하지 않는다 — 그쪽은 **WU-G1b** 다.
@@ -96,8 +99,8 @@ G:\내 드라이브\01.Cognileap\02.Planning\
 ## 5. v3 문서 (v2 스코프 아님)
 
 ```
-G:\내 드라이브\01.Cognileap\02.Planning\CoLab_ver2_hsw\
-   CONCEPT.md · CEO-POSITIONING.md · 발표덱 · 온보딩 보고서 · screens\
+<작업공간>/40 COLAB-기획/CoLab_ver2_hsw/
+   CONCEPT.md · CEO-POSITIONING.md · 발표덱 · 온보딩 보고서 · screens/
 ```
 
 이름에 "ver2"가 들어 있지만 **v2가 아니다.** 대화를 정문으로 세우는 다음 세대 구상이고, v2 정본이 명시적으로 범위 밖으로 뺐다. 폴더명 정정 전까지 이 안내가 유일한 표식이다.
