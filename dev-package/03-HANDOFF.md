@@ -3,9 +3,9 @@
 > **이 문서가 "지금 어디까지 왔는가"의 진실원.** 매 세션 끝에 갱신한다(규약 `01-CLAUDE-DRIVER.md §C`).
 > 새 세션은 여기부터 읽는다. 코드·인프라와 모순되면 실제 상태를 점검해 **이 문서를 먼저 바로잡는다.**
 
-**최종 갱신** 2026-08-22 (**R0 확정 — `colab-v2` 신규 모노레포. 스캐폴드 작성 완료, 원격 생성·푸시 대기**)
-**현재 단계** R1 진행 중 · 게이트·인프라·지식추출 병렬 구간
-**다음 WU (택1, 전부 병렬 가능)** → **R1 마무리**(원격 생성·푸시·main 보호) · **I0** AWS 계정·결제 · **G2** 자연어 검색 엔진 결정 · **G8** 온톨로지 범위 합의 · **C1** 5 repo 푸시 확인
+**최종 갱신** 2026-08-22 (**R1 닫힘 — 원격 push · `main` 보호 · CI red 확인 완료. 레포 public 전환**)
+**현재 단계** R1 완료 · T-C/T-G/T-I 병렬 구간 진입 (D 트랙 선행조건 대기)
+**다음 WU (택1, 전부 병렬 가능)** → Claude 착수 가능: **G7** 기획 SSOT 통합 · **C3/C4** PoC·v1 지식 추출 ／ 사람 결정 필요(Ted): **I0** AWS 계정·결제 · **G2** 검색 엔진 결정 · **G8** 온톨로지 범위 합의
 
 ---
 
@@ -17,7 +17,7 @@
 | WU | 상태 | 비고 |
 |---|---|---|
 | R0 레포 결정 | ✅ | **`colab-v2` 신규 모노레포** (Ted, 2026-08-22). `colab-dev-package`는 v1 자산으로 archive |
-| R1 스캐폴드 + CI 골격 | 🟧 | 로컬 트리·CODEOWNERS·CI 골격·게이트 러너·도메인 README **작성 완료**. **잔여: 원격 생성 · 첫 푸시 · main 보호 · CI 1회 완주** |
+| R1 스캐폴드 + CI 골격 | ✅ | 원격 `CognileapAI/colab-v2`(public) push 완료 · `main` 보호(force-push·삭제 차단, 리뷰 필수 없음) · CI 1회 완주 — 게이트 잡(`contract-gates` 등) 전부 "미구현 — red"로 **설계대로** 실패. 가시성 결정 = `PLAN-SoT §9-⑯` |
 | R2 v1 레포 5종 archive | ⬜ | C4 후 (`colab-dev-package` 포함) |
 
 ### T-C 정리
@@ -81,7 +81,7 @@
 
 ## 2. 현재 상태 스냅샷
 
-- **레포**: `CognileapAI/colab-v2` (신규 모노레포). 스캐폴드 = `contracts/` `services/{core-api,pipeline-worker,viz-render,ai-service}` `frontend/` `db/{platform,ai}/` `gates/` `eval/` `infra/` `dev-package/` `planning/` + CODEOWNERS + CI 골격. **원격 미생성.**
+- **레포**: `CognileapAI/colab-v2` (신규 모노레포, **public** — PLAN-SoT §9-⑯). **원격 push 완료**, `origin/main` = 스캐폴드 커밋(`620238c`). `main` 보호 ON: force-push·삭제 차단, 리뷰 필수 없음(1인 CODEOWNERS 셀프-락아웃 회피), enforce_admins off. CI 1회 완주 — 게이트 잡 전부 "미구현 — red". 스캐폴드 = `contracts/` `services/{core-api,pipeline-worker,viz-render,ai-service}` `frontend/` `db/{platform,ai}/` `gates/` `eval/` `infra/` `dev-package/` `planning/` + CODEOWNERS + CI 골격.
 - **게이트**: `gates/run.sh` 골격만. 미구현 게이트는 **red를 낸다**(green-by-skip 금지). WU-D3에서 구현.
 - **코드**: 없음. v2는 신규 구축이며 계약 동결(D2) 후 배치한다.
 - **AWS 리소스**: 없음. I1에서 IaC로 생성.
@@ -94,7 +94,7 @@
 
 확정·열림 전체는 `PLAN-SoT.md §9`. 새 결정이 나면 **거기 적고 여기서 링크**한다(두 곳에 적으면 갈라진다).
 
-최근 확정 — ① 신규 구축 ② AWS 배포까지 ③ 정본 260818 ④ AI 도메인 분리 ⑤ WU 단위 ⑥ Assistant BC 미계승 *(전부 2026-08-22 Ted)*
+최근 확정 — ① 신규 구축 ② AWS 배포까지 ③ 정본 260818 ④ AI 도메인 분리 ⑤ WU 단위 ⑥ Assistant BC 미계승 ⑦ `colab-v2` 모노레포 ⑯ 레포 public *(전부 2026-08-22 Ted)*
 
 ## 4. 블로커 (사람이 풀어야 할 것)
 
@@ -103,7 +103,7 @@
 | 1 | **AWS 계정·결제** | I0 → I1~I5 전부. **AWS 배포가 완료 조건이므로 임계경로** |
 | 2 | **자연어 검색 엔진 결정** | P4 · K4 |
 | 3 | **온톨로지 범위 (수문학 소유자 시간)** | K 트랙 전체 |
-| 4 | CI 실행 환경 결제 | 자동화 게이트 |
+| 4 | ~~CI 실행 환경 결제~~ | **해소** (2026-08-22) — public 전환으로 GitHub Actions 무료 러너 사용. R1에서 CI 1회 완주 확인 |
 | 5 | 전달 패키지 재빌드 (기획 소유자) | P0 |
 
 ## 5. PLAN 이탈 기록
