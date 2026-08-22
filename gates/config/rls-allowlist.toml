@@ -1,0 +1,38 @@
+# rls-coverage 게이트의 **유일한 정의처**. 스크립트는 목록을 갖지 않는다 — 두 곳에 적으면 갈라진다.
+#
+# 근거: CLAUDE.md §3-5 (모든 조회에 연구실 경계가 자동 주입된다)
+#       PLAN-SoT §9-㉖ · PERMISSION-PRINCIPLES P-34 (잠금 시행은 두 층 — 경계는 RLS, 본체도 RLS)
+#
+# 규칙
+#   - allow_no_rls 에 없는 테이블이 RLS 없이 존재하면 **red**
+#   - allow_no_rls 에 적었으나 실제 DB 에 없는 테이블도 **red** (낡은 면제는 조용한 구멍이다)
+#   - RLS 는 ENABLE 만으로 부족하다. **FORCE 까지** 켜야 한다 (테이블 소유자에게도 정책이 걸린다)
+#   - 정책 이름 관례로 "무슨 정책인지"를 판정한다. 필수 이름이 없으면 red.
+#     그 밖의 정책이 더 걸려 있는 것은 red 가 아니지만 출력에 찍는다 (사람이 보라고)
+
+[policy_naming]
+# 연구실 경계 정책 — 모든 테넌시 대상 테이블에 필수 (CLAUDE.md §3-5).
+lab_boundary = "lab_boundary"
+# 파일 본체 접근 정책 — 허용자 목록 + 만료일 (P-34 · §9-㉖). 본체 테이블에만 추가로 필수.
+body_access  = "body_access"
+
+[platform]
+# 파일 **본체** 테이블 — 경계 정책 + 본체 정책 **둘 다** 걸려야 한다 (P-34 ③).
+# 데이터셋 메타(이름·요약)에는 본체 정책을 걸지 않는다 — 걸면 P-13 이 깨지고 E-06 승인 흐름이 죽는다.
+body_tables = [
+  "d3_file",          # 파일 본체 (다운로드·원본)
+  "d7_viz_source",    # 시각화 소스
+]
+# RLS 가 없어도 되는 테이블. **참조 테이블·전역 테이블만.** 연구실 데이터를 담으면 여기 올 수 없다.
+allow_no_rls = [
+  "alembic_version_platform",  # 마이그레이션 체인 상태. 연구실 데이터가 아니다
+  "d1_lab",                    # 테넌트 루트 그 자체 — 자기가 경계다 (DATAMODEL-BASELINE §1 D1)
+]
+
+[ai]
+body_tables = []
+allow_no_rls = [
+  "alembic_version_ai",
+  # D9 온톨로지는 연구실 공통 지식이다 — 테넌트별로 갈리지 않는다 (DOMAINS.md D9).
+  # 접두사가 아니라 이름을 하나씩 적는다. 접두사 면제는 나중에 아무 테이블이나 숨는 문이 된다.
+]

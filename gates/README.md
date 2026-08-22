@@ -14,26 +14,36 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 |
 | `rls-coverage` | allow-list 밖 테이블의 RLS 누락 |
 | `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
-| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** |
+| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · boundary · db 증명 셋) |
 
 ## selftest가 있는 이유
 
 "전부 green"과 "전부 무력"은 구분되지 않는다. v1 CI는 DB 없이 돌아 RLS 테스트를 **green-by-skip** 했다.
 각 게이트는 red fixture로 자신이 fail-closed임을 증명해야 한다.
 
-## 현재 상태
+## 현재 상태 (2026-08-23)
 
-`run.sh`는 아직 골격이 남아 있고 **미구현 게이트는 red를 낸다.** 남은 것은 WU-D3의 뒷절반에서 채운다.
+**미구현 게이트는 red 를 낸다.** 우회하거나 끄지 않는다.
 
-| 구현됨 | WU | 실행체 |
+| 게이트 | 상태 | 지금 red 인 이유 |
 |---|---|---|
-| `planning-freshness` | G1 | `dev-package/tools/check-package-freshness.py` (표준 라이브러리만) |
-| `contract-lint` · `contract-breaking` · `contract-selftest` | D2 | `gates/tools/contract-*.sh` |
-| `import-boundary` · `banned-import` · `ai-no-lineage-write` · `boundary-selftest` | D3 | `gates/tools/import-boundary.sh` · `banned-import.py` · `ai-no-lineage-write.sh` · `boundary-selftest.sh` |
+| `planning-freshness` | ✅ 구현 (WU-G1) | — green |
+| `contract-lint` · `contract-breaking` | ✅ 구현 (WU-D2) | — green |
+| `import-boundary` · `banned-import` · `ai-no-lineage-write` | ✅ 구현 (WU-D3) | **red — `services/` 에 코드가 없다** |
+| `migration-single-head` · `schema-diff` · `rls-coverage` | ✅ 구현 (WU-D3) | **red — `db/` 에 마이그레이션·스키마가 없다** |
+| `generated-up-to-date` | ⬜ 미구현 | red |
 
-경계 게이트 3종의 판정 방식·모듈 경로 관례·한계는 `dev-package/sessions/D3-boundary.md`.
-설정은 `gates/config/boundaries.toml`(배포 단위·금지 목록)과 `gates/config/importlinter.ini`(경계 계약),
-도구 버전은 `gates/requirements.txt`가 고정한다(`gates/.venv`는 게이트가 스스로 만든다).
+> **red 인 것이 정상인 게이트가 있다.** "AI 가 계보에 쓰지 않는다"와 "AI 가 아직 없다"는 다른 사실이라, 검사 대상 0건을 green 으로 세지 않는다. 이 게이트들은 P0 이 코드를 만들면 비로소 green 이 될 수 있다.
 
-예외로 **`planning-freshness` 는 구현돼 있다** (WU-G1). 실행체는 `dev-package/tools/check-package-freshness.py` —
-표준 라이브러리만 쓰고, `--selftest` 로 변조 fixture·정본 부재 두 경우 모두 red 를 냄을 증명한다.
+## 자기 증명 (selftest)
+
+각 게이트가 **자기가 fail-closed 임을 red fixture 로 증명**한다. 증명 셋은 셋으로 나뉘어 있다 — 서로의 인프라 사고에 걸리지 않게 하기 위해서다.
+
+| 셋 | 케이스 | 의존 |
+|---|---|---|
+| `contract-selftest` | **15** | docker(oasdiff) · spectral |
+| `boundary-selftest` | **30** | python venv |
+| `db-selftest` | **38** | docker(postgres) — 24 는 docker 없이도 돈다 |
+| `selftest` | 위 셋 전부 | |
+
+`planning-freshness` 의 증명은 `dev-package/tools/check-package-freshness.py --selftest`(3 케이스).

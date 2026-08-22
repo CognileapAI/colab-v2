@@ -88,7 +88,7 @@ T-P  플랫폼   D1~D8 구현              T-K  지식·AI   D9·D10 구현
 |---|---|---|---|
 | **R0** | 레포 결정 — `colab-dev-package` 승격 vs `colab-v2` 신설. **모노레포 권고**(`REPO.md §2`) | 없음 | 결정 로그 기록 |
 | **R1** | 스캐폴드 — 디렉터리 구조 · CODEOWNERS · `main` 보호 · CI 실행 환경 · 변경 경로 필터 골격 · dev-package 문서 이관 | R0 | 빈 CI 워크플로가 1회 완주 |
-| **R2** | v1 레포 4종 archive (읽기 전용 전환) | C4 | archive 표시 완료 |
+| **R2** | v1 레포 **5종** archive (읽기 전용 전환) — `colab-dev-package` 포함 | C4 | archive 표시 완료 |
 
 > **R1이 D2·D3의 그릇이다.** 계약과 게이트가 들어갈 자리가 없으면 계약 동결을 시작할 수 없다.
 
@@ -97,8 +97,7 @@ T-P  플랫폼   D1~D8 구현              T-K  지식·AI   D9·D10 구현
 | WU | 내용 | 진입조건 | 완료 판정(오라클) |
 |---|---|---|---|
 | **C1** | 5 repo 푸시 상태 확인 — `git status` clean + `git log origin/main..HEAD` 비어 있음 + 열린 draft PR 5건 브랜치 원격 존재 | 없음 | 5개 전부 확인됨 (하나라도 로컬 전용이면 **이동 차단**) |
-| **C2** | v1 이관 — PoC·Launch를 `20 CoLAB-v1/{00-poc,10-launch}` 로. 부피/임시파일 제거 → 이동 → 재생성 → 경로 참조 갱신 | C1 | 이동 후 `scripts/run_gates.sh` 5게이트 + pytest green 재현 |
-| **C2** | v1 이관 — PoC·Launch를 `20 CoLAB-v1/{00-poc,10-launch}` 로. 부피/임시파일 제거 → 이동 → 경로 참조 갱신 → FROZEN 배너 | C1 | 두 폴더가 `20 CoLAB-v1` 아래에 있고, 원래 자리는 비어 있다 |
+| **C2** | v1 이관 — PoC·Launch를 `20 CoLAB-v1/{00-poc,10-launch}` 로. 부피/임시파일 제거 → 이동 → 경로 참조 갱신 → FROZEN 배너 | C1 | 두 폴더가 `20 CoLAB-v1` 아래에 있고 원래 자리는 비어 있으며, **이동 후 `scripts/run_gates.sh` 5게이트 + pytest 가 green 으로 재현**된다 *(2026-08-23: 완료 판정이 다른 C2 행이 둘이었다. 약한 쪽을 버리지 않고 합쳤다 — 옮겼다는 사실보다 옮기고도 돌아간다는 사실이 필요하다)* |
 | **C3** | **PoC 지식 추출** — `HARVEST.md`. 4포맷 디코딩 절차와 함정 · 포맷 감지 판별 규칙 · COG/타일 파라미터 · 실패 목록 | C1 | 모든 항목이 실제 파일·라인으로 도달 가능하고, **v2에서 다시 구현할 수 있을 만큼 서술**돼 있다 |
 | **C4** | **v1 방법론 추출** — `METHOD.md`. 계약 게이트 6종의 구성 방식 · 멀티테넌시 3중 방어 · 세션 인계 형식 · 실패 교훈 | C1 | WU-D3이 이 문서만 읽고 게이트를 재구축할 수 있다 |
 
@@ -145,8 +144,9 @@ C2·C3·C4는 서로 병렬. C1만 공통 선행.
 | WU | 내용 | 진입조건 | 완료 판정 |
 |---|---|---|---|
 | **D1** | 도메인 경계 확정 — `DOMAINS.md` 리뷰·승인 | G5 초안 | 10 도메인 소유자 배정 완료 |
-| **D2** | 계약 동결 — seam OpenAPI(FE↔core, core↔viz, core↔ai) + async 봉투(core↔pipeline) + 공통 JSON-Schema(ULID 등) | D1, A3 | spectral + oasdiff 게이트 green |
+| **D2** | 계약 동결 — seam OpenAPI(FE↔core, core↔viz, core↔ai) + async 봉투(core↔pipeline) + 공통 JSON-Schema(ULID 등) | D1 ~~A3~~ *(`A3` 는 존재하지 않는 WU 였다 — A 트랙 자체가 없다. v1 잔재 유령 참조, 2026-08-22 삭제)* | spectral + oasdiff 게이트 green |
 | **D2b** | **이벤트 계약 게이트** — `contracts/events/**` 는 지금 **어떤 게이트도 보지 않는다.** `contract-lint`(spectral)는 `contracts/seams/**` 만 훑고, `contract-breaking`(oasdiff)은 OpenAPI 전용이라 이벤트의 파괴적 변경을 아무도 못 잡는다. 필요한 것 = `event-lint`(ajv 로 스키마 유효성 + 인스턴스 fixture) · `$defs` 단위 diff 규칙 · red fixture selftest | D2 | 게이트 self-test green + 이벤트 계약 변경이 실제로 red 를 냄 |
+| **D3b** | **RLS 실효 증명 — 음성·양성 테스트** | D3 · **P0 스키마** | ① 허용자 아님·만료됨 두 경우 본체 조회가 **DB 층에서 0행** ② 잠긴 데이터셋의 **메타는 반드시 조회됨**(`P-13` 회귀 방지) ③ cross-tenant 조회 0행. 셋 다 red fixture 로 fail-closed 증명 |
 | **D3** | 경계 강제 장치 — import-linter 계약, banned-import(geo), **D10→D4 쓰기 금지 음성 테스트**, RLS 커버리지 게이트, 스키마 diff, alembic single-head | D2 | 게이트 self-test 전부 fail-closed 증명 |
 
 > **D3이 이 프로젝트의 보험이다.** v1에서 실제로 터진 버그 — ID 타입 드리프트, FE-BE 타입 수동 동기화, 스코프 누락 노출 — 는 전부 "관례로 지키기로 했던 것"이었다.
@@ -243,8 +243,9 @@ D9·D10. **계약(D2)만 동결되면 T-P와 완전히 병렬로 진행된다.**
 저장소  R0 ✅  R1 ✅  R2 ✅
 에픽    P0 ✅  P1 ✅  P2 ✅  P3 ✅  P4 ✅  P5 ✅  P6 ✅  P7 ✅  P8 ✅
 지식AI  K1 ✅  K2 ✅  K3 ✅  K4 ✅  K5 ✅
-경계    D1 ✅  D2 ✅  D3 ✅
+경계    D1 ✅  D2 ✅  D2b ✅  D3 ✅  D3b ✅
 인프라  I0 ✅  I1 ✅  I2 ✅  I3 ✅  I4 ✅  I5 ✅
+staging IS1 ✅  IS2 ✅  IS3 ✅
 정리    C1 ✅  C2 ✅  C3 ✅  C4 ✅
 게이트  G1 ✅  G1b ✅  G2 ✅  G3 ✅  G4 ✅  G5 ✅  G7 ✅  G8 ✅
 실데이터 4포맷 E2E 완주 ✅

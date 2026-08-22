@@ -44,9 +44,36 @@ case "$GATE" in
     # 위 세 게이트가 red fixture로 fail-closed임을 증명한다.
     exec "$REPO_ROOT/gates/tools/boundary-selftest.sh"
     ;;
-  generated-up-to-date|\
-  migration-single-head|schema-diff|rls-coverage|selftest)
-    echo "::error::게이트 '$GATE' 미구현 — WU-D3에서 구현한다. 미구현은 red다."
+  migration-single-head)
+    # alembic head 분기 검출 — db/platform · db/ai 두 체인 각각 (CLAUDE.md §3-3).
+    # DB 접속 없이 down_revision 그래프를 직접 판정한다. 마이그레이션 0건은 red.
+    exec python3 "$REPO_ROOT/gates/tools/migration_single_head.py"
+    ;;
+  schema-diff)
+    # 선언 스키마(db/<체인>/schema.sql) ↔ 적용 DB 드리프트.
+    # DB 가 필요한 검사다. DB 가 없으면 skip 이 아니라 red — 그 skip 이 v1 의 실패였다.
+    exec "$REPO_ROOT/gates/tools/schema-diff.sh"
+    ;;
+  rls-coverage)
+    # allow-list 밖 테이블의 RLS 누락 검출 (CLAUDE.md §3-5 · PLAN-SoT §9-㉖).
+    # allow-list 정본 = gates/config/rls-allowlist.toml 하나뿐.
+    exec "$REPO_ROOT/gates/tools/rls-coverage.sh"
+    ;;
+  db-selftest)
+    # 위 세 게이트가 red fixture 로 fail-closed 임을 증명한다.
+    exec "$REPO_ROOT/gates/tools/db-selftest.sh"
+    ;;
+  selftest)
+    # 증명 셋을 한 번에. 하나라도 red 면 red.
+    rc=0
+    for s in contract-selftest boundary-selftest db-selftest; do
+      echo "══ $s ══════════════════════════════════════════════"
+      "$REPO_ROOT/gates/run.sh" "$s" || rc=1
+    done
+    exit $rc
+    ;;
+  generated-up-to-date)
+    echo "::error::게이트 '$GATE' 미구현 — 후속 WU에서 구현한다. 미구현은 red다."
     exit 1
     ;;
   "")
