@@ -2,21 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://colab.cognileap.ai/schemas/common.json",
   "title": "CoLAB v2 공통 모델",
+  "description": "전 도메인 shared kernel. 정규 ID·시각·오류 봉투·값 집합(enum)·목록 봉투의 유일한 정의 자리. 근거: CLAUDE.md §3-6 · PLAN-SoT §9-⑲. 표기 규칙 — 속성 이름은 영문(기술 어휘), enum 값은 정본 한국어 표기 그대로(도메인 값 집합). 근거: DataModel_공통_기반 v1.8 이 값 집합을 한국어로만 열거하므로 영문 코드값을 만들면 정본에 없는 어휘를 새로 만들고 코드↔DB↔화면 사이에 매핑 테이블이 생긴다(PLAN-SoT §9-㉗ 이 같은 이유로 매핑 테이블을 거부했다).",
+
   "$defs": {
     "Ulid": {
-      "description": "정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26).",
+      "description": "정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26). 근거: CLAUDE.md §3-6 · DATAMODEL-BASELINE.md §4.",
       "type": "string",
       "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
       "minLength": 26,
       "maxLength": 26
     },
+
     "Timestamp": {
-      "description": "UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다.",
+      "description": "UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다. 근거: DataModel_공통_기반 §4.1(레코드 시점).",
       "type": "string",
       "format": "date-time"
     },
+
     "ErrorEnvelope": {
-      "description": "모든 4xx/5xx 응답의 공통 형태.",
+      "description": "모든 4xx/5xx 응답의 공통 형태. 근거: contracts/README.md(계약 권위체) — seam 전체가 한 형태를 쓴다.",
       "type": "object",
       "required": ["code", "message"],
       "additionalProperties": false,
@@ -24,6 +28,140 @@
         "code": { "type": "string" },
         "message": { "type": "string" },
         "details": { "type": "object" }
+      }
+    },
+
+    "Role": {
+      "description": "역할. 2층뿐이며 계정 등급을 두지 않는다. 근거: DataModel_공통_기반 §3(계정) · PERMISSION-PRINCIPLES P-2.",
+      "type": "string",
+      "enum": ["교수", "연구원"]
+    },
+
+    "PermissionSwitch": {
+      "description": "권한 스위치 이름. 정확히 4종이며 다섯 번째를 만들지 않는다. 근거: DataModel_공통_기반 §3(권한 스위치) · PERMISSION-PRINCIPLES P-3.",
+      "type": "string",
+      "enum": ["업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정"]
+    },
+
+    "PermissionSwitchSet": {
+      "description": "계정 1:1 권한 스위치 4종의 켜짐/꺼짐. 기본값 — 업로드·편집·프로젝트 생성은 켜짐, 위임 성격인 승인 위임·연구실 설정은 꺼짐. 근거: DataModel_공통_기반 §3 · PERMISSION-PRINCIPLES P-3·P-4.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/PermissionSwitch" },
+      "additionalProperties": { "type": "boolean" },
+      "required": ["업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정"],
+      "default": {
+        "업로드·편집": true,
+        "프로젝트 생성": true,
+        "승인 위임": false,
+        "연구실 설정": false
+      }
+    },
+
+    "PermissionSwitchChange": {
+      "description": "권한 변경 이력 한 줄의 변경 방향. 저장 단위는 스위치 하나이고 append-only다. 근거: PLAN-SoT §9-㉘ · PERMISSION-PRINCIPLES P-33(정본에 항목 없음 — 레포 결정).",
+      "type": "string",
+      "enum": ["켬", "끔"]
+    },
+
+    "AccessState": {
+      "description": "데이터셋 접근 상태. 2값이고 새 데이터셋의 기본값은 `열림`. 근거: DataModel_공통_기반 §4.1(접근 상태) · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-24·P-32.",
+      "type": "string",
+      "enum": ["열림", "잠김"],
+      "default": "열림"
+    },
+
+    "LabDefaultVisibility": {
+      "description": "연구실 `데이터 공개 범위` 기본값. 값 집합이 접근 상태와 같아 데이터셋 값의 덮어쓰기가 대입 한 번으로 끝난다 — 매핑 테이블을 만들지 않는다. 근거: DataModel_공통_기반 §2 · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-27·P-32.",
+      "$ref": "#/$defs/AccessState"
+    },
+
+    "FileKind": {
+      "description": "파일 종류. 둘뿐이며 기준 격자 파일은 데이터셋당 0~1건이다. 근거: DataModel_공통_기반 §4.3(파일).",
+      "type": "string",
+      "enum": ["본체", "기준 격자 파일"]
+    },
+
+    "ParentRole": {
+      "description": "계보 관계의 부모 역할. 기본은 `주입력`이고, `보조입력`은 가공 단계 Lv 계산에서 빠진다. 근거: DataModel_공통_기반 §4.2(부모 역할).",
+      "type": "string",
+      "enum": ["주입력", "보조입력"],
+      "default": "주입력"
+    },
+
+    "LineageOrigin": {
+      "description": "계보 관계가 만들어진 경로. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2.",
+      "type": "string",
+      "enum": ["AI 제안을 사람이 확인", "사람이 직접 연결"]
+    },
+
+    "LineageState": {
+      "description": "계보 상태 4값. **파생값 — 저장하지 않고 계산한다. 응답 타입에만 쓰고 입력/쓰기 타입에 두지 않는다.** 건수를 붙이지 않는다. 근거: DataModel_공통_기반 §4.1(계보 상태) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-③.",
+      "type": "string",
+      "enum": ["확정", "확인 필요", "기록 없음", "원천"],
+      "readOnly": true
+    },
+
+    "ProcessingLevel": {
+      "description": "가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④.",
+      "type": "integer",
+      "minimum": 0,
+      "readOnly": true
+    },
+
+    "ProjectType": {
+      "description": "프로젝트 유형. 과제/논문 1건 = 프로젝트 1개. 근거: DataModel_공통_기반 §5(프로젝트).",
+      "type": "string",
+      "enum": ["국가과제", "논문"]
+    },
+
+    "ProjectStatus": {
+      "description": "프로젝트 상태. 2값이며 삭제는 없다. 근거: DataModel_공통_기반 §5(상태).",
+      "type": "string",
+      "enum": ["진행 중", "닫힘"]
+    },
+
+    "AiConfidence": {
+      "description": "AI 제안 확신도. 3값 enum이며 **퍼센트·점수 필드를 만들지 않는다.** 근거: Policy_업로드와_계보_확정 §용어(확신도)·§6 · PRD_업로드와_계보_확정 · CLAUDE.md §3(AI 응답 규격).",
+      "type": "string",
+      "enum": ["확실", "애매", "모름"]
+    },
+
+    "AiRationale": {
+      "description": "AI 응답의 근거. **필수 필드이며 nullable 이 아니다.** 화면에서 한 줄로 서므로 줄바꿈을 허용하지 않는다. 근거: CLAUDE.md §3(근거 필드 필수·근거는 한 줄) · Policy_데이터_찾기 §결과 카드(AI 근거 한 줄) · contracts/README.md(AI seam).",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\n\\r]+$"
+    },
+
+    "AiSearchScope": {
+      "description": "AI 검색이 **뒤진 범위**. 응답에 필수로 실린다 — 0건이어도 어디를 찾았는지 먼저 밝힌다. 근거: Policy_데이터_찾기 §0건(뒤진 범위 = 연구실·개수)·§범위 표시줄 · CLAUDE.md §3.",
+      "type": "object",
+      "required": ["labId", "labName", "searchedCount"],
+      "additionalProperties": false,
+      "properties": {
+        "labId": { "$ref": "#/$defs/Ulid" },
+        "labName": { "type": "string", "minLength": 1 },
+        "searchedCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "Cursor": {
+      "description": "목록 이어보기 토큰. 불투명 문자열이며 클라이언트가 해석하지 않는다. 근거: 정본은 `+N건 더 보기`(할 일 함 그룹당 5건, 에픽_목록 2026-08-07)만 요구하고 페이지 번호 UI 를 두지 않는다 — 이어보기 방식은 그 화면 요구를 만족시키는 레포 결정이다.",
+      "type": "string",
+      "minLength": 1
+    },
+
+    "ListEnvelope": {
+      "description": "목록 응답 공통 형태. `totalCount` 는 화면이 반드시 표시하는 값이라 선택 항목이 아니다(결과 헤드 `4건을 찾았어요`, 조건을 걸 때마다 건수 갱신). `nextCursor` 가 null 이면 더 없음. 근거: Policy_데이터_찾기 §결과 헤드·§화면 동작(건수 갱신) · Cursor 참조.",
+      "type": "object",
+      "required": ["items", "totalCount", "nextCursor"],
+      "additionalProperties": false,
+      "properties": {
+        "items": { "type": "array" },
+        "totalCount": { "type": "integer", "minimum": 0 },
+        "nextCursor": {
+          "oneOf": [{ "$ref": "#/$defs/Cursor" }, { "type": "null" }]
+        }
       }
     }
   }

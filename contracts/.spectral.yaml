@@ -1,0 +1,143 @@
+# CoLAB v2 seam 린트 룰셋 (WU-D2).
+#
+# spectral:oas 를 확장하되, 이 프로젝트가 문서로만 못 박아 둔 규칙을 **기계 규칙으로** 옮긴다.
+# 관례로 남은 규칙은 반드시 깨진다 — v1(PoC)에서 실제로 그렇게 깨졌다.
+#
+# 커스텀 룰은 전부 severity: error 다. seam 은 동결 대상이라 "경고"라는 중간 상태가 없다.
+extends: ["spectral:oas"]
+
+rules:
+  # ── spectral:oas 기본 룰 중 seam 동결에 치명적인 것을 warn → error 로 올린다 ────────
+  # operationId 는 코드 생성기의 함수명 원천이다. 없으면 생성물이 경로 기반 이름으로 흔들리고,
+  # 그 흔들림이 그대로 소비자 코드의 무성한 diff 가 된다 (contracts/README.md 규칙 3·4).
+  operation-operationId: error
+  operation-operationId-unique: error
+  # 중복 operationId 는 생성기에서 조용히 덮어쓰기가 된다.
+  operation-operationId-valid-in-url: error
+  # 태그·설명 누락은 계약 리뷰(CODEOWNERS)를 형해화한다.
+  operation-description: error
+  info-description: error
+  # 예시가 스키마와 어긋나면 FE 가 예시를 믿고 짜다가 런타임에 터진다.
+  oas3-valid-schema-example: error
+  oas3-valid-media-example: error
+
+  # ── 이 프로젝트 고유 규칙 ────────────────────────────────────────────────────────
+  colab-error-envelope-ref:
+    # (a) 모든 4xx/5xx 응답 본문은 공통 ErrorEnvelope 를 $ref 해야 한다.
+    #     근거: schemas/common.json 이 "모든 4xx/5xx 응답의 공통 형태"라고 정의한다.
+    #     인라인 에러 스키마를 허용하면 도메인마다 에러 모양이 갈라지고 FE 가 분기 지옥이 된다.
+    description: "4xx/5xx 응답은 common.json#/$defs/ErrorEnvelope 를 $ref 해야 한다"
+    severity: error
+    resolved: false      # $ref 가 풀리기 전 원문을 봐야 "참조했는가"를 판정할 수 있다
+    given: "$.paths[*][*].responses[?(@property.match(/^[45]/))].content[*].schema"
+    then:
+      - field: "$ref"
+        function: truthy
+      - field: "$ref"
+        function: pattern
+        functionOptions:
+          match: "common\\.json#/\\$defs/ErrorEnvelope$"
+
+  colab-operation-has-error-response:
+    # 위 (a) 룰이 공허해지지 않게 하는 짝 룰 — 에러 응답을 아예 안 적으면 검사할 대상이 없다.
+    #     계약에 실패 경로가 없는 오퍼레이션은 "실패하지 않는다"는 거짓말이다.
+    description: "모든 오퍼레이션은 최소 하나의 4xx/5xx 응답을 선언해야 한다"
+    severity: error
+    given: "$.paths[*][*].responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          minProperties: 1
+          propertyNames: true
+          anyOf:
+            - required: ["400"]
+            - required: ["401"]
+            - required: ["403"]
+            - required: ["404"]
+            - required: ["409"]
+            - required: ["422"]
+            - required: ["500"]
+            - required: ["503"]
+            - required: ["default"]
+
+  colab-id-must-ref-ulid:
+    # (b) ID 필드는 인라인으로 정의하지 말고 common.json#/$defs/Ulid 를 $ref 한다.
+    #     근거: CLAUDE.md §3-6 "정규 ID 타입은 contracts/schemas/common.json 에서만 정의된다".
+    #     인라인 `type: string` ID 는 26자 ULID 패턴을 잃고, 도메인마다 다른 ID 규격을 낳는다.
+    #     nullable ID(`oneOf: [$ref Ulid, type: "null"]`)는 허용한다 — 원천 표기처럼 데이터셋이
+    #     아닌 노드가 실재하기 때문이다(fe-core `LineageNode.datasetId`). 허용하는 것은 **감싸는 형태**
+    #     뿐이고, 안쪽이 여전히 Ulid $ref 여야 한다는 요구는 그대로다. 인라인 `type: string` 은 계속 red.
+    description: "ID 필드(`id`, `*_id`)는 common.json#/$defs/Ulid 를 $ref 해야 한다 (nullable 은 oneOf 로 감싼 형태만 허용)"
+    severity: error
+    resolved: false
+    given: "$..properties[?(@property === 'id' || @property.match(/(_id|Id)$/))]"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          oneOf:
+            # ① 곧바로 $ref
+            - type: object
+              required: ["$ref"]
+              properties:
+                "$ref": { type: string, pattern: "common\\.json#/\\$defs/Ulid$" }
+            # ② nullable — oneOf/anyOf 안에 Ulid $ref 가 반드시 들어 있어야 한다
+            - type: object
+              required: ["oneOf"]
+              properties:
+                oneOf:
+                  type: array
+                  contains:
+                    type: object
+                    required: ["$ref"]
+                    properties:
+                      "$ref": { type: string, pattern: "common\\.json#/\\$defs/Ulid$" }
+            - type: object
+              required: ["anyOf"]
+              properties:
+                anyOf:
+                  type: array
+                  contains:
+                    type: object
+                    required: ["$ref"]
+                    properties:
+                      "$ref": { type: string, pattern: "common\\.json#/\\$defs/Ulid$" }
+
+  colab-no-numeric-confidence:
+    # (d-1) 확신도는 `확실 | 애매 | 모름` enum 이다. 숫자·퍼센트 필드가 계약에 존재하면 안 된다.
+    #       근거: CLAUDE.md §3 "AI 응답 규격". 숫자 확신도는 정본이 명시적으로 뺀 것이며,
+    #       한 번 타입에 뚫리면 화면이 그 숫자를 그리기 시작해 되돌릴 수 없다.
+    description: "확신도/점수를 숫자 타입으로 노출하지 않는다 (enum: 확실|애매|모름)"
+    severity: error
+    given: "$..properties[?(@property.match(/(confidence|score|probability|percent|ratio)/i))]"
+    then:
+      field: "type"
+      function: pattern
+      functionOptions:
+        notMatch: "^(number|integer)$"
+
+  colab-no-batch-approval:
+    # (d-2) [모두 승인] 없음 — 배치 승인 엔드포인트를 노출하지 않는다 (CLAUDE.md §3).
+    #       사람 확인 게이트가 있는데 배치 승인이 있으면 게이트는 형식만 남는다.
+    description: "배치/일괄 승인 엔드포인트를 노출하지 않는다"
+    severity: error
+    given: "$.paths"
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "(approve[-_]?all|bulk[-_]?approve|approvals?[:/](batch|all)|batch[-_]?approve)"
+
+  colab-no-absolute-server-url:
+    # (d-3) seam 에 환경별 절대 URL 을 박지 않는다. 배포 단위 5개가 환경마다 다른 오리진을 갖는다.
+    #       계약이 특정 호스트를 알면 staging/prod 에서 계약이 갈라진다.
+    description: "servers 에 환경 고정 절대 URL 을 박지 않는다 (상대 경로 또는 변수)"
+    severity: error
+    given: "$.servers[*]"
+    then:
+      field: "url"
+      function: pattern
+      functionOptions:
+        notMatch: "^https?://(?!\\{)"

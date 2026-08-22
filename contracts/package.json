@@ -1,0 +1,9 @@
+{
+  "name": "colab-v2-contracts",
+  "private": true,
+  "version": "0.0.0",
+  "description": "계약 게이트 도구 고정. npx 로 매번 최신을 끌어오면 게이트가 조용히 바뀐다 — 버전은 여기 하나에서만 정한다.",
+  "devDependencies": {
+    "@stoplight/spectral-cli": "6.16.3"
+  }
+}

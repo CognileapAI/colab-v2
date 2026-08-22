@@ -14,7 +14,20 @@ case "$GATE" in
     # 정본이 마운트되지 않으면 skip이 아니라 red다 (CLAUDE.md §4 green-by-skip 금지).
     exec python3 "$REPO_ROOT/dev-package/tools/check-package-freshness.py"
     ;;
-  contract-lint|contract-breaking|generated-up-to-date|\
+  contract-lint)
+    # seam OpenAPI 린트 (spectral, 룰셋 contracts/.spectral.yaml).
+    # 도구 부재·네트워크 실패·대상 0건은 전부 red다 (CLAUDE.md §4 green-by-skip 금지).
+    exec "$REPO_ROOT/gates/tools/contract-lint.sh"
+    ;;
+  contract-breaking)
+    # seam 계약의 파괴적 변경 검출 (oasdiff, 기준=git HEAD 판 · 대상=워킹트리 판).
+    exec "$REPO_ROOT/gates/tools/contract-breaking.sh"
+    ;;
+  contract-selftest)
+    # 위 두 게이트가 red fixture로 fail-closed임을 증명한다.
+    exec "$REPO_ROOT/gates/tools/contract-selftest.sh"
+    ;;
+  generated-up-to-date|\
   import-boundary|banned-import|ai-no-lineage-write|\
   migration-single-head|schema-diff|rls-coverage|selftest)
     echo "::error::게이트 '$GATE' 미구현 — WU-D3에서 구현한다. 미구현은 red다."

@@ -1,0 +1,1895 @@
+openapi: 3.1.0
+
+info:
+  title: CoLAB v2 — FE ↔ core-api seam
+  version: 0.1.0
+  contact:
+    name: CoLAB v2 · 플랫폼 개발
+    url: https://github.com/CognileapAI/colab-v2
+  description: |
+    프런트엔드와 core-api(D1 Identity&Lab · D2 Access&Policy · D3 Catalog · D4 Lineage ·
+    D6 Project · D8 Insight) 사이의 손작성 계약. 근거: `DOMAINS.md §4` 배포 단위 표.
+
+    이 seam 에 **없는 것**과 그 이유 —
+    - 자연어 검색(S-06)·계보 제안: D10. `core-ai` seam 이 맡는다 (`DOMAINS §2`).
+    - 업로드·파일 파싱·프로젝트 연결 생성(E-04 가 주인): D5. 이벤트/업로드 seam.
+    - 미리보기 렌더·타일·스크린샷: D7. `core-viz` seam (`CLAUDE.md §3-4` — core 에 geo 라이브러리 금지).
+
+    표기 규칙 —
+    - 경로는 소문자 kebab-case, 경로 파라미터·쿼리·응답 속성은 **camelCase**(영문 기술 어휘).
+    - enum **값**은 정본 한국어 표기 그대로이며 `../schemas/common.json` 에서만 정의된다
+      (`CLAUDE.md §3-6` · `sessions/D2.md §1`). 이 파일은 값 집합을 다시 선언하지 않는다.
+    - **연구실 경계는 요청에 실리지 않는다.** 서버가 인증 주체에서 주입한다
+      (`CLAUDE.md §3-5` · `PERMISSION-PRINCIPLES` P-9·P-10). `labId` 쿼리 파라미터가 없는 이유다.
+    - 파생값(`계보 상태`·`가공 단계 Lv`)은 응답에만 있다 (`PLAN-SoT §9-⑳`).
+    - **배치 승인 엔드포인트가 없다** (`CLAUDE.md §3` · `Policy_승인_처리` — 요청 1건 = 처리 1건).
+    - 잠긴 데이터는 목록·상세에서 **사라지지 않는다.** 이름·요약은 200 으로 내려가고
+      `bodyAccessible: false` 가 본체 차단을 말한다 (P-13·P-34).
+
+servers:
+  - url: /api/v1
+
+security:
+  - sessionSubject: []
+
+tags:
+  - name: identity
+    description: D1 — 현재 사용자 · 연구실 정보
+  - name: access
+    description: D2 — 권한 스위치 · 접근 요청 · Verified
+  - name: catalog
+    description: D3 — 데이터셋 조회 · 파일 · 삭제
+  - name: lineage
+    description: D4 — 계보 그래프 · 관계 편집 · 재확인
+  - name: project
+    description: D6 — 프로젝트 CRUD · 소속 데이터셋
+  - name: insight
+    description: D8 — 홈 대시보드 집계
+
+paths:
+
+  # ─────────────────────────────── D1 Identity & Lab ───────────────────────────────
+
+  /me:
+    get:
+      tags: [identity]
+      operationId: getCurrentAccount
+      summary: 현재 사용자 · 역할 · 권한 스위치
+      description: |
+        GNB 아바타(`IA_사이트맵 §3`)와 화면별 권한 분기가 읽는다. 권한 판정은 언제나 스위치 기준이다
+        (P-6). 소속 연구실은 서버가 정하며 클라이언트가 고르지 않는다.
+      responses:
+        "200":
+          description: 현재 사용자
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentAccount" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lab:
+    get:
+      tags: [identity]
+      operationId: getLab
+      summary: 연구실 정보 읽기
+      description: |
+        `우리 연구실` 읽기 모달(E-07 §8)과 `연구실 설정 > 연구실 정보`가 같은 값을 읽는다.
+        **읽기는 전 구성원**이고 편집 버튼만 권한자에게 보인다 (`Policy_홈_대시보드 §6`).
+      responses:
+        "200":
+          description: 연구실 정보
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lab" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    patch:
+      tags: [identity]
+      operationId: updateLab
+      summary: 연구실 정보 편집
+      description: |
+        `연구실 설정` 스위치가 켜진 사람만(P-2 행동표). 여기 적은 **이름**을 연구실 전환기와
+        업로드 모달 헤더가 읽는다 (`DataModel §2`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LabUpdate" }
+      responses:
+        "200":
+          description: 갱신된 연구실 정보
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lab" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lab/members:
+    get:
+      tags: [access]
+      operationId: listLabMembers
+      summary: 구성원 · 권한 격자
+      description: |
+        `연구실 설정 > 구성원 · 권한` — 권한 스위치를 고치는 **유일한 자리**(P-18).
+        행마다 `editablePermissions` 가 함께 내려간다. **재위임 금지(P-31)를 서버가 말한다** —
+        `연구실 설정` 위임자에게는 `업로드·편집`·`프로젝트 생성` 두 값만 담기고, 교수 행은 빈 배열이다
+        (교수 행 고정 P-5). 편집 불가 열도 값은 보이므로 표 구조가 깨지지 않는다.
+      responses:
+        "200":
+          description: 구성원 목록
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/LabMember" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lab/members/permissions:
+    put:
+      tags: [access]
+      operationId: saveLabMemberPermissions
+      summary: 권한 스위치 저장 (확인 모달 1회 = 요청 1회)
+      description: |
+        권한은 **실시간 저장이 아니다** — `편집 → 체크 → 저장 → 확인 모달` 세 단(P-19).
+        확인 모달 한 번에 여러 칸이 바뀌므로 한 요청에 변경분을 모아 보낸다.
+        저장은 스위치 하나당 한 줄로 이력에 남는다 — append-only (P-33).
+        **재위임 금지 위반은 403 이다** — 화면에서 막은 것을 서버도 같은 기준으로 막는다 (P-11·P-31).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PermissionSaveRequest" }
+      responses:
+        "200":
+          description: 저장 후 구성원 목록
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/LabMember" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────────── D3 Catalog ───────────────────────────────
+
+  /datasets:
+    get:
+      tags: [catalog]
+      operationId: listDatasets
+      summary: 카탈로그 목록 (S-03)
+      description: |
+        표 헤더가 조건과 정렬의 유일한 자리다 — 조건 툴바도 패싯 사이드바도 없다
+        (`Policy_데이터_찾기 §1.3-9`). 조건을 걸 수 있는 열은 주제 · Level · 업로더 · 계보 · Verified
+        다섯이고 한 열에서 값을 여러 개 고른다(§5). 기본 정렬은 **수정일 최신순**.
+        **잠긴 데이터는 빠지지 않는다** — 자물쇠·`잠김` 칩으로 표시될 뿐이다 (P-13).
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/CatalogSortColumn"
+        - $ref: "#/components/parameters/SortOrder"
+        - $ref: "#/components/parameters/FilterTopic"
+        - $ref: "#/components/parameters/FilterProcessingLevel"
+        - $ref: "#/components/parameters/FilterUploader"
+        - $ref: "#/components/parameters/FilterLineageState"
+        - $ref: "#/components/parameters/FilterVerified"
+      responses:
+        "200":
+          description: |
+            `totalCount` 는 조건을 걸 때마다 갱신되는 표시값이다 (`Policy_데이터_찾기 §결과 헤드`).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/DatasetRow" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/facets:
+    get:
+      tags: [catalog]
+      operationId: listDatasetFacets
+      summary: 열 메뉴의 값별 건수
+      description: |
+        열 메뉴는 값마다 지금 조건 기준의 건수를 함께 적는다. **다른 열에 걸린 조건을 먼저 적용한 뒤
+        센다** — 그래서 요청은 목록과 같은 조건을 그대로 싣는다. 0건인 값은 흐리게 두어
+        빈 결과로 보내지 않는다 (`Policy_데이터_찾기 §5 값별 건수`).
+      parameters:
+        - $ref: "#/components/parameters/FilterTopic"
+        - $ref: "#/components/parameters/FilterProcessingLevel"
+        - $ref: "#/components/parameters/FilterUploader"
+        - $ref: "#/components/parameters/FilterLineageState"
+        - $ref: "#/components/parameters/FilterVerified"
+      responses:
+        "200":
+          description: 조건을 걸 수 있는 다섯 열의 값별 건수
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetSet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [catalog]
+      operationId: getDataset
+      summary: 데이터셋 상세 (S-05) — 헤더 · 기본 정보 · 계보 요약 · 활용 프로젝트
+      description: |
+        한 페이지 스크롤 화면이 읽는 값 전부. **잠긴 데이터도 200 이다** —
+        이름·요약·헤더 태그(주제·Lv·Verified)까지 내려가고 `basicInfo` 는 `null` 이 된다
+        (`Policy_승인_처리 §8` 상세 잠긴 상태 · P-13). 403 을 쓰면 접근 요청 흐름이 죽는다.
+        묘비(삭제된 데이터셋)는 상세 화면이 없으므로 404 다 (`Policy_데이터셋_상세 §7`).
+      responses:
+        "200":
+          description: 데이터셋 상세
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [catalog]
+      operationId: deleteDataset
+      summary: 데이터셋 삭제 (묘비)
+      description: |
+        **소유자 또는 교수만.** 파일·미리보기만 지우고 이름·주제·Lv·계보 관계·프로젝트 연결·
+        Verified 는 남긴다 (`DataModel §4.1` 삭제 기록 · `Policy_데이터셋_상세 §8`).
+        되돌리는 전이가 없다. 대기 중인 접근 요청은 자동으로 닫힌다 (§9).
+      responses:
+        "204":
+          description: 묘비로 전환됨
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/deletion-impact:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [catalog]
+      operationId: getDatasetDeletionImpact
+      summary: 삭제 확인 모달이 말해야 하는 파급
+      description: |
+        확인 모달은 무엇이 지워지고 무엇이 남는지, 파생 N건 · Verified 여부 ·
+        **대기 중인 접근 요청 N건**을 말한다 (`Policy_데이터셋_상세 §8·§9`).
+        앞의 둘은 상세 화면에 이미 있으나 접근 요청 건수는 이 화면에 없는 값이라 따로 내준다.
+      responses:
+        "200":
+          description: 파급 요약
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeletionImpact" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/files:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [catalog]
+      operationId: listDatasetFiles
+      summary: 파일(조각) 목록 — `보기`를 눌렀을 때만
+      description: |
+        기본 정보의 `파일` 칸은 조각 수와 용량 합계만 말하고, 목록은 사람이 눌렀을 때 연다
+        (`DataModel §4.3` · `Policy_데이터셋_상세 §5`). 본체 조각들과 기준 격자 파일 유무를
+        함께 보여주고, 없으면 없다고 적는다.
+      responses:
+        "200":
+          description: 파일 목록
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/DatasetFile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: |
+            잠김 + 허용 목록 밖. 메타는 상세에서 보이지만 파일 목록은 본체 쪽이라 막힌다 (P-34).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/download:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [catalog]
+      operationId: downloadDataset
+      summary: 원본 다운로드 (조각 묶음은 묶어서 한 번에)
+      description: |
+        원본 파일을 그대로 내려받는다. 부분 다운로드는 없고, 조각 묶음이면 묶어서 한 번에 받는다
+        (`Policy_데이터셋_상세 §2·§8`). **누가 언제 받았는지 기록에 남는다**(`DataModel §6.2`) —
+        그 기록이 D8 소유라 프런트가 스토리지를 직접 부르지 않고 core 를 거친다.
+        받은 횟수는 어느 화면에도 내리지 않는다.
+      responses:
+        "302":
+          description: 실제 바이트를 받는 곳으로 보낸다. 이 응답 시점에 다운로드 이력이 쌓인다.
+          headers:
+            Location:
+              required: true
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────────── D4 Lineage ───────────────────────────────
+
+  /datasets/{datasetId}/lineage:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [lineage]
+      operationId: getDatasetLineage
+      summary: 계보 그래프와 상세 행
+      description: |
+        가로축에 데이터만 세운다 — 원천(점선 표기) → 가공 전 → 이 데이터 → 파생.
+        프로젝트는 노드가 아니라 활용 배지다 (`Policy_데이터셋_상세 §8`).
+        **확정된 관계만 그린다.** 제안 상태가 이 응답에 없는 것은 D10→D4 쓰기 경로가 없기 때문이다
+        (`CLAUDE.md §3-2` · `DataModel §4.2`). 잠긴 노드·묘비 노드는 사라지지 않는다.
+      responses:
+        "200":
+          description: 계보
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageGraph" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/lineage/parents:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [lineage]
+      operationId: addLineageParent
+      summary: 부모 관계 추가 (계보 수정)
+      description: |
+        상세 화면의 `계보 수정·추가`. **여기서 붙인 관계는 `사람이 직접 연결`로 저장된다** —
+        만들어진 경로를 요청이 고르지 않는다 (`Policy_데이터셋_상세 §8` · `DataModel §4.2`).
+        `기록 없음` 표시는 관계가 붙으면 사라진다.
+        파생(자식) 관계는 자식 상세에서 고친다 — 이 엔드포인트로 자식을 붙이지 않는다 (§3.2).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LineageParentCreate" }
+      responses:
+        "201":
+          description: 추가 후 계보
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageGraph" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/lineage/parents/{parentDatasetId}:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+      - name: parentDatasetId
+        in: path
+        required: true
+        schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+    delete:
+      tags: [lineage]
+      operationId: removeLineageParent
+      summary: 부모 관계 끊기 (계보 수정)
+      description: "`업로드·편집`이 켜진 사람만. 관계 한 쌍만 지운다 — 데이터셋은 지워지지 않는다."
+      responses:
+        "204":
+          description: 관계가 지워짐
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/lineage/confirmation:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [lineage]
+      operationId: confirmLineage
+      summary: 계보 다시 확인
+      description: |
+        사람이 다시 확인하면 **계보 확정일이 갱신되고 `이후 수정됨` 표시가 사라진다**
+        (`Policy_데이터셋_상세 §2·§8`). 확인 기록은 지우지 않고 쌓는다 (`DataModel §4.1`).
+        계보 상태는 이 호출의 결과로 계산될 뿐 요청이 값을 싣지 않는다 (`PLAN-SoT §9-⑳`).
+      responses:
+        "200":
+          description: 확인 후 계보
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageGraph" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────────── D2 Access & Policy ───────────────────────────────
+
+  /datasets/{datasetId}/access-requests:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [access]
+      operationId: createAccessRequest
+      summary: 접근 요청 보내기
+      description: |
+        잠긴 데이터를 만난 자리에서 요청한다. 사유는 0~300자 **선택**
+        (`Policy_승인_처리 §5`). 요청 뒤 상세·검색 카드의 안내 줄이 `검토 대기` 칩으로 바뀐다 —
+        그 상태는 `DatasetDetail.accessRequestPending` 이 말한다.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessRequestCreate" }
+      responses:
+        "201":
+          description: 요청이 접수됨
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 이미 검토 대기 중이거나 이미 볼 수 있는 데이터다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /access-requests/pending:
+    get:
+      tags: [access]
+      operationId: listPendingAccessRequests
+      summary: 받은 접근 요청 (할 일 함 그룹)
+      description: |
+        교수와 `승인 위임` 연구원만 받는다 (`Policy_승인_처리 §6`). 처리 대기만 모이므로
+        전용 목록 화면이 없다. **오래된 순**으로 내려간다 — 방치를 막기 위해서다
+        (`Policy_홈_대시보드 §8` 승인 계열 두 그룹). 화면 상한(5건 + `+N건 더 보기`)은 화면이 정한다.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: 검토 대기 중인 접근 요청
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/AccessRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /access-requests/{requestId}/approval:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      tags: [access]
+      operationId: approveAccessRequest
+      summary: 접근 요청 승인 (요청 1건)
+      description: |
+        요청자를 허용 목록에 넣고 **만료일 = 승인일 + 6개월**을 기록한다
+        (P-25 · `Policy_승인_처리 §7.2`). 승인의 단위는 데이터 한 건이다 —
+        **사람 단위·연구실 단위 일괄 승인 엔드포인트를 두지 않는다** (`CLAUDE.md §3`).
+      responses:
+        "200":
+          description: 승인 결과
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessGrant" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 이미 처리된 요청이다 (`Policy_승인_처리 §9`).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /access-requests/{requestId}/rejection:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      tags: [access]
+      operationId: rejectAccessRequest
+      summary: 접근 요청 거절 (사유 필수)
+      description: |
+        **거절 사유는 1~300자 필수이고 요청자에게 그대로 전달된다** (P-26 · `Policy_승인_처리 §5`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessRejection" }
+      responses:
+        "204":
+          description: 거절 처리됨
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 이미 처리된 요청이다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/verification-request:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [access]
+      operationId: requestVerification
+      summary: Verified 승인 요청 (올린 사람 · 소유자)
+      description: |
+        **자동으로 검토 대기에 들어가지 않는다** — 올린 사람·소유자가 상세 헤더에서 직접 누른다
+        (`Policy_승인_처리 §1.2·§7.1`). 누르면 교수 할 일 함에 검토 대기가 생긴다.
+      responses:
+        "202":
+          description: 검토 대기가 만들어짐
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 이미 검토 대기이거나 이미 승인된 데이터다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /verification-requests/pending:
+    get:
+      tags: [access]
+      operationId: listPendingVerificationRequests
+      summary: Verified 검토 대기 (교수 할 일 함 그룹)
+      description: |
+        **교수만.** `승인 위임`으로 위임되지 않는다 (P-5·P-22).
+        항목은 링크만 갖는다 — **할 일 함에서 바로 승인하지 않는다**(`Policy_승인_처리 §1.3-2`).
+        오래된 순.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: 검토 대기 목록
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/VerificationRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/verification:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [access]
+      operationId: approveVerification
+      summary: Verified 승인 (교수만 · 상세에서)
+      description: |
+        **교수 전용이고 위임되지 않는다** (P-5·P-22). 승인자·승인 시각이 기록된다
+        (`DataModel §4.1` Verified 기록). 데이터 한 건씩만 — 배치 승인이 없다.
+      responses:
+        "200":
+          description: 승인 결과
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 이미 승인된 데이터다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/verification-cancellation:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    post:
+      tags: [access]
+      operationId: cancelVerification
+      summary: Verified 승인 취소 (교수가 직접 시작)
+      description: |
+        **막지 않는다.** 파급(정렬 하락 · 활용 프로젝트 표시 · 파생 데이터 건수)을 화면이 먼저 보여준 뒤
+        확인하면 그대로 취소한다 (P-28 · `Policy_승인_처리 §7.1`). 데이터와 계보는 남고 배지만 사라지며,
+        취소한 사람·시각·사유가 남는다. 취소 사유는 0~120자 선택 (§5).
+        파생 데이터에는 표시하지 않는다.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerificationCancellation" }
+      responses:
+        "200":
+          description: 취소 결과
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationRecord" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────────── D6 Project ───────────────────────────────
+
+  /projects:
+    get:
+      tags: [project]
+      operationId: listProjects
+      summary: 프로젝트 목록 (S-02)
+      description: |
+        조건 컨트롤은 목록 위 **툴바** 한 벌이다 — 카드/표 두 보기가 같은 거른 결과를 그린다
+        (`Policy_프로젝트 §1.3-8·§8`). 기본값은 상태 `진행 중` · 유형 전체 · 정렬 `최근 시작 순`.
+        숨은 닫힘 건수는 같은 조건에 상태만 `닫힘`으로 바꿔 부른 `totalCount` 로 읽는다 —
+        목록 봉투에 별도 필드를 만들지 않는다.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          description: 비우면 전체. 정본 기본값은 `진행 중` 이며 그 기본은 화면이 건다.
+          required: false
+          schema: { $ref: "../schemas/common.json#/$defs/ProjectStatus" }
+        - name: type
+          in: query
+          description: 비우면 전체.
+          required: false
+          schema: { $ref: "../schemas/common.json#/$defs/ProjectType" }
+        - name: sort
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/ProjectSort" }
+      responses:
+        "200":
+          description: 프로젝트 목록
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/ProjectRow" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [project]
+      operationId: createProject
+      summary: 새 프로젝트
+      description: |
+        **필수는 유형·이름뿐**이고 설명·기간·연결 주소는 나중에 채운다 (`Policy_프로젝트 §5`).
+        `프로젝트 생성` 스위치가 켜진 사람만 (§6). 프로젝트 1건 = 국가과제 또는 논문 1건.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectCreate" }
+      responses:
+        "201":
+          description: 만들어진 프로젝트
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [project]
+      operationId: getProject
+      summary: 프로젝트 상세 (S-02b)
+      description: |
+        개요(설명·기간) · 연결 주소 · **소속 데이터셋 전부**를 순서대로 내려준다.
+        소속 데이터셋 표는 자르지 않는다 — 더 보기·페이지 나누기를 두지 않는다
+        (`Policy_프로젝트 §5` 소속 데이터셋 표 범위).
+      responses:
+        "200":
+          description: 프로젝트 상세
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    patch:
+      tags: [project]
+      operationId: updateProject
+      summary: 정보 수정
+      description: "이름·설명·기간·연결 주소를 고친다. **유형은 고치지 않는다** (`Policy_프로젝트 §2`)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectUpdate" }
+      responses:
+        "200":
+          description: 갱신된 프로젝트
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [project]
+      operationId: deleteProject
+      summary: 프로젝트 삭제 (데이터셋 0건일 때만)
+      description: |
+        업로드 중 빠른 생성으로 잘못 만든 프로젝트를 지우기 위한 **예외**다.
+        데이터셋이 한 건이라도 붙으면 409 — 데이터를 잃는 경로를 만들지 않는다
+        (`Policy_프로젝트 §1.3-6`). 평소 정리 수단은 닫기다.
+      responses:
+        "204":
+          description: 지워짐
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 소속 데이터셋이 1건 이상이다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /projects/{projectId}/status:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    put:
+      tags: [project]
+      operationId: setProjectStatus
+      summary: 닫기 · 다시 열기
+      description: |
+        **닫기는 정리이지 삭제가 아니다** — 소속 데이터셋은 카탈로그에 그대로 남는다
+        (`Policy_프로젝트 §1.3-5·§7`). 다시 열면 되돌아간다. 상태를 따로 뗀 이유는
+        정보 수정과 권한·확인 절차가 같지 않아서다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectStatusChange" }
+      responses:
+        "200":
+          description: 갱신된 프로젝트
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /projects/{projectId}/datasets/{datasetId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/DatasetId"
+    delete:
+      tags: [project]
+      operationId: unlinkProjectDataset
+      summary: 소속 해제 (연결만 끊는다)
+      description: |
+        연결 기록만 지운다 — 데이터셋은 카탈로그·검색에 그대로 있고, 다른 프로젝트의 연결도 남는다
+        (`Policy_프로젝트 §7`). **담는 동작은 이 seam 에 없다** — 데이터를 프로젝트에 담는 것은
+        업로드 화면(E-04)이 맡고 이 화면은 담긴 것을 보고 빼는 것까지다 (§1.3-9).
+      responses:
+        "204":
+          description: 연결이 끊어짐
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────────── D8 Insight ───────────────────────────────
+
+  /dashboard/summary:
+    get:
+      tags: [insight]
+      operationId: getDashboardSummary
+      summary: 요약 지표 (네 개를 넘기지 않는다)
+      description: |
+        프로젝트 건수 · 데이터셋 개수 · **계보 확정 개수** · Verified 개수
+        (`Policy_홈_대시보드 §5`). 계보 확정 = 확정 + 원천이고, 아직 확인이 필요한 건수를
+        함께 내린다. **퍼센트로 바꾸지 않는다.**
+      responses:
+        "200":
+          description: 요약 지표
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /dashboard/data-map:
+    get:
+      tags: [insight]
+      operationId: getDataMap
+      summary: 데이터 맵 — 계보 상태별 · 주제별
+      description: |
+        두 묶음을 다 내리고 계보 상태별이 위에 온다. 각 묶음은 이름 · 건수로 이뤄지고,
+        비율 막대는 `totalCount` 로 화면이 계산한다 (`Policy_홈_대시보드 §5`).
+        묶는 기준은 카탈로그 조건과 같아야 하므로 값은 `LineageState` 를 그대로 쓴다.
+      responses:
+        "200":
+          description: 데이터 맵
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataMap" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503":
+          description: |
+            집계를 불러오지 못했다. 화면은 "카탈로그에서는 볼 수 있어요"로 안내한다 (§9).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /dashboard/activities:
+    get:
+      tags: [insight]
+      operationId: listActivities
+      summary: 최근 활동 (연구실 구성원의 **바꾼 일**만)
+      description: |
+        올림 · 계보 고침 · 승인 · 프로젝트 만듦 · 지움만 쌓인다.
+        **열람은 서버에 남기지 않는다** — "내가 열어 본 것"은 브라우저에만 있고 화면이 이 목록과
+        섞어 보여준다 (`DataModel §6.1` · `Policy_홈_대시보드 §10`).
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: 최근 활동
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/Activity" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+components:
+
+  securitySchemes:
+    sessionSubject:
+      type: http
+      scheme: bearer
+      description: |
+        **모든 오퍼레이션이 인증 주체를 요구한다.** 연구실 경계와 권한 스위치 판정이 전부 이 주체에서
+        나오기 때문이다 (`CLAUDE.md §3-5` · P-9·P-10) — 그래서 `labId` 를 요청 파라미터로 받지 않는다.
+
+        **자격증명의 발급 방식은 정본에 없다.** 로그인·초대·프로필 화면은 P1 보류이고 v2 1차에서는
+        개발자가 계정을 심어 제공한다 (P-17). 여기 적은 `bearer` 는 "주체가 실린다"를 표현하기 위한
+        레포 결정이며, 실제 수단은 P1 에서 정한다.
+
+  parameters:
+
+    DatasetId:
+      name: datasetId
+      in: path
+      required: true
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        이어보기 토큰. 페이지 크기는 서버가 정한다 — 정본은 `+N건 더 보기`만 요구하고
+        페이지 크기 값을 주지 않는다 (`sessions/D2.md §3-②`).
+      schema: { $ref: "../schemas/common.json#/$defs/Cursor" }
+
+    CatalogSortColumn:
+      name: sortColumn
+      in: query
+      required: false
+      description: "기본은 `수정일` 최신순 (`Policy_데이터_찾기 §5` 기본 정렬)."
+      schema: { $ref: "#/components/schemas/CatalogColumn" }
+
+    SortOrder:
+      name: sortOrder
+      in: query
+      required: false
+      description: "열 메뉴의 정렬(오름/내림) (`Policy_데이터_찾기 §8` 열 메뉴)."
+      schema: { $ref: "#/components/schemas/SortOrder" }
+
+    FilterTopic:
+      name: topic
+      in: query
+      required: false
+      description: 주제 열 조건. 한 열에서 값을 여러 개 고른다.
+      schema:
+        type: array
+        items: { type: string, minLength: 1 }
+
+    FilterProcessingLevel:
+      name: processingLevel
+      in: query
+      required: false
+      description: Level 열 조건. 파생값이지만 조건으로는 걸 수 있다 — 쓰기 바디에는 없다.
+      schema:
+        type: array
+        items:
+          type: integer
+          minimum: 0
+
+    FilterUploader:
+      name: uploader
+      in: query
+      required: false
+      description: 업로더 열 조건. 계정 ID 로 건다.
+      schema:
+        type: array
+        items: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    FilterLineageState:
+      name: lineageState
+      in: query
+      required: false
+      description: 계보 열 조건. 값은 `LineageState` 넷뿐이고 숫자를 붙이지 않는다.
+      schema:
+        type: array
+        items: { $ref: "../schemas/common.json#/$defs/LineageState" }
+
+    FilterVerified:
+      name: verified
+      in: query
+      required: false
+      description: |
+        Verified 열 조건. 검색의 `Verified만 보기` 토글이 카탈로그에서는 이 열 조건으로 흡수된다
+        (`Policy_데이터_찾기 §8`).
+      schema: { type: boolean }
+
+  responses:
+
+    BadRequest:
+      description: 요청 값이 규칙에 맞지 않는다.
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+    Unauthorized:
+      description: 인증되지 않았다.
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+    Forbidden:
+      description: |
+        권한 스위치가 꺼져 있거나 위임 범위 밖이다. 화면에서 숨긴 것을 서버가 같은 기준으로 막는다 (P-11).
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+    NotFound:
+      description: |
+        없거나 연구실 경계 밖이다. **경계 밖은 존재를 알리지 않는다** — 403 이 아니라 404 다
+        (P-9·P-10). 잠김은 여기 해당하지 않는다.
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+    Conflict:
+      description: 지금 상태에서 할 수 없는 동작이다.
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+    ServerError:
+      description: 서버 오류.
+      content:
+        application/json:
+          schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+
+  schemas:
+
+    # ── 값 집합 (seam 전용 · common.json 과 겹치지 않는 것만) ──
+
+    CatalogColumn:
+      description: |
+        카탈로그 표의 열. 값은 `Policy_데이터_찾기 §5` 의 열 구성 표기를 그대로 쓴다
+        (`데이터셋 · 주제 · Level · 프로젝트 · 업로더 · 수정일 · 계보 · Verified`).
+        조건을 걸 수 있는 열은 다섯이고 나머지는 정렬만 갖는다.
+      type: string
+      enum: ["데이터셋", "주제", "Level", "프로젝트", "업로더", "수정일", "계보", "Verified"]
+
+    SortOrder:
+      description: "열 메뉴의 정렬 방향. 정본 표기는 `오름`·`내림` 이다."
+      type: string
+      enum: ["오름", "내림"]
+
+    ProjectSort:
+      description: |
+        프로젝트 목록 정렬. 네 값은 `Policy_프로젝트 §5` 목록 정렬 행의 표기 그대로다.
+        기간 정렬의 기준은 시작일이다.
+      type: string
+      enum: ["최근 시작 순", "먼저 시작한 순", "최근 종료 순", "데이터셋 많은 순"]
+      default: "최근 시작 순"
+
+    # ── 공통 조각 ──
+
+    AccountRef:
+      description: 사람을 가리키는 최소 표기. 역할은 `Role`, 받은 위임은 권한 스위치가 말한다 (P-23).
+      type: object
+      required: [accountId, name]
+      additionalProperties: false
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+
+    DatasetRef:
+      type: object
+      required: [datasetId, name]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+
+    ProjectRef:
+      type: object
+      required: [projectId, name]
+      additionalProperties: false
+      properties:
+        projectId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+
+    DataPeriod:
+      description: |
+        데이터가 다루는 시간 범위. **레코드 시점 3종과 축이 다르다**(`DataModel §4.1`).
+        조각이 여럿이면 합집합이다 (§4.3).
+      type: object
+      required: [start, end]
+      additionalProperties: false
+      properties:
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+
+    ProjectPeriod:
+      description: |
+        프로젝트 기간. 시작·종료 각각 **연·월까지**이고, 진행 중이면 종료가 비어 있다
+        (`Policy_프로젝트 §5`).
+      type: object
+      required: [start, end]
+      additionalProperties: false
+      properties:
+        start:
+          type: [string, "null"]
+          pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"
+        end:
+          type: [string, "null"]
+          pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"
+
+    # ── D1 ──
+
+    CurrentAccount:
+      type: object
+      required: [accountId, name, email, role, permissions, labId, labName]
+      additionalProperties: false
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        role: { $ref: "../schemas/common.json#/$defs/Role" }
+        permissions:
+          description: |
+            교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6).
+          $ref: "../schemas/common.json#/$defs/PermissionSwitchSet"
+        labId:
+          description: 서버가 정한 현재 연구실. 요청으로 바꿀 수 없다 (P-9·P-10).
+          $ref: "../schemas/common.json#/$defs/Ulid"
+        labName: { type: string, minLength: 1 }
+
+    Lab:
+      description: "연구실 정보 — 연구실을 정의하는 유일한 자리 (`DataModel §2`)."
+      type: object
+      required:
+        [labId, name, university, department, principalInvestigator,
+         researchField, introduction, defaultVisibility, memberCount, openedAt]
+      additionalProperties: false
+      properties:
+        labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        university: { type: [string, "null"] }
+        department: { type: [string, "null"] }
+        principalInvestigator: { type: [string, "null"] }
+        researchField: { type: [string, "null"] }
+        introduction:
+          description: 한 줄 소개.
+          type: [string, "null"]
+        defaultVisibility:
+          description: |
+            `데이터 공개 범위` 기본값. **데이터셋이 따로 정했으면 그쪽이 이긴다** (P-27).
+          $ref: "../schemas/common.json#/$defs/LabDefaultVisibility"
+        memberCount:
+          description: 연구실 정보 모달이 읽는 파생값. 편집 대상이 아니다.
+          type: integer
+          minimum: 0
+          readOnly: true
+        openedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+
+    LabUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1 }
+        university: { type: [string, "null"] }
+        department: { type: [string, "null"] }
+        principalInvestigator: { type: [string, "null"] }
+        researchField: { type: [string, "null"] }
+        introduction: { type: [string, "null"] }
+        defaultVisibility: { $ref: "../schemas/common.json#/$defs/LabDefaultVisibility" }
+
+    # ── D2 ──
+
+    LabMember:
+      type: object
+      required: [accountId, name, email, role, permissions, editablePermissions]
+      additionalProperties: false
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        role: { $ref: "../schemas/common.json#/$defs/Role" }
+        permissions: { $ref: "../schemas/common.json#/$defs/PermissionSwitchSet" }
+        editablePermissions:
+          description: |
+            **이 요청자가 이 행에서 고칠 수 있는 열.** 재위임 금지의 계약 쪽 표현이다 (P-31) —
+            `연구실 설정` 위임자에게는 `업로드·편집`·`프로젝트 생성` 둘만 담기고,
+            교수 행에는 빈 배열이 담긴다(교수 행 고정, P-5).
+            나머지 열은 **값은 보이되 편집 불가**로 그린다 — 열을 지우면 표 구조가 깨진다.
+          type: array
+          uniqueItems: true
+          items: { $ref: "../schemas/common.json#/$defs/PermissionSwitch" }
+
+    PermissionSaveRequest:
+      description: |
+        확인 모달 한 번 = 요청 한 번. 스위치 하나가 이력 한 줄이 된다 (P-33).
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [accountId, changes]
+            additionalProperties: false
+            properties:
+              accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+              changes:
+                description: 바꾼 칸만 싣는다. 손대지 않은 스위치는 키가 없다.
+                type: object
+                minProperties: 1
+                propertyNames: { $ref: "../schemas/common.json#/$defs/PermissionSwitch" }
+                additionalProperties: { type: boolean }
+
+    AccessRequestCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          description: 요청 사유 0~300자. 선택 (`Policy_승인_처리 §5`).
+          type: string
+          maxLength: 300
+
+    AccessRequest:
+      type: object
+      required: [requestId, dataset, requester, requestedAt, reason]
+      additionalProperties: false
+      properties:
+        requestId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        dataset: { $ref: "#/components/schemas/DatasetRef" }
+        requester: { $ref: "#/components/schemas/AccountRef" }
+        requestedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+        reason: { type: [string, "null"], maxLength: 300 }
+
+    AccessRejection:
+      type: object
+      required: [reason]
+      additionalProperties: false
+      properties:
+        reason:
+          description: |
+            **1~300자 필수.** 요청자에게 그대로 전달된다 (P-26).
+          type: string
+          minLength: 1
+          maxLength: 300
+
+    AccessGrant:
+      description: "허용 목록 한 줄. 만료일 = 승인일 + 6개월 (P-25)."
+      type: object
+      required: [dataset, grantee, approver, approvedAt, expiresAt]
+      additionalProperties: false
+      properties:
+        dataset: { $ref: "#/components/schemas/DatasetRef" }
+        grantee: { $ref: "#/components/schemas/AccountRef" }
+        approver: { $ref: "#/components/schemas/AccountRef" }
+        approvedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+        expiresAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+
+    VerificationRequest:
+      type: object
+      required: [dataset, requester, requestedAt]
+      additionalProperties: false
+      properties:
+        dataset: { $ref: "#/components/schemas/DatasetRef" }
+        requester: { $ref: "#/components/schemas/AccountRef" }
+        requestedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+
+    VerificationRecord:
+      description: |
+        Verified 기록 (`DataModel §4.1`). 배지는 1종이고 **표시 전용이다** — 누르는 곳이 아니다.
+        취소해도 데이터와 계보는 남고 배지만 사라진다.
+      type: object
+      required: [verified, approver, approvedAt, cancelledBy, cancelledAt, cancellationReason]
+      additionalProperties: false
+      properties:
+        verified: { type: boolean }
+        approver:
+          oneOf:
+            - $ref: "#/components/schemas/AccountRef"
+            - type: "null"
+        approvedAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        cancelledBy:
+          oneOf:
+            - $ref: "#/components/schemas/AccountRef"
+            - type: "null"
+        cancelledAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        cancellationReason: { type: [string, "null"], maxLength: 120 }
+
+    VerificationCancellation:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          description: 취소 사유 0~120자. 선택 (`Policy_승인_처리 §5`).
+          type: string
+          maxLength: 120
+
+    # ── D3 ──
+
+    DatasetRow:
+      description: |
+        카탈로그 표 한 행. 8열 + 빠른 작업 자리를 그리는 데 필요한 값만 담는다.
+        **잠긴 행도 이 형태로 내려간다** — 업로더까지 표시한다(요청할 상대가 누구인지가
+        잠김 상태에서 더 필요하다, `Policy_데이터_찾기 §5`).
+      type: object
+      required:
+        [datasetId, name, fileCount, topic, processingLevel, projects, uploader,
+         lastModifiedAt, lineageState, lineageConfirmedAt, verified, accessState, bodyAccessible]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name:
+          description: 사람이 적은 **묶음 이름**. 조각 하나를 대표로 세우지 않는다 (`DataModel §4.3`).
+          type: string
+          minLength: 1
+        fileCount:
+          description: "파일 건수. 2 이상이면 화면이 `조각 N` 칩을 붙인다."
+          type: integer
+          minimum: 1
+        topic: { type: [string, "null"] }
+        processingLevel: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }
+        projects:
+          description: |
+            **대표 1건 + `외 N`** (`Policy_데이터_찾기 §5` 프로젝트 열). 대표는 가장 먼저 연결된 것이다.
+            0건이면 `representative` 가 null 이고 화면은 빈 칸으로 둔다. 정확한 목록은 상세가 보여준다.
+          type: object
+          required: [representative, moreCount, names]
+          additionalProperties: false
+          properties:
+            representative:
+              oneOf:
+                - $ref: "#/components/schemas/ProjectRef"
+                - type: "null"
+            moreCount: { type: integer, minimum: 0 }
+            names:
+              description: 마우스를 올렸을 때 보여줄 전체 이름.
+              type: array
+              items: { type: string, minLength: 1 }
+        uploader: { $ref: "#/components/schemas/AccountRef" }
+        lastModifiedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+        lineageState: { $ref: "../schemas/common.json#/$defs/LineageState" }
+        lineageConfirmedAt:
+          description: |
+            계보 확정일. `확인 필요` 행에서 확정한 날과 바뀐 날을 나란히 보여줄 때 쓴다
+            (`Policy_데이터_찾기 §8` 계보 열).
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        verified: { type: boolean }
+        accessState: { $ref: "../schemas/common.json#/$defs/AccessState" }
+        bodyAccessible:
+          description: |
+            본체(다운로드·미리보기)에 닿을 수 있는가. `false` 면 화면이 자물쇠와 `잠김` 칩을 붙이고
+            **빠른 작업을 두지 않는다.** 행 자체는 사라지지 않는다 (P-13·P-34).
+          type: boolean
+
+    FacetSet:
+      description: 조건을 걸 수 있는 다섯 열의 값별 건수.
+      type: object
+      required: [columns]
+      additionalProperties: false
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            required: [column, values]
+            additionalProperties: false
+            properties:
+              column: { $ref: "#/components/schemas/CatalogColumn" }
+              values:
+                type: array
+                items:
+                  type: object
+                  required: [value, count]
+                  additionalProperties: false
+                  properties:
+                    value:
+                      description: 열에 따라 문자열·정수·불리언이다(주제/업로더·Level·Verified).
+                      type: [string, integer, boolean]
+                    count: { type: integer, minimum: 0 }
+
+    DatasetBasicInfo:
+      description: |
+        기본 정보 **아홉 칸** — 구성 · 좌표계 · 기간 · 격자 · 포맷 · 파일 · 원천 표기 · 소유자 · 올린 사람
+        (`Policy_데이터셋_상세 §5`). 공간 범위 칸은 두지 않는다(이름과 지도가 이미 말한다).
+        조각이 여럿이면 §4.3 합치는 규칙의 결과가 담긴다.
+      type: object
+      required: [variables, crs, period, grid, format, files, sourceLabel, owner, uploader]
+      additionalProperties: false
+      properties:
+        variables:
+          description: 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다.
+          type: array
+          items: { type: string, minLength: 1 }
+        crs: { type: [string, "null"] }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/DataPeriod"
+            - type: "null"
+        grid: { type: [string, "null"] }
+        format: { type: [string, "null"] }
+        files:
+          description: "`파일` 칸 — 조각 수와 용량 **합계**만 말한다 (`조각 4개 · 합계 148 MB`)."
+          type: object
+          required: [count, totalSizeBytes, hasReferenceGridFile]
+          additionalProperties: false
+          properties:
+            count: { type: integer, minimum: 1 }
+            totalSizeBytes: { type: integer, minimum: 0 }
+            hasReferenceGridFile:
+              description: |
+                기준 격자 파일 유무. 없으면 없다고 적는다 — 짝 파일이 없어 못 그리는 것인지
+                원래 필요 없는 포맷인지가 갈린다 (`Policy_데이터셋_상세 §5`).
+              type: boolean
+        sourceLabel:
+          description: 원천 표기. 연구실 밖 출처의 이름이며 계보 그래프의 점선 노드가 이 값이다.
+          type: [string, "null"]
+        owner:
+          description: 소유자. **빈 값 불가** (P-29).
+          $ref: "#/components/schemas/AccountRef"
+        uploader:
+          description: 올린 사람. 바뀌지 않는다 — 소유자와 별개 기록이다 (P-30).
+          $ref: "#/components/schemas/AccountRef"
+
+    DatasetProjectUse:
+      description: |
+        활용 프로젝트 한 건. **의미 문장은 연결마다 따로다** — 같은 데이터라도 과제마다 쓰임이 다르다
+        (`DataModel §5` · `Policy_데이터셋_상세 §5`).
+      type: object
+      required: [projectId, name, type, period, usageNote]
+      additionalProperties: false
+      properties:
+        projectId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        type: { $ref: "../schemas/common.json#/$defs/ProjectType" }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/ProjectPeriod"
+            - type: "null"
+        usageNote: { type: [string, "null"] }
+
+    DatasetDetail:
+      description: |
+        상세 화면(S-05)이 읽는 값. **잠긴 데이터도 이 형태로 200 이다** —
+        `bodyAccessible: false` 이면 `basicInfo`·`projects` 가 null 이고 화면은 그 자리에
+        잠김 안내와 접근 요청 버튼을 세운다 (`Policy_승인_처리 §8` · P-13).
+      type: object
+      required:
+        [datasetId, name, fileName, summary, topic, processingLevel, lineageState,
+         verification, accessState, bodyAccessible, accessRequestPending,
+         uploadedAt, lastModifiedAt, lineageConfirmedAt, basicInfo, projects, actions]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name:
+          description: 제목 = 사람이 붙인 이름 (`Policy_데이터셋_상세 §8` 상세 헤더).
+          type: string
+          minLength: 1
+        fileName:
+          description: 제목 아래 작게 서는 파일명(묶음 이름).
+          type: [string, "null"]
+        summary:
+          description: 한 줄 요약. 잠김이어도 내려간다 (P-13).
+          type: [string, "null"]
+        topic: { type: [string, "null"] }
+        processingLevel: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }
+        lineageState: { $ref: "../schemas/common.json#/$defs/LineageState" }
+        verification: { $ref: "#/components/schemas/VerificationRecord" }
+        accessState: { $ref: "../schemas/common.json#/$defs/AccessState" }
+        bodyAccessible: { type: boolean }
+        accessRequestPending:
+          description: |
+            보는 사람이 이미 요청을 보냈는가. `검토 대기` 칩과 "결과가 정해지면 알려드려요"가
+            이 값으로 갈린다 (`Policy_데이터_찾기 §8` 잠긴 카드 상태 칩).
+          type: boolean
+        uploadedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+        lastModifiedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+        lineageConfirmedAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        basicInfo:
+          oneOf:
+            - $ref: "#/components/schemas/DatasetBasicInfo"
+            - type: "null"
+        projects:
+          description: |
+            활용 프로젝트를 **여러 건 전부** 나열한다. 0건이면 빈 배열이고 화면이 빈 상태를 세운다.
+            잠김이면 null.
+          oneOf:
+            - type: array
+              items: { $ref: "#/components/schemas/DatasetProjectUse" }
+            - type: "null"
+        actions:
+          description: |
+            **화면이 조건을 임의로 정하지 않는다** (P-7). 헤더 우측 한 자리가 상태 × 보는 사람에 따라
+            갈리는 것(`✓ 승인 요청` / `승인` / `⋯ 승인 취소`)과 편집 컨트롤 노출을 서버가 판정해 내린다.
+            꺼진 것은 화면에서 **숨긴다**(P-12).
+          type: object
+          required:
+            [canRequestVerification, canApproveVerification, canCancelVerification,
+             canEditLineage, canDelete, canDownload, canRequestAccess]
+          additionalProperties: false
+          properties:
+            canRequestVerification: { type: boolean }
+            canApproveVerification: { type: boolean }
+            canCancelVerification: { type: boolean }
+            canEditLineage: { type: boolean }
+            canDelete: { type: boolean }
+            canDownload: { type: boolean }
+            canRequestAccess: { type: boolean }
+
+    DatasetFile:
+      type: object
+      required: [fileId, fileName, kind]
+      additionalProperties: false
+      properties:
+        fileId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        fileName:
+          description: 조각의 실제 파일명. 목록을 펼쳐야 보인다 (`DataModel §4.3`).
+          type: string
+          minLength: 1
+        kind: { $ref: "../schemas/common.json#/$defs/FileKind" }
+
+    DeletionImpact:
+      type: object
+      required: [derivedDatasetCount, verified, pendingAccessRequestCount]
+      additionalProperties: false
+      properties:
+        derivedDatasetCount:
+          description: "\"이 데이터로 만든 데이터 N건의 계보에 자리가 남아요\"."
+          type: integer
+          minimum: 0
+        verified:
+          description: "\"교수 승인이 붙은 데이터예요\" 경고를 더할지."
+          type: boolean
+        pendingAccessRequestCount:
+          description: "\"대기 중인 접근 요청 N건이 자동으로 닫혀요\"."
+          type: integer
+          minimum: 0
+
+    # ── D4 ──
+
+    LineageNode:
+      description: |
+        계보 그래프의 노드. **원천·묘비 노드는 열 화면이 없어 이동하지 않는다**
+        (`Policy_데이터셋_상세 §8`). 잠긴 노드는 사라지지 않고 눌리면 잠긴 상세로 간다.
+      type: object
+      required: [kind, datasetId, name, processingLevel, verified, navigable, bodyAccessible, deletedAt]
+      additionalProperties: false
+      properties:
+        kind:
+          description: |
+            그래프에서의 자리. `원천`은 연구실 데이터셋이 아니라 표기이고, `묘비`는 지워진 데이터다
+            (`DataModel §4.1·§4.2`).
+          type: string
+          enum: ["원천", "가공 전", "이 데이터", "파생", "묘비"]
+        datasetId:
+          description: "`원천`은 데이터셋이 아니므로 null 이다."
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        name: { type: string, minLength: 1 }
+        processingLevel:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/ProcessingLevel"
+            - type: "null"
+        verified: { type: boolean }
+        navigable:
+          description: 눌러서 그 데이터셋 상세로 갈 수 있는가. 원천·묘비는 false 다.
+          type: boolean
+        bodyAccessible: { type: boolean }
+        deletedAt:
+          description: 묘비 노드의 지운 시각. 마우스를 올렸을 때 알린다.
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+
+    LineageEdge:
+      description: |
+        관계 하나 = "자식 ← 부모" 한 쌍. **가공 방식은 관계에 붙는다** — 화살표 라벨이 되는 값이라서다
+        (`DataModel §4.2`).
+      type: object
+      required: [childDatasetId, parentDatasetId, parentRole, method, origin, confirmedBy, confirmedAt]
+      additionalProperties: false
+      properties:
+        childDatasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        parentDatasetId:
+          description: 원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다.
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        parentRole: { $ref: "../schemas/common.json#/$defs/ParentRole" }
+        method:
+          description: |
+            가공 방식 — 어떻게 만들었는지 **한 줄**(자유 문장). 정본이 열거값을 주지 않았고
+            어휘 확정은 수문학 도메인 소유자 몫이라 enum 을 만들지 않는다
+            (`sessions/D2.md §3-①` · `PLAN-SoT §9-㉚`).
+          type: [string, "null"]
+        origin: { $ref: "../schemas/common.json#/$defs/LineageOrigin" }
+        confirmedBy: { $ref: "#/components/schemas/AccountRef" }
+        confirmedAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
+
+    LineageGraph:
+      type: object
+      required: [datasetId, lineageState, lineageConfirmedAt, unknownParents, nodes, edges, projectUseCount, canEdit]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        lineageState: { $ref: "../schemas/common.json#/$defs/LineageState" }
+        lineageConfirmedAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        unknownParents:
+          description: |
+            `기록 없음` 표시. 부모를 모르는 채 등록했다는 뜻이고 관계가 붙으면 사라진다
+            (`DataModel §4.2`). 빈 상태 화면이 이 값으로 갈린다.
+          type: boolean
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/LineageNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/LineageEdge" }
+        projectUseCount:
+          description: |
+            활용 배지 숫자. **활용 프로젝트 목록 건수와 같은 값이어야 한다**
+            (`Policy_데이터셋_상세 §8`).
+          type: integer
+          minimum: 0
+        canEdit:
+          description: "`업로드·편집`이 켜졌는가. 꺼졌으면 수정 컨트롤을 숨긴다 (P-12)."
+          type: boolean
+
+    LineageParentCreate:
+      description: |
+        만들어진 경로(`LineageOrigin`)·확인 기록·계보 상태·Lv 는 요청에 없다 —
+        서버가 `사람이 직접 연결`로 기록하고 파생값은 계산한다 (`PLAN-SoT §9-⑳` · `CLAUDE.md §3-2`).
+      type: object
+      required: [parentDatasetId]
+      additionalProperties: false
+      properties:
+        parentDatasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        parentRole: { $ref: "../schemas/common.json#/$defs/ParentRole" }
+        method:
+          description: 가공 방식 한 줄. 자유 문장이다.
+          type: [string, "null"]
+
+    # ── D6 ──
+
+    ProjectRow:
+      description: |
+        목록 카드·표가 같은 값을 쓴다 — 필터·정렬이 한 벌이라 두 보기가 같은 목록을 본다
+        (`Policy_프로젝트 §5`). 표 열: 이름 · 유형 · 데이터셋 수 · 기간 · 기록 없음 수 · 승인 수.
+      type: object
+      required: [projectId, name, type, status, period, description, datasetCount, verifiedCount, unknownLineageCount]
+      additionalProperties: false
+      properties:
+        projectId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        type: { $ref: "../schemas/common.json#/$defs/ProjectType" }
+        status: { $ref: "../schemas/common.json#/$defs/ProjectStatus" }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/ProjectPeriod"
+            - type: "null"
+        description:
+          description: 카드에 두 줄로 선다. 비어 있으면 화면이 채우기 유도를 세운다.
+          type: [string, "null"]
+          maxLength: 500
+        datasetCount:
+          description: "지표 타일·이동 안내(`데이터셋 N개 보기 →`)가 같은 값을 쓴다."
+          type: integer
+          minimum: 0
+        verifiedCount:
+          description: "승인 수. 화면은 `승인 / 전체`로 적으므로 분모는 `datasetCount` 다."
+          type: integer
+          minimum: 0
+        unknownLineageCount:
+          description: "기록 없음 수. 1건부터 강조색 (`Policy_프로젝트 §5` 지표 타일)."
+          type: integer
+          minimum: 0
+
+    ProjectDatasetRow:
+      description: |
+        소속 데이터셋 표 한 행 — 이름 · 가공 단계 · 기간 · 계보 · Verified · 소속 해제.
+        **행에서 판단이 끝나도록 싣는다** (`Policy_프로젝트 §5`).
+      type: object
+      required: [datasetId, name, fileCount, processingLevel, period, lineageState, verified, accessState, bodyAccessible, usageNote]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        fileCount:
+          description: "2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙)."
+          type: integer
+          minimum: 1
+        processingLevel: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/DataPeriod"
+            - type: "null"
+        lineageState: { $ref: "../schemas/common.json#/$defs/LineageState" }
+        verified: { type: boolean }
+        accessState: { $ref: "../schemas/common.json#/$defs/AccessState" }
+        bodyAccessible:
+          description: "잠긴 데이터셋은 이름까지만 보이고 그 자리가 접근 요청이 된다 (`Policy_승인_처리 §8`)."
+          type: boolean
+        usageNote:
+          description: 이 연결의 활용 의미 문장.
+          type: [string, "null"]
+
+    ProjectDetail:
+      type: object
+      required: [projectId, name, type, status, period, description, link, datasets, canManage]
+      additionalProperties: false
+      properties:
+        projectId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        type: { $ref: "../schemas/common.json#/$defs/ProjectType" }
+        status: { $ref: "../schemas/common.json#/$defs/ProjectStatus" }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/ProjectPeriod"
+            - type: "null"
+        description: { type: [string, "null"], maxLength: 500 }
+        link:
+          description: |
+            연결 주소 — 설명·기간과 **다른 묶음**이다(계보 항목). 받아 적은 값을 그대로 저장하고
+            링크로만 보여준다. 형식·생존 여부를 확인하지 않는다 (`Policy_프로젝트 §5`).
+          type: [string, "null"]
+          maxLength: 500
+        datasets:
+          description: "**전부** 담는다. 자르지 않는다 (`Policy_프로젝트 §5`)."
+          type: array
+          items: { $ref: "#/components/schemas/ProjectDatasetRow" }
+        canManage:
+          description: "`프로젝트 생성` 스위치. 꺼졌으면 만들기·수정·닫기 버튼을 숨긴다 (§6·P-12)."
+          type: boolean
+
+    ProjectCreate:
+      type: object
+      required: [type, name]
+      additionalProperties: false
+      properties:
+        type: { $ref: "../schemas/common.json#/$defs/ProjectType" }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: [string, "null"], maxLength: 500 }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/ProjectPeriod"
+            - type: "null"
+        link: { type: [string, "null"], maxLength: 500 }
+
+    ProjectUpdate:
+      description: "유형은 없다 — 만든 뒤에는 바꾸지 않는다."
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: [string, "null"], maxLength: 500 }
+        period:
+          oneOf:
+            - $ref: "#/components/schemas/ProjectPeriod"
+            - type: "null"
+        link: { type: [string, "null"], maxLength: 500 }
+
+    ProjectStatusChange:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: { $ref: "../schemas/common.json#/$defs/ProjectStatus" }
+
+    # ── D8 ──
+
+    DashboardSummary:
+      type: object
+      required: [projectCount, datasetCount, lineageSettledCount, lineageUnsettledCount, verifiedCount]
+      additionalProperties: false
+      properties:
+        projectCount: { type: integer, minimum: 0 }
+        datasetCount: { type: integer, minimum: 0 }
+        lineageSettledCount:
+          description: |
+            계보 확정 = `확정` + `원천`. 원천은 가공 전 데이터가 없는 것이 정상이라 미확정으로 세지 않는다
+            (`Policy_홈_대시보드 §4·§5`).
+          type: integer
+          minimum: 0
+        lineageUnsettledCount:
+          description: "확인이 필요한 수 = `확인 필요` + `기록 없음`. 퍼센트로 바꾸지 않는다."
+          type: integer
+          minimum: 0
+        verifiedCount: { type: integer, minimum: 0 }
+
+    DataMap:
+      type: object
+      required: [totalCount, byLineageState, byTopic]
+      additionalProperties: false
+      properties:
+        totalCount:
+          description: 비율 막대의 분모.
+          type: integer
+          minimum: 0
+        byLineageState:
+          description: "네 값 전부 담는다 — 0이어도 줄을 지우지 않는다."
+          type: array
+          items:
+            type: object
+            required: [value, count]
+            additionalProperties: false
+            properties:
+              value: { $ref: "../schemas/common.json#/$defs/LineageState" }
+              count: { type: integer, minimum: 0 }
+        byTopic:
+          type: array
+          items:
+            type: object
+            required: [value, count]
+            additionalProperties: false
+            properties:
+              value: { type: string, minLength: 1 }
+              count: { type: integer, minimum: 0 }
+
+    Activity:
+      description: |
+        활동 기록 한 줄 — 누가 · 무엇을 · 언제 · 어떤 일 (`DataModel §6.1`).
+        **바꾼 일만** 쌓인다(올림 · 계보 고침 · 승인 · 프로젝트 만듦 · 지움).
+      type: object
+      required: [activityId, actor, action, target, occurredAt]
+      additionalProperties: false
+      properties:
+        activityId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        actor: { $ref: "#/components/schemas/AccountRef" }
+        action:
+          description: |
+            무슨 일을 했는가. 정본(`DataModel §6.1`)은 다섯 가지를 **예시로 열거**할 뿐
+            값 집합으로 닫지 않았고 `common.json` 에도 정의가 없다.
+            여기서 enum 을 만들면 정본에 없는 값 집합을 seam 이 새로 여는 것이라 문자열로 둔다.
+          type: string
+          minLength: 1
+        target:
+          description: 누르면 가는 곳. 데이터셋 또는 프로젝트다.
+          type: object
+          required: [kind, id, name]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              enum: ["데이터셋", "프로젝트"]
+            id: { $ref: "../schemas/common.json#/$defs/Ulid" }
+            name: { type: string, minLength: 1 }
+        occurredAt: { $ref: "../schemas/common.json#/$defs/Timestamp" }
