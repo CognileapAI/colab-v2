@@ -27,8 +27,24 @@ case "$GATE" in
     # 위 두 게이트가 red fixture로 fail-closed임을 증명한다.
     exec "$REPO_ROOT/gates/tools/contract-selftest.sh"
     ;;
+  import-boundary)
+    # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).
+    # 코드가 없으면 red — 대상 0건인 경계 게이트는 통과가 아니다.
+    exec "$REPO_ROOT/gates/tools/import-boundary.sh"
+    ;;
+  banned-import)
+    # 배포 단위별 import allow/deny. 금지 목록 정본 = gates/config/boundaries.toml.
+    exec python3 "$REPO_ROOT/gates/tools/banned-import.py"
+    ;;
+  ai-no-lineage-write)
+    # 음성 게이트 — D10 → D4 쓰기 경로가 계약·코드·마이그레이션 어디에도 없음을 증명한다.
+    exec "$REPO_ROOT/gates/tools/ai-no-lineage-write.sh"
+    ;;
+  boundary-selftest)
+    # 위 세 게이트가 red fixture로 fail-closed임을 증명한다.
+    exec "$REPO_ROOT/gates/tools/boundary-selftest.sh"
+    ;;
   generated-up-to-date|\
-  import-boundary|banned-import|ai-no-lineage-write|\
   migration-single-head|schema-diff|rls-coverage|selftest)
     echo "::error::게이트 '$GATE' 미구현 — WU-D3에서 구현한다. 미구현은 red다."
     exit 1

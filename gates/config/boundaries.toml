@@ -1,0 +1,58 @@
+# 배포 단위 ↔ 파이썬 패키지 대응 · 배포 단위별 import allow/deny.
+#
+# **금지 목록의 유일한 정의처다.** 게이트 스크립트에 목록을 다시 적지 않는다.
+# 배포 단위 구분은 dev-package/DOMAINS.md §4 가 정본이다.
+# 모듈 경로 관례의 근거와 전문은 dev-package/sessions/D3-boundary.md.
+
+[units.core-api]
+dir     = "core-api"
+package = "colab_core"
+domains = ["d1_identity", "d2_access", "d3_catalog", "d4_lineage", "d6_project", "d8_insight"]
+# CLAUDE.md §3-4 — core-api 에 geo 라이브러리를 import 하지 않는다.
+# v1 PoC 에서 타일 API 가 core 안에서 rasterio 를 직접 열어 프로파일이 오염됐다.
+banned = [
+  "rasterio", "osgeo", "gdal", "xarray", "pyproj", "shapely", "fiona",
+  "geopandas", "rioxarray", "netCDF4", "h5py", "cfgrib", "eccodes",
+  "pygrib", "cartopy", "rio_cogeo", "matplotlib", "affine",
+]
+
+[units.pipeline-worker]
+dir     = "pipeline-worker"
+package = "colab_pipeline"
+domains = ["d5_ingestion"]
+banned  = []   # geo 라이브러리가 허용된다 — 포맷 변환이 이 단위의 일이다
+
+[units.viz-render]
+dir     = "viz-render"
+package = "colab_viz"
+domains = ["d7_visualization"]
+banned  = []   # geo 라이브러리가 허용된다 — 정본이 "여기에만 들어간다"고 못 박은 곳
+
+[units.ai-service]
+dir     = "ai-service"
+package = "colab_ai"
+domains = ["d9_ontology", "d10_ai_services"]
+# ai-service 는 래스터를 열지 않는다. 열어야 하면 그 일은 pipeline-worker 것이다.
+banned = ["rasterio", "osgeo", "gdal", "xarray", "rioxarray", "fiona", "geopandas"]
+
+# ── ai-no-lineage-write 전용 (CLAUDE.md §3-2 · §3-3) ────────────────────────
+[ai_no_lineage_write]
+# ai-service 코드에 나타나면 red 인 심볼·문자열.
+banned_imports = [
+  "colab_core",            # 플랫폼 패키지 전체 (D4 Lineage 포함)
+  "alembic",               # ai-service 런타임이 플랫폼 마이그레이션을 돌릴 이유가 없다
+  "db.platform",
+]
+# 플랫폼 D4 테이블 접두사. ai-service 코드/마이그레이션에 나타나면 red.
+platform_lineage_tables = ["lineage_", "d4_"]
+# 쓰기 SQL 키워드 — 위 테이블 접두사와 같은 문장에 나타나면 red.
+write_sql_keywords = ["INSERT INTO", "UPDATE", "DELETE FROM", "MERGE INTO", "COPY", "UPSERT", "TRUNCATE"]
+# seam 계약(core-ai)에 있으면 red 인 오퍼레이션 이름 조각 — "제안"이 아니라 "확정/생성"을 뜻하는 동사.
+banned_operation_verbs = [
+  "commit", "confirm", "approve", "create", "persist", "save", "write",
+  "record", "register", "finalize", "update", "delete", "upsert", "materialize",
+]
+# 위 동사와 짝지어 금지되는 명사 — 계보 도메인.
+lineage_nouns = ["lineage", "provenance", "derivation", "ancestry"]
+# 제안 오퍼레이션만 예외로 허용한다 (contracts/seams/core-ai.yaml 의 현재 동결판).
+allowed_lineage_operations = ["suggestLineage"]

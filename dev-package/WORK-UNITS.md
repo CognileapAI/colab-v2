@@ -146,6 +146,7 @@ C2·C3·C4는 서로 병렬. C1만 공통 선행.
 |---|---|---|---|
 | **D1** | 도메인 경계 확정 — `DOMAINS.md` 리뷰·승인 | G5 초안 | 10 도메인 소유자 배정 완료 |
 | **D2** | 계약 동결 — seam OpenAPI(FE↔core, core↔viz, core↔ai) + async 봉투(core↔pipeline) + 공통 JSON-Schema(ULID 등) | D1, A3 | spectral + oasdiff 게이트 green |
+| **D2b** | **이벤트 계약 게이트** — `contracts/events/**` 는 지금 **어떤 게이트도 보지 않는다.** `contract-lint`(spectral)는 `contracts/seams/**` 만 훑고, `contract-breaking`(oasdiff)은 OpenAPI 전용이라 이벤트의 파괴적 변경을 아무도 못 잡는다. 필요한 것 = `event-lint`(ajv 로 스키마 유효성 + 인스턴스 fixture) · `$defs` 단위 diff 규칙 · red fixture selftest | D2 | 게이트 self-test green + 이벤트 계약 변경이 실제로 red 를 냄 |
 | **D3** | 경계 강제 장치 — import-linter 계약, banned-import(geo), **D10→D4 쓰기 금지 음성 테스트**, RLS 커버리지 게이트, 스키마 diff, alembic single-head | D2 | 게이트 self-test 전부 fail-closed 증명 |
 
 > **D3이 이 프로젝트의 보험이다.** v1에서 실제로 터진 버그 — ID 타입 드리프트, FE-BE 타입 수동 동기화, 스코프 누락 노출 — 는 전부 "관례로 지키기로 했던 것"이었다.

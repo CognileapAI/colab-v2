@@ -1,0 +1,13 @@
+# 경계 게이트(import-boundary · ai-no-lineage-write) 전용 도구 핀.
+# 매번 최신을 끌어오면 게이트가 조용히 바뀐다. 조용히 바뀌는 게이트는 게이트가 아니다.
+# 갱신은 사람이 이 파일을 고칠 때만 일어난다 (gates/.venv 를 지우고 재실행하면 재설치).
+import-linter==2.13
+PyYAML==6.0.2
+# ── 위 둘의 전이 의존 (해석 결과를 그대로 고정) ─────────────────────────────
+click==8.4.2
+grimp==3.15
+markdown-it-py==4.2.0
+mdurl==0.1.2
+Pygments==2.21.0
+rich==15.0.0
+typing_extensions==4.16.0

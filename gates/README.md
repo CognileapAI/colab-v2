@@ -23,7 +23,17 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 
 ## 현재 상태
 
-`run.sh`는 골격이며 **미구현 게이트는 red를 낸다.** WU-D3에서 채운다.
+`run.sh`는 아직 골격이 남아 있고 **미구현 게이트는 red를 낸다.** 남은 것은 WU-D3의 뒷절반에서 채운다.
+
+| 구현됨 | WU | 실행체 |
+|---|---|---|
+| `planning-freshness` | G1 | `dev-package/tools/check-package-freshness.py` (표준 라이브러리만) |
+| `contract-lint` · `contract-breaking` · `contract-selftest` | D2 | `gates/tools/contract-*.sh` |
+| `import-boundary` · `banned-import` · `ai-no-lineage-write` · `boundary-selftest` | D3 | `gates/tools/import-boundary.sh` · `banned-import.py` · `ai-no-lineage-write.sh` · `boundary-selftest.sh` |
+
+경계 게이트 3종의 판정 방식·모듈 경로 관례·한계는 `dev-package/sessions/D3-boundary.md`.
+설정은 `gates/config/boundaries.toml`(배포 단위·금지 목록)과 `gates/config/importlinter.ini`(경계 계약),
+도구 버전은 `gates/requirements.txt`가 고정한다(`gates/.venv`는 게이트가 스스로 만든다).
 
 예외로 **`planning-freshness` 는 구현돼 있다** (WU-G1). 실행체는 `dev-package/tools/check-package-freshness.py` —
 표준 라이브러리만 쓰고, `--selftest` 로 변조 fixture·정본 부재 두 경우 모두 red 를 냄을 증명한다.

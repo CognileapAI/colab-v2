@@ -15,7 +15,14 @@
 | `P7.md` | 연구실 대시보드 | ⬜ |
 | `P8.md` | E-01 화면별 적용 지점 표 | ⬜ |
 | `K1.md` ~ `K5.md` | 온톨로지 → KG → 계보 제안 · 검색 · 원장 | ⬜ G8 확정 후 |
-| `D1.md` ~ `D3.md` | 도메인 확정 · 계약 동결 · 경계 강제 | ⬜ |
+| `D1.md` | 도메인 확정 | ⛔ `HYD` 실명 대기 (배정표는 `DOMAINS §7`) |
+| `D2.md` | **계약 동결 — 공통 스키마** | ✅ 정의 21종 |
+| `D2-fe-core.md` | seam FE↔core (op 34) | ✅ |
+| `D2-ai-viz.md` | seam core↔ai (op 2) · core↔viz (op 5) | ✅ |
+| `D2-events.md` | async 봉투 core↔pipeline (이벤트 7종) | ✅ · 게이트 사각지대 → **D2b** |
+| `D2-gates.md` | `contract-lint` · `contract-breaking` | ✅ selftest 15 케이스 green |
+| `D2b.md` | 이벤트 계약 게이트 (`event-lint`) | ⬜ 신설 |
+| `D3.md` | 경계 강제 장치 | 🟦 진행 |
 | `I0.md` ~ `I5.md` | AWS 계정 → IaC → skeleton → 자동화 → 운영 → prod | ⬜ |
 | `C1.md` ~ `C4.md` | 푸시 확인 · 이관 · 지식 추출 · 방법론 추출 | ⬜ |
 | `G1.md` | **E-00 전달 패키지 재빌드 (DataModel v1.8 · Policy v1.4)** | ✅ 작성됨 — 실측 결과 재빌드가 아니라 **최신성 검사기 + 기록 정정**이 본체 |
