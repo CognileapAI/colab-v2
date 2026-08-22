@@ -246,7 +246,7 @@ D9·D10. **계약(D2)만 동결되면 T-P와 완전히 병렬로 진행된다.**
 지식AI  K1 ✅  K2 ✅  K3 ✅  K4 ✅  K5 ✅
 경계    D1 ✅  D2 ✅  D2b ✅  D3 ✅  D3b ✅
 인프라  I0 ✅  I1 ✅  I2 ✅  I3 ✅  I4 ✅  I5 ✅
-staging IS1 ✅  IS2 ✅  IS3 ✅
+staging IS1 ✅  IS2 ✅  IS3 ✅  IS4 ✅
 정리    C1 ✅  C2 ✅  C3 ✅  C4 ✅
 게이트  G1 ✅  G1b ✅  G2 ✅  G3 ✅  G4 ✅  G5 ✅  G7 ✅  G8 ✅
 실데이터 4포맷 E2E 완주 ✅
