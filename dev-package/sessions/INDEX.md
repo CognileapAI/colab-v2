@@ -18,7 +18,8 @@
 | `D1.md` ~ `D3.md` | 도메인 확정 · 계약 동결 · 경계 강제 | ⬜ |
 | `I0.md` ~ `I5.md` | AWS 계정 → IaC → skeleton → 자동화 → 운영 → prod | ⬜ |
 | `C1.md` ~ `C4.md` | 푸시 확인 · 이관 · 지식 추출 · 방법론 추출 | ⬜ |
-| `G7.md` | 기획 SSOT 통합 | ⬜ R1 다음 후보 |
+| `G5.md` | **DataModel v1.8 ↔ 스키마 대조** | ✅ 닫힘 — 산출 `DATAMODEL-BASELINE.md` |
+| `G7.md` | 기획 SSOT 통합 | ⬜ |
 
 ## 지시서를 쓰는 시점
 
