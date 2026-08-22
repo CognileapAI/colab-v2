@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G8 결정 4건 — 스스로 판단하기</title>
+<style>
+:root{
+  --bg:#faf9f7; --surface:#ffffff; --surface-2:#f2f0ec; --ink:#1c1a17; --ink-2:#55504a;
+  --ink-3:#8b857d; --line:#e0dcd5; --line-2:#c9c3b9;
+  --accent:#1f5f4e; --accent-soft:#e4efe9; --warn:#9a4a1c; --warn-soft:#f8e9df;
+  --danger:#8d2b2b; --danger-soft:#f7e3e3; --pick:#1f5f4e;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#15140f; --surface:#1e1c17; --surface-2:#262319; --ink:#f0ece4; --ink-2:#bab3a7;
+  --ink-3:#8a8377; --line:#33302a; --line-2:#4a463e;
+  --accent:#6fc4a8; --accent-soft:#1a2f28; --warn:#e0a06a; --warn-soft:#31241a;
+  --danger:#e08585; --danger-soft:#331d1d; --pick:#6fc4a8;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  --bg:#15140f; --surface:#1e1c17; --surface-2:#262319; --ink:#f0ece4; --ink-2:#bab3a7;
+  --ink-3:#8a8377; --line:#33302a; --line-2:#4a463e;
+  --accent:#6fc4a8; --accent-soft:#1a2f28; --warn:#e0a06a; --warn-soft:#31241a;
+  --danger:#e08585; --danger-soft:#331d1d; --pick:#6fc4a8;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+  font-size:16.5px; line-height:1.72; letter-spacing:-.005em; overflow-x:hidden;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 22px 120px}
+header.top{padding:64px 0 34px; border-bottom:1px solid var(--line)}
+h1{font-size:2.05rem; line-height:1.28; margin:0 0 14px; letter-spacing:-.03em}
+.sub{color:var(--ink-2); margin:0; font-size:1.02rem}
+.meta{margin-top:18px; font-size:.85rem; color:var(--ink-3)}
+h2{font-size:1.42rem; margin:0 0 6px; letter-spacing:-.025em; line-height:1.35}
+h3{font-size:1.08rem; margin:30px 0 8px; letter-spacing:-.02em}
+section{padding:52px 0; border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-size:.76rem; letter-spacing:.13em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:10px}
+p{margin:0 0 14px}
+.lead{font-size:1.06rem; color:var(--ink-2)}
+strong{font-weight:700; color:var(--ink)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.86em;
+  background:var(--surface-2); padding:.1em .38em; border-radius:4px; border:1px solid var(--line)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin:20px 0; box-shadow:var(--shadow)}
+.card.tight{padding:16px 18px}
+.quote{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 16px; border-radius:0 8px 8px 0; margin:16px 0; font-size:.95rem}
+.quote .src{display:block; margin-top:6px; font-size:.8rem; color:var(--ink-3)}
+.tablewrap{overflow-x:auto; margin:18px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:.9rem}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+th{background:var(--surface-2); font-weight:700; font-size:.82rem; letter-spacing:.01em}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:.74rem; font-weight:700; border:1px solid var(--line-2); white-space:nowrap}
+.pill.rec{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+.pill.bad{background:var(--danger-soft); border-color:var(--danger); color:var(--danger)}
+.pill.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn)}
+.pill.ted{background:var(--warn-soft); border-color:var(--warn); color:var(--warn)}
+details{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:0; margin:14px 0; overflow:hidden}
+details>summary{cursor:pointer; padding:13px 18px; font-weight:700; font-size:.95rem; list-style:none; background:var(--surface-2)}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸ "; color:var(--accent)}
+details[open]>summary::before{content:"▾ "}
+details .body{padding:4px 18px 16px}
+.q{border-color:var(--accent)}
+.q>summary{background:var(--accent-soft); color:var(--accent)}
+ul,ol{margin:0 0 14px; padding-left:1.3em}
+li{margin-bottom:7px}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 10px}
+button{font:inherit; font-size:.87rem; font-weight:600; padding:8px 15px; border-radius:9px;
+  border:1px solid var(--line-2); background:var(--surface); color:var(--ink); cursor:pointer; transition:all .15s}
+button:hover{border-color:var(--accent); color:var(--accent)}
+button[aria-pressed="true"],button.on{background:var(--accent); border-color:var(--accent); color:var(--bg)}
+.caption{font-size:.87rem; color:var(--ink-2); background:var(--surface-2); border-radius:9px; padding:10px 14px; margin-top:12px; min-height:2.6em}
+.stage{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px; margin:18px 0; box-shadow:var(--shadow)}
+svg{display:block; max-width:100%; height:auto}
+.fade{transition:opacity .55s ease, transform .55s ease}
+@media (prefers-reduced-motion:reduce){ .fade{transition:none !important} }
+.vocab{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0}
+.vocab span{font-size:.83rem; padding:5px 11px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line)}
+.rev{font-size:.9rem; color:var(--ink-2); border-top:1px dashed var(--line-2); margin-top:14px; padding-top:12px}
+.rev b{color:var(--ink)}
+.toc{background:var(--surface-2); border-radius:12px; padding:16px 20px; font-size:.93rem}
+.toc a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-2)}
+.toc a:hover{color:var(--accent); border-color:var(--accent)}
+.themebtn{position:fixed; top:14px; right:14px; z-index:9; padding:6px 12px; font-size:.78rem; border-radius:99px; opacity:.8}
+.final{background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:22px 24px}
+.final h3{margin-top:0}
+.numbox{display:flex; gap:14px; align-items:flex-start; margin:16px 0}
+.num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--accent); color:var(--bg); display:grid; place-items:center; font-weight:800; font-size:.85rem}
+hr.soft{border:none; border-top:1px solid var(--line); margin:26px 0}
+.sig{font-size:.86rem}
+.no{color:var(--danger); font-weight:700}
+.warnnum{color:var(--warn); font-weight:700}
+.yes{color:var(--accent); font-weight:700}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" type="button">라이트/다크</button>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">WU-G8 · 승인 세션 준비</div>
+  <h1>온톨로지 결정 4건 —<br>왜 이렇게 작아졌는가</h1>
+  <p class="sub">이 문서를 다 읽으면 <strong>ONTOLOGY-SCOPE §④ 의 네 칸에 값을 직접 적을 수 있다.</strong> 각 칸마다 선택지·그 선택이 나중에 강제하는 것·되돌리는 비용·권고를 담았다.</p>
+  <p class="meta">2026-08-23 · 근거는 전부 <code>ONTOLOGY-SCOPE.md</code>·기획 정본·동결된 계약에서 인용했다. 확인 못 한 것은 적지 않았다.</p>
+</header>
+
+<section>
+  <div class="eyebrow">먼저</div>
+  <h2>이 결정들은 "온톨로지를 어떻게 만들까"가 아니다</h2>
+  <p class="lead">네 결정은 전부 <strong>"어휘를 어디에 두고, 얼마나 단단히 묶을까"</strong>다. 크기가 작아 보인다면 그게 맞다 — 작아진 이유가 이 문서의 절반이다.</p>
+  <div class="toc">
+    <b>순서</b><br>
+    ① <a href="#why">범위가 왜 셋으로 줄었나</a> (여기를 건너뛰면 나머지가 이상해 보인다)<br>
+    ② <a href="#d1">결정 1 — 가공 방식 어휘</a> · ③ <a href="#d2">결정 2 — 주제 목록, 축이 하나인가 둘인가</a><br>
+    ④ <a href="#d3">결정 3 — 동의어를 어디에</a> · ⑤ <a href="#d4">결정 4 — K1 을 무엇으로</a><br>
+    ⑥ <a href="#final">적어야 할 네 줄</a>
+  </div>
+</section>
+
+<!-- ================= 왜 줄었나 ================= -->
+<section id="why">
+  <div class="eyebrow">맥락 — 가장 큰 발견</div>
+  <h2>계보 제안은 온톨로지를 한 번도 쓰지 않는다</h2>
+  <p>G8 은 "D9 가 무엇을 알아야 하는가"를 <strong>도메인 설명서가 아니라 계약의 출력에서 역산</strong>했다. D9 를 먹는 입은 둘뿐이고, 둘 다 <code>contracts/seams/core-ai.yaml</code> 로 이미 닫혀 있다 — 계보 제안과 자연어 검색.</p>
+  <p>그리고 <strong>계보 제안이 실제로 무엇을 근거로 삼는지는 정본이 직접 열거해 뒀다.</strong> E-04 목업의 AI 근거 문장이 쓰는 신호는 넷이다.</p>
+
+  <div class="stage">
+    <div class="btnrow" role="group" aria-label="애니메이션 조작">
+      <button id="ani-play" type="button">▶ 하나씩 걸러내기</button>
+      <button id="ani-next" type="button">다음 단계</button>
+      <button id="ani-reset" type="button">처음으로</button>
+    </div>
+    <div id="anistage" style="overflow-x:auto">
+    <svg viewBox="0 0 700 400" role="img" aria-label="후보 여섯 가지 중 근거 신호 넷이 요구하지 않는 것이 탈락하고 사전 셋만 남는 과정">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0 0 L8 4 L0 8 z" fill="var(--ink-3)"/>
+        </marker>
+      </defs>
+      <!-- 근거 신호 4 -->
+      <text x="16" y="24" font-size="13" font-weight="700" fill="currentColor">계보 제안이 실제로 쓰는 근거 신호 4개 (정본 E-04)</text>
+      <g id="sig-row" font-size="11.5" fill="currentColor">
+        <g class="signal" data-i="0"><rect x="16" y="36" width="158" height="34" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="95" y="57" text-anchor="middle">① 헤더·이력 직접 참조</text></g>
+        <g class="signal" data-i="1"><rect x="184" y="36" width="150" height="34" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="259" y="57" text-anchor="middle">② 같은 프로젝트 소속</text></g>
+        <g class="signal" data-i="2"><rect x="344" y="36" width="170" height="34" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="429" y="57" text-anchor="middle">③ 격자 해상도 변화 0.25°→0.05°</text></g>
+        <g class="signal" data-i="3"><rect x="524" y="36" width="160" height="34" rx="8" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="604" y="57" text-anchor="middle">④ 이름 유사</text></g>
+      </g>
+      <line x1="350" y1="78" x2="350" y2="100" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="350" y="118" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">이 넷이 D9 에 무엇을 요구하는가?</text>
+
+      <!-- 후보 9개 -->
+      <g id="cand-row" font-size="12" fill="currentColor">
+        <g class="cand fade" data-i="0"><rect x="20" y="140" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="120" y="164" text-anchor="middle">변수 표준 사전</text></g>
+        <g class="cand fade" data-i="1"><rect x="250" y="140" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="350" y="164" text-anchor="middle">관측소 명부</text></g>
+        <g class="cand fade" data-i="2"><rect x="480" y="140" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="580" y="164" text-anchor="middle">유역 위계 (상·하위)</text></g>
+        <g class="cand fade" data-i="3"><rect x="20" y="192" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="120" y="216" text-anchor="middle">좌표계 온톨로지</text></g>
+        <g class="cand fade" data-i="4"><rect x="250" y="192" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="350" y="216" text-anchor="middle">기관 마스터</text></g>
+        <g class="cand fade" data-i="5"><rect x="480" y="192" width="200" height="38" rx="9" fill="var(--surface-2)" stroke="var(--line-2)"/><text x="580" y="216" text-anchor="middle">행정 공간 위계</text></g>
+      </g>
+
+      <!-- 남는 셋 -->
+      <g id="keep-row" class="fade" style="opacity:0" font-size="12" fill="currentColor">
+        <line x1="350" y1="248" x2="350" y2="268" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="350" y="290" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">1차 범위에 남는 것 — 작은 사전 셋</text>
+        <g><rect x="30" y="304" width="196" height="44" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="128" y="323" text-anchor="middle" font-weight="700">A. 가공 방식 후보</text><text x="128" y="339" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">정본 인용 13개</text></g>
+        <g><rect x="252" y="304" width="196" height="44" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="350" y="323" text-anchor="middle" font-weight="700">B. 주제 동의어</text><text x="350" y="339" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">질의어 → 고정 4값</text></g>
+        <g><rect x="474" y="304" width="196" height="44" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="572" y="323" text-anchor="middle" font-weight="700">C. 지명 별칭</text><text x="572" y="339" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">위계 아님 · 별칭만</text></g>
+        <text x="350" y="374" text-anchor="middle" font-size="11.5" fill="var(--ink-3)">A 는 검색이 아니라 제안 문장용 · B·C 는 검색의 주제축·공간축용</text>
+      </g>
+    </svg>
+    </div>
+    <div class="caption" id="ani-cap">지금 볼 것 — 위 네 신호를 하나씩 후보 목록에 대 보면, 어떤 후보도 그 신호를 만드는 데 필요하지 않다는 것이 드러난다. [▶] 를 누르거나 [다음 단계]로 한 칸씩 넘겨라.</div>
+  </div>
+
+  <p><strong>넷 중 온톨로지를 요구하는 항목이 하나도 없다.</strong> 헤더 참조는 파일이 말해 주고, 같은 프로젝트는 D6 가 안다. 해상도 변화는 숫자 비교고, 이름 유사는 문자열 비교다. 그래서 제안에 필요한 것은 <strong>제안 문장에 쓸 가공 방식 어휘 후보</strong>뿐이 됐다.</p>
+  <p>검색 쪽도 마찬가지다. 정본이 준 유일한 해석 예시가 3축이고, 그중 사전이 필요한 건 둘뿐이다.</p>
+  <div class="quote">"'25년도'는 2025년, '낙동강 유역'은 공간, '강우데이터'는 강수 주제로 모두 일치해요"
+    <span class="src">목업 E-02 · 제품 — 시간은 파서(D10), 공간은 별칭(C), 주제는 동의어(B)</span></div>
+
+  <details class="q"><summary>스스로 답해 보기 — 여기서 변수 표준 사전을 1차에 넣으면 무슨 일이 생길까?</summary>
+    <div class="body">
+      <p>두 가지가 동시에 생긴다. ⑴ <strong>정본에 없는 값을 발명하게 된다</strong> — 정본이 준 변수는 <code>tp</code>·<code>t2m</code>·<code>sp</code>·<code>RR</code>·<code>QC</code> 다섯뿐이라 사전이라 부를 수 없고, 나머지는 우리가 지어내야 한다. ⑵ <strong>그렇게 만든 사전을 아무도 쓰지 않는다</strong> — 계보 제안의 근거 넷에 변수 대조가 없고, 검색의 주제축은 주제 고정 목록이 맡는다. 쓰이지 않는 사전은 유지 비용만 남기고 다음 판에서 지워진다.</p>
+      <p class="rev"><b>참고 —</b> <code>DOMAINS §2</code> 는 D9 소유물로 "변수(강수·유출·수위…)"를 들지만, <strong>유출·수위는 정본에 변수로 존재하지 않는다.</strong> 그 열거는 정본 인용이 아니라 수문학 예시다.</p>
+    </div></details>
+
+  <h3>비유 하나 — 그리고 그 비유가 깨지는 곳</h3>
+  <p>D9 를 <strong>연구실 벽에 붙은 용어 안내판</strong>이라고 생각하면 네 결정이 한 번에 정리된다. 안내판은 아무것도 강제하지 않고, 사람이 쓸 때 곁눈질하는 물건이다. 문제는 늘 셋이다 — <em>안내판의 문구를 규칙으로 만들 것인가</em>(결정 1), <em>안내판에 적힌 항목이 실제 서식과 다를 때 어느 쪽이 맞나</em>(결정 2), <em>안내판을 벽에 붙일까 서식 뒷면에 인쇄할까</em>(결정 3), <em>안내판이 한 장이면 되는가 지도까지 필요한가</em>(결정 4).</p>
+  <p class="rev"><b>비유가 깨지는 곳 —</b> 안내판은 틀려도 사람이 무시하면 끝이다. D9 는 <strong>K3 의 제안 문장을 실제로 생성</strong>하므로, 여기 적힌 어휘가 곧 사용자 화면에 뜨는 문장이 된다. "참고용"이라는 감각이 여기서는 절반만 맞다.</p>
+</section>
+
+<!-- ================= 결정 1 ================= -->
+<section id="d1">
+  <div class="eyebrow">결정 1 · ONTOLOGY-SCOPE §④-1</div>
+  <h2>가공 방식 어휘를 어떻게 다룰까</h2>
+  <p class="lead">세 세션(<code>D2</code>·<code>D2-fe-core</code>·<code>D2-ai-viz</code>)이 연속으로 막혀 있던 자리다. 막힌 이유는 간단했다 — <strong>정책 문서만 읽으면 "자유 문장 한 줄"이라는 규칙만 나오고 값이 안 나온다.</strong> 값은 목업 안의 계보 화살표 라벨·AI 근거 문장·입력 도움말에 흩어져 있었다.</p>
+
+  <h3>정본이 실제로 쓴 가공 방식 어휘 13개</h3>
+  <div class="vocab">
+    <span>격자 보간</span><span>품질검사</span><span>유역 클리핑</span><span>유역 평균</span><span>유역 집계</span>
+    <span>일 단위 평균</span><span>(유역 경계로) 잘라냄</span><span>임계값 초과일 집계</span><span>재격자화</span>
+    <span>편의 보정</span><span>다운스케일</span><span>전처리</span><span>보간 방식(선형/최근접)</span>
+  </div>
+  <details><summary>각 어휘의 출처 원문 보기</summary><div class="body">
+    <div class="tablewrap"><table>
+      <tr><th>어휘</th><th>정본 원문</th><th>출처</th></tr>
+      <tr><td>격자 보간</td><td><code>Lv1 (격자 보간·품질검사)</code> · <code>격자 보간 → 낙동강 유역 클리핑 → 유역 평균</code></td><td>목업 E-04·E-03</td></tr>
+      <tr><td>품질검사</td><td><code>격자 보간 · 품질검사</code></td><td>목업 E-04</td></tr>
+      <tr><td>유역 클리핑 / 유역 평균</td><td><code>가공 방식: 유역 클리핑 · 유역 평균</code></td><td>목업 E-04·E-03</td></tr>
+      <tr><td>유역 집계</td><td><code>Lv2 (유역 집계)</code></td><td>목업 E-04·E-03</td></tr>
+      <tr><td>일 단위 평균 · 잘라냄</td><td><code>일 단위 평균 후 유역 경계로 잘라냄</code> — DataModel 이 직접 든 예시</td><td>DM §4.2</td></tr>
+      <tr><td>임계값 초과일 집계</td><td><code>✦ 임계값 초과일 집계</code></td><td>목업 E-03</td></tr>
+      <tr><td>재격자화 · 편의 보정 · 유역 집계</td><td><code>여러 단계면 쉼표로 구분해요. 예: 재격자화, 편의 보정, 유역 집계</code> — 입력 도움말</td><td>목업 E-04</td></tr>
+      <tr><td>다운스케일</td><td><code>0.25°→0.05° 다운스케일 흔적도 일치해요</code> — AI 근거 문장</td><td>목업 E-04</td></tr>
+      <tr><td>전처리</td><td><code>Lv1 (전처리)</code></td><td>목업 E-04·E-03</td></tr>
+      <tr><td>보간 방식(선형/최근접)</td><td><code>흔적은 확인했지만 보간 방식(선형/최근접)은 명시돼 있지 않아요</code> — AI 가 모른다고 말하는 예시</td><td>목업 E-04</td></tr>
+    </table></div>
+  </div></details>
+
+  <h3>같은 문장을 세 선택지에 넣어 보면</h3>
+  <p>연구원이 업로드 화면에서 <strong>"일 단위 평균 후 유역 경계로 잘라냄"</strong> 이라고 적었다고 하자. 이건 우리가 지어낸 문장이 아니라 <code>DataModel §4.2</code> 가 가공 방식의 예로 직접 든 문장이다.</p>
+
+  <div class="stage">
+    <div class="btnrow" role="group" aria-label="선택지 전환">
+      <button class="opt on" data-opt="a" type="button">(가) 자유 문자열 유지</button>
+      <button class="opt" data-opt="b" type="button">(나) enum 으로 닫기</button>
+      <button class="opt" data-opt="c" type="button">(다) 하이브리드</button>
+    </div>
+    <div id="optbox"></div>
+  </div>
+
+  <div class="tablewrap"><table>
+    <tr><th style="width:20%">선택지</th><th style="width:34%">나중에 무엇을 강제하는가</th><th style="width:30%">치르는 대가</th><th>되돌리는 비용</th></tr>
+    <tr>
+      <td><b>(가) 자유 문자열 유지</b><br><span class="pill">현행</span></td>
+      <td>D9 는 이 범주를 아예 갖지 않는다. K2 시드가 그만큼 작아지고, K3 는 제안 문장을 매번 모델이 만들게 된다</td>
+      <td>계보 화살표 라벨이 사람마다 제각각(<code>유역 평균</code> vs <code>유역별 평균</code> vs <code>basin mean</code>). 카탈로그에서 가공 방식으로 좁힐 수 없다. K3 제안 문장의 표현이 흔들려 <b>평가셋을 만들기 어렵다</b></td>
+      <td class="yes">싸다 — 나중에 (다)로 올리는 데 계약·DB 변경이 없다</td>
+    </tr>
+    <tr>
+      <td><b>(나) enum 으로 닫기</b><br><span class="pill bad">정본 위반</span></td>
+      <td><code>common.json</code> 에 값 집합이 생기고, 그 순간부터 <b>목록에 없는 가공은 적을 수 없게 된다.</b> 계약·DB·FE 를 동시에 개정해야 하고 D2·D3 산출물이 재개정된다</td>
+      <td>아래 <b>두 근거</b>로 정본을 어긴다</td>
+      <td class="no">가장 비싸다 — P0 스키마에 굳은 뒤에는 소급 비용이 붙는다</td>
+    </tr>
+    <tr>
+      <td><b>(다) 하이브리드</b><br><span class="pill rec">초안 권고</span></td>
+      <td>저장·계약은 (가) 그대로. D9 가 13개를 <b>시드 어휘로만</b> 갖고 K3 제안 문장 생성과 업로드 자동완성 후보에 쓴다. 사람은 언제든 다른 문장을 쓴다. K2 시드 WU 에 항목 하나가 는다</td>
+      <td>강제력이 없어 완전한 일관성은 오지 않는다. 시드 목록을 유지할 자리가 하나 생긴다</td>
+      <td class="yes">싸다 — 시드를 지우면 (가)로 돌아간다. 계약·DB 무변경</td>
+    </tr>
+  </table></div>
+
+  <div class="card">
+    <h3 style="margin-top:0">(나)가 정본 위반인 근거 두 개</h3>
+    <div class="numbox"><div class="num">1</div><div>
+      <b>정책이 자유 문장으로 못 박았다.</b>
+      <div class="quote">가공 방식 문장 — <b>1자 이상 120자 이하</b><span class="src">E-04 Policy_업로드와_계보_확정 §5 입력값 규칙</span></div>
+      길이 규칙만 있고 값 집합이 없다. 정본 전체에서 가공 방식의 열거값을 선언한 곳이 <b>한 군데도 없다.</b>
+    </div></div>
+    <div class="numbox"><div class="num">2</div><div>
+      <b>정본이 든 예시 자체가 어떤 enum 값에도 안 들어간다.</b>
+      <div class="quote">가공 방식 | 어떻게 만들었는지 한 줄 (예: <b>"일 단위 평균 후 유역 경계로 잘라냄"</b>). 관계에 붙는다<span class="src">E-00 DataModel_공통_기반 §4.2</span></div>
+      이건 어휘가 아니라 <b>문장</b>이다. 13개를 enum 으로 만들면 정본이 든 예시가 입력 불가가 된다.
+    </div></div>
+    <p style="margin-bottom:0" class="rev"><b>그리고 정신이 충돌한다 —</b> 목록에 없는 가공을 한 사람이 <b>사실을 못 적게 된다.</b> "모르면 모른다고 남긴다"는 정본의 원칙과 정반대다. AI 가 <code>보간 방식(선형/최근접)은 명시돼 있지 않아요</code> 라고 말하도록 설계된 제품에서, 사람만 드롭다운에 갇히는 것은 앞뒤가 안 맞는다.</p>
+  </div>
+
+  <details><summary>계약이 이미 이 방향으로 동결돼 있다 (확인용)</summary><div class="body">
+    <p><code>contracts/seams/core-ai.yaml</code> 의 <code>ProcessingMethodSuggestion.methodText</code> 는 <code>type: string</code>, <code>minLength: 1</code>, <code>maxLength: 120</code> 이고 주석이 이렇게 달려 있다 — <b>"어휘를 enum 으로 닫지 않는다"</b>. DB 쪽도 계보 관계의 <code>method</code> 가 자유 텍스트다. 즉 <b>(가)와 (다)는 무변경이고, (나)만 개정을 부른다.</b></p>
+  </div></details>
+
+  <details class="q"><summary>스스로 답해 보기 — (다)를 골랐는데 연구원이 <code>basin mean</code> 이라고 영어로 적었다. 무슨 일이 생기나?</summary>
+    <div class="body"><p><strong>아무 일도 안 생긴다. 그대로 저장되고 그대로 화살표 라벨이 된다.</strong> (다)의 시드는 자동완성 후보와 K3 제안 문장의 재료일 뿐, 입력을 막지 않는다. 다음에 같은 사람이 입력할 때 <code>유역 평균</code> 이 후보로 떠서 <b>천천히 수렴</b>할 뿐이다. 이 "강제하지 않음"이 (다)의 대가이자 동시에 값어치다.</p></div></details>
+
+  <div class="card" style="border-color:var(--warn)">
+    <p style="margin:0"><span class="pill warn">함께 답해야 하는 것</span> <strong>13개 어휘 중 대부분은 정책 문서가 아니라 목업 문자열에서 왔다.</strong> 목업은 정책이 <code>links.ui_spec</code> 으로 가리키는 정본 구성물이지만 문서보다 낮은 층위다. Ted 가 <b>"목업 문구는 예시일 뿐"</b>이라고 판정하면 13개의 근거가 약해진다 — 이 판정 자체가 결정 1 에 포함된다.</p>
+  </div>
+
+  <div class="final" style="margin-top:22px">
+    <h3>권고 — (다) 하이브리드</h3>
+    <p style="margin-bottom:0">셋 중 <strong>정본을 어기지 않으면서 라벨 일관성을 얻는 유일한 선택지</strong>다. (가)는 정본에 맞지만 K3 평가셋을 만들 토대를 주지 않고, (나)는 일관성을 얻는 대가로 정본 두 곳을 어긴다. (다)는 계약·DB·정본 어느 것도 건드리지 않으므로 <strong>D2·D3 산출물 재개정이 없다</strong> — 이게 실무적으로 가장 큰 차이다. 되돌리기도 싸다.</p>
+  </div>
+</section>
+
+<!-- ================= 결정 2 ================= -->
+<section id="d2">
+  <div class="eyebrow">결정 2 · ONTOLOGY-SCOPE §④-2</div>
+  <h2>주제 고정 목록의 넷째 값 — 입력하는 화면과 조회하는 화면이 갈라져 있다</h2>
+  <p class="lead">이 한 건은 <strong>Ted 만 답할 수 있다.</strong> 다른 셋은 근거를 대면 판단이 서지만, 이건 근거가 서로를 부정한다. 그리고 정본을 전수로 훑어 보니 <strong>어긋남의 모양이 처음 보이던 것과 달랐다</strong> — 목업 하나가 딴소리를 하는 게 아니었다.</p>
+
+  <div class="grid2">
+    <div class="card tight">
+      <div class="pill">정책 문서</div>
+      <p style="margin:10px 0 4px" class="sig"><code>E-04 Policy §5 입력값 규칙</code></p>
+      <p style="margin:0;font-size:.85rem" class="mono">강우·강수 / 식생·NDVI / 지형·DEM / <b>토지피복·LULC</b></p>
+    </div>
+    <div class="card tight">
+      <div class="pill">홈 데이터 맵 목업</div>
+      <p style="margin:10px 0 4px" class="sig"><code>mockups/제품_260817.html</code></p>
+      <p style="margin:0;font-size:.85rem" class="mono">강우·강수 / 식생·NDVI / 지형·DEM / <b>유출·수문</b></p>
+    </div>
+  </div>
+  <p>앞의 세 값은 완전히 같다. <strong>넷째 칸 하나만 다르다.</strong> 여기까지는 목업 한 곳의 오탈자처럼 보인다. 그런데 정본 전체(<code>.md</code>·<code>.html</code> 전수, 목업 사본인 <code>package/</code> 제외)에서 두 값이 <strong>어디에</strong> 나오는지를 세면 다른 그림이 나온다.</p>
+
+  <h3>실측 — 두 값의 분포</h3>
+  <div class="tablewrap"><table>
+    <tr><th style="width:38%">파일</th><th style="width:16%">토지피복·LULC</th><th style="width:16%">유출·수문</th><th>그 화면이 하는 일</th></tr>
+    <tr><td><code>E-04/documents/Policy_….md</code></td><td class="yes">1</td><td>0</td><td rowspan="2"><b>값을 고르는 자리</b> — 업로드 시 주제 선택</td></tr>
+    <tr><td><code>E-04/mockups/업로드와_계보_확정….html</code></td><td class="yes">3</td><td>0</td></tr>
+    <tr><td><code>E-02/mockups/데이터_찾기….html</code></td><td>0</td><td class="warnnum">2</td><td rowspan="5"><b>이미 있는 값을 보여주고 묶는 자리</b> — 검색·상세·홈·제품 전반</td></tr>
+    <tr><td><code>E-03/mockups/데이터셋_상세….html</code></td><td>0</td><td class="warnnum">1</td></tr>
+    <tr><td><code>E-07/mockups/홈_대시보드….html</code></td><td>0</td><td class="warnnum">2</td></tr>
+    <tr><td><code>mockups/제품_260817.html</code></td><td>0</td><td class="warnnum">2</td></tr>
+    <tr><td><code>mockups/핵심시나리오_260817.html</code></td><td>0</td><td class="warnnum">1</td></tr>
+    <tr><td><b>합계</b></td><td><b>4</b> (정책 1 · 목업 3)</td><td><b>8</b> (정책 <b>0</b> · 목업 8)</td><td>—</td></tr>
+  </table></div>
+
+  <div class="card" style="border-color:var(--warn)">
+    <p style="margin:0 0 10px"><span class="pill warn">읽는 법</span> 이 표에서 중요한 것은 <b>빈도가 아니라 분포의 규칙성</b>이다. 두 값이 여기저기 섞여 있는 게 아니라, <b>선이 정확히 한 번 그어져 있다.</b></p>
+    <div class="grid2" style="gap:12px">
+      <div style="border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--surface-2)">
+        <b class="mono">토지피복·LULC</b>
+        <p style="margin:6px 0 0" class="sig"><b>오직 E-04</b> 에만 나온다. 정책 문서와 그 화면 목업 — 정책 §5 의 규칙 행, 주제 드롭다운 2곳, 파일 태그 <code>LULC_2024_Lv1.tif</code>.<br><b>= 사용자가 값을 고르는 자리</b></p>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--surface-2)">
+        <b class="mono">유출·수문</b>
+        <p style="margin:6px 0 0" class="sig">E-02(검색)·E-03(상세)·E-07(홈)·제품·핵심시나리오 <b>다섯 곳</b>. 그리고 <b>정책·PRD 문서에는 한 건도 없다.</b><br><b>= 이미 있는 값을 보여주고 묶는 자리</b></p>
+      </div>
+    </div>
+    <p style="margin:12px 0 0" class="rev"><b>결론 —</b> 한 화면이 딴소리를 하는 게 아니라, <b>입력하는 화면과 조회하는 화면이 통째로 갈라져 있다.</b> 그리고 <b>문서로 확정된 값(<code>토지피복·LULC</code>)과 목업에 그려진 값(<code>유출·수문</code>)이 다르다</b> — 정책·PRD 어디에도 <code>유출·수문</code> 은 없다.</p>
+  </div>
+
+  <h3>정책이 못 박은 문장이 여기서 날카로워진다</h3>
+  <div class="quote">필수. <b>연구실이 항목을 추가할 수 없다 — 목록이 늘면 검색·데이터 맵의 묶음 기준이 깨진다.</b> 항목 추가는 운영팀이 한다.
+    <span class="src">E-04 Policy_업로드와_계보_확정 §5, 주제 행</span></div>
+  <p>정책은 <strong>검색과 데이터 맵을 지키려고</strong> 목록을 잠갔다. 그런데 <strong>정작 그 검색(E-02)과 데이터 맵(E-07·제품) 목업이 정책과 다른 값을 쓰고 있다.</strong> 지키려던 대상이 이미 다른 목록을 쓰고 있는 셈이다. 이 목록은 편의를 위한 태그가 아니라 <strong>제품이 세상을 묶는 축</strong>이고, 검색 필터·데이터 맵 막대·D9 주제 동의어 사전이 전부 여기 매달린다.</p>
+
+  <h3>해석은 둘 다 열려 있다 — 그리고 무게가 다르다</h3>
+  <div class="numbox"><div class="num">A</div><div>
+    <b>목록이 한 번 바뀌었는데 한쪽만 갱신됐다.</b> 업로드 쪽이 새 값이고 조회 쪽 목업이 안 따라왔거나, 그 반대다. <span class="pill">가벼움</span><br>
+    <span class="sig">이 경우 결정은 원래대로 <b>"넷째 값 하나 고르기"</b>다. 어느 쪽이 나중 버전인지를 Ted 가 알면 끝난다.</span>
+  </div></div>
+  <div class="numbox"><div class="num">B</div><div>
+    <b>애초에 다른 목록 둘을 그리고 있었다.</b> 고르는 값(입력 분류)과 묶는 축(조회 분류)이 처음부터 다른 물건이었다. <span class="pill bad">무거움</span><br>
+    <span class="sig">이 경우 <b>결정의 성격이 통째로 바뀐다</b> — 넷째 값이 무엇이냐가 아니라 <b>분류 축이 하나냐 둘이냐</b>가 된다.</span>
+  </div></div>
+
+  <div class="card" style="border-color:var(--danger)">
+    <p style="margin:0"><span class="pill bad">(해석 B)가 맞다면</span> D9 의 주제 동의어 사전이 <b>무엇을 향해야 하는지</b>부터 달라진다. 축이 둘이면 사전도 둘이거나, 입력 값 → 조회 축의 <b>대응표</b>가 하나 더 필요해진다. 그리고 그 대응표는 <code>㉗</code>(공개 범위를 2값으로 좁힌 결정)이 <b>"매핑 테이블이 생기지 않게"</b> 를 근거로 거부했던 바로 그 물건이다. 즉 (해석 B)는 <b>주제라는 개념을 정본 차원에서 다시 정의하는 일</b>이 되고, 이건 K1 의 진입조건을 넘어 <b>정본 개정</b> 범위다.</p>
+  </div>
+
+  <h3>선택지</h3>
+  <div class="tablewrap"><table>
+    <tr><th style="width:24%">선택지</th><th style="width:38%">나중에 무엇을 강제하는가</th><th>되돌리는 비용</th></tr>
+    <tr><td><b>(가) 문서(<code>P04 §5</code>) 4값이 정본</b><br><span class="sig">= 해석 A · 업로드 쪽이 맞다</span></td>
+      <td>구현은 <code>토지피복·LULC</code> 로 간다. <b>검색·상세·홈·제품 목업 다섯 곳이 전부 어긋난 채</b> 구현된다 — 한 곳이 아니라 다섯 곳이므로, 목업을 보는 사람이 계속 같은 질문을 하게 된다. 목업 개정 대상이 다섯 파일이다</td>
+      <td>중간 — 주제는 데이터셋에 저장되는 값이라 나중에 바꾸면 데이터 이관이 붙는다</td></tr>
+    <tr><td><b>(가&#39;) 목업 8건 쪽이 정본</b><br><span class="sig">= 해석 A · 조회 쪽이 맞다</span></td>
+      <td><code>유출·수문</code> 으로 간다. 대신 <b>정책 문서 §5 를 고쳐야 한다</b> — 값이 정책·PRD 어디에도 없으므로 문서에 없는 값으로 구현하게 된다. E-04 목업 3곳(드롭다운 2 · 파일 태그 1)도 함께 개정</td>
+      <td>중간 — 위와 같음. 더해 정책 문서 개정이 선행된다</td></tr>
+    <tr><td><b>(나) 5값으로 확장</b><br><span class="pill bad">범위 확대</span></td>
+      <td>정본 어느 문서에도 5값이 없다. <b>정본을 먼저 고쳐야</b> 하고, 고치면 정책·E-04 목업·조회 목업 다섯이 모두 개정 대상이 된다. 축이 늘면 데이터 맵·필터·동의어 사전이 전부 다섯 칸이 된다</td>
+      <td>비싸다 — 그리고 <b>(해석 B)를 확인하지 않은 채 5값으로 덮으면</b> 축이 둘이라는 사실이 다섯 칸 목록에 묻힌다</td></tr>
+    <tr><td><b>(다) 정본 수정 요청 후 대기</b></td>
+      <td>K2(시드 적재)와 P2 가 그만큼 기다린다. <b>해석 B 가 의심되면 이게 정직한 선택</b>이다 — 축의 개수를 모르는 채 시드를 만들면 어느 쪽이든 다시 만든다</td>
+      <td>없음 — 대신 시간을 쓴다</td></tr>
+  </table></div>
+
+  <details><summary>계약은 아직 이 값을 얼려두지 않았다 — 그래서 지금이 싸다</summary><div class="body">
+    <p><code>contracts/schemas/common.json</code> 에는 주제 enum 이 <b>없다.</b> <code>fe-core.yaml</code> 의 데이터셋 행에서도 <code>topic</code> 은 <code>type: [string, "null"]</code> 이고, 필터 파라미터도 문자열이다. 역할·권한·접근 상태·확신도 같은 다른 값 집합은 이미 <code>common.json</code> 에 한국어 enum 으로 굳어 있는데 주제만 비어 있다. <b>지금 정하면 계약 개정 한 번으로 끝나고, K2 시드가 만들어진 뒤에 정하면 시드와 데이터가 함께 움직인다.</b> 축이 둘로 판명되면(해석 B) 계약에 들어갈 물건 자체가 달라지므로, 이 빈칸은 아직 채우지 않은 편이 맞다.</p>
+  </div></details>
+
+  <details class="q"><summary>스스로 답해 보기 — 이 불일치를 그냥 두고 K1 을 시작하면?</summary>
+    <div class="body"><p>D9 의 주제 동의어 사전이 <strong>무엇에 동의어를 달지 모르는 채로</strong> 만들어진다. <code>토지피복·LULC</code> 에 달면 <b>검색·상세·홈·제품 다섯 화면</b>의 묶음이 그 사전을 안 쓴다. <code>유출·수문</code> 에 달면 그 주제를 <b>고를 화면이 없다</b> — 업로드 드롭다운에 그 값이 없기 때문이다. 어느 쪽이든 K2 를 다시 해야 한다. 그래서 <code>ONTOLOGY-SCOPE §⑥</code> 이 <b>"§④ 에 값이 적혀 있을 것"을 K1 의 진입조건으로</b> 걸어 뒀다.</p></div></details>
+
+  <div class="final">
+    <h3>권고 — 값을 권하지 않는다. 대신 <u>먼저 답할 질문</u>이 바뀌었다</h3>
+    <p>다른 셋과 달리 여기서는 값을 권하지 않는다. <strong>"1차 마일스톤에서 연구실이 실제로 올릴 데이터가 토지피복인가 유출인가"</strong>는 정본 저자만 아는 사실이고, 등장 빈도는 판단 근거가 못 된다.</p>
+    <p style="margin-bottom:0">다만 실측이 <strong>질문의 순서를 바꿔 놓았다.</strong> 먼저 답해야 할 것은 "넷째 값이 무엇인가"가 아니라 —
+    <br><br><b style="font-size:1.05rem">"주제 목록은 하나인가, 아니면 고르는 값과 묶는 축이 원래 둘이었나?"</b>
+    <br><br>여기에 <b>하나</b>라고 답하면(해석 A) 남는 일은 넷째 값 하나를 고르는 것이고, 위 표의 (가)/(가&#39;) 중 하나로 끝난다. <b>둘</b>이라고 답하면(해석 B) 이건 G8 의 결정이 아니라 <b>정본 개정 사안</b>이고, K1 은 그때까지 기다리는 것이 맞다.</p>
+  </div>
+</section>
+
+<!-- ================= 결정 3 ================= -->
+<section id="d3">
+  <div class="eyebrow">결정 3 · ONTOLOGY-SCOPE §④-3</div>
+  <h2>동의어를 D9 에 둘까, Postgres 검색 사전에 둘까</h2>
+  <p class="lead">둘 다 "<code>강우데이터</code> 를 <code>강우·강수</code> 주제로 알아듣게 만든다"는 같은 일을 한다. 다른 것은 <strong>누가 그 사전을 볼 수 있느냐</strong> 하나뿐이다.</p>
+
+  <h3>먼저 알아야 할 것 — 검색 사전이 무엇인가</h3>
+  <p>PostgreSQL 은 전문 검색을 할 때 질의어를 정규화하는 <strong>사전(<code>ts_config</code>)</strong> 을 갖는다. 여기에 "이 말과 저 말은 같은 말"이라고 등록하면 검색 단계에서 자동으로 치환된다. 빠르고 공짜고, <strong>DB 안에서만 존재한다</strong>. 그 마지막 성질이 이 결정의 전부다.</p>
+
+  <div class="stage">
+    <div class="btnrow" role="group" aria-label="배치 전환">
+      <button class="loc on" data-loc="d9" type="button">(가) D9 시드에 둔다</button>
+      <button class="loc" data-loc="pg" type="button">(나) Postgres 사전에만 둔다</button>
+    </div>
+    <div id="locbox" style="overflow-x:auto">
+    <svg viewBox="0 0 660 250" role="img" aria-label="동의어 사전의 위치에 따라 계보 제안이 그것을 볼 수 있는지가 갈리는 그림">
+      <g font-size="12.5" fill="currentColor">
+        <rect x="20" y="30" width="180" height="58" rx="10" fill="var(--surface-2)" stroke="var(--line-2)"/>
+        <text x="110" y="55" text-anchor="middle" font-weight="700">K4 자연어 검색</text>
+        <text x="110" y="74" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">질의 → 관련도 + 근거</text>
+
+        <rect x="20" y="150" width="180" height="58" rx="10" fill="var(--surface-2)" stroke="var(--line-2)"/>
+        <text x="110" y="175" text-anchor="middle" font-weight="700">K3 계보 제안</text>
+        <text x="110" y="194" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">부모 후보 + 가공 방식</text>
+
+        <g id="box-d9">
+          <rect x="400" y="88" width="230" height="62" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="515" y="113" text-anchor="middle" font-weight="700" fill="var(--accent)">D9 시드 (db/ai)</text>
+          <text x="515" y="132" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">주제 동의어 · 지명 별칭 · 가공 후보</text>
+        </g>
+        <g id="box-pg" style="opacity:0" class="fade">
+          <rect x="400" y="28" width="230" height="62" rx="12" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.6"/>
+          <text x="515" y="53" text-anchor="middle" font-weight="700" fill="var(--warn)">Postgres ts_config</text>
+          <text x="515" y="72" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">검색 질의 안에서만 산다</text>
+        </g>
+
+        <path id="line-k4" d="M200 59 C 300 59, 300 112, 400 116" fill="none" stroke="var(--accent)" stroke-width="2" class="fade"/>
+        <path id="line-k3" d="M200 179 C 300 179, 300 130, 400 124" fill="none" stroke="var(--accent)" stroke-width="2" class="fade"/>
+        <g id="cut" style="opacity:0" class="fade">
+          <text x="300" y="176" text-anchor="middle" font-size="22" fill="var(--danger)">✕</text>
+          <text x="300" y="200" text-anchor="middle" font-size="11" fill="var(--danger)" font-weight="700">못 본다</text>
+        </g>
+        <text x="330" y="238" text-anchor="middle" font-size="11" fill="var(--ink-3)" id="loc-note"></text>
+      </g>
+    </svg>
+    </div>
+    <div class="caption" id="loc-cap">지금 볼 것 — 사전의 위치를 바꾸면 <b>K3(계보 제안)에서 사전으로 가는 선이 끊긴다.</b> 버튼으로 두 배치를 오가며 끊기는 선을 보라.</div>
+  </div>
+
+  <h3>㊶ 이 이 판단을 어떻게 바꿨는가</h3>
+  <p><code>PLAN-SoT §9-㊶</code> 으로 검색 엔진은 <strong>Postgres 단독(tsvector + pgvector)</strong> 이 됐다. 별도 검색 엔진을 두지 않는다. 이 결정은 이번 판단을 <strong>양쪽으로</strong> 민다.</p>
+  <div class="grid2">
+    <div class="card tight"><b>(나)를 매력적으로 만든 부분</b><p style="margin:8px 0 0" class="sig">검색이 어차피 Postgres 안에 있으니 동의어도 거기 두면 <b>추가 부품이 0개</b>다. 별도 저장소도, 조회 경로도 필요 없다. ㊶ 의 논리(컴포넌트를 줄일수록 staging·AWS 가 싸다)와 그대로 이어진다.</p></div>
+    <div class="card tight"><b>그런데 결정적인 부분</b><p style="margin:8px 0 0" class="sig">㊶ 은 <b>검색만</b> Postgres 로 정리했다. <b>계보 제안(K3)은 검색 질의를 통과하지 않는다</b> — 업로드된 파일의 메타를 보고 부모 후보와 가공 방식을 만든다. Postgres 사전에 넣은 동의어는 K3 의 눈에 보이지 않는다.</p></div>
+  </div>
+
+  <div class="tablewrap"><table>
+    <tr><th style="width:22%">선택지</th><th style="width:40%">나중에 무엇을 강제하는가</th><th>되돌리는 비용</th></tr>
+    <tr><td><b>(가) D9 시드에 둔다</b><br><span class="pill rec">초안 권고</span></td>
+      <td>어휘가 한 자리에 모이고 K3·K4 가 <b>같은 사전</b>을 본다. 대신 <b>D9 저장소와 시드 WU(K2)가 실제로 필요해진다</b> — K1·K2 가 살아 있는 WU 가 된다. 검색이 쓰려면 D9 시드를 Postgres 사전으로 <b>내보내는 경로</b>가 하나 필요하다</td>
+      <td class="yes">싸다 — 시드 테이블은 지우고 다시 넣으면 된다 (<code>DOMAINS §3-②</code>: 온톨로지의 소급 비용은 낮다. 지식은 다시 적재하면 된다)</td></tr>
+    <tr><td><b>(나) Postgres 사전에만 둔다</b></td>
+      <td>D9 가 사실상 비어 K1·K2 를 축소·통합할 수 있다. 대신 <b>K3 가 그 사전을 못 본다</b> → 계보 제안이 쓸 어휘를 따로 두게 되고, <code>WORK-UNITS</code> 가 경고한 <b>"의미 체계가 두 벌 생긴다"</b>가 그대로 일어난다</td>
+      <td class="no">비싸다 — 두 벌이 갈라진 뒤 합치는 것은 처음부터 한 벌로 만드는 것보다 항상 비싸다</td></tr>
+  </table></div>
+
+  <div class="quote">KG 가 두 지점 모두의 토대다. K3·K4 를 각각 따로 만들면 <b>의미 체계가 두 벌 생긴다</b> — 그래서 K1·K2 가 선행이다.<span class="src">WORK-UNITS.md · K 트랙 주석</span></div>
+
+  <details class="q"><summary>스스로 답해 보기 — (가)를 골라도 검색은 결국 Postgres 사전을 쓸 텐데, 그럼 두 벌 아닌가?</summary>
+    <div class="body"><p><strong>아니다 — 원본이 한 벌이면 사본은 몇 벌이든 두 벌이 아니다.</strong> (가)에서 D9 시드가 <b>단일 정본</b>이고, Postgres 사전은 거기서 생성되는 파생물이다. 이 프로젝트가 이미 여러 곳에서 쓰는 구조와 같다 — <code>common.json</code> 이 정본이고 타입·클라이언트는 생성물이라 손으로 고치지 않는다. 위험한 것은 사본이 아니라 <b>서로 다른 사람이 서로 다른 곳에 원본을 적는 상황</b>이다.</p></div></details>
+
+  <div class="final">
+    <h3>권고 — (가) D9 시드에 둔다</h3>
+    <p style="margin-bottom:0">㊶ 이 <strong>검색 엔진</strong>을 정리했지 <strong>어휘의 소유자</strong>를 정리한 것이 아니다. 어휘를 D9 에 두면 K3·K4 가 같은 원본을 보고, 검색용 사본은 거기서 생성하면 된다. 되돌리는 비용도 낮다 — <code>DOMAINS §3-②</code> 가 D9 를 별도 마이그레이션 체인에 둔 이유가 바로 <strong>"온톨로지는 자주 바뀌고 소급 비용이 낮다"</strong>는 것이다.</p>
+  </div>
+</section>
+
+<!-- ================= 결정 4 ================= -->
+<section id="d4">
+  <div class="eyebrow">결정 4 · ONTOLOGY-SCOPE §④-4</div>
+  <h2>K1 을 그래프 DB 로 만들까, 시드 테이블 3개로 만들까</h2>
+  <p class="lead">앞의 셋을 (다)·(무엇이든)·(가)로 고르고 나면 D9 의 1차 내용물이 확정된다 — <strong>작은 사전 셋.</strong> 이 결정은 그 내용물에 <strong>어울리는 그릇</strong>을 고르는 일이다.</p>
+
+  <h3>그래프 DB 가 값을 하는 조건</h3>
+  <p>그래프 저장소는 <strong>관계를 여러 홉 따라가는 질의</strong>에서 값을 한다. "낙동강 유역의 하위 소유역들, 그 소유역에 속한 관측소들, 그 관측소가 관측하는 변수들" 같은 것이다. 그런데 <strong>1차 범위에서 그 질문을 만들 재료가 전부 빠졌다.</strong></p>
+
+  <div class="tablewrap"><table>
+    <tr><th style="width:26%">그래프가 필요했을 재료</th><th style="width:40%">정본이 실제로 준 것</th><th>결과</th></tr>
+    <tr><td>유역 위계 (대권역/중권역/표준유역)</td><td><code>낙동강 유역</code>·<code>한강 상류</code>·<code>금강 하굿둑</code>·<code>소유역</code> — <b>이름뿐. 포함 관계를 정의한 곳이 없다</b></td><td class="no">범위 밖</td></tr>
+    <tr><td>관측소 명부 (ID·좌표·기관·항목)</td><td><code>점(관측소 등)은 값 크기에 따른 원 마커</code> — <b>시각화 표현 방식으로만 등장</b></td><td class="no">범위 밖</td></tr>
+    <tr><td>유역 ↔ 행정구역 대응</td><td>행정구역은 <b>참조 레이어</b>(DEM 음영·행정경계)로만. 시군구 목록 없음</td><td class="no">범위 밖</td></tr>
+    <tr><td>변수 ↔ 표준명 ↔ 동의어</td><td>변수 예시 5개. <b>사전이라 부를 수 없다</b></td><td class="no">범위 밖</td></tr>
+    <tr><td>기관 ↔ 데이터셋 제품 대응</td><td>정본이 원천을 <b>"데이터셋이 아니라 표기"</b>로 못 박았다 (<code>DM §4.1</code>)</td><td class="no">범위 밖</td></tr>
+    <tr><td><b>남은 것</b></td><td>가공 방식 후보 13개 · 주제 동의어(4값 대상) · 지명 별칭 4개</td><td class="yes">이게 전부다</td></tr>
+  </table></div>
+
+  <p><strong>남은 셋은 전부 "말 → 말" 대응 한 홉짜리다.</strong> <code>강우데이터 → 강우·강수</code>, <code>낙동강 → 낙동강 유역</code>. 이런 질의에 그래프 DB 를 쓰는 것은 <strong>연락처 3개를 관리하려고 관계형 CRM 을 도입하는 것</strong>과 같다. 도구가 나빠서가 아니라 그 도구의 값어치가 발생할 자리가 없어서다.</p>
+
+  <div class="tablewrap"><table>
+    <tr><th style="width:24%">선택지</th><th style="width:38%">나중에 무엇을 강제하는가</th><th>되돌리는 비용</th></tr>
+    <tr><td><b>(가) 그래프 구조</b></td>
+      <td>개념 유형 체계·관계 유형을 <b>지금 정의해야</b> 한다 — 그런데 정본이 관계로 읽을 수 있는 것을 <b>셋</b>만 줬다(주제·시간·공간 정규화). 나머지 유형은 우리가 발명하게 되고, 그건 <code>PLAN-SoT §9-㊴</code> 이 금지한 것이다. 배포 단위(<code>ai-service</code>)에 저장소 하나가 늘어 staging·AWS 비용이 붙는다</td>
+      <td class="no">비싸다 — 인프라가 붙은 뒤에는 철거가 WU 가 된다 (PoC 철거가 실제로 그랬다)</td></tr>
+    <tr><td><b>(나) 시드 테이블 3개</b><br><span class="pill rec">초안 권고</span></td>
+      <td>K1 은 <b>테이블 3개 + 읽기 전용 Port 시그니처</b>만 정의한다. <code>db/ai</code> 는 <code>db/platform</code> 과 마이그레이션 체인이 분리된 채 그대로다. 나중에 위계가 정본에 생기면 그때 그래프를 얹는다</td>
+      <td class="yes">싸다 — 테이블 3개는 언제든 그래프로 옮길 수 있다. 반대 방향(그래프 → 테이블)이 훨씬 비싸다</td></tr>
+  </table></div>
+
+  <details><summary>(나)를 골라도 지켜지는 것 — 도메인 분리는 그대로다</summary><div class="body">
+    <p>"시드 테이블 3개"는 <b>D9 를 없애자는 뜻이 아니다.</b> K1 이 이어받을 것은 그대로 남는다 — ⑴ 범주 3종의 저장 형태 ⑵ <code>db/ai</code> 와 <code>db/platform</code> 의 <b>마이그레이션 체인 분리</b> 확인(<code>CLAUDE.md §3-3</code>) ⑶ <b>읽기 전용 Port</b> 시그니처(D10 만이 소비자) ⑷ K2 시드의 커버리지 기준. 바뀌는 것은 저장 형태 하나이고, 경계 규칙은 전부 유지된다.</p>
+  </div></details>
+
+  <details class="q"><summary>스스로 답해 보기 — 나중에 관측소 명부가 필요해지면 그래프로 시작하지 않은 걸 후회하지 않을까?</summary>
+    <div class="body"><p>후회할 근거가 지금은 없다. <strong>관측소는 <code>ONTOLOGY-SCOPE §⑤</code> 에서 "P1 이후 후보"로 명시적으로 미뤄져 있고, 1차 정본에 점 데이터셋 자체가 없다.</strong> 그리고 그때가 오면 필요한 것은 명부(테이블)이지 그래프가 아니다 — 그래프가 값을 하는 건 관측소·유역·변수 <b>사이의 관계</b>가 정의된 다음이고, 그 관계를 정의하려면 <b>정본 개정이 먼저</b>다. 순서가 그렇게 정해져 있다.</p></div></details>
+
+  <div class="final">
+    <h3>권고 — (나) 시드 테이블 3개</h3>
+    <p style="margin-bottom:0"><strong>정본이 준 값의 양이 그래프를 정당화하지 않는다.</strong> 그래프를 지금 만들면 채울 것이 없어 우리가 관계를 발명하게 되고, 그것이 <code>㊴</code> 가 "[정본 무근거]로 남기지 만들지 않는다"로 막으려던 바로 그 일이다. 되돌리는 방향도 (나)가 유리하다 — 테이블에서 그래프로 가는 것은 쉽고, 반대는 어렵다.</p>
+  </div>
+</section>
+
+<!-- ================= 최종 ================= -->
+<section id="final">
+  <div class="eyebrow">결론</div>
+  <h2>적어야 할 네 줄</h2>
+  <p class="lead"><code>ONTOLOGY-SCOPE §④</code> 의 네 칸에 값이 적히면 K1 의 진입조건이 충족된다. 미충족이면 다음 세션은 K1 을 시작하지 않고 보고한다.</p>
+
+  <div class="tablewrap"><table>
+    <tr><th style="width:6%">#</th><th style="width:30%">무엇을 정하는가</th><th style="width:26%">권고</th><th>되돌리는 비용</th></tr>
+    <tr><td><b>④-1</b></td><td>가공 방식 어휘 처리</td><td><span class="pill rec">(다) 하이브리드</span><br><span class="sig">+ "목업 문구를 어휘 근거로 인정하는가" 함께 답할 것</span></td><td class="yes">싸다 — 시드를 지우면 현행으로 복귀</td></tr>
+    <tr><td><b>④-2</b></td><td>주제 목록 — <b>먼저 축이 하나인지 둘인지</b></td><td><span class="pill ted">Ted 만 답할 수 있다</span><br><span class="sig">입력 화면(E-04)과 조회 화면 다섯이 다른 값을 쓴다. 축이 둘이면 정본 개정 사안</span></td><td class="no">중간~높음 — 데이터가 쌓인 뒤엔 이관이 붙는다</td></tr>
+    <tr><td><b>④-3</b></td><td>동의어의 위치</td><td><span class="pill rec">(가) D9 시드</span><br><span class="sig">검색용 사본은 거기서 생성</span></td><td class="yes">싸다 — 지식은 다시 적재하면 된다</td></tr>
+    <tr><td><b>④-4</b></td><td>K1 의 형태</td><td><span class="pill rec">(나) 시드 테이블 3개</span><br><span class="sig">경계·Port·체인 분리는 그대로 유지</span></td><td class="yes">싸다 — 테이블 → 그래프는 언제든</td></tr>
+  </table></div>
+
+  <div class="card">
+    <h3 style="margin-top:0">고민의 무게를 나눠 두면</h3>
+    <p><strong>가볍게 결정해도 되는 것 — ④-1, ④-3, ④-4.</strong> 셋 다 계약·DB 를 건드리지 않거나(하이브리드·시드 테이블), 되돌릴 때 데이터 재적재로 끝난다. 권고대로 가면 D2·D3 산출물 재개정이 없다.</p>
+    <p style="margin-bottom:0"><strong>무겁게 결정해야 하는 것 — ④-2 하나뿐.</strong> 주제는 데이터셋에 저장되는 값이고 검색·데이터 맵의 묶음 축이다. 게다가 실측으로 드러난 어긋남이 목업 한 곳이 아니라 <strong>입력 화면 대 조회 화면의 분리</strong>여서, 이 하나가 <strong>정본 개정이 필요한지 아닌지</strong>를 가른다. 다른 셋을 여기에 묶어 함께 미룰 이유는 없다 — ④-2 만 미루고 나머지 셋을 먼저 확정해도 K1 은 절반 이상 진행된다.</p>
+  </div>
+
+  <h3>이 문서가 단순화한 자리</h3>
+  <ul class="sig">
+    <li><strong>실제로는 더 복잡하다 —</strong> <code>ONTOLOGY-SCOPE §③</code> 에는 <code>[정본 무근거]</code> 항목이 10건 있다. 이 문서는 그중 결정 4건에 직접 걸리는 것만 다뤘다. 나머지(<code>리샘플 ≡ 보간</code> 동일성 판정, 유역 코드 체계, CF 표준명 매핑 등)는 <code>§⑤ 정본 밖 제안</code> 에 별도로 모여 있고, <strong>승인 없이는 하나도 반영되지 않는다.</strong></li>
+    <li><strong>정량 검증은 하지 않았다 —</strong> "이 어휘로 실제 제안·검색 품질이 나오는가"는 평가셋이 필요하고, 평가셋의 정답은 정본이 값을 주지 않으면 만들 수 없다. K3·K4 의 완료 정의가 이 문제를 다시 만난다 — G8 이 미리 보고해 둔 사항이다.</li>
+  </ul>
+</section>
+
+</div>
+
+<script>
+(function(){
+  // ---- theme ----
+  var tb=document.getElementById('themebtn');
+  tb.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var sysDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = cur ? (cur==='dark'?'light':'dark') : (sysDark?'light':'dark');
+    document.documentElement.setAttribute('data-theme',next);
+  });
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- animation 1: 후보 탈락 ----
+  var cands=[].slice.call(document.querySelectorAll('#anistage .cand'));
+  var keep=document.getElementById('keep-row');
+  var cap=document.getElementById('ani-cap');
+  var steps=[
+    {drop:[], t:'지금 볼 것 — 여섯 후보를 네 신호에 하나씩 대 본다. [다음 단계]로 넘겨라.'},
+    {drop:[0], t:'<b>변수 표준 사전 탈락.</b> 근거 신호 넷 어디에도 변수 대조가 없다. 변수는 파일 헤더에서 자동 추출되고 사람이 타이핑하지 않는다.'},
+    {drop:[1], t:'<b>관측소 명부 탈락.</b> 정본에 관측소는 시각화 표현 방식(값 크기에 따른 원 마커)으로만 나온다. 명부·좌표·식별자가 한 건도 없다.'},
+    {drop:[2], t:'<b>유역 위계 탈락.</b> 정본은 낙동강 유역·한강 상류·금강 하굿둑을 <b>이름으로만</b> 쓴다. 포함 관계를 정의한 곳이 없다 — 만들면 발명이 된다.'},
+    {drop:[3], t:'<b>좌표계 온톨로지 탈락.</b> EPSG 는 외부 표준이고 파일 헤더에서 자동 추출되며, 계약도 자유문자열이다. D9 가 다시 정의할 것이 없다.'},
+    {drop:[4], t:'<b>기관 마스터 탈락.</b> 정본이 원천을 "데이터셋이 아니라 표기"로 못 박았다. 기관 엔티티를 만들면 정본이 거부한 것을 뒷문으로 되살린다.'},
+    {drop:[5], t:'<b>행정 공간 위계 탈락.</b> 행정구역은 참조 레이어로만 등장한다. 시군구 목록도, 유역↔행정 대응도 없다.'},
+    {drop:[], keep:true, t:'<b>남은 것은 작은 사전 셋뿐이다.</b> 이게 결정 4건이 전부 "어휘를 어디에 둘까"로 좁혀진 이유다 — 그래프로 그릴 관계 자체가 1차 범위에 없다.'}
+  ];
+  var si=0, timer=null;
+  function render(){
+    var dropped={};
+    for(var i=0;i<=si;i++){ (steps[i].drop||[]).forEach(function(d){dropped[d]=1}); }
+    cands.forEach(function(g,i){
+      var out = dropped[i];
+      g.style.opacity = out ? (reduce?'.18':'0.12') : '1';
+      g.style.transform = out && !reduce ? 'translateY(8px) scale(.96)' : 'none';
+      g.style.transformOrigin='center';
+    });
+    keep.style.opacity = steps[si].keep ? '1' : '0';
+    cap.innerHTML = '지금 볼 것 — ' + steps[si].t;
+  }
+  function next(){ si=Math.min(si+1,steps.length-1); render(); if(si===steps.length-1&&timer){clearInterval(timer);timer=null;} }
+  document.getElementById('ani-next').addEventListener('click',function(){ if(timer){clearInterval(timer);timer=null;} next(); });
+  document.getElementById('ani-reset').addEventListener('click',function(){ if(timer){clearInterval(timer);timer=null;} si=0; render(); });
+  document.getElementById('ani-play').addEventListener('click',function(){
+    if(timer){clearInterval(timer);timer=null;return;}
+    si=0; render();
+    timer=setInterval(next, reduce?900:1500);
+  });
+  render();
+
+  // ---- 결정1: 선택지별 결과 ----
+  var optData={
+    a:{title:'(가) 자유 문자열 유지',
+       flow:['입력칸: 아무 문장이나 1~120자','저장: <code>method</code> 자유 텍스트 — 그대로','화살표 라벨: <b>일 단위 평균 후 유역 경계로 잘라냄</b>','다음 사람이 같은 가공을 <b>유역별 평균</b>이라 적어도 아무도 모른다'],
+       verdict:'정본과 100% 일치. 발명 위험 0. 대신 라벨이 사람마다 갈리고 K3 평가셋을 세울 기준이 없다.',
+       cls:''},
+    b:{title:'(나) enum 으로 닫기',
+       flow:['입력칸: 13개 드롭다운','<b class="no">이 문장은 입력 불가</b> — 어떤 값에도 안 들어간다','사용자는 가장 가까운 <b>유역 집계</b> 를 고른다 → <b>사실이 사라진다</b>','정본이 예시로 든 문장을 제품이 거부한다'],
+       verdict:'라벨은 완벽히 일관되지만 P04 §5(자유 문장 1~120자)와 DM §4.2(예시 문장) 둘을 동시에 어긴다. 계약·DB·FE 동시 개정.',
+       cls:'bad'},
+    c:{title:'(다) 하이브리드',
+       flow:['입력칸: 자유 문장 + <b>아래에 후보 13개가 뜬다</b>','사용자가 <b>일 단위 평균</b> 을 클릭하고 뒤를 이어 적는다','저장: 자유 텍스트 — 계약·DB 무변경','다음 사람에게도 같은 후보가 떠서 표현이 <b>천천히 수렴</b>한다'],
+       verdict:'정본을 어기지 않으면서 라벨이 자연히 수렴한다. 강제력이 없어 완전한 일관성은 오지 않는다.',
+       cls:'rec'}
+  };
+  var optbox=document.getElementById('optbox');
+  function drawOpt(k){
+    var d=optData[k];
+    var html='<div style="font-weight:700;margin-bottom:10px">입력 문장 — <span class="mono">일 단위 평균 후 유역 경계로 잘라냄</span></div><ol style="margin:0 0 12px;padding-left:1.25em;font-size:.93rem">';
+    d.flow.forEach(function(s){ html+='<li>'+s+'</li>'; });
+    html+='</ol><div class="caption" style="margin:0"><span class="pill '+d.cls+'">'+d.title+'</span> &nbsp;'+d.verdict+'</div>';
+    optbox.innerHTML=html;
+  }
+  [].slice.call(document.querySelectorAll('.opt')).forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.opt').forEach(function(x){x.classList.remove('on')});
+      b.classList.add('on'); drawOpt(b.dataset.opt);
+    });
+  });
+  drawOpt('a');
+
+  // ---- 결정3: 동의어 위치 ----
+  var boxD9=document.getElementById('box-d9'), boxPG=document.getElementById('box-pg');
+  var lk3=document.getElementById('line-k3'), cut=document.getElementById('cut');
+  var note=document.getElementById('loc-note'), lcap=document.getElementById('loc-cap');
+  var lk4=document.getElementById('line-k4');
+  function drawLoc(k){
+    if(k==='d9'){
+      boxD9.style.opacity='1'; boxPG.style.opacity='0';
+      lk3.style.opacity='1'; cut.style.opacity='0';
+      lk4.setAttribute('d','M200 59 C 300 59, 300 112, 400 116');
+      note.textContent='원본이 한 자리 — 검색용 Postgres 사전은 여기서 생성한다';
+      lcap.innerHTML='지금 볼 것 — <b>K3·K4 가 같은 상자를 본다.</b> 어휘의 원본이 한 벌이라 "의미 체계가 두 벌 생긴다"는 경고가 해소된다. 대신 D9 저장소와 K2 시드 WU 가 실제로 필요해진다.';
+    } else {
+      boxD9.style.opacity='0'; boxPG.style.opacity='1';
+      lk3.style.opacity='0'; cut.style.opacity='1';
+      lk4.setAttribute('d','M200 59 C 300 59, 300 56, 400 58');
+      note.textContent='D9 가 사실상 비어 K1·K2 를 축소할 수 있다 — 대신 K3 가 눈이 먼다';
+      lcap.innerHTML='지금 볼 것 — <b>K3 로 가는 선이 끊겼다.</b> 계보 제안은 검색 질의를 통과하지 않으므로 Postgres 사전을 볼 수 없다. 결국 계보 제안용 어휘를 따로 두게 되고 <b>의미 체계가 두 벌</b>이 된다.';
+    }
+  }
+  [].slice.call(document.querySelectorAll('.loc')).forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.loc').forEach(function(x){x.classList.remove('on')});
+      b.classList.add('on'); drawLoc(b.dataset.loc);
+    });
+  });
+  drawLoc('d9');
+})();
+</script>
+</body>
+</html>
