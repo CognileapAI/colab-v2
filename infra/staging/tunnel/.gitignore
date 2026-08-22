@@ -1,0 +1,11 @@
+# 비밀·상태는 절대 커밋하지 않는다.
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate
+*.tfstate.backup
+crash.log
+*.tfplan
