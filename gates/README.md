@@ -14,9 +14,10 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`ai-no-lineage-write`** | **D10 → D4 쓰기 경로 존재** (음성) |
 | `migration-single-head` | 마이그레이션 head 분기 (platform / ai 각각) |
 | `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 (**체인별로 각각** — `COLAB_APPLIED_DB_URL_PLATFORM` · `_AI` 둘 다 필요) |
-| `rls-coverage` | allow-list 밖 테이블의 RLS 누락 |
+| `rls-coverage` | allow-list 밖 테이블의 RLS 누락 (정책이 **걸려 있는가**) |
+| **`rls-effect`** | **RLS 가 실제로 막는가** — 본체 음성(허용자 아님·만료됨 0행) · 메타 양성(`P-13`) · cross-tenant 0행. NOBYPASSRLS·비소유자 롤로 판정하고, 우회 롤이면 red |
 | `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
-| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db 증명 셋) |
+| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db · rls-effect 증명 다섯) |
 
 ## selftest가 있는 이유
 
@@ -34,6 +35,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `event-lint` · `event-breaking` | ✅ 구현 (WU-D2b) | — green |
 | `import-boundary` · `banned-import` · `ai-no-lineage-write` | ✅ 구현 (WU-D3) | **red — `services/` 에 코드가 없다** |
 | `migration-single-head` · `rls-coverage` | ✅ 구현 (WU-D3) | — green (P0 이 `db/` 를 채웠다) |
+| `rls-effect` | ✅ 구현 (WU-D3b) | — green (A2 의 시드·앱 롤을 그대로 쓴다) |
 | `schema-diff` | ✅ 구현 (WU-D3) · 체인별 URL 로 수정 | 체인별 적용 DB URL 을 **둘 다** 주면 green. 하나라도 없으면 red |
 | `generated-up-to-date` | ⬜ 미구현 | red |
 
@@ -49,6 +51,11 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `event-selftest` | **33** | node + ajv (`gates/tools/node`) |
 | `boundary-selftest` | **30** | python venv |
 | `db-selftest` | **43** | docker(postgres) — 24 는 docker 없이도 돈다 |
-| `selftest` | 위 셋 전부 | |
+| `rls-effect-selftest` | **18** | docker(postgres) — 매 케이스가 자기 일회용 DB 를 새로 짓는다 |
+| `selftest` | 위 다섯 전부 | |
+
+> `db-selftest` 의 픽스처 케이스는 **레포의 `gates/config/rls-allowlist.toml` 을 읽지 않는다.**
+> 합성 스키마에 없는 테이블이 allow-list 에 정당하게 추가되면(K1 이 그랬다) 기준 케이스가 red 가 되기 때문이다 —
+> 게이트가 옳고 selftest 의 배선이 틀린 경우다. 픽스처는 자기 allow-list 를 들고 다닌다 (`WU-D3b`).
 
 `planning-freshness` 의 증명은 `dev-package/tools/check-package-freshness.py --selftest`(3 케이스).

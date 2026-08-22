@@ -74,6 +74,16 @@ case "$GATE" in
     # allow-list 정본 = gates/config/rls-allowlist.toml 하나뿐.
     exec "$REPO_ROOT/gates/tools/rls-coverage.sh"
     ;;
+  rls-effect)
+    # RLS 가 **실제로 막는지** — 오라클 3종 (WORK-UNITS D3b).
+    # rls-coverage 가 「정책이 걸려 있는가」를 보는 자리라면, 여기는 「행이 안 보이는가」를 본다.
+    # NOBYPASSRLS · 비소유자 롤로 붙는다. 우회 롤로 돌면 red — 거짓 green 을 만들 여지를 두지 않는다.
+    exec "$REPO_ROOT/gates/tools/rls-effect.sh"
+    ;;
+  rls-effect-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 보호 장치를 실제로 떼어 본다.
+    exec "$REPO_ROOT/gates/tools/rls-effect-selftest.sh"
+    ;;
   db-selftest)
     # 위 세 게이트가 red fixture 로 fail-closed 임을 증명한다.
     exec "$REPO_ROOT/gates/tools/db-selftest.sh"
@@ -81,7 +91,7 @@ case "$GATE" in
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

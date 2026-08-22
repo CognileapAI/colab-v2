@@ -34,6 +34,31 @@ expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
   fi
 }
 
+# ── allow-list fixture — **레포 정본을 읽지 않는다** ─────────────────────────
+# 왜 이걸 픽스처로 고정하는가:
+#   selftest 의 기준 케이스(baseline-green)는 합성 스키마로 만든다. 그 합성 스키마엔 d9_* 같은
+#   실제 테이블이 없다. 그런데 판정 코어가 **레포의 gates/config/rls-allowlist.toml** 을 읽으면,
+#   K1 처럼 **정당하고 옳은** allow-list 추가가 일어날 때마다 「낡은 면제」 판정에 걸려
+#   selftest 기준 케이스가 red 가 된다 — 게이트가 옳고 selftest 가 잘못 배선된 것이다.
+#   그래서 픽스처 케이스는 자기 allow-list 를 들고 다닌다(hermetic). 「낡은 면제」 검사는
+#   **그대로 둔다** — 그 검사는 이번에 실제 드리프트를 잡아 자기 값어치를 증명했다.
+#   레포 정본에 대한 판정은 게이트 본체(`gates/run.sh rls-coverage`)가 본다. 여기가 볼 자리가 아니다.
+FIXTURE_ALLOWLIST="$TMP/rls-allowlist.fixture.toml"
+cat > "$FIXTURE_ALLOWLIST" <<'TOML'
+[policy_naming]
+lab_boundary = "lab_boundary"
+body_access  = "body_access"
+
+[platform]
+body_tables  = ["d3_file"]   # 레포 정본과 같은 뜻이되, **정본을 읽지는 않는다**
+allow_no_rls = ["alembic_version_platform", "d1_lab"]
+
+[ai]
+body_tables  = []
+allow_no_rls = ["alembic_version_ai"]
+TOML
+export COLAB_RLS_ALLOWLIST="$FIXTURE_ALLOWLIST"
+
 # ── 체인 fixture ─────────────────────────────────────────────────────────────
 mkdb() { # $1=이름 → db 루트를 echo. 두 체인 각각 선형 2단 + schema.sql
   local r="$TMP/$1/db" c
