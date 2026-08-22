@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "colab-core-api"
+version = "0.1.0"
+description = "CoLAB v2 core-api — D1·D2·D3·D4·D6·D8"
+requires-python = "==3.12.*"
+# 버전 핀의 정본은 requirements.in(직접) · requirements.txt(닫힘)다.
+# 여기에 다시 적으면 두 곳이 갈라진다.
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.in"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

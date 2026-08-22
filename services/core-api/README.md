@@ -28,3 +28,43 @@
 1. 스코프 커널 — 트랜잭션마다 연구실 스코프 주입, 미설정 시 default-deny
 2. RLS — ENABLE + FORCE + tenant-isolation 정책
 3. cross-tenant 음성 테스트 — 읽기 · 자식 · 미스코프 · 쓰기(WITH CHECK) 4종
+
+---
+
+## 실물 (WU-P0 산출물 #4 — `dev-package/sessions/P0-core-api.md`)
+
+계약 정본은 `contracts/seams/fe-core.yaml` 이고, 이 서비스는 그 **34 오퍼레이션 전부**를 등록한다.
+실질의 5 개만 DB 를 읽고 나머지 29 개는 501 + `ErrorEnvelope` 다 — 200 으로 가짜 값을 내리지 않는다.
+
+```
+src/colab_core/
+  app/        조립 루트 — 여러 도메인을 아는 유일한 자리 (routes/ 포함)
+  domains/    d1_identity d2_access d3_catalog d4_lineage d6_project d8_insight
+  ports/      cross-domain 인터페이스. 구현은 소유 도메인에 있다
+  kernel/     스코프 커널 · 세션 · 설정 · 정규 ID(Ulid)
+```
+
+### 띄우기
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+export COLAB_CORE_DATABASE_URL='postgresql+psycopg://colab_app:...@호스트/디비'
+export COLAB_CORE_SUBJECTS_FILE=/경로/subjects.json     # 개발자가 심은 계정 (P-17)
+.venv/bin/uvicorn --factory colab_core.app:create_app
+```
+
+접속 롤은 **NOBYPASSRLS · 비소유자**여야 한다. 만드는 법은 `ops/app-role.sql` (왜 `db/` 가 아닌지도 거기 적었다).
+
+### 테스트
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+COLAB_CORE_TEST_DATABASE_URL=... COLAB_CORE_TEST_SUBJECTS_FILE=... .venv/bin/python -m pytest
+```
+
+DB 를 붙이지 않으면 `test_live_endpoints` · `test_scope_kernel` 이 **fail** 한다. skip 이 아니다.
+
+### 의존 핀
+
+`requirements.in`(직접 선언) → `requirements.txt`(전이까지 닫힌 목록, 전부 `==`).
+개발 의존은 `requirements-dev.in` / `requirements-dev.txt`. `frontend/package-lock.json` 과 같은 역할이다.
