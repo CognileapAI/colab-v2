@@ -275,6 +275,8 @@ P0 (도메인 뼈대)  →  I2 (빈 서비스 5종 AWS 배포)  →  이후 모�
 | ㊱ | **잠김은 403 이 아니라 `200 + bodyAccessible:false`** | `㉖`(잠금 두 층)을 HTTP 로 내린 것. 403 으로 접으면 이름·요약이 응답에서 사라져 `P-13` 이 깨지고 `접근 요청` 버튼이 붙을 자리가 없어져 **E-06 흐름이 죽는다**. **확정 = ① 잠긴 데이터셋 = `200`, 메타는 실리고 본체 필드만 빠지며 `bodyAccessible: false` 로 표시 ② 연구실 경계 밖 = `404`**(존재를 알리지 않는다 — `P-9`·`P-10`. 403 은 "있는데 못 본다"를 알려주므로 경계에 쓰면 안 된다) ③ 권한 스위치 위반 = `403`. 세 축을 하나로 합치지 않는다. *2026-08-22 Claude 판단 · Ted 비토 가능* |
 | ㊲ | **이벤트 멱등은 키 둘로 표현한다** | outbox/워커에서 중복 전달은 예외가 아니라 정상이다. **확정 = `eventId`(전달의 정체성, 재전달에도 불변) + `idempotencyKey`(`<타입>:<uploadId>` 결정론적)**. 하나로는 두 중복 경로 중 하나만 막는다 — 재전달은 `eventId` 로, outbox 재생성은 결정론적 키로 걸러야 한다. 재시도 판단값(`attempt`·`maxAttempts`=5·`redelivery`·`deadLettered`)을 전부 봉투에 실어 소비자가 상태를 따로 들고 있지 않게 했다. *2026-08-22 Claude 판단 · Ted 비토 가능* |
 
+| ㊳ | **기술 스택 — 백엔드 Python/FastAPI/SQLAlchemy/Alembic · 프런트 TypeScript/React/Vite** | P0 착수 시점에 스택이 어디에도 적혀 있지 않았다. 다만 **선택지는 이미 좁아져 있었다** — D3 게이트가 `import-linter`(파이썬 전용)·alembic `down_revision` 그래프·`colab_core` 패키지 관례를 정본으로 박아뒀다. 게이트를 먼저 세운 대가이자 이득이다. **확정 = 백엔드 Python 3.12 + FastAPI + SQLAlchemy 2.x + Alembic**(계약이 OpenAPI 3.1 이라 FastAPI 의 스펙 우선 운용이 맞고, `banned-import` 가 geo 라이브러리를 배포 단위별로 막는 전제가 파이썬이다) · **프런트 TypeScript + React + Vite**(`frontend/README` 가 **정적 배포**와 **생성 클라이언트만 쓴다**를 이미 못 박았다. OpenAPI → 타입·클라이언트 생성 도구가 가장 두꺼운 생태계이고, v1 의 #1 버그가 FE-BE 타입 수동 동기화였다). **생성물 손수정 금지**(`CLAUDE.md §3-7`)는 `generated-up-to-date` 게이트가 지킨다 — 아직 미구현이라 그때까지는 관례다. *2026-08-23 Claude 판단 · Ted 비토 가능* |
+
 ### 열린 것
 
 | # | 결정 | 막는 것 | 담당 WU |

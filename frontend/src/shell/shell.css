@@ -1,0 +1,184 @@
+@import './tokens.css';
+
+/* 셸 레이아웃 · GNB — 규칙과 치수의 정본은 목업 `mockups/제품_260817.html` 의 `.gnb` 블록이다.
+   목업을 임의로 변형하지 않는다. 목업에 없는 요소를 여기서 발명하지 않는다. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+}
+
+/* ===== 하나의 셸 · GNB (전원 공통, 항상 노출) ===== */
+.gnb {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-shell);
+  box-shadow: var(--shadow-sm);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.brand .logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--color-primary-600);
+}
+
+.labswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--ease), border-color var(--ease);
+}
+.labswitch:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* 주 내비 3개 — 남는 가로 여백은 여기서 먹는다.
+   우측 버튼(업로드·연구실 설정)은 권한에 따라 숨는 요소라 거기에 여백을 걸면 화면이 무너진다.
+   (Policy_공통_기반 v1.4 §1 · IA_사이트맵 §3) */
+.mainnav {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 8px;
+  margin-right: auto;
+  align-self: stretch;
+}
+.mainnav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--ease), background var(--ease);
+}
+.mainnav a:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+/* 활성 내비 = 흰 면 + 잉크 밑줄 */
+.mainnav a.is-active {
+  color: var(--color-text);
+  font-weight: 700;
+  background: var(--color-surface);
+}
+.mainnav a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -11px;
+  height: 3px;
+  background: var(--color-primary-600);
+  border-radius: 3px 3px 0 0;
+}
+
+/* GNB 에 검색을 두지 않는다 — 진입은 `연구실` 화면 히어로 한 곳뿐 */
+
+.gnb-settings {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-body);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--ease), border-color var(--ease);
+}
+.gnb-settings:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* 업로드 = 셸 전역 1급 행동 · 유일한 상시 잉크 솔리드 */
+.gnb-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--ease);
+}
+.gnb-upload:hover { background: var(--color-primary-700); }
+
+.avatar-wrap { position: relative; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 9px 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  transition: background var(--ease), border-color var(--ease);
+}
+.avatar:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-border-strong);
+}
+.avatar .nm,
+.labswitch .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar .cv,
+.labswitch .cv { color: var(--color-gray-500); flex: none; font-size: var(--text-caption); }
+
+.appmain { display: block; }

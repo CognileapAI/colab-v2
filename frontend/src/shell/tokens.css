@@ -1,0 +1,43 @@
+/* 디자인 토큰 — 값의 정본은 목업 `mockups/제품_260817.html` 의 :root 블록이다.
+   여기에는 **셸(GNB·본문 캔버스)이 실제로 쓰는 토큰만** 옮겼다. 값은 한 자도 바꾸지 않았다.
+   화면 토큰(상태색·AI 액센트·플롯 등)은 그 화면을 만드는 WU 가 필요할 때 옮긴다 —
+   지금 통째로 복사하면 쓰지도 않는 값이 먼저 굳는다.
+   ※ 크림슨/바이올렛 액센트는 **AI 액션 전용**이다 (Policy_공통_기반 v1.4 §4). 셸에 쓰지 않는다. */
+:root {
+  --color-white: #ffffff;
+  --color-gray-50: #f9fafb;
+  --color-gray-400: #848c94;
+  --color-gray-500: #697077;
+
+  --color-primary-600: #1369e9; /* blue50 = primary.normal */
+  --color-primary-700: #0f62e0; /* blue40 = primary.heavy — hover·pressed·링크 */
+  --color-primary: var(--color-primary-600);
+
+  --color-bg: #f9fafb; /* 앱 캔버스 */
+  --color-surface: var(--color-white); /* 카드·셸 */
+  --color-surface-hover: #69707714; /* fill.normal 8% */
+
+  --color-border: #e8ecf2; /* line.solid.normal */
+  --color-border-strong: #dfe3e8; /* CG110 */
+  /* 셸 전용 — GNB 밑줄만 한 단 진하게. 셸 외에는 쓰지 않는다 */
+  --color-border-shell: #bfc6cc;
+
+  --color-text: #121619; /* label.normal */
+  --color-text-body: #21272ae0; /* label.neutral */
+  --color-text-muted: #565c63; /* coolNeutral40 */
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", "Noto Sans KR", sans-serif;
+
+  --text-body: 15px;
+  --leading-body: 1.467;
+  --tracking-body: 0.0096em;
+  --text-body-sm: 14px;
+  --text-caption: 13px;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+
+  --shadow-sm: 0px 1px 2px -1px #1717171a;
+  --ease: 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+}
