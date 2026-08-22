@@ -114,6 +114,7 @@ C2·C3·C4는 서로 병렬. C1만 공통 선행.
 | **I0** | 계정·결제·조직 구조 — AWS 계정/결제, CI 실행 환경 결제, 리전 확정, 예산 알람 | 없음 | 계정에서 리소스 생성 가능 + 예산 알람 동작 |
 | **IS1** | **staging 호스트 구성** — 철거된 PoC 자리(WSL + Cloudflare Tunnel)에 v2 오리진을 세운다. 터널은 살아 있고 토큰 사본도 있으므로 **DNS·터널을 새로 만들지 않는다**. 참조 = `DEPLOY-CURRENT.md` · `reference/poc-deploy/` | 없음 (**I0 불필요** — `PLAN-SoT §9-㉓`) | `colab-hydro.com` 이 v2 오리진으로 200 응답 + 되돌리기 1회 성공 |
 | **IS2** | **터널 라우팅을 레포로 끌어온다** — 현재 ingress 정본이 Cloudflare 대시보드에만 있어 레포에 재현본이 없다. IaC 로 선언하고 대시보드를 그 산출로 만든다 | IS1 | 레포에서 라우팅을 재적용해 동일 상태 재현 |
+| **IS4** | **terraform state 보관** — 지금 state 가 WSL 호스트 로컬에만 있다. 레포에는 못 넣는다(비밀 포함). 호스트가 사라지면 재import 로만 복구된다. 원격 백엔드(S3+DynamoDB 등)로 옮기거나, 최소한 **복구 절차를 재현 가능한 형태로** 남긴다 | IS2 · (원격 백엔드면 I0) | state 를 잃은 상태에서 문서만 보고 복구 성공 |
 | **IS3** | **staging 백업 체계** — PoC 백업 크론을 비활성화한 자리를 대체한다. **복원 리허설까지 포함한다** — 8주간 빈 백업이 성공으로 기록된 전례가 있다(`DEPLOY-CURRENT.md` 백업 사건) | IS1 | 백업 1회 + **복원 1회 성공** + 빈 백업 fixture 로 fail-closed 증명 |
 | **I1** | 토폴로지 확정 + IaC 저작 — VPC·DB·오케스트레이션·스토리지·CDN·시크릿. `plan`까지 로컬 검증 | I0 | `plan` 무오류 + 비용 추정치 기록 |
 | **I2** | **Walking skeleton 배포** — 5개 배포 단위(core-api·pipeline-worker·viz-render·ai-service·frontend)를 **빈 상태로** staging에 올린다. 헬스체크 + 롤백 경로 증명 | **IS1 또는 I1**, P0 | staging에서 5개 전부 헬스 green, 배포·롤백 각 1회 성공 |

@@ -26,7 +26,37 @@ Terraform 은 원격 관리형 구조를 그대로 두고 **대시보드와 같�
 - 완전 가역 — 되돌리는 것도 apply 한 번.
 - I1(토폴로지 IaC)이 어차피 Terraform 을 들여온다. 이 디렉터리가 그 트리의 첫 조각이다.
 
-## 3. 선행 조건 — API 토큰 (아직 없다. 이게 유일한 블로커)
+## 0. 상태 — 적용 완료 (2026-08-23)
+
+`terraform plan` = **`No changes.`** 레포 선언이 실제 상태와 일치한다. **대시보드가 정본이 아니라 레포가 정본이고 대시보드가 그 산출이다.**
+
+현재 ingress 는 둘뿐이다 — `www.colab-hydro.com → http://nginx:80` · catch-all `http_status:404`.
+
+### `ssh.colab-hydro.com` 은 세 겹이었다
+
+블로커 #7 을 "ingress 규칙 하나"로 진단했는데 얕았다. 지운 뒤에 나머지가 드러났다.
+
+| 층 | 무엇이었나 | 어떻게 지웠나 |
+|---|---|---|
+| 라우팅 | 터널 ingress 규칙 | 선언에서 빼고 `apply` — 커넥터가 `version=7` 로 수신 |
+| **인증** | Zero Trust **Access 애플리케이션** | ingress 를 지운 뒤 404 가 아니라 **302 Access 로그인**이 떴다. 아무 데도 안 가는 문에 자물쇠만 남은 상태 |
+| **이름** | **DNS CNAME** (`ssh` → `<tunnel>.cfargotunnel.com`, proxied) | 이것 때문에 요청이 Cloudflare 까지 도달했다 |
+
+**엣지에 만든 것은 라우팅·인증·이름 세 층에 흩어진다.** 하나만 지우고 끝났다고 보면 안 된다.
+
+뒤의 둘은 API 로 바로 지우지 않았다. **임시 선언 → `import` → `plan` 확인(`0 add, 0 change, 2 destroy`) → `-target` destroy** 순서로 갔다. 무엇이 지워지는지 사람이 먼저 읽는 절차를 건너뛰지 않는다. 끝나고 임시 선언 파일은 지웠다 — 없는 것을 계속 선언해 둘 이유가 없다.
+
+### 알려진 한계 — state 가 이 호스트에만 있다
+
+`terraform.tfstate` 는 레포에 넣지 않는다(비밀이 들어간다). 지금은 **WSL 호스트 로컬에만** 있고, 호스트가 사라지면 `import` 로 다시 만들어야 한다. → **WU-IS4**.
+
+terraform 은 `~/.local/bin` 에 사용자 수준으로 설치돼 있다(sudo·apt 저장소 불필요). 지우려면 그 파일 하나만 지우면 된다.
+
+---
+
+## 3. 선행 조건 — API 토큰
+
+> 2026-08-23 발급 완료. 아래는 재발급·타 환경 구성용 기록이다.
 
 Cloudflare 대시보드 → My Profile → API Tokens → Create Token → **Custom token**.
 

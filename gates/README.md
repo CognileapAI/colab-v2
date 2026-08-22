@@ -11,7 +11,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `banned-import` | core-api의 geo 라이브러리 |
 | **`ai-no-lineage-write`** | **D10 → D4 쓰기 경로 존재** (음성) |
 | `migration-single-head` | 마이그레이션 head 분기 (platform / ai 각각) |
-| `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 |
+| `schema-diff` | 선언 스키마 ↔ 적용 DB 드리프트 (**체인별로 각각** — `COLAB_APPLIED_DB_URL_PLATFORM` · `_AI` 둘 다 필요) |
 | `rls-coverage` | allow-list 밖 테이블의 RLS 누락 |
 | `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · boundary · db 증명 셋) |
@@ -30,7 +30,8 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `planning-freshness` | ✅ 구현 (WU-G1) | — green |
 | `contract-lint` · `contract-breaking` | ✅ 구현 (WU-D2) | — green |
 | `import-boundary` · `banned-import` · `ai-no-lineage-write` | ✅ 구현 (WU-D3) | **red — `services/` 에 코드가 없다** |
-| `migration-single-head` · `schema-diff` · `rls-coverage` | ✅ 구현 (WU-D3) | **red — `db/` 에 마이그레이션·스키마가 없다** |
+| `migration-single-head` · `rls-coverage` | ✅ 구현 (WU-D3) | — green (P0 이 `db/` 를 채웠다) |
+| `schema-diff` | ✅ 구현 (WU-D3) · 체인별 URL 로 수정 | 체인별 적용 DB URL 을 **둘 다** 주면 green. 하나라도 없으면 red |
 | `generated-up-to-date` | ⬜ 미구현 | red |
 
 > **red 인 것이 정상인 게이트가 있다.** "AI 가 계보에 쓰지 않는다"와 "AI 가 아직 없다"는 다른 사실이라, 검사 대상 0건을 green 으로 세지 않는다. 이 게이트들은 P0 이 코드를 만들면 비로소 green 이 될 수 있다.
@@ -43,7 +44,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 |---|---|---|
 | `contract-selftest` | **15** | docker(oasdiff) · spectral |
 | `boundary-selftest` | **30** | python venv |
-| `db-selftest` | **38** | docker(postgres) — 24 는 docker 없이도 돈다 |
+| `db-selftest` | **43** | docker(postgres) — 24 는 docker 없이도 돈다 |
 | `selftest` | 위 셋 전부 | |
 
 `planning-freshness` 의 증명은 `dev-package/tools/check-package-freshness.py --selftest`(3 케이스).

@@ -229,15 +229,25 @@ expect red "schema-diff: 선언 스키마 0건" env COLAB_DB_DIR="$D" "$SD"
 D="$(mkdb sd-nodb)"; mkschema "$D"
 expect red "schema-diff: 적용 DB 미지정(skip 아님)" env COLAB_DB_DIR="$D" "$SD"
 
+D="$(mkdb sd-legacy-only)"; mkschema "$D"
+expect red "schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red)" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
+
+D="$(mkdb sd-onlyplatform)"; mkschema "$D"
+expect red "schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다)" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" "$SD"
+
 D="$(mkdb sd-unreachable)"; mkschema "$D"
 expect red "schema-diff: 적용 DB 접속 불가" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
+      COLAB_APPLIED_DB_URL_AI="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-nodocker)"; mkschema "$D"
 expect red "schema-diff: 도커 부재는 skip 이 아니라 red" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+      COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
 
-# 적용 DB 를 실제로 띄워 green / drift 두 경우를 본다.
+# 적용 DB 를 실제로 띄워 체인별 green / drift 경우를 본다.
 # **staging 컨테이너와 이름·포트가 겹치지 않는다** — 포트를 publish 하지 않고 컨테이너 네트워크로만 붙는다.
 if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null 2>&1; then
   APPC="colab_v2_gatepg_applied_$$_${RANDOM}"
@@ -248,25 +258,46 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
   for i in $(seq 1 60); do docker exec "$APPC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
   APPIP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$APPC")"
 
+  # 체인마다 **다른 DB** 에 **그 체인의 선언만** 적용한다 — 이게 실제 배치 형태다 (§3-3).
   D="$(mkdb sd-match)"; mkschema "$D"
-  # "적용 DB" = 같은 선언을 실제로 적용한 DB. 한 URL 로 두 체인을 다 보는 형태라
-  # 비교 대상이 하나가 되도록 platform+ai 를 한 DB 에 적용한다 (§8 한계 1).
-  docker exec "$APPC" createdb -U postgres applied >/dev/null 2>&1
-  cat "$D/platform/schema.sql" "$D/ai/schema.sql" > "$TMP/all.sql"
-  cat "$TMP/all.sql" > "$D/platform/schema.sql"; cat "$TMP/all.sql" > "$D/ai/schema.sql"
-  docker exec -i "$APPC" psql -U postgres -d applied -q -v ON_ERROR_STOP=1 < "$TMP/all.sql" >/dev/null 2>&1
-  expect green "schema-diff(e2e): 선언 = 적용" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@$APPIP:5432/applied" "$SD"
+  docker exec "$APPC" createdb -U postgres applied_platform >/dev/null 2>&1
+  docker exec "$APPC" createdb -U postgres applied_ai >/dev/null 2>&1
+  docker exec -i "$APPC" psql -U postgres -d applied_platform -q -v ON_ERROR_STOP=1 < "$D/platform/schema.sql" >/dev/null 2>&1
+  docker exec -i "$APPC" psql -U postgres -d applied_ai -q -v ON_ERROR_STOP=1 < "$D/ai/schema.sql" >/dev/null 2>&1
+  U_P="postgresql://postgres@$APPIP:5432/applied_platform"
+  U_A="postgresql://postgres@$APPIP:5432/applied_ai"
 
-  docker exec "$APPC" psql -U postgres -d applied -q -c \
+  expect green "schema-diff(e2e): 두 체인 모두 선언 = 적용" \
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+
+  # 체인을 뒤바꿔 붙이면 red — 게이트가 정말 체인별로 보고 있다는 증거다.
+  expect red "schema-diff(e2e): 체인별 URL 을 서로 바꿔 지정" \
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_A" COLAB_APPLIED_DB_URL_AI="$U_P" "$SD"
+
+  # 한 체인(ai)만 드리프트 — 나머지 한 체인이 깨끗해도 red 다.
+  docker exec "$APPC" psql -U postgres -d applied_ai -q -c \
+    'ALTER TABLE ai_lineage_suggestion ADD COLUMN drifted text;' >/dev/null 2>&1
+  expect red "schema-diff(e2e): ai 체인만 드리프트(platform 은 일치)" \
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+
+  # 한 체인(platform)만 드리프트 — 반대 방향도 red 여야 한다.
+  docker exec "$APPC" psql -U postgres -d applied_ai -q -c \
+    'ALTER TABLE ai_lineage_suggestion DROP COLUMN drifted;' >/dev/null 2>&1
+  docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
     'ALTER TABLE d3_dataset ADD COLUMN drifted text;' >/dev/null 2>&1
-  expect red "schema-diff(e2e): 적용 DB 에만 있는 컬럼(드리프트)" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@$APPIP:5432/applied" "$SD"
+  expect red "schema-diff(e2e): platform 체인만 드리프트(ai 는 일치)" \
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+
+  # 한 체인의 URL 만 빠진 경우 — 나머지 한 체인이 실제로 일치해도 red (green-by-skip 금지).
+  docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
+    'ALTER TABLE d3_dataset DROP COLUMN drifted;' >/dev/null 2>&1
+  expect red "schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락" \
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" "$SD"
 
   docker rm -f "$APPC" >/dev/null 2>&1
   trap 'rm -rf "$TMP"' EXIT
 else
-  echo "[selftest] schema-diff(e2e): 도커 없음 — 이 두 케이스는 증명되지 않았다 ✗"
+  echo "[selftest] schema-diff(e2e): 도커 없음 — 이 여섯 케이스는 증명되지 않았다 ✗"
   FAILURES+=("schema-diff(e2e) 미증명(도커 부재)")
 fi
 fi

@@ -81,7 +81,7 @@ selftest 가 "분기 → red, 머지 리비전 추가 → green" 을 둘 다 증
 
 ### DB 가 없을 때: skip 이 아니라 red
 
-`COLAB_APPLIED_DB_URL` 이 없으면 red. 접속 실패도 red. 도커가 없어 일회용 postgres 를 못 띄워도 red.
+`COLAB_APPLIED_DB_URL_PLATFORM` · `COLAB_APPLIED_DB_URL_AI` 중 하나라도 없으면 red (§8). 접속 실패도 red. 도커가 없어 일회용 postgres 를 못 띄워도 red.
 **여기서 skip 하는 것이 정확히 v1 의 실패다** — 없는 검사는 통과가 아니다.
 
 ### CI 에서 실제로 판정하게 하는 경로 (설계)
@@ -92,7 +92,7 @@ CI 도 같은 형태다.
 1. postgres 서비스 컨테이너를 띄운다 (`postgres:16-alpine`).
 2. `db/platform` · `db/ai` 를 각각 `alembic upgrade head` 로 적용한다 — **적용 DB 를 만드는 것은 게이트의 일이 아니라
    파이프라인의 일이다.** 게이트가 마이그레이션을 돌리면 게이트가 alembic 에 묶이고, 2번 이유(대상 실행)가 되살아난다.
-3. 그 DB 의 URL 을 `COLAB_APPLIED_DB_URL` 로 넘겨 `gates/run.sh schema-diff` 를 돌린다.
+3. 그 DB 의 URL 을 체인별 변수(`COLAB_APPLIED_DB_URL_PLATFORM` · `_AI`)로 넘겨 `gates/run.sh schema-diff` 를 돌린다.
 
 **이 호스트의 staging 컨테이너(`colab_v2_staging_*`)는 건드리지 않는다.** `_pg.sh` 는
 ① 이름을 `colab_v2_gatepg_<pid>_<rand>` 로 짓고 ② **포트를 하나도 publish 하지 않으며**(모든 질의가 `docker exec`
@@ -141,7 +141,7 @@ selftest 는 합성 facts 로 판정 코어를 직접 때리고(11 케이스), �
 
 `./gates/run.sh db-selftest` (전부 green = 세 게이트가 fail-closed). fixture 는 전부 `mktemp -d` 아래이며
 실제 `db/`·`services/`·`contracts/` 는 건드리지 않는다. 주입은 환경변수
-(`COLAB_DB_DIR` · `COLAB_RLS_ALLOWLIST` · `COLAB_APPLIED_DB_URL` · `COLAB_PG_IMAGE` · `COLAB_PG_FORCE_UNAVAILABLE`) —
+(`COLAB_DB_DIR` · `COLAB_RLS_ALLOWLIST` · `COLAB_APPLIED_DB_URL_PLATFORM` · `_AI` · `COLAB_PG_IMAGE` · `COLAB_PG_FORCE_UNAVAILABLE`) —
 `boundary-selftest`·`contract-selftest` 와 같은 형태다.
 
 | 게이트 | 케이스 | 기대 |
@@ -209,3 +209,56 @@ CI 가 적용 DB 를 넘기는 순간 셋 다 green 으로 돌아설 수 있다 
    쓰기 시작하면 이 게이트를 먼저 고쳐야 한다.
 7. **뷰·파티션 부모·물리적으로 상속된 테이블은 RLS 검사 대상이 아니다**(`relkind='r'` 만 본다).
    파티션 테이블을 도입하면 자식 파티션의 RLS 를 따로 봐야 한다.
+
+---
+
+## 8. `schema-diff` 체인별 URL 수정 (P0 이후)
+
+### 무엇이 틀려 있었나
+
+게이트가 적용 DB 를 `COLAB_APPLIED_DB_URL` **하나**로만 받아 두 체인(`db/platform` · `db/ai`)을 **같은 DB** 와 비교했다.
+두 체인은 `CLAUDE.md §3-3` 으로 분리된 **서로 다른 DB** 이므로, 한 번의 실행에서 둘 다 green 이 되려면
+두 `schema.sql` 이 같아야 한다 — 체인 분리와 정면으로 모순이다. `P0-schema.md §7-①` 에서 실물로 터진 결함이다.
+스키마는 틀리지 않았다(체인별로 적용해 보면 **두 체인 모두 드리프트 0**). **게이트가 틀렸다.**
+
+### 어떻게 고쳤나
+
+적용 DB URL 을 체인별로 받는다 — `COLAB_APPLIED_DB_URL_PLATFORM` · `COLAB_APPLIED_DB_URL_AI`.
+체인마다 자기 DB 를 덤프해 자기 `schema.sql` 과 비교한다. **한 체인이라도 드리프트가 있으면 red.**
+검사 대상이 줄어든 게 아니라 늘었다 — 전에는 두 체인이 한 DB 를 봤고, 이제는 두 체인이 각각 자기 DB 를 본다.
+
+### 구 변수 `COLAB_APPLIED_DB_URL` 만 준 경우 = **red** (그 근거)
+
+세 선택지가 있었다.
+
+1. 두 체인에 그대로 갖다 쓴다 → **옛 결함을 그대로 남긴다.** 기각
+2. 어느 한 체인(예: platform)에만 쓰고 나머지는 건너뛴다 → **조용히 한 체인만 보고 green.**
+   이게 셋 중 최악이다. green-by-skip 을 변수 이름 뒤에 숨기는 꼴이라 기각
+3. **설정 오류로 red** → 채택
+
+이 변수 하나로는 "어느 체인의 DB 인가"를 알 방법이 없다. 알 수 없는 것을 추측해 검사 범위를 줄이느니
+호출자에게 명시하라고 요구하는 쪽이 옳다 (`CLAUDE.md §4` — 게이트를 green 으로 만들려고 검사 대상을 줄이지 않는다).
+체인별 변수가 **둘 다** 있으면 구 변수는 무시하고 진행한다 — 마이그레이션 중인 CI 설정을 깨지 않기 위해서다.
+한 체인 URL 만 있는 경우도 red 다. 나머지 한 체인이 실제로 일치하더라도 **검사하지 못한 것은 통과가 아니다.**
+
+### selftest — 38 → 43 케이스
+
+`db-selftest.sh` 에 늘린 것(기존 케이스는 하나도 지우지 않았다. e2e 는 체인마다 다른 DB 를 만드는 실제 배치 형태로 바꿨다):
+
+| 케이스 | 기대 |
+|---|---|
+| 구 단일 변수만 지정 | red |
+| ai 체인 URL 누락 (platform 만 지정) | red |
+| 두 체인 모두 선언 = 적용 | **green** |
+| 체인별 URL 을 서로 바꿔 지정 | red — 게이트가 정말 체인별로 본다는 증거 |
+| ai 체인만 드리프트 (platform 은 일치) | red |
+| platform 체인만 드리프트 (ai 는 일치) | red |
+| 일치하는 platform 만 지정하고 ai URL 누락 | red — green-by-skip 금지 |
+
+### 실측
+
+`alembic upgrade head --sql` 로 두 체인을 각각 뽑아 일회용 컨테이너의 `colab_platform` · `colab_ai` 두 DB 에 적용하고
+체인별 URL 로 `gates/run.sh schema-diff` 를 돌려 **두 체인 모두 green**(드리프트 0)을 확인했다.
+구 단일 변수만 준 실행은 red. 임시 컨테이너는 포트를 하나도 공개하지 않았고 끝나고 지웠다. staging 두 컨테이너는 무변경.
+
+이로써 `§7-①`(체인별 URL 은 배포 형태가 정해지는 WU 에서 정한다)은 **닫혔다.**
