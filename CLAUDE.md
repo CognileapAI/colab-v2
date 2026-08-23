@@ -21,6 +21,9 @@
 
 작업을 시작하기 전에 반드시.
 
+> **호스트를 껐다 켠 뒤라면 `dev-package/RESTART.md` 를 먼저 읽는다.** staging 은 자동으로 뜨지 않고,
+> 되살리는 명령을 한 글자 빼면 **조용히 I2 이전으로 롤백된다.** 그 상태에서도 루트 헬스는 200 을 낸다.
+
 1. `dev-package/03-HANDOFF.md` — **지금 어디까지 왔는가.** 여기가 진실원
 2. `dev-package/DOMAINS.md` — 경계. 무엇을 무엇과 섞지 않는가
 3. `dev-package/WORK-UNITS.md` — 완료 정의와 의존 그래프
