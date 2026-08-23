@@ -1,0 +1,9 @@
+# D5 런타임 직접 의존 — 근거는 DATA-REFERENCE §5 (PoC 실호출 기록).
+# HDF4 는 pip 환경에서 GDAL HDF4 드라이버가 없어 pyhdf 를 쓴다 (conda 없이 휠로 설치됨).
+numpy
+rasterio
+rio-cogeo
+netCDF4
+h5py
+pyproj
+pyhdf
