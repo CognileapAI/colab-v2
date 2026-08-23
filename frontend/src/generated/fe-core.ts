@@ -97,6 +97,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 업로드 진입점 — 등록 전 임시 업로드를 만든다
+         * @description **`upload.accepted` 를 발행하는 유일한 자리다** — 이벤트 계약이 `source` 를 `core-api`
+         *     상수로 못 박았고(`../events/core-pipeline.json` 이벤트 ① · `envelope.json` source 주석),
+         *     그 능력을 행사하는 HTTP 입구가 이 op 이다 (`〈54〉` · `sessions/D2c.md §2-4`).
+         *     여러 파일을 한 번에 받는다 — 본체 1건 이상 + 기준 격자 파일
+         *     (`PRD_업로드와_계보_확정 §5.1 여러 파일 받기` · `Policy_업로드와_계보_확정 §8 파일 놓기`).
+         *     **저장되는 것은 없다** — 등록 전 세계는 사람이 `데이터셋 만들기`를 눌러야 D3 가 된다
+         *     (`Policy_업로드와_계보_확정 §7.1` — 열어보는 중 = 저장 안 됨).
+         *     조각(part) 단위 이어올리기 상태는 계약에 없다 — 정본이 범위 밖으로 뒀다 (`Policy §9`).
+         *     파일 바이트가 이 op 으로 들어온다는 전송 형태는 `[정본 무근거]` 레포 결정이다 —
+         *     정본은 `파일을 끌어다 놓는다 → 업로드한다`(`Policy §2` 규칙 맵)까지만 말한다.
+         *     core-api ↔ 스토리지 사이가 presigned multipart 인 것은 배포 내부 사정이며 이 seam 의 것이 아니다.
+         */
+        post: operations["createUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{uploadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 업로드 상태 조회 — 실패 사유 8값이 화면에 가는 자리
+         * @description 파이프라인 이벤트(②~⑦)의 결과를 FE 가 소비하는 동기 창구다
+         *     (`sessions/SEAM-AUDIT.md` I-18·C-5 — 실패 사유가 화면에 갈 자리가 없었다).
+         *     필드는 이벤트 페이로드의 사실을 그대로 비춘다 — 새 값 집합을 만들지 않는다.
+         */
+        get: operations["getUploadStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{uploadId}/lineage-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * AI 계보 제안 조회 (중계) — 제안만, 저장 없음
+         * @description `core-ai` 는 내부 표면이라(소비자는 core-api 뿐 — `core-ai.yaml`) FE 는 이 중계로만
+         *     제안에 도달한다 (`Policy_업로드와_계보_확정 §2` 규칙 맵 — AI 제안을 확인한다 ·
+         *     `sessions/D2c.md 추기-2` — 범위 확장 1건, 사용자 승인 2026-08-23).
+         *     요청의 파일 메타·범위는 core-api 가 파이프라인 결과에서 만든다 — FE 는 해석 단서만 보탠다.
+         *     **확정 오퍼레이션이 아니다** — 확인된 제안은 `createDataset` 의 계보 관계로만 저장된다
+         *     (`CLAUDE.md §3-2` — D10 은 제안만, 사람이 확인한 것만 커밋).
+         *     스키마는 중계라 재선언하지 않고 `core-ai.yaml` 정의를 그대로 참조한다 — 같은 모양의
+         *     두 번째 선언은 갈라질 표면이다.
+         */
+        get: operations["listUploadLineageSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/datasets": {
         parameters: {
             query?: never;
@@ -113,7 +198,19 @@ export interface paths {
          */
         get: operations["listDatasets"];
         put?: never;
-        post?: never;
+        /**
+         * 데이터셋 만들기 — 업로드의 등록 전환 (계보 확정)
+         * @description 의미는 「새 데이터셋을 만든다」가 아니라 **「업로드 세계의 `uploadId` 를 D3 데이터셋으로
+         *     등록 전환한다」** 다 — 사람이 `데이터셋 만들기`를 눌러야 데이터셋이 생기고
+         *     (`Policy_업로드와_계보_확정 §7.2` · `../events/envelope.json` uploadId 주석),
+         *     등록 전에는 아무것도 저장되지 않는다 (`Policy §7.1`).
+         *     확정된 계보 관계·소속 프로젝트 지정이 이 요청에 함께 실린다 — 등록 폼 한 화면이
+         *     한 번에 제출하는 값이다 (`Policy §5` 입력값 규칙).
+         *     **`fileId` 동일성** — 등록 시 D3 파일 레코드는 업로드 세계의 `fileId` ULID 를 자기 PK 로
+         *     그대로 쓴다. 새로 만들지 않는다. `[정본 무근거 — 계약 구조 연역(sessions/D2c.md §2-10) ·
+         *     Ted 승인 2026-08-23 (본인 확인) — ㉢ 제출 목록 유지]`
+         */
+        post: operations["createDataset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -170,7 +267,15 @@ export interface paths {
         delete: operations["deleteDataset"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 데이터셋 정보 수정 — 사람이 적는 정보만
+         * @description **「사람이 적는 정보」(이름·주제·한 줄 요약)만 고친다** (`DATAMODEL-BASELINE.md` D3 ·
+         *     `sessions/D2c.md §2-7` — 이 U 가 통째로 없어 `〈55〉` 의 주제를 고칠 길이 없었다).
+         *     「자동으로 읽은 정보」(변수·기간·좌표계·격자·포맷)는 이 op 의 대상이 아니다 —
+         *     파일에서 읽는 값이다 (`DataModel §4.1` · `DR-14`).
+         *     `업로드·편집` 스위치가 판정한다 (`〈59〉-②` — 소유자를 별도 관문으로 만들지 않는다).
+         */
+        patch: operations["updateDataset"];
         trace?: never;
     };
     "/datasets/{datasetId}/deletion-impact": {
@@ -214,8 +319,52 @@ export interface paths {
          */
         get: operations["listDatasetFiles"];
         put?: never;
-        post?: never;
+        /**
+         * 파일 추가 (후주입) — 기준 격자 파일은 나중에 와도 된다
+         * @description **`〈58〉-②` 가 요구한 후주입 경로다** — 기준 격자 파일은 나중에 구해서 더할 수 있어야
+         *     하고, 없으면 좌표를 구한 사람이 다시 올리는 수밖에 없어 계보가 끊긴다.
+         *     추가는 정상 동작이다 (`〈59〉-①`). 판정은 `업로드·편집` 스위치가 한다 (`〈59〉-②`).
+         *     후주입은 계보를 접지 않고 활동 기록(D8)에 남는다 (`〈60〉`).
+         *     새 파일도 파이프라인(파싱·변환)을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
+         */
+        post: operations["addDatasetFile"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/datasets/{datasetId}/files/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 기준 격자 파일 교체 — 정상 동작
+         * @description 교체는 정상 동작이다 (`〈59〉-①` — 열린 결정 ⑳ 해소). 판정은 `업로드·편집` 스위치
+         *     (`〈59〉-②`). **본체 파일은 이 경로의 대상이 아니다** — 본체를 갈아 끼우는 것은
+         *     다른 데이터다 (`〈59〉-③`). 대상 파일의 `kind` 가 `본체` 면 409 다.
+         */
+        put: operations["replaceDatasetGridFile"];
+        post?: never;
+        /**
+         * 기준 격자 파일 삭제 — 정상 동작
+         * @description 삭제는 정상 동작이다 (`〈59〉-①`). 판정은 `업로드·편집` 스위치 (`〈59〉-②`).
+         *     **본체 파일은 지우지 않는다** — 대상의 `kind` 가 `본체` 면 409 (`〈59〉-③`).
+         *     격자를 지우면 그릴 수 없게 될 수 있을 뿐이다 — 그릴 수 없는 것과 등록할 수 없는 것은
+         *     다르다 (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
+         */
+        delete: operations["deleteDatasetGridFile"];
         options?: never;
         head?: never;
         patch?: never;
@@ -625,15 +774,78 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * 소속 연결 (본문 있는 op — 활용 의미 문장을 채운다)
+         * @description 프로젝트:데이터셋은 N:N 이고 **연결마다 활용 의미 문장이 붙는다**
+         *     (`DATAMODEL-BASELINE.md` D6 연결 · `DataModel §5`). 이 op 이 `ProjectDatasetRow.usageNote`
+         *     (required 로 읽히는 값)를 쓰는 유일한 수단이다 — 끊는 길(`unlinkProjectDataset`)만 있고
+         *     잇는 길이 없던 비대칭을 닫는다 (`sessions/SEAM-AUDIT.md` I-03·I-10 · `sessions/D2c.md §2-8`).
+         *     이미 있는 연결이면 `usageNote` 를 고친다(멱등 PUT). 최초 등록 시점의 연결은
+         *     `createDataset` 요청의 `projectIds` 가 만들고, 이 op 은 등록 후 연결·의미 문장 편집이다.
+         */
+        put: operations["linkProjectDataset"];
         post?: never;
         /**
          * 소속 해제 (연결만 끊는다)
          * @description 연결 기록만 지운다 — 데이터셋은 카탈로그·검색에 그대로 있고, 다른 프로젝트의 연결도 남는다
-         *     (`Policy_프로젝트 §7`). **담는 동작은 이 seam 에 없다** — 데이터를 프로젝트에 담는 것은
-         *     업로드 화면(E-04)이 맡고 이 화면은 담긴 것을 보고 빼는 것까지다 (§1.3-9).
+         *     (`Policy_프로젝트 §7`). 담는 동작은 같은 경로의 `linkProjectDataset`(PUT)과
+         *     `createDataset.projectIds` 다 — 이전 산문의 「이 seam 에 없다」는 오배정이었다
+         *     (`sessions/SEAM-AUDIT.md` I-03 · `〈54〉`).
          */
         delete: operations["unlinkProjectDataset"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 미리보기 렌더 작업 생성 (중계)
+         * @description viz-render 는 내부 표면이라 FE 는 이 중계로만 렌더를 시작한다
+         *     (`core-viz.yaml` — 소비자는 core-api 뿐 · `sessions/SEAM-AUDIT.md` I-06·I-07·C-4 —
+         *     등록 데이터셋(E-03)·미등록 업로드(S-08) 둘 다 계약상 도달 불가였다).
+         *     대상은 `datasetId`(등록 후) 또는 `uploadId`(등록 전, S-08) 정확히 하나다
+         *     (`core-viz.yaml` RenderTarget). **타일 URL 은 중계하지 않는다** — 결과의
+         *     `tileUrlTemplate` 을 FE 가 직접 소비한다 (타일 경로만 CDN 뒤 — `core-viz.yaml` 상단 주석).
+         *     스키마는 중계라 재선언하지 않고 `core-viz.yaml` 정의를 그대로 참조한다.
+         *     `style.palette` 값 집합의 FE 도달 경로(`listPalettes` 중계)는 이 개정이 열지 않는다 —
+         *     열린 항목으로 보고한다 (`sessions/D2c.md §2-9` 는 생성·조회 두 op 만 확정했다).
+         */
+        post: operations["createPreviewRender"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/previews/{renderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 렌더 작업 식별자 (`core-viz.yaml` RenderId 와 같은 값 — 중계라 새 식별자를 만들지 않는다). */
+                renderId: components["parameters"]["RenderId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 렌더 작업 조회 (중계)
+         * @description 진행 단계·완료 결과·실패를 한 형태로 본다 (`core-viz.yaml` RenderJob — 단계·실패 문구는
+         *     정본 표기 그대로: `Policy_데이터셋_상세 §8`). 실패 종류의 `code` 값 라벨은
+         *     `[정본 무근거]` 로 아직 신설하지 않았다 (`sessions/D2c.md §2-11` NB-B — Ted 답 대기).
+         */
+        get: operations["getPreviewRender"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -864,6 +1076,115 @@ export interface components {
         VerificationCancellation: {
             /** @description 취소 사유 0~120자. 선택 (`Policy_승인_처리 §5`). */
             reason?: string;
+        };
+        /**
+         * @description 업로드 안의 파일 하나. 이벤트 seam 의 `FileRef`(`../events/core-pipeline.json`)와 같은
+         *     네 값이다 — 동기 응답과 비동기 페이로드가 같은 사실을 말하게 둔다.
+         *     `fileId` 는 등록 전환 후 D3 파일 레코드의 PK 로 그대로 이어진다 — `fileId` 동일성
+         *     (`sessions/D2c.md §2-10` `[정본 무근거]` · Ted 승인 2026-08-23 (본인 확인)).
+         */
+        UploadFileRef: {
+            fileId: components["schemas"]["Ulid"];
+            fileName: string;
+            kind: components["schemas"]["FileKind"];
+            byteSize: number;
+        };
+        /**
+         * @description 업로드 접수 결과. `uploadId` 는 이벤트 seam 의 집계 루트와 같은 값이고
+         *     (`../events/envelope.json`), `core-viz` 의 `RenderTarget.uploadId`(S-08)도 같은 값을 쓴다.
+         */
+        UploadReceipt: {
+            uploadId: components["schemas"]["Ulid"];
+            files: components["schemas"]["UploadFileRef"][];
+        };
+        /**
+         * @description 파이프라인 이벤트(②~⑦)의 결과를 FE 가 읽는 형태. **필드마다 원천 이벤트가 있다** —
+         *     새 사실을 만들지 않는다 (`../events/core-pipeline.json`).
+         *     조각(part) 단위 상태는 없다 — 정본이 이어올리기를 범위 밖으로 뒀다 (`Policy §9`).
+         */
+        UploadStatus: {
+            uploadId: components["schemas"]["Ulid"];
+            files: components["schemas"]["UploadFileRef"][];
+            /** @description `upload.ready`(⑥) 가 왔는가 — 등록 결정 게이트를 볼 수 있는 상태 (`Policy §7.1`·`§8`). */
+            ready: boolean;
+            /** @description 미리보기를 그릴 수 있는가 (`upload.ready.renderable`). 아직 모르면 null. false 여도 등록은 막지 않는다. */
+            renderable?: boolean | null;
+            /** @description 자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null. */
+            metadataComplete?: boolean | null;
+            /** @description 임시 업로드의 수명 (`upload.ready.expiresAt` — 이 화면을 벗어나면 사라진다, `Policy §7.1`). */
+            expiresAt?: components["schemas"]["Timestamp"] | null;
+            /**
+             * @description `upload.failed`(⑦) 가 왔으면 그 사유. 사유 값 집합은 이벤트 계약의 것을 그대로 쓴다 —
+             *     재선언하지 않는다 (`../events/envelope.json` FailureReason — 정본 §9 표와 1:1).
+             *     화면 문구는 정본 §9 가 소유하고 화면이 그린다.
+             */
+            failure: {
+                reason: components["schemas"]["FailureReason"];
+            } | null;
+        };
+        /**
+         * @description 등록 전환에 싣는 확정 계보 관계 한 건. **사람이 확인한 것만 온다** — AI 제안은 저장되지
+         *     않았고, 확인·수정·거절은 화면(클라이언트 상태)에서 일어난다 (`Policy §7.1` — 등록 중 = 저장 안 됨).
+         */
+        UploadLineageParent: {
+            parentDatasetId: components["schemas"]["Ulid"];
+            /** @description 생략하면 기본값 `주입력` (`Policy §5 부모 역할`). */
+            parentRole?: components["schemas"]["ParentRole"];
+            /** @description 가공 방식 한 줄. 자유 문장이다 (`Policy §5`). */
+            method?: string | null;
+            /**
+             * @description 만들어진 경로 — AI 제안을 사람이 확인했는가, 직접 연결했는가 (`DataModel §4.2`).
+             *     상세 화면의 수동 추가(`addLineageParent`)와 달리 업로드 화면엔 두 경로가 다 있어
+             *     요청이 실어야 서버가 안다.
+             */
+            origin: components["schemas"]["LineageOrigin"];
+            /**
+             * @description `가공 방식` 제안을 확인·수정한 결과 문장. `method` 와 같은 자리로 접힌다 —
+             *     둘 다 오면 400. `[정본 무근거 — 제안 확인 결과가 등록 요청의 어느 필드로 실리는지
+             *     정본이 형태를 주지 않아 레포 결정]`
+             */
+            confirmedMethodText?: string | null;
+        };
+        /**
+         * @description 등록 전환 요청 — 업로드 폼 한 화면이 한 번에 제출하는 값 (`Policy §5` 입력값 규칙 ·
+         *     `§7.2` 등록 중 → 등록됨). 자동으로 읽은 정보(변수·기간·좌표계·격자·포맷)는 싣지 않는다 —
+         *     파일에서 읽는 값이다 (`DataModel §4.1`).
+         */
+        DatasetCreate: {
+            uploadId: components["schemas"]["Ulid"];
+            /** @description 사람이 적는 묶음 이름 (`DataModel §4.3`). */
+            name: string;
+            /**
+             * @description 주제. 값 집합은 DB CHECK 4값이 지킨다 (`〈55〉`) — 계약 층 enum 은 이 개정이
+             *     임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
+             */
+            topic?: string | null;
+            /** @description 한 줄 요약. */
+            summary?: string | null;
+            /** @description 원천 표기 — 데이터셋이 아니라 표기다 (`Policy §4 용어` · 계보 그래프의 점선 노드). */
+            sourceLabel?: string | null;
+            /**
+             * @description 확정된 계보 관계들. **비어 있으면 `기록 없음`으로 등록된다** — 등록을 막지 않는다
+             *     (`Policy §3.3`). 일괄 승인 필드가 아니다 — 항목마다 사람이 확인한 결과다 (`CLAUDE.md §3`).
+             */
+            lineageParents?: components["schemas"]["UploadLineageParent"][];
+            /**
+             * @description 소속 프로젝트 복수 지정 (`Policy §5` 소속 프로젝트 — 0건 이상). 등록 폼이 한 번에
+             *     제출하므로 등록 후 `linkProjectDataset` N 회 호출이 아니라 여기 실린다 —
+             *     연결의 `usageNote` 는 여기 없다: 업로드 화면이 그 문장을 받는 자리가 정본에 없어
+             *     (`[정본 무근거]` — E04-step-op-map Q2) 등록 후 `linkProjectDataset` 으로 적는다.
+             */
+            projectIds?: components["schemas"]["Ulid"][];
+        };
+        /**
+         * @description 사람이 적는 정보만 (`DATAMODEL-BASELINE.md` D3 · `sessions/D2c.md §2-7`).
+         *     자동으로 읽은 정보는 이 스키마에 자리가 없다 (`DataModel §4.1` · `DR-14`).
+         */
+        DatasetUpdate: {
+            name?: string;
+            /** @description 값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E). */
+            topic?: string | null;
+            summary?: string | null;
         };
         /**
          * @description 카탈로그 표 한 행. 8열 + 빠른 작업 자리를 그리는 데 필요한 값만 담는다.
@@ -1142,6 +1463,15 @@ export interface components {
             /** @description `프로젝트 생성` 스위치. 꺼졌으면 만들기·수정·닫기 버튼을 숨긴다 (§6·P-12). */
             canManage: boolean;
         };
+        /**
+         * @description 연결 한 건의 본문 — 맨 PUT 이 아니다 (`sessions/D2c.md §2-8`). 연결마다 활용 의미 문장이
+         *     붙는다 (`DATAMODEL-BASELINE.md` · `DataModel §5`). 아직 못 적었으면 null 로 명시한다 —
+         *     필드를 빼먹은 요청과 구분하기 위해 required 다.
+         */
+        ProjectDatasetLinkCreate: {
+            /** @description 이 연결의 활용 의미 문장. `ProjectDatasetRow.usageNote` 가 읽는 값이다. */
+            usageNote: string | null;
+        };
         ProjectCreate: {
             type: components["schemas"]["ProjectType"];
             name: string;
@@ -1256,6 +1586,126 @@ export interface components {
             nextCursor: components["schemas"]["Cursor"] | null;
         };
         /**
+         * @description 파일 종류. 둘뿐이며 기준 격자 파일은 데이터셋당 0~2건이다 — 위도·경도 한 쌍이 실물이고(축은 grid_axis 가 가른다), 등록 뒤 후주입도 정상 동작이다. 근거: 〈58〉(PLAN-SoT — DataModel_공통_기반 §4.3 의 0~1건 을 Ted 가 2026-08-23 에 2건 허용으로 닫았다). ⚠ ../events/core-pipeline.json 의 「0~1건」 산문은 이벤트 계약 동결(D2c §2-1 — 한 글자도 안 고친다) 때문에 이번 회차에 못 따라왔다 — 다음 이벤트 개정 권한이 열릴 때 정합한다.
+         * @enum {string}
+         */
+        FileKind: "본체" | "기준 격자 파일";
+        /**
+         * @description 실패 사유. **정본 `Policy_업로드와_계보_확정 §9 오류와 예외` 표의 행에 1:1 로 대응**하고, 어디에도 없는 것은 `내부 오류` 하나로 모은다. 화면 문구를 이벤트에 싣지 않는 이유 — 사용자 문구는 정본 §9 가 소유하고 화면이 그린다. 봉투가 문구를 나르면 같은 문장이 정본·이벤트·화면 세 곳에 생기고 갈라진다.
+         * @enum {string}
+         */
+        FailureReason: "업로드 중단" | "형식 인식 실패" | "헤더 인식 실패" | "조각이 서로 다름" | "좌표계 변환 실패" | "미리보기 준비 실패" | "시간 초과" | "내부 오류";
+        /**
+         * @description AI 장애가 제품을 멈추면 안 된다. AI 가 제 몫을 못 하면 5xx 로 끝내지 않고
+         *     **빈 결과 + `degraded: true`** 로 돌려준다 — core 는 화면을 계속 그리고
+         *     카탈로그·업로드는 그대로 돈다 (`DOMAINS §4` · `contracts/README.md`).
+         */
+        Degradable: {
+            /** @description true 면 결과가 온전하지 않다. 이때 결과 배열은 비어 있거나 부분적이다. */
+            degraded: boolean;
+            /** @description 사람이 읽을 한 줄. 화면 문구는 core 가 정한다 — 여기 문구를 그대로 쓰지 않는다. */
+            degradedReason?: string;
+        };
+        /** @description AI 검색이 **뒤진 범위**. 응답에 필수로 실린다 — 0건이어도 어디를 찾았는지 먼저 밝힌다. 근거: Policy_데이터_찾기 §0건(뒤진 범위 = 연구실·개수)·§범위 표시줄 · CLAUDE.md §3. */
+        AiSearchScope: {
+            labId: components["schemas"]["Ulid"];
+            labName: string;
+            searchedCount: number;
+        };
+        /**
+         * @description AI 제안 확신도. 3값 enum이며 **퍼센트·점수 필드를 만들지 않는다.** 근거: Policy_업로드와_계보_확정 §용어(확신도)·§6 · PRD_업로드와_계보_확정 · CLAUDE.md §3(AI 응답 규격).
+         * @enum {string}
+         */
+        AiConfidence: "확실" | "애매" | "모름";
+        /** @description AI 응답의 근거. **필수 필드이며 nullable 이 아니다.** 화면에서 한 줄로 서므로 줄바꿈을 허용하지 않는다. 근거: CLAUDE.md §3(근거 필드 필수·근거는 한 줄) · Policy_데이터_찾기 §결과 카드(AI 근거 한 줄) · contracts/README.md(AI seam). */
+        AiRationale: string;
+        /** @description 모든 제안이 지고 가는 두 값 — 확신도와 근거. 둘 다 required 다. */
+        AiSuggestionBase: {
+            /**
+             * @description **한 응답 안에서 항목을 구분하는 값일 뿐이다.** 저장된 계보 관계의 ID 가 아니고,
+             *     이 ID 로 무언가를 확정하는 오퍼레이션은 이 스펙에 없다.
+             */
+            suggestionId: components["schemas"]["Ulid"];
+            /**
+             * @description 제안 종류. 화면의 카드 종류와 1:1 이다.
+             * @enum {string}
+             */
+            kind: "가공 전 데이터" | "가공 방식";
+            /** @description 3값 enum. **퍼센트·점수 필드를 이 스키마에 추가하지 않는다.** */
+            confidence: components["schemas"]["AiConfidence"];
+            /** @description 왜 이 제안인지 한 줄. nullable 이 아니다. */
+            rationale: components["schemas"]["AiRationale"];
+        };
+        /**
+         * @description 계보 관계의 부모 역할. 기본은 `주입력`이고, `보조입력`은 가공 단계 Lv 계산에서 빠진다. 근거: DataModel_공통_기반 §4.2(부모 역할).
+         * @default 주입력
+         * @enum {string}
+         */
+        ParentRole: "주입력" | "보조입력";
+        ParentCandidateSuggestion: components["schemas"]["AiSuggestionBase"] & {
+            /** @constant */
+            kind?: "가공 전 데이터";
+            parentDatasetId: components["schemas"]["Ulid"];
+            /** @description 화면 대조용 표시 이름. 정본값은 D3 에 있고 core 가 다시 붙인다. */
+            parentDatasetName: string;
+            /**
+             * @description 제안값이다. 사람이 확인할 때 바꿀 수 있고, 바꾸지 않으면 기본값 `주입력` 이다
+             *     (`Policy_업로드와_계보_확정 §5 부모 역할`).
+             */
+            suggestedParentRole: components["schemas"]["ParentRole"];
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "가공 전 데이터";
+        };
+        ProcessingMethodSuggestion: components["schemas"]["AiSuggestionBase"] & {
+            /** @constant */
+            kind?: "가공 방식";
+            /**
+             * @description "어떻게 만들었는지" 한 줄. 사람이 고쳐 쓸 수 있고, 고친 문장이 화살표 라벨이 된다.
+             *     길이 상한은 입력 규칙(`Policy_업로드와_계보_확정 §5 가공 방식 문장 — 1~120자`)과 맞춘다.
+             *     **어휘를 enum 으로 닫지 않는다** — 가공 방식 어휘는 수문학 도메인 소유자(HYD) 협의
+             *     사항이고 정본에 열거값이 없다 (`DOMAINS §3-③` · `PLAN-SoT §9-㉚`).
+             */
+            methodText: string;
+            /**
+             * @description 가공 방식은 계보 **관계**에 붙는 값이라 어느 부모와의 관계인지를 가리킨다
+             *     (`DOMAINS §2 D4`). 어느 부모인지 모르면 생략한다 — 지어내지 않는다.
+             */
+            appliesToParentDatasetId?: components["schemas"]["Ulid"];
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "가공 방식";
+        };
+        /** @description 제안 카드 한 장. `kind` 로 갈린다. */
+        LineageSuggestion: components["schemas"]["ParentCandidateSuggestion"] | components["schemas"]["ProcessingMethodSuggestion"];
+        LineageSuggestionResponse: components["schemas"]["Degradable"] & {
+            /**
+             * @description **먼저 밝히는 범위.** 무엇을 근거로 삼았는지(연구실·살펴본 데이터 개수)를
+             *     제안보다 앞에 둔다. 빈 연구실이면 `searchedCount: 0` 이고, 그 자체가
+             *     "제안할 근거가 없다"의 정직한 형태다.
+             *     요청의 `scope` 와 다르면 core-api 는 응답을 버린다.
+             */
+            scope: components["schemas"]["AiSearchScope"];
+            /**
+             * @description 가공 흔적이 없어 원자료로 보이는가. true 면 화면은 원천 표기만 남기고
+             *     등록하도록 안내한다 (`Policy_업로드와_계보_확정 §8 가공 단계 칸 · AI 제안 영역`).
+             *     **가공 단계 Lv 를 여기서 계산해 보내지 않는다** — Lv 는 확정된 계보에서
+             *     core 가 계산하는 파생값이다 (`common.json#ProcessingLevel` · `PLAN-SoT §9-⑳`).
+             */
+            rawDataLikely: boolean;
+            /**
+             * @description **빈 배열이 정상이다.** 억지 제안을 만들지 않는다.
+             *     묶음 단위의 상태·승인 필드를 두지 않는다 — 확인은 항목마다 사람이 한다.
+             */
+            suggestions: components["schemas"]["LineageSuggestion"][];
+        };
+        /**
          * @description 계보 상태 4값. **파생값 — 저장하지 않고 계산한다. 응답 타입에만 쓰고 입력/쓰기 타입에 두지 않는다.** 건수를 붙이지 않는다. 근거: DataModel_공통_기반 §4.1(계보 상태) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-③.
          * @enum {string}
          */
@@ -1263,31 +1713,152 @@ export interface components {
         /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. */
         ProcessingLevel: number;
         /**
-         * @description 프로젝트 유형. 과제/논문 1건 = 프로젝트 1개. 근거: DataModel_공통_기반 §5(프로젝트).
-         * @enum {string}
-         */
-        ProjectType: "국가과제" | "논문";
-        /**
-         * @description 파일 종류. 둘뿐이며 기준 격자 파일은 데이터셋당 0~1건이다. 근거: DataModel_공통_기반 §4.3(파일).
-         * @enum {string}
-         */
-        FileKind: "본체" | "기준 격자 파일";
-        /**
-         * @description 계보 관계의 부모 역할. 기본은 `주입력`이고, `보조입력`은 가공 단계 Lv 계산에서 빠진다. 근거: DataModel_공통_기반 §4.2(부모 역할).
-         * @default 주입력
-         * @enum {string}
-         */
-        ParentRole: "주입력" | "보조입력";
-        /**
          * @description 계보 관계가 만들어진 경로. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2.
          * @enum {string}
          */
         LineageOrigin: "AI 제안을 사람이 확인" | "사람이 직접 연결";
         /**
+         * @description 프로젝트 유형. 과제/논문 1건 = 프로젝트 1개. 근거: DataModel_공통_기반 §5(프로젝트).
+         * @enum {string}
+         */
+        ProjectType: "국가과제" | "논문";
+        /**
          * @description 프로젝트 상태. 2값이며 삭제는 없다. 근거: DataModel_공통_기반 §5(상태).
          * @enum {string}
          */
         ProjectStatus: "진행 중" | "닫힘";
+        /**
+         * @description 무엇을 그릴 것인가. **식별자만 넘긴다.** 등록된 데이터셋이면 `datasetId`(+ 조각 선택),
+         *     아직 등록하지 않은 업로드면 `uploadId` 다 (S-08). 둘 중 정확히 하나를 넣는다.
+         */
+        RenderTarget: {
+            datasetId?: components["schemas"]["Ulid"];
+            /** @description 등록 전 임시 업로드. 결과에 수명이 있다. */
+            uploadId?: components["schemas"]["Ulid"];
+            /**
+             * @description 그릴 조각(본체 파일)들. 생략하면 대상 전체다. 조각 하나만 골라 그리는 복구 경로가
+             *     여기로 온다 (`Policy_데이터셋_상세 §8 — 파일이 너무 큼`).
+             */
+            fileIds?: components["schemas"]["Ulid"][];
+        } & (unknown | unknown);
+        /** @description 색상과 간격. 정본이 준 컨트롤은 이 둘뿐이다. */
+        RenderStyle: {
+            /** @description `listPalettes` 가 돌려준 값. **ULID 가 아니라 viz-render 소유의 불투명 스타일 키다** — 그래서 `Id` 어휘를 쓰지 않는다. 이름을 계약에 박지 않는다. */
+            palette: string;
+            /**
+             * @description 구간 수 (`Policy_데이터셋_상세 §5 시각화 구간 수 — 3~9 단계, 기본 6`).
+             * @default 6
+             */
+            classCount: number;
+        };
+        RenderRequest: {
+            target: components["schemas"]["RenderTarget"];
+            /**
+             * @description 그릴 값 **하나**. 한 번에 값 하나만 그린다 (`Policy_데이터셋_상세 §1.3-5`).
+             *     생략하면 viz-render 가 기본값을 고른다 — core 가 파일의 변수 목록을 해석해
+             *     고르지 않는다.
+             */
+            variable?: string;
+            /**
+             * @description 그릴 시각. **층마다 따로 고른다** — 데이터마다 시간 간격이 달라 하나로 묶으면
+             *     없는 시각을 있는 것처럼 그린다 (`Policy_데이터셋_상세 §8 층의 시각`).
+             *     생략하면 첫 시각이다.
+             */
+            instant?: components["schemas"]["Timestamp"];
+            style: components["schemas"]["RenderStyle"];
+            /**
+             * @description 기준 격자 파일(위경도 짝 파일) 없이 그려 본다. 파일 안에 위경도가 들어 있는
+             *     경우가 있어 미리 막으면 그릴 수 있는 것까지 못 그린다
+             *     (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
+             * @default false
+             */
+            withoutReferenceGrid: boolean;
+        };
+        /**
+         * @description 렌더 작업 상태. 3값이며 취소를 두지 않는다 — 정본에 취소 화면이 없다.
+         * @enum {string}
+         */
+        RenderStatus: "그리는 중" | "완료" | "실패";
+        /**
+         * @description 진행 단계. 값은 정본 문구를 그대로 쓴다
+         *     (`Policy_업로드와_계보_확정 §8 미리보기 그리기` — 파일 읽는 중 → 지도 그리는 중 → 범례 만드는 중).
+         * @enum {string}
+         */
+        RenderStage: "파일 읽는 중" | "지도 그리는 중" | "범례 만드는 중";
+        /**
+         * @description 지도를 맞출 경계. **WGS84 경위도 고정**이라 요청·응답 어디에도 좌표계 인자가 없다 —
+         *     원본 좌표계 해석은 viz-render 안에서 끝난다 (§3-4).
+         */
+        Bounds: {
+            west: number;
+            south: number;
+            east: number;
+            north: number;
+        };
+        LegendClass: {
+            /** @description `#rrggbb`. */
+            color: string;
+            min: number;
+            max: number;
+        };
+        /**
+         * @description 범례. 구간마다 색과 값 범위를 준다. **층마다 따로 세운다** — 같은 팔레트로 겹치면
+         *     어느 색이 어느 층 값인지 알 수 없다 (`Policy_데이터셋_상세 §8 층 색상`).
+         */
+        Legend: {
+            palette: string;
+            /** @description 실제로 그린 값의 이름. */
+            variable?: string;
+            /** @description 단위. 파일에 없으면 생략한다 — 지어내지 않는다. */
+            unit?: string;
+            classes: components["schemas"]["LegendClass"][];
+        };
+        RenderResult: {
+            /**
+             * @description 지도 위젯이 그대로 쓰는 타일 URL 틀 (`{z}`·`{x}`·`{y}` 치환).
+             *     core 는 이 문자열을 해석하지 않고 전달만 한다.
+             */
+            tileUrlTemplate: string;
+            bounds: components["schemas"]["Bounds"];
+            legend: components["schemas"]["Legend"];
+        };
+        /**
+         * @description 조각 묶음에서만 생기는 상태. 몇 개를 못 읽었다고 미리보기를 통째로 막지 않는다.
+         *     **무엇이 빠졌는지를 시각으로 정확히 말한다** — 지도에서 비어 보이는 자리를
+         *     데이터가 없는 것으로 잘못 읽지 않게 한다 (`Policy_데이터셋_상세 §8`).
+         */
+        PartialFailure: {
+            totalParts: number;
+            renderedParts: number;
+            /** @description 못 읽은 조각. 화면은 이름과 시각을 그대로 밝힌다. */
+            missingParts: {
+                fileId?: components["schemas"]["Ulid"];
+                fileName: string;
+                instant?: components["schemas"]["Timestamp"];
+            }[];
+        };
+        RenderJob: {
+            renderId: components["schemas"]["Ulid"];
+            status: components["schemas"]["RenderStatus"];
+            /** @description `status` 가 `그리는 중` 일 때만 있다. */
+            stage?: components["schemas"]["RenderStage"];
+            /** @description 렌더 결과의 수명. 등록 전 업로드의 미리보기는 임시로만 둔다. */
+            expiresAt?: components["schemas"]["Timestamp"];
+            /** @description `status` 가 `완료` 일 때만 있다. */
+            result?: components["schemas"]["RenderResult"];
+            /**
+             * @description `status` 가 `실패` 일 때만 있다. `code` 로 정본의 실패 종류를 구분한다 —
+             *     그리는 서버 연결 불가 · 시간 초과 · 알 수 없는 오류
+             *     (`Policy_데이터셋_상세 §8 미리보기를 그릴 수 없을 때`).
+             *     **부분 실패는 여기가 아니다** — 아래 `RenderResult.partialFailure` 를 쓴다.
+             */
+            failure?: components["schemas"]["ErrorEnvelope"];
+            /**
+             * @description 조각 일부를 못 읽었을 때. **`status` 는 `완료` 로 남는다.**
+             *     부분 실패는 전부 실패와 다르게 다룬다 — 읽힌 조각으로 그린다.
+             */
+            partialFailure?: components["schemas"]["PartialFailure"];
+        };
     };
     responses: {
         /** @description 요청 값이 규칙에 맞지 않는다. */
@@ -1352,6 +1923,15 @@ export interface components {
         DatasetId: components["schemas"]["Ulid"];
         ProjectId: components["schemas"]["Ulid"];
         RequestId: components["schemas"]["Ulid"];
+        /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+        UploadId: components["schemas"]["Ulid"];
+        /**
+         * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+         *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+         */
+        FileId: components["schemas"]["Ulid"];
+        /** @description 렌더 작업 식별자 (`core-viz.yaml` RenderId 와 같은 값 — 중계라 새 식별자를 만들지 않는다). */
+        RenderId: components["schemas"]["Ulid"];
         /**
          * @description 이어보기 토큰. 페이지 크기는 서버가 정한다 — 정본은 `+N건 더 보기`만 요구하고
          *     페이지 크기 값을 주지 않는다 (`sessions/D2.md §3-②`).
@@ -1509,6 +2089,113 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    createUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** @description 파일 바이트 파트들. 순서가 `fileKinds` 와 짝이다. */
+                    files: string[];
+                    /**
+                     * @description `files` 와 같은 순서의 파일 종류. 생략하면 전부 `본체` 다.
+                     *     이벤트의 `FileRef.kind` 가 required 라 접수 시점에 종류가 정해져 있어야 한다
+                     *     (`../events/core-pipeline.json` FileRef · `DataModel §4.3`).
+                     */
+                    fileKinds?: components["schemas"]["FileKind"][];
+                };
+            };
+        };
+        responses: {
+            /**
+             * @description 접수됨. 이 응답이 FE 표면에 `uploadId`·`fileId` 를 내리는 자리다
+             *     (`sessions/SEAM-AUDIT.md` I-01·I-06 — 소비만 있고 생산이 없던 두 식별자).
+             */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadReceipt"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getUploadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 업로드 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description 없는 업로드이거나 수명이 다해 사라졌다 (`Policy §7.1` — 등록되지 않은 업로드는 남지 않는다). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+        };
+    };
+    listUploadLineageSuggestions: {
+        parameters: {
+            query?: {
+                /** @description 등록 폼의 데이터셋 이름 초안. 해석 단서로만 쓴다 (`core-ai.yaml` LineageSuggestionRequest). */
+                datasetNameDraft?: string;
+                /** @description 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`). */
+                subject?: string;
+            };
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 제안 결과. **0건도 여기로 온다** — 정직한 빈 상태 (`Policy §8` AI 제안 영역). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineageSuggestionResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     listDatasets: {
         parameters: {
             query?: {
@@ -1554,6 +2241,52 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    createDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetCreate"];
+            };
+        };
+        responses: {
+            /** @description 등록된 데이터셋. 화면은 상세로 이동한다 (`Policy §7.2`). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description 없는(또는 수명이 다한) 업로드다. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 이미 등록 전환된 업로드다 — 같은 업로드로 데이터셋을 두 번 만들지 않는다. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             500: components["responses"]["ServerError"];
         };
     };
@@ -1643,6 +2376,37 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    updateDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetUpdate"];
+            };
+        };
+        responses: {
+            /** @description 갱신된 상세 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getDatasetDeletionImpact: {
         parameters: {
             query?: never;
@@ -1702,6 +2466,125 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    addDatasetFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: string;
+                    kind: components["schemas"]["FileKind"];
+                };
+            };
+        };
+        responses: {
+            /** @description 추가된 파일 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    replaceDatasetGridFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 교체된 파일 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteDatasetGridFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 지워짐 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 대상이 본체 파일이다 (`〈59〉-③`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             500: components["responses"]["ServerError"];
         };
     };
@@ -2297,6 +3180,36 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    linkProjectDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectDatasetLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description 연결됨(또는 의미 문장이 갱신됨) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     unlinkProjectDataset: {
         parameters: {
             query?: never;
@@ -2315,6 +3228,62 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    createPreviewRender: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderRequest"];
+            };
+        };
+        responses: {
+            /** @description 렌더 작업이 잡혔다. 진행·결과는 `getPreviewRender` 로 본다. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getPreviewRender: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 렌더 작업 식별자 (`core-viz.yaml` RenderId 와 같은 값 — 중계라 새 식별자를 만들지 않는다). */
+                renderId: components["parameters"]["RenderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 렌더 작업 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderJob"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

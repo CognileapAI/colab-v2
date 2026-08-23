@@ -101,15 +101,21 @@ case "$GATE" in
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done
     exit $rc
     ;;
   generated-up-to-date)
-    echo "::error::게이트 '$GATE' 미구현 — 후속 WU에서 구현한다. 미구현은 red다."
-    exit 1
+    # 생성물 등기부(contracts/codegen/manifest.toml)의 엔트리를 실제로 재생성해 커밋본과 diff.
+    # 등기부 밖의 「generated」 마커 파일도 red — codegen 통제 밖 자칭 생성물은 드리프트 발원지다.
+    # 빈 등기부·등기부 부재·재생성 실패는 전부 red (CLAUDE.md §4 green-by-skip 금지).
+    exec "$REPO_ROOT/gates/tools/generated-up-to-date.sh"
+    ;;
+  generated-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (stale·손수정·부재·빈 등기부·미등기 마커).
+    exec "$REPO_ROOT/gates/tools/generated-selftest.sh"
     ;;
   "")
     echo "usage: gates/run.sh <gate>" >&2

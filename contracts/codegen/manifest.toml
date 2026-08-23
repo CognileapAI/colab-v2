@@ -1,0 +1,23 @@
+# codegen manifest — 생성물 등기부 (SSoT)
+#
+# `generated-up-to-date` 게이트가 읽는 유일한 정본이다. 엔트리마다
+# 「계약(source) → 생성 명령(command) → 커밋된 산출물(output)」을 못 박고,
+# 게이트가 command 를 실제로 다시 돌려 임시 파일과 커밋본을 byte-diff 한다.
+#
+# 규칙 (contracts/README.md §규칙 3·4):
+#   - 생성물은 커밋한다. 손으로 고치지 않는다 (CLAUDE.md 규칙 7).
+#   - 여기 등재되지 않은 파일이 「generated」 마커를 달고 레포에 있으면 red 다 —
+#     codegen 통제 밖에서 생성물을 자칭하는 파일은 드리프트의 발원지다.
+#   - **엔트리 0건은 red 다.** "생성물이 없다"와 "등기부를 비웠다"는 구분되지 않으므로
+#     빈 등기부를 green 으로 세지 않는다 (gates/README.md — 대상 0건 = red 원칙 그대로).
+#
+# command 는 레포 루트에서 실행되고, {OUT} 이 임시 산출 경로로 치환된다.
+# 도구 버전은 레포에 고정된 것만 쓴다 (frontend/package.json 의 openapi-typescript 7.13.0) —
+# npx 로 최신을 끌어오면 게이트가 조용히 바뀐다 (contracts/package.json 과 같은 이유).
+
+[[output]]
+id = "fe-core-ts"
+source = "contracts/seams/fe-core.yaml"
+output = "frontend/src/generated/fe-core.ts"
+command = "frontend/node_modules/.bin/openapi-typescript contracts/seams/fe-core.yaml -o {OUT}"
+# 재생성 = cd frontend && npm run generate (package.json scripts.generate 와 같은 도구·같은 입력)

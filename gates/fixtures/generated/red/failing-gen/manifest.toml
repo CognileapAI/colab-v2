@@ -1,0 +1,5 @@
+[[output]]
+id = "demo"
+source = "src/in.txt"
+output = "out/gen.ts"
+command = "exit 3"
