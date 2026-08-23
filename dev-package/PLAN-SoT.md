@@ -148,7 +148,7 @@ v2가 AI에게 시키는 두 일은 모두 **관계 질의**다.
 | 지식 | 어디서 | v2 어디에 들어가나 |
 |---|---|---|
 | 4포맷 디코딩 절차와 함정 — GRIB(ERA5 경도 0-360) · NetCDF(GK2A LCC) · Binary(HSR Curvilinear) · HDF5(MODIS Sinusoidal) → WGS84 | PoC `services/processors/` | **D5** 헤더 파싱·좌표계 변환 재구현의 명세 |
-| **GeoTIFF — PoC 선례 없음** (`㊿` 로 5번째 입력 포맷 채택) | **없다** | **D5 에서 새로 연다.** 함정 목록이 비어 있고, *이미 COG 인 tif* 와 *일반 GeoTIFF* 를 구분하는 감지 규칙이 필요하다 |
+| **GeoTIFF — 선례가 반쪽이다** *(2026-08-23 정정. 「선례 없음」으로 적었던 것은 **거짓이었다**)* | **디코드는 있다** — `PoC/viz-service/app/decoders/geotiff.py`(밴드 선택 · **정확일치 nodata** · `src.crs.to_epsg() != 4326` 이면 `pyproj` 재투영). **인제스트·COG 경로는 없다** — `.tif` 프로세서가 레지스트리에 없어 archive-only 로 빠진다 | **D5 는 「읽기」를 물려받고 「받아들이기」를 새로 연다.** 그리고 **이미-COG 판별은 어느 세대에도 없다**(`cog_validate`·`is_cog` grep 0건) — `DR-2` 는 처음부터 세운다 |
 | 포맷 자동 감지 판별 규칙 | PoC `format_detector` | **D5** |
 | COG 변환 파라미터·overview 전략·타일 서빙 튜닝 | PoC `tiles.py` | **D7** |
 | 실패 목록 — Dataset God Object(112 컬럼) · 이중 스토리지 · 워커 트랜잭션 부재로 인한 고아 COG · 큐 사일런트 데드락 · 타입 수동 동기화 · ID 타입 드리프트 | v1 PLAN-SoT §Context | **설계 회귀 방지 체크리스트.** WU-D3의 게이트 목록이 여기서 나온다 |
