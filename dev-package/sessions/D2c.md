@@ -536,7 +536,7 @@ red 2건 — 둘 다 이 레인과 무관하게 설계·환경 조건이다:
 | 7-1 additive 증명 | ✅ | `contract-breaking` green(「No breaking changes … but the specs are different」) · 두 함정(`usageNote` required · `fileCount minimum:1`) 원형 유지 — C1 기록 |
 | 7-2 501 표 | 🟧 부분 | **표 등재는 25 → 36(+11) 완료. 그러나 라우트 등록·`not_implemented.py`·1:1 diff 시험은 D2c-api 레인 몫으로 미착수** — 워킹트리는 **고아 계약 op 11건** 상태다. 커밋 불가 사유이기도 하다(한 커밋 = 계약 + 소비자, §7-5) |
 | 7-3 게이트 | ✅ | 전 수트 green + `seam-consistency` green + selftest 13케이스(green 4 · red 9) + **개정 전 red 실측 기록**(G-e·G-b 둘 다 눈으로 봄 — C2 기록). 무관 red 2건은 설계·환경 조건(`generated-up-to-date` 미구현 red 설계대로 · `schema-diff` DB URL 부재) |
-| 7-4 staging 배포 green | 🟦 **기능군 완료 시 울트라리뷰로 이행** (`〈62〉-㉰`) | 레인이 staging 을 건드리지 않았다(멈춤 규칙). 실측은 기능군 완료 시점에 Ted 가 울트라리뷰(전수 검수)로 일괄 수행한다 — Ted 직접 지시 2026-08-23 |
+| 7-4 staging 배포 green | ✅ **실측 (2026-08-23)** | Ted 지시로 이번 회차 실측. deploy.sh 완주(빌드→마이그레이션→교체, :prev 태그 보존 — DR-5 대응) 후 **컨테이너 8개 정상**(7 healthy + cloudflared 무헬스체크 설계) · **헬스 6종 전부 200 + 본문 대조**(단위별 unit JSON — 자리표시 오리진 아님 증명). exit 0 을 믿지 않고 별도 실측했다(DR-6) |
 | 7-5 `contracts/README.md` 규칙 5 리뷰 | ✅ **Ted 면제** (`〈62〉-㉯`) | 커밋 `0f6641b`·`c1022f2` 의 규칙 5 소급 이행을 Ted 가 면제 — 소급 PR 을 만들지 않는다 (2026-08-23) |
 | 7-6 ㉠ 정본 근거 대조 | ✅ | 기계 검사 구현·신설 50건 전수 통과(근거의 **내용** 옳음은 안 본다 — ㉠ 명세 그대로) |
 | 7-7 ㉡ 흐름 완주 | ✅ | 15단계 재생 · 끊긴 자리 0 · P4 이월 1건 명시. **단 fixture 는 E04-map DRAFT 승계본 — Ted 검토 전**(표가 틀리면 ㉡ 이 틀린 흐름을 완주로 판정한다) |
@@ -590,3 +590,11 @@ C1 신설 11 op 의 고아 상태 해소 — 라우트 501 등록 + 1:1 diff 시
 ### 남은 것
 
 - 커밋(계약 + 소비자 한 커밋, §7-5) · ㉢ Ted 승인 · staging 배포 green 실측 — 메인 세션 소관 (변경 없음).
+
+
+## 7-4 staging 실측 (2026-08-23)
+
+- 배포: `infra/staging/deploy.sh` 완주 (clean main = 커밋 `7004ee4` 기준 빌드 — DR-4 조건 충족 · 직전 이미지 `:prev` 태그 보존 — DR-5 대응)
+- 컨테이너: 8/8 정상 — app 5종 + nginx + pg healthy, cloudflared 는 헬스체크 없음(설계)
+- 헬스: 루트 + 5단위 전부 200, 본문 = 단위별 `{"unit":…,"status":"alive"}` JSON (자리표시 오리진은 이 본문을 못 낸다)
+- 이로써 D2c 완료 정의 8항 **전부 충족** — 계약 동결(㉢) + 실측까지. **D2c 닫힘.**
