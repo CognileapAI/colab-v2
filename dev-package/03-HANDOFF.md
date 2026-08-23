@@ -3,11 +3,12 @@
 > **이 문서가 "지금 어디까지 왔는가"의 진실원.** 매 세션 끝에 갱신한다(규약 `01-CLAUDE-DRIVER.md §C`).
 > 새 세션은 여기부터 읽는다. 코드·인프라와 모순되면 실제 상태를 점검해 **이 문서를 먼저 바로잡는다.**
 
-**최종 갱신** 2026-08-23 (**밤샘 세션 — WU 8개 닫힘. P0 · I2 분수령 통과 · IS3 · K1 · K2 · D2b · D3b · D3**)
+**최종 갱신** 2026-08-23 (**밤샘 세션 WU 8개 닫힘** + **결정 `㊻` — AWS 보류, 완주 판정을 staging 까지로 내림**)
 **현재 단계** **T-G 전부 닫힘 · T-D 전부 닫힘(D1 D2 D2b D3 D3b) · P0 ✅ · I2 ✅** · 게이트 **13종 중 12종 구현**(`generated-up-to-date` 만 미구현 — 설계대로 red), 자기 증명 **139 케이스** green · **staging 에 5개 배포 단위 + postgres 2체인이 실제로 서 있다**(`www.colab-hydro.com`)
 **다음 WU** → **P1**(카탈로그 S-03 + 상세 헤더 + `연구실 설정 > 구성원·권한`). 진입조건 P0 충족. **I2 를 지났으므로 이제부터 각 WU 의 완료 판정에 `staging 배포 green` 이 붙는다.** 병렬 착수 가능 = **I3**(배포 자동화) · `generated-up-to-date` 게이트 · **IS4 잔여**. **K3·K4 는 OpenAI API 키 대기.**
 ／ **Ted 비토 대기 (기본은 그대로 간다)**: `㉝` 스토리 6개 상한 폐기(정본 내용 변경) · `㉟` 표기 규약 · `㊱` 잠김 200·경계 404·권한 403 · `㊲` 멱등 키 둘 · `㊳` 기술 스택 · **`㊸-④-3` D9 시드 배치(④-4 함의로 확정 — 명시 답변 아님)**. **PLAN 이탈 1건**(`§5`)
-／ **Ted 가 줄 것 (그것만 막는 것)**: **IS2 apply 용 Cloudflare API 토큰**(`Account → Cloudflare Tunnel : Edit`) · **I0** AWS 계정(**prod 전용** — staging 은 `㉓` 로 우회) · **OpenAI API 키**(`㊷` — K3·K4 런타임) · 터널 ID 히스토리 처리(`§4-8`)
+／ **Ted 가 줄 것 (그것만 막는 것)**: **IS2 apply 용 Cloudflare API 토큰**(`Account → Cloudflare Tunnel : Edit`) · **OpenAI API 키**(`㊷` — K3·K4 런타임) · 터널 ID 히스토리 처리(`§4-8`)
+／ **⏸ 보류 — 열지 않기로 한 것**: **AWS 계정 (I0·I1·I5, prod 전용)**. `㊻`(2026-08-23 Ted) — **v2 완주 판정은 `staging 배포 green` 까지로 내렸다.** prod 는 ① staging 에서 v2 전체가 충분히 동작하고 ② Ted 가 **출시를 결정**했을 때 연다. **더 이상 블로커가 아니다 — 대기가 아니라 결정이다.**
 ／ Claude 착수 가능: **P1** · **I3** 배포 자동화 · `generated-up-to-date` 게이트 · **IS4 잔여**(마지막 apply · 맨몸 호스트 조건)
 ／ **T-C(C1~C4)는 v1 정리 트랙이므로 지금 열지 않는다** — C3는 P2·D5, C4는 D3에 가서야 입력이 된다
 
@@ -32,7 +33,7 @@
 | C3 PoC 지식 추출 `HARVEST.md` | ⬜ | 4포맷·좌표계·COG·실패 목록 |
 | C4 v1 방법론 추출 `METHOD.md` | ⬜ | 계약 게이트 6종 구성 방식 |
 
-### T-I 인프라 (AWS 배포가 완료 조건)
+### T-I 인프라 (**staging 배포가 완료 조건** — prod 는 `§9-㊻` 로 보류)
 
 > **staging = WSL+Cloudflare Tunnel 호스트 재사용 · prod = AWS** *(2026-08-22 Ted, `PLAN-SoT §9-㉓`)*.
 > **PoC 스택은 2026-08-22 철거됐다** — 컨테이너·볼륨·데이터 전부. `colab-hydro.com` 은 현재 **530**(오리진 없음).
@@ -41,16 +42,16 @@
 
 | WU | 상태 | 비고 |
 |---|---|---|
-| I0 계정·결제·리전·예산 알람 | ⬜ | **prod 임계경로.** staging은 IS1이 대신하므로 I2가 이걸 기다리지 않는다 |
+| I0 계정·결제·리전·예산 알람 | ⏸ | **보류 — 출시 결정 대기** (`㊻`). staging 은 IS1 이 대신한다. ⬜ 가 아닌 이유 = ⬜ 는 "곧 할 것"으로 읽혀 매 세션 착수 후보에 오른다 |
 | **IS1 staging 호스트 구성** | ✅ | 기존 터널에 v2 오리진 재부착. 산출 `infra/staging/` — nginx + cloudflared **둘뿐**(데이터 저장소 없음), 호스트 노출은 `127.0.0.1:3000` 만(PoC 의 `0.0.0.0` 반복 회피). **롤백 왕복 증명 200→530→200.** 현재 `colab-hydro.com` = v2 staging 자리표시(중립 안내 + `/healthz`). 토큰은 레포 밖 홈 `0600` 파일. **커넥터 로그가 원격 ingress 정본을 노출했다 — `www.colab-hydro.com → http://nginx:80`** (그래서 서비스명을 `nginx` 로 고정) |
 | **IS2 터널 라우팅 IaC화** | ✅ | **완료 판정 증명됨 — `terraform plan` = `No changes.`** 레포 선언이 실제 상태와 일치한다. 즉 **대시보드가 정본이 아니라 레포가 정본이고 대시보드가 그 산출**이다. 산출 `infra/staging/tunnel/`(versions·variables·tunnel.tf·tfvars.example·.gitignore·README). ingress 선언 = `www→nginx:80` + catch-all 404 **둘뿐이고 ssh 규칙 없음**(`§9-㉜`) — 없는 이유를 파일 주석에 남겼다. 비밀은 전부 변수(default 없음)이고 `.gitignore` 가 `*.tfvars`·상태파일 차단(`git check-ignore` 확인). 실행 기록 — `init → import → plan → apply`(`0 add, 1 change, 0 destroy`, destroy/replace 0건) → `www/healthz` **200 무중단** → 커넥터가 `version=7` 로 새 ingress 수신. **블로커 #7 은 세 겹이었다**(ingress · Access 앱 · DNS CNAME) — 셋 다 제거, `ssh.colab-hydro.com` 은 이제 **DNS 미해석**. terraform 은 `~/.local/bin` 에 사용자 수준 설치(sudo·apt 저장소 불필요, 파일 삭제로 원복). **한계 = state 가 이 호스트 로컬에만 있다**(레포에 커밋하지 않는다 — 비밀 포함). 호스트가 사라지면 재import 로 복구해야 한다 → **IS4 로 세웠다**. 터널은 **원격 관리형**(토큰만 · ingress 를 Cloudflare 가 push, 커넥터 로그 `version=6` 으로 확증). 3안 비교 후 **Terraform `cloudflare_zero_trust_tunnel_cloudflared_config`** 채택 — 무중단이고 `terraform plan` 이 "레포에서 재적용해 동일 상태 재현"을 그대로 만족시킨다. `.tf` 초안·apply/verify/rollback 시퀀스 = `sessions/IS2.md`(아직 `infra/` 에 배치하지 않았다). 블로커 #7 은 `§9-㉜` 로 **삭제 확정** — IS2 선언에서 빼면 apply 시 사라진다 |
 | IS3 staging 백업 체계 | ✅ | **2026-08-23 닫힘 — 실 staging 대상.** 백업 1회(두 체인) · **복원 1회**(일회용 인스턴스, 테이블·행 수·내용 md5 대조 일치, K2 시드 22행 별도 확인) · **fail-closed fixture 11건 전부 red**. F2 가 핵심 — **빈 gzip 20B 는 `gzip -t` 를 통과한다**(PoC 가드가 통과시킨 그 파일). I2 가 넘긴 설정으로는 platform 만 덮여 부분 성공이 났고, 프로파일별 합격선으로 고친 뒤 **F9 로 박았다**. 스케줄 설치. **정직한 한계 = 실패가 「가서 봐야 보이는」 자리에만 남는다** — push 알림 채널이 없어 침묵 창이 0 이 된 것이 아니라 8주 → 최대 1주로 잘렸다. 산출 `sessions/IS3.md` |
 | **IS4 terraform state 보관** | 🟧 | **2026-08-23 — 절차는 섰고 리허설도 돌렸다.** scratch 에 `.tf` 만 복사해 빈 state 로 `init → import → plan`(실자격증명). 원본 state md5 동일 · 실디렉터리 `plan` = `No changes.` · staging 내내 200. 산출 `sessions/IS4.md` · `infra/staging/tunnel/README §5-1`. **미달 2건 = ① 마지막 `apply` 미실행**(실 터널을 건드린다) **② 맨몸 호스트 조건**(terraform 미설치·자격증명 파일 없음) 미실험. 원격 백엔드(S3+DynamoDB)는 **I0 대기** |
-| I1 토폴로지 + IaC (`plan`까지) | ⬜ | I0 후 |
+| I1 토폴로지 + IaC (`plan`까지) | ⏸ | I0 후 — **보류** (`㊻`) |
 | **I2 walking skeleton 배포** | ✅ | **2026-08-23 — 분수령 통과.** 5개 단위 전부 헬스 green(`/healthz/{core-api,frontend,pipeline-worker,viz-render,ai-service}`), 컨테이너 7/7 healthy, 호스트 노출 `127.0.0.1` 하나뿐 **`0.0.0.0` 0건**. **롤백 증명에서 방법을 고쳤다 — 상태 코드만으로는 판정할 수 없다**(자리표시가 모든 경로에 200 을 준다). 본문까지 대조했다: `<!doctype html>` ↔ `{"unit":"core-api"}` · `/api/v1/me` 200↔401. 배포→롤백→재배포 4구간 **530 없이 무중단**. postgres 2체인 분리 유지(`colab_platform` 20표 · `colab_ai` 시드 22행). 앱 롤 staging 실측 `rolsuper=f·rolbypassrls=f·소유 0` — P0 숫자와 동일. 터널 선언 무수정(`plan` = No changes). 산출 `sessions/I2.md` |
 | I3 배포 자동화 | ⬜ | |
 | I4 운영 준비 (추적·알람·복구 리허설) | ⬜ | |
-| I5 prod 전환 | ⬜ | I4 + P7 |
+| I5 prod 전환 | ⏸ | I4 + P7 — **보류** (`㊻`). v2 개발의 종점은 여기가 아니라 **staging 전체 green** 이다 |
 
 ### T-G 게이트
 | WU | 상태 | 비고 |
@@ -112,15 +113,15 @@
 
 확정·열림 전체는 `PLAN-SoT.md §9`. 새 결정이 나면 **거기 적고 여기서 링크**한다(두 곳에 적으면 갈라진다).
 
-최근 확정 — ① 신규 구축 ② AWS 배포까지 ③ 정본 260818 ④ AI 도메인 분리 ⑤ WU 단위 ⑥ Assistant BC 미계승 ⑦ `colab-v2` 모노레포 ⑯ 레포 public *(전부 2026-08-22 Ted)* · **⑰ G5 대조 상대 = v1 스키마 ⑱ v1 저장 형태 계승 0 ⑲ 값 집합은 DB가 강제 ⑳ 파생값 2종 미저장** *(2026-08-22 G5)*. **㉑ D4→D3 읽기 Port 시그니처 확정 ㉒ "도메인 소유자" = 변경 승인권자 ㉓ staging=터널 호스트·prod=AWS ㉔ PoC 철거·데이터 폐기** *(2026-08-22 Ted)*. **㊵ 승격 게이트(staging 확인 → Ted 승인 → AWS) ㊶ 검색 = Postgres 단독 ㊷ 모델 = GPT 전면 통일(luna/terra, API 키 · Claude 어댑터 휴면) ㊸ 온톨로지 §④ 4항목 확정 — G8 승인, K1 진입조건 충족** *(2026-08-23 Ted)*. **㊹ 미구현 엔드포인트 = 501 + code 두 종(404 아님, 계약 무수정) ㊺ staging postgres 2 DB · 앱 롤 비소유자·NOBYPASSRLS** *(2026-08-23 Claude 판단 · 비토 가능)*. 열린 결정 **⑧⑨⑩ 해소**(⑪~⑮는 그대로 열려 있다). **㉖(RLS 실효 증명) 은 D3b 로 닫혔다.** 새로 열린 것 — 없음
+최근 확정 — ① 신규 구축 ~~② AWS 배포까지~~(**㊻ 로 개정 — staging 까지**) ③ 정본 260818 ④ AI 도메인 분리 ⑤ WU 단위 ⑥ Assistant BC 미계승 ⑦ `colab-v2` 모노레포 ⑯ 레포 public *(전부 2026-08-22 Ted)* · **⑰ G5 대조 상대 = v1 스키마 ⑱ v1 저장 형태 계승 0 ⑲ 값 집합은 DB가 강제 ⑳ 파생값 2종 미저장** *(2026-08-22 G5)*. **㉑ D4→D3 읽기 Port 시그니처 확정 ㉒ "도메인 소유자" = 변경 승인권자 ㉓ staging=터널 호스트·prod=AWS ㉔ PoC 철거·데이터 폐기** *(2026-08-22 Ted)*. **㊵ 승격 게이트(staging 확인 → Ted 승인 → AWS) ㊶ 검색 = Postgres 단독 ㊷ 모델 = GPT 전면 통일(luna/terra, API 키 · Claude 어댑터 휴면) ㊸ 온톨로지 §④ 4항목 확정 — G8 승인, K1 진입조건 충족** *(2026-08-23 Ted)*. **㊹ 미구현 엔드포인트 = 501 + code 두 종(404 아님, 계약 무수정) ㊺ staging postgres 2 DB · 앱 롤 비소유자·NOBYPASSRLS** *(2026-08-23 Claude 판단 · 비토 가능)*. **㊻ AWS 보류 — v2 완주 판정을 `staging 배포 green` 까지로 내리고 prod 는 출시 결정 뒤에 연다** *(2026-08-23 Ted)*. 열린 결정 **⑧⑨⑩ 해소**(⑪~⑮는 그대로 열려 있다). **㉖(RLS 실효 증명) 은 D3b 로 닫혔다.** 새로 열린 것 — 없음
 
 ## 4. 블로커 (사람이 풀어야 할 것)
 
-> **2026-08-23 밤 기준 — 진행을 막는 사람 결정은 둘뿐이다.** ① **AWS 계정**(#1, prod 임계경로) ② **OpenAI API 키**(K3·K4). 그 밖의 전 트랙은 Claude 착수 가능이다.
+> **2026-08-23 갱신 — 진행을 막는 사람 결정은 이제 하나뿐이다: OpenAI API 키(#9, K3·K4).** AWS 계정(#1)은 `§9-㊻` 으로 **보류가 결정돼 블로커에서 빠졌다.** 그 밖의 전 트랙은 Claude 착수 가능이다.
 
 | # | 블로커 | 막는 것 |
 |---|---|---|
-| 1 | **AWS 계정·결제** | I0 → I1·I5(**prod**). 완료 조건이므로 여전히 임계경로. 단 `㉓` 으로 **staging은 이 블로커를 우회**한다 |
+| 1 | ~~**AWS 계정·결제**~~ | **성격 변경 · 블로커 아님** (2026-08-23, `§9-㊻`) — Ted 가 **보류**를 결정했다. 완주 판정이 `staging 배포 green` 까지로 내려갔으므로 I0·I1·I5 는 임계경로에서 빠진다. prod 는 **출시를 결정할 때** 연다. 실제로 이 항목이 막고 있던 P·K·D 트랙은 **하나도 없었다** |
 | 2 | ~~**자연어 검색 엔진 결정**~~ | **해소** (2026-08-23, `§9-㊶`) — **Postgres 단독**(tsvector + pgvector). 별도 엔진을 두지 않는다. 경계가 RLS 로 공짜로 따라오고, 정렬 최종 결정권이 어차피 core 에 있다. **P4·K4 차단 해제** |
 | 3 | ~~**온톨로지 범위 (수문학 소유자 시간)**~~ | **성격 변경** (2026-08-23, `§9-㊴`) — 더 이상 **사람의 시간을 기다리는 블로커가 아니다.** 범위·어휘를 **기획 정본에서 길어 올리는 작업**이고 승인은 Ted 가 한다. **G8·K 트랙이 Claude 착수 가능**이 됐다. 남은 위험은 하나 — 정본이 값을 주지 않는 곳에서 **만들어 채우는 것**. 그런 자리는 `[정본 무근거]` 로 남긴다 |
 | 7 | ~~**`ssh.colab-hydro.com` ingress 가 오리진 없이 살아 있다**~~ | **해소 · 실행 완료** (2026-08-23, `§9-㉜`). 진단이 얕았다 — 잔재는 **세 겹**(ingress · Access 앱 · DNS CNAME)이었고 셋 다 제거했다. **엣지에 만든 것은 라우팅·인증·이름 세 층에 흩어진다** |
