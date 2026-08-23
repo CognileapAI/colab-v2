@@ -358,7 +358,7 @@ paths:
         한 번에 제출하는 값이다 (`Policy §5` 입력값 규칙).
         **`fileId` 동일성** — 등록 시 D3 파일 레코드는 업로드 세계의 `fileId` ULID 를 자기 PK 로
         그대로 쓴다. 새로 만들지 않는다. `[정본 무근거 — 계약 구조 연역(sessions/D2c.md §2-10) ·
-        사용자 승인 2026-08-23, Ted 본인 승인 여부 미확인 — ㉢ 제출 목록 유지]`
+        Ted 승인 2026-08-23 (본인 확인) — ㉢ 제출 목록 유지]`
       requestBody:
         required: true
         content:
@@ -1749,7 +1749,7 @@ components:
         업로드 안의 파일 하나. 이벤트 seam 의 `FileRef`(`../events/core-pipeline.json`)와 같은
         네 값이다 — 동기 응답과 비동기 페이로드가 같은 사실을 말하게 둔다.
         `fileId` 는 등록 전환 후 D3 파일 레코드의 PK 로 그대로 이어진다 — `fileId` 동일성
-        (`sessions/D2c.md §2-10` `[정본 무근거]` · 사용자 승인 2026-08-23, Ted 본인 승인 여부 미확인).
+        (`sessions/D2c.md §2-10` `[정본 무근거]` · Ted 승인 2026-08-23 (본인 확인)).
       type: object
       required: [fileId, fileName, kind, byteSize]
       additionalProperties: false

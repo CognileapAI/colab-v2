@@ -372,7 +372,7 @@
 
 ## 추기 (2026-08-23 · 메인 세션) — 착수 전 반영 사항
 
-1. **`NB-A`(`fileId` 동일성) 답이 나왔다 — 동일 ID 유지.** 업로드 시 발급된 `fileId` 가 계보 확정(등록 전환) 후 `d3_file.id` 로 **그대로 유지**된다. 별도 uploadId→fileId 변환 지점을 만들지 않는다. *(사용자 승인 2026-08-23 — Ted 본인 승인 여부 미확인. 정본 근거가 아니라 사용자 결정이므로 `[정본 무근거]` 로 취급하고 `§7-8-㉢-2` 제출 목록에 유지한다 — 계약 본문에는 이 결정을 산문 명기하되 근거 표기를 정직하게 남긴다.)*
+1. **`NB-A`(`fileId` 동일성) 답이 나왔다 — 동일 ID 유지.** 업로드 시 발급된 `fileId` 가 계보 확정(등록 전환) 후 `d3_file.id` 로 **그대로 유지**된다. 별도 uploadId→fileId 변환 지점을 만들지 않는다. *(Ted 승인 2026-08-23 (본인 확인). 정본 근거가 아니라 사용자 결정이므로 `[정본 무근거]` 로 취급하고 `§7-8-㉢-2` 제출 목록에 유지한다 — 계약 본문에는 이 결정을 산문 명기하되 근거 표기를 정직하게 남긴다.)*
 2. **신설 항목 추가 — AI 계보 제안 조회 중계 op.** `E04-step-op-map.DRAFT.md` 단계 10 이 지적한 구멍: `core-ai` 는 core-api 내부 seam 이라 FE 가 계보 제안에 도달할 계약 경로가 없다 — `§2` 신설 목록에 **FE↔core 중계 op(계보 제안 조회)** 를 추가한다(§2-3 의 위임 산문 정정과 별개 항목). `DR-7` 과 같은 모양의 구멍을 개정 회차에 알고도 남기지 않는다. **㉢ 제출 목록에 「범위 확장 1건」으로 명시한다.** *(사용자 승인 2026-08-23)*
 3. **`DR-13`·`STOP-4` 는 닫혔다**(제3안 — D5 만 WU 승격). `§8` 의 마감 보고 문구 중 「`DR-13` 은 열려 있다」 부분은 **「`DR-13` 은 닫혔다(2026-08-23)」로 바꿔 적는다.** P2 착수 판정은 `STOP-1` 닫힘만 남는다.
 4. **`DR-8`·`STOP-2` 는 닫혔다** — 정본 갱신 완료(계약 무변경, `§2-12` 처방대로). 개정 시 `core-pipeline.json` 의 포맷 표기는 **갱신된 정본**(`NetCDF·Binary·HDF4·GeoTIFF`) 기준으로 정합을 본다.
@@ -405,7 +405,7 @@
 | `createUpload` | POST `/uploads` | §2-4 · `core-pipeline.json` ①(source=core-api const) · Policy §2·§8 — `upload.accepted` 발행 유일 자리 산문 명기. **전송 형태(파일 바이트가 이 op 으로) = `[정본 무근거]` 레포 결정**(E04-map 단계 1 형태 승계) |
 | `getUploadStatus` | GET `/uploads/{uploadId}` | §2-4 · SEAM-AUDIT I-18·C-5. 실패 사유는 `envelope.json#FailureReason` $ref — 재선언 없음 |
 | `listUploadLineageSuggestions` | GET `/uploads/{uploadId}/lineage-suggestions` | **추기-2(범위 확장 1건, 사용자 승인 2026-08-23)** · Policy §2 규칙 맵. 응답 = `core-ai.yaml#LineageSuggestionResponse` $ref(중계라 재선언 안 함) |
-| `createDataset` | POST `/datasets` | §2-5 · Policy §7.2 · 〈55〉(topic 은 받되 계약 enum 없음 — NB-E). **fileId 동일성 산문 명기 + `[정본 무근거 · 사용자 승인 2026-08-23 — Ted 본인 승인 여부 미확인]` 표기**(추기-1) |
+| `createDataset` | POST `/datasets` | §2-5 · Policy §7.2 · 〈55〉(topic 은 받되 계약 enum 없음 — NB-E). **fileId 동일성 산문 명기 + `[정본 무근거 · Ted 승인 2026-08-23 (본인 확인)]` 표기**(추기-1) |
 | `updateDataset` | PATCH `/datasets/{datasetId}` | §2-7 · DATAMODEL-BASELINE(이름·주제·요약만) · DR-14 |
 | `addDatasetFile` | POST `/datasets/{datasetId}/files` | §2-6 · 〈58〉-② 후주입 · 〈59〉-①·② · 〈60〉 |
 | `replaceDatasetGridFile` | PUT `/datasets/{datasetId}/files/{fileId}` | 〈59〉-①·③(본체 대상 아님 → 409) |
@@ -536,8 +536,8 @@ red 2건 — 둘 다 이 레인과 무관하게 설계·환경 조건이다:
 | 7-1 additive 증명 | ✅ | `contract-breaking` green(「No breaking changes … but the specs are different」) · 두 함정(`usageNote` required · `fileCount minimum:1`) 원형 유지 — C1 기록 |
 | 7-2 501 표 | 🟧 부분 | **표 등재는 25 → 36(+11) 완료. 그러나 라우트 등록·`not_implemented.py`·1:1 diff 시험은 D2c-api 레인 몫으로 미착수** — 워킹트리는 **고아 계약 op 11건** 상태다. 커밋 불가 사유이기도 하다(한 커밋 = 계약 + 소비자, §7-5) |
 | 7-3 게이트 | ✅ | 전 수트 green + `seam-consistency` green + selftest 13케이스(green 4 · red 9) + **개정 전 red 실측 기록**(G-e·G-b 둘 다 눈으로 봄 — C2 기록). 무관 red 2건은 설계·환경 조건(`generated-up-to-date` 미구현 red 설계대로 · `schema-diff` DB URL 부재) |
-| 7-4 staging 배포 green | ⛔ **미실측** | 레인이 staging 을 건드리지 않았다(멈춤 규칙). 컨테이너 8 healthy·헬스 6종 200 은 **측정하지 않았다** — 커밋·배포 뒤 메인 세션 몫 |
-| 7-5 `contracts/README.md` 규칙 5 리뷰 | ⛔ **미실시** | 커밋이 없어 PR 자체가 없다 — CODEOWNERS 리뷰는 커밋 이후 |
+| 7-4 staging 배포 green | 🟦 **기능군 완료 시 울트라리뷰로 이행** (`〈62〉-㉰`) | 레인이 staging 을 건드리지 않았다(멈춤 규칙). 실측은 기능군 완료 시점에 Ted 가 울트라리뷰(전수 검수)로 일괄 수행한다 — Ted 직접 지시 2026-08-23 |
+| 7-5 `contracts/README.md` 규칙 5 리뷰 | ✅ **Ted 면제** (`〈62〉-㉯`) | 커밋 `0f6641b`·`c1022f2` 의 규칙 5 소급 이행을 Ted 가 면제 — 소급 PR 을 만들지 않는다 (2026-08-23) |
 | 7-6 ㉠ 정본 근거 대조 | ✅ | 기계 검사 구현·신설 50건 전수 통과(근거의 **내용** 옳음은 안 본다 — ㉠ 명세 그대로) |
 | 7-7 ㉡ 흐름 완주 | ✅ | 15단계 재생 · 끊긴 자리 0 · P4 이월 1건 명시. **단 fixture 는 E04-map DRAFT 승계본 — Ted 검토 전**(표가 틀리면 ㉡ 이 틀린 흐름을 완주로 판정한다) |
 | 7-8 ㉢ Ted 승인 | ⛔ **미실시** | **동결하지 않았다.** ㉠·㉡ green 은 ㉢ 을 대신하지 않는다(§7-8 · `03-HANDOFF.md:134`). 제출 패키지를 `sessions/D2c-ted-approval.md` 로 마련했다 — **침묵은 승인이 아니다** |
