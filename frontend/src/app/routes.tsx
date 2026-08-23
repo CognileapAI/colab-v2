@@ -8,6 +8,7 @@ import { DatasetsPage } from '../routes/DatasetsPage';
 import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
+import { UnregisteredPreviewPage } from '../routes/UnregisteredPreviewPage';
 
 export function AppRoutes() {
   return (
@@ -18,6 +19,7 @@ export function AppRoutes() {
         <Route path="/lab" element={<LabPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
+        <Route path="/datasets/preview/:uploadId" element={<UnregisteredPreviewPage />} />
         <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />

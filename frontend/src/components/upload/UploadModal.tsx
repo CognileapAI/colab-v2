@@ -1,0 +1,308 @@
+// S-04 업로드 **전체 화면 모달** — 정본 `Policy_업로드와_계보_확정.md` §7·§8·§9.
+//
+// 이 파일이 모달의 골격이다. W4(`P2-fe-lineage`)가 ③ 을 이 골격 위에 얹는다 — 얹는 자리는
+// `lineageStep` 슬롯 하나이고, 넘겨받는 것은 `LineageStepContext`(`types.ts`)다.
+//
+// 골격이 지키는 것
+//  - **화면이 아니라 모달**이다. 라우트를 만들지 않는다 (`Policy_공통_기반 §2.3`).
+//  - 등록 단계가 열려 있을 때만 닫기 확인을 받는다. 뷰어만 보던 상태면 잃을 것이 없다.
+//  - **미리보기는 등록 내내 접히지 않는다** (§8 — 정본이 그렇게 못 박았다).
+//  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
+//  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAccount } from '../../permission/session';
+import { FileDropCard } from './FileDropCard';
+import { PreviewPanel } from './PreviewPanel';
+import { RegisterArea, type Step } from './RegisterArea';
+import {
+  UploadGone,
+  type FileKind,
+  type LineageStepContext,
+  type LineageStepRender,
+  type PickedFile,
+  type UploadLineageParent,
+  type UploadSources,
+  type UploadStatus,
+} from './types';
+
+/** 업로드 상태 확인 간격. 이벤트 ②~⑦ 의 결과가 오기를 기다린다. */
+const STATUS_POLL_MS = 1000;
+
+/** 파일명에서 데이터셋 이름 초안을 만든다 (`Policy §5` — 기본값 = 파일명에서 생성). */
+function nameFromFile(fileName: string): string {
+  const dot = fileName.lastIndexOf('.');
+  return dot > 0 ? fileName.slice(0, dot) : fileName;
+}
+
+export function UploadModal(props: {
+  sources: UploadSources;
+  lineageStep?: LineageStepRender | undefined;
+  onClose: () => void;
+}) {
+  const account = useAccount();
+  const navigate = useNavigate();
+  const { upload } = props.sources;
+
+  const [picked, setPicked] = useState<PickedFile[]>([]);
+  const [uploadId, setUploadId] = useState<string | null>(null);
+  const [status, setStatus] = useState<UploadStatus | null>(null);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [step, setStep] = useState<Step>(1);
+  const [confirmClose, setConfirmClose] = useState(false);
+
+  const [name, setName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [summary, setSummary] = useState('');
+  const [sourceLabel, setSourceLabel] = useState('');
+  const [projects, setProjects] = useState<{ projectId: string; name: string }[]>([]);
+  const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
+  const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
+  const [nameError, setNameError] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const statusTimer = useRef(0);
+
+  // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
+  // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
+  const signature = picked.map((p) => `${p.file.name}:${p.file.size}:${p.kind}`).join('|');
+  useEffect(() => {
+    if (picked.length === 0) {
+      setUploadId(null);
+      setStatus(null);
+      return;
+    }
+    let alive = true;
+    void upload
+      .create(picked)
+      .then((receipt) => {
+        if (!alive) return;
+        setUploadId(receipt.uploadId);
+        const firstBody = receipt.files.find((f) => f.kind === '본체') ?? receipt.files[0];
+        setName((cur) => cur || (firstBody ? nameFromFile(firstBody.fileName) : ''));
+      })
+      .catch(() => {
+        // §9 업로드 중단 — 「올리다가 끊겼어요. 다시 시도해 주세요.」 파일 놓기부터 다시 한다.
+        if (alive) setUploadId(null);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature, upload]);
+
+  // 이벤트 ②~⑦ 의 결과를 읽는다 — 새 사실을 만들지 않는다.
+  useEffect(() => {
+    if (!uploadId) return;
+    let alive = true;
+    const tick = async () => {
+      try {
+        const s = await upload.status(uploadId);
+        if (!alive) return;
+        setStatus(s);
+        if (!s.ready && !s.failure) statusTimer.current = window.setTimeout(tick, STATUS_POLL_MS);
+      } catch (e) {
+        if (!alive) return;
+        if (e instanceof UploadGone) setRegisterError('이 파일은 더 이상 없어요. 다시 올려 주세요.');
+      }
+    };
+    void tick();
+    return () => {
+      alive = false;
+      window.clearTimeout(statusTimer.current);
+    };
+  }, [uploadId, upload]);
+
+  const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일');
+  const bodyName =
+    picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
+
+  const onLineageProgress = useCallback(
+    (p: { confirmed: number; total: number }) => setLineage(p),
+    [],
+  );
+  const onLineageParentsChange = useCallback(
+    (parents: UploadLineageParent[]) => setLineageParents(parents),
+    [],
+  );
+  const lineageCtx: LineageStepContext = useMemo(
+    () => ({
+      uploadId: uploadId ?? '',
+      datasetNameDraft: name,
+      topic: topic || null,
+      onLineageProgress,
+      onLineageParentsChange,
+    }),
+    [uploadId, name, topic, onLineageProgress, onLineageParentsChange],
+  );
+
+  function pick(files: File[]) {
+    // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
+    setPicked((cur) => [...cur, ...files.map((file) => ({ file, kind: '본체' as FileKind }))]);
+  }
+
+  function setKind(index: number, kind: FileKind) {
+    setPicked((cur) => cur.map((p, i) => (i === index ? { ...p, kind } : p)));
+  }
+
+  function requestClose() {
+    // 등록 단계를 연 채 닫으면 사람이 한 확인이 사라진다 — 그때만 묻는다 (§8 모달 닫기)
+    if (registerOpen) setConfirmClose(true);
+    else props.onClose();
+  }
+
+  async function submit() {
+    if (!uploadId) return;
+    if (!name.trim()) {
+      // §9 이름 없이 데이터셋 만들기 — 이름 칸으로 초점을 옮긴다
+      setNameError(true);
+      setStep(1);
+      window.setTimeout(() => document.getElementById('reg-name')?.focus(), 0);
+      return;
+    }
+    setNameError(false);
+    setRegisterError(null);
+    try {
+      const made = await upload.register({
+        uploadId,
+        name: name.trim(),
+        // **미정을 표현할 수 있어야 한다** — 4값 CHECK 는 「값이 있다면 넷 중 하나」다
+        topic: topic || null,
+        summary: summary.trim() || null,
+        sourceLabel: sourceLabel.trim() || null,
+        // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
+        lineageParents,
+        projectIds: projects.map((p) => p.projectId),
+      });
+      props.onClose();
+      navigate(`/datasets/${made.datasetId}`);
+    } catch (e) {
+      setRegisterError(
+        e instanceof UploadGone
+          ? '이 파일은 더 이상 없어요. 다시 올려 주세요.'
+          : '데이터셋을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      );
+    }
+  }
+
+  return (
+    <div className="modal-back mb-takeover">
+      <div
+        className="modal modal-takeover"
+        role="dialog"
+        aria-modal="true"
+        aria-label="업로드"
+        data-testid="upload-modal"
+      >
+        <div className="modal-h">
+          <h3>업로드</h3>
+          {/* 상단 메뉴가 가려져도 **어느 연구실에 올리는지**가 보인다 (§8) */}
+          <span className="mh-lab" data-testid="upload-lab">
+            <b>{account?.labName ?? ''}</b>에 올려요
+          </span>
+          <button type="button" className="x" data-testid="upload-close" onClick={requestClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="modal-b up-body">
+          {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
+          <FileDropCard picked={picked} onPick={pick} onKind={setKind} />
+
+          {picked.length > 0 && (
+            <>
+              <PreviewPanel
+                source={props.sources.preview}
+                uploadId={uploadId}
+                hasReferenceGrid={hasReferenceGrid}
+              />
+
+              {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
+              <div className="reggate" data-testid="reg-gate">
+                <div>
+                  <div className="rg-t">이 파일을 연구실에 등록할까요?</div>
+                  <div className="rg-s">등록하면 계보가 쌓이고 검색·공유가 돼요.</div>
+                </div>
+                <div className="rg-a">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    data-testid="reg-viewonly"
+                    onClick={() => void submit()}
+                  >
+                    보기만 할게요
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-strong"
+                    data-testid="reg-open"
+                    onClick={() => {
+                      setRegisterOpen(true);
+                      setStep(1);
+                    }}
+                  >
+                    연구실에 등록 →
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
+              옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치) */}
+          {registerOpen && (
+            <RegisterArea
+              step={step}
+              onStep={setStep}
+              fileName={bodyName}
+              lineage={lineage}
+              status={status}
+              projectSource={props.sources.projects}
+              name={name}
+              onName={setName}
+              topic={topic}
+              onTopic={setTopic}
+              summary={summary}
+              onSummary={setSummary}
+              sourceLabel={sourceLabel}
+              onSourceLabel={setSourceLabel}
+              projects={projects}
+              onProjects={setProjects}
+              nameError={nameError}
+              registerError={registerError}
+              lineageStep={props.lineageStep}
+              lineageCtx={lineageCtx}
+              onCancel={() => setRegisterOpen(false)}
+              onSubmit={() => void submit()}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 닫기 확인 — 사람이 한 확인이 소리 없이 사라지지 않는다 (§8) */}
+      {confirmClose && (
+        <div className="modal-back confirm-back">
+          <div className="modal" data-testid="upload-close-confirm">
+            <div className="modal-h">
+              <h3>업로드를 닫을까요?</h3>
+            </div>
+            <div className="modal-b">
+              <p>확인한 계보와 입력한 내용이 사라져요. 데이터셋은 만들어지지 않아요.</p>
+            </div>
+            <div className="modal-f">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setConfirmClose(false)}
+              >
+                계속 작성
+              </button>
+              <button type="button" className="btn btn-strong" onClick={props.onClose}>
+                닫고 나가기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import { NavLink, useLocation, Link } from 'react-router-dom';
 import { MAIN_NAV, LAB_SETTINGS_PATH, ownerTabOf } from './nav';
 import { useAccount } from '../permission/session';
 import { PermissionGate } from '../permission/PermissionGate';
+import { UploadEntry } from '../components/upload/UploadEntry';
 
 export function Gnb() {
   const account = useAccount();
@@ -45,9 +46,7 @@ export function Gnb() {
           화면으로 넘어가지 않고 전체 화면 모달을 연다 (Policy §2.3).
           모달 본체는 E-04 → WU-P2 가 만든다. 여기서는 버튼 자리만 둔다. */}
       <PermissionGate requires="업로드·편집">
-        <button type="button" className="gnb-upload" data-testid="gnb-upload" data-fills-in="WU-P2">
-          <span className="lbl">업로드</span>
-        </button>
+        <UploadEntry />
       </PermissionGate>
 
       {/* 연구실 설정 — `연구실 설정` 스위치가 켜진 사람에게만 보인다 (P-12) */}

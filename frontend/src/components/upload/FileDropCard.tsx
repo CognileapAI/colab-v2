@@ -1,0 +1,132 @@
+// S-04 「파일 놓기」 — 정본 §8 파일 놓기 · 올린 파일 표시 · 기준 격자 파일 세 묶음.
+//
+// **번호를 붙이지 않는다** (§8 단계 번호) — 파일 놓기·바로 미리보기는 절차가 아니라
+// 파일을 열어 보는 일이다.
+// **축(위도·경도)을 사람에게 묻지 않는다** — 서버가 파일에서 판별한다 (`〈63〉-㉰`).
+import { useState } from 'react';
+import type { FileKind, PickedFile } from './types';
+
+const KINDS: FileKind[] = ['본체', '기준 격자 파일'];
+
+function humanSize(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+export function totalBytes(files: PickedFile[]): number {
+  return files.reduce((s, f) => s + f.file.size, 0);
+}
+
+function FileRow(props: {
+  picked: PickedFile;
+  onKind: (kind: FileKind) => void;
+}) {
+  const { picked } = props;
+  return (
+    <div className="filecard">
+      <div className="fmeta">
+        <div className="fn">{picked.file.name}</div>
+        <div className="fs">{humanSize(picked.file.size)}</div>
+      </div>
+      <label className="fkind">
+        <span className="lbl">파일 종류</span>
+        <select
+          className="sel"
+          data-testid="up-file-kind"
+          value={picked.kind}
+          onChange={(e) => props.onKind(e.target.value as FileKind)}
+        >
+          {KINDS.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+export function FileDropCard(props: {
+  picked: PickedFile[];
+  onPick: (files: File[]) => void;
+  onKind: (index: number, kind: FileKind) => void;
+}) {
+  const [slicesOpen, setSlicesOpen] = useState(false);
+  const bodies = props.picked
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.kind === '본체');
+  const grids = props.picked
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.kind === '기준 격자 파일');
+  const bundle = bodies.length > 1;
+
+  return (
+    <div className="card up-card">
+      <div className="card-b">
+        {/* 여러 개를 한 번에 받는다 — 드롭 영역이 그렇게 말한다 (§8) */}
+        <label className="dropzone" data-testid="up-drop">
+          <span className="big">파일을 끌어다 놓으세요</span>
+          <span className="muted">여러 개를 한 번에 놓아도 돼요</span>
+          <input
+            type="file"
+            multiple
+            className="hidden-input"
+            data-testid="up-drop-input"
+            onChange={(e) => props.onPick(Array.from(e.target.files ?? []))}
+          />
+        </label>
+
+        {props.picked.length > 0 && (
+          <div className="filelist" data-testid="up-files">
+            {/* 조각 묶음이면 **요약 한 줄**이고 목록은 눌렀을 때만 편다 (§8 · `DataModel §4.3`) */}
+            {bundle && (
+              <>
+                <div className="filecard is-bundle" data-testid="up-bundle">
+                  <div className="fmeta">
+                    <div className="fn">
+                      {bodies[0]?.p.file.name}
+                      <span className="chip chip--neutral">조각 {bodies.length}</span>
+                    </div>
+                    <div className="fs">합계 {humanSize(totalBytes(bodies.map(({ p }) => p)))}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="slicebtn"
+                  onClick={() => setSlicesOpen((v) => !v)}
+                >
+                  조각 {bodies.length}개 {slicesOpen ? '접기' : '모두 보기'}
+                </button>
+              </>
+            )}
+
+            {(!bundle || slicesOpen) && (
+              <div className={bundle ? 'slicelist' : ''} data-testid={bundle ? 'up-slices' : undefined}>
+                {bodies.map(({ p, i }) => (
+                  <FileRow key={`${p.file.name}-${i}`} picked={p} onKind={(k) => props.onKind(i, k)} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 기준 격자 파일은 본체 목록과 **따로** 세운다 (§8) */}
+        {grids.length > 0 && (
+          <div className="companion" data-testid="up-companion">
+            <span className="cl">기준 격자 파일</span>
+            {grids.map(({ p, i }) => (
+              <div className="cline" key={`${p.file.name}-${i}`}>
+                <span className="cn">{p.file.name}</span>
+                <span className="cw">이 파일이 있어야 지도에 그려요</span>
+                <FileRow picked={p} onKind={(k) => props.onKind(i, k)} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,96 @@
+// S-04 업로드 모달이 바깥 세계와 만나는 **얼굴 셋**.
+// 화면은 어느 쪽이 실서버인지 모른다 (집 관례 — `components/detail/types.ts`·`detailSource.ts`).
+//
+// 타입은 전부 생성물에서 온다 — 여기서 계약 스키마를 다시 선언하지 않는다
+// (`CLAUDE.md §3-6·§3-7` · `frontend/src/generated/README.md`).
+import type { Schemas } from '../../api/client';
+
+export type FileKind = Schemas['FileKind'];
+export type UploadReceipt = Schemas['UploadReceipt'];
+export type UploadStatus = Schemas['UploadStatus'];
+export type UploadFileRef = Schemas['UploadFileRef'];
+export type DatasetCreate = Schemas['DatasetCreate'];
+export type UploadLineageParent = Schemas['UploadLineageParent'];
+export type ProjectRow = Schemas['ProjectRow'];
+export type ProjectCreate = Schemas['ProjectCreate'];
+
+/** 만료됐거나 없는 업로드 (`Policy §7.1`·§9 「이 파일은 더 이상 없어요」 · 계약 404). */
+export class UploadGone extends Error {}
+
+/** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 표). */
+export class NotImplemented extends Error {}
+
+/** 놓은 파일 한 건 + 사람이 고른 종류. **축은 여기 없다** — 서버가 파일에서 판별한다(`〈63〉-㉰`). */
+export interface PickedFile {
+  file: File;
+  kind: FileKind;
+}
+
+export interface UploadSource {
+  /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다. */
+  create(files: PickedFile[]): Promise<UploadReceipt>;
+  /** `getUploadStatus` — 이벤트 ②~⑦ 의 결과만 읽는다. 만료면 `UploadGone`. */
+  status(uploadId: string): Promise<UploadStatus>;
+  /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
+  register(body: DatasetCreate): Promise<{ datasetId: string }>;
+}
+
+/**
+ * 팔레트 한 값. **`fe-core` 계약에 `listPalettes` 중계가 없어**(`fe-core.yaml:1193` 이
+ * 「이 개정이 열지 않는다」고 명시) 생성 타입이 존재하지 않는다. 그래서 **계약 스키마의
+ * 재선언이 아니라, 이 화면이 필요로 하는 최소 모양**만 여기 둔다 — 중계가 열리면
+ * 생성 타입으로 갈아 끼운다. 상세는 보고서 `[정본 무근거]`·「막힌 자리」 항.
+ */
+export interface PaletteOption {
+  palette: string;
+  label: string;
+}
+
+/**
+ * 렌더 작업·요청 — **중계라 계약이 `core-viz.yaml` 정의를 `$ref` 로 그대로 쓴다.**
+ * 생성물에 그대로 있으므로 여기서 다시 선언하지 않는다.
+ *
+ * 소비 규칙 셋(`sessions/P2-viz-report.md §13`) — ⑴ 실패는 4xx 가 아니라 **200 + `failure`**
+ * ⑵ `stage` 는 `그리는 중` 일 때만 있다 ⑶ `partialFailure` 는 `status` 를 `실패` 로 만들지 않는다.
+ */
+export type RenderJob = Schemas['RenderJob'];
+export type RenderRequest = Schemas['RenderRequest'];
+
+export interface PreviewSource {
+  /** 팔레트 값의 **유일한 출처**. 화면이 목록을 지어내지 않는다. */
+  palettes(): Promise<PaletteOption[]>;
+  createRender(req: RenderRequest): Promise<RenderJob>;
+  getRender(renderId: string): Promise<RenderJob>;
+}
+
+export interface ProjectSource {
+  list(): Promise<ProjectRow[]>;
+  create(body: ProjectCreate): Promise<{ projectId: string; name: string }>;
+}
+
+export interface UploadSources {
+  upload: UploadSource;
+  preview: PreviewSource;
+  projects: ProjectSource;
+}
+
+/**
+ * ③ 계보 확정이 얹히는 자리 (`P2-fe-lineage`, W4).
+ * **이 레인은 골격과 표시기까지만 만든다** — 카드·확신도·부모 역할은 그 레인 소유다.
+ */
+export interface LineageStepContext {
+  uploadId: string;
+  /** ① 에서 사람이 적는 중인 이름 — 제안 조회의 단서로만 쓴다 (`listUploadLineageSuggestions`). */
+  datasetNameDraft: string;
+  /** 고른 주제. 아직 안 골랐으면 `null` (`P2.md §2-17` — 미정이 정상 상태다). */
+  topic: string | null;
+  /** 표시기의 확정 건수(`③ 계보 확정 0 / 3`)를 갱신한다. 0건이면 부르지 않는다. */
+  onLineageProgress(p: { confirmed: number; total: number }): void;
+  /** 등록 요청에 실릴 **확인된** 계보 관계. 사람이 확인한 것만 온다. */
+  onLineageParentsChange(parents: UploadLineageParent[]): void;
+}
+
+export type LineageStepRender = (ctx: LineageStepContext) => React.ReactNode;
+
+/** 주제 고정 4값 (`Policy §5` · `〈55〉` DB CHECK). **빈 값 = 미정**이고 그것이 정상 상태다. */
+export const TOPICS = ['강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC'] as const;
