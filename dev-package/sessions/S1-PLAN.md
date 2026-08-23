@@ -70,6 +70,14 @@
 
 > **매직바이트 감지는 1번의 예외가 아니다.** 파일의 **머리 몇 바이트를 보고 종류를 말하는 것**이지
 > 값을 만들어 내지 않는다. `〈70〉-㉯` 이 이 선을 그었다.
+>
+> **감지 비용은 실측상 무시할 수준이다 — 그래서 감지를 남기는 것이 Ted 의 근거와 부딪히지 않는다.**
+> `S1-upload-path-audit.md`(§C-1·C-2) 실측 — 매직바이트 경로(GeoTIFF·HDF4) **1.6 ms**, NetCDF4 try-open **13~23 ms**.
+> 대조군으로 같은 27.0 MB 파일의 저장(`createUpload` 의 read+write) 이 **85 ms** 라 **감지:저장 ≈ 1:53**.
+> **전송 시간(파일 크기에 비례, `createUpload` 가 어차피 치르는 비용)과 처리 시간(감지, 크기와 무관)은 다른 것이고
+> 섞으면 이 절의 판정이 틀려진다.** `〈70〉-㉴` 의 근거(「가공 단계가 업로드에 들어가면 분기와 처리 시간이 계속 발생한다」)는
+> **가공**(파싱·좌표·COG)을 겨눈 것이지 감지를 겨눈 것이 아니다 — 감지는 이미 그 근거가 문제 삼은 자리 밖에 있다(`〈73〉`).
+> **`[미측정]`** — GB 급 NetCDF4 의 try-open 시간(원천 최대 `.nc` 가 11.5 MB). 50 GB 규모에 대해 이 값은 근거가 없다.
 
 ---
 
@@ -90,7 +98,7 @@
 | 1 | **`0004` 마이그레이션** (축 2열 · CHECK 4종 · 부분 유니크 2 · `d5_*` 3표 · RLS FORCE) | **살린다 · 무수정** | **아무것도 안 한다.** `〈70〉-㉱` 이 「`0004` 무수정」을 명시했고 [인벤토리] B-4 가 「범위 밖만 위한 것은 사실상 없다」로 실측했다. 되돌리면 `schema-diff` red + 적재된 원장 소실([인벤토리] B-2-2·B-4) |
 | 2 | **`d5_upload` · `d5_upload_file` 원장** | **살린다** | 무변경. `createUpload`(`routes/ingestion.py:157-182`)의 저장처다([인벤토리] C-2) |
 | 3 | **`d5_pipeline_event` outbox** | **살린다** | 무변경. `upload.accepted` 의 유일한 저장처(`0004:226-227` 이 `source='core-api'` 를 CHECK 로 강제) |
-| 4 | **outbox 릴레이 · 워커 루프 · reaper** | **살린다** | **`_FAILURE_MAP`(`domains/d5_ingestion.py:45-53`) 중 범위 밖 4줄**(TIFF 구조 판독 실패·파싱 실패·좌표/격자 없음·COG 변환 실패)**을 죽은 분기로 표시**한다(지우지 않는다 — stage2 에서 깨운다). reaper 는 `〈67〉-㉠` 이행 제약이라 그대로 |
+| 4 | **outbox 릴레이 · 워커 루프 · reaper** | **살린다 · 배선 필요**(`〈73〉`) | ⚠ **초판의 「살린다」는 「이미 돌고 있으니 그대로 둔다」는 뜻이었고, 그 전제가 실측상 거짓이다** — `S1-upload-path-audit.md`(§A-2)가 확인했다: `Dockerfile:18` 은 헬스 서버만 CMD 로 걸고, `infra/staging/compose.i2.yml:92-102` 에 `COLAB_PIPELINE_DB_URL`·`COLAB_WORKER_LAB_ID`·`COLAB_WORKER_ACCOUNT_ID` 환경변수가 **0건**이라 워커가 기동조차 못 한다. `process_upload` 의 production 호출자도 **0건**(시험 5파일뿐). **「배선」의 실제 내용** — ① `Dockerfile` CMD 를 헬스 서버 단독 → **헬스 + 워커 루프**로 바꾸고 compose 에 위 세 환경변수를 건다 ② `run_once` 에 outbox 의 `upload.accepted` 를 소비해 stage1 판 `process_upload` 를 부르는 한 발을 더한다 ③ `process_upload`(`…domains/d5_ingestion.py:137-232`) 안에서 **파싱·좌표·COG 구간(`:171-222`)만 건너뛴다** — 감지(②) 다음이 곧 `upload.ready`(⑥) ④ `_FAILURE_MAP`(`domains/d5_ingestion.py:45-53`) 중 범위 밖 4줄(TIFF 구조 판독 실패·파싱 실패·좌표/격자 없음·COG 변환 실패)은 **죽은 분기로 표시**한다(지우지 않는다 — stage2 에서 깨운다) ⑤ **reaper 는 같은 루프에서 처음으로 실제로 돈다** — 「`〈67〉-㉠` 이행 제약이라 그대로」가 아니라, **지금까지 그 제약을 이행하는 코드 자체가 안 돌고 있었다.** 소유·물결은 §4.3·§5.2 의 `S1-api` 확장 범위(W3)로 배정한다. **계약·`0004` 무수정**(`〈73〉`) |
 | 5 | **`detect.py`(124) · `formats.py`(11) · `events.py`(185) · `lineage.py`(31)** | **살린다** | `events.py:31-37` **`STAGE_ORDER` 를 stage1 판으로 줄인다** — 5단계 → **`format-detected` → `ready`**. ⚠ 이것이 §8-위험2 의 자리다 |
 | 6 | **`axis.py`(253) — 격자 축 판별** | **휴면 → stage2** (`〈71〉-㉮` 로 확정) | 「헤더 파싱은 밖」에 **예외를 두지 않는다.** 기준 격자 파일을 안 받으므로 축 판별의 대상이 없다(`〈70〉-㉱`). 시험 20건은 `stage2` 마커로 격리하되 **CI 에서 계속 돌린다**(`〈71〉-㉰`). `〈65〉`·`〈66〉`·`〈69〉-⑴` 은 **stage2 에서 깨운다** |
 | 7 | **`parse.py`·`hsr.py`·`grid.py`·`cog.py`·`tiff_probe.py`·`renderable.py`·`pipeline.py` (합 796줄, [인벤토리] A-4)** | **휴면** | **파일을 지우지 않는다.** ① `domains/d5_ingestion.py:19-34` 의 import 에서 **범위 밖 심볼만 분리**해 파이프라인 단계 배열에서 뺀다 ② 관련 시험 **62건 전부**(격자·축 20건 포함 — `〈71〉-㉮` 로 축도 휴면이다)를 `stage2` 마커로 격리 — **삭제하지 않고, CI 에서 계속 돌려 green 을 유지한다**(`〈71〉-㉰`) ③ `pipeline-worker/README.md:27-40` 축 절은 **「stage2 대기」로 표기**한다(`〈71〉-㉮`) |
@@ -370,7 +378,7 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 | **S1-canon** | W1 | `dev-package/`(§3.2 의 24자리) · `gates/fixtures/seam-consistency/` · `gates/README.md` | 정본 개정 · 픽스처 재작성 |
 | **S1-detach** | W2 | `services/viz-render/README.md` · `frontend/src/components/preview/` · `frontend/src/routes/UnregisteredPreviewPage.tsx` · `frontend/src/app/routes.tsx`(**2줄만**) · `infra/staging/compose.i2.yml`(**viz 블록만**) · `services/pipeline-worker/src/colab_pipeline/d5/`(휴면 표기) | 휴면 절제 · 컨테이너 8→7 |
 | **S1-ontology-canon** | W2 | `dev-package/ONTOLOGY-SCOPE.md` · 기획 정본 | **Ted/지정자 레인.** `G8b` |
-| **S1-api** | W3 | `services/core-api/src/colab_core/` · `services/core-api/tests/` | **501 표 24→28**(미리보기 2 + 격자 3) · `HttpPreviewRelay` 비활성 · 시험 3건 개정 · 시험 2건 이관 |
+| **S1-api** | W3 | `services/core-api/src/colab_core/` · `services/core-api/tests/` · **＋ `services/pipeline-worker/Dockerfile` · `services/pipeline-worker/src/colab_pipeline/app/worker.py`(배선만, 로직 무수정) · `infra/staging/compose.i2.yml`(**워커 서비스 블록만** — `S1-detach` 의 viz 블록과 겹치지 않는다)** | **501 표 24→28**(미리보기 2 + 격자 3) · `HttpPreviewRelay` 비활성 · 시험 3건 개정 · 시험 2건 이관 · **＋ 워커 배선**(§2.1 #4, `〈73〉`) — Dockerfile CMD 를 헬스+루프로, compose 환경변수 3종, `run_once` 소비 한 발, `process_upload` 파싱·좌표·COG 구간 건너뛰기 |
 | **S1-fe** | W3 | `frontend/src/components/upload/` · `frontend/src/components/lineage/` · `frontend/test/upload.test.tsx` | S-04 미리보기 절제 + 등록 게이트 재배치 · 계보 확정 모달 ③ 완주 |
 | **S1-search-infra** | W3 | `db/platform/versions/` · `db/ai/versions/` · `infra/staging/`(DB 이미지) | `tsvector`·GIN·pgvector. **확장 유무 실측 먼저.** ＋ **설명 길이 CHECK 를 새로 추가하지 않는다**(`〈72〉-㉯`, §3.3 — canon 문구만 바뀌고 이 레인은 마이그레이션 0건) |
 | **S1-ontology-graph** | W4 | `db/ai/` | K1b·K2b |
@@ -383,7 +391,13 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 **공유 파일 — 명시된 한 줄만 만진다**(`P2-EXEC §3` 관례 승계)
 - `frontend/src/app/routes.tsx` — **S1-detach 만** S-08 라우트 2줄 제거
 - `services/core-api/src/colab_core/app/relay.py` — **S1-api 만**, `HttpPreviewRelay`(`:58-79`) **그 블록만**
-- `infra/staging/compose.i2.yml` — **S1-detach 만** viz 서비스 블록
+- `infra/staging/compose.i2.yml` — **S1-detach 는 viz 서비스 블록만 · S1-api 는 워커 서비스 블록만.** 겹치지 않는다
+
+> **왜 워커 배선을 새 레인이 아니라 `S1-api` 에 붙이는가.** `infra/`·`compose` 는 **P2 의 어느 레인 소유 디렉터리에도 없었다**
+> ([S1-upload-path-audit §A-2] — `Dockerfile`·compose 양쪽 다 손댄 레인이 없다는 것이 워커가 배선되지 않은 이유 중 하나다).
+> `W3` 은 이미 동시 레인 3(`S1-api`·`S1-fe`·`S1-search-infra`)이 꽉 차 있고(§5 「동시 레인 최대는 3」), 새 4번째 레인을 넣으면
+> 그 상한이 깨진다. 워커 배선은 **backend/계약 표면과 같은 결이라 `S1-api` 의 소유를 확장**하는 쪽을 택한다 —
+> **소유를 흐리게 두지 않는다**: 위 표의 `services/pipeline-worker/…`·compose 워커 블록은 **`S1-api` 전용**이고 다른 레인은 손대지 않는다.
 
 ### 5.3 진입조건
 
@@ -430,6 +444,7 @@ pipeline 72p/17f/9e · viz 42p/6f · frontend 147p/**1f**(⚠ **범위 축소 �
 | **12** | **stage 2 목록이 문서로 실재한다** — 휴면 8건 + P3·P6·P7·P8·S3·K3·K5 가 **한자리에 적혀 있다** | **없으면 stage1 green 이 v2 완료로 읽힌다**(§3.1-㈎) |
 | **13** | **⚠ 휴면 시험이 CI 에서 계속 돌고 계속 통과한다** (`〈71〉-㉰`) — `stage2` 마커 시험(약 **46 + 23 + 20**건)은 **배포 단위·화면·완료 정의에서만 빠지고 CI 에서는 빠지지 않는다.** 마커를 **CI 가 실행하는 셋에 포함**시키고 **그 사실을 `gates/README.md` 에 적는다** | `pytest -m stage2` 가 CI 로그에 **존재하고 green**. ⚠ **이것이 휴면과 방치를 기계로 가르는 유일한 선**이다 — 게이트의 기계적 수호는 **「삭제」 방향에만** 있고(§7-5: 지워야 red 가 난다) **휴면 자체는 아무것도 안 지킨다.** 안 돌리면 휴면은 **부식**이고, stage2 에서 깨울 때 「green 이었던 것」이 아니라 **「green 이었다고 적힌 것」**을 깨우게 된다. **관례로 지키기로 한 것이 무너진 기록이 이 레포에 반복해 남아 있다**(`CLAUDE.md §3` 서두 · `DR-4`·`DR-6`) |
 
+| **14** | **⚠ FE 무한 폴링이 해소된다**(`〈73〉`) — `UploadModal.tsx:102` 의 `GET /uploads/{id}` 폴링이 **워커 주기 안에 종료**한다. 실측상 지금은 `ready` 가 영원히 `false` 라 폴링이 **무한**이었다(`S1-upload-path-audit.md` §A-3). 배선 후 대기는 **무한 → 최대 워커 주기**(`worker.py:58` 의 `interval_seconds`, 기본 5.0초를 1초 이하로 낮춘 값)로 준다 | **코드를 읽어서 판정하지 않는다 — 실제로 관찰한다.** 실파일 업로드 1건을 올리고 네트워크 로그(또는 서버 접근 로그)에서 `GET /uploads/{id}` 호출 횟수가 **유한**하게 끝나고, 마지막 응답이 `ready:true`(또는 `failure` 채움)로 폴링 루프(`:102` 조건)를 자연 종료시키는 것을 눈으로 확인한다. 「코드상 종료 조건이 있다」는 이 판정을 충족하지 않는다 — 그 조건은 지금도 코드에 있고, 그런데도 실측은 무한 폴링이었다 |
 **⚠ 무엇이 완료 정의가 **아닌가** (오해 방지)** — 파싱·COG·시각화 E2E(구 조건 7) · S-08 · 미리보기 · 격자 후주입 실증 ·
 `renderable`·`metadata_complete` 값 · GRIB(`〈51〉` 로 이미 범위 밖).
 
@@ -466,6 +481,7 @@ pipeline 72p/17f/9e · viz 42p/6f · frontend 147p/**1f**(⚠ **범위 축소 �
 **원 결정의 모양** — 「'온톨로지 기반'이 지금의 사전 3종인가, 그 이상인가」를 **`㊸` 되돌림의 대가와 함께** 물었고 Ted 가 **「그 이상 — 관계·그래프까지」**를 골랐다. **범위 결정은 Ted 의 것이고 이 문서가 되돌리지 않는다.**
 **그리고 반대 근거도 약화하지 않는다** — `〈71〉-㉱`(K4 2층 분리)는 **범위를 줄인 것이 아니라 순서만 푼 것**이다(§4.3). `K4-b` 는 완료 정의 안에 그대로 있다. ⚠ **대가 = 정본 개정 작업 + 수문학 도메인 소유자 시간이 다시 임계경로**(`㊴` 가 사람에서 문서로 옮겼던 그 자리). **완화(제거 아님)** = `K4-a` 병렬화 + `C1` 체크포인트(§5.0) — **늦어도 검색은 뜨고 절반은 닫힌다.** 그래도 `K4-b` 가 안 서면 **stage1 은 미완이다** |
 | **2** | **`〈63〉-㉮` 흡수** | advisor 는 별도 WU 절단(㈏)을 권고했고 Ted 가 흡수(㈎)를 골랐다. **반대 근거 = 「렌더 4포맷+타일+팔레트는 사실상 P3 의 심장이라 P2 가 한 WU 로 감당 못 한다」.** ⚠ **그 반대가 사후에 다른 이유로 맞았다** — 범위 축소로 그 산출 전체가 휴면이 됐다. **이 사실을 지우지 않는다**([인벤토리] D-1) |
+| **19** | **워커를 걷어내지 않고 배선한다**(`〈73〉`) | **반대 근거 = 이 안은 `S1-PLAN §2.1 #4` 초판의 「살린다·무변경」보다 일이 늘어난다** — Dockerfile CMD·compose 환경변수·`run_once` 소비 배선이 새로 붙는다. **정직한 답 = 그 「무변경」은 워커가 이미 돌고 있다는 전제 위에 있었고 실측상 거짓이었다**(`S1-upload-path-audit.md` §A-2) — 무변경을 골랐다면 stage1 완료 정의가 「업로드하면 영원히 처리 중처럼 보이는 화면」 위에 섰을 것이다. **뜯어내는 안(가공 기계 철거)과 비교한 대가** — 뜯어내면 지금 당장의 배선 비용은 없앨 수 있지만, **stage2 재건축량이 최소가 아니라 커진다**(워커·릴레이·reaper·outbox·이벤트 7종·`_PROCESSING` 을 stage2 에서 처음부터 다시 짜야 한다). **배선을 택하면 stage2 재건축량은 최소로 남는다** — 이 장치들이 전부 제자리에 있고 건너뛴 파싱·좌표·COG 구간만 다시 켜면 된다(`〈73〉`). **뜯어내면 비용이 없어지는 것이 아니라 stage2 로 옮겨갈 뿐이다.** |
 
 ### 8.2 이 재계획이 새로 만드는 위험
 
