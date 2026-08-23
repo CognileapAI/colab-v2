@@ -119,6 +119,14 @@ services:
     image: colab-v2/ai-service:i2
     container_name: colab_v2_staging_ai_service
     restart: unless-stopped
+    # ModelPort 런타임 자격증명 (PLAN-SoT §9-㊷).
+    # 소비자는 K3·K4 이고 아직 없다. 지금은 통로만 열어 둔다 —
+    # `:-` 로 받는 이유는 키가 없어도 staging 이 떠야 하기 때문이다.
+    # 필수(`:?`)로 걸면 K3 착수 전까지 배포 전체가 죽는다.
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      COLAB_MODEL_HELPER: ${COLAB_MODEL_HELPER:-gpt-5.6-luna}
+      COLAB_MODEL_ORCHESTRATOR: ${COLAB_MODEL_ORCHESTRATOR:-gpt-5.6-terra}
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8200/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s
