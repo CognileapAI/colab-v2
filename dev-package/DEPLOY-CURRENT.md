@@ -234,6 +234,16 @@ Ted가 PoC 데이터 불요를 판단하고 전면 철거를 승인했다. 실�
 
 ## 부록 — 스택 요약 (v2 참조용, 코드는 계승하지 않는다)
 
-백엔드 FastAPI + SQLAlchemy/Alembic + Celery · geo 계열 rasterio/xarray/GDAL/titiler(GRIB·NetCDF·COG) · 프론트 React18 + Vite + Cesium + Leaflet · DB Postgres(PostGIS/pgvector) · 오브젝트 MinIO · 큐 ElasticMQ.
+백엔드 FastAPI + SQLAlchemy/Alembic + Celery · geo 계열 rasterio/xarray/GDAL · 프론트 React18 + Vite + Leaflet · DB Postgres(PostGIS/pgvector) · 오브젝트 MinIO · 큐 ElasticMQ.
+
+> ⚠ **선언과 실사용이 다르다** (2026-08-23 PoC 코드 조사로 정정). 이 절은 **v2 참조용**이라 틀리면 D5·D7 이 **없는 선례를 있다고 믿는다.**
+>
+> | 원래 적혀 있던 것 | 실제 |
+> |---|---|
+> | `titiler` | **`requirements.txt` 에 설치되지만 import 0건.** 타일링은 **자작**이었다(`viz-service/app/tiles.py` — 주석이 「TiTiler 없이」라고 밝힌다) |
+> | `Cesium` | 지도 표시에 쓰이지 않았다. 프론트는 **Leaflet `ImageOverlay` 단일 PNG** — **XYZ 타일이 아니다** |
+> | `titiler(GRIB·…)` 의 GRIB | **`〈51〉` 로 v2 범위 밖.** PoC 에서도 `eccodes` 시스템 의존성을 통째로 끌고 왔다 — 빼면 컨테이너가 크게 가벼워진다 |
+>
+> **따라오는 결론 — v2 에 타일링 선례가 없다.** PoC 는 COG 를 만들었지만 **타일 서버를 세우지 않았고** 화면은 단일 PNG 를 덮었다. D7(viz-render)이 물려받을 지식은 **COG 생성까지**이고 **타일·줌·좌표 정합은 새로 여는 경로**다.
 
 > `CLAUDE.md §5` — 참조는 **지식**이지 코드가 아니다. 이 절은 도메인 지식·방법론 참조용이며 코드 계승 근거가 아니다.
