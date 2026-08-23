@@ -21,6 +21,16 @@ body_access  = "body_access"
 # 데이터셋 메타(이름·요약)에는 본체 정책을 걸지 않는다 — 걸면 P-13 이 깨지고 E-06 승인 흐름이 죽는다.
 body_tables = [
   "d3_file",          # 파일 본체 (다운로드·원본)
+  # "d5_upload_file", # **등록 전** 임시 원장의 파일. `0004` 이 만들었고 RLS 경계 정책은 걸려 있다
+  #                   # (ENABLE + FORCE + lab_boundary — 면제가 아니다). 여기 **없는** 이유는
+  #                   # `body_access` 를 걸 대상이 없기 때문이다: 그 정책은 `d2_dataset_access`·
+  #                   # `d1_lab_profile` 을 `dataset_id` 로 조회하는데 등록 전 업로드에는
+  #                   # **데이터셋이 아직 없다** (`〈64〉-ⓓ` — `upload.ready` 에 `datasetId` 가 없다).
+  #                   # 대신 지켜야 할 것은 「올린 사람 말고는 못 본다」이고, 그 판정 재료(`uploader_account_id`)
+  #                   # 는 표 안에 있다. **누가 그것을 강제하는가는 아직 열려 있다** —
+  #                   # 현재는 `ports/ingestion.py`(P2-api 소관) 이고, DB 층으로 내리려면
+  #                   # `d5_upload_file` 전용 RESTRICTIVE 정책을 새로 써야 한다.
+  #                   # **P2-db 가 관례로 정하지 않고 남긴다** — W2 `P2-api` 가 닫을 자리다.
   # "d7_viz_source",  # 시각화 소스 — D7 저장 형태는 P3 이 정한다(DataModel v1.8 범위 밖).
   #                   # 테이블이 없는데 여기 적어 두면 게이트가 "낡은 면제"로 red 를 낸다.
   #                   # **P3 에서 테이블을 만들 때 이 줄을 되살린다** — 지우지 않고 주석으로 남기는 이유가 그것이다.

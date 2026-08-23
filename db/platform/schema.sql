@@ -1,7 +1,8 @@
 -- db/platform/schema.sql — 플랫폼 선언 스키마 정본 (SoT)
 --
--- 소유 도메인: D1 Identity&Lab · D2 Access&Policy · D3 Catalog · D4 Lineage · D6 Project · D8 Insight(공통 기록)
--- D5 Ingestion · D7 Visualization 은 P2·P3 에서 이 파일에 더한다 (저장 형태의 정본이 아직 없다).
+-- 소유 도메인: D1 Identity&Lab · D2 Access&Policy · D3 Catalog · D4 Lineage · D5 Ingestion&Pipeline
+--              · D6 Project · D8 Insight(공통 기록)
+-- D5 는 `0004`(P2-db) 이 더했다 — §4-b. D7 Visualization 은 P3 에서 더한다 (저장 형태의 정본이 아직 없다).
 --
 -- 근거
 --   정본  에픽/E-00_공통_기반/documents/DataModel_공통_기반.md v1.8  (§2 §3 §4.1 §4.2 §4.3 §5 §6)
@@ -9,7 +10,7 @@
 --   규칙  CLAUDE.md §3-1 §3-5 §3-6 · PLAN-SoT §9-⑲ ⑳ ㉖ ㉗ ㉘ · PERMISSION-PRINCIPLES P-13 P-24 P-29 P-30 P-32 P-34
 --
 -- 이 파일이 지키는 것 (틀리면 뒤가 전부 소급된다 — DATAMODEL-BASELINE §3)
---   · 데이터셋 : 파일 = 1 : N (본체 1건 이상 + 기준 격자 0~1건)
+--   · 데이터셋 : 파일 = 1 : N (본체 1건 이상 + 기준 격자 **0~2건** — `〈58〉`·`〈66〉`, `0004`)
 --   · 계보는 데이터셋 사이에만 — 파일에는 계보가 없다. 부모 여럿, 가공 방식은 관계에 부착
 --   · 소유자(빈 값 불가) 와 올린 사람(불변) 은 별개 기록
 --   · 가공 단계 Lv · 계보 상태는 컬럼이 아니다 — 계산한다 (⑳). 이 파일에 그 두 컬럼이 없는 것이 그 강제다
@@ -269,9 +270,16 @@ CREATE TABLE d3_dataset_autometa (
 );
 CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
 
--- 파일 — 데이터셋 1:N. 종류는 둘뿐이고 기준 격자 파일은 데이터셋당 0~1건 (정본 §4.3).
+-- 파일 — 데이터셋 1:N. 종류는 둘뿐이고 기준 격자 파일은 데이터셋당 **0~2건**
+-- (위도·경도 한 쌍이 실물이다 — `〈58〉`. 결합축 파일이면 1건으로 둘 다 선다 — `〈66〉`).
 -- **파일에는 계보가 없다.** 계보는 데이터셋 사이에만 있다 (§4.2·§4.3).
 -- 파일 **본체 테이블**이므로 경계 정책 위에 본체 정책이 하나 더 걸린다 (㉖ ③ · P-34).
+--
+-- 축은 **텍스트 단일값이 아니라 두 불리언**이다 (`〈66〉` — `0004`).
+--   실물 16건 중 2건이 한 파일에 `lat`·`lon` 을 다 담는다. 단일값 모델은 그 파일을
+--   「축을 못 갈라서」가 아니라 **「둘 다 갈려서」** 표현하지 못한다.
+--   제3값(결합축이라는 세 번째 enum)은 **「위도 1건 + 결합축 1건」을 못 막아** 탈락했다.
+--   **행 : 파일 = 1 : 1 을 유지한다** — 행을 축으로 쪼개면 같은 `storage_key` 가 두 행에 들어간다.
 CREATE TABLE d3_file (
   id           ulid        PRIMARY KEY,
   lab_id       ulid        NOT NULL REFERENCES d1_lab(id),
@@ -280,14 +288,27 @@ CREATE TABLE d3_file (
   file_name    text        NOT NULL CHECK (length(btrim(file_name)) > 0),
   size_bytes   bigint      CHECK (size_bytes IS NULL OR size_bytes >= 0),
   storage_key  text        NOT NULL CHECK (length(btrim(storage_key)) > 0),
-  created_at   timestamptz NOT NULL DEFAULT now()
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  carries_lat  boolean     NOT NULL DEFAULT false,
+  carries_lon  boolean     NOT NULL DEFAULT false,
+  -- **양쪽 반쪽을 다 건다.** 축 없는 격자 파일도, 축 붙은 본체도 만들지 않는다 —
+  -- 한쪽만 걸면 「열을 뒀는데 안 채우면 그만」이 된다 (DATA-REFERENCE §1).
+  CONSTRAINT d3_file_grid_carries_an_axis
+    CHECK (kind <> '기준 격자 파일' OR carries_lat OR carries_lon),
+  CONSTRAINT d3_file_body_carries_no_axis
+    CHECK (kind <> '본체' OR (NOT carries_lat AND NOT carries_lon))
 );
 CREATE INDEX d3_file_dataset_idx ON d3_file (dataset_id);
 CREATE INDEX d3_file_lab_idx ON d3_file (lab_id);
--- 기준 격자 파일은 데이터셋당 최대 1건 (§4.3). 본체 1건 이상은 행 제약으로 표현할 수 없다 —
--- 마지막 본체를 지우는 것을 막는 일은 애플리케이션·묘비 규칙의 몫이다.
-CREATE UNIQUE INDEX d3_file_one_reference_grid_per_dataset
-  ON d3_file (dataset_id) WHERE kind = '기준 격자 파일';
+-- 유일성은 **축 원소마다 1건**이다. 개수만 2로 늘리면 위도 파일이 둘 들어가고 시스템이
+-- 둘을 구분하지 못한다 — 개수 제약은 「몇 개냐」만 답하고 「무엇이냐」는 안 답한다.
+-- 결합축 파일은 두 인덱스에 **동시에** 걸리므로 「위도1 + 결합1」도 여기서 막힌다.
+-- 본체 1건 이상은 행 제약으로 표현할 수 없다 — 마지막 본체를 지우는 것을 막는 일은
+-- 애플리케이션·묘비 규칙의 몫이다.
+CREATE UNIQUE INDEX d3_file_one_lat_grid_per_dataset
+  ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lat;
+CREATE UNIQUE INDEX d3_file_one_lon_grid_per_dataset
+  ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lon;
 
 -- 조각 수 유지 (㊼). **다시 세지 않고 증분으로 더한다.**
 --   · 다시 세면 세는 주체가 `body_access` 를 받아 잠긴 데이터셋에 0 을 써 넣는다 — 고치려던 결함을 트리거가 재현한다
@@ -395,6 +416,120 @@ CREATE TABLE d4_lineage_unknown (
   marked_by_account_id ulid   NOT NULL REFERENCES d1_account(id)
 );
 CREATE INDEX d4_lineage_unknown_lab_idx ON d4_lineage_unknown (lab_id);
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 4-b. D5 Ingestion & Pipeline — 등록 **전** 임시 원장 (`0004` · `〈63〉-㉱` · `〈64〉`)
+--
+--   「등록 전에는 아무것도 저장되지 않는다」의 **대상은 D3 카탈로그**다 (`〈64〉-ⓐ` · P2.md §2-27).
+--   이 세 표는 그 진술의 대상이 아니라 **D5 소유의 처리 중 상태**이고(`ⓑ`),
+--   어느 사용자 읽기 경로(카탈로그·계보·검색)에도 비치지 않으며 만료되면 reaper 가 지운다(`ⓒ`).
+--   원장이 없으면 `getUploadStatus` 가 읽을 자리가 사라져 이벤트 ②~⑦ 이 갈 곳을 잃는다.
+--
+--   **`core-api` 는 이 표들을 직접 만지지 않는다** — `ports/ingestion.py` 를 지난다
+--   (`〈63〉-㉱` · 불변규칙 1). 여기에는 D3·D4·D6 를 가리키는 FK 가 **하나도 없다.**
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- 업로드 1건 — 등록 전 임시 세계의 집계 루트. `uploadId` 는 이벤트 봉투의 것과 같은 값이다.
+CREATE TABLE d5_upload (
+  id                   ulid        PRIMARY KEY,
+  lab_id               ulid        NOT NULL REFERENCES d1_lab(id),
+  uploader_account_id  ulid        NOT NULL REFERENCES d1_account(id),
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  -- 수명. **값은 정본이 안 줬다** — 계약이 발행자에게 열어 뒀고(`NB-2`), 여기서 DEFAULT 를
+  -- 발명하지 않는다. 넣는 쪽이 명시한다.
+  expires_at           timestamptz NOT NULL,
+  -- 이벤트 ②~⑦ 의 **결과**를 담는 자리. 새 사실을 만들지 않는다 (`UploadStatus` 와 1:1).
+  ready                boolean     NOT NULL DEFAULT false,
+  renderable           boolean,            -- 아직 모르면 NULL (계약도 3값이다)
+  metadata_complete    boolean,            -- 상동
+  failed_at            timestamptz,
+  failure_class        text CHECK (failure_class IS NULL OR failure_class IN ('재시도 가능', '영구')),
+  failure_reason       text CHECK (failure_reason IS NULL OR failure_reason IN (
+                         '업로드 중단', '형식 인식 실패', '헤더 인식 실패', '조각이 서로 다름',
+                         '좌표계 변환 실패', '미리보기 준비 실패', '시간 초과', '내부 오류')),
+  -- 등록 전환 시각. **`datasetId` 를 두지 않는다** — D5 가 D3 를 직접 가리키면 불변규칙 1 위반이다.
+  -- 「이미 전환됐다(409)」 판정에 필요한 것은 여부이지 대상이 아니다.
+  registered_at        timestamptz,
+  CHECK (expires_at > created_at),
+  -- 실패는 세 값이 함께 선다. 하나만 채워진 반쪽 실패를 만들지 않는다.
+  CHECK ((failed_at IS NULL) = (failure_reason IS NULL)
+         AND (failed_at IS NULL) = (failure_class IS NULL))
+);
+CREATE INDEX d5_upload_lab_idx ON d5_upload (lab_id);
+-- reaper 가 만료분을 훑는 자리 (`〈64〉-ⓒ`).
+CREATE INDEX d5_upload_expiry_idx ON d5_upload (expires_at);
+
+-- 업로드 안의 파일 N건.
+-- **PK 가 업로드가 발급한 `fileId` ULID 다** — 등록 시 `d3_file.id` 로 **그대로** 간다.
+-- 변환 지점이 없다는 것이 `NB-A`(fileId 동일성)의 저장 형태 쪽 표현이다.
+CREATE TABLE d5_upload_file (
+  id               ulid        PRIMARY KEY,
+  lab_id           ulid        NOT NULL REFERENCES d1_lab(id),
+  upload_id        ulid        NOT NULL REFERENCES d5_upload(id) ON DELETE CASCADE,
+  kind             text        NOT NULL CHECK (kind IN ('본체', '기준 격자 파일')),
+  file_name        text        NOT NULL CHECK (length(btrim(file_name)) > 0
+                                               AND length(file_name) <= 255),
+  byte_size        bigint      CHECK (byte_size IS NULL OR byte_size >= 0),
+  storage_key      text        NOT NULL CHECK (length(btrim(storage_key)) > 0),
+  -- D3 와 **같은 두 열 · 같은 두 CHECK.** 원장이 먼저 막지 않으면 등록 전환 때 뒤늦게 터진다.
+  carries_lat      boolean     NOT NULL DEFAULT false,
+  carries_lon      boolean     NOT NULL DEFAULT false,
+  -- 파이프라인이 매직바이트로 판정한 포맷 (`file.format-detected`). 확장자가 아니다.
+  detected_format  text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d5_upload_file_grid_carries_an_axis
+    CHECK (kind <> '기준 격자 파일' OR carries_lat OR carries_lon),
+  CONSTRAINT d5_upload_file_body_carries_no_axis
+    CHECK (kind <> '본체' OR (NOT carries_lat AND NOT carries_lon))
+);
+CREATE INDEX d5_upload_file_upload_idx ON d5_upload_file (upload_id);
+CREATE INDEX d5_upload_file_lab_idx ON d5_upload_file (lab_id);
+-- D3 와 같은 유일성을 원장에서도 건다 — 업로드 하나 안에 같은 축이 둘 있으면 등록은
+-- 반드시 실패한다. 그 실패를 등록 시점이 아니라 **접수 시점에** 낸다.
+CREATE UNIQUE INDEX d5_upload_file_one_lat_grid_per_upload
+  ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lat;
+CREATE UNIQUE INDEX d5_upload_file_one_lon_grid_per_upload
+  ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lon;
+
+-- 파이프라인 이벤트 / outbox. 열 구성의 정본은 `contracts/events/envelope.json` 의 봉투다 —
+-- 여기서 값 집합을 **재선언하지 않고 옮겨 적는다** (⑲ 「확정 열거값은 DB 가 강제한다」).
+CREATE TABLE d5_pipeline_event (
+  id                  ulid        PRIMARY KEY,          -- = eventId (전달의 정체성)
+  lab_id              ulid        NOT NULL REFERENCES d1_lab(id),
+  actor_account_id    ulid        NOT NULL REFERENCES d1_account(id),
+  -- **파일 단위 이벤트가 없다.** 7종 페이로드 전부가 업로드 단위이고, 파일을 가리킬 때도
+  -- `fileIds` 배열을 페이로드에 싣는다 (core-pipeline.json — CrsNormalized·CogBuilt).
+  -- 그래서 `file_id` 열을 두지 않는다. 그리고 그것이 멱등 키가 `<타입>:<uploadId>` 만으로
+  -- 충돌 없이 성립하는 이유다 — 타입 하나당 업로드 하나당 이벤트 하나.
+  upload_id           ulid        NOT NULL REFERENCES d5_upload(id) ON DELETE CASCADE,
+  event_type          text        NOT NULL CHECK (event_type IN (
+                        'upload.accepted', 'file.format-detected', 'file.header-parsed',
+                        'file.crs-normalized', 'preview.cog-built', 'upload.ready', 'upload.failed')),
+  schema_version      text        NOT NULL CHECK (schema_version ~ '^[0-9]+\.[0-9]+$'),
+  source              text        NOT NULL CHECK (source IN ('core-api', 'pipeline-worker')),
+  occurred_at         timestamptz NOT NULL DEFAULT now(),
+  -- **작업의 정체성.** `<이벤트 타입>:<uploadId>` 로 결정론적으로 만든다 — 발행자가 난수를
+  -- 쓰지 않으므로 outbox 행이 다시 만들어져도 같은 키가 나온다 (envelope.json `IdempotencyKey`).
+  idempotency_key     text        NOT NULL CHECK (
+                        idempotency_key ~ '^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*:[0-9A-HJKMNP-TV-Z]{26}$'),
+  attempt             integer     NOT NULL DEFAULT 1 CHECK (attempt >= 1),
+  max_attempts        integer     NOT NULL DEFAULT 5 CHECK (max_attempts >= 1),
+  first_published_at  timestamptz,        -- 미발행 = NULL. 릴레이가 채운다
+  published_at        timestamptz,
+  dead_lettered       boolean     NOT NULL DEFAULT false,
+  payload             jsonb       NOT NULL,
+  -- `upload.accepted` **만** core-api 가 낸다 — 봉투가 타입마다 `source` 를 const 로 못박았다.
+  -- 산문으로만 있던 그 규칙을 DB 가 강제한다.
+  CONSTRAINT d5_pipeline_event_source_matches_type
+    CHECK ((event_type = 'upload.accepted') = (source = 'core-api')),
+  -- **재전달 멱등의 DB 층 뿌리.** S2 완료 판정이 요구하고 PoC 에 선례가 없다 (P2.md §10-(나)).
+  CONSTRAINT d5_pipeline_event_idempotency_key_unique UNIQUE (idempotency_key)
+);
+CREATE INDEX d5_pipeline_event_upload_idx ON d5_pipeline_event (upload_id, occurred_at);
+CREATE INDEX d5_pipeline_event_lab_idx ON d5_pipeline_event (lab_id);
+-- 릴레이가 집는 자리 — 아직 안 나간 것만.
+CREATE INDEX d5_pipeline_event_unpublished_idx
+  ON d5_pipeline_event (occurred_at) WHERE published_at IS NULL;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 5. D6 Project (정본 §5)
@@ -567,6 +702,25 @@ CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
         AND g.expires_at > now()
     )
   );
+
+-- D5 임시 원장 3종 — **경계 정책만.** `body_access` 는 걸 수 없다(걸 대상이 없다):
+-- 그 정책은 `d2_dataset_access`·`d1_lab_profile` 을 `dataset_id` 로 조회하는데, 등록 전
+-- 업로드에는 **데이터셋이 아직 없다**(`〈64〉-ⓓ` — `upload.ready` 에 `datasetId` 가 없다).
+-- 「올린 사람 말고는 못 본다」는 Port·앱 층이 지킨다 — 근거는 rls-allowlist.toml 주석에 남겼다.
+ALTER TABLE d5_upload               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_upload               FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_upload FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d5_upload_file          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_upload_file          FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_upload_file FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d5_pipeline_event       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_pipeline_event       FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_pipeline_event FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 ALTER TABLE d4_lineage_edge         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d4_lineage_edge         FORCE  ROW LEVEL SECURITY;
