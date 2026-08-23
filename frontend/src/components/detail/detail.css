@@ -1,0 +1,89 @@
+/* S-05 데이터셋 상세 상단 — 치수·색의 정본은 목업 `mockups/데이터셋_상세_260817.html` 이다.
+   목업에 없는 요소를 여기서 발명하지 않는다.
+   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
+     여기서 잇는다. 값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다. */
+:root {
+  --color-gray-100: #e8ecf2;
+  --color-gray-600: #565c63;
+  --color-gray-700: #434950;
+  --color-warning-50: #fff6ed;
+  --color-warning-600: #a85400;
+  --color-primary-50: #edf4ff;
+  --color-primary-100: #e2eeff;
+  --color-band-dark-2: #121619;
+  --color-on-dark: #ffffff;
+  --color-on-dark-muted: rgba(255, 255, 255, 0.72);
+  --font-data: var(--font-sans);
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+  --text-h2: 24px;
+  --text-h3: 18px;
+  --weight-heading: 600;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+}
+
+.detail-page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 96px; }
+
+/* 되돌아가기 줄 — 경로(브레드크럼)가 아니다. 헤더 밖 제 줄에 하나 */
+.detail-page .backrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 6px; }
+.detail-page .backlink {
+  display: inline-flex; align-items: center; gap: 6px; max-width: min(60vw, 460px);
+  padding: 3px 9px 3px 7px; margin-left: -7px; border: 1px solid transparent; border-radius: var(--radius-sm);
+  font-size: var(--text-caption); color: var(--color-text-muted); text-decoration: none;
+  transition: border-color var(--ease), background var(--ease), color var(--ease);
+}
+.detail-page .backlink:hover { border-color: var(--color-border-strong); background: var(--color-surface); color: var(--color-text); }
+.detail-page .backlink .bl-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-page .backlink .bl-a { flex: none; font-size: 11px; }
+
+/* 페이지 머리다 — 카드로 감싸지 않는다. 면·보더를 두면 아래 기본 정보와 같은 층으로 읽힌다 */
+.detail-page .dt-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: var(--space-5); }
+.detail-page .dh-main { flex: 1; min-width: 0; }
+.detail-page .dt-header h1 {
+  font-family: var(--font-data); font-size: 31px; font-weight: 700; letter-spacing: -0.03em;
+  line-height: 1.25; font-variant-numeric: tabular-nums; margin: 0;
+}
+.detail-page .dh-file { font-family: var(--font-data); font-size: var(--text-body-sm); color: var(--color-text-muted); margin-top: 3px; }
+.detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
+.detail-page .dh-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.detail-page .dh-act { margin-left: auto; display: flex; gap: 8px; flex: none; align-items: center; }
+@media (max-width: 860px) { .detail-page .dt-header { flex-wrap: wrap; } .detail-page .dh-act { width: 100%; } }
+
+.detail-page .chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.detail-page .chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
+.detail-page .chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
+.detail-page .lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 11px; font-weight: 600; line-height: 1; }
+.detail-page .lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
+.detail-page .lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }
+.detail-page .lvl-2, .detail-page .lvl-3 { background: var(--color-primary-100); color: var(--color-primary-700); }
+
+/* 격자선은 셀이 직접 긋는다. gap 으로 컨테이너 배경을 비쳐 만들면
+   칸이 덜 찬 마지막 줄에서 그 배경이 선이 아니라 면으로 드러난다 */
+.detail-page .infogrid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden;
+  background: var(--color-surface); margin-bottom: var(--space-6);
+}
+.detail-page .infogrid .ig { background: var(--color-surface); padding: 12px 14px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.detail-page .infogrid .ig:nth-child(3n) { border-right: none; }
+.detail-page .infogrid .ig:nth-last-child(-n + 3) { border-bottom: none; }
+.detail-page .infogrid .ig .k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-page .infogrid .ig .v { font-size: var(--text-body); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .detail-page .infogrid { grid-template-columns: 1fr 1fr; }
+  .detail-page .infogrid .ig:nth-child(3n) { border-right: 1px solid var(--color-border); }
+  .detail-page .infogrid .ig:nth-child(2n) { border-right: none; }
+}
+
+/* 잠긴 상세 — 다크 네이비 밴드 (E-06가 얹힐 자리 · E-00 공통 기반) */
+.detail-page .locked-hero {
+  background: var(--color-band-dark-2); border: 1px solid var(--color-band-dark-2);
+  border-radius: var(--radius-lg); padding: 40px 24px; text-align: center; color: var(--color-on-dark);
+}
+.detail-page .locked-hero h2 { font-size: var(--text-h2); font-weight: var(--weight-heading); margin: 0 0 7px; color: var(--color-on-dark); }
+.detail-page .locked-hero p { color: var(--color-on-dark-muted); font-size: var(--text-body-sm); max-width: 440px; margin: 0 auto; line-height: 1.65; }
+
+.detail-page .gone { padding: 34px 22px; text-align: center; }
+.detail-page .gone p { font-size: var(--text-body); color: var(--color-text-body); margin: 0 0 12px; }

@@ -1,7 +1,8 @@
 """core-api 앱 — fe-core seam 34 오퍼레이션 전부를 등록한다.
 
-실질의 5개(`getCurrentAccount` `getLab` `listDatasets` `listDatasetFiles` `createProject`)만
-DB 를 읽고, 나머지 29 개는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3).
+실동작 9 개(`getCurrentAccount` `getLab` `listLabMembers` `saveLabMemberPermissions`
+`listDatasets` `listDatasetFacets` `getDataset` `listDatasetFiles` `createProject`)가
+DB 를 읽고 쓰며, 나머지 25 개는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3).
 미구현에 404 를 쓰지 않는다 — 404 는 「경계 밖」의 뜻으로 이미 예약돼 있다 (PLAN-SoT §9-㊱).
 """
 from __future__ import annotations
@@ -13,7 +14,7 @@ from ..kernel import errors
 from ..kernel.auth import SubjectRegistry
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
-from .routes import catalog, identity, not_implemented, project
+from .routes import catalog, identity, members, not_implemented, project
 
 API_PREFIX = "/api/v1"
 
@@ -40,7 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def _healthz() -> dict:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
-    for router in (identity.router, catalog.router, project.router):
+    for router in (identity.router, members.router, catalog.router, project.router):
         app.include_router(router, prefix=API_PREFIX)
     not_implemented.register(app, prefix=API_PREFIX)
 

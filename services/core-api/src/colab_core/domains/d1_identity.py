@@ -30,6 +30,14 @@ _LAB = text("""
 
 _MEMBER_COUNT = text("SELECT count(*) FROM d1_account")
 
+# 구성원·권한 격자의 행 순서. 이름순으로 세운다 — 정본이 순서를 주지 않으므로
+# 화면이 매번 다른 순서를 보지 않게 하는 최소 규칙만 둔다.
+_MEMBERS = text("""
+    SELECT a.id, a.name, a.email
+      FROM d1_account a
+     ORDER BY a.name, a.id
+""")
+
 
 def find_account(session: Session, account_id: Ulid) -> dict | None:
     row = session.execute(_ACCOUNT, {"account_id": str(account_id)}).mappings().first()
@@ -39,6 +47,19 @@ def find_account(session: Session, account_id: Ulid) -> dict | None:
 def find_lab(session: Session) -> dict | None:
     row = session.execute(_LAB).mappings().first()
     return dict(row) if row else None
+
+
+def list_members(session: Session) -> list[dict]:
+    """연구실 구성원 전원. 경계는 RLS 가 이미 걸었다 — lab_id 조건을 다시 적지 않는다."""
+    return [dict(r) for r in session.execute(_MEMBERS).mappings().all()]
+
+
+def member_exists(session: Session, account_id: Ulid) -> bool:
+    """경계 밖이면 RLS 가 행을 지우므로 False 가 되고, 호출자는 404 를 낸다 (P-9·P-10)."""
+    return session.execute(
+        text("SELECT 1 FROM d1_account WHERE id = :account_id"),
+        {"account_id": str(account_id)},
+    ).first() is not None
 
 
 def member_count(session: Session) -> int:

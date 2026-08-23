@@ -1,4 +1,4 @@
-"""아직 구현하지 않은 29 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 25 개 오퍼레이션 — **501 + ErrorEnvelope**.
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
   · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
@@ -27,14 +27,12 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) 34 개 중 실질의 5 개를 뺀 29 개.
+#: 계약(`contracts/seams/fe-core.yaml`) 34 개 중 실동작 9 개를 뺀 25 개.
+#: P1 이 넷을 가져갔다 — `listLabMembers` · `saveLabMemberPermissions` ·
+#: `listDatasetFacets` · `getDataset`. **이 표가 줄어드는 것이 진척의 계측이다** (P1.md §2-⑤).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("updateLab", "PATCH", "/lab", "NOT_IMPLEMENTED_P1"),
-    Op("listLabMembers", "GET", "/lab/members", "NOT_IMPLEMENTED_P1"),
-    Op("saveLabMemberPermissions", "PUT", "/lab/members/permissions", "NOT_IMPLEMENTED_P1"),
-    Op("listDatasetFacets", "GET", "/datasets/facets", "NOT_IMPLEMENTED_P1"),
-    Op("getDataset", "GET", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),

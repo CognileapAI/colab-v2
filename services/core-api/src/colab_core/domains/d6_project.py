@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.project_link import DatasetProjects
+from ..ports.project_link import DatasetProjects, ProjectUse
 
 _INSERT = text("""
     INSERT INTO d6_project (id, lab_id, type, name, description,
@@ -23,6 +23,18 @@ _LINKS = text("""
       JOIN d6_project p ON p.id = pd.project_id
      WHERE pd.dataset_id = ANY(CAST(:ids AS char(26)[]))
      ORDER BY pd.dataset_id, pd.created_at, p.id
+""")
+
+
+# 상세의 활용 프로젝트 — **여러 건 전부**를 나열한다 (Policy_데이터셋_상세 §5·§8).
+# 의미 문장(`usage_note`)은 연결마다 따로다. 같은 데이터라도 과제마다 쓰임이 다르다.
+_USES = text("""
+    SELECT p.id AS project_id, p.name, p.type, p.period_start, p.period_end,
+           pd.usage_note, pd.created_at
+      FROM d6_project_dataset pd
+      JOIN d6_project p ON p.id = pd.project_id
+     WHERE pd.dataset_id = :dataset_id
+     ORDER BY pd.created_at, p.id
 """)
 
 
@@ -63,3 +75,14 @@ class ProjectLinkAdapter:
                 names=[r["name"] for r in rows],
             )
         return out
+
+    def uses_of(self, dataset_id: Ulid) -> list[ProjectUse]:
+        rows = self._session.execute(_USES, {"dataset_id": str(dataset_id)}).mappings().all()
+        return [
+            ProjectUse(
+                project_id=r["project_id"], name=r["name"], type=r["type"],
+                period_start=r["period_start"], period_end=r["period_end"],
+                usage_note=r["usage_note"],
+            )
+            for r in rows
+        ]

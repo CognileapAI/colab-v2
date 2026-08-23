@@ -20,7 +20,10 @@ _ROWS = text("""
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
-           (SELECT count(*) FROM d3_file f WHERE f.dataset_id = d.id) AS file_count
+           -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
+           -- `body_access` RESTRICTIVE 아래서 본체 테이블을 세면 잠긴 행이 0 을 낸다(실측).
+           -- 트리거가 이 열을 유지하고, `tests/test_file_count_drift.py` 가 드리프트를 잡는다.
+           d.file_count
       FROM d3_dataset d
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
       JOIN d1_account u ON u.id = d.uploader_account_id
@@ -36,6 +39,53 @@ _FILES = text("""
 
 _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL")
 
+# 상세 한 건. 목록 질의와 같은 형태를 쓰되 소유자 이름까지 함께 읽는다 —
+# 상세의 `기본 정보` 는 소유자와 올린 사람을 **둘 다** 적는다 (Policy_데이터셋_상세 §5 · P-30).
+_ONE = text("""
+    SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
+           d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at, d.file_count,
+           dd.name, dd.topic, dd.summary,
+           u.name AS uploader_name,
+           o.name AS owner_name
+      FROM d3_dataset d
+      JOIN d3_dataset_description dd ON dd.dataset_id = d.id
+      JOIN d1_account u ON u.id = d.uploader_account_id
+      JOIN d1_account o ON o.id = d.owner_account_id
+     WHERE d.id = :dataset_id AND d.deleted_at IS NULL
+""")
+
+# 자동으로 읽은 정보. 사람이 타이핑하지 않는다 (Policy_데이터셋_상세 §5).
+_AUTOMETA = text("""
+    SELECT format, variables, period_start, period_end, crs, grid,
+           total_size_bytes, bundle_file_name
+      FROM d3_dataset_autometa
+     WHERE dataset_id = :dataset_id
+""")
+
+# 기준 격자 파일 유무. **없으면 없다고 적는다** — 짝 파일이 없어 못 그리는 것인지
+# 원래 필요 없는 포맷인지가 갈린다 (Policy_데이터셋_상세 §5).
+# 본체 테이블이라 잠긴 데이터에서는 0행이 나온다. 그래서 이 값은 `basicInfo` 를
+# 내리는 경우(=본체에 닿는 경우)에만 묻는다.
+_HAS_GRID = text("""
+    SELECT 1 FROM d3_file
+     WHERE dataset_id = :dataset_id AND kind = '기준 격자 파일'
+     LIMIT 1
+""")
+
+
+@dataclasses.dataclass(frozen=True)
+class DatasetAutometa:
+    """자동으로 읽은 메타. 값이 없으면 `None` 이고 **지어내지 않는다**."""
+
+    format: str | None
+    variables: list[str]
+    period_start: object
+    period_end: object
+    crs: str | None
+    grid: str | None
+    total_size_bytes: int | None
+    bundle_file_name: str | None
+
 
 @dataclasses.dataclass(frozen=True)
 class DatasetCore:
@@ -46,10 +96,12 @@ class DatasetCore:
     file_count: int
     uploader_id: str
     uploader_name: str
-    source_label: str | None
-    last_modified_at: object
-    uploaded_at: object
-    lineage_confirmed_at: object
+    owner_id: str | None = None
+    owner_name: str | None = None
+    source_label: str | None = None
+    last_modified_at: object = None
+    uploaded_at: object = None
+    lineage_confirmed_at: object = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -59,12 +111,45 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
         DatasetCore(
             dataset_id=r["id"], name=r["name"], topic=r["topic"], summary=r["summary"],
             file_count=int(r["file_count"]), uploader_id=r["uploader_account_id"],
-            uploader_name=r["uploader_name"], source_label=r["source_label"],
+            uploader_name=r["uploader_name"], owner_id=r["owner_account_id"],
+            owner_name=None, source_label=r["source_label"],
             last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
             lineage_confirmed_at=r["lineage_confirmed_at"],
         )
         for r in rows
     ]
+
+
+def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
+    """상세 한 건. **묘비는 여기서 걸러진다** — 지운 데이터는 상세 화면이 없다 (§7)."""
+    r = session.execute(_ONE, {"dataset_id": str(dataset_id)}).mappings().first()
+    if r is None:
+        return None
+    return DatasetCore(
+        dataset_id=r["id"], name=r["name"], topic=r["topic"], summary=r["summary"],
+        file_count=int(r["file_count"]), uploader_id=r["uploader_account_id"],
+        uploader_name=r["uploader_name"], owner_id=r["owner_account_id"],
+        owner_name=r["owner_name"], source_label=r["source_label"],
+        last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
+        lineage_confirmed_at=r["lineage_confirmed_at"],
+    )
+
+
+def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
+    r = session.execute(_AUTOMETA, {"dataset_id": str(dataset_id)}).mappings().first()
+    if r is None:
+        return None
+    return DatasetAutometa(
+        format=r["format"], variables=list(r["variables"] or []),
+        period_start=r["period_start"], period_end=r["period_end"],
+        crs=r["crs"], grid=r["grid"],
+        total_size_bytes=(None if r["total_size_bytes"] is None else int(r["total_size_bytes"])),
+        bundle_file_name=r["bundle_file_name"],
+    )
+
+
+def has_reference_grid_file(session: Session, dataset_id: Ulid) -> bool:
+    return session.execute(_HAS_GRID, {"dataset_id": str(dataset_id)}).first() is not None
 
 
 def dataset_exists(session: Session, dataset_id: Ulid) -> bool:

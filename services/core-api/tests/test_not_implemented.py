@@ -15,7 +15,9 @@ from colab_core.app.main import API_PREFIX, create_app
 from colab_core.app.routes.not_implemented import OPERATIONS
 from colab_core.kernel.config import Settings
 
-REAL = {"getCurrentAccount", "getLab", "listDatasets", "listDatasetFiles", "createProject"}
+# 실동작 9 개. P1 이 넷을 501 표에서 빼 왔다 (P1.md §2-⑤).
+REAL = {"getCurrentAccount", "getLab", "listLabMembers", "saveLabMemberPermissions",
+        "listDatasets", "listDatasetFacets", "getDataset", "listDatasetFiles", "createProject"}
 NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
     "rejectAccessRequest", "requestVerification", "listPendingVerificationRequests",
@@ -35,8 +37,8 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_29_unimplemented_operations_are_exactly_these() -> None:
-    assert len(OPERATIONS) == 29
+def test_the_25_unimplemented_operations_are_exactly_these() -> None:
+    assert len(OPERATIONS) == 25
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -44,7 +46,7 @@ def test_codes_are_the_two_kinds() -> None:
     no_store = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_NO_STORE"}
     p1 = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_P1"}
     assert no_store == NO_STORE
-    assert len(p1) == 22
+    assert len(p1) == 18
     assert no_store & p1 == set()
 
 

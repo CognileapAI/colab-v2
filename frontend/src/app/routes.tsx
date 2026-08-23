@@ -5,6 +5,7 @@ import { AppLayout } from '../shell/AppLayout';
 import { LabPage } from '../routes/LabPage';
 import { ProjectsPage } from '../routes/ProjectsPage';
 import { DatasetsPage } from '../routes/DatasetsPage';
+import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
 
@@ -17,6 +18,7 @@ export function AppRoutes() {
         <Route path="/lab" element={<LabPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
+        <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
