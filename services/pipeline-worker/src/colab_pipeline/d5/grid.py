@@ -10,7 +10,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -27,6 +27,9 @@ class ReferenceGrid:
     axes: tuple[str, str]
     lat_path: Path
     lon_path: Path
+    #: 열어 봤으나 격자가 아니었던 컨테이너와 그 사유. **조용히 무시하지 않는다** —
+    #: 무시가 아니라 「봤고, 이래서 안 썼다」를 남긴다(`DATA-REFERENCE §0`).
+    container_rejections: list[str] = field(default_factory=list)
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -91,37 +94,49 @@ def find_reference_grid(grid_dir: Path | None, *, expect_shape: tuple[int, int] 
                         ) -> ReferenceGrid:
     """디렉터리에서 기준 격자를 찾는다. 못 찾으면 예외 — 지어내지 않는다.
 
+    **순서가 판정이다 — 결합축 컨테이너(`.nc`)를 먼저 본다(`〈69〉-⑵`).**
+
+    `〈66〉` 이 HSR 정본 격자를 `rdr_500m_latlon.nc` 로 판정했다. 같은 폴더에 `.npy`
+    쌍이 함께 있고 **행·열 각 1셀(500 m) 인덱스 off-by-one 만큼 어긋난다** — 먼저
+    본 쪽이 정본이 된다. 그래서 우선순위 한 줄이 곧 좌표값의 판정이다.
+    `〈69〉` 판정 전까지 이 코드는 `.npy` 를 우선했다.
+
     ⚠ **결손 정정(`〈66〉-ⓒ`)** — 예전에는 `*.npy` 만 훑어서 결합축 `.nc` 격자가
-    **실패하지도 않고 조용히 무시**됐다. 이제 `.npy` 쌍이 없으면 컨테이너를 본다.
+    **실패하지도 않고 조용히 무시**됐다. 이제 컨테이너를 먼저 열고, 격자가 아니면
+    **그 사유를 `container_rejections` 에 남긴 채** `.npy` 쌍으로 내려간다.
     """
     if grid_dir is None:
         raise GridUnavailableError("기준 격자 디렉터리가 지정되지 않았다")
     grid_dir = Path(grid_dir)
     if not grid_dir.is_dir():
         raise GridUnavailableError(f"기준 격자 디렉터리가 없다: {grid_dir}")
+
+    # ① 결합축 컨테이너 — 정본 우선 (`〈69〉-⑵`)
+    combined = sorted(p for p in grid_dir.iterdir()
+                      if p.is_file() and p.suffix.lower() in (".nc", ".h5", ".hdf5"))
+    reasons: list[str] = []
+    for c in combined:
+        try:
+            grid = load_combined_grid(c)
+        except GridUnavailableError as e:
+            reasons.append(str(e))
+            continue
+        if expect_shape is not None and grid.shape != tuple(expect_shape):
+            reasons.append(f"{c.name}: 형상 {grid.shape} ≠ 데이터 {tuple(expect_shape)}")
+            continue
+        grid.container_rejections = reasons
+        return grid
+
+    # ② `.npy` 쌍 — 컨테이너가 없거나 못 쓸 때만
     lats = sorted(p for p in grid_dir.glob("*.npy") if p.name.lower().startswith("lat"))
     lons = sorted(p for p in grid_dir.glob("*.npy") if p.name.lower().startswith("lon"))
     if not lats or not lons:
-        combined = sorted(p for p in grid_dir.iterdir()
-                          if p.is_file() and p.suffix.lower() in (".nc", ".h5", ".hdf5"))
-        if not combined:
-            raise GridUnavailableError(
-                f"기준 격자를 찾지 못했다 (lat npy {len(lats)} · lon npy {len(lons)} · "
-                f"컨테이너 0): {grid_dir}")
-        reasons = []
-        for c in combined:
-            try:
-                grid = load_combined_grid(c)
-            except GridUnavailableError as e:
-                reasons.append(str(e))
-                continue
-            if expect_shape is not None and grid.shape != tuple(expect_shape):
-                reasons.append(f"{c.name}: 형상 {grid.shape} ≠ 데이터 {tuple(expect_shape)}")
-                continue
-            return grid
         raise GridUnavailableError(
-            "결합축 격자 후보를 열었으나 쓸 수 있는 것이 없다: " + " | ".join(reasons))
+            f"기준 격자를 찾지 못했다 (lat npy {len(lats)} · lon npy {len(lons)} · "
+            f"컨테이너 {len(combined)}): {grid_dir}"
+            + (" — 컨테이너 거절 사유: " + " | ".join(reasons) if reasons else ""))
     grid = load_reference_grid(lat_path=lats[0], lon_path=lons[0])
+    grid.container_rejections = reasons
     if expect_shape is not None and grid.shape != tuple(expect_shape):
         raise GridUnavailableError(
             f"격자 형상이 데이터와 안 맞는다: 격자 {grid.shape} vs 데이터 {tuple(expect_shape)}")

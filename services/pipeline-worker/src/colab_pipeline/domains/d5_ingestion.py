@@ -68,6 +68,9 @@ class UploadFileWork:
     path: Path
     kind: str            # '본체' | '기준 격자 파일'
     file_name: str
+    #: 격자 파일 행은 **워커가 만든다**(`〈69〉-⑴`) — 만들려면 저장 키가 필요하다.
+    #: 접수가 이미 행을 세운 본체에는 쓰이지 않는다.
+    storage_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -231,7 +234,15 @@ class IngestionService:
     # ── 격자 축 ────────────────────────────────────────────────────────────
     def _resolve_grid_axes(self, work: UploadWork, res: ProcessResult,
                            grids: list[UploadFileWork]) -> Path | None:
-        """축을 판별해 원장에 두 불리언으로 적는다. 못 정한 파일은 **거절**한다(`〈66〉`)."""
+        """축을 판별하고, 그 뒤에 **격자 파일 행을 세운다**(`〈69〉-⑴`).
+
+        접수(`createUpload`)는 업로드와 본체 파일 행까지만 만든다 — `d5_upload_file` 의
+        CHECK 가 「기준 격자 파일이면 축 하나 이상 true」를 요구하는데 축은 파일을
+        열어야 나오기 때문이다. **`0004` 는 고치지 않는다**(`〈69〉`): CHECK 를 상태로
+        조건화하면 「축이 빈 격자 행」이 합법한 상태가 되어 불변식이 약해진다.
+
+        못 정한 파일은 **거절**한다(`〈66〉`) — 행 자체를 만들지 않고, 등록은 진행한다.
+        """
         if not grids:
             return work.grid_dir
         by_path = {g.path: g for g in grids}
@@ -240,8 +251,10 @@ class IngestionService:
             g = by_path[path]
             out = res.files[g.file_id]
             out.carries_lat, out.carries_lon = d.carries_lat, d.carries_lon
-            self._ledger.record_file_axes(
-                g.file_id, carries_lat=d.carries_lat, carries_lon=d.carries_lon)
+            self._ledger.record_file_axes_row(
+                file_id=g.file_id, lab_id=work.lab_id, upload_id=work.upload_id,
+                file_name=g.file_name, storage_key=g.storage_key or g.file_name,
+                carries_lat=d.carries_lat, carries_lon=d.carries_lon)
         for path, why in detection.rejected.items():
             # 그 파일만 막고 등록은 막지 않는다(`〈63〉-ⓒ`). 축이 빈 행을 만들지 않는다.
             res.rejected[by_path[path].file_id] = why
@@ -265,6 +278,21 @@ def _iso(value) -> str | None:
 # ════════════════════════════════════════════════════════════════════════════
 # SQL 원장 — W1 이 만든 `d5_*` 표. 새 표를 만들지 않는다.
 # ════════════════════════════════════════════════════════════════════════════
+
+#: 「처리 중인가」 — `〈67〉-ⓐ` 규칙 ② 의 대상 집합. `core-api` 의 `_PROCESSING` 과
+#: **같은 문장**이다(`colab_core.domains.d5_ingestion`). 두 서비스의 reaper 가 서로
+#: 다른 행을 지우면 「처리 중은 안 지운다」는 보장이 한쪽에서만 성립한다.
+#: 「처리 중」의 정의 자체는 정본에 없다 — 새 숫자를 만들지 않으려고 **수명 그 자체를
+#: 창으로** 썼다. 이것은 레포 판단이다(정본 값이 아니다).
+_PROCESSING = """
+    (u.ready = false AND u.failed_at IS NULL AND EXISTS (
+        SELECT 1 FROM d5_pipeline_event e
+         WHERE e.upload_id = u.id
+           AND e.event_type <> 'upload.accepted'
+           AND e.occurred_at > COALESCE(:now, now()) - (u.expires_at - u.created_at)
+    ))
+"""
+
 class SqlLedger:
     """`EventLedgerPort` + `UploadLedgerPort` 실물. 세션 하나 = 트랜잭션 하나."""
 
@@ -344,16 +372,6 @@ class SqlLedger:
         """), {"id": upload_id}).mappings().first()
         return dict(r) if r else None
 
-    def record_file_axes(self, file_id: str, *, carries_lat: bool, carries_lon: bool) -> None:
-        from sqlalchemy import text
-        if not (carries_lat or carries_lon):
-            raise ValueError("축이 빈 기준 격자 파일 행을 만들지 않는다 (〈66〉)")
-        self._s.execute(text("""
-            UPDATE d5_upload_file
-               SET carries_lat = :lat, carries_lon = :lon
-             WHERE id = :id
-        """), {"id": file_id, "lat": carries_lat, "lon": carries_lon})
-
     def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
                              file_name: str, storage_key: str,
                              carries_lat: bool, carries_lon: bool) -> None:
@@ -392,11 +410,24 @@ class SqlLedger:
                         {"id": upload_id, **fields})
 
     def expire(self, now=None) -> list[str]:
+        """만료 스윕. **처리 중인 업로드는 건드리지 않는다**(`〈67〉` 이행 제약 ㉠).
+
+        「시계가 처리를 앞지르지 않는다」가 정본 규칙이다. `expires_at` 만 보고 지우면
+        **처리 중인 업로드가 사라져 정상 동작이 404 로 답한다** — 그러면 음성 시험
+        ㉳(만료된 업로드는 전환되지 않는다)가 그 실패 위에서 green 을 보고한다.
+
+        「처리 중」의 정의는 `core-api` 쪽(`colab_core…d5_ingestion._PROCESSING`)과
+        **같은 문장**이다 — 한쪽만 갈라지면 두 스윕이 다른 행을 지운다.
+        `upload.accepted` 를 진행의 증거에서 빼는 이유는 그것이 접수 순간 반드시
+        있어서, 세면 만료가 통째로 죽기 때문이다.
+        """
         from sqlalchemy import text
-        rows = self._s.execute(text("""
-            DELETE FROM d5_upload
-             WHERE registered_at IS NULL AND expires_at <= COALESCE(:now, now())
-            RETURNING id
+        rows = self._s.execute(text(f"""
+            DELETE FROM d5_upload u
+             WHERE u.registered_at IS NULL
+               AND u.expires_at <= COALESCE(:now, now())
+               AND NOT {_PROCESSING}
+            RETURNING u.id
         """), {"now": now}).all()
         return [r[0] for r in rows]
 

@@ -37,15 +37,20 @@ def test_combined_axis_nc_is_found_as_a_reference_grid(tmp_path):
     assert grid.lat_path == grid.lon_path        # 한 파일이 둘 다 담는다 (`〈66〉`)
 
 
-def test_npy_pair_still_wins_when_both_exist(tmp_path):
-    """원천 `2_nc` 폴더는 같은 격자를 `.npy` 2건과 `.nc` 1건으로 **둘 다** 준다."""
+def test_combined_nc_wins_when_both_exist(tmp_path):
+    """원천 `2_nc` 폴더는 같은 격자를 `.npy` 2건과 `.nc` 1건으로 **둘 다** 준다.
+
+    **`〈69〉-⑵` 로 우선순위가 뒤집혔다** — 예전 이 시험은 `.npy` 가 이기는 것을
+    단언했고, 그것이 `〈66〉`(정본 격자는 `.nc`)의 미이행 상태였다. 값이 실제로
+    갈리는 것을 박는 시험은 `test_grid_canonical_nc.py` 다.
+    """
     d = tmp_path / "04.Lat_Lon_info"
     d.mkdir()
     np.save(d / "Lat_x.npy", np.repeat(np.linspace(30, 43, 8)[:, None], 8, axis=1))
     np.save(d / "Lon_x.npy", np.repeat(np.linspace(118.8, 133.5, 8)[None, :], 8, axis=0))
     _write_combined(d / "combined.nc")
     grid = find_reference_grid(d)
-    assert grid.lat_path.name == "Lat_x.npy"
+    assert grid.lat_path.name == "combined.nc"
 
 
 def test_nc_without_coordinate_variables_is_a_hard_failure(tmp_path):

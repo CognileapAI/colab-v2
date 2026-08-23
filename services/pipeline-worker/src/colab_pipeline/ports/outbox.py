@@ -27,8 +27,14 @@ class EventLedgerPort(Protocol):
 class UploadLedgerPort(Protocol):
     def load_upload(self, upload_id: str) -> dict | None: ...
 
-    def record_file_axes(self, file_id: str, *, carries_lat: bool, carries_lon: bool) -> None:
-        """축 두 불리언(`〈66〉`). **둘 다 false 면 거부한다** — 축이 빈 행을 만들지 않는다."""
+    def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
+                             file_name: str, storage_key: str,
+                             carries_lat: bool, carries_lon: bool) -> None:
+        """기준 격자 파일 행을 **세운다**(`〈69〉-⑴`). 갱신이 아니라 생성이다 —
+        접수는 이 행을 만들지 않는다(축을 모르기 때문).
+
+        축 두 불리언(`〈66〉`). **둘 다 false 면 거부한다** — 축이 빈 행을 만들지 않는다.
+        """
         ...
 
     def record_detected_format(self, file_id: str, fmt: str | None) -> None: ...

@@ -377,3 +377,363 @@ COLAB_PIPELINE_DB_URL=postgresql+psycopg://colab_app:gateapp@<컨테이너 IP>:5
   .venv/bin/python -m pytest tests/test_outbox_db.py -q
 docker rm -f p2pipe_pg
 ```
+
+---
+---
+
+# 【후속 레인 추가분】 P2 · W2 `P2-pipeline` 후속 — `〈69〉` 이행 3건
+
+> **레인** `P2-pipeline` 후속(본 레인 완료·advisor 게이트 ② `approve-with-changes` 이후) ·
+> **일자** 2026-08-23 · **소유 디렉터리** `services/pipeline-worker/` · **커밋하지 않았다**
+>
+> **위 §1~§9 는 본 레인의 기록이고, 이 절부터가 후속분이다. 위를 고쳐 쓰지 않았다.**
+> **증거와 해석을 가른다**(`M-5`) — `EVIDENCE` 표시가 붙은 블록은 **실측 출력 그대로**이고,
+> `해석` 이라 적힌 자리는 **잠정**이다. 인용한 `파일:행` 은 전부 `cat -n` 으로 확인했다(`M-7`).
+
+## A0. 한눈에
+
+| # | 지시 | 상태 | RED 근거 | GREEN 근거 |
+|---|---|:--:|---|---|
+| **A** | 접수 시점의 격자 파일 행 — **워커가 만든다**(`〈69〉-⑴`) | ✅ | `§A2.1` | `§A2.2`(단위 4건 + 실 DB 2건) |
+| **B** | `.nc` 정본 격자 이행(`〈69〉-⑵`) | ✅ | `§A3.1` — `assert 'Lat_HSR.npy' == 'rdr_500m_latlon.nc'` | `§A3.2`(좌표값 실측 포함) |
+| **C** | `expire()` 의 처리 중 제외(`〈67〉-㉠`) | ✅ **결손은 실재했다** | `§A4.1`(단위 + 실 DB 둘 다) | `§A4.2` |
+
+- **`db/0004` 를 한 글자도 고치지 않았다** — 판정의 일부다(`§A2.3`).
+- **`contracts/` 무변경 · `d5/` 파서 9모듈 무변경.** `grid.py` 만 손댔고 그것은 `〈66〉-ⓒ` 가
+  결손으로 명시 배정한 자리다.
+- 시험 **82건 → 98건**(+16). 게이트는 본 레인과 **같은 결과**다(`§A6`).
+
+---
+
+## A1. 진입 확인 — 지시서가 시킨 대로 먼저 읽고 먼저 쟀다
+
+| 확인 | 실측 |
+|---|---|
+| `〈69〉` 판정문 | `dev-package/PLAN-SoT.md:332` 에 실재. ⑴·⑵ 두 건 일괄 판정 |
+| `〈66〉` 의 `.nc` 판정 | `PLAN-SoT.md:329` |
+| `〈67〉` 이행 제약 ㉠·㉡ | `PLAN-SoT.md:330` |
+| 측정 근거 | `sessions/P2-W0-HSR-grid-measurement.md §2.4`·`§3.2` — 두 격자는 **인덱스 1칸** 차이 |
+| 좌표 실측값 | `sessions/P2-W0-1-measurement.md:69`(`.npy` lat min `30.102751`)·`:86`(`.nc` `30.107119`) · `DATA-REFERENCE.md:48` |
+| C 의 결손 주장 | `sessions/P2-api-report.md:286-291` |
+
+---
+
+## A2. Task A — 격자 파일 행은 **워커가 만든다** (`〈69〉-⑴`)
+
+### A2.0 무엇이 바뀌었나
+
+본 레인은 `SqlLedger.record_file_axes_row` 를 **만들어만 두고**, 실제 처리 경로는
+`record_file_axes`(= `UPDATE d5_upload_file SET carries_lat…`)를 불렀다. **갱신은 행이
+이미 있다는 전제**이고, `〈69〉-⑴` 은 그 전제를 뒤집었다 — 접수는 격자 행을 만들지 않는다.
+
+- `domains/d5_ingestion.py` `_resolve_grid_axes` 가 이제 **`record_file_axes_row` 를 부른다**
+- **`record_file_axes`(UPDATE 전용)를 지웠다** — Port·`SqlLedger`·`MemoryLedger` 세 곳 모두.
+  남겨 두면 「행이 이미 있다」는 죽은 전제가 코드에 남아 다시 불린다
+- `UploadFileWork` 에 `storage_key: str | None = None` 추가 — 행을 **만들려면** 저장 키가 필요하다
+  (없으면 `file_name` 을 쓴다)
+
+### A2.1 RED (EVIDENCE)
+
+```
+$ .venv/bin/python -m pytest tests/test_worker_creates_grid_row.py -q
+FAILED test_the_grid_row_does_not_exist_before_the_worker_runs - AttributeError: 'MemoryLedger' object has no attribute 'file_rows'
+FAILED test_worker_creates_the_grid_file_row_with_the_two_booleans - TypeError: UploadFileWork.__init__() got an unexpected keyword argument 'storage_key'
+FAILED test_detection_failure_creates_no_row_and_the_upload_still_completes - AttributeError: 'MemoryLedger' object has no attribute 'file_rows'
+FAILED test_an_empty_axis_row_is_refused_by_the_ledger - AttributeError: 'MemoryLedger' object has no attribute 'record_file_axes_row'
+```
+
+### A2.2 GREEN (EVIDENCE)
+
+**단위 4건** — `tests/test_worker_creates_grid_row.py`
+
+| 시험 | 무엇을 세웠나 |
+|---|---|
+| `test_the_grid_row_does_not_exist_before_the_worker_runs` | 접수 직후 격자 행 **0건**. 이것이 `〈69〉` 가 치른 대가다 |
+| `test_worker_creates_the_grid_file_row_with_the_two_booleans` | 처리 뒤 행이 **생겨** 있고 `(carries_lat, carries_lon) == (False, True)` · `kind`·`lab_id`·`upload_id`·`storage_key` 까지 |
+| `test_detection_failure_creates_no_row_and_the_upload_still_completes` | 판별 실패 → **행 0건** · 그 파일만 `rejected` · 마지막 이벤트는 여전히 `upload.ready` |
+| `test_an_empty_axis_row_is_refused_by_the_ledger` | 축 둘 다 false 면 `ValueError` |
+
+**실 DB 2건** — `tests/test_outbox_db.py`(일회용 postgres `p2pipe_pg2`, **호스트 포트 publish 0개**,
+`colab_app` 롤 = NOSUPERUSER·NOBYPASSRLS)
+
+```
+$ COLAB_PIPELINE_DB_URL=<일회용 DB> .venv/bin/python -m pytest tests/test_outbox_db.py -q
+9 passed in 4.31s          # 착수 시점 6건 → 9건
+```
+
+| 시험 | 무엇을 세웠나 |
+|---|---|
+| `test_worker_creates_the_grid_file_row_that_acceptance_did_not` | 접수 뒤 `kind='기준 격자 파일'` 행 **0건** 을 먼저 단언하고, 처리 뒤 그 행이 `('기준 격자 파일', False, True, 's3://Lon_x.npy')` 로 **생긴다** |
+| `test_no_grid_row_is_created_when_the_axis_cannot_be_determined` | 판별 실패 시 DB 에 행 **0건** · `upload.ready` 는 그대로 나간다 |
+
+### A2.3 `0004` 를 고치지 않았다 (EVIDENCE)
+
+```
+$ bash gates/run.sh migration-single-head
+# db/platform: 리비전 4건 · head 1개 (0004_p2_grid_axis_and_d5)
+migration-single-head green — 두 체인 모두 head 1개.
+```
+
+`git status` 에 `db/` 변경 **0건**. `〈69〉` 가 「CHECK 를 상태로 조건화하면 『축이 빈 격자 행』이
+합법한 상태가 되어 불변식이 약해진다」고 못박은 그대로다.
+
+> **⚠ 해석(잠정)** — 이 배치는 **접수 직후 격자 파일이 원장에 안 보이는** 창을 만든다.
+> `〈69〉` 가 대가로 명시했고 이 레인이 새로 만든 위험이 아니다. 다만 그 창 동안
+> `getUpload` 응답의 파일 목록에 격자가 빠진다 — **화면이 그것을 어떻게 보이는지는
+> 이 레인이 재지 않았다**(`core-api`·FE 소관).
+
+---
+
+## A3. Task B — `.nc` 정본 격자 이행 (`〈69〉-⑵`)
+
+### A3.0 무엇이 바뀌었나 — 순서 한 줄이 곧 좌표값의 판정이다
+
+`d5/grid.py` `find_reference_grid` 의 탐색 **순서를 뒤집었다**.
+
+| | 이전 | 이후 |
+|---|---|---|
+| ① | `*.npy` 쌍 (`lat*`·`lon*`) | **결합축 컨테이너**(`.nc`·`.h5`·`.hdf5`) |
+| ② | 쌍이 없을 때만 컨테이너 | 컨테이너가 없거나 못 쓸 때만 `.npy` 쌍 |
+| 컨테이너가 격자가 아닐 때 | (쌍이 있으면) **아예 안 열어 봄 — 조용한 무시** | 열어 보고 **사유를 `ReferenceGrid.container_rejections` 에 남긴 채** `.npy` 로 내려간다 |
+
+**본 레인이 적은 결손이 여기서 완전히 닫힌다** — `§4.5` 는 「`.npy` 쌍이 **없으면**
+컨테이너를 본다」까지였다. 원천 `3_bin` 폴더처럼 **둘 다 있는** 자리에서는 `.nc` 가
+여전히 안 열렸고, 그것이 `〈66〉` 미이행의 실체였다.
+
+`ReferenceGrid` 에 `container_rejections: list[str]` 필드를 더했다. **「안 썼다」와
+「못 봤다」를 구분하려는 것이다** — `DATA-REFERENCE §0` 이 그 무늬로 쓰였다.
+
+### A3.1 RED (EVIDENCE)
+
+```
+$ .venv/bin/python -m pytest tests/test_grid_canonical_nc.py -q
+FAILED test_canonical_nc_wins_when_both_grids_are_present - AssertionError: assert 'Lat_HSR.npy' == 'rdr_500m_latlon.nc'
+FAILED test_an_unreadable_container_falls_back_to_the_npy_pair_and_says_so - AttributeError: 'ReferenceGrid' object has no attribute 'container_rejections'
+```
+
+### A3.2 GREEN — **좌표값을 박았다** (EVIDENCE)
+
+지시서가 경고한 함정: **파일을 맞게 고르는 것과 맞는 좌표를 읽는 것은 다르다.**
+P2-viz 레인은 렌더가 멀쩡하고 픽셀이 제자리인데 값이 틀린 상태를 겪었다.
+그래서 시험이 **파일 이름과 좌표값을 둘 다** 단언한다.
+
+```
+$ COLAB_REFERENCE_DATA=<원천> .venv/bin/python -m pytest tests/test_grid_canonical_nc.py -q
+5 passed
+```
+
+**코드가 실제로 내는 값 (EVIDENCE — 실물 `03 Reference-Data/…/file_format_3_bin/04.Lat_Lon_info`)**
+
+```
+picked   : rdr_500m_latlon.nc | lon: rdr_500m_latlon.nc
+shape    : (2881, 2305)
+lat.min  : 30.107118606567383
+lon.max  : 133.5606689453125
+rejections: []
+npy lat.min: 30.102750778198242
+```
+
+| 값 | 코드가 지금 내는 것 | 측정 보고서(`P2-W0-1-measurement §2`) | 판정 |
+|---|---|---|---|
+| **HSR 남단 위도** | **`30.107118606567383`** | `.nc` `30.107119` / `.npy` `30.102751` | **`.nc` 판. 일치** |
+| HSR 동단 경도 | `133.5606689453125` | `.nc` `133.560669` / `.npy` `133.553513` | `.nc` 판. 일치 |
+
+**P2-viz 레인이 이미 쓰고 있는 단언과 같은 값이다** — `services/viz-render/tests/test_e2e_real.py:139`
+가 `south == pytest.approx(30.107119, abs=1e-6)` 를 건다. **두 레인이 같은 격자 위에 섰다.**
+
+시험 5건:
+
+| 시험 | 무엇을 세웠나 |
+|---|---|
+| `test_canonical_nc_wins_when_both_grids_are_present` | 둘 다 있으면 `.nc` · **읽힌 lat.min 이 `.nc` 판이고 `.npy` 판이 아니다** (양쪽 다 단언) |
+| `test_npy_pair_is_still_used_when_no_container_is_present` | 컨테이너가 없으면 `.npy` 는 그대로 쓰인다 — 기능을 뺀 것이 아니다 |
+| `test_an_unreadable_container_falls_back_to_the_npy_pair_and_says_so` | 격자 아닌 `.nc` 가 섞여 있으면 `.npy` 로 내려가되 **사유를 남긴다** |
+| `test_no_grid_at_all_is_a_hard_failure` | 아무것도 없으면 예외 — 지어내지 않는다(`DR-9`) |
+| `test_the_real_hsr_grid_that_the_code_picks_has_the_nc_southern_edge` (e2e) | **실물**에서 `.nc` 를 고르고 남단이 `30.107119 ± 1e-6` |
+
+### A3.3 기존 시험 하나를 **뒤집었다 — 약화가 아니라 판정 이행이다**
+
+`tests/test_grid_combined_nc.py` 의 `test_npy_pair_still_wins_when_both_exist` 는
+**옛 동작(= `〈66〉` 미이행 상태)을 단언하던 시험**이다. `test_combined_nc_wins_when_both_exist`
+로 뒤집고, 시험 docstring 에 **뒤집힌 사실과 근거(`〈69〉-⑵`)를 적었다.**
+**단언을 지우거나 느슨하게 하지 않았다** — 반대 방향으로 같은 강도로 걸었다.
+
+> **⚠ 해석(잠정) · 반대 증거를 지우지 않는다** — `〈66〉` 이 기록한 대로 **원천 제공자의
+> 처리 코드는 아직 `.npy` 를 쓴다**(`P2-W0-HSR-grid-measurement §2.6`·`§3.3`). 정본 판정은
+> 문서화된 투영 정의 재현(`§3.2`)에 근거한 것이고, **원천의 「공식 선언」은 여전히 없다**
+> (같은 문서 `U-4`). 답이 오면 이 우선순위 한 줄이 갈린다.
+
+---
+
+## A4. Task C — `expire()` 의 처리 중 제외 (`〈67〉-㉠`)
+
+### A4.1 먼저 확인했다 — **보고가 옳았다. 결손은 실재했다** (EVIDENCE)
+
+`P2-api-report.md:286-291` 의 주장을 **믿지 않고 직접 봤다**(`M-7`). 정정 전
+`services/pipeline-worker/src/colab_pipeline/domains/d5_ingestion.py` 의 `expire()`:
+
+```
+   394	    def expire(self, now=None) -> list[str]:
+   395	        from sqlalchemy import text
+   396	        rows = self._s.execute(text("""
+   397	            DELETE FROM d5_upload
+   398	             WHERE registered_at IS NULL AND expires_at <= COALESCE(:now, now())
+   399	            RETURNING id
+   400	        """), {"now": now}).all()
+   401	        return [r[0] for r in rows]
+```
+
+**처리 중 제외 조건이 없다.** 행 번호까지 보고와 일치한다.
+
+**RED — 단위 (EVIDENCE)**
+
+```
+$ .venv/bin/python -m pytest tests/test_reaper_skips_processing.py -q
+FAILED test_an_upload_still_being_processed_survives_its_expiry_time
+E       AssertionError: assert '01JQ00000000000000000UPL01' not in ['01JQ00000000000000000UPL01']
+```
+
+**RED — 실 DB (EVIDENCE)** · 정정 전 SQL 한 문장을 같은 픽스처에 그대로 실행했다
+(레포 밖 임시 스크립트. 레포에 남기지 않았다):
+
+```
+처리 중인데 지워졌는가(정정 전 질의): True
+지워진 목록: ['01JQ00000000000000000RED01']
+```
+
+**즉 「처리 중인 업로드가 만료 시각에 실제로 삭제된다」를 DB 위에서 눈으로 봤다.**
+이 상태에서 음성 시험 ㉳(만료된 업로드는 전환되지 않는다·404)는 **정상 동작에 404 를 내면서
+green 을 보고한다** — `〈67〉` ㉡ 이 경고한 「에러 없이 그럴듯한 값」 그대로다.
+
+### A4.2 GREEN
+
+`expire()` 에 `AND NOT {_PROCESSING}` 을 걸었다. **「처리 중」의 정의는 `core-api` 와
+같은 문장을 그대로 옮겼다** — `services/core-api/src/colab_core/domains/d5_ingestion.py:39-50`
+의 `_PROCESSING` 과 동일하다:
+
+```
+(u.ready = false AND u.failed_at IS NULL AND EXISTS (
+    SELECT 1 FROM d5_pipeline_event e
+     WHERE e.upload_id = u.id
+       AND e.event_type <> 'upload.accepted'
+       AND e.occurred_at > COALESCE(:now, now()) - (u.expires_at - u.created_at)
+))
+```
+
+**정의를 새로 만들지 않았다** — 두 서비스가 다른 정의를 쓰면 「처리 중은 안 지운다」는
+보장이 한쪽에서만 성립하고, 어느 쪽 reaper 가 먼저 도는지에 결과가 달린다.
+
+**시험 4건**(`tests/test_reaper_skips_processing.py`) + **실 DB 1건**(`test_outbox_db.py`)
+
+| 시험 | 무엇을 세웠나 |
+|---|---|
+| `test_an_upload_still_being_processed_survives_its_expiry_time` | **처리 중이면 만료 시각을 지나고도 산다**(`〈67〉` ㉡ 그 자체) |
+| `test_an_idle_expired_upload_is_still_reaped` | 접수만 되고 진행이 없으면 **제때 사라진다** — 제외가 만료를 통째로 죽이면 안 된다 |
+| `test_a_failed_upload_is_not_processing_and_is_reaped` | 실패한 것은 처리 중이 아니다 |
+| `test_a_ready_upload_is_not_processing_and_is_reaped` | `ready` 는 처리가 끝난 것이다(`〈64〉-ⓒ`) |
+| `test_reaper_leaves_an_upload_that_is_still_being_processed` (실 DB) | 같은 것을 **실제 `d5_*` 표 위에서** |
+
+**기존 reaper 시험 2건(`…deletes_expired_unregistered_uploads`·`…leaves_registered_uploads_alone`)은
+그대로 green 이다** — 새 조건이 기존 보장을 갉아먹지 않았다.
+
+> **⚠ 해석(잠정)** — 「처리 중」의 정의(수명 그 자체를 창으로 쓰는 것)는 **정본에 없다**.
+> `〈67〉` 은 「처리 중인 업로드는 지워지지 않는다」까지만 말하고 무엇을 처리 중이라 할지는
+> 「정하지 않은 것」에 남겼다. **이것은 `core-api` 레인의 판단을 이 레인이 따른 것**이고,
+> 정본 값이 아니다. 정본이 기산점·주기를 정하는 날 두 곳을 함께 고쳐야 한다.
+
+---
+
+## A5. 하지 않은 것 · 거절한 것
+
+| # | 하지 않은 것 | 왜 |
+|---|---|---|
+| 1 | **커밋** | 메인 세션 몫(`P2-EXEC §7`) |
+| 2 | **`db/0004` 수정** | `〈69〉` 판정의 일부다 — 고치지 말라는 것이 판정이다 |
+| 3 | **`contracts/` 수정** | 동결. `git status` 변경 0건 |
+| 4 | **`d5/` 파서 9모듈 개정** | 금지. `grid.py` 만 손댔고 그것은 `〈66〉-ⓒ` 가 결손으로 명시 배정한 자리다. `detect`·`parse`·`hsr`·`cog`·`tiff_probe`·`formats`·`lineage`·`pipeline`·`axis` 무변경 |
+| 5 | **`core-api`·`viz-render`·FE 손대기** | 타 레인 소유 디렉터리 |
+| 6 | **staging 접촉** | 일회용 컨테이너 `p2pipe_pg2`(호스트 포트 publish 0개)만 썼고 **끝내고 지웠다** |
+| 7 | **`.npy` 경로 제거** | 요구받지 않았다. 컨테이너가 없는 폴더(원천 `1_hdf`·`4_tif` 등)에서 여전히 유일한 격자 경로다 |
+| 8 | **`planning-freshness` red 손대기** | 워크트리에서 정본 마운트가 안 잡히는 **경로 문제**이고 착수 전부터 같은 상태다(`§6-5` 그대로). 게이트를 green 으로 만들려고 검사 대상을 줄이지 않는다 |
+| 9 | **`Dockerfile`·큐 배선·DLQ** | `§5` 의 2·3·8 그대로 살아 있다. 이 후속분이 닫은 것이 아니다 |
+
+---
+
+## A6. 게이트 재실행 (EVIDENCE · 본 레인 `§7` 과 같은 항목)
+
+```
+contract-lint green — seam 3건, 룰 위반 0.
+contract-breaking green — 기준 HEAD (3건) 대비 파괴적 변경 없음.
+event-lint green — 스키마 2건 컴파일 · valid 5건 통과 · invalid 8건 거부.
+event-breaking green — 기준 HEAD (2건) 대비 파괴적 변경 없음.
+import-boundary green — 계약 전부 통과.
+banned-import green — .py 90건, 금지 import 0.
+  pipeline-worker  .py   24건 · deny 0개
+  viz-render       .py   24건 · deny 0개
+ai-no-lineage-write green — 계약·코드·체인 세 층 모두에서 쓰기 경로가 없다.
+seam-consistency green — G-e 258건 · G-b 7건 · ㉠ 0건 · ㉡ 15건.
+migration-single-head green — 두 체인 모두 head 1개.
+rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.
+::error::planning-freshness red — 1건
+  - 정본 폴더가 없다 (위치 확인 — planning/README.md §1)
+```
+
+**`selftest` 전부 green** — 게이트가 fail-closed 임을 다시 증명했다:
+
+```
+contract-selftest green · event-selftest green · boundary-selftest green
+db-selftest green · rls-effect-selftest green
+seam-consistency-selftest green — 13 케이스 전부 기대대로 (green 4 · red 9)
+generated-selftest green — 9 케이스 전부 기대대로 (green 1 · red 8)
+```
+
+**`planning-freshness` red 는 본 레인 `§6-5` 와 같은 원인**이고 이 후속분의 변경과 무관하다.
+**감추지 않고 그대로 적는다.**
+
+**시험 전건 (EVIDENCE)**
+
+```
+$ COLAB_REFERENCE_DATA=<원천> COLAB_PIPELINE_DB_URL=<일회용 DB> .venv/bin/python -m pytest tests/ -q
+98 passed, 11 warnings in 38.09s
+```
+
+본 레인 종료 시점 82건 → **98건**(+16). 신규 분포(`--collect-only` 실측):
+
+```
+ 4 tests/test_worker_creates_grid_row.py    (신규 · Task A)
+ 5 tests/test_grid_canonical_nc.py          (신규 · Task B)
+ 4 tests/test_reaper_skips_processing.py    (신규 · Task C)
+ 9 tests/test_outbox_db.py                  (6 → 9 · A 2건 + C 1건 추가)
+```
+
+---
+
+## A7. 고친 파일
+
+| 파일 | 무엇 |
+|---|---|
+| `src/colab_pipeline/d5/grid.py` | 컨테이너 우선 탐색(`〈69〉-⑵`) · `container_rejections` 필드 |
+| `src/colab_pipeline/domains/d5_ingestion.py` | `record_file_axes_row` 로 행 **생성**(A) · `record_file_axes`(UPDATE 전용) 삭제 · `_PROCESSING` 신설 + `expire()` 조건(C) · `UploadFileWork.storage_key` |
+| `src/colab_pipeline/ports/outbox.py` | Port 에서 `record_file_axes` → `record_file_axes_row` |
+| `tests/memory_ledger.py` | `file_rows` · `record_file_axes_row` · `_processing`(실물과 같은 정의) |
+| `tests/test_grid_combined_nc.py` | 우선순위 뒤집힘 반영(`§A3.3` — 약화 아님) |
+| `tests/test_outbox_db.py` | 실 DB 시험 3건 추가 |
+| `README.md` | `〈69〉` 두 판정 + reaper 처리 중 제외를 규칙으로 명기 |
+| **신규** | `tests/test_worker_creates_grid_row.py` · `tests/test_grid_canonical_nc.py` · `tests/test_reaper_skips_processing.py` |
+
+## A8. 재현
+
+```bash
+cd services/pipeline-worker
+.venv/bin/python -m pytest tests/ -m "not e2e and not dbint" -q            # 72
+COLAB_REFERENCE_DATA=<원천 마운트> .venv/bin/python -m pytest tests/ -m "not dbint" -q   # 89
+
+# 실 DB — 일회용 컨테이너(호스트 포트 publish 없음). staging 은 건드리지 않는다.
+docker run -d --rm --name p2pipe_pg2 --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
+  -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine
+docker exec p2pipe_pg2 psql -U postgres -c "CREATE DATABASE p2pipe2;"
+CONTAINER=p2pipe_pg2 DB=p2pipe2 APP_PASSWORD=gateapp \
+  bash services/core-api/tests/fixtures/setup-db.sh          # URL 을 출력한다
+COLAB_PIPELINE_DB_URL=<위 URL> .venv/bin/python -m pytest tests/test_outbox_db.py -q   # 9
+docker rm -f p2pipe_pg2
+```

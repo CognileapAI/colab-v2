@@ -15,6 +15,9 @@ class MemoryLedger:
         self._keys: set[str] = set()
         self.axes: dict[str, tuple[bool, bool]] = {}
         self.formats: dict[str, str | None] = {}
+        #: `d5_upload_file` 행. **접수는 격자 파일 행을 만들지 않는다**(`〈69〉-⑴`) —
+        #: 그래서 `accept()` 는 이 사전을 비워 둔 채 시작한다.
+        self.file_rows: dict[str, dict] = {}
 
     # ── 접수(= core-api 몫). 시험에서 전건을 세우기 위해 대역이 대신 해 준다 ──
     def accept(self, *, upload_id: str, lab_id: str, actor_account_id: str,
@@ -61,9 +64,17 @@ class MemoryLedger:
     def load_upload(self, upload_id: str) -> dict | None:
         return self.uploads.get(upload_id)
 
-    def record_file_axes(self, file_id: str, *, carries_lat: bool, carries_lon: bool) -> None:
+    def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
+                             file_name: str, storage_key: str,
+                             carries_lat: bool, carries_lon: bool) -> None:
+        """격자 파일 행을 **세운다**(`〈69〉-⑴`). DB CHECK 와 같은 거절을 흉내낸다."""
         if not (carries_lat or carries_lon):
             raise ValueError("축이 빈 기준 격자 파일 행을 만들지 않는다 (〈66〉)")
+        self.file_rows[file_id] = {
+            "id": file_id, "lab_id": lab_id, "upload_id": upload_id,
+            "kind": "기준 격자 파일", "file_name": file_name, "storage_key": storage_key,
+            "carries_lat": carries_lat, "carries_lon": carries_lon,
+        }
         self.axes[file_id] = (carries_lat, carries_lon)
 
     def record_detected_format(self, file_id: str, fmt: str | None) -> None:
@@ -72,10 +83,25 @@ class MemoryLedger:
     def record_status(self, upload_id: str, **fields) -> None:
         self.uploads[upload_id].update(fields)
 
+    def _processing(self, upload_id: str, now: datetime) -> bool:
+        """`SqlLedger._PROCESSING` 과 같은 정의 — 대역이 헐거우면 시험이 거짓말을 한다."""
+        r = self.uploads[upload_id]
+        if r["ready"] or r["failed_at"] is not None:
+            return False
+        window = now - (r["expires_at"] - r["created_at"])
+        for e in self.events:
+            if e["uploadId"] != upload_id or e["type"] == "upload.accepted":
+                continue
+            at = datetime.fromisoformat(e["occurredAt"].replace("Z", "+00:00"))
+            if at > window:
+                return True
+        return False
+
     def expire(self, now=None) -> list[str]:
         now = now or datetime.now(timezone.utc)
         gone = [u for u, r in self.uploads.items()
-                if r["registered_at"] is None and r["expires_at"] <= now]
+                if r["registered_at"] is None and r["expires_at"] <= now
+                and not self._processing(u, now)]
         for u in gone:
             del self.uploads[u]
             self.events = [e for e in self.events if e["uploadId"] != u]
