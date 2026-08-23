@@ -139,7 +139,7 @@
 | 1 | **기획 정본이 읽히는가** | `./gates/run.sh planning-freshness` 가 **green** | 폴더 목록만 보는 확인은 이 조건을 못 잡는다 — **목록은 되고 읽기가 실패**하는 상태가 실제로 있었다. 게이트는 15개 문서를 실제로 **읽어서** 해시를 낸다. red 면 정본 폴더(`planning/README §1`)가 제자리에 있는지 먼저 본다 |
 | 2 | 레포가 원격과 같은가 | `git status -sb` 가 clean + ahead/behind 0 | `git pull` |
 | 3 | gh 인증 | `gh auth status` | `gh auth login` (환경별 키링 — Windows 인증은 WSL로 안 넘어온다) |
-| 4 | **staging 이 살아 있는가** | `docker ps` 에 `colab_v2_staging_*` **8개**(nginx·cloudflared·pg·core_api·frontend·pipeline_worker·viz_render·ai_service) · `curl -I https://www.colab-hydro.com/healthz` 200 · 5개 단위 `/healthz/<unit>` 각각 200 | WSL 재시작 시 컨테이너가 안 뜬다. `infra/staging/` 에서 `docker compose --env-file ~/.colab-v2-staging.env up -d`. **토큰은 홈의 `.colab-v2-staging.env`(0600) — 레포에 없다** |
+| 4 | **staging 이 살아 있는가** | `docker ps` 에 `colab_v2_staging_*` **8개**(nginx·cloudflared·pg·core_api·frontend·pipeline_worker·viz_render·ai_service) · `curl -I https://www.colab-hydro.com/healthz` 200 · 5개 단위 `/healthz/<unit>` 각각 200 | WSL 재시작 시 컨테이너가 안 뜬다(데몬이 자동 기동하지 않는다). 되살리는 명령은 **`-f compose.i2.yml` 을 반드시 붙인다** — `docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d`. **`-f` 를 빼면 `compose.yml`(자리표시 오리진 2개)이 떠서 I2 가 조용히 롤백된다.** 컨테이너는 `restart=unless-stopped` 이고 `pgdata` 는 홈의 바인드 마운트라 **데이터는 재부팅을 넘긴다**. **토큰은 홈의 `.colab-v2-staging.env`(0600) — 레포에 없다** |
 
 > **1번은 이 프로젝트의 반복 함정이었다.** 레포는 환경을 옮겨도 따라오지만 **레포 밖 자산(기획 정본)은 따라오지 않는다.**
 > 2026-08-22 정본을 **작업공간 형제 폴더 `40 COLAB-기획/`** 로 들여와 외부 드라이브 의존을 끊었다(`PLAN-SoT §9-㉕`).
