@@ -7,9 +7,14 @@ from .lineage import LineageSummary, LineageSummaryPort
 from .access import (DatasetAccess, DatasetAccessPort, DatasetVerification,
                      MemberPermissions)
 from .project_link import DatasetProjects, ProjectLinkPort, ProjectUse
+from .ingestion import (UploadFileRecord, UploadLedgerReadPort,
+                        UploadLedgerWritePort, UploadRecord)
+from .relay import LineageSuggestionPort, PreviewRenderPort
 
 __all__ = [
     "LineageSummary", "LineageSummaryPort",
     "DatasetAccess", "DatasetAccessPort", "DatasetVerification", "MemberPermissions",
     "DatasetProjects", "ProjectLinkPort", "ProjectUse",
+    "UploadFileRecord", "UploadRecord", "UploadLedgerReadPort", "UploadLedgerWritePort",
+    "PreviewRenderPort", "LineageSuggestionPort",
 ]

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "colab-viz-render"
+version = "0.1.0"
+description = "CoLAB v2 viz-render — D7 Visualization"
+requires-python = "==3.12.*"
+# 버전 핀의 정본은 requirements.in(직접) · requirements.txt(닫힘)다.
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.in"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+markers = ["e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다"]

@@ -7,3 +7,7 @@ netCDF4
 h5py
 pyproj
 pyhdf
+# outbox 원장·릴레이·reaper (P2 W2). core-api 와 **같은 핀**을 쓴다 —
+# 두 배포 단위가 서로 다른 버전으로 같은 표를 보면 드리프트가 조용히 생긴다.
+SQLAlchemy==2.0.44
+psycopg[binary]==3.2.12

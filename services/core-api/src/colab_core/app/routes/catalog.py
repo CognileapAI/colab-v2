@@ -258,8 +258,13 @@ def get_dataset(datasetId: str,
     """
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
-    dataset_id = Ulid(datasetId)
+    return dataset_detail(db, subject, Ulid(datasetId))
 
+
+def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
+    """`DatasetDetail` 한 벌. `getDataset` 과 `createDataset` 이 **같은 함수**를 쓴다 —
+    등록 직후 화면이 상세로 이동하므로(`Policy §7.2`) 두 자리가 다른 값을 그리면 안 된다."""
+    datasetId = str(dataset_id)
     core = d3_catalog.find_dataset_core(db, dataset_id)
     if core is None:
         # 경계 밖이면 RLS 가 이미 행을 지웠고(P-9·P-10), 묘비면 상세 화면이 없다(§7).

@@ -1,0 +1,17 @@
+# viz-render 직접 런타임 의존. 닫힘(closure)은 requirements.txt 가 갖는다.
+#
+# geo 라이브러리가 **여기에만** 들어간다 (CLAUDE.md §3-4 · DOMAINS §2 D7).
+# core-api 의 banned 목록(gates/config/boundaries.toml)이 금지한 것들이 이 단위에서는 허용이다.
+#
+# 포맷 4종(〈51〉 = NetCDF·Binary·HDF4·GeoTIFF)을 여는 데 실제로 호출하는 것만 적는다:
+#   NetCDF  → netCDF4      · HDF4 → pyhdf(SD)   · GeoTIFF → rasterio
+#   Binary  → numpy 만     (HSR 은 지오 라이브러리가 필요 없다 — DATA-REFERENCE §5)
+# rio-cogeo·pyproj 는 넣지 않는다 — 이 레인은 COG 를 만들지 않고(그건 D5),
+# 타일 좌표 변환은 웹 메르카토르 공식 그대로라 외부 투영 라이브러리가 필요 없다.
+fastapi==0.121.2
+uvicorn==0.38.0
+numpy==2.5.2
+rasterio==1.5.1
+netCDF4==1.7.4
+pyhdf==0.11.7
+pillow==12.1.0

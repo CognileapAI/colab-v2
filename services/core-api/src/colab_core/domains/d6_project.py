@@ -53,6 +53,32 @@ def create_project(session: Session, *, type_: str, name: str, description: str 
     return dict(row)
 
 
+# 등록 폼이 **한 번에** 제출하므로 등록 뒤 `linkProjectDataset` N 회가 아니라 여기서 붙인다
+# (`DatasetCreate.projectIds` 산문). `usageNote` 는 이 자리에 없다 — 업로드 화면이 그 문장을
+# 받는 자리가 정본 폼에 없어(`D2c` C1 Q2) 등록 후 `linkProjectDataset` 이 적는다(P5).
+# `dataset_id` 는 bare 컬럼이라 없는 데이터셋도 DB 는 받는다 — **존재 확인은 부르는 쪽이**
+# 하고, 없으면 400 이다. 그 확인이 없으면 유령 연결이 조용히 쌓인다.
+_LINK = text("""
+    INSERT INTO d6_project_dataset (id, lab_id, project_id, dataset_id)
+    VALUES (:id, current_lab_id(), :project_id, :dataset_id)
+    ON CONFLICT (project_id, dataset_id) DO NOTHING
+""")
+
+_PROJECT_EXISTS = text("SELECT 1 FROM d6_project WHERE id = :project_id")
+
+
+def project_exists(session: Session, project_id: Ulid) -> bool:
+    """경계 밖이면 RLS 가 행을 지우므로 False 다 — 남의 연구실 프로젝트에 붙지 않는다."""
+    return session.execute(_PROJECT_EXISTS, {"project_id": str(project_id)}).first() is not None
+
+
+def link_dataset(session: Session, *, project_id: Ulid, dataset_id: Ulid) -> None:
+    session.execute(_LINK, {
+        "id": str(Ulid.generate()), "project_id": str(project_id),
+        "dataset_id": str(dataset_id),
+    })
+
+
 class ProjectLinkAdapter:
     """`ports.ProjectLinkPort` 의 D6 쪽 구현."""
 

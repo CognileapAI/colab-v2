@@ -1,4 +1,8 @@
 fastapi==0.121.2
 sqlalchemy==2.0.44
 psycopg[binary]==3.2.12
+# multipart/form-data — 동결 계약이 요구한다 (createUpload · addDatasetFile ·
+# replaceDatasetGridFile 의 requestBody 가 multipart/form-data 다). starlette 의
+# 폼 파서가 이 패키지 없이는 뜨지 않는다. P2-api 가 더했다.
+python-multipart==0.0.20
 uvicorn==0.38.0

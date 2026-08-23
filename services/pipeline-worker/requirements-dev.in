@@ -1,2 +1,5 @@
 -r requirements.in
 pytest
+# 동결 계약(contracts/events/**)으로 봉투를 검증한다 — 시험 전용.
+# 계약을 다시 적지 않기 위해 스키마 파일을 그대로 읽어 쓴다.
+jsonschema

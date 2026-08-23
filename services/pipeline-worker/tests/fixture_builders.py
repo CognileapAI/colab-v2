@@ -164,3 +164,24 @@ def make_hdf4_magic_stub(path: Path) -> Path:
     """HDF4 매직만 가진 스텁 — 감지 시험용(파싱 시험용 아님)."""
     path.write_bytes(b"\x0e\x03\x13\x01" + b"\x00" * 60)
     return path
+
+
+# ── 실제로 읽히는 GeoTIFF (파이프라인 경로 시험용) ────────────────────────
+# 위의 `_write_tiff` 산출물은 IFD 만 있는 **판정 시험용**이라 픽셀이 없다.
+# 워커 경로는 파싱·변환까지 가므로 진짜로 열리는 파일이 필요하다.
+
+def make_readable_geotiff(path: Path, *, w: int = 300, h: int = 300,
+                          tiled: bool = False) -> Path:
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_origin
+
+    data = np.arange(w * h, dtype="float32").reshape(h, w)
+    kw = {"blockxsize": 256, "blockysize": 256} if tiled else {}
+    with rasterio.open(
+        path, "w", driver="GTiff", height=h, width=w, count=1, dtype="float32",
+        crs="EPSG:4326", transform=from_origin(126.0, 38.0, 0.01, 0.01),
+        tiled=tiled, **kw,
+    ) as dst:
+        dst.write(data, 1)
+    return path

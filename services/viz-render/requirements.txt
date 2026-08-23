@@ -1,0 +1,31 @@
+# viz-render 런타임 의존 — **전이 의존까지 전부 정확히 핀**한다 (범위 지정자 없음).
+# 직접 의존은 requirements.in 이 선언하고, 이 파일은 그 닫힘(closure)이다.
+#   재생성: python3 -m venv .venv && .venv/bin/pip install -r requirements.in && .venv/bin/pip freeze
+#
+# ⚠ HDF4 는 **pyhdf 휠로 열린다** — conda-forge `hdf4`(GDAL HDF4 드라이버)가 필요하지
+#    않았다. `DATA-REFERENCE §5` 의 「pip 휠에 없다」는 **rasterio 로 HDF4 를 여는 경로**에
+#    대한 서술이고, 이 단위는 D5 와 같이 pyhdf 를 직접 쓴다.
+affine==3.0.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.14.2
+attrs==26.1.0
+certifi==2026.7.22
+cftime==1.6.5
+click==8.4.2
+fastapi==0.121.2
+h11==0.16.0
+idna==3.19
+netCDF4==1.7.4
+numpy==2.5.2
+packaging==26.3
+pillow==12.1.0
+pydantic==2.13.4
+pydantic_core==2.46.4
+pyhdf==0.11.7
+pyparsing==3.3.2
+rasterio==1.5.1
+starlette==0.49.3
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+uvicorn==0.38.0

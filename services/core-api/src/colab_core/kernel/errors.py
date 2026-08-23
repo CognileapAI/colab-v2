@@ -42,6 +42,15 @@ def bad_request(message: str, details: dict[str, Any] | None = None) -> ApiError
     return ApiError(400, "BAD_REQUEST", message, details)
 
 
+def conflict(message: str, details: dict[str, Any] | None = None) -> ApiError:
+    """409 — 「지금 상태에서는 그 일이 두 번 일어날 수 없다」.
+
+    404(경계 밖)·400(요청이 틀림)과 갈라 쓴다. 등록 전환 두 번(`createDataset`) ·
+    본체 파일 교체·삭제 시도(`〈59〉-③`) · 계보 순환이 여기로 온다.
+    """
+    return ApiError(409, "CONFLICT", message, details)
+
+
 def error_response(exc: HTTPException) -> JSONResponse:
     detail = exc.detail
     if isinstance(detail, dict) and "code" in detail and "message" in detail:

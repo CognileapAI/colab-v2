@@ -19,4 +19,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "tests"]
-markers = ["e2e: 실데이터 E2E — 원천 마운트가 필요하다"]
+markers = [
+  "e2e: 실데이터 E2E — 원천 마운트가 필요하다",
+  "dbint: 실 DB 통합 — COLAB_PIPELINE_DB_URL 이 필요하다",
+]
