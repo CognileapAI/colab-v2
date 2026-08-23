@@ -117,7 +117,9 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     name: '낙동강 유역 유출량 (2025)',
     fileName: 'nakdong_runoff_2025_Lv2.nc',
     summary: '강우와 짝이 되는 유출 결과',
-    topic: '유출·수문',
+    // 주제 = NULL. 4값(`〈55〉` · `㊸-④-2`)에 유출을 담을 값이 없다 —
+    // 억지로 가까운 값에 배정하면 검색·분류가 조용히 틀린다. 미분류로 둔다.
+    topic: null,
     processingLevel: 2,
     lineageState: '확정',
     verification: NO_VERIFICATION,

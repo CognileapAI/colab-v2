@@ -43,7 +43,7 @@ def test_only_the_five_filterable_columns_are_listed(client: TestClient) -> None
 
 def test_counts_without_any_condition(client: TestClient) -> None:
     f = facets(client)
-    assert f["주제"] == {"강우": 2}
+    assert f["주제"] == {"강우·강수": 2}
     assert f["Level"] == {0: 1, 1: 1}
     assert f["업로더"] == {ACC_A_RES: 2}
     assert f["Verified"] == {True: 1, False: 1}
@@ -57,7 +57,7 @@ def test_the_four_lineage_states_never_disappear(client: TestClient) -> None:
 
 def test_other_columns_conditions_are_applied_first(client: TestClient) -> None:
     f = facets(client, query="?verified=true")
-    assert f["주제"] == {"강우": 1}
+    assert f["주제"] == {"강우·강수": 1}
     assert f["Level"] == {0: 1, 1: 0}
     assert f["계보"] == {"확정": 0, "확인 필요": 0, "기록 없음": 0, "원천": 1}
 
@@ -70,8 +70,8 @@ def test_a_column_does_not_count_its_own_condition(client: TestClient) -> None:
 
 def test_facets_stay_inside_the_lab_boundary(client: TestClient) -> None:
     b = facets(client, token="b1-prof-token")
-    assert b["주제"] == {"수질": 1}
-    assert "강우" not in b["주제"], "다른 연구실 값이 셈에 섞였다."
+    assert b["주제"] == {"토지피복·LULC": 1}
+    assert "강우·강수" not in b["주제"], "다른 연구실 값이 셈에 섞였다."
 
 
 def test_bad_filter_value_is_400(client: TestClient) -> None:

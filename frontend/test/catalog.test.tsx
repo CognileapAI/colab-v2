@@ -103,15 +103,28 @@ describe('§8 열 메뉴', () => {
     await click(screen.getByRole('button', { name: '주제' }));
     await click(screen.getByRole('menuitemcheckbox', { name: /강우·강수/ }));
     expect(screen.getByRole('menu')).toBeInTheDocument();
-    await click(screen.getByRole('menuitemcheckbox', { name: /유출·수문/ }));
+    await click(screen.getByRole('menuitemcheckbox', { name: /지형·DEM/ }));
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(screen.getByRole('menuitemcheckbox', { name: /강우·강수/ })).toHaveAttribute(
       'aria-checked',
       'true',
     );
-    expect(screen.getByRole('menuitemcheckbox', { name: /유출·수문/ })).toHaveAttribute(
+    expect(screen.getByRole('menuitemcheckbox', { name: /지형·DEM/ })).toHaveAttribute(
       'aria-checked',
       'true',
+    );
+  });
+
+  it('주제 값 목록은 잠긴 4값(`〈55〉`) 밖으로 나가지 않는다 — 미분류 행은 값을 만들지 않는다', async () => {
+    renderCatalog();
+    await settle();
+    await click(screen.getByRole('button', { name: '주제' }));
+    const menu = screen.getByRole('menu');
+    const values = within(menu)
+      .getAllByRole('menuitemcheckbox')
+      .map((el) => el.textContent!.replace(/\s*\(\d+\)\s*$/, '').trim());
+    expect(values.every((v) => ['강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC'].includes(v))).toBe(
+      true,
     );
   });
 

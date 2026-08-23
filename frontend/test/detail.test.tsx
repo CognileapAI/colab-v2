@@ -155,7 +155,10 @@ describe('§7 잠김 (허용 안 됨) — 헤더 요약 + 잠김 안내만', () 
     expect(screen.getByTestId('dh-file')).toHaveTextContent('nakdong_runoff_2025_Lv2.nc');
     expect(screen.getByTestId('dh-sum')).toHaveTextContent('강우와 짝이 되는 유출 결과');
     const tags = screen.getByTestId('dh-tags');
-    expect(within(tags).getByText('유출·수문')).toBeInTheDocument();
+    // 주제는 잠긴 것이 아니라 **아직 분류되지 않았다**. 4값(`〈55〉`)이 유출을 담지 못하므로
+    // 이 데이터셋의 주제는 NULL 이고, 화면은 없는 값을 지어내지 않고 칩 자체를 만들지 않는다.
+    expect(FIXTURE_DETAILS[LOCKED_ID]!.topic).toBeNull();
+    expect(tags.querySelectorAll('.chip--neutral')).toHaveLength(0);
     expect(within(tags).getByText('Lv2')).toBeInTheDocument();
     expect(within(tags).getByText('잠김')).toBeInTheDocument();
   });

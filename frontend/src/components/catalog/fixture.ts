@@ -86,7 +86,9 @@ export const FIXTURE_ROWS: DatasetRow[] = [
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA5',
     name: 'nakdong_runoff_2025_Lv2.nc',
     fileCount: 3,
-    topic: '유출·수문',
+    // 주제 = NULL. 4값(`〈55〉` · `㊸-④-2`)에 유출을 담을 값이 없다 —
+    // 억지로 가까운 값에 배정하면 검색·분류가 조용히 틀린다. 미분류로 둔다.
+    topic: null,
     processingLevel: 2,
     projects: {
       representative: { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0P01', name: '홍수기 강우-유출 분석' },

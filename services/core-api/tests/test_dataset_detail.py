@@ -49,7 +49,7 @@ def test_header_says_one_thing_per_line(client: TestClient) -> None:
     assert b["datasetId"] == DS_A1
     assert b["name"] == "A 강우 원자료"
     assert b["summary"] == "관측 원자료"
-    assert b["topic"] == "강우"
+    assert b["topic"] == "강우·강수"
     assert b["processingLevel"] == 0
     assert b["lineageState"] == "원천"
     assert b["accessState"] == "열림"
@@ -126,7 +126,7 @@ def test_locked_dataset_is_200_with_header_only(client: TestClient) -> None:
     b = r.json()
     assert b["name"] == "A 강우 격자화"
     assert b["summary"] == "격자화 결과"
-    assert b["topic"] == "강우"
+    assert b["topic"] == "강우·강수"
     assert b["processingLevel"] == 1
     assert b["lineageState"] == "확정"
     assert b["accessState"] == "잠김"
