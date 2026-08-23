@@ -19,3 +19,41 @@ export function account(permissions: Partial<PermissionSwitchSet> = {}): Current
     labName: '수자원순환연구실',
   };
 }
+
+// ── 구성원 · 권한 격자 (P1-fe-members) ───────────────────────────────────────
+import type { Schemas } from '../src/api/client';
+
+export type LabMember = Schemas['LabMember'];
+
+/** 교수 행은 네 스위치가 켜진 채로 내려오고 편집 가능 열이 비어 있다 (P-5). */
+export function professor(accountId: string, name: string): LabMember {
+  return {
+    accountId,
+    name,
+    email: `${accountId.toLowerCase()}@example.ac.kr`,
+    role: '교수',
+    permissions: {
+      '업로드·편집': true,
+      '프로젝트 생성': true,
+      '승인 위임': true,
+      '연구실 설정': true,
+    },
+    editablePermissions: [],
+  };
+}
+
+/** editablePermissions 는 시험이 서버 역할로 채운다 — 화면이 계산하지 않는다 (P-31). */
+export function researcher(
+  accountId: string,
+  name: string,
+  permissions: Schemas['PermissionSwitchSet'],
+): LabMember {
+  return {
+    accountId,
+    name,
+    email: `${accountId.toLowerCase()}@example.ac.kr`,
+    role: '연구원',
+    permissions,
+    editablePermissions: [],
+  };
+}

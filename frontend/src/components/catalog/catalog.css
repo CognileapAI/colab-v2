@@ -1,0 +1,151 @@
+/* S-03 카탈로그 — 치수·색의 정본은 목업 `mockups/데이터_찾기_260817.html` 의 카탈로그 블록이다.
+   목업에 없는 요소를 여기서 발명하지 않는다.
+   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
+     여기서 잇는다. 값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다. */
+:root {
+  --color-gray-100: #e8ecf2;
+  --color-gray-200: #dfe3e8;
+  --color-gray-600: #565c63;
+  --color-gray-700: #434950;
+  --color-success-50: #efffef;
+  --color-success-600: #067506;
+  --color-warning-50: #fff6ed;
+  --color-warning-600: #a85400;
+  --color-primary-50: #edf4ff;
+  --color-primary-100: #e2eeff;
+  --color-surface-alt: #f4f7fb;
+  --color-border-control: #848c94;
+  --font-data: var(--font-sans);
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+  --shadow-lg: 0px 6px 10px -4px #17171714, 0px 16px 24px -6px #17171714;
+}
+
+.catalog-page { padding: 24px 20px 40px; }
+.catalog-page .page-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.catalog-page .page-head h1 { font-size: var(--text-h2, 24px); margin: 0; letter-spacing: -0.023em; }
+.catalog-page .hcnt { font-size: var(--text-body-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.catalog-page .desc { font-size: var(--text-caption); color: var(--color-text-muted); }
+.catalog-page .card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+
+/* 가로·세로 스크롤은 표 래퍼 **한 곳**이 맡는다 — 컨테이너가 둘이면 sticky 기준이 흔들린다 */
+.tblwrap { max-height: calc(100vh - 232px); overflow: auto; }
+.tbl { width: 100%; min-width: 940px; border-collapse: collapse; font-size: var(--text-body-sm); }
+.tbl th {
+  text-align: left; font-size: 10px; color: var(--color-gray-500); font-weight: 700; letter-spacing: 0.05em;
+  padding: 0; border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-surface-alt); white-space: nowrap;
+  position: sticky; top: 0; z-index: 5;
+}
+.tbl th::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--color-border-strong); }
+.tbl td { padding: 13px 14px; border-bottom: 1px solid var(--color-border); vertical-align: middle;
+  color: var(--color-text-body); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr.clk { cursor: pointer; }
+.tbl tr.clk td { transition: background var(--ease), box-shadow var(--ease); }
+.tbl tr.clk:hover td { background: var(--color-surface-hover); }
+.tbl tr.clk:hover td:first-child { box-shadow: inset 2px 0 0 var(--color-primary-600); }
+.tbl .fname { font-family: var(--font-data); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text); }
+.tbl tr.is-locked td { color: var(--color-text-muted); }
+.tbl tr.is-locked .fname { color: var(--color-gray-500); }
+.tbl td.empty { text-align: center; padding: 36px 14px; color: var(--color-text-muted); white-space: normal; }
+
+/* 열 이름 자체가 버튼. 표식(정렬 화살표·조건 점)만 오른쪽에 붙는다 */
+.tbl thead th > .thf {
+  display: flex; align-items: center; gap: 5px; width: 100%;
+  padding: 10px 14px; border: none; background: none; font: inherit; color: inherit;
+  cursor: pointer; white-space: nowrap; text-align: left;
+}
+.tbl thead th > .thf:hover { background: var(--color-gray-100); }
+.tbl thead th > .thf::before { content: "▾"; order: 2; font-size: 9px; color: var(--color-gray-400); }
+.tbl thead th.is-sorted > .thf { color: var(--color-text); }
+.tbl thead th.is-sorted > .thf::before { content: "▼"; color: var(--color-text); }
+.tbl thead th.is-sorted.is-asc > .thf::before { content: "▲"; }
+/* 조건이 걸린 열은 점 하나로만 알린다 — 배경을 칠하면 표가 얼룩진다 */
+.tbl thead th.is-filtered > .thf::after {
+  content: ""; order: 3; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--color-primary-600); flex: none;
+}
+.tbl thead th { position: sticky; }
+.tbl thead th[data-col] { position: sticky; }
+
+.colmenu {
+  position: absolute; z-index: 140; min-width: 186px; padding: 6px; left: 8px; top: 100%;
+  background: var(--color-surface); border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  font-weight: 400; letter-spacing: normal; text-transform: none;
+}
+.colmenu .cm-s { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-text-muted); padding: 6px 8px 4px; }
+.colmenu button.cm-i {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: none; background: none;
+  font-size: 12px; color: var(--color-text-body); cursor: pointer; border-radius: var(--radius-sm); text-align: left;
+}
+.colmenu button.cm-i:hover { background: var(--color-gray-100); }
+.colmenu button.cm-i.on { color: var(--color-text); font-weight: 600; }
+.colmenu .cm-box {
+  width: 13px; height: 13px; flex: none; border: 1px solid var(--color-border-control); border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: #fff;
+}
+.colmenu button.cm-i.on .cm-box { background: var(--color-primary-600); border-color: var(--color-primary-600); }
+.colmenu .cm-i .cm-l { flex: 1; min-width: 0; }
+.colmenu .cm-i .cm-n { color: var(--color-text-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+/* 눌러도 0건인 값은 감추지 않고 흐리게 — 빈 결과로 보내지 않는다 */
+.colmenu .cm-i.is-zero { opacity: 0.42; }
+.colmenu .cm-hr { height: 1px; background: var(--color-border); margin: 5px 2px; }
+.colmenu .cm-clr {
+  width: 100%; padding: 6px 8px; border: none; background: none; font-size: 11px;
+  color: var(--color-text-muted); cursor: pointer; text-align: left; border-radius: var(--radius-sm);
+}
+.colmenu .cm-clr:hover { background: var(--color-gray-100); color: var(--color-text); }
+
+/* 적용된 조건 칩 줄 — 없으면 줄째로 사라진다 (컴포넌트가 null 을 낸다) */
+.fchips {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border); background: var(--color-surface-alt);
+}
+.fchips .fl { font-size: 11px; color: var(--color-text-muted); margin-right: 2px; }
+.fchips .fc {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px 0 9px;
+  border: 1px solid var(--color-border-control); border-radius: var(--radius-pill);
+  background: var(--color-surface); font-size: 11px; color: var(--color-text-body);
+}
+.fchips .fc b { font-weight: 600; color: var(--color-text); }
+.fchips .fc button { border: none; background: none; padding: 0; font-size: 13px; line-height: 1; color: var(--color-gray-500); cursor: pointer; }
+.fchips .fall { margin-left: 4px; border: none; background: none; font-size: 11px; color: var(--color-text-muted); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+.chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
+.chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
+.lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 11px; font-weight: 600; line-height: 1; }
+.lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
+.lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }
+.lvl-2 { background: var(--color-primary-100); color: var(--color-primary-700); }
+.verified { display: inline-flex; align-items: center; gap: 4px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; background: var(--color-success-50); color: var(--color-success-600); }
+.verified svg { width: 11px; height: 11px; flex: none; }
+.lin { display: inline-flex; align-items: center; gap: 4px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.lin--done { background: var(--color-primary-50); color: var(--color-primary-700); }
+.lin--wait { background: var(--color-warning-50); color: var(--color-warning-600); }
+.lin--none { color: var(--color-gray-400); font-weight: 500; }
+
+/* 행 빠른 작업 — 평소엔 자리만 잡고 있다가 행 hover·키보드 포커스에서 나타난다 */
+.tbl th.rowact, .tbl td.rowact { width: 74px; padding-right: 14px; }
+.tbl td.rowact .ra { display: flex; gap: 4px; justify-content: flex-end; opacity: 0; transition: opacity var(--ease); }
+.tbl tbody tr:hover td.rowact .ra, .tbl td.rowact .ra:focus-within { opacity: 1; }
+.tbl td.rowact .rab {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-border-control); border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-text-body); cursor: pointer; padding: 0;
+}
+.tbl td.rowact .rab svg { width: 14px; height: 14px; }
+.tbl td.rowact .rab:hover { border-color: var(--color-primary-600); color: var(--color-primary-700); }
+
+/* 두 길 상호 안내 — 카탈로그는 검색을 가리킨다 (`Policy_데이터_찾기 §1.3-8`) */
+.crosslink {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding: 13px 15px;
+  border: 1px dashed var(--color-border-strong); border-radius: var(--radius-md);
+  font-size: var(--text-caption); color: var(--color-text-muted); background: var(--color-surface);
+}
+.crosslink a { color: var(--color-primary-700); }

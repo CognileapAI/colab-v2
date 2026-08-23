@@ -223,6 +223,10 @@ CREATE TABLE d3_dataset (
   -- 삭제 기록(묘비). 행을 지우지 않는다 — 지운 데이터가 부모였다면 자식의 출처가 끊긴다 (정본 §4.1).
   deleted_at             timestamptz,
   deleted_by_account_id  ulid        REFERENCES d1_account(id),
+  -- 조각 수. **메타다** (㊼). `d3_file` 을 세지 않는다 — `body_access` RESTRICTIVE 아래서 본체 테이블을 세면
+  -- 잠긴 데이터셋이 0 을 내고, 계약 `DatasetRow.fileCount`(required · minimum 1)를 표현할 수단이 사라진다.
+  -- 드러나는 것은 **개수 하나뿐**이고 이름·종류·본체는 그대로 잠긴다. 유지는 `d3_file` 의 트리거가 한다.
+  file_count             integer     NOT NULL DEFAULT 0 CHECK (file_count >= 0),
   CHECK ((deleted_at IS NULL) = (deleted_by_account_id IS NULL))
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
@@ -281,6 +285,76 @@ CREATE INDEX d3_file_lab_idx ON d3_file (lab_id);
 -- 마지막 본체를 지우는 것을 막는 일은 애플리케이션·묘비 규칙의 몫이다.
 CREATE UNIQUE INDEX d3_file_one_reference_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일';
+
+-- 조각 수 유지 (㊼). **다시 세지 않고 증분으로 더한다.**
+--   · 다시 세면 세는 주체가 `body_access` 를 받아 잠긴 데이터셋에 0 을 써 넣는다 — 고치려던 결함을 트리거가 재현한다
+--   · 문장 단위 + 전이 테이블: 전이 테이블은 RLS 로 걸러지지 않는다(실제로 영향받은 행 그대로).
+--     한 문장이 조각 수백 개를 넣어도 `d3_dataset` UPDATE 는 한 번이다
+--   · `UPDATE ... SET file_count = file_count + n` 은 행 잠금을 잡는다 — 동시 삽입도 어긋나지 않는다
+--   · 갱신된 행 수가 기대와 다르면 **예외로 멈춘다.** 경계 정책이 UPDATE 를 0행으로 막는 순간
+--     조용히 드리프트가 생기는데, 조용한 드리프트가 비정규화의 유일한 위험이다
+CREATE FUNCTION sync_dataset_file_count() RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  DECLARE
+    ids     char(26)[];
+    deltas  bigint[];
+    touched bigint;
+  BEGIN
+    IF TG_OP = 'INSERT' THEN
+      SELECT array_agg(g.dataset_id), array_agg(g.n) INTO ids, deltas
+        FROM (SELECT dataset_id, count(*)::bigint AS n FROM new_files GROUP BY dataset_id) g;
+    ELSIF TG_OP = 'DELETE' THEN
+      SELECT array_agg(g.dataset_id), array_agg(-g.n) INTO ids, deltas
+        FROM (SELECT dataset_id, count(*)::bigint AS n FROM old_files GROUP BY dataset_id) g;
+    ELSE
+      SELECT array_agg(g.dataset_id), array_agg(g.n) INTO ids, deltas
+        FROM (
+          SELECT dataset_id, sum(d)::bigint AS n
+            FROM (SELECT dataset_id, 1 AS d FROM new_files
+                  UNION ALL
+                  SELECT dataset_id, -1 AS d FROM old_files) s
+           GROUP BY dataset_id HAVING sum(d) <> 0
+        ) g;
+    END IF;
+
+    IF ids IS NULL THEN
+      RETURN NULL;
+    END IF;
+
+    WITH applied AS (
+      UPDATE d3_dataset t
+         SET file_count = t.file_count + u.n
+        FROM unnest(ids, deltas) AS u(dataset_id, n)
+       WHERE t.id = u.dataset_id
+      RETURNING 1
+    )
+    SELECT count(*) INTO touched FROM applied;
+
+    IF touched <> array_length(ids, 1) THEN
+      RAISE EXCEPTION '조각 수를 유지하지 못했다 — d3_dataset % 건 중 % 건만 갱신됐다 (PLAN-SoT 9-47)',
+        array_length(ids, 1), touched;
+    END IF;
+    RETURN NULL;
+  END;
+  $$;
+
+CREATE TRIGGER d3_file_count_insert
+  AFTER INSERT ON d3_file
+  REFERENCING NEW TABLE AS new_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_file_count();
+
+CREATE TRIGGER d3_file_count_delete
+  AFTER DELETE ON d3_file
+  REFERENCING OLD TABLE AS old_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_file_count();
+
+-- 조각이 다른 데이터셋으로 옮겨 가는 경우. 열 목록(`UPDATE OF dataset_id`)을 붙이지 않는다 —
+-- postgres 는 열 목록과 전이 테이블을 함께 못 쓴다. 옮김이 아닌 UPDATE 는 증분이 0 이라 저절로 빠진다.
+CREATE TRIGGER d3_file_count_move
+  AFTER UPDATE ON d3_file
+  REFERENCING OLD TABLE AS old_files NEW TABLE AS new_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_file_count();
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 4. D4 Lineage (정본 §4.2)
