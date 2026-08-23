@@ -1,0 +1,7 @@
+{
+  "title": "red fixture — 흐름의 한 단계가 호출 불가능한 op 을 가리킨다 (㉡-1)",
+  "steps": [
+    { "step": "1", "name": "업로드", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["createGhostUpload"], "inputs": [], "outputs": ["uploadId"] }
+  ]
+}

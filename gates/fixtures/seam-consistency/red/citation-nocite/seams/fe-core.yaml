@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: red fixture — 신설 op 에 description 은 있는데 정본 인용도 무근거 표기도 없다 (㉠-1)
+  version: 0.0.1
+paths:
+  /datasets:
+    get:
+      operationId: listDatasets
+      description: 기존 op (Policy §1).
+      responses:
+        "200": { description: ok }
+  /uploads:
+    post:
+      operationId: createUpload
+      description: 업로드를 만든다. 근거 없이 슬쩍 들어온 문장이다.
+      responses:
+        "201": { description: ok }

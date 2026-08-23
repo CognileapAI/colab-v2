@@ -5,6 +5,7 @@
 > **⚠ PLAN-SoT 의 경고 그대로** — **「그 표가 틀리면 ㉡ 은 틀린 흐름을 완주로 판정한다.」** 이 표의 오류는 게이트의 오류가 된다. 그래서 검토 없이 fixture 로 승격하지 않는다(㉢ 는 별도 — 이 표의 승인이 계약 동결 승인을 대신하지 않는다).
 > **정본 원천** — `01 CoLAB-Plan/reference/v2_1차마일스톤_기획_260808/에픽/E-04_업로드와_계보_확정/documents/Policy_업로드와_계보_확정.md`(이하 `Policy`). 계약 원천 — `contracts/seams/fe-core.yaml`(rev 전 34 op) · `contracts/events/core-pipeline.json`·`envelope.json` · `contracts/seams/core-viz.yaml`.
 > **작성** 2026-08-23. 편집한 기존 파일 없음 — 이 파일이 유일한 신규 산출이다.
+> **갱신** 2026-08-23 (D2c-C3) — C1 계약 개정의 **실제 op 이름·경로**를 [부재] 행에 반영하고, Q1(추기-2 신설)·Q2(C1 판정) 를 기록했다. **status 는 여전히 DRAFT — Ted 검토 전이다.** C2 의 ㉡ fixture(`gates/fixtures/seam-consistency/e04-flow.json`)는 이 표의 승계본이므로 **DRAFT 성격을 그대로 물려받는다** — 표가 틀리면 ㉡ 이 틀린 흐름을 완주로 판정한다(〈61〉 경고 그대로).
 
 ---
 
@@ -23,7 +24,7 @@
 
 | # | 단계 (정본 인용: 파일+절) | 담당 seam | op / event id | 입력 식별자 | 출력 식별자 | 다음 단계와의 연결 |
 |---|---|---|---|---|---|---|
-| 1 | **파일 업로드** — 「파일을 끌어다 놓는다 → 업로드하고 헤더에서 메타데이터를 읽는다」(`Policy §2` 규칙 맵 1행 · `§7.1` 열어보는 중) | FE↔core | **[부재-4]** 업로드 진입점 op — 「`upload.accepted` 를 발행하는 유일한 자리」로 산문 명기(`D2c §2-4`) | (없음 — 파일 바이트) | **`uploadId` 발급 · `fileId[]` 발급**(본체 1+ · 기준 격자 0~2, `〈58〉-①`) | ✅ `uploadId`·`fileId[]` 가 2 의 봉투·payload 로 그대로 |
+| 1 | **파일 업로드** — 「파일을 끌어다 놓는다 → 업로드하고 헤더에서 메타데이터를 읽는다」(`Policy §2` 규칙 맵 1행 · `§7.1` 열어보는 중) | FE↔core | **✅신설(C1)** `createUpload` POST `/uploads` — 「`upload.accepted` 를 발행하는 유일한 자리」 산문 명기(`D2c §2-4` · C1 실행 기록). 전송 형태(파일 바이트 직접) = `[정본 무근거]` 레포 결정 | (없음 — 파일 바이트) | **`uploadId` 발급 · `fileId[]` 발급**(본체 1+ · 기준 격자 0~2, `〈58〉-①`) | ✅ `uploadId`·`fileId[]` 가 2 의 봉투·payload 로 그대로 |
 | 2 | **업로드 접수 (파이프라인 입구)** — 「core-api 가 내는 유일한 이벤트」(`core-pipeline.json` ① · `Policy §2` 1행) | core↔pipe | `upload.accepted` (source: `core-api` const — ㉡-3 촉발점 = 단계 1 op) | `uploadId`(봉투) · `fileId[]`(FileRef) | 동일 (전달) | ✅ 같은 `uploadId` 로 3~7 |
 | 3 | **포맷 감지** — 「형식 제한 없음, 헤더 인식만 형식별」이라 파서 선택에 포맷이 먼저(`Policy §5` 파일 행 · `core-pipeline.json` ②) | core↔pipe | `file.format-detected` (source: pipeline-worker) | `uploadId` · perFile `fileId` | `uploadId` + 포맷 판정 | ✅ |
 | 4 | **헤더 파싱** — 자동 메타(변수·기간·좌표계·격자·용량), 「못 읽어도 등록은 막지 않는다」(`Policy §9` · `§3.3` · `core-pipeline.json` ③) | core↔pipe | `file.header-parsed` | `uploadId` · unreadableFiles `fileId` | `uploadId` + 메타 | ✅ |
@@ -31,15 +32,15 @@
 | 6 | **COG 변환** — ⚠ 정본에 `COG` 라는 말 없음; 정본 근거는 「미리보기는 서버가 그린다·GB 급」(`Policy §8` 미리보기 그리기)까지, COG 는 레포 판단(계약 자기 명기, `core-pipeline.json` ⑤) | core↔pipe | `preview.cog-built` | `uploadId` · 본체 `fileIds` | 동일 (미리보기 파생물 준비) | ✅ `uploadId`(·본체 `fileIds`)가 9 의 RenderTarget 으로 |
 | 7 | **준비 완료** — 등록 결정 게이트(「보기만 할게요 / 연구실에 등록」)를 볼 수 있는 상태, 저장된 것 없음(`Policy §7.1`·`§8` · `core-pipeline.json` ⑥) | core↔pipe | `upload.ready` (`datasetId` 없음 — 의도적) | `uploadId` | `uploadId` + expiresAt | ✅ |
 | 7′ | **실패 (어느 단계에서든)** — `Policy §9` 오류와 예외 표 1:1 (`envelope.json` FailureReason 8값) | core↔pipe | `upload.failed` | `uploadId` | 실패 사유 | ⚠ 8 이 없으면 화면 도달 불가 |
-| 8 | **업로드 상태·실패 사유 조회** — 실패 8값이 화면에 갈 자리(`Policy §9` 안내 문구 · `SEAM-AUDIT` I-18·C-5) | FE↔core | **[부재-4]** 업로드 상태 조회 op | `uploadId` | 상태 + FailureReason | ✅ 2~7′ 의 결과를 FE 가 소비 |
-| 9 | **미리보기 렌더** — 「미리보기를 그린다 — 사람이 고른 변수·시간·값 범위로 지도를 그린다」(`Policy §2` 2행 · `§8` 미리보기 그리기) | FE↔core 중계 → core↔viz | FE측 **[부재-9]** 렌더 생성·조회 중계 op (`visualization` tag) · viz측 기존 `createRender`(`core-viz.yaml:248-268` RenderTarget `oneOf datasetId\|uploadId`, `fileIds`=본체 한정) · 타일 URL 은 중계 없이 FE 직결(`core-viz.yaml:40`) | `uploadId`(미등록, S-08) 또는 `datasetId`(등록 후) + 본체 `fileIds` | `renderId` → 타일 URL | ✅ 6 의 출력이 입력으로. ⚠ 기준 격자 파일의 렌더러 소비 방식은 D7 구현 몫(NB-D 해소 · `P2.md NB-7`) |
-| 10 | **AI 계보 제안 확인·수정·거절** — 「AI 제안을 확인한다 → 계보 관계로 확정 예약」·확신도 3단·일괄 없음(`Policy §2` 규칙 맵 · `§8` 제안 카드) | (core-ai 는 내부 seam — 소비자는 core-api 뿐, `core-ai.yaml:50`) | ⚠ **FE 중계 op 미정** — `D2c §2-3` 은 `:14` 위임 산문 정정까지만 확정, 계보 제안 중계 op 신설 여부는 §2 항목에 없다. **열린 질문 Q1** | `uploadId`(제안 맥락) + 부모 후보 `datasetId` | 확정 예약된 계보 관계(클라이언트 상태 — 저장 안 됨, `Policy §7.1` 등록 중=저장 안 됨) | ✅ 확정 관계가 12 의 입력에 실림 |
+| 8 | **업로드 상태·실패 사유 조회** — 실패 8값이 화면에 갈 자리(`Policy §9` 안내 문구 · `SEAM-AUDIT` I-18·C-5) | FE↔core | **✅신설(C1)** `getUploadStatus` GET `/uploads/{uploadId}` — 실패 사유는 `envelope.json#FailureReason` $ref | `uploadId` | 상태 + FailureReason | ✅ 2~7′ 의 결과를 FE 가 소비 |
+| 9 | **미리보기 렌더** — 「미리보기를 그린다 — 사람이 고른 변수·시간·값 범위로 지도를 그린다」(`Policy §2` 2행 · `§8` 미리보기 그리기) | FE↔core 중계 → core↔viz | FE측 **✅신설(C1)** `createPreviewRender` POST `/previews` · `getPreviewRender` GET `/previews/{renderId}` (`visualization` tag — `/renders` 는 oasdiff composed 중복으로 `/previews` 개명) · viz측 기존 `createRender`(`core-viz.yaml:248-268` RenderTarget `oneOf datasetId\|uploadId`, `fileIds`=본체 한정) · 타일 URL 은 중계 없이 FE 직결(`core-viz.yaml:40`) | `uploadId`(미등록, S-08) 또는 `datasetId`(등록 후) + 본체 `fileIds` | `renderId` → 타일 URL | ✅ 6 의 출력이 입력으로. ⚠ 기준 격자 파일의 렌더러 소비 방식은 D7 구현 몫(NB-D 해소 · `P2.md NB-7`) |
+| 10 | **AI 계보 제안 확인·수정·거절** — 「AI 제안을 확인한다 → 계보 관계로 확정 예약」·확신도 3단·일괄 없음(`Policy §2` 규칙 맵 · `§8` 제안 카드) | (core-ai 는 내부 seam — 소비자는 core-api 뿐, `core-ai.yaml:50`) | **✅신설(C1)** `listUploadLineageSuggestions` GET `/uploads/{uploadId}/lineage-suggestions` — **추기-2 범위 확장 1건(사용자 승인 2026-08-23)**. 응답 = `core-ai.yaml#LineageSuggestionResponse` $ref. **Q1 닫힘** | `uploadId`(제안 맥락) + 부모 후보 `datasetId` | 확정 예약된 계보 관계(클라이언트 상태 — 저장 안 됨, `Policy §7.1` 등록 중=저장 안 됨) | ✅ 확정 관계가 12 의 입력에 실림 |
 | 11 | **직접 검색으로 부모 추가** — 「직접 추가 → 이름·주제·기간으로 연구실 데이터셋 검색」(`Policy §2`·`§8` 직접 추가 버튼) | FE↔core | **[계약 부재 — D2c 범위 밖, P4 가 연다]** (`D2c §2-3`·`§10-3` — 산문에 「P4 가 연다」 명기) · 임시 대안: `listDatasets`(`fe-core.yaml:175`)로 근사 가능 여부는 판정 안 함 | 검색어 | 부모 후보 `datasetId` | ✅ 12 의 입력에 |
-| 12 | **계보 확정 = 등록 전환** — 「데이터셋 만들기를 누른다 → 데이터셋과 확정된 계보 관계를 저장하고 상세로 이동」(`Policy §2` 마지막 행 · `§7.2` 등록 중→등록됨) | FE↔core | **[부재-5]** `createDataset` POST `/datasets` — 의미는 「`uploadId` 를 D3 데이터셋으로 등록 전환」. `topic` 4값(`〈55〉`)도 이 op 이 받는다 | **`uploadId`** + 이름·주제·설명 + 확정 계보 관계(부모 `datasetId`+가공 방식 문장) + 소속 프로젝트 `projectId[]`(0+, `Policy §5`) — **Q2 참조** | **`datasetId` 발급** · **`fileId` 는 업로드 값 그대로 `d3_file.id` 로 (NB-A)** | ✅ `datasetId` 가 13·14 의 입력으로. `fileId` 동일성이 업로드 세계↔D3 세계의 유일한 다리 |
-| 13 | **프로젝트 연결** — 소속 프로젝트 복수 지정(`Policy §5` 소속 프로젝트 · `§12` v1.2 다중 연결) | FE↔core | **[부재-8]** `linkProjectDataset` — 본문 있는 op(`usageNote` required 를 채운다, `fe-core.yaml:1731`) · 끊기는 기존 `unlinkProjectDataset`(`:836`) | `projectId` + `datasetId` + usageNote | 연결 | ✅ `getProject.datasets` 하드코딩 `[]` 도 닫힘(`D2c §2-8`) |
+| 12 | **계보 확정 = 등록 전환** — 「데이터셋 만들기를 누른다 → 데이터셋과 확정된 계보 관계를 저장하고 상세로 이동」(`Policy §2` 마지막 행 · `§7.2` 등록 중→등록됨) | FE↔core | **✅신설(C1)** `createDataset` POST `/datasets` — 「`uploadId` 를 D3 데이터셋으로 등록 전환」. `topic` 은 받되 계약 enum 없음(NB-E). **Q2 판정(C1): `projectIds` 를 이 op 이 받는다 — 단계 13 의 소속 지정이 여기 접힌다** | **`uploadId`** + 이름·주제·설명 + 확정 계보 관계(부모 `datasetId`+가공 방식 문장) + 소속 프로젝트 `projectIds[]`(0+, `Policy §5` — **Q2 판정: 접힘 확정**) | **`datasetId` 발급** · **`fileId` 는 업로드 값 그대로 `d3_file.id` 로 (NB-A)** | ✅ `datasetId` 가 13·14 의 입력으로. `fileId` 동일성이 업로드 세계↔D3 세계의 유일한 다리 |
+| 13 | **프로젝트 연결** — 소속 프로젝트 복수 지정(`Policy §5` 소속 프로젝트 · `§12` v1.2 다중 연결) | FE↔core | **✅신설(C1)** `linkProjectDataset` PUT `/projects/{projectId}/datasets/{datasetId}` — 본문 있는 op(`usageNote` required-but-nullable). **Q2 판정: 소속 지정은 12 에 접히고, `usageNote` 는 폼에 자리가 정본에 없어 등록 후 이 op 으로 채운다**. 기존 `unlinkProjectDataset` 의 거짓 산문도 C1 이 정정 | `projectId` + `datasetId` + usageNote | 연결 | ✅ `getProject.datasets` 하드코딩 `[]` 도 닫힘(`D2c §2-8`) |
 | 14 | **상세 이동·계보 확인** — 「상세 화면으로 이동한다」(`Policy §7.2`) | FE↔core | 기존 `getDataset`(`fe-core.yaml:239`) · `getDatasetLineage`(`:358`) | `datasetId` | 상세·계보 그래프 | (흐름 종료) |
 
-**끊긴 자리 요약(현행 계약 기준, ㉡-4 형식)** — 단계 1·8·9(FE측)·12·13 이 **[계약 부재]** 로 끊겨 있고, 전부 D2c §2-4·§2-9·§2-5·§2-8 이 신설 예정이다. 단계 10 은 신설 항목 미배정(Q1), 11 은 의도적 P4 이월. 이벤트 구간(2~7′)은 현행 계약만으로 완주한다.
+**끊긴 자리 요약(C1 개정 후, ㉡-4 형식)** — **끊긴 자리: 없음.** 구 [부재] 단계 1·8·9(FE측)·10·12·13 은 전부 C1 이 신설했다(C2 ㉡ 재생 15단계 완주 실측). 남는 것은 단계 11 의 **의도적 P4 이월**(끊김 아님 — 계약 산문에 「P4 가 연다」 명기) 하나다.
 
 ---
 
@@ -53,7 +54,7 @@
 
 | # | 질문 |
 |---|---|
-| **Q1** | 단계 10(AI 계보 제안)의 FE 도달 경로 — `D2c §2` 신설 목록에 계보 제안 **중계 op 이 없다**(§2-3 은 `:14` 산문 정정까지). E-04 정본 흐름의 핵심 단계인데 D2c 뒤에도 계약상 도달 불가로 남는가, 아니면 §2-3 정정에 op 신설이 포함되는가? (P4=검색 진입점과는 별건이다) |
-| **Q2** | 단계 13 이 단계 12 안에 접히는가 — 정본은 소속 프로젝트를 **업로드 등록 폼 안에서** 복수 지정한다(`Policy §5`). `createDataset` 요청 본문이 `projectId[]`(+usageNote?)를 받는지, 등록 후 `linkProjectDataset` 을 N 회 부르는지에 따라 ㉡ 의 간선이 달라진다. usageNote 를 업로드 화면이 받는 자리는 정본에 없다 — `[정본 무근거]` 후보. |
-| **Q3** | ㉡ 의 검사 범위 — 최초 등록 흐름만인가, 후주입(`〈58〉`)·미등록 미리보기(S-08)·실패 경로(7′→8)도 「완주」에 포함하는가? 본표는 최초 흐름 + 7′/8 실패 표시까지만 세웠다. |
+| ~~**Q1**~~ ✅닫힘 | 추기-2 가 답했다 — **`listUploadLineageSuggestions` 신설(범위 확장 1건, 사용자 승인 2026-08-23)**. P4 검색 진입점과는 별건 그대로 |
+| ~~**Q2**~~ ✅판정(C1) | 단계 13 이 단계 12 안에 접히는가 — 정본은 소속 프로젝트를 **업로드 등록 폼 안에서** 복수 지정한다(`Policy §5`). **C1 판정: 접힌다 — `createDataset.projectIds` 로**(Policy §5 폼 한 화면 제출 + §7.1 등록 전 저장 없음 → 등록 전 link 호출 불가). **`usageNote` 는 폼에 자리가 정본에 없어 등록 후 `linkProjectDataset` 으로 — `[정본 무근거]` 등재(㉢ 목록 유지)**. |
+| **Q3** | ㉡ 의 검사 범위 — 최초 등록 흐름만인가, 후주입(`〈58〉`)·미등록 미리보기(S-08)·실패 경로(7′→8)도 「완주」에 포함하는가? 본표는 최초 흐름 + 7′/8 실패 표시까지만 세웠다. **C2 fixture 도 같은 범위로 고정했다(사실상의 잠정 판정) — Ted 검토 시 확인 대상.** |
 | **Q4** | 단계 5·6 은 정본 E-04 에 직접 근거가 없다(계약이 스스로 명기 — DOMAINS 열거가 근거). ㉡ fixture 가 「정본 단계」와 「레포 판단 단계」를 구분 표기해야 ㉠ 과 축이 섞이지 않는다 — 본표는 ⚠ 로 구분해 뒀다. 유지 여부 확인. |

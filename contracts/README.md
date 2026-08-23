@@ -16,7 +16,7 @@
 
 1. **seam은 손으로 쓴다.** 안정적이고 수가 적고 값이 높다.
 2. **도메인 내부 엔드포인트는 code-first로 emit**하고, emit 결과가 frozen seam과 충돌하면 **CI가 거부**한다.
-3. **생성물은 커밋한다.** `codegen/` 산출물이 최신인지 CI가 diff로 검증한다.
+3. **생성물은 커밋한다.** `codegen/` 산출물이 최신인지는 `generated-up-to-date` 게이트가 검증할 자리다 — **아직 미구현 red 다** (`gates/README.md` · `SEAM-AUDIT.md` I-21). 구현 전까지 이 규칙은 관례로만 서 있다.
 4. **소비자는 생성물만 쓴다.** 손수정 금지.
 5. `contracts/` 변경은 **필수 리뷰**(CODEOWNERS).
 

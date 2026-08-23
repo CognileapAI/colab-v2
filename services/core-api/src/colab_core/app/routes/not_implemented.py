@@ -1,8 +1,9 @@
-"""아직 구현하지 않은 25 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 36 개 오퍼레이션 — **501 + ErrorEnvelope**.
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
   · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
-    다운로드 1). 구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다.
+    다운로드 1 · D2c 신설 11 — 업로드·데이터셋 쓰기·파일 조작·연결·미리보기는 D5 스키마가
+    P2 몫이다, `D2c.md §5-확정`). 구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다.
   · `NOT_IMPLEMENTED_P1` — 저장 자리는 있고 로직이 P1 이다.
 
 **200 으로 가짜 값을 내리지 않는다.** P1 이 하나 구현할 때마다 이 표가 한 줄씩 줄고,
@@ -27,7 +28,9 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) 34 개 중 실동작 9 개를 뺀 25 개.
+#: 계약(`contracts/seams/fe-core.yaml`) 45 개 중 실동작 9 개를 뺀 36 개.
+#: D2c 개정(C1)이 11 op 을 신설해 25 → 36 — 전부 `NOT_IMPLEMENTED_NO_STORE` 다
+#: (D2c.md §5-확정: 저장처가 아직 없다, D5 스키마는 P2 몫).
 #: P1 이 넷을 가져갔다 — `listLabMembers` · `saveLabMemberPermissions` ·
 #: `listDatasetFacets` · `getDataset`. **이 표가 줄어드는 것이 진척의 계측이다** (P1.md §2-⑤).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
@@ -69,6 +72,22 @@ OPERATIONS: tuple[Op, ...] = (
     Op("getDashboardSummary", "GET", "/dashboard/summary", "NOT_IMPLEMENTED_P1"),
     Op("getDataMap", "GET", "/dashboard/data-map", "NOT_IMPLEMENTED_P1"),
     Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),
+    # ── D2c 신설 11 (C1, 2026-08-23) — 전부 NO_STORE (D2c.md §5-확정) ──
+    Op("createUpload", "POST", "/uploads", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("getUploadStatus", "GET", "/uploads/{uploadId}", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("listUploadLineageSuggestions", "GET", "/uploads/{uploadId}/lineage-suggestions",
+       "NOT_IMPLEMENTED_NO_STORE"),
+    Op("createDataset", "POST", "/datasets", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("updateDataset", "PATCH", "/datasets/{datasetId}", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("addDatasetFile", "POST", "/datasets/{datasetId}/files", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("replaceDatasetGridFile", "PUT", "/datasets/{datasetId}/files/{fileId}",
+       "NOT_IMPLEMENTED_NO_STORE"),
+    Op("deleteDatasetGridFile", "DELETE", "/datasets/{datasetId}/files/{fileId}",
+       "NOT_IMPLEMENTED_NO_STORE"),
+    Op("linkProjectDataset", "PUT", "/projects/{projectId}/datasets/{datasetId}",
+       "NOT_IMPLEMENTED_NO_STORE"),
+    Op("createPreviewRender", "POST", "/previews", "NOT_IMPLEMENTED_NO_STORE"),
+    Op("getPreviewRender", "GET", "/previews/{renderId}", "NOT_IMPLEMENTED_NO_STORE"),
 )
 
 _MESSAGE = {

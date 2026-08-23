@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: red fixture — 촉발 op 은 있는데 집계 루트(uploadId)를 다루지 않는다
+  version: 0.0.1
+paths:
+  /uploads:
+    post:
+      operationId: createUpload
+      description: upload.accepted 를 발행한다고 말하지만 응답 어디에도 집계 루트가 없다.
+      responses:
+        "201": { description: ok }

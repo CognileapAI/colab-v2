@@ -38,8 +38,8 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_34() -> None:
-    assert len(contract_operations()) == 34, "계약의 오퍼레이션이 34 개가 아니다 — 발췌가 잘렸다."
+def test_operation_count_is_45() -> None:
+    assert len(contract_operations()) == 45, "계약의 오퍼레이션이 45 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

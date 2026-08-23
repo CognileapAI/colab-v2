@@ -88,10 +88,20 @@ case "$GATE" in
     # 위 세 게이트가 red fixture 로 fail-closed 임을 증명한다.
     exec "$REPO_ROOT/gates/tools/db-selftest.sh"
     ;;
+  seam-consistency)
+    # seam ↔ 이벤트 계약의 **사이**를 본다 (WU-D2c §2-13 · 〈61〉-㉠·㉡).
+    # contract-* 는 seams 만, event-* 는 events 만 봐서 DR-7(위임 산문 오배정)이 살아남았다.
+    # 검사 4종: G-e 산문 위임 참조 · G-b source const 능력 주장 · ㉠ 정본 근거 대조 · ㉡ E-04 흐름 완주.
+    exec "$REPO_ROOT/gates/tools/seam-consistency.sh"
+    ;;
+  seam-consistency-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 개정 전 위임 산문 원문(DR-7 실물) 포함.
+    exec "$REPO_ROOT/gates/tools/seam-consistency-selftest.sh"
+    ;;
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: red fixture — 신설 op 의 근거 칸이 공란 (description 자체가 없다, ㉠-1)
+  version: 0.0.1
+paths:
+  /datasets:
+    get:
+      operationId: listDatasets
+      description: 기존 op (Policy §1).
+      responses:
+        "200": { description: ok }
+  /uploads:
+    post:
+      operationId: createUpload
+      responses:
+        "201": { description: ok }

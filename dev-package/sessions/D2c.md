@@ -377,3 +377,216 @@
 3. **`DR-13`·`STOP-4` 는 닫혔다**(제3안 — D5 만 WU 승격). `§8` 의 마감 보고 문구 중 「`DR-13` 은 열려 있다」 부분은 **「`DR-13` 은 닫혔다(2026-08-23)」로 바꿔 적는다.** P2 착수 판정은 `STOP-1` 닫힘만 남는다.
 4. **`DR-8`·`STOP-2` 는 닫혔다** — 정본 갱신 완료(계약 무변경, `§2-12` 처방대로). 개정 시 `core-pipeline.json` 의 포맷 표기는 **갱신된 정본**(`NetCDF·Binary·HDF4·GeoTIFF`) 기준으로 정합을 본다.
 5. **단계↔op 대응표 초안이 있다** — `sessions/E04-step-op-map.DRAFT.md`(〈61〉-㉡ 전제물). ㉡ 검사는 이 표를 fixture 로 쓰되, 표의 열린 질문 Q2(usageNote 시점)·Q3(㉡ 검사 범위)·Q4(CRS·COG 정본 무근거 ⚠ 표기 유지)는 개정 중 판정해 표를 갱신·고정한다.
+
+---
+
+## C1 실행 기록 (2026-08-23 · D2c-C1 레인 — 계약 개정만)
+
+> 범위 = 계약 개정(§2)만. seam-consistency 게이트(§2-13)·㉠/㉡ 증거표·501 라우트 등록(D2c-api)은 **후속 레인** 몫.
+> 커밋 없음(오케스트레이터 소관). 동결 선언 없음 — ㉢(Ted 승인)은 사람 단계로 남아 있다.
+
+### 개정 전 기준선 (§3-2 · §7-3)
+
+- `contract-lint` green · `contract-breaking` green · `event-lint` green · `event-breaking` green (착수 시 실측).
+- **`fe-core.yaml:13-16` 개정 전 원문(§7-3 요구 기록)** — seam-consistency 게이트가 아직 없어 기계 red 출력은 없다. 산문 red 의 실물은 아래 원문 그대로다:
+  ```
+  이 seam 에 **없는 것**과 그 이유 —
+  - 자연어 검색(S-06)·계보 제안: D10. `core-ai` seam 이 맡는다 (`DOMAINS §2`).
+  - 업로드·파일 파싱·프로젝트 연결 생성(E-04 가 주인): D5. 이벤트/업로드 seam.
+  - 미리보기 렌더·타일·스크린샷: D7. `core-viz` seam (`CLAUDE.md §3-4` — core 에 geo 라이브러리 금지).
+  ```
+
+### 무엇을 개정했나 — fe-core.yaml 34 → 45 op (+11)
+
+위임 산문(`:13-16`)을 §2-3 표대로 정정하고 판정 기준 문장(「이 seam 에 없다고 적으려면, 그것을 받는 곳에 FE 가 도달할 수 있어야 한다」)을 같은 절에 박았다. `:14` 검색 진입점은 산문 정정까지만 — **「P4 가 연다」 명기**(§10-3). tag 2종 신설(`ingestion`·`visualization`).
+
+| op | 경로 | 근거 |
+|---|---|---|
+| `createUpload` | POST `/uploads` | §2-4 · `core-pipeline.json` ①(source=core-api const) · Policy §2·§8 — `upload.accepted` 발행 유일 자리 산문 명기. **전송 형태(파일 바이트가 이 op 으로) = `[정본 무근거]` 레포 결정**(E04-map 단계 1 형태 승계) |
+| `getUploadStatus` | GET `/uploads/{uploadId}` | §2-4 · SEAM-AUDIT I-18·C-5. 실패 사유는 `envelope.json#FailureReason` $ref — 재선언 없음 |
+| `listUploadLineageSuggestions` | GET `/uploads/{uploadId}/lineage-suggestions` | **추기-2(범위 확장 1건, 사용자 승인 2026-08-23)** · Policy §2 규칙 맵. 응답 = `core-ai.yaml#LineageSuggestionResponse` $ref(중계라 재선언 안 함) |
+| `createDataset` | POST `/datasets` | §2-5 · Policy §7.2 · 〈55〉(topic 은 받되 계약 enum 없음 — NB-E). **fileId 동일성 산문 명기 + `[정본 무근거 · 사용자 승인 2026-08-23 — Ted 본인 승인 여부 미확인]` 표기**(추기-1) |
+| `updateDataset` | PATCH `/datasets/{datasetId}` | §2-7 · DATAMODEL-BASELINE(이름·주제·요약만) · DR-14 |
+| `addDatasetFile` | POST `/datasets/{datasetId}/files` | §2-6 · 〈58〉-② 후주입 · 〈59〉-①·② · 〈60〉 |
+| `replaceDatasetGridFile` | PUT `/datasets/{datasetId}/files/{fileId}` | 〈59〉-①·③(본체 대상 아님 → 409) |
+| `deleteDatasetGridFile` | DELETE `/datasets/{datasetId}/files/{fileId}` | 〈59〉-①·③ |
+| `linkProjectDataset` | PUT `/projects/{projectId}/datasets/{datasetId}` | §2-8 · DATAMODEL-BASELINE(연결마다 의미 문장) — 본문 있는 op(`usageNote` required-but-nullable). `unlinkProjectDataset` 의 거짓 산문(「담는 동작은 이 seam 에 없다」)도 정정 |
+| `createPreviewRender` | POST `/previews` | §2-9 · SEAM-AUDIT I-06·I-07·C-4. 요청/응답 = `core-viz.yaml#RenderRequest/RenderJob` $ref. 타일 URL 은 중계 안 함 |
+| `getPreviewRender` | GET `/previews/{renderId}` | §2-9. RenderFailureCode 는 신설 안 함(NB-B — Ted 답 대기, 등재만) |
+
+신설 스키마: `UploadFileRef`(이벤트 FileRef 와 동일 4값) · `UploadReceipt` · `UploadStatus`(필드마다 원천 이벤트 명기) · `UploadLineageParent` · `DatasetCreate` · `DatasetUpdate` · `ProjectDatasetLinkCreate`. 신설 파라미터: `UploadId`·`FileId`·`RenderId`. `common.json` **무변경**(RenderFailureCode 미신설 — NB-B). `contracts/events/**` **무변경**. `core-viz.yaml`·`core-ai.yaml` **무변경**($ref 소비만).
+
+`contracts/README.md` — seam 목록 표 무변경(§5 대로). **규칙 3 능력 주장 한 줄 정정**(선택 항목, 보고와 함께): 「CI가 검증한다」→ 「`generated-up-to-date` 미구현 red — 관례로만 서 있다」(SEAM-AUDIT I-21·C-6).
+
+### `[정본 무근거]` 추가 등재 (㉠-3 대비)
+
+- 업로드 전송 형태(파일 바이트가 `createUpload` 로 직접) — 정본은 「끌어다 놓는다」까지. E04-map 단계 1 형태 승계.
+- `UploadLineageParent.confirmedMethodText` — 제안 확인 결과가 등록 요청의 어느 필드로 실리는지 정본 무형태.
+- Q2 판정 — `createDataset.projectIds` 로 접힘(Policy §5 폼 한 화면 제출 + §7.1 등록 전 저장 없음 → 등록 전 link 호출 불가). **usageNote 는 폼에 자리가 정본에 없어 등록 후 `linkProjectDataset` 으로** — E04-map 표 갱신은 레인 편집권 밖이라 미반영(오케스트레이터 몫).
+- NB-A·NB-B 는 §9 표 그대로 유지 — ㉢ 제출 목록에 남는다.
+
+### 501 표 (§2-15 · §7-2)
+
+- **개정 전 25 → 개정 후 목표 36**(+11). 라우트 등록·`not_implemented.py` 갱신·1:1 diff 시험은 **D2c-api 레인 몫 — 이 레인은 services/ 를 만지지 않았다.** 현재 워킹트리는 「고아 계약 op 11건」 상태다 — D2c-api 가 닫기 전까지 커밋하지 않는 것이 맞다(한 커밋 = 계약 + 소비자, §7-5).
+
+### 게이트 결과 (개정 후 실측)
+
+- `contract-lint` **green** (seam 3건, 룰 위반 0 — 중간에 `colab-id-must-ref-ulid` red 1건을 보고 고쳤다: `DatasetCreate.uploadId` allOf → 직접 $ref).
+- `contract-breaking` **green** (「No breaking changes to report, but the specs are different」— additive 증명). 중간 red 1건: oasdiff composed 모드가 `/renders` 를 core-viz 와 중복 엔드포인트로 거부 → FE 중계 경로를 `/previews` 로 개명해 해소(core-viz 무변경 유지).
+- `event-lint` green · `event-breaking` green (이벤트 무변경 확인) · `contract-selftest` green(fail-closed 증명 15케이스).
+
+### §7-1 두 함정 점검
+
+- `ProjectDatasetRow.usageNote` required — **건드리지 않음**(required 목록 원형 유지, `linkProjectDataset` 은 별도 요청 스키마).
+- `DatasetRow.fileCount minimum: 1` — **건드리지 않음**(후주입 op 은 하한과 무관).
+
+### 열린 항목 (닫지 않고 보고)
+
+1. `listPalettes` FE 중계 부재 — `createPreviewRender.style.palette` 값의 출처가 FE 표면에 없다. §2-9 가 생성·조회 2 op 만 확정해 범위 확장하지 않았다. 계약 산문에 명기해 둠.
+2. 기준 격자 건수 불일치 — `common.json#FileKind`·`UploadAcceptedPayload` 는 「0~1건」(DataModel §4.3 인용), 〈58〉·E04-map 은 「0~2건」. 이벤트·common 은 이 레인이 못 고친다(§2-12 계열 — 정본/결정 정합은 별도 판정 필요).
+3. NB-A ㉢ 제출 유지(Ted 본인 승인 미확인) · NB-B RenderFailureCode 미신설(Ted 답 대기).
+4. E04-step-op-map.DRAFT.md 의 Q2 판정 반영·단계 10 op 명 기입 — 레인 편집권 밖(파일이 허용 목록에 없음), 오케스트레이터가 갱신.
+5. seam-consistency 게이트·㉠/㉡ 기계 검사·501 라우트 — 후속 레인.
+
+**STOP-1 판정 문구(§8 · 추기-3 반영)** — 계약 표면 기준으로 업로드 세계가 FE 에 도달 가능해졌다. `DR-13` 은 닫혔다(2026-08-23). P2 착수 판정은 STOP-1 의 나머지(501 라우트 1:1 복원 + 게이트 레인) 뒤에 선다. **동결 아님** — ㉢ 전.
+
+---
+
+## C2 실행 기록 (2026-08-23 · D2c-C2 레인 — seam-consistency 게이트)
+
+> 범위 = §2-13 게이트 신설 + 〈61〉-㉠·㉡ 기계 검사 + C1 열린 항목 ② 판정. 커밋 없음(오케스트레이터 소관).
+> D2c-api(501 라우트)와 ㉢(Ted 승인)은 여전히 남아 있다 — 이 기록은 동결 선언이 아니다.
+
+### 구현한 검사 — 4종 (`gates/tools/seam_consistency.py` · 진입 `gates/tools/seam-consistency.sh`)
+
+| 검사 | 무엇을 본다 | 비고 |
+|---|---|---|
+| **G-e** 산문 위임 참조 | 계약 산문 속 ① 계약 파일명 ② 백틱 op 이름(동사 접두 camelCase) ③ 이벤트 타입 점 표기 ④ 「X seam」 위임 문구 — 전부 실재 대상인지. 검사 258건 | 「이벤트/업로드 seam」(DR-7 실물)을 `업로드` 미등록 별칭으로 red 낸다 |
+| **G-b** `const` 능력 주장 | 이벤트 `source: {const: X}` 마다 X 의 HTTP seam(allow-list `http-sources`)에 그 이벤트 타입을 명시하는 촉발 op 실재 + 그 op 이 집계 루트 `uploadId` 를 다루는지. 검사 7건 | `pipeline-worker` 는 `internal-sources` 에 이유와 함께 등재(HTTP 표면 없음). C1 의 `createUpload` 가 `upload.accepted` 촉발점으로 잡힌다 |
+| **〈61〉-㉠** 정본 근거 대조 | git HEAD(또는 지정 기준선) 대비 **신설** op·스키마·파라미터 전수 — description 공란 red, 인용·`[정본 무근거]`/`[사용자 승인]` 표기 없음 red. 이번 개정분 신설 검사 대상 50건 전수 통과 | **근거의 내용이 옳은지는 안 본다**(㉠ 명세 그대로). 인용으로 세는 것에 **계약 상호 인용**(envelope.json·core-pipeline.json·core-viz.yaml·core-ai.yaml·common.json)을 포함시켰다 — 〈54〉 가 이벤트 seam 을 정본으로 확정했으므로 정본격 계약 인용도 근거다. 커밋 뒤에는 신설분이 기준선 안으로 들어가 대조 0건이 된다 — ㉠ 은 개정 회차 게이트이지 소급 감사가 아니다 |
+| **〈61〉-㉡** 흐름 완주 | 사람 고정 fixture `gates/fixtures/seam-consistency/e04-flow.json`(E04-step-op-map.DRAFT 승계 + C1 개정분 반영, Q2 = `createDataset.projectIds` 접힘 판정 반영) 재생 — ㉡-1 op/이벤트 실재 · ㉡-2 식별자 종류 연결(+op 블록 실측 대조: fixture↔계약 드리프트도 red) · ㉡-3 source 촉발점 HTTP 실재 · ㉡-4 끊긴 자리 목록 출력 | **G-e 와 별도 검사·별도 fixture 다**(§7-7 — 축이 다르다) |
+
+**미구현 — 감추지 않는다**: G-a(식별자 도달성)·G-c(짝 op 대칭)·G-d(공유 값 집합 재선언). §2-13 최소 채택선(G-e·G-b)대로이며 `gates/README.md` 게이트 표·상태 표·기계화 불가 절에 명기했다.
+
+### 배선
+
+- `gates/run.sh` — `seam-consistency` · `seam-consistency-selftest` 분기 2개 + `selftest)` 묶음에 1개 추가.
+- `.github/workflows/ci.yml` contract-gates 잡에 `seam-consistency` 스텝 1개 추가.
+- `gates/README.md` — 게이트 표 1행 · selftest 표 1행 · 상태 표 1행 · **§2-14 기계화 불가 절 이관**(+㉡ fixture 의존·㉠ 기준선 의존 한계 추가).
+- allow-list — `gates/config/seam-consistency-allowlist.toml` (ge 별칭 · gb http/internal-sources · 집계 루트). fixture 는 자기 allow-list(`gates/fixtures/seam-consistency/allowlist.toml`)를 들고 다닌다(WU-D3b 와 같은 이유).
+
+### 자기 증명 (`seam-consistency-selftest`) — 13 케이스 (green 4 · red 9), green
+
+red fixture 목록 (`gates/fixtures/seam-consistency/red/`):
+1. `ge-old-prose/` — **개정 전 `fe-core.yaml:13-16` 위임 산문 원문**(C1 §7-3 보존분 그대로) → G-e red. §3-3 이 요구한 오라클의 고정판이다.
+2. `ge-ghost/` — 실재하지 않는 op(`createGhostUpload`)·파일(`upload-seam.yaml`) 참조 → G-e red.
+3. `gb-no-trigger/` — `source: core-api` const 인데 촉발 op 0건 → G-b red (I-01·I-05 의 실물 모양).
+4. `gb-no-root/` — 촉발 op 은 있는데 집계 루트 `uploadId` 를 안 다룸 → G-b red.
+5. `citation-empty/`(+기준선 `citation-baseline/`) — 신설 op description 자체 없음 → ㉠ red.
+6. `citation-nocite/` — description 은 있는데 인용·무근거 표기 없음 → ㉠ red.
+7. `flow/missing-op.json` — 단계가 호출 불가능한 op 을 가리킴 → ㉡ red.
+8. `flow/id-break.json` — 어느 단계도 생산 안 한 식별자를 입력 요구 → ㉡ red.
+9. fixture 부재 → ㉡ red (skip 아님).
+
+**개정 전 red 실측(§7-3 요구 기록)** — HEAD 판 seam 3종 위에서 게이트를 돌려 눈으로 봤다:
+- G-e: `fe-core.yaml: 「이벤트/업로드 seam」 위임 — '업로드' 은 등록된 seam 이 아니다 (DR-7 · SEAM-AUDIT I-02)` — red.
+- G-b: `upload.accepted 은 source 가 core-api const 인데 fe-core.yaml 에 그 이벤트를 촉발한다고 말하는 op 이 0건이다 (I-01·I-05)` — red.
+개정 후 워킹트리에서는 둘 다 green — C1 의 산문 정정과 `createUpload` 가 정확히 이 red 를 닫는다.
+
+### ㉡ 완주 재생 결과 (㉡-4)
+
+- 단계 15건 재생(1 · 2~7·7′ 이벤트 · 8 · 9 · 10 · 11 · 12 · 13 · 14) — **끊긴 자리: 없음.**
+- 의도적 이월 1건: **단계 11(직접 검색으로 부모 추가) — 계약 부재, P4 이월**(fe-core 위임 산문에 「P4 가 연다」 명기, §10-3). 끊김이 아니라 명시된 이월로 분류했다.
+- 흐름 밖 외부 입력 2건(fixture 에 이유 명기): 단계 12·13 의 `projectId`(기존 프로젝트 — E-04 밖에서 이미 존재).
+
+### 게이트 전 수트 결과 (개정 후 워킹트리 실측, 2026-08-23)
+
+green — `planning-freshness` · `contract-lint` · `contract-breaking`(additive 증명) · `event-lint` · `event-breaking` · **`seam-consistency`** · `import-boundary` · `banned-import` · `ai-no-lineage-write` · `migration-single-head` · `rls-coverage` · `rls-effect` · `selftest`(6셋: contract 15 · event 33 · boundary 30 · db 43 · rls-effect 18 · **seam-consistency 13**).
+
+red 2건 — 둘 다 이 레인과 무관하게 설계·환경 조건이다:
+- `generated-up-to-date` — 미구현 red, 설계대로(§7-3 — 우회하지 않는다).
+- `schema-diff` — 체인별 적용 DB URL(`COLAB_APPLIED_DB_URL_PLATFORM`·`_AI`) 이 이 세션에 없다. README 대로 URL 둘 다 주면 green 이 되는 환경 조건 red 이며, 이 레인 착수 전에도 같았다. 레인이 staging·DB 를 세우지 않았다(멈춤 규칙 3·4).
+
+### C1 열린 항목 ② 판정 — 기준 격자 건수 불일치 (0~1 vs 〈58〉 0~2)
+
+- **실측**: `common.json:79` `FileKind` description 이 「기준 격자 파일은 데이터셋당 0~1건」(DataModel §4.3 인용), `core-pipeline.json:39` `UploadAcceptedPayload.files` description 도 「0~1건」. **기계 제약은 어느 쪽에도 없다**(maxContains/maxItems 부재) — 갈린 것은 산문뿐이고, 스키마 자체는 이미 0~2 를 허용한다.
+- **처분**: `common.json` 의 산문을 〈58〉 인용과 함께 **0~2건(+grid_axis·후주입 명기)** 으로 갱신했다 — description-only 라 additive 이고, 갱신 후 `contract-lint`·`contract-breaking`·`event-lint`·`event-breaking` 전부 green 실측.
+- **남긴 것**: `core-pipeline.json:39` 의 「0~1건」 산문은 **이벤트 계약 동결(§2-1 — 한 글자도 안 고친다) 때문에 이번 회차에 고치지 않았다.** common.json 쪽 산문에 그 사실과 사유를 명기해 뒀다 — 다음 이벤트 개정 권한이 열리는 회차의 일감이다.
+
+### 열린 항목 (닫지 않고 보고)
+
+1. G-a·G-c·G-d 미구현 — 후속 회차. G-e·G-b 는 파생 증상이 아니라 DR-7 의 뿌리를 때리는 둘이라 먼저 세웠다(§2-13).
+2. `core-pipeline.json:39` 「0~1건」 산문 드리프트 — 이벤트 개정 권한 필요(위 ② 판정).
+3. ㉡ fixture(`e04-flow.json`)는 E04-step-op-map.DRAFT 승계본이다 — DRAFT 의 Ted 검토(㉢ 와 별도)가 아직이며, 표가 틀리면 ㉡ 이 틀린 흐름을 완주로 판정한다(〈61〉 경고 그대로).
+4. D2c-api(501 라우트 11건 등록·1:1 diff 시험) 미착수 — 워킹트리는 여전히 「고아 계약 op 11건」 상태다(C1 기록 그대로).
+5. ㉢(Ted 승인) 전 — 동결 아님.
+
+---
+
+## 마감 보고 (C1~C3) (2026-08-23 · D2c-C3 레인 — 마감 문서화)
+
+> 커밋 없음(오케스트레이터 소관). **동결 선언 없음 — ㉢ 전이다.** ㉢ 제출 패키지 = `sessions/D2c-ted-approval.md`.
+
+**판정 문구(§8 · 추기-3 반영)** — **「`STOP-1` 은 닫혔다. `DR-13` 은 닫혔다(2026-08-23). P2 착수 판정은 메인 세션/사용자의 몫으로 남는다 — 동결(㉢) 미실시·staging 미실측의 유보를 안고 선다.」** 「P2 를 열었다」라고 적지 않는다.
+
+### 완료 정의 8항 대조 — 충족 5 · 미충족 3 (부분 완료로 「닫힘」이라 적지 않는다)
+
+| 항 | 판정 | 근거 |
+|---|---|---|
+| 7-1 additive 증명 | ✅ | `contract-breaking` green(「No breaking changes … but the specs are different」) · 두 함정(`usageNote` required · `fileCount minimum:1`) 원형 유지 — C1 기록 |
+| 7-2 501 표 | 🟧 부분 | **표 등재는 25 → 36(+11) 완료. 그러나 라우트 등록·`not_implemented.py`·1:1 diff 시험은 D2c-api 레인 몫으로 미착수** — 워킹트리는 **고아 계약 op 11건** 상태다. 커밋 불가 사유이기도 하다(한 커밋 = 계약 + 소비자, §7-5) |
+| 7-3 게이트 | ✅ | 전 수트 green + `seam-consistency` green + selftest 13케이스(green 4 · red 9) + **개정 전 red 실측 기록**(G-e·G-b 둘 다 눈으로 봄 — C2 기록). 무관 red 2건은 설계·환경 조건(`generated-up-to-date` 미구현 red 설계대로 · `schema-diff` DB URL 부재) |
+| 7-4 staging 배포 green | ⛔ **미실측** | 레인이 staging 을 건드리지 않았다(멈춤 규칙). 컨테이너 8 healthy·헬스 6종 200 은 **측정하지 않았다** — 커밋·배포 뒤 메인 세션 몫 |
+| 7-5 `contracts/README.md` 규칙 5 리뷰 | ⛔ **미실시** | 커밋이 없어 PR 자체가 없다 — CODEOWNERS 리뷰는 커밋 이후 |
+| 7-6 ㉠ 정본 근거 대조 | ✅ | 기계 검사 구현·신설 50건 전수 통과(근거의 **내용** 옳음은 안 본다 — ㉠ 명세 그대로) |
+| 7-7 ㉡ 흐름 완주 | ✅ | 15단계 재생 · 끊긴 자리 0 · P4 이월 1건 명시. **단 fixture 는 E04-map DRAFT 승계본 — Ted 검토 전**(표가 틀리면 ㉡ 이 틀린 흐름을 완주로 판정한다) |
+| 7-8 ㉢ Ted 승인 | ⛔ **미실시** | **동결하지 않았다.** ㉠·㉡ green 은 ㉢ 을 대신하지 않는다(§7-8 · `03-HANDOFF.md:134`). 제출 패키지를 `sessions/D2c-ted-approval.md` 로 마련했다 — **침묵은 승인이 아니다** |
+
+### 남은 것 (이 WU 가 닫히려면)
+
+1. **D2c-api** — 신설 11 op 라우트 501 등록 + 1:1 diff 시험 (고아 op 11건 해소).
+2. **㉢** — Ted 명시 승인(`D2c-ted-approval.md` 제출) → 그 뒤에야 동결.
+3. **커밋 → CODEOWNERS PR 리뷰(7-5) → staging 배포 green 실측(7-4)** — 전부 메인 세션 소관.
+4. 이월 기록 유지 — G-a·G-c·G-d 미구현 · `core-pipeline.json:39` 「0~1건」 산문 드리프트(이벤트 개정 권한 필요) · `listPalettes` FE 중계 부재 · 검색 진입점 P4 · E04-map DRAFT 의 Ted 검토.
+
+
+### ㉠ baseline 기록 (커밋 시점 재현성 — advisor 보완 3)
+
+- **㉠(정본 근거 대조) 검사의 baseline ref = `0f6641b`** (개정 직전 HEAD). 이번 회차 신설 50건(op 11 · 스키마 7 · 파라미터 3 외)의 전수 대조는 이 ref 대비로 수행됐다. 개정 커밋이 들어가면 ㉠ 의 「신설」 집합이 비므로, 이 회차 감사의 재현은 `git diff 0f6641b -- contracts/seams/fe-core.yaml contracts/schemas/common.json` 으로 한다.
+- `core-pipeline.json:39` 산문 드리프트는 **`DR-16`** 으로 등재됐다(`03-HANDOFF §5.5`).
+
+## D2c-api 실행 기록 (2026-08-23)
+
+C1 신설 11 op 의 고아 상태 해소 — 라우트 501 등록 + 1:1 diff 시험. 계약(`contracts/**`)·게이트 도구는 무수정.
+
+### 라우트 11건 (`not_implemented.py` — 전부 `NOT_IMPLEMENTED_NO_STORE`, §5-확정 그대로)
+
+| op | 라우트 |
+|---|---|
+| `createUpload` | POST `/uploads` |
+| `getUploadStatus` | GET `/uploads/{uploadId}` |
+| `listUploadLineageSuggestions` | GET `/uploads/{uploadId}/lineage-suggestions` |
+| `createDataset` | POST `/datasets` |
+| `updateDataset` | PATCH `/datasets/{datasetId}` |
+| `addDatasetFile` | POST `/datasets/{datasetId}/files` |
+| `replaceDatasetGridFile` | PUT `/datasets/{datasetId}/files/{fileId}` |
+| `deleteDatasetGridFile` | DELETE `/datasets/{datasetId}/files/{fileId}` |
+| `linkProjectDataset` | PUT `/projects/{projectId}/datasets/{datasetId}` |
+| `createPreviewRender` | POST `/previews` |
+| `getPreviewRender` | GET `/previews/{renderId}` |
+
+### 501 표 25 → 36
+
+- `OPERATIONS` 25 → **36** (NO_STORE 7 → 18 · P1 18 그대로). 오라클 갱신:
+  `test_the_36_unimplemented_operations_are_exactly_these`(len==36) ·
+  `test_operation_count_is_45`(계약 45 op) · `test_app_route_table_equals_contract` 1:1 diff green.
+- 문서 정합: `services/core-api/README.md` 34→45 op · 실질의 5→9 · 501 29→36 (구 기록이 P1 이후에도 5/29 로 낡아 있었다 — 함께 바로잡음).
+
+### 수트 결과
+
+- **core-api pytest 166 passed** (일회용 `d2capi_pg` postgres:16-alpine + `setup-db.sh`, RESTART.md §④ 절차. 실행 후 컨테이너 폐기).
+- **게이트 20종: green 18 · red 2** — red 는 예상 그대로: `generated-up-to-date`(미구현, 설계대로) · `schema-diff`(체인별 DB URL 부재 — 환경 조건). `seam-consistency`·selftest 전부 green.
+
+### 남은 것
+
+- 커밋(계약 + 소비자 한 커밋, §7-5) · ㉢ Ted 승인 · staging 배포 green 실측 — 메인 세션 소관 (변경 없음).

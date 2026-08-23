@@ -1,0 +1,11 @@
+{
+  "$defs": {
+    "EventType": { "enum": ["upload.accepted"] },
+    "UploadAccepted": {
+      "properties": {
+        "type": { "const": "upload.accepted" },
+        "source": { "const": "core-api" }
+      }
+    }
+  }
+}

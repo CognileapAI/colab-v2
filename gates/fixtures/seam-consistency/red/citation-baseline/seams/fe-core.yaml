@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: citation red fixture 의 기준선 — 신설 전
+  version: 0.0.1
+paths:
+  /datasets:
+    get:
+      operationId: listDatasets
+      description: 기존 op (Policy §1).
+      responses:
+        "200": { description: ok }

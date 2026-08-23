@@ -10,10 +10,22 @@ info:
     프런트엔드와 core-api(D1 Identity&Lab · D2 Access&Policy · D3 Catalog · D4 Lineage ·
     D6 Project · D8 Insight) 사이의 손작성 계약. 근거: `DOMAINS.md §4` 배포 단위 표.
 
-    이 seam 에 **없는 것**과 그 이유 —
-    - 자연어 검색(S-06)·계보 제안: D10. `core-ai` seam 이 맡는다 (`DOMAINS §2`).
-    - 업로드·파일 파싱·프로젝트 연결 생성(E-04 가 주인): D5. 이벤트/업로드 seam.
-    - 미리보기 렌더·타일·스크린샷: D7. `core-viz` seam (`CLAUDE.md §3-4` — core 에 geo 라이브러리 금지).
+    **판정 기준 — 이 seam 에 없다고 적으려면, 그것을 받는 곳에 FE 가 도달할 수 있어야 한다**
+    (`〈54〉` · `sessions/SEAM-AUDIT.md` I-02 — 이 기준이 없어 위임 세 줄이 전부 오배정됐었다).
+    그 기준으로 판정한 위임 —
+    - 자연어 검색(S-06)·계보 제안: 만드는 것은 D10 이지만 `core-ai` 는 내부 표면이라
+      FE 가 직접 도달할 수 없다 (소비자는 core-api 뿐 — `core-ai.yaml` servers 주석).
+      **FE 는 이 파일의 중계 op 으로만 도달한다.** 계보 제안 조회는 `listUploadLineageSuggestions`(이 파일)가
+      중계하고, **검색 진입점 op 은 아직 없다 — P4 가 연다** (`sessions/D2c.md §2-3`).
+    - 업로드(E-04): 동기 절반 — HTTP 입구·상태 조회·등록 전환
+      (`createUpload`·`getUploadStatus`·`createDataset`) — 은 **이 파일**이고,
+      파싱·변환의 **비동기 절반만** `../events/core-pipeline.json` 이다.
+      프로젝트 연결 생성도 **이 파일**(`linkProjectDataset`)이다 — 이벤트 봉투는
+      `datasetId`·`projectId` 를 싣지 않는다 (`../events/envelope.json` 경계 주석).
+    - 미리보기 렌더: 렌더 작업 **생성·조회는 이 파일의 중계 op**
+      (`createPreviewRender`·`getPreviewRender`)이고, **타일 URL 소비만 FE 직결**이다 —
+      viz-render 는 내부 표면이며 타일 경로만 CDN 뒤에 선다 (`core-viz.yaml` 상단 주석).
+      geo 해석은 여전히 D7 의 것이다 (`CLAUDE.md §3-4` 는 geo 라이브러리 import 금지이지 중계 op 금지가 아니다).
 
     표기 규칙 —
     - 경로는 소문자 kebab-case, 경로 파라미터·쿼리·응답 속성은 **camelCase**(영문 기술 어휘).
@@ -45,6 +57,15 @@ tags:
     description: D6 — 프로젝트 CRUD · 소속 데이터셋
   - name: insight
     description: D8 — 홈 대시보드 집계
+  - name: ingestion
+    description: |
+      D5 중계 — 업로드 HTTP 입구 · 상태 조회 · 파일 후주입. 파싱·변환의 비동기 절반은
+      `../events/core-pipeline.json` 이 맡고, 여기는 그 파이프라인의 동기 입구다
+      (`〈54〉-②` · `sessions/D2c.md §2-2` — 경계는 tag·라우터가 지킨다).
+  - name: visualization
+    description: |
+      D7 중계 — 렌더 작업 생성·조회. viz-render 는 내부 표면이라 FE 는 여기로만 도달하고,
+      타일 URL 소비만 FE 직결이다 (`core-viz.yaml` — 타일 경로만 CDN 뒤 · `sessions/D2c.md §2-9`).
 
 paths:
 
@@ -167,6 +188,125 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  # ─────────────────────────── D5 Ingestion 중계 (E-04) ───────────────────────────
+
+  /uploads:
+    post:
+      tags: [ingestion]
+      operationId: createUpload
+      summary: 업로드 진입점 — 등록 전 임시 업로드를 만든다
+      description: |
+        **`upload.accepted` 를 발행하는 유일한 자리다** — 이벤트 계약이 `source` 를 `core-api`
+        상수로 못 박았고(`../events/core-pipeline.json` 이벤트 ① · `envelope.json` source 주석),
+        그 능력을 행사하는 HTTP 입구가 이 op 이다 (`〈54〉` · `sessions/D2c.md §2-4`).
+        여러 파일을 한 번에 받는다 — 본체 1건 이상 + 기준 격자 파일
+        (`PRD_업로드와_계보_확정 §5.1 여러 파일 받기` · `Policy_업로드와_계보_확정 §8 파일 놓기`).
+        **저장되는 것은 없다** — 등록 전 세계는 사람이 `데이터셋 만들기`를 눌러야 D3 가 된다
+        (`Policy_업로드와_계보_확정 §7.1` — 열어보는 중 = 저장 안 됨).
+        조각(part) 단위 이어올리기 상태는 계약에 없다 — 정본이 범위 밖으로 뒀다 (`Policy §9`).
+        파일 바이트가 이 op 으로 들어온다는 전송 형태는 `[정본 무근거]` 레포 결정이다 —
+        정본은 `파일을 끌어다 놓는다 → 업로드한다`(`Policy §2` 규칙 맵)까지만 말한다.
+        core-api ↔ 스토리지 사이가 presigned multipart 인 것은 배포 내부 사정이며 이 seam 의 것이 아니다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              additionalProperties: false
+              properties:
+                files:
+                  description: 파일 바이트 파트들. 순서가 `fileKinds` 와 짝이다.
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    contentMediaType: application/octet-stream
+                fileKinds:
+                  description: |
+                    `files` 와 같은 순서의 파일 종류. 생략하면 전부 `본체` 다.
+                    이벤트의 `FileRef.kind` 가 required 라 접수 시점에 종류가 정해져 있어야 한다
+                    (`../events/core-pipeline.json` FileRef · `DataModel §4.3`).
+                  type: array
+                  items: { $ref: "../schemas/common.json#/$defs/FileKind" }
+      responses:
+        "201":
+          description: |
+            접수됨. 이 응답이 FE 표면에 `uploadId`·`fileId` 를 내리는 자리다
+            (`sessions/SEAM-AUDIT.md` I-01·I-06 — 소비만 있고 생산이 없던 두 식별자).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadReceipt" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /uploads/{uploadId}:
+    parameters:
+      - $ref: "#/components/parameters/UploadId"
+    get:
+      tags: [ingestion]
+      operationId: getUploadStatus
+      summary: 업로드 상태 조회 — 실패 사유 8값이 화면에 가는 자리
+      description: |
+        파이프라인 이벤트(②~⑦)의 결과를 FE 가 소비하는 동기 창구다
+        (`sessions/SEAM-AUDIT.md` I-18·C-5 — 실패 사유가 화면에 갈 자리가 없었다).
+        필드는 이벤트 페이로드의 사실을 그대로 비춘다 — 새 값 집합을 만들지 않는다.
+      responses:
+        "200":
+          description: 업로드 상태
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: 없는 업로드이거나 수명이 다해 사라졌다 (`Policy §7.1` — 등록되지 않은 업로드는 남지 않는다).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /uploads/{uploadId}/lineage-suggestions:
+    parameters:
+      - $ref: "#/components/parameters/UploadId"
+    get:
+      tags: [ingestion]
+      operationId: listUploadLineageSuggestions
+      summary: AI 계보 제안 조회 (중계) — 제안만, 저장 없음
+      description: |
+        `core-ai` 는 내부 표면이라(소비자는 core-api 뿐 — `core-ai.yaml`) FE 는 이 중계로만
+        제안에 도달한다 (`Policy_업로드와_계보_확정 §2` 규칙 맵 — AI 제안을 확인한다 ·
+        `sessions/D2c.md 추기-2` — 범위 확장 1건, 사용자 승인 2026-08-23).
+        요청의 파일 메타·범위는 core-api 가 파이프라인 결과에서 만든다 — FE 는 해석 단서만 보탠다.
+        **확정 오퍼레이션이 아니다** — 확인된 제안은 `createDataset` 의 계보 관계로만 저장된다
+        (`CLAUDE.md §3-2` — D10 은 제안만, 사람이 확인한 것만 커밋).
+        스키마는 중계라 재선언하지 않고 `core-ai.yaml` 정의를 그대로 참조한다 — 같은 모양의
+        두 번째 선언은 갈라질 표면이다.
+      parameters:
+        - name: datasetNameDraft
+          in: query
+          required: false
+          description: 등록 폼의 데이터셋 이름 초안. 해석 단서로만 쓴다 (`core-ai.yaml` LineageSuggestionRequest).
+          schema: { type: string, minLength: 1, maxLength: 80 }
+        - name: subject
+          in: query
+          required: false
+          description: 고른 주제. 아직 안 골랐으면 생략한다 (`Policy §5`).
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: 제안 결과. **0건도 여기로 온다** — 정직한 빈 상태 (`Policy §8` AI 제안 영역).
+          content:
+            application/json:
+              schema: { $ref: "core-ai.yaml#/components/schemas/LineageSuggestionResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ─────────────────────────────── D3 Catalog ───────────────────────────────
 
   /datasets:
@@ -204,6 +344,45 @@ paths:
                         items: { $ref: "#/components/schemas/DatasetRow" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [ingestion]
+      operationId: createDataset
+      summary: 데이터셋 만들기 — 업로드의 등록 전환 (계보 확정)
+      description: |
+        의미는 「새 데이터셋을 만든다」가 아니라 **「업로드 세계의 `uploadId` 를 D3 데이터셋으로
+        등록 전환한다」** 다 — 사람이 `데이터셋 만들기`를 눌러야 데이터셋이 생기고
+        (`Policy_업로드와_계보_확정 §7.2` · `../events/envelope.json` uploadId 주석),
+        등록 전에는 아무것도 저장되지 않는다 (`Policy §7.1`).
+        확정된 계보 관계·소속 프로젝트 지정이 이 요청에 함께 실린다 — 등록 폼 한 화면이
+        한 번에 제출하는 값이다 (`Policy §5` 입력값 규칙).
+        **`fileId` 동일성** — 등록 시 D3 파일 레코드는 업로드 세계의 `fileId` ULID 를 자기 PK 로
+        그대로 쓴다. 새로 만들지 않는다. `[정본 무근거 — 계약 구조 연역(sessions/D2c.md §2-10) ·
+        사용자 승인 2026-08-23, Ted 본인 승인 여부 미확인 — ㉢ 제출 목록 유지]`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DatasetCreate" }
+      responses:
+        "201":
+          description: 등록된 데이터셋. 화면은 상세로 이동한다 (`Policy §7.2`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: 없는(또는 수명이 다한) 업로드다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "409":
+          description: 이미 등록 전환된 업로드다 — 같은 업로드로 데이터셋을 두 번 만들지 않는다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /datasets/facets:
@@ -250,6 +429,32 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/DatasetDetail" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    patch:
+      tags: [catalog]
+      operationId: updateDataset
+      summary: 데이터셋 정보 수정 — 사람이 적는 정보만
+      description: |
+        **「사람이 적는 정보」(이름·주제·한 줄 요약)만 고친다** (`DATAMODEL-BASELINE.md` D3 ·
+        `sessions/D2c.md §2-7` — 이 U 가 통째로 없어 `〈55〉` 의 주제를 고칠 길이 없었다).
+        「자동으로 읽은 정보」(변수·기간·좌표계·격자·포맷)는 이 op 의 대상이 아니다 —
+        파일에서 읽는 값이다 (`DataModel §4.1` · `DR-14`).
+        `업로드·편집` 스위치가 판정한다 (`〈59〉-②` — 소유자를 별도 관문으로 만들지 않는다).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DatasetUpdate" }
+      responses:
+        "200":
+          description: 갱신된 상세
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
     delete:
@@ -322,6 +527,104 @@ paths:
             application/json:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+    post:
+      tags: [ingestion]
+      operationId: addDatasetFile
+      summary: 파일 추가 (후주입) — 기준 격자 파일은 나중에 와도 된다
+      description: |
+        **`〈58〉-②` 가 요구한 후주입 경로다** — 기준 격자 파일은 나중에 구해서 더할 수 있어야
+        하고, 없으면 좌표를 구한 사람이 다시 올리는 수밖에 없어 계보가 끊긴다.
+        추가는 정상 동작이다 (`〈59〉-①`). 판정은 `업로드·편집` 스위치가 한다 (`〈59〉-②`).
+        후주입은 계보를 접지 않고 활동 기록(D8)에 남는다 (`〈60〉`).
+        새 파일도 파이프라인(파싱·변환)을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, kind]
+              additionalProperties: false
+              properties:
+                file:
+                  type: string
+                  contentMediaType: application/octet-stream
+                kind:
+                  $ref: "../schemas/common.json#/$defs/FileKind"
+      responses:
+        "201":
+          description: 추가된 파일
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetFile" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/files/{fileId}:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+      - $ref: "#/components/parameters/FileId"
+    put:
+      tags: [ingestion]
+      operationId: replaceDatasetGridFile
+      summary: 기준 격자 파일 교체 — 정상 동작
+      description: |
+        교체는 정상 동작이다 (`〈59〉-①` — 열린 결정 ⑳ 해소). 판정은 `업로드·편집` 스위치
+        (`〈59〉-②`). **본체 파일은 이 경로의 대상이 아니다** — 본체를 갈아 끼우는 것은
+        다른 데이터다 (`〈59〉-③`). 대상 파일의 `kind` 가 `본체` 면 409 다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              additionalProperties: false
+              properties:
+                file:
+                  type: string
+                  contentMediaType: application/octet-stream
+      responses:
+        "200":
+          description: 교체된 파일
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetFile" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [ingestion]
+      operationId: deleteDatasetGridFile
+      summary: 기준 격자 파일 삭제 — 정상 동작
+      description: |
+        삭제는 정상 동작이다 (`〈59〉-①`). 판정은 `업로드·편집` 스위치 (`〈59〉-②`).
+        **본체 파일은 지우지 않는다** — 대상의 `kind` 가 `본체` 면 409 (`〈59〉-③`).
+        격자를 지우면 그릴 수 없게 될 수 있을 뿐이다 — 그릴 수 없는 것과 등록할 수 없는 것은
+        다르다 (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
+      responses:
+        "204":
+          description: 지워짐
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 대상이 본체 파일이다 (`〈59〉-③`).
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /datasets/{datasetId}/download:
@@ -831,17 +1134,98 @@ paths:
     parameters:
       - $ref: "#/components/parameters/ProjectId"
       - $ref: "#/components/parameters/DatasetId"
+    put:
+      tags: [project]
+      operationId: linkProjectDataset
+      summary: 소속 연결 (본문 있는 op — 활용 의미 문장을 채운다)
+      description: |
+        프로젝트:데이터셋은 N:N 이고 **연결마다 활용 의미 문장이 붙는다**
+        (`DATAMODEL-BASELINE.md` D6 연결 · `DataModel §5`). 이 op 이 `ProjectDatasetRow.usageNote`
+        (required 로 읽히는 값)를 쓰는 유일한 수단이다 — 끊는 길(`unlinkProjectDataset`)만 있고
+        잇는 길이 없던 비대칭을 닫는다 (`sessions/SEAM-AUDIT.md` I-03·I-10 · `sessions/D2c.md §2-8`).
+        이미 있는 연결이면 `usageNote` 를 고친다(멱등 PUT). 최초 등록 시점의 연결은
+        `createDataset` 요청의 `projectIds` 가 만들고, 이 op 은 등록 후 연결·의미 문장 편집이다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectDatasetLinkCreate" }
+      responses:
+        "204":
+          description: 연결됨(또는 의미 문장이 갱신됨)
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
     delete:
       tags: [project]
       operationId: unlinkProjectDataset
       summary: 소속 해제 (연결만 끊는다)
       description: |
         연결 기록만 지운다 — 데이터셋은 카탈로그·검색에 그대로 있고, 다른 프로젝트의 연결도 남는다
-        (`Policy_프로젝트 §7`). **담는 동작은 이 seam 에 없다** — 데이터를 프로젝트에 담는 것은
-        업로드 화면(E-04)이 맡고 이 화면은 담긴 것을 보고 빼는 것까지다 (§1.3-9).
+        (`Policy_프로젝트 §7`). 담는 동작은 같은 경로의 `linkProjectDataset`(PUT)과
+        `createDataset.projectIds` 다 — 이전 산문의 「이 seam 에 없다」는 오배정이었다
+        (`sessions/SEAM-AUDIT.md` I-03 · `〈54〉`).
       responses:
         "204":
           description: 연결이 끊어짐
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  # ─────────────────────────── D7 Visualization 중계 ───────────────────────────
+
+  /previews:
+    post:
+      tags: [visualization]
+      operationId: createPreviewRender
+      summary: 미리보기 렌더 작업 생성 (중계)
+      description: |
+        viz-render 는 내부 표면이라 FE 는 이 중계로만 렌더를 시작한다
+        (`core-viz.yaml` — 소비자는 core-api 뿐 · `sessions/SEAM-AUDIT.md` I-06·I-07·C-4 —
+        등록 데이터셋(E-03)·미등록 업로드(S-08) 둘 다 계약상 도달 불가였다).
+        대상은 `datasetId`(등록 후) 또는 `uploadId`(등록 전, S-08) 정확히 하나다
+        (`core-viz.yaml` RenderTarget). **타일 URL 은 중계하지 않는다** — 결과의
+        `tileUrlTemplate` 을 FE 가 직접 소비한다 (타일 경로만 CDN 뒤 — `core-viz.yaml` 상단 주석).
+        스키마는 중계라 재선언하지 않고 `core-viz.yaml` 정의를 그대로 참조한다.
+        `style.palette` 값 집합의 FE 도달 경로(`listPalettes` 중계)는 이 개정이 열지 않는다 —
+        열린 항목으로 보고한다 (`sessions/D2c.md §2-9` 는 생성·조회 두 op 만 확정했다).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "core-viz.yaml#/components/schemas/RenderRequest" }
+      responses:
+        "202":
+          description: 렌더 작업이 잡혔다. 진행·결과는 `getPreviewRender` 로 본다.
+          content:
+            application/json:
+              schema: { $ref: "core-viz.yaml#/components/schemas/RenderJob" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /previews/{renderId}:
+    parameters:
+      - $ref: "#/components/parameters/RenderId"
+    get:
+      tags: [visualization]
+      operationId: getPreviewRender
+      summary: 렌더 작업 조회 (중계)
+      description: |
+        진행 단계·완료 결과·실패를 한 형태로 본다 (`core-viz.yaml` RenderJob — 단계·실패 문구는
+        정본 표기 그대로: `Policy_데이터셋_상세 §8`). 실패 종류의 `code` 값 라벨은
+        `[정본 무근거]` 로 아직 신설하지 않았다 (`sessions/D2c.md §2-11` NB-B — Ted 답 대기).
+      responses:
+        "200":
+          description: 렌더 작업 상태
+          content:
+            application/json:
+              schema: { $ref: "core-viz.yaml#/components/schemas/RenderJob" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -950,6 +1334,29 @@ components:
       name: requestId
       in: path
       required: true
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    UploadId:
+      name: uploadId
+      in: path
+      required: true
+      description: 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId).
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    FileId:
+      name: fileId
+      in: path
+      required: true
+      description: |
+        파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+        (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    RenderId:
+      name: renderId
+      in: path
+      required: true
+      description: 렌더 작업 식별자 (`core-viz.yaml` RenderId 와 같은 값 — 중계라 새 식별자를 만들지 않는다).
       schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
 
     Cursor:
@@ -1334,6 +1741,162 @@ components:
           description: 취소 사유 0~120자. 선택 (`Policy_승인_처리 §5`).
           type: string
           maxLength: 120
+
+    # ── D5 중계 (E-04 업로드 세계) ──
+
+    UploadFileRef:
+      description: |
+        업로드 안의 파일 하나. 이벤트 seam 의 `FileRef`(`../events/core-pipeline.json`)와 같은
+        네 값이다 — 동기 응답과 비동기 페이로드가 같은 사실을 말하게 둔다.
+        `fileId` 는 등록 전환 후 D3 파일 레코드의 PK 로 그대로 이어진다 — `fileId` 동일성
+        (`sessions/D2c.md §2-10` `[정본 무근거]` · 사용자 승인 2026-08-23, Ted 본인 승인 여부 미확인).
+      type: object
+      required: [fileId, fileName, kind, byteSize]
+      additionalProperties: false
+      properties:
+        fileId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        kind: { $ref: "../schemas/common.json#/$defs/FileKind" }
+        byteSize: { type: integer, minimum: 0 }
+
+    UploadReceipt:
+      description: |
+        업로드 접수 결과. `uploadId` 는 이벤트 seam 의 집계 루트와 같은 값이고
+        (`../events/envelope.json`), `core-viz` 의 `RenderTarget.uploadId`(S-08)도 같은 값을 쓴다.
+      type: object
+      required: [uploadId, files]
+      additionalProperties: false
+      properties:
+        uploadId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        files:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/UploadFileRef" }
+
+    UploadStatus:
+      description: |
+        파이프라인 이벤트(②~⑦)의 결과를 FE 가 읽는 형태. **필드마다 원천 이벤트가 있다** —
+        새 사실을 만들지 않는다 (`../events/core-pipeline.json`).
+        조각(part) 단위 상태는 없다 — 정본이 이어올리기를 범위 밖으로 뒀다 (`Policy §9`).
+      type: object
+      required: [uploadId, files, ready, failure]
+      additionalProperties: false
+      properties:
+        uploadId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        files:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/UploadFileRef" }
+        ready:
+          description: "`upload.ready`(⑥) 가 왔는가 — 등록 결정 게이트를 볼 수 있는 상태 (`Policy §7.1`·`§8`)."
+          type: boolean
+        renderable:
+          description: "미리보기를 그릴 수 있는가 (`upload.ready.renderable`). 아직 모르면 null. false 여도 등록은 막지 않는다."
+          type: [boolean, "null"]
+        metadataComplete:
+          description: "자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null."
+          type: [boolean, "null"]
+        expiresAt:
+          description: "임시 업로드의 수명 (`upload.ready.expiresAt` — 이 화면을 벗어나면 사라진다, `Policy §7.1`)."
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+        failure:
+          description: |
+            `upload.failed`(⑦) 가 왔으면 그 사유. 사유 값 집합은 이벤트 계약의 것을 그대로 쓴다 —
+            재선언하지 않는다 (`../events/envelope.json` FailureReason — 정본 §9 표와 1:1).
+            화면 문구는 정본 §9 가 소유하고 화면이 그린다.
+          oneOf:
+            - type: object
+              required: [reason]
+              additionalProperties: false
+              properties:
+                reason: { $ref: "../events/envelope.json#/$defs/FailureReason" }
+            - type: "null"
+
+    UploadLineageParent:
+      description: |
+        등록 전환에 싣는 확정 계보 관계 한 건. **사람이 확인한 것만 온다** — AI 제안은 저장되지
+        않았고, 확인·수정·거절은 화면(클라이언트 상태)에서 일어난다 (`Policy §7.1` — 등록 중 = 저장 안 됨).
+      type: object
+      required: [parentDatasetId, origin]
+      additionalProperties: false
+      properties:
+        parentDatasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        parentRole:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/ParentRole" }]
+          description: "생략하면 기본값 `주입력` (`Policy §5 부모 역할`)."
+        method:
+          description: 가공 방식 한 줄. 자유 문장이다 (`Policy §5`).
+          type: [string, "null"]
+        origin:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/LineageOrigin" }]
+          description: |
+            만들어진 경로 — AI 제안을 사람이 확인했는가, 직접 연결했는가 (`DataModel §4.2`).
+            상세 화면의 수동 추가(`addLineageParent`)와 달리 업로드 화면엔 두 경로가 다 있어
+            요청이 실어야 서버가 안다.
+        confirmedMethodText:
+          description: |
+            `가공 방식` 제안을 확인·수정한 결과 문장. `method` 와 같은 자리로 접힌다 —
+            둘 다 오면 400. `[정본 무근거 — 제안 확인 결과가 등록 요청의 어느 필드로 실리는지
+            정본이 형태를 주지 않아 레포 결정]`
+          type: [string, "null"]
+
+    DatasetCreate:
+      description: |
+        등록 전환 요청 — 업로드 폼 한 화면이 한 번에 제출하는 값 (`Policy §5` 입력값 규칙 ·
+        `§7.2` 등록 중 → 등록됨). 자동으로 읽은 정보(변수·기간·좌표계·격자·포맷)는 싣지 않는다 —
+        파일에서 읽는 값이다 (`DataModel §4.1`).
+      type: object
+      required: [uploadId, name]
+      additionalProperties: false
+      properties:
+        uploadId:
+          # 등록 전환할 업로드. 이 값이 업로드 세계와 D3 세계를 잇는 유일한 입력이다.
+          $ref: "../schemas/common.json#/$defs/Ulid"
+        name:
+          description: 사람이 적는 묶음 이름 (`DataModel §4.3`).
+          type: string
+          minLength: 1
+        topic:
+          description: |
+            주제. 값 집합은 DB CHECK 4값이 지킨다 (`〈55〉`) — 계약 층 enum 은 이 개정이
+            임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
+          type: [string, "null"]
+        summary:
+          description: 한 줄 요약.
+          type: [string, "null"]
+        sourceLabel:
+          description: 원천 표기 — 데이터셋이 아니라 표기다 (`Policy §4 용어` · 계보 그래프의 점선 노드).
+          type: [string, "null"]
+          maxLength: 60
+        lineageParents:
+          description: |
+            확정된 계보 관계들. **비어 있으면 `기록 없음`으로 등록된다** — 등록을 막지 않는다
+            (`Policy §3.3`). 일괄 승인 필드가 아니다 — 항목마다 사람이 확인한 결과다 (`CLAUDE.md §3`).
+          type: array
+          items: { $ref: "#/components/schemas/UploadLineageParent" }
+        projectIds:
+          description: |
+            소속 프로젝트 복수 지정 (`Policy §5` 소속 프로젝트 — 0건 이상). 등록 폼이 한 번에
+            제출하므로 등록 후 `linkProjectDataset` N 회 호출이 아니라 여기 실린다 —
+            연결의 `usageNote` 는 여기 없다: 업로드 화면이 그 문장을 받는 자리가 정본에 없어
+            (`[정본 무근거]` — E04-step-op-map Q2) 등록 후 `linkProjectDataset` 으로 적는다.
+          type: array
+          items: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    DatasetUpdate:
+      description: |
+        사람이 적는 정보만 (`DATAMODEL-BASELINE.md` D3 · `sessions/D2c.md §2-7`).
+        자동으로 읽은 정보는 이 스키마에 자리가 없다 (`DataModel §4.1` · `DR-14`).
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1 }
+        topic:
+          description: "값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E)."
+          type: [string, "null"]
+        summary: { type: [string, "null"] }
 
     # ── D3 ──
 
@@ -1779,6 +2342,19 @@ components:
         canManage:
           description: "`프로젝트 생성` 스위치. 꺼졌으면 만들기·수정·닫기 버튼을 숨긴다 (§6·P-12)."
           type: boolean
+
+    ProjectDatasetLinkCreate:
+      description: |
+        연결 한 건의 본문 — 맨 PUT 이 아니다 (`sessions/D2c.md §2-8`). 연결마다 활용 의미 문장이
+        붙는다 (`DATAMODEL-BASELINE.md` · `DataModel §5`). 아직 못 적었으면 null 로 명시한다 —
+        필드를 빼먹은 요청과 구분하기 위해 required 다.
+      type: object
+      required: [usageNote]
+      additionalProperties: false
+      properties:
+        usageNote:
+          description: 이 연결의 활용 의미 문장. `ProjectDatasetRow.usageNote` 가 읽는 값이다.
+          type: [string, "null"]
 
     ProjectCreate:
       type: object

@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: red fixture — 실재하지 않는 op·파일 참조
+  version: 0.0.1
+  description: |
+    업로드는 `createGhostUpload` 가 맡고, 나머지는 `upload-seam.yaml` 이 맡는다.
+paths:
+  /ping:
+    get:
+      operationId: getPing
+      responses:
+        "200": { description: ok }

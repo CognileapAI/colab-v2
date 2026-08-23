@@ -1,0 +1,20 @@
+# seam-consistency 게이트 allow-list — 예외는 **이유와 함께**만 등재한다 (D2c.md §2-13).
+# selftest fixture 는 이 파일을 읽지 않는다 — 자기 allow-list 를 들고 다닌다 (WU-D3b 와 같은 이유).
+
+[ge]
+# 「X seam」 위임 문구에서 X 로 허용되는 이름. seam 파일 stem(core-ai·core-viz·fe-core)과
+# 이벤트 파일 stem(core-pipeline·envelope)은 자동 등록되고, 여기는 별칭만 더한다.
+# "이벤트" = contracts/events/** (D2c §2-1 이 정본으로 확정한 async seam 의 한국어 지칭).
+seam-aliases = ["이벤트", "events"]
+
+[gb]
+# 이벤트 봉투의 집계 루트 식별자 (envelope.json — 「7종 전부가 여기에 매달린다」).
+aggregate-root = "uploadId"
+
+[gb.http-sources]
+# source const → 그 능력을 행사하는 HTTP seam 파일. 촉발 op 이 여기 실재해야 한다.
+core-api = "fe-core.yaml"
+
+[gb.internal-sources]
+# HTTP 표면이 없는 발행자 — 촉발 op 을 요구하지 않는 이유를 적는다.
+pipeline-worker = "outbox 워커 — HTTP 표면이 없는 배포 단위다 (DOMAINS §4). 촉발은 큐 소비이지 HTTP 가 아니다."

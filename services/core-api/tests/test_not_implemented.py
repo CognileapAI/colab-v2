@@ -22,6 +22,11 @@ NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
     "rejectAccessRequest", "requestVerification", "listPendingVerificationRequests",
     "downloadDataset",
+    # D2c 신설 11 (C1, 2026-08-23) — 저장처가 아직 없다 (D2c.md §5-확정)
+    "createUpload", "getUploadStatus", "listUploadLineageSuggestions",
+    "createDataset", "updateDataset", "addDatasetFile", "replaceDatasetGridFile",
+    "deleteDatasetGridFile", "linkProjectDataset", "createPreviewRender",
+    "getPreviewRender",
 }
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -37,8 +42,8 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_25_unimplemented_operations_are_exactly_these() -> None:
-    assert len(OPERATIONS) == 25
+def test_the_36_unimplemented_operations_are_exactly_these() -> None:
+    assert len(OPERATIONS) == 36
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -55,7 +60,10 @@ def test_returns_501_with_envelope(client: TestClient, op) -> None:
     url = API_PREFIX + op.path.replace("{datasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{parentDatasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{projectId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
     r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
     assert r.status_code == 501, f"{op.operation_id} 가 501 이 아니다 — 가짜 200 은 거짓말이다."
     body = r.json()
@@ -69,7 +77,10 @@ def test_requires_subject(client: TestClient, op) -> None:
     url = API_PREFIX + op.path.replace("{datasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{parentDatasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{projectId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
     r = client.request(op.method, url)
     assert r.status_code == 401, "미구현이어도 인증은 건다 — 경계 밖에 오퍼레이션 목록을 열지 않는다."
     assert r.json()["code"] == "UNAUTHORIZED"
@@ -81,6 +92,9 @@ def test_404_is_never_used_for_unimplemented(client: TestClient) -> None:
         url = API_PREFIX + op.path.replace("{datasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                                   .replace("{parentDatasetId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                                   .replace("{projectId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                                  .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                                  .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
         r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
         assert r.status_code != 404

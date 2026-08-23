@@ -1,0 +1,9 @@
+{
+  "title": "red fixture — 어느 단계도 생산하지 않은 식별자를 입력으로 요구한다 (㉡-2)",
+  "steps": [
+    { "step": "1", "name": "업로드", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["createUpload"], "inputs": [], "outputs": ["uploadId", "fileId"] },
+    { "step": "2", "name": "렌더 조회", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["getPreviewRender"], "inputs": ["renderId"], "outputs": [] }
+  ]
+}

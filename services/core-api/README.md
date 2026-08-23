@@ -33,8 +33,8 @@
 
 ## 실물 (WU-P0 산출물 #4 — `dev-package/sessions/P0-core-api.md`)
 
-계약 정본은 `contracts/seams/fe-core.yaml` 이고, 이 서비스는 그 **34 오퍼레이션 전부**를 등록한다.
-실질의 5 개만 DB 를 읽고 나머지 29 개는 501 + `ErrorEnvelope` 다 — 200 으로 가짜 값을 내리지 않는다.
+계약 정본은 `contracts/seams/fe-core.yaml` 이고, 이 서비스는 그 **45 오퍼레이션 전부**를 등록한다.
+실질의 9 개만 DB 를 읽고 나머지 36 개는 501 + `ErrorEnvelope` 다 — 200 으로 가짜 값을 내리지 않는다.
 
 ```
 src/colab_core/

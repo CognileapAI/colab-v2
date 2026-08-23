@@ -19,7 +19,7 @@
 | `D2-events.md` | async 봉투 core↔pipeline (이벤트 7종) | ✅ · 게이트 사각지대 → **D2b** |
 | `D2-gates.md` | `contract-lint` · `contract-breaking` | ✅ selftest 15 케이스 green |
 | `D2b.md` | 이벤트 계약 게이트 | ✅ 닫힘 — `event-lint`·`event-breaking`·`event-selftest` 33 케이스 |
-| `D2c.md` | 계약 개정 — `fe-core` 를 이벤트 seam 에 맞춘다 (`〈54〉`·`DR-7` 이행) | 📋 지시서 — **미착수** (선행: `DR-13` 해소) |
+| `D2c.md` (+`D2c-ted-approval.md`·`E04-step-op-map.DRAFT.md`) | 계약 개정 — `fe-core` 를 이벤트 seam 에 맞춘다 (`〈54〉`·`DR-7` 이행) | 🟧 **실행됨 C1~C3 (2026-08-23) · 동결 대기** — fe-core 34→45 op · `seam-consistency`+㉠㉡ green. 잔여: ㉢ Ted 승인(→동결) · D2c-api 501 라우트 11건 · 커밋/리뷰/staging 실측 |
 | `D3.md` (+`D3-boundary.md`·`D3-db.md`) | 경계 강제 장치 | ✅ 닫힘 — 게이트 6종 배선, 잔여 RLS 실효 증명은 D3b 로 완결 |
 | `D3b.md` | RLS 실효 증명 게이트 승격 | ✅ 닫힘 — `rls-effect`, red fixture 18/18 |
 | `I2.md` | walking skeleton staging 배포 | ✅ 닫힘 — 5개 단위 헬스 green, 무중단 롤백 증명 |

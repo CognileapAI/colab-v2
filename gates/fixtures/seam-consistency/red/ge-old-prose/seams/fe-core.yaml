@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: red fixture — DR-7 의 실물 (개정 전 fe-core.yaml:13-16 위임 산문 원문)
+  version: 0.0.1
+  description: |
+    C1 실행 기록(§7-3)이 보존한 개정 전 원문 그대로다. 이 산문이 red 를 내지 못하면
+    G-e 는 DR-7 을 다시 놓친다.
+
+    이 seam 에 **없는 것**과 그 이유 —
+    - 자연어 검색(S-06)·계보 제안: D10. `core-ai` seam 이 맡는다 (`DOMAINS §2`).
+    - 업로드·파일 파싱·프로젝트 연결 생성(E-04 가 주인): D5. 이벤트/업로드 seam.
+    - 미리보기 렌더·타일·스크린샷: D7. `core-viz` seam (`CLAUDE.md §3-4` — core 에 geo 라이브러리 금지).
+paths:
+  /ping:
+    get:
+      operationId: getPing
+      responses:
+        "200": { description: ok }

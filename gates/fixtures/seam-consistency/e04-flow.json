@@ -1,0 +1,98 @@
+{
+  "title": "E-04 업로드 → 파싱 → COG → 계보 확정 — 〈61〉-㉡ 흐름 완주 fixture",
+  "note": "사람 고정 픽스처. 원천 = dev-package/sessions/E04-step-op-map.DRAFT.md (2026-08-23) + D2c C1 개정분. 이 표가 틀리면 ㉡ 은 틀린 흐름을 완주로 판정한다 (PLAN-SoT 〈61〉 경고) — 검토 없이 고치지 않는다. Q2 판정 반영: 소속 프로젝트는 createDataset.projectIds 로 접히고 usageNote 는 등록 후 linkProjectDataset 으로 간다. ⚠ 표기 = 정본 E-04 직접 근거 없음(레포 판단 단계, E04-map Q4) — ㉠ 축과 섞지 않기 위한 구분이다.",
+  "steps": [
+    {
+      "step": "1", "name": "파일 업로드", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["createUpload"],
+      "inputs": [], "outputs": ["uploadId", "fileId"],
+      "cite": "Policy §2 규칙 맵 1행 · §7.1 · D2c §2-4"
+    },
+    {
+      "step": "2", "name": "업로드 접수", "kind": "event",
+      "ids": ["upload.accepted"], "source_const": "core-api",
+      "inputs": ["uploadId", "fileId"], "outputs": ["uploadId", "fileId"],
+      "cite": "core-pipeline.json ① · Policy §2 1행"
+    },
+    {
+      "step": "3", "name": "포맷 감지", "kind": "event",
+      "ids": ["file.format-detected"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId", "fileId"], "outputs": ["uploadId"],
+      "cite": "Policy §5 파일 행 · core-pipeline.json ②"
+    },
+    {
+      "step": "4", "name": "헤더 파싱", "kind": "event",
+      "ids": ["file.header-parsed"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "Policy §9 · §3.3 · core-pipeline.json ③"
+    },
+    {
+      "step": "5", "name": "좌표계 정규화 ⚠정본 직접 근거 없음(DOMAINS §2 D5)", "kind": "event",
+      "ids": ["file.crs-normalized"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "core-pipeline.json ④ (계약 자기 명기)"
+    },
+    {
+      "step": "6", "name": "COG 변환 ⚠정본에 COG 없음(레포 판단)", "kind": "event",
+      "ids": ["preview.cog-built"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "Policy §8 미리보기 그리기 · core-pipeline.json ⑤"
+    },
+    {
+      "step": "7", "name": "준비 완료", "kind": "event",
+      "ids": ["upload.ready"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "Policy §7.1 · §8 · core-pipeline.json ⑥"
+    },
+    {
+      "step": "7'", "name": "실패 (어느 단계에서든)", "kind": "event",
+      "ids": ["upload.failed"], "source_const": "pipeline-worker",
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "Policy §9 · envelope.json FailureReason 8값"
+    },
+    {
+      "step": "8", "name": "업로드 상태·실패 사유 조회", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["getUploadStatus"],
+      "inputs": ["uploadId"], "outputs": ["uploadId"],
+      "cite": "Policy §9 · SEAM-AUDIT I-18·C-5 · D2c §2-4"
+    },
+    {
+      "step": "9", "name": "미리보기 렌더 (중계)", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["createPreviewRender", "getPreviewRender"],
+      "inputs": ["uploadId"], "outputs": ["renderId"],
+      "cite": "Policy §2 2행 · §8 · D2c §2-9 · core-viz.yaml RenderTarget oneOf datasetId|uploadId"
+    },
+    {
+      "step": "10", "name": "AI 계보 제안 확인 (중계)", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["listUploadLineageSuggestions"],
+      "inputs": ["uploadId"], "outputs": [],
+      "cite": "Policy §2 규칙 맵 · §8 제안 카드 · D2c 추기-2 (범위 확장 1건, 사용자 승인 2026-08-23). 확정 예약은 클라이언트 상태 — 저장 없음 (Policy §7.1)"
+    },
+    {
+      "step": "11", "name": "직접 검색으로 부모 추가",
+      "deferred": "계약 부재 — 의도적 P4 이월. fe-core.yaml 위임 산문에 「P4 가 연다」 명기 (D2c §2-3 · §10-3)"
+    },
+    {
+      "step": "12", "name": "계보 확정 = 등록 전환", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["createDataset"],
+      "inputs": ["uploadId"],
+      "external_inputs": { "projectId": "소속 프로젝트 지정 — 기존 프로젝트는 E-04 흐름 밖에서 이미 존재한다 (Policy §5)" },
+      "outputs": ["datasetId"],
+      "cite": "Policy §2 마지막 행 · §7.2 · D2c §2-5. fileId 동일성(NB-A)은 [정본 무근거·사용자 승인 2026-08-23] — 계약 산문 명기"
+    },
+    {
+      "step": "13", "name": "프로젝트 연결 (usageNote)", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["linkProjectDataset"],
+      "inputs": ["datasetId", "projectId"],
+      "external_inputs": { "projectId": "기존 프로젝트 — E-04 흐름 밖에서 이미 존재한다 (Policy §5 · §12 v1.2 다중 연결)" },
+      "outputs": [],
+      "cite": "Policy §5 소속 프로젝트 · D2c §2-8 · DATAMODEL-BASELINE(연결마다 의미 문장)"
+    },
+    {
+      "step": "14", "name": "상세 이동·계보 확인", "kind": "op", "seam": "fe-core.yaml",
+      "ids": ["getDataset", "getDatasetLineage"],
+      "inputs": ["datasetId"], "outputs": [],
+      "cite": "Policy §7.2 · fe-core.yaml 기존 op"
+    }
+  ]
+}
