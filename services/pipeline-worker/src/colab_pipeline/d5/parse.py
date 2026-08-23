@@ -107,7 +107,10 @@ def _parse_binary(path: Path, meta: AutoMetadata) -> HsrResult:
     meta.variables = [f"블록{i + 1}" for i in range(r.blocks_present)]
     meta.grid = (h.ny, h.nx)
     meta.period = (h.tm.isoformat(), h.tm.isoformat())
-    meta.crs_embedded = False   # 헤더가 투영 파라미터를 주지만 위경도 배열은 기준 격자에서
+    # 헤더에 투영 파라미터가 **없다** — 36~63 B 가 실물에서 전부 0 이라 격자를 세울 수 없다.
+    # (옛 문서는 「헤더가 직접 준다」였으나 근거가 명세 PDF 였다 — DATA-REFERENCE §0 M-8 · §1.1)
+    # HSR 은 다섯 포맷 중 유일하게 기준 격자 파일이 필수인 포맷이다.
+    meta.crs_embedded = False
     if r.block_count_mismatch:
         meta.notes.append(
             f"헤더 num_data={h.num_data} 인데 실재 블록 {r.blocks_present} — 배포본 축소")

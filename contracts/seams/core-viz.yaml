@@ -297,6 +297,11 @@ components:
             기준 격자 파일(위경도 짝 파일) 없이 그려 본다. 파일 안에 위경도가 들어 있는
             경우가 있어 미리 막으면 그릴 수 있는 것까지 못 그린다
             (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
+            ⚠ 실측 — NetCDF·GeoTIFF·HDF4 는 파일 내부 정보로 격자가 계산되므로 이 옵션이
+            실제로 통한다. **Binary(HSR) 는 통하지 않는다** — 헤더의 투영 파라미터 자리가
+            전부 0 이라 재현 불가(오차 5.9 km)이고, 이 경우 **합성 격자를 만들지 않고
+            그리기를 실패로 끝낸다**(`DR-9`). `DATA-REFERENCE §1.1` ·
+            `DATA-PIPELINE-MEASUREMENT.md`.
 
     RenderStyle:
       type: object

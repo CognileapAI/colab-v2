@@ -15,9 +15,9 @@ GRIB 이 빠지고 GeoTIFF 가 들어오며, MODIS 실물은 매직바이트상 
 
 | 포맷 | 사례 | 변환 함정 |
 |---|---|---|
-| NetCDF | GK2A | LCC 투영 격자 — 위경도는 파일 내 좌표 변수 또는 기준 격자 |
-| Binary | HSR | Curvilinear → WGS84. 블록 수는 헤더 `num_data` 가 말한다 — 가정 금지 |
-| HDF4 | MODIS | Sinusoidal → WGS84. `.hdf` 를 HDF5 로 오인하지 않는다 (매직 판정) |
+| NetCDF | GK2A | LCC 투영 격자 — 위경도는 **파일 내 좌표 변수로 계산된다**(동봉 격자 대비 오차 1.3e-5°). 기준 격자는 편의 |
+| Binary | HSR | Curvilinear → WGS84. **기준 격자 파일 필수** — 헤더에 투영 파라미터가 없다(36~63 B 가 0). 블록 수는 `num_data` 를 읽되 **파일 길이와 교차검증**한다 — 원천은 3 을 선언하고 1블록만 담는다 |
+| HDF4 | MODIS | Sinusoidal → WGS84. **꼬리 `StructMetadata` 로 격자 계산 가능**(오차 7e-14°). `.hdf` 를 HDF5 로 오인하지 않는다 (매직 `0e031301`) — 폴더명 `file_format_5_HDF5` 는 오기다 |
 | GeoTIFF | HLS S30 · KWRA | **입력 tif ↔ 산출 COG 를 층에서 가른다** — 이미-COG · 타일만 · 스트립 3부류(`DATA-REFERENCE §4`) |
 
 감지는 **매직바이트**가 정본이고 확장자는 힌트다(`DR-3`). 좌표를 못 읽으면 `[미상]` + 실패 —
