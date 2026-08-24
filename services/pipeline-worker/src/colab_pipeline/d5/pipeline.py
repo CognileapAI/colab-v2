@@ -3,6 +3,9 @@
 - 좌표를 못 찾으면 crs=[미상] · status=FAILURE (DR-9). 합성 격자는 없다.
 - 사람이 올린 tif 는 (이미 COG 여도) **입력**이다 — 산출물로 기록되지 않는다 (DR-2).
 - 실패 파일은 목록으로 남는다 — 조용히 건너뛰지 않는다 (완료조건 ④).
+
+**stage2 대기.** 배포 단위·완료 정의에서 빠진다 — 파일·시험 유지(`〈71〉-㉰`).
+근거: `dev-package/sessions/S1-PLAN.md` §5.2 행 7 · `PLAN-SoT.md §9 〈74〉〈75〉`.
 """
 from __future__ import annotations
 

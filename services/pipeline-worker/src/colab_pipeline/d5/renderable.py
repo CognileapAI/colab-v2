@@ -10,6 +10,9 @@
 
 ⚠ **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — `renderable=false` 는 등록·다운로드·
 계보 확정을 막지 않는다(정본 §9 「그릴 수 없는 형식」).
+
+**stage2 대기.** `renderable` 값 자체는 완료 정의 밖이다 — 배포 단위·시험은 유지한다
+(`〈71〉-㉰`). 근거: `dev-package/sessions/S1-PLAN.md` §5.2 행 7 · `PLAN-SoT.md §9 〈74〉〈75〉`.
 """
 from __future__ import annotations
 

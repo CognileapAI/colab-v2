@@ -8,6 +8,9 @@
   dxy=500@26 · num_data@32 · data_code[16]@33 (실물 값 3 / 1,2,3).
   바이트 0~2, 17~19 는 판독 못 한 필드 — 쓰지 않는다.
   **36~63 B(투영 파라미터 자리)는 실물에서 전부 0 이다** — 헤더로 위경도를 세울 수 없다.
+
+**stage2 대기.** 배포 단위·완료 정의에서 빠진다 — 파일·시험 유지(`〈71〉-㉰`).
+근거: `dev-package/sessions/S1-PLAN.md` §5.2 행 7 · `PLAN-SoT.md §9 〈74〉〈75〉`.
   명세 기재값(Lambert·표준위도 30/60·기준 38/126)으로 재현하면 위도 0.053°(≈5.9 km)
   어긋난다 → HSR 은 기준 격자 파일(Lat_HSR.npy/Lon_HSR.npy)이 **필수**다.
   (DATA-REFERENCE §0 M-8 · §1.1 · DATA-PIPELINE-MEASUREMENT.md)

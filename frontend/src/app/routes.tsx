@@ -8,7 +8,8 @@ import { DatasetsPage } from '../routes/DatasetsPage';
 import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
-import { UnregisteredPreviewPage } from '../routes/UnregisteredPreviewPage';
+// S-08(미등록 미리보기 화면)은 stage2 대기 — 라우트만 뺀다. 파일은 유지한다
+// (`dev-package/sessions/S1-PLAN.md` §5.2, `PLAN-SoT.md §9 〈74〉〈75〉〈79〉`).
 
 export function AppRoutes() {
   return (
@@ -19,7 +20,6 @@ export function AppRoutes() {
         <Route path="/lab" element={<LabPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
-        <Route path="/datasets/preview/:uploadId" element={<UnregisteredPreviewPage />} />
         <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />

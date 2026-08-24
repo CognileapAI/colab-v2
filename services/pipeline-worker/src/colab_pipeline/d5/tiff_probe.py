@@ -6,6 +6,9 @@
   stripped   = 태그 278 (스트립)
 
 「타일링 있으면 COG」로 판정하면 16건을 우리 산출물로 오인한다.
+
+**stage2 대기.** 배포 단위·완료 정의에서 빠진다 — 파일·시험 유지(`〈71〉-㉰`).
+근거: `dev-package/sessions/S1-PLAN.md` §5.2 행 7 · `PLAN-SoT.md §9 〈74〉〈75〉`.
 """
 from __future__ import annotations
 
