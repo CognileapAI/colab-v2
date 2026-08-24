@@ -41,6 +41,31 @@ def apply_scope(session: Session, subject: Subject) -> None:
     session.execute(_SET_LOCAL, {"name": GUC_ACCOUNT, "value": str(subject.account_id)})
 
 
+# `SET TRANSACTION READ ONLY` — 검색 실행처럼 **읽기만 하는 자리**를 Postgres 가 지키게 한다.
+# 문서로 「여기서는 안 쓴다」고 적는 대신 **쓰기를 거절당하게** 만든다.
+_READ_ONLY = text("SET TRANSACTION READ ONLY")
+
+
+@contextmanager
+def read_only_scope(factory: sessionmaker[Session], subject: Subject) -> Iterator[Session]:
+    """경계를 심은 **읽기 전용** 트랜잭션. 끝나면 언제나 rollback 한다.
+
+    `scoped_session` 과 갈라 두는 이유 — 요청 트랜잭션은 쓰기를 해야 하는 자리가 있고,
+    검색 질의는 **한 줄도 쓰지 않아야 한다.** 같은 트랜잭션에 얹으면 그 성질을 증명할 방법이
+    사라진다 (`tests/test_search_execution.py::test_실행기는_읽기만_한다`).
+    `READ ONLY` 는 트랜잭션이 열린 직후에만 세울 수 있으므로 경계 주입보다 먼저 온다.
+    """
+    session = factory()
+    try:
+        session.begin()
+        session.execute(_READ_ONLY)
+        apply_scope(session, subject)
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+
+
 @contextmanager
 def scoped_session(factory: sessionmaker[Session], subject: Subject) -> Iterator[Session]:
     """요청 경계 = 트랜잭션 경계. 예외가 나면 rollback, 정상 종료면 commit."""

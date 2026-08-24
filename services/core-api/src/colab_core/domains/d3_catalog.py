@@ -181,6 +181,114 @@ def count_datasets(session: Session) -> int:
         text("SELECT count(*) FROM d3_dataset WHERE deleted_at IS NULL")).scalar_one())
 
 
+#: 후보 추출 + 관련도. 세 색인을 각각 `@@` 로 물어 GIN 을 쓰고, 순위는 **이어 붙인 벡터
+#: 하나**로 낸다 — 가중치(A=이름 · B=주제·포맷·변수·원천 · C=요약·좌표계·격자)가 그래야
+#: 한 눈금 위에 선다. 색인·가중치는 `0005_s1_search_index` 가 정했다 (`〈81〉-㉯`).
+#: **여기서 색인을 새로 만들지 않는다.** 벡터 열도, 임베딩도, 유사도도 없다 (`〈81〉`).
+#:
+#: `websearch_to_tsquery` 인 이유 — 검색어를 문자열로 이어 붙여 `to_tsquery` 에 넣으면
+#: 따옴표 하나에 구문이 깨진다. `websearch_to_tsquery` 는 **파라미터로 넘긴 사용자 문자열**을
+#: 안전하게 읽고, 큰따옴표로 묶은 여러 낱말을 구(phrase)로 다룬다 — 「낙동강 유역」처럼
+#: 공백이 든 별칭이 그대로 산다.
+#:
+#: 조건절에 연구실이 없는 것은 **RLS 가 이미 남의 연구실 행을 지운 뒤**이기 때문이다.
+#: 묘비(`deleted_at`)는 카탈로그 목록과 같은 규칙으로 뺀다 — 검색만 죽은 행을 보이면 안 된다.
+_SEARCH = text("""
+WITH q AS (
+  SELECT websearch_to_tsquery('simple', :websearch) AS tq
+)
+SELECT d.id AS dataset_id,
+       ts_rank_cd(
+         coalesce(dd.search_vector, ''::tsvector) ||
+         coalesce(am.search_vector, ''::tsvector) ||
+         coalesce(d.search_vector,  ''::tsvector), q.tq) AS rank,
+       (dd.search_vector @@ q.tq) AS hit_description,
+       (am.search_vector @@ q.tq) AS hit_autometa,
+       (d.search_vector  @@ q.tq) AS hit_source,
+       m.matched AS matched_terms,
+       count(*) OVER () AS total_count
+  FROM d3_dataset d
+  CROSS JOIN q
+  LEFT JOIN d3_dataset_description dd ON dd.dataset_id = d.id
+  LEFT JOIN d3_dataset_autometa    am ON am.dataset_id = d.id
+  LEFT JOIN LATERAL (
+    SELECT array_agg(u.t ORDER BY u.ord) AS matched
+      FROM unnest(cast(:terms AS text[])) WITH ORDINALITY AS u(t, ord)
+     WHERE (coalesce(dd.search_vector, ''::tsvector) ||
+            coalesce(am.search_vector, ''::tsvector) ||
+            coalesce(d.search_vector,  ''::tsvector))
+           @@ websearch_to_tsquery('simple', '"' || replace(u.t, '"', '') || '"')
+  ) m ON true
+ WHERE d.deleted_at IS NULL
+   AND (dd.search_vector @@ q.tq
+     OR am.search_vector @@ q.tq
+     OR d.search_vector  @@ q.tq)
+   AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text))
+ ORDER BY rank DESC, d.id ASC
+ LIMIT :limit OFFSET :offset
+""")
+
+#: 어느 색인에서 맞았는가. 근거 한 줄의 「어디에 맞았다」가 되는 말이고,
+#: 열 이름이 아니라 **사람이 화면에서 읽는 말**이다.
+_WHERE_LABELS = (("hit_description", "이름·주제·요약"),
+                 ("hit_autometa", "포맷·변수"),
+                 ("hit_source", "원천 표기"))
+
+
+@dataclasses.dataclass(frozen=True)
+class SearchMatch:
+    """검색 후보 한 건. **관련도는 DB 가 계산한 값 그대로**다.
+
+    `matched_terms` 는 **실제로 맞은 검색어**다 — 안 맞은 말을 근거에 적지 않으려고
+    행마다 따로 받는다. `where` 는 맞은 자리다.
+    """
+    dataset_id: str
+    rank: float
+    matched_terms: tuple[str, ...]
+    where: tuple[str, ...]
+
+
+def _websearch(terms: tuple[str, ...]) -> str:
+    """검색어를 **OR** 로 잇는다. 하나만 맞아도 후보다 — 좁히는 일은 순위가 한다."""
+    return " or ".join('"' + t.replace('"', " ").strip() + '"' for t in terms if t.strip())
+
+
+def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | None,
+                    limit: int, offset: int) -> tuple[list[SearchMatch], int]:
+    """`tsvector` 로 후보를 뽑고 **순위를 낸다** (`〈72〉-㉮` · `〈81〉`).
+
+    **D3 는 core-api 의 자기 도메인이다** — 이 질의는 도메인 경계를 넘지 않는다.
+    `K4-a` 는 같은 질의를 D10(ai-service)에서 던졌고 그것이 `CLAUDE.md §3-1` 위반이었다.
+    Ted 판정(2026-08-25 ㈎)이 실행을 이쪽으로 옮겼고, **LLM 은 질의 해석까지만** 한다.
+
+    접근 상태(D2)를 **여기서 보지 않는다** — 그래서 잠긴 데이터를 뺄 수 없고, 그것이
+    정본이 요구한 성질이다 (`Policy_데이터_찾기 §1.3-6` · `P-13`·`P-34`).
+    잠김 **표시**는 조립 루트가 D2 Port 로 붙인다.
+
+    **한계** (`〈81〉-㉲`) — `ts_config` 가 `'simple'` 이라 형태소를 자르지 않는다.
+    「강수량」은 한 낱말이고 「강수」로는 안 잡힌다. 접두 질의나 `pg_trgm` 은 **매칭 규칙을
+    바꾸는 일**이라 `〈72〉` 가 고정한 자리를 코드 레인이 혼자 옮기지 않는다.
+    """
+    websearch = _websearch(terms)
+    if not websearch:
+        return [], 0
+    rows = session.execute(_SEARCH, {
+        "websearch": websearch, "terms": list(terms),
+        "topic": topic, "limit": limit, "offset": offset,
+    }).mappings().all()
+    total = int(rows[0]["total_count"]) if rows else 0
+    matches = [
+        SearchMatch(
+            dataset_id=str(r["dataset_id"]),
+            rank=float(r["rank"]),
+            matched_terms=tuple(r["matched_terms"] or ()),
+            where=tuple(label for key, label in _WHERE_LABELS if r[key]),
+        )
+        for r in rows
+    ]
+    return matches, total
+
+
 def dataset_exists(session: Session, dataset_id: Ulid) -> bool:
     """경계 밖이면 RLS 가 행을 지우므로 여기서 False 가 되고, 호출자는 404 를 낸다 (P-9·P-10)."""
     return session.execute(_EXISTS, {"dataset_id": str(dataset_id)}).first() is not None
