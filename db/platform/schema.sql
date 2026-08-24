@@ -209,6 +209,14 @@ CREATE INDEX d2_verified_lab_idx ON d2_verified (lab_id);
 -- 3. D3 Catalog (정본 §4.1 §4.3)
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- 검색어 결합기 — `text[]` **전용**이다 (`0005`). 다른 타입 배열에 쓰지 않는다.
+-- 생성 열은 IMMUTABLE 식만 받는데 `array_to_string` 은 `anyarray` 라 STABLE 이다
+-- (원소 출력 함수가 GUC 를 읽을 수 있다 — `timestamptz` 는 DateStyle 을 읽는다).
+-- 원소 타입을 `text` 로 못 박으면 그 사유가 사라진다 — `textout` 은 IMMUTABLE 이다.
+CREATE FUNCTION d3_search_join(arr text[]) RETURNS text
+  LANGUAGE sql IMMUTABLE PARALLEL SAFE
+  AS $$ SELECT array_to_string(coalesce(arr, '{}'::text[]), ' ') $$;
+
 -- 데이터셋. **가공 단계 Lv 컬럼도 계보 상태 컬럼도 여기 없다** — 둘 다 파생값이다 (⑳).
 -- 다시 올리기(버전) 자리도 없다 (정본 §8).
 CREATE TABLE d3_dataset (
@@ -228,9 +236,16 @@ CREATE TABLE d3_dataset (
   -- 잠긴 데이터셋이 0 을 내고, 계약 `DatasetRow.fileCount`(required · minimum 1)를 표현할 수단이 사라진다.
   -- 드러나는 것은 **개수 하나뿐**이고 이름·종류·본체는 그대로 잠긴다. 유지는 `d3_file` 의 트리거가 한다.
   file_count             integer     NOT NULL DEFAULT 0 CHECK (file_count >= 0),
-  CHECK ((deleted_at IS NULL) = (deleted_by_account_id IS NULL))
+  CHECK ((deleted_at IS NULL) = (deleted_by_account_id IS NULL)),
+  -- 검색 색인 (`0005` · 〈72〉 — 매칭·순위는 tsvector 가 정한다).
+  -- `ts_config` 는 `'simple'` 이고 이 값은 **`[정본 무근거]`** 다 — 소문자화·구두점 분리뿐,
+  -- 한국어 형태소 분석이 없다(이미지의 `pg_ts_config` 29종에 한국어가 없다 — 실측).
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', coalesce(source_label, '')), 'B')
+  ) STORED
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
+CREATE INDEX d3_dataset_search_idx ON d3_dataset USING gin (search_vector);
 CREATE INDEX d3_dataset_owner_idx ON d3_dataset (owner_account_id);
 CREATE TRIGGER d3_dataset_uploader_immutable
   BEFORE UPDATE ON d3_dataset
@@ -247,9 +262,17 @@ CREATE TABLE d3_dataset_description (
   -- 아직 분류하지 않은 상태가 표현되어야 하고, 4값이 담지 못하는 실데이터(`D-11`·`D-12`)는 NULL 로 남는다.
   topic       text        CHECK (topic IS NULL OR topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC')),
   summary     text,
-  updated_at  timestamptz NOT NULL DEFAULT now()
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  -- 사람이 적은 말. **이름이 가장 무겁다** — 검색 순위가 여기서 갈린다 (`0005`).
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', coalesce(name, '')),    'A') ||
+    setweight(to_tsvector('simple', coalesce(topic, '')),   'B') ||
+    setweight(to_tsvector('simple', coalesce(summary, '')), 'C')
+  ) STORED
 );
 CREATE INDEX d3_dataset_description_lab_idx ON d3_dataset_description (lab_id);
+CREATE INDEX d3_dataset_description_search_idx
+  ON d3_dataset_description USING gin (search_vector);
 
 -- 자동으로 읽은 정보 (정본 §4.1). **파일에서 자동** — 사람이 타이핑하지 않는다.
 -- 본체가 여럿이면 §4.3 합치는 규칙의 **결과**를 담는다
@@ -266,9 +289,21 @@ CREATE TABLE d3_dataset_autometa (
   total_size_bytes  bigint      CHECK (total_size_bytes IS NULL OR total_size_bytes >= 0),
   bundle_file_name  text,       -- 묶음 이름(조각에서 시각 부분을 뺀 파일명). 조각 이름이 아니다 (§4.3)
   updated_at        timestamptz NOT NULL DEFAULT now(),
-  CHECK (period_start IS NULL OR period_end IS NULL OR period_start <= period_end)
+  CHECK (period_start IS NULL OR period_end IS NULL OR period_start <= period_end),
+  -- 파일에서 자동으로 읽은 말 (`0005`). 변수명·포맷이 좌표계·격자·묶음 이름보다 앞선다.
+  -- 배열은 `d3_search_join` 을 지난다 — `array_to_tsvector` 는 대소문자를 그대로 둬서
+  -- `to_tsquery` 와 영영 안 만난다(실측). 있는데 절대 안 맞는 색인이 될 뻔했다.
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple',
+      coalesce(format, '') || ' ' || d3_search_join(variables)), 'B') ||
+    setweight(to_tsvector('simple',
+      coalesce(crs, '') || ' ' || coalesce(grid, '') || ' ' ||
+      coalesce(bundle_file_name, '')), 'C')
+  ) STORED
 );
 CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
+CREATE INDEX d3_dataset_autometa_search_idx
+  ON d3_dataset_autometa USING gin (search_vector);
 
 -- 파일 — 데이터셋 1:N. 종류는 둘뿐이고 기준 격자 파일은 데이터셋당 **0~2건**
 -- (위도·경도 한 쌍이 실물이다 — `〈58〉`. 결합축 파일이면 1건으로 둘 다 선다 — `〈66〉`).
