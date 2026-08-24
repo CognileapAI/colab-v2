@@ -76,6 +76,8 @@ class RenderJob:
     artifacts: "PreviewArtifacts | None" = None
     color_range: scale.ColorRange | None = None
     badge: str = preview.BADGE_NO_GRID
+    value_variable: str = ""
+    value_unit: str | None = None
 
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
@@ -84,29 +86,53 @@ class RenderJob:
             body["stage"] = self.stage
         if self.expires_at is not None:
             body["expiresAt"] = self.expires_at.isoformat().replace("+00:00", "Z")
-        if self.status == STATUS_DONE and self.rendered is not None \
-                and self.artifacts is not None and self.artifacts.map_image is not None:
+        if self.status == STATUS_DONE and self.artifacts is not None:
             # **`oneOf` 다** — stage 1 은 이미지 갈래만 낸다. `tileUrlTemplate` 은 계약에
             # 살아 있고(stage 2 확대 뷰) 서명도 그대로 발급되지만, **결과에 함께 싣지
             # 않는다.** 둘을 함께 실으면 「무엇을 그릴지 두 번 적힌 완료」다.
+            #
+            # ⚠ **좌표가 있느냐로 갈린다** (`〈85〉` · 동결 2회 해제).
+            #   ③이 있으면 지도형 — `bounds`·사이드카·월드파일이 함께 간다.
+            #   ③이 없으면 ②비지도형 — `imageUrl` 하나다. **경계를 지어내지 않는다**
+            #   (`DR-9`). 옛 코드는 이 자리를 `실패(REFERENCE_GRID_MISSING)` 로 두고
+            #   산출물 URL 을 `failure.details` 로 밀어 넣었다 — 계약이 ②를 낼 자리를
+            #   주지 않아서였고, 그 구멍이 닫혔다.
             a = self.artifacts
-            body["result"] = {
-                "imageUrl": a.map_image.url,
-                "sidecarUrl": a.sidecar.url,
-                "worldFileUrl": a.world_file.url,
-                "bounds": a.geometry.bounds_dict(),
-                "legend": self.rendered.legend(),
-                "precisionBadge": self.badge,
-                "colorRangeStage": self.color_range.stage if self.color_range else None,
-            }
-            if body["result"]["colorRangeStage"] is None:
+            result: dict = {"legend": self.legend_body(), "precisionBadge": self.badge,
+                            "colorRangeStage": self.color_range.stage
+                            if self.color_range else None}
+            if a.map_image is not None and a.geometry is not None:
+                result["imageUrl"] = a.map_image.url
+                result["sidecarUrl"] = a.sidecar.url
+                result["worldFileUrl"] = a.world_file.url
+                result["bounds"] = a.geometry.bounds_dict()
+            else:
+                result["imageUrl"] = a.detail.url
+            if result["colorRangeStage"] is None:
                 # 라벨 없는 산출물은 **범위 밖이다**(`§C.2 Q4`) — 키를 지우지 않고 실패로 둔다.
                 raise RuntimeError("색 범위 단계 라벨 없이 결과를 낼 수 없다")
+            body["result"] = result
         if self.status == STATUS_FAILED and self.failure is not None:
             body["failure"] = self.failure
         if self.partial is not None:
             body["partialFailure"] = self.partial
         return body
+
+    def legend_body(self) -> dict:
+        """범례. **③이 없어도 범례는 있다** — ②도 같은 색 사다리로 칠해진 그림이다.
+
+        지도형이 없을 때는 `Rendered` 가 없으므로(경계를 요구하는 자료형이다) 공통
+        색 범위와 팔레트에서 곧바로 세운다. **구간을 프레임에서 다시 잡지 않는다**(`V-2`) —
+        `raster.legend_from_range` 가 쓰는 범위는 `_color_range` 가 잡은 그 범위다.
+        """
+        if self.rendered is not None:
+            return self.rendered.legend()
+        if self.color_range is None:
+            raise RuntimeError("색 범위 없이 범례를 세울 수 없다")
+        return raster.legend_from_range(
+            palette_key=self.spec.palette, class_count=self.spec.class_count,
+            value_range=(self.color_range.vmin, self.color_range.vmax),
+            variable=self.value_variable, unit=self.value_unit)
 
     @property
     def expired(self) -> bool:
@@ -305,10 +331,11 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
 def _failure(code: str, detail: str, job: RenderJob, message: str | None = None) -> dict:
     """실패 봉투. **값 미리보기가 이미 있으면 그 자리를 함께 말한다.**
 
-    ⚠ 「격자 없음」은 `§5.5` 가 **보류**라 부른 상태다. 그런데 계약 `RenderResult` 는
-    `bounds` 를 **필수**로 요구하고 ②비지도형에는 좌표가 없다 — 그래서 이 상태를
-    「완료 + 결과」로 낼 자리가 계약에 없다. 지어낸 경계로 채우지 않고(`DR-9`),
-    산출물이 실제로 있다는 사실을 `details` 로 말한다. **계약 개정 사안으로 상신한다.**
+    ⚠ **좌표 없는 렌더는 더 이상 여기 오지 않는다** — `〈85〉` 로 계약이 ②비지도형을
+    「완료」로 받게 됐고, `failure.details` 로 산출물 URL 을 밀어 넣던 우회가 사라졌다.
+    지금 이 자리에 남은 것은 **진짜 실패**뿐이다 — 붙인 격자를 못 쓰는 경우, HSR 에
+    `withoutReferenceGrid` 를 건 경우(`DR-9`), 경계가 상식 밖인 경우, 시간 초과.
+    그중에도 ①②가 이미 구워졌으면 그 자리를 함께 말한다 — 있는 것을 감추지 않는다.
     """
     details: dict = {}
     if detail:
@@ -367,18 +394,23 @@ def _run(job: RenderJob) -> None:
         merged = raster.merge(drawn, vr) if drawn else None
 
         _stage(STAGE_LEGEND)
+        job.value_variable = reads[0].field.variable
+        job.value_unit = reads[0].field.unit
         if merged is None:
             # 좌표가 하나도 없다 — ①②만 굽고 **지도형은 보류**다. `Rendered` 는 경계를
             # 요구하므로 만들지 않는다. **경계를 지어내지 않는다**(`DR-9`).
+            #
+            # ⚠ **여기서 실패시키지 않는다**(`〈85〉` · Ted 2026-08-24 판정 ㈎).
+            # 이것은 ②비지도형이고 계약이 이제 그 형태를 「완료」로 받는다 —
+            # `bounds` 는 지도형 갈래에만 필수다. 격자를 붙였는데 못 쓰는 경우는
+            # 이 자리에 오지 않는다: `_read_part` 가 이미 실패로 끊는다.
             job.artifacts = _build_artifacts(job, reads, _ValuesOnly(reads[0].field),
                                              color_range)
             job.badge = preview.BADGE_NO_GRID
-            raise RenderError(RenderFailure.NO_REFERENCE_GRID,
-                              "지도형은 보류다 — 값 미리보기(①②)는 만들었다")
-
-        job.rendered = merged
-        job.artifacts = _build_artifacts(job, reads, merged, color_range)
-        job.badge = _badge_for(reads, job.artifacts.map_image is not None)
+        else:
+            job.rendered = merged
+            job.artifacts = _build_artifacts(job, reads, merged, color_range)
+            job.badge = _badge_for(reads, job.artifacts.map_image is not None)
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),

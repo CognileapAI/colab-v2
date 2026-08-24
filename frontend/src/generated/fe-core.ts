@@ -1983,6 +1983,19 @@ export interface components {
          *
          *     **래스터 배열은 여전히 core 를 통과하지 않는다** — 오가는 것은 URL 과 경계뿐이다
          *     (파일 상단 주석 · `PREVIEW-IMPLEMENTATION §10-14` — FE 에는 bbox 네 숫자와 이미지 크기만).
+         *
+         *     **⟨동결 2회 해제 · `PLAN-SoT §9-〈85〉` · Ted 2026-08-24 판정 ㈎⟩ `bounds` 는
+         *     지도형에만 필수다.** 개정 전에는 `required: [bounds, …]` 라 **②비지도형을
+         *     「완료」로 낼 자리가 없었다** — `〈74〉-㉮` 가 「①②는 좌표계도 격자도 요구하지
+         *     않는다」로 stage 1 에 넣은 층인데, 결과 스키마가 두 갈래 **모두**에 WGS84 경계를
+         *     요구했다. 그 사이를 집행은 `실패(REFERENCE_GRID_MISSING)` ＋ `failure.details` 로
+         *     메웠고, 그것은 **화면에 「실패」라고 말하면서 그림을 주는 상태**였다(`〈83〉-㉮`).
+         *     `〈80〉` 묶음이 ②의 존재를 세지 못해 이 항을 놓쳤다.
+         *
+         *     **지금의 형태** — `legend` 만 무조건 필수다. `bounds` 는 **좌표를 쓰는 산출물이
+         *     실제로 있을 때** 따라 붙는다(`dependentRequired`): 사이드카·월드파일(③지도형)
+         *     또는 타일 갈래가 있으면 경계가 있어야 한다. **`imageUrl` 만 있는 결과 = ②비지도형**
+         *     이고 경계가 없는 것이 정상이다 — 없는 좌표를 지어내지 않는다(`DR-9`).
          */
         RenderResult: {
             /**
@@ -2010,13 +2023,15 @@ export interface components {
              *     **stage 1 은 이 형태를 내지 않는다** — 타일 서빙은 stage 1 밖이다(`〈74〉-㉳`).
              */
             tileUrlTemplate?: string;
-            bounds: components["schemas"]["Bounds"];
+            bounds?: components["schemas"]["Bounds"];
             legend: components["schemas"]["Legend"];
             /**
              * @description **`K-4` 정밀도 배지** — 이 그림의 좌표가 어디서 왔는가를 화면이 **말하게** 한다
-             *     (`〈80〉-㉯ 4`). 지도형(③)을 낸 결과에는 있어야 하고, 좌표를 쓰지 않는
-             *     ①②에는 생략한다. **`격자 없음 — 지도형 보류` 는 실패가 아니라 상태다**
-             *     (`PREVIEW-IMPLEMENTATION §5.5` — 「실패가 아니라 보류」).
+             *     (`〈80〉-㉯ 4`). 지도형(③)을 낸 결과에는 있어야 하고, ②비지도형에는
+             *     **`격자 없음 — 지도형 보류` 를 싣는다** — 좌표를 쓰지 않았다는 사실 자체를
+             *     화면이 말해야 격자를 올리면 켜진다는 것이 전해진다.
+             *     **그 값은 실패가 아니라 상태다**
+             *     (`PREVIEW-IMPLEMENTATION §5.5` — 「실패가 아니라 보류」 · `〈85〉`).
              */
             precisionBadge?: components["schemas"]["GridPrecisionBadge"];
             /**

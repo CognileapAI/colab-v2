@@ -48,26 +48,59 @@ def test_좌표를_못_구하면_경성_실패다_근사_격자를_만들지_않
         find_reference_grid(None, expect_shape=(10, 10))
 
 
-def test_격자_없는_HSR_은_완료가_아니라_실패다(client, put_target, tmp_path):
-    """같은 파일이라도 격자를 못 주면 성공이 아니다 — 실패에 `기준 격자 없음`이 담긴다."""
-    from colab_viz.domains.d7_visualization.failures import RenderFailure
-
+def _hsr_blob(nx: int = 4, ny: int = 3) -> bytes:
     raw = bytearray(1024)
     raw[3:5] = (2025).to_bytes(2, "little", signed=True)
     raw[5], raw[6], raw[7] = 8, 13, 10
-    nx, ny = 4, 3
     raw[20:22] = nx.to_bytes(2, "little")
     raw[22:24] = ny.to_bytes(2, "little")
     raw[24:26] = (1).to_bytes(2, "little")
     raw[26:28] = (500).to_bytes(2, "little")
     raw[32] = 1
     raw[33] = 1
-    blob = bytes(raw) + np.arange(nx * ny, dtype="<i2").tobytes()
+    return bytes(raw) + np.arange(nx * ny, dtype="<i2").tobytes()
 
-    tid = put_target(files={"RDR_CMP_HSR_TEST.bin": blob})
+
+def test_좌표_없는_HSR_은_보류가_아니라_완료다_지도형만_빠진다(client, put_target):
+    """**두 번째 동결 해제**(`PLAN-SoT §9-〈85〉` · Ted 2026-08-24 판정 ㈎).
+
+    좌표가 하나도 없는 ②비지도형은 **완료**로 나간다 — `bounds` 는 지도형 갈래에만
+    필수다. 경계를 지어내지 않으므로(`DR-9`) 결과에 `bounds`·사이드카가 **없다**.
+    옛 코드는 이 상태를 `실패(REFERENCE_GRID_MISSING)` 로 두고 진짜 산출물 URL 을
+    `failure.details` 로 밀어 넣었다 — 그 우회가 사라졌다.
+    """
+    tid = put_target(files={"RDR_CMP_HSR_TEST.bin": _hsr_blob()})
     rid = client.post("/viz/v1/renders", headers=AUTH, json={
         "target": {"datasetId": tid}, "style": {"palette": "단색-파랑"}}).json()["renderId"]
     job = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
+
+    assert job["status"] == "완료", job.get("failure")
+    assert "failure" not in job
+    result = job["result"]
+    assert result["imageUrl"]                       # ②비지도형 1024 px PNG 가 결과다
+    assert "bounds" not in result                   # 좌표가 없으니 경계도 없다
+    assert "sidecarUrl" not in result and "worldFileUrl" not in result
+    assert result["precisionBadge"] == "격자 없음 — 지도형 보류"
+    assert result["colorRangeStage"] in ("잠정", "확정")
+    assert 3 <= len(result["legend"]["classes"]) <= 9
+
+
+def test_격자를_붙였는데_못_쓰면_그대로_실패다(client, put_target):
+    """음성 — **보류와 실패를 한 덩어리로 접지 않는다.**
+
+    격자 파일을 붙였다는 것은 지도형을 요구한 것이다. 그 격자가 값과 형상이 달라
+    좌표를 세울 수 없으면 이것은 「좌표가 없는 상태」가 아니라 **실패**다.
+    """
+    from colab_viz.domains.d7_visualization.failures import RenderFailure
+
+    bad_lat = np.zeros((7, 9), dtype="f4")          # 값은 (3, 4) 다 — 형상이 다르다
+    bad_lon = np.zeros((7, 9), dtype="f4")
+    tid = put_target(files={"RDR_CMP_HSR_TEST.bin": _hsr_blob()},
+                     grid={"Lat_HSR.npy": bad_lat, "Lon_HSR.npy": bad_lon})
+    rid = client.post("/viz/v1/renders", headers=AUTH, json={
+        "target": {"datasetId": tid}, "style": {"palette": "단색-파랑"}}).json()["renderId"]
+    job = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
+
     assert job["status"] == "실패"
     assert job["failure"]["code"] == RenderFailure.NO_REFERENCE_GRID
     assert "result" not in job

@@ -171,16 +171,28 @@ def test_e2e_4_hdf4(client, put_target, source_root):
     assert 0 <= lo <= hi <= 1, ("Fpar 가 0~1 밖이다 — 스케일 인자를 놓쳤을 수 있다", lo, hi)
 
 
-def test_e2e_5_HSR_격자_없으면_실패다(client, put_target):
-    """음성 — 같은 실파일에서 격자만 빼면 「완료」가 아니라 실패다 (`DR-9`)."""
+def test_e2e_5_HSR_격자_없으면_지도형만_빠지고_값은_완료다(client, put_target):
+    """같은 실파일에서 격자만 빼면 **②비지도형으로 완료**다 (`〈85〉` · 동결 2회 해제).
+
+    **경계는 여전히 지어내지 않는다**(`DR-9`) — 완료지만 `bounds` 가 없다.
+    ⚠ 「격자 없이 그려 보기」(`withoutReferenceGrid`)를 건 HSR 은 **그대로 실패**다.
+    보류와 실패를 한 덩어리로 접지 않는다.
+    """
     from colab_viz.domains.d7_visualization.failures import RenderFailure
 
     d = _fmtdir("file_format_3_bin")
     src = _first("RDR_CMP_HSR_*.bin.gz", d / "00.Data")
     tid = put_target(copy_from=[src])
     job = _render(client, tid)
-    assert job["status"] == "실패"
-    assert job["failure"]["code"] == RenderFailure.NO_REFERENCE_GRID
+    assert job["status"] == "완료", job.get("failure")
+    assert job["result"]["imageUrl"]
+    assert "bounds" not in job["result"]
+    assert job["result"]["precisionBadge"] == "격자 없음 — 지도형 보류"
+
+    tid2 = put_target(copy_from=[src])
+    forced = _render(client, tid2, withoutReferenceGrid=True)
+    assert forced["status"] == "실패"
+    assert forced["failure"]["code"] == RenderFailure.NO_REFERENCE_GRID
 
 
 def test_e2e_6_변수를_생략하면_viz_render_가_고른다(client, put_target, source_root):
@@ -248,8 +260,8 @@ def test_e2e_8_격자가_없어도_값_미리보기_두_장은_실제로_나온�
     tid = put_target(copy_from=[src])
     job = _render(client, tid)
 
-    details = job["failure"]["details"]
-    assert details["precisionBadge"] == "격자 없음 — 지도형 보류"
+    assert job["status"] == "완료", job.get("failure")
+    assert job["result"]["precisionBadge"] == "격자 없음 — 지도형 보류"
     store = client.app.state.jobs.get(job["_renderId"]).artifacts
     assert store.map_image is None and store.sidecar is None
     assert store.thumbnail.path.read_bytes()[:4] == b"RIFF"

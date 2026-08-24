@@ -100,6 +100,30 @@ def _classify(values: np.ndarray, count: int,
     return [(edges[i], edges[i + 1]) for i in range(count)]
 
 
+def legend_from_range(*, palette_key: str, class_count: int,
+                      value_range: tuple[float, float],
+                      variable: str, unit: str | None) -> dict:
+    """**좌표 없이 세우는 범례** — ②비지도형(`〈85〉`)이 쓰는 자리다.
+
+    `Rendered` 는 경계를 요구하는 자료형이라 좌표가 없으면 만들 수 없다. 그런데 ②도
+    같은 공통 색 범위로 칠해진 그림이므로 **범례는 있다.** 구간은 여기서 새로 잡지
+    않고 넘겨받은 범위를 그대로 나눈다 — 프레임에서 다시 잡으면 `§10-7` 이 금지한
+    그것이 된다(`_classify` 와 같은 계산이다).
+    """
+    palette = palettes.get(palette_key)
+    breaks = _classify(np.empty(0, dtype="f4"), class_count, value_range)
+    legend: dict = {
+        "palette": palette.key,
+        "classes": [{"color": c, "min": lo, "max": hi}
+                    for c, (lo, hi) in zip(palettes.ramp(palette, class_count), breaks)],
+    }
+    if variable:
+        legend["variable"] = variable
+    if unit:
+        legend["unit"] = unit
+    return legend
+
+
 def build(field: Field, *, palette_key: str, class_count: int,
           reference: tuple[np.ndarray, np.ndarray] | None,
           value_range: tuple[float, float] | None = None) -> Rendered:
