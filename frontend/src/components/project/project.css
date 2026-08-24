@@ -1,0 +1,251 @@
+/* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
+   이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
+
+.project-page .page-head,
+.project-detail .pd-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.project-page .page-head .desc {
+  flex-basis: 100%;
+  color: var(--fg-muted, #667);
+  font-size: 13px;
+}
+
+.pj-new {
+  margin-left: auto;
+}
+
+/* ── 툴바 — 조건은 목록 위 한 줄에 모인다 (§8) ─────────────────────────────── */
+.pj-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.pj-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.pj-views button {
+  padding: 4px 10px;
+  border: 1px solid var(--line, #e3e6ea);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pj-views button.on {
+  background: var(--surface-2, #eceef2);
+  font-weight: 600;
+}
+
+.pj-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+}
+
+/* ── 카드 — 모든 카드가 같은 높이다 (§5 카드 높이) ─────────────────────────── */
+.pj-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.pcard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 닫힘은 배경을 한 단계 낮춘다. **투명도로 흐리게 만들지 않는다** —
+   저시력·고대비 환경에서 안 읽히고 비활성인지 로딩인지도 구분되지 않는다 (§5) */
+.pcard[data-closed='true'] {
+  background: var(--surface-2, #f4f5f7);
+}
+
+.pc-body {
+  flex: 1;
+  padding: 14px;
+}
+
+.pc-t {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+
+.pc-m {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+  margin-bottom: 8px;
+}
+
+.pc-d {
+  font-size: 13px;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pc-d.is-empty {
+  color: var(--fg-muted, #99a);
+  border: 1px dashed var(--line, #d6dae0);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+/* 지표 타일 — 1px 간격이 헤어라인 구분선이 된다 */
+.pc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line, #e3e6ea);
+}
+
+.pc-s {
+  background: var(--surface-2, #eceef2);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.pc-s .n {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pc-s .k {
+  display: block;
+  font-size: 11px;
+  color: var(--fg-muted, #667);
+}
+
+.pc-s[data-zero='true'] .n {
+  color: var(--fg-muted, #aab);
+}
+
+.pc-s[data-warn='true'] .n {
+  color: var(--warn, #b45309);
+}
+
+/* 이동 안내 — 면을 따로 칠하지 않아 카드 배경을 그대로 물려받는다 (§5) */
+.pc-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 12px;
+  border-top: 1px solid var(--line, #e3e6ea);
+}
+
+/* ── 표 ────────────────────────────────────────────────────────────────────── */
+.pj-table,
+.pj-ds {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pj-table th,
+.pj-table td,
+.pj-ds th,
+.pj-ds td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line, #eef0f3);
+}
+
+.pj-table tbody tr,
+.pj-ds tbody tr {
+  cursor: pointer;
+}
+
+.pj-table td[data-warn='true'] {
+  color: var(--warn, #b45309);
+  font-weight: 600;
+}
+
+.pj-ds .right {
+  text-align: right;
+}
+
+.pj-ds .lin-none {
+  color: var(--warn, #b45309);
+}
+
+/* ── 상세 ──────────────────────────────────────────────────────────────────── */
+.project-detail .card {
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.pd-sect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pd-sect h2 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.pd-sect .quiet {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+}
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  font-size: 13px;
+  margin: 10px 0 0;
+}
+
+.pd-desc.is-empty {
+  color: var(--fg-muted, #99a);
+}
+
+.pd-linkurl {
+  word-break: break-all;
+  font-size: 13px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #e3e6ea);
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.pc-m .chip,
+.pd-m .chip {
+  margin-left: 0;
+}

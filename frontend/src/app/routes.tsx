@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../shell/AppLayout';
 import { LabPage } from '../routes/LabPage';
 import { ProjectsPage } from '../routes/ProjectsPage';
+import { ProjectDetailPage } from '../routes/ProjectDetailPage';
 import { DatasetsPage } from '../routes/DatasetsPage';
 import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
@@ -19,6 +20,8 @@ export function AppRoutes() {
         <Route path="/" element={<Navigate to="/lab" replace />} />
         <Route path="/lab" element={<LabPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
+        {/* S-02b — 고르는 자리(목록)와 무엇이 담겼는지 보는 자리(상세)를 가른다 (`Policy_프로젝트 §8`) */}
+        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
         <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
