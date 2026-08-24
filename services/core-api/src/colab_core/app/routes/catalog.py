@@ -173,7 +173,7 @@ MAX_SEARCH_LIMIT = 100
 DEFAULT_SEARCH_LIMIT = 20
 
 
-@router.post("/searches", name="searchDatasets")
+@router.post("/dataset-searches", name="searchDatasets")
 def search_datasets(request: Request, body: dict | None = Body(default=None),
                     subject: Subject = Depends(current_subject),
                     db: Session = Depends(scoped_db)) -> dict:

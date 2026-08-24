@@ -21,7 +21,7 @@ from conftest import DS_A1, DS_A2, TOKEN_RES, auth
 
 from colab_core.app.main import API_PREFIX
 
-SEARCH = f"{API_PREFIX}/searches"
+SEARCH = f"{API_PREFIX}/dataset-searches"
 
 
 @pytest.fixture()

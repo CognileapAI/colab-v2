@@ -239,7 +239,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/searches": {
+    "/dataset-searches": {
         parameters: {
             query?: never;
             header?: never;
@@ -254,6 +254,12 @@ export interface paths {
          *     이 파일 상단이 「검색 진입점 op 은 아직 없다 — P4 가 연다」로 비워 둔 자리다.
          *     `core-ai` 는 내부 표면이라 FE 가 직접 도달할 수 없고, **이 중계로만 도달한다**
          *     (`listUploadLineageSuggestions` 와 같은 모양 · `SEAM-AUDIT I-08`).
+         *
+         *     ⚠ **경로가 `core-ai.yaml` 의 `POST /searches` 와 일부러 다르다.** 두 seam 이 같은
+         *     경로를 쓰면 `contract-breaking` 게이트(oasdiff `-c` 합성 비교)가 **같은 엔드포인트로
+         *     합쳐 버려** 비교 자체를 못 한다 — 실제로 red 를 보고 고쳤다. 두 표면은 소비자도
+         *     모양도 다르므로(이쪽은 카탈로그 값이 붙은 카드, 저쪽은 식별자·관련도·근거) 경로가
+         *     갈리는 것이 사실에 더 맞다.
          *
          *     **역할 분담이 `core-ai.yaml` 의 것 그대로다** — AI 는 **식별자 · 관련도 · 근거 한 줄**만
          *     돌려주고, 카드에 실리는 나머지(이름·Lv·주제·업로더·Verified·잠김)는 **core-api 가
