@@ -1,0 +1,102 @@
+# db/ai/seed/k2b-graph-standard.tsv — K2b(그래프 시드) 완료 오라클의 정본 (SoT)
+#
+# 내용 정본 = dev-package/sessions/K1b-ONTOLOGY-CONTENT.md §A(노드)·§B(엣지)·§E-4(검사 항목)
+# 판정 정본 = Ted 판정 2026-08-25 (PLAN-SoT §9 — F-4d ❌ · F-7 ❌ · F-10 ㈏ · F-12 ㈎ · 나머지 ✅)
+#
+# 이 파일은 **기준**이고 db/ai/seed/k2b_concept_graph_seed.sql 은 **적재물**이다.
+# 둘을 일부러 갈라 두었다 — 기준을 적재물에서 생성하면 체크가 영원히 green 인 자동통과가 된다
+# (k2-coverage-standard.tsv 와 같은 이유).
+#
+# 형식
+#   node<TAB>concept_id<TAB>kind<TAB>label<TAB>source_grade<TAB>expandable<TAB>근거
+#   edge<TAB>src<TAB>relation<TAB>dst<TAB>source_grade<TAB>근거
+#
+# 판정은 **집합 완전일치**다. 기준에 없는 행이 DB 에 있어도 red, 기준에 있는 행이 DB 에 없어도 red.
+# 특히 source_grade=6 행은 Ted 승인 목록(§F)과 따로 한 번 더 대조된다 (k2b_graph_check.py APPROVED_G6).
+
+# ── 노드: 방법 25 + 영문 표기 2 = 27 ───────────────────────────────────────────
+# expandable=f 인 셋(전처리·품질검사·유역 집계)이 §D-6 경계 4 「부모 금지 목록」의 실물이다.
+node	m-grid-interp	방법	격자 보간	1	t	d9_method_term 적재 · 목업 E-04 「Lv1 (격자 보간·품질검사)」
+node	m-qc	방법	품질검사	1	f	d9_method_term 적재 · 부모 금지 목록 (§D-6 경계 4)
+node	m-basin-clip	방법	유역 클리핑	1	t	d9_method_term 적재 · 목업 제품 「✦ 유역 클리핑·평균」
+node	m-basin-mean	방법	유역 평균	1	t	d9_method_term 적재
+node	m-basin-agg	방법	유역 집계	1	f	d9_method_term 적재 · 부모 금지 목록 (F-7 ❌ 로 유지 — Ted 2026-08-25)
+node	m-daily-mean	방법	일 단위 평균	1	t	d9_method_term 적재 · DM §4.2
+node	m-basin-cut	방법	유역 경계로 잘라냄	1	t	d9_method_term 적재 · DM §4.2
+node	m-thresh-days	방법	임계값 초과일 집계	1	t	d9_method_term 적재
+node	m-regrid	방법	재격자화	1	t	d9_method_term 적재 · 목업 E-04 입력 도움말
+node	m-bias-corr	방법	편의 보정	1	t	d9_method_term 적재
+node	m-downscale	방법	다운스케일	1	t	d9_method_term 적재 · 목업 E-04 「0.25°→0.05° 다운스케일」
+node	m-preproc	방법	전처리	1	f	d9_method_term 적재 · 부모 금지 목록 (§D-6 경계 4)
+node	m-interp-mode	방법	보간 방식(선형/최근접)	1	t	d9_method_term 적재 · 목업 E-04 AI 근거
+node	m-nearest	방법	최근린보간	2	t	SEED-DATA §5.1 「최근린보간 (Nearest)」 · 데이터셋 D-03 이름
+node	m-nearest-en	방법	Nearest	2	t	SEED-DATA §5.1 같은 칸의 영문 표기 · 데이터셋 D-03 이름 (E1-1 의 끝점)
+node	m-bilinear	방법	이중선형보간	2	t	SEED-DATA §5.1 「이중선형보간 (Bilinear)」 · 데이터셋 D-04 이름
+node	m-bilinear-en	방법	Bilinear	2	t	SEED-DATA §5.1 같은 칸의 영문 표기 · 데이터셋 D-04 이름 (E1-2 의 끝점)
+node	m-idw	방법	IDW	2	t	SEED-DATA §5.1 · 데이터셋 D-05 이름
+node	m-cokriging	방법	Co-Kriging	2	t	SEED-DATA §5.1·§4.1 · 데이터셋 D-06 이름
+node	m-regkriging	방법	Regression Kriging	2	t	SEED-DATA §5.1 「Regression Kriging / Co-Kriging」
+node	m-reproject	방법	LCC→WGS84 재투영	2	t	SEED-DATA §5.1 · §4.2 「WGS84 변환」
+node	m-savgol	방법	Savitzky-Golay 필터	2	t	SEED-DATA §5.1 (d=2, 23일창)
+node	m-thinning	방법	source thinning	2	t	SEED-DATA §5.1 KWRA README §8
+node	m-unet	방법	U-Net 공간상세화	2	t	SEED-DATA §4.2 — 엣지는 걸지 않는다 (§A.5)
+node	m-dqf	방법	DQF 마스킹	2	t	SEED-DATA §5.1 식생 처리 문서
+node	m-roi-crop	방법	ROI 크롭	2	t	SEED-DATA §5.1 — ⚠ 유역이 아니라 사각 영역. 유역 클리핑과 엣지를 걸지 않는다
+node	m-monthly-mean	방법	월평균	2	t	SEED-DATA §5.1 식생 처리 문서
+
+# ── 노드: 주제 4 (엣지 0행 — d9_topic_synonym 이 이미 하는 일을 두 곳에 두지 않는다) ─────
+node	t-precip	주제	강우·강수	1	t	d9_topic_synonym CHECK 4값 · P04 §5 고정 목록
+node	t-veg	주제	식생·NDVI	1	t	상동
+node	t-dem	주제	지형·DEM	1	t	상동
+node	t-lulc	주제	토지피복·LULC	1	t	상동
+
+# ── 노드: 지명 8 ──────────────────────────────────────────────────────────────
+node	p-nakdong	지명	낙동강 유역	1	t	d9_place_alias 적재 · 목업 E-02
+node	p-han-upper	지명	한강 상류	1	t	d9_place_alias 적재 · 목업 제품
+node	p-geum-estuary	지명	금강 하굿둑	1	t	d9_place_alias 적재
+node	p-han	지명	한강 유역	1	t	d9_place_alias 적재 · 목업 제품
+node	p-chungcheong	지명	충청권	2	t	SEED-DATA §5.3 KWRA README · 126.70~127.96°E, 36.08~37.36°N
+node	p-chungcheong-en	지명	southern Gyeonggi and Chungcheong regions	2	t	SEED-DATA §5.3 KWRA docx(영문)
+node	p-korea-peninsula	지명	한반도	2	t	SEED-DATA §5.3 「한반도 전역 — 852×1200 격자」 · 데이터셋 D-01 이름
+node	p-korea-en	지명	Korea	2	t	SEED-DATA §5.3 폴더명
+
+# ── 노드: 원천표기 10 (엔티티가 아니라 **표기 문자열**이다 — ㊸ 를 되살리지 않는다) ────────
+node	s-gk2a-hyphen	원천표기	GK-2A	2	t	SEED-DATA §5.4 「GK-2A(천리안위성2A호)」
+node	s-gk2a	원천표기	GK2A	5	t	DM §4.1 원천 표기 예시 「GK2A · 국가기상위성센터」
+node	s-gk2a-ko	원천표기	천리안위성2A호	2	t	SEED-DATA §5.4
+node	s-nmsc	원천표기	NMSC	2	t	SEED-DATA §5.4 「NMSC(국가기상위성센터)」
+node	s-nmsc-ko	원천표기	국가기상위성센터	5	t	DM §4.1 · 목업 E-03 계보 원천
+node	s-kma-hub	원천표기	기상청 API허브	2	t	SEED-DATA §5.4
+node	s-modis	원천표기	MODIS MOD15A2H	2	t	SEED-DATA §5.4·§0-F-2
+node	s-hls	원천표기	HLS S30	2	t	SEED-DATA §5.4·§0-F-3
+node	s-kwra	원천표기	KWRA	2	t	SEED-DATA §5.4 「한국수자원학회(KWRA)」
+node	s-kwra-ko	원천표기	한국수자원학회	2	t	상동
+
+# ── 엣지: E1 「같은 말이다」 11 (대칭 — 한 방향 한 행, src < dst 정규화) ──────────────
+edge	m-nearest	같은 말이다	m-nearest-en	2	SEED-DATA §5.1 이 한 칸에 「최근린보간 (Nearest)」로 적었다 [E1-1]
+edge	m-bilinear	같은 말이다	m-bilinear-en	2	SEED-DATA §5.1 「이중선형보간 (Bilinear)」 [E1-2]
+edge	m-cokriging	같은 말이다	m-regkriging	6	Ted ✅ F-1 (2026-08-25). SEED-DATA §5.1 의 빗금 나열을 등식으로 읽는다 [E1-3]
+edge	m-dqf	같은 말이다	m-qc	2	SEED-DATA §5.1 「DQF 마스킹 / 품질검사(QC) → 품질검사 ✅ 커버」 [E1-4]
+edge	m-basin-clip	같은 말이다	m-basin-cut	6	Ted ✅ F-2 (2026-08-25). 두 정본 어휘가 같은 동작의 두 이름이다 [E1-5]
+edge	p-chungcheong	같은 말이다	p-chungcheong-en	2	SEED-DATA §5.3 「⚠ 같은 영역에 이름이 둘이다」 원천 대조 [E1-6]
+edge	p-korea-en	같은 말이다	p-korea-peninsula	6	Ted ✅ F-3 (2026-08-25). 한반도(README)와 Korea(폴더명)의 등식 [E1-7]
+edge	s-gk2a	같은 말이다	s-gk2a-hyphen	5	DM §4.1 GK2A vs SEED-DATA §5.4 GK-2A. 실측 2026-08-25 to_tsvector simple 이 gk-2a/gk/2a 를 내어 gk2a 와 만나지 않는다 — 이 엣지가 D-01~D-06 6건을 좌우한다 [E1-8]
+edge	s-gk2a-hyphen	같은 말이다	s-gk2a-ko	2	SEED-DATA §5.4 「GK-2A(천리안위성2A호)」 [E1-9]
+edge	s-nmsc	같은 말이다	s-nmsc-ko	2	SEED-DATA §5.4 「NMSC(국가기상위성센터)」 · DM §4.1 [E1-10]
+edge	s-kwra	같은 말이다	s-kwra-ko	2	SEED-DATA §5.4 「한국수자원학회(KWRA)」 [E1-11]
+
+# ── 엣지: E5 「~의 한 가지다」 7 (방향 — src=하위 → dst=상위 · 확장은 하향 전용) ────────
+# F-4d(Co-Kriging → 재격자화)는 Ted ❌ 로 **없다.** 그래서 §D-2 는 4건이 아니라 **3건**이다.
+# F-7(유역 평균 → 유역 집계)도 Ted ❌ 로 **없다.** 유역 집계는 부모 금지 목록에 그대로 남는다.
+edge	m-nearest	~의 한 가지다	m-regrid	6	Ted ✅ F-4a (2026-08-25). 「재격자화」 질의 → D-03 [E5-1]
+edge	m-bilinear	~의 한 가지다	m-regrid	6	Ted ✅ F-4b (2026-08-25). → D-04 [E5-2]
+edge	m-idw	~의 한 가지다	m-regrid	6	Ted ✅ F-4c (2026-08-25). → D-05 [E5-3]
+edge	m-nearest	~의 한 가지다	m-interp-mode	5	정본 어휘가 글자로 「최근접」을 담고 있다 (목업 E-04 AI 근거) [E5-5]
+edge	m-bilinear	~의 한 가지다	m-interp-mode	5	상동 — 「선형」 [E5-6]
+edge	m-grid-interp	~의 한 가지다	m-regrid	6	Ted ✅ F-5 (2026-08-25). 하위 관계로 확정 — E1 로 바꾸지 않았다 [E5-7]
+edge	m-downscale	~의 한 가지다	m-regrid	6	Ted ✅ F-6 (2026-08-25). §D-4 [E5-8]
+
+# ── 엣지: E2 「안에 있다」 1 (Ted F-10 ㈏ — 1행만) ─────────────────────────────
+# E2-2(한강 상류 ⊂ 한강 유역, F-8)는 **F-10 ㈏ 가 「E2-2 는 넣지 않는다」로 닫아 시드에 없다.**
+# ⚠ 이 1행이 ㊸ · ONTOLOGY-SCOPE §2.4(유역 위계는 범위 밖)를 **부분적으로 되돌린다** — PLAN-SoT §9 기록.
+edge	p-chungcheong	안에 있다	p-korea-peninsula	3	SEED-DATA §5.3 실측 좌표가 D-01 한반도 852×1200 격자 범위 안이다 [E2-1]
