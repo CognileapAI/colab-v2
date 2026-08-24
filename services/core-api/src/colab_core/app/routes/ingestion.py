@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import hashlib
 import pathlib
 import tempfile
 from typing import Any
@@ -66,7 +65,18 @@ def _storage_root(request: Request) -> pathlib.Path:
 
 
 def _store(request: Request, *, key: str, payload: bytes) -> None:
-    path = _storage_root(request) / hashlib.sha256(key.encode()).hexdigest()
+    """**저장 키가 곧 배치다** — `{root}/uploads/{targetId}/{fileId}`.
+
+    ⚠ 예전에는 `sha256(key)` 한 덩이를 루트에 평평하게 깔았다. 그런데 바이트를 여는 쪽
+    (`pipeline-worker` 의 `_storage_path`)은 **키를 경로로 그대로 읽는다** — 같은 규칙이
+    두 곳에 적혀 있다가 실제로 갈라진 자리다. 그 결과 워커가 파일을 못 찾고, 그 실패는
+    에러가 아니라 **「형식 인식 실패」로 위장**한다(두 파일의 주석이 나란히 경고하던 바로
+    그 무늬다). 시험이 못 잡은 이유는 양쪽이 서로 다른 가짜 저장소를 썼기 때문이다.
+
+    키 조각은 전부 ULID 라 경로 탈출이 성립하지 않는다.
+    """
+    path = _storage_root(request) / key
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
 
 
