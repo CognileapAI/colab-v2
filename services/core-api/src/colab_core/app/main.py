@@ -43,8 +43,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.subjects = SubjectRegistry.from_file(settings.subjects_file)
     # 중계 두 곳. viz-render 주소가 없으면 **중계를 만들지 않는다** — 없는 것을 있는 척하지
     # 않고, 미리보기 op 이 503 봉투로 정직하게 답한다. 그래도 등록·계보 확정은 그대로 돈다.
-    app.state.previews = (HttpPreviewRelay(settings.viz_base_url)
-                          if settings.viz_base_url else None)
+    #
+    # ⚠ **자격 증명도 주소와 똑같이 다룬다.** `core-viz.yaml` 은 `security: [serviceToken]` 로
+    # 모든 렌더 표면에 bearer 를 요구한다 — 토큰이 없으면 중계를 세워 봐야 저쪽에서 401 이고,
+    # 그것은 화면에 「그리는 서버에 못 닿았다」로만 보인다. **없으면 안 세운다.**
+    app.state.previews = (HttpPreviewRelay(settings.viz_base_url,
+                                           service_token=settings.viz_service_token)
+                          if settings.viz_base_url and settings.viz_service_token else None)
     # ai-service 는 주소가 없어도 중계를 세운다 — 그쪽이 **0건 + degraded** 를 만들어 낸다.
     # 「AI 가 없다」가 「업로드를 못 한다」가 되면 안 된다 (CLAUDE.md §3).
     app.state.suggestions = HttpLineageSuggestionRelay(settings.ai_base_url)

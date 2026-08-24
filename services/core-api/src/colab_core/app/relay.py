@@ -49,21 +49,39 @@ def _request(url: str, *, method: str, headers: dict[str, str],
         raise RelayUnavailable(str(e)) from e
 
 
-def _scope_headers(lab_id: str, account_id: str) -> dict[str, str]:
+def _scope_headers(lab_id: str, account_id: str,
+                   service_token: str | None = None) -> dict[str, str]:
     """경계는 중계에도 실린다 — 큐에서 꺼낸 메시지처럼 저쪽에는 주체가 없다
-    (`envelope.json labId` 주석이 같은 이유를 async 쪽에 적었다)."""
-    return {"X-CoLAB-Lab": lab_id, "X-CoLAB-Account": account_id, "Accept": "application/json"}
+    (`envelope.json labId` 주석이 같은 이유를 async 쪽에 적었다).
+
+    ⚠ **`Authorization` 은 사람의 세션이 아니라 배포 단위 사이의 자격 증명이다**
+    (`core-viz.yaml` `securitySchemes.serviceToken`). 경계 헤더와 **다른 물건**이고
+    둘 다 필요하다 — 경계는 「누구 것을 그리는가」이고 자격 증명은 「부를 자격이 있는가」다.
+    """
+    headers = {"X-CoLAB-Lab": lab_id, "X-CoLAB-Account": account_id,
+               "Accept": "application/json"}
+    if service_token:
+        headers["Authorization"] = f"Bearer {service_token}"
+    return headers
 
 
 class HttpPreviewRelay:
-    """`ports.PreviewRenderPort` — viz-render 로 나가는 중계."""
+    """`ports.PreviewRenderPort` — viz-render 로 나가는 중계.
 
-    def __init__(self, base_url: str) -> None:
+    ⚠ **`service_token` 이 없으면 저쪽이 전부 401 이다.** `core-viz.yaml` 이
+    `security: [serviceToken]` 로 모든 렌더 표면에 bearer 를 요구하는데, 개정 전 이 중계는
+    경계 헤더만 실었다 — 실서버 2대를 세워 보고서야 드러났고, 그때까지 시험용 가짜 viz 가
+    자격 증명을 검사하지 않아 **계약이 요구하는 것을 아무도 안 물었다.**
+    """
+
+    def __init__(self, base_url: str, *, service_token: str | None = None) -> None:
         self._base = base_url.rstrip("/")
+        self._token = service_token
 
     def create(self, *, lab_id: str, account_id: str, request: dict[str, Any]) -> dict[str, Any]:
         status, body = _request(f"{self._base}/renders", method="POST",
-                                headers=_scope_headers(lab_id, account_id), body=request)
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body=request)
         if status not in (200, 201, 202) or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
@@ -76,14 +94,16 @@ class HttpPreviewRelay:
         보내게 된다. 못 닿으면 `RelayUnavailable` 이고 라우트가 **503** 으로 낸다.
         """
         status, body = _request(f"{self._base}/palettes", method="GET",
-                                headers=_scope_headers(lab_id, account_id), body=None)
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body=None)
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
 
     def get(self, *, lab_id: str, account_id: str, render_id: str) -> dict[str, Any] | None:
         status, body = _request(f"{self._base}/renders/{render_id}", method="GET",
-                                headers=_scope_headers(lab_id, account_id), body=None)
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body=None)
         if status == 404:
             return None
         if status != 200 or body is None:

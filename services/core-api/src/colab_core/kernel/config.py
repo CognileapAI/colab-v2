@@ -28,6 +28,13 @@ ENV_UPLOAD_STORAGE_DIR = "COLAB_CORE_UPLOAD_DIR"
 #: 중계 대상 두 곳. 없으면 중계를 시도하지 않고 **정직하게** 답한다
 #: (미리보기는 503 성격의 봉투, AI 제안은 `degraded: true` + 0건).
 ENV_VIZ_BASE_URL = "COLAB_CORE_VIZ_BASE_URL"
+#: viz-render 로 나갈 **서비스 자격 증명** (`core-viz.yaml` `security: [serviceToken]`).
+#: ⚠ **이것이 없어서 중계가 실제 viz-render 앞에서 통째로 401 이었다** — 계약이 모든 렌더
+#: 표면에 bearer 를 요구하는데 중계는 경계 헤더만 실었고, 시험용 가짜 viz 가 자격 증명을
+#: 검사하지 않아 아무도 못 봤다(실서버 2대로 실측). 값이 없으면 **중계를 시도하지 않고
+#: 503 을 낸다** — 「토큰이 없으니 안 보낸다」로 통과시키면 저쪽이 검사를 켜는 순간
+#: 전 표면이 조용히 죽는다.
+ENV_VIZ_SERVICE_TOKEN = "COLAB_CORE_VIZ_SERVICE_TOKEN"
 ENV_AI_BASE_URL = "COLAB_CORE_AI_BASE_URL"
 
 
@@ -38,6 +45,7 @@ class Settings:
     upload_ttl_hours: int = DEFAULT_UPLOAD_TTL_HOURS
     upload_storage_dir: str | None = None
     viz_base_url: str | None = None
+    viz_service_token: str | None = None
     ai_base_url: str | None = None
 
 
@@ -68,5 +76,6 @@ def load_settings() -> Settings:
             DEFAULT_UPLOAD_TTL_HOURS),
         upload_storage_dir=os.environ.get(ENV_UPLOAD_STORAGE_DIR) or None,
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
+        viz_service_token=os.environ.get(ENV_VIZ_SERVICE_TOKEN) or None,
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,
     )

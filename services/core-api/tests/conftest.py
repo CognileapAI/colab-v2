@@ -184,11 +184,13 @@ def p2_client(app_db_url: str, subjects_file: str, tmp_path):
     from colab_core.kernel.config import Settings
 
     def build(*, ttl_hours: int = 24, viz_base_url: str | None = None,
-              ai_base_url: str | None = None) -> TestClient:
+              ai_base_url: str | None = None,
+              viz_service_token: str | None = "test-viz-service-token") -> TestClient:
         settings = Settings(database_url=app_db_url, subjects_file=subjects_file,
                             upload_ttl_hours=ttl_hours,
                             upload_storage_dir=str(tmp_path / "uploads"),
-                            viz_base_url=viz_base_url, ai_base_url=ai_base_url)
+                            viz_base_url=viz_base_url, ai_base_url=ai_base_url,
+                            viz_service_token=viz_service_token)
         return TestClient(create_app(settings), raise_server_exceptions=False)
 
     return build
