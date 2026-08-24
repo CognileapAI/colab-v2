@@ -227,7 +227,10 @@ export function UploadModal(props: {
                     type="button"
                     className="btn btn-secondary"
                     data-testid="reg-viewonly"
-                    onClick={() => void submit()}
+                    // **등록하지 않겠다는 선택**이다 — 여기서 `submit()` 을 부르면 등록을
+                    // 거절한 사람에게 데이터셋이 생긴다. `submit()` 이 `onClose()` 도 부르는 탓에
+                    // 모달이 정상으로 닫혀 눈에 안 띄었다 (`S1-PLAN §5.2` — `S1-fe` 가 닫는다).
+                    onClick={requestClose}
                   >
                     보기만 할게요
                   </button>
