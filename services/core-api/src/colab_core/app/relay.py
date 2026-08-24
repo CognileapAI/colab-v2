@@ -114,7 +114,7 @@ def unreadable_interpretation(reason: str) -> dict[str, Any]:
 
 
 class HttpDatasetSearchRelay:
-    """`ports.DatasetSearchPort` — ai-service 로 나가는 **질의 해석** 중계.
+    """`ports.QueryInterpretationPort` — ai-service 로 나가는 **질의 해석** 중계.
 
     ⚠ **2026-08-25 판정 ㈎ 로 이 중계가 받아 오는 것이 바뀌었다.** `K4-a` 까지는
     저쪽이 `tsvector` 를 직접 던져 **후보와 순위**를 돌려줬다 — D10 이 D3 테이블에 붙는

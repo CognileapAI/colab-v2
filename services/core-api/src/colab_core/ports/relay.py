@@ -38,14 +38,18 @@ class LineageSuggestionPort(Protocol):
         ...
 
 
-class DatasetSearchPort(Protocol):
-    """ai-service 자연어 검색 중계 (`core-ai.yaml searchDatasets` · `〈80〉-㉯ 5`).
+class QueryInterpretationPort(Protocol):
+    """ai-service **질의 해석** 중계 (`core-ai.yaml searchDatasets` · `〈80〉-㉯ 5`).
 
-    **AI 는 식별자·관련도·근거 한 줄만 돌려준다.** 이름·Lv·잠김 같은 카탈로그 값은
-    core-api 가 D3·D2 에서 붙인다 — 두 곳에서 말하면 갈라진다.
-    **못 찾으면 정직한 빈 상태**이고, 그때도 `scope` 는 온다: 뒤진 범위를 먼저 밝힌다.
+    ⚠ **2026-08-25 판정 ㈎ 로 이 표면의 몫이 줄었다.** `K4-a` 까지는 저쪽이 `tsvector` 를
+    직접 던져 후보·순위를 돌려줬다 — D10 이 D3 테이블에 붙는 `CLAUDE.md §3-1` 위반이었다.
+    **AI 는 이제 검색어·주제·해석 출처만 돌려준다.** 찾고 매기는 일도, 카드 값을 붙이는
+    일도 D3·D2 의 주인인 core-api 가 한다 (`〈72〉-㉮`).
+
+    **못 읽으면 정직한 빈 상태**다 — 검색어를 지어내지 않는다. 뒤진 범위(`scope`)는
+    호출자가 D3 에서 세어 붙인다: 세는 일이 이쪽 도메인이기 때문이다.
     """
 
-    def search(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
-               limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
+    def interpret(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
+                  limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
         ...
