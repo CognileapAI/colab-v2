@@ -11,11 +11,16 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from ..kernel import storage_layout
 from ..kernel.ids import _ALPHABET  # noqa: F401  (ULID 알파벳 — 파생 id 인코딩에 쓴다)
+
+#: ULID 26자. **배치가 본체를 `fileId` 로 이름 붙이므로** 디스크의 이름이 곧 원장의 id 다.
+_ULID_RE = re.compile(rf"^[{_ALPHABET}]{{26}}$")
 
 
 @dataclass(frozen=True)
@@ -61,14 +66,31 @@ def _derive_file_id(target_id: str, file_name: str) -> str:
     return "".join(reversed(out))
 
 
+def _file_id_of(target_id: str, file_name: str) -> str:
+    """디스크의 이름이 **이미 `fileId`** 면 그것을 쓴다.
+
+    ⚠ 이 갈림이 없으면 `fileIds` 로 조각을 고르는 경로가 **실배포에서만** 깨진다.
+    요청이 싣는 `fileIds` 는 업로드가 발급한 ULID 인데, 파생 id 는 파일명을 해시한
+    다른 값이라 어느 것도 안 맞고, 그 실패는 404 「고른 조각이 대상 안에 없다」로 나온다.
+    파일명에서 만든 id 는 원장 없이 세운 시험 픽스처를 위한 자리로 남는다.
+    """
+    return file_name if _ULID_RE.match(file_name) else _derive_file_id(target_id, file_name)
+
+
 class FilesystemSourcePort:
-    """`{root}/{targetId}/` 아래의 본체 파일 + `{root}/{targetId}/grid/` 기준 격자.
+    """접수한 바이트를 **core-api 가 놓은 자리 그대로** 읽는다.
+
+    배치의 정본은 `kernel/storage_layout`(생성물 · `contracts/storage/layout.json`)이고
+    core-api·pipeline-worker 가 쓰는 것과 **같은 함수**다. `root` 는 저장소 루트이지
+    `uploads/` 안쪽이 아니다 — 「한 층 아래」를 배포 설정이 손으로 세던 자리가
+    `03-HANDOFF §4 #20` 이 난 자리다.
 
     등록된 데이터셋인지 등록 전 업로드인지를 **파일 배치로 구분하지 않는다** — 그것은
     호출자가 어느 식별자를 넘겼는가의 문제이고, 수명(`expiresAt`)만 거기서 갈린다.
     """
 
-    GRID_DIRNAME = "grid"
+    #: 배치의 정본은 생성물이다. 이 별칭은 옛 이름을 부르던 자리를 위해 남긴다.
+    GRID_DIRNAME = storage_layout.GRID_DIRNAME
 
     def __init__(self, root: Path) -> None:
         self._root = Path(root)
@@ -79,7 +101,7 @@ class FilesystemSourcePort:
     def resolve(self, *, dataset_id: str | None, upload_id: str | None,
                 file_ids: list[str] | None) -> ResolvedTarget:
         target_id = dataset_id or upload_id or ""
-        base = self._root / target_id
+        base = storage_layout.target_dir(self._root, target_id)
         if not base.is_dir():
             raise TargetNotFound(f"대상을 찾지 못했다: {target_id}")
 
@@ -87,7 +109,7 @@ class FilesystemSourcePort:
         for p in sorted(base.iterdir()):
             if p.is_dir() or p.name == "desktop.ini":
                 continue
-            parts.append(SourcePart(file_id=_derive_file_id(target_id, p.name),
+            parts.append(SourcePart(file_id=_file_id_of(target_id, p.name),
                                     file_name=p.name, path=p,
                                     size_bytes=p.stat().st_size))
         if file_ids:
@@ -98,7 +120,7 @@ class FilesystemSourcePort:
         if not parts:
             raise TargetNotFound(f"대상에 본체 파일이 없다: {target_id}")
 
-        grid_dir = base / self.GRID_DIRNAME
+        grid_dir = storage_layout.grid_dir(self._root, target_id)
         return ResolvedTarget(target_id=target_id, is_upload=upload_id is not None,
                               parts=tuple(parts),
                               grid_dir=grid_dir if grid_dir.is_dir() else None)

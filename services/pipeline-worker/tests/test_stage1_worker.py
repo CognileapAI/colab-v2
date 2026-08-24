@@ -213,14 +213,19 @@ def test_drive_finds_grid_files_that_have_no_ledger_row_yet(tmp_path):
     `files`(FileRef 전건)가 정본이다."""
     from colab_pipeline.app.worker import drive_uploads
 
+    from colab_pipeline.kernel import storage_layout
+
     root = tmp_path / "store"
-    (root / "uploads" / _UPL).mkdir(parents=True)
-    make_readable_geotiff(root / "uploads" / _UPL / _F1)
-    # 저장 키에는 확장자가 없다 — `_storage_key` 는 `uploads/{uploadId}/{fileId}` 다.
-    np.save(root / "uploads" / _UPL / f"{_G1}.npy", np.linspace(33.0, 39.0, 16).reshape(4, 4))
-    np.save(root / "uploads" / _UPL / f"{_G2}.npy", np.linspace(124.0, 132.0, 16).reshape(4, 4))
-    (root / "uploads" / _UPL / f"{_G1}.npy").rename(root / "uploads" / _UPL / _G1)
-    (root / "uploads" / _UPL / f"{_G2}.npy").rename(root / "uploads" / _UPL / _G2)
+    storage_layout.target_dir(root, _UPL).mkdir(parents=True)
+    make_readable_geotiff(storage_layout.target_dir(root, _UPL) / _F1)
+    # **격자는 `grid/` 아래에 제 이름으로 놓인다** — 배치가 이름을 보존하기 때문이다
+    # (`contracts/storage/layout.json`). 확장자를 벗기던 옛 배치에서는 축 판별 사다리가
+    # `.npy` 를 못 알아보고 실패가 **「축 미상」으로 위장**했다.
+    storage_layout.grid_dir(root, _UPL).mkdir(parents=True)
+    np.save(storage_layout.grid_dir(root, _UPL) / "lat.npy",
+            np.linspace(33.0, 39.0, 16).reshape(4, 4))
+    np.save(storage_layout.grid_dir(root, _UPL) / "lon.npy",
+            np.linspace(124.0, 132.0, 16).reshape(4, 4))
 
     ledger = _DriveLedger()
     _accept_with_files(ledger, [

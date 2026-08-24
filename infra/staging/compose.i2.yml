@@ -188,11 +188,12 @@ services:
       COLAB_VIZ_SERVICE_TOKEN: ${COLAB_VIZ_SERVICE_TOKEN:?COLAB_VIZ_SERVICE_TOKEN 이 필요하다}
       # 타일 URL 서명 비밀 (`〈68〉`). 코드에 기본값이 없다 — 있으면 모든 배포가 같은 비밀이다.
       COLAB_VIZ_TILE_SIGNING_SECRET: ${COLAB_VIZ_TILE_SIGNING_SECRET:?COLAB_VIZ_TILE_SIGNING_SECRET 이 필요하다}
-      # ⭑ 바이트를 어디서 여는가. core-api 의 저장 키는 `uploads/{targetId}/{fileId}` 이고
-      #   `FilesystemSourcePort` 는 `{root}/{targetId}/` 를 본다 — 그래서 root 는
-      #   업로드 볼륨의 `uploads/` **한 층 아래**다. 여기를 한 층 틀리면 렌더가
-      #   「대상을 찾지 못했다」로 죽고, 그 실패는 404 로 위장한다.
-      COLAB_VIZ_SOURCE_ROOT: /var/lib/colab/uploads/uploads
+      # ⭑ 바이트를 어디서 여는가 — **core-api·워커와 똑같은 저장소 루트**다.
+      #   예전에는 여기에 `/uploads` 를 한 번 더 붙여 「한 층 아래」를 배포 설정이 손으로
+      #   세고 있었다. 층은 맞췄지만 **격자 배치는 못 맞췄고**(`grid/` 를 만드는 코드가
+      #   트리에 없었다) 그래서 지도형이 영영 안 떴다 — `03-HANDOFF §4 #20`.
+      #   이제 층수도 `grid/` 도 `contracts/storage/layout.json` 한 곳이 정한다.
+      COLAB_VIZ_SOURCE_ROOT: /var/lib/colab/uploads
       COLAB_VIZ_PREVIEW_DIR: /srv/viz-previews
     volumes:
       # **읽기 전용이다.** 렌더는 접수한 바이트를 열 뿐 고치지 않는다.

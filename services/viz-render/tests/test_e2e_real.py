@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from colab_viz.kernel import storage_layout
 from conftest import AUTH
 
 pytestmark = pytest.mark.e2e
@@ -106,7 +107,7 @@ def test_e2e_2_netcdf(client, put_target, source_root):
     d = _fmtdir("file_format_2_nc")
     src = _first("gk2a_*.nc", d / "00.Data")
     tid = put_target(copy_from=[src])
-    g = source_root / tid / "grid"
+    g = storage_layout.grid_dir(source_root, tid)
     g.mkdir(parents=True, exist_ok=True)
     for axis in ("lat2d.npy", "lon2d.npy"):
         shutil.copy(d / "04.Lat_Lon_info" / axis, g / axis)
@@ -118,7 +119,7 @@ def test_e2e_3_binary_hsr(client, put_target, source_root):
     d = _fmtdir("file_format_3_bin")
     src = _first("RDR_CMP_HSR_*.bin.gz", d / "00.Data")
     tid = put_target(copy_from=[src])
-    g = source_root / tid / "grid"
+    g = storage_layout.grid_dir(source_root, tid)
     g.mkdir(parents=True, exist_ok=True)
     # 〈66〉 — HSR 정본 격자는 `rdr_500m_latlon.nc`(한 파일에 lat·lon 둘 다)다.
     shutil.copy(d / "04.Lat_Lon_info" / "rdr_500m_latlon.nc", g / "rdr_500m_latlon.nc")
@@ -156,7 +157,7 @@ def test_e2e_4_hdf4(client, put_target, source_root):
     d = _fmtdir("file_format_5_HDF5")      # 폴더명이 거짓말 — 실체는 HDF4 (`DR-3`·`M-1`)
     src = _first("*h27v05*.hdf", d / "00.Data")
     tid = put_target(copy_from=[src])
-    g = source_root / tid / "grid"
+    g = storage_layout.grid_dir(source_root, tid)
     g.mkdir(parents=True, exist_ok=True)
     # h27v05 타일 격자만 붙인다 — 다른 타일 격자를 붙이면 그것이 오배정이다
     for axis in ("lat2d_h27v05.npy", "lon2d_h27v05.npy"):
@@ -200,7 +201,7 @@ def test_e2e_6_변수를_생략하면_viz_render_가_고른다(client, put_targe
     d = _fmtdir("file_format_2_nc")
     src = _first("gk2a_*.nc", d / "00.Data")
     tid = put_target(copy_from=[src])
-    g = source_root / tid / "grid"
+    g = storage_layout.grid_dir(source_root, tid)
     g.mkdir(parents=True, exist_ok=True)
     for axis in ("lat2d.npy", "lon2d.npy"):
         shutil.copy(d / "04.Lat_Lon_info" / axis, g / axis)

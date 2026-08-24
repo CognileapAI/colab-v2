@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d5_ingestion,
                         d6_project, d8_insight)
-from ...kernel import errors
+from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
@@ -65,23 +65,38 @@ def _storage_root(request: Request) -> pathlib.Path:
 
 
 def _store(request: Request, *, key: str, payload: bytes) -> None:
-    """**저장 키가 곧 배치다** — `{root}/uploads/{targetId}/{fileId}`.
+    """**저장 키가 곧 배치다.** 키는 `kernel/storage_layout` 이 만든다.
 
     ⚠ 예전에는 `sha256(key)` 한 덩이를 루트에 평평하게 깔았다. 그런데 바이트를 여는 쪽
     (`pipeline-worker` 의 `_storage_path`)은 **키를 경로로 그대로 읽는다** — 같은 규칙이
     두 곳에 적혀 있다가 실제로 갈라진 자리다. 그 결과 워커가 파일을 못 찾고, 그 실패는
-    에러가 아니라 **「형식 인식 실패」로 위장**한다(두 파일의 주석이 나란히 경고하던 바로
-    그 무늬다). 시험이 못 잡은 이유는 양쪽이 서로 다른 가짜 저장소를 썼기 때문이다.
+    에러가 아니라 **「형식 인식 실패」로 위장**한다.
 
-    키 조각은 전부 ULID 라 경로 탈출이 성립하지 않는다.
+    ⭑ **그 뒤 세 번째 자리가 있었다는 것이 드러났다**(`03-HANDOFF §4 #20`) — `viz-render`
+    는 또 다른 배치를 보고 있었고, 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다.
+    그래서 규칙을 주석의 약속이 아니라 **한 정본**(`contracts/storage/layout.json`)으로
+    옮겼다. 세 단위가 같은 생성물을 쓰고, `generated-up-to-date` 가 드리프트를 막는다.
     """
     path = _storage_root(request) / key
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
 
 
-def _storage_key(upload_id: str, file_id: str) -> str:
-    return f"uploads/{upload_id}/{file_id}"
+def _discard(request: Request, *, key: str | None, keep: str | None = None) -> None:
+    """원장에서 사라진 격자의 **바이트도** 치운다.
+
+    ⚠ 바이트를 남기면 원장은 「없다」고 하는데 격자 폴더에는 남아 있는 상태가 된다.
+    격자를 읽는 쪽(`viz-render`)에는 원장이 없어 **폴더가 곧 사실**이라, 지운 격자로
+    계속 그리거나 짝이 셋이 되어 통째로 거절된다. 없는 파일은 조용히 넘어간다 —
+    이미 없는 것을 지우지 못했다고 200 을 500 으로 바꾸지 않는다.
+    """
+    if not key or key == keep:
+        return
+    path = _storage_root(request) / key
+    try:
+        path.unlink()
+    except (FileNotFoundError, IsADirectoryError, PermissionError):
+        return
 
 
 # ── 권한 ────────────────────────────────────────────────────────────────────
@@ -186,7 +201,8 @@ async def create_upload(request: Request, response: Response,
             raise errors.bad_request("파일 이름은 1~255자다.")
         payload = await upload_file.read()
         file_id = Ulid.generate()
-        key = _storage_key(str(upload_id), str(file_id))
+        key = storage_layout.storage_key(str(upload_id), file_id=str(file_id),
+                                         kind=kind, file_name=name)
         _store(request, key=key, payload=payload)
         records.append(UploadFileRecord(
             file_id=str(file_id), file_name=name, kind=kind, byte_size=len(payload),
@@ -437,7 +453,8 @@ async def add_dataset_file(request: Request, datasetId: str,
 
     payload = await file.read()
     file_id = Ulid.generate()
-    key = _storage_key(datasetId, str(file_id))
+    key = storage_layout.storage_key(datasetId, file_id=str(file_id),
+                                     kind=kind, file_name=name)
     _store(request, key=key, payload=payload)
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
@@ -482,8 +499,13 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
     if not name or len(name) > MAX_FILE_NAME:
         raise errors.bad_request("파일 이름은 1~255자다.")
     payload = await file.read()
-    key = _storage_key(datasetId, str(file_ref))
+    key = storage_layout.storage_key(datasetId, file_id=str(file_ref),
+                                     kind=row.kind, file_name=name)
     _store(request, key=key, payload=payload)
+    # **옛 바이트를 남기지 않는다.** 격자는 이름으로 자리가 정해지므로(`layout.json`),
+    # 이름이 바뀐 교체는 옛 파일을 그 자리에 그대로 둔다 — 그러면 격자 폴더에 위도가
+    # 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다. 교체했는데 안 그려지는 실물이 이것이다.
+    _discard(request, key=row.storage_key, keep=key)
     updated = d3_catalog.replace_file(db, file_id=file_ref, file_name=name,
                                       size_bytes=len(payload), storage_key=key)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
@@ -492,12 +514,13 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
 
 @router.delete("/datasets/{datasetId}/files/{fileId}", name="deleteDatasetGridFile",
                status_code=204)
-def delete_dataset_grid_file(datasetId: str, fileId: str,
+def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
                              subject: Subject = Depends(current_subject),
                              db: Session = Depends(scoped_db)) -> Response:
     """삭제도 정상 동작이다. **본체는 지우지 않는다** — 409 (`〈59〉-③`)."""
-    _row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
     d3_catalog.delete_file(db, file_ref)
+    _discard(request, key=row.storage_key)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return Response(status_code=204)
 

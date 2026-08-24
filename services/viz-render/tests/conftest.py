@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from colab_viz.app.main import create_app
+from colab_viz.kernel import storage_layout
 from colab_viz.kernel.config import Settings
 from colab_viz.kernel.ids import new_ulid
 
@@ -63,18 +64,23 @@ def manual_client(source_root):
 
 @pytest.fixture
 def put_target(source_root):
-    """대상 하나를 만든다 — 반환값은 ULID. 본체 파일들을 그 아래 놓는다."""
+    """대상 하나를 만든다 — 반환값은 ULID. 본체 파일들을 그 아래 놓는다.
+
+    ⚠ **자리는 픽스처가 정하지 않는다** — `kernel/storage_layout`(생성물)이 정한다.
+    이 픽스처가 자기 배치를 쓰고 있었던 것이 `03-HANDOFF §4 #20` 이 시험을 전부 green 인
+    채로 통과한 이유다: 시험이 자기가 놓은 자리에서 읽으면 **배치는 아무도 안 본다.**
+    """
     def _put(files: dict[str, bytes] | None = None, *, grid: dict[str, np.ndarray] | None = None,
              copy_from: list = None) -> str:
         tid = new_ulid()
-        d = source_root / tid
+        d = storage_layout.target_dir(source_root, tid)
         d.mkdir(parents=True)
         for name, blob in (files or {}).items():
             (d / name).write_bytes(blob)
         for src in (copy_from or []):
             (d / src.name).write_bytes(src.read_bytes())
         if grid:
-            g = d / "grid"
+            g = storage_layout.grid_dir(source_root, tid)
             g.mkdir()
             for name, arr in grid.items():
                 np.save(g / name, arr)

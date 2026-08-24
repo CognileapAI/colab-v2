@@ -38,6 +38,7 @@ from ..domains.d5_ingestion import (
     reap_expired_uploads,
     relay_unpublished,
 )
+from ..kernel import storage_layout
 from ..kernel.db import apply_scope, make_engine, make_session_factory
 
 ENV_DB = "COLAB_PIPELINE_DB_URL"
@@ -58,14 +59,20 @@ def stdout_publish(envelope: dict) -> None:
     print(json.dumps(envelope, ensure_ascii=False), flush=True)
 
 
-def _storage_path(root: Path, upload_id: str, file_id: str) -> Path:
-    """`core-api` 의 `_storage_key` 와 **같은 규칙**이다 — `uploads/{uploadId}/{fileId}`.
+def _storage_path(root: Path, upload_id: str, file_id: str, *,
+                  kind: str = storage_layout.BODY_KIND,
+                  file_name: str | None = None) -> Path:
+    """접수한 바이트의 자리 — **규칙은 `kernel/storage_layout` 한 곳에만 있다.**
 
-    ⚠ 규칙이 두 곳에 적혀 있다는 사실 자체가 갈라질 자리다. 저장 키를 이벤트에 싣지 않는
-    이유는 그것이 **배포 내부 사정**이고 계약의 것이 아니기 때문이다(`fe-core.yaml createUpload`
-    산문). 갈라지면 감지가 「파일 없음」으로 실패하고, 그 실패는 시험이 아니라 배포에서 난다.
+    ⚠ 예전에는 같은 규칙이 여기와 `core-api` 두 곳에 손으로 적혀 있었고, 이 주석이
+    「갈라질 자리다」라고 경고하고 있었다. **실제로는 세 곳이었다** — `viz-render` 가
+    또 다른 배치를 보고 있었고, 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다
+    (`03-HANDOFF §4 #20`). 저장 키를 이벤트에 싣지 않는 이유는 그것이 **배포 내부 사정**
+    이라서다(`fe-core.yaml createUpload` 산문) — 그래서 계약이 아니라 **생성되는 규약**
+    (`contracts/storage/layout.json`)으로 못 박았다.
     """
-    return root / "uploads" / upload_id / file_id
+    return storage_layout.storage_path(root, upload_id, file_id=file_id, kind=kind,
+                                       file_name=file_name)
 
 
 def _named_view(blob: Path, holder: Path, file_name: str) -> Path:
@@ -110,15 +117,17 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
             file_id = ref.get("fileId")
             if not file_id:
                 continue
-            key = f"uploads/{upload_id}/{file_id}"
+            kind = ref.get("kind") or storage_layout.BODY_KIND
             name = ref.get("fileName") or file_id
-            blob = _storage_path(upload_dir, upload_id, file_id)
-            files.append(UploadFileWork(
-                file_id=file_id,
-                path=_named_view(blob, workdir / upload_id / "inputs" / file_id, name),
-                kind=ref.get("kind") or "본체",
-                file_name=name,
-                storage_key=key))
+            key = storage_layout.storage_key(upload_id, file_id=file_id, kind=kind,
+                                             file_name=name)
+            blob = _storage_path(upload_dir, upload_id, file_id, kind=kind, file_name=name)
+            # **격자는 이미 제 이름으로 놓여 있다** — 배치가 이름을 보존하기 때문이다
+            # (`layout.json`). 본체만 이름을 잃으므로 그쪽에만 이름 붙은 뷰를 만든다.
+            path = blob if storage_layout.is_grid(kind) else _named_view(
+                blob, workdir / upload_id / "inputs" / file_id, name)
+            files.append(UploadFileWork(file_id=file_id, path=path, kind=kind,
+                                        file_name=name, storage_key=key))
         if not files:
             # 접수 이벤트가 파일을 안 실었다 — 지어내지 않는다. 다음 바퀴가 다시 본다.
             continue

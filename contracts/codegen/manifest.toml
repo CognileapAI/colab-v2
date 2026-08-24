@@ -21,3 +21,28 @@ source = "contracts/seams/fe-core.yaml"
 output = "frontend/src/generated/fe-core.ts"
 command = "frontend/node_modules/.bin/openapi-typescript contracts/seams/fe-core.yaml -o {OUT}"
 # 재생성 = cd frontend && npm run generate (package.json scripts.generate 와 같은 도구·같은 입력)
+
+# ── 저장 배치 규약 (`WU-V1` · `03-HANDOFF §4 #20`).
+#
+# 「같은 규칙이 두 곳에 적혀 있다는 사실 자체가 갈라질 자리다」를 core-api·pipeline-worker
+# 두 파일의 주석이 나란히 경고하고 있었는데, **세 번째 자리(viz-render)가 조용히 세 번째
+# 규칙을 쓰고 있었다** — 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다.
+# 이제 규칙은 layout.json 한 곳에만 있고 세 단위는 **같은 바이트**를 받는다.
+# 셋의 산출물이 byte-identical 이라는 사실 자체가 「단위마다 다른 규칙」을 불가능하게 한다.
+[[output]]
+id = "storage-layout-core"
+source = "contracts/storage/layout.json"
+output = "services/core-api/src/colab_core/kernel/storage_layout.py"
+command = "python3 contracts/codegen/gen_storage_layout.py {OUT}"
+
+[[output]]
+id = "storage-layout-pipeline"
+source = "contracts/storage/layout.json"
+output = "services/pipeline-worker/src/colab_pipeline/kernel/storage_layout.py"
+command = "python3 contracts/codegen/gen_storage_layout.py {OUT}"
+
+[[output]]
+id = "storage-layout-viz"
+source = "contracts/storage/layout.json"
+output = "services/viz-render/src/colab_viz/kernel/storage_layout.py"
+command = "python3 contracts/codegen/gen_storage_layout.py {OUT}"
