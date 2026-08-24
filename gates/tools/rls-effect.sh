@@ -86,6 +86,11 @@ su_psql -q -c "CREATE ROLE $OWNER LOGIN NOSUPERUSER NOBYPASSRLS;" >/dev/null 2>&
   || red "소유자 롤을 만들지 못했다."
 su_psql -q -c "ALTER SCHEMA public OWNER TO $OWNER; GRANT ALL ON SCHEMA public TO $OWNER;" >/dev/null 2>&1 \
   || red "public 스키마 소유권을 넘기지 못했다."
+# 선언 스키마가 `CREATE EXTENSION pg_trgm` 을 담고 있다 (`0006` · `〈89〉-㉰`). trusted 확장이라
+# superuser 는 필요 없지만 **DB 에 대한 CREATE 권한**은 필요하다 — public 스키마 소유권만으로는
+# 안 된다. 소유자는 여전히 NOSUPERUSER·NOBYPASSRLS 이므로 이 게이트가 재는 성질은 그대로다.
+su_psql -q -c "GRANT CREATE ON DATABASE $DB TO $OWNER;" >/dev/null 2>&1 \
+  || red "소유자에게 DB CREATE 권한을 주지 못했다 — 확장을 담은 선언 스키마가 적용되지 않는다."
 own_psql -q < "$SCHEMA" >"$TMP/err" 2>&1 \
   || red "선언 스키마를 적용하지 못했다. 적용되지 않는 스키마는 검사할 수 없다:
 $(sed 's/^/     /' "$TMP/err")"

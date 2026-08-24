@@ -24,6 +24,11 @@
 -- 0. 공통 커널 — 정규 ID 타입과 스코프 커널
 -- ════════════════════════════════════════════════════════════════════════════
 
+-- 삼중자 검색 확장 (`0006` · `PLAN-SoT §9-〈89〉-㉰`). **이미지에 있는 것만 건다** —
+-- `postgres:16-alpine` 의 `pg_available_extensions` 에 `pg_trgm` 1.6 이 있다(실측).
+-- `pgvector` 는 같은 질의에서 0행이라 걸지 않았고, 그 판정은 `0005` 서두에 그대로 남아 있다.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- 정규 ID. 값 정본은 contracts/schemas/common.json#/$defs/Ulid 하나뿐이고(CLAUDE.md §3-6),
 -- 여기서는 그 정본을 DB 층으로 옮겨 적는다 — 도메인 하나로 선언해 타입 드리프트를 원천 차단한다
 -- (v1 의 #1 함정: users.id 를 String(20/30/36) 으로 제각각 선언 — DATAMODEL-BASELINE §3-⑩).
@@ -273,6 +278,12 @@ CREATE TABLE d3_dataset_description (
 CREATE INDEX d3_dataset_description_lab_idx ON d3_dataset_description (lab_id);
 CREATE INDEX d3_dataset_description_search_idx
   ON d3_dataset_description USING gin (search_vector);
+-- 이름의 **삼중자 색인** (`0006` · `PLAN-SoT §9-〈89〉`). `tsvector` 가 한 건도 못 잡은
+-- 질의에만 도는 보조 팔이다 — `ts_config='simple'` 이 형태소를 안 자르므로 접두 질의로도
+-- 못 넘는 자리(질의가 색인된 낱말보다 **긴** 경우)가 남고, 그 자리를 유사도가 받는다.
+-- **순위는 여전히 `tsvector` 가 낸다** — 유사도는 세 번째 정렬 키다 (`〈89〉-㉮③`).
+CREATE INDEX d3_dataset_description_name_trgm_idx
+  ON d3_dataset_description USING gin (name gin_trgm_ops);
 
 -- 자동으로 읽은 정보 (정본 §4.1). **파일에서 자동** — 사람이 타이핑하지 않는다.
 -- 본체가 여럿이면 §4.3 합치는 규칙의 **결과**를 담는다

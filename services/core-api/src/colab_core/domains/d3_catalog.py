@@ -186,16 +186,29 @@ def count_datasets(session: Session) -> int:
 #: 한 눈금 위에 선다. 색인·가중치는 `0005_s1_search_index` 가 정했다 (`〈81〉-㉯`).
 #: **여기서 색인을 새로 만들지 않는다.** 벡터 열도, 임베딩도, 유사도도 없다 (`〈81〉`).
 #:
-#: `websearch_to_tsquery` 인 이유 — 검색어를 문자열로 이어 붙여 `to_tsquery` 에 넣으면
-#: 따옴표 하나에 구문이 깨진다. `websearch_to_tsquery` 는 **파라미터로 넘긴 사용자 문자열**을
-#: 안전하게 읽고, 큰따옴표로 묶은 여러 낱말을 구(phrase)로 다룬다 — 「낙동강 유역」처럼
-#: 공백이 든 별칭이 그대로 산다.
+#: **접두 질의다** (`PLAN-SoT §9-〈89〉-㉮①`). `ts_config='simple'` 은 형태소를 안 자르므로
+#: 「강수」가 「강수량」을 못 잡는다 — `0005` 서두가 스스로 적어 둔 한계이고, 같은 줄이
+#: **「접두 질의 `강수:*` 로는 잡힌다」**고도 적었다. 여기가 그 줄을 실행한 자리다.
+#:
+#: 만드는 법 — 낱말마다 `phraseto_tsquery` 를 태워 `'낙동강' <-> '유역'` 같은 **구 질의**를
+#: 얻고, 그 텍스트 끝(=마지막 어휘소)에 `:*` 를 붙여 `tsquery` 로 **캐스팅**한다.
+#: 캐스팅이지 `to_tsquery` 재파싱이 아니다 — 재파싱하면 이미 어휘소가 된 글자를 한 번 더
+#: 렉싱해 값이 조용히 달라질 수 있다. 사용자 문자열은 `phraseto_tsquery` 의 **파라미터**로만
+#: 들어가므로 따옴표 하나에 구문이 깨지지 않는다(`websearch_to_tsquery` 를 쓰던 이유 그대로).
+#: 빈 질의(구두점뿐인 낱말)는 `nullif` 로 떨어져 `' | '` 이음에서 빠진다.
 #:
 #: 조건절에 연구실이 없는 것은 **RLS 가 이미 남의 연구실 행을 지운 뒤**이기 때문이다.
 #: 묘비(`deleted_at`)는 카탈로그 목록과 같은 규칙으로 뺀다 — 검색만 죽은 행을 보이면 안 된다.
+_PREFIX_TSQUERY = """
+  (SELECT string_agg('(' || pfx.e || ')', ' | ')
+     FROM (SELECT nullif(phraseto_tsquery('simple', u.t)::text, '') || ':*' AS e
+             FROM unnest(cast(:terms AS text[])) AS u(t)) pfx
+    WHERE pfx.e IS NOT NULL)::tsquery
+"""
+
 _SEARCH = text("""
 WITH q AS (
-  SELECT websearch_to_tsquery('simple', :websearch) AS tq
+  SELECT """ + _PREFIX_TSQUERY + """ AS tq
 )
 SELECT d.id AS dataset_id,
        ts_rank_cd(
@@ -217,7 +230,7 @@ SELECT d.id AS dataset_id,
      WHERE (coalesce(dd.search_vector, ''::tsvector) ||
             coalesce(am.search_vector, ''::tsvector) ||
             coalesce(d.search_vector,  ''::tsvector))
-           @@ websearch_to_tsquery('simple', '"' || replace(u.t, '"', '') || '"')
+           @@ (nullif(phraseto_tsquery('simple', u.t)::text, '') || ':*')::tsquery
   ) m ON true
  WHERE d.deleted_at IS NULL
    AND (dd.search_vector @@ q.tq
@@ -234,6 +247,46 @@ _WHERE_LABELS = (("hit_description", "이름·주제·요약"),
                  ("hit_autometa", "포맷·변수"),
                  ("hit_source", "원천 표기"))
 
+#: 유사도 문턱 (`〈89〉-㉮②`). `pg_trgm` 의 기본값 0.3 을 **코드에 명시**한다 —
+#: `SET pg_trgm.similarity_threshold` 는 세션 설정이라 접속마다 달라질 수 있고,
+#: 그러면 같은 질의가 접속에 따라 다른 답을 낸다. 재현성이 세션 설정에 걸리면 안 된다.
+TRGM_THRESHOLD = 0.3
+
+#: 근거 한 줄이 읽는 자리 이름. **`tsvector` 로 맞은 것과 다른 말이어야 한다** —
+#: 글자가 정확히 맞은 것과 비슷한 것을 같은 문장으로 말하면 근거가 과장이 된다.
+_TRGM_WHERE = ("이름(비슷한 말)",)
+
+#: **`tsvector` 가 한 건도 못 잡았을 때만** 도는 보조 팔 (`〈89〉-㉮②`).
+#:
+#: 두 질의를 나눠 둔 것이 곧 「대체가 아니라 보조」의 실물이다 — `tsvector` 가 한 건이라도
+#: 잡으면 이 SQL 은 **실행되지 않으므로**, 기존 질의의 결과 집합도 순위도 유사도 때문에
+#: 바뀔 수 없다. 한 질의로 합쳐 `OR` 로 이으면 그 성질이 문장 하나로 사라진다.
+#:
+#: 순위는 `유사도 DESC, 식별자 ASC` 다. 둘 다 DB 가 낸 결정적 값이라 같은 질의가 같은
+#: 순서를 낸다 (`〈89〉-㉮③` — 이 팔이 도는 동안 `tsvector` 순위는 존재하지 않는다).
+_SEARCH_TRGM = text("""
+SELECT d.id AS dataset_id,
+       s.sim AS rank,
+       m.matched AS matched_terms,
+       count(*) OVER () AS total_count
+  FROM d3_dataset d
+  JOIN d3_dataset_description dd ON dd.dataset_id = d.id
+  LEFT JOIN LATERAL (
+    SELECT max(similarity(dd.name, u.t)) AS sim
+      FROM unnest(cast(:terms AS text[])) AS u(t)
+  ) s ON true
+  LEFT JOIN LATERAL (
+    SELECT array_agg(u.t ORDER BY u.ord) AS matched
+      FROM unnest(cast(:terms AS text[])) WITH ORDINALITY AS u(t, ord)
+     WHERE similarity(dd.name, u.t) >= :threshold
+  ) m ON true
+ WHERE d.deleted_at IS NULL
+   AND s.sim >= :threshold
+   AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text))
+ ORDER BY s.sim DESC, d.id ASC
+ LIMIT :limit OFFSET :offset
+""")
+
 
 @dataclasses.dataclass(frozen=True)
 class SearchMatch:
@@ -248,9 +301,14 @@ class SearchMatch:
     where: tuple[str, ...]
 
 
-def _websearch(terms: tuple[str, ...]) -> str:
-    """검색어를 **OR** 로 잇는다. 하나만 맞아도 후보다 — 좁히는 일은 순위가 한다."""
-    return " or ".join('"' + t.replace('"', " ").strip() + '"' for t in terms if t.strip())
+def _websearch(terms: tuple[str, ...]) -> bool:
+    """뒤질 말이 하나라도 있는가. **없으면 SQL 을 던지지 않는다.**
+
+    ⚠ 이제 **질의 문자열을 만들지 않는다.** 검색어를 문자열로 이어 붙여 넘기던 자리는
+    `〈89〉` 의 접두 질의가 가져갔고, 그쪽은 낱말 배열을 그대로 받아 SQL 안에서 잇는다 —
+    파이썬이 만든 질의 문자열과 SQL 이 만든 질의 문자열 둘이 공존하면 규칙이 갈라진다.
+    """
+    return any(t.strip() for t in terms)
 
 
 def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | None,
@@ -265,28 +323,39 @@ def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | No
     정본이 요구한 성질이다 (`Policy_데이터_찾기 §1.3-6` · `P-13`·`P-34`).
     잠김 **표시**는 조립 루트가 D2 Port 로 붙인다.
 
-    **한계** (`〈81〉-㉲`) — `ts_config` 가 `'simple'` 이라 형태소를 자르지 않는다.
-    「강수량」은 한 낱말이고 「강수」로는 안 잡힌다. 접두 질의나 `pg_trgm` 은 **매칭 규칙을
-    바꾸는 일**이라 `〈72〉` 가 고정한 자리를 코드 레인이 혼자 옮기지 않는다.
+    **매칭 규칙이 둘이다** (`〈89〉` — `〈72〉-㉮` 의 개정). ① 검색어는 **접두 질의**로
+    던진다 — `ts_config='simple'` 이 형태소를 안 자르는 한계(`〈81〉-㉲`)를 그렇게 넘는다.
+    ② 그래도 한 건도 못 잡으면 **이름의 삼중자 유사도**로 한 번 더 본다. **②는 ①이
+    실패했을 때만 돈다** — 그래서 ①이 잡은 질의의 결과도 순위도 유사도가 못 바꾼다.
+
+    **여전히 남는 한계** — 「강수량」으로 「강우」를 부르는 것은 매칭의 일이 아니다.
+    표기가 다른 같은 말은 사전(D9)이, 상위어의 하위들은 그래프(`K4-b`)가 맡는다.
     """
-    websearch = _websearch(terms)
-    if not websearch:
+    if not _websearch(terms):
         return [], 0
-    rows = session.execute(_SEARCH, {
-        "websearch": websearch, "terms": list(terms),
-        "topic": topic, "limit": limit, "offset": offset,
-    }).mappings().all()
-    total = int(rows[0]["total_count"]) if rows else 0
-    matches = [
-        SearchMatch(
-            dataset_id=str(r["dataset_id"]),
-            rank=float(r["rank"]),
-            matched_terms=tuple(r["matched_terms"] or ()),
-            where=tuple(label for key, label in _WHERE_LABELS if r[key]),
-        )
-        for r in rows
-    ]
-    return matches, total
+    params = {"terms": list(terms), "topic": topic, "limit": limit, "offset": offset}
+    rows = session.execute(_SEARCH, params).mappings().all()
+    if rows:
+        return ([SearchMatch(dataset_id=str(r["dataset_id"]),
+                             rank=float(r["rank"]),
+                             matched_terms=tuple(r["matched_terms"] or ()),
+                             where=tuple(lb for key, lb in _WHERE_LABELS if r[key]))
+                 for r in rows],
+                int(rows[0]["total_count"]))
+
+    # ── 보조 팔. **여기 오는 것은 `tsvector` 가 0건을 냈다는 뜻이다** ──────────
+    # ⚠ `offset > 0` 이어도 상관없다 — 같은 질의의 첫 쪽이 0건이었으면 뒤쪽도 0건이라,
+    #    이어보기가 갑자기 다른 규칙의 결과로 갈아타는 일이 생기지 않는다.
+    rows = session.execute(_SEARCH_TRGM, {**params,
+                                          "threshold": TRGM_THRESHOLD}).mappings().all()
+    if not rows:
+        return [], 0
+    return ([SearchMatch(dataset_id=str(r["dataset_id"]),
+                         rank=float(r["rank"]),
+                         matched_terms=tuple(r["matched_terms"] or ()),
+                         where=_TRGM_WHERE)
+             for r in rows],
+            int(rows[0]["total_count"]))
 
 
 def dataset_exists(session: Session, dataset_id: Ulid) -> bool:

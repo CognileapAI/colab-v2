@@ -24,6 +24,9 @@ psql_su() { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "
 psql_su -q -c "SET client_min_messages=warning; DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null 2>&1
 psql_su -c "DO \$\$BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${OWNER}') THEN CREATE ROLE ${OWNER} LOGIN NOSUPERUSER NOBYPASSRLS; END IF; END\$\$;" >/dev/null
 psql_su -c "ALTER SCHEMA public OWNER TO ${OWNER}; GRANT ALL ON SCHEMA public TO ${OWNER};" >/dev/null
+# 선언 스키마가 `CREATE EXTENSION pg_trgm` 을 담고 있다 (`0006` · `〈89〉-㉰`). trusted 확장이라
+# superuser 는 필요 없지만 **DB 에 대한 CREATE 권한**은 필요하다 — 스키마 소유권만으로는 안 된다.
+psql_su -c "GRANT CREATE ON DATABASE ${DB} TO ${OWNER};" >/dev/null
 docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U "$OWNER" -d "$DB" < "$REPO/db/platform/schema.sql" >/dev/null
 
 # ② 앱 롤
