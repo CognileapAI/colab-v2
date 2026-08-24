@@ -14,8 +14,18 @@ WORKDIR /app
 
 # geo 스택(rasterio·pyhdf·netCDF4·pyproj)이 여기 들어온다. **core-api 에는 한 줄도 안 들어간다**
 # (`CLAUDE.md §3-4` · `banned-import` 게이트). 그 분리가 이 배포 단위가 따로 있는 이유다.
+# OS 공유 라이브러리 — **실측 최소 집합**. viz-render 와 같은 결손이다:
+# rasterio 휠의 `libgdal-*.so.38` 이 `libexpat.so.1` 을 OS 에서 찾는다. 두 단위가 같은 휠을 쓰므로
+# 결손도 같다 — 한쪽만 고치면 나머지 한쪽이 조용히 남는다.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libexpat1 \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-deps -r /app/requirements.txt
+
+# **회귀 방지 — geo 스택 import 가 성립하지 않으면 빌드가 실패한다.** 근거는 viz-render 와 같다.
+RUN python -c "import rasterio, rasterio._env, netCDF4, h5py, pyproj, pyhdf.SD; print('geo import OK', rasterio.__gdal_version__)"
 
 COPY src/ /app/src/
 ENV PYTHONPATH=/app/src COLAB_HEALTH_PORT=8000

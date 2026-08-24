@@ -1,11 +1,12 @@
 """liveness 신호 — 배포 배관이지 도메인 로직이 아니다.
 
-이 배포 단위는 아직 비어 있다(D5 은 뒤의 WU 가 채운다). walking skeleton 이
-요구하는 것은 "프로세스가 살아 있고 오케스트레이터가 그것을 기계로 확인할 수 있다" 뿐이고,
-이 파일은 딱 그것만 한다.
+`implemented` 는 **이 배포 단위가 비어 있는가**를 나타내는 값이다. 스캐폴드 시점에는 false 가
+사실이었으나 `〈73〉` 이 워커 루프(`app.worker`)를 켠 뒤로는 아니다. `03-HANDOFF §4` #23 —
+실이미지가 false 를 계속 내어 **본문 대조 검증이 이 단위를 「빈 단위」로 읽었다.**
+자리표시가 전 경로 200 을 내므로 상태 코드로는 구분되지 않는다. 값을 사실에 맞춘다.
 
-표준 라이브러리만 쓴다 — 빈 단위에 런타임 의존을 들이면 나중에 실제 스택을 고를 때
-이미 골라 버린 셈이 된다. 프레임워크 선택은 이 단위를 실제로 채우는 WU 의 몫이다.
+표준 라이브러리만 쓴다 — 헬스 경로에 런타임 의존을 들이면 그 의존이 죽었을 때
+생사 신호까지 함께 죽는다.
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_error(404, "not found")
             return
         body = json.dumps(
-            {"unit": UNIT, "status": "alive", "implemented": False},
+            {"unit": UNIT, "status": "alive", "implemented": True},
             ensure_ascii=False,
         ).encode("utf-8")
         self.send_response(200)
