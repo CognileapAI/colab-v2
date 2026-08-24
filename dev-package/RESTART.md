@@ -49,7 +49,8 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 
 | 키 | 성격 | 비고 |
 |---|---|---|
-| `CF_TUNNEL_TOKEN` · `CF_API_TOKEN` · `CF_ACCOUNT_ID` · `CF_TUNNEL_ID` | 비밀 / 식별자 | 터널 커넥터 |
+| `CF_TUNNEL_TOKEN` | **비밀** | 터널 커넥터. **compose 가 `:?` 로 요구하는 것은 이 하나뿐이다** |
+| `CF_API_TOKEN` · `CF_ACCOUNT_ID` · `CF_TUNNEL_ID` | 비밀 / 식별자 | **compose 가 아니라 `infra/staging/terraform` 이 쓴다**(IS2). `up` 은 이것 없이도 뜬다 — 라우팅 IaC 를 돌릴 때 필요하다 |
 | `COLAB_PG_SUPER_PASSWORD` · `COLAB_OWNER_PASSWORD` · `COLAB_APP_PASSWORD` | **비밀** | 플랫폼 DB 3롤 |
 | `COLAB_AI_APP_PASSWORD` | **비밀** | `colab_ai` DB 앱 롤 |
 | `COLAB_VIZ_SERVICE_TOKEN` | **비밀** | core-api ↔ viz-render **양쪽이 같은 문자열** |
@@ -57,6 +58,12 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 | `OPENAI_API_KEY` | **비밀** | ai-service |
 | `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다** |
 | `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
+| `COLAB_CORE_AI_BASE_URL` · `COLAB_MODEL_HELPER` · `COLAB_MODEL_ORCHESTRATOR` | **선택(기본값 있음)** | `W7` 배선(`c5a2fbf`)이 더한 셋. 없어도 `up` 이 뜨고 compose 의 기본값이 쓰인다 — **비밀이 아니다**(주소·모델 이름). `COLAB_CORE_AI_BASE_URL` 을 비우면 core-api 가 relay 를 만들지 않아 **검색·제안이 503 이 된다** |
+
+> **`up` 을 막는 것과 제품을 잠그는 것은 다르다.** 위 표에서 `:?` 인 키가 없으면 컨테이너가 아예 안 뜨지만,
+> **compose 안에서만 배선되는 값**(`COLAB_VIZ_SOURCE_ROOT` · `COLAB_VIZ_PREVIEW_DIR` · `COLAB_CORE_SUBJECTS_FILE` · `COLAB_AI_DB_URL`)이
+> 비면 **헬스는 200 인 채로 제품이 잠긴다.** 2026-08-25 이전이 실제로 그 상태였다(`〈92〉` 계열 · `03-HANDOFF §4`).
+> 이 넷은 env 파일이 아니라 `compose.i2.yml` 이 정본이므로 **호스트에서 손댈 것이 없다.**
 
 **심어 둔 계정 표(`COLAB_STAGING_SUBJECTS_FILE` 가 가리키는 `subjects.json`)는 자격증명이다.**
 
