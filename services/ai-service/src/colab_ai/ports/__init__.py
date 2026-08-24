@@ -6,7 +6,10 @@
   여기**에 산다. 조립은 `app/` 이 한다.
 
 이 파일에 **없는 것**
-  · 순위 규칙이 없다 — 순위는 `tsvector` 가 낸다 (`PLAN-SoT §9-〈72〉-㉮`).
+  · **카탈로그 조회 표면이 없다.** `K4-a` 의 `CatalogSearchPort`·`MatchRow` 는 2026-08-25
+    판정 ㈎ 로 core-api(`domains/d3_catalog.SearchMatch`)로 갔다 — D3 는 저쪽 도메인이고,
+    이 단위가 그 표면을 갖고 있는 한 D10 이 D3 에 붙을 자리가 남는다 (`CLAUDE.md §3-1`).
+  · 순위 규칙이 없다 — 순위는 core-api 의 `tsvector` 가 낸다 (`PLAN-SoT §9-〈72〉-㉮`).
   · 결과 본문 생성이 없다 — 이름·요약·잠김은 core-api 가 D3·D2 에서 붙인다.
   · 점수·퍼센트 필드가 없다 (`CLAUDE.md §3 AI 응답 규격`).
 """
@@ -36,20 +39,6 @@ class Interpretation:
     degraded_reason: str | None
 
 
-@dataclass(frozen=True)
-class MatchRow:
-    """실행기가 낸 후보 한 건. **관련도는 DB 가 계산한 값 그대로**다.
-
-    `where` 는 어느 색인에서 맞았는가(이름·주제·요약 / 포맷·변수 / 원천 표기)이고
-    근거 한 줄의 재료다. `matched_terms` 는 **실제로 맞은 검색어**다 —
-    안 맞은 말을 근거에 적지 않으려고 행마다 따로 받는다.
-    """
-    dataset_id: str
-    rank: float
-    matched_terms: tuple[str, ...]
-    where: tuple[str, ...]
-
-
 class QueryInterpreterPort(Protocol):
     """질의 해석기. **실패해도 예외를 던지지 않는다** — 문자열 해석으로 떨어진다."""
 
@@ -61,20 +50,4 @@ class DictionaryPort(Protocol):
     """D9 사전 3종 조회. D10 은 이 표면으로만 지식을 읽는다 (`DOMAINS §2`)."""
 
     def expand(self, terms: tuple[str, ...], query: str):
-        ...
-
-
-class CatalogSearchPort(Protocol):
-    """`tsvector` 질의 실행기.
-
-    **연구실 경계는 이 아래 Postgres 층에 남는다** — 구현이 세션에 경계를 심고 RLS 가
-    행을 지운다. D10 코드에는 경계 판단이 한 줄도 없다 (`CLAUDE.md §3-5`).
-    **읽기 전용이다** — 이 표면에 쓰기 메서드가 존재하지 않는다.
-    """
-
-    def count_datasets(self, *, lab_id: str, account_id: str) -> int:
-        ...
-
-    def match(self, *, lab_id: str, account_id: str, terms: tuple[str, ...],
-              topic: str | None, limit: int, offset: int) -> tuple[list[MatchRow], int]:
         ...

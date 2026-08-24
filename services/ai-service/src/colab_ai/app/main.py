@@ -3,20 +3,23 @@
 **여는 것은 `searchDatasets`(`POST /searches`) 하나다.** `suggestLineage` 는 `K3` 의 자리이고
 여기서 흉내 내지 않는다 — 계약에 있는 것과 구현된 것이 다르면 그 사실이 보여야 한다.
 
+⚠ **2026-08-25 판정 ㈎ 이후 `/searches` 는 질의를 해석해 돌려줄 뿐 카탈로그를 뒤지지 않는다.**
+찾고 매기는 것은 D3 의 주인인 core-api 다 (`CLAUDE.md §3-1` · `〈72〉-㉮`).
+
 **경계를 두 번 받는다.** 본문의 `scope.labId` 와 헤더 `X-CoLAB-Lab` 이다(core-api 중계가
 둘 다 보낸다). **둘이 다르면 뒤지지 않고 400 이다** — 어느 쪽을 믿을지 이쪽이 고르면
 경계가 이 파일의 판단이 되고, 그 순간 `CLAUDE.md §3-5` 가 막으려던 「경계가 두 곳에서
 정해지는 상황」이 된다.
 
-**설정이 하나도 없어도 뜬다.** DB URL 이 없으면 `/searches` 는 5xx 가 아니라
-**뒤진 범위를 먼저 밝힌 빈 결과 + `degraded`** 를 낸다 (`CLAUDE.md §3`).
+**설정이 하나도 없어도 뜬다.** 사전 DB URL 도 모델 키도 없으면 `/searches` 는 5xx 가 아니라
+**질문의 낱말 그대로 + `degraded`** 를 낸다 — core-api 는 그 낱말로 실제 검색을 돌린다
+(`CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
 """
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from colab_ai.app.catalog_search import SqlCatalogSearch
 from colab_ai.app.dictionaries import SqlDictionaries
 from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
 from colab_ai.domains.d10_ai_services import SearchService
@@ -35,16 +38,6 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"code": code, "message": message})
 
 
-class _UnavailableCatalog:
-    """카탈로그 DB 가 배선되지 않았을 때의 자리. **거짓 성공을 만들지 않는다.**"""
-
-    def count_datasets(self, **_kw):
-        raise RuntimeError("카탈로그 색인 주소가 배선되지 않았다")
-
-    def match(self, **_kw):
-        raise RuntimeError("카탈로그 색인 주소가 배선되지 않았다")
-
-
 class _UnavailableDictionaries:
     def expand(self, terms, query):
         raise RuntimeError("온톨로지 사전 주소가 배선되지 않았다")
@@ -54,14 +47,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
 
-    catalog = (SqlCatalogSearch(make_engine(settings.platform_db_url))
-               if settings.platform_db_url else _UnavailableCatalog())
     dictionaries = (SqlDictionaries(make_engine(settings.dict_db_url))
                     if settings.dict_db_url else _UnavailableDictionaries())
     interpreter = (LlmQueryInterpreter(api_key=settings.openai_api_key, model=settings.model,
                                        timeout_seconds=settings.model_timeout_seconds)
                    if settings.openai_api_key else LiteralInterpreter())
-    service = SearchService(interpreter=interpreter, dictionaries=dictionaries, catalog=catalog)
+    service = SearchService(interpreter=interpreter, dictionaries=dictionaries)
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -94,6 +85,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         query = payload.get("query")
         if not isinstance(query, str) or not query.strip() or len(query) > MAX_QUERY:
             return _error(400, "bad_request", f"검색 질문은 1~{MAX_QUERY}자다.")
+        # **`searchedCount` 는 호출자(core-api)가 실제로 센 값이다.** 계약의 `RequestedScope` 에는
+        # 없지만 core-api 가 실측으로 얹어 보낸다 — 이 단위는 D3 를 못 읽으므로 되비출 뿐이다.
+        searched = scope.get("searchedCount")
+        if not isinstance(searched, int) or isinstance(searched, bool) or searched < 0:
+            searched = 0
+
         limit = payload.get("limit", DEFAULT_LIMIT)
         if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_LIMIT:
             return _error(400, "bad_request", f"limit 은 1~{MAX_LIMIT} 이다.")
@@ -101,8 +98,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if cursor is not None and not isinstance(cursor, str):
             return _error(400, "bad_request", "cursor 는 문자열이다.")
 
-        body = service.search(lab_id=lab_id, lab_name=lab_name, account_id=account_id,
-                              query=query.strip(), limit=limit, cursor=cursor)
+        # `limit`·`cursor` 는 계약이 허용하는 값이라 규칙만 지키고 **쓰지는 않는다** —
+        # 쪽 나누기는 결과를 가진 쪽(core-api)의 일이다.
+        body = service.search(lab_id=lab_id, lab_name=lab_name,
+                              query=query.strip(), searched_count=searched)
         # `scope` 를 먼저 쓴 dict 를 그대로 직렬화한다 — 뒤진 범위가 바이트에서도 먼저다.
         return JSONResponse(content=body)
 

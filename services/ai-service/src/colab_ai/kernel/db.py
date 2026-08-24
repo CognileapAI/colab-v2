@@ -1,26 +1,20 @@
-"""엔진 · 세션 · **경계 주입**. 배포 단위 하나에 엔진 하나 (다른 단위와 같은 관례).
+"""엔진 · 세션. 배포 단위 하나에 엔진 하나 (다른 단위와 같은 관례).
 
-**세션에 연구실 경계를 심는 것이 이 파일의 존재 이유다.** GUC 를 안 세우면
-`current_lab_id()` 가 NULL 이라 정책이 한 행도 안 보여 준다 — 기본 거부다.
-`SET LOCAL` 이라 풀로 돌아간 커넥션이 앞 요청의 경계를 물려받지 않는다.
+**이 단위가 붙는 저장소는 `db/ai` 하나다.** D9 사전 3종이 거기 살고, 그것이 자기 도메인이다.
+`K4-a` 는 여기에 **플랫폼 DB(D3) 커넥션**도 함께 두었고 — 연구실 경계 주입(GUC)까지 이 파일이
+했다 — 그것이 `CLAUDE.md §3-1` 위반이었다. 2026-08-25 판정 ㈎ 로 그 커넥션이 사라졌다.
+**경계 주입 코드가 여기 없는 것이 지금은 옳다**: 경계를 심을 대상 테이블이 이 단위에 없다.
+(`db/ai` 세 표에는 `lab_id` 가 없다 — 연구실 공통 지식이기 때문이다.)
 
-**그리고 이 단위는 읽기만 한다.** 트랜잭션을 `READ ONLY` 로 연다 — D10 이 기록 쪽 저장소에
-쓰지 않는다는 것을 문서가 아니라 **Postgres 가** 거절로 증명한다 (`CLAUDE.md §3-2` 의
-정신 · `ai-no-lineage-write` 게이트의 런타임 짝).
+그리고 이 단위는 **읽기만 한다.** 사전 조회는 `READ ONLY` 트랜잭션으로 열린다
+(`app/dictionaries.py`) — D10 이 어느 저장소에도 쓰지 않는다는 것을 문서가 아니라
+**Postgres 가** 거절로 증명한다 (`CLAUDE.md §3-2` 의 정신 · `ai-no-lineage-write` 의 런타임 짝).
 """
 from __future__ import annotations
 
-import contextlib
-
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
-
-GUC_LAB = "app.current_lab"
-GUC_ACCOUNT = "app.current_account"
-
-_SET_LOCAL = text("SELECT set_config(:name, :value, true)")
-_READ_ONLY = text("SET TRANSACTION READ ONLY")
 
 
 def make_engine(database_url: str) -> Engine:
@@ -29,18 +23,3 @@ def make_engine(database_url: str) -> Engine:
 
 def make_session_factory(engine: Engine) -> sessionmaker[Session]:
     return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
-
-
-@contextlib.contextmanager
-def read_only_scope(factory: sessionmaker[Session], *, lab_id: str, account_id: str):
-    """경계를 심은 **읽기 전용** 트랜잭션. 끝나면 언제나 rollback 한다."""
-    session = factory()
-    try:
-        session.begin()
-        session.execute(_READ_ONLY)
-        session.execute(_SET_LOCAL, {"name": GUC_LAB, "value": str(lab_id)})
-        session.execute(_SET_LOCAL, {"name": GUC_ACCOUNT, "value": str(account_id)})
-        yield session
-    finally:
-        session.rollback()
-        session.close()

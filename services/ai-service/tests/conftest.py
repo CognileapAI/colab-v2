@@ -3,10 +3,11 @@
 **DB 가 없으면 skip 이 아니라 fail 이다** — core-api `tests/conftest.py` 와 같은 규율이다
 (`CLAUDE.md §4` · v1 CI 가 DB 없이 RLS 를 green-by-skip 한 실패를 반복하지 않는다).
 
-환경변수 둘
-  `COLAB_AI_TEST_PLATFORM_DB_URL`  D3 카탈로그 DB. **앱 롤**(NOBYPASSRLS·비소유자)로 붙는다.
-                                   RLS 가 살아 있어야 cross-tenant 음성이 오라클이 된다.
-  `COLAB_AI_TEST_DICT_DB_URL`      D9 사전 3종 DB (`db/ai` 체인).
+환경변수 하나
+  `COLAB_AI_TEST_DICT_DB_URL`      D9 사전 3종 DB (`db/ai` 체인). **이 단위가 붙는 유일한 DB다.**
+
+⚠ **`COLAB_AI_TEST_PLATFORM_DB_URL` 은 2026-08-25 판정 ㈎ 로 사라졌다.** 카탈로그(D3)를 뒤지는
+시험은 `services/core-api/tests/test_search_execution.py` 로 옮겼다 — 실행기가 그리로 갔다.
 """
 from __future__ import annotations
 
@@ -25,9 +26,6 @@ LAB_A = "0000000000000000000000000A"
 LAB_B = "0000000000000000000000000B"
 ACC_A_RES = "000000000000000000000000A1"
 ACC_B_PROF = "00000000000000000000000BP1"
-DS_A1 = "0000000000000000000000DSA1"   # 'A 강우 원자료' · 열림 · CSV · 변수 강우량
-DS_A2 = "0000000000000000000000DSA2"   # 'A 강우 격자화' · **잠김** · NetCDF
-DS_B1 = "0000000000000000000000DSB1"   # 다른 연구실 · 'B 토지피복 원자료'
 
 
 def _require(name: str) -> str:
@@ -38,20 +36,8 @@ def _require(name: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def platform_db_url() -> str:
-    return _require("COLAB_AI_TEST_PLATFORM_DB_URL")
-
-
-@pytest.fixture(scope="session")
 def dict_db_url() -> str:
     return _require("COLAB_AI_TEST_DICT_DB_URL")
-
-
-@pytest.fixture(scope="session")
-def catalog(platform_db_url: str):
-    from colab_ai.app.catalog_search import SqlCatalogSearch
-    from colab_ai.kernel.db import make_engine
-    return SqlCatalogSearch(make_engine(platform_db_url))
 
 
 @pytest.fixture(scope="session")
