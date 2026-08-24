@@ -97,20 +97,36 @@ paths:
     post:
       tags: [search]
       operationId: searchDatasets
-      summary: 자연어 질의를 해석해 관련 데이터셋을 관련도 순으로 돌려준다
+      summary: 자연어 질의를 **검색어·주제 필터로 해석**해 돌려준다 (찾고 매기는 것은 core-api)
       description: |
-        질의를 해석해 **데이터셋 식별자 · 관련도 · 근거 한 줄**만 돌려준다.
-        카드에 실리는 나머지(이름·포맷·Lv·요약·기간·소유·Verified·잠김)는 core-api 가
-        D3·D2 에서 붙인다. AI 가 카탈로그 값을 다시 말하지 않는다 — 두 곳에서 말하면 갈라진다.
+        **⟨동결 3회 해제 · `PLAN-SoT §9-〈87〉`⟩ 이 산문은 반대 방향으로 낡아 있었다.**
+        아래는 `〈72〉-㉮`(Ted 판정 2026-08-25 ㈎)가 그은 실제 역할 분담이다.
 
-        **정렬 판단은 core 가 한다.** 여기서 오는 순서는 관련도 순이고,
-        `Verified 우선`은 D2 의 값이라 core-api 가 다시 세운다
+        **이 표면이 하는 일은 해석 하나다.** 자연어 한 문장을 **검색어(`terms`)와
+        주제 필터(`topic`)** 로 바꾼다. 그게 전부다.
+
+        **찾고 매기는 일은 core-api 가 한다.** 후보 선정·순위·근거 한 줄은 D3 의
+        `tsvector`(+ 온톨로지 사전으로 넓힌 검색어)로 **core-api 안에서** 만들어진다.
+        D3 는 core-api 의 자기 도메인이고, `K4-a` 까지 이 단위가 `tsvector` 를 직접 던지던
+        것은 **D10 → D3 직접 접속** 이라 `CLAUDE.md §3-1` 위반이었다.
+
+        **그래서 core-api 가 이 응답에서 읽는 것은 `interpretation` 하나다.**
+        `results.items` 에 무엇이 실려 오든 **읽지 않는다** — 읽는 순간 순서가 모델의 것이
+        되고, 같은 질의가 때마다 다른 답을 내며, 근거 한 줄이 사후 정당화로 전락한다.
+        `results` 는 계약 하위 호환을 위해 남은 **빈 봉투**다 (`SearchHit` 참고).
+
+        **정렬 판단도 core 가 한다.** `Verified 우선`은 D2 의 값이다
         (`Policy_데이터_찾기 §5 기본 정렬`). AI 에 권한 정책을 얹지 않는다.
 
         **잠긴 데이터를 결과에서 빼지 않는다** (`Policy_데이터_찾기 §1.3-6`).
-        AI 는 잠김 여부를 모른 채 관련도만 돌려주고, 잠김 표시는 core 가 붙인다.
+        AI 는 잠김 여부를 아예 모르고, 잠김 표시는 core 가 D2 에서 붙인다.
 
-        0건은 **정상 응답**이다 — `items: []` + `scope`(뒤진 연구실·개수).
+        0건은 **정상 응답**이다 — `scope`(뒤진 연구실·개수)를 먼저 밝힌다.
+
+        ⚠ **이 표면에 못 닿는 것은 0건이 아니다.** core-api 가 여기 못 닿거나
+        `interpretation` 을 못 읽으면 **뒤지지도 못한 것**이라, FE 중계
+        (`fe-core.yaml#searchDatasets`)는 200 + 빈 결과가 아니라 **503** 을 낸다
+        (`PLAN-SoT §9-〈87〉-㉯` Ted 판정 2026-08-25).
       requestBody:
         required: true
         content:
@@ -376,17 +392,58 @@ components:
             results:
               allOf: [{ $ref: "../schemas/common.json#/$defs/ListEnvelope" }]
               description: |
-                `items` 는 관련도 순이다. **빈 배열이 정상이다** — 0건은 막다른 길이 아니라
-                다음 행동을 안내할 상태다 (`Policy_데이터_찾기 §1.3-7`).
+                **`〈72〉-㉮` 이후 이 봉투는 언제나 비어 있다.** 후보를 뽑는 것은 core-api 의
+                `tsvector` 이고 이 단위는 D3 를 읽지 않는다. 필수로 남는 것은 하위 호환
+                때문이고, **core-api 는 `items` 를 읽지 않는다.**
               properties:
                 items:
                   type: array
                   items: { $ref: "#/components/schemas/SearchHit" }
+            interpretation:
+              allOf: [{ $ref: "#/components/schemas/SearchInterpretation" }]
+              description: |
+                **core-api 가 이 응답에서 읽는 유일한 값이다** (`〈72〉-㉮`).
+                선택 속성이다 — **없으면 지어내지 않는다.** 해석을 못 받았다는 것은
+                「뒤졌는데 없다」가 아니라 **「뒤지지도 못했다」**이므로, core-api 는
+                0건이 아니라 「지금 동작하지 않는다」로 답한다 (`〈87〉-㉯`).
+
+    SearchInterpretation:
+      type: object
+      description: |
+        **질의 해석 결과 — 이 표면의 산출물 전부.** 자연어 한 문장을 검색어와 주제 필터로
+        바꾼 것이고, **후보·순위·근거는 여기 없다** (`Policy_데이터_찾기 §4 용어(관련도)` —
+        순서가 이미 관련도이고 그 순서는 core-api 의 `tsvector` 가 낸다 · `〈72〉-㉮`).
+      required: [terms, source]
+      additionalProperties: false
+      properties:
+        terms:
+          type: array
+          description: |
+            찾을 말. 질문에 실제로 있는 말과 그 표기 변형, 그리고 온톨로지 사전이 넓힌 말이다.
+            **없는 말을 지어내지 않는다.** 비어 있으면 core-api 는 뒤지지 않는다.
+          items:
+            type: string
+            minLength: 1
+        topic:
+          type: ["string", "null"]
+          description: |
+            주제 필터 한 개 또는 없음. 값 집합은 온톨로지의 주제 표기 그대로다
+            (`Policy_데이터_찾기 §5 조건`). **core-api 가 이 값으로 좁혀 뒤진다.**
+        source:
+          type: string
+          enum: ["llm", "literal"]
+          description: |
+            해석이 **어디서 왔는가.** `literal` 은 모델 없이 질문을 낱말로 자른 것이다 —
+            결과는 진짜 결과이지만 놓친 것이 있을 수 있고, **근거 한 줄이 그 사실을 밝힌다**
+            (`Policy_데이터_찾기 §4 한계 표시`). `Degradable.degraded` 와 짝으로 온다.
 
     SearchHit:
       type: object
       description: |
-        검색 결과 한 건. **카드에 필요한 나머지 값은 core 가 D3·D2 에서 붙인다.**
+        검색 결과 한 건. **`〈72〉-㉮` 이후 이 단위는 이것을 만들지 않는다** —
+        `SearchResponse.results.items` 는 언제나 빈 배열이고 core-api 는 읽지 않는다.
+        스키마를 지우지 않는 것은 계약 하위 호환 때문이며, **세 값이 required 인 것은
+        그대로 옳다**: 실려 온다면 셋이 다 있어야 하고, 셋이 다 있어도 읽히지 않는다.
       required: [datasetId, relevanceBar, rationale]
       additionalProperties: false
       properties:

@@ -44,9 +44,12 @@ class SearchService:
 
         `results` 는 계약(`SearchResponse.results`)이 required 라 **빈 봉투로 선다.**
         이 단위는 이제 후보를 뽑지 않는다 — 실제 결과는 core-api 가 `tsvector` 로 만든다.
-        `interpretation` 은 그 core-api 가 읽는 값이다. `SearchResponse` 는 열린 객체라
-        (`additionalProperties` 를 닫지 않았다) 계약을 고치지 않고 실을 수 있다.
-        ⚠ **다만 계약의 산문은 아직 옛 역할 분담을 적고 있다** — 그 갱신은 계약 소유 레인의 몫이다.
+        `interpretation` 은 그 core-api 가 **이 응답에서 읽는 유일한 값**이다.
+        **2026-08-25 세 번째 동결 해제(`〈87〉-㉮`)로 계약에 실렸다** — `SearchResponse` 의
+        선택 속성 `interpretation`(`SearchInterpretation`)이고, 같은 회차에 산문이 반대
+        방향으로 낡아 있던 것(「AI 가 식별자·관련도를 돌려준다」)도 함께 정정됐다.
+        ⚠ **`interpretation` 을 빼면 core-api 는 0건이 아니라 503 으로 답한다**(`〈87〉-㉯`) —
+        검색어가 없으면 한 건도 뒤지지 못한 것이고, 그것을 0건으로 내면 화면이 거짓말을 한다.
 
         `searchedCount` 는 **호출자가 보낸 값을 그대로 되비춘다.** 세는 것은 D3 의 일이고
         이 단위는 D3 를 못 읽는다 — 여기서 지어내면 화면의 범위 표시줄이 거짓이 된다.

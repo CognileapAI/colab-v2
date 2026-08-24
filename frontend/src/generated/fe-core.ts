@@ -275,8 +275,22 @@ export interface paths {
          *     - **잠긴 데이터가 결과에서 빠지지 않는다** (§1.3-6). 잠김 표시는 core 가 붙인다.
          *
          *     **`Verified 우선` 정렬은 core 가 다시 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
-         *     AI 가 제 몫을 못 하면 5xx 가 아니라 **빈 결과 + `degraded: true`** 다
-         *     (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+         *
+         *     ⚠ **역할 분담 두 문단이 낡았다 — `PLAN-SoT §9-〈87〉-㉮`(2026-08-25 Ted) 로 정정한다.**
+         *     AI 는 **식별자·관련도를 돌려주지 않는다.** 자연어를 **검색어·주제 필터로 해석할 뿐**이고,
+         *     후보·순위·근거 한 줄은 **core-api 가 D3 의 `tsvector` 로** 만든다
+         *     (`core-ai.yaml#searchDatasets` · `〈72〉-㉮`). 카드 값(이름·Lv·업로더·Verified·잠김)을
+         *     core 가 붙인다는 것만 그대로다.
+         *
+         *     **「제 몫을 못 함」이 두 가지고, 화면이 둘을 다르게 그린다** (`〈87〉-㉯` Ted 판정) —
+         *     - **해석만 무너짐 (`degraded: true` + 200)** — 모델이 없거나 답을 못 읽어 **낱말 그대로**
+         *       찾았다. **결과는 진짜 결과다.** 화면은 결과를 그대로 그리고 한계를 함께 말한다.
+         *       여기서 `CLAUDE.md §3`(AI 없이도 v2 는 완결된 제품)이 지켜진다.
+         *     - **검색에 못 닿음 (`503` + `SEARCH_UNAVAILABLE`)** — ai-service 가 죽었거나 응답의
+         *       범위가 달라 버렸거나 해석을 못 읽었다. **한 건도 뒤지지 않았다.** 이때 200 + 0건을
+         *       내면 화면이 「찾아봤는데 없다」고 말하는데 사실은 **「찾아보지도 못했다」**이다.
+         *       **폴백을 두지 않는다** — 죽으면 「동작하지 않음」이 드러나야 하고, 그래야 감시가 잡는다.
+         *       카탈로그·업로드는 그대로 도므로 화면은 카탈로그로 안내한다.
          */
         post: operations["searchDatasets"];
         delete?: never;
@@ -2573,6 +2587,20 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["ServerError"];
+            /**
+             * @description **검색에 닿지 못했다 — 0건이 아니다** (`ErrorEnvelope.code = SEARCH_UNAVAILABLE`).
+             *     한 건도 뒤지지 않은 상태라 「없다」고 말할 자격이 없다 (`〈87〉-㉯`).
+             *     화면은 「검색이 지금 동작하지 않아요… 없다는 뜻이 아니에요」 + 카탈로그 링크를 세운다.
+             *     `createPreviewRender` 의 `RENDER_UNAVAILABLE` 과 같은 모양이다.
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     getDataset: {
