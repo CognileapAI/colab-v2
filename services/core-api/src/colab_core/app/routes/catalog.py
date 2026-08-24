@@ -10,10 +10,10 @@ import binascii
 import datetime as dt
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d4_lineage, d6_project
+from ...domains import d1_identity, d2_access, d3_catalog, d4_lineage, d6_project
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -164,6 +164,76 @@ def list_datasets(
     for r in page:
         r.pop("_lastModifiedAt", None)
     return {"items": page, "totalCount": total, "nextCursor": next_cursor}
+
+
+#: `Policy_데이터_찾기 §5 검색 질문 — 1~200자`. 규칙 밖을 200 으로 받으면 규칙이 없는 것과 같다.
+MAX_QUERY = 200
+#: 화면의 `+N건 더 보기` 가 감당하는 폭. 계약 `SearchQuery.limit` 과 같은 상한이다.
+MAX_SEARCH_LIMIT = 100
+DEFAULT_SEARCH_LIMIT = 20
+
+
+@router.post("/searches", name="searchDatasets")
+def search_datasets(request: Request, body: dict | None = Body(default=None),
+                    subject: Subject = Depends(current_subject),
+                    db: Session = Depends(scoped_db)) -> dict:
+    """자연어 검색 — **중계 + 조립** (`〈80〉-㉯ 5`).
+
+    **AI 가 돌려주는 것은 셋뿐이다** — `datasetId` · `relevanceBar` · `rationale`.
+    카드에 실리는 나머지는 여기서 D3·D2·D4·D6 의 사실로 붙인다. **AI 가 카탈로그 값을
+    다시 말하지 않는다** — 두 곳에서 말하면 갈라진다 (`core-ai.yaml searchDatasets` 산문).
+
+    지키는 것 넷 —
+    · **순서를 다시 정렬하지 않는다.** 온 순서가 이미 관련도다 (`§4`).
+    · **잠긴 데이터를 빼지 않는다** (`§1.3-6`). 잠김 표시는 `bodyAccessible` 이 한다.
+    · **경계 밖 식별자는 붙일 값이 없어 빠진다.** RLS 가 이미 행을 지웠고, **지어내 채우지 않는다.**
+    · **AI 가 없어도 200 이다** — 빈 결과 + `degraded: true`.
+    """
+    payload = body if isinstance(body, dict) else {}
+    unknown = sorted(set(payload) - {"query", "limit", "cursor"})
+    if unknown:
+        raise errors.bad_request(f"요청에 계약에 없는 필드가 있다: {unknown}")
+    query = payload.get("query")
+    if not isinstance(query, str) or not query.strip() or len(query) > MAX_QUERY:
+        raise errors.bad_request(f"검색 질문은 1~{MAX_QUERY}자다.")
+    limit = payload.get("limit", DEFAULT_SEARCH_LIMIT)
+    if not isinstance(limit, int) or isinstance(limit, bool) \
+            or not 1 <= limit <= MAX_SEARCH_LIMIT:
+        raise errors.bad_request(f"limit 은 1~{MAX_SEARCH_LIMIT} 이다.")
+    cursor = payload.get("cursor")
+    if cursor is not None and not isinstance(cursor, str):
+        raise errors.bad_request("cursor 는 문자열이다.")
+
+    lab = d1_identity.find_lab(db)
+    answer = request.app.state.searches.search(
+        lab_id=str(subject.lab_id), lab_name=("" if lab is None else lab["name"]) or "연구실",
+        account_id=str(subject.account_id), query=query.strip(), limit=limit, cursor=cursor,
+        searched_count=d3_catalog.count_datasets(db),
+    )
+
+    by_id = {row["datasetId"]: row for row in _compose(db)}
+    items: list[dict] = []
+    for hit in answer["items"]:
+        row = by_id.get(hit.get("datasetId")) if isinstance(hit, dict) else None
+        if row is None:
+            # 경계 밖이거나 지워진 식별자다. **없는 카드를 지어내지 않는다** (P-9·P-10).
+            continue
+        enriched = {k: v for k, v in row.items() if not k.startswith("_")}
+        enriched["relevanceBar"] = hit.get("relevanceBar")
+        enriched["rationale"] = hit.get("rationale")
+        items.append(enriched)
+
+    out = {
+        "scope": answer["scope"],
+        "isDataQuery": answer["isDataQuery"],
+        "degraded": answer["degraded"],
+        "items": items,
+        "totalCount": len(items),
+        "nextCursor": answer.get("nextCursor"),
+    }
+    if answer.get("degradedReason"):
+        out["degradedReason"] = answer["degradedReason"]
+    return out
 
 
 @router.get("/datasets/{datasetId}/files", name="listDatasetFiles")

@@ -38,8 +38,14 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_45() -> None:
-    assert len(contract_operations()) == 45, "계약의 오퍼레이션이 45 개가 아니다 — 발췌가 잘렸다."
+def test_operation_count_is_46() -> None:
+    """45 → **46.** 늘어난 하나는 `searchDatasets` 다.
+
+    `〈80〉-㉯ 5`(승인된 1회 동결 해제)가 `fe-core.yaml` 이 「아직 없다 — P4 가 연다」로
+    비워 뒀던 검색 진입점을 열었다. **동결 해제는 이 회차 한 번뿐이다** — 이 수가 또 늘면
+    두 번째 해제가 일어난 것이고, 그것은 `〈80〉` 이 실패했다는 뜻이다.
+    """
+    assert len(contract_operations()) == 46, "계약의 오퍼레이션이 46 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

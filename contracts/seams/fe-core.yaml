@@ -16,7 +16,8 @@ info:
     - 자연어 검색(S-06)·계보 제안: 만드는 것은 D10 이지만 `core-ai` 는 내부 표면이라
       FE 가 직접 도달할 수 없다 (소비자는 core-api 뿐 — `core-ai.yaml` servers 주석).
       **FE 는 이 파일의 중계 op 으로만 도달한다.** 계보 제안 조회는 `listUploadLineageSuggestions`(이 파일)가
-      중계하고, **검색 진입점 op 은 아직 없다 — P4 가 연다** (`sessions/D2c.md §2-3`).
+      중계하고, **검색은 `searchDatasets`(이 파일 `POST /searches`)가 중계한다** —
+      ⭑ 「아직 없다 — P4 가 연다」로 비워 뒀던 자리를 `〈80〉-㉯ 5`(승인된 1회 동결 해제)가 열었다.
     - 업로드(E-04): 동기 절반 — HTTP 입구·상태 조회·등록 전환
       (`createUpload`·`getUploadStatus`·`createDataset`) — 은 **이 파일**이고,
       파싱·변환의 **비동기 절반만** `../events/core-pipeline.json` 이다.
@@ -66,6 +67,11 @@ tags:
     description: |
       D7 중계 — 렌더 작업 생성·조회. viz-render 는 내부 표면이라 FE 는 여기로만 도달하고,
       타일 URL 소비만 FE 직결이다 (`core-viz.yaml` — 타일 경로만 CDN 뒤 · `sessions/D2c.md §2-9`).
+  - name: search
+    description: |
+      D10 중계 — 자연어 검색 진입점. `core-ai` 는 내부 표면이라 FE 는 여기로만 도달한다.
+      AI 는 **식별자·관련도·근거 한 줄**만 내고 카탈로그 값은 core 가 붙인다
+      (`core-ai.yaml` `searchDatasets` · `PLAN-SoT §9-〈80〉-㉯ 5`).
 
 paths:
 
@@ -410,6 +416,48 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /searches:
+    post:
+      tags: [search]
+      operationId: searchDatasets
+      summary: 자연어 검색 (중계) — S-01 검색 히어로 · S-06 검색 결과
+      description: |
+        **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 5⟩**
+        이 파일 상단이 「검색 진입점 op 은 아직 없다 — P4 가 연다」로 비워 둔 자리다.
+        `core-ai` 는 내부 표면이라 FE 가 직접 도달할 수 없고, **이 중계로만 도달한다**
+        (`listUploadLineageSuggestions` 와 같은 모양 · `SEAM-AUDIT I-08`).
+
+        **역할 분담이 `core-ai.yaml` 의 것 그대로다** — AI 는 **식별자 · 관련도 · 근거 한 줄**만
+        돌려주고, 카드에 실리는 나머지(이름·Lv·주제·업로더·Verified·잠김)는 **core-api 가
+        D3·D2 에서 붙인다.** AI 가 카탈로그 값을 다시 말하지 않는다 — 두 곳에서 말하면 갈라진다.
+        그래서 응답 스키마를 `core-ai.yaml` 에서 그대로 참조하지 **않고** 여기서 세운다.
+
+        정본이 못 박은 것 넷 —
+        - **뒤진 범위를 먼저 밝힌다** (`scope`). 0건이어도 어디를 몇 개 뒤졌는지가 먼저다
+          (`Policy_데이터_찾기 §3.3`). **0건은 정상 응답이다** — 오류로 만들지 않는다.
+        - **관련도는 막대 하나다.** `relevanceBar` 를 퍼센트·등급 텍스트로 그리지 않는다(§4).
+          확신도(`AiConfidence`)와 **다른 개념**이고, 확신도에는 숫자가 없다.
+        - **근거는 한 줄 고정**이고 **한계도 그 한 줄 안에서** 밝힌다 — 별도 필드를 두지 않는다.
+        - **잠긴 데이터가 결과에서 빠지지 않는다** (§1.3-6). 잠김 표시는 core 가 붙인다.
+
+        **`Verified 우선` 정렬은 core 가 다시 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
+        AI 가 제 몫을 못 하면 5xx 가 아니라 **빈 결과 + `degraded: true`** 다
+        (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SearchQuery" }
+      responses:
+        "200":
+          description: 검색 결과. **0건도 여기로 온다** — 정직한 빈 상태.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResults" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /datasets/{datasetId}:
     parameters:
       - $ref: "#/components/parameters/DatasetId"
@@ -572,23 +620,46 @@ paths:
     put:
       tags: [ingestion]
       operationId: replaceDatasetGridFile
-      summary: 기준 격자 파일 교체 — 정상 동작
+      summary: 기준 격자 파일 교체 · 축 뒤집기 — 둘 다 정상 동작
       description: |
         교체는 정상 동작이다 (`〈59〉-①` — 열린 결정 ⑳ 해소). 판정은 `업로드·편집` 스위치
         (`〈59〉-②`). **본체 파일은 이 경로의 대상이 아니다** — 본체를 갈아 끼우는 것은
         다른 데이터다 (`〈59〉-③`). 대상 파일의 `kind` 가 `본체` 면 409 다.
+
+        **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 3(`K-3`) — 축 뒤집기가 이 op 안에 든다⟩**
+        서버가 축을 잘못 판별했을 때 사람이 바로잡는 길이다
+        (`PREVIEW-IMPLEMENTATION §10-16` — 사용자에게 묻지 않고 **보여주고 뒤집기 버튼을 준다**).
+        **새 op 을 만들지 않는다** — 뒤집기 = **같은 두 파일의 축 배정을 바꾸는 것**이고
+        그것이 정확히 `〈59〉` 가 말한 「잘못 붙인 격자를 바로잡는」 정상 동작이다.
+        **파일을 다시 올리지 않는다.** 기각한 대안 = `flipGridAxes` 신설 — 501 이 24 → 25 가 되고
+        축을 바꾸는 길이 둘이 되어 **어느 것이 정본 경로인지 흐려진다**(`〈80〉-㉯ 3`).
+
+        요청은 **택일(`oneOf`)** 이다.
+        - `file` — 파일을 갈아 끼운다. 축 배정은 그대로 둔다.
+        - `flipAxes: true` — **파일은 그대로 두고 그 데이터셋의 두 기준 격자 파일의 축 배정을
+          맞바꾼다.** ⚠ **한 파일만 고치는 형태가 아닌 이유** — `0004:192-195` 의
+          축별 부분 유니크가 「위도 둘」을 막으므로 **한쪽만 바꾸면 중간 상태가 제약을 깬다.**
+          맞바꿈은 한 트랜잭션 안에서 끝난다.
+          그래서 **격자 파일이 2건이 아니면 409** 다 — 짝이 없으면 바꿀 배정이 없다.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [file]
               additionalProperties: false
+              oneOf:
+                - required: [file]
+                - required: [flipAxes]
               properties:
                 file:
                   type: string
                   contentMediaType: application/octet-stream
+                flipAxes:
+                  type: boolean
+                  description: |
+                    `true` 면 축 뒤집기다 — 이 파일과 짝 파일의 축 배정을 맞바꾼다.
+                    `false` 를 보내는 것은 **아무것도 안 하는 요청**이므로 400 이다.
       responses:
         "200":
           description: 교체된 파일
@@ -600,7 +671,9 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`).
+          description: |
+            대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`).
+            **또는** `flipAxes` 인데 그 데이터셋의 기준 격자 파일이 2건이 아니다 — 바꿀 짝이 없다.
           content:
             application/json:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
@@ -1956,6 +2029,97 @@ components:
             본체(다운로드·미리보기)에 닿을 수 있는가. `false` 면 화면이 자물쇠와 `잠김` 칩을 붙이고
             **빠른 작업을 두지 않는다.** 행 자체는 사라지지 않는다 (P-13·P-34).
           type: boolean
+        thumbnailUrl:
+          description: |
+            **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 2(`K-2`)⟩**
+            목록 썸네일(①, 128 px WEBP)의 URL. **사전 생성된 정적 자산이다** —
+            행마다 렌더 작업을 거는 물건이 아니다(`〈80〉-㉯ 2`).
+            **없을 수 있다** — 아직 안 구워졌거나, 본체를 못 읽었거나, `bodyAccessible: false` 인
+            잠긴 행이다. 없으면 화면은 **빈 자리로 둔다** — 대체 그림을 지어내지 않는다.
+          oneOf:
+            - type: string
+              minLength: 1
+            - type: "null"
+
+    SearchQuery:
+      description: |
+        **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 5⟩** 자연어 검색 요청.
+        **연구실 경계는 실리지 않는다** — 서버가 인증 주체에서 주입한다 (`CLAUDE.md §3-5` ·
+        P-9·P-10). `core-ai.yaml` 의 `SearchRequest.scope` 를 FE 가 채우지 않는 이유가 이것이다.
+      type: object
+      required: [query]
+      additionalProperties: false
+      properties:
+        query:
+          description: 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`).
+          type: string
+          minLength: 1
+          maxLength: 200
+        limit:
+          description: 돌려받을 최대 건수. 화면의 `+N건 더 보기` 가 쓰는 폭이다.
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        cursor:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/Cursor" }]
+          description: 이어보기 토큰. 첫 요청에서는 생략한다.
+
+    SearchResults:
+      description: |
+        검색 응답. **뒤진 범위를 먼저 밝히고**(`scope`), 결과는 관련도 순이며,
+        **0건이 정상**이다 (`Policy_데이터_찾기 §1.3-7`·§3.3).
+      allOf:
+        - $ref: "../schemas/common.json#/$defs/ListEnvelope"
+        - type: object
+          required: [scope, isDataQuery, degraded, items]
+          properties:
+            scope:
+              allOf: [{ $ref: "../schemas/common.json#/$defs/AiSearchScope" }]
+              description: |
+                「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.**
+            isDataQuery:
+              description: |
+                질의가 **데이터를 찾는 질문**인가. `false` 면 `items` 는 비어 있고 화면은
+                「데이터를 찾는 질문에 답해요」 + 예시로 안내한다 (`§9`). **오류가 아니다.**
+              type: boolean
+            degraded:
+              description: |
+                AI 가 제 몫을 못 했다. `true` 면 결과가 비었거나 부분적이다 —
+                **5xx 로 끝내지 않는다.** 카탈로그·업로드는 그대로 돈다
+                (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+              type: boolean
+            degradedReason:
+              description: 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다.
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/SearchResultRow" }
+
+    SearchResultRow:
+      description: |
+        검색 결과 카드 한 장 = **카탈로그 행 그대로 + AI 가 보탠 두 값.**
+        `DatasetRow` 를 다시 선언하지 않고 합성한다 — 같은 모양의 두 번째 선언은 갈라질 표면이다.
+        **잠긴 데이터도 이 형태로 내려간다** (`§1.3-6` — 결과에서 빼지 않는다).
+      allOf:
+        - $ref: "#/components/schemas/DatasetRow"
+        - type: object
+          required: [relevanceBar, rationale]
+          properties:
+            relevanceBar:
+              description: |
+                **막대 하나의 길이**다. **퍼센트도 등급 텍스트도 쓰지 않는다**
+                (`Policy_데이터_찾기 §4 용어(관련도)`). 순서가 이미 관련도이고 이 값은 강도만 거든다.
+                **사용자에게 숫자로 보이는 순간 정본 위반이다.**
+              type: number
+              minimum: 0
+              maximum: 1
+            rationale:
+              allOf: [{ $ref: "../schemas/common.json#/$defs/AiRationale" }]
+              description: |
+                「왜 이 결과?」 **한 줄.** 한계도 이 한 줄 안에서 함께 밝힌다 —
+                별도 필드를 두지 않는다 (`§4 한계 표시` · `§8 AI 근거 블록`).
 
     FacetSet:
       description: 조건을 걸 수 있는 다섯 열의 값별 건수.
@@ -2125,6 +2289,15 @@ components:
           type: string
           minLength: 1
         kind: { $ref: "../schemas/common.json#/$defs/FileKind" }
+        gridAxis:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/GridAxisAssignment" }]
+          description: |
+            **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 3(`K-3`)⟩**
+            **`kind` 가 `기준 격자 파일` 일 때만 있다.** 본체에는 없다 — 축이 붙은 본체는
+            `0004` 의 CHECK 가 애초에 만들지 않는다.
+            **화면이 뒤집기 버튼을 그리려면 지금 배정이 무엇인지 알아야 한다** —
+            그 값이 이것이다 (`PREVIEW-IMPLEMENTATION §10-16` — 사용자에게 「위도냐 경도냐」를
+            묻지 않는다. **서버가 판별하고 보여주고 뒤집기 버튼을 준다**).
 
     DeletionImpact:
       type: object

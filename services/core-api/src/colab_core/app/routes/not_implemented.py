@@ -40,8 +40,9 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) 45 개 중 실동작 21 개를 뺀 24 개.
-#: 25 → 36(D2c 신설 11) → **24**(P2 구현 12).
+#: 계약(`contracts/seams/fe-core.yaml`) **46** 개 중 실동작 **22** 개를 뺀 **24** 개.
+#: 25 → 36(D2c 신설 11) → **24**(P2 구현 12) → **24 유지**(S1 — `searchDatasets` 를
+#: 신설과 동시에 구현했으므로 표에 더할 행이 없다. `〈80〉-㉯ 5` · `〈74〉-㉱`).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("updateLab", "PATCH", "/lab", "NOT_IMPLEMENTED_P1"),

@@ -1,10 +1,13 @@
-"""core-api 앱 — fe-core seam 45 오퍼레이션 전부를 등록한다.
+"""core-api 앱 — fe-core seam **46** 오퍼레이션 전부를 등록한다.
 
-실동작 **21 개**. P2 가 열둘을 가져왔다 (`P2-EXEC §4 W2 P2-api`) —
+실동작 **22 개**. P2 가 열둘을 가져왔다 (`P2-EXEC §4 W2 P2-api`) —
 업로드 6(`createUpload` `getUploadStatus` `createDataset` `addDatasetFile`
 `replaceDatasetGridFile` `deleteDatasetGridFile`) · 계보 확정 3(`addLineageParent`
 `removeLineageParent` `confirmLineage`) · 미리보기 중계 2 · AI 제안 중계 1.
-나머지 24 개는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3).
+그리고 S1 이 `searchDatasets` 하나를 **신설과 동시에** 가져갔다 — `〈80〉-㉯ 5`(승인된 1회
+계약 동결 해제)가 검색 진입점을 열었고, 열어 두고 안 만들면 501 이 24 → 25 가 된다.
+나머지 **24 개**는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3) — 이 수는 S1 에서
+변하지 않는다 (`〈74〉-㉱` · `C1` 통과 조건 2).
 미구현에 404 를 쓰지 않는다 — 404 는 「경계 밖」의 뜻으로 이미 예약돼 있다 (PLAN-SoT §9-㊱).
 """
 from __future__ import annotations
@@ -16,7 +19,8 @@ from ..kernel import errors
 from ..kernel.auth import SubjectRegistry
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
-from .relay import HttpLineageSuggestionRelay, HttpPreviewRelay
+from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
+                    HttpPreviewRelay)
 from .routes import (catalog, identity, ingestion, lineage, members, not_implemented,
                      preview, project)
 
@@ -44,6 +48,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # ai-service 는 주소가 없어도 중계를 세운다 — 그쪽이 **0건 + degraded** 를 만들어 낸다.
     # 「AI 가 없다」가 「업로드를 못 한다」가 되면 안 된다 (CLAUDE.md §3).
     app.state.suggestions = HttpLineageSuggestionRelay(settings.ai_base_url)
+    # 검색도 같은 규칙이다 — 주소가 없으면 **0건 + degraded** 로 답하고 화면은 산다
+    # (`〈80〉-㉯ 5`). 「AI 가 없다」가 「검색 화면이 죽는다」가 되면 안 된다.
+    app.state.searches = HttpDatasetSearchRelay(settings.ai_base_url)
 
     # liveness — 배포 배관이다. 계약(fe-core.yaml) 밖 경로이므로 API_PREFIX 아래에 두지 않는다.
     # 라우트 표 오라클(tests/test_route_table.py)은 API_PREFIX 로 시작하는 라우트만 세므로 34 는 그대로다.

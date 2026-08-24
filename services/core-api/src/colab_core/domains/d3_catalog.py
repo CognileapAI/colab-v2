@@ -30,8 +30,12 @@ _ROWS = text("""
      WHERE d.deleted_at IS NULL
 """)
 
+#: `common.json#/$defs/FileKind` 의 둘 중 격자 쪽. **값 집합의 정본은 계약이다** —
+#: 여기 있는 것은 그 값을 SQL 과 대조하는 상수일 뿐 두 번째 선언이 아니다.
+GRID_KIND = "기준 격자 파일"
+
 _FILES = text("""
-    SELECT f.id, f.file_name, f.kind
+    SELECT f.id, f.file_name, f.kind, f.carries_lat, f.carries_lon
       FROM d3_file f
      WHERE f.dataset_id = :dataset_id
      ORDER BY f.kind DESC, f.file_name, f.id
@@ -165,8 +169,20 @@ def dataset_exists(session: Session, dataset_id: Ulid) -> bool:
 
 
 def list_files(session: Session, dataset_id: Ulid) -> list[dict]:
+    """계약 `DatasetFile`. **축은 기준 격자 파일에만 붙는다** (`K-3` · `〈80〉-㉯ 3`).
+
+    본체에 `gridAxis` 자리를 만들면 없는 사실을 있는 척하게 된다 — `0004` 의 CHECK 가
+    축 붙은 본체를 애초에 만들지 않으므로, 그 사실을 응답 모양이 그대로 비춘다.
+    """
     rows = session.execute(_FILES, {"dataset_id": str(dataset_id)}).mappings().all()
-    return [{"fileId": r["id"], "fileName": r["file_name"], "kind": r["kind"]} for r in rows]
+    out: list[dict] = []
+    for r in rows:
+        item = {"fileId": r["id"], "fileName": r["file_name"], "kind": r["kind"]}
+        if r["kind"] == GRID_KIND:
+            item["gridAxis"] = {"carriesLat": bool(r["carries_lat"]),
+                                "carriesLon": bool(r["carries_lon"])}
+        out.append(item)
+    return out
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -213,6 +229,39 @@ _FIND_FILE = text("""
 """)
 
 _DELETE_FILE = text("DELETE FROM d3_file WHERE id = :file_id RETURNING id")
+
+_GRID_FILES = text("""
+    SELECT id, dataset_id, kind, file_name, size_bytes, storage_key, carries_lat, carries_lon
+      FROM d3_file
+     WHERE dataset_id = :dataset_id AND kind = '기준 격자 파일'
+     ORDER BY id
+""")
+
+# 축 뒤집기 (`K-3`) — **두 문장이다. 한 문장으로는 안 된다.**
+#
+# ⚠ `0004:192-195` 의 유일성은 **부분 유니크 인덱스**이고, 인덱스는 `DEFERRABLE` 이 될 수 없다.
+#    한 `UPDATE` 가 두 행을 훑어도 검사는 **행마다 즉시** 일어나므로, A 를 경도로 바꾸는 순간
+#    아직 경도인 B 와 부딪힌다. 「한 문장이면 원자적이라 괜찮다」는 **틀렸다** —
+#    재 보고 알았다(`UniqueViolation: d3_file_one_lon_grid_per_dataset`).
+#
+# 그래서 **인덱스 술어 밖으로 잠시 뺐다가 되돌린다.** 술어가 `kind = '기준 격자 파일' AND …` 이라
+# `kind` 를 본체로 두면 두 행이 두 인덱스 어디에도 안 걸린다 — 그리고 그 상태는
+# CHECK ㈏(본체는 축이 없다)를 지키므로 **합법이다.** 트랜잭션 밖에서는 보이지 않는다.
+#
+# **기각한 대안 = 지웠다 다시 넣기.** `created_at` 이 밀린다 — 그것은 「이 파일 행이 언제
+# 생겼는가」라는 **사실**이고, 축을 바로잡았다고 그 사실이 바뀌지 않는다.
+# **마이그레이션(제약을 DEFERRABLE 로)도 기각** — `〈70〉-㉱`·`〈79〉` 의 「`0004` 무수정」을 깬다.
+_PARK_GRID_AXES = text("""
+    UPDATE d3_file
+       SET kind = '본체', carries_lat = false, carries_lon = false
+     WHERE dataset_id = :dataset_id AND kind = '기준 격자 파일'
+""")
+
+_RESTORE_GRID_AXIS = text("""
+    UPDATE d3_file
+       SET kind = '기준 격자 파일', carries_lat = :carries_lat, carries_lon = :carries_lon
+     WHERE id = :file_id
+""")
 
 _UPDATE_FILE = text("""
     UPDATE d3_file
@@ -319,6 +368,32 @@ def replace_file(session: Session, *, file_id: Ulid, file_name: str,
         "storage_key": storage_key,
     }).mappings().one()
     return _file_row(r)
+
+
+def grid_files(session: Session, dataset_id: Ulid) -> list[FileRow]:
+    """그 데이터셋의 기준 격자 파일 전건. **0~2건**이다 (`〈58〉` · `common.json FileKind`)."""
+    rows = session.execute(_GRID_FILES, {"dataset_id": str(dataset_id)}).mappings().all()
+    return [_file_row(r) for r in rows]
+
+
+def swap_grid_axes(session: Session, dataset_id: Ulid) -> None:
+    """축 뒤집기 (`K-3` · `〈80〉-㉯ 3`) — 그 데이터셋의 두 격자 파일의 축 배정을 맞바꾼다.
+
+    **파일은 건드리지 않는다** — 이름·크기·저장 키·`created_at` 이 그대로여야
+    「파일을 다시 올리지 않는다」가 참이다. 뒤집기는 **잘못 붙인 격자를 바로잡는 정상 동작**이지
+    새 데이터가 아니다 (`〈59〉`).
+
+    절차는 위 `_PARK_GRID_AXES` 주석이 「왜 두 문장인가」를 적었다.
+    """
+    before = grid_files(session, dataset_id)
+    session.execute(_PARK_GRID_AXES, {"dataset_id": str(dataset_id)})
+    for row in before:
+        # 뒤집기 = 두 축을 맞바꾸는 것. 결합축(둘 다 true)은 바꿔도 같은 값이라 무해하다 —
+        # 그 경우는 애초에 짝이 아니어서 호출자가 409 로 막는다.
+        session.execute(_RESTORE_GRID_AXIS, {
+            "file_id": row.file_id,
+            "carries_lat": row.carries_lon, "carries_lon": row.carries_lat,
+        })
 
 
 def delete_file(session: Session, file_id: Ulid) -> bool:

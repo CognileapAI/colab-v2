@@ -36,7 +36,7 @@
       "additionalProperties": false,
       "properties": {
         "files": {
-          "description": "접수한 파일 전건. 본체 1건 이상 + 기준 격자 파일 0~1건(DataModel §4.3).",
+          "description": "접수한 파일 전건. 본체 1건 이상 + 기준 격자 파일 **0~2건**(위도·경도 한 쌍이 실물이다). ⭑ DataModel_공통_기반 §4.3 의 0~1건 을 Ted 가 2026-08-23 에 2건 허용으로 닫았고(〈58〉), 이 문장은 이벤트 계약 동결 때문에 못 따라왔었다 — 〈80〉-㉯ 8(승인된 1회 해제)에서 ../schemas/common.json 의 $defs.FileKind 와 정합했다. 파일의 역할은 요청이 선언하고(createUpload.fileKinds) 확장자가 정하지 않는다(〈79〉·〈77〉-㉵).",
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/FileRef" }

@@ -426,11 +426,30 @@ async def add_dataset_file(request: Request, datasetId: str,
 
 @router.put("/datasets/{datasetId}/files/{fileId}", name="replaceDatasetGridFile")
 async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
-                                    file: UploadFile = File(...),
+                                    file: UploadFile | None = File(default=None),
+                                    flipAxes: bool | None = Form(default=None),
                                     subject: Subject = Depends(current_subject),
                                     db: Session = Depends(scoped_db)) -> dict:
-    """교체는 **정상 동작**이다 (`〈59〉-①`). **본체는 이 경로의 대상이 아니다** — 409."""
+    """교체는 **정상 동작**이다 (`〈59〉-①`). **본체는 이 경로의 대상이 아니다** — 409.
+
+    **⟨동결 1회 해제 · `〈80〉-㉯ 3`(`K-3`)⟩ 축 뒤집기가 이 op 안에 든다.**
+    뒤집기 = **같은 두 파일의 축 배정을 맞바꾸는 것**이고, 그것이 정확히 `〈59〉` 가 말한
+    「잘못 붙인 격자를 바로잡는」 정상 동작이다. **파일을 다시 올리지 않는다.**
+    새 op(`flipGridAxes`)을 만들지 않은 이유는 501 이 24 → 25 가 되고 **축을 바꾸는 길이 둘이 되어
+    어느 것이 정본 경로인지 흐려지기** 때문이다.
+
+    요청은 **택일**이다 — `file` 이거나 `flipAxes: true` 이거나. 둘 다이거나 둘 다 아니면 400.
+    """
     row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    if flipAxes is not None and file is not None:
+        raise errors.bad_request(
+            "`file` 과 `flipAxes` 는 택일이다 — 함께 보내면 어느 쪽을 했는지 응답이 말할 수 없다.")
+    if flipAxes is not None:
+        if not flipAxes:
+            raise errors.bad_request("`flipAxes: false` 는 아무것도 요청하지 않는다.")
+        return _flip_grid_axes(db, subject=subject, dataset_id=dataset_id, file_ref=file_ref)
+    if file is None:
+        raise errors.bad_request("`file` 이거나 `flipAxes: true` 여야 한다.")
     name = (file.filename or "").strip()
     if not name or len(name) > MAX_FILE_NAME:
         raise errors.bad_request("파일 이름은 1~255자다.")
@@ -453,6 +472,23 @@ def delete_dataset_grid_file(datasetId: str, fileId: str,
     d3_catalog.delete_file(db, file_ref)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return Response(status_code=204)
+
+
+def _flip_grid_axes(db: Session, *, subject: Subject, dataset_id: Ulid, file_ref: Ulid) -> dict:
+    """`K-3` — 두 격자 파일의 축 배정을 맞바꾼다. **짝이 없으면 409.**
+
+    「격자가 2건이 아니면 바꿀 배정이 없다」가 409 의 뜻이다. 결합축 1건(위도·경도가 한 파일)을
+    뒤집는 것은 **같은 것**이라 조작 자체가 성립하지 않는다.
+    """
+    grids = d3_catalog.grid_files(db, dataset_id)
+    if len(grids) != 2:
+        raise errors.conflict(
+            f"기준 격자 파일이 {len(grids)}건이라 축을 맞바꿀 짝이 없다 — 뒤집기는 두 파일 사이의 조작이다.")
+    d3_catalog.swap_grid_axes(db, dataset_id)
+    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    updated = next(g for g in d3_catalog.grid_files(db, dataset_id) if g.file_id == str(file_ref))
+    return {"fileId": updated.file_id, "fileName": updated.file_name, "kind": updated.kind,
+            "gridAxis": {"carriesLat": updated.carries_lat, "carriesLon": updated.carries_lon}}
 
 
 def _grid_target(db: Session, subject: Subject, datasetId: str, fileId: str):

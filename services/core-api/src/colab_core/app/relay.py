@@ -95,6 +95,75 @@ def honest_empty_suggestions(*, lab_id: str, lab_name: str, searched_count: int,
     }
 
 
+def honest_empty_search(*, lab_id: str, lab_name: str, searched_count: int,
+                        reason: str) -> dict[str, Any]:
+    """**정직한 빈 상태** — 검색판 (`〈80〉-㉯ 5`).
+
+    ① **뒤진 범위가 먼저다** (`Policy_데이터_찾기 §3.3`). 0건이어도 어디를 몇 개 뒤졌는지가 먼저다.
+    ② **0건은 오류가 아니다** — 막다른 길이 아니라 다음 행동을 안내할 상태다(`§1.3-7`).
+    ③ `isDataQuery` 를 `true` 로 둔다 — **질의를 판정한 것은 AI 이고 우리는 판정하지 못했다.**
+       `false` 로 두면 「데이터를 찾는 질문이 아니다」라는 **하지 않은 판정**을 말하는 것이 된다.
+    """
+    return {
+        "degraded": True,
+        "degradedReason": reason,
+        "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
+        "isDataQuery": True,
+        "items": [],
+        "totalCount": 0,
+        "nextCursor": None,
+    }
+
+
+class HttpDatasetSearchRelay:
+    """`ports.DatasetSearchPort` — ai-service 로 나가는 자연어 검색 중계.
+
+    `HttpLineageSuggestionRelay` 와 같은 규칙이다 — 주소가 없어도, 못 닿아도, 범위가 달라도
+    **200 + 빈 결과**다. 「AI 가 없다」가 「검색 화면이 죽는다」가 되면 안 된다 (`CLAUDE.md §3`).
+    """
+
+    def __init__(self, base_url: str | None) -> None:
+        self._base = None if not base_url else base_url.rstrip("/")
+
+    def search(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
+               limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
+        def empty(reason: str) -> dict[str, Any]:
+            return honest_empty_search(lab_id=lab_id, lab_name=lab_name,
+                                       searched_count=searched_count, reason=reason)
+
+        if self._base is None:
+            return empty("검색 서비스가 아직 연결되지 않았다 — 목록에서 조건으로 찾을 수 있다.")
+        payload: dict[str, Any] = {
+            "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
+            "query": query,
+            "limit": limit,
+        }
+        if cursor:
+            payload["cursor"] = cursor
+        try:
+            status, body = _request(f"{self._base}/searches", method="POST",
+                                    headers=_scope_headers(lab_id, account_id), body=payload)
+        except RelayUnavailable as e:
+            return empty(f"검색 서비스에 닿지 못했다: {e}")
+        if status != 200 or not isinstance(body, dict):
+            return empty(f"검색 서비스가 {status} 로 답했다.")
+        # **요청의 범위와 다르면 응답을 버린다** (`core-ai.yaml SearchResponse.scope`).
+        # 다른 연구실을 뒤진 결과를 이 화면에 세우면 경계가 응답 한 줄로 무너진다.
+        scope = body.get("scope")
+        if not isinstance(scope, dict) or scope.get("labId") != lab_id:
+            return empty("검색 응답의 범위가 요청과 달라 버렸다.")
+        results = body.get("results")
+        items = results.get("items") if isinstance(results, dict) else None
+        return {
+            "degraded": bool(body.get("degraded", False)),
+            "degradedReason": body.get("degradedReason"),
+            "scope": scope,
+            "isDataQuery": bool(body.get("isDataQuery", True)),
+            "items": items if isinstance(items, list) else [],
+            "nextCursor": results.get("nextCursor") if isinstance(results, dict) else None,
+        }
+
+
 class HttpLineageSuggestionRelay:
     """`ports.LineageSuggestionPort` — ai-service 로 나가는 중계.
 

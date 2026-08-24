@@ -15,7 +15,9 @@ from colab_core.app.main import API_PREFIX, create_app
 from colab_core.app.routes.not_implemented import OPERATIONS
 from colab_core.kernel.config import Settings
 
-# 실동작 21 개. P1 이 넷을, **P2 가 열둘을** 501 표에서 빼 왔다 (P2-EXEC §4 W2 P2-api ⑸).
+# 실동작 **22 개**. P1 이 넷을, **P2 가 열둘을** 501 표에서 빼 왔고(P2-EXEC §4 W2 P2-api ⑸),
+# **S1 이 `searchDatasets` 를 신설과 동시에 구현했다** — 계약에 op 을 열어 두고 안 만들면
+# 501 이 24 → 25 가 된다. 그래서 여는 회차에 함께 만들었다 (`〈80〉-㉯ 5` · `〈74〉-㉱`).
 P1_REAL = {"getCurrentAccount", "getLab", "listLabMembers", "saveLabMemberPermissions",
            "listDatasets", "listDatasetFacets", "getDataset", "listDatasetFiles",
            "createProject"}
@@ -34,6 +36,10 @@ P2_REAL = {
     "getPreviewRender":             "tests/test_preview_relay.py",
     "listUploadLineageSuggestions": "tests/test_lineage_suggestions.py",
 }
+#: S1 이 동결 해제 회차에 신설과 동시에 구현한 하나. **뺀 자리마다 실동작 시험이 있다**는
+#: 규칙이 「신설한 자리」에도 그대로 걸린다 — 그래야 501 이 안 늘어난 것이 증명된다.
+S1_REAL = {"searchDatasets": "tests/test_search_relay.py"}
+P2_REAL = {**P2_REAL, **S1_REAL}
 REAL = P1_REAL | set(P2_REAL)
 NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
@@ -57,7 +63,12 @@ def client() -> TestClient:
 
 
 def test_the_24_unimplemented_operations_are_exactly_these() -> None:
-    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24."""
+    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24.
+
+    ⭑ **S1 은 이 수를 바꾸지 않는다** (`〈74〉-㉱` · `C1` 통과 조건 2). 미리보기 2 도 격자 3 도
+    되돌리지 않고, 계약이 하나 늘어난 `searchDatasets` 는 **여는 회차에 구현**해서 표에
+    행을 더하지 않았다. **「변동 없음」도 확인 대상이다** — 그래서 이 단언이 남아 있다.
+    """
     assert len(OPERATIONS) == 24
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 

@@ -365,19 +365,75 @@ components:
 
     RenderResult:
       type: object
-      required: [tileUrlTemplate, bounds, legend]
+      description: |
+        **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 1(`K-1`)·4(`K-4`)⟩**
+
+        완성된 렌더가 무엇으로 소비되는가. **두 형태가 택일(`oneOf`)이다.**
+        - **단일 이미지** (`imageUrl` ＋ 사이드카) — stage 1 미리보기 3층이 내는 형태다
+          (`〈74〉-㉮` — ①썸네일 128 px WEBP · ②비지도형 1024 px PNG · ③지도형 1024 px PNG).
+        - **타일** (`tileUrlTemplate`) — **지우지 않는다.** stage 2 확대 뷰가 그 자리를 쓰고
+          `〈68〉` 은 유효한 채 stage 2 에서 깨어난다 (`〈80〉-㉯ 1`).
+
+        **왜 `oneOf` 인가** — 개정 전에는 `required: [tileUrlTemplate, …]` ＋
+        `additionalProperties: false` 라 **단일 이미지 + bbox 를 낼 자리가 없었다.**
+        둘 다 선택으로 풀어 두면 「무엇을 그릴지 안 적힌 완료」가 성립한다 — 택일로 못 박는다.
+
+        **래스터 배열은 여전히 core 를 통과하지 않는다** — 오가는 것은 URL 과 경계뿐이다
+        (파일 상단 주석 · `PREVIEW-IMPLEMENTATION §10-14` — FE 에는 bbox 네 숫자와 이미지 크기만).
       additionalProperties: false
+      required: [bounds, legend]
+      oneOf:
+        - required: [imageUrl]
+        - required: [tileUrlTemplate]
       properties:
+        imageUrl:
+          type: string
+          description: |
+            그려진 이미지 한 장의 URL. core 는 이 문자열을 해석하지 않고 전달만 한다.
+            **원값을 여기서 읽으려 하지 마라** — 8비트로 양자화돼 되돌릴 수 없다
+            (`PREVIEW-IMPLEMENTATION §10-20`). 값 조회는 stage 1 밖이다.
+          minLength: 1
+        sidecarUrl:
+          type: string
+          description: |
+            지도형(③)에만 있는 **bbox 사이드카 JSON** 의 URL (약 400 B ·
+            `PREVIEW-IMPLEMENTATION §3.3`). 비지도형(②)·썸네일(①)에는 **없다** —
+            좌표계가 「없음」인 산출물에 좌표 파일을 붙이지 않는다.
+            ⚠ **위경도 배열을 내려보내는 자리가 아니다**(53 MB ↔ 400 B, `§10-3`).
+          minLength: 1
+        worldFileUrl:
+          type: string
+          description: |
+            지도형(③)의 `.pgw` 월드파일 URL. ⚠ **`sidecarUrl` 의 `bbox_3857`(이미지 바깥 모서리)과
+            반 픽셀 어긋나는 것이 정상이다**(월드파일 5·6행은 픽셀 **중심**).
+            **같게 만들려고 고치지 마라**(`PREVIEW-IMPLEMENTATION §3.4`).
+          minLength: 1
         tileUrlTemplate:
           type: string
           description: |
             지도 위젯이 그대로 쓰는 타일 URL 틀 (`{z}`·`{x}`·`{y}` 치환).
             core 는 이 문자열을 해석하지 않고 전달만 한다.
+            **stage 1 은 이 형태를 내지 않는다** — 타일 서빙은 stage 1 밖이다(`〈74〉-㉳`).
           minLength: 1
         bounds:
           $ref: "#/components/schemas/Bounds"
         legend:
           $ref: "#/components/schemas/Legend"
+        precisionBadge:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/GridPrecisionBadge" }]
+          description: |
+            **`K-4` 정밀도 배지** — 이 그림의 좌표가 어디서 왔는가를 화면이 **말하게** 한다
+            (`〈80〉-㉯ 4`). 지도형(③)을 낸 결과에는 있어야 하고, 좌표를 쓰지 않는
+            ①②에는 생략한다. **`격자 없음 — 지도형 보류` 는 실패가 아니라 상태다**
+            (`PREVIEW-IMPLEMENTATION §5.5` — 「실패가 아니라 보류」).
+        colorRangeStage:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/ColorRangeStage" }]
+          description: |
+            **`K-4` 색 범위 단계** — 이 그림의 2–98 % 공통 스케일이 `잠정`(그 업로드의 파일
+            집합)인가 `확정`(데이터셋 전체)인가 (`〈74〉-㉴` · `〈80〉-㉯ 4`).
+            ⚠ **라벨이 없으면 그 산출물은 범위 밖이다** — `S1-PLAN-REFOUND §C.2 Q4` 의
+            「범위 표기 의무」가 이 필드다. 파일이 1장이면 잠정 범위는 프레임별 스트레치와
+            수학적으로 같고, 금지(`§10-7`)와 갈리는 근거 셋 중 하나가 **이 라벨**이다.
 
     Bounds:
       type: object

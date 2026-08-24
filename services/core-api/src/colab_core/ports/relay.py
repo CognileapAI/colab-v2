@@ -36,3 +36,16 @@ class LineageSuggestionPort(Protocol):
                 upload_id: str, searched_count: int,
                 dataset_name_draft: str | None, subject: str | None) -> dict[str, Any]:
         ...
+
+
+class DatasetSearchPort(Protocol):
+    """ai-service 자연어 검색 중계 (`core-ai.yaml searchDatasets` · `〈80〉-㉯ 5`).
+
+    **AI 는 식별자·관련도·근거 한 줄만 돌려준다.** 이름·Lv·잠김 같은 카탈로그 값은
+    core-api 가 D3·D2 에서 붙인다 — 두 곳에서 말하면 갈라진다.
+    **못 찾으면 정직한 빈 상태**이고, 그때도 `scope` 는 온다: 뒤진 범위를 먼저 밝힌다.
+    """
+
+    def search(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
+               limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
+        ...

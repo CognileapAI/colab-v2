@@ -239,6 +239,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/searches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 자연어 검색 (중계) — S-01 검색 히어로 · S-06 검색 결과
+         * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 5⟩**
+         *     이 파일 상단이 「검색 진입점 op 은 아직 없다 — P4 가 연다」로 비워 둔 자리다.
+         *     `core-ai` 는 내부 표면이라 FE 가 직접 도달할 수 없고, **이 중계로만 도달한다**
+         *     (`listUploadLineageSuggestions` 와 같은 모양 · `SEAM-AUDIT I-08`).
+         *
+         *     **역할 분담이 `core-ai.yaml` 의 것 그대로다** — AI 는 **식별자 · 관련도 · 근거 한 줄**만
+         *     돌려주고, 카드에 실리는 나머지(이름·Lv·주제·업로더·Verified·잠김)는 **core-api 가
+         *     D3·D2 에서 붙인다.** AI 가 카탈로그 값을 다시 말하지 않는다 — 두 곳에서 말하면 갈라진다.
+         *     그래서 응답 스키마를 `core-ai.yaml` 에서 그대로 참조하지 **않고** 여기서 세운다.
+         *
+         *     정본이 못 박은 것 넷 —
+         *     - **뒤진 범위를 먼저 밝힌다** (`scope`). 0건이어도 어디를 몇 개 뒤졌는지가 먼저다
+         *       (`Policy_데이터_찾기 §3.3`). **0건은 정상 응답이다** — 오류로 만들지 않는다.
+         *     - **관련도는 막대 하나다.** `relevanceBar` 를 퍼센트·등급 텍스트로 그리지 않는다(§4).
+         *       확신도(`AiConfidence`)와 **다른 개념**이고, 확신도에는 숫자가 없다.
+         *     - **근거는 한 줄 고정**이고 **한계도 그 한 줄 안에서** 밝힌다 — 별도 필드를 두지 않는다.
+         *     - **잠긴 데이터가 결과에서 빠지지 않는다** (§1.3-6). 잠김 표시는 core 가 붙인다.
+         *
+         *     **`Verified 우선` 정렬은 core 가 다시 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
+         *     AI 가 제 몫을 못 하면 5xx 가 아니라 **빈 결과 + `degraded: true`** 다
+         *     (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+         */
+        post: operations["searchDatasets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/datasets/{datasetId}": {
         parameters: {
             query?: never;
@@ -350,10 +390,26 @@ export interface paths {
         };
         get?: never;
         /**
-         * 기준 격자 파일 교체 — 정상 동작
+         * 기준 격자 파일 교체 · 축 뒤집기 — 둘 다 정상 동작
          * @description 교체는 정상 동작이다 (`〈59〉-①` — 열린 결정 ⑳ 해소). 판정은 `업로드·편집` 스위치
          *     (`〈59〉-②`). **본체 파일은 이 경로의 대상이 아니다** — 본체를 갈아 끼우는 것은
          *     다른 데이터다 (`〈59〉-③`). 대상 파일의 `kind` 가 `본체` 면 409 다.
+         *
+         *     **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 3(`K-3`) — 축 뒤집기가 이 op 안에 든다⟩**
+         *     서버가 축을 잘못 판별했을 때 사람이 바로잡는 길이다
+         *     (`PREVIEW-IMPLEMENTATION §10-16` — 사용자에게 묻지 않고 **보여주고 뒤집기 버튼을 준다**).
+         *     **새 op 을 만들지 않는다** — 뒤집기 = **같은 두 파일의 축 배정을 바꾸는 것**이고
+         *     그것이 정확히 `〈59〉` 가 말한 「잘못 붙인 격자를 바로잡는」 정상 동작이다.
+         *     **파일을 다시 올리지 않는다.** 기각한 대안 = `flipGridAxes` 신설 — 501 이 24 → 25 가 되고
+         *     축을 바꾸는 길이 둘이 되어 **어느 것이 정본 경로인지 흐려진다**(`〈80〉-㉯ 3`).
+         *
+         *     요청은 **택일(`oneOf`)** 이다.
+         *     - `file` — 파일을 갈아 끼운다. 축 배정은 그대로 둔다.
+         *     - `flipAxes: true` — **파일은 그대로 두고 그 데이터셋의 두 기준 격자 파일의 축 배정을
+         *       맞바꾼다.** ⚠ **한 파일만 고치는 형태가 아닌 이유** — `0004:192-195` 의
+         *       축별 부분 유니크가 「위도 둘」을 막으므로 **한쪽만 바꾸면 중간 상태가 제약을 깬다.**
+         *       맞바꿈은 한 트랜잭션 안에서 끝난다.
+         *       그래서 **격자 파일이 2건이 아니면 409** 다 — 짝이 없으면 바꿀 배정이 없다.
          */
         put: operations["replaceDatasetGridFile"];
         post?: never;
@@ -1224,6 +1280,70 @@ export interface components {
              *     **빠른 작업을 두지 않는다.** 행 자체는 사라지지 않는다 (P-13·P-34).
              */
             bodyAccessible: boolean;
+            /**
+             * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 2(`K-2`)⟩**
+             *     목록 썸네일(①, 128 px WEBP)의 URL. **사전 생성된 정적 자산이다** —
+             *     행마다 렌더 작업을 거는 물건이 아니다(`〈80〉-㉯ 2`).
+             *     **없을 수 있다** — 아직 안 구워졌거나, 본체를 못 읽었거나, `bodyAccessible: false` 인
+             *     잠긴 행이다. 없으면 화면은 **빈 자리로 둔다** — 대체 그림을 지어내지 않는다.
+             */
+            thumbnailUrl?: string | null;
+        };
+        /**
+         * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 5⟩** 자연어 검색 요청.
+         *     **연구실 경계는 실리지 않는다** — 서버가 인증 주체에서 주입한다 (`CLAUDE.md §3-5` ·
+         *     P-9·P-10). `core-ai.yaml` 의 `SearchRequest.scope` 를 FE 가 채우지 않는 이유가 이것이다.
+         */
+        SearchQuery: {
+            /** @description 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`). */
+            query: string;
+            /**
+             * @description 돌려받을 최대 건수. 화면의 `+N건 더 보기` 가 쓰는 폭이다.
+             * @default 20
+             */
+            limit: number;
+            /** @description 이어보기 토큰. 첫 요청에서는 생략한다. */
+            cursor?: components["schemas"]["Cursor"];
+        };
+        /**
+         * @description 검색 응답. **뒤진 범위를 먼저 밝히고**(`scope`), 결과는 관련도 순이며,
+         *     **0건이 정상**이다 (`Policy_데이터_찾기 §1.3-7`·§3.3).
+         */
+        SearchResults: components["schemas"]["ListEnvelope"] & {
+            /** @description 「우리 연구실 데이터 128개를 뒤졌지만…」 의 그 값. **0건이어도 이것이 먼저다.** */
+            scope: components["schemas"]["AiSearchScope"];
+            /**
+             * @description 질의가 **데이터를 찾는 질문**인가. `false` 면 `items` 는 비어 있고 화면은
+             *     「데이터를 찾는 질문에 답해요」 + 예시로 안내한다 (`§9`). **오류가 아니다.**
+             */
+            isDataQuery: boolean;
+            /**
+             * @description AI 가 제 몫을 못 했다. `true` 면 결과가 비었거나 부분적이다 —
+             *     **5xx 로 끝내지 않는다.** 카탈로그·업로드는 그대로 돈다
+             *     (`core-ai.yaml` Degradable · `CLAUDE.md §3` — AI 없이도 v2 는 완결된 제품이다).
+             */
+            degraded: boolean;
+            /** @description 사람이 읽을 한 줄. **화면 문구는 core 가 정한다** — AI 문구를 그대로 쓰지 않는다. */
+            degradedReason?: string;
+            items: components["schemas"]["SearchResultRow"][];
+        };
+        /**
+         * @description 검색 결과 카드 한 장 = **카탈로그 행 그대로 + AI 가 보탠 두 값.**
+         *     `DatasetRow` 를 다시 선언하지 않고 합성한다 — 같은 모양의 두 번째 선언은 갈라질 표면이다.
+         *     **잠긴 데이터도 이 형태로 내려간다** (`§1.3-6` — 결과에서 빼지 않는다).
+         */
+        SearchResultRow: components["schemas"]["DatasetRow"] & {
+            /**
+             * @description **막대 하나의 길이**다. **퍼센트도 등급 텍스트도 쓰지 않는다**
+             *     (`Policy_데이터_찾기 §4 용어(관련도)`). 순서가 이미 관련도이고 이 값은 강도만 거든다.
+             *     **사용자에게 숫자로 보이는 순간 정본 위반이다.**
+             */
+            relevanceBar: number;
+            /**
+             * @description 「왜 이 결과?」 **한 줄.** 한계도 이 한 줄 안에서 함께 밝힌다 —
+             *     별도 필드를 두지 않는다 (`§4 한계 표시` · `§8 AI 근거 블록`).
+             */
+            rationale: components["schemas"]["AiRationale"];
         };
         /** @description 조건을 걸 수 있는 다섯 열의 값별 건수. */
         FacetSet: {
@@ -1329,6 +1449,15 @@ export interface components {
             /** @description 조각의 실제 파일명. 목록을 펼쳐야 보인다 (`DataModel §4.3`). */
             fileName: string;
             kind: components["schemas"]["FileKind"];
+            /**
+             * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 3(`K-3`)⟩**
+             *     **`kind` 가 `기준 격자 파일` 일 때만 있다.** 본체에는 없다 — 축이 붙은 본체는
+             *     `0004` 의 CHECK 가 애초에 만들지 않는다.
+             *     **화면이 뒤집기 버튼을 그리려면 지금 배정이 무엇인지 알아야 한다** —
+             *     그 값이 이것이다 (`PREVIEW-IMPLEMENTATION §10-16` — 사용자에게 「위도냐 경도냐」를
+             *     묻지 않는다. **서버가 판별하고 보여주고 뒤집기 버튼을 준다**).
+             */
+            gridAxis?: components["schemas"]["GridAxisAssignment"];
         };
         DeletionImpact: {
             /** @description "이 데이터로 만든 데이터 N건의 계보에 자리가 남아요". */
@@ -1586,7 +1715,7 @@ export interface components {
             nextCursor: components["schemas"]["Cursor"] | null;
         };
         /**
-         * @description 파일 종류. 둘뿐이며 기준 격자 파일은 데이터셋당 0~2건이다 — 위도·경도 한 쌍이 실물이고(축은 grid_axis 가 가른다), 등록 뒤 후주입도 정상 동작이다. 근거: 〈58〉(PLAN-SoT — DataModel_공통_기반 §4.3 의 0~1건 을 Ted 가 2026-08-23 에 2건 허용으로 닫았다). ⚠ ../events/core-pipeline.json 의 「0~1건」 산문은 이벤트 계약 동결(D2c §2-1 — 한 글자도 안 고친다) 때문에 이번 회차에 못 따라왔다 — 다음 이벤트 개정 권한이 열릴 때 정합한다.
+         * @description 파일 종류. 둘뿐이며 기준 격자 파일은 데이터셋당 0~2건이다 — 위도·경도 한 쌍이 실물이고(축은 carries_lat·carries_lon 두 열이 가른다), 등록 뒤 후주입도 정상 동작이다. 근거: 〈58〉(PLAN-SoT — DataModel_공통_기반 §4.3 의 0~1건 을 Ted 가 2026-08-23 에 2건 허용으로 닫았다). ⭑ ../events/core-pipeline.json 의 「0~1건」 산문은 이벤트 계약 동결 때문에 못 따라왔었고, 〈80〉-㉯ 8(승인된 1회 해제) 회차에 0~2건 으로 정합했다 — 계약 안에서 두 값으로 갈라져 있던 자리가 닫혔다. 역할은 요청이 선언한다(createUpload.fileKinds) — 확장자가 정하지 않는다(〈79〉·〈77〉-㉵).
          * @enum {string}
          */
         FileKind: "본체" | "기준 격자 파일";
@@ -1722,6 +1851,11 @@ export interface components {
          * @enum {string}
          */
         ProjectType: "국가과제" | "논문";
+        /** @description 기준 격자 파일 한 장이 어느 축을 싣는가. 단일 enum 이 아니라 두 불리언인 이유는 통합 파일(위도·경도가 한 파일)이 실재하기 때문이다 — 제3의 「결합축」 값을 두면 「위도 1건 + 결합축 1건」을 못 막는다(0004_p2_grid_axis_and_d5 ⑴ · 〈66〉). 둘 다 false 인 기준 격자 파일은 만들어지지 않는다 — 축을 못 정한 파일은 행을 만들지 않고 거절한다(〈63〉-ⓒ · 〈79〉-⑵). */
+        GridAxisAssignment: {
+            carriesLat: boolean;
+            carriesLon: boolean;
+        };
         /**
          * @description 프로젝트 상태. 2값이며 삭제는 없다. 근거: DataModel_공통_기반 §5(상태).
          * @enum {string}
@@ -1770,6 +1904,11 @@ export interface components {
              * @description 기준 격자 파일(위경도 짝 파일) 없이 그려 본다. 파일 안에 위경도가 들어 있는
              *     경우가 있어 미리 막으면 그릴 수 있는 것까지 못 그린다
              *     (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
+             *     ⚠ 실측 — NetCDF·GeoTIFF·HDF4 는 파일 내부 정보로 격자가 계산되므로 이 옵션이
+             *     실제로 통한다. **Binary(HSR) 는 통하지 않는다** — 헤더의 투영 파라미터 자리가
+             *     전부 0 이라 재현 불가(오차 5.9 km)이고, 이 경우 **합성 격자를 만들지 않고
+             *     그리기를 실패로 끝낸다**(`DR-9`). `DATA-REFERENCE §1.1` ·
+             *     `DATA-PIPELINE-MEASUREMENT.md`.
              * @default false
              */
             withoutReferenceGrid: boolean;
@@ -1813,15 +1952,76 @@ export interface components {
             unit?: string;
             classes: components["schemas"]["LegendClass"][];
         };
+        /**
+         * @description 미리보기 지도형(③)의 좌표가 어디서 왔는가. 화면이 이것을 말하지 않으면 사용자는 「지어낸 좌표」와 「파일이 말한 좌표」를 구분할 방법이 없다. `격자 없음 — 지도형 보류` 는 실패가 아니라 상태다 — 격자를 올리면 켜진다(PREVIEW-IMPLEMENTATION §5.5 · §10-9). 근거: 〈80〉-㉯ 4(K-4) · 〈74〉-㉮.
+         * @enum {string}
+         */
+        GridPrecisionBadge: "동봉 격자 적용" | "투영 계산 격자" | "격자 없음 — 지도형 보류";
+        /**
+         * @description 2–98 % 공통 색 범위를 어느 집합에서 잡았는가. `잠정` = 그 업로드의 파일 집합(등록 확정 전 모달 전용) · `확정` = 데이터셋 전체(등록 확정 시 1회). ⚠ 캐시 키에 이 단계 토큰을 넣는다 — 값만 넣으면 두 범위가 우연히 같을 때 잠정 산출물이 확정으로 조용히 승격된다. 잠정 범위로 재생·애니메이션을 열지 않는다. 근거: 〈74〉-㉴ · 〈80〉-㉯ 4(K-4) · S1-PLAN-REFOUND §C.2 Q4·§D.4-⑶.
+         * @enum {string}
+         */
+        ColorRangeStage: "잠정" | "확정";
+        /**
+         * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 1(`K-1`)·4(`K-4`)⟩**
+         *
+         *     완성된 렌더가 무엇으로 소비되는가. **두 형태가 택일(`oneOf`)이다.**
+         *     - **단일 이미지** (`imageUrl` ＋ 사이드카) — stage 1 미리보기 3층이 내는 형태다
+         *       (`〈74〉-㉮` — ①썸네일 128 px WEBP · ②비지도형 1024 px PNG · ③지도형 1024 px PNG).
+         *     - **타일** (`tileUrlTemplate`) — **지우지 않는다.** stage 2 확대 뷰가 그 자리를 쓰고
+         *       `〈68〉` 은 유효한 채 stage 2 에서 깨어난다 (`〈80〉-㉯ 1`).
+         *
+         *     **왜 `oneOf` 인가** — 개정 전에는 `required: [tileUrlTemplate, …]` ＋
+         *     `additionalProperties: false` 라 **단일 이미지 + bbox 를 낼 자리가 없었다.**
+         *     둘 다 선택으로 풀어 두면 「무엇을 그릴지 안 적힌 완료」가 성립한다 — 택일로 못 박는다.
+         *
+         *     **래스터 배열은 여전히 core 를 통과하지 않는다** — 오가는 것은 URL 과 경계뿐이다
+         *     (파일 상단 주석 · `PREVIEW-IMPLEMENTATION §10-14` — FE 에는 bbox 네 숫자와 이미지 크기만).
+         */
         RenderResult: {
+            /**
+             * @description 그려진 이미지 한 장의 URL. core 는 이 문자열을 해석하지 않고 전달만 한다.
+             *     **원값을 여기서 읽으려 하지 마라** — 8비트로 양자화돼 되돌릴 수 없다
+             *     (`PREVIEW-IMPLEMENTATION §10-20`). 값 조회는 stage 1 밖이다.
+             */
+            imageUrl?: string;
+            /**
+             * @description 지도형(③)에만 있는 **bbox 사이드카 JSON** 의 URL (약 400 B ·
+             *     `PREVIEW-IMPLEMENTATION §3.3`). 비지도형(②)·썸네일(①)에는 **없다** —
+             *     좌표계가 「없음」인 산출물에 좌표 파일을 붙이지 않는다.
+             *     ⚠ **위경도 배열을 내려보내는 자리가 아니다**(53 MB ↔ 400 B, `§10-3`).
+             */
+            sidecarUrl?: string;
+            /**
+             * @description 지도형(③)의 `.pgw` 월드파일 URL. ⚠ **`sidecarUrl` 의 `bbox_3857`(이미지 바깥 모서리)과
+             *     반 픽셀 어긋나는 것이 정상이다**(월드파일 5·6행은 픽셀 **중심**).
+             *     **같게 만들려고 고치지 마라**(`PREVIEW-IMPLEMENTATION §3.4`).
+             */
+            worldFileUrl?: string;
             /**
              * @description 지도 위젯이 그대로 쓰는 타일 URL 틀 (`{z}`·`{x}`·`{y}` 치환).
              *     core 는 이 문자열을 해석하지 않고 전달만 한다.
+             *     **stage 1 은 이 형태를 내지 않는다** — 타일 서빙은 stage 1 밖이다(`〈74〉-㉳`).
              */
-            tileUrlTemplate: string;
+            tileUrlTemplate?: string;
             bounds: components["schemas"]["Bounds"];
             legend: components["schemas"]["Legend"];
-        };
+            /**
+             * @description **`K-4` 정밀도 배지** — 이 그림의 좌표가 어디서 왔는가를 화면이 **말하게** 한다
+             *     (`〈80〉-㉯ 4`). 지도형(③)을 낸 결과에는 있어야 하고, 좌표를 쓰지 않는
+             *     ①②에는 생략한다. **`격자 없음 — 지도형 보류` 는 실패가 아니라 상태다**
+             *     (`PREVIEW-IMPLEMENTATION §5.5` — 「실패가 아니라 보류」).
+             */
+            precisionBadge?: components["schemas"]["GridPrecisionBadge"];
+            /**
+             * @description **`K-4` 색 범위 단계** — 이 그림의 2–98 % 공통 스케일이 `잠정`(그 업로드의 파일
+             *     집합)인가 `확정`(데이터셋 전체)인가 (`〈74〉-㉴` · `〈80〉-㉯ 4`).
+             *     ⚠ **라벨이 없으면 그 산출물은 범위 밖이다** — `S1-PLAN-REFOUND §C.2 Q4` 의
+             *     「범위 표기 의무」가 이 필드다. 파일이 1장이면 잠정 범위는 프레임별 스트레치와
+             *     수학적으로 같고, 금지(`§10-7`)와 갈리는 근거 셋 중 하나가 **이 라벨**이다.
+             */
+            colorRangeStage?: components["schemas"]["ColorRangeStage"];
+        } & (unknown | unknown);
         /**
          * @description 조각 묶음에서만 생기는 상태. 몇 개를 못 읽었다고 미리보기를 통째로 막지 않는다.
          *     **무엇이 빠졌는지를 시각으로 정확히 말한다** — 지도에서 비어 보이는 자리를
@@ -2327,6 +2527,33 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    searchDatasets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchQuery"];
+            };
+        };
+        responses: {
+            /** @description 검색 결과. **0건도 여기로 온다** — 정직한 빈 상태. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResults"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getDataset: {
         parameters: {
             query?: never;
@@ -2520,8 +2747,13 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": {
-                    file: string;
-                };
+                    file?: string;
+                    /**
+                     * @description `true` 면 축 뒤집기다 — 이 파일과 짝 파일의 축 배정을 맞바꾼다.
+                     *     `false` 를 보내는 것은 **아무것도 안 하는 요청**이므로 400 이다.
+                     */
+                    flipAxes?: boolean;
+                } & (unknown | unknown);
             };
         };
         responses: {
@@ -2538,7 +2770,10 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`). */
+            /**
+             * @description 대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 (`〈59〉-③`).
+             *     **또는** `flipAxes` 인데 그 데이터셋의 기준 격자 파일이 2건이 아니다 — 바꿀 짝이 없다.
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
