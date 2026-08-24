@@ -72,6 +72,8 @@ class RenderJob:
     rendered: raster.Rendered | None = None
     partial: dict | None = None
     failure: dict | None = None
+    #: `core-viz.yaml#GridRejection` — 붙인 격자를 왜 못 썼는가. 거절이 아니면 `None`.
+    grid_rejection: dict | None = None
     tile_url_template: str = ""
     artifacts: "PreviewArtifacts | None" = None
     color_range: scale.ColorRange | None = None
@@ -101,12 +103,20 @@ class RenderJob:
             result: dict = {"legend": self.legend_body(), "precisionBadge": self.badge,
                             "colorRangeStage": self.color_range.stage
                             if self.color_range else None}
+            #
+            # ⚠ **①②는 항상 함께 구워진다**(`build_value_layers`). 개정 전에는 실을 자리가
+            # `imageUrl` 하나뿐이라 ③이 있으면 ②가, ③이 없으면 ①이 **버려졌다** —
+            # 그 URL 들은 **실패 봉투로만** 나갔고, 즉 **렌더가 성공할수록 썸네일이 안
+            # 보였다**(스윕 `A-1` · `〈88〉` 묶음 3). 이제 층마다 자기 자리가 있다.
+            result["thumbnailUrl"] = a.thumbnail.url
+            result["valuePreviewUrl"] = a.detail.url
             if a.map_image is not None and a.geometry is not None:
                 result["imageUrl"] = a.map_image.url
                 result["sidecarUrl"] = a.sidecar.url
                 result["worldFileUrl"] = a.world_file.url
                 result["bounds"] = a.geometry.bounds_dict()
             else:
+                # ②가 곧 주 화면인 갈래다 — 같은 URL 을 가리키는 것이 정상이다.
                 result["imageUrl"] = a.detail.url
             if result["colorRangeStage"] is None:
                 # 라벨 없는 산출물은 **범위 밖이다**(`§C.2 Q4`) — 키를 지우지 않고 실패로 둔다.
@@ -116,6 +126,10 @@ class RenderJob:
             body["failure"] = self.failure
         if self.partial is not None:
             body["partialFailure"] = self.partial
+        if self.grid_rejection is not None:
+            # ⚠ **`failure` 안이 아니다.** ②비지도형은 격자 없이도 `완료` 로 나가고,
+            # 그때도 「왜 지도형이 안 떴는가」를 화면이 말해야 한다 (`§5.5` 보류).
+            body["gridRejection"] = self.grid_rejection
         return body
 
     def legend_body(self) -> dict:
@@ -203,7 +217,11 @@ def _read_part(part: SourcePart, spec: RenderSpec) -> _Read:
     try:
         grid = find_reference_grid(spec.target.grid_dir, expect_shape=native)
     except GridUnavailableError as e:
-        raise RenderError(RenderFailure.NO_REFERENCE_GRID, str(e)) from e
+        # **거절 사유를 숫자·enum 으로 들려 보낸다** (`〈88〉` 묶음 1·2). 문장은 사람용으로만
+        # 남는다 — 화면이 문장을 가르던 자리가 여기서 닫힌다(스윕 `C-1`).
+        err = RenderError(RenderFailure.NO_REFERENCE_GRID, str(e))
+        err.grid_rejection = e.rejection(file_name=part.file_name)
+        raise err from e
     steps = field_.steps
     reference = (_decimate_grid(grid.lat, steps), _decimate_grid(grid.lon, steps))
     return _Read(part=part, fmt=fmt, field=field_, reference=reference,
@@ -427,6 +445,7 @@ def _run(job: RenderJob) -> None:
     except RenderError as e:
         job.stage = None
         job.status = STATUS_FAILED
+        job.grid_rejection = getattr(e, "grid_rejection", None)
         job.failure = _failure(e.code, e.detail, job,
                                message=FAILURE_MESSAGES.get(e.code, e.message))
     except Exception as e:                       # noqa: BLE001 — 마지막 그물

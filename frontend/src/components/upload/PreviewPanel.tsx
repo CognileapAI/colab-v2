@@ -14,8 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PaletteOption, PreviewSource, RenderJob, RenderResult } from './types';
 import { GridUploadBlock, type GridActions } from './GridUploadBlock';
-import { gridState } from './gridFlow';
-import { colorRangeNotice, layerOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
+import { gridState, type GridRejectionInput } from './gridFlow';
+import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 
 /** 정본 §9 「그리는 서버에 연결 못 함」. 코드가 없을 때 쓰는 기본 문구. */
 const UNAVAILABLE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
@@ -34,6 +34,12 @@ export interface GridFlowProps extends GridActions {
   transfer?: { sentBytes: number; totalBytes: number } | null;
   /** 워커의 축 판정을 기다린다 (`§E.3b` — 확정 또는 거절로 끝나야 `ready`). */
   verifying?: boolean;
+  /**
+   * ⟨`〈88〉` 묶음 7⟩ **워커가 거절한 격자의 사유**(`UploadStatus.gridRejections`).
+   * 렌더가 아직 없는 등록 전 구간에서 ⑥⑦⑧ 거절 상태를 세우는 근거다 —
+   * 이전에는 이 자리에 근거가 없어 화면이 viz-render 의 실패 문장을 인용했다.
+   */
+  gridRejection?: GridRejectionInput | null;
 }
 
 export function PreviewPanel(props: {
@@ -124,6 +130,8 @@ export function PreviewPanel(props: {
   const result: RenderResult | undefined = done ? job?.result : undefined;
   // 실패해도 이미 구운 값 미리보기·썸네일이 있으면 **감추지 않는다**
   const salvage = salvageOf(failure);
+  // **성공 경로의 ①②** (`〈88〉` 묶음 3). 이전에는 성공하면 오히려 사라지던 자리다.
+  const layers = result ? layersOf(result) : null;
 
   // 색 범위 — **조용히 바뀌지 않는다.** 앞서 본 범위와 견줘 바뀜을 한 번 말한다 (`§D.4`)
   const stage = result?.colorRangeStage ?? salvage?.colorRangeStage;
@@ -147,6 +155,10 @@ export function PreviewPanel(props: {
         drawing,
         result: result ?? null,
         failure: failure ?? null,
+        // **구조화된 거절이 먼저다** (`〈88〉` 묶음 2) — 화면은 서버 문장을 가르지 않는다.
+        // 렌더의 판정(`RenderJob.gridRejection`)이 있으면 그것이 최신이고, 없으면
+        // 워커의 판정(`UploadStatus.gridRejections` — 등록 전 구간)이 선다.
+        gridRejection: job?.gridRejection ?? grid.gridRejection ?? null,
         unreachable,
       })
     : null;
@@ -257,6 +269,15 @@ export function PreviewPanel(props: {
               {layerOf(result)}
             </span>
           </div>
+          {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3). 없으면 자리째 없다 */}
+          {layers?.thumbnailUrl ? (
+            <img
+              className="thumb"
+              alt=""
+              data-testid="up-preview-thumb"
+              src={layers.thumbnailUrl}
+            />
+          ) : null}
           {previewImageSrc(result) ? (
             <img
               className="tile"

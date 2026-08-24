@@ -95,6 +95,21 @@ export const FAILURE_CODE = {
 export const BADGE_NO_GRID = '격자 없음 — 지도형 보류';
 export const BADGE_ATTACHED = '동봉 격자 적용';
 
+/**
+ * ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 2⟩ 서버가 준 **구조화된** 거절.
+ * 계약 `core-viz.yaml#GridRejection` 이고 `UploadStatus.gridRejections` 도 같은 값 집합이다.
+ */
+export interface GridRejectionInput {
+  reason?: string;
+  shapes?: {
+    dataShape?: number[];
+    gridShape?: number[];
+    latShape?: number[];
+    lonShape?: number[];
+  };
+  fileName?: string;
+}
+
 export interface GridStateInput {
   /** 격자 파일을 실제로 올렸는가. 안 올렸으면 거절이 아니라 **아직 없음**이다. */
   hasGrid?: boolean;
@@ -109,6 +124,12 @@ export interface GridStateInput {
   failure?: { code?: string; message?: string; details?: unknown } | null;
   /** 렌더 서버에 닿지 못했다 (`§E.2-⑩` — `test_preview_relay.py:169` 의 화면 판). */
   unreachable?: boolean;
+  /**
+   * **거절 사유의 정본 자리** (`〈88〉` 묶음 2). 이것이 있으면 서버 문장을 보지 않는다.
+   * 없으면 문장으로 가르는 옛 경로가 선다 — 아직 안 고친 서버가 있을 수 있으므로 지우지 않지만,
+   * **새 사실을 만들지는 않는다.**
+   */
+  gridRejection?: GridRejectionInput | null;
 }
 
 export interface GridStateShapes {
@@ -144,8 +165,43 @@ function shapeText(raw: string): string {
 
 const SHAPE = /\(([0-9,\s]+)\)/g;
 
+/** `[2881, 2305]` → `2881 × 2305`. **숫자를 만들지 않는다.** 빈 배열이면 자리째 없다. */
+function shapeOf(dims?: number[]): string | undefined {
+  if (!dims || dims.length === 0) return undefined;
+  return dims.join(' × ');
+}
+
+/**
+ * ⟨`〈88〉` 묶음 2⟩ **구조화된 거절을 그대로 읽는다** — 문장을 가르지 않는다.
+ *
+ * ⚠ 형상을 **이름으로** 읽는 것이 핵심이다. 옛 경로는 문장에서 나온 괄호를 **순서대로**
+ * `{데이터}`·`{격자}` 에 채웠는데, viz-render 는 「데이터 … vs 격자 …」로 쓰고
+ * pipeline-worker 는 「격자 … vs 데이터 …」로 써서 **두 형상이 맞바뀌었다.**
+ * 화면이 「이 파일은 격자의 형상이고, 올리신 격자는 본체의 형상입니다」라고 말했고
+ * **거짓말인데 에러가 안 났다** (스윕 `C-1`⑵).
+ */
+export function fromGridRejection(rejection: GridRejectionInput): GridStateResult | null {
+  const name = rejection.reason;
+  if (name !== '형상 불일치' && name !== '축 판별 실패' && name !== '짝 불일치') return null;
+  const src = rejection.shapes ?? {};
+  const shapes: GridStateShapes = {};
+  const data = shapeOf(src.dataShape);
+  const grid = shapeOf(src.gridShape);
+  const lat = shapeOf(src.latShape);
+  const lon = shapeOf(src.lonShape);
+  if (data) shapes.data = data;
+  if (grid) shapes.grid = grid;
+  if (lat) shapes.lat = lat;
+  if (lon) shapes.lon = lon;
+  return Object.keys(shapes).length > 0 ? { name, shapes } : { name };
+}
+
 /**
  * 거절 사유를 `§E.2` 의 상태로 가른다.
+ *
+ * ⚠ **이 함수는 이제 대비책이다** — `〈88〉` 묶음 2 가 `gridRejection` 을 열었고 화면은
+ * 그쪽을 먼저 읽는다. 여기 남긴 이유는 **아직 그 필드를 안 채우는 응답이 올 수 있어서**이고,
+ * 새 사실을 만들지는 않는다. 아래 경고는 **이 대비 경로에 대한 것**으로 그대로 참이다.
  *
  * ⚠ **가르는 근거가 서버 문장뿐이다.** `REFERENCE_GRID_MISSING` 한 코드가 사다리
  * 1·2·3단을 모두 싣고 오고, 계약에는 그것을 나눌 필드가 없다 (`ErrorEnvelope.details` 는
@@ -190,6 +246,11 @@ export function gridState(input: GridStateInput): GridStateResult | null {
   if (input.unreachable) return { name: '렌더 서버 불가' };
   if (input.failure?.code === FAILURE_CODE.BOUNDS) return { name: '경계 위생 실패' };
   if (input.failure?.code === FAILURE_CODE.UNREACHABLE) return { name: '렌더 서버 불가' };
+  if (input.gridRejection) {
+    // **구조화된 사유가 이긴다** (`〈88〉` 묶음 2). 문장은 보지 않는다.
+    const structured = fromGridRejection(input.gridRejection);
+    if (structured) return structured;
+  }
   if (input.failure?.code === FAILURE_CODE.NO_GRID) {
     return classifyGridRejection(detailOf(input.failure), hasGrid);
   }

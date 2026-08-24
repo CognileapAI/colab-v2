@@ -5,9 +5,12 @@
 //  · `imageUrl` 만            → **②비지도형. 경계가 없는 것이 정상이고 이것은 완료다**
 //  · `tileUrlTemplate`        → stage 2 확대 뷰의 갈래. stage 1 은 내지 않지만 **읽을 수는 있다**
 //
-// ⚠ **①썸네일은 완료 응답에 자리가 없다** — `RenderResult` 에 썸네일 URL 필드가 없고,
-// viz-render 는 실패 봉투의 `details.thumbnailUrl` 로만 그 자리를 말한다. 그래서 화면은
-// 실패했을 때에 한해 그 URL 을 살려 쓴다. **없는 필드를 지어내지 않는다**(`DR-9`).
+// ⭑ **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 3⟩ 그 자리가 열렸다.**
+// 이전 판의 주석은 「①썸네일은 완료 응답에 자리가 없다 — 실패 봉투로만 온다」였고
+// **그것이 사실이었다.** viz-render 가 ①②를 항상 함께 굽는데 성공 응답에는 `imageUrl`
+// 한 자리뿐이라, ③이 있으면 ②가 ③이 없으면 ①이 버려졌다 — 즉 **렌더가 성공할수록
+// 썸네일이 안 보였다**(스윕 `A-1`). 이제 `thumbnailUrl`·`valuePreviewUrl` 이 계약에 있다.
+// `salvageOf`(실패 봉투 경로)는 **지우지 않는다** — 실패해도 구워진 층은 여전히 남는다.
 import type { RenderResult } from './types';
 
 /** 화면이 사람에게 말하는 층 이름. **번호를 쓰지 않는다.** */
@@ -17,6 +20,30 @@ export function layerOf(result: RenderResult): PreviewLayerName {
   return result.bounds || result.sidecarUrl || result.tileUrlTemplate
     ? '지도형 미리보기'
     : '값 미리보기';
+}
+
+export interface PreviewLayers {
+  /** ①썸네일 128 px WEBP. 없으면 자리째 없다 — **URL 을 지어내지 않는다.** */
+  thumbnailUrl?: string;
+  /** ②비지도형 1024 px PNG. */
+  valuePreviewUrl?: string;
+  /** 주 화면에 그릴 한 장 — ③이 있으면 ③, 없으면 ②다. */
+  mainImageUrl?: string;
+}
+
+/**
+ * 성공 결과가 실어 온 **세 층**을 화면 어휘로 옮긴다 (`〈88〉` 묶음 3).
+ * 「무엇을 주 화면에 그릴 것인가」(`imageUrl`)와 「어떤 층들이 함께 구워졌는가」는
+ * 다른 질문이고, 계약이 그 둘을 갈라 놓았다.
+ */
+export function layersOf(result: RenderResult): PreviewLayers {
+  const r = result as RenderResult & { thumbnailUrl?: string; valuePreviewUrl?: string };
+  const out: PreviewLayers = {};
+  if (r.thumbnailUrl) out.thumbnailUrl = r.thumbnailUrl;
+  if (r.valuePreviewUrl) out.valuePreviewUrl = r.valuePreviewUrl;
+  const main = previewImageSrc(result);
+  if (main) out.mainImageUrl = main;
+  return out;
 }
 
 /** `{z}`·`{x}`·`{y}` **셋만** 바꾼다 — 서명이 실려 있어 다시 조립하면 깨진다(`〈68〉`). */

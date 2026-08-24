@@ -59,8 +59,11 @@ def test_완료_결과는_이미지_경계_범례를_준다(client, put_target, 
     rid = _create(client, {"datasetId": tid}).json()["renderId"]
     job = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
     res = job["result"]
+    # ⚠ **개정 2** — `〈88〉` 묶음 3 으로 ①썸네일·②비지도형이 자기 자리를 얻었다.
+    # 이전에는 ③이 있으면 ②가 버려졌고 ①은 실패 봉투로만 나갔다(스윕 `A-1`).
     assert set(res) == {"imageUrl", "sidecarUrl", "worldFileUrl", "bounds", "legend",
-                        "precisionBadge", "colorRangeStage"}
+                        "precisionBadge", "colorRangeStage",
+                        "thumbnailUrl", "valuePreviewUrl"}
     assert res["imageUrl"].endswith(".png") and res["worldFileUrl"].endswith(".pgw")
     b = res["bounds"]
     assert set(b) == {"west", "south", "east", "north"}

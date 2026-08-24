@@ -118,6 +118,11 @@ export function UploadModal(props: {
   // 격자를 올린 뒤 워커가 축을 확정하거나 거절할 때까지 — `ready` 가 그 판정을 포함한다
   // (`〈79〉`·`§E.3b` — 「본체 감지가 끝났고 함께 올라온 격자의 축이 확정되거나 거절됐다」).
   const gridVerifying = hasReferenceGrid && status !== null && !status.ready && !status.failure;
+  // ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩ **워커가 거절한 격자의 사유.**
+  // 이전에는 이 사실이 seam 을 건너오지 않아, 화면이 등록 **전** 거절 상태를 만들 근거가
+  // **viz-render 의 렌더 실패 문장**뿐이었다 — 판정자와 인용처가 다른 기계였다(스윕 `B-2`).
+  // 거절된 격자는 `files` 에 행이 없어 **말없이 사라진다**. 그 자리를 이것이 말한다.
+  const gridRejection = status?.gridRejections?.[0] ?? null;
   const bodyName =
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
 
@@ -242,6 +247,7 @@ export function UploadModal(props: {
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
                   verifying: gridVerifying,
+                  ...(gridRejection ? { gridRejection } : {}),
                   onPickGrid: pickGrid,
                   // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
                   onSkipGrid: () => setGridSkipped(true),

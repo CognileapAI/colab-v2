@@ -1860,6 +1860,19 @@ components:
         fileName: { type: string, minLength: 1, maxLength: 255 }
         kind: { $ref: "../schemas/common.json#/$defs/FileKind" }
         byteSize: { type: integer, minimum: 0 }
+        gridAxis:
+          allOf: [{ $ref: "../schemas/common.json#/$defs/GridAxisAssignment" }]
+          description: |
+            **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩**
+            **`kind` 가 `기준 격자 파일` 이고 축이 확정된 뒤에만 있다.** 아직 판별 중이거나
+            본체면 없다. 모양은 등록 뒤의 `DatasetFile.gridAxis` 와 **같은 것을 쓴다** —
+            새 스키마를 만들지 않는다.
+
+            ⚠ **등록 전 세계에 이 값이 없어서 `S1-PLAN-REFOUND §E.2` 의 ③격자 확인 중 ·
+            ⑤위치 확인 상태가 seam 에 근거가 없었다.** 화면이 그 상태를 만드는 유일한 근거가
+            **viz-render 의 렌더 실패 문장**이었고, 즉 판정자(pipeline-worker)와 화면이
+            인용하는 근거(viz-render)가 다른 기계였다
+            (`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-2`).
 
     UploadReceipt:
       description: |
@@ -1896,8 +1909,37 @@ components:
           description: "미리보기를 그릴 수 있는가 (`upload.ready.renderable`). 아직 모르면 null. false 여도 등록은 막지 않는다."
           type: [boolean, "null"]
         metadataComplete:
-          description: "자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null."
+          description: |
+            자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null.
+            ⚠ **stage 1 에서 이 값은 언제나 `false` 이고, 그 `false` 는 「읽어 보고 아니었다」가
+            아니라 「안 읽었다」의 뜻이다** — 헤더 파싱(`file.header-parsed`)이 stage 1 에
+            켜져 있지 않다(`〈73〉` · `sessions/S1-CONTRACT-GAP-SWEEP.md` `B-3`).
+            화면 동작(자동 칸 → 입력 칸)은 그대로 옳다. 값 집합을 3값으로 넓히는 것은
+            헤더 파싱이 켜지는 **stage 2 의 일**이다.
           type: [boolean, "null"]
+        gridRejections:
+          description: |
+            **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩**
+            함께 올라온 기준 격자 파일 중 **쓸 수 없다고 판정된 것들.** 없으면 빈 배열이다 —
+            `null` 로 「모른다」를 말하지 않는다(그 뜻은 `ready: false` 가 이미 말한다).
+
+            ⚠ **거절된 격자 파일은 `files` 에서 사라진다.** 축을 못 정한 격자는 원장에 행을
+            만들지 않기 때문이다(`0004` 축 CHECK · `〈63〉-ⓒ`·`〈79〉-⑵`). 그래서 접수 201
+            (`UploadReceipt.files`)에 있던 파일이 조회 200 에서 안 보이는 일이 생기는데,
+            **이 배열이 그 자리를 말한다** — 조용히 사라지지 않는다
+            (`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-2`).
+
+            사유·형상은 `core-viz.yaml#GridRejection` 과 **같은 값 집합**이다 — 판정자가
+            누구든 화면이 같은 것을 읽는다.
+          type: array
+          items:
+            type: object
+            required: [fileName, reason]
+            additionalProperties: false
+            properties:
+              fileName: { type: string, minLength: 1, maxLength: 255 }
+              reason: { $ref: "../schemas/common.json#/$defs/GridRejectionReason" }
+              shapes: { $ref: "../schemas/common.json#/$defs/GridShapes" }
         expiresAt:
           description: "임시 업로드의 수명 (`upload.ready.expiresAt` — 이 화면을 벗어나면 사라진다, `Policy §7.1`)."
           oneOf:

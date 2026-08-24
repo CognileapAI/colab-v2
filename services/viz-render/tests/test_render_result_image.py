@@ -33,7 +33,9 @@ def test_결과는_이미지_갈래이고_타일틀을_함께_싣지_않는다(c
 
     assert "tileUrlTemplate" not in res, "oneOf 다 — 둘을 함께 내지 않는다"
     assert set(res) <= {"imageUrl", "sidecarUrl", "worldFileUrl", "bounds", "legend",
-                        "precisionBadge", "colorRangeStage"}
+                        "precisionBadge", "colorRangeStage",
+                        # `〈88〉` 묶음 3 — ①②도 성공 응답에 실린다
+                        "thumbnailUrl", "valuePreviewUrl"}
     assert res["imageUrl"] and res["sidecarUrl"] and res["worldFileUrl"]
     assert set(res["bounds"]) == {"west", "south", "east", "north"}
 

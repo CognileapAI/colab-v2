@@ -146,10 +146,18 @@ def cog_built_payload(*, file_ids: list[str], overview_levels: int,
 
 
 def upload_ready_payload(*, renderable: bool, metadata_complete: bool,
-                         expires_at: str | None = None) -> dict:
+                         expires_at: str | None = None,
+                         grid_resolution: list[dict] | None = None) -> dict:
+    """⑥ 준비 완료.
+
+    ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 8⟩ `gridResolution` 이 붙었다 —
+    `〈79〉-⑷` 가 `ready` 의 뜻에 넣은 「격자 축이 확정되거나 거절됐다」를 **페이로드가
+    실제로 말한다.** 격자가 없으면 **빈 배열**이다: `null` 로 「모른다」를 말하지 않는다.
+    """
     p: dict = {"renderable": renderable, "metadataComplete": metadata_complete}
     if expires_at:
         p["expiresAt"] = expires_at
+    p["gridResolution"] = list(grid_resolution or [])
     return p
 
 

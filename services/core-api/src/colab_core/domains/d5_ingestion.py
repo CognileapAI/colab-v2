@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -31,6 +32,10 @@ from ..ports.ingestion import UploadFileRecord, UploadRecord
 
 #: `upload.accepted` 페이로드의 스키마 버전 (`contracts/events/core-pipeline.json`).
 ACCEPTED_SCHEMA_VERSION = "1.0"
+
+#: 계약의 사유 3값 (`contracts/schemas/common.json#GridRejectionReason`). **판정하지 않고
+#: 중계만 하지만, 값 집합 밖을 화면에 흘리지 않는다** — 세 표면이 한 집합을 공유한다.
+GRID_REJECTION_REASONS = ("형상 불일치", "짝 불일치", "축 판별 실패")
 #: 이 이벤트를 내는 배포 단위. 봉투가 타입마다 `source` 를 const 로 못 박았다.
 ACCEPTED_SOURCE = "core-api"
 ACCEPTED_TYPE = "upload.accepted"
@@ -63,6 +68,16 @@ _FILES = text("""
       FROM d5_upload_file
      WHERE upload_id = :id
      ORDER BY kind DESC, file_name, id
+""")
+
+#: ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩ 워커의 ⑥ `upload.ready` 가 실은 격자 판정.
+#: **core-api 는 판정하지 않는다** — 이벤트가 말한 것을 읽어 seam 형태로 옮길 뿐이다.
+_READY_PAYLOAD = text("""
+    SELECT payload
+      FROM d5_pipeline_event
+     WHERE upload_id = :id AND event_type = 'upload.ready'
+     ORDER BY occurred_at DESC, id DESC
+     LIMIT 1
 """)
 
 _INSERT_UPLOAD = text("""
@@ -157,6 +172,38 @@ class UploadLedgerAdapter:
             )
             for r in rows
         ]
+
+    def grid_rejections(self, upload_id: Ulid) -> list[dict]:
+        """`UploadStatus.gridRejections` — **거절된 격자가 왜 목록에서 사라졌는가.**
+
+        축을 못 정한 격자는 `d5_upload_file` 행이 아예 안 만들어지므로(`0004` CHECK ·
+        `〈63〉-ⓒ`) 접수 201 에 있던 파일이 조회 200 에서 **말없이 사라진다.** 그 자리를
+        말하는 것이 이 목록이다 (스윕 `B-2`).
+
+        ⚠ **값 집합 밖은 중계하지 않는다.** 판정은 워커가 하지만, 화면이 모르는 어휘가
+        seam 을 건너가면 화면이 조용히 아무 상태도 못 만든다 — 그때는 차라리 비운다.
+        """
+        row = self._session.execute(_READY_PAYLOAD, {"id": str(upload_id)}).first()
+        if row is None:
+            return []
+        payload = row[0]
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+        if not isinstance(payload, dict):
+            return []
+        out: list[dict] = []
+        for item in payload.get("gridResolution") or []:
+            if not isinstance(item, dict):
+                continue
+            reason = item.get("rejectionReason")
+            if reason not in GRID_REJECTION_REASONS:
+                continue                       # 확정분(`gridAxis`)이거나 값 집합 밖이다
+            entry: dict = {"fileName": item.get("fileName") or "", "reason": reason}
+            shapes = item.get("shapes")
+            if isinstance(shapes, dict) and shapes:
+                entry["shapes"] = shapes
+            out.append(entry)
+        return out
 
     # ── 쓰기 ────────────────────────────────────────────────────────────────
     def accept(self, *, upload_id: Ulid, uploader_account_id: Ulid,

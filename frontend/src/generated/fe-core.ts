@@ -1164,6 +1164,19 @@ export interface components {
             fileName: string;
             kind: components["schemas"]["FileKind"];
             byteSize: number;
+            /**
+             * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩**
+             *     **`kind` 가 `기준 격자 파일` 이고 축이 확정된 뒤에만 있다.** 아직 판별 중이거나
+             *     본체면 없다. 모양은 등록 뒤의 `DatasetFile.gridAxis` 와 **같은 것을 쓴다** —
+             *     새 스키마를 만들지 않는다.
+             *
+             *     ⚠ **등록 전 세계에 이 값이 없어서 `S1-PLAN-REFOUND §E.2` 의 ③격자 확인 중 ·
+             *     ⑤위치 확인 상태가 seam 에 근거가 없었다.** 화면이 그 상태를 만드는 유일한 근거가
+             *     **viz-render 의 렌더 실패 문장**이었고, 즉 판정자(pipeline-worker)와 화면이
+             *     인용하는 근거(viz-render)가 다른 기계였다
+             *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-2`).
+             */
+            gridAxis?: components["schemas"]["GridAxisAssignment"];
         };
         /**
          * @description 업로드 접수 결과. `uploadId` 는 이벤트 seam 의 집계 루트와 같은 값이고
@@ -1185,8 +1198,34 @@ export interface components {
             ready: boolean;
             /** @description 미리보기를 그릴 수 있는가 (`upload.ready.renderable`). 아직 모르면 null. false 여도 등록은 막지 않는다. */
             renderable?: boolean | null;
-            /** @description 자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null. */
+            /**
+             * @description 자동 메타 다섯 값을 모두 읽었는가 (`upload.ready.metadataComplete`). 아직 모르면 null.
+             *     ⚠ **stage 1 에서 이 값은 언제나 `false` 이고, 그 `false` 는 「읽어 보고 아니었다」가
+             *     아니라 「안 읽었다」의 뜻이다** — 헤더 파싱(`file.header-parsed`)이 stage 1 에
+             *     켜져 있지 않다(`〈73〉` · `sessions/S1-CONTRACT-GAP-SWEEP.md` `B-3`).
+             *     화면 동작(자동 칸 → 입력 칸)은 그대로 옳다. 값 집합을 3값으로 넓히는 것은
+             *     헤더 파싱이 켜지는 **stage 2 의 일**이다.
+             */
             metadataComplete?: boolean | null;
+            /**
+             * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩**
+             *     함께 올라온 기준 격자 파일 중 **쓸 수 없다고 판정된 것들.** 없으면 빈 배열이다 —
+             *     `null` 로 「모른다」를 말하지 않는다(그 뜻은 `ready: false` 가 이미 말한다).
+             *
+             *     ⚠ **거절된 격자 파일은 `files` 에서 사라진다.** 축을 못 정한 격자는 원장에 행을
+             *     만들지 않기 때문이다(`0004` 축 CHECK · `〈63〉-ⓒ`·`〈79〉-⑵`). 그래서 접수 201
+             *     (`UploadReceipt.files`)에 있던 파일이 조회 200 에서 안 보이는 일이 생기는데,
+             *     **이 배열이 그 자리를 말한다** — 조용히 사라지지 않는다
+             *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-2`).
+             *
+             *     사유·형상은 `core-viz.yaml#GridRejection` 과 **같은 값 집합**이다 — 판정자가
+             *     누구든 화면이 같은 것을 읽는다.
+             */
+            gridRejections?: {
+                fileName: string;
+                reason: components["schemas"]["GridRejectionReason"];
+                shapes?: components["schemas"]["GridShapes"];
+            }[];
             /** @description 임시 업로드의 수명 (`upload.ready.expiresAt` — 이 화면을 벗어나면 사라진다, `Policy §7.1`). */
             expiresAt?: components["schemas"]["Timestamp"] | null;
             /**
@@ -1739,6 +1778,27 @@ export interface components {
          * @enum {string}
          */
         FileKind: "본체" | "기준 격자 파일";
+        /** @description 기준 격자 파일 한 장이 어느 축을 싣는가. 단일 enum 이 아니라 두 불리언인 이유는 통합 파일(위도·경도가 한 파일)이 실재하기 때문이다 — 제3의 「결합축」 값을 두면 「위도 1건 + 결합축 1건」을 못 막는다(0004_p2_grid_axis_and_d5 ⑴ · 〈66〉). 둘 다 false 인 기준 격자 파일은 만들어지지 않는다 — 축을 못 정한 파일은 행을 만들지 않고 거절한다(〈63〉-ⓒ · 〈79〉-⑵). */
+        GridAxisAssignment: {
+            carriesLat: boolean;
+            carriesLon: boolean;
+        };
+        /**
+         * @description 기준 격자 파일을 쓸 수 없다고 판정한 **사유 3값**. ⟨동결 4회 해제 · PLAN-SoT §9-〈88〉 묶음 1⟩ 지금까지 이 사실은 `REFERENCE_GRID_MISSING` 한 코드 아래 **한국어 문장**으로만 나갔고, 화면이 그 문장을 정규식으로 갈랐다 — 서버가 문장을 한 글자 다듬으면 화면이 조용히 다른 상태로 넘어간다(S1-CONTRACT-GAP-SWEEP C-1, 복합 문장에서 이미 오분류가 실측됐다). 값은 S1-PLAN-REFOUND §E.2 의 거절 3상태(⑥⑦⑧)와 1:1 이다. **네 번째를 만들지 않는다** — 검증 사다리 4단은 「여기까지 오지 않는다」이고 5단은 `MAP_BOUNDS_IMPLAUSIBLE` 이라 이 집합 밖이다. `REFERENCE_GRID_MISSING` 코드 자체는 남는다 — 지우면 DR-9 의 진짜 실패(HSR + withoutReferenceGrid)가 갈 자리가 없다.
+         * @enum {string}
+         */
+        GridRejectionReason: "형상 불일치" | "짝 불일치" | "축 판별 실패";
+        /** @description 격자 판정에 쓰인 **형상들 — 숫자 그대로**. ⟨동결 4회 해제 · PLAN-SoT §9-〈88〉 묶음 2⟩ 숫자를 문장으로 만들었다가 화면에서 되파싱하는 것이 C-1 의 원인이었고, 두 서비스(viz-render `grid.py` · pipeline-worker `d5/grid.py`)가 같은 문장의 **인자 순서를 서로 반대로** 써서 화면이 두 형상을 맞바꿔 말했다. 그래서 이름 붙은 정수 배열로 나른다 — 순서를 산문이 정하지 않는다. 아직 알 수 없는 형상은 **넣지 않는다**(빈 배열로 지어내지 않는다). */
+        GridShapes: {
+            /** @description 본체(그릴 데이터)의 형상. */
+            dataShape?: number[];
+            /** @description 붙인 기준 격자 파일의 형상. 축이 갈리기 전이라 한 덩어리다. */
+            gridShape?: number[];
+            /** @description 위도 축으로 배정된 파일의 형상. */
+            latShape?: number[];
+            /** @description 경도 축으로 배정된 파일의 형상. */
+            lonShape?: number[];
+        };
         /**
          * @description 실패 사유. **정본 `Policy_업로드와_계보_확정 §9 오류와 예외` 표의 행에 1:1 로 대응**하고, 어디에도 없는 것은 `내부 오류` 하나로 모은다. 화면 문구를 이벤트에 싣지 않는 이유 — 사용자 문구는 정본 §9 가 소유하고 화면이 그린다. 봉투가 문구를 나르면 같은 문장이 정본·이벤트·화면 세 곳에 생기고 갈라진다.
          * @enum {string}
@@ -1871,11 +1931,6 @@ export interface components {
          * @enum {string}
          */
         ProjectType: "국가과제" | "논문";
-        /** @description 기준 격자 파일 한 장이 어느 축을 싣는가. 단일 enum 이 아니라 두 불리언인 이유는 통합 파일(위도·경도가 한 파일)이 실재하기 때문이다 — 제3의 「결합축」 값을 두면 「위도 1건 + 결합축 1건」을 못 막는다(0004_p2_grid_axis_and_d5 ⑴ · 〈66〉). 둘 다 false 인 기준 격자 파일은 만들어지지 않는다 — 축을 못 정한 파일은 행을 만들지 않고 거절한다(〈63〉-ⓒ · 〈79〉-⑵). */
-        GridAxisAssignment: {
-            carriesLat: boolean;
-            carriesLon: boolean;
-        };
         /**
          * @description 프로젝트 상태. 2값이며 삭제는 없다. 근거: DataModel_공통_기반 §5(상태).
          * @enum {string}
@@ -2019,6 +2074,28 @@ export interface components {
              */
             imageUrl?: string;
             /**
+             * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 3⟩**
+             *     ①썸네일(128 px WEBP)의 URL. **선택 속성이다** — 타일 갈래에는 없다.
+             *
+             *     ⚠ **이 필드가 없어서 ①이 성공 응답에 실릴 자리가 없었다.** viz-render 는 ①과 ②를
+             *     **항상 함께 굽는데**(`d7_visualization/jobs.py` `build_value_layers`) 성공 응답에는
+             *     `imageUrl` 한 자리뿐이라, ①의 URL 이 **실패 봉투의 `details.thumbnailUrl` 로만**
+             *     나갔다. 즉 **렌더가 성공할수록 썸네일이 안 보였다** — `〈83〉-㉮` 가 닫았다고
+             *     선언한 「성공 산출물이 실패 봉투로 나가는」 모양이 한 필드 옆에 남아 있었다
+             *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `A-1`).
+             *
+             *     `imageUrl` 의 `oneOf` 는 손대지 않는다 — 「무엇을 주 화면에 그릴 것인가」와
+             *     「어떤 층들이 함께 구워졌는가」는 다른 질문이다.
+             */
+            thumbnailUrl?: string;
+            /**
+             * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 3⟩**
+             *     ②비지도형(1024 px PNG)의 URL. **선택 속성이다.**
+             *     ③지도형이 있을 때 `imageUrl` 은 ③을 가리키므로, 그때 ②가 갈 자리가 이 필드다 —
+             *     ①②③ 세 층이 함께 구워지는데(`〈74〉-㉮`) 응답이 한 층만 실어 나르면 나머지가 버려진다.
+             */
+            valuePreviewUrl?: string;
+            /**
              * @description 지도형(③)에만 있는 **bbox 사이드카 JSON** 의 URL (약 400 B ·
              *     `PREVIEW-IMPLEMENTATION §3.3`). 비지도형(②)·썸네일(①)에는 **없다** —
              *     좌표계가 「없음」인 산출물에 좌표 파일을 붙이지 않는다.
@@ -2072,6 +2149,24 @@ export interface components {
                 instant?: components["schemas"]["Timestamp"];
             }[];
         };
+        /**
+         * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 2⟩**
+         *     기준 격자 파일을 쓸 수 없다고 판정한 사실. **사유는 enum, 형상은 숫자다** —
+         *     둘 다 `../schemas/common.json` 이 정의하고 이 파일은 재선언하지 않는다
+         *     (`CLAUDE.md §3-6`). `UploadStatus.gridRejections`(`fe-core.yaml`)와
+         *     `UploadReadyPayload.gridResolution`(`../events/core-pipeline.json`)이 **같은 값 집합**을
+         *     쓴다 — 네 표면 중 하나라도 문장으로 말하면 다시 갈라진다.
+         */
+        GridRejection: {
+            reason: components["schemas"]["GridRejectionReason"];
+            /**
+             * @description 판정에 쓰인 형상들. **화면이 「데이터는 (a,b), 격자는 (c,d)」를 말하려면 필요하다.**
+             *     알 수 없는 형상은 넣지 않는다 — 지어내지 않는다.
+             */
+            shapes?: components["schemas"]["GridShapes"];
+            /** @description 거절당한 격자 파일의 이름. 화면이 어느 파일인지 지목하는 데 쓴다. */
+            fileName?: string;
+        };
         RenderJob: {
             renderId: components["schemas"]["Ulid"];
             status: components["schemas"]["RenderStatus"];
@@ -2093,6 +2188,21 @@ export interface components {
              *     부분 실패는 전부 실패와 다르게 다룬다 — 읽힌 조각으로 그린다.
              */
             partialFailure?: components["schemas"]["PartialFailure"];
+            /**
+             * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 2⟩**
+             *     붙인 기준 격자 파일을 **왜** 쓸 수 없었는가. 선택 속성이다 — 격자를 안 붙였거나
+             *     잘 붙은 렌더에는 없다.
+             *
+             *     **왜 `failure` 안이 아닌가** — 격자 거절은 `status` 를 `실패` 로 만들지 않을 수
+             *     있다. ②비지도형은 격자 없이도 완료로 나가고, 그때도 「왜 지도형이 안 떴는가」를
+             *     화면이 말해야 한다(`PREVIEW-IMPLEMENTATION §5.5` — 실패가 아니라 보류).
+             *     그래서 `RenderJob` 바로 아래에 둔다.
+             *
+             *     ⚠ **이 필드가 생기기 전에는 이 사실이 `ErrorEnvelope.details` 의 한국어 문장으로만
+             *     나갔고, FE 가 정규식으로 갈랐다** — 복합 문장에서 이미 오분류했다
+             *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `C-1`). 화면은 이제 이 필드만 읽는다.
+             */
+            gridRejection?: components["schemas"]["GridRejection"];
         };
     };
     responses: {

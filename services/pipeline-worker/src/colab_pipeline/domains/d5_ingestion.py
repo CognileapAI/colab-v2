@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from ..d5.axis import detect_axes_for_upload
+from ..d5.axis import REASON_AXIS_UNDECIDED, detect_axes_for_upload
 from ..d5.detect import detect_format
 from ..d5.events import (
     STAGE_ORDER,
@@ -162,7 +162,7 @@ class IngestionService:
         for f in work.files:
             res.files[f.file_id] = FileOutcome(file_id=f.file_id)
 
-        grid_dir = self._resolve_grid_axes(work, res, grids)
+        grid_dir, grid_resolution = self._resolve_grid_axes(work, res, grids)
 
         # ② 포맷 감지 — 매직바이트. 헤더 파싱보다 앞이다(파서를 고르려면 포맷이 먼저다)
         per_file = []
@@ -198,7 +198,8 @@ class IngestionService:
             self._ledger.record_status(work.upload_id, ready=True)
             self._emit(work, res, "upload.ready", upload_ready_payload(
                 renderable=renderable, metadata_complete=False,
-                expires_at=_iso(upload.get("expires_at"))))
+                expires_at=_iso(upload.get("expires_at")),
+                grid_resolution=grid_resolution))
             return res
 
         # ③④⑤ — 기존 파이프라인을 파일마다 통과시킨다 (파서를 다시 쓰지 않는다)
@@ -261,12 +262,12 @@ class IngestionService:
                                    metadata_complete=metadata_complete)
         self._emit(work, res, "upload.ready", upload_ready_payload(
             renderable=renderable, metadata_complete=metadata_complete,
-            expires_at=_iso(expires)))
+            expires_at=_iso(expires), grid_resolution=grid_resolution))
         return res
 
     # ── 격자 축 ────────────────────────────────────────────────────────────
     def _resolve_grid_axes(self, work: UploadWork, res: ProcessResult,
-                           grids: list[UploadFileWork]) -> Path | None:
+                           grids: list[UploadFileWork]) -> tuple[Path | None, list[dict]]:
         """축을 판별하고, 그 뒤에 **격자 파일 행을 세운다**(`〈69〉-⑴`).
 
         접수(`createUpload`)는 업로드와 본체 파일 행까지만 만든다 — `d5_upload_file` 의
@@ -275,9 +276,14 @@ class IngestionService:
         조건화하면 「축이 빈 격자 행」이 합법한 상태가 되어 불변식이 약해진다.
 
         못 정한 파일은 **거절**한다(`〈66〉`) — 행 자체를 만들지 않고, 등록은 진행한다.
+
+        ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 8⟩ **두 번째 반환값이 `gridResolution` 이다.**
+        파일마다 「축을 확정했다(`gridAxis`)」 또는 「못 쓰겠다(`rejectionReason`)」 중
+        정확히 하나를 말한다 — 그것이 `upload.ready` 에 실린다. 이전에는 이 판정이
+        **파이썬 딕셔너리 안의 산문**으로만 남고 어떤 페이로드에도 안 실렸다(스윕 `G`).
         """
         if not grids:
-            return work.grid_dir
+            return work.grid_dir, []
         by_path = {g.path: g for g in grids}
         detection = detect_axes_for_upload([g.path for g in grids])
         for path, d in detection.resolved.items():
@@ -291,10 +297,27 @@ class IngestionService:
         for path, why in detection.rejected.items():
             # 그 파일만 막고 등록은 막지 않는다(`〈63〉-ⓒ`). 축이 빈 행을 만들지 않는다.
             res.rejected[by_path[path].file_id] = why
+
+        # 파일 순서를 그대로 둔다 — 화면이 올린 순서로 말할 수 있게.
+        resolution: list[dict] = []
+        for g in grids:
+            row: dict = {"fileId": g.file_id, "fileName": g.file_name}
+            d = detection.resolved.get(g.path)
+            if d is not None:
+                row["gridAxis"] = {"carriesLat": bool(d.carries_lat),
+                                   "carriesLon": bool(d.carries_lon)}
+            else:
+                row["rejectionReason"] = detection.reasons.get(
+                    g.path, REASON_AXIS_UNDECIDED)
+                shape = detection.shapes.get(g.path)
+                if shape:
+                    row["shapes"] = {"gridShape": list(shape)}
+            resolution.append(row)
+
         usable = [p for p in detection.resolved]
         if not usable:
-            return work.grid_dir
-        return work.grid_dir or Path(usable[0]).parent
+            return work.grid_dir, resolution
+        return (work.grid_dir or Path(usable[0]).parent), resolution
 
 
 def _iso(value) -> str | None:

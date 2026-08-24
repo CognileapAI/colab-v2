@@ -64,6 +64,12 @@ class AxisDetection:
 class UploadAxisResult:
     resolved: dict[Path, AxisDetection] = field(default_factory=dict)
     rejected: dict[Path, str] = field(default_factory=dict)
+    #: ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 8⟩ 거절 사유를 **계약의 enum 으로** 말한다.
+    #: `rejected` 의 한국어 문장은 사람이 읽는 용도로 남고, 소비자는 이쪽을 읽는다 —
+    #: 문장을 소비자가 되파싱하던 것이 스윕 `C-1` 의 원인이었다.
+    reasons: dict[Path, str] = field(default_factory=dict)
+    #: 판정에 쓰인 형상(있으면). 숫자 그대로 나른다.
+    shapes: dict[Path, list[int]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -207,6 +213,15 @@ def detect_axes(path: Path) -> AxisDetection:
         f"{path.name} — 쌍 정합이 필요하다")
 
 
+#: **계약의 사유 3값 그대로** (`../../../../contracts/schemas/common.json#GridRejectionReason`).
+#: viz-render(`d7_visualization/grid.py`)와 **같은 집합**을 쓴다 — 표면마다 다른 어휘를
+#: 만들면 화면이 두 기계의 말을 따로 배워야 한다(스윕 `C-1`·`B-2`).
+REASON_SHAPE_MISMATCH = "형상 불일치"
+REASON_PAIR_MISMATCH = "짝 불일치"
+REASON_AXIS_UNDECIDED = "축 판별 실패"
+GRID_REJECTION_REASONS = (REASON_SHAPE_MISMATCH, REASON_PAIR_MISMATCH, REASON_AXIS_UNDECIDED)
+
+
 # ── 업로드 단위 판별 (쌍 정합) ──────────────────────────────────────────────
 def detect_axes_for_upload(paths: list[Path]) -> UploadAxisResult:
     """업로드 안의 격자 파일들을 함께 본다. 짝은 **형상**으로 짓는다.
@@ -269,5 +284,16 @@ def detect_axes_for_upload(paths: list[Path]) -> UploadAxisResult:
             res.resolved[p] = AxisDetection(
                 cl, cn, "쌍 정합", [ev_common], _cross_check(p, stats[p], cl, cn))
             res.rejected.pop(p, None)
+
+    # ── 남은 거절에 **구조화된 사유**를 붙인다 (`〈88〉` 묶음 8) ──────────────
+    # 같은 형상의 짝이 정확히 2건이면 「짝은 있는데 못 갈랐다」 = 축 판별 실패,
+    # 아니면 「애초에 한 쌍이 아니다」 = 짝 불일치. **네 번째를 만들지 않는다.**
+    for p in list(res.rejected):
+        shape = stats[p].shape if p in stats else None
+        if shape is not None:
+            res.shapes[p] = [int(n) for n in shape]
+        members = groups.get(shape, []) if shape is not None else []
+        res.reasons[p] = (REASON_AXIS_UNDECIDED if len(members) == 2
+                          else REASON_PAIR_MISMATCH)
 
     return res

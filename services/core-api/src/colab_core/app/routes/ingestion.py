@@ -115,12 +115,26 @@ def _live_upload(db: Session, upload_id: Ulid, *, now: dt.datetime | None = None
 
 
 def _file_records(upload_files) -> list[dict[str, Any]]:
-    """계약 `UploadFileRef` 네 값. 원장이 아는 다른 열은 FE 표면에 내리지 않는다."""
-    return [
-        {"fileId": f.file_id, "fileName": f.file_name, "kind": f.kind,
-         "byteSize": 0 if f.byte_size is None else f.byte_size}
-        for f in upload_files
-    ]
+    """계약 `UploadFileRef`. 원장이 아는 다른 열은 FE 표면에 내리지 않는다.
+
+    ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩ **`gridAxis` 가 붙었다** — 기준 격자
+    파일이고 축이 확정된 경우에만. 등록 뒤의 `DatasetFile.gridAxis` 와 **같은 모양**이다.
+    화면이 뒤집기 버튼을 그리려면 지금 배정이 무엇인지 알아야 하는데, 등록 **전** 세계에는
+    그 값을 말할 자리가 없었다(스윕 `B-2`).
+
+    ⚠ **본체에는 붙이지 않는다.** 축이 붙은 본체는 `0004` 의 CHECK 가 애초에 만들지 않으므로
+    거기 `false/false` 를 실으면 **없는 사실**을 말하는 것이 된다.
+    """
+    out: list[dict[str, Any]] = []
+    for f in upload_files:
+        row: dict[str, Any] = {
+            "fileId": f.file_id, "fileName": f.file_name, "kind": f.kind,
+            "byteSize": 0 if f.byte_size is None else f.byte_size}
+        if f.kind == GRID and (f.carries_lat or f.carries_lon):
+            row["gridAxis"] = {"carriesLat": bool(f.carries_lat),
+                               "carriesLon": bool(f.carries_lon)}
+        out.append(row)
+    return out
 
 
 # ═══════════════════════════════ createUpload ═══════════════════════════════
@@ -195,10 +209,14 @@ def get_upload_status(uploadId: str,
     if record is None:
         # 없는 업로드 · 경계 밖 · 수명이 다한 것을 **같은 404** 로 낸다.
         raise errors.not_found("없거나 수명이 다한 업로드다.")
-    files = _ledger(db).files(upload_id)
+    ledger = _ledger(db)
+    files = ledger.files(upload_id)
     return {
         "uploadId": record.upload_id,
         "files": _file_records(files),
+        # **거절된 격자는 `files` 에 못 선다** — 행이 없기 때문이다. 사라진 이유를
+        # 말하는 자리가 이것이다 (`〈88〉` 묶음 7 · 스윕 `B-2`).
+        "gridRejections": ledger.grid_rejections(upload_id),
         "ready": record.ready,
         "renderable": record.renderable,
         "metadataComplete": record.metadata_complete,
