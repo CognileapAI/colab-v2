@@ -4,6 +4,7 @@
 // 타입은 전부 생성물에서 온다 — 여기서 계약 스키마를 다시 선언하지 않는다
 // (`CLAUDE.md §3-6·§3-7` · `frontend/src/generated/README.md`).
 import type { Schemas } from '../../api/client';
+import type { LineageSource } from '../lineage/types';
 
 export type FileKind = Schemas['FileKind'];
 export type UploadReceipt = Schemas['UploadReceipt'];
@@ -72,11 +73,14 @@ export interface UploadSources {
   upload: UploadSource;
   preview: PreviewSource;
   projects: ProjectSource;
+  /** ③ 계보 확정의 읽기 출처 (`components/lineage/`). **쓰기 op 이 없는 것이 설계다.** */
+  lineage: LineageSource;
 }
 
 /**
- * ③ 계보 확정이 얹히는 자리 (`P2-fe-lineage`, W4).
- * **이 레인은 골격과 표시기까지만 만든다** — 카드·확신도·부모 역할은 그 레인 소유다.
+ * ③ 계보 확정이 얹히는 자리.
+ * **골격은 자리와 표시기까지만 만든다** — 카드·확신도·부모 역할은 `components/lineage/` 소유다.
+ * 아무도 얹지 않으면 모달이 집 안의 `LineageStep` 을 세운다 (`S1-fe`, W3).
  */
 export interface LineageStepContext {
   uploadId: string;

@@ -1,6 +1,6 @@
 // S-04 등록 단계 — 정본 §8 등록 3단계 표시기 · 등록 단계 배치 · ① 자동 메타데이터 · ② 소속 프로젝트.
 //
-// **③ 계보 확정은 이 레인이 아니다** (`P2-EXEC §3` — `P2-fe-lineage`, W4).
+// **③ 계보 확정의 알맹이는 이 파일이 아니다** (`components/lineage/LineageStep`).
 // 여기서는 ③ 의 **자리와 표시기**까지만 만들고, 그 안은 슬롯(`lineageStep`)이 채운다.
 //
 // 지키는 것
@@ -337,12 +337,12 @@ function StepThree(props: {
           />
         </div>
 
-        {/* ③ 계보 확정이 얹히는 자리 — `P2-fe-lineage`(W4). 없으면 정직한 빈 자리로 둔다 */}
+        {/* ③ 계보 확정이 얹히는 자리. 모달이 기본으로 `LineageStep` 을 넘긴다 */}
         <div className="lineage-slot" data-testid="reg-lineage-slot">
           {props.lineageStep ? (
             props.lineageStep(props.ctx)
           ) : (
-            <p className="muted">계보 확정은 아직 이 화면에 붙지 않았어요.</p>
+            <p className="muted">계보 확정을 열 수 없어요.</p>
           )}
         </div>
       </div>

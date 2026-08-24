@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { UploadModal } from './UploadModal';
+import { apiLineageSource } from '../lineage/lineageSource';
 import { apiPreviewSource } from './previewSource';
 import { apiProjectSource } from './projectSource';
 import { apiUploadSource } from './uploadSource';
@@ -21,12 +22,13 @@ function defaultSources(): UploadSources {
     upload: apiUploadSource(),
     preview: apiPreviewSource(),
     projects: apiProjectSource(),
+    lineage: apiLineageSource(),
   };
 }
 
 export function UploadEntry(props: {
   sources?: UploadSources | undefined;
-  /** ③ 계보 확정 (`P2-fe-lineage`, W4). 없으면 그 자리는 정직한 빈 자리로 남는다. */
+  /** ③ 계보 확정 자리를 바깥에서 갈아 끼우고 싶을 때만 넘긴다. 없으면 모달이 집 안의 것을 세운다. */
   lineageStep?: LineageStepRender | undefined;
 }) {
   const [open, setOpen] = useState(false);

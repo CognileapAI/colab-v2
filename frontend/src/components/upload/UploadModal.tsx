@@ -1,7 +1,7 @@
 // S-04 업로드 **전체 화면 모달** — 정본 `Policy_업로드와_계보_확정.md` §7·§8·§9.
 //
-// 이 파일이 모달의 골격이다. W4(`P2-fe-lineage`)가 ③ 을 이 골격 위에 얹는다 — 얹는 자리는
-// `lineageStep` 슬롯 하나이고, 넘겨받는 것은 `LineageStepContext`(`types.ts`)다.
+// 이 파일이 모달의 골격이다. ③ 은 `components/lineage/LineageStep` 이 이 골격 위에 얹는다 —
+// 얹는 자리는 `lineageStep` 슬롯 하나이고, 넘겨받는 것은 `LineageStepContext`(`types.ts`)다.
 //
 // 골격이 지키는 것
 //  - **화면이 아니라 모달**이다. 라우트를 만들지 않는다 (`Policy_공통_기반 §2.3`).
@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
+import { LineageStep } from '../lineage/LineageStep';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
@@ -124,6 +125,11 @@ export function UploadModal(props: {
     (parents: UploadLineageParent[]) => setLineageParents(parents),
     [],
   );
+  // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
+  // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
+  const lineageStep: LineageStepRender =
+    props.lineageStep ?? ((c) => <LineageStep source={props.sources.lineage} ctx={c} />);
+
   const lineageCtx: LineageStepContext = useMemo(
     () => ({
       uploadId: uploadId ?? '',
@@ -272,7 +278,7 @@ export function UploadModal(props: {
               onProjects={setProjects}
               nameError={nameError}
               registerError={registerError}
-              lineageStep={props.lineageStep}
+              lineageStep={lineageStep}
               lineageCtx={lineageCtx}
               onCancel={() => setRegisterOpen(false)}
               onSubmit={() => void submit()}

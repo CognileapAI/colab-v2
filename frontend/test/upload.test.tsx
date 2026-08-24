@@ -21,6 +21,11 @@ import type {
   UploadSource,
   UploadSources,
 } from '../src/components/upload/types';
+import type {
+  DatasetRow,
+  LineageSource,
+  LineageSuggestionResponse,
+} from '../src/components/lineage/types';
 import type { CurrentAccount, Schemas } from '../src/api/client';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
@@ -29,6 +34,31 @@ const FILE_ID2 = '01JYZ9K7WQ3N8V4M2X6C5B0FI2';
 const RENDER_ID = '01JYZ9K7WQ3N8V4M2X6C5B0RE1';
 const DATASET_ID = '01JYZ9K7WQ3N8V4M2X6C5B0DS1';
 const PROJECT_ID = '01JYZ9K7WQ3N8V4M2X6C5B0PR1';
+// KWRA 다운스케일 묶음 (`SEED-DATA §4.1`) — 부모 1(NDVI 2 km) + 보조입력 DEM.
+// **화면이 이 묶음을 못 담으면 화면이 틀린 것이다** (`P2-EXEC §4`).
+const NDVI_ID = '01JYZ9K7WQ3N8V4M2X6C5B0PA1';
+const DEM_ID = '01JYZ9K7WQ3N8V4M2X6C5B0PA2';
+const SG1 = '01JYZ9K7WQ3N8V4M2X6C5B0SG1';
+const SG2 = '01JYZ9K7WQ3N8V4M2X6C5B0SG2';
+const SG3 = '01JYZ9K7WQ3N8V4M2X6C5B0SG3';
+
+function catalogRow(datasetId: string, name: string, level: number): DatasetRow {
+  return {
+    datasetId,
+    name,
+    fileCount: 1,
+    topic: '식생·NDVI',
+    processingLevel: level,
+    projects: { representative: null, moreCount: 0, names: [] },
+    uploader: { accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AC1', name: '호랑이' },
+    lastModifiedAt: '2026-08-01T00:00:00Z',
+    lineageState: '원천',
+    lineageConfirmedAt: null,
+    verified: true,
+    accessState: '열림',
+    bodyAccessible: true,
+  } as unknown as DatasetRow;
+}
 
 type Perm = Partial<Record<Schemas['PermissionSwitch'], boolean>>;
 
@@ -52,6 +82,9 @@ function fakes(
     palettes?: { palette: string; label: string }[];
     projects?: Schemas['ProjectRow'][];
     registerThrows?: unknown;
+    suggestions?: Partial<LineageSuggestionResponse>;
+    suggestionsThrows?: unknown;
+    candidates?: DatasetRow[];
   } = {},
 ) {
   const calls = {
@@ -64,6 +97,9 @@ function fakes(
     listProjects: 0,
     createProject: 0,
     registered: [] as Record<string, unknown>[],
+    suggestions: 0,
+    suggestionsQuery: [] as Record<string, unknown>[],
+    candidates: 0,
   };
   const status: Schemas['UploadStatus'] = {
     uploadId: UPLOAD_ID,
@@ -167,7 +203,69 @@ function fakes(
       return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: body.name };
     },
   };
-  return { sources: { upload, preview, projects } as UploadSources, calls };
+  const lineage: LineageSource = {
+    async suggestions(uploadId, q) {
+      calls.suggestions += 1;
+      calls.suggestionsQuery.push({ uploadId, ...q });
+      if (over.suggestionsThrows) throw over.suggestionsThrows;
+      return {
+        degraded: false,
+        scope: {
+          labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1',
+          labName: '수자원순환연구실',
+          searchedCount: 12,
+        },
+        rawDataLikely: false,
+        suggestions: [],
+        ...over.suggestions,
+      } as LineageSuggestionResponse;
+    },
+    async candidates() {
+      calls.candidates += 1;
+      return (
+        over.candidates ?? [
+          catalogRow(NDVI_ID, 'KWRA NDVI 2 km 일별', 0),
+          catalogRow(DEM_ID, 'SRTM DEM 30 m', 0),
+        ]
+      );
+    },
+  };
+  return { sources: { upload, preview, projects, lineage } as UploadSources, calls };
+}
+
+/** KWRA 묶음의 제안 응답 — 부모 후보 2건(주입력 NDVI · 보조입력 DEM) + 가공 방식 1건. */
+function kwraSuggestions(): Partial<LineageSuggestionResponse> {
+  return {
+    rawDataLikely: false,
+    suggestions: [
+      {
+        suggestionId: SG1,
+        kind: '가공 전 데이터',
+        confidence: '확실',
+        rationale: '이름과 기간이 겹치고 격자만 다릅니다.',
+        parentDatasetId: NDVI_ID,
+        parentDatasetName: 'KWRA NDVI 2 km 일별',
+        suggestedParentRole: '주입력',
+      },
+      {
+        suggestionId: SG2,
+        kind: '가공 전 데이터',
+        confidence: '애매',
+        rationale: '고도 보정에 쓰였을 수 있습니다.',
+        parentDatasetId: DEM_ID,
+        parentDatasetName: 'SRTM DEM 30 m',
+        suggestedParentRole: '보조입력',
+      },
+      {
+        suggestionId: SG3,
+        kind: '가공 방식',
+        confidence: '모름',
+        rationale: '파일 이름에 보간 방식이 적혀 있지 않습니다.',
+        methodText: 'Co-Kriging 으로 250 m 다운스케일',
+        appliesToParentDatasetId: NDVI_ID,
+      },
+    ],
+  } as Partial<LineageSuggestionResponse>;
 }
 
 function makeFile(name: string, size = 148_000_000) {
@@ -630,14 +728,17 @@ describe('§8 등록 3단계 표시기 — ①② 는 이 레인, ③ 은 얹히
     expect(typeof ctx!.onLineageParentsChange).toBe('function');
   });
 
-  it('W4 가 얹히기 전에는 ③ 자리가 **정직한 빈 자리**다', async () => {
+  it('③ 자리는 슬롯이고, 아무도 얹지 않으면 **집 안의 계보 확정**이 들어온다', async () => {
+    // `S1-fe`(W3) 이전에는 이 자리가 빈 자리였다. 지금은 `components/lineage/` 가 채운다 —
+    // 슬롯 자체는 그대로라 바깥에서 갈아 끼우는 길(위 두 시험)이 남아 있다.
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
     await click(stepBtn('③'));
     expect(await screen.findByTestId('reg-s3')).toBeInTheDocument();
-    expect(screen.getByTestId('reg-lineage-slot')).toBeInTheDocument();
+    const slot = screen.getByTestId('reg-lineage-slot');
+    expect(within(slot).getByTestId('lin-step')).toBeInTheDocument();
   });
 });
 
@@ -891,5 +992,248 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     expect(await screen.findByTestId('reg-error')).toHaveTextContent(
       '이 파일은 더 이상 없어요. 다시 올려 주세요.',
     );
+  });
+});
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// ③ 계보 확정 (`P2-EXEC §4` `P2-fe-lineage` · `CLAUDE.md §3` AI 응답 규격)
+//
+// 이 화면은 **아무것도 저장하지 않는다.** 확인·수정·거절은 클라이언트 상태이고,
+// 사람이 확인한 것만 `createDataset` 의 `lineageParents` 에 실린다.
+
+async function openLineage(sources: UploadSources, perm?: Perm) {
+  await openModal(sources, perm);
+  await dropFiles([makeFile('nakdong_ndvi_250m.nc')]);
+  await openRegister();
+  await click(stepBtn('③'));
+  await screen.findByTestId('lin-step');
+}
+
+/** 마지막 `createDataset` 요청에 실린 계보 관계들. */
+function sentParents(calls: { registered: Record<string, unknown>[] }) {
+  const last = calls.registered[calls.registered.length - 1] ?? {};
+  return (last.lineageParents ?? []) as Record<string, unknown>[];
+}
+
+describe('③ 계보 확정 — 뒤진 범위를 먼저 밝힌다', () => {
+  it('제안보다 **앞에** 뒤진 범위(연구실·개수)가 선다', async () => {
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const scope = await screen.findByTestId('lin-scope');
+    expect(scope).toHaveTextContent('수자원순환연구실');
+    expect(scope).toHaveTextContent('12');
+    const cards = screen.getByTestId('lin-cards');
+    expect(
+      scope.compareDocumentPosition(cards) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('이름 초안과 주제를 해석 단서로 넘긴다 — 주제를 안 골랐으면 안 넘긴다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const q = calls.suggestionsQuery[0]!;
+    expect(q.uploadId).toBe(UPLOAD_ID);
+    expect(q.datasetNameDraft).toBe('nakdong_ndvi_250m');
+    expect(q.subject).toBeUndefined();
+  });
+});
+
+describe('③ 계보 확정 — 정직한 빈 상태 (AI 없이도 완결된다)', () => {
+  it('제안 0건이면 억지 카드를 만들지 않고 빈 상태를 말한다', async () => {
+    const { sources } = fakes();
+    await openLineage(sources);
+    expect(await screen.findByTestId('lin-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('lin-card')).toBeNull();
+    // 빈 상태여도 범위는 그대로 밝힌다 — 「무엇을 근거로 못 찾았는가」가 빈 상태의 내용이다.
+    expect(screen.getByTestId('lin-scope')).toHaveTextContent('수자원순환연구실');
+  });
+
+  it('제안 0건이어도 등록이 끝까지 간다 — `기록 없음` 으로 등록된다', async () => {
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await click(screen.getByTestId('reg-done'));
+    expect(calls.register).toBe(1);
+    expect(sentParents(calls)).toHaveLength(0);
+  });
+
+  it('제안 조회가 실패해도 등록을 막지 않는다 — 못 그리는 것과 못 등록하는 것은 다르다', async () => {
+    const { sources, calls } = fakes({ suggestionsThrows: new Error('down') });
+    await openLineage(sources);
+    expect(await screen.findByTestId('lin-unavailable')).toBeInTheDocument();
+    await click(screen.getByTestId('reg-done'));
+    expect(calls.register).toBe(1);
+  });
+
+  it('`degraded` 면 그 사실을 알리고 등록 경로는 그대로 둔다', async () => {
+    const { sources } = fakes({
+      suggestions: { degraded: true, degradedReason: 'ai timeout', suggestions: [] },
+    });
+    await openLineage(sources);
+    expect(await screen.findByTestId('lin-degraded')).toBeInTheDocument();
+    // core 가 정할 문구를 화면이 그대로 옮기지 않는다 (`core-ai.yaml Degradable`).
+    expect(screen.getByTestId('lin-step').textContent).not.toContain('ai timeout');
+    expect(screen.getByTestId('lin-add')).toBeEnabled();
+  });
+
+  it('`rawDataLikely` 면 원천 표기만 적고 등록하도록 안내한다', async () => {
+    const { sources } = fakes({ suggestions: { rawDataLikely: true, suggestions: [] } });
+    await openLineage(sources);
+    expect(await screen.findByTestId('lin-raw')).toBeInTheDocument();
+  });
+});
+
+describe('③ 계보 확정 — AI 응답 규격 (`CLAUDE.md §3`)', () => {
+  it('**[모두 승인] 이 없다** — 확인은 항목마다 받는다', async () => {
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    await screen.findByTestId('lin-cards');
+    expect(screen.queryByText(/모두 승인|전체 승인|일괄/)).toBeNull();
+    expect(screen.getAllByTestId('lin-confirm')).toHaveLength(3);
+  });
+
+  it('확신도는 3값 enum 이고 **퍼센트·점수가 없다**. 근거는 한 줄로 반드시 붙는다', async () => {
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const chips = await screen.findAllByTestId('lin-confidence');
+    expect(chips.map((c) => c.textContent)).toEqual(['확실', '애매', '모름']);
+    expect(screen.getByTestId('lin-step').textContent).not.toMatch(/\d+\s*%/);
+    const reasons = screen.getAllByTestId('lin-rationale');
+    expect(reasons).toHaveLength(3);
+    for (const r of reasons) {
+      expect(r.textContent?.trim().length).toBeGreaterThan(0);
+      expect(r.textContent).not.toContain('\n');
+    }
+  });
+});
+
+describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
+  it('확인한 것만 등록 요청에 실리고, 경로는 `AI 제안을 사람이 확인` 이다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const cards = await screen.findAllByTestId('lin-card');
+    await click(within(cards[0]!).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents).toHaveLength(1);
+    expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
+    expect(parents[0]!.origin).toBe('AI 제안을 사람이 확인');
+  });
+
+  it('거절한 것은 카드에서 빠지고 아무것도 실리지 않는다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const cards = await screen.findAllByTestId('lin-card');
+    await click(within(cards[0]!).getByTestId('lin-reject'));
+    expect(screen.queryAllByTestId('lin-card')).toHaveLength(1);
+    await click(screen.getByTestId('reg-done'));
+    expect(sentParents(calls)).toHaveLength(0);
+  });
+
+  it('**수정하면 AI 행동이 아니다** — 확신도 칩이 걷히고 경로가 `직접` 이 되며 확인을 다시 받는다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const cards = await screen.findAllByTestId('lin-card');
+    const card = cards[0]!;
+    expect(within(card).getByTestId('lin-confidence')).toBeInTheDocument();
+    await click(within(card).getByTestId('lin-confirm'));
+    await click(within(card).getByTestId('lin-edit'));
+    // 고른 대상을 바꾼다 — 그 순간 이 관계는 사람이 만든 것이다.
+    await click(await within(card).findByTestId(`lin-pick-${DEM_ID}`));
+    expect(within(card).queryByTestId('lin-confidence')).toBeNull();
+    // **확인이 풀렸다** — 확정 건수가 1 에서 0 으로 돌아간다. 다시 확인해야 실린다.
+    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
+    expect(within(card).queryByText('확인함')).toBeNull();
+
+    await click(within(card).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents).toHaveLength(1);
+    expect(parents[0]!.parentDatasetId).toBe(DEM_ID);
+    expect(parents[0]!.origin).toBe('사람이 직접 연결');
+  });
+});
+
+describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 방식', () => {
+  it('부모 역할은 `주입력`·`보조입력` 둘뿐이고 제안값이 기본으로 선다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const cards = await screen.findAllByTestId('lin-card');
+    const roles = within(cards[0]!).getByTestId('lin-role') as HTMLSelectElement;
+    expect([...roles.options].map((o) => o.value)).toEqual(['주입력', '보조입력']);
+    expect(roles.value).toBe('주입력');
+    expect((within(cards[1]!).getByTestId('lin-role') as HTMLSelectElement).value).toBe('보조입력');
+
+    await click(within(cards[0]!).getByTestId('lin-confirm'));
+    await click(within(cards[1]!).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents).toHaveLength(2);
+    expect(parents.map((p) => p.parentRole)).toEqual(['주입력', '보조입력']);
+  });
+
+  it('`보조입력` 이 Lv 계산에서 빠진다는 것을 알린다 — Lv 값을 화면이 계산하지 않는다', async () => {
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const note = await screen.findByTestId('lin-lv-note');
+    expect(note).toHaveTextContent('보조입력');
+    // Lv 는 파생값이라 등록 뒤 core 가 계산한다 (`PLAN-SoT §9-⑳`) — 여기서 숫자를 짓지 않는다.
+    expect(note.textContent).not.toMatch(/Lv\s*\d/);
+  });
+
+  it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `사람이 직접 연결`', async () => {
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await click(await screen.findByTestId('lin-add'));
+    await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
+    const card = await screen.findByTestId('lin-card');
+    expect(within(card).queryByTestId('lin-confidence')).toBeNull();
+    await click(within(card).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents).toHaveLength(1);
+    expect(parents[0]!.origin).toBe('사람이 직접 연결');
+    expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
+  });
+
+  it('가공 방식은 **관계에 붙는다** — 확인하면 그 부모의 `confirmedMethodText` 로 실린다', async () => {
+    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    const cards = await screen.findAllByTestId('lin-card');
+    await click(within(cards[0]!).getByTestId('lin-confirm'));
+    const method = screen.getByTestId('lin-method-card');
+    expect(within(method).getByTestId('lin-method-parent')).toHaveTextContent(
+      'KWRA NDVI 2 km 일별',
+    );
+    await click(within(method).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents).toHaveLength(1);
+    expect(parents[0]!.confirmedMethodText).toBe('Co-Kriging 으로 250 m 다운스케일');
+    // `method` 와 `confirmedMethodText` 가 둘 다 오면 400 이다 — 한 자리로 접힌다.
+    expect(parents[0]!.method ?? null).toBeNull();
+  });
+
+  it('직접 적은 가공 방식은 `method` 로 실린다 — 제안 확인 자리와 섞이지 않는다', async () => {
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await click(await screen.findByTestId('lin-add'));
+    await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
+    const card = await screen.findByTestId('lin-card');
+    await change(within(card).getByTestId('lin-method'), 'IDW 로 250 m 다운스케일');
+    await click(within(card).getByTestId('lin-confirm'));
+    await click(screen.getByTestId('reg-done'));
+    const parents = sentParents(calls);
+    expect(parents[0]!.method).toBe('IDW 로 250 m 다운스케일');
+    expect(parents[0]!.confirmedMethodText ?? null).toBeNull();
+  });
+
+  it('확정 건수가 ③ 표시기로 간다 — 0건이면 건수를 붙이지 않는다', async () => {
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineage(sources);
+    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
+    const cards = screen.getAllByTestId('lin-card');
+    await click(within(cards[0]!).getByTestId('lin-confirm'));
+    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('1 / 2'));
   });
 });
