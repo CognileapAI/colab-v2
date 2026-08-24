@@ -1,0 +1,109 @@
+"""ai-service 조립 루트 — `core-ai.yaml` 의 표면을 세운다.
+
+**여는 것은 `searchDatasets`(`POST /searches`) 하나다.** `suggestLineage` 는 `K3` 의 자리이고
+여기서 흉내 내지 않는다 — 계약에 있는 것과 구현된 것이 다르면 그 사실이 보여야 한다.
+
+**경계를 두 번 받는다.** 본문의 `scope.labId` 와 헤더 `X-CoLAB-Lab` 이다(core-api 중계가
+둘 다 보낸다). **둘이 다르면 뒤지지 않고 400 이다** — 어느 쪽을 믿을지 이쪽이 고르면
+경계가 이 파일의 판단이 되고, 그 순간 `CLAUDE.md §3-5` 가 막으려던 「경계가 두 곳에서
+정해지는 상황」이 된다.
+
+**설정이 하나도 없어도 뜬다.** DB URL 이 없으면 `/searches` 는 5xx 가 아니라
+**뒤진 범위를 먼저 밝힌 빈 결과 + `degraded`** 를 낸다 (`CLAUDE.md §3`).
+"""
+from __future__ import annotations
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from colab_ai.app.catalog_search import SqlCatalogSearch
+from colab_ai.app.dictionaries import SqlDictionaries
+from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
+from colab_ai.domains.d10_ai_services import SearchService
+from colab_ai.kernel.config import Settings
+from colab_ai.kernel.db import make_engine
+from colab_ai.kernel.ids import is_valid_ulid
+
+#: `Policy_데이터_찾기 §5 검색 질문 — 1~200자`. 계약(`SearchRequest.query`)과 같은 값이다.
+MAX_QUERY = 200
+MAX_LIMIT = 100
+DEFAULT_LIMIT = 20
+
+
+def _error(status: int, code: str, message: str) -> JSONResponse:
+    """모든 4xx/5xx 는 한 형태다 (`common.json#ErrorEnvelope`)."""
+    return JSONResponse(status_code=status, content={"code": code, "message": message})
+
+
+class _UnavailableCatalog:
+    """카탈로그 DB 가 배선되지 않았을 때의 자리. **거짓 성공을 만들지 않는다.**"""
+
+    def count_datasets(self, **_kw):
+        raise RuntimeError("카탈로그 색인 주소가 배선되지 않았다")
+
+    def match(self, **_kw):
+        raise RuntimeError("카탈로그 색인 주소가 배선되지 않았다")
+
+
+class _UnavailableDictionaries:
+    def expand(self, terms, query):
+        raise RuntimeError("온톨로지 사전 주소가 배선되지 않았다")
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or Settings.from_env()
+    app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
+
+    catalog = (SqlCatalogSearch(make_engine(settings.platform_db_url))
+               if settings.platform_db_url else _UnavailableCatalog())
+    dictionaries = (SqlDictionaries(make_engine(settings.dict_db_url))
+                    if settings.dict_db_url else _UnavailableDictionaries())
+    interpreter = (LlmQueryInterpreter(api_key=settings.openai_api_key, model=settings.model,
+                                       timeout_seconds=settings.model_timeout_seconds)
+                   if settings.openai_api_key else LiteralInterpreter())
+    service = SearchService(interpreter=interpreter, dictionaries=dictionaries, catalog=catalog)
+
+    @app.get("/healthz")
+    def healthz() -> dict:
+        return {"unit": "ai-service", "status": "alive", "implemented": True}
+
+    @app.post("/searches")
+    async def search_datasets(request: Request):
+        try:
+            payload = await request.json()
+        except Exception:                                        # noqa: BLE001
+            return _error(400, "bad_request", "본문이 JSON 이 아니다.")
+        if not isinstance(payload, dict):
+            return _error(400, "bad_request", "본문이 객체가 아니다.")
+
+        scope = payload.get("scope")
+        if not isinstance(scope, dict):
+            return _error(400, "bad_request", "scope 가 없다 — 경계 없이 뒤지지 않는다.")
+        lab_id, lab_name = scope.get("labId"), scope.get("labName")
+        if not is_valid_ulid(lab_id) or not isinstance(lab_name, str) or not lab_name.strip():
+            return _error(400, "bad_request", "scope.labId · scope.labName 이 계약대로가 아니다.")
+
+        header_lab = request.headers.get("X-CoLAB-Lab")
+        account_id = request.headers.get("X-CoLAB-Account")
+        if header_lab and header_lab != lab_id:
+            return _error(400, "bad_request",
+                          "요청 본문의 연구실과 헤더의 연구실이 다르다 — 경계를 이쪽이 고르지 않는다.")
+        if not is_valid_ulid(account_id):
+            return _error(401, "unauthorized", "주체가 없다 — 경계 없이 뒤지지 않는다.")
+
+        query = payload.get("query")
+        if not isinstance(query, str) or not query.strip() or len(query) > MAX_QUERY:
+            return _error(400, "bad_request", f"검색 질문은 1~{MAX_QUERY}자다.")
+        limit = payload.get("limit", DEFAULT_LIMIT)
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_LIMIT:
+            return _error(400, "bad_request", f"limit 은 1~{MAX_LIMIT} 이다.")
+        cursor = payload.get("cursor")
+        if cursor is not None and not isinstance(cursor, str):
+            return _error(400, "bad_request", "cursor 는 문자열이다.")
+
+        body = service.search(lab_id=lab_id, lab_name=lab_name, account_id=account_id,
+                              query=query.strip(), limit=limit, cursor=cursor)
+        # `scope` 를 먼저 쓴 dict 를 그대로 직렬화한다 — 뒤진 범위가 바이트에서도 먼저다.
+        return JSONResponse(content=body)
+
+    return app
