@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import binascii
 import datetime as dt
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
@@ -22,6 +23,16 @@ from .. import dataset_search
 from ..deps import current_subject, scoped_db
 
 router = APIRouter()
+
+#: 검색 장애의 **감시 표면**. Ted 가 모니터링을 붙인다(2026-08-25) — 그러려면 실패가
+#: 사람의 눈이 아니라 **기계가 긁을 이름**으로 서야 한다. 이름 셋을 고정한다:
+#: 로거 `colab_core.search` · `record.event = "search.unavailable"` · `record.code`.
+#: 문구는 바뀔 수 있어도 이 셋은 계약처럼 다룬다 — 대시보드 질의가 그 위에 선다.
+_search_log = logging.getLogger("colab_core.search")
+
+#: 검색에 못 닿았을 때의 봉투 코드. `preview.py` 의 `RENDER_UNAVAILABLE` 과 같은 모양이고
+#: 계약(`fe-core.yaml#searchDatasets` 의 `"503"`)이 이 값을 이름으로 적어 뒀다.
+SEARCH_UNAVAILABLE = "SEARCH_UNAVAILABLE"
 
 PAGE_SIZE = 20   # 페이지 크기는 서버가 정한다 — 정본은 `+N건 더 보기`만 요구한다 (D2.md §3-②)
 
@@ -190,7 +201,11 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     · **잠긴 데이터를 빼지 않고, 잠김으로 표시해서 낸다** (`§1.3-6` · `P-13`·`P-34`).
       실행이 이쪽으로 오면서 D2 를 제대로 볼 수 있게 됐다 — `K4-a` 의 무표시가 여기서 닫힌다.
     · **경계는 주체에서만 나온다.** 질의는 `READ ONLY` + 스코프 트랜잭션에서 돈다.
-    · **AI 가 없어도 200 이다** — 빈 결과 + `degraded: true`.
+    · **검색에 못 닿으면 503 이다 — 0건이 아니다** (Ted 판정 2026-08-25 `〈87〉-㉯`).
+      「뒤졌는데 없다」와 「뒤지지도 못했다」는 다른 사실이고, 0건으로 접으면 화면이
+      「없다」고 답한다. **폴백을 두지 않는다** — 죽으면 「동작하지 않음」이 드러나야 한다.
+      **`degraded`(해석만 무너짐 · 낱말 그대로 찾음)는 그대로 200 이다** — 그쪽은 **진짜로
+      뒤졌고 결과가 진짜 결과**다. 두 상태를 접지 않는 것이 이 라우트의 요점이다.
     · **AI 가 얹어 보낸 식별자를 읽지 않는다** (중계가 이미 버린다).
     """
     payload = body if isinstance(body, dict) else {}
@@ -218,6 +233,20 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
         account_id=str(subject.account_id), query=query.strip(), limit=limit, cursor=cursor,
         searched_count=searched_count,
     )
+
+    if answer.get("unavailable"):
+        # **한 건도 뒤지지 않았다.** 여기서 200 + 0건을 내면 화면이 「없다」고 말하는데
+        # 사실은 「못 했다」이다. 로그가 먼저 서는 이유는 감시다 — 응답만으로는
+        # 「지금 몇 건 실패했나」를 아무도 못 센다.
+        reason = answer.get("unavailableReason") or "검색 서비스에 닿지 못했다."
+        _search_log.warning(
+            "event=search.unavailable code=%s reason=%s", SEARCH_UNAVAILABLE, reason,
+            extra={"event": "search.unavailable", "code": SEARCH_UNAVAILABLE,
+                   "reason": reason, "labId": str(subject.lab_id)},
+        )
+        raise errors.ApiError(
+            503, SEARCH_UNAVAILABLE,
+            f"검색이 지금 동작하지 않는다 — 없다는 뜻이 아니다: {reason}")
 
     items: list[dict] = []
     next_cursor = None

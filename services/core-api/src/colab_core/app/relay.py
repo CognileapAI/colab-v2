@@ -96,14 +96,24 @@ def honest_empty_suggestions(*, lab_id: str, lab_name: str, searched_count: int,
 
 
 def unreadable_interpretation(reason: str) -> dict[str, Any]:
-    """**해석을 못 받았다.** 검색어가 없으니 뒤지지 않는다 — 지어내지 않는다.
+    """**해석을 못 받았다 — 그러므로 한 건도 뒤지지 않았다.**
 
-    ① **0건은 오류가 아니다** — 막다른 길이 아니라 다음 행동을 안내할 상태다(`§1.3-7`).
+    ⚠ **2026-08-25 Ted 판정 `〈87〉-㉯` 로 이 값의 뜻이 바뀌었다.** 이전 판은 이것을
+    「0건 + degraded」로 접었다. 그런데 **0건은 「뒤졌는데 없다」는 뜻**이고 여기서 참인 것은
+    **「뒤지지도 못했다」**다. 둘을 같은 응답으로 내면 화면이 정확히 거짓말을 한다 —
+    사용자는 「우리 연구실에 그런 자료가 없구나」로 읽는다.
+    **폴백을 두지 않는다. 죽으면 「동작하지 않음」이 드러나야 한다.**
+
+    ① `unavailable: True` 가 그 사실이다 — 호출자(라우트)가 **503 + `SEARCH_UNAVAILABLE`** 로
+       바꾸고, FE 의 `unavailable` 상태가 그 위에 선다(`useSearch.ts` — 이미 있는 자리다).
     ② `isDataQuery` 를 `true` 로 둔다 — **질의를 판정한 것은 AI 이고 우리는 판정하지 못했다.**
        `false` 로 두면 「데이터를 찾는 질문이 아니다」라는 **하지 않은 판정**을 말하는 것이 된다.
-    ③ 뒤진 범위(`scope`)는 **호출자가 붙인다** — 세는 것은 D3 이고 그것은 core 의 일이다.
+    ③ **`degraded`(해석만 무너짐)와 접지 않는다.** 저쪽이 `source: "literal"` 로 답했다면
+       검색어가 **있고** core-api 가 **진짜로 뒤졌고 결과는 진짜 결과다** — 그것은 200 이다.
     """
     return {
+        "unavailable": True,
+        "unavailableReason": reason,
         "degraded": True,
         "degradedReason": reason,
         "isDataQuery": True,
@@ -121,8 +131,13 @@ class HttpDatasetSearchRelay:
     `CLAUDE.md §3-1` 위반이었다. 이제 받아 오는 것은 **검색어·주제·해석 출처**뿐이고,
     찾고 매기는 일은 D3 의 주인인 core-api 가 한다 (`〈72〉-㉮`).
 
-    `HttpLineageSuggestionRelay` 와 같은 규칙이다 — 주소가 없어도, 못 닿아도, 범위가 달라도
-    **200 + 빈 결과**다. 「AI 가 없다」가 「검색 화면이 죽는다」가 되면 안 된다 (`CLAUDE.md §3`).
+    ⚠ **계보 제안 중계와 규칙이 갈린다** (2026-08-25 Ted 판정 `〈87〉-㉯`). 저쪽은 못 닿아도
+    200 + 0건이면 된다 — 「제안이 없다」와 「제안을 못 받았다」의 결과가 같기 때문이다
+    (사람이 계보를 직접 적으면 된다). **검색은 다르다.** 0건이 곧 「연구실에 그런 자료가
+    없다」는 **답**이라, 못 닿은 것을 0건으로 내면 답이 거짓이 된다. 그래서 주소가 없거나,
+    못 닿거나, 범위가 다르거나, 해석을 못 읽으면 **`unavailable`** 을 세우고 라우트가
+    **503** 으로 낸다. **「AI 없이도 v2 는 완결된 제품」은 그대로다** — 카탈로그·업로드는
+    도는 채이고 화면이 카탈로그로 안내한다 (`CLAUDE.md §3`).
 
     **저쪽이 얹어 보낸 `results.items` 를 읽지 않는다.** 읽으면 순서가 모델의 것이 되고,
     같은 질의가 때마다 다른 답을 내며, 근거 한 줄이 사후 정당화가 된다 (`〈72〉-㉮`).
@@ -165,6 +180,7 @@ class HttpDatasetSearchRelay:
         topic = interpretation.get("topic")
         source = interpretation.get("source")
         return {
+            "unavailable": False,
             "degraded": bool(body.get("degraded", False)),
             "degradedReason": body.get("degradedReason"),
             "isDataQuery": bool(body.get("isDataQuery", True)),

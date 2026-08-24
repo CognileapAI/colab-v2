@@ -67,24 +67,54 @@ def _ai_body(terms, *, lab_id, topic=None, source="llm", searched=3,
     }
 
 
-# ═════════════════ ④ AI 가 없어도 200 · 정직한 빈 상태 ═════════════════
-def test_without_ai_service_it_is_200_with_degraded_and_no_results(p2_client) -> None:
-    """**5xx 로 끝내지 않는다.** 「AI 가 없다」가 「검색 화면이 죽는다」가 되면
-    `CLAUDE.md §3` 의 「AI 없이도 v2 는 완결된 제품」이 거짓이 된다."""
+# ════════ ④ 검색이 죽으면 **「동작하지 않음」이 드러난다** — 0건으로 위장하지 않는다 ════════
+#
+# ⚠ **2026-08-25 Ted 판정 〈87〉-㉯ 로 이 묶음이 뒤집혔다.** 여기까지의 판은
+# 「AI 가 없으면 200 + 0건 + degraded」였다. 그런데 **0건은 「뒤졌는데 없다」는 뜻**이고,
+# 못 닿은 상태의 사실은 **「뒤지지도 못했다」**다. 둘을 같은 화면으로 그리면 화면이 거짓말을
+# 한다. Ted 의 말 그대로 — 「서비스 죽으면 동작하지 않음이 노출되어야 함. 모니터링 달 거야.」
+#
+# **`degraded`(해석만 무너짐 · 결과는 진짜)는 그대로 살아 있다** — 아래 마지막 묶음이 지킨다.
+def test_a_dead_ai_service_is_503_not_a_zero_hit_result(p2_client) -> None:
+    """**0건처럼 보이지 않는다.** 주소가 없어 한 건도 뒤지지 못했다."""
     r = p2_client().post(SEARCH, json={"query": "2023년 강수량"}, headers=auth(TOKEN_RES))
-    assert r.status_code == 200, r.text
+    assert r.status_code == 503, r.text
     body = r.json()
-    assert body["degraded"] is True
-    assert body["items"] == []
-    assert body["degradedReason"], "왜 비었는지 한 줄이 없으면 빈 상태가 정직하지 않다."
+    assert body["code"] == "SEARCH_UNAVAILABLE", "감시가 긁을 코드가 없다."
+    assert body["message"], "왜 못 했는지 한 줄이 없으면 정직하지 않다."
+    assert "items" not in body and "totalCount" not in body, \
+        "0건 봉투를 함께 내면 화면이 「없다」로 그릴 수 있다 — 둘을 섞지 않는다."
 
 
-def test_the_honest_empty_state_still_says_what_it_searched(p2_client) -> None:
-    """① **뒤진 범위가 먼저다** (`§3.3` — 「우리 연구실 데이터 128개를 뒤졌지만…」)."""
-    r = p2_client().post(SEARCH, json={"query": "강수"}, headers=auth(TOKEN_RES))
-    scope = r.json()["scope"]
-    assert scope["labName"], "범위 표시줄에 세울 이름이 없다."
-    assert scope["searchedCount"] >= 1, "0 을 적으면 「아무것도 없는 연구실」이라 말하는 것이다."
+def test_an_unreachable_ai_service_is_503_too(p2_client) -> None:
+    """주소는 있는데 아무도 안 받는다. **주소 없음과 같은 사실이다** — 뒤지지 못했다."""
+    r = p2_client(ai_base_url="http://127.0.0.1:9").post(
+        SEARCH, json={"query": "강수"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 503, r.text
+    assert r.json()["code"] == "SEARCH_UNAVAILABLE"
+
+
+def test_the_failure_leaves_a_signal_a_monitor_can_scrape(p2_client, caplog) -> None:
+    """**감시가 긁을 것이 응답 밖에도 있어야 한다** — Ted 가 모니터링을 붙인다.
+    로그 한 줄에 `event`·`code` 가 고정된 이름으로 선다."""
+    import logging
+    with caplog.at_level(logging.WARNING, logger="colab_core.search"):
+        p2_client().post(SEARCH, json={"query": "강수"}, headers=auth(TOKEN_RES))
+    hits = [rec for rec in caplog.records if getattr(rec, "event", None) == "search.unavailable"]
+    assert hits, "장애가 로그에 이름을 남기지 않았다 — 감시가 붙을 자리가 없다."
+    assert hits[0].code == "SEARCH_UNAVAILABLE"
+    assert hits[0].reason, "이유 없는 신호는 대시보드에서 아무 말도 못 한다."
+
+
+def test_the_catalogue_still_works_when_search_is_down(p2_client) -> None:
+    """**「검색이 죽었다」가 「제품이 죽었다」가 아니다** (`CLAUDE.md §3`).
+    503 은 검색 op 하나에만 서고 카탈로그는 그대로 돈다 — 화면의 카탈로그 링크가 공허하지 않다."""
+    client = p2_client()
+    assert client.post(SEARCH, json={"query": "강수"},
+                       headers=auth(TOKEN_RES)).status_code == 503
+    r = client.get(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json()["items"], "카탈로그가 비면 「카탈로그에서 직접 찾기」 안내가 거짓이 된다."
 
 
 # ═════════════════ ② AI 는 검색어만 · 나머지는 core 가 만든다 ═════════════════
@@ -188,13 +218,15 @@ def test_another_labs_dataset_never_comes_back(p2_client, fake_ai) -> None:
 
 
 def test_a_response_from_another_scope_is_discarded(p2_client, fake_ai) -> None:
-    """`core-ai.yaml SearchResponse.scope` — 요청의 범위와 다르면 **응답을 버린다.**"""
+    """`core-ai.yaml SearchResponse.scope` — 요청의 범위와 다르면 **응답을 버린다.**
+
+    버린 뒤에 남는 사실은 **「뒤지지 못했다」**다. 0건이 아니라 503 이다 (`〈87〉-㉯`)."""
     from conftest import LAB_B
     fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_B)
     r = p2_client(ai_base_url=fake_ai["url"]).post(
         SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
-    assert r.json()["degraded"] is True
-    assert r.json()["items"] == []
+    assert r.status_code == 503, r.text
+    assert r.json()["code"] == "SEARCH_UNAVAILABLE"
 
 
 # ═════════════════ AI 가 해석에 실패해도 검색은 돈다 ═════════════════
@@ -212,15 +244,30 @@ def test_a_degraded_interpretation_still_searches(p2_client, fake_ai) -> None:
     assert all("질의 해석 없이" in i["rationale"] for i in body["items"])
 
 
-def test_an_unreadable_answer_is_the_honest_empty_state(p2_client, fake_ai) -> None:
-    """해석을 아예 못 읽었으면 **지어내지 않는다.**"""
+def test_an_unreadable_answer_is_not_a_zero_hit_result(p2_client, fake_ai) -> None:
+    """해석을 아예 못 읽었으면 **검색어가 없어 한 건도 뒤지지 않았다.**
+
+    ⚠ **여기가 `degraded` 와 갈리는 자리다.** 위 시험(`literal`)은 검색어가 있어서 **진짜로
+    뒤졌고 진짜 결과가 나왔다** — 그래서 200 이다. 이쪽은 뒤진 적이 없다 — 그래서 503 이다."""
     from conftest import LAB_A
     body = _ai_body([], lab_id=LAB_A)
     body.pop("interpretation")
     fake_ai["body"] = body
     r = p2_client(ai_base_url=fake_ai["url"]).post(
         SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
-    assert r.json()["items"] == [] and r.json()["degraded"] is True
+    assert r.status_code == 503, r.text
+    assert r.json()["code"] == "SEARCH_UNAVAILABLE"
+
+
+def test_ai_answering_with_an_error_status_is_503(p2_client, fake_ai) -> None:
+    """저쪽이 5xx 로 답했다. **그 상태코드를 0건으로 번역하지 않는다.**"""
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(["강우"], lab_id=LAB_A)
+    fake_ai["status"] = 500
+    r = p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": "강우"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 503, r.text
+    assert r.json()["code"] == "SEARCH_UNAVAILABLE"
 
 
 # ═════════════════ 데이터를 찾는 질문이 아닐 때 · 입력 규칙 ═════════════════
