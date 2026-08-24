@@ -11,8 +11,11 @@
 //   ⑶ `partialFailure` 는 `status` 를 `실패` 로 만들지 않는다 — 읽힌 조각으로 그리고 `완료` 다.
 //   ⑷ `tileUrlTemplate` 은 **불투명 문자열**이다(`〈68〉` 단명 서명 포함). `{z}`·`{x}`·`{y}` 만 치환한다.
 //   ⑸ 만료된 렌더의 타일은 **401** 로 온다 — 권한 문제가 아니라 만료로 다룬다.
-import { useEffect, useRef, useState } from 'react';
-import type { PaletteOption, PreviewSource, RenderJob } from './types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PaletteOption, PreviewSource, RenderJob, RenderResult } from './types';
+import { GridUploadBlock, type GridActions } from './GridUploadBlock';
+import { gridState } from './gridFlow';
+import { colorRangeNotice, layerOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 
 /** 정본 §9 「그리는 서버에 연결 못 함」. 코드가 없을 때 쓰는 기본 문구. */
 const UNAVAILABLE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
@@ -21,11 +24,25 @@ const POLL_MS = 250;
 /** 구간 수 3~9 · 기본 6 (`Policy_데이터셋_상세 §5` · 계약 `RenderStyle.classCount`). */
 const DEFAULT_CLASS_COUNT = 6;
 
+/** 격자 흐름이 바깥(모달)에서 받는 사실 + 바깥으로 돌려주는 행동 (`§E.1-㈎`). */
+export interface GridFlowProps extends GridActions {
+  /** 사람이 「건너뛰기」를 골랐다 (`§E.2-⑨`). **기본 경로다.** */
+  skipped?: boolean;
+  /** 격자 파일이 실제로 붙어 있는가. */
+  hasGrid?: boolean;
+  /** 전송 진행 — 바이트가 실제로 세어질 때만 온다. 없으면 퍼센트를 쓰지 않는다. */
+  transfer?: { sentBytes: number; totalBytes: number } | null;
+  /** 워커의 축 판정을 기다린다 (`§E.3b` — 확정 또는 거절로 끝나야 `ready`). */
+  verifying?: boolean;
+}
+
 export function PreviewPanel(props: {
   source: PreviewSource;
   uploadId: string | null;
   /** 기준 격자 파일이 붙어 있는가. 없으면 정본 §9 안내 + `짝 파일 없이 그려 보기`. */
   hasReferenceGrid: boolean;
+  /** 격자 업로드 흐름. 없으면 블록을 열지 않는다 — 화면이 사라지는 것이 아니라 안 열린다. */
+  grid?: GridFlowProps | undefined;
 }) {
   const { source, uploadId } = props;
   const [palettes, setPalettes] = useState<PaletteOption[] | null>(null);
@@ -34,7 +51,11 @@ export function PreviewPanel(props: {
   const [job, setJob] = useState<RenderJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tileExpired, setTileExpired] = useState(false);
+  const [unreachable, setUnreachable] = useState(false);
+  const [accepted, setAccepted] = useState(false);
   const polling = useRef(0);
+  // 색 범위가 **조용히** 바뀌지 않게, 앞서 본 잠정 범위를 들고 있는다 (`§D.4`)
+  const seenRange = useRef<{ stage: string; key: string } | null>(null);
 
   // 팔레트 값의 **유일한 출처는 서버**다. 화면이 목록을 지어내지 않는다.
   useEffect(() => {
@@ -64,6 +85,8 @@ export function PreviewPanel(props: {
     if (!uploadId || !palette) return;
     setError(null);
     setTileExpired(false);
+    setUnreachable(false);
+    setAccepted(false);
     try {
       const started = await source.createRender({
         target: { uploadId },
@@ -73,6 +96,8 @@ export function PreviewPanel(props: {
       setJob(started);
       poll(started.renderId);
     } catch {
+      // 그리는 서버에 닿지 못했다 — **등록은 그대로 진행된다**(`§E.2-⑩`)
+      setUnreachable(true);
       setError(UNAVAILABLE);
     }
   }
@@ -85,6 +110,7 @@ export function PreviewPanel(props: {
         setJob(next);
         if (next.status === '그리는 중') poll(renderId);
       } catch {
+        setUnreachable(true);
         setError(UNAVAILABLE);
       }
     }, POLL_MS);
@@ -95,7 +121,37 @@ export function PreviewPanel(props: {
   // **실패는 200 + `failure`** 다. HTTP 상태로 판정하지 않는다.
   const failure = job?.status === '실패' ? job.failure : undefined;
   const partial = job?.partialFailure;
-  const result = done ? job?.result : undefined;
+  const result: RenderResult | undefined = done ? job?.result : undefined;
+  // 실패해도 이미 구운 값 미리보기·썸네일이 있으면 **감추지 않는다**
+  const salvage = salvageOf(failure);
+
+  // 색 범위 — **조용히 바뀌지 않는다.** 앞서 본 범위와 견줘 바뀜을 한 번 말한다 (`§D.4`)
+  const stage = result?.colorRangeStage ?? salvage?.colorRangeStage;
+  const changed = useMemo(() => {
+    if (!result || !stage) return false;
+    const key = rangeKey(result);
+    const seen = seenRange.current;
+    const moved = Boolean(seen && seen.stage === '잠정' && stage === '확정' && seen.key !== key);
+    seenRange.current = { stage, key };
+    return moved;
+  }, [result, stage]);
+  const notice = colorRangeNotice(stage, changed);
+
+  const grid = props.grid;
+  const gs = grid
+    ? gridState({
+        hasGrid: grid.hasGrid ?? props.hasReferenceGrid,
+        skipped: grid.skipped ?? false,
+        transfer: grid.transfer ?? null,
+        verifying: grid.verifying ?? false,
+        drawing,
+        result: result ?? null,
+        failure: failure ?? null,
+        unreachable,
+      })
+    : null;
+  // 「맞습니다」를 누른 뒤에는 확인을 다시 청하지 않는다 — 물어 놓고 또 묻지 않는다
+  const gridBlock = gs && !(accepted && gs.name === '위치 확인') ? gs : null;
 
   return (
     <section className="mapstage" data-testid="up-preview">
@@ -187,16 +243,30 @@ export function PreviewPanel(props: {
         </div>
       )}
 
+      {/* 그림 한 장. **②비지도형은 경계가 없는 것이 정상이고 그것도 완료다**(`〈85〉`) —
+          여기서 오류 자리로 보내지 않는다. 배지가 좌표의 출처를 화면이 말하게 한다(`K-4`) */}
       {result && (
         <div className="mapcanvas" data-testid="up-preview-map">
-          {/* `tileUrlTemplate` 을 **그대로** 쓴다. 질의부를 떼거나 다시 조립하면 서명이 깨진다 */}
-          <img
-            className="tile"
-            alt="미리보기 타일"
-            data-testid="up-preview-tile"
-            src={result.tileUrlTemplate.split('{z}').join('0').split('{x}').join('0').split('{y}').join('0')}
-            onError={() => setTileExpired(true)}
-          />
+          <div className="pv-badges">
+            {result.precisionBadge ? (
+              <span className="chip" data-testid="up-preview-badge">
+                {result.precisionBadge}
+              </span>
+            ) : null}
+            <span className="chip chip--neutral" data-testid="up-preview-layer">
+              {layerOf(result)}
+            </span>
+          </div>
+          {previewImageSrc(result) ? (
+            <img
+              className="tile"
+              alt="미리보기"
+              /* 계약이 `oneOf` 라 갈래마다 다른 자리다 — 단일 이미지(stage 1)와 타일(stage 2) */
+              data-testid={result.imageUrl ? 'up-preview-image' : 'up-preview-tile'}
+              src={previewImageSrc(result)}
+              onError={() => setTileExpired(true)}
+            />
+          ) : null}
           {tileExpired && (
             <div className="vizerr" role="alert" aria-live="assertive" data-testid="up-preview-expired">
               타일 주소의 수명이 다했어요. 미리보기를 다시 그려 주세요.
@@ -204,6 +274,54 @@ export function PreviewPanel(props: {
           )}
         </div>
       )}
+
+      {/* 실패했어도 **이미 구운 값 미리보기·썸네일은 남는다** — 있는 것을 감추지 않는다 */}
+      {!result && salvage && (
+        <div className="mapcanvas" data-testid="up-preview-salvage">
+          {salvage.precisionBadge ? (
+            <span className="chip" data-testid="up-preview-badge">
+              {salvage.precisionBadge}
+            </span>
+          ) : null}
+          {salvage.thumbnailUrl ? (
+            <img className="thumb" alt="" data-testid="up-preview-thumb" src={salvage.thumbnailUrl} />
+          ) : null}
+          {salvage.valuePreviewUrl ? (
+            <img
+              className="tile"
+              alt="값 미리보기"
+              data-testid="up-preview-image"
+              src={salvage.valuePreviewUrl}
+            />
+          ) : null}
+        </div>
+      )}
+
+      {/* 색 범위 단계 — **잠정을 잠정이라 말한다.** 조용히 바뀌지 않는다 (`§D.4`) */}
+      {notice ? (
+        <div className="vizstage" data-testid="up-preview-colorstage" aria-live="polite">
+          <span className="chip chip--neutral">{notice.stage}</span>
+          {notice.message ? <span className="cw">{notice.message}</span> : null}
+        </div>
+      ) : null}
+
+      {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다 */}
+      {grid && gridBlock ? (
+        <GridUploadBlock
+          state={gridBlock}
+          transfer={grid.transfer ?? null}
+          actions={{
+            onPickGrid: grid.onPickGrid,
+            onSkipGrid: grid.onSkipGrid,
+            ...(grid.onCancel ? { onCancel: grid.onCancel } : {}),
+            onAccept: () => {
+              setAccepted(true);
+              grid.onAccept?.();
+            },
+            ...(grid.onFlipAxes ? { onFlipAxes: grid.onFlipAxes } : {}),
+          }}
+        />
+      ) : null}
 
       {!job && !error && (
         <div className="vizph">

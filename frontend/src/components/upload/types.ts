@@ -56,6 +56,8 @@ export interface PaletteOption {
  */
 export type RenderJob = Schemas['RenderJob'];
 export type RenderRequest = Schemas['RenderRequest'];
+/** 완료된 렌더 결과. **`oneOf` 다** — 단일 이미지(stage 1)와 타일(stage 2) 갈래가 갈린다(`〈85〉`). */
+export type RenderResult = Schemas['RenderResult'];
 
 export interface PreviewSource {
   /** 팔레트 값의 **유일한 출처**. 화면이 목록을 지어내지 않는다. */

@@ -197,3 +197,24 @@
 .btn-sm { padding: 6px 10px; font-size: 13px; }
 .btn-strong, .btn-primary { background: var(--up-ink); color: #fff; border-color: var(--up-ink); }
 .btn-ghost { border-color: transparent; }
+
+
+/* 격자 업로드 블록 (`S1-PLAN-REFOUND §E`) — 미리보기 패널 **안**에서 열린다.
+   조건부로 사라지는 앵커를 만들지 않으려고 패널은 그대로 두고 이 블록만 여닫는다. */
+.gridblock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  background: var(--surface-2, #f9fafb);
+}
+.gridblock .gb-t { margin: 0; font-weight: 600; }
+.gridblock .gb-b { margin: 0; color: var(--muted, #6b7280); font-size: 13px; }
+.gridblock .gb-a { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gridblock .gridbar { width: 100%; height: 6px; }
+/* 배지 — 좌표의 출처와 색 범위 단계를 화면이 **말한다** (`K-4`) */
+.pv-badges { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted, #6b7280); }
+.mapcanvas .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }

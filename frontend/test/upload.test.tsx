@@ -1237,3 +1237,102 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     await waitFor(() => expect(stepBtn('③')).toHaveTextContent('1 / 2'));
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// `S1-PLAN-REFOUND §E.0-1` — **등록은 미리보기에 인질이 아니다.**
+// 격자 흐름이 새 실패 경로를 여럿 만들었으므로, 그 하나하나에서 등록이 살아 있음을 본다.
+// (이전에는 이 성질의 실동작 증명이 `test_preview_relay.py:169` **한 건**뿐이었다.)
+describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다 — 격자 흐름 전 경로', () => {
+  const REJECT = (detail: string) => [
+    {
+      renderId: RENDER_ID,
+      status: '실패',
+      failure: { code: 'REFERENCE_GRID_MISSING', message: '위경도를 담은 짝 파일이 없어요.', details: { detail } },
+    },
+  ];
+
+  it('격자가 없어 지도형이 보류돼도 등록 버튼은 살아 있다', async () => {
+    const { sources } = fakes({
+      jobs: [
+        {
+          renderId: RENDER_ID,
+          status: '완료',
+          result: {
+            imageUrl: 'https://viz.example/p/detail.png',
+            legend: { palette: 'viridis', classes: [] },
+            precisionBadge: '격자 없음 — 지도형 보류',
+            colorRangeStage: '잠정',
+          },
+        },
+      ],
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('rdr.bin')]);
+    await click(await screen.findByTestId('up-preview-draw'));
+    const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
+    expect(block).toHaveTextContent('이 파일은 좌표를 자체적으로 갖고 있지 않습니다.');
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
+  });
+
+  it('격자가 형상 불일치로 거절돼도 등록 버튼은 살아 있다', async () => {
+    const { sources } = fakes({
+      jobs: REJECT('격자 형상이 데이터와 안 맞는다: 데이터 (2881, 2305) vs 격자 (1200, 1200)'),
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('rdr.bin')]);
+    await click(await screen.findByTestId('up-preview-draw'));
+    const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
+    expect(block).toHaveTextContent('이 격자는 이 파일의 것이 아닙니다.');
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
+  });
+
+  it('건너뛰기를 누르면 지도 없이 등록한다고 말하고 등록은 그대로 열린다', async () => {
+    const { sources } = fakes({
+      jobs: [
+        {
+          renderId: RENDER_ID,
+          status: '완료',
+          result: {
+            imageUrl: 'https://viz.example/p/detail.png',
+            legend: { palette: 'viridis', classes: [] },
+            precisionBadge: '격자 없음 — 지도형 보류',
+            colorRangeStage: '잠정',
+          },
+        },
+      ],
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('rdr.bin')]);
+    await click(await screen.findByTestId('up-preview-draw'));
+    await click(await screen.findByTestId('up-grid-skip', undefined, { timeout: 4000 } as never));
+    expect(await screen.findByTestId('up-grid-block')).toHaveTextContent('지도 없이 등록합니다.');
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
+  });
+
+  it('격자 파일을 고르면 `기준 격자 파일` 로 다시 접수한다 — 축은 싣지 않는다', async () => {
+    const { sources, calls } = fakes({
+      jobs: [
+        {
+          renderId: RENDER_ID,
+          status: '완료',
+          result: {
+            imageUrl: 'https://viz.example/p/detail.png',
+            legend: { palette: 'viridis', classes: [] },
+            precisionBadge: '격자 없음 — 지도형 보류',
+            colorRangeStage: '잠정',
+          },
+        },
+      ],
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('rdr.bin')]);
+    await click(await screen.findByTestId('up-preview-draw'));
+    const before = calls.create;
+    fireEvent.change(await screen.findByTestId('up-grid-input', undefined, { timeout: 4000 }), {
+      target: { files: [makeFile('Lat_HSR.npy'), makeFile('Lon_HSR.npy')] },
+    });
+    await act(async () => {});
+    await waitFor(() => expect(calls.create).toBeGreaterThan(before));
+    expect(await screen.findByTestId('up-companion')).toHaveTextContent('Lat_HSR.npy');
+  });
+});

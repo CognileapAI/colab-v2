@@ -59,6 +59,7 @@ export function UploadModal(props: {
   const [projects, setProjects] = useState<{ projectId: string; name: string }[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
+  const [gridSkipped, setGridSkipped] = useState(false);
   const [nameError, setNameError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const statusTimer = useRef(0);
@@ -114,6 +115,9 @@ export function UploadModal(props: {
   }, [uploadId, upload]);
 
   const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일');
+  // 격자를 올린 뒤 워커가 축을 확정하거나 거절할 때까지 — `ready` 가 그 판정을 포함한다
+  // (`〈79〉`·`§E.3b` — 「본체 감지가 끝났고 함께 올라온 격자의 축이 확정되거나 거절됐다」).
+  const gridVerifying = hasReferenceGrid && status !== null && !status.ready && !status.failure;
   const bodyName =
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
 
@@ -140,6 +144,20 @@ export function UploadModal(props: {
     }),
     [uploadId, name, topic, onLineageProgress, onLineageParentsChange],
   );
+
+  /**
+   * 격자 파일을 **그 업로드에 직접** 붙인다 (`§E.5` — 재사용·추천 없음).
+   * ⚠ **역할은 요청이 선언한다** — `kind` 를 실어 접수하고, 원장 행은 워커가 축을 확정한
+   * 뒤에 선다(`〈79〉-㈎`). 화면은 축을 묻지도, 정하지도 않는다.
+   */
+  function pickGrid(files: File[]) {
+    if (files.length === 0) return;
+    setGridSkipped(false);
+    setPicked((cur) => [
+      ...cur,
+      ...files.map((file) => ({ file, kind: '기준 격자 파일' as FileKind })),
+    ]);
+  }
 
   function pick(files: File[]) {
     // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
@@ -220,6 +238,14 @@ export function UploadModal(props: {
                 source={props.sources.preview}
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}
+                grid={{
+                  hasGrid: hasReferenceGrid,
+                  skipped: gridSkipped,
+                  verifying: gridVerifying,
+                  onPickGrid: pickGrid,
+                  // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
+                  onSkipGrid: () => setGridSkipped(true),
+                }}
               />
 
               {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
