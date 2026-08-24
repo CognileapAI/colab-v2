@@ -42,6 +42,36 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 
 **데이터가 살아 있으므로 `deploy.sh` 를 다시 돌릴 필요가 없다.** `deploy.sh` 는 빌드·마이그레이션까지 다시 하는 배포 명령이지 복구 명령이 아니다. 코드가 바뀐 게 없다면 쓰지 않는다.
 
+### ②-1 시크릿은 어디에 사는가 — **이름과 위치만 적는다. 값은 절대 적지 않는다**
+
+`--env-file` 이 가리키는 홈의 `0600` env 파일 하나가 staging 의 모든 비밀을 쥔다.
+`compose.i2.yml` 이 `${...:?}` 로 요구하는 키는 다음과 같다 — **하나라도 없으면 `up` 이 뜨지 않는다.**
+
+| 키 | 성격 | 비고 |
+|---|---|---|
+| `CF_TUNNEL_TOKEN` · `CF_API_TOKEN` · `CF_ACCOUNT_ID` · `CF_TUNNEL_ID` | 비밀 / 식별자 | 터널 커넥터 |
+| `COLAB_PG_SUPER_PASSWORD` · `COLAB_OWNER_PASSWORD` · `COLAB_APP_PASSWORD` | **비밀** | 플랫폼 DB 3롤 |
+| `COLAB_AI_APP_PASSWORD` | **비밀** | `colab_ai` DB 앱 롤 |
+| `COLAB_VIZ_SERVICE_TOKEN` | **비밀** | core-api ↔ viz-render **양쪽이 같은 문자열** |
+| `COLAB_VIZ_TILE_SIGNING_SECRET` | **비밀** | 타일 서명 |
+| `OPENAI_API_KEY` | **비밀** | ai-service |
+| `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다** |
+| `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
+
+**심어 둔 계정 표(`COLAB_STAGING_SUBJECTS_FILE` 가 가리키는 `subjects.json`)는 자격증명이다.**
+
+- 그 안의 키 문자열이 **곧 베어러 토큰**이다. `services/core-api/tests/fixtures/subjects.json` 의
+  값을 그대로 쓰면 **레포를 읽을 수 있는 누구나 공개 staging 에 인증된다.**
+  실제로 그렇게 배포된 적이 있다 — **레포 픽스처 토큰은 테스트 전용이고, staging 에는 절대 올리지 않는다.**
+- 파일 권한은 **`0600`** 이고, **소유자는 컨테이너 uid `10001`** 이다(각 Dockerfile `USER colab`).
+  `0644` 로 푸는 것은 고치는 것이 아니라 **노출을 넓히는 것**이다. `0600` 에서 `PermissionError` 가
+  나면 답은 권한 완화가 아니라 **소유권 정렬** — `compose.i2.yml` 의 `volume-init` 이 named volume 에
+  하는 일(`chown 10001`)을 호스트 바인드 파일에 손으로 해 주는 것과 같다.
+- **바인드 마운트는 inode 에 붙는다.** 값을 갈 때 새 파일을 만들어 `mv` 하면 컨테이너는 **옛 파일을 계속 읽는다.**
+  반드시 **제자리 덮어쓰기** 후 `docker restart colab_v2_staging_core_api` — 표는 기동 시에 한 번 읽힌다.
+- 회전 검증은 **본문으로** 한다. 새 토큰으로 `/api/v1/me` 가 **200 + 옳은 주체**를 내고,
+  **옛 토큰이 401 `UNAUTHORIZED` 를 내는 음성 확인**까지 봐야 회전이 먹은 증거다.
+
 ### ③ 확인 — 여기까지 해야 복구다
 
 ```
