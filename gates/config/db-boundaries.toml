@@ -1,0 +1,81 @@
+# 배포 단위 ↔ 접속 허용 DB 체인. **db-boundary 게이트의 유일한 정의처다.**
+#
+# 근거
+#   CLAUDE.md §2      배포 단위 5개와 각 단위가 소유한 도메인
+#   CLAUDE.md §3-1    도메인은 자기 테이블 + D1 만 참조한다. cross-domain 은 Port 경유
+#   CLAUDE.md §3-3    D9·D10 저장소는 D1~D8 과 마이그레이션 체인이 분리된다 (db/ai vs db/platform)
+#   PLAN-SoT §9-〈90〉 그래프 확장은 ai-service 안에서 끝난다 — core-api 로는 낱말·간선만 건너간다
+#
+# **이 표는 「지금 코드가 무엇을 하는가」가 아니라 「무엇이 허용되는가」다.**
+# 코드가 표를 넘으면 코드를 고친다. 표를 고쳐서 green 을 만드는 것은 게이트 우회다 (CLAUDE.md §4).
+
+# ── 체인 ────────────────────────────────────────────────────────────────────
+# env 이름이 어느 체인을 가리키는지 판정하는 정규식.
+[chains.platform]
+schema = "db/platform"
+domains = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"]
+env_patterns = [
+  '^COLAB_CORE_(TEST_)?DATABASE_URL$',
+  '^COLAB_PIPELINE_(TEST_)?DB_URL$',
+  '^COLAB_PLATFORM_DB_URL$',
+  '^COLAB_APPLIED_DB_URL_PLATFORM$',
+  '^COLAB_[A-Z0-9_]*(CATALOG|PLATFORM|LINEAGE|CORE|PIPELINE|VIZ)[A-Z0-9_]*_(DB|DATABASE)_URL$',
+]
+
+[chains.ai]
+schema = "db/ai"
+domains = ["d9", "d10"]
+env_patterns = [
+  '^COLAB_AI_DB_URL$',
+  '^COLAB_AI_TEST_DICT_DB_URL$',
+  '^COLAB_APPLIED_DB_URL_AI$',
+]
+
+# ── 배포 단위 ───────────────────────────────────────────────────────────────
+[units.core-api]
+dir = "services/core-api"
+compose_service = "core-api"
+chains = ["platform"]          # D1 D2 D3 D4 D6 D8 — 전부 db/platform
+
+[units.pipeline-worker]
+dir = "services/pipeline-worker"
+compose_service = "pipeline-worker"
+chains = ["platform"]          # D5 (d5_upload · d5_pipeline_event) — db/platform
+
+[units.viz-render]
+dir = "services/viz-render"
+compose_service = "viz-render"
+chains = []                    # D7 은 db/platform 에 테이블이 없다 (schema.sql 실측 — d7_* 0건).
+                               # 렌더 단위는 상태를 DB 에 두지 않는다. 필요해지면 이 줄을 먼저 고친다
+
+[units.ai-service]
+dir = "services/ai-service"
+compose_service = "ai-service"
+chains = ["ai"]                # D9·D10 — db/ai 만. 카탈로그(D3)는 Port/HTTP 경유이지 DB 접속이 아니다.
+                               # 〈90〉: 그래프 확장은 여기서 끝나고, core-api 로는 낱말·간선만 건너간다
+
+[units.frontend]
+dir = "frontend"
+compose_service = "frontend"
+chains = []                    # 브라우저 번들에 DB 는 없다
+
+# ── 일회성 러너 (배포 단위는 아니지만 compose 에서 DB 를 잡는다) ────────────
+[units.migrate-platform]
+compose_service = "migrate-platform"
+chains = ["platform"]
+
+[units.migrate-ai]
+compose_service = "migrate-ai"
+chains = ["ai"]
+
+# ── 판정 재료 ───────────────────────────────────────────────────────────────
+[detect]
+# 이 정규식에 걸리면 「DB 연결 선언」으로 본다. 걸렸는데 어느 체인에도 안 맞으면 red
+# ("분류 불가"를 green 으로 세지 않는다 — CLAUDE.md §4).
+env_is_db = '^[A-Z][A-Z0-9_]*_(DB|DATABASE)_URL$'
+# 소스 안의 접속 개시 호출. chains = [] 인 단위에 나타나면 red.
+connect_calls = [
+  "create_engine", "create_async_engine",
+  "psycopg.connect", "psycopg2.connect", "psycopg.AsyncConnection",
+  "asyncpg.connect", "asyncpg.create_pool",
+]

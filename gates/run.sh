@@ -55,6 +55,16 @@ case "$GATE" in
     # 음성 게이트 — D10 → D4 쓰기 경로가 계약·코드·마이그레이션 어디에도 없음을 증명한다.
     exec "$REPO_ROOT/gates/tools/ai-no-lineage-write.sh"
     ;;
+  db-boundary)
+    # 배포 단위별 DB 체인 경계 (CLAUDE.md §3-1 · §3-3). 정본 = gates/config/db-boundaries.toml.
+    # import-boundary 가 못 보는 계열 — 횡단이 import 가 아니라 **DB 접속**일 때.
+    # 2026-08-25 에 ai-service 가 COLAB_AI_CATALOG_DB_URL 로 D3 에 직접 붙었고 전 게이트가 green 이었다.
+    exec python3 "$REPO_ROOT/gates/tools/db_boundary.py"
+    ;;
+  db-boundary-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 위 위반의 실물 재현 포함.
+    exec "$REPO_ROOT/gates/tools/db-boundary-selftest.sh"
+    ;;
   boundary-selftest)
     # 위 세 게이트가 red fixture로 fail-closed임을 증명한다.
     exec "$REPO_ROOT/gates/tools/boundary-selftest.sh"
@@ -101,7 +111,7 @@ case "$GATE" in
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done
