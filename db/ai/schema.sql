@@ -112,7 +112,87 @@ CREATE TABLE d9_place_alias (
 CREATE INDEX d9_place_alias_place_idx ON d9_place_alias (place_name);
 
 -- ════════════════════════════════════════════════════════════════════════════
--- 4. 마이그레이션 체인 상태 테이블
+-- 4. D9 — 개념 노드 (WU-K1b · Ted 판정 2026-08-25 · PLAN-SoT §9)
+--    내용 정본 = dev-package/sessions/K1b-ONTOLOGY-CONTENT.md §A·§E-1
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- **위 세 표를 흡수하지 않는다** (§E-3 · Ted F-13 ㈎).
+--   · 세 표는 `질의어 → 값` 조회(사전)이고 이 두 표는 `질의어 → term set` 확장(그래프)이다. 역할이 다르다
+--   · 합치면 K2 의 완료 오라클(k2-coverage-standard.tsv)과 0002·0003 이 통째로 흔들린다
+-- **여기에 「데이터셋에 대한 사실」은 한 줄도 들어오지 않는다.** kind 4값이 그것을 스키마로 못 박은 것이다 —
+-- `데이터셋`·`프로젝트`·`변수`·`좌표계`가 이 목록에 **없는 것**이 CLAUDE.md §3-2 의 실물이다.
+-- 이 표에도 lab_id 가 없다 — 연구실 공통 지식이라 테넌트로 갈리지 않는다 (0002 서두와 같은 근거).
+CREATE TABLE d9_concept (
+  -- **대리키다.** 세 시드 표는 어휘 자체가 PK(자연키)라 표기를 고치면 참조가 끊긴다.
+  -- 그래프에서는 그 성질이 치명적이라(엣지가 통째로 죽는다) 여기서만 안정 키를 쓴다 (§E-1).
+  concept_id   text        PRIMARY KEY
+               CHECK (concept_id ~ '^[a-z0-9]+(-[a-z0-9]+)*$'
+                      AND length(concept_id) BETWEEN 1 AND 60),
+  kind         text        NOT NULL
+               CHECK (kind IN ('방법', '주제', '지명', '원천표기')),
+  -- 정본 한국어 표기. 세 시드 표의 CHECK 와 같은 모양이다.
+  label        text        NOT NULL
+               CHECK (btrim(label) = label AND length(label) BETWEEN 1 AND 120),
+  -- **출처 등급이 DB 까지 살아남는다** (§E-2). ⑥ = 도메인 상식 = Ted 승인이 있어야 하는 행이고,
+  -- 완료 오라클(db/ai/tools/k2b_graph_check.py)이 이 열 하나로 승인 목록과 대조한다.
+  source_grade smallint    NOT NULL CHECK (source_grade BETWEEN 1 AND 6),
+  source_note  text        NOT NULL CHECK (length(btrim(source_note)) > 0),
+  -- §D-6 경계 4 「부모 금지 목록」. false 면 `~의 한 가지다` 의 **도착**이 될 수 없다.
+  -- `전처리`·`품질검사`·`유역 집계` 처럼 넓은 말이 상위가 되면 확장이 15건 중 12건을 부르고
+  -- 「근거 한 줄」이 아무 말도 아닌 문장이 된다 (〈72〉-㉮).
+  expandable   boolean     NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  -- 같은 종류 안에 같은 표기가 둘일 수 없다.
+  UNIQUE (kind, label)
+);
+CREATE INDEX d9_concept_kind_idx ON d9_concept (kind);
+CREATE INDEX d9_concept_grade_idx ON d9_concept (source_grade);
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 5. D9 — 개념 엣지 (WU-K1b · K1b-ONTOLOGY-CONTENT.md §B·§C·§E-2)
+-- ════════════════════════════════════════════════════════════════════════════
+
+-- 관계는 **셋뿐**이다. 정본이 안 쓴 어휘(`subClassOf`·`skos:broader`)를 들여오지 않는다.
+--   · `같은 말이다`   대칭 — 저장은 한 방향 한 행, 조회에서 양쪽으로 편다
+--   · `~의 한 가지다` 방향 — src=하위 → dst=상위. **확장은 dst→src(하향)로만** 간다 (§D-6 경계 1)
+--   · `안에 있다`     방향 — 공간 포함. Ted F-10 ㈏ 로 시드는 1행뿐이다
+-- **가중치·점수·확신도 열이 없다.** CLAUDE.md §3 AI 응답 규격 「숫자·퍼센트 필드 없음」 ·
+-- 순위는 tsvector 가 정한다(〈72〉-㉮). 순위가 두 곳에서 정해지면 평가셋으로 회귀를 못 잡는다.
+CREATE TABLE d9_concept_edge (
+  -- 같은 체인 안의 FK 다. 금지된 것은 기록 체인(D1~D8)으로 넘어가는 FK 이고(CLAUDE.md §3-1),
+  -- 애초에 다른 DB 라 걸 수도 없다.
+  --
+  -- ⚠ **여기 산문에 기록 체인의 경로 문자열을 적지 않는다.** `ai-no-lineage-write` ⑨ 는
+  --   db/ai 파일 안에서 그 경로가 **글자로 나타나는 것만으로** red 를 낸다 — 주석인지 코드인지
+  --   구분하지 않는다. 게이트가 맞다(정규식이 산문과 코드를 가를 방법이 없고, 가르려 들면
+  --   진짜 참조를 놓칠 문이 생긴다). 같은 실수가 이 레포에서 두 번 났다 —
+  --   S1-search-infra 레인이 한 번, K1b 가 한 번. **고칠 것은 게이트가 아니라 문장이다.**
+  src          text        NOT NULL REFERENCES d9_concept (concept_id),
+  relation     text        NOT NULL
+               CHECK (relation IN ('같은 말이다', '~의 한 가지다', '안에 있다')),
+  dst          text        NOT NULL REFERENCES d9_concept (concept_id),
+  source_grade smallint    NOT NULL CHECK (source_grade BETWEEN 1 AND 6),
+  source_note  text        NOT NULL CHECK (length(btrim(source_note)) > 0),
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  -- 재적재가 멱등해진다 (세 시드 표의 ON CONFLICT DO UPDATE 규약을 그대로 승계).
+  PRIMARY KEY (src, relation, dst),
+  CONSTRAINT d9_concept_edge_no_self CHECK (src <> dst),
+  -- 대칭 관계는 **정규형 한 행**만 둔다. 같은 쌍이 순서만 바꿔 두 번 들어오면
+  -- 「한쪽만 지우는 사고」가 나고 확장이 조용히 반쪽이 된다 (§E-2).
+  CONSTRAINT d9_concept_edge_sym_normalized
+               CHECK (relation <> '같은 말이다' OR src < dst)
+);
+-- 확장은 상위(dst)에서 하위(src)를 찾는다 — 그 방향의 조회를 색인이 받친다.
+CREATE INDEX d9_concept_edge_dst_idx ON d9_concept_edge (relation, dst);
+
+-- 여기 **CHECK 로 못 넣는 것 셋**이 있고, 그것들은 완료 오라클(k2b_graph_check.py)이 본다.
+--   ① 양끝의 kind 규약 — `안에 있다`=지명·지명, `~의 한 가지다`=방법·방법 (상대 행을 CHECK 가 못 본다)
+--   ② expandable=false 인 노드가 `~의 한 가지다` 의 dst 가 되는 것 (두 표를 걸친 조건)
+--   ③ 팬아웃 상한 6 (집계 조건)
+-- 트리거를 쓰지 않는 이유 = 세 시드 표에 트리거가 하나도 없고, d9 표는 **선언만으로 읽히는 것**이 규약이다.
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 6. 마이그레이션 체인 상태 테이블
 --    alembic 이 만드는 것과 **같은 형태**를 여기 선언해 둔다 — 그래야 선언 = 적용이 성립한다.
 --    이름이 다른 체인과 다른 것이 체인 분리의 실물이다 (CLAUDE.md §3-3).
 -- ════════════════════════════════════════════════════════════════════════════
