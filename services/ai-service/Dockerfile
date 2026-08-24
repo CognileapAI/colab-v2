@@ -4,9 +4,11 @@
 #    배선돼 있고 `infra/` 는 이 레인의 소유 디렉터리가 아니다. 다만 **응답 본문의
 #    `implemented` 가 false → true 로 바뀐다**(이제 검색 표면이 실제로 있다).
 #
-# ⚠ **DB URL 두 개는 아직 compose 에 없다** — `COLAB_AI_CATALOG_DB_URL`(D3 검색 색인, 읽기 전용
-#    앱 롤) · `COLAB_AI_DB_URL`(`db/ai` 사전 3종). 배선은 인프라 레인의 일이고, 값이 없으면
-#    이 서비스는 죽지 않고 **뒤진 범위를 먼저 밝힌 빈 결과 + degraded** 를 낸다.
+# ⚠ **DB URL 은 하나뿐이다** — `COLAB_AI_DB_URL`(`db/ai` 사전 3종). 배선은 인프라 레인의 일이고,
+#    값이 없으면 이 서비스는 죽지 않고 **질문의 낱말 그대로 + degraded** 를 낸다.
+#    `K4-a` 가 쓰던 `COLAB_AI_CATALOG_DB_URL`(D3 검색 색인)은 **2026-08-25 판정 ㈎ 로 없앴다** —
+#    D10 이 D3 에 직접 붙는 것은 `CLAUDE.md §3-1` 위반이었다. 검색은 이제 core-api 가 실행한다.
+#    compose 에 그 변수가 남아 있어도 아무도 읽지 않는다(정리는 인프라 레인의 몫).
 #
 # geo 라이브러리는 한 줄도 들어오지 않는다 (`gates/config/boundaries.toml` units.ai-service).
 FROM python:3.12-slim

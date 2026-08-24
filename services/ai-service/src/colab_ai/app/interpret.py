@@ -50,7 +50,7 @@ class LiteralInterpreter:
     """**모델 없이 하는 해석.** 질문을 낱말로 자르고 끝이다.
 
     `is_data_query` 를 언제나 참으로 둔다 — 「데이터를 찾는 질문이 아니다」는 **판정**이고,
-    판정한 적 없는 것을 말하지 않는다 (core-api `honest_empty_search` 와 같은 규율).
+    판정한 적 없는 것을 말하지 않는다 (core-api `unreadable_interpretation` 과 같은 규율).
     """
 
     def __init__(self, reason: str | None = None) -> None:

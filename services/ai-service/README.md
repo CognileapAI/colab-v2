@@ -47,7 +47,7 @@ D10 제안  →  제안 저장소(임시, D10 소유)  →  화면에서 사람�
 
 `db/ai/` 를 쓴다. **플랫폼(`db/platform/`)과 마이그레이션 체인이 분리된다** — 온톨로지 한 줄 추가가 플랫폼 마이그레이션을 기다리면 안 되고, 그 반대도 안 된다.
 
-**이 단위가 카탈로그 쪽 DB 에 붙는 것은 검색 하나뿐이고, 붙는 방식이 좁다** — 읽기 전용 트랜잭션 · D3 검색 열만 · 경계는 세션 GUC 로 심고 RLS 가 지운다(`kernel/db.py` · `app/catalog_search.py`). 마이그레이션 체인은 여전히 만지지 않는다.
+**이 단위는 플랫폼 DB 에 붙지 않는다.** `K4-a` 는 검색 하나 때문에 D3 카탈로그에 직접 붙었고, 그것이 `CLAUDE.md §3-1` 위반이었다 — 넘은 것이 파이썬 import 가 아니라 **DB 커넥션**이라 `import-boundary` 가 green 이었다. **Ted 판정 2026-08-25 ㈎** 로 그 커넥션·표면·설정을 전부 없앴다. 붙는 곳은 `db/ai` 하나이고, 그것이 자기 도메인이다.
 
 ## 자연어 검색 — `K4-a` (`POST /searches`)
 
@@ -57,8 +57,9 @@ D10 제안  →  제안 저장소(임시, D10 소유)  →  화면에서 사람�
 |---|---|---|
 | **질의 해석기** | 자연어 → **검색어·필터**. LLM 의 일은 여기까지다 | `app/interpret.py` |
 | **사전 3종** | 검색어를 D9 로 넓힌다 (방법 용어 13 · 주제 동의어 5 · 지명 별칭 4 = 22행) | `domains/d9_ontology.py` · `app/dictionaries.py` |
-| **`tsvector` 실행기** | `0005` 의 생성 열 3 + GIN 3 으로 찾고 **순위를 낸다** | `app/catalog_search.py` |
-| **조립** | 계약 모양으로 접는다. 근거 한 줄을 만든다 | `domains/d10_ai_services.py` |
+| **조립** | 계약 모양으로 접는다. `interpretation`(검색어·주제·출처)을 싣는다 | `domains/d10_ai_services.py` |
+
+**찾고 매기는 층은 여기 없다.** `0005` 의 생성 열 3 + GIN 3 으로 후보를 뽑고 순위를 내는 일은 **core-api** 가 한다 — `services/core-api/src/colab_core/domains/d3_catalog.py::search_datasets` · `app/dataset_search.py`. D3 는 저쪽 도메인이다.
 
 - **LLM 은 순위를 정하지 않고 결과 본문을 쓰지 않는다.** 응답에서 읽는 값은 `isDataQuery`·`terms`·`topic` 셋뿐이다.
 - **키가 없어도 검색은 돈다** — 질문의 낱말이 그대로 검색어가 되고 `degraded: true` 로 그 사실을 밝힌다.
@@ -68,18 +69,18 @@ D10 제안  →  제안 저장소(임시, D10 소유)  →  화면에서 사람�
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
-COLAB_AI_TEST_PLATFORM_DB_URL=... COLAB_AI_TEST_DICT_DB_URL=... .venv/bin/python -m pytest
+COLAB_AI_TEST_DICT_DB_URL=... .venv/bin/python -m pytest
 ```
 
-일회용 DB 는 `services/core-api/tests/fixtures/setup-db.sh`(플랫폼) + `db/ai/schema.sql`·`db/ai/seed/k2_ontology_seed.sql`(사전) 로 만든다.
+일회용 사전 DB 는 `db/ai/schema.sql` + `db/ai/seed/k2_ontology_seed.sql` 로 만든다. 카탈로그 검색 시험은 `services/core-api/tests/test_search_execution.py` 로 옮겨 갔다.
 ⚠ `ai-no-lineage-write` 게이트의 L2 층은 이 디렉터리의 **모든 텍스트 파일**을 훑는다 — `.venv/` 도 포함이다(현재 의존 17개로 green).
 
 ### 런타임 환경변수
 
 | 이름 | 없으면 |
 |---|---|
-| `COLAB_AI_CATALOG_DB_URL` | 검색이 **뒤진 범위를 먼저 밝힌 빈 결과 + `degraded`** 를 낸다 |
-| `COLAB_AI_DB_URL` | 사전으로 넓히지 않고 질문의 낱말 그대로 찾는다 |
+| `COLAB_AI_DB_URL` | 사전으로 넓히지 않고 질문의 낱말 그대로 내준다 |
 | `OPENAI_API_KEY` · `COLAB_MODEL_HELPER` | 문자열 해석으로 떨어진다. **검색 자체는 산다** |
 
-⚠ 앞의 둘은 **아직 `infra/staging/compose.i2.yml` 에 없다.** 배선은 인프라 레인의 일이다.
+⚠ `COLAB_AI_DB_URL` 은 **아직 `infra/staging/compose.i2.yml` 에 없다.** 배선은 인프라 레인의 일이다.
+⚠ `COLAB_AI_CATALOG_DB_URL` 은 **더 이상 읽지 않는다**(판정 ㈎). compose 에 남아 있어도 무해하지만, 지우는 것이 인프라 레인의 몫으로 남는다.

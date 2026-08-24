@@ -17,6 +17,8 @@ from ...domains import d1_identity, d2_access, d3_catalog, d4_lineage, d6_projec
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
+from ...kernel.scope import read_only_scope
+from .. import dataset_search
 from ..deps import current_subject, scoped_db
 
 router = APIRouter()
@@ -177,17 +179,19 @@ DEFAULT_SEARCH_LIMIT = 20
 def search_datasets(request: Request, body: dict | None = Body(default=None),
                     subject: Subject = Depends(current_subject),
                     db: Session = Depends(scoped_db)) -> dict:
-    """자연어 검색 — **중계 + 조립** (`〈80〉-㉯ 5`).
+    """자연어 검색 — **해석 중계 + 실행 + 조립** (`〈80〉-㉯ 5` · Ted 판정 2026-08-25 ㈎).
 
-    **AI 가 돌려주는 것은 셋뿐이다** — `datasetId` · `relevanceBar` · `rationale`.
-    카드에 실리는 나머지는 여기서 D3·D2·D4·D6 의 사실로 붙인다. **AI 가 카탈로그 값을
-    다시 말하지 않는다** — 두 곳에서 말하면 갈라진다 (`core-ai.yaml searchDatasets` 산문).
+    **AI 가 돌려주는 것은 검색어·주제뿐이다.** `K4-a` 까지는 ai-service 가 `tsvector` 를 직접
+    던졌고, 그것이 D10 → D3 직접 접속이라 `CLAUDE.md §3-1` 위반이었다. 이제 **찾고 매기는 것은
+    여기**다 — D3 는 core-api 의 자기 도메인이라 이 실행은 아무 경계도 넘지 않는다 (`〈72〉-㉮`).
 
-    지키는 것 넷 —
-    · **순서를 다시 정렬하지 않는다.** 온 순서가 이미 관련도다 (`§4`).
-    · **잠긴 데이터를 빼지 않는다** (`§1.3-6`). 잠김 표시는 `bodyAccessible` 이 한다.
-    · **경계 밖 식별자는 붙일 값이 없어 빠진다.** RLS 가 이미 행을 지웠고, **지어내 채우지 않는다.**
+    지키는 것 다섯 —
+    · **순서는 `ts_rank_cd` 내림차순, 동점은 식별자 오름차순.** 모델이 순서를 정하지 않는다.
+    · **잠긴 데이터를 빼지 않고, 잠김으로 표시해서 낸다** (`§1.3-6` · `P-13`·`P-34`).
+      실행이 이쪽으로 오면서 D2 를 제대로 볼 수 있게 됐다 — `K4-a` 의 무표시가 여기서 닫힌다.
+    · **경계는 주체에서만 나온다.** 질의는 `READ ONLY` + 스코프 트랜잭션에서 돈다.
     · **AI 가 없어도 200 이다** — 빈 결과 + `degraded: true`.
+    · **AI 가 얹어 보낸 식별자를 읽지 않는다** (중계가 이미 버린다).
     """
     payload = body if isinstance(body, dict) else {}
     unknown = sorted(set(payload) - {"query", "limit", "cursor"})
@@ -205,31 +209,52 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
         raise errors.bad_request("cursor 는 문자열이다.")
 
     lab = d1_identity.find_lab(db)
-    answer = request.app.state.searches.search(
-        lab_id=str(subject.lab_id), lab_name=("" if lab is None else lab["name"]) or "연구실",
+    lab_name = ("" if lab is None else lab["name"]) or "연구실"
+    # **뒤진 범위를 먼저 밝힌다** — 세는 것은 D3 이고, 그것이 이쪽 도메인이다.
+    searched_count = d3_catalog.count_datasets(db)
+
+    answer = request.app.state.searches.interpret(
+        lab_id=str(subject.lab_id), lab_name=lab_name,
         account_id=str(subject.account_id), query=query.strip(), limit=limit, cursor=cursor,
-        searched_count=d3_catalog.count_datasets(db),
+        searched_count=searched_count,
     )
 
-    by_id = {row["datasetId"]: row for row in _compose(db)}
     items: list[dict] = []
-    for hit in answer["items"]:
-        row = by_id.get(hit.get("datasetId")) if isinstance(hit, dict) else None
-        if row is None:
-            # 경계 밖이거나 지워진 식별자다. **없는 카드를 지어내지 않는다** (P-9·P-10).
-            continue
-        enriched = {k: v for k, v in row.items() if not k.startswith("_")}
-        enriched["relevanceBar"] = hit.get("relevanceBar")
-        enriched["rationale"] = hit.get("rationale")
-        items.append(enriched)
+    next_cursor = None
+    if answer["isDataQuery"] and answer["terms"]:
+        offset = dataset_search.decode_cursor(cursor)
+        # **읽기 전용 트랜잭션**에서 돈다 — 검색이 한 줄도 쓰지 않는다는 것을
+        # 문서가 아니라 Postgres 의 거절이 지킨다.
+        with read_only_scope(request.app.state.session_factory, subject) as ro:
+            matches, total = d3_catalog.search_datasets(
+                ro, terms=answer["terms"], topic=answer["topic"],
+                limit=limit, offset=offset)
+        hits, next_cursor = dataset_search.compose(
+            matches, lab_name=lab_name, searched=searched_count, topic=answer["topic"],
+            # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
+            interpretation_degraded=answer["source"] != "llm",
+            total=total, offset=offset)
+
+        by_id = {row["datasetId"]: row for row in _compose(db)}
+        for hit in hits:
+            row = by_id.get(hit["datasetId"])
+            if row is None:
+                # 경계 밖이거나 지워진 식별자다. **없는 카드를 지어내지 않는다** (P-9·P-10).
+                continue
+            enriched = {k: v for k, v in row.items() if not k.startswith("_")}
+            # **잠김 표시는 여기서 붙는다** — `accessState`·`bodyAccessible` 은 D2 의 값이다.
+            enriched["relevanceBar"] = hit["relevanceBar"]
+            enriched["rationale"] = hit["rationale"]
+            items.append(enriched)
 
     out = {
-        "scope": answer["scope"],
+        "scope": {"labId": str(subject.lab_id), "labName": lab_name,
+                  "searchedCount": searched_count},
         "isDataQuery": answer["isDataQuery"],
         "degraded": answer["degraded"],
         "items": items,
         "totalCount": len(items),
-        "nextCursor": answer.get("nextCursor"),
+        "nextCursor": next_cursor,
     }
     if answer.get("degradedReason"):
         out["degradedReason"] = answer["degradedReason"]

@@ -95,44 +95,47 @@ def honest_empty_suggestions(*, lab_id: str, lab_name: str, searched_count: int,
     }
 
 
-def honest_empty_search(*, lab_id: str, lab_name: str, searched_count: int,
-                        reason: str) -> dict[str, Any]:
-    """**정직한 빈 상태** — 검색판 (`〈80〉-㉯ 5`).
+def unreadable_interpretation(reason: str) -> dict[str, Any]:
+    """**해석을 못 받았다.** 검색어가 없으니 뒤지지 않는다 — 지어내지 않는다.
 
-    ① **뒤진 범위가 먼저다** (`Policy_데이터_찾기 §3.3`). 0건이어도 어디를 몇 개 뒤졌는지가 먼저다.
-    ② **0건은 오류가 아니다** — 막다른 길이 아니라 다음 행동을 안내할 상태다(`§1.3-7`).
-    ③ `isDataQuery` 를 `true` 로 둔다 — **질의를 판정한 것은 AI 이고 우리는 판정하지 못했다.**
+    ① **0건은 오류가 아니다** — 막다른 길이 아니라 다음 행동을 안내할 상태다(`§1.3-7`).
+    ② `isDataQuery` 를 `true` 로 둔다 — **질의를 판정한 것은 AI 이고 우리는 판정하지 못했다.**
        `false` 로 두면 「데이터를 찾는 질문이 아니다」라는 **하지 않은 판정**을 말하는 것이 된다.
+    ③ 뒤진 범위(`scope`)는 **호출자가 붙인다** — 세는 것은 D3 이고 그것은 core 의 일이다.
     """
     return {
         "degraded": True,
         "degradedReason": reason,
-        "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
         "isDataQuery": True,
-        "items": [],
-        "totalCount": 0,
-        "nextCursor": None,
+        "terms": (),
+        "topic": None,
+        "source": None,
     }
 
 
 class HttpDatasetSearchRelay:
-    """`ports.DatasetSearchPort` — ai-service 로 나가는 자연어 검색 중계.
+    """`ports.DatasetSearchPort` — ai-service 로 나가는 **질의 해석** 중계.
+
+    ⚠ **2026-08-25 판정 ㈎ 로 이 중계가 받아 오는 것이 바뀌었다.** `K4-a` 까지는
+    저쪽이 `tsvector` 를 직접 던져 **후보와 순위**를 돌려줬다 — D10 이 D3 테이블에 붙는
+    `CLAUDE.md §3-1` 위반이었다. 이제 받아 오는 것은 **검색어·주제·해석 출처**뿐이고,
+    찾고 매기는 일은 D3 의 주인인 core-api 가 한다 (`〈72〉-㉮`).
 
     `HttpLineageSuggestionRelay` 와 같은 규칙이다 — 주소가 없어도, 못 닿아도, 범위가 달라도
     **200 + 빈 결과**다. 「AI 가 없다」가 「검색 화면이 죽는다」가 되면 안 된다 (`CLAUDE.md §3`).
+
+    **저쪽이 얹어 보낸 `results.items` 를 읽지 않는다.** 읽으면 순서가 모델의 것이 되고,
+    같은 질의가 때마다 다른 답을 내며, 근거 한 줄이 사후 정당화가 된다 (`〈72〉-㉮`).
     """
 
     def __init__(self, base_url: str | None) -> None:
         self._base = None if not base_url else base_url.rstrip("/")
 
-    def search(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
-               limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
-        def empty(reason: str) -> dict[str, Any]:
-            return honest_empty_search(lab_id=lab_id, lab_name=lab_name,
-                                       searched_count=searched_count, reason=reason)
-
+    def interpret(self, *, lab_id: str, lab_name: str, account_id: str, query: str,
+                  limit: int, cursor: str | None, searched_count: int) -> dict[str, Any]:
         if self._base is None:
-            return empty("검색 서비스가 아직 연결되지 않았다 — 목록에서 조건으로 찾을 수 있다.")
+            return unreadable_interpretation(
+                "검색 서비스가 아직 연결되지 않았다 — 목록에서 조건으로 찾을 수 있다.")
         payload: dict[str, Any] = {
             "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
             "query": query,
@@ -144,23 +147,30 @@ class HttpDatasetSearchRelay:
             status, body = _request(f"{self._base}/searches", method="POST",
                                     headers=_scope_headers(lab_id, account_id), body=payload)
         except RelayUnavailable as e:
-            return empty(f"검색 서비스에 닿지 못했다: {e}")
+            return unreadable_interpretation(f"검색 서비스에 닿지 못했다: {e}")
         if status != 200 or not isinstance(body, dict):
-            return empty(f"검색 서비스가 {status} 로 답했다.")
+            return unreadable_interpretation(f"검색 서비스가 {status} 로 답했다.")
         # **요청의 범위와 다르면 응답을 버린다** (`core-ai.yaml SearchResponse.scope`).
-        # 다른 연구실을 뒤진 결과를 이 화면에 세우면 경계가 응답 한 줄로 무너진다.
+        # 다른 연구실을 보고 온 해석을 이 화면에 세우면 경계가 응답 한 줄로 무너진다.
         scope = body.get("scope")
         if not isinstance(scope, dict) or scope.get("labId") != lab_id:
-            return empty("검색 응답의 범위가 요청과 달라 버렸다.")
-        results = body.get("results")
-        items = results.get("items") if isinstance(results, dict) else None
+            return unreadable_interpretation("검색 응답의 범위가 요청과 달라 버렸다.")
+
+        interpretation = body.get("interpretation")
+        if not isinstance(interpretation, dict):
+            return unreadable_interpretation("검색 서비스의 질의 해석을 읽지 못했다.")
+        raw_terms = interpretation.get("terms")
+        terms = tuple(t.strip() for t in raw_terms
+                      if isinstance(t, str) and t.strip()) if isinstance(raw_terms, list) else ()
+        topic = interpretation.get("topic")
+        source = interpretation.get("source")
         return {
             "degraded": bool(body.get("degraded", False)),
             "degradedReason": body.get("degradedReason"),
-            "scope": scope,
             "isDataQuery": bool(body.get("isDataQuery", True)),
-            "items": items if isinstance(items, list) else [],
-            "nextCursor": results.get("nextCursor") if isinstance(results, dict) else None,
+            "terms": terms,
+            "topic": topic if isinstance(topic, str) and topic else None,
+            "source": source if isinstance(source, str) else None,
         }
 
 
