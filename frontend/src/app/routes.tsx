@@ -6,6 +6,7 @@ import { LabPage } from '../routes/LabPage';
 import { ProjectsPage } from '../routes/ProjectsPage';
 import { ProjectDetailPage } from '../routes/ProjectDetailPage';
 import { DatasetsPage } from '../routes/DatasetsPage';
+import { SearchResultsPage } from '../routes/SearchResultsPage';
 import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
@@ -23,6 +24,9 @@ export function AppRoutes() {
         {/* S-02b — 고르는 자리(목록)와 무엇이 담겼는지 보는 자리(상세)를 가른다 (`Policy_프로젝트 §8`) */}
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/datasets" element={<DatasetsPage />} />
+        {/* S-06 검색 결과 — 데이터셋 계열 화면이라 주인 탭이 `데이터셋` 이다 (Policy_공통_기반 §2.4).
+            정적 구간이 `:datasetId` 보다 먼저 맞고, ULID 에 `search` 는 없으므로 상세와 부딪히지 않는다 */}
+        <Route path="/datasets/search" element={<SearchResultsPage />} />
         <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
