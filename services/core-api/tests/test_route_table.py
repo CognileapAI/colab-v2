@@ -38,14 +38,20 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_46() -> None:
-    """45 → **46.** 늘어난 하나는 `searchDatasets` 다.
+def test_operation_count_is_49() -> None:
+    """45 → 46 → **49.**
 
-    `〈80〉-㉯ 5`(승인된 1회 동결 해제)가 `fe-core.yaml` 이 「아직 없다 — P4 가 연다」로
-    비워 뒀던 검색 진입점을 열었다. **동결 해제는 이 회차 한 번뿐이다** — 이 수가 또 늘면
-    두 번째 해제가 일어난 것이고, 그것은 `〈80〉` 이 실패했다는 뜻이다.
+    46 의 하나는 `searchDatasets`(`〈80〉-㉯ 5`)였다. **49 의 셋은 4차 동결 해제**다
+    (`PLAN-SoT §9-〈88〉` 묶음 4·5·6) — `listPalettes` · `addUploadFile` ·
+    `replaceUploadGridFile`. 셋 다 **등록 전 세계**의 표면이고, 셋이 함께 있어야
+    `S1-PLAN-REFOUND §E` 의 11 상태가 닫힌다.
+
+    ⚠ 이전 판의 주석은 「동결 해제는 이 회차 한 번뿐이다 — 이 수가 또 늘면 `〈80〉` 이
+    실패했다는 뜻이다」였다. **실제로 네 번 늘었고, 그것이 `〈88〉` 이 존재하는 이유다.**
+    세 회차가 각각 직전 묶음이 세지 않은 축에서 구멍을 남겼다 — 마지막 축이
+    **「그 응답을 부를 op 이 있는가」**였다(`sessions/S1-CONTRACT-GAP-SWEEP.md`).
     """
-    assert len(contract_operations()) == 46, "계약의 오퍼레이션이 46 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 49, "계약의 오퍼레이션이 49 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

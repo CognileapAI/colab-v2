@@ -44,6 +44,32 @@ def _target_in_lab(db: Session, target: dict) -> bool:
     return False
 
 
+@router.get("/preview-palettes", name="listPalettes")
+def list_palettes(request: Request,
+                  subject: Subject = Depends(current_subject)) -> dict:
+    """`RenderStyle.palette` 값의 **유일한 출처** — 중계만 한다 (`〈88〉` 묶음 4).
+
+    ⚠ **이 op 이 없어서 실서버에서 미리보기 렌더가 단 한 번도 시작되지 않았다.**
+    `RenderStyle.required` 가 `[palette]` 인데 FE 가 그 값을 얻을 계약 경로가 없었고,
+    화면은 목록을 지어내는 대신(옳다) `createRender` 를 아예 안 불렀다
+    (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-1`).
+
+    **경계 판정이 없다** — 팔레트는 연구실에 딸린 값이 아니라 렌더러의 능력이다.
+    인증은 건다: 경계 밖에 표면을 열지 않는다.
+    """
+    relay = request.app.state.previews
+    if relay is None:
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
+    try:
+        return relay.palettes(lab_id=str(subject.lab_id), account_id=str(subject.account_id))
+    except RelayUnavailable as e:
+        # **빈 목록을 내지 않는다.** 0건은 「고를 것이 없다」는 답이고, 참인 것은
+        # 「물어보지 못했다」이다 — `〈87〉-㉯` 가 검색에서 금지한 접기와 같은 모양이다.
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              f"그리는 서버에 연결하지 못했다: {e}") from None
+
+
 @router.post("/previews", name="createPreviewRender", status_code=202)
 def create_preview_render(request: Request, response: Response, body: dict = Body(...),
                           subject: Subject = Depends(current_subject),

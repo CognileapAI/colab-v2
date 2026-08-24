@@ -68,6 +68,19 @@ class HttpPreviewRelay:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
 
+    def palettes(self, *, lab_id: str, account_id: str) -> dict[str, Any]:
+        """`listPalettes` 중계 (`〈88〉` 묶음 4).
+
+        **값 집합은 viz-render 소유다.** 여기서 목록을 만들거나, 저쪽이 못 답할 때 기본값을
+        끼워 넣지 않는다 — 그러면 팔레트 정본이 core 로 옮겨 앉고 화면이 저쪽이 모르는 키를
+        보내게 된다. 못 닿으면 `RelayUnavailable` 이고 라우트가 **503** 으로 낸다.
+        """
+        status, body = _request(f"{self._base}/palettes", method="GET",
+                                headers=_scope_headers(lab_id, account_id), body=None)
+        if status != 200 or body is None:
+            raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
+        return body
+
     def get(self, *, lab_id: str, account_id: str, render_id: str) -> dict[str, Any] | None:
         status, body = _request(f"{self._base}/renders/{render_id}", method="GET",
                                 headers=_scope_headers(lab_id, account_id), body=None)

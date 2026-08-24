@@ -1,4 +1,4 @@
-"""아직 구현하지 않은 21 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 23 개 오퍼레이션 — **501 + ErrorEnvelope**.
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
   · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
@@ -47,10 +47,12 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) **46** 개 중 실동작 **25** 개를 뺀 **21** 개.
+#: 계약(`contracts/seams/fe-core.yaml`) **49** 개 중 실동작 **26** 개를 뺀 **23** 개.
 #: 25 → 36(D2c 신설 11) → **24**(P2 구현 12) → **24 유지**(S1 W3 — `searchDatasets` 를
 #: 신설과 동시에 구현했으므로 표에 더할 행이 없다. `〈80〉-㉯ 5` · `〈74〉-㉱`)
-#: → **21**(S1 W5 `P5` — 프로젝트 목록·상세·연결 셋).
+#: → **21**(S1 W5 `P5` — 프로젝트 목록·상세·연결 셋)
+#: → **23**(S1 4차 동결 해제 — `addUploadFile`·`replaceUploadGridFile` 신설.
+#:    `listPalettes` 는 신설과 동시에 구현해 표에 안 든다. `〈88〉` 묶음 4·5·6).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("updateLab", "PATCH", "/lab", "NOT_IMPLEMENTED_P1"),
@@ -85,6 +87,16 @@ OPERATIONS: tuple[Op, ...] = (
     Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     Op("updateDataset", "PATCH", "/datasets/{datasetId}", "NOT_IMPLEMENTED_NO_STORE"),
+    # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
+    #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데
+    #    계약이 침묵해서 표에도 없던 것이고, 그 침묵이 `D-2`·`D-4` 를 세 회차 동안 감췄다.
+    #    `P2.md §2-19` 의 「목록이 줄어드는 것이 진척의 계측」은 **표에 이미 있던 행**에
+    #    대한 말이다. 없는 줄이 줄어들 수는 없다.
+    #    ⚠ 셋째(`listPalettes`)는 여기 없다 — **신설과 동시에 구현했다**(`routes/preview.py`).
+    #    `searchDatasets` 때와 같은 규칙이다(`〈80〉-㉯ 5`): 계약에 열어 두고 안 만들면 표가 는다.
+    Op("addUploadFile", "POST", "/uploads/{uploadId}/files", "NOT_IMPLEMENTED_P1"),
+    Op("replaceUploadGridFile", "PUT", "/uploads/{uploadId}/files/{fileId}",
+       "NOT_IMPLEMENTED_P1"),
 )
 
 _MESSAGE = {

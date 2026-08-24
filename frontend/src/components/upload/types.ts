@@ -37,15 +37,14 @@ export interface UploadSource {
 }
 
 /**
- * 팔레트 한 값. **`fe-core` 계약에 `listPalettes` 중계가 없어**(`fe-core.yaml:1193` 이
- * 「이 개정이 열지 않는다」고 명시) 생성 타입이 존재하지 않는다. 그래서 **계약 스키마의
- * 재선언이 아니라, 이 화면이 필요로 하는 최소 모양**만 여기 둔다 — 중계가 열리면
- * 생성 타입으로 갈아 끼운다. 상세는 보고서 `[정본 무근거]`·「막힌 자리」 항.
+ * 팔레트 한 값. **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 4⟩ 생성 타입으로 갈아 끼웠다.**
+ *
+ * 이전 판은 「`fe-core` 계약에 `listPalettes` 중계가 없어 생성 타입이 존재하지 않는다」며
+ * 화면이 필요로 하는 최소 모양을 손으로 적고 「중계가 열리면 갈아 끼운다」고 남겨 뒀다.
+ * **그 중계가 없어서 실서버 렌더가 한 번도 시작되지 않았다**(스윕 `D-1`). 이제 열렸고,
+ * 여기서 계약 스키마를 다시 선언하지 않는다 (`CLAUDE.md §3-6·§3-7`).
  */
-export interface PaletteOption {
-  palette: string;
-  label: string;
-}
+export type PaletteOption = Schemas['PaletteOption'];
 
 /**
  * 렌더 작업·요청 — **중계라 계약이 `core-viz.yaml` 정의를 `$ref` 로 그대로 쓴다.**

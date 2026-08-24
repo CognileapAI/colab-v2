@@ -127,6 +127,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/{uploadId}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 등록 전 업로드에 파일 하나를 더한다 — `addDatasetFile` 의 **등록 전 짝**
+         * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5⟩**
+         *     `addDatasetFile`(등록 뒤)과 **같은 모양**이고, 다른 것은 대상 세계뿐이다 —
+         *     등록 전 업로드 vs 등록된 데이터셋. 두 세계가 갈라져 있는 것은 `〈79〉-㈎` 가 이미
+         *     세운 사실이다.
+         *
+         *     ⚠ **없어서 무엇이 깨졌나** (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-2`)
+         *     「업로드에 파일을 더한다」는 op 이 **등록 뒤에만** 있어서, 화면이 격자를 붙일 때마다
+         *     `createUpload` 를 **다시** 불렀다. 그 결과 —
+         *     - **본체 전체가 다시 올라갔다.** 화면은 「격자 파일을 받는 중입니다」라고 말하는데
+         *       실제로는 본체를 재전송한다 — **화면이 하는 말이 사실이 아니다.**
+         *       HSR 격자 한 장이 실측 26,562,948 B 이고 본체는 조각 묶음이면 훨씬 크다.
+         *     - **`uploadId` 가 바뀌었다.** 앞 업로드에 붙어 있던 계보 제안 화면 상태와 이미 그린
+         *       미리보기(`renderId`)가 **전부 무효가 된다.**
+         *
+         *     기각한 대안 = `createUpload` 를 여러 번 부르되 `uploadId` 를 요청에 싣기 —
+         *     「접수 = 새 집계 루트」라는 이벤트 계약의 성질(`../events/envelope.json`)을 흐린다.
+         *
+         *     새 파일도 파이프라인을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
+         *     판정은 `업로드·편집` 스위치가 한다 (`〈59〉-②`).
+         */
+        post: operations["addUploadFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{uploadId}/files/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 등록 전 기준 격자 파일 교체 · 축 뒤집기 — `replaceDatasetGridFile` 의 등록 전 짝
+         * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 6⟩**
+         *     요청 스키마를 `replaceDatasetGridFile` 과 **공유한다**(`GridFileReplacement`) —
+         *     같은 조작이고 대상 세계만 다르다.
+         *
+         *     ⚠ **없어서 무엇이 깨졌나** (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-4`)
+         *     `flipAxes` 가 `replaceDatasetGridFile` **안에만** 있고 그것은 `datasetId` 를
+         *     요구하므로 **등록 전에는 부를 수 없었다.** `S1-PLAN-REFOUND §E.2-⑤` 는 그 자리에
+         *     **[맞습니다] [위도·경도 뒤집기]** 두 버튼을 규정하고 `§E.3` 사다리 **6단(사람의 눈)**
+         *     이 이것 없이 성립하지 않는데, 화면은 **없는 길을 버튼으로 만들지 않으려고** 버튼을
+         *     아예 세우지 않았다(`GridUploadBlock.tsx`). 축이 뒤바뀐 격자를 올린 사람은
+         *     **엉뚱한 지도를 본 채 등록하고** 나서 상세에서 고쳐야 했다.
+         *
+         *     ⚠ **`〈80〉-㉯ 3` 이 기각한 `flipGridAxes` 신설과 다르다.** 그 기각의 근거는
+         *     「축을 바꾸는 길이 둘이 되어 정본 경로가 흐려진다」였는데, 여기서는 **대상 세계가
+         *     다르다**(등록 전 업로드 vs 등록된 데이터셋). `addDatasetFile` ↔ `addUploadFile` 과
+         *     같은 짝 관계이고, 두 세계가 갈라져 있는 것은 `〈79〉-㈎` 가 이미 세운 사실이다.
+         *
+         *     `flipAxes` 의 규칙은 등록 뒤와 **같다** — 한쪽만 바꾸면 축별 부분 유니크의
+         *     중간 상태가 제약을 깨므로 **맞바꿈은 한 트랜잭션 안에서 끝난다.** 그래서 그 업로드의
+         *     기준 격자 파일이 2건이 아니면 409 다. 대상이 `본체` 면 409 다 (`〈59〉-③`).
+         */
+        put: operations["replaceUploadGridFile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{uploadId}": {
         parameters: {
             query?: never;
@@ -261,10 +349,11 @@ export interface paths {
          *     모양도 다르므로(이쪽은 카탈로그 값이 붙은 카드, 저쪽은 식별자·관련도·근거) 경로가
          *     갈리는 것이 사실에 더 맞다.
          *
-         *     **역할 분담이 `core-ai.yaml` 의 것 그대로다** — AI 는 **식별자 · 관련도 · 근거 한 줄**만
-         *     돌려주고, 카드에 실리는 나머지(이름·Lv·주제·업로더·Verified·잠김)는 **core-api 가
-         *     D3·D2 에서 붙인다.** AI 가 카탈로그 값을 다시 말하지 않는다 — 두 곳에서 말하면 갈라진다.
-         *     그래서 응답 스키마를 `core-ai.yaml` 에서 그대로 참조하지 **않고** 여기서 세운다.
+         *     **역할 분담** — AI 는 **자연어를 검색어·주제 필터로 해석할 뿐**이고, 후보·순위·근거
+         *     한 줄은 **core-api 가 D3 의 `tsvector` 로** 만든다 (`core-ai.yaml#searchDatasets` ·
+         *     `〈72〉-㉮`). 카드에 실리는 값(이름·Lv·주제·업로더·Verified·잠김)도 **core-api 가
+         *     D3·D2 에서 붙인다** — AI 가 카탈로그 값을 다시 말하지 않는다(두 곳에서 말하면
+         *     갈라진다). 그래서 응답 스키마를 `core-ai.yaml` 에서 참조하지 **않고** 여기서 세운다.
          *
          *     정본이 못 박은 것 넷 —
          *     - **뒤진 범위를 먼저 밝힌다** (`scope`). 0건이어도 어디를 몇 개 뒤졌는지가 먼저다
@@ -274,13 +363,10 @@ export interface paths {
          *     - **근거는 한 줄 고정**이고 **한계도 그 한 줄 안에서** 밝힌다 — 별도 필드를 두지 않는다.
          *     - **잠긴 데이터가 결과에서 빠지지 않는다** (§1.3-6). 잠김 표시는 core 가 붙인다.
          *
-         *     **`Verified 우선` 정렬은 core 가 다시 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
-         *
-         *     ⚠ **역할 분담 두 문단이 낡았다 — `PLAN-SoT §9-〈87〉-㉮`(2026-08-25 Ted) 로 정정한다.**
-         *     AI 는 **식별자·관련도를 돌려주지 않는다.** 자연어를 **검색어·주제 필터로 해석할 뿐**이고,
-         *     후보·순위·근거 한 줄은 **core-api 가 D3 의 `tsvector` 로** 만든다
-         *     (`core-ai.yaml#searchDatasets` · `〈72〉-㉮`). 카드 값(이름·Lv·업로더·Verified·잠김)을
-         *     core 가 붙인다는 것만 그대로다.
+         *     **`Verified 우선` 정렬은 core 가 세운다** — D2 의 값이라 AI 에 권한 정책을 얹지 않는다.
+         *     (⭑ 위 두 문단은 `PLAN-SoT §9-〈87〉-㉮` 로 정정된 판이다. `〈88〉` 묶음 11 이 낡은 원문을
+         *     **지웠다** — 정정문을 덧붙이기만 하면 계약 안에 서로 반대인 두 문장이 공존하고,
+         *     그때 어느 쪽이 정본인지가 없다.)
          *
          *     **「제 몫을 못 함」이 두 가지고, 화면이 둘을 다르게 그린다** (`〈87〉-㉯` Ted 판정) —
          *     - **해석만 무너짐 (`degraded: true` + 200)** — 모델이 없거나 답을 못 읽어 **낱말 그대로**
@@ -386,6 +472,28 @@ export interface paths {
          *     추가는 정상 동작이다 (`〈59〉-①`). 판정은 `업로드·편집` 스위치가 한다 (`〈59〉-②`).
          *     후주입은 계보를 접지 않고 활동 기록(D8)에 남는다 (`〈60〉`).
          *     새 파일도 파이프라인(파싱·변환)을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
+         *
+         *     **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 10 · Ted 2026-08-25 판정 ㈎「연다」⟩
+         *     기준 격자 파일은 `202` 로 답한다.**
+         *     ⚠ **개정 전에는 이 op 이 자기 존재 이유인 `기준 격자 파일` 을 400 으로 거절했다** —
+         *     「축 판별 경로가 아직 이 op 에 연결되지 않았다」는 이유였고, 통과하는 것은 `본체`
+         *     뿐이었는데 **본체 후주입은 `〈59〉-③` 이 금지한 조작**이다. 그래서 요약문의
+         *     「기준 격자 파일은 나중에 와도 된다」와 `§E.2-⑨` 의 건너뛰기 안내
+         *     (「나중에 데이터셋 상세에서 격자를 올리면…」)가 **거짓 약속**이었다.
+         *     **건너뛰기는 `§E.1` 이 지정한 기본 경로다** — 즉 다수 사용자가 그 거짓말을 만났다
+         *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-3`).
+         *
+         *     **왜 `201 + DatasetFile` 이 아닌가** — 격자는 축이 정해지기 전까지 `DatasetFile` 을
+         *     낼 수 없다. `gridAxis` 는 파일을 읽어야 나오고(`〈63〉-㉰`) 그 판별은
+         *     pipeline-worker 소관이라, 응답 시점에 말할 자격이 없다. **지어내지 않는다.**
+         *
+         *     ⛔ **집행이 아직 이 202 를 내지 못한다 — 감추지 않고 적는다.**
+         *     `〈88〉` 이 계약 쪽을 열었으나, **축이 정해지기 전의 격자 파일을 둘 자리가 저장 형태에
+         *     없다**: `d3_file` 의 CHECK ㈎ 가 축 없는 격자 행을 막고(`0004`), 파이프라인 이벤트는
+         *     `upload_id` 가 NOT NULL 이라 **데이터셋 단위 판별을 태울 봉투가 없다.** 둘 중 하나를
+         *     여는 것은 **스키마 판정**이고 이 묶음의 범위가 아니다(`CLAUDE.md §5` 범위 늘리기 금지).
+         *     그때까지 집행은 `kind = 기준 격자 파일` 을 **400 으로 거절한다** — 받아 두고 잃는 것보다
+         *     정직하다. **다음 회차의 진입조건이다.**
          */
         post: operations["addDatasetFile"];
         delete?: never;
@@ -874,6 +982,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/preview-palettes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 쓸 수 있는 팔레트 목록 (중계)
+         * @description **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 4 — 이 묶음의 최우선 항⟩**
+         *
+         *     ⚠ **경로가 `core-viz.yaml` 의 `GET /palettes` 와 일부러 다르다.** 두 seam 이 같은
+         *     경로를 쓰면 `contract-breaking` 게이트(oasdiff 합성 비교)가 **같은 엔드포인트로
+         *     합쳐 버려** 비교 자체를 못 한다 — `searchDatasets`(`/dataset-searches` vs
+         *     `core-ai.yaml` 의 `/searches`)가 같은 이유로 갈렸고, 여기서도 **실제로 red 를 보고
+         *     고쳤다.** 두 표면은 소비자가 다르다(이쪽은 사람의 세션, 저쪽은 서비스 토큰).
+         *
+         *     `core-viz.yaml#listPalettes` 를 그대로 중계한다. **팔레트는 viz-render 가 소유한다** —
+         *     정본은 「팔레트 3종」이라고만 하고 이름을 열거하지 않으므로(`Policy_데이터셋_상세 §8`
+         *     시각화 컨트롤) 계약에 이름을 박지 않고 목록으로 서빙한다. **core·FE 는 하드코딩하지
+         *     않는다.**
+         *
+         *     ⚠ **없어서 무엇이 깨졌나** (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-1`)
+         *     `core-viz.yaml` 의 `RenderStyle.required` 가 `[palette]` 인데 **FE 가 팔레트 값을 얻을
+         *     계약 경로가 없었다.** 그래서 실서버 구현은 항상 예외를 던졌고(`previewSource.ts`),
+         *     `PreviewPanel` 은 `palette` 가 빈 문자열이라 `createRender` 를 **한 번도 부르지
+         *     않았다.** 즉 **실서버에서 미리보기 렌더가 단 한 번도 시작되지 않았다.**
+         *     `S1-PLAN-REFOUND §F` 완료 정의 **2·15·16·18** 이 통째로, `§E` 의 11 상태 중
+         *     **일곱**이 도달 불가였다.
+         *
+         *     ⚠ **시험이 왜 못 잡았나** — 프런트 시험은 전부 픽스처 소스를 주입한다.
+         *     **실서버 구현만 죽어 있었고 시험은 그 파일을 지나지 않았다.**
+         *
+         *     기각한 대안 = 팔레트 키를 계약에 박기 — `core-viz.yaml` 이 「이름을 계약에 박지
+         *     않는다」로 못 박았고, 박으면 팔레트 정본이 화면으로 옮겨 앉는다.
+         */
+        get: operations["listPalettes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/previews": {
         parameters: {
             query?: never;
@@ -892,8 +1045,14 @@ export interface paths {
          *     (`core-viz.yaml` RenderTarget). **타일 URL 은 중계하지 않는다** — 결과의
          *     `tileUrlTemplate` 을 FE 가 직접 소비한다 (타일 경로만 CDN 뒤 — `core-viz.yaml` 상단 주석).
          *     스키마는 중계라 재선언하지 않고 `core-viz.yaml` 정의를 그대로 참조한다.
-         *     `style.palette` 값 집합의 FE 도달 경로(`listPalettes` 중계)는 이 개정이 열지 않는다 —
-         *     열린 항목으로 보고한다 (`sessions/D2c.md §2-9` 는 생성·조회 두 op 만 확정했다).
+         *     `style.palette` 값 집합의 FE 도달 경로는 **`GET /preview-palettes`(`listPalettes` 중계)** 다 —
+         *     `PLAN-SoT §9-〈88〉` 묶음 4 가 열었다. 이전 판은 여기에 「이 개정이 열지 않는다 —
+         *     열린 항목으로 보고한다」라고 적혀 있었고, **그 열린 항목이 실서버에서 렌더를 통째로
+         *     막고 있었다**(`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-1`).
+         *
+         *     ⚠ **stage 1 은 `RenderResult` 의 타일 갈래를 내지 않는다** (`core-viz.yaml` ·
+         *     `〈74〉-㉳`). 위의 「타일 URL 을 중계하지 않는다」는 **stage 2 에 그대로 살아나는
+         *     문장**이라 지우지 않는다 — 지금은 그 갈래가 비활성이라는 사실만 여기 적는다.
          */
         post: operations["createPreviewRender"];
         delete?: never;
@@ -915,8 +1074,15 @@ export interface paths {
         /**
          * 렌더 작업 조회 (중계)
          * @description 진행 단계·완료 결과·실패를 한 형태로 본다 (`core-viz.yaml` RenderJob — 단계·실패 문구는
-         *     정본 표기 그대로: `Policy_데이터셋_상세 §8`). 실패 종류의 `code` 값 라벨은
-         *     `[정본 무근거]` 로 아직 신설하지 않았다 (`sessions/D2c.md §2-11` NB-B — Ted 답 대기).
+         *     정본 표기 그대로: `Policy_데이터셋_상세 §8`).
+         *
+         *     실패 종류의 `code` 값 라벨은 `[정본 무근거]` 이고 **`ErrorEnvelope.code` 가 enum 없는
+         *     자유 문자열**이라 계약 개정 없이 표현된다 — viz-render 가 소유한다
+         *     (`services/viz-render/.../d7_visualization/failures.py`).
+         *     ⭑ 이전 판은 「아직 신설하지 않았다 — Ted 답 대기」였는데 **그것이 사실이 아니었다** —
+         *     FE 는 이미 그 코드 3값에 하드 의존하고 있었다. `PLAN-SoT §9-〈88〉` 묶음 11 이 지운다.
+         *     **격자 거절의 갈래는 이제 코드가 아니라 `RenderJob.gridRejection` 이 말한다**
+         *     (`〈88〉` 묶음 2) — 한 코드가 다섯 상태를 나르던 자리가 닫혔다.
          */
         get: operations["getPreviewRender"];
         put?: never;
@@ -1153,6 +1319,27 @@ export interface components {
             /** @description 취소 사유 0~120자. 선택 (`Policy_승인_처리 §5`). */
             reason?: string;
         };
+        /**
+         * @description 기준 격자 파일 교체 요청. **`replaceDatasetGridFile`(등록 뒤)과
+         *     `replaceUploadGridFile`(등록 전)이 이 한 스키마를 공유한다**
+         *     (`PLAN-SoT §9-〈88〉` 묶음 6) — 같은 조작이고 대상 세계만 다르다. 두 벌로 선언하면
+         *     갈라질 표면이 하나 더 생긴다.
+         *
+         *     요청은 **택일(`oneOf`)** 이다.
+         *     - `file` — 파일을 갈아 끼운다. 축 배정은 그대로 둔다.
+         *     - `flipAxes: true` — **파일은 그대로 두고 두 기준 격자 파일의 축 배정을 맞바꾼다.**
+         *       ⚠ **한 파일만 고치는 형태가 아닌 이유** — `0004:192-195` 의 축별 부분 유니크가
+         *       「위도 둘」을 막으므로 **한쪽만 바꾸면 중간 상태가 제약을 깬다.**
+         *       맞바꿈은 한 트랜잭션 안에서 끝난다. 그래서 **격자 파일이 2건이 아니면 409** 다.
+         */
+        GridFileReplacement: {
+            file?: string;
+            /**
+             * @description `true` 면 축 뒤집기다 — 이 파일과 짝 파일의 축 배정을 맞바꾼다.
+             *     `false` 를 보내는 것은 **아무것도 안 하는 요청**이므로 400 이다.
+             */
+            flipAxes?: boolean;
+        } & (unknown | unknown);
         /**
          * @description 업로드 안의 파일 하나. 이벤트 seam 의 `FileRef`(`../events/core-pipeline.json`)와 같은
          *     네 값이다 — 동기 응답과 비동기 페이로드가 같은 사실을 말하게 둔다.
@@ -1936,6 +2123,13 @@ export interface components {
          * @enum {string}
          */
         ProjectStatus: "진행 중" | "닫힘";
+        PaletteOption: {
+            palette: string;
+            /** @description 화면에 서는 이름. viz-render 가 소유한다. */
+            label: string;
+            /** @description 고르는 자리에 보여줄 색 견본. */
+            sampleColors?: string[];
+        };
         /**
          * @description 무엇을 그릴 것인가. **식별자만 넘긴다.** 등록된 데이터셋이면 `datasetId`(+ 조각 선택),
          *     아직 등록하지 않은 업로드면 `uploadId` 다 (S-08). 둘 중 정확히 하나를 넣는다.
@@ -2474,6 +2668,98 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    addUploadFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: string;
+                    kind: components["schemas"]["FileKind"];
+                };
+            };
+        };
+        responses: {
+            /**
+             * @description 받았다. **`201 + UploadFileRef` 로 답하지 않는다** — 기준 격자 파일의 축은
+             *     서버가 파일을 읽어야 정해지고(`〈63〉-㉰`) 그 판별은 pipeline-worker 소관이라,
+             *     응답 시점에 `gridAxis` 를 말할 자격이 없다. 확정 결과는 `getUploadStatus` 의
+             *     `files[].gridAxis` · `gridRejections` 에 나타난다 (`〈88〉` 묶음 7).
+             */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadFileRef"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    replaceUploadGridFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["GridFileReplacement"];
+            };
+        };
+        responses: {
+            /**
+             * @description 받았다. **`200 + UploadFileRef` 로 답하지 않는다** — 파일을 갈아 끼운 경우 새 축
+             *     판별이 다시 돌아야 하고, 그 결과는 `getUploadStatus` 가 말한다 (`〈88〉` 묶음 7).
+             */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadFileRef"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description 대상이 본체 파일이다 (`〈59〉-③`). **또는** `flipAxes` 인데 그 업로드의 기준 격자
+             *     파일이 2건이 아니다 — 바꿀 짝이 없다. `replaceDatasetGridFile` 과 같은 규칙이다.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+        };
+    };
     getUploadStatus: {
         parameters: {
             query?: never;
@@ -2873,13 +3159,34 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 추가된 파일 */
+            /**
+             * @description 추가된 파일. **`kind` 가 `본체` 일 때만 이 응답이다** — 축 판별이 필요 없어
+             *     그 자리에서 완결된다.
+             */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetFile"];
+                };
+            };
+            /**
+             * @description **`kind` 가 `기준 격자 파일` 일 때의 응답** (`〈88〉` 묶음 10).
+             *     받았고, **축이 정해진 뒤 `listDatasetFiles` 에 나타난다.** 축을 못 정하면
+             *     그 파일은 나타나지 않는다 — 축이 빈 격자 행을 만들지 않는다(`〈63〉-ⓒ`·`〈66〉`).
+             *     **응답 본문에 `gridAxis` 가 없는 것이 정상이다** — 아직 아무도 모른다.
+             */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        fileId: components["schemas"]["Ulid"];
+                        fileName: string;
+                        kind: components["schemas"]["FileKind"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -2905,14 +3212,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": {
-                    file?: string;
-                    /**
-                     * @description `true` 면 축 뒤집기다 — 이 파일과 짝 파일의 축 배정을 맞바꾼다.
-                     *     `false` 를 보내는 것은 **아무것도 안 하는 요청**이므로 400 이다.
-                     */
-                    flipAxes?: boolean;
-                } & (unknown | unknown);
+                "multipart/form-data": components["schemas"]["GridFileReplacement"];
             };
         };
         responses: {
@@ -3629,6 +3929,43 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    listPalettes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 팔레트 목록. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEnvelope"] & {
+                        items?: components["schemas"]["PaletteOption"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다** (`ErrorEnvelope.code = RENDER_UNAVAILABLE`).
+             *     목록을 지어내지 않는다 — 화면은 팔레트를 못 고른다고 정직하게 말하고
+             *     **등록은 그대로 진행한다.** `createPreviewRender` 의 503 과 같은 모양이다.
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     createPreviewRender: {
         parameters: {
             query?: never;
@@ -3656,6 +3993,26 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다 — 실패한 렌더가 아니다**
+             *     (`ErrorEnvelope.code = RENDER_UNAVAILABLE`).
+             *     ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 9⟩ 코드는 **네 자리에서** 이 상태를
+             *     내고 실동작 시험까지 있었는데(`services/core-api/.../routes/preview.py` ·
+             *     `tests/test_preview_relay.py`) **계약 어디에도 없었다** — `DR-7` 의 정확한 모양이다.
+             *     ⚠ 게다가 `searchDatasets` 의 503 설명이 이 없는 표면을 「같은 모양이다」라고
+             *     **선례로 인용까지 했다**(`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-1`).
+             *     **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 여기서 실패해도 등록·다운로드·
+             *     계보 확정은 그대로 된다. 화면은 「미리보기를 만드는 서버에 닿지 못했습니다 /
+             *     등록은 그대로 진행할 수 있습니다」를 세운다 (`S1-PLAN-REFOUND §E.2-⑩`).
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     getPreviewRender: {
@@ -3683,6 +4040,26 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다 — 실패한 렌더가 아니다**
+             *     (`ErrorEnvelope.code = RENDER_UNAVAILABLE`).
+             *     ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 9⟩ 코드는 **네 자리에서** 이 상태를
+             *     내고 실동작 시험까지 있었는데(`services/core-api/.../routes/preview.py` ·
+             *     `tests/test_preview_relay.py`) **계약 어디에도 없었다** — `DR-7` 의 정확한 모양이다.
+             *     ⚠ 게다가 `searchDatasets` 의 503 설명이 이 없는 표면을 「같은 모양이다」라고
+             *     **선례로 인용까지 했다**(`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-1`).
+             *     **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 여기서 실패해도 등록·다운로드·
+             *     계보 확정은 그대로 된다. 화면은 「미리보기를 만드는 서버에 닿지 못했습니다 /
+             *     등록은 그대로 진행할 수 있습니다」를 세운다 (`S1-PLAN-REFOUND §E.2-⑩`).
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     getDashboardSummary: {

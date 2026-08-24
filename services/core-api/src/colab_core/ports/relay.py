@@ -27,6 +27,11 @@ class PreviewRenderPort(Protocol):
     def get(self, *, lab_id: str, account_id: str, render_id: str) -> dict[str, Any] | None:
         ...
 
+    def palettes(self, *, lab_id: str, account_id: str) -> dict[str, Any]:
+        """`RenderStyle.palette` 값 집합 (`〈88〉` 묶음 4). **못 닿으면 예외다** —
+        빈 목록은 「고를 것이 없다」는 답이지 「물어보지 못했다」가 아니다."""
+        ...
+
 
 class LineageSuggestionPort(Protocol):
     """ai-service 중계. **못 찾으면 정직한 빈 상태**다 — 억지 제안을 만들지 않는다

@@ -36,9 +36,13 @@ P2_REAL = {
     "getPreviewRender":             "tests/test_preview_relay.py",
     "listUploadLineageSuggestions": "tests/test_lineage_suggestions.py",
 }
-#: S1 이 동결 해제 회차에 신설과 동시에 구현한 하나. **뺀 자리마다 실동작 시험이 있다**는
+#: S1 이 동결 해제 회차에 신설과 동시에 구현한 **둘**. **뺀 자리마다 실동작 시험이 있다**는
 #: 규칙이 「신설한 자리」에도 그대로 걸린다 — 그래야 501 이 안 늘어난 것이 증명된다.
-S1_REAL = {"searchDatasets": "tests/test_search_relay.py"}
+#: ⭑ `listPalettes` 는 **4차 해제**(`〈88〉` 묶음 4)가 신설과 동시에 구현했다. 이것 없이는
+#: 실서버에서 `createRender` 가 한 번도 안 불렸다 — 계약만 열고 501 로 두면 그 구멍이
+#: 그대로 남는다.
+S1_REAL = {"searchDatasets": "tests/test_search_relay.py",
+           "listPalettes": "tests/test_palettes_relay.py"}
 #: **S1 의 `P5` 레인이 표에서 뺀 셋** (24 → 21). 앞의 둘은 S-02·S-02b 화면 본체이고,
 #: `linkProjectDataset` 은 `S1-PLAN.md §4.2` P5 행이 「여기서 열린다」고 지목한 op 이다.
 P5_REAL = {
@@ -70,8 +74,20 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_21_unimplemented_operations_are_exactly_these() -> None:
-    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → **21**.
+def test_the_23_unimplemented_operations_are_exactly_these() -> None:
+    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → 21 → **23**.
+
+    ⭑ **이번에는 늘었고, 그것이 옳다** (`PLAN-SoT §9-〈88〉` 묶음 5·6 · 4차 동결 해제).
+    `addUploadFile`·`replaceUploadGridFile` 은 **지금 화면이 필요로 하는데 계약이 침묵해서
+    표에도 없던** op 이다 — 격자를 붙일 때마다 본체 전체가 재전송되고 `uploadId` 가
+    바뀌었고(`D-2`), 등록 전 축 뒤집기 버튼이 아예 서지 못했다(`D-4`). **그 침묵이 세
+    회차 동안 구멍을 감췄다.** `§2-19` 의 「줄어드는 것이 진척」은 **표에 이미 있던 행**에
+    대한 말이고, 없는 줄이 줄어들 수는 없다.
+
+    ⭑ **셋째(`listPalettes`)는 표에 안 들었다** — 신설과 동시에 구현했다(`S1_REAL`).
+    스윕은 21 → 24 를 예상했지만 **24 는 세 op 을 전부 501 로 두었을 때의 수**이고,
+    그러면 `D-1`(실서버에서 렌더가 시작조차 안 된다)이 **그대로 남는다.**
+    `searchDatasets` 때 세운 규칙 그대로다: 여는 회차에 만든다 (`〈80〉-㉯ 5` · `〈74〉-㉱`).
 
     ⭑ **S1 의 `W3` 는 이 수를 바꾸지 않았다** (`〈74〉-㉱` · `C1` 통과 조건 2) — 계약이 하나
     늘어난 `searchDatasets` 를 **여는 회차에 구현**해 표에 행을 더하지 않았다.
@@ -81,7 +97,7 @@ def test_the_21_unimplemented_operations_are_exactly_these() -> None:
     남은 프로젝트 op 넷(`updateProject`·`deleteProject`·`setProjectStatus`·
     `unlinkProjectDataset`)은 P1 배정이라 그대로 있다 — 범위를 늘리지 않았다.
     """
-    assert len(OPERATIONS) == 21
+    assert len(OPERATIONS) == 23
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -100,7 +116,9 @@ def test_codes_are_the_two_kinds() -> None:
     no_store = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_NO_STORE"}
     p1 = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_P1"}
     assert no_store == NO_STORE
-    assert len(p1) == 13   # 15 → 13: P5 가 `listProjects`·`getProject` 를 가져갔다
+    # 15 → 13: P5 가 `listProjects`·`getProject` 를 가져갔다
+    # 13 → 15: `〈88〉` 묶음 5·6 이 등록 전 파일 조작 둘을 신설했다(저장 자리는 있고 로직이 P1)
+    assert len(p1) == 15
     assert no_store & p1 == set()
 
 
