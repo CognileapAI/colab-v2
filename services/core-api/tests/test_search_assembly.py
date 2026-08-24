@@ -26,10 +26,11 @@ MATCHES = (
 )
 
 
-def _compose(matches=MATCHES, *, total=None, offset=0, topic=None, degraded=False):
+def _compose(matches=MATCHES, *, total=None, offset=0, topic=None, degraded=False,
+             expansions=None):
     return dataset_search.compose(
         matches, lab_name="A 연구실", searched=3, topic=topic,
-        interpretation_degraded=degraded,
+        interpretation_degraded=degraded, expansions=expansions,
         total=len(matches) if total is None else total, offset=offset)
 
 
@@ -108,3 +109,57 @@ def test_해석_없이_찾았으면_근거가_그_사실을_밝힌다() -> None:
 def test_망가진_커서는_처음부터다() -> None:
     assert dataset_search.decode_cursor("!!!") == 0
     assert dataset_search.decode_cursor(None) == 0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# K4-b — **근거 한 줄이 그래프가 한 일을 이름으로 말한다** (`PLAN-SoT §9-〈90〉-㉱`)
+#
+# 「확장으로 걸린 결과는 근거 한 줄에 그 엣지를 이름으로 적을 수 있어야 한다. 적을 수
+# 없으면 확장하지 않는다」 — `sessions/K1b-ONTOLOGY-CONTENT §D-6` 의 다섯째 안전장치다.
+# 그 문장을 만드는 것은 core-api 이므로 오라클도 여기 산다.
+# ─────────────────────────────────────────────────────────────────────────────
+
+GRAPHED = (SearchMatch(dataset_id=DS1, rank=0.9, matched_terms=("Nearest",),
+                       where=("이름·주제·요약",)),)
+
+
+def test_그래프가_데려온_말이면_엣지를_이름으로_적는다() -> None:
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("~의 한 가지다", "재격자화")})
+    assert "‘재격자화’의 한 가지인 ‘Nearest’" in items[0]["rationale"]
+
+
+def test_같은_말_엣지도_읽어_준다() -> None:
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("같은 말이다", "최근린보간")})
+    assert "‘최근린보간’와 같은 말인 ‘Nearest’" in items[0]["rationale"]
+
+
+def test_안에_있다_엣지도_읽어_준다() -> None:
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("안에 있다", "한반도")})
+    assert "‘한반도’ 안에 있는 ‘Nearest’" in items[0]["rationale"]
+
+
+def test_그래프가_안_데려온_말은_예전_문장_그대로다() -> None:
+    items, _ = _compose(expansions={"Nearest": ("~의 한 가지다", "재격자화")})
+    assert "‘강우’가" in items[0]["rationale"] and "한 가지" not in items[0]["rationale"]
+
+
+def test_그래프_근거를_붙여도_여전히_한_줄이고_숫자가_없다() -> None:
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("~의 한 가지다", "재격자화")})
+    line = items[0]["rationale"]
+    assert "\n" not in line
+    assert "%" not in line
+    assert set(json.loads(json.dumps(items[0]))) == {"datasetId", "relevanceBar", "rationale"}
+
+
+def test_모르는_관계는_지어내지_않고_예전_문장으로_떨어진다() -> None:
+    """저쪽이 계약 밖 관계를 보내와도 **근거가 그것을 사용자에게 옮기지 않는다.**"""
+    items, _ = _compose(GRAPHED, expansions={"Nearest": ("비슷하다", "재격자화")})
+    assert "‘Nearest’가" in items[0]["rationale"] and "비슷하다" not in items[0]["rationale"]
+
+
+def test_그래프_확장이_순위를_바꾸지_않는다() -> None:
+    """**그래프는 검색어만 넓힌다** (`〈72〉-㉮`). 같은 후보면 같은 순서·같은 막대다."""
+    plain, _ = _compose()
+    graphed, _ = _compose(expansions={"강우": ("~의 한 가지다", "강수")})
+    assert [h["datasetId"] for h in plain] == [h["datasetId"] for h in graphed]
+    assert [h["relevanceBar"] for h in plain] == [h["relevanceBar"] for h in graphed]

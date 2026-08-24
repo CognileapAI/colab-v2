@@ -153,7 +153,37 @@ def unreadable_interpretation(reason: str) -> dict[str, Any]:
         "terms": (),
         "topic": None,
         "source": None,
+        "expansions": {},
     }
+
+
+#: 그래프 확장의 관계 3값. `core-ai.yaml SearchInterpretation.expansions.items.relation`
+#: enum 과 같은 값이고, 그 원본은 `d9_concept_edge.relation` CHECK 다.
+#: **모르는 관계는 버린다** — 근거 한 줄이 저쪽이 새로 지어낸 말을 사용자에게 옮기지 않는다.
+_EXPANSION_RELATIONS = ("같은 말이다", "~의 한 가지다", "안에 있다")
+
+
+def _read_expansions(raw: Any, terms: tuple[str, ...]) -> dict[str, tuple[str, str]]:
+    """`expansions` 를 `검색어 → (관계, 부모)` 로 접는다. **믿고 쓰지 않고 검사하고 쓴다.**
+
+    버리는 것 셋 — ① 모양이 계약과 다른 행 ② 관계가 3값 밖인 행 ③ **`terms` 에 없는 말**.
+    ③ 이 중요하다. 이 값은 근거 한 줄에 그대로 실려 사용자가 읽으므로, 실제로 뒤진 말이
+    아닌 것이 여기 섞이면 **근거가 하지 않은 검색을 말한다.**
+    """
+    if not isinstance(raw, list):
+        return {}
+    live = set(terms)
+    out: dict[str, tuple[str, str]] = {}
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        term, relation, parent = row.get("term"), row.get("relation"), row.get("parent")
+        if not all(isinstance(v, str) and v.strip() for v in (term, relation, parent)):
+            continue
+        if relation not in _EXPANSION_RELATIONS or term not in live:
+            continue
+        out.setdefault(term, (relation, parent))
+    return out
 
 
 class HttpDatasetSearchRelay:
@@ -220,6 +250,7 @@ class HttpDatasetSearchRelay:
             "terms": terms,
             "topic": topic if isinstance(topic, str) and topic else None,
             "source": source if isinstance(source, str) else None,
+            "expansions": _read_expansions(interpretation.get("expansions"), terms),
         }
 
 

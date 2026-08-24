@@ -57,14 +57,17 @@ def fake_ai():
 
 
 def _ai_body(terms, *, lab_id, topic=None, source="llm", searched=3,
-             is_data_query: bool = True, degraded: bool = False) -> dict:
-    return {
+             is_data_query: bool = True, degraded: bool = False, expansions=None) -> dict:
+    body = {
         "degraded": degraded,
         "scope": {"labId": lab_id, "labName": "연구실 A", "searchedCount": searched},
         "isDataQuery": is_data_query,
         "results": {"items": [], "totalCount": 0, "nextCursor": None},
         "interpretation": {"terms": list(terms), "topic": topic, "source": source},
     }
+    if expansions is not None:
+        body["interpretation"]["expansions"] = expansions
+    return body
 
 
 # ════════ ④ 검색이 죽으면 **「동작하지 않음」이 드러난다** — 0건으로 위장하지 않는다 ════════
@@ -304,3 +307,45 @@ def test_query_outside_the_input_rule_is_400(p2_client, body) -> None:
 def test_search_requires_authentication(p2_client) -> None:
     r = p2_client().post(SEARCH, json={"query": "강수"})
     assert r.status_code == 401
+
+
+# ════════ K4-b — 그래프 확장이 **HTTP 를 지나서도** 근거가 된다 (`〈90〉-㉱`) ════════
+#
+# core-api 는 그래프에 붙지 않는다. 붙으면 2026-08-25 판정 ㈎ 로 고친 위반의 거울상이다
+# (`PLAN-SoT §9-〈90〉-㉮`). 그래서 이쪽이 받는 것은 **행이 아니라 말과 그 엣지**이고,
+# 아래 셋이 「받은 것을 믿고 쓰지 않고 검사하고 쓴다」를 붙잡는다.
+
+def _graph_search(p2_client, fake_ai, expansions, *, terms=("강우",), query="강우"):
+    from conftest import LAB_A
+    fake_ai["body"] = _ai_body(list(terms), lab_id=LAB_A, expansions=expansions)
+    return p2_client(ai_base_url=fake_ai["url"]).post(
+        SEARCH, json={"query": query}, headers=auth(TOKEN_RES))
+
+
+def test_graph_expansion_reaches_the_rationale(p2_client, fake_ai) -> None:
+    r = _graph_search(p2_client, fake_ai,
+                      [{"term": "강우", "relation": "~의 한 가지다", "parent": "강수"}])
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert items and all("‘강수’의 한 가지인 ‘강우’" in i["rationale"] for i in items)
+
+
+def test_an_expansion_for_a_term_we_never_searched_is_dropped(p2_client, fake_ai) -> None:
+    """**근거가 하지 않은 검색을 말하지 않는다** — `terms` 에 없는 말은 버린다."""
+    r = _graph_search(p2_client, fake_ai,
+                      [{"term": "재격자화", "relation": "~의 한 가지다", "parent": "전처리"}])
+    assert r.status_code == 200
+    assert all("재격자화" not in i["rationale"] for i in r.json()["items"])
+
+
+def test_a_malformed_expansion_does_not_break_search(p2_client, fake_ai) -> None:
+    """모양이 계약과 다르면 **그 행만 버리고 검색은 그대로 돈다.**"""
+    r = _graph_search(p2_client, fake_ai, ["쓰레기", {"term": "강우"}, {}])
+    assert r.status_code == 200 and r.json()["items"]
+
+
+def test_no_expansions_means_the_old_sentence(p2_client, fake_ai) -> None:
+    """선택 속성이다 — 안 오면 예전 근거 그대로다(하위 호환)."""
+    r = _graph_search(p2_client, fake_ai, None)
+    assert r.status_code == 200
+    assert all("한 가지" not in i["rationale"] for i in r.json()["items"])

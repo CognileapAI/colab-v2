@@ -36,9 +36,20 @@ class SearchService:
         self._interpreter = interpreter
         self._dictionaries = dictionaries
 
+    @staticmethod
+    def _expansions(terms: tuple[str, ...], hops) -> list[dict]:
+        """그래프가 데려온 말만, **실제로 나가는 검색어에 한해** 적는다.
+
+        `MAX_TERMS` 로 잘린 말의 근거를 남기면 core-api 가 오지 않은 말을 근거에 적게 된다.
+        「적을 수 없으면 확장하지 않는다」의 대우다 (`sessions/K1b-ONTOLOGY-CONTENT §D-6`).
+        """
+        live = set(terms)
+        return [{"term": h.term, "relation": h.relation, "parent": h.parent}
+                for h in (hops or ()) if h.term in live]
+
     def _envelope(self, *, lab_id: str, lab_name: str, searched: int, is_data_query: bool,
                   terms: tuple[str, ...], topic: str | None, source: str,
-                  degraded: bool, reason: str | None) -> dict:
+                  degraded: bool, reason: str | None, expansions: list[dict] | None = None) -> dict:
         """**`scope` 가 먼저다.** 파이썬 dict 는 삽입 순서를 지키고 json 은 그 순서로 쓴다 —
         「뒤진 범위를 먼저 밝힌다」가 직렬화된 바이트에서도 사실이 된다.
 
@@ -61,6 +72,10 @@ class SearchService:
             "results": {"items": [], "totalCount": 0, "nextCursor": None},
             "interpretation": {"terms": list(terms), "topic": topic, "source": source},
         }
+        # **빈 배열을 싣지 않는다.** 그래프가 한 일이 없을 때 빈 칸이 서면 화면과 근거가
+        # 「그래프가 돌았는데 아무것도 못 찾았다」와 「그래프가 안 돌았다」를 못 가른다.
+        if expansions:
+            body["interpretation"]["expansions"] = expansions
         if reason:
             body["degradedReason"] = reason
         return body
@@ -79,14 +94,18 @@ class SearchService:
 
         # 사전으로 넓힌다. **사전이 죽어도 원문 검색어로 간다** — 검색이 멈추지 않는다.
         terms, topic = interpretation.terms, interpretation.topic
+        hops: tuple = ()
         try:
             expansion = self._dictionaries.expand(interpretation.terms, query)
             terms = expansion.terms
             topic = interpretation.topic or expansion.topic
+            hops = getattr(expansion, "graph_hops", ())
         except Exception as e:                                   # noqa: BLE001
             degraded = True
             reason = reason or f"온톨로지 사전을 읽지 못해 질문의 낱말 그대로 찾았다: {e}"
 
+        cut = tuple(terms)[:MAX_TERMS]
         return self._envelope(lab_id=lab_id, lab_name=lab_name, searched=searched_count,
-                              is_data_query=True, terms=tuple(terms)[:MAX_TERMS], topic=topic,
-                              source=interpretation.source, degraded=degraded, reason=reason)
+                              is_data_query=True, terms=cut, topic=topic,
+                              source=interpretation.source, degraded=degraded, reason=reason,
+                              expansions=self._expansions(cut, hops))

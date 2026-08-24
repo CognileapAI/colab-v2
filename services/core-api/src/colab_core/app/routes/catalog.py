@@ -262,6 +262,8 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             matches, lab_name=lab_name, searched=searched_count, topic=answer["topic"],
             # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
             interpretation_degraded=answer["source"] != "llm",
+            # 그래프가 데려온 말이면 근거 한 줄이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
+            expansions=answer.get("expansions"),
             total=total, offset=offset)
 
         by_id = {row["datasetId"]: row for row in _compose(db)}

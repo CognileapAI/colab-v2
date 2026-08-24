@@ -436,6 +436,42 @@ components:
             해석이 **어디서 왔는가.** `literal` 은 모델 없이 질문을 낱말로 자른 것이다 —
             결과는 진짜 결과이지만 놓친 것이 있을 수 있고, **근거 한 줄이 그 사실을 밝힌다**
             (`Policy_데이터_찾기 §4 한계 표시`). `Degradable.degraded` 와 짝으로 온다.
+        expansions:
+          type: array
+          description: |
+            **온톨로지 그래프가 데려온 말과 그 엣지** (`K4-b` · `PLAN-SoT §9-〈90〉-㉱`).
+            `terms` 중 그래프가 붙인 것만 여기 한 번 더 서고, **질문에 있던 말과 사전이
+            붙인 말은 여기 없다.** 선택 속성이다 — 그래프가 한 일이 없으면 아예 오지 않는다.
+
+            **왜 계약에 서는가.** 「확장으로 걸린 결과는 근거 한 줄에 그 엣지를 이름으로
+            적을 수 있어야 한다」가 확장 경계의 다섯째 안전장치이고
+            (`sessions/K1b-ONTOLOGY-CONTENT §D-6`), 근거를 만드는 것은 core-api 다.
+            이 세 값이 없으면 core-api 는 「‘재격자화’의 한 가지인 ‘Nearest’가 맞았다」를
+            말할 수 없고, 그러면 확장이 **사람이 눈으로 검사할 수 없는 것**이 된다.
+
+            **순위는 여기서 나오지 않는다.** 점수도 확신도도 없다 — 순서는 core-api 의
+            `ts_rank_cd` 가 낸다 (`〈72〉-㉮`).
+          items:
+            type: object
+            required: [term, relation, parent]
+            additionalProperties: false
+            properties:
+              term:
+                type: string
+                minLength: 1
+                description: 그래프가 붙인 말. **반드시 `terms` 안에 있다.**
+              relation:
+                type: string
+                enum: ["같은 말이다", "~의 한 가지다", "안에 있다"]
+                description: |
+                  일한 엣지의 관계. 값 집합은 `d9_concept_edge.relation` CHECK 그대로다 —
+                  **여기서 새로 정하지 않는다.**
+              parent:
+                type: string
+                minLength: 1
+                description: |
+                  **질문 쪽에 있던 말**(상위). 확장은 하향 전용이므로 이 값이 언제나
+                  사용자가 실제로 쓴 쪽이다.
 
     SearchHit:
       type: object

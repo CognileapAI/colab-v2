@@ -39,16 +39,43 @@ def decode_cursor(cursor: str | None) -> int:
     return int(raw[2:]) if raw.startswith("o:") and raw[2:].isdigit() else 0
 
 
+#: 그래프가 데려온 말을 근거에 **어떻게 읽어 주는가.** 관계 3값을 사람 문장으로 옮긴 것이고,
+#: 빈칸 둘은 (부모, 넓힌 말) 순서다. 열쇠는 `d9_concept_edge.relation` CHECK 값 그대로다.
+_EXPANSION_PHRASE = {
+    "~의 한 가지다": "‘{parent}’의 한 가지인 ‘{term}’",
+    "같은 말이다": "‘{parent}’와 같은 말인 ‘{term}’",
+    "안에 있다": "‘{parent}’ 안에 있는 ‘{term}’",
+}
+
+
+def _matched_phrase(term: str, expansions: dict[str, tuple[str, str]] | None) -> str:
+    """맞은 말 하나를 읽어 준다. **그래프가 데려온 말이면 그 엣지를 이름으로 적는다.**
+
+    「적을 수 없으면 확장하지 않는다」(`sessions/K1b-ONTOLOGY-CONTENT §D-6` 의 다섯째
+    안전장치)의 이쪽 절반이다 — 여기서 문장이 나오지 않으면 그 확장은 사람이 눈으로
+    검사할 수 없는 것이 된다. **여전히 한 줄이고 숫자는 하나도 없다.**
+    """
+    hop = (expansions or {}).get(term)
+    if not hop:
+        return f"‘{term}’"
+    relation, parent = hop
+    template = _EXPANSION_PHRASE.get(relation)
+    return template.format(parent=parent, term=term) if template else f"‘{term}’"
+
+
 def rationale(match: SearchMatch, *, lab_name: str, searched: int, topic: str | None,
-              interpretation_degraded: bool) -> str:
+              interpretation_degraded: bool,
+              expansions: dict[str, tuple[str, str]] | None = None) -> str:
     """**한 줄이고, 같은 줄에서 한계도 밝힌다** (`Policy_데이터_찾기 §8` — 펼침·더보기 없음).
 
     앞 절은 실행기가 준 사실(뒤진 범위 · 맞은 말 · 맞은 자리)이고, 뒤 절은 **이 검색이 못 본
     것**이다. 좋은 점만 적는 줄이 따로 생기지 않도록 두 절을 한 문장에 붙여 둔다.
     """
-    matched = ", ".join(match.matched_terms[:MAX_TERMS_IN_RATIONALE]) or "질문의 낱말"
+    heads = [_matched_phrase(t, expansions)
+             for t in match.matched_terms[:MAX_TERMS_IN_RATIONALE]]
+    matched = ", ".join(heads) or "‘질문의 낱말’"
     where = "·".join(match.where) if match.where else "카탈로그"
-    head = f"{lab_name} 안 {searched}건에서 ‘{matched}’가 {where}에 맞았다"
+    head = f"{lab_name} 안 {searched}건에서 {matched}가 {where}에 맞았다"
     if topic:
         head += f" (주제 {topic}로 좁혀 뒤졌다)"
     tail = "기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 보라"
@@ -58,8 +85,9 @@ def rationale(match: SearchMatch, *, lab_name: str, searched: int, topic: str | 
 
 
 def compose(matches, *, lab_name: str, searched: int, topic: str | None,
-            interpretation_degraded: bool, total: int,
-            offset: int) -> tuple[list[dict], str | None]:
+            interpretation_degraded: bool, total: int, offset: int,
+            expansions: dict[str, tuple[str, str]] | None = None
+            ) -> tuple[list[dict], str | None]:
     """후보를 **정본 모양의 세 값**으로 접는다 — `datasetId` · `relevanceBar` · `rationale`.
 
     동점은 **식별자 오름차순**으로 고정한다 — DB 가 같은 점수를 낸 두 행의 순서까지
@@ -75,7 +103,8 @@ def compose(matches, *, lab_name: str, searched: int, topic: str | None,
             # (`Policy_데이터_찾기 §4 용어(관련도)`).
             "relevanceBar": round(m.rank / top, 3) if top > 0 else 0.0,
             "rationale": rationale(m, lab_name=lab_name, searched=searched, topic=topic,
-                                   interpretation_degraded=interpretation_degraded),
+                                   interpretation_degraded=interpretation_degraded,
+                                   expansions=expansions),
         }
         for m in ordered
     ]
