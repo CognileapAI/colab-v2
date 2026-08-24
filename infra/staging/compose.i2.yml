@@ -79,6 +79,18 @@ services:
     environment:
       # 앱은 **비소유자 · NOBYPASSRLS 롤**로만 붙는다 (services/core-api/ops/app-role.sql).
       COLAB_CORE_DATABASE_URL: postgresql+psycopg://colab_app:${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}@postgres:5432/colab_platform
+      # 접수한 바이트를 두는 자리. **없으면 접수를 거절한다**(kernel/config.py) —
+      # 바이트를 버리고 201 을 내리는 것은 거짓말이다. worker 와 **같은 볼륨**이어야 한다.
+      COLAB_CORE_UPLOAD_DIR: /var/lib/colab/uploads
+      # ⭑ 렌더 표면. **이 변수가 없어서 미리보기가 전량 503 이었다**(`〈70〉-㉰` 실측 · `〈74〉`).
+      # compose 에 viz 블록이 있어도 core-api 가 이 값을 못 읽으면 `HttpPreviewRelay` 자체를
+      # 만들지 않는다(app/main.py) — 블록이 있는 것과 배선이 된 것은 다르다.
+      COLAB_CORE_VIZ_BASE_URL: http://viz-render:8100/viz/v1
+      # ai-service 중계(계보 제안 · 자연어 검색). **주소가 없어도 뜬다** — 그쪽이
+      # 0건 + degraded 를 만들어 낸다. AI 없이도 v2 는 완결된 제품이다 (CLAUDE.md §3).
+      COLAB_CORE_AI_BASE_URL: ${COLAB_CORE_AI_BASE_URL:-}
+    volumes:
+      - uploads:/var/lib/colab/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,13 +100,31 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── 아직 비어 있는 세 단위. liveness 만 대답한다 — 도메인 로직은 각자의 WU 가 채운다.
+  # ── ⭑ 더 이상 「빈 단위」가 아니다 (`〈73〉`).
+  #    이 블록에 환경변수가 0건이라 워커가 **기동조차 못 했고**, 그래서 `upload.ready` 가
+  #    영원히 false 였으며 FE 가 1초마다 무한 폴링했다. Ted 가 말한 「대기」의 실물이 이것이다 —
+  #    가공 코드가 아니라 **가공을 기다리는 형태**였다.
   pipeline-worker:
     build:
       context: ../../services/pipeline-worker
     image: colab-v2/pipeline-worker:i2
     container_name: colab_v2_staging_pipeline_worker
     restart: unless-stopped
+    environment:
+      # 앱 롤로 붙는다 — core-api 와 같은 규칙이다(비소유자 · NOBYPASSRLS).
+      COLAB_PIPELINE_DB_URL: postgresql+psycopg://colab_app:${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}@postgres:5432/colab_platform
+      # **경계는 이벤트에도 실린다** — 큐에서 꺼낸 메시지에는 주체가 없다(envelope.json labId).
+      # 그래서 워커는 자기 경계를 환경에서 받는다. 값이 없으면 뜨지 않는다.
+      COLAB_WORKER_LAB_ID: ${COLAB_WORKER_LAB_ID:?COLAB_WORKER_LAB_ID 가 필요하다 — 경계 없이 원장을 읽지 않는다}
+      COLAB_WORKER_ACCOUNT_ID: ${COLAB_WORKER_ACCOUNT_ID:?COLAB_WORKER_ACCOUNT_ID 가 필요하다}
+      # **core-api 의 COLAB_CORE_UPLOAD_DIR 과 같은 자리여야 한다.** 바이트를 못 열면
+      # 감지가 통째로 실패하고, 그 실패는 「형식 인식 실패」로 위장한다.
+      COLAB_WORKER_UPLOAD_DIR: /var/lib/colab/uploads
+    volumes:
+      - uploads:/var/lib/colab/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s
@@ -173,3 +203,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+# ── 접수한 바이트. **core-api 와 pipeline-worker 가 같은 자리를 본다.**
+#    접수는 core-api 가 하고 여는 것은 워커다 — 둘이 다른 자리를 보면 워커의 감지가
+#    「파일 없음」으로 죽고, 그 실패는 「형식 인식 실패」로 위장한다.
+#    ⚠ named volume 을 쓴다 — postgres 와 달리 initdb 퍼미션 문제가 없고, 호스트 경로를
+#    적으면 이 파일에 절대경로가 들어온다(`CLAUDE.md §3-8`).
+volumes:
+  uploads: {}

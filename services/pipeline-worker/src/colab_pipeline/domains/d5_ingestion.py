@@ -42,14 +42,21 @@ TARGET_CRS = "WGS84"
 # `run_file` 이 남기는 실패 문구 → (멈춘 단계, 정본 사유, 실패 분류).
 # **문구를 새로 만들지 않는다** — 기존 파이프라인이 이미 내는 것을 단계로 옮겨 적는다.
 # 사유 값 집합의 정본은 `envelope.json#FailureReason` 이다.
+#
+# ⚠ **stage 1 에서 살아 있는 것은 위 둘뿐이다** — 감지만 도므로 나머지 넷은 발화하지 않는다.
+#    **지우지 않는다**(`〈73〉` — 건너뛴 구간만 다시 켜면 stage 2 다). 아래 표기는
+#    `S1-PLAN-REFOUND §D.6-4` 의 판정이다: 「좌표/격자 없음」은 **되살아나되 업로드 실패가
+#    아니라 렌더 결과의 「보류」**로 표현되고(D7 소관), 나머지 셋은 **죽은 채 남는다.**
 _FAILURE_MAP: list[tuple[str, str, str, str]] = [
-    ("감지 실패", "file.format-detected", "형식 인식 실패", "영구"),
-    ("지원 목록 밖", "file.format-detected", "형식 인식 실패", "영구"),
-    ("TIFF 구조 판독 실패", "file.header-parsed", "헤더 인식 실패", "영구"),
-    ("파싱 실패", "file.header-parsed", "헤더 인식 실패", "영구"),
+    ("감지 실패", "file.format-detected", "형식 인식 실패", "영구"),          # stage 1 에서 산다
+    ("지원 목록 밖", "file.format-detected", "형식 인식 실패", "영구"),        # stage 1 에서 산다
+    ("TIFF 구조 판독 실패", "file.header-parsed", "헤더 인식 실패", "영구"),   # 죽은 분기 — stage 2
+    ("파싱 실패", "file.header-parsed", "헤더 인식 실패", "영구"),             # 죽은 분기 — stage 2
     # 격자는 **후주입으로 붙일 수 있다**(`〈58〉`) — 그래서 영구가 아니라 재시도 가능이다.
+    # stage 1 에서는 이 분기가 안 돌고, 같은 사실을 **D7 이 「격자 없음 — 지도형 보류」 배지**로
+    # 말한다(`K-4`). 업로드는 실패하지 않는다 — 그릴 수 없는 것과 등록할 수 없는 것은 다르다.
     ("좌표/격자 없음", "file.crs-normalized", "좌표계 변환 실패", "재시도 가능"),
-    ("COG 변환 실패", "preview.cog-built", "미리보기 준비 실패", "재시도 가능"),
+    ("COG 변환 실패", "preview.cog-built", "미리보기 준비 실패", "재시도 가능"),  # 죽은 분기 — stage 2
 ]
 
 
@@ -134,7 +141,21 @@ class IngestionService:
         return res
 
     # ── 본 흐름 ─────────────────────────────────────────────────────────────
-    def process_upload(self, work: UploadWork) -> ProcessResult:
+    def process_upload(self, work: UploadWork, *, stage1: bool = False) -> ProcessResult:
+        """`stage1=True` 면 **감지 다음이 곧 `ready`** 다 (`〈73〉` · `S1-PLAN-REFOUND §D.6`).
+
+        ⚠ **미리보기가 stage 1 로 돌아왔다고 이 구간이 켜지는 것이 아니다.**
+        `〈74〉`·`〈75〉` 가 되살린 미리보기는 **워커 파이프라인 안이 아니라 화면 요청형**이다 —
+        `upload.ready` 뒤에 FE 가 `POST /previews` 를 부르고, 그리는 것은 **D7(viz-render)** 다
+        (`§D.6` 흐름도). 그래서 파싱·좌표·COG 는 `〈73〉` 이 정한 대로 stage 1 밖에 남는다.
+
+        **늘어난 것은 단계가 아니라 `ready` 의 판정 조건이다** (`〈79〉-⑷`) — 「본체 감지가
+        끝났고, 함께 올라온 격자 파일의 축이 확정되거나 거절됐다」. 축 판별은 아래
+        `_resolve_grid_axes` 가 **stage 여부와 무관하게** 먼저 돈다.
+
+        **건너뛴 구간을 지우지 않는다** — stage 2 는 「건너뛴 구간만 다시 켜면」 된다(`〈73〉`).
+        뜯어내면 비용이 없어지는 것이 아니라 stage 2 로 옮겨갈 뿐이다.
+        """
         res = ProcessResult()
         bodies = [f for f in work.files if f.kind == "본체"]
         grids = [f for f in work.files if f.kind == "기준 격자 파일"]
@@ -167,6 +188,18 @@ class IngestionService:
             return self._fail(work, res, stage="file.format-detected",
                               reason="조각이 서로 다름", klass="영구",
                               detail=f"감지된 포맷 {sorted(readable)}")
+
+        if stage1:
+            # ⑥ 로 곧장 간다. **`renderable` 은 감지로 안 사실**이라 그대로 싣고,
+            # `metadataComplete` 는 **헤더를 안 읽었으니 false** 다 — 「읽어 보고 아니었다」와
+            # 「안 읽었다」를 갈라 적을 자리가 계약에 없어서, 원장 열은 NULL 로 남긴다
+            # (`S1-PLAN-REFOUND §D.1 #20` — 열은 살리되 값은 NULL).
+            upload = self._ledger.load_upload(work.upload_id) or {}
+            self._ledger.record_status(work.upload_id, ready=True)
+            self._emit(work, res, "upload.ready", upload_ready_payload(
+                renderable=renderable, metadata_complete=False,
+                expires_at=_iso(upload.get("expires_at"))))
+            return res
 
         # ③④⑤ — 기존 파이프라인을 파일마다 통과시킨다 (파서를 다시 쓰지 않는다)
         results: dict[str, PipelineResult] = {}
@@ -371,6 +404,46 @@ class SqlLedger:
               FROM d5_upload WHERE id = :id
         """), {"id": upload_id}).mappings().first()
         return dict(r) if r else None
+
+    def pending_uploads(self, limit: int = 20) -> list[dict]:
+        """아직 처리하지 않은 접수 건 (`〈73〉` 배선의 소비 쪽).
+
+        조건 넷 — 접수됐고(`upload.accepted` 가 있고) · 아직 `ready` 가 아니고 ·
+        실패하지 않았고 · 등록 전환 전이다. **`ready` 를 조건에 넣는 것이 멱등의 전부다** —
+        같은 업로드를 두 번 돌려도 두 번째는 이 집합에 없다. 이벤트 쪽 멱등 키가
+        두 벌 발행을 막고, 이 조건이 두 번째 처리 자체를 막는다.
+        """
+        from sqlalchemy import text
+        rows = self._s.execute(text("""
+            SELECT u.id, u.lab_id, u.uploader_account_id
+              FROM d5_upload u
+             WHERE u.ready = false AND u.failed_at IS NULL AND u.registered_at IS NULL
+               AND EXISTS (SELECT 1 FROM d5_pipeline_event e
+                            WHERE e.upload_id = u.id AND e.event_type = 'upload.accepted')
+             ORDER BY u.created_at, u.id
+             LIMIT :limit
+        """), {"limit": limit}).mappings().all()
+        return [dict(r) for r in rows]
+
+    def accepted_files(self, upload_id: str) -> list[dict]:
+        """접수된 파일 **전건** — `upload.accepted` 페이로드에서 읽는다.
+
+        ⚠ **`d5_upload_file` 을 보면 안 된다.** `〈79〉-㈎ⓑ` 대로 접수는 **본체 행만** 만들고
+        격자는 저장만 한다(축을 모르는 채로는 CHECK 를 통과하지 못한다). 그래서 원장 행을
+        세면 **격자가 통째로 안 보이고**, 축 판별을 돌릴 대상이 사라진다.
+        접수 이벤트의 `files` 는 `FileRef` 전건이라 격자가 거기 있다.
+        """
+        from sqlalchemy import text
+        r = self._s.execute(text("""
+            SELECT payload FROM d5_pipeline_event
+             WHERE upload_id = :uid AND event_type = 'upload.accepted'
+             ORDER BY occurred_at LIMIT 1
+        """), {"uid": upload_id}).mappings().first()
+        if r is None:
+            return []
+        payload = r["payload"] or {}
+        files = payload.get("files") if isinstance(payload, dict) else None
+        return list(files) if isinstance(files, list) else []
 
     def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
                              file_name: str, storage_key: str,
