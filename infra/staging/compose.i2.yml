@@ -20,6 +20,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx.i2.conf:/etc/nginx/conf.d/default.conf:ro
+      # 미리보기 산출물은 **정적 파일**이라 앱을 거치지 않고 엣지가 그대로 낸다.
+      # 읽기 전용 — 엣지가 렌더 산출물을 고칠 수 있으면 그건 엣지가 아니다.
+      - previews:/srv/viz-previews:ro
     ports:
       - "127.0.0.1:3000:80"
     healthcheck:
@@ -69,6 +72,22 @@ services:
       timeout: 3s
       retries: 10
 
+  # ── ⭑ 볼륨 주인 맞추기. **이것이 없으면 업로드가 통째로 500 이다.**
+  #    named volume 의 마운트 지점은 root 소유로 만들어지는데 세 단위는 전부 uid 10001 로
+  #    돈다(각 Dockerfile `USER colab`). 그래서 접수한 바이트를 쓰는 첫 줄에서
+  #    `PermissionError` 가 나고, 그 실패는 **500** 으로만 보인다 — 「업로드가 안 된다」의
+  #    실물이 코드가 아니라 소유권이었다는 것을 상태코드가 감춘다.
+  #    compose 는 named volume 소유자를 선언으로 못 바꾼다. 그래서 일회성 root 컨테이너로 맞춘다.
+  volume-init:
+    image: alpine:3.20
+    container_name: colab_v2_staging_volume_init
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews && chmod 0755 /var/lib/colab/uploads /srv/viz-previews"]
+    volumes:
+      - uploads:/var/lib/colab/uploads
+      - previews:/srv/viz-previews
+    restart: "no"
+
   # ── 실체가 있는 단위 — P0 골격(34 라우트 · 실질의 5 · 501 두 종).
   core-api:
     build:
@@ -86,12 +105,27 @@ services:
       # compose 에 viz 블록이 있어도 core-api 가 이 값을 못 읽으면 `HttpPreviewRelay` 자체를
       # 만들지 않는다(app/main.py) — 블록이 있는 것과 배선이 된 것은 다르다.
       COLAB_CORE_VIZ_BASE_URL: http://viz-render:8100/viz/v1
+      # ⭑ **주소만으로는 부족하다.** `main.py` 는 base_url **과** service_token 이 **둘 다**
+      # 있을 때만 `HttpPreviewRelay` 를 만든다. 토큰이 없으면 relay 가 None 이고 미리보기는
+      # 다시 503 이다 — `〈74〉` 가 주소만 꽂아 둔 자리가 여기다. 값은 viz-render 쪽
+      # `COLAB_VIZ_SERVICE_TOKEN` 과 **같은 문자열**이어야 한다(같은 env 키를 쓴다).
+      COLAB_CORE_VIZ_SERVICE_TOKEN: ${COLAB_VIZ_SERVICE_TOKEN:?COLAB_VIZ_SERVICE_TOKEN 이 필요하다 — 없으면 미리보기가 전량 503 이다}
       # ai-service 중계(계보 제안 · 자연어 검색). **주소가 없어도 뜬다** — 그쪽이
       # 0건 + degraded 를 만들어 낸다. AI 없이도 v2 는 완결된 제품이다 (CLAUDE.md §3).
-      COLAB_CORE_AI_BASE_URL: ${COLAB_CORE_AI_BASE_URL:-}
+      # 같은 compose 안에 실물이 있으므로 기본값으로 그것을 가리킨다.
+      COLAB_CORE_AI_BASE_URL: ${COLAB_CORE_AI_BASE_URL:-http://ai-service:8200}
+      # ⭑ 심어 둔 계정 표 (`P-17` · `kernel/auth.py`). **이것이 없으면 표가 비고
+      # 인증이 필요한 모든 op 이 401 이다** — 헬스만 200 인 채로 제품 전체가 잠긴다.
+      COLAB_CORE_SUBJECTS_FILE: /etc/colab/subjects.json
     volumes:
       - uploads:/var/lib/colab/uploads
+      # 비밀이 아니라 **심어 둔 계정 표**다. 실값은 홈의 0600 파일 옆에 둔다 —
+      # 레포에 절대경로를 적지 않으려고 경로를 env 로 받는다 (CLAUDE.md §3-8).
+      - ${COLAB_STAGING_SUBJECTS_FILE:?COLAB_STAGING_SUBJECTS_FILE 이 필요하다}:/etc/colab/subjects.json:ro
     depends_on:
+      # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
+      volume-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     healthcheck:
@@ -123,6 +157,9 @@ services:
     volumes:
       - uploads:/var/lib/colab/uploads
     depends_on:
+      # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
+      volume-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     healthcheck:
@@ -131,12 +168,34 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── ⭑ 이 블록에 환경변수가 **0건**이었다. 헬스는 200 인데 **렌더 표면이 전량 503** 이고,
+  #    그래서 「미리보기가 안 된다」가 「미리보기를 안 만들었다」로 오래 오독됐다
+  #    (`〈70〉-㉰` · `〈74〉`). 셋 다 없으면 `config.py` 가 열어 두는 대신 503 을 낸다 —
+  #    조용히 인증을 끄지 않는 설계라, **배선이 유일한 해법**이다.
   viz-render:
     build:
       context: ../../services/viz-render
     image: colab-v2/viz-render:i2
     container_name: colab_v2_staging_viz_render
     restart: unless-stopped
+    environment:
+      # core-api 가 `Authorization: Bearer` 로 실어 보내는 것과 **같은 문자열**.
+      COLAB_VIZ_SERVICE_TOKEN: ${COLAB_VIZ_SERVICE_TOKEN:?COLAB_VIZ_SERVICE_TOKEN 이 필요하다}
+      # 타일 URL 서명 비밀 (`〈68〉`). 코드에 기본값이 없다 — 있으면 모든 배포가 같은 비밀이다.
+      COLAB_VIZ_TILE_SIGNING_SECRET: ${COLAB_VIZ_TILE_SIGNING_SECRET:?COLAB_VIZ_TILE_SIGNING_SECRET 이 필요하다}
+      # ⭑ 바이트를 어디서 여는가. core-api 의 저장 키는 `uploads/{targetId}/{fileId}` 이고
+      #   `FilesystemSourcePort` 는 `{root}/{targetId}/` 를 본다 — 그래서 root 는
+      #   업로드 볼륨의 `uploads/` **한 층 아래**다. 여기를 한 층 틀리면 렌더가
+      #   「대상을 찾지 못했다」로 죽고, 그 실패는 404 로 위장한다.
+      COLAB_VIZ_SOURCE_ROOT: /var/lib/colab/uploads/uploads
+      COLAB_VIZ_PREVIEW_DIR: /srv/viz-previews
+    volumes:
+      # **읽기 전용이다.** 렌더는 접수한 바이트를 열 뿐 고치지 않는다.
+      - uploads:/var/lib/colab/uploads:ro
+      - previews:/srv/viz-previews
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8100/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s
@@ -154,6 +213,10 @@ services:
     # `:-` 로 받는 이유는 키가 없어도 staging 이 떠야 하기 때문이다.
     # 필수(`:?`)로 걸면 K3 착수 전까지 배포 전체가 죽는다.
     environment:
+      # ⭑ D9 사전 3종 + 개념 그래프(`db/ai` 체인). **이 값이 없으면 온톨로지가 통째로 비고**
+      #   검색의 그래프 증강이 조용히 0건이 된다 — degraded 가 아니라 「없는 것」처럼 보인다.
+      #   `colab_platform` 이 아니다: D10 은 D3 에 붙지 않는다 (2026-08-25 판정 ㈎ · `db-boundary`).
+      COLAB_AI_DB_URL: postgresql+psycopg://colab_ai_app:${COLAB_AI_APP_PASSWORD:?COLAB_AI_APP_PASSWORD 가 필요하다}@postgres:5432/colab_ai
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       COLAB_MODEL_HELPER: ${COLAB_MODEL_HELPER:-gpt-5.6-luna}
       COLAB_MODEL_ORCHESTRATOR: ${COLAB_MODEL_ORCHESTRATOR:-gpt-5.6-terra}
@@ -211,3 +274,6 @@ services:
 #    적으면 이 파일에 절대경로가 들어온다(`CLAUDE.md §3-8`).
 volumes:
   uploads: {}
+  # 미리보기 3층 산출물. **정적 자산이다** — 렌더 작업으로 매번 만드는 물건이 아니라
+  # 한 번 그려 두고 목록 썸네일도 같은 자리에서 서빙된다(`〈80〉-㉯ 2`).
+  previews: {}

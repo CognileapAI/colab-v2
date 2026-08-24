@@ -47,7 +47,32 @@ app-grants)
   docker exec -i "$PG" psql -v ON_ERROR_STOP=1 -U postgres -d colab_platform \
     -v owner=colab_owner -v app=colab_app -v app_password="$COLAB_APP_PASSWORD" \
     < "$REPO/services/core-api/ops/app-role.sql" >/dev/null
-  echo "app role grants: ok"
+  # ── ai-service 의 접속 주체. **`colab_app` 이 아니다.**
+  #    `colab_app` 은 core-api 배포 단위 하나의 것이고, 그 롤에 colab_ai 접속을 붙이면
+  #    한 자격증명이 두 체인을 다 여는 순간이 생긴다 — `db-boundary` 가 파일로 막는 것을
+  #    자격증명이 뒤에서 뚫는 모양이다. 그리고 **SELECT 뿐이다**: 이 단위는 사전을 읽기만 한다
+  #    (`colab_ai/app/main.py` — 쓰기 호출이 0건). D10 은 기록하지 않는다 (CLAUDE.md §3-2).
+  : "${COLAB_AI_APP_PASSWORD:?COLAB_AI_APP_PASSWORD 가 필요하다}"
+  su_psql -d colab_ai -v ai_pw="$COLAB_AI_APP_PASSWORD" <<'SQL'
+SELECT format('CREATE ROLE colab_ai_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD %L', :'ai_pw')
+ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='colab_ai_app')
+\gexec
+SELECT format('ALTER ROLE colab_ai_app PASSWORD %L', :'ai_pw')
+\gexec
+GRANT CONNECT ON DATABASE colab_ai TO colab_ai_app;
+GRANT USAGE ON SCHEMA public TO colab_ai_app;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO colab_ai_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE colab_owner IN SCHEMA public GRANT SELECT ON TABLES TO colab_ai_app;
+-- fail-closed: 쓰기 권한이 하나라도 붙어 있으면 여기서 죽는다.
+DO $$
+DECLARE n int;
+BEGIN
+  SELECT count(*) INTO n FROM information_schema.role_table_grants
+   WHERE grantee='colab_ai_app' AND privilege_type <> 'SELECT';
+  IF n > 0 THEN RAISE EXCEPTION 'colab_ai_app 에 SELECT 밖 권한이 % 건 있다', n; END IF;
+END $$;
+SQL
+  echo "app role grants: ok (colab_app@platform · colab_ai_app@ai · SELECT only)"
   ;;
 verify)
   # 경계가 staging 에서도 살아 있는지 — 값으로 확인한다.
