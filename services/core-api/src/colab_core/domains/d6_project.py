@@ -1,6 +1,7 @@
 """D6 Project — 프로젝트 · 데이터셋 N:N 연결."""
 from __future__ import annotations
 
+import dataclasses
 from datetime import date
 
 from sqlalchemy import text
@@ -112,3 +113,105 @@ class ProjectLinkAdapter:
             )
             for r in rows
         ]
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# S-02 목록 · S-02b 상세 · 연결 쓰기 (WU-P5)
+#
+# **여기 있는 질의는 전부 `d6_*` 뿐이다.** 데이터셋의 이름·조각 수·계보·접근 상태는
+# D3·D4·D2 의 사실이라 이 파일이 읽지 않는다 — 조립은 `app/routes/project.py` 가 한다
+# (`CLAUDE.md §3-1` · `ports/__init__.py` 머리말).
+# ════════════════════════════════════════════════════════════════════════════
+
+# 연구실 경계는 RLS 가 이미 걸었다 — 여기에 lab_id 조건을 다시 적지 않는다 (P-9·P-10).
+_LIST = text("""
+    SELECT p.id, p.type, p.name, p.description, p.status,
+           p.period_start, p.period_end, p.link_url
+      FROM d6_project p
+     ORDER BY p.period_start DESC NULLS LAST, p.id
+""")
+
+_FIND = text("""
+    SELECT p.id, p.type, p.name, p.description, p.status,
+           p.period_start, p.period_end, p.link_url
+      FROM d6_project p
+     WHERE p.id = :project_id
+""")
+
+#: 한 프로젝트의 소속 데이터셋 **전부**. 자르지 않는다 (`Policy_프로젝트 §5` 표 범위).
+#: 여기서 나오는 것은 **식별자와 의미 문장뿐**이다 — 나머지 열은 D3·D2·D4 가 말한다.
+_DATASETS_OF = text("""
+    SELECT pd.dataset_id, pd.usage_note
+      FROM d6_project_dataset pd
+     WHERE pd.project_id = :project_id
+     ORDER BY pd.created_at, pd.dataset_id
+""")
+
+#: 목록 카드의 지표 타일이 쓰는 것 — 어느 프로젝트에 어느 데이터셋이 붙었는가.
+#: **건수를 세어 내리지 않는다.** 승인·기록 없음은 D2·D4 의 사실이라 D6 이 셀 수 없고,
+#: 데이터셋 수만 여기서 세면 세 칸이 서로 다른 곳에서 와 갈라진다.
+_LINKS_ALL = text("""
+    SELECT pd.project_id, pd.dataset_id
+      FROM d6_project_dataset pd
+""")
+
+#: 멱등 PUT — 이미 있는 연결이면 의미 문장을 고친다 (계약 `linkProjectDataset` 산문).
+#: `link_dataset`(등록 폼 경로)과 나눠 둔 이유는 그쪽이 `usage_note` 를 **적지 않기** 때문이다.
+#: 한 문장으로 합치면 등록이 기존에 적어 둔 문장을 null 로 덮어쓴다.
+_UPSERT_LINK = text("""
+    INSERT INTO d6_project_dataset (id, lab_id, project_id, dataset_id, usage_note)
+    VALUES (:id, current_lab_id(), :project_id, :dataset_id, :usage_note)
+    ON CONFLICT (project_id, dataset_id) DO UPDATE SET usage_note = EXCLUDED.usage_note
+""")
+
+
+@dataclasses.dataclass(frozen=True)
+class ProjectRecord:
+    """프로젝트 한 건의 **D6 쪽 사실 전부**. 데이터셋 관련 값은 하나도 들어 있지 않다."""
+
+    project_id: str
+    type: str
+    name: str
+    description: str | None
+    status: str
+    period_start: object
+    period_end: object
+    link_url: str | None
+
+
+def _record(r) -> ProjectRecord:
+    return ProjectRecord(
+        project_id=r["id"], type=r["type"], name=r["name"], description=r["description"],
+        status=r["status"], period_start=r["period_start"], period_end=r["period_end"],
+        link_url=r["link_url"],
+    )
+
+
+def list_projects(session: Session) -> list[ProjectRecord]:
+    return [_record(r) for r in session.execute(_LIST).mappings()]
+
+
+def find_project(session: Session, project_id: Ulid) -> ProjectRecord | None:
+    """경계 밖이면 RLS 가 행을 지우므로 None 이고, 호출자는 404 를 낸다 (P-9·P-10)."""
+    r = session.execute(_FIND, {"project_id": str(project_id)}).mappings().first()
+    return None if r is None else _record(r)
+
+
+def datasets_of(session: Session, project_id: Ulid) -> list[tuple[str, str | None]]:
+    rows = session.execute(_DATASETS_OF, {"project_id": str(project_id)}).mappings()
+    return [(r["dataset_id"], r["usage_note"]) for r in rows]
+
+
+def dataset_ids_by_project(session: Session) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for r in session.execute(_LINKS_ALL).mappings():
+        out.setdefault(r["project_id"], []).append(r["dataset_id"])
+    return out
+
+
+def upsert_link(session: Session, *, project_id: Ulid, dataset_id: Ulid,
+                usage_note: str | None) -> None:
+    session.execute(_UPSERT_LINK, {
+        "id": str(Ulid.generate()), "project_id": str(project_id),
+        "dataset_id": str(dataset_id), "usage_note": usage_note,
+    })

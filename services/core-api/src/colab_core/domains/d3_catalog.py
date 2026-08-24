@@ -152,6 +152,24 @@ def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
     )
 
 
+#: 데이터가 다루는 시간 범위 — **메타 열이라 잠긴 데이터셋도 나온다**(본체가 아니다).
+#: 소속 데이터셋 표(`ProjectDatasetRow.period`)가 이 값을 쓴다.
+_PERIODS = text("""
+    SELECT dataset_id, period_start, period_end
+      FROM d3_dataset_autometa
+     WHERE dataset_id = ANY(CAST(:ids AS char(26)[]))
+       AND period_start IS NOT NULL AND period_end IS NOT NULL
+""")
+
+
+def periods_of(session: Session, dataset_ids: list[Ulid]) -> dict[str, tuple]:
+    """여러 건의 기간을 한 번에. **없으면 키가 없다** — 없는 기간을 지어내지 않는다."""
+    if not dataset_ids:
+        return {}
+    rows = session.execute(_PERIODS, {"ids": [str(i) for i in dataset_ids]}).mappings()
+    return {r["dataset_id"]: (r["period_start"], r["period_end"]) for r in rows}
+
+
 def has_reference_grid_file(session: Session, dataset_id: Ulid) -> bool:
     return session.execute(_HAS_GRID, {"dataset_id": str(dataset_id)}).first() is not None
 

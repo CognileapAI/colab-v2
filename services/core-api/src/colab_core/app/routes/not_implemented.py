@@ -1,4 +1,4 @@
-"""아직 구현하지 않은 24 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 21 개 오퍼레이션 — **501 + ErrorEnvelope**.
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
   · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
@@ -16,10 +16,17 @@ P2 가 열둘을 가져갔다 (36 → 24) —
 
 **남긴 것과 이유** (`P2-EXEC §4 W2 P2-api`)
   · `updateDataset` — 상세 편집이라 P2 화면(S-04·S-08) 범위 밖이다.
-  · `linkProjectDataset` — **P5** 다. P2 는 `createDataset.projectIds` 만 다룬다.
-    연결의 `usageNote` 는 정본 업로드 폼에 자리가 없다 (`D2c` C1 Q2).
   · `getDatasetLineage` — 그래프를 그리는 함수는 P2 가 만들었지만(`routes/lineage.py`),
     이 **조회 op 자체는 P1 배정**이라 범위를 늘리지 않는다 (`CLAUDE.md §5`).
+
+**S1 의 `P5` 레인이 셋을 가져갔다 (24 → 21)** — `listProjects` · `getProject` ·
+`linkProjectDataset`. 앞의 둘은 S-02·S-02b 화면 본체이고, 셋째는 `S1-PLAN.md §4.2` 의
+P5 행이 「여기서 열린다」고 지목한 op 이다. **셋 다 실동작 시험이 뒤에 있다**
+(`tests/test_project_screens.py`) — 그 규칙이 없으면 501 을 200 으로 바꾼 것과 다르지 않다.
+
+**남은 프로젝트 op 넷은 그대로 501 이다** — `updateProject` · `deleteProject` ·
+`setProjectStatus` · `unlinkProjectDataset`. 넷 다 `NOT_IMPLEMENTED_P1` 배정이라
+P5 가 범위를 늘려 가져오지 않았다 (`CLAUDE.md §5` 범위 늘리기 금지).
 """
 from __future__ import annotations
 
@@ -40,9 +47,10 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) **46** 개 중 실동작 **22** 개를 뺀 **24** 개.
-#: 25 → 36(D2c 신설 11) → **24**(P2 구현 12) → **24 유지**(S1 — `searchDatasets` 를
-#: 신설과 동시에 구현했으므로 표에 더할 행이 없다. `〈80〉-㉯ 5` · `〈74〉-㉱`).
+#: 계약(`contracts/seams/fe-core.yaml`) **46** 개 중 실동작 **25** 개를 뺀 **21** 개.
+#: 25 → 36(D2c 신설 11) → **24**(P2 구현 12) → **24 유지**(S1 W3 — `searchDatasets` 를
+#: 신설과 동시에 구현했으므로 표에 더할 행이 없다. `〈80〉-㉯ 5` · `〈74〉-㉱`)
+#: → **21**(S1 W5 `P5` — 프로젝트 목록·상세·연결 셋).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("updateLab", "PATCH", "/lab", "NOT_IMPLEMENTED_P1"),
@@ -67,8 +75,6 @@ OPERATIONS: tuple[Op, ...] = (
        "NOT_IMPLEMENTED_P1"),
     Op("cancelVerification", "POST", "/datasets/{datasetId}/verification-cancellation",
        "NOT_IMPLEMENTED_P1"),
-    Op("listProjects", "GET", "/projects", "NOT_IMPLEMENTED_P1"),
-    Op("getProject", "GET", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
     Op("updateProject", "PATCH", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
     Op("deleteProject", "DELETE", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
     Op("setProjectStatus", "PUT", "/projects/{projectId}/status", "NOT_IMPLEMENTED_P1"),
@@ -79,8 +85,6 @@ OPERATIONS: tuple[Op, ...] = (
     Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     Op("updateDataset", "PATCH", "/datasets/{datasetId}", "NOT_IMPLEMENTED_NO_STORE"),
-    Op("linkProjectDataset", "PUT", "/projects/{projectId}/datasets/{datasetId}",
-       "NOT_IMPLEMENTED_NO_STORE"),
 )
 
 _MESSAGE = {

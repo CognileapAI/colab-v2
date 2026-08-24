@@ -116,6 +116,11 @@ _SEED_DATASETS = ("'0000000000000000000000DSA1'", "'0000000000000000000000DSA2'"
 _KEEP_DATASETS = f" AND dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
 _CLEANUP: tuple[tuple[str, str, str], ...] = (
     ("d6_project_dataset", "created_at", ""),
+    # **`d6_project` 는 WU-P5 에서 들어왔다.** `listProjects` 가 생기기 전에는 시험이 만든
+    # 프로젝트가 남아도 아무도 세지 않아 드러나지 않았다 — `createProject` 시험이 회차마다
+    # 한 건씩 쌓아 두고 있었고, 목록 op 이 열리자마자 그 누적이 셈을 틀리게 했다(실측).
+    # 자식(`d6_project_dataset`)을 먼저 지우므로 FK 순서는 위 줄이 지킨다.
+    ("d6_project", "created_at", ""),
     ("d4_lineage_edge", "confirmed_at", ""),
     ("d4_lineage_unknown", "marked_at", ""),
     ("d5_pipeline_event", "occurred_at", ""),
@@ -229,7 +234,9 @@ def _rollback_p2_rows(request, session_factory):
     (ID 접두사로 가르려 했으나 시드 ULID 와 생성 ULID 가 **둘 다 `0` 으로 시작한다** — 확인하고
     버린 방법이다. 확장자로 역할을 가르려다 실파일 14건을 삼킨 `M-1` 과 같은 무늬라서 안 쓴다.)
     """
-    if "p2_client" not in request.fixturenames and "sql" not in request.fixturenames:
+    # `live_client` 도 훑는다 — `test_cross_tenant.py` 의 쓰기 경계 증명이 `createProject` 로
+    # 실제 행을 만들고 되돌리지 않았다. 목록 op 이 열리기 전에는 보이지 않던 누출이다 (WU-P5).
+    if not {"p2_client", "sql", "live_client"} & set(request.fixturenames):
         yield
         return
     from sqlalchemy import text

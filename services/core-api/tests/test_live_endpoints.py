@@ -98,7 +98,12 @@ def test_cross_lab_dataset_is_404_not_403(client: TestClient) -> None:
     assert r.status_code == 404, "경계 밖은 존재를 알리지 않는다 (P-9·P-10)."
 
 
-def test_create_project_writes_into_the_own_lab_only(client: TestClient) -> None:
+def test_create_project_writes_into_the_own_lab_only(client: TestClient, sql) -> None:
+    """`sql` 을 받는 것은 **되돌리기 때문**이다 (`conftest._rollback_p2_rows`).
+
+    WU-P5 로 `listProjects` 가 열리기 전에는 여기서 만든 프로젝트가 남아도 아무도 세지
+    않아 드러나지 않았다. 목록이 생긴 순간 그 누적이 다른 시험의 셈을 틀리게 했다(실측).
+    """
     r = client.post(f"{API_PREFIX}/projects", headers=auth("a1-res-token"),
                     json={"type": "논문", "name": "a1 가 만든 논문", "period": {"start": "2026-03", "end": None}})
     assert r.status_code == 201
@@ -106,6 +111,9 @@ def test_create_project_writes_into_the_own_lab_only(client: TestClient) -> None
     assert body["status"] == "진행 중" and body["period"]["start"] == "2026-03"
     listed = client.get(f"{API_PREFIX}/datasets", headers=auth("b1-prof-token")).json()
     assert listed["totalCount"] == 1, "쓴 것이 다른 연구실로 새지 않았는지 함께 본다."
+    # 「응답이 그럴듯한가」와 「행이 남았는가」는 다른 질문이다 (`conftest.sql` 주석).
+    assert sql("SELECT lab_id FROM d6_project WHERE id = :p",
+               {"p": body["projectId"]})[0]["lab_id"].strip() == LAB_A
 
 
 def test_unknown_subject_is_401(client: TestClient) -> None:

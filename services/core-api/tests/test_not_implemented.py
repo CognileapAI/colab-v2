@@ -39,14 +39,22 @@ P2_REAL = {
 #: S1 이 동결 해제 회차에 신설과 동시에 구현한 하나. **뺀 자리마다 실동작 시험이 있다**는
 #: 규칙이 「신설한 자리」에도 그대로 걸린다 — 그래야 501 이 안 늘어난 것이 증명된다.
 S1_REAL = {"searchDatasets": "tests/test_search_relay.py"}
-P2_REAL = {**P2_REAL, **S1_REAL}
+#: **S1 의 `P5` 레인이 표에서 뺀 셋** (24 → 21). 앞의 둘은 S-02·S-02b 화면 본체이고,
+#: `linkProjectDataset` 은 `S1-PLAN.md §4.2` P5 행이 「여기서 열린다」고 지목한 op 이다.
+P5_REAL = {
+    "listProjects":        "tests/test_project_screens.py",
+    "getProject":          "tests/test_project_screens.py",
+    "linkProjectDataset":  "tests/test_project_screens.py",
+}
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL}
 REAL = P1_REAL | set(P2_REAL)
 NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
     "rejectAccessRequest", "requestVerification", "listPendingVerificationRequests",
     "downloadDataset",
-    # D2c 신설 11 중 P2 가 안 가져간 둘 — 이유는 not_implemented.py 문서주석에 있다.
-    "updateDataset", "linkProjectDataset",
+    # D2c 신설 11 중 P2 가 안 가져간 둘 중 **남은 하나** — 이유는 not_implemented.py 문서주석에.
+    # (`linkProjectDataset` 은 P5 가 가져갔다 — 위 `P5_REAL`.)
+    "updateDataset",
 }
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -62,14 +70,18 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_24_unimplemented_operations_are_exactly_these() -> None:
-    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24.
+def test_the_21_unimplemented_operations_are_exactly_these() -> None:
+    """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → **21**.
 
-    ⭑ **S1 은 이 수를 바꾸지 않는다** (`〈74〉-㉱` · `C1` 통과 조건 2). 미리보기 2 도 격자 3 도
-    되돌리지 않고, 계약이 하나 늘어난 `searchDatasets` 는 **여는 회차에 구현**해서 표에
-    행을 더하지 않았다. **「변동 없음」도 확인 대상이다** — 그래서 이 단언이 남아 있다.
+    ⭑ **S1 의 `W3` 는 이 수를 바꾸지 않았다** (`〈74〉-㉱` · `C1` 통과 조건 2) — 계약이 하나
+    늘어난 `searchDatasets` 를 **여는 회차에 구현**해 표에 행을 더하지 않았다.
+    ⭑ **`W5` 의 `P5` 레인이 셋을 뺐다** — `listProjects` · `getProject` ·
+    `linkProjectDataset`. 이번에는 **줄어드는 것이 정상이다**: `S1-PLAN.md §4.2` 의 P5 행이
+    「`linkProjectDataset` 이 여기서 열린다」고 미리 적었고, 화면 본체 두 op 이 함께 열렸다.
+    남은 프로젝트 op 넷(`updateProject`·`deleteProject`·`setProjectStatus`·
+    `unlinkProjectDataset`)은 P1 배정이라 그대로 있다 — 범위를 늘리지 않았다.
     """
-    assert len(OPERATIONS) == 24
+    assert len(OPERATIONS) == 21
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -88,7 +100,7 @@ def test_codes_are_the_two_kinds() -> None:
     no_store = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_NO_STORE"}
     p1 = {op.operation_id for op in OPERATIONS if op.code == "NOT_IMPLEMENTED_P1"}
     assert no_store == NO_STORE
-    assert len(p1) == 15
+    assert len(p1) == 13   # 15 → 13: P5 가 `listProjects`·`getProject` 를 가져갔다
     assert no_store & p1 == set()
 
 
