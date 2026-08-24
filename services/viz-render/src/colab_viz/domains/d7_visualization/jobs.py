@@ -10,18 +10,21 @@
 """
 from __future__ import annotations
 
+import hashlib
 import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import numpy as np
+
 from ...kernel import signing
 from ...ports.source import ResolvedTarget, SourcePart
-from . import raster
+from . import colormap, downsample, palettes, preview, raster, scale
 from .failures import FAILURE_MESSAGES, NotRenderableError, RenderError, RenderFailure
 from .grid import GridUnavailableError, find_reference_grid
-from .readers import FieldReadError, read_field
+from .readers import Field, FieldReadError, read_field
 
 STAGE_READ = "파일 읽는 중"
 STAGE_DRAW = "지도 그리는 중"
@@ -32,10 +35,16 @@ STATUS_DRAWING = "그리는 중"
 STATUS_DONE = "완료"
 STATUS_FAILED = "실패"
 
-#: 파일 안에 위경도가 들어 있을 수 있는 포맷 (`DATA-REFERENCE §1.1`).
-#: Binary(HSR)·HDF4 는 실측상 좌표를 밖에서 받아야 한다 — 헤더의 투영 파라미터 칸이
-#: 실물에서 전부 0 이고(HSR), MODIS 는 Sinusoidal 투영 격자다.
-MAY_CARRY_COORDINATES = frozenset({"GeoTIFF", "NetCDF"})
+#: 파일 안에서 격자를 **계산해 낼 수 있는** 포맷 (`DATA-PIPELINE-MEASUREMENT §1.1` 실측).
+#: 오차 — GeoTIFF 2.8e-14° · HDF4 7e-14° · NetCDF 1.3e-5°(=1.45 m). 셋 다 격자 파일이
+#: 필요 없다.
+#:
+#: ⚠ **`HDF4` 가 여기 들어온 것이 `C-3` 의 실물이다.** 옛 주석은 「MODIS 는 Sinusoidal
+#: 격자라 좌표를 밖에서 받아야 한다」고 적었는데 **실측이 그것을 뒤집었다** — 꼬리의
+#: `StructMetadata.0` 코너좌표 + Sinusoidal(R=6371007.181)로 7e-14° 에 재현된다.
+#: **Binary(HSR) 만 남는다** — 헤더의 투영 파라미터 자리(36~63 B)가 실물에서 전부 0 이라
+#: 재현이 불가능하고, 명세 기재값으로 재구성해도 0.053°(≈5.9 km) 틀린다(`§5.1`).
+MAY_CARRY_COORDINATES = frozenset({"GeoTIFF", "NetCDF", "HDF4"})
 
 
 @dataclass
@@ -48,6 +57,8 @@ class RenderSpec:
     without_reference_grid: bool
     max_preview_side: int
     deadline_seconds: float
+    preview_dir: Path
+    preview_url_base: str
 
 
 @dataclass
@@ -62,6 +73,9 @@ class RenderJob:
     partial: dict | None = None
     failure: dict | None = None
     tile_url_template: str = ""
+    artifacts: "PreviewArtifacts | None" = None
+    color_range: scale.ColorRange | None = None
+    badge: str = preview.BADGE_NO_GRID
 
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
@@ -70,12 +84,24 @@ class RenderJob:
             body["stage"] = self.stage
         if self.expires_at is not None:
             body["expiresAt"] = self.expires_at.isoformat().replace("+00:00", "Z")
-        if self.status == STATUS_DONE and self.rendered is not None:
+        if self.status == STATUS_DONE and self.rendered is not None \
+                and self.artifacts is not None and self.artifacts.map_image is not None:
+            # **`oneOf` 다** — stage 1 은 이미지 갈래만 낸다. `tileUrlTemplate` 은 계약에
+            # 살아 있고(stage 2 확대 뷰) 서명도 그대로 발급되지만, **결과에 함께 싣지
+            # 않는다.** 둘을 함께 실으면 「무엇을 그릴지 두 번 적힌 완료」다.
+            a = self.artifacts
             body["result"] = {
-                "tileUrlTemplate": self.tile_url_template,
-                "bounds": self.rendered.bounds_dict(),
+                "imageUrl": a.map_image.url,
+                "sidecarUrl": a.sidecar.url,
+                "worldFileUrl": a.world_file.url,
+                "bounds": a.geometry.bounds_dict(),
                 "legend": self.rendered.legend(),
+                "precisionBadge": self.badge,
+                "colorRangeStage": self.color_range.stage if self.color_range else None,
             }
+            if body["result"]["colorRangeStage"] is None:
+                # 라벨 없는 산출물은 **범위 밖이다**(`§C.2 Q4`) — 키를 지우지 않고 실패로 둔다.
+                raise RuntimeError("색 범위 단계 라벨 없이 결과를 낼 수 없다")
         if self.status == STATUS_FAILED and self.failure is not None:
             body["failure"] = self.failure
         if self.partial is not None:
@@ -87,31 +113,216 @@ class RenderJob:
         return self.expires_at is not None and datetime.now(timezone.utc) >= self.expires_at
 
 
-def _read_part(part: SourcePart, spec: RenderSpec) -> raster.Rendered:
-    """조각 하나를 읽어 규칙 격자로 놓는다. 못 읽으면 예외 — 지어내지 않는다."""
+@dataclass
+class PreviewArtifacts:
+    """미리보기 3층의 산출물. **③이 없어도 ①②는 있다**(`§5.5` — 실패가 아니라 보류)."""
+    thumbnail: preview.Artifact
+    detail: preview.Artifact
+    map_image: preview.Artifact | None = None
+    sidecar: preview.Artifact | None = None
+    world_file: preview.Artifact | None = None
+    geometry: preview.MapGeometry | None = None
+
+    def all(self) -> list[preview.Artifact]:
+        return [a for a in (self.thumbnail, self.detail, self.map_image,
+                            self.sidecar, self.world_file) if a is not None]
+
+
+@dataclass
+class _Read:
+    """읽힌 조각 하나 — **값과 좌표를 함께 들고 다닌다.**
+
+    ⚠ 값과 좌표를 갈라 두는 이유 — ①②는 **원본 배열 방향 그대로**이고 좌표를 쓰지
+    않는다(`§2` 좌표계 열). ③만 좌표를 쓴다. 한 덩어리로 뭉치면 ①②가 좌표에 인질이
+    되고, 그것이 「격자 없으면 미리보기 없음」이라는 거짓말의 출발점이었다.
+    """
+    part: SourcePart
+    fmt: str
+    field: Field
+    reference: tuple | None = None
+    from_uploaded_grid: bool = False
+
+
+def _decimate_grid(arr, steps: tuple[int, int]):
+    """기준 격자를 값과 같은 형상으로 줄인다 — **블록 중심의 실측 좌표를 집는다.**
+
+    평균하면 양 끝이 안쪽으로 밀려 격자의 최솟값·최댓값이 바뀐다. 그 이동은 실물
+    `.npy` 판과 `.nc` 판을 가르는 612 m 와 같은 크기다 — **우리가 만든 오차를 원본
+    차이와 섞을 이유가 없다**(`downsample.sample_centers`).
+    """
+    return downsample.sample_centers(np.asarray(arr, dtype="f8"), steps).astype("f8")
+
+
+def _read_part(part: SourcePart, spec: RenderSpec) -> _Read:
+    """조각 하나를 읽는다. 좌표는 있으면 싣고, **없으면 없다고 말한다** — 지어내지 않는다."""
     fmt, field_ = read_field(part.path, variable=spec.variable, instant=spec.instant,
                              max_side=spec.max_preview_side)
 
-    reference = None
-    if not field_.has_position:
-        if spec.target.grid_dir is None and fmt not in MAY_CARRY_COORDINATES \
-                and not spec.without_reference_grid:
-            # 미리 막는 것이 옳은 유일한 자리다 — 이 포맷은 파일 안에 좌표가 없다.
-            # 화면은 `짝 파일 없이 그려 보기`로 이 판단을 뒤집을 수 있다.
-            raise RenderError(RenderFailure.NO_REFERENCE_GRID,
-                              f"{part.file_name}: 위경도를 담은 짝 파일이 없다")
-        # ⚠ 격자는 **솎기 전 원래 형상**으로 대조한다. 솎은 형상으로 찾으면 실물 격자가
-        # 「안 맞는다」로 튕겨 나가고, 그 자리에서 「짝 파일이 없다」는 **틀린 이유**가 붙는다.
-        native = field_.native_shape or field_.values.shape
-        try:
-            grid = find_reference_grid(spec.target.grid_dir, expect_shape=native)
-        except GridUnavailableError as e:
-            raise RenderError(RenderFailure.NO_REFERENCE_GRID, str(e)) from e
-        sy, sx = field_.steps
-        reference = (grid.lat[::sy, ::sx], grid.lon[::sy, ::sx])
+    if field_.has_position:
+        return _Read(part=part, fmt=fmt, field=field_)
 
-    return raster.build(field_, palette_key=spec.palette,
-                        class_count=spec.class_count, reference=reference)
+    if spec.target.grid_dir is None:
+        if spec.without_reference_grid and fmt == "Binary":
+            # 계약이 이 조합만 명시로 막았다 — HSR 은 헤더로 격자를 세울 수 없고
+            # **합성 격자를 만들지 않는다**(`core-viz.yaml` · `§10-9` · `DR-9`).
+            raise RenderError(RenderFailure.NO_REFERENCE_GRID,
+                              f"{part.file_name}: HSR 은 격자 파일 없이 지도를 그릴 수 없다")
+        # ⚠ **실패가 아니라 보류다**(`§5.5`). ①②는 이 뒤에도 만들어진다 — 좌표가 없어
+        # 못 만드는 것은 ③뿐이다. 옛 코드가 여기서 전체를 실패시켰다.
+        return _Read(part=part, fmt=fmt, field=field_)
+
+    # ⚠ 격자는 **솎기 전 원래 형상**으로 대조한다. 솎은 형상으로 찾으면 실물 격자가
+    # 「안 맞는다」로 튕겨 나가고, 그 자리에 「짝 파일이 없다」는 **틀린 이유**가 붙는다.
+    native = field_.native_shape or field_.values.shape
+    try:
+        grid = find_reference_grid(spec.target.grid_dir, expect_shape=native)
+    except GridUnavailableError as e:
+        raise RenderError(RenderFailure.NO_REFERENCE_GRID, str(e)) from e
+    steps = field_.steps
+    reference = (_decimate_grid(grid.lat, steps), _decimate_grid(grid.lon, steps))
+    return _Read(part=part, fmt=fmt, field=field_, reference=reference,
+                 from_uploaded_grid=True)
+
+
+def _source_digest(reads: list[_Read]) -> str:
+    """원본을 가리키는 값 (`§7.2` 「원본 해시」).
+
+    ⚠ **내용 해시가 아니다.** 500 MB 를 렌더마다 다시 읽는 비용을 아직 안 쟀다 —
+    `[미측정]`. 지금은 `(파일명, 크기, 수정시각)` 이고, **원본이 바뀌면 키가 바뀐다**는
+    성질은 그대로 선다. 내용 해시로 바꾸는 것은 이 함수 하나를 고치는 일이다.
+    """
+    h = hashlib.sha256()
+    for r in sorted(reads, key=lambda r: r.part.file_name):
+        st = r.part.path.stat()
+        h.update(f"{r.part.file_name}|{st.st_size}|{st.st_mtime_ns}|".encode())
+    return h.hexdigest()
+
+
+def _grid_digest(reads: list[_Read]) -> str | None:
+    """지도형 키에만 들어가는 격자 값 — **격자를 갈면 지도형만 무효화된다**(`§7.2`)."""
+    parts = [f"{r.reference[0].shape}:{float(np.nanmin(r.reference[0])):.6f}:"
+             f"{float(np.nanmax(r.reference[1])):.6f}"
+             for r in reads if r.from_uploaded_grid and r.reference is not None]
+    if not parts:
+        return None
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()
+
+
+def _mesh_from_bounds(values, bounds):
+    """규칙 격자의 좌표 배열. **파일이 말한 경계에서 나온 값**이고 합성이 아니다."""
+    w, s, e, n = bounds
+    ny, nx = values.shape
+    lat = np.repeat(np.linspace(n, s, ny)[:, None], nx, axis=1)
+    lon = np.repeat(np.linspace(w, e, nx)[None, :], ny, axis=0)
+    return values, lat, lon
+
+
+def _map_coordinates(reads: list[_Read], merged):
+    """③에 쓸 (값, 위도, 경도). **좌표를 지어내지 않는다** — 없으면 `None` 이다.
+
+    조각이 하나면 **그 조각의 실측 좌표에서 바로** 3857 로 간다(`V-3`) — 4326 규칙
+    격자를 거치면 재배치가 한 번 더 낀다. 여러 조각이면 합친 층의 경계에서 격자를
+    세운다(합치는 순간 조각별 곡선 좌표는 이미 한 격자로 접혔다).
+    """
+    if len(reads) == 1:
+        r = reads[0]
+        if r.field.lat is not None and r.field.lon is not None:
+            return r.field.values, r.field.lat, r.field.lon
+        if r.reference is not None:
+            return r.field.values, r.reference[0], r.reference[1]
+        if r.field.bounds is not None:
+            return _mesh_from_bounds(r.field.values, r.field.bounds)
+        return None
+    if merged is not None:
+        return _mesh_from_bounds(merged.values, merged.bounds)
+    return None
+
+
+def _badge_for(reads: list[_Read], has_map: bool) -> str:
+    if not has_map:
+        return preview.BADGE_NO_GRID
+    if any(r.from_uploaded_grid for r in reads):
+        return preview.BADGE_ATTACHED_GRID
+    return preview.BADGE_COMPUTED_GRID
+
+
+def _color_range(spec: RenderSpec, arrays: list) -> scale.ColorRange:
+    """**잠정/확정 2단계**(`§D.4-⑶`). 등록 전 업로드는 잠정, 데이터셋은 확정이다."""
+    target_id = spec.target.target_id
+    try:
+        if spec.target.is_upload:
+            return scale.for_upload(target_id, arrays)
+        return scale.for_dataset(target_id, arrays)
+    except scale.RangeUnavailableError:
+        # 유효값이 하나도 없다 — `§9` 는 이것을 **실패가 아니라 전부 투명한 PNG** 로 둔다.
+        # 어떤 범위를 넣어도 그림이 같다(전 픽셀 알파 0). 값이 그림에 들어가지 않으므로
+        # **값을 지어내는 것이 아니다.**
+        if spec.target.is_upload:
+            return scale.ColorRange(vmin=0.0, vmax=1.0, stage=scale.STAGE_PROVISIONAL,
+                                    scope=scale.SCOPE_UPLOAD, scope_id=target_id)
+        return scale.ColorRange(vmin=0.0, vmax=1.0, stage=scale.STAGE_FINAL,
+                                scope=scale.SCOPE_DATASET, scope_id=target_id)
+
+
+class _ValuesOnly:
+    """좌표 없는 층의 자리끼움 — `_build_artifacts` 가 보는 것은 `values`·`variable` 뿐이다."""
+
+    def __init__(self, field: Field) -> None:
+        self.values = field.values
+        self.variable = field.variable
+        self.bounds = None
+
+
+def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
+                     color_range: scale.ColorRange) -> PreviewArtifacts:
+    """①②를 먼저 만들고, 좌표가 있으면 ③을 **덧붙인다.** 순서가 곧 `§5.5` 다."""
+    spec = job.spec
+    lut = colormap.lut256(palettes.get(spec.palette).anchors)
+    key_params = dict(source_digest=_source_digest(reads),
+                      fills=tuple(sorted({f for r in reads for f in r.field.fills})),
+                      palette=spec.palette, selection=merged.variable)
+    out_dir = Path(spec.preview_dir)
+
+    values = reads[0].field.values if len(reads) == 1 else merged.values
+    thumb, detail = preview.build_value_layers(
+        values, color_range=color_range, lut=lut, out_dir=out_dir,
+        url_base=spec.preview_url_base, key_params=key_params)
+    artifacts = PreviewArtifacts(thumbnail=thumb, detail=detail)
+
+    coords = _map_coordinates(reads, merged if not isinstance(merged, _ValuesOnly) else None)
+    if coords is None:
+        return artifacts
+    map_values, lat, lon = coords
+    image, sidecar, world, geom = preview.build_map_layer(
+        map_values, lat, lon, color_range=color_range, lut=lut, out_dir=out_dir,
+        url_base=spec.preview_url_base, key_params=key_params,
+        grid_digest=_grid_digest(reads), source_name=reads[0].part.file_name)
+    artifacts.map_image, artifacts.sidecar = image, sidecar
+    artifacts.world_file, artifacts.geometry = world, geom
+    return artifacts
+
+
+def _failure(code: str, detail: str, job: RenderJob, message: str | None = None) -> dict:
+    """실패 봉투. **값 미리보기가 이미 있으면 그 자리를 함께 말한다.**
+
+    ⚠ 「격자 없음」은 `§5.5` 가 **보류**라 부른 상태다. 그런데 계약 `RenderResult` 는
+    `bounds` 를 **필수**로 요구하고 ②비지도형에는 좌표가 없다 — 그래서 이 상태를
+    「완료 + 결과」로 낼 자리가 계약에 없다. 지어낸 경계로 채우지 않고(`DR-9`),
+    산출물이 실제로 있다는 사실을 `details` 로 말한다. **계약 개정 사안으로 상신한다.**
+    """
+    details: dict = {}
+    if detail:
+        details["detail"] = detail
+    if job.artifacts is not None:
+        details["thumbnailUrl"] = job.artifacts.thumbnail.url
+        details["valuePreviewUrl"] = job.artifacts.detail.url
+        details["precisionBadge"] = job.badge
+        if job.color_range is not None:
+            details["colorRangeStage"] = job.color_range.stage
+    out = {"code": code, "message": message or FAILURE_MESSAGES.get(code, code)}
+    if details:
+        out["details"] = details
+    return out
 
 
 def _run(job: RenderJob) -> None:
@@ -126,12 +337,12 @@ def _run(job: RenderJob) -> None:
 
     try:
         _stage(STAGE_READ)
-        drawn: list[raster.Rendered] = []
+        reads: list[_Read] = []
         missing: list[dict] = []
         first_error: RenderError | None = None
         for part in spec.target.parts:
             try:
-                drawn.append(_read_part(part, spec))
+                reads.append(_read_part(part, spec))
             except RenderError as e:
                 first_error = first_error or e
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
@@ -139,34 +350,57 @@ def _run(job: RenderJob) -> None:
                 first_error = first_error or RenderError(RenderFailure.UNKNOWN, str(e))
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
 
-        if not drawn:
+        if not reads:
             raise first_error or RenderError(RenderFailure.UNKNOWN, "읽힌 조각이 없다")
 
         _stage(STAGE_DRAW)
-        merged = raster.merge(drawn)
+        # **공통 범위를 먼저 잡고 그 범위로 구간을 정한다.** 순서가 뒤집히면 프레임이
+        # 자기 값으로 구간을 잡고, 그것이 `§10-7` 이 금지한 그것이다.
+        color_range = _color_range(spec, [r.field.values for r in reads])
+        job.color_range = color_range
+        vr = (color_range.vmin, color_range.vmax)
+
+        drawn = [raster.build(r.field, palette_key=spec.palette,
+                              class_count=spec.class_count, reference=r.reference,
+                              value_range=vr)
+                 for r in reads if r.field.has_position or r.reference is not None]
+        merged = raster.merge(drawn, vr) if drawn else None
 
         _stage(STAGE_LEGEND)
+        if merged is None:
+            # 좌표가 하나도 없다 — ①②만 굽고 **지도형은 보류**다. `Rendered` 는 경계를
+            # 요구하므로 만들지 않는다. **경계를 지어내지 않는다**(`DR-9`).
+            job.artifacts = _build_artifacts(job, reads, _ValuesOnly(reads[0].field),
+                                             color_range)
+            job.badge = preview.BADGE_NO_GRID
+            raise RenderError(RenderFailure.NO_REFERENCE_GRID,
+                              "지도형은 보류다 — 값 미리보기(①②)는 만들었다")
+
         job.rendered = merged
+        job.artifacts = _build_artifacts(job, reads, merged, color_range)
+        job.badge = _badge_for(reads, job.artifacts.map_image is not None)
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),
-                           "renderedParts": len(drawn),
+                           "renderedParts": len(reads),
                            "missingParts": missing}
         job.stage = None
         job.status = STATUS_DONE
+    except preview.BboxSanityError as e:
+        # ⑪ — 격자는 있었는데 결과가 상식 밖이다. **지도형만 실패하고 ①②는 남는다.**
+        job.stage = None
+        job.status = STATUS_FAILED
+        job.badge = preview.BADGE_NO_GRID
+        job.failure = _failure(RenderFailure.MAP_BOUNDS_IMPLAUSIBLE, str(e), job)
     except RenderError as e:
         job.stage = None
         job.status = STATUS_FAILED
-        details = {"detail": e.detail} if e.detail else None
-        job.failure = {"code": e.code,
-                       "message": FAILURE_MESSAGES.get(e.code, e.message),
-                       **({"details": details} if details else {})}
+        job.failure = _failure(e.code, e.detail, job,
+                               message=FAILURE_MESSAGES.get(e.code, e.message))
     except Exception as e:                       # noqa: BLE001 — 마지막 그물
         job.stage = None
         job.status = STATUS_FAILED
-        job.failure = {"code": RenderFailure.UNKNOWN,
-                       "message": FAILURE_MESSAGES[RenderFailure.UNKNOWN],
-                       "details": {"detail": f"{type(e).__name__}: {e}"}}
+        job.failure = _failure(RenderFailure.UNKNOWN, f"{type(e).__name__}: {e}", job)
 
 
 class JobStore:

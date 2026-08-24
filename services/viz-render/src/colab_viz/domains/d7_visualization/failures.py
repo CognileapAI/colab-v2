@@ -22,6 +22,9 @@ class RenderFailure:
     # 넷째 — 정본이 **별도 행으로** 둔 상황이라 「알 수 없는 오류」에 섞지 않는다.
     # 안내 문구도 다르고 복구 경로(`짝 파일 없이 그려 보기`)도 다르다.
     NO_REFERENCE_GRID: Final = "REFERENCE_GRID_MISSING"
+    # 다섯째 — 격자는 있었는데 **결과 위치가 상식 밖**이다(`PREVIEW-IMPLEMENTATION §9` warp 행).
+    # 「격자가 없다」와 섞으면 화면이 「올려 주세요」라고 말하는데 이미 올린 상태가 된다.
+    MAP_BOUNDS_IMPLAUSIBLE: Final = "MAP_BOUNDS_IMPLAUSIBLE"
 
 
 FAILURE_MESSAGES: Final[dict[str, str]] = {
@@ -29,6 +32,8 @@ FAILURE_MESSAGES: Final[dict[str, str]] = {
     RenderFailure.TIMEOUT: "그리는 데 너무 오래 걸려요. 조각 하나나 좁은 기간으로 다시 해 보세요.",
     RenderFailure.UNKNOWN: "미리보기를 만들다 문제가 생겼어요.",
     RenderFailure.NO_REFERENCE_GRID: "위경도를 담은 짝 파일이 없어요.",
+    RenderFailure.MAP_BOUNDS_IMPLAUSIBLE:
+        "격자를 적용했지만 결과 위치가 상식 밖이라 지도에 얹지 않았어요.",
 }
 
 #: 415 안내 문구. **그릴 수 있는 형식을 함께 적는다** — 안 되는 것만 말하면

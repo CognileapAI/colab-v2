@@ -35,6 +35,13 @@ DEFAULT_MAX_PREVIEW_SIDE = 1024
 #: 대신, 뜨되 렌더 표면이 503 을 낸다.** 인증 없이 열어 두는 것과 다르다.
 DEFAULT_SOURCE_ROOT = Path("/srv/viz-sources")
 
+#: 미리보기 3층 산출물이 놓이는 자리. **정적 자산이다** — 렌더 작업으로 매번 만드는
+#: 물건이 아니고(`〈80〉-㉯ 2`), 목록 썸네일도 같은 자리에서 서빙된다.
+#: ⚠ 서빙 자체는 이 레인이 아니다 — `imageUrl` 은 계약이 **불투명 문자열**로 둔 자리라
+#: core 도 해석하지 않는다(`core-viz.yaml`).
+DEFAULT_PREVIEW_DIR = Path("/srv/viz-previews")
+DEFAULT_PREVIEW_URL_BASE = "/previews"
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -51,6 +58,8 @@ class Settings:
     max_preview_side: int = DEFAULT_MAX_PREVIEW_SIDE
     tile_url_base: str = "/viz/v1"
     tile_signature_ttl_seconds: int = DEFAULT_TILE_SIGNATURE_TTL_SECONDS
+    preview_dir: Path = DEFAULT_PREVIEW_DIR
+    preview_url_base: str = DEFAULT_PREVIEW_URL_BASE
 
 
 def load_settings() -> Settings:
@@ -69,4 +78,7 @@ def load_settings() -> Settings:
         # 기본값을 하나 지어 넣으면 그것이 모든 배포에서 같은 비밀이 된다.
         tile_signing_secret=os.environ.get("COLAB_VIZ_TILE_SIGNING_SECRET") or None,
         execution=os.environ.get("COLAB_VIZ_EXECUTION", "thread"),
+        preview_dir=Path(os.environ.get("COLAB_VIZ_PREVIEW_DIR") or DEFAULT_PREVIEW_DIR),
+        preview_url_base=os.environ.get("COLAB_VIZ_PREVIEW_URL_BASE")
+        or DEFAULT_PREVIEW_URL_BASE,
     )

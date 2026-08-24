@@ -51,3 +51,25 @@ def block_average(arr: np.ndarray, steps: tuple[int, int]) -> np.ndarray:
     hit = counts > 0
     out[hit] = (sums[hit] / counts[hit]).astype("f4")
     return out
+
+
+def sample_centers(arr: np.ndarray, steps: tuple[int, int]) -> np.ndarray:
+    """블록 **중심의 실측값**을 집는다 — 좌표 배열 전용.
+
+    값은 평균해도 되지만 **좌표는 평균하지 않는다.** 평균은 측정된 좌표들 사이의 값을
+    만들고, 그 순간 가장자리가 안쪽으로 밀려 **격자의 최솟값·최댓값이 바뀐다**
+    (HSR 실측에서 `.npy` 판과 `.nc` 판을 가르는 차이가 612 m 인데, 반 블록 평균만으로
+    같은 크기의 이동이 생긴다). 그래서 **집되, 모서리가 아니라 중심을 집고**,
+    마지막 블록은 배열 끝으로 붙여 **양 끝 실측값이 살아남게** 한다.
+    """
+    a = np.asarray(arr)
+    sy, sx = steps
+    if sy == 1 and sx == 1:
+        return np.asarray(a)
+    ny, nx = a.shape
+    ty, tx = -(-ny // sy), -(-nx // sx)
+    rows = np.minimum(np.arange(ty) * sy + sy // 2, ny - 1)
+    cols = np.minimum(np.arange(tx) * sx + sx // 2, nx - 1)
+    rows[-1] = ny - 1                       # 마지막 행의 실측 좌표를 잃지 않는다
+    cols[-1] = nx - 1
+    return np.asarray(a[np.ix_(rows, cols)])

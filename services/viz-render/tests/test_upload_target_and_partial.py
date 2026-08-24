@@ -19,7 +19,8 @@ def test_uploadId_대상_렌더가_동작한다(client, put_target, tiny_geotiff
     rid = r.json()["renderId"]
     job = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
     assert job["status"] == "완료"
-    assert job["result"]["tileUrlTemplate"]
+    # stage 1 은 **이미지 갈래**를 낸다 (`oneOf` — `〈80〉-㉯ 1`)
+    assert job["result"]["imageUrl"]
     # 등록 전 업로드의 미리보기 결과는 임시로만 둔다 — 수명이 있다
     assert job["expiresAt"]
 

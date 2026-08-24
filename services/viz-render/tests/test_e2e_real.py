@@ -134,10 +134,22 @@ def test_e2e_3_binary_hsr(client, put_target, source_root):
     # 미문서화 음수 코드값 2,073종은 `§7-ⓑ` 로 상신된 열린 질문이다. 여기서 하한을
     # 박으면 레인이 값 집합의 정의를 관례로 정하는 것이 된다(`㊴-②`).
 
-    # ── 남단 경계 — `〈66〉` 이 고른 정본 격자(`.nc`)를 실제로 쓰고 있는가.
-    # `.npy` 판은 `30.102751` 이라 두 격자가 여기서 갈린다 (`DATA-REFERENCE §1`).
-    assert job["result"]["bounds"]["south"] == pytest.approx(30.107119, abs=1e-6), \
-        "남단이 정본 격자(.nc)의 lat min 과 다르다 — .npy 판을 읽고 있을 수 있다"
+    # ── 남단 경계 — 어느 격자를 실제로 읽었는가.
+    # ⚠ **개정** — 경계의 뜻이 바뀌었다. 옛 값(`30.107119` = 격자 lat min)은 **격자 전체**의
+    # 4326 범위였고, 지금은 ③지도형의 **3857 bbox**라 **값이 있는 자리**만 감싼다
+    # (정본 `§3.3` 실측 HSR bbox 도 `31.139640` 으로 같은 성질이다 — 격자 lat min 이 아니다).
+    # 판별력은 그대로다 — 같은 파일을 `.npy` 쌍으로 그리면 `31.139984` 가 나온다(이 세션 실측).
+    # **두 격자의 612 m 차이가 여기서 그대로 보인다**(`DATA-REFERENCE §1`).
+    assert job["result"]["bounds"]["south"] == pytest.approx(31.14469, abs=1e-4), \
+        "남단이 `.nc` 격자로 그린 값과 다르다 — .npy 판을 읽고 있을 수 있다"
+    assert job["result"]["precisionBadge"] == "동봉 격자 적용"
+
+    # ── 동반 파일 두 벌이 실제로 놓였는가 (`§3.3`·`§3.4`)
+    import json as _json
+    store = client.app.state.jobs.get(job["_renderId"]).artifacts
+    doc = _json.loads(store.sidecar.path.read_text(encoding="utf-8"))
+    assert doc["crs"] == "EPSG:3857" and doc["source"] == src.name
+    assert len(store.world_file.path.read_text().strip().splitlines()) == 6
 
 
 def test_e2e_4_hdf4(client, put_target, source_root):
@@ -191,3 +203,61 @@ def test_e2e_6_변수를_생략하면_viz_render_가_고른다(client, put_targe
     assert legend["unit"] == "K"
     lo, hi = legend["classes"][0]["min"], legend["classes"][-1]["max"]
     assert 200 < lo < hi < 400, (lo, hi)
+
+
+def test_e2e_7_계산_격자가_동봉_격자와_일치한다(client, put_target):
+    """**`C-3` 의 오라클** — 「파일 안에서 격자가 나온다」를 동봉 격자와 대조해 확인한다.
+
+    정본 실측 (`DATA-PIPELINE-MEASUREMENT §1.1`) — hdf **7e-14°** · nc **1.3e-5°**.
+    이 시험이 없으면 「계산했다」와 「맞게 계산했다」가 구분되지 않는다.
+    """
+    from colab_viz.domains.d7_visualization import coords
+
+    d = _fmtdir("file_format_5_HDF5")
+    src = _first("*h27v05*.hdf", d / "00.Data")
+    from pyhdf.SD import SD, SDC
+    sd = SD(str(src), SDC.READ)
+    text = sd.attributes()["StructMetadata.0"]
+    sd.end()
+    lat, lon = coords.from_struct_metadata(text)
+    ref_lat = np.load(d / "04.Lat_Lon_info" / "lat2d_h27v05.npy")
+    ref_lon = np.load(d / "04.Lat_Lon_info" / "lon2d_h27v05.npy")
+    assert float(np.nanmax(np.abs(lat - ref_lat))) < 1e-9
+    assert float(np.nanmax(np.abs(lon - ref_lon))) < 1e-9
+
+    d = _fmtdir("file_format_2_nc")
+    src = _first("gk2a_*.nc", d / "00.Data")
+    from netCDF4 import Dataset
+    ds = Dataset(str(src), "r")
+    proj = ds.variables["gk2a_imager_projection"]
+    attrs = {a: getattr(proj, a) for a in proj.ncattrs()}
+    shape = tuple(ds.variables["LST"].shape[-2:])
+    ds.close()
+    lat, lon = coords.from_cf_projection(attrs, shape)
+    ref_lat = np.load(d / "04.Lat_Lon_info" / "lat2d.npy")
+    ref_lon = np.load(d / "04.Lat_Lon_info" / "lon2d.npy")
+    # ⚠ 반 픽셀(1 km)을 잘못 잡으면 여기서 1.1e-2° 로 튄다 — 그 회귀를 이 값이 잡는다.
+    assert float(np.nanmax(np.abs(lat - ref_lat))) < 2e-5
+    assert float(np.nanmax(np.abs(lon - ref_lon))) < 2e-5
+
+
+def test_e2e_8_격자가_없어도_값_미리보기_두_장은_실제로_나온다(client, put_target):
+    """`§5.5`·`〈74〉-㉵` — 지도형만 보류다. **「미리보기를 지원하지 않는 형식」이 아니다.**"""
+    d = _fmtdir("file_format_3_bin")
+    src = _first("RDR_CMP_HSR_*.bin.gz", d / "00.Data")
+    tid = put_target(copy_from=[src])
+    job = _render(client, tid)
+
+    details = job["failure"]["details"]
+    assert details["precisionBadge"] == "격자 없음 — 지도형 보류"
+    store = client.app.state.jobs.get(job["_renderId"]).artifacts
+    assert store.map_image is None and store.sidecar is None
+    assert store.thumbnail.path.read_bytes()[:4] == b"RIFF"
+    assert store.detail.path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+    from PIL import Image
+    # ⚠ 1024 「이하」다 — 정수 간격으로 솎으므로 2881/3 = 961 이 된다. 상한이지 목표가 아니다.
+    assert 512 < max(Image.open(store.detail.path).size) <= 1024
+    # 값이 실제로 그려졌다 — 알파 0 만 있는 그림이 아니다
+    alpha = np.asarray(Image.open(store.detail.path).convert("RGBA"))[..., 3]
+    assert (alpha > 0).sum() > 0

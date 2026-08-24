@@ -74,7 +74,20 @@ def regrid_nearest(values: np.ndarray, lat: np.ndarray, lon: np.ndarray,
     return out, (lon_min, lat_min, lon_max, lat_max)
 
 
-def _classify(values: np.ndarray, count: int) -> list[tuple[float, float]]:
+def _classify(values: np.ndarray, count: int,
+              value_range: tuple[float, float] | None = None) -> list[tuple[float, float]]:
+    """구간 경계. **범위가 주어지면 그것을 쓴다 — 프레임에서 다시 잡지 않는다**(`V-2`).
+
+    ⚠ 프레임별로 잡으면 값이 아니라 **분포**를 그리게 된다. 실측 — nc LST 5프레임에서
+    개별 스트레치와 공통 범위가 최대 42 DN 어긋나고 p98 이 50분에 4.4 K 이동한다
+    (`PREVIEW-IMPLEMENTATION §6.2`). **HSR 에서 차이가 작다고 규칙을 완화하지 마라.**
+    """
+    if value_range is not None:
+        vmin, vmax = (float(v) for v in value_range)
+        if vmax <= vmin:
+            vmax = vmin + 1.0
+        edges = [vmin + (vmax - vmin) * i / count for i in range(count + 1)]
+        return [(edges[i], edges[i + 1]) for i in range(count)]
     finite = values[np.isfinite(values)]
     if finite.size == 0:
         raise RenderError(RenderFailure.UNKNOWN, "그릴 값이 하나도 없다 — 전부 결측이다")
@@ -88,7 +101,8 @@ def _classify(values: np.ndarray, count: int) -> list[tuple[float, float]]:
 
 
 def build(field: Field, *, palette_key: str, class_count: int,
-          reference: tuple[np.ndarray, np.ndarray] | None) -> Rendered:
+          reference: tuple[np.ndarray, np.ndarray] | None,
+          value_range: tuple[float, float] | None = None) -> Rendered:
     """값 하나를 규칙 격자로 놓고 구간·색을 정한다."""
     if field.bounds is not None:
         values, bounds = field.values, field.bounds
@@ -102,13 +116,14 @@ def build(field: Field, *, palette_key: str, class_count: int,
         raise RenderError(RenderFailure.NO_REFERENCE_GRID, "좌표가 없다")
 
     palette = palettes.get(palette_key)
-    breaks = _classify(values, class_count)
+    breaks = _classify(values, class_count, value_range)
     return Rendered(values=values, bounds=bounds, breaks=breaks,
                     colors=palettes.ramp(palette, class_count),
                     palette=palette.key, variable=field.variable, unit=field.unit)
 
 
-def merge(rendereds: list[Rendered]) -> Rendered:
+def merge(rendereds: list[Rendered],
+          value_range: tuple[float, float] | None = None) -> Rendered:
     """조각 여러 개를 한 층으로 합친다 — 읽힌 조각만 들어온다.
 
     합칠 때 **좌표를 다시 만들지 않는다.** 공통 경계를 잡고 각 조각을 자기 경계에 맞춰
@@ -140,6 +155,6 @@ def merge(rendereds: list[Rendered]) -> Rendered:
         out[take] = sampled[take]
 
     first = rendereds[0]
-    breaks = _classify(out, len(first.breaks))
+    breaks = _classify(out, len(first.breaks), value_range)
     return Rendered(values=out, bounds=(w, s, e, n), breaks=breaks, colors=first.colors,
                     palette=first.palette, variable=first.variable, unit=first.unit)

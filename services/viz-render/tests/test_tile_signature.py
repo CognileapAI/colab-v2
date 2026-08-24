@@ -27,12 +27,16 @@ def _rendered(client, put_target, tiny_geotiff) -> dict:
     assert r.status_code == 202, r.text
     job = r.json()
     assert job["status"] == "완료", job
+    # ⚠ **개정** — stage 1 결과는 이미지 갈래라 `tileUrlTemplate` 을 **싣지 않는다**
+    # (`oneOf`, `〈80〉-㉯ 1`). 그러나 타일 경로와 서명은 그대로 살아 있고 stage 2 가 쓴다.
+    # 그래서 템플릿을 결과가 아니라 **작업**에서 집는다 — 서명 시험 여덟 건이 전부 산다.
+    job["_template"] = client.app.state.jobs.get(job["renderId"]).tile_url_template
     return job
 
 
 def _tile_path(job: dict) -> str:
     """템플릿을 **FE 가 하는 그대로** 쓴다 — `{z}`·`{x}`·`{y}` 치환 말고는 손대지 않는다."""
-    return (job["result"]["tileUrlTemplate"]
+    return (job["_template"]
             .replace("{z}", "6").replace("{x}", "54").replace("{y}", "24"))
 
 
@@ -122,6 +126,7 @@ def test_서명_수명은_렌더_결과_수명을_넘지_않는다(source_root, 
                  json={"target": {"uploadId": tid}, "style": {"palette": "단색-파랑"}},
                  headers=AUTH).json()
     expires = datetime.fromisoformat(job["expiresAt"].replace("Z", "+00:00")).timestamp()
+    job["_template"] = c.app.state.jobs.get(job["renderId"]).tile_url_template
     query = dict(kv.split("=", 1) for kv in _tile_path(job).split("?", 1)[1].split("&"))
     assert int(query["exp"]) <= int(expires) + 1, (query["exp"], expires)
 

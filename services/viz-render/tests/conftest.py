@@ -8,6 +8,8 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -39,6 +41,8 @@ def make_client(source_root, execution: str, **overrides) -> TestClient:
         execution=execution,
         max_render_bytes=500 * 1024 * 1024,
         result_ttl_seconds=3600,
+        # 미리보기 산출물은 **실제로 디스크에 놓인다** — 시험도 진짜로 쓴다.
+        preview_dir=Path(source_root).parent / "previews",
     )
     fields.update(overrides)
     return TestClient(create_app(Settings(**fields)))

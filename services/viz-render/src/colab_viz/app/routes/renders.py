@@ -109,6 +109,8 @@ def create_render(body: RenderRequest, request: Request) -> dict:
         without_reference_grid=body.withoutReferenceGrid,
         max_preview_side=settings.max_preview_side,
         deadline_seconds=settings.render_deadline_seconds,
+        preview_dir=settings.preview_dir,
+        preview_url_base=settings.preview_url_base,
     )
     job = request.app.state.jobs.submit(new_ulid(), spec,
                                         temporary=body.target.uploadId is not None)

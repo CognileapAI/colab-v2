@@ -51,13 +51,17 @@ def test_그리는_중일_때만_stage_가_있다(manual_client, put_target, tin
     assert "failure" not in done
 
 
-def test_완료_결과는_타일틀_경계_범례를_준다(client, put_target, tiny_geotiff):
+def test_완료_결과는_이미지_경계_범례를_준다(client, put_target, tiny_geotiff):
+    """⚠ **개정** — `〈80〉-㉯ 1` 로 결과가 `oneOf` 가 됐고 stage 1 은 이미지 갈래를 낸다.
+    타일 갈래는 계약에 살아 있되 stage 2 것이다 — 여기서 둘을 함께 요구하면 `oneOf` 위반을
+    시험이 강요하게 된다."""
     tid = put_target(copy_from=[tiny_geotiff])
     rid = _create(client, {"datasetId": tid}).json()["renderId"]
     job = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
     res = job["result"]
-    assert set(res) == {"tileUrlTemplate", "bounds", "legend"}
-    assert "{z}" in res["tileUrlTemplate"] and "{x}" in res["tileUrlTemplate"]
+    assert set(res) == {"imageUrl", "sidecarUrl", "worldFileUrl", "bounds", "legend",
+                        "precisionBadge", "colorRangeStage"}
+    assert res["imageUrl"].endswith(".png") and res["worldFileUrl"].endswith(".pgw")
     b = res["bounds"]
     assert set(b) == {"west", "south", "east", "north"}
     assert -180 <= b["west"] < b["east"] <= 180
