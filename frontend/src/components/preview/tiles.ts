@@ -11,3 +11,17 @@ export function tileUrl(template: string, z: number, x: number, y: number): stri
     .replace('{x}', String(x))
     .replace('{y}', String(y));
 }
+
+/**
+ * 그릴 이미지 한 장. **계약이 `oneOf` 다**(`〈85〉` · `〈80〉-㉯ 1`) —
+ * stage 1 은 단일 이미지(`imageUrl`)를 내고, 타일 갈래는 stage 2 확대 뷰의 자리다.
+ * **둘 다 없으면 `undefined`** 다 — 빈 `src` 로 깨진 이미지를 그리지 않는다.
+ */
+export function resultImageSrc(result: {
+  imageUrl?: string;
+  tileUrlTemplate?: string;
+}): string | undefined {
+  if (result.imageUrl) return result.imageUrl;
+  if (result.tileUrlTemplate) return tileUrl(result.tileUrlTemplate, 0, 0, 0);
+  return undefined;
+}

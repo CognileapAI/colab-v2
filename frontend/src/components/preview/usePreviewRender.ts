@@ -84,9 +84,13 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
           // 부분 실패는 **완료** 안에 담긴다 — 오류 자리로 보내지 않는다
           ...(job.partialFailure ? { partialFailure: job.partialFailure } : {}),
         });
-        // 타일 한 장을 찔러 본다. 401 이면 서명이 죽은 것이고 그것은 **만료**다
-        const url = tileUrl(job.result.tileUrlTemplate, 0, 0, 0);
-        if (probed.current !== url) {
+        // 타일 한 장을 찔러 본다. 401 이면 서명이 죽은 것이고 그것은 **만료**다.
+        // ⚠ **타일 갈래일 때만이다** — stage 1 의 단일 이미지 결과에는 템플릿이 없고,
+        // 없는 것을 찔러 「만료」로 단정하지 않는다 (`〈85〉` 로 갈래가 둘이 됐다).
+        const url = job.result.tileUrlTemplate
+          ? tileUrl(job.result.tileUrlTemplate, 0, 0, 0)
+          : undefined;
+        if (url && probed.current !== url) {
           probed.current = url;
           const tile = await source.probeTile(url);
           if (alive && tile === 'expired') setState({ phase: '만료됨' });

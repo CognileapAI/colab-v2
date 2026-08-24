@@ -1,7 +1,7 @@
 // S-08 의 조각들. **화면 글자는 전부 정본 §8.1·§9 에서 그대로 온다** — 여기서 새 한국어를
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
-import { tileUrl } from './tiles';
+import { resultImageSrc } from './tiles';
 
 /** 정본 §8.1 「휘발 고지」 — 두 문장과 등록 길이 **한 줄**에 있다. 남은 시간은 세지 않는다. */
 export function VolatileNotice(props: { onRegister: () => void }) {
@@ -142,10 +142,15 @@ export function PreviewMap(props: { result: RenderResult }) {
     <section
       className="pv-map"
       data-testid="preview-map"
-      data-tile-template={result.tileUrlTemplate}
+      {...(result.tileUrlTemplate ? { 'data-tile-template': result.tileUrlTemplate } : {})}
+      /* 좌표가 없는 결과(②비지도형)도 **완료**다 — 배지가 그 사실을 말한다 (`〈85〉`) */
+      {...(result.precisionBadge ? { 'data-precision-badge': result.precisionBadge } : {})}
+      {...(result.colorRangeStage ? { 'data-color-range-stage': result.colorRangeStage } : {})}
       aria-label="미리보기"
     >
-      <img className="pv-tile" src={tileUrl(result.tileUrlTemplate, 0, 0, 0)} alt="" />
+      {resultImageSrc(result) ? (
+        <img className="pv-tile" src={resultImageSrc(result)} alt="" />
+      ) : null}
       <dl className="pv-legend" aria-label="범례">
         {result.legend.classes.map((c) => (
           <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
