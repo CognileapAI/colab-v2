@@ -1,0 +1,12 @@
+# ai-service 직접 런타임 의존. 닫힘(closure)은 requirements.txt 가 갖는다.
+#
+# 여기 **없는 것이 결정**이다 —
+#   · OpenAI SDK 를 넣지 않는다. 모델 호출은 표준 라이브러리 `urllib` 뿐이고, 그 호출이
+#     실패해도 검색은 살아야 한다(`〈72〉-㉮`). SDK 를 넣으면 그 실패 경로가 SDK 예외
+#     계층에 숨고, 「AI 없이도 v2 는 완결된 제품이다」가 시험하기 어려워진다.
+#   · geo 라이브러리를 넣지 않는다 (`gates/config/boundaries.toml` units.ai-service.banned).
+#   · 벡터 클라이언트를 넣지 않는다 — 임베딩은 stage 1 밖이다 (`〈81〉`).
+fastapi==0.121.2
+uvicorn==0.38.0
+sqlalchemy==2.0.44
+psycopg[binary]==3.2.12
