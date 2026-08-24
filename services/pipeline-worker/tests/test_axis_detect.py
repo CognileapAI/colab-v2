@@ -140,3 +140,38 @@ def test_detection_is_a_pair_of_booleans_not_a_string():
     d = AxisDetection(carries_lat=True, carries_lon=False, method="x", evidence=[], warnings=[])
     assert isinstance(d.carries_lat, bool) and isinstance(d.carries_lon, bool)
     assert not hasattr(d, "grid_axis")
+
+
+# ── 확장자로 가르지 않는다 (`DATA-REFERENCE §0 M-1` · `〈77〉-⑵`) ──────────────
+def test_확장자가_없어도_npy_는_매직바이트로_읽힌다(tmp_path):
+    """⚠ **저장 키에는 확장자가 없다.** 축 판별이 `.npy` 접미사로 갈리면 원장 경로에서
+    조용히 「격자로 읽을 수 있는 형식이 아니다」가 된다 — 확장자로 분류하는 그 실수다.
+    (`W3` 이 같은 자리에서 원본 파일명을 흘려보내 막았고, 여기는 그 아래층이다.)"""
+    _, lon = _grid(33.0, 38.0, 124.0, 132.0)
+    np.save(tmp_path / "tmp.npy", lon)
+    keyed = tmp_path / "01ARZ3NDEKTSV4RRFFQ69G5FAV"          # 확장자 없음
+    keyed.write_bytes((tmp_path / "tmp.npy").read_bytes())
+
+    d = detect_axes(keyed)
+    assert (d.carries_lat, d.carries_lon) == (False, True)
+
+
+def test_npy_가_아닌_바이트는_여전히_거절된다(tmp_path):
+    p = tmp_path / "not_a_grid"
+    p.write_bytes(b"II*" + bytes(64))
+    with pytest.raises(AxisUndeterminedError):
+        detect_axes(p)
+
+
+def test_쌍_정합도_확장자를_보지_않는다(tmp_path):
+    """둘 다 ±90 안이라 쌍 정합이 필요한 경우 — 통계 수집도 확장자를 보면 안 된다."""
+    lat, lon = _grid(33.0, 38.0, 30.0, 40.0)
+    paths = []
+    for name, arr in (("keyA", lat), ("keyB", lon)):
+        np.save(tmp_path / (name + ".npy"), arr)
+        p = tmp_path / name
+        p.write_bytes((tmp_path / (name + ".npy")).read_bytes())
+        (tmp_path / (name + ".npy")).unlink()
+        paths.append(p)
+    res = detect_axes_for_upload(paths)
+    assert len(res.resolved) == 2 and not res.rejected

@@ -23,7 +23,10 @@ from . import coords, downsample
 from .failures import NotRenderableError
 from .hsr import decode_block, parse_hsr
 
-SUPPORTED_FORMATS: list[str] = ["NetCDF", "Binary", "HDF4", "GeoTIFF"]
+#: 지원 포맷 — `〈51〉`·`〈77〉`. **숫자가 아니라 목록이다.**
+#: ⚠ 같은 이름의 목록이 `pipeline-worker` 의 `d5/formats.py` 에도 있다 — **두 곳에
+#: 적혀 있다는 사실 자체가 갈릴 자리다**(`§D.5b-⑵`). 함께 고친다.
+SUPPORTED_FORMATS: list[str] = ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy"]
 
 MAGIC_HDF4 = b"\x0e\x03\x13\x01"
 MAGIC_HDF5 = b"\x89HDF\r\n\x1a\n"
@@ -31,6 +34,9 @@ MAGIC_TIFF_LE = b"II*\x00"
 MAGIC_TIFF_BE = b"MM\x00*"
 MAGIC_GZIP = b"\x1f\x8b"
 MAGIC_CDF = (b"CDF\x01", b"CDF\x02", b"CDF\x05")
+#: `.npy` — 매직 + 버전 2B + 길이 2B + ASCII 헤더 dict(`descr`·`fortran_order`·`shape`).
+#: **확장자가 아니라 매직으로 감지한다**(`〈77〉-⑵`) — 저장 키에 확장자가 없는 자리가 있다.
+MAGIC_NPY = b"\x93NUMPY"
 
 _COORD_NAMES = {"lat", "lon", "latitude", "longitude", "x", "y", "time",
                 "crs", "spatial_ref", "gk2a_imager_projection"}
@@ -125,6 +131,8 @@ def detect_format(path: Path) -> str:
             return "NetCDF"
         except Exception as e:
             raise NotRenderableError(f"HDF5 컨테이너인데 NetCDF 로 열리지 않는다: {e}") from e
+    if head.startswith(MAGIC_NPY):
+        return "NumPy"
     if _plausible_hsr(head):
         return "Binary"
     raise NotRenderableError("알려진 매직바이트가 없다")
@@ -362,6 +370,27 @@ def _read_binary(path: Path, variable: str | None, max_side: int) -> Field:
                  native_shape=native, steps=steps)
 
 
+def _read_numpy(path: Path, max_side: int) -> Field:
+    """`.npy` — 배열 하나. **결측은 NaN 만이다**(`〈77〉` Ted 판정).
+
+    네 포맷은 결측값이 실측으로 확정돼 있지만 `.npy` 에는 그런 규약이 **없다** —
+    배열만 있고 메타가 없다. 그래서 `−9999` 도 `65535` 도 **여기서는 유효값**이다.
+    다른 포맷의 규약을 빌려오면 그것이 곧 값을 지우는 일이다(`§6.1` 의 두 전례).
+
+    **좌표를 말하지 않는다** — ③지도형은 HSR 과 같은 자리에서 격자를 받는다(`§E.4-⑶`).
+    """
+    arr = np.load(path, mmap_mode="r", allow_pickle=False)   # 헤더를 직접 파싱하지 않는다
+    values = np.asarray(arr, dtype="f8")
+    while values.ndim > 2:            # 시각·밴드 축 — 한 번에 값 하나만 그린다
+        values = values[0]
+    if values.ndim != 2:
+        raise NotRenderableError(f"{path.name}: 2차원 배열이 아니다 — shape={arr.shape}")
+    native = (values.shape[0], values.shape[1])
+    steps = _steps_for(native, max_side)
+    return Field(values=_decimate(values, steps).astype("f4"), variable=path.stem,
+                 unit=None, native_shape=native, steps=steps, fills=())
+
+
 def read_field(path: Path, *, variable: str | None = None, instant: str | None = None,
                max_side: int = 1024) -> tuple[str, Field]:
     """(포맷, 값 하나). 위치가 파일 안에 없으면 `Field.has_position` 이 False 다."""
@@ -376,6 +405,8 @@ def read_field(path: Path, *, variable: str | None = None, instant: str | None =
             return fmt, _read_hdf4(path, variable, max_side)
         if fmt == "Binary":
             return fmt, _read_binary(path, variable, max_side)
+        if fmt == "NumPy":
+            return fmt, _read_numpy(path, max_side)
     except (NotRenderableError, FieldReadError):
         raise
     except Exception as e:                       # 포맷은 맞는데 이 파일이 깨졌다

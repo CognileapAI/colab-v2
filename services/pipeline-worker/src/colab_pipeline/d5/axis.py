@@ -21,6 +21,8 @@
      (측정 R-3: `4_tif`·`5_HDF5` 는 4파일이 전부 같은 형상이고 MODIS 위도 2건은 값 통계까지 같다).
   ④ **이방성**(축별 변화량)은 **교차검증 전용**. 단독 14/16 이고, 틀릴 때 **경도를 조용히
      「위도」로 뒤집는다**(MODIS Sinusoidal 2건). 확정 근거로 쓰지 않는다.
+  ⑤ **파일명**은 **대조 전용**. ⚠ **확장자도 마찬가지다** — 무엇으로 읽을지는
+     매직바이트가 정한다(`_is_npy`).
   ⑤ **파일명**은 **대조 전용**. 실측 16/16 이지만 한 기관 관례라 표본 편향이다. 값과 어긋나면
      값을 따르고 불일치를 기록한다. **단독으로는 아무것도 확정하지 않는다.**
   ⑥ 어느 단계도 확정 못 하면 **판별 실패**다. `〈66〉` 유권해석 — 그 파일은 **거절**되고
@@ -110,6 +112,24 @@ def _read_container(path: Path) -> dict[str, _Stats]:
     return out
 
 
+#: `.npy` 매직 (`〈77〉-⑵` — 매직 + 버전 2B + 길이 2B + ASCII 헤더 dict).
+MAGIC_NPY = b"\x93NUMPY"
+
+
+def _is_npy(path: Path) -> bool:
+    """**확장자가 아니라 매직바이트로 가른다.**
+
+    ⚠ 저장 키에는 확장자가 없다(`uploads/{uploadId}/{fileId}`). 접미사로 가르면
+    원장 경로에서 격자가 조용히 「읽을 수 있는 형식이 아니다」로 튕긴다 —
+    `DATA-REFERENCE §0 M-1` 이 금지한 그 분류다.
+    """
+    try:
+        with open(path, "rb") as f:
+            return f.read(6) == MAGIC_NPY
+    except OSError:
+        return False
+
+
 def _is_container(path: Path) -> bool:
     try:
         with open(path, "rb") as f:
@@ -171,7 +191,7 @@ def detect_axes(path: Path) -> AxisDetection:
             return AxisDetection(has_lat, has_lon, "컨테이너 내부 변수명", evidence, warnings)
         raise AxisUndeterminedError(f"컨테이너에 좌표 변수가 없다: {path.name}")
 
-    if path.suffix.lower() != ".npy":
+    if not _is_npy(path):
         raise AxisUndeterminedError(f"격자로 읽을 수 있는 형식이 아니다: {path.name}")
 
     s = _read_npy(path)
@@ -206,7 +226,7 @@ def detect_axes_for_upload(paths: list[Path]) -> UploadAxisResult:
             res.rejected[p] = str(e)
             pending.append(p)
         try:
-            if p.suffix.lower() == ".npy":
+            if _is_npy(p):
                 stats[p] = _read_npy(p)
         except Exception:                      # 통계조차 못 내면 쌍 정합에도 못 쓴다
             stats.pop(p, None)

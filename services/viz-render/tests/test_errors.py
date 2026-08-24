@@ -56,8 +56,9 @@ def test_그릴_수_없는_포맷은_415_이고_그릴_수_있는_형식을_함�
     body = r.json()
     assert set(body) >= {"code", "message"}
     formats = body["details"]["renderableFormats"]
-    # 〈51〉 — 숫자가 아니라 목록이다. GRIB 은 v2 범위 밖이고 HDF 는 버전이 다르다.
-    assert formats == ["NetCDF", "Binary", "HDF4", "GeoTIFF"]
+    # 〈51〉·〈77〉 — 숫자가 아니라 목록이다. GRIB 은 v2 범위 밖이고 HDF 는 버전이 다르며,
+    # `NumPy` 가 **독립 포맷**으로 들어왔다(Ted 판정 — 「nc 랑은 다른 파일이다」).
+    assert formats == ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy"]
 
 
 def test_실패_3종은_failure_code_로_갈린다():

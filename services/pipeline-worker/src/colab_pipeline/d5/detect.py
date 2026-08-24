@@ -63,6 +63,11 @@ def _plausible_hsr_header(head: bytes) -> bool:
     )
 
 
+#: `.npy` — 매직 + 버전 2B + 길이 2B + ASCII 헤더 dict(`descr`·`fortran_order`·`shape`).
+#: 헤더가 ASCII 라 numpy 없이도 읽힌다(`DATA-REFERENCE §1`). **확장자 판정이 아니다.**
+MAGIC_NPY = b"\x93NUMPY"
+
+
 def _sniff_bytes(head: bytes) -> tuple[str | None, str | None, str]:
     """(format, container, reason). HDF5 매직은 여기서 확정하지 않는다."""
     if head.startswith(MAGIC_HDF4):
@@ -73,6 +78,8 @@ def _sniff_bytes(head: bytes) -> tuple[str | None, str | None, str]:
         return "NetCDF", None, "magic CDF (classic)"
     if head.startswith((MAGIC_TIFF_LE, MAGIC_TIFF_BE)):
         return "GeoTIFF", None, "magic TIFF"
+    if head.startswith(MAGIC_NPY):
+        return "NumPy", None, "magic \\x93NUMPY"
     if _plausible_hsr_header(head):
         return "Binary", None, "HSR 헤더 개연성 (실측 배치)"
     return None, None, "알려진 매직바이트 없음"
