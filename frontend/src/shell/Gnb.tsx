@@ -47,7 +47,7 @@ export function Gnb() {
   return (
     <header className="gnb">
       {/* 브랜드 마크 — 누르면 연구실 화면으로 */}
-      <Link className="brand" to="/lab">
+      <Link className="brand" to="/lab" aria-label="Co-Lab">
         <span className="logo" aria-hidden="true" />
         <span className="bn">Co-Lab</span>
       </Link>
