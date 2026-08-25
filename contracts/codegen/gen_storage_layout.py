@@ -29,6 +29,9 @@ TEMPLATE = '''"""접수한 바이트가 어디에 놓이는가 — **세 단위�
 배치
 {layout_doc}
 
+**`targetId` 가 무엇인가**
+{target_id_doc}
+
 **왜 격자만 이름을 보존하는가**
 {grid_why}
 """
@@ -95,7 +98,10 @@ def uploads_root(root) -> Path:
 
 
 def target_dir(root, target_id: str) -> Path:
-    """한 대상(업로드 또는 데이터셋)의 본체 파일들이 놓인 디렉터리."""
+    """한 대상의 본체 파일들이 놓인 디렉터리.
+
+    `target_id` 는 **등록 전 `uploadId` · 등록 뒤 `datasetId`** 다 (모듈 서두 참조).
+    """
     return uploads_root(root) / target_id
 
 
@@ -116,6 +122,7 @@ def render() -> str:
     grid_why = "  " + spec["why"][grid_kind]
     rendered = TEMPLATE.format(
         layout_doc=layout_doc,
+        target_id_doc="  " + spec["targetId"],
         grid_why=grid_why,
         uploads_prefix=spec["uploadsPrefix"],
         grid_dirname=spec["gridDirname"],

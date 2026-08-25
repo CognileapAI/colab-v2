@@ -1,6 +1,7 @@
 {
   "$comment": "접수한 바이트가 놓이는 자리의 **유일한 정본**. 세 단위(core-api·pipeline-worker·viz-render)가 이 파일에서 생성된 같은 모듈을 쓴다 — contracts/codegen/manifest.toml 등재분이고 generated-up-to-date 게이트가 드리프트를 막는다. 왜 계약(seam)이 아니라 여기인가: 저장 배치는 **배포 내부 사정**이라 FE 표면에 오르지 않는다(fe-core.yaml createUpload 산문). 그러나 배포 내부 사정이 세 단위에 걸쳐 있으면 그것은 관례가 아니라 규약이어야 한다 — 규약을 안 세운 대가가 03-HANDOFF §4 #20 이다.",
   "uploadsPrefix": "uploads",
+  "targetId": "**등록 전에는 `uploadId`, 등록 뒤에는 `datasetId`** 다 — 한 대상의 파일은 언제나 한 디렉터리에 모인다. 등록 전환(`createDataset`)과 격자 후주입(`attachUploadGridFiles`)이 바이트를 데이터셋 자리로 옮기고 저장 키를 다시 적는다. 승계하면 두 자리로 갈라진다: 그 뒤에 붙는 `addDatasetFile`·`replaceDatasetGridFile` 은 이미 `datasetId` 자리에 쓴다. 갈라진 대가가 등록된 데이터셋 **전체**의 미리보기 503 이다 — 그리는 쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**이라, `datasetId` 로 온 요청이 빈 자리를 보고 404 를 냈다(`03-HANDOFF §4 #20` 계열). 사용자에게 등록은 데이터셋이 성립하는 사건이므로 자리도 데이터셋의 것이다.",
   "gridDirname": "grid",
   "keys": {
     "본체": "{uploadsPrefix}/{targetId}/{fileId}",

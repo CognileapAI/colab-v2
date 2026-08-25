@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import os
 import pathlib
 import tempfile
 from typing import Any
@@ -97,6 +98,66 @@ def _discard(request: Request, *, key: str | None, keep: str | None = None) -> N
         path.unlink()
     except (FileNotFoundError, IsADirectoryError, PermissionError):
         return
+
+
+def _dataset_keys(dataset_id: str, files) -> dict[str, str]:
+    """그 파일들이 **데이터셋의 자리**에서 가질 저장 키. 계산은 규약 함수 하나뿐이다."""
+    return {f.file_id: storage_layout.storage_key(dataset_id, file_id=f.file_id,
+                                                  kind=f.kind, file_name=f.file_name)
+            for f in files}
+
+
+def _prune_upload_dirs(root: pathlib.Path, old_keys) -> None:
+    """옮기고 남은 빈 자리를 치운다. 비어 있지 않으면 건드리지 않는다."""
+    stop = storage_layout.uploads_root(root)
+    for key in old_keys:
+        if not key:
+            continue
+        node = (root / key).parent
+        while stop in node.parents:
+            try:
+                node.rmdir()
+            except OSError:
+                break
+            node = node.parent
+
+
+def _relocate(request: Request, *, files, new_keys: dict[str, str]) -> None:
+    """등록 전환·후주입에서 **바이트를 데이터셋 자리로 옮긴다.**
+
+    ⚠ 예전에는 저장 키를 그대로 승계해 바이트가 `uploads/{uploadId}/` 에 남았다. 그리는
+    쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**이라, `datasetId` 로 오는 렌더 요청은 빈
+    자리를 보고 404 를 냈고 그 실패는 중계에서 **503 `RENDER_UNAVAILABLE`** 로 나왔다 —
+    등록된 데이터셋 **전체**가 대상이었다 (`03-HANDOFF §4 #20` 계열).
+
+    **사용자에게 등록은 데이터셋이 성립하는 사건이다.** 그래서 자리도 데이터셋의 것이 된다 —
+    같은 볼륨 안의 이름 바꾸기(`os.replace`)라 바이트를 복사하지 않는다. 그 뒤에 붙는
+    `addDatasetFile`·`replaceDatasetGridFile` 이 이미 `datasetId` 자리에 쓰고 있었으므로,
+    이 이동이 없으면 한 데이터셋의 파일이 **두 디렉터리로 갈라진 채** 남는다.
+
+    호출은 **모든 판정이 끝난 뒤 마지막**이다 — 중간 실패로 트랜잭션이 되감길 때
+    바이트만 옮겨진 상태를 만들지 않는다. 이동 도중 실패하면 옮긴 것을 되돌린다.
+    """
+    root = _storage_root(request)
+    done: list[tuple[pathlib.Path, pathlib.Path]] = []
+    try:
+        for f in files:
+            new_key = new_keys[f.file_id]
+            if not f.storage_key or f.storage_key == new_key:
+                continue
+            src, dst = root / f.storage_key, root / new_key
+            if not src.is_file():
+                # 바이트가 이미 없다. 원장은 새 자리를 적는다 — 두 자리를 만들지 않는다.
+                continue
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(src, dst)
+            done.append((src, dst))
+    except OSError:
+        for src, dst in reversed(done):
+            src.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(dst, src)
+        raise
+    _prune_upload_dirs(root, [f.storage_key for f in files])
 
 
 # ── 권한 ────────────────────────────────────────────────────────────────────
@@ -392,11 +453,14 @@ def create_dataset(request: Request, body: dict = None,
         total_size_bytes=total,
     )
 
-    # ② 파일 — **업로드가 발급한 `fileId` 그대로.**
+    # ② 파일 — **업로드가 발급한 `fileId` 그대로.** 저장 키는 **데이터셋의 자리**다
+    #    (`_relocate` 주석 — 승계하면 등록된 데이터셋 전체가 렌더 404 다).
+    new_keys = _dataset_keys(str(dataset_id), files)
     for f in files:
         d3_catalog.insert_file(
             db, file_id=f.file_id, dataset_id=dataset_id, kind=f.kind,
-            file_name=f.file_name, size_bytes=f.byte_size, storage_key=f.storage_key,
+            file_name=f.file_name, size_bytes=f.byte_size,
+            storage_key=new_keys[f.file_id],
             carries_lat=f.carries_lat, carries_lon=f.carries_lon)
 
     # ③ 계보 — **사람이 확인한 것만** 온다. 비어 있으면 `기록 없음` 이고 등록은 막지 않는다.
@@ -422,6 +486,8 @@ def create_dataset(request: Request, body: dict = None,
             raise errors.bad_request("프로젝트가 없거나 연구실 경계 밖이다.")
         d6_project.link_dataset(db, project_id=pid, dataset_id=dataset_id)
 
+    # ⑤ 바이트 — **판정이 다 끝난 뒤에** 옮긴다. 앞에서 실패하면 바이트는 그대로다.
+    _relocate(request, files=files, new_keys=new_keys)
     return dataset_detail(db, subject, dataset_id)
 
 
@@ -501,7 +567,8 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
 
     안 하는 것
       · **축을 지어내지 않는다** — 원장에 축이 있는 행만 옮긴다 (`〈66〉`).
-      · **바이트를 옮기지 않는다** — 저장 키를 그대로 물려받는다. 등록 전환과 같은 규칙이다.
+      · **저장 키를 승계하지 않는다** — 바이트는 데이터셋 자리로 온다(`_relocate`).
+        등록 전환과 같은 규칙이고, 승계가 렌더 404 의 원인이었다.
       · **본체를 받지 않는다** — 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.
       · **마이그레이션·이벤트 계약을 건드리지 않는다.**
     """
@@ -563,12 +630,15 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
         raise errors.conflict("이미 소비된 업로드다.")
 
     out: list[dict[str, Any]] = []
+    new_keys = _dataset_keys(datasetId, grids)
     for g in grids:
         # **`fileId` 동일성** — 업로드가 발급한 ULID 가 `d3_file.id` 로 그대로 간다 (`NB-A`).
-        # **저장 키도 그대로다** — 바이트를 옮기지 않는다(등록 전환과 같은 규칙).
+        # **저장 키는 데이터셋의 자리다** — 등록 전환과 같은 규칙이고, 본체와 격자가 한
+        # 디렉터리에 모여야 D7 이 짝을 본다(그쪽에는 원장이 없다).
         d3_catalog.insert_file(
             db, file_id=g.file_id, dataset_id=dataset_id, kind=g.kind,
-            file_name=g.file_name, size_bytes=g.byte_size, storage_key=g.storage_key,
+            file_name=g.file_name, size_bytes=g.byte_size,
+            storage_key=new_keys[g.file_id],
             carries_lat=g.carries_lat, carries_lon=g.carries_lon)
         out.append({"fileId": g.file_id, "fileName": g.file_name, "kind": g.kind,
                     "gridAxis": {"carriesLat": bool(g.carries_lat),
@@ -576,6 +646,7 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
 
     # `〈60〉` — 계보를 접지 않고 이력에 남긴다. 좌표계·격자는 재계산한다.
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    _relocate(request, files=grids, new_keys=new_keys)
     return {"items": out}
 
 
