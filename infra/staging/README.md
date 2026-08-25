@@ -88,6 +88,37 @@ curl -s -o /dev/null -w '%{http_code}\n' --resolve www.colab-hydro.com:443:$IP \
 호스트 포트는 `127.0.0.1:3000` 으로만 연다. 외부 노출 경로는 터널 하나뿐이다.
 PoC 에서 5432·8100 이 의도와 달리 `0.0.0.0` 에 열려 있던 문제를 반복하지 않는다.
 
+## `load-seed.py` — S2 초기 데이터 적재 도구
+
+명세 = `dev-package/sessions/S2-EXEC-PLAN.md §14` · 멱등 설계 = 같은 문서 `§5.4`(`〈106〉`).
+
+```bash
+python3 infra/staging/load-seed.py \
+  --base-url https://www.colab-hydro.com \
+  --token-file <홈의 0600 토큰 파일> \
+  --manifest  <적재 매니페스트 .json> \
+  --source-root <원천 데이터 루트>
+
+python3 infra/staging/load-seed-test.py      # 시험 16건 — staging 에 접속하지 않는다
+```
+
+- **공개 API op 4건만 부른다** — `listDatasets` · `createUpload` · `createDataset` ·
+  `attachUploadGridFiles`. **DB 드라이버를 import 하지 않는다** — `㊾-③`(DB 직접 INSERT 금지)
+  위반을 코드로 불가능하게 만드는 수단이다.
+- **멱등은 도구가 자기 재실행에 대해 보장한다.** `listDatasets` 를 `nextCursor` 가 `null` 이 될
+  때까지 순회해 **이름 완전 일치**로 판정한다 — 건너뜀 / 격자만 이어붙임 / 중단. **판정을
+  건너뛰는 인자(`--force` 류)를 두지 않았다.**
+- **삭제 호출 0건.** `deleteDataset` 은 501 이고 삭제는 이 도구의 동작이 아니다.
+- 토큰은 헤더에만 실린다 — 로그·보고서에 적지 않는다(시험이 단언한다).
+
+> ⚠ **도구는 S-04 업로드 모달을 대체하지 않는다.** FE 코드를 지나지 않고 그 모달이 부르는
+> **서버 표면**만 재현한다. 그래서 절차서 `§14.3` 은 **회차 ①(`D-01`·`D-02`)을 화면으로** 하라고
+> 못 박았다 — 계보 확정 UI 가 실제로 도는 것을 그 회차가 증명한다.
+
+> ⛔ **2026-08-26 현재 매니페스트가 없다.** 기준 격자 16건 중 일부가 **적재 제외분(`D-14` HLS)**
+> 과 **범위 밖(GRIB)** 의 격자라 데이터셋 귀속을 지어내야 완성된다 — `㊴-②` 저촉이라 만들지
+> 않았다. 형식은 `load-seed-test.py` 의 `MANIFEST_3` 이 보여준다. 미결은 `03-HANDOFF §4` #28.
+
 ## 아직 남은 것
 
 - 터널 ingress 규칙의 정본은 이제 `tunnel/` 이다 (WU-IS2 적용 완료 · `terraform plan` = No changes.).
