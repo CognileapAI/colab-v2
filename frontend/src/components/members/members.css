@@ -20,6 +20,9 @@
   font-size: var(--text-body);
 }
 .card-b { padding: 6px 18px; }
+/* 권한 격자는 스위치 4열 때문에 600px 을 넘는다. 제 스크롤 통이 없으면
+   문서 전체가 옆으로 밀린다 — 가로 스크롤은 이 통 하나가 맡는다 */
+.memgrid .card-b { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* 편집 액션은 카드 헤더 오른쪽 끝에 붙는다 (목업 `.memact`) */
 .memact { display: flex; gap: 8px; margin-left: auto; }
@@ -46,7 +49,7 @@
 .btn-primary:hover { background: var(--color-primary-700); }
 .btn-ghost { border-color: transparent; background: transparent; }
 
-.memtbl { width: 100%; border-collapse: collapse; }
+.memtbl { width: 100%; min-width: 640px; border-collapse: collapse; }
 .memtbl th,
 .memtbl td {
   padding: 10px 8px;
@@ -118,7 +121,7 @@
 }
 
 /* 연구실 설정 두 탭 — `연구실 정보` / `구성원 · 권한` (IA_사이트맵 §3 · 목업 `.settabs`) */
-.settabs { display: flex; gap: 4px; margin-bottom: 14px; }
+.settabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
 .settabs .st {
   height: 36px;
   padding: 0 14px;
