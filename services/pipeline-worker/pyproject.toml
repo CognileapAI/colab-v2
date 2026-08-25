@@ -22,4 +22,5 @@ pythonpath = ["src", "tests"]
 markers = [
   "e2e: 실데이터 E2E — 원천 마운트가 필요하다",
   "dbint: 실 DB 통합 — COLAB_PIPELINE_DB_URL 이 필요하다",
+  "stage2: stage2 대기 모듈(parse·hsr·cog·tiff_probe·renderable·pipeline)을 단언한다 — 배포 단위·완료 정의 밖, 시험은 CI 유지(〈71〉-㉰)",
 ]

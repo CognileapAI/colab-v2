@@ -16,7 +16,7 @@ from colab_pipeline.d5.detect import detect_format
 from colab_pipeline.d5.pipeline import run_file
 from colab_pipeline.d5.tiff_probe import classify_tiff
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.stage2]
 
 _ENV = "COLAB_REFERENCE_DATA"
 

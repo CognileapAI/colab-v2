@@ -111,6 +111,29 @@ jobs:
       - name: RLS 실효 (본체 음성 · 메타 양성 · cross-tenant)
         run: ./gates/run.sh rls-effect
 
+  # 휴면(`stage2` 대기) 모듈의 시험 실행 경로.
+  # 〈71〉-㉰ — 휴면은 배포 단위·화면·완료 정의에서 빠지는 것이고, 시험은 CI 에서 계속 돈다.
+  # 안 돌리면 휴면은 부식한다. 수집 0 건 · skipped · failed 는 전부 red.
+  dormant-tests:
+    needs: changes
+    if: needs.changes.outputs.pipeline-worker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pipeline-worker 런타임 설치 (핀 = requirements.txt)
+        working-directory: services/pipeline-worker
+        run: |
+          python -m venv .venv
+          ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
+          ./.venv/bin/pip install -q --disable-pip-version-check -e .
+      - name: 게이트가 skip 을 통과로 세지 않음을 증명 (0건 · skip · fail)
+        run: ./gates/run.sh stage2-markers-selftest
+      - name: stage2 마커 시험 실행
+        run: ./gates/run.sh stage2-markers
+
   # 게이트가 실제로 red를 낼 수 있는지 증명한다.
   # 이 잡이 없으면 "전부 green"이 "전부 무력"과 구분되지 않는다.
   gate-selftest:

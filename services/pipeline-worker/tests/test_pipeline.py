@@ -11,6 +11,7 @@ from colab_pipeline.d5.tiff_probe import classify_tiff
 from fixture_builders import make_hsr_bin_gz, make_npy_2d, make_netcdf, make_tiled_only_tiff
 
 
+@pytest.mark.stage2
 def test_coords_missing_returns_failure_not_success(tmp_path: Path):
     # 완료조건 ① 핵심 음성 — 좌표 못 찾은 파일이 「성공」을 반환하지 않는다
     nx, ny = 8, 6
@@ -21,6 +22,7 @@ def test_coords_missing_returns_failure_not_success(tmp_path: Path):
     assert any("좌표" in f or "격자" in f for f in r.failures)
 
 
+@pytest.mark.stage2
 def test_hsr_with_reference_grid_completes(tmp_path: Path):
     # 오버뷰가 최소 1단 생기도록 256 타일보다 큰 격자를 쓴다
     nx, ny = 600, 520
@@ -40,6 +42,7 @@ def test_hsr_with_reference_grid_completes(tmp_path: Path):
     assert str(r.artifact.path) != str(p)
 
 
+@pytest.mark.stage2
 def test_unknown_format_is_failure(tmp_path: Path):
     p = tmp_path / "junk.dat"
     p.write_bytes(b"\xde\xad\xbe\xef" * 100)
@@ -47,6 +50,7 @@ def test_unknown_format_is_failure(tmp_path: Path):
     assert r.status == "FAILURE"
 
 
+@pytest.mark.stage2
 def test_human_uploaded_cog_is_never_our_artifact(tmp_path: Path):
     # DR-2 — 사람이 올린 tif 는 (COG 여도) 입력이지 산출물이 아니다
     import fixture_builders as fb
@@ -56,6 +60,7 @@ def test_human_uploaded_cog_is_never_our_artifact(tmp_path: Path):
     assert r.artifact is None or str(r.artifact.path) != str(p)
 
 
+@pytest.mark.stage2
 def test_overview_resampling_split():
     # DR-12 — 범주형/연속형 분기
     assert OVERVIEW_RESAMPLING["categorical"] == "nearest"

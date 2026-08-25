@@ -4,9 +4,16 @@
 """
 from pathlib import Path
 
+import pytest
+
 from colab_pipeline.d5.tiff_probe import classify_tiff
 
 from fixture_builders import make_cog_tiff, make_stripped_tiff, make_tiled_only_tiff
+
+
+# `stage2` 대기 모듈을 단언한다 — 배포 단위·완료 정의에서는 빠지고
+# 시험은 CI 에서 계속 돈다(`PLAN-SoT §9 〈71〉-㉰`).
+pytestmark = pytest.mark.stage2
 
 
 def test_cog_class(tmp_path: Path):

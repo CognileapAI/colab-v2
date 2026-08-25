@@ -5,8 +5,15 @@
 """
 from __future__ import annotations
 
+import pytest
+
 from colab_pipeline.d5.formats import SUPPORTED_FORMATS
 from colab_pipeline.d5.renderable import RENDERABLE_FORMATS, is_renderable
+
+
+# `stage2` 대기 모듈을 단언한다 — 배포 단위·완료 정의에서는 빠지고
+# 시험은 CI 에서 계속 돈다(`PLAN-SoT §9 〈71〉-㉰`).
+pytestmark = pytest.mark.stage2
 
 
 def test_supported_four_are_renderable():

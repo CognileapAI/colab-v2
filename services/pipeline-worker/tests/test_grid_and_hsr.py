@@ -56,6 +56,7 @@ def test_no_linspace_synthesis_anywhere():
 
 # ── HSR ─────────────────────────────────────────────────────────────────
 
+@pytest.mark.stage2
 def test_hsr_reads_num_data_not_assumed(tmp_path: Path):
     nx, ny = 8, 6
     blocks = [[100] * 48, [200] * 48, [7] * 48]
@@ -67,6 +68,7 @@ def test_hsr_reads_num_data_not_assumed(tmp_path: Path):
     assert r.header.nx == nx and r.header.ny == ny
 
 
+@pytest.mark.stage2
 def test_hsr_header_declares_more_than_file_holds(tmp_path: Path):
     # 실측 실물: 원천 배포본이 헤더 num_data=3 인데 1블록만 담는다 — 정직하게 기록
     p = make_hsr_bin_gz(tmp_path / "hsr1.bin.gz", blocks=[[100] * 48], declared_num_data=3)
@@ -76,6 +78,7 @@ def test_hsr_header_declares_more_than_file_holds(tmp_path: Path):
     assert r.block_count_mismatch is True
 
 
+@pytest.mark.stage2
 def test_fill_values_exact_match_only():
     # 행 26 — -20000 은 유효 하한이다. 범위 비교 금지.
     raw = np.array([[-30000, -25000, -20000, 0, 100]], dtype="<i2")

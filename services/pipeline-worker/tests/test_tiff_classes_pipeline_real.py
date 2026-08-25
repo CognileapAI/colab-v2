@@ -22,7 +22,7 @@ from colab_pipeline.domains.d5_ingestion import (
 )
 from memory_ledger import MemoryLedger
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.stage2]
 
 _ENV = "COLAB_REFERENCE_DATA"
 _LAB = "01JQ0000000000000000000001"
