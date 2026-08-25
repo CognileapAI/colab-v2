@@ -17,6 +17,8 @@ import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
 import {
+  GridAxisTaken,
+  NoResolvedGrid,
   UploadGone,
   type FileKind,
   type LineageStepContext,
@@ -36,9 +38,26 @@ function nameFromFile(fileName: string): string {
   return dot > 0 ? fileName.slice(0, dot) : fileName;
 }
 
+/**
+ * **격자 후주입 모드.** 들어오면 이 모달은 「기준 격자 추가」가 된다.
+ *
+ * 사람에게 그 조작은 **파일 업로드**다(Ted 2026-08-25 판정 · 사용자 관점 우선) — 그래서
+ * 새 화면 개념을 만들지 않고 이 모달을 그대로 쓴다. 진행 표시 · 감지 · 판별 사다리 ·
+ * 11 상태가 전부 같은 코드다. 바뀌는 것은 **끝의 한 걸음**뿐이다:
+ * 「연구실에 등록」 대신 「이 데이터셋에 반영」이고, 그때 `uploadId` 와 `datasetId` 가
+ * 한 요청으로 간다. **짝은 이 컴포넌트의 상태로만 존재한다** — 서버에 보관되지 않는다.
+ */
+export interface GridAttachTarget {
+  datasetId: string;
+  datasetName?: string | undefined;
+  /** 반영이 끝난 뒤 상세를 다시 읽게 하는 자리. */
+  onAttached?: (() => void) | undefined;
+}
+
 export function UploadModal(props: {
   sources: UploadSources;
   lineageStep?: LineageStepRender | undefined;
+  attach?: GridAttachTarget | undefined;
   onClose: () => void;
 }) {
   const account = useAccount();
@@ -62,7 +81,12 @@ export function UploadModal(props: {
   const [gridSkipped, setGridSkipped] = useState(false);
   const [nameError, setNameError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [attaching, setAttaching] = useState(false);
   const statusTimer = useRef(0);
+
+  const attach = props.attach;
+  /** 후주입 모드의 기본 파일 종류. 사람이 격자를 붙이러 왔으므로 격자가 기본이다. */
+  const defaultKind: FileKind = attach ? '기준 격자 파일' : '본체';
 
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
@@ -166,7 +190,8 @@ export function UploadModal(props: {
 
   function pick(files: File[]) {
     // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
-    setPicked((cur) => [...cur, ...files.map((file) => ({ file, kind: '본체' as FileKind }))]);
+    // **후주입 모드에서는 기본값이 `기준 격자 파일` 이다** — 사람이 격자를 붙이러 왔다.
+    setPicked((cur) => [...cur, ...files.map((file) => ({ file, kind: defaultKind }))]);
   }
 
   function setKind(index: number, kind: FileKind) {
@@ -177,6 +202,33 @@ export function UploadModal(props: {
     // 등록 단계를 연 채 닫으면 사람이 한 확인이 사라진다 — 그때만 묻는다 (§8 모달 닫기)
     if (registerOpen) setConfirmClose(true);
     else props.onClose();
+  }
+
+  /**
+   * 「이 데이터셋에 반영」 — 후주입의 **마지막 한 걸음**.
+   * 화면이 들고 있던 `uploadId` 를 `datasetId` 옆에 놓아 보낸다. 그 짝은 여기서만 존재했다.
+   */
+  async function confirmAttach() {
+    if (!uploadId || !attach) return;
+    setAttaching(true);
+    setRegisterError(null);
+    try {
+      await upload.attachGrid(attach.datasetId, uploadId);
+      attach.onAttached?.();
+      props.onClose();
+    } catch (e) {
+      setRegisterError(
+        e instanceof UploadGone
+          ? '이 파일은 더 이상 없어요. 다시 올려 주세요.'
+          : e instanceof GridAxisTaken
+            ? '이 데이터셋에는 그 축의 기준 격자 파일이 이미 있어요. 바꾸려면 교체를 쓰세요.'
+            : e instanceof NoResolvedGrid
+              ? '올린 파일에서 위도·경도를 정하지 못했어요. 위 안내를 확인해 주세요.'
+              : '격자를 반영하지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+      );
+    } finally {
+      setAttaching(false);
+    }
   }
 
   async function submit() {
@@ -219,11 +271,12 @@ export function UploadModal(props: {
         className="modal modal-takeover"
         role="dialog"
         aria-modal="true"
-        aria-label="업로드"
+        aria-label={attach ? '기준 격자 추가' : '업로드'}
         data-testid="upload-modal"
+        data-mode={attach ? 'grid-attach' : 'register'}
       >
         <div className="modal-h">
-          <h3>업로드</h3>
+          <h3>{attach ? '기준 격자 추가' : '업로드'}</h3>
           {/* 상단 메뉴가 가려져도 **어느 연구실에 올리는지**가 보인다 (§8) */}
           <span className="mh-lab" data-testid="upload-lab">
             <b>{account?.labName ?? ''}</b>에 올려요
@@ -254,7 +307,48 @@ export function UploadModal(props: {
                 }}
               />
 
+              {/* 후주입 확정 — 등록 게이트와 **같은 자리**다. 화면 개념을 늘리지 않는다.
+                  판별이 끝나기 전에는 누를 수 없다 — 축이 정해져야 반영할 것이 있다. */}
+              {attach ? (
+                <div className="reggate" data-testid="grid-attach-gate">
+                  <div>
+                    <div className="rg-t">
+                      이 기준 격자를 {attach.datasetName ?? '이 데이터셋'}에 반영할까요?
+                    </div>
+                    <div className="rg-s">
+                      반영하면 지도형 미리보기가 생겨요. 데이터는 새로 만들어지지 않아요.
+                    </div>
+                  </div>
+                  <div className="rg-a">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      data-testid="grid-attach-cancel"
+                      onClick={requestClose}
+                    >
+                      그만두기
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-strong"
+                      data-testid="grid-attach-confirm"
+                      disabled={!uploadId || !status?.ready || attaching}
+                      onClick={() => void confirmAttach()}
+                    >
+                      이 데이터셋에 반영
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {attach && registerError ? (
+                <p className="err" data-testid="grid-attach-error" role="alert">
+                  {registerError}
+                </p>
+              ) : null}
+
               {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
+              {!attach ? (
               <div className="reggate" data-testid="reg-gate">
                 <div>
                   <div className="rg-t">이 파일을 연구실에 등록할까요?</div>
@@ -285,12 +379,13 @@ export function UploadModal(props: {
                   </button>
                 </div>
               </div>
+              ) : null}
             </>
           )}
 
           {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
               옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치) */}
-          {registerOpen && (
+          {!attach && registerOpen && (
             <RegisterArea
               step={step}
               onStep={setStep}

@@ -38,8 +38,13 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_49() -> None:
-    """45 → 46 → **49.**
+def test_operation_count_is_50() -> None:
+    """45 → 46 → 49 → **50.**
+
+    ⭑ **50 의 하나는 `attachUploadGridFiles`** — 격자 후주입의 집행 경로다
+    (Ted 2026-08-25 판정 · 사용자 관점 우선). **신설과 동시에 구현했다** — 그래서
+    501 표는 23 에 머문다(`searchDatasets`·`listPalettes` 때 세운 규칙 그대로).
+
 
     46 의 하나는 `searchDatasets`(`〈80〉-㉯ 5`)였다. **49 의 셋은 4차 동결 해제**다
     (`PLAN-SoT §9-〈88〉` 묶음 4·5·6) — `listPalettes` · `addUploadFile` ·
@@ -51,7 +56,7 @@ def test_operation_count_is_49() -> None:
     세 회차가 각각 직전 묶음이 세지 않은 축에서 구멍을 남겼다 — 마지막 축이
     **「그 응답을 부를 op 이 있는가」**였다(`sessions/S1-CONTRACT-GAP-SWEEP.md`).
     """
-    assert len(contract_operations()) == 49, "계약의 오퍼레이션이 49 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 50, "계약의 오퍼레이션이 50 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

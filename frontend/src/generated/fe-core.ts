@@ -473,29 +473,76 @@ export interface paths {
          *     후주입은 계보를 접지 않고 활동 기록(D8)에 남는다 (`〈60〉`).
          *     새 파일도 파이프라인(파싱·변환)을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
          *
-         *     **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 10 · Ted 2026-08-25 판정 ㈎「연다」⟩
-         *     기준 격자 파일은 `202` 로 답한다.**
-         *     ⚠ **개정 전에는 이 op 이 자기 존재 이유인 `기준 격자 파일` 을 400 으로 거절했다** —
-         *     「축 판별 경로가 아직 이 op 에 연결되지 않았다」는 이유였고, 통과하는 것은 `본체`
-         *     뿐이었는데 **본체 후주입은 `〈59〉-③` 이 금지한 조작**이다. 그래서 요약문의
-         *     「기준 격자 파일은 나중에 와도 된다」와 `§E.2-⑨` 의 건너뛰기 안내
-         *     (「나중에 데이터셋 상세에서 격자를 올리면…」)가 **거짓 약속**이었다.
-         *     **건너뛰기는 `§E.1` 이 지정한 기본 경로다** — 즉 다수 사용자가 그 거짓말을 만났다
-         *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `D-3`).
+         *     **⟨Ted 2026-08-25 판정(사용자 관점 우선) — 격자 후주입의 집행 경로는 이 op 이 아니다⟩**
+         *     `〈88〉` 묶음 10 이 여기에 `202` 를 열었으나 **그 응답을 낼 수 있는 집행이 없었다**:
+         *     축이 정해지기 전의 격자 파일을 둘 자리가 저장 형태에 없고(`d3_file` CHECK ㈎),
+         *     파이프라인 이벤트는 `upload_id` 가 NOT NULL 이라 데이터셋 단위 판별을 태울 봉투가 없다.
          *
-         *     **왜 `201 + DatasetFile` 이 아닌가** — 격자는 축이 정해지기 전까지 `DatasetFile` 을
-         *     낼 수 없다. `gridAxis` 는 파일을 읽어야 나오고(`〈63〉-㉰`) 그 판별은
-         *     pipeline-worker 소관이라, 응답 시점에 말할 자격이 없다. **지어내지 않는다.**
+         *     **격자 후주입은 `attachUploadGridFiles` 가 집행한다.** 사람에게 그 조작은 **파일
+         *     업로드**이므로 기존 업로드 흐름(`createUpload` → `getUploadStatus` → 판별 사다리)을
+         *     그대로 쓰고, 판별이 끝난 뒤 그 op 이 `uploadId` 와 `datasetId` 를 한 요청에서 받는다.
+         *     그래서 `〈58〉-②`·`§E.2-⑨` 의 약속이 실제 경로를 얻는다.
          *
-         *     ⛔ **집행이 아직 이 202 를 내지 못한다 — 감추지 않고 적는다.**
-         *     `〈88〉` 이 계약 쪽을 열었으나, **축이 정해지기 전의 격자 파일을 둘 자리가 저장 형태에
-         *     없다**: `d3_file` 의 CHECK ㈎ 가 축 없는 격자 행을 막고(`0004`), 파이프라인 이벤트는
-         *     `upload_id` 가 NOT NULL 이라 **데이터셋 단위 판별을 태울 봉투가 없다.** 둘 중 하나를
-         *     여는 것은 **스키마 판정**이고 이 묶음의 범위가 아니다(`CLAUDE.md §5` 범위 늘리기 금지).
-         *     그때까지 집행은 `kind = 기준 격자 파일` 을 **400 으로 거절한다** — 받아 두고 잃는 것보다
-         *     정직하다. **다음 회차의 진입조건이다.**
+         *     ⛔ **아래 `202` 는 집행이 없는 응답으로 남아 있다 — 감추지 않고 적는다.**
+         *     지우는 것은 `response-success-status-removed` 라 `contract-breaking` red 이고,
+         *     그 철회는 **동결 해제 판정 사안**이라 이 회차의 범위가 아니다
+         *     (`CLAUDE.md §5` 범위 늘리기 금지). **다음 회차의 진입조건이다.**
+         *
+         *     ⚠ **이 op 에 남는 집행은 `본체` 뿐이고, 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.**
+         *     집행은 `kind = 기준 격자 파일` 을 **400 으로 거절하고 `attachUploadGridFiles` 를 가리킨다.**
          */
         post: operations["addDatasetFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/datasets/{datasetId}/grid-files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 기준 격자 후주입 확정 — 판별이 끝난 업로드를 이 데이터셋에 반영한다
+         * @description **정본 근거 = `〈58〉-②`(후주입 경로가 없으면 계보가 끊긴다) · `〈75〉-㉰`(격자는 지도형의
+         *     전제이고 등록은 격자에 인질이 아니다) · `Policy_데이터셋_상세 §5`(파일 칸) ·
+         *     Ted 2026-08-25 판정(사용자 관점 우선 — 「격자를 나중에 붙이는 행위」 = 파일 업로드).**
+         *
+         *     **사람에게 이 조작은 업로드다.** 그래서 새 개념을 만들지 않고 **기존 업로드 흐름을
+         *     그대로 재사용한다** — `createUpload` 로 격자 파일을 접수하고, `getUploadStatus` 로
+         *     판별 사다리의 결과(`gridAxis` · `gridRejections`)를 본 뒤, 사람이 「이 데이터셋에
+         *     반영」을 누르면 이 op 이 `uploadId` 와 `datasetId` 를 **한 요청 안에서** 받는다.
+         *
+         *     **짝(데이터셋 ↔ 업로드)을 저장하지 않는다.** 화면이 들고 있다가 이 요청에 동봉한다 —
+         *     `d5_upload` 는 `datasetId` 를 의도적으로 갖지 않고(불변규칙 1), 그 자리를 만들면
+         *     D5 가 D3 를 가리키게 된다. 등록 전환(`createDataset`)이 성립하는 이유와 같은 이유로
+         *     이 op 도 성립한다: **`datasetId` 와 격자 파일이 한 트랜잭션 안에 함께 있는 순간**이다.
+         *
+         *     **`〈79〉-㈎` 가 그대로 지켜진다** — 원장의 격자 행은 워커가 축을 확정한 뒤에 서고,
+         *     이 op 은 그 **이미 축이 확정된 행**을 `d3_file` 로 옮긴다. 축이 빈 격자 행을 만들지
+         *     않으며, `0004` 의 CHECK 도 이벤트 계약도 건드리지 않는다.
+         *
+         *     판정은 `업로드·편집` 스위치가 한다 (`〈59〉-②`). 후주입은 계보를 접지 않고 활동
+         *     기록(D8)에 남는다 (`〈60〉`).
+         *
+         *     **거절되는 자리**
+         *     - 그 업로드에 **축이 확정된 기준 격자 파일이 하나도 없다** → `400`.
+         *       판별에 실패했거나 형상이 어긋난 격자는 원장에 행이 없다 (`〈66〉`) —
+         *       사유는 `getUploadStatus` 의 `gridRejections` 가 말한다.
+         *     - 그 업로드에 **본체 파일이 섞여 있다** → `400`. 본체가 든 묶음은 등록 전환의
+         *       대상이지 후주입의 대상이 아니다 (`〈59〉-③` — 본체 후주입은 금지된 조작이다).
+         *     - 이미 그 축을 쓰는 격자 파일이 데이터셋에 있다 → `409`.
+         *       데이터셋당 기준 격자 파일은 **0~2 건**이고 축마다 하나다 (`〈58〉` · `0004` 축별 부분 유니크).
+         *     - 그 업로드가 이미 반영·등록됐다 → `409`. 같은 업로드를 두 번 소비하지 않는다.
+         */
+        post: operations["attachUploadGridFiles"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3172,10 +3219,9 @@ export interface operations {
                 };
             };
             /**
-             * @description **`kind` 가 `기준 격자 파일` 일 때의 응답** (`〈88〉` 묶음 10).
-             *     받았고, **축이 정해진 뒤 `listDatasetFiles` 에 나타난다.** 축을 못 정하면
-             *     그 파일은 나타나지 않는다 — 축이 빈 격자 행을 만들지 않는다(`〈63〉-ⓒ`·`〈66〉`).
-             *     **응답 본문에 `gridAxis` 가 없는 것이 정상이다** — 아직 아무도 모른다.
+             * @description ⛔ **집행이 없는 응답이다** — 격자 후주입은 `attachUploadGridFiles` 가 집행한다.
+             *     철회는 `contract-breaking` 을 건드리는 동결 해제 판정 사안이라 이 회차의 범위가
+             *     아니다. 집행은 `kind = 기준 격자 파일` 을 400 으로 거절한다.
              */
             202: {
                 headers: {
@@ -3193,6 +3239,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    attachUploadGridFiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    uploadId: components["schemas"]["Ulid"];
+                };
+            };
+        };
+        responses: {
+            /** @description 반영된 기준 격자 파일들. **축이 확정된 것만 들어 있다** — 지어낸 축이 없다. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["DatasetFile"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
         };
     };

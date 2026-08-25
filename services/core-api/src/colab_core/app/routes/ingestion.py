@@ -189,9 +189,12 @@ async def create_upload(request: Request, response: Response,
     unknown = sorted(set(kinds) - set(FILE_KINDS))
     if unknown:
         raise errors.bad_request(f"파일 종류가 2값 밖이다: {unknown}")
-    if BODY not in kinds:
-        # 본체 1건 이상 (`DataModel §4.3`). 격자만 올린 묶음은 데이터가 아니라 좌표다.
-        raise errors.bad_request("본체 파일이 최소 1건 있어야 한다.")
+    # ⚠ **여기서 「본체 1건 이상」을 요구하지 않는다.** 그 불변식은 **데이터셋의 성질**이고
+    # (`DataModel §4.3`), 접수는 D3 에 아무것도 만들지 않는다 (`〈64〉-ⓐ`). 그래서 판정은
+    # 등록 전환(`createDataset`)이 한다 — 아래 그 자리에 있다.
+    # **격자만 든 묶음이 접수돼야 격자 후주입이 성립한다**(Ted 2026-08-25 판정 · 사용자
+    # 관점 우선 — 「격자를 나중에 붙이는 행위」 = 파일 업로드). 그 묶음의 소비처는
+    # `attachUploadGridFiles` 이고, 등록 전환은 여전히 본체를 요구한다.
 
     upload_id = Ulid.generate()
     records: list[UploadFileRecord] = []
@@ -361,6 +364,14 @@ def create_dataset(request: Request, body: dict = None,
     files = ledger.files(upload_id)
     if not files:
         raise errors.bad_request("접수된 파일이 없다.")
+    if not any(f.kind == BODY for f in files):
+        # **본체 1건 이상** (`DataModel §4.3`). 격자만 올린 묶음은 데이터가 아니라 좌표다.
+        # 판정이 접수가 아니라 **여기** 있는 이유 — 격자만 든 업로드는 후주입의 재료로
+        # 정상 상태이고(`attachUploadGridFiles`), 데이터셋이 되는 것만 막으면 된다.
+        raise errors.bad_request(
+            "본체 파일이 최소 1건 있어야 한다 — 기준 격자 파일만 든 묶음은 "
+            "데이터셋이 아니라 좌표다. 이미 있는 데이터셋에 붙이려면 "
+            "`/datasets/{datasetId}/grid-files` 로 반영한다.")
 
     # ① 원장 도장을 **먼저** 찍는다. 두 요청이 동시에 오면 UPDATE 의 행 잠금이 하나를
     #    떨어뜨리고, 떨어진 쪽은 409 가 된다 — 데이터셋이 둘 생기지 않는다.
@@ -459,14 +470,113 @@ async def add_dataset_file(request: Request, datasetId: str,
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
         # 축을 지어내지 않는다 (`〈66〉`). 축 판별은 파일을 읽는 쪽의 일이다.
+        # **격자의 자리는 `attachUploadGridFiles` 다** — 거절하면서 갈 곳을 말한다.
         raise errors.bad_request(
             "기준 격자 파일의 축(위도·경도)은 서버가 파일에서 판별한다 — "
-            "그 판별 경로(pipeline-worker)가 아직 이 op 에 연결되지 않았다.")
+            "이 op 은 그 판별을 태우지 않는다. 격자는 업로드로 올려 판별을 마친 뒤 "
+            "`/datasets/{datasetId}/grid-files` 로 반영한다.")
     d3_catalog.insert_file(db, file_id=str(file_id), dataset_id=dataset_id, kind=kind,
                            file_name=name, size_bytes=len(payload), storage_key=key,
                            carries_lat=False, carries_lon=False)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return {"fileId": str(file_id), "fileName": name, "kind": kind}
+
+
+_ALLOWED_ATTACH_FIELDS = {"uploadId"}
+
+
+@router.post("/datasets/{datasetId}/grid-files", name="attachUploadGridFiles", status_code=201)
+def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body(default=None),
+                             subject: Subject = Depends(current_subject),
+                             db: Session = Depends(scoped_db)) -> dict:
+    """격자 후주입 **확정** — 판별이 끝난 업로드를 이 데이터셋에 반영한다.
+
+    **사람에게 이 조작은 업로드다** (Ted 2026-08-25 판정 · 사용자 관점 우선). 그래서 새 개념을
+    만들지 않고 기존 업로드 흐름을 그대로 쓴다 — `createUpload` 가 격자를 접수하고, 워커가
+    축을 확정해 `d5_upload_file` 행을 세우고(`〈79〉-㈎`), 이 op 이 그 행을 `d3_file` 로 옮긴다.
+
+    **짝(데이터셋 ↔ 업로드)을 저장하지 않는다** — 화면이 들고 있다가 이 요청에 동봉한다.
+    `d5_upload` 는 `datasetId` 를 의도적으로 갖지 않는다(불변규칙 1). 등록 전환이 성립하는
+    이유와 같은 이유로 이 op 도 성립한다: **`datasetId` 와 격자 파일이 한 트랜잭션 안에 있다.**
+
+    안 하는 것
+      · **축을 지어내지 않는다** — 원장에 축이 있는 행만 옮긴다 (`〈66〉`).
+      · **바이트를 옮기지 않는다** — 저장 키를 그대로 물려받는다. 등록 전환과 같은 규칙이다.
+      · **본체를 받지 않는다** — 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.
+      · **마이그레이션·이벤트 계약을 건드리지 않는다.**
+    """
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    _require_upload_edit(db, subject)
+    if not d3_catalog.dataset_exists(db, dataset_id):
+        # 없는 데이터셋과 경계 밖을 **같은 404** 로 낸다.
+        raise errors.not_found()
+
+    if not isinstance(body, dict):
+        raise errors.bad_request("요청 본문이 객체가 아니다.")
+    unknown = set(body) - _ALLOWED_ATTACH_FIELDS
+    if unknown:
+        raise errors.bad_request(f"계약에 없는 필드다: {sorted(unknown)}")
+    upload_ref = body.get("uploadId")
+    if not Ulid.is_valid(upload_ref):
+        raise errors.bad_request("uploadId 가 정규 ID 가 아니다.")
+    upload_id = Ulid(upload_ref)
+
+    ledger = _ledger(db)
+    record = _live_upload(db, upload_id)
+    if record is None:
+        # 수명은 **일반 업로드와 같다** (`〈67〉-ⓐ` 규칙 ③) — 후주입 전용 수명을 만들지 않는다.
+        raise errors.not_found("없거나 수명이 다한 업로드다.")
+    if record.registered_at is not None:
+        raise errors.conflict("이미 소비된 업로드다 — 같은 업로드를 두 번 반영하지 않는다.")
+
+    files = ledger.files(upload_id)
+    if any(f.kind == BODY for f in files):
+        raise errors.bad_request(
+            "본체 파일이 든 업로드다 — 본체가 든 묶음은 등록 전환의 대상이지 "
+            "후주입의 대상이 아니다.")
+    grids = [f for f in files if f.kind == GRID]
+    if not grids:
+        # 판별에 실패했거나 형상이 어긋난 격자는 **행 자체가 없다** (`〈66〉`).
+        # 사유는 `getUploadStatus` 의 `gridRejections` 가 말한다 — 여기서 어휘를 새로 만들지 않는다.
+        raise errors.bad_request(
+            "축이 확정된 기준 격자 파일이 없다 — 판별 결과는 업로드 상태 조회의 "
+            "`gridRejections` 가 말한다.")
+
+    # `〈58〉` — 데이터셋당 기준 격자 파일 0~2 건이고 **축마다 하나**다. 집행 장치는
+    # `0004` 의 축별 부분 유니크이고, 여기서는 그 위반을 **409 로 먼저** 말한다 —
+    # IntegrityError 를 500 으로 흘리면 사람은 무엇이 겹쳤는지 못 읽는다.
+    taken_lat = any(g.carries_lat for g in d3_catalog.grid_files(db, dataset_id))
+    taken_lon = any(g.carries_lon for g in d3_catalog.grid_files(db, dataset_id))
+    for g in grids:
+        if (g.carries_lat and taken_lat) or (g.carries_lon and taken_lon):
+            raise errors.conflict(
+                "이미 그 축을 쓰는 기준 격자 파일이 있다 — 데이터셋당 축마다 한 건이다. "
+                "바꾸려면 교체(`replaceDatasetGridFile`)를 쓴다.")
+        taken_lat = taken_lat or g.carries_lat
+        taken_lon = taken_lon or g.carries_lon
+
+    # 원장 도장을 **먼저** 찍는다 — 등록 전환과 같은 도장이고 같은 행 잠금이다.
+    # 두 요청이 동시에 오면 하나만 통과하고, 같은 업로드가 두 데이터셋에 반영되지 않는다.
+    if not ledger.mark_registered(upload_id):
+        raise errors.conflict("이미 소비된 업로드다.")
+
+    out: list[dict[str, Any]] = []
+    for g in grids:
+        # **`fileId` 동일성** — 업로드가 발급한 ULID 가 `d3_file.id` 로 그대로 간다 (`NB-A`).
+        # **저장 키도 그대로다** — 바이트를 옮기지 않는다(등록 전환과 같은 규칙).
+        d3_catalog.insert_file(
+            db, file_id=g.file_id, dataset_id=dataset_id, kind=g.kind,
+            file_name=g.file_name, size_bytes=g.byte_size, storage_key=g.storage_key,
+            carries_lat=g.carries_lat, carries_lon=g.carries_lon)
+        out.append({"fileId": g.file_id, "fileName": g.file_name, "kind": g.kind,
+                    "gridAxis": {"carriesLat": bool(g.carries_lat),
+                                 "carriesLon": bool(g.carries_lon)}})
+
+    # `〈60〉` — 계보를 접지 않고 이력에 남긴다. 좌표계·격자는 재계산한다.
+    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    return {"items": out}
 
 
 @router.put("/datasets/{datasetId}/files/{fileId}", name="replaceDatasetGridFile")

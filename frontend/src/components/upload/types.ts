@@ -27,6 +27,15 @@ export interface PickedFile {
   kind: FileKind;
 }
 
+/** 후주입 확정이 돌려주는 `DatasetFile` 들. 축은 **판별의 결과**다. */
+export type DatasetFile = Schemas['DatasetFile'];
+
+/** 이미 그 축을 쓰는 격자가 있다 (`〈58〉` 상한 · 계약 409). */
+export class GridAxisTaken extends Error {}
+
+/** 확정할 격자가 없다 — 판별에 실패했거나 형상이 어긋났다 (계약 400 · `〈66〉`). */
+export class NoResolvedGrid extends Error {}
+
 export interface UploadSource {
   /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다. */
   create(files: PickedFile[]): Promise<UploadReceipt>;
@@ -34,6 +43,11 @@ export interface UploadSource {
   status(uploadId: string): Promise<UploadStatus>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
   register(body: DatasetCreate): Promise<{ datasetId: string }>;
+  /**
+   * `attachUploadGridFiles` — **격자 후주입 확정.**
+   * 짝(데이터셋 ↔ 업로드)은 어디에도 저장되지 않는다 — **화면이 들고 있다가 여기서 동봉한다.**
+   */
+  attachGrid(datasetId: string, uploadId: string): Promise<DatasetFile[]>;
 }
 
 /**

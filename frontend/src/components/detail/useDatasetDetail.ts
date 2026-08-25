@@ -7,7 +7,12 @@ export type DetailState =
   | { status: 'ready'; detail: DatasetDetail }
   | { status: 'gone' };
 
-export function useDatasetDetail(source: DetailSource, datasetId: string): DetailState {
+/**
+ * `reloadToken` — 값이 바뀌면 다시 읽는다. **화면이 서버 값을 손으로 고치지 않게** 하는 자리다
+ * (격자를 반영한 뒤 `hasReferenceGridFile` 을 화면이 직접 true 로 바꾸면 서버가 거절해도 참으로 보인다).
+ */
+export function useDatasetDetail(source: DetailSource, datasetId: string,
+                                 reloadToken: number = 0): DetailState {
   const [state, setState] = useState<DetailState>({ status: 'loading' });
 
   useEffect(() => {
@@ -24,7 +29,7 @@ export function useDatasetDetail(source: DetailSource, datasetId: string): Detai
     return () => {
       alive = false;
     };
-  }, [source, datasetId]);
+  }, [source, datasetId, reloadToken]);
 
   return state;
 }

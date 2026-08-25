@@ -82,6 +82,7 @@ function fakes(
     palettes?: { palette: string; label: string }[];
     projects?: Schemas['ProjectRow'][];
     registerThrows?: unknown;
+    attachThrows?: unknown;
     suggestions?: Partial<LineageSuggestionResponse>;
     suggestionsThrows?: unknown;
     candidates?: DatasetRow[];
@@ -97,6 +98,8 @@ function fakes(
     listProjects: 0,
     createProject: 0,
     registered: [] as Record<string, unknown>[],
+    /** 후주입 확정이 실제로 실어 보낸 짝 — **화면이 들고 있던 것**이 이 배열에 남는다. */
+    attached: [] as { datasetId: string; uploadId: string }[],
     suggestions: 0,
     suggestionsQuery: [] as Record<string, unknown>[],
     candidates: 0,
@@ -156,6 +159,18 @@ function fakes(
       calls.registered.push(body as unknown as Record<string, unknown>);
       if (over.registerThrows) throw over.registerThrows;
       return { datasetId: DATASET_ID };
+    },
+    async attachGrid(datasetId, uploadId) {
+      calls.attached.push({ datasetId, uploadId });
+      if (over.attachThrows) throw over.attachThrows;
+      return [
+        {
+          fileId: FILE_ID2,
+          fileName: 'lat.npy',
+          kind: '기준 격자 파일',
+          gridAxis: { carriesLat: true, carriesLon: false },
+        },
+      ];
     },
   };
   const preview: PreviewSource = {

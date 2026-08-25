@@ -76,10 +76,16 @@ def test_create_upload_requires_the_upload_edit_switch(p2_client, sql) -> None:
             {"a": "000000000000000000000000A1"}, account_id="00000000000000000000000AP1")
 
 
-def test_create_upload_needs_at_least_one_body_file(p2_client) -> None:
-    """격자만 올린 묶음은 데이터가 아니라 좌표다 (`DataModel §4.3` — 본체 1건 이상)."""
+def test_create_upload_accepts_a_grid_only_bundle(p2_client) -> None:
+    """**격자만 든 묶음도 접수된다** — 판정 자리가 접수에서 **등록 전환**으로 옮겨졌다.
+
+    「본체 1건 이상」은 **데이터셋의 성질**이고(`DataModel §4.3`), 접수는 D3 에 아무것도
+    만들지 않는다(`〈64〉-ⓐ`). 격자만 든 업로드는 **격자 후주입의 재료**로 정상 상태다
+    (`attachUploadGridFiles` · Ted 2026-08-25 판정). 데이터셋이 되는 것은
+    `tests/test_dataset_registration.py` 가 막는다.
+    """
     r = _upload(p2_client(), files=one_body("grid.nc"), kinds=["기준 격자 파일"])
-    assert r.status_code == 400
+    assert r.status_code == 201, r.text
 
 
 def test_create_upload_rejects_a_third_file_kind(p2_client) -> None:
