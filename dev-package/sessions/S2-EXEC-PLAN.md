@@ -1037,3 +1037,176 @@ db/platform/schema.sql:646-648 d8_download_append_only  BEFORE UPDATE OR DELETE 
 | ㉯ | `D-07`·`D-15` 격자 사본 차이 측정 | 통일 판단의 선행. 지금은 `[미확인]` |
 | ㉰ | A·B 관측치 API 4칸 취득 주체 | 토큰 접근 권한을 가진 레인에서 잴 것인가 |
 
+
+---
+
+## 16. 5단 집행 기록 — 픽스처 A·B **부분 철거** (2026-08-26)
+
+> **표기 = 「부분 철거」.** 「철거 완료」로 적지 않는다 — 잔존 4종이 남는다(`§16.6`).
+> 근거는 실행 명령과 관측값. 재지 않은 칸은 `[미확인]`.
+
+### 16.1 승인·전제
+
+| 항목 | 값 |
+|---|---|
+| 승인 | 2026-08-26 Ted — 대상 = staging 연구실 A·B 의 시험 데이터 D3~D8 |
+| 존치 목적 달성 근거 | A·B 관측치 불변 **21/21** 확인. 경계 격리 실증 완료 |
+| 실데이터 사전 계수 | 연구실 C — 데이터셋 **12** · 파일 **129** · 계보 **5** |
+| 실행 조건 | 5건(백업 · `lab_id` 조건 · C 계수 대조 · 단계별 · 잔존 명시) 전건 준수 |
+
+### 16.2 사전 상태 — 표별 행 수 실측
+
+취득 = `docker exec colab_v2_staging_pg psql -U postgres -d colab_platform` · `GROUP BY lab_id`.
+0 = 집계 행이 나오지 않은 칸(해당 연구실 행 없음).
+
+| 표 | A | B | C(HYMETS) |
+|---|---|---|---|
+| `d6_project_dataset` | 2 | 1 | 0 |
+| `d6_project` | 1 | 1 | 0 |
+| `d4_lineage_edge` | 1 | 0 | 5 |
+| `d2_verified` | 2 | 0 | 0 |
+| `d2_dataset_access` | 2 | 0 | 0 |
+| `d3_file` | 3 | 1 | 129 |
+| `d3_dataset_autometa` | 2 | 1 | 12 |
+| `d3_dataset_description` | 2 | 1 | 12 |
+| `d3_dataset` | 2 | 1 | 12 |
+| `d8_activity` (존치) | 5 | 1 | 3 |
+| `d8_download` (존치) | 1 | 1 | 0 |
+| `d2_permission_switch` (존치) | 4 | 0 | 4 |
+| `d2_member_role` (존치) | 2 | 1 | 2 |
+| `d1_account` (존치) | 2 | 1 | 2 |
+| `d1_lab_profile` (존치) | 1 | 1 | 1 |
+
+- `d4_lineage_unknown` 8 · `d5_upload` 15 · `d5_upload_file` 129 · `d5_pipeline_event` 21 — **전량 연구실 C 귀속.** 철거 대상 0
+- `d2_permission_change` — 전 연구실 0행
+
+### 16.3 1단 백업 + 복원 리허설 (조건 1)
+
+| 항목 | 값 |
+|---|---|
+| 명령 | `infra/staging/backup/backup.sh` → `infra/staging/backup/restore-rehearsal.sh` |
+| platform 산출물 | `platform-20260826T205653.sql.gz` · 26854 B · C1~C6 **GREEN** (`CREATE TABLE` 23 · 데이터 행 402) |
+| ai 산출물 | `ai-20260826T205654.sql.gz` · 5132 B · C1~C6 **GREEN** (`CREATE TABLE` 6 · 데이터 행 91) |
+| 복원 리허설 platform | **GREEN** — 표 23 원본=복원 · 총 행 402 · 내용 다이제스트 `d39f41ea12932a6292008ce5eaa2c67b` 일치 |
+| 복원 리허설 ai | **GREEN** — 표 6 · 총 행 91 · 다이제스트 `6661ee8e45f86ba6fe0281f8a334b12a` 일치 · K2 시드 22행 복원 |
+| 종료코드 | 0 |
+
+**롤백 지점 R4 확보 뒤에 철거를 시작했다.**
+
+### 16.4 3단 연구실 A 철거 (조건 2·4)
+
+모든 문장에 `lab_id = '0000000000000000000000000A'` 조건. 단일 트랜잭션.
+**실행 전 동일 조건 `SELECT` 로 대상 건수 산출 → `DELETE` 결과와 칸별 대조.**
+
+| 순서 | 표 | SELECT 예상 | DELETE 실제 | 일치 |
+|---|---|---|---|---|
+| 1 | `d6_project_dataset` (픽스처 ULID 한정) | 1 | 1 | ○ |
+| 2 | `d6_project` (존치 참조 제외) | 0 | 0 | ○ |
+| 3 | `d4_lineage_edge` | 1 | 1 | ○ |
+| 4 | `d2_verified` | 2 | 2 | ○ |
+| 5 | `d2_dataset_access` | 2 | 2 | ○ |
+| 6 | `d3_file` | 3 | 3 | ○ |
+| 7 | `d3_dataset_autometa` | 2 | 2 | ○ |
+| 8 | `d3_dataset_description` | 2 | 2 | ○ |
+| 9 | `d3_dataset` | 2 | 2 | ○ |
+
+- **9/9 일치.** FK 저촉 0 · 오류 0 · `COMMIT` 1회
+- 1 번의 한정 조건 = `dataset_id <> '01M0TMCKMWYYZGP61BZJYD0TGC'` — 잔존 지정분 제외(`§16.6-④`)
+- 2 번이 0 인 사유 = 잔존 `d6_project_dataset` 1행이 `project_id = '0000000000000000000000PRJA'` 를 FK 로 잡는다(`db/platform/schema.sql:606`)
+
+**A 직후 연구실 C 계수** — 데이터셋 12 · 파일 129 · 계보 5. **사전과 동일.** A 잔존 `d3_dataset` 0 · `d3_file` 0
+
+### 16.5 4단 연구실 B 철거 (A 정상 완료 확인 후)
+
+`lab_id = '0000000000000000000000000B'` 조건. 단일 트랜잭션.
+
+| 순서 | 표 | SELECT 예상 | DELETE 실제 | 일치 |
+|---|---|---|---|---|
+| 1 | `d6_project_dataset` | 1 | 1 | ○ |
+| 2 | `d6_project` | 1 | 1 | ○ |
+| 3 | `d4_lineage_edge` | 0 | 0 | ○ |
+| 4 | `d2_verified` | 0 | 0 | ○ |
+| 5 | `d2_dataset_access` | 0 | 0 | ○ |
+| 6 | `d3_file` | 1 | 1 | ○ |
+| 7 | `d3_dataset_autometa` | 1 | 1 | ○ |
+| 8 | `d3_dataset_description` | 1 | 1 | ○ |
+| 9 | `d3_dataset` | 1 | 1 | ○ |
+
+- **9/9 일치.** FK 저촉 0 · 오류 0 · `COMMIT` 1회
+- 삭제 합계 = A **15행** ＋ B **6행** = **21행**
+
+### 16.6 잔존 항목 4종 (조건 5) — 실측
+
+| # | 잔존 | 실측 행 수 | 삭제 불가 사유 |
+|---|---|---|---|
+| ① | `d8_activity` | A 5 · B 1 (C 3 은 실데이터) | `d8_activity_append_only` 트리거 — `BEFORE UPDATE OR DELETE ... FOR EACH ROW`(`db/platform/schema.sql:633-635`). 조건 없는 행 트리거라 어떤 `WHERE` 로도 예외(`㉘` — `db/platform/schema.sql:61`) |
+| ② | `d8_download` | A 1 · B 1 | `d8_download_append_only` 트리거(`db/platform/schema.sql:646-648`). 사유 동일 |
+| ③ | 연구실 A·B 운영 기반 행 | `d1_lab` 각 1 · `d1_lab_profile` 각 1 · `d1_account` A 2 · B 1 · `d2_member_role` A 2 · B 1 · `d2_permission_switch` A 4 · B 0 | `d8_activity.lab_id`·`d8_download.lab_id` 가 `d1_lab(id)` 를(`schema.sql:625`·`:640`), `d8_activity.actor_account_id` 가 `d1_account(id)` 를(`schema.sql:626`) FK 로 잡는다. ①② 가 남는 한 D1 행도 남는다 |
+| ④ | `d6_project_dataset` 실 ULID 1행 | 1 — `id=01M0TMCSSTYFP6YYG1AEH9Q25P` · `dataset_id=01M0TMCKMWYYZGP61BZJYD0TGC` | E2E 산출물이라 시드로 복원 불가(`§15.3` · `S2-BLOCKER-INVESTIGATION.md` §2.6-4). **Ted 지정 존치** |
+
+**④ 의 파생 존치 1건** — `d6_project` 의 `0000000000000000000000PRJA` **1행**. ④ 가 `project_id` FK 로 잡는다(`schema.sql:606`). ④ 를 지우지 않는 한 이 행도 지울 수 없다. **연구실 B 의 `d6_project` 1행은 대응 관계가 없어 삭제됐다.**
+
+### 16.7 5단 사후 검증
+
+**① 연구실 C 계수 대조 (조건 3)**
+
+| 판정기준 | 사전 | 사후 | 일치 |
+|---|---|---|---|
+| 데이터셋 | 12 | 12 | ○ |
+| 파일 | 129 | 129 | ○ |
+| 계보 | 5 | 5 | ○ |
+
+DB 계수 ＋ API 본문 양쪽에서 확인. `GET /api/v1/datasets?pageSize=100`(연구실 C 주체) → `items` **12건** · `fileCount` 합 **129**.
+
+**② 카탈로그·검색 시험 데이터 미노출 — 본문 대조**
+
+- DB — `SELECT count(*) FROM d3_dataset_description WHERE name LIKE 'A %' OR name LIKE 'B %'` → **0**
+- 카탈로그(연구실 C 주체) — 12건 이름 전수에 픽스처 명(`A 강우 원자료`·`A 강우 격자화`·`B 토지피복 원자료`) **0건**. 반환 예 = `GK-2A NDVI 100 m 경기남부·충청권 월평균 (2023-05)` · `HSR 레이더 견본` · `RN15 지상 강수 (Lv.0)`
+- 검색(연구실 C 주체) — `POST /api/v1/dataset-searches` `{"query":"토지피복 원자료"}` →
+  `{"scope":{"labId":"00000000000000000000HYMETS","labName":"고려대학교 수문학연구실","searchedCount":12},"isDataQuery":true,"degraded":false,"items":[],"totalCount":0,"nextCursor":null}`
+  **뒤진 범위 12 를 밝히고 빈 상태로 답한다.** 억지 제안 0건
+
+**③ 연구실 A·B 주체 조회 — 정상 빈 상태**
+
+| 주체 | 요청 | 응답 |
+|---|---|---|
+| `a1-prof` | `GET /api/v1/datasets` | `{"items":[],"totalCount":0,"nextCursor":null}` · **200** |
+| `b1-prof` | `GET /api/v1/datasets` | `{"items":[],"totalCount":0,"nextCursor":null}` · **200** |
+| `b1-prof` | `POST /api/v1/dataset-searches` `{"query":"토지피복"}` | `searchedCount` **0** · `items` 0 · `degraded` false · **200** |
+
+**500 은 0건.** 빈 상태가 정상 응답으로 나온다.
+
+**④ 연구실 목록의 A·B 표시 여부**
+
+- **연구실 목록 화면·계약이 존재하지 않는다** — `contracts/seams/fe-core.yaml` 의 연구실 관련 op 는 `getLab`·`updateLab`·`listLabMembers`·`saveLabMemberPermissions` 4건뿐이고 경로가 `/lab` 단수형이다(`§1.1`). 여러 연구실을 한 화면에 늘어놓는 표면이 없다
+- **자기 연구실로는 표시된다** — `a1-prof` 주체의 `GET /api/v1/lab` → `{"labId":"0000000000000000000000000A","name":"A 연구실","university":"A 대학교",…,"memberCount":2}` · 200.
+  **표시 사실을 기재한다.** 연구실 A·B 행이 잔존 ③ 으로 남으므로 A·B 자격증명으로 접속하면 시험용 표시명이 그대로 보인다. 연구실 C 주체에게는 보이지 않는다(RLS · 목록 표면 부재)
+- ⚠ `a1-prof` 주체의 `GET /api/v1/projects` → `A 논문` **1건**(`datasetCount` 0 · `verifiedCount` 0). 잔존 ④ 의 파생 존치(`§16.6`)가 화면에 남는 형태다. 연구실 A 주체 한정
+
+**⑤ 컨테이너·헬스 — 본문 대조**
+
+- 컨테이너 **8/8** — `nginx`·`cloudflared`·`pg`·`core_api`·`frontend`·`pipeline_worker`·`viz_render`·`ai_service`. `cloudflared` 외 7건 `healthy`
+- 헬스 **6/6 · 200** — 루트 본문 `ok` · 단위 5종 전부 `{"unit":…,"status":"alive","implemented":true}`
+
+**⑥ 게이트 — 26종 개별 실행**
+
+| 판정기준 | 값 |
+|---|---|
+| green | **25** |
+| red | **1** — `schema-diff` |
+| 신규 red | **0.** `schema-diff` 는 `§15.6` 과 같은 red 이며 원인도 같다 — `COLAB_APPLIED_DB_URL_PLATFORM`·`_AI` 미설정 ＋ 호스트 `psql` 부재. 이번 회차의 변경과 무관한 실행 환경 조건 |
+
+⚠ 게이트는 이 워크트리에서 실행했고, 실행 시점에 **다른 레인의 미커밋 변경**(`services/ai-service/`·`services/pipeline-worker/`)이 작업 트리에 함께 있었다.
+
+- 시험 계수(core-api 407/0 · frontend 274/0 · 워커 129/0 · `tsc` 0 · 501 표 23 · 계약 op 52) — **이번 회차 미측정.** 사유 = 다른 레인의 미커밋 변경이 같은 작업 트리에 있어 측정값의 귀속이 갈린다. `[미확인]`
+
+### 16.8 중단·롤백
+
+**중단 0건 · 백업 복원 실행 0회 · 재시도 0회.** 중단 조건 5건(백업·리허설 실패 · `SELECT` 불일치 · C 계수 변동 · 게이트 신규 red · 삭제 오류) 전건 미발생.
+
+### 16.9 Ted 판정이 필요한 잔여 — 이 회차분
+
+| # | 항목 | 판정기준 |
+|---|---|---|
+| ㉱ | 연구실 A·B 표시명 잔존 | `d1_lab.name = 'A 연구실'`·`'B 연구실'` 이 A·B 자격증명 접속 시 화면에 보인다. `updateLab` 501 이라 화면 수정 수단 부재. 자격증명 회수로 접근을 끊을 것인가 |
+| ㉲ | 잔존 ④ 와 파생 `d6_project` PRJA | 존치 지정이 `d6_project` 1행까지 함께 붙든다. A 주체 프로젝트 목록에 `A 논문` 1건이 남는다. 그대로 둘 것인가 |
