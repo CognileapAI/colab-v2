@@ -27,16 +27,31 @@ def test_detection_failure_is_not_renderable():
 
 
 def test_unsupported_formats_are_not_renderable():
-    # 〈51〉 로 범위 밖이 된 GRIB · 지원 목록 밖인 순수 HDF5
+    # ⭑ GRIB 의 **값은 그대로 false 인데 이유가 바뀌었다** (`〈134〉`).
+    #   종전 = 「`〈51〉` 로 범위 밖」. 지금 = **지원 목록 안이지만 미리보기 대상이 아니다**
+    #   (결정 2-3 — 「5종이어도 grib 은 미리보기 대상이 아니다」).
+    #   같은 false 라도 근거가 다르면 주석이 거짓말을 한다.
     assert is_renderable("GRIB") is False
+    # 지원 목록 밖인 순수 HDF5
+
     assert is_renderable("HDF5") is False
     assert is_renderable("무엇인지 모를 것") is False
 
 
 def test_renderable_list_is_not_a_number_and_lives_here():
-    # 숫자가 아니라 목록이다 (〈51〉). 그리고 지원 목록과 한 자리에서 파생된다 —
-    # 두 곳에 적으면 갈라진다.
-    assert RENDERABLE_FORMATS == list(SUPPORTED_FORMATS)
+    # 숫자가 아니라 목록이다 (〈51〉·〈134〉). 그리고 지원 목록과 **한 자리에서**
+    # 파생된다 — 두 곳에 적으면 갈라진다.
+    #
+    # ⭑ **파생이 항등에서 뺄셈이 됐다** (`〈134〉`). 이 파일의 주석이 예고한 자리다 —
+    #   「갈라지는 날이 오면 여기 한 줄이 갈라진다」. GRIB 이 그 첫 포맷이다.
+    from colab_pipeline.d5.renderable import NOT_RENDERABLE_FORMATS
+
+    assert RENDERABLE_FORMATS == [
+        f for f in SUPPORTED_FORMATS if f not in NOT_RENDERABLE_FORMATS]
+    assert RENDERABLE_FORMATS != SUPPORTED_FORMATS, "더는 같지 않다."
+    # **뺄셈으로 적은 것이 요점이다** — 새 포맷은 기본이 「그릴 수 있음」이고
+    # 못 그리는 것만 명시적으로 빠진다. 따로 나열하면 새 포맷이 조용히 누락된다.
+    assert NOT_RENDERABLE_FORMATS == ["GRIB"]
 
 
 def test_contract_does_not_pin_the_list(repo_root):

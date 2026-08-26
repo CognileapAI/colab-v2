@@ -23,6 +23,9 @@ MAGIC_GZIP = b"\x1f\x8b"
 MAGIC_CDF1 = b"CDF\x01"
 MAGIC_CDF2 = b"CDF\x02"
 MAGIC_CDF5 = b"CDF\x05"
+#: GRIB1·GRIB2 공통 매직. **판(edition) 은 offset 7 이고 1 또는 2 다** (`〈134〉`).
+MAGIC_GRIB = b"GRIB"
+GRIB_EDITIONS = (1, 2)
 
 _EXT_CLAIMS = {
     ".nc": "NetCDF",
@@ -31,6 +34,11 @@ _EXT_CLAIMS = {
     ".h5": "HDF4",   # 원천의 오표기 계열 — 어차피 힌트일 뿐이다
     ".tif": "GeoTIFF",
     ".tiff": "GeoTIFF",
+    # GRIB 는 표기가 넷으로 흩어져 있다 — 어차피 힌트이고 판정은 매직이 한다.
+    ".grib": "GRIB",
+    ".grib2": "GRIB",
+    ".grb": "GRIB",
+    ".grb2": "GRIB",
 }
 
 
@@ -68,8 +76,26 @@ def _plausible_hsr_header(head: bytes) -> bool:
 MAGIC_NPY = b"\x93NUMPY"
 
 
+def _is_grib(head: bytes) -> bool:
+    """`GRIB` 매직 **＋ 판 바이트**. 매직만 보면 산문이 GRIB 이 된다.
+
+    「GRIB is a format used in meteorology.」 로 시작하는 텍스트 파일이 실제로 잡힌다 —
+    `GRIB` 은 사람이 쓰는 낱말이기도 하다. 다른 포맷의 매직(`\\x0e\\x03\\x13\\x01` 등)과
+    달리 **인쇄 가능한 ASCII 라 우연히 겹칠 수 있는 유일한 매직**이다.
+
+    GRIB1 = `GRIB` ＋ 전체 길이 3B ＋ 판 1B, GRIB2 = `GRIB` ＋ 예약 2B ＋ 분야 1B ＋
+    판 1B. **둘 다 offset 7 이 판**이고 값은 1 또는 2 다. 지어내지 않는다 — 판을
+    못 읽으면 GRIB 이라고 말하지 않는다(`DR-9`).
+    """
+    if not head.startswith(MAGIC_GRIB) or len(head) < 8:
+        return False
+    return head[7] in GRIB_EDITIONS
+
+
 def _sniff_bytes(head: bytes) -> tuple[str | None, str | None, str]:
     """(format, container, reason). HDF5 매직은 여기서 확정하지 않는다."""
+    if _is_grib(head):
+        return "GRIB", None, f"magic GRIB (판 {head[7]})"
     if head.startswith(MAGIC_HDF4):
         return "HDF4", None, "magic 0e031301"
     if head.startswith(MAGIC_HDF5):

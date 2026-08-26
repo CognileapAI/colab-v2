@@ -51,6 +51,33 @@ def test_e2e_netcdf(tmp_path: Path):
     assert r.cog_path and classify_tiff(Path(r.cog_path)) == "cog"
 
 
+def test_e2e_grib_is_detected_and_is_deliberately_not_renderable(tmp_path: Path):
+    """**GRIB — 지원하되 그리지 않는다** (`〈134〉`, Ted 판정 ㈎ · 2026-08-26).
+
+    다른 E2E 와 달리 **COG 를 요구하지 않는다.** 정본이 미리보기 대상을
+    `bin·nc·tif·HDF` 로 못 박았기 때문이다(결정 2-3). 여기서 요구하는 것은
+    **감지되고, 그릴 수 없다고 정직하게 말하는 것** 둘이다.
+
+    ⭑ **디코더가 필요 없다.** 정본 POLICY 핵심규칙 1 이 자동 추출을 **포맷·용량뿐**으로
+    줄였고 GRIB 은 미리보기 대상도 아니다. 따라서 `eccodes`·`cfgrib` 없이 매직바이트만
+    으로 충분하다 — `〈51〉` 이 걱정한 「아무도 안 쓸 포맷을 위해 디코더를 짜게 된다」가
+    **구조적으로 사라졌다.**
+
+    ⚠ **원파일이 아직 0 건이다.** `file_format_1_grib/` 에 `00.Data` 가 없다(실측).
+    Ted 가 넣기로 했고(2026-08-26 「레퍼런슨데 데이터에 넣어줄게 기달」), 넣을 자리는
+    `02.File-format/file_format_1_grib/00.Data/` 다. **그때까지 이 시험은 fail 로
+    선다 — skip 이 아니다.** 완료 조건이 아직 안 닫혔다는 사실이 보여야 한다.
+    """
+    from colab_pipeline.d5.renderable import is_renderable
+
+    d = _fmtdir("file_format_1_grib")
+    f = _first("*.gr*b*", d / "00.Data")
+    r = detect_format(f)
+    assert r.format == "GRIB", f"{f.name} 이 GRIB 으로 감지되지 않았다: {r.reason}"
+    assert is_renderable(r.format) is False, (
+        "GRIB 은 미리보기 대상이 아니다 — 그릴 수 있다고 말하면 화면이 거짓이 된다.")
+
+
 def test_e2e_binary_hsr(tmp_path: Path):
     d = _fmtdir("file_format_3_bin")
     f = _first("RDR_CMP_HSR_*.bin.gz", d / "00.Data")

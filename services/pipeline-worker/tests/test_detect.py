@@ -16,9 +16,17 @@ from fixture_builders import (
 
 
 def test_supported_formats_is_the_list_not_a_number():
-    # 〈51〉·〈77〉 — 숫자가 아니라 목록. PoC 4포맷과 구성이 다르고, `NumPy` 가
+    # 〈51〉·〈77〉·〈134〉 — 숫자가 아니라 목록. PoC 4포맷과 구성이 다르고, `NumPy` 가
     # **독립 포맷**으로 들어왔다(Ted — 「nc 랑은 다른 파일이다」).
-    assert SUPPORTED_FORMATS == ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy"]
+    #
+    # ⭑ `GRIB` 이 `〈134〉` 로 돌아왔다 — `〈51〉` 의 제외를 정본(결정 2-3)이 뒤집었고
+    #   Ted 가 ㈎(수급한다)를 택했다. **기대값을 결과에 맞춘 것이 아니라 정본이 바뀐 것이다.**
+    #
+    # ⭑ **6종이다.** 정본 목록(`nc·grib·tif·HDF·bin`)과 `〈77〉` 목록은 **둘 다 5종인데
+    #   구성이 달랐다** — 정본에 `NumPy` 가 없다. 합집합이라 6종이다.
+    #   **여기서 실제로 한 번 틀렸다 — 그래서 이 시험이 숫자가 아니라 목록을 본다.**
+    assert SUPPORTED_FORMATS == [
+        "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB"]
 
 
 def test_npy_is_detected_by_magic_not_by_extension(tmp_path: Path):

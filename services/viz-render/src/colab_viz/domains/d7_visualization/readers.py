@@ -23,9 +23,22 @@ from . import coords, downsample
 from .failures import NotRenderableError
 from .hsr import decode_block, parse_hsr
 
-#: 지원 포맷 — `〈51〉`·`〈77〉`. **숫자가 아니라 목록이다.**
+#: 이 단위가 **그릴 수 있는** 포맷 — `〈51〉`·`〈77〉`·`〈134〉`. **숫자가 아니라 목록이다.**
+#:
 #: ⚠ 같은 이름의 목록이 `pipeline-worker` 의 `d5/formats.py` 에도 있다 — **두 곳에
-#: 적혀 있다는 사실 자체가 갈릴 자리다**(`§D.5b-⑵`). 함께 고친다.
+#: 적혀 있다는 사실 자체가 갈릴 자리다**(`§D.5b-⑵`).
+#:
+#: ⭑⭑ **그러나 「함께 고친다」가 이제 「같게 만든다」는 뜻이 아니다** (`〈134〉`).
+#: `GRIB` 이 지원 포맷으로 돌아왔지만 **미리보기 대상이 아니다**(결정 2-3 — 「5종이어도
+#: grib 은 미리보기 대상이 아니다」). 그래서 두 목록이 갈라졌다:
+#:
+#:   pipeline-worker `SUPPORTED_FORMATS` = 6종 (**GRIB 포함**) — 받아서 저장하는 것
+#:   여기 `SUPPORTED_FORMATS`            = 5종 (**GRIB 제외**) — 그려 낼 수 있는 것
+#:                                        = pipeline-worker 의 `RENDERABLE_FORMATS`
+#:
+#: **여기에 `GRIB` 을 넣지 마라.** 넣으면 못 그리는 포맷을 그릴 수 있다고 말하게 되고,
+#: `renders.py` 의 `renderableFormats` 가 곧바로 거짓이 된다. 맞춰야 할 상대는
+#: pipeline-worker 의 `SUPPORTED_FORMATS` 가 아니라 **`RENDERABLE_FORMATS`** 다.
 SUPPORTED_FORMATS: list[str] = ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy"]
 
 MAGIC_HDF4 = b"\x0e\x03\x13\x01"
