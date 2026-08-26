@@ -2513,7 +2513,10 @@ components:
           type: string
           minLength: 1
         fileCount:
-          description: "파일 건수. 2 이상이면 화면이 `조각 N` 칩을 붙인다."
+          description: |
+            **본체 파일 건수.** 기준 격자 파일은 세지 않는다 — 데이터셋은 관측 자료의 묶음이고
+            격자는 좌표를 붙이기 위한 부속이다. 2 이상이면 화면이 `조각 N` 칩을 붙인다.
+            파일 **목록**(`listDatasetFiles`)은 격자를 그대로 담는다 — 줄어드는 것은 이 요약 숫자뿐이다.
           type: integer
           minimum: 1
         topic: { type: [string, "null"] }
@@ -2696,7 +2699,12 @@ components:
           required: [count, totalSizeBytes, hasReferenceGridFile]
           additionalProperties: false
           properties:
-            count: { type: integer, minimum: 1 }
+            count:
+              description: |
+                **본체 파일 건수** — 기준 격자 파일 제외 (`DatasetRow.fileCount` 와 같은 정의).
+                격자의 유무는 바로 아래 `hasReferenceGridFile` 이 따로 말한다.
+              type: integer
+              minimum: 1
             totalSizeBytes: { type: integer, minimum: 0 }
             hasReferenceGridFile:
               description: |
@@ -2993,7 +3001,9 @@ components:
         datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         name: { type: string, minLength: 1 }
         fileCount:
-          description: "2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙)."
+          description: |
+            **본체 파일 건수** — 기준 격자 파일 제외 (`DatasetRow.fileCount` 와 같은 정의).
+            2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙).
           type: integer
           minimum: 1
         processingLevel: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }

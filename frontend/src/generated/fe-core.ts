@@ -1630,7 +1630,11 @@ export interface components {
             datasetId: components["schemas"]["Ulid"];
             /** @description 사람이 적은 **묶음 이름**. 조각 하나를 대표로 세우지 않는다 (`DataModel §4.3`). */
             name: string;
-            /** @description 파일 건수. 2 이상이면 화면이 `조각 N` 칩을 붙인다. */
+            /**
+             * @description **본체 파일 건수.** 기준 격자 파일은 세지 않는다 — 데이터셋은 관측 자료의 묶음이고
+             *     격자는 좌표를 붙이기 위한 부속이다. 2 이상이면 화면이 `조각 N` 칩을 붙인다.
+             *     파일 **목록**(`listDatasetFiles`)은 격자를 그대로 담는다 — 줄어드는 것은 이 요약 숫자뿐이다.
+             */
             fileCount: number;
             topic: string | null;
             processingLevel: components["schemas"]["ProcessingLevel"];
@@ -1749,6 +1753,10 @@ export interface components {
             format: string | null;
             /** @description `파일` 칸 — 조각 수와 용량 **합계**만 말한다 (`조각 4개 · 합계 148 MB`). */
             files: {
+                /**
+                 * @description **본체 파일 건수** — 기준 격자 파일 제외 (`DatasetRow.fileCount` 와 같은 정의).
+                 *     격자의 유무는 바로 아래 `hasReferenceGridFile` 이 따로 말한다.
+                 */
                 count: number;
                 totalSizeBytes: number;
                 /**
@@ -1942,7 +1950,10 @@ export interface components {
         ProjectDatasetRow: {
             datasetId: components["schemas"]["Ulid"];
             name: string;
-            /** @description 2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙). */
+            /**
+             * @description **본체 파일 건수** — 기준 격자 파일 제외 (`DatasetRow.fileCount` 와 같은 정의).
+             *     2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙).
+             */
             fileCount: number;
             processingLevel: components["schemas"]["ProcessingLevel"];
             period: components["schemas"]["DataPeriod"] | null;
