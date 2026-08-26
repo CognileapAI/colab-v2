@@ -177,7 +177,9 @@ def test_link_shows_up_in_the_detail_and_moves_the_metrics(client) -> None:
     assert {d["datasetId"] for d in body["datasets"]} == {DS_A1, DS_A2}
     added = next(d for d in body["datasets"] if d["datasetId"] == DS_A1)
     assert added["bodyAccessible"] is True and added["verified"] is True
-    assert added["lineageState"] == "원천" and added["fileCount"] == 2
+    # `fileCount` 는 **본체 수**다 — DSA1 은 본체 1 + 격자 1 이라 1 이다
+    # (Ted 판정 2026-08-26 · `test_file_count_body_only.py`).
+    assert added["lineageState"] == "원천" and added["fileCount"] == 1
 
     row = next(x for x in client.get(f"{API_PREFIX}/projects",
                                      headers=auth(TOKEN_RES)).json()["items"]

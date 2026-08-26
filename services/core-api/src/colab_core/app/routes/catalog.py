@@ -91,6 +91,7 @@ def _compose(db: Session) -> list[dict]:
         rows.append({
             "datasetId": core.dataset_id,
             "name": core.name,
+            # **본체 파일 수**다 — 기준 격자 파일은 세지 않는다 (Ted 판정 2026-08-26).
             # 잠긴 데이터셋은 본체 정책 때문에 파일 행이 보이지 않는다 — 그 자리를 지어내지 않는다.
             # 계약의 `minimum: 1` 과 어긋나는 유일한 경우이며 sessions/P0-core-api.md §5 에 적었다.
             "fileCount": core.file_count,
@@ -427,6 +428,8 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "format": None if meta is None else meta.format,
             "files": {
                 # 조각 수는 메타 열에서 온다 — 본체를 세지 않는다 (PLAN-SoT §9-㊼).
+                # **격자는 빠진 본체 파일 수**다 (Ted 판정 2026-08-26) — 바로 아래
+                # `hasReferenceGridFile` 이 격자의 유무를 따로 말한다.
                 "count": core.file_count,
                 "totalSizeBytes": 0 if meta is None or meta.total_size_bytes is None
                                   else meta.total_size_bytes,

@@ -23,8 +23,17 @@ _ROWS = text("""
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
            -- `body_access` RESTRICTIVE 아래서 본체 테이블을 세면 잠긴 행이 0 을 낸다(실측).
            -- 트리거가 이 열을 유지하고, `tests/test_file_count_drift.py` 가 드리프트를 잡는다.
-           d.file_count
+           --
+           -- **응답으로 나가는 수는 본체 기준이다** (Ted 판정 2026-08-26). 저장 열은
+           -- 격자 포함 총수로 두고 읽는 시점에 격자를 뺀다 — 마이그레이션이 없다.
+           -- 잠긴 데이터셋은 격자 행도 안 보여 빼는 값이 0 이 되고 총수가 그대로 나간다
+           -- (최대 2 초과 계상). `tests/test_file_count_body_only.py` 가 그 경로를 못 박는다.
+           d.file_count - _grid.n AS file_count
       FROM d3_dataset d
+      LEFT JOIN LATERAL (
+        SELECT count(*) AS n FROM d3_file f
+         WHERE f.dataset_id = d.id AND f.kind = '기준 격자 파일'
+      ) AS _grid ON true
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
       JOIN d1_account u ON u.id = d.uploader_account_id
      WHERE d.deleted_at IS NULL
@@ -47,11 +56,17 @@ _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at I
 # 상세의 `기본 정보` 는 소유자와 올린 사람을 **둘 다** 적는다 (Policy_데이터셋_상세 §5 · P-30).
 _ONE = text("""
     SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
-           d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at, d.file_count,
+           d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
+           -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
+           d.file_count - _grid.n AS file_count,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
            o.name AS owner_name
       FROM d3_dataset d
+      LEFT JOIN LATERAL (
+        SELECT count(*) AS n FROM d3_file f
+         WHERE f.dataset_id = d.id AND f.kind = '기준 격자 파일'
+      ) AS _grid ON true
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
       JOIN d1_account u ON u.id = d.uploader_account_id
       JOIN d1_account o ON o.id = d.owner_account_id
@@ -97,6 +112,9 @@ class DatasetCore:
     name: str
     topic: str | None
     summary: str | None
+    #: **본체 파일 수.** 기준 격자 파일은 세지 않는다 (Ted 판정 2026-08-26).
+    #: 저장 열 `d3_dataset.file_count` 는 격자 포함 총수로 남고, 이 값은 그 열에서
+    #: 격자 수를 뺀 것이다. 잠긴 데이터셋은 격자 행이 안 보여 총수가 그대로 온다.
     file_count: int
     uploader_id: str
     uploader_name: str

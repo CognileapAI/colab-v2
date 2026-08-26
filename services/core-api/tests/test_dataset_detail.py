@@ -92,7 +92,9 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
 def test_files_cell_says_count_and_total_size_only(client: TestClient) -> None:
     files = get(client, DS_A1, "a1-prof-token").json()["basicInfo"]["files"]
     assert set(files) == {"count", "totalSizeBytes", "hasReferenceGridFile"}
-    assert files["count"] == 2           # 메타 열 `file_count` 에서 온다 (㊼)
+    # 메타 열 `file_count`(격자 포함 2) 에서 격자를 뺀 **본체 수 1** 이다
+    # (㊼ · Ted 판정 2026-08-26 — `test_file_count_body_only.py`).
+    assert files["count"] == 1
     assert files["totalSizeBytes"] == 100
     assert files["hasReferenceGridFile"] is True
 

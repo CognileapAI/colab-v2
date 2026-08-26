@@ -162,6 +162,7 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
             # 접근 요청이 된다 (P-13). 숨기면 E-06 흐름 자체가 사라진다.
             "name": core.name,
             # 조각 수는 메타 열이다 — 본체를 세지 않는다 (㊼). 잠긴 행에서 0 이 되는 것을 막는다.
+            # 값은 **본체 파일 수**다 — 기준 격자 파일 제외 (Ted 판정 2026-08-26).
             "fileCount": core.file_count,
             "processingLevel": d3_catalog.processing_level(summary),
             "period": _data_period(periods.get(dataset_id)),
