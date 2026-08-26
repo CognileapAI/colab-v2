@@ -57,13 +57,31 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 | `COLAB_VIZ_TILE_SIGNING_SECRET` | **비밀** | 타일 서명 |
 | `OPENAI_API_KEY` | **비밀** | ai-service |
 | `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **선택 · 식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다.** ⭑ **2026-08-26 부터 필수가 아니다**(`PLAN-SoT §9 〈110〉`) — 워커는 대상 연구실을 원장(`d1_lab`)에서 읽고 연구실마다 제 스코프로 돈다. `compose.i2.yml` 은 이 둘을 **걸지 않는다.** 값을 되걸면 그 연구실 하나로 다시 좁혀지고, **원장에 없는 값이면 워커가 뜨지 않는다** |
-| `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
+| `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` · `COLAB_STAGING_CREDENTIALS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
+| `COLAB_STAGING_CORE_DB_URL_FILE` · `COLAB_STAGING_PIPELINE_DB_URL_FILE` · `COLAB_STAGING_AI_DB_URL_FILE` · `COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE` · `COLAB_STAGING_AI_OWNER_DB_URL_FILE` | 경로 (**가리키는 파일이 비밀**) | ⭑ **접속 URL 을 값이 아니라 파일로 넘긴다** (`PLAN-SoT §9 〈121〉-㉯` · `03-HANDOFF §4 #34`). 예전에는 접속 문자열이 compose 의 환경변수였고, 그래서 `docker inspect` 에 비밀번호가 통째로 나와 **작업 기록에 남았다.** 다섯 다 `:?` — 하나라도 없으면 `up` 이 뜨지 않는다. 뒤 둘은 `--profile migrate` 러너 전용이라 `up` 만 할 때는 안 쓰이지만, **없으면 마이그레이션이 안 돈다** |
 | `COLAB_CORE_AI_BASE_URL` · `COLAB_MODEL_HELPER` · `COLAB_MODEL_ORCHESTRATOR` | **선택(기본값 있음)** | `W7` 배선(`c5a2fbf`)이 더한 셋. 없어도 `up` 이 뜨고 compose 의 기본값이 쓰인다 — **비밀이 아니다**(주소·모델 이름). `COLAB_CORE_AI_BASE_URL` 을 비우면 core-api 가 relay 를 만들지 않아 **검색·제안이 503 이 된다** |
 
 > **`up` 을 막는 것과 제품을 잠그는 것은 다르다.** 위 표에서 `:?` 인 키가 없으면 컨테이너가 아예 안 뜨지만,
-> **compose 안에서만 배선되는 값**(`COLAB_VIZ_SOURCE_ROOT` · `COLAB_VIZ_PREVIEW_DIR` · `COLAB_CORE_SUBJECTS_FILE` · `COLAB_AI_DB_URL`)이
+> **compose 안에서만 배선되는 값**(`COLAB_VIZ_SOURCE_ROOT` · `COLAB_VIZ_PREVIEW_DIR` · `COLAB_CORE_SUBJECTS_FILE`)이
 > 비면 **헬스는 200 인 채로 제품이 잠긴다.** 2026-08-25 이전이 실제로 그 상태였다(`〈92〉` 계열 · `03-HANDOFF §4`).
 > 이 넷은 env 파일이 아니라 `compose.i2.yml` 이 정본이므로 **호스트에서 손댈 것이 없다.**
+
+**접속 URL 파일 다섯도 자격증명이다** (`〈121〉-㉯`). 파일 하나에 접속 문자열 **한 줄**만 넣는다 —
+읽는 쪽이 끝의 공백·개행만 벗기므로 개행은 있어도 되고, **주석·빈 줄·따옴표는 넣지 않는다.**
+규약은 아래 `subjects.json` 과 **완전히 같다**: `0600` · 소유자 uid `10001` · 홈 보관 ·
+**제자리 덮어쓰기 후 재기동**(바인드 마운트는 inode 에 붙는다).
+파일이 없거나 못 읽히거나 비면 각 단위는 **뜨지 않는다** — 조용한 폴백이 없다.
+
+| env 키 | 컨테이너 안 자리 | 읽는 쪽 |
+|---|---|---|
+| `COLAB_STAGING_CORE_DB_URL_FILE` | `/etc/colab/core-database.url` | core-api `COLAB_CORE_DATABASE_URL_FILE` |
+| `COLAB_STAGING_PIPELINE_DB_URL_FILE` | `/etc/colab/pipeline-db.url` | pipeline-worker `COLAB_PIPELINE_DB_URL_FILE` |
+| `COLAB_STAGING_AI_DB_URL_FILE` | `/etc/colab/ai-db.url` | ai-service `COLAB_AI_DB_URL_FILE` |
+| `COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE` | `/etc/colab/platform-owner-db.url` | `db/platform/env.py` `COLAB_PLATFORM_DB_URL_FILE` |
+| `COLAB_STAGING_AI_OWNER_DB_URL_FILE` | `/etc/colab/ai-owner-db.url` | `db/ai/env.py` `COLAB_AI_DB_URL_FILE` |
+
+> 앞 셋은 **앱 롤**(비소유자 · NOBYPASSRLS), 뒤 둘은 **소유자 롤**이다 — 섞으면 앱이 DDL 권한을 갖거나
+> 마이그레이션이 권한 부족으로 죽는다. 두 체인의 소유자 파일도 **따로** 둔다(`CLAUDE.md §3-3`).
 
 **심어 둔 계정 표(`COLAB_STAGING_SUBJECTS_FILE` 가 가리키는 `subjects.json`)는 자격증명이다.**
 

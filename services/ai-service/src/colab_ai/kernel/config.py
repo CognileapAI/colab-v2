@@ -16,7 +16,54 @@
 from __future__ import annotations
 
 import os
+import pathlib
+from collections.abc import Mapping
 from dataclasses import dataclass
+
+#: D9 사전 DB 의 접속 URL. **값 대신 경로로 받을 수 있다** — `COLAB_AI_DB_URL_FILE`
+#: (`PLAN-SoT §9 〈121〉-㉯`). `docker inspect` 의 환경변수 목록에 접속 문자열이 통째로
+#: 들어 있어 그 값이 작업 기록에 남았기 때문이다.
+ENV_DB_URL = "COLAB_AI_DB_URL"
+#: 접미사는 **정확히 `_FILE`** 이다. 읽는 쪽과 배선하는 쪽의 이름이 한 글자라도 어긋나면
+#: 배선은 있는데 아무도 안 읽는 상태가 되고, 그것은 에러를 내지 않는다.
+FILE_SUFFIX = "_FILE"
+
+
+def resolve_env_or_file(env: Mapping[str, str], name: str) -> str | None:
+    """`<VAR>` 또는 `<VAR>_FILE` 에서 값을 뽑는다 (`PLAN-SoT §9 〈121〉-㉯`).
+
+    ① `_FILE` 이 있으면 그 파일을 읽는다 — **끝의 공백·개행만** 벗긴다(`rstrip`).
+    ② 파일이 없거나 못 읽거나 비었으면 **죽는다.** 조용한 폴백은 없다.
+       ⚠ 이것은 「값이 없어도 뜬다」와 모순되지 않는다 — **경로를 줬는데 못 읽는 것**은
+       「없다」가 아니라 **「배선이 틀렸다」**다. 그 둘을 같은 상태로 보이게 하지 않는다.
+    ③ 둘 다 있으면 **죽는다.** 두 출처가 갈리면 어느 것이 진실인지 아무도 모른다.
+    ④ 둘 다 없으면 `None` — 지금과 같은 동작이다.
+    ⑤ **값을 로그·예외 메시지에 싣지 않는다.** 경로와 사유만 적는다.
+
+    ⚠ 배포 단위는 서로 독립이라 이 판독기를 공유 라이브러리로 빼지 않는다
+    (`CLAUDE.md §3-1`). 같은 규칙이 각 단위의 `kernel/` 안에 따로 산다.
+    """
+    file_env = name + FILE_SUFFIX
+    direct = (env.get(name) or "").strip()
+    path = (env.get(file_env) or "").strip()
+    if path and direct:
+        raise RuntimeError(
+            f"{name} 와 {file_env} 이 둘 다 설정돼 있다 — 두 출처가 갈리면 어느 것이 "
+            "진실인지 아무도 모른다. 하나만 둔다."
+        )
+    if not path:
+        return direct or None
+    try:
+        raw = pathlib.Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"{file_env} 이 가리키는 파일을 읽지 못했다: {path} "
+            f"({type(exc).__name__}) — 못 읽은 것을 빈 값으로 넘기지 않는다."
+        ) from None
+    value = raw.rstrip()
+    if not value:
+        raise RuntimeError(f"{file_env} 이 가리키는 파일이 비었다: {path}")
+    return value
 
 
 @dataclass(frozen=True)
@@ -44,7 +91,7 @@ class Settings:
         # 모르는 값은 **끈 쪽으로** 떨어뜨린다 — 오타가 검색을 몰래 켜지 않는다.
         mode = (e.get("COLAB_AI_QUERY_INTERPRETATION") or "").strip().lower()
         return cls(
-            dict_db_url=e.get("COLAB_AI_DB_URL") or None,
+            dict_db_url=resolve_env_or_file(e, ENV_DB_URL),
             openai_api_key=e.get("OPENAI_API_KEY") or None,
             model=e.get("COLAB_MODEL_HELPER") or "gpt-5.6-luna",
             query_interpretation="llm" if mode == "llm" else "literal",

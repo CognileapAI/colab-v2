@@ -111,7 +111,13 @@ services:
     restart: unless-stopped
     environment:
       # 앱은 **비소유자 · NOBYPASSRLS 롤**로만 붙는다 (services/core-api/ops/app-role.sql).
-      COLAB_CORE_DATABASE_URL: postgresql+psycopg://colab_app:${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}@postgres:5432/colab_platform
+      # ⭑ **값이 아니라 경로다** (`PLAN-SoT §9 〈121〉-㉯`). 예전에는 접속 문자열을 통째로
+      #   여기 박았고, 그래서 `docker inspect` 의 환경변수 목록에 비밀번호가 그대로 나와
+      #   **작업 기록에 남았다**(`03-HANDOFF §4 #34`). 자격 파일을 `0600` 으로 두고
+      #   경로만 넘긴다 — `〈93〉`(주체 표) · `〈108〉-㉯`(자격 파일) 과 같은 방식이다.
+      #   ⚠ 접미사는 **정확히 `_FILE`** 이다. `kernel/config.py` 가 이 이름을 읽는다 —
+      #     한 글자만 어긋나도 배선은 있는데 아무도 안 읽는 상태가 되고 에러가 안 난다.
+      COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
       # 접수한 바이트를 두는 자리. **없으면 접수를 거절한다**(kernel/config.py) —
       # 바이트를 버리고 201 을 내리는 것은 거짓말이다. worker 와 **같은 볼륨**이어야 한다.
       COLAB_CORE_UPLOAD_DIR: /var/lib/colab/uploads
@@ -156,6 +162,11 @@ services:
       #    파일 바인드 마운트는 **inode 에 붙는다** — 회전 뒤 컨테이너는 옛 파일을 계속 읽는다.
       #    그래서 회전 절차에 **core-api 재기동이 포함된다**(`〈93〉-㉰` 와 같은 성질).
       - ${COLAB_STAGING_CREDENTIALS_FILE:?COLAB_STAGING_CREDENTIALS_FILE 이 필요하다}:/etc/colab/credentials.json:ro
+      # ⭑ **접속 문자열도 비밀이다** (`〈121〉-㉯`). 위 둘과 **같은 규약** — `0600` ·
+      # 소유자 uid `10001`(컨테이너 유저) · 홈 보관 · 레포에 절대경로를 적지 않으려고 env 로 받는다.
+      # ⚠ 회전은 **제자리 덮어쓰기** 후 컨테이너 재기동이다. 바인드 마운트는 inode 에 붙어서
+      #   새 파일을 `mv` 하면 컨테이너가 옛 파일을 계속 읽는다(자격 파일과 같은 성질).
+      - ${COLAB_STAGING_CORE_DB_URL_FILE:?COLAB_STAGING_CORE_DB_URL_FILE 이 필요하다}:/etc/colab/core-database.url:ro
     depends_on:
       # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
       volume-init:
@@ -180,7 +191,8 @@ services:
     restart: unless-stopped
     environment:
       # 앱 롤로 붙는다 — core-api 와 같은 규칙이다(비소유자 · NOBYPASSRLS).
-      COLAB_PIPELINE_DB_URL: postgresql+psycopg://colab_app:${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}@postgres:5432/colab_platform
+      # ⭑ **값이 아니라 경로다** (`〈121〉-㉯`) — core-api 와 같은 이유·같은 규약이다.
+      COLAB_PIPELINE_DB_URL_FILE: /etc/colab/pipeline-db.url
       # ⭑ **`COLAB_WORKER_LAB_ID` 를 걸지 않는다** (Ted 판정 2026-08-26 ㈑ · `03-HANDOFF §4 #32`).
       #   이 값이 픽스처 연구실 하나를 가리키고 있어, 다른 연구실의 접수분이 **한 건도 감지되지
       #   않았다** — 실측이 그 연구실의 `d5_pipeline_event` 12건 전부 `published_at` NULL 이었다.
@@ -194,6 +206,8 @@ services:
       COLAB_WORKER_UPLOAD_DIR: /var/lib/colab/uploads
     volumes:
       - uploads:/var/lib/colab/uploads
+      # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · uid `10001` · 홈 보관 · 경로는 env).
+      - ${COLAB_STAGING_PIPELINE_DB_URL_FILE:?COLAB_STAGING_PIPELINE_DB_URL_FILE 이 필요하다}:/etc/colab/pipeline-db.url:ro
     depends_on:
       # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
       volume-init:
@@ -255,7 +269,8 @@ services:
       # ⭑ D9 사전 3종 + 개념 그래프(`db/ai` 체인). **이 값이 없으면 온톨로지가 통째로 비고**
       #   검색의 그래프 증강이 조용히 0건이 된다 — degraded 가 아니라 「없는 것」처럼 보인다.
       #   `colab_platform` 이 아니다: D10 은 D3 에 붙지 않는다 (2026-08-25 판정 ㈎ · `db-boundary`).
-      COLAB_AI_DB_URL: postgresql+psycopg://colab_ai_app:${COLAB_AI_APP_PASSWORD:?COLAB_AI_APP_PASSWORD 가 필요하다}@postgres:5432/colab_ai
+      # ⭑ **값이 아니라 경로다** (`〈121〉-㉯`) — core-api 와 같은 이유·같은 규약이다.
+      COLAB_AI_DB_URL_FILE: /etc/colab/ai-db.url
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       COLAB_MODEL_HELPER: ${COLAB_MODEL_HELPER:-gpt-5.6-luna}
       COLAB_MODEL_ORCHESTRATOR: ${COLAB_MODEL_ORCHESTRATOR:-gpt-5.6-terra}
@@ -265,6 +280,11 @@ services:
       # Phase 2 에서 켤 자리다: 이 값을 `llm` 으로 두면 해석이 돌아온다.
       # ⚠ 기본값에 기대지 않고 **여기 명시한다** — 안 적으면 다음 배포가 기본값에 기댄다.
       COLAB_AI_QUERY_INTERPRETATION: ${COLAB_AI_QUERY_INTERPRETATION:-literal}
+    volumes:
+      # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · uid `10001` · 홈 보관 · 경로는 env).
+      # ⚠ 이 값이 없으면 온톨로지가 통째로 빈다. 그래서 `:?` 로 요구한다 —
+      #   「경로를 줬는데 못 읽는 것」은 「없다」가 아니라 **「배선이 틀렸다」**다.
+      - ${COLAB_STAGING_AI_DB_URL_FILE:?COLAB_STAGING_AI_DB_URL_FILE 이 필요하다}:/etc/colab/ai-db.url:ro
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8200/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s
@@ -292,9 +312,14 @@ services:
     image: colab-v2/migrator:i2
     volumes:
       - ../../db/platform:/chain:ro
+      # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · 홈 보관 · 경로는 env).
+      #   ⚠ 이 자리는 **소유자 롤**이라 값이 가장 세다. 값을 환경변수에 박으면
+      #   `docker inspect` 에 그대로 나온다(`〈121〉-㉯` 의 발단).
+      - ${COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE:?COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE 이 필요하다}:/etc/colab/platform-owner-db.url:ro
     environment:
       # 마이그레이션은 **소유자 롤**로 돈다. 앱 롤에는 DDL 권한이 없다.
-      COLAB_PLATFORM_DB_URL: postgresql+psycopg://colab_owner:${COLAB_OWNER_PASSWORD:?COLAB_OWNER_PASSWORD 가 필요하다}@postgres:5432/colab_platform
+      # ⭑ **값이 아니라 경로다** (`〈121〉-㉯`). `db/platform/env.py` 가 이 이름을 읽는다.
+      COLAB_PLATFORM_DB_URL_FILE: /etc/colab/platform-owner-db.url
     depends_on:
       postgres:
         condition: service_healthy
@@ -306,8 +331,12 @@ services:
     image: colab-v2/migrator:i2
     volumes:
       - ../../db/ai:/chain:ro
+      # ⭑ 접속 문자열 파일 — platform 러너와 같은 규약. **파일은 따로 둔다**:
+      #   두 체인은 마이그레이션 체인이 갈라져 있고(`CLAUDE.md §3-3`) 붙는 DB 도 다르다.
+      - ${COLAB_STAGING_AI_OWNER_DB_URL_FILE:?COLAB_STAGING_AI_OWNER_DB_URL_FILE 이 필요하다}:/etc/colab/ai-owner-db.url:ro
     environment:
-      COLAB_AI_DB_URL: postgresql+psycopg://colab_owner:${COLAB_OWNER_PASSWORD:?COLAB_OWNER_PASSWORD 가 필요하다}@postgres:5432/colab_ai
+      # ⭑ **값이 아니라 경로다** (`〈121〉-㉯`). `db/ai/env.py` 가 이 이름을 읽는다.
+      COLAB_AI_DB_URL_FILE: /etc/colab/ai-owner-db.url
     depends_on:
       postgres:
         condition: service_healthy

@@ -15,19 +15,19 @@
 schema = "db/platform"
 domains = ["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"]
 env_patterns = [
-  '^COLAB_CORE_(TEST_)?DATABASE_URL$',
-  '^COLAB_PIPELINE_(TEST_)?DB_URL$',
-  '^COLAB_PLATFORM_DB_URL$',
+  '^COLAB_CORE_(TEST_)?DATABASE_URL(_FILE)?$',
+  '^COLAB_PIPELINE_(TEST_)?DB_URL(_FILE)?$',
+  '^COLAB_PLATFORM_DB_URL(_FILE)?$',
   '^COLAB_APPLIED_DB_URL_PLATFORM$',
-  '^COLAB_[A-Z0-9_]*(CATALOG|PLATFORM|LINEAGE|CORE|PIPELINE|VIZ)[A-Z0-9_]*_(DB|DATABASE)_URL$',
+  '^COLAB_[A-Z0-9_]*(CATALOG|PLATFORM|LINEAGE|CORE|PIPELINE|VIZ)[A-Z0-9_]*_(DB|DATABASE)_URL(_FILE)?$',
 ]
 
 [chains.ai]
 schema = "db/ai"
 domains = ["d9", "d10"]
 env_patterns = [
-  '^COLAB_AI_DB_URL$',
-  '^COLAB_AI_TEST_DICT_DB_URL$',
+  '^COLAB_AI_DB_URL(_FILE)?$',
+  '^COLAB_AI_TEST_DICT_DB_URL(_FILE)?$',
   '^COLAB_APPLIED_DB_URL_AI$',
 ]
 
@@ -72,7 +72,13 @@ chains = ["ai"]
 [detect]
 # 이 정규식에 걸리면 「DB 연결 선언」으로 본다. 걸렸는데 어느 체인에도 안 맞으면 red
 # ("분류 불가"를 green 으로 세지 않는다 — CLAUDE.md §4).
-env_is_db = '^[A-Z][A-Z0-9_]*_(DB|DATABASE)_URL$'
+#
+# ⭑ `_FILE` 갈래를 **여기서 같이 본다** (`PLAN-SoT §9 〈121〉-㉯`). 접속 URL 을 값이 아니라
+#   파일 경로로 넘기게 바뀌었는데, 이 정규식이 `_URL$` 로 끝나 있으면 `..._URL_FILE` 이
+#   **검사기 눈에 안 보인다** — 체인 횡단 배선이 생겨도 게이트가 green 을 낸다.
+#   검사 대상을 줄여 green 을 만드는 것의 정반대다: **같은 배선을 이름만 바꿔 숨기지 못하게**
+#   대상을 넓힌다. (이 레포에는 검사기가 접미사 없는 변수를 읽어 배선을 오독한 전례가 있다.)
+env_is_db = '^[A-Z][A-Z0-9_]*_(DB|DATABASE)_URL(_FILE)?$'
 # 소스 안의 접속 개시 호출. chains = [] 인 단위에 나타나면 red.
 connect_calls = [
   "create_engine", "create_async_engine",

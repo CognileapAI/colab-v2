@@ -39,6 +39,7 @@ from ..domains.d5_ingestion import (
     relay_unpublished,
 )
 from ..kernel import storage_layout
+from ..kernel.env_file import FILE_SUFFIX, resolve_env_or_file
 from ..kernel.db import (
     apply_scope,
     clear_scope,
@@ -47,6 +48,9 @@ from ..kernel.db import (
     scoped_labs,
 )
 
+#: 원장 접속 URL. **값 대신 경로로 받을 수 있다** — `COLAB_PIPELINE_DB_URL_FILE`
+#: (`PLAN-SoT §9 〈121〉-㉯`). `docker inspect` 의 환경변수 목록에 접속 문자열이 통째로
+#: 들어 있어 그 값이 작업 기록에 남았다. 규칙은 `kernel/env_file.py` 에 있다.
 ENV_DB = "COLAB_PIPELINE_DB_URL"
 ENV_LAB = "COLAB_WORKER_LAB_ID"
 ENV_ACCOUNT = "COLAB_WORKER_ACCOUNT_ID"
@@ -227,9 +231,11 @@ def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
     그 자체라 애초에 RLS 대상이 아니다(`gates/config/rls-allowlist.toml`). 접속 주체는
     그대로 비소유자 · NOBYPASSRLS 앱 롤이고, 연구실의 **자료**는 스코프를 세운 뒤에만 보인다.
     """
-    url = os.environ.get(ENV_DB)
+    url = resolve_env_or_file(os.environ, ENV_DB)
     if not url:
-        raise RuntimeError(f"{ENV_DB} 가 없다 — 원장 없이 워커를 돌리지 않는다")
+        raise RuntimeError(
+            f"{ENV_DB} (또는 {ENV_DB}{FILE_SUFFIX}) 가 없다 — 원장 없이 워커를 돌리지 않는다"
+        )
     # **둘 다 선택이다.** `ENV_LAB` 은 이제 경계의 출처가 아니라 **좁히는 값**이고,
     # `ENV_ACCOUNT` 는 그 연구실 소속일 때만 쓰인다. 경계 자체는 원장 행이 정한다.
     only_lab = os.environ.get(ENV_LAB) or None

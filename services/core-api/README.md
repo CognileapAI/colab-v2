@@ -53,6 +53,25 @@ export COLAB_CORE_SUBJECTS_FILE=/경로/subjects.json     # 개발자가 심은 
 .venv/bin/uvicorn --factory colab_core.app:create_app
 ```
 
+**접속 URL 은 값 대신 경로로도 준다** — `COLAB_CORE_DATABASE_URL_FILE` (`PLAN-SoT §9 〈121〉-㉯`).
+`docker inspect` 의 환경변수 목록에 접속 문자열이 통째로 들어 있어 그 값이 작업 기록에 남았기 때문이다.
+staging 배선이 쓰는 갈래가 이쪽이다.
+
+```bash
+export COLAB_CORE_DATABASE_URL_FILE=/경로/core-database.url   # 0600 · 소유자 uid 10001
+```
+
+| 규칙 | |
+|---|---|
+| `_FILE` 만 있다 | 그 파일을 읽는다 — **끝의 공백·개행만** 벗긴다(`rstrip`). URL 중간 공백은 안 건드린다 |
+| 파일이 없다 · 못 읽는다 · 비었다 | **뜨지 않는다.** 조용한 폴백 없음 — 못 읽은 것을 빈 값으로 넘기지 않는다 |
+| 둘 다 있다 | **뜨지 않는다.** 두 출처가 갈리면 어느 것이 진실인지 아무도 모른다 |
+| 둘 다 없다 | 지금과 같다 — 뜨지 않는다 |
+| 오류 메시지 | **경로와 사유만.** 값은 절대 싣지 않는다 |
+
+⚠ 접미사는 **정확히 `_FILE`** 이다. 읽는 쪽(`kernel/config.py`)과 배선하는 쪽(`compose.i2.yml`)의
+이름이 한 글자만 어긋나도 배선은 있는데 아무도 안 읽는 상태가 되고, **그 상태는 에러를 내지 않는다.**
+
 접속 롤은 **NOBYPASSRLS · 비소유자**여야 한다. 만드는 법은 `ops/app-role.sql` (왜 `db/` 가 아닌지도 거기 적었다).
 
 ### 테스트
