@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.lineage import LineageSummary
+from ..ports.lineage import LV_CAP, LineageSummary
 
 # 묘비(삭제된 데이터셋)는 카탈로그 목록에 서지 않는다 — 상세 화면도 없다
 # (Policy_데이터셋_상세 §7). 계보 그래프에는 묘비 노드로 남는다(그건 D4 의 일이다).
@@ -623,10 +623,19 @@ def confirm_lineage(session: Session, dataset_id: Ulid) -> bool:
 
 
 def processing_level(summary: LineageSummary | None) -> int:
-    """원자료 Lv0 · 주입력 부모의 최대 + 1 (E-00 · common.json#/$defs/ProcessingLevel)."""
+    """원자료 Lv0 · 주입력 부모의 최대 + 1, **상한 `LV_CAP`** (E-00 · common.json#/$defs/ProcessingLevel).
+
+    상한은 정본이 준 값이다 — `POL-020` 「연결된 가공 전 데이터 중 가장 높은 Lv + 1,
+    **상한 Lv2**」 · `VAL-005`. 자르지 않으면 정본이 **「존재할 수 없는 값」**이라고 한
+    `Lv3` 이 나오고, 카탈로그 필터가 아무 화면도 그릴 수 없는 칸을 열게 된다.
+
+    **자르는 것이지 막는 것이 아니다.** 깊은 사슬은 합법이고(`POL-020` 은 금지하지
+    않는다) Lv 은 깊이가 아니라 종류이므로(`Lv2 = 집계·분석용`) 접어도 잃는 것이
+    없다 — 깊이는 계보 그래프에 그대로 남는다.
+    """
     if summary is None or summary.max_primary_parent_level is None:
         return 0
-    return summary.max_primary_parent_level + 1
+    return min(summary.max_primary_parent_level + 1, LV_CAP)
 
 
 def lineage_state(core: DatasetCore, summary: LineageSummary | None) -> str:

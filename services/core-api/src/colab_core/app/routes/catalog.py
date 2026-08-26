@@ -19,6 +19,7 @@ from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...kernel.scope import read_only_scope
+from ...ports.lineage import LV_CAP
 from .. import dataset_search
 from ..deps import current_subject, scoped_db
 
@@ -138,8 +139,12 @@ def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, upload
 
 def _validate_filters(processingLevel, lineageState) -> None:
     for level in processingLevel or ():
-        if level < 0:
-            raise errors.bad_request("processingLevel 은 0 이상이다.")
+        # 상한도 함께 본다 — 없으면 `Lv3` 필터가 **조용히 빈 결과**를 낸다.
+        # 「없는 값으로 걸렀더니 0 건」과 「있는 값으로 걸렀더니 0 건」은 다르고,
+        # 화면은 그 둘을 구분하지 못한다. `Lv3` 은 정본이 「존재할 수 없는 값」이라
+        # 못 박았으므로(`VAL-005`·`POL-020`) 빈 상태가 아니라 잘못된 요청이다.
+        if level < 0 or level > LV_CAP:
+            raise errors.bad_request(f"processingLevel 은 0 이상 {LV_CAP} 이하다.")
     for state in lineageState or ():
         if state not in LINEAGE_STATES:
             raise errors.bad_request("lineageState 가 계보 열의 네 값이 아니다.")

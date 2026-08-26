@@ -8,11 +8,33 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.lineage import LineageSummary
+from ..ports.lineage import LV_CAP, LineageSummary
 
 # 주입력 부모의 최대 Lv 를 재귀로 센다 — Lv 는 컬럼이 아니라 계산이다 (PLAN-SoT §9-⑳).
 # 보조입력은 Lv 계산에서 빠진다 (common.json#/$defs/ParentRole).
-_SUMMARY = text("""
+#
+# **재귀항에 둘이 걸려 있다 — 둘 다 정본에서 나온다 (`PLAN-SoT §9 〈133〉`).**
+#
+# ⑴ `UNION`(중복 제거). `UNION ALL` 이면 CTE 가 뽑는 것은 **노드가 아니라 경로**다.
+#    다이아몬드 `A → {B, C} → D` 가 k 겹 쌓이면 행 수가 **2^k** 로 간다. 그리고
+#    다이아몬드는 **합법이고 순환이 아니다** — `would_create_cycle` 이 막는 그래프가
+#    아니다. 실측 = 마름모 18 겹에서 `listDatasets` 가 **9.4 초**였다.
+#    `catalog.py` 의 목록·상세가 둘 다 `summaries()` 를 부르므로
+#    **카탈로그를 여는 것만으로 터졌다.**
+#
+# ⑵ `LEAST(p.level + 1, LV_CAP)` (깊이 접기). `POL-020` 이 Lv 를 상한 2 로 자르므로
+#    뿌리에서 2 홉을 넘어가면 **값이 바뀌지 않는다.** 절단이 아니라 **볼 이유가 없는
+#    곳을 안 보는 것**이고, 근사가 아니라 정확한 의미다.
+#
+#    ⚠ **재귀를 멈추는 것(`WHERE p.level < LV_CAP`)이 아니라 값을 접는 것이다.**
+#    멈추면 상한보다 깊은 노드는 `depth` 행이 아예 안 생겨 부모 Lv 가 NULL 이 되고
+#    **Lv0 으로 떨어진다** — 원자료가 아닌 것을 원자료라고 말하게 된다. 실제로 그렇게
+#    틀렸다. 접으면 값이 `LV_CAP` 에서 고정되고, `UNION` 이 (노드, 레벨) 쌍을 중복
+#    제거하므로 **새 쌍이 안 나오는 순간 재귀가 끝난다.** 행 수 상한 = 노드 × (LV_CAP+1).
+#
+#    **오류를 내지 않는다** — `POL-020` 은 깊은 사슬을 자르기만 하고 금지하지
+#    않으므로, 상한 초과를 오류로 만들면 정본이 허용한 데이터를 막게 된다.
+_SUMMARY = text(f"""
     WITH RECURSIVE depth(dataset_id, level) AS (
         SELECT d.id, 0
           FROM d3_dataset d
@@ -20,8 +42,8 @@ _SUMMARY = text("""
              SELECT 1 FROM d4_lineage_edge e
               WHERE e.child_dataset_id = d.id AND e.parent_role = '주입력'
          )
-        UNION ALL
-        SELECT e.child_dataset_id, p.level + 1
+        UNION
+        SELECT e.child_dataset_id, LEAST(p.level + 1, {LV_CAP})
           FROM d4_lineage_edge e
           JOIN depth p ON p.dataset_id = e.parent_dataset_id
          WHERE e.parent_role = '주입력'
