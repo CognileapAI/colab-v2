@@ -181,10 +181,14 @@ services:
     environment:
       # 앱 롤로 붙는다 — core-api 와 같은 규칙이다(비소유자 · NOBYPASSRLS).
       COLAB_PIPELINE_DB_URL: postgresql+psycopg://colab_app:${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}@postgres:5432/colab_platform
-      # **경계는 이벤트에도 실린다** — 큐에서 꺼낸 메시지에는 주체가 없다(envelope.json labId).
-      # 그래서 워커는 자기 경계를 환경에서 받는다. 값이 없으면 뜨지 않는다.
-      COLAB_WORKER_LAB_ID: ${COLAB_WORKER_LAB_ID:?COLAB_WORKER_LAB_ID 가 필요하다 — 경계 없이 원장을 읽지 않는다}
-      COLAB_WORKER_ACCOUNT_ID: ${COLAB_WORKER_ACCOUNT_ID:?COLAB_WORKER_ACCOUNT_ID 가 필요하다}
+      # ⭑ **`COLAB_WORKER_LAB_ID` 를 걸지 않는다** (Ted 판정 2026-08-26 ㈑ · `03-HANDOFF §4 #32`).
+      #   이 값이 픽스처 연구실 하나를 가리키고 있어, 다른 연구실의 접수분이 **한 건도 감지되지
+      #   않았다** — 실측이 그 연구실의 `d5_pipeline_event` 12건 전부 `published_at` NULL 이었다.
+      #   워커는 이제 대상 연구실을 원장에서 읽고 **연구실마다 제 트랜잭션 · 제 스코프**로 돈다.
+      #   한 번에 하나의 연구실 스코프만 갖는다 — 사고가 나도 범위가 그 한 바퀴다.
+      #   면제는 새로 만들지 않았다: 접속 주체는 그대로 비소유자 · NOBYPASSRLS 인 `colab_app` 이고,
+      #   스코프 없이 읽는 표는 RLS 대상이 아닌 `d1_lab`(테넌트 루트) 하나뿐이다.
+      #   **값을 되걸면 그 연구실 하나로 다시 좁혀진다** — 좁히고 싶을 때만 건다.
       # **core-api 의 COLAB_CORE_UPLOAD_DIR 과 같은 자리여야 한다.** 바이트를 못 열면
       # 감지가 통째로 실패하고, 그 실패는 「형식 인식 실패」로 위장한다.
       COLAB_WORKER_UPLOAD_DIR: /var/lib/colab/uploads

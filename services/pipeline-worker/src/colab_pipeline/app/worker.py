@@ -39,7 +39,13 @@ from ..domains.d5_ingestion import (
     relay_unpublished,
 )
 from ..kernel import storage_layout
-from ..kernel.db import apply_scope, make_engine, make_session_factory
+from ..kernel.db import (
+    apply_scope,
+    clear_scope,
+    make_engine,
+    make_session_factory,
+    scoped_labs,
+)
 
 ENV_DB = "COLAB_PIPELINE_DB_URL"
 ENV_LAB = "COLAB_WORKER_LAB_ID"
@@ -139,20 +145,95 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
     return done
 
 
-def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
-    """처리 1회 + 릴레이 1회 + reaper 1회.
+def _scope_lab(session, lab: str, worker_account: str | None) -> None:
+    """이 바퀴의 스코프를 **연구실 하나로** 세운다 (Ted 판정 2026-08-26 ㈑).
 
-    돌려주는 것은 (처리한 업로드, 내보낸 건수, 지운 업로드).
+    계정 GUC 는 **그 연구실 소속일 때만** 세운다. 다른 연구실의 계정 ID 를 얹으면 원장에
+    적히는 주체가 사실과 갈라지고, `current_account_id()` 를 보는 정책이 나중에 붙을 때
+    거짓 양성이 된다. 소속이 아니면 비워 둔다 — NULL 은 **기본 거부**다.
+    """
+    apply_scope(session, lab_id=lab, account_id="")
+    if not worker_account:
+        return
+    from sqlalchemy import text
+    member = session.execute(text("SELECT 1 FROM d1_account WHERE id = :a"),
+                             {"a": worker_account}).first()
+    if member:
+        apply_scope(session, lab_id=lab, account_id=worker_account)
+
+
+def _target_labs(factory, only_lab: str | None) -> list[str]:
+    """이 바퀴가 돌 연구실들. `COLAB_WORKER_LAB_ID` 가 있으면 **그 하나로 좁힌다.**
+
+    좁히는 값이 원장에 없으면 **뜨지 않는다** — 오타 하나가 「처리할 것이 없다」로 위장하는
+    자리다(`#32` 가 정확히 그 무늬였다).
+    """
+    session = factory()
+    try:
+        session.begin()
+        labs = scoped_labs(session)
+        session.rollback()
+    finally:
+        session.close()
+    if only_lab is None:
+        return labs
+    if only_lab not in labs:
+        raise RuntimeError(f"{ENV_LAB}={only_lab} 가 원장에 없다 — 없는 경계로 돌지 않는다")
+    return [only_lab]
+
+
+def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path,
+              workdir: Path, publish) -> tuple[list[str], int, list[str]]:
+    """연구실 **하나**의 한 바퀴 — 제 트랜잭션 · 제 스코프 · 끝나면 해제.
+
     **순서가 중요하다** — 처리가 먼저여야 그 바퀴에 생긴 이벤트가 같은 바퀴에 나간다.
     셋이 **한 트랜잭션**이라 반쪽이 남지 않는다.
+    """
+    session = factory()
+    try:
+        session.begin()
+        _scope_lab(session, lab, worker_account)
+        ledger = SqlLedger(session)
+        processed = drive_uploads(ledger, upload_dir=upload_dir, workdir=workdir)
+        sent = relay_unpublished(ledger, publish=publish)
+        reaped = reap_expired_uploads(ledger)
+        # 스코프 해제를 **눈에 보이는 한 줄**로 둔다 — 한 바퀴에 연구실 여럿을 도는 뒤로는
+        # 「트랜잭션이 끝나면 어차피 사라진다」는 암묵을 믿지 않는다.
+        clear_scope(session)
+        session.commit()
+        return processed, sent, reaped
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
+    """한 바퀴 — **연구실마다 한 번씩** 처리 · 릴레이 · reaper 를 돈다.
+
+    돌려주는 것은 (처리한 업로드, 내보낸 건수, 지운 업로드) 의 **전 연구실 합**이다.
+
+    **⭑ 왜 연구실 목록을 도는가 (`03-HANDOFF §4 #32` · Ted 판정 2026-08-26 ㈑).**
+    이전 판은 `COLAB_WORKER_LAB_ID` 하나로 트랜잭션 스코프를 세우고 그 안에서 셋을 돌았다.
+    그래서 그 환경변수가 가리키지 않는 연구실의 접수분은 **한 건도 감지되지 않았고**
+    아웃박스가 배수되지 않았다 — 실측이 연구실 하나의 `d5_pipeline_event` 12건 전부
+    `published_at` NULL 이었다. 워커를 다른 연구실로 옮기면 옮긴 쪽이 멈추고,
+    연구실마다 워커를 두면 배포 단위가 연구실 수만큼 늘고, 경계를 걷어내면 **상시 전역 권한**을
+    갖는다. 셋 다 기각이고, 남은 것이 이것이다 — **한 번에 하나의 연구실 스코프만** 갖고,
+    그 스코프를 끝내고 다음으로 간다. 사고가 나도 범위가 그 한 바퀴다.
+
+    **면제를 새로 만들지 않는다** — 대상 목록의 출처는 `d1_lab` 이고 그 표는 테넌트 루트
+    그 자체라 애초에 RLS 대상이 아니다(`gates/config/rls-allowlist.toml`). 접속 주체는
+    그대로 비소유자 · NOBYPASSRLS 앱 롤이고, 연구실의 **자료**는 스코프를 세운 뒤에만 보인다.
     """
     url = os.environ.get(ENV_DB)
     if not url:
         raise RuntimeError(f"{ENV_DB} 가 없다 — 원장 없이 워커를 돌리지 않는다")
-    lab, account = os.environ.get(ENV_LAB), os.environ.get(ENV_ACCOUNT)
-    if not lab or not account:
-        # 경계는 이벤트에도 실린다 — 큐에서 꺼낸 메시지에는 주체가 없다(envelope.json labId).
-        raise RuntimeError(f"{ENV_LAB}·{ENV_ACCOUNT} 가 있어야 연구실 경계를 세운다")
+    # **둘 다 선택이다.** `ENV_LAB` 은 이제 경계의 출처가 아니라 **좁히는 값**이고,
+    # `ENV_ACCOUNT` 는 그 연구실 소속일 때만 쓰인다. 경계 자체는 원장 행이 정한다.
+    only_lab = os.environ.get(ENV_LAB) or None
+    worker_account = os.environ.get(ENV_ACCOUNT) or None
     upload_dir = os.environ.get(ENV_UPLOAD_DIR)
     if not upload_dir:
         # 바이트를 못 여는 워커는 **감지를 못 하면서 「형식 인식 실패」를 낸다** —
@@ -162,22 +243,20 @@ def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
 
     engine = make_engine(url)
     factory = make_session_factory(engine)
-    session = factory()
+    processed: list[str] = []
+    sent = 0
+    reaped: list[str] = []
     try:
-        session.begin()
-        apply_scope(session, lab_id=lab, account_id=account)
-        ledger = SqlLedger(session)
-        processed = drive_uploads(ledger, upload_dir=Path(upload_dir), workdir=workdir)
-        sent = relay_unpublished(ledger, publish=publish)
-        reaped = reap_expired_uploads(ledger)
-        session.commit()
-        return processed, sent, reaped
-    except BaseException:
-        session.rollback()
-        raise
+        for lab in _target_labs(factory, only_lab):
+            p, s, r = _lab_pass(factory, lab, worker_account=worker_account,
+                                upload_dir=Path(upload_dir), workdir=workdir,
+                                publish=publish)
+            processed += p
+            sent += s
+            reaped += r
     finally:
-        session.close()
         engine.dispose()
+    return processed, sent, reaped
 
 
 def serve(interval_seconds: float = 5.0) -> None:  # pragma: no cover - 배관
