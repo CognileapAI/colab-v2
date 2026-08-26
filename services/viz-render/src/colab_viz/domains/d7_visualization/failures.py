@@ -59,3 +59,24 @@ class RenderError(Exception):
 
 class NotRenderableError(Exception):
     """어느 표현으로도 그릴 수 없다 — 415. **등록·다운로드·계보 확정은 그대로 된다.**"""
+
+
+#: **그리지 않는 것**과 **못 그리는 것**을 가른다 (`C-5` · 결정 2-3 · `〈135〉`).
+#: 정본이 요구한 분리 = 「못 그렸어요(**재시도 가능**)」 vs
+#: 「이 형식은 원래 안 그려져요(**재시도 무의미**)」.
+#:
+#: 결정 #8 이 「못 그렸어요 ＋ **다시 그리기**」 상태를 만들라고 했으므로 **그 버튼을
+#: 언제 감출지가 정해져 있어야 한다.** 안 그러면 GRIB 에도 「다시 그리기」가 뜨고,
+#: 눌러도 영원히 같은 실패가 돌아온다 — 사용자가 자기 파일을 의심하게 된다.
+NOT_A_PREVIEW_TARGET_MESSAGE: Final = (
+    "이 형식은 지도로 그리지 않아요. 내려받아서 쓰는 자료예요.")
+
+
+def is_retry_pointless(error: Exception) -> bool:
+    """다시 그려도 결과가 같은가.
+
+    `NotRenderableError` 는 **파일의 성질**에서 오는 실패라 재시도가 무의미하다 —
+    포맷이 바뀌지 않는 한 몇 번을 눌러도 같다. 반대로 `RenderError`(연결 실패·시간
+    초과·알 수 없는 오류)는 **그때의 사정**이라 다시 해 볼 만하다.
+    """
+    return isinstance(error, NotRenderableError)

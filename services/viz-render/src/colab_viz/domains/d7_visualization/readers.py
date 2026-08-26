@@ -50,6 +50,17 @@ MAGIC_CDF = (b"CDF\x01", b"CDF\x02", b"CDF\x05")
 #: `.npy` — 매직 + 버전 2B + 길이 2B + ASCII 헤더 dict(`descr`·`fortran_order`·`shape`).
 #: **확장자가 아니라 매직으로 감지한다**(`〈77〉-⑵`) — 저장 키에 확장자가 없는 자리가 있다.
 MAGIC_NPY = b"\x93NUMPY"
+#: GRIB — **여기서는 그리려고 보는 것이 아니라 「아는데 안 그린다」고 말하려고 본다**
+#: (`〈135〉`). 판정 규칙은 `pipeline-worker` 의 `detect.py` 와 같다: 매직 ＋ **판**
+#: (offset 7 이 1 또는 2). `GRIB` 은 인쇄 가능한 ASCII 라 산문과 우연히 겹친다.
+MAGIC_GRIB = b"GRIB"
+GRIB_EDITIONS = (1, 2)
+
+
+def _is_grib(head: bytes) -> bool:
+    if not head.startswith(MAGIC_GRIB) or len(head) < 8:
+        return False
+    return head[7] in GRIB_EDITIONS
 
 _COORD_NAMES = {"lat", "lon", "latitude", "longitude", "x", "y", "time",
                 "crs", "spatial_ref", "gk2a_imager_projection"}
@@ -146,6 +157,13 @@ def detect_format(path: Path) -> str:
             raise NotRenderableError(f"HDF5 컨테이너인데 NetCDF 로 열리지 않는다: {e}") from e
     if head.startswith(MAGIC_NPY):
         return "NumPy"
+    if _is_grib(head):
+        # **아는데 안 그리는 것이다 — 모르는 것이 아니다** (`〈135〉`).
+        # 여기서 아래 「알려진 매직바이트가 없다」로 흘려보내면, 정상적으로 지원하는
+        # 파일을 올린 사람이 **자기 파일이 깨진 줄 안다.** 사유는 참이어야 한다.
+        raise NotRenderableError(
+            f"GRIB(판 {head[7]}) 은 지원 포맷이지만 미리보기 대상이 아니다 — "
+            "저장·다운로드는 그대로 된다")
     if _plausible_hsr(head):
         return "Binary"
     raise NotRenderableError("알려진 매직바이트가 없다")
