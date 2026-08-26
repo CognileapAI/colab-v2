@@ -576,10 +576,10 @@ export interface paths {
          *     그대로 쓰고, 판별이 끝난 뒤 그 op 이 `uploadId` 와 `datasetId` 를 한 요청에서 받는다.
          *     그래서 `〈58〉-②`·`§E.2-⑨` 의 약속이 실제 경로를 얻는다.
          *
-         *     ⛔ **아래 `202` 는 집행이 없는 응답으로 남아 있다 — 감추지 않고 적는다.**
-         *     지우는 것은 `response-success-status-removed` 라 `contract-breaking` red 이고,
-         *     그 철회는 **동결 해제 판정 사안**이라 이 회차의 범위가 아니다
-         *     (`CLAUDE.md §5` 범위 늘리기 금지). **다음 회차의 진입조건이다.**
+         *     ⭑ **`202` 는 철회됐다 (Ted 판정 2026-08-27 · 여섯 번째 동결 해제 · `〈151〉`).**
+         *     `〈98〉` 이 「다음 회차의 진입조건」이라 적었고 그 회차가 왔다. 소비자 0건이고
+         *     집행도 0건이었다 — **실현 안 되는 약속을 계약이 들고 있으면 다음 사람이 그것을
+         *     구현하려 든다.** 격자 후주입의 경로는 `attachUploadGridFiles` 하나다.
          *
          *     ⚠ **이 op 에 남는 집행은 `본체` 뿐이고, 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.**
          *     집행은 `kind = 기준 격자 파일` 을 **400 으로 거절하고 `attachUploadGridFiles` 를 가리킨다.**
@@ -3536,23 +3536,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetFile"];
-                };
-            };
-            /**
-             * @description ⛔ **집행이 없는 응답이다** — 격자 후주입은 `attachUploadGridFiles` 가 집행한다.
-             *     철회는 `contract-breaking` 을 건드리는 동결 해제 판정 사안이라 이 회차의 범위가
-             *     아니다. 집행은 `kind = 기준 격자 파일` 을 400 으로 거절한다.
-             */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        fileId: components["schemas"]["Ulid"];
-                        fileName: string;
-                        kind: components["schemas"]["FileKind"];
-                    };
                 };
             };
             400: components["responses"]["BadRequest"];

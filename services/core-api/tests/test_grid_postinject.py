@@ -355,7 +355,7 @@ def test_a_non_canonical_upload_id_is_400(p2_client) -> None:
 
 # ═══════ `addDatasetFile` 은 격자를 받지 않고 이 op 을 가리킨다 ═══════════════
 def test_add_dataset_file_still_refuses_a_grid_and_points_here(p2_client) -> None:
-    """계약의 `202` 는 집행이 없다 — 격자는 `attachUploadGridFiles` 가 받는다."""
+    """격자는 `attachUploadGridFiles` 가 받는다 — `202` 는 계약에서 철회됐다 (`〈151〉`)."""
     r = p2_client().post(f"{API_PREFIX}/datasets/{DS_A2}/files",
                          files={"file": ("g.npy", _hdf(), "application/octet-stream")},
                          data={"kind": GRID}, headers=auth(TOKEN_RES))
