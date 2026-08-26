@@ -164,6 +164,32 @@ class IngestionService:
 
         grid_dir, grid_resolution = self._resolve_grid_axes(work, res, grids)
 
+        if not bodies and grids:
+            # ⟨Ted 판정 2026-08-26 · 해소안 ⓐ⟩ **격자 전용 업로드는 워커 처리 대상 밖이다.**
+            # 감지 루프가 본체만 순회하므로 여기서는 감지 대상이 **공집합**이고, 공집합을
+            # 「전건이 매직바이트가 아니다」로 읽으면 D3 원장은 성공인데 D5 는 실패로 갈린다.
+            # 격자 전용은 **후주입(`attachUploadGridFiles`)의 재료**로 정상 상태이며,
+            # `createDataset` 이 이미 400 으로 데이터셋 전환만 막는다(core-api `ingestion.py`).
+            # ② 를 내지 않는 이유 — 계약이 `format: null` 을 「감지 실패」로 적었다.
+            # 안 읽은 것을 읽어 보고 실패했다고 말하지 않는다.
+            upload = self._ledger.load_upload(work.upload_id) or {}
+            self._ledger.record_status(work.upload_id, ready=True,
+                                       renderable=False, metadata_complete=False)
+            self._emit(work, res, "upload.ready", upload_ready_payload(
+                renderable=False, metadata_complete=False,
+                expires_at=_iso(upload.get("expires_at")),
+                grid_resolution=grid_resolution))
+            return res
+
+        if not bodies and not grids:
+            # 격자 전용과 **다른 경우**다 — 파일 자체가 없다. 사유는 같은 자리에 서지만
+            # 상세가 갈라져야 사람이 두 경우를 구분한다.
+            self._emit(work, res, "file.format-detected", format_detected_payload(
+                fmt=None, renderable=False, uniform=True, per_file=[]))
+            return self._fail(work, res, stage="file.format-detected",
+                              reason="형식 인식 실패", klass="영구",
+                              detail="업로드에 파일이 없다")
+
         # ② 포맷 감지 — 매직바이트. 헤더 파싱보다 앞이다(파서를 고르려면 포맷이 먼저다)
         per_file = []
         for f in bodies:
