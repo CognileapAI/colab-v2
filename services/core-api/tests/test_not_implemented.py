@@ -26,6 +26,8 @@ P2_REAL = {
     "createUpload":                 "tests/test_uploads.py",
     "getUploadStatus":              "tests/test_uploads.py",
     "createDataset":                "tests/test_dataset_registration.py",
+    "updateDataset":                "tests/test_dataset_update.py",
+    "listDatasetFieldSuggestions":  "tests/test_field_suggestions.py",
     "addDatasetFile":               "tests/test_dataset_files.py",
     "replaceDatasetGridFile":       "tests/test_dataset_files.py",
     "deleteDatasetGridFile":        "tests/test_dataset_files.py",
@@ -56,9 +58,8 @@ NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
     "rejectAccessRequest", "requestVerification", "listPendingVerificationRequests",
     "downloadDataset",
-    # D2c 신설 11 중 P2 가 안 가져간 둘 중 **남은 하나** — 이유는 not_implemented.py 문서주석에.
-    # (`linkProjectDataset` 은 P5 가 가져갔다 — 위 `P5_REAL`.)
-    "updateDataset",
+    # ⭑ `updateDataset` 이 여기서 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
+    #    `#36`(설명 결손 2건)을 채울 **공개 경로가 그것뿐이었다.**
 }
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -96,8 +97,13 @@ def test_the_23_unimplemented_operations_are_exactly_these() -> None:
     「`linkProjectDataset` 이 여기서 열린다」고 미리 적었고, 화면 본체 두 op 이 함께 열렸다.
     남은 프로젝트 op 넷(`updateProject`·`deleteProject`·`setProjectStatus`·
     `unlinkProjectDataset`)은 P1 배정이라 그대로 있다 — 범위를 늘리지 않았다.
+
+    ⭑ **2026-08-27 — `updateDataset` 이 빠져 23 → 22.** `〈127〉` Ted 판정 ㈎ 가 예고한
+    수 그대로다(「구현하면 501 표가 23 → 22 로 준다」). **줄어드는 것이 진척의 계측이다.**
+    같은 회차에 `listDatasetFieldSuggestions` 가 신설됐지만 **여는 회차에 구현**해
+    표에 행을 더하지 않았다 — `searchDatasets`·`listPalettes` 때 세운 규칙 그대로다.
     """
-    assert len(OPERATIONS) == 23
+    assert len(OPERATIONS) == 22
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 

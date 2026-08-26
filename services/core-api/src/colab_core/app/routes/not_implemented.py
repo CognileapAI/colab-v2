@@ -15,7 +15,11 @@ P2 가 열둘을 가져갔다 (36 → 24) —
   중계 3  `createPreviewRender` `getPreviewRender` `listUploadLineageSuggestions`
 
 **남긴 것과 이유** (`P2-EXEC §4 W2 P2-api`)
-  · `updateDataset` — 상세 편집이라 P2 화면(S-04·S-08) 범위 밖이다.
+  · ~~`updateDataset`~~ — **구현했다 (2026-08-27 · `〈127〉` Ted 판정 ㈎).**
+    `#36`(설명 결손 2건)을 채울 **공개 경로가 이것뿐이었다** — 나머지 셋은 막혀 있다:
+    `deleteDataset` 501 · 재적재는 12 → 14 를 만들고 · DB 직접 UPDATE 는 `㊾-③` 위반.
+    Ted 판정 ㈏(2026-08-27)로 대상이 넓어졌다 — 원천 표기·가공 단계·대표 조각·변수·
+    좌표계·기간까지. **표가 23 → 22 로 준다.**
   · `getDatasetLineage` — 그래프를 그리는 함수는 P2 가 만들었지만(`routes/lineage.py`),
     이 **조회 op 자체는 P1 배정**이라 범위를 늘리지 않는다 (`CLAUDE.md §5`).
 
@@ -90,7 +94,6 @@ OPERATIONS: tuple[Op, ...] = (
     Op("getDataMap", "GET", "/dashboard/data-map", "NOT_IMPLEMENTED_P1"),
     Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
-    Op("updateDataset", "PATCH", "/datasets/{datasetId}", "NOT_IMPLEMENTED_NO_STORE"),
     # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
     #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데
     #    계약이 침묵해서 표에도 없던 것이고, 그 침묵이 `D-2`·`D-4` 를 세 회차 동안 감췄다.

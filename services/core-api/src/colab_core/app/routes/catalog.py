@@ -97,7 +97,8 @@ def _compose(db: Session) -> list[dict]:
             # 계약의 `minimum: 1` 과 어긋나는 유일한 경우이며 sessions/P0-core-api.md §5 에 적었다.
             "fileCount": core.file_count,
             "topic": core.topic,
-            "processingLevel": d3_catalog.processing_level(summary),
+            "processingLevel": d3_catalog.processing_level(
+                summary, core.processing_level_user_set),
             "projects": {
                 "representative": (None if link is None or link.representative_id is None else
                                    {"projectId": link.representative_id,
@@ -409,6 +410,77 @@ def _project_period(start, end) -> dict:
     return {"start": month(start), "end": month(end)}
 
 
+#: `DatasetUpdate` 가 받는 열쇠. **계약이 정본이다** — 여기는 그 목록을 서버가
+#: 다시 한 번 지키는 자리다. 계약이 `additionalProperties: false` 라고 적었어도
+#: **런타임에 그것을 강제하는 것은 이 줄뿐이다.**
+_UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel", "processingLevel",
+                  "representativeFileId", "variables", "crs", "period")
+
+
+@router.patch("/datasets/{datasetId}", name="updateDataset")
+def update_dataset(datasetId: str, body: dict | None = Body(default=None),
+                   subject: Subject = Depends(current_subject),
+                   db: Session = Depends(scoped_db)) -> dict:
+    """**올린 뒤에 고치는 길** (`〈127〉` Ted 판정 ㈎ · `〈138〉`·`〈140〉` · ㈏ 범위).
+
+    `#36` 이 열려 있던 이유가 이 op 의 부재다 — `D-01`·`D-02` 의 `summary` 를 채울
+    **공개 경로가 없었다.** 다른 셋은 전부 막혀 있다: `deleteDataset` 501 · 재적재는
+    12 → 14 를 만들고 · DB 직접 `UPDATE` 는 `㊾-③` 위반.
+
+    **부분 수정이다.** 보내지 않은 열쇠는 안 건드리고, `null` 을 **명시적으로** 보내는
+    것은 **비우라는 뜻**이다. 둘을 접으면 요약만 고치려다 Lv 가 날아간다.
+    """
+    payload = body if isinstance(body, dict) else {}
+    unknown = sorted(set(payload) - set(_UPDATE_FIELDS))
+    if unknown:
+        # **조용히 무시하지 않는다.** 무시하면 사용자는 고쳤다고 믿고 떠나고,
+        # `format` 처럼 **원래 못 고치는 값**을 보낸 경우 그 사실이 안 드러난다.
+        raise errors.bad_request(f"요청에 계약에 없는 필드가 있다: {unknown}",
+                                 {"allowed": list(_UPDATE_FIELDS)})
+
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found("데이터셋을 찾지 못했다.")
+
+    changes = {k: v for k, v in payload.items()}
+
+    if "name" in changes:
+        name = changes["name"]
+        if not isinstance(name, str) or not name.strip():
+            raise errors.bad_request("데이터셋 이름을 적어 주세요.")   # ERR-001 문구 그대로
+
+    if "processingLevel" in changes:
+        level = changes["processingLevel"]
+        if level is not None:
+            if isinstance(level, bool) or not isinstance(level, int) \
+                    or not 0 <= level <= LV_CAP:
+                # `Lv3` 은 정본이 「존재할 수 없는 값」이라 했다 (`VAL-005`·`〈133〉`).
+                raise errors.bad_request(f"가공 단계는 0 이상 {LV_CAP} 이하다.")
+
+    if "representativeFileId" in changes:
+        file_id = changes["representativeFileId"]
+        if file_id is not None:
+            if not Ulid.is_valid(file_id):
+                raise errors.bad_request("representativeFileId 가 정규 ID 가 아니다.")
+            # **FK 가 못 막는 자리다** — `d3_file` 은 한 표라 다른 데이터셋의 조각을
+            # 가리켜도 참조 무결성은 만족한다. 막는 것은 여기뿐이다.
+            if not d3_catalog.file_belongs_to(db, file_id=file_id,
+                                              dataset_id=dataset_id):
+                raise errors.bad_request("대표 조각은 이 데이터셋의 조각이어야 한다.")
+
+    if "variables" in changes and changes["variables"] is not None:
+        variables = changes["variables"]
+        if not isinstance(variables, list) or \
+                any(not isinstance(v, str) or not v.strip() for v in variables):
+            raise errors.bad_request("변수 목록은 빈 문자열 없는 문자열 배열이다.")
+
+    if changes:
+        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes)
+    return get_dataset(datasetId, subject=subject, db=db)
+
+
 @router.get("/datasets/{datasetId}", name="getDataset")
 def get_dataset(datasetId: str,
                 subject: Subject = Depends(current_subject),
@@ -495,7 +567,8 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         "name": core.name,
         "summary": core.summary,
         "topic": core.topic,
-        "processingLevel": d3_catalog.processing_level(summary),
+        "processingLevel": d3_catalog.processing_level(
+                summary, core.processing_level_user_set),
         "lineageState": d3_catalog.lineage_state(core, summary),
         "verification": {
             "verified": verified,

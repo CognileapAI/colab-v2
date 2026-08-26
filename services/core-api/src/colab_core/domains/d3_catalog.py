@@ -18,6 +18,7 @@ from ..ports.lineage import LV_CAP, LineageSummary
 _ROWS = text("""
     SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
+           d.processing_level_user_set,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
@@ -59,6 +60,7 @@ _ONE = text("""
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
            d.file_count - _grid.n AS file_count,
+           d.processing_level_user_set,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
            o.name AS owner_name
@@ -124,6 +126,9 @@ class DatasetCore:
     last_modified_at: object = None
     uploaded_at: object = None
     lineage_confirmed_at: object = None
+    #: **사람이 고른 가공 단계.** `None` 이면 계보에서 파생한다 (`〈140〉`).
+    #: 계산 결과는 여기 담기지 않는다 — 담는 순간 계보와 갈라진다.
+    processing_level_user_set: int | None = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -137,6 +142,7 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
             owner_name=None, source_label=r["source_label"],
             last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
             lineage_confirmed_at=r["lineage_confirmed_at"],
+            processing_level_user_set=r["processing_level_user_set"],
         )
         for r in rows
     ]
@@ -154,6 +160,7 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         owner_name=r["owner_name"], source_label=r["source_label"],
         last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
         lineage_confirmed_at=r["lineage_confirmed_at"],
+        processing_level_user_set=r["processing_level_user_set"],
     )
 
 
@@ -609,6 +616,75 @@ def register_dataset(session: Session, *, dataset_id: Ulid, owner_id: Ulid,
     return new_id
 
 
+#: **생략과 `null` 을 가르는 표식.** `None` 은 「비워라」라는 **값**이라 「안 보냈다」를
+#: 표현할 수 없다. 이 둘을 접으면 「요약만 고치려다 Lv 가 날아가는」 일이 생긴다.
+UNSET = object()
+
+
+#: 이 op 이 고칠 수 있는 칸 ↔ 그 값이 사는 표. **계약(`DatasetUpdate`)이 정본이고**
+#: 여기는 그것을 SQL 자리로 옮긴 표일 뿐이다.
+_UPDATABLE = {
+    "name": ("d3_dataset_description", "name"),
+    "topic": ("d3_dataset_description", "topic"),
+    "summary": ("d3_dataset_description", "summary"),
+    "sourceLabel": ("d3_dataset", "source_label"),
+    "processingLevel": ("d3_dataset", "processing_level_user_set"),
+    "representativeFileId": ("d3_dataset", "representative_file_id"),
+    "variables": ("d3_dataset_autometa", "variables"),
+    "crs": ("d3_dataset_autometa", "crs"),
+}
+
+
+def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None:
+    """**부분 수정.** `changes` 에 있는 열쇠만 건드린다 (`〈127〉`·`〈138〉`·`〈140〉`).
+
+    `UNSET` 이 아닌 값만 온다고 가정한다 — 라우트가 이미 걸러 냈다.
+
+    **표를 나눠 UPDATE 한다.** 이름·주제·요약은 `d3_dataset_description`, 원천 표기·
+    가공 단계·대표 조각은 `d3_dataset`, 변수·좌표계·기간은 `d3_dataset_autometa` 다.
+    한 표에 몰려 있지 않은 것은 **자동으로 읽은 값과 사람이 적은 값을 갈라 둔** 설계
+    때문이고(`정본 §4.1`), `〈138〉` 로 그 경계가 옮겨졌어도 **표는 그대로 둔다** —
+    표를 옮기는 것은 마이그레이션이고 얻는 것이 없다.
+    """
+    by_table: dict[str, dict[str, object]] = {}
+    for key, value in changes.items():
+        table, column = _UPDATABLE[key]
+        by_table.setdefault(table, {})[column] = value
+
+    # 기간은 두 열로 갈라진다 — 계약은 한 덩어리(`DataPeriod`)로 받는다.
+    if "period" in changes:
+        period = changes["period"]
+        target = by_table.setdefault("d3_dataset_autometa", {})
+        target["period_start"] = None if period is None else period.get("start")
+        target["period_end"] = None if period is None else period.get("end")
+
+    for table, columns in by_table.items():
+        assignments = ", ".join(f"{c} = :{c}" for c in columns)
+        key_column = "id" if table == "d3_dataset" else "dataset_id"
+        session.execute(
+            text(f"UPDATE {table} SET {assignments} WHERE {key_column} = :dataset_id"),
+            {**columns, "dataset_id": str(dataset_id)})
+
+    # **마지막 수정 시각은 언제나 움직인다.** 계보 상태 판정이 이 값을 본다
+    # (`DATAMODEL-BASELINE §3-③` — 「마지막 수정 > 계보 확정일」이면 `확인 필요`).
+    # 빈 요청이어도 갱신하지 않는다 — 아무것도 안 고쳤으면 고친 것이 아니다.
+    if by_table:
+        session.execute(
+            text("UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id"),
+            {"dataset_id": str(dataset_id)})
+
+
+def file_belongs_to(session: Session, *, file_id: str, dataset_id: Ulid) -> bool:
+    """대표 조각이 **이 데이터셋의 조각인가.**
+
+    FK 는 이것을 못 막는다 — `d3_file` 은 한 표라서 다른 데이터셋의 조각을 가리켜도
+    참조 무결성은 만족한다. **막는 것은 여기뿐이다.**
+    """
+    return session.execute(
+        text("SELECT 1 FROM d3_file WHERE id = :file_id AND dataset_id = :dataset_id"),
+        {"file_id": file_id, "dataset_id": str(dataset_id)}).first() is not None
+
+
 def insert_file(session: Session, *, file_id: str, dataset_id: Ulid, kind: str,
                 file_name: str, size_bytes: int | None, storage_key: str,
                 carries_lat: bool, carries_lon: bool) -> str:
@@ -683,7 +759,8 @@ def confirm_lineage(session: Session, dataset_id: Ulid) -> bool:
     return session.execute(_CONFIRM_LINEAGE, {"dataset_id": str(dataset_id)}).first() is not None
 
 
-def processing_level(summary: LineageSummary | None) -> int:
+def processing_level(summary: LineageSummary | None,
+                     user_set: int | None = None) -> int:
     """원자료 Lv0 · 주입력 부모의 최대 + 1, **상한 `LV_CAP`** (E-00 · common.json#/$defs/ProcessingLevel).
 
     상한은 정본이 준 값이다 — `POL-020` 「연결된 가공 전 데이터 중 가장 높은 Lv + 1,
@@ -694,6 +771,10 @@ def processing_level(summary: LineageSummary | None) -> int:
     않는다) Lv 은 깊이가 아니라 종류이므로(`Lv2 = 집계·분석용`) 접어도 잃는 것이
     없다 — 깊이는 계보 그래프에 그대로 남는다.
     """
+    # **사람이 고른 값이 먼저다** — `POL-020` 의 예외이자 `TC-W-001` 이 요구하는 그대로다.
+    # 「Lv1 로 직접 선택 → Lv1 부모를 연결 → 보정하지 않음(사람이 정한 값 유지)」.
+    if user_set is not None:
+        return min(max(int(user_set), 0), LV_CAP)
     if summary is None or summary.max_primary_parent_level is None:
         return 0
     return min(summary.max_primary_parent_level + 1, LV_CAP)
