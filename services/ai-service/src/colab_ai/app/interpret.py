@@ -100,10 +100,23 @@ class LiteralInterpreter:
 
     def __init__(self, reason: str | None = None) -> None:
         self._reason = reason or "질의 해석 모델을 쓰지 않았다 — 질문의 낱말 그대로 찾았다."
+        # **결정으로 고른 회차는 `degraded` 가 아니다** (`〈148〉`).
+        # 계약이 `degraded` 를 **「AI 가 제 몫을 못 했다」**로 정의했는데(`SearchResults.degraded`),
+        # `〈136〉` 에서 AI 는 그 몫을 **하지 않기로 한 것**이지 못 한 것이 아니다.
+        #
+        # ⚠ **사유 문구만 고쳐서는 못 고친다 — 상태 자체가 틀렸다.** `degraded: true` 면
+        # 화면이 경고 배너를 띄우고, 게다가 그 배너는 **서버가 보낸 정직한 사유를 안 쓴다**
+        # (「AI 문구를 그대로 화면에 싣지 않는다」가 시험으로 지켜지고 있다). 그래서 사용자는
+        # 화면이 가진 **「질의 해석이 지금 동작하지 않아」**를 읽고 **고장으로 안다.**
+        #
+        # 낱말 검색이 이번 릴리즈의 **정상 동작**이라는 사실은 다른 자리가 이미 말한다 —
+        # 검색 히어로의 「적혀 있는 낱말 그대로 찾아요」와 근거 한 줄이다. 배너는 필요 없다.
+        self._by_design = reason == self.BY_DESIGN_REASON
 
     def interpret(self, query: str) -> Interpretation:
         return Interpretation(is_data_query=True, terms=_tokens(query), topic=None,
-                              source="literal", degraded=True, degraded_reason=self._reason)
+                              source="literal", degraded=not self._by_design,
+                              degraded_reason=self._reason)
 
 
 class LlmQueryInterpreter:

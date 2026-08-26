@@ -71,3 +71,26 @@ def test_literal_interpretation_still_finds_words_and_never_judges_the_question(
 def test_the_llm_interpreter_class_is_not_deleted():
     """**되돌리기가 아니라 순서다** — Phase 2 가 쓸 코드를 지우지 않는다(`〈136〉-㉰`)."""
     assert LlmQueryInterpreter is not None
+
+
+# ═══════════ 결정으로 고른 상태는 `degraded` 가 아니다 (`〈148〉`) ═══════════
+def test_a_deliberate_literal_run_is_not_degraded():
+    """**`degraded` 는 「AI 가 제 몫을 못 했다」는 뜻이다** (계약 `SearchResults.degraded`).
+
+    `〈136〉` 에서 AI 는 그 몫을 **하지 않기로 한 것**이지 못 한 것이 아니다.
+    `degraded: true` 로 두면 화면이 경고 배너를 띄우고 **사용자는 고장으로 읽는다** —
+    게다가 화면 문구는 「AI 문구를 그대로 쓰지 않는다」는 규칙 때문에 서버가 보낸 정직한
+    사유 대신 **화면이 가진 「질의 해석이 지금 동작하지 않아」를 그린다.**
+
+    ⚠ 그래서 **사유 문구만 고쳐서는 못 고친다. 상태 자체가 틀렸다.**
+    """
+    r = LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON).interpret("강수")
+    assert r.degraded is False, "결정으로 고른 상태를 고장으로 말하고 있다"
+    assert r.terms == ("강수",), "그래도 검색은 진짜로 돈다"
+
+
+def test_a_real_breakage_is_still_degraded():
+    """**둘을 접지 않는다.** 켜려 했는데 못 켠 회차는 여전히 고장이다."""
+    r = LiteralInterpreter().interpret("강수")
+    assert r.degraded is True
+    assert "낱말" in (r.degraded_reason or "")

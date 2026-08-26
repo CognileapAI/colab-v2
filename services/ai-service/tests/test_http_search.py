@@ -49,7 +49,14 @@ def test_키가_없어도_200_이고_검색어가_나온다(client: TestClient) 
     res = client.post("/searches", json=_body(), headers=_headers())
     assert res.status_code == 200
     body = res.json()
-    assert body["degraded"] is True and body["degradedReason"]
+    # ⭑ `〈148〉` — **기본 회차는 `degraded` 가 아니다.** 이 시험이 지키는 것은
+    #   「키가 없어도 **200 이고 검색어가 나온다**」이지 고장 표시가 아니다.
+    #   `degraded` 는 계약상 「AI 가 제 몫을 **못 했다**」인데, 이번 릴리즈의 낱말 검색은
+    #   **하지 않기로 한 것**이라 정상 동작이다(`〈136〉`).
+    #   ⚠ 「켜려 했는데 키가 없다」는 여전히 고장이고, 그 갈래는
+    #   `test_query_interpretation_switch.py` 가 따로 지킨다.
+    assert body["degraded"] is False, "결정으로 고른 상태를 고장으로 말하면 안 된다"
+    assert body["degradedReason"], "그래도 무엇을 했는지는 한 줄로 말한다"
     assert "강우" in body["interpretation"]["terms"]
 
 
