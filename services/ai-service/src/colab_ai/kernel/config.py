@@ -27,12 +27,25 @@ class Settings:
     model: str = "gpt-5.6-luna"
     #: 모델 대기 시간(초). 안 답하는 모델이 검색 요청을 붙잡아 두지 않는다.
     model_timeout_seconds: float = 8.0
+    #: 질의 해석 방식 — `"literal"`(낱말 그대로) | `"llm"`(모델 해석). **기본은 `literal`.**
+    #:
+    #: `PLAN-SoT §9 〈136〉` — 정본 결정 2-5 가 이번 릴리즈에서 자연어 검색을 뺐다. 다만
+    #: **「빼는 결정이 아니라 순서 결정」**이라 인프라·평가셋·회귀 게이트는 살려 둔다.
+    #:
+    #: ⚠ **키 유무로 가르지 않는다.** 종전 규칙(「키가 있으면 LLM」)으로 끄려면 키를 빼야
+    #: 하는데, 그러면 ① 결정이 코드에 안 보이고 ② Phase 2 에 켤 자리가 안 남으며
+    #: ③ **「키를 못 넣은 것」과 「안 쓰기로 한 것」이 같은 상태로 보인다.**
+    #: `〈136〉-㉲` 가 요구한 것은 그 반대다 — **켜는 시점을 값으로 정할 수 있어야 한다.**
+    query_interpretation: str = "literal"
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         e = os.environ if env is None else env
+        # 모르는 값은 **끈 쪽으로** 떨어뜨린다 — 오타가 검색을 몰래 켜지 않는다.
+        mode = (e.get("COLAB_AI_QUERY_INTERPRETATION") or "").strip().lower()
         return cls(
             dict_db_url=e.get("COLAB_AI_DB_URL") or None,
             openai_api_key=e.get("OPENAI_API_KEY") or None,
             model=e.get("COLAB_MODEL_HELPER") or "gpt-5.6-luna",
+            query_interpretation="llm" if mode == "llm" else "literal",
         )

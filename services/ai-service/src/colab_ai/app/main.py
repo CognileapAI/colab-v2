@@ -49,9 +49,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     dictionaries = (SqlDictionaries(make_engine(settings.dict_db_url))
                     if settings.dict_db_url else _UnavailableDictionaries())
-    interpreter = (LlmQueryInterpreter(api_key=settings.openai_api_key, model=settings.model,
-                                       timeout_seconds=settings.model_timeout_seconds)
-                   if settings.openai_api_key else LiteralInterpreter())
+    # 해석 방식은 **설정이 정한다** — 키 유무가 아니다 (`PLAN-SoT §9 〈136〉`).
+    # 이번 릴리즈의 기본은 `literal` 이고, 그건 고장이 아니라 결정이라 사유 문구도 다르다.
+    # LLM 은 **스위치와 키가 둘 다** 있어야 선다 — 스위치만 켜고 키가 없으면 낱말 검색으로
+    # 남되, 그때는 「쓰기로 했는데 못 썼다」이므로 기본(고장) 문구가 맞다.
+    use_llm = settings.query_interpretation == "llm" and bool(settings.openai_api_key)
+    if use_llm:
+        interpreter = LlmQueryInterpreter(
+            api_key=settings.openai_api_key, model=settings.model,
+            timeout_seconds=settings.model_timeout_seconds)
+    elif settings.query_interpretation == "llm":
+        interpreter = LiteralInterpreter()          # 켜려 했으나 키가 없다 = 고장 문구
+    else:
+        interpreter = LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON)
     service = SearchService(interpreter=interpreter, dictionaries=dictionaries)
 
     @app.get("/healthz")
