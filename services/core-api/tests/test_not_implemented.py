@@ -27,6 +27,8 @@ P2_REAL = {
     "getUploadStatus":              "tests/test_uploads.py",
     "createDataset":                "tests/test_dataset_registration.py",
     "updateDataset":                "tests/test_dataset_update.py",
+    "updateLab":                    "tests/test_lab_and_project_update.py",
+    "updateProject":                "tests/test_lab_and_project_update.py",
     "listDatasetFieldSuggestions":  "tests/test_field_suggestions.py",
     "addDatasetFile":               "tests/test_dataset_files.py",
     "replaceDatasetGridFile":       "tests/test_dataset_files.py",
@@ -97,13 +99,18 @@ def test_the_23_unimplemented_operations_are_exactly_these() -> None:
     「`linkProjectDataset` 이 여기서 열린다」고 미리 적었고, 화면 본체 두 op 이 함께 열렸다.
     남은 프로젝트 op 넷(`updateProject`·`deleteProject`·`setProjectStatus`·
     `unlinkProjectDataset`)은 P1 배정이라 그대로 있다 — 범위를 늘리지 않았다.
+    ⚠ **그중 `updateProject` 는 `〈150〉` 으로 빠졌다** — 남은 셋만 P1 이다.
 
     ⭑ **2026-08-27 — `updateDataset` 이 빠져 23 → 22.** `〈127〉` Ted 판정 ㈎ 가 예고한
     수 그대로다(「구현하면 501 표가 23 → 22 로 준다」). **줄어드는 것이 진척의 계측이다.**
     같은 회차에 `listDatasetFieldSuggestions` 가 신설됐지만 **여는 회차에 구현**해
     표에 행을 더하지 않았다 — `searchDatasets`·`listPalettes` 때 세운 규칙 그대로다.
+
+    ⭑ **2026-08-27 — `updateLab`·`updateProject` 가 빠져 22 → 20** (`〈150〉`).
+    `〈149〉-㉱` 가 남긴 결손 2건이고, 둘 다 **「올린 뒤 고칠 길이 없다」의 잔여**였다.
+    계약은 이미 완비라 **개정 없이 501 만 걷었다.**
     """
-    assert len(OPERATIONS) == 22
+    assert len(OPERATIONS) == 20
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -124,7 +131,10 @@ def test_codes_are_the_two_kinds() -> None:
     assert no_store == NO_STORE
     # 15 → 13: P5 가 `listProjects`·`getProject` 를 가져갔다
     # 13 → 15: `〈88〉` 묶음 5·6 이 등록 전 파일 조작 둘을 신설했다(저장 자리는 있고 로직이 P1)
-    assert len(p1) == 15
+    # 15 → 13: `〈150〉` 이 `updateLab`·`updateProject` 를 가져갔다 — **둘 다 P1 계열이었다.**
+    #          `〈149〉-㉱` 가 남긴 결손 2건이고 둘 다 「올린 뒤 고칠 길이 없다」의 잔여다.
+    #          **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+    assert len(p1) == 13
     assert no_store & p1 == set()
 
 

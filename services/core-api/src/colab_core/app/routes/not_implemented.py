@@ -63,7 +63,6 @@ class Op:
 #:    `listPalettes` 는 신설과 동시에 구현해 표에 안 든다. `〈88〉` 묶음 4·5·6).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
-    Op("updateLab", "PATCH", "/lab", "NOT_IMPLEMENTED_P1"),
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
@@ -85,7 +84,6 @@ OPERATIONS: tuple[Op, ...] = (
        "NOT_IMPLEMENTED_P1"),
     Op("cancelVerification", "POST", "/datasets/{datasetId}/verification-cancellation",
        "NOT_IMPLEMENTED_P1"),
-    Op("updateProject", "PATCH", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
     Op("deleteProject", "DELETE", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
     Op("setProjectStatus", "PUT", "/projects/{projectId}/status", "NOT_IMPLEMENTED_P1"),
     Op("unlinkProjectDataset", "DELETE", "/projects/{projectId}/datasets/{datasetId}",

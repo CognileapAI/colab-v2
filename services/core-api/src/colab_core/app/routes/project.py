@@ -61,6 +61,51 @@ def _year_month(value: dt.date | None) -> str | None:
     return None if value is None else f"{value.year:04d}-{value.month:02d}"
 
 
+#: `ProjectUpdate` 가 받는 열쇠. **`type` 은 없다** — 「만든 뒤에는 바꾸지 않는다」
+#: (계약 산문). `status` 도 없다 — 그쪽은 `setProjectStatus` 의 일이다.
+_PROJECT_UPDATE_FIELDS = ("name", "description", "period", "link")
+
+
+@router.patch("/projects/{projectId}", name="updateProject")
+def update_project(projectId: str, body: dict | None = Body(default=None),
+                   subject: Subject = Depends(current_subject),
+                   db: Session = Depends(scoped_db)) -> dict:
+    """프로젝트 정보 수정 (`PLAN-SoT §9 〈150〉` — `〈149〉-㉱` 결손 2건 중 하나).
+
+    ⚠ **이름 중복을 여기서도 검사한다.** 결정 2-7 이 함정을 미리 적었다 —
+    **「생성 시점에만 검사하고 수정 시점에 빠뜨리면 유니크 제약의 우회로가 된다」.**
+
+    그리고 결정 2-7 은 이 op 을 **오타 정정의 우선 경로**로 지목했다: 빠른 생성으로
+    만든 프로젝트는 데이터셋이 1건이라 삭제 조건(0건)을 영영 못 만족하는데,
+    **이름 수정이 열려 있으면 오타 정정은 여기서 끝난다.**
+    """
+    payload = body if isinstance(body, dict) else {}
+    unknown = sorted(set(payload) - set(_PROJECT_UPDATE_FIELDS))
+    if unknown:
+        # `type` 을 보낸 경우가 여기 걸린다 — **조용히 무시하지 않는다.**
+        raise errors.bad_request(f"계약에 없는 필드다: {unknown}",
+                                 {"allowed": list(_PROJECT_UPDATE_FIELDS)})
+    if not Ulid.is_valid(projectId):
+        raise errors.bad_request("projectId 가 정규 ID 가 아니다.")
+    project_id = Ulid(projectId)
+    if not d6_project.project_exists(db, project_id):
+        raise errors.not_found("프로젝트를 찾지 못했다.")
+
+    if "name" in payload:
+        name = payload["name"]
+        if not isinstance(name, str) or not (1 <= len(name.strip()) <= 100):
+            raise errors.bad_request("과제·논문 이름을 적어 주세요.")   # ERR 문구 그대로
+        # **자기 자신은 중복이 아니다** — 없으면 설명만 고치려는 사람이 막힌다.
+        if d6_project.name_is_taken(db, name=name, exclude_id=str(project_id)):
+            raise errors.conflict("같은 이름의 프로젝트가 이미 있어요")
+    if "period" in payload:
+        _period(payload["period"])          # 형식 검사만 — 저장은 도메인이 한다
+
+    if payload:
+        d6_project.update_project(db, project_id=project_id, changes=payload)
+    return get_project(projectId, subject=subject, db=db)
+
+
 @router.post("/projects", name="createProject", status_code=201)
 def create_project(response: Response, body: dict = Body(...),
                    subject: Subject = Depends(current_subject),
@@ -81,6 +126,10 @@ def create_project(response: Response, body: dict = Body(...),
     if not isinstance(name, str) or not (1 <= len(name) <= 100):
         raise errors.bad_request("name 은 1~100자다.")
     start, end = _period(body.get("period"))
+    # **이름 중복 차단** — `VAL-010`·`TC-E-004`·결정 2-6. 결정 #11 로 빠른 생성이
+    # 전원에게 열렸으므로 **이것이 이름만 받는 생성 경로의 유일한 방어선**이다.
+    if d6_project.name_is_taken(db, name=name):
+        raise errors.conflict("같은 이름의 프로젝트가 이미 있어요")   # ERR 문구 그대로
 
     row = d6_project.create_project(
         db, type_=type_, name=name, description=body.get("description"),

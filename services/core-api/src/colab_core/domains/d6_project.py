@@ -39,6 +39,64 @@ _USES = text("""
 """)
 
 
+#: 프로젝트 이름은 **연구실 단위 유니크**다 (결정 2-6 · `VAL-010` · `TC-E-004`).
+#: 근거 — 결정 #11 로 빠른 생성이 전원에게 열렸으므로, **이름 중복 차단이 이름만 받는
+#: 생성 경로의 유일한 방어선**이다. 데이터셋 이름은 중복 허용이라(2-1) 규칙이 갈리는데
+#: **의도된 차이**다: 프로젝트는 여러 사람이 공유하는 묶음이라 이름이 식별자 역할을 하고,
+#: 데이터셋은 개별 파일이라 업로더·파일명으로 구분된다.
+#:
+#: ⚠ **DB 유니크 제약이 아직 없다** — 넣으려면 마이그레이션이고 기존 행에 중복이 있으면
+#: 실패한다. 지금은 응용 층이 지키고, **경계는 RLS 가 이미 걸어** 남의 연구실 이름은 안 보인다.
+_NAME_TAKEN = text("""
+    SELECT 1 FROM d6_project
+     WHERE btrim(lower(name)) = btrim(lower(:name))
+       AND (CAST(:exclude_id AS char(26)) IS NULL OR id <> CAST(:exclude_id AS char(26)))
+     LIMIT 1
+""")
+
+
+class ProjectNameTaken(Exception):
+    """같은 이름의 프로젝트가 이미 있다. 호출자가 409 로 바꾼다."""
+
+
+def name_is_taken(session: Session, *, name: str, exclude_id: str | None = None) -> bool:
+    """**대소문자·앞뒤 공백을 무시하고 본다.**
+
+    `ERA5` 와 `era5 ` 를 다른 이름으로 두면 유니크가 이름값만 하고 실제로는 갈린다 —
+    결정 2-10 이 원천 표기에서 든 근거와 같다.
+
+    `exclude_id` = **자기 자신은 중복이 아니다.** 없으면 설명만 고치려는 사람이
+    「이미 있어요」에 막힌다.
+    """
+    return session.execute(_NAME_TAKEN, {
+        "name": name, "exclude_id": exclude_id}).first() is not None
+
+
+#: 이 op 이 고칠 수 있는 칸 ↔ 열. **`type` 은 없다** — 「만든 뒤에는 바꾸지 않는다」
+#: (`ProjectUpdate` 산문). `status` 도 없다 — 그쪽은 `setProjectStatus` 의 일이다.
+_PROJECT_UPDATABLE = {
+    "name": "name", "description": "description", "link": "link_url",
+}
+
+
+def update_project(session: Session, *, project_id: Ulid, changes: dict) -> None:
+    """프로젝트 정보 부분 수정 (`〈150〉`). 보내지 않은 열쇠는 안 건드린다."""
+    columns: dict[str, object] = {}
+    for key, value in changes.items():
+        if key in _PROJECT_UPDATABLE:
+            columns[_PROJECT_UPDATABLE[key]] = value
+    if "period" in changes:
+        period = changes["period"]
+        columns["period_start"] = None if period is None else period.get("start")
+        columns["period_end"] = None if period is None else period.get("end")
+    if not columns:
+        return
+    assignments = ", ".join(f"{c} = :{c}" for c in columns)
+    session.execute(
+        text(f"UPDATE d6_project SET {assignments} WHERE id = :project_id"),
+        {**columns, "project_id": str(project_id)})
+
+
 def create_project(session: Session, *, type_: str, name: str, description: str | None,
                    period_start: date | None, period_end: date | None,
                    link_url: str | None) -> dict:

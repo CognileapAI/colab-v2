@@ -49,6 +49,53 @@ def find_lab(session: Session) -> dict | None:
     return dict(row) if row else None
 
 
+#: 연구실 편집이 닿는 칸 ↔ 그 값이 사는 표. **계약(`LabUpdate`)이 정본이고** 여기는
+#: 그것을 SQL 자리로 옮긴 표다. `openedAt` 은 여기 없다 — **개설일은 고치는 값이 아니다.**
+_LAB_UPDATABLE = {
+    "name": ("d1_lab", "name"),
+    "university": ("d1_lab_profile", "university"),
+    "department": ("d1_lab_profile", "department"),
+    "principalInvestigator": ("d1_lab_profile", "principal_investigator"),
+    "researchField": ("d1_lab_profile", "research_field"),
+    "introduction": ("d1_lab_profile", "introduction"),
+    "defaultVisibility": ("d1_lab_profile", "default_visibility"),
+}
+
+
+def update_lab(session: Session, changes: dict) -> None:
+    """연구실 정보 부분 수정 (`〈150〉` · 계약 `LabUpdate`).
+
+    **두 표에 걸쳐 있다** — 이름은 `d1_lab`, 나머지는 `d1_lab_profile` 이다. 정본이
+    「연구실을 정의하는 유일한 자리」로 프로필을 따로 둔 결과이고(§2), 표를 합치는 것은
+    마이그레이션이라 하지 않는다.
+
+    **프로필 행이 없을 수 있다** — 그래서 `INSERT ... ON CONFLICT DO UPDATE` 로 쓴다.
+    없는 행에 `UPDATE` 를 날리면 0행이 갱신되고 **조용히 아무 일도 안 일어난다.**
+
+    경계는 `current_lab_id()` 가 넣는다 — 요청에서 `labId` 를 받지 않는다.
+    """
+    by_table: dict[str, dict[str, object]] = {}
+    for key, value in changes.items():
+        table, column = _LAB_UPDATABLE[key]
+        by_table.setdefault(table, {})[column] = value
+
+    lab = by_table.get("d1_lab")
+    if lab:
+        assignments = ", ".join(f"{c} = :{c}" for c in lab)
+        session.execute(text(f"UPDATE d1_lab SET {assignments} WHERE id = current_lab_id()"),
+                        lab)
+
+    profile = by_table.get("d1_lab_profile")
+    if profile:
+        columns = ", ".join(profile)
+        binds = ", ".join(f":{c}" for c in profile)
+        updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in profile)
+        session.execute(text(
+            f"INSERT INTO d1_lab_profile (lab_id, {columns}) "
+            f"VALUES (current_lab_id(), {binds}) "
+            f"ON CONFLICT (lab_id) DO UPDATE SET {updates}"), profile)
+
+
 def list_members(session: Session) -> list[dict]:
     """연구실 구성원 전원. 경계는 RLS 가 이미 걸었다 — lab_id 조건을 다시 적지 않는다."""
     return [dict(r) for r in session.execute(_MEMBERS).mappings().all()]
