@@ -1261,14 +1261,26 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description 로그인 입력. **한 칸뿐이다** — 개발자가 심어 둔 계정의 접속 코드 (P-17 ·
-         *     `PLAN-SoT §9 〈90〉-㉮`). 비밀번호를 새로 만들게 하지 않는다. 정본이 명시적으로 뺀 것이
-         *     「구글 외의 로그인 방법 (비밀번호 · 다른 소셜 계정)」이기 때문이다
-         *     (`PRD_계정과_연구실_소속 §5.2`).
+         * @description 로그인 입력. **두 형태 중 하나**이며 **정확히 하나만** 채운다 (`PLAN-SoT §9 〈107〉` ·
+         *     `〈108〉`). 둘 다 개발자가 심어 둔 자격이고 **회원가입 경로가 아니다** (P-17).
+         *
+         *     ㈎ `accountName` ＋ `password` — 사람이 쓰는 형태 (Ted 2026-08-26).
+         *     ㈏ `accessCode` — 심어 둔 접속 코드. 도구·시험이 쓰는 형태.
+         *
+         *     ⚠ **정본은 「구글 외의 로그인 방법 (비밀번호 · 다른 소셜 계정)」을 명시적으로 뺐다**
+         *     (`PRD_계정과_연구실_소속 §5.2`). ㈎ 는 그 문장과 어긋나며, 어긋남을 감추지 않고
+         *     `〈108〉-㉮` 에 Ted 판정 사안으로 등재해 두었다. 구글 어댑터가 서면 ㈎ 는 걷힌다.
+         *
+         *     **비밀번호는 어디에도 평문으로 저장되지 않는다** — 자격 파일에 표준 KDF 해시만 있다
+         *     (`〈108〉-㉯`).
          */
         SessionCredentials: {
+            /** @description 심어 둔 계정 이름. `password` 와 짝으로만 쓴다. */
+            accountName?: string;
+            /** @description 비밀번호. **응답·로그 어디에도 되비치지 않는다** (`〈108〉-㉯`). */
+            password?: string;
             /** @description 심어 둔 접속 코드. 값의 출처는 배포 설정이며 계약이 형식을 규정하지 않는다. */
-            accessCode: string;
+            accessCode?: string;
         };
         /**
          * @description 발급된 세션. **무상태 서명 토큰**이라 서버에 세션 표가 없다
@@ -2569,6 +2581,18 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /**
+         * @description 로그인 시도가 창 안에서 너무 잦다 (`PLAN-SoT §9 〈108〉-㉰`). 사전 추측을 느리게 만드는
+         *     최소 보완이며, 시행 범위의 한계는 그 판정문이 적어 두었다.
+         */
+        TooManyAttempts: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description 서버 오류. */
         ServerError: {
             headers: {
@@ -2645,6 +2669,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyAttempts"];
             500: components["responses"]["ServerError"];
         };
     };

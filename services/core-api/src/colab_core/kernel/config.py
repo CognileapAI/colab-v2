@@ -21,6 +21,19 @@ ENV_SESSION_TTL_MINUTES = "COLAB_CORE_SESSION_TTL_MINUTES"
 #: 이 값 하나뿐이며, Ted 판정으로 바뀔 수 있다.
 DEFAULT_SESSION_TTL_MINUTES = 720
 
+#: 자격 파일 — 계정 이름 → 주체 ＋ **비밀번호 해시** (`PLAN-SoT §9 〈108〉-㉯`).
+#: 주체 표와 갈라 둔다: 파일 권한(`0600`)과 배포 경로를 따로 쥐기 위해서다.
+#: 값이 없으면 비밀번호 어댑터가 서지 않는다 — 접속 코드 경로는 그대로 돈다.
+ENV_CREDENTIALS_FILE = "COLAB_CORE_CREDENTIALS_FILE"
+
+#: 로그인 시도 제한 (`〈108〉-㉰`). **[정본 무근거]** — 정본은 비밀번호도 시도 제한도 다루지 않는다.
+ENV_LOGIN_MAX_FAILURES = "COLAB_CORE_LOGIN_MAX_FAILURES"
+ENV_LOGIN_WINDOW_SECONDS = "COLAB_CORE_LOGIN_WINDOW_SECONDS"
+#: 초기값 = 창 900 초(15 분) 안에 실패 5 회. 사전 추측을 느리게 만드는 최소선이고,
+#: 사람이 오타로 잠기지 않는 선이다. 근거는 이 값 하나뿐이며 Ted 판정으로 바뀐다.
+DEFAULT_LOGIN_MAX_FAILURES = 5
+DEFAULT_LOGIN_WINDOW_SECONDS = 900
+
 #: 미등록 업로드의 수명 — **운영 설정이다** (`PLAN-SoT §9 〈67〉-ⓐ`).
 #: 정본(E-04 Policy v2.3)은 규칙 셋만 말하고 **숫자를 갖지 않는다**:
 #:   ① 미등록 업로드는 수명이 있다 ② 시계가 처리를 앞지르지 않는다 ③ 만료 뒤에는 404.
@@ -56,6 +69,9 @@ class Settings:
     subjects_file: str | None
     session_secret: str | None = None
     session_ttl_minutes: int = DEFAULT_SESSION_TTL_MINUTES
+    credentials_file: str | None = None
+    login_max_failures: int = DEFAULT_LOGIN_MAX_FAILURES
+    login_window_seconds: int = DEFAULT_LOGIN_WINDOW_SECONDS
     upload_ttl_hours: int = DEFAULT_UPLOAD_TTL_HOURS
     upload_storage_dir: str | None = None
     viz_base_url: str | None = None
@@ -89,6 +105,13 @@ def load_settings() -> Settings:
         session_ttl_minutes=_positive_int(
             ENV_SESSION_TTL_MINUTES, os.environ.get(ENV_SESSION_TTL_MINUTES),
             DEFAULT_SESSION_TTL_MINUTES),
+        credentials_file=os.environ.get(ENV_CREDENTIALS_FILE) or None,
+        login_max_failures=_positive_int(
+            ENV_LOGIN_MAX_FAILURES, os.environ.get(ENV_LOGIN_MAX_FAILURES),
+            DEFAULT_LOGIN_MAX_FAILURES),
+        login_window_seconds=_positive_int(
+            ENV_LOGIN_WINDOW_SECONDS, os.environ.get(ENV_LOGIN_WINDOW_SECONDS),
+            DEFAULT_LOGIN_WINDOW_SECONDS),
         upload_ttl_hours=_positive_int(
             ENV_UPLOAD_TTL_HOURS, os.environ.get(ENV_UPLOAD_TTL_HOURS),
             DEFAULT_UPLOAD_TTL_HOURS),

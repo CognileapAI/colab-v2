@@ -51,6 +51,15 @@ def conflict(message: str, details: dict[str, Any] | None = None) -> ApiError:
     return ApiError(409, "CONFLICT", message, details)
 
 
+def too_many_attempts(message: str) -> ApiError:
+    """429 — 창 안의 실패가 한계를 넘었다 (`PLAN-SoT §9 〈108〉-㉰`).
+
+    401(자격이 틀림)과 갈라 쓴다. 같은 코드로 합치면 「막힌 것」과 「틀린 것」이 구분되지 않아
+    사람이 자기 비밀번호를 계속 의심한다.
+    """
+    return ApiError(429, "TOO_MANY_ATTEMPTS", message)
+
+
 def error_response(exc: HTTPException) -> JSONResponse:
     detail = exc.detail
     if isinstance(detail, dict) and "code" in detail and "message" in detail:

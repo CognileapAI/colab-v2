@@ -14,15 +14,32 @@ from pydantic import BaseModel, Field
 
 from ...kernel import errors
 from ...kernel.auth import Subject
+from ...kernel.authn import LoginAttempt
 from ..deps import current_subject
 
 router = APIRouter()
 
 
 class SessionCredentials(BaseModel):
-    """계약 `SessionCredentials` — 칸 하나뿐이다 (P-17 · `〈90〉-㉮`)."""
+    """계약 `SessionCredentials` — 두 형태 중 **정확히 하나** (`〈107〉-㉮` · `〈108〉-㉮`).
 
-    accessCode: str = Field(min_length=1, max_length=512)
+    ㈎ `accountName` ＋ `password`  ㈏ `accessCode`
+    """
+
+    accountName: str | None = Field(default=None, min_length=1, max_length=128)
+    password: str | None = Field(default=None, min_length=1, max_length=512)
+    accessCode: str | None = Field(default=None, min_length=1, max_length=512)
+
+    def attempt(self) -> LoginAttempt:
+        """**갈래를 여기서 판단하지 않는다** — 입력을 한 벌로 묶어 발급 사슬에 넘긴다."""
+        password_form = bool(self.accountName) and bool(self.password)
+        code_form = bool(self.accessCode)
+        # 두 형태를 한 요청에 섞으면 어느 쪽으로 판정했는지가 응답에서 안 보인다.
+        if password_form == code_form:
+            raise errors.bad_request(
+                "`accountName`＋`password` 또는 `accessCode` 중 **정확히 하나**를 보낸다.")
+        return LoginAttempt(access_code=self.accessCode,
+                            account_name=self.accountName, password=self.password)
 
 
 @router.post("/sessions", name="createSession", status_code=201)
@@ -35,10 +52,19 @@ def create_session(body: SessionCredentials, request: Request) -> dict:
             500, "SESSION_UNAVAILABLE",
             "세션 서명 비밀값이 설정되지 않아 로그인을 세울 수 없다 "
             "(COLAB_CORE_SESSION_SECRET).")
-    issued = issuer.issue(body.accessCode)
+    attempt = body.attempt()
+    limiter = request.app.state.login_limiter
+    if limiter.blocked(attempt.key):
+        # 사전 추측을 **느리게** 만드는 최소 보완이다 (`〈108〉-㉰`). 한계는 `kernel/throttle.py`.
+        raise errors.too_many_attempts(
+            "로그인 시도가 너무 잦다. 잠시 뒤에 다시 시도한다.")
+    issued = issuer.issue(attempt)
     if issued is None:
-        # 「없는 코드」와 「틀린 코드」를 가르지 않는다 — 가르는 순간 코드의 존재 여부가 샌다.
+        # 「없는 계정」과 「틀린 비밀번호」를 가르지 않는다 — 가르는 순간 계정의 존재가 샌다.
+        # ⚠ **입력값을 메시지에 담지 않는다** (Ted 2026-08-26 조건 1 — 로그·오류에 값 미출력).
+        limiter.record_failure(attempt.key)
         raise errors.unauthorized("심어 둔 계정이 아니다. 계정은 개발자가 심는다 (P-17).")
+    limiter.clear(attempt.key)
     return {"token": issued.token,
             "expiresAt": issued.expires_at.isoformat().replace("+00:00", "Z")}
 

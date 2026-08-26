@@ -37,7 +37,8 @@ def test_비밀값이_있으면_두_수단이_병존한다() -> None:
     assert issuer is not None
     # 심어 둔 코드와 발급된 세션이 **같은 주체**로 판정된다.
     assert chain.resolve("심어둔-코드") == SUBJECT
-    assert chain.resolve(issuer.issue("심어둔-코드").token) == SUBJECT
+    issued = issuer.issue(authn.LoginAttempt(access_code="심어둔-코드"))
+    assert chain.resolve(issued.token) == SUBJECT
 
 
 def test_빈_사슬은_모두_거부한다() -> None:
@@ -62,7 +63,13 @@ def test_사슬은_수단을_더해도_같은_형태다() -> None:
 
 def test_발급기는_표에_없는_코드로_계정을_만들지_않는다() -> None:
     _, issuer = authn.build(registry=REGISTRY, signer=signer())
-    assert issuer.issue("없는-코드") is None
+    assert issuer.issue(authn.LoginAttempt(access_code="없는-코드")) is None
+
+
+def test_시도_식별자에_비밀번호가_들어가지_않는다() -> None:
+    """제한이 세는 키가 로그·메모리에 남아도 비밀번호는 새지 않는다 (`〈108〉-㉰`)."""
+    attempt = authn.LoginAttempt(account_name="colab", password="비밀")
+    assert "비밀" not in attempt.key
 
 
 # ── 서명 토큰 ───────────────────────────────────────────────────────────────────

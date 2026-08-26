@@ -186,9 +186,13 @@ def p2_client(app_db_url: str, subjects_file: str, tmp_path):
     def build(*, ttl_hours: int = 24, viz_base_url: str | None = None,
               ai_base_url: str | None = None,
               session_secret: str | None = None,
+              credentials_file: str | None = None,
+              login_max_failures: int = 5,
               viz_service_token: str | None = "test-viz-service-token") -> TestClient:
         settings = Settings(database_url=app_db_url, subjects_file=subjects_file,
                             session_secret=session_secret,
+                            credentials_file=credentials_file,
+                            login_max_failures=login_max_failures,
                             upload_ttl_hours=ttl_hours,
                             upload_storage_dir=str(tmp_path / "uploads"),
                             viz_base_url=viz_base_url, ai_base_url=ai_base_url,

@@ -31,7 +31,24 @@ import dataclasses
 from typing import Protocol, runtime_checkable
 
 from .auth import Subject, SubjectRegistry
+from .credentials import CredentialStore
+from .password import verify_password
 from .session_token import IssuedSession, SessionSigner
+
+
+@dataclasses.dataclass(frozen=True)
+class LoginAttempt:
+    """로그인 입력 한 벌. **어느 수단인지는 발급기가 판단한다** — 라우터가 갈래를 알지 않는다."""
+
+    access_code: str | None = None
+    account_name: str | None = None
+    password: str | None = None
+
+    @property
+    def key(self) -> str:
+        """시도 제한이 세는 식별자. **비밀번호를 담지 않는다.**"""
+        return f"name:{self.account_name}" if self.account_name else "code:*"
+
 
 
 @runtime_checkable
@@ -49,7 +66,7 @@ class CredentialIssuer(Protocol):
 
     name: str
 
-    def issue(self, access_code: str) -> IssuedSession | None: ...
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | None: ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -85,9 +102,58 @@ class PlantedCodeIssuer:
     signer: SessionSigner
     name: str = "planted-access-code"
 
-    def issue(self, access_code: str) -> IssuedSession | None:
-        subject = self.registry.resolve(access_code)
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | None:
+        if not attempt.access_code:
+            return None
+        subject = self.registry.resolve(attempt.access_code)
         return None if subject is None else self.signer.issue(subject)
+
+
+@dataclasses.dataclass(frozen=True)
+class PasswordIssuer:
+    """발급 어댑터 ② — 계정 이름 + 비밀번호 (Ted 2026-08-26).
+
+    **회원가입이 아니다** (P-17). 자격은 개발자가 `ops/set-password.py` 로 심고,
+    저장은 **scrypt 해시뿐**이다 — 평문도 가역 암호화도 두지 않는다.
+
+    ⚠ **계정의 존재 여부를 흘리지 않는다** — 없는 계정과 틀린 비밀번호가 **같은 None** 이다.
+    """
+
+    store: CredentialStore
+    signer: SessionSigner
+    name: str = "planted-password"
+
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | None:
+        if not attempt.account_name or not attempt.password:
+            return None
+        record = self.store.find(attempt.account_name)
+        if record is None:
+            # 없는 계정에도 **해시 한 번을 태운다** — 즉답으로 돌아가면 응답 시간만으로
+            # 계정의 존재 여부를 셀 수 있다.
+            self.store.dummy_verify(attempt.password)
+            return None
+        if not verify_password(attempt.password, record.password):
+            return None
+        return self.signer.issue(record.subject)
+
+
+class IssuerChain:
+    """발급 어댑터를 순서대로 훑는다. **다음 수단은 여기 한 줄로 들어온다.**"""
+
+    def __init__(self, issuers: tuple[CredentialIssuer, ...]) -> None:
+        self._issuers = issuers
+        self.name = "+".join(i.name for i in issuers) or "none"
+
+    @property
+    def issuers(self) -> tuple[CredentialIssuer, ...]:
+        return self._issuers
+
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | None:
+        for issuer in self._issuers:
+            issued = issuer.issue(attempt)
+            if issued is not None:
+                return issued
+        return None
 
 
 class AuthenticatorChain:
@@ -112,16 +178,22 @@ class AuthenticatorChain:
         return None
 
 
-def build(*, registry: SubjectRegistry,
-          signer: SessionSigner | None) -> tuple[AuthenticatorChain, CredentialIssuer | None]:
+def build(*, registry: SubjectRegistry, signer: SessionSigner | None,
+          credentials: CredentialStore | None = None,
+          ) -> tuple[AuthenticatorChain, CredentialIssuer | None]:
     """⭑ **다음 수단을 더할 때 만지는 함수가 이것 하나다.**
 
     서명 비밀값이 없으면 세션 어댑터도 발급기도 세우지 않는다 — 없는 것을 있는 척하지 않고,
     로그인 op 이 그 사실을 그대로 말한다 (`routes/session.py`).
+
+    발급 순서 = **비밀번호 → 접속 코드**. 사람이 쓰는 수단이 앞이다.
     """
     adapters: list[Authenticator] = [StaticTokenAuthenticator(registry)]
-    issuer: CredentialIssuer | None = None
-    if signer is not None:
-        adapters.append(SignedSessionAuthenticator(signer))
-        issuer = PlantedCodeIssuer(registry, signer)
-    return AuthenticatorChain(tuple(adapters)), issuer
+    if signer is None:
+        return AuthenticatorChain(tuple(adapters)), None
+    adapters.append(SignedSessionAuthenticator(signer))
+    issuers: list[CredentialIssuer] = []
+    if credentials is not None and not credentials.empty:
+        issuers.append(PasswordIssuer(credentials, signer))
+    issuers.append(PlantedCodeIssuer(registry, signer))
+    return AuthenticatorChain(tuple(adapters)), IssuerChain(tuple(issuers))

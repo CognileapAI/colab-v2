@@ -18,6 +18,8 @@ from fastapi.exceptions import RequestValidationError
 from ..kernel import errors
 from ..kernel import authn
 from ..kernel.auth import SubjectRegistry
+from ..kernel.credentials import CredentialStore
+from ..kernel.throttle import AttemptLimiter
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
 from ..kernel.session_token import SessionSigner
@@ -52,7 +54,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                              ttl_minutes=settings.session_ttl_minutes)
                if settings.session_secret else None)
     app.state.authenticators, app.state.session_issuer = authn.build(
-        registry=app.state.subjects, signer=_signer)
+        registry=app.state.subjects, signer=_signer,
+        credentials=CredentialStore.from_file(settings.credentials_file))
+    # 시도 제한은 **프로세스 안에서만** 센다 — 한계는 `kernel/throttle.py` 가 적었다.
+    app.state.login_limiter = AttemptLimiter(
+        max_failures=settings.login_max_failures,
+        window_seconds=settings.login_window_seconds)
     # 중계 두 곳. viz-render 주소가 없으면 **중계를 만들지 않는다** — 없는 것을 있는 척하지
     # 않고, 미리보기 op 이 503 봉투로 정직하게 답한다. 그래도 등록·계보 확정은 그대로 돈다.
     #
