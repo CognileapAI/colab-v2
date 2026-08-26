@@ -27,6 +27,9 @@
 | 10 | 적재 도구 실행 형태 | **스크립트 1건 · 공개 API 호출.** DB 직접 INSERT 0. `㊾-③` 정합 (`§14`) |
 | 11 | 연구실 C ID | **결정론적 고정값** `00000000000000000000HYMETS` (`§3.4`) |
 | 12 | 철거 결과 표기 | **「철거 완료」 기재 금지.** 잔존 3종을 사유와 함께 적는다 (`§5단`) |
+| 13 | 백업 주기 | **일 1회 ＋ 회차 단위.** 정리·삭제·재시드 직전 백업 강제 (`§8` 0단 · 2026-08-26 Ted ②) |
+| 14 | 픽스처 복구 | **부분 시드 실행 완료** — D3/D4/D5 만. 고아 9→1 (`§15.3` · 2026-08-26 Ted ③) |
+| 15 | 격자 매니페스트 | **6건 확정** — `D-07` 2 · `D-08` 2 · `D-15` 2. `D-08` 은 측정으로 필요 판정 (`§15.4`) |
 
 **Ted 판정 대기 0건.** 종전 5건은 2026-08-26 Ted 판정으로 전건 확정 — `§11`. **이 절차서는 판정 대기 없이 집행 가능하다.**
 
@@ -534,6 +537,27 @@ db/platform/schema.sql:646-648 d8_download_append_only  BEFORE UPDATE OR DELETE 
 
 ---
 
+### 0단 — 회차 백업 의무 (2026-08-26 Ted ② 채택 · 신설)
+
+**근거** — 2026-08-25 소실 구간에서 픽스처 적재(08-25 04:36 KST)와 삭제(08-25 23:2x KST) 사이 **19시간을 덮는 백업 산출물이 0건**이었다. 원인은 삭제가 아니라 **취득 공백**이다 — `S2-BLOCKER-INVESTIGATION.md` §1.6. 종전 주기는 **일 1회(03:30)** 뿐이었다(`infra/staging/backup/schedule.crontab`).
+
+**보강 내용 — 일정 백업에 회차 백업을 더한다.**
+
+| # | 규칙 | 적용 대상 |
+|---|---|---|
+| 0-1 | **회차 단위 백업 의무.** 각 단(1단~5단) 시작 전 `infra/staging/backup/backup.sh` 1회 | 5단 전부 |
+| 0-2 | **정리·삭제·재시드 직전 백업 강제.** 직전 취득이 없으면 실행하지 않는다 | 3단·5단·재시드 |
+| 0-3 | **직전 취득 확인은 `infra/staging/backup/latest-check.sh` 로 한다.** 신선도 판정이 GREEN 이 아니면 정지 | 0-2 의 선행 |
+| 0-4 | **자동화 지점 = 실행기가 스스로 확인한다.** 재시드 실행기는 첫 단계에서 `latest-check.sh` 를 부르고 RED 면 적재를 시작하지 않는다 | `infra/staging/reseed-fixture-d345.sh:31-32` |
+| 0-5 | **일정 백업(일 1회 03:30)은 유지한다.** 회차 백업은 그것을 대체하지 않고 더한다 | `schedule.crontab` |
+
+**금지** — staging DB 에 대한 손 `DELETE`. 데이터 정리는 제품 op 또는 **커밋된 스크립트**로만 한다(`S2-BLOCKER-INVESTIGATION.md` §1.7-1). 조건 없는 `DELETE` 문장은 어떤 스크립트에도 두지 않는다.
+
+**판정 기준** — 각 단 착수 로그에 해당 회차 백업 산출물명이 남는다.
+**중단 조건** — 백업 실패 또는 `latest-check.sh` RED. 해당 단을 시작하지 않는다.
+
+---
+
 ### 1단 — 백업 + 복원 리허설
 
 **명령**
@@ -910,4 +934,104 @@ db/platform/schema.sql:646-648 d8_download_append_only  BEFORE UPDATE OR DELETE 
 | R-9 | `files`·`fileKinds` **순서 짝을 단언**한다 | `contracts/seams/fe-core.yaml:231` — 어긋나도 오류가 나지 않는 자리다 |
 | R-10 | 실행 기록에 **회차·데이터셋 이름·판정 결과(적재/건너뜀/이어붙임)** 를 남긴다 | 진행표를 대체하는 것이 아니라 사후 대조용이다 |
 | R-11 | **재실행 시 쓰기 호출 0건**을 도구 자신이 세어 출력한다 | 완료 조건 ② 판정 2행의 증거다 (`§5.4.5`) |
+
+---
+
+## 15. 잔존 차단 해소 집행 기록 (2026-08-26 · Ted 판정 5건 전건 채택)
+
+> 판정 원문 = `S2-BLOCKER-INVESTIGATION.md` 의 「Ted 판정 필요」 5건. 채택일 2026-08-26.
+> 이 절은 **집행 결과**만 적는다. 설계 근거는 위 각 절과 조사 기록에 있다.
+
+### 15.1 ① `log_statement='mod'` 상향 — 적용
+
+| 항목 | 값 |
+|---|---|
+| 적용 수단 | `ALTER SYSTEM SET log_statement='mod'` ＋ `pg_reload_conf()` (가동 인스턴스). 값은 `PGDATA/postgresql.auto.conf` 에 남아 재기동을 넘긴다 |
+| 레포 정본 | `infra/staging/compose.i2.yml` 의 postgres `command: ["postgres","-c","log_statement=mod"]` — **다음 recreate 부터 적용** |
+| 상향 전 | `log_statement=none` · `log_min_duration_statement=-1` · `logging_collector=off` |
+| 실측 확인 | `UPDATE d1_lab SET name=name WHERE id='0000000000000000000000ZZZZ'`(0행 갱신) 실행 → 로그에 `LOG: statement: UPDATE d1_lab …` 기록됨. **성공한 쓰기가 남는다** |
+| 로그 증가량 | 유휴 4분 창(2026-08-26 00:37~00:41 UTC) **27,193 B · 문장 44건** = **6.80 KB/분 · 약 9.6 MB/일**. 상향 전 기준선 = 8시간 15,030 B(약 1.9 KB/시) |
+| 증가량의 주체 | 44건 전부 `d5_upload` 만료 청소 문장(분당 11회). 사람 조작이 아니라 **주기 작업**이 로그량을 결정한다 |
+| 과대 대응 | 무한 증가를 막는 상한을 compose 에 선언 — json-file `max-size=50m` · `max-file=5`(약 250 MB · 26일치). ⚠ **recreate 전까지 상한 없음** |
+
+### 15.2 ② 백업 주기 보강 — 절차서 반영
+
+- 신설 = **`§8` 0단 「회차 백업 의무」** 5개 규칙. 일 1회 일정 백업은 유지하고 회차 백업을 더한다
+- 자동화 = `infra/staging/reseed-fixture-d345.sh` 가 첫 단계에서 `latest-check.sh` 를 부르고 RED 면 적재를 시작하지 않는다
+
+### 15.3 ③ 부분 시드 — 실행 완료
+
+| 항목 | 값 |
+|---|---|
+| 산출물 | `infra/staging/reseed-fixture-d345.sql`(INSERT 전용) · `infra/staging/reseed-fixture-d345.sh`(실행기) |
+| 선행 백업 | `platform-20260826T093351.sql.gz`(GREEN) · `ai-20260826T093353.sql.gz`(GREEN) |
+| 충돌 검사 | 대상 8표 전부 0행 확인 후 적재 |
+| 복원 계수 | `d3_dataset` 3 · `d3_dataset_description` 3 · `d3_dataset_autometa` 3 · `d3_file` 4 · `d4_lineage_edge` 1. `d5_upload`·`d5_upload_file`·`d5_pipeline_event` 는 픽스처 정본에 행이 없어 0 |
+| 트리거 확인 | `d3_dataset.file_count` = DSA1 2 · DSA2 1 · DSB1 1 (손으로 넣지 않음) |
+| 고아 해소 | **9 → 1.** 해소 8 = `d2_dataset_access` 2 · `d2_verified` 2 · `d8_download` 2 · `d6_project_dataset` 2 |
+| 잔존 고아 | **1행.** `d6_project_dataset.id=01M0TMCSSTYFP6YYG1AEH9Q25P` · `dataset_id=01M0TMCKMWYYZGP61BZJYD0TGC` — E2E 산출물이라 시드로 복원 불가(`S2-BLOCKER-INVESTIGATION.md` §2.6-4) |
+| append-only | `d8_activity` 6행 · `d8_download` 2행은 트리거로 삭제 불가 — 손대지 않았다 |
+| 실패·롤백 | 0건 |
+
+### 15.4 ④⑤ 격자 매니페스트 — 6건 확정
+
+- 산출 = **`infra/staging/manifest-grid-entries.json`**(소유 = 본 레인. 소비처 = `infra/staging/load-seed.py --manifest`)
+- 항목 = **6건** — `D-07` 2 ＋ `D-15` 2 ＋ **`D-08` 2**(측정 결과 추가). 6건 전부 원천 실물 존재 확인
+- 사본 통일 = **미실행**(Ted ④). `D-07` 은 `01.level-data` 사본, `D-15` 는 `02.File-format` 사본. **미실행 사유 = 판정이 각 사본 사용을 지정했고, 통일은 두 사본의 값 차이를 먼저 재야 하는데 그 측정이 이번 범위 밖이다.** 사본 간 차이 유무 = `[미확인]`
+- `D-08` 측정 = 아래
+
+| 판정기준 | 값 |
+|---|---|
+| 대상 | `sfc_grid_rn_15m_201907281430.nc`(10건 중 1건 판독) |
+| 변수 | `data`(int16, 2049×2049) 1건. **`lat`·`lon` 변수 0건** |
+| 전역속성 | `map_pro='Lambert Conformal Conic Projection'` · `map_slat=38.0` · `map_slon=126.0` · `grid_size=0.5` · `map_sx=880.0` · `map_sy=1540.0` |
+| 결손 | **표준위도 2개 자리가 없다.** `map_slat` 1개만 존재 |
+| 재현 오차 | 표준위도 30/60 가정 시 최대 `|dlat|=0.016219°`(약 1.80 km) · `|dlon|=0.018205°`(약 1.60 km) = 500 m 셀 약 3.6개 |
+| 역투영 검사 | 격자 파일을 같은 투영면으로 되돌리면 간격 0.4988/0.5011 km 로 헤더 기재 0.5 km 와 어긋나고 표준편차가 0 이 아니다. 추정 원점 880.27/1540.44 도 헤더 880.0/1540.0 과 어긋난다 |
+| **판정** | **격자 파일 필요.** `LAT_RN15.npy`·`LON_RN15.npy`(2049×2049 f32 · lat 30.743372~40.354130 · lon 120.667374~133.069901) |
+
+### 15.5 A·B 관측치 고정표 — DB 측 취득
+
+- 산출 = **`infra/staging/observe-fixture-ab.sql`**(SELECT 전용). 재시드 직후 실행, **17칸 취득**
+
+| 판정기준 | A | B |
+|---|---|---|
+| 데이터셋 수 | 2 | 1 |
+| 파일 수 합 | 3 | 1 |
+| 파일 크기 합(byte) | 300 | 300 |
+| 기준 격자 파일 수 | 1 | 0 |
+| 계보 간선 수 | 1 | 0 |
+| 열림 데이터셋 수 | 1 | 0 |
+| 잠김 데이터셋 수 | 1 | 0 |
+| Verified true 수 | 1 | 0 |
+| 패싯 주제 강우·강수 | 2 | 0 |
+| 패싯 주제 토지피복·LULC | 0 | 1 |
+| 이름에 「강우」 포함 수 | 2 | 0 |
+| 프로젝트-데이터셋 연결 수 | 2 | 1 |
+| 고아 dataset_id 수(4표 합) | 1 | 0 |
+
+> B 의 0 은 조회 결과가 0행이라 집계 행이 나오지 않은 칸이다. 취득 행 수 17 = 위 표에서 값이 0행 아닌 칸의 수.
+
+- **`[미확인]` — API·화면 측 판정기준 4종**: 검색 `강우` 결과 건수 · 검색 `degraded` 값 · 미리보기 ①썸네일 산출 성공 수 · ②비지도형 산출 성공 수.
+  **사유 = 주체 토큰 파일 접근이 이 레인에서 허용되지 않았다.** DB 측 계수로 대체하지 않는다 — 다른 것을 잰 값이다
+
+### 15.6 검증 계수
+
+| 판정기준 | 값 |
+|---|---|
+| staging 컨테이너 | **8/8** — nginx·cloudflared·pg·core_api·frontend·pipeline_worker·viz_render·ai_service. cloudflared 외 7건 `healthy` |
+| 헬스 | **6/6 · 본문 대조 완료.** 루트 본문 `ok` · 단위 5종 전부 `{"unit":…,"status":"alive","implemented":true}` |
+| 게이트 | **개별 실행 26종 · green 25 · red 1** |
+| red 게이트 | `schema-diff` — 원인 = `COLAB_APPLIED_DB_URL_PLATFORM`·`_AI` 미설정 ＋ 호스트에 `psql` 부재. 이 회차의 변경과 무관한 실행 환경 조건이다 |
+| 실패·롤백 | **0건.** 백업 복원 실행 0회 |
+
+⚠ 게이트는 이 워크트리에서 실행했고, 실행 시점에 **다른 레인의 미커밋 변경**(`services/`·`frontend/`·`contracts/`)이 작업 트리에 함께 있었다. 위 계수는 그 상태의 값이다.
+
+### 15.7 Ted 판정이 필요한 잔여
+
+| # | 항목 | 판정기준 |
+|---|---|---|
+| ㉮ | `log_statement='mod'` 유지 여부 | 일 9.6 MB. 컨테이너 recreate 로 로그 상한(250 MB)을 실제로 걸 것인가 — recreate 는 postgres 재기동을 동반한다 |
+| ㉯ | `D-07`·`D-15` 격자 사본 차이 측정 | 통일 판단의 선행. 지금은 `[미확인]` |
+| ㉰ | A·B 관측치 API 4칸 취득 주체 | 토큰 접근 권한을 가진 레인에서 잴 것인가 |
 

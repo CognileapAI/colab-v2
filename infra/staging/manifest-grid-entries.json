@@ -1,0 +1,58 @@
+{
+  "_설명": [
+    "S2 적재 매니페스트의 **기준 격자 파일 항목만** 확정한 조각. 데이터셋 본체 항목은 여기에 없다.",
+    "소비처 = infra/staging/load-seed.py 의 --manifest. 각 datasets[].files 에 kind='기준 격자 파일' 로 병합한다.",
+    "path 는 --source-root 기준 상대. source-root = '03 Reference-Data'.",
+    "판정 근거 = dev-package/sessions/S2-BLOCKER-INVESTIGATION.md §3.5·§3.6 · 2026-08-26 Ted ④⑤.",
+    "상한 = 데이터셋당 격자 2건(위도·경도 한 쌍, PLAN-SoT 〈58〉). 세 데이터셋 전부 2건으로 상한 내."
+  ],
+  "_판정": {
+    "사본_통일": "미실행. D-07 은 01.level-data 사본, D-15 는 02.File-format 사본을 각각 쓴다(Ted ④). 두 사본의 값 차이 유무는 [미확인] — 이번 회차에서 재지 않았다.",
+    "D-08_격자_필요": "필요. 측정 결과는 아래 _측정_D08.",
+    "D-13": "격자 파일 없이 성립(HDF4 꼬리 StructMetadata 로 계산, 오차 7e-14deg). 항목 0건.",
+    "제외분": "D-12(3건)·D-14(4건)·D-15 의 rdr_500m_latlon.nc(1건)·GRIB(2건)은 적재 대상 밖."
+  },
+  "_측정_D08": {
+    "대상": "03 Reference-Data/01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_201907281430.nc",
+    "판독_수단": "netCDF4 (pipeline-worker 컨테이너), pyproj 3.7.2",
+    "변수": "data (int16, ny=2049 x nx=2049) 1건. lat·lon 변수 0건",
+    "전역속성": "map_pro='Lambert Conformal Conic Projection' · map_slat=38.0 · map_slon=126.0 · grid_size=0.5 · map_sx=880.0 · map_sy=1540.0 · map_nx/ny=2048.0 · grid_nx/ny=2049.0",
+    "결손": "표준위도 2개 자리가 헤더에 없다. map_slat 1개만 존재",
+    "재현_오차": "KMA 관례 표준위도 30/60 을 가정해 재현 시 최대 |dlat|=0.016219deg(약 1.80km) · |dlon|=0.018205deg(약 1.60km). 500m 셀 약 3.6개",
+    "역투영_검사": "격자 파일을 LCC(30/60, 38/126) 평면으로 역투영하면 간격 dx=0.4988km · dy=0.5011km 로 헤더 기재 0.5km 와 어긋나고 표준편차 0 이 아니다. 추정 원점 sx=880.27 · sy=1540.44 로 헤더 880.0/1540.0 과 어긋난다",
+    "판정": "헤더만으로 좌표 자립 불가. 격자 파일 2건 필요",
+    "격자_파일_실측": "LAT_RN15.npy · LON_RN15.npy = (2049, 2049) float32. lat 30.743372~40.354130 · lon 120.667374~133.069901"
+  },
+  "datasets": [
+    {
+      "key": "D-07",
+      "name": "HSR 레이더 합성 반사도 (Lv.0)",
+      "_격자_필요_근거": "헤더 1024B 중 투영 파라미터 자리 36~63B 가 전부 0. 문서 기재값 재현 시 위도 0.053deg(약 5.9km) 오차 — DATA-REFERENCE.md:28 · :133",
+      "_사본": "01.level-data 사본을 쓴다 (Ted ④)",
+      "files": [
+        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_HSR.npy", "kind": "기준 격자 파일" },
+        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_HSR.npy", "kind": "기준 격자 파일" }
+      ]
+    },
+    {
+      "key": "D-08",
+      "name": "RN15 지상 강수 (Lv.0)",
+      "_격자_필요_근거": "위 _측정_D08. 이번 회차 실측",
+      "_사본": "01.level-data 사본 1종뿐 — 선택지 없음",
+      "files": [
+        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_RN15.npy", "kind": "기준 격자 파일" },
+        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_RN15.npy", "kind": "기준 격자 파일" }
+      ]
+    },
+    {
+      "key": "D-15",
+      "name": "HSR 레이더 견본",
+      "_격자_필요_근거": "D-07 과 동일 포맷·동일 형상 (2881, 2305) f32 — DATA-REFERENCE.md:40-49",
+      "_사본": "02.File-format 사본을 쓴다 (Ted ④). 동봉 rdr_500m_latlon.nc 는 표준위도 결손으로 제외 — DATA-REFERENCE.md:76",
+      "files": [
+        { "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lat_HSR.npy", "kind": "기준 격자 파일" },
+        { "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy", "kind": "기준 격자 파일" }
+      ]
+    }
+  ]
+}
