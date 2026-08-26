@@ -13,7 +13,8 @@ import json
 
 import pytest
 
-from colab_ai.app.interpret import LiteralInterpreter, LlmQueryInterpreter
+from colab_ai.app.interpret import (SYSTEM_PROMPT, LiteralInterpreter, LlmQueryInterpreter,
+                                    _SEED)
 
 
 def test_llm_없으면_원문이_그대로_검색어가_된다() -> None:
@@ -79,3 +80,19 @@ def test_LLM_호출이_예외를_던져도_검색어는_남는다() -> None:
     out = interp.interpret("강우 데이터")
     assert out.source == "literal" and out.degraded is True
     assert "모델" in out.degraded_reason or "해석" in out.degraded_reason
+
+
+def test_프롬프트가_기능어를_검색어로_만들지_말라고_지시한다() -> None:
+    """Ted 판정 2026-08-26 ⑴ 첫째 수단. **억제는 모델 쪽에서 한 번 건다.**
+    ⚠ 이것만으로는 안 닫힌다 — 모델은 지시를 어길 수 있고, 그래서 서버 필터가 뒤에 선다
+    (`d10_ai_services.FUNCTION_WORDS`). 두 겹이 같은 두 낱말을 이름으로 적는다."""
+    assert "자료" in SYSTEM_PROMPT and "데이터" in SYSTEM_PROMPT
+    assert "기능어" in SYSTEM_PROMPT
+
+
+def test_프롬프트_정정_3건이_그대로_남아_있다() -> None:
+    """`〈112〉-㉳` 의 정정 — 「표기 변형」 절 삭제 · `isDataQuery` 기준 · `seed` 고정.
+    기능어 절을 더하면서 앞의 셋을 건드리지 않았다는 것을 값으로 잡는다."""
+    assert "표기 변형·동의어·상하위어를 만들지 않는다" in SYSTEM_PROMPT
+    assert "isDataQuery 는 다음 기준으로만 정한다" in SYSTEM_PROMPT
+    assert _SEED == 20260826

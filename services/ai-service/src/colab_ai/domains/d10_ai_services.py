@@ -27,6 +27,34 @@ from colab_ai.ports import DictionaryPort, Interpretation, QueryInterpreterPort
 #: 검색어를 몇 개까지 내보내는가. 상한이 없으면 사전 확장이 질의를 통째로 넓혀 버린다.
 MAX_TERMS = 24
 
+#: **검색어에서 빼는 기능어.** Ted 판정 2026-08-26 ⑴ (`PLAN-SoT §9-〈113〉-㉲-ⓑ` 의 답).
+#:
+#: 왜 필터링인가 — Postgres `ts_rank_cd` 는 **말뭉치 희소도를 반영하지 않는다.** 흔한 낱말이
+#: 자동으로 밀리지 않으므로 순위로는 못 푼다. 대상 12건 규모에서 통계적 가중은 신뢰도가
+#: 낮다. 남는 수단이 필터링 하나다.
+#:
+#: **왜 이 두 낱말인가 — 실측이다** (staging `colab_platform` `d3_dataset_description`,
+#: 2026-08-26). `자료:*` 가 **8건**, `데이터:*` 가 **1건**을 낸다. 그리고 적재 12건의
+#: 이름·주제·설명 어디에도 이 두 낱말이 **핵심 의미로 쓰인 자리가 없다** — 전부
+#: 「본 자료는」·「자료명」·「자료 제공처」·「본 데이터의 R²」 같은 두루 쓰이는 쓰임이다.
+#: 핵심 의미로 쓰였으면 그 낱말은 이 목록에서 뺀다.
+#:
+#: **⚠ `[정본 무근거]`** — 이 목록을 정한 정본 문서가 없다. 근거는 위 실측과 Ted 판정뿐이다.
+#:
+#: **목록에 없는 낱말은 통과한다 — 과잉 제거 금지.** `원자료`·`관측자료`·`분석자료` 는
+#: `simple` 파서가 내는 **다른 토큰**이라 여기 걸리지 않고, 걸려서도 안 된다
+#: (`D-09` = GK2A/AMI NDVI 원자료 (Lv.0) 의 이름이 그 말이다).
+#: 실측상 0건인 말(`전체`·`찾아줘`)은 **넣지 않았다** — 해를 재지 못한 낱말을 빼지 않는다.
+FUNCTION_WORDS = ("자료", "데이터")
+
+
+def strip_function_words(terms) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """`(남긴 말, 뺀 말)`. **비교는 정확 일치다** — 접두로 자르면 `원자료` 가 함께 사라진다."""
+    kept, dropped = [], []
+    for term in terms or ():
+        (dropped if term in FUNCTION_WORDS else kept).append(term)
+    return tuple(kept), tuple(dropped)
+
 
 class SearchService:
     """`core-ai.yaml searchDatasets` 의 본체 — **질의 해석 절반**."""
@@ -92,11 +120,30 @@ class SearchService:
                                   is_data_query=False, terms=(), topic=None,
                                   source=interpretation.source, degraded=degraded, reason=reason)
 
+        # **기능어를 먼저 뺀다** (Ted 판정 2026-08-26 ⑴). 넓히기 전에 빼는 이유 —
+        # 사전이 기능어를 동의어로 넓히면 뺀 말이 다른 표기로 되돌아온다.
+        kept, dropped = strip_function_words(interpretation.terms)
+        if not kept:
+            # **「찾았으나 없음」이 아니라 「찾을 말이 없음」이다.** 둘은 다른 상태이고,
+            # 같은 응답으로 내면 화면이 「우리 연구실에 그런 자료가 없다」고 답한다.
+            # ⛔ **전건 반환 금지** — 검색어가 비면 core-api 는 한 건도 뒤지지 않는다
+            #    (`d3_catalog._websearch`). 여기서 원문을 되돌려 놓으면 뺀 뜻이 없다.
+            # `degraded: true` 로 서는 근거 = `core-ai.yaml Degradable.degraded`
+            # (*「결과가 온전하지 않다 — 결과 배열은 비어 있거나 부분적이다」*).
+            # **뺀 말을 문구가 이름으로 밝힌다** — 「몰래 제거」 상태를 두지 않는다.
+            names = "·".join(f"‘{t}’" for t in dropped)
+            return self._envelope(
+                lab_id=lab_id, lab_name=lab_name, searched=searched_count,
+                is_data_query=True, terms=(), topic=None, source=interpretation.source,
+                degraded=True,
+                reason=(f"질문에 찾을 말이 없다 — {names} 는 무엇을 찾든 붙는 말이라 "
+                        "검색어에서 뺐다. 찾는 자료의 이름·주제·지역·기간을 넣어 다시 물어보라."))
+
         # 사전으로 넓힌다. **사전이 죽어도 원문 검색어로 간다** — 검색이 멈추지 않는다.
-        terms, topic = interpretation.terms, interpretation.topic
+        terms, topic = kept, interpretation.topic
         hops: tuple = ()
         try:
-            expansion = self._dictionaries.expand(interpretation.terms, query)
+            expansion = self._dictionaries.expand(kept, query)
             terms = expansion.terms
             topic = interpretation.topic or expansion.topic
             hops = getattr(expansion, "graph_hops", ())
@@ -104,7 +151,9 @@ class SearchService:
             degraded = True
             reason = reason or f"온톨로지 사전을 읽지 못해 질문의 낱말 그대로 찾았다: {e}"
 
-        cut = tuple(terms)[:MAX_TERMS]
+        # **넓힌 뒤에 한 번 더 뺀다.** 확장이 기능어를 되데려오면 앞의 필터가 있으나 마나다.
+        widened, _ = strip_function_words(terms)
+        cut = tuple(widened)[:MAX_TERMS]
         return self._envelope(lab_id=lab_id, lab_name=lab_name, searched=searched_count,
                               is_data_query=True, terms=cut, topic=topic,
                               source=interpretation.source, degraded=degraded, reason=reason,

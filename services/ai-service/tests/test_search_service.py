@@ -94,13 +94,18 @@ def test_데이터_질문이_아니면_검색어가_비고_오류가_아니다()
 
 def test_LLM_이_죽어도_질문의_낱말이_검색어로_나간다() -> None:
     """**「AI 없이도 v2 는 완결된 제품이다」의 이쪽 절반** — 해석만 무너지고 검색어는 산다.
-    core-api 는 이 낱말로 실제 `tsvector` 검색을 돌린다."""
-    literal = Interpretation(is_data_query=True, terms=("강우", "데이터"), topic=None,
+    core-api 는 이 낱말로 실제 `tsvector` 검색을 돌린다.
+
+    ⚠ **검색어를 「강우·데이터」에서 「강우·낙동강」으로 바꿨다** (2026-08-26 Ted 판정 ⑴).
+    「데이터」가 기능어 목록에 들어가 이 자리에서 빠지는데, 이 시험이 재는 것은
+    **기능어 처리가 아니라 해석 붕괴 시 검색어 생존**이다. 두 성질을 한 줄에 겹치지 않는다.
+    """
+    literal = Interpretation(is_data_query=True, terms=("강우", "낙동강"), topic=None,
                              source="literal", degraded=True,
                              degraded_reason="질의 해석 모델에 닿지 못했다 — 질문 그대로 찾았다.")
     body = _search(_service(interpretation=literal))
     assert body["degraded"] is True and body["degradedReason"]
-    assert body["interpretation"]["terms"] == ["강우", "데이터"]
+    assert body["interpretation"]["terms"] == ["강우", "낙동강"]
     assert body["interpretation"]["source"] == "literal"
 
 
@@ -124,3 +129,81 @@ def test_검색어_수에_상한이_있다() -> None:
                           topic=None, source="llm", degraded=False, degraded_reason=None)
     body = _search(_service(interpretation=many))
     assert len(body["interpretation"]["terms"]) <= 24
+
+
+# ── 기능어 처리 (Ted 판정 2026-08-26 ⑴) ──────────────────────────────────────
+# 왜 필터링이 유일한 수단인가 — Postgres `ts_rank_cd` 는 말뭉치 희소도를 반영하지 않아
+# 흔한 낱말이 자동으로 밀리지 않고, 대상 12건 규모에서 통계적 가중은 신뢰도가 낮다.
+# 실측(staging `colab_platform` · 2026-08-26) — `자료:*` 가 **8건**, `데이터:*` 가 **1건**.
+
+def _interp(*terms, is_data_query=True):
+    return Interpretation(is_data_query=is_data_query, terms=terms, topic=None,
+                          source="llm", degraded=False, degraded_reason=None)
+
+
+def _terms(*terms):
+    return _search(_service(interpretation=_interp(*terms)))["interpretation"]["terms"]
+
+
+def test_기능어는_검색어에서_빠진다() -> None:
+    """「자료」·「데이터」는 적재 12건의 이름·주제·설명 어디에서도 **핵심 의미로 쓰이지 않는다.**
+    남겨 두면 한 낱말이 8건을 부른다 — 무관한 결과가 검색어 OR 결합으로 통째로 실린다."""
+    assert _terms("낙동강", "강우", "자료", "데이터") == ["낙동강", "강우"]
+
+
+def test_목록에_없는_낱말은_통과한다() -> None:
+    """**과잉 제거 금지.** 목록은 실측된 두 낱말뿐이고 그 밖은 손대지 않는다.
+    `원자료` 는 `D-09`(GK2A/AMI NDVI 원자료 (Lv.0)) 이름에 있는 **다른 토큰**이다."""
+    assert _terms("원자료", "관측자료", "강수량", "전체") \
+        == ["원자료", "관측자료", "강수량", "전체"]
+
+
+def test_사전이_넓힌_말에도_같은_필터가_걸린다() -> None:
+    """확장이 기능어를 되데려오면 필터가 있으나 마나다."""
+    class FunctionWordDictionaries:
+        def expand(self, terms, query):
+            class _Expansion:
+                pass
+            out = _Expansion()
+            out.terms = tuple(terms) + ("자료",)
+            out.topic = None
+            out.graph_hops = ()
+            return out
+
+    body = _search(_service(interpretation=_interp("낙동강"),
+                            dictionaries=FunctionWordDictionaries()))
+    assert body["interpretation"]["terms"] == ["낙동강"]
+
+
+def test_기능어만_남은_질의는_정직한_빈_상태다() -> None:
+    """**「찾았으나 없음」이 아니라 「찾을 말이 없음」이다.**
+    ⛔ 전건 반환 금지 — 검색어가 비면 core-api 는 한 건도 뒤지지 않는다."""
+    body = _search(_service(interpretation=_interp("자료", "데이터")))
+    assert body["isDataQuery"] is True
+    assert body["interpretation"]["terms"] == []
+    assert body["results"] == {"items": [], "totalCount": 0, "nextCursor": None}
+    assert body["degraded"] is True
+    assert body["degradedReason"]
+
+
+def test_빈_질의_안내가_0건_안내와_구분된다() -> None:
+    """0건 안내는 「뒤졌는데 없다」이고 이 문구는 「뒤질 말이 없다」다.
+    **뺀 말을 문구가 이름으로 밝힌다** — 「몰래 제거」 상태를 두지 않는다."""
+    reason = _search(_service(interpretation=_interp("자료", "데이터")))["degradedReason"]
+    assert "찾을 말" in reason
+    assert "자료" in reason and "데이터" in reason
+
+
+def test_남은_검색어가_있으면_기능어_제거가_degraded_를_세우지_않는다() -> None:
+    """`degraded` 는 「결과가 온전하지 않다」다(`core-ai.yaml Degradable`).
+    기능어를 뺀 검색은 **진짜로 뒤졌고 결과는 진짜 결과**다 — 여기서 세우면 뜻이 갈라진다."""
+    body = _search(_service(interpretation=_interp("낙동강", "자료")))
+    assert body["interpretation"]["terms"] == ["낙동강"]
+    assert body["degraded"] is False and "degradedReason" not in body
+
+
+def test_데이터_질문이_아니면_빈_질의_안내를_붙이지_않는다() -> None:
+    """인사·잡담은 「찾을 말이 없다」가 아니라 **「찾을 대상이 없는 질문」**이다."""
+    body = _search(_service(interpretation=_interp(is_data_query=False)))
+    assert body["isDataQuery"] is False and body["degraded"] is False
+    assert "degradedReason" not in body
