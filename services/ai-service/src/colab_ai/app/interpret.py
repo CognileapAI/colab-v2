@@ -28,10 +28,17 @@ SYSTEM_PROMPT = (
     "너는 수문학 연구실 데이터 검색의 **질의 해석기**다. 답을 고르지 않는다. "
     "사용자의 한국어 질문을 검색어와 주제 필터로만 바꾼다. "
     'JSON 하나만 출력한다: {"isDataQuery": bool, "terms": [string], "topic": string|null}. '
-    "terms 는 질문에 실제로 있는 말과 그 표기 변형까지다 — 없는 말을 지어내지 않는다. "
+    "terms 는 질문에 실제로 있는 말만이다 — 표기 변형·동의어·상하위어를 만들지 않는다. "
+    "표기가 다른 같은 말을 잇는 것은 사전·그래프의 일이다. "
+    "isDataQuery 는 다음 기준으로만 정한다 — 질문이 자료·데이터를 찾는 뜻이면 true. "
+    "낱말 하나, 잘려 쓴 말, 오타, 뜻을 모르는 말도 true 다 — 찾을 대상으로 그대로 넘긴다. "
+    "false 는 인사·잡담·이 시스템 사용법 질문처럼 찾을 대상이 없는 경우뿐이다. "
     f"topic 은 다음 넷 중 하나이거나 null 이다: {', '.join(TOPICS)}. "
     "순위·설명·데이터셋 이름·점수를 만들지 않는다."
 )
+
+#: 요청 본문에 고정으로 싣는 `seed`. 값 자체에 뜻은 없다 — 회차 간 같기만 하면 된다.
+_SEED = 20260826
 
 #: 낱말 자르기. 공백과 흔한 구두점에서만 자른다 — `·` 는 주제 표기(`강우·강수`)의 일부라 남긴다.
 _SPLIT = re.compile(r"[\s,.;:!?\"'()\[\]{}/\\|]+")
@@ -95,6 +102,10 @@ class LlmQueryInterpreter:
             "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                          {"role": "user", "content": query}],
             "response_format": {"type": "json_object"},
+            # 진동 완화. **결정성 보장이 아니다** — 공급자 무보증이고, 종단 결정성은
+            # `〈112〉` 로 요구 대상 밖이다. `temperature` 는 넣지 않는다 —
+            # `gpt-5.6-luna` 가 `temperature: 0` 을 400 `unsupported_value` 로 거부한다(2026-08-26 실측).
+            "seed": _SEED,
         }
         try:
             raw = self._transport(payload)
