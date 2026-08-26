@@ -56,7 +56,7 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 | `COLAB_VIZ_SERVICE_TOKEN` | **비밀** | core-api ↔ viz-render **양쪽이 같은 문자열** |
 | `COLAB_VIZ_TILE_SIGNING_SECRET` | **비밀** | 타일 서명 |
 | `OPENAI_API_KEY` | **비밀** | ai-service |
-| `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다** |
+| `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **선택 · 식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다.** ⭑ **2026-08-26 부터 필수가 아니다**(`PLAN-SoT §9 〈110〉`) — 워커는 대상 연구실을 원장(`d1_lab`)에서 읽고 연구실마다 제 스코프로 돈다. `compose.i2.yml` 은 이 둘을 **걸지 않는다.** 값을 되걸면 그 연구실 하나로 다시 좁혀지고, **원장에 없는 값이면 워커가 뜨지 않는다** |
 | `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
 | `COLAB_CORE_AI_BASE_URL` · `COLAB_MODEL_HELPER` · `COLAB_MODEL_ORCHESTRATOR` | **선택(기본값 있음)** | `W7` 배선(`c5a2fbf`)이 더한 셋. 없어도 `up` 이 뜨고 compose 의 기본값이 쓰인다 — **비밀이 아니다**(주소·모델 이름). `COLAB_CORE_AI_BASE_URL` 을 비우면 core-api 가 relay 를 만들지 않아 **검색·제안이 503 이 된다** |
 
