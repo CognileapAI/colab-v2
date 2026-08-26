@@ -192,6 +192,67 @@ def has_reference_grid_file(session: Session, dataset_id: Ulid) -> bool:
     return session.execute(_HAS_GRID, {"dataset_id": str(dataset_id)}).first() is not None
 
 
+#: 자동완성이 후보를 낼 수 있는 칸 — **D3 이 소유한 자유 입력 칸만** (`〈138〉` · 결정 2-10).
+#:
+#: ⚠ **`가공 방식` 은 여기 없다.** 그 어휘는 D9 온톨로지 시드가 소유하고(`d9_method_term`,
+#: 결정 2-11) **core-api 는 그 저장소에 붙지 않는다**(`CLAUDE.md §3-1`·`§3-3`). 넣으면
+#: 불변규칙을 깬다 — 그쪽은 ai-service 의 사전 표면으로 간다.
+#:
+#: 값은 **계약 층 enum 으로 만들지 않는다**(`NB-E`) — 서버가 모르는 값이면 400 이다.
+SUGGESTABLE_FIELDS = ("sourceLabel", "variables", "crs")
+
+#: 원천 표기·좌표계 — `d3_dataset` / `d3_dataset_autometa` 의 **스칼라** 열이다.
+_SUGGEST_SCALAR = {
+    "sourceLabel": ("d3_dataset", "source_label"),
+    "crs": ("d3_dataset_autometa", "crs"),
+}
+
+
+def suggest_field_values(session: Session, *, field: str, prefix: str | None,
+                         limit: int) -> list[dict]:
+    """이 연구실에서 **이미 쓰인 값**만 돌려준다 (`listDatasetFieldSuggestions`).
+
+    **만들어 내지 않는다.** 후보에 없는 값이 섞이면 사용자가 그것을 「연구실에서 쓰는
+    표기」로 믿는다 — 그 순간 자동완성이 파편화를 막기는커녕 새 표기를 하나 더 낳는다.
+
+    **경계는 스코프 커널이 주입한다** — 이 질의는 랩을 직접 적지 않는다. 빈 목록은
+    정상이다(첫 사람은 후보가 없다).
+
+    순서 = **많이 쓰인 순 → 사전순.** 동수일 때 순서가 흔들리면 같은 글자를 쳤는데
+    후보가 매번 달라 보인다.
+    """
+    if field == "variables":
+        # 배열 열이라 펼쳐 센다. `d3_dataset_autometa.variables` 는 `text[]` 다.
+        sql = """
+            SELECT v AS value, count(*) AS use_count
+              FROM d3_dataset_autometa a, unnest(a.variables) AS v
+             WHERE (CAST(:prefix AS text) IS NULL OR v ILIKE CAST(:like AS text))
+             GROUP BY v
+             ORDER BY count(*) DESC, v ASC
+             LIMIT :limit
+        """
+    else:
+        table, column = _SUGGEST_SCALAR[field]
+        sql = f"""
+            SELECT {column} AS value, count(*) AS use_count
+              FROM {table}
+             WHERE {column} IS NOT NULL AND btrim({column}) <> ''
+               AND (CAST(:prefix AS text) IS NULL OR {column} ILIKE CAST(:like AS text))
+             GROUP BY {column}
+             ORDER BY count(*) DESC, {column} ASC
+             LIMIT :limit
+        """
+    cleaned = (prefix or "").strip() or None
+    rows = session.execute(text(sql), {
+        "prefix": cleaned,
+        # `ILIKE` 특수문자를 글자로 돌린다 — `%` 를 친 사람이 전체를 훑지 않게 한다.
+        "like": None if cleaned is None else (
+            cleaned.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"),
+        "limit": limit,
+    }).mappings().all()
+    return [{"value": r["value"], "useCount": int(r["use_count"])} for r in rows]
+
+
 def count_datasets(session: Session) -> int:
     """AI 가 **뒤진 범위**를 먼저 밝히기 위한 셈 (`AiSearchScope.searchedCount`).
     0건이면 그 자체가 「제안할 근거가 없다」의 정직한 형태다."""

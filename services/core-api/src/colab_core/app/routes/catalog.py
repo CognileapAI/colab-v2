@@ -192,6 +192,38 @@ MAX_SEARCH_LIMIT = 100
 DEFAULT_SEARCH_LIMIT = 20
 
 
+#: 자동완성 후보 상한. 계약 `limit` 과 같은 값이다.
+MAX_SUGGESTIONS = 20
+DEFAULT_SUGGESTIONS = 10
+
+
+@router.get("/dataset-field-suggestions", name="listDatasetFieldSuggestions")
+def list_dataset_field_suggestions(
+        field: str = Query(...),
+        q: str | None = Query(default=None, max_length=60),
+        limit: int = Query(default=DEFAULT_SUGGESTIONS),
+        db: Session = Depends(scoped_db)) -> dict:
+    """자유 입력 칸의 자동완성 후보 (결정 2-10 · `PLAN-SoT §9 〈138〉`).
+
+    **파편화를 입력 단계에서 막는다.** 정본이 변수·좌표계·원천 표기를 자유 입력으로
+    두었으므로(`VAL-006`·`VAL-009`) 같은 것을 두 사람이 다르게 적는 일이 생긴다 —
+    `ERA5` / `era5` / `ECMWF ERA5` / `ERA-5`. 결정 2-10 이 그 대가를 적어 뒀다:
+    **데이터가 쌓인 뒤의 소급 정리는 사람이 하나씩 묶어야 한다.**
+
+    **모르는 칸은 400 이다** — 계약이 값 집합을 enum 으로 박지 않았으므로(`NB-E`)
+    여기가 유일한 관문이다. 조용히 빈 목록을 내면 **화면이 「후보가 없다」로 읽고**
+    오타 난 필드 이름이 영원히 안 드러난다.
+    """
+    if field not in d3_catalog.SUGGESTABLE_FIELDS:
+        raise errors.bad_request(
+            f"자동완성을 낼 수 있는 칸이 아니다: {field!r}",
+            {"field": field, "allowed": list(d3_catalog.SUGGESTABLE_FIELDS)})
+    if isinstance(limit, bool) or not 1 <= limit <= MAX_SUGGESTIONS:
+        raise errors.bad_request(f"limit 은 1~{MAX_SUGGESTIONS} 이다.")
+    items = d3_catalog.suggest_field_values(db, field=field, prefix=q, limit=limit)
+    return {"field": field, "items": items}
+
+
 @router.post("/dataset-searches", name="searchDatasets")
 def search_datasets(request: Request, body: dict | None = Body(default=None),
                     subject: Subject = Depends(current_subject),

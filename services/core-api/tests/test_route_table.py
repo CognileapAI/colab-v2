@@ -38,8 +38,16 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_52() -> None:
-    """45 → 46 → 49 → 50 → **52.**
+def test_operation_count_is_53() -> None:
+    """45 → 46 → 49 → 50 → 52 → **53.**
+
+    ⭑ **53 의 하나는 `listDatasetFieldSuggestions`** — **6차 동결 해제**
+    (`PLAN-SoT §9 〈138〉` · 결정 2-10 · Ted 판정 ㈏ 2026-08-27). **신설과 동시에
+    구현했다** — 그래서 501 표는 그대로다. 이 회차의 개정은 **순수 추가**였고
+    `contract-breaking` 이 「파괴적 변경 없음, 다만 스펙이 다르다」로 그것을 확인했다.
+
+    ⚠ **기대값을 결과에 맞춘 것이 아니다** — 계약이 실제로 커졌고, 그 개정을 Ted 가
+    범위까지 정해 승인했다(㈏ 「올리고 고친다를 한 벌로」).
 
     ⭑ **52 의 둘은 `createSession`·`endSession`** — **5차 동결 해제**
     (`PLAN-SoT §9 〈90〉` · Ted 2026-08-26 지시). **신설과 동시에 구현했다**(`routes/session.py`)
@@ -60,7 +68,7 @@ def test_operation_count_is_52() -> None:
     세 회차가 각각 직전 묶음이 세지 않은 축에서 구멍을 남겼다 — 마지막 축이
     **「그 응답을 부를 op 이 있는가」**였다(`sessions/S1-CONTRACT-GAP-SWEEP.md`).
     """
-    assert len(contract_operations()) == 52, "계약의 오퍼레이션이 52 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 53, "계약의 오퍼레이션이 53 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

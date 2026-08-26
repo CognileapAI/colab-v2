@@ -247,11 +247,39 @@ CREATE TABLE d3_dataset (
   -- 한국어 형태소 분석이 없다(이미지의 `pg_ts_config` 29종에 한국어가 없다 — 실측).
   search_vector tsvector GENERATED ALWAYS AS (
     setweight(to_tsvector('simple', coalesce(source_label, '')), 'B')
-  ) STORED
+  ) STORED,
+  -- ── `0007` 이 더한 셋. **여기 순서는 임의가 아니다** ──────────────────────────
+  -- `ALTER TABLE ADD COLUMN` 은 열을 **뒤에** 붙인다. 선언이 이 순서와 다르면
+  -- schema-diff 가 red 를 낸다 — 실제로 그렇게 잡혔다.
+  -- 가공 단계 — **사람이 고른 값만 담는다** (`0007` · `PLAN-SoT §9 〈140〉`).
+  -- ⚠ **계산 결과를 여기 넣지 않는다.** `⑳` 이 「저장 필드를 두지 않는다」고 한 것이 막으려던
+  -- 위험은 `DATAMODEL-BASELINE:166` 이 적은 그것이다 — 「Lv 를 손으로 고치는 칸으로 두면
+  -- 계보를 고쳐도 Lv 가 안 따라가 둘이 갈라진다」. **낡는 것은 계산 결과지 사람의 의도가 아니다.**
+  -- `NULL` = 계보에서 파생하라 · 값 있음 = 사람이 골랐으니 자동 보정이 덮지 않는다 (`POL-020` 예외).
+  processing_level_user_set smallint,
+  CONSTRAINT d3_dataset_processing_level_user_set_range CHECK (
+    processing_level_user_set IS NULL OR processing_level_user_set BETWEEN 0 AND 2),
+  -- 대표 조각 — 상세 진입 시 미리보기에 그려지는 조각 (결정 2-4).
+  -- **`NULL` 이 「자동」이다** — 파일명 오름차순 자연 정렬의 첫 조각(결정 2-8)을 그때그때 고른다.
+  -- 값이 있으면 사람이 지정한 것이라 **렌더 결과가 바뀌어도 따라 움직이지 않는다.**
+  -- 별도 플래그를 두지 않는 이유가 이것이다 — `NULL` 하나로 두 상태가 다 표현된다.
+  -- ⚠ FK 는 여기 못 붙인다 — `d3_file` 이 아직 선언되기 전이다(그쪽이 이 표를 참조한다).
+  --    제약은 `d3_file` 선언 뒤에 `ALTER TABLE` 로 붙인다. 순서가 곧 이유다.
+  representative_file_id ulid,
+  -- 원천 표기의 정규화값 (결정 2-10). **원문(`source_label`)을 지우지 않고 병기한다** —
+  -- 원문이 남아야 나중에 정규화 규칙이 바뀌어도 복구된다.
+  -- 근거: 원천은 **계보 그래프의 뿌리 노드**라 `ERA5`/`era5`/`ECMWF ERA5` 가 각각 노드가 되면
+  -- 「ERA5 를 쓴 데이터셋 전부」에 답할 수 없고 그래프 상단이 통째로 갈라진다.
+  source_label_normalized text
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
 CREATE INDEX d3_dataset_search_idx ON d3_dataset USING gin (search_vector);
 CREATE INDEX d3_dataset_owner_idx ON d3_dataset (owner_account_id);
+-- 자동완성이 훑는 자리 (`listDatasetFieldSuggestions` · 결정 2-10).
+-- **연구실을 앞에 둔다** — 경계 없는 접두 스캔이 되지 않게 한다.
+CREATE INDEX d3_dataset_source_label_normalized_idx
+  ON d3_dataset (lab_id, source_label_normalized)
+  WHERE source_label_normalized IS NOT NULL;
 CREATE TRIGGER d3_dataset_uploader_immutable
   BEFORE UPDATE ON d3_dataset
   FOR EACH ROW EXECUTE FUNCTION deny_uploader_change();
@@ -355,6 +383,15 @@ CREATE UNIQUE INDEX d3_file_one_lat_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lat;
 CREATE UNIQUE INDEX d3_file_one_lon_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lon;
+
+-- 대표 조각의 FK (`0007` · 결정 2-4). `d3_dataset` 선언 시점에는 이 표가 없어 여기서 붙인다.
+--   · `ON DELETE SET NULL` — 대표로 지정한 조각이 사라지면 **자동으로 되돌아간다.**
+--     그 자리를 비워 두면 상세가 없는 조각을 그리려 하고, 막으면 조각을 못 지운다.
+--   · 다른 데이터셋의 조각을 대표로 지정하는 것은 **FK 로 못 막는다**(같은 표라서).
+--     그 검사는 애플리케이션의 몫이고, 음성 시험이 지킨다.
+ALTER TABLE d3_dataset
+  ADD CONSTRAINT d3_dataset_representative_file_fk
+  FOREIGN KEY (representative_file_id) REFERENCES d3_file(id) ON DELETE SET NULL;
 
 -- 조각 수 유지 (㊼). **다시 세지 않고 증분으로 더한다.**
 --   · 다시 세면 세는 주체가 `body_access` 를 받아 잠긴 데이터셋에 0 을 써 넣는다 — 고치려던 결함을 트리거가 재현한다
