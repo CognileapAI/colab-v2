@@ -4,6 +4,56 @@
  */
 
 export interface paths {
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그인 — 심어 둔 접속 코드를 세션으로 바꾼다
+         * @description **회원가입이 아니다.** 계정은 개발자가 심고(P-17 · `Policy_역할과_권한 §3`), 이 op 은
+         *     심어 둔 계정의 접속 코드를 **세션 토큰**으로 바꾸기만 한다. 계정을 만들지 않는다.
+         *
+         *     **연구실 경계는 여기서도 요청에 실리지 않는다** — 응답 토큰이 주체를 담고, 경계는
+         *     서버가 그 주체에서 뽑는다 (`CLAUDE.md §3-5` · P-9·P-10).
+         *
+         *     인증 수단은 `PLAN-SoT §9 〈90〉-㉮` 의 교체 가능한 경계 뒤에 있다. 세션 수명·갱신·
+         *     조기 회수는 **[정본 무근거]** 이며 `〈90〉-㉲` 가 운영 설정으로 둔 값이다.
+         */
+        post: operations["createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 로그아웃 — 지금 세션을 버린다
+         * @description 화면이 토큰을 버리는 것이 로그아웃의 실체다. 서버는 **무상태 서명 세션**이라 만료 전
+         *     조기 회수를 하지 않는다 — 회수하려면 세션 표가 필요하고, 그 스키마는 이 회차가 만들지
+         *     않았다 (`PLAN-SoT §9 〈90〉-㉳`, **[정본 무근거]**). 이 op 은 그 사실을 감추지 않고
+         *     **204** 만 낸다.
+         */
+        delete: operations["endSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -1211,6 +1261,30 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description 로그인 입력. **한 칸뿐이다** — 개발자가 심어 둔 계정의 접속 코드 (P-17 ·
+         *     `PLAN-SoT §9 〈90〉-㉮`). 비밀번호를 새로 만들게 하지 않는다. 정본이 명시적으로 뺀 것이
+         *     「구글 외의 로그인 방법 (비밀번호 · 다른 소셜 계정)」이기 때문이다
+         *     (`PRD_계정과_연구실_소속 §5.2`).
+         */
+        SessionCredentials: {
+            /** @description 심어 둔 접속 코드. 값의 출처는 배포 설정이며 계약이 형식을 규정하지 않는다. */
+            accessCode: string;
+        };
+        /**
+         * @description 발급된 세션. **무상태 서명 토큰**이라 서버에 세션 표가 없다
+         *     (`PLAN-SoT §9 〈90〉-㉯` — 마이그레이션 0 으로 성립시킨 결정).
+         *     `token` 은 이후 모든 op 의 `sessionSubject` bearer 값이다.
+         */
+        Session: {
+            /** @description bearer 값. 화면이 내용을 해석하지 않는다. */
+            token: string;
+            /**
+             * Format: date-time
+             * @description 만료 시각. 수명은 **[정본 무근거]** 이며 운영 설정이다 (`〈90〉-㉲`).
+             */
+            expiresAt: string;
+        };
+        /**
          * @description 카탈로그 표의 열. 값은 `Policy_데이터_찾기 §5` 의 열 구성 표기를 그대로 쓴다
          *     (`데이터셋 · 주제 · Level · 프로젝트 · 업로더 · 수정일 · 계보 · Verified`).
          *     조건을 걸 수 있는 열은 다섯이고 나머지는 정렬만 갖는다.
@@ -1958,6 +2032,12 @@ export interface components {
             };
             occurredAt: components["schemas"]["Timestamp"];
         };
+        /** @description 모든 4xx/5xx 응답의 공통 형태. 근거: contracts/README.md(계약 권위체) — seam 전체가 한 형태를 쓴다. */
+        ErrorEnvelope: {
+            code: string;
+            message: string;
+            details?: Record<string, never>;
+        };
         /** @description 정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26). 근거: CLAUDE.md §3-6 · DATAMODEL-BASELINE.md §4. */
         Ulid: string;
         /**
@@ -1981,12 +2061,6 @@ export interface components {
          */
         PermissionSwitchSet: {
             [key: string]: boolean;
-        };
-        /** @description 모든 4xx/5xx 응답의 공통 형태. 근거: contracts/README.md(계약 권위체) — seam 전체가 한 형태를 쓴다. */
-        ErrorEnvelope: {
-            code: string;
-            message: string;
-            details?: Record<string, never>;
         };
         /**
          * @description 데이터셋 접근 상태. 2값이고 새 데이터셋의 기본값은 `열림`. 근거: DataModel_공통_기반 §4.1(접근 상태) · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-24·P-32.
@@ -2547,6 +2621,53 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    createSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionCredentials"];
+            };
+        };
+        responses: {
+            /** @description 세션 발급 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    endSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 세션을 버렸다 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getCurrentAccount: {
         parameters: {
             query?: never;

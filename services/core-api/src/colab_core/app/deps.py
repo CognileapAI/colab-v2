@@ -15,11 +15,14 @@ def current_subject(request: Request, authorization: str | None = Header(default
     """계약의 `sessionSubject` bearer 하나만 본다.
 
     **labId 를 헤더·쿼리·바디 어디에서도 받지 않는다.** 경계는 주체에서만 나온다 (P-9·P-10).
+
+    **인증 수단을 알지 못한다.** 판정은 `kernel/authn.py` 의 사슬이 하고, 여기는 그 결과만
+    쓴다 (`PLAN-SoT §9 〈90〉-㉮`) — 수단이 늘어도 이 함수는 바뀌지 않는다.
     """
     token = bearer_token(authorization)
     if token is None:
         raise errors.unauthorized("Authorization: Bearer <토큰> 이 없다.")
-    subject = request.app.state.subjects.resolve(token)
+    subject = request.app.state.authenticators.resolve(token)
     if subject is None:
         raise errors.unauthorized("알 수 없는 주체다. 계정은 개발자가 심는다 (P-17).")
     return subject

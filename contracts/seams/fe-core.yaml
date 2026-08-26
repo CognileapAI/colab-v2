@@ -80,6 +80,60 @@ tags:
 
 paths:
 
+  # ─────────────────────────────── D1 세션 (로그인·로그아웃) ────────────────────────
+  #
+  # ⭑ **5차 동결 해제** — `PLAN-SoT §9 〈90〉`(Ted 2026-08-26 지시). 신설 2 op 뿐이고
+  #   기존 op 의 요청·응답·`security` 는 한 글자도 바뀌지 않는다.
+  #   정본은 로그인 화면(A-01)을 **P1 로 보류**했고(`IA_사이트맵 §0` · `README_P1` · P-17),
+  #   그래서 이 두 op 의 근거는 정본이 아니라 `〈90〉` 이다. 인증 **수단**은
+  #   `〈90〉-㉮` 가 교체 가능한 경계 뒤에 둔다 — 정본이 정한 구글 로그인(`PRD_계정과_연구실_소속 §5.1`)이
+  #   인가되면 그 경계 안의 어댑터만 바뀌고 이 계약은 그대로다.
+
+  /sessions:
+    post:
+      tags: [identity]
+      operationId: createSession
+      summary: 로그인 — 심어 둔 접속 코드를 세션으로 바꾼다
+      security: []          # 로그인 자체는 주체를 요구하지 않는다. 이 seam 에서 유일한 예외다.
+      description: |
+        **회원가입이 아니다.** 계정은 개발자가 심고(P-17 · `Policy_역할과_권한 §3`), 이 op 은
+        심어 둔 계정의 접속 코드를 **세션 토큰**으로 바꾸기만 한다. 계정을 만들지 않는다.
+
+        **연구실 경계는 여기서도 요청에 실리지 않는다** — 응답 토큰이 주체를 담고, 경계는
+        서버가 그 주체에서 뽑는다 (`CLAUDE.md §3-5` · P-9·P-10).
+
+        인증 수단은 `PLAN-SoT §9 〈90〉-㉮` 의 교체 가능한 경계 뒤에 있다. 세션 수명·갱신·
+        조기 회수는 **[정본 무근거]** 이며 `〈90〉-㉲` 가 운영 설정으로 둔 값이다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionCredentials" }
+      responses:
+        "201":
+          description: 세션 발급
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /sessions/current:
+    delete:
+      tags: [identity]
+      operationId: endSession
+      summary: 로그아웃 — 지금 세션을 버린다
+      description: |
+        화면이 토큰을 버리는 것이 로그아웃의 실체다. 서버는 **무상태 서명 세션**이라 만료 전
+        조기 회수를 하지 않는다 — 회수하려면 세션 표가 필요하고, 그 스키마는 이 회차가 만들지
+        않았다 (`PLAN-SoT §9 〈90〉-㉳`, **[정본 무근거]**). 이 op 은 그 사실을 감추지 않고
+        **204** 만 낸다.
+      responses:
+        "204": { description: 세션을 버렸다 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ─────────────────────────────── D1 Identity & Lab ───────────────────────────────
 
   /me:
@@ -1881,6 +1935,41 @@ components:
           schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
 
   schemas:
+
+    # ── 세션 (`PLAN-SoT §9 〈90〉`) ──
+
+    SessionCredentials:
+      description: |
+        로그인 입력. **한 칸뿐이다** — 개발자가 심어 둔 계정의 접속 코드 (P-17 ·
+        `PLAN-SoT §9 〈90〉-㉮`). 비밀번호를 새로 만들게 하지 않는다. 정본이 명시적으로 뺀 것이
+        「구글 외의 로그인 방법 (비밀번호 · 다른 소셜 계정)」이기 때문이다
+        (`PRD_계정과_연구실_소속 §5.2`).
+      type: object
+      required: [accessCode]
+      additionalProperties: false
+      properties:
+        accessCode:
+          description: 심어 둔 접속 코드. 값의 출처는 배포 설정이며 계약이 형식을 규정하지 않는다.
+          type: string
+          minLength: 1
+          maxLength: 512
+
+    Session:
+      description: |
+        발급된 세션. **무상태 서명 토큰**이라 서버에 세션 표가 없다
+        (`PLAN-SoT §9 〈90〉-㉯` — 마이그레이션 0 으로 성립시킨 결정).
+        `token` 은 이후 모든 op 의 `sessionSubject` bearer 값이다.
+      type: object
+      required: [token, expiresAt]
+      additionalProperties: false
+      properties:
+        token:
+          description: bearer 값. 화면이 내용을 해석하지 않는다.
+          type: string
+        expiresAt:
+          description: 만료 시각. 수명은 **[정본 무근거]** 이며 운영 설정이다 (`〈90〉-㉲`).
+          type: string
+          format: date-time
 
     # ── 값 집합 (seam 전용 · common.json 과 겹치지 않는 것만) ──
 

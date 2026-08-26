@@ -16,13 +16,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
 from ..kernel import errors
+from ..kernel import authn
 from ..kernel.auth import SubjectRegistry
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
+from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
 from .routes import (catalog, identity, ingestion, lineage, members, not_implemented,
-                     preview, project)
+                     preview, project, session)
 
 API_PREFIX = "/api/v1"
 
@@ -41,6 +43,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
     app.state.subjects = SubjectRegistry.from_file(settings.subjects_file)
+    # 인증 수단의 **교체 지점은 `kernel/authn.py::build` 하나**다 (`PLAN-SoT §9 〈90〉-㉮`).
+    # 여기서는 설정을 넘기기만 한다 — 앱은 수단이 몇 개인지도 알 필요가 없다.
+    #
+    # 서명 비밀값이 없으면 세션 어댑터도 발급기도 서지 않는다. **그래도 심어 둔 주체 표는
+    # 그대로 돈다**(병존 · `〈90〉-㉱`) — 로그인을 못 세운 것이 기존 도구를 끊는 이유가 되면 안 된다.
+    _signer = (SessionSigner(settings.session_secret,
+                             ttl_minutes=settings.session_ttl_minutes)
+               if settings.session_secret else None)
+    app.state.authenticators, app.state.session_issuer = authn.build(
+        registry=app.state.subjects, signer=_signer)
     # 중계 두 곳. viz-render 주소가 없으면 **중계를 만들지 않는다** — 없는 것을 있는 척하지
     # 않고, 미리보기 op 이 503 봉투로 정직하게 답한다. 그래도 등록·계보 확정은 그대로 돈다.
     #
@@ -65,7 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def _healthz() -> dict:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
-    for router in (identity.router, members.router, catalog.router, project.router,
+    for router in (session.router, identity.router, members.router, catalog.router, project.router,
                    ingestion.router, lineage.router, preview.router):
         app.include_router(router, prefix=API_PREFIX)
     not_implemented.register(app, prefix=API_PREFIX)

@@ -6,9 +6,11 @@ import { MAIN_NAV, LAB_SETTINGS_PATH, ownerTabOf } from './nav';
 import { useAccount } from '../permission/session';
 import { PermissionGate } from '../permission/PermissionGate';
 import { UploadEntry } from '../components/upload/UploadEntry';
+import { useLogout } from '../auth/AuthGate';
 
 export function Gnb() {
   const account = useAccount();
+  const logout = useLogout();
   const activeTab = ownerTabOf(useLocation().pathname);
 
   return (
@@ -61,6 +63,11 @@ export function Gnb() {
         <button type="button" className="avatar" data-testid="gnb-avatar">
           <span className="nm">{account?.name ?? ''}</span>
           <span className="cv" aria-hidden="true">▾</span>
+        </button>
+        {/* 로그아웃 — 아바타 드롭다운이 서기 전까지 자리를 여기 둔다 (`PLAN-SoT §9 〈90〉-㉳`).
+            들어온 길이 있으면 나가는 길도 있어야 한다. */}
+        <button type="button" className="gnb-logout" onClick={logout} data-testid="gnb-logout">
+          로그아웃
         </button>
       </div>
     </header>

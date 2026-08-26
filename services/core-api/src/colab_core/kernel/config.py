@@ -6,8 +6,20 @@ import os
 
 #: 앱이 접속할 DB. **NOBYPASSRLS · 비소유자 롤**이어야 한다 (ops/app-role.sql).
 ENV_DATABASE_URL = "COLAB_CORE_DATABASE_URL"
-#: 개발자가 심은 계정의 토큰 표 (P-17). 로그인 흐름은 P1 이다.
+#: 개발자가 심은 계정의 토큰 표 (P-17). 로그인이 서도 이 표는 **그대로 남는다** —
+#: 도구·시험·기존 배포 설정이 이 토큰으로 붙어 있고, 병존이 `〈90〉-㉱` 의 결정이다.
 ENV_SUBJECTS_FILE = "COLAB_CORE_SUBJECTS_FILE"
+
+#: 세션 서명 비밀값 (`PLAN-SoT §9 〈90〉-㉯`). **없으면 로그인을 세우지 않는다** —
+#: 서명 없는 세션은 아무나 위조할 수 있고, 그것은 인증이 아니다. 기본값을 코드에 두지 않는 이유도
+#: 같다(`ENV_DATABASE_URL` 과 같은 규칙).
+ENV_SESSION_SECRET = "COLAB_CORE_SESSION_SECRET"
+#: 세션 수명(분). **[정본 무근거]** — 정본에 「세션」이라는 낱말 자체가 없다(2026-08-26 전수 조사).
+#: 그래서 숫자를 정본인 척 적지 않고 **운영 설정**에 둔다 (`〈90〉-㉲`).
+ENV_SESSION_TTL_MINUTES = "COLAB_CORE_SESSION_TTL_MINUTES"
+#: 초기값 720 분(12 시간) — 근무 한 나절을 다시 로그인하지 않고 쓰는 값이다. 근거는 정본이 아니라
+#: 이 값 하나뿐이며, Ted 판정으로 바뀔 수 있다.
+DEFAULT_SESSION_TTL_MINUTES = 720
 
 #: 미등록 업로드의 수명 — **운영 설정이다** (`PLAN-SoT §9 〈67〉-ⓐ`).
 #: 정본(E-04 Policy v2.3)은 규칙 셋만 말하고 **숫자를 갖지 않는다**:
@@ -42,6 +54,8 @@ ENV_AI_BASE_URL = "COLAB_CORE_AI_BASE_URL"
 class Settings:
     database_url: str
     subjects_file: str | None
+    session_secret: str | None = None
+    session_ttl_minutes: int = DEFAULT_SESSION_TTL_MINUTES
     upload_ttl_hours: int = DEFAULT_UPLOAD_TTL_HOURS
     upload_storage_dir: str | None = None
     viz_base_url: str | None = None
@@ -71,6 +85,10 @@ def load_settings() -> Settings:
     return Settings(
         database_url=url,
         subjects_file=os.environ.get(ENV_SUBJECTS_FILE) or None,
+        session_secret=os.environ.get(ENV_SESSION_SECRET) or None,
+        session_ttl_minutes=_positive_int(
+            ENV_SESSION_TTL_MINUTES, os.environ.get(ENV_SESSION_TTL_MINUTES),
+            DEFAULT_SESSION_TTL_MINUTES),
         upload_ttl_hours=_positive_int(
             ENV_UPLOAD_TTL_HOURS, os.environ.get(ENV_UPLOAD_TTL_HOURS),
             DEFAULT_UPLOAD_TTL_HOURS),

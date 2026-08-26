@@ -1,28 +1,15 @@
-import { useEffect, useState } from 'react';
-import { api, type CurrentAccount } from '../api/client';
-import { SessionProvider } from '../permission/session';
+import { AuthGate } from '../auth/AuthGate';
 import { AppRoutes } from './routes';
 
 /**
- * 권한 값의 유일한 원천은 GET /me 다 (P-6·P-7).
- * 응답이 오기 전에는 account 가 null 이고, 그동안 모든 스위치는 꺼진 것으로 본다 — fail-closed.
+ * 인증은 `AuthGate` 한 곳에만 있다 (`PLAN-SoT §9 〈90〉-㉮`).
+ * 권한 값의 유일한 원천은 여전히 `GET /me` 이고(P-6·P-7), 그 응답을 문지기가 읽어
+ * `SessionProvider` 에 심는다 — 화면은 인증도 토큰도 알지 못한다.
  */
 export function App() {
-  const [account, setAccount] = useState<CurrentAccount | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    void api.GET('/me').then(({ data }) => {
-      if (alive && data) setAccount(data);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   return (
-    <SessionProvider account={account}>
+    <AuthGate>
       <AppRoutes />
-    </SessionProvider>
+    </AuthGate>
   );
 }
