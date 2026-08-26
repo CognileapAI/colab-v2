@@ -125,6 +125,34 @@ class LineageCycle(Exception):
     """순환·자기부모. 호출자가 409 로 바꾼다."""
 
 
+#: 계보 쓰기를 연구실 단위로 줄 세우는 락 (`PLAN-SoT §9 〈141〉` · 부차 결함 `D-B`).
+#:
+#: **`xact` 다 — 세션 락이 아니다.** 세션 단위로 잡으면 커넥션이 풀로 돌아가도 락이
+#: 남아 다음 요청이 남의 락에 걸린다. 수명이 「요청 하나 = 트랜잭션 하나」와 같아야 한다.
+#:
+#: **열쇠는 `current_lab_id()` 에서 나온다** — 전역 락이면 한 연구실의 계보 쓰기가
+#: 남의 연구실을 멈춘다. 경계가 이미 스코프 커널로 주입돼 있으므로 그 값을 그대로 쓴다.
+_LOCK_LAB = text("SELECT pg_advisory_xact_lock(hashtext(current_lab_id()::text))")
+
+
+def lock_lab_for_lineage_write(session: Session) -> None:
+    """**검사와 삽입 사이를 닫는다.**
+
+    `would_create_cycle` 의 SELECT 와 `_INSERT_EDGE` 사이에는 락이 하나도 없었고
+    트랜잭션은 READ COMMITTED 다(`app/deps.py`). 그래서 `A → B` 와 `B → A` 를 두
+    커넥션이 동시에 붙이면 **둘 다 검사를 통과하고 둘 다 삽입해 순환이 생긴다** —
+    어느 쪽도 혼자서는 순환이 아니고, 상대가 커밋 전이라 서로를 못 본다.
+
+    **그냥 두면 안 되는 이유** — 순환이 한 번 들어가면 `_SUMMARY` 의 재귀가 그 위를
+    돌고, `deleteDataset` 이 501 이라 **지울 수단이 없다.** `〈133〉` 이 깊이를 접어
+    무한 재귀는 막았지만 **순환 자체를 막는 것은 이 락뿐이다.**
+
+    ⚠ **반드시 검사보다 먼저 부른다.** 검사 뒤에 잡으면 창이 그대로 남는다 —
+    두 요청이 나란히 검사를 통과한 다음 차례로 락을 잡고 차례로 삽입한다.
+    """
+    session.execute(_LOCK_LAB)
+
+
 def would_create_cycle(session: Session, *, child_id: Ulid, parent_id: Ulid) -> bool:
     """`parent → … → child` 가 이미 있으면, `child ← parent` 를 붙이는 순간 순환이다.
 
@@ -142,6 +170,11 @@ def add_parent(session: Session, *, child_id: Ulid, parent_id: Ulid, parent_role
         raise ValueError(f"부모 역할이 2값 밖이다: {parent_role!r}")
     if origin not in ("AI 제안을 사람이 확인", "사람이 직접 연결"):
         raise ValueError(f"만들어진 경로가 2값 밖이다: {origin!r}")
+    # **락이 검사보다 먼저다** (`〈141〉`). 순서가 곧 이 수정의 전부다 —
+    # 검사 뒤에 잡으면 두 요청이 나란히 검사를 통과한 뒤 차례로 삽입해 순환이 남는다.
+    # 값 검사(위 두 줄)는 DB 를 안 보므로 락 밖에 둔다 — 잘못된 요청이 남의 쓰기를
+    # 기다리게 할 이유가 없다.
+    lock_lab_for_lineage_write(session)
     if would_create_cycle(session, child_id=child_id, parent_id=parent_id):
         raise LineageCycle(f"{parent_id} → {child_id} 를 붙이면 계보에 순환이 생긴다.")
     edge_id = session.execute(_INSERT_EDGE, {
