@@ -681,12 +681,19 @@ paths:
     patch:
       tags: [catalog]
       operationId: updateDataset
-      summary: 데이터셋 정보 수정 — 사람이 적는 정보만
+      summary: 데이터셋 정보 수정 — 사람이 적는 정보
       description: |
-        **「사람이 적는 정보」(이름·주제·한 줄 요약)만 고친다** (`DATAMODEL-BASELINE.md` D3 ·
-        `sessions/D2c.md §2-7` — 이 U 가 통째로 없어 `〈55〉` 의 주제를 고칠 길이 없었다).
-        「자동으로 읽은 정보」(변수·기간·좌표계·격자·포맷)는 이 op 의 대상이 아니다 —
-        파일에서 읽는 값이다 (`DataModel §4.1` · `DR-14`).
+        **「사람이 적는 정보」를 고친다** (`DATAMODEL-BASELINE.md` D3 · `sessions/D2c.md §2-7`
+        — 이 U 가 통째로 없어 `〈55〉` 의 주제를 고칠 길이 없었다).
+
+        ⭑ **2026-08-27 개정 (`PLAN-SoT §9 〈138〉`·`〈140〉`).** 종전 서술은 「이름·주제·한 줄
+        요약만」이고 「자동으로 읽은 정보(변수·기간·좌표계·격자·포맷)는 이 op 의 대상이
+        아니다」였다. **정본이 자동 추출을 포맷·용량으로 줄이면서**(`POLICY` 핵심규칙 1 ·
+        `VAL-006`) **변수·기간·좌표계가 사람이 적는 값이 됐다.** 원천 표기·가공 단계·대표
+        조각도 여기서 고친다. 대상은 `DatasetUpdate` 가 정본이다.
+
+        **`format`·`grid` 는 여전히 대상이 아니다** — 자동이고 사람이 고칠 수 없다 (`VAL-003`).
+
         `업로드·편집` 스위치가 판정한다 (`〈59〉-②` — 소유자를 별도 관문으로 만들지 않는다).
       requestBody:
         required: true
@@ -718,6 +725,56 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /dataset-field-suggestions:
+    get:
+      tags: [catalog]
+      operationId: listDatasetFieldSuggestions
+      summary: 자유 입력 칸의 자동완성 후보 — 이미 쓰인 말을 돌려준다
+      description: |
+        **파편화를 입력 단계에서 막는다** (결정 2-10 · `PLAN-SoT §9 〈138〉`).
+
+        정본이 변수·좌표계·원천 표기를 **자유 입력**으로 두었으므로(`VAL-006`·`VAL-009`)
+        같은 것을 두 사람이 다르게 적는 일이 생긴다 — `ERA5` / `era5` / `ECMWF ERA5` /
+        `ERA-5`. 결정 2-10 이 그 대가를 적어 뒀다: **「데이터가 쌓인 뒤의 소급 정리는
+        사람이 하나씩 묶어야 하므로 입력 단계 차단과 비용 차이가 크다」**, 그리고
+        원천은 **계보 그래프의 뿌리 노드**라 파편화되면 그래프 상단이 통째로 갈라진다.
+
+        **통제 어휘로 고정하지 않는다** — 연구실에 어떤 자료가 들어올지 미리 알 수 없다.
+        제안하되 목록에 없는 값은 직접 칠 수 있다.
+
+        **이 연구실 안에서 이미 쓰인 값만 돌려준다** — 경계는 스코프 커널이 주입한다.
+        빈 목록은 정상이다(첫 사람은 후보가 없다). **억지로 채우지 않는다.**
+
+        ⚠ **`가공 방식` 은 여기 없다.** 그 어휘는 D9 온톨로지 시드가 소유하고
+        (`d9_method_term`, 결정 2-11) **core-api 는 그 저장소에 붙지 않는다**
+        (`CLAUDE.md §3-1`·`§3-3`). 그쪽은 ai-service 의 사전 표면으로 간다.
+      parameters:
+        - name: field
+          in: query
+          required: true
+          description: |
+            후보를 받을 칸. **D3 이 소유한 자유 입력 칸만** 값으로 온다.
+            계약 층 enum 을 만들지 않는다 (`NB-E`) — 서버가 모르는 값이면 400 이다.
+          schema: { type: string, minLength: 1 }
+        - name: q
+          in: query
+          required: false
+          description: 입력 중인 글자. 비면 많이 쓰인 순으로 앞쪽을 돌려준다.
+          schema: { type: string, maxLength: 60 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 20, default: 10 }
+      responses:
+        "200":
+          description: 후보 목록
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FieldSuggestions" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /datasets/{datasetId}/deletion-impact:
@@ -2438,11 +2495,46 @@ components:
             정본이 형태를 주지 않아 레포 결정]`
           type: [string, "null"]
 
+    FieldSuggestions:
+      description: |
+        자동완성 후보 (`listDatasetFieldSuggestions`). 근거 = `_결정_업로드계보_260826.md §2-10`
+        (원천 표기 = 자동완성 ＋ 정규화 병기) · `PLAN-SoT §9 〈138〉` · `VAL-006`·`VAL-009`.
+        **이미 쓰인 말만 담는다** — 만들어 낸 값이 섞이면 사용자가 그것을
+        「연구실에서 쓰는 표기」로 믿는다.
+      type: object
+      required: [field, items]
+      additionalProperties: false
+      properties:
+        field: { type: string, minLength: 1 }
+        items:
+          type: array
+          items:
+            type: object
+            required: [value, useCount]
+            additionalProperties: false
+            properties:
+              value: { type: string, minLength: 1 }
+              useCount:
+                description: |
+                  이 연구실에서 이 값이 쓰인 건수. **고르는 근거로 보여준다** —
+                  「이미 8건이 이렇게 적었다」가 표기를 모으는 가장 싼 장치다.
+                type: integer
+                minimum: 1
+
     DatasetCreate:
       description: |
         등록 전환 요청 — 업로드 폼 한 화면이 한 번에 제출하는 값 (`Policy §5` 입력값 규칙 ·
-        `§7.2` 등록 중 → 등록됨). 자동으로 읽은 정보(변수·기간·좌표계·격자·포맷)는 싣지 않는다 —
-        파일에서 읽는 값이다 (`DataModel §4.1`).
+        `§7.2` 등록 중 → 등록됨).
+
+        ⭑ **2026-08-27 개정 (`PLAN-SoT §9 〈138〉`·`〈140〉`).** 종전 서술은 「자동으로 읽은
+        정보(변수·기간·좌표계·격자·포맷)는 싣지 않는다」였다. **정본이 자동 추출을 줄였다** —
+        `POLICY-20260825-001` 핵심규칙 1 = 「자동으로 읽는 값은 **포맷과 용량뿐**」,
+        `VAL-006` = 「변수·기간·좌표계는 **자유 입력 · 선택 입력**」.
+        그래서 그 셋이 **사람이 적는 값으로 옮겨 왔다.**
+
+        **`format`·`grid` 는 그대로 자동이라 여기 없다.** `format` 은 `VAL-003`(자동·수정
+        불가)이고, `grid` 는 업로드 폼이 읽는 값이 아니라 **격자 파일을 붙인 뒤 서버가 세는
+        값**이라 층이 다르다 (`〈74〉`).
       type: object
       required: [uploadId, name]
       additionalProperties: false
@@ -2472,6 +2564,35 @@ components:
             (`Policy §3.3`). 일괄 승인 필드가 아니다 — 항목마다 사람이 확인한 결과다 (`CLAUDE.md §3`).
           type: array
           items: { $ref: "#/components/schemas/UploadLineageParent" }
+        processingLevel:
+          description: |
+            가공 단계 — **사람이 고르는 칸**이다 (`VAL-005` · 스펙 17 · `PLAN-SoT §9 〈140〉`).
+            **생략하면 계보에서 파생한다** (`POL-020`). 값을 실으면 「사람이 골랐다」로
+            기록되어 **자동 보정이 그 값을 덮지 않는다** (`POL-020` 예외 · `TC-W-001`).
+
+            ⚠ **폼 기본값을 그대로 통과시킨 것은 「골랐다」가 아니다** — 실으면 나중에
+            부모를 연결해도 값이 안 움직여 스펙 33(가공 단계 자동 보정 알림)이 죽는다.
+            **사용자가 실제로 컨트롤을 바꿨을 때만 싣는다.**
+
+            계보를 안 적은 경우의 값은 **`0`(가공 안 함) / `1`(가공함)** 이다
+            (Ted 2026-08-27). `2` 는 계보가 있을 때 파생으로 나온다.
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 2
+        variables:
+          description: |
+            구성(변수 목록) — **자유 입력**이다 (`VAL-006`). 형식 검사를 하지 않는다.
+            비우면 `null` 이고 그것이 정상이다 — 필수는 이름 하나다 (`VAL-001`).
+          type: [array, "null"]
+          items: { type: string, minLength: 1 }
+        crs:
+          description: 좌표계 — **자유 입력** (`VAL-006`). 검사하지 않는다.
+          type: [string, "null"]
+        period:
+          description: 기간 — **자유 입력** (`VAL-006`).
+          oneOf:
+            - $ref: "#/components/schemas/DataPeriod"
+            - type: "null"
         projectIds:
           description: |
             소속 프로젝트 복수 지정 (`Policy §5` 소속 프로젝트 — 0건 이상). 등록 폼이 한 번에
@@ -2484,7 +2605,20 @@ components:
     DatasetUpdate:
       description: |
         사람이 적는 정보만 (`DATAMODEL-BASELINE.md` D3 · `sessions/D2c.md §2-7`).
-        자동으로 읽은 정보는 이 스키마에 자리가 없다 (`DataModel §4.1` · `DR-14`).
+
+        ⭑ **2026-08-27 개정 — 「고치는 길」을 연다** (`PLAN-SoT §9 〈138〉`·`〈140〉` ·
+        Ted 판정 ㈏ 「올리고 고친다를 한 벌로」).
+
+        **왜 넓히는가.** 종전에는 올린 뒤 고칠 수 있는 것이 **이름·주제·요약 셋뿐**이었다.
+        Lv 도 원천 표기도 변수·좌표계·기간도 못 고쳤고, `deleteDataset` 도 아직 없어
+        **잘못 올리면 되돌릴 길이 없었다.** 되돌릴 수 없는 제품은 사람이 조심하느라
+        안 쓰게 된다 — 그것이 「졸업하면 데이터가 사라진다」를 막겠다는 목적과 어긋난다.
+
+        **여전히 없는 것 = `format`·`grid`·파일 자체.** 앞 둘은 자동이고(`VAL-003` ·
+        격자는 서버가 센다), 파일은 이 op 의 일이 아니다.
+
+        **보내지 않은 열쇠는 안 건드린다** — 부분 수정이다. `null` 을 명시적으로 보내는
+        것은 **비우라는 뜻**이고, 열쇠를 생략한 것은 **그대로 두라는 뜻**이다. 둘이 다르다.
       type: object
       additionalProperties: false
       properties:
@@ -2493,6 +2627,44 @@ components:
           description: "값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E)."
           type: [string, "null"]
         summary: { type: [string, "null"] }
+        sourceLabel:
+          description: |
+            원천 표기 (`VAL-009`). **`DatasetCreate` 에는 있는데 여기 없어서 고칠 길이
+            없던 값이다.** 연구실 밖 출처의 이름이며 계보 그래프의 점선 노드가 된다.
+          type: [string, "null"]
+          maxLength: 60
+        processingLevel:
+          description: |
+            가공 단계 — **사람이 고르는 칸** (`VAL-005` · `〈140〉`). `null` 을 보내면
+            **사람의 선택을 지우고 계보에서 파생하는 상태로 되돌린다.**
+            생략하면 지금 상태를 그대로 둔다.
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 2
+        representativeFileId:
+          description: |
+            대표 조각 — 상세에 들어갔을 때 미리보기에 그려지는 조각 (결정 2-4).
+            **기본은 자동**(파일명 오름차순 자연 정렬로 첫 번째, 결정 2-8)이고,
+            의도한 조각을 보여주고 싶을 때 여기서 바꾼다.
+            `null` 을 보내면 자동으로 되돌린다.
+
+            ⚠ **자동인지 사람이 고른 것인지를 구분한다** — 자동이면 렌더 결과가 바뀔 때
+            따라 움직이고, **사람이 고른 값은 덮지 않는다** (결정 2-4 · `〈140〉` 과 같은 패턴).
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        variables:
+          description: 구성(변수 목록) — **자유 입력** (`VAL-006` · `〈138〉`).
+          type: [array, "null"]
+          items: { type: string, minLength: 1 }
+        crs:
+          description: 좌표계 — **자유 입력** (`VAL-006` · `〈138〉`).
+          type: [string, "null"]
+        period:
+          description: 기간 — **자유 입력** (`VAL-006` · `〈138〉`).
+          oneOf:
+            - $ref: "#/components/schemas/DataPeriod"
+            - type: "null"
 
     # ── D3 ──
 
