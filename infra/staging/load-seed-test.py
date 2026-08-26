@@ -41,6 +41,10 @@ class FakeState:
         self.page_size = page_size
         self.datasets = []          # {datasetId, name, fileCount, lineageState}
         self.uploads = {}           # uploadId -> [{fileName, kind}]
+        # 축 판별은 **비동기**다 — 접수 직후에는 축이 없고 워커가 나중에 정한다(`〈79〉-㈎`).
+        # 몇 번째 조회부터 축이 서는지를 여기서 정한다. 0 이면 첫 조회부터 확정이다.
+        self.grid_axis_after = 0
+        self.upload_polls = {}      # uploadId -> 조회 횟수
         self.calls = []             # (method, path)
         self.multipart = []         # [(fileNames, fileKinds)]
         self.seen_auth = []
@@ -87,6 +91,25 @@ class Handler(BaseHTTPRequestHandler):
                 "totalCount": len(st.datasets),
                 "nextCursor": str(nxt) if nxt < len(st.datasets) else None,
             })
+        if self.path.split("?")[0].startswith("/api/v1/uploads/"):
+            uid = self.path.split("?")[0].split("/")[4]
+            up = st.uploads.get(uid)
+            if up is None:
+                return self._json(404, {"code": "NOT_FOUND"})
+            st.upload_polls[uid] = st.upload_polls.get(uid, 0) + 1
+            settled = st.upload_polls[uid] > st.grid_axis_after
+            files = []
+            for f in up:
+                row = {"fileId": st.next_id("F"), "fileName": f["fileName"],
+                       "kind": f["kind"], "byteSize": 1}
+                if settled and f["kind"] == "기준 격자 파일":
+                    row["gridAxis"] = {
+                        "carriesLat": f["fileName"].startswith("g_lat"),
+                        "carriesLon": f["fileName"].startswith("g_lon"),
+                    }
+                files.append(row)
+            return self._json(200, {"uploadId": uid, "files": files,
+                                    "gridRejections": [], "ready": settled})
         return self._json(404, {"code": "NOT_FOUND"})
 
     def do_POST(self):
@@ -127,7 +150,13 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/v1/datasets/") and path.endswith("/grid-files"):
             did = path.split("/")[4]
             req = json.loads(body)
-            up = st.uploads.pop(req["uploadId"], None)
+            uid = req["uploadId"]
+            # **축이 서기 전에는 400 이다** — 실물 서버가 그렇다
+            # (`ingestion.py` 「축이 확정된 기준 격자 파일이 없다」). `#31` 의 실물 무늬다.
+            if st.upload_polls.get(uid, 0) <= st.grid_axis_after:
+                return self._json(400, {"code": "BAD_REQUEST",
+                                        "message": "축이 확정된 기준 격자 파일이 없다"})
+            up = st.uploads.pop(uid, None)
             if up is None:
                 return self._json(404, {"code": "NOT_FOUND"})
             for d in st.datasets:
@@ -314,6 +343,24 @@ class LoaderCase(unittest.TestCase):
         grid_calls = [c for c in self.state.calls if c[1].endswith("/grid-files")]
         self.assertEqual(len(grid_calls), 1)
 
+    def test_grid_attach_waits_for_axis_detection(self):
+        """`#31` — 접수와 축 판별 사이는 **비동기 seam** 이다. 도구가 기다려야 한다.
+
+        축이 세 번째 조회부터 서게 두면, 기다리지 않는 도구는 `attachUploadGridFiles` 에서
+        400 「축이 확정된 기준 격자 파일이 없다」 를 받고 중단한다 — 실측된 무늬 그대로다.
+        """
+        self.state.grid_axis_after = 2
+        self.state.datasets.append(
+            {"datasetId": self.state.next_id("D"), "name": "나 데이터셋",
+             "fileCount": 1, "lineageState": "원천"})
+        r = self.run_tool()
+        self.assertEqual(r.exit_code, 0, r.report)
+        row = [d for d in self.state.datasets if d["name"] == "나 데이터셋"][0]
+        self.assertEqual(row["fileCount"], 2, "격자를 이어 붙이지 않았다")
+        polls = [c for c in self.state.calls
+                 if c[0] == "GET" and c[1].startswith("/api/v1/uploads/")]
+        self.assertGreaterEqual(len(polls), 3, "축이 설 때까지 기다리지 않았다")
+
     # ── ⑧ 계약 준수 ─────────────────────────────────────────────────────────
     def test_multipart_keeps_files_and_kinds_in_matching_order(self):
         """R-9 — 어긋나도 서버가 오류를 내지 않는 자리다."""
@@ -331,12 +378,15 @@ class LoaderCase(unittest.TestCase):
         self.assertEqual([c for c in self.state.calls if c[0] == "DELETE"], [])
 
     def test_only_contract_operations_are_called(self):
-        """R-1 — 호출 op 4 건 한정."""
+        """R-1 — 호출 op 5 건 한정(넷 ＋ 축 판별을 기다리는 `getUploadStatus`)."""
         self.run_tool()
         allowed = {("GET", "/api/v1/datasets"), ("POST", "/api/v1/datasets"),
                    ("POST", "/api/v1/uploads")}
         for method, path in self.state.calls:
             if path.endswith("/grid-files") and method == "POST":
+                continue
+            # `getUploadStatus` — 축 판별을 기다리는 조회. 계약 op 이다(`fe-core.yaml`).
+            if method == "GET" and path.startswith("/api/v1/uploads/"):
                 continue
             self.assertIn((method, path), allowed, f"계약 밖 호출: {method} {path}")
 

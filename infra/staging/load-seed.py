@@ -27,6 +27,7 @@ import json
 import mimetypes
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -224,11 +225,44 @@ def load_dataset(client: Client, ds: dict, source_root: Path, resolved: dict[str
     return resp["datasetId"]
 
 
+#: 축 판별을 기다리는 상한(초). 워커 루프가 5초 주기이므로 여러 바퀴를 덮는다.
+GRID_AXIS_TIMEOUT = 180.0
+
+
+def _await_grid_axes(client: Client, upload_id: str, expected: int) -> dict:
+    """축 판별이 **끝날 때까지** 기다린다. 돌려주는 것은 마지막 상태 본문이다.
+
+    ⚠ **이 기다림이 없어서 `#31` 이 났다.** 접수와 축 판별 사이는 **비동기 seam** 이다 —
+    `createUpload` 는 바이트만 받고, 축은 pipeline-worker 가 나중에 정해 원장 행을 세운다
+    (`〈79〉-㈎`). 곧바로 `attachUploadGridFiles` 를 부르면 그 행이 아직 없어서 서버가
+    **400 「축이 확정된 기준 격자 파일이 없다」** 를 낸다. 도구가 못 기다린 것을 서버 결함으로
+    읽으면 안 된다 — 그래서 여기서 **사실이 설 때까지** 기다리고, 안 서면 그 사실을 적는다.
+
+    끝났다고 보는 조건 둘 — 축이 확정된 파일이 기대 건수만큼 생겼거나, `gridRejections` 가
+    비어 있지 않다(거절도 결론이다). 어느 쪽도 아니면 상한까지 기다렸다가 중단한다.
+    """
+    deadline = time.monotonic() + GRID_AXIS_TIMEOUT
+    body: dict = {}
+    while True:
+        status, body = client.get(f"{API}/uploads/{upload_id}")
+        if status != 200:
+            raise Abort(f"getUploadStatus 가 {status} 를 냈다 — {body}")
+        settled = [f for f in body.get("files", []) if f.get("gridAxis")]
+        if len(settled) >= expected or body.get("gridRejections"):
+            return body
+        if time.monotonic() >= deadline:
+            raise Abort(
+                f"축 판별이 {GRID_AXIS_TIMEOUT:.0f}초 안에 끝나지 않았다 "
+                f"(확정 {len(settled)}/{expected} · 거절 0) — 워커가 도는지 먼저 본다")
+        time.sleep(2.0)
+
+
 def attach_grid(client: Client, ds: dict, source_root: Path, dataset_id: str) -> None:
     entries = _files_of(ds, source_root, kinds={"기준 격자 파일"})
     if not entries:
         raise Abort(f"「{ds['name']}」 이 계획치에 못 미치는데 붙일 격자 파일이 없다")
     upload_id = _create_upload(client, entries)
+    _await_grid_axes(client, upload_id, len(entries))
     status, body = client.post_json(f"{API}/datasets/{dataset_id}/grid-files",
                                     {"uploadId": upload_id})
     if status != 201:
