@@ -2,15 +2,16 @@
   "_설명": [
     "S2 초기 데이터 적재 매니페스트 (확정판). 소비처 = infra/staging/load-seed.py 의 --manifest.",
     "path 는 --source-root 기준 상대. source-root = '03 Reference-Data'. 전 경로 실물 확인 완료(2026-08-26).",
-    "적재 대상 = 11 데이터셋(D-01~D-09 · D-13 · D-15). 제외 4건(D-10·D-11·D-12·D-14)은 PLAN-SoT 〈104〉.",
+    "적재 대상 = 12 데이터셋(D-01~D-09 · D-13 · D-15 · D-16). 제외 4건(D-10·D-11·D-12·D-14)은 PLAN-SoT 〈104〉. D-16 은 2026-08-26 Ted 판정 ④ 신설.",
     "이름은 S2b-DATASET-DESCRIPTIONS §2.1 확정 이름 그대로다 — 도구가 완전 일치로 대조한다.",
-    "기준 격자 파일 6건은 infra/staging/manifest-grid-entries.json 의 확정 항목을 그대로 병합했다."
+    "기준 격자 파일 6건은 infra/staging/manifest-grid-entries.json 의 확정 항목을 그대로 병합했다.",
+    "D-16 은 기준 격자 파일을 싣지 않는다 — GeoTIFF 가 crs·transform 을 자립으로 갖는다(S2b-DATASET-DESCRIPTIONS §2.4-⑤). 계보 간선도 싣지 않는다 — 판정 사안(같은 문서 §2.4-⑥-ⓑ)."
   ],
   "_계수": {
-    "데이터셋": 11,
-    "파일": 128,
+    "데이터셋": 12,
+    "파일": 129,
     "계보간선": 5,
-    "⚠계획치와의 차이": "S2-EXEC-PLAN §8 3-B 회차표는 139 를 적는다. 실측 128 과 11 건 차이가 난다. 내역 = ① 기준 격자 16 → 확정 6 (manifest-grid-entries.json · 2026-08-26 Ted ④⑤). ② 기타 tif 1 (01.level-data/02.vegetation/02.vegetation/Lv.1/GK2A_NDVI_mean_202305.tif) 은 11 데이터셋 어디에도 속하지 않아 배정처가 없다. 이 매니페스트는 계획 숫자를 고치지 않고 실측만 담는다."
+    "⚠계획치와의 차이": "S2-EXEC-PLAN §8 3-B 회차표는 139 를 적는다. 실측 129 와 10 건 차이가 난다. 내역 = 기준 격자 16 → 확정 6 (manifest-grid-entries.json · 2026-08-26 Ted ④⑤). ⟨증보 2026-08-26 Ted 판정 ④⟩ 종전 차이 11 중 「기타 tif 1」이 데이터셋 D-16 으로 확정돼 적재 대상에 들어왔다 — 데이터셋 11 → 12 · 파일 128 → 129. 이 매니페스트는 계획 숫자를 고치지 않고 실측만 담는다."
   },
   "_회차_주의": "load-seed.py 의 --round 는 데이터셋 단위 필터다. 회차 ⑦(기준 격자)은 별도 회차로 분리할 수 없어 기준 격자 파일이 소속 데이터셋의 회차(③·⑥)에 함께 실린다.",
   "datasets": [
@@ -662,6 +663,19 @@
         {
           "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy",
           "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "D-16",
+      "round": 8,
+      "name": "GK-2A NDVI 100 m 경기남부·충청권 월평균 (2023-05)",
+      "topic": "식생·NDVI",
+      "summary": "자료명 GK2A_NDVI_mean_yyyymm.tif. ／ 처리 과정(처리 순서대로 나열) — DQF 자료를 활용하여 품질이 저하되는 픽셀의 값을 NaN으로 변경하였음. NDVI의 유효 값 범주인 -1 ~ 1을 고려하여, 해당 범주를 벗어나는 값을 NaN으로 변경하였음. 원자료 좌표계인 LCC를 WGS84로 변환하였음. 복수의 인자가 dictionary 형태로 저장되어 있는 NetCDF4 형식의 파일에서, NDVI 레이어를 추출하여 별개의 TIF 파일로 저장하였음. 연구 대상지역인 경기도 남부 ~ 충청권 일대에 맞추어 영역을 추출하였음. 시계열 자료의 이상치 평활화 기법(Savitzky-Golay)와 선형 보간 기법을 활용하여 결측치를 보간하였음. 본래 공간해상도 2 km의 자료를 균등 분할하여 100 m로 변환하였음(Uniform Distribution 기법 적용). 일 단위 자료를 월 단위 평균 자료로 변환하였음. ／ Lv.1에서 일 단위 자료를 월 단위로 변환한 것은, 이후 Lv.2 단계의 자료를 제작하기 위한 딥러닝 모델 훈련 자료로 활용하기 위함임. ／ 정규식생지수 / Normalized Difference Vegetation Index (NDVI). 계산식 NDVI = (NIR - Red) / (NIR + Red). 값 범위 -1 to 1. ／ 자료 전달 기간 2023. 05. 01. ~ 2023. 05. 31. ／ [실측 2026-08-26] GeoTIFF · EPSG:4326 · 1280 × 1280 · float64 · 화소 0.0010002775°(≈100 m) · 경계 126.67621899~127.95657414°E / 36.07784524~37.35820039°N · 타일 128×128 · packbits · 오버뷰 0단 · NoData 미설정 · 값 0.0000~0.7845926 · NaN 0.",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1/GK2A_NDVI_mean_202305.tif",
+          "kind": "본체"
         }
       ]
     }
