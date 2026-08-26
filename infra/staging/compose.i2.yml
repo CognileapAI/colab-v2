@@ -65,6 +65,20 @@ services:
       # 그래서 WSL 쪽 ext4 경로에 바인드한다. 값은 홈의 0600 env 파일에만 있다 —
       # 문서·레포에 절대경로를 적지 않는다 (CLAUDE.md §5).
       - ${COLAB_STAGING_PGDATA_DIR:?COLAB_STAGING_PGDATA_DIR 이 필요하다 — WSL ext4 쪽 경로여야 한다}:/var/lib/postgresql/data
+    # 쓰기 문장을 남긴다 (2026-08-26 Ted ① 채택).
+    # 2026-08-25 소실에서 **성공한 쓰기가 로그에 없어** 삭제 주체를 재지 못했다
+    # (dev-package/sessions/S2-BLOCKER-INVESTIGATION.md §1.4).
+    # 현재 가동 인스턴스에는 ALTER SYSTEM 으로 이미 걸려 있고 그 값은 PGDATA 에 남는다.
+    # 이 줄은 레포 측 정본이다 — 다음 recreate 부터 compose 가 같은 값을 준다.
+    command: ["postgres", "-c", "log_statement=mod"]
+    # 로그 상한. 상향 후 실측 증가량 = 유휴 상태 6.80 KB/분(약 9.6 MB/일).
+    # 상한이 없으면 json 로그가 무한히 자란다 — 50m x 5 = 250 MB 로 막는다(약 26일치).
+    # ⚠ 이 옵션은 **컨테이너 recreate 시점에** 적용된다. 적용 전까지는 상한이 없다.
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     # 포트를 열지 않는다. 접근은 compose 네트워크와 docker exec 뿐이다.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
