@@ -40,8 +40,25 @@ export function UploadEntry(props: {
         type="button"
         className="gnb-upload"
         data-testid="gnb-upload"
+        aria-label="업로드"
         onClick={() => setOpen(true)}
       >
+        {/* 좁은 화면에서는 `.lbl` 이 숨고 이 아이콘만 남는다 (`shell.css` 640px).
+            아이콘이 없으면 버튼이 빈 칸이 된다 — main 의 모바일 반응형 병합에서 실제로 그럴 뻔했다. */}
+        <svg
+          className="ico"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
+        </svg>
         <span className="lbl">업로드</span>
       </button>
       {open && (

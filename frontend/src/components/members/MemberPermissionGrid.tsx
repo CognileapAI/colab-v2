@@ -168,7 +168,7 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
                   // 편집 불가 열도 **값은 보인다** — 열을 지우면 표 구조가 깨진다 (P-31).
                   // 여기에 P-12(숨김)를 적용하지 않는 이유가 그것이다.
                   return (
-                    <td key={sw} className={`pc${changed ? ' is-chg' : ''}`}>
+                    <td key={sw} className={`pc${changed ? ' is-chg' : ''}`} data-sw={sw}>
                       <input
                         type="checkbox"
                         checked={value}

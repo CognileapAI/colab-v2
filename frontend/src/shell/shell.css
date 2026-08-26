@@ -202,3 +202,34 @@ body {
   color: var(--color-text);
   border-color: var(--color-border-shell);
 }
+
+/* GNB 아이콘 — 라벨 옆에 붙는다. 데스크톱에서는 아이콘·라벨이 함께 보인다 */
+.gnb .ico { flex: none; }
+
+/* ===== 좁은 화면 (아이폰 375px) — GNB 는 아이콘만 남긴다 =====
+   라벨을 감추는 컨트롤에는 전부 aria-label 이 붙어 있다 (Gnb.tsx) — 접근성은 그대로다 */
+@media (max-width: 640px) {
+  /* 노치·홈 인디케이터 안쪽 여백 (viewport-fit=cover) */
+  .gnb {
+    gap: 4px;
+    padding: 0 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  .appmain { padding-bottom: env(safe-area-inset-bottom); }
+  /* iOS 가 포커스에서 자동 확대하지 않게 입력 글자를 16px 아래로 두지 않는다 */
+  input, select, textarea { font-size: 16px; }
+  .gnb .lbl,
+  .brand .bn,
+  .avatar .nm,
+  .labswitch .ln,
+  .labswitch .cv { display: none; }
+  .labswitch { gap: 0; padding: 0 9px; }
+  .mainnav { margin-left: 2px; gap: 0; min-width: 0; }
+  .mainnav a { padding: 0 9px; }
+  .gnb-settings,
+  .gnb-upload { padding: 0 10px; gap: 0; }
+  .avatar { gap: 2px; padding: 0 6px; }
+  /* 로그아웃은 아이콘이 없다 — 감추면 모바일에서 나가는 길이 사라진다. 좁히기만 한다. */
+  .gnb-logout { margin-left: 4px; padding: 0 6px; }
+}
