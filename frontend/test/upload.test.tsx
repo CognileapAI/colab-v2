@@ -1187,13 +1187,19 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     expect(parents.map((p) => p.parentRole)).toEqual(['주입력', '보조입력']);
   });
 
-  it('`보조입력` 이 Lv 계산에서 빠진다는 것을 알린다 — Lv 값을 화면이 계산하지 않는다', async () => {
+  it('안내가 **정할 수 없는 값**을 설명하지 않는다 — 화면은 부모 역할을 묻지 않는다', async () => {
+    // `PLAN-SoT §9 〈139〉`(Ted 2026-08-27) — 부모 역할은 화면에서 묻지 않고 서버 기본값
+    // `주입력` 이며, 고치는 자리는 **상세의 계보 수정**이다. 그런데 종전 안내는
+    // 「`보조입력` 으로 표시한 부모는…」이라 **표시할 방법이 없는 값을 설명**했다.
+    // 사용자는 그 표시를 찾다가 못 찾고, 안 보이는 기능이 있다고 믿는다.
     const { sources } = fakes({ suggestions: kwraSuggestions() });
     await openLineage(sources);
     const note = await screen.findByTestId('lin-lv-note');
-    expect(note).toHaveTextContent('보조입력');
+    expect(note.textContent).not.toMatch(/보조입력/);
     // Lv 는 파생값이라 등록 뒤 core 가 계산한다 (`PLAN-SoT §9-⑳`) — 여기서 숫자를 짓지 않는다.
     expect(note.textContent).not.toMatch(/Lv\s*\d/);
+    // **고칠 수 있다는 사실은 말한다** — `〈127〉` 로 상세에서 고치는 길이 열렸다.
+    expect(note).toHaveTextContent('상세');
   });
 
   it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `사람이 직접 연결`', async () => {
