@@ -21,12 +21,17 @@
 BEGIN;
 
 -- 연구실이 없으면 **멈춘다.** 계정을 붙일 자리를 지어내지 않는다.
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM d1_lab WHERE id = :lab_id) THEN
-    RAISE EXCEPTION '연구실 %가 없다. 계정을 붙일 자리를 만들지 않는다.', :lab_id;
-  END IF;
-END$$;
+--
+-- ⚠ **`DO $$ … $$` 안에서는 psql 변수가 치환되지 않는다** — 달러 인용 문자열은 psql 이 손대지
+--    않는 구간이라 `:lab_id` 가 글자 그대로 서버에 가고 `syntax error at or near ":"` 로 죽는다.
+--    2026-08-26 첫 실행에서 실측됐다. 그래서 **문장을 만들어 `\gexec` 로 실행한다** —
+--    연구실이 있으면 무해한 `SELECT 1`, 없으면 예외를 던지는 블록이 만들어진다.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM d1_lab WHERE id = :lab_id)
+  THEN 'SELECT 1'
+  ELSE format(
+    'DO $guard$ BEGIN RAISE EXCEPTION ''연구실 %%가 없다. 계정을 붙일 자리를 만들지 않는다.'', %L; END $guard$',
+    :lab_id)
+END \gexec
 
 INSERT INTO d1_account (id, lab_id, name, email)
 VALUES (:account_id, :lab_id, :name, :email)

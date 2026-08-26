@@ -1,0 +1,669 @@
+{
+  "_설명": [
+    "S2 초기 데이터 적재 매니페스트 (확정판). 소비처 = infra/staging/load-seed.py 의 --manifest.",
+    "path 는 --source-root 기준 상대. source-root = '03 Reference-Data'. 전 경로 실물 확인 완료(2026-08-26).",
+    "적재 대상 = 11 데이터셋(D-01~D-09 · D-13 · D-15). 제외 4건(D-10·D-11·D-12·D-14)은 PLAN-SoT 〈104〉.",
+    "이름은 S2b-DATASET-DESCRIPTIONS §2.1 확정 이름 그대로다 — 도구가 완전 일치로 대조한다.",
+    "기준 격자 파일 6건은 infra/staging/manifest-grid-entries.json 의 확정 항목을 그대로 병합했다."
+  ],
+  "_계수": {
+    "데이터셋": 11,
+    "파일": 128,
+    "계보간선": 5,
+    "⚠계획치와의 차이": "S2-EXEC-PLAN §8 3-B 회차표는 139 를 적는다. 실측 128 과 11 건 차이가 난다. 내역 = ① 기준 격자 16 → 확정 6 (manifest-grid-entries.json · 2026-08-26 Ted ④⑤). ② 기타 tif 1 (01.level-data/02.vegetation/02.vegetation/Lv.1/GK2A_NDVI_mean_202305.tif) 은 11 데이터셋 어디에도 속하지 않아 배정처가 없다. 이 매니페스트는 계획 숫자를 고치지 않고 실측만 담는다."
+  },
+  "_회차_주의": "load-seed.py 의 --round 는 데이터셋 단위 필터다. 회차 ⑦(기준 격자)은 별도 회차로 분리할 수 없어 기준 격자 파일이 소속 데이터셋의 회차(③·⑥)에 함께 실린다.",
+  "datasets": [
+    {
+      "key": "D-01",
+      "round": 1,
+      "name": "GK-2A NDVI 2 km 한반도 (2024-06-15~24)",
+      "topic": "식생·NDVI",
+      "summary": "식생의 활력도를 나타내는 무차원 지수. 식 : NDVI = (NIR − RED) / (NIR + RED). −1 ~ +1 범위, 일반적으로 0 ~ 1. 0.2 미만 → 맨땅·물·도시, 0.3~0.6 → 농경지/초지, 0.6 이상 → 울창한 숲. ／ 한국 기상청 운영의 정지궤도 위성. 본 자료는 GK-2A 식생산출물 (NDVI) 일별 합성 자료로, 약 2 km 격자 (≈ 0.02°) 해상도. ／ GeoTIFF, EPSG:4326, ~2 km, float64, NDVI ∈ [0, 1] (NoData = NaN). 한반도 전역(852 × 1200) — 코드 내부에서 충청권으로 잘라 사용.",
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240615_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240616_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240617_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240618_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240619_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240620_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240621_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240622_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240623_2km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/GK-2A_NDVI_20240624_2km.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-02",
+      "round": 1,
+      "name": "DEM 100 m 충청권",
+      "topic": "지형·DEM",
+      "summary": "고도(elevation) 격자. 본 예시의 Co-Kriging 에서 보조 변수로 사용. 산악·평지 차이를 NDVI 다운스케일링에 반영하기 위함. ／ GeoTIFF, EPSG:4326, ~100 m, float32, 단위 = 미터. 충청권 도메인 (1280 × 1280).",
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Input/DEM_100m.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-03",
+      "round": 2,
+      "name": "GK-2A NDVI 1 km 충청권 — Nearest",
+      "topic": "식생·NDVI",
+      "summary": "저해상도(2 km) 자료를 고해상도(1 km)로 변환하는 다운스케일링. 딥러닝 없이 고전적 통계·보간 기법만 사용. ／ Nearest-Neighbour — 타깃 셀에 가장 가까운 원본 셀 값을 그대로 복사. 보조 변수 없음. 산출 특성 = 계단(blocky), 정보량 변화 없음. ／ GeoTIFF, EPSG:4326, 정확히 1 km (0.01°) 격자, float32. 크기 126 × 128, NoData = NaN, deflate 압축. ／ 연구 영역 (충청권) 경도 126.70°E ~ 127.96°E, 위도 36.08°N ~ 37.36°N. 입력 일자 2024-06-15 ~ 2024-06-24 (10일). ／ 해상도 한계 — Nearest·Bilinear·IDW 는 원본 2 km 가 가진 정보 한도 안에 갇혀 있다.",
+      "lineageParents": [
+        {
+          "parentKey": "D-01",
+          "origin": "사람이 직접 연결",
+          "parentRole": "주입력",
+          "method": "최근린보간"
+        }
+      ],
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240615_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240616_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240617_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240618_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240619_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240620_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240621_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240622_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240623_nearest_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/01_nearest/GK-2A_NDVI_20240624_nearest_1km.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-04",
+      "round": 2,
+      "name": "GK-2A NDVI 1 km 충청권 — Bilinear",
+      "topic": "식생·NDVI",
+      "summary": "저해상도(2 km) 자료를 고해상도(1 km)로 변환하는 다운스케일링. ／ Bilinear — 가장 가까운 4 셀의 거리 비례 가중평균. 보조 변수 없음. 산출 특성 = 부드러움(분산 ↓), 표준 보간. ／ GeoTIFF, EPSG:4326, 정확히 1 km (0.01°) 격자, float32. 크기 126 × 128, NoData = NaN, deflate 압축. ／ 연구 영역 (충청권) 경도 126.70°E ~ 127.96°E, 위도 36.08°N ~ 37.36°N. 입력 일자 2024-06-15 ~ 2024-06-24 (10일). ／ 해상도 한계 — 원본 2 km 가 가진 정보 한도 안에 갇혀 있다.",
+      "lineageParents": [
+        {
+          "parentKey": "D-01",
+          "origin": "사람이 직접 연결",
+          "parentRole": "주입력",
+          "method": "이중선형보간"
+        }
+      ],
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240615_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240616_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240617_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240618_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240619_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240620_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240621_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240622_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240623_bilinear_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/02_bilinear/GK-2A_NDVI_20240624_bilinear_1km.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-05",
+      "round": 2,
+      "name": "GK-2A NDVI 1 km 충청권 — IDW",
+      "topic": "식생·NDVI",
+      "summary": "저해상도(2 km) 자료를 고해상도(1 km)로 변환하는 다운스케일링. ／ IDW (k=12, p=2) — KNN 의 1/d² 가중평균. 보조 변수 없음. 산출 특성 = 유연한 평탄화, 결측 보강. ／ GeoTIFF, EPSG:4326, 정확히 1 km (0.01°) 격자, float32. 크기 126 × 128, NoData = NaN, deflate 압축. ／ 위경도 평면 근사 — IDW 거리 계산은 위경도를 미터로 환산 (111.32 km/°). 도메인이 1° 이내라 평면 근사 오차 무시 가능.",
+      "lineageParents": [
+        {
+          "parentKey": "D-01",
+          "origin": "사람이 직접 연결",
+          "parentRole": "주입력",
+          "method": "IDW (k=12, p=2)"
+        }
+      ],
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240615_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240616_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240617_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240618_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240619_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240620_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240621_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240622_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240623_idw_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/03_idw/GK-2A_NDVI_20240624_idw_1km.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-06",
+      "round": 2,
+      "name": "GK-2A NDVI 1 km 충청권 — Co-Kriging",
+      "topic": "식생·NDVI",
+      "summary": "Co-Kriging (Regression Kriging) — NDVI–DEM 선형회귀 + 잔차 Ordinary Kriging. 보조 변수 = DEM. 산출 특성 = DEM 의 고해상도 구조 반영. ／ 엄밀한 의미의 co-kriging 이 아니라, 보조 변수(DEM)가 모든 위치에 dense 하게 존재하는 경우 동등한 Regression Kriging 으로 구현. 변동도(variogram) 적합과 행렬 계산은 pykrige 가 담당. ／ 원본 GK-2A NDVI 의 결측(구름·미관측)은 NaN 으로 전파되나, Co-Kriging 만 회귀항 (a + b·DEM) 이 모든 위치에서 정의되어 결측을 거의 채워준다. ／ 가정 — NDVI와 DEM 의 1차 선형 관계. 본 데이터의 R² ≈ 0.48 (충청권 6월). ／ 속도 vs 정확도 — source 점을 2배 thin (≈25% 사용).",
+      "lineageParents": [
+        {
+          "parentKey": "D-01",
+          "origin": "사람이 직접 연결",
+          "parentRole": "주입력",
+          "method": "Regression Kriging"
+        },
+        {
+          "parentKey": "D-02",
+          "origin": "사람이 직접 연결",
+          "parentRole": "보조입력"
+        }
+      ],
+      "files": [
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240615_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240616_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240617_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240618_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240619_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240620_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240621_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240622_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240623_cokriging_1km.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "3_KWRA_conference-20260517T141236Z-3-001/3_KWRA_conference/3_해상도변경/Output/04_cokriging/GK-2A_NDVI_20240624_cokriging_1km.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-07",
+      "round": 3,
+      "name": "HSR 레이더 합성 반사도 (Lv.0)",
+      "topic": "강우·강수",
+      "summary": "반사도 : 대기 중 강수 입자(빗방울·눈·우박 등)가 레이더 전파를 얼마나 강하게 산란하여 되돌려 보내는지를 나타내는 물리량. ／ 자료명 RDR_CMP_HSR_PUB_201907281430.bin.gz · 자료 제공처 기상청 API허브 · 자료 형식 bin · 시/공간해상도 5분 / 0.5 km · 변량 반사도. ／ 레이더는 강우량을 직접 측정하지 않고 반사도를 관측하며, 전통적으로 Z–R 관계식(Z=aR^b, Marshall–Palmer)으로 강우량을 추정한다. 고정된 Z–R 관계식만으로는 강수 유형·지형 효과·미세물리 변화 때문에 정확한 추정에 한계가 있다. ／ 레이더 반사도 자료 — U-Net Model 의 Input Data. ／ 전달 기간 = test dataset 중 일부 샘플 10개 시각.",
+      "sourceLabel": "기상청 API허브",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202005151115.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202007221045.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202106031430.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202107031745.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202207110415.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202208100500.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202307140830.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202405151930.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202407091315.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "D-08",
+      "round": 3,
+      "name": "RN15 지상 강수 (Lv.0)",
+      "topic": "강우·강수",
+      "summary": "자료명 sfc_grid_rn_15m_201907281430.nc · 자료 제공처 기상청 API허브 · 자료 형식 NetCDF4 · 시/공간해상도 5분 / 0.5 km · 변량 15분 누적 강수량. ／ 기상청 및 공공기관(산림청·농진청 등) 관측자료(AWS·해양기상부이·등표)에 지형효과를 반영한 3차원 객관분석 기법을 적용하여 생산한 분석자료. ／ 지상 강우량계 자료 — U-Net Model 의 Target Data.",
+      "sourceLabel": "기상청 API허브",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_201907281430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202005151115.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202007221045.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202106031430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202107031745.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202207110415.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202208100500.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202307140830.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202405151930.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202407091315.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_RN15.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_RN15.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "D-09",
+      "round": 4,
+      "name": "GK2A/AMI NDVI 원자료 (Lv.0)",
+      "topic": "식생·NDVI",
+      "summary": "정규식생지수 (NDVI). 근적외선(NIR)과 적색(Red) 반사율의 차이를 이용해 식생의 활력 상태를 추정하는 지수. NDVI = (NIR − Red) / (NIR + Red), 값 범위 −1 ~ 1. ／ 자료명 gk2a_ami_le2_vgt_ko_yyyymmddHHMM.nc · 자료 제공처 국가기상위성센터 (NMSC) · 자료 형식 NetCDF4 · 좌표계 Lambert Conformal Conic (LCC) · 시/공간해상도 1일 / 2 km. ／ 자료 구성 — DQF(품질 플래그) · EVI · FVC · gk2a_imager_projection(좌표계 정의) · NDVI 총 5개. ／ GK-2A(천리안 2A호) le2 식생자료이며 대상지는 한반도.",
+      "sourceLabel": "국가기상위성센터 (NMSC)",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305010000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305020000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305030000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305040000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305050000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305060000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305070000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305080000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305090000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305100000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305110000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305120000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305130000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305140000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305150000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305160000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305170000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305180000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305190000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305200000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305210000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305220000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305230000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305240000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305250000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305260000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305270000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305280000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305290000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305300000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305310000.nc",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-13",
+      "round": 6,
+      "name": "MODIS MOD15A2H FPAR/LAI 견본",
+      "topic": "식생·NDVI",
+      "summary": "원천 = 02.File-format/file_format_5_HDF5/00.Data. 파일명 규격 MOD15A2H.A{YYYYDDD}.{타일ID}.061.{생산일시}.hdf. ／ 조각 = 타일 2 종(h27v05·h28v05) × 관측일 4 종(A2019273·A2019281·A2019289·A2019297) = 8 조합 전수, 관측일 간격 8 일. ／ 포맷 = HDF4(매직 0e 03 13 01) — 폴더명 file_format_5_HDF5 와 어긋난다. ／ SDS 6 종 = Fpar_500m · Lai_500m · FparLai_QC · FparExtra_QC · FparStdDev_500m · LaiStdDev_500m. 전부 [2400, 2400] · DFNT_UINT8. ／ 좌표계 = Sinusoidal(GCTP_SNSOID), 구 반지름 6371007.181 m, GridName MOD_Grid_MOD15A2H. 격자 XDim 2400 · YDim 2400. ／ 이 8 건에 NDVI 라는 이름의 변수는 없다 — 주제값은 4 값 중 이 자료가 걸리는 칸이라는 뜻이다.",
+      "files": [
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019281.h27v05.061.2020314051728.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019281.h28v05.061.2020314051209.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019289.h27v05.061.2020315001441.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019289.h28v05.061.2020315003912.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019297.h27v05.061.2020316034423.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019297.h28v05.061.2020316041359.hdf",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "D-15",
+      "round": 6,
+      "name": "HSR 레이더 견본",
+      "topic": "강우·강수",
+      "summary": "원천 = 02.File-format/file_format_3_bin/00.Data. 파일명 규격 RDR_CMP_HSR_PUB_{YYYYMMDDhhmm}.bin.gz. ／ 기간 2025-08-13 10:00 ~ 10:55, 간격 5 분, 12 건 연속 · 결번 0. ／ 포맷 = gzip 안의 헤더 붙은 raw binary. 압축 해제 크기 12 건 전건 13,282,434 B = 1024 + 2305 × 2881 × 2. ／ 헤더 격자 필드 nx 2305 · ny 2881 · map_code 1 · dxy 500. 헤더는 3 블록이라 말하고 파일 길이는 1 블록치다. ／ 헤더 offset 36 ~ 63 이 전부 0 — 투영 파라미터 자리가 비어 있어 위경도를 파일 안에서 세울 수 없고 04.Lat_Lon_info 의 기준 격자 파일이 있어야 한다. ／ 좌표계·변수명·단위 = [미확인].",
+      "files": [
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131005.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131010.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131015.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131020.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131025.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131030.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131035.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131040.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131045.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131050.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131055.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lat_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    }
+  ]
+}

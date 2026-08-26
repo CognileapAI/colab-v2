@@ -131,6 +131,15 @@ services:
       # ⭑ 심어 둔 계정 표 (`P-17` · `kernel/auth.py`). **이것이 없으면 표가 비고
       # 인증이 필요한 모든 op 이 401 이다** — 헬스만 200 인 채로 제품 전체가 잠긴다.
       COLAB_CORE_SUBJECTS_FILE: /etc/colab/subjects.json
+      # ⭑ 세션 서명 비밀값 (`〈107〉-㉯`). **없으면 로그인이 서지 않는다** —
+      # `kernel/authn.py::build` 가 서명자를 만들지 못하고 `POST /sessions` 가 500 이다.
+      # 서명 없는 세션은 아무나 위조할 수 있으므로 기본값을 코드에도 여기에도 두지 않는다.
+      COLAB_CORE_SESSION_SECRET: ${COLAB_CORE_SESSION_SECRET:?COLAB_CORE_SESSION_SECRET 이 필요하다 — 없으면 로그인이 서지 않는다}
+      # ⭑ 자격 파일 = 계정 이름 → 주체 ＋ **scrypt 해시** (`〈108〉-㉯`). 주체 표와 갈라 둔다.
+      # 값이 없으면 비밀번호 어댑터가 서지 않고 접속 코드 경로만 남는다.
+      # ⚠ **경로가 틀리면 기동이 실패한다** — `CredentialStore.from_file` 이 없는 파일을 빈 표로
+      #    넘기지 않는다. 「비밀번호 로그인이 조용히 사라진 배포」를 만들지 않기 위해서다.
+      COLAB_CORE_CREDENTIALS_FILE: /etc/colab/credentials.json
     volumes:
       - uploads:/var/lib/colab/uploads
       # ⭑ **이것은 비밀이다.** 표의 키 문자열이 곧 베어러 토큰이라, 레포 픽스처
@@ -141,6 +150,12 @@ services:
       # 위 volume-init 이 named volume 에 하는 `chown 10001` 과 같은 일이다.
       # 레포에 절대경로를 적지 않으려고 경로를 env 로 받는다 (CLAUDE.md §3-8 · RESTART.md ②-1).
       - ${COLAB_STAGING_SUBJECTS_FILE:?COLAB_STAGING_SUBJECTS_FILE 이 필요하다}:/etc/colab/subjects.json:ro
+      # ⭑ **이것도 비밀이다.** 값은 해시뿐이라 토큰 표만큼 직접적이지 않지만, 사전 추측의
+      # 재료가 되므로 같은 규약을 쓴다 — `0600` · 소유자 uid `10001`(컨테이너 유저) · 홈 보관.
+      # ⚠ **회전은 inode 를 바꾼다.** `ops/set-password.py` 는 임시 파일 → `rename` 으로 쓰는데
+      #    파일 바인드 마운트는 **inode 에 붙는다** — 회전 뒤 컨테이너는 옛 파일을 계속 읽는다.
+      #    그래서 회전 절차에 **core-api 재기동이 포함된다**(`〈93〉-㉰` 와 같은 성질).
+      - ${COLAB_STAGING_CREDENTIALS_FILE:?COLAB_STAGING_CREDENTIALS_FILE 이 필요하다}:/etc/colab/credentials.json:ro
     depends_on:
       # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
       volume-init:

@@ -7,7 +7,7 @@
     "상한 = 데이터셋당 격자 2건(위도·경도 한 쌍, PLAN-SoT 〈58〉). 세 데이터셋 전부 2건으로 상한 내."
   ],
   "_판정": {
-    "사본_통일": "미실행. D-07 은 01.level-data 사본, D-15 는 02.File-format 사본을 각각 쓴다(Ted ④). 두 사본의 값 차이 유무는 [미확인] — 이번 회차에서 재지 않았다.",
+    "사본_통일": "**측정 완료 (2026-08-26 · Ted ③).** `D-07`(01.level-data 사본)과 `D-15`(02.File-format 사본)의 LAT·LON 은 **바이트 완전 일치**다 — 형상 (2881, 2305) float32 · 26,562,948 B · 최대 절대차 0 · 다른 원소 0/6,640,705 · lat 30.102751~43.567989 · lon 118.840202~133.553513 양쪽 동일. **통일할 차이가 없다** — 각 사본을 그대로 쓴다. 종전 `[미확인]` 해소.",
     "D-08_격자_필요": "필요. 측정 결과는 아래 _측정_D08.",
     "D-13": "격자 파일 없이 성립(HDF4 꼬리 StructMetadata 로 계산, 오차 7e-14deg). 항목 0건.",
     "제외분": "D-12(3건)·D-14(4건)·D-15 의 rdr_500m_latlon.nc(1건)·GRIB(2건)은 적재 대상 밖."
@@ -30,8 +30,14 @@
       "_격자_필요_근거": "헤더 1024B 중 투영 파라미터 자리 36~63B 가 전부 0. 문서 기재값 재현 시 위도 0.053deg(약 5.9km) 오차 — DATA-REFERENCE.md:28 · :133",
       "_사본": "01.level-data 사본을 쓴다 (Ted ④)",
       "files": [
-        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_HSR.npy", "kind": "기준 격자 파일" },
-        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_HSR.npy", "kind": "기준 격자 파일" }
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
       ]
     },
     {
@@ -40,8 +46,14 @@
       "_격자_필요_근거": "위 _측정_D08. 이번 회차 실측",
       "_사본": "01.level-data 사본 1종뿐 — 선택지 없음",
       "files": [
-        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_RN15.npy", "kind": "기준 격자 파일" },
-        { "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_RN15.npy", "kind": "기준 격자 파일" }
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_RN15.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_RN15.npy",
+          "kind": "기준 격자 파일"
+        }
       ]
     },
     {
@@ -50,8 +62,14 @@
       "_격자_필요_근거": "D-07 과 동일 포맷·동일 형상 (2881, 2305) f32 — DATA-REFERENCE.md:40-49",
       "_사본": "02.File-format 사본을 쓴다 (Ted ④). 동봉 rdr_500m_latlon.nc 는 표준위도 결손으로 제외 — DATA-REFERENCE.md:76",
       "files": [
-        { "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lat_HSR.npy", "kind": "기준 격자 파일" },
-        { "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy", "kind": "기준 격자 파일" }
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lat_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
       ]
     }
   ]
