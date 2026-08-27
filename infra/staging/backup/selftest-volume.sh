@@ -246,6 +246,106 @@ done
 if [ "$VF18" -eq 0 ]; then echo "  → 기대대로: 비밀 모양 11건 전건 적중 · 산출물 4건 오탐 0"
 else BAD=$((BAD+1)); fi
 
+# ══ 〈171〉-㉮ 최소 건수 3상태화 회귀 fixture ═════════════════════════════════
+#    어드바이저가 잡은 잔여 결함: 오라클만 3상태가 됐고 **최소 건수는 안 됐다.**
+#    새 볼륨을 `ORACLE_<볼륨>=none` 으로 **정당하게 면제**하면 V5 는 승인된 SKIP 이 되는데
+#    V6 는 조용히 합격선 1 이 되어 **파일 1건짜리 아카이브가 GREEN** 이었다.
+
+# VF19 **최소 건수 미선언 = RED.** 그리고 요약줄이 GREEN 이라 적지 않는다.
+#      오라클은 `none` 으로 **명시 면제**해 둔다 — V5 로 막히는 것이 아님을 분명히 하려는 것이다.
+#      즉 이 fixture 가 RED 인 이유는 **오직 V6** 다.
+TREE19="$W/vol19"; mkdir -p "$TREE19/fixturevol2"
+head -c 4000 /dev/urandom > "$TREE19/fixturevol2/ONE"
+make_archive "$TREE19" "$W/vol-fixturevol2-20260827T000019"
+cat > "$W/nominfiles.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_VOLBACKUP_VOLUMES="fixturevol2"
+COLAB_VOLBACKUP_ORACLE_fixturevol2=none
+CFG
+RAN=$((RAN+1)); echo "──────── VF19 최소 건수 미선언 볼륨 (오라클은 명시 면제) — V6 만으로 RED 여야 한다"
+OUT19="$(env COLAB_BACKUP_CONFIG="$W/nominfiles.env" \
+           "$HERE/verify-volume-artifact.sh" "$W/vol-fixturevol2-20260827T000019.tar.gz" \
+           --pair "$W/platform-good.sql.gz" 2>&1)"; RC19=$?
+echo "$OUT19" | sed 's/^/    /'
+if [ $RC19 -ne 0 ] \
+   && echo "$OUT19" | grep -q 'V6 볼륨' \
+   && ! echo "$OUT19" | tail -1 | grep -q 'GREEN'; then
+  echo "  → 기대대로 RED (exit $RC19) · 요약줄이 GREEN 이 아니다 · 미선언을 합격선 1 로 읽지 않았다"
+else
+  echo "  → ✗ 최소 건수 미선언이 통과했다 — 조용한 기본값 1 회귀 (〈171〉-㉮)"; BAD=$((BAD+1))
+fi
+
+# VF20 **명시 면제(none)는 요약줄에 SKIP 으로 드러난다** — 오라클 쪽 VF16 과 같은 성질.
+#      3상태가 대칭이라는 증거다. 「안 본 것」이 GREEN 안에 숨지 않는다.
+cat > "$W/noneminfiles.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_VOLBACKUP_VOLUMES="fixturevol2"
+COLAB_VOLBACKUP_ORACLE_fixturevol2=none
+COLAB_VOLBACKUP_MIN_FILES_fixturevol2=none
+CFG
+RAN=$((RAN+1)); echo "──────── VF20 최소 건수 명시 면제(none) 의 요약줄에 SKIP 건수가 실린다"
+OUT20="$(env COLAB_BACKUP_CONFIG="$W/noneminfiles.env" \
+           "$HERE/verify-volume-artifact.sh" "$W/vol-fixturevol2-20260827T000019.tar.gz" \
+           --pair "$W/platform-good.sql.gz" 2>&1)"
+if echo "$OUT20" | grep -q 'SKIP  V6' && echo "$OUT20" | tail -1 | grep -q '승인된 SKIP 2건'; then
+  echo "  → 기대대로: $(echo "$OUT20" | tail -1)"
+else
+  echo "  → ✗ 면제가 요약줄에 안 드러났다"; echo "$OUT20" | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
+# ══ 〈171〉-㉰ 이름 모양 판정기 두 자리 ═══════════════════════════════════════
+# VF21 **보관처는 그대로 넓고, 볼륨만 모양 기준이다.** 어느 한쪽도 약해지지 않았음을 값으로 박는다.
+RAN=$((RAN+1)); echo "──────── VF21 secret_shaped(보관처, 넓다) vs secret_shaped_volume(볼륨, 모양만)"
+VF21=0
+# ⑴ 모양 기준 비밀은 **두 판정기 모두** 잡는다 — 볼륨 쪽을 좁히면서 이것들을 놓치면 안 된다.
+for n in .env core.env app.envrc subjects-20260827T051347.json credentials.json \
+         COLAB_STAGING_CORE_DB_URL core-db-url.txt id_rsa server.key tls.pem; do
+  secret_shaped        "$n" || { echo "  ✗ 보관처 판정기가 못 잡았다: $n"; VF21=1; }
+  secret_shaped_volume "$n" || { echo "  ✗ 볼륨 판정기가 못 잡았다(모양 기준인데): $n"; VF21=1; }
+done
+# ⑵ 낱말만 걸리는 이름 — **보관처는 여전히 잡고**(약화 0), **볼륨은 안 잡는다**(야간 정지 회피).
+for n in station_token_map.csv secret-catchment.tif password_list.xlsx passwd-note.txt; do
+  secret_shaped        "$n" || { echo "  ✗ 보관처 판정기가 약해졌다: $n"; VF21=1; }
+  secret_shaped_volume "$n" && { echo "  ✗ 볼륨 판정기가 연구 데이터를 비밀로 오판했다: $n"; VF21=1; }
+done
+# ⑶ 산출물 이름은 어느 쪽에서도 안 잡힌다.
+for n in platform-20260827T171801.sql.gz vol-uploads-20260827T171801.tar.gz; do
+  secret_shaped "$n" && { echo "  ✗ 산출물을 비밀로 오판했다: $n"; VF21=1; }
+done
+if [ "$VF21" -eq 0 ]; then echo "  → 기대대로: 모양 10건 두 판정기 전건 적중 · 낱말 4건 보관처만 적중 · 산출물 오탐 0"
+else BAD=$((BAD+1)); fi
+
+# ══ 〈171〉-㉱ 정지가 사람에게 도달하는가 ═════════════════════════════════════
+# VF22 볼륨에 비밀 모양 파일이 있으면 **아카이브를 만들지 않는다** — 정지 판정 자체.
+#      `backup-volume.sh` 는 docker 가 필요하므로 여기서는 판정 함수와 매니페스트 경로로 같은 것을 친다.
+RAN=$((RAN+1)); echo "──────── VF22 볼륨 매니페스트에 비밀 모양이 섞이면 정지 대상으로 뽑힌다"
+printf 'uploads/DS1/F001\t10\tx\nuploads/DS1/.env\t10\tx\nuploads/DS1/station_token_map.csv\t10\tx\n' > "$W/man22.tsv"
+HIT22="$(awk -F'\t' '{print $1}' "$W/man22.tsv" | while IFS= read -r r; do
+           secret_shaped_volume "$r" && printf '%s\n' "$r"; done)"
+if [ "$HIT22" = "uploads/DS1/.env" ]; then
+  echo "  → 기대대로: 정지 대상 1건(.env) · 연구 데이터(station_token_map.csv)는 정지시키지 않는다"
+else
+  echo "  → ✗ 정지 대상 판정이 어긋났다: [$HIT22]"; BAD=$((BAD+1))
+fi
+
+# VF23 **표식이 사람에게 도달한다** — `latest-check.sh` 가 `BACKUP-FAILED.txt` 를 읽고 RED 로 만든다.
+#      1회차까지 월요일 검사는 이 표식을 **한 번도 읽지 않았다.**
+mkdir -p "$W/halt-state/staging"
+echo '2026-08-27T03:30:00+0900 backup-full.sh 실패 (exit 1)' > "$W/halt-state/BACKUP-FAILED.txt"
+cat > "$W/halt.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_BACKUP_DIR=$W/halt-state/staging
+CFG
+RAN=$((RAN+1)); echo "──────── VF23 latest-check.sh 가 야간 실패 표식을 사람이 읽을 말로 낸다"
+OUT23="$(env COLAB_BACKUP_CONFIG="$W/halt.env" "$HERE/latest-check.sh" 2>&1)"; RC23=$?
+if [ $RC23 -ne 0 ] \
+   && echo "$OUT23" | grep -q '야간 실행 표식' \
+   && echo "$OUT23" | grep -q '볼륨 안 비밀 모양 파일'; then
+  echo "  → 기대대로 RED (exit $RC23) · 표식과 조치 절차가 출력에 실렸다"
+else
+  echo "  → ✗ 표식이 월요일 검사에 도달하지 않았다"; echo "$OUT23" | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then
   echo "볼륨 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로 RED"

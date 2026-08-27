@@ -134,6 +134,44 @@ else
   echo "──────── F8 건너뜀 — docker 없음. 이 fixture 는 실행되지 않았다(증명 미완)"; BAD=$((BAD+1))
 fi
 
+# ══ 〈171〉-㉯ 조용한 기본값 스윕에서 나온 형제 결함 ═══════════════════════════
+# F10 **프로파일 합격선 미선언 = RED.** 종전에는 전역 `COLAB_BACKUP_MIN_ROWS=1` 로 조용히
+#     떨어져 「행 1건이면 통과」가 붙었다 — `volume_min_files` 의 조용한 `1` 과 같은 모양이다.
+mkdir -p "$W/newprofile"
+cat > "$W/newprofile.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_BACKUP_PROFILES="brandnew"
+COLAB_BACKUP_DB_brandnew=colab_brandnew
+COLAB_BACKUP_DIR=$W/newprofile
+CFG
+RAN=$((RAN+1)); echo "──────── F10 합격선 미선언 프로파일 — 전역 기본값 1 로 떨어지지 않는다"
+OUT10="$(env COLAB_BACKUP_CONFIG="$W/newprofile.env" \
+           COLAB_BACKUP_MIN_TABLES="$(. "$HERE/lib.sh"; load_config; profile_min_tables brandnew)" \
+           COLAB_BACKUP_MIN_ROWS="$(. "$HERE/lib.sh"; load_config; profile_min_rows brandnew)" \
+           "$HERE/verify-artifact.sh" "$GOOD" 2>&1)"; RC10=$?
+echo "$OUT10" | sed 's/^/    /'
+if [ $RC10 -ne 0 ] && echo "$OUT10" | grep -q 'C0 합격선'; then
+  echo "  → 기대대로 RED (exit $RC10) — 선언 없는 합격선을 기본값으로 메우지 않았다"
+else
+  echo "  → ✗ 합격선 없이 통과했다 — 조용한 기본값 1 회귀 (〈171〉-㉯)"; BAD=$((BAD+1))
+fi
+
+# F11 **선언된 프로파일은 코드가 쥔 값으로 돈다** — 홈 env 파일에 키가 없어도 190·45 다.
+#     `〈170〉-㉮ ⑴`(「손으로 켠 GREEN 은 기구가 아니다」)을 원장 쪽에도 세운 것이다.
+RAN=$((RAN+1)); echo "──────── F11 설정에 프로파일 합격선이 없어도 platform 190 · ai 45 로 돈다"
+cat > "$W/nofloor.env" <<'CFG'
+COLAB_BACKUP_TARGET=postgres
+CFG
+F11="$( COLAB_BACKUP_CONFIG="$W/nofloor.env"; export COLAB_BACKUP_CONFIG
+        . "$HERE/lib.sh"; load_config
+        printf '%s %s %s %s' "$(profile_min_rows platform)" "$(profile_min_tables platform)" \
+                             "$(profile_min_rows ai)" "$(profile_min_tables ai)" )"
+if [ "$F11" = "190 20 45 4" ]; then
+  echo "  → 기대대로: platform 190/20 · ai 45/4 (값이 코드에 있다)"
+else
+  echo "  → ✗ 합격선이 코드에 없다: [$F11]"; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then
   echo "셀프테스트 GREEN — fixture $RAN 건 전부 기대대로 RED"

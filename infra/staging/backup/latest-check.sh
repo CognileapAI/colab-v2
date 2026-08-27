@@ -33,6 +33,24 @@ for V in $(volume_list); do
   "$HERE/verify-volume-artifact.sh" "$LATEST" || BAD=$((BAD+1))
 done
 
+# ── 야간 실행 표식 — **정지가 사람에게 도달하는 자리** (〈171〉-㉱).
+#    `run-scheduled.sh` 는 실패하면 `BACKUP-FAILED.txt` 를 남기고 **다음 성공에서만** 지운다.
+#    그런데 월요일 검사가 그 표식을 **한 번도 읽지 않고 있었다** — 표식은 「가서 봐야 보이는」 자리인데
+#    「가서 보는」 유일한 기구가 그것을 안 봤다. 볼륨 백업이 비밀 모양 파일로 정지하면
+#    (`backup-volume.sh` ①-b) 산출물이 안 생기는데, 보존 규칙이 **가장 최신 1개를 안 지우므로**
+#    옛 아카이브가 남아 있고, 그때 사람에게 닿는 것은 V7 신선도 RED 뿐이었다 —
+#    「옛 잔존 파일이다」라고만 적혀 **왜 멈췄는지가 안 보였다.** 그래서 표식을 여기서 읽는다.
+STATE="$(dirname "$COLAB_BACKUP_DIR")"
+if [ -f "$STATE/BACKUP-FAILED.txt" ]; then
+  echo "──────── 야간 실행 표식 (BACKUP-FAILED.txt)"
+  sed 's/^/  ⛔ /' "$STATE/BACKUP-FAILED.txt"
+  echo "  ⛔ 야간 백업이 **실패한 채로 남아 있다.** 이 표식은 다음 성공에서만 사라진다."
+  echo "     흔한 원인 하나 — **볼륨 안 비밀 모양 파일**(〈170〉-㉰): 그 볼륨은 아카이브가 통째로 안 만들어진다."
+  echo "     조치: staging-backup.log 에서 '⛔' 줄의 파일 이름을 찾아 볼륨에서 치우고 backup-full.sh 를 다시 돌린다."
+  echo "     절차 전문 = README 「볼륨 백업이 정지했을 때」 · ../restore/RUNBOOK.md §9"
+  BAD=$((BAD+1))
+fi
+
 # ── 보관처 위생 — 비밀 사본이 흘러들었는지 정기적으로 되묻는다 (〈170〉-㉰).
 OFF="$(backup_dir_offenders)"
 if [ -n "$OFF" ]; then

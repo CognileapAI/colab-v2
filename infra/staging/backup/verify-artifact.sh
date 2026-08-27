@@ -18,7 +18,22 @@ SKIP_AGE=0
 [ -n "$FILE" ] || { echo "사용: verify-artifact.sh <파일.sql.gz> [--skip-age]" >&2; exit 2; }
 
 FAILED=0; SKIPPED=0
-echo "검사 대상: $(basename "$FILE")"
+echo "검사 대상: $(basename "$FILE")  (합격선 — 테이블 $COLAB_BACKUP_MIN_TABLES · 행 $COLAB_BACKUP_MIN_ROWS)"
+
+# ── C0 합격선 자체가 선언돼 있는가 (`〈171〉-㉯`) ──────────────────────────────
+# 합격선이 없으면 C4·C5 는 **아무것도 막지 못한다.** 종전에는 프로파일에 선언이 없으면
+# 전역 `COLAB_BACKUP_MIN_ROWS=1` 로 조용히 떨어져 「행 1건이면 통과」가 붙었다 —
+# `volume_min_files` 의 조용한 `1` 과 같은 모양이다. 값이 숫자가 아니면 **여기서 선다.**
+FLOOR_BAD=0
+for _fl in COLAB_BACKUP_MIN_TABLES COLAB_BACKUP_MIN_ROWS; do
+  eval "_fv=\"\${$_fl}\""
+  printf '%s' "$_fv" | grep -qE '^[0-9]+$' || {
+    fail "C0 합격선 $_fl 이 숫자가 아니다 ($_fv) — 선언 없는 합격선을 기본값으로 메우지 않는다"
+    FLOOR_BAD=1
+  }
+done
+if [ "$FLOOR_BAD" -eq 0 ]; then pass "C0 합격선 선언 (테이블 $COLAB_BACKUP_MIN_TABLES · 행 $COLAB_BACKUP_MIN_ROWS)"
+else echo "결과: RED (실패 ${FAILED}건)"; exit 1; fi
 
 # C1 존재 · 최소 크기 (빈 gzip 은 20바이트다 — 1KiB 를 밑돌면 즉시 red)
 if [ ! -f "$FILE" ]; then

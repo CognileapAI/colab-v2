@@ -97,13 +97,18 @@ backup_one_volume() { # $1=볼륨
   #    조용히 제외하면 아카이브와 원장이 어긋나 오라클이 거짓 RED 를 내고, 그 RED 를 사람이
   #    「원래 그렇다」로 읽게 된다. 그래서 **제외가 아니라 실패**다 — 볼륨에 비밀이 들어간 것 자체가 사고다.
   #    ⚠ 이름만 본다. 내용은 열지 않는다.
+  #    ⚠ 판정기는 **볼륨용**(`secret_shaped_volume`)이다 — 보관처용보다 좁다. 근거는 `lib.sh` 주석
+  #      (`〈171〉-㉰`): 여기 이름은 **연구자가** 짓고, 오탐 하나가 곧 **야간 백업 정지**다.
   local SEC
   SEC="$(awk -F'\t' '{print $1}' "$TMPMAN" | while IFS= read -r rel; do
-           secret_shaped "$rel" && printf '%s\n' "$rel"; done)"
+           secret_shaped_volume "$rel" && printf '%s\n' "$rel"; done)"
   if [ -n "$SEC" ]; then
     log "[$V] 볼륨 안에 **비밀 모양 파일**이 있다 — 아카이브를 만들지 않는다 (〈163〉-㉲ 비밀 7종 미백업)"
     printf '%s\n' "$SEC" | while IFS= read -r r; do log "  ⛔ $r"; done
     log "     값은 읽지 않았다. 볼륨에서 치운 뒤 다시 돌린다."
+    log "     ⚠ **이 볼륨의 아카이브는 이번 회차에 만들어지지 않는다.** 야간 실행이면 표식 파일"
+    log "       BACKUP-FAILED.txt 가 남고, 월요일 latest-check.sh 가 그 표식과 볼륨 신선도로 같은 사실을 다시 묻는다."
+    log "       (조치 절차 = README 「볼륨 백업이 정지했을 때」 · ../restore/RUNBOOK.md §9)"
     return 1
   fi
 

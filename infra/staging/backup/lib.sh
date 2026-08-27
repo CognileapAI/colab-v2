@@ -41,11 +41,32 @@ verdict() { # $1=대상 이름(요약줄 앞머리)
 #   ⑴ 이름 규약 (`backup_dir_offenders`) — 보관처에는 **산출물만** 있어야 한다.
 #      규약에 안 맞는 파일이 하나라도 있으면 RED. 배제 목록이 아니라 **허용 목록**이라,
 #      「아직 생각 못 한 모양의 비밀」도 걸린다. 배제 목록은 언제나 뒤늦다.
-#   ⑵ 이름 모양 (`secret_shaped`) — 볼륨 트리처럼 허용 목록을 못 쓰는 자리에서 쓴다.
+#   ⑵ 이름 모양 (`secret_shaped*`) — 볼륨 트리처럼 허용 목록을 못 쓰는 자리에서 쓴다.
 #
 # ⚠ **값을 절대 읽지도 찍지도 않는다.** 이름과 건수만 다룬다 (`〈121〉-㉰` 계열).
+#
+# ── 판정기가 **둘**인 이유 (`PLAN-SoT §9 〈171〉-㉰` · 2026-08-27) ─────────────
+# 두 자리는 **누가 이름을 짓는가**가 다르고, 그래서 오탐의 값이 다르다.
+#
+#   · **보관처**(`secret_shaped`) — 이름을 **기계가** 짓는다. 규약이 닫혀 있어(`backup_dir_offenders`)
+#     낱말이 하나라도 걸리면 그것은 진짜 이상 신호다. **오탐 비용이 사실상 0** 이므로 **최대로 넓게** 잡는다.
+#     실제 비밀 사본이 떨어질 자리도 여기다(`R-1` 1회차의 `subjects-*.json`). **여기는 절대 좁히지 않는다.**
+#   · **볼륨 트리**(`secret_shaped_volume`) — 이름을 **연구자가** 짓는다. `uploads` 는 사용자가 올린
+#     연구 데이터이고, 수문 관측 자료에 `station_token_map.csv` 같은 이름은 **정상적으로 온다.**
+#     그런데 여기서 걸리면 `〈170〉-㉰` 판정에 따라 **그 볼륨의 야간 백업이 통째로 선다** —
+#     오탐 하나가 백업 정지다. 그래서 **낱말(`*token*`·`*secret*`·`*password*`)을 뺀다.**
+#
+# ⭑ 뺀 것과 남긴 것의 기준 = **낱말인가 모양인가.** 진짜 비밀이 볼륨에 흘러드는 경로는 어휘가 아니라
+#   **꼴**을 갖는다 — 확장자(`.env`·`.pem`·`.key`·`.envrc`) · 알려진 고정 이름(`id_rsa`·`credentials*`·
+#   `subjects*`) · 접속 문자열 키(`*_DB_URL*`). 그 셋은 연구 데이터 파일명으로 거의 나오지 않는다.
+#   반대로 `token`·`secret`·`password` 는 **관측 지점표·설정 표에 흔한 낱말**이고, 잡아 봐야
+#   비밀이 아닐 확률이 압도적이다. **좁힌 것이 아니라 자리를 나눈 것이다** — 보관처 쪽은 그대로다.
+# ⚠ **남는 위험을 적어 둔다.** 볼륨에 `api-token.txt` 라는 **진짜** 비밀이 놓이면 볼륨 판정기는 못 잡는다.
+#   그 경우 아카이브에 들어간다. 대신 그 파일은 **보관처로 복사되지 않으므로** ⑴ 이 여전히 유효하고,
+#   `uploads` 볼륨에 비밀을 두는 것 자체는 접수 경로가 만들지 않는 상태다(사람이 손으로 넣어야 한다).
+#   **정지를 사람이 못 보는 위험**(README 「볼륨 백업이 정지했을 때」)이 이 위험보다 컸다는 것이 판단이다.
 
-# 비밀 7종과 그 이웃의 이름 모양. 하나라도 맞으면 비밀 취급한다.
+# 보관처용 — **최대로 넓다.** 낱말까지 잡는다. 좁히지 않는다.
 secret_shaped() { # $1=경로(또는 파일명) → 0 = 비밀 모양이다
   local b; b="$(basename "$1")"
   case "$b" in
@@ -53,6 +74,19 @@ secret_shaped() { # $1=경로(또는 파일명) → 0 = 비밀 모양이다
     *.env|.env|.env.*|*.envrc)                                  return 0 ;;
     *_DB_URL*|*db-url*|*db_url*|*DB-URL*)                       return 0 ;;
     *token*|*secret*|*password*|*passwd*|*.pem|*.key|id_rsa*)   return 0 ;;
+  esac
+  return 1
+}
+
+# 볼륨 트리용 — **모양만.** 낱말 넷(`token`·`secret`·`password`·`passwd`)을 빼고,
+# 확장자·고정 이름·접속 문자열 키는 **보관처와 똑같이** 잡는다.
+secret_shaped_volume() { # $1=볼륨 안 상대 경로 → 0 = 비밀 모양이다
+  local b; b="$(basename "$1")"
+  case "$b" in
+    subjects*|*subjects*.json|credentials*|*credentials*.json) return 0 ;;
+    *.env|.env|.env.*|*.envrc)                                  return 0 ;;
+    *_DB_URL*|*db-url*|*db_url*|*DB-URL*)                       return 0 ;;
+    *.pem|*.key|id_rsa*)                                        return 0 ;;
   esac
   return 1
 }
@@ -83,6 +117,14 @@ load_config() {
   : "${COLAB_BACKUP_DIR:=$HOME/colab-v2-backups/staging}"
   : "${COLAB_BACKUP_MIN_TABLES:=20}"
   : "${COLAB_BACKUP_MIN_ROWS:=1}"
+  # ⭐ **프로파일 합격선도 코드가 쥔다** (`〈171〉-㉯` · 조용한 기본값 스윕에서 나온 형제 결함).
+  #   종전에는 `COLAB_BACKUP_MIN_ROWS_<p>` 가 실 설정(홈 env 파일)에만 있었고, 없으면
+  #   **조용히 전역 `1`** 로 떨어졌다 — `〈170〉-㉮ ⑴` 이 볼륨 오라클에서 없앤 것과 **같은 배선**이다.
+  #   실측(staging 2026-08-27 · platform 381행 · ai 91행)의 절반을 여기 박는다(`〈128〉`·`〈144〉`).
+  : "${COLAB_BACKUP_MIN_TABLES_platform:=20}"
+  : "${COLAB_BACKUP_MIN_ROWS_platform:=190}"
+  : "${COLAB_BACKUP_MIN_TABLES_ai:=4}"
+  : "${COLAB_BACKUP_MIN_ROWS_ai:=45}"
   : "${COLAB_BACKUP_MAX_AGE_MIN:=1500}"
   : "${COLAB_BACKUP_RETENTION_DAYS:=14}"
 }
@@ -97,5 +139,12 @@ backup_profiles() {
 }
 _pvar() { local n="$1"; eval "printf '%s' \"\${$n:-}\""; }
 profile_db()         { local v; v="$(_pvar "COLAB_BACKUP_DB_$1")";         [ -n "$v" ] && printf '%s' "$v" || printf '%s' "${COLAB_BACKUP_PG_DB:-}"; }
-profile_min_tables() { local v; v="$(_pvar "COLAB_BACKUP_MIN_TABLES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$COLAB_BACKUP_MIN_TABLES"; }
-profile_min_rows()   { local v; v="$(_pvar "COLAB_BACKUP_MIN_ROWS_$1")";   [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$COLAB_BACKUP_MIN_ROWS"; }
+# ⚠ **미선언은 전역 기본값으로 떨어지지 않는다** (`〈171〉-㉯`). 전역 `COLAB_BACKUP_MIN_ROWS` 는 `1` 이라,
+#   새 프로파일을 하나 추가하면 「행 1건이면 통과」가 조용히 붙었다 — `volume_min_files` 의 `1` 과 같은 모양이다.
+#   이제 미선언은 `미선언` 이라는 **숫자가 아닌 값**을 돌려주고, `verify-artifact.sh` 의 합격선 검사(C0)가 RED 를 낸다.
+#   호출처가 넷(`backup.sh`·`latest-check.sh`·`restore-rehearsal.sh`·`../restore/preflight.sh`)이라
+#   **판정을 소비처 한 곳에 모았다** — 넷에 같은 가드를 흩으면 그중 하나가 언젠가 빠진다.
+#   ⚠ 전역 `COLAB_BACKUP_MIN_TABLES`/`_MIN_ROWS` 자체는 **그대로 둔다.** `verify-artifact.sh` 를 손으로
+#     한 파일에 대고 돌릴 때 쓰는 값이고, 그쪽을 없애는 것은 기존 검사를 줄이는 일이다.
+profile_min_tables() { local v; v="$(_pvar "COLAB_BACKUP_MIN_TABLES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }
+profile_min_rows()   { local v; v="$(_pvar "COLAB_BACKUP_MIN_ROWS_$1")";   [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }

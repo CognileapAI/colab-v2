@@ -44,7 +44,7 @@ MINFILES="$(volume_min_files "$VOL")"
 ORACLE="$(volume_oracle "$VOL")"
 
 FAILED=0; SKIPPED=0
-echo "검사 대상: $(basename "$ART")  (볼륨 $VOL · 최소 건수 $MINFILES · 오라클 ${ORACLE:-없음})"
+echo "검사 대상: $(basename "$ART")  (볼륨 $VOL · 최소 건수 ${MINFILES:-미선언} · 오라클 ${ORACLE:-미선언})"
 
 # ── V1 존재 · 최소 크기 ──────────────────────────────────────────────────────
 if [ ! -f "$ART" ]; then
@@ -166,8 +166,21 @@ else
   fi
 fi
 
-# ── V6 최소 건수 (볼륨별 합격선) ─────────────────────────────────────────────
-if [ "$NTAR" -ge "$MINFILES" ]; then pass "V6 파일 ${NTAR}건 (>= $MINFILES)"; else fail "V6 파일 ${NTAR}건 < $MINFILES — 거의 빈 아카이브다"; fi
+# ── V6 최소 건수 (볼륨별 합격선) — **오라클과 같은 세 상태다** (`〈171〉-㉮`) ─────
+# 종전에는 미선언이 **조용히 합격선 1** 이 됐다. `〈170〉-㉳` 의 「기본 1 이던 것이 결손 12」와
+# 같은 모양이고, `ORACLE_<볼륨>=none` 이라는 **정당한 면제** 하나만으로 되돌아온다 —
+# V5 는 승인된 SKIP, V6 는 합격선 1. 그래서 두 선언을 대칭으로 맞춘다.
+if [ -z "$MINFILES" ]; then
+  fail "V6 볼륨 \`$VOL\` 에 최소 건수 선언이 없다 (COLAB_VOLBACKUP_MIN_FILES_$VOL). 합격선을 두지 않으려면 값을 \`none\` 으로 **명시**한다 — 미선언을 합격선 1 로 읽지 않는다"
+elif [ "$MINFILES" = "none" ]; then
+  skip_ack "V6 최소 건수 명시 면제(none) — 이 볼륨엔 합격선을 두지 않기로 사람이 적었다. **건수를 안 본 채 통과했다**"
+elif ! printf '%s' "$MINFILES" | grep -qE '^[0-9]+$'; then
+  fail "V6 최소 건수 선언이 숫자가 아니다 ($MINFILES) — 값을 지어내지 않는다"
+elif [ "$NTAR" -ge "$MINFILES" ]; then
+  pass "V6 파일 ${NTAR}건 (>= $MINFILES)"
+else
+  fail "V6 파일 ${NTAR}건 < $MINFILES — 거의 빈 아카이브다"
+fi
 
 # ── V7 신선도 ────────────────────────────────────────────────────────────────
 if [ "$SKIP_AGE" -eq 1 ]; then
