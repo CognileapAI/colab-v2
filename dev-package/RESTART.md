@@ -17,6 +17,7 @@
 | **staging 컨테이너 8개** | **안 뜬다** | `restart=unless-stopped` 이지만 **도커 데몬이 자동 기동하지 않는다** |
 | **검증용 일회용 DB** (`p1_pg` 등) | **죽는다** | tmpfs. 일회용이므로 다시 만든다 |
 | **서브에이전트** | **죽는다** | 그래서 **레인이 끝난 뒤에** 재시작한다 |
+| **Remote Control 세션** | **죽는다** | RC 서버 프로세스가 WSL 과 함께 접힌다. 세션은 `offline` 로 남고 **약 4시간 뒤 되살릴 수 없다**(`§2-⑤`) |
 
 ---
 
@@ -130,6 +131,35 @@ cd services/core-api && CONTAINER=<레인>_pg APP_PASSWORD=<임시> tests/fixtur
 > `could not change permissions of directory` 로 죽는다. `postgres:16-alpine` 을 쓴다(staging 과 같은 이미지).
 > **호스트 포트를 공개하지 않는다** — 컨테이너 IP 로만 붙는다.
 
+### ⑤ Remote Control 다시 띄우기 — **시한이 있다**
+
+**staging 이 안 뜨는 것과 뿌리가 같다.** WSL2 가 접히면 안에서 돌던 장기 연결이 조용히 끊기고,
+`claude remote-control` **서버 프로세스가 사라진다.** 세션은 개별로 끊긴 것이 아니라 **물고 있던 서버가 없어진 것**이라,
+남아 있던 RC 세션이 **한꺼번에 `offline`** 이 된다.
+
+**먼저 무엇이 죽었는지 가른다.**
+
+```
+ps aux | grep '[c]laude remote-control'    # 0 이면 서버가 죽었다
+ping -c 2 api.anthropic.com                # 닿으면 네트워크·인증 문제가 아니다
+```
+
+| 실측 | 뜻 | 할 일 |
+|---|---|---|
+| 서버 프로세스 **있다** | 링크만 끊겼다 | 해당 세션에서 `/remote-control` |
+| 서버 프로세스 **0** | 서버가 죽었다 | **아래로 다시 띄운다.** `/remote-control` 로는 안 된다 |
+
+```
+claude remote-control --continue           # 마지막 세션을 잇는다
+claude remote-control --session-id <id>    # 특정 세션을 집는다
+```
+
+> ⚠ **그 세션이 원래 돌던 디렉터리에서 돌린다.** 워크트리에서 돌리면 다른 세션이 뜬다.
+> ⚠ **끊긴 뒤 약 4시간 안에만 되살아난다.** 그 뒤에는 새 세션만 열린다 — **호스트를 되살릴 때 같이 한다.**
+> ⚠ `/remote-control` 은 **살아 있는 프로세스를 재연결하는 명령**이다. 죽은 서버를 되살리지 않는다.
+
+**확인** — 풋터에 `/rc active` 가 뜨면 붙은 것이다. 실패하면 `/remote-control` 이 이유를 찍는다.
+
 ---
 
 ## 3. 그다음
@@ -155,5 +185,6 @@ cd services/core-api && CONTAINER=<레인>_pg APP_PASSWORD=<임시> tests/fixtur
 - [ ] 원격에 **푸시됐는가** (`git status -sb` 에 ahead 없음)
 - [ ] `03-HANDOFF` 가 **갱신됐는가** (`CLAUDE.md §6` 세션 종료 규약)
 - [ ] 일회용 컨테이너를 **지웠는가** (`docker ps -a` 에 `*_pg` 잔재)
+- [ ] **살려 둘 Remote Control 세션이 있는가** — 있다면 세션 id 를 적어 둔다. 껐다 켠 뒤 **4시간**이 시한이고, 그 안에 `--session-id` 로 집어야 이어진다(`§2-⑤`)
 
 > 갱신하지 않고 끝낸 세션은 다음 세션의 시간을 두 배로 쓰게 만든다.
