@@ -1,0 +1,269 @@
+# WU-R-1 — 살아 있는 staging 제자리 복원 절차 (초안)
+
+> **이 문서는 초안이고, 집행 기록이 아니다.** 여기 적힌 어떤 명령도 이 세션에서 실행하지 않았다.
+> 판정·등재는 `PLAN-SoT §9` 소관이고 여기는 **절차와 그 근거**만 담는다.
+>
+> 세우는 이유 = **백업은 있는데 되돌리는 절차가 없다**(`STAGE2-PREP §6`). 복원 리허설은
+> **일회용 인스턴스 전용**이고(`infra/staging/backup/restore-rehearsal.sh` 머리말),
+> 실사고가 나면 복원 명령을 사람이 그 자리에서 조립해야 한다. `X-1`·`X-4` 재기동의 전제조건이다
+> (`WORK-UNITS §10.2` · `PLAN-SoT §9 〈158〉-㉯`).
+
+---
+
+## 1. 지금 있는 기구 — 무엇을 하고 무엇을 안 하는가
+
+`infra/staging/backup/` 아래 12개 파일. **전부 「뜨는 쪽」과 「일회용에 되살리는 쪽」이고,
+살아 있는 대상에 되쓰는 쪽은 하나도 없다.**
+
+| 파일 | 하는 일 | 살아 있는 staging 에 쓰는가 |
+|---|---|---|
+| `backup.sh` | 프로파일 루프 덤프. 임시파일 → `PIPESTATUS` → 검사 통과분만 최종본 | **읽기만**(`docker exec … pg_dump`) |
+| `verify-artifact.sh` | 산출물 검사 C1~C6 — fail-closed 의 본체 | 아니오 |
+| `verify-restore.sh` | 복원 **결과** 검사 — 테이블 수 · 테이블별 행 수 · 총 행 수 | 아니오 |
+| `roundtrip.sh` | 씨앗 → 백업 → 파괴 → 복원 왕복(`d1_*` 일회용) | 아니오 |
+| `restore-rehearsal.sh` | **실 staging 백업**을 `is3_pg_*` 일회용에 복원 · 원본과 대조 | **읽기만** |
+| `selftest.sh` | fixture 11건이 전부 RED 임을 강제 | 아니오 |
+| `latest-check.sh` · `run-scheduled.sh` · `schedule.crontab` · `install-schedule.sh` | 스케줄·침묵 감지 | 아니오 |
+| `lib.sh` · `config.example.env` | 설정 로드 · 프로파일 조회 | — |
+
+⚠ **`restore-rehearsal.sh` 를 살아 있는 staging 에 겨누는 개조로 이 WU 를 때우지 않는다.**
+그 스크립트의 안전성이 「대상이 언제나 방금 만든 빈 일회용 인스턴스」라는 전제 위에 서 있다 —
+전제를 빼면 남는 건 `gunzip | psql` 한 줄이고, 그건 절차가 아니다.
+
+### 산출물 — 어디에 · 어떤 이름으로
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| 보관처 | 홈 아래 `colab-v2-backups/staging/` (`COLAB_BACKUP_DIR` 기본값) | `lib.sh` `load_config` |
+| 이름 | `<프로파일>-<YYYYMMDDTHHMMSS>.sql.gz` ＋ 같은 이름 `.sha256` | `backup.sh` `backup_one` |
+| 프로파일 | `platform`(`colab_platform`) · `ai`(`colab_ai`) | `COLAB_BACKUP_PROFILES` |
+| 형식 | `pg_dump --no-owner --no-privileges` **평문 SQL** ＋ gzip | 〃 |
+| 보존 | `COLAB_BACKUP_RETENTION_DAYS=14`. **프로파일별 최신 1개는 어떤 경우에도 안 지운다** | 〃 |
+| 설정 실값 | 홈의 `.colab-v2-staging-backup.env`(`0600`) — 레포 밖 | `IS3 §7` |
+
+### GREEN 이 실제로 보증하는 것 / 보증하지 않는 것
+
+`verify-artifact.sh` 의 GREEN 은 **여섯 항목의 논리곱**이다.
+
+| | 검사 | 보증 |
+|---|---|---|
+| C1 | 파일 존재 · ≥ 1024 B | 0바이트·20바이트 빈 gzip 아님 |
+| C2 | `gzip -t` | 절단·손상 아님 |
+| C3 | 해제 후 바이트 > 0 | 압축은 멀쩡한데 알맹이가 0 인 상태 아님 |
+| C4 | `CREATE TABLE` ≥ 프로파일 합격선(platform 20 · ai 4) | 스키마 없음·중간 절단 아님 |
+| C5 | 데이터 행 ≥ 합격선(platform 190 · ai 45 — **실측의 절반**) | 거의 빈 덤프 아님 |
+| C6 | mtime 신선도 ≤ 1500분 | 옛 성공본이 오늘 백업으로 오독되지 않음 |
+
+**GREEN 이 말하지 않는 것 — 이쪽이 복원 절차에 더 중요하다.**
+
+1. **복원 가능성을 시험하지 않았다.** C1~C6 은 파일을 **읽어 센 것**이지 `psql` 에 먹여 본 것이 아니다.
+   실제 적재 시험은 `restore-rehearsal.sh` 쪽이고 그건 백업과 **다른 실행**이다.
+2. **행 수는 세지만 값의 정합은 안 본다.** 「행 수는 같은데 값이 뒤바뀐 덤프」는 C5 를 통과한다.
+   내용 대조(md5 다이제스트)는 `restore-rehearsal.sh` 의 ④ 단계에만 있다.
+3. **행 수 세기가 근사다.** `awk` 로 `COPY … FROM stdin;` 블록 안의 줄과 `INSERT INTO` 를 센다 —
+   본문에 `\.` 이나 `CREATE TABLE` 로 시작하는 텍스트 값이 있으면 어긋난다.
+4. **두 프로파일의 시점 일치를 보증하지 않는다.** `platform` 과 `ai` 는 **서로 다른 덤프**이고
+   `backup.sh` 가 순차로 뜬다(`IS3 §8` 실측 8초 차). 원자적 스냅숏이 아니다.
+5. **`sha256` 은 만들 뿐 검증 경로가 없다.** 어떤 스크립트도 복원 전에 이 값을 다시 대조하지 않는다.
+
+---
+
+## 2. 백업되는 것 / 안 되는 것 — 전면 복원에 필요한 목록 대조
+
+| # | 전면 복원에 필요한 것 | 판정 | 근거 |
+|---|---|---|---|
+| 1 | **`colab_platform` DB** | **백업됨** | `COLAB_BACKUP_DB_platform` 프로파일. `IS3 §13` 실측 23테이블·381행 |
+| 2 | **`colab_ai` DB** (온톨로지 사전 3종 ＋ 개념 그래프 2표) | **백업됨** | `ai` 프로파일. `IS3 §13` 실측 6테이블·91행 |
+| 3 | **업로드 원본** (`/var/lib/colab/uploads` = named volume `colab-v2-staging_uploads`) | **백업 안 됨** | `IS3 §5-2`·`§12-3` 이 명시적으로 남긴 것. `compose.i2.yml` `volumes: uploads: {}` (프로젝트명 `colab-v2-staging`) |
+| 4 | **미리보기 산출물** (`/srv/viz-previews` = `colab-v2-staging_previews`) | **백업 안 됨** | 같은 이유. ⚠ **재생성 가능하지만 재생성이 원본(#3)에 의존한다** |
+| 5 | **`credentials.json`** (`COLAB_STAGING_CREDENTIALS_FILE`) | **백업 안 됨** | 홈의 `0600` 파일. 백업 대상 목록 어디에도 없다. ⚠ **`d1_account` 행과 짝이라 DB 만 되돌리면 로그인 상태가 갈린다** |
+| 6 | **`subjects.json`** (`COLAB_STAGING_SUBJECTS_FILE`) | **백업 안 됨** | 〃. **그 안의 키 문자열이 곧 베어러 토큰**이다(`RESTART §2-1`) |
+| 7 | **`COLAB_STAGING_*_DB_URL_FILE` 5종 파일** | **백업 안 됨** | 홈의 `0600` 파일 5개. 없으면 `:?` 로 컨테이너가 **아예 안 뜬다** |
+| 8 | **env 파일** (`--env-file` 이 가리키는 홈의 `0600` 파일) | **백업 안 됨** | staging 의 모든 비밀을 쥔 파일. 백업 대상 아님 |
+| 9 | **이미지 태그·digest** (`colab-v2/*:i2` 5종) | **백업 안 됨 · 기록도 없다** | `compose.i2.yml` 이 태그만 고정한다. **`:i2` 는 움직이는 태그**이고 digest 를 적어 둔 파일이 레포에 없다 |
+| 10 | **PGDATA 자체** (`COLAB_STAGING_PGDATA_DIR` 바인드) | **백업 안 됨**(논리 덤프로 대체) | 물리 백업 없음 — PITR·WAL 아카이빙 없다 |
+| 11 | **알렘빅 리비전 상태** | **백업됨**(#1·#2 안) | `alembic_version_platform` · `alembic_version_ai` 가 덤프에 포함 |
+| 12 | **터널·DNS·terraform state** | **[미확인]** — 이 WU 의 범위 밖 | `RESTART §1` 상 재시작에는 살아남는다. **호스트 소실 시나리오는 재지 않았다** |
+| 13 | **오프호스트 사본** | **없음** | `IS3 §5-4` — 백업이 원본과 **같은 WSL2 머신 1대** 위에 있다 |
+
+**요약 — 백업은 원장 두 개뿐이다.** 3·5·6·7·8·9 여섯이 비어 있고, 그중 **5·6·7·8 은 없으면 기동 자체가 안 되며**,
+**3 은 없으면 기동은 되는데 제품이 빈 껍데기가 된다**(파일 129건의 바이트가 사라진다).
+
+⚠ **가장 조용한 결손은 #9 다.** `〈153〉` 때 배선만 바꾸고 옛 이미지로 올렸더니 **ai-service 만 healthy** 였고
+사전 DB 가 `None` 으로 조용히 비었다(`STAGE2-PREP §3`). 복원 뒤 **어느 이미지로 올렸는지 대조할 기준이 없다**는 뜻이다.
+
+---
+
+## 3. 제자리 복원이 실제로 요구하는 것 — 제약 다섯
+
+| # | 제약 | 어기면 |
+|---|---|---|
+| ㉮ | **`-f infra/staging/compose.i2.yml` 을 반드시 붙인다** | 기본값 `compose.yml`(자리표시 오리진)이 떠 **조용히 I2 이전으로 롤백**된다. 그 상태에서도 **루트 헬스는 200** 이다(`RESTART §2-②`) |
+| ㉯ | **`COLAB_STAGING_*_DB_URL_FILE` 5키가 있어야 한다** | `:?` 로 `up` 이 아예 안 뜬다. 뒤 둘(`PLATFORM_OWNER`·`AI_OWNER`)은 `--profile migrate` 전용이지만 **없으면 마이그레이션이 안 돈다** |
+| ㉰ | **`credentials.json`·`subjects.json` 은 읽기 전용 바인드 · inode 에 붙는다** | 새 파일 생성 후 `mv` 하면 컨테이너가 **옛 파일을 계속 읽는다.** **제자리 덮어쓰기 ＋ 재기동**이 유일한 경로. 권한 `0600` · 소유자 uid `10001` |
+| ㉱ | **서비스가 커넥션을 쥔 채로는 DB 를 되돌릴 수 없다** | `DROP SCHEMA` 가 `being accessed by other users` 로 막히거나, 반쯤 적재된 상태에 앱이 쓰기를 얹는다. **먼저 비운다(drain)** |
+| ㉲ | **ai-service 는 사전이 비어도 healthy 를 낸다** | `services/ai-service/src/colab_ai/app/main.py` — `settings.dict_db_url` 이 없으면 `_UnavailableDictionaries` 로 떨어지는데 `/healthz` 는 `{"status":"alive","implemented":true}` 를 그대로 낸다. **검증은 헬스가 아니라 내용으로 한다** |
+
+⚠ ㉲ 보강 — **`_UnavailableDictionaries` 는 검색 시점에야 `RuntimeError` 를 던진다.** 기동·헬스·컨테이너 상태
+어디에도 신호가 없다. **살아 있는 쪽이 속인다**(`STAGE2-PREP §3`).
+
+⚠ 회전 음성 확인은 **네트워크 경유로** 잰다 — pg 컨테이너 안 루프백은 `pg_hba` 가 `trust` 라 엉터리 비밀번호도 통과한다.
+
+---
+
+## 4. 런북 — 살아 있는 staging 제자리 복원 (초안 · 미리허설)
+
+> **표기** — 모든 경로는 레포 상대 또는 `~` 기준이다. `$ENVFILE` = 홈의 `0600` staging env 파일,
+> `$BK` = `~/colab-v2-backups/staging`. 컨테이너 이름은 `compose.i2.yml` 의 `container_name` 그대로다.
+
+### 4.0 사전조건 — 하나라도 아니면 **복원을 시작하지 않는다**
+
+| # | 확인 | 통과 기준 |
+|---|---|---|
+| P1 | 도커 데몬이 산다 | `docker ps` 가 응답 |
+| P2 | 되돌릴 산출물이 **둘 다** 있다 | `$BK` 에 `platform-*.sql.gz` · `ai-*.sql.gz` 각 1개 이상 |
+| P3 | 산출물이 GREEN 이다 | `infra/staging/backup/verify-artifact.sh <파일> --skip-age` 가 두 프로파일 다 GREEN. ⚠ **사고 복원은 옛 파일을 쓰므로 `--skip-age` 가 맞다 — C6 를 없애는 게 아니라 이 경로에서만 뺀다** |
+| P4 | 무결성이 맞다 | `.sha256` 과 대조. **지금 스크립트에 이 단계가 없다 — 런북이 처음 넣는다** |
+| P5 | **두 산출물이 같은 회차다** | 이름의 `<YYYYMMDDTHHMMSS>` 가 서로 몇 분 안. 다른 회차를 섞으면 원장과 사전이 다른 세대가 된다 |
+| P6 | 비밀 6종이 **제자리에 있다** | `$ENVFILE` · `credentials.json` · `subjects.json` · `*_DB_URL_FILE` 5개가 존재하고 `0600`/uid `10001` |
+| P7 | **복원 직전 상태를 한 번 더 뜬다** | `infra/staging/backup/backup.sh` 1회 GREEN. ⚠ **이것이 「되돌림의 되돌림」의 유일한 재료다**(§4.7) |
+| P8 | 현재 이미지 digest 를 **적어 둔다** | `docker inspect --format '{{.Id}}'` 로 5종. **비교 기준이 없으면 §4.6-④ 를 못 잰다** |
+| P9 | 원인이 규명됐다 | ⚠ **원인 미상인 채 복원하면 같은 손상이 다시 온다.** `S2-BLOCKER-INVESTIGATION §1.4`(2026-08-25 소실에서 삭제 주체를 못 잰 사례) |
+
+### 4.1 정지 순서 — **쓰는 쪽부터, DB 는 마지막**
+
+```
+docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE stop \
+  frontend nginx core-api pipeline-worker viz-render ai-service
+```
+
+| 순서 | 대상 | 왜 이 자리 |
+|---|---|---|
+| ① | `frontend` · `nginx` | **유입을 먼저 끊는다.** 뒤에 끊으면 정지 중인 서비스에 요청이 계속 들어간다 |
+| ② | `core-api` | 원장에 쓰는 유일한 정문 |
+| ③ | `pipeline-worker` | outbox 폴링이 살아 있으면 **복원 도중에 상태 전이를 쓴다** |
+| ④ | `viz-render` | uploads 를 `:ro` 로 읽는다 — 볼륨 복원(§4.4)의 전제 |
+| ⑤ | `ai-service` | `colab_ai` 커넥션 보유자 |
+| — | **`pg` 는 세우지 않는다** | 세우면 복원할 대상이 사라진다. **커넥션만 없애면 된다** |
+| — | `cloudflared` | **건드리지 않는다.** 터널·DNS 는 어느 쪽에서도 손대지 않는다(`compose.i2.yml` 머리말) |
+
+정지 확인 — `docker ps --filter name=colab_v2_staging` 에 `pg`·`cloudflared` 둘만 남는다.
+잔여 커넥션 확인 — `pg_stat_activity` 에서 `colab_platform`·`colab_ai` 가 **0행**.
+
+### 4.2 복원 순서 — 넷을 이 순서로
+
+> **원칙 — 「기동을 막는 것」을 먼저, 「내용」을 나중에.** 비밀이 없으면 검증조차 못 돌린다.
+
+| 순 | 대상 | 하는 일 |
+|---|---|---|
+| **1** | **비밀 파일 7종**(§2 #5~#8) | 제자리 덮어쓰기만. **`mv` 금지**(㉰). 권한 `0600` · `chown 10001` 재확인 |
+| **2** | **`colab_platform`** | §4.3 |
+| **3** | **`colab_ai`** | §4.3 (같은 절차, DB 이름만 다름) |
+| **4** | **uploads 볼륨** | §4.4 — ⚠ **원장보다 뒤에 둔다.** 원장이 파일 행의 정본이고, 볼륨은 그 행이 가리키는 바이트다 |
+
+⚠ **플랫폼과 AI 를 반드시 둘 다 되돌린다.** 한쪽만 되돌리면 원장의 데이터셋과 사전이 다른 세대가 된다.
+**지난 사고가 정확히 `ai` 쪽이었다**(`STAGE2-PREP §2` 1단-2).
+
+### 4.3 DB 하나를 되돌리는 법 — 스키마 교체
+
+```
+# ① 대상 스키마를 비운다 — 소유자 롤로. 앱 롤은 DDL 권한이 없다.
+docker exec -i colab_v2_staging_pg psql -v ON_ERROR_STOP=1 -U <owner> -d colab_platform \
+  -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# ② 덤프를 적재한다.
+gunzip -c $BK/platform-<stamp>.sql.gz \
+  | docker exec -i colab_v2_staging_pg psql -q -v ON_ERROR_STOP=1 -U <owner> -d colab_platform
+```
+
+| 항목 | 값 · 이유 |
+|---|---|
+| 롤 | **소유자 롤**(`COLAB_OWNER_PASSWORD` 쪽). 앱 롤은 비소유자·NOBYPASSRLS 라 `DROP SCHEMA` 가 막힌다 |
+| `--no-owner --no-privileges` | 덤프가 그렇게 떴다 → **GRANT·롤 부여가 덤프에 없다.** ⚠ **적재 후 앱 롤 권한과 RLS 정책 생존을 따로 확인해야 한다**(§4.6-⑤) |
+| `ON_ERROR_STOP=1` | 없으면 **절반만 적재된 DB 가 exit 0** 로 끝난다 — `IS3 §3` F8 이 fixture 로 박아 둔 실패다 |
+| `DROP DATABASE` 를 안 쓰는 이유 | 데이터베이스를 지우면 롤 부여·확장·`ts_config` 등 스키마 밖 객체가 함께 날아간다. **교체 범위를 `public` 로 한정한다** |
+| ⚠ **[미확인]** | staging 의 `public` 밖 객체(사용자 정의 `ts_config` 등) 유무를 **이 초안에서 재지 않았다.** 리허설 1회차의 첫 측정 항목이다 |
+
+### 4.4 uploads 볼륨 — **되돌릴 재료가 없다**
+
+- **현재 백업이 없다**(§2 #3). 즉 **이 절차는 지금 쓸 수 없다.**
+- 그러므로 런북의 이 자리는 **두 갈래**다.
+  - ㈎ **볼륨 백업이 붙은 뒤** — 아카이브를 헬퍼 컨테이너에 `uploads` 를 마운트해 풀고 `chown -R 10001:10001`.
+  - ㈏ **지금(백업 없음)** — 볼륨은 **손대지 않는다.** DB 만 과거로 되돌리면 **원장에 없는 고아 바이트**가
+    볼륨에 남는다. ⚠ **이것을 「정상」으로 적어 둔다** — 지우는 쪽이 더 위험하다(되돌림의 되돌림이 막힌다).
+- ⚠ **`R-1` 을 「볼륨 백업 없이」 닫지 않는다.** `STAGE2-PREP §2` 1단-2 의 전범위 백업이 **볼륨을 명시**한다.
+
+### 4.5 기동 순서
+
+```
+docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
+```
+
+- ⚠ **`-f compose.i2.yml` 확인**(㉮). 빼면 되살리는 명령이 아니라 `rollback.sh` 와 같은 일을 한다.
+- ⚠ **`--build` 를 붙이지 않는다.** 복원은 **코드를 바꾸는 일이 아니다.** 재빌드하면 §4.6-④ 의 digest 대조가
+  「복원 전과 같은가」가 아니라 「방금 빌드한 것과 같은가」가 되어 **오라클이 사라진다**.
+- `volume-init` 이 `chown 10001` 을 먼저 돌고(`service_completed_successfully`) 나머지가 뜬다.
+- 컨테이너 **8개**가 `healthy` 가 될 때까지 기다린다 — 여기까지는 **아직 검증이 아니다**.
+
+### 4.6 검증 블록 — **헬스가 아니라 실측 다섯**
+
+> **`/healthz` 6종 200 은 통과 조건이 아니라 최소 전제다.** 자리표시 오리진도 루트 200 을 내고,
+> 사전이 빈 ai-service 도 200 을 낸다.
+
+| # | 항목 | 질의 | 통과 기준 |
+|---|---|---|---|
+| ① | **데이터셋** | `psql -U <owner> -d colab_platform -At -c "SELECT count(*) FROM d3_dataset"` | **12** |
+| ② | **계보 간선** | `… -c "SELECT count(*) FROM d4_lineage_edge"` | **6** (2026-08-27 실측 · 전건 확정 · `§9 〈159〉`). ⚠ `B`(`D-09`→`D-16`)는 **이미 그어져 있었다** — 여러 문서의 「5」는 틀린 값이다. **런북은 「복원 시점의 기대치」를 쓰는 것이지 상수를 박는 것이 아니다** |
+| ③ | **온톨로지 사전 non-`None`** | `psql -U <owner> -d colab_ai -At -c "SELECT (SELECT count(*) FROM d9_method_term), (SELECT count(*) FROM d9_place_alias), (SELECT count(*) FROM d9_topic_synonym), (SELECT count(*) FROM d9_concept), (SELECT count(*) FROM d9_concept_edge)"` | 앞 셋 = **13 · 4 · 5**(합 **22** = K2 시드) · 뒤 둘 **> 0**. 표 이름은 `app/dictionaries.py` 의 5개 질의가 정본 |
+| ③-보 | **읽는 경로까지 살아 있다** | `POST /searches` 를 정문으로 한 번 | `_UnavailableDictionaries` 면 여기서 **`RuntimeError`** 가 난다. **사전 표가 차 있어도 배선이 끊기면 검색에서만 드러난다**(㉲) |
+| ④ | **이미지 digest** | `docker inspect --format '{{.Id}}'` — `core-api`·`pipeline-worker`·`viz-render`·`ai-service`·`frontend` 의 `:i2` | **P8 에서 적어 둔 5개와 전건 일치.** 하나라도 다르면 **복원이 아니라 재배포를 한 것**이다 |
+| ⑤ | **권한·RLS 가 살아 있다** | 앱 롤로 붙어 cross-tenant 음성 확인 1건 | `--no-privileges` 덤프라 **GRANT 가 덤프에 없다.** 앱 롤이 못 읽거나, 반대로 RLS 없이 다 읽히면 **둘 다 RED** |
+| ⑥ | 파일 원장 | `… -c "SELECT count(*) FROM d3_file"` | **129**(`IS3 §14` 실측). ⚠ §4.4-㈏ 를 택했으면 **원장과 볼륨의 대조는 성립하지 않는다 — 그 사실을 적는다** |
+| ⑦ | 헬스 | `/healthz` ＋ `/healthz/<unit>` **5종** | 전부 200. **루트 하나만 보지 않는다** |
+
+**판정 — ①~⑤ 가 전부 통과해야 복원 성공이다.** 하나라도 어긋나면 §4.7.
+
+### 4.7 되돌림의 되돌림 (rollback-of-the-rollback)
+
+- **재료 = P7 에서 뜬 「복원 직전 백업」 하나뿐이다.** 이것을 안 뜨고 §4.3 을 실행하면
+  **현재 상태가 영구히 사라진다** — `DROP SCHEMA public CASCADE` 는 되돌릴 수 없다.
+- 절차는 §4.1 → §4.3 → §4.5 를 **P7 산출물을 대상으로** 한 번 더 도는 것이다. 새 절차가 아니다.
+- ⚠ **비밀 파일(§4.2-1)은 되돌아가지 않는다.** 제자리 덮어쓰기라 **옛 값이 어디에도 안 남는다.**
+  → **덮어쓰기 전에 같은 디렉터리에 `.bak-<stamp>`(`0600`) 사본을 만든다.** 런북이 이 한 줄을 강제한다.
+- ⚠ **볼륨도 되돌아가지 않는다**(§4.4-㈏ 를 택했다면 애초에 안 건드렸으므로 무해하다).
+- **되돌림의 되돌림이 실패하면 그 자리는 인프라 사고다** — 조립하지 말고 멈추고 보고한다(`CLAUDE.md §4`).
+
+---
+
+## 5. 살아 있는 staging 에서 **리허설할 수 없는 것**
+
+| # | 리허설 불가 구간 | 왜 | 일회용 인스턴스가 대신 덮는 것 |
+|---|---|---|---|
+| 1 | **`DROP SCHEMA public CASCADE`** | 비가역이다. 여기서 실패하면 되돌릴 대상 자체가 사라진다 | ✅ **전부 덮인다.** 일회용에 실 산출물 적재 → 스키마 교체 → 재적재까지 그대로 돈다 |
+| 2 | **8개 컨테이너 stop/up 왕복** | 공개 staging 이 그동안 죽는다. `-f` 를 빠뜨리면 **조용한 롤백**이 실사고가 된다 | ⚠ **부분만.** 별도 compose 프로젝트명으로 전체를 띄우면 순서·`:?` 키·`volume-init` 은 검증되지만 **터널·DNS·실 태그 경합은 안 덮인다** |
+| 3 | **비밀 파일 제자리 덮어쓰기 ＋ inode 동작** | 실패하면 core-api·ai-service 가 **뜨지 않거나** 옛 값을 계속 읽는다 | ✅ 덮인다. 같은 규약(`0600`·uid `10001`·`:ro` 바인드)으로 `mv` vs 덮어쓰기를 **양성·음성 둘 다** 재현 |
+| 4 | **uploads 볼륨 복원** | 재료가 없다(§2 #3) | ✅ 덮인다 — **먼저 볼륨 백업 절차부터 세워야 한다.** 이것이 `R-1` 의 실제 선행 결손 |
+| 5 | **이미지 digest 대조(④)** | 실 이미지를 지우거나 다시 태그하는 실험을 살아 있는 배포에 못 한다 | ⚠ **부분만.** 「태그 같고 digest 다른」 상황은 만들 수 있으나, **`:i2` 가 언제 움직였는지의 이력은 어디에도 없다** |
+| 6 | **RLS·GRANT 생존(⑤)** | 앱 롤 권한을 실 DB 에서 깨 보는 실험이 곧 사고다 | ✅ 덮인다. 소유자·앱 두 롤을 세우고 `--no-privileges` 덤프를 적재해 **앱 롤이 못 읽는 상태**를 재현 |
+| 7 | **복원 소요 실측** | 실규모 값은 이미 있다 — platform **317 ms** · ai **130 ms**(`IS3 §15`) | ⚠ **그 값에 업로드 바이트가 안 들어 있다.** 볼륨이 붙으면 다시 잰다 |
+| 8 | **원인 규명(P9)** | 사고의 원인은 사고가 나야 있다 | 덮이지 않는다. **P9 를 게이트로 남기는 것이 유일한 대응** |
+
+**리허설 1회차 권고 = 1·3·6 을 일회용 인스턴스에서 한 묶음으로.** 셋 다 완전히 덮이고, 셋이 §4 의
+가장 비가역적인 부분이다. 2·5 는 **부분 리허설임을 적어 두고** 넘어간다 — 완전 리허설은 staging 을
+하나 더 세우는 일이고 그건 이 WU 의 범위가 아니다.
+
+---
+
+## 6. 이 초안이 닫히려면 — 남은 것
+
+| # | 남은 것 | 왜 지금 못 적었나 |
+|---|---|---|
+| 1 | **uploads·previews 볼륨 백업 절차** | 기구 자체가 없다. **`R-1` 의 진짜 선행 결손**(§4.4) |
+| 2 | **비밀 7종의 백업·보관 정책** | 백업하면 「비밀의 사본이 하나 더」다. **정본 판정 사안** |
+| 3 | **이미지 digest 대장** | `:i2` 는 움직이는 태그이고 digest 기록 파일이 레포에 없다(§2 #9) |
+| 4 | **`public` 밖 객체 목록** | 이 세션은 읽기 전용 감사라 실 DB 를 재지 않았다(§4.3 `[미확인]`) |
+| 5 | **`sha256` 대조 · `--skip-age` 를 스크립트에 넣기** | 런북이 손으로 채우고 있다. 기구화는 별건 |
+| 6 | **리허설 실행** | 이 문서는 **초안이고 리허설 전**이다. §5 의 1·3·6 을 돌기 전에는 `R-1` 이 닫히지 않는다 |
+
+---
+
+*작성 2026-08-27. 읽기 전용 감사의 산출이고 어떤 명령도 집행하지 않았다 — 판정은 `PLAN-SoT §9`.*
