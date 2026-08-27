@@ -40,6 +40,14 @@ infra/staging/restore/preflight.sh --record-digests /tmp/pre-digests.tsv
 - **P8 이 찍은 `/tmp/pre-digests.tsv` 를 잃어버리면 `§4.6-④` 를 못 잰다.** 다른 창에 남긴다.
 - **P9 는 사람만 채울 수 있다.** 원인 미상인 채 복원하면 같은 손상이 다시 온다.
 
+> ⚠⚠ **완전 복원의 실효 창은 볼륨 보존 3일이다. 그보다 오래된 원장 덤프의 복원은 파일 결손을 전제로 한다.**
+> 원장 덤프는 14일(`COLAB_BACKUP_RETENTION_DAYS`) 남고 볼륨 아카이브는 3일(`COLAB_VOLBACKUP_RETENTION_DAYS`)만 남아
+> **4~14일 된 덤프에는 짝이 되는 볼륨이 없다.** 그리고 **오늘의 볼륨은 옛 원장의 상위집합이 아니다** —
+> `storage_key` 는 추가만 되는 것이 아니라 **이동·재작성된다**(`app/routes/ingestion.py` 의 `createDataset` 접수분 이관 ·
+> `attachUploadGridFiles` · `replaceDatasetGridFile` 의 옛 키 폐기). 옛 원장이 가리키는 키가 오늘의 볼륨에는 **이미 옮겨져 없다.**
+> **10일 된 덤프를 최신 볼륨에 대고 복원하면 `#20` 실패 계열이 재현된다** — 원장이 존재하지 않는 키를 가리킨다.
+> 그 창 밖의 복원은 **하지 않는 것이 아니라, 결손을 알고 하는 것이다.** P5-b 짝 확인이 RED 를 낸다.
+
 ---
 
 ## 2. 정지 — 쓰는 쪽부터, DB 는 마지막
