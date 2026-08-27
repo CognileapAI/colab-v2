@@ -12,6 +12,10 @@
 
 ## 1. 지금 있는 기구 — 무엇을 하고 무엇을 안 하는가
 
+> ⭑ **2026-08-27 갱신 — 이 절의 진단(「되쓰는 쪽이 하나도 없다」)이 이 회차에 해소됐다.**
+> 아래 표는 **그 전의 상태**이고, 새로 선 것은 `§1.1` 에 따로 적는다. 진단을 지우지 않고 남긴다 —
+> 무엇이 없어서 무엇을 세웠는지가 흐려지면 다음 회차가 같은 자리를 다시 판단한다.
+
 `infra/staging/backup/` 아래 12개 파일. **전부 「뜨는 쪽」과 「일회용에 되살리는 쪽」이고,
 살아 있는 대상에 되쓰는 쪽은 하나도 없다.**
 
@@ -29,6 +33,29 @@
 ⚠ **`restore-rehearsal.sh` 를 살아 있는 staging 에 겨누는 개조로 이 WU 를 때우지 않는다.**
 그 스크립트의 안전성이 「대상이 언제나 방금 만든 빈 일회용 인스턴스」라는 전제 위에 서 있다 —
 전제를 빼면 남는 건 `gunzip | psql` 한 줄이고, 그건 절차가 아니다.
+
+### 1.1 이 회차에 선 것 (2026-08-27) — **기구만. 실행은 0회다**
+
+| 파일 | 하는 일 | 살아 있는 staging 에 |
+|---|---|---|
+| `backup/volume-lib.sh` | 볼륨 설정·합격선·오라클 조회. 원장 쪽 `lib.sh` 와 **갈라 둔다** | — |
+| `backup/backup-volume.sh` | 볼륨 → 매니페스트 ＋ tar. 디스크 여유 사전점검 · 볼륨별 보존 | **읽기만**(`:ro` 마운트) |
+| `backup/verify-volume-artifact.sh` | 볼륨 산출물 검사 **V1~V7**. **오라클이 본체** | 아니오 |
+| `backup/backup-full.sh` | **원장 먼저 · 볼륨 나중**. 스케줄이 부르는 정문 | **읽기만** |
+| `backup/selftest-volume.sh` | fixture **14건** 전건 RED 강제. **docker 불필요** | 아니오 |
+| `restore/RUNBOOK.md` · `REHEARSAL.md` | 실행본 런북 · 리허설 절차 | — |
+| `restore/preflight.sh` | **P1~P9** — sha256 대조 · `--skip-age` · 볼륨↔원장 짝 확인 | **읽기만** |
+| `restore/expectations.sh` | **기대치를 짝 덤프에서 읽는다**(상수 0) | 아니오 |
+| `restore/check-image-digests.sh` | **`reference/IMAGE-DIGESTS.md` 를 읽어** 대조 | 읽기만 |
+| `restore/restore-db.sh` | §4.3 — **문 셋**을 통과해야 쓴다 | ⚠ **되쓴다** |
+| `restore/restore-volume.sh` | §4.4-㈎ — 덮어쓰기(삭제 없음) ＋ 매니페스트 sha256 대조 | ⚠ **되쓴다** |
+| `restore/verify-restored.sh` | §4.6 ①~⑦. **숫자가 한 개도 없다** | 읽기만 |
+| `restore/rehearsal.sh` | §5 의 1·3·6 ＋ 볼륨 왕복 | **읽기만**(쓰기는 `r1_*` 일회용에만) |
+| `restore/selftest-restore.sh` | fixture **10건**. docker 불필요 | 아니오 |
+
+⚠ **`restore-db.sh`·`restore-volume.sh` 는 이 문서가 「없다」고 적었던 「되쓰는 쪽」이다.**
+그래서 우회로가 아니라 **문**을 세웠다 — 손으로 붙이는 확인 인자 · 되돌림 재료 존재 · 커넥션 0(또는 컨테이너 정지).
+`restore-rehearsal.sh` 를 살아 있는 대상에 겨누는 개조는 **하지 않았다**(그쪽 전제는 그대로 살아 있다).
 
 ### 산출물 — 어디에 · 어떤 이름으로
 
@@ -74,8 +101,8 @@
 |---|---|---|---|
 | 1 | **`colab_platform` DB** | **백업됨** | `COLAB_BACKUP_DB_platform` 프로파일. `IS3 §13` 실측 23테이블·381행 |
 | 2 | **`colab_ai` DB** (온톨로지 사전 3종 ＋ 개념 그래프 2표) | **백업됨** | `ai` 프로파일. `IS3 §13` 실측 6테이블·91행 |
-| 3 | **업로드 원본** (`/var/lib/colab/uploads` = named volume `colab-v2-staging_uploads`) | **백업 안 됨** | `IS3 §5-2`·`§12-3` 이 명시적으로 남긴 것. `compose.i2.yml` `volumes: uploads: {}` (프로젝트명 `colab-v2-staging`) |
-| 4 | **미리보기 산출물** (`/srv/viz-previews` = `colab-v2-staging_previews`) | **백업 안 됨** | 같은 이유. ⚠ **재생성 가능하지만 재생성이 원본(#3)에 의존한다** |
+| 3 | **업로드 원본** (`/var/lib/colab/uploads` = named volume `colab-v2-staging_uploads`) | ⭑ **기구 생김 · 실행 0회** (2026-08-27) | `backup-volume.sh` 의 `uploads` 대상. 오라클 = `d3_file.storage_key`(저장 키가 곧 볼륨 안 상대 경로 · `contracts/storage/layout.json`) |
+| 4 | **미리보기 산출물** (`/srv/viz-previews` = `colab-v2-staging_previews`) | ⭑ **기구 생김 · 실행 0회** · **오라클 없음** | ⚠ **「재생성 가능」이 지금은 실제로 거짓이다** — 원본 의존을 넘어 **재생성 수단 자체가 없다**(렌더 재실행은 stage 2 범위). 그래서 싸게 백업한다. stage 2 에서 수단이 서면 이 판단과 보존을 다시 잰다 |
 | 5 | **`credentials.json`** (`COLAB_STAGING_CREDENTIALS_FILE`) | **백업 안 됨** | 홈의 `0600` 파일. 백업 대상 목록 어디에도 없다. ⚠ **`d1_account` 행과 짝이라 DB 만 되돌리면 로그인 상태가 갈린다** |
 | 6 | **`subjects.json`** (`COLAB_STAGING_SUBJECTS_FILE`) | **백업 안 됨** | 〃. **그 안의 키 문자열이 곧 베어러 토큰**이다(`RESTART §2-1`) |
 | 7 | **`COLAB_STAGING_*_DB_URL_FILE` 5종 파일** | **백업 안 됨** | 홈의 `0600` 파일 5개. 없으면 `:?` 로 컨테이너가 **아예 안 뜬다** |
@@ -86,7 +113,10 @@
 | 12 | **터널·DNS·terraform state** | ✅ **확정 — `R-1` 범위 밖** (2026-08-27 · `PLAN-SoT §9 〈165〉`) | `RESTART §1` 상 재시작에는 살아남는다. **호스트 소실 시나리오는 재지 않는다 — 그것이 이 WU 의 범위가 아니라는 것이 판정이다.** `[미확인]` 이 아니라 **안 재기로 한 것**이다. 재려면 `IS2` 의 `terraform plan` 을 빈 state 에서 재현하는 별건 WU 를 연다(`IS4` 가 부분 리허설했다) |
 | 13 | **오프호스트 사본** | **없음** | `IS3 §5-4` — 백업이 원본과 **같은 WSL2 머신 1대** 위에 있다 |
 
-**요약 — 백업은 원장 두 개뿐이다.** 3·5·6·7·8·9 여섯이 비어 있고, 그중 **5·6·7·8 은 없으면 기동 자체가 안 되며**,
+**요약 (2026-08-27 갱신) — 백업 대상이 원장 둘에서 원장 둘 ＋ 볼륨 둘로 늘었다.**
+남은 결손은 **5·6·7·8(비밀 7종)** 과 **9(이미지 자체)** 이고, 비밀 쪽은 **백업하지 않기로 판정된 것**이다(`§7`) —
+결손이 아니라 선택이다. 이미지는 **대조는 되고 복원은 재빌드**다.
+**아래 종전 요약을 이력으로 남긴다.** ~~3·5·6·7·8·9 여섯이 비어 있고, 그중 **5·6·7·8 은 없으면 기동 자체가 안 되며**,~~
 **3 은 없으면 기동은 되는데 제품이 빈 껍데기가 된다**(파일 129건의 바이트가 사라진다).
 
 ⚠ **가장 조용한 결손은 #9 다.** `〈153〉` 때 배선만 바꾸고 옛 이미지로 올렸더니 **ai-service 만 healthy** 였고
@@ -183,14 +213,19 @@ gunzip -c $BK/platform-<stamp>.sql.gz \
 | `DROP DATABASE` 를 안 쓰는 이유 | 데이터베이스를 지우면 롤 부여·확장·`ts_config` 등 스키마 밖 객체가 함께 날아간다. **교체 범위를 `public` 로 한정한다** |
 | ✅ **해소 · 없음** (2026-08-27) | staging 의 `public` 밖 객체가 **없다** — `\dn` = `public` 하나뿐 · `pg_ts_config` 29 항목 전부 기본(사용자 정의 0). 값·근거 = `PLAN-SoT §9 〈165〉-㉰`. **즉 교체 범위를 `public` 로 한정하는 이 절차가 성립한다.** ⚠ `T-1` 이 한국어 `ts_config` 를 만들면 **이 값은 즉시 낡는다** — 재측정을 `T-1` 완료 정의에 넣는다 |
 
-### 4.4 uploads 볼륨 — **되돌릴 재료가 없다**
+### 4.4 uploads 볼륨 — ⭑ **재료를 만드는 기구가 섰다 (2026-08-27)**
 
-- **현재 백업이 없다**(§2 #3). 즉 **이 절차는 지금 쓸 수 없다.**
-- 그러므로 런북의 이 자리는 **두 갈래**다.
-  - ㈎ **볼륨 백업이 붙은 뒤** — 아카이브를 헬퍼 컨테이너에 `uploads` 를 마운트해 풀고 `chown -R 10001:10001`.
-  - ㈏ **지금(백업 없음)** — 볼륨은 **손대지 않는다.** DB 만 과거로 되돌리면 **원장에 없는 고아 바이트**가
+- ~~**현재 백업이 없다**~~ → **`backup-volume.sh` · `backup-full.sh` 로 뜬다.** 산출물 = `vol-<볼륨>-<stamp>.tar.gz`
+  ＋ `.manifest.tsv`(경로·크기·sha256) ＋ `.pair`(짝 원장 덤프) ＋ `.sha256`.
+- 그러므로 런북의 이 자리는 여전히 **두 갈래**이고, **이제는 ㈎ 가 기본**이다.
+  - ㈎ **볼륨 백업이 있을 때** — `infra/staging/restore/restore-volume.sh`. 헬퍼 컨테이너로 풀고 `chown -R 10001:10001`,
+    그리고 **매니페스트 전건 `sha256` 대조**까지 한다. ⚠ **덮어쓰기이지 동기화가 아니다** — 아카이브에 없는 파일을 지우지 않는다.
+    (`--prune` 같은 선택지를 두지 않았다. 없는 기능은 잘못 쓰이지 않는다.)
+  - ㈏ **아카이브가 없거나 RED 일 때** — 볼륨은 **손대지 않는다.** DB 만 과거로 되돌리면 **원장에 없는 고아 바이트**가
     볼륨에 남는다. ⚠ **이것을 「정상」으로 적어 둔다** — 지우는 쪽이 더 위험하다(되돌림의 되돌림이 막힌다).
+    같은 이유로 **백업 시점의 고아 바이트도 정상**이고, 볼륨 검사 오라클이 그것을 `INFO` 로만 적는다.
 - ⚠ **`R-1` 을 「볼륨 백업 없이」 닫지 않는다.** `STAGE2-PREP §2` 1단-2 의 전범위 백업이 **볼륨을 명시**한다.
+  ⚠ **기구가 섰다는 것과 한 번 돌았다는 것은 다르다** — 실 staging 실행은 아직 0회다.
 
 ### 4.5 기동 순서
 
@@ -255,14 +290,20 @@ docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
 
 ## 6. 이 초안이 닫히려면 — 남은 것
 
-| # | 남은 것 | 왜 지금 못 적었나 |
+> ⭑ **2026-08-27 갱신 — 이 표는 이제 「남은 것」이 아니라 「무엇이 섰고 무엇이 안 섰는가」다.**
+> 기구는 대부분 섰고, **남은 것은 리허설 1건과 그 리허설이 낳는 실측 몇 개**다.
+
+| # | 남은 것 | 상태 |
 |---|---|---|
-| 1 | **uploads·previews 볼륨 백업 절차** | 기구 자체가 없다. **`R-1` 의 진짜 선행 결손**(§4.4) |
+| 1 | **uploads·previews 볼륨 백업 절차** | ✅ **기구 신설 (2026-08-27)** — `infra/staging/backup/` 에 `backup-volume.sh` · `verify-volume-artifact.sh` · `backup-full.sh` · `volume-lib.sh` · `selftest-volume.sh`. **원장 덤프 먼저, 볼륨 tar 나중**(순서를 `backup-full.sh` 가 쥔다). 검사 오라클 = **매니페스트(경로·크기·sha256) ↔ 짝 덤프의 `d3_file`** 대조. 스케줄(`03:30` 매일)이 `backup.sh` → `backup-full.sh` 로 바뀌었고 주간 `latest-check.sh` 가 볼륨도 묻는다. fail-closed 증명 = fixture **14건 전건 RED**(docker 불필요). ⚠ **아직 실 staging 에서 한 번도 돌지 않았다** — 실행은 `R-1` 집행 회차의 일이다 |
 | ~~2~~ | ~~**비밀 7종의 백업·보관 정책**~~ | ✅ **판정 완료 (Ted 2026-08-27 · `PLAN-SoT §9 〈163〉-㉲`) — 백업하지 않는다.** 사본을 늘리는 대가가 되찾는 이득보다 크다(백업이 원본과 **같은 머신 1대** 위에 있다 · `§2` #13). **대신 재발급 절차를 완료 정의에 넣는다 — `§7`** |
 | ~~3~~ | ~~**이미지 digest 대장**~~ | ✅ **해소 (2026-08-27 · `PLAN-SoT §9 〈165〉-㉱`)** — 대장을 세웠다: **`dev-package/reference/IMAGE-DIGESTS.md`** (8 건 · 자체 5 ＋ 외부 3). `WORK-UNITS §10.3` 1 단의 「이미지 digest 일치」가 이제 대조 기준을 갖는다 |
 | ~~4~~ | ~~**`public` 밖 객체 목록**~~ | ✅ **해소 · 없음 (2026-08-27 · `PLAN-SoT §9 〈165〉-㉰`)** — `public` 스키마 하나뿐이고 사용자 정의 `ts_config` 0. 목록으로 적을 것이 없다는 것이 결과다(§4.3) |
-| 5 | **`sha256` 대조 · `--skip-age` 를 스크립트에 넣기** | 런북이 손으로 채우고 있다. 기구화는 별건 |
-| 6 | **리허설 실행** | 이 문서는 **초안이고 리허설 전**이다. §5 의 1·3·6 을 돌기 전에는 `R-1` 이 닫히지 않는다 |
+| 5 | **`sha256` 대조 · `--skip-age` 를 스크립트에 넣기** | ✅ **해소 (2026-08-27)** — `infra/staging/restore/preflight.sh` 가 P1~P9 를 센다. **P3 이 `--skip-age`**(원장·볼륨 양쪽), **P4 가 `.sha256` 대조**, **P5-b 가 볼륨↔원장 짝(`.pair`) 확인**. ⚠ **C6·V7 을 없앤 것이 아니라 이 경로에서만 뺀다** — 정기 검사에는 그대로 산다 |
+| 6 | **리허설 실행** | 🟧 **절차는 섰고 실행은 안 했다.** `infra/staging/restore/rehearsal.sh` ＋ `REHEARSAL.md` 가 §5 의 **1·3·6 ＋ 볼륨 왕복**을 한 묶음으로 엮는다. **살아 있는 staging 을 읽기만 하고 일회용에만 쓴다** — 어떤 파괴적 단계보다 먼저 돌아도 안전하다. **이것을 돌기 전에는 `R-1` 이 닫히지 않는다** |
+| 7 | **런북의 실행본** | ✅ **신설 (2026-08-27)** — `infra/staging/restore/RUNBOOK.md` ＋ `preflight.sh` · `restore-db.sh` · `restore-volume.sh` · `verify-restored.sh` · `expectations.sh` · `check-image-digests.sh` · `selftest-restore.sh`(fixture 10건). 이 문서는 **설계 근거**, 저쪽은 **무엇을 어떤 순서로 치는가**다 |
+| 8 | **이미지 digest 대조의 배선** | ✅ **해소 (2026-08-27)** — `check-image-digests.sh` 가 **`reference/IMAGE-DIGESTS.md` 를 읽는다.** digest 를 스크립트에 박지 않았다(대장이 정본 · `IMAGE-DIGESTS §4-4`). P8 이 복원 전 상태를 tsv 로 기록하고 `verify-restored.sh ④-b` 가 그것과 대조한다 — **미측정을 일치로 읽지 않는다**(fixture `SR5`) |
+| 9 | **`§4.6` 기대치를 상수로 박지 않기** | ✅ **기구화 (2026-08-27)** — `expectations.sh` 가 **되돌릴 덤프의 COPY 블록을 세어** 그 회차의 기대치를 만든다. `verify-restored.sh` 에는 숫자가 한 개도 없다. fixture `SR0` 이 「같은 스크립트가 다른 덤프에 다른 값을 낸다」를 실증한다 |
 
 ---
 
@@ -296,11 +337,78 @@ docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
 |---|---|---|
 | **`credentials.json`** | `services/core-api/ops/set-password.py` — 비밀번호를 **표준입력으로** 받고(`argv` 금지 — `ps`·셸 히스토리에 남는다) `0600` 임시 파일 → 제자리 반영. **scrypt 해시만 저장**(`〈108〉-㉯`) | ① 원장 짝 확인 — `d1_account` 1행 ＋ `d2_member_role` 1행이 **같은 계정**을 가리키는가. 없으면 `services/core-api/ops/provision-account.sql`(⚠ `\gexec` 형태 · `〈109〉-㉱`) ② **core-api 재기동** ③ 로그인 200 · 구 비밀번호 **401** 음성 확인 |
 | **`COLAB_STAGING_*_DB_URL_FILE` 5종** | DB 접속 URL 5개를 각각 `0600` 파일로 **다시 쓴다**. 값의 출처 = 현재 살아 있는 롤의 비밀번호(모르면 `X-1`·`〈153〉` 의 회전 절차로 **롤 비밀번호부터 회전**하고 그 값을 쓴다) | ① 5키가 전부 있어야 한다 — 하나라도 없으면 compose 의 `:?` 로 **컨테이너가 아예 안 뜬다**(`§2` #7) ② 전 단위 재기동 ③ `§4.6` ①~⑤ |
-| **`subjects.json`** | **[미확인]** — 재생성 스크립트를 이 문서에서 확인하지 못했다. 그 안의 키 문자열이 **곧 베어러 토큰**이다(`RESTART §2-1`). ⚠ **값을 지어내지 않는다** — 실제 형식은 `RESTART §2` 와 주체 표 코드로 재는 것이 `R-1` 리허설의 측정 항목이다 | 재발급 시 **도구·시험·staging 설정이 쥔 옛 토큰이 함께 끊긴다**(`〈107〉-㉱`) — 끊기는 자리를 먼저 센다 |
-| **env 파일** (`--env-file`) | **[미확인]** — 키 목록의 정본을 이 문서에서 재지 않았다. 최소한 `COLAB_CORE_SESSION_SECRET`·`COLAB_CORE_CREDENTIALS_FILE`·`COLAB_STAGING_PGDATA_DIR`·`*_DB_URL_FILE` 5키가 들어간다(`〈109〉-㉲` · `RESTART §2`) | ⚠ **`COLAB_CORE_SESSION_SECRET` 이 바뀌면 발급된 세션이 전부 무효다**(무상태 서명 · `〈107〉-㉯`) — 재로그인이 필요하다 |
+| **`subjects.json`** | ⭑ **항목을 둘로 가른다 (2026-08-27).** ⓐ **형식 = 확정.** `{"<토큰문자열>": {"accountId": "<ULID>", "labId": "<ULID>"}}` — 근거는 `services/core-api/tests/fixtures/subjects.json` 실물과 `kernel/auth.py` 가 그 표를 읽는 방식이다. 토큰은 새로 만든다(예: `openssl rand -hex 32`). ⚠ **레포 픽스처 값을 staging 에 올리지 않는다** — 그렇게 배포된 적이 있다(`RESTART §2-1`). ⓑ **「재발급본으로 기동이 선다」(완-비2) = 여전히 미증명.** 컨테이너 왕복이 필요해 **리허설 2회차** 항목이다(`§5-2` 부분 리허설) | 재발급 시 **도구·시험·staging 설정이 쥔 옛 토큰이 함께 끊긴다**(`〈107〉-㉱`) — 끊기는 자리를 먼저 센다 |
+| **env 파일** (`--env-file`) | ✅ **해소 — 키 목록 정본은 아래 `§7.3` 이다 (2026-08-27).** 「최소한 5키」가 아니라 **26 키**이고, 그중 `up` 을 막는 `:?` 는 **13** 이다 | ⚠ **`COLAB_CORE_SESSION_SECRET` 이 바뀌면 발급된 세션이 전부 무효다**(무상태 서명 · `〈107〉-㉯`) — 재로그인이 필요하다 |
 
-⚠ **`[미확인]` 둘은 리허설 1회차의 측정 항목이다.** 값을 만들어 적지 않는다.
+⚠ **`[미확인]` 둘 중 하나(env 키 목록)는 닫혔고, 하나(`subjects.json`)는 절반만 닫혔다.**
+**형식을 안 것과 기동이 선 것은 다르다** — 값을 만들어 적지 않는다.
+
+### 7.3 env 파일 키 목록 — **정본** (2026-08-27 · 레포에서 도출)
+
+**도출 방법 = 세 출처의 합집합.** ⓐ `infra/staging/compose.i2.yml` 의 `${…}` 전건(`:?` 와 `:-` 를 갈라서)
+ⓑ `RESTART §2-1` 표 ⓒ `PLAN-SoT §9 〈109〉-㉲`(그 회차가 더한 두 키).
+**추정 0 · 값 0** — 아래는 **이름과 성격**뿐이고 어떤 값도 적지 않는다.
+
+**Ⓐ `compose` 가 `:?` 로 요구한다 — 하나라도 없으면 `up` 이 아예 안 뜬다 (13)**
+
+| 키 | 성격 |
+|---|---|
+| `CF_TUNNEL_TOKEN` | 비밀 — compose 가 `:?` 로 요구하는 터널 키는 **이 하나뿐**이다 |
+| `COLAB_PG_SUPER_PASSWORD` | 비밀 |
+| `COLAB_CORE_SESSION_SECRET` | 비밀 — 바뀌면 발급된 세션이 **전부 무효** |
+| `COLAB_VIZ_SERVICE_TOKEN` | 비밀 — core-api ↔ viz-render **같은 문자열**. 없으면 미리보기 전량 503 |
+| `COLAB_VIZ_TILE_SIGNING_SECRET` | 비밀 |
+| `COLAB_STAGING_PGDATA_DIR` | 경로(WSL ext4) |
+| `COLAB_STAGING_SUBJECTS_FILE` · `COLAB_STAGING_CREDENTIALS_FILE` | 경로 — **가리키는 파일이 비밀** |
+| `COLAB_STAGING_CORE_DB_URL_FILE` · `…_PIPELINE_DB_URL_FILE` · `…_AI_DB_URL_FILE` | 경로 — **앱 롤** 접속 URL 파일 |
+| `COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE` · `…_AI_OWNER_DB_URL_FILE` | 경로 — **소유자 롤**. `--profile migrate` 전용이지만 **없으면 마이그레이션이 안 돈다** |
+
+**Ⓑ `compose` 가 `:-` 로 받는다 — 없어도 `up` 은 뜬다 (5)**
+
+`OPENAI_API_KEY`(비밀) · `COLAB_CORE_AI_BASE_URL` · `COLAB_MODEL_HELPER` · `COLAB_MODEL_ORCHESTRATOR` · `COLAB_AI_QUERY_INTERPRETATION`
+⚠ **`COLAB_CORE_AI_BASE_URL` 을 비우면 core-api 가 relay 를 안 만들어 검색·제안이 503 이다** — 「없어도 뜬다」와 「없어도 된다」는 다르다.
+
+**Ⓒ `compose` 가 안 읽는다 — 다른 것이 읽는다 (8)**
+
+| 키 | 읽는 쪽 |
+|---|---|
+| `COLAB_OWNER_PASSWORD` · `COLAB_APP_PASSWORD` · `COLAB_AI_APP_PASSWORD` | DB 롤 세우기·회전(`ops/app-role.sql` 계열). **URL 파일의 내용이 이 값에서 나온다** |
+| `CF_API_TOKEN` · `CF_ACCOUNT_ID` · `CF_TUNNEL_ID` | `infra/staging/terraform`(IS2). `up` 은 이것 없이 뜬다 |
+| `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **선택 · 비밀 아님**(시드 ULID). 2026-08-26 부터 필수가 아니다(`〈110〉-㉱`). **원장에 없는 값이면 워커가 안 뜬다** |
+
+**⚠ env 파일에 없는데 있다고 오해하기 쉬운 것** — `COLAB_CORE_CREDENTIALS_FILE`·`COLAB_CORE_SUBJECTS_FILE`·
+`COLAB_CORE_UPLOAD_DIR`·`COLAB_VIZ_SOURCE_ROOT`·`COLAB_VIZ_PREVIEW_DIR` 은 **`compose.i2.yml` 안에 값이 박혀 있다.**
+호스트에서 손댈 것이 없고, **비면 헬스는 200 인 채로 제품이 잠긴다**(`RESTART §2-1` 말미).
+
+**합계 = 26.** 재발급은 Ⓐ 13 을 먼저 세우고(그래야 기동이 선다), Ⓒ 의 롤 비밀 3 으로 URL 파일 5 를 다시 쓴 뒤,
+Ⓑ 를 채우는 순서다.
+
+---
+
+## 8. `R-1` 완료 정의 — **지금 무엇이 닫혔고 무엇이 안 닫혔나** (2026-08-27)
+
+> **닫힘 판정은 `PLAN-SoT §9` 소관이다. 여기는 현황이다.**
+> ⚠ **「기구가 섰다」를 「닫혔다」로 적지 않는다** — 이 표가 있는 이유가 그것이다.
+
+| # | 항목 | 상태 |
+|---|---|---|
+| 1 | 볼륨 백업 절차 (`uploads`·`previews`) | ✅ **기구 · 증명 완료** (fixture 14건) · ⚠ **실 staging 실행 0회** |
+| 2 | 제자리 복원 런북 | ✅ **실행본 · 스크립트화 완료** (`restore/RUNBOOK.md`) |
+| 3 | `sha256` 대조 · `--skip-age` 기구화 | ✅ (`preflight.sh` P3·P4·P5-b) |
+| 4 | 이미지 digest 대조 배선 | ✅ 대장을 읽는다 (`check-image-digests.sh`) |
+| 5 | `§4.6` 기대치 = 짝 덤프에서 읽기 | ✅ (`expectations.sh` · 상수 0) |
+| 6 | env 키 목록 정본 | ✅ **§7.3 · 26 키** |
+| 7 | 비밀 7종 재발급 절차 문서화 (**완-비1**) | ✅ 6종 확정 ＋ `subjects.json` **형식** 확정 |
+| 8 | 리허설 1회차 실행 | ⛔ **미실행.** 절차는 `REHEARSAL.md` · `rehearsal.sh` |
+| 9 | **완-비2** 재발급본으로 기동이 선다 | ⛔ **미증명.** 컨테이너 왕복이 필요 — **리허설 2회차**(`§5-2` 부분) |
+| 10 | **완-비3** 원장과 짝이 맞는다(로그인 200 · cross-tenant 음성) | ⛔ **미증명.** 인증을 쥐는 단계라 손으로 돈다 |
+| 11 | 볼륨 포함 복원 소요 실측 | ⛔ **미측정.** 종전 값(317ms·130ms)에는 업로드 바이트가 없다(`§5-7`) |
+| 12 | 볼륨 실제 크기 · 볼륨별 합격선 | ⚠ **[미확인].** 첫 GREEN 회차의 로그(`볼륨 실사용 …KiB`)와 `V3 파일 항목 N건` 이 그 값이다 |
+
+**즉 `R-1` 은 8~11 이 남아 있고, 그 넷은 전부 「돌려 봐야 아는 것」이다.**
+기구를 더 쓴다고 닫히지 않는다.
 
 ---
 
 *작성 2026-08-27. 읽기 전용 감사의 산출이고 어떤 명령도 집행하지 않았다 — 판정은 `PLAN-SoT §9`.*
+*⭑ 2026-08-27 2차 — `§1.1`·`§4.4`·`§6`·`§7.3`·`§8` 을 더했다. **기구를 세웠고 어떤 명령도 살아 있는 staging 에 집행하지 않았다.***

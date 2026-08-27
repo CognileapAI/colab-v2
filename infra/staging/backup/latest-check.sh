@@ -5,7 +5,9 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib.sh"
+. "$HERE/volume-lib.sh"
 load_config
+load_volume_config
 if [ "$COLAB_BACKUP_TARGET" = "none" ]; then
   log "대상 미연결 — 검사할 백업이 존재할 수 없다 (exit 78)"; exit 78
 fi
@@ -19,5 +21,17 @@ for P in $(backup_profiles); do
   COLAB_BACKUP_MIN_ROWS="$(profile_min_rows "$P")" \
     "$HERE/verify-artifact.sh" "$LATEST" || BAD=$((BAD+1))
 done
-if [ "$BAD" -eq 0 ]; then echo "최신본 재검사 GREEN — 프로파일 $N 개"; exit 0; fi
-echo "최신본 재검사 RED — 프로파일 $N 개 중 $BAD 개 실패"; exit 1
+# ── 볼륨 아카이브도 같은 질문을 받는다. **산출물이 없는 것도 실패다.**
+#    원장만 살아 있고 볼륨이 조용히 멈춘 상태는 「DB 만 과거로 가고 파일은 현재에 남는」
+#    복원을 예약해 둔 것과 같다(`WORK-UNITS §10.2` R-1 행).
+VN=0
+for V in $(volume_list); do
+  VN=$((VN+1))
+  LATEST="$(ls -1t "$COLAB_BACKUP_DIR/vol-$V"-*.tar.gz 2>/dev/null | head -1)"
+  if [ -z "$LATEST" ]; then log "[$V] 볼륨 아카이브가 하나도 없다 — 실패다"; BAD=$((BAD+1)); continue; fi
+  echo "──────── 볼륨 $V"
+  "$HERE/verify-volume-artifact.sh" "$LATEST" || BAD=$((BAD+1))
+done
+
+if [ "$BAD" -eq 0 ]; then echo "최신본 재검사 GREEN — 프로파일 $N 개 · 볼륨 $VN 개"; exit 0; fi
+echo "최신본 재검사 RED — 프로파일 $N ＋ 볼륨 $VN 중 $BAD 개 실패"; exit 1

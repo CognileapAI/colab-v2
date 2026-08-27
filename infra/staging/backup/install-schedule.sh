@@ -14,7 +14,7 @@ block() {
   echo "$BEGIN"
   cat "$HERE/schedule.crontab" | sed 's/^/# /' | sed 's/^# #/#/'
   echo "MAILTO=\"\""
-  echo "30 3 * * * \"$HERE/run-scheduled.sh\" backup.sh >> \"$LOG\" 2>&1"
+  echo "30 3 * * * \"$HERE/run-scheduled.sh\" backup-full.sh >> \"$LOG\" 2>&1"
   echo "10 4 * * 1 \"$HERE/run-scheduled.sh\" latest-check.sh >> \"$LOG\" 2>&1"
   echo "$END"
 }
