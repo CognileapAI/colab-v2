@@ -87,6 +87,25 @@ expect_red "SR8 COLAB_RESTORE_PRE_BACKUP 없이 restore-db.sh (되돌림의 되�
 expect_red "SR9 --yes-overwrite-volume 없이 restore-volume.sh" \
   "$HERE/restore-volume.sh" --volume uploads --archive "$W/platform.sql.gz"
 
+# ── 보관처 위생 (〈170〉-㉰) — `preflight` P10 이 쓰는 판정기 자체를 건다.
+#    허용 목록 방식이라 「아직 생각 못 한 모양의 비밀」도 걸린다는 성질을 여기서 값으로 보인다.
+RAN=$((RAN+1)); echo "──────── SR10 보관처 허용 목록 — 산출물은 통과 · 규약 밖 파일은 적발"
+. "$HERE/../backup/lib.sh"
+D="$W/store"; mkdir -p "$D"
+: > "$D/platform-20260827T171801.sql.gz"; : > "$D/platform-20260827T171801.sql.gz.sha256"
+: > "$D/vol-uploads-20260827T171801.tar.gz"; : > "$D/vol-uploads-20260827T171801.manifest.tsv"
+: > "$D/vol-uploads-20260827T171801.pair"; : > "$D/.inflight-platform-20260827T180000.sql.gz"
+if [ -z "$(backup_dir_offenders "$D")" ]; then
+  echo "  → 산출물만 있는 보관처: 적발 0 (오탐 없음)"
+  echo 'DUMMY-NOT-A-SECRET' > "$D/subjects-20260827T051347.json"
+  echo 'DUMMY' > "$D/무엇인지-모를-파일.txt"
+  N="$(backup_dir_offenders "$D" | wc -l | tr -d ' ')"
+  if [ "$N" = "2" ]; then echo "  → 기대대로: 비밀 모양 1건 ＋ 규약 밖 1건 = 2건 적발"
+  else echo "  → ✗ 적발 $N 건 (기대 2)"; BAD=$((BAD+1)); fi
+else
+  echo "  → ✗ 산출물을 규약 밖으로 오판했다"; backup_dir_offenders "$D" | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi
 echo "복원 셀프테스트 RED — $BAD 건이 fail-closed 가 아니다"; exit 1

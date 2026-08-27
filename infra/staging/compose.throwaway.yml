@@ -1,0 +1,159 @@
+# CoLAB v2 — **일회용 리허설 스택** (`R-1` 리허설 2회차 · `PLAN-SoT §9 〈170〉-㉱`).
+#
+# ⭑⭑ **살아 있는 staging 과 한 자리도 겹치지 않는다.** 겹치면 리허설이 사고를 만든다.
+#   · **프로젝트명이 다르다** — `colab-v2-r1throw`. 볼륨·네트워크가 통째로 갈린다
+#     (`colab-v2-r1throw_uploads` ≠ `colab-v2-staging_uploads`)
+#   · **컨테이너 이름을 짓지 않는다** — `container_name:` 이 없다. `colab_v2_staging_*` 와 부딪힐 수 없다
+#   · **호스트 포트를 하나도 열지 않는다** — 살아 있는 `127.0.0.1:3000` 과 충돌할 자리가 없다.
+#     검증은 compose 네트워크 안에서 `docker compose exec` 로 친다
+#   · **`cloudflared` 가 없다** — 같은 터널 토큰으로 두 번째 커넥터를 띄우면 살아 있는 staging 의
+#     트래픽이 이쪽으로 샌다. 리허설이 실서비스를 건드릴 유일한 경로였고, 그래서 뺐다.
+#     ⚠ 그래서 이 스택은 **7 개**다(살아 있는 8 개 = 이 7 ＋ `cloudflared`). 기동 시간을 그렇게 읽는다
+#   · **`build:` 가 없다** — 이미 있는 `:i2` 이미지를 그대로 쓴다. 리허설이 이미지를 새로 만들면
+#     digest 대장(`§4.6-④`)이 그 자리에서 무의미해진다
+#   · **postgres 는 tmpfs** — 호스트에 한 바이트도 안 남기고, 살아 있는 PGDATA 바인드를 안 쓴다
+#
+# 비밀은 전부 `throwaway-stack.sh` 가 **그 회차에만 쓰는 새 값**으로 만든다.
+# 살아 있는 staging 의 비밀 파일 5종은 이 파일 어디에서도 참조하지 않는다.
+name: colab-v2-r1throw
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${THROW_PG_SUPER_PASSWORD:?THROW_PG_SUPER_PASSWORD 가 필요하다}
+      POSTGRES_DB: postgres
+      PGDATA: /pgdata/db
+    tmpfs:
+      - /pgdata:rw,size=1g
+    command: ["postgres", "-c", "log_statement=mod"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  volume-init:
+    image: alpine:3.20
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews && chmod 0755 /var/lib/colab/uploads /srv/viz-previews"]
+    volumes:
+      - uploads:/var/lib/colab/uploads
+      - previews:/srv/viz-previews
+    restart: "no"
+
+  core-api:
+    image: colab-v2/core-api:i2
+    restart: unless-stopped
+    environment:
+      COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+      COLAB_CORE_UPLOAD_DIR: /var/lib/colab/uploads
+      COLAB_CORE_VIZ_BASE_URL: http://viz-render:8100/viz/v1
+      COLAB_CORE_VIZ_SERVICE_TOKEN: ${THROW_VIZ_SERVICE_TOKEN:?}
+      COLAB_CORE_AI_BASE_URL: http://ai-service:8200
+      COLAB_CORE_SUBJECTS_FILE: /etc/colab/subjects.json
+      COLAB_CORE_SESSION_SECRET: ${THROW_SESSION_SECRET:?}
+      COLAB_CORE_CREDENTIALS_FILE: /etc/colab/credentials.json
+    volumes:
+      - uploads:/var/lib/colab/uploads
+      # ⚠ 셋 다 **이 회차에만 존재하는 재발급본**이다. 살아 있는 5종을 물리지 않는다.
+      - ${THROW_SUBJECTS_FILE:?}:/etc/colab/subjects.json:ro
+      - ${THROW_CREDENTIALS_FILE:?}:/etc/colab/credentials.json:ro
+      - ${THROW_CORE_DB_URL_FILE:?}:/etc/colab/core-database.url:ro
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).status==200 else 1)\""]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  pipeline-worker:
+    image: colab-v2/pipeline-worker:i2
+    restart: unless-stopped
+    environment:
+      COLAB_PIPELINE_DB_URL_FILE: /etc/colab/pipeline-db.url
+      COLAB_WORKER_UPLOAD_DIR: /var/lib/colab/uploads
+    volumes:
+      - uploads:/var/lib/colab/uploads
+      - ${THROW_PIPELINE_DB_URL_FILE:?}:/etc/colab/pipeline-db.url:ro
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).status==200 else 1)\""]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  viz-render:
+    image: colab-v2/viz-render:i2
+    restart: unless-stopped
+    environment:
+      COLAB_VIZ_SERVICE_TOKEN: ${THROW_VIZ_SERVICE_TOKEN:?}
+      COLAB_VIZ_TILE_SIGNING_SECRET: ${THROW_VIZ_TILE_SIGNING_SECRET:?}
+      COLAB_VIZ_SOURCE_ROOT: /var/lib/colab/uploads
+      COLAB_VIZ_PREVIEW_DIR: /srv/viz-previews
+    volumes:
+      - uploads:/var/lib/colab/uploads:ro
+      - previews:/srv/viz-previews
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8100/healthz',timeout=3).status==200 else 1)\""]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  ai-service:
+    image: colab-v2/ai-service:i2
+    restart: unless-stopped
+    environment:
+      COLAB_AI_DB_URL_FILE: /etc/colab/ai-db.url
+      OPENAI_API_KEY: ""
+      COLAB_AI_QUERY_INTERPRETATION: literal
+    volumes:
+      - ${THROW_AI_DB_URL_FILE:?}:/etc/colab/ai-db.url:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8200/healthz',timeout=3).status==200 else 1)\""]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    image: colab-v2/frontend:i2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx.i2.conf:/etc/nginx/conf.d/default.conf:ro
+      - previews:/srv/viz-previews:ro
+    # ⚠ **`ports:` 가 없다.** 살아 있는 `127.0.0.1:3000` 과 충돌할 자리를 만들지 않는다.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/healthz || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      frontend:
+        condition: service_started
+
+volumes:
+  uploads: {}
+  previews: {}

@@ -17,7 +17,7 @@ SKIP_AGE=0
 [ "${2:-}" = "--skip-age" ] && SKIP_AGE=1
 [ -n "$FILE" ] || { echo "사용: verify-artifact.sh <파일.sql.gz> [--skip-age]" >&2; exit 2; }
 
-FAILED=0
+FAILED=0; SKIPPED=0
 echo "검사 대상: $(basename "$FILE")"
 
 # C1 존재 · 최소 크기 (빈 gzip 은 20바이트다 — 1KiB 를 밑돌면 즉시 red)
@@ -54,11 +54,11 @@ if [ "$ROWS" -ge "$COLAB_BACKUP_MIN_ROWS" ]; then pass "C5 데이터 행 ${ROWS}
 # C6 신선도 — 오래된 파일은 "오늘 백업이 돌았다" 의 증거가 아니다.
 #     이전 성공본이 그대로 남아 있는 상황을 성공으로 오독하지 않기 위한 검사다.
 if [ "$SKIP_AGE" -eq 1 ]; then
-  echo "  SKIP  C6 신선도 (--skip-age)"
+  skip_ack "C6 신선도 (--skip-age · 사람이 명시한 유예)"
 else
   NOW=$(date +%s); MT=$(date -r "$FILE" +%s 2>/dev/null || echo 0)
   AGE_MIN=$(( (NOW - MT) / 60 ))
   if [ "$AGE_MIN" -le "$COLAB_BACKUP_MAX_AGE_MIN" ]; then pass "C6 신선도 ${AGE_MIN}분 (<= $COLAB_BACKUP_MAX_AGE_MIN)"; else fail "C6 신선도 ${AGE_MIN}분 > $COLAB_BACKUP_MAX_AGE_MIN — 오래된 잔존 파일이다"; fi
 fi
 
-if [ "$FAILED" -eq 0 ]; then echo "결과: GREEN"; exit 0; else echo "결과: RED (실패 ${FAILED}건)"; exit 1; fi
+verdict "결과"; exit $?

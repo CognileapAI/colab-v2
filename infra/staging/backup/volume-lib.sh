@@ -15,6 +15,23 @@ load_volume_config() {
   : "${COLAB_VOLBACKUP_FREE_MULTIPLIER:=3}"
   # 신선도 상한(분). 원장 덤프와 같은 값을 기본으로 둔다 — 같은 회차에 같이 뜨기 때문이다.
   : "${COLAB_VOLBACKUP_MAX_AGE_MIN:=${COLAB_BACKUP_MAX_AGE_MIN:-1500}}"
+
+  # ⭐ **오라클은 코드가 쥔다 — 설정 파일이 아니다** (`PLAN-SoT §9 〈170〉-㉮` · 2026-08-27).
+  #   `R-1` 1회차에서 실 설정 파일에 `COLAB_VOLBACKUP_ORACLE_uploads` 가 **없어서** V5 가 SKIP 됐고,
+  #   그 SKIP 이 「원장 오라클 포함 GREEN」으로 요약됐다. 원인은 오라클이 아니라 **배선**이었다 —
+  #   손으로 켜니 진짜 GREEN 이 났다. **손으로 켠 GREEN 은 기구가 아니다.**
+  #   그래서 값을 홈의 env 파일에 의존시키지 않고 **레포 안 코드인 여기에 기본값으로 박는다.**
+  #   ⚠ `:=` 는 **미설정과 빈 값을 모두** 덮는다 — 실 설정에 빈 줄이 있어도 기본값이 산다.
+  : "${COLAB_VOLBACKUP_ORACLE_uploads:=d3_file}"
+  # `previews` 는 원장에 대응 표가 없다. **빈 값이 아니라 `none` 이라 적는다** — `volume_oracle` 주석 참조.
+  : "${COLAB_VOLBACKUP_ORACLE_previews:=none}"
+
+  # 볼륨별 최소 건수 기본값 — 실측(`R1-REHEARSAL-01 §2.2` · uploads 135 · previews 39)의 **절반**.
+  # 근거는 원장 쪽과 같다(`〈128〉`): 막아야 하는 것은 「거의 빈 아카이브」이지 소폭 변동이 아니고,
+  # 절반으로 두면 **데이터가 늘수록 자동으로 보수적**이 된다. 여기 두는 이유도 오라클과 같다 —
+  # 실 설정에 이 키가 없어 기본 `1` 로 돌던 것이 `R-1` 1회차의 결손 12 였다.
+  : "${COLAB_VOLBACKUP_MIN_FILES_uploads:=67}"
+  : "${COLAB_VOLBACKUP_MIN_FILES_previews:=19}"
 }
 
 volume_list() { printf '%s\n' ${COLAB_VOLBACKUP_VOLUMES}; }
@@ -25,9 +42,14 @@ volume_real_name() { printf '%s_%s' "$COLAB_VOLBACKUP_PROJECT" "$1"; }
 # ── 볼륨별 합격선 · 오라클 ────────────────────────────────────────────────────
 # `F9` 가 원장 프로파일에 세운 것과 **같은 형태**다: 볼륨마다 따로 걸고, 하나라도 실패하면 전체가 실패.
 #   COLAB_VOLBACKUP_MIN_FILES_<볼륨>   아카이브 안 파일 최소 건수
-#   COLAB_VOLBACKUP_ORACLE_<볼륨>      원장 대조 오라클의 테이블 이름. 비면 오라클 없음
+#   COLAB_VOLBACKUP_ORACLE_<볼륨>      원장 대조 오라클의 테이블 이름. `none` = 명시 면제 · 비면 RED
 _vvar() { local n="$1"; eval "printf '%s' \"\${$n:-}\""; }
 volume_min_files() { local v; v="$(_vvar "COLAB_VOLBACKUP_MIN_FILES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '1'; }
+# 오라클 선언은 **세 상태**다. 두 상태(있다/없다)로 두면 「선언을 잊은 것」과
+# 「없다고 판단한 것」이 같은 값이 되고, 그 구분이 없는 것이 `〈170〉-㉮` 의 실패였다.
+#   <테이블명>     = 오라클 있음. V5 가 돈다
+#   none           = **명시적 면제.** 사람이 「이 볼륨엔 대조 기준이 없다」고 적은 것. V5 는 승인된 SKIP
+#   빈 값·미설정   = **선언 자체가 없다.** V5 는 **RED** — 새 볼륨을 오라클 없이 추가하면 백업이 선다
 volume_oracle()    { _vvar "COLAB_VOLBACKUP_ORACLE_$1"; }
 
 # 산출물 이름 — 원장 덤프(`<프로파일>-<stamp>.sql.gz`)와 **접두사로 갈린다**.

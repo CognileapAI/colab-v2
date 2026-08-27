@@ -15,7 +15,7 @@ COLAB_BACKUP_TARGET=postgres
 COLAB_VOLBACKUP_MIN_FILES_uploads=3
 COLAB_VOLBACKUP_MIN_FILES_previews=1
 COLAB_VOLBACKUP_ORACLE_uploads=d3_file
-COLAB_VOLBACKUP_ORACLE_previews=
+COLAB_VOLBACKUP_ORACLE_previews=none
 CFG
 
 expect_red() { # $1=이름 $2...=명령
@@ -169,6 +169,82 @@ fi
 # VF13 짝 없이 볼륨 백업을 부를 수 없다
 expect_red "VF13 --pair 없이 backup-volume.sh (짝 없는 아카이브를 만들지 않는다)" \
   env COLAB_BACKUP_CONFIG="$COLAB_BACKUP_CONFIG" "$HERE/backup-volume.sh"
+
+# ══ 〈170〉-㉮ green-by-skip 회귀 fixture ══════════════════════════════════════
+#    `R-1` 1회차가 실물로 잡은 실패: 실 설정에 오라클 키가 없어 V5 가 SKIP 됐는데
+#    상위 요약줄은 「원장 오라클 포함 GREEN」이었다. 아래 넷이 그 형태를 못 돌아오게 박는다.
+
+# VF14 **오라클 미선언 볼륨은 RED 다** — 조용한 SKIP 이 아니다.
+#      `uploads`·`previews` 는 volume-lib 이 기본값을 쥐므로, 선언이 없는 상태를 재현하려면
+#      기본값이 없는 **새 볼륨 이름**을 써야 한다. 새 볼륨을 오라클 없이 추가하는 상황 그 자체다.
+TREE14="$W/vol14"; mkdir -p "$TREE14/uploads/DS1"
+head -c 4000 /dev/urandom > "$TREE14/uploads/DS1/F001"
+make_archive "$TREE14" "$W/vol-fixturevol-20260827T000014"
+cat > "$W/undeclared.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_VOLBACKUP_VOLUMES="fixturevol"
+COLAB_VOLBACKUP_MIN_FILES_fixturevol=1
+CFG
+expect_red "VF14 오라클 미선언 볼륨 — 선언 없는 것을 통과로 읽지 않는다 (〈170〉-㉮)" \
+  env COLAB_BACKUP_CONFIG="$W/undeclared.env" \
+      "$HERE/verify-volume-artifact.sh" "$W/vol-fixturevol-20260827T000014.tar.gz" --pair "$W/platform-one.sql.gz"
+
+# VF15 **배선 회귀** — 설정 파일에 오라클 키가 하나도 없어도 `uploads` 의 V5 는 **돌아야** 한다.
+#      1회차의 실 설정이 정확히 이 모양이었다. 기본값이 코드에 있으므로 이제 SKIP 되지 않는다.
+cat > "$W/nokeys.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+CFG
+RAN=$((RAN+1)); echo "──────── VF15 오라클 키 없는 설정에서도 uploads V5 가 실제로 돈다 (〈170〉-㉮ 배선)"
+OUT15="$(env COLAB_BACKUP_CONFIG="$W/nokeys.env" "$HERE/verify-volume-artifact.sh" "$GOOD" --pair "$W/platform-good.sql.gz" 2>&1)"
+if echo "$OUT15" | grep -q 'V5-b' && ! echo "$OUT15" | grep -q 'SKIP  V5'; then
+  echo "  → 기대대로: V5 가 돌았다 (오라클 기본값이 코드에 있다)"
+else
+  echo "  → ✗ 설정 키가 없자 V5 가 다시 꺼졌다 — green-by-skip 회귀"; echo "$OUT15" | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
+# VF16 **SKIP 은 요약줄에 반드시 드러난다** — 명시 면제(none)라도 「그냥 GREEN」이라 적지 않는다.
+TREE16="$W/vol16"; mkdir -p "$TREE16/previews"
+for i in 1 2 3; do head -c 4000 /dev/urandom > "$TREE16/previews/P$i"; done
+make_archive "$TREE16" "$W/vol-previews-20260827T000016"
+cat > "$W/prev.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_VOLBACKUP_MIN_FILES_previews=1
+CFG
+RAN=$((RAN+1)); echo "──────── VF16 명시 면제(none) 볼륨의 요약줄에 SKIP 건수가 실린다"
+OUT16="$(env COLAB_BACKUP_CONFIG="$W/prev.env" "$HERE/verify-volume-artifact.sh" "$W/vol-previews-20260827T000016.tar.gz" --pair "$W/platform-good.sql.gz" 2>&1)"
+if echo "$OUT16" | tail -1 | grep -q '승인된 SKIP'; then
+  echo "  → 기대대로: $(echo "$OUT16" | tail -1)"
+else
+  echo "  → ✗ SKIP 이 있는데 요약줄이 숨겼다"; echo "$OUT16" | tail -3 | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
+# ══ 〈170〉-㉰ 비밀 사본 회귀 fixture ═════════════════════════════════════════
+# VF17 보관처에 비밀 모양 파일이 있으면 **전범위 백업이 시작조차 안 한다**.
+#      `R-1` 1회차에 보관처에서 나온 `subjects-*.json` 이 그 실물이다.
+#      ⚠ 이 fixture 는 **비밀이 아닌 더미 내용**을 쓴다. 이름 모양만 같으면 걸리는 것이 요점이다.
+mkdir -p "$W/secret-out"
+echo 'DUMMY-NOT-A-SECRET' > "$W/secret-out/subjects-20260827T000000.json"
+cat > "$W/secret.env" <<CFG
+COLAB_BACKUP_TARGET=postgres
+COLAB_BACKUP_DIR=$W/secret-out
+CFG
+expect_red "VF17 보관처에 subjects-*.json 이 있으면 backup-full.sh 가 선다 (〈170〉-㉰)" \
+  env COLAB_BACKUP_CONFIG="$W/secret.env" "$HERE/backup-full.sh"
+
+# VF18 이름 모양 판정기 자체 — 비밀 7종의 모양이 전건 잡히고, 산출물 이름은 안 잡힌다.
+RAN=$((RAN+1)); echo "──────── VF18 secret_shaped 판정 (비밀 7종 모양 전건 · 산출물 오탐 0)"
+VF18=0
+. "$HERE/lib.sh"
+for n in subjects.json subjects-20260827T051347.json credentials.json core.env .env \
+         COLAB_STAGING_CORE_DB_URL core-db-url.txt id_rsa server.key tls.pem api-token.txt; do
+  secret_shaped "$n" || { echo "  ✗ 비밀 모양인데 못 잡았다: $n"; VF18=1; }
+done
+for n in platform-20260827T171801.sql.gz vol-uploads-20260827T171801.tar.gz \
+         vol-uploads-20260827T171801.manifest.tsv vol-uploads-20260827T171801.pair; do
+  secret_shaped "$n" && { echo "  ✗ 산출물을 비밀로 오판했다: $n"; VF18=1; }
+done
+if [ "$VF18" -eq 0 ]; then echo "  → 기대대로: 비밀 모양 11건 전건 적중 · 산출물 4건 오탐 0"
+else BAD=$((BAD+1)); fi
 
 echo
 if [ "$BAD" -eq 0 ]; then

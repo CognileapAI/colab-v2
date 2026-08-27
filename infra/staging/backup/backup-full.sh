@@ -14,6 +14,20 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 load_config
 load_volume_config
 
+# ═══ 0단 · 보관처 위생 — **비밀 사본이 있으면 백업을 시작하지 않는다** (PLAN-SoT §9 〈170〉-㉰)
+#     Ted 판정 2026-08-27 = 「지우고, 생기지 않게 막는다」. 「생기지 않게」의 정문이 여기다.
+#     허용 목록 방식이라 subjects-*.json 뿐 아니라 **산출물 규약 밖 파일 전부**가 걸린다.
+#     ⚠ 이름만 찍는다. 값은 읽지도 찍지도 않는다 (〈121〉-㉰ 계열).
+OFF="$(backup_dir_offenders)"
+if [ -n "$OFF" ]; then
+  log "보관처에 산출물 규약 밖 파일이 있다 — 백업을 시작하지 않는다. 비밀 사본일 수 있다(〈163〉-㉲)."
+  printf '%s\n' "$OFF" | while IFS= read -r f; do
+    if secret_shaped "$f"; then log "  ⛔ 비밀 모양: $(basename "$f")"; else log "  ⛔ 규약 밖:  $(basename "$f")"; fi
+  done
+  log "값은 읽지 않았다. 지우거나 보관처 밖으로 옮긴 뒤 다시 돌린다."
+  exit 1
+fi
+
 log "═══ 1단 · 원장 덤프 (platform · ai)"
 # ⚠ 종료코드를 `if ! cmd; then RC=$?` 로 받지 않는다 — `!` 가 `$?` 를 뒤집어 **0 을 받는다.**
 #   이 셀프테스트(`VF12`)가 실제로 그 버그를 잡았다. 성공으로 오독되는 실패가 이 디렉터리의 주제다.
@@ -35,5 +49,5 @@ if [ "$RC" -ne 0 ]; then
   exit "$RC"
 fi
 
-log "전범위 백업 GREEN — 원장 2 프로파일 ＋ 볼륨 $(volume_list | wc -l | tr -d ' ') 개"
+log "전범위 백업 GREEN — 원장 2 프로파일 ＋ 볼륨 $(volume_list | wc -l | tr -d ' ') 개 · 보관처 규약 밖 파일 0"
 exit 0

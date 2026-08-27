@@ -16,7 +16,7 @@ load_config
 : "${COLAB_STAGING_PLATFORM_DB:=colab_platform}"
 : "${COLAB_STAGING_AI_DB:=colab_ai}"
 
-PDUMP=""; ADUMP=""; OWNER=""; PRE=""; BASE=""
+PDUMP=""; ADUMP=""; OWNER=""; PRE=""; BASE=""; NO_HEALTH=0; MANUAL_OK=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform-dump) PDUMP="${2:?}"; shift 2 ;;
@@ -24,12 +24,15 @@ while [ $# -gt 0 ]; do
     --owner) OWNER="${2:?}"; shift 2 ;;
     --pre-digests) PRE="${2:?}"; shift 2 ;;
     --base-url) BASE="${2:?}"; shift 2 ;;
+    # ⭑ 아래 둘은 **명시 승인 플래그**다 (`〈170〉-㉮`). 없으면 해당 항목은 SKIP 이 아니라 RED·미완이다.
+    --no-health) NO_HEALTH=1; shift ;;        # 헬스를 일부러 안 본다고 사람이 적은 경우
+    --manual-ok) MANUAL_OK=1; shift ;;        # ③-보·⑤ 손검사를 사람이 돌고 통과를 확인한 경우
     *) echo "모르는 인자: $1" >&2; exit 2 ;;
   esac
 done
 [ -n "$PDUMP" ] && [ -n "$ADUMP" ] && [ -n "$OWNER" ] || { echo "사용법은 머리말을 본다" >&2; exit 2; }
 
-FAILED=0
+FAILED=0; SKIPPED=0
 q() { docker exec "$COLAB_STAGING_PG_CONTAINER" psql -U "$OWNER" -d "$1" -At -c "$2" 2>/dev/null </dev/null; }
 
 cmp_table() { # $1=DB $2=덤프 $3=테이블
@@ -83,14 +86,26 @@ if [ -n "$BASE" ]; then
     C="$(curl -s -o /dev/null -w '%{http_code}' "$BASE$P" 2>/dev/null)"
     if [ "$C" = "200" ]; then pass "⑦ $P 200"; else fail "⑦ $P $C"; fi
   done
+elif [ "$NO_HEALTH" -eq 1 ]; then
+  skip_ack "⑦ 헬스 (--no-health · 사람이 명시한 유예). ⚠ **루트 하나만 보지 않는다** — 자리표시 오리진도 루트 200 을 낸다"
 else
-  echo "  SKIP  --base-url 미지정. ⚠ **루트 하나만 보지 않는다** — 자리표시 오리진도 루트 200 을 낸다"
+  # ⭑ 종전에는 여기서 조용히 SKIP 하고 최종 요약이 「복원 검증 GREEN」이었다. 헬스를 한 건도
+  #   안 재고 GREEN 을 말한 것이다 — `〈170〉-㉮` 와 같은 형태라 같이 닫는다.
+  fail "⑦ --base-url 을 안 줬다 — 헬스를 한 건도 재지 않았다. 일부러 빼려면 --no-health 로 **명시**한다"
 fi
 
 echo
-if [ "$FAILED" -eq 0 ]; then
-  echo "복원 검증 GREEN — 단, ③-보 와 ⑤ 는 손으로 돌아야 판정이 완성된다"
+if [ "$FAILED" -ne 0 ]; then
+  echo "복원 검증 RED (실패 ${FAILED}건$([ "${SKIPPED:-0}" -ne 0 ] && echo " · 승인된 SKIP ${SKIPPED}건")) — 다음 수는 §4.7 되돌림의 되돌림이다"
+  exit 1
+fi
+# ⭑ **손검사 2건(③-보 · ⑤)을 안 돌고 「GREEN」이라 말하지 않는다** (`〈170〉-㉮`).
+#   종전 요약은 「복원 검증 GREEN — 단, ③-보 와 ⑤ 는 손으로…」였다. 그 「단,」이 곧 SKIP 이고,
+#   그럼에도 종료코드가 0 이었다. 안 본 것이 있으면 **성공 판정이 아니다** — exit 3(미완)로 가른다.
+if [ "$MANUAL_OK" -eq 1 ]; then
+  echo "복원 검증 GREEN — 자동분 전건 통과 ＋ 손검사 2건(③-보·⑤) 사람이 확인(--manual-ok)$([ "${SKIPPED:-0}" -ne 0 ] && echo " · 승인된 SKIP ${SKIPPED}건")"
   exit 0
 fi
-echo "복원 검증 RED (실패 ${FAILED}건) — 다음 수는 §4.7 되돌림의 되돌림이다"
-exit 1
+echo "복원 검증 **미완** — 자동분은 전건 통과했으나 손검사 2건(③-보 POST /searches · ⑤ 앱 롤 양성·음성)이 아직 판정되지 않았다."
+echo "  런북 §4.6-③-보 · §4.6-⑤ 를 돌고, 통과했으면 --manual-ok 로 다시 부른다. (exit 3 = GREEN 아님)"
+exit 3

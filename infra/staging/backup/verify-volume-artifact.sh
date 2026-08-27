@@ -43,7 +43,7 @@ case "$PAIR" in */*) : ;; "") : ;; *) PAIR="$(dirname "$ART")/$PAIR" ;; esac
 MINFILES="$(volume_min_files "$VOL")"
 ORACLE="$(volume_oracle "$VOL")"
 
-FAILED=0
+FAILED=0; SKIPPED=0
 echo "검사 대상: $(basename "$ART")  (볼륨 $VOL · 최소 건수 $MINFILES · 오라클 ${ORACLE:-없음})"
 
 # ── V1 존재 · 최소 크기 ──────────────────────────────────────────────────────
@@ -107,7 +107,12 @@ fi
 # **이 항목이 이 검사기의 존재 이유다.** 크기·gzip 은 「파일이 있다」만 말하고
 # 「원장이 가리키는 바이트가 다 들어 있다」는 말하지 않는다.
 if [ -z "$ORACLE" ]; then
-  echo "  SKIP  V5 오라클 없음 — 이 볼륨은 원장 대조 기준이 없다 (아래 '보증하지 않는 것' 참조)"
+  # ⭑ **선언이 없으면 RED 다** (`〈170〉-㉮`). 종전에는 여기서 조용히 SKIP 했고, 그 SKIP 이
+  #   상위 요약줄에서 「원장 오라클 포함 GREEN」이 됐다 — `R-1` 1회차가 실물로 잡은 형태다.
+  #   면제하려면 `COLAB_VOLBACKUP_ORACLE_<볼륨>=none` 이라고 **적어야** 한다. 안 적은 것은 면제가 아니다.
+  fail "V5 볼륨 \`$VOL\` 에 오라클 선언이 없다 (COLAB_VOLBACKUP_ORACLE_$VOL). 면제하려면 값을 \`none\` 으로 **명시**한다 — 미선언을 통과로 읽지 않는다"
+elif [ "$ORACLE" = "none" ]; then
+  skip_ack "V5 오라클 명시 면제(none) — 이 볼륨은 원장 대조 기준이 없다 (아래 '보증하지 않는 것' 참조)"
 elif [ -z "$PAIR" ] || [ ! -f "$PAIR" ]; then
   fail "V5 짝 원장 덤프가 없다 — 오라클을 못 돌리면 통과시키지 않는다 (fail-closed)"
 else
@@ -166,11 +171,12 @@ if [ "$NTAR" -ge "$MINFILES" ]; then pass "V6 파일 ${NTAR}건 (>= $MINFILES)";
 
 # ── V7 신선도 ────────────────────────────────────────────────────────────────
 if [ "$SKIP_AGE" -eq 1 ]; then
-  echo "  SKIP  V7 신선도 (--skip-age) — 사고 복원은 옛 산출물을 쓴다"
+  skip_ack "V7 신선도 (--skip-age · 사람이 명시한 유예) — 사고 복원은 옛 산출물을 쓴다"
 else
   NOW=$(date +%s); MT=$(date -r "$ART" +%s 2>/dev/null || echo 0)
   AGE_MIN=$(( (NOW - MT) / 60 ))
   if [ "$AGE_MIN" -le "$COLAB_VOLBACKUP_MAX_AGE_MIN" ]; then pass "V7 신선도 ${AGE_MIN}분 (<= $COLAB_VOLBACKUP_MAX_AGE_MIN)"; else fail "V7 신선도 ${AGE_MIN}분 > $COLAB_VOLBACKUP_MAX_AGE_MIN — 옛 잔존 파일이다"; fi
 fi
 
-if [ "$FAILED" -eq 0 ]; then echo "결과: GREEN"; exit 0; else echo "결과: RED (실패 ${FAILED}건)"; exit 1; fi
+# 요약줄은 `lib.sh` 의 `verdict` 하나가 만든다 — SKIP 건수를 숨긴 GREEN 을 쓸 수 없게 하기 위해서다.
+verdict "결과"; exit $?

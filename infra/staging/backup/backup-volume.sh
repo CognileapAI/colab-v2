@@ -93,6 +93,20 @@ backup_one_volume() { # $1=볼륨
   RC=$?
   [ "$RC" -eq 0 ] || { log "[$V] 매니페스트 작성 실패 (exit $RC) — 최종본 생성 안 함"; return 1; }
 
+  # ── ①-b **비밀 모양 파일은 백업하지 않는다 — 빼는 것이 아니라 선다** (PLAN-SoT §9 〈170〉-㉰)
+  #    조용히 제외하면 아카이브와 원장이 어긋나 오라클이 거짓 RED 를 내고, 그 RED 를 사람이
+  #    「원래 그렇다」로 읽게 된다. 그래서 **제외가 아니라 실패**다 — 볼륨에 비밀이 들어간 것 자체가 사고다.
+  #    ⚠ 이름만 본다. 내용은 열지 않는다.
+  local SEC
+  SEC="$(awk -F'\t' '{print $1}' "$TMPMAN" | while IFS= read -r rel; do
+           secret_shaped "$rel" && printf '%s\n' "$rel"; done)"
+  if [ -n "$SEC" ]; then
+    log "[$V] 볼륨 안에 **비밀 모양 파일**이 있다 — 아카이브를 만들지 않는다 (〈163〉-㉲ 비밀 7종 미백업)"
+    printf '%s\n' "$SEC" | while IFS= read -r r; do log "  ⛔ $r"; done
+    log "     값은 읽지 않았다. 볼륨에서 치운 뒤 다시 돌린다."
+    return 1
+  fi
+
   # ── ② tar — 매니페스트의 경로 목록 그대로.
   log "[$V] 아카이브 생성"
   awk -F'\t' '{print "./" $1}' "$TMPMAN" \

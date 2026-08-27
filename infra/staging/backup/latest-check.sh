@@ -33,5 +33,14 @@ for V in $(volume_list); do
   "$HERE/verify-volume-artifact.sh" "$LATEST" || BAD=$((BAD+1))
 done
 
+# ── 보관처 위생 — 비밀 사본이 흘러들었는지 정기적으로 되묻는다 (〈170〉-㉰).
+OFF="$(backup_dir_offenders)"
+if [ -n "$OFF" ]; then
+  echo "──────── 보관처 위생"
+  printf '%s\n' "$OFF" | while IFS= read -r f; do echo "  ⛔ 산출물 규약 밖: $(basename "$f")"; done
+  echo "  비밀 사본일 수 있다 — 〈163〉-㉲ 는 비밀 7종을 백업하지 않는다. 값은 읽지 않았다."
+  BAD=$((BAD+1))
+fi
+
 if [ "$BAD" -eq 0 ]; then echo "최신본 재검사 GREEN — 프로파일 $N 개 · 볼륨 $VN 개"; exit 0; fi
 echo "최신본 재검사 RED — 프로파일 $N ＋ 볼륨 $VN 중 $BAD 개 실패"; exit 1

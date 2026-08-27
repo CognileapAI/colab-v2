@@ -8,7 +8,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib.sh"
 load_config
 CT="${1:?컨테이너}"; DB="${2:?DB}"; U="${3:?사용자}"; EXP="${4:?기대치파일}"
-FAILED=0
+FAILED=0; SKIPPED=0
 q() { docker exec "$CT" psql -U "$U" -d "$DB" -At -c "$1" 2>/dev/null </dev/null; }
 
 TOTAL=0
@@ -30,4 +30,4 @@ NT="$(q "SELECT count(*) FROM information_schema.tables WHERE table_schema='publ
 NT="${NT:-0}"
 if [ "$NT" -ge "$COLAB_BACKUP_MIN_TABLES" ]; then pass "테이블 $NT 개 (>= $COLAB_BACKUP_MIN_TABLES)"; else fail "테이블 $NT 개 < $COLAB_BACKUP_MIN_TABLES"; fi
 
-if [ "$FAILED" -eq 0 ]; then echo "결과: GREEN"; exit 0; else echo "결과: RED (실패 ${FAILED}건)"; exit 1; fi
+verdict "결과"; exit $?

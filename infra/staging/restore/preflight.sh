@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-FAILED=0
+FAILED=0; SKIPPED=0
 pick() { # $1=글로브 접두  $2=확장자
   if [ -n "$STAMP" ]; then ls -1 "$1-$STAMP$2" 2>/dev/null | head -1
   else ls -1t "$1"-*"$2" 2>/dev/null | head -1; fi
@@ -54,8 +54,14 @@ for P in $(backup_profiles); do
 done
 for V in $(volume_list); do
   A="${ART[vol-$V]:-}"; [ -n "$A" ] || continue
-  if "$BK_LIB/verify-volume-artifact.sh" "$A" --skip-age >/dev/null 2>&1
-  then pass "P3 볼륨 $V 아카이브 GREEN (원장 오라클 포함)"; else fail "P3 볼륨 $V 아카이브 RED"; fi
+  # ⭑ **「원장 오라클 포함」을 무조건 찍지 않는다** (`〈170〉-㉮`). 오라클 선언을 설정에서 읽어
+  #   그 값을 적고, 검사기 요약줄(SKIP 건수 포함)을 그대로 옮긴다. `rehearsal.sh` 4단과 같은 처치다.
+  O="$(volume_oracle "$V")"
+  OUT="$("$BK_LIB/verify-volume-artifact.sh" "$A" --skip-age 2>&1)"; RC=$?
+  SUM="$(echo "$OUT" | tail -1)"
+  if [ "$RC" -eq 0 ]
+  then pass "P3 볼륨 $V 아카이브 — $SUM · 원장 오라클 = ${O:-미선언}"
+  else fail "P3 볼륨 $V 아카이브 RED — $SUM (상세는 verify-volume-artifact.sh 를 직접 돌린다)"; fi
 done
 
 echo "════ P4 sha256 무결성"
@@ -137,6 +143,16 @@ else
   fail "P9 COLAB_RESTORE_CAUSE 가 비어 있다. **원인 미상인 채 복원하면 같은 손상이 다시 온다**(S2-BLOCKER-INVESTIGATION §1.4)"
 fi
 
+echo "════ P10 보관처에 비밀 사본이 없다 (〈170〉-㉰ · 이름만 본다 · 값은 읽지 않는다)"
+OFF="$(backup_dir_offenders)"
+if [ -z "$OFF" ]; then pass "P10 보관처에 산출물 규약 밖 파일 0"
+else
+  printf '%s\n' "$OFF" | while IFS= read -r f; do echo "        ⛔ $(basename "$f")"; done
+  fail "P10 보관처에 산출물 규약 밖 파일이 있다 — 비밀 사본일 수 있다. 〈163〉-㉲ 는 비밀 7종을 백업하지 않는다"
+fi
+
 echo
-if [ "$FAILED" -eq 0 ]; then echo "사전조건 GREEN — 복원을 시작해도 된다"; exit 0; fi
+if [ "$FAILED" -eq 0 ]; then
+  echo "사전조건 GREEN — 복원을 시작해도 된다$([ "${SKIPPED:-0}" -ne 0 ] && echo " (승인된 SKIP ${SKIPPED}건)")"; exit 0
+fi
 echo "사전조건 RED (실패 ${FAILED}건) — **복원을 시작하지 않는다**"; exit 1

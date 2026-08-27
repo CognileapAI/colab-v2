@@ -9,7 +9,8 @@
 #
 # 덮는 것(§5) — 1 `DROP SCHEMA` 비가역 구간 · 3 비밀 파일 제자리 덮어쓰기 vs `mv`(inode) ·
 #               6 RLS·GRANT 생존 · ＋ 볼륨 백업 왕복(§5 #4 의 선행 결손이 이번에 채워졌다)
-# 안 덮는 것 — 2 컨테이너 8개 왕복(부분) · 5 `:i2` 태그 이력(부분) · 8 원인 규명(안 덮인다)
+# 안 덮는 것 — 5 `:i2` 태그 이력(부분) · 8 원인 규명(안 덮인다)
+#              (2 컨테이너 왕복은 2회차부터 7단이 덮는다 — `〈170〉-㉱`)
 #
 # 사용: rehearsal.sh [--keep]      (`--keep` 은 실패 조사용 · 기본은 전부 지운다)
 set -uo pipefail
@@ -46,7 +47,7 @@ ADUMP="$(ls -1t "$COLAB_BACKUP_DIR"/ai-*.sql.gz | head -1)"
 VART="$(ls -1t "$COLAB_BACKUP_DIR"/vol-uploads-*.tar.gz | head -1)"
 ok "재료 = $(basename "$PDUMP") · $(basename "$ADUMP") · $(basename "${VART:-없음}")"
 
-step "1. §5-1 — `DROP SCHEMA public CASCADE` → 재적재 (비가역 구간을 일회용에서 통째로)"
+step '1. §5-1 — `DROP SCHEMA public CASCADE` → 재적재 (비가역 구간을 일회용에서 통째로)'
 up r1_pg_drop colab_platform || true
 gunzip -c "$PDUMP" | docker exec -i r1_pg_drop psql -q -v ON_ERROR_STOP=1 -U postgres -d colab_platform >/dev/null \
   && ok "1차 적재" || ng "1차 적재 실패"
@@ -64,7 +65,7 @@ while IFS=$'\t' read -r t n; do
 done <<< "$BEFORE"
 echo "  ⏱ 이 구간의 소요를 적어 둔다 — 실사고 때 「얼마나 걸리는가」의 유일한 근거다"
 
-step "2. §5-3 — 비밀 파일: **제자리 덮어쓰기 vs `mv`** (inode 동작 · 양성·음성)"
+step '2. §5-3 — 비밀 파일: **제자리 덮어쓰기 vs `mv`** (inode 동작 · 양성·음성)'
 # 살아 있는 비밀 파일을 쓰지 않는다. 같은 규약(0600 · `:ro` 파일 바인드)으로 **재현**한다.
 mkdir -p "$W/secret"; echo "OLD" > "$W/secret/token.json"; chmod 600 "$W/secret/token.json"
 docker rm -f r1_bind >/dev/null 2>&1 || true
@@ -77,13 +78,13 @@ printf 'NEW-INPLACE' > "$W/secret/token.json"        # 제자리 덮어쓰기 �
   || ng "제자리 덮어쓰기가 안 보인다"
 printf 'NEW-MOVED' > "$W/secret/token.new"; mv "$W/secret/token.new" "$W/secret/token.json"   # mv — inode 교체
 if [ "$(docker exec r1_bind cat /etc/colab/token.json)" = "NEW-MOVED" ]; then
-  ng "음성 실패 — `mv` 가 반영됐다. 이 호스트에서는 §4.2-1 의 근거가 성립하지 않는다(재측정 필요)"
+  ng '음성 실패 — `mv` 가 반영됐다. 이 호스트에서는 §4.2-1 의 근거가 성립하지 않는다(재측정 필요)'
 else
-  ok "음성 — `mv` 뒤에도 컨테이너는 **옛 파일을 계속 읽는다**(바인드는 inode 에 붙는다)"
+  ok '음성 — `mv` 뒤에도 컨테이너는 **옛 파일을 계속 읽는다**(바인드는 inode 에 붙는다)'
 fi
-echo "  ⚠ 그래서 재발급 절차는 **제자리 덮어쓰기 ＋ 재기동**이다. `mv` 금지(§7.2 공통규약)."
+echo '  ⚠ 그래서 재발급 절차는 **제자리 덮어쓰기 ＋ 재기동**이다. `mv` 금지(§7.2 공통규약).'
 
-step "3. §5-6 — RLS·GRANT 생존: `--no-privileges` 덤프를 적재하면 앱 롤이 무엇을 보는가"
+step '3. §5-6 — RLS·GRANT 생존: `--no-privileges` 덤프를 적재하면 앱 롤이 무엇을 보는가'
 up r1_pg_rls colab_platform || true
 gunzip -c "$PDUMP" | docker exec -i r1_pg_rls psql -q -v ON_ERROR_STOP=1 -U postgres -d colab_platform >/dev/null || ng "적재 실패"
 docker exec -i r1_pg_rls psql -q -v ON_ERROR_STOP=1 -U postgres -d colab_platform \
@@ -97,11 +98,19 @@ docker exec -i r1_pg_rls psql -q -U postgres -d colab_platform \
 SCOPED="$(docker exec r1_pg_rls psql -U r1_app -d colab_platform -At -c "SELECT count(*) FROM d3_dataset" 2>/dev/null || echo 실패)"
 [ "$SCOPED" = "0" ] && ok "양성 — GRANT 뒤에도 스코프 없는 조회는 0행(RLS 기본 거부가 산다)" \
   || ng "GRANT 뒤 조회 = $SCOPED. 0 이 아니면 RLS 가 안 살아 있거나 정책이 다르다"
-echo "  ⚠ 실 staging 의 앱 롤 권한 복구 수단은 `services/core-api/ops/app-role.sql` 이다 — 런북 §4.3 이 가리킨다"
+echo '  ⚠ 실 staging 의 앱 롤 권한 복구 수단은 `services/core-api/ops/app-role.sql` 이다 — 런북 §4.3 이 가리킨다'
 
 step "4. 볼륨 왕복 — 백업 → 일회용 볼륨에 복원 → 매니페스트 전건 sha256 대조"
 if [ -z "$VART" ]; then ng "볼륨 아카이브가 없다 — §5 #4 가 아직 안 채워졌다"; else
-  "$BK/verify-volume-artifact.sh" "$VART" && ok "아카이브 검사 GREEN(원장 오라클 포함)" || ng "아카이브 검사 RED"
+  # ⭑ **요약줄이 실제로 돈 것만 말하게 한다** (`〈170〉-㉮`). 종전에는 V5 가 SKIP 돼도
+  #   「원장 오라클 포함」이라 찍었다 — 그것이 `R-1` 1회차가 잡은 green-by-skip 이다.
+  #   이제 ⓐ 오라클 이름을 설정에서 읽어 그대로 적고 ⓑ 검사기 요약줄(SKIP 건수 포함)을 그대로 옮긴다.
+  VORACLE="$(volume_oracle uploads)"
+  VOUT="$("$BK/verify-volume-artifact.sh" "$VART" 2>&1)"; VRC=$?
+  echo "$VOUT" | sed 's/^/        /'
+  VSUM="$(echo "$VOUT" | tail -1)"
+  if [ "$VRC" -eq 0 ]; then ok "아카이브 검사 — $VSUM · 원장 오라클 = ${VORACLE:-미선언}"
+  else ng "아카이브 검사 RED — $VSUM"; fi
   docker volume create r1_vol_uploads >/dev/null
   gunzip -c "$VART" | docker run --rm -i -u 0:0 -v r1_vol_uploads:/vol "$COLAB_VOLBACKUP_HELPER_IMAGE" \
     sh -c 'tar -xf - -C /vol && chown -R 10001:10001 /vol' \
@@ -115,19 +124,31 @@ if [ -z "$VART" ]; then ng "볼륨 아카이브가 없다 — §5 #4 가 아직 
     done; echo "BAD=$bad"' < "$MAN")"
   [ "${OUT#BAD=}" = "0" ] && ok "매니페스트 전건 sha256 일치" || ng "왕복 대조 RED ($OUT)"
   docker volume rm r1_vol_uploads >/dev/null 2>&1 || true
-  echo "  ⏱ **복원 소요를 다시 잰다** — 종전 실측(platform 317ms · ai 130ms · `IS3 §15`)에는 업로드 바이트가 없다(§5-7)"
+  echo '  ⏱ **복원 소요를 다시 잰다** — 종전 실측(platform 317ms · ai 130ms · `IS3 §15`)에는 업로드 바이트가 없다(§5-7)'
 fi
 
 step "5. 이미지 digest 대장 대조 (읽기 전용 · §5-5 부분 리허설)"
 "$HERE/check-image-digests.sh" && ok "대장 일치" || ng "대장 불일치 — 재기동 전에 §4.6-④ 로 판정한다"
 
-step "6. `subjects.json` 형식 — **재발급의 절반**(§7.2 [미확인] 분할분)"
+step '6. `subjects.json` 형식 — **재발급의 절반**(§7.2 [미확인] 분할분)'
 echo "  형식은 레포에서 읽힌다: services/core-api/tests/fixtures/subjects.json ＋ kernel/auth.py"
 echo "  {\"<토큰문자열>\": {\"accountId\": \"<ULID>\", \"labId\": \"<ULID>\"}} — 키가 곧 베어러 토큰이다"
 echo "  ⚠ **레포 픽스처 값을 staging 에 올리지 않는다.** 토큰은 새로 만든다(예: openssl rand -hex 32)"
 echo "  ⚠ **여기서 증명되지 않는 것 = 완-비2**: 「재발급본으로 기동이 선다」는 컨테이너 왕복이라"
 echo "     리허설 2회차(§5-2 부분 리허설)의 항목이다. 형식을 안 것과 기동이 선 것은 다르다."
 
+step '7. §5-2 — **일회용 compose 스택 기동** (완-비2 · 완-비3 · 기동 시간)'
+# ⭑ 1회차가 못 닫은 결손이 여기서 닫힌다 — `R1-REHEARSAL-01 §3` 이 값으로 적은 넷.
+#   프로젝트명·볼륨·네트워크가 통째로 갈리고 호스트 포트를 하나도 안 연다. `cloudflared` 는 없다.
+if [ "${COLAB_REHEARSAL_SKIP_STACK:-0}" = "1" ]; then
+  # ⚠ **명시 플래그로만 뺄 수 있다.** 안 준 채 조용히 건너뛰는 경로를 두지 않는다(〈170〉-㉮).
+  ng "7단을 건너뛰라고 지시받았다(COLAB_REHEARSAL_SKIP_STACK=1) — 완-비2·완-비3 는 미판정이다. 미판정을 통과로 읽지 않는다"
+else
+  "$HERE/throwaway-stack.sh" --platform-dump "$PDUMP" --ai-dump "$ADUMP" \
+    && ok "완-비2·완-비3 전건 통과 (상세는 위 출력)" \
+    || ng "일회용 스택 RED — 완-비2/완-비3 중 실패가 있다"
+fi
+
 echo
-if [ "$BAD" -eq 0 ]; then echo "리허설 GREEN — §5 의 1·3·6 ＋ 볼륨 왕복 전건 통과"; exit 0; fi
-echo "리허설 RED — $BAD 건. **`R-1` 을 닫지 않는다**"; exit 1
+if [ "$BAD" -eq 0 ]; then echo "리허설 GREEN — §5 의 1·3·6 ＋ 볼륨 왕복 전건 통과 (하위 검사기 요약줄에 SKIP 건수가 그대로 실린다)"; exit 0; fi
+echo "리허설 RED — $BAD 건. **R-1 을 닫지 않는다**"; exit 1
