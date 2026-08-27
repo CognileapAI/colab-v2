@@ -180,17 +180,51 @@ expect red "ai-no-lineage ⑦: 쓰기 SQL + D4 테이블" runai "$R"
 R="$(mkai ai-nocode)"; find "$R/services/ai-service" -name '*.py' -delete
 expect red "ai-no-lineage ⑧: ai-service 코드 0건" runai "$R"
 
+# ⑨⑩ 은 **산문(주석·독스트링)을 참조로 세지 않는다** (`PLAN-SoT §9 〈172〉`).
+# 아래 케이스들이 "정밀도를 올린 것이지 검사 대상을 줄인 것이 아님"의 증거다.
 R="$(mkai ai-chain-ref)"
-echo '# see db/platform/versions/0001_init.py' >> "$R/db/ai/versions/0001_init.py"
-expect red "ai-no-lineage ⑨: db/ai 가 플랫폼 체인 참조" runai "$R"
+echo 'from db.platform.versions import base' >> "$R/db/ai/versions/0001_init.py"
+expect red "ai-no-lineage ⑨: db/ai 가 플랫폼 체인 참조(코드)" runai "$R"
+
+R="$(mkai ai-chain-trailing)"
+echo 'from db.platform import base  # 편의상 재사용' >> "$R/db/ai/versions/0001_init.py"
+expect red "ai-no-lineage ⑨: 꼬리 주석이 붙은 줄의 코드 참조" runai "$R"
+
+R="$(mkai ai-chain-after-comment)"
+printf '# 아래는 설명이다\n# db/platform 을 참조하지 말 것\nfrom db.platform import base\n' \
+  >> "$R/db/ai/versions/0001_init.py"
+expect red "ai-no-lineage ⑨: 주석 블록 바로 다음 줄의 코드 참조" runai "$R"
+
+R="$(mkai ai-chain-dynamic)"
+printf 'import importlib\nm = importlib.import_module("db.platform.base")\n' \
+  >> "$R/db/ai/versions/0001_init.py"
+expect red "ai-no-lineage ⑨: 문자열 리터럴로 만든 동적 import(독스트링 아님 = 검사한다)" runai "$R"
+
+R="$(mkai ai-chain-prose)"
+printf '"""ai 체인 전용.\n\n⚠ db/platform/platform_db_url.py 와 헬퍼를 공유하지 않는다.\n"""\n' \
+  > "$R/db/ai/prose_only.py"
+printf 'X = 1  # db/platform 과 섞지 말 것\n' >> "$R/db/ai/prose_only.py"
+expect green "ai-no-lineage ⑨: 독스트링·주석 안의 경고문(오탐이던 것)" runai "$R"
+
+R="$(mkai ai-chain-ini-prose)"
+printf '# db/platform 과 version_table 을 공유하지 않는다\n' >> "$R/db/ai/alembic.ini"
+expect green "ai-no-lineage ⑨: ini 주석 안의 경고문" runai "$R"
+
+R="$(mkai ai-chain-ini-code)"
+printf 'other = db/platform  ; 재사용\n' >> "$R/db/ai/alembic.ini"
+expect red "ai-no-lineage ⑨: ini 값(코드)의 체인 횡단" runai "$R"
 
 R="$(mkai ai-chain-d4)"
 echo 'op.create_table("lineage_edge")' >> "$R/db/ai/versions/0001_init.py"
 expect red "ai-no-lineage ⑨: db/ai 에 D4 테이블" runai "$R"
 
 R="$(mkai ai-chain-back)"
-echo '# db/ai 와 함께 올린다' >> "$R/db/platform/versions/0001_init.py"
-expect red "ai-no-lineage ⑩: db/platform 이 ai 체인 참조" runai "$R"
+echo 'from db.ai.versions import base' >> "$R/db/platform/versions/0001_init.py"
+expect red "ai-no-lineage ⑩: db/platform 이 ai 체인 참조(코드)" runai "$R"
+
+R="$(mkai ai-chain-back-prose)"
+echo '# db/ai 와 함께 올리지 않는다' >> "$R/db/platform/versions/0001_init.py"
+expect green "ai-no-lineage ⑩: db/platform 주석 안의 언급" runai "$R"
 
 R="$(mkai ai-same-vt)"
 sed -i 's/alembic_version_ai/alembic_version/' "$R/db/ai/alembic.ini"

@@ -13,6 +13,9 @@
 # 환경변수
 #   COLAB_PG_IMAGE   기본 postgres:16-alpine
 #   COLAB_PG_FORCE_UNAVAILABLE=1  selftest 전용 — 도커 부재를 흉내낸다
+#   COLAB_PG_NETWORK  일회용 컨테이너를 붙일 도커 네트워크(기본: 없음 = 기본 브리지).
+#     적용 DB 가 다른 컴포즈 네트워크의 서비스 이름으로만 닿을 때 쓴다(schema-diff 를 staging 에 댈 때).
+#     **포트는 여전히 하나도 publish 하지 않는다** — 네트워크에 참가할 뿐이다.
 
 PG_IMAGE="${COLAB_PG_IMAGE:-postgres:16-alpine}"
 PGC=""
@@ -36,7 +39,9 @@ pg_start() {
     echo "::error::$gate red — 이미지 $PG_IMAGE 를 확보하지 못했다(네트워크/레지스트리). skip 아님."; return 1; }
 
   PGC="colab_v2_gatepg_$$_${RANDOM}"
-  docker run -d --rm --name "$PGC" \
+  local netarg=()
+  [ -n "${COLAB_PG_NETWORK:-}" ] && netarg=(--network "$COLAB_PG_NETWORK")
+  docker run -d --rm --name "$PGC" "${netarg[@]}" \
     --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
     -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust \
     "$PG_IMAGE" >/dev/null 2>&1 || {
