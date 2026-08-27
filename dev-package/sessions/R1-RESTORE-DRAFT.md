@@ -295,12 +295,12 @@ docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
 
 | # | 남은 것 | 상태 |
 |---|---|---|
-| 1 | **uploads·previews 볼륨 백업 절차** | ✅ **기구 신설 (2026-08-27)** — `infra/staging/backup/` 에 `backup-volume.sh` · `verify-volume-artifact.sh` · `backup-full.sh` · `volume-lib.sh` · `selftest-volume.sh`. **원장 덤프 먼저, 볼륨 tar 나중**(순서를 `backup-full.sh` 가 쥔다). 검사 오라클 = **매니페스트(경로·크기·sha256) ↔ 짝 덤프의 `d3_file`** 대조. 스케줄(`03:30` 매일)이 `backup.sh` → `backup-full.sh` 로 바뀌었고 주간 `latest-check.sh` 가 볼륨도 묻는다. fail-closed 증명 = fixture **14건 전건 RED**(docker 불필요). ⚠ **아직 실 staging 에서 한 번도 돌지 않았다** — 실행은 `R-1` 집행 회차의 일이다 |
+| 1 | **uploads·previews 볼륨 백업 절차** | ✅ **기구 신설 (2026-08-27)** — `infra/staging/backup/` 에 `backup-volume.sh` · `verify-volume-artifact.sh` · `backup-full.sh` · `volume-lib.sh` · `selftest-volume.sh`. **원장 덤프 먼저, 볼륨 tar 나중**(순서를 `backup-full.sh` 가 쥔다). 검사 오라클 = **매니페스트(경로·크기·sha256) ↔ 짝 덤프의 `d3_file`** 대조. 스케줄(`03:30` 매일)이 `backup.sh` → `backup-full.sh` 로 바뀌었고 주간 `latest-check.sh` 가 볼륨도 묻는다. fail-closed 증명 = fixture **14건 전건 RED**(docker 불필요). ⭑ **2026-08-27 실 staging 1회 GREEN** — `R1-REHEARSAL-01 §2.1`. ⚠ **단 V5 원장 오라클이 실 설정에서 SKIP 됐다** — `COLAB_VOLBACKUP_ORACLE_uploads` 가 실 설정 파일에 없다(`R1-REHEARSAL-01 §4-㉮`). 손으로 켜서 다시 돌린 결과는 GREEN(129/129)이나 **손으로 켠 GREEN 은 기구가 아니다** |
 | ~~2~~ | ~~**비밀 7종의 백업·보관 정책**~~ | ✅ **판정 완료 (Ted 2026-08-27 · `PLAN-SoT §9 〈163〉-㉲`) — 백업하지 않는다.** 사본을 늘리는 대가가 되찾는 이득보다 크다(백업이 원본과 **같은 머신 1대** 위에 있다 · `§2` #13). **대신 재발급 절차를 완료 정의에 넣는다 — `§7`** |
 | ~~3~~ | ~~**이미지 digest 대장**~~ | ✅ **해소 (2026-08-27 · `PLAN-SoT §9 〈165〉-㉱`)** — 대장을 세웠다: **`dev-package/reference/IMAGE-DIGESTS.md`** (8 건 · 자체 5 ＋ 외부 3). `WORK-UNITS §10.3` 1 단의 「이미지 digest 일치」가 이제 대조 기준을 갖는다 |
 | ~~4~~ | ~~**`public` 밖 객체 목록**~~ | ✅ **해소 · 없음 (2026-08-27 · `PLAN-SoT §9 〈165〉-㉰`)** — `public` 스키마 하나뿐이고 사용자 정의 `ts_config` 0. 목록으로 적을 것이 없다는 것이 결과다(§4.3) |
 | 5 | **`sha256` 대조 · `--skip-age` 를 스크립트에 넣기** | ✅ **해소 (2026-08-27)** — `infra/staging/restore/preflight.sh` 가 P1~P9 를 센다. **P3 이 `--skip-age`**(원장·볼륨 양쪽), **P4 가 `.sha256` 대조**, **P5-b 가 볼륨↔원장 짝(`.pair`) 확인**. ⚠ **C6·V7 을 없앤 것이 아니라 이 경로에서만 뺀다** — 정기 검사에는 그대로 산다 |
-| 6 | **리허설 실행** | 🟧 **절차는 섰고 실행은 안 했다.** `infra/staging/restore/rehearsal.sh` ＋ `REHEARSAL.md` 가 §5 의 **1·3·6 ＋ 볼륨 왕복**을 한 묶음으로 엮는다. **살아 있는 staging 을 읽기만 하고 일회용에만 쓴다** — 어떤 파괴적 단계보다 먼저 돌아도 안전하다. **이것을 돌기 전에는 `R-1` 이 닫히지 않는다** |
+| 6 | **리허설 실행** | ✅ **1회차 집행 완료 · GREEN (2026-08-27 17:18 · 기록 = `R1-REHEARSAL-01.md`)** — `§5` 의 **1·3·6 ＋ 볼륨 왕복** 전건 통과. 살아 있는 staging 은 읽기만 했고 파괴 플래그를 한 번도 쓰지 않았다. **닫힌 것** = `§8` 의 1·3·4·5·7·8·11 ＋ 볼륨 실크기(12 앞단). **안 닫힌 것** = 완-비2·완-비3(둘 다 컨테이너 왕복 · `§5-2`) ＋ 오라클 배선(`§4-㉮`) ＋ 볼륨별 합격선. ⚠ 실물 결함 둘을 함께 봤다 — **V5 오라클 green-by-skip** · **`rehearsal.sh` 의 백틱 명령치환**(무해했으나 `ops/app-role.sql` 이 셸로 실행됐다). 종전 문구는 아래에 남긴다 — ~~절차는 섰고 실행은 안 했다.~~ `infra/staging/restore/rehearsal.sh` ＋ `REHEARSAL.md` 가 §5 의 **1·3·6 ＋ 볼륨 왕복**을 한 묶음으로 엮는다. **살아 있는 staging 을 읽기만 하고 일회용에만 쓴다** — 어떤 파괴적 단계보다 먼저 돌아도 안전하다. **이것을 돌기 전에는 `R-1` 이 닫히지 않는다** |
 | 7 | **런북의 실행본** | ✅ **신설 (2026-08-27)** — `infra/staging/restore/RUNBOOK.md` ＋ `preflight.sh` · `restore-db.sh` · `restore-volume.sh` · `verify-restored.sh` · `expectations.sh` · `check-image-digests.sh` · `selftest-restore.sh`(fixture 10건). 이 문서는 **설계 근거**, 저쪽은 **무엇을 어떤 순서로 치는가**다 |
 | 8 | **이미지 digest 대조의 배선** | ✅ **해소 (2026-08-27)** — `check-image-digests.sh` 가 **`reference/IMAGE-DIGESTS.md` 를 읽는다.** digest 를 스크립트에 박지 않았다(대장이 정본 · `IMAGE-DIGESTS §4-4`). P8 이 복원 전 상태를 tsv 로 기록하고 `verify-restored.sh ④-b` 가 그것과 대조한다 — **미측정을 일치로 읽지 않는다**(fixture `SR5`) |
 | 9 | **`§4.6` 기대치를 상수로 박지 않기** | ✅ **기구화 (2026-08-27)** — `expectations.sh` 가 **되돌릴 덤프의 COPY 블록을 세어** 그 회차의 기대치를 만든다. `verify-restored.sh` 에는 숫자가 한 개도 없다. fixture `SR0` 이 「같은 스크립트가 다른 덤프에 다른 값을 낸다」를 실증한다 |
@@ -392,21 +392,22 @@ docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
 
 | # | 항목 | 상태 |
 |---|---|---|
-| 1 | 볼륨 백업 절차 (`uploads`·`previews`) | ✅ **기구 · 증명 완료** (fixture 14건) · ⚠ **실 staging 실행 0회** |
+| 1 | 볼륨 백업 절차 (`uploads`·`previews`) | ✅ **기구 · 증명 완료** (fixture 14건) ＋ **실 staging 1회 GREEN (2026-08-27)** · ⚠ V5 오라클 배선은 열려 있다(`R1-REHEARSAL-01 §4-㉮`) |
 | 2 | 제자리 복원 런북 | ✅ **실행본 · 스크립트화 완료** (`restore/RUNBOOK.md`) |
 | 3 | `sha256` 대조 · `--skip-age` 기구화 | ✅ (`preflight.sh` P3·P4·P5-b) |
 | 4 | 이미지 digest 대조 배선 | ✅ 대장을 읽는다 (`check-image-digests.sh`) |
 | 5 | `§4.6` 기대치 = 짝 덤프에서 읽기 | ✅ (`expectations.sh` · 상수 0) |
 | 6 | env 키 목록 정본 | ✅ **§7.3 · 26 키** |
 | 7 | 비밀 7종 재발급 절차 문서화 (**완-비1**) | ✅ 6종 확정 ＋ `subjects.json` **형식** 확정 |
-| 8 | 리허설 1회차 실행 | ⛔ **미실행.** 절차는 `REHEARSAL.md` · `rehearsal.sh` |
+| 8 | 리허설 1회차 실행 | ✅ **집행 완료 · GREEN (2026-08-27) — 기록 `R1-REHEARSAL-01.md`** |
 | 9 | **완-비2** 재발급본으로 기동이 선다 | ⛔ **미증명.** 컨테이너 왕복이 필요 — **리허설 2회차**(`§5-2` 부분) |
 | 10 | **완-비3** 원장과 짝이 맞는다(로그인 200 · cross-tenant 음성) | ⛔ **미증명.** 인증을 쥐는 단계라 손으로 돈다 |
-| 11 | 볼륨 포함 복원 소요 실측 | ⛔ **미측정.** 종전 값(317ms·130ms)에는 업로드 바이트가 없다(`§5-7`) |
-| 12 | 볼륨 실제 크기 · 볼륨별 합격선 | ⚠ **[미확인].** 첫 GREEN 회차의 로그(`볼륨 실사용 …KiB`)와 `V3 파일 항목 N건` 이 그 값이다 |
+| 11 | 볼륨 포함 복원 소요 실측 | ✅ **실측 (2026-08-27)** — 원장 `platform` **0.307 s** · `ai` **0.135 s** · 볼륨 `uploads` **4.17 s** → **코어 합 4.62 s**, 검증(V1~V7 4.90 s ＋ 전건 sha256 2.42 s)까지 **11.9 s**. ⚠ **컨테이너 8개 기동 시간은 여전히 `[미확인]`**(`§5-2` · 2회차) |
+| 12 | 볼륨 실제 크기 · 볼륨별 합격선 | ✅ **실크기 닫힘** — `uploads` **503,320 KiB**(아카이브 325.7 MiB · 파일 135) · `previews` **6,484 KiB**(6.17 MiB · 39). 3일 보존 = 약 **1.04 GB**, 여유 **912 GiB** → 현실적. 실사용×3 가드 요구 1.44 GiB 대비 여유 **633 배** → 현실적. ⚠ **합격선은 열림** — `COLAB_VOLBACKUP_MIN_FILES_*` 가 실 설정에 없어 기본 `1` 로 돈다 |
 
-**즉 `R-1` 은 8~11 이 남아 있고, 그 넷은 전부 「돌려 봐야 아는 것」이다.**
-기구를 더 쓴다고 닫히지 않는다.
+**즉 `R-1` 은 9·10 이 남아 있고, 둘 다 「컨테이너 8개 왕복」 하나에 걸려 있다**(`§5-2` 부분 리허설 = 리허설 2회차).
+8·11 은 1회차가 닫았고, 12 는 실크기가 닫히고 합격선만 남았다. **＋ 새로 열린 것 = V5 오라클 배선**(`R1-REHEARSAL-01 §4-㉮`).
+기구를 더 쓴다고 닫히지 않는다 — 남은 것은 전부 돌려 봐야 아는 것이다.
 
 ---
 
