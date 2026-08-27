@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stage 2 — 어디서 끝나고, 무엇을 어떤 순서로, 무엇을 정할 것인가</title>
+<style>
+:root{
+  --bg:#f7f7f5; --panel:#ffffff; --panel-2:#f1f1ee; --ink:#16181d; --ink-2:#4c5159;
+  --line:#d9dad5; --line-2:#c2c4bd;
+  --accent:#1f5f8b; --accent-soft:#e3eef6;
+  --warn:#a8410a; --warn-soft:#fbe9de;
+  --stop:#8c1c2b; --stop-soft:#f8e2e5;
+  --ok:#26603a; --ok-soft:#e2efe6;
+  --mute:#6d727a;
+  --code-bg:#ecedea;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111317; --panel:#181b20; --panel-2:#1f232a; --ink:#e8e9e6; --ink-2:#b0b5bc;
+    --line:#2c3138; --line-2:#3b4149;
+    --accent:#7fb6dc; --accent-soft:#14293a;
+    --warn:#e8a071; --warn-soft:#33210f;
+    --stop:#e8848f; --stop-soft:#331519;
+    --ok:#82c79c; --ok-soft:#12291b;
+    --mute:#8d939b;
+    --code-bg:#22262c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111317; --panel:#181b20; --panel-2:#1f232a; --ink:#e8e9e6; --ink-2:#b0b5bc;
+  --line:#2c3138; --line-2:#3b4149;
+  --accent:#7fb6dc; --accent-soft:#14293a;
+  --warn:#e8a071; --warn-soft:#33210f;
+  --stop:#e8848f; --stop-soft:#331519;
+  --ok:#82c79c; --ok-soft:#12291b;
+  --mute:#8d939b;
+  --code-bg:#22262c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.75; letter-spacing:-.01em;
+  overflow-x:hidden;
+}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 120px}
+header.top{padding:56px 0 28px;border-bottom:1px solid var(--line)}
+h1{font-size:1.9rem;line-height:1.35;margin:0 0 12px;letter-spacing:-.02em}
+.sub{color:var(--ink-2);margin:0;font-size:1rem}
+.meta{margin-top:18px;font-size:.82rem;color:var(--mute)}
+h2{font-size:1.35rem;margin:64px 0 6px;letter-spacing:-.02em;line-height:1.4}
+h2 .num{display:inline-block;min-width:1.9em;color:var(--accent);font-variant-numeric:tabular-nums}
+h3{font-size:1.05rem;margin:34px 0 8px;letter-spacing:-.01em}
+h4{font-size:.95rem;margin:20px 0 6px;color:var(--ink-2)}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:1.25em}
+li{margin:5px 0}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px;font-size:.86em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:0}
+strong{font-weight:700}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+a{color:var(--accent)}
+
+.lede{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:8px;padding:16px 18px;margin:20px 0;box-shadow:var(--shadow)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0;box-shadow:var(--shadow)}
+.card.warn{border-left:3px solid var(--warn)}
+.card.stop{border-left:3px solid var(--stop)}
+.card.ok{border-left:3px solid var(--ok)}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--panel-2);vertical-align:middle;letter-spacing:0}
+.tag.stop{color:var(--stop);background:var(--stop-soft);border-color:transparent}
+.tag.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+.tag.ok{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+.tag.acc{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:18px 0;
+  border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
+.scroll > svg{display:block;min-width:640px}
+figure{margin:22px 0}
+figcaption{font-size:.82rem;color:var(--mute);margin-top:8px;line-height:1.6}
+
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:520px}
+.scroll table{margin:0}
+th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:var(--panel-2);font-weight:700;font-size:.82rem;color:var(--ink-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+
+details{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:0;margin:14px 0}
+details > summary{cursor:pointer;padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--ink-2);list-style:none;position:relative}
+details > summary::-webkit-details-marker{display:none}
+details > summary::before{content:"▸";display:inline-block;margin-right:8px;transition:transform .15s;color:var(--accent)}
+details[open] > summary::before{transform:rotate(90deg)}
+details .body{padding:0 16px 14px;font-size:.9rem;border-top:1px solid var(--line)}
+details .body > *:first-child{margin-top:12px}
+
+.quiz{border:1px dashed var(--line-2);border-radius:10px;padding:16px 18px;margin:22px 0;background:var(--panel)}
+.quiz .q{font-weight:700;margin:0 0 4px}
+.quiz .hint{font-size:.84rem;color:var(--mute);margin:0}
+.quiz details{background:transparent;border:0;margin:10px 0 0}
+.quiz details > summary{padding:6px 0;color:var(--accent)}
+.quiz details .body{border-top:0;padding:0;font-size:.9rem}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+
+.dec{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:20px 0;box-shadow:var(--shadow);overflow:hidden}
+.dec > .head{padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.dec > .head .t{font-weight:700;font-size:1rem;margin:0}
+.dec > .head .s{font-size:.82rem;color:var(--mute);margin:2px 0 0}
+.dec > .body{padding:6px 20px 18px}
+.dec .row{margin:14px 0}
+.dec .row > .k{font-size:.74rem;font-weight:700;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin:0 0 3px}
+.dec .row > .v{margin:0;font-size:.94rem}
+.opts{margin:6px 0 0;padding:0;list-style:none}
+.opts li{border-left:2px solid var(--line-2);padding:2px 0 2px 12px;margin:8px 0;font-size:.92rem}
+.rec{background:var(--accent-soft);border-radius:8px;padding:12px 14px;margin-top:14px;font-size:.93rem}
+.rec .k{font-size:.74rem;font-weight:700;letter-spacing:.04em;color:var(--accent);margin:0 0 3px}
+.cost{font-size:.85rem;color:var(--ink-2);margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line-2)}
+
+.player{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px;border-top:1px solid var(--line);background:var(--panel-2)}
+button{font:inherit;font-size:.85rem;padding:6px 13px;border-radius:7px;border:1px solid var(--line-2);
+  background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button[aria-pressed="true"],button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button[aria-pressed="true"],:root[data-theme="dark"] button.on{color:#0f1115}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button[aria-pressed="true"],:root:not([data-theme="light"]) button.on{color:#0f1115}}
+.cap{font-size:.85rem;color:var(--ink-2);margin:0;padding:0 14px 12px;min-height:2.6em;background:var(--panel-2)}
+
+.themebar{position:sticky;top:0;z-index:20;display:flex;justify-content:flex-end;gap:6px;
+  padding:8px 0;background:linear-gradient(var(--bg) 70%,transparent)}
+.themebar button{font-size:.78rem;padding:4px 10px}
+
+svg text{font-family:inherit}
+.s-lbl{font-size:12px;fill:var(--ink)}
+.s-lbl-sm{font-size:10.5px;fill:var(--ink-2)}
+.s-lbl-b{font-size:12.5px;font-weight:700;fill:var(--ink)}
+.s-head{font-size:13px;font-weight:700;fill:var(--ink)}
+.s-mute{font-size:10.5px;fill:var(--mute)}
+.box{fill:var(--panel-2);stroke:var(--line-2)}
+.box-acc{fill:var(--accent-soft);stroke:var(--accent)}
+.box-warn{fill:var(--warn-soft);stroke:var(--warn)}
+.box-stop{fill:var(--stop-soft);stroke:var(--stop)}
+.box-ok{fill:var(--ok-soft);stroke:var(--ok)}
+.arw{stroke:var(--line-2);stroke-width:1.4;fill:none}
+.arw-s{stroke:var(--stop);stroke-width:1.8;fill:none}
+.dash{stroke-dasharray:4 4}
+
+.step{opacity:.28;transition:opacity .35s}
+.step.live{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .step{transition:none}
+  details > summary::before{transition:none}
+}
+.foot{margin-top:70px;padding-top:20px;border-top:1px solid var(--line);font-size:.82rem;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="themebar">
+  <button type="button" id="t-light">라이트</button>
+  <button type="button" id="t-dark">다크</button>
+  <button type="button" id="t-sys">시스템</button>
+</div>
+
+<header class="top">
+  <h1>stage 2 — 어디서 끝나고, 무엇을 어떤 순서로 하고, 남은 판정을 어떻게 정하는가</h1>
+  <p class="sub">2026-08-27 회차의 산출을 한 장으로 접은 것. 값과 근거의 정본은 <code>PLAN-SoT §9</code>, 진행 상태의 진실원은 <code>03-HANDOFF §1</code>이다 — 이 문서는 값을 다시 적지 않고 구조만 그린다.</p>
+  <p class="meta">근거 문서 · <code>sessions/STAGE2-READY.md</code> · <code>WORK-UNITS.md §1.5·§10.2·§10.2-b·§10.3·§11</code> · <code>PLAN-SoT.md §9 〈162〉~〈167〉</code> · <code>03-HANDOFF.md §1·§4</code> · <code>sessions/{TED-DECISIONS-OPEN, R1-RESTORE-DRAFT, X2-FREEZE-PROTOCOL-DRAFT, I3, STAGE2-PREP}.md</code> · <code>reference/IMAGE-DIGESTS.md</code> · <code>infra/staging/backup/backup.sh</code></p>
+</header>
+
+<div class="lede">
+  <p style="margin:0"><strong>읽고 나면 판단할 수 있는 것 셋.</strong> ① stage 2 가 어디서 끝나는가 ② 무엇을 어떤 순서로 하는가 ③ 남아 있는 판정 각각을 지금 어떻게 정할 것인가.</p>
+</div>
+
+<h3 style="margin-top:34px">닻 — 이 회차를 한 문장으로 옮기면</h3>
+<div class="card">
+  <p style="margin-top:0"><strong>이 회차에 일어난 일은 <code>schema-diff</code> 가 문서 층에서 red 를 낸 것이다.</strong></p>
+  <ul>
+    <li><strong>선언된 스키마</strong> = <code>WORK-UNITS §1.5</code> 의 stage 2 정의. 열 가지를 이름으로 적는다.</li>
+    <li><strong>적용된 마이그레이션 체인</strong> = <code>§10.2</code> WU 표 + <code>§10.3</code> 순서표. 실제로 세워진 것은 넷이었다.</li>
+    <li><strong>둘의 diff</strong> = 여섯. <code>P6</code>·<code>P7</code>·<code>P8</code>·<code>K3</code>·<code>K5</code>·자동 무효화.</li>
+    <li><strong>판정</strong> = 선언이 옳다. 체인을 선언에 맞춘다(<code>〈167〉-㉮</code>) — <code>§1.5</code> 는 한 글자도 고치지 않았다.</li>
+  </ul>
+  <p>이 비유가 잘 맞는 이유 — 이 레포는 실제로 <code>schema-diff</code> 게이트를 갖고 있고, <code>〈131〉</code> 이 일회용 DB 에 두 체인을 적용해 <strong>「선언 = 적용」을 실측으로</strong> 닫았다. 같은 규율을 문서에 적용한 결과가 이번 판정이다.</p>
+  <p style="margin-bottom:0"><strong>⚠ 비유가 깨지는 지점 셋.</strong> 적어 두지 않으면 이 그림을 사실로 오해하게 된다.</p>
+  <ul style="margin-bottom:0">
+    <li><strong>ⓐ 방향이 고정돼 있지 않다.</strong> DB 에서는 선언이 언제나 기준이다. 문서에서는 <strong>어느 쪽이 진실원인지 매번 판정</strong>해야 한다 — 이번엔 정의가 옳았고, <code>§11</code> 3차 정정 때는 <code>03-HANDOFF §1</code> 이 옳았다(<code>〈167〉-㉴</code>).</li>
+    <li><strong>ⓑ 이 diff 를 도는 기계가 없다.</strong> <code>schema-diff</code> 는 자동이고, 이 여섯은 <strong>사람이 두 절을 나란히 읽어서</strong> 나왔다. 다음 누락도 같은 방식으로만 잡힌다.</li>
+    <li><strong>ⓒ 스키마에는 「하지 않기로 한 것」을 적는 칸이 없다.</strong> 문서에는 있어야 한다 — <code>⏸</code> 기호가 그 칸이고, 그 칸이 없어서 <code>〈120〉</code> 사고가 났다(②에서 다룬다).</li>
+  </ul>
+</div>
+
+<!-- ================= ① ================= -->
+<h2><span class="num">①</span> 큰 그림 — stage 2 는 어디서 끝나는가</h2>
+<p>이번 라운드의 최대 발견. <strong>계약서에는 열 개, 작업 지시서에는 네 개가 적혀 있었다.</strong></p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 470" role="img" aria-label="§1.5 stage 2 정의 열 항목과 §10.2 순서표 네 항목의 대조. 여섯이 빠져 있었다.">
+  <text x="24" y="30" class="s-head">계약서 — <tspan font-family="ui-monospace,monospace" font-size="12">WORK-UNITS §1.5</tspan> stage 2 정의</text>
+  <text x="24" y="48" class="s-mute">「끝났다」의 조건. 이름으로 열 가지를 적는다</text>
+  <text x="520" y="30" class="s-head">작업 지시서 — <tspan font-family="ui-monospace,monospace" font-size="12">§10.2 · §10.3</tspan></text>
+  <text x="520" y="48" class="s-mute">실제로 WU 로 서 있던 것 (개정 전)</text>
+
+  <!-- left column boxes -->
+  <g>
+    <rect x="24" y="62" width="300" height="30" rx="6" class="box-ok"/><text x="38" y="82" class="s-lbl">가공 — 파싱 · 좌표계 · COG</text>
+    <rect x="24" y="98" width="300" height="30" rx="6" class="box-ok"/><text x="38" y="118" class="s-lbl">타일 서빙 · 확대 · createScreenshot</text>
+    <rect x="24" y="134" width="300" height="30" rx="6" class="box-ok"/><text x="38" y="154" class="s-lbl">팔레트 재렌더 · S-08 · 값 조회</text>
+    <rect x="24" y="170" width="300" height="30" rx="6" class="box-ok"/><text x="38" y="190" class="s-lbl">P3 · S3 · 〈78〉 편의 기능 묶음</text>
+
+    <rect x="24" y="216" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="236" class="s-lbl">P6 승인 처리</text>
+    <rect x="24" y="252" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="272" class="s-lbl">P7 연구실 대시보드</text>
+    <rect x="24" y="288" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="308" class="s-lbl">P8 E-01 적용 지점 표</text>
+    <rect x="24" y="324" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="344" class="s-lbl">K3 계보 제안 서비스</text>
+    <rect x="24" y="360" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="380" class="s-lbl">K5 제안 원장</text>
+    <rect x="24" y="396" width="300" height="30" rx="6" class="box-stop"/><text x="38" y="416" class="s-lbl">자동 무효화</text>
+  </g>
+
+  <!-- arrows -->
+  <g class="arw">
+    <path d="M330 77 L 505 77"/><path d="M330 113 L 505 113"/><path d="M330 149 L 505 149"/><path d="M330 185 L 505 185"/>
+  </g>
+  <g class="arw-s dash">
+    <path d="M330 231 L 470 231"/><path d="M330 267 L 470 267"/><path d="M330 303 L 470 303"/>
+    <path d="M330 339 L 470 339"/><path d="M330 375 L 470 375"/><path d="M330 411 L 470 411"/>
+  </g>
+  <g fill="var(--stop)" font-size="15" font-weight="700">
+    <text x="478" y="236">✕</text><text x="478" y="272">✕</text><text x="478" y="308">✕</text>
+    <text x="478" y="344">✕</text><text x="478" y="380">✕</text><text x="478" y="416">✕</text>
+  </g>
+
+  <!-- right column -->
+  <g>
+    <rect x="505" y="62" width="290" height="30" rx="6" class="box-ok"/><text x="519" y="82" class="s-lbl">D5 stage 2 파트</text>
+    <rect x="505" y="98" width="290" height="30" rx="6" class="box-ok"/><text x="519" y="118" class="s-lbl">P3 (타일·확대 흡수)</text>
+    <rect x="505" y="134" width="290" height="30" rx="6" class="box-ok"/><text x="519" y="154" class="s-lbl">V-1 · V-2 · F-1</text>
+    <rect x="505" y="170" width="290" height="30" rx="6" class="box-ok"/><text x="519" y="190" class="s-lbl">S3 · J-1 · T-1 · R-1 · X-5</text>
+  </g>
+  <rect x="505" y="216" width="290" height="210" rx="8" fill="none" stroke="var(--stop)" stroke-dasharray="5 4"/>
+  <text x="650" y="308" text-anchor="middle" class="s-lbl-b" fill="var(--stop)">비어 있었다</text>
+  <text x="650" y="328" text-anchor="middle" class="s-mute">여섯 — 순서표에 이름이 없다</text>
+
+  <text x="24" y="452" class="s-mute">판정 = 정의가 맞다. 여섯을 순서표에 넣는다 · §1.5 무개정 · §10.2-b 신설 · §10.3 3단 재작성 (〈167〉-㉮)</text>
+</svg>
+</div>
+<figcaption><strong>왼쪽이 정본, 오른쪽이 실제.</strong> 붉은 여섯 줄이 「stage 2 라고 적혀 있는데 아무 WU 도 지고 있지 않던 것」이다. 자동 무효화는 여기서 <code>Y-1</code> 로 서고, <code>§J-7</code>(편의 묶음)에서 적출됐다 — 묶음은 10 → 9 건이 됐다(<code>〈167〉-㉳</code>).</figcaption>
+</figure>
+
+<div class="card warn">
+  <p style="margin-top:0"><strong>이걸 안 잡았으면 무슨 일이 생기나.</strong></p>
+  <p style="margin-bottom:0"><strong>stage 2 의 끝이 정의되지 않은 채 착수한다.</strong> 그러면 <code>P2</code> 가 겪은 「실행 중 범위 재정의로 멈춤」이 반복된다(<code>STAGE2-READY §7.2</code> 위험 6). 그리고 <code>P7</code> 이 순서표 밖에 있는 한 <strong><code>§1.5</code> 조건 3(「도메인 10개 전부」)은 영원히 안 닫힌다</strong> — <code>D8</code> 은 stage 1 에서 실동작 op 0 이고, 그것이 닫히는 자리가 정확히 <code>P7</code> 이다.</p>
+</div>
+
+<div class="quiz">
+  <p class="q">여기서 「<code>§1.5</code> 를 여섯 줄 줄여서 순서표에 맞춘다」를 골랐다면?</p>
+  <p class="hint">두 문서를 일치시키는 방법은 둘이다. 어느 쪽을 움직이느냐가 다른 결과를 낸다.</p>
+  <details><summary>답 보기</summary><div class="body">
+    <p><strong>범위가 조용히 줄어든다.</strong> <code>P6</code>~<code>P8</code>·<code>K3</code>·<code>K5</code> 는 「v2 완주 조건」에서 빠지는 게 아니라 <strong>stage 2 밖으로 밀려 이름 없는 뒷단</strong>이 된다. <code>CLAUDE.md §5</code> 의 「나중에로 남기기 금지」에 정면으로 걸린다. 그리고 <code>K3</code> 은 AI 두 지점 중 하나(계보 제안)라 <strong>정본의 제품 정의가 깨진다.</strong></p>
+    <p style="margin-bottom:0">판정문이 「<strong>범위 복원이지 범위 확대가 아니다</strong>」라고 못 박은 이유가 이것이다(<code>〈167〉</code> 머리).</p>
+  </div></details>
+</div>
+
+<!-- ================= ② ================= -->
+<h2><span class="num">②</span> 판정 28건이 어떻게 1건이 됐나</h2>
+<p><code>〈162〉-㉮</code> 의 전수 스윕 결과가 출발점이다 — <strong>A 6 · B 8 · C 6 · D 8 = 28.</strong> 지금 남은 막힘은 <strong>하나</strong>다.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 400" role="img" aria-label="판정 28건이 네 블록으로 나뉘어 각각 다른 방식으로 닫히고 최종적으로 I3 7건 한 건만 남는 흐름도">
+  <text x="24" y="26" class="s-head">28건 — 네 블록은 성격이 다르다. 같은 수로 세면 안 된다</text>
+
+  <!-- A -->
+  <rect x="24" y="46" width="196" height="112" rx="8" class="box-stop"/>
+  <text x="40" y="70" class="s-lbl-b">A · 6건 — 착수를 막는 것</text>
+  <text x="40" y="90" class="s-lbl-sm">X-2 등급 · 회차 번호 · ㉰-4 소급</text>
+  <text x="40" y="107" class="s-lbl-sm">seam 시점 · R-1 비밀 정책</text>
+  <text x="40" y="124" class="s-lbl-sm">I3 [정본 무근거] 7건</text>
+  <text x="40" y="146" class="s-lbl-sm" fill="var(--ok)">→ 다섯 닫힘 〈163〉 · 하나 존속</text>
+
+  <!-- B -->
+  <rect x="238" y="46" width="196" height="112" rx="8" class="box-warn"/>
+  <text x="254" y="70" class="s-lbl-b">B · 8건 — 미루면 비싸짐</text>
+  <text x="254" y="90" class="s-lbl-sm">온톨로지 범위 · 평가셋 소유</text>
+  <text x="254" y="107" class="s-lbl-sm">주제 빈 상태 · 산문 개정 창</text>
+  <text x="254" y="146" class="s-lbl-sm" fill="var(--ok)">→ 넷 닫힘 〈164〉 · 넷은 이연</text>
+
+  <!-- C -->
+  <rect x="452" y="46" width="196" height="112" rx="8" class="box-acc"/>
+  <text x="468" y="70" class="s-lbl-b">C · 6건 — 문서 정합</text>
+  <text x="468" y="90" class="s-lbl-sm">§11 체크리스트 · §10 낡은 행</text>
+  <text x="468" y="107" class="s-lbl-sm">#18 · R-1 [미확인] 셋</text>
+  <text x="468" y="146" class="s-lbl-sm" fill="var(--ok)">→ 여섯 전부 집행 〈165〉</text>
+
+  <!-- D -->
+  <rect x="666" y="46" width="210" height="112" rx="8" class="box"/>
+  <text x="682" y="70" class="s-lbl-b">D · 8건 — 이미 정해진 것</text>
+  <text x="682" y="90" class="s-lbl-sm">「열림」으로 적혀 있어 지울 것</text>
+  <text x="682" y="107" class="s-lbl-sm">〈120〉 · #8 · #33 · X-3 …</text>
+  <text x="682" y="146" class="s-lbl-sm" fill="var(--ok)">→ 여덟 전부 걷음 〈165〉</text>
+
+  <!-- funnel arrows -->
+  <g class="arw">
+    <path d="M122 158 L 122 196 L 450 196"/><path d="M336 158 L 336 190 L 450 190"/>
+    <path d="M550 158 L 550 190 L 450 190"/><path d="M770 158 L 770 196 L 450 196"/>
+  </g>
+  <rect x="290" y="212" width="320" height="46" rx="8" class="box-stop"/>
+  <text x="450" y="233" text-anchor="middle" class="s-lbl-b">남은 막힘 = I3 「[정본 무근거]」 7건 · 1건</text>
+  <text x="450" y="250" text-anchor="middle" class="s-mute">나머지는 표기 정정 작업이지 판정이 아니다</text>
+
+  <!-- reopened three -->
+  <text x="24" y="296" class="s-head" fill="var(--warn)">그러나 스윕 자신이 놓친 것이 셋 — 라운드 중 새로 열렸다</text>
+  <rect x="24" y="308" width="276" height="64" rx="8" class="box-warn"/>
+  <text x="40" y="330" class="s-lbl-b">stage 2 정의 누락</text>
+  <text x="40" y="349" class="s-lbl-sm">§1.5 vs 순서표 — 착수를 막는 판정</text>
+  <text x="40" y="365" class="s-lbl-sm" fill="var(--ok)">→ 닫힘 〈167〉-㉮</text>
+
+  <rect x="312" y="308" width="276" height="64" rx="8" class="box-warn"/>
+  <text x="328" y="330" class="s-lbl-b">R-1 속이 비어 있었다</text>
+  <text x="328" y="349" class="s-lbl-sm">완료 정의 10항 중 산출물 3항</text>
+  <text x="328" y="365" class="s-lbl-sm" fill="var(--stop)">→ 존속 · 1단의 임계경로</text>
+
+  <rect x="600" y="308" width="276" height="64" rx="8" class="box-warn"/>
+  <text x="616" y="330" class="s-lbl-b">PA-G 기한 초과</text>
+  <text x="616" y="349" class="s-lbl-sm">「stage 1 완료와 동시」가 지났다</text>
+  <text x="616" y="365" class="s-lbl-sm" fill="var(--ok)">→ 연다 〈167〉-㉯ (근거는 약함)</text>
+</svg>
+</div>
+<figcaption><strong>28 은 네 종류를 한 수로 센 값이다.</strong> <code>STAGE2-READY §6</code> 이 한때 「A 7 + B 9 + C 8 = 24 · 막힘 8」로 적었는데, 어드바이저 지적으로 <strong>부풀려져 있음</strong>이 잡혔다 — 판정 대기 · 낡은 표기 · 문서 드리프트를 섞어 센 수였다. 실제 막힘은 <code>I3</code> 7건 + <code>B1</code> 1건이었고, <code>B1</code> 이 닫힌 지금은 <strong><code>I3</code> 7건 하나</strong>다.</figcaption>
+</figure>
+
+<h3>D 블록이 왜 가장 위험한가 — 기호가 하나 모자란다</h3>
+<div class="card stop">
+  <p style="margin-top:0"><strong>「미실행 ⬜」과 「하지 않기로 한 것」이 같은 기호로 보인다.</strong></p>
+  <p>진행 표기는 다섯이다(<code>WORK-UNITS §12</code>) — <code>✅ 닫힘</code> · <code>🟦 진행</code> · <code>⬜ 대기</code> · <code>🟧 부분</code> · <code>⛔ 차단</code>. 여기에 <strong><code>⏸</code>(열지 않기로 한 것)</strong> 이 있으나, 실제 문서에서는 <strong>「하지 않기로 결정한 것」이 <code>⬜</code> 로 적히는 일이 계속 일어났다.</strong></p>
+  <p><strong>실제 사례 — <code>〈120〉</code>.</strong> Ted 가 <code>〈145〉</code> 로 「그대로 둬」로 닫은 격자 전용 업로드 3건이, <code>03-HANDOFF</code> 의 <strong>「⬜ 미이행」 표기만 보고 2단 착수 후보로 다시 올라왔다.</strong> <code>〈145〉</code> 가 경고한 바로 그 일이 <strong>8시간 만에</strong> 실제로 일어났다(<code>〈162〉-㉰</code>).</p>
+  <p style="margin-bottom:0"><strong>구조적 진단.</strong> <code>〈162〉-㉱</code> 가 같은 회차에 문서-실물 괴리 <strong>아홉</strong>을 셌다. 「한 회차에 아홉이면 개별 실수가 아니라 구조다 — <strong>닫힘은 갱신되고 열림은 늙으며, 「하지 않기로 한 것」에는 기호가 없다.</strong>」</p>
+</div>
+
+<div class="quiz">
+  <p class="q">D 블록 8건을 「어차피 다 끝난 것이니 굳이 안 지운다」로 두면 무슨 일이 생길까?</p>
+  <details><summary>답 보기</summary><div class="body">
+    <p><strong>다음 세션이 끝난 일을 다시 착수한다.</strong> 그리고 착수 비용만 드는 게 아니다 — 재착수한 세션은 「왜 이게 아직 열려 있지」를 조사하느라 <strong>이미 내린 판정을 다시 논의</strong>하고, 그 논의가 앞 판정과 다른 결론을 내면 <strong>결정 이력이 갈린다.</strong></p>
+    <p style="margin-bottom:0">이건 회차 번호가 갈렸던 것(<code>〈107〉</code> 5차/6차)과 같은 뿌리다 — <strong>기록이 유일한 발급처가 아니면 값이 두 개가 된다.</strong></p>
+  </div></details>
+</div>
+
+<!-- ================= ③ ================= -->
+<h2><span class="num">③</span> 실행 순서 — 1단 · 2단 · 3단</h2>
+<p>정본은 <code>WORK-UNITS §10.3</code>. 아래는 그 실물을 의존 관계로 다시 그린 것이다.</p>
+
+<figure>
+<div class="scroll" style="background:var(--panel)">
+<svg viewBox="0 0 900 620" role="img" aria-label="1단·2단·3단 실행 순서와 의존 그래프">
+  <!-- 1단 -->
+  <text x="24" y="28" class="s-head">1단 — 단일 변수 원칙. 엄격 직렬</text>
+  <g id="g1">
+    <rect x="24" y="42" width="140" height="42" rx="7" class="box-stop"/>
+    <text x="94" y="60" text-anchor="middle" class="s-lbl-b">R-1</text><text x="94" y="76" text-anchor="middle" class="s-lbl-sm">복원 절차 ＋ 리허설</text>
+    <path d="M168 63 L 196 63" class="arw" marker-end="url(#ah)"/>
+    <rect x="200" y="42" width="150" height="42" rx="7" class="box-acc"/>
+    <text x="275" y="60" text-anchor="middle" class="s-lbl-b">전범위 백업</text><text x="275" y="76" text-anchor="middle" class="s-lbl-sm">platform ＋ ai ＋ 볼륨</text>
+    <path d="M354 63 L 382 63" class="arw" marker-end="url(#ah)"/>
+    <rect x="386" y="42" width="160" height="42" rx="7" class="box-warn"/>
+    <text x="466" y="60" text-anchor="middle" class="s-lbl-b">#22 D2·D8 고아 행 삭제</text><text x="466" y="76" text-anchor="middle" class="s-lbl-sm">수를 술어에 넣지 않는다 · 사후 「고아 0」 실측</text>
+    <path d="M550 63 L 578 63" class="arw" marker-end="url(#ah)"/>
+    <rect x="582" y="42" width="180" height="42" rx="7" class="box-acc"/>
+    <text x="672" y="60" text-anchor="middle" class="s-lbl-b">X-1 회전 ＋ X-4 재기동</text><text x="672" y="76" text-anchor="middle" class="s-lbl-sm">한 회차에 함께 — 단일 변수</text>
+  </g>
+  <rect x="24" y="98" width="200" height="36" rx="7" class="box"/>
+  <text x="124" y="114" text-anchor="middle" class="s-lbl-b">∥ X-5 소급 전수확인</text>
+  <text x="124" y="128" text-anchor="middle" class="s-lbl-sm">무의존 · 초반이 싸다</text>
+  <text x="240" y="112" class="s-lbl-sm">검증 = 헬스가 아니라 실측 — 12 · 129 · 6 · 12 · <tspan font-family="ui-monospace,monospace">d4_lineage_edge</tspan> 전체 행 수 ·</text>
+  <text x="240" y="128" class="s-lbl-sm">사전 non-None · 이미지 digest 대장 한 줄씩 대조</text>
+
+  <line x1="24" y1="150" x2="876" y2="150" stroke="var(--line)"/>
+
+  <!-- 2단 -->
+  <text x="24" y="176" class="s-head">2단 — 병합 전 처리. 직렬</text>
+  <rect x="24" y="190" width="180" height="40" rx="7" class="box-acc"/>
+  <text x="114" y="207" text-anchor="middle" class="s-lbl-b">A 동결 해제 프로토콜</text><text x="114" y="222" text-anchor="middle" class="s-lbl-sm">실질 잔여 = 파일명 개명</text>
+  <path d="M208 210 L 236 210" class="arw" marker-end="url(#ah)"/>
+  <rect x="240" y="190" width="200" height="40" rx="7" class="box-acc"/>
+  <text x="340" y="207" text-anchor="middle" class="s-lbl-b">E main 병합</text><text x="340" y="222" text-anchor="middle" class="s-lbl-sm">게이트 green 확인 · 23종</text>
+  <text x="460" y="207" class="s-lbl-sm">＋ ㉮ 자동 허용 묶음 3파일 ＋ 생성물 — 한 목적 = 한 회차.</text>
+  <text x="460" y="223" class="s-lbl-sm">쪼개면 ㉰-6 위반. 8차 해제로 §9 등재</text>
+
+  <line x1="24" y1="248" x2="876" y2="248" stroke="var(--line)"/>
+
+  <!-- 3단 -->
+  <text x="24" y="274" class="s-head">3단 — 본체. 병렬과 직렬이 갈린다</text>
+
+  <rect x="24" y="290" width="200" height="44" rx="7" class="box-acc"/>
+  <text x="124" y="308" text-anchor="middle" class="s-lbl-b">T-1 ts_config 한국어</text>
+  <text x="124" y="324" text-anchor="middle" class="s-lbl-sm">＋온톨로지 ＋재측정 ＋평가셋</text>
+  <path d="M228 312 L 256 312" class="arw" marker-end="url(#ah)"/>
+  <rect x="260" y="290" width="180" height="44" rx="7" class="box"/>
+  <text x="350" y="308" text-anchor="middle" class="s-lbl-b">K4 · P4 완료 판정</text>
+  <text x="350" y="324" text-anchor="middle" class="s-lbl-sm">오라클 = 평가셋 대비</text>
+
+  <!-- parallel three -->
+  <rect x="24" y="352" width="150" height="38" rx="7" class="box"/>
+  <text x="99" y="376" text-anchor="middle" class="s-lbl-b">PA-G</text>
+  <rect x="190" y="352" width="230" height="38" rx="7" class="box-warn"/>
+  <text x="305" y="370" text-anchor="middle" class="s-lbl-b">D5 stage 2 파트</text>
+  <text x="305" y="384" text-anchor="middle" class="s-lbl-sm">파싱 → 좌표계 → COG (안에서도 직렬)</text>
+  <rect x="436" y="352" width="90" height="38" rx="7" class="box"/>
+  <text x="481" y="376" text-anchor="middle" class="s-lbl-b">K3</text>
+  <path d="M530 371 L 552 371" class="arw" marker-end="url(#ah)"/>
+  <rect x="556" y="352" width="90" height="38" rx="7" class="box"/>
+  <text x="601" y="376" text-anchor="middle" class="s-lbl-b">K5</text>
+  <text x="664" y="368" class="s-mute">셋은 서로 병렬</text>
+  <text x="664" y="383" class="s-mute">K3 은 P2 산출만 필요</text>
+
+  <!-- D5 -> P3 -->
+  <path d="M305 394 L 305 416" class="arw-s" marker-end="url(#ahs)"/>
+  <text x="318" y="410" class="s-lbl-sm" fill="var(--stop)">타일은 COG 없이 못 낸다 — 선호가 아니라 의존</text>
+  <rect x="190" y="420" width="230" height="40" rx="7" class="box-warn"/>
+  <text x="305" y="437" text-anchor="middle" class="s-lbl-b">P3</text>
+  <text x="305" y="452" text-anchor="middle" class="s-lbl-sm">계보 그래프 · 2D 3종 · 타일·확대 · 스크린샷</text>
+  <rect x="436" y="420" width="120" height="40" rx="7" class="box"/>
+  <text x="496" y="445" text-anchor="middle" class="s-lbl-b">F-1 (∥ P3)</text>
+
+  <!-- P3 downstream -->
+  <path d="M240 464 L 240 486" class="arw" marker-end="url(#ah)"/>
+  <rect x="190" y="490" width="105" height="36" rx="7" class="box"/>
+  <text x="242" y="513" text-anchor="middle" class="s-lbl-b">V-1 · V-2</text>
+  <path d="M340 464 L 340 486" class="arw" marker-end="url(#ah)"/>
+  <rect x="305" y="490" width="130" height="36" rx="7" class="box"/>
+  <text x="370" y="513" text-anchor="middle" class="s-lbl-b">Y-1 자동 무효화</text>
+  <text x="445" y="512" class="s-mute">← P3 ＋ D5 둘 다 뒤</text>
+
+  <path d="M400 464 L 610 464 L 610 486" class="arw" marker-end="url(#ah)"/>
+  <rect x="556" y="490" width="110" height="36" rx="7" class="box"/>
+  <text x="611" y="513" text-anchor="middle" class="s-lbl-b">S3 (＋S2)</text>
+  <path d="M670 508 L 692 508" class="arw" marker-end="url(#ah)"/>
+  <rect x="696" y="490" width="180" height="36" rx="7" class="box"/>
+  <text x="786" y="513" text-anchor="middle" class="s-lbl-b">P6 → P7 → P8</text>
+
+  <rect x="24" y="546" width="240" height="38" rx="7" class="box-stop"/>
+  <text x="144" y="564" text-anchor="middle" class="s-lbl-b">I3 → I4  (본체와 병렬)</text>
+  <text x="144" y="578" text-anchor="middle" class="s-lbl-sm">⛔ I3 7건 판정이 선행</text>
+  <rect x="288" y="546" width="240" height="38" rx="7" class="box"/>
+  <text x="408" y="564" text-anchor="middle" class="s-lbl-b">J-1 편의 묶음 9건</text>
+  <text x="408" y="578" text-anchor="middle" class="s-lbl-sm">stage 2 맨 마지막 · 하나씩 안 꺼낸다</text>
+  <text x="552" y="562" class="s-mute">⚠ P6 ⊇ I4 는 근거가 §9 ASCII 사슬뿐 — 미판정.</text>
+  <text x="552" y="577" class="s-mute">순서표는 P6 를 S3 뒤에 두되 I4 를 전제로 걸지 않았다</text>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--line-2)"/></marker>
+    <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--stop)"/></marker>
+  </defs>
+</svg>
+</div>
+<figcaption>붉은 화살표 하나가 이 그림에서 유일한 <strong>강제 의존</strong>이다 — <code>D5</code> → <code>P3</code>. 나머지 3단 갈래는 서로 병렬이다.</figcaption>
+</figure>
+
+<h3>1단을 왜 맨 앞에 두는가 — 단일 변수</h3>
+<figure>
+<div class="scroll" style="background:var(--panel)">
+<svg id="anim1" viewBox="0 0 880 250" role="img" aria-label="재기동을 뒤에 두었을 때와 앞에 두었을 때의 원인 추적 가능성 대비">
+  <g class="step live" data-s="1">
+    <text x="20" y="28" class="s-head" fill="var(--stop)">뒤에 두면 — 원인이 뒤섞인다</text>
+    <rect x="20" y="42" width="110" height="34" rx="6" class="box"/><text x="75" y="64" text-anchor="middle" class="s-lbl">A 변경</text>
+    <rect x="146" y="42" width="110" height="34" rx="6" class="box"/><text x="201" y="64" text-anchor="middle" class="s-lbl">B 변경</text>
+    <rect x="272" y="42" width="110" height="34" rx="6" class="box"/><text x="327" y="64" text-anchor="middle" class="s-lbl">C 변경</text>
+    <rect x="398" y="42" width="130" height="34" rx="6" class="box-stop"/><text x="463" y="64" text-anchor="middle" class="s-lbl-b">재기동</text>
+    <path d="M532 59 L 560 59" class="arw" marker-end="url(#ah2)"/>
+    <rect x="564" y="42" width="200" height="34" rx="6" class="box-stop"/>
+    <text x="664" y="64" text-anchor="middle" class="s-lbl-b">조용한 롤백 — 루트 헬스 200</text>
+    <text x="20" y="98" class="s-lbl-sm" fill="var(--stop)">→ 무엇이 깨뜨렸나? A·B·C·재기동 넷 중 어느 것인지 가릴 수 없다</text>
+  </g>
+  <g class="step" data-s="2">
+    <text x="20" y="140" class="s-head" fill="var(--ok)">앞에 두면 — 변수가 하나다</text>
+    <rect x="20" y="154" width="130" height="34" rx="6" class="box-acc"/><text x="85" y="176" text-anchor="middle" class="s-lbl-b">R-1 ＋ 백업</text>
+    <path d="M154 171 L 178 171" class="arw" marker-end="url(#ah2)"/>
+    <rect x="182" y="154" width="130" height="34" rx="6" class="box-ok"/><text x="247" y="176" text-anchor="middle" class="s-lbl-b">재기동 (단독)</text>
+    <path d="M316 171 L 340 171" class="arw" marker-end="url(#ah2)"/>
+    <rect x="344" y="154" width="176" height="34" rx="6" class="box-ok"/><text x="432" y="176" text-anchor="middle" class="s-lbl">실측 검증 — 12·129·6·12</text>
+    <path d="M524 171 L 548 171" class="arw" marker-end="url(#ah2)"/>
+    <rect x="552" y="154" width="110" height="34" rx="6" class="box"/><text x="607" y="176" text-anchor="middle" class="s-lbl">A · B · C</text>
+    <text x="20" y="210" class="s-lbl-sm" fill="var(--ok)">→ 깨지면 원인은 재기동 하나다. 그리고 되돌릴 절차(R-1)가 이미 손에 있다</text>
+  </g>
+  <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="var(--line-2)"/></marker></defs>
+</svg>
+<div class="player">
+  <button type="button" data-anim="anim1" data-step="1">1 · 뒤에 두면</button>
+  <button type="button" data-anim="anim1" data-step="2">2 · 앞에 두면</button>
+  <button type="button" data-anim="anim1" data-step="all">둘 다 보기</button>
+</div>
+<p class="cap" id="cap-anim1">지금 볼 것 — 위쪽 줄에서 <strong>재기동이 마지막에 있다</strong>는 사실. 깨졌을 때 용의자가 넷이다.</p>
+</div>
+<figcaption>근거 = <code>〈158〉-㉮</code>. 「뒤에 두면 다른 변경 <strong>위에</strong> 재기동 위험이 얹혀, 조용한 롤백이 나면 원인이 뒤섞인다.」 <code>-f compose.i2.yml</code> 을 한 번 빠뜨리면 <strong>조용히 I2 이전으로 롤백되고 그 상태에서도 루트 헬스는 200</strong> 이다(<code>RESTART.md §2-②</code>).</figcaption>
+</figure>
+
+<div class="card">
+  <p style="margin-top:0"><strong>병렬과 직렬 — 근거가 있는 것만.</strong></p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>구간</th><th>성격</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td><code>R-1</code> → 백업 → 고아 삭제 → <code>X-1</code>+<code>X-4</code></td><td><strong>엄격 직렬</strong></td><td><code>〈158〉-㉮㉯</code> · 삭제 자리는 <code>〈167〉-㉰</code></td></tr>
+      <tr><td><code>X-5</code></td><td><strong>1단과 병렬</strong> — 진입조건 없음</td><td><code>〈163〉-㉰</code> · <code>§10.3</code> 1단에 자리를 얻었다</td></tr>
+      <tr><td><code>D5</code> 안 : 파싱 → 좌표계 → COG</td><td><strong>엄격 직렬</strong></td><td>헤더 파싱이 첫 체감 가치(메타 자동 채움) — <code>〈158〉-㉳</code></td></tr>
+      <tr><td><code>D5</code> → <code>P3</code></td><td><strong>의존</strong> — 선호가 아니다</td><td><strong>타일은 COG 없이 못 낸다</strong>(<code>〈158〉-㉳</code>)</td></tr>
+      <tr><td><code>K3</code> → <code>K5</code></td><td>둘은 직렬, <strong>D5·P3 과는 병렬</strong></td><td><code>K3</code> 은 <code>P2</code> 산출만 필요 — <code>S3</code> 뒤에 둘 이유가 없다(<code>〈167〉-㉮</code>)</td></tr>
+      <tr><td><code>F-1</code></td><td><code>P3</code> 와 <strong>병렬</strong></td><td><code>§10.2</code></td></tr>
+      <tr><td><code>Y-1</code></td><td><code>P3</code> ＋ <code>D5</code> <strong>둘 다 뒤</strong></td><td>대상이 렌더 산출물이고 트리거가 재가공·격자 변경(<code>§10.2-b</code>)</td></tr>
+      <tr><td><code>S3</code></td><td><code>S2</code> ＋ <code>P3</code> — <strong>합류점</strong></td><td><code>§10.3</code></td></tr>
+      <tr><td><code>I3</code> → <code>I4</code></td><td>본체와 <strong>병렬 가능</strong></td><td>진입조건 = <code>I2</code> ✅. 단 <code>I3</code> 7건 판정이 선행</td></tr>
+      <tr><td><code>J-1</code></td><td><strong>맨 마지막</strong> · 9건 한 묶음</td><td><code>〈157〉-㉱</code> · <code>J-7</code> 적출로 10 → 9(<code>〈167〉-㉳</code>)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<details>
+<summary>2단 ㉮ 자동 허용 묶음 — 무엇을 함께 싣는가</summary>
+<div class="body">
+<p><strong>셋을 쪼개면 <code>㉰-6</code>(묶음 쪼개기로 자동 허용 만들기 금지)에 걸린다.</strong> 한 목적 = 한 회차로 판정한다.</p>
+<ol>
+  <li><code>contracts/events/core-pipeline.json</code> — 「기준 격자 파일 0~1건」 산문을 <code>〈58〉</code> 의 <strong>0~2건</strong>으로. 구조 제약 무변경(<code>DR-16</code>)</li>
+  <li><code>contracts/schemas/common.json</code> — <code>FileKind.description</code> 의 <code>grid_axis</code> 표기 정정(<code>DR-18</code>)</li>
+  <li><code>contracts/seams/fe-core.yaml</code> — 산문 1줄, 「여섯 번째 동결 해제」 → <strong>일곱 번째</strong>(<code>〈166〉-㉱</code>)</li>
+  <li>생성물 — 위 셋의 반영분. <strong>손수정 금지</strong>, 재생성으로만(<code>CLAUDE.md §3-7</code>)</li>
+</ol>
+<p>돌려야 하는 게이트 넷 — <code>contract-lint</code> · <code>contract-breaking</code>(<strong>ERR 0 이어야 ㉮ 자격</strong>) · <code>generated-up-to-date</code> · <code>seam-consistency</code>. <strong>소비자 0 은 주장이 아니라 grep 출력으로 남긴다</strong>(<code>㉱-3</code>). 등재 = <code>§9</code> 한 항목 · 필드 8개 · <strong>회차 번호 8차</strong>.</p>
+</div>
+</details>
+
+<!-- ================= ④ ================= -->
+<h2><span class="num">④</span> 임계경로 — <code>R-1</code> 이 왜 병목인가</h2>
+<p><code>R-1</code> 은 1단의 첫 칸이고, <code>X-1</code>·<code>X-4</code> 재기동 <strong>전부</strong>가 그 뒤에 있다. 그런데 <code>R-1</code> 의 완료 정의 10항 중 <strong>레포에 산출물이 있는 것은 3항</strong>이다.</p>
+
+<div class="scroll">
+<table>
+  <thead><tr><th>#</th><th>완료 정의 항목</th><th>산출물</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><strong>uploads·previews 볼륨 백업 절차</strong></td><td><span class="tag stop">없다 — 기구 자체가 없다</span></td></tr>
+    <tr><td>2</td><td>비밀 7종 재발급 절차</td><td><span class="tag warn">부분</span> <code>subjects.json</code>·env 파일 둘이 <code>[미확인]</code></td></tr>
+    <tr><td>3</td><td>재발급본으로 기동이 선다</td><td><span class="tag stop">없다</span> 리허설 미실시</td></tr>
+    <tr><td>4</td><td>원장과 짝이 맞는다(<code>d1_account</code>·<code>d2_member_role</code>)</td><td><span class="tag stop">없다</span> 리허설 미실시</td></tr>
+    <tr><td>5</td><td>리허설 1회차</td><td><span class="tag stop">없다</span> 문서가 스스로 「초안이고 리허설 전」</td></tr>
+    <tr><td>6</td><td>이미지 digest 대장</td><td><span class="tag ok">있다</span> <code>reference/IMAGE-DIGESTS.md</code> 8건(자체 5 ＋ 외부 3)</td></tr>
+    <tr><td>7</td><td><code>public</code> 밖 객체 목록</td><td><span class="tag ok">있다 · 결과 = 없음</span> ⚠ <code>T-1</code> 이 한국어 <code>ts_config</code> 를 만들면 즉시 낡는다</td></tr>
+    <tr><td>8</td><td>터널·DNS·terraform state 소실</td><td><span class="tag acc">범위 밖 확정</span> <code>R-1</code> 이 지지 않는다</td></tr>
+    <tr><td>9</td><td><code>sha256</code> 대조 · <code>--skip-age</code> 기구화</td><td><span class="tag stop">없다</span> 런북이 손으로 채운다 · <strong>소유 WU 표기 없음</strong></td></tr>
+    <tr><td>10</td><td>런북 본체(사전조건 P1~P9 · 정지·복원 4단 · 검증 5)</td><td><span class="tag ok">있다 · 초안</span> 명령 집행 0</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>#1 을 실물로 확인했다 — <code>backup.sh</code> 는 <code>pg_dump</code> 전용이다</h3>
+<div class="card stop">
+<p style="margin-top:0"><code>infra/staging/backup/backup.sh</code> 를 직접 읽은 결과.</p>
+<ul>
+  <li>덤프 명령은 <strong><code>pg_dump -U … -d "$DB" --no-owner --no-privileges | gzip</code> 단 하나</strong>다(직결 시 <code>pg_dump "$COLAB_BACKUP_PG_URL"</code>).</li>
+  <li>대상은 <strong>프로파일 목록</strong> — <code>platform</code>(<code>colab_platform</code>) · <code>ai</code>(<code>colab_ai</code>). <strong>둘 다 데이터베이스다.</strong></li>
+  <li>산출물은 <code>&lt;프로파일&gt;-&lt;타임스탬프&gt;.sql.gz</code> ＋ <code>.sha256</code>. <strong>볼륨을 담는 경로·명령·프로파일이 스크립트 어디에도 없다.</strong></li>
+  <li>검사(<code>verify-artifact.sh</code> C1~C6)도 전부 <strong>SQL 덤프 파일을 세는 검사</strong>다 — <code>CREATE TABLE</code> 수 · 데이터 행 수 · gzip 무결성 · mtime 신선도.</li>
+</ul>
+<p style="margin-bottom:0"><strong>즉 「볼륨 백업 절차가 없다」는 문서의 주장이 아니라 코드의 사실이다.</strong> <code>R1-RESTORE-DRAFT §2</code> 도 같은 판정을 내린다 — 백업되는 것은 <strong>원장 DB 둘뿐</strong>이고, uploads 볼륨(<code>colab-v2-staging_uploads</code>)·previews 볼륨·비밀 파일 넷·이미지 <strong>여섯이 비어 있다.</strong></p>
+</div>
+
+<figure>
+<div class="scroll" style="background:var(--panel)">
+<svg id="anim2" viewBox="0 0 880 300" role="img" aria-label="DB만 백업본으로 되돌아가고 파일 볼륨은 현재에 남아 원장과 바이트의 세대가 갈리는 그림">
+  <!-- timeline -->
+  <line x1="60" y1="60" x2="820" y2="60" stroke="var(--line-2)" stroke-width="1.5"/>
+  <circle cx="200" cy="60" r="5" fill="var(--accent)"/><text x="200" y="44" text-anchor="middle" class="s-lbl-sm">T0 — 백업 시점</text>
+  <circle cx="700" cy="60" r="5" fill="var(--warn)"/><text x="700" y="44" text-anchor="middle" class="s-lbl-sm">T1 — 사고 · 지금</text>
+
+  <g class="step live" data-s="1">
+    <rect x="60" y="86" width="760" height="52" rx="8" class="box-acc"/>
+    <text x="76" y="106" class="s-lbl-b">원장 — colab_platform · colab_ai</text>
+    <text x="76" y="126" class="s-lbl-sm">pg_dump 로 T0 스냅숏이 있다 · 데이터셋 12 · 파일 행 129 · 간선 6</text>
+    <path d="M690 112 L 230 112" class="arw" stroke="var(--accent)" marker-end="url(#ah3)"/>
+    <text x="460" y="104" text-anchor="middle" class="s-lbl-sm" fill="var(--accent)">복원 = T0 으로 되돌아간다</text>
+  </g>
+
+  <g class="step" data-s="2">
+    <rect x="60" y="152" width="760" height="52" rx="8" class="box-stop"/>
+    <text x="76" y="172" class="s-lbl-b">바이트 — uploads 볼륨 · previews 볼륨</text>
+    <text x="76" y="192" class="s-lbl-sm">백업본이 없다 · T1 상태 그대로 남는다 (지워졌으면 지워진 채)</text>
+    <path d="M230 178 L 690 178" class="arw-s dash" marker-end="url(#ahs3)"/>
+    <text x="460" y="170" text-anchor="middle" class="s-lbl-sm" fill="var(--stop)">되돌릴 것이 없다 — 현재에 머문다</text>
+  </g>
+
+  <g class="step" data-s="3">
+    <rect x="200" y="222" width="500" height="56" rx="8" class="box-warn"/>
+    <text x="450" y="244" text-anchor="middle" class="s-lbl-b">결과 — 원장은 T0, 파일은 T1. 세대가 갈린다</text>
+    <text x="450" y="264" text-anchor="middle" class="s-lbl-sm">DB 는 「파일 129건이 있다」고 말하고, 디스크에는 그 바이트가 없다. 헬스는 200 이다</text>
+  </g>
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+    <marker id="ahs3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--stop)"/></marker>
+  </defs>
+</svg>
+<div class="player">
+  <button type="button" data-anim="anim2" data-step="1">1 · 원장</button>
+  <button type="button" data-anim="anim2" data-step="2">2 · 바이트</button>
+  <button type="button" data-anim="anim2" data-step="3">3 · 결과</button>
+  <button type="button" data-anim="anim2" data-step="all">전체</button>
+</div>
+<p class="cap" id="cap-anim2">지금 볼 것 — 파란 화살표가 <strong>왼쪽으로</strong> 간다. 원장만 과거로 돌아간다.</p>
+</div>
+<figcaption><strong>「지금 되돌리면 DB 만 과거로 가고 파일은 현재에 남는다」</strong>(<code>〈161〉-㉳</code>). <code>R1-RESTORE-DRAFT §2</code> 는 이 상태를 「기동은 되는데 <strong>제품이 빈 껍데기</strong>가 된다 — 파일 129건의 바이트가 사라진다」고 적는다. 그래서 <strong><code>R-1</code> 은 볼륨 백업 절차 없이 닫지 않는다.</strong></figcaption>
+</figure>
+
+<div class="card warn">
+<p style="margin-top:0"><strong>이걸 안 하고 재기동하면 무슨 일이 생기나 — 이 문서에서 가장 강한 대비다.</strong></p>
+<ul style="margin-bottom:0">
+  <li><strong>지금 재기동은 무보험이다.</strong> 「백업은 있는데 되돌리는 절차가 없다」가 그 자체로 모순이고, 미루면 <strong>그 사이 모든 재기동이 무보험</strong>이다(<code>〈158〉-㉯</code>).</li>
+  <li><strong>백업 GREEN 은 복원 가능성을 보증하지 않는다.</strong> C1~C6 은 <strong>파일을 읽어 센 것</strong>이지 <code>psql</code> 에 먹여 본 것이 아니다. 그리고 <code>platform</code>·<code>ai</code> 두 덤프는 순차로 떠서 <strong>원자적 스냅숏이 아니다</strong>(실측 8초 차).</li>
+  <li><strong><code>sha256</code> 은 만들 뿐 검증 경로가 없다.</strong> 어떤 스크립트도 복원 전에 이 값을 다시 대조하지 않는다 — 그리고 <strong>이 기구화의 소유 WU 가 비어 있다</strong>(위 표 #9).</li>
+  <li><strong>오프호스트 사본이 0 이다.</strong> 백업이 원본과 <strong>같은 WSL2 머신 1대</strong> 위에 있다(<code>IS3 §5-4</code>).</li>
+</ul>
+</div>
+
+<div class="quiz">
+  <p class="q">「볼륨은 재생성 가능하니 백업 안 해도 된다」— 이 논리는 어디서 깨질까?</p>
+  <details><summary>답 보기</summary><div class="body">
+    <p><strong>previews 는 재생성 가능하지만, 그 재생성이 uploads 원본에 의존한다</strong>(<code>R1-RESTORE-DRAFT §2</code> #4). 그리고 <strong>uploads 원본은 재생성 불가</strong>다 — 사람이 올린 파일이고 소실되면 <code>03 Reference-Data</code> 에서 다시 적재해야 한다.</p>
+    <p style="margin-bottom:0">즉 「재생성 가능」은 <strong>#4 에만</strong> 참이고, #3 이 살아 있을 때만 참이다. 조건부 성질을 무조건으로 읽는 것이 이 자리의 함정이다.</p>
+  </div></details>
+</div>
+
+<!-- ================= ⑤ ================= -->
+<h2><span class="num">⑤</span> 남은 판정 — 한 건씩</h2>
+<p>이 절이 이 문서의 핵심이다. <strong>지금 막고 있는 것은 <code>I3</code> 7건 하나</strong>이고, 그 밖에 <strong>완료 정의가 비어 있는 것 둘</strong>과 <strong>안 잰 축 하나</strong>가 있다.</p>
+
+<h3><code>I3</code> <code>[정본 무근거]</code> 7건 — 정하지 않으면 <code>I3</code> 착수 전부가 막힌다</h3>
+
+<div class="card">
+<p style="margin-top:0"><strong>왜 이게 갑자기 stage 2 를 막게 됐나.</strong> 종전에는 <code>I3</code> 가 「stage 2 목록 밖 · v2 완주 필요」로 분류돼 <strong>stage 2 계획에서 보이지 않았다.</strong> <code>〈167〉-㉲</code> 로 <code>I3</code>·<code>I4</code> 가 stage 2 경로에 편입되면서 <strong>7건이 stage 2 차단 요인</strong>이 됐다.</p>
+<p><strong><code>DR-4</code>·<code>DR-5</code>·<code>DR-6</code> 이 전부 <code>I3</code> 소유다.</strong> <code>I3.md §0</code> 은 셋을 각각의 결함으로 세면 이 WU 를 잘못 읽는다고 적는다 — <strong>하나의 증상이 세 자리에 나타난 것</strong>이고 뿌리는 하나다.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>얼굴</th><th>도구가 하는 말</th><th>실제</th></tr></thead>
+  <tbody>
+    <tr><td><strong>DR-4</strong> — 무엇을 굽는가</td><td>「배포되는 것이 <strong>커밋의 산출</strong>」(주석)</td><td><strong>워킹트리</strong>를 굽는다. SHA 로 특정할 수 없다</td></tr>
+    <tr><td><strong>DR-5</strong> — 무엇으로 돌아가는가</td><td><code>rollback.sh</code> 가 있으니 되돌릴 수 있다</td><td>태그가 <code>:i2</code> 고정이라 직전 이미지가 <strong>이름을 잃는다</strong></td></tr>
+    <tr><td><strong>DR-6</strong> — 무엇이 성공했는가</td><td><code>exit 0</code></td><td>앱 5종이 <code>health: starting</code> 인 채로 0 을 반환한다</td></tr>
+  </tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><strong>공통 형태 = 「모른다」를 「성공」으로 바꿔 말하는 것.</strong> 이 레포의 표준(<code>㊺</code>·<code>㊽</code>·<code>D3b</code> — <strong>모르면 red 를 내라</strong>)과 정반대다. 지금의 <code>deploy.sh</code> 는 <strong>fail-open</strong> 이다. <code>I3</code> 의 산출은 「배포가 빨라진 상태」가 아니라 <strong>「배포가 하는 말이 검증 가능해진 상태」</strong>다.</p>
+</div>
+
+<p class="meta" style="margin-top:26px"><strong>공통 기본값 —</strong> <code>I3.md:303</code> 「정본이 값을 주지 않으면 만들지 않는다 — <code>[정본 무근거]</code> 로 남기고 보고한다」. <strong>즉 무응답은 「기본값 채택」이 아니라 「착수 중단」이다.</strong> 아래 일곱은 전부 그 성질을 갖는다.</p>
+
+<!-- I3-1 -->
+<div class="dec">
+<div class="head"><p class="t">① push 알림 채널 — 메일인가 메신저인가 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:84</code> — 「<code>IS3 §12-2</code> 와 같은 이유로 <strong>레포 밖 결정</strong>이다. 정본 확인 필요 → <code>[정본 무근거]</code>」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">파이프라인이 자동으로 도는 순간 <strong>판정기 옆에 사람이 없다.</strong> <code>I3.md §0-1</code> 의 실측 — 2026-08-23 P1 배포에서 <code>deploy.sh</code> 가 컨테이너 <code>starting</code> 상태로 <code>exit 0</code> 을 냈고, 그 배포가 green 으로 판정된 것은 <strong>사람이 따로 기다렸다가 헬스 6종을 확인해서</strong>였다. 트리거만 자동화하면 그 사람이 사라진다.</p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v">문서가 이 항목을 <strong>「범위 밖 — 레포 밖 결정」</strong>으로 분류한다. 즉 값이 없는 게 아니라 <strong>값을 정할 자리가 레포 안에 없다.</strong> 채널을 정해야 <code>I3-cd</code> 레인의 「실행 로그·표식 파일」이 어디로 나가는지 결정된다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 채널 없음 — 표식 파일만.</strong> <code>IS3 §10</code> 의 <code>BACKUP-FAILED.txt</code> 계열 관행을 그대로 쓴다. 사람이 호스트를 볼 때 안다.</li>
+      <li><strong>ⓑ 메일.</strong> 외부 SMTP 자격증명이 호스트에 하나 더 놓인다.</li>
+      <li><strong>ⓒ 메신저 webhook.</strong> 아웃바운드 하나. 다만 <strong>webhook URL 자체가 비밀</strong>이라 비밀 목록이 7종 → 8종이 된다.</li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓐ 를 고르면</strong> — 배포 실패가 <strong>사람이 볼 때까지 조용하다.</strong> 호스트가 자동 기동하지 않는 이 환경에서는 그 침묵이 며칠 갈 수 있다. <strong>ⓑ·ⓒ 를 고르면</strong> — 비밀이 하나 늘고, <code>R-1</code> 의 <strong>「백업하지 않고 재발급한다」 목록에 한 줄이 추가</strong>된다(<code>〈163〉-㉲</code>). <code>R-1</code> 완료 정의가 그만큼 넓어진다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ 표식 파일 · staging 한정.</strong> 근거 셋 — ① <code>㊻</code> 로 대상이 staging 한 대뿐이고 사용자가 붙기 전이다 ② <strong>비밀을 늘리지 않는 쪽이 <code>R-1</code> 과 정합</strong>이다 ③ <code>IS3 §10</code> 의 침묵 감지(<code>latest-check.sh</code>)가 이미 같은 계열로 돌고 있어 <strong>새 기구가 아니라 기존 관행의 확장</strong>이다.</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다.</strong> 채널 추가는 표식 파일을 남긴 채 발신 한 줄을 얹는 일이다. 반대로 <strong>ⓑ·ⓒ 를 먼저 켰다가 끄는 것은 비밀 회수 절차가 따라온다.</strong></p>
+</div></div>
+
+<!-- I3-2 -->
+<div class="dec">
+<div class="head"><p class="t">② 폴링 주기 · 워처를 systemd 로 걸 것인가 cron 으로 걸 것인가 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:197</code> — 「폴링 주기 값 · 워처를 systemd 로 걸지 cron 으로 걸지 → <code>[정본 무근거]</code>. 세션에서 정하고 근거를 적는다. (IS3 의 크론이 이 호스트에서 실제로 돌고 있음은 확인된 사실이다 — <code>IS3 §10</code>)」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">트리거 방식은 <strong>이미 결정 1 에서 권고가 나 있다 — A 호스트 폴링.</strong> 근거 셋 — ① 인바운드를 0 으로 유지한다(<code>IS2</code> 가 ingress 를 <code>www→nginx:80</code> ＋ catch-all 404 <strong>둘뿐</strong>으로 좁혔다) ② 자격증명이 <strong>읽기 전용 <code>git fetch</code></strong> 하나로 끝난다 ③ 호스트가 꺼져 있으면 안 도는 성질이 <strong>정직하다</strong>. 나머지 둘(self-hosted runner · webhook)은 <strong>레포가 public</strong> 이거나 ingress 를 넓힌다는 대가가 붙는다. <strong>남은 것은 그 워처를 어디에 매다는가와 주기 값이다.</strong></p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v"><code>IS3</code> 의 백업 크론이 <strong>이 호스트에서 실제로 돌고 있다</strong>(<code>schedule.crontab</code>·<code>install-schedule.sh</code>). 즉 <strong>선례가 cron 쪽에 있다.</strong> systemd 는 이 환경(WSL2 + Docker Desktop)에서 새 의존이다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ cron · 기존 crontab 에 한 줄.</strong> 설치 스크립트 패턴이 이미 있다. 실행 로그·잠금은 스크립트가 직접 진다.</li>
+      <li><strong>ⓑ systemd timer.</strong> 실행 상태·실패 이력을 <code>systemctl</code> 이 지지만, WSL2 에서 systemd 활성 여부가 <strong>환경 조건</strong>이 된다.</li>
+    </ul>
+    <p class="v" style="margin-top:8px"><strong>주기</strong> — 「커밋→배포 지연 = 폴링 주기」가 이 방식의 유일한 대가다(결정 1 표).</p></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓑ 를 고르면</strong> — 호스트 재기동 절차(<code>RESTART.md</code>)에 <strong>systemd 항목이 하나 늘고</strong>, 그것이 안 뜬 상태에서도 staging 은 정상으로 보인다. <code>RESTART.md</code> 가 이미 「한 글자 빼면 조용히 롤백되고 루트 헬스는 200」인 환경이라 <strong>침묵 실패의 자리가 하나 더 생긴다.</strong> <strong>주기를 짧게 잡으면</strong> — <code>git fetch</code> 가 잦아지는 것 자체는 싸지만, <strong>파이프라인 동시 실행</strong> 위험이 커진다(<code>I3 §2-7</code> — 단일 실행 잠금이 지금 없다).</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ cron ＋ 주기 5분.</strong> 근거 — ① <strong>이 호스트에서 이미 도는 기구</strong>를 쓴다(새 환경 의존 0) ② <code>install-schedule.sh</code> 계열 설치 패턴을 재사용한다 ③ <strong>5분은 「빌드+마이그레이션+교체」 1회보다 짧다</strong> — 즉 <strong>단일 실행 잠금이 없으면 반드시 겹친다.</strong> 그래서 <strong>주기 값과 잠금은 한 묶음으로 결정</strong>하고, 잠금 없이 워처를 켜지 않는다.</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다.</strong> crontab 한 줄 · 주기 값은 설정이다. <strong>단 「잠금 없이 먼저 켠 뒤 나중에 붙인다」의 비용은 낮지 않다</strong> — 겹친 배포가 남기는 상태는 되돌리기 어렵다.</p>
+</div></div>
+
+<!-- I3-3 -->
+<div class="dec">
+<div class="head"><p class="t">③ 레지스트리를 쓸 것인가 · 이미지를 몇 개 보존할 것인가 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:215</code> — 「레지스트리 사용 여부 · 이미지 보존 개수 → <code>[정본 무근거]</code>」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v"><strong><code>DR-5</code> 의 본체다.</strong> 지금 태그는 전부 고정 <code>:i2</code> 라 빌드할 때마다 같은 이름을 덮어쓴다. 그래서 ⓐ 지금 도는 컨테이너가 <strong>어느 커밋의 산출인지 이미지 이름으로 알 수 없고</strong> ⓑ 이전 이미지는 <strong>이름을 잃은 dangling</strong> 이 되어 되돌릴 손잡이가 없다. 문서 권고는 <strong>A — 호스트 로컬 이미지 ＋ 커밋 SHA 태그</strong>이고 근거는 「이미지는 커밋의 결정론적 산출이므로 <strong>원본은 git 이다 — 레지스트리는 캐시지 진실원이 아니다</strong>」.</p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v"><strong>digest 대장은 이미 섰다</strong> — <code>reference/IMAGE-DIGESTS.md</code> 8건(<code>〈165〉-㉱</code>). <strong>대조는 되고 복원은 재빌드다</strong>(<code>R1-RESTORE-DRAFT §2</code> #9). 그리고 <code>I3.md §0-3</code> 이 <strong>순서 규칙 하나를 실증으로 확정</strong>했다 — <strong>태그 보존은 빌드보다 먼저다</strong>(빌드 후에는 늦다. <code>:i2</code> 가 이미 새 이미지를 가리킨다). 이번 세션 P1 배포가 그 순서대로 했고 보존 5종의 이미지 ID 가 새 것과 전부 다름을 확인했다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 로컬 이미지 ＋ SHA 태그 · 보존 N 개.</strong> 호스트가 죽으면 이미지도 죽지만 <strong>커밋에서 재생 가능</strong>하다.</li>
+      <li><strong>ⓑ GHCR 푸시 후 pull.</strong> 자격증명·용량, 그리고 <strong>public 레포의 이미지 공개 범위</strong> 판단이 새로 필요하다.</li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓑ 를 고르면</strong> — 비밀이 하나 늘고(레지스트리 자격), <strong><code>㊻</code> 로 대상이 staging 한 대뿐인 동안 이득이 없다.</strong> <strong>보존 개수를 너무 작게 잡으면</strong> — <code>DR-5</code> 가 부분적으로 되살아난다(N-1 은 있는데 N-2 가 없다). <strong>너무 크게 잡으면</strong> — WSL2 호스트 디스크가 <strong>백업 보관처(<code>colab-v2-backups/staging/</code>)와 같은 디스크</strong>다. 이미지가 백업 자리를 밀어낸다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ 로컬 ＋ SHA 태그 · 보존 3개(현행 ＋ N-1 ＋ N-2).</strong> 근거 — ① 문서 권고 A 를 그대로 따른다 ② <strong>3 이면 「직전으로 돌아갔는데 그것도 red」인 경우가 커버</strong>된다 ③ 백업 보존이 <strong>14일 · 프로파일별 최신 1개는 절대 삭제 안 함</strong>인 것과 <strong>같은 형태</strong>다 — 「기한 초과분은 지우되 마지막 하나는 안 지운다」. <strong>같은 규칙 모양을 쓰면 운영자가 두 규칙을 따로 외우지 않는다.</strong></p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다(ⓐ→ⓑ), 높다(ⓑ→ⓐ).</strong> 로컬에서 레지스트리로 가는 것은 push 를 얹는 일이다. 반대는 <strong>자격증명 회수 ＋ 공개된 이미지의 회수 불가</strong>가 따라온다 — public 레포라 <strong>한 번 공개되면 되돌릴 수 없다.</strong></p>
+</div></div>
+
+<!-- I3-4 -->
+<div class="dec">
+<div class="head"><p class="t">④ 배포 원장 파일 형식 · 보존 개수 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:229</code> — 「원장 파일 형식 · 보존 개수 → <code>[정본 무근거]</code>. <code>IS3 §10</code> 의 표식 파일 3종(<code>BACKUP-FAILED.txt</code> 등)이 이미 같은 계열의 관행이므로 <strong>그것과 모양을 맞추는 것을 권한다</strong>」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v"><strong>롤백이 「직전 릴리스」로 가려면 그 사실이 호스트 위 파일로 남아야 한다.</strong> 지금 <code>rollback.sh</code> 는 <code>compose.yml</code>(I2 이전 자리표시 — nginx ＋ cloudflared 둘뿐, 안내 페이지)로 간다. 즉 <strong>「직전 릴리스로 되돌린다」가 아니라 「제품 이전 상태로 되돌린다」</strong>이다. 원인은 하나 — <strong>「직전에 green 이었던 릴리스가 무엇인가」를 적어 두는 자리가 어디에도 없다.</strong></p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v">문서 권고는 <strong><code>infra/staging/</code> 아래 릴리스 원장</strong>(레포 산출 · 값은 런타임 생성물 · <code>.gitignore</code> 로 커밋 차단). 한 줄에 <strong>커밋 SHA · 이미지 태그 · 시각 · 배포 판정(green/red) · 롤백 여부</strong>. <strong>롤백 대상이 두 종류라는 사실을 문서와 명령에 드러낸다</strong> — 직전 릴리스 / 자리표시. <code>compose.yml</code> 은 지우지 않는다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 한 줄 텍스트 append (<code>IS3</code> 표식 파일 모양).</strong> 사람이 <code>cat</code> 으로 읽는다. 파싱은 <code>awk</code>.</li>
+      <li><strong>ⓑ JSON Lines.</strong> 기계 파싱이 쉽지만 셸에서 읽으려면 <code>jq</code> 의존이 생긴다.</li>
+    </ul>
+    <p class="v" style="margin-top:8px"><strong>보존 개수</strong> — 원장은 <strong>이력</strong>이라 이미지 보존 개수와 성질이 다르다.</p></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>보존을 짧게 잡으면</strong> — 「깬 적 있는가」를 물을 자리가 사라진다. 계약 게이트가 이미 <strong>같은 결함</strong>을 갖고 있다(<code>X-2 §4</code> 4번 — 「기준이 HEAD 라 파괴적 변경도 커밋과 동시에 green 이 된다. 게이트는 <strong>「방금 깼는가」만 보고 「깬 적 있는가」는 못 본다</strong> → <strong>회차 기록이 곧 유일한 이력</strong>」). 배포 원장이 그 자리의 배포판이다. <strong>ⓑ 를 고르면</strong> — 롤백 스크립트가 <code>jq</code> 에 의존하고, <strong>복원 상황(도구가 없을 수도 있는 상황)에서 읽을 수 없는 형식</strong>이 된다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ 한 줄 텍스트 · 무기한 append(로테이션 없음).</strong> 근거 — ① 문서 스스로 <code>IS3</code> 표식 파일과 <strong>모양을 맞추라</strong>고 권한다 ② <strong>복원 상황에서 <code>cat</code> 하나로 읽혀야 한다</strong> ③ 한 줄 ≈ 100 B 이면 <strong>1000 릴리스가 100 KB</strong> — 로테이션 규칙을 만드는 비용이 저장 비용보다 크다. <strong>「이력은 지우지 않는다」가 이 레포의 일관된 태도</strong>다(<code>〈166〉-㉮</code> — 「이력을 지우는 것이 아니라 개정을 표시한다」).</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다.</strong> 형식 변경은 새 파일로 시작하고 옛 파일을 남기면 된다. <strong>단 「로테이션으로 지운 이력」은 되돌릴 수 없다.</strong></p>
+</div></div>
+
+<!-- I3-5 -->
+<div class="dec">
+<div class="head"><p class="t">⑤ 「이미지 롤백 시 스키마는 그대로 둔다」를 규칙으로 삼는가 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:249</code> — 「이 판단은 <strong>정본에 명시가 없다</strong> → <code>[정본 무근거]</code> 로 표시하되, 되돌리는 마이그레이션이 데이터를 지울 수 있다는 점에서 <strong><code>rollback.sh</code> 의 기존 원칙(「롤백이 데이터를 지우면 그건 롤백이 아니라 재해다」)의 직접 연장</strong>이다. 세션에서 확정한다」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">두 postgres 체인(<code>platform</code>·<code>ai</code>)은 <strong>다른 데이터베이스이고 합치지 않는다</strong>(<code>CLAUDE.md §3-3</code>). 자동화가 새로 답해야 할 것은 <strong>순서·전제·되돌림</strong> 셋이고, 앞의 둘은 이미 값을 치르고 알아낸 것이 있다 — GRANT 를 테이블보다 먼저 주면 <code>GRANT ON ALL TABLES</code> 가 빈 집합에 걸려 <strong>조용히 아무것도 안 준다</strong>(<code>I2 §2</code>). <strong>남은 것이 되돌림이다.</strong></p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v">권고 = <strong>마이그레이션은 forward-only 로 간주한다.</strong> 롤백은 <strong>이미지만</strong> 되돌리고 스키마는 되돌리지 않는다. 그 대가로 <strong>한 릴리스의 마이그레이션은 직전 이미지와도 호환되어야 한다</strong> — <strong>추가는 되고 파괴는 안 된다.</strong> 이걸 지키지 못하는 변경은 <strong>배포 자동화가 아니라 사람이 처리할 사건</strong>으로 분류하고 멈춘다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 규칙으로 삼는다 — forward-only.</strong> 롤백 = 이미지만. 파괴적 마이그레이션은 자동화 밖 사건.</li>
+      <li><strong>ⓑ 스키마도 되돌린다 — <code>downgrade</code> 를 파이프라인에 넣는다.</strong> 「완전한 롤백」이지만 <strong>되돌리는 마이그레이션이 데이터를 지울 수 있다.</strong></li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓑ 를 고르면</strong> — 롤백이 <strong>재해가 될 수 있는 경로</strong>가 자동으로 도는 상태가 된다. 그리고 이 레포에는 <strong>PITR·WAL 아카이빙이 없다</strong>(<code>R1-RESTORE-DRAFT §2</code> #10 — 물리 백업 없음, 논리 덤프로 대체). 즉 <strong><code>downgrade</code> 가 지운 데이터를 되찾는 경로가 사실상 마지막 <code>pg_dump</code> 하나</strong>다. <strong>ⓐ 를 고르면</strong> — 개발 쪽에 제약이 하나 생긴다: <strong>「직전 이미지와 호환되는 마이그레이션만 쓴다」.</strong> 파괴적 스키마 변경은 <strong>계약 동결 해제 <code>㉯</code>(사람이 연다)와 같은 층</strong>으로 올라간다 — 「마이그레이션 ≥ 1 은 언제나 사람이 연다」(<code>〈69〉</code>)가 이미 그 규칙이다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ 규칙으로 삼는다.</strong> 근거 셋 — ① 문서 스스로 「<code>rollback.sh</code> 기존 원칙의 <strong>직접 연장</strong>」이라 적었다 ② <strong>PITR 이 없는 환경에서 자동 <code>downgrade</code> 는 fail-open 이다</strong> — <code>I3</code> 가 고치려는 성질 그 자체다 ③ 이미 <strong>계약 층에서 같은 판정을 내려 뒀다</strong>(마이그레이션 ≥ 1 → <code>㉯</code> 사람 판정). <strong>배포 층과 계약 층이 같은 규칙을 쓰면 예외의 자리가 줄어든다.</strong></p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다(규칙 자체), 다만 지연 비용이 있다.</strong> 규칙은 문서 한 줄이다. 그러나 <strong>이 규칙 아래 쌓인 마이그레이션은 그 제약을 전제로 쓰인 것</strong>이라, 나중에 ⓑ 로 바꿔도 <strong>과거 릴리스로는 여전히 못 돌아간다.</strong></p>
+</div></div>
+
+<!-- I3-6 -->
+<div class="dec">
+<div class="head"><p class="t">⑥ 배포 실패 시 직전 green 릴리스로 <strong>자동</strong> 롤백하는가 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:261</code> — 「실패하면 <strong>자동으로 직전 green 릴리스로 되돌리는가</strong>는 별도 판단이다 → <code>[정본 무근거]</code>. 권고는 <strong>① 판정 red → 배포 중단 ＋ 표식 파일 ＋ 사람 호출</strong>을 기본으로 하고, 자동 롤백은 <strong>명시 옵션</strong>으로 둔다. <strong>판정기를 신뢰하기 전에 자동 되돌림을 켜면 멀쩡한 릴리스를 판정 버그가 계속 걷어내는 상태가 된다</strong>」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">판정 기준은 이미 값이 있다 — <code>I2 §3</code> 의 방법을 스크립트로 옮긴다(<strong>새 기준을 만들지 않는다</strong>). <strong>헬스 6종 전부 200 ＋ 본문까지 대조</strong>(각 단위가 자기 <code>unit</code> 이름으로 대답해야 한다 — <strong>200 만으로는 자리표시와 구분되지 않는다</strong>) ＋ <strong><code>docker ps</code> 8개 전부 healthy</strong> ＋ <strong><code>0.0.0.0</code> 바인딩 0건</strong>.</p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v"><strong>판정기가 아직 없다.</strong> <code>deploy.sh</code> ⑦ 은 <code>dc ps</code> 로 끝나고 사람이 눈으로 본다. 즉 <strong>자동 롤백을 켤 대상(신뢰할 판정기)이 존재하지 않는 상태</strong>다.</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 자동 롤백 없음 — red 면 중단 ＋ 표식 ＋ 사람 호출.</strong> 실패한 배포가 <strong>그 상태 그대로 멈춰 있다.</strong></li>
+      <li><strong>ⓑ 자동 롤백 켬.</strong> 실패가 스스로 치유되지만 <strong>판정 버그가 곧 롤백 루프</strong>가 된다.</li>
+      <li><strong>ⓒ 명시 옵션 — 기본 off, 플래그로 on.</strong> 문서 권고의 형태.</li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓑ 를 고르면</strong> — 판정기가 틀렸을 때 <strong>멀쩡한 릴리스가 계속 걷어내진다.</strong> 그리고 이 환경에서는 롤백이 <strong>컨테이너 교체 한 번</strong>이라 <strong>루프가 빠르다</strong> — 사람이 알아채기 전에 여러 번 돈다. <strong>ⓐ 를 고르면</strong> — 실패한 배포가 <strong>깨진 채로 서 있다.</strong> 다만 이 환경은 <strong>사용자가 붙기 전 staging</strong> 이라 그 대가가 작고, ①에서 표식 파일 채널을 골랐다면 침묵도 아니다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓒ — 기본 off, 명시 옵션으로 배선만 해 둔다.</strong> 근거 — ① 문서 권고 그대로 ② <strong>판정기를 먼저 쌓고, 판정기의 red/green 이력이 원장에 쌓인 뒤에 켠다</strong> — 원장(④)이 그 판단의 근거가 된다 ③ <strong>배선을 안 해 두면 나중에 켜는 것이 새 WU 가 된다</strong>(<code>CLAUDE.md §5</code> 「나중에로 남기기 금지」). <strong>배선은 지금, 스위치는 off.</strong></p></div>
+  <p class="cost"><strong>되돌리는 비용 — 매우 낮다.</strong> 플래그 하나다. <strong>ⓑ 로 먼저 켰다가 겪는 롤백 루프의 비용이 비대칭적으로 크다.</strong></p>
+</div></div>
+
+<!-- I3-7 -->
+<div class="dec">
+<div class="head"><p class="t">⑦ 승인 기록의 보관 위치 · 형식 · 승인자 표기 <span class="tag stop">막힘</span></p>
+<p class="s">원문 · <code>I3.md:277</code> — 「승인 기록의 보관 위치·형식·승인자 표기 → <code>[정본 무근거]</code>」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">정본이 「prod 는 승인 게이트」라고만 적었고, <code>㊵</code> 가 <strong>승인의 성질</strong>을 이미 정해 뒀다 — ① 구현·확인은 전부 staging ② <strong>Ted 가 staging 에서 직접 보고 승인한 뒤</strong>에 넘어간다 ③ 승인 단위는 WU 가 아니라 <strong>눈으로 확인 가능한 화면·흐름</strong>. 그리고 <code>㊻</code> 이 <strong>prod 착수 시점 자체를 닫아</strong> 뒀다.</p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v">권고 = 파이프라인에 <strong>타깃 개념</strong>을 도입하되 목록은 <code>staging</code> 하나. <code>prod</code> 타깃은 <strong>선언은 하되 실행 경로가 비어 있고, 호출하면 <code>㊻</code> 을 인용하며 즉시 거부</strong>한다(<strong>조용한 no-op 금지</strong>). 승인은 <strong>자동 판정이 아니라 사람의 기록</strong> — 원장에 <strong>승인자 · 시각 · 무엇을 눈으로 봤는가</strong>. 그리고 <strong>승인 없이 prod 타깃이 도는 경로가 존재하지 않음을 red fixture 로 증명</strong>한다(음성 게이트 · <code>ai-no-lineage-write</code> 와 같은 계열).</p></div>
+  <div class="row"><p class="k">선택지</p>
+    <ul class="opts">
+      <li><strong>ⓐ 배포 원장에 같이 적는다</strong>(④의 파일에 승인 필드 3개 추가).</li>
+      <li><strong>ⓑ 별도 승인 원장 파일.</strong> 성격이 다르니 파일도 나눈다.</li>
+      <li><strong>ⓒ <code>PLAN-SoT §9</code> 에 등재한다.</strong> 판정 이력의 정본이 이미 거기다.</li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>ⓒ 를 고르면</strong> — 승인이 <strong>레포 커밋 이력에 남아 되돌릴 수 없다.</strong> 다만 <strong>파이프라인이 실행 시점에 읽을 수 없다</strong>(레포 파일이지 런타임 생성물이 아니다). <strong>ⓐ 를 고르면</strong> — 파일 하나로 「무엇이 배포됐고 누가 승인했나」가 한 줄에 읽힌다. 그러나 그 파일은 <strong><code>.gitignore</code> 로 커밋이 차단된 런타임 생성물</strong>이라 <strong>호스트가 죽으면 승인 이력도 죽는다.</strong> <strong>ⓑ 를 고르면</strong> — 위 둘의 단점을 그대로 물려받는다.</p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ ＋ ⓒ 둘 다 — 다만 층을 나눈다.</strong> <strong>런타임 원장(ⓐ)</strong> = 파이프라인이 읽고 쓰는 값(승인자 · 시각 · 무엇을 봤는가). <strong><code>§9</code> 등재(ⓒ)</strong> = 그 승인의 <strong>판정 근거</strong>. 이 레포가 이미 쓰는 형태 그대로다 — <strong>「HANDOFF 에는 링크만, 값과 근거는 <code>§9</code> 에」</strong>(<code>CLAUDE.md §6-3</code>). <strong>두 곳에 같은 값을 적는 것이 아니라 다른 층을 적는 것</strong>이므로 「두 곳에 적으면 갈라진다」에 걸리지 않는다. <strong>승인자 표기는 실명 하나</strong>(현재 승인자가 한 사람이고, <code>〈56〉</code> 이 「사람 이름은 <code>source_label</code> 에 넣지 않는다」로 <strong>도메인 데이터</strong>와 <strong>운영 기록</strong>을 이미 갈라 뒀다 — 운영 기록에는 실명이 든다).</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다.</strong> prod 타깃이 아직 닫혀 있어(<code>㊻</code>) <strong>실 승인 기록이 0 건</strong>이다. 형식을 바꿔도 옮길 데이터가 없다. <strong>이 항목은 지금이 가장 싸다.</strong></p>
+</div></div>
+
+<hr>
+
+<h3>완료 정의가 비어 있는 둘</h3>
+
+<div class="dec">
+<div class="head"><p class="t"><code>Y-1</code> 자동 무효화 — <strong>완료 정의 미작성</strong> <span class="tag warn">막힘 아님</span></p>
+<p class="s">출처 · <code>WORK-UNITS §10.2-b</code> — 「완료 정의 미작성. ⭑ <code>§J-7</code> 에서 적출된 항목이다(<code>〈167〉-㉳</code>)」</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v"><strong>같은 것이 두 층에 동시에 있었다.</strong> <code>§1.5</code> 는 stage 2 정의에 <strong>「자동 무효화」를 이름으로</strong> 적었고, <code>S1-PLAN-REFOUND §J-7</code> 은 같은 것을 <strong>편의 기능</strong>으로 적었다. <code>〈78〉-㉲</code> 는 「편의 묶음은 하나씩 꺼내 쓰지 않는다」이므로 <code>J-7</code> 만 WU 로 세우려면 예외를 명문화해야 했고, <code>〈167〉-㉳</code> 이 그 예외를 적었다 — <strong>「꺼내 쓰는 것이 아니라 잘못 들어와 있던 것을 돌려놓는 것이다.」</strong> 묶음은 10 → 9, 새 WU 는 <code>Y-1</code>. <strong>예외는 나머지 아홉에 번지지 않는다.</strong></p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v">범위는 적혀 있다 — <strong>사건(재가공 · 격자 변경 · 파일 추가) 감지 → 무효화 범위 계산 → 재생성</strong>. <strong>무효화 대상 = 렌더 산출물.</strong> 소유 = <code>D7</code>/<code>viz-render</code>(트리거 발신은 <code>D5</code>). 진입조건 = <code>P3</code> ＋ <code>D5</code> stage 2 파트. <strong>비어 있는 것은 「무엇이 green 인가」 하나다.</strong></p></div>
+  <div class="row"><p class="k">무엇을 정해야 완료를 잴 수 있나</p>
+    <ul class="opts">
+      <li><strong>ⓐ 오라클의 형태</strong> — 「사건을 일으키면 낡은 렌더가 사라지고 새것이 난다」를 <strong>어떤 관측으로</strong> 판정하는가. 산출물 파일의 mtime 인가, <code>d7</code> 원장의 행인가, 화면인가.</li>
+      <li><strong>ⓑ 무효화 <strong>범위</strong> 계산의 정확도 기준</strong> — 과다 무효화(전부 다시 그린다)를 통과로 볼 것인가. 통과로 보면 <strong>「범위 계산」이라는 말이 빈다.</strong></li>
+      <li><strong>ⓒ 사건 3종 각각에 최소 1건</strong>을 요구할 것인가 — <code>S3</code> 가 「4종 각각 최소 1건」으로 같은 모양을 쓴다.</li>
+      <li><strong>ⓓ 「다시 만들기」 버튼과의 관계</strong> — <code>〈78〉</code> 이 「버튼은 <code>J-7</code> 의 1단계가 아니다. <code>J-7</code> 을 꺼낼 때 <strong>버튼이 그 안으로 흡수</strong>된다」고 적었다. <strong><code>Y-1</code> 완료 정의에 버튼이 드는가.</strong></li>
+    </ul></div>
+  <div class="row"><p class="k">정하지 않으면</p><p class="v"><strong><code>Y-1</code> 을 「부분 완료로 닫지 않는다」가 적용될 수 없다.</strong> <code>WORK-UNITS §1.5</code> 유예 금지 규칙 — 「오라클이 green 이 아니면 <code>🟧 부분(사유)</code> 로 남긴다」. <strong>오라클이 없으면 🟧 인지 ✅ 인지도 판정 불가</strong>다. 그리고 <code>Y-1</code> 은 stage 2 <strong>끝단</strong>에 있어, 여기가 흐리면 <strong>stage 2 완주 선언 자체가 흐려진다.</strong></p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>완료 정의를 <code>P3</code> 착수 시점에 쓴다 — 지금 쓰지 않는다.</strong> 근거 — ① <strong>대상이 렌더 산출물</strong>인데 그 산출물의 저장 형태·원장이 <code>P3</code> 에서 확정된다. 지금 쓰면 <strong>실물 없이 오라클을 지어내는 것</strong>이고, 그건 이 레포가 <code>DR-9</code>·<code>〈165〉-㉯</code> 에서 반복해 막아 온 형태다 ② 단 <strong>ⓓ(버튼 흡수 여부)만 지금 판정</strong>한다 — 그것은 <strong>범위 물음이지 실물 물음이 아니고</strong>, <code>〈78〉</code> 에 이미 답이 반쯤 적혀 있다(흡수된다). <strong>권고 = 버튼은 <code>Y-1</code> 안이다.</strong></p></div>
+  <p class="cost"><strong>되돌리는 비용 — 낮다.</strong> 완료 정의는 문서다. <strong>다만 「미작성」을 <code>WORK-UNITS</code> 에 그대로 적어 둔 것이 이 항목의 안전장치</strong>다 — 지우면 <strong>없는 완료 정의가 있는 것처럼 보인다.</strong></p>
+</div></div>
+
+<div class="dec">
+<div class="head"><p class="t"><code>PA-G</code> 구글 IdP 어댑터 — <strong>완료 정의 미작성</strong> ＋ <strong>기한 발동 근거가 약하다</strong> <span class="tag warn">기한 초과</span></p>
+<p class="s">출처 · <code>WORK-UNITS §10.2-b</code>(「완료 정의 미작성. <code>PA</code> 의 완료 정의 7항은 <code>PA</code> 의 것이고 <code>PA-G</code> 로 자동 승계되지 않는다」) · <code>〈167〉-㉯</code></p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v"><code>〈122〉-㉯</code> 가 교체 기한을 <strong>「stage 1 완료 판정과 동시에 이 WU 를 연다」</strong>로 못 박았다. <strong>정본이 적은 유일 로그인 수단</strong>이고, <code>PA</code> 의 비밀번호 어댑터를 <strong>대체</strong>한다(공존시키지 않는다).</p></div>
+  <div class="row"><p class="k">지금 상태 — 그리고 판정문이 스스로 적은 약점</p><p class="v"><code>〈167〉-㉯</code> 는 <strong>「기한 발동 근거는 강하지 않다 — 약하다고 적는다」</strong>로 시작한다. 트리거 문언은 「stage 1 완료 판정과 동시」인데, <code>§1.5</code> 의 2026-08-27 재판정은 여덟 항 중 <strong>조건 4 를 「이번 범위 밖」 · 조건 7 을 🟧 부분 충족</strong>으로 남겼다. 즉 <strong>「stage 1 완료 판정」이라는 사건이 문서상 한 점으로 찍혀 있지 않다.</strong> 발동으로 보는 근거는 둘뿐 — ⓐ 같은 재판정이 <strong>「stage 1 에서 해야 하는데 안 된 것이 0 이다」</strong>라고 적고 잔여 둘(<code>D8</code> · 계보 확정 완주)을 stage 2 로 <strong>명시 이관</strong>했다 ⓑ <code>03-HANDOFF</code> 현재 단계가 <strong>「stage 2 진입 준비」</strong>다. <strong>둘 다 정황이고 판정문이 아니다.</strong> 실물 = <strong>자격 발급 0 · ⬜ 미이행.</strong></p></div>
+  <div class="row"><p class="k">무엇을 정해야 하나 — 둘이다</p>
+    <ul class="opts">
+      <li><strong>ⓐ 완료 정의.</strong> <code>PA</code> 의 7항은 <strong>자동 승계되지 않는다.</strong> 최소한 정해야 하는 것 — <strong>기존 비밀번호 계정의 이행 경로</strong>(대체이지 공존이 아니므로 <strong>기존 계정이 어떻게 넘어가는가</strong>가 완료 정의에 들어야 한다) · <strong><code>d1_account</code>·<code>d2_member_role</code> 원장과의 짝</strong>(<code>R-1</code> 재발급 절차가 같은 짝을 본다) · <strong>staging 배포 green.</strong></li>
+      <li><strong>ⓑ 기한 문언의 정정 여부.</strong> 「stage 1 완료 판정과 동시」가 <strong>찍히지 않는 사건</strong>임이 드러났다. 같은 문언을 남겨 두면 <strong>다음에 또 정황으로 발동을 판단</strong>해야 한다.</li>
+    </ul></div>
+  <div class="row"><p class="k">고르면 나중에 무슨 일이</p><p class="v"><strong>안 열면</strong> — 「기한이 문서에 없으면 <strong>임시 수단이 정착한다</strong>」(<code>〈122〉-㉯</code>). 비밀번호 어댑터는 <strong>지금 임시 수단인 채로 staging 에 서 있다.</strong> <strong>열되 완료 정의 없이 열면</strong> — <code>Y-1</code> 과 같은 자리에 선다: <strong>닫을 수 없는 WU.</strong> 그리고 <code>PA-G</code> 는 <strong>무의존 병렬</strong>이라 <strong>언제든 착수 가능한 만큼 언제까지고 안 닫힐 수 있다.</strong></p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>ⓐ 완료 정의를 착수 전에 쓴다 · ⓑ 기한 문언을 「stage 1 완료 판정과 동시」에서 <strong>관측 가능한 사건</strong>으로 바꾼다.</strong> 근거 — ① <strong><code>〈167〉-㉯</code> 스스로 근거가 약하다고 적었다.</strong> 약한 근거를 그대로 두면 <strong>다음 기한도 같은 방식으로 흐려진다</strong> ② 관측 가능한 사건의 후보 = <strong>「<code>03-HANDOFF</code> 현재 단계가 stage 2 로 바뀌는 커밋」</strong> — 이미 일어난 사건이고 <strong>한 점으로 찍힌다</strong> ③ <strong>기한 정본은 <code>WORK-UNITS §7</code> 의 <code>PA-G</code> 행 하나</strong>로 유지한다(<code>§10.2-b</code> 는 가리키기만) — 두 곳에 적으면 갈라진다.</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 중간.</strong> 완료 정의·기한 문언은 문서라 싸다. 그러나 <strong><code>PA-G</code> 를 착수해 로그인 수단을 교체한 뒤 되돌리는 것은 비싸다</strong> — 대체이지 공존이 아니므로 <strong>비밀번호 어댑터를 되살리는 일</strong>이 된다. <strong>착수 전에 정의를 확정하는 것이 이 항목에서 가장 싼 자리다.</strong></p>
+</div></div>
+
+<h3>안 잰 축 하나</h3>
+
+<div class="dec">
+<div class="head"><p class="t"><code>d4_lineage_edge</code> 전체 행 수 <strong>미측정</strong> <span class="tag acc">1단 검증 항목</span></p>
+<p class="s">출처 · <code>〈166〉-㉰</code> · <code>WORK-UNITS §10.3</code> 1단 검증</p></div>
+<div class="body">
+  <div class="row"><p class="k">배경</p><p class="v">「계보 간선 6」은 <strong><code>confirmed_at IS NOT NULL</code> 로 센 값</strong>이다 — <code>d4_lineage_edge</code> 에 <code>status</code> 열이 없다(<code>〈165〉-㉯</code>). 측정법이 문서에 적혀 있는 이유는 <strong>「다음 회차가 같은 수를 다른 방법으로 세면 다른 수가 나온다」</strong>이다. 참고로 여러 문서의 <strong>「5」는 틀린 값</strong>이었다(<code>〈159〉-㉲</code>).</p></div>
+  <div class="row"><p class="k">지금 상태</p><p class="v"><strong><code>SELECT COUNT(*)</code> 를 세지 않았다.</strong> <code>〈166〉</code> 회차는 문서 회차라 <strong>DB 접근을 넓히지 않기로</strong> 했고, 대신 <strong>안 잰 축을 이름으로 남겼다</strong>(<code>X-2 §5-㉱-7</code> 의 적용). <code>WORK-UNITS §10.3</code> 1단 검증에 <strong>한 줄로 걸려 있다.</strong></p></div>
+  <div class="row"><p class="k">무엇이 걸려 있나</p><p class="v"><strong>전체가 6 이 아니면 아무도 안 본 미확정 행이 있다는 뜻이다.</strong> 그 가능성을 안 잰 채 두면 <strong>다음 회차가 6 을 「전부」로 읽는다</strong> — 그리고 그 6 이 <strong>재기동 검증의 기준선</strong>이다. 기준선이 부분집합이면 <strong>재기동 후 「일치」가 일치를 증명하지 않는다.</strong></p></div>
+  <div class="rec"><p class="k">권고</p><p style="margin:0"><strong>판정할 것이 없다 — 이미 자리를 얻었다. 1단에서 재고, 결과를 <code>§9</code> 에 등재한다.</strong> <strong>전체 &gt; 6 이면 그 자리에서 멈추고 「미확정 행이 무엇인가」를 <code>§9</code> 항목으로 연다</strong> — <strong>고아 행 삭제(<code>#22</code>)와 같은 회차에 있으므로 「지우는 것」과 섞지 않는다.</strong> 미확정 계보 행은 <strong>픽스처 잔재가 아니라 사람이 확인하지 않은 제안일 수 있다</strong>(<code>D10 → D4</code> 쓰기 경로가 없으므로 AI 가 쓴 것은 아니지만, <strong>사람이 열어 두고 안 닫은 것</strong>일 수 있다).</p></div>
+  <p class="cost"><strong>되돌리는 비용 — 0.</strong> 읽기 전용 측정이다. <strong>안 재는 비용이 크다.</strong></p>
+</div></div>
+
+<div class="quiz">
+  <p class="q"><code>I3</code> 7건 중 「나중에 되돌리는 비용이 가장 비싼 것」 하나를 고른다면?</p>
+  <details><summary>답 보기</summary><div class="body">
+    <p><strong>③ 레지스트리 — 그중에서도 ⓑ(GHCR 푸시)로 먼저 가는 경우.</strong> <strong>레포가 public 이다</strong>(<code>R1</code>). 한 번 공개 레지스트리에 올라간 이미지는 <strong>회수할 수 없다</strong> — 다른 여섯은 전부 파일 형식·플래그·규칙 문장이라 되돌리기가 싸다.</p>
+    <p style="margin-bottom:0">그래서 이 일곱은 <strong>같은 무게로 고민할 대상이 아니다.</strong> ③만 비가역이고, 나머지는 「지금 정하고 나중에 바꾼다」가 성립한다.</p>
+  </div></details>
+</div>
+
+<!-- ================= ⑥ ================= -->
+<h2><span class="num">⑥</span> 규율 장치 — 왜 이렇게까지 하나</h2>
+<p>배경 절이다. 결론에 필요한 것은 <strong>한 문장</strong>이고, 나머지는 접어 뒀다.</p>
+<div class="card">
+  <p style="margin:0"><strong>「예외적 1회」로 설계된 것이 7회 열렸다. 그러면 그것은 예외가 아니라 운영 경로다</strong> — 그래서 <strong>횟수 상한을 버리고 3등급제(㉮ 자동허용 / ㉯ 승인 / ㉰ 금지)로 갔다</strong>(<code>〈163〉-㉮</code>). <strong>「몇 번 여는가」가 아니라 「무엇을 여는가」로 판정한다.</strong></p>
+</div>
+
+<details>
+<summary>회차가 는 이유는 의지가 아니라 <strong>점검 축의 누락</strong>이었다 — 진단과 증거</summary>
+<div class="body">
+<p><strong>일곱 회차의 점검 축을 나열하면 축이 매번 새로 발견됐다</strong>(<code>X2 §3</code>).</p>
+<ul>
+  <li>1~3 회차 = <strong>「응답이 무엇을 담는가」</strong></li>
+  <li>4 회차 = <strong>「그 응답을 부를 op 이 있는가」</strong> — <code>listPalettes</code> 가 없어 <code>createRender</code> 가 도달 불가였다. <strong>어떤 게이트도 말하지 않았다. 없는 것은 diff 에 안 나온다</strong></li>
+  <li>5·6 회차 = <strong>「사용자 행위가 계약에 있는가」</strong></li>
+  <li>7 회차 = <strong>「계약이 낼 수 없는 것을 선언하고 있는가」</strong> — <code>202</code>. lint·breaking 전부 green 이었다</li>
+</ul>
+<p><strong>결론(<code>X2 §6</code>).</strong> 「잘못된 것 = <strong>「1회」라는 수</strong>. <code>〈80〉</code> 은 「두 번째 해제가 일어나면 이 결정은 실패」라고 못 박았고 7회가 났다. <strong>1회는 예측 가능한 세계에서만 성립하는 수인데, 회차마다 새 축이 발견됐다. 축을 다 아는 상태가 애초에 없었으므로 1회는 지킬 수 없는 약속이었다.</strong>」</p>
+<p><strong>잘못이 아닌 것 = 동결.</strong> 7회 전부 Ted 승인 · 마이그레이션 0 · 게이트 준수였다. <strong>「동결의 산출물은 「안 여는 것」이 아니라 「열 때마다 근거와 증거가 남는 것」이었고, 그 산출물은 실제로 나왔다.」</strong></p>
+<h4>상한을 버린 대가를 무엇이 받는가</h4>
+<p><strong><code>㉰-6</code>(묶음 쪼개기로 자동 허용 만들기 금지)</strong> 이 그 자리를 직접 받는다 — 한 목적의 변경을 나눠 각 조각을 <code>㉮</code> 로 통과시키는 것은 <strong>목적 단위 판정</strong>으로 막는다. 그리고 <strong>㉱ 증거 7항</strong>이 「주장하지 말고 보여 준다」를 강제한다.</p>
+<div class="scroll">
+<table>
+  <thead><tr><th>#</th><th>증거</th><th>형태</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>contract-breaking</code></td><td>실행 출력 — ERR/WARN 건수 · 파괴면 red→green 전이 기록</td></tr>
+    <tr><td>2</td><td><code>contract-lint</code> · <code>generated-up-to-date</code> · <code>seam-consistency</code></td><td>green 출력</td></tr>
+    <tr><td>3</td><td><strong>소비자 수</strong></td><td>grep 명령과 결과 건수 — <strong>0 이라는 주장이 아니라 0 이라는 출력</strong></td></tr>
+    <tr><td>4</td><td>마이그레이션 0</td><td><code>db/platform</code>·<code>db/ai</code> diff 0</td></tr>
+    <tr><td>5</td><td><strong>집행 증명</strong></td><td>신설 op 이면 <strong>모의가 아닌</strong> 실 호출 1건 이상</td></tr>
+    <tr><td>6</td><td>회귀 수치</td><td>서비스별 시험 수 전/후 · op 총계 전/후 · 501 표 전/후</td></tr>
+    <tr><td>7</td><td><strong>못 본 축</strong></td><td>이번에 세지 <strong>않은</strong> 축을 이름으로 적는다 — <strong>다음 회차의 진입조건</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>㉱-7 이 실제로 작동한 사례가 이 문서 안에 있다</strong> — <code>d4_lineage_edge</code> 전체 행 수(⑤ 마지막 카드). <strong>안 잰 축을 이름으로 적었고, 그것이 1단 검증 항목이 됐다.</strong></p>
+<p style="margin-bottom:0"><strong>⚠ 게이트 탐지 범위는 한 칸도 줄이지 않는다.</strong> 프로토콜은 게이트가 <strong>못 잡는 6종</strong> 위에만 얹힌다. 장기 해법은 규칙 완화가 아니라 <code>seam-consistency</code> <strong>G-a·G-c·G-d 구현</strong>이고, 그 시점은 <strong>stage 2 이후로 확정</strong>됐다(<code>〈163〉-㉱</code>). 그때까지 6종은 <strong><code>㉯</code> 사람 판정</strong>이 계속 받는다.</p>
+</div>
+</details>
+
+<details>
+<summary>같은 규율이 이번 회차의 문서 층에서 무엇을 잡았나 — 자기 정정 넷</summary>
+<div class="body">
+<p>이 라운드의 산출물(<code>STAGE2-READY.md</code>)이 <strong>자기 결함 셋을 어드바이저 지적으로 기록</strong>했고, 판정 회차가 하나를 더 잡았다.</p>
+<ul>
+  <li><strong><code>§6-C5</code> 가 틀렸다</strong> — <code>#25</code> 는 <strong>2026-08-26 에 이미 판정</strong>됐다(<code>S2b-SEARCH-EVALSET §4</code> — 「한국수자원학회」 기대값 0건 확정 ＋ <code>source_label</code> 부여 금지 · <code>pg_trgm</code> 0.3 유지). <strong>열린 충돌이 아니라 낡은 행 표기였다.</strong></li>
+  <li><strong>판정 계수가 부풀려져 있었다</strong> — 「A 7 ＋ B 9 ＋ C 8 = 24 · 막힘 8」로 셌으나, <strong>막힘이 여덟으로 「늘어난」 것이 아니라</strong> 「7건 하나」에 <strong><code>B1</code> 하나가 더해진 것</strong>이었다.</li>
+  <li><strong><code>§6-B3</code>·<code>§6-B5</code> 는 과다 개방이었다</strong> — 둘 다 <strong>이미 판정·이연된 것</strong>(<code>〈78〉-㉲</code> · <code>〈157〉-㉱</code>)을 다시 열린 판정으로 세웠다. <strong>낡은 표기와 열린 판정을 가르지 못한 자리다.</strong></li>
+  <li><strong><code>§11</code> 3차 정정</strong> — <code>R2</code> 가 <code>§11</code> 에서 ✅ 인데 <code>03-HANDOFF §1 T-R</code> 은 ⬜(C4 후)였다. <strong>2차 정정문이 「부분 정정은 남은 거짓 ✅ 를 더 믿게 만든다」고 적었는데, 그 문장이 자기 자신에게도 맞았다</strong>(<code>〈167〉-㉴</code>).</li>
+</ul>
+<p style="margin-bottom:0"><strong>본문은 무수정 보존하고 취소선·개정 표시만 붙였다</strong> — 「지우면 같은 물음이 근거 없이 다시 열린다」.</p>
+</div>
+</details>
+
+<!-- ================= 결론 ================= -->
+<h2><span class="num">✓</span> 다음 한 수</h2>
+
+<div class="card ok">
+  <p style="margin-top:0;font-size:1.05rem"><strong><code>R-1</code> 을 연다. 그리고 그 첫 항목은 「볼륨 백업 기구를 만드는 것」이다.</strong></p>
+  <p><strong>왜 이것 하나인가.</strong></p>
+  <ul>
+    <li><strong>1단의 첫 칸이고 유일한 진입점이다.</strong> <code>X-1</code>·<code>X-4</code> 재기동 전부가 뒤에 있고(<code>〈158〉-㉯</code>), 2단·3단은 1단 뒤다. <strong><code>X-5</code> 만 병렬로 함께 열 수 있다</strong>(무의존 · 초반이 싸다).</li>
+    <li><strong>지금 가장 비싼 미지가 여기 있다.</strong> <code>R-1</code> 완료 정의 10항 중 산출물이 있는 것이 3항이고, <strong>#1(볼륨 백업)은 기구 자체가 없다</strong> — <code>backup.sh</code> 를 직접 읽어 확인했다.</li>
+    <li><strong>남은 막힘(<code>I3</code> 7건)은 1단을 막지 않는다.</strong> <code>I3</code>→<code>I4</code> 는 3단에서 본체와 병렬이므로, <strong>7건 판정을 1단 진행과 동시에 붙일 수 있다.</strong></li>
+  </ul>
+  <p><strong>한 회차에 함께 실을 것.</strong></p>
+  <ol>
+    <li><strong>볼륨 백업 절차 신설</strong> — <code>uploads</code>·<code>previews</code>. <strong><code>backup.sh</code> 의 세 원칙(임시파일 → <code>PIPESTATUS</code> → 검사 통과분만 <code>mv</code>)을 그대로 따른다</strong> — 새 형태를 발명하지 않는다.</li>
+    <li><strong>리허설 1회차</strong> — 일회용 인스턴스에 <code>§5</code> 의 1·3·6 을 한 묶음으로. <strong>여기서 <code>R-1</code> 의 <code>[미확인]</code> 둘이 측정된다</strong>(<code>subjects.json</code> 재생성 수단 · env 키 목록 정본). <strong>값을 지어내지 않는다.</strong></li>
+    <li><strong><code>I3</code> 7건 판정</strong> — 위 권고를 그대로 채택하거나 고친다. <strong>비가역인 것은 ③ 하나</strong>이므로 나머지 여섯은 빨리 정하고 지나간다.</li>
+    <li><strong>소유 없는 둘에 소유를 준다</strong> — <code>sha256</code> 대조·<code>--skip-age</code> 기구화, <code>〈128〉</code> 백업 최소 행 수 상향. <strong>둘 다 <code>R-1</code> 에 붙이는 것이 자연스럽다</strong>(재료가 같다). <code>CLAUDE.md §5</code> — 소유 없는 항목은 「나중에」로 남는다.</li>
+  </ol>
+  <p style="margin-bottom:0"><strong>동시에 하지 말 것.</strong> <code>R-1</code> 과 재기동을 같은 회차에 묶지 않는다 — <strong>그것이 단일 변수 원칙 그 자체다.</strong> 그리고 <code>IS4</code> 의 맨몸 호스트 리허설은 <strong><code>R-1</code> 뒤에</strong> 붙인다(재료가 겹쳐 그쪽이 싸다).</p>
+</div>
+
+<div class="card">
+  <p style="margin-top:0"><strong>되돌리는 비용.</strong></p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>한 수</th><th>되돌리는 비용</th></tr></thead>
+    <tbody>
+      <tr><td><strong>볼륨 백업 기구 신설</strong></td><td><strong>0 — 되돌릴 이유가 없다.</strong> 읽기 전용 산출물이고, 안 쓰면 디스크만 쓴다. <strong>반대로 안 만들고 재기동하면 그 회차의 사고는 되돌릴 수 없다.</strong></td></tr>
+      <tr><td><strong>리허설 1회차</strong></td><td><strong>0 — 일회용 인스턴스 전용이다.</strong> 살아 있는 staging 에 닿지 않는다.</td></tr>
+      <tr><td><strong><code>I3</code> 7건 판정</strong></td><td><strong>낮다 — ③ 하나만 빼고.</strong> 파일 형식·플래그·규칙 문장은 바꾸면 그만이다. <strong>③ 에서 public 레지스트리로 가면 회수 불가</strong>이므로 <strong>로컬 ＋ SHA 태그로 시작</strong>한다.</td></tr>
+      <tr><td><strong><code>#22</code> 고아 행 삭제</strong></td><td><strong>선백업 GREEN 이 유일한 되돌림</strong>이다. <strong>백업이 red 면 삭제하지 않는다</strong>(<code>〈167〉-㉰</code> ⓑ). <code>d8_activity</code> 의 잔존 행은 <code>#28</code> 이 「지우면 경위 증거가 사라진다」고 적은 <strong>그 증거</strong>다.</td></tr>
+      <tr><td><strong><code>X-1</code> 회전 ＋ <code>X-4</code> 재기동</strong></td><td><strong><code>R-1</code> 이 있으면 낮고, 없으면 알 수 없다.</strong> 그것이 순서를 이렇게 잡은 이유 전부다.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<p class="foot">
+이 문서는 값을 다시 적지 않는다 — 인용된 수치·상태는 전부 원문에서 확인한 것이고, 정본은 <code>PLAN-SoT §9</code>(값·근거) 와 <code>03-HANDOFF §1</code>(진행 상태) 이다. 원문에서 확인되지 않은 것은 쓰지 않았다.<br>
+작성 2026-08-27 · 읽기 전용 종합 · 어떤 파일도 고치지 않았다.
+</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.documentElement;
+  function setTheme(v){
+    try{
+      if(v==="sys"){root.removeAttribute("data-theme");localStorage.removeItem("s2-theme");}
+      else{root.setAttribute("data-theme",v);localStorage.setItem("s2-theme",v);}
+    }catch(e){
+      if(v==="sys"){root.removeAttribute("data-theme");}else{root.setAttribute("data-theme",v);}
+    }
+    mark(v);
+  }
+  function mark(v){
+    var m={"light":"t-light","dark":"t-dark","sys":"t-sys"};
+    ["t-light","t-dark","t-sys"].forEach(function(id){
+      var b=document.getElementById(id); if(b) b.setAttribute("aria-pressed", m[v]===id ? "true":"false");
+    });
+  }
+  try{
+    var saved=localStorage.getItem("s2-theme");
+    if(saved==="light"||saved==="dark"){root.setAttribute("data-theme",saved);mark(saved);}else{mark("sys");}
+  }catch(e){mark("sys");}
+  var bl=document.getElementById("t-light"),bd=document.getElementById("t-dark"),bs=document.getElementById("t-sys");
+  if(bl)bl.addEventListener("click",function(){setTheme("light");});
+  if(bd)bd.addEventListener("click",function(){setTheme("dark");});
+  if(bs)bs.addEventListener("click",function(){setTheme("sys");});
+
+  var caps={
+    "anim1":{
+      "1":"지금 볼 것 — 위쪽 줄에서 <strong>재기동이 마지막에 있다</strong>는 사실. 깨졌을 때 용의자가 넷이다.",
+      "2":"지금 볼 것 — 아래쪽 줄에서 <strong>재기동 앞에 아무 변경도 없다</strong>는 사실. 용의자가 하나다. 그리고 그 앞에 <code>R-1</code>(되돌리는 절차)이 있다.",
+      "all":"두 줄을 나란히 — 같은 재기동인데 <strong>앞에 무엇이 있느냐</strong>만 다르다. 그것이 <code>〈158〉-㉮</code> 가 순서를 뒤집은 이유 전부다."
+    },
+    "anim2":{
+      "1":"지금 볼 것 — 파란 화살표가 <strong>왼쪽으로</strong> 간다. 원장만 과거로 돌아간다.",
+      "2":"지금 볼 것 — 붉은 점선은 <strong>오른쪽으로</strong> 간다. 볼륨은 되돌릴 것이 없어 현재에 머문다.",
+      "3":"지금 볼 것 — 두 화살표가 <strong>반대 방향</strong>이다. 그 사이에 생기는 간격이 「원장과 바이트의 세대 차이」다.",
+      "all":"전체 — 백업 대상이 DB 둘뿐인 한, 복원은 언제나 <strong>반쪽</strong>이다."
+    }
+  };
+  function apply(id,step){
+    var svg=document.getElementById(id); if(!svg) return;
+    var gs=svg.querySelectorAll(".step");
+    for(var i=0;i<gs.length;i++){
+      var s=gs[i].getAttribute("data-s");
+      if(step==="all"||s===step) gs[i].classList.add("live"); else gs[i].classList.remove("live");
+    }
+    var cap=document.getElementById("cap-"+id);
+    if(cap&&caps[id]&&caps[id][step]) cap.innerHTML=caps[id][step];
+    var btns=document.querySelectorAll('button[data-anim="'+id+'"]');
+    for(var j=0;j<btns.length;j++){
+      btns[j].classList.toggle("on", btns[j].getAttribute("data-step")===step);
+    }
+  }
+  var all=document.querySelectorAll("button[data-anim]");
+  for(var k=0;k<all.length;k++){
+    all[k].addEventListener("click",function(){
+      apply(this.getAttribute("data-anim"), this.getAttribute("data-step"));
+    });
+  }
+  // reduced motion: 최종 상태(전체)를 정적으로 보여 준다
+  try{
+    if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      apply("anim1","all"); apply("anim2","all");
+    }else{
+      apply("anim1","1"); apply("anim2","1");
+    }
+  }catch(e){ apply("anim1","1"); apply("anim2","1"); }
+})();
+</script>
+</body>
+</html>
