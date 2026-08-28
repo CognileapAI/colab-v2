@@ -38,9 +38,35 @@ export class GridAxisTaken extends Error {}
 /** 확정할 격자가 없다 — 판별에 실패했거나 형상이 어긋났다 (계약 400 · `〈66〉`). */
 export class NoResolvedGrid extends Error {}
 
+/** `create` 의 선택 인자 — 프리사인드 전송(〈174〉)에서만 의미를 갖는다. */
+export interface UploadCreateOptions {
+  /** 배너·목록에 보일 묶음 이름. */
+  sourceLabel?: string;
+  /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
+  resumeUploadId?: string;
+  onProgress?: (p: { sentBytes: number; totalBytes: number }) => void;
+}
+
+/** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈174〉). */
+export interface IncompleteTransferItem {
+  uploadId: string;
+  sourceLabel: string;
+  uploadedFiles: number;
+  plannedFiles: number;
+  uploadedBytes: number;
+  plannedBytes: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface UploadSource {
-  /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다. */
-  create(files: PickedFile[]): Promise<UploadReceipt>;
+  /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다.
+   *  프리사인드 전송이 서면(저장 모드 s3) 그 경로로, 아니면(501) form-data 로 폴백한다. */
+  create(files: PickedFile[], opts?: UploadCreateOptions): Promise<UploadReceipt>;
+  /** 내 미완결 전송 — 이어올리기 배너. 프리사인드가 안 서는 환경(501)에서는 빈 배열. */
+  incomplete?(): Promise<IncompleteTransferItem[]>;
+  /** 미완결 전송을 지운다 (S3 조각까지). */
+  abortTransfer?(uploadId: string): Promise<void>;
   /** `getUploadStatus` — 이벤트 ②~⑦ 의 결과만 읽는다. 만료면 `UploadGone`. */
   status(uploadId: string): Promise<UploadStatus>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */

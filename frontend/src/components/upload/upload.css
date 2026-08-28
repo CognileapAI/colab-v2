@@ -218,3 +218,26 @@
 .pv-badges { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted, #6b7280); }
 .mapcanvas .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+
+/* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
+.up-banner {
+  border: 1px solid var(--up-warn);
+  background: var(--up-warn-bg);
+  border-radius: var(--up-radius);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.up-banner .ub-row { display: flex; align-items: center; gap: 10px; }
+.up-banner .ub-txt { flex: 1; font-size: 13px; color: var(--up-ink); }
+.up-banner .ub-btn {
+  border: 1px solid var(--up-line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.up-banner .ub-btn.is-armed { border-color: var(--up-warn); color: var(--up-warn); }
+.up-banner .ub-hint { margin: 0; font-size: 12px; color: var(--up-muted); }

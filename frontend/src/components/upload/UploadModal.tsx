@@ -24,6 +24,7 @@ import {
   type FileKind,
   type LineageStepContext,
   type LineageStepRender,
+  type IncompleteTransferItem,
   type PickedFile,
   type UploadLineageParent,
   type UploadSources,
@@ -88,11 +89,28 @@ export function UploadModal(props: {
     renderId: string;
     withoutReferenceGrid: boolean;
   } | null>(null);
+  // 미완결 프리사인드 전송 (〈174〉) — 저장 모드 s3 에서만 값이 온다 (local 은 빈 배열)
+  const [incomplete, setIncomplete] = useState<IncompleteTransferItem[]>([]);
+  // 재개 대상: 표시용 상태 + 접수 effect 가 읽는 ref. **성공 시에만 비운다** — 상태를
+  // deps 로 쓰면 성공 직후 effect 가 한 번 더 돌아 같은 파일이 새 업로드로 중복 접수된다
+  // (시험 「resumeUploadId 를 싣는다」가 실제로 잡아낸 실수).
+  const [resumeId, setResumeId] = useState<string | null>(null);
+  const resumeRef = useRef<string | null>(null);
+  const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
 
   const attach = props.attach;
   /** 후주입 모드의 기본 파일 종류. 사람이 격자를 붙이러 왔으므로 격자가 기본이다. */
   const defaultKind: FileKind = attach ? '기준 격자 파일' : '본체';
+
+  // 미완결 전송 목록 (〈174〉) — 후주입 모드에서는 묻지 않는다 (격자를 붙이러 온 자리다).
+  const refreshIncomplete = useCallback(() => {
+    if (attach || !upload.incomplete) return;
+    void upload.incomplete().then(setIncomplete).catch(() => setIncomplete([]));
+  }, [attach, upload]);
+  useEffect(() => {
+    refreshIncomplete();
+  }, [refreshIncomplete]);
 
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
@@ -107,23 +125,34 @@ export function UploadModal(props: {
       return;
     }
     let alive = true;
+    const label = picked.length === 1 && picked[0]
+      ? (picked[0].relativePath ?? picked[0].file.name)
+      : `파일 ${picked.length}건`;
+    const resume = resumeRef.current;
     void upload
-      .create(picked)
+      .create(picked, { sourceLabel: label,
+                        ...(resume ? { resumeUploadId: resume } : {}) })
       .then((receipt) => {
         if (!alive) return;
         setUploadId(receipt.uploadId);
+        if (resume) {                      // 이어올리기가 접수까지 갔다 — 배너 항목이 사라진다
+          resumeRef.current = null;
+          setResumeId(null);
+        }
+        refreshIncomplete();
         const firstBody = receipt.files.find((f) => f.kind === '본체') ?? receipt.files[0];
         setName((cur) => cur || (firstBody ? nameFromFile(firstBody.fileName) : ''));
       })
       .catch(() => {
         // §9 업로드 중단 — 「올리다가 끊겼어요. 다시 시도해 주세요.」 파일 놓기부터 다시 한다.
+        // 재개 중이었다면 배너가 남아 있어 같은 자리에서 다시 시도할 수 있다.
         if (alive) setUploadId(null);
       });
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, upload]);
+  }, [signature, upload, resumeArm]);
 
   // 이벤트 ②~⑦ 의 결과를 읽는다 — 새 사실을 만들지 않는다.
   useEffect(() => {
@@ -329,6 +358,50 @@ export function UploadModal(props: {
         </div>
 
         <div className="modal-b up-body">
+          {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈174〉) */}
+          {!attach && incomplete.length > 0 && (
+            <aside className="up-banner" data-testid="up-incomplete" aria-live="polite">
+              {incomplete.map((item) => (
+                <div className="ub-row" key={item.uploadId}>
+                  <span className="ub-txt">
+                    <b>올리다 만 업로드가 있어요</b> — {item.sourceLabel} ·{' '}
+                    {item.uploadedFiles}/{item.plannedFiles} 파일
+                  </span>
+                  <button
+                    type="button"
+                    className={resumeId === item.uploadId ? 'ub-btn is-armed' : 'ub-btn'}
+                    data-testid={`up-resume-${item.uploadId}`}
+                    onClick={() => {
+                      resumeRef.current = item.uploadId;
+                      setResumeId(item.uploadId);
+                      setResumeArm((n) => n + 1);
+                    }}
+                  >
+                    이어서 올리기
+                  </button>
+                  <button
+                    type="button"
+                    className="ub-btn"
+                    data-testid={`up-discard-${item.uploadId}`}
+                    onClick={() => {
+                      void upload.abortTransfer?.(item.uploadId).then(refreshIncomplete);
+                      if (resumeId === item.uploadId) {
+                        resumeRef.current = null;
+                        setResumeId(null);
+                      }
+                    }}
+                  >
+                    지우기
+                  </button>
+                </div>
+              ))}
+              {resumeId && (
+                <p className="ub-hint" data-testid="up-resume-hint">
+                  같은 파일을 다시 끌어다 놓으면 남은 조각부터 이어서 올라가요.
+                </p>
+              )}
+            </aside>
+          )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
           <FileDropCard picked={picked} onPick={pick} onKind={setKind} />
 
