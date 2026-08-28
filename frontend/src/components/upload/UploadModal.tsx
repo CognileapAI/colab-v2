@@ -96,7 +96,10 @@ export function UploadModal(props: {
 
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
-  const signature = picked.map((p) => `${p.file.name}:${p.file.size}:${p.kind}`).join('|');
+  // 폴더 드롭에서는 다른 폴더의 같은 이름·같은 크기가 실재하므로 상대 경로가 정체성에 든다
+  const signature = picked
+    .map((p) => `${p.relativePath ?? p.file.name}:${p.file.size}:${p.kind}`)
+    .join('|');
   useEffect(() => {
     if (picked.length === 0) {
       setUploadId(null);
@@ -196,10 +199,17 @@ export function UploadModal(props: {
     ]);
   }
 
-  function pick(files: File[]) {
+  function pick(files: File[], paths?: ReadonlyMap<File, string>) {
     // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
     // **후주입 모드에서는 기본값이 `기준 격자 파일` 이다** — 사람이 격자를 붙이러 왔다.
-    setPicked((cur) => [...cur, ...files.map((file) => ({ file, kind: defaultKind }))]);
+    // 폴더째 드롭이면 상대 경로가 함께 온다 (`dropTree.ts` · `〈173〉`).
+    setPicked((cur) => [
+      ...cur,
+      ...files.map((file) => {
+        const relativePath = paths?.get(file);
+        return { file, kind: defaultKind, ...(relativePath ? { relativePath } : {}) };
+      }),
+    ]);
   }
 
   function setKind(index: number, kind: FileKind) {

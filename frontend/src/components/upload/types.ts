@@ -25,6 +25,8 @@ export class NotImplemented extends Error {}
 export interface PickedFile {
   file: File;
   kind: FileKind;
+  /** 폴더째 드롭에서 왔을 때의 `폴더/이름` 상대 경로 (`dropTree.ts` · `〈173〉`). 낱개 파일은 없음. */
+  relativePath?: string;
 }
 
 /** 후주입 확정이 돌려주는 `DatasetFile` 들. 축은 **판별의 결과**다. */

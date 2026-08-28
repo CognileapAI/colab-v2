@@ -4,6 +4,7 @@
 // 파일을 열어 보는 일이다.
 // **축(위도·경도)을 사람에게 묻지 않는다** — 서버가 파일에서 판별한다 (`〈63〉-㉰`).
 import { useState } from 'react';
+import { collectDrop } from './dropTree';
 import type { FileKind, PickedFile } from './types';
 
 const KINDS: FileKind[] = ['본체', '기준 격자 파일'];
@@ -27,7 +28,8 @@ function FileRow(props: {
   return (
     <div className="filecard">
       <div className="fmeta">
-        <div className="fn">{picked.file.name}</div>
+        {/* 폴더에서 왔으면 어느 폴더의 무엇인지가 곧 이름이다 */}
+        <div className="fn">{picked.relativePath ?? picked.file.name}</div>
         <div className="fs">{humanSize(picked.file.size)}</div>
       </div>
       <label className="fkind">
@@ -51,7 +53,8 @@ function FileRow(props: {
 
 export function FileDropCard(props: {
   picked: PickedFile[];
-  onPick: (files: File[]) => void;
+  /** `paths` 는 폴더째 드롭에서만 온다 — 파일 → `폴더/이름` 상대 경로. */
+  onPick: (files: File[], paths?: ReadonlyMap<File, string>) => void;
   onKind: (index: number, kind: FileKind) => void;
 }) {
   const [slicesOpen, setSlicesOpen] = useState(false);
@@ -66,8 +69,24 @@ export function FileDropCard(props: {
   return (
     <div className="card up-card">
       <div className="card-b">
-        {/* 여러 개를 한 번에 받는다 — 드롭 영역이 그렇게 말한다 (§8) */}
-        <label className="dropzone" data-testid="up-drop">
+        {/* 여러 개를 한 번에 받는다 — 드롭 영역이 그렇게 말한다 (§8).
+            실제 드롭은 여기 핸들러가 받는다 — 숨긴 1px 인풋에는 드롭이 닿지 않는다.
+            폴더가 떨어지면 dropTree 가 재귀로 펼친다 (`〈173〉`). */}
+        <label
+          className="dropzone"
+          data-testid="up-drop"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            void collectDrop(e.dataTransfer).then((dropped) => {
+              if (dropped.length === 0) return;
+              const paths = new Map(
+                dropped.flatMap((d) => (d.relativePath ? [[d.file, d.relativePath] as const] : [])),
+              );
+              props.onPick(dropped.map((d) => d.file), paths.size > 0 ? paths : undefined);
+            });
+          }}
+        >
           <span className="big">파일을 끌어다 놓으세요</span>
           <span className="muted">여러 개를 한 번에 놓아도 돼요</span>
           <input
