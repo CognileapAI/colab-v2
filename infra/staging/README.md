@@ -37,6 +37,7 @@ green 이 된 것은 **사람이 따로 기다렸다 헬스 6종을 본** 덕이
 | `pipeline/approval/target.sh` | 타깃 판정. `prod` 는 **선언만 있고 실행 경로가 없다** |
 | `pipeline/approval/approve.sh` | 승인 기록 (승인자 한 낱말 + **무엇을 눈으로 봤는가**) |
 | `pipeline/selftest.sh` | 원장·롤백 대상·표식·거부 경로의 fail-closed 증명 |
+| `preflight.sh` | **필수 설정 프리플라이트** — env 파일을 프로세스에 싣고, 필요한 키를 `compose.i2.yml` 의 `:?` + `db-bootstrap.sh required-env` 에서 **받아 와** 빌드 전에 전부 검사한다. 값은 출력하지 않는다 |
 | `verify/verify-deploy.sh` | **판정기** — 헬스 6종 + 본문 대조 + 컨테이너 8개 + `0.0.0.0` 0건 |
 | `verify/verify-chains.sh` | 두 체인 head (한쪽만 확인하고 전체 성공으로 기록하지 않는다) |
 | `verify/selftest.sh` | 판정기 red fixture — 죽은 단위 · 자리표시 본문 · 대상 0건 · 면제 건수 |
@@ -72,6 +73,17 @@ green 이 된 것은 **사람이 따로 기다렸다 헬스 6종을 본** 덕이
 - 워킹트리 더러움 → 거부(`--allow-dirty` 로만 통과, 건수 노출)
 - 배포 전 백업 → 두 프로파일 GREEN 아니면 중단(`--skip-backup` 으로만 면제, 원장에 남는다)
 - 검사 대상 0건 → **red**
+- **필수 설정 미비 → 거부**(면제 없음). 판정 자리는 `deploy.sh` ⓪-b — **빌드보다 먼저다**
+
+#### 프리플라이트가 왜 ⓪-b 에 있나 (2026-08-28)
+
+첫 staging 배포가 **⑦ 롤 부트스트랩에서 죽었다.** 사유는 `COLAB_OWNER_PASSWORD` 미설정이다.
+값은 홈 env 파일에 **있었다.** 없던 것은 배선이었다 — env 파일은 `--env-file` 로 **compose 에만**
+넘어갔고, 호스트에서 직접 도는 `db-bootstrap.sh` 는 빈 환경으로 돌았다. 종전의 사실상
+프리플라이트는 `compose.i2.yml` 의 `:?` 뿐이라 **compose 가 모르는 키는 보이지 않았고**,
+그래서 게이트·태그보존·빌드·백업을 전부 치른 뒤에야 드러났다.
+지금은 ⓪-b 가 ① 보다 먼저 돌고, 필요한 키 목록을 **필요로 하는 쪽에서 받아 온다.**
+회귀 픽스처는 `verify/selftest.sh` F14–F18 · `pipeline/selftest.sh` P13 이다.
 
 ### 실패하면 무엇이 일어나나
 

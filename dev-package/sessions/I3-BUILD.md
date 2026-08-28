@@ -245,3 +245,63 @@ infra/staging/pipeline/run-pipeline.sh --target staging --force
 | 컨테이너 `colab_v2_staging_cloudflared` 의 헬스체크 존재 여부 | `compose.i2.yml` 에 `healthcheck` 선언이 없다. `RESTART.md` 는 8개 healthy 를 적었으므로 **이미지 내장 HEALTHCHECK 로 추정**하되 재지 않았다. 판정기는 **healthy 가 아니면 red** 로 둔다(fail-closed) — 배포 회차에 실물로 갈린다 |
 | staging 실물의 `403` 2건 (`work-items.yaml` X5 잔여) | 배포 후 `PATCH` 2회 |
 | 클라우드 CI 와 호스트 게이트가 갈리는지 | 자동 탐지 없음. 갈리면 **호스트 쪽이 정본**이라고만 정해 뒀다(`I3 §7-10`) |
+
+---
+
+## 10. 2026-08-28 첫 staging 배포 중단 — ⑦ 롤 부트스트랩 (개정 · 2026-08-29)
+
+**무엇이 일어났나** — `deploy.sh` 가 단계 ⑦ 에서 중단(exit 70). 축자:
+
+```
+db-bootstrap.sh: line 17: COLAB_OWNER_PASSWORD: COLAB_OWNER_PASSWORD 가 필요하다
+!!! 배포 중단 — 단계 [롤 부트스트랩] · db-bootstrap.sh roles 실패
+```
+
+마이그레이션 **전에** 멈췄다. 스키마는 손대지 않았고 스택은 그대로다. fail-closed 는 옳게 동작했다.
+
+**무엇이 원인이었나 — 값이 아니라 배선이다.**
+
+| 처음 의심 | 실측 |
+|---|---|
+| `COLAB_OWNER_PASSWORD` 가 env 파일에 없다 | **있다.** 홈 env 파일(0600)에 키가 이미 선언돼 있다 |
+| 새 비밀을 만들어 넣어야 한다 | **아니다.** 만들 것이 없다 |
+
+실제 결함은 둘이다.
+
+1. `deploy.sh` 가 env 파일을 `docker compose --env-file` 로만 넘겼다. 그건 **compose 가 뜨우는
+   컨테이너에만** 닿는다. `db-bootstrap.sh` 는 compose 서비스가 아니라 호스트에서 직접 도는
+   스크립트라 **자기 환경이 비어 있었다.**
+2. 사실상의 프리플라이트가 `compose.i2.yml` 의 `:?` 뿐이었다. 그것은 **compose 가 아는 키만**
+   안다. `db-bootstrap.sh` 가 요구하는 키는 어디서도 검사되지 않았고, 그래서 게이트·태그
+   보존·빌드·백업을 **다 치른 뒤** ⑦ 에서야 드러났다.
+
+**고른 배선 — 비밀을 옮기지 않는다 (`〈121〉-㉯` 유지).**
+
+| 안 | 판정 |
+|---|---|
+| ⓐ env 파일에 `COLAB_OWNER_PASSWORD` 를 리터럴로 추가 | **불필요.** 이미 있다. 없는 문제를 고치는 안이다 |
+| ⓑ `db-bootstrap.sh` 가 소유자 URL 파일에서 비밀번호를 파싱 | **기각.** 방향이 거꾸로다 — URL 파일의 내용이 이 값에서 나온다(`R1-RESTORE-DRAFT.md`). 마운트용 파일을 스크립트가 읽어 percent-decode 하는 경로를 새로 만들면, 값이 사는 자리가 하나 더 생긴다 |
+| **ⓒ 배선을 고친다(채택)** | env 파일을 `deploy.sh` **프로세스 환경에 싣는다.** 비밀은 여전히 한 자리(0600 env 파일)에만 있고, 새로 생기는 사본이 없다 |
+
+**바꾼 것**
+
+| 파일 | 무엇 |
+|---|---|
+| `infra/staging/preflight.sh` (신규) | `env_load` — env 파일을 프로세스에 싣는다(이미 있는 값은 덮지 않는다). `preflight_required` — 필수 키를 전부 검사하고 `verdict()` 로 판정. **값은 출력하지 않는다.** 경로 키(`*_FILE`·`*_DIR`)는 실물 존재까지 본다(읽기 권한은 보지 않는다 — 그 파일들은 root 소유 0600 이고 마운트 주체는 도커 데몬이다) |
+| `infra/staging/db-bootstrap.sh` | `required-env` 단계 추가. **자기 요구 목록의 정본이 자기 안에 있다** — 프리플라이트가 목록을 베껴 두면 언젠가 어긋나고, 어긋난 순간 검사기가 무력해진다 |
+| `infra/staging/deploy.sh` | ⓪-b 프리플라이트. 위치는 설정 파일 확인 직후 · **① 커밋 확인보다 먼저**, 즉 게이트·빌드·백업 전부보다 앞이다 |
+| `verify/selftest.sh` | F14–F18 (15건 → 22건) |
+| `pipeline/selftest.sh` | P13·P13b (14건 → 16건) |
+
+**red 픽스처 · 변이 시험** — F15 는 「`COLAB_OWNER_PASSWORD` 하나만 빠진」 픽스처다.
+`preflight_required_keys` 에서 `db-bootstrap.sh required-env` 줄을 빼면(=종전 상태) F15 가
+green 으로 뒤집히고 selftest 가 RED 를 낸다. 즉 이 픽스처는 **바로 그 눈먼 구간**을 잡는다.
+
+**`[미확인]`** — 다음 배포에서 갈린다.
+
+| 항목 | 풀리는 조건 |
+|---|---|
+| ⓪-b 가 실제 배포 실행에서 GREEN 16건을 내는지 | 다음 `deploy.sh --target staging` 의 로그 첫머리 |
+| ⑦ 롤 부트스트랩이 실제로 통과하는지 (`colab_owner` 비밀번호가 기존 값으로 `ALTER ROLE` 되는지) | 같은 회차 |
+| `colab_owner` 가 `ALTER ROLE` 이후에도 NOSUPERUSER·NOBYPASSRLS 를 유지하는지 | `db-bootstrap.sh verify` 출력 |
+| 프리플라이트가 실제 배포 환경(실행 사용자·경로 권한)에서 `*_FILE` 검사를 통과하는지 | 같은 회차. 이 워크트리에서는 별도 실행으로 GREEN 16건 실측 |

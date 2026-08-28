@@ -93,6 +93,35 @@ if "$HERE/../deploy.sh" --target prod >/dev/null 2>&1; then
   echo "  FAIL  [P12] prod 로 배포가 진행됐다"; FAILED=$((FAILED+1))
 else echo "  PASS  [P12] 거부"; fi
 
+echo "── P13 배포: 필수 설정이 비면 **빌드 전에** 멈춘다 (⑦ 까지 가지 않는다)"
+# 2026-08-28 첫 staging 배포는 게이트·태그보존·빌드·백업을 다 치르고 ⑦ 에서 죽었다.
+# 이제 그 판정이 ⓪-b 로 앞당겨졌는지 — **빌드 줄이 나오지 않는지** 로 확인한다.
+# 픽스처 env 는 가짜 값이다. 실물 env 파일도 도커도 건드리지 않는다.
+mkdir -p "$TMP/pf"; : > "$TMP/pf/dummy"
+: > "$TMP/pf/no-owner.env"
+while read -r k; do
+  [ -n "$k" ] || continue
+  [ "$k" = COLAB_OWNER_PASSWORD ] && continue
+  case "$k" in
+    *_FILE) printf '%s=%s\n' "$k" "$TMP/pf/dummy" ;;
+    *_DIR)  printf '%s=%s\n' "$k" "$TMP/pf" ;;
+    *)      printf '%s=fixture-not-a-real-secret\n' "$k" ;;
+  esac >> "$TMP/pf/no-owner.env"
+done < <(env -i PATH="$PATH" bash -c '. "$1"; preflight_required_keys' _ "$HERE/../preflight.sh")
+
+COLAB_STAGING_ENV="$TMP/pf/no-owner.env" "$HERE/../deploy.sh" --target staging >"$TMP/d" 2>&1; DRC=$?
+N=$((N+1))
+if [ "$DRC" -eq 0 ]; then echo "  FAIL  [P13] 필수 설정이 비었는데 배포가 진행됐다"; FAILED=$((FAILED+1))
+elif ! grep -q "COLAB_OWNER_PASSWORD" "$TMP/d"; then
+  echo "  FAIL  [P13] 멈추긴 했으나 어느 키가 없는지 말하지 않는다"; FAILED=$((FAILED+1))
+elif grep -q "이미지 빌드" "$TMP/d"; then
+  echo "  FAIL  [P13] 빌드까지 간 뒤에 멈췄다 — 프리플라이트가 늦다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P13] 빌드 전에 거부 · 빠진 키 이름을 말한다"; fi
+N=$((N+1))
+if grep -q "fixture-not-a-real-secret" "$TMP/d"; then
+  echo "  FAIL  [P13b] 배포 출력에 설정 값이 섞였다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P13b] 출력에 값이 없다"; fi
+
 echo
 echo "── 판정기 selftest 도 이어서 돈다"
 "$HERE/../verify/selftest.sh" || FAILED=$((FAILED+1))

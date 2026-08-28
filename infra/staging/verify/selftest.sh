@@ -108,6 +108,55 @@ echo "── F13 체인 판정: 양쪽 다 head 있음 → green (양성 대조�
 sed -i 's/  colab_ai)       : ;;.*/  colab_ai)       echo "0003_ffeedd" ;;/' "$TMP/bin/docker"
 LABEL=F13; want_green env PATH="$TMP/bin:$PATH" "$HERE/verify-chains.sh"
 
+# ── 필수 설정 프리플라이트 (2026-08-28 ⑦ 중단의 회귀 픽스처) ────────────────
+# 종전의 사실상 프리플라이트는 `compose.i2.yml` 의 `:?` 뿐이었다. 그건 compose 가 아는 키만
+# 안다 — `db-bootstrap.sh` 가 필요로 하는 키는 **보이지 않았고**, 배포는 빌드·백업을 다 치른
+# 뒤 ⑦ 에서야 죽었다. 아래 픽스처들은 그 눈먼 구간이 실제로 red 를 내는지 시험한다.
+# 픽스처 값은 전부 가짜다. 실물 env 파일을 읽지 않는다(`env -i` 로 환경을 끊는다).
+PF="$HERE/../preflight.sh"
+pf() { env -i PATH="$PATH" HOME="$TMP" bash "$PF" "$@"; }
+
+mkdir -p "$TMP/pf"
+: > "$TMP/pf/dummy"
+pf_fixture() { # $1=출력 파일 $2=비울 키(없으면 전부 채운다)
+  local out="$1" drop="${2:-}" k
+  : > "$out"
+  while read -r k; do
+    [ -n "$k" ] || continue
+    [ "$k" = "$drop" ] && continue
+    case "$k" in
+      *_FILE) printf '%s=%s\n' "$k" "$TMP/pf/dummy" ;;
+      *_DIR)  printf '%s=%s\n' "$k" "$TMP/pf" ;;
+      *)      printf '%s=fixture-not-a-real-secret\n' "$k" ;;
+    esac >> "$out"
+  done < <(env -i PATH="$PATH" bash -c '. "$1"; preflight_required_keys' _ "$PF")
+}
+
+echo "── F14 프리플라이트: 설정 파일 자체가 없으면 red"
+LABEL=F14; want_red pf "$TMP/pf/does-not-exist.env"
+
+echo "── F15 프리플라이트: **COLAB_OWNER_PASSWORD 만** 빠져도 red"
+echo "     compose 의 :? 는 이 키를 모른다. 그래서 종전에는 ⑦ 까지 가서야 드러났다."
+pf_fixture "$TMP/pf/no-owner.env" COLAB_OWNER_PASSWORD
+LABEL=F15; want_red pf "$TMP/pf/no-owner.env"
+grep_out F15 "COLAB_OWNER_PASSWORD"
+
+echo "── F16 프리플라이트: 경로 키가 가리키는 실물이 없으면 red (경로만 있고 파일이 없는 상태)"
+pf_fixture "$TMP/pf/all.env"
+sed 's#^COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE=.*#COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE='"$TMP"'/pf/nope#' \
+  "$TMP/pf/all.env" > "$TMP/pf/badpath.env"
+LABEL=F16; want_red pf "$TMP/pf/badpath.env"
+
+echo "── F17 프리플라이트: 전 키 충족 → green (양성 대조군). 대상 0건이면 green 이 아니다"
+LABEL=F17; want_green pf "$TMP/pf/all.env"
+grep_out F17 "SKIP 0"
+
+echo "── F18 프리플라이트가 **값을 출력하지 않는다** (키 이름과 건수만)"
+N=$((N+1))
+if grep -q "fixture-not-a-real-secret" "$TMP/out"; then
+  echo "  FAIL  [F18] 출력에 값이 섞였다 — 프리플라이트는 이름만 말해야 한다"; FAILED=$((FAILED+1))
+else echo "  PASS  [F18] 출력에 값이 없다"; fi
+
 echo
 if [ "$FAILED" -ne 0 ]; then
   echo "verify selftest: RED (실패 ${FAILED}건 / ${N}건)"; exit 1

@@ -14,6 +14,17 @@ set -euo pipefail
 
 PG="${PG_CONTAINER:-colab_v2_staging_pg}"
 STEP="${1:-}"
+
+# ── 이 스크립트가 필요로 하는 설정 키 — **여기가 정본이다** ──────────────────
+# `preflight.sh` 가 이 목록을 물어서 빌드 전에 검사한다. 목록을 프리플라이트 쪽에
+# 베껴 두면 언젠가 어긋나고, 어긋난 순간 프리플라이트는 「검사했다」면서 아무것도
+# 지키지 않는다. 그래서 **필요로 하는 쪽이 자기 목록을 말한다.**
+# 값은 절대 출력하지 않는다 — 나가는 것은 이름뿐이다.
+DB_BOOTSTRAP_REQUIRED_ENV=(COLAB_OWNER_PASSWORD COLAB_APP_PASSWORD COLAB_AI_APP_PASSWORD)
+if [ "$STEP" = required-env ]; then
+  printf '%s\n' "${DB_BOOTSTRAP_REQUIRED_ENV[@]}"; exit 0
+fi
+
 : "${COLAB_OWNER_PASSWORD:?COLAB_OWNER_PASSWORD 가 필요하다}"
 : "${COLAB_APP_PASSWORD:?COLAB_APP_PASSWORD 가 필요하다}"
 
@@ -90,5 +101,5 @@ verify)
   su_psql -d colab_ai       -c "SELECT 'ai' AS chain, version_num FROM alembic_version_ai;"
   ;;
 *)
-  echo "사용: db-bootstrap.sh {roles|app-grants|verify}" >&2; exit 2 ;;
+  echo "사용: db-bootstrap.sh {roles|app-grants|verify|required-env}" >&2; exit 2 ;;
 esac
