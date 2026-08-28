@@ -116,6 +116,10 @@ v1 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 구조
 
 ## 6. 세션 종료 규약 (예외 없음)
 
+> ⭑ **상태 변경은 대장을 먼저 고친다.** 항목 상태의 유일한 원본은 `dev-package/work-items.yaml` 이고,
+> `03-HANDOFF §1`·`WORK-UNITS §10~§11` 은 **그 반영본**이다. 순서를 뒤집으면 산문이 다시 갈라진다.
+> **판정은 사람 기억이 아니라 게이트 `work-item-consistency` 가 한다.**
+
 끝내기 전에 반드시:
 
 1. `dev-package/03-HANDOFF.md §1` 해당 WU 상태 갱신 — ✅ / 🟧+사유 / ⛔+원인

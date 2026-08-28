@@ -1,0 +1,1121 @@
+# work-items.yaml — 개발 항목 상태의 정본(SSOT)
+#
+# 이 파일이 항목 상태의 **유일한 원본**이다. `03-HANDOFF §1` · `WORK-UNITS §10~§11` ·
+# `PLAN-SoT §9` 의 산문 표기는 이 대장의 **반영본**이지 원본이 아니다.
+# 상태를 바꾼다는 것은 **먼저 이 파일을 고치는 것**이고, 산문은 그 뒤에 맞춘다.
+# 검사기 = `./gates/run.sh work-item-consistency`. 대장과 산문이 어긋나면 red 다.
+#
+# `status: conflict` 는 상태가 아니다. **산문 문서끼리 갈린 채 사람의 실측 판정을 기다리는 자리**다.
+# 어느 한쪽을 고르거나 평균하거나 「해소」하지 않는다 — 고른 순간 갈렸다는 사실이 사라진다.
+# conflict 가 하나라도 남아 있으면 게이트는 ㈓ 로 red 를 낸다. 그 red 가 이 기구의 첫 산출이다.
+#
+# 이 대장은 두 벌의 독립 읽기(03-HANDOFF §1 66행 · WORK-UNITS §10~§11 74항목)를 합친 것이다.
+# 두 읽기는 서로를 보지 않고 만들어졌고, 그 불일치가 여기 그대로 남아 있다.
+
+items:
+  - id: R0
+    name: 레포 결정
+    status: done
+    stage: stage1
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`colab-v2` 신규 모노레포 (Ted, 2026-08-22). `colab-dev-package` 는 v1 자산으로 archive"
+    deadline: null
+    note: "`WORK-UNITS §10` 착수-후보 표에 취소선 행으로 여전히 인쇄돼 있다 — 닫힌 항목이 후보 표에 남는다."
+    sources: ["03-HANDOFF §1 T-R", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: R1
+    name: 스캐폴드 + CI 골격
+    status: done
+    stage: unknown
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: [R0]
+    completion_def: 완료 정의 미작성
+    evidence: "원격 `CognileapAI/colab-v2`(public) push 완료 · `main` 보호 · CI 1회 완주 — 게이트 잡 전부 「미구현 — red」로 설계대로 실패. 가시성 결정 = `PLAN-SoT §9-⑯`"
+    deadline: null
+    note: "`WORK-UNITS §11` 에는 글리프만 있고 완료 정의가 없다."
+    sources: ["03-HANDOFF §1 T-R", "WORK-UNITS §9", "WORK-UNITS §11"]
+
+  - id: R2
+    name: v1 레포 5종 archive
+    status: open
+    stage: after_stage2
+    owner: "T-R"
+    entry_conditions: ["C4 후 (`colab-dev-package` 포함)"]
+    depends_on: [C4]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "3차 정정 대상(`〈167〉-㉴`) — 종전 판이 ✅ 였는데 두 읽기 모두 ⬜(C4 후)로 맞췄다."
+    sources: ["03-HANDOFF §1 T-R", "WORK-UNITS §11"]
+
+  - id: S1-preview
+    name: "viz-render ①②③ + 사이드카 + 축 사다리 + `.npy`"
+    status: done
+    stage: stage1
+    owner: "viz-render"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "코드 커밋 5 — `ef09064`·`fc93055`·`a3fe5cf`·`5c1a3a6`·`1ede28b`. viz-render 90 passed / 0 failed(원천 마운트 시) · pipeline-worker 104 passed(9 errors = DB 부재). 게이트 회귀 0건"
+    deadline: null
+    note: "남은 것 = `§4` #19(계약 `RenderResult.bounds` 필수라 ②비지도형을 완료로 낼 자리가 없다) — 단 `§4` #19 는 뒤에 ✅ 해소로 정정돼 있어 진행도 표기와 블로커 표기가 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: S1-search
+    name: "K4-a — 검색 실행기 → core-api"
+    status: done
+    stage: stage1
+    owner: "core-api"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`c1753a1`·`d11a5d7`·`35e9360`·`fdf8470` 실행기 이관 · `81f3020`·`10d9495` 3차 해제 + `SEARCH_UNAVAILABLE`(`〈87〉`) · `9b33321` 한국어 접두 + `pg_trgm`(`〈89〉`) · `19d25ad` 실측. staging 실결과 — `강우` 3건 · `degraded:false`"
+    deadline: null
+    note: "폴백 없음 — 죽으면 「동작하지 않음」이 드러난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: S1-ontology-graph
+    name: "온톨로지 그래프 (K1b·K2b)"
+    status: done
+    stage: stage1
+    owner: "D9"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`57deb8e`·`61bcfa9`·`57c760b` — 노드 49 · 엣지 19, 등급 ⑥ 8(`〈86〉`). `〈91〉` 로 닫힘(승인도 8). `bc229c0` `K4-b` 그래프 증강(`〈90〉`)"
+    deadline: null
+    note: "D9 가 넓히고 core-api 가 찾는다. WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: S1-project
+    name: "P5 화면 셋 (레인)"
+    status: done
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`e4e552a`·`2a0c489`·`c3fcc64` — 501 표 24 → 21(`〈84〉`)"
+    deadline: null
+    note: "WU-P5 자체는 아직 안 닫는다 — 레인 ✅ 와 WU 🟧 가 병존한다. WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: 계약해제-2-3-4차
+    name: 계약 해제 2·3·4차
+    status: done
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`6428e3a` `bounds`(`〈85〉`) · `81f3020`/`10d9495`(`〈87〉`) · `2ed6ef7`·`4783f4a`·`cdd8c40`·`0f7926f` 전수 스윕 16건 → 묶음 11항 승인(`〈88〉`). 501 표 = 23(실측)"
+    deadline: null
+    note: "501 표 계수가 문서 안에서 24/21/23/29 로 여러 값이 돌아다닌다. 식별자 규격 밖의 레인 항목이다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: S1-preview-ui
+    name: "P4·미리보기 화면"
+    status: partial
+    stage: stage1
+    owner: "frontend"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`a747c67`·`875aa2a` 미리보기 UI · `15847b3` P4 검색 화면. ①②는 공개 주소에서 200 · ③지도형은 안 뜬다"
+    deadline: null
+    note: "사유 = `§4` #20. 단 `§4` #20 은 2026-08-26 `〈115〉-㉮` 로 ✅ 해소 표기 — 진행도 🟧 와 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: gate-db-boundary
+    name: "게이트 `db-boundary` (T-S 레인 행)"
+    status: done
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`c499123` — 매니페스트가 정본(`〈92〉`). selftest 18. 게이트 21 → 23"
+    deadline: null
+    note: "같은 게이트가 WORK-UNITS 에서는 WU `G9` 로 따로 센다 — 두 문서가 같은 산출에 다른 식별자를 붙였다. 병합하지 않고 둘 다 남긴다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: W7
+    name: staging 배포 (레인)
+    status: done
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`974cf9f` 저장 키 = 배치 · `c5a2fbf` 배선 다섯 자리 + nginx `client_max_body_size`. 컨테이너 8 · 헬스 6 · 롤백 왕복 증명(530 없음, 본문 대조)"
+    deadline: null
+    note: "WORK-UNITS 읽기에는 이 레인이 없다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: 보안
+    name: 보안 (레인)
+    status: done
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`30c2f0a` — 주체 표는 비밀, `0600` + uid 정렬(`〈93〉`)"
+    deadline: null
+    note: "픽스처 토큰의 staging 반입 금지. 식별자 규격 밖의 레인 항목이다."
+    sources: ["03-HANDOFF §1 T-S"]
+
+  - id: S2b
+    name: 설명 문구·검색 평가셋
+    status: conflict
+    stage: stage1
+    owner: "T-S"
+    entry_conditions: ["S1", "`〈72〉`"]
+    depends_on: [S1]
+    completion_def: "평가셋 대비 판정 — 「완료 정의가 평가셋 대비 판정인데 실패 8 이 남는다」"
+    evidence: null
+    deadline: null
+    note: "`03-HANDOFF §1 T-S` 는 ✅(2026-08-26 Ted 승인 완료 · 설명 15건 승인/11건 적재 · 평가셋 18건) 로 적고, `WORK-UNITS §8.5` 는 🟧(A층 재판정 = 통과 8 · 실패 8 · 층 밖 2, 실패 8건 재측정은 `T-1` 로 이관) 로 적는다. 게다가 `WORK-UNITS §11` 초기데이터 줄에는 S2b 행 자체가 없다(S1·S2·S3 뿐). 어느 하나를 고르지 않는다 — 사람이 평가셋을 다시 돌려 판정할 자리다."
+    sources: ["03-HANDOFF §1 T-S", "WORK-UNITS §8.5", "WORK-UNITS §10.2"]
+
+  - id: C1
+    name: 5 repo 푸시 확인
+    status: open
+    stage: after_stage2
+    owner: "T-C"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "C2 이관의 차단 조건. T-C(C1~C4)는 stage 2 에서도 열지 않으나 v2 완주 판정에는 들어간다 — 실질은 유예인데 ⏸ 로 적히지 않았다. ⚠ `S1-PLAN` 체크포인트 `C1` 과 이름이 충돌한다."
+    sources: ["03-HANDOFF §1 T-C", "WORK-UNITS §3", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: C2
+    name: "v1 이관 (`20 CoLAB-v1`)"
+    status: open
+    stage: after_stage2
+    owner: "T-C"
+    entry_conditions: ["C1 후"]
+    depends_on: [C1]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: null
+    sources: ["03-HANDOFF §1 T-C", "WORK-UNITS §3", "WORK-UNITS §11"]
+
+  - id: C3
+    name: "PoC 지식 추출 `HARVEST.md`"
+    status: open
+    stage: after_stage2
+    owner: "T-C"
+    entry_conditions: ["C1"]
+    depends_on: [C1]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "`§6` D5 행이 「있으면 쓰고 없어도 진행한다 — 차단 아님」으로 비차단 선언. `§5.5` DR-10 이 C3 을 소유 WU 로 지목."
+    sources: ["03-HANDOFF §1 T-C", "WORK-UNITS §3", "WORK-UNITS §11"]
+
+  - id: C4
+    name: "v1 방법론 추출 `METHOD.md`"
+    status: open
+    stage: after_stage2
+    owner: "T-C"
+    entry_conditions: ["C1"]
+    depends_on: [C1]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "계약 게이트 6종 구성 방식. R2 의 선행. D3 비고에 「C4 입력은 없어도 진행됐다」."
+    sources: ["03-HANDOFF §1 T-C", "WORK-UNITS §3", "WORK-UNITS §11"]
+
+  - id: C3·C4
+    name: "지식·방법론 추출 (`WORK-UNITS §10` 에서 한 행으로 묶인 항목)"
+    status: open
+    stage: after_stage2
+    owner: "T-C"
+    entry_conditions: ["C1"]
+    depends_on: [C1, C3, C4]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "`WORK-UNITS §10` 은 C3·C4 를 한 행으로 묶고 `§11` 은 따로 센다. 묶음 행 자체를 지우지 않고 등재한다 — 한 행이 두 항목을 가리는 구조가 대장에도 보여야 한다."
+    sources: ["WORK-UNITS §10"]
+
+  - id: I0
+    name: "AWS 계정·결제·리전·예산 알람"
+    status: deferred
+    stage: out_of_scope
+    owner: "인프라"
+    entry_conditions: ["출시 결정(`㊻`)"]
+    depends_on: []
+    completion_def: "계정에서 리소스 생성 가능 + 예산 알람 동작 (`WORK-UNITS §4` T-I 표)"
+    evidence: null
+    deadline:
+      condition: "① staging 에서 v2 전체가 충분히 동작하고 ② Ted 가 출시를 결정했을 때 연다"
+      fired: false
+    note: "⏸ 인데 `WORK-UNITS §10` 「지금 착수 가능한 WU」 표에 행으로 실려 있다 — ㈑ 가 잡는 그 자리다. 상태를 바꿔 red 를 없애지 않는다. staging 은 IS1 이 대신한다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: IS1
+    name: staging 호스트 구성
+    status: done
+    stage: stage1
+    owner: "인프라"
+    entry_conditions: ["없음 (I0 불필요 — `PLAN-SoT §9-㉓`)"]
+    depends_on: []
+    completion_def: "`colab-hydro.com` 이 v2 오리진으로 200 응답 + 되돌리기 1회 성공 (`§4`)"
+    evidence: "롤백 왕복 증명 200→530→200. 산출 `infra/staging/` — nginx + cloudflared 둘뿐, 호스트 노출 `127.0.0.1:3000` 만. 커넥터 로그가 원격 ingress 정본을 노출"
+    deadline: null
+    note: "토큰은 레포 밖 홈 `0600` 파일."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §11"]
+
+  - id: IS2
+    name: 터널 라우팅 IaC화
+    status: done
+    stage: stage1
+    owner: "인프라"
+    entry_conditions: ["IS1"]
+    depends_on: [IS1]
+    completion_def: "레포에서 라우팅을 재적용해 동일 상태 재현 (`§4`) — 완료 판정 증명됨 `terraform plan` = `No changes.`"
+    evidence: "`terraform plan` = `No changes.` · 실행 기록 `init → import → plan → apply`(`0 add, 1 change, 0 destroy`) → `www/healthz` 200 무중단 → 커넥터 `version=7`. 산출 `infra/staging/tunnel/`"
+    deadline: null
+    note: "블로커 #7 세 겹 제거. 한계 = state 가 이 호스트 로컬에만 있다 → IS4 로 세웠다. ⚠ 같은 칸에 「`.tf` 초안은 아직 `infra/` 에 배치하지 않았다」와 「산출 `infra/staging/tunnel/`」이 함께 적혀 서로 어긋난다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §11"]
+
+  - id: IS3
+    name: staging 백업 체계
+    status: done
+    stage: stage1
+    owner: "인프라"
+    entry_conditions: ["IS1"]
+    depends_on: [IS1]
+    completion_def: "백업 1회 + 복원 1회 성공 + 빈 백업 fixture 로 fail-closed 증명 (`§4`)"
+    evidence: "2026-08-26 증보(`〈115〉-㉯`) 적재후 재통과 GREEN · platform 317 ms(26,506 B · 23 테이블 · 381 행) · ai 130 ms(5,132 B · 6 테이블 · 91 행). 2026-08-23 닫힘 — 백업 1회(두 체인) · 복원 1회 · fail-closed fixture 11건 전부 red"
+    deadline: null
+    note: "✅ 인데 한계 2건이 열려 있다 — 업로드 원본 바이트가 이 값에 없고, 침묵 창이 8주 → 최대 1주로 줄었을 뿐이다. R-1 과의 흡수·대체 관계는 두 문서 모두 미기재."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §8.5", "WORK-UNITS §11"]
+
+  - id: IS4
+    name: terraform state 보관
+    status: partial
+    stage: unknown
+    owner: "인프라"
+    entry_conditions: ["IS2 · (원격 백엔드면 I0)"]
+    depends_on: [IS2]
+    completion_def: "state 를 잃은 상태에서 문서만 보고 복구 성공 (`§4` T-I 표)"
+    evidence: "2026-08-23 — 절차는 섰고 리허설도 돌렸다. 원본 state md5 동일 · 실디렉터리 `plan` = `No changes.` · staging 내내 200. 산출 `sessions/IS4.md` · `infra/staging/tunnel/README §5-1`"
+    deadline: null
+    note: "미달 2건 = ① 마지막 `apply` 미실행(실 터널을 건드린다) ② 맨몸 호스트 조건 미실험. 맨몸 리허설은 R-1 과 재료가 겹쳐 R-1 뒤가 싸다. 원격 백엔드는 I0 대기."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: I1
+    name: "토폴로지 + IaC (`plan` 까지)"
+    status: conflict
+    stage: out_of_scope
+    owner: "인프라"
+    entry_conditions: ["I0 후"]
+    depends_on: [I0]
+    completion_def: "`plan` 무오류 + 비용 추정치 기록 (`§4`)"
+    evidence: null
+    deadline:
+      condition: "prod. `㊻` 로 보류 — 출시 결정 시 연다"
+      fired: false
+    note: "`WORK-UNITS §11` 은 ⏸(보류) 로 적는데 같은 문서 `§4` T-I 표의 I1 행에는 ⏸ 글리프가 아예 없고(⏸ 는 I0·I5 에만 붙었다), `§9` 의존 그래프는 `I0 ── I1` 을 「착수 가능(전부 병렬)」 묶음에 그린다. `03-HANDOFF §1 T-I` 는 ⏸ 다. 한 문서 안에서 세 절이 갈렸다 — 어느 하나를 고르지 않는다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §9", "WORK-UNITS §11"]
+
+  - id: I2
+    name: walking skeleton 배포
+    status: done
+    stage: stage1
+    owner: "인프라"
+    entry_conditions: ["IS1 또는 I1", "P0"]
+    depends_on: [IS1, P0]
+    completion_def: "staging 에서 5개 전부 헬스 green, 배포·롤백 각 1회 성공. ＋ 2026-08-25 추가 — 「헬스 200」은 배포 판정이 아니다. 단위별 본문과 실제 op 한 건이 돌아야 배포다"
+    evidence: "2026-08-23 — 5개 단위 전부 헬스 green · 컨테이너 7/7 healthy · `0.0.0.0` 0건 · 본문 대조 · 배포→롤백→재배포 4구간 530 없이 무중단 · `colab_platform` 20표 · `colab_ai` 시드 22행. 산출 `sessions/I2.md`"
+    deadline: null
+    note: "헬스 green 뒤에 제품이 잠겨 있었다 — 다섯 자리를 `W7`(`c5a2fbf`)이 이었다. 헬스 골격 판정으로서 ✅ 유지. ⚠ `03-HANDOFF §1` 에서 이 행은 표의 4번째 칸으로 넘쳐 행 끝 파이프가 없다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §9", "WORK-UNITS §11"]
+
+  - id: I3
+    name: 배포 자동화
+    status: conflict
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["I2(✅)"]
+    depends_on: [I2]
+    completion_def: "파이프라인 1회 완주 (`WORK-UNITS §4`) · 정본 = `WORK-UNITS §10.2-b`"
+    evidence: null
+    deadline: null
+    note: "`03-HANDOFF §1 T-I` 는 ⬜(착수 전)이면서 비고에 「✅ 착수 차단 해제 2026-08-27 — `[정본 무근거]` 7건 전부 판정」이라 적고, `WORK-UNITS §10` 표는 「⛔ 착수 전 판정 7건이 남아 있다」, `§10.2-b` 는 「✅ 차단 해제(2026-08-27 · `〈168〉-㉮~㉴`)」, `§10.3` 3단은 「⛔ I3 7건 판정이 선행」, `§11` 은 ⬜ 다. 한 문서 세 절이 서로 다르다 — 어느 하나를 고르지 않는다. 사람이 `sessions/TED-DECISIONS-OPEN.md §A` 를 열어 7건의 실물을 세고 판정할 자리다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §10", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "WORK-UNITS §11"]
+
+  - id: I4
+    name: "운영 준비 (추적·알람·복구 리허설)"
+    status: open
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["I3"]
+    depends_on: [I3]
+    completion_def: "복원 리허설 성공 (`§4`) · 정본 = `WORK-UNITS §10.2-b`"
+    evidence: null
+    deadline: null
+    note: "⚠ R-1 과 복원 리허설 재료가 겹치는데 한쪽이 다른 쪽을 흡수하는지 두 문서 모두 미기재. `§9` 그래프의 `I4 ── P6` 은 `〈168〉-㉵` 로 WU 의존이 아님이 판정됐다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
+
+  - id: I5
+    name: prod 전환
+    status: deferred
+    stage: out_of_scope
+    owner: "인프라"
+    entry_conditions: ["I4 + P7 + 출시 결정(`㊻`)"]
+    depends_on: [I4, P7]
+    completion_def: "prod 헬스 green + 롤백 경로 증명 (`§4`)"
+    evidence: null
+    deadline:
+      condition: "출시 결정(`㊻`) — 출시 결정 시 연다"
+      fired: false
+    note: "v2 개발의 종점은 여기가 아니라 staging 전체 green 이다."
+    sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §9", "WORK-UNITS §11"]
+
+  - id: G1
+    name: "E-00 패키지 재빌드 / 패키지 신선도 게이트"
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["WU-P0"]
+    depends_on: [P0]
+    completion_def: "게이트 green(15/15 일치) + selftest 가 변조·미마운트 둘 다 red 로 fail-closed 증명 (`§5`)"
+    evidence: "15개 임베드 블록이 8개 에픽 전부에서 원본과 일치(sha256). 산출 = `tools/check-package-freshness.py` · `planning-freshness` 게이트 · `PACKAGE-FRESHNESS.md`. selftest 가 변조 fixture + 미마운트 둘 다 red"
+    deadline: null
+    note: "남은 것 = 정본 `E-00 README §4` 의 낡은 서술(Ted 판단). `§10` 착수-후보 표에 취소선 행으로 남아 있다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: G1b
+    name: "E-04 · E-02 목업·화면 최신성"
+    status: open
+    stage: unknown
+    owner: "T-G"
+    entry_conditions: ["P2 · P4"]
+    depends_on: [G1, P2, P4]
+    completion_def: "목업이 최신 PRD·Policy 와 어긋나지 않음 (`§5`)"
+    evidence: null
+    deadline: null
+    note: "1차 정정 대상 — 종전 판이 ✅ 로 적었으나 두 읽기 모두 ⬜. 문서 임베드는 G1 게이트가 지키고, 남은 것은 목업·화면 최신성뿐이다. ⚠ `§10.2`·`§10.2-b`·`§10.3` 어디에도 없어 stage 2 순서표에 자리가 없다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §11"]
+
+  - id: G2
+    name: 자연어 검색 엔진 결정
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["WU-P4 · K4"]
+    depends_on: []
+    completion_def: "결정 로그 기록 (`§5` T-G 표)"
+    evidence: "해소 (2026-08-23, `§9-㊶`) — Postgres 단독(tsvector+pgvector). P4·K4 차단 해제. `〈81〉` 로 stage 1 에서 pgvector 는 빠진다"
+    deadline: null
+    note: "⚠ pgvector 는 뒤에 `§4` #17 에서 stage 2 범위 밖으로 판정됐다(`〈157〉-㉯`) — `03-HANDOFF` 의 근거 문장과 어긋난다. depends_on 은 순환(G2↔P4·K4)이라 비웠다 — 진입조건 문자열로만 남긴다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: G3
+    name: "E-01 권한 — 원칙(선행) / 화면별 적용 표(후행) 분리"
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["P0 품질", "G7"]
+    depends_on: [G7]
+    completion_def: "원칙 문서 확정 (`§5`)"
+    evidence: "원칙 문서 초안 완료 — 산출 `PERMISSION-PRINCIPLES.md`(P-1~P-34). 정본이 열어둔 9건 중 4건을 닫았다(`§9-㉖㉗㉘㉙`). G7 통합 후 `IA_사이트맵.md 7장` 대조 완료"
+    deadline: null
+    note: "잔여 미결 4건(①②⑤⑥)은 P8·P1 전까지 유예. ⚠ 「초안 완료」인데 상태는 ✅ 다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §11"]
+
+  - id: G4
+    name: 미배치 화면 3건 단계 배정
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["P0", "P1"]
+    depends_on: [P0, P1]
+    completion_def: "순서표 갱신 (`§5`)"
+    evidence: "순서표 갱신 완료. ① 연구실 설정 > 구성원·권한 → P1 ② S-08 → 이미 P2 에 배정 ③ 연구실 정보 읽기 모달 → P7 편입. 조사 = `sessions/G4.md`"
+    deadline: null
+    note: "WU 이름은 「3건」인데 실측은 2건 — 이름과 값이 어긋난다. 개정 — S-08 은 stage 2 배정으로 이관돼 현재 `F-1` 이다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §11"]
+
+  - id: G5
+    name: "DataModel v1.8 ↔ 스키마 대조"
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["WU-P0"]
+    depends_on: []
+    completion_def: "diff 표 작성, 소급 항목 0 (`§5`)"
+    evidence: "산출 `DATAMODEL-BASELINE.md` — 기준표(누락 0) · v1 diff · 소급 위험 11건. v1 저장 형태 계승 0. 결정 `PLAN-SoT §9-⑰⑱⑲⑳`"
+    deadline: null
+    note: "신규 열림 `㉑`(D4→D3 Port). ⚠ 진입조건 순환 — G5 진입조건이 P0 인데 P0 진입조건이 「G1 · G5 · D3」이다. 순환이라 depends_on 을 비웠다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §7", "WORK-UNITS §11"]
+
+  - id: G6
+    name: "인프라 결제 → T-I 트랙의 I0 으로 승격"
+    status: done
+    stage: out_of_scope
+    owner: null
+    entry_conditions: []
+    depends_on: [I0]
+    completion_def: "→ I0"
+    evidence: "AWS 배포가 완료 조건이 되면서 게이트가 아니라 임계경로가 됐다 — I0 으로 승격돼 소멸"
+    deadline: null
+    note: "`WORK-UNITS §5` T-G 표에 취소선 행으로 남아 있다. `03-HANDOFF §1` 에는 행이 없다."
+    sources: ["WORK-UNITS §5"]
+
+  - id: G7
+    name: 기획 SSOT 통합
+    status: done
+    stage: stage1
+    owner: "T-G"
+    entry_conditions: ["전 단계 참조 정확도"]
+    depends_on: []
+    completion_def: "정본 폴더 하나로 완결 (`§5`)"
+    evidence: "깨진 상대링크 38건 → 1건 · 링크 스윕 222개 중 1개 · 스토리 실측(E-01 7 · E-07 8 · 합 45) · 게이트 green. 정본 내용 변경 1건 = 「에픽당 스토리 6개 상한」 폐기(`§9-㉝`)"
+    deadline: null
+    note: "남은 `[미확인]` = `연구실 설정` 화면(S-07)의 소유 에픽이 어느 문서에도 없다. G3 의 선행."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: G8
+    name: 온톨로지 범위 합의
+    status: done
+    stage: stage1
+    owner: "T-G / 수문학 도메인 소유자"
+    entry_conditions: ["WU-K1"]
+    depends_on: []
+    completion_def: "어휘 목록 확정 (수문학 도메인 소유자 승인) — `§5`"
+    evidence: "승인 완료 (2026-08-23, `§9-㊸`) — ④-1 (다) 하이브리드 · ④-2 (가) 문서 정본 · ④-3 (가) D9 시드 · ④-4 시드 테이블 3개. 산출 `ONTOLOGY-SCOPE.md`"
+    deadline: null
+    note: "후속 `G8b`(2차 범위)는 두 문서 어느 표에도 자기 행이 없고 본문 안에만 산다 — Q1(관계 값의 출처 채널)이 열린 채 Ted 를 기다린다. depends_on 은 순환(G8↔K1)이라 비웠다."
+    sources: ["03-HANDOFF §1 T-G", "WORK-UNITS §5", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: G9
+    name: "`db-boundary` 게이트 (WU 번호)"
+    status: done
+    stage: stage1
+    owner: "T-G / 게이트"
+    entry_conditions: ["`CLAUDE.md §3-1`·`§3-3` 이 실제로 강제되는가"]
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "닫힘 (2026-08-25 · `c499123` · `〈92〉`) — 매니페스트 `gates/config/db-boundaries.toml` 이 유일한 정의처 · selftest 18 케이스가 소스·Dockerfile·compose 세 자리의 red 를 증명 · 게이트 21 → 23"
+    deadline: null
+    note: "⚠ `WORK-UNITS §11` 게이트 줄에 G9 행이 없다 — ✅ 로 닫힌 게이트 WU 인데 완주 체크리스트에서 누락. `03-HANDOFF` 는 같은 산출을 T-S 레인 `gate-db-boundary` 로 센다."
+    sources: ["WORK-UNITS §5"]
+
+  - id: D1
+    name: 도메인 경계 확정
+    status: done
+    stage: stage1
+    owner: "T-D"
+    entry_conditions: ["G5 초안"]
+    depends_on: [G5]
+    completion_def: "10 도메인 소유자 배정 완료 (`§6`)"
+    evidence: "배정표 확정 — `DOMAINS.md §7` 신설(10개 전부 Ted · 협의 필수 5곳은 정본 대조 · 딸린 규칙 4개). 근거 `§9-㉚`·`§9-㊴`. 2026-08-23 닫힘"
+    deadline: null
+    note: "정본에 없으면 `[정본 무근거]` 로 남기지 만들지 않는다."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11"]
+
+  - id: D2
+    name: 계약 동결
+    status: done
+    stage: stage1
+    owner: "T-D"
+    entry_conditions: ["D1", "착수 당시 `D1` 이 열려 있었다 — 진입조건 이탈 1건, 2026-08-23 해소"]
+    depends_on: [D1]
+    completion_def: "spectral + oasdiff 게이트 green (`§6`)"
+    evidence: "완료 판정(spectral + oasdiff green) 충족. 산출 = `common.json`(정의 21종 · enum 9종) · seam 3종 · `contracts/events/`(이벤트 7종) · 게이트 `contract-lint`·`contract-breaking`·`contract-selftest` 15 케이스 green. 결정 ㉟㊱㊲"
+    deadline: null
+    note: "진입조건 이탈은 `§5` 에 기록. 진입조건에 있던 `A3` 는 존재하지 않는 WU 였다 — v1 잔재 유령 참조, 2026-08-22 삭제."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11"]
+
+  - id: D2b
+    name: 이벤트 계약 게이트
+    status: done
+    stage: stage1
+    owner: "T-D / 게이트"
+    entry_conditions: ["D2"]
+    depends_on: [D2]
+    completion_def: "게이트 self-test green + 이벤트 계약 변경이 실제로 red 를 냄 (`§6`)"
+    evidence: "2026-08-23 닫힘 — `event-lint`(ajv 8.17.1 핀 · 유효 5 통과/무효 8 거부) · `event-breaking`(ERR 14규칙 / WARN 3규칙) · `event-selftest` 33 케이스. 실제 파괴가 red 를 냄을 진짜 파일로 증명"
+    deadline: null
+    note: "행 안에 취소선 이전 기록(「이벤트 계약의 파괴적 변경을 아무도 못 잡는다」)이 함께 남아 있다."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11"]
+
+  - id: D2c
+    name: "계약 개정 (`〈54〉` 이행)"
+    status: done
+    stage: stage1
+    owner: "계약"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`DR-7` 이행됨(`03-HANDOFF §5.5` `DR-7` 행). 지시서 `sessions/D2c.md`"
+    deadline: null
+    note: "`WORK-UNITS §10` 착수-후보 표에 취소선 행으로 남아 있고 행 본문이 스스로 「「다음 WU」가 아니다」라고 적는다. 잔여 `D2c-api`(501 표 소진)는 「해당 에픽 WU 가 지고 간다」로만 적혀 소유 WU 가 특정되지 않는다 — 별도 행이 없어 대장에도 세우지 못한다."
+    sources: ["WORK-UNITS §10"]
+
+  - id: D3
+    name: 경계 강제 장치
+    status: done
+    stage: stage1
+    owner: "T-D"
+    entry_conditions: ["D2"]
+    depends_on: [D2]
+    completion_def: "게이트 self-test 전부 fail-closed 증명 (`§6`)"
+    evidence: "2026-08-23 닫힘 — 잔여였던 RLS 실효 증명이 D3b 로 완결. 게이트 6종 배선·증명, `boundary-selftest` 30 케이스 · DB 게이트 3종 · `db-selftest` 38 케이스 green"
+    deadline: null
+    note: "한계 = RLS 정책의 내용은 안 본다 — `USING(true)` 가짜 정책이 통과한다. C4 입력은 없어도 진행됐다. ⚠ `03-HANDOFF` 에서 이 행은 셀 안 파이프로 표가 4칸으로 갈라진다."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: D3b
+    name: "RLS 실효 증명 — 음성·양성 테스트"
+    status: done
+    stage: stage1
+    owner: "T-D"
+    entry_conditions: ["D3", "P0 스키마"]
+    depends_on: [D3, P0]
+    completion_def: "① 허용자 아님·만료됨 본체 조회 0행 ② 잠긴 데이터셋 메타는 조회됨(P-13 회귀 방지) ③ cross-tenant 0행. 셋 다 red fixture 로 fail-closed 증명 (`§6`)"
+    evidence: "2026-08-23 닫힘 — 게이트 `rls-effect` 로 승격. ①본체 음성 ②메타 양성(`P-13`) ③cross-tenant(18표 전수 0행). red fixture 18/18"
+    deadline: null
+    note: "부수로 `db-selftest` 결합 결함을 고쳤다 — 게이트가 옳고 selftest 배선이 틀렸다."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11"]
+
+  - id: D5
+    name: "인제스트·파이프라인 (포맷 처리)"
+    status: partial
+    stage: stage1
+    owner: "D5 / pipeline-worker"
+    entry_conditions: ["없음 — 지금 착수 가능", "참고 입력 = `SEED-DATA.md`(S1 ✅) · `HARVEST.md`(C3 — 없어도 진행, 차단 아님)"]
+    depends_on: []
+    completion_def: "`§6` D5 행 넷 — ① 감지·파싱 자기 증명 red fixture fail-closed ② 이미-COG 판별 3부류 red→green(6·16·40) ③ 게이트 green(core-api 에 rasterio 0) ④ 실데이터 E2E 지원 4종 각 최소 1건 완주. 화면·계약 왕복은 완료 조건이 아니다"
+    evidence: "2026-08-23 — 완료조건 ①~④ 전부 로컬 green. D5 모듈 6종 + 테스트 32건 green, red 선행 확인. 실물 62건 전수 재판정이 SEED-DATA 실측(6/16/40)과 일치. HSR 헤더 오프셋 실측. + 2026-08-25 staging 배포됨(`c5a2fbf`·`974cf9f`), 시험 118/0"
+    deadline: null
+    note: "🟧 사유 = 저장 배치 회귀 시험 0건(`§4` #26) · `/healthz` 가 실이미지인데 `implemented:false`(`§4` #23) — ⚠ 둘 다 `§4` 에서는 ✅ 해소로 표기돼 진행도 근거가 낡았다. stage 는 실제로 stage 1 과 stage 2 에 걸쳐 있으나(파싱·좌표계·COG 가 stage 2) 스키마 값이 하나뿐이라 `stage1` 로 적고 여기 남긴다. ⚠ `WORK-UNITS §11` 에 독립 행이 없고 「경계」줄 괄호 주석으로만 존재한다."
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §10", "WORK-UNITS §10.3"]
+
+  - id: generated-up-to-date
+    name: "`generated-up-to-date` 게이트"
+    status: done
+    stage: stage1
+    owner: "게이트"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "해소 — 구현됐고 green(2026-08-24 실측). 게이트는 23 종이고 2026-08-25 기준 전부 green(`db-boundary` 신설 · `〈92〉`)"
+    deadline: null
+    note: "`WORK-UNITS §10` 착수-후보 표에 취소선 행으로 남아 있다. WU 번호가 없는 게이트 항목이라 식별자 규격 밖이다."
+    sources: ["WORK-UNITS §10"]
+
+  - id: X-1
+    name: "슈퍼유저 `POSTGRES_PASSWORD` 회전"
+    status: open
+    stage: stage2
+    owner: "인프라 — pg 컨테이너"
+    entry_conditions: ["`X-4` 재기동에 동봉(`§9 〈158〉-㈏`)", "R-1 복원 절차 · 전범위 백업 · `#22` 고아 행 삭제 뒤"]
+    depends_on: [X-4, R-1, "#22"]
+    completion_def: "정본 = `WORK-UNITS §10.1`"
+    evidence: null
+    deadline: null
+    note: "T-X 는 stage 2 가 열리면 닫히는 임시 트랙. `〈153〉` 이 앱·소유자 3롤만 회전했고 슈퍼유저 값은 아직 `docker inspect` 로 보인다. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
+
+  - id: X-2
+    name: 계약 동결 해제 프로토콜 명문화
+    status: conflict
+    stage: stage2
+    owner: "계약"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "해제 조건·절차를 문서로 못 박는다"
+    evidence: null
+    deadline: null
+    note: "`03-HANDOFF §1 T-X` 는 ✅(`〈163〉` 으로 확정 · 3등급제 발효)로 적는다. 그런데 `WORK-UNITS §10.1` 안에서 자기모순이다 — X-2 가 표에 열린 행으로 그대로 인쇄돼 있는데, 표 바로 아래 문장이 「X-2 도 `〈163〉` 으로 닫혔다 … 남은 것은 X-1·X-4 둘이다」라고 적는다(X-3 는 표에서 내렸는데 X-2 는 내리지 않았다). 확정 문서 파일명도 `X2-FREEZE-PROTOCOL-DRAFT.md` 로 `-DRAFT` 다. 어느 하나를 고르지 않는다."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
+
+  - id: X-3
+    name: 프로젝트↔데이터셋 실연결
+    status: done
+    stage: stage2
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "`§9 〈155〉` — 정문으로 실연결됨. admin 정문으로 12/12 · 204 · `d6_project_dataset` 0 → 12 · 시드 INSERT 0"
+    deadline: null
+    note: "⚠ `03-HANDOFF §4` #28 은 「`d6_project_dataset` 은 지금 0행」이라 적고 #18 은 12 를 실측으로 적는다 — 세 곳이 어긋난다. `WORK-UNITS §10.1` 표에서는 행이 내려가 이름·소유·진입조건이 그 문서에 없다."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1"]
+
+  - id: X-4
+    name: "`_FILE` 배선 재기동 실전 검증"
+    status: open
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["`R-1` 선행(`§9 〈158〉-㉯`)"]
+    depends_on: [R-1, X-1]
+    completion_def: "정본 = `WORK-UNITS §10.1`"
+    evidence: null
+    deadline: null
+    note: "대상 = `RESTART.md §2` 의 `COLAB_STAGING_*_DB_URL_FILE` 5키. 「5키가 없으면 `:?` 로 죽는다. 표는 갱신했지만 다음 재기동이 첫 실전이다」. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
+
+  - id: X-5
+    name: ㉰-4 소급 전수확인
+    status: open
+    stage: stage2
+    owner: "계약 / core-api"
+    entry_conditions: ["진입조건 없음 — 무의존이라 병렬"]
+    depends_on: []
+    completion_def: "정본 = `WORK-UNITS §10.2` · 근거 `§9 〈163〉-㉰`"
+    evidence: null
+    deadline: null
+    note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: R-1
+    name: 복원 절차
+    status: conflict
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["없음 — X-1·X-4 재기동의 전제조건(`〈158〉-㉯`)"]
+    depends_on: []
+    completion_def: "정본 = `WORK-UNITS §10.2` (완료 정의 12행 · 초안 `sessions/R1-RESTORE-DRAFT.md`) ＋ 볼륨 백업 절차 ＋ `install-schedule.sh install` 재실행"
+    evidence: null
+    deadline:
+      condition: "크론 환경 첫 회차(2026-08-28 03:30) 로그 미실측 — 손으로 돌린 GREEN 은 기구가 아니다"
+      fired: unknown
+    note: "`03-HANDOFF §1 T-X` 는 상태 칸에 🟧 를 적으면서 같은 칸 본문에 ⛔ 글리프를 함께 쓴다. `WORK-UNITS §10.2` 는 ⛔(「그래도 R-1 은 열려 있다」가 두 번 반복)로, 같은 문서 `§10.3` 은 「기구 ✅ · 유인 1회 GREEN ✅ · 크론 첫 회차 로그 대기」로 적는다. 완료 정의 12행은 전건 ✅ 인데 남은 넷(크론 첫 회차 로그 · `POST /searches` 1회 · `preflight` 성질 판정 · `:i2` 태그 이력)이 있다. 어느 하나를 고르지 않는다 — 03:30 크론 로그를 사람이 실측할 자리다."
+    sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: T-1
+    name: "`ts_config` 한국어 재작성"
+    status: open
+    stage: stage2
+    owner: "D3 / core-api"
+    entry_conditions: ["stage 2 초반 — 「지금이 가장 싸다」(데이터셋 12)"]
+    depends_on: []
+    completion_def: "2026-08-27 확장(`〈167〉-㉱`) — ⓐ `ts_config` 한국어 재작성 ＋ 전 행 재생성 ⓑ 온톨로지 어휘·관계 확장을 같은 회차에 ⓒ public 밖 객체 재측정 ⓓ 검색 평가셋 A층 실패 8건 재측정·보수"
+    evidence: null
+    deadline: null
+    note: "K4·P4 의 완료 판정이 T-1 에 걸린다 — 둘의 오라클이 「평가셋 대비」인데 잴 회차가 없었다. ⚠ `03-HANDOFF §1` 에는 행이 없고 본문 참조로만 나온다."
+    sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: V-1
+    name: 팔레트 선택 재렌더
+    status: open
+    stage: stage2
+    owner: "D7 / viz-render"
+    entry_conditions: ["P3"]
+    depends_on: [P3]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "범위 = 서버측 재렌더 경로까지 — 팔레트 선택 UI(`§J-6`)는 J-1 묶음에 남는다. 둘을 한 WU 로 합치지 않는다. `03-HANDOFF §1` 에는 행이 없다."
+    sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: V-2
+    name: 값 조회
+    status: open
+    stage: stage2
+    owner: "D7 / viz-render"
+    entry_conditions: ["P3"]
+    depends_on: [P3]
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "「지도에서 한 점을 찍으면 그 값이 뜬다」. `03-HANDOFF §1` 에는 행이 없다."
+    sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: F-1
+    name: "S-08 화면 (미등록 미리보기 화면 자체)"
+    status: open
+    stage: stage2
+    owner: "frontend"
+    entry_conditions: ["P3 와 병렬 가능"]
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "G4 에서 「S-08 은 P2 편입 권장이 아니라 stage 2 배정」으로 이관된 그 화면. `03-HANDOFF §1` 에는 행이 없다."
+    sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: J-1
+    name: 편의 기능 묶음
+    status: conflict
+    stage: stage2
+    owner: "혼합"
+    entry_conditions: ["stage 2 마지막(`〈157〉-㉱`)"]
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "`WORK-UNITS §10.2` 표는 「§J 10건」으로 적고, 같은 절의 Y-1 행은 「`§J-7` 에서 적출된 항목이다 — 편의 묶음 J-1 은 이제 9건이다」라고 적고, `§10.3` 은 「J-1 편의 묶음(9건)」이라 적는다. 표만 갱신에서 빠졌다. `03-HANDOFF §1` 에는 행이 없다. 어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다."
+    sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: Y-1
+    name: 자동 무효화
+    status: open
+    stage: stage2
+    owner: "D7 / viz-render (트리거 발신은 D5)"
+    entry_conditions: ["P3 · D5 stage 2 파트"]
+    depends_on: [P3, D5]
+    completion_def: "2026-08-27 작성(`〈168〉-㉶`) — ⓐ 무효화 대상 = 렌더 산출물뿐 ⓑ 트리거 3종이 각각 시험으로 무효화를 일으킨다 ⓒ 수동 「미리보기 다시 만들기」 흡수 ⓓ stage 1 의 「자동 재생성 안 함」이 여기서만 뒤집힌다 ⓔ 경계 — 무효화·재생성 D7 · 트리거 발신 D5 ⓕ staging 배포 green"
+    evidence: null
+    deadline: null
+    note: "`§J-7` 에서 적출돼 J-1 이 10건 → 9건이 됐다. ⚠ `WORK-UNITS §11` 완주 체크리스트에 행이 없고 `03-HANDOFF §1` 에도 행이 없다."
+    sources: ["WORK-UNITS §10.2-b", "WORK-UNITS §10.3"]
+
+  - id: P0
+    name: 공통 기반
+    status: done
+    stage: stage1
+    owner: "D1 D2 (+D3 · D4 D6 은 스키마 정본만)"
+    entry_conditions: ["G1 · G5 · D3"]
+    depends_on: [G1, G5, D3]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미) — 완료 판정 8행"
+    evidence: "2026-08-23 닫힘. 완료 판정 8행 중 1~7 충족(8 은 조문 자체가 「I2 이후」). 스키마 20표 · core-api 34 라우트(실질 5 · 501 29) · 경계 증명 6종 · FE 셸. 산출 `sessions/P0-*.md`"
+    deadline: null
+    note: "8행 중 7행만 충족인데 ✅ 다. ⚠ 진입조건 순환 — P0 ← G5 인데 G5 ← P0."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §11"]
+
+  - id: P1
+    name: "카탈로그(S-03) + 상세 헤더 + 연구실 설정 > 구성원·권한"
+    status: done
+    stage: stage1
+    owner: "D3 D2 D1"
+    entry_conditions: ["P0"]
+    depends_on: [P0]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미)"
+    evidence: "닫힘 — 네 레인 전부 + staging 배포 green (2026-08-23). core-api pytest 144 · frontend vitest 73 · 게이트 12종 GREEN · 501 표 29 → 25. staging 커밋 `06eafa9` — 컨테이너 8/8 · 헬스 6종 200 · K2 시드 22행 · 본문 대조 실시"
+    deadline: null
+    note: "⚠ P6 가 되짚어야 한다 — `accessRequestPending`·`canApproveVerification` 이 항상 `false`. 정직한 한계 — 501 축소는 staging 에서 독립 증명되지 않았다. ⚠ P5 가 「프로젝트 op 넷이 P1 배정」이라 적는데 P1 은 ✅ 로 닫혀 있다 — 닫힌 WU 에 미완 op 이 남아 있다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §11"]
+
+  - id: P2
+    name: "업로드 전체화면 모달(S-04) · 계보 확정 ＋ 미리보기 최소 렌더 경로 · S-08"
+    status: conflict
+    stage: stage1
+    owner: "D5(WU) · D4(계보 쓰기) · D7 일부(미리보기 렌더 경로)"
+    entry_conditions: ["P1", "G4", "(AI 지점은 K3)"]
+    depends_on: [P1, G4, D5]
+    completion_def: "「각 P 의 완료 판정」 4항 ＋ 2026-08-25 추가 둘 — ⓐ 저장 배치를 단언하는 회귀 시험(`#26`) ⓑ `addDatasetFile` 202 의 저장 자리(`#21`). 스키마 판정(Ted) 전에는 닫지 않는다"
+    evidence: null
+    deadline: null
+    note: "`WORK-UNITS §11` 은 P2 를 🟧 로 적는데, 같은 문서 `§10.2` 의존줄과 `§10.3` 엄격 직렬줄은 「P3 ⊇ P2(✅)」로 P2 를 ✅ 로 적는다. `03-HANDOFF §1 T-P` 도 🟧(「실행 중 범위 재정의로 멈춤 — `S1` 로 재편」)이면서, 닫지 않는 사유로 든 `§4` #21·#26 은 `§4` 에서 ✅ 해소로 표기돼 있다. 어느 하나를 고르지 않는다 — 사람이 저장 배치 시험과 202 저장 자리를 실물로 잴 자리다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §10.3", "WORK-UNITS §11"]
+
+  - id: P3
+    name: "계보 그래프 · 2D 시각화 3종 · createScreenshot · 렌더 표현 확장"
+    status: open
+    stage: stage2
+    owner: "D4 · D7 (둘 다 P3 에 흡수)"
+    entry_conditions: ["P2"]
+    depends_on: [P2, D5]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미). 타일 서빙·확대 · `createScreenshot` 이 완료 정의로 올라왔다"
+    evidence: null
+    deadline: null
+    note: "「P3 은 stage 2 전체다」(`〈74〉`). `D5 → P3` 는 엄격 직렬 의존 — 타일은 COG 없이 못 낸다. advisor 는 D7 흡수에 반대하고 별도 WU 절단을 권고했다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §11"]
+
+  - id: P4
+    name: "검색 히어로(S-01) · 검색 결과(S-06)"
+    status: open
+    stage: unknown
+    owner: "D3"
+    entry_conditions: ["P1 · G2 · K4"]
+    depends_on: [P1, G2, K4, T-1]
+    completion_def: "「각 P 의 완료 판정」 4항. 오라클 = 검색 평가셋(S2b) · 재측정은 `T-1`"
+    evidence: null
+    deadline: null
+    note: "⬜ 를 유지하는 이유 = 완료 판정의 오라클인 평가셋이 초안이다. ⚠ 그런데 `S2b` 는 `03-HANDOFF` 에서 Ted 승인 완료 ✅ 로 적혀 어긋난다. ⚠ 화면이 서고 staging 에서 실결과(`강우` 3건)를 내는데 상태는 ⬜ 다 — 문서가 그 이유를 명시하므로 상태는 ⬜ 로 둔다. stage 는 `WORK-UNITS` 가 「stage 1 에 지어지고 stage 2 에 판정된다」로 적어 스키마 값 하나로 못 담는다 — `unknown` 으로 적고 여기 남긴다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §11"]
+
+  - id: P5
+    name: "프로젝트 목록·상세(S-02/S-02b)"
+    status: partial
+    stage: stage1
+    owner: "D6 (P5 에 흡수)"
+    entry_conditions: ["P1"]
+    depends_on: [P1]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미) ＋ P6(승인)·`§1.5` 완료 조건"
+    evidence: "2026-08-24 `W5` 레인 `S1-project` — S-02 목록·S-02b 상세와 `linkProjectDataset` 이 열렸다. 501 표 24 → 21. core-api 260 passed · frontend 198 passed · viz-render 90 · pipeline-worker 104 · 게이트 21 green / 1 red(설계상). 커밋 `e4e552a`·`2a0c489`"
+    deadline: null
+    note: "닫지 않는 이유 둘 — ① 프로젝트 op 넷이 아직 501 이고 P1 배정 ② 새 프로젝트·정보 수정·닫기 확인 모달(F-03~F-05) 부재. ⚠ `03-HANDOFF` 가 가리키는 `§1.5` 는 그 문서에 존재하지 않는 절이다(`WORK-UNITS` 에는 있다)."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §11"]
+
+  - id: P6
+    name: 승인 처리
+    status: conflict
+    stage: stage2
+    owner: "D2 / core-api ＋ frontend"
+    entry_conditions: ["P1~P5"]
+    depends_on: [P1, P2, P3, P4, P5]
+    completion_def: "「각 P 의 완료 판정」 4항 — 수용 기준 · 도메인 게이트 green · staging 배포 green · 목업 대비 화면 검증"
+    evidence: null
+    deadline: null
+    note: "`WORK-UNITS §10.2-b` 는 「✅ 판정됨(2026-08-27 Ted · `〈168〉-㉵`) = I4 는 P6 의 시작을 막지 않는다 · 진입조건 정본은 `§7` 의 P6 행 하나다」라고 적는데, 같은 문서 `§10.3` 말미 경고문은 여전히 「둘 중 어느 쪽이 값인지 미판정이므로 … 판정이 나면 이 줄과 `§9` 그래프를 함께 고친다」로 남아 있고 `§9` 그래프도 `I4 ── P6` 사슬 그대로다. `03-HANDOFF §1 T-P` 는 ⬜ 이면서 「`I4` 를 전제로 걸지 않았다 — 근거가 `§9` 그래프뿐이다」라고 적는다. 어느 하나를 고르지 않는다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §9", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "WORK-UNITS §11"]
+
+  - id: P7
+    name: 연구실 대시보드
+    status: open
+    stage: stage2
+    owner: "D8 · D1 / core-api ＋ frontend"
+    entry_conditions: ["P6"]
+    depends_on: [P6]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미)"
+    evidence: null
+    deadline: null
+    note: "D8 실동작 op 0 이 여기서 닫힌다. ⚠ I5 진입조건이 P7 을 거는데 P7 은 stage 2 다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
+
+  - id: P8
+    name: "E-01 적용 지점 표"
+    status: open
+    stage: stage2
+    owner: "D2 / core-api"
+    entry_conditions: ["P7"]
+    depends_on: [P7]
+    completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미)"
+    evidence: null
+    deadline: null
+    note: "단계는 숫자가 아니라 「후」다. 화면별 적용 지점 표 → 정책·패키지 재생성."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
+
+  - id: K1
+    name: 온톨로지 스키마
+    status: done
+    stage: stage1
+    owner: "D9 / ai-service"
+    entry_conditions: ["G8"]
+    depends_on: [G8]
+    completion_def: "스키마 정의 + 예시 인스턴스 왕복 (`§8`)"
+    evidence: "2026-08-23 닫힘. 시드 테이블 3개 — `d9_method_term`·`d9_topic_synonym`·`d9_place_alias`, 전부 `db/ai` 체인(`0002_k1_ontology`). 게이트 4종 green · 왕복 증명이 음성을 포함. 산출 `sessions/K1.md`"
+    deadline: null
+    note: "RLS 를 걸지 않았다 — 세 표에 `lab_id` 가 없다. 면제 근거와 뒤집히는 조건을 allowlist 주석에 남겼다."
+    sources: ["03-HANDOFF §1 T-K", "WORK-UNITS §8", "WORK-UNITS §11"]
+
+  - id: K2
+    name: 온톨로지 시드 적재
+    status: done
+    stage: stage1
+    owner: "D9 / ai-service"
+    entry_conditions: ["K1", "G8"]
+    depends_on: [K1, G8]
+    completion_def: "시드 커버리지 체크 (핵심 어휘 미커버 0) — `§8`"
+    evidence: "2026-08-23 닫힘. 적재 22행(어휘 13 · 주제 5 · 지명 4) / 커버리지 기준 21항목 미커버 0. 커버리지 체크 red 실증 5방향. 시드는 마이그레이션 체인 안(`0003`), 멱등 실측. 산출 `sessions/K2.md`"
+    deadline: null
+    note: "`[정본 무근거]` 5건은 `K2.md §5`. `T-1` 완료 정의 ⓑ 가 K2 의 후속 확장을 흡수한다."
+    sources: ["03-HANDOFF §1 T-K", "WORK-UNITS §8", "WORK-UNITS §11"]
+
+  - id: K3
+    name: 계보 제안 서비스
+    status: open
+    stage: stage2
+    owner: "D10 / ai-service"
+    entry_conditions: ["K2(✅) · D2(✅) — 열려 있다", "`P2` 산출만 필요해 `D5`·`P3` 과 병렬"]
+    depends_on: [K2, D2, P2]
+    completion_def: "평가셋 대비 제안 품질 ＋ D4 쓰기 경로 부재 음성 테스트 green (`§8`)"
+    evidence: null
+    deadline: null
+    note: "D4 쓰기 경로 부재 음성 테스트 필수 · 모델 = `㊷` GPT(luna/terra)."
+    sources: ["03-HANDOFF §1 T-K", "WORK-UNITS §8", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
+
+  - id: K4
+    name: 자연어 검색 서비스
+    status: open
+    stage: stage1
+    owner: "D10 / ai-service ＋ core-api"
+    entry_conditions: ["K2", "G2", "D2", "`K4-b`(그래프 증강)는 `G8b` Q1 대기"]
+    depends_on: [K2, G2, D2, T-1]
+    completion_def: "평가셋 대비 재현율/근거 정확도 (`§8`). ⭑ 완료 판정이 `T-1` 에 걸렸다(`〈167〉-㉱` — 평가셋 A층 재측정)"
+    evidence: null
+    deadline: null
+    note: "닫지 않는다 — 완료 판정의 오라클(평가셋)이 초안 상태다. ⚠ `S2b` 는 이미 Ted 승인 ✅ 로 적혀 있어 「초안」 진술과 어긋난다. ⚠ 서비스가 staging 에서 실결과를 내는데 상태는 ⬜ 다 — 문서가 이유를 명시하므로 ⬜ 로 둔다. 하위 층 `K4-a`·`K4-b` 와 선행 `G8b` 는 어느 표에도 자체 행이 없다."
+    sources: ["03-HANDOFF §1 T-K", "WORK-UNITS §8", "WORK-UNITS §10.2", "WORK-UNITS §11"]
+
+  - id: K5
+    name: 제안 원장
+    status: open
+    stage: stage2
+    owner: "D10 / ai-service"
+    entry_conditions: ["K3"]
+    depends_on: [K3]
+    completion_def: "원장 왕복 테스트 (`§8`)"
+    evidence: null
+    deadline: null
+    note: "제안·확인·수정·거절 이력. 모델 교체 시 회귀 판정의 근거. 엄격 직렬 K5 ⊇ K3."
+    sources: ["03-HANDOFF §1 T-K", "WORK-UNITS §8", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
+
+  - id: S1
+    name: 원천 인벤토리·적재 범위 확정
+    status: conflict
+    stage: stage1
+    owner: "T-S"
+    entry_conditions: ["없음 — 지금 착수 가능(코드 아님, 분류다)"]
+    depends_on: []
+    completion_def: "`§8.5` — `SEED-DATA.md` 가 존재하고 2,122 파일 전부가 세 분류 중 하나에 배정돼 미분류 0. `.npy` 1,622건 제외 · tif 62건 입력 포맷, 그중 이미 COG 인 것 표시"
+    evidence: null
+    deadline: null
+    note: "두 읽기는 모두 ✅(`SEED-DATA.md` — 2,122 파일 전부 배정, 미분류 0 · 데이터셋 15건 · 계보 3갈래 · 2026-08-23 닫힘)로 적지만, 산문 자체가 식별자 `S1` 에 두 표기를 함께 붙인다. `03-HANDOFF §1` 안에서 `S1` 로 읽히는 행이 다섯이고 그중 넷(`S1-preview`·`S1-search`·`S1-ontology-graph`·`S1-project`)은 ✅, 하나(`S1-preview-ui`)는 🟧 다 — T-S 레인 접두사 `S1-*` 과 T-S 초기데이터의 WU `S1`, 그리고 집행 계획 `S1-PLAN` 이 한 이름을 쓴다. 기계는 어느 것이 WU `S1` 의 상태인지 가를 수 없다. 어느 하나를 고르지 않는다 — 사람이 레인 접두사를 WU 와 다른 이름으로 갈라 붙일 자리다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §8.5", "WORK-UNITS §10", "WORK-UNITS §11"]
+
+  - id: PA
+    name: 로그인 · 세션
+    status: conflict
+    stage: unknown
+    owner: "D1 / core-api ＋ frontend"
+    entry_conditions: ["P0 (스코프 커널·주체 표 · 실동작 `GET /me`)"]
+    depends_on: [P0]
+    completion_def: "`§7` 「PA 완료 정의」 7항 — ① 로그인/401/만료/로그아웃 실동작 green ② cross-tenant 404 ③ 기존 주체 표 병존 ④ 마이그레이션 0 ⑤ 계약 게이트 green ⑥ FE 가 가짜 진행을 그리지 않는다 ⑦ 인증 세부가 교체 지점 한 곳에만. staging 배포는 포함되지 않는다"
+    evidence: null
+    deadline: null
+    note: "`03-HANDOFF §1 T-S 초기 데이터` 는 ✅(2026-08-26 구현 완료 · core-api 407/0 · frontend 274/0 · 게이트 15종 green)로 적는다. 반면 `WORK-UNITS` 는 `§7` T-P 표에 완료 정의까지 갖춘 행이 있으면서 `§10.x`·`§11` 어디에도 나타나지 않아 상태 글리프가 문서 전체에 없다 — 판정 불가다. 게다가 ✅ 쪽에도 정본 충돌 1건(정본은 비밀번호 로그인을 명시적으로 뺐다)과 미실행 3건이 남아 있다. 어느 하나를 고르지 않는다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7"]
+
+  - id: PA-G
+    name: 구글 IdP 어댑터
+    status: open
+    stage: stage2
+    owner: "D1 / core-api ＋ frontend"
+    entry_conditions: ["stage 1 완료 판정 (기한 정본은 `§7` 의 PA-G 행)"]
+    depends_on: [PA]
+    completion_def: "2026-08-27 작성(`〈168〉-㉷`) — PA 의 7항은 자동 승계되지 않는다. ⓐ 어댑터가 `kernel/authn.py` 한 파일에만 ⓑ 비밀번호 발급 경로 제거(공존시키지 않는다) ⓒ `credentials.json`·`ops/set-password.py` 폐기 ⓓ admin 계정 처리 + 음성 시험 ⓔ PA ①②③⑤⑥ 재통과 ⓕ staging 배포 green"
+    evidence: null
+    deadline:
+      condition: "교체 기한 = stage 1 완료 판정과 동시에 이 WU 를 연다 (`§7` PA-G 행 · `〈122〉-㉯`). 비밀번호 어댑터는 이 WU 가 닫히는 시점에 제거한다"
+      fired: unknown
+    note: "fired 를 `unknown` 으로 둔 이유 = `§1.5` 2026-08-27 재판정이 stage 1 조건 대부분을 ✅ 로 적으면서도 잔여 둘(조건 3 D8 · 조건 7 계보 확정 완주)을 stage 2 로 남겨, 「stage 1 완료 판정」이 났는지 두 문서만으로 결정되지 않는다. 사람이 판정할 자리다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3"]
+
+  - id: S2
+    name: 초기 데이터 staging 적재
+    status: conflict
+    stage: stage1
+    owner: "T-S"
+    entry_conditions: ["S1 · P2(업로드·계보) · I2", "＋ 시험 픽스처(A/B 두 연구실) 철거 시점 판정(`#22`)"]
+    depends_on: [S1, P2, I2, IS3]
+    completion_def: "① staging 카탈로그(S-03)에서 적재분이 보이고 상세(S-05)가 열린다 ② 재실행 멱등 ③ IS3 백업·복원 리허설을 적재 후 상태로 1회 재통과. DB 직접 INSERT 금지 — 화면 경로로만"
+    evidence: null
+    deadline: null
+    note: "`03-HANDOFF §1 T-S 초기 데이터` 는 🟧 이면서 잔여 사유로 `§4` ⛔ `#30`·`#36` 을 드는데 그 둘은 같은 문서 `§4` 에서 ✅ 해소로 표기돼 있다. `WORK-UNITS §8.5` 는 한 절에 세 행을 둔다 — 상태행 🟧 · 정의행 · 별도 「↳ S2 실적 ⛔ 미실행(야간 레인)」 — 그리고 같은 문서 `§1.5` 2026-08-27 재판정 조건 8 은 ✅(데이터셋 12 · 파일 129 · 계보 6, 「배포된 API 가 실데이터를 낸다」)로 적는다. 계수도 문단마다 다르다(파일 122/123/129/139 · 계보 5/6 · 데이터셋 11/12). 어느 하나를 고르지 않는다 — staging 실물을 세는 것이 판정이다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §1.5", "WORK-UNITS §8.5", "WORK-UNITS §10.3", "WORK-UNITS §11"]
+
+  - id: S3
+    name: 실데이터 4종 E2E
+    status: open
+    stage: stage2
+    owner: "T-S"
+    entry_conditions: ["S2 · P3 (GRIB 차단 해제 — `〈51〉` 로 범위에서 뺐다)"]
+    depends_on: [S2, P3]
+    completion_def: "4종 각각 최소 1건이 시각화 화면에 그려지고 계보가 확정 상태로 남는다. GeoTIFF 를 가장 먼저 돌린다. 실패 파일은 목록으로 남긴다"
+    evidence: null
+    deadline: null
+    note: "「S3 전체가 stage 2 로 이관된다」(`〈74〉`). ⚠ 이름은 「4종」인데 `㊿`·`〈77〉` 은 지원 포맷을 5종(＋NumPy)으로 올렸다 — 이름과 값이 어긋난다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §8.5", "WORK-UNITS §10.3", "WORK-UNITS §11"]
+
+  - id: S3-e2e-4종
+    name: "실데이터 4종(NetCDF·Binary·HDF4·GeoTIFF) E2E 완주 — `WORK-UNITS §11` 무식별자 줄"
+    status: open
+    stage: stage2
+    owner: "T-S"
+    entry_conditions: ["S2 · P3"]
+    depends_on: [S3]
+    completion_def: "`§8.5` S3 행의 완료 판정과 동일 — 행 자신이 「= S3」이라 밝힌다"
+    evidence: null
+    deadline: null
+    note: "⚠ 원문 줄에는 식별자 토큰이 없다 — `§11` ASCII 블록 마지막 줄이고 `§1.5` 완료 조건 7 을 그대로 옮긴 문장이며, 괄호로 스스로 「= S3」임을 밝힌다. 즉 S3 의 중복 계상이다. 대장의 id `S3-e2e-4종` 은 이 대장이 붙인 것이고 산문에는 없다. 지원 포맷도 이 줄은 4종, `§8.5` S3 행은 5종으로 적어 같은 문서 안에서 목록이 어긋난다."
+    sources: ["WORK-UNITS §11"]
+
+  - id: "#22"
+    name: "D2·D8 고아 행 삭제"
+    status: open
+    stage: stage2
+    owner: "인프라/DB"
+    entry_conditions: ["전범위 백업 직후 · X-1 회전 이전", "선백업 GREEN(platform ＋ ai)"]
+    depends_on: [R-1]
+    completion_def: "`§10.3` 1단-㉮ 5단계 — ① 테이블별 참조 열 실측 ② 선백업 GREEN 확인(red 면 삭제하지 않는다) ③ id 를 못 박고 「고아일 때만」 조건을 함께 건다 ④ 사후 실측 = 「고아 0」 ⑤ 기준선 표에 삭제 전/후를 갈라 적는다"
+    evidence: null
+    deadline: null
+    note: "⚠ 삭제 대상 목록 미고정 — 조건문이 아니라 id 목록으로 못 박은 뒤 실행한다. 대상 = `d2_dataset_access`·`d2_verified`·`d8_activity`. 이 항목은 WU 표 어디에도 행이 없고 순서표와 그 부속 절차에만 있으며 id 도 블로커 번호다."
+    sources: ["WORK-UNITS §10.3"]
+
+  - id: 전범위백업
+    name: "전범위 백업 (platform ＋ ai ＋ 볼륨)"
+    status: partial
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["R-1"]
+    depends_on: [R-1]
+    completion_def: 완료 정의 미작성
+    evidence: "기구 ✅ · 유인 1회 GREEN ✅ (2026-08-28) · crontab 재설치 닫힘(03:30 = `backup-full.sh` · 본 체크아웃 · `〈173〉-㉰`)"
+    deadline: null
+    note: "`§10.3` 1단에만 있는 화살표 항목 — 독립 WU 행이 없고 R-1 의 산출로 인쇄된다. 남은 것 = 크론 환경 첫 회차 로그 확인. 식별자 규격 밖의 항목이다."
+    sources: ["WORK-UNITS §10.3"]
+
+  - id: 2단-A
+    name: "A 동결해제 프로토콜 (`§10.3` 2단)"
+    status: done
+    stage: stage2
+    owner: "계약"
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "✅(`〈163〉` 3등급제)"
+    deadline: null
+    note: "`X-2` 와 같은 항목의 다른 이름표다 — `§10.1` X-2 = 계약 동결 해제 프로토콜 명문화. 같은 일이 두 자리에서 다른 이름으로 세어지고 한쪽(X-2)은 conflict 다."
+    sources: ["WORK-UNITS §10.3"]
+
+  - id: 2단-E
+    name: "E main 병합 (`§10.3` 2단)"
+    status: done
+    stage: stage2
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: "✅(2026-08-28 · `5866b49` → `9b312da` fast-forward · `〈173〉-㉳`)"
+    deadline: null
+    note: "식별자 규격 밖의 순서표 항목이다."
+    sources: ["WORK-UNITS §10.3"]
+
+  - id: 2단-BC120
+    name: "종전 2단 후보 셋 (B · C · `〈120〉` 3건)"
+    status: conflict
+    stage: stage2
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "`WORK-UNITS §10.3` 한 줄이 「※ 종전의 B·C·`〈120〉` 셋은 착수 후보가 아니다 — 전부 이미 끝났거나 안 하기로 한 것이다」로 done(B = `〈159〉` 집행 · C = `〈160〉`/`〈114〉` 집행)과 deferred(`〈120〉` 3건 = 하지 않기로 한 것)를 한 줄에 섞어 적는다. 각 항목의 이름·범위가 그 문서에 없어 분해가 불가능하다 — ⬜ 와 ⏸ 를 결코 뭉개지 않는 이 대장의 규칙상 한 상태로 접을 수 없다. `03-HANDOFF §1` 에는 행이 없다. 사람이 셋을 갈라 이름 붙일 자리다."
+    sources: ["WORK-UNITS §10.3"]
+
+  - id: W-1
+    name: 항목 상태 대장·검사기
+    status: in_progress
+    stage: stage2
+    owner: dev-package / gates
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⓐ dev-package/work-items.yaml 이 03-HANDOFF §1 · WORK-UNITS §10~§11 의 전 항목을 담는다
+      ⓑ gates/run.sh work-item-consistency 가 검사 6종을 돌고 ㈎㈏㈐㈑㈒ 가 green
+      ⓒ gates/run.sh work-item-selftest 가 대조군 1 · red 증명 8 로 green
+      ⓓ 대장의 conflict 가 전건 사람 판정으로 닫혀 ㈓ 가 green — **이 조건이 이 WU 를 닫는 것이다**
+      ⓔ 03-HANDOFF 머리말 · CLAUDE.md §6 · gates/README.md 배선
+    evidence: null
+    deadline: null
+    note: 검사기 자신이 관리 대상 밖이 되지 않게 대장에 등재한다.
+    sources: ["PLAN-SoT §9 〈176〉"]

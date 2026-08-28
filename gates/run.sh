@@ -122,11 +122,22 @@ case "$GATE" in
     # stage2-markers-selftest 는 여기 없다 — pipeline-worker 런타임 의존(rasterio 등)이 필요해
     # contract-gates 잡의 환경으로는 못 돈다. CI 는 dormant-tests 잡에서 따로 부른다.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done
     exit $rc
+    ;;
+  work-item-consistency)
+    # 개발 항목 상태의 **대장 ↔ 산문** 불일치 (Ted 판정 2026-08-28).
+    # 정본 = dev-package/work-items.yaml. 상태가 산문 세 곳에 흩어져 사람 기억으로
+    # 동기화되던 것을 기계가 받는다 — 「관례를 두지 않는다」의 마지막 사각지대였다.
+    # 검사 6종: 스키마 · 완주 체크리스트 · 진실원 표 · 보류 항목 혼입 · 기한 경과 · conflict 잔존.
+    exec python3 "$REPO_ROOT/gates/tools/work_item_consistency.py"
+    ;;
+  work-item-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (검사 6종 각각 + 정상 대장 대조군).
+    exec "$REPO_ROOT/gates/tools/work-item-selftest.sh"
     ;;
   generated-up-to-date)
     # 생성물 등기부(contracts/codegen/manifest.toml)의 엔트리를 실제로 재생성해 커밋본과 diff.

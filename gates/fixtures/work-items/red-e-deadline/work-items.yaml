@@ -1,0 +1,77 @@
+# 대조군 — 대장과 산문이 일치하는 정상 상태. 이 케이스가 green 이 아니면 게이트가 고장난 것이다.
+# 레포 실물이 아니라 fixture 다 (db-selftest·generated-selftest 와 같은 이유 —
+# selftest 가 레포의 실제 진행 상태에 볼모잡히면 안 된다).
+items:
+  - id: P1
+    name: 업로드
+    status: done
+    stage: stage1
+    owner: D3 / core-api
+    entry_conditions: []
+    depends_on: []
+    completion_def: "§7 말미 「각 P 의 완료 판정」 4항"
+    evidence: "〈100〉 staging 배포 green · 수용 기준 12/12"
+    deadline: null
+    note: null
+
+  - id: P2
+    name: 데이터셋 인포
+    status: partial
+    stage: stage1
+    owner: D3 / core-api
+    entry_conditions: []
+    depends_on: [P1]
+    completion_def: "§7 말미 「각 P 의 완료 판정」 4항"
+    evidence: "〈120〉 4 화면 중 3 green · 나머지 1 은 501"
+    deadline: null
+    note: 잔여 = 501 표 소진
+
+  - id: P3
+    name: 시각화
+    status: open
+    stage: stage2
+    owner: D7 / viz-render
+    entry_conditions: ["P2 완료"]
+    depends_on: [P2]
+    completion_def: "§7 말미 「각 P 의 완료 판정」 4항"
+    evidence: null
+    deadline: null
+    note: null
+
+  - id: D2b
+    name: 이벤트 계약
+    status: done
+    stage: stage1
+    owner: 계약
+    entry_conditions: []
+    depends_on: []
+    completion_def: "§6 T-D 표"
+    evidence: "〈40〉 event-lint · event-breaking green"
+    deadline: null
+    note: 소문자 접미 식별자 — 토큰 정규식이 이것을 놓치면 안 된다
+
+  - id: I0
+    name: AWS 계정·결제·리전
+    status: deferred
+    stage: out_of_scope
+    owner: 인프라
+    entry_conditions: []
+    depends_on: []
+    completion_def: 완료 정의 미작성
+    evidence: null
+    deadline: null
+    note: "⏸ 보류 — prod 는 출시 결정 시 연다. 착수 후보 표에 올라오면 안 된다"
+
+  - id: PA-G
+    name: 구글 IdP 어댑터
+    status: open
+    stage: stage2
+    owner: D1 / core-api
+    entry_conditions: ["stage 1 완료 판정"]
+    depends_on: []
+    completion_def: "§7 PA-G 행"
+    evidence: null
+    deadline:
+      condition: "stage 1 완료 판정과 동시에 이 WU 를 연다"
+      fired: true
+    note: 기한 정본은 §7 의 이 행 하나다
