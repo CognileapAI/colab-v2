@@ -439,7 +439,6 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/UploadStatus" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
         "404":
           description: 없는 업로드이거나 수명이 다해 사라졌다 (`Policy §7.1` — 등록되지 않은 업로드는 남지 않는다).
           content:
@@ -481,7 +480,6 @@ paths:
             application/json:
               schema: { $ref: "core-ai.yaml#/components/schemas/LineageSuggestionResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1675,7 +1673,6 @@ paths:
               schema: { $ref: "core-viz.yaml#/components/schemas/RenderJob" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503":
           description: |
@@ -1719,7 +1716,6 @@ paths:
             application/json:
               schema: { $ref: "core-viz.yaml#/components/schemas/RenderJob" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503":
           description: |

@@ -3117,7 +3117,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description 없는 업로드이거나 수명이 다해 사라졌다 (`Policy §7.1` — 등록되지 않은 업로드는 남지 않는다). */
             404: {
                 headers: {
@@ -3157,7 +3156,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
         };
@@ -4375,7 +4373,6 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
             /**
@@ -4422,7 +4419,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
             /**

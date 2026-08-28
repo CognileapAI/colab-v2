@@ -671,15 +671,15 @@ items:
 
   - id: X-5
     name: ㉰-4 소급 전수확인
-    status: partial
+    status: done
     stage: stage2
     owner: "계약 / core-api"
     entry_conditions: ["진입조건 없음 — 무의존이라 병렬"]
     depends_on: []
     completion_def: "정본 = `WORK-UNITS §10.2` · 근거 `§9 〈163〉-㉰`"
-    evidence: "조사분 완료 (2026-08-28 · `§9 〈174〉-㉰` · 산출 `sessions/X5-AUDIT.md`) — 총 185 항목 · 미구현 26 · 미선언 1 · 미확인 2. op 축은 `test_route_table.py` 양방향 diff 로 구조적으로 닫혀 있어 「조용히 없는 op」 0 이고 501 스텁 20 은 은닉이 아니라 명시. 필드·이벤트·열거값·저장배치는 전건 정합(고아 필드 0 · 이벤트 7종 전건 발행·소비). 적출 3계열 = `422` 생산자 0 인 2건(`core-viz.yaml:98`·`core-ai.yaml:142` · **철회 확정·집행 완료 2026-08-28 Ted · `§9-㊾`** — `contract-lint`·`contract-breaking`·`seam-consistency`·`generated-up-to-date`·`planning-freshness` 로컬 green, 비성공 응답 제거는 파괴적 변경으로 계수되지 않음이 실행으로 확인돼 열려 있던 `[미확인]` 1건 해소) · `403` 을 선언하고 스위치를 안 거는 2건(`fe-core.yaml:683`·`:1473`) · `PermissionSwitchChange`(`common.json:60`)를 읽을 op 부재 1건. 집행분 1계열 완료 = `403` 2건 (`§9 〈175〉` · 브랜치 `x5-403-enforce`)"
+    evidence: "조사분 완료 (2026-08-28 · `§9 〈174〉-㉰` · 산출 `sessions/X5-AUDIT.md`) — 총 185 항목 · 미구현 26 · 미선언 1 · 미확인 2. op 축은 `test_route_table.py` 양방향 diff 로 구조적으로 닫혀 있어 「조용히 없는 op」 0 이고 501 스텁 20 은 은닉이 아니라 명시. 필드·이벤트·열거값·저장배치는 전건 정합(고아 필드 0 · 이벤트 7종 전건 발행·소비). 적출 3계열 = `422` 생산자 0 인 2건(`core-viz.yaml:98`·`core-ai.yaml:142` · **철회 확정·집행 완료 2026-08-28 Ted · `§9-㊾`** — `contract-lint`·`contract-breaking`·`seam-consistency`·`generated-up-to-date`·`planning-freshness` 로컬 green, 비성공 응답 제거는 파괴적 변경으로 계수되지 않음이 실행으로 확인돼 열려 있던 `[미확인]` 1건 해소) · `403` 을 선언하고 스위치를 안 거는 2건(`fe-core.yaml:683`·`:1473` · **집행 완료 `§9 〈175〉` · `main` 병합**) · `PermissionSwitchChange`(`common.json:60`)를 읽을 op 부재 1건(**판정 없음 종결 · `§9-㊿`** — `P-33` 이 이미 닫은 결정). 4계열 = 읽기·중계 4 op 의 `403`(**철회·집행 완료 `§9-㊿`** — `fe-core.yaml` 4줄 삭제 36 → 32 · `fe-core.ts` 재생성 · frontend `274 passed` · 빌드 성공)"
     deadline: null
-    note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`. ⚠ **닫히지 않았다 — 판정 3건이 열려 있다**(2026-08-28 개정 · 종전 5건): 읽기·중계 4 op 의 `403` 1묶음 · `PermissionSwitchChange` 1건(철회하면 도는 원장을 계약이 부정한다) · `suggestLineage` 비대칭 1건(`K3` 시점 문제). **`422` 2건은 철회로 판정·집행 완료**(`§9-㊾` · `core-viz.yaml#createRender`·`core-ai.yaml#searchDatasets` 선언 삭제 · 코드 변경 0). 집행된 `403` 2건은 **`main` 병합 완료**(2026-08-28 · 리베이스 후 fast-forward · 산출 `sessions/X5-403-VERIFY.md`) — **red 픽스처 증명 완료**(생산 코드 두 훅만 되돌려 재실행 → `assert 200 == 403` 둘 실물 확인 후 복원) · `455 passed` 실패 0 · 게이트 6종 green · 일회용 DB 로 검증, 운영 스택 무접촉. ⚠ **여전히 로컬 green 이고 staging 배포 전이다** — `[미확인]` 2건 = frontend 회귀 · staging 실물의 `403`(배포 후 `PATCH` 2회로 풀린다)."
+    note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`. **⟨2026-08-28 닫힘⟩ 열린 판정 0건** — 7건 전건 판정 완료(`§9-㊾`·`㊿`). 판정 이력 = 5건 → 3건 → 0건. 마지막 3건은 **Stage 2 연관성 기준**으로 갈랐다(`㊿`): 읽기·중계 4 op 의 `403` **철회·집행**(둘이 `P3`·`V-1`·`V-2` 가 올라탈 표면이라 착수 전 확정) · `PermissionSwitchChange` **판정 없음 종결**(`P-33` 이 이미 「조회 화면 없음」으로 닫아 둔 결정이 낡은 감사 문서로 재등장한 것) · `suggestLineage` **판정 아님, `K3` 착수 순서로 이관**.**`422` 2건은 철회로 판정·집행 완료**(`§9-㊾` · `core-viz.yaml#createRender`·`core-ai.yaml#searchDatasets` 선언 삭제 · 코드 변경 0). 집행된 `403` 2건은 **`main` 병합 완료**(2026-08-28 · 리베이스 후 fast-forward · 산출 `sessions/X5-403-VERIFY.md`) — **red 픽스처 증명 완료**(생산 코드 두 훅만 되돌려 재실행 → `assert 200 == 403` 둘 실물 확인 후 복원) · `455 passed` 실패 0 · 게이트 6종 green · 일회용 DB 로 검증, 운영 스택 무접촉. ⚠ **여전히 로컬 green 이고 staging 배포 전이다** — **`[미확인]` 잔 1건 = staging 실물의 `403`**(배포 후 `PATCH` 2회로 풀린다 · `I3` 에 딸린다). **frontend 회귀는 해소**(`㊿` 실측 — `274 passed` 13파일 · `npm run build` 성공)."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: R-1
