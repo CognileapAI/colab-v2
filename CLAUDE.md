@@ -144,3 +144,21 @@ git log --oneline -10
 ```
 
 기획 정본은 이 레포에 없다. 위치와 상태는 `planning/README.md`.
+
+## 업로드(S3) — 고칠 때 알아야 할 것
+
+업로드 바이트 저장이 **로컬/S3 로 갈린다** (`PLAN-SoT §9 〈173〉·〈174〉` · 운영 정본 `dev-package/S3.md`).
+로컬 개발은 local 모드(form-data→디스크)가 기본이라 AWS 없이 그대로 돈다.
+
+- 분기점은 저장 Port(`ports/storage.py`)와 전송 라우트(`routes/upload_transfers.py`) 둘뿐이다.
+  s3 모드는 `COLAB_CORE_STORAGE_MODE=s3` + 버킷·리전 — 반쪽 설정은 기동이 거부된다
+- **SigV4 는 표준 라이브러리 자작이다** (`kernel/sigv4.py`) — boto3 없음. S3 API 호출에 본문이
+  있으면 `content-type: application/xml` 을 명시해야 한다 (urllib 기본값이 서명을 깨뜨린다).
+  그래서 **에뮬레이터(MinIO 등) 검증 금지** — 관대한 통과가 진짜 S3 의 403 을 숨긴다
+- **파트의 정본은 S3 ListParts 다** — 재개·완료 검증 어디서도 클라이언트 자기 보고를 믿지 않는다
+- **완결이 곧 접수다** — `completeUploadTransfer` 전에는 `d5_upload` 도 `upload.accepted` 도 없다
+- 만료 전송 정리는 **원장이 아는 것만** 지운다. 버킷 루트 스캔 금지 — 시드 lab_id 가 겹치는
+  버킷에서 남의 데이터를 지운다. 최후 백스톱은 라이프사이클 abort-7d
+- 폴더 업로드의 경로는 저장 키가 아니라 원장 메타(`relative_path`)다 — 키 규약(생성물)은 불변
+- AWS 검증은 콘솔 눈이 아니라 `services/core-api` 에서 `.venv/bin/python ops/s3_doctor.py` / `ops/s3_smoke.py`
+- 시크릿 키는 채팅·커밋에 절대 넣지 않는다
