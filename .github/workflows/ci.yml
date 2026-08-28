@@ -84,6 +84,34 @@ jobs:
         with:
           path: gates/tools/node/node_modules
           key: ${{ runner.os }}-node20-gatetools-${{ hashFiles('gates/tools/node/package-lock.json') }}
+      # ⭑ **캐시는 설치가 아니다.** 위 두 `cache` 스텝은 복원만 하고, 캐시가 비면
+      #   `node_modules` 가 없는 채로 게이트가 돈다. `contract-lint`·`event-lint` 는
+      #   부재를 보고 스스로 `npm ci` 하지만 **`generated-up-to-date` 는 하지 않는다** —
+      #   등기부 첫 항목이 `frontend/node_modules/.bin/openapi-typescript` 를 직접 부르고,
+      #   없으면 exit 127 로 red 다. 도구 부재를 red 로 내는 것은 **옳은 동작**이다.
+      #   그래서 게이트를 무르게 고치지 않고 **설치 단계를 세운다.**
+      #   ⚠ `frontend/` 는 캐시 대상에도 없었다. 캐시를 먼저 붙이고 설치를 그 뒤에 둔다.
+      - uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node20-frontend-${{ hashFiles('frontend/package-lock.json') }}
+      # `npm ci` 는 lock 을 정본으로 삼는다 — `npm install` 이 아니다. lock 과 어긋나면 실패한다.
+      # `--ignore-scripts` 를 쓰지 않는다: 도구가 postinstall 로 바이너리를 놓는 경우가 있고,
+      # 「설치했는데 바이너리가 없다」는 캐시가 빈 것과 같은 red 로 되돌아온다.
+      - name: 노드 의존 설치 (contracts · gates/tools/node · frontend — lock 이 정본)
+        run: |
+          set -euo pipefail
+          npm ci --prefix contracts --no-audit --no-fund
+          npm ci --prefix gates/tools/node --no-audit --no-fund
+          npm ci --prefix frontend --no-audit --no-fund
+      # 설치가 「돌았다」와 「도구가 실제로 있다」는 다르다. 셋을 **존재로** 확인한다 —
+      # 확인 없이 다음 스텝으로 가면 부재가 게이트 red 로 위장해 원인이 한 겹 멀어진다.
+      - name: 설치 확인 (도구 3종이 실물로 있는가)
+        run: |
+          set -euo pipefail
+          test -x contracts/node_modules/.bin/spectral
+          test -d gates/tools/node/node_modules/ajv
+          test -x frontend/node_modules/.bin/openapi-typescript
       - name: seam 스펙 린트
         run: ./gates/run.sh contract-lint
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
@@ -190,6 +218,34 @@ jobs:
         with:
           path: gates/tools/node/node_modules
           key: ${{ runner.os }}-node20-gatetools-${{ hashFiles('gates/tools/node/package-lock.json') }}
+      # ⭑ **캐시는 설치가 아니다.** 위 두 `cache` 스텝은 복원만 하고, 캐시가 비면
+      #   `node_modules` 가 없는 채로 게이트가 돈다. `contract-lint`·`event-lint` 는
+      #   부재를 보고 스스로 `npm ci` 하지만 **`generated-up-to-date` 는 하지 않는다** —
+      #   등기부 첫 항목이 `frontend/node_modules/.bin/openapi-typescript` 를 직접 부르고,
+      #   없으면 exit 127 로 red 다. 도구 부재를 red 로 내는 것은 **옳은 동작**이다.
+      #   그래서 게이트를 무르게 고치지 않고 **설치 단계를 세운다.**
+      #   ⚠ `frontend/` 는 캐시 대상에도 없었다. 캐시를 먼저 붙이고 설치를 그 뒤에 둔다.
+      - uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node20-frontend-${{ hashFiles('frontend/package-lock.json') }}
+      # `npm ci` 는 lock 을 정본으로 삼는다 — `npm install` 이 아니다. lock 과 어긋나면 실패한다.
+      # `--ignore-scripts` 를 쓰지 않는다: 도구가 postinstall 로 바이너리를 놓는 경우가 있고,
+      # 「설치했는데 바이너리가 없다」는 캐시가 빈 것과 같은 red 로 되돌아온다.
+      - name: 노드 의존 설치 (contracts · gates/tools/node · frontend — lock 이 정본)
+        run: |
+          set -euo pipefail
+          npm ci --prefix contracts --no-audit --no-fund
+          npm ci --prefix gates/tools/node --no-audit --no-fund
+          npm ci --prefix frontend --no-audit --no-fund
+      # 설치가 「돌았다」와 「도구가 실제로 있다」는 다르다. 셋을 **존재로** 확인한다 —
+      # 확인 없이 다음 스텝으로 가면 부재가 게이트 red 로 위장해 원인이 한 겹 멀어진다.
+      - name: 설치 확인 (도구 3종이 실물로 있는가)
+        run: |
+          set -euo pipefail
+          test -x contracts/node_modules/.bin/spectral
+          test -d gates/tools/node/node_modules/ajv
+          test -x frontend/node_modules/.bin/openapi-typescript
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

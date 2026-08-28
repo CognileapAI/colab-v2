@@ -8,6 +8,17 @@
 #
 # 이 대칭이 이 WU 의 롤백 증명이다. 터널·DNS 는 어느 쪽에서도 건드리지 않는다.
 #
+# ⭑ **롤백 대상은 두 종류다** (`I3` 결정 3). 위의 `compose.yml` 은 **자리표시**로 가는 손잡이이고,
+#   「직전 릴리스로 되돌린다」는 `rollback.sh --to-last-green` 이 릴리스 원장에서 태그를 읽어 한다.
+#   릴리스가 둘 이상 쌓인 뒤에도 `compose.yml` 로 가면 그건 N-1 이 아니라 **0** 으로 가는 것이다.
+#
+# ⭑ **이미지 태그는 릴리스 태그다** (`I3 §2-4` DR-5). 종전에는 전부 `:i2` 고정이었고,
+#   그래서 ⑴ 돌고 있는 컨테이너가 어느 커밋의 산출인지 이름으로 알 수 없었고
+#   ⑵ 이전 이미지가 **이름을 잃은 dangling** 이 되어 되돌릴 손잡이가 없었다.
+#   `COLAB_RELEASE_TAG` 는 **`:?` 로 요구한다** — 기본값 `i2` 로 떨어지면 그 결함이 그대로 살아난다.
+#   `deploy.sh` · `rollback.sh` 가 값을 넣는다. 손으로 부를 때는 앞에 붙인다:
+#       COLAB_RELEASE_TAG=i2 docker compose -f compose.i2.yml --env-file ... ps
+#
 # 호스트 노출은 127.0.0.1:3000 하나뿐이다. postgres 를 포함해 나머지는 **포트를 열지 않는다**
 # (PoC 에서 5432 가 0.0.0.0 에 열려 있던 실패를 반복하지 않는다).
 name: colab-v2-staging
@@ -106,7 +117,7 @@ services:
   core-api:
     build:
       context: ../../services/core-api
-    image: colab-v2/core-api:i2
+    image: colab-v2/core-api:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다 — 릴리스 태그는 커밋 SHA 다 (deploy.sh 가 넣는다)}
     container_name: colab_v2_staging_core_api
     restart: unless-stopped
     environment:
@@ -186,7 +197,7 @@ services:
   pipeline-worker:
     build:
       context: ../../services/pipeline-worker
-    image: colab-v2/pipeline-worker:i2
+    image: colab-v2/pipeline-worker:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     container_name: colab_v2_staging_pipeline_worker
     restart: unless-stopped
     environment:
@@ -227,7 +238,7 @@ services:
   viz-render:
     build:
       context: ../../services/viz-render
-    image: colab-v2/viz-render:i2
+    image: colab-v2/viz-render:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     container_name: colab_v2_staging_viz_render
     restart: unless-stopped
     environment:
@@ -258,7 +269,7 @@ services:
   ai-service:
     build:
       context: ../../services/ai-service
-    image: colab-v2/ai-service:i2
+    image: colab-v2/ai-service:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     container_name: colab_v2_staging_ai_service
     restart: unless-stopped
     # ModelPort 런타임 자격증명 (PLAN-SoT §9-㊷).
@@ -294,7 +305,7 @@ services:
   frontend:
     build:
       context: ../../frontend
-    image: colab-v2/frontend:i2
+    image: colab-v2/frontend:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     container_name: colab_v2_staging_frontend
     restart: unless-stopped
     healthcheck:
@@ -309,7 +320,7 @@ services:
     profiles: ["migrate"]
     build:
       context: ./migrator
-    image: colab-v2/migrator:i2
+    image: colab-v2/migrator:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     volumes:
       - ../../db/platform:/chain:ro
       # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · 홈 보관 · 경로는 env).
@@ -328,7 +339,7 @@ services:
     profiles: ["migrate"]
     build:
       context: ./migrator
-    image: colab-v2/migrator:i2
+    image: colab-v2/migrator:${COLAB_RELEASE_TAG:?COLAB_RELEASE_TAG 이 필요하다}
     volumes:
       - ../../db/ai:/chain:ro
       # ⭑ 접속 문자열 파일 — platform 러너와 같은 규약. **파일은 따로 둔다**:

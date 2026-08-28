@@ -1,37 +1,209 @@
 #!/usr/bin/env bash
-# WU-I2 배포 — 자리표시 오리진(compose.yml) → walking skeleton(compose.i2.yml).
+# staging 배포 — **자기 결과를 묻는 배포.**
 #
-# 되돌리기는 rollback.sh 한 줄이다. 두 스크립트가 같은 프로젝트·같은 컨테이너 이름을 쓰기 때문에
-# 앞뒤 교체가 대칭이고, DNS·터널을 건드리지 않으므로 전파를 기다릴 일이 없다.
-set -euo pipefail
+#   deploy.sh [--target staging] [--allow-dirty] [--skip-backup] [--auto-rollback]
+#
+# ── 이 스크립트가 고치는 세 얼굴 (`I3 §0` — DR-4·DR-5·DR-6) ──────────────────
+# 뿌리는 하나였다: **배포 도구가 검증한 것보다 많이 단언했다.**
+#   · DR-4 「무엇을 굽는가」 — 주석은 커밋의 산출이라 했고 코드는 **워킹트리**를 구웠다.
+#   · DR-5 「무엇으로 돌아가는가」 — 태그가 `:i2` 고정이라 **직전 이미지가 이름을 잃었다.**
+#   · DR-6 「무엇이 성공했는가」 — 앱 5종이 `starting` 인 채로 `exit 0` 이 나갔다.
+# 셋 다 「모른다」를 「성공」으로 바꿔 말하는 모양이고, 이 레포의 표준(`㊺`·`㊽`·`D3b`)은
+# 그 반대다 — **모르면 red 를 낸다.** `exit 0` 은 **검증된 green** 에만 준다.
+#
+# 되돌리기는 rollback.sh 다. 롤백은 **이미지만** 되돌리고 **스키마는 되돌리지 않는다**
+# (`〈168〉-㉲` forward-only). 되돌리는 마이그레이션은 데이터를 지울 수 있고, 그러면
+# 그것은 롤백이 아니라 재해다.
+set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
+. "$HERE/pipeline/lib.sh"
+
 ENV_FILE="${COLAB_STAGING_ENV:-$HOME/.colab-v2-staging.env}"   # 홈의 0600 파일. 레포에 두지 않는다.
-dc() { docker compose -f "$HERE/compose.i2.yml" --env-file "$ENV_FILE" "$@"; }
 
-set -a; . "$ENV_FILE"; set +a
-
-echo "① 이미지 빌드 — 배포되는 것이 커밋의 산출이 되도록 이미지 안에서 빌드한다"
-dc --profile migrate build
-
-echo "② 저장소 먼저 — 앱보다 postgres 가 먼저 healthy 여야 한다"
-dc up -d postgres
-for _ in $(seq 1 60); do
-  [ "$(docker inspect -f '{{.State.Health.Status}}' colab_v2_staging_pg 2>/dev/null)" = healthy ] && break
-  sleep 2
+TARGET=""; ALLOW_DIRTY=0; SKIP_BACKUP=0; AUTO_ROLLBACK=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --target) TARGET="${2:-}"; shift 2 ;;
+    --allow-dirty)   ALLOW_DIRTY=1; shift ;;
+    --skip-backup)   SKIP_BACKUP=1; shift ;;
+    # ⭑ **기본값은 off 다** (`〈168〉-㉳`). 판정기를 신뢰하기 전에 자동 되돌림을 켜면
+    #   판정 버그가 멀쩡한 릴리스를 계속 걷어내고, 원인이 코드인지 판정기인지 구분되지 않는다.
+    --auto-rollback) AUTO_ROLLBACK=1; shift ;;
+    *) echo "알 수 없는 인자: $1" >&2; exit 2 ;;
+  esac
 done
 
-echo "③ 롤 · 데이터베이스 (체인마다 하나씩 — 합치지 않는다)"
-"$HERE/db-bootstrap.sh" roles
+# ── ⓪ 타깃 — **기본값으로 떨어지지 않는다.** 어디에 배포하는지 모르는 배포는 없다.
+"$HERE/pipeline/approval/target.sh" check "$TARGET" || exit $?
 
-echo "④ 마이그레이션 — 체인별로 따로, 소유자 롤로"
-dc run --rm migrate-platform upgrade head
-dc run --rm migrate-ai       upgrade head
+pipeline_lock
+state_init
+[ -f "$ENV_FILE" ] || die "설정 파일이 없다: \$COLAB_STAGING_ENV (홈의 0600 파일). 없으면 배포하지 않는다."
 
-echo "⑤ 앱 롤 GRANT — 테이블이 생긴 뒤라야 의미가 있다. NOBYPASSRLS·비소유자 검사 포함"
-"$HERE/db-bootstrap.sh" app-grants
+# ── ① 무엇을 굽는가 — **커밋이다** (DR-4) ────────────────────────────────────
+# 종전 주석은 「이미지 안에서 빌드하니 커밋의 산출」이라 했다. 그건 거짓이었다 —
+# `docker compose build` 의 컨텍스트는 **그 순간의 워킹트리**이고, 워킹트리는 커밋이 아니다.
+# 이제 **커밋임을 주장하지 않고 강제한다**: 트리가 깨끗하지 않으면 배포하지 않는다.
+DIRTY_N="$(git -C "$REPO" status --porcelain 2>/dev/null | grep -c . || true)"
+SHA="$(git -C "$REPO" rev-parse --short=12 HEAD 2>/dev/null || true)"
+[ -n "$SHA" ] || die "git 커밋을 특정할 수 없다 — 무엇을 굽는지 모르는 배포는 red 다"
+if [ "$DIRTY_N" -ne 0 ]; then
+  if [ "$ALLOW_DIRTY" -eq 0 ]; then
+    log "워킹트리가 깨끗하지 않다 — 변경 ${DIRTY_N}건."
+    log "이미지 태그가 커밋 SHA 인데 내용이 그 커밋이 아니면 **태그가 거짓말을 한다.**"
+    log "정말 굽겠다면 --allow-dirty 로 **명시**하라. 그 건수는 원장에 남는다."
+    mark_failed "커밋 확인" "워킹트리 변경 ${DIRTY_N}건 (--allow-dirty 미지정)"
+    ledger_append deploy "$SHA" "-" red "워킹트리 변경 ${DIRTY_N}건 — 착수 거부"
+    exit 65
+  fi
+  # ⭑ 명시 면제. **건수를 드러낸 채** 넘어간다 — 원장에도 그대로 남는다.
+  TAG="$SHA-dirty"
+  log "SKIP 승인됨: 워킹트리 변경 ${DIRTY_N}건 — 태그를 '$TAG' 로 짓는다(깨끗한 커밋이 아님을 이름에 박는다)"
+else
+  TAG="$SHA"
+fi
+export COLAB_RELEASE_TAG="$TAG"
+log "릴리스 태그 = $TAG (커밋 $SHA · 워킹트리 변경 ${DIRTY_N}건)"
 
-echo "⑥ 5개 배포 단위 + 엣지 교체"
-dc up -d --remove-orphans
+dc() { docker compose -f "$HERE/compose.i2.yml" --env-file "$ENV_FILE" "$@"; }
 
-echo "⑦ 상태"
-dc ps
+abort() { # $1=단계 $2=사유
+  mark_failed "$1" "$2"
+  ledger_append deploy "$SHA" "$TAG" red "$1 — $2"
+  log "!!! 배포 중단 — 단계 [$1] · $2"
+  log "자동 롤백은 기본 off 다. 되돌리려면 사람이 rollback.sh 를 부른다(〈168〉-㉳)."
+  if [ "$AUTO_ROLLBACK" -eq 1 ]; then
+    log "--auto-rollback 이 명시됐다 — 직전 green 릴리스로 되돌린다"
+    "$HERE/rollback.sh" --to-last-green || log "롤백도 실패했다 — 사람 호출"
+  fi
+  exit 70
+}
+
+# ── ② 호스트에서 게이트를 **다시** 돈다 ─────────────────────────────────────
+# 클라우드 green 을 신뢰로 대체하지 않는다(`I3` 결정 4-5). 러너 OS·도구 버전이 다르면
+# 결과가 갈릴 수 있고, 갈리면 **배포가 일어나는 쪽(호스트)이 정본**이다.
+log "② 호스트 게이트 — migration-single-head"
+"$REPO/gates/run.sh" migration-single-head || abort "게이트" "migration-single-head red"
+
+# ── ③ 태그 보존은 **빌드보다 먼저다** (DR-5 · `I3 §0-3`) ─────────────────────
+# 빌드 후에는 늦다 — 새 이미지가 이름을 가져가고 직전 이미지는 **이름 없는 dangling** 이 된다.
+# 스크립트가 옳아도 돌아갈 이미지가 없으면 소용없다. 그래서 순서가 먼저다.
+log "③ 직전 이미지 보존 (:prev) — 빌드 전에 한다"
+PREV_IDS=""
+for n in "${RELEASE_IMAGES[@]}"; do
+  if id="$(docker image inspect -f '{{.Id}}' "colab-v2/$n:i2" 2>/dev/null)"; then
+    docker tag "colab-v2/$n:i2" "colab-v2/$n:prev" || abort "태그 보존" "$n 태그 실패"
+    PREV_IDS="$PREV_IDS$n=$id"$'\n'
+    log "   보존 colab-v2/$n:prev ← ${id:7:12}"
+  else
+    log "   (colab-v2/$n:i2 없음 — 첫 배포로 본다)"
+  fi
+done
+
+# ── ④ 빌드 — 태그는 커밋 SHA 다 (DR-4·DR-5) ─────────────────────────────────
+log "④ 이미지 빌드 — 태그 $TAG"
+dc --profile migrate build || abort "빌드" "docker compose build 실패"
+
+# 보존본과 신규본의 **이미지 ID 가 실제로 다른지** 확인한다(완료 정의 14).
+# 「보존했다」가 「같은 것을 두 이름으로 부른다」와 구분되지 않으면 보존이 아니다.
+if [ -n "$PREV_IDS" ]; then
+  same=0
+  while IFS='=' read -r n oldid; do
+    [ -n "$n" ] || continue
+    newid="$(docker image inspect -f '{{.Id}}' "colab-v2/$n:$TAG" 2>/dev/null || echo '')"
+    if [ -z "$newid" ]; then abort "빌드" "$n:$TAG 이미지가 없다"; fi
+    if [ "$newid" = "$oldid" ]; then
+      log "   주의 $n — 보존본과 신규본의 이미지 ID 가 같다(${oldid:7:12}). 내용 변화 없음."
+      same=$((same+1))
+    else
+      log "   확인 $n — 보존 ${oldid:7:12} ≠ 신규 ${newid:7:12}"
+    fi
+  done <<< "$PREV_IDS"
+  log "   이미지 ID 동일 ${same}건 (동일해도 실패는 아니다 — 코드가 안 바뀌면 같은 것이 옳다)"
+fi
+
+# ── ⑤ 배포 전 백업 — **스키마를 바꾸기 직전이 데이터가 가장 위험한 순간이다** ──
+# `IS3 §7` 이 「한쪽만 덮은 백업이 전체 성공으로 기록되는 것」을 F9 픽스처로 못 박아 뒀다.
+# 그 판정을 그대로 쓴다 — 두 프로파일 전부 GREEN 이 아니면 배포하지 않는다.
+if [ "$SKIP_BACKUP" -eq 1 ]; then
+  # ⭑ 명시 면제. 건수를 드러낸 채 넘어가고 **원장에 남는다.** 조용히 넘어가지 않는다.
+  log "⑤ SKIP 승인됨: 배포 전 백업 (프로파일 2건 미실행) — --skip-backup 명시"
+  BACKUP_NOTE="배포전백업SKIP(2건)"
+else
+  log "⑤ 배포 전 백업 — 두 프로파일 전부 GREEN 이어야 진행한다"
+  "$HERE/backup/backup.sh" || abort "배포 전 백업" "backup.sh red (프로파일 중 하나 이상 실패)"
+  BACKUP_NOTE="배포전백업GREEN"
+fi
+
+# ── ⑥ 저장소 먼저 — **healthy 대기가 타임아웃하면 red 다** ───────────────────
+# 종전 주석은 「앱보다 postgres 가 먼저 healthy 여야 한다」고만 적었다. 헬스가 판정에
+# 필요하다는 것을 알면서 **postgres 에만** 걸었고 앱 5종은 비어 있었다(DR-6).
+# 이제 대기는 postgres 와 앱 5종 **양쪽**에 건다(⑩). 그리고 타임아웃은 통과가 아니라 red 다.
+log "⑥ postgres 기동 대기"
+dc up -d postgres || abort "postgres 기동" "up -d postgres 실패"
+ok=0
+for _ in $(seq 1 60); do
+  [ "$(docker inspect -f '{{.State.Health.Status}}' colab_v2_staging_pg 2>/dev/null)" = healthy ] && { ok=1; break; }
+  sleep 2
+done
+[ "$ok" -eq 1 ] || abort "postgres 기동" "120초 안에 healthy 가 되지 않았다 — 대기 타임아웃은 red 다"
+
+# ── ⑦ 롤 · 데이터베이스 (체인마다 하나씩 — 합치지 않는다) ────────────────────
+log "⑦ 롤 · 데이터베이스"
+"$HERE/db-bootstrap.sh" roles || abort "롤 부트스트랩" "db-bootstrap.sh roles 실패"
+
+# ── ⑧ 마이그레이션 — 체인별로 따로, 소유자 롤로 ──────────────────────────────
+# **forward-only 다** (`〈168〉-㉲`). 한 릴리스의 마이그레이션은 직전 이미지와도 호환되어야
+# 한다(추가는 되고 파괴는 안 된다). 이를 지키지 못하는 변경은 **자동화의 일이 아니라
+# 「사람이 처리할 사건」**이다 — 자동화가 스스로 처리하려 들면 그 순간 파괴적 마이그레이션이
+# 무인 경로에 오른다. **체인은 끝까지 따로 돈다.** 한 번에 두 체인을 도는 "최적화"를 하지 않는다.
+log "⑧ 마이그레이션 (platform)"
+dc run --rm migrate-platform upgrade head || abort "마이그레이션" "platform 체인 실패"
+log "⑧ 마이그레이션 (ai)"
+dc run --rm migrate-ai       upgrade head || abort "마이그레이션" "ai 체인 실패"
+
+# ── ⑨ 앱 롤 GRANT — 테이블이 생긴 뒤라야 의미가 있다 ────────────────────────
+# 순서를 ⑦→⑧→⑨ 로 보존한다. GRANT 를 테이블보다 먼저 주면 `GRANT ON ALL TABLES` 가
+# 빈 집합에 걸려 **조용히 아무것도 안 준다**(`I2 §2`). 값을 치르고 알아낸 순서다.
+log "⑨ 앱 롤 GRANT (NOBYPASSRLS · 비소유자 검사 포함)"
+"$HERE/db-bootstrap.sh" app-grants || abort "GRANT" "db-bootstrap.sh app-grants 실패"
+
+# ── ⑩ 교체 ─────────────────────────────────────────────────────────────────
+log "⑩ 5개 배포 단위 + 엣지 교체"
+dc up -d --remove-orphans || abort "교체" "up -d 실패"
+
+# ── ⑪ 판정 — **여기가 종료 코드의 근거다** (DR-6 · 완료 정의 2-b) ────────────
+# 종전 ⑦ 은 `dc ps` 로 끝났다. `dc ps` 는 「무엇이 서빙되고 있는가」를 묻지 않는다.
+# 이제 **헬스 6종 + 본문 대조 + 컨테이너 8개 + 노출 0건 + 두 체인 head** 가 판정이다.
+# 앱 5종이 `starting` 인 동안은 **아직 green 이 아니다** — 대기하다 타임아웃하면 red.
+log "⑪ 배포 판정 — 헬스 6종 + 본문 대조 (대기하며 재시도)"
+VOK=0
+for _ in $(seq 1 "${COLAB_VERIFY_TRIES:-30}"); do
+  if "$HERE/verify/verify-deploy.sh" >/dev/null 2>&1; then VOK=1; break; fi
+  sleep 5
+done
+if [ "$VOK" -ne 1 ]; then
+  log "판정 실패 — 마지막 판정 출력:"
+  "$HERE/verify/verify-deploy.sh" || true
+  abort "배포 판정" "헬스 6종/컨테이너/노출 판정이 green 이 아니다 (대기 타임아웃 포함)"
+fi
+"$HERE/verify/verify-deploy.sh"
+log "⑪-b 체인 판정 — 두 체인 head"
+"$HERE/verify/verify-chains.sh" || abort "체인 판정" "두 체인 중 하나 이상이 적용되지 않았다"
+
+# ── ⑫ 원장 · 표식 · 보존 ────────────────────────────────────────────────────
+ledger_append deploy "$SHA" "$TAG" green "$BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
+mark_success "$TAG"
+
+# `:i2` 는 **릴리스 신원이 아니라 호환 별칭**이다. `compose.throwaway.yml`(복원 리허설)이
+# 이 이름으로 이미지를 찾는다. 신원은 SHA 태그이고, 더 정확히는 digest 다
+# (`reference/IMAGE-DIGESTS.md` — 「태그는 신원이 아니다. digest 만이 신원이다」).
+for n in "${RELEASE_IMAGES[@]}"; do docker tag "colab-v2/$n:$TAG" "colab-v2/$n:i2" 2>/dev/null || true; done
+
+image_prune "$TAG"
+
+echo
+echo "배포 GREEN — 커밋 $SHA · 태그 $TAG"
+echo "원장: $(ledger_path)"
+tail -n 1 "$(ledger_path)"
