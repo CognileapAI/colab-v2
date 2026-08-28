@@ -70,6 +70,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # 도구는 lock 파일이 **정확히** 고정한다. 캐시 키도 그 lock 의 해시다 —
+      # lock 이 한 글자라도 바뀌면 키가 바뀌어 낡은 도구가 재사용될 수 없다.
+      # (게이트 스크립트는 캐시 적중 여부와 무관하게 도구 부재를 red 로 낸다. 캐시는 속도만 바꾼다.)
+      - uses: actions/cache@v4
+        with:
+          path: contracts/node_modules
+          key: ${{ runner.os }}-node20-contracts-${{ hashFiles('contracts/package-lock.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: gates/tools/node/node_modules
+          key: ${{ runner.os }}-node20-gatetools-${{ hashFiles('gates/tools/node/package-lock.json') }}
       - name: seam 스펙 린트
         run: ./gates/run.sh contract-lint
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
@@ -89,6 +103,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # gates/.venv 의 정본은 gates/requirements.txt 다. _venv.sh 가 그 sha256 을 스탬프로
+      # 들고 있어, 키가 어긋난 캐시가 들어와도 venv 를 다시 짓는다 — 캐시는 지름길일 뿐이다.
+      - uses: actions/cache@v4
+        with:
+          path: gates/.venv
+          key: ${{ runner.os }}-py312-gatevenv-${{ hashFiles('gates/requirements.txt') }}
       - name: 도메인 import 경계
         run: ./gates/run.sh import-boundary
       - name: core-api geo 라이브러리 금지
@@ -102,6 +125,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # gates/.venv 의 정본은 gates/requirements.txt 다. _venv.sh 가 그 sha256 을 스탬프로
+      # 들고 있어, 키가 어긋난 캐시가 들어와도 venv 를 다시 짓는다 — 캐시는 지름길일 뿐이다.
+      - uses: actions/cache@v4
+        with:
+          path: gates/.venv
+          key: ${{ runner.os }}-py312-gatevenv-${{ hashFiles('gates/requirements.txt') }}
       - name: 마이그레이션 single-head (platform / ai 각각)
         run: ./gates/run.sh migration-single-head
       - name: 선언 스키마 ↔ 적용 DB diff
@@ -123,6 +155,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: services/pipeline-worker/requirements.txt
       - name: pipeline-worker 런타임 설치 (핀 = requirements.txt)
         working-directory: services/pipeline-worker
         run: |
@@ -142,5 +176,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # 도구는 lock 파일이 **정확히** 고정한다. 캐시 키도 그 lock 의 해시다 —
+      # lock 이 한 글자라도 바뀌면 키가 바뀌어 낡은 도구가 재사용될 수 없다.
+      # (게이트 스크립트는 캐시 적중 여부와 무관하게 도구 부재를 red 로 낸다. 캐시는 속도만 바꾼다.)
+      - uses: actions/cache@v4
+        with:
+          path: contracts/node_modules
+          key: ${{ runner.os }}-node20-contracts-${{ hashFiles('contracts/package-lock.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: gates/tools/node/node_modules
+          key: ${{ runner.os }}-node20-gatetools-${{ hashFiles('gates/tools/node/package-lock.json') }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # gates/.venv 의 정본은 gates/requirements.txt 다. _venv.sh 가 그 sha256 을 스탬프로
+      # 들고 있어, 키가 어긋난 캐시가 들어와도 venv 를 다시 짓는다 — 캐시는 지름길일 뿐이다.
+      - uses: actions/cache@v4
+        with:
+          path: gates/.venv
+          key: ${{ runner.os }}-py312-gatevenv-${{ hashFiles('gates/requirements.txt') }}
       - name: 전 게이트 fail-closed 증명
         run: ./gates/run.sh selftest

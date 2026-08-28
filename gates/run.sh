@@ -8,6 +8,17 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="${1:-}"
 
+# 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
+ALL_GATES=(
+  planning-freshness contract-lint contract-breaking event-lint event-breaking
+  seam-consistency generated-up-to-date import-boundary banned-import
+  ai-no-lineage-write db-boundary migration-single-head schema-diff
+  rls-coverage rls-effect work-item-consistency stage2-markers
+  contract-selftest event-selftest boundary-selftest db-boundary-selftest
+  db-selftest rls-effect-selftest seam-consistency-selftest
+  generated-selftest work-item-selftest stage2-markers-selftest
+)
+
 case "$GATE" in
   planning-freshness)
     # 기획 정본 패키지 HTML의 임베드 md ↔ 원본 md 일치 검사.
@@ -149,8 +160,43 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (stale·손수정·부재·빈 등기부·미등기 마커).
     exec "$REPO_ROOT/gates/tools/generated-selftest.sh"
     ;;
+  all)
+    # 전 게이트를 병렬로 돈다. **검사 내용은 하나도 바뀌지 않는다** — 순서만 바뀌고,
+    # 출력은 목록 순서로 되돌려 재생한다. 하나라도 red 면 red 다.
+    ncpu="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
+    jobs_n=2
+    if [ "${2:-}" = "-j" ]; then jobs_n="${3:-2}"; fi
+    [ "$jobs_n" -ge 1 ] 2>/dev/null || jobs_n=1
+    # 안쪽 selftest 풀의 몫을 나눠 준다 — 바깥 병렬과 곱해져 코어를 넘기지 않게.
+    inner=$(( ncpu / jobs_n )); [ "$inner" -ge 1 ] || inner=1
+    outdir="$(mktemp -d -p "${TMPDIR:-/tmp}" gates-all-XXXXXX)"
+    for g in "${ALL_GATES[@]}"; do
+      while [ "$(jobs -rp | wc -l)" -ge "$jobs_n" ]; do wait -n 2>/dev/null || break; done
+      # set -e 아래서 자식의 red 가 이 서브셸을 먼저 죽이면 종료코드를 못 적는다.
+      # 종료코드 없는 게이트는 「미실행」으로 red 가 되므로, 반드시 받아 적는다.
+      { if COLAB_GATE_JOBS="$inner" "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
+        then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi; } &
+    done
+    wait
+    rc=0
+    for g in "${ALL_GATES[@]}"; do
+      grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
+      echo "══ $g (exit $grc) ═════════════════════════════════════════"
+      cat "$outdir/$g.out"
+      [ "$grc" -eq 0 ] 2>/dev/null || rc=1
+    done
+    echo "── 요약 ────────────────────────────────────────────────────"
+    for g in "${ALL_GATES[@]}"; do
+      grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
+      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"
+      elif [ "$grc" = 111 ]; then echo "  red    $g (미실행 — 종료코드 없음)"
+      else echo "  red    $g (exit $grc)"; fi
+    done
+    rm -rf "$outdir"
+    exit $rc
+    ;;
   "")
-    echo "usage: gates/run.sh <gate>" >&2
+    echo "usage: gates/run.sh <gate> | gates/run.sh all [-j N]" >&2
     exit 2
     ;;
   *)

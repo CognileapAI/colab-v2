@@ -40,10 +40,17 @@ command -v node >/dev/null 2>&1 || red "node 가 없다. 검사를 못 한 것�
 [ -f "$ENGINE" ] || red "검사 엔진이 없다: gates/tools/event_lint.mjs"
 if [ ! -d "$NODE_DIR/node_modules/ajv" ]; then
   echo "ajv 미설치 — gates/tools/node/package-lock.json 기준으로 설치를 시도한다."
+  # 병렬 실행 대비 — 잠금 뒤 한 번 더 본다.
+  . "$REPO_ROOT/gates/tools/_lock.sh"; gate_lock_fd "$NODE_DIR/node_modules"
+  [ -d "$NODE_DIR/node_modules/ajv" ] && gate_unlock_fd
+fi
+if [ ! -d "$NODE_DIR/node_modules/ajv" ]; then
   if ! (cd "$NODE_DIR" && npm ci --no-audit --no-fund >/dev/null 2>&1); then
+    gate_unlock_fd
     red "ajv 를 설치하지 못했다 (네트워크/npm 실패). 검사를 못 한 것은 통과가 아니다.
    → 온라인에서 'npm ci --prefix gates/tools/node' 를 한 번 돌린 뒤 재실행한다."
   fi
+  gate_unlock_fd
 fi
 [ -d "$NODE_DIR/node_modules/ajv" ] || red "ajv 가 여전히 없다: $NODE_DIR/node_modules/ajv"
 

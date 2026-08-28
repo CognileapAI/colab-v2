@@ -23,6 +23,21 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`work-item-consistency`** | **개발 항목 상태의 대장 ↔ 산문 불일치** (정본 = `dev-package/work-items.yaml`). 검사 6종 — ㈎ 대장 스키마 · ㈏ `WORK-UNITS §11` 완주 체크리스트 대조 · ㈐ `03-HANDOFF §1` 진실원 표 대조 · ㈑ `⏸`(하지 않기로 한 것)의 착수 후보 표 혼입 · ㈒ 기한 발동인데 안 열린 항목 · ㈓ `conflict` 잔존. **상태 관리가 「관례를 두지 않는다」의 마지막 사각지대였다** |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db-boundary · db · rls-effect · seam-consistency · generated · work-item 증명 아홉). ⚠ **`stage2-markers-selftest` 는 여기 없다** — pipeline-worker 런타임 의존(rasterio 등)이 필요해 `contract-gates` 잡 환경에서 못 돈다. CI 는 `dormant-tests` 잡에서 따로 부른다 |
 
+## 빨리 도는 것과 덜 보는 것은 다르다
+
+게이트를 병렬로 돌린다. **검사 대상·기대값·판정 기준은 하나도 바뀌지 않았고, 바뀐 것은 실행 순서뿐이다.**
+출력은 등록 순서로 되돌려 재생하므로 로그도 직렬판과 같은 줄이 같은 순서로 나온다.
+
+- `gates/run.sh all [-j N]` — 전 게이트를 동시 N 개씩. 하나라도 red 면 red 이고, 끝에 게이트별 판정을 요약한다.
+- `contract-selftest` · `event-selftest` · `boundary-selftest` · `rls-effect-selftest` 는 케이스를
+  `gates/tools/_expect_pool.sh` 의 풀로 돈다. 케이스마다 자기 임시 픽스처(또는 자기 일회용 컨테이너)를
+  들고 있어 서로를 볼 수 없다 — 격리는 그대로다. 종료코드가 없는 케이스는 **미실행으로 red** 다.
+- `COLAB_GATE_JOBS=1` 이면 사실상 직렬이다. 재현이 필요하면 이 값을 쓴다.
+- **`db-selftest` 는 병렬로 돌리지 않는다.** schema-diff e2e 묶음이 한 적용 DB 를 순서대로 훼손해 가며
+  보기 때문에, 동시에 돌리면 케이스가 서로의 드리프트를 본다. 격리를 깨는 속도는 속도가 아니다.
+- 도구 설치 구간(`gates/.venv` · `node_modules`)에는 잠금을 걸었다(`_lock.sh`). 잠금이 없으면 둘이 동시에
+  설치하다 한쪽이 「도구 없음」 red 를 내는데, 그건 검사 결과가 아니라 배선이 만든 red 다.
+
 ## selftest가 있는 이유
 
 "전부 green"과 "전부 무력"은 구분되지 않는다. v1 CI는 DB 없이 돌아 RLS 테스트를 **green-by-skip** 했다.

@@ -14,20 +14,11 @@ FIX="$REPO_ROOT/gates/fixtures/events"
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" event-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 FAILURES=()
+# 케이스를 병렬로 돈다. 케이스 목록·기대값·판정은 직렬판과 동일하고 실행 순서만 바뀐다.
+# 출력은 등록 순서로 되돌려 재생한다 (gates/tools/_expect_pool.sh).
+. "$REPO_ROOT/gates/tools/_expect_pool.sh"
+pool_init
 
-expect() { # $1=기대(green|red) $2=라벨 $3.. = 실행할 명령
-  local want="$1" label="$2"; shift 2
-  local out rc
-  out="$("$@" 2>&1)"; rc=$?
-  local got="green"; [ $rc -eq 0 ] || got="red"
-  if [ "$got" = "$want" ]; then
-    echo "[selftest] $label → $got OK"
-  else
-    echo "[selftest] $label → $got (기대 $want) ✗"
-    echo "$out" | sed 's/^/           /'
-    FAILURES+=("$label")
-  fi
-}
 
 evcopy() { # $1=이름 → 이벤트 계약 사본 디렉터리 경로를 출력
   local d="$TMP/ev-$1"; rm -rf "$d"; mkdir -p "$d"; cp "$EVENTS"/*.json "$d/"; echo "$d"
@@ -185,6 +176,8 @@ expect red "breaking: 기준 ref 부재" env COLAB_BREAKING_BASE_REF=no-such-ref
   COLAB_EVENTS_REV="$EVENTS" "$BREAK"
 
 # ── 판정 ─────────────────────────────────────────────────────────────────────
+pool_join
+
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::event-selftest red — 게이트가 fail-closed 가 아니다:"
   printf '  - %s\n' "${FAILURES[@]}"

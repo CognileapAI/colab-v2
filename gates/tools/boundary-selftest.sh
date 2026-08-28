@@ -12,20 +12,11 @@ AI="$REPO_ROOT/gates/tools/ai-no-lineage-write.sh"
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" boundary-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 FAILURES=()
+# 케이스를 병렬로 돈다. 케이스 목록·기대값·판정은 직렬판과 동일하고 실행 순서만 바뀐다.
+# 출력은 등록 순서로 되돌려 재생한다 (gates/tools/_expect_pool.sh).
+. "$REPO_ROOT/gates/tools/_expect_pool.sh"
+pool_init
 
-expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
-  local want="$1" label="$2"; shift 2
-  local out rc got
-  out="$("$@" 2>&1)"; rc=$?
-  got="green"; [ $rc -eq 0 ] || got="red"
-  if [ "$got" = "$want" ]; then
-    echo "[selftest] $label → $got OK"
-  else
-    echo "[selftest] $label → $got (기대 $want) ✗"
-    echo "$out" | sed 's/^/           /'
-    FAILURES+=("$label")
-  fi
-}
 
 # ── 서비스 트리 fixture ──────────────────────────────────────────────────────
 # dev-package/sessions/D3-boundary.md §2 의 모듈 경로 관례를 그대로 만든다.
@@ -239,6 +230,8 @@ R="$(mkai ai-nomig)"; rm -rf "$R/db/platform/versions"
 expect red "ai-no-lineage ⑫: 한쪽 체인 마이그레이션 0건" runai "$R"
 
 # ── 판정 ─────────────────────────────────────────────────────────────────────
+pool_join
+
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::boundary-selftest red — 게이트가 fail-closed 가 아니다:"
   printf '  - %s\n' "${FAILURES[@]}"

@@ -25,10 +25,17 @@ red() { echo "::error::contract-lint red — $*"; exit 1; }
 # 버전은 contracts/package.json + package-lock.json 이 고정한다. npx 최신 끌어오기 금지.
 if [ ! -x "$SPECTRAL" ]; then
   echo "spectral 미설치 — contracts/package-lock.json 기준으로 설치를 시도한다."
+  # 병렬 실행 대비 — 같은 node_modules 를 둘이 동시에 깔면 한쪽이 「도구 없음」 red 를 낸다.
+  . "$REPO_ROOT/gates/tools/_lock.sh"; gate_lock_fd "$CONTRACTS/node_modules"
+  [ -x "$SPECTRAL" ] && gate_unlock_fd
+fi
+if [ ! -x "$SPECTRAL" ]; then
   if ! (cd "$CONTRACTS" && npm ci --no-audit --no-fund >/dev/null 2>&1); then
+    gate_unlock_fd
     red "spectral 을 설치하지 못했다 (네트워크/npm 실패). 검사를 못 한 것은 통과가 아니다.
    → 온라인에서 'npm ci --prefix contracts' 를 한 번 돌린 뒤 재실행한다."
   fi
+  gate_unlock_fd
 fi
 [ -x "$SPECTRAL" ] || red "spectral 바이너리가 여전히 없다: contracts/node_modules/.bin/spectral"
 
