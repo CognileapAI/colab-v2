@@ -619,15 +619,15 @@ items:
 
   - id: X-1
     name: "슈퍼유저 `POSTGRES_PASSWORD` 회전"
-    status: open
+    status: done
     stage: stage2
     owner: "인프라 — pg 컨테이너"
     entry_conditions: ["`X-4` 재기동에 동봉(`§9 〈158〉-㈏`)", "R-1 복원 절차 · 전범위 백업 · `#22` 고아 행 삭제 뒤"]
     depends_on: [X-4, R-1, "#22"]
     completion_def: "정본 = `WORK-UNITS §10.1`"
-    evidence: null
+    evidence: "집행·검증 완료 (2026-08-28 · `§9 〈177〉-㉮`). 슈퍼유저 비밀번호를 `ALTER USER postgres` 로 회전하고 `~/.colab-v2-staging.env` 의 `COLAB_PG_SUPER_PASSWORD` 를 제자리 갱신(0600 유지). **양성·음성 둘 다 쟀다** — 신규 값 인증 통과 · **옛 값 거부**. ⭑ **검증 경로를 한 번 갈아야 했다**: `pg_hba` 가 `local` 과 `127.0.0.1` 을 **`trust`** 로 두어(`pg_hba_file_rules` 실측) 컨테이너 안에서 `127.0.0.1` 로 한 첫 확인은 **인증을 아예 통과시키지 않는 가짜 오라클**이었다. 별도 컨테이너에서 네트워크로 붙어 `scram-sha-256` 규칙에 걸리게 한 뒤에야 음성이 실제로 red 를 냈다. 옛 값 사본(`.env.bak-20260828`)은 검증 뒤 제거."
     deadline: null
-    note: "T-X 는 stage 2 가 열리면 닫히는 임시 트랙. `〈153〉` 이 앱·소유자 3롤만 회전했고 슈퍼유저 값은 아직 `docker inspect` 로 보인다. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
+    note: "⚠ **회전은 유출된 옛 값을 무효화했을 뿐, 노출 자체는 그대로다** — `compose.i2.yml:57` 이 `POSTGRES_PASSWORD` 를 평문 env 로 넘기므로 **새 값도 `docker inspect` 에 보인다**. 없애려면 `POSTGRES_PASSWORD_FILE` 로 바꾸는 별건이 필요하고, 그것은 이 WU 의 완료 정의가 아니다. 원 note — T-X 는 stage 2 가 열리면 닫히는 임시 트랙. `〈153〉` 이 앱·소유자 3롤만 회전했고 슈퍼유저 값은 아직 `docker inspect` 로 보인다. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
 
   - id: X-2
@@ -658,15 +658,15 @@ items:
 
   - id: X-4
     name: "`_FILE` 배선 재기동 실전 검증"
-    status: open
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["`R-1` 선행(`§9 〈158〉-㉯`)"]
     depends_on: [R-1, X-1]
     completion_def: "정본 = `WORK-UNITS §10.1`"
-    evidence: null
+    evidence: "집행·검증 완료 (2026-08-28 · `§9 〈177〉-㉯`). `docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d` 로 재기동. ⭑ **첫 회차는 증명이 아니었다** — 평문 `up -d` 는 `pg`·`nginx` 만 재생성하고 앱 5개를 `Running` 으로 두었다. **전부 healthy 라 통과처럼 보이지만 `_FILE` 을 읽는 사건이 일어나지 않았다.** `--force-recreate` 로 앱 5개를 다시 띄운 뒤에야 실전 검증이 성립했다. 결과 = 앱 5개 전부 새로 기동(10~11초) · `core-api`·`pipeline-worker`·`ai-service` 안에 `/etc/colab/*.url` 실재 확인 · 기동 로그 실패 흔적 **0** · 컨테이너 **7 healthy ＋ cloudflared**(헬스체크 없음) · nginx 경유 헬스 **5종 전부 200** · digest 대장 **8건 전건 일치** · 기준선 **12 · 129 · 6 · 12 · d8_activity 3 불변** · 마이그레이션 head **`0007_p2_human_written_meta` · `0005_k2b_concept_graph_seed` 불변**."
     deadline: null
-    note: "대상 = `RESTART.md §2` 의 `COLAB_STAGING_*_DB_URL_FILE` 5키. 「5키가 없으면 `:?` 로 죽는다. 표는 갱신했지만 다음 재기동이 첫 실전이다」. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
+    note: "⚠ **`up -d` 만으로는 이 WU 가 증명되지 않는다** — 앱 컨테이너가 실제로 재생성돼야 `_FILE` 을 읽는다. 다음 회차도 `--force-recreate` 를 쓴다. 원 note — 대상 = `RESTART.md §2` 의 `COLAB_STAGING_*_DB_URL_FILE` 5키. 「5키가 없으면 `:?` 로 죽는다. 표는 갱신했지만 다음 재기동이 첫 실전이다」. ⚠ 되돌릴 수 없다 — 착수 전 Ted 확인."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
 
   - id: X-5
