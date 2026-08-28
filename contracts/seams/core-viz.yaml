@@ -95,7 +95,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
-        "422": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
 
