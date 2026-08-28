@@ -40,3 +40,6 @@ desktop.ini
 
 # 생성물 — 커밋 대상이다. 무시하지 않는다.
 # (generated-up-to-date 게이트가 diff로 검증하므로 반드시 추적해야 한다)
+
+# 워크트리는 레포에 들어가지 않는다 — git add -A 가 gitlink 로 집어넣는다
+.claude/worktrees/
