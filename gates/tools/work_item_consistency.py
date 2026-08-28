@@ -92,8 +92,9 @@ REQUIRED_FIELDS = ("id", "name", "status", "stage", "owner", "completion_def", "
 ID_RE = re.compile(r"[A-Z]{1,3}(?:-[A-Z0-9]+|\d+[a-z]?)")
 ID_AT_START = re.compile(r"^(" + ID_RE.pattern + r")\b")
 
-problems: list[str] = []       # 위반 — red 사유
-unchecked: list[str] = []      # 검사하지 못한 자리 — 숨기지 않는다
+problems: list[str] = []        # 위반 — red 사유
+unchecked: list[str] = []       # **항목 행인데** 읽지 못한 자리 — 숨기지 않는다
+not_item_tables: list[str] = []  # 애초에 항목표가 아니어서 대상이 아닌 표 — 위와 성격이 다르다
 
 
 def die(msg: str) -> None:
@@ -381,7 +382,26 @@ def check_deferred_in_candidates(by_id: dict[str, dict]) -> int:
     if not tables:
         die("㈑ 착수 후보 표를 찾지 못했다")
     scanned = 0
+    item_tables = 0
     for header, rows in tables:
+        # ⚠ 이 절에는 **항목표가 아닌 표**가 섞여 있다 — `§10.3` 의 재기동 계측 기준선 표가 그렇다.
+        # 그 표의 행은 착수 후보가 아니라 **재는 축**이고, 첫 열 머리글이 `WU` 가 아니다.
+        # 전부 훑으면 두 가지가 망가진다 —
+        #   ① **오탐 red** — 계측 행이 식별자로 시작하기만 하면(`I0 계정 수` 같은 축 이름)
+        #      「보류 항목이 착수 후보에 재등장」으로 잘못 걸린다. 실제 문서에서 안 터진 것은
+        #      그 행들이 우연히 식별자로 시작하지 않았기 때문이지 게이트가 옳아서가 아니다.
+        #   ② **신호 대 잡음** — 「검사 대상 밖」 목록이 계측 행으로 채워져,
+        #      진짜로 못 읽은 **항목 행**이 그 사이에 묻힌다.
+        # 그래서 **첫 열 머리글이 `WU` 인 표만** 항목표로 본다. 범위를 줄이는 것이 아니라
+        # 대상을 바르게 고르는 것이고, 그 구분은 픽스처로 증명한다 —
+        # 계측표 안의 `I0` 는 green, 항목표 안의 `I0` 는 여전히 red.
+        if not header or strip_md(header[0]) != "WU":
+            not_item_tables.append(
+                f"㈑ 항목표가 아니어서 대상이 아니다(첫 열이 `WU` 가 아님 · {len(rows)}행): "
+                f"`| {' | '.join(strip_md(h) for h in header)} |`"
+            )
+            continue
+        item_tables += 1
         for row in rows:
             if not row:
                 continue
@@ -401,6 +421,8 @@ def check_deferred_in_candidates(by_id: dict[str, dict]) -> int:
                         f"`WORK-UNITS §10` 착수 후보 표에 이름으로 올라 있다 — "
                         f"⏸ 와 ⬜ 가 같은 자리에 있으면 끝난 일을 다시 착수한다"
                     )
+    if item_tables == 0:
+        die("㈑ 첫 열이 `WU` 인 항목표를 하나도 찾지 못했다 — 대상을 잘못 좁혔거나 문서가 바뀌었다")
     if scanned == 0:
         die("㈑ 훑은 착수 후보 행이 0건이다 — 검사 대상 0 은 통과가 아니다")
     return scanned
@@ -460,6 +482,13 @@ def main() -> int:
         print(f"  ── 검사 대상 밖 {len(unchecked)}건 (파싱하지 못해 **안 본** 자리다 — 통과의 근거가 아니다)")
         for u in unchecked:
             print(f"     · {u}")
+
+    if not_item_tables:
+        # 위와 성격이 다르다 — 「못 읽은 항목 행」이 아니라 「애초에 항목표가 아닌 표」다.
+        # 섞어 세면 위 목록이 잡음으로 덮이고, 진짜로 못 읽은 항목 행이 묻힌다.
+        print(f"  ── 항목표가 아닌 표 {len(not_item_tables)}건 (대상이 아니다 — 위의 「검사 대상 밖」과 다르다)")
+        for t in not_item_tables:
+            print(f"     · {t}")
 
     if problems:
         print(f"::error::work-item-consistency — 불일치 {len(problems)}건")

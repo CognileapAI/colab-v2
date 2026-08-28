@@ -14,6 +14,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GATE="$REPO_ROOT/gates/tools/work_item_consistency.py"
 FIX="$REPO_ROOT/gates/fixtures/work-items"
 FAILURES=()
+CASES=0   # 케이스 수를 손으로 적지 않는다 — 요약줄이 실제와 어긋나면 그것도 거짓 보고다
 
 # ⚠ rc 만 보는 selftest 는 반쪽이다 — **어느 검사가** red 를 냈는지 확인하지 않으면,
 # 다른 검사가 우연히 red 를 내는 동안 정작 증명하려던 검사가 죽어 있어도 OK 가 나온다.
@@ -21,6 +22,7 @@ FAILURES=()
 # 그래서 red 케이스는 **기호(㈎~㈓)까지 대조**하고, green 케이스는 `::error::` 부재까지 본다.
 expect() { # $1=기대(green|red) $2=기호(red 일 때만 · green 이면 -) $3=라벨 $4.. = 실행할 명령
   local want="$1" mark="$2" label="$3"; shift 3
+  CASES=$((CASES+1))
   local out rc
   out="$("$@" 2>&1)"; rc=$?
   local got="green"; [ $rc -eq 0 ] || got="red"
@@ -85,6 +87,11 @@ expect red "㈐" "㈐ 진실원 표(T-P · 상태 3열째)가 대장과 갈린�
 expect red "㈑" "㈑ ⏸(하지 않기로 한 것)가 착수 후보 표에 재등장한다"          run red-d-deferred
 expect red "㈒" "㈒ 기한이 발동했는데 status 가 open 으로 남아 있다"           run red-e-deadline
 expect red "㈓" "㈓ 산문끼리 갈린 채 conflict 로 남아 있다"                    run red-f-conflict
+# ⚠ ㈑ 의 대상 좁히기가 「조용히 아무것도 안 보는」 쪽으로 무너지지 않음을 증명한다.
+# 첫 열 머리글이 `WU` 인 표가 하나도 없으면 통과가 아니라 red 여야 한다.
+# 대조군은 같은 절에 계측 기준선 표(첫 열 `축`)를 담고 있고 그것은 green 이다 —
+# 둘이 함께 있어야 「정밀도를 올린 것」과 「범위를 줄인 것」이 갈린다.
+expect red "㈑" "㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다 → red (조용한 통과 금지)" run red-g-noitemtable
 
 # 환경 결손 — green-by-skip 방지 (기호가 아니라 die() 경로라 기호 대조는 하지 않는다)
 expect red - "대장 부재 → red (검사 불가는 통과가 아니다)"                  run_missing_ledger
@@ -94,4 +101,4 @@ if [ ${#FAILURES[@]} -gt 0 ]; then
   echo "::error::work-item-selftest — ${#FAILURES[@]}건 실패: ${FAILURES[*]}"
   exit 1
 fi
-echo "work-item-selftest: green — 9 케이스 (대조군 1 · red 증명 8)"
+echo "work-item-selftest: green — $CASES 케이스 (대조군 1 · red 증명 $((CASES-1)))"
