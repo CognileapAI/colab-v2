@@ -10,8 +10,8 @@ import { SearchResultsPage } from '../routes/SearchResultsPage';
 import { DatasetDetailPage } from '../routes/DatasetDetailPage';
 import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
-// S-08(미등록 미리보기 화면)은 stage2 대기 — 라우트만 뺀다. 파일은 유지한다
-// (`dev-package/sessions/S1-PLAN.md` §5.2, `PLAN-SoT.md §9 〈74〉〈75〉〈79〉`).
+import { UnregisteredPreviewPage } from '../routes/UnregisteredPreviewPage';
+import { PREVIEW_ROUTE_PATH } from '../components/preview/handoff';
 
 export function AppRoutes() {
   return (
@@ -28,6 +28,11 @@ export function AppRoutes() {
             정적 구간이 `:datasetId` 보다 먼저 맞고, ULID 에 `search` 는 없으므로 상세와 부딪히지 않는다 */}
         <Route path="/datasets/search" element={<SearchResultsPage />} />
         <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
+        {/* S-08 미등록 파일 미리보기 — 주소는 `handoff.ts` 의 `PREVIEW_ROUTE_PATH` 가 정본이다.
+            정적 구간 `preview` 가 ULID 자리보다 먼저 맞아 상세와 부딪히지 않는다.
+            사람이 주소를 쳐서 오는 화면이 아니라 **S-04 모달의 `보기만 할게요` 가 보내는 자리**다
+            (정본 `Policy_업로드와_계보_확정 §7.2` 전이표 · Ted 2026-08-28 완료 정의 ①). */}
+        <Route path={PREVIEW_ROUTE_PATH} element={<UnregisteredPreviewPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

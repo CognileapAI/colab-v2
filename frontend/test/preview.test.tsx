@@ -17,6 +17,9 @@ import { tileUrl } from '../src/components/preview/tiles';
 import { PreviewGone, NotRenderableError } from '../src/components/preview/types';
 import type { PreviewHandoff, PreviewSource, RenderJob } from '../src/components/preview/types';
 import { ownerTabOf } from '../src/shell/nav';
+import { AppRoutes } from '../src/app/routes';
+import { SessionProvider } from '../src/permission/session';
+import { account } from './factories';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const RENDER_ID = '01JYZ9K7WQ3N8V4M2X6C5B0RN1';
@@ -386,5 +389,27 @@ describe('§7.1 저장 안 됨 — 이 화면은 사실을 하나도 만들지 �
     fireEvent.click(screen.getByRole('button', { name: '연구실에 등록 →' }));
     expect(await screen.findByText('카탈로그')).toBeInTheDocument();
     expect(REGISTER_FROM_PREVIEW_STATE_KEY).toBe('openUploadForRegister');
+  });
+});
+
+/**
+ * Ted 2026-08-28 완료 정의 ① 도달 경로 — **라우팅 표 쪽 절반.**
+ * 앞의 시험들은 화면 컴포넌트를 직접 마운트하므로 `app/routes.tsx` 를 한 줄도 검사하지 않는다.
+ * 라우트가 빠져 있으면 사람은 이 화면에 **도달할 수 없고**, 그때 여기가 red 가 된다.
+ */
+describe('완료 정의 ① — 앱 라우팅 표가 S-08 을 세운다', () => {
+  it('S-08 주소로 들어가면 없는 화면이 아니라 미등록 미리보기가 선다', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={[previewPath(UPLOAD_ID)]}>
+        <SessionProvider account={account({ '업로드·편집': true })}>
+          <AppRoutes />
+        </SessionProvider>
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('[data-screen="S-08"]')).not.toBeNull();
+    // 라우트가 없으면 `*` 가 먹어 「없는 화면」이 뜬다 — 그 자리를 못 박는다
+    expect(screen.queryByTestId('preview-none')).toBeInTheDocument();
+    // 이어받은 것이 없으므로 화면은 없는 대로 말한다. 여기서 값을 지어내지 않는다
+    expect(await screen.findByTestId('volatile-notice')).toBeInTheDocument();
   });
 });

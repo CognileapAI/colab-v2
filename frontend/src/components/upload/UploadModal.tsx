@@ -16,6 +16,7 @@ import { LineageStep } from '../lineage/LineageStep';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
+import { previewNavigation } from '../preview/handoff';
 import {
   GridAxisTaken,
   NoResolvedGrid,
@@ -82,6 +83,11 @@ export function UploadModal(props: {
   const [nameError, setNameError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [attaching, setAttaching] = useState(false);
+  // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
+  const [rendered, setRendered] = useState<{
+    renderId: string;
+    withoutReferenceGrid: boolean;
+  } | null>(null);
   const statusTimer = useRef(0);
 
   const attach = props.attach;
@@ -149,6 +155,8 @@ export function UploadModal(props: {
   const gridRejection = status?.gridRejections?.[0] ?? null;
   const bodyName =
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
+  // 헤더에서 읽은 값 중 FE 표면이 실제로 실어 주는 것은 `byteSize` 하나다 (`preview/types.ts`)
+  const bodyByteSize = (status?.files.find((f) => f.kind === '본체') ?? status?.files[0])?.byteSize;
 
   const onLineageProgress = useCallback(
     (p: { confirmed: number; total: number }) => setLineage(p),
@@ -196,6 +204,30 @@ export function UploadModal(props: {
 
   function setKind(index: number, kind: FileKind) {
     setPicked((cur) => cur.map((p, i) => (i === index ? { ...p, kind } : p)));
+  }
+
+  /**
+   * 「보기만 할게요」 — **등록하지 않겠다는 선택**이고, 정본 §7.2 전이표가 이 선택의 도착지를
+   * `미등록 파일 미리보기(S-08)` 로 못 박았다. 모달만 닫으면 파일이 그냥 버려져 그 전이가
+   * 제품에 없는 것이 된다(Ted 2026-08-28 완료 정의 ①). 여기서 만드는 사실은 **없다** —
+   * `createDataset` 을 부르지 않고, 이미 접수된 업로드의 주소로 이동할 뿐이다.
+   */
+  function viewOnly() {
+    if (!uploadId) {
+      // 접수가 아직/못 됐으면 보낼 주소가 없다. **주소를 지어내지 않는다** — 닫기만 한다.
+      props.onClose();
+      return;
+    }
+    const nav = previewNavigation({
+      uploadId,
+      ...(rendered ? { renderId: rendered.renderId } : {}),
+      ...(rendered ? { withoutReferenceGrid: rendered.withoutReferenceGrid } : {}),
+      // 헤더에서 읽은 값만 넘긴다 — 사람이 붙인 이름·주제는 등록 전이라 자리 자체가 없다
+      basicInfo: { ...(bodyByteSize !== undefined ? { byteSize: bodyByteSize } : {}) },
+      files: status?.files ?? [],
+    });
+    props.onClose();
+    navigate(nav.to, { state: nav.state });
   }
 
   function requestClose() {
@@ -296,6 +328,7 @@ export function UploadModal(props: {
                 source={props.sources.preview}
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}
+                onRender={setRendered}
                 grid={{
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
@@ -362,7 +395,8 @@ export function UploadModal(props: {
                     // **등록하지 않겠다는 선택**이다 — 여기서 `submit()` 을 부르면 등록을
                     // 거절한 사람에게 데이터셋이 생긴다. `submit()` 이 `onClose()` 도 부르는 탓에
                     // 모달이 정상으로 닫혀 눈에 안 띄었다 (`S1-PLAN §5.2` — `S1-fe` 가 닫는다).
-                    onClick={requestClose}
+                    // 모달을 닫고 **S-08 로 보낸다** — 정본 §7.2 전이표의 도착지다.
+                    onClick={viewOnly}
                   >
                     보기만 할게요
                   </button>

@@ -9,10 +9,12 @@
  * fireEvent 를 쓴다 — user-event 를 새로 들이지 않는다(집 관례, `test/members.test.tsx`).
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
+import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
+import type { PreviewHandoff } from '../src/components/preview/types';
 import { UploadGone } from '../src/components/upload/types';
 import type {
   LineageStepContext,
@@ -1355,5 +1357,74 @@ describe('§E.0-1 그릴 수 없는 것과 등록할 수 없는 것은 다르다
     await act(async () => {});
     await waitFor(() => expect(calls.create).toBeGreaterThan(before));
     expect(await screen.findByTestId('up-companion')).toHaveTextContent('Lat_HSR.npy');
+  });
+});
+
+/**
+ * Ted 2026-08-28 완료 정의 ① 도달 경로 — **모달 쪽 절반.**
+ * 정본 §7.2 전이표: 「보기만 할게요」의 도착지는 `미등록 파일 미리보기(S-08)` 다.
+ * 배선을 되돌리면(=버튼이 닫기만 하면) 이 describe 가 red 가 된다.
+ */
+function LocationProbe() {
+  const loc = useLocation();
+  return (
+    <div
+      data-testid="loc"
+      data-path={loc.pathname}
+      data-search={loc.search}
+      data-state={JSON.stringify(loc.state ?? null)}
+    />
+  );
+}
+
+async function openModalWithProbe(sources: UploadSources) {
+  render(
+    <MemoryRouter initialEntries={['/datasets']}>
+      <SessionProvider account={account({ '업로드·편집': true })}>
+        <UploadEntry sources={sources} />
+        <LocationProbe />
+      </SessionProvider>
+    </MemoryRouter>,
+  );
+  await click(screen.getByTestId('gnb-upload'));
+  await screen.findByTestId('upload-modal');
+}
+
+describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => {
+  it('모달이 닫히고 주소가 미등록 미리보기 화면으로 바뀐다', async () => {
+    const { sources, calls } = fakes();
+    await openModalWithProbe(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await screen.findByTestId('up-preview');
+    await click(await screen.findByTestId('reg-viewonly'));
+
+    const loc = screen.getByTestId('loc');
+    expect(loc.getAttribute('data-path')).toBe(previewPath(UPLOAD_ID).split('?')[0]);
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    // **아무것도 등록하지 않는다** — 이동은 사실을 만드는 것이 아니다 (§7.1)
+    expect(calls.register).toBe(0);
+  });
+
+  it('그리던 미리보기를 짐으로 넘긴다 — S-08 이 다시 그리지 않고 이어 본다 (§8.1)', async () => {
+    const { sources, calls } = fakes();
+    await openModalWithProbe(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await screen.findByTestId('up-preview');
+    await click(await screen.findByTestId('up-preview-draw'));
+    await waitFor(() => expect(calls.createRender.length).toBeGreaterThan(0));
+    await click(await screen.findByTestId('reg-viewonly'));
+
+    const loc = screen.getByTestId('loc');
+    expect(loc.getAttribute('data-search')).toBe(`?render=${RENDER_ID}`);
+    const state = JSON.parse(loc.getAttribute('data-state') ?? 'null') as Record<
+      string,
+      PreviewHandoff
+    >;
+    const handoff = state[PREVIEW_STATE_KEY]!;
+    expect(handoff.uploadId).toBe(UPLOAD_ID);
+    expect(handoff.renderId).toBe(RENDER_ID);
+    // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
+    expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
+    expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
   });
 });
