@@ -640,6 +640,11 @@ CREATE TABLE d5_upload_file (
   carries_lon      boolean     NOT NULL DEFAULT false,
   -- 파이프라인이 매직바이트로 판정한 포맷 (`file.format-detected`). 확장자가 아니다.
   detected_format  text,
+  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0008 · 〈173〉). 낱개 파일은 NULL.
+  -- 저장 키에는 넣지 않는다 — 키 규약(contracts/storage/layout.json)은 세 배포 단위의
+  -- 공유 정본이라 여기 메타로만 보존한다. 등록 후(d3) 표시는 후속 결정.
+  relative_path    text        CHECK (relative_path IS NULL
+                                      OR length(relative_path) BETWEEN 1 AND 1024),
   created_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT d5_upload_file_grid_carries_an_axis
     CHECK (kind <> '기준 격자 파일' OR carries_lat OR carries_lon),
@@ -654,6 +659,50 @@ CREATE UNIQUE INDEX d5_upload_file_one_lat_grid_per_upload
   ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lat;
 CREATE UNIQUE INDEX d5_upload_file_one_lon_grid_per_upload
   ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lon;
+
+-- 프리사인드 전송 원장 (0008 · 〈174〉 동결 해제 8차) — 저장 모드 s3 에서만 쓰인다.
+-- **전송이 완결되기 전의 상태**만 담는다: 완결(complete)되는 순간 같은 ULID 로
+-- `d5_upload` 가 서고(upload.accepted 발행), 이후는 기존 원장의 세계다.
+-- 격자 파일도 여기엔 행이 선다 — 축 CHECK 가 없는 전송 전용 표라서다. `d5_upload_file`
+-- 의 격자 행은 여전히 워커가 축을 정한 뒤 세운다 (`〈79〉`).
+-- 파트의 정본은 S3 ListParts 다 — 파트 번호·크기를 여기 저장하지 않는다.
+CREATE TABLE d5_upload_transfer (
+  id                   ulid        PRIMARY KEY,          -- 완결 시 d5_upload.id 로 승계
+  lab_id               ulid        NOT NULL REFERENCES d1_lab(id),
+  uploader_account_id  ulid        NOT NULL REFERENCES d1_account(id),
+  source_label         text        NOT NULL CHECK (length(source_label) <= 255),
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  expires_at           timestamptz NOT NULL,             -- 이어올리기 창 — 수명 밖은 정리 대상
+  completed_at         timestamptz,                      -- 완결 = d5_upload 로 승계된 시각
+  CONSTRAINT d5_upload_transfer_expiry_after_birth CHECK (expires_at > created_at)
+);
+CREATE INDEX d5_upload_transfer_lab_idx ON d5_upload_transfer (lab_id);
+-- 미완료 배너·지연 정리가 훑는 자리.
+CREATE INDEX d5_upload_transfer_open_idx ON d5_upload_transfer (expires_at)
+  WHERE completed_at IS NULL;
+
+CREATE TABLE d5_upload_transfer_file (
+  id             ulid        PRIMARY KEY,                -- 완결 시 d5_upload_file.id 로 승계 (NB-A)
+  lab_id         ulid        NOT NULL REFERENCES d1_lab(id),
+  transfer_id    ulid        NOT NULL REFERENCES d5_upload_transfer(id) ON DELETE CASCADE,
+  kind           text        NOT NULL CHECK (kind IN ('본체', '기준 격자 파일')),
+  file_name      text        NOT NULL CHECK (length(btrim(file_name)) > 0
+                                             AND length(file_name) <= 255),
+  relative_path  text        CHECK (relative_path IS NULL
+                                    OR length(relative_path) BETWEEN 1 AND 1024),
+  byte_size      bigint      NOT NULL CHECK (byte_size >= 0),
+  storage_key    text        NOT NULL CHECK (length(btrim(storage_key)) > 0),
+  -- 멀티파트일 때만: 파트 크기와 S3 가 발급한 멀티파트 UploadId. 단일 PUT 은 둘 다 NULL.
+  part_size      bigint      CHECK (part_size IS NULL OR part_size > 0),
+  transfer_ref   text,
+  -- 서버가 S3 실측(ListParts·HeadObject)으로 확인한 결과만 기록한다 — 자기 보고를 믿지 않는다.
+  outcome        text        NOT NULL DEFAULT '대기' CHECK (outcome IN ('대기', '올라감', '실패')),
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d5_upload_transfer_file_ref_only_for_multipart
+    CHECK (transfer_ref IS NULL OR part_size IS NOT NULL)
+);
+CREATE INDEX d5_upload_transfer_file_transfer_idx ON d5_upload_transfer_file (transfer_id);
+CREATE INDEX d5_upload_transfer_file_lab_idx ON d5_upload_transfer_file (lab_id);
 
 -- 파이프라인 이벤트 / outbox. 열 구성의 정본은 `contracts/events/envelope.json` 의 봉투다 —
 -- 여기서 값 집합을 **재선언하지 않고 옮겨 적는다** (⑲ 「확정 열거값은 DB 가 강제한다」).
@@ -901,6 +950,16 @@ CREATE POLICY lab_boundary ON d5_upload_file FOR ALL
 ALTER TABLE d5_pipeline_event       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d5_pipeline_event       FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d5_pipeline_event FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d5_upload_transfer      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_upload_transfer      FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_upload_transfer FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d5_upload_transfer_file ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_upload_transfer_file FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_upload_transfer_file FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 ALTER TABLE d4_lineage_edge         ENABLE ROW LEVEL SECURITY;

@@ -38,6 +38,40 @@ class UploadFileRecord:
     #: 매직바이트로 판정한 포맷. **core-api 는 절대 채우지 않는다** — 확장자를 믿지 않는다
     #: (`P2.md §2-10` · `DR-3`). 파이프라인이 `file.format-detected` 로 채운다.
     detected_format: str | None
+    #: 폴더째 업로드에서 온 `폴더/이름` 상대 경로 (0008 · `〈173〉`). 낱개 파일은 None.
+    relative_path: str | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class TransferFileRecord:
+    """프리사인드 전송 중인 파일 하나 (`d5_upload_transfer_file` · `〈174〉`).
+
+    `file_id` 는 전송 완결 시 `d5_upload_file.id`(본체) 혹은 워커가 세울 격자 행의
+    id 로 **그대로** 간다 — `NB-A` 동일성이 전송 단계까지 소급된 형태다.
+    파트 번호·크기는 여기 없다 — **파트의 정본은 S3 ListParts 다.**
+    """
+
+    file_id: str
+    file_name: str
+    kind: str
+    byte_size: int
+    storage_key: str
+    relative_path: str | None
+    part_size: int | None          #: None = 단일 PUT
+    transfer_ref: str | None       #: S3 멀티파트 UploadId (단일 PUT 은 None)
+    outcome: str                   #: 대기 | 올라감 | 실패 — 서버 실측 결과만
+
+
+@dataclasses.dataclass(frozen=True)
+class TransferRecord:
+    """전송 1건 (`d5_upload_transfer`). 완결되면 같은 ULID 로 `d5_upload` 가 선다."""
+
+    transfer_id: str
+    uploader_account_id: str
+    source_label: str
+    created_at: dt.datetime
+    expires_at: dt.datetime
+    completed_at: dt.datetime | None
 
 
 @dataclasses.dataclass(frozen=True)

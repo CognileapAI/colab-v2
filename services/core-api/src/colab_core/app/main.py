@@ -1,4 +1,4 @@
-"""core-api 앱 — fe-core seam **46** 오퍼레이션 전부를 등록한다.
+"""core-api 앱 — fe-core seam **54** 오퍼레이션 전부를 등록한다.
 
 실동작 **22 개**. P2 가 열둘을 가져왔다 (`P2-EXEC §4 W2 P2-api`) —
 업로드 6(`createUpload` `getUploadStatus` `createDataset` `addDatasetFile`
@@ -6,6 +6,8 @@
 `removeLineageParent` `confirmLineage`) · 미리보기 중계 2 · AI 제안 중계 1.
 그리고 S1 이 `searchDatasets` 하나를 **신설과 동시에** 가져갔다 — `〈80〉-㉯ 5`(승인된 1회
 계약 동결 해제)가 검색 진입점을 열었고, 열어 두고 안 만들면 501 이 24 → 25 가 된다.
+동결 해제 8차(`〈174〉`)가 프리사인드 전송 8 op 을 **신설과 동시에** 실동작으로 가져왔다
+(`upload_transfers.router` — 저장 모드 local 에서는 8 개 전부 정직한 501 을 낸다).
 나머지 **24 개**는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3) — 이 수는 S1 에서
 변하지 않는다 (`〈74〉-㉱` · `C1` 통과 조건 2).
 미구현에 404 를 쓰지 않는다 — 404 는 「경계 밖」의 뜻으로 이미 예약돼 있다 (PLAN-SoT §9-㊱).
@@ -26,7 +28,7 @@ from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
 from .routes import (access, catalog, identity, ingestion, insight, lineage, members,
-                     not_implemented, preview, project, session)
+                     not_implemented, preview, project, session, upload_transfers)
 
 API_PREFIX = "/api/v1"
 
@@ -85,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
     for router in (session.router, identity.router, members.router, catalog.router, project.router,
+                   upload_transfers.router,  # /uploads/transfers 가 /uploads/{uploadId} 보다 먼저
                    ingestion.router, lineage.router, preview.router, access.router,
                    insight.router):
         app.include_router(router, prefix=API_PREFIX)

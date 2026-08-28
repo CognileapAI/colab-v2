@@ -177,6 +177,226 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 프리사인드 전송 계획 — 바이트 없이 접수 초안을 세운다
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 전송 형태는
+         *     `[정본 무근거]` 레포 결정이다 — 정본은 `파일을 끌어다 놓는다 → 업로드한다`
+         *     (`Policy §2`)까지만 말한다. 파일 바이트는 이 op 으로 들어오지 않는다 —
+         *     브라우저가 프리사인드 URL 로 S3 에 직접 놓고, 서버는 계획(전략·파트 크기)과
+         *     수명(이어올리기 창 72시간)만 만든다. 완결(`completeUploadTransfer`) 전에는
+         *     `d5_upload` 도 `upload.accepted` 도 없다 — 접수는 그때 일어난다.
+         *     폴더째 업로드의 상대 경로는 `relativePath` 메타로 보존한다 — 세 배포 단위가
+         *     공유하는 저장 키 규약은 손대지 않는다 (`PLAN-SoT §9 〈173〉`).
+         */
+        post: operations["initiateUploadTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/incomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 미완결 전송 — 이어올리기 배너의 데이터
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 본인 것만 온다 —
+         *     배너가 남의 미완료를 보여 줄 이유가 없다 (연구실 경계는 RLS 가 먼저 긋는다).
+         *     만료(이어올리기 창 72시간)된 전송은 지연 정리로 사라지고 목록에 오르지 않는다.
+         */
+        get: operations["listIncompleteUploadTransfers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 전송 상태 — 재개에 필요한 실측 사실
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). **파트의 정본은
+         *     S3 ListParts 다** — `uploadedParts` 는 서버가 실측해 온 값이고, 클라이언트의
+         *     자기 보고를 믿지 않는다. 재개는 이 값에서 빠진 파트만 다시 올린다.
+         */
+        get: operations["getUploadTransfer"];
+        put?: never;
+        post?: never;
+        /**
+         * 전송 중단 — S3 의 파트·객체까지 치운다
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 미완 멀티파트를
+         *     Abort 하고 올라간 객체를 지운 뒤 원장 행을 지운다. 완결된 전송은 중단할 수
+         *     없다(409) — 그것은 이미 접수다.
+         */
+        delete: operations["abortUploadTransfer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}/put-urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 단일 PUT 프리사인드 URL 발급
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). URL 수명은 짧다
+         *     (자격증명 만료 안쪽으로 클램프) — 소진되면 다시 발급받는다.
+         */
+        post: operations["issueUploadUrls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}/files/{fileId}/multipart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 멀티파트 시작 — 멱등
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 이미 시작됐으면
+         *     같은 계획을 다시 돌려준다 — 재개가 이 멱등성 위에 선다.
+         */
+        post: operations["initUploadFileMultipart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}/files/{fileId}/part-urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 파트 PUT 프리사인드 URL 발급 (배치)
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 한 번에 1~16개 —
+         *     URL 수명(짧다)과 왕복 수의 절충이다.
+         */
+        post: operations["issueUploadPartUrls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}/files/{fileId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 파일 완료 — 서버가 S3 실측으로 검증한다
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 멀티파트면
+         *     ListParts → Complete, 이어서 HeadObject 로 크기를 신고값과 대조한다.
+         *     불일치는 `실패` 로 남고 다시 올려야 한다 — 자기 보고를 믿지 않는다. 멱등.
+         */
+        post: operations["completeUploadFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/transfers/{uploadId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 전송 완결 — 이때 접수(`upload.accepted`)가 일어난다
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 모든 파일이
+         *     실측으로 확인된 뒤에만 성립한다(아니면 409). 같은 ULID 로 `d5_upload` 가 서고
+         *     `upload.accepted` 가 발행된다 — 이벤트 계약의 `source: core-api` 능력을
+         *     행사하는 두 번째 HTTP 입구다 (`createUpload` 와 같은 능력 · `〈54〉`).
+         *     응답은 `UploadReceipt` 와 같은 모양이다 — 이 지점부터 두 전송 경로의 구분 없이
+         *     같은 상태 조회(`getUploadStatus`)로 간다.
+         */
+        post: operations["completeUploadTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{uploadId}/files": {
         parameters: {
             query?: never;
@@ -1585,6 +1805,119 @@ export interface components {
              *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `B-2`).
              */
             gridAxis?: components["schemas"]["GridAxisAssignment"];
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 전송 계획 요청 — 바이트 없이 파일의 사실(이름·크기·종류·
+         *     상대 경로)만 신고한다 (`PLAN-SoT §9 〈174〉`).
+         */
+        UploadTransferDraft: {
+            /** @description 배너·목록에 보일 묶음 이름. 생략하면 서버가 채운다. */
+            sourceLabel?: string;
+            files: {
+                /** @description 경로 없는 이름 1~255자. 경로는 `relativePath` 로. */
+                fileName: string;
+                byteSize: number;
+                kind?: components["schemas"]["FileKind"];
+                /**
+                 * @description 폴더째 업로드의 `폴더/이름` 상대 경로 — 원장 메타로만 보존된다
+                 *     (`PLAN-SoT §9 〈173〉`). 저장 키 규약은 손대지 않는다.
+                 */
+                relativePath?: string;
+            }[];
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 전송 계획 — 파일마다 전략과 파트 크기가 정해져 있다
+         *     (`PLAN-SoT §9 〈174〉`). 받아들일 수 없던 파일은 `rejected` 에 사유와 함께 남는다 —
+         *     조용히 빼지 않는다.
+         */
+        UploadTransferPlan: {
+            uploadId: components["schemas"]["Ulid"];
+            /** Format: date-time */
+            expiresAt: string;
+            files: components["schemas"]["UploadTransferPlanFile"][];
+            rejected: {
+                fileName: string;
+                reason: string;
+            }[];
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 계획 속 파일 하나 (`PLAN-SoT §9 〈174〉`). `fileId` 는
+         *     완결 시 `d5_upload_file.id` 로 그대로 간다 (`NB-A` 동일성의 전송 단계 소급).
+         */
+        UploadTransferPlanFile: {
+            fileId: components["schemas"]["Ulid"];
+            fileName: string;
+            kind: components["schemas"]["FileKind"];
+            byteSize: number;
+            relativePath?: string;
+            /** @enum {string} */
+            strategy: "단일" | "멀티파트";
+            partSize: number | null;
+            partCount: number | null;
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 전송 상태 (`PLAN-SoT §9 〈174〉`). `uploadedParts` 는
+         *     서버가 S3 ListParts 로 실측한 값이다 — 파트의 정본은 S3 다.
+         */
+        UploadTransferStatus: {
+            uploadId: components["schemas"]["Ulid"];
+            /** Format: date-time */
+            expiresAt: string;
+            files: (components["schemas"]["UploadTransferPlanFile"] & {
+                /** @enum {string} */
+                outcome: "대기" | "올라감" | "실패";
+                /** @description 올라간 파트 번호 실측. 실측 불가면 null — 지어내지 않는다. */
+                uploadedParts?: number[] | null;
+            })[];
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 내 미완결 전송 목록 (`PLAN-SoT §9 〈174〉`) — 이어올리기
+         *     배너의 데이터. 본인 것만 온다.
+         */
+        IncompleteUploadTransfers: {
+            items: {
+                uploadId: components["schemas"]["Ulid"];
+                sourceLabel: string;
+                uploadedFiles: number;
+                plannedFiles: number;
+                uploadedBytes: number;
+                plannedBytes: number;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                expiresAt: string;
+            }[];
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 단일 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈174〉`).
+         *     수명이 짧다 — 소진되면 다시 발급받는다.
+         */
+        UploadPutUrls: {
+            urls: {
+                fileId: components["schemas"]["Ulid"];
+                url: string;
+                /** Format: date-time */
+                expiresAt: string;
+            }[];
+        };
+        /** @description [사용자 승인 2026-08-28] 파트 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈174〉`). */
+        UploadPartUrls: {
+            urls: {
+                partNumber: number;
+                url: string;
+            }[];
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * @description [사용자 승인 2026-08-28] 파일 실측 결과 (`PLAN-SoT §9 〈174〉`) — 서버가 S3 에
+         *     직접 물은 값만 적는다. 실패면 사유가 `detail` 에 있다.
+         */
+        UploadFileOutcome: {
+            fileId: components["schemas"]["Ulid"];
+            /** @enum {string} */
+            outcome: "올라감" | "실패";
+            detail: string | null;
         };
         /**
          * @description 업로드 접수 결과. `uploadId` 는 이벤트 seam 의 집계 루트와 같은 값이고
@@ -3071,6 +3404,277 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    initiateUploadTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadTransferDraft"];
+            };
+        };
+        responses: {
+            /** @description 전송 계획. 파일마다 전략(단일/멀티파트)과 파트 크기가 정해져 있다. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadTransferPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    listIncompleteUploadTransfers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 미완결 전송 목록 (최신순). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncompleteUploadTransfers"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getUploadTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 전송 계획 + 파일별 결과와 올라간 파트 실측. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadTransferStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    abortUploadTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 중단·정리됨. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    issueUploadUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 전략이 `단일` 인 파일들. 1~50개. */
+                    fileIds: components["schemas"]["Ulid"][];
+                };
+            };
+        };
+        responses: {
+            /** @description 파일별 프리사인드 PUT URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadPutUrls"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    initUploadFileMultipart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 파트 크기·개수 계획. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        partSize: number;
+                        partCount: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    issueUploadPartUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 1~10000 (S3 파트 번호 하드 리밋). */
+                    partNumbers: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description 파트별 프리사인드 PUT URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadPartUrls"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    completeUploadFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 실측 결과. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadFileOutcome"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    completeUploadTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 접수됨 — `createUpload` 201 과 같은 자리다. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadReceipt"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
         };
     };

@@ -25,8 +25,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable, Iterator
 
-from colab_core.kernel.aws_credentials import load_credentials
-from colab_core.kernel.sigv4 import Credentials, sign_headers, uri_encode
+from colab_core.kernel.aws_credentials import effective_ttl, load_credentials
+from colab_core.kernel.sigv4 import Credentials, presign, sign_headers, uri_encode
 
 # transport(method, url, headers, payload, timeout) -> (status, 응답 헤더, 본문)
 Transport = Callable[[str, str, dict[str, str], bytes, float], tuple[int, dict[str, str], bytes]]
@@ -184,6 +184,19 @@ class S3Client:
             ((n.findtext("{*}Key") or ""), (n.findtext("{*}UploadId") or ""))
             for n in _xml(body).findall("{*}Upload")
         ]
+
+    # ── 프리사인 (브라우저 직접 PUT 용) ─────────────────────────────────────
+
+    def url_ttl(self, configured: int, now: datetime) -> int:
+        """프리사인 TTL 을 자격증명 만료 안쪽으로 클램프한다 (`aws_credentials.effective_ttl`)."""
+        return effective_ttl(configured, self._credentials(), now)
+
+    def presign_put(self, key: str, *, query: dict[str, str] | None = None,
+                    expires: int, now: datetime) -> str:
+        """브라우저가 직접 PUT 할 프리사인드 URL. 서명은 서버, 바이트는 브라우저."""
+        return presign(method="PUT", host=self.host, key=key, region=self.region,
+                       creds=self._credentials(), query=query or {},
+                       expires=expires, now=now)
 
     # ── 객체 ────────────────────────────────────────────────────────────────
 
