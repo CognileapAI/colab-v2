@@ -671,15 +671,15 @@ items:
 
   - id: X-5
     name: ㉰-4 소급 전수확인
-    status: open
+    status: partial
     stage: stage2
     owner: "계약 / core-api"
     entry_conditions: ["진입조건 없음 — 무의존이라 병렬"]
     depends_on: []
     completion_def: "정본 = `WORK-UNITS §10.2` · 근거 `§9 〈163〉-㉰`"
-    evidence: null
+    evidence: "조사분 완료 (2026-08-28 · `§9 〈174〉-㉰` · 산출 `sessions/X5-AUDIT.md`) — 총 185 항목 · 미구현 26 · 미선언 1 · 미확인 2. op 축은 `test_route_table.py` 양방향 diff 로 구조적으로 닫혀 있어 「조용히 없는 op」 0 이고 501 스텁 20 은 은닉이 아니라 명시. 필드·이벤트·열거값·저장배치는 전건 정합(고아 필드 0 · 이벤트 7종 전건 발행·소비). 적출 3계열 = `422` 생산자 0 인 2건(`core-viz.yaml:98`·`core-ai.yaml:142` · 철회 유력) · `403` 을 선언하고 스위치를 안 거는 2건(`fe-core.yaml:683`·`:1473`) · `PermissionSwitchChange`(`common.json:60`)를 읽을 op 부재 1건. 집행분 1계열 완료 = `403` 2건 (`§9 〈175〉` · 브랜치 `x5-403-enforce`)"
     deadline: null
-    note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`."
+    note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`. ⚠ **닫히지 않았다 — 판정 5건이 열려 있다**: `422` 2건 철회 여부 · `PermissionSwitchChange` 1건(철회하면 도는 원장을 계약이 부정한다) · `[미확인]` 2건. 집행된 `403` 2건도 **로컬 green 이고 staging 배포 전이다**."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: R-1
@@ -690,11 +690,11 @@ items:
     entry_conditions: ["없음 — X-1·X-4 재기동의 전제조건(`〈158〉-㉯`)"]
     depends_on: []
     completion_def: "정본 = `WORK-UNITS §10.2` (완료 정의 12행 · 초안 `sessions/R1-RESTORE-DRAFT.md`) ＋ 볼륨 백업 절차 ＋ `install-schedule.sh install` 재실행"
-    evidence: null
+    evidence: "크론 첫 회차를 실측했다 (`§9 〈174〉-㉮`). **2026-08-28 03:30 회차는 GREEN 이지만 오라클이 아니다** — 돌린 것이 `backup.sh`(원장 전용)이고 `backup-full.sh` 가 아니다. 근거 셋 = 로그에 `backup-full.sh` 표지인 `═══ 1단` **0회** · `LAST-SUCCESS.txt` 가 08-24~08-28 **다섯 회차 전부 `backup.sh OK`** · 그 시각 보관처에 `vol-*` 산출물 없음. 원인 = crontab 대상 교체(`〈173〉-㉰`)가 그 회차 **뒤에** 이뤄졌다. ⚠ 매일 GREEN 이 쌓여 전범위가 도는 것처럼 읽히는 **green-by-skip 모양**이다."
     deadline:
-      condition: "크론 환경 첫 회차(2026-08-28 03:30) 로그 미실측 — 손으로 돌린 GREEN 은 기구가 아니다"
-      fired: unknown
-    note: "`03-HANDOFF §1 T-X` 는 상태 칸에 🟧 를 적으면서 같은 칸 본문에 ⛔ 글리프를 함께 쓴다. `WORK-UNITS §10.2` 는 ⛔(「그래도 R-1 은 열려 있다」가 두 번 반복)로, 같은 문서 `§10.3` 은 「기구 ✅ · 유인 1회 GREEN ✅ · 크론 첫 회차 로그 대기」로 적는다. 완료 정의 12행은 전건 ✅ 인데 남은 넷(크론 첫 회차 로그 · `POST /searches` 1회 · `preflight` 성질 판정 · `:i2` 태그 이력)이 있다. 어느 하나를 고르지 않는다 — 03:30 크론 로그를 사람이 실측할 자리다."
+      condition: "`backup-full.sh` 의 크론 무인 회차가 아직 0 회다 — 첫 회차는 2026-08-29 03:30. 손으로 돌린 GREEN 은 기구가 아니다"
+      fired: false
+    note: "`03-HANDOFF §1 T-X` 는 상태 칸에 🟧 를 적으면서 같은 칸 본문에 ⛔ 글리프를 함께 쓴다. `WORK-UNITS §10.2` 는 ⛔(「그래도 R-1 은 열려 있다」가 두 번 반복)로, 같은 문서 `§10.3` 은 「기구 ✅ · 유인 1회 GREEN ✅ · 크론 첫 회차 로그 대기」로 적는다. 완료 정의 12행은 전건 ✅ 인데 남은 넷(크론 첫 회차 로그 · `POST /searches` 1회 · `preflight` 성질 판정 · `:i2` 태그 이력)이 있다. 어느 하나를 고르지 않는다. ⭑ **2026-08-28 — 넷 중 첫째를 실측했고, 닫히지 않았다**(`evidence` 필드). 실측이 갈라짐을 없애지는 않는다 — `§10.2` 는 여전히 ⛔ 이고 `§10.3` 은 진행 표기다. **`status: conflict` 를 그대로 둔다.** 남은 셋(`POST /searches` · `preflight` 성질 · `:i2` 이력)은 미실측이다."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: T-1
