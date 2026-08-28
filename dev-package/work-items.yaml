@@ -803,15 +803,15 @@ items:
 
   - id: P2
     name: "업로드 전체화면 모달(S-04) · 계보 확정 ＋ 미리보기 최소 렌더 경로 · S-08"
-    status: conflict
+    status: done
     stage: stage1
     owner: "D5(WU) · D4(계보 쓰기) · D7 일부(미리보기 렌더 경로)"
     entry_conditions: ["P1", "G4", "(AI 지점은 K3)"]
     depends_on: [P1, G4, D5]
     completion_def: "「각 P 의 완료 판정」 4항 ＋ 2026-08-25 추가 둘 — ⓐ 저장 배치를 단언하는 회귀 시험(`#26`) ⓑ `addDatasetFile` 202 의 저장 자리(`#21`). 스키마 판정(Ted) 전에는 닫지 않는다"
-    evidence: null
+    evidence: "**2026-08-28 실측 · 완료 정의 전 항목 닫힘** (산출 `sessions/P2-MEASURE.md` · 판정 `§9 〈179〉`). ⓐ 저장 배치 = `contracts/storage/layout.json` 단일 정의처 ＋ 등기 3건 · 회귀 시험 **15건 전건 green**(core-api 8 · pipeline-worker 3 · viz-render 4) · **세 배포 단위 `storage_layout.py` md5 동일 `90beaff6f85bfe0d84f016b6406ff0fa`**(오케스트레이터 직접 실측 — 「단위마다 다른 규칙」이 구조적으로 불가능하다) · staging 디스크 배치가 원장 `storage_key` 와 한 글자도 다르지 않음. ⓑ `addDatasetFile` 202 = 계약 응답에 202 없음 · 집행은 `ingestion.py:540-543` 이 400 ＋ `grid-files` 지시 · 시험 green · 스키마 판정은 2026-08-27 `〈151〉` 철회로 완료. ① 스토리 수용 = core-api **455/0** · pipeline-worker **152/0** · viz-render **107/0** · frontend **274/0** · `tsc` exit 0. ② 도메인 게이트 = 계약·이벤트·경계·생성물·DB경계·마이그레이션·RLS커버리지·seam·기획신선도 green ＋ **`rls-effect` green**(오케스트레이터 직접 실행 — 본체 음성 · 메타 양성 · cross-tenant 3종 엔진 차단). ③ staging = 컨테이너 8/8 · 헬스 6종 200 · head `0007` · **배포 이미지 = 레포 HEAD**. ④ 목업 대비 = 화면 설명 결손 0/12 · 미리보기 3층 산출물 39건 실재"
     deadline: null
-    note: "`WORK-UNITS §11` 은 P2 를 🟧 로 적는데, 같은 문서 `§10.2` 의존줄과 `§10.3` 엄격 직렬줄은 「P3 ⊇ P2(✅)」로 P2 를 ✅ 로 적는다. `03-HANDOFF §1 T-P` 도 🟧(「실행 중 범위 재정의로 멈춤 — `S1` 로 재편」)이면서, 닫지 않는 사유로 든 `§4` #21·#26 은 `§4` 에서 ✅ 해소로 표기돼 있다. 어느 하나를 고르지 않는다 — 사람이 저장 배치 시험과 202 저장 자리를 실물로 잴 자리다."
+    note: "**⟨2026-08-28 닫힘 · Ted⟩** 갈림의 정체는 「어느 문서가 맞나」가 아니라 **낡은 자리가 어디인가**였고, 실물이 `§10.2`·`§10.3` 의 ✅ 를 지지했다. **낡은 쪽 = `03-HANDOFF §1 T-P`** — 닫지 않는 사유로 든 `§4` `#21`·`#26` 이 같은 문서 `§4` 에서 이미 ✅ 해소인데 2026-08-25 표기에 멈춰 있었다. `WORK-UNITS §11` 🟧 도 같이 낡았다. **효과 = `P3`·`K3` 의 `depends_on` 이 열린다.** 잔 `[미확인]` 둘은 완료 조건 밖이다 — `schema-diff` 2026-08-28 값(마지막 값 = 2026-08-27 두 체인 green · 드리프트 0) · `grid/` 잔여 바이트 6건의 소유자 미지정(등록 전환이 「옮김」인지 「복사」인지 미판정)."
     sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §10.3", "WORK-UNITS §11"]
 
   - id: P3
