@@ -79,6 +79,12 @@ def update_project(projectId: str, body: dict | None = Body(default=None),
     만든 프로젝트는 데이터셋이 1건이라 삭제 조건(0건)을 영영 못 만족하는데,
     **이름 수정이 열려 있으면 오타 정정은 여기서 끝난다.**
     """
+    # `프로젝트 생성` 스위치 하나가 이 화면의 **모든 쓰기 동작**을 가른다
+    # (`Policy_프로젝트 §6`·`P-6`) — 화면에서 숨긴 것을 서버가 같은 기준으로 막는다
+    # (`P-11`·`P-12`). 판정은 `_can_manage` 한 벌이 하고 여기서 다시 짜지 않는다.
+    if not _can_manage(db, subject):
+        raise errors.forbidden("`프로젝트 생성` 스위치가 꺼져 있다.")
+
     payload = body if isinstance(body, dict) else {}
     unknown = sorted(set(payload) - set(_PROJECT_UPDATE_FIELDS))
     if unknown:

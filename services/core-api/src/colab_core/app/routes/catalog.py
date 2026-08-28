@@ -430,6 +430,12 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
     **부분 수정이다.** 보내지 않은 열쇠는 안 건드리고, `null` 을 **명시적으로** 보내는
     것은 **비우라는 뜻**이다. 둘을 접으면 요약만 고치려다 Lv 가 날아간다.
     """
+    # 판정은 **형제 op 들이 쓰는 그 헬퍼 하나**가 한다 — `업로드·편집` 스위치
+    # (`〈59〉-②`·`P-6`). 두 벌을 두면 한쪽만 고쳐지는 날이 온다.
+    # `ingestion` 이 이 모듈을 import 하므로 되짚는 방향은 **부를 때** 푼다.
+    from .ingestion import _require_upload_edit
+    _require_upload_edit(db, subject)
+
     payload = body if isinstance(body, dict) else {}
     unknown = sorted(set(payload) - set(_UPDATE_FIELDS))
     if unknown:

@@ -13,7 +13,7 @@
 """
 from __future__ import annotations
 
-from conftest import TOKEN_PROF, TOKEN_RES, auth
+from conftest import ACC_A_RES, TOKEN_PROF, TOKEN_RES, auth
 
 from colab_core.app.main import API_PREFIX
 
@@ -141,3 +141,21 @@ def test_omitted_keys_are_left_alone_on_project(p2_client) -> None:
 def test_an_unknown_project_is_404(p2_client) -> None:
     assert _patch_project(p2_client(), "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                           {"name": "x"}).status_code == 404
+
+
+def test_editing_a_project_needs_the_switch(p2_client, sql) -> None:
+    """**계약이 선언한 `403` 을 서버가 실제로 낸다.**
+
+    `프로젝트 생성` 스위치 하나가 이 화면의 **모든 쓰기 동작**을 가른다
+    (`Policy_프로젝트 §6` · `P-6`). 형제 op(`createProject`·`linkProjectDataset`)은
+    이미 그 스위치로 막는데 이 op 만 판정 없이 통과했다.
+    """
+    client = p2_client()
+    pid = _new_project(client, "스위치 확인용 프로젝트").json()["projectId"]
+    sql("UPDATE d2_permission_switch SET enabled = false"
+        " WHERE account_id = :a AND switch = '프로젝트 생성'",
+        {"a": ACC_A_RES})
+    r = _patch_project(client, pid, {"name": "스위치 없는 사람이 바꾼 이름"})
+    assert r.status_code == 403, "스위치 없는 사람이 프로젝트 정보를 고쳤다"
+    after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES))
+    assert after.json()["name"] == "스위치 확인용 프로젝트", "막혔다면서 값이 남았다"

@@ -13,7 +13,7 @@ Ted 판정 ㈎(2026-08-26) = `#36`(설명 결손 2건)의 해소 수단은 **`up
 """
 from __future__ import annotations
 
-from conftest import TOKEN_RES, auth
+from conftest import ACC_A_RES, TOKEN_RES, auth
 from test_dataset_registration import make_upload, register  # noqa: F401
 from test_lineage_confirm import _add_parent, _new_dataset
 
@@ -142,3 +142,21 @@ def test_a_field_outside_the_contract_is_rejected(p2_client) -> None:
 def test_an_unknown_dataset_is_404(p2_client) -> None:
     assert _patch(p2_client(), "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                   {"summary": "x"}).status_code == 404
+
+
+def test_editing_a_dataset_needs_the_upload_edit_switch(p2_client, sql) -> None:
+    """**계약이 선언한 `403` 을 서버가 실제로 낸다.**
+
+    seam 산문이 못 박은 대로 「`업로드·편집` 스위치가 판정한다」(`〈59〉-②`) —
+    형제 op(`createUpload`·`addDatasetFile`)은 이미 그 스위치로 막는데
+    이 op 만 판정 없이 통과했다. **화면에서 숨긴 것을 서버가 같은 기준으로 막는다**
+    (`P-11`·`P-12`).
+    """
+    client = p2_client()
+    dataset_id = _new_dataset(client, "스위치 확인용 자료")
+    sql("UPDATE d2_permission_switch SET enabled = false"
+        " WHERE account_id = :a AND switch = '업로드·편집'",
+        {"a": ACC_A_RES})
+    r = _patch(client, dataset_id, {"summary": "스위치 없는 사람이 적은 설명"})
+    assert r.status_code == 403, "스위치 없는 사람이 데이터셋 정보를 고쳤다"
+    assert _detail(client, dataset_id)["summary"] is None, "막혔다면서 값이 남았다"
