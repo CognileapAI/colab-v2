@@ -92,10 +92,20 @@ ENV_UPLOAD_TTL_HOURS = "COLAB_CORE_UPLOAD_TTL_HOURS"
 #: 실증된 최대는 `SEED-DATA` 의 1.3 GB 묶음이다. 값이 정본 밖에 있는 이유가 이것이다.
 DEFAULT_UPLOAD_TTL_HOURS = 24
 
-#: 접수한 바이트를 두는 자리. core-api ↔ 스토리지 사이는 **배포 내부 사정**이고 이 seam 의
-#: 것이 아니다 (`fe-core.yaml createUpload` 산문). 값이 없으면 접수를 거절한다 —
-#: 바이트를 버리고 201 을 내리는 것은 거짓말이다.
+#: 접수한 바이트를 두는 자리(저장 모드 local 일 때). core-api ↔ 스토리지 사이는
+#: **배포 내부 사정**이고 이 seam 의 것이 아니다 (`fe-core.yaml createUpload` 산문).
+#: 값이 없으면 프로세스마다 한 번 만드는 임시 디렉터리를 쓴다 — 바이트를 버리고
+#: 201 을 내리지 않기 위해서다 (`routes/ingestion.py` 의 실동작과 일치시킨 서술).
 ENV_UPLOAD_STORAGE_DIR = "COLAB_CORE_UPLOAD_DIR"
+
+#: 업로드 저장 백엔드 — `local`(로컬 디스크, 기본) | `s3` (`PLAN-SoT §9 〈173〉`).
+#: 로컬 개발은 local 이 기본값이라 아무 설정 없이 지금까지와 같이 돈다.
+#: s3 를 켜려면 버킷·리전이 **함께** 있어야 한다 — 반쪽 설정이면 뜨지 않는 것이 맞다.
+#: AWS 자격증명은 표준 환경변수 사슬(`kernel/aws_credentials.py` — env→ECS→IMDSv2)로 온다.
+ENV_STORAGE_MODE = "COLAB_CORE_STORAGE_MODE"
+ENV_S3_BUCKET = "COLAB_CORE_S3_BUCKET"
+ENV_S3_REGION = "COLAB_CORE_S3_REGION"
+STORAGE_MODES = ("local", "s3")
 
 #: 중계 대상 두 곳. 없으면 중계를 시도하지 않고 **정직하게** 답한다
 #: (미리보기는 503 성격의 봉투, AI 제안은 `degraded: true` + 0건).
@@ -121,6 +131,9 @@ class Settings:
     login_window_seconds: int = DEFAULT_LOGIN_WINDOW_SECONDS
     upload_ttl_hours: int = DEFAULT_UPLOAD_TTL_HOURS
     upload_storage_dir: str | None = None
+    storage_mode: str = "local"
+    s3_bucket: str | None = None
+    s3_region: str | None = None
     viz_base_url: str | None = None
     viz_service_token: str | None = None
     ai_base_url: str | None = None
@@ -138,6 +151,23 @@ def _positive_int(name: str, raw: str | None, fallback: int) -> int:
     return value
 
 
+def _storage_settings() -> tuple[str, str | None, str | None]:
+    mode = (os.environ.get(ENV_STORAGE_MODE) or "local").strip().lower()
+    if mode not in STORAGE_MODES:
+        raise RuntimeError(
+            f"{ENV_STORAGE_MODE} 가 모르는 값이다: {mode!r} — {'|'.join(STORAGE_MODES)} 중 하나. "
+            "오타를 local 로 조용히 접으면 dev 가 로컬 디스크에 쓰고도 아무도 모른다."
+        )
+    bucket = os.environ.get(ENV_S3_BUCKET) or None
+    region = os.environ.get(ENV_S3_REGION) or None
+    if mode == "s3" and not (bucket and region):
+        missing = [n for n, v in ((ENV_S3_BUCKET, bucket), (ENV_S3_REGION, region)) if not v]
+        raise RuntimeError(
+            f"저장 모드가 s3 인데 {' 와 '.join(missing)} 가 없다 — 반쪽 설정이면 뜨지 않는 것이 맞다."
+        )
+    return mode, bucket, region
+
+
 def load_settings() -> Settings:
     url = resolve_env_or_file(os.environ, ENV_DATABASE_URL)
     if not url:
@@ -145,6 +175,7 @@ def load_settings() -> Settings:
             f"{ENV_DATABASE_URL} (또는 {ENV_DATABASE_URL}{FILE_SUFFIX}) 가 비었다. "
             "접속 문자열의 기본값을 코드에 두지 않는다 — 설정이 없으면 뜨지 않는 것이 맞다."
         )
+    storage_mode, s3_bucket, s3_region = _storage_settings()
     return Settings(
         database_url=url,
         subjects_file=os.environ.get(ENV_SUBJECTS_FILE) or None,
@@ -163,6 +194,9 @@ def load_settings() -> Settings:
             ENV_UPLOAD_TTL_HOURS, os.environ.get(ENV_UPLOAD_TTL_HOURS),
             DEFAULT_UPLOAD_TTL_HOURS),
         upload_storage_dir=os.environ.get(ENV_UPLOAD_STORAGE_DIR) or None,
+        storage_mode=storage_mode,
+        s3_bucket=s3_bucket,
+        s3_region=s3_region,
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
         viz_service_token=os.environ.get(ENV_VIZ_SERVICE_TOKEN) or None,
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,

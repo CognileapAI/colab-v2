@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import os
 import pathlib
 import tempfile
 from typing import Any
@@ -27,6 +26,9 @@ from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d5_inges
                         d6_project, d8_insight)
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
+from ...kernel.s3 import S3Client
+from ...kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
+from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
@@ -44,60 +46,30 @@ MAX_FILE_NAME = 255
 
 
 # ── 저장 ────────────────────────────────────────────────────────────────────
-def _storage_root(request: Request) -> pathlib.Path:
-    """접수한 바이트를 두는 자리.
+# 바이트를 만지는 자리는 전부 저장 Port(`ports/storage.py`) 경유다 — 로컬 디스크와
+# S3 가 여기서 갈린다 (`〈173〉`). **저장 키가 곧 배치**라는 규칙은 그대로다: 키는
+# `kernel/storage_layout`(정본 `contracts/storage/layout.json`)이 만들고, 세 단위가
+# 같은 생성물을 쓴다 — 키 규칙이 두 곳에 적혀 갈라졌던 실패(`03-HANDOFF §4 #20`)의 봉인.
+def _storage(request: Request) -> UploadStoragePort:
+    """설정이 정한 저장 백엔드. 앱마다 한 번 만들어 재사용한다.
 
-    core-api ↔ 스토리지 사이(presigned multipart 인지 로컬인지)는 **배포 내부 사정**이고
-    이 seam 의 것이 아니다 (`fe-core.yaml createUpload` 산문). 설정이 없으면 프로세스마다
-    한 번 만드는 임시 디렉터리를 쓴다 — **바이트를 버리고 201 을 내리지 않기 위해서다.**
+    local 모드에서 `upload_storage_dir` 이 없으면 프로세스마다 한 번 만드는 임시
+    디렉터리를 쓴다 — **바이트를 버리고 201 을 내리지 않기 위해서다.**
     """
+    cached = getattr(request.app.state, "upload_storage", None)
+    if cached is not None:
+        return cached
     settings = request.app.state.settings
-    configured = getattr(settings, "upload_storage_dir", None)
-    if configured:
-        root = pathlib.Path(configured)
+    if getattr(settings, "storage_mode", "local") == "s3":
+        client = S3Client(bucket=settings.s3_bucket, region=settings.s3_region)
+        storage: UploadStoragePort = S3UploadStorage(client)
     else:
-        cached = getattr(request.app.state, "upload_storage_fallback", None)
-        if cached is None:
-            cached = tempfile.mkdtemp(prefix="colab-uploads-")
-            request.app.state.upload_storage_fallback = cached
-        root = pathlib.Path(cached)
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def _store(request: Request, *, key: str, payload: bytes) -> None:
-    """**저장 키가 곧 배치다.** 키는 `kernel/storage_layout` 이 만든다.
-
-    ⚠ 예전에는 `sha256(key)` 한 덩이를 루트에 평평하게 깔았다. 그런데 바이트를 여는 쪽
-    (`pipeline-worker` 의 `_storage_path`)은 **키를 경로로 그대로 읽는다** — 같은 규칙이
-    두 곳에 적혀 있다가 실제로 갈라진 자리다. 그 결과 워커가 파일을 못 찾고, 그 실패는
-    에러가 아니라 **「형식 인식 실패」로 위장**한다.
-
-    ⭑ **그 뒤 세 번째 자리가 있었다는 것이 드러났다**(`03-HANDOFF §4 #20`) — `viz-render`
-    는 또 다른 배치를 보고 있었고, 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다.
-    그래서 규칙을 주석의 약속이 아니라 **한 정본**(`contracts/storage/layout.json`)으로
-    옮겼다. 세 단위가 같은 생성물을 쓰고, `generated-up-to-date` 가 드리프트를 막는다.
-    """
-    path = _storage_root(request) / key
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(payload)
-
-
-def _discard(request: Request, *, key: str | None, keep: str | None = None) -> None:
-    """원장에서 사라진 격자의 **바이트도** 치운다.
-
-    ⚠ 바이트를 남기면 원장은 「없다」고 하는데 격자 폴더에는 남아 있는 상태가 된다.
-    격자를 읽는 쪽(`viz-render`)에는 원장이 없어 **폴더가 곧 사실**이라, 지운 격자로
-    계속 그리거나 짝이 셋이 되어 통째로 거절된다. 없는 파일은 조용히 넘어간다 —
-    이미 없는 것을 지우지 못했다고 200 을 500 으로 바꾸지 않는다.
-    """
-    if not key or key == keep:
-        return
-    path = _storage_root(request) / key
-    try:
-        path.unlink()
-    except (FileNotFoundError, IsADirectoryError, PermissionError):
-        return
+        configured = getattr(settings, "upload_storage_dir", None)
+        root = pathlib.Path(configured) if configured \
+            else pathlib.Path(tempfile.mkdtemp(prefix="colab-uploads-"))
+        storage = LocalFilesystemStorage(root)
+    request.app.state.upload_storage = storage
+    return storage
 
 
 def _dataset_keys(dataset_id: str, files) -> dict[str, str]:
@@ -105,59 +77,6 @@ def _dataset_keys(dataset_id: str, files) -> dict[str, str]:
     return {f.file_id: storage_layout.storage_key(dataset_id, file_id=f.file_id,
                                                   kind=f.kind, file_name=f.file_name)
             for f in files}
-
-
-def _prune_upload_dirs(root: pathlib.Path, old_keys) -> None:
-    """옮기고 남은 빈 자리를 치운다. 비어 있지 않으면 건드리지 않는다."""
-    stop = storage_layout.uploads_root(root)
-    for key in old_keys:
-        if not key:
-            continue
-        node = (root / key).parent
-        while stop in node.parents:
-            try:
-                node.rmdir()
-            except OSError:
-                break
-            node = node.parent
-
-
-def _relocate(request: Request, *, files, new_keys: dict[str, str]) -> None:
-    """등록 전환·후주입에서 **바이트를 데이터셋 자리로 옮긴다.**
-
-    ⚠ 예전에는 저장 키를 그대로 승계해 바이트가 `uploads/{uploadId}/` 에 남았다. 그리는
-    쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**이라, `datasetId` 로 오는 렌더 요청은 빈
-    자리를 보고 404 를 냈고 그 실패는 중계에서 **503 `RENDER_UNAVAILABLE`** 로 나왔다 —
-    등록된 데이터셋 **전체**가 대상이었다 (`03-HANDOFF §4 #20` 계열).
-
-    **사용자에게 등록은 데이터셋이 성립하는 사건이다.** 그래서 자리도 데이터셋의 것이 된다 —
-    같은 볼륨 안의 이름 바꾸기(`os.replace`)라 바이트를 복사하지 않는다. 그 뒤에 붙는
-    `addDatasetFile`·`replaceDatasetGridFile` 이 이미 `datasetId` 자리에 쓰고 있었으므로,
-    이 이동이 없으면 한 데이터셋의 파일이 **두 디렉터리로 갈라진 채** 남는다.
-
-    호출은 **모든 판정이 끝난 뒤 마지막**이다 — 중간 실패로 트랜잭션이 되감길 때
-    바이트만 옮겨진 상태를 만들지 않는다. 이동 도중 실패하면 옮긴 것을 되돌린다.
-    """
-    root = _storage_root(request)
-    done: list[tuple[pathlib.Path, pathlib.Path]] = []
-    try:
-        for f in files:
-            new_key = new_keys[f.file_id]
-            if not f.storage_key or f.storage_key == new_key:
-                continue
-            src, dst = root / f.storage_key, root / new_key
-            if not src.is_file():
-                # 바이트가 이미 없다. 원장은 새 자리를 적는다 — 두 자리를 만들지 않는다.
-                continue
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(src, dst)
-            done.append((src, dst))
-    except OSError:
-        for src, dst in reversed(done):
-            src.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(dst, src)
-        raise
-    _prune_upload_dirs(root, [f.storage_key for f in files])
 
 
 # ── 권한 ────────────────────────────────────────────────────────────────────
@@ -267,7 +186,7 @@ async def create_upload(request: Request, response: Response,
         file_id = Ulid.generate()
         key = storage_layout.storage_key(str(upload_id), file_id=str(file_id),
                                          kind=kind, file_name=name)
-        _store(request, key=key, payload=payload)
+        _storage(request).put(key=key, payload=payload)
         records.append(UploadFileRecord(
             file_id=str(file_id), file_name=name, kind=kind, byte_size=len(payload),
             storage_key=key,
@@ -548,7 +467,7 @@ def create_dataset(request: Request, body: dict = None,
         d6_project.link_dataset(db, project_id=pid, dataset_id=dataset_id)
 
     # ⑤ 바이트 — **판정이 다 끝난 뒤에** 옮긴다. 앞에서 실패하면 바이트는 그대로다.
-    _relocate(request, files=files, new_keys=new_keys)
+    _storage(request).relocate(files=files, new_keys=new_keys)
     # ⑥ **올린 일이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
     #    등록이 다 끝난 뒤에 적는다 — 위에서 떨어진 요청은 데이터셋을 만들지 않았으므로
     #    활동도 없다(활동만 남으면 목록이 없는 데이터셋을 가리킨다).
@@ -599,7 +518,7 @@ async def add_dataset_file(request: Request, datasetId: str,
     file_id = Ulid.generate()
     key = storage_layout.storage_key(datasetId, file_id=str(file_id),
                                      kind=kind, file_name=name)
-    _store(request, key=key, payload=payload)
+    _storage(request).put(key=key, payload=payload)
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
         # 축을 지어내지 않는다 (`〈66〉`). 축 판별은 파일을 읽는 쪽의 일이다.
@@ -713,7 +632,7 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
 
     # `〈60〉` — 계보를 접지 않고 이력에 남긴다. 좌표계·격자는 재계산한다.
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
-    _relocate(request, files=grids, new_keys=new_keys)
+    _storage(request).relocate(files=grids, new_keys=new_keys)
     return {"items": out}
 
 
@@ -749,11 +668,11 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
     payload = await file.read()
     key = storage_layout.storage_key(datasetId, file_id=str(file_ref),
                                      kind=row.kind, file_name=name)
-    _store(request, key=key, payload=payload)
+    _storage(request).put(key=key, payload=payload)
     # **옛 바이트를 남기지 않는다.** 격자는 이름으로 자리가 정해지므로(`layout.json`),
     # 이름이 바뀐 교체는 옛 파일을 그 자리에 그대로 둔다 — 그러면 격자 폴더에 위도가
     # 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다. 교체했는데 안 그려지는 실물이 이것이다.
-    _discard(request, key=row.storage_key, keep=key)
+    _storage(request).discard(key=row.storage_key, keep=key)
     updated = d3_catalog.replace_file(db, file_id=file_ref, file_name=name,
                                       size_bytes=len(payload), storage_key=key)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
@@ -768,7 +687,7 @@ def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
     """삭제도 정상 동작이다. **본체는 지우지 않는다** — 409 (`〈59〉-③`)."""
     row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
     d3_catalog.delete_file(db, file_ref)
-    _discard(request, key=row.storage_key)
+    _storage(request).discard(key=row.storage_key)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return Response(status_code=204)
 

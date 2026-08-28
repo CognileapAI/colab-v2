@@ -187,6 +187,28 @@ class S3Client:
 
     # ── 객체 ────────────────────────────────────────────────────────────────
 
+    def put_object(self, key: str, payload: bytes,
+                   content_type: str = "application/octet-stream") -> str:
+        """단일 PUT. 서버가 직접 바이트를 놓는 경로(저장 백엔드 s3 모드)에서만 쓴다."""
+        headers, _body = self._call(method="PUT", key=key, payload=payload,
+                                    extra_headers={"content-type": content_type},
+                                    timeout=60.0)
+        lowered = {k.lower(): v for k, v in headers.items()}
+        return lowered.get("etag", "")
+
+    def copy_object(self, src_key: str, dst_key: str) -> None:
+        """같은 버킷 안 서버사이드 복사 — 바이트가 서버를 오가지 않는다.
+
+        CompleteMultipartUpload 처럼 **200 본문에 <Error> 가 올 수 있다** — 루트 태그를
+        확인한다 (등록 전환의 이동이 조용히 실패하면 안 된다).
+        """
+        source = f"/{self.bucket}/{uri_encode(src_key, keep_slash=True)}"
+        _h, body = self._call(method="PUT", key=dst_key,
+                              extra_headers={"x-amz-copy-source": source}, timeout=60.0)
+        root = _xml(body)
+        if root.tag.endswith("Error") or root.findtext("{*}ETag") is None:
+            raise _error_from(body, 200)
+
     def head_object(self, key: str) -> tuple[int, str]:
         headers, _body = self._call(method="HEAD", key=key)
         lowered = {k.lower(): v for k, v in headers.items()}
