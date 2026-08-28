@@ -109,6 +109,11 @@ done
 ```
 
 - 컨테이너 **8개**(nginx·cloudflared·pg·core_api·frontend·pipeline_worker·viz_render·ai_service) 전부 `healthy`
+  > ⚠ 2026-08-28 이전에는 이 줄이 **참이 아니었다.** `cloudflared` 만 헬스체크 선언이 없어
+  > 실물은 7개만 헬스체크를 가졌고(실측 8개 중 7개 `healthy`, cloudflared 는 「헬스체크없음」),
+  > `verify-deploy.sh` ② 가 구조적으로 RED 를 냈다. `compose.i2.yml` 에 `cloudflared` 헬스체크를
+  > 선언해 고쳤다 — **선언은 다음 배포에서 컨테이너가 재생성될 때 적용된다.** 그 전까지는
+  > 돌고 있는 컨테이너가 옛 선언이라 이 줄이 여전히 거짓이고 판정기도 RED 다.
 - 헬스 **6종 전부 200**
 
 > **루트 하나만 보고 넘어가지 않는다.** 자리표시 오리진도 루트는 200 을 낸다.

@@ -56,7 +56,36 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?CF_TUNNEL_TOKEN 이 필요하다}
-    command: ["tunnel", "--no-autoupdate", "run"]
+    # ⭑ `--metrics` 를 **명시로 못박는다.** 기본값 `0.0.0.0:0` 은 20241~20245 중 「비어 있는 것」을
+    #   집으므로 포트가 기동마다 달라질 수 있고, 그러면 아래 헬스체크가 고정 주소를 못 쓴다.
+    #   loopback 에 묶는다 — 판정 주체가 **이 컨테이너 자신**이라 compose 네트워크에 낼 이유가 없다.
+    #   (`--management-diagnostics` 기본값이 true 라 이 주소에는 /debug/pprof·/metrics 도 붙는다.)
+    command: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:20241", "run"]
+    # ⭑ 이 컨테이너만 헬스체크가 **없었다**. 8개 중 7개가 `healthy` 인데 이것만 「선언없음」이라
+    #   `verify-deploy.sh` ② 가 구조적으로 RED 를 냈다. **판정에서 빼지 않는다** — 터널이 죽으면
+    #   사이트가 외부에서 통째로 안 보이는데, 빼면 그것이 안 보이는 채로 green 이 난다.
+    #
+    # ⚠ 이 이미지는 **distroless 다 — 셸도 curl 도 wget 도 없다.** 그래서 다른 단위가 쓰는
+    #   `CMD-SHELL` 이 여기서는 통째로 안 먹는다(`exec: "sh": executable file not found`).
+    #   대신 cloudflared 바이너리 자신의 `tunnel ready` 를 쓴다 — /ready 를 호출해 종료코드로 답한다.
+    #
+    # ⚠ **`--metrics` 는 `ready` 앞에 와야 한다**(`cloudflared tunnel [옵션] ready`).
+    #   뒤에 놓으면 `Incorrect Usage: flag provided but not defined` 를 내면서 **종료코드 0** 이다 —
+    #   즉 아무것도 안 보고 영원히 통과하는 헬스체크가 된다. 실측으로 확인한 함정이다.
+    #
+    # 실측(2026-08-28, 가동 중인 컨테이너) — 살아 있는 주소에서 exit 0,
+    # 아무도 안 듣는 주소(20242~20245 · 29999)에서 exit 1. 양방향 모두 확인했다.
+    # /ready 본문은 `{"status":200,"readyConnections":4,...}` 로 **실제 연결 수**를 낸다 —
+    # 프로세스가 살아 있다는 뜻이 아니라 터널이 붙어 있다는 뜻이다.
+    #
+    # `start_period` 는 기동 직후 연결이 붙기 전의 실패를 계수하지 않을 뿐이고,
+    # 최종 판정은 그대로 진짜 통과를 요구한다 — 건너뛰기가 아니다.
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:20241", "ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ── 기록 저장소. 두 체인이 **같은 클러스터의 다른 데이터베이스**다.
   #    한 데이터베이스에 둘을 합치면 CLAUDE.md §3-3(체인 분리)이 스키마 이름 규칙으로만 남는다.
