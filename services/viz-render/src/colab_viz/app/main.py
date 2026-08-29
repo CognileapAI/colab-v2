@@ -1,9 +1,9 @@
-"""viz-render 앱 — `core-viz.yaml` 의 표면 중 **미리보기 최소 렌더 경로 4 op**.
+"""viz-render 앱 — `core-viz.yaml` 의 표면 중 **렌더 5 op**.
 
-등록된 것 — `createRender` · `getRender` · `getRenderTile` · `listPalettes`.
-**등록하지 않은 것과 그 이유** — `createScreenshot` 은 P2 가 아니다(`P2-EXEC §3`).
-501 로 자리만 잡아 두지도 않는다: 이 seam 에는 「미구현 표」 규약이 없고(그것은
-`fe-core` 쪽 장치다), 없는 경로는 라우트 표에 없는 것이 정직하다.
+등록된 것 — `createRender` · `getRender` · `getRenderTile` · `listPalettes`,
+그리고 **`createScreenshot`**(P3 · `WORK-UNITS §10.2` 말미가 완료 정의로 올렸다).
+없는 경로는 라우트 표에 없는 것이 정직하다 — 501 로 자리만 잡아 두지 않는다:
+이 seam 에는 「미구현 표」 규약이 없다(그것은 `fe-core` 쪽 장치다).
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from ..domains.d7_visualization.jobs import JobStore
 from ..kernel import errors
 from ..kernel.config import Settings, load_settings
 from ..ports.source import FilesystemSourcePort
-from .routes import renders, style
+from .routes import renders, screenshots, style
 
 API_PREFIX = "/viz/v1"
 
@@ -40,7 +40,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # 프로세스 생존과 파일 도달성은 다른 질문이다 — 섞으면 멀쩡한 프로세스가 죽는다.
         return {"unit": "viz-render", "status": "alive", "implemented": True}
 
-    for router in (renders.router, renders.tile_router, style.router):
+    for router in (renders.router, renders.tile_router,
+                   screenshots.router, style.router):
         app.include_router(router, prefix=API_PREFIX)
 
     @app.exception_handler(HTTPException)
