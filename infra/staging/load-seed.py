@@ -208,7 +208,7 @@ def load_dataset(client: Client, ds: dict, source_root: Path, resolved: dict[str
         if not pid:
             raise Abort(f"계보 부모 {parent['parentKey']} 의 datasetId 를 모른다 "
                         f"— 부모가 먼저 적재돼야 한다")
-        item = {"parentDatasetId": pid, "origin": parent.get("origin", "사람이 직접 연결")}
+        item = {"parentDatasetId": pid, "origin": parent.get("origin", "manual")}
         if parent.get("parentRole"):
             item["parentRole"] = parent["parentRole"]
         if parent.get("method"):

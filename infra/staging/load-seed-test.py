@@ -201,7 +201,7 @@ MANIFEST_3 = {
         {"key": "D-C", "round": 2, "name": "다 데이터셋", "topic": "식생·NDVI",
          "files": [{"path": "c1.nc", "kind": "본체"}],
          "lineageParents": [{"parentKey": "D-A", "parentRole": "주입력",
-                             "method": "Nearest", "origin": "사람이 직접 연결"}]},
+                             "method": "Nearest", "origin": "manual"}]},
     ]
 }
 

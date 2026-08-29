@@ -86,7 +86,7 @@
       "lineageParents": [
         {
           "parentKey": "D-01",
-          "origin": "사람이 직접 연결",
+          "origin": "manual",
           "parentRole": "주입력",
           "method": "최근린보간"
         }
@@ -143,7 +143,7 @@
       "lineageParents": [
         {
           "parentKey": "D-01",
-          "origin": "사람이 직접 연결",
+          "origin": "manual",
           "parentRole": "주입력",
           "method": "이중선형보간"
         }
@@ -200,7 +200,7 @@
       "lineageParents": [
         {
           "parentKey": "D-01",
-          "origin": "사람이 직접 연결",
+          "origin": "manual",
           "parentRole": "주입력",
           "method": "IDW (k=12, p=2)"
         }
@@ -257,13 +257,13 @@
       "lineageParents": [
         {
           "parentKey": "D-01",
-          "origin": "사람이 직접 연결",
+          "origin": "manual",
           "parentRole": "주입력",
           "method": "Regression Kriging"
         },
         {
           "parentKey": "D-02",
-          "origin": "사람이 직접 연결",
+          "origin": "manual",
           "parentRole": "보조입력"
         }
       ],
