@@ -14,6 +14,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from depgate import require_dep
+
 from colab_pipeline.d5.grid import GridUnavailableError, find_reference_grid
 
 _ENV = "COLAB_REFERENCE_DATA"
@@ -25,7 +27,7 @@ HSR_SOUTH_NPY = 30.102751
 
 
 def _write_combined(path, lat, lon):
-    h5py = pytest.importorskip("h5py")
+    h5py = require_dep("h5py")
     with h5py.File(path, "w") as f:
         f.create_dataset("lat", data=lat)
         f.create_dataset("lon", data=lon)
@@ -61,7 +63,7 @@ def test_npy_pair_is_still_used_when_no_container_is_present(tmp_path: Path):
 
 def test_an_unreadable_container_falls_back_to_the_npy_pair_and_says_so(tmp_path: Path):
     """컨테이너가 격자가 아니면 `.npy` 로 내려간다 — **조용히 무시하지는 않는다**."""
-    h5py = pytest.importorskip("h5py")
+    h5py = require_dep("h5py")
     d = tmp_path / "04.Lat_Lon_info"
     d.mkdir()
     np.save(d / "Lat_x.npy", np.repeat(np.linspace(30, 43, 8)[:, None], 8, axis=1))
