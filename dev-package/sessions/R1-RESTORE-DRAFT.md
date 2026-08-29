@@ -249,7 +249,7 @@ docker compose -f infra/staging/compose.i2.yml --env-file $ENVFILE up -d
 | ① | **데이터셋** | `psql -U <owner> -d colab_platform -At -c "SELECT count(*) FROM d3_dataset"` | **12** |
 | ② | **계보 간선** | `… -c "SELECT count(*) FROM d4_lineage_edge"` | **6** (2026-08-27 실측 · 전건 확정 · `§9 〈159〉`). ⚠ `B`(`D-09`→`D-16`)는 **이미 그어져 있었다** — 여러 문서의 「5」는 틀린 값이다. **런북은 「복원 시점의 기대치」를 쓰는 것이지 상수를 박는 것이 아니다** |
 | ③ | **온톨로지 사전 non-`None`** | `psql -U <owner> -d colab_ai -At -c "SELECT (SELECT count(*) FROM d9_method_term), (SELECT count(*) FROM d9_place_alias), (SELECT count(*) FROM d9_topic_synonym), (SELECT count(*) FROM d9_concept), (SELECT count(*) FROM d9_concept_edge)"` | 앞 셋 = **13 · 4 · 5**(합 **22** = K2 시드) · 뒤 둘 **> 0**. 표 이름은 `app/dictionaries.py` 의 5개 질의가 정본 |
-| ③-보 | **읽는 경로까지 살아 있다** | `POST /searches` 를 정문으로 한 번 | `_UnavailableDictionaries` 면 여기서 **`RuntimeError`** 가 난다. **사전 표가 차 있어도 배선이 끊기면 검색에서만 드러난다**(㉲) |
+| ③-보 | **읽는 경로까지 살아 있다** | `POST /searches` 를 정문으로 한 번 | ⭑ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈207〉`-㉯⟩ 이 오라클은 실물과 다르다.** `d10_ai_services.py:146-153` 이 `expand` 를 `try/except Exception` 으로 감싸 **사전이 죽어도 200 이 나온다** — `degraded=true` ＋ 「온톨로지 사전을 읽지 못해…」 로 내려앉을 뿐이다. **⟹ 통과 기준 = 「200」이 아니라 「`degraded:false` ＋ 확장 산출」.** 상태코드만 보면 **사전이 끊겨도 통과**한다 — green-by-skip 자리다. **실측 2026-08-29 20:50 = 200 · `degraded:false` · `topic` 채워짐 · 원 질의에 없던 낱말 2개 부착.** ／ 이전 ~~`_UnavailableDictionaries` 면 여기서 **`RuntimeError`** 가 난다~~ · **사전 표가 차 있어도 배선이 끊기면 검색에서만 드러난다**(㉲) |
 | ④ | **이미지 digest** | `docker inspect --format '{{.Id}}'` — `core-api`·`pipeline-worker`·`viz-render`·`ai-service`·`frontend` 의 `:i2` | **P8 에서 적어 둔 5개와 전건 일치.** 하나라도 다르면 **복원이 아니라 재배포를 한 것**이다 |
 | ⑤ | **권한·RLS 가 살아 있다** | 앱 롤로 붙어 cross-tenant 음성 확인 1건 | `--no-privileges` 덤프라 **GRANT 가 덤프에 없다.** 앱 롤이 못 읽거나, 반대로 RLS 없이 다 읽히면 **둘 다 RED** |
 | ⑥ | 파일 원장 | `… -c "SELECT count(*) FROM d3_file"` | **129**(`IS3 §14` 실측). ⚠ §4.4-㈏ 를 택했으면 **원장과 볼륨의 대조는 성립하지 않는다 — 그 사실을 적는다** |
@@ -419,9 +419,9 @@ Ted 판정 둘(비밀 사본 `-㉰` · 일회용 기동 단 `-㉱`)도 집행됐
 |---|---|
 | ~~**crontab 재설치**(`install-schedule.sh install`)~~ | ✅ **닫힘 (2026-08-28 · Ted 실행 · `PLAN-SoT §9 〈173〉-㉰`)** — 03:30 대상 = **`backup-full.sh`**, 경로 = **본 체크아웃**, 월요 04:10 `latest-check.sh` 유지(실측) |
 | **오라클을 켠 채 스케줄이 도는가** | ⛔ **미실측 — 크론 환경 첫 회차가 2026-08-28 03:30 이다.** 확인 = 로그 끝의 **전범위 백업 성공 출력** ＋ 보관처에 **실패 표식 없음**. **손으로 돌린 GREEN 은 기구가 아니다** — 이 확인 전에는 `R-1` 을 닫지 않는다 |
-| `§4.6-③-보` `POST /searches` 1회 | 2회차는 `datasets` 로 경계를 쳤다. `_UnavailableDictionaries` 는 검색 시점에야 터진다 |
-| `preflight` 가 리허설 경로에서 GREEN 이 될 수 없는 성질 | 결함인지 의도인지 **판정 대기** |
-| `:i2` 태그 이동 이력 · `§5-8` 원인 규명(P9) | `§5-5` 의 남은 절반 · 사고가 나야 있는 값 |
+| ~~`§4.6-③-보` `POST /searches` 1회~~ | ✅ **닫힘 (2026-08-29 · `〈207〉`-㉮)** — 실요청 **200 · `degraded:false`** ＋ 사전 확장 실동작. 잔여 `[미확인]` = core-api 중계 다리(정문 무세션 **401** 실측) |
+| ~~`preflight` 가 리허설 경로에서 GREEN 이 될 수 없는 성질~~ | ✅ **판정 (2026-08-29 · `〈207〉`-㉱)** = **의도**. P6·P7 은 입력 부재 · **P9 는 fail-closed 가 옳다**. ⛔ 다만 **`P5-b` 2건은 새 결함**(`-㉲`) — **`R-1` 의 꼬리가 아니라 별건** |
+| **`:i2` 태그 이동 이력** · `§5-8` 원인 규명(P9) | ⛔ **열림.** `§5-5` 의 남은 절반 · 사고가 나야 있는 값. ⭑ **2026-08-29 (`〈207〉`-㉳)** — 대장 대조 **RED 5건/8건** · 이동 시점은 `release-ledger.tsv` 로 특정(**08-29T10:08:36 green 배포**)했으나 **원장이 적는 것은 릴리스 태그이지 digest 가 아니다. 이력 기구가 없다** |
 
 **종전 문구 — 이번 회차에 사실이 아니게 됐다.** ~~즉 `R-1` 은 9·10 이 남아 있고, 둘 다 「컨테이너 8개 왕복」 하나에 걸려 있다.~~
 
