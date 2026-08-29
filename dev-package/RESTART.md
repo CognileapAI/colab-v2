@@ -199,13 +199,42 @@ cd services/core-api && CONTAINER=<레인>_pg APP_PASSWORD=<임시> tests/fixtur
 | `COLAB_CORE_TEST_SUBJECTS_FILE` | 레포 픽스처 `services/core-api/tests/fixtures/subjects.json` (미지정이면 `conftest.py:54` 가 같은 파일로 되돌린다) |
 | `COLAB_REFERENCE_DATA` | 원천 마운트 `/mnt/f/00_Project/00 CoLAB/03 Reference-Data` — `pipeline-worker`·`viz-render` 의 실데이터 시험이 읽는다 |
 | `COLAB_PIPELINE_DB_URL` | 위 ④ 의 `tests/fixtures/setup-db.sh` 가 찍는 일회용 DB URL 을 그대로 쓴다 (원장은 `core-api` 와 같은 `colab_platform`) |
-| `COLAB_AI_TEST_DICT_DB_URL` | **`[미확인]`** — `db/ai` 체인용 부트스트랩이 없다. 푸는 법 = `services/ai-service/tests/fixtures/` 에 `core-api` 와 **같은 규약**으로 일회용 DB 부트스트랩을 신설한다 (`services/ai-service/tests/fixtures/` 디렉터리 자체가 아직 없다) |
+| `COLAB_AI_TEST_DICT_DB_URL` | `services/ai-service/tests/fixtures/setup-db.sh` 가 찍는 일회용 DB URL (`db/ai` 체인 · DB `colab_ai`). ⭑ **⟨신설 2026-08-29⟩ 부트스트랩이 생겼다** — `core-api` 와 같은 규약이고 다른 것은 체인뿐이다 |
+
+**다섯 값이 사는 자리 = 홈의 `~/.colab-v2-test.env`(`0600`)** ⭑ ⟨신설 2026-08-29⟩.
+`~/.colab-v2-staging.env` · `~/.colab-v2-staging-backup.env` 와 **같은 관행**이다 — 레포에 두지 않는다(`CLAUDE.md §3-8`).
+
+```
+set -a; . ~/.colab-v2-test.env; set +a
+cd services/<단위> && .venv/bin/python -m pytest
+```
+
+> ⚠ **DB URL 세 줄(`COLAB_CORE_TEST_DATABASE_URL` · `COLAB_PIPELINE_DB_URL` · `COLAB_AI_TEST_DICT_DB_URL`)은 일회용 컨테이너의 값이다.**
+> tmpfs 라 컨테이너를 지우거나 호스트를 껐다 켜면 **죽는다.** 다시 만든 뒤 각 체인의 `setup-db.sh` 가 찍는 한 줄로 **덮어쓴다.**
+> 파일 머리에 그 두 줄이 적혀 있다. **값은 그 파일 밖 어디에도 적지 않는다.**
+
+ai 체인 일회용 DB 를 세우는 줄 (`postgres:16-alpine` · `--rm` · tmpfs · `PGDATA` · 호스트 포트 미공개):
+
+```
+docker run -d --rm --name ai_pg \
+  --tmpfs /var/lib/postgresql/data:rw,size=512m \
+  -e PGDATA=/var/lib/postgresql/data/pg \
+  -e POSTGRES_PASSWORD=<임시> -e POSTGRES_DB=colab_ai postgres:16-alpine
+
+cd services/ai-service && CONTAINER=ai_pg APP_PASSWORD=<임시> tests/fixtures/setup-db.sh
+```
+
+- 앱 롤은 **`colab_ai_app` 이고 `colab_app` 이 아니다** — 한 자격증명이 두 체인을 다 여는 순간을 만들지 않는다
+- 그 롤은 **SELECT 뿐**이고, 쓰기 권한이 붙으면 스크립트가 그 자리에서 죽는다(`infra/staging/db-bootstrap.sh` 의 `app-grants` 와 같은 fail-closed)
+- 시드 둘(`k2_ontology_seed.sql` · `k2b_concept_graph_seed.sql`)까지 적재한다 — 시험이 세는 수(사전 22 · 노드 49 · 엣지 19)의 출처다
 
 **없이 돌리면 붕괴로 보인다** — core-api `471 errors` · pipeline-worker `23 failed·15 errors` · viz-render `8 failed`.
 **전부 환경 게이트이고, skip 이 아니라 fail 로 떨구는 의도적 설계다**(green-by-skip 금지 · `CLAUDE.md §4`) — 고장으로 읽지 않는다.
-**채우면 전건 통과** — core-api **471** · pipeline-worker **160** · viz-render **119** · frontend **277**.
+**채우면 전건 통과** — core-api **471** · pipeline-worker **160** · viz-render **119** · **ai-service 98** · frontend **277**.
+(앞 넷은 2026-08-29 재실측 — `~/.colab-v2-test.env` 를 source 한 뒤 각 단위 `.venv/bin/python -m pytest`.)
 
-**`services/ai-service/.venv` 는 없다** — 4개 서비스 중 유일하게 빠져 있다. 세우는 줄 (`services/ai-service` 에서):
+⭑ **⟨개정 2026-08-29⟩ `services/ai-service/.venv` 를 세웠다.** 실측 = 환경 없이 `72 passed · 26 errors` · 위 env 를 채우면 **98 passed**.
+／ 이전 ~~`services/ai-service/.venv` 는 없다 — 4개 서비스 중 유일하게 빠져 있다~~. 세우는 줄 (`services/ai-service` 에서):
 
 ```
 uv venv .venv && uv pip install -r requirements.txt -r requirements-dev.txt

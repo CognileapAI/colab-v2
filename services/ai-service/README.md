@@ -72,7 +72,19 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requiremen
 COLAB_AI_TEST_DICT_DB_URL=... .venv/bin/python -m pytest
 ```
 
-일회용 사전 DB 는 `db/ai/schema.sql` + `db/ai/seed/k2_ontology_seed.sql` 로 만든다. 카탈로그 검색 시험은 `services/core-api/tests/test_search_execution.py` 로 옮겨 갔다.
+일회용 사전 DB 는 **`tests/fixtures/setup-db.sh`** 하나로 만든다 ⭑ ⟨신설 2026-08-29⟩ — `db/ai/schema.sql` ＋ 시드 둘
+(`k2_ontology_seed.sql` · `k2b_concept_graph_seed.sql`) ＋ 앱 롤 `colab_ai_app`(**SELECT 뿐** · fail-closed)까지 세우고
+접속 URL 을 **마지막 한 줄로만** 찍는다. 규약은 `services/core-api/tests/fixtures/setup-db.sh` 와 같다.
+
+```bash
+docker run -d --rm --name ai_pg --tmpfs /var/lib/postgresql/data:rw,size=512m \
+  -e PGDATA=/var/lib/postgresql/data/pg -e POSTGRES_PASSWORD=<임시> -e POSTGRES_DB=colab_ai postgres:16-alpine
+CONTAINER=ai_pg APP_PASSWORD=<임시> tests/fixtures/setup-db.sh
+```
+
+시험 환경변수가 사는 자리는 홈의 `~/.colab-v2-test.env`(`0600`) 다 — `dev-package/RESTART.md §2-④`.
+**DB 를 안 붙이면 26건이 fail 한다. skip 이 아니다**(실측 = 붙이면 **98 passed** · 안 붙이면 `72 passed · 26 errors`).
+카탈로그 검색 시험은 `services/core-api/tests/test_search_execution.py` 로 옮겨 갔다.
 ⚠ `ai-no-lineage-write` 게이트의 L2 층은 이 디렉터리의 **모든 텍스트 파일**을 훑는다 — `.venv/` 도 포함이다(현재 의존 17개로 green).
 
 ### 런타임 환경변수
