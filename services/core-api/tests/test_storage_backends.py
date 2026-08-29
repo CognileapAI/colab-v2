@@ -131,3 +131,68 @@ def test_storage_mode_defaults_to_local(monkeypatch) -> None:
     monkeypatch.delenv(ENV_STORAGE_MODE, raising=False)
     mode, _bucket, _region = _storage_settings()
     assert mode == "local"
+
+
+# ── put_stream (`〈175〉` — 업로드 본문을 통째로 메모리에 올리지 않는다) ──────
+
+def test_local_put_stream_copies_in_chunks_and_returns_the_size(tmp_path, monkeypatch) -> None:
+    """청크 4 바이트로 10 바이트를 옮긴다 — 한 번의 read 로 다 읽는 구현이면 청크 크기가 뜻이 없다."""
+    import io
+
+    from colab_core.kernel import storage_backends
+    monkeypatch.setattr(storage_backends, "STREAM_CHUNK", 4)
+
+    class Counting(io.BytesIO):
+        reads: list[int] = []
+
+        def read(self, n=-1):  # noqa: D401
+            self.reads.append(n)
+            return super().read(n)
+
+    src = Counting(b"0123456789")
+    st = LocalFilesystemStorage(tmp_path)
+    assert st.put_stream(key="uploads/U1/F1", stream=src) == 10
+    assert (tmp_path / "uploads/U1/F1").read_bytes() == b"0123456789"
+    assert all(n == 4 for n in src.reads), src.reads
+    assert len(src.reads) >= 3
+
+
+def test_local_put_stream_overwrites(tmp_path) -> None:
+    import io
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="uploads/U1/F1", payload=b"old-old-old")
+    assert st.put_stream(key="uploads/U1/F1", stream=io.BytesIO(b"new")) == 3
+    assert (tmp_path / "uploads/U1/F1").read_bytes() == b"new"
+
+
+def test_s3_put_stream_is_a_read_fallback_that_sends_one_put() -> None:
+    """SigV4 가 본문 전체 해시를 서명에 넣으므로 S3 쪽은 다 읽어 단일 PUT 이다 — 그 사실을 못 박는다."""
+    import io
+    calls, client = _client([_PUT_OK])
+    n = S3UploadStorage(client).put_stream(key="uploads/U1/F1", stream=io.BytesIO(b"abc"))
+    assert n == 3
+    method, url, headers, payload = calls[0]
+    assert method == "PUT" and url.endswith("/uploads/U1/F1") and payload == b"abc"
+    assert headers.get("content-type") == "application/octet-stream"
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("seekable", [True, False])
+def test_s3_put_stream_over_the_single_put_limit_is_413_before_any_request(
+        monkeypatch, seekable) -> None:
+    """5 GiB 상한 — 탐색 가능하면 읽기 전에 재고, 아니면 읽은 뒤 잰다. 어느 쪽도 S3 에 닿지 않는다."""
+    import io
+
+    from colab_core.kernel import errors, storage_backends
+    monkeypatch.setattr(storage_backends, "S3_SINGLE_PUT_MAX", 2)
+
+    class NotSeekable(io.BytesIO):
+        def seekable(self):
+            return False
+
+    stream = io.BytesIO(b"abc") if seekable else NotSeekable(b"abc")
+    calls, client = _client([])
+    with pytest.raises(errors.ApiError) as exc:
+        S3UploadStorage(client).put_stream(key="uploads/U1/F1", stream=stream)
+    assert exc.value.status_code == 413
+    assert calls == []

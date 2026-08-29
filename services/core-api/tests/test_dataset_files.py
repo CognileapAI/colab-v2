@@ -193,3 +193,58 @@ def test_the_activity_action_string_is_exactly_the_one_the_decision_fixed() -> N
     """값 집합이 열린 것은 **아무 문자열이나 써도 된다는 뜻이 아니다** — 정본이 안 닫았다는
     뜻이다 (`〈60〉`). 레인마다 다른 문자열을 쓰면 활동 화면이 뒤죽박죽이 된다."""
     assert ACTION_GRID_CHANGED == "좌표계·격자 변경"
+
+
+# ═══════════ 파일 메타 — `byteSize`·`createdAt`·`relativePath` (`〈175〉-(가)·(나)`) ═══════════
+def test_grid_replace_response_carries_size_and_created_at(p2_client, sql) -> None:
+    """모든 파일 응답이 `d3_catalog.file_ref` 하나를 지난다 — 교체 응답에도 크기·시각이 있고,
+    `total_size_bytes` 는 트리거가 차분(50 → 8)으로 따라온다."""
+    client = p2_client()
+    payload = b"\x89HDF\r\n\x1a\n"
+    r = client.put(f"{API_PREFIX}/datasets/{DS_A1}/files/{GRID_FILE}",
+                   files={"file": ("new-grid.nc", payload, "application/octet-stream")},
+                   headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["byteSize"] == len(payload)
+    assert body["createdAt"].endswith("Z")
+    assert body["gridAxis"] == {"carriesLat": True, "carriesLon": True}
+    assert "relativePath" not in body
+    assert sql("SELECT total_size_bytes FROM d3_dataset_autometa WHERE dataset_id = :d",
+               {"d": DS_A1})[0]["total_size_bytes"] == 50 + len(payload)
+
+
+def test_adding_a_body_file_with_a_relative_path_keeps_the_folder(p2_client, sql) -> None:
+    """`addDatasetFile` 의 `relativePath` 가 `d3_file.relative_path`(0009)에 남고, 응답과 목록에
+    **있을 때만** 키로 선다. 합계는 트리거가 더한다(100 → 108)."""
+    client = p2_client()
+    r = client.post(f"{API_PREFIX}/datasets/{DS_A1}/files",
+                    files={"file": ("extra.csv", b"a,b\n1,2\n", "text/csv")},
+                    data={"kind": "본체", "relativePath": "sub\\dir/extra.csv"},
+                    headers=auth(TOKEN_RES))
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["relativePath"] == "sub/dir/extra.csv"
+    assert body["byteSize"] == 8 and body["createdAt"].endswith("Z")
+    assert "gridAxis" not in body
+
+    listed = {f["fileId"]: f for f in
+              client.get(f"{API_PREFIX}/datasets/{DS_A1}/files",
+                         headers=auth(TOKEN_RES)).json()["items"]}
+    assert listed[body["fileId"]]["relativePath"] == "sub/dir/extra.csv"
+    assert "relativePath" not in listed[BODY_FILE]
+    assert listed[BODY_FILE]["byteSize"] == 50
+    assert sql("SELECT relative_path FROM d3_file WHERE id = :f",
+               {"f": body["fileId"]})[0]["relative_path"] == "sub/dir/extra.csv"
+    assert sql("SELECT total_size_bytes FROM d3_dataset_autometa WHERE dataset_id = :d",
+               {"d": DS_A1})[0]["total_size_bytes"] == 108
+
+
+def test_adding_a_file_with_an_unnormalizable_relative_path_is_400(p2_client, sql) -> None:
+    before = sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :d", {"d": DS_A1})[0]["n"]
+    r = p2_client().post(f"{API_PREFIX}/datasets/{DS_A1}/files",
+                         files={"file": ("x.csv", b"a\n", "text/csv")},
+                         data={"kind": "본체", "relativePath": ".."}, headers=auth(TOKEN_RES))
+    assert r.status_code == 400, r.text
+    assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :d",
+               {"d": DS_A1})[0]["n"] == before

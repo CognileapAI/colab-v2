@@ -65,7 +65,7 @@ _FIND = text(f"""
 
 _FILES = text("""
     SELECT id, file_name, kind, byte_size, storage_key,
-           carries_lat, carries_lon, detected_format
+           carries_lat, carries_lon, detected_format, relative_path
       FROM d5_upload_file
      WHERE upload_id = :id
      ORDER BY kind DESC, file_name, id
@@ -179,6 +179,9 @@ class UploadLedgerAdapter:
                 storage_key=r["storage_key"],
                 carries_lat=bool(r["carries_lat"]), carries_lon=bool(r["carries_lon"]),
                 detected_format=r["detected_format"],
+                # 0008 의 열. 쓰기만 하고 읽지 않던 열이었다 — 등록 전환이 `d3_file` 로
+                # 승계하려면(0009 · `〈175〉-(나)`) 여기서 읽어야 한다.
+                relative_path=r["relative_path"],
             )
             for r in rows
         ]

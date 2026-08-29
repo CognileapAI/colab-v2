@@ -246,3 +246,45 @@ def test_a_failed_pipeline_does_not_block_registration(p2_client, sql, reason) -
     assert status.json()["failure"] == {"reason": reason}
     assert register(client, receipt).status_code == 201, \
         f"실패({reason})한 업로드가 등록을 막았다 — 정본 :192 위반이다."
+
+
+# ═══════ 파일 메타 승계 — 크기·시각·폴더 경로 · 합계는 트리거가 (`〈175〉`) ═════════
+def test_registered_files_carry_size_created_at_relative_path_and_total_is_not_doubled(
+        p2_client, sql) -> None:
+    """`listDatasetFiles` 가 `byteSize`·`createdAt`·`relativePath` 를 내고(`〈175〉-(가)·(나)`),
+    `total_size_bytes` 가 파일 합계와 **같다 — 두 배가 아니다.**
+
+    등록 코드가 합계를 손으로 넣고 파일 INSERT 가 트리거(`0009`)로 한 번 더 더하면 두 배가 된다 —
+    시드가 정확히 그렇게 200 == 100 red 를 냈다. 등록은 0 으로 세우고 트리거가 채운다.
+    """
+    import datetime as dt
+
+    client = p2_client()
+    a, b = HDF5_MAGIC, HDF5_MAGIC + b"xy"
+    r = client.post(f"{API_PREFIX}/uploads",
+                    files=[("files", ("a.nc", a, "application/octet-stream")),
+                           ("files", ("b.nc", b, "application/octet-stream"))],
+                    data={"relativePaths": ["site-1/a.nc", ""]}, headers=auth(TOKEN_RES))
+    assert r.status_code == 201, r.text
+    receipt = r.json()
+    reg = register(client, receipt)
+    assert reg.status_code == 201, reg.text
+    dataset_id = reg.json()["datasetId"]
+
+    listed = client.get(f"{API_PREFIX}/datasets/{dataset_id}/files", headers=auth(TOKEN_RES))
+    assert listed.status_code == 200
+    by_name = {f["fileName"]: f for f in listed.json()["items"]}
+    assert by_name["a.nc"]["byteSize"] == len(a)
+    assert by_name["b.nc"]["byteSize"] == len(b)
+    assert by_name["a.nc"]["relativePath"] == "site-1/a.nc", "원장의 경로가 d3_file 로 승계되지 않았다."
+    assert "relativePath" not in by_name["b.nc"]
+    for item in by_name.values():
+        assert item["createdAt"].endswith("Z")
+        dt.datetime.fromisoformat(item["createdAt"].replace("Z", "+00:00"))  # 파싱된다
+
+    total = sql("SELECT total_size_bytes FROM d3_dataset_autometa WHERE dataset_id = :d",
+                {"d": dataset_id})[0]["total_size_bytes"]
+    assert total == len(a) + len(b), f"합계가 파일 합계와 다르다 — 두 번 셌는가: {total}"
+    assert reg.json()["basicInfo"]["files"]["totalSizeBytes"] == len(a) + len(b)
+    detail = client.get(f"{API_PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_RES)).json()
+    assert detail["basicInfo"]["files"]["totalSizeBytes"] == len(a) + len(b)

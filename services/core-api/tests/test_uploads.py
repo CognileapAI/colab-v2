@@ -257,3 +257,77 @@ def test_no_extension_to_format_table_exists_in_core_api() -> None:
             if token in text:
                 suspicious.append(f"{path.name}: {token}")
     assert suspicious == [], f"확장자→포맷 매핑으로 보이는 것이 있다: {suspicious}"
+
+
+# ═══════════ 폴더 경로 — `relativePaths` (`PLAN-SoT §9 〈175〉-(나)` · 0008) ═══════════
+def _upload_with_paths(client, names, paths, token=TOKEN_RES):
+    files = [("files", (n, HDF5_MAGIC, "application/octet-stream")) for n in names]
+    return client.post(f"{API_PREFIX}/uploads", files=files, data={"relativePaths": paths},
+                       headers=auth(token))
+
+
+def test_relative_paths_come_back_per_file_and_land_in_the_ledger(p2_client, sql) -> None:
+    """`relativePaths[i]` → `UploadFileRef.relativePath` — **있을 때만 키가 선다.**
+
+    빈 문자열은 「경로 없음」이다(multipart 배열은 null 을 못 싣는다). 0008 이 열을 만들었지만
+    `_FILES` SELECT 에 없어 **쓰기 전용**이었다 — 접수 응답에도 상태 조회에도 없었다. 이 시험이
+    그 세 자리(접수 응답 · 원장 · 상태 조회)를 한 번에 본다.
+    """
+    client = p2_client()
+    r = _upload_with_paths(client, ["a.nc", "b.nc"], ["2024\\01/a.nc", ""])
+    assert r.status_code == 201, r.text
+    by_name = {f["fileName"]: f for f in r.json()["files"]}
+    assert by_name["a.nc"]["relativePath"] == "2024/01/a.nc", "백슬래시가 정규화되지 않았다."
+    assert "relativePath" not in by_name["b.nc"], "경로 없는 파일에 빈 키가 섰다."
+
+    upload_id = r.json()["uploadId"]
+    rows = {x["file_name"]: x["relative_path"] for x in
+            sql("SELECT file_name, relative_path FROM d5_upload_file WHERE upload_id = :u",
+                {"u": upload_id})}
+    assert rows == {"a.nc": "2024/01/a.nc", "b.nc": None}
+
+    status = client.get(f"{API_PREFIX}/uploads/{upload_id}", headers=auth(TOKEN_RES)).json()
+    by_name = {f["fileName"]: f for f in status["files"]}
+    assert by_name["a.nc"]["relativePath"] == "2024/01/a.nc"
+    assert "relativePath" not in by_name["b.nc"]
+
+
+def test_without_relative_paths_no_key_appears(p2_client) -> None:
+    r = _upload(p2_client(), files=one_body())
+    assert r.status_code == 201
+    assert "relativePath" not in r.json()["files"][0]
+
+
+def test_relative_paths_count_must_match_files(p2_client) -> None:
+    """`fileKinds` 와 같은 400 — 짝이 안 맞는 배열은 어느 파일의 경로인지 말할 수 없다."""
+    r = _upload_with_paths(p2_client(), ["a.nc", "b.nc"], ["only-one/a.nc"])
+    assert r.status_code == 400, r.text
+    assert "relativePaths" in r.json()["message"]
+
+
+@pytest.mark.parametrize("bad", ["..", "/", "../..", " . "])
+def test_relative_path_that_normalizes_to_nothing_is_400(p2_client, bad) -> None:
+    """정규화 뒤 세그먼트가 남지 않는 경로는 400 — `kernel/objectpath` 규칙 그대로
+    (프리사인드 경로 `initiateUploadTransfer` 와 같은 함수). `..` **세그먼트**는 정규화가
+    떨어뜨린다 — 그 규칙은 FE `normalizeName.ts` 와 같은 벡터로 묶여 있어 여기서 더 엄격해지지 않는다."""
+    r = _upload_with_paths(p2_client(), ["a.nc"], [bad])
+    assert r.status_code == 400, r.text
+
+
+def test_relative_path_over_1024_is_400(p2_client) -> None:
+    r = _upload_with_paths(p2_client(), ["a.nc"], ["x" * 1025])
+    assert r.status_code == 400, r.text
+
+
+def test_more_than_500_files_is_400_and_the_limit_is_one_value_for_both_entrances(
+        p2_client) -> None:
+    """상한 500 은 계약 두 자리(`createUpload.files.maxItems` · `UploadTransferDraft.files.maxItems`)
+    와 코드 두 자리(`ingestion.MAX_UPLOAD_FILES` · `upload_transfers.MAX_FILES`)가 **한 값**이다."""
+    from colab_core.app.routes import ingestion, upload_transfers
+    assert ingestion.MAX_UPLOAD_FILES == 500
+    assert upload_transfers.MAX_FILES is ingestion.MAX_UPLOAD_FILES
+
+    files = [("files", (f"f{i}.bin", b"x", "application/octet-stream")) for i in range(501)]
+    r = p2_client().post(f"{API_PREFIX}/uploads", files=files, headers=auth(TOKEN_RES))
+    assert r.status_code == 400, r.text
+    assert "500" in r.json()["message"]

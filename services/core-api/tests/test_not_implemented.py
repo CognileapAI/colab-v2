@@ -157,8 +157,13 @@ def test_the_5_unimplemented_operations_are_exactly_these() -> None:
     프로젝트 닫기」로 정의하고 `Policy_프로젝트 §6`·`§8` 이 삭제·닫기·해제를 전부 E-05
     화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+    
+    ⭑ **병합 2026-09-02 — 5 → 7.** 다른 레인이 `downloadDatasetFile`·`getDownloadBytes` 를
+    **임시 등재**했다(`〈278〉`-(다) 9차 동결 해제). 이 회차(C1b)는 계약 동결 + 파일 메타만이고,
+    다운로드 집행 커밋(C2)이 둘을(그리고 `downloadDataset` 까지) 뺀다.
+    **이 수가 7 에 머문 채 C2 가 닫히면 그것이 red 다.**
     """
-    assert len(OPERATIONS) == 5
+    assert len(OPERATIONS) == 7
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -190,7 +195,10 @@ def test_codes_are_the_two_kinds() -> None:
     #  7 →  4: `P7` 이 D8 집계 셋(`getDashboardSummary`·`getDataMap`·`listActivities`)을
     #          가져갔다. **셋 다 저장 자리는 있었고 집계만 없던 쪽이다** — `d8_activity` 는
     #          P0 이 세웠고 지표·맵의 재료는 D3·D4·D2·D6 에 이미 다 있었다.
-    assert len(p1) == 4
+    #  4 →  6: `〈278〉`-(다) 다운로드 둘의 **임시 등재**(C2 가 뺀다). `NO_STORE` 가 아닌 이유 —
+    #          저장 자리는 `0009`(`d8_download.file_id`)가 이미 만들었다. ⚠ 같은 이유로
+    #          `downloadDataset` 의 `NO_STORE` 도 낡았다 — C2 가 셋을 함께 걷는다.
+    assert len(p1) == 6
     assert no_store & p1 == set()
 
 
@@ -202,7 +210,8 @@ def test_returns_501_with_envelope(client: TestClient, op) -> None:
                               .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
     r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
     assert r.status_code == 501, f"{op.operation_id} 가 501 이 아니다 — 가짜 200 은 거짓말이다."
     body = r.json()
@@ -219,7 +228,8 @@ def test_requires_subject(client: TestClient, op) -> None:
                               .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
     r = client.request(op.method, url)
     assert r.status_code == 401, "미구현이어도 인증은 건다 — 경계 밖에 오퍼레이션 목록을 열지 않는다."
     assert r.json()["code"] == "UNAUTHORIZED"
@@ -234,6 +244,7 @@ def test_404_is_never_used_for_unimplemented(client: TestClient) -> None:
                                   .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
         r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
         assert r.status_code != 404

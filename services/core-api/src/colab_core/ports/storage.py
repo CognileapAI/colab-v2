@@ -5,13 +5,15 @@
 `contracts/storage/layout.json`(생성물 `kernel/storage_layout`)이고, 이 Port 는
 그 키가 가리키는 바이트를 **어디에 두는가**만 가른다 (`PLAN-SoT §9 〈173〉`).
 
-세 동작이 전부다 — 라우트(`routes/ingestion.py`)가 바이트를 만지는 자리가
-이 세 호출로 봉인돼 있기 때문이다.
+네 동작이 전부다 — 라우트(`routes/ingestion.py`)가 바이트를 만지는 자리가
+이 네 호출로 봉인돼 있기 때문이다. `put`(바이트열)과 `put_stream`(파일 객체)은 같은
+결과를 내고, 라우트는 **`put_stream` 을 쓴다** — 업로드 본문을 통째로 메모리에 올리지
+않기 위해서다 (`PLAN-SoT §9 〈175〉`). `put` 은 남겨 둔다(시험·소규모 쓰기).
 """
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Protocol
+from typing import BinaryIO, Protocol
 
 from .ingestion import UploadFileRecord
 
@@ -19,6 +21,15 @@ from .ingestion import UploadFileRecord
 class UploadStoragePort(Protocol):
     def put(self, *, key: str, payload: bytes) -> None:
         """키 자리에 바이트를 놓는다. 이미 있으면 덮어쓴다."""
+        ...
+
+    def put_stream(self, *, key: str, stream: BinaryIO) -> int:
+        """키 자리에 스트림의 바이트를 놓고 **놓은 바이트 수**를 돌려준다.
+
+        스트림은 시작 위치에 있어야 한다. 이미 있으면 덮어쓴다. 백엔드가 진짜 스트리밍을
+        못 하면(S3 — SigV4 가 본문 전체 해시를 서명에 넣는다) 안에서 읽어 모으되,
+        그 사실은 구현 주석이 말한다 — 이 Port 의 약속은 「반환값이 저장된 크기」뿐이다.
+        """
         ...
 
     def discard(self, *, key: str | None, keep: str | None = None) -> None:

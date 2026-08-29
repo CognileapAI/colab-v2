@@ -1,4 +1,8 @@
-"""아직 구현하지 않은 23 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 **22** 개 오퍼레이션 — **501 + ErrorEnvelope**.
+
+⭑ 2026-08-29 실측 정정 — 이 머리말의 「23 개」는 낡아 있었다. `〈150〉` 이 `updateLab`·`updateProject`
+를 빼 **20** 이 된 뒤에도 머리말만 23 에 머물렀다(같은 자리의 다섯 번째 오기 — 아래 `OPERATIONS`
+주석이 「네 번째」까지 세고 있다). 이번에 `〈175〉` 다운로드 op 둘을 **임시 등재**해 20 → 22 다.
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
   · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
@@ -88,6 +92,9 @@ class Op:
 #:    「쌓이기만 하는 대기줄」이다. 요청 op 만 열고 처리 op 을 남기는 절단은 정본 §7.1·§7.2 의
 #:    전이표를 반만 세우는 것이라 부분 완료가 된다 (`CLAUDE.md §5`).
 #:    여덟 다 실동작 시험이 뒤에 있다 (`tests/test_approval.py` — 음성 다섯 포함).
+#: → **＋2**(`〈278〉`-(다) 9차 동결 해제 — `downloadDatasetFile`·`getDownloadBytes` **임시 등재**.
+#:    이 회차(C1b)는 계약 동결 + 파일 메타만이고 다운로드 집행은 다음 커밋(C2)이다 — **C2 가 뺀다.**
+#:    「신설과 동시에 구현」 규칙(`〈80〉-㉯ 5`)의 예외이고, 예외인 이유가 표에 적혀 있어야 한다.)
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
@@ -105,6 +112,15 @@ OPERATIONS: tuple[Op, ...] = (
     Op("addUploadFile", "POST", "/uploads/{uploadId}/files", "NOT_IMPLEMENTED_P1"),
     Op("replaceUploadGridFile", "PUT", "/uploads/{uploadId}/files/{fileId}",
        "NOT_IMPLEMENTED_P1"),
+    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈175〉-(다)`⟩ 다운로드 티켓·바이트 둘 — **임시 등재. C2 가 뺀다.**
+    #    사유 코드는 기존 둘 중 「집행 준비 중」에 가까운 `NOT_IMPLEMENTED_P1` 이다 — 저장 자리는
+    #    `0009`(`d8_download.file_id`)가 이미 만들었으므로 `NO_STORE` 는 거짓이 된다. 메시지의
+    #    「P1 범위」는 여기서 정확하지 않지만 코드 3종을 만들지 않는다 — 두 줄은 곧 사라진다.
+    #    ⚠ `getDownloadBytes` 는 계약이 `security: []` 인데 이 자리표는 인증을 건다(아래 `_handler`
+    #    공통) — 미구현 501 을 경계 밖에 열지 않는 규칙이 우선이고, C2 가 진짜 핸들러로 바꾼다.
+    Op("downloadDatasetFile", "GET", "/datasets/{datasetId}/files/{fileId}/download",
+       "NOT_IMPLEMENTED_P1"),
+    Op("getDownloadBytes", "GET", "/downloads/{ticket}", "NOT_IMPLEMENTED_P1"),
 )
 
 _MESSAGE = {

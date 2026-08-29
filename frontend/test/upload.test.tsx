@@ -170,6 +170,8 @@ function fakes(
           fileId: FILE_ID2,
           fileName: 'lat.npy',
           kind: '기준 격자 파일',
+          byteSize: 4,
+          createdAt: '2026-08-29T00:00:00Z',
           gridAxis: { carriesLat: true, carriesLon: false },
         },
       ];

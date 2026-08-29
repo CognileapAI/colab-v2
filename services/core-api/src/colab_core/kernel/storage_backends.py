@@ -9,15 +9,36 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, BinaryIO
 
-from colab_core.kernel import storage_layout
+from colab_core.kernel import errors, storage_layout
 from colab_core.kernel.s3 import S3Client, S3Error
 
 # 파일 인자의 모양은 `ports/ingestion.UploadFileRecord`(file_id·storage_key)다.
 # 층 규칙(app > domains > ports > kernel)상 kernel 은 ports 를 import 하지 않으므로
 # 여기서는 덕 타이핑으로 받는다 — 계약 검사는 Protocol(`ports/storage.py`)이 한다.
+
+#: 스트림 복사 청크. 업로드 본문을 통째로 메모리에 올리지 않는다 (`〈175〉`).
+STREAM_CHUNK = 8 * 1024 * 1024
+
+#: S3 단일 PutObject 의 하드 리밋. 그 위는 멀티파트뿐이고, 서버 경유 경로는 멀티파트를
+#: 하지 않는다 — 큰 파일의 정문은 프리사인드 전송(`〈174〉`)이다.
+S3_SINGLE_PUT_MAX = 5 * 1024 ** 3
+
+
+def _stream_size(stream: BinaryIO) -> int | None:
+    """탐색 가능한 스트림이면 위치를 건드리지 않고 남은 길이를 잰다. 아니면 None."""
+    try:
+        if not stream.seekable():
+            return None
+        here = stream.tell()
+        end = stream.seek(0, os.SEEK_END)
+        stream.seek(here)
+        return end - here
+    except (OSError, ValueError, AttributeError):
+        return None
 
 
 class LocalFilesystemStorage:
@@ -38,6 +59,14 @@ class LocalFilesystemStorage:
         path = self._root / key
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
+
+    def put_stream(self, *, key: str, stream: BinaryIO) -> int:
+        """청크 복사 — 파일 크기와 무관하게 메모리는 청크 하나다."""
+        path = self._root / key
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("wb") as fh:
+            shutil.copyfileobj(stream, fh, length=STREAM_CHUNK)
+            return fh.tell()
 
     def discard(self, *, key: str | None, keep: str | None = None) -> None:
         if not key or key == keep:
@@ -101,6 +130,25 @@ class S3UploadStorage:
 
     def put(self, *, key: str, payload: bytes) -> None:
         self._client.put_object(key, payload)
+
+    def put_stream(self, *, key: str, stream: BinaryIO) -> int:
+        """**read() 폴백이다 — 진짜 스트리밍이 아니다.**
+
+        SigV4(`kernel/sigv4.py`)가 `x-amz-content-sha256` 에 **본문 전체 해시**를 넣어
+        서명하므로 본문을 다 읽기 전에는 요청을 시작할 수 없다(청크 서명·UNSIGNED-PAYLOAD
+        는 자작 서명기가 지원하지 않는다). 그래서 여기서 전부 읽어 `put_object` 로 보낸다.
+        단일 PUT 상한(5 GiB)을 넘는 본문은 **413** 이다 — 그 크기의 정문은 프리사인드 전송이다.
+        """
+        size = _stream_size(stream)
+        if size is not None and size > S3_SINGLE_PUT_MAX:
+            raise errors.payload_too_large(
+                f"S3 단일 PUT 상한(5 GiB)을 넘는다 ({size}B) — 프리사인드 전송으로 올릴 것.")
+        payload = stream.read()
+        if len(payload) > S3_SINGLE_PUT_MAX:
+            raise errors.payload_too_large(
+                f"S3 단일 PUT 상한(5 GiB)을 넘는다 ({len(payload)}B) — 프리사인드 전송으로 올릴 것.")
+        self._client.put_object(key, payload)
+        return len(payload)
 
     def discard(self, *, key: str | None, keep: str | None = None) -> None:
         if not key or key == keep:

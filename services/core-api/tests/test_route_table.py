@@ -38,8 +38,9 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
+<<<<<<< HEAD
 def test_operation_count_is_63() -> None:
-    """45 → 46 → 49 → 50 → 52 → 53 → 54 → **63.**
+    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → **65.**
 
     ⭑ **54 의 하나는 `createPreviewScreenshot`** — **11차 동결 해제**
     (`PLAN-SoT §9 〈231〉` · Ted 승인 2026-08-30 · 등급 ㉯ op 신설). 정본이 스크린샷을
@@ -51,6 +52,21 @@ def test_operation_count_is_63() -> None:
 
     ⭑ **54 → 63 은 프리사인드 전송 9 op** — 8차 동결 해제. 두 레인이 각자 계약을 열었고
     병합에서 **둘 다 남았다**(순수 추가끼리라 겹치는 op 이 없다).
+=======
+def test_operation_count_is_64() -> None:
+    """45 → 46 → 49 → 50 → 52 → 53 → 62 → **64.**
+
+    ⭑ **62 → 64 는 9차 동결 해제**(`PLAN-SoT §9 〈175〉-(다)` · 회의 2026-08-23 Ted·phj ·
+    [사용자 승인 2026-08-29]) — 파일 단위 다운로드 티켓(`downloadDatasetFile`)과 서명 티켓
+    바이트(`getDownloadBytes`). 같은 회차에 `downloadDataset` 이 302 → 200 `DownloadTicket` 으로,
+    `DatasetFile` 에 `byteSize`·`createdAt`(필수)·`relativePath` 가, `createUpload` 에
+    `relativePaths` 가 붙었다. `contract-breaking` 은 두 기준(HEAD·origin/main) 모두 **ERR 0** —
+    302 삭제는 `response-non-success-status-removed` INFO 다(소비자 0건 · 집행 0건이던 응답).
+    ⚠ **신설 둘은 이 커밋에서 구현하지 않는다** — 501 표에 **임시 등재**(20 → 22)하고 다운로드
+    집행 커밋(C2)이 뺀다. 「신설과 동시에 구현」 규칙의 예외이고, 예외인 이유가 표에 적혀 있다.
+
+    ---
+>>>>>>> 2799376 (동결 해제 9차(가) — 파일 관리 계약 동결 + 파일 메타가 d3 까지 (〈175〉〈177〉))
 
     ⭑ **53 의 하나는 `listDatasetFieldSuggestions`** — **6차 동결 해제**
     (`PLAN-SoT §9 〈138〉` · 결정 2-10 · Ted 판정 ㈏ 2026-08-27). **신설과 동시에
@@ -83,7 +99,7 @@ def test_operation_count_is_63() -> None:
     **신설과 동시에 구현했다**(㉰-4) — 저장 모드 local 에서는 아홉 전부 정직한 501 을
     내고, FE 는 그 신호로 form-data 경로에 폴백한다. 501 표는 24 그대로다.
     """
-    assert len(contract_operations()) == 63, "계약의 오퍼레이션이 63 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 65, "계약의 오퍼레이션이 65 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

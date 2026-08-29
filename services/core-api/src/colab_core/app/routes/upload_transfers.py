@@ -25,7 +25,7 @@ from ...kernel.objectpath import normalize_relative_path
 from ...kernel.s3 import Part, S3Client, S3Error
 from ...ports.ingestion import TransferFileRecord, UploadFileRecord
 from ..deps import current_subject, scoped_db
-from .ingestion import _require_upload_edit, _ttl
+from .ingestion import MAX_UPLOAD_FILES, _file_records, _require_upload_edit, _ttl
 
 router = APIRouter()
 
@@ -33,7 +33,8 @@ router = APIRouter()
 #: 수명이고 이것은 접수 **전**(전송 중) 상태의 수명이다. 금요일 밤에 끊겨도 월요일에 잇는다.
 TRANSFER_TTL_HOURS = 72
 URL_TTL_SECONDS = 900
-MAX_FILES = 500
+#: form-data 입구(`createUpload`)와 **한 값** — 두 입구가 다른 상한을 갖지 않는다 (`〈175〉`).
+MAX_FILES = MAX_UPLOAD_FILES
 MAX_GRID_FILES = 2          # 〈58〉 — 기준 격자 파일 0~2건
 MAX_PART_URL_BATCH = 16
 MAX_URL_BATCH = 50
@@ -426,9 +427,9 @@ def complete_upload_transfer(request: Request,
                   expires_at=expires_at, files=records)
     accept.publish_accepted(upload_id=Ulid(upload_id),
                             actor_account_id=subject.account_id, files=records)
-    return {"uploadId": upload_id,
-            "files": [{"fileId": f.file_id, "fileName": f.file_name, "kind": f.kind,
-                       "byteSize": f.byte_size} for f in files]}
+    # `UploadReceipt` 조립은 form-data 입구와 **같은 함수**다 — `relativePath` 가 어느 입구로
+    # 왔든 같은 자리에 같은 값으로 선다 (계약 `UploadFileRef` 산문 · `〈175〉-(나)`).
+    return {"uploadId": upload_id, "files": _file_records(records)}
 
 
 # ═══════════════════════════════ 중단 ═══════════════════════════════════════

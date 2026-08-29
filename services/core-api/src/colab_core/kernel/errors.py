@@ -51,6 +51,15 @@ def conflict(message: str, details: dict[str, Any] | None = None) -> ApiError:
     return ApiError(409, "CONFLICT", message, details)
 
 
+def payload_too_large(message: str) -> ApiError:
+    """413 — 본문이 저장 백엔드의 단일 쓰기 상한을 넘는다 (`〈175〉` — S3 단일 PUT 5 GiB).
+
+    400 과 갈라 쓴다: 요청이 틀린 것이 아니라 **이 입구로는 못 받는 크기**다. 그 크기의
+    정문은 프리사인드 전송(`〈174〉`)이고, 메시지가 그쪽을 가리킨다.
+    """
+    return ApiError(413, "PAYLOAD_TOO_LARGE", message)
+
+
 def too_many_attempts(message: str) -> ApiError:
     """429 — 창 안의 실패가 한계를 넘었다 (`PLAN-SoT §9 〈108〉-㉰`).
 
