@@ -998,31 +998,31 @@ items:
 
   - id: PA
     name: 로그인 · 세션
-    status: conflict
-    stage: unknown
+    status: done
+    stage: stage1
     owner: "D1 / core-api ＋ frontend"
     entry_conditions: ["P0 (스코프 커널·주체 표 · 실동작 `GET /me`)"]
     depends_on: [P0]
     completion_def: "`§7` 「PA 완료 정의」 7항 — ① 로그인/401/만료/로그아웃 실동작 green ② cross-tenant 404 ③ 기존 주체 표 병존 ④ 마이그레이션 0 ⑤ 계약 게이트 green ⑥ FE 가 가짜 진행을 그리지 않는다 ⑦ 인증 세부가 교체 지점 한 곳에만. staging 배포는 포함되지 않는다"
-    evidence: null
+    evidence: "⭑ ⟨2026-08-29⟩ **정본 충돌 1건이 Ted 판정으로 닫혔다** — `PLAN-SoT §9 〈188〉`(**값과 근거는 거기 있다**). 실측 = 비밀번호 발급 어댑터 가동 중(`kernel/authn.py::PasswordIssuer` · scrypt) ＋ 심어 둔 접속 코드 어댑터 병존 · **구글/OAuth/OIDC 코드 0건**(`sessions/DOC-DRIFT-SWEEP.md`). 구현 실측 = core-api 407/0 · frontend 274/0 · `tsc` 0 · 게이트 15종 green(2026-08-26). ⚠ **결손 둘은 그대로다** — 만료 전 조기 회수 불가 · 시도 제한이 프로세스 안에서만. ⚠ staging 배포는 완료 정의에 포함되지 않는다"
     deadline: null
-    note: "`03-HANDOFF §1 T-S 초기 데이터` 는 ✅(2026-08-26 구현 완료 · core-api 407/0 · frontend 274/0 · 게이트 15종 green)로 적는다. 반면 `WORK-UNITS` 는 `§7` T-P 표에 완료 정의까지 갖춘 행이 있으면서 `§10.x`·`§11` 어디에도 나타나지 않아 상태 글리프가 문서 전체에 없다 — 판정 불가다. 게다가 ✅ 쪽에도 정본 충돌 1건(정본은 비밀번호 로그인을 명시적으로 뺐다)과 미실행 3건이 남아 있다. 어느 하나를 고르지 않는다."
-    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7"]
+    note: "⭑ ⟨2026-08-29⟩ **`conflict` → `done`.** 갈림의 원인이던 **정본 충돌 1건**(정본은 비밀번호 로그인을 명시적으로 뺐는데 구현은 그것으로 돈다)이 `PLAN-SoT §9 〈188〉` 로 닫혔다 — **확정 = 비밀번호 로그인을 v2 개발 기간 동안 「기한부 예외」로 유지하고, 정본은 고치지 않는다.** 전환은 `PA-G` 의 `deadline.condition` 에 박혔다. ⚠ **다음 세션에게 — 정본(구글 전용)과 구현(비밀번호)이 다른 것은 결함이 아니라 등재된 「알려진 예외」다. 다시 조사하지 마라.** ／ 이전 ~~`03-HANDOFF §1 T-S 초기 데이터` 는 ✅(2026-08-26 구현 완료 · core-api 407/0 · frontend 274/0 · 게이트 15종 green)로 적는다. 반면 `WORK-UNITS` 는 `§7` T-P 표에 완료 정의까지 갖춘 행이 있으면서 `§10.x`·`§11` 어디에도 나타나지 않아 상태 글리프가 문서 전체에 없다 — 판정 불가다. 게다가 ✅ 쪽에도 정본 충돌 1건(정본은 비밀번호 로그인을 명시적으로 뺐다)과 미실행 3건이 남아 있다. 어느 하나를 고르지 않는다.~~ — `WORK-UNITS` 에 상태 글리프가 없던 자리는 `§7` `PA` 행에 명시했다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "PLAN-SoT §9 〈188〉"]
 
   - id: PA-G
     name: 구글 IdP 어댑터
     status: open
     stage: stage2
     owner: "D1 / core-api ＋ frontend"
-    entry_conditions: ["stage 1 완료 판정 (기한 정본은 `§7` 의 PA-G 행)"]
+    entry_conditions: ["⭑ ⟨개정 2026-08-29 · `PLAN-SoT §9 〈188〉`⟩ **v2 의 기존 기능이 전부 완성된 시점** — 그 뒤·출시 결정 **전**에 연다. 기한 정본은 아래 `deadline.condition` 과 `WORK-UNITS §7` 의 PA-G 행. ／ 이전 ~~stage 1 완료 판정~~"]
     depends_on: [PA]
     completion_def: "2026-08-27 작성(`〈168〉-㉷`) — PA 의 7항은 자동 승계되지 않는다. ⓐ 어댑터가 `kernel/authn.py` 한 파일에만 ⓑ 비밀번호 발급 경로 제거(공존시키지 않는다) ⓒ `credentials.json`·`ops/set-password.py` 폐기 ⓓ admin 계정 처리 + 음성 시험 ⓔ PA ①②③⑤⑥ 재통과 ⓕ staging 배포 green"
     evidence: null
     deadline:
-      condition: "교체 기한 = stage 1 완료 판정과 동시에 이 WU 를 연다 (`§7` PA-G 행 · `〈122〉-㉯`). 비밀번호 어댑터는 이 WU 가 닫히는 시점에 제거한다"
-      fired: unknown
-    note: "fired 를 `unknown` 으로 둔 이유 = `§1.5` 2026-08-27 재판정이 stage 1 조건 대부분을 ✅ 로 적으면서도 잔여 둘(조건 3 D8 · 조건 7 계보 확정 완주)을 stage 2 로 남겨, 「stage 1 완료 판정」이 났는지 두 문서만으로 결정되지 않는다. 사람이 판정할 자리다."
-    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3"]
+      condition: "⭑ ⟨개정 2026-08-29 · `PLAN-SoT §9 〈188〉`⟩ **v2 의 기존 기능이 전부 완성된 시점에 이 WU 를 연다 — 그 뒤·출시 결정 전에 구글 계정 전환을 집행한다. 날짜가 아니라 조건이다.** 그때까지 비밀번호 로그인은 「기한부 예외」로 유지하고, 비밀번호 어댑터는 이 WU 가 닫히는 시점에 제거한다(공존시키지 않는다). ／ 이전 ~~교체 기한 = stage 1 완료 판정과 동시에 이 WU 를 연다 (`§7` PA-G 행 · `〈122〉-㉯`)~~"
+      fired: false
+    note: "⭑ ⟨2026-08-29⟩ **`fired` 를 `false` 로 확정했다**(`PLAN-SoT §9 〈188〉`) — 기한의 기준이 「stage 1 완료 판정」에서 **「v2 기존 기능 전부 완성」**으로 바뀌었고, 그 조건은 오늘 충족되지 않았다(미착수 WU 잔존). `unknown` 의 원인이던 「stage 1 완료 판정이 났는지 두 문서만으로 결정되지 않는다」는 기준이 바뀌어 사라졌다. ⚠ **지금 착수하는 항목이 아니다 — 조건이 충족되기 전에는 열리지 않는다.** 조건이 충족되는 회차에 `fired: true` 로 올리면 ㈒ 가 red 로 착수를 강제한다. ／ 이전 ~~fired 를 `unknown` 으로 둔 이유 = `§1.5` 2026-08-27 재판정이 stage 1 조건 대부분을 ✅ 로 적으면서도 잔여 둘(조건 3 D8 · 조건 7 계보 확정 완주)을 stage 2 로 남겨, 「stage 1 완료 판정」이 났는지 두 문서만으로 결정되지 않는다. 사람이 판정할 자리다.~~ — 사람이 판정했다."
+    sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "PLAN-SoT §9 〈188〉"]
 
   - id: S2
     name: 초기 데이터 staging 적재
