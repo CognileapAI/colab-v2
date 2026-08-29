@@ -192,6 +192,25 @@ cd services/core-api && CONTAINER=<레인>_pg APP_PASSWORD=<임시> tests/fixtur
 > `could not change permissions of directory` 로 죽는다. `postgres:16-alpine` 을 쓴다(staging 과 같은 이미지).
 > **호스트 포트를 공개하지 않는다** — 컨테이너 IP 로만 붙는다.
 
+#### ⭑ ⟨신설 2026-08-29 · 근거 `sessions/STAGE2-READINESS-AUDIT.md §5`⟩ 시험용 환경변수는 `COLAB_CORE_TEST_DATABASE_URL` 하나가 아니다
+
+| 이름 | 값 출처 |
+|---|---|
+| `COLAB_CORE_TEST_SUBJECTS_FILE` | 레포 픽스처 `services/core-api/tests/fixtures/subjects.json` (미지정이면 `conftest.py:54` 가 같은 파일로 되돌린다) |
+| `COLAB_REFERENCE_DATA` | 원천 마운트 `/mnt/f/00_Project/00 CoLAB/03 Reference-Data` — `pipeline-worker`·`viz-render` 의 실데이터 시험이 읽는다 |
+| `COLAB_PIPELINE_DB_URL` | 위 ④ 의 `tests/fixtures/setup-db.sh` 가 찍는 일회용 DB URL 을 그대로 쓴다 (원장은 `core-api` 와 같은 `colab_platform`) |
+| `COLAB_AI_TEST_DICT_DB_URL` | **`[미확인]`** — `db/ai` 체인용 부트스트랩이 없다. 푸는 법 = `services/ai-service/tests/fixtures/` 에 `core-api` 와 **같은 규약**으로 일회용 DB 부트스트랩을 신설한다 (`services/ai-service/tests/fixtures/` 디렉터리 자체가 아직 없다) |
+
+**없이 돌리면 붕괴로 보인다** — core-api `471 errors` · pipeline-worker `23 failed·15 errors` · viz-render `8 failed`.
+**전부 환경 게이트이고, skip 이 아니라 fail 로 떨구는 의도적 설계다**(green-by-skip 금지 · `CLAUDE.md §4`) — 고장으로 읽지 않는다.
+**채우면 전건 통과** — core-api **471** · pipeline-worker **160** · viz-render **119** · frontend **277**.
+
+**`services/ai-service/.venv` 는 없다** — 4개 서비스 중 유일하게 빠져 있다. 세우는 줄 (`services/ai-service` 에서):
+
+```
+uv venv .venv && uv pip install -r requirements.txt -r requirements-dev.txt
+```
+
 ### ⑤ Remote Control 다시 띄우기 — **시한이 있다**
 
 **staging 이 안 뜨는 것과 뿌리가 같다.** WSL2 가 접히면 안에서 돌던 장기 연결이 조용히 끊기고,
