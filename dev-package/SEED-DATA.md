@@ -211,7 +211,7 @@
 > | 신설 간선 | `D-09`(GK2A/AMI NDVI 원자료 (Lv.0)) → `D-16`(GK-2A NDVI 100 m 경기남부·충청권 월평균 (2023-05)) | SRC-E `[2] Lv.1` 「처리 과정」 8단 ＋ 「Lv.0에서 Lv.1-B로 자료가 변환되는 과정에서 대상 지역(ROI)가 변경되므로」 |
 > | 부모 역할 | `주입력` | SRC-E `[2] Lv.0` 「해당 프로세스에서는 NDVI 자료만 활용되었으므로, 이후 Lv.1 자료부터는 NDVI 자료만 제공함」 |
 > | 가공 방식 | 원천 문서 「처리 과정」 8단을 옮겨 적었다 — DQF 품질 저하 픽셀 NaN 처리 · 유효 값 범주(-1~1) 밖 NaN 처리 · LCC→WGS84 변환 · NDVI 레이어 추출 · 경기도 남부~충청권 영역 추출 · Savitzky-Golay 평활화와 선형 보간 · 2 km 균등 분할(Uniform Distribution) 100 m 변환 · 일 단위→월 단위 평균 | SRC-E `[2] Lv.1` 처리 과정 |
-> | 만들어진 경로 | `사람이 직접 연결` — `addLineageParent` 가 요청에서 받지 않고 못 박는다 | `services/core-api/src/colab_core/app/routes/lineage.py:30` |
+> | 만들어진 경로 | `manual` — `addLineageParent` 가 요청에서 받지 않고 못 박는다. ⭑ ⟨개정 2026-08-29 · `PLAN-SoT §9 〈205〉`⟩ 이 회차 당시의 값은 `사람이 직접 연결` 이었고, 10 차 동결 해제가 `manual` 로 옮겼다(마이그레이션 `0008_lineage_origin_labels`) | `services/core-api/src/colab_core/app/routes/lineage.py` `MANUAL_ORIGIN` |
 > | 실행 수단 | 공개 API `addLineageParent` ＋ `confirmLineage`(`㊾-③`) | 응답 201 / 200 |
 > | 실행 후 계수 | `d4_lineage_edge` **6** · `D-16` 의 `processingLevel` **0 → 1** · 계보 상태 **`기록 없음` → `확정`** | 응답 본문 ＋ 원장 셈 |
 >

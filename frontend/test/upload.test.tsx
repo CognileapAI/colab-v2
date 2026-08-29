@@ -1125,7 +1125,7 @@ describe('③ 계보 확정 — AI 응답 규격 (`CLAUDE.md §3`)', () => {
 });
 
 describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
-  it('확인한 것만 등록 요청에 실리고, 경로는 `AI 제안을 사람이 확인` 이다', async () => {
+  it('확인한 것만 등록 요청에 실리고, 경로는 `ai` 이다', async () => {
     const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
     await openLineage(sources);
     const cards = await screen.findAllByTestId('lin-card');
@@ -1134,7 +1134,7 @@ describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
     const parents = sentParents(calls);
     expect(parents).toHaveLength(1);
     expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
-    expect(parents[0]!.origin).toBe('AI 제안을 사람이 확인');
+    expect(parents[0]!.origin).toBe('ai');
   });
 
   it('거절한 것은 카드에서 빠지고 아무것도 실리지 않는다', async () => {
@@ -1167,7 +1167,7 @@ describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
     const parents = sentParents(calls);
     expect(parents).toHaveLength(1);
     expect(parents[0]!.parentDatasetId).toBe(DEM_ID);
-    expect(parents[0]!.origin).toBe('사람이 직접 연결');
+    expect(parents[0]!.origin).toBe('manual');
   });
 });
 
@@ -1204,7 +1204,7 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     expect(note).toHaveTextContent('상세');
   });
 
-  it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `사람이 직접 연결`', async () => {
+  it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `manual`', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
     await click(await screen.findByTestId('lin-add'));
@@ -1215,7 +1215,7 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents).toHaveLength(1);
-    expect(parents[0]!.origin).toBe('사람이 직접 연결');
+    expect(parents[0]!.origin).toBe('manual');
     expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
   });
 

@@ -146,7 +146,7 @@ def test_registration_time_parents_are_cycle_checked_too(p2_client, sql) -> None
     # 새 데이터셋의 부모로 자기 자식을 지목할 수는 없으니(아직 ID 가 없다), 대신
     # 등록 경로가 `add_parent` 를 지나는지 확인한다 — 지나면 순환 판정이 함께 걸린다.
     r = register(client, receipt,
-                 lineageParents=[{"parentDatasetId": child, "origin": "사람이 직접 연결"}])
+                 lineageParents=[{"parentDatasetId": child, "origin": "manual"}])
     assert r.status_code == 201
     new_id = r.json()["datasetId"]
     assert _add_parent(client, child, new_id).status_code == 409, \
@@ -157,18 +157,18 @@ def test_registration_time_parents_are_cycle_checked_too(p2_client, sql) -> None
 def test_add_lineage_parent_always_records_a_manual_origin(p2_client, sql) -> None:
     """**요청이 만들어진 경로를 고르지 않는다** (`LineageParentCreate` 산문).
 
-    상세 화면의 수동 추가는 언제나 `사람이 직접 연결`이다 — 요청이 `origin` 을 실어
+    상세 화면의 수동 추가는 언제나 `manual` 이다 — 요청이 `origin` 을 실어
     보내면 AI 가 붙인 것처럼 위장할 수 있다.
     """
     client = p2_client()
     child = _new_dataset(client, "경로 시험")
-    r = _add_parent(client, child, DS_A1, origin="AI 제안을 사람이 확인")
+    r = _add_parent(client, child, DS_A1, origin="ai")
     assert r.status_code == 400, "요청이 origin 을 실을 수 있으면 안 된다."
 
     assert _add_parent(client, child, DS_A1).status_code == 201
     rows = sql("SELECT origin, confirmed_by_account_id FROM d4_lineage_edge"
                "  WHERE child_dataset_id = :d", {"d": child})
-    assert rows[0]["origin"] == "사람이 직접 연결"
+    assert rows[0]["origin"] == "manual"
     # **확인 기록은 NOT NULL 이다** — 누가 확인했는지 없이 관계가 들어갈 수 없다.
     assert rows[0]["confirmed_by_account_id"] == "000000000000000000000000A1"
 

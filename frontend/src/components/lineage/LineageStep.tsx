@@ -4,7 +4,7 @@
 //  - **뒤진 범위를 먼저 밝힌다.** 제안보다 위에 「어느 연구실의 몇 건을 살펴봤는가」가 선다.
 //  - **[모두 승인] 이 없다.** 확인·수정·거절을 항목마다 받는다. 묶음 승인 버튼을 두지 않는다.
 //  - 확신도는 `확실|애매|모름` **enum**이고 퍼센트·점수를 붙이지 않는다. **근거는 필수**다.
-//  - **사람이 `수정` 하면 AI 행동이 아니다** — 확신도 칩을 걷고 경로를 `사람이 직접 연결` 로
+//  - **사람이 `수정` 하면 AI 행동이 아니다** — 확신도 칩을 걷고 경로를 `manual` 로
 //    바꾸며 **확인을 다시 받는다** (정본 §8 `수정 버튼`).
 //  - **제안 0건은 정직한 빈 상태**다. 억지 제안을 만들지 않고, **등록은 그대로 끝까지 간다** —
 //    AI 없이도 v2 는 완결된 제품이다.
@@ -108,7 +108,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
             role: s.suggestedParentRole,
             confidence: s.confidence,
             rationale: s.rationale,
-            origin: 'AI 제안을 사람이 확인' as LineageOrigin,
+            // `ai` = **AI 가 제안하고 사람이 확인한 것**. 「AI 가 만든 것」이 아니다 —
+            // AI 는 계보를 쓰지 않는다 (`CLAUDE.md §3-2`). 값의 뜻은 `LineageOrigin` 이 정본.
+            // ⚠ 이 값을 **화면에 그대로 보여주지 않는다** — 사용자 문구는 아직 미정이다.
+            origin: 'ai' as LineageOrigin,
             confirmed: false,
             method: '',
             confirmedMethodText: null,
@@ -178,7 +181,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       parentDatasetName: row.name,
       confidence: null,
       rationale: null,
-      origin: '사람이 직접 연결',
+      origin: 'manual',
       confirmed: false,
       confirmedMethodText: null,
       picking: false,
@@ -196,7 +199,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         role: '주입력',
         confidence: null,
         rationale: null,
-        origin: '사람이 직접 연결',
+        origin: 'manual',
         confirmed: false,
         method: '',
         confirmedMethodText: null,

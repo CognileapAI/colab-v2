@@ -757,7 +757,7 @@ export interface paths {
         put?: never;
         /**
          * 부모 관계 추가 (계보 수정)
-         * @description 상세 화면의 `계보 수정·추가`. **여기서 붙인 관계는 `사람이 직접 연결`로 저장된다** —
+         * @description 상세 화면의 `계보 수정·추가`. **여기서 붙인 관계는 `manual` 로 저장된다** —
          *     만들어진 경로를 요청이 고르지 않는다 (`Policy_데이터셋_상세 §8` · `DataModel §4.2`).
          *     `기록 없음` 표시는 관계가 붙으면 사라진다.
          *     파생(자식) 관계는 자식 상세에서 고친다 — 이 엔드포인트로 자식을 붙이지 않는다 (§3.2).
@@ -1611,7 +1611,9 @@ export interface components {
             /** @description 가공 방식 한 줄. 자유 문장이다 (`Policy §5`). */
             method?: string | null;
             /**
-             * @description 만들어진 경로 — AI 제안을 사람이 확인했는가, 직접 연결했는가 (`DataModel §4.2`).
+             * @description 만들어진 경로 — `ai`(**AI 가 제안하고 사람이 확인**했다. 「AI 가 만들었다」가 아니다)
+             *     인가 `manual`(사람이 손으로 이었다)인가 (`DataModel §4.2` · `LineageOrigin`).
+             *     `processed`(가공으로 자동 생성)는 **이 요청이 실을 수 있는 값이 아니다** — 생산 경로가 아직 없다.
              *     상세 화면의 수동 추가(`addLineageParent`)와 달리 업로드 화면엔 두 경로가 다 있어
              *     요청이 실어야 서버가 안다.
              */
@@ -2047,7 +2049,7 @@ export interface components {
         };
         /**
          * @description 만들어진 경로(`LineageOrigin`)·확인 기록·계보 상태·Lv 는 요청에 없다 —
-         *     서버가 `사람이 직접 연결`로 기록하고 파생값은 계산한다 (`PLAN-SoT §9-⑳` · `CLAUDE.md §3-2`).
+         *     서버가 `manual` 로 기록하고 파생값은 계산한다 (`PLAN-SoT §9-⑳` · `CLAUDE.md §3-2`).
          */
         LineageParentCreate: {
             parentDatasetId: components["schemas"]["Ulid"];
@@ -2384,10 +2386,10 @@ export interface components {
         /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. */
         ProcessingLevel: number;
         /**
-         * @description 계보 관계가 만들어진 경로. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2.
+         * @description 계보 관계가 만들어진 경로. 세 값의 뜻은 이렇다 — `ai` = **AI 가 제안하고 사람이 확인한 것**(「AI 가 만든 것」이 아니다: AI 는 계보를 쓰지 않는다), `manual` = 사람이 손으로 이은 것, `processed` = 가공으로 자동 생성된 것. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. ⚠ `processed` 를 만드는 생산 경로는 아직 없다(데이터 프로세스가 stage 2 다음이다) — 값만 열려 있다. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2 · PLAN-SoT §9 〈198〉·〈205〉.
          * @enum {string}
          */
-        LineageOrigin: "AI 제안을 사람이 확인" | "사람이 직접 연결";
+        LineageOrigin: "ai" | "manual" | "processed";
         /**
          * @description 프로젝트 유형. 과제/논문 1건 = 프로젝트 1개. 근거: DataModel_공통_기반 §5(프로젝트).
          * @enum {string}

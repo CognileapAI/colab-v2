@@ -71,7 +71,7 @@ def test_the_suggestion_op_never_writes_anything(p2_client, sql) -> None:
 
 
 def test_a_request_cannot_forge_the_ai_confirmed_origin(p2_client, sql) -> None:
-    """상세 화면의 수동 추가로는 **`AI 제안을 사람이 확인` 을 만들 수 없다.**
+    """상세 화면의 수동 추가로는 **`ai` 를 만들 수 없다.**
 
     그 값을 요청이 고를 수 있으면, 사람이 직접 그은 선이 AI 가 그은 것처럼 기록된다 —
     거꾸로도 마찬가지다. 어느 쪽이든 「누가 그었는가」의 기록이 거짓이 된다.
@@ -80,7 +80,7 @@ def test_a_request_cannot_forge_the_ai_confirmed_origin(p2_client, sql) -> None:
     client = p2_client()
     child = _new_dataset(client, "위조 시험")
     r = client.post(f"{API_PREFIX}/datasets/{child}/lineage/parents",
-                    json={"parentDatasetId": DS_A1, "origin": "AI 제안을 사람이 확인"},
+                    json={"parentDatasetId": DS_A1, "origin": "ai"},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 400
     assert sql("SELECT count(*) AS n FROM d4_lineage_edge WHERE child_dataset_id = :d",

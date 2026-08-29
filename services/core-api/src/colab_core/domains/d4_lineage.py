@@ -168,8 +168,11 @@ def add_parent(session: Session, *, child_id: Ulid, parent_id: Ulid, parent_role
     """관계 한 쌍. **확인 기록이 NOT NULL 이라 「누가 확인했는지」 없이 들어갈 수 없다.**"""
     if parent_role not in ("주입력", "보조입력"):
         raise ValueError(f"부모 역할이 2값 밖이다: {parent_role!r}")
-    if origin not in ("AI 제안을 사람이 확인", "사람이 직접 연결"):
-        raise ValueError(f"만들어진 경로가 2값 밖이다: {origin!r}")
+    # 값 셋 = `ai`(AI 제안 → **사람이 확인**) · `manual`(사람이 손으로 이음) ·
+    # `processed`(가공으로 자동 생성 — 생산 경로는 아직 없다, `PLAN-SoT §9 〈205〉`).
+    # ⚠ `ai` 는 「AI 가 만들었다」가 아니다 — AI 는 계보를 쓰지 않는다 (`CLAUDE.md §3-2`).
+    if origin not in ("ai", "manual", "processed"):
+        raise ValueError(f"만들어진 경로가 3값 밖이다: {origin!r}")
     # **락이 검사보다 먼저다** (`〈141〉`). 순서가 곧 이 수정의 전부다 —
     # 검사 뒤에 잡으면 두 요청이 나란히 검사를 통과한 뒤 차례로 삽입해 순환이 남는다.
     # 값 검사(위 두 줄)는 DB 를 안 보므로 락 밖에 둔다 — 잘못된 요청이 남의 쓰기를

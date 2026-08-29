@@ -1089,7 +1089,7 @@ paths:
       operationId: addLineageParent
       summary: 부모 관계 추가 (계보 수정)
       description: |
-        상세 화면의 `계보 수정·추가`. **여기서 붙인 관계는 `사람이 직접 연결`로 저장된다** —
+        상세 화면의 `계보 수정·추가`. **여기서 붙인 관계는 `manual` 로 저장된다** —
         만들어진 경로를 요청이 고르지 않는다 (`Policy_데이터셋_상세 §8` · `DataModel §4.2`).
         `기록 없음` 표시는 관계가 붙으면 사라진다.
         파생(자식) 관계는 자식 상세에서 고친다 — 이 엔드포인트로 자식을 붙이지 않는다 (§3.2).
@@ -2466,7 +2466,9 @@ components:
         origin:
           allOf: [{ $ref: "../schemas/common.json#/$defs/LineageOrigin" }]
           description: |
-            만들어진 경로 — AI 제안을 사람이 확인했는가, 직접 연결했는가 (`DataModel §4.2`).
+            만들어진 경로 — `ai`(**AI 가 제안하고 사람이 확인**했다. 「AI 가 만들었다」가 아니다)
+            인가 `manual`(사람이 손으로 이었다)인가 (`DataModel §4.2` · `LineageOrigin`).
+            `processed`(가공으로 자동 생성)는 **이 요청이 실을 수 있는 값이 아니다** — 생산 경로가 아직 없다.
             상세 화면의 수동 추가(`addLineageParent`)와 달리 업로드 화면엔 두 경로가 다 있어
             요청이 실어야 서버가 안다.
         confirmedMethodText:
@@ -3097,7 +3099,7 @@ components:
     LineageParentCreate:
       description: |
         만들어진 경로(`LineageOrigin`)·확인 기록·계보 상태·Lv 는 요청에 없다 —
-        서버가 `사람이 직접 연결`로 기록하고 파생값은 계산한다 (`PLAN-SoT §9-⑳` · `CLAUDE.md §3-2`).
+        서버가 `manual` 로 기록하고 파생값은 계산한다 (`PLAN-SoT §9-⑳` · `CLAUDE.md §3-2`).
       type: object
       required: [parentDatasetId]
       additionalProperties: false

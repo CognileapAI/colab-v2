@@ -480,7 +480,11 @@ CREATE TABLE d4_lineage_edge (
                          CHECK (parent_role IN ('주입력', '보조입력')),
   method                 text,       -- 가공 방식 한 줄. 자유 문장 — 정본이 열거값을 주지 않았다
   origin                 text        NOT NULL
-                         CHECK (origin IN ('AI 제안을 사람이 확인', '사람이 직접 연결')),
+                         -- 뜻: ai = AI 가 제안하고 **사람이 확인**한 것(「AI 가 만든 것」이 아니다 —
+                         -- AI 는 계보를 쓰지 않는다, CLAUDE.md §3-2) · manual = 사람이 손으로 이은 것 ·
+                         -- processed = 가공으로 자동 생성된 것(생산 경로는 아직 없다 — 값만 열려 있다).
+                         -- 근거: PLAN-SoT §9 〈198〉·〈205〉 (10 차 동결 해제).
+                         CHECK (origin IN ('ai', 'manual', 'processed')),
   confirmed_by_account_id ulid       NOT NULL REFERENCES d1_account(id),
   confirmed_at           timestamptz NOT NULL DEFAULT now(),
   CHECK (child_dataset_id <> parent_dataset_id),

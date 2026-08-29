@@ -366,9 +366,11 @@ def _parse_parents(raw: Any) -> list[dict]:
         if not Ulid.is_valid(parent_id):
             raise errors.bad_request("parentDatasetId 가 정규 ID 가 아니다.")
         origin = item.get("origin")
-        if origin not in ("AI 제안을 사람이 확인", "사람이 직접 연결"):
+        if origin not in ("ai", "manual"):
             # **필수다.** 업로드 화면엔 두 경로가 다 있어 요청이 실어야 서버가 안다.
-            raise errors.bad_request("origin 은 `AI 제안을 사람이 확인` 또는 `사람이 직접 연결` 이다.")
+            # `processed`(가공으로 자동 생성)는 **여기서 받지 않는다** — 사람이 올리는 경로가
+            # 만들 수 있는 값이 아니다. 생산 경로는 아직 없다 (`PLAN-SoT §9 〈205〉`).
+            raise errors.bad_request("origin 은 `ai` 또는 `manual` 이다.")
         role = item.get("parentRole") or "주입력"    # 생략하면 기본값 (`Policy §5`)
         if role not in ("주입력", "보조입력"):
             raise errors.bad_request("parentRole 은 `주입력` 또는 `보조입력` 이다.")

@@ -83,7 +83,7 @@ INSERT INTO d2_verified (dataset_id, lab_id, verified, approver_account_id, appr
 INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id, parent_role,
                              method, origin, confirmed_by_account_id, confirmed_at) VALUES
   ('000000000000000000000EDGA1', '0000000000000000000000000A', '0000000000000000000000DSA2',
-   '0000000000000000000000DSA1', '주입력', '역거리가중 격자화', '사람이 직접 연결',
+   '0000000000000000000000DSA1', '주입력', '역거리가중 격자화', 'manual',
    '00000000000000000000000AP1', '2026-02-03T00:00:00Z');
 
 INSERT INTO d6_project (id, lab_id, type, name, description, period_start, period_end, status) VALUES

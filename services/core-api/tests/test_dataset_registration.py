@@ -75,7 +75,7 @@ def test_lineage_parents_and_project_ids_come_in_one_request(p2_client, sql) -> 
     receipt = make_upload(client)
     r = register(client, receipt,
                  lineageParents=[{"parentDatasetId": DS_A1, "parentRole": "주입력",
-                                  "method": "역거리가중", "origin": "사람이 직접 연결"}],
+                                  "method": "역거리가중", "origin": "manual"}],
                  projectIds=[PRJ_A])
     assert r.status_code == 201, r.text
     dataset_id = r.json()["datasetId"]
@@ -83,7 +83,7 @@ def test_lineage_parents_and_project_ids_come_in_one_request(p2_client, sql) -> 
                 "  FROM d4_lineage_edge WHERE child_dataset_id = :d", {"d": dataset_id})
     assert len(edges) == 1
     assert edges[0]["parent_dataset_id"] == DS_A1
-    assert edges[0]["origin"] == "사람이 직접 연결"
+    assert edges[0]["origin"] == "manual"
     links = sql("SELECT project_id FROM d6_project_dataset WHERE dataset_id = :d",
                 {"d": dataset_id})
     assert [x["project_id"] for x in links] == [PRJ_A]
@@ -138,7 +138,7 @@ def test_a_mid_way_failure_leaves_no_half_row_in_d3(p2_client, sql) -> None:
     before = sql("SELECT count(*) AS n FROM d3_dataset")[0]["n"]
     receipt = make_upload(client)
     r = register(client, receipt,
-                 lineageParents=[{"parentDatasetId": DS_A1, "origin": "사람이 직접 연결"}],
+                 lineageParents=[{"parentDatasetId": DS_A1, "origin": "manual"}],
                  projectIds=[PRJ_B])          # 남의 연구실 프로젝트 → 마지막 단계에서 실패
     assert r.status_code == 400, r.text
 

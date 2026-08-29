@@ -146,9 +146,9 @@
     },
 
     "LineageOrigin": {
-      "description": "계보 관계가 만들어진 경로. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2.",
+      "description": "계보 관계가 만들어진 경로. 세 값의 뜻은 이렇다 — `ai` = **AI 가 제안하고 사람이 확인한 것**(「AI 가 만든 것」이 아니다: AI 는 계보를 쓰지 않는다), `manual` = 사람이 손으로 이은 것, `processed` = 가공으로 자동 생성된 것. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. ⚠ `processed` 를 만드는 생산 경로는 아직 없다(데이터 프로세스가 stage 2 다음이다) — 값만 열려 있다. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2 · PLAN-SoT §9 〈198〉·〈205〉.",
       "type": "string",
-      "enum": ["AI 제안을 사람이 확인", "사람이 직접 연결"]
+      "enum": ["ai", "manual", "processed"]
     },
 
     "LineageState": {

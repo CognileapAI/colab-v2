@@ -3,7 +3,7 @@
 **여기가 되돌릴 수 없는 것이 만들어지는 자리다.** 규칙 넷을 코드가 지킨다.
 
   ① **사람이 확인한 것만 저장된다.** D10 이 이 파일에 닿는 경로가 없다 (`CLAUDE.md §3-2`).
-     `addLineageParent` 는 만들어진 경로를 요청에서 받지 않고 **`사람이 직접 연결`로 못 박는다**
+     `addLineageParent` 는 만들어진 경로를 요청에서 받지 않고 **`manual` 로 못 박는다**
      (`LineageParentCreate` 산문 — 「요청이 고르지 않는다」).
   ② **순환·자기부모는 들어가지 않는다** (`DR-15`). 판정은 `d4_lineage.would_create_cycle`.
   ③ **Lv 는 파생이다 — 저장하지 않는다** (`P2.md §2-4`·`§2-6` · `PLAN-SoT §9-⑳`).
@@ -27,7 +27,9 @@ from ..deps import current_subject, scoped_db
 router = APIRouter()
 
 #: 상세 화면의 수동 추가는 **언제나 이 경로**다. 요청이 고르지 않는다.
-MANUAL_ORIGIN = "사람이 직접 연결"
+#: 값 셋의 뜻은 `contracts/schemas/common.json#/$defs/LineageOrigin` 이 정본이다 —
+#: `ai` 는 **AI 가 제안하고 사람이 확인한 것**이지 「AI 가 만든 것」이 아니다 (`CLAUDE.md §3-2`).
+MANUAL_ORIGIN = "manual"
 _ALLOWED_PARENT_FIELDS = {"parentDatasetId", "parentRole", "method"}
 
 
@@ -118,7 +120,7 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
 def add_lineage_parent(datasetId: str, body: dict = Body(...),
                        subject: Subject = Depends(current_subject),
                        db: Session = Depends(scoped_db)) -> dict:
-    """부모 관계 추가. **여기서 붙인 관계는 언제나 `사람이 직접 연결`이다.**
+    """부모 관계 추가. **여기서 붙인 관계는 언제나 `manual` 이다.**
 
     파생(자식) 관계는 자식 상세에서 고친다 — 이 엔드포인트로 자식을 붙이지 않는다.
     """
