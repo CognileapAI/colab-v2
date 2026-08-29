@@ -34,8 +34,20 @@ docker ps
 ### ② staging 8개 올리기
 
 ```
+COLAB_RELEASE_TAG=<현재 서빙 릴리스 태그> \
 docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d
 ```
+
+> ⭑ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈185〉-㉹`⟩ `COLAB_RELEASE_TAG` 를 반드시 앞에 붙인다.**
+> `I3` 첫 실배포 이후 `compose.i2.yml` 의 앱 6종이 이미지를 `${COLAB_RELEASE_TAG:?}` 로 요구한다.
+> **그 값을 넣는 자리는 `deploy.sh:77` 하나뿐이고 env 파일에는 없다** — 2026-08-29 실측
+> (`grep -c '^COLAB_RELEASE_TAG=' <env 파일>` = **0** · 값은 출력하지 않았다).
+> 즉 **종전 명령 그대로는 compose 가 거부하고 아무것도 뜨지 않는다.**
+> **현재 서빙 태그 = `30b3e0a7b3f3`**(2026-08-29 실측 · `docker ps` 의 앱 5종 이미지 태그).
+> 다음 배포 뒤에는 **원장 `~/colab-v2-releases/release-ledger.tsv` 의 마지막 green `deploy` 행**이 그 값이다.
+> ⚠ **별칭 `i2` 로 대신하지 않는다** — 별칭 재부착이 실패를 삼키는 결함이 열려 있어(`03-HANDOFF §4 #45` · 항목 `X-6`)
+> **옛 이미지가 뜨고도 정상으로 보일 수 있다.** 릴리스 태그를 명시한다.
+> ／ 이전 ~~`docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d`~~ (**낡았다**)
 
 > **`-f compose.i2.yml` 을 반드시 붙인다.**
 > 빼면 기본값 `compose.yml` 이 뜨는데 그건 **I2 이전의 자리표시 오리진(nginx·cloudflared 2개)** 이다.
@@ -109,6 +121,12 @@ done
 ```
 
 - 컨테이너 **8개**(nginx·cloudflared·pg·core_api·frontend·pipeline_worker·viz_render·ai_service) 전부 `healthy`
+  > ⭑ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈185〉-㉲`⟩ 이 줄은 이제 참이다.** 2026-08-29 배포에서
+  > `cloudflared` 가 **재생성되며 선언이 적용돼 `healthy`** 가 됐다(실측 — 8개 전부 `healthy`).
+  > ⚠ **함정 하나를 남긴다** — 선언은 `cloudflared tunnel --metrics 127.0.0.1:20241 ready` 이고
+  > (distroless 라 `CMD-SHELL` 을 못 쓴다) **`--metrics` 를 `ready` 뒤에 놓으면 오류를 내면서 종료코드 0** 이다.
+  > 아무것도 안 보는 헬스체크가 되고, 그건 이 레포의 대표 실패형이다.
+  > ／ 이전 원문 —
   > ⚠ 2026-08-28 이전에는 이 줄이 **참이 아니었다.** `cloudflared` 만 헬스체크 선언이 없어
   > 실물은 7개만 헬스체크를 가졌고(실측 8개 중 7개 `healthy`, cloudflared 는 「헬스체크없음」),
   > `verify-deploy.sh` ② 가 구조적으로 RED 를 냈다. `compose.i2.yml` 에 `cloudflared` 헬스체크를

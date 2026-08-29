@@ -344,15 +344,15 @@ items:
 
   - id: I3
     name: 배포 자동화
-    status: conflict
+    status: partial
     stage: stage2
     owner: "인프라"
     entry_conditions: ["I2(✅)"]
     depends_on: [I2]
-    completion_def: "파이프라인 1회 완주 (`WORK-UNITS §4`) · 정본 = `WORK-UNITS §10.2-b`"
-    evidence: null
+    completion_def: "파이프라인 1회 완주 (`WORK-UNITS §4`) · 15행 정본 = `sessions/I3.md §6` · 상태 정본 = `PLAN-SoT §9 〈185〉`"
+    evidence: "**staging 첫 실배포 2026-08-29 — 완료 정의 15행 중 닫힘 9 · 열림/부분 6.** 값과 근거 전건 = `PLAN-SoT §9 〈185〉` · 산출 `sessions/I3-BUILD.md`(빌드·수정) · `sessions/I3-POSTDEPLOY.md`(배포 후 실측). ⑴ 원장 3행 = approve 1 · red 1(`0a3ea797dbb1` 롤 부트스트랩) · **green 1**(`2026-08-29T10:08:36 · 30b3e0a7b3f3 · 배포전백업GREEN 워킹트리변경=0`). ⑵ **2차 배포 GREEN** — 판정 15건 · SKIP 0 · 컨테이너 8/8 healthy · 공개 헬스 6종 200 · 노출 `0.0.0.0` 0건 · 서빙 태그 6종 전부 `:30b3e0a7b3f3`(세는 기준 = `verify-deploy.sh` 요약줄 · 시점 2026-08-29 10:16 KST). ⑶ **1차 red 는 설계대로 동작한 것** — 마이그레이션 직전 중단(스키마 무접촉) · 자동 롤백 없이 표식. 진짜 원인은 값 부재가 아니라 **배선**(env 파일이 `--env-file` 로만 넘어가 호스트의 `db-bootstrap.sh` 가 빈 환경으로 돌았다) → 프리플라이트를 ⓪-b 로 앞당기고 요구 목록 정본을 `db-bootstrap.sh required-env` 하나에 뒀다. **변이 시험으로 증명**(그 검사를 빼면 green). ⑷ 기준선 무변경 — 데이터셋 12 · 파일 본체 123(저장 전체 129) · 계보 6 · K2 시드 22(기준 = `colab_platform` 표 행 수 · 시점 = 2026-08-29 01:14/01:29 UTC 동일). ⑸ 게이트 27종 = green 26 · red 1(`work-item-consistency`) · 못 돈 것 0건. **`schema-diff` green — 살아 있는 두 체인 드리프트 0**. ⑹ cloudflared 헬스체크 실물 확정(`healthy`)."
     deadline: null
-    note: "`03-HANDOFF §1 T-I` 는 ⬜(착수 전)이면서 비고에 「✅ 착수 차단 해제 2026-08-27 — `[정본 무근거]` 7건 전부 판정」이라 적고, `WORK-UNITS §10` 표는 「⛔ 착수 전 판정 7건이 남아 있다」, `§10.2-b` 는 「✅ 차단 해제(2026-08-27 · `〈168〉-㉮~㉴`)」, `§10.3` 3단은 「⛔ I3 7건 판정이 선행」, `§11` 은 ⬜ 다. 한 문서 세 절이 서로 다르다 — 어느 하나를 고르지 않는다. 사람이 `sessions/TED-DECISIONS-OPEN.md §A` 를 열어 7건의 실물을 세고 판정할 자리다."
+    note: "⭑ **2026-08-29 — `conflict` 를 풀고 `partial` 로 세웠다.** 종전 갈라짐(`03-HANDOFF §1 T-I` ⬜ ↔ `WORK-UNITS §10` ⛔ ↔ `§10.2-b` ✅ ↔ `§11` ⬜)의 원인이던 **선행 판정 7건은 이미 전건 종결**이고(`PLAN-SoT §9 〈168〉-㉮~㉴`), 그 위에 **실배포까지 섰다**(`〈185〉`). 산문 넷을 같은 회차에 `partial` 로 맞췄다. ／ 이전 ~~`status: conflict` — 한 문서 세 절이 서로 다르다. 사람이 `sessions/TED-DECISIONS-OPEN.md §A` 를 열어 7건의 실물을 세고 판정할 자리다~~ (**낡았다 — 7건은 2026-08-27 에 전건 판정됐다**). ／ **닫지 않는 이유 = 열림/부분 6행.** 열림 ⑴ 자동 트리거 완주(크론 미설치 — `install-schedule.sh` 미실행) ⑷ 롤백 왕복 ⑸ 직전 릴리스 확인. 부분 2-b(실배포 red 로그 없음 — 원장 red 행은 **헬스 판정 미도달** 단계다) ⑽ 게이트(red 1) ⑾ 전후 200→200(**배포 직전 값 미측정** → `[미확인]`). ⚠ **지금 스크립트 롤백 경로가 없다** — `ledger_rollback_target()` 대상 0건(green `deploy` 행이 1건뿐) · `:prev` 는 원장에 없는 수동 빌드본이다(`〈185〉-㉷`-⑵ · 블로커 `§4 #43`). **다음 배포가 한 번 더 성공해야 ⑷⑸ 를 잴 수 있다.**"
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §10", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "WORK-UNITS §11"]
 
   - id: I4
@@ -681,6 +681,19 @@ items:
     deadline: null
     note: "계약에 남은 미집행 선언 전수 확인 — op·필드가 선언만 되고 구현이 없는 것. 발견분은 철회 또는 집행으로 가른다. 선례 `〈151〉`. **⟨2026-08-28 닫힘⟩ 열린 판정 0건** — 7건 전건 판정 완료(`§9-〈180〉`·`〈181〉`). 판정 이력 = 5건 → 3건 → 0건. 마지막 3건은 **Stage 2 연관성 기준**으로 갈랐다(`〈181〉`): 읽기·중계 4 op 의 `403` **철회·집행**(둘이 `P3`·`V-1`·`V-2` 가 올라탈 표면이라 착수 전 확정) · `PermissionSwitchChange` **판정 없음 종결**(`P-33` 이 이미 「조회 화면 없음」으로 닫아 둔 결정이 낡은 감사 문서로 재등장한 것) · `suggestLineage` **판정 아님, `K3` 착수 순서로 이관**.**`422` 2건은 철회로 판정·집행 완료**(`§9-〈180〉` · `core-viz.yaml#createRender`·`core-ai.yaml#searchDatasets` 선언 삭제 · 코드 변경 0). 집행된 `403` 2건은 **`main` 병합 완료**(2026-08-28 · 리베이스 후 fast-forward · 산출 `sessions/X5-403-VERIFY.md`) — **red 픽스처 증명 완료**(생산 코드 두 훅만 되돌려 재실행 → `assert 200 == 403` 둘 실물 확인 후 복원) · `455 passed` 실패 0 · 게이트 6종 green · 일회용 DB 로 검증, 운영 스택 무접촉. ⚠ **여전히 로컬 green 이고 staging 배포 전이다** — **`[미확인]` 잔 1건 = staging 실물의 `403`**(배포 후 `PATCH` 2회로 풀린다 · `I3` 에 딸린다). **frontend 회귀는 해소**(`〈181〉` 실측 — `274 passed` 13파일 · `npm run build` 성공)."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
+
+  - id: X-6
+    name: 별칭 재부착 실패 삼킴
+    status: open
+    stage: stage2
+    owner: "인프라"
+    entry_conditions: ["없음 — 무의존. `I3` 실배포에서 적출(2026-08-29)"]
+    depends_on: []
+    completion_def: "⑴ `deploy.sh` ⑫ 의 별칭 재부착이 **실패를 삼키지 않는다** — `docker tag … 2>/dev/null || true` 의 무조건 성공 경로를 없애고, 실패하면 배포 판정이 GREEN 이 되지 않는다. ⑵ 그 성질을 **실패 픽스처로 증명한다** — 별칭 재부착이 실패하는 픽스처에서 판정이 실제로 red 를 내는 것을 `infra/staging/pipeline/selftest.sh` 회차로 못 박는다(통과시키려고 검사 범위를 줄이지 않는다). ⚠ 이 두 줄이 완료 정의의 전부다 — 이 항목의 근거 문장(`PLAN-SoT §9 〈185〉-㉸`-⑵)에서만 도출했고 그 밖은 넘겨짚지 않았다."
+    evidence: null
+    deadline: null
+    note: "적출 = `I3` 첫 실배포 회차(2026-08-29 · `PLAN-SoT §9 〈185〉-㉸`-⑵ · 산출 `sessions/I3-POSTDEPLOY.md`). **모양** = `deploy.sh` ⑫ 이 별칭 태그를 다시 붙일 때 `2>/dev/null || true` 로 무조건 성공한다. **왜 위험한가** = 실패해도 배포가 GREEN 을 찍고, 복원 리허설(`compose.throwaway.yml`)이 **그 별칭 이름으로 이미지를 찾으므로** 옛 이미지를 리허설하며 통과를 낼 수 있다. **이 레포 대표 실패형(green-by-skip)과 같은 모양**이다(`CLAUDE.md §4 게이트 정책` · 스킬 `§4`). ⚠ **형제를 찾는다** — 한 곳에서 이 모양이 나오면 다른 곳에도 있다. 다만 형제 탐색 범위는 이번에 세지 않았다 → `[미확인]`(푸는 법 = `infra/staging/**` 의 `|| true`·`2>/dev/null` 자리를 전수 열거해 각각이 판정 경로인지 가른다)."
+    sources: ["PLAN-SoT §9 〈185〉", "03-HANDOFF §4 #45"]
 
   - id: R-1
     name: 복원 절차
