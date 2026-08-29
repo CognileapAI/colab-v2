@@ -20,8 +20,11 @@ P2 가 열둘을 가져갔다 (36 → 24) —
     `deleteDataset` 501 · 재적재는 12 → 14 를 만들고 · DB 직접 UPDATE 는 `㊾-③` 위반.
     Ted 판정 ㈏(2026-08-27)로 대상이 넓어졌다 — 원천 표기·가공 단계·대표 조각·변수·
     좌표계·기간까지. **표가 23 → 22 로 준다.**
-  · `getDatasetLineage` — 그래프를 그리는 함수는 P2 가 만들었지만(`routes/lineage.py`),
-    이 **조회 op 자체는 P1 배정**이라 범위를 늘리지 않는다 (`CLAUDE.md §5`).
+  · ~~`getDatasetLineage`~~ — **구현했다 (P3 · 계보 그래프).** 그래프를 그리는 함수는
+    P2 가 만들어 두었고(`routes/lineage.py:lineage_graph`), 없던 것은 그 함수를 부를
+    GET 라우트 하나였다. 종전 기재는 「이 조회 op 자체는 P1 배정이라 범위를 늘리지
+    않는다」였는데, **`P1` 이 닫힌 뒤에도 op 은 501 로 남아 있었다** — 산문이 낡은
+    자리다. 계보 그래프 화면(`P3`)은 이 op 없이 설 수 없다. **표가 23 → 22 로 준다.**
 
 **S1 의 `P5` 레인이 셋을 가져갔다 (24 → 21)** — `listProjects` · `getProject` ·
 `linkProjectDataset`. 앞의 둘은 S-02·S-02b 화면 본체이고, 셋째는 `S1-PLAN.md §4.2` 의
@@ -51,7 +54,8 @@ class Op:
     code: str
 
 
-#: 계약(`contracts/seams/fe-core.yaml`) **50** 개 중 실동작 **27** 개를 뺀 **23** 개.
+#: 계약(`contracts/seams/fe-core.yaml`) 의 오퍼레이션 중 실동작을 뺀 나머지.
+#: ⭑ **23 → 22** — `getDatasetLineage` 구현 (P3 · 계보 그래프. 윗 문단이 이유를 적었다).
 #: ⭑ 종전 기재는 「49 개 중 26 개」였다 — **둘 다 1 씩 낮았고 차 23 만 우연히 맞았다**
 #: (2026-08-26 실측 정정: 계약 `operationId` 고유 50 · 이 표 23). 같은 자리의 네 번째 오기다.
 #: 차만 맞아서 `test_route_table.py` 도 `len(OPERATIONS)` 단언도 red 를 내지 않았다 —
@@ -67,7 +71,6 @@ OPERATIONS: tuple[Op, ...] = (
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
     Op("downloadDataset", "GET", "/datasets/{datasetId}/download", "NOT_IMPLEMENTED_NO_STORE"),
-    Op("getDatasetLineage", "GET", "/datasets/{datasetId}/lineage", "NOT_IMPLEMENTED_P1"),
     Op("createAccessRequest", "POST", "/datasets/{datasetId}/access-requests",
        "NOT_IMPLEMENTED_NO_STORE"),
     Op("listPendingAccessRequests", "GET", "/access-requests/pending",

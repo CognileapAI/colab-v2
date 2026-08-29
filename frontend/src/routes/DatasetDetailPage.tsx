@@ -1,5 +1,5 @@
-// S-05 데이터셋 상세 — **상단(헤더 + 기본 정보)만.**
-// 계보 그래프·미리보기·활용 프로젝트 섹션은 WU-P2·P3·P5 가 이어서 채운다 (`sessions/P1.md §1`).
+// S-05 데이터셋 상세 — 상단(헤더 + 기본 정보) + **계보 · 족보**(WU-P3).
+// 미리보기·활용 프로젝트 섹션은 WU-P2·P5 가 이어서 채운다 (`sessions/P1.md §1`).
 // 한 페이지 스크롤이고 탭으로 콘텐츠를 숨기지 않는다 (`Policy_데이터셋_상세 §1.3-1`).
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -9,6 +9,10 @@ import { LockedNotice } from '../components/detail/LockedNotice';
 import { defaultDetailSource } from '../components/detail/detailSource';
 import { useDatasetDetail } from '../components/detail/useDatasetDetail';
 import type { DetailSource } from '../components/detail/types';
+import { LineageSection } from '../components/lineage/LineageSection';
+import { defaultLineageSource } from '../components/lineage/graphSource';
+import { useDatasetLineage } from '../components/lineage/useDatasetLineage';
+import type { LineageGraphSource } from '../components/lineage/graphTypes';
 import { GridAttachEntry } from '../components/upload/GridAttachEntry';
 import type { UploadSources } from '../components/upload/types';
 import { LockedContent } from '../permission/LockedContent';
@@ -20,7 +24,11 @@ const DEFAULT_BACK = { label: '데이터셋 목록', to: '/datasets' };
 type BackState = { backLabel?: string; backTo?: string } | null;
 
 export function DatasetDetailPage(
-  props: { source?: DetailSource; uploadSources?: UploadSources } = {},
+  props: {
+    source?: DetailSource;
+    lineageSource?: LineageGraphSource;
+    uploadSources?: UploadSources;
+  } = {},
 ) {
   const { datasetId = '' } = useParams();
   const state = useLocation().state as BackState;
@@ -29,6 +37,12 @@ export function DatasetDetailPage(
   // 격자를 반영한 뒤 **서버에게 다시 묻는다** — 화면이 값을 손으로 고치지 않는다.
   const [reloadToken, setReloadToken] = useState(0);
   const detail = useDatasetDetail(source, datasetId, reloadToken);
+  // 계보는 **다른 op** 이라 다른 출처로 읽는다 — 상세가 501 이어도 계보가 살아 있을 수 있고 그 반대도 된다
+  const lineageSource = useMemo(
+    () => props.lineageSource ?? defaultLineageSource(),
+    [props.lineageSource],
+  );
+  const lineage = useDatasetLineage(lineageSource, datasetId, reloadToken);
 
   const back = {
     label: state?.backLabel ?? DEFAULT_BACK.label,
@@ -85,6 +99,14 @@ export function DatasetDetailPage(
                 />
               </div>
             </>
+          ) : null}
+          {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로 그리지 않는다** —
+              읽지 못하면 구역 자체를 세우지 않는다. */}
+          {lineage.status === 'ready' ? (
+            <LineageSection
+              graph={lineage.graph}
+              lastModifiedAt={detail.detail.lastModifiedAt}
+            />
           ) : null}
         </LockedContent>
       ) : null}

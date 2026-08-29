@@ -54,7 +54,13 @@ P5_REAL = {
     "getProject":          "tests/test_project_screens.py",
     "linkProjectDataset":  "tests/test_project_screens.py",
 }
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL}
+#: **`P3` 이 표에서 뺀 하나** (20 → 19) — `getDatasetLineage`. **그래프를 그리는 함수는
+#: P2 가 만들어 두었고**(`routes/lineage.py:lineage_graph`), 없던 것은 그 함수를 부를 GET
+#: 라우트 하나였다. 종전 산문은 「이 조회 op 자체는 P1 배정」이었는데 **`P1` 이 닫힌 뒤에도
+#: op 은 501 로 남아 있었다** — 산문이 낡은 자리다. 계보 그래프 화면(`P3`)은 이 op 없이
+#: 설 수 없다. **뺀 자리에 실동작 시험이 있다**는 규칙은 여기에도 그대로 걸린다.
+P3_REAL = {"getDatasetLineage": "tests/test_lineage_graph_read.py"}
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL}
 REAL = P1_REAL | set(P2_REAL)
 NO_STORE = {
     "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
@@ -109,8 +115,12 @@ def test_the_23_unimplemented_operations_are_exactly_these() -> None:
     ⭑ **2026-08-27 — `updateLab`·`updateProject` 가 빠져 22 → 20** (`〈150〉`).
     `〈149〉-㉱` 가 남긴 결손 2건이고, 둘 다 **「올린 뒤 고칠 길이 없다」의 잔여**였다.
     계약은 이미 완비라 **개정 없이 501 만 걷었다.**
+
+    ⭑ **`P3` — `getDatasetLineage` 가 빠져 20 → 19.** 계보 그래프 화면의 조회 op 이고,
+    **계약 개정이 0 건이다** — 계약은 처음부터 이 op 을 들고 있었고 라우트만 없었다.
+    **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 20
+    assert len(OPERATIONS) == 19
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -134,7 +144,8 @@ def test_codes_are_the_two_kinds() -> None:
     # 15 → 13: `〈150〉` 이 `updateLab`·`updateProject` 를 가져갔다 — **둘 다 P1 계열이었다.**
     #          `〈149〉-㉱` 가 남긴 결손 2건이고 둘 다 「올린 뒤 고칠 길이 없다」의 잔여다.
     #          **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
-    assert len(p1) == 13
+    # 13 → 12: `P3` 이 `getDatasetLineage` 를 가져갔다 — 계보 그래프 화면의 조회 op 이다.
+    assert len(p1) == 12
     assert no_store & p1 == set()
 
 
