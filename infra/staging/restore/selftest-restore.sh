@@ -106,6 +106,85 @@ else
   echo "  → ✗ 산출물을 규약 밖으로 오판했다"; backup_dir_offenders "$D" | sed 's/^/    /'; BAD=$((BAD+1))
 fi
 
+# ── 회차 짝짓기 (`preflight` P2/P5-b) ─────────────────────────────────────────
+# ⭑ 재현하는 결함 = 원장과 볼륨을 **각각 독립으로 「최신」** 으로 고르던 것(`R1-TAILS-EXEC §2.1`).
+#   원장 전용 백업이 볼륨보다 뒤에 뜬 실물 상태를 그대로 픽스처로 만든다 —
+#   ledger-only 회차 `…T100801` 가 최신이고, 볼륨이 딸린 회차는 `…T033005` 다.
+#   볼륨 둘의 스탬프는 **35초 차**(033005 / 033040)라 `--stamp` 하나로는 못 잡는다.
+mk_store() { # $1=보관처  $2=회차스탬프  $3=uploads스탬프  $4=previews스탬프("" 면 안 만든다)
+  local d="$1" r="$2"
+  mkdir -p "$d"
+  local R="platform-$r.sql.gz"
+  for f in "platform-$r.sql.gz" "ai-$r.sql.gz"; do : > "$d/$f"; sha256sum "$d/$f" | awk '{print $1}' > "$d/$f.sha256"; done
+  if [ -n "$3" ]; then
+    : > "$d/vol-uploads-$3.tar.gz"; sha256sum "$d/vol-uploads-$3.tar.gz" | awk '{print $1}' > "$d/vol-uploads-$3.tar.gz.sha256"
+    : > "$d/vol-uploads-$3.manifest.tsv"; printf '%s' "$R" > "$d/vol-uploads-$3.pair"
+  fi
+  if [ -n "$4" ]; then
+    : > "$d/vol-previews-$4.tar.gz"; sha256sum "$d/vol-previews-$4.tar.gz" | awk '{print $1}' > "$d/vol-previews-$4.tar.gz.sha256"
+    : > "$d/vol-previews-$4.manifest.tsv"; printf '%s' "$R" > "$d/vol-previews-$4.pair"
+  fi
+}
+mk_cfg() { # $1=cfg경로  $2=보관처  $3=볼륨목록
+  cat > "$1" <<CFG
+COLAB_BACKUP_DIR=$2
+COLAB_BACKUP_PROFILES="platform ai"
+COLAB_VOLBACKUP_VOLUMES="$3"
+CFG
+}
+pf() { COLAB_BACKUP_CONFIG="$1" "$HERE/preflight.sh" "${@:2}" 2>&1; }
+
+# SR11 — 원장 전용 최신 회차가 있어도 **볼륨이 딸린 회차**를 고른다
+S="$W/rt1"; mk_store "$S" 20260829T033005 20260829T033005 20260829T033040
+: > "$S/platform-20260829T100801.sql.gz"; sha256sum "$S/platform-20260829T100801.sql.gz" | awk '{print $1}' > "$S/platform-20260829T100801.sql.gz.sha256"
+: > "$S/ai-20260829T100801.sql.gz";       sha256sum "$S/ai-20260829T100801.sql.gz"       | awk '{print $1}' > "$S/ai-20260829T100801.sql.gz.sha256"
+touch "$S/platform-20260829T100801.sql.gz" "$S/ai-20260829T100801.sql.gz"
+mk_cfg "$W/cfg1.env" "$S" "uploads previews"
+RAN=$((RAN+1)); echo "──────── SR11 원장·볼륨을 회차로 묶어 고른다 (독립 「최신」 금지)"
+O="$(pf "$W/cfg1.env")"
+if echo "$O" | grep -q 'P2 platform = platform-20260829T033005.sql.gz' \
+   && echo "$O" | grep -q 'P2 볼륨 previews = vol-previews-20260829T033040.tar.gz' \
+   && ! echo "$O" | grep -q 'P5-b .*≠'; then
+  echo "  → 기대대로: 회차 platform-20260829T033005.sql.gz 로 네 산출물이 한 벌로 잡혔다"
+else
+  echo "  → ✗ 짝이 어긋났다"; echo "$O" | grep -E 'P2 |P5-b ' | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
+# SR12 — **성립하는 회차가 없으면 RED.** 관대한 기본값으로 떨어지지 않는다
+S="$W/rt2"; mkdir -p "$S"
+for f in platform-20260829T100801.sql.gz ai-20260829T100801.sql.gz; do : > "$S/$f"; sha256sum "$S/$f" | awk '{print $1}' > "$S/$f.sha256"; done
+mk_cfg "$W/cfg2.env" "$S" "uploads previews"
+expect_red "SR12 짝이 맞는 회차가 하나도 없다 — 「최신」으로 떨어지지 않고 RED" \
+  env COLAB_BACKUP_CONFIG="$W/cfg2.env" "$HERE/preflight.sh"
+RAN=$((RAN+1)); echo "──────── SR12-b 그 RED 가 **회차 부재를 이름으로** 말한다"
+O="$(pf "$W/cfg2.env")"
+if echo "$O" | grep -q 'P2 짝이 맞는 회차가 없다'; then echo "  → 기대대로"
+else echo "  → ✗ 회차 부재를 말하지 않는다"; BAD=$((BAD+1)); fi
+
+# SR13 — 회차 편입 **선언이 없는 볼륨**은 RED (새 볼륨을 선언 없이 추가한 모양)
+S="$W/rt3"; mk_store "$S" 20260829T033005 20260829T033005 20260829T033040
+mk_cfg "$W/cfg3.env" "$S" "uploads previews scratch"
+expect_red "SR13 회차 편입 선언이 없는 볼륨(scratch) — 조용히 넘기지 않는다" \
+  env COLAB_BACKUP_CONFIG="$W/cfg3.env" "$HERE/preflight.sh"
+RAN=$((RAN+1)); echo "──────── SR13-b 그 RED 가 **선언 부재를 이름으로** 말한다"
+O="$(pf "$W/cfg3.env")"
+if echo "$O" | grep -q 'scratch 의 회차 편입 선언이 없다'; then echo "  → 기대대로"
+else echo "  → ✗ 선언 부재를 말하지 않는다"; BAD=$((BAD+1)); fi
+
+# SR14 — **명시적 면제는 통과하되 건수를 드러낸다** (세 상태의 가운데)
+S="$W/rt4"; mk_store "$S" 20260829T033005 20260829T033005 ""
+mk_cfg "$W/cfg4.env" "$S" "uploads previews"
+echo 'COLAB_VOLBACKUP_PAIRING_previews=none' >> "$W/cfg4.env"
+RAN=$((RAN+1)); echo "──────── SR14 명시 면제된 볼륨은 SKIP 되고 **요약줄에 건수가 나온다**"
+O="$(pf "$W/cfg4.env")"
+if echo "$O" | grep -q 'SKIP  P2 볼륨 previews 는 회차 편입에서 명시 면제' \
+   && echo "$O" | grep -q 'SKIP  P5-b 볼륨 previews' \
+   && echo "$O" | grep -qE '승인된 SKIP [0-9]+건'; then
+  echo "  → 기대대로: 면제는 통과하되 **무엇을 안 봤는지**가 요약줄에 남는다"
+else
+  echo "  → ✗ 면제가 숨었다"; echo "$O" | grep -E 'SKIP|사전조건' | sed 's/^/    /'; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi
 echo "복원 셀프테스트 RED — $BAD 건이 fail-closed 가 아니다"; exit 1
