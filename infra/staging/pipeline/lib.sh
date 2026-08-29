@@ -28,14 +28,17 @@ verdict() { # $1=대상 이름(요약줄 앞머리)
   if [ "${FAILED:-0}" -ne 0 ]; then
     echo "$what: RED (실패 ${FAILED}건${sk})"; return 1
   fi
-  if [ "${CHECKED:-1}" -eq 0 ]; then
+  # ⚠ 종전 기본값이 `${CHECKED:-1}` 이었다 — CHECKED 를 **한 번도 세지 않은** 호출처는
+  #   「0 이 아니다」로 읽혀 GREEN 이 났고 요약줄은 「통과 ?건」이었다. 관대한 기본값은
+  #   그 자체가 green-by-skip 이다(`CLAUDE.md §4`). 세지 않은 것은 0 으로 읽고 RED 다.
+  if [ "${CHECKED:-0}" -eq 0 ]; then
     # 검사 대상 0건은 통과가 아니다. `gates/README.md` 의 「대상 0건 = red」 원칙 그대로.
-    echo "$what: RED (검사 대상 0건 — 아무것도 검사하지 않았다)"; return 1
+    echo "$what: RED (검사 대상 0건 — 아무것도 검사하지 않았다$([ -z "${CHECKED:-}" ] && echo " · 건수를 세지도 않았다"))"; return 1
   fi
   if [ "${SKIPPED:-0}" -ne 0 ]; then
-    echo "$what: GREEN (통과 ${CHECKED:-?}건 · **승인된 SKIP ${SKIPPED}건** — 무엇을 안 봤는지는 위 SKIP 줄)"; return 0
+    echo "$what: GREEN (통과 ${CHECKED}건 · **승인된 SKIP ${SKIPPED}건** — 무엇을 안 봤는지는 위 SKIP 줄)"; return 0
   fi
-  echo "$what: GREEN (통과 ${CHECKED:-?}건 · SKIP 0 — 모든 항목이 실제로 돌았다)"; return 0
+  echo "$what: GREEN (통과 ${CHECKED}건 · SKIP 0 — 모든 항목이 실제로 돌았다)"; return 0
 }
 
 # ── 상태 디렉터리 ───────────────────────────────────────────────────────────
@@ -91,6 +94,43 @@ ledger_rollback_target() { # $1=현재 태그(제외 대상, 비어도 된다)
     printf '%s' "$tag"; return 0
   done < <(tac "$f")
   return 1
+}
+
+# ── digest 이력 원장 (Ted 판정 2026-08-29) ──────────────────────────────────
+# 릴리스 원장(`release-ledger.tsv`)이 적는 것은 **릴리스 태그**다. 태그는 신원이 아니다 —
+# 별칭 태그(`:i2`)는 재빌드마다 다른 이미지를 가리키고, 덮이는 순간 **이전에 무엇을 가리켰는지가
+# 사라진다.** 그래서 「지금 `:i2` 가 무엇인가」는 답할 수 있어도 「어제 무엇이었나」는 답이 없었다
+# (`sessions/R1-TAILS-EXEC.md §3` — 대장 8건 중 5건 불일치의 원인이 **기구 부재**였다).
+#
+# 이 원장이 그 자리를 메운다. 별칭을 옮길 때마다 **이미지 하나에 한 줄**을 append 한다.
+#   시각 · 릴리스태그 · 별칭태그 · 이미지 · digest
+# append-only 이고 prune 하지 않는다 — 이력을 줄이는 것은 이력이 아니다.
+DIGEST_LEDGER_NAME="image-digest-ledger.tsv"
+digest_ledger_path() { printf '%s/%s' "$(pipeline_state_dir)" "$DIGEST_LEDGER_NAME"; }
+
+# 실측 수단은 갈아끼울 수 있게 둔다(셀프테스트가 docker 없이 돌아야 한다).
+: "${COLAB_DIGEST_INSPECT:=}"
+digest_of() { # $1=이미지 → digest 하나(없으면 빈 문자열)
+  if [ -n "${COLAB_DIGEST_INSPECT:-}" ]; then "$COLAB_DIGEST_INSPECT" "$1" | awk '{print $1}'; return; fi
+  docker image inspect "$1" --format '{{.Id}}' 2>/dev/null
+}
+
+# $1=릴리스태그 $2=별칭태그 $3.. = 이미지 이름(태그 없이)
+# ⚠ 실측이 안 되는 이미지는 `[미측정]` 으로 **적고** 0 이 아닌 코드를 낸다.
+#   부르는 쪽이 이것을 삼키면 그 자리가 green-by-skip 이 된다.
+digest_ledger_append() {
+  local rel="$1" alias="$2"; shift 2
+  state_init
+  local f n img d bad=0
+  f="$(digest_ledger_path)"
+  for n in "$@"; do
+    img="$n:$alias"
+    d="$(digest_of "$img")"
+    [ -n "$d" ] || { d="[미측정]"; bad=1; }
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" "$rel" "$alias" "$n" "$d" >> "$f"
+  done
+  [ "$bad" -eq 0 ] || return 1
+  return 0
 }
 
 # ── 이미지 ──────────────────────────────────────────────────────────────────
