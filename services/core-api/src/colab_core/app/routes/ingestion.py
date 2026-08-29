@@ -455,6 +455,22 @@ def create_dataset(request: Request, body: dict = None,
         total_size_bytes=total,
     )
 
+    # ①-b **보류된 사건을 반영한다** (`〈190〉` 사건 경유 되쓰기 · 반영 시점 = 여기).
+    #
+    # 사건은 **등록 전**에 났고(`upload.ready` 축자 「저장된 것은 아무것도 없다」) 값이 사는
+    # 장부 행은 **바로 위에서** 생겼다. 그 사이 사건은 `d5_pipeline_event` 에 **보류**돼 있었다 —
+    # 큐도 메모리도 아니다. 재기동을 건너도 남는 이유가 그것이고, 「버린다」를 고르지 않은
+    # 이유도 그것이다(버리면 값이 영영 안 들어간다 = 지금 상태의 재현).
+    #
+    # **같은 트랜잭션이다** — 데이터셋이 생겼는데 값만 안 들어간 반쪽이 남지 않는다.
+    # 판정은 하지 않는다: 사건이 말한 것을 옮길 뿐이고(`core-api` 는 파일을 못 읽는다),
+    # 사람이 이미 고친 칸은 덮지 않는다(`apply_autometa` 의 `COALESCE`).
+    held = ledger.held_auto_metadata(upload_id)
+    d3_catalog.apply_autometa(
+        db, dataset_id=dataset_id, format=held.format, crs=held.crs, grid=held.grid,
+        period_start=held.period_start, period_end=held.period_end,
+        variables=held.variables, total_size_bytes=held.byte_size_total)
+
     # ② 파일 — **업로드가 발급한 `fileId` 그대로.** 저장 키는 **데이터셋의 자리**다
     #    (`_relocate` 주석 — 승계하면 등록된 데이터셋 전체가 렌더 404 다).
     new_keys = _dataset_keys(str(dataset_id), files)

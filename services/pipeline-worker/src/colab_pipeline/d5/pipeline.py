@@ -9,12 +9,14 @@
 """
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
-from .cog import convert_tif_to_cog, write_cog_from_grid
+from ..kernel import storage_layout
+from .cog import OVERVIEW_RESAMPLING, convert_tif_to_cog, write_cog_from_grid
 from .detect import detect_format
 from .formats import UNKNOWN
 from .grid import GridUnavailableError, find_reference_grid
@@ -44,6 +46,8 @@ class PipelineResult:
     metadata: AutoMetadata | None = None
     input_cog_class: str | None = None   # 입력 tif 의 3부류 판정
     cog_path: str | None = None
+    #: 지도 타일이 놓인 **내용 키**. 산출물이 미리보기 루트에 놓였을 때만 값이 있다.
+    tile_content_key: str | None = None
     artifact: ArtifactRecord | None = None
     failures: list[str] = field(default_factory=list)
 
@@ -54,8 +58,64 @@ def _fail(res: PipelineResult, msg: str) -> PipelineResult:
     return res
 
 
+#: COG 프로파일 이름. `cog.py` 가 `cog_profiles.get("deflate")` 로 고정한 값이고,
+#: 내용 키의 재료라 **여기서 다시 정하지 않고 그 사실을 이름으로 옮긴다.**
+COG_COMPRESSION = "deflate"
+
+
+def file_digest(path: Path) -> str:
+    """원본 바이트의 다이제스트 — 지도 타일 내용 키의 첫 재료."""
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _grid_digest(grid_dir: Path | None, used_reference_grid: bool) -> str:
+    """좌표를 준 것의 다이제스트.
+
+    파일 안 좌표를 썼으면 **명시값**(`내장`)이다 — 빈 값으로 두면 「격자가 없다」와
+    「안 물어봤다」가 같은 키를 얻는다.
+    """
+    if not used_reference_grid or grid_dir is None:
+        return storage_layout.GRID_DIGEST_EMBEDDED
+    h = hashlib.sha256()
+    for f in sorted(Path(grid_dir).iterdir()):
+        if f.is_file():
+            h.update(f.name.encode("utf-8"))
+            h.update(file_digest(f).encode("ascii"))
+    return h.hexdigest()
+
+
+def map_tile_key(source: Path, *, grid_dir: Path | None, used_reference_grid: bool,
+                 kind: str) -> str:
+    """이 산출물의 자리를 정하는 **전용 키** — 재료는 파이프라인이 실제로 가진 것뿐이다.
+
+    렌더 산출물의 키 규칙(`viz-render` `render_cache_key`)을 **부르지 않는다** —
+    그 규칙의 입력(팔레트·선택 변수·색범위)이 여기 존재하지 않기 때문이고,
+    부르면 D5 가 D7 의 렌더 개념을 갖는다(`CLAUDE.md §3-1`).
+    """
+    if kind not in OVERVIEW_RESAMPLING:
+        raise ValueError(f"kind 는 categorical|continuous — 받은 값: {kind}")
+    return storage_layout.map_tile_content_key(
+        sourceDigest=file_digest(source),
+        sourceByteSize=Path(source).stat().st_size,
+        gridDigest=_grid_digest(grid_dir, used_reference_grid),
+        conversionKind=kind,
+        overviewResampling=OVERVIEW_RESAMPLING[kind],
+        compression=COG_COMPRESSION,
+    )
+
+
 def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
-             kind: str = "continuous") -> PipelineResult:
+             kind: str = "continuous",
+             previews_root: Path | None = None) -> PipelineResult:
+    """`previews_root` 가 주어지면 산출물은 **미리보기 산출물 자리**에 놓인다.
+
+    ⚠ 없으면 예전처럼 `workdir` 임시 자리다 — 그 상태는 「자리를 안 정한 것」이고,
+    유실 감지 게이트가 그 사실을 건수로 드러낸다. 조용히 성공으로 세지 않는다.
+    """
     path = Path(path)
     workdir = Path(workdir)
     res = PipelineResult(input_path=path, status="FAILURE")
@@ -92,7 +152,16 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
 
     # 4) COG — 입력과 산출을 층에서 가른다
     workdir.mkdir(parents=True, exist_ok=True)
-    out_path = workdir / (path.name.split(".")[0] + ".cog.tif")
+    if previews_root is not None:
+        try:
+            res.tile_content_key = map_tile_key(
+                path, grid_dir=grid_dir, used_reference_grid=grid is not None, kind=kind)
+        except ValueError as e:
+            return _fail(res, f"지도 타일 내용 키를 지을 수 없다: {e}")
+        out_path = storage_layout.preview_path(previews_root, res.tile_content_key, ".tif")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        out_path = workdir / (path.name.split(".")[0] + ".cog.tif")
     try:
         if det.format == "GeoTIFF":
             res.input_cog_class = classify_tiff(path)

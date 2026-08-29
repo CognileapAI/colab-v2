@@ -28,7 +28,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.ingestion import UploadFileRecord, UploadRecord
+from ..ports.ingestion import HeldAutoMetadata, UploadFileRecord, UploadRecord
 
 #: `upload.accepted` 페이로드의 스키마 버전 (`contracts/events/core-pipeline.json`).
 ACCEPTED_SCHEMA_VERSION = "1.0"
@@ -78,6 +78,15 @@ _READY_PAYLOAD = text("""
      WHERE upload_id = :id AND event_type = 'upload.ready'
      ORDER BY occurred_at DESC, id DESC
      LIMIT 1
+""")
+
+#: **보류된 사건을 읽는 자리.** 큐가 아니라 질의다 — 보류함은 `d5_pipeline_event` 그 자체다.
+#: 같은 타입이 두 번 들어올 수 없으므로(멱등 키 UNIQUE) 정렬 없이도 한 타입에 한 행이다.
+_HELD_AUTOMETA_EVENTS = text("""
+    SELECT event_type, payload
+      FROM d5_pipeline_event
+     WHERE upload_id = :id
+       AND event_type IN ('file.format-detected', 'file.header-parsed')
 """)
 
 _INSERT_UPLOAD = text("""
@@ -172,6 +181,52 @@ class UploadLedgerAdapter:
             )
             for r in rows
         ]
+
+    def held_auto_metadata(self, upload_id: Ulid) -> HeldAutoMetadata:
+        """등록 전에 난 사건이 나른 값을 **읽기만** 한다. **판정하지 않는다.**
+
+        `upload.ready` 를 읽는 `_READY_PAYLOAD` 와 같은 모양이다 — core-api 는 이벤트가
+        말한 것을 옮길 뿐이고, 값을 만드는 것은 파일을 읽는 쪽(pipeline-worker)이다
+        (`CLAUDE.md §3-4` — core-api 에는 geo 라이브러리가 없다).
+
+        **없는 값을 지어내지 않는다.** 사건이 없으면 전부 `None` 이고 `event_types` 가
+        비어 있다 — 그 사실을 유실 감지가 건수로 읽는다.
+        """
+        fmt = crs = grid = None
+        variables = None
+        period_start = period_end = None
+        byte_total = None
+        seen: list[str] = []
+        rows = self._session.execute(
+            _HELD_AUTOMETA_EVENTS, {"id": str(upload_id)}).mappings().all()
+        for row in rows:
+            payload = row["payload"]
+            if isinstance(payload, str):
+                payload = json.loads(payload)
+            if not isinstance(payload, dict):
+                continue
+            seen.append(row["event_type"])
+            if row["event_type"] == "file.format-detected":
+                # **조각마다 다르면 아직 모르는 것이다** — 등록 경로가 `detected_format`
+                # 에 쓰는 규칙과 같다. `uniform` 이 거짓이면 값을 옮기지 않는다.
+                if payload.get("uniform") is not False:
+                    fmt = payload.get("format")
+            else:
+                variables = payload.get("variables")
+                if not isinstance(variables, list):
+                    variables = None
+                crs = payload.get("crs")
+                grid = payload.get("grid")
+                period = payload.get("period")
+                if isinstance(period, dict):
+                    period_start = period.get("start")
+                    period_end = period.get("end")
+                size = payload.get("byteSizeTotal")
+                byte_total = size if isinstance(size, int) else None
+        return HeldAutoMetadata(
+            format=fmt, variables=variables, period_start=period_start,
+            period_end=period_end, crs=crs, grid=grid, byte_size_total=byte_total,
+            event_types=tuple(sorted(seen)))
 
     def grid_rejections(self, upload_id: Ulid) -> list[dict]:
         """`UploadStatus.gridRejections` — **거절된 격자가 왜 목록에서 사라졌는가.**

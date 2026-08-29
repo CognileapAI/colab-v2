@@ -13,10 +13,11 @@ ALL_GATES=(
   planning-freshness contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
-  rls-coverage rls-effect work-item-consistency stage2-markers
+  rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
+  autometa-loss-selftest
 )
 
 case "$GATE" in
@@ -123,6 +124,15 @@ case "$GATE" in
     # 휴면(`stage2` 대기) 모듈의 시험이 **CI 에서 계속 도는지** (〈71〉-㉰).
     # 수집 0 건 · skipped · failed 는 전부 red — 「안 돌리면 휴면은 부식」.
     exec "$REPO_ROOT/gates/tools/stage2-markers.sh"
+    ;;
+  autometa-loss)
+    # 사건이 발행되고도 장부에 반영되지 않았는가 (`〈190〉-㉱`). **대상 0건도 red 다.**
+    # 적용 DB 가 없으면 red — schema-diff 와 같은 규율이다(환경 부재를 skip 으로 세지 않는다).
+    exec "$REPO_ROOT/gates/tools/autometa-loss.sh"
+    ;;
+  autometa-loss-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 유실·대상 0건·환경 부재 셋 다.
+    exec "$REPO_ROOT/gates/tools/autometa-loss-selftest.sh"
     ;;
   stage2-markers-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (0 건 · skip · fail).

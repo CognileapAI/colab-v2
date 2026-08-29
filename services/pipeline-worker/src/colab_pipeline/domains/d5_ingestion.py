@@ -89,6 +89,9 @@ class UploadWork:
     files: list[UploadFileWork]
     grid_dir: Path | None = None
     kind: str = "continuous"      # 오버뷰 리샘플링 분기 (`DR-12`)
+    #: 지도 타일이 놓일 **미리보기 산출물 루트**. 없으면 산출물은 임시 자리에만 떨어진다 —
+    #: 그 상태는 「자리를 안 정한 것」이고 조용히 성공으로 세지 않는다(호출자가 선언한다).
+    previews_root: Path | None = None
 
 
 # ── 출력 ────────────────────────────────────────────────────────────────────
@@ -231,7 +234,8 @@ class IngestionService:
         # ③④⑤ — 기존 파이프라인을 파일마다 통과시킨다 (파서를 다시 쓰지 않는다)
         results: dict[str, PipelineResult] = {}
         for f in bodies:
-            r = run_file(f.path, workdir=work.workdir, grid_dir=grid_dir, kind=work.kind)
+            r = run_file(f.path, workdir=work.workdir, grid_dir=grid_dir, kind=work.kind,
+                         previews_root=work.previews_root)
             results[f.file_id] = r
             out = res.files[f.file_id]
             out.status, out.failures = r.status, list(r.failures)
