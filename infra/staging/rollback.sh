@@ -125,6 +125,13 @@ else
   ALIAS_NOTE="별칭재부착GREEN"
 fi
 
-ledger_append rollback "-" "$TAG" green "직전 green 릴리스로 되돌림 (직전 배포=$CUR) $ALIAS_NOTE"
+# digest 이력 — 되돌리기도 별칭을 옮긴다. 옮긴 쪽만 적으면 이력에 구멍이 난다.
+if ! digest_ledger_append "$TAG" i2 "${RELEASE_IMAGES[@]/#/colab-v2/}"; then
+  ledger_append rollback "-" "$TAG" red "롤백은 섰으나 digest 실측 실패 — 이력에 [미측정] 이 남았다"
+  mark_failed "롤백 digest 이력" "별칭 :i2 의 digest 를 실측하지 못했다"
+  exit 71
+fi
+
+ledger_append rollback "-" "$TAG" green "직전 green 릴리스로 되돌림 (직전 배포=$CUR) $ALIAS_NOTE digest이력=${#RELEASE_IMAGES[@]}종"
 echo "롤백 GREEN — 태그 $TAG"
 tail -n 1 "$(ledger_path)"

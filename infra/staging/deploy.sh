@@ -227,8 +227,17 @@ else
   ALIAS_NOTE="별칭재부착GREEN"
 fi
 
+# ⑫-a2 digest 이력 — **별칭이 지금 무엇을 가리키는지를 회차마다 남긴다** (Ted 판정 2026-08-29).
+# 릴리스 원장이 적는 것은 태그뿐이라, `:i2` 가 덮이는 순간 **이전 값이 사라졌다.** 그래서
+# 「대장 8건 중 5건 불일치」의 이력을 소급할 수 없었다(`sessions/R1-TAILS-EXEC.md §3`).
+# 여기가 그 기구다. 실측이 안 되면 `[미측정]` 으로 적히고 **배포가 멈춘다** — 조용히 넘기지 않는다.
+log "⑫-a2 digest 이력 원장 append (${#RELEASE_IMAGES[@]}종)"
+digest_ledger_append "$TAG" i2 "${RELEASE_IMAGES[@]/#/colab-v2/}" \
+  || abort "digest 이력" "별칭 :i2 의 digest 를 실측하지 못했다 — 이력이 비면 다음 회차가 대조 기준을 잃는다"
+log "digest 이력: $(digest_ledger_path)"
+
 log "⑫-b 원장 · 표식"
-ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE $BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
+ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE digest이력=${#RELEASE_IMAGES[@]}종 $BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
 mark_success "$TAG"
 
 image_prune "$TAG"

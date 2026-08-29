@@ -161,8 +161,13 @@ fi
 
 echo "════ P8 현재 이미지 digest 를 적어 둔다"
 if [ -n "$DIGEST_OUT" ]; then
-  "$HERE/check-image-digests.sh" --record "$DIGEST_OUT" || true
-  if [ -s "$DIGEST_OUT" ]; then pass "P8 현재 digest 를 $(basename "$DIGEST_OUT") 에 기록"; else fail "P8 digest 기록 실패"; fi
+  # ⚠ 종전 이 자리는 `|| true` 였다 — 대장 대조가 RED 여도 **파일만 비어 있지 않으면 PASS** 였다.
+  #   기록과 대조는 다른 사실이다. 대조 결과를 삼키면 P8 은 「적었다」만 말하고 「맞다」를 말하지 않는다.
+  DIGEST_RC=0
+  "$HERE/check-image-digests.sh" --record "$DIGEST_OUT" || DIGEST_RC=$?
+  if [ ! -s "$DIGEST_OUT" ]; then fail "P8 digest 기록 실패"
+  elif [ "$DIGEST_RC" -ne 0 ]; then fail "P8 digest 를 $(basename "$DIGEST_OUT") 에 적었으나 **대장 대조가 RED** 다 (위 FAIL 줄)"
+  else pass "P8 현재 digest 를 $(basename "$DIGEST_OUT") 에 기록 · 대장 대조 일치"; fi
 else
   fail "P8 --record-digests <출력.tsv> 를 주지 않았다 — 비교 기준이 없으면 §4.6-④ 를 못 잰다"
 fi

@@ -66,17 +66,28 @@ exit 0
 SH
 chmod +x "$W/inspect-ok" "$W/inspect-drift" "$W/inspect-none"
 
+# 배포 목록의 정본 = compose 의 `image:`. 이 픽스처 묶음의 대장은 두 줄뿐이므로 compose 도 두 줄이다 —
+# 검사 범위를 줄인 것이 아니라 **대장과 배포 목록을 같은 세계로 맞춘 것**이다(범위 불일치는 SR15 가 따로 잡는다).
+cat > "$W/compose-2.yml" <<'YML'
+services:
+  a:
+    image: colab-v2/core-api:${COLAB_RELEASE_TAG:?필요}
+  b:
+    image: colab-v2/frontend:${COLAB_RELEASE_TAG:?필요}
+YML
+DG=(--compose "$W/compose-2.yml")
+
 RAN=$((RAN+1)); echo "──────── SR3 대조군 — 대장과 실측이 같으면 GREEN"
-if COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" >/dev/null 2>&1; then
+if COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" "${DG[@]}" >/dev/null 2>&1; then
   echo "  → 기대대로 GREEN"
 else echo "  → ✗ 같은데 RED 다"; BAD=$((BAD+1)); fi
 
 expect_red "SR4 태그는 같은데 digest 가 다르다 (〈153〉 사고의 형태)" \
-  env COLAB_DIGEST_INSPECT="$W/inspect-drift" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md"
+  env COLAB_DIGEST_INSPECT="$W/inspect-drift" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" "${DG[@]}"
 expect_red "SR5 이미지가 호스트에 없다 — 미측정을 일치로 읽지 않는다" \
-  env COLAB_DIGEST_INSPECT="$W/inspect-none" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md"
+  env COLAB_DIGEST_INSPECT="$W/inspect-none" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" "${DG[@]}"
 expect_red "SR6 대장에서 digest 행을 못 읽었다 (표 형식이 바뀌었다)" \
-  env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/inspect-ok"
+  env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/inspect-ok" "${DG[@]}"
 
 # ── 복원 스크립트의 문 ───────────────────────────────────────────────────────
 expect_red "SR7 --yes-drop-schema 없이 restore-db.sh" \
@@ -184,6 +195,74 @@ if echo "$O" | grep -q 'SKIP  P2 볼륨 previews 는 회차 편입에서 명시 
 else
   echo "  → ✗ 면제가 숨었다"; echo "$O" | grep -E 'SKIP|사전조건' | sed 's/^/    /'; BAD=$((BAD+1))
 fi
+
+# ── digest 대장의 **세 상태** (Ted 판정 2026-08-29 · 별칭 태그 이동에 이력 기구가 없던 결함) ──
+#   ⭑ 재현하는 결함 = 대장이 **선언한 행만** 보던 것. 배포되는 이미지가 대장에 아예 없으면
+#     검사 대상에서 조용히 빠지고 「전건 일치 GREEN」이 나왔다 — green-by-skip 의 교과서 모양이다.
+#   세 상태: digest 선언 → 대조 · 명시 면제 → 통과하되 건수 노출 · 선언 없음 → RED.
+mk_compose() { cat > "$1" <<'YML'
+services:
+  a:
+    image: colab-v2/core-api:${COLAB_RELEASE_TAG:?필요}
+  b:
+    image: colab-v2/frontend:${COLAB_RELEASE_TAG:?필요}
+  c:
+    image: colab-v2/migrator:${COLAB_RELEASE_TAG:?필요}
+YML
+}
+mk_compose "$W/compose.yml"
+
+expect_red "SR15 배포되는 이미지가 대장에 **선언조차 없다** — 대상에서 빠지는 것은 통과가 아니다" \
+  env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" \
+      --ledger "$W/ledger.md" --compose "$W/compose.yml"
+
+RAN=$((RAN+1)); echo "──────── SR15-b 그 RED 가 **어느 이미지가 미선언인지** 이름으로 말한다"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" --compose "$W/compose.yml" 2>&1)"
+if echo "$O" | grep -q 'colab-v2/migrator:i2 — 대장에 선언이 없다'; then echo "  → 기대대로"
+else echo "  → ✗ 미선언 이미지를 이름으로 말하지 않는다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+# SR16 — 명시 면제는 통과하되 건수를 드러낸다 (세 상태의 가운데)
+cp "$W/ledger.md" "$W/ledger-exempt.md"
+echo '| `colab-v2/migrator:i2` | 면제: 배포 때만 도는 일회용 이미지 · 서빙 표면 없음 |' >> "$W/ledger-exempt.md"
+RAN=$((RAN+1)); echo "──────── SR16 명시 면제된 이미지는 통과하되 **요약줄에 건수가 나온다**"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger-exempt.md" --compose "$W/compose.yml" 2>&1)"
+RC=$?
+if [ $RC -eq 0 ] && echo "$O" | grep -q 'SKIP  colab-v2/migrator:i2 — 명시 면제' \
+   && echo "$O" | grep -qE '승인된 면제 [0-9]+건'; then
+  echo "  → 기대대로: 면제는 통과하되 **무엇을 안 봤는지**가 요약줄에 남는다"
+else echo "  → ✗ 면제가 숨었거나 통과하지 않았다 (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+# SR17 — **사유 없는 면제는 면제가 아니다.** 빈 사유로 검사를 끄는 경로를 막는다
+cp "$W/ledger.md" "$W/ledger-noreason.md"
+echo '| `colab-v2/migrator:i2` | 면제: |' >> "$W/ledger-noreason.md"
+expect_red "SR17 사유 없는 면제 — 사유가 없으면 면제가 아니라 RED" \
+  env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" \
+      --ledger "$W/ledger-noreason.md" --compose "$W/compose.yml"
+
+# SR18 — digest 이력 원장: 별칭 태그가 가리킨 것을 **회차마다 한 줄씩** 남긴다
+RAN=$((RAN+1)); echo "──────── SR18 digest 이력 원장 — 별칭 이동마다 append 되고 덮어쓰지 않는다"
+( . "$HERE/../pipeline/lib.sh"
+  export COLAB_PIPELINE_STATE_DIR="$W/state"
+  export COLAB_DIGEST_INSPECT="$W/inspect-ok"
+  digest_ledger_append aaa1111 i2 colab-v2/core-api colab-v2/frontend >/dev/null 2>&1 || exit 3
+  digest_ledger_append bbb2222 i2 colab-v2/core-api colab-v2/frontend >/dev/null 2>&1 || exit 4
+  L="$(digest_ledger_path)"
+  [ "$(wc -l < "$L")" = "4" ] || exit 5
+  grep -q $'aaa1111\ti2\tcolab-v2/core-api\tsha256:aaaa' "$L" || exit 6
+  grep -q $'bbb2222\ti2\tcolab-v2/frontend\tsha256:bbbb' "$L" || exit 7 )
+RC=$?
+if [ $RC -eq 0 ]; then echo "  → 기대대로: 두 회차 4줄이 그대로 쌓였다 (덮어쓰기 없음)"
+else echo "  → ✗ digest 이력 원장이 없거나 쌓이지 않는다 (코드 $RC)"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR18-b 실측이 안 되는 이미지는 이력에 **[미측정]로 적히고 실패**한다"
+( . "$HERE/../pipeline/lib.sh"
+  export COLAB_PIPELINE_STATE_DIR="$W/state2"
+  export COLAB_DIGEST_INSPECT="$W/inspect-none"
+  digest_ledger_append ccc3333 i2 colab-v2/core-api >/dev/null 2>&1 && exit 3
+  grep -q '\[미측정\]' "$(digest_ledger_path)" || exit 4 )
+RC=$?
+if [ $RC -eq 0 ]; then echo "  → 기대대로: 미측정은 조용한 성공이 아니다"
+else echo "  → ✗ 미측정을 성공으로 셌거나 적지 않았다 (코드 $RC)"; BAD=$((BAD+1)); fi
 
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi

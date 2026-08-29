@@ -56,8 +56,12 @@ fi
 
 # ── 일회용 postgres — 포트를 하나도 publish 하지 않는다 ──────────────────────
 # 이 호스트에는 staging(colab_v2_staging_*)이 돈다. 이름·포트가 겹칠 여지를 만들지 않는다.
+# 동시성 한도·슬롯은 `_pg.sh` 의 것을 **그대로 쓴다** — 두 벌로 두면 한쪽이 언젠가 관대해진다.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
+
 PGC=""
-cleanup() { [ -n "$PGC" ] && docker rm -f "$PGC" >/dev/null 2>&1; [ -n "${TMP:-}" ] && rm -rf "$TMP"; }
+cleanup() { [ -n "$PGC" ] && docker rm -f "$PGC" >/dev/null 2>&1; [ -n "${TMP:-}" ] && rm -rf "$TMP"; pg_slot_release; }
 trap cleanup EXIT INT TERM
 
 if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" = "1" ]; then
@@ -67,14 +71,20 @@ command -v docker >/dev/null 2>&1 || red "docker 가 없다. DB 가 필요한 �
 docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >/dev/null 2>&1 \
   || red "이미지 $PG_IMAGE 를 확보하지 못했다(네트워크/레지스트리). skip 아님."
 
+pg_slot_acquire rls-effect || exit 1
+
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" rls-effect-XXXXXX)"
 PGC="b3_rlseffect_$$_${RANDOM}"
-docker run -d --rm --name "$PGC" \
+RUNERR="$(docker run -d --rm --name "$PGC" \
   --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
   -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust \
-  "$PG_IMAGE" >/dev/null 2>&1 || { PGC=""; red "일회용 postgres 컨테이너를 띄우지 못했다."; }
+  "$PG_IMAGE" 2>&1 >/dev/null)" || { PGC=""; red "일회용 postgres 컨테이너를 띄우지 못했다.
+   도커가 낸 말: ${RUNERR:-(출력 없음)}"; }
 for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || red "postgres 가 60초 안에 뜨지 않았다."
+docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || red "postgres 가 60초 안에 뜨지 않았다.
+   컨테이너 상태: $(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 부하: $(uptime | sed 's/.*load average/load average/')
+   마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-300)
+   ⚠ 이것은 **red 다.** 못 돈 검사를 통과로 세지 않는다. 동시성 한도는 COLAB_PG_MAX_CONCURRENT 로 선언된다."
 
 su_psql()  { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U postgres  -d "$DB" "$@"; }
 own_psql() { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U "$OWNER"  -d "$DB" "$@"; }
