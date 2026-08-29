@@ -172,6 +172,41 @@ else
   echo "  → ✗ 합격선이 코드에 없다: [$F11]"; BAD=$((BAD+1))
 fi
 
+# ══ 검사 대상 0건을 성공으로 읽지 않는다 (요약줄 정본 `verdict`) ══════════════
+# 결함: `verdict` 은 FAILED 만 봤다. 통과도 실패도 SKIP 도 **하나도 없는** 상태 —
+#   즉 검사가 한 건도 돌지 않은 상태 — 가 「GREEN (SKIP 0 — 모든 항목이 실제로 돌았다)」로
+#   찍혔다. 이것이 `CLAUDE.md §4` 의 green-by-skip 그 자체다. 세 상태로 가른다:
+#     ⓐ 검사 대상 있음(PASSED>0) → 검사한다        ⓑ 명시 면제(SKIP 만) → 건수를 드러낸 채 통과
+#     ⓒ 아무것도 선언·발견되지 않음(0/0/0)        → **RED**
+_vd() { ( FAILED=0; SKIPPED=0; PASSED=0; . "$HERE/lib.sh"; "$@" >/dev/null 2>&1; verdict "결과" ); }
+
+RAN=$((RAN+1)); echo "──────── F12 검사 대상 0건 (통과·실패·SKIP 전부 0) — 성공으로 찍히지 않는다"
+OUT12="$(_vd true)"; RC12=$?
+echo "$OUT12" | sed 's/^/    /'
+if [ $RC12 -ne 0 ]; then
+  echo "  → 기대대로 RED — 검사 0건을 통과로 세지 않았다"
+else
+  echo "  → ✗ 검사 0건인데 GREEN 이 나왔다 (green-by-skip)"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F12-b 명시 면제만 있는 상태 — 통과하되 SKIP 건수를 요약줄에 드러낸다"
+OUT12B="$( ( FAILED=0; SKIPPED=0; PASSED=0; . "$HERE/lib.sh"; skip_ack "면제 항목" >/dev/null; verdict "결과" ) )"; RC12B=$?
+echo "$OUT12B" | sed 's/^/    /'
+if [ $RC12B -eq 0 ] && echo "$OUT12B" | grep -q 'SKIP 1건' && echo "$OUT12B" | grep -q '검사 0건'; then
+  echo "  → 기대대로 GREEN — 건너뛴 건수와 「검사 0건」이 요약줄에 남았다"
+else
+  echo "  → ✗ 명시 면제의 건수·검사 0건 사실이 요약줄에 드러나지 않았다"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F12-c 대조군 — 실제로 통과 항목이 있으면 GREEN 이다"
+OUT12C="$( ( FAILED=0; SKIPPED=0; PASSED=0; . "$HERE/lib.sh"; pass "항목1" >/dev/null; verdict "결과" ) )"; RC12C=$?
+echo "$OUT12C" | sed 's/^/    /'
+if [ $RC12C -eq 0 ] && echo "$OUT12C" | grep -q '통과 1건'; then
+  echo "  → 기대대로 GREEN — 검사기가 무조건 red 를 내는 것이 아니다"
+else
+  echo "  → ✗ 통과 항목이 있는데 GREEN 이 아니다 (또는 통과 건수가 요약줄에 없다)"; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then
   echo "셀프테스트 GREEN — fixture $RAN 건 전부 기대대로 RED"
