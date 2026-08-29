@@ -116,6 +116,27 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     }
 
 
+@router.get("/datasets/{datasetId}/lineage", name="getDatasetLineage")
+def get_dataset_lineage(datasetId: str,
+                        subject: Subject = Depends(current_subject),
+                        db: Session = Depends(scoped_db)) -> dict:
+    """계보 그래프 조회 — **화면이 쓰기 없이 그래프를 얻는 유일한 자리** (WU `P3`).
+
+    **그리는 함수는 새로 만들지 않았다.** 세 쓰기 op 이 이미 `lineage_graph()` 로 답하고
+    있었고, 없던 것은 그 함수를 부를 GET 하나였다 (`not_implemented.py` 의 「이 조회 op
+    자체는 P1 배정」 — `P1` 은 닫혔는데 op 은 501 로 남아 있었다). **같은 함수가 답한다** —
+    조회와 쓰기가 다른 그래프를 그리면 어느 쪽이 맞는지 아무도 모른다.
+
+    **없는 데이터셋은 404 다** — 다른 연구실의 것도 404 이고, 403 이 아니다
+    (`find_dataset_core` 가 RLS 아래에서 읽으므로 있다는 사실 자체가 새지 않는다).
+    **계보가 0 건이어도 200 이다** — 노드는 자기 자신이 남는다. 「없다」와 「못 읽었다」를
+    같은 응답으로 답하지 않는다 (`CLAUDE.md §4`).
+    """
+    if not Ulid.is_valid(datasetId):
+        raise errors.not_found()
+    return lineage_graph(db, subject, Ulid(datasetId))
+
+
 @router.post("/datasets/{datasetId}/lineage/parents", name="addLineageParent", status_code=201)
 def add_lineage_parent(datasetId: str, body: dict = Body(...),
                        subject: Subject = Depends(current_subject),
