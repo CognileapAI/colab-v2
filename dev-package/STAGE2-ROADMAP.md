@@ -108,6 +108,20 @@
 | 게이트 | 실측 | 비고 |
 |---|---|---|
 | `schema-diff` | **red** | `COLAB_APPLIED_DB_URL_PLATFORM` · `_AI` 미지정. 설계상 「DB 없으면 red」(green-by-skip 금지) — 환경 게이트이지 드리프트 아님 |
+
+> ⭑ **⟨실측 2026-08-30T02:12+09:00 · 워크트리 `lane2-search`⟩ 「적용 스키마 축」을 실제로 쟀다 — 위 red 는 여전히 환경 부재의 red 이고,
+> 아래가 그 자리를 채운 드리프트 실측이다. 위 줄은 지우지 않는다(시점이 다르다).**
+>
+> - 잰 법 = 살아 있는 staging 두 체인(`colab_platform` · `colab_ai`)을 체인별 변수로 붙여 `./gates/run.sh schema-diff` 1회.
+>   읽기는 `pg_dump --schema-only` 뿐이고 비교판은 `--rm` 일회용 postgres 다. **`DELETE`·`UPDATE`·DDL·컨테이너 조작 0건.**
+> - **`db/ai` = green — 드리프트 없음.**
+> - **`db/platform` = red — 드리프트 1곳.** `d4_lineage_edge_origin_check` 의 허용값이
+>   선언 `('ai','manual','processed')` ↔ 적용 `('AI 제안을 사람이 확인','사람이 직접 연결')` 로 갈린다.
+> - **원인은 특정됐다 — 새 결함이 아니다.** 마이그레이션 `db/platform/versions/0008_lineage_origin_labels.py` 가
+>   **staging 에 미적용**이다(`03-HANDOFF` 축자 — 「전진 전용 · staging 미적용 · 배포 경로가 적용한다」).
+> - **푸는 법 = 배포 회차가 `0008` 을 적용한 뒤 이 게이트를 재실행한다.** 적용 없이 green 으로 적지 않는다.
+> - ⚠ **이번에 세지 않은 판단기준** — 배포 시각·적용 후 재측정. 그 둘은 운영 접촉이라 이 회차 범위 밖이다.
+
 | `work-item-consistency` | **red** | 불일치 3건 = ㈓ `S2b` · ㈓ `R-1` · ㈓ `S2` (전부 `conflict` 잔존). 부수 출력 — 검사 대상 밖 9건 · 항목표 아님 1건 |
 | 나머지 25종 | green | `planning-freshness` · `contract-lint` · `contract-breaking` · `event-lint` · `event-breaking` · `seam-consistency` · `generated-up-to-date` · `import-boundary` · `banned-import` · `ai-no-lineage-write` · `db-boundary` · `migration-single-head` · `rls-coverage` · `rls-effect` · `stage2-markers` ＋ selftest 10종 |
 
