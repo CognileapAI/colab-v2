@@ -11,7 +11,7 @@
 | 문서 서술 | 실측 | 근거 |
 |---|---|---|
 | 대장 검사기 red **1** (`W-1`) | red **3건** | `./gates/run.sh work-item-consistency` → `불일치 3건` = `S2b` · `R-1` · `S2` |
-| `X-6` 별칭 재부착 = 착수 가능 1순위 | **이미 끝남** | 삼킴 구문 부재. `9c6fc92` · `31f36a5` 가 제거. `infra/staging/pipeline/lib.sh:137-159` 가 종료코드＋이미지 ID 대조로 판정, `deploy.sh:220-226` 이 원장 green 앞에 섬. 실패 픽스처 P15·P16·P20 존재, selftest 37/22 GREEN |
+| `X-6` 별칭 재부착 = 착수 가능 1순위 | **이미 끝남** | 삼킴 구문 부재. `9c6fc92` · `31f36a5` 가 제거. `infra/staging/pipeline/lib.sh:135-159` 가 종료코드＋이미지 ID 대조로 판정, `infra/staging/deploy.sh:220-226` 이 원장 green 앞에 섬. 실패 픽스처 P15·P16·P20 존재, selftest 37/22 GREEN |
 | `F-2` 카탈로그 키워드 입력 제거 | **제거할 입력이 없음** | `components/catalog/**` 에 `<input>` 0건, `useCatalog.ts:29` 질의 모델에 `keyword` 필드 없음. 진입점은 이미 `SearchHero` 하나 |
 | `unknown` 단계 미배정 = 2건 | **5건** | `R1` · `IS4` · `G1b` · `P4` · `LV-4` |
 
