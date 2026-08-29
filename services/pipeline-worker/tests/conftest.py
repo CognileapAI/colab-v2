@@ -7,6 +7,19 @@ import pytest
 # 픽스처 빌더를 테스트에서 평이하게 import 하기 위해
 sys.path.insert(0, str(Path(__file__).parent))
 
+import depgate  # noqa: E402  — 위 sys.path 조작 뒤여야 한다
+from depgate import require_dep  # noqa: E402
+
+
+def pytest_terminal_summary(terminalreporter):
+    """면제로 건너뛴 의존 검사 건수를 **요약줄에 드러낸다**.
+
+    건수를 세기만 하고 안 적으면 숨긴 것과 같다(`CLAUDE.md §4`).
+    """
+    line = depgate.summary_line()
+    if line:
+        terminalreporter.write_sep("-", line)
+
 
 @pytest.fixture(scope="session")
 def repo_root() -> Path:
@@ -24,7 +37,7 @@ def event_validator(repo_root):
 
     계약을 **다시 적지 않는다** — 파일을 그대로 읽어 `$ref` 를 로컬에서 해석한다.
     """
-    jsonschema = pytest.importorskip("jsonschema")
+    jsonschema = require_dep("jsonschema")
     from referencing import Registry, Resource
 
     events = repo_root / "contracts" / "events"

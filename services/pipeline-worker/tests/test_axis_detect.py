@@ -18,6 +18,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from depgate import require_dep
+
 from colab_pipeline.d5.axis import (
     AxisDetection,
     AxisUndeterminedError,
@@ -113,7 +115,7 @@ def test_anisotropy_alone_never_decides(tmp_path):
 
 # ── 〈66〉 출력 모양 = 두 불리언. 한 파일이 둘 다 담을 수 있다 ────────────────
 def test_combined_axis_netcdf_carries_both(tmp_path):
-    h5py = pytest.importorskip("h5py")
+    h5py = require_dep("h5py")
     lat, lon = _grid(30, 43, 118.8, 133.5)
     p = tmp_path / "rdr_500m_latlon_ish.nc"
     with h5py.File(p, "w") as f:

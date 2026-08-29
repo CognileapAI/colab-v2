@@ -12,11 +12,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from depgate import require_dep
+
 from colab_pipeline.d5.grid import GridUnavailableError, find_reference_grid
 
 
 def _write_combined(path, n=8):
-    h5py = pytest.importorskip("h5py")
+    h5py = require_dep("h5py")
     lat = np.repeat(np.linspace(30, 43, n)[:, None], n, axis=1).astype("f4")
     lon = np.repeat(np.linspace(118.8, 133.5, n)[None, :], n, axis=0).astype("f4")
     with h5py.File(path, "w") as f:
@@ -55,7 +57,7 @@ def test_combined_nc_wins_when_both_exist(tmp_path):
 
 def test_nc_without_coordinate_variables_is_a_hard_failure(tmp_path):
     """무시하지 않는다 — 못 읽으면 실패다 (`DR-9`)."""
-    h5py = pytest.importorskip("h5py")
+    h5py = require_dep("h5py")
     d = tmp_path / "04.Lat_Lon_info"
     d.mkdir()
     with h5py.File(d / "no_coords.nc", "w") as f:
