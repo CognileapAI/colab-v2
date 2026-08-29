@@ -442,6 +442,13 @@ CREATE TABLE d3_file (
   created_at   timestamptz NOT NULL DEFAULT now(),
   carries_lat  boolean     NOT NULL DEFAULT false,
   carries_lon  boolean     NOT NULL DEFAULT false,
+  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0009 · 〈175〉-(나)). 낱개 파일은 NULL.
+  -- 접수 원장 `d5_upload_file.relative_path`(0008 · 〈173〉-③)를 등록 전환 때 **그대로** 승계한다 —
+  -- 저장 키에는 넣지 않는다. 키 규약(contracts/storage/layout.json)은 세 배포 단위의 공유
+  -- 정본이라 여기 메타로만 보존한다. **맨 뒤에 선언한다** — `ALTER TABLE ADD COLUMN` 은
+  -- 열을 뒤에 붙이고 선언 순서가 다르면 schema-diff 가 red 를 낸다 (d3_dataset 의 0007 주석).
+  relative_path text        CHECK (relative_path IS NULL
+                                   OR length(relative_path) BETWEEN 1 AND 1024),
   -- **양쪽 반쪽을 다 건다.** 축 없는 격자 파일도, 축 붙은 본체도 만들지 않는다 —
   -- 한쪽만 걸면 「열을 뒀는데 안 채우면 그만」이 된다 (DATA-REFERENCE §1).
   CONSTRAINT d3_file_grid_carries_an_axis
@@ -539,6 +546,73 @@ CREATE TRIGGER d3_file_count_move
   AFTER UPDATE ON d3_file
   REFERENCING OLD TABLE AS old_files NEW TABLE AS new_files
   FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_file_count();
+
+-- 용량 합계 유지 (`0009` · 〈175〉). `d3_dataset_autometa.total_size_bytes` 를 위의
+-- `sync_dataset_file_count` 와 **같은 기구**로 움직인다 — `file_count` 와 같은 표·같은 사건을
+-- 다른 기구로 움직이면 드리프트 유형이 둘이 된다.
+--   · **다시 세지 않고 증분으로 더한다** — 다시 세면 `body_access` 아래서 잠긴 데이터셋이 0 이 된다
+--   · 문장 단위 + 전이 테이블 — 전이 테이블은 RLS 로 걸러지지 않는다
+--   · `size_bytes` NULL 인 조각은 0 으로 센다 — 합계가 NULL 로 물들지 않는다
+--   · UPDATE 는 `size_bytes` 변경·데이터셋 이동일 때만 뜻이 있다. `UPDATE OF size_bytes` 는
+--     전이 테이블과 함께 못 쓰므로 함수 안에서 차분을 내고, 차분 0 인 데이터셋은 저절로 빠진다
+--   · `file_count` 와 다른 점 하나 — 갱신 행 수를 검사하지 않는다. autometa 행은 데이터셋마다
+--     반드시 있는 것이 아니라(등록 전환이 따로 세운다) 없는 데이터셋은 건너뛴다
+--   · ⚠ 이 열에 값을 **손으로 넣지 않는다.** 시드·등록 전환이 합계를 직접 쓰고 조각도 넣으면
+--     두 번 센다 — `file_count` 와 같은 규율이다 (seed.sql 의 file_count 주석)
+CREATE FUNCTION sync_dataset_total_size() RETURNS trigger
+  LANGUAGE plpgsql
+  AS $$
+  DECLARE
+    ids     char(26)[];
+    deltas  bigint[];
+  BEGIN
+    IF TG_OP = 'INSERT' THEN
+      SELECT array_agg(g.dataset_id), array_agg(g.n) INTO ids, deltas
+        FROM (SELECT dataset_id, sum(COALESCE(size_bytes, 0))::bigint AS n
+                FROM new_files GROUP BY dataset_id
+              HAVING sum(COALESCE(size_bytes, 0)) <> 0) g;
+    ELSIF TG_OP = 'DELETE' THEN
+      SELECT array_agg(g.dataset_id), array_agg(-g.n) INTO ids, deltas
+        FROM (SELECT dataset_id, sum(COALESCE(size_bytes, 0))::bigint AS n
+                FROM old_files GROUP BY dataset_id
+              HAVING sum(COALESCE(size_bytes, 0)) <> 0) g;
+    ELSE
+      SELECT array_agg(g.dataset_id), array_agg(g.n) INTO ids, deltas
+        FROM (
+          SELECT dataset_id, sum(d)::bigint AS n
+            FROM (SELECT dataset_id,  COALESCE(size_bytes, 0) AS d FROM new_files
+                  UNION ALL
+                  SELECT dataset_id, -COALESCE(size_bytes, 0) AS d FROM old_files) s
+           GROUP BY dataset_id HAVING sum(d) <> 0
+        ) g;
+    END IF;
+
+    IF ids IS NULL THEN
+      RETURN NULL;
+    END IF;
+
+    UPDATE d3_dataset_autometa t
+       SET total_size_bytes = COALESCE(t.total_size_bytes, 0) + u.n
+      FROM unnest(ids, deltas) AS u(dataset_id, n)
+     WHERE t.dataset_id = u.dataset_id;
+    RETURN NULL;
+  END;
+  $$;
+
+CREATE TRIGGER d3_file_total_size_insert
+  AFTER INSERT ON d3_file
+  REFERENCING NEW TABLE AS new_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_total_size();
+
+CREATE TRIGGER d3_file_total_size_delete
+  AFTER DELETE ON d3_file
+  REFERENCING OLD TABLE AS old_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_total_size();
+
+CREATE TRIGGER d3_file_total_size_update
+  AFTER UPDATE ON d3_file
+  REFERENCING OLD TABLE AS old_files NEW TABLE AS new_files
+  FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_total_size();
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 4. D4 Lineage (정본 §4.2)
@@ -640,12 +714,14 @@ CREATE TABLE d5_upload_file (
   carries_lon      boolean     NOT NULL DEFAULT false,
   -- 파이프라인이 매직바이트로 판정한 포맷 (`file.format-detected`). 확장자가 아니다.
   detected_format  text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
   -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0008 · 〈173〉). 낱개 파일은 NULL.
   -- 저장 키에는 넣지 않는다 — 키 규약(contracts/storage/layout.json)은 세 배포 단위의
-  -- 공유 정본이라 여기 메타로만 보존한다. 등록 후(d3) 표시는 후속 결정.
+  -- 공유 정본이라 여기 메타로만 보존한다. 등록 후(d3) 표시는 `0009` 의 `d3_file.relative_path`.
+  -- `created_at` **뒤에** 선언한다 — 0008 은 `ALTER TABLE ADD COLUMN` 이라 열이 맨 뒤에 붙고,
+  -- 선언 순서가 다르면 schema-diff 가 red 를 낸다 (d3_dataset 의 0007 주석과 같은 이유).
   relative_path    text        CHECK (relative_path IS NULL
                                       OR length(relative_path) BETWEEN 1 AND 1024),
-  created_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT d5_upload_file_grid_carries_an_axis
     CHECK (kind <> '기준 격자 파일' OR carries_lat OR carries_lon),
   CONSTRAINT d5_upload_file_body_carries_no_axis
@@ -814,7 +890,11 @@ CREATE TABLE d8_download (
   lab_id         ulid        NOT NULL REFERENCES d1_lab(id),
   account_id     ulid        NOT NULL REFERENCES d1_account(id),
   dataset_id     ulid        NOT NULL,
-  downloaded_at  timestamptz NOT NULL DEFAULT now()
+  downloaded_at  timestamptz NOT NULL DEFAULT now(),
+  -- 파일 단위 내려받기 (`0009` · 〈175〉-(다)). NULL = 데이터셋 묶음, 값 = 그 파일 하나.
+  -- **FK 없음** — append-only 이력은 파일이 지워져도 남는다. `[정본 무근거]` — 정본 §6.2 는
+  -- 누가·어느 데이터셋·언제까지만 적는다. `dataset_id` 와 같은 bare 컬럼이다 (D8 → D3 직접 FK 금지).
+  file_id        ulid
 );
 CREATE INDEX d8_download_lab_idx ON d8_download (lab_id, downloaded_at DESC);
 CREATE TRIGGER d8_download_append_only
