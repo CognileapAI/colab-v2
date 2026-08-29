@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # staging 배포 — **자기 결과를 묻는 배포.**
 #
-#   deploy.sh [--target staging] [--allow-dirty] [--skip-backup] [--auto-rollback]
+#   deploy.sh [--target staging] [--allow-dirty] [--skip-backup] [--skip-alias-reattach] [--auto-rollback]
 #
 # ── 이 스크립트가 고치는 세 얼굴 (`I3 §0` — DR-4·DR-5·DR-6) ──────────────────
 # 뿌리는 하나였다: **배포 도구가 검증한 것보다 많이 단언했다.**
@@ -21,12 +21,15 @@ REPO="$(cd "$HERE/../.." && pwd)"
 
 ENV_FILE="${COLAB_STAGING_ENV:-$HOME/.colab-v2-staging.env}"   # 홈의 0600 파일. 레포에 두지 않는다.
 
-TARGET=""; ALLOW_DIRTY=0; SKIP_BACKUP=0; AUTO_ROLLBACK=0
+TARGET=""; ALLOW_DIRTY=0; SKIP_BACKUP=0; AUTO_ROLLBACK=0; SKIP_ALIAS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --target) TARGET="${2:-}"; shift 2 ;;
     --allow-dirty)   ALLOW_DIRTY=1; shift ;;
     --skip-backup)   SKIP_BACKUP=1; shift ;;
+    # ⭑ `:i2` 재부착 면제. **명시일 때만**, 그리고 건수가 원장에 남는다(`X-6`).
+    #   켜면 복원 리허설(`compose.throwaway.yml`)이 **옛 이미지**를 볼 수 있다.
+    --skip-alias-reattach) SKIP_ALIAS=1; shift ;;
     # ⭑ **기본값은 off 다** (`〈168〉-㉳`). 판정기를 신뢰하기 전에 자동 되돌림을 켜면
     #   판정 버그가 멀쩡한 릴리스를 계속 걷어내고, 원인이 코드인지 판정기인지 구분되지 않는다.
     --auto-rollback) AUTO_ROLLBACK=1; shift ;;
@@ -203,14 +206,30 @@ fi
 log "⑪-b 체인 판정 — 두 체인 head"
 "$HERE/verify/verify-chains.sh" || abort "체인 판정" "두 체인 중 하나 이상이 적용되지 않았다"
 
-# ── ⑫ 원장 · 표식 · 보존 ────────────────────────────────────────────────────
-ledger_append deploy "$SHA" "$TAG" green "$BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
-mark_success "$TAG"
-
+# ── ⑫ 별칭 재부착 · 원장 · 표식 · 보존 ──────────────────────────────────────
 # `:i2` 는 **릴리스 신원이 아니라 호환 별칭**이다. `compose.throwaway.yml`(복원 리허설)이
 # 이 이름으로 이미지를 찾는다. 신원은 SHA 태그이고, 더 정확히는 digest 다
 # (`reference/IMAGE-DIGESTS.md` — 「태그는 신원이 아니다. digest 만이 신원이다」).
-for n in "${RELEASE_IMAGES[@]}"; do docker tag "colab-v2/$n:$TAG" "colab-v2/$n:i2" 2>/dev/null || true; done
+#
+# ⚠ 종전 이 자리는 `docker tag … 2>/dev/null || true` 한 줄이었고 **원장 green 뒤**에 있었다.
+#   무조건 성공이다 — 재부착이 실패해도 원장에는 이미 green 이 적혀 있었고, 복원 리허설은
+#   그 뒤로도 `:i2` 라는 이름으로 **옛 이미지를 리허설하며 통과**를 냈다(`X-6` · green-by-skip).
+#   이제 세 상태다 — 요구되면 **검사한다**(붙인 뒤 이미지 ID 대조) / `--skip-alias-reattach` 로
+#   **명시** 면제하면 **건수를 드러낸 채** 넘어간다 / 아무 말도 없으면 **실패한다.**
+#   그리고 순서를 뒤집었다: 판정이 **원장 green 보다 먼저** 난다. 뒤에 두면 green 을 적고 죽는다.
+if [ "$SKIP_ALIAS" -eq 1 ]; then
+  ALIAS_NOTE="별칭재부착SKIP(${#RELEASE_IMAGES[@]}종)"
+  log "SKIP 승인됨: :i2 재부착 ${#RELEASE_IMAGES[@]}종 — 복원 리허설은 **옛 이미지**를 볼 수 있다. 원장에 남는다"
+else
+  log "⑫-a 별칭 :i2 재부착 — 붙인 뒤 이미지 ID 로 대조한다(「붙였다」 ≠ 「가리킨다」)"
+  alias_reattach "$TAG" \
+    || abort "별칭 재부착" ":i2 가 $TAG 를 가리키지 않는다 — 복원 리허설이 옛 이미지를 리허설할 수 있다"
+  ALIAS_NOTE="별칭재부착GREEN"
+fi
+
+log "⑫-b 원장 · 표식"
+ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE $BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
+mark_success "$TAG"
 
 image_prune "$TAG"
 

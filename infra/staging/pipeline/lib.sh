@@ -115,6 +115,46 @@ IMAGE_KEEP="${COLAB_IMAGE_KEEP:-3}"
 #   같이 걷어 간다 — 보존을 하는 코드가 보존을 깨는 모양이 된다.
 ALIAS_TAGS=(prev i2)
 
+# ── 별칭 재부착 — **실패를 삼키지 않는다** (`X-6` · `PLAN-SoT §9 〈185〉-㉸`-⑵) ────────
+# 종전 `deploy.sh` ⑫ 는 `docker tag … 2>/dev/null || true` 였다. 무조건 성공이다.
+# 재부착이 실패하면 `:i2` 가 **옛 이미지를 계속 가리키는데 배포는 GREEN 을 찍었고**,
+# 복원 리허설(`compose.throwaway.yml`)이 바로 그 이름으로 이미지를 찾으므로
+# **옛 이미지를 리허설하며 통과를 낸다.** 이 레포 대표 실패형(green-by-skip)과 같은 무늬다.
+#
+# ⚠ **「붙였다」와 「그 이름이 그 이미지를 가리킨다」는 다르다.** `docker tag` 의 종료코드만 보면
+#   앞의 것만 안다. 그래서 붙인 **뒤에** `image inspect` 로 이미지 ID 를 대조한다 — 사후 검증이다.
+#
+# ⚠ **정상 부재는 없다.** 이 함수가 불리는 자리(⑫)는 ④ 빌드가 방금 `colab-v2/$n:$tag` 를
+#   구운 뒤다. 대상 `:i2` 가 없는 것은 첫 배포에서 정상이지만 그건 `docker tag` 의 **결과**이지
+#   실패가 아니다. 반대로 **원본 `:$tag` 의 부재는 어떤 경우에도 정상이 아니다** — 굽지 않았거나
+#   이름을 잃은 것이고 둘 다 red 다. 그래서 부재와 실패를 원본/대상으로 가른다.
+alias_reattach() { # $1=릴리스 태그 → 6종 전부 `:i2` 가 그 태그를 가리켜야 0
+  local tag="${1:-}" n src dst want got rc=0 okn=0
+  [ -n "$tag" ] || { log "별칭 재부착 RED — 릴리스 태그가 비었다. 무엇을 가리킬지 모르는 재부착은 red 다"; return 1; }
+  for n in "${RELEASE_IMAGES[@]}"; do
+    src="colab-v2/$n:$tag"; dst="colab-v2/$n:i2"
+    if ! want="$(docker image inspect -f '{{.Id}}' "$src" 2>/dev/null)"; then
+      log "  별칭 RED $n — 원본 $src 이 없다 (빌드 산출이 이름을 잃었다)"; rc=1; continue
+    fi
+    if ! docker tag "$src" "$dst"; then
+      log "  별칭 RED $n — docker tag $src → $dst 가 실패했다"; rc=1; continue
+    fi
+    if ! got="$(docker image inspect -f '{{.Id}}' "$dst" 2>/dev/null)"; then
+      log "  별칭 RED $n — 붙인 뒤에도 $dst 이 조회되지 않는다"; rc=1; continue
+    fi
+    if [ "$got" != "$want" ]; then
+      log "  별칭 RED $n — $dst 이 ${got:7:12} 를 가리킨다 (기대 ${want:7:12}). **옛 이미지가 남았다**"; rc=1; continue
+    fi
+    okn=$((okn+1))
+    log "  별칭 colab-v2/$n:i2 ← $tag (${want:7:12})"
+  done
+  # 검사 대상 0건은 통과가 아니다 (`gates/README.md` 「대상 0건 = red」).
+  if [ "$okn" -eq 0 ]; then log "별칭 재부착 RED — 재부착에 성공한 것이 0건이다"; return 1; fi
+  if [ "$rc" -ne 0 ]; then log "별칭 재부착 RED — ${#RELEASE_IMAGES[@]}종 중 ${okn}종만 $tag 를 가리킨다"; return 1; fi
+  log "별칭 재부착 GREEN — ${okn}/${#RELEASE_IMAGES[@]}종의 :i2 가 $tag 를 가리킨다(이미지 ID 대조 완료)"
+  return 0
+}
+
 image_prune() { # $1=지금 배포한 태그(무조건 보존)
   local keep=("$1" "${ALIAS_TAGS[@]}") f tag n
   f="$(ledger_path)"; [ -f "$f" ] || return 0

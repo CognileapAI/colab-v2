@@ -22,7 +22,32 @@ export COLAB_PIPELINE_STATE_DIR="$TMP/state"
 mkdir -p "$TMP/bin"
 cat > "$TMP/bin/docker" <<'SH'
 #!/usr/bin/env bash
-# 껍데기 — `image inspect <ref>` 만 답한다. EXISTING_TAGS 에 있는 태그만 존재로 친다.
+# 껍데기. 두 모드다.
+#  ⓐ 기본 — `image inspect <ref>` 만 답한다. EXISTING_TAGS 에 있는 태그만 존재로 친다.
+#  ⓑ DOCKER_FAKE_STORE 가 있으면 **이미지 ID 를 가진 실물 흉내**를 낸다(`ref<TAB>id` 한 줄씩).
+#     `tag` 도 답한다 — X-6 의 사후 검증(붙인 뒤 ID 대조)을 시험하려면 ID 가 필요하기 때문이다.
+#     DOCKER_FAKE_TAG_FAIL 에 든 대상은 tag 가 **실패**하고,
+#     DOCKER_FAKE_TAG_NOOP 에 든 대상은 tag 가 **성공을 말하지만 아무것도 바꾸지 않는다**
+#     (= 「붙였다」가 참인데 「가리킨다」가 거짓인 자리. `|| true` 를 떼는 것만으로는 못 잡는다).
+if [ -n "${DOCKER_FAKE_STORE:-}" ]; then
+  TAB="$(printf '\t')"
+  if [ "${1:-}" = image ] && [ "${2:-}" = inspect ]; then
+    ref="${!#}"
+    line="$(grep -m1 -- "^${ref}${TAB}" "$DOCKER_FAKE_STORE" 2>/dev/null)" || exit 1
+    [ -n "$line" ] || exit 1
+    printf '%s\n' "${line#*${TAB}}"; exit 0
+  fi
+  if [ "${1:-}" = tag ]; then
+    src="${2:-}"; dst="${3:-}"
+    case " ${DOCKER_FAKE_TAG_FAIL:-} " in *" $dst "*) echo "fake: tag 거부 $dst" >&2; exit 1 ;; esac
+    case " ${DOCKER_FAKE_TAG_NOOP:-} " in *" $dst "*) exit 0 ;; esac
+    sl="$(grep -m1 -- "^${src}${TAB}" "$DOCKER_FAKE_STORE" 2>/dev/null)" || exit 1
+    grep -v -- "^${dst}${TAB}" "$DOCKER_FAKE_STORE" > "$DOCKER_FAKE_STORE.n" 2>/dev/null
+    printf '%s%s%s\n' "$dst" "$TAB" "${sl#*${TAB}}" >> "$DOCKER_FAKE_STORE.n"
+    mv "$DOCKER_FAKE_STORE.n" "$DOCKER_FAKE_STORE"; exit 0
+  fi
+  exit 1
+fi
 [ "${1:-}" = image ] || exit 1
 [ "${2:-}" = inspect ] || exit 1
 ref="${!#}"; tag="${ref##*:}"
@@ -121,6 +146,67 @@ N=$((N+1))
 if grep -q "fixture-not-a-real-secret" "$TMP/d"; then
   echo "  FAIL  [P13b] 배포 출력에 설정 값이 섞였다"; FAILED=$((FAILED+1))
 else echo "  PASS  [P13b] 출력에 값이 없다"; fi
+
+
+# ══ X-6 별칭 재부착 — 「실패를 삼키고 다음 줄에서 GREEN 을 찍는」 모양이 없는지 ═══════
+# 종전 `deploy.sh` ⑫ 는 `docker tag … 2>/dev/null || true` 였다. 아래 넷은 그 무조건 성공
+# 경로가 실제로 사라졌는지를 **실패 픽스처로** 못 박는다.
+store_seed() { # $1=릴리스 태그 → 6종의 :$1 을 새 ID 로, :i2 를 **옛 ID** 로 심는다
+  : > "$TMP/images"
+  for n in "${RELEASE_IMAGES[@]}"; do
+    printf 'colab-v2/%s:%s\tsha256:new%s000000000000\n' "$n" "$1" "$n" >> "$TMP/images"
+    printf 'colab-v2/%s:i2\tsha256:old%s000000000000\n'  "$n" "$n" >> "$TMP/images"
+  done
+}
+alias_points_to() { # $1=서비스 $2=태그 → :i2 가 :$2 와 같은 ID 인가
+  local a b TAB; TAB="$(printf '\t')"
+  a="$(grep -m1 -- "^colab-v2/$1:i2${TAB}" "$TMP/images" | cut -f2)"
+  b="$(grep -m1 -- "^colab-v2/$1:$2${TAB}" "$TMP/images" | cut -f2)"
+  [ -n "$a" ] && [ "$a" = "$b" ]
+}
+export DOCKER_FAKE_STORE="$TMP/images"
+
+echo "── P14 별칭 재부착이 **정상**이면 green 이고 :i2 가 새 이미지를 가리킨다 (양성)"
+store_seed r1; unset DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
+if alias_reattach r1 >/dev/null 2>&1; then ck P14 "GREEN" "GREEN"; else ck P14 "GREEN" "RED"; fi
+ck P14b "가리킨다" "$(alias_points_to core-api r1 && echo 가리킨다 || echo 옛것)"
+
+echo "── P15 docker tag 가 **실패**하면 판정이 red 다 (무조건 성공 경로가 없다)"
+store_seed r2; unset DOCKER_FAKE_TAG_NOOP
+export DOCKER_FAKE_TAG_FAIL="colab-v2/viz-render:i2"
+if alias_reattach r2 >/dev/null 2>&1; then ck P15 "RED" "GREEN"; else ck P15 "RED" "RED"; fi
+ck P15b "옛것" "$(alias_points_to viz-render r2 && echo 가리킨다 || echo 옛것)"
+
+echo "── P16 tag 가 **성공을 말했는데 안 붙은** 경우도 red 다 (붙였다 ≠ 가리킨다 · 사후 검증)"
+# || true 만 떼면 이 자리는 여전히 green 이 난다. 종료코드가 0 이기 때문이다.
+store_seed r3; unset DOCKER_FAKE_TAG_FAIL
+export DOCKER_FAKE_TAG_NOOP="colab-v2/ai-service:i2"
+if alias_reattach r3 >/dev/null 2>&1; then ck P16 "RED" "GREEN"; else ck P16 "RED" "RED"; fi
+
+echo "── P17 **원본이 없으면** red 다 (정상 부재는 대상 :i2 쪽이지 원본 쪽이 아니다)"
+store_seed r4; unset DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
+grep -v -- "^colab-v2/frontend:r4$(printf '\t')" "$TMP/images" > "$TMP/i.n"; mv "$TMP/i.n" "$TMP/images"
+if alias_reattach r4 >/dev/null 2>&1; then ck P17 "RED" "GREEN"; else ck P17 "RED" "RED"; fi
+
+echo "── P18 **첫 배포**(:i2 가 아직 없음)는 정상이다 — 부재를 실패로 읽지 않는다"
+: > "$TMP/images"
+for n in "${RELEASE_IMAGES[@]}"; do printf 'colab-v2/%s:r5\tsha256:new%s000000000000\n' "$n" "$n" >> "$TMP/images"; done
+if alias_reattach r5 >/dev/null 2>&1; then ck P18 "GREEN" "GREEN"; else ck P18 "GREEN" "RED"; fi
+
+echo "── P19 릴리스 태그를 **안 밝히면** 거부한다 (기본값으로 아무 이미지나 가리키지 않는다)"
+if alias_reattach "" >/dev/null 2>&1; then ck P19 "RED" "GREEN"; else ck P19 "RED" "RED"; fi
+
+echo "── P20 deploy.sh ⑫ 에 **무조건 성공 경로가 없다** (docker tag … || true 소멸)"
+N=$((N+1))
+# 주석은 뺀다 — 이 파일은 그 옛 모양을 **주석으로 인용**하고 있다(무엇을 고쳤는지 남기려고).
+if grep -vE '^[[:space:]]*#' "$HERE/../deploy.sh" | grep -q 'docker tag .*|| *true'; then
+  echo "  FAIL  [P20] deploy.sh 에 docker tag … || true 가 남아 있다"; FAILED=$((FAILED+1))
+elif ! grep -q 'alias_reattach "$TAG"' "$HERE/../deploy.sh"; then
+  echo "  FAIL  [P20] deploy.sh 가 alias_reattach 를 부르지 않는다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P20] 무조건 성공 경로 없음 · 판정 함수 호출 확인"; fi
+
+unset DOCKER_FAKE_STORE DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
+export EXISTING_TAGS="aaa"
 
 echo
 echo "── 판정기 selftest 도 이어서 돈다"
