@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘 무슨 일이 있었나 — 그림으로</title>
+<style>
+:root{
+  --bg:#f7f7f5; --panel:#ffffff; --ink:#1b1b19; --dim:#5f5f5a; --line:#e2e2dc;
+  --accent:#2f6f4f; --warn:#b4442c; --gold:#b98514; --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.05);
+  --svg-bg:#f0f0ec;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141513; --panel:#1c1e1b; --ink:#eceae4; --dim:#a2a29a; --line:#2e312c;
+    --accent:#69bd8e; --warn:#e8836a; --gold:#e0b64f; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.35);
+    --svg-bg:#22241f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141513; --panel:#1c1e1b; --ink:#eceae4; --dim:#a2a29a; --line:#2e312c;
+  --accent:#69bd8e; --warn:#e8836a; --gold:#e0b64f; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.35);
+  --svg-bg:#22241f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:Pretendard,'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  font-size:17px; line-height:1.75; letter-spacing:-.01em;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 20px 96px}
+header.top{padding:72px 0 28px}
+h1{font-size:clamp(28px,6vw,44px); line-height:1.25; margin:0 0 12px; letter-spacing:-.03em}
+.sub{color:var(--dim); font-size:16px; margin:0}
+.themebtn{
+  position:fixed; top:14px; right:14px; z-index:9; background:var(--panel); color:var(--ink);
+  border:1px solid var(--line); border-radius:999px; padding:8px 14px; font:inherit; font-size:13px;
+  cursor:pointer; box-shadow:var(--shadow);
+}
+section{padding:56px 0 8px; border-top:1px solid var(--line); margin-top:40px}
+.tag{font-size:13px; letter-spacing:.08em; color:var(--dim); text-transform:none; margin:0 0 10px}
+h2{font-size:clamp(23px,4.6vw,32px); line-height:1.35; margin:0 0 8px; letter-spacing:-.02em}
+h3{font-size:19px; margin:40px 0 10px; letter-spacing:-.02em}
+p{margin:0 0 14px}
+ul{margin:0 0 16px; padding-left:1.1em}
+li{margin:6px 0}
+.lead{font-size:19px; color:var(--dim)}
+figure{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:16px;
+  padding:18px; box-shadow:var(--shadow); overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:300px}
+figcaption{margin-top:12px; font-size:14px; color:var(--dim); text-align:center}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px 22px;
+  box-shadow:var(--shadow); margin:20px 0}
+.card h4{margin:0 0 8px; font-size:17px}
+.big{font-size:clamp(21px,4vw,27px); line-height:1.45; font-weight:700; letter-spacing:-.02em;
+  margin:34px 0; padding-left:16px; border-left:4px solid var(--accent)}
+.big.warnline{border-left-color:var(--warn)}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0}
+@media (max-width:560px){.split{grid-template-columns:1fr}}
+.half{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow)}
+.half .lbl{font-size:13px; color:var(--dim); margin:0 0 6px}
+.half.a{border-top:3px solid var(--warn)}
+.half.b{border-top:3px solid var(--accent)}
+code{font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; font-size:.88em;
+  background:var(--svg-bg); padding:2px 6px; border-radius:5px}
+.note{font-size:15px; color:var(--dim)}
+footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--line); color:var(--dim); font-size:14px}
+@media (prefers-reduced-motion:no-preference){
+  .fade{opacity:0; transform:translateY(14px); transition:opacity .6s ease, transform .6s ease}
+  .fade.on{opacity:1; transform:none}
+}
+</style>
+</head>
+<body>
+<button class="themebtn" id="tb" type="button">테마</button>
+<div class="wrap">
+
+<header class="top">
+  <p class="tag">2026-08-29 · 오늘 한 일 설명서</p>
+  <h1>「통과」라고 적혀 있다고<br>통과한 것은 아니다</h1>
+  <p class="sub">그림 위주로 세 덩어리 — 가짜 통과 · 좋은 실패 · 오늘의 진전</p>
+</header>
+
+<!-- ① -->
+<section class="fade">
+  <p class="tag">첫째 덩어리 · 가장 중요</p>
+  <h2>검사기가 아무것도 안 보고 「통과」를 찍는 결함</h2>
+  <p class="lead">이 레포가 있는 이유의 절반. 오늘 새로 두 건 더 잡음.</p>
+
+  <div class="big">비유 — 화재경보기.<br>벽에 붙어 있고, 초록불도 켜져 있음.<br>불이 나면 울리는지는 아무도 안 눌러 봄.</div>
+
+  <figure>
+  <svg viewBox="0 0 720 300" role="img" aria-label="경보기 두 대 비교: 배선이 없는 경보기와 시험 버튼을 눌러 울린 경보기">
+    <rect x="0" y="0" width="720" height="300" rx="14" fill="var(--svg-bg)"/>
+    <!-- left -->
+    <text x="180" y="34" text-anchor="middle" font-size="16" fill="var(--dim)" font-family="inherit">이렇게 보임</text>
+    <rect x="105" y="56" width="150" height="150" rx="26" fill="none" stroke="var(--dim)" stroke-width="4"/>
+    <circle cx="180" cy="131" r="42" fill="none" stroke="var(--dim)" stroke-width="4"/>
+    <circle cx="180" cy="131" r="10" fill="var(--accent)"/>
+    <text x="180" y="235" text-anchor="middle" font-size="17" fill="var(--accent)" font-family="inherit" font-weight="700">초록불 켜짐</text>
+    <text x="180" y="262" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">뒤에 선이 안 연결됨</text>
+    <path d="M255 131 L300 131" stroke="var(--warn)" stroke-width="4" stroke-dasharray="9 9"/>
+    <circle cx="312" cy="131" r="11" fill="none" stroke="var(--warn)" stroke-width="4"/>
+    <path d="M305 124 L319 138 M319 124 L305 138" stroke="var(--warn)" stroke-width="4"/>
+    <!-- divider -->
+    <line x1="368" y1="50" x2="368" y2="250" stroke="var(--line)" stroke-width="2"/>
+    <!-- right -->
+    <text x="545" y="34" text-anchor="middle" font-size="16" fill="var(--dim)" font-family="inherit">진짜 검사</text>
+    <rect x="470" y="56" width="150" height="150" rx="26" fill="none" stroke="var(--ink)" stroke-width="4"/>
+    <circle cx="545" cy="131" r="42" fill="none" stroke="var(--ink)" stroke-width="4"/>
+    <circle cx="545" cy="131" r="14" fill="var(--warn)"/>
+    <path d="M600 86 L634 66 M612 131 L652 131 M600 176 L634 196" stroke="var(--warn)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M490 86 L456 66 M478 131 L438 131 M490 176 L456 196" stroke="var(--warn)" stroke-width="5" stroke-linecap="round"/>
+    <text x="545" y="235" text-anchor="middle" font-size="17" fill="var(--warn)" font-family="inherit" font-weight="700">시험 버튼 → 울림</text>
+    <text x="545" y="262" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">울려야 믿을 수 있음</text>
+  </svg>
+  <figcaption>초록불은 「고장 안 났다」는 뜻일 뿐. 울리는 걸 봐야 「검사한다」는 뜻.</figcaption>
+  </figure>
+
+  <h3>실제로 있었던 다섯 가지</h3>
+
+  <div class="card">
+    <h4>1. 확인 대상이 0건인데 「복원 성공」</h4>
+    <p class="note">검사할 항목이 하나도 없었음 → 아무것도 안 보고 통과 도장. 0건은 성공이 아니라 검사 부재.</p>
+  </div>
+  <div class="card">
+    <h4>2. 이미지 별칭 붙이기에 실패했는데 배포는 「성공」</h4>
+    <p class="note">그 결과 복원 리허설이 <b>옛 이미지를 리허설하며 통과</b>. 진짜로 되돌릴 수 있는지는 아무도 모르는 상태.</p>
+  </div>
+  <div class="card">
+    <h4>3. 옵션 순서를 바꿔 쓴 헬스체크</h4>
+    <p class="note">명령이 오류를 내면서도 종료코드는 0 → 영원히 통과하는, 아무것도 안 보는 헬스체크.</p>
+  </div>
+  <div class="card">
+    <h4>4. 시험용 가짜 서버가 요청 본문을 읽고 버림</h4>
+    <p class="note">약속한 형식과 실제 호출이 서로 다른 말을 해도 잡히지 않음.</p>
+  </div>
+  <div class="card">
+    <h4>5. 오늘 잡은 것 — 「그 화면이 아직 없어서」 우연히 통과하던 시험 2건</h4>
+    <p class="note">검사하려던 것을 검사하지 않고, 없다는 이유로 통과. 화면이 생기는 순간 조용히 무의미해질 시험.</p>
+  </div>
+
+  <div class="split">
+    <div class="half a"><p class="lbl">빨간불이 안 켜졌다</p><p>= 아직 아무 일도 일어나지 않았음. 검사기가 꺼져 있어도 이렇게 보임.</p></div>
+    <div class="half b"><p class="lbl">초록불이 켜졌다</p><p>= 검사기가 실제로 보고, 실제로 통과시켰음.</p></div>
+  </div>
+
+  <div class="big warnline">둘은 화면에서 똑같이 「통과」로 보인다.<br>가르는 방법은 하나 — 일부러 망가뜨려 보기.</div>
+
+  <figure>
+  <svg viewBox="0 0 720 250" role="img" aria-label="검사를 지웠을 때 빨간불이 켜지는지 확인하는 절차">
+    <rect x="0" y="0" width="720" height="250" rx="14" fill="var(--svg-bg)"/>
+    <text x="120" y="46" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">① 멀쩡한 상태</text>
+    <rect x="45" y="66" width="150" height="96" rx="14" fill="none" stroke="var(--accent)" stroke-width="4"/>
+    <circle cx="120" cy="114" r="20" fill="var(--accent)"/>
+    <text x="120" y="192" text-anchor="middle" font-size="16" fill="var(--ink)" font-family="inherit">통과</text>
+    <path d="M215 114 L255 114" stroke="var(--dim)" stroke-width="4"/><path d="M243 104 L257 114 L243 124" fill="none" stroke="var(--dim)" stroke-width="4"/>
+    <text x="360" y="46" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">② 검사를 일부러 지움</text>
+    <rect x="285" y="66" width="150" height="96" rx="14" fill="none" stroke="var(--dim)" stroke-width="4" stroke-dasharray="10 8"/>
+    <path d="M330 94 L390 134 M390 94 L330 134" stroke="var(--dim)" stroke-width="5"/>
+    <text x="360" y="192" text-anchor="middle" font-size="16" fill="var(--dim)" font-family="inherit">망가진 상태</text>
+    <path d="M455 114 L495 114" stroke="var(--dim)" stroke-width="4"/><path d="M483 104 L497 114 L483 124" fill="none" stroke="var(--dim)" stroke-width="4"/>
+    <text x="600" y="46" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">③ 빨간불이 켜지는가</text>
+    <rect x="525" y="66" width="150" height="96" rx="14" fill="none" stroke="var(--warn)" stroke-width="4"/>
+    <circle cx="600" cy="114" r="20" fill="var(--warn)"/>
+    <text x="600" y="192" text-anchor="middle" font-size="16" fill="var(--warn)" font-family="inherit" font-weight="700">켜져야 진짜</text>
+    <text x="360" y="228" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">③에서 계속 초록이면, ①의 통과는 처음부터 가짜였음</text>
+  </svg>
+  <figcaption>오늘 이 절차로 실제 증명함 — 검사를 지우니 빨간불이 켜졌음.</figcaption>
+  </figure>
+
+  <div class="big">검사기를 믿는 근거는 「통과했다」가 아니라<br>「망가뜨렸더니 잡아냈다」.</div>
+</section>
+
+<!-- ② -->
+<section class="fade">
+  <p class="tag">둘째 덩어리</p>
+  <h2>배포가 한 번 실패했다가 성공한 것이 좋은 신호인 이유</h2>
+
+  <div class="big">비유 — 끊긴 다리 앞의 열차.<br>안개 속에서 계기 하나가 안 들어옴.<br>열차는 다리 <b>앞에서</b> 멈추고 기적을 울림.</div>
+
+  <figure>
+  <svg viewBox="0 0 720 280" role="img" aria-label="다리 직전에서 멈춘 열차와, 돌아올 수 없는 지점">
+    <rect x="0" y="0" width="720" height="280" rx="14" fill="var(--svg-bg)"/>
+    <line x1="30" y1="190" x2="400" y2="190" stroke="var(--dim)" stroke-width="5"/>
+    <line x1="440" y1="190" x2="690" y2="190" stroke="var(--dim)" stroke-width="5" stroke-dasharray="12 10"/>
+    <!-- gap -->
+    <path d="M400 190 L400 240 M440 190 L440 240" stroke="var(--warn)" stroke-width="4"/>
+    <text x="420" y="266" text-anchor="middle" font-size="14" fill="var(--warn)" font-family="inherit">되돌릴 수 없는 구간</text>
+    <!-- train -->
+    <rect x="150" y="128" width="180" height="56" rx="12" fill="none" stroke="var(--ink)" stroke-width="4"/>
+    <circle cx="190" cy="196" r="12" fill="none" stroke="var(--ink)" stroke-width="4"/>
+    <circle cx="290" cy="196" r="12" fill="none" stroke="var(--ink)" stroke-width="4"/>
+    <rect x="176" y="146" width="34" height="24" rx="5" fill="var(--dim)"/>
+    <rect x="224" y="146" width="34" height="24" rx="5" fill="var(--dim)"/>
+    <!-- stop signal -->
+    <line x1="368" y1="190" x2="368" y2="86" stroke="var(--warn)" stroke-width="5"/>
+    <circle cx="368" cy="74" r="18" fill="var(--warn)"/>
+    <text x="368" y="46" text-anchor="middle" font-size="15" fill="var(--warn)" font-family="inherit" font-weight="700">정지</text>
+    <!-- sound -->
+    <path d="M120 130 Q96 156 120 182" fill="none" stroke="var(--gold)" stroke-width="4"/>
+    <path d="M100 118 Q66 156 100 194" fill="none" stroke="var(--gold)" stroke-width="4"/>
+    <text x="240" y="112" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">여기서 멈춤 · 표식을 남기고 사람을 부름</text>
+    <text x="560" y="160" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">데이터베이스 구조 변경</text>
+  </svg>
+  <figcaption>멈춘 자리 = 데이터베이스 구조를 바꾸기 직전. 되돌릴 수 없는 유일한 자리 바로 앞.</figcaption>
+  </figure>
+
+  <h3>1차 배포에서 일어난 일</h3>
+  <ul>
+    <li>필수 설정값이 스크립트에 안 닿음 → <b>중단</b></li>
+    <li>관대한 기본값으로 조용히 넘어가지 <b>않음</b></li>
+    <li>멈춘 자리가 데이터베이스 구조 변경 직전 — 되돌릴 수 없는 유일한 단계 앞</li>
+    <li>자동으로 되돌리지 않고 표식을 남기고 사람을 부름 — 정해 둔 규칙대로</li>
+    <li>배포 전 백업 성공, 「건너뛴 항목 0 — 모든 항목이 실제로 돌았음」 명시</li>
+  </ul>
+
+  <h3>원인 — 값이 없던 게 아니라 배선</h3>
+  <div class="split">
+    <div class="half a"><p class="lbl">설정값이 간 곳</p><p>컨테이너 안</p></div>
+    <div class="half b"><p class="lbl">설정값이 필요했던 곳</p><p>호스트에서 도는 스크립트</p></div>
+  </div>
+  <p>배선을 고치고 2차 배포 성공.</p>
+
+  <h3>그리고 순서를 바꿈</h3>
+  <figure>
+  <svg viewBox="0 0 720 190" role="img" aria-label="검사를 파이프라인 맨 앞으로 옮긴 전후 비교">
+    <rect x="0" y="0" width="720" height="190" rx="14" fill="var(--svg-bg)"/>
+    <text x="24" y="40" font-size="15" fill="var(--dim)" font-family="inherit">전</text>
+    <rect x="60" y="18" width="330" height="40" rx="9" fill="none" stroke="var(--dim)" stroke-width="3"/>
+    <text x="225" y="45" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">빌드 (20분)</text>
+    <rect x="400" y="18" width="150" height="40" rx="9" fill="none" stroke="var(--warn)" stroke-width="3"/>
+    <text x="475" y="45" text-anchor="middle" font-size="15" fill="var(--warn)" font-family="inherit">설정 검사</text>
+    <text x="590" y="45" font-size="15" fill="var(--warn)" font-family="inherit">← 여기서 탈락</text>
+    <text x="24" y="130" font-size="15" fill="var(--dim)" font-family="inherit">후</text>
+    <rect x="60" y="108" width="150" height="40" rx="9" fill="none" stroke="var(--accent)" stroke-width="3"/>
+    <text x="135" y="135" text-anchor="middle" font-size="15" fill="var(--accent)" font-family="inherit">설정 검사</text>
+    <rect x="220" y="108" width="330" height="40" rx="9" fill="none" stroke="var(--dim)" stroke-width="3"/>
+    <text x="385" y="135" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">빌드 (20분)</text>
+    <text x="565" y="135" font-size="15" fill="var(--accent)" font-family="inherit">← 20분 절약</text>
+  </svg>
+  <figcaption>설정이 부족하면 20분짜리 빌드 전에 드러남.</figcaption>
+  </figure>
+
+  <div class="big warnline">조용한 실패는 나쁜 것.<br>시끄럽게, 올바른 자리에서 멈추면 좋은 것.</div>
+</section>
+
+<!-- ③ -->
+<section class="fade">
+  <p class="tag">셋째 덩어리 · 마무리</p>
+  <h2>오늘 실제로 나아진 것</h2>
+
+  <ul>
+    <li>사용자가 쓰는 기능 2개 완성 — 업로드한 파일을 <b>등록 전에 미리 보는 화면</b>, <b>화면 갈무리(스크린샷)</b></li>
+    <li><b>처음으로 자동 배포가 실제로 돌아 서비스가 새 버전으로 교체됨</b> — 컨테이너 8개 정상 · 공개 서비스 정상 · 데이터 무변경</li>
+    <li>문서와 실물이 어긋나 있던 자리 다수를 실측으로 맞춤</li>
+  </ul>
+
+  <div class="big">비유 — 예비 열쇠.<br>지금 문은 잘 열림.<br>다만 서랍에 있던 예비 열쇠가 예상보다 많이 버려졌음.</div>
+
+  <figure>
+  <svg viewBox="0 0 720 200" role="img" aria-label="되돌릴 손잡이 재고: 남은 것과 다음 배포로 생기는 것">
+    <rect x="0" y="0" width="720" height="200" rx="14" fill="var(--svg-bg)"/>
+    <text x="360" y="38" text-anchor="middle" font-size="16" fill="var(--dim)" font-family="inherit">되돌릴 손잡이(옛 버전 이미지)</text>
+    <g stroke-width="4" fill="none">
+      <g stroke="var(--accent)"><circle cx="150" cy="112" r="20"/><path d="M170 112 L216 112 M204 112 L204 128 M216 112 L216 130"/></g>
+      <g stroke="var(--line)" stroke-dasharray="9 8"><circle cx="330" cy="112" r="20"/><path d="M350 112 L396 112 M384 112 L384 128 M396 112 L396 130"/></g>
+      <g stroke="var(--line)" stroke-dasharray="9 8"><circle cx="510" cy="112" r="20"/><path d="M530 112 L576 112 M564 112 L564 128 M576 112 L576 130"/></g>
+    </g>
+    <text x="183" y="170" text-anchor="middle" font-size="15" fill="var(--accent)" font-family="inherit">지금 도는 버전</text>
+    <text x="363" y="170" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">지워짐</text>
+    <text x="543" y="170" text-anchor="middle" font-size="15" fill="var(--dim)" font-family="inherit">지워짐</text>
+  </svg>
+  <figcaption>다음 배포가 한 번 더 성공하면 「직전으로 되돌리기」가 다시 생김.</figcaption>
+  </figure>
+
+  <div class="card">
+    <h4>솔직하게 적는 부분</h4>
+    <p class="note">되돌릴 손잡이(옛 버전 이미지)가 예상보다 많이 지워졌음. 지금 서비스는 정상. 다만 <b>다음 배포가 한 번 더 성공해야 「직전으로 되돌리기」가 생김.</b></p>
+  </div>
+</section>
+
+<footer>
+  요약 — ① 통과 표시는 검사를 지워 봐야 믿을 수 있음 · ② 시끄러운 실패는 좋은 실패 · ③ 기능 2개와 첫 실배포 완료, 되돌리기 여력은 다음 배포로 회복.
+</footer>
+</div>
+<script>
+(function(){
+  var b=document.getElementById('tb');
+  var saved=null; try{saved=localStorage.getItem('eli5-theme');}catch(e){}
+  if(saved){document.documentElement.setAttribute('data-theme',saved);}
+  b.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var mqDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = cur ? (cur==='dark'?'light':'dark') : (mqDark?'light':'dark');
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('eli5-theme',next);}catch(e){}
+  });
+  var els=[].slice.call(document.querySelectorAll('.fade'));
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce||!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('on');});return;}
+  var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('on');io.unobserve(x.target);}});},{threshold:.08});
+  els.forEach(function(e){io.observe(e);});
+})();
+</script>
+</body>
+</html>
