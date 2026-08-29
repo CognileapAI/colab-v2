@@ -1066,6 +1066,60 @@ describe('③ 계보 확정 — 정직한 빈 상태 (AI 없이도 완결된다)
     expect(screen.getByTestId('lin-scope')).toHaveTextContent('수자원순환연구실');
   });
 
+  // ── **0건의 뜻 셋을 가른다** (`PLAN-SoT §9 〈211〉`-㉮-⑵) ────────────────────
+  // 제안 기능은 데이터가 없으면 무엇이든 0건이라, **음성 판정이 공짜로 통과한다.**
+  // 그래서 「제안이 가능했는데 안 했다」와 「애초에 가능하지 않았다」를 화면에서 가른다.
+  it('㈏ 뒤질 대상이 있었고 서비스가 답했는데 0건 — **가능했으나 제안하지 않았다**', async () => {
+    const { sources } = fakes({
+      suggestions: {
+        degraded: false,
+        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 12 },
+        suggestions: [],
+      },
+    });
+    await openLineage(sources);
+    const empty = await screen.findByTestId('lin-empty');
+    expect(empty).toHaveAttribute('data-kind', 'searched-none');
+    expect(empty).toHaveTextContent('12건을 살펴봤지만');
+    expect(empty).toHaveTextContent('찾지 못했어요');
+    // 「살펴볼 것이 없었다」로 말하면 거짓이다 — 살펴볼 것은 12건 있었다.
+    expect(empty).not.toHaveTextContent('살펴볼 것이 없었어요');
+    expect(screen.queryByTestId('lin-degraded')).toBeNull();
+  });
+
+  it('㈎ 뒤질 대상이 0건 — **제안이 가능했던 적이 없다**. 「찾지 못했다」로 말하지 않는다', async () => {
+    const { sources } = fakes({
+      suggestions: {
+        degraded: false,
+        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 0 },
+        suggestions: [],
+      },
+    });
+    await openLineage(sources);
+    const empty = await screen.findByTestId('lin-empty');
+    expect(empty).toHaveAttribute('data-kind', 'nothing-to-search');
+    expect(empty).toHaveTextContent('살펴볼 것이 없었어요');
+    expect(empty).not.toHaveTextContent('찾지 못했어요');
+    // 범위 줄도 「0건을 살펴봤다」로 거짓말하지 않는다.
+    expect(screen.getByTestId('lin-scope')).toHaveTextContent('살펴볼 데이터가 없어요');
+  });
+
+  it('㈐ 물어보지 못했다 — 「없다」가 아니라 **모른다**로 적는다', async () => {
+    const { sources } = fakes({
+      suggestions: {
+        degraded: true,
+        degradedReason: '계보 제안 서비스에 닿지 못했다',
+        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 12 },
+        suggestions: [],
+      },
+    });
+    await openLineage(sources);
+    const empty = await screen.findByTestId('lin-empty');
+    expect(empty).toHaveAttribute('data-kind', 'not-asked');
+    expect(empty).toHaveTextContent('확인하지 못했어요');
+    expect(empty).not.toHaveTextContent('찾지 못했어요');
+  });
+
   it('제안 0건이어도 등록이 끝까지 간다 — `기록 없음` 으로 등록된다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);

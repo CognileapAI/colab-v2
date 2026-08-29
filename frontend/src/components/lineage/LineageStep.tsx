@@ -247,7 +247,15 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       {/* **범위를 먼저 밝힌다** — 무엇을 근거로 삼았는지가 제안보다 위에 선다 */}
       {scope && (
         <p className="lin-scope" data-testid="lin-scope">
-          <b>{scope.labName}</b>의 데이터 {scope.searchedCount}건을 살펴봤어요.
+          {scope.searchedCount === 0 ? (
+            <>
+              <b>{scope.labName}</b>에 아직 살펴볼 데이터가 없어요.
+            </>
+          ) : (
+            <>
+              <b>{scope.labName}</b>의 데이터 {scope.searchedCount}건을 살펴봤어요.
+            </>
+          )}
         </p>
       )}
 
@@ -398,11 +406,43 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
           })}
       </div>
 
-      {/* 제안 0건 = **정직한 빈 상태.** 억지 카드를 만들지 않고, 등록은 그대로 끝까지 간다 */}
+      {/* 제안 0건 = **정직한 빈 상태.** 억지 카드를 만들지 않고, 등록은 그대로 끝까지 간다.
+          ⚠ **0건의 뜻이 셋이라 문구를 가른다** (`PLAN-SoT §9 〈211〉`-㉮-⑵ 「화면이 그대로 적는다」).
+          제안 기능은 **데이터가 없으면 무엇이든 0건**이라, 셋을 한 문구로 접으면 화면이
+          「살펴봤는데 없다」를 언제나 말하게 된다 — 그것이 이 항목의 green-by-skip 형태다.
+            ㈎ `nothing-to-search` — 뒤질 대상이 0건이었다. **제안이 가능했던 적이 없다.**
+            ㈏ `searched-none`    — 뒤질 대상이 있었고 서비스가 답했는데 **0건이 참인 답**이다.
+                                    **제안이 가능했으나 하지 않은 것**이고, 이 자리가 음성 판정이다.
+            ㈐ `not-asked`        — 물어보지 못했다(`degraded`). 「없다」가 아니라 **모른다**다. */}
       {resp && !unavailable && parents.length === 0 && methods.length === 0 && (
-        <p className="lin-empty" data-testid="lin-empty">
-          앞선 데이터를 찾지 못했어요. 직접 이어 붙이거나, 그대로 등록해도 돼요 —{' '}
-          <b>계보는 「기록 없음」</b>으로 남고 나중에 상세 화면에서 이을 수 있어요.
+        <p
+          className="lin-empty"
+          data-testid="lin-empty"
+          data-kind={
+            resp.degraded
+              ? 'not-asked'
+              : (scope?.searchedCount ?? 0) === 0
+                ? 'nothing-to-search'
+                : 'searched-none'
+          }
+        >
+          {resp.degraded ? (
+            <>
+              앞선 데이터가 있는지 <b>확인하지 못했어요</b> — 없다는 뜻은 아니에요. 직접 이어 붙이거나,
+              그대로 등록해도 돼요.
+            </>
+          ) : (scope?.searchedCount ?? 0) === 0 ? (
+            <>
+              연구실에 앞선 데이터가 아직 없어서 <b>살펴볼 것이 없었어요.</b> 그대로 등록하면{' '}
+              <b>계보는 「기록 없음」</b>으로 남고 나중에 상세 화면에서 이을 수 있어요.
+            </>
+          ) : (
+            <>
+              데이터 {scope?.searchedCount}건을 살펴봤지만 <b>앞선 데이터를 찾지 못했어요.</b> 직접 이어
+              붙이거나, 그대로 등록해도 돼요 — <b>계보는 「기록 없음」</b>으로 남고 나중에 상세 화면에서
+              이을 수 있어요.
+            </>
+          )}
         </p>
       )}
 

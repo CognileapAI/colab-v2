@@ -161,21 +161,87 @@ case "$GATE" in
     exec "$REPO_ROOT/gates/tools/generated-selftest.sh"
     ;;
   all)
-    # 전 게이트를 병렬로 돈다. **검사 내용은 하나도 바뀌지 않는다** — 순서만 바뀌고,
+    # 전 게이트를 돈다. **검사 내용은 하나도 바뀌지 않는다** — 순서만 바뀌고,
     # 출력은 목록 순서로 되돌려 재생한다. 하나라도 red 면 red 다.
+    #
+    # ⚠ **병렬 안전성은 실행기가 정하지 않는다 — 게이트가 선언하고 여기가 지킨다.**
+    #   정본 = gates/config/parallelism.toml (읽는 자리 = gates/tools/parallelism.py).
+    #   세 상태다: serial → 단독 · parallel → 풀 · **미선언 → 안전한 쪽(단독) ＋ 출력에 명시.**
+    #   조용히 「병렬 안전」으로 가정하지 않는다 (CLAUDE.md §4 — 미선언을 통과로 세지 않는 것과 같은 규율).
+    #
+    #   왜 생겼나: README 가 「db-selftest 는 병렬로 돌리지 않는다」고 적어 두었는데 **실행기가
+    #   그 선언을 읽지 않아** -j 2 에서 red · 단독에서 green 이었다. **판정이 아니라 배선이 낸 red** 다.
+    #   병렬도를 낮추거나 · 재시도하거나 · 게이트를 건너뛰어 덮지 않는다. 선언을 집행한다.
     ncpu="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
     jobs_n=2
     if [ "${2:-}" = "-j" ]; then jobs_n="${3:-2}"; fi
     [ "$jobs_n" -ge 1 ] 2>/dev/null || jobs_n=1
     # 안쪽 selftest 풀의 몫을 나눠 준다 — 바깥 병렬과 곱해져 코어를 넘기지 않게.
     inner=$(( ncpu / jobs_n )); [ "$inner" -ge 1 ] || inner=1
-    outdir="$(mktemp -d -p "${TMPDIR:-/tmp}" gates-all-XXXXXX)"
+    outdir="${COLAB_GATE_OUTDIR:-$(mktemp -d -p "${TMPDIR:-/tmp}" gates-all-XXXXXX)}"
+    mkdir -p "$outdir"
+
+    # ── 선언을 읽는다 ────────────────────────────────────────────────────────
+    manifest="${COLAB_GATE_PARALLELISM_MANIFEST:-$REPO_ROOT/gates/config/parallelism.toml}"
+    declare -A GATE_MODE=()
+    plan_notes=()
+    decl_raw="$(python3 "$REPO_ROOT/gates/tools/parallelism.py" "$manifest" 2>&1)" \
+      || decl_raw="!PARSE	parallelism.py 를 돌리지 못했다"
+    while IFS=$'\t' read -r c1 c2 c3; do
+      [ -n "$c1" ] || continue
+      case "$c1" in
+        '!PARSE') plan_notes+=("⚠ 병렬 선언표를 읽지 못했다 (${manifest#$REPO_ROOT/}) — 전 게이트를 단독으로 돌린다. $c2") ;;
+        '!BAD')   plan_notes+=("⚠ 선언 값이 serial·parallel 이 아니다: $c2 = '$c3' — 미선언으로 보고 단독으로 돌린다.") ;;
+        *)        GATE_MODE["$c1"]="$c2" ;;
+      esac
+    done <<< "$decl_raw"
+
+    # ── 세 상태로 가른다 ─────────────────────────────────────────────────────
+    solo_gates=(); pool_gates=(); undeclared_gates=()
     for g in "${ALL_GATES[@]}"; do
+      case "${GATE_MODE[$g]:-}" in
+        parallel) pool_gates+=("$g") ;;
+        serial)   solo_gates+=("$g") ;;
+        *)        solo_gates+=("$g"); undeclared_gates+=("$g") ;;
+      esac
+    done
+    # 선언표에만 있는 이름 — 표가 실물보다 낡았다는 뜻이라 감추지 않고 드러낸다.
+    for k in "${!GATE_MODE[@]}"; do
+      found=0
+      for g in "${ALL_GATES[@]}"; do [ "$g" = "$k" ] && { found=1; break; }; done
+      [ "$found" -eq 1 ] || plan_notes+=("⚠ 선언표에만 있는 이름: $k (실행 목록에 없다)")
+    done
+
+    echo "── 실행 계획 (병렬도 -j $jobs_n) ──────────────────────────────────────"
+    echo "  선언 정본 = ${manifest#$REPO_ROOT/}"
+    echo "  단독 ${#solo_gates[@]}건 · 병렬 ${#pool_gates[@]}건 · 미선언 ${#undeclared_gates[@]}건"
+    for g in "${solo_gates[@]}"; do
+      if [ -n "${GATE_MODE[$g]:-}" ]; then echo "  단독  $g  (선언: serial)"
+      else echo "  단독  $g  (**미선언 — 안전한 쪽을 골랐다.** 선언 없는 것을 병렬 안전으로 가정하지 않는다)"; fi
+    done
+    for n in ${plan_notes[@]+"${plan_notes[@]}"}; do echo "  $n"; done
+    echo "────────────────────────────────────────────────────────────────────"
+
+    # 종료코드와 **실행 구간**을 받아 적는다. 구간은 「단독으로 돌았다」를
+    # 주장이 아니라 값으로 남기기 위한 것이다 (COLAB_GATE_OUTDIR 로 꺼내 대조한다).
+    run_one() { # $1=게이트 $2=안쪽 병렬도
+      local g="$1" ij="$2" st
+      st="$(date +%s.%N)"
+      if COLAB_GATE_JOBS="$ij" "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
+      then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
+      printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
+    }
+
+    # ① 단독 게이트 — 하나씩. **이 구간에는 다른 게이트가 하나도 돌지 않는다.**
+    #    바깥이 비어 있으므로 안쪽 풀에는 코어를 그대로 준다 (곱해질 것이 없다).
+    for g in ${solo_gates[@]+"${solo_gates[@]}"}; do run_one "$g" "$ncpu"; done
+
+    # ② 병렬 게이트 — 풀에서 동시에.
+    for g in ${pool_gates[@]+"${pool_gates[@]}"}; do
       while [ "$(jobs -rp | wc -l)" -ge "$jobs_n" ]; do wait -n 2>/dev/null || break; done
       # set -e 아래서 자식의 red 가 이 서브셸을 먼저 죽이면 종료코드를 못 적는다.
       # 종료코드 없는 게이트는 「미실행」으로 red 가 되므로, 반드시 받아 적는다.
-      { if COLAB_GATE_JOBS="$inner" "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
-        then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi; } &
+      { run_one "$g" "$inner"; } &
     done
     wait
     rc=0
@@ -192,7 +258,10 @@ case "$GATE" in
       elif [ "$grc" = 111 ]; then echo "  red    $g (미실행 — 종료코드 없음)"
       else echo "  red    $g (exit $grc)"; fi
     done
-    rm -rf "$outdir"
+    if [ "${#undeclared_gates[@]}" -gt 0 ]; then
+      echo "  ⚠ 병렬 안전성 **미선언** ${#undeclared_gates[@]}건 — 안전한 쪽으로 단독 실행했다: ${undeclared_gates[*]}"
+    fi
+    [ -n "${COLAB_GATE_OUTDIR:-}" ] || rm -rf "$outdir"
     exit $rc
     ;;
   "")

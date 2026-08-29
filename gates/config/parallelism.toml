@@ -1,0 +1,56 @@
+# 게이트의 **병렬 안전성 선언** — `gates/run.sh all [-j N]` 이 읽는 정본.
+#
+# 왜 여기 있는가: `gates/README.md` 는 「`db-selftest` 는 병렬로 돌리지 않는다」고 적어 두었는데
+# **실행기가 그 선언을 읽지 않았다.** 그래서 `-j 2` 에서 `db-selftest` 가 red 였고 단독으로는
+# green 이었다 — **판정이 아니라 배선이 낸 red** 이고, 이 레포가 이미 한 번 겪은 거짓 red 와
+# 같은 뿌리다(`gates/README.md` 「빨리 도는 것과 덜 보는 것은 다르다」 · `CLAUDE.md §4`).
+#
+# 고치는 방향은 **병렬도를 낮추는 것도 · 재시도도 · 건너뛰기도 아니다.** 게이트가 자기 요구를
+# 선언하고 실행기가 그것을 지킨다. 선언은 게이트 곁(이 표)에 있고 실행기 안에 이름 목록으로
+# 박히지 않는다 — 다른 정본들(`db-boundaries.toml`·`rls-allowlist.toml`)과 같은 배치다.
+#
+# ── 세 상태 (`CLAUDE.md §4`) ────────────────────────────────────────────────
+#   "serial"    단독으로 돈다. 다른 게이트가 하나도 같이 돌지 않는다.
+#   "parallel"  풀에서 동시에 돈다.
+#   **선언 없음**  → 실행기가 **안전한 쪽(단독)** 을 고르고 **그렇게 했다고 출력에 적는다.**
+#                  조용히 「병렬 안전」으로 가정하지 않는다. 미선언을 통과로 세지 않는 것과 같은 규율이다.
+#
+# ⚠ 값을 `serial` → `parallel` 로 바꾸는 편집은 **격리 요구를 없앤 결정**이지 속도 튜닝이 아니다.
+#   근거 없이 바꾸지 않는다.
+
+[gates]
+# ── 단독 실행이 필요한 것 ───────────────────────────────────────────────────
+# `schema-diff` e2e 묶음이 **한 적용 DB 를 순서대로 훼손해 가며** 본다. 동시에 돌면 케이스가
+# 서로의 드리프트를 본다 — 격리를 깨는 속도는 속도가 아니다 (`gates/README.md`).
+"db-selftest" = "serial"
+
+# ── 병렬 안전 ───────────────────────────────────────────────────────────────
+# 근거 = `gates/README.md` 「빨리 도는 것과 덜 보는 것은 다르다」 — 검사 대상·기대값·판정 기준이
+# 실행 순서에 걸리지 않는다. DB 를 쓰는 것들은 **자기 일회용 컨테이너**를 들고 다니고(`_pg.sh`),
+# 도구 설치 구간은 잠금으로 갈라져 있다(`_lock.sh`).
+"planning-freshness"        = "parallel"
+"contract-lint"             = "parallel"
+"contract-breaking"         = "parallel"
+"event-lint"                = "parallel"
+"event-breaking"            = "parallel"
+"seam-consistency"          = "parallel"
+"generated-up-to-date"      = "parallel"
+"import-boundary"           = "parallel"
+"banned-import"             = "parallel"
+"ai-no-lineage-write"       = "parallel"
+"db-boundary"               = "parallel"
+"migration-single-head"     = "parallel"
+"schema-diff"               = "parallel"
+"rls-coverage"              = "parallel"
+"rls-effect"                = "parallel"
+"work-item-consistency"     = "parallel"
+"stage2-markers"            = "parallel"
+"contract-selftest"         = "parallel"
+"event-selftest"            = "parallel"
+"boundary-selftest"         = "parallel"
+"db-boundary-selftest"      = "parallel"
+"rls-effect-selftest"       = "parallel"
+"seam-consistency-selftest" = "parallel"
+"generated-selftest"        = "parallel"
+"work-item-selftest"        = "parallel"
+"stage2-markers-selftest"   = "parallel"
