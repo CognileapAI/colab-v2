@@ -17,22 +17,28 @@
 #   · 끝나면 `down -v` — 볼륨까지 지운다. tmpfs PGDATA 라 호스트에 바이트가 남지 않는다
 #
 # 사용: throwaway-stack.sh --platform-dump <…sql.gz> --ai-dump <…sql.gz> [--keep]
+#       [--skip-alias-freshness]  `:i2` 신선도 대조를 **명시** 면제한다(요약줄에 SKIP 건수가 남는다)
 # 종료코드 0 = 완-비2(재발급본으로 기동이 선다) ＋ 완-비3(로그인 200 · cross-tenant 음성) 전건 통과
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STG="$(cd "$HERE/.." && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
+# ⭑ `pipeline/lib.sh` 를 **먼저** 물린다 — `RELEASE_IMAGES`·`alias_id`·`alias_fresh`·
+#   `serving_release_tag` 를 재사용하려는 것이고, 이름이 겹치는 판정 어휘(`verdict`·`skip_ack`)는
+#   **뒤에 오는 `backup/lib.sh` 것이 이긴다.** 이 스크립트의 요약줄 규약은 backup 쪽이다.
+. "$STG/pipeline/lib.sh"
 . "$STG/backup/lib.sh"
 load_config
 
 PROJ=colab-v2-r1throw
 CF="$STG/compose.throwaway.yml"
-PDUMP=""; ADUMP=""; KEEP=0
+PDUMP=""; ADUMP=""; KEEP=0; SKIP_FRESH=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform-dump) PDUMP="${2:?}"; shift 2 ;;
     --ai-dump)       ADUMP="${2:?}"; shift 2 ;;
     --keep)          KEEP=1; shift ;;
+    --skip-alias-freshness) SKIP_FRESH=1; shift ;;
     *) echo "모르는 인자: $1" >&2; exit 2 ;;
   esac
 done
@@ -51,6 +57,43 @@ echo "$CFKEYS" | grep -qE '^\s*container_name:' && { echo "일회용 compose 에
 echo "$CFKEYS" | grep -qE '^\s*ports:'          && { echo "일회용 compose 가 호스트 포트를 연다 — 시작하지 않는다" >&2; exit 1; }
 echo "$CFKEYS" | grep -qE '^\s*cloudflared:'    && { echo "일회용 compose 에 cloudflared 가 있다 — 실트래픽을 가로챈다. 시작하지 않는다" >&2; exit 1; }
 echo "$CFKEYS" | grep -qE '^\s*build:'          && { echo "일회용 compose 가 이미지를 새로 만든다 — digest 대장이 무의미해진다. 시작하지 않는다" >&2; exit 1; }
+
+# ── ⓪ **이 리허설이 무엇을 리허설하는가** — `:i2` 의 신선도 (`X-6` 형제②) ──────────
+# 이 스택은 6종을 전부 `colab-v2/*:i2` 로 띄운다(`compose.throwaway.yml`). 그런데 그 이름이
+# **언제 것인지**를 여기서 묻지 않으면, 별칭이 옛 이미지를 가리키고 있어도 리허설은 그대로
+# 서고 통과를 낸다 — **옛 것을 리허설하며 GREEN 을 찍는다.** 이 레포 대표 실패형과 같은 무늬다.
+#
+# ⭑ 신선도의 정의 = **「`:i2` 의 이미지 ID」 = 「지금 서빙 중인 릴리스 태그의 이미지 ID」.**
+#   이름·시각이 아니라 ID 다(`pipeline/lib.sh:alias_fresh` — 재부착의 사후 대조와 같은 잣대).
+#   서빙 태그는 살아 있는 `colab_v2_staging_core_api` 의 `.Config.Image` 에서 읽는다
+#   (`pipeline/lib.sh:serving_release_tag` · `compose.i2.yml` 이 6종을 한 변수로 띄운다).
+# ⚠ 살아 있는 스택에는 `docker inspect` **한 번**뿐이다 — 읽기만 한다.
+#
+# 세 상태 — 잴 수 있으면 **잰다** / `--skip-alias-freshness` 로 **명시** 면제하면 건수를 드러낸 채
+# 넘어간다 / 못 재면(서빙 태그를 못 읽거나 불일치) **시작하지 않는다.** 모르는 채로 리허설하면
+# 그 리허설의 결론은 「무엇이 복원되는가」를 말하지 못한다.
+step_zero_fresh() {
+  if [ "$SKIP_FRESH" -eq 1 ]; then
+    skip_ack ":i2 신선도 ${#RELEASE_IMAGES[@]}종 미측정 (--skip-alias-freshness) — 이 리허설은 **옛 이미지를 리허설했을 수 있다**"
+    return 0
+  fi
+  local stag
+  if ! stag="$(serving_release_tag)"; then
+    echo "거부: 지금 서빙 중인 릴리스 태그를 읽지 못했다(컨테이너 ${COLAB_SERVING_CONTAINER:-colab_v2_staging_core_api})." >&2
+    echo "      무엇과 대조할지 모르면 :i2 의 신선도를 잴 수 없고, 못 잰 것을 통과로 읽지 않는다." >&2
+    echo "      알고도 돌리려면 --skip-alias-freshness 를 **명시**하라 (요약줄에 SKIP 건수가 남는다)." >&2
+    return 1
+  fi
+  if ! alias_fresh "$stag"; then
+    echo "거부: :i2 가 서빙 중인 릴리스($stag)와 다른 이미지를 가리킨다 — 이 스택은 **옛 것을 리허설한다.**" >&2
+    echo "      배포/롤백 회차에서 재부착이 빠졌거나 실패한 자리다. deploy.sh ⑫ · rollback.sh 의 재부착을 먼저 보라." >&2
+    return 1
+  fi
+  echo "  PASS :i2 신선도 — 6종이 서빙 중인 $stag 와 같은 이미지다 (ID 대조)"
+  return 0
+}
+echo; echo "════════ 0. :i2 신선도 — 이 리허설이 **무엇을** 리허설하는가"
+step_zero_fresh || exit 1
 
 W="$(mktemp -d)"; chmod 700 "$W"
 DOWN=1

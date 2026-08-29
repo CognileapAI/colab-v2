@@ -37,6 +37,14 @@ if [ -n "${DOCKER_FAKE_STORE:-}" ]; then
     [ -n "$line" ] || exit 1
     printf '%s\n' "${line#*${TAB}}"; exit 0
   fi
+  #  ⓒ `docker inspect -f … <컨테이너>` — 저장소의 `container/<이름>` 행이 그 컨테이너가 물고 있는
+  #     이미지 참조다. `serving_release_tag` 가 「지금 서빙 중인 것」을 실물에서 읽는 자리를 시험한다.
+  if [ "${1:-}" = inspect ]; then
+    ref="${!#}"
+    line="$(grep -m1 -- "^container/${ref}${TAB}" "$DOCKER_FAKE_STORE" 2>/dev/null)" || exit 1
+    [ -n "$line" ] || exit 1
+    printf '%s\n' "${line#*${TAB}}"; exit 0
+  fi
   if [ "${1:-}" = tag ]; then
     src="${2:-}"; dst="${3:-}"
     case " ${DOCKER_FAKE_TAG_FAIL:-} " in *" $dst "*) echo "fake: tag 거부 $dst" >&2; exit 1 ;; esac
@@ -204,6 +212,95 @@ if grep -vE '^[[:space:]]*#' "$HERE/../deploy.sh" | grep -q 'docker tag .*|| *tr
 elif ! grep -q 'alias_reattach "$TAG"' "$HERE/../deploy.sh"; then
   echo "  FAIL  [P20] deploy.sh 가 alias_reattach 를 부르지 않는다"; FAILED=$((FAILED+1))
 else echo "  PASS  [P20] 무조건 성공 경로 없음 · 판정 함수 호출 확인"; fi
+
+
+# ══ X-6 형제② 별칭 신선도 — 「리허설이 무엇을 리허설하는지 재지 않는」 모양이 없는지 ═══
+# 복원 리허설(`compose.throwaway.yml`)은 6종을 전부 `:i2` 로 띄운다. 그 이름이 **언제 것인지**
+# 묻지 않으면 옛 이미지를 리허설하고 통과를 낸다. 아래는 그 대조가 실물로 도는지를 못 박는다.
+serve_as() { # $1=서빙 태그 → 살아 있는 core-api 가 그 태그를 물고 있다고 심는다
+  local TAB; TAB="$(printf '\t')"
+  grep -v -- "^container/colab_v2_staging_core_api${TAB}" "$TMP/images" > "$TMP/i.n" 2>/dev/null
+  printf 'container/colab_v2_staging_core_api%scolab-v2/core-api:%s\n' "$TAB" "$1" >> "$TMP/i.n"
+  mv "$TMP/i.n" "$TMP/images"
+}
+
+echo "── P21 서빙 태그를 **실물(컨테이너가 문 이미지)** 에서 읽는다 (원장 마지막 줄이 아니다)"
+store_seed s1; serve_as s1
+ck P21 "s1" "$(serving_release_tag)"
+
+echo "── P22 :i2 가 서빙 태그와 **같은 이미지**면 신선도 green (양성 대조군)"
+unset DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
+alias_reattach s1 >/dev/null 2>&1
+if alias_fresh "$(serving_release_tag)" >/dev/null 2>&1; then ck P22 "GREEN" "GREEN"; else ck P22 "GREEN" "RED"; fi
+
+echo "── P23 :i2 가 **옛 이미지**를 가리키면 red 다 (재부착이 빠진 배포·롤백 뒤의 상태)"
+store_seed s2; serve_as s2   # :i2 는 old… 인 채로 둔다(재부착 안 함)
+if alias_fresh "$(serving_release_tag)" >/dev/null 2>&1; then ck P23 "RED" "GREEN"; else ck P23 "RED" "RED"; fi
+
+echo "── P24 :i2 가 **아예 없으면** red 다 (쓰는 자리의 부재는 정상 부재가 아니다)"
+store_seed s3; serve_as s3
+grep -v -- ":i2$(printf '\t')" "$TMP/images" > "$TMP/i.n"; mv "$TMP/i.n" "$TMP/images"
+if alias_fresh "$(serving_release_tag)" >/dev/null 2>&1; then ck P24 "RED" "GREEN"; else ck P24 "RED" "RED"; fi
+
+echo "── P25 서빙 컨테이너를 못 읽으면 **태그를 지어내지 않는다** (기본값으로 떨어지지 않는다)"
+store_seed s4   # container/ 행 없음
+if serving_release_tag >/dev/null 2>&1; then ck P25 "실패" "성공"; else ck P25 "실패" "실패"; fi
+echo "── P25b 서빙이 **별칭**(:i2)을 물고 있으면 그것도 「모른다」다 — 별칭은 신원이 아니다"
+serve_as i2
+if serving_release_tag >/dev/null 2>&1; then ck P25b "실패" "성공"; else ck P25b "실패" "실패"; fi
+
+echo "── P26 rollback.sh 가 되돌린 뒤 :i2 를 **재부착하고**, 그 판정이 원장 green 보다 **앞**이다"
+N=$((N+1))
+RB="$HERE/../rollback.sh"
+RBSRC="$(grep -vE '^[[:space:]]*#' "$RB")"
+LA="$(printf '%s\n' "$RBSRC" | grep -n 'alias_reattach "\$TAG"' | head -1 | cut -d: -f1)"
+LG="$(printf '%s\n' "$RBSRC" | grep -n 'ledger_append rollback .*green "직전 green' | head -1 | cut -d: -f1)"
+if [ -z "$LA" ]; then
+  echo "  FAIL  [P26] rollback.sh 가 alias_reattach 를 부르지 않는다 — 되돌린 뒤 :i2 가 걷어낸 이미지를 가리킨다"; FAILED=$((FAILED+1))
+elif [ -z "$LG" ]; then
+  echo "  FAIL  [P26] rollback.sh 의 원장 green 줄을 찾지 못했다 — 순서를 판정할 수 없다"; FAILED=$((FAILED+1))
+elif [ "$LA" -ge "$LG" ]; then
+  echo "  FAIL  [P26] 재부착 판정이 원장 green 뒤에 있다 — green 을 적어 놓고 죽는 모양이다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P26] 재부착 호출 있음 · 원장 green 보다 앞($LA < $LG)"; fi
+
+echo "── P27 리허설(throwaway-stack.sh)이 :i2 신선도를 **잰다** (안 재고 띄우지 않는다)"
+N=$((N+1))
+TW="$HERE/../restore/throwaway-stack.sh"
+TWSRC="$(grep -vE '^[[:space:]]*#' "$TW")"
+if ! printf '%s\n' "$TWSRC" | grep -q 'alias_fresh'; then
+  echo "  FAIL  [P27] throwaway-stack.sh 가 alias_fresh 를 부르지 않는다 — 옛 이미지를 리허설할 수 있다"; FAILED=$((FAILED+1))
+elif ! printf '%s\n' "$TWSRC" | grep -q 'serving_release_tag'; then
+  echo "  FAIL  [P27] 서빙 태그를 실물에서 읽지 않는다 — 무엇과 대조하는지가 없다"; FAILED=$((FAILED+1))
+elif ! printf '%s\n' "$TWSRC" | grep -q 'skip_ack .*신선도'; then
+  echo "  FAIL  [P27] 명시 면제 경로에 건수가 남지 않는다 — 승인된 SKIP 이 아니다"; FAILED=$((FAILED+1))
+else
+  # 신선도 판정이 compose up **보다 앞**이어야 한다. 뒤면 이미 옛 것을 띄운 뒤다.
+  LF="$(printf '%s\n' "$TWSRC" | grep -n 'step_zero_fresh || exit 1' | head -1 | cut -d: -f1)"
+  LU="$(printf '%s\n' "$TWSRC" | grep -n 'compose -p "\$PROJ" -f "\$CF" up -d' | head -1 | cut -d: -f1)"
+  if [ -n "$LF" ] && [ -n "$LU" ] && [ "$LF" -lt "$LU" ]; then
+    echo "  PASS  [P27] 신선도 대조 있음 · 기동보다 앞($LF < $LU) · 면제는 건수를 남긴다"
+  else echo "  FAIL  [P27] 신선도 판정이 기동보다 앞이 아니다 (${LF:-없음} / ${LU:-없음})"; FAILED=$((FAILED+1)); fi
+fi
+
+echo "── P28 서빙 태그 대조 — 실제로 그 태그가 서빙 중이면 green (양성 대조군)"
+store_seed t1; serve_as t1
+if serving_tag_is t1 >/dev/null 2>&1; then ck P28 "GREEN" "GREEN"; else ck P28 "GREEN" "RED"; fi
+
+echo "── P29 **옛 태그가 서빙 중인데 되돌렸다고 말하면** red 다 (헬스는 이것을 묻지 않는다)"
+if serving_tag_is t2 >/dev/null 2>&1; then ck P29 "RED" "GREEN"; else ck P29 "RED" "RED"; fi
+
+echo "── P30 서빙을 못 읽으면 red 다 (모르는 것을 일치로 읽지 않는다)"
+store_seed t3   # container/ 행 없음
+if serving_tag_is t3 >/dev/null 2>&1; then ck P30 "RED" "GREEN"; else ck P30 "RED" "RED"; fi
+
+echo "── P31 rollback.sh 가 서빙 태그를 대조한다 · 그 판정이 원장 green 보다 앞이다"
+N=$((N+1))
+LS_="$(printf '%s\n' "$RBSRC" | grep -n 'serving_tag_is "\$TAG"' | head -1 | cut -d: -f1)"
+if [ -z "$LS_" ]; then
+  echo "  FAIL  [P31] rollback.sh 가 serving_tag_is 를 부르지 않는다 — 옛 이미지로 살아 있어도 GREEN 이 난다"; FAILED=$((FAILED+1))
+elif [ -n "$LG" ] && [ "$LS_" -ge "$LG" ]; then
+  echo "  FAIL  [P31] 서빙 태그 대조가 원장 green 뒤에 있다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P31] 서빙 태그 대조 있음 · 원장 green 보다 앞($LS_ < $LG)"; fi
 
 unset DOCKER_FAKE_STORE DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
 export EXISTING_TAGS="aaa"

@@ -128,18 +128,22 @@ ALIAS_TAGS=(prev i2)
 #   구운 뒤다. 대상 `:i2` 가 없는 것은 첫 배포에서 정상이지만 그건 `docker tag` 의 **결과**이지
 #   실패가 아니다. 반대로 **원본 `:$tag` 의 부재는 어떤 경우에도 정상이 아니다** — 굽지 않았거나
 #   이름을 잃은 것이고 둘 다 red 다. 그래서 부재와 실패를 원본/대상으로 가른다.
+# 이미지 신원 한 자리 — 「이름이 있다」가 아니라 **「그 이름이 무엇을 가리키는가」**를 낸다.
+# 재부착(사후 대조)과 신선도(사전 대조)가 **같은 잣대**를 쓴다. 두 벌을 두면 한쪽만 고쳐진다.
+alias_id() { docker image inspect -f '{{.Id}}' "$1" 2>/dev/null; }
+
 alias_reattach() { # $1=릴리스 태그 → 6종 전부 `:i2` 가 그 태그를 가리켜야 0
   local tag="${1:-}" n src dst want got rc=0 okn=0
   [ -n "$tag" ] || { log "별칭 재부착 RED — 릴리스 태그가 비었다. 무엇을 가리킬지 모르는 재부착은 red 다"; return 1; }
   for n in "${RELEASE_IMAGES[@]}"; do
     src="colab-v2/$n:$tag"; dst="colab-v2/$n:i2"
-    if ! want="$(docker image inspect -f '{{.Id}}' "$src" 2>/dev/null)"; then
+    if ! want="$(alias_id "$src")"; then
       log "  별칭 RED $n — 원본 $src 이 없다 (빌드 산출이 이름을 잃었다)"; rc=1; continue
     fi
     if ! docker tag "$src" "$dst"; then
       log "  별칭 RED $n — docker tag $src → $dst 가 실패했다"; rc=1; continue
     fi
-    if ! got="$(docker image inspect -f '{{.Id}}' "$dst" 2>/dev/null)"; then
+    if ! got="$(alias_id "$dst")"; then
       log "  별칭 RED $n — 붙인 뒤에도 $dst 이 조회되지 않는다"; rc=1; continue
     fi
     if [ "$got" != "$want" ]; then
@@ -152,6 +156,71 @@ alias_reattach() { # $1=릴리스 태그 → 6종 전부 `:i2` 가 그 태그를
   if [ "$okn" -eq 0 ]; then log "별칭 재부착 RED — 재부착에 성공한 것이 0건이다"; return 1; fi
   if [ "$rc" -ne 0 ]; then log "별칭 재부착 RED — ${#RELEASE_IMAGES[@]}종 중 ${okn}종만 $tag 를 가리킨다"; return 1; fi
   log "별칭 재부착 GREEN — ${okn}/${#RELEASE_IMAGES[@]}종의 :i2 가 $tag 를 가리킨다(이미지 ID 대조 완료)"
+  return 0
+}
+
+# ── 서빙 중인 릴리스 태그 — **원장이 아니라 실물에서 읽는다** ────────────────────────
+# 어느 태그가 「지금 것」인가를 원장 마지막 줄로 답하면, 그것은 **마지막으로 적은 값**이지
+# 최근에 잰 값이 아니다(`CLAUDE.md §0`). 실물은 살아 있는 컨테이너가 물고 있는 이미지 참조다.
+# `compose.i2.yml:149` 이 `colab-v2/core-api:${COLAB_RELEASE_TAG}` 이므로 그 컨테이너의
+# `.Config.Image` 태그 = 이번 릴리스 태그이고, 6종이 **같은 변수**로 뜨므로 하나로 대표한다.
+# `rollback.sh` 도 현재 태그(`CUR`)를 같은 자리에서 읽는다 — 잣대를 갈라 두지 않는다.
+# ⚠ **읽기 전용이다.** `docker inspect` 한 번뿐이고 운영 스택을 건드리지 않는다.
+serving_release_tag() { # → 서빙 태그를 찍고 0 / 못 읽으면 아무것도 안 찍고 1
+  local img t
+  img="$(docker inspect -f '{{index .Config.Image}}' "${COLAB_SERVING_CONTAINER:-colab_v2_staging_core_api}" 2>/dev/null)" || return 1
+  [ -n "$img" ] || return 1
+  case "$img" in colab-v2/core-api:*) ;; *) return 1 ;; esac
+  t="${img##*:}"
+  # 별칭이 서빙 중이면 「지금 것」을 답할 수 없다 — 별칭은 신원이 아니다. 모르면 모른다고 한다.
+  case "$t" in ''|i2|prev) return 1 ;; esac
+  printf '%s' "$t"
+}
+
+# 「되돌렸다」와 「되돌아갔다」를 가른다 — 서빙 중인 이미지 태그가 실제로 그 태그인가.
+# 헬스 6종은 이것을 묻지 않는다(`verify/verify-deploy.sh` 는 태그를 안 본다). 옛 이미지로
+# 떠 있어도 헬스는 200 을 낸다 — **죽은 쪽은 바로 보이고 살아 있는 쪽이 속인다**(`CLAUDE.md §6`).
+serving_tag_is() { # $1=기대 태그 → 서빙 중인 것이 그 태그면 0
+  local want="${1:-}" got
+  [ -n "$want" ] || { log "서빙 태그 대조 RED — 기대 태그가 비었다"; return 1; }
+  if ! got="$(serving_release_tag)"; then
+    log "서빙 태그 대조 RED — 지금 무엇이 서빙 중인지 읽지 못했다. 모르는 것을 일치로 읽지 않는다"; return 1
+  fi
+  if [ "$got" != "$want" ]; then
+    log "서빙 태그 대조 RED — 서빙 중인 것은 $got 인데 $want 로 갔다고 말한다"; return 1
+  fi
+  log "서빙 태그 대조 GREEN — 서빙 중인 이미지가 실제로 $want 다"
+  return 0
+}
+
+# ── 별칭 신선도 — **복원 리허설이 무엇을 리허설하는지 재는 자리** (`X-6` 형제②) ────────
+# `compose.throwaway.yml` 은 6종을 전부 `colab-v2/*:i2` 로 띄운다. 그 이름이 언제 것인지
+# 묻지 않으면 리허설은 **옛 이미지를 리허설하고 통과**를 낸다 — 재부착이 실패했거나
+# (`X-6` 본체), 되돌린 뒤 재부착이 없었을 때(형제①) 정확히 그 상태가 된다.
+#
+# ⭑ **신선도 = 「`:i2` 의 이미지 ID」와 「서빙 중인 릴리스 태그의 이미지 ID」의 일치.**
+#   태그 이름이나 생성 시각이 아니다 — 태그는 옮겨 붙고 시각은 재빌드로 흔들린다.
+#   `alias_reattach` 의 사후 대조와 **같은 잣대**(`alias_id`)를 쓴다.
+# ⚠ 여기서 `:i2` 의 부재는 **red 다.** 재부착 자리(⑫)와 달리 이 자리는 붙이는 자리가 아니라
+#   쓰는 자리이고, 없는 별칭으로는 리허설이 서지 않는다.
+alias_fresh() { # $1=기준(서빙) 릴리스 태그 → 6종 :i2 가 전부 그 태그와 같은 ID 여야 0. **붙이지 않는다.**
+  local tag="${1:-}" n want got rc=0 okn=0
+  [ -n "$tag" ] || { log "별칭 신선도 RED — 기준 릴리스 태그가 비었다. 무엇과 대조할지 모르는 신선도는 red 다"; return 1; }
+  for n in "${RELEASE_IMAGES[@]}"; do
+    if ! want="$(alias_id "colab-v2/$n:$tag")"; then
+      log "  신선도 RED $n — 기준 colab-v2/$n:$tag 이 없다 (서빙 중인 이미지가 호스트에 없다)"; rc=1; continue
+    fi
+    if ! got="$(alias_id "colab-v2/$n:i2")"; then
+      log "  신선도 RED $n — colab-v2/$n:i2 이 없다 (리허설이 띄울 이미지가 없다)"; rc=1; continue
+    fi
+    if [ "$got" != "$want" ]; then
+      log "  신선도 RED $n — :i2 가 ${got:7:12} 를 가리킨다 (서빙 $tag = ${want:7:12}). **옛 것을 리허설하게 된다**"; rc=1; continue
+    fi
+    okn=$((okn+1))
+  done
+  if [ "$okn" -eq 0 ]; then log "별칭 신선도 RED — 대조에 성공한 것이 0건이다 (대상 0건은 통과가 아니다)"; return 1; fi
+  if [ "$rc" -ne 0 ]; then log "별칭 신선도 RED — ${#RELEASE_IMAGES[@]}종 중 ${okn}종만 서빙 $tag 와 같다"; return 1; fi
+  log "별칭 신선도 GREEN — ${okn}/${#RELEASE_IMAGES[@]}종의 :i2 가 서빙 중인 $tag 와 같은 이미지다(ID 대조)"
   return 0
 }
 

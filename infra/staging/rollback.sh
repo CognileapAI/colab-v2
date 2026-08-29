@@ -21,12 +21,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/pipeline/lib.sh"
 ENV_FILE="${COLAB_STAGING_ENV:-$HOME/.colab-v2-staging.env}"
 
-MODE=""; WANT=""
+MODE=""; WANT=""; SKIP_ALIAS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --to-last-green)  MODE=lastgreen; shift ;;
     --to-tag)         MODE=tag; WANT="${2:-}"; shift 2 ;;
     --to-placeholder) MODE=placeholder; shift ;;
+    # ⭑ 별칭 재부착을 빼려면 **명시**해야 한다. 안 주면 검사한다(암묵 SKIP 은 없다).
+    --skip-alias-reattach) SKIP_ALIAS=1; shift ;;
     *) echo "알 수 없는 인자: $1" >&2; exit 2 ;;
   esac
 done
@@ -40,6 +42,7 @@ if [ -z "$MODE" ]; then
   --to-last-green      직전 green 릴리스로 (릴리스 원장에서 읽는다)
   --to-tag <태그>      지정 릴리스로
   --to-placeholder     제품 이전(자리표시 오리진)으로 — 이것은 N-1 이 아니라 0 이다
+  (선택) --skip-alias-reattach  되돌린 뒤 :i2 재부착을 **명시** 면제한다 (원장에 건수가 남는다)
 EOF
   exit 64
 fi
@@ -51,7 +54,9 @@ if [ "$MODE" = placeholder ]; then
   log "자리표시 오리진(compose.yml)으로 되돌린다 — **이것은 직전 릴리스가 아니라 제품 이전이다**"
   docker compose -f "$HERE/compose.yml" --env-file "$ENV_FILE" up -d --remove-orphans || die "자리표시 기동 실패"
   docker compose -f "$HERE/compose.yml" --env-file "$ENV_FILE" ps
-  ledger_append rollback "-" "placeholder" green "자리표시 오리진으로 되돌림(N-1 아님)"
+  # ⚠ 여기서는 `:i2` 를 재부착하지 **않는다.** 자리표시 오리진에는 `colab-v2/*` 릴리스 이미지가
+  #   없어 가리킬 대상 자체가 없다. 붙일 것이 없는 것이지 검사를 건너뛴 것이 아니다.
+  ledger_append rollback "-" "placeholder" green "자리표시 오리진으로 되돌림(N-1 아님) 별칭재부착없음(대상이미지없음)"
   exit 0
 fi
 
@@ -89,6 +94,37 @@ if [ "$VOK" -ne 1 ]; then
   mark_failed "롤백 판정" "태그 $TAG 로 되돌렸으나 헬스 6종이 green 이 아니다"
   exit 70
 fi
-ledger_append rollback "-" "$TAG" green "직전 green 릴리스로 되돌림 (직전 배포=$CUR)"
+# ── 되돌아갔는가 — **헬스는 태그를 묻지 않는다** ────────────────────────────
+# 위 판정은 「서빙이 산다」까지다. 옛 이미지로 살아 있어도 헬스 6종은 200 을 낸다.
+# 그래서 서빙 중인 이미지 태그를 실물에서 한 번 읽어 $TAG 와 대조한다(읽기 전용).
+if ! serving_tag_is "$TAG"; then
+  ledger_append rollback "-" "$TAG" red "헬스는 green 이나 서빙 중인 이미지가 $TAG 가 아니다"
+  mark_failed "롤백 서빙 태그" "되돌렸다고 말했으나 서빙 중인 이미지가 $TAG 가 아니다"
+  exit 70
+fi
+
+# ── 별칭 :i2 재부착 — **되돌리기에도 붙인다** (`X-6` 형제① · green-by-skip 재발 방지) ──
+# 종전 이 자리에는 아무것도 없었다. `deploy.sh` ⑫ 만 `:i2` 를 옮기므로, 되돌린 뒤에도
+# `:i2` 는 **방금 걷어낸(새) 이미지를 계속 가리킨다.** 복원 리허설(`compose.throwaway.yml`)이
+# 그 이름으로 이미지를 찾으므로 **되돌린 뒤 리허설하면 되돌리기 전 이미지를 리허설한다** —
+# 배포 쪽에서 막은 것과 같은 무늬가 되돌리기 쪽에서 재현되는 자리다.
+#
+# 세 상태다 — 요구되면 **검사한다**(붙인 뒤 이미지 ID 대조 · `alias_reattach` 를 그대로 재사용) /
+# `--skip-alias-reattach` 로 **명시** 면제하면 **건수를 드러낸 채** 넘어간다 / 아무 말도 없으면 **실패한다.**
+# 그리고 `deploy.sh` ⑫ 와 같은 순서다 — 판정이 **원장 green 보다 먼저** 난다.
+if [ "$SKIP_ALIAS" -eq 1 ]; then
+  ALIAS_NOTE="별칭재부착SKIP(${#RELEASE_IMAGES[@]}종)"
+  log "SKIP 승인됨: :i2 재부착 ${#RELEASE_IMAGES[@]}종 — 복원 리허설은 **되돌리기 전 이미지**를 볼 수 있다. 원장에 남는다"
+else
+  log "별칭 :i2 재부착 — 붙인 뒤 이미지 ID 로 대조한다(「붙였다」 ≠ 「가리킨다」)"
+  if ! alias_reattach "$TAG"; then
+    ledger_append rollback "-" "$TAG" red "롤백은 섰으나 :i2 재부착 실패"
+    mark_failed "롤백 별칭 재부착" ":i2 가 $TAG 를 가리키지 않는다 — 복원 리허설이 되돌리기 전 이미지를 리허설할 수 있다"
+    exit 70
+  fi
+  ALIAS_NOTE="별칭재부착GREEN"
+fi
+
+ledger_append rollback "-" "$TAG" green "직전 green 릴리스로 되돌림 (직전 배포=$CUR) $ALIAS_NOTE"
 echo "롤백 GREEN — 태그 $TAG"
 tail -n 1 "$(ledger_path)"
