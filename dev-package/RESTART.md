@@ -34,9 +34,20 @@ docker ps
 ### ② staging 8개 올리기
 
 ```
-COLAB_RELEASE_TAG=<현재 서빙 릴리스 태그> \
+# 태그는 손으로 적지 않는다 — **원장의 마지막 green `deploy` 행**에서 읽는다.
+COLAB_RELEASE_TAG="$(awk -F'\t' '$2=="deploy" && $5=="green" {t=$4} END{if(t=="")exit 1; print t}' \
+  ~/colab-v2-releases/release-ledger.tsv)" \
 docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d
 ```
+
+> **이 한 줄을 쓰는 이유 = 태그를 문서에 박으면 다음 배포마다 낡기 때문이다.**
+> 원장(`~/colab-v2-releases/release-ledger.tsv`)은 `deploy.sh` 가 배포마다 append 하므로 **문서보다 늦게 낡지 않는다.**
+> 형식 = 탭 6칸(`시각·종류·SHA·태그·판정·비고` — `infra/staging/pipeline/lib.sh`). `awk` 는 `deploy`＋`green` 행의 **태그 칸**만 읽는다.
+> **원장에 green 행이 없으면** `awk` 가 1 을 반환하고 변수가 빈 채로 남는데, 그러면 `compose.i2.yml` 의 `${COLAB_RELEASE_TAG:?}` 가 거부한다 —
+> 즉 **뜨지 않는다.** 기본값·별칭으로 조용히 떨어지는 경로가 없다(2026-08-29 확인 = 빈 값에서 compose 거부).
+> ／ 2026-08-29 실측 = 이 한 줄의 출력 `30b3e0a7b3f3` · `LAST-SUCCESS.txt` 의 태그와 같다 · 그 태그로 이미지 6종 전부 존재.
+> ／ **막히면** 아래를 그대로 쳐도 된다(**이 값은 2026-08-29 시점이고 다음 배포 뒤에는 낡는다**):
+> `COLAB_RELEASE_TAG=30b3e0a7b3f3 docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d`
 
 > ⭑ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈185〉-㉹`⟩ `COLAB_RELEASE_TAG` 를 반드시 앞에 붙인다.**
 > `I3` 첫 실배포 이후 `compose.i2.yml` 의 앱 6종이 이미지를 `${COLAB_RELEASE_TAG:?}` 로 요구한다.
@@ -49,11 +60,38 @@ docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.en
 > **옛 이미지가 뜨고도 정상으로 보일 수 있다.** 릴리스 태그를 명시한다.
 > ／ 이전 ~~`docker compose -f infra/staging/compose.i2.yml --env-file ~/.colab-v2-staging.env up -d`~~ (**낡았다**)
 
+> ⛔ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈186〉`⟩ `COLAB_RELEASE_TAG=prev` 로 띄우지 마라 — 스키마 정합이 보장되지 않는다.**
+> `:prev` 는 **원장에 없는 수동 빌드본**(2026-08-27)이다(`§9 〈185〉-㉷`-⑵). 현행 릴리스 `30b3e0a7b3f3` 의 migrator 가
+> 스키마를 이미 앞으로 옮겼고, 마이그레이션은 **forward-only** 라 되돌리지 않는다(`〈168〉-㉲`).
+> 즉 `:prev` 로 띄우면 **구코드 ↔ 신스키마** 로 붙는다 — 그 조합이 맞는다는 증거가 없다.
+> **되돌릴 세대는 실질 2세대가 아니라 1세대다** — 릴리스 태그와 별칭 `i2` 는 **같은 이미지**를 가리키고,
+> 나머지 하나(`:prev`)가 위의 정합 미보장본이다. 낙관적으로 세지 않는다.
+
 > **`-f compose.i2.yml` 을 반드시 붙인다.**
 > 빼면 기본값 `compose.yml` 이 뜨는데 그건 **I2 이전의 자리표시 오리진(nginx·cloudflared 2개)** 이다.
 > 즉 되살리는 명령이 아니라 **`rollback.sh` 와 같은 일**을 한다. 그러고도 루트 헬스는 200 이라 알아채기 어렵다.
 
 **데이터가 살아 있으므로 `deploy.sh` 를 다시 돌릴 필요가 없다.** `deploy.sh` 는 빌드·마이그레이션까지 다시 하는 배포 명령이지 복구 명령이 아니다. 코드가 바뀐 게 없다면 쓰지 않는다.
+
+### ②-0 이미지가 없으면 — **소스에서 다시 굽는 정식 경로는 `deploy.sh` 하나다** ⟨신설 2026-08-29 · `PLAN-SoT §9 〈186〉`⟩
+
+위 `up` 이 `No such image` 로 죽으면 그 릴리스의 이미지가 호스트에 없다는 뜻이다.
+**여기서 `docker build` 를 손으로 치지 않는다.** 태그가 커밋 SHA 인데 굽는 내용이 그 커밋이 아니면 **태그가 거짓말을 하고**,
+그건 `deploy.sh` 가 막으려고 만들어진 결함 그대로다(DR-4 · `deploy.sh` 머리 주석).
+
+```
+git -C <레포> status --porcelain        # 변경 0건이어야 한다 — 아니면 먼저 정리한다
+infra/staging/pipeline/approval/approve.sh Ted "<무엇을 눈으로 봤는가>"
+infra/staging/deploy.sh --target staging
+```
+
+- **`deploy.sh` 는 복구 명령이 아니라 배포 명령이다** — 게이트·태그보존·빌드·**배포 전 백업**·마이그레이션·판정을 전부 다시 친다.
+  데이터는 살아 있으므로 **이미지가 있는 한 이 경로를 쓰지 않는다**(위 `②`).
+- **새 태그가 생긴다.** 되살리는 것이 아니라 **지금 커밋을 새 릴리스로 굽는 것**이다. 원장에 green `deploy` 행이 하나 더 붙고,
+  그 다음부터는 위 `awk` 한 줄이 그 태그를 읽는다.
+- **`--allow-dirty`·`--skip-backup` 을 재기동 상황에서 쓰지 않는다.** 둘 다 「무엇을 굽는지/무엇을 지켰는지 모른다」를 원장에 남긴다.
+- 되돌리기는 `rollback.sh` 이고 **이미지만 되돌린다 — 스키마는 되돌리지 않는다.**
+  ⚠ 2026-08-29 현재 **스크립트 롤백 경로가 없다**(성공 릴리스 1건 · `03-HANDOFF §4 #43`).
 
 ### ②-1 시크릿은 어디에 사는가 — **이름과 위치만 적는다. 값은 절대 적지 않는다**
 
