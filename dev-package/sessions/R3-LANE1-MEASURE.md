@@ -123,6 +123,21 @@ F12-c(대조군 · 통과 1건 → GREEN). **추가 직후 셋 다 기대와 반
 
 ---
 
+## 4-b. 게이트 실측 (`./gates/run.sh all -j 2` · 2026-08-30)
+
+**green 25 / red 2.** 기준선은 green 26 / red 1(`schema-diff` 단독)이었다.
+
+| 게이트 | -j 2 | 단독 재측 | 사유 |
+|---|---|---|---|
+| `schema-diff` | **green** | green | 이 회차에 적용 DB 를 대 놓았다(§1). 기준선의 red 가 닫혔다 |
+| `db-selftest` | **red** | **green** | 병렬에서만 뒤집혔다. `gates/README.md` 는 이 게이트를 **병렬로 돌리지 않는다**고 적고 있다(e2e 묶음이 한 적용 DB 를 순서대로 훼손해 가며 본다). 판정부가 아니라 배선에서 난 red 로 보이나, **-j 2 에서 실제로 red 였다는 사실은 지우지 않는다** |
+| `stage2-markers` | **red** | **red** | `services/pipeline-worker/.venv` 가 이 워크트리에 없다. **환경 부재이므로 검사를 못 돈 것이고, 못 돈 것은 통과가 아니다.** 푸는 방법 = `services/pipeline-worker` 에 venv 를 만들고 `requirements.txt` 를 설치한다 |
+
+⚠ 기준선 표기(`red 1 = schema-diff 만`)와 어긋난 자리가 둘이다. 둘 다 **코드 변경이 만든 것이 아니다** —
+이번 회차의 변경은 `infra/staging/backup/**` 뿐이고 게이트 대상에 들어가지 않는다.
+
+---
+
 ## 5. 이번에 세지 않은 판단기준 (다음 회차 진입조건)
 
 - staging 실물 적용 스키마 ↔ 선언 스키마 대조 — 마지막 실측 2026-08-27. 이번 회차는 재지 않았다.
