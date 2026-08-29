@@ -159,6 +159,9 @@ git log --oneline -10
 - **완결이 곧 접수다** — `completeUploadTransfer` 전에는 `d5_upload` 도 `upload.accepted` 도 없다
 - 만료 전송 정리는 **원장이 아는 것만** 지운다. 버킷 루트 스캔 금지 — 시드 lab_id 가 겹치는
   버킷에서 남의 데이터를 지운다. 최후 백스톱은 라이프사이클 abort-7d
-- 폴더 업로드의 경로는 저장 키가 아니라 원장 메타(`relative_path`)다 — 키 규약(생성물)은 불변
+- 폴더 업로드의 경로는 저장 키가 아니라 원장 메타(`relative_path`, d5→d3 승계)다 — 키 규약(생성물)은 불변
+- **다운로드는 302 가 아니라 200 티켓이다** — 브라우저 `<a href>` 는 Bearer 를 못 싣는다. 바이트 op
+  (`/downloads/{ticket}`)는 `security: []` 지만 티켓 클레임으로 `apply_scope` 를 심어 RLS 가 다시 판정한다.
+  `session_secret` 이 없으면 500 `DOWNLOAD_UNAVAILABLE`(`createSession` 과 같은 자리) — 조용한 폴백을 두지 않는다
 - AWS 검증은 콘솔 눈이 아니라 `services/core-api` 에서 `.venv/bin/python ops/s3_doctor.py` / `ops/s3_smoke.py`
 - 시크릿 키는 채팅·커밋에 절대 넣지 않는다
