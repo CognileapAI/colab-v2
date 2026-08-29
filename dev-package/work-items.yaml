@@ -259,7 +259,7 @@ items:
     deadline:
       condition: "① staging 에서 v2 전체가 충분히 동작하고 ② Ted 가 출시를 결정했을 때 연다"
       fired: false
-    note: "⏸ 인데 `WORK-UNITS §10` 「지금 착수 가능한 WU」 표에 행으로 실려 있다 — ㈑ 가 잡는 그 자리다. 상태를 바꿔 red 를 없애지 않는다. staging 은 IS1 이 대신한다."
+    note: "⭑ ⟨2026-08-29⟩ `WORK-UNITS §10` 「지금 착수 가능한 WU」 표에서 **행을 내렸다** — ㈑ red 해소. **상태는 `deferred` 그대로다**(⏸ 를 ⬜ 로 바꾸지 않았다 · `PLAN-SoT §9 〈187〉`-㉯). staging 은 IS1 이 대신한다. ／ 이전 ~~⏸ 인데 `WORK-UNITS §10` 표에 행으로 실려 있다 — ㈑ 가 잡는 그 자리다~~"
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10", "WORK-UNITS §11"]
 
   - id: IS1
@@ -316,7 +316,7 @@ items:
 
   - id: I1
     name: "토폴로지 + IaC (`plan` 까지)"
-    status: conflict
+    status: deferred
     stage: out_of_scope
     owner: "인프라"
     entry_conditions: ["I0 후"]
@@ -326,7 +326,7 @@ items:
     deadline:
       condition: "prod. `㊻` 로 보류 — 출시 결정 시 연다"
       fired: false
-    note: "`WORK-UNITS §11` 은 ⏸(보류) 로 적는데 같은 문서 `§4` T-I 표의 I1 행에는 ⏸ 글리프가 아예 없고(⏸ 는 I0·I5 에만 붙었다), `§9` 의존 그래프는 `I0 ── I1` 을 「착수 가능(전부 병렬)」 묶음에 그린다. `03-HANDOFF §1 T-I` 는 ⏸ 다. 한 문서 안에서 세 절이 갈렸다 — 어느 하나를 고르지 않는다."
+    note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉯⟩ **표기 정정으로 닫았다 — 실물이 명백하고 문서만 낡았다.** 진입조건이 `I0`(deferred)이므로 열려 있을 수 없고, `03-HANDOFF §1 T-I`·`WORK-UNITS §11` 이 이미 ⏸ 였다. 고친 것 둘 = `§4` T-I 표 I1 행에 ⏸ 를 붙였다 · `§9` 그래프의 `I0 ── I1` 을 착수 가능 묶음에서 **prod 보류 묶음**으로 옮겼다. staging 은 IS1 이 대신해 막힌 트랙은 없다. ／ 이전 ~~`WORK-UNITS §11` 은 ⏸ 로 적는데 `§4` T-I 표에는 글리프가 없고 `§9` 그래프는 착수 가능 묶음에 그린다 — 어느 하나를 고르지 않는다~~"
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §9", "WORK-UNITS §11"]
 
   - id: I2
@@ -632,15 +632,15 @@ items:
 
   - id: X-2
     name: 계약 동결 해제 프로토콜 명문화
-    status: conflict
+    status: done
     stage: stage2
     owner: "계약"
     entry_conditions: []
     depends_on: []
     completion_def: "해제 조건·절차를 문서로 못 박는다"
-    evidence: null
+    evidence: "확정 문서 `sessions/X2-FREEZE-PROTOCOL.md`(첫 줄 「확정 · 2026-08-27」 · §5 3등급 효력 · 해제 횟수 상한 폐기) · 판정 `PLAN-SoT §9 〈163〉`"
     deadline: null
-    note: "`03-HANDOFF §1 T-X` 는 ✅(`〈163〉` 으로 확정 · 3등급제 발효)로 적는다. 그런데 `WORK-UNITS §10.1` 안에서 자기모순이다 — X-2 가 표에 열린 행으로 그대로 인쇄돼 있는데, 표 바로 아래 문장이 「X-2 도 `〈163〉` 으로 닫혔다 … 남은 것은 X-1·X-4 둘이다」라고 적는다(X-3 는 표에서 내렸는데 X-2 는 내리지 않았다). 확정 문서 파일명도 `X2-FREEZE-PROTOCOL-DRAFT.md` 로 `-DRAFT` 다. 어느 하나를 고르지 않는다."
+    note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉯⟩ **표기 정정으로 닫았다.** 고친 것 둘 = `WORK-UNITS §10.1` 표에서 X-2 행을 내렸다(표 바로 아래 문장이 이미 「닫혔다」고 적고 있었다) · 파일명 `X2-FREEZE-PROTOCOL-DRAFT.md` → `X2-FREEZE-PROTOCOL.md`(참조 전수 갱신). ／ 이전 `03-HANDOFF §1 T-X` 는 ✅(`〈163〉` 으로 확정 · 3등급제 발효)로 적는다. 그런데 `WORK-UNITS §10.1` 안에서 자기모순이다 — X-2 가 표에 열린 행으로 그대로 인쇄돼 있는데, 표 바로 아래 문장이 「X-2 도 `〈163〉` 으로 닫혔다 … 남은 것은 X-1·X-4 둘이다」라고 적는다(X-3 는 표에서 내렸는데 X-2 는 내리지 않았다). 확정 문서 파일명도 `X2-FREEZE-PROTOCOL.md` 로 `-DRAFT` 다. 어느 하나를 고르지 않는다."
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.1", "WORK-UNITS §10.3"]
 
   - id: X-3
@@ -705,9 +705,9 @@ items:
     completion_def: "정본 = `WORK-UNITS §10.2` (완료 정의 12행 · 초안 `sessions/R1-RESTORE-DRAFT.md`) ＋ 볼륨 백업 절차 ＋ `install-schedule.sh install` 재실행"
     evidence: "크론 첫 회차를 실측했다 (`§9 〈174〉-㉮`). **2026-08-28 03:30 회차는 GREEN 이지만 오라클이 아니다** — 돌린 것이 `backup.sh`(원장 전용)이고 `backup-full.sh` 가 아니다. 근거 셋 = 로그에 `backup-full.sh` 표지인 `═══ 1단` **0회** · `LAST-SUCCESS.txt` 가 08-24~08-28 **다섯 회차 전부 `backup.sh OK`** · 그 시각 보관처에 `vol-*` 산출물 없음. 원인 = crontab 대상 교체(`〈173〉-㉰`)가 그 회차 **뒤에** 이뤄졌다. ⚠ 매일 GREEN 이 쌓여 전범위가 도는 것처럼 읽히는 **green-by-skip 모양**이다."
     deadline:
-      condition: "`backup-full.sh` 의 크론 무인 회차가 아직 0 회다 — 첫 회차는 2026-08-29 03:30. 손으로 돌린 GREEN 은 기구가 아니다"
-      fired: false
-    note: "`03-HANDOFF §1 T-X` 는 상태 칸에 🟧 를 적으면서 같은 칸 본문에 ⛔ 글리프를 함께 쓴다. `WORK-UNITS §10.2` 는 ⛔(「그래도 R-1 은 열려 있다」가 두 번 반복)로, 같은 문서 `§10.3` 은 「기구 ✅ · 유인 1회 GREEN ✅ · 크론 첫 회차 로그 대기」로 적는다. 완료 정의 12행은 전건 ✅ 인데 남은 넷(크론 첫 회차 로그 · `POST /searches` 1회 · `preflight` 성질 판정 · `:i2` 태그 이력)이 있다. 어느 하나를 고르지 않는다. ⭑ **2026-08-28 — 넷 중 첫째를 실측했고, 닫히지 않았다**(`evidence` 필드). 실측이 갈라짐을 없애지는 않는다 — `§10.2` 는 여전히 ⛔ 이고 `§10.3` 은 진행 표기다. **`status: conflict` 를 그대로 둔다.** 남은 셋(`POST /searches` · `preflight` 성질 · `:i2` 이력)은 미실측이다."
+      condition: "⭑ ⟨개정 2026-08-29⟩ **첫 무인 회차가 돌았다** — `2026-08-29T03:30:41+0900 backup-full.sh OK`(`LAST-SUCCESS.txt` 마지막 줄) · 볼륨 산출물 `vol-uploads`·`vol-previews` 실재. ／ 이전 `backup-full.sh` 의 크론 무인 회차가 아직 0 회다 — 첫 회차는 2026-08-29 03:30. 손으로 돌린 GREEN 은 기구가 아니다"
+      fired: true
+    note: "`03-HANDOFF §1 T-X` 는 상태 칸에 🟧 를 적으면서 같은 칸 본문에 ⛔ 글리프를 함께 쓴다. `WORK-UNITS §10.2` 는 ⛔(「그래도 R-1 은 열려 있다」가 두 번 반복)로, 같은 문서 `§10.3` 은 「기구 ✅ · 유인 1회 GREEN ✅ · 크론 첫 회차 로그 대기」로 적는다. 완료 정의 12행은 전건 ✅ 인데 남은 넷(크론 첫 회차 로그 · `POST /searches` 1회 · `preflight` 성질 판정 · `:i2` 태그 이력)이 있다. 어느 하나를 고르지 않는다. ⭑ **2026-08-28 — 넷 중 첫째를 실측했고, 닫히지 않았다**(`evidence` 필드). 실측이 갈라짐을 없애지는 않는다 — `§10.2` 는 여전히 ⛔ 이고 `§10.3` 은 진행 표기다. **`status: conflict` 를 그대로 둔다.** 남은 셋(`POST /searches` · `preflight` 성질 · `:i2` 이력)은 미실측이다. ⭑ **⟨개정 2026-08-29 · `PLAN-SoT §9 〈187〉`-㉮⟩ 잔여 넷 중 첫째가 닫혔다** — `backup-full.sh` 의 크론 무인 첫 회차 **2026-08-29 03:30 GREEN** 실측. 그 전까지는 원장 전용 백업만 돌면서 GREEN 이 찍히던 green-by-skip 자리였다. **`R-1` 항목 자체는 닫지 않는다 — 남은 셋은 여전히 미측정 `[미확인]` 이고 `status: conflict` 를 유지한다.**"
     sources: ["03-HANDOFF §1 T-X", "WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: T-1
@@ -777,7 +777,7 @@ items:
 
   - id: J-1
     name: 편의 기능 묶음
-    status: conflict
+    status: open
     stage: stage2
     owner: "혼합"
     entry_conditions: ["stage 2 마지막(`〈157〉-㉱`)"]
@@ -785,7 +785,7 @@ items:
     completion_def: 완료 정의 미작성
     evidence: null
     deadline: null
-    note: "`WORK-UNITS §10.2` 표는 「§J 10건」으로 적고, 같은 절의 Y-1 행은 「`§J-7` 에서 적출된 항목이다 — 편의 묶음 J-1 은 이제 9건이다」라고 적고, `§10.3` 은 「J-1 편의 묶음(9건)」이라 적는다. 표만 갱신에서 빠졌다. `03-HANDOFF §1` 에는 행이 없다. 어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다."
+    note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉰⟩ **유효 9건으로 맞췄고, 세는 기준을 함께 적었다.** 「10」도 「9」도 오기가 아니다 — **세는 기준이 달랐다**: 행 수 10(취소선 원문 보존 포함) 대 유효 항목 9(`J-1`~`J-6`·`J-8`~`J-10`). `J-7`(자동 무효화)이 `Y-1` 로 **적출돼 나갔고**(2026-08-27 · `〈167〉-㉳`) `WORK-UNITS §10.2` 표만 갱신에서 빠져 있었다. 세는 자리 = `sessions/S1-PLAN-REFOUND.md §J` · 시점 2026-08-29. ／ 이전 ~~어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다~~"
     sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: Y-1
@@ -881,7 +881,7 @@ items:
 
   - id: P6
     name: 승인 처리
-    status: conflict
+    status: open
     stage: stage2
     owner: "D2 / core-api ＋ frontend"
     entry_conditions: ["P1~P5"]
@@ -889,7 +889,7 @@ items:
     completion_def: "「각 P 의 완료 판정」 4항 — 수용 기준 · 도메인 게이트 green · staging 배포 green · 목업 대비 화면 검증"
     evidence: null
     deadline: null
-    note: "`WORK-UNITS §10.2-b` 는 「✅ 판정됨(2026-08-27 Ted · `〈168〉-㉵`) = I4 는 P6 의 시작을 막지 않는다 · 진입조건 정본은 `§7` 의 P6 행 하나다」라고 적는데, 같은 문서 `§10.3` 말미 경고문은 여전히 「둘 중 어느 쪽이 값인지 미판정이므로 … 판정이 나면 이 줄과 `§9` 그래프를 함께 고친다」로 남아 있고 `§9` 그래프도 `I4 ── P6` 사슬 그대로다. `03-HANDOFF §1 T-P` 는 ⬜ 이면서 「`I4` 를 전제로 걸지 않았다 — 근거가 `§9` 그래프뿐이다」라고 적는다. 어느 하나를 고르지 않는다."
+    note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉱⟩ **판정은 2026-08-27 에 이미 끝났고(`〈168〉-㉵`) 그래프·경고문만 안 따라갔던 것이다.** 고친 것 둘 = `§10.3` 말미 「미판정」 경고문을 삭제하고 판정 완료 한 줄로 대체 · `§9` 그래프의 `I2 ── I3 ── I4 ── P6 ─ P7 ─ P8 ── I5(prod)` 사슬을 `I2 ── I3 ── I4 ── I5(prod)`(인프라 진행 순서)와 `S3 ── P6 ─ P7 ─ P8`(WU 의존)으로 **갈랐다**. **진입조건 정본 = `§7` 의 P6 행 하나(`P1`~`P5`)** — `I4` 는 P6 의 시작을 막지 않는다. ／ 이전 ~~같은 문서 `§10.3` 말미 경고문은 여전히 「둘 중 어느 쪽이 값인지 미판정」으로 남아 있고 `§9` 그래프도 `I4 ── P6` 사슬 그대로다 — 어느 하나를 고르지 않는다~~"
     sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §9", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "WORK-UNITS §11"]
 
   - id: P7
