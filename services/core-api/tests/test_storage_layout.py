@@ -189,3 +189,45 @@ def test_후주입_격자는_데이터셋_grid_아래로_온다(p2_client, tmp_p
     assert (target / "grid" / "LON_HSR.npy").is_file(), \
         "후주입 격자가 데이터셋의 grid/ 아래로 오지 않았다 — 렌더러가 짝을 못 본다."
     assert len([p for p in target.iterdir() if p.is_file()]) == 1, "본체 자리에 격자가 섞였다."
+
+
+# ── 미리보기 산출물의 자리 ──────────────────────────────────────────────────
+# **세 단위가 같은 답을 내야 한다** — 아래 기대값은 세 시험 파일에 **같은 문자열**로
+# 박혀 있고(core-api·pipeline-worker·viz-render), 하나라도 갈리면 그 단위가 틀린 것이다.
+# 자리가 없으면 이미 구운 그림을 못 찾아 매번 다시 굽는다 — 그래서 자리를 규약에 둔다.
+
+_PREVIEW_CONTENT_KEY = "0123456789abcdef" * 4      # sha256 자리끼움 (64자)
+_PREVIEW_EXPECTED = _PREVIEW_CONTENT_KEY + ".png"  # 세 단위 공통 오라클
+
+
+def test_preview_key_is_content_addressed_and_stable():
+    """ⓐ **같은 입력이면 같은 키** — 재사용이 성립하는 근거다."""
+    first = storage_layout.preview_key(_PREVIEW_CONTENT_KEY, ".png")
+    second = storage_layout.preview_key(_PREVIEW_CONTENT_KEY, ".png")
+    assert first == second == _PREVIEW_EXPECTED
+    assert storage_layout.preview_key(_PREVIEW_CONTENT_KEY, ".webp").endswith(".webp")
+    assert storage_layout.KEY_TEMPLATES[storage_layout.PREVIEW_KIND] == "{contentKey}{extension}"
+
+
+def test_preview_root_is_not_the_uploads_root():
+    """ⓑⓒ **원본과 갈린다** — 루트가 다르고, 그 루트가 실물 볼륨 둘과 어긋나지 않는다."""
+    assert storage_layout.ROOTS[storage_layout.PREVIEW_KIND] == storage_layout.PREVIEW_ROOT
+    assert storage_layout.ROOTS[storage_layout.BODY_KIND] == storage_layout.UPLOAD_ROOT
+    assert storage_layout.ROOTS[storage_layout.GRID_KIND] == storage_layout.UPLOAD_ROOT
+    assert storage_layout.PREVIEW_ROOT != storage_layout.UPLOAD_ROOT
+    # 접수분 루트 아래로 새어 들어가지 않는다 — 백업·복원·삭제가 둘을 갈라야 한다.
+    assert storage_layout.UPLOADS_PREFIX not in _PREVIEW_EXPECTED
+
+
+def test_storage_key_refuses_preview_kind(tmp_path):
+    """산출물을 접수분 배치 함수로 부르면 **거절**한다 — 조용히 섞이지 않는다."""
+    import pytest as _pytest
+
+    with _pytest.raises(ValueError):
+        storage_layout.storage_key("T1", file_id="F1",
+                                   kind=storage_layout.PREVIEW_KIND)
+    body = storage_layout.storage_key("T1", file_id="F1",
+                                      kind=storage_layout.BODY_KIND)
+    assert body != _PREVIEW_EXPECTED
+    got = storage_layout.preview_path(tmp_path, _PREVIEW_CONTENT_KEY, ".png")
+    assert got == tmp_path / _PREVIEW_EXPECTED

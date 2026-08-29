@@ -29,11 +29,17 @@ TEMPLATE = '''"""접수한 바이트가 어디에 놓이는가 — **세 단위�
 배치
 {layout_doc}
 
+**루트가 둘이다** — 접수분(원본)과 미리보기 산출물은 **다른 저장 루트**에 산다.
+{previews_root_doc}
+
 **`targetId` 가 무엇인가**
 {target_id_doc}
 
 **왜 격자만 이름을 보존하는가**
 {grid_why}
+
+**왜 미리보기 산출물이 규약에 있는가**
+{preview_why}
 """
 from __future__ import annotations
 
@@ -45,11 +51,24 @@ UPLOADS_PREFIX = {uploads_prefix!r}
 #: 기준 격자 파일이 사는 하위 디렉터리 이름.
 GRID_DIRNAME = {grid_dirname!r}
 
-#: 파일 종류(`common.json#FileKind`) → 저장 키 템플릿. **여기가 배치의 정본이다.**
+#: 종류 → 저장 키 템플릿. **여기가 배치의 정본이다.**
+#: ⚠ 앞의 둘만 `common.json#FileKind` 이자 `d3_file.kind` CHECK 의 값이다.
+#: **미리보기 산출물은 원장에 행이 없다** — 사용자가 올린 파일이 아니라 다시 만들 수 있는
+#: 산출물이라 `FileKind` 를 넓히지 않고 CHECK 도 건드리지 않는다(마이그레이션 0).
 KEY_TEMPLATES = {key_templates}
 
 BODY_KIND = {body_kind!r}
 GRID_KIND = {grid_kind!r}
+PREVIEW_KIND = {preview_kind!r}
+
+#: 저장 루트의 이름 — **둘이다.** 실물도 볼륨 둘로 갈려 있고(`uploads`·`previews`),
+#: 백업이 둘을 따로 뜬다. 규약이 실물을 따라간다.
+UPLOAD_ROOT = {upload_root!r}
+PREVIEW_ROOT = {preview_root!r}
+
+#: 종류 → 그 종류가 사는 루트. **원본과 산출물을 가르는 자리**다 —
+#: 원본은 사용자 것이고 산출물은 다시 만들 수 있다. 섞이면 백업·복원·삭제가 둘을 못 가른다.
+ROOTS = {roots}
 
 
 class UnsafeFileName(ValueError):
@@ -79,11 +98,42 @@ def storage_key(target_id: str, *, file_id: str, kind: str,
     template = KEY_TEMPLATES.get(kind)
     if template is None:
         raise ValueError(f"모르는 파일 종류다: {{kind!r}} — 배치를 지어내지 않는다")
+    if ROOTS[kind] != UPLOAD_ROOT:
+        # **루트가 다른 것을 이 함수로 부르지 않는다.** 조용히 접수분 루트 아래로
+        # 새어 들어가면 백업·복원·삭제가 원본과 산출물을 못 가른다 — `preview_key()` 를 쓴다.
+        raise ValueError(
+            f"{{kind!r}} 은 접수분 루트에 놓이지 않는다 (루트 {{ROOTS[kind]!r}}) — preview_key() 를 쓴다")
     name = "" if file_name is None else safe_file_name(file_name)
     if is_grid(kind) and not name:
         raise ValueError("기준 격자 파일은 이름이 있어야 자리가 정해진다 (짝짓기·확장자)")
     return template.format(uploadsPrefix=UPLOADS_PREFIX, gridDirname=GRID_DIRNAME,
                            targetId=target_id, fileId=file_id, fileName=name)
+
+
+def preview_key(content_key: str, extension: str) -> str:
+    """미리보기 산출물 하나의 자리. **내용 주소**라 같은 입력이면 같은 키다.
+
+    `content_key` 는 렌더 파라미터 전부를 접은 다이제스트다(viz-render
+    `d7_visualization/cache.py` `render_cache_key`). 그래서 **이미 구운 것이 있으면
+    같은 키가 나와 찾아 쓰고**, 입력이 하나라도 바뀌면 키가 갈려 무효화가 저절로 된다.
+    여기서 다이제스트를 만들지 않는다 — 만드는 자리는 하나여야 한다.
+
+    돌려주는 것은 **미리보기 루트 기준** 상대 키다. 접수분 루트가 아니다.
+    """
+    key = str(content_key).strip()
+    if not key or "/" in key or "\\\\" in key or key in (".", ".."):
+        raise ValueError(f"미리보기 산출물의 내용 키로 쓸 수 없다: {{content_key!r}}")
+    ext = str(extension)
+    if ext and not ext.startswith("."):
+        raise ValueError(f"확장자는 점으로 시작한다: {{extension!r}}")
+    if "/" in ext:
+        raise ValueError(f"확장자에 경로 구분자를 넣지 않는다: {{extension!r}}")
+    return KEY_TEMPLATES[PREVIEW_KIND].format(contentKey=key, extension=ext)
+
+
+def preview_path(previews_root, content_key: str, extension: str) -> Path:
+    """`previews_root` 는 **접수분 루트가 아니다** — 배포가 주는 별도 볼륨의 자리다."""
+    return Path(previews_root) / preview_key(content_key, extension)
 
 
 def storage_path(root, target_id: str, *, file_id: str, kind: str,
@@ -114,8 +164,17 @@ def grid_dir(root, target_id: str) -> Path:
 def render() -> str:
     spec = json.loads(SOURCE.read_text(encoding="utf-8"))
     keys: dict[str, str] = spec["keys"]
-    body_kind, grid_kind = list(keys)[0], list(keys)[1]
-    layout_doc = "\n".join(f"  · {kind} — `{{root}}/{tpl}`" for kind, tpl in keys.items())
+    roots: dict[str, str] = spec["roots"]
+    upload_root = roots["본체"]
+    preview_root = next(r for r in roots.values() if r != upload_root)
+    upload_kinds = [k for k in keys if roots[k] == upload_root]
+    preview_kinds = [k for k in keys if roots[k] == preview_root]
+    if len(upload_kinds) != 2 or len(preview_kinds) != 1:
+        raise SystemExit(f"루트별 종류 수가 규약과 다르다: {upload_kinds} / {preview_kinds}")
+    body_kind, grid_kind = upload_kinds
+    preview_kind = preview_kinds[0]
+    layout_doc = "\n".join(
+        f"  · {kind} — `{{{roots[kind]} 루트}}/{tpl}`" for kind, tpl in keys.items())
     layout_doc = (layout_doc
                   .replace("{uploadsPrefix}", spec["uploadsPrefix"])
                   .replace("{gridDirname}", spec["gridDirname"]))
@@ -123,12 +182,18 @@ def render() -> str:
     rendered = TEMPLATE.format(
         layout_doc=layout_doc,
         target_id_doc="  " + spec["targetId"],
+        previews_root_doc="  " + spec["previewsRoot"],
         grid_why=grid_why,
+        preview_why="  " + spec["why"][preview_kind],
         uploads_prefix=spec["uploadsPrefix"],
         grid_dirname=spec["gridDirname"],
         key_templates="{\n" + "".join(f"    {k!r}: {v!r},\n" for k, v in keys.items()) + "}",
+        roots="{\n" + "".join(f"    {k!r}: {v!r},\n" for k, v in roots.items()) + "}",
         body_kind=body_kind,
         grid_kind=grid_kind,
+        preview_kind=preview_kind,
+        upload_root=upload_root,
+        preview_root=preview_root,
     )
     # **자기 검증** — 템플릿이 정본이 아니게 되면 생성 자체가 실패해야 한다.
     ns: dict = {}
@@ -143,6 +208,19 @@ def render() -> str:
                                          targetId="T1", fileId="F1", fileName="LAT_x.npy")
     assert sample_body == expect_body, (sample_body, expect_body)
     assert sample_grid == expect_grid, (sample_grid, expect_grid)
+    # 미리보기 — ⓐ같은 입력이면 같은 키 ⓑ원본 키와 갈린다 ⓒ접수분 루트를 안 탄다
+    digest = "0" * 64
+    sample_preview = ns["preview_key"](digest, ".png")
+    assert sample_preview == ns["preview_key"](digest, ".png"), sample_preview
+    assert sample_preview == keys[preview_kind].format(contentKey=digest, extension=".png")
+    assert not sample_preview.startswith(spec["uploadsPrefix"]), sample_preview
+    assert sample_preview != sample_body
+    try:
+        ns["storage_key"]("T1", file_id="F1", kind=preview_kind)
+    except ValueError:
+        pass
+    else:  # pragma: no cover — 생성 자체를 세우는 자리다
+        raise AssertionError("접수분 배치 함수가 미리보기 산출물을 받아 버렸다")
     return rendered
 
 

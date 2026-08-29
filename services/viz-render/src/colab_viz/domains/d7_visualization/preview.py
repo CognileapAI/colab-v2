@@ -26,6 +26,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from ...kernel import storage_layout
 from . import cache, colormap, downsample
 from .scale import ColorRange
 
@@ -215,7 +216,9 @@ def _write(out_dir: Path, url_base: str, layer: str, kind: str, key: str,
            suffix: str, blob: bytes) -> Artifact:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    name = f"{key}{suffix}"
+    # 자리는 **규약이 정한다** — `contracts/storage/layout.json` 의 「미리보기 산출물」.
+    # 여기서 이름을 다시 조립하면 그것이 세 번째 규칙이 된다(`03-HANDOFF §4 #20` 의 무늬).
+    name = storage_layout.preview_key(key, suffix)
     path = out_dir / name
     path.write_bytes(blob)
     return Artifact(layer=layer, kind=kind, path=path,
