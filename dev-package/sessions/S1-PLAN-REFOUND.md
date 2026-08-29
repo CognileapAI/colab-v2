@@ -522,10 +522,10 @@ W3 (병렬 3) ── S1-api                ∥  S1-fe          ∥  S1-search-in
    │
 ★ C1  (메인) ── 체크포인트  전 게이트 green · **501 = 24 유지** · 계약 동결 해제 1회 통과 · 커밋
    │
-W4 (병렬 3) ── S1-ontology-graph ∥ S1-search-a  ∥  **S1-preview** ⟨신설⟩
+W4 (병렬 3) ── SC-3 ∥ S1-search-a  ∥  **SC-1** ⟨신설⟩
    │            K1b·K2b            K4-a            viz-render ①②③ + 사이드카 + 축 사다리
    │
-W5 (병렬 3) ── S1-search-b   ∥  **S1-fe-preview** ⟨신설⟩   ∥  S1-project
+W5 (병렬 3) ── S1-search-b   ∥  **S1-fe-preview** ⟨신설⟩   ∥  SC-4
    │            K4-b            격자 UI · 확인 화면 · 뒤집기      P5
    │
 W6 (병렬 2) ── S1-fe-search  ∥  S1-seed
@@ -535,7 +535,7 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 **제약 준수 확인**
 - **동시 레인 최대 3** — `W4` 2→**3**, `W5` 3 유지, `W6` 1→**2**. **상한을 깨지 않는다.**
 - **소유 디렉터리 무중첩** —
-  `S1-preview` = `services/viz-render/` · `contracts/seams/core-viz.yaml` · `services/pipeline-worker/src/colab_pipeline/d5/{axis,grid}.py`
+  `SC-1` = `services/viz-render/` · `contracts/seams/core-viz.yaml` · `services/pipeline-worker/src/colab_pipeline/d5/{axis,grid}.py`
   `S1-fe-preview` = `frontend/src/components/upload/` · `frontend/src/components/preview/` · `frontend/test/upload.test.tsx`
   `S1-fe-search`(W6 으로 이동) = `frontend/src/routes/` · `frontend/src/components/search/`
   **겹치지 않는다.** ⚠ `S1-fe`(W3)가 `components/upload/` 를 먼저 만지고 `S1-fe-preview`(W5)가 나중에 만진다 — **다른 물결이라 동시 소유가 아니다.**
@@ -826,9 +826,9 @@ lat min **30.102751**(`.npy`) ↔ **30.107119**(`.nc`) · lon max **133.553513**
 | 7 | **게이트 2 red 의 환경 배선** — `planning-freshness`(워크트리 경로) · `schema-diff`(DB 부재) | 메인 | `C1` 조건 1 이 어차피 요구한다 |
 | 8 | **검색 평가셋 15~20건 초안**(`S2b`) | 메인 또는 `S1-seed` | `W6` 진입조건 |
 | 9 | **게이트 selftest 7종 1회 실행** | 메인 | `S1-W0-baseline §8` 의 `[미측정]`. `C1` 전에 한 번은 돈다 |
-| 10 | **⭑ `viz-render` 의 HDF4 좌표 취급 확인** | 메인 또는 `S1-preview` | **⭑ 이번 세션이 답을 찾았다** — `jobs.py:38` `MAY_CARRY_COORDINATES = {"GeoTIFF","NetCDF"}` 가 **HDF4 를 빼 놓았고 새 정본과 어긋난다**(`§D.5b-⑵`). 남은 것은 `readers.py:_read_hdf4` 실측뿐 |
+| 10 | **⭑ `viz-render` 의 HDF4 좌표 취급 확인** | 메인 또는 `SC-1` | **⭑ 이번 세션이 답을 찾았다** — `jobs.py:38` `MAY_CARRY_COORDINATES = {"GeoTIFF","NetCDF"}` 가 **HDF4 를 빼 놓았고 새 정본과 어긋난다**(`§D.5b-⑵`). 남은 것은 `readers.py:_read_hdf4` 실측뿐 |
 | 11 | **⛔ `createUpload` 계약에 파일별 `kind` 자리가 있는지 확인** | 메인 | **판정 ㉯ 의 유일한 미확인 입력.** `contracts/seams/fe-core.yaml` 을 **읽기만** 하면 된다. **묶음 확정 전에 반드시** |
-| 12 | **포맷 목록 3곳에 `NumPy` 추가 준비 — 계약 개정 불요 확인됨** | `S1-preview` | **⭑ 스캔 완료**(`§D.5b-⑵`) — 계약·DB 에 포맷 enum 이 **없다.** 코드 3곳뿐이라 **동결 해제와 무관하게 진행 가능** |
+| 12 | **포맷 목록 3곳에 `NumPy` 추가 준비 — 계약 개정 불요 확인됨** | `SC-1` | **⭑ 스캔 완료**(`§D.5b-⑵`) — 계약·DB 에 포맷 enum 이 **없다.** 코드 3곳뿐이라 **동결 해제와 무관하게 진행 가능** |
 
 ### G.2 판정을 기다려야 하는 것
 
@@ -920,7 +920,7 @@ lat min **30.102751**(`.npy`) ↔ **30.107119**(`.nc`) · lon max **133.553513**
 
 ### H.3 `S1-PLAN.md` 개정 절
 
-`§1.2`(IN 에 미리보기 + 격자 수용 추가) · `§1.3-㉡㉢`(정의 좁힘) · **`§1.4`(전면 교체 → `§C.2`)** · `§2.1`(9행 재배정) · `§2.2`(계수) · `§3.2`(24자리 → 약 32) · `§4.2`(P2 행 「나감」 목록 축소) · `§5`(물결 도표 · `W4`·`W5`·`W6`) · `§5.0`(`C1` 조건 2·5) · `§5.2`(레인 표에 `S1-preview`·`S1-fe-preview`) · `§5.3`(진입조건) · **`§6`(완료 정의 2·3·9 + 신설 15·16·17)** · `§7`(멈춤 규칙 — 격자 관련 항 복원) · `§8`(위험).
+`§1.2`(IN 에 미리보기 + 격자 수용 추가) · `§1.3-㉡㉢`(정의 좁힘) · **`§1.4`(전면 교체 → `§C.2`)** · `§2.1`(9행 재배정) · `§2.2`(계수) · `§3.2`(24자리 → 약 32) · `§4.2`(P2 행 「나감」 목록 축소) · `§5`(물결 도표 · `W4`·`W5`·`W6`) · `§5.0`(`C1` 조건 2·5) · `§5.2`(레인 표에 `SC-1`·`S1-fe-preview`) · `§5.3`(진입조건) · **`§6`(완료 정의 2·3·9 + 신설 15·16·17)** · `§7`(멈춤 규칙 — 격자 관련 항 복원) · `§8`(위험).
 
 ### H.4 다른 정본 파일
 

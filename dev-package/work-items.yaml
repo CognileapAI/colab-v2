@@ -52,8 +52,8 @@ items:
     note: "3차 정정 대상(`〈167〉-㉴`) — 종전 판이 ✅ 였는데 두 읽기 모두 ⬜(C4 후)로 맞췄다."
     sources: ["03-HANDOFF §1 T-R", "WORK-UNITS §11"]
 
-  - id: S1-preview
-    name: "viz-render ①②③ + 사이드카 + 축 사다리 + `.npy`"
+  - id: SC-1
+    name: "화면 레인 — 미리보기 렌더 (viz-render ①②③ + 사이드카 + 축 사다리 + `.npy`)"
     status: done
     stage: stage1
     owner: "viz-render"
@@ -62,11 +62,11 @@ items:
     completion_def: 완료 정의 미작성
     evidence: "코드 커밋 5 — `ef09064`·`fc93055`·`a3fe5cf`·`5c1a3a6`·`1ede28b`. viz-render 90 passed / 0 failed(원천 마운트 시) · pipeline-worker 104 passed(9 errors = DB 부재). 게이트 회귀 0건"
     deadline: null
-    note: "남은 것 = `§4` #19(계약 `RenderResult.bounds` 필수라 ②비지도형을 완료로 낼 자리가 없다) — 단 `§4` #19 는 뒤에 ✅ 해소로 정정돼 있어 진행도 표기와 블로커 표기가 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    note: "⭑ ⟨개정 2026-08-29 · 화면 레인 접두사 분리⟩ 종전 식별자는 `S1-preview` 였다 — WU `S1`(초기 데이터)·집행 계획 `S1-PLAN` 과 한 이름을 쓰던 자리다. 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`. ／ 이전 남은 것 = `§4` #19(계약 `RenderResult.bounds` 필수라 ②비지도형을 완료로 낼 자리가 없다) — 단 `§4` #19 는 뒤에 ✅ 해소로 정정돼 있어 진행도 표기와 블로커 표기가 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
     sources: ["03-HANDOFF §1 T-S"]
 
-  - id: S1-search
-    name: "K4-a — 검색 실행기 → core-api"
+  - id: SC-2
+    name: "화면 레인 — 검색 (K4-a · 검색 실행기 → core-api)"
     status: done
     stage: stage1
     owner: "core-api"
@@ -75,11 +75,11 @@ items:
     completion_def: 완료 정의 미작성
     evidence: "`c1753a1`·`d11a5d7`·`35e9360`·`fdf8470` 실행기 이관 · `81f3020`·`10d9495` 3차 해제 + `SEARCH_UNAVAILABLE`(`〈87〉`) · `9b33321` 한국어 접두 + `pg_trgm`(`〈89〉`) · `19d25ad` 실측. staging 실결과 — `강우` 3건 · `degraded:false`"
     deadline: null
-    note: "폴백 없음 — 죽으면 「동작하지 않음」이 드러난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    note: "⭑ ⟨개정 2026-08-29 · 화면 레인 접두사 분리⟩ 종전 식별자는 `S1-search` 였다 — WU `S1`(초기 데이터)·집행 계획 `S1-PLAN` 과 한 이름을 쓰던 자리다. 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`. ／ 이전 폴백 없음 — 죽으면 「동작하지 않음」이 드러난다. WORK-UNITS 읽기에는 이 레인이 없다."
     sources: ["03-HANDOFF §1 T-S"]
 
-  - id: S1-ontology-graph
-    name: "온톨로지 그래프 (K1b·K2b)"
+  - id: SC-3
+    name: "화면 레인 — 온톨로지 그래프 (K1b·K2b)"
     status: done
     stage: stage1
     owner: "D9"
@@ -88,11 +88,11 @@ items:
     completion_def: 완료 정의 미작성
     evidence: "`57deb8e`·`61bcfa9`·`57c760b` — 노드 49 · 엣지 19, 등급 ⑥ 8(`〈86〉`). `〈91〉` 로 닫힘(승인도 8). `bc229c0` `K4-b` 그래프 증강(`〈90〉`)"
     deadline: null
-    note: "D9 가 넓히고 core-api 가 찾는다. WORK-UNITS 읽기에는 이 레인이 없다."
+    note: "⭑ ⟨개정 2026-08-29 · 화면 레인 접두사 분리⟩ 종전 식별자는 `S1-ontology-graph` 였다 — WU `S1`(초기 데이터)·집행 계획 `S1-PLAN` 과 한 이름을 쓰던 자리다. 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`. ／ 이전 D9 가 넓히고 core-api 가 찾는다. WORK-UNITS 읽기에는 이 레인이 없다."
     sources: ["03-HANDOFF §1 T-S"]
 
-  - id: S1-project
-    name: "P5 화면 셋 (레인)"
+  - id: SC-4
+    name: "화면 레인 — 프로젝트 화면 셋 (P5)"
     status: done
     stage: stage1
     owner: null
@@ -101,7 +101,7 @@ items:
     completion_def: 완료 정의 미작성
     evidence: "`e4e552a`·`2a0c489`·`c3fcc64` — 501 표 24 → 21(`〈84〉`)"
     deadline: null
-    note: "WU-P5 자체는 아직 안 닫는다 — 레인 ✅ 와 WU 🟧 가 병존한다. WORK-UNITS 읽기에는 이 레인이 없다."
+    note: "⭑ ⟨개정 2026-08-29 · 화면 레인 접두사 분리⟩ 종전 식별자는 `S1-project` 였다 — WU `S1`(초기 데이터)·집행 계획 `S1-PLAN` 과 한 이름을 쓰던 자리다. 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`. ／ 이전 WU-P5 자체는 아직 안 닫는다 — 레인 ✅ 와 WU 🟧 가 병존한다. WORK-UNITS 읽기에는 이 레인이 없다."
     sources: ["03-HANDOFF §1 T-S"]
 
   - id: 계약해제-2-3-4차
@@ -117,8 +117,8 @@ items:
     note: "501 표 계수가 문서 안에서 24/21/23/29 로 여러 값이 돌아다닌다. 식별자 규격 밖의 레인 항목이다."
     sources: ["03-HANDOFF §1 T-S"]
 
-  - id: S1-preview-ui
-    name: "P4·미리보기 화면"
+  - id: SC-5
+    name: "화면 레인 — 미리보기 화면 (P4)"
     status: partial
     stage: stage1
     owner: "frontend"
@@ -127,7 +127,7 @@ items:
     completion_def: 완료 정의 미작성
     evidence: "`a747c67`·`875aa2a` 미리보기 UI · `15847b3` P4 검색 화면. ①②는 공개 주소에서 200 · ③지도형은 안 뜬다"
     deadline: null
-    note: "사유 = `§4` #20. 단 `§4` #20 은 2026-08-26 `〈115〉-㉮` 로 ✅ 해소 표기 — 진행도 🟧 와 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
+    note: "⭑ ⟨개정 2026-08-29 · 화면 레인 접두사 분리⟩ 종전 식별자는 `S1-preview-ui` 였다 — WU `S1`(초기 데이터)·집행 계획 `S1-PLAN` 과 한 이름을 쓰던 자리다. 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`. ／ 이전 사유 = `§4` #20. 단 `§4` #20 은 2026-08-26 `〈115〉-㉮` 로 ✅ 해소 표기 — 진행도 🟧 와 어긋난다. WORK-UNITS 읽기에는 이 레인이 없다."
     sources: ["03-HANDOFF §1 T-S"]
 
   - id: gate-db-boundary
@@ -900,7 +900,7 @@ items:
     entry_conditions: ["P1"]
     depends_on: [P1]
     completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미) ＋ P6(승인)·`§1.5` 완료 조건"
-    evidence: "2026-08-24 `W5` 레인 `S1-project` — S-02 목록·S-02b 상세와 `linkProjectDataset` 이 열렸다. 501 표 24 → 21. core-api 260 passed · frontend 198 passed · viz-render 90 · pipeline-worker 104 · 게이트 21 green / 1 red(설계상). 커밋 `e4e552a`·`2a0c489`"
+    evidence: "2026-08-24 `W5` 레인 `SC-4` — S-02 목록·S-02b 상세와 `linkProjectDataset` 이 열렸다. 501 표 24 → 21. core-api 260 passed · frontend 198 passed · viz-render 90 · pipeline-worker 104 · 게이트 21 green / 1 red(설계상). 커밋 `e4e552a`·`2a0c489`"
     deadline: null
     note: "닫지 않는 이유 둘 — ① 프로젝트 op 넷이 아직 501 이고 P1 배정 ② 새 프로젝트·정보 수정·닫기 확인 모달(F-03~F-05) 부재. ⚠ `03-HANDOFF` 가 가리키는 `§1.5` 는 그 문서에 존재하지 않는 절이다(`WORK-UNITS` 에는 있다)."
     sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §11"]
@@ -1011,15 +1011,15 @@ items:
 
   - id: S1
     name: 원천 인벤토리·적재 범위 확정
-    status: conflict
+    status: done
     stage: stage1
     owner: "T-S"
     entry_conditions: ["없음 — 지금 착수 가능(코드 아님, 분류다)"]
     depends_on: []
     completion_def: "`§8.5` — `SEED-DATA.md` 가 존재하고 2,122 파일 전부가 세 분류 중 하나에 배정돼 미분류 0. `.npy` 1,622건 제외 · tif 62건 입력 포맷, 그중 이미 COG 인 것 표시"
-    evidence: null
+    evidence: "`SEED-DATA.md` — 2,122 파일 전부 배정 · 미분류 0 · 데이터셋 15건 · 계보 3갈래 (2026-08-23 닫힘 · `〈57〉`). `03-HANDOFF §1 T-S 초기 데이터` `S1` 행 = ✅ · `WORK-UNITS §8.5` `↳ S1 실적` = ✅ 닫힘 · `§11` = ✅ — 세 자리가 일치한다"
     deadline: null
-    note: "두 읽기는 모두 ✅(`SEED-DATA.md` — 2,122 파일 전부 배정, 미분류 0 · 데이터셋 15건 · 계보 3갈래 · 2026-08-23 닫힘)로 적지만, 산문 자체가 식별자 `S1` 에 두 표기를 함께 붙인다. `03-HANDOFF §1` 안에서 `S1` 로 읽히는 행이 다섯이고 그중 넷(`S1-preview`·`S1-search`·`S1-ontology-graph`·`S1-project`)은 ✅, 하나(`S1-preview-ui`)는 🟧 다 — T-S 레인 접두사 `S1-*` 과 T-S 초기데이터의 WU `S1`, 그리고 집행 계획 `S1-PLAN` 이 한 이름을 쓴다. 기계는 어느 것이 WU `S1` 의 상태인지 가를 수 없다. 어느 하나를 고르지 않는다 — 사람이 레인 접두사를 WU 와 다른 이름으로 갈라 붙일 자리다."
+    note: "⭑ ⟨개정 2026-08-29 · 이름 분리로 닫는다⟩ **갈라짐의 원인은 상태값이 아니라 이름이었다** — 한 식별자 `S1` 이 셋을 가리켰다: ⑴ WU `S1`(초기 데이터 적재 범위 확정 · 이 항목) ⑵ 화면 레인 접두사 `S1-*` ⑶ 집행 계획 `S1-PLAN`. **Ted 판정 2026-08-29 = ⑵ 만 바꾼다** — 레인 접두사를 `SC-`(화면 레인)로 갈라 다섯 레인에 `SC-1`~`SC-5` 를 붙였다. 기각 둘 = WU 개명(대장 식별자라 이력 추적이 끊긴다) · 계획 문서만 개명(WU 와 레인이 여전히 겹쳐 문제가 안 풀린다). **그 결과 `03-HANDOFF §1` 에서 `S1` 로 읽히는 행은 이 항목 하나뿐이고 세 읽기가 모두 ✅ 다 — `status: done` 으로 닫는다.** 등재문 초안 = `dev-package/sessions/NAME-SPLIT.md`(`PLAN-SoT §9` 등재 대기). ／ 이전 두 읽기는 모두 ✅(`SEED-DATA.md` — 2,122 파일 전부 배정, 미분류 0 · 데이터셋 15건 · 계보 3갈래 · 2026-08-23 닫힘)로 적지만, 산문 자체가 식별자 `S1` 에 두 표기를 함께 붙인다. `03-HANDOFF §1` 안에서 `S1` 로 읽히는 행이 다섯이고 그중 넷(`SC-1`·`SC-2`·`SC-3`·`SC-4`)은 ✅, 하나(`SC-5`)는 🟧 다 — T-S 레인 접두사 `S1-*` 과 T-S 초기데이터의 WU `S1`, 그리고 집행 계획 `S1-PLAN` 이 한 이름을 쓴다. 기계는 어느 것이 WU `S1` 의 상태인지 가를 수 없다. 어느 하나를 고르지 않는다 — 사람이 레인 접두사를 WU 와 다른 이름으로 갈라 붙일 자리다."
     sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §8.5", "WORK-UNITS §10", "WORK-UNITS §11"]
 
   - id: PA

@@ -393,10 +393,10 @@ W3 (병렬 3) ── S1-api               ∥  S1-fe            ∥  S1-search-i
    │
 ★ C1  (메인) ── 체크포인트  전 게이트 green · 501 = 24 유지 · 동결 해제 1회 통과 · 커밋
    │
-W4 (병렬 3) ── S1-ontology-graph ∥ S1-search-a  ∥  **S1-preview** ⟨신설⟩
+W4 (병렬 3) ── SC-3 ∥ S1-search-a  ∥  **SC-1** ⟨신설⟩
    │            K1b·K2b             K4-a            viz-render ①②③ + 사이드카 + 축 사다리 + .npy
    │
-W5 (병렬 3) ── S1-search-b   ∥  **S1-fe-preview** ⟨신설⟩   ∥  S1-project
+W5 (병렬 3) ── S1-search-b   ∥  **S1-fe-preview** ⟨신설⟩   ∥  SC-4
    │            K4-b            격자 UI · 확인 화면 · 뒤집기        P5
    │
 W6 (병렬 2) ── S1-fe-search  ∥  S1-seed
@@ -405,7 +405,7 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 ```
 
 **제약 준수 확인** — **동시 레인 최대 3 을 깨지 않는다**(`W4` 2→3 · `W5` 3 유지 · `W6` 1→2).
-**소유 디렉터리 무중첩** — `S1-preview` = `services/viz-render/` · `contracts/seams/core-viz.yaml` · `d5/{axis,grid}.py`,
+**소유 디렉터리 무중첩** — `SC-1` = `services/viz-render/` · `contracts/seams/core-viz.yaml` · `d5/{axis,grid}.py`,
 `S1-fe-preview` = `frontend/src/components/upload/` · `frontend/src/components/preview/` · `frontend/test/upload.test.tsx`,
 `S1-fe-search`(W6 으로 이동) = `frontend/src/routes/` · `frontend/src/components/search/`. **겹치지 않는다.**
 ⚠ `S1-fe`(W3)가 `components/upload/` 를 **먼저** 만지고 `S1-fe-preview`(W5)가 **나중에** 만진다 — **다른 물결이라 동시 소유가 아니다.**
@@ -431,10 +431,10 @@ W3 (병렬 3) ── S1-api      ∥  S1-fe        ∥  S1-search-infra
 ★ C1  (메인) ── ⭑ 체크포인트 게이트 ⭑  전 게이트 green · 501 = 28 확정 · 커밋
    │            ── 여기까지가 「온톨로지가 늦어도 남는 독립 가치」다 ──
    │
-W4 (병렬 2) ── S1-ontology-graph   ∥  S1-search-a
+W4 (병렬 2) ── SC-3   ∥  S1-search-a
    │            K1b·K2b (W2 정본 소비)   K4-a — tsvector + 사전 3종 · 그래프 무의존
    │
-W5 (병렬 3) ── S1-search-b   ∥  S1-fe-search  ∥  S1-project
+W5 (병렬 3) ── S1-search-b   ∥  S1-fe-search  ∥  SC-4
    │            K4-b 그래프 증강   P4 화면 (K4-a 소비)   P5
    │
 W6         ── S1-seed        (S2·S2b — 실데이터 적재 + 설명 문구)
@@ -488,13 +488,13 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 | **S1-api** | W3 | `services/core-api/src/colab_core/` · `services/core-api/tests/` · **＋ `services/pipeline-worker/Dockerfile` · `services/pipeline-worker/src/colab_pipeline/app/worker.py`(배선만, 로직 무수정) · `infra/staging/compose.i2.yml`(**워커 서비스 블록만** — `S1-detach` 의 viz 블록과 겹치지 않는다)** | **501 표 24→28**(미리보기 2 + 격자 3) · `HttpPreviewRelay` 비활성 · 시험 3건 개정 · 시험 2건 이관 · **＋ 워커 배선**(§2.1 #4, `〈73〉`) — Dockerfile CMD 를 헬스+루프로, compose 환경변수 3종, `run_once` 소비 한 발, `process_upload` 파싱·좌표·COG 구간 건너뛰기 |
 | **S1-fe** | W3 | `frontend/src/components/upload/` · `frontend/src/components/lineage/` · `frontend/test/upload.test.tsx` | S-04 미리보기 절제 + 등록 게이트 재배치 · 계보 확정 모달 ③ 완주 |
 | **S1-search-infra** | W3 | `db/platform/versions/` · `db/ai/versions/` · `infra/staging/`(DB 이미지) | `tsvector`·GIN·pgvector. **확장 유무 실측 먼저.** ＋ **설명 길이 CHECK 를 새로 추가하지 않는다**(`〈72〉-㉯`, §3.3 — canon 문구만 바뀌고 이 레인은 마이그레이션 0건) |
-| **S1-ontology-graph** | W4 | `db/ai/` | K1b·K2b |
+| **SC-3** | W4 | `db/ai/` | K1b·K2b |
 | **S1-search-a** | **W4** | `services/ai-service/` | **K4-a — `searchDatasets` (tsvector + 사전 3종). 그래프 무의존** |
 | **S1-search-b** | W5 | `services/ai-service/` | **K4-b — 그래프 증강.** ⚠ `S1-search-a` 와 **같은 디렉터리라 반드시 뒤 물결**이다(동시 소유 금지) |
 | **S1-fe-search** | W5 | `frontend/src/routes/`(S-01·S-06) · `frontend/src/components/search/` | P4 |
-| **S1-project** | W5 | `frontend/src/components/project/` · core-api 프로젝트 op | P5 |
+| **SC-4** | W5 | `frontend/src/components/project/` · core-api 프로젝트 op | P5 |
 | **S1-seed** | W6 | `dev-package/SEED-DATA.md` · 적재 실행 | S2 · S2b |
-| **⭑ S1-preview** ⟨신설⟩ | **W4** | `services/viz-render/` · `contracts/seams/core-viz.yaml` · `services/pipeline-worker/src/colab_pipeline/d5/{axis,grid}.py` | **미리보기 3층 + bbox 사이드카 + `.pgw` · 축 판별 사다리 · `.npy` 감지·판독**(`〈77〉`) · `MAY_CARRY_COORDINATES` 에 `HDF4` 정정 |
+| **⭑ SC-1** ⟨신설⟩ | **W4** | `services/viz-render/` · `contracts/seams/core-viz.yaml` · `services/pipeline-worker/src/colab_pipeline/d5/{axis,grid}.py` | **미리보기 3층 + bbox 사이드카 + `.pgw` · 축 판별 사다리 · `.npy` 감지·판독**(`〈77〉`) · `MAY_CARRY_COORDINATES` 에 `HDF4` 정정 |
 | **⭑ S1-fe-preview** ⟨신설⟩ | **W5** | `frontend/src/components/upload/` · `frontend/src/components/preview/` · `frontend/test/upload.test.tsx` | **격자 요청 블록 · 좌표 정합 확인 화면 · 뒤집기 · 정밀도 배지 · 색 범위 라벨** |
 
 > **⟨개정 2026-08-24⟩ 위 표에서 바뀐 것 넷** —
@@ -523,14 +523,14 @@ W7 (메인)  ── 결합 E2E · 501 표 · 전 게이트 · staging 배포 gre
 | W2 | W1 커밋 |
 | W3 | W2 커밋 · `generated-up-to-date` green |
 | **C1** | ⟨개정⟩ **W3 전 레인 · 전 게이트 green · 501 = 24 유지 · 동결 해제 1회 통과 · 커밋**(§5.0 통과 조건 **다섯**) |
-| **W4 (`S1-preview`)** | ⭑⟨신설⟩ **C1.** ⚠ **`HSR 정본 격자 판정`은 진입조건이 아니다**(`〈75〉-㉵`) — 사용자가 격자를 직접 올리므로 도메인 소유자의 두 번째 의존이 생기지 않는다. **대신 약 612 m 불일치를 stage 1 이 막지 않는다는 한계가 남는다** |
-| **W5 (`S1-fe-preview`)** | ⭑⟨신설⟩ **`S1-preview` 완료** — 렌더 표면이 없는 채로 화면을 완주시키지 않는다(`DR-7` 무늬) |
-| W4 | C1. **그중 `S1-ontology-graph` 만** `G8b` 산출이 실재해야 한다 — 없으면 착수 금지(`[정본 무근거]` 위에 스키마를 짜지 않는다). **`S1-search-a` 는 `G8b` 에 안 묶인다**(`〈71〉-㉱`) |
-| W5 | **`S1-search-a` 완료**(세 레인 공통) · `S1-search-b` 는 추가로 `S1-ontology-graph` 완료 |
+| **W4 (`SC-1`)** | ⭑⟨신설⟩ **C1.** ⚠ **`HSR 정본 격자 판정`은 진입조건이 아니다**(`〈75〉-㉵`) — 사용자가 격자를 직접 올리므로 도메인 소유자의 두 번째 의존이 생기지 않는다. **대신 약 612 m 불일치를 stage 1 이 막지 않는다는 한계가 남는다** |
+| **W5 (`S1-fe-preview`)** | ⭑⟨신설⟩ **`SC-1` 완료** — 렌더 표면이 없는 채로 화면을 완주시키지 않는다(`DR-7` 무늬) |
+| W4 | C1. **그중 `SC-3` 만** `G8b` 산출이 실재해야 한다 — 없으면 착수 금지(`[정본 무근거]` 위에 스키마를 짜지 않는다). **`S1-search-a` 는 `G8b` 에 안 묶인다**(`〈71〉-㉱`) |
+| W5 | **`S1-search-a` 완료**(세 레인 공통) · `S1-search-b` 는 추가로 `SC-3` 완료 |
 | W6 | W5 · S2b 문구 초안 · **평가셋 초안이 실재**(§6-7) |
 | W7 | 전 레인 |
 
-> **⚠ `G8b` 가 늦으면 무엇이 일어나는가 — 미리 정해 둔다.** `W4` 의 `S1-ontology-graph` 만 대기하고 **나머지는 계속 간다.**
+> **⚠ `G8b` 가 늦으면 무엇이 일어나는가 — 미리 정해 둔다.** `W4` 의 `SC-3` 만 대기하고 **나머지는 계속 간다.**
 > `K4-b` 가 못 서면 **stage1 은 완료가 아니다**(범위는 안 줄인다). 하지만 **C1 까지의 커밋은 이미 독립 가치로 서 있고**,
 > 늦음이 **어디서 멈췄는지가 한 자리에 보인다.** 「범위를 줄여 green 을 얻지 않는다」(§7-8)는 그대로다.
 
