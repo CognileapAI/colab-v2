@@ -1,12 +1,14 @@
-"""아직 구현하지 않은 **22** 개 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 **19** 개 오퍼레이션 — **501 + ErrorEnvelope**.
 
 ⭑ 2026-08-29 실측 정정 — 이 머리말의 「23 개」는 낡아 있었다. `〈150〉` 이 `updateLab`·`updateProject`
 를 빼 **20** 이 된 뒤에도 머리말만 23 에 머물렀다(같은 자리의 다섯 번째 오기 — 아래 `OPERATIONS`
-주석이 「네 번째」까지 세고 있다). 이번에 `〈175〉` 다운로드 op 둘을 **임시 등재**해 20 → 22 다.
+주석이 「네 번째」까지 세고 있다). `〈175〉` C1b 가 다운로드 op 둘을 **임시 등재**해 20 → 22 였고,
+**C2(다운로드 집행)가 그 둘과 `downloadDataset` 까지 셋을 뺐다 — 22 → 19.**
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
-  · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
-    다운로드 1). 구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다.
+  · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2).
+    구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다. ⭑ 다운로드 1 은 `0009`
+    (`d8_download.file_id`)가 자리를 만들었고 C2 가 구현했다 — 이제 여기 없다.
   · `NOT_IMPLEMENTED_P1` — 저장 자리는 있고 로직이 P1 이다.
 
 **200 으로 가짜 값을 내리지 않는다.** 하나 구현할 때마다 이 표가 한 줄씩 줄고,
@@ -95,12 +97,14 @@ class Op:
 #: → **＋2**(`〈278〉`-(다) 9차 동결 해제 — `downloadDatasetFile`·`getDownloadBytes` **임시 등재**.
 #:    이 회차(C1b)는 계약 동결 + 파일 메타만이고 다운로드 집행은 다음 커밋(C2)이다 — **C2 가 뺀다.**
 #:    「신설과 동시에 구현」 규칙(`〈80〉-㉯ 5`)의 예외이고, 예외인 이유가 표에 적혀 있어야 한다.)
+#: → **19**(`〈175〉-(다)` C2 — 다운로드 집행. 임시 등재 둘 + `downloadDataset`(P0 부터 501)을
+#:    뺐다. 셋 다 실동작 시험이 뒤에 있다: `tests/test_download.py`. `routes/download.py` 가 진짜
+#:    핸들러이고, `getDownloadBytes` 는 계약대로 `security: []` — 티켓이 곧 자격이다.)
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
-    Op("downloadDataset", "GET", "/datasets/{datasetId}/download", "NOT_IMPLEMENTED_NO_STORE"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
     #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데
@@ -112,15 +116,9 @@ OPERATIONS: tuple[Op, ...] = (
     Op("addUploadFile", "POST", "/uploads/{uploadId}/files", "NOT_IMPLEMENTED_P1"),
     Op("replaceUploadGridFile", "PUT", "/uploads/{uploadId}/files/{fileId}",
        "NOT_IMPLEMENTED_P1"),
-    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈175〉-(다)`⟩ 다운로드 티켓·바이트 둘 — **임시 등재. C2 가 뺀다.**
-    #    사유 코드는 기존 둘 중 「집행 준비 중」에 가까운 `NOT_IMPLEMENTED_P1` 이다 — 저장 자리는
-    #    `0009`(`d8_download.file_id`)가 이미 만들었으므로 `NO_STORE` 는 거짓이 된다. 메시지의
-    #    「P1 범위」는 여기서 정확하지 않지만 코드 3종을 만들지 않는다 — 두 줄은 곧 사라진다.
-    #    ⚠ `getDownloadBytes` 는 계약이 `security: []` 인데 이 자리표는 인증을 건다(아래 `_handler`
-    #    공통) — 미구현 501 을 경계 밖에 열지 않는 규칙이 우선이고, C2 가 진짜 핸들러로 바꾼다.
-    Op("downloadDatasetFile", "GET", "/datasets/{datasetId}/files/{fileId}/download",
-       "NOT_IMPLEMENTED_P1"),
-    Op("getDownloadBytes", "GET", "/downloads/{ticket}", "NOT_IMPLEMENTED_P1"),
+    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈175〉-(다)`⟩ 다운로드 셋은 **C2 가 걷었다** — `routes/download.py`.
+    #    C1b 의 임시 등재(`downloadDatasetFile`·`getDownloadBytes`)가 여기 있었고, 그때 적어 둔
+    #    「C2 가 뺀다」가 이 줄이다. 걷은 자리의 시험 = `tests/test_download.py`.
 )
 
 _MESSAGE = {

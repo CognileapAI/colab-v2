@@ -60,6 +60,15 @@ def payload_too_large(message: str) -> ApiError:
     return ApiError(413, "PAYLOAD_TOO_LARGE", message)
 
 
+def gone(message: str) -> ApiError:
+    """410 — 「있었는데 창이 닫혔다 — 다시 발급받으라」 (`〈175〉-(다)` · `getDownloadBytes` 전용).
+
+    404 와 갈라 쓴다: 404 는 「없거나 접근이 회수됐다」(존재를 흘리지 않는다), 410 은 서명은
+    맞는데 수명이 지난 티켓이다. 둘을 접으면 화면이 「없다」와 「다시 받으면 된다」를 구분 못 한다.
+    """
+    return ApiError(410, "GONE", message)
+
+
 def too_many_attempts(message: str) -> ApiError:
     """429 — 창 안의 실패가 한계를 넘었다 (`PLAN-SoT §9 〈108〉-㉰`).
 

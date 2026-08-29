@@ -7,10 +7,13 @@
 """
 from __future__ import annotations
 
+import dataclasses
+import datetime as dt
 import os
 import pathlib
 import shutil
-from collections.abc import Sequence
+import urllib.parse
+from collections.abc import Iterator, Sequence
 from typing import Any, BinaryIO
 
 from colab_core.kernel import errors, storage_layout
@@ -19,9 +22,46 @@ from colab_core.kernel.s3 import S3Client, S3Error
 # 파일 인자의 모양은 `ports/ingestion.UploadFileRecord`(file_id·storage_key)다.
 # 층 규칙(app > domains > ports > kernel)상 kernel 은 ports 를 import 하지 않으므로
 # 여기서는 덕 타이핑으로 받는다 — 계약 검사는 Protocol(`ports/storage.py`)이 한다.
+# 같은 이유로 `presign_get` 의 반환 모양(`PresignedGet`)은 **여기** 정의되고 `ports/storage.py`
+# 가 이름만 내놓는다.
 
 #: 스트림 복사 청크. 업로드 본문을 통째로 메모리에 올리지 않는다 (`〈175〉`).
 STREAM_CHUNK = 8 * 1024 * 1024
+#: 읽기 청크(다운로드). 쓰기보다 작게 — 응답 첫 바이트까지의 지연이 이 크기에 걸린다.
+READ_CHUNK = 1024 * 1024
+
+
+@dataclasses.dataclass(frozen=True)
+class PresignedGet:
+    """브라우저가 직접 받을 절대 URL 과 **실제** 만료 시각.
+
+    만료를 함께 돌려주는 이유 — 임시 자격증명(ECS·IMDS)으로 서명한 URL 은 자격증명 만료
+    안쪽으로 수명이 잘린다(`aws_credentials.effective_ttl`). 잘린 값을 모른 채 티켓의
+    `expiresAt` 을 적으면 화면이 죽은 URL 을 산 것으로 안다.
+    """
+
+    url: str
+    expires_at: dt.datetime
+
+
+def content_disposition(file_name: str) -> str:
+    """`attachment; filename*=UTF-8''<url-encoded>` — 계약(`getDownloadBytes` 헤더 산문) 그대로.
+
+    한 자리에서 만든다: 라우트의 응답 헤더와 S3 프리사인드 GET 의 `response-content-disposition`
+    이 **같은 문자열**이어야 두 경로의 저장 이름이 갈리지 않는다.
+    """
+    return "attachment; filename*=UTF-8''" + urllib.parse.quote(file_name, safe="")
+
+
+def _read_chunks(fh, chunk_size: int) -> Iterator[bytes]:
+    try:
+        while True:
+            chunk = fh.read(chunk_size)
+            if not chunk:
+                return
+            yield chunk
+    finally:
+        fh.close()
 
 #: S3 단일 PutObject 의 하드 리밋. 그 위는 멀티파트뿐이고, 서버 경유 경로는 멀티파트를
 #: 하지 않는다 — 큰 파일의 정문은 프리사인드 전송(`〈174〉`)이다.
@@ -98,6 +138,16 @@ class LocalFilesystemStorage:
                 os.replace(dst, src)
             raise
         self._prune_upload_dirs([f.storage_key for f in files])
+
+    def open(self, *, key: str) -> Iterator[bytes]:
+        """파일을 **여기서** 연다 — 없으면 `FileNotFoundError` 가 호출 시점에 난다."""
+        fh = (self._root / key).open("rb")
+        return _read_chunks(fh, READ_CHUNK)
+
+    def presign_get(self, *, key: str, file_name: str, expires_seconds: int,
+                    now: dt.datetime) -> PresignedGet | None:
+        """로컬 디스크에는 브라우저가 직접 닿을 길이 없다 — 바이트는 core 를 거친다."""
+        return None
 
     def _prune_upload_dirs(self, old_keys: Sequence[str | None]) -> None:
         """옮기고 남은 빈 자리를 치운다. 비어 있지 않으면 건드리지 않는다."""
@@ -178,3 +228,23 @@ class S3UploadStorage:
             raise
         if moved_src:
             self._client.delete_objects(moved_src)
+
+    def open(self, *, key: str) -> Iterator[bytes]:
+        """S3 GET 스트림 — 묶음(zip)만 여기를 지난다 (「컨트롤 플레인만」의 예외 · `〈175〉-(다)`).
+        없는 키는 로컬과 같은 예외(`FileNotFoundError`)로 접는다 — 라우트가 백엔드를 가리지 않게."""
+        try:
+            return self._client.get_object_stream(key)
+        except S3Error as e:
+            if e.status == 404 or e.code == "NoSuchKey":
+                raise FileNotFoundError(key) from e
+            raise
+
+    def presign_get(self, *, key: str, file_name: str, expires_seconds: int,
+                    now: dt.datetime) -> PresignedGet | None:
+        """단일 파일의 정문 — 바이트가 core 를 안 거친다. 저장 이름은 서명된 쿼리에 실린다.
+        수명은 자격증명 만료 안쪽으로 잘릴 수 있어(`url_ttl`) **실제 만료를 함께** 돌려준다."""
+        ttl = self._client.url_ttl(expires_seconds, now)
+        url = self._client.presign_get(
+            key, query={"response-content-disposition": content_disposition(file_name)},
+            expires=ttl, now=now)
+        return PresignedGet(url=url, expires_at=now + dt.timedelta(seconds=ttl))

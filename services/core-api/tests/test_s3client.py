@@ -142,3 +142,83 @@ def test_delete_objects_sends_md5_and_batches():
     assert len(t.calls) == 2                             # 1000 + 1
     headers = t.calls[0][2]
     assert any(h.lower() == "content-md5" for h in headers)
+
+
+# ── 다운로드 (`〈175〉-(다)`) — presign_get · get_object_stream ──────────────
+
+class StreamStub:
+    """스트림 전송 대역 — (status, headers, body) 큐. 2xx 본문은 읽기 객체로 준다."""
+
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.calls: list[tuple] = []
+        self.closed = 0
+
+    def __call__(self, method, url, headers, timeout):
+        import io
+        self.calls.append((method, url, dict(headers), timeout))
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        status, resp_headers, body = item
+        if status >= 400:
+            return status, resp_headers, body
+        stub = self
+
+        class Reader(io.BytesIO):
+            def close(self):
+                stub.closed += 1
+                super().close()
+
+        return status, resp_headers, Reader(body)
+
+
+def stream_client(*responses) -> tuple[S3Client, StreamStub]:
+    t = StreamStub(*responses)
+    c = S3Client(bucket="test-bucket", region="ap-northeast-2", creds=CREDS,
+                 stream_transport=t, backoff_base=0)
+    return c, t
+
+
+def test_presign_get_is_the_get_twin_of_presign_put():
+    """같은 서명기(`sigv4.presign`)에 메서드만 GET — 쿼리(응답 헤더 덮어쓰기)도 서명에 든다."""
+    import datetime as dt
+    import urllib.parse
+
+    from colab_core.kernel.sigv4 import presign
+    c, _t = stream_client()
+    now = dt.datetime(2026, 8, 29, 0, 0, tzinfo=dt.timezone.utc)
+    query = {"response-content-disposition": "attachment; filename*=UTF-8''%EA%B0%95.nc"}
+    url = c.presign_get("폴더/강.nc", query=query, expires=600, now=now)
+    assert url == presign(method="GET", host=c.host, key="폴더/강.nc", region=c.region,
+                          creds=CREDS, query=query, expires=600, now=now)
+    assert url.startswith("https://test-bucket.s3.ap-northeast-2.amazonaws.com/%ED%8F%B4%EB%8D%94/")
+    parsed = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    assert parsed["X-Amz-Expires"] == "600"
+    assert parsed["response-content-disposition"] == query["response-content-disposition"]
+
+
+def test_get_object_stream_yields_chunks_and_closes_the_response():
+    c, t = stream_client((200, {"Content-Length": "10"}, b"0123456789"))
+    chunks = list(c.get_object_stream("k", chunk_size=4))
+    assert chunks == [b"0123", b"4567", b"89"]
+    assert t.closed == 1
+    method, url, headers, _timeout = t.calls[0]
+    assert method == "GET" and url.endswith("/k")
+    assert headers["x-amz-content-sha256"].startswith("e3b0c442")   # 빈 본문 해시 — 본문 없는 GET
+    assert not any(h.lower() == "content-type" for h in headers)     # 본문이 없으니 함정도 없다
+
+
+def test_get_object_stream_404_raises_when_called_not_on_first_chunk():
+    """호출 시점에 예외다 — 제너레이터를 돌려주고 첫 `next()` 에서 터지면 라우트는 이미 200 을 보낸 뒤다."""
+    c, _t = stream_client((404, {}, b"<Error><Code>NoSuchKey</Code><Message>x</Message></Error>"))
+    with pytest.raises(S3Error) as e:
+        c.get_object_stream("k")
+    assert e.value.status == 404 and e.value.code == "NoSuchKey"
+
+
+def test_get_object_stream_retries_5xx_before_the_first_byte():
+    err = (500, {}, b"<Error><Code>InternalError</Code></Error>")
+    c, t = stream_client(err, (200, {}, b"ok"))
+    assert b"".join(c.get_object_stream("k")) == b"ok"
+    assert len(t.calls) == 2

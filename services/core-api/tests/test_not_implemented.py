@@ -54,50 +54,13 @@ P5_REAL = {
     "getProject":          "tests/test_project_screens.py",
     "linkProjectDataset":  "tests/test_project_screens.py",
 }
-#: **`P3` 이 표에서 뺀 하나** (20 → 19) — `getDatasetLineage`. **그래프를 그리는 함수는
-#: P2 가 만들어 두었고**(`routes/lineage.py:lineage_graph`), 없던 것은 그 함수를 부를 GET
-#: 라우트 하나였다. 종전 산문은 「이 조회 op 자체는 P1 배정」이었는데 **`P1` 이 닫힌 뒤에도
-#: op 은 501 로 남아 있었다** — 산문이 낡은 자리다. 계보 그래프 화면(`P3`)은 이 op 없이
-#: 설 수 없다. **뺀 자리에 실동작 시험이 있다**는 규칙은 여기에도 그대로 걸린다.
-P3_REAL = {"getDatasetLineage": "tests/test_lineage_graph_read.py"}
-#: **`P6` 승인 처리가 표에서 뺀 여덟** (16 → 8). 접근 요청 4 ＋ Verified 4.
-#: 앞의 여섯은 `NOT_IMPLEMENTED_NO_STORE` 였고 그 사유(「저장처 자체가 P0 스키마에 없다」)를
-#: 마이그레이션 `0010` 이 없앴다 — `d2_dataset_access_request`·`d2_verification_request`.
-#: 뒤의 둘은 `NOT_IMPLEMENTED_P1` 이었다. **여덟이 한 회차에 나가는 이유** = 요청 op 만 열고
-#: 처리 op 을 남기면 정본 §7.1·§7.2 의 전이표가 반만 서고, 그 회차의 산출은 「쌓이기만 하는
-#: 대기줄」이 된다 (`CLAUDE.md §5` 부분 완료 금지).
-#: **뺀 자리마다 실동작 시험이 있다** — 여덟 다 `tests/test_approval.py` 가 부르고,
-#: 그 파일은 음성 다섯(경계 누출·미승인 개방·만료·일괄 승인 표면·권한 없는 처리)을 함께 든다.
-P6_REAL = {
-    "createAccessRequest":             "tests/test_approval.py",
-    "listPendingAccessRequests":       "tests/test_approval.py",
-    "approveAccessRequest":            "tests/test_approval.py",
-    "rejectAccessRequest":             "tests/test_approval.py",
-    "requestVerification":             "tests/test_approval.py",
-    "listPendingVerificationRequests": "tests/test_approval.py",
-    "approveVerification":             "tests/test_approval.py",
-    "cancelVerification":              "tests/test_approval.py",
-}
-#: **`P7` 연구실 대시보드가 표에서 뺀 셋** (8 → 5). D8 집계 셋이다.
-#: **계약 개정이 0 건이다** — 계약은 처음부터 이 셋을 들고 있었고 라우트만 없었다.
-#: **셋이 한 회차에 나가는 이유** = 지표·맵·활동은 한 화면의 세 구획이고, 하나라도 501 이면
-#: 그 화면은 「불러오지 못했어요」로만 선다 (`CLAUDE.md §5` 부분 완료 금지).
-#: **뺀 자리마다 실동작 시험이 있다** — 셋 다 `tests/test_dashboard.py` 가 부르고,
-#: 그 파일은 **연구실 경계 음성**(B 주체로 같은 세 op 을 불러 A 의 값이 하나도 안 보이는 것)을
-#: 함께 든다. 대시보드는 숫자로 접힌 화면이라 누출이 숫자 안에 숨는다.
-P7_REAL = {
-    "getDashboardSummary": "tests/test_dashboard.py",
-    "getDataMap":          "tests/test_dashboard.py",
-    "listActivities":      "tests/test_dashboard.py",
-}
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL}
-REAL = P1_REAL | set(P2_REAL)
-NO_STORE = {
-    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`). 남은 하나는
-    #    `downloadDataset` 이고 그 저장처(파일 저장소)는 아직 없다 — `CT-1` 의 마지막 한 칸이다.
-    "downloadDataset",
+    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`),
+    #    그리고 **`downloadDataset` 도 빠졌다**(`〈278〉`-(다) C2 다운로드 집행 — 티켓 2 + 바이트 1).
+    #    **`NOT_IMPLEMENTED_NO_STORE` 는 이제 0 건이다** — 저장처가 없어 못 세우던 것이 남지 않았다.
     # ⭑ `updateDataset` 이 여기서 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
     #    `#36`(설명 결손 2건)을 채울 **공개 경로가 그것뿐이었다.**
+    # ⭑ `downloadDataset` 이 여기서 빠졌다 (2026-08-29 · `〈175〉-(다)` C2). `NO_STORE` 는 `0009`
+    #    이후 낡아 있었고, C2 가 501 을 걷으면서 함께 걷었다.
 }
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -162,8 +125,13 @@ def test_the_5_unimplemented_operations_are_exactly_these() -> None:
     **임시 등재**했다(`〈278〉`-(다) 9차 동결 해제). 이 회차(C1b)는 계약 동결 + 파일 메타만이고,
     다운로드 집행 커밋(C2)이 둘을(그리고 `downloadDataset` 까지) 뺀다.
     **이 수가 7 에 머문 채 C2 가 닫히면 그것이 red 다.**
+    
+    ⭑ **7 → 4 — C2 가 셋을 뺐다** (`〈278〉`-(다) 다운로드 집행). `downloadDataset` ·
+    `downloadDatasetFile` · `getDownloadBytes`. 앞의 둘은 이 브랜치가 **임시 등재**했던 것이고,
+    `downloadDataset` 은 저장처가 없어 `NO_STORE` 로 있던 것이다 — 저장 Port 가 그 저장처다.
+    **`NOT_IMPLEMENTED_NO_STORE` 가 0 건이 됐다.**
     """
-    assert len(OPERATIONS) == 7
+    assert len(OPERATIONS) == 4
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -198,7 +166,7 @@ def test_codes_are_the_two_kinds() -> None:
     #  4 →  6: `〈278〉`-(다) 다운로드 둘의 **임시 등재**(C2 가 뺀다). `NO_STORE` 가 아닌 이유 —
     #          저장 자리는 `0009`(`d8_download.file_id`)가 이미 만들었다. ⚠ 같은 이유로
     #          `downloadDataset` 의 `NO_STORE` 도 낡았다 — C2 가 셋을 함께 걷는다.
-    assert len(p1) == 6
+    assert len(p1) == 4
     assert no_store & p1 == set()
 
 
