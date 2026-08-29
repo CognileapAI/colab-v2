@@ -27,6 +27,11 @@ case "$RC" in
   # 75 = EX_TEMPFAIL. 겹쳐 돌지 않으려 양보한 것 · fetch 실패. **고장이 아니다** —
   # 표식을 만들지 않는다. 다만 `LAST-SUCCESS` 를 갱신하지도 않으므로 침묵이 길어지면 ③ 이 잡는다.
   75) echo "$TS run-pipeline 이번 회차 건너뜀 (exit 75 — 겹침 또는 fetch 실패)" >> "$LOG" ;;
+  # 66 = EX_NOINPUT. **새 커밋이 없어 할 일이 없었다.** 성공이 아니다 —
+  #   `LAST-SUCCESS` 를 갱신하지 않는다(갱신하면 ③ 이 「아예 안 돈 경우」를 영영 못 잡는다).
+  #   실패도 아니다 — 표식을 만들지 않고, **직전 표식을 지우지도 덮지도 않는다**
+  #   (`mark_failed` 의 「다음 성공에서만 사라진다」 계약을 안 돈 회차가 깨면 안 된다).
+  66) echo "$TS run-pipeline 할 일 없음 (exit 66 — 새 커밋 없음). 배포하지 않았다" >> "$LOG" ;;
   *)  mark_failed "파이프라인" "run-pipeline.sh exit $RC"
       echo "$TS !!! run-pipeline 실패 (exit $RC)" >> "$LOG" ;;
 esac

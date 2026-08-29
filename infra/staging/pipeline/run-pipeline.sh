@@ -42,9 +42,16 @@ git -C "$REPO" fetch --quiet origin "$BRANCH" || { log "fetch 실패 — 이번 
 LOCAL="$(git -C "$REPO" rev-parse HEAD)"
 REMOTE="$(git -C "$REPO" rev-parse "origin/$BRANCH")"
 
+# ⚠ **「할 일이 없었다」를 「배포에 성공했다」와 같은 코드로 말하지 않는다.**
+# 종전에는 여기서 `exit 0` 이었다. 크론 껍데기(`watch.sh`)는 종료코드만 보므로 아무것도 하지
+# 않은 회차를 배포 green 으로 읽었고, 그 결과 ⓐ 「크론은 도는데 배포는 안 된다」를 잡으라고 둔
+# `LAST-SUCCESS.txt` 가 **5분마다 갱신되어 아무것도 못 잡게** 되고, ⓑ 「다음 성공에서만
+# 사라진다」가 계약인 `DEPLOY-FAILED.txt` 가 **진짜 배포 실패 5분 뒤 조용히 지워졌다.**
+# 이 레포가 이름 붙인 green-by-skip 의 가장 나쁜 모양이다(`CLAUDE.md §4`).
+#   66 = EX_NOINPUT. **할 일 없음** — 고장도 아니고 성공도 아니다. 껍데기가 셋을 가른다.
 if [ "$LOCAL" = "$REMOTE" ] && [ "$FORCE" -eq 0 ]; then
   log "새 커밋 없음 ($(git -C "$REPO" rev-parse --short=12 HEAD)) — 돌지 않는다"
-  exit 0
+  exit 66
 fi
 
 # ── ② 체크아웃 — **깨끗한 fast-forward 만** ────────────────────────────────
