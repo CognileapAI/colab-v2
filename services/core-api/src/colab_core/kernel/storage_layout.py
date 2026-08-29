@@ -119,6 +119,62 @@ def preview_key(content_key: str, extension: str) -> str:
     return KEY_TEMPLATES[PREVIEW_KIND].format(contentKey=key, extension=ext)
 
 
+#: 지도 타일의 내용 키 접두사. **한 슬롯 안에서 두 규칙을 눈으로도 가른다** —
+#: 렌더 산출물은 접두사가 없고, 지도 타일은 이것으로 시작한다.
+MAP_TILE_KEY_PREFIX = 'tile-'
+
+#: 규칙 자신의 판. 재료의 뜻이 바뀌면 이 값을 올린다 — 그러면 옛 키와 새 키가 갈린다.
+MAP_TILE_KEY_VERSION = '1'
+
+#: 지도 타일 키를 짓는 재료. **전부 필수다.** 기본값을 두지 않는 이유는
+#: `layout.json` 의 `fieldsWhy` 에 있다 — 빠진 재료를 관대한 기본값으로 메우면
+#: 서로 다른 산출물이 같은 키를 얻는다.
+MAP_TILE_KEY_FIELDS = (
+    'sourceDigest',
+    'sourceByteSize',
+    'gridDigest',
+    'conversionKind',
+    'overviewResampling',
+    'compression',
+)
+
+#: 좌표가 파일 안에 있어 기준 격자를 쓰지 않은 경우의 `gridDigest` 명시값.
+#: **빈 값이 아니다** — 「격자가 없다」와 「안 물어봤다」를 가른다.
+GRID_DIGEST_EMBEDDED = '내장'
+
+
+def map_tile_content_key(**fields) -> str:
+    """지도 타일 하나의 **내용 키** — 파이프라인이 실제로 가진 재료만으로 짓는다.
+
+    ⚠ **렌더 산출물의 키 규칙(`render_cache_key`)을 쓰지 않는다.** 그 규칙의 입력은
+    렌더 파라미터이고 파이프라인에는 그 값이 없다 — 부르는 순간 D5 가 D7 의 개념을 갖는다.
+    두 규칙은 같은 슬롯(`미리보기 산출물`)에 산출물을 놓지만 **키가 서로를 침범하지 않는다.**
+
+    재료가 하나라도 빠지거나 비면 **짓지 않고 예외다.** 지어낸 기본값으로 키를 만들면
+    서로 다른 산출물이 같은 자리를 차지한다.
+    """
+    import hashlib
+    import json as _json
+
+    missing = [f for f in MAP_TILE_KEY_FIELDS if fields.get(f) in (None, "")]
+    if missing:
+        raise ValueError(
+            f"지도 타일 내용 키의 재료가 없다: {missing} — 기본값으로 메우지 않는다")
+    unknown = [f for f in fields if f not in MAP_TILE_KEY_FIELDS]
+    if unknown:
+        raise ValueError(f"지도 타일 내용 키가 모르는 재료다: {unknown} — 규약은 layout.json 이다")
+    material = [MAP_TILE_KEY_VERSION] + [str(fields[f]) for f in MAP_TILE_KEY_FIELDS]
+    digest = hashlib.sha256(
+        _json.dumps(material, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return MAP_TILE_KEY_PREFIX + digest
+
+
+def is_map_tile_key(content_key: str) -> bool:
+    """한 슬롯에 함께 사는 둘 중 어느 규칙이 지은 키인가."""
+    return str(content_key).startswith(MAP_TILE_KEY_PREFIX)
+
+
 def preview_path(previews_root, content_key: str, extension: str) -> Path:
     """`previews_root` 는 **접수분 루트가 아니다** — 배포가 주는 별도 볼륨의 자리다."""
     return Path(previews_root) / preview_key(content_key, extension)

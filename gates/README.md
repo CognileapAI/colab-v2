@@ -19,6 +19,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`rls-effect`** | **RLS 가 실제로 막는가** — 본체 음성(허용자 아님·만료됨 0행) · 메타 양성(`P-13`) · cross-tenant 0행. NOBYPASSRLS·비소유자 롤로 판정하고, 우회 롤이면 red |
 | `planning-freshness` | 기획 패키지 HTML의 임베드 md가 원본 md보다 낡음 (정본 미마운트 포함) |
 | `stage2-markers` | 휴면(`stage2` 대기) 모듈의 시험이 CI 에서 **안 도는 것** — 수집 0건 · skipped · failed 가 전부 red (`PLAN-SoT §9 〈71〉-㉰`) |
+| **`autometa-loss`** | **사건이 발행되고도 장부에 반영되지 않았는가** (`PLAN-SoT §9 〈190〉-㉱`). 세는 단위 = (업로드, 칸) 쌍 · 칸 = `format`·`crs`·`grid`. 발행 ↔ 반영을 대조하고 어긋나면 red. **대상 0건도 red** 이고, 적용 DB(`COLAB_APPLIED_DB_URL_PLATFORM`)가 없어도 red 다. 면제는 `gates/config/autometa-loss.toml` 에 **이름으로** 적혀야 하고 그 건수가 출력에 드러난다 |
 | **`seam-consistency`** | **seam ↔ 이벤트 계약의 사이** — G-e 산문 위임 참조(실재하지 않는 seam·op 에의 위임 — `DR-7` 의 모양) · G-b `source: const` 능력 주장(촉발 HTTP op 부재) · ㉠ 신설 op·스키마의 정본 근거 공란 · ㉡ E-04 흐름 완주(사람 고정 fixture 재생) |
 | **`work-item-consistency`** | **개발 항목 상태의 대장 ↔ 산문 불일치** (정본 = `dev-package/work-items.yaml`). 검사 6종 — ㈎ 대장 스키마 · ㈏ `WORK-UNITS §11` 완주 체크리스트 대조 · ㈐ `03-HANDOFF §1` 진실원 표 대조 · ㈑ `⏸`(하지 않기로 한 것)의 착수 후보 표 혼입 · ㈒ 기한 발동인데 안 열린 항목 · ㈓ `conflict` 잔존. **상태 관리가 「관례를 두지 않는다」의 마지막 사각지대였다** |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db-boundary · db · rls-effect · seam-consistency · generated · work-item 증명 아홉). ⚠ **`stage2-markers-selftest` 는 여기 없다** — pipeline-worker 런타임 의존(rasterio 등)이 필요해 `contract-gates` 잡 환경에서 못 돈다. CI 는 `dormant-tests` 잡에서 따로 부른다 |
@@ -76,6 +77,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `db-selftest` | **43** | docker(postgres) — 24 는 docker 없이도 돈다 |
 | `seam-consistency-selftest` | **13** | python3 + pyyaml — red fixture 에 **개정 전 `fe-core.yaml:13-16` 위임 산문 원문**(`DR-7` 실물) 포함 |
 | `rls-effect-selftest` | **18** | docker(postgres) — 매 케이스가 자기 일회용 DB 를 새로 짓는다 |
+| `autometa-loss-selftest` | **8** | docker(postgres) — 일회용 DB 에 선언 스키마·시드·픽스처를 넣고 6 케이스를 돈다: ⓐ 적용 DB 미지정 · ⓑ 면제 선언 부재 · ⓑ' 면제 항목 부재 · ⓒ **대상 0건** · ⓓ 유실 3건 이 전부 red, ⓔ 전건 반영 · ⓕ 이름으로 면제 가 green 이며 **ⓕ 는 면제 건수가 출력에 나타나는지까지 본다**(건수를 숨긴 통과는 green-by-skip 이다) |
 | `stage2-markers-selftest` | **3** | pipeline-worker venv — ⓐ 마커 0건 · ⓑ skip · ⓒ fail 셋이 전부 red 임을 증명한다. ⓑ 가 핵심이다: **green-by-skip 이 v1 의 실패 형태**다 |
 | `work-item-selftest` | **10** | 없음 (bash + python3 + pyyaml) — 대조군 1 · red 증명 9. **픽스처가 자기 산문 문서(`03-HANDOFF` · `WORK-UNITS` 스텁)를 들고 다닌다.** 레포 실물의 항목 상태는 정당하게 어긋나 있을 수 있고(그것이 이 게이트를 만든 이유다) selftest 가 거기 볼모잡히면 안 된다 — `db-selftest`·`generated-selftest` 와 같은 이유. red 픽스처의 ㈑ 는 **2026-08-27 실물 재현**(`WORK-UNITS §10` 착수 후보 표에 `I0 ⏸` 가 올라 있던 것) |
 | `generated-selftest` | **9** | 없음 (bash + python3) — green 기준 케이스도 fixture 다. 레포 실물은 재생성 파이프라인 상태에 따라 정당하게 red 일 수 있어, selftest 가 레포 상태에 볼모잡히지 않게 했다 |

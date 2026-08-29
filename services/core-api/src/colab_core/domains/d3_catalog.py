@@ -495,6 +495,36 @@ _INSERT_AUTOMETA = text("""
     VALUES (:dataset_id, current_lab_id(), :format, :bundle_file_name, :total_size_bytes)
 """)
 
+# 사건이 나른 자동 정보를 장부에 **반영**한다 (`〈190〉` 사건 경유 되쓰기).
+#
+# **비어 있는 칸만 채운다.** 사람이 고친 값(`update_dataset` 의 `crs`·`variables`)을
+# 사건이 덮으면 사용자의 수정이 조용히 사라진다 — 그 실패는 화면에 아무 말도 남기지 않는다.
+# `COALESCE` 가 그 규율이고, `variables` 는 **빈 배열이 곧 비어 있음**이다(NOT NULL DEFAULT '{}').
+#
+# 돌려주는 것은 **반영 뒤 값이 들어 있는 칸의 이름들**이다(UPDATE 이후 상태). 「불렀다」가
+# 아니라 「값이 있다」를 세야 유실 감지가 성립한다 (`CLAUDE.md §4` — 건수를 드러낸 채 넘어간다).
+_APPLY_AUTOMETA = text("""
+    UPDATE d3_dataset_autometa a
+       SET format       = COALESCE(a.format, :format),
+           crs          = COALESCE(a.crs, :crs),
+           grid         = COALESCE(a.grid, :grid),
+           period_start = COALESCE(a.period_start, CAST(:period_start AS timestamptz)),
+           period_end   = COALESCE(a.period_end, CAST(:period_end AS timestamptz)),
+           variables    = CASE WHEN cardinality(a.variables) > 0
+                                 OR CAST(:variables AS text[]) IS NULL
+                               THEN a.variables ELSE CAST(:variables AS text[]) END,
+           total_size_bytes = COALESCE(a.total_size_bytes, :total_size_bytes),
+           updated_at   = now()
+     WHERE a.dataset_id = :dataset_id
+    RETURNING (a.format IS NOT NULL)                AS has_format,
+              (a.crs IS NOT NULL)                   AS has_crs,
+              (a.grid IS NOT NULL)                  AS has_grid,
+              (a.period_start IS NOT NULL)          AS has_period_start,
+              (a.period_end IS NOT NULL)            AS has_period_end,
+              (cardinality(a.variables) > 0)        AS has_variables,
+              (a.total_size_bytes IS NOT NULL)      AS has_total_size_bytes
+""")
+
 _INSERT_FILE = text("""
     INSERT INTO d3_file (id, lab_id, dataset_id, kind, file_name, size_bytes, storage_key,
                          carries_lat, carries_lon)
@@ -798,3 +828,38 @@ def lineage_state(core: DatasetCore, summary: LineageSummary | None) -> str:
     if core.source_label:
         return "원천"
     return "기록 없음"
+
+
+#: 사건이 채울 수 있는 칸 ↔ `HeldAutoMetadata` 의 값 이름. **정본은 사건 계약이다**
+#: (`contracts/events/core-pipeline.json` FormatDetected·HeaderParsed) — 여기는 그것을
+#: 장부 열로 옮긴 표일 뿐이다. 표를 늘리려면 계약이 먼저 그 값을 날라야 한다.
+AUTOMETA_FROM_EVENTS = (
+    "format", "crs", "grid", "period_start", "period_end", "variables", "total_size_bytes",
+)
+
+
+def apply_autometa(session: Session, *, dataset_id: Ulid, format: str | None = None,
+                   crs: str | None = None, grid: str | None = None,
+                   period_start=None, period_end=None,
+                   variables: list[str] | None = None,
+                   total_size_bytes: int | None = None) -> tuple[str, ...]:
+    """보류된 사건이 나른 값을 장부에 적는다. **돌려주는 것은 반영 뒤 값이 있는 칸**이다.
+
+    ⚠ **「불렀다」를 「값이 있다」로 세지 않는다.** 대상 행이 없으면 빈 tuple 이고,
+    사건이 값을 안 날랐으면 그 칸은 목록에 없다 — 그 둘을 통과로 접으면 유실이 안 보인다.
+    """
+    # `text[]` 파라미터는 **리터럴로 넘긴다** — 드라이버 어댑터에 기대면 배열이 조용히
+    # 한 원소 문자열로 접히는 경로가 생긴다. 비어 있으면 아예 넘기지 않는다(NULL).
+    arr = None
+    if variables:
+        esc = ",".join('"' + str(v).replace("\\", "\\\\").replace('"', '\\"') + '"'
+                       for v in variables)
+        arr = "{" + esc + "}"
+    row = session.execute(_APPLY_AUTOMETA, {
+        "dataset_id": str(dataset_id), "format": format, "crs": crs, "grid": grid,
+        "period_start": period_start, "period_end": period_end,
+        "variables": arr, "total_size_bytes": total_size_bytes,
+    }).mappings().first()
+    if row is None:
+        return ()
+    return tuple(c for c in AUTOMETA_FROM_EVENTS if row[f"has_{c}"])

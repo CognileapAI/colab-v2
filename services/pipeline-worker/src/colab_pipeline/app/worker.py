@@ -60,6 +60,22 @@ ENV_UPLOAD_DIR = "COLAB_WORKER_UPLOAD_DIR"
 #: 워커가 산출물을 두는 자리. stage 1 은 산출물을 만들지 않지만 `run_file` 이 stage 2 에서
 #: 쓰므로 인자를 비워 두지 않는다.
 ENV_WORKDIR = "COLAB_WORKER_WORKDIR"
+#: 지도 타일이 놓일 **미리보기 산출물 루트**. viz-render 의 `COLAB_VIZ_PREVIEW_DIR` 과
+#: **같은 볼륨**이어야 한다 — 규약(`contracts/storage/layout.json`)이 루트가 둘이라는
+#: 사실만 못 박고 실제 경로는 배포가 준다. 없으면 stage 2 는 **돌지 않는다**(아래 참조).
+ENV_PREVIEW_DIR = "COLAB_WORKER_PREVIEW_DIR"
+#: **stage 2 를 도는가.** 예전에는 `stage1=True` 가 호출부에 박혀 있어 설정으로 열 자리가
+#: 없었다 — 스위치가 코드였다. 이제 선언으로 갈린다.
+#:
+#: 세 상태를 코드가 가른다 (`CLAUDE.md §4`):
+#:   · `on` 으로 **선언되면** stage 2 를 돈다. 이때 미리보기 루트가 없으면 **뜨지 않는다** —
+#:     자리를 모르는 채 산출물을 만들면 임시 자리에 떨어뜨리고 성공을 보고한다.
+#:   · `off` 로 **명시 면제하면** stage 1 로 돌되 **그 사실을 한 줄로 드러낸다.**
+#:   · **아무 말도 없으면** 면제로 세지 않는다 — `off` 와 같은 동작이되 「선언되지 않았다」로
+#:     드러내고, 그 상태에서 사건이 나지 않는 것을 **유실 감지 게이트가 red 로 받는다.**
+#:     여기서 프로세스를 죽이지 않는 이유는 하나다 — 이미 도는 배포가 재기동에서 서지 못하면
+#:     그것은 검사가 아니라 사고다. **판정처는 게이트이고, 여기는 그 사실을 말하는 자리다.**
+ENV_STAGE2 = "COLAB_WORKER_STAGE2"
 
 #: 한 바퀴에 처리할 업로드 수의 상한. **없으면 한 바퀴가 얼마나 걸릴지 아무도 모른다.**
 BATCH = 20
@@ -110,8 +126,22 @@ def _named_view(blob: Path, holder: Path, file_name: str) -> Path:
     return view
 
 
+def stage2_declaration(env=None) -> tuple[bool, str]:
+    """`(stage 2 를 도는가, 그 사실을 적을 한 줄)` — **선언을 값으로 바꾸는 유일한 자리.**"""
+    env = os.environ if env is None else env
+    raw = (env.get(ENV_STAGE2) or "").strip().lower()
+    if raw == "on":
+        return True, f"{ENV_STAGE2}=on — stage 2 를 돈다"
+    if raw == "off":
+        return False, f"{ENV_STAGE2}=off — 명시 면제. stage 1 만 돈다"
+    if raw:
+        raise RuntimeError(f"{ENV_STAGE2} 는 on|off 다 — 받은 값: {raw!r}. 지어내지 않는다")
+    return False, f"{ENV_STAGE2} 미선언 — stage 1 만 돈다(면제 선언 아님 · 유실 감지가 받는다)"
+
+
 def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH,
-                  service=None) -> list[str]:
+                  service=None, stage1: bool = True,
+                  previews_root: Path | None = None) -> list[str]:
     """접수분을 stage 1 로 태운다. 돌려주는 것은 **처리한 업로드 id** 다.
 
     **한 건이 실패해도 나머지를 멈추지 않는다** — `process_upload` 는 실패를 예외가 아니라
@@ -144,7 +174,8 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
         service.process_upload(UploadWork(
             upload_id=upload_id, lab_id=row["lab_id"],
             actor_account_id=row["uploader_account_id"],
-            workdir=workdir / upload_id, files=files), stage1=True)
+            workdir=workdir / upload_id, files=files,
+            previews_root=previews_root), stage1=stage1)
         done.append(upload_id)
     return done
 
@@ -187,7 +218,8 @@ def _target_labs(factory, only_lab: str | None) -> list[str]:
 
 
 def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path,
-              workdir: Path, publish) -> tuple[list[str], int, list[str]]:
+              workdir: Path, publish, stage1: bool = True,
+              previews_root: Path | None = None) -> tuple[list[str], int, list[str]]:
     """연구실 **하나**의 한 바퀴 — 제 트랜잭션 · 제 스코프 · 끝나면 해제.
 
     **순서가 중요하다** — 처리가 먼저여야 그 바퀴에 생긴 이벤트가 같은 바퀴에 나간다.
@@ -198,7 +230,8 @@ def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path
         session.begin()
         _scope_lab(session, lab, worker_account)
         ledger = SqlLedger(session)
-        processed = drive_uploads(ledger, upload_dir=upload_dir, workdir=workdir)
+        processed = drive_uploads(ledger, upload_dir=upload_dir, workdir=workdir,
+                                  stage1=stage1, previews_root=previews_root)
         sent = relay_unpublished(ledger, publish=publish)
         reaped = reap_expired_uploads(ledger)
         # 스코프 해제를 **눈에 보이는 한 줄**로 둔다 — 한 바퀴에 연구실 여럿을 도는 뒤로는
@@ -247,6 +280,16 @@ def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
         raise RuntimeError(f"{ENV_UPLOAD_DIR} 가 없다 — 접수한 바이트를 못 여는 워커는 안 돈다")
     workdir = Path(os.environ.get(ENV_WORKDIR) or (Path(upload_dir) / "_work"))
 
+    stage2, note = stage2_declaration()
+    print(note, flush=True)
+    preview_dir = os.environ.get(ENV_PREVIEW_DIR) or ""
+    if stage2 and not preview_dir:
+        # **자리를 모르는 채 산출물을 만들지 않는다.** 임시 자리에 떨어뜨리고 성공을 보고하면
+        # 그 산출물은 다음 바퀴에 사라지고, 사라진 사실은 아무 데도 안 적힌다.
+        raise RuntimeError(
+            f"{ENV_STAGE2}=on 인데 {ENV_PREVIEW_DIR} 가 없다 — 지도 타일의 자리를 모른 채 돌지 않는다")
+    previews_root = Path(preview_dir) if preview_dir else None
+
     engine = make_engine(url)
     factory = make_session_factory(engine)
     processed: list[str] = []
@@ -256,7 +299,8 @@ def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
         for lab in _target_labs(factory, only_lab):
             p, s, r = _lab_pass(factory, lab, worker_account=worker_account,
                                 upload_dir=Path(upload_dir), workdir=workdir,
-                                publish=publish)
+                                publish=publish, stage1=not stage2,
+                                previews_root=previews_root)
             processed += p
             sent += s
             reaped += r

@@ -58,10 +58,48 @@ class UploadRecord:
     processing: bool
 
 
+@dataclasses.dataclass(frozen=True)
+class HeldAutoMetadata:
+    """**아직 장부에 반영되지 않은 채 보류된 사건들**이 나르는 자동 정보.
+
+    왜 「보류」인가 — 사건은 **등록 전**에 난다(`upload.ready` 축자 「저장된 것은 아무것도
+    없다」 · `datasetId` 가 없다). 그런데 값이 사는 장부 행 `d3_dataset_autometa` 는
+    **등록 전환 시점**에 생긴다. 그래서 소비자는 **대상 행이 아직 없는 사건**을 반드시 만난다.
+
+    **보류된 사건이 어디 사는가 = `d5_pipeline_event` 행 그 자체다.**
+    따로 큐를 만들지 않는다. 메모리에 들고 있으면 재기동에서 사라지고, 사라진 사실은
+    「값이 원래 없었다」와 구분되지 않는다 — 그것이 지금 상태의 재현이다. 사건 행은
+    이미 내구 저장이고(원장 표 · 업로드와 함께 `ON DELETE CASCADE`), 멱등 키가
+    `<타입>:<uploadId>` 라 **타입당 한 건**이다. 그래서 「보류 목록」은 **질의**이지
+    자료구조가 아니다 — 두 벌이 될 수 없다.
+
+    반영 시점 = **등록 전환 트랜잭션**. 같은 트랜잭션이라 반쪽이 남지 않는다.
+    """
+
+    format: str | None
+    variables: list[str] | None
+    period_start: str | None
+    period_end: str | None
+    crs: str | None
+    grid: str | None
+    byte_size_total: int | None
+    #: 읽은 사건의 종류들. **건수가 아니라 목록이다** — 유실 감지가 「무엇이 안 왔나」를
+    #: 말할 수 있어야 하고, 0 건과 「읽었는데 값이 비었다」는 다른 사실이다.
+    event_types: tuple[str, ...] = ()
+
+    @property
+    def carries_any_value(self) -> bool:
+        return any(v not in (None, [], "") for v in (
+            self.format, self.variables, self.period_start, self.period_end,
+            self.crs, self.grid, self.byte_size_total))
+
+
 class UploadLedgerReadPort(Protocol):
     def find(self, upload_id: Ulid) -> UploadRecord | None: ...
 
     def files(self, upload_id: Ulid) -> list[UploadFileRecord]: ...
+
+    def held_auto_metadata(self, upload_id: Ulid) -> HeldAutoMetadata: ...
 
 
 class UploadLedgerWritePort(Protocol):
