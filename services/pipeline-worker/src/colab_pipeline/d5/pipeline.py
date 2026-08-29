@@ -18,6 +18,7 @@ from .cog import convert_tif_to_cog, write_cog_from_grid
 from .detect import detect_format
 from .formats import UNKNOWN
 from .grid import GridUnavailableError, find_reference_grid
+from .internal_grid import InternalGridUnavailable, internal_latlon
 from .hsr import decode_block, parse_hsr
 from .parse import AutoMetadata, ParseError, parse_metadata
 from .tiff_probe import classify_tiff
@@ -150,23 +151,32 @@ def _first_2d_array(path: Path, fmt: str, meta: AutoMetadata) -> np.ndarray:
 
 
 def _embedded_latlon(path: Path, fmt: str) -> tuple[np.ndarray, np.ndarray]:
-    if fmt != "NetCDF":
-        raise GridUnavailableError(f"{fmt} 는 파일 내 위경도가 없다")
-    from netCDF4 import Dataset
-    ds = Dataset(path, "r")
+    """파일 내부에서 위경도를 얻는다 — ① 좌표 변수 ② 투영 속성.
+
+    ②(`internal_grid`)가 없던 동안 GK2A·MODIS 는 좌표 변수가 없다는 이유만으로
+    기준 격자 후주입을 강요받았다 — 운영 dry-run 39건의 실패가 그것이다.
+    둘 다 못 세우면 예외다. **지어내지 않는다 (DR-9).**
+    """
+    if fmt == "NetCDF":
+        from netCDF4 import Dataset
+        ds = Dataset(path, "r")
+        try:
+            names = {v.lower(): v for v in ds.variables}
+            lat_n = names.get("lat") or names.get("latitude")
+            lon_n = names.get("lon") or names.get("longitude")
+            if lat_n and lon_n:
+                lat = np.asarray(ds.variables[lat_n][:], dtype="f8")
+                lon = np.asarray(ds.variables[lon_n][:], dtype="f8")
+                if lat.ndim == 1 and lon.ndim == 1:
+                    lon, lat = np.meshgrid(lon, lat)
+                return lat, lon
+        finally:
+            ds.close()
     try:
-        names = {v.lower(): v for v in ds.variables}
-        lat_n = names.get("lat") or names.get("latitude")
-        lon_n = names.get("lon") or names.get("longitude")
-        if not lat_n or not lon_n:
-            raise GridUnavailableError("파일 내 lat/lon 변수가 없다")
-        lat = np.asarray(ds.variables[lat_n][:], dtype="f8")
-        lon = np.asarray(ds.variables[lon_n][:], dtype="f8")
-        if lat.ndim == 1 and lon.ndim == 1:
-            lon, lat = np.meshgrid(lon, lat)
-        return lat, lon
-    finally:
-        ds.close()
+        lat, lon, _note = internal_latlon(path, fmt)
+    except InternalGridUnavailable as e:
+        raise GridUnavailableError(f"{fmt} 는 파일 내 위경도를 세울 수 없다: {e}") from e
+    return lat, lon
 
 
 def run_batch(paths: list[Path], *, workdir: Path, grid_dirs: dict[str, Path] | None = None,

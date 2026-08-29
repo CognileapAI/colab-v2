@@ -17,6 +17,7 @@ from pathlib import Path
 from .detect import DetectionResult
 from .formats import UNKNOWN
 from .hsr import HsrResult, parse_hsr
+from .internal_grid import describe_internal_grid
 
 _COORD_VAR_NAMES = {"lat", "lon", "latitude", "longitude", "x", "y", "time",
                     "gk2a_imager_projection", "crs", "spatial_ref"}
@@ -72,6 +73,14 @@ def _parse_netcdf(path: Path, meta: AutoMetadata) -> None:
                 meta.notes.append("time 변수는 있으나 기간 해석 실패 — [미상]")
     finally:
         ds.close()
+    # 좌표 변수가 없어도 **투영 속성만으로 격자가 선다** — GK2A(`ko020lc`)가 그렇다.
+    # 여기서 후주입을 강제하던 것이 운영 dry-run 39건 중 31건의 실패 원인이었다.
+    # (근거 = DATA-REFERENCE §1.1 「NetCDF 는 파일 내부만으로 계산된다 ✅확인」 + 실물 재측정)
+    if not meta.crs_embedded:
+        note = describe_internal_grid(path, "NetCDF")
+        if note:
+            meta.crs = note
+            meta.crs_embedded = True
 
 
 def _parse_hdf4(path: Path, meta: AutoMetadata) -> None:
@@ -84,14 +93,23 @@ def _parse_hdf4(path: Path, meta: AutoMetadata) -> None:
         shapes = [tuple(v[1]) for v in infos.values() if len(v[1]) >= 2]
         if shapes:
             meta.grid = (int(shapes[0][-2]), int(shapes[0][-1]))
-        # MODIS Sinusoidal — 투영 격자. 위경도는 동봉 기준 격자가 필요하다.
-        meta.crs_embedded = False
         attrs = sd.attributes()
-        sm = attrs.get("StructMetadata.0", "")
-        if "GCTP_SNSOID" in str(sm):
-            meta.notes.append("투영 = Sinusoidal (StructMetadata) — 위경도는 기준 격자 필요")
+        sm = str(attrs.get("StructMetadata.0", ""))
     finally:
         sd.end()
+    # ⚠ 예전에는 여기서 `crs_embedded = False` 로 **고정**해 후주입을 강제했다 —
+    # 운영 dry-run 39건 중 MODIS 8건의 실패 원인이 이 한 줄이었다. 정본(§1.1)은
+    # 「HDF4 는 파일 내부만으로 계산된다 ✅확인(오차 7e-14°)」이었고, 실물로 다시
+    # 재도 같았다(`sessions/D5-GRID.md §2`). 그래서 **세워 보고** 정한다 —
+    # 속성이 있다고 믿는 것이 아니라 실제로 서는지를 본다 (`§0 M-8`).
+    note = describe_internal_grid(path, "HDF4")
+    if note:
+        meta.crs = note
+        meta.crs_embedded = True
+    else:
+        meta.crs_embedded = False
+        if "GCTP_SNSOID" in sm:
+            meta.notes.append("Sinusoidal 인데 격자를 세우지 못했다 — 기준 격자 필요")
 
 
 def _parse_geotiff(path: Path, meta: AutoMetadata) -> None:
