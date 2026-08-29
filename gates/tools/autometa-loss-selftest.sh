@@ -2,7 +2,8 @@
 # autometa-loss 가 red fixture 로 **fail-closed** 임을 증명한다 (CLAUDE.md §4).
 #
 # 케이스 7종 — 다섯은 red 여야 하고 둘은 green 이어야 하며, green 하나는 **건수를 드러내야** 한다.
-#   ⓐ 적용 DB 미지정        → red   (환경 부재를 skip 으로 세지 않는다)
+#   ⓐ 적용 DB 미지정        → red(준비·입력미선언)  (환경 부재를 skip 으로 세지 않는다.
+#                             다만 「대상이 규율을 어겼다」가 아니라 「입력이 선언되지 않았다」로 말한다)
 #   ⓑ 면제 선언 파일 부재    → red   (「선언이 없다」와 「면제가 없다」는 다르다)
 #   ⓒ 대조 대상 0건          → red   (**대상 0건은 통과가 아니다** — 이 게이트의 핵심)
 #   ⓓ 발행 3 · 반영 0        → red   (유실 그 자체)
@@ -104,8 +105,17 @@ expect() { # $1=green|red $2=라벨 $3..=환경변수
   fi
 }
 
-# ⓐ 적용 DB 미지정
+# ⓐ 적용 DB 미지정 — red 이되 **원인을 참말로 말해야 한다.**
+#   대상을 한 건도 못 봤으므로 「검사 대상이 규율을 어겼다」가 아니다. 「입력이 선언되지 않았다」다.
 expect red "ⓐ 적용 DB 미지정" COLAB_AUTOMETA_EXEMPT="$EXEMPT_NONE" COLAB_APPLIED_DB_URL_PLATFORM=
+case "$LAST_OUT" in
+  *cause=입력미선언*missing=*)
+    if printf '%s\n' "$LAST_OUT" | grep '규율을 어겼다' | grep -qv '아니라'; then
+      echo "[selftest] ⓐ 원인 문구 ✗ — 「대상이 규율을 어겼다」로 말한다"; FAILURES+=("ⓐ 거짓 원인 문구")
+    else echo "[selftest] ⓐ 원인 표식(입력미선언) → OK"; fi ;;
+  *) echo "[selftest] ⓐ cause=입력미선언 표식이 없다 ✗ — 미선언이 판정 red 로 찍힌다"
+     echo "$LAST_OUT" | sed 's/^/           /'; FAILURES+=("ⓐ 원인 표식") ;;
+esac
 
 # ⓑ 면제 선언 파일 부재
 expect red "ⓑ 면제 선언 부재" COLAB_AUTOMETA_EXEMPT="$TMP/없는파일.toml" \

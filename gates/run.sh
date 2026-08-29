@@ -263,14 +263,18 @@ case "$GATE" in
     done
     # ── 요약 — red 를 **두 갈래로 가른다** ───────────────────────────────────
     #   red(판정)  = 검사 대상이 규율을 어겼다. 고쳐야 할 결함이다.
-    #   red(준비)  = **검사기가 아예 못 돌았다**(일회용 DB 가 제때 뜨지 않는 등).
-    #                무엇을 얼마나 기다렸는지까지 적는다.
+    #   red(준비)  = **검사기가 판정을 못 냈다.** 대상은 아직 판정되지 않았다.
+    #                준비 red 의 원인은 두 종류이고, 둘을 **같은 말로 찍지 않는다**:
+    #                  · 환경대기   일회용 DB 가 제때 뜨지 않았다. 무엇을 얼마나 기다렸는지 적는다.
+    #                  · 입력미선언 검사에 필요한 값이 아무 데도 선언되지 않았다(적용 DB URL 등).
+    #                              기다린 것이 없다 — 그러니 waited_for 를 묻지 않는다.
+    #                가르는 축은 하나다 — **대상이 판정됐는가.** 셋째 범주를 만들지 않는다.
     # 왜 가르나: 둘이 같은 `red` 로 보이면 부하에서 나는 간헐 red 를 결함으로 오인하고,
     #   그 모호함이 이 레포의 **모든 측정값**을 못 믿게 만든다(병합 판정 포함).
     # ⚠ 준비 red 도 red 다. 총계에서 빠지지 않고 종료코드도 그대로 실패다.
     #   상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다.
     echo "── 요약 ────────────────────────────────────────────────────"
-    n_green=0; n_red_judge=0; n_red_ready=0
+    n_green=0; n_red_judge=0; n_red_ready=0; n_undeclared_input=0
     for g in "${ALL_GATES[@]}"; do
       grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
       rmark="$(grep -m1 '^::gate-readiness-failure::' "$outdir/$g.out" 2>/dev/null || true)"
@@ -278,12 +282,28 @@ case "$GATE" in
       elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1))
       elif [ "$grc" = 78 ] || [ -n "$rmark" ]; then
         detail="${rmark#::gate-readiness-failure::}"
-        echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다. ${detail:-사유 표식 없음}"
+        # 원인을 표식에서 읽는다. `cause=` 가 없는 옛 표식은 환경대기다(`_pg.sh`).
+        case "$rmark" in
+          *cause=입력미선언*)
+            echo "  red(준비)  $g (exit $grc) — **검사에 필요한 입력이 선언되지 않았다.** 검사 대상은 한 건도 판정되지 않았다. ${detail:-사유 표식 없음}"
+            n_undeclared_input=$((n_undeclared_input+1)) ;;
+          *)
+            echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${detail:-사유 표식 없음}" ;;
+        esac
         n_red_ready=$((n_red_ready+1))
       else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); fi
     done
     echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
-    [ "$n_red_ready" -eq 0 ] || echo "  ⚠ red(준비) ${n_red_ready}건 — **판정이 아니라 준비가 낸 red 다.** 위 줄의 waited_for·limit·elapsed 가 무엇을 얼마나 기다렸는지다. 이 건들에 대해 검사 대상은 아직 판정되지 않았다."
+    if [ "$n_red_ready" -gt 0 ]; then
+      echo "  ⚠ red(준비) ${n_red_ready}건 — **판정이 아니라 준비가 낸 red 다.** 이 건들에 대해 검사 대상은 아직 판정되지 않았다."
+      if [ "$n_undeclared_input" -gt 0 ]; then
+        echo "     · 입력미선언 ${n_undeclared_input}건 — 위 줄의 missing 이 **아무 데도 선언되지 않은 값**이다. 기다린 것이 없으므로 상한을 늘려도 달라지지 않는다. 그 값을 선언하고 다시 돌린다."
+      fi
+      if [ "$((n_red_ready - n_undeclared_input))" -gt 0 ]; then
+        echo "     · 환경대기 $((n_red_ready - n_undeclared_input))건 — 위 줄의 waited_for·limit·elapsed 가 무엇을 얼마나 기다렸는지다."
+      fi
+      echo "     ⚠ 어느 쪽이든 **red 다.** 상한 연장·재시도·병렬도 축소·건너뛰기·기본값으로 green 을 만들지 않는다."
+    fi
     if [ "${#undeclared_gates[@]}" -gt 0 ]; then
       echo "  ⚠ 병렬 안전성 **미선언** ${#undeclared_gates[@]}건 — 안전한 쪽으로 단독 실행했다: ${undeclared_gates[*]}"
     fi

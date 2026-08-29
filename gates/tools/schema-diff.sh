@@ -33,6 +33,12 @@ CHAINS=(platform ai)
 
 red() { echo "::error::schema-diff red — $*"; exit 1; }
 
+# 선언되지 않은 입력 = **준비 red**. 「검사 대상이 규율을 어겼다」가 아니다 — 대상을 한 건도 못 봤다.
+#   여전히 red 이고 종료코드도 실패다.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
+red_undeclared() { readiness_undeclared_input schema-diff "$1" "$2"; exit "$READINESS_EXIT"; }
+
 # ── 1. 선언 스키마가 있는가 (대상 0건 = red) ────────────────────────────────
 MISSING=()
 for c in "${CHAINS[@]}"; do
@@ -52,7 +58,8 @@ URL_AI="${COLAB_APPLIED_DB_URL_AI:-}"
 LEGACY="${COLAB_APPLIED_DB_URL:-}"
 
 if [ -n "$LEGACY" ] && { [ -z "$URL_PLATFORM" ] || [ -z "$URL_AI" ]; }; then
-  red "COLAB_APPLIED_DB_URL 은 더 이상 쓰지 않는다 — 어느 체인의 DB 인지 알 수 없다.
+  red_undeclared "체인별 적용 DB URL (구 변수 COLAB_APPLIED_DB_URL 만 있다)" \
+    "COLAB_APPLIED_DB_URL 은 더 이상 쓰지 않는다 — 어느 체인의 DB 인지 알 수 없다.
    db/platform 과 db/ai 는 마이그레이션 체인이 분리된 **서로 다른 DB** 다 (CLAUDE.md §3-3).
    한 URL 을 두 체인에 갖다 대면 한 체인만 실제로 검사된다 — 조용히 검사 범위가 줄어드는 게 최악이다.
    → COLAB_APPLIED_DB_URL_PLATFORM 과 COLAB_APPLIED_DB_URL_AI 를 **둘 다** 지정한다."
@@ -62,7 +69,7 @@ MISSING_URL=()
 [ -n "$URL_PLATFORM" ] || MISSING_URL+=("COLAB_APPLIED_DB_URL_PLATFORM (db/platform)")
 [ -n "$URL_AI" ]       || MISSING_URL+=("COLAB_APPLIED_DB_URL_AI (db/ai)")
 if [ "${#MISSING_URL[@]}" -gt 0 ]; then
-  red "적용 DB 가 지정되지 않았다:
+  red_undeclared "$(printf '%s · ' "${MISSING_URL[@]}" | sed 's/ · $//')" "적용 DB 가 지정되지 않았다:
 $(printf '     - %s\n' "${MISSING_URL[@]}")
    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.
    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →

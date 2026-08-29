@@ -35,9 +35,15 @@ URL="${COLAB_APPLIED_DB_URL_PLATFORM:-}"
 
 red() { echo "::error::autometa-loss red — $*"; exit 1; }
 
+# 선언되지 않은 입력 = **준비 red**. 「검사 대상이 규율을 어겼다」가 아니다 — 대상을 한 건도 못 봤다.
+#   여전히 red 이고 종료코드도 실패다. 바뀌는 것은 **red 가 자기 원인을 참말로 말한다**는 것뿐이다.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
+red_undeclared() { readiness_undeclared_input autometa-loss "$1" "$2"; exit "$READINESS_EXIT"; }
+
 # ── 1. 면제 선언 — **파일이 없으면 red.** 「선언이 없다」와 「면제가 없다」는 다르다 ────
-[ -f "$EXEMPT_FILE" ] || red "면제 선언 파일이 없다: ${EXEMPT_FILE#"$REPO_ROOT"/}
-   이 파일은 면제를 **이름으로** 고정하는 유일한 정본이다. 없으면 무엇이 면제인지 아무도 모른다.
+[ -f "$EXEMPT_FILE" ] || red_undeclared "면제 선언 파일 (${EXEMPT_FILE#"$REPO_ROOT"/})" \
+  "이 파일은 면제를 **이름으로** 고정하는 유일한 정본이다. 없으면 무엇이 면제인지 아무도 모른다.
    → 빈 목록(datasets = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다."
 
 EXEMPT_IDS="$(python3 - "$EXEMPT_FILE" <<'PY'
@@ -51,15 +57,16 @@ else:
 PY
 )" || red "면제 선언을 읽지 못했다."
 if [ "$EXEMPT_IDS" = "::MISSING::" ]; then
-  red "면제 선언에 datasets 항목이 없다: ${EXEMPT_FILE#"$REPO_ROOT"/}
-   항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다."
+  red_undeclared "면제 선언의 datasets 항목 (${EXEMPT_FILE#"$REPO_ROOT"/})" \
+    "항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다."
 fi
 EXEMPT_COUNT=0
 [ -n "$EXEMPT_IDS" ] && EXEMPT_COUNT="$(printf '%s' "$EXEMPT_IDS" | tr ',' '\n' | grep -c .)"
 
 # ── 2. 적용 DB — 없으면 red. **skip 하면 그게 정확히 v1 의 실패다** ────────────────
-[ -n "$URL" ] || red "COLAB_APPLIED_DB_URL_PLATFORM 이 없다 — 적용 DB 없이 반영 여부를 셀 수 없다.
-   검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4). schema-diff 와 같은 변수·같은 규율이다.
+[ -n "$URL" ] || red_undeclared "COLAB_APPLIED_DB_URL_PLATFORM (db/platform 적용 DB)" \
+  "적용 DB 없이 반영 여부를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
+   schema-diff 와 같은 변수·같은 규율이다.
    → db/platform 이 적용된 DB 의 URL 을 지정하고 다시 돌린다."
 
 SQL_ARRAY="ARRAY[]::text[]"
