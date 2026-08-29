@@ -216,6 +216,24 @@ install) mkdir -p …; { current; block; } | crontab - && echo "설치됨. 로�
 **설치본이 `requirements.txt` 핀과 정확히 일치**함을 실측했다(`pydantic 2.13.4` · `pydantic_core 2.46.4` · `rio-cogeo 7.0.2`).
 ⟹ **핀 자체가 이 파이썬(3.12)·이 호스트에서 어긋난다**는 뜻이고, **레포 결함인지 내 사본 구성 문제인지는 이 회차가 가르지 못했다** → **`[미확인]`**.
 푸는 법 = CI 는 이 시험을 **도커 이미지 안**에서 돌린다 — 같은 이미지로 한 번 돌려 결과가 갈리는지 본다.
+
+> ⭑ **⟨해소 2026-08-30T02:12+09:00 · 워크트리 `lane2-search`⟩ 「푸는 법」을 그대로 실행했다 — 값이 갈린다.
+> 위 실측치는 지우지 않는다(호스트 venv 판의 값이다).**
+>
+> | 어디서 돌렸나 | 수집 | 통과 | 실패 | 오류 |
+> |---|---:|---:|---:|---:|
+> | 호스트 venv (`services/pipeline-worker/.venv`, python 3.12) | 34 | **31** | **3** | 0 |
+> | **배포 이미지 `colab-v2/pipeline-worker:30b3e0a7b3f3`** | 34 | **34** | **0** | 0 |
+>
+> 명령 = `docker run --rm --network none -v "$PWD:/repo:ro" -w /repo/services/pipeline-worker`
+> `colab-v2/pipeline-worker:30b3e0a7b3f3 python -m pytest -q --strict-markers -p no:cacheprovider -m "stage2 and not e2e"`
+> (`--rm` · 네트워크 없음 · 레포 `:ro` 마운트 · 호스트 포트 미공개 — 운영 컨테이너 무접촉).
+>
+> ⟹ **판정 = 레포 결함이 아니다. 이 사본의 venv 구성 문제다**(`pydantic-core` 2건 · `test_hsr_with_reference_grid_completes` 1건이
+> 배포 이미지에서 전건 통과). **`stage2-markers` 게이트의 red 는 호스트 venv 로 돌릴 때만 난다.**
+> ⚠ 첫 실행에서 `services/pipeline-worker` 만 마운트하면 `contracts/events/envelope.json` 을 못 찾아
+> `test_contract_does_not_pin_the_list` 가 **error 1건**을 낸다 — **레포 루트를 마운트해야 한다.** 시험 결함이 아니라 마운트 범위다.
+> **이번에 세지 않은 판단기준** — 게이트가 이미지 안에서 돌도록 배선을 바꿀지는 정하지 않았다(`stage2-markers.sh` 는 여전히 호스트 venv 를 본다).
 **이 항목은 배포 자동화 소관이 아니다**(pipeline-worker 의 의존 핀). 고치지 않았고 넘겨 적는다.
 
 ### 5.3 전 종 실행 — `./gates/run.sh all -j 2` · **red 전건 단독 재현**
