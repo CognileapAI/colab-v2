@@ -3,27 +3,53 @@
  * 오라클은 `E-02_데이터_찾기/documents/Policy_데이터_찾기.md` (v1.8) 와 그 목업이다.
  * 화면 글자는 정본에서 그대로 온다 — 여기서 새 한국어 라벨을 만들지 않는다.
  */
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { DatasetsPage } from '../src/routes/DatasetsPage';
 import { fixtureCatalogSource } from '../src/components/catalog/fixture';
+import { DownloadContext } from '../src/components/detail/download';
+import type { DownloadTicket, FileSource } from '../src/components/detail/types';
 
 function Where() {
   const l = useLocation();
   return <div data-testid="where">{l.pathname}</div>;
 }
 
+/** 다운로드는 티켓이다 (`〈175〉-(다)`) — 표는 `downloadTicket` 만 부르고 바이트는 startDownload 가 받는다. */
+function fakeFiles() {
+  const tickets: string[] = [];
+  const source: FileSource = {
+    async list() { throw new Error('카탈로그는 파일 목록을 부르지 않는다'); },
+    async downloadTicket(datasetId) {
+      tickets.push(datasetId);
+      return { url: `/api/v1/downloads/T-${datasetId}`, expiresAt: 'x',
+               fileName: 'bundle.zip', byteSize: null, scope: '묶음' };
+    },
+    async add() { throw new Error('부르지 않는다'); },
+    async replace() { throw new Error('부르지 않는다'); },
+    async remove() { throw new Error('부르지 않는다'); },
+  };
+  return { source, tickets };
+}
+
 function renderCatalog() {
+  const files = fakeFiles();
+  const downloads: DownloadTicket[] = [];
   const view = render(
     <MemoryRouter initialEntries={['/datasets']}>
-      <Routes>
-        <Route path="/datasets" element={<DatasetsPage source={fixtureCatalogSource()} />} />
-        <Route path="*" element={<Where />} />
-      </Routes>
+      <DownloadContext.Provider value={(t) => { downloads.push(t); }}>
+        <Routes>
+          <Route
+            path="/datasets"
+            element={<DatasetsPage source={fixtureCatalogSource()} fileSource={files.source} />}
+          />
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </DownloadContext.Provider>
     </MemoryRouter>,
   );
-  return view;
+  return Object.assign(view, { tickets: files.tickets, downloads });
 }
 
 /** 새 의존성을 들이지 않는다 — 이미 있는 fireEvent 로 누른다 */
@@ -246,7 +272,7 @@ describe('§8 잠긴 카탈로그 행 — 표에서 사라지지 않는다', () 
     await settle();
     const locked = bodyRows().find((tr) => within(tr).queryByText('잠김'))!;
     expect(within(locked).queryByRole('button', { name: /엿보기/ })).toBeNull();
-    expect(within(locked).queryByRole('link', { name: /다운로드/ })).toBeNull();
+    expect(within(locked).queryByRole('button', { name: /다운로드/ })).toBeNull();
     expect(within(locked).queryByRole('button', { name: /접근 요청/ })).toBeNull();
   });
 
@@ -255,7 +281,22 @@ describe('§8 잠긴 카탈로그 행 — 표에서 사라지지 않는다', () 
     await settle();
     const open = bodyRows()[0]!;
     expect(within(open).getByRole('button', { name: /엿보기/ })).toBeInTheDocument();
-    expect(within(open).getByRole('link', { name: /다운로드/ })).toBeInTheDocument();
+    expect(within(open).getByRole('button', { name: /다운로드/ })).toBeInTheDocument();
+  });
+
+  it('다운로드는 링크가 아니라 **버튼 → 티켓 → startDownload** 다 — `<a href>` 에는 Bearer 가 실리지 않는다', async () => {
+    const { container, tickets, downloads } = renderCatalog();
+    await settle();
+    expect(container.querySelector('a[href*="/download"]')).toBeNull();
+    const open = bodyRows()[0]!;
+    const btn = within(open).getByRole('button', { name: 'nakdong_precip_2025_Lv2.nc 다운로드' });
+    await click(btn);
+    await waitFor(() => expect(downloads).toHaveLength(1));
+    expect(tickets).toHaveLength(1);
+    expect(tickets[0]).toMatch(/^[0-9A-Z]{26}$/);
+    expect(downloads[0]!.url).toBe(`/api/v1/downloads/T-${tickets[0]}`);
+    // 행 클릭(상세로 이동)을 삼킨다 — 다운로드가 상세를 열지 않는다
+    expect(screen.queryByTestId('where')).toBeNull();
   });
 
   it('잠긴 행을 눌러도 상세로 간다 (요청은 거기서 한다)', async () => {

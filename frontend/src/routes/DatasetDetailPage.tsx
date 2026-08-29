@@ -9,10 +9,13 @@ import { apiApprovalSource } from '../components/approval/approvalSource';
 import type { ApprovalSource } from '../components/approval/types';
 import { BasicInfoGrid } from '../components/detail/BasicInfoGrid';
 import { DetailHeader } from '../components/detail/DetailHeader';
+import { FileList, describeFileError } from '../components/detail/FileList';
 import { LockedNotice } from '../components/detail/LockedNotice';
 import { defaultDetailSource } from '../components/detail/detailSource';
+import { useStartDownload } from '../components/detail/download';
+import { apiFileSource } from '../components/detail/fileSource';
 import { useDatasetDetail } from '../components/detail/useDatasetDetail';
-import type { DetailSource } from '../components/detail/types';
+import type { DetailSource, FileSource } from '../components/detail/types';
 import { LineageSection } from '../components/lineage/LineageSection';
 import { defaultLineageSource } from '../components/lineage/graphSource';
 import { useDatasetLineage } from '../components/lineage/useDatasetLineage';
@@ -20,6 +23,7 @@ import type { LineageGraphSource } from '../components/lineage/graphTypes';
 import { GridAttachEntry } from '../components/upload/GridAttachEntry';
 import type { UploadSources } from '../components/upload/types';
 import { LockedContent } from '../permission/LockedContent';
+import { ActionGate } from '../permission/PermissionGate';
 import { recordVisit } from '../components/dashboard/visits';
 import '../components/detail/detail.css';
 
@@ -34,6 +38,8 @@ export function DatasetDetailPage(
     lineageSource?: LineageGraphSource;
     previewSource?: DatasetPreviewSource;
     uploadSources?: UploadSources;
+    /** 파일 목록·트리·다운로드 (`〈278〉`-(다)). 시험이 대역을 꽂는 자리다. */
+    fileSource?: FileSource;
     /** 승인 처리 네 동작 (WU-P6). 시험이 대역을 꽂는 자리다. */
     approvalSource?: ApprovalSource;
   } = {},
@@ -42,7 +48,11 @@ export function DatasetDetailPage(
   const state = useLocation().state as BackState;
   // 실서버가 아직 501 을 내면 픽스처로 그린다 — 서버가 붙는 순간 자동으로 갈아탄다
   const source = useMemo(() => props.source ?? defaultDetailSource(), [props.source]);
-  // 격자를 반영한 뒤 **서버에게 다시 묻는다** — 화면이 값을 손으로 고치지 않는다.
+  // 파일 관리는 **픽스처 폴백이 없다** — 쓰기 경로다 (`fileSource.ts` 머리말)
+  const fileSource = useMemo(() => props.fileSource ?? apiFileSource(), [props.fileSource]);
+  const download = useStartDownload();
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  // 격자를 반영하거나 파일이 바뀐 뒤 **서버에게 다시 묻는다** — 화면이 값을 손으로 고치지 않는다.
   const [reloadToken, setReloadToken] = useState(0);
   const detail = useDatasetDetail(source, datasetId, reloadToken);
   // 승인·요청이 끝나면 **서버에게 다시 묻는다** — 화면이 `verified`·`accessRequestPending` 을
@@ -70,6 +80,14 @@ export function DatasetDetailPage(
     label: state?.backLabel ?? DEFAULT_BACK.label,
     to: state?.backTo ?? DEFAULT_BACK.to,
   };
+
+  function downloadAll() {
+    setDownloadError(null);
+    fileSource
+      .downloadTicket(datasetId)
+      .then(download)
+      .catch((e: unknown) => setDownloadError(describeFileError(e)));
+  }
 
   return (
     <div className="detail-page" data-screen="S-05">
@@ -119,12 +137,24 @@ export function DatasetDetailPage(
                 basicInfo={detail.detail.basicInfo}
                 fileName={detail.detail.fileName}
               />
-              {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이
-                  없으면 그 데이터는 지도 위에 영영 못 선다 (`〈58〉-②`·`〈75〉`).
-                  이미 격자가 있으면 남은 축이 없을 수 있으나, **그 판정은 서버가 한다** —
-                  화면이 조건을 임의로 정하지 않는다 (`P-7`). 서버는 409 로 답하고
-                  모달이 그 문장을 그대로 보여 준다. */}
               <div className="dt-gridact" data-testid="detail-grid-actions">
+                {/* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
+                    (`〈175〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */}
+                <ActionGate allowed={detail.detail.actions.canDownload}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    data-testid="dt-download"
+                    onClick={downloadAll}
+                  >
+                    다운로드{/* [정본 무근거 · 〈175〉] — 카탈로그 빠른 작업의 같은 낱말 */}
+                  </button>
+                </ActionGate>
+                {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이
+                    없으면 그 데이터는 지도 위에 영영 못 선다 (`〈58〉-②`·`〈75〉`).
+                    이미 격자가 있으면 남은 축이 없을 수 있으나, **그 판정은 서버가 한다** —
+                    화면이 조건을 임의로 정하지 않는다 (`P-7`). 서버는 409 로 답하고
+                    모달이 그 문장을 그대로 보여 준다. */}
                 <GridAttachEntry
                   datasetId={datasetId}
                   datasetName={detail.detail.name}
@@ -132,6 +162,19 @@ export function DatasetDetailPage(
                   sources={props.uploadSources}
                 />
               </div>
+              {downloadError ? (
+                <p className="dt-files-error" role="alert" data-testid="dt-download-error">
+                  {downloadError}
+                </p>
+              ) : null}
+              {/* 파일 목록은 사람이 눌렀을 때 연다 (`§5`). 추가·교체·삭제 뒤에는 상세를 다시 읽어
+                  `파일` 칸의 조각 수·합계가 서버 값으로 돌아온다 */}
+              <FileList
+                datasetId={datasetId}
+                source={fileSource}
+                actions={detail.detail.actions}
+                onChanged={() => setReloadToken((n) => n + 1)}
+              />
             </>
           ) : null}
           {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로 그리지 않는다** —

@@ -10,9 +10,10 @@
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
+import { apiUploadSource } from '../src/components/upload/uploadSource';
 import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
 import type { PreviewHandoff } from '../src/components/preview/types';
 import { UploadGone } from '../src/components/upload/types';
@@ -1482,5 +1483,88 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
     // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
     expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
     expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
+
+// ───────────────────────────────────────────────────────────────────────────
+// form-data 폴백 (`createUpload`) — 프리사인드가 501 이면 이 경로다 (〈174〉 · 〈175〉-(나)).
+// 계약: `relativePaths` 는 `files` 와 **같은 순서·같은 개수**이고, 빈 문자열 = 경로 없음.
+describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서로 싣는다', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * 프리사인드(501) → form-data 로 떨어지는 fetch 라우터. 받은 multipart 를 그대로 기록한다.
+   * `append` 순서도 따로 적는다 — jsdom 의 File 을 undici `Request` 가 직렬화하면서 파일 **이름**을
+   * 잃는다(환경 한계 · 브라우저는 그렇지 않다). 이름·순서는 append 기록으로, 값은 multipart 로 본다.
+   */
+  function installRouter() {
+    const forms: FormData[] = [];
+    const appends: [string, string][] = [];
+    const Real = FormData;
+    vi.stubGlobal(
+      'FormData',
+      class extends Real {
+        override append(name: string, value: string | Blob, filename?: string) {
+          appends.push([name, typeof value === 'string' ? value : (filename ?? (value as File).name)]);
+          // jsdom 은 인자 **개수**로 오버로드를 고른다 — 세 번째를 undefined 로 넘기면 문자열 값도 Blob 으로 본다
+          if (filename === undefined) super.append(name, value as never);
+          else super.append(name, value as Blob, filename);
+        }
+      },
+    );
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      const json = (body: unknown, status = 200) =>
+        new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        return json({ code: 'NOT_IMPLEMENTED', message: '저장 모드 local' }, 501);
+      }
+      if (path === '/uploads' && req.method === 'POST') {
+        const form = await req.formData();
+        forms.push(form);
+        const files = form.getAll('files') as File[];
+        return json({
+          uploadId: UPLOAD_ID,
+          files: files.map((f, i) => ({
+            fileId: i === 0 ? FILE_ID : FILE_ID2, fileName: f.name, kind: '본체', byteSize: f.size,
+          })),
+        }, 201);
+      }
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+    return { forms, appends };
+  }
+
+  it('어느 파일이든 경로가 있으면 전부 싣고, 경로 없는 파일은 빈 문자열이다 — `files` 와 같은 순서', async () => {
+    const { forms, appends } = installRouter();
+    await apiUploadSource().create([
+      { file: new File(['a'], 'a.nc'), kind: '본체', relativePath: '2025/06/a.nc' },
+      { file: new File(['b'], 'b.nc'), kind: '본체' },
+      { file: new File(['c'], 'lat.npy'), kind: '기준 격자 파일', relativePath: 'grid/lat.npy' },
+    ]);
+    // ① 싣는 순서 — 세 배열이 같은 순서다
+    expect(appends).toEqual([
+      ['files', 'a.nc'], ['files', 'b.nc'], ['files', 'lat.npy'],
+      ['fileKinds', '본체'], ['fileKinds', '본체'], ['fileKinds', '기준 격자 파일'],
+      ['relativePaths', '2025/06/a.nc'], ['relativePaths', ''], ['relativePaths', 'grid/lat.npy'],
+    ]);
+    // ② 실제로 나간 multipart 에도 같은 값이 같은 순서로 있다 (개수 = `files` 와 같다)
+    expect(forms).toHaveLength(1);
+    const form = forms[0]!;
+    expect(form.getAll('files')).toHaveLength(3);
+    expect(form.getAll('fileKinds')).toEqual(['본체', '본체', '기준 격자 파일']);
+    expect(form.getAll('relativePaths')).toEqual(['2025/06/a.nc', '', 'grid/lat.npy']);
+  });
+
+  it('아무 파일에도 경로가 없으면 `relativePaths` 를 싣지 않는다 (생략 = 전부 낱개)', async () => {
+    const { forms, appends } = installRouter();
+    await apiUploadSource().create([
+      { file: new File(['a'], 'a.nc'), kind: '본체' },
+      { file: new File(['b'], 'b.nc'), kind: '본체' },
+    ]);
+    expect(appends.map(([k]) => k)).toEqual(['files', 'files', 'fileKinds', 'fileKinds']);
+    const form = forms[0]!;
+    expect(form.getAll('files')).toHaveLength(2);
+    expect(form.has('relativePaths')).toBe(false);
   });
 });

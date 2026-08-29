@@ -1,17 +1,21 @@
 // S-03 카탈로그 — 뭐가 있는지 훑는 길. **AI 를 쓰지 않는다** (`Policy_데이터_찾기 §1.2`).
 // 조건과 정렬은 전부 표 헤더에 있다. 자연어 입력칸도 조건 툴바도 여기 없다.
-import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppliedConditions } from '../components/catalog/AppliedConditions';
 import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
 import { useCatalog } from '../components/catalog/useCatalog';
 import type { CatalogFilters, CatalogSource } from '../components/catalog/types';
+import { describeFileError } from '../components/detail/FileList';
+import { useStartDownload } from '../components/detail/download';
+import { apiFileSource } from '../components/detail/fileSource';
+import type { FileSource } from '../components/detail/types';
 import { VerifiedBadgeSlot } from '../placeholders/VerifiedBadgeSlot';
 import { LockIndicatorSlot } from '../placeholders/LockIndicatorSlot';
 import '../components/catalog/catalog.css';
 
-export function DatasetsPage(props: { source?: CatalogSource } = {}) {
+export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileSource } = {}) {
   const navigate = useNavigate();
   // 실서버가 아직 501 을 내면 픽스처로 그린다 — 서버가 붙는 순간 자동으로 갈아탄다
   const source = useMemo(() => props.source ?? defaultCatalogSource(), [props.source]);
@@ -28,6 +32,10 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
     return filters;
   }, [params]);
   const state = useCatalog(source, initialFilters);
+  // 빠른 작업의 다운로드는 **티켓**이다 (`〈175〉-(다)`). 읽기 폴백을 두는 표와 달리 여기는 폴백이 없다
+  const fileSource = useMemo(() => props.fileSource ?? apiFileSource(), [props.fileSource]);
+  const download = useStartDownload();
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // 업로더 조건은 계정 ID 로 걸지만 사람에게는 이름을 보인다 (계약 `FilterUploader`)
   const uploaderNames = useMemo(
@@ -37,6 +45,14 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
 
   const shown = state.list?.totalCount ?? 0;
   const base = state.baseTotal;
+
+  function onDownload(datasetId: string) {
+    setDownloadError(null);
+    fileSource
+      .downloadTicket(datasetId)
+      .then(download)
+      .catch((e: unknown) => setDownloadError(describeFileError(e)));
+  }
 
   return (
     <div className="catalog-page" data-screen="S-03">
@@ -59,10 +75,16 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
           onToggle={state.toggleValue}
           onClearAll={state.clearAll}
         />
+        {downloadError ? (
+          <p className="dl-error" role="alert" data-testid="dl-error">
+            {downloadError}
+          </p>
+        ) : null}
         <CatalogTable
           state={state}
           uploaderNames={uploaderNames}
           onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
+          onDownload={onDownload}
         />
       </div>
 

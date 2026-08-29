@@ -4,10 +4,7 @@
 // 그 응답을 그대로 쓴다. 화면·컴포넌트 코드는 한 줄도 바뀌지 않는다.
 import { api } from '../../api/client';
 import { fixtureDetailSource } from './fixture';
-import { DatasetGone, type DetailSource } from './types';
-
-/** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 두 종). */
-class NotImplemented extends Error {}
+import { DatasetGone, NotImplemented, type DetailSource } from './types';
 
 export function apiDetailSource(): DetailSource {
   return {

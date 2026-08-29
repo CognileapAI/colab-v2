@@ -15,14 +15,29 @@ export function formatPeriod(p: DatasetBasicInfo['period']): string {
   return s.slice(0, 4) === e.slice(0, 4) ? `${s} ~ ${e.slice(5, 7)}` : `${s} ~ ${e}`;
 }
 
-/** 용량 표기. 목업이 쓰는 단위는 `MB` 다(`37 MB` · `148 MB`). */
-export function formatBytes(bytes: number): string {
-  if (bytes <= 0) return EMPTY; // 픽스처가 용량을 모르는 자리 — 0 B 라고 말하지 않는다
+/** 단위 표기 — 목업이 쓰는 단위는 `MB` 다(`37 MB` · `148 MB`). */
+function withUnit(bytes: number): string {
   const K = 1024;
   if (bytes >= K ** 3) return `${(bytes / K ** 3).toFixed(1)} GB`;
   if (bytes >= K ** 2) return `${Math.round(bytes / K ** 2)} MB`;
   if (bytes >= K) return `${Math.round(bytes / K)} KB`;
   return `${bytes} B`;
+}
+
+/** 용량 표기. 합계 자리 전용 — 0 은 「픽스처가 용량을 모르는 자리」라 `—` 다. */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return EMPTY; // 픽스처가 용량을 모르는 자리 — 0 B 라고 말하지 않는다
+  return withUnit(bytes);
+}
+
+/**
+ * 조각 **하나**의 크기. `null` = 모름 — `d3_file.size_bytes` 가 NULL 일 수 있고 그것은 0 과 다르다
+ * (`〈175〉-(가)` 「모르는 값을 0 으로 적지 않는다」). `formatBytes` 의 「0 → `—`」 규칙과 **갈라 둔다**:
+ * 여기서 0 은 진짜 0 B 다.
+ */
+export function formatFileSize(bytes: number | null): string {
+  if (bytes === null) return '모름'; // [정본 무근거 · 〈175〉]
+  return withUnit(bytes);
 }
 
 /**

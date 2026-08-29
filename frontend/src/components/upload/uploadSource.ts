@@ -31,10 +31,15 @@ export function apiUploadSource(): UploadSource {
           transferUnavailable = true;  // ② 501 = 로컬 저장 모드 — form-data 로 폴백
         }
       }
-      // 계약이 `multipart/form-data` 로 못 박았고 `fileKinds` 는 `files` 와 **같은 순서**다.
+      // 계약이 `multipart/form-data` 로 못 박았고 `fileKinds`·`relativePaths` 는 `files` 와 **같은 순서**다.
       const form = new FormData();
       for (const f of files) form.append('files', f.file, f.file.name);
       for (const f of files) form.append('fileKinds', f.kind);
+      // 폴더째 업로드의 경로(〈175〉-(나)) — 하나라도 있으면 **전부** 싣는다(같은 개수). 빈 문자열 =
+      // 그 파일은 경로 없음(multipart 배열은 null 을 싣지 못한다). 아무 파일에도 없으면 생략 = 전부 낱개.
+      if (files.some((f) => f.relativePath)) {
+        for (const f of files) form.append('relativePaths', f.relativePath ?? '');
+      }
       const r = await api.POST('/uploads', {
         body: form as unknown as never,
         bodySerializer: (b: unknown) => b as FormData,

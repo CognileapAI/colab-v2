@@ -87,3 +87,26 @@
 
 .detail-page .gone { padding: 34px 22px; text-align: center; }
 .detail-page .gone p { font-size: var(--text-body); color: var(--color-text-body); margin: 0 0 12px; }
+
+/* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,
+   같은 면·같은 보더로 잇고 새 색을 만들지 않는다. */
+.detail-page .dt-gridact { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: -8px 0 var(--space-4); }
+.detail-page .dt-files { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); margin-bottom: var(--space-6); }
+.detail-page .dt-files-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; }
+.detail-page .dt-files-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-right: auto; }
+.detail-page .dt-files-error { margin: 0 14px 10px; font-size: var(--text-body-sm); color: var(--color-warning-600); }
+.detail-page .dt-files-body-wrap { border-top: 1px solid var(--color-border); padding: 8px 14px 12px; }
+.detail-page .fl-list { list-style: none; margin: 0; padding: 0; }
+.detail-page .fl-list .fl-list { padding-left: 18px; }
+.detail-page .fl-folder { padding: 4px 0 0; }
+.detail-page .fl-dir { font-family: var(--font-data); font-size: var(--text-body-sm); font-weight: 600; color: var(--color-gray-700); }
+.detail-page .fl-file { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 5px 0; border-bottom: 1px solid var(--color-border); }
+.detail-page .fl-file:last-child { border-bottom: none; }
+.detail-page .fl-name { font-family: var(--font-data); font-size: var(--text-body-sm); overflow-wrap: anywhere; }
+.detail-page .fl-size, .detail-page .fl-date { font-size: var(--text-caption); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.detail-page .fl-act { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+.detail-page .fl-grid { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--color-border); }
+.detail-page .fl-gh { display: block; font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-page .fl-gh.muted { font-weight: 600; margin-bottom: 0; }
+.detail-page .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.detail-page label.btn { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
