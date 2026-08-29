@@ -527,6 +527,14 @@ def create_dataset(request: Request, body: dict = None,
 
 
 # ═════════════════════ addDatasetFile · 교체 · 삭제 (〈60〉) ═════════════════
+#: `〈175〉-(라)` — 본체 파일 추가·교체·삭제의 활동 문자열. **`[정본 무근거]`** (`〈177〉-⑦-⑾` Ted 판정 대기).
+#: 정본 §6.1 은 값 집합을 안 닫았고 `〈60〉` 은 격자 것(`d8_insight.ACTION_GRID_CHANGED`)만 고정했다.
+#: 격자와 **다른** 문자열인 이유 — 바뀐 것이 좌표를 읽을 수단이 아니라 과학 데이터 자체라, 활동
+#: 화면에서 두 사건이 갈려 보여야 한다. 상수가 여기(라우트) 사는 것은 D8 표면을 늘리지 않기 위해서다 —
+#: `record_activity(action=…)` 는 자유 문자열이고 DB CHECK 는 비어 있지 않음만 본다.
+ACTION_BODY_CHANGED = "본체 파일 변경"
+
+
 def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) -> None:
     """`〈60〉` — 후주입·교체·삭제는 **계보를 접지 않고 이력에 남긴다.**
 
@@ -538,6 +546,25 @@ def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) ->
     d3_catalog.recompute_grid_metadata(db, dataset_id)
     d8_insight.record_activity(
         db, actor_id=subject.account_id, action=d8_insight.ACTION_GRID_CHANGED,
+        target_kind="데이터셋", target_id=dataset_id)
+
+
+def _record_body_activity(db: Session, *, subject: Subject, dataset_id: Ulid) -> None:
+    """`〈175〉-(라)` — 본체 추가·교체·삭제. **격자(`_record_grid_activity`)와 셋 다 반대다.**
+
+    ① `마지막 수정` 을 **민다** (`〈175〉` 권고 · Ted 판정 대기 `〈177〉-⑦-⑷`). `〈60〉-①` 이 격자에서
+       그 열을 안 건드린 이유는 「바뀐 것이 과학 데이터가 아니라 좌표를 읽을 수단」이어서였다 —
+       본체는 **과학 데이터 자체**라 파생 관계를 다시 봐야 하고, 파생인 `계보 상태` 가 `확정` 에서
+       `확인 필요` 로 접히는 것이 맞다. 사람이 확인하러 가면 실제로 바뀐 것이 있다.
+    ② `crs/grid` 를 **건드리지 않는다** — `recompute_grid_metadata`(`_CLEAR_GRID_META`)는 사람이
+       `updateDataset` 으로 적은 `crs`(`_UPDATABLE`)를 NULL 로 지운다. 본체가 바뀌었다고 사람이 적은
+       좌표계가 틀려지는 것이 아니다 — 「모른다」와 「지웠다」는 다르다.
+    ③ `d8_activity` 에 `본체 파일 변경` 한 행 — 격자 문자열과 갈라 둔다.
+    `total_size_bytes` 는 여기서도 손대지 않는다 — `0009` 트리거가 `d3_file` 차분으로 옮긴다.
+    """
+    d3_catalog.touch_last_modified(db, dataset_id)
+    d8_insight.record_activity(
+        db, actor_id=subject.account_id, action=ACTION_BODY_CHANGED,
         target_kind="데이터셋", target_id=dataset_id)
 
 
@@ -553,6 +580,10 @@ async def add_dataset_file(request: Request, datasetId: str,
     본체 후주입은 `〈59〉-③` 이 막았던 조작이고 `〈175〉-(라)` 가 번복했다 — 계약이 막지 않고
     사람이 판단한다. 격자 0건은 정상 상태다 (`P2.md §2-21`). 그릴 수 없는 것과 등록할 수 없는
     것은 다르다. 폴더 경로는 `relativePath` 로 받아 `d3_file.relative_path` 에 남긴다 (`〈175〉-(나)`).
+
+    본체의 뒷정리는 교체·삭제와 **같은 규칙**(`_record_body_activity`)이다 — `마지막 수정` 이동 ·
+    `crs/grid` 무변경 · `본체 파일 변경` 한 행. ⚠ 이 경로가 `_record_grid_activity` 를 불렀던 동안은
+    본체를 하나 더할 때마다 사람이 적은 `crs` 가 지워지고 있었다(실측 — `〈175〉` 집행 전).
     """
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
@@ -585,7 +616,8 @@ async def add_dataset_file(request: Request, datasetId: str,
                                  file_name=name, size_bytes=byte_size, storage_key=key,
                                  carries_lat=False, carries_lon=False,
                                  relative_path=relative_path)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    # 여기 오는 것은 본체뿐이다 — 격자는 위에서 400 으로 갈 곳을 말하고 끝났다.
+    _record_body_activity(db, subject=subject, dataset_id=dataset_id)
     return d3_catalog.file_ref(row)
 
 
@@ -610,7 +642,8 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
       · **축을 지어내지 않는다** — 원장에 축이 있는 행만 옮긴다 (`〈66〉`).
       · **저장 키를 승계하지 않는다** — 바이트는 데이터셋 자리로 온다(`_relocate`).
         등록 전환과 같은 규칙이고, 승계가 렌더 404 의 원인이었다.
-      · **본체를 받지 않는다** — 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.
+      · **본체를 받지 않는다** — 본체가 든 묶음은 등록 전환의 대상이다. 본체 후주입의 자리는
+        `addDatasetFile` 이다 (`〈175〉-(라)` 가 `〈59〉-③` 을 번복한 뒤에도 이 op 은 격자 전용이다).
       · **마이그레이션·이벤트 계약을 건드리지 않는다.**
     """
     if not Ulid.is_valid(datasetId):
@@ -696,7 +729,12 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
                                     flipAxes: bool | None = Form(default=None),
                                     subject: Subject = Depends(current_subject),
                                     db: Session = Depends(scoped_db)) -> dict:
-    """교체는 **정상 동작**이다 (`〈59〉-①`). **본체는 이 경로의 대상이 아니다** — 409.
+    """교체는 **정상 동작**이다 (`〈59〉-①`) — **본체도, 격자도.**
+
+    **⟨`〈175〉-(라)` · `〈59〉-③` 번복⟩** 「본체를 갈아 끼우는 것은 다른 데이터다」는 판단을 **사람이
+    한다** — 계약이 막지 않는다(계약 산문 · `GridFileReplacement`). `operationId` 는 그대로다.
+    본체 교체의 뒷정리는 격자와 반대다 — `_record_body_activity` 주석. `flipAxes` 만은 여전히
+    **격자 사이의 조작**이라 본체에 요청하면 409 다(계약 409-②).
 
     **⟨동결 1회 해제 · `〈80〉-㉯ 3`(`K-3`)⟩ 축 뒤집기가 이 op 안에 든다.**
     뒤집기 = **같은 두 파일의 축 배정을 맞바꾸는 것**이고, 그것이 정확히 `〈59〉` 가 말한
@@ -706,13 +744,17 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
 
     요청은 **택일**이다 — `file` 이거나 `flipAxes: true` 이거나. 둘 다이거나 둘 다 아니면 400.
     """
-    row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    row, dataset_id, file_ref = _file_target(db, subject, datasetId, fileId)
     if flipAxes is not None and file is not None:
         raise errors.bad_request(
             "`file` 과 `flipAxes` 는 택일이다 — 함께 보내면 어느 쪽을 했는지 응답이 말할 수 없다.")
     if flipAxes is not None:
         if not flipAxes:
             raise errors.bad_request("`flipAxes: false` 는 아무것도 요청하지 않는다.")
+        if row.kind == BODY:
+            # 본체에는 축이 없다(`0004` CHECK ㈏) — 뒤집을 배정 자체가 없다. 짝 수를 세기 전에 가른다.
+            raise errors.conflict(
+                "대상이 본체 파일이다 — `flipAxes` 는 기준 격자 파일 사이의 조작이고 본체에는 축이 없다.")
         return _flip_grid_axes(db, subject=subject, dataset_id=dataset_id, file_ref=file_ref)
     if file is None:
         raise errors.bad_request("`file` 이거나 `flipAxes: true` 여야 한다.")
@@ -723,13 +765,21 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
                                      kind=row.kind, file_name=name)
     await file.seek(0)
     byte_size = _storage(request).put_stream(key=key, stream=file.file)
-    # **옛 바이트를 남기지 않는다.** 격자는 이름으로 자리가 정해지므로(`layout.json`),
-    # 이름이 바뀐 교체는 옛 파일을 그 자리에 그대로 둔다 — 그러면 격자 폴더에 위도가
-    # 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다. 교체했는데 안 그려지는 실물이 이것이다.
+    # **옛 바이트를 남기지 않는다.**
+    #   · 격자는 이름으로 자리가 정해지므로(`layout.json`) 이름이 바뀐 교체는 옛 파일을 그 자리에
+    #     그대로 둔다 — 그러면 격자 폴더에 위도가 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다.
+    #     교체했는데 안 그려지는 실물이 이것이다.
+    #   · 본체는 키가 `{datasetId}/{fileId}` 라 **키 불변**이다 — `put_stream` 이 그 자리에 덮어썼고
+    #     `keep` 이 같은 키를 막아 이 줄은 아무것도 안 한다. 원장 키가 규약 밖인 행(시드·이관분)만
+    #     옛 자리가 지워진다 — 그 바이트는 이제 아무도 가리키지 않는다.
     _storage(request).discard(key=row.storage_key, keep=key)
     updated = d3_catalog.replace_file(db, file_id=file_ref, file_name=name,
                                       size_bytes=byte_size, storage_key=key)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    if row.kind == BODY:
+        d3_catalog.sync_bundle_file_name(db, dataset_id, was=row.file_name)
+        _record_body_activity(db, subject=subject, dataset_id=dataset_id)
+    else:
+        _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return d3_catalog.file_ref(updated)
 
 
@@ -738,11 +788,35 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
 def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
                              subject: Subject = Depends(current_subject),
                              db: Session = Depends(scoped_db)) -> Response:
-    """삭제도 정상 동작이다. **본체는 지우지 않는다** — 409 (`〈59〉-③`)."""
-    row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    """삭제도 정상 동작이다 — **본체도.** 남는 불변식은 **본체 ≥ 1** 하나다 (`DataModel §4.3` ·
+    `〈175〉-(라)` — `〈59〉-③` 의 「본체는 409」 번복). 그래서 409 의 뜻이 「본체다」에서
+    「**마지막** 본체다」로 바뀌었다. 격자는 0건이 정상이라 그 409 가 없다.
+
+    대표 조각(`d3_dataset.representative_file_id`)은 **FK `ON DELETE SET NULL`** 이 되돌린다
+    (`schema.sql` `d3_dataset_representative_file_fk`). 그 열의 `NULL` 은 「없음」이 아니라 **「자동」**
+    (파일명 자연 정렬의 첫 조각을 그때그때 고른다 — 열 주석 · 결정 2-4·2-8)이고, 값이 있으면 **사람이
+    지정한 것**이다. 그래서 앱 코드가 남은 본체를 골라 써 넣지 않는다 — 써 넣으면 「사람이
+    지정했다」는 없는 사실이 된다. 「남은 본체 중 가장 오래된 것으로 갱신」하는 규칙은 그 이유로
+    기각했다 (`〈175〉` 집행 보고 · Ted 판정 대기).
+    `bundle_file_name` 은 FK 가 없어 `sync_bundle_file_name` 이 따라간다 (`[정본 무근거]`).
+    """
+    row, dataset_id, file_ref = _file_target(db, subject, datasetId, fileId)
+    if row.kind == BODY:
+        # 세고 나서 지운다 — 그래서 **데이터셋 행을 먼저 잠근다.** 잠그지 않으면 마지막 둘을 동시에
+        # 지우는 두 요청이 각자 「2건」을 보고 둘 다 통과해 본체 0건이 된다. 에러 없이 깨지는 불변식이다.
+        if not d3_catalog.lock_dataset(db, dataset_id):
+            raise errors.not_found()      # 관문 뒤에 묘비가 됐다 — 없는 것으로 답한다
+        if d3_catalog.body_file_count(db, dataset_id) <= 1:
+            raise errors.conflict(
+                "마지막 본체 파일은 지울 수 없다 — 본체 없는 데이터셋은 데이터가 아니라 좌표다"
+                "(본체 ≥ 1). 데이터를 없애려면 파일이 아니라 데이터셋을 지운다.")
     d3_catalog.delete_file(db, file_ref)
     _storage(request).discard(key=row.storage_key)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    if row.kind == BODY:
+        d3_catalog.sync_bundle_file_name(db, dataset_id, was=row.file_name)
+        _record_body_activity(db, subject=subject, dataset_id=dataset_id)
+    else:
+        _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return Response(status_code=204)
 
 
@@ -762,8 +836,13 @@ def _flip_grid_axes(db: Session, *, subject: Subject, dataset_id: Ulid, file_ref
     return d3_catalog.file_ref(updated)
 
 
-def _grid_target(db: Session, subject: Subject, datasetId: str, fileId: str):
-    """교체·삭제가 공유하는 관문 — 404 · 403 · **409(본체)** 를 한 자리에서 가른다."""
+def _file_target(db: Session, subject: Subject, datasetId: str, fileId: str):
+    """교체·삭제가 공유하는 관문 — 400 · 403 · 404 를 한 자리에서 가른다.
+
+    ⟨`〈175〉-(라)`⟩ 예전 이름은 `_grid_target` 이었고 여기서 본체를 409 로 막았다(`〈59〉-③`).
+    번복으로 본체도 대상이다 — 종류별 검사(`flipAxes` 는 격자만 · 마지막 본체는 못 지운다)는
+    **각 op 안에** 있다. 없는 파일과 경계 밖은 **같은 404** 다 (P-9·P-10).
+    """
     if not Ulid.is_valid(datasetId) or not Ulid.is_valid(fileId):
         raise errors.bad_request("정규 ID 가 아니다.")
     dataset_id, file_id = Ulid(datasetId), Ulid(fileId)
@@ -773,7 +852,4 @@ def _grid_target(db: Session, subject: Subject, datasetId: str, fileId: str):
     row = d3_catalog.find_file(db, dataset_id=dataset_id, file_id=file_id)
     if row is None:
         raise errors.not_found()
-    if row.kind == BODY:
-        # 본체를 갈아 끼우는 것은 **다른 데이터**다 — `DataModel §4.3` 이 데이터셋을 나누라고 한다.
-        raise errors.conflict("대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 한다.")
     return row, dataset_id, file_id

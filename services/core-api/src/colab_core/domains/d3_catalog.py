@@ -636,6 +636,32 @@ _CONFIRM_LINEAGE = text("""
      RETURNING id
 """)
 
+# `마지막 수정` 을 **미는** 자리 — 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이
+# 바뀌었을 때**(`〈175〉-(라)` · 권고, Ted 판정 대기)뿐이다. 격자 변경은 여기 오지 않는다(위 주석).
+_TOUCH_LAST_MODIFIED = text("""
+    UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id
+""")
+
+# 본체 ≥ 1 판정의 **행 잠금**. 잠그지 않으면 마지막 둘을 동시에 지우는 두 요청이 각자 「2건」을
+# 보고 둘 다 통과한다 — 불변식이 에러 없이 깨진다. 데이터셋 행 하나에 직렬화한다.
+_LOCK_DATASET = text("""
+    SELECT id FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL FOR UPDATE
+""")
+
+# `bundle_file_name` 따라가기 (`[정본 무근거]` · `〈175〉-(라)`). 등록 전환이 **첫 본체의 이름**으로
+# 세운 값이라(`routes/ingestion.create_dataset`), 그 본체가 지워지거나 이름이 바뀌면 지워진
+# 파일의 이름이 상세의 `fileName` 에 남는다. **옛 이름과 같을 때만** 남은 본체 중 가장 오래된
+# 것의 이름으로 옮긴다 — 다른 값이 적혀 있으면 사람이 바꾼 묶음 이름이므로 건드리지 않는다.
+# 「가장 오래된 본체」는 대표 조각의 자동 규칙과 같은 축이다 (`created_at, id`).
+_SYNC_BUNDLE_FILE_NAME = text("""
+    UPDATE d3_dataset_autometa a
+       SET bundle_file_name = (SELECT f.file_name FROM d3_file f
+                                WHERE f.dataset_id = a.dataset_id AND f.kind = '본체'
+                                ORDER BY f.created_at, f.id LIMIT 1),
+           updated_at = now()
+     WHERE a.dataset_id = :dataset_id AND a.bundle_file_name = :was
+""")
+
 
 @dataclasses.dataclass(frozen=True)
 class FileRow:
@@ -742,9 +768,28 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     # (`DATAMODEL-BASELINE §3-③` — 「마지막 수정 > 계보 확정일」이면 `확인 필요`).
     # 빈 요청이어도 갱신하지 않는다 — 아무것도 안 고쳤으면 고친 것이 아니다.
     if by_table:
-        session.execute(
-            text("UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id"),
-            {"dataset_id": str(dataset_id)})
+        touch_last_modified(session, dataset_id)
+
+
+def touch_last_modified(session: Session, dataset_id: Ulid) -> None:
+    """`마지막 수정` 을 지금으로 민다 — 파생인 `계보 상태` 가 `확인 필요` 로 접히는 신호다.
+
+    부르는 자리는 둘뿐이다: 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이 바뀌었을 때**
+    (`routes/ingestion._record_body_activity` · `〈175〉-(라)`). 격자 변경은 부르지 않는다(`〈60〉-①`).
+    """
+    session.execute(_TOUCH_LAST_MODIFIED, {"dataset_id": str(dataset_id)})
+
+
+def lock_dataset(session: Session, dataset_id: Ulid) -> bool:
+    """데이터셋 행을 이 트랜잭션에 잠근다(`FOR UPDATE`). 본체 ≥ 1 판정처럼 **세고 나서 지우는**
+    조작이 동시 요청에도 하나씩 지나가게 한다. 경계 밖·묘비면 False."""
+    return session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)}).first() is not None
+
+
+def sync_bundle_file_name(session: Session, dataset_id: Ulid, *, was: str) -> None:
+    """`bundle_file_name` 이 `was`(지워지거나 이름이 바뀐 본체의 옛 이름)와 같을 때만 남은 본체 중
+    가장 오래된 것의 이름으로 옮긴다. 위 `_SYNC_BUNDLE_FILE_NAME` 주석이 「왜 같을 때만인가」를 적었다."""
+    session.execute(_SYNC_BUNDLE_FILE_NAME, {"dataset_id": str(dataset_id), "was": was})
 
 
 def file_belongs_to(session: Session, *, file_id: str, dataset_id: Ulid) -> bool:
@@ -791,7 +836,9 @@ def replace_file(session: Session, *, file_id: Ulid, file_name: str,
                  size_bytes: int | None, storage_key: str) -> FileRow:
     """교체는 **행을 갈아 끼우지 않고 같은 행의 본체를 바꾼다** — `fileId` 가 유지돼야
     계보·활동 기록이 같은 대상을 가리킨다. 축(`carries_*`)은 건드리지 않는다: 새 파일의
-    축은 파일을 읽는 쪽이 다시 정한다."""
+    축은 파일을 읽는 쪽이 다시 정한다. `relative_path`·`created_at` 도 그대로다 — 폴더 안의
+    자리와 행이 선 시각은 바이트를 갈아 끼웠다고 바뀌는 사실이 아니다 (`〈175〉-(나)·(라)`).
+    `size_bytes` 의 차분은 `0009` 트리거가 `total_size_bytes` 로 옮긴다."""
     r = session.execute(_UPDATE_FILE, {
         "file_id": str(file_id), "file_name": file_name, "size_bytes": size_bytes,
         "storage_key": storage_key,
