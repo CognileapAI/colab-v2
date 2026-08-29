@@ -4,8 +4,10 @@
 set -o pipefail
 
 log()  { printf '%s %s\n' "$(date +%Y-%m-%dT%H:%M:%S)" "$*" >&2; }
-pass() { printf '  PASS  %s\n' "$*"; }
-fail() { printf '  FAIL  %s\n' "$*"; FAILED=$((FAILED+1)); }
+# ⚠ 통과 건수를 **센다.** 세지 않으면 「한 건도 안 봤다」와 「전건 통과」가 구분되지 않는다 —
+#   그 구분이 없던 것이 아래 `verdict` 의 결함이었다.
+pass() { printf '  PASS  %s\n' "$*"; PASSED=$(( ${PASSED:-0} + 1 )); }
+fail() { printf '  FAIL  %s\n' "$*"; FAILED=$(( ${FAILED:-0} + 1 )); }
 die()  { log "ERROR: $*"; exit 1; }
 
 # ── SKIP 규약 (`〈170〉-㉮` · 2026-08-27) ──────────────────────────────────────
@@ -17,20 +19,36 @@ die()  { log "ERROR: $*"; exit 1; }
 #     통과할 수 있지만 **요약줄에 건수가 반드시 나온다.** 「무엇을 안 봤는가」가 안 보이면 승인이 아니다.
 #   · **암묵적 SKIP** = 설정·인자가 없어서 꺼진 것. **이제 존재하지 않는다 — 전부 `fail` 이다.**
 #     모르는 것을 통과로 읽지 않는다.
-skip_ack() { printf '  SKIP  %s\n' "$*"; SKIPPED=$((SKIPPED+1)); }
+skip_ack() { printf '  SKIP  %s\n' "$*"; SKIPPED=$(( ${SKIPPED:-0} + 1 )); }
 
 # 요약줄 정본. SKIP 건수를 숨기는 GREEN 을 만들 수 없게 한 곳에 모은다.
+#
+# ── 검사 대상 0건 가드 (2026-08-30) ──────────────────────────────────────────
+# 종전에는 `FAILED` 만 봤다. 그래서 **통과도 실패도 SKIP 도 하나도 없는 상태** —
+# 즉 검사가 한 건도 돌지 않은 상태 — 가 「GREEN (SKIP 0 — 모든 항목이 실제로 돌았다)」로
+# 찍혔다. 요약줄이 스스로 거짓말을 한 것이고, `CLAUDE.md §4` 의 green-by-skip 그 자체다.
+# 세 상태로 가른다:
+#   ⓐ 검사 대상 있음(`PASSED` > 0)      → 검사한다. 요약줄에 **통과 건수**를 적는다.
+#   ⓑ 명시 면제만 있음(`SKIPPED` > 0)   → 통과하되 요약줄에 **「검사 0건」과 SKIP 건수**를 적는다.
+#   ⓒ 아무것도 선언·발견되지 않음(0/0/0) → **RED.** 모르는 것을 통과로 읽지 않는다.
 verdict() { # $1=대상 이름(요약줄 앞머리)
   local what="${1:-결과}"
   local sk=""; [ "${SKIPPED:-0}" -ne 0 ] && sk=" · 승인된 SKIP ${SKIPPED}건"
   if [ "${FAILED:-0}" -ne 0 ]; then
-    echo "$what: RED (실패 ${FAILED}건${sk})"; return 1
+    echo "$what: RED (실패 ${FAILED}건 · 통과 ${PASSED:-0}건${sk})"; return 1
+  fi
+  if [ "${PASSED:-0}" -eq 0 ] && [ "${SKIPPED:-0}" -eq 0 ]; then
+    echo "$what: RED (검사 0건 — 통과·실패·명시 면제가 하나도 없다. 검사 대상이 선언되지 않았거나 발견되지 않았다. 대상 0건은 통과가 아니다)"; return 1
+  fi
+  if [ "${PASSED:-0}" -eq 0 ]; then
+    echo "$what: GREEN (**검사 0건 · 승인된 SKIP ${SKIPPED}건** — 실제로 본 항목이 없다. 무엇을 안 봤는지는 위 SKIP 줄)"; return 0
   fi
   if [ "${SKIPPED:-0}" -ne 0 ]; then
-    echo "$what: GREEN (전부 통과 · **승인된 SKIP ${SKIPPED}건** — 무엇을 안 봤는지는 위 SKIP 줄)"; return 0
+    echo "$what: GREEN (통과 ${PASSED}건 · **승인된 SKIP ${SKIPPED}건** — 무엇을 안 봤는지는 위 SKIP 줄)"; return 0
   fi
-  echo "$what: GREEN (SKIP 0 — 모든 항목이 실제로 돌았다)"; return 0
+  echo "$what: GREEN (통과 ${PASSED}건 · SKIP 0 — 모든 항목이 실제로 돌았다)"; return 0
 }
+
 
 # ── 비밀 배제 (`PLAN-SoT §9 〈170〉-㉰` · Ted 판정 2026-08-27 「지우고, 생기지 않게 막는다」) ──
 # `〈163〉-㉲` = **비밀 7종을 백업하지 않는다.** 사본이 원본과 같은 머신 1대 위에 놓이기 때문이다.

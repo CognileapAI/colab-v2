@@ -8,7 +8,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib.sh"
 load_config
 CT="${1:?컨테이너}"; DB="${2:?DB}"; U="${3:?사용자}"; EXP="${4:?기대치파일}"
-FAILED=0; SKIPPED=0
+FAILED=0; SKIPPED=0; PASSED=0
 q() { docker exec "$CT" psql -U "$U" -d "$DB" -At -c "$1" 2>/dev/null </dev/null; }
 
 TOTAL=0

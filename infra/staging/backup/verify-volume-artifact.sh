@@ -43,7 +43,7 @@ case "$PAIR" in */*) : ;; "") : ;; *) PAIR="$(dirname "$ART")/$PAIR" ;; esac
 MINFILES="$(volume_min_files "$VOL")"
 ORACLE="$(volume_oracle "$VOL")"
 
-FAILED=0; SKIPPED=0
+FAILED=0; SKIPPED=0; PASSED=0
 echo "검사 대상: $(basename "$ART")  (볼륨 $VOL · 최소 건수 ${MINFILES:-미선언} · 오라클 ${ORACLE:-미선언})"
 
 # ── V1 존재 · 최소 크기 ──────────────────────────────────────────────────────

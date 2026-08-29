@@ -17,7 +17,7 @@ SKIP_AGE=0
 [ "${2:-}" = "--skip-age" ] && SKIP_AGE=1
 [ -n "$FILE" ] || { echo "사용: verify-artifact.sh <파일.sql.gz> [--skip-age]" >&2; exit 2; }
 
-FAILED=0; SKIPPED=0
+FAILED=0; SKIPPED=0; PASSED=0
 echo "검사 대상: $(basename "$FILE")  (합격선 — 테이블 $COLAB_BACKUP_MIN_TABLES · 행 $COLAB_BACKUP_MIN_ROWS)"
 
 # ── C0 합격선 자체가 선언돼 있는가 (`〈171〉-㉯`) ──────────────────────────────
