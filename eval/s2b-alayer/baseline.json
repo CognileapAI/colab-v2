@@ -1,0 +1,522 @@
+{
+  "시점": "2026-08-29T17:37:03+09:00",
+  "세는_기준": {
+    "대상_데이터셋": 12,
+    "고정_검색어": "S2b-SEARCH-EVALSET §2.9.1 무수정",
+    "1단": "colab_v2_staging_ai_service 컨테이너 SqlDictionaries.expand 실호출",
+    "2단": "d3_catalog.py _SEARCH/_SEARCH_TRGM 원문 · topic=NULL · LIMIT 50",
+    "롤": "postgres (RLS 우회 — Q-20 은 이 경로로 못 잰다)",
+    "반복": 3,
+    "md5": [
+      "4c8bd6f58beb1b19f1197744c6ff2a9e",
+      "4c8bd6f58beb1b19f1197744c6ff2a9e",
+      "4c8bd6f58beb1b19f1197744c6ff2a9e"
+    ]
+  },
+  "미실행": [
+    "Q-19",
+    "Q-20",
+    "B층 16건"
+  ],
+  "results": {
+    "Q-01": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-07",
+          "rank": 0.8
+        },
+        {
+          "key": "D-08",
+          "rank": 0.6
+        },
+        {
+          "key": "D-15",
+          "rank": 0.4
+        }
+      ],
+      "count": 3,
+      "total_count": 3,
+      "expansion": [
+        "낙동강",
+        "유역",
+        "강우",
+        "낙동강 유역"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 [] · 실제 ['D-07', 'D-08', 'D-15'] · 초과 ['D-07', 'D-08', 'D-15'] · 결손 []"
+    },
+    "Q-02": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-03",
+          "rank": 3.6
+        },
+        {
+          "key": "D-05",
+          "rank": 3.0
+        },
+        {
+          "key": "D-04",
+          "rank": 2.8
+        },
+        {
+          "key": "D-16",
+          "rank": 2.2
+        },
+        {
+          "key": "D-01",
+          "rank": 2.0
+        },
+        {
+          "key": "D-06",
+          "rank": 2.0
+        },
+        {
+          "key": "D-09",
+          "rank": 2.0
+        },
+        {
+          "key": "D-13",
+          "rank": 0.6
+        },
+        {
+          "key": "D-02",
+          "rank": 0.4
+        }
+      ],
+      "count": 9,
+      "total_count": 9,
+      "expansion": [
+        "재격자화",
+        "NDVI",
+        "이중선형보간",
+        "Bilinear",
+        "다운스케일",
+        "격자 보간",
+        "IDW",
+        "최근린보간",
+        "Nearest"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "상위3 = ['D-03', 'D-05', 'D-04']"
+    },
+    "Q-03": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-07",
+          "rank": 0.8
+        },
+        {
+          "key": "D-08",
+          "rank": 0.6
+        },
+        {
+          "key": "D-15",
+          "rank": 0.4
+        }
+      ],
+      "count": 3,
+      "total_count": 3,
+      "expansion": [
+        "전처리",
+        "강우"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "집합 일치 ['D-07', 'D-08', 'D-15']"
+    },
+    "Q-04": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-04",
+          "rank": 1.2
+        },
+        {
+          "key": "D-03",
+          "rank": 0.2
+        }
+      ],
+      "count": 2,
+      "total_count": 2,
+      "expansion": [
+        "Bilinear",
+        "이중선형보간"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-04'] · 실제 ['D-04', 'D-03'] · 초과 ['D-03'] · 결손 []"
+    },
+    "Q-05": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-09",
+          "rank": 3.8
+        },
+        {
+          "key": "D-16",
+          "rank": 3.6
+        },
+        {
+          "key": "D-01",
+          "rank": 3.4
+        },
+        {
+          "key": "D-06",
+          "rank": 3.2
+        },
+        {
+          "key": "D-03",
+          "rank": 2.4
+        },
+        {
+          "key": "D-04",
+          "rank": 2.4
+        },
+        {
+          "key": "D-05",
+          "rank": 2.4
+        },
+        {
+          "key": "D-13",
+          "rank": 0.6
+        },
+        {
+          "key": "D-02",
+          "rank": 0.2
+        }
+      ],
+      "count": 9,
+      "total_count": 9,
+      "expansion": [
+        "GK2A",
+        "위성",
+        "NDVI",
+        "GK-2A"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-01', 'D-03', 'D-04', 'D-05', 'D-06', 'D-09'] · 실제 ['D-09', 'D-16', 'D-01', 'D-06', 'D-03', 'D-04', 'D-05', 'D-13', 'D-02'] · 초과 ['D-02', 'D-13', 'D-16'] · 결손 []"
+    },
+    "Q-06": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-01",
+          "rank": 1.2
+        },
+        {
+          "key": "D-06",
+          "rank": 1.2
+        },
+        {
+          "key": "D-03",
+          "rank": 1.0
+        },
+        {
+          "key": "D-04",
+          "rank": 1.0
+        },
+        {
+          "key": "D-05",
+          "rank": 1.0
+        },
+        {
+          "key": "D-16",
+          "rank": 1.0
+        },
+        {
+          "key": "D-09",
+          "rank": 0.2
+        }
+      ],
+      "count": 7,
+      "total_count": 7,
+      "expansion": [
+        "천리안위성2A호",
+        "GK-2A"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "집합 일치 ['D-01', 'D-03', 'D-04', 'D-05', 'D-06', 'D-09', 'D-16']"
+    },
+    "Q-07": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-01",
+          "rank": 2.2
+        },
+        {
+          "key": "D-03",
+          "rank": 1.6
+        },
+        {
+          "key": "D-04",
+          "rank": 1.6
+        },
+        {
+          "key": "D-06",
+          "rank": 1.6
+        },
+        {
+          "key": "D-16",
+          "rank": 1.6
+        },
+        {
+          "key": "D-05",
+          "rank": 1.4
+        },
+        {
+          "key": "D-02",
+          "rank": 1.2
+        },
+        {
+          "key": "D-09",
+          "rank": 1.0
+        },
+        {
+          "key": "D-13",
+          "rank": 0.4
+        }
+      ],
+      "count": 9,
+      "total_count": 9,
+      "expansion": [
+        "한반도",
+        "식생",
+        "충청권",
+        "southern Gyeonggi and Chungcheong regions",
+        "Korea"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "기대 1위 D-01 · 포함 ['D-02'] / 실제 ['D-01', 'D-03', 'D-04', 'D-06', 'D-16', 'D-05', 'D-02', 'D-09', 'D-13']"
+    },
+    "Q-08": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-02",
+          "rank": 0.2
+        },
+        {
+          "key": "D-03",
+          "rank": 0.2
+        },
+        {
+          "key": "D-04",
+          "rank": 0.2
+        },
+        {
+          "key": "D-05",
+          "rank": 0.2
+        }
+      ],
+      "count": 4,
+      "total_count": 4,
+      "expansion": [
+        "한국수자원학회",
+        "다운스케일",
+        "KWRA"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-03', 'D-04', 'D-05'] · 실제 ['D-02', 'D-03', 'D-04', 'D-05'] · 초과 ['D-02'] · 결손 []"
+    },
+    "Q-09": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-02",
+          "rank": 1.2
+        },
+        {
+          "key": "D-03",
+          "rank": 1.2
+        },
+        {
+          "key": "D-04",
+          "rank": 1.2
+        },
+        {
+          "key": "D-06",
+          "rank": 1.2
+        },
+        {
+          "key": "D-16",
+          "rank": 1.2
+        },
+        {
+          "key": "D-05",
+          "rank": 1.0
+        },
+        {
+          "key": "D-01",
+          "rank": 0.2
+        }
+      ],
+      "count": 7,
+      "total_count": 7,
+      "expansion": [
+        "충청"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-02', 'D-03', 'D-04', 'D-05', 'D-06', 'D-16'] · 실제 ['D-02', 'D-03', 'D-04', 'D-06', 'D-16', 'D-05', 'D-01'] · 초과 ['D-01'] · 결손 []"
+    },
+    "Q-10": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-08",
+          "rank": 1.6
+        },
+        {
+          "key": "D-07",
+          "rank": 0.8
+        },
+        {
+          "key": "D-15",
+          "rank": 0.4
+        }
+      ],
+      "count": 3,
+      "total_count": 3,
+      "expansion": [
+        "강수"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "기대 ['D-07', 'D-08', 'D-15'] · 1위 D-08 / 실제 ['D-08', 'D-07', 'D-15']"
+    },
+    "Q-11": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-08",
+          "rank": 0.2
+        }
+      ],
+      "count": 1,
+      "total_count": 1,
+      "expansion": [
+        "강수량"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 [] · 실제 ['D-08'] · 초과 ['D-08'] · 결손 []"
+    },
+    "Q-12": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-01",
+          "rank": 0.2
+        }
+      ],
+      "count": 1,
+      "total_count": 1,
+      "expansion": [
+        "위성"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "판정보류",
+      "why": "기대문의 「등」을 어떻게 읽느냐에 판정이 걸린다. D-09 는 「국가기상위성센터」가 simple 파서에서 한 토큰이라 접두 질의가 토큰 중간을 못 잡는다(§2.9.2) — 즉 처음부터 성립할 수 없는 이름이다. 통과·실패를 이 하네스가 정하지 않는다 (Ted 판정 자리 · DRIFT3-MEASURE §4-㈎). 관측: 걸린 것 ['D-01'] · 안 걸린 것 ['D-09'] · 전체 ['D-01']"
+    },
+    "Q-13": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-02",
+          "rank": 0.2
+        },
+        {
+          "key": "D-03",
+          "rank": 0.2
+        },
+        {
+          "key": "D-04",
+          "rank": 0.2
+        },
+        {
+          "key": "D-05",
+          "rank": 0.2
+        }
+      ],
+      "count": 4,
+      "total_count": 4,
+      "expansion": [
+        "다운스케"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-01', 'D-03', 'D-04', 'D-05', 'D-06'] · 실제 ['D-02', 'D-03', 'D-04', 'D-05'] · 초과 ['D-02'] · 결손 ['D-01', 'D-06']"
+    },
+    "Q-14": {
+      "arm": "pg_trgm",
+      "hits": [],
+      "count": 0,
+      "total_count": 0,
+      "expansion": [
+        "HSR레이더합성반사도"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "미충족",
+      "why": "기대 ['D-07'] · 실제 [] · 초과 [] · 결손 ['D-07']"
+    },
+    "Q-17": {
+      "arm": "tsvector",
+      "hits": [
+        {
+          "key": "D-13",
+          "rank": 2.8
+        }
+      ],
+      "count": 1,
+      "total_count": 1,
+      "expansion": [
+        "MODIS",
+        "FPAR"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "집합 일치 ['D-13']"
+    },
+    "Q-18": {
+      "arm": "pg_trgm",
+      "hits": [],
+      "count": 0,
+      "total_count": 0,
+      "expansion": [
+        "코크리깅"
+      ],
+      "expansion_topic": null,
+      "expansion_matches_evalset": true,
+      "verdict": "충족",
+      "why": "집합 일치 []"
+    }
+  },
+  "사유": "2026-08-29 실측 · DRIFT3-MEASURE §3.2 와 축자 대조해 전건 일치를 확인한 값"
+}

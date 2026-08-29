@@ -1,0 +1,149 @@
+{
+  "_설명": [
+    "S2b 검색 평가셋 A층 16건의 실행 입력. 정본 = dev-package/sessions/S2b-SEARCH-EVALSET.md.",
+    "query = §2 각 축 표의 질의 원문. terms = §2.9.1 고정 검색어(무수정). expected_expansion = §2.9.1 「확장 뒤 (D9)」 칸.",
+    "check = §2 의 기대 결과를 기계 판정 가능한 형태로 옮긴 것이다. 기대를 고친 것이 없다 — 산문을 술어로 옮겼을 뿐이고, 옮길 수 없는 것은 kind=undecided 로 남긴다.",
+    "⚠ 이 파일은 합격선이 아니다. 실행기는 통과/불합격을 반환하지 않고 항목별 값과 기준선 대비 변화를 낸다 (2026-08-29 Ted 판정 — 검색 평가셋은 이번 릴리즈 판정 대상 밖).",
+    "B층 16건과 층 밖 Q-19·Q-20 은 여기 없다. 이 하네스가 못 도는 것이고, 요약줄이 그 건수를 드러낸다."
+  ],
+  "_대상": "고려대학교 수문학연구실 적재분. 이름↔D 코드 대응은 infra/staging/manifest-s2.json 이 정본이다 — 이 파일에 이름을 다시 적지 않는다.",
+  "out_of_layer": [
+    {"id": "Q-19", "사유": "ai-service 정지가 필요하다 — 운영 스택 접촉이라 이 하네스가 돌지 않는다", "정본": "§2.5"},
+    {"id": "Q-20", "사유": "다른 연구실 앱 롤 자격이 필요하다 — RLS 우회 롤로는 못 잰다", "정본": "§2.5"}
+  ],
+  "items": [
+    {
+      "id": "Q-01", "regression_gate": true, "축": "D",
+      "query": "25년도 낙동강 유역 강우 데이터 찾아줘",
+      "terms": ["낙동강", "유역", "강우"],
+      "expected_expansion": ["낙동강", "유역", "강우", "낙동강 유역"],
+      "expected_text": "0건",
+      "check": {"kind": "exact_set", "value": []}
+    },
+    {
+      "id": "Q-02", "regression_gate": true, "축": "A",
+      "query": "재격자화한 NDVI 자료",
+      "terms": ["재격자화", "NDVI"],
+      "expected_expansion": ["재격자화", "NDVI", "이중선형보간", "Bilinear", "다운스케일", "격자 보간", "IDW", "최근린보간", "Nearest"],
+      "expected_text": "상위3 = D-03·D-04·D-05 · D-06 은 상위3 밖",
+      "check": {"kind": "top3_set", "value": ["D-03", "D-04", "D-05"], "not_in_top3": ["D-06"]}
+    },
+    {
+      "id": "Q-03", "regression_gate": true, "축": "B",
+      "query": "전처리한 강우 자료",
+      "terms": ["전처리", "강우"],
+      "expected_expansion": ["전처리", "강우"],
+      "expected_text": "정확히 3건 = D-07·D-08·D-15",
+      "check": {"kind": "exact_set", "value": ["D-07", "D-08", "D-15"]}
+    },
+    {
+      "id": "Q-04", "regression_gate": true, "축": "B",
+      "query": "Bilinear 로 만든 자료",
+      "terms": ["Bilinear"],
+      "expected_expansion": ["Bilinear", "이중선형보간"],
+      "expected_text": "D-04 1건",
+      "check": {"kind": "exact_set", "value": ["D-04"]}
+    },
+    {
+      "id": "Q-05", "축": "A",
+      "query": "GK2A 위성 NDVI",
+      "terms": ["GK2A", "위성", "NDVI"],
+      "expected_expansion": ["GK2A", "위성", "NDVI", "GK-2A"],
+      "expected_text": "D-01·D-03~D-06 ＋ 기저 D-09",
+      "check": {"kind": "exact_set", "value": ["D-01", "D-03", "D-04", "D-05", "D-06", "D-09"]},
+      "주의": "정본이 이 열거에 「7건」이라 적었으나 열거된 이름은 6개다. 기대를 고치지 않고 열거를 그대로 옮겼다 — 셈과 열거의 갈림은 §4 형식으로 올릴 자리다."
+    },
+    {
+      "id": "Q-06", "축": "A",
+      "query": "천리안위성2A호 자료",
+      "terms": ["천리안위성2A호"],
+      "expected_expansion": ["천리안위성2A호", "GK-2A"],
+      "expected_text": "7건(2026-08-26 Ted 판정 ⑵ 개정)",
+      "check": {"kind": "exact_set", "value": ["D-01", "D-03", "D-04", "D-05", "D-06", "D-09", "D-16"]}
+    },
+    {
+      "id": "Q-07", "축": "B",
+      "query": "한반도 전체 식생 자료",
+      "terms": ["한반도", "식생"],
+      "expected_expansion": ["한반도", "식생", "충청권", "southern Gyeonggi and Chungcheong regions", "Korea"],
+      "expected_text": "D-01 최상위 · D-02 포함(알려진 오탐)",
+      "check": {"kind": "top1_and_contains", "top1": "D-01", "contains": ["D-02"]}
+    },
+    {
+      "id": "Q-08", "축": "A",
+      "query": "한국수자원학회 학회 발표에 쓴 다운스케일 자료",
+      "terms": ["한국수자원학회", "다운스케일"],
+      "expected_expansion": ["한국수자원학회", "다운스케일", "KWRA"],
+      "expected_text": "D-03·D-04·D-05",
+      "check": {"kind": "exact_set", "value": ["D-03", "D-04", "D-05"]}
+    },
+    {
+      "id": "Q-09", "축": "C",
+      "query": "충청",
+      "terms": ["충청"],
+      "expected_expansion": ["충청"],
+      "expected_text": "6건(2026-08-26 Ted 판정 ⑵ 개정)",
+      "check": {"kind": "exact_set", "value": ["D-02", "D-03", "D-04", "D-05", "D-06", "D-16"]}
+    },
+    {
+      "id": "Q-10", "축": "C",
+      "query": "강수",
+      "terms": ["강수"],
+      "expected_expansion": ["강수"],
+      "expected_text": "3건 · D-08 상위",
+      "check": {"kind": "rank1_and_set", "value": ["D-07", "D-08", "D-15"], "rank1": "D-08"}
+    },
+    {
+      "id": "Q-11", "축": "D",
+      "query": "강수량",
+      "terms": ["강수량"],
+      "expected_expansion": ["강수량"],
+      "expected_text": "0건",
+      "check": {"kind": "exact_set", "value": []}
+    },
+    {
+      "id": "Q-12", "축": "D",
+      "query": "위성",
+      "terms": ["위성"],
+      "expected_expansion": ["위성"],
+      "expected_text": "설명 적재 후 D-01·D-09 「등」이 C 가중치로 걸린다",
+      "check": {
+        "kind": "undecided",
+        "reason": "기대문의 「등」을 어떻게 읽느냐에 판정이 걸린다. D-09 는 「국가기상위성센터」가 simple 파서에서 한 토큰이라 접두 질의가 토큰 중간을 못 잡는다(§2.9.2) — 즉 처음부터 성립할 수 없는 이름이다. 통과·실패를 이 하네스가 정하지 않는다 (Ted 판정 자리 · DRIFT3-MEASURE §4-㈎).",
+        "observe": ["D-01", "D-09"]
+      }
+    },
+    {
+      "id": "Q-13", "축": "C",
+      "query": "다운스케",
+      "terms": ["다운스케"],
+      "expected_expansion": ["다운스케"],
+      "expected_text": "설명 적재 후 D-01·D-03~D-06",
+      "check": {"kind": "exact_set", "value": ["D-01", "D-03", "D-04", "D-05", "D-06"]}
+    },
+    {
+      "id": "Q-14", "축": "C",
+      "query": "HSR레이더합성반사도",
+      "terms": ["HSR레이더합성반사도"],
+      "expected_expansion": ["HSR레이더합성반사도"],
+      "expected_text": "D-07 1건이 pg_trgm 보조 팔로",
+      "check": {"kind": "exact_set", "value": ["D-07"]}
+    },
+    {
+      "id": "Q-17", "축": "C",
+      "query": "MODIS FPAR",
+      "terms": ["MODIS", "FPAR"],
+      "expected_expansion": ["MODIS", "FPAR"],
+      "expected_text": "D-13 1건",
+      "check": {"kind": "exact_set", "value": ["D-13"]}
+    },
+    {
+      "id": "Q-18", "축": "D",
+      "query": "코크리깅",
+      "terms": ["코크리깅"],
+      "expected_expansion": ["코크리깅"],
+      "expected_text": "0건",
+      "check": {"kind": "exact_set", "value": []}
+    }
+  ]
+}
