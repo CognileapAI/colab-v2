@@ -1171,3 +1171,96 @@ items:
     deadline: null
     note: 검사기 자신이 관리 대상 밖이 되지 않게 대장에 등재한다.
     sources: ["PLAN-SoT §9 〈176〉"]
+
+  - id: LV-1
+    name: 사람이 가공 단계를 직접 고르는 경로 제거 (레벨은 언제나 계보에서 나온다)
+    status: open
+    stage: stage1
+    owner: "D3 / core-api ＋ contracts ＋ db"
+    entry_conditions: ["계약 동결 해제 등급 판정 (`sessions/X2-FREEZE-PROTOCOL.md`) — `[미확인]`"]
+    depends_on: [P2]
+    completion_def: >-
+      ⓐ 사람이 고른 값을 담는 경로가 전부 없어졌다 —
+      `db/platform/schema.sql` 의 `processing_level_user_set` 열과 `CHECK` 제약 ·
+      계약 `contracts/seams/fe-core.yaml` 의 `DatasetUpdate.processingLevel` ·
+      수용 경로 `routes/catalog.py` 와 `domains/d3_catalog.py` 의 필드 대응표 ·
+      `d3_catalog.py::processing_level` 의 `user_set` 분기 ·
+      그 경로를 단언하던 시험
+      ⓑ 이미 쌓인 값의 처리 — **제거 착수 시점에 다시 세고**, 0건이 아니면
+      각 행의 표시 Lv 가 파생값으로 어떻게 바뀌는지를 목록으로 고정한 뒤 집행한다
+      (조건문이 아니라 목록으로 고정한다 · `CLAUDE.md §6`)
+      ⓒ 되돌림(down) 마이그레이션이 있고 `schema-diff` 가 두 체인 각각 선언＝적용
+      ⓓ 게이트 `contract-lint`·`contract-breaking`·`seam-consistency`·`generated-up-to-date` 판정을
+      **돌린 결과로** 적는다 — 필드 제거는 파괴적 변경이라 `contract-breaking` 이 red 를 낼 수 있고,
+      그 red 는 동결 해제 승인 기록과 짝지어야 한다
+      ⓔ 업로드 폼의 읽기 전용 칸(`RegisterArea.tsx` 「계보를 확정하면 정해져요」)은 그대로 둔다 —
+      화면 변경이 없다는 것이 이 항목의 전제다
+    evidence: "2026-08-29 실측 — staging `d3_dataset` 전체 12 · `processing_level_user_set` 비-NULL **0건**(읽기 전용 조회). 데이터 이행 대상 0. 산출 `sessions/LINEAGE-LEVEL.md §9.1`"
+    deadline: null
+    note: >-
+      stage 판정 근거 = 걷어낼 자리가 **전부 stage 1 에서 이미 지어진 표면**이다
+      (`P2` 업로드 ✅ stage1 · `P1` 카탈로그 ✅ stage1 · 마이그레이션 `0007`).
+      새 기능이 아니라 stage 1 표면 안의 정정이므로 `stage1` 로 둔다.
+      ⚠ **화면에는 아직 없어 지금이 가장 싸다** — 업로드 폼의 가공 단계 칸은 읽기 전용이고
+      사용자가 이 경로를 쓰는 화면이 한 자리도 없다.
+      ⚠ 계약 동결 해제 등급은 이번에 정하지 않았다 → `[미확인]`.
+    sources: ["PLAN-SoT §9 〈194〉"]
+
+  - id: LV-2
+    name: AI 계보 추천을 버튼으로 되살린다 (자동 호출 → 사용자가 누르는 보조)
+    status: open
+    stage: unknown
+    owner: "E-04 프런트 ＋ core-api 중계"
+    entry_conditions: ["없음 (프런트 자동 호출 제거만이면 지금 가능) — 다만 stage 가 미정이다"]
+    depends_on: [P2]
+    completion_def: >-
+      ⓐ `frontend/src/components/lineage/LineageStep.tsx` 의 마운트 시 자동 조회
+      (`useEffect(…, [uploadId, source])`)가 없어지고, 사용자가 누르는 버튼이 그 자리를 대신한다
+      ⓑ 누르기 전에는 **직접 연결이 기본 자리**다 — AI 제안 영역이 화면을 선점하지 않는다
+      ⓒ 누른 뒤의 빈 결과가 사용자에게 드러난다 — 「제안 0건」과 「제안을 못 받았다」가
+      화면에서 갈린다(중계의 `reason` 을 화면이 버리지 않는다)
+      ⓓ 「정직한 빈 상태」와 「AI 없이도 등록이 끝까지 간다」는 유지된다
+      (`CLAUDE.md §3` · `LineageStep.tsx:9`)
+      ⓔ 호출 횟수가 업로드 1건당 1회에서 **누른 횟수**로 바뀐 것을 시험이 단언한다
+    evidence: null
+    deadline: null
+    note: >-
+      ⚠ **stage `[미확인]` — 임의로 정하지 않았다.** 두 읽기가 갈린다.
+      ㋐ **stage 2** = AI 계보 제안 서비스 `K3` 가 `stage2`(`〈167〉-㉮`)이고 버튼은 그 산출을
+      받는 자리다. 버튼을 지금 만들어도 누르면 늘 「0건」이라 확인할 것이 없다.
+      ㋑ **stage 1** = 걷어낼 자동 호출이 **stage 1 에서 이미 배포된 화면 안에** 있고
+      (260826 결정은 AI 를 이번 릴리즈에서 뺐는데 코드는 아직 부른다),
+      제거 자체는 `K3` 없이 지금 가능하다.
+      **푸는 법 = Ted 가 「자동 호출 제거」와 「버튼 신설」을 한 항목으로 볼지 가를지 정한다.**
+      ⚠ 이 항목은 `K3` 의 순서를 당기지 않는다 — 위상과 발동 방식만 정한 판정이다.
+    sources: ["PLAN-SoT §9 〈197〉"]
+
+  - id: LV-3
+    name: "「CoLAB에서 가공됨」 표식 — 레벨 표시 옆 작은 표식 ＋ 계보 그래프 노드 구분"
+    status: open
+    stage: after_stage2
+    owner: "E-04 · E-03 프런트"
+    entry_conditions: ["`DP-1`(데이터 프로세스) — 표식이 가리킬 「시스템이 만든 계보」가 그때 처음 생긴다", "`P3`(계보 그래프) — ⓑ 노드 구분의 자리"]
+    depends_on: [DP-1, P3]
+    completion_def: >-
+      ⓐ 레벨 표시(`lvl lvl-N`) 옆에 작은 표식이 붙는다 — **독립 칩으로 만들지 않는다**
+      (잠김·검증 칩과 같은 무게로 읽혀 출처의 성질이라는 종류 차이가 뭉개진다)
+      ⓑ 계보 그래프에서 시스템이 만든 노드가 구분된다
+      ⓒ 표식이 답하는 질문이 「우리가 만들었다」가 아니라
+      **「이 레벨을 시스템이 보증하는가」**임이 문구·툴팁에서 읽힌다
+      ⓓ **계보를 편집하면 레벨이 다시 계산되므로** 그 시점에 표식을 어떻게 할지가 정해져 있다
+      — ⚠ **이 갈래는 판정 안 됐다 → `[미확인]`**
+    evidence: null
+    deadline: null
+    note: >-
+      stage 판정 근거 = **표시할 대상이 그 전에는 0 건이다.**
+      `d4_lineage_edge.origin` CHECK 2값에 「시스템이 만들었다」가 없고,
+      그 값을 만드는 주체인 데이터 프로세스(`DP-1`)가 `after_stage2` 다(`〈189〉`-㉳-⑵).
+      그래서 `DP-1` 과 같은 자리에 둔다.
+      ⚠ **ⓑ 의 실물은 미확인** — 계보 그래프 화면 자체가 아직 없다(`P3` open).
+      푸는 법 = `P3` 착수 시 노드 렌더 구현 자리에서 확인.
+      ⚠ **ⓓ 편집 후 표식의 거취는 판정 안 됐다** — 갈래 셋(표식을 걷는다 / 유지하되
+      「사람이 손댐」을 함께 표시한다 / 그대로 둔다). 푸는 법 = Ted 판정. 지어내지 않는다.
+      ⭑ 실물 근거 — Lv 는 이미 칩 계열이 아니다(`DetailHeader.tsx:25` · `CatalogTable.tsx:157`
+      가 `lvl lvl-N`, 주제·잠김·조각 N 은 `chip`).
+    sources: ["PLAN-SoT §9 〈198〉"]
