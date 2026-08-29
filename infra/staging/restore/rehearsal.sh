@@ -42,10 +42,22 @@ up() { # $1=이름 $2=DB
 
 step "0. 재료 — 살아 있는 staging 에서 **읽어** 온다 (쓰기 0)"
 "$BK/backup-full.sh" || { ng "전범위 백업 실패 — 리허설의 재료가 없다"; exit 1; }
-PDUMP="$(ls -1t "$COLAB_BACKUP_DIR"/platform-*.sql.gz | head -1)"
-ADUMP="$(ls -1t "$COLAB_BACKUP_DIR"/ai-*.sql.gz | head -1)"
-VART="$(ls -1t "$COLAB_BACKUP_DIR"/vol-uploads-*.tar.gz | head -1)"
-ok "재료 = $(basename "$PDUMP") · $(basename "$ADUMP") · $(basename "${VART:-없음}")"
+# ⭑ **각각 「최신」으로 고르지 않는다** — `preflight.sh` P5-b 를 통과 불가능하게 만든 것과 같은 배선이다
+#   (`volume-lib.sh` 회차 절 · Ted 판정 2026-08-29). 원장 전용 백업이 볼륨보다 뒤에 뜨면
+#   **원장은 새 회차 · 볼륨은 옛 회차**로 리허설이 서고, 그 어긋남이 어디에도 안 찍힌다.
+RROUND=""; RRC=0
+RROUND="$(select_backup_round "$COLAB_BACKUP_DIR")" || RRC=$?
+if [ "$RRC" -eq 2 ]; then
+  ng "볼륨의 회차 편입 선언이 없다 — COLAB_VOLBACKUP_PAIRING_<볼륨> 을 적는다"; exit 1
+fi
+[ -n "$RROUND" ] || { ng "짝이 맞는 회차가 없다 — 원장과 볼륨이 한 벌인 회차가 보관처에 없다"; exit 1; }
+PDUMP="$(round_profile_dump "$COLAB_BACKUP_DIR" platform "$RROUND")"
+ADUMP="$(round_profile_dump "$COLAB_BACKUP_DIR" ai "$RROUND")"
+[ -n "$PDUMP" ] && [ -n "$ADUMP" ] || { ng "회차 $RROUND 에 원장 둘이 다 있지 않다"; exit 1; }
+# ⚠ 여기서는 면제를 만들지 않는다. `uploads` 아카이브가 이 회차에 없으면 **아래 §5 #4 가 RED 를 낸다**
+#   (`rehearsal.sh` 의 「볼륨 아카이브가 없다」). 리허설에 면제 갈래를 새로 파면 그것이 green-by-skip 의 입구다.
+VART="$(round_volume_archive "$COLAB_BACKUP_DIR" uploads "$RROUND")" || VART=""
+ok "회차 = $RROUND · 재료 = $(basename "$PDUMP") · $(basename "$ADUMP") · $([ -n "$VART" ] && basename "$VART" || echo 없음)"
 
 step '1. §5-1 — `DROP SCHEMA public CASCADE` → 재적재 (비가역 구간을 일회용에서 통째로)'
 up r1_pg_drop colab_platform || true
