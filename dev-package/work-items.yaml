@@ -1141,18 +1141,68 @@ items:
     note: "식별자 규격 밖의 순서표 항목이다."
     sources: ["WORK-UNITS §10.3"]
 
-  - id: 2단-BC120
-    name: "종전 2단 후보 셋 (B · C · `〈120〉` 3건)"
-    status: conflict
+  # ⟨개정 2026-08-29 · `PLAN-SoT §9 〈201〉`⟩ 아래 종전 한 행을 세 항목으로 갈랐다.
+  #   `2단-BC120`(conflict) → `2단-계보간선-원자료→월평균`(done)
+  #                          ＋ `2단-격자전용-워커제외`(done)
+  #                          ＋ `2단-격자전용-실패3건-처분`(deferred)
+  # 원문은 지우지 않고 아래에 개정 표시로 남긴다 — 무엇이 무엇으로 갈렸는지를 잃지 않기 위해서다.
+  # 종전 행(2026-08-28 판) 축자:
+#   - id: 2단-BC120
+#     name: "종전 2단 후보 셋 (B · C · `〈120〉` 3건)"
+#     status: conflict
+#     stage: stage2
+#     owner: null
+#     entry_conditions: []
+#     depends_on: []
+#     completion_def: 완료 정의 미작성
+#     evidence: null
+#     deadline: null
+#     note: "`WORK-UNITS §10.3` 한 줄이 「※ 종전의 B·C·`〈120〉` 셋은 착수 후보가 아니다 — 전부 이미 끝났거나 안 하기로 한 것이다」로 done(B = `〈159〉` 집행 · C = `〈160〉`/`〈114〉` 집행)과 deferred(`〈120〉` 3건 = 하지 않기로 한 것)를 한 줄에 섞어 적는다. 각 항목의 이름·범위가 그 문서에 없어 분해가 불가능하다 — ⬜ 와 ⏸ 를 결코 뭉개지 않는 이 대장의 규칙상 한 상태로 접을 수 없다. `03-HANDOFF §1` 에는 행이 없다. 사람이 셋을 갈라 이름 붙일 자리다."
+#     sources: ["WORK-UNITS §10.3"]
+
+  - id: 2단-계보간선-원자료→월평균
+    name: "원자료 → 월평균 산출물 계보 간선 확정 (`§10.3` 2단 · 종전 라벨 `B`)"
+    status: done
     stage: stage2
     owner: null
     entry_conditions: []
     depends_on: []
-    completion_def: 완료 정의 미작성
-    evidence: null
+    completion_def: >-
+      GK2A/AMI NDVI 원자료(`D-09`)에서 NDVI 100 m 경기남부·충청권 월평균(`D-16`)으로 가는
+      `d4_lineage_edge` 간선이 **사람 확정**(`confirmed_by`)으로 서 있다
+    evidence: "`PLAN-SoT §9 〈159〉`-㉮ — `d4_lineage_edge` 실측 `01M0YWDXN7CA13KB7MQC9PGEW5`(`D-16`) ← `01M0Y1WNCHGHBGK7Y31SSY4FQV`(`D-09`) · `confirmed_at` 2026-08-26 12:14:18Z · `confirmed_by` 전창현(교수). 복원 조사 = `sessions/BC120-RECONSTRUCT.md §2-⑴`"
     deadline: null
-    note: "`WORK-UNITS §10.3` 한 줄이 「※ 종전의 B·C·`〈120〉` 셋은 착수 후보가 아니다 — 전부 이미 끝났거나 안 하기로 한 것이다」로 done(B = `〈159〉` 집행 · C = `〈160〉`/`〈114〉` 집행)과 deferred(`〈120〉` 3건 = 하지 않기로 한 것)를 한 줄에 섞어 적는다. 각 항목의 이름·범위가 그 문서에 없어 분해가 불가능하다 — ⬜ 와 ⏸ 를 결코 뭉개지 않는 이 대장의 규칙상 한 상태로 접을 수 없다. `03-HANDOFF §1` 에는 행이 없다. 사람이 셋을 갈라 이름 붙일 자리다."
-    sources: ["WORK-UNITS §10.3"]
+    note: "⭑ 2026-08-29 `2단-BC120` 에서 갈려 나온 항목이다(`〈201〉`). 착수 후보가 아니다 — 집행됐는데 등재만 없었다(`〈159〉`-㉰). 같은 항목 `-㉲` 가 재기동 검증 기준선의 계보 간선 5 → 6 정정을 함께 확정했다. 사람이 확정했으므로 「AI 는 계보에 쓰지 않는다」(`CLAUDE.md §3-2`)에 저촉하지 않는다."
+    sources: ["WORK-UNITS §10.3", "PLAN-SoT §9 〈159〉"]
+
+  - id: 2단-격자전용-워커제외
+    name: "격자 전용 업로드를 워커 처리에서 제외 (`§10.3` 2단 · 종전 라벨 `C`)"
+    status: done
+    stage: stage2
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      본체 파일 없이 격자 파일만 온 업로드가 파이프라인 워커에서 `upload.failed` 를 내지 않고
+      곧장 `upload.ready` 로 선다
+    evidence: "확정·구현 = `PLAN-SoT §9 〈114〉`(2026-08-26 Ted 「워커에서 격자전용은 제외하라」 · 해소안 ⓐ 채택 · `services/pipeline-worker/src/colab_pipeline/domains/d5_ingestion.py` `process_upload`). 사후 실측 = `§9 〈160〉`-㉮ — 커밋 `4a8e41b`(`origin/main` 포함) · `d5_ingestion.py:167` `if not bodies and grids:` early return · 산출 `sessions/C-GRID-ONLY-REVIEW.md`. 복원 조사 = `sessions/BC120-RECONSTRUCT.md §2-⑵`"
+    deadline: null
+    note: "⭑ 2026-08-29 `2단-BC120` 에서 갈려 나온 항목이다(`〈201〉`). 착수 후보가 아니다. ⚠ 별건 위험 — `〈160〉`-㉳: 미리보기 뒷단을 켜며 `:167` 분기를 뒤로 밀면 「내부 오류」로 부활한다. 그것은 `PV-1` 이 지고 갈 주의사항이지 이 항목의 잔여가 아니다."
+    sources: ["WORK-UNITS §10.3", "PLAN-SoT §9 〈114〉", "PLAN-SoT §9 〈160〉"]
+
+  - id: 2단-격자전용-실패3건-처분
+    name: "실패로 굳은 격자 전용 업로드 3건의 처분 (`〈120〉` 3건)"
+    status: deferred
+    stage: stage2
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      집행 대상 없음 — 「그대로 둔다」가 판정이므로 완료 조건이 아니라 **닫힘 사유**가 정본이다
+    evidence: "`PLAN-SoT §9 〈145〉`-㉳ — Ted 2026-08-27 판정 「그대로 둬」로 ⓒ 채택. 축자 = 「`〈120〉` 은 여기서 닫힌다 — 미실행이 아니라 「하지 않기로 한 것」이다」. 대상 3건 실측(`-㉰`) = `01M0Y1XND62XV5EKYZHFGNVJGS` · `01M0YTT4VJKMGV2FXZZE12SEA4` · `01M0YTT941XPYHH10RT3S2V9YY`. 복원 조사 = `sessions/BC120-RECONSTRUCT.md §2-⑶`"
+    deadline: null
+    note: "⭑ 2026-08-29 `2단-BC120` 에서 갈려 나온 항목이다(`〈201〉`). ⏸(하지 않기로 한 것)이지 ⬜(착수 후보)가 아니다 — 착수 후보 표에 올리지 않는다. ⚠ 딸린 사실 = 그 3건은 **기다려도 사라지지 않는다.** 회수 질의가 `registered_at IS NULL` 을 요구하는데 3건 다 `registered_at` 이 있다(`〈145〉`-㉯㉰ · `d5_ingestion.py:549`). 즉 `d5_upload` 3행의 「형식 인식 실패」 기록이 staging 에 **영구히 남는다 — 그것이 의도된 결과다.** 사용자 화면에 나타나지 않고 `〈114〉` 로 재발이 막혀 늘지 않는다. ⚠ 실제 사고 — 이 자리를 「미이행」으로 적었더니 2026-08-27 에 다시 착수 후보로 올라왔다(`〈160〉`-㉲ · `03-HANDOFF §3`)."
+    sources: ["WORK-UNITS §10.3", "PLAN-SoT §9 〈120〉", "PLAN-SoT §9 〈145〉"]
 
   - id: W-1
     name: 항목 상태 대장·검사기
