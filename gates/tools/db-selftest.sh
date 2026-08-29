@@ -30,6 +30,17 @@ expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
   out="$("$@" 2>&1)"; rc=$?
   if [ "$rc" -eq 78 ] || printf '%s' "$out" | grep -q '::gate-readiness-failure::'; then
     printf '%s\n' "$out" | grep '::gate-readiness-failure::' | sed 's/^/           /'
+    # **입력 미선언은 간헐이 아니다.** 환경이 흔들려 못 돈 것과 달리, 값이 선언되지 않았다는
+    # 사실은 매번 같은 답을 낸다 — 그러므로 「판정 못 함」으로 접어 두지 않고 여기서 판정한다.
+    if printf '%s' "$out" | grep -q 'cause=입력미선언'; then
+      if [ "$want" = "미선언" ]; then
+        echo "[selftest] $label → red(준비·입력미선언) OK"
+      else
+        echo "[selftest] $label → red(준비·입력미선언) (기대 $want) ✗"
+        FAILURES+=("$label: 미선언으로 분류됨(기대 $want)")
+      fi
+      return
+    fi
     if [ "$want" = "ready" ]; then
       echo "[selftest] $label → red(준비) OK (이 케이스가 재는 것이 준비 실패다)"
     else
@@ -267,14 +278,14 @@ D="$(mkdb sd-noschema)"
 expect red "schema-diff: 선언 스키마 0건" env COLAB_DB_DIR="$D" "$SD"
 
 D="$(mkdb sd-nodb)"; mkschema "$D"
-expect red "schema-diff: 적용 DB 미지정(skip 아님)" env COLAB_DB_DIR="$D" "$SD"
+expect 미선언 "schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언)" env COLAB_DB_DIR="$D" "$SD"
 
 D="$(mkdb sd-legacy-only)"; mkschema "$D"
-expect red "schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red)" \
+expect 미선언 "schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red)" \
   env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-onlyplatform)"; mkschema "$D"
-expect red "schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다)" \
+expect 미선언 "schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다)" \
   env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-unreachable)"; mkschema "$D"
@@ -331,7 +342,7 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
   # 한 체인의 URL 만 빠진 경우 — 나머지 한 체인이 실제로 일치해도 red (green-by-skip 금지).
   docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
     'ALTER TABLE d3_dataset DROP COLUMN drifted;' >/dev/null 2>&1
-  expect red "schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락" \
+  expect 미선언 "schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락" \
     env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" "$SD"
 
   docker rm -f "$APPC" >/dev/null 2>&1
@@ -401,6 +412,60 @@ fi
 D2="$(mkdb ready-vs-judge-noschema)"
 expect_judge_red "구분: 선언 스키마 0건 = 판정 실패(준비 아님)" \
   env COLAB_DB_DIR="$D2" "$RC_SH"
+
+# ── 준비 red 안에서 **원인 둘을 가른다** ─────────────────────────────────────
+# 왜: 적용 DB URL 이 아무 데도 선언되지 않았을 때 종전에는 판정 red 로 찍혀
+#   「검사 대상이 규율을 어겼다」가 출력됐다. 참이 아니다 — 대상은 한 건도 보이지 않았고
+#   어긴 것도 없다. 아무도 값을 말하지 않았을 뿐이다. 그 두 문장이 같은 자리에 오면
+#   읽는 사람은 코드를 고치러 가고, 고칠 코드는 없다.
+# 축은 하나다(대상이 판정됐는가) 이므로 **셋째 범주를 만들지 않는다.** 준비 red 안에서 원인만 가른다.
+expect_undeclared_red() { # $1=라벨 $2.. = 명령 — 미선언 입력이 준비 red 로, 그것도 참말로 찍히는가
+  local label="$1"; shift
+  local out rc; out="$("$@" 2>&1)"; rc=$?
+  if [ "$rc" -ne 78 ]; then
+    echo "[selftest] $label → 종료코드 $rc (기대 78) ✗"; FAILURES+=("$label: 미선언 종료코드"); return
+  fi
+  case "$out" in
+    *'::gate-readiness-failure::'*cause=입력미선언*missing=*) : ;;
+    *) echo "[selftest] $label → cause=입력미선언·missing 표식이 없다 ✗"
+       echo "$out" | sed 's/^/           /'; FAILURES+=("$label: 미선언 표식"); return ;;
+  esac
+  # 「…가 아니라」로 부정하는 줄은 참말이다. 그것 말고 **주장하는** 줄이 있으면 거짓이다.
+  if printf '%s\n' "$out" | grep '규율을 어겼다' | grep -qv '아니라'; then
+    echo "[selftest] $label → 「대상이 규율을 어겼다」로 말한다 ✗ (참이 아니다 — 대상을 못 봤다)"
+    FAILURES+=("$label: 거짓 원인 문구"); return
+  fi
+  if ! printf '%s' "$out" | grep -q '선언되지 않았다'; then
+    echo "[selftest] $label → 「선언되지 않았다」가 사람이 읽는 줄에 없다 ✗"
+    FAILURES+=("$label: 사람용 문구 누락"); return
+  fi
+  # 표식이 **grep 으로 찾아지는가.** 바이트 단위로 자르다 한글이 깨지면 grep 이 출력을
+  # 바이너리로 보고 표식을 못 찾아, 요약이 「사유 표식 없음」을 찍는다 — 실제로 그랬다.
+  if [ "$(printf '%s\n' "$out" | grep -c '^::gate-readiness-failure::')" != "1" ]; then
+    echo "[selftest] $label → 표식이 grep 에 잡히지 않는다 ✗ (깨진 바이트로 바이너리 취급)"
+    FAILURES+=("$label: 표식 grep 불가"); return
+  fi
+  echo "[selftest] $label → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)"
+}
+expect_undeclared_red "원인: schema-diff 적용 DB URL 미선언" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
+expect_undeclared_red "원인: schema-diff 구 변수만 선언(체인을 모른다)" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+      COLAB_APPLIED_DB_URL="postgresql://x/y" "$SD"
+expect_undeclared_red "원인: autometa-loss 적용 DB URL 미선언" \
+  env COLAB_APPLIED_DB_URL_PLATFORM= "$REPO_ROOT/gates/tools/autometa-loss.sh"
+
+# 반대 방향 — **환경 대기는 입력미선언으로 찍히지 않는다.** 둘이 섞이면 가른 뜻이 없다.
+AW_OUT="$(env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+              COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD" 2>&1)"
+if printf '%s' "$AW_OUT" | grep -q 'cause=입력미선언'; then
+  echo "[selftest] 원인: 환경 대기가 입력미선언으로 찍혔다 ✗ (구분이 무너졌다)"
+  FAILURES+=("원인 오분류: 환경대기→입력미선언")
+elif printf '%s' "$AW_OUT" | grep -q 'waited_for='; then
+  echo "[selftest] 원인: 환경 대기 = waited_for 로 찍힌다 OK (입력미선언과 섞이지 않았다)"
+else
+  echo "[selftest] 원인: 환경 대기 표식을 찾지 못했다 ✗"; FAILURES+=("환경대기 표식 누락")
+fi
 
 # ── 판정 ─────────────────────────────────────────────────────────────────────
 if [ "${#FAILURES[@]}" -gt 0 ]; then

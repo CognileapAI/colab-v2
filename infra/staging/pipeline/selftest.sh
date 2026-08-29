@@ -377,6 +377,143 @@ if ! printf '%s\n' "$ISSRC" | grep -q 'PRE_N'; then
   echo "  FAIL  [P39] 설치 전 줄 수를 세지 않는다 — 통째로 날아가도 알 수 없다"; FAILED=$((FAILED+1))
 else echo "  PASS  [P39] 설치 전후 줄 수 대조 있음"; fi
 
+# ══ P40 스케줄 설치가 **남의 crontab 항목을 지우지 않는다** (행동 픽스처) ═════════
+# P38·P39 는 소스에 특정 낱말이 있는지만 봤다 — 낱말이 있어도 파괴 경로는 열려 있을 수 있다.
+# 여기서는 **실제로 돌려서** 판정한다. 백업 쪽 F13 과 같은 모양이다.
+#
+# ⚠ **실물 crontab 에 절대 닿지 않는다** — 두 겹으로 막는다.
+#   ⓐ COLAB_CRONTAB_BIN 으로 명시 주입 ⓑ PATH 앞에 가짜를 놓아, 스크립트가 주입을 무시하고
+#      맨 `crontab` 을 불러도 가짜가 받는다. ⓐ 만으로는 스크립트가 주입을 안 읽는 판에서
+#      픽스처가 **실물 crontab 을 갈아엎는다** — 실제로 한 번 일어났다.
+#   그래서 P40-0 이 주입이 먹는지 **먼저** 증명하고, 안 먹으면 아래를 돌리지 않고 멈춘다.
+IS="$HERE/install-schedule.sh"
+FAKE_DIR="$TMP/fakecron"; mkdir -p "$FAKE_DIR"
+cat > "$FAKE_DIR/crontab" <<'FAKE'
+#!/usr/bin/env bash
+# 가짜 crontab. 실물을 대신해 픽스처 안에서만 산다.
+#   FAKE_CRON_STORE   현재 크론탭 내용을 담은 파일
+#   FAKE_CRON_MODE    ok | none(크론탭 없음) | fail(명령 실패)
+set -uo pipefail
+STORE="$FAKE_CRON_STORE"
+case "${1:-}" in
+  -l)
+    case "${FAKE_CRON_MODE:-ok}" in
+      # 「없음」은 **쓰기 전까지만** 없음이다. 설치가 실제로 걸었으면 그 뒤로는 읽힌다.
+      none) if [ -s "$STORE" ]; then cat "$STORE"; else echo "no crontab for tester" >&2; exit 1; fi ;;
+      fail) echo "crontab: cannot open /var/spool/cron/tester: Permission denied" >&2; exit 1 ;;
+      *)    cat "$STORE" ;;
+    esac ;;
+  -)  cat > "$STORE" ;;
+  *)  cat "$1" > "$STORE" ;;
+esac
+FAKE
+chmod +x "$FAKE_DIR/crontab"
+
+SIBLING='# >>> colab-v2-staging-backup >>>
+MAILTO=""
+30 3 * * * /opt/colab/run-scheduled.sh backup-full.sh >> /tmp/b.log 2>&1
+# <<< colab-v2-staging-backup <<<
+0 6 * * * /opt/other/nightly.sh'
+
+run_is() { # $1=모드 $2..=install-schedule 인자 — 가짜 crontab 으로만 돈다
+  local mode="$1"; shift
+  env PATH="$FAKE_DIR:$PATH" COLAB_CRONTAB_BIN="$FAKE_DIR/crontab" FAKE_CRON_STORE="$TMP/cronstore" \
+      FAKE_CRON_MODE="$mode" COLAB_PIPELINE_STATE_DIR="$TMP/cronstate" "$IS" "$@" 2>&1
+}
+
+echo "── P40-0 픽스처가 실물 crontab 에 닿지 않는다 (주입이 실제로 먹는지 먼저 증명)"
+N=$((N+1))
+printf 'SENTINEL-DO-NOT-TOUCH\n' > "$TMP/cronstore"
+run_is ok show >/dev/null 2>&1
+if grep -q 'SENTINEL-DO-NOT-TOUCH' "$TMP/cronstore"; then
+  echo "  PASS  [P40-0] 가짜 저장소만 읽었다 — 아래 파괴 픽스처를 돌려도 된다"
+else
+  echo "  FAIL  [P40-0] 주입이 먹지 않는다. **아래 픽스처는 실물 crontab 을 건드린다** — 중단한다"
+  FAILED=$((FAILED+1))
+  echo "pipeline selftest: RED (crontab 주입 미동작 — 파괴 픽스처를 돌리지 않았다)"; exit 1
+fi
+
+echo "── P40-a crontab 읽기 실패 시 설치를 **거부한다** (형제 블록이 살아남는다)"
+N=$((N+1))
+printf '%s\n' "$SIBLING" > "$TMP/cronstore"
+OUT="$(run_is fail install)"; RC=$?
+if [ $RC -ne 0 ] && grep -q 'nightly.sh' "$TMP/cronstore" && grep -q 'colab-v2-staging-backup' "$TMP/cronstore"; then
+  echo "  PASS  [P40-a] RED 로 멈췄고 형제 블록·남의 줄이 그대로다"
+else
+  echo "  FAIL  [P40-a] 읽기 실패인데 exit $RC 로 진행했다(또는 기존 항목이 사라졌다)"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
+echo "── P40-b 「크론탭 없음」은 실패가 아니다 — 설치되고, 설치 뒤 읽어서 확인한다"
+N=$((N+1))
+: > "$TMP/cronstore"
+OUT="$(run_is none install)"; RC=$?
+if [ $RC -eq 0 ] && grep -q 'colab-v2-staging-deploy' "$TMP/cronstore"; then
+  echo "  PASS  [P40-b] 없던 크론탭에 블록이 실제로 걸렸다"
+else
+  echo "  FAIL  [P40-b] 「없음」을 실패로 다뤘거나 블록이 걸리지 않았다 (exit $RC)"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
+echo "── P40-c 설치가 형제 블록(백업)과 남의 줄을 **보존한다**"
+N=$((N+1))
+printf '%s\n' "$SIBLING" > "$TMP/cronstore"
+OUT="$(run_is ok install)"; RC=$?
+if [ $RC -eq 0 ] && grep -q 'colab-v2-staging-backup' "$TMP/cronstore" \
+   && grep -q 'nightly.sh' "$TMP/cronstore" && grep -q 'colab-v2-staging-deploy' "$TMP/cronstore"; then
+  echo "  PASS  [P40-c] 형제 블록·남의 줄·새 블록이 함께 있다"
+else
+  echo "  FAIL  [P40-c] 설치가 남의 항목을 삼켰다 (exit $RC)"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
+echo "── P40-d 「설치했다」≠「걸려 있다」 — 써도 안 걸리면 RED 다"
+N=$((N+1))
+printf '%s\n' "$SIBLING" > "$TMP/cronstore"
+cat > "$FAKE_DIR/crontab.swallow" <<'FAKE2'
+#!/usr/bin/env bash
+# 쓰기를 **삼키는** 가짜 crontab — exit 0 을 내지만 저장하지 않는다.
+set -uo pipefail
+case "${1:-}" in
+  -l) cat "$FAKE_CRON_STORE" ;;
+  -)  cat > /dev/null ;;
+  *)  : ;;
+esac
+FAKE2
+chmod +x "$FAKE_DIR/crontab.swallow"
+OUT="$(env PATH="$FAKE_DIR:$PATH" COLAB_CRONTAB_BIN="$FAKE_DIR/crontab.swallow" \
+        FAKE_CRON_STORE="$TMP/cronstore" COLAB_PIPELINE_STATE_DIR="$TMP/cronstate" "$IS" install 2>&1)"; RC=$?
+if [ $RC -ne 0 ]; then
+  echo "  PASS  [P40-d] 붙인 뒤 읽어서 「안 걸렸다」를 잡았다"
+else
+  echo "  FAIL  [P40-d] 쓰기가 삼켜졌는데 「설치됨」을 냈다 — 설치 후 재확인이 없다"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
+echo "── P40-e remove 도 읽기 실패에서 **쓰지 않는다**"
+N=$((N+1))
+printf '%s\n' "$SIBLING" > "$TMP/cronstore"
+OUT="$(run_is fail remove)"; RC=$?
+if [ $RC -ne 0 ] && grep -q 'nightly.sh' "$TMP/cronstore"; then
+  echo "  PASS  [P40-e] 지우지 않았고 남의 줄이 그대로다"
+else
+  echo "  FAIL  [P40-e] 읽기 실패인데 remove 가 crontab 을 덮었다 (exit $RC)"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
+echo "── P40-f remove 정상 경로 — 배포 블록만 지우고 형제 블록은 남긴다 (양성 대조군)"
+N=$((N+1))
+printf '%s\n' "$SIBLING" > "$TMP/cronstore"
+run_is ok install >/dev/null 2>&1
+OUT="$(run_is ok remove)"; RC=$?
+if [ $RC -eq 0 ] && ! grep -q 'colab-v2-staging-deploy' "$TMP/cronstore" \
+   && grep -q 'colab-v2-staging-backup' "$TMP/cronstore" && grep -q 'nightly.sh' "$TMP/cronstore"; then
+  echo "  PASS  [P40-f] 배포 블록만 사라졌고 형제 블록·남의 줄은 남았다"
+else
+  echo "  FAIL  [P40-f] 제거가 지나치거나 모자랐다 (exit $RC)"
+  printf '%s\n' "$OUT" | sed 's/^/        /'; FAILED=$((FAILED+1))
+fi
+
 unset DOCKER_FAKE_STORE DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
 export EXISTING_TAGS="aaa"
 

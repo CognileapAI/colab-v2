@@ -54,3 +54,20 @@
 "generated-selftest"        = "parallel"
 "work-item-selftest"        = "parallel"
 "stage2-markers-selftest"   = "parallel"
+
+# `autometa-loss` — 실측 근거: 이 게이트는 적용 DB 에 **읽기만 한다.**
+#   `gates/tools/autometa-loss.sh` 안에 INSERT·UPDATE·DELETE·CREATE·DROP·ALTER·TRUNCATE 가
+#   한 건도 없다(질의는 WITH … SELECT 하나뿐). 도커·임시 파일·잠금도 쓰지 않는다.
+#   경합 자원은 적용 DB 하나이고 그 접촉이 읽기 전용이므로 실행 순서가 판정을 바꾸지 않는다.
+#   같은 적용 DB 를 같은 방식으로 읽는 `schema-diff` 가 이미 parallel 로 서 있다.
+"autometa-loss"             = "parallel"
+
+# `autometa-loss-selftest` — 실측 근거: **자기 일회용 컨테이너 안에서만** 산다.
+#   `_pg.sh` 의 `pg_start` 로 컨테이너를 뜨우고(이름 = PID＋난수 · 포트 미공개 · `--rm`),
+#   그 안에 자기 DB(`autometaloss`)를 만들어 쓴다. 픽스처 파일은 자기 `mktemp -d` 안이고,
+#   게이트에는 psql 을 주입해 **적용 DB URL 을 아예 쓰지 않는다**(주입된 psql 이 첫 인자를 버린다).
+#   도커 데몬 경합은 `_pg.sh` 의 선언 한도(COLAB_PG_MAX_CONCURRENT)가 이미 받는다 —
+#   `rls-coverage`·`rls-effect`·`schema-diff`·`stage2-markers` 가 같은 배치로 parallel 이다.
+#   ⚠ `db-selftest` 를 serial 로 둔 이유(**한 적용 DB 를 순서대로 훼손해 가며** 본다)는
+#     여기에 해당하지 않는다. 이쪽은 적용 DB 를 한 번도 건드리지 않는다.
+"autometa-loss-selftest"    = "parallel"

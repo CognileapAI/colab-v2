@@ -32,12 +32,16 @@ PGC=""
 # 무엇을 남기나 (한 줄 · 기계가 읽는 표식):
 #   ::gate-readiness-failure::gate=<게이트>|waited_for=<무엇을 기다렸나>|limit=<상한>|elapsed=<실경과>|detail=<사유>
 # 실행기(gates/run.sh all)는 이 표식과 종료코드 78 로 요약에서 `red(준비)` 를 갈라 적는다.
+# 표식 문자열을 자르는 자리는 `_readiness.sh` 가 쥔다 — 바이트 단위로 자르면 한글이 깨지고,
+# 깨진 바이트가 있으면 `grep` 이 출력을 바이너리로 보아 **표식을 못 찾는다.**
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
 PG_READINESS_EXIT=78
 
 pg_readiness_report() { # $1=게이트 $2=기다린 대상 $3=상한 $4=실경과 $5=사유
   local gate="$1" what="$2" limit="$3" elapsed="$4" detail="$5"
   printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=%s|elapsed=%s|detail=%s\n' \
-    "$gate" "$what" "$limit" "$elapsed" "$(printf '%s' "$detail" | tr '\n' ' ' | cut -c1-400)"
+    "$gate" "$what" "$limit" "$elapsed" "$(readiness_oneline "$detail" 400)"
   echo "::error::$gate red(준비) — **검사기가 돌지 못했다.** 판정 red 가 아니다.
    기다린 것: $what
    선언 상한: $limit · 실경과: $elapsed
