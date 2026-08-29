@@ -207,6 +207,136 @@ else
   echo "  → ✗ 통과 항목이 있는데 GREEN 이 아니다 (또는 통과 건수가 요약줄에 없다)"; BAD=$((BAD+1))
 fi
 
+# ═══════════════════════════════════════════════════════════════════════════
+# F13 스케줄 설치가 **남의 crontab 항목을 지우지 않는다**
+#
+# 왜 있는가: `crontab -l 2>/dev/null` 은 「크론탭이 없다」와 「crontab 명령이 실패했다」를
+#   **같은 빈 출력**으로 만든다. 그 빈 출력을 그대로 `crontab -` 에 밀어 넣으면 배포 블록을
+#   포함한 기존 항목이 통째로 사라진 채 「설치됨」이 찍힌다. 배포 쪽에서 이미 고친 모양이고,
+#   백업 쪽에 같은 것이 남아 있었다.
+# 어떻게 증명하나: **가짜 crontab** 을 물려(COLAB_CRONTAB_BIN) 실제 crontab 을 한 줄도
+#   건드리지 않고 파괴 경로를 재현한다. 실물 crontab 은 이 픽스처에서 읽지도 쓰지도 않는다.
+IS="$HERE/install-schedule.sh"
+FAKE_DIR="$W/fakecron"; mkdir -p "$FAKE_DIR"
+cat > "$FAKE_DIR/crontab" <<'FAKE'
+#!/usr/bin/env bash
+# 가짜 crontab. 실물을 대신해 픽스처 안에서만 산다.
+#   FAKE_CRON_STORE   현재 크론탭 내용을 담은 파일
+#   FAKE_CRON_MODE    ok | none(크론탭 없음) | fail(명령 실패)
+set -uo pipefail
+STORE="$FAKE_CRON_STORE"
+case "${1:-}" in
+  -l)
+    case "${FAKE_CRON_MODE:-ok}" in
+      # 「없음」은 **쓰기 전까지만** 없음이다. 설치가 실제로 걸었으면 그 뒤로는 읽힌다 —
+      # 이걸 흉내내지 않으면 픽스처가 스크립트 대신 자기 거짓말을 재는 꼴이 된다.
+      none) if [ -s "$STORE" ]; then cat "$STORE"; else echo "no crontab for tester" >&2; exit 1; fi ;;
+      fail) echo "crontab: cannot open /var/spool/cron/tester: Permission denied" >&2; exit 1 ;;
+      *)    cat "$STORE" ;;
+    esac ;;
+  -)  cat > "$STORE" ;;
+  *)  cat "$1" > "$STORE" ;;
+esac
+FAKE
+chmod +x "$FAKE_DIR/crontab"
+
+SIBLING='# >>> colab-v2-staging-deploy >>>
+MAILTO=""
+*/5 * * * * /opt/colab/watch.sh >> /tmp/p.log 2>&1
+# <<< colab-v2-staging-deploy <<<
+0 6 * * * /opt/other/nightly.sh'
+
+# ⚠ **실물 crontab 에 절대 닿지 않는다** — 두 겹으로 막는다.
+#   ⓐ COLAB_CRONTAB_BIN 으로 명시 주입 ⓑ PATH 앞에 가짜를 놓아, 스크립트가 주입을 무시하고
+#      맨 `crontab` 을 불러도 가짜가 받는다. ⓐ 만으로는 스크립트가 주입을 안 읽는 판에서
+#      픽스처가 **실물 crontab 을 갈아엎는다** — 실제로 한 번 일어났다.
+run_is() { # $1=모드 $2..=install-schedule 인자 — 가짜 crontab 으로만 돈다
+  local mode="$1"; shift
+  env PATH="$FAKE_DIR:$PATH" COLAB_CRONTAB_BIN="$FAKE_DIR/crontab" FAKE_CRON_STORE="$W/cronstore" \
+      FAKE_CRON_MODE="$mode" COLAB_BACKUP_STATE_DIR="$W/state" "$IS" "$@" 2>&1
+}
+
+RAN=$((RAN+1)); echo "──────── F13-0 픽스처가 실물 crontab 에 닿지 않는다 (주입이 실제로 먹는지 먼저 증명)"
+printf 'SENTINEL-DO-NOT-TOUCH\n' > "$W/cronstore"
+run_is ok show >/dev/null 2>&1
+if grep -q 'SENTINEL-DO-NOT-TOUCH' "$W/cronstore"; then
+  echo "  → 기대대로 — 가짜 저장소만 읽었다. 아래 파괴 픽스처를 돌려도 된다"
+else
+  echo "  → ✗ 주입이 먹지 않는다. **아래 픽스처는 실물 crontab 을 건드린다** — 중단한다"; BAD=$((BAD+1))
+  echo "셀프테스트 RED — crontab 주입 미동작"; exit 1
+fi
+
+RAN=$((RAN+1)); echo "──────── F13-a crontab 읽기 실패 시 설치를 **거부한다** (형제 블록이 살아남는다)"
+printf '%s
+' "$SIBLING" > "$W/cronstore"
+OUT13A="$(run_is fail install)"; RC13A=$?
+echo "$OUT13A" | sed 's/^/    /'
+SURVIVED="$(grep -c 'nightly.sh' "$W/cronstore" || true)"
+if [ $RC13A -ne 0 ] && [ "$SURVIVED" -ge 1 ] && grep -q 'colab-v2-staging-deploy' "$W/cronstore"; then
+  echo "  → 기대대로 RED — 쓰지 않았고 형제 블록·남의 줄이 그대로다"
+else
+  echo "  → ✗ 읽기 실패인데 exit $RC13A 로 진행했다(또는 기존 항목이 사라졌다). 파괴 경로가 열려 있다"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F13-b 「크론탭 없음」은 실패가 아니다 — 설치되고, 설치 뒤 읽어서 확인한다"
+: > "$W/cronstore"
+OUT13B="$(run_is none install)"; RC13B=$?
+# 설치 뒤에는 저장소에 내용이 생겼으니 이후 읽기는 ok 모드로 확인한다
+echo "$OUT13B" | sed 's/^/    /'
+if [ $RC13B -eq 0 ] && grep -q 'colab-v2-staging-backup' "$W/cronstore"; then
+  echo "  → 기대대로 GREEN — 없던 크론탭에 블록이 실제로 걸렸다"
+else
+  echo "  → ✗ 「크론탭 없음」을 실패로 다뤘거나 블록이 걸리지 않았다 (exit $RC13B)"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F13-c 설치가 형제 블록(배포)과 남의 줄을 **보존한다**"
+printf '%s
+' "$SIBLING" > "$W/cronstore"
+OUT13C="$(run_is ok install)"; RC13C=$?
+echo "$OUT13C" | sed 's/^/    /'
+if [ $RC13C -eq 0 ] \
+   && grep -q 'colab-v2-staging-deploy' "$W/cronstore" \
+   && grep -q 'nightly.sh' "$W/cronstore" \
+   && grep -q 'colab-v2-staging-backup' "$W/cronstore"; then
+  echo "  → 기대대로 GREEN — 형제 블록·남의 줄·새 블록이 함께 있다"
+else
+  echo "  → ✗ 설치가 남의 항목을 삼켰다 (exit $RC13C)"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F13-d 「설치했다」≠「걸려 있다」 — 써도 안 걸리면 RED 다"
+printf '%s
+' "$SIBLING" > "$W/cronstore"
+cat > "$FAKE_DIR/crontab.swallow" <<'FAKE2'
+#!/usr/bin/env bash
+# 쓰기를 **삼키는** 가짜 crontab — exit 0 을 내지만 저장하지 않는다.
+set -uo pipefail
+case "${1:-}" in
+  -l) cat "$FAKE_CRON_STORE" ;;
+  -)  cat > /dev/null ;;
+  *)  : ;;
+esac
+FAKE2
+chmod +x "$FAKE_DIR/crontab.swallow"
+OUT13D="$(env PATH="$FAKE_DIR:$PATH" COLAB_CRONTAB_BIN="$FAKE_DIR/crontab.swallow" FAKE_CRON_STORE="$W/cronstore" \
+   COLAB_BACKUP_STATE_DIR="$W/state" "$IS" install 2>&1)"; RC13D=$?
+echo "$OUT13D" | sed 's/^/    /'
+if [ $RC13D -ne 0 ]; then
+  echo "  → 기대대로 RED — 붙인 뒤 읽어서 「안 걸렸다」를 잡았다"
+else
+  echo "  → ✗ 쓰기가 삼켜졌는데 「설치됨」을 냈다. 설치 후 재확인이 없다"; BAD=$((BAD+1))
+fi
+
+RAN=$((RAN+1)); echo "──────── F13-e remove 도 읽기 실패에서 **쓰지 않는다**"
+printf '%s
+' "$SIBLING" > "$W/cronstore"
+OUT13E="$(run_is fail remove)"; RC13E=$?
+echo "$OUT13E" | sed 's/^/    /'
+if [ $RC13E -ne 0 ] && grep -q 'nightly.sh' "$W/cronstore"; then
+  echo "  → 기대대로 RED — 지우지 않았고 남의 줄이 그대로다"
+else
+  echo "  → ✗ 읽기 실패인데 remove 가 crontab 을 덮었다 (exit $RC13E)"; BAD=$((BAD+1))
+fi
+
 echo
 if [ "$BAD" -eq 0 ]; then
   echo "셀프테스트 GREEN — fixture $RAN 건 전부 기대대로 RED"

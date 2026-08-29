@@ -64,27 +64,36 @@ PGC=""
 cleanup() { [ -n "$PGC" ] && docker rm -f "$PGC" >/dev/null 2>&1; [ -n "${TMP:-}" ] && rm -rf "$TMP"; pg_slot_release; }
 trap cleanup EXIT INT TERM
 
+# 준비 실패(readiness)는 판정 실패와 **가른다** — 표식·종료코드는 `_pg.sh` 의 것을 그대로 쓴다.
+# 두 벌로 두면 한쪽이 언젠가 다른 말을 한다.
+ready_red() { # $1=기다린 대상 $2=상한 $3=실경과 $4=사유
+  pg_readiness_report rls-effect "$1" "$2" "$3" "$4"; exit "$PG_READINESS_EXIT"
+}
+T0="$(pg_now)"
 if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" = "1" ]; then
-  red "일회용 postgres 를 띄울 수 없다(주입된 부재). 검사를 못 한 것은 통과가 아니다."
+  ready_red "일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)" "대기 없음" "0초" \
+    "selftest 가 도커 부재를 주입했다."
 fi
-command -v docker >/dev/null 2>&1 || red "docker 가 없다. DB 가 필요한 게이트를 DB 없이 green 으로 세지 않는다."
+command -v docker >/dev/null 2>&1 \
+  || ready_red "docker 실행 파일" "대기 없음" "0초" "docker 가 PATH 에 없다."
 docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >/dev/null 2>&1 \
-  || red "이미지 $PG_IMAGE 를 확보하지 못했다(네트워크/레지스트리). skip 아님."
+  || ready_red "이미지 $PG_IMAGE 확보(pull)" "상한 없음" "$(( $(pg_now) - T0 ))초" \
+       "레지스트리/네트워크에서 이미지를 받지 못했다."
 
-pg_slot_acquire rls-effect || exit 1
+pg_slot_acquire rls-effect || exit "$PG_READINESS_EXIT"
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" rls-effect-XXXXXX)"
 PGC="b3_rlseffect_$$_${RANDOM}"
 RUNERR="$(docker run -d --rm --name "$PGC" \
   --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
   -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust \
-  "$PG_IMAGE" 2>&1 >/dev/null)" || { PGC=""; red "일회용 postgres 컨테이너를 띄우지 못했다.
-   도커가 낸 말: ${RUNERR:-(출력 없음)}"; }
-for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || red "postgres 가 60초 안에 뜨지 않았다.
-   컨테이너 상태: $(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 부하: $(uptime | sed 's/.*load average/load average/')
-   마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-300)
-   ⚠ 이것은 **red 다.** 못 돈 검사를 통과로 세지 않는다. 동시성 한도는 COLAB_PG_MAX_CONCURRENT 로 선언된다."
+  "$PG_IMAGE" 2>&1 >/dev/null)" || { PGC=""; ready_red "일회용 postgres 컨테이너 생성(docker run)" \
+    "대기 없음" "$(( $(pg_now) - T0 ))초" "도커가 낸 말: ${RUNERR:-(출력 없음)}"; }
+READY_LIMIT="${COLAB_PG_READY_TIMEOUT:-60}"; T1="$(pg_now)"
+for _ in $(seq 1 "$READY_LIMIT"); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
+docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 \
+  || ready_red "postgres 접속 준비(pg_isready · 컨테이너 $PGC)" "${READY_LIMIT}초" "$(( $(pg_now) - T1 ))초" \
+       "컨테이너 상태=$(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 $(uptime | sed 's/.*load average/load average/') · 마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-200)"
 
 su_psql()  { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U postgres  -d "$DB" "$@"; }
 own_psql() { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U "$OWNER"  -d "$DB" "$@"; }

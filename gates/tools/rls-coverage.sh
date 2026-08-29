@@ -39,15 +39,23 @@ fi
 
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
-pg_start rls-coverage || exit 1
+pg_start rls-coverage || exit $?   # 준비 실패는 78 로 그대로 전달한다
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" rls-coverage-XXXXXX)"
 trap 'rm -rf "$TMP"; pg_cleanup' EXIT INT TERM
 FACTS="$TMP/facts.tsv"; : > "$FACTS"
 
 for c in "${CHAINS[@]}"; do
-  pg_apply "rlschk_$c" "$DB_DIR/$c/schema.sql" \
-    || red "db/$c/schema.sql 를 빈 postgres 에 적용하지 못했다. 적용되지 않는 스키마는 검사할 수 없다."
+  if ! pg_apply "rlschk_$c" "$DB_DIR/$c/schema.sql"; then
+    # 서버가 쓸 수 있는 상태가 아니었나(준비), 스키마가 틀렸나(판정) — 사유로 가른다.
+    if pg_is_readiness_error "$PG_APPLY_ERR"; then
+      pg_readiness_report rls-coverage "일회용 postgres 가 스키마를 받을 수 있는 상태(db/$c 적용)" \
+        "상한 없음" "-" "$PG_APPLY_ERR"
+      exit "$PG_READINESS_EXIT"
+    fi
+    red "db/$c/schema.sql 를 빈 postgres 에 적용하지 못했다. 적용되지 않는 스키마는 검사할 수 없다.
+   postgres 가 낸 말: ${PG_APPLY_ERR:-(출력 없음)}"
+  fi
   # 사용자 스키마의 **일반 테이블만** 본다 (뷰·파티션 부모·시스템 스키마 제외).
   pg_psql "rlschk_$c" -At -F$'\t' -c "
     SELECT '$c', c.relname,
