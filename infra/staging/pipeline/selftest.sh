@@ -302,6 +302,81 @@ elif [ -n "$LG" ] && [ "$LS_" -ge "$LG" ]; then
   echo "  FAIL  [P31] 서빙 태그 대조가 원장 green 뒤에 있다"; FAILED=$((FAILED+1))
 else echo "  PASS  [P31] 서빙 태그 대조 있음 · 원장 green 보다 앞($LS_ < $LG)"; fi
 
+
+# ══ 스케줄 실행 껍데기 — 「아무것도 안 하고 성공을 보고하는」 모양이 없는지 ═══════════
+# 이 자리가 이 레포 대표 실패형(green-by-skip)의 가장 나쁜 모양이다. 크론이 5분마다 부르는데
+# 그 회차가 **아무것도 하지 않았을 때**를 「성공」으로 적으면 두 가지가 동시에 무너진다.
+#   ⓐ `LAST-SUCCESS.txt` 는 「파이프라인이 아예 안 돈 경우」를 잡는 표식인데(watch.sh ③),
+#      안 돈 회차가 그 표식을 갱신하면 **그 표식은 영원히 아무것도 못 잡는다.**
+#   ⓑ `DEPLOY-FAILED.txt` 는 「**다음 성공에서만** 사라진다」가 계약인데(lib.sh mark_failed),
+#      안 돈 회차가 지우면 **진짜 배포 실패가 5분 뒤 조용히 사라진다.**
+# 그래서 「할 일 없음」과 「배포 green」은 **다른 종료코드**여야 하고 껍데기가 그것을 갈라야 한다.
+# 실물 `watch.sh` 를 그대로 시험한다 — 사본 옆에 가짜 `run-pipeline.sh` 를 두고 부른다.
+WT="$TMP/wt"; mkdir -p "$WT"
+cp "$HERE/watch.sh" "$HERE/lib.sh" "$WT/"
+watch_case() { # $1=가짜 run-pipeline 종료코드 → 상태 디렉터리를 새로 깔고 watch.sh 를 한 번 돌린다
+  printf '#!/usr/bin/env bash\nexit %s\n' "$1" > "$WT/run-pipeline.sh"; chmod +x "$WT/run-pipeline.sh"
+  rm -rf "$TMP/wstate"; mkdir -p "$TMP/wstate"
+  COLAB_PIPELINE_STATE_DIR="$TMP/wstate" "$WT/watch.sh" >/dev/null 2>&1
+  WRC=$?
+}
+wmark()  { [ -f "$TMP/wstate/$FAILED_MARK" ] && echo 있음 || echo 없음; }
+wsucc()  { [ -s "$TMP/wstate/$LAST_SUCCESS" ] && echo 있음 || echo 없음; }
+
+echo "── P32 배포가 **실제로 돌아 green** 이면 성공 표식이 갱신된다 (양성 대조군)"
+watch_case 0
+ck P32 "있음" "$(wsucc)"
+
+echo "── P33 **할 일 없음**(새 커밋 없음)은 성공이 아니다 — LAST-SUCCESS 를 갱신하지 않는다"
+# 갱신하면 「크론은 도는데 배포는 8주째 안 됐다」를 잡을 표식이 사라진다.
+watch_case 66
+ck P33 "없음" "$(wsucc)"
+
+echo "── P34 **할 일 없음이 직전 실패 표식을 건드리지 않는다** — 지우지도 덮어쓰지도 않는다"
+# 지우면 진짜 실패가 5분 뒤 사라지고, 덮어쓰면 **무엇이 실패했는지**가 사라진다. 둘 다 안 된다.
+printf '#!/usr/bin/env bash\nexit 66\n' > "$WT/run-pipeline.sh"; chmod +x "$WT/run-pipeline.sh"
+rm -rf "$TMP/wstate"; mkdir -p "$TMP/wstate"
+( COLAB_PIPELINE_STATE_DIR="$TMP/wstate"; . "$WT/lib.sh"; mark_failed "마이그레이션" "원래사유" ) >/dev/null 2>&1
+COLAB_PIPELINE_STATE_DIR="$TMP/wstate" "$WT/watch.sh" >/dev/null 2>&1
+ck P34 "있음" "$(wmark)"
+ck P34b "원래사유보존" "$(grep -q '원래사유' "$TMP/wstate/$FAILED_MARK" 2>/dev/null && echo 원래사유보존 || echo 덮였다)"
+
+echo "── P34c 할 일 없음은 **실패도 아니다** — 없던 표식을 새로 만들지 않는다"
+watch_case 66
+ck P34c "없음" "$(wmark)"
+
+echo "── P35 겹침·fetch 실패(75)는 고장이 아니다 — 표식을 만들지 않는다"
+watch_case 75
+ck P35 "없음" "$(wmark)"
+
+echo "── P36 진짜 실패는 표식을 만든다 (양성 대조군)"
+watch_case 65
+ck P36 "있음" "$(wmark)"
+
+echo "── P37 run-pipeline.sh 의 **「새 커밋 없음」 갈래가 exit 0 이 아니다**"
+N=$((N+1))
+NOOP="$(grep -vE '^[[:space:]]*#' "$HERE/run-pipeline.sh" | grep -A2 '새 커밋 없음' | grep -oE 'exit [0-9]+' | head -1)"
+if [ -z "$NOOP" ]; then
+  echo "  FAIL  [P37] 「새 커밋 없음」 갈래의 exit 를 찾지 못했다 — 판정할 수 없다"; FAILED=$((FAILED+1))
+elif [ "$NOOP" = "exit 0" ]; then
+  echo "  FAIL  [P37] 아무것도 안 한 회차가 exit 0 을 낸다 — 부르는 쪽이 배포 성공과 못 가른다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P37] 할 일 없음 = $NOOP (배포 green 과 다른 코드)"; fi
+
+echo "── P38 install-schedule.sh 가 설치 뒤 **읽어서 확인**한다 (「설치했다」≠「걸려 있다」)"
+N=$((N+1))
+ISSRC="$(grep -vE '^[[:space:]]*#' "$HERE/install-schedule.sh")"
+if ! printf '%s\n' "$ISSRC" | grep -q 'verify_installed'; then
+  echo "  FAIL  [P38] 설치 후 재확인 경로가 없다 — crontab - 의 종료코드만 보고 있다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P38] 설치 후 재확인 있음"; fi
+
+echo "── P39 install-schedule.sh 가 **기존 crontab 을 통째로 날리지 않는다**"
+# `crontab -l 2>/dev/null` 은 「크론탭이 없다」와 「crontab 명령이 실패했다」를 같은 빈 출력으로 만든다.
+# 그 빈 출력을 그대로 `crontab -` 에 넣으면 **백업 블록까지 사라진 채** 「설치됨」이 찍힌다.
+N=$((N+1))
+if ! printf '%s\n' "$ISSRC" | grep -q 'PRE_N'; then
+  echo "  FAIL  [P39] 설치 전 줄 수를 세지 않는다 — 통째로 날아가도 알 수 없다"; FAILED=$((FAILED+1))
+else echo "  PASS  [P39] 설치 전후 줄 수 대조 있음"; fi
+
 unset DOCKER_FAKE_STORE DOCKER_FAKE_TAG_FAIL DOCKER_FAKE_TAG_NOOP
 export EXISTING_TAGS="aaa"
 
