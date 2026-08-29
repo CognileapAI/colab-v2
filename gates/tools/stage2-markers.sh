@@ -21,12 +21,17 @@ SELECT="${COLAB_STAGE2_SELECT:-stage2 and not e2e}"
 KSEL="${COLAB_STAGE2_K:-}"
 KARGS=(); [ -n "$KSEL" ] && KARGS=(-k "$KSEL")
 
+# 준비 실패(readiness)는 판정 실패와 **가른다** — 표식·종료코드는 DB 게이트의 것과 같다.
+# 시험 자체가 틀린 것(판정 red)과 **시험을 돌릴 환경이 없는 것**(준비 red)은 다른 사실이다.
+# ⚠ 준비 실패도 여전히 red 다. 건너뛰지 않는다.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
+
 PY="${COLAB_STAGE2_PY:-$SVC/.venv/bin/python}"
 if [ ! -x "$PY" ]; then
-  echo "::error::stage2-markers red — pipeline-worker 파이썬이 없다: $PY
-   → services/pipeline-worker 에 venv 를 만들고 requirements.txt 를 설치한 뒤 재실행한다.
-   검사를 못 한 것은 통과가 아니다."
-  exit 1
+  pg_readiness_report stage2-markers "pipeline-worker 파이썬 실행 파일($PY)" "대기 없음" "0초" \
+    "venv 가 이 체크아웃에 없다. services/pipeline-worker 에 venv 를 만들고 requirements.txt 를 설치한 뒤 재실행한다."
+  exit "$PG_READINESS_EXIT"
 fi
 
 XML="$(mktemp -t stage2-markers-XXXXXX.xml)"

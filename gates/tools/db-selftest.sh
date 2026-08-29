@@ -20,10 +20,25 @@ TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" db-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 FAILURES=()
 
+# 준비 실패로 뒤집힌 케이스를 **fail-closed 결함으로 세지 않는다.**
+# 부하에서 일회용 DB 가 못 뜬 것을 「검사기가 틀렸다」로 적으면 그 보고가 거짓이 된다.
+# ⚠ 여전히 RED 다 — 다만 셀프테스트 전체가 종료코드 78 로 나가 실행기가 `red(준비)` 로 적는다.
+READINESS=()
 expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
   local want="$1" label="$2"; shift 2
   local out rc got
   out="$("$@" 2>&1)"; rc=$?
+  if [ "$rc" -eq 78 ] || printf '%s' "$out" | grep -q '::gate-readiness-failure::'; then
+    printf '%s\n' "$out" | grep '::gate-readiness-failure::' | sed 's/^/           /'
+    if [ "$want" = "ready" ]; then
+      echo "[selftest] $label → red(준비) OK (이 케이스가 재는 것이 준비 실패다)"
+    else
+      # 준비 실패를 「기대한 red」로 세지 않는다 — 그 케이스는 판정된 적이 없다.
+      echo "[selftest] $label → red(준비) — 검사기가 못 돌았다. **판정하지 못했다**(기대 $want)"
+      READINESS+=("$label (기대 $want · 판정 못 함)")
+    fi
+    return
+  fi
   got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then
     echo "[selftest] $label → $got OK"
@@ -244,7 +259,7 @@ D="$(mkdb rc-e2e-badsql)"; mkschema "$D"; echo 'CREATE TABL oops;' >> "$D/ai/sch
 expect red "rls-coverage(e2e): 적용되지 않는 스키마" env COLAB_DB_DIR="$D" "$RC_SH"
 
 D="$(mkdb rc-e2e-nodocker)"; mkschema "$D"
-expect red "rls-coverage(e2e): 도커 부재는 skip 이 아니라 red" \
+expect ready "rls-coverage(e2e): 도커 부재는 skip 이 아니라 red" \
   env COLAB_DB_DIR="$D" COLAB_PG_FORCE_UNAVAILABLE=1 "$RC_SH"
 
 # ── schema-diff ──
@@ -268,7 +283,7 @@ expect red "schema-diff: 적용 DB 접속 불가" \
       COLAB_APPLIED_DB_URL_AI="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-nodocker)"; mkschema "$D"
-expect red "schema-diff: 도커 부재는 skip 이 아니라 red" \
+expect ready "schema-diff: 도커 부재는 skip 이 아니라 red" \
   env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
       COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
 
@@ -327,10 +342,78 @@ else
 fi
 fi
 
+# ── 준비 실패 ↔ 판정 실패의 **구분**이 실제로 서는가 ─────────────────────────
+# 종전에는 둘 다 그냥 red 였다. 부하에서 일회용 DB 가 제때 못 뜬 red 를 결함으로 오인하면
+# 이 레포의 측정값 전부가 못 믿을 것이 된다. 그래서 구분 자체를 픽스처로 못 박는다.
+#   ⑴ 준비 실패 → 종료코드 78 ＋ `::gate-readiness-failure::` 표식 ＋ waited_for/limit/elapsed
+#   ⑵ 판정 실패 → 78 이 아니고 표식도 없다 (구분이 무너지면 여기가 red)
+expect_ready_red() { # $1=라벨 $2.. = 명령
+  local label="$1"; shift
+  local out rc; out="$("$@" 2>&1)"; rc=$?
+  if [ "$rc" -ne 78 ]; then
+    echo "[selftest] $label → 종료코드 $rc (기대 78) ✗"; FAILURES+=("$label: 준비 실패 종료코드"); return
+  fi
+  case "$out" in
+    *'::gate-readiness-failure::'*waited_for=*limit=*elapsed=*)
+      echo "[selftest] $label → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)" ;;
+    *) echo "[selftest] $label → 표식/필드 누락 ✗"; echo "$out" | sed 's/^/           /'
+       FAILURES+=("$label: 준비 실패 표식") ;;
+  esac
+}
+expect_judge_red() { # $1=라벨 $2.. = 명령 — 판정 red 가 준비 red 로 오분류되지 않는지
+  local label="$1"; shift
+  local out rc; out="$("$@" 2>&1)"; rc=$?
+  if [ "$rc" -eq 0 ]; then
+    echo "[selftest] $label → green (기대 red) ✗"; FAILURES+=("$label: 판정 red 아님"); return
+  fi
+  if [ "$rc" -eq 78 ] || printf '%s' "$out" | grep -q '::gate-readiness-failure::'; then
+    echo "[selftest] $label → 준비 실패로 분류됨 (기대: 판정 실패) ✗"
+    FAILURES+=("$label: 판정 red 가 준비 red 로 오분류")
+  else
+    echo "[selftest] $label → red(판정) OK (exit $rc · 준비 표식 없음)"
+  fi
+}
+
+D="$(mkdb ready-vs-judge)"; mkschema "$D"
+expect_ready_red "구분: rls-coverage 도커 부재 = 준비 실패" \
+  env COLAB_DB_DIR="$D" COLAB_PG_FORCE_UNAVAILABLE=1 "$RC_SH"
+expect_ready_red "구분: schema-diff 도커 부재 = 준비 실패" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+      COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
+# 슬롯 고갈 — 선언 한도(1개)를 selftest 가 **직접 잡고** 게이트를 돌린다.
+# 슬롯이 없어 못 돈 것은 판정이 아니라 준비다. (flock 이 없는 호스트에서는 한도 자체가 없으므로 건너뛰되 건수를 드러낸다)
+if command -v flock >/dev/null 2>&1; then
+  mkdir -p "$TMP/slots-busy"
+  exec 8>"$TMP/slots-busy/slot-0"
+  if flock -n 8; then
+    expect_ready_red "구분: 슬롯 고갈 = 준비 실패" \
+      env COLAB_DB_DIR="$D" COLAB_PG_MAX_CONCURRENT=1 COLAB_PG_SLOT_WAIT=2 \
+          COLAB_PG_SLOT_DIR="$TMP/slots-busy" "$RC_SH"
+  else
+    echo "[selftest] 구분: 슬롯 고갈 — 슬롯을 잡지 못해 증명하지 못했다 ✗"
+    FAILURES+=("슬롯 고갈 미증명")
+  fi
+  exec 8>&-
+else
+  echo "[selftest] 구분: 슬롯 고갈 — flock 부재로 증명하지 못했다 ✗"
+  FAILURES+=("슬롯 고갈 미증명(flock 부재)")
+fi
+D2="$(mkdb ready-vs-judge-noschema)"
+expect_judge_red "구분: 선언 스키마 0건 = 판정 실패(준비 아님)" \
+  env COLAB_DB_DIR="$D2" "$RC_SH"
+
 # ── 판정 ─────────────────────────────────────────────────────────────────────
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::db-selftest red — 게이트가 fail-closed 가 아니다:"
   printf '  - %s\n' "${FAILURES[@]}"
   exit 1
+fi
+if [ "${#READINESS[@]}" -gt 0 ]; then
+  # 판정 결함은 하나도 없었지만 **판정하지 못한 케이스가 있다.** 통과로 세지 않는다.
+  printf '::gate-readiness-failure::gate=db-selftest|waited_for=일회용 postgres 가 쓸 수 있는 상태(케이스 %d건)|limit=케이스별 상한|elapsed=-|detail=%s\n' \
+    "${#READINESS[@]}" "${READINESS[*]}"
+  echo "::error::db-selftest red(준비) — 아래 케이스를 **판정하지 못했다**(검사기가 못 돌았다). 통과로 세지 않는다:" >&2
+  printf '  - %s\n' "${READINESS[@]}" >&2
+  exit 78
 fi
 echo "db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명)."

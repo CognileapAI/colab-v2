@@ -28,7 +28,7 @@ done
 
 # shellcheck source=/dev/null
 . "$REPO_ROOT/gates/tools/_pg.sh"
-pg_start autometa-loss-selftest || exit 1
+pg_start autometa-loss-selftest || exit $?   # 준비 실패는 78 로 그대로 전달한다
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" autometa-loss-XXXXXX)"
 cleanup_all() { rm -rf "$TMP"; pg_cleanup; }

@@ -12,7 +12,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GATE="$REPO_ROOT/gates/tools/rls-effect.sh"
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" rls-effect-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
-FAILURES=()
+FAILURES=(); READINESS=()
 # 케이스를 병렬로 돈다. 케이스 목록·기대값·판정은 직렬판과 동일하고 실행 순서만 바뀐다.
 # 출력은 등록 순서로 되돌려 재생한다 (gates/tools/_expect_pool.sh).
 . "$REPO_ROOT/gates/tools/_expect_pool.sh"
@@ -91,7 +91,7 @@ printf 'CREATE TABL oops;\n' > "$TMP/bad.sql"
 expect red "rls-effect: 적용되지 않는 스키마" \
   env COLAB_RLS_EFFECT_SCHEMA="$TMP/bad.sql" "$GATE"
 
-expect red "rls-effect: 도커 부재는 skip 이 아니라 red" \
+expect ready "rls-effect: 도커 부재는 skip 이 아니라 red" \
   env COLAB_PG_FORCE_UNAVAILABLE=1 "$GATE"
 
 pool_join
@@ -100,5 +100,12 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::rls-effect-selftest red — 게이트가 fail-closed 가 아니다:"
   printf '  - %s\n' "${FAILURES[@]}"
   exit 1
+fi
+if [ "${#READINESS[@]}" -gt 0 ]; then
+  printf '::gate-readiness-failure::gate=rls-effect-selftest|waited_for=일회용 postgres 가 쓸 수 있는 상태(케이스 %d건)|limit=케이스별 상한|elapsed=-|detail=%s\n' \
+    "${#READINESS[@]}" "${READINESS[*]}"
+  echo "::error::rls-effect-selftest red(준비) — 아래 케이스를 **판정하지 못했다**. 통과로 세지 않는다:" >&2
+  printf '  - %s\n' "${READINESS[@]}" >&2
+  exit 78
 fi
 echo "rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다."

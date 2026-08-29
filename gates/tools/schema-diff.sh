@@ -74,7 +74,7 @@ applied_url() { case "$1" in platform) echo "$URL_PLATFORM";; ai) echo "$URL_AI"
 # ── 3. 일회용 postgres 확보 ─────────────────────────────────────────────────
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
-pg_start schema-diff || exit 1
+pg_start schema-diff || exit $?   # 준비 실패는 78 로 그대로 전달한다
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" schema-diff-XXXXXX)"
 trap 'rm -rf "$TMP"; pg_cleanup' EXIT INT TERM
@@ -89,8 +89,16 @@ normalize() {
 RC=0
 for c in "${CHAINS[@]}"; do
   echo "── db/$c ────────────────────────────────────────────"
-  pg_apply "declared_$c" "$DB_DIR/$c/schema.sql" \
-    || red "db/$c/schema.sql 를 빈 postgres 에 적용하지 못했다. 선언 스키마 자체가 깨져 있다."
+  if ! pg_apply "declared_$c" "$DB_DIR/$c/schema.sql"; then
+    # 형제 자리(rls-coverage)와 **같은 규율** — 서버 탓이면 준비 red, 스키마 탓이면 판정 red.
+    if pg_is_readiness_error "$PG_APPLY_ERR"; then
+      pg_readiness_report schema-diff "일회용 postgres 가 선언 스키마를 받을 수 있는 상태(db/$c 적용)" \
+        "상한 없음" "-" "$PG_APPLY_ERR"
+      exit "$PG_READINESS_EXIT"
+    fi
+    red "db/$c/schema.sql 를 빈 postgres 에 적용하지 못했다. 선언 스키마 자체가 깨져 있다.
+   postgres 가 낸 말: ${PG_APPLY_ERR:-(출력 없음)}"
+  fi
   docker exec "$PGC" pg_dump -U postgres --schema-only --no-owner --no-privileges \
     -d "declared_$c" > "$TMP/declared_$c.sql" 2>"$TMP/err" \
     || red "선언 스키마 덤프 실패: $(cat "$TMP/err")"

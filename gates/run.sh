@@ -261,13 +261,29 @@ case "$GATE" in
       cat "$outdir/$g.out"
       [ "$grc" -eq 0 ] 2>/dev/null || rc=1
     done
+    # ── 요약 — red 를 **두 갈래로 가른다** ───────────────────────────────────
+    #   red(판정)  = 검사 대상이 규율을 어겼다. 고쳐야 할 결함이다.
+    #   red(준비)  = **검사기가 아예 못 돌았다**(일회용 DB 가 제때 뜨지 않는 등).
+    #                무엇을 얼마나 기다렸는지까지 적는다.
+    # 왜 가르나: 둘이 같은 `red` 로 보이면 부하에서 나는 간헐 red 를 결함으로 오인하고,
+    #   그 모호함이 이 레포의 **모든 측정값**을 못 믿게 만든다(병합 판정 포함).
+    # ⚠ 준비 red 도 red 다. 총계에서 빠지지 않고 종료코드도 그대로 실패다.
+    #   상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다.
     echo "── 요약 ────────────────────────────────────────────────────"
+    n_green=0; n_red_judge=0; n_red_ready=0
     for g in "${ALL_GATES[@]}"; do
       grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
-      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"
-      elif [ "$grc" = 111 ]; then echo "  red    $g (미실행 — 종료코드 없음)"
-      else echo "  red    $g (exit $grc)"; fi
+      rmark="$(grep -m1 '^::gate-readiness-failure::' "$outdir/$g.out" 2>/dev/null || true)"
+      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1))
+      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1))
+      elif [ "$grc" = 78 ] || [ -n "$rmark" ]; then
+        detail="${rmark#::gate-readiness-failure::}"
+        echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다. ${detail:-사유 표식 없음}"
+        n_red_ready=$((n_red_ready+1))
+      else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); fi
     done
+    echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
+    [ "$n_red_ready" -eq 0 ] || echo "  ⚠ red(준비) ${n_red_ready}건 — **판정이 아니라 준비가 낸 red 다.** 위 줄의 waited_for·limit·elapsed 가 무엇을 얼마나 기다렸는지다. 이 건들에 대해 검사 대상은 아직 판정되지 않았다."
     if [ "${#undeclared_gates[@]}" -gt 0 ]; then
       echo "  ⚠ 병렬 안전성 **미선언** ${#undeclared_gates[@]}건 — 안전한 쪽으로 단독 실행했다: ${undeclared_gates[*]}"
     fi

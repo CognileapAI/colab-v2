@@ -20,6 +20,33 @@
 PG_IMAGE="${COLAB_PG_IMAGE:-postgres:16-alpine}"
 PGC=""
 
+# ── 준비 실패(readiness) 를 판정 실패와 **가르는 자리** ──────────────────────
+# 왜 있는가: DB 게이트의 red 는 두 가지 뜻을 겹쳐 갖고 있었다 —
+#   ⑴ **검사 대상이 틀렸다**(판정 red · 고쳐야 할 결함) ⑵ **검사기가 아예 못 돌았다**(준비 red).
+# 부하 아래에서 일회용 postgres 가 제때 뜨지 않으면 ⑵ 인데 출력만으로는 ⑴ 과 구분되지 않았고,
+# 그 모호함이 이 레포의 **모든 측정값**을 신뢰할 수 없게 만들었다(병합 판정 포함).
+#
+# 규율 — 준비 실패는 **여전히 red 다.** 상한을 늘리거나 · 재시도하거나 · 병렬도를 낮추거나 ·
+#   건너뛰어 green 으로 만들지 않는다. 바뀌는 것은 **red 가 자기 원인을 말한다**는 것뿐이다.
+#
+# 무엇을 남기나 (한 줄 · 기계가 읽는 표식):
+#   ::gate-readiness-failure::gate=<게이트>|waited_for=<무엇을 기다렸나>|limit=<상한>|elapsed=<실경과>|detail=<사유>
+# 실행기(gates/run.sh all)는 이 표식과 종료코드 78 로 요약에서 `red(준비)` 를 갈라 적는다.
+PG_READINESS_EXIT=78
+
+pg_readiness_report() { # $1=게이트 $2=기다린 대상 $3=상한 $4=실경과 $5=사유
+  local gate="$1" what="$2" limit="$3" elapsed="$4" detail="$5"
+  printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=%s|elapsed=%s|detail=%s\n' \
+    "$gate" "$what" "$limit" "$elapsed" "$(printf '%s' "$detail" | tr '\n' ' ' | cut -c1-400)"
+  echo "::error::$gate red(준비) — **검사기가 돌지 못했다.** 판정 red 가 아니다.
+   기다린 것: $what
+   선언 상한: $limit · 실경과: $elapsed
+   사유: $detail
+   ⚠ 준비 실패도 **red 다.** 상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다."
+}
+
+pg_now() { date +%s; }
+
 # ── 일회용 postgres 의 **선언된 동시성 한도** ────────────────────────────────
 # 왜 있는가: `gates/run.sh all -j N` 은 DB 를 쓰는 게이트를 여럿 동시에 띄운다. 컨테이너 생성은
 #   도커 데몬의 **공유 자원**(네트워크 엔드포인트·iptables·스토리지 드라이버)을 거치고, 그 자리의
@@ -49,9 +76,10 @@ pg_slot_acquire() { # $1=게이트 이름 → 0=획득 / 1=red
       eval "exec ${PG_SLOT_FD}>&-"; PG_SLOT_FD=""
     done
     if [ "$(date +%s)" -ge "$deadline" ]; then
-      echo "::error::$gate red — 일회용 postgres 동시성 슬롯(${max}개)을 ${wait_s}초 안에 얻지 못했다.
-   **검사를 못 돈 것은 통과가 아니다** — 무엇이 없었나: 실행 슬롯. 한도는 COLAB_PG_MAX_CONCURRENT 로 선언된다."
-      return 1
+      pg_readiness_report "$gate" "일회용 postgres 동시성 슬롯(${max}개 · COLAB_PG_MAX_CONCURRENT)" \
+        "${wait_s}초" "$(( $(date +%s) - deadline + wait_s ))초" \
+        "슬롯 ${max}개가 모두 다른 게이트에 잡혀 있었다. 슬롯 디렉터리=$PG_SLOT_DIR"
+      return "$PG_READINESS_EXIT"
     fi
     sleep 1
   done
@@ -72,17 +100,22 @@ pg_cleanup() {
 # $1 = 게이트 이름(메시지용). 성공하면 $PGC 가 컨테이너 이름이다.
 pg_start() {
   local gate="$1"
+  local t0; t0="$(pg_now)"
   if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" = "1" ]; then
-    echo "::error::$gate red — 일회용 postgres 를 띄울 수 없다(주입된 부재). 검사를 못 한 것은 통과가 아니다."
-    return 1
+    pg_readiness_report "$gate" "일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)" \
+      "대기 없음" "0초" "selftest 가 도커 부재를 주입했다."
+    return "$PG_READINESS_EXIT"
   fi
   command -v docker >/dev/null 2>&1 || {
-    echo "::error::$gate red — docker 가 없다. DB 가 필요한 게이트를 DB 없이 green 으로 세지 않는다 (CLAUDE.md §4).
-   → CI 에서는 postgres 서비스 컨테이너를 띄우거나 docker 를 쓸 수 있게 한다."; return 1; }
+    pg_readiness_report "$gate" "docker 실행 파일" "대기 없음" "0초" \
+      "docker 가 PATH 에 없다. CI 에서는 postgres 서비스 컨테이너를 띄우거나 docker 를 쓸 수 있게 한다."
+    return "$PG_READINESS_EXIT"; }
   docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >/dev/null 2>&1 || {
-    echo "::error::$gate red — 이미지 $PG_IMAGE 를 확보하지 못했다(네트워크/레지스트리). skip 아님."; return 1; }
+    pg_readiness_report "$gate" "이미지 $PG_IMAGE 확보(pull)" "상한 없음" "$(( $(pg_now) - t0 ))초" \
+      "레지스트리/네트워크에서 이미지를 받지 못했다."
+    return "$PG_READINESS_EXIT"; }
 
-  pg_slot_acquire "$gate" || return 1
+  pg_slot_acquire "$gate" || return "$PG_READINESS_EXIT"
   trap pg_cleanup EXIT INT TERM
 
   PGC="colab_v2_gatepg_$$_${RANDOM}"
@@ -95,28 +128,41 @@ pg_start() {
     "$PG_IMAGE" 2>&1 >/dev/null)" || {
       # ⚠ 종전에는 도커의 실패 사유를 통째로 버렸다 — red 만 남고 **왜** 가 없어
       #   병렬에서 간헐로 나는 red 를 사후에 귀속할 수 없었다. 사유를 그대로 싣는다.
-      echo "::error::$gate red — 일회용 postgres 컨테이너를 띄우지 못했다.
-   도커가 낸 말: ${runerr:-(출력 없음)}"; PGC=""; return 1; }
+      pg_readiness_report "$gate" "일회용 postgres 컨테이너 생성(docker run)" "대기 없음" \
+        "$(( $(pg_now) - t0 ))초" "도커가 낸 말: ${runerr:-(출력 없음)}"
+      PGC=""; return "$PG_READINESS_EXIT"; }
 
-  local i
-  for i in $(seq 1 60); do
+  local i ready_limit="${COLAB_PG_READY_TIMEOUT:-60}" t1; t1="$(pg_now)"
+  for i in $(seq 1 "$ready_limit"); do
     docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && return 0
     sleep 1
   done
-  echo "::error::$gate red — postgres 가 60초 안에 뜨지 않았다.
-   컨테이너 상태: $(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 부하: $(uptime | sed 's/.*load average/load average/')
-   마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-300)
-   ⚠ 이것은 **red 다.** 못 돈 검사를 통과로 세지 않는다. 동시성 한도는 COLAB_PG_MAX_CONCURRENT 로 선언된다."
+  pg_readiness_report "$gate" "postgres 접속 준비(pg_isready · 컨테이너 $PGC)" \
+    "${ready_limit}초" "$(( $(pg_now) - t1 ))초" \
+    "컨테이너 상태=$(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 $(uptime | sed 's/.*load average/load average/') · 마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-200)"
   pg_cleanup
-  return 1
+  return "$PG_READINESS_EXIT"
 }
 
 # psql 을 컨테이너 안에서 돌린다. $1=DB 이름, 나머지는 psql 인자.
 pg_psql() { local db="$1"; shift; docker exec -i "$PGC" psql -U postgres -d "$db" -v ON_ERROR_STOP=1 "$@"; }
 
+# 적용 실패가 **스키마 탓인지 서버 탓인지**를 가른다.
+# 「적용되지 않는 스키마」(판정 red)와 「DB 가 쓸 수 있는 상태가 아니었다」(준비 red)는 다른 사실인데,
+# 종전에는 둘 다 같은 문장으로 나왔다 — 부하에서 뜨는 간헐 red 를 스키마 결함으로 오인하게 만들던 자리다.
+# 여기 나열한 것은 전부 **서버·접속 계열**이고, SQL 문법·제약 오류는 하나도 들어 있지 않다.
+pg_is_readiness_error() { # $1=오류 문자열 → 0=준비 실패 / 1=판정 실패
+  printf '%s' "$1" | grep -qiE \
+    'could not connect|connection refused|server closed the connection|terminating connection|the database system is (starting up|shutting down|in recovery)|no route to host|could not translate host|connection to server .* failed|is the server running|Error response from daemon|is not running|No such container|EOF detected|server process was terminated'
+}
+
 # 호스트의 .sql 파일을 컨테이너 안 DB 에 적용한다. $1=DB $2=파일
+# 실패하면 $PG_APPLY_ERR 에 **사유가 남는다** — 버리면 사후에 귀속할 수 없다.
+PG_APPLY_ERR=""
 pg_apply() {
   local db="$1" f="$2"
-  docker exec "$PGC" createdb -U postgres "$db" >/dev/null 2>&1 || return 1
-  docker exec -i "$PGC" psql -U postgres -d "$db" -q -v ON_ERROR_STOP=1 < "$f"
+  PG_APPLY_ERR="$(docker exec "$PGC" createdb -U postgres "$db" 2>&1 >/dev/null)" || return 1
+  PG_APPLY_ERR="$(docker exec -i "$PGC" psql -U postgres -d "$db" -q -v ON_ERROR_STOP=1 < "$f" 2>&1 >/dev/null)" || return 1
+  PG_APPLY_ERR=""
+  return 0
 }
