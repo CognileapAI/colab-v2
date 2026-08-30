@@ -405,4 +405,25 @@ volumes:
   uploads: {}
   # 미리보기 3층 산출물. **정적 자산이다** — 렌더 작업으로 매번 만드는 물건이 아니라
   # 한 번 그려 두고 목록 썸네일도 같은 자리에서 서빙된다(`〈80〉-㉯ 2`).
-  previews: {}
+  #
+  # ⭑ **⟨개정 2026-08-31 · Ted 판정 `PLAN-SoT §9 〈235〉` · `03-HANDOFF §4 #49`⟩
+  #   순수 named volume 에서 **호스트 경로에 바인드된 named volume** 으로 바꿨다.**
+  #   ⚠ **이름은 그대로 `previews`(실물 `colab-v2-staging_previews`) 다** — 백업이 볼륨을
+  #     **이름으로** 문다(`infra/staging/backup/volume-lib.sh volume_real_name`). 이름을 갈면
+  #     백업 대상이 조용히 사라지고, 그 침묵은 `V6`(최소 건수)가 뒤늦게 잡는다. 갈지 않는다.
+  #   **왜 바꾸나** — 순수 named volume 의 마운트 지점은 도커 root 아래라 **게이트를 돌리는
+  #   사용자가 못 읽는다**(실측 = `docker volume inspect` 가 준 자리에 `Permission denied`).
+  #   그래서 게이트 `preview-tile-slot` 이 「자리를 못 봐서 검사를 못 했다」로 red 였고,
+  #   그것을 통과로 세는 것이 이 레포의 대표 실패다(`CLAUDE.md §4`). **자리는 보여야 검사된다.**
+  #   ⚠ 값은 **홈의 0600 env 파일에만** 있다 — postgres 의 `COLAB_STAGING_PGDATA_DIR` 과
+  #     같은 관행이고 같은 이유다(레포·문서에 절대경로를 적지 않는다 · `CLAUDE.md §3-8`).
+  #   ⚠ **WSL ext4 쪽 경로여야 한다** — Windows 드라이브(9p/drvfs)에는 POSIX 퍼미션이 없어
+  #     `volume-init` 의 `chown 10001` 이 먹지 않는다.
+  #   ⚠ 볼륨 형태를 갈 때는 **기존 볼륨을 지우고 다시 만들어야** 도커가 새 선언을 읽는다 —
+  #     안에 든 산출물을 먼저 새 자리로 옮긴다. 지우기 전 이관이 절차다.
+  previews:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${COLAB_STAGING_PREVIEWS_DIR:?COLAB_STAGING_PREVIEWS_DIR 이 필요하다 — WSL ext4 쪽 호스트 경로여야 한다}
