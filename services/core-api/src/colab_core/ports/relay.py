@@ -35,10 +35,17 @@ class PreviewRenderPort(Protocol):
 
 class LineageSuggestionPort(Protocol):
     """ai-service 중계. **못 찾으면 정직한 빈 상태**다 — 억지 제안을 만들지 않는다
-    (`CLAUDE.md §3 AI 응답 규격`). 0건도 `degraded` 와 `scope` 를 달고 온다."""
+    (`CLAUDE.md §3 AI 응답 규격`). 0건도 `degraded` 와 `scope` 를 달고 온다.
+
+    ⭑ **`upload_id` 가 아니라 `file_meta` 를 넘긴다.** 계약
+    (`core-ai.yaml LineageSuggestionRequest`)이 `file`(`UploadedFileMeta`)을 required 로
+    두고 `additionalProperties: false` 다. 업로드 식별자는 그 계약 어디에도 없다 —
+    ai-service 는 업로드 원장을 읽지 못하므로 식별자만으로는 아무것도 할 수 없다.
+    **읽는 것은 core-api 의 일이고, 넘기는 것은 읽은 값이다.**
+    """
 
     def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
-                upload_id: str, searched_count: int,
+                file_meta: dict[str, Any], searched_count: int,
                 dataset_name_draft: str | None, subject: str | None) -> dict[str, Any]:
         ...
 

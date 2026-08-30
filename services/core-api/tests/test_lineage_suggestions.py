@@ -251,3 +251,109 @@ def test_the_three_zero_states_are_distinguishable_from_the_response_alone(
     kinds = {kind(searched_none), kind(not_asked), kind(nothing_to_search)}
     assert kinds == {"searched-none", "not-asked", "nothing-to-search"}, (
         f"세 0건이 응답에서 갈리지 않는다: {kinds}")
+
+
+# ═══════ 나가는 요청이 계약과 같은 모양인가 (`core-ai.yaml` 이 오라클) ═══════
+#
+# ⚠ **여기가 지금까지 검사 대상이 없던 자리다.** 위의 `_FakeAi` 는 본문을 읽어 **버리고**
+# 고정 응답만 냈다. 그래서 중계가 계약과 다른 모양을 보내도 어떤 시험도 red 를 내지 않았고,
+# 계약 게이트는 정적 스펙만 보므로 실제 요청 바이트를 보지 않는다.
+# **동결된 계약(2026-08-22)이 먼저이고 중계(2026-08-23)가 그 뒤에 다른 모양으로 섰다** —
+# 그러므로 정본은 계약이고, 고치는 쪽은 중계다.
+
+_SEEN: list[dict] = []
+
+
+class _RecordingAi(_FakeAi):
+    def do_POST(self) -> None:                                    # noqa: N802
+        raw = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+        _SEEN.append(json.loads(raw.decode()))
+        out = json.dumps(_FakeAi.payload).encode()
+        self.send_response(_FakeAi.status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+
+@pytest.fixture()
+def recording_ai():
+    _SEEN.clear()
+    server = HTTPServer(("127.0.0.1", 0), _RecordingAi)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    _FakeAi.status = 200
+    _FakeAi.payload = {"degraded": False,
+                       "scope": {"labId": LAB_A, "labName": "A 연구실", "searchedCount": 2},
+                       "rawDataLikely": False, "suggestions": []}
+    yield f"http://127.0.0.1:{server.server_port}", _SEEN
+    server.shutdown()
+    server.server_close()
+
+
+def _contract_schemas():
+    import pathlib
+
+    import yaml
+    repo = pathlib.Path(__file__).resolve().parents[3]
+    spec = yaml.safe_load((repo / "contracts" / "seams" / "core-ai.yaml").read_text("utf-8"))
+    return spec["components"]["schemas"]
+
+
+def test_나가는_요청에_계약의_required_가_다_있다(p2_client, recording_ai) -> None:
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    assert seen, "요청이 나가지 않았다."
+    schemas = _contract_schemas()
+    required = set(schemas["LineageSuggestionRequest"]["required"])
+    missing = required - set(seen[0])
+    assert not missing, f"계약의 required 가 요청에 없다: {missing}"
+
+
+def test_나가는_요청에_계약에_없는_열쇠가_없다(p2_client, recording_ai) -> None:
+    """`additionalProperties: false` — 계약 밖 열쇠는 명시적 위반이다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schemas = _contract_schemas()
+    allowed = set(schemas["LineageSuggestionRequest"]["properties"])
+    extra = set(seen[0]) - allowed
+    assert not extra, f"계약에 없는 열쇠를 보낸다: {extra}"
+    file_allowed = set(schemas["UploadedFileMeta"]["properties"])
+    file_extra = set(seen[0]["file"]) - file_allowed
+    assert not file_extra, f"file 에 계약에 없는 열쇠를 보낸다: {file_extra}"
+
+
+def test_파일_메타는_원장에_실재하는_값만_싣는다(p2_client, recording_ai) -> None:
+    """**헤더를 못 읽은 항목은 생략한다** — 빈 문자열로 채우면 「못 읽음」과 「값 없음」이
+    갈리지 않는다 (계약 `UploadedFileMeta` 산문). 지어낸 값이 실리면 red 다."""
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    receipt = make_upload(client)
+    _get(client, receipt["uploadId"])
+    meta = seen[0]["file"]
+    assert meta["fileName"], "묶음 이름이 없으면 제안의 근거가 없다"
+    assert meta["kind"] in ("본체", "기준 격자 파일")
+    for key, value in meta.items():
+        assert value not in ("", [], None), f"{key} 를 빈 값으로 채웠다 — 생략해야 한다"
+
+
+def test_소비자와_생산자가_같은_계약_한_벌을_본다(p2_client, recording_ai) -> None:
+    """**두 시험이 각자 green 인데 서로 못 말하는 상태를 막는 자리다.**
+
+    ⚠ 배포 단위를 import 해서 맞대지 않는다 — 그 순간 다섯 단위가 한 단위가 된다
+    (`gates/config/importlinter.ini` units-independent). 대신 **동결된 계약 한 벌**을
+    양쪽이 각자 오라클로 쓴다: 여기서는 나가는 요청을, ai-service 쪽
+    `tests/test_http_suggestions.py` 에서는 들어오는 요청을 같은 yaml 로 대조한다.
+    """
+    base, seen = recording_ai
+    client = p2_client(ai_base_url=base)
+    _get(client, make_upload(client)["uploadId"])
+    schemas = _contract_schemas()
+    req, meta = schemas["LineageSuggestionRequest"], schemas["UploadedFileMeta"]
+    assert req["additionalProperties"] is False and meta["additionalProperties"] is False
+    body = seen[0]
+    assert set(req["required"]) <= set(body)
+    assert set(body) <= set(req["properties"])
+    assert set(meta["required"]) <= set(body["file"])
+    assert set(body["file"]) <= set(meta["properties"])

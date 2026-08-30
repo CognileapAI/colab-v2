@@ -315,6 +315,47 @@ def get_upload_status(uploadId: str,
     }
 
 
+# ─────────────────────────── AI 제안에 넘길 파일 메타 ────────────────────────
+def _uploaded_file_meta(ledger, upload_id: Ulid) -> dict[str, Any]:
+    """계약 `core-ai.yaml#UploadedFileMeta` 를 **원장에서 읽은 값으로만** 조립한다.
+
+    ⭑ **⟨신설 2026-08-30⟩ 이 자리가 비어 있어서 중계가 계약과 다른 모양을 보내고 있었다.**
+    ai-service 는 업로드 원장도 파일 바이트도 읽지 못한다(`DOMAINS §4`) — 그래서 계약이
+    「이미 읽은 값」을 본문에 실으라고 적었고, 읽는 쪽은 D5 의 주인인 core-api 다.
+
+    두 규칙을 지킨다.
+      ① **헤더를 못 읽은 항목은 열쇠 자체를 만들지 않는다.** 빈 문자열·빈 배열로 채우면
+         「못 읽음」과 「값 없음」이 갈리지 않는다 (계약 `UploadedFileMeta` 산문).
+      ② **지어내지 않는다.** `format` 은 감지 이벤트가 말한 값이고, 판정이 없으면 생략한다.
+    """
+    files = ledger.files(upload_id)
+    held = ledger.held_auto_metadata(upload_id)
+    # 묶음 이름 = 본체 우선. `_FILES` 가 `kind DESC` 로 본체를 앞세운다.
+    head = files[0] if files else None
+    meta: dict[str, Any] = {
+        "fileName": (head.file_name if head else "") or "이름 없는 업로드",
+        "kind": head.kind if head else BODY,
+    }
+    fmt = held.format or getattr(head, "detected_format", None)
+    if fmt:
+        meta["format"] = fmt
+    if held.variables:
+        meta["variables"] = [v for v in held.variables if isinstance(v, str) and v]
+        if not meta["variables"]:
+            del meta["variables"]
+    if held.crs:
+        meta["crs"] = held.crs
+    if held.grid:
+        meta["gridDescription"] = held.grid
+    if held.period_start:
+        meta["periodStart"] = held.period_start
+    if held.period_end:
+        meta["periodEnd"] = held.period_end
+    if len(files) > 1:
+        meta["partCount"] = len(files)
+    return meta
+
+
 # ═══════════════════ listUploadLineageSuggestions (중계) ════════════════════
 @router.get("/uploads/{uploadId}/lineage-suggestions", name="listUploadLineageSuggestions")
 def list_upload_lineage_suggestions(
@@ -336,9 +377,11 @@ def list_upload_lineage_suggestions(
         raise errors.not_found("없거나 수명이 다한 업로드다.")
     lab = d1_identity.find_lab(db)
     searched = d3_catalog.count_datasets(db)
+    # **계약이 요구하는 것은 식별자가 아니라 읽은 값이다** — `_uploaded_file_meta` 참조.
     return request.app.state.suggestions.suggest(
         lab_id=str(subject.lab_id), lab_name=("" if lab is None else lab["name"]) or "연구실",
-        account_id=str(subject.account_id), upload_id=uploadId,
+        account_id=str(subject.account_id),
+        file_meta=_uploaded_file_meta(_ledger(db), Ulid(uploadId)),
         searched_count=searched, dataset_name_draft=datasetNameDraft, subject=subject_q,
     )
 
