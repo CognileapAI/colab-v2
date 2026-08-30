@@ -710,15 +710,15 @@ items:
 
   - id: X-6
     name: 별칭 재부착 실패 삼킴
-    status: open
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["없음 — 무의존. `I3` 실배포에서 적출(2026-08-29)"]
     depends_on: []
     completion_def: "⑴ `deploy.sh` ⑫ 의 별칭 재부착이 **실패를 삼키지 않는다** — `docker tag … 2>/dev/null || true` 의 무조건 성공 경로를 없애고, 실패하면 배포 판정이 GREEN 이 되지 않는다. ⑵ 그 성질을 **실패 픽스처로 증명한다** — 별칭 재부착이 실패하는 픽스처에서 판정이 실제로 red 를 내는 것을 `infra/staging/pipeline/selftest.sh` 회차로 못 박는다(통과시키려고 검사 범위를 줄이지 않는다). ⚠ 이 두 줄이 완료 정의의 전부다 — 이 항목의 근거 문장(`PLAN-SoT §9 〈185〉-㉸`-⑵)에서만 도출했고 그 밖은 넘겨짚지 않았다."
-    evidence: "⭑ **실측 (2026-08-29 · `sessions/STAGE2-READINESS-AUDIT.md §1`) — 완료 정의 2항이 코드로는 전건 충족이다.** ⑴ 삼킴 구문 `docker tag … 2>/dev/null || true` **부재** — `9c6fc92` · `31f36a5` 가 제거했다. 현재 판정은 `infra/staging/pipeline/lib.sh:135-159 alias_reattach()` 가 **종료코드 ＋ 이미지 ID 대조**로 내리고, 재부착 성공 0건도 red 로 떨어뜨린다(「대상 0건 = red」). 호출 자리 = `infra/staging/deploy.sh:220-226` 으로 **원장 green 앞**에 선다. ⑵ 실패 픽스처 **P15 · P16 · P20** 실재(`infra/staging/pipeline/selftest.sh:185`·`:192`·`:207-214`) — P20 은 `|| true` 잔존과 `alias_reattach` 미호출을 각각 FAIL 로 잡는다. selftest **37/22 GREEN**. ⚠ **남은 행동은 코드가 아니라 Ted 상태 판정이다** — 이 항목의 `status: open` · 형제 탐색 `[미확인]` 을 어떻게 닫을지가 사람의 자리다."
+    evidence: "⭑ **실측 (2026-08-29 · `sessions/STAGE2-READINESS-AUDIT.md §1`) — 완료 정의 2항이 코드로는 전건 충족이다.** ⑴ 삼킴 구문 `docker tag … 2>/dev/null || true` **부재** — `9c6fc92` · `31f36a5` 가 제거했다. 현재 판정은 `infra/staging/pipeline/lib.sh:135-159 alias_reattach()` 가 **종료코드 ＋ 이미지 ID 대조**로 내리고, 재부착 성공 0건도 red 로 떨어뜨린다(「대상 0건 = red」). 호출 자리 = `infra/staging/deploy.sh:220-226` 으로 **원장 green 앞**에 선다. ⑵ 실패 픽스처 **P15 · P16 · P20** 실재(`infra/staging/pipeline/selftest.sh:185`·`:192`·`:207-214`) — P20 은 `|| true` 잔존과 `alias_reattach` 미호출을 각각 FAIL 로 잡는다. selftest **37/22 GREEN**. ⚠ **남은 행동은 코드가 아니라 Ted 상태 판정이다** — 이 항목의 `status: open` · 형제 탐색 `[미확인]` 을 어떻게 닫을지가 사람의 자리다. ⭑ **⟨개정 2026-08-30 · 재실측⟩ 완료 정의 2항 전건 충족 — 닫는다.** **⑴** 삼킴 구문 **전수 부재** 재확인 — `infra/staging/**` 의 `docker tag` 5자리 중 무조건 성공 경로 **0건**(`deploy.sh:110` 은 `|| abort`, 나머지는 주석). 판정은 `pipeline/lib.sh:175 alias_reattach()` 가 종료코드 ＋ 사후 `image inspect` **이미지 ID 대조**로 내리고, 호출 자리 `deploy.sh:225` 는 **원장 green 앞**이며 `rollback.sh:120` 도 같은 함수를 재사용한다. **⑵** 실패 픽스처 **실행** 확인 — `pipeline/selftest.sh` P15(태그 실패) · P16(성공을 말했는데 안 붙음) · P20(무조건 성공 경로 소멸 ＋ 판정 함수 호출) ＋ 양성 대조군 P14·P18 ＋ P26(rollback 호출) · 결과 `pipeline selftest: GREEN (54건 + 판정기 전건 기대대로)` ＋ `verify selftest: GREEN (22건)`. ⭑ **⑴ 은 코드뿐 아니라 실배포로 행사됐다** — 2026-08-30 배포 회차가 별칭 재부착을 **실제로 돌렸고** 원장이 `별칭재부착GREEN digest이력=6종` 을 적었다(`~/colab-v2-releases/release-ledger.tsv` `2026-08-30T10:41:50+0900 deploy cfc98e302ae4 green`). 이미지 ID 대조의 실물 = `image-digest-ledger.tsv` **6행**(`core-api`·`pipeline-worker`·`viz-render`·`ai-service`·`frontend`·`migrator` 각 `:i2` ↔ `sha256:…`) — **선언된 6종 전건이 대조됐고 대상 0건이 아니다.** ⚠ 형제 탐색 `[미확인]` 은 **이 항목의 완료 정의 밖**이다(완료 정의는 2항뿐) — 닫는 근거로 쓰지 않았고 별건으로 남는다."
     deadline: null
-    note: "적출 = `I3` 첫 실배포 회차(2026-08-29 · `PLAN-SoT §9 〈185〉-㉸`-⑵ · 산출 `sessions/I3-POSTDEPLOY.md`). **모양** = `deploy.sh` ⑫ 이 별칭 태그를 다시 붙일 때 `2>/dev/null || true` 로 무조건 성공한다. **왜 위험한가** = 실패해도 배포가 GREEN 을 찍고, 복원 리허설(`compose.throwaway.yml`)이 **그 별칭 이름으로 이미지를 찾으므로** 옛 이미지를 리허설하며 통과를 낼 수 있다. **이 레포 대표 실패형(green-by-skip)과 같은 모양**이다(`CLAUDE.md §4 게이트 정책` · 스킬 `§4`). ⚠ **형제를 찾는다** — 한 곳에서 이 모양이 나오면 다른 곳에도 있다. 다만 형제 탐색 범위는 이번에 세지 않았다 → `[미확인]`(푸는 법 = `infra/staging/**` 의 `|| true`·`2>/dev/null` 자리를 전수 열거해 각각이 판정 경로인지 가른다). ⭑ **⟨2026-08-29 실측⟩ 위 `evidence` 참조 — 적출된 모양은 이미 제거됐고 잔여는 상태 판정 하나다. 상태값은 이 회차에서 고치지 않는다(동결 해제 프로토콜 소관).**"
+    note: "적출 = `I3` 첫 실배포 회차(2026-08-29 · `PLAN-SoT §9 〈185〉-㉸`-⑵ · 산출 `sessions/I3-POSTDEPLOY.md`). **모양** = `deploy.sh` ⑫ 이 별칭 태그를 다시 붙일 때 `2>/dev/null || true` 로 무조건 성공한다. **왜 위험한가** = 실패해도 배포가 GREEN 을 찍고, 복원 리허설(`compose.throwaway.yml`)이 **그 별칭 이름으로 이미지를 찾으므로** 옛 이미지를 리허설하며 통과를 낼 수 있다. **이 레포 대표 실패형(green-by-skip)과 같은 모양**이다(`CLAUDE.md §4 게이트 정책` · 스킬 `§4`). ⚠ **형제를 찾는다** — 한 곳에서 이 모양이 나오면 다른 곳에도 있다. 다만 형제 탐색 범위는 이번에 세지 않았다 → `[미확인]`(푸는 법 = `infra/staging/**` 의 `|| true`·`2>/dev/null` 자리를 전수 열거해 각각이 판정 경로인지 가른다). ⭑ **⟨2026-08-29 실측⟩ 위 `evidence` 참조 — 적출된 모양은 이미 제거됐고 잔여는 상태 판정 하나다. 상태값은 이 회차에서 고치지 않는다(동결 해제 프로토콜 소관).** ⭑ **⟨2026-08-30⟩ 상태값을 `open` → `done` 으로 갈았다** — 근거는 `evidence` 의 재실측 ＋ **실배포 1회의 실제 행사**다. ⚠ **형제 탐색 `[미확인]` 은 그대로 열려 있다**(푸는 법 = 위 문단 그대로) — 완료 정의 2항에 없으므로 이 항목을 막지 않되, **사라진 것이 아니다.**"
     sources: ["PLAN-SoT §9 〈185〉", "03-HANDOFF §4 #45"]
 
   - id: R-1
@@ -1104,15 +1104,15 @@ items:
 
   - id: 전범위백업
     name: "전범위 백업 (platform ＋ ai ＋ 볼륨)"
-    status: partial
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["R-1"]
     depends_on: [R-1]
     completion_def: "⭑ ⟨기재 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈213〉`⟩ **⑴ `backup-full.sh` 한 회차가 platform · ai · 볼륨 둘(`uploads`·`previews`)의 산출물을 모두 내고 요약줄이 GREEN ⑵ 볼륨별 **최소 파일 건수** 합격선을 넘는다 — 합격선의 실물은 `infra/staging/backup/volume-lib.sh:33-34` 의 기본값이고 `infra/staging/backup/config.example.env:74-75` 가 같은 값을 적는다(값 = `〈213〉`) ⑶ 미선언·빈 값은 **RED** — 합격선을 두지 않으려면 `none` 으로 **명시**한다(`verify-volume-artifact.sh:174` V6. 미선언을 합격선 1 로 읽지 않는다) ⑷ 크론 **무인** 회차 1건이 위 셋을 만족한다.** ⚠ 합격선은 실측의 절반이고 **실측이 두 배가 되면 다시 올린다** — 갱신 규칙의 정본은 `config.example.env` 볼륨 절 주석이다"
-    evidence: "기구 ✅ · 유인 1회 GREEN ✅ (2026-08-28) · crontab 재설치 닫힘(03:30 = `backup-full.sh` · 본 체크아웃 · `〈173〉-㉰`)"
+    evidence: "기구 ✅ · 유인 1회 GREEN ✅ (2026-08-28) · crontab 재설치 닫힘(03:30 = `backup-full.sh` · 본 체크아웃 · `〈173〉-㉰`) ⭑ **⟨개정 2026-08-30 · 실측⟩ 완료 정의 4행 전건 충족 — 크론 무인 회차 1건으로 닫는다.** 근거 = `~/colab-v2-backups/staging-backup.log` 의 `2026-08-30T03:30:02`~`03:30:38` 회차(크론 실행 · `crontab` `30 3 * * *` → `run-scheduled.sh backup-full.sh` · 본 체크아웃). **⑴** 한 회차가 platform(`platform-20260830T033002.sql.gz` 27,379 B · 표 23 · 행 389) · ai(`ai-20260830T033002.sql.gz` 5,132 B · 표 6 · 행 91) · 볼륨 둘(`vol-uploads-20260830T033002.tar.gz` 341,527,870 B · `vol-previews-20260830T033036.tar.gz` 6,472,714 B) 산출물을 **모두** 냈고 요약줄 = `전범위 백업 GREEN — 원장 2 프로파일 ＋ 볼륨 2 개 · 보관처 규약 밖 파일 0`. **⑵** 볼륨별 최소 건수 합격선 실측 통과 — uploads `V6 파일 135건 (>= 67)` · previews `V6 파일 39건 (>= 19)`. 합격선 실물 = `infra/staging/backup/volume-lib.sh:33-34` 기본값 **67·19** 이고 `config.example.env:74-75` 가 **같은 값**을 적는다(두 자리 대조 일치). **⑶** 미선언·빈 값 RED 성질 = `verify-volume-artifact.sh` V6 3상태 분기 코드 확인(미선언 `fail` · `none` `skip_ack` · 비숫자 `fail`) ＋ **실패 픽스처 `VF19`**(최소 건수 미선언이 **오직 V6 로** RED) 실행 확인 · `selftest-volume.sh` **fixture 24건 전부 기대대로 RED**. **⑷** 크론 **무인** 회차가 위 셋을 만족 — `LAST-SUCCESS.txt` `2026-08-30T03:30:38+0900 backup-full.sh OK`(전일 `2026-08-29T03:30:41` 에 이어 **2회 연속**). ⚠ previews 의 `SKIP V5`(오라클 `none`)는 **승인된 명시 면제**이고 요약줄이 건수를 드러낸다(`GREEN (통과 6건 · 승인된 SKIP 1건)`) — 합격선 V6 는 건너뛰지 않고 **실제로 쟀다**."
     deadline: null
-    note: "`§10.3` 1단에만 있는 화살표 항목 — 독립 WU 행이 없고 R-1 의 산출로 인쇄된다. 남은 것 = 크론 환경 첫 회차 로그 확인. 식별자 규격 밖의 항목이다."
+    note: "`§10.3` 1단에만 있는 화살표 항목 — 독립 WU 행이 없고 R-1 의 산출로 인쇄된다. 식별자 규격 밖의 항목이다. ⭑ **⟨2026-08-30 닫힘⟩ 남은 것이던 「크론 환경 첫 회차 로그 확인」이 실측으로 닫혔다** — `evidence` ⑷ 참조. ／ 이전 ~~남은 것 = 크론 환경 첫 회차 로그 확인~~"
     sources: ["WORK-UNITS §10.3"]
 
   - id: 2단-A
@@ -1206,7 +1206,7 @@ items:
 
   - id: W-1
     name: 항목 상태 대장·검사기
-    status: in_progress
+    status: done
     stage: stage2
     owner: dev-package / gates
     entry_conditions: []
@@ -1217,9 +1217,9 @@ items:
       ⓒ gates/run.sh work-item-selftest 가 대조군 1 · red 증명 8 로 green
       ⓓ 대장의 conflict 가 전건 사람 판정으로 닫혀 ㈓ 가 green — **이 조건이 이 WU 를 닫는 것이다**
       ⓔ 03-HANDOFF 머리말 · CLAUDE.md §6 · gates/README.md 배선
-    evidence: null
+    evidence: "⭑ **⟨2026-08-30 실측⟩ 완료 정의 ⓐ~ⓔ 전건 충족 — 닫는다.** **ⓐ** 대장 **95항목**(84 → 95)이 `03-HANDOFF §1` · `WORK-UNITS §10~§11` 을 담는다 — 근거는 게이트 요약줄의 대조 건수다(㈐ 진실원 **70행** · ㈏ 체크리스트 **49건**). **ⓑ** `./gates/run.sh work-item-consistency` = **green · 불일치 0** · 검사 6종 전건 실행(㈐ 70행 · ㈏ 49건 · ㈑ 착수 후보 33행 · ㈒ 기한 6건 · ㈓ conflict 0건) · **검사 대상 밖 9건 ＋ 항목표가 아닌 표 1건을 요약줄이 드러낸 채** 통과(안 본 자리를 통과 근거로 세지 않는다). **ⓒ** `./gates/run.sh work-item-selftest` = **green · 10 케이스(대조군 1 · red 증명 9)**. ⚠ 완료 정의는 「red 증명 **8**」로 적혀 있으나 실물은 **9** 다 — **정의를 고치지 않는다.** 증명이 **늘어난** 것이지 범위가 줄어든 것이 아니다(늘어난 1 = 「㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다 → red」 조용한 통과 금지). **ⓓ** **`conflict` 0건 — ㈓ green.** `S2b`·`S2`(`〈208〉`) · `R-1`(`〈207〉` `conflict` → `partial`)로 전건 사람 판정이 끝났다. **이 조건이 이 WU 를 닫는 것이다.** **ⓔ** 배선 3자리 실물 확인 — `03-HANDOFF` 머리말(「상태의 원본은 `work-items.yaml`, 이 문서는 그 반영본」 · 「판정은 게이트 `work-item-consistency` 가 한다」) · `CLAUDE.md:119-121` · `gates/README.md:24`·`:72`·`:92` ＋ 「못 보는 것」 절. ⛔ **다만 배선 한 자리가 비어 있었고 이 회차가 채웠다** — `work-item-consistency` 와 형제 `planning-freshness` 가 **어느 CI 잡에서도 돌지 않았다**(`.github/workflows/ci.yml` 전수 확인). `work-item-selftest` 만 `gate-selftest` 잡의 집합 `selftest` 에 실려 **「판정기가 red 를 낼 수 있다」만 증명**하고 있었고, **정작 판정 자체는 CI 에 없었다** — 증명만 있고 판정이 없으면 상태 드리프트가 그대로 `main` 에 들어간다. **신설 = `planning-gates` 잡**(경로 필터 `dev-package/**`·`gates/**` — 판정기가 바뀌어도 다시 판정한다 · pyyaml 핀은 `gates/requirements.txt` 하나를 재사용해 판을 두 곳에 적지 않는다 · **모듈 부재가 게이트 red 로 위장하지 않도록 `import yaml` 설치 확인 스텝**을 앞에 둔다). 로컬 실측 = 두 게이트 모두 green."
     deadline: null
-    note: 검사기 자신이 관리 대상 밖이 되지 않게 대장에 등재한다.
+    note: "검사기 자신이 관리 대상 밖이 되지 않게 대장에 등재한다. ⭑ **⟨2026-08-30 닫힘⟩ 이 항목이 만든 것은 「상태를 산문이 아니라 게이트가 판정한다」는 구조**이고, 그 구조의 마지막 구멍이 **판정기가 CI 에서 안 돌던 것**이었다(`evidence` ⓔ). ⚠ 남는 것 = 이 게이트가 **못 보는** 범위(`gates/README.md` 「work-item-consistency 가 못 보는 것」 절) — 항목이 닫혔다고 그 범위가 덮이지는 않는다."
     sources: ["PLAN-SoT §9 〈176〉"]
 
   - id: LV-1

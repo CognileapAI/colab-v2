@@ -27,6 +27,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       infra: ${{ steps.filter.outputs.infra }}
       db: ${{ steps.filter.outputs.db }}
+      dev-package: ${{ steps.filter.outputs.dev-package }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -57,6 +58,11 @@ jobs:
               - 'infra/**'
             db:
               - 'db/**'
+            # 상태 대장과 그 반영본(산문). 게이트 자체가 바뀌어도 다시 판정한다 —
+            # 판정기를 고치고 대상을 안 보는 것이 이 레포의 대표 실패형이다.
+            dev-package:
+              - 'dev-package/**'
+              - 'gates/**'
 
   # ─────────────────────────────────────────────────────────────
   # 게이트. WU-D3에서 실제 검사를 채운다.
@@ -195,6 +201,38 @@ jobs:
         run: ./gates/run.sh stage2-markers-selftest
       - name: stage2 마커 시험 실행
         run: ./gates/run.sh stage2-markers
+
+  # ─────────────────────────────────────────────────────────────
+  # 문서 게이트. **상태 판정을 사람 기억이 아니라 여기서 한다.**
+  # 종전에 이 둘은 로컬에서만 돌았고 CI 에는 없었다 — `work-item-selftest` 는
+  # `gate-selftest` 잡에 실려 「판정기가 red 를 낼 수 있다」만 증명하고 있었고,
+  # **정작 판정 자체는 아무 잡도 돌리지 않았다.** 증명만 CI 에 있고 판정이 없으면
+  # 상태 드리프트가 그대로 `main` 에 들어간다.
+  # ─────────────────────────────────────────────────────────────
+  planning-gates:
+    needs: changes
+    if: needs.changes.outputs.dev-package == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # 핀은 gates/requirements.txt 하나다 — 여기에 판을 다시 적지 않는다.
+      # 적어 두면 두 곳이 갈리고, 갈린 쪽이 조용히 이긴다.
+      - name: pyyaml 설치 (핀 = gates/requirements.txt)
+        run: |
+          set -euo pipefail
+          python -m pip install -q --disable-pip-version-check \
+            "$(grep -iE '^PyYAML==' gates/requirements.txt)"
+      # 설치가 「돌았다」와 「모듈이 실제로 있다」는 다르다. 부재가 게이트 red 로
+      # 위장하면 원인이 한 겹 멀어진다 — 여기서 먼저 끊는다.
+      - name: 설치 확인 (pyyaml 이 실물로 있는가)
+        run: python -c 'import yaml'
+      - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
+        run: ./gates/run.sh work-item-consistency
+      - name: 기획 패키지 임베드 최신성
+        run: ./gates/run.sh planning-freshness
 
   # 게이트가 실제로 red를 낼 수 있는지 증명한다.
   # 이 잡이 없으면 "전부 green"이 "전부 무력"과 구분되지 않는다.
