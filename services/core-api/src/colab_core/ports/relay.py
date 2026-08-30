@@ -27,6 +27,13 @@ class PreviewRenderPort(Protocol):
     def get(self, *, lab_id: str, account_id: str, render_id: str) -> dict[str, Any] | None:
         ...
 
+    def screenshot(self, *, lab_id: str, account_id: str,
+                   request: dict[str, Any]) -> tuple[int, bytes, str | None]:
+        """`createScreenshot` 중계 (`〈231〉` · 11차 해제). **JSON 이 아닌 답을 지난다** —
+        200 은 `image/png` 바이트다. 상태·본문·`Content-Type` 셋을 그대로 돌려주고
+        core-api 는 그림을 해석하지 않는다."""
+        ...
+
     def palettes(self, *, lab_id: str, account_id: str) -> dict[str, Any]:
         """`RenderStyle.palette` 값 집합 (`〈88〉` 묶음 4). **못 닿으면 예외다** —
         빈 목록은 「고를 것이 없다」는 답이지 「물어보지 못했다」가 아니다."""

@@ -1233,6 +1233,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/preview-screenshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 지금 장면을 이미지로 뽑는다 (중계)
+         * @description **⟨동결 11회 해제 · `PLAN-SoT §9 〈231〉` — Ted 승인 2026-08-30 · 등급 ㉯(op 신설)⟩**
+         *
+         *     정본은 데이터셋 상세에 **스크린샷을 편집 권한자 컨트롤로 요구한다** —
+         *     `Policy_데이터셋_상세 §8 스크린샷` 축자 「지금 장면을 PNG로 저장. **설정을 저장하지
+         *     않으므로 남길 장면은 여기서 뽑는다**」 · `§6` 축자 「`업로드·편집` 켜짐 ｜ 시각화 편집·
+         *     **스크린샷**·계보 수정」 · `§2` 축자 「스크린샷을 누른다 ｜ 지금 장면을 이미지로 저장한다」.
+         *
+         *     ⚠ **없어서 무엇이 깨져 있었나** (`sessions/P3-DETAIL-PREVIEW-20260830.md` 남은 차단 ㈎)
+         *     서버쪽 `core-viz.yaml#createScreenshot` 은 **이미 서 있는데**(viz-render 구현·시험 존재)
+         *     이 seam 에 중계 op 이 **0건**이라 **화면이 그 op 에 닿을 계약 경로가 없었다.**
+         *     `listPalettes` 가 없어 렌더가 한 번도 시작되지 않았던 것(`〈88〉` 묶음 4)과 **같은 모양**이고,
+         *     같은 이유로 게이트가 못 잡는다 — **없는 것은 diff 에 안 나온다**(`sessions/X2-FREEZE-PROTOCOL.md §4-2`).
+         *
+         *     **중계만 한다.** 요청 스키마는 `core-viz.yaml#ScreenshotRequest` 를 그대로 참조하고
+         *     **재선언하지 않는다** — 같은 모양의 두 번째 선언은 갈라질 표면이다. 층 목록·순서·
+         *     불투명도·화면 크기는 지도 위젯만 아는 값이라 요청에 실린다.
+         *
+         *     **core-api 가 하는 판정은 둘이다** — ⑴ **편집 권한**(`업로드·편집`). `core-viz.yaml` 이
+         *     「권한 판정은 core-api 가 하고 이 seam 은 판정하지 않는다」로 그 자리를 여기에 넘겼다.
+         *     ⑵ **연구실 경계** — 장면에 담긴 렌더가 이 연구실 것인가. 그 확인 없이 중계하면
+         *     남의 연구실 그림을 뽑아 준다. **그리는 일은 한 줄도 하지 않는다**
+         *     (`CLAUDE.md §3-4` — core-api 에 geo 라이브러리를 import 하지 않는다).
+         *
+         *     ⚠ **경로가 `core-viz.yaml` 의 `POST /screenshots` 와 일부러 다르다** — 두 seam 이 같은
+         *     경로를 쓰면 `contract-breaking` 의 합성 비교가 같은 엔드포인트로 합쳐 버린다.
+         *     `listPalettes`(`/preview-palettes` vs `/palettes`)가 같은 이유로 갈렸다.
+         */
+        post: operations["createPreviewScreenshot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/summary": {
         parameters: {
             query?: never;
@@ -2674,6 +2719,30 @@ export interface components {
              *     (`sessions/S1-CONTRACT-GAP-SWEEP.md` `C-1`). 화면은 이제 이 필드만 읽는다.
              */
             gridRejection?: components["schemas"]["GridRejection"];
+        };
+        ScreenshotLayer: {
+            renderId: components["schemas"]["Ulid"];
+            /**
+             * @description 불투명도. 얹은 층의 기본은 0.55 다 — 아래층을 비춰 봐야 비교가 된다
+             *     (`Policy_데이터셋_상세 §8 얹은 층`). 맨 아래 층은 1 로 보낸다.
+             * @default 0.55
+             */
+            opacity: number;
+        };
+        /** @description 지도 위젯이 지금 보여주는 화면. 픽셀 크기와 경계만 넘긴다. */
+        Viewport: {
+            width: number;
+            height: number;
+            bounds: components["schemas"]["Bounds"];
+        };
+        /**
+         * @description 지금 장면. 층 순서는 배열 순서이고 **첫 항목이 맨 아래 층**이다 —
+         *     `이 데이터` 층은 맨 아래로 고정되고 끄거나 뺄 수 없다 (`Policy_데이터셋_상세 §8`).
+         *     그 고정 자체는 화면 규칙이라 이 계약이 강제하지 않는다.
+         */
+        ScreenshotRequest: {
+            layers: components["schemas"]["ScreenshotLayer"][];
+            viewport: components["schemas"]["Viewport"];
         };
     };
     responses: {
@@ -4434,6 +4503,75 @@ export interface operations {
              *     **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 여기서 실패해도 등록·다운로드·
              *     계보 확정은 그대로 된다. 화면은 「미리보기를 만드는 서버에 닿지 못했습니다 /
              *     등록은 그대로 진행할 수 있습니다」를 세운다 (`S1-PLAN-REFOUND §E.2-⑩`).
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    createPreviewScreenshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenshotRequest"];
+            };
+        };
+        responses: {
+            /**
+             * @description PNG 이미지. **설정을 저장하지 않으므로 남길 장면은 이것뿐이다**
+             *     (`Policy_데이터셋_상세 §8 시각화 컨트롤`).
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description **`업로드·편집` 이 꺼져 있다.** 정본이 스크린샷을 편집 권한자 컨트롤로 두므로
+             *     (`Policy_데이터셋_상세 §6`) 화면에서 숨긴 것을 서버가 같은 기준으로 막는다
+             *     (`§3.3` 축자 「화면에서 숨긴 것은 서버도 같은 기준으로 막는다」).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description 장면에 담긴 층 중 **아직 완료되지 않은 렌더**가 있다
+             *     (`core-viz.yaml#createScreenshot` 의 409 를 그대로 옮긴다).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다 — 실패한 스크린샷이 아니다**
+             *     (`ErrorEnvelope.code = RENDER_UNAVAILABLE`). `createPreviewRender` 의 503 과 같은
+             *     모양이다. **빈 이미지를 지어내지 않는다** — 0바이트 PNG 는 「장면이 비었다」로 읽힌다.
              */
             503: {
                 headers: {
