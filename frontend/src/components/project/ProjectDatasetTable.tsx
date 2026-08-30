@@ -15,6 +15,8 @@ export function ProjectDatasetTable(props: {
   rows: ProjectDatasetRow[];
   canManage: boolean;
   onOpen(datasetId: string): void;
+  /** 소속 해제 — **연결 기록만** 지운다. 데이터셋은 카탈로그에 그대로 있다 (`§7`). */
+  onUnlink(datasetId: string): Promise<void>;
 }) {
   return (
     <table className="pj-ds" data-testid="project-datasets">
@@ -57,12 +59,15 @@ export function ProjectDatasetTable(props: {
             <td data-testid="dataset-verified">{row.verified ? '승인됨' : '—'}</td>
             <td className="right">
               {/* 소속 해제는 `프로젝트 생성` 스위치가 켜진 사람만 (§6). 꺼졌으면 **숨긴다**
-                  — 비활성 버튼으로 남기지 않는다 (P-12). 실물 op(`unlinkProjectDataset`)은
-                  아직 501 이라 여기는 자리만 둔다. */}
+                  — 비활성 버튼으로 남기지 않는다 (P-12). */}
               {props.canManage ? (
-                <span className="quiet" data-slot="unlink" data-fills-in="unlinkProjectDataset">
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => void props.onUnlink(row.datasetId)}
+                >
                   소속 해제
-                </span>
+                </button>
               ) : null}
             </td>
           </tr>

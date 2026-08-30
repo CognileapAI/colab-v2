@@ -5,7 +5,16 @@
 // (WU-P5 가 그 셋을 열었으므로 실서버 경로가 이제 살아 있다 — 픽스처는 서버가 없을 때의 자리다.)
 import { api } from '../../api/client';
 import { fixtureProjectSource } from './fixture';
-import { ProjectGone, type ProjectDetail, type ProjectRow, type ProjectSource } from './types';
+import {
+  ProjectGone,
+  ProjectHasDatasets,
+  type ProjectCreate,
+  type ProjectDetail,
+  type ProjectRow,
+  type ProjectSource,
+  type ProjectStatus,
+  type ProjectUpdate,
+} from './types';
 
 /** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 두 종). */
 class NotImplemented extends Error {}
@@ -37,6 +46,56 @@ export function apiProjectSource(): ProjectSource {
       if (!body) throw new Error('프로젝트 상세를 불러오지 못했어요.');
       return body as ProjectDetail;
     },
+
+    // ── 쓰기 다섯 (F-03·F-04·F-05 · 삭제 · 소속 해제) ───────────────────────
+    //
+    // **폴백하지 않는다.** 읽기는 서버가 없으면 픽스처로 그려도 화면이 거짓말을 하지
+    // 않지만, 쓰기는 픽스처로 성공을 흉내 내는 순간 **저장되지 않은 것을 저장됐다고**
+    // 말하게 된다. 그래서 아래 `defaultProjectSource` 도 이 다섯은 그대로 통과시킨다.
+    async create(input: ProjectCreate) {
+      const r = await api.POST('/projects', { body: input });
+      if (r.response.status === 501) throw new NotImplemented();
+      if (!r.data) throw new Error('프로젝트를 만들지 못했어요.');
+      return r.data as ProjectDetail;
+    },
+    async update(projectId, input: ProjectUpdate) {
+      const r = await api.PATCH('/projects/{projectId}', {
+        params: { path: { projectId } },
+        body: input,
+      });
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status === 501) throw new NotImplemented();
+      if (!r.data) throw new Error('프로젝트를 고치지 못했어요.');
+      return r.data as ProjectDetail;
+    },
+    async setStatus(projectId, status: ProjectStatus) {
+      const r = await api.PUT('/projects/{projectId}/status', {
+        params: { path: { projectId } },
+        body: { status },
+      });
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status === 501) throw new NotImplemented();
+      if (!r.data) throw new Error('프로젝트 상태를 바꾸지 못했어요.');
+      return r.data as ProjectDetail;
+    },
+    async remove(projectId) {
+      const r = await api.DELETE('/projects/{projectId}', {
+        params: { path: { projectId } },
+      });
+      // **409 를 삼키지 않는다** — 소속 데이터셋이 있다는 사실을 화면이 그대로 말한다.
+      if (r.response.status === 409) throw new ProjectHasDatasets();
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status === 501) throw new NotImplemented();
+      if (r.response.status !== 204) throw new Error('프로젝트를 지우지 못했어요.');
+    },
+    async unlink(projectId, datasetId) {
+      const r = await api.DELETE('/projects/{projectId}/datasets/{datasetId}', {
+        params: { path: { projectId, datasetId } },
+      });
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status === 501) throw new NotImplemented();
+      if (r.response.status !== 204) throw new Error('소속을 해제하지 못했어요.');
+    },
   };
 }
 
@@ -64,5 +123,12 @@ export function defaultProjectSource(): ProjectSource {
         return stub.get(projectId);
       }
     },
+    // **쓰기 다섯은 폴백이 없다.** 픽스처로 성공을 흉내 내면 저장되지 않은 것을
+    // 저장됐다고 말하게 된다 — 읽기의 폴백과 성질이 다르다.
+    create: live.create,
+    update: live.update,
+    setStatus: live.setStatus,
+    remove: live.remove,
+    unlink: live.unlink,
   };
 }

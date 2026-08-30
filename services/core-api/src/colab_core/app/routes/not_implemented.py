@@ -31,9 +31,16 @@ P2 가 열둘을 가져갔다 (36 → 24) —
 P5 행이 「여기서 열린다」고 지목한 op 이다. **셋 다 실동작 시험이 뒤에 있다**
 (`tests/test_project_screens.py`) — 그 규칙이 없으면 501 을 200 으로 바꾼 것과 다르지 않다.
 
-**남은 프로젝트 op 넷은 그대로 501 이다** — `updateProject` · `deleteProject` ·
-`setProjectStatus` · `unlinkProjectDataset`. 넷 다 `NOT_IMPLEMENTED_P1` 배정이라
-P5 가 범위를 늘려 가져오지 않았다 (`CLAUDE.md §5` 범위 늘리기 금지).
+**`P5` 잔여 회차가 남은 프로젝트 op 을 전부 가져갔다 (23 → 20)** — `deleteProject` ·
+`setProjectStatus` · `unlinkProjectDataset`. ⭑ **위 문단의 「넷」은 낡은 수였다** —
+`updateProject` 는 그 뒤 `〈150〉` 으로 이미 열렸는데 이 산문이 안 따라갔다. 셋이 맞다.
+
+**왜 배정을 넘었는가.** 셋 다 `NOT_IMPLEMENTED_P1` 로 적혀 있었으나 **정본은 셋 다
+E-05 화면의 동작으로 적었다** — `PRD_프로젝트:65` 가 S-02b 를 「… 소속 해제 · 프로젝트
+닫기」로 정의하고, `Policy_프로젝트 §6` 의 허용 행동이 「만들기 · 정보 수정 · 소속 해제 ·
+닫기 · 다시 열기」이며, `§8` 삭제 버튼 행이 그 자리를 「상세 · 데이터셋 0건」으로 못 박는다.
+**낡은 배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다** (`CLAUDE.md §5`).
+셋 다 실동작 시험이 뒤에 있다 (`tests/test_project_screens.py`).
 """
 from __future__ import annotations
 
@@ -65,6 +72,8 @@ class Op:
 #: → **21**(S1 W5 `P5` — 프로젝트 목록·상세·연결 셋)
 #: → **23**(S1 4차 동결 해제 — `addUploadFile`·`replaceUploadGridFile` 신설.
 #:    `listPalettes` 는 신설과 동시에 구현해 표에 안 든다. `〈88〉` 묶음 4·5·6).
+#: → **20**(`P5` 잔여 — `deleteProject`·`setProjectStatus`·`unlinkProjectDataset`.
+#:    윗 문단이 배정을 넘은 이유를 적었다).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
@@ -86,10 +95,6 @@ OPERATIONS: tuple[Op, ...] = (
     Op("approveVerification", "POST", "/datasets/{datasetId}/verification",
        "NOT_IMPLEMENTED_P1"),
     Op("cancelVerification", "POST", "/datasets/{datasetId}/verification-cancellation",
-       "NOT_IMPLEMENTED_P1"),
-    Op("deleteProject", "DELETE", "/projects/{projectId}", "NOT_IMPLEMENTED_P1"),
-    Op("setProjectStatus", "PUT", "/projects/{projectId}/status", "NOT_IMPLEMENTED_P1"),
-    Op("unlinkProjectDataset", "DELETE", "/projects/{projectId}/datasets/{datasetId}",
        "NOT_IMPLEMENTED_P1"),
     Op("getDashboardSummary", "GET", "/dashboard/summary", "NOT_IMPLEMENTED_P1"),
     Op("getDataMap", "GET", "/dashboard/data-map", "NOT_IMPLEMENTED_P1"),

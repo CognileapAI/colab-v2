@@ -249,3 +249,221 @@
 .pd-m .chip {
   margin-left: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   F-03 새 프로젝트 · F-04 정보 수정 · F-05 닫기 확인 (목업 `프로젝트_260817.html`)
+
+   **전체 화면 모달이 아니다** — 업로드(S-04)만 전체 화면이고(`Policy_업로드와_계보_확정 §7`),
+   이 셋은 폼 한 벌짜리 가운데 모달이다. 목업의 `.modal-back`/`.modal` 골격 그대로다.
+   ══════════════════════════════════════════════════════════════════════════ */
+.pj-modal-back {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(15 20 28 / 45%);
+  z-index: 40;
+}
+
+.pj-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px;
+}
+
+.pj-modal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line, #eef0f3);
+}
+
+.pj-modal-h h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.pj-x {
+  border: 0;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--fg-muted, #667);
+  cursor: pointer;
+}
+
+.pj-modal-b {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.pj-modal-f {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line, #eef0f3);
+}
+
+/* ── 폼 칸 ─────────────────────────────────────────────────────────────── */
+.pj-row {
+  margin-bottom: 14px;
+}
+
+.pj-row label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+}
+
+.pj-inp,
+.pj-tarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.pj-tarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.pj-readonly {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pj-seg {
+  display: inline-flex;
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pj-seg button {
+  padding: 6px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pj-seg button.on {
+  background: var(--surface-2, #eceef2);
+  font-weight: 600;
+}
+
+.pj-2col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pj-tilde {
+  color: var(--fg-muted, #99a);
+}
+
+.pj-hint,
+.pj-muted {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: var(--fg-muted, #99a);
+}
+
+/* 정의·범위 안내 — **새 프로젝트 모달에만** 있다 (§8) */
+.pj-defnote {
+  margin: -6px 0 14px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  background: var(--surface-2, #f4f5f7);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg-muted, #667);
+}
+
+/* 연결 주소 묶음 — 설명·기간과 **다른 카드**다 (§1.2·§8) */
+.pj-fgroup {
+  margin: 4px 0 14px;
+  padding: 12px;
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 8px;
+}
+
+.pj-fgroup-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pj-fgroup-h .t {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 대상 블록 — 무엇을 고치거나 닫는지가 폼 위에 먼저 온다 */
+.pj-target {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface-2, #f4f5f7);
+}
+
+.pj-tn {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pj-tm {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--fg-muted, #99a);
+}
+
+/* **잔존 안내가 먼저다** — 가장 큰 걱정을 누르기 전에 없앤다 (§8 닫기 확인 행) */
+.pj-keepbox {
+  padding: 11px 12px;
+  border: 1px solid var(--ok-line, #cde9d6);
+  border-radius: 6px;
+  background: var(--ok-bg, #f2fbf5);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pj-closebody {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.pj-err,
+.pd-notice {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--warn, #b45309);
+}
+
+/* `자리`(span)였던 것이 실물 버튼이 됐다 — 브라우저 기본 테두리·배경을 걷어
+   **조용한 버튼**의 생김새를 그대로 유지한다 (§8 「조용한 버튼으로 둔다」). */
+.pj-new,
+.quiet {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
