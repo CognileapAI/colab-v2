@@ -14,11 +14,12 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  preview-tile-slot
+  preview-tile-slot e2e-format-coverage
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest
+  e2e-format-coverage-selftest
 )
 
 case "$GATE" in
@@ -117,6 +118,16 @@ case "$GATE" in
     # 검사 4종: G-e 산문 위임 참조 · G-b source const 능력 주장 · ㉠ 정본 근거 대조 · ㉡ E-04 흐름 완주.
     exec "$REPO_ROOT/gates/tools/seam-consistency.sh"
     ;;
+  e2e-format-coverage)
+    # 지원 포맷 목록의 **각 포맷이 실파일로 실제 그려지는가** (`S3` 완료 정의 축자
+    # 「각각 최소 1건이 시각화 화면에 그려지고 … 실패 파일은 목록으로 남긴다」).
+    # 원천 마운트가 없으면 준비 red — skip 이 아니다. 표식 붙은 케이스 0건도 red 다.
+    exec "$REPO_ROOT/gates/tools/e2e-format-coverage.sh"
+    ;;
+  e2e-format-coverage-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.
+    exec "$REPO_ROOT/gates/tools/e2e-format-coverage-selftest.sh"
+    ;;
   seam-consistency-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 개정 전 위임 산문 원문(DR-7 실물) 포함.
     exec "$REPO_ROOT/gates/tools/seam-consistency-selftest.sh"
@@ -153,8 +164,11 @@ case "$GATE" in
     # 증명 셋을 한 번에. 하나라도 red 면 red.
     # stage2-markers-selftest 는 여기 없다 — pipeline-worker 런타임 의존(rasterio 등)이 필요해
     # contract-gates 잡의 환경으로는 못 돈다. CI 는 dormant-tests 잡에서 따로 부른다.
+    # ⭑ e2e-format-coverage-selftest 는 **여기 있다** — 픽스처가 junit XML 과 선언 파일뿐이라
+    #   원천·DB·도커 없이 돈다. **본 게이트(e2e-format-coverage)는 CI 에 없다** — 원천 3.5 GB
+    #   마운트가 없으면 준비 red 이고, 그 red 는 입력 미선언이지 판정 실패가 아니다.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

@@ -107,3 +107,18 @@ def tiny_geotiff(tmp_path):
     ) as dst:
         dst.write(data, 1)
     return path
+
+
+@pytest.fixture(autouse=True)
+def _실데이터포맷_표식을_리포트에_남긴다(request, record_property):
+    """`e2e_format` 마커를 junit 속성으로 옮긴다 — 게이트가 읽는 유일한 경로다.
+
+    ⚠ **케이스 이름으로 포맷을 짐작하지 않는다.** 이름 규칙으로 세면 이름을 바꾸는
+    순간 대상이 조용히 0 이 되고, 게이트는 그것을 「통과」로 보고한다(`CLAUDE.md §4`).
+    표식은 시험이 **명시적으로** 선언한다.
+    """
+    m = request.node.get_closest_marker("e2e_format")
+    if m is not None:
+        if len(m.args) != 1 or not isinstance(m.args[0], str) or not m.args[0]:
+            raise ValueError("e2e_format 마커는 포맷 이름 하나를 받는다")
+        record_property("실데이터포맷", m.args[0])
