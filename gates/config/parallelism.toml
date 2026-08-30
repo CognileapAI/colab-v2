@@ -71,3 +71,21 @@
 #   ⚠ `db-selftest` 를 serial 로 둔 이유(**한 적용 DB 를 순서대로 훼손해 가며** 본다)는
 #     여기에 해당하지 않는다. 이쪽은 적용 DB 를 한 번도 건드리지 않는다.
 "autometa-loss-selftest"    = "parallel"
+
+# `preview-tile-slot` — 실측 근거: **적용 DB 에 읽기만 하고, 자리에도 읽기만 한다.**
+#   `gates/tools/preview-tile-slot.sh` 안에 INSERT·UPDATE·DELETE·CREATE·DROP·ALTER·TRUNCATE 가
+#   한 건도 없다(질의는 `SELECT count(DISTINCT upload_id) …` 하나뿐). 자리 접촉은 `find` 와
+#   파일 읽기뿐이라 파일을 만들지도 지우지도 않는다. 도커·임시 파일·잠금도 쓰지 않는다.
+#   경합 자원 둘(적용 DB · 미리보기 루트) 모두 읽기 전용이므로 실행 순서가 판정을 바꾸지 않는다.
+"preview-tile-slot"         = "parallel"
+
+# `preview-tile-slot-selftest` — 실측 근거: **자기 일회용 컨테이너와 자기 임시 자리 안에서만** 산다.
+#   `_pg.sh` 의 `pg_start` 로 컨테이너를 뜨우고 그 안에 자기 DB(`previewtileslot`)를 만들어 쓴다.
+#   픽스처 TIFF·면제 선언·타일 자리는 전부 자기 `mktemp -d` 안이고, 게이트에는 psql 을 주입해
+#   **적용 DB URL 을 아예 쓰지 않는다.** 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
+#   ⚠ **그런데도 `serial` 이다 — 실측 근거가 그쪽이다.** parallel 로 두고 `all -j 2` 를 두 번 돌리니
+#     한 번은 green 28 / red 3, 한 번은 **일회용 postgres 슬롯 고갈로 다른 게이트가 `환경대기` red**
+#     였다(2026-08-30 실측). 이 배포에서 pg 를 쓰는 게이트가 하나 늘어난 만큼 슬롯이 모자란다.
+#     **재현되지 않는 red 는 판정이 아니라 배선이 낸 red 이고, 그것을 통과로도 실패로도 셀 수 없다.**
+#     슬롯 한도를 올려 green 을 만들지 않는다 — 한도는 이 호스트가 감당하는 값이다.
+"preview-tile-slot-selftest" = "serial"

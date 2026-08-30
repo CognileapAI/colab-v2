@@ -14,10 +14,11 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
+  preview-tile-slot
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
-  autometa-loss-selftest
+  autometa-loss-selftest preview-tile-slot-selftest
 )
 
 case "$GATE" in
@@ -133,6 +134,16 @@ case "$GATE" in
   autometa-loss-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 유실·대상 0건·환경 부재 셋 다.
     exec "$REPO_ROOT/gates/tools/autometa-loss-selftest.sh"
+    ;;
+  preview-tile-slot)
+    # 지도 타일이 **자리에 놓였고, 놓인 것을 다시 쓸 수 있는가**(완료 정의 ⑵ 축자).
+    # **대상 0건도 red 다** — 이 자리의 자연스러운 대상 수는 오늘 0 이고, 0 을 통과로 세면
+    # 게이트가 아무것도 안 보면서 green 을 찍는다. 자리 경로·적용 DB 미선언도 red 다.
+    exec "$REPO_ROOT/gates/tools/preview-tile-slot.sh"
+    ;;
+  preview-tile-slot-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 대상 0건·못 쓰는 타일·입력 미선언.
+    exec "$REPO_ROOT/gates/tools/preview-tile-slot-selftest.sh"
     ;;
   stage2-markers-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (0 건 · skip · fail).

@@ -49,6 +49,14 @@ class PipelineResult:
     #: 지도 타일이 놓인 **내용 키**. 산출물이 미리보기 루트에 놓였을 때만 값이 있다.
     tile_content_key: str | None = None
     artifact: ArtifactRecord | None = None
+    #: 이번 회차가 **굽지 않고 자리에 있던 것을 찾아 썼는가**(완료 정의 ⑵ 축자
+    #: 「다시 만들지 않고 찾아 쓸 수 있다」). 자리를 선언하지 않았으면 언제나 False 다.
+    reused: bool = False
+    #: 자리에 파일이 있었으나 **타일이 아니어서** 다시 구운 건수. 0 이 정상이고,
+    #: 0 이 아니면 그 사실이 드러나야 한다 — 삼키면 잔재를 미리보기로 내보낸다.
+    rebuilt_unusable: int = 0
+    #: 재사용 판정이 왜 그렇게 났는지. **비어 있는 채로 통과시키지 않는다.**
+    notes: list[str] = field(default_factory=list)
     failures: list[str] = field(default_factory=list)
 
 
@@ -160,8 +168,35 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
             return _fail(res, f"지도 타일 내용 키를 지을 수 없다: {e}")
         out_path = storage_layout.preview_path(previews_root, res.tile_content_key, ".tif")
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        # **자리를 보는 것이 곧 찾아 쓰는 것이다** — 키가 내용 주소라 별도의 표가 없다
+        # (`contracts/storage/layout.json` `keys.미리보기 산출물`·`contentKeys.지도 타일.why`).
+        #
+        # ⚠ **「파일이 있다」를 「구워져 있다」로 읽지 않는다.** 0 바이트 잔재·중단된 쓰기가
+        #   그 자리에 남을 수 있고, 그것을 재사용하면 **에러 없이 깨진 미리보기**가 나간다 —
+        #   이 레포가 여덟 번 중 일곱 번 당한 무늬다(`DATA-REFERENCE §0`). 그래서 **구조로**
+        #   판정한다: IFD 를 읽어 COG 층이어야 재사용한다.
+        if out_path.exists():
+            usable = False
+            why = ""
+            try:
+                cls = classify_tiff(out_path)
+                usable = cls == "cog"
+                why = f"자리의 파일이 {cls} 다"
+            except Exception as e:            # 열리지도 않는 잔재
+                why = f"자리의 파일을 판독할 수 없다: {e}"
+            if usable:
+                res.cog_path = str(out_path)
+                res.reused = True
+                res.status = "SUCCESS"
+                res.notes.append(f"재사용 — 이미 구운 타일을 찾아 썼다({res.tile_content_key})")
+                return res
+            res.rebuilt_unusable = 1
+            res.notes.append(f"재사용하지 않는다 — {why}. 다시 굽는다")
     else:
         out_path = workdir / (path.name.split(".")[0] + ".cog.tif")
+        # 자리를 선언하지 않으면 **매번 다시 굽는다** — 정본이 그렇게 적었다.
+        # 조용히 성공으로 세지 않고 사실로 남긴다. 유실 감지가 이 사실을 받는다.
+        res.notes.append("자리(미리보기 루트)가 선언되지 않았다 — 재사용 없이 임시 자리에 굽는다")
     try:
         if det.format == "GeoTIFF":
             res.input_cog_class = classify_tiff(path)
