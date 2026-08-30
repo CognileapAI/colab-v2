@@ -38,8 +38,16 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_53() -> None:
-    """45 → 46 → 49 → 50 → 52 → **53.**
+def test_operation_count_is_54() -> None:
+    """45 → 46 → 49 → 50 → 52 → 53 → **54.**
+
+    ⭑ **54 의 하나는 `createPreviewScreenshot`** — **11차 동결 해제**
+    (`PLAN-SoT §9 〈231〉` · Ted 승인 2026-08-30 · 등급 ㉯ op 신설). 정본이 스크린샷을
+    편집 권한자 컨트롤로 요구하는데(`Policy_데이터셋_상세 §6`·`§8`) `fe-core.yaml` 에
+    중계가 **0건**이라 화면이 서버 `createScreenshot` 에 닿을 길이 없었다
+    (`sessions/P3-DETAIL-PREVIEW-20260830.md` 남은 차단 ㈎). **신설과 동시에 구현했다**
+    (`routes/preview.py` — 집행 없는 신설 금지 `X2-FREEZE-PROTOCOL §5-㉰-4`) — 그래서
+    501 표는 그대로다. `contract-breaking` = 파괴적 변경 없음(순수 추가).
 
     ⭑ **53 의 하나는 `listDatasetFieldSuggestions`** — **6차 동결 해제**
     (`PLAN-SoT §9 〈138〉` · 결정 2-10 · Ted 판정 ㈏ 2026-08-27). **신설과 동시에
@@ -68,7 +76,7 @@ def test_operation_count_is_53() -> None:
     세 회차가 각각 직전 묶음이 세지 않은 축에서 구멍을 남겼다 — 마지막 축이
     **「그 응답을 부를 op 이 있는가」**였다(`sessions/S1-CONTRACT-GAP-SWEEP.md`).
     """
-    assert len(contract_operations()) == 53, "계약의 오퍼레이션이 53 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 54, "계약의 오퍼레이션이 54 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

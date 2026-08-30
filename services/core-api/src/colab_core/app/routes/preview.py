@@ -18,7 +18,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d3_catalog, d5_ingestion
+from ...domains import d2_access, d3_catalog, d5_ingestion
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -124,3 +124,75 @@ def get_preview_render(request: Request, renderId: str,
     if job is None:
         raise errors.not_found("그런 렌더 작업이 없다.")
     return job
+
+
+@router.post("/preview-screenshots", name="createPreviewScreenshot")
+def create_preview_screenshot(request: Request, body: dict = Body(...),
+                              subject: Subject = Depends(current_subject),
+                              db: Session = Depends(scoped_db)) -> Response:
+    """`createScreenshot` 중계 (`〈231〉` · **11차 동결 해제**).
+
+    ⚠ **이 op 이 없어서 정본이 요구하는 컨트롤이 계약상 도달 불가였다** —
+    서버(`core-viz.yaml#createScreenshot`)는 서 있는데 `fe-core.yaml` 에 중계가 0건이라
+    화면이 닿을 길이 없었다. `listPalettes` 부재(`〈88〉` 묶음 4)와 같은 모양이다.
+
+    **core-api 가 하는 판정은 둘뿐이다.**
+      ⑴ **편집 권한** — 정본이 스크린샷을 편집 권한자 컨트롤로 둔다
+        (`Policy_데이터셋_상세 §6`). `core-viz.yaml` 이 「권한 판정은 core-api 가 한다」로
+        그 자리를 여기에 넘겼다. **화면에서 숨긴 것은 서버도 같은 기준으로 막는다**(`§3.3`).
+      ⑵ **연구실 경계** — 장면에 담긴 렌더가 이 연구실 것인가. 확인 없이 중계하면
+        남의 연구실 그림을 뽑아 준다.
+
+    **그리는 일은 한 줄도 하지 않는다** (`CLAUDE.md §3-4`). 층 합성·픽셀은 viz-render 안이다.
+    """
+    layers = body.get("layers")
+    if not isinstance(layers, list) or not layers:
+        raise errors.bad_request("layers 가 없다 — 장면에는 층이 하나 이상 있어야 한다.")
+    if not isinstance(body.get("viewport"), dict):
+        raise errors.bad_request("viewport 가 없다.")
+
+    render_ids: list[str] = []
+    for layer in layers:
+        if not isinstance(layer, dict):
+            raise errors.bad_request("layers 의 항목이 층이 아니다.")
+        render_ref = layer.get("renderId")
+        if not isinstance(render_ref, str) or not Ulid.is_valid(render_ref):
+            raise errors.bad_request("layers[].renderId 가 정규 ID 가 아니다.")
+        render_ids.append(render_ref)
+
+    role = d2_access.role_of(db, subject.account_id)
+    permissions = d2_access.permissions_of(db, subject.account_id, role)
+    if not permissions.get("업로드·편집"):
+        raise errors.forbidden("`업로드·편집` 스위치가 꺼져 있다.")
+
+    relay = request.app.state.previews
+    if relay is None:
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              "그리는 서버에 연결하지 못했다 — 장면을 뽑을 수 없다.")
+
+    # **경계는 렌더 조회로 확인한다.** 렌더 작업은 viz-render 소유라 core-api 에 표가 없다 —
+    # 그쪽에 경계 헤더를 실어 물어보는 것이 이 경계의 유일한 정직한 확인이다.
+    for render_ref in render_ids:
+        try:
+            job = relay.get(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+                            render_id=render_ref)
+        except RelayUnavailable as e:
+            raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                                  f"그리는 서버에 연결하지 못했다: {e}") from None
+        if job is None:
+            # **경계 밖은 존재를 알리지 않는다** — 403 이 아니라 404 다 (`fe-core.yaml` NotFound).
+            raise errors.not_found("장면에 담긴 렌더가 없거나 연구실 경계 밖이다.")
+
+    try:
+        status, payload, content_type = relay.screenshot(
+            lab_id=str(subject.lab_id), account_id=str(subject.account_id), request=body)
+    except RelayUnavailable as e:
+        # **빈 이미지를 만들지 않는다** — 0바이트 PNG 는 「장면이 비었다」로 읽힌다.
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              f"그리는 서버에 연결하지 못했다: {e}") from None
+    if status != 200:
+        # 저쪽이 낸 상태·봉투를 **해석하지 않고** 그대로 올린다.
+        return Response(content=payload, status_code=status,
+                        media_type=content_type or "application/json")
+    return Response(content=payload, status_code=200,
+                    media_type=content_type or "image/png")

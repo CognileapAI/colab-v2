@@ -49,6 +49,29 @@ def _request(url: str, *, method: str, headers: dict[str, str],
         raise RelayUnavailable(str(e)) from e
 
 
+def _request_binary(url: str, *, method: str, headers: dict[str, str],
+                    body: dict[str, Any] | None) -> tuple[int, bytes, str | None]:
+    """**JSON 이 아닌 답을 지나 보내는 전송.** `createPreviewScreenshot` 의 200 은
+    `image/png` 라 `_request` 로는 못 받는다 — `json.loads` 가 그림을 파싱하려다 죽는다.
+
+    **바이트를 해석하지 않는다.** core-api 는 그림을 만들지도 고치지도 않고, 저쪽이 준
+    본문과 `Content-Type` 을 그대로 되돌린다 (`CLAUDE.md §3-4`).
+    오류(4xx/5xx)는 저쪽이 `ErrorEnvelope` JSON 으로 주므로 본문을 그대로 올려 보내고
+    상태코드도 저쪽 것을 쓴다 — **저쪽이 낸 상태코드는 사실이다.**
+    """
+    data = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=RELAY_TIMEOUT_SECONDS) as res:
+            return res.status, res.read(), res.headers.get("Content-Type")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), e.headers.get("Content-Type")
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise RelayUnavailable(str(e)) from e
+
+
 def _scope_headers(lab_id: str, account_id: str,
                    service_token: str | None = None) -> dict[str, str]:
     """경계는 중계에도 실린다 — 큐에서 꺼낸 메시지처럼 저쪽에는 주체가 없다
@@ -99,6 +122,20 @@ class HttpPreviewRelay:
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
+
+    def screenshot(self, *, lab_id: str, account_id: str,
+                   request: dict[str, Any]) -> tuple[int, bytes, str | None]:
+        """`createScreenshot` 중계 (`〈231〉` · 11차 해제).
+
+        **판정하지 않고 지나 보낸다.** 200 이면 PNG 바이트, 4xx 면 저쪽의 `ErrorEnvelope`
+        본문이 그대로 실려 온다 — 상태코드도 저쪽 것이다. 여기서 빈 이미지를 만들거나
+        상태를 200 으로 바꾸지 않는다: **0바이트 PNG 는 「장면이 비었다」로 읽힌다.**
+        못 닿으면 `RelayUnavailable` 이고 라우트가 **503** 으로 낸다.
+        """
+        headers = _scope_headers(lab_id, account_id, self._token)
+        headers["Accept"] = "image/png, application/json"
+        return _request_binary(f"{self._base}/screenshots", method="POST",
+                               headers=headers, body=request)
 
     def get(self, *, lab_id: str, account_id: str, render_id: str) -> dict[str, Any] | None:
         status, body = _request(f"{self._base}/renders/{render_id}", method="GET",
