@@ -13,8 +13,11 @@
  *  · `§8` 「미리보기를 그릴 수 없을 때」 표 — 형식 불가 · 서버 연결 못 함 · 조각 일부 못 읽음
  *
  * **화면 글자를 여기서 새로 만들지 않는다** — 정본·서버가 준 문구를 그대로 기대한다.
- * 범위 밖(이 시험이 단언하지 않는 것) — 팔레트 선택 재렌더(`V-1`) · 값 조회(`V-2`) ·
- * 확대(정본 근거 0건) · 겹쳐 보기 · 스크린샷 버튼(FE 도달 계약 표면 부재).
+ * 범위 밖(이 시험이 단언하지 않는 것) — 팔레트 선택 재렌더(`V-1`) · 값 조회(`V-2`) · 겹쳐 보기.
+ * ⭑ **확대(줌)·스크린샷은 이제 여기가 아니라 자기 시험이 판정한다** —
+ * `dataset-preview-zoom.test.tsx`(정본 `§8` 확대 조건 여섯) ·
+ * `dataset-preview-screenshot.test.tsx`(`§6`·`§8` · 중계 op `createPreviewScreenshot`).
+ * ／ 이전 표기 ~~확대(정본 근거 0건) · 스크린샷 버튼(FE 도달 계약 표면 부재)~~.
  */
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -59,6 +62,7 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
+    screenshot: vi.fn(async () => new Blob([new Uint8Array([1])], { type: 'image/png' })),
     ...over,
   };
 }

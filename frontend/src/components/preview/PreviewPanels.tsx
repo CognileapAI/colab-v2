@@ -1,7 +1,9 @@
 // S-08 의 조각들. **화면 글자는 전부 정본 §8.1·§9 에서 그대로 온다** — 여기서 새 한국어를
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
+import type { ReactNode } from 'react';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
 import { resultImageSrc } from './tiles';
+import type { ZoomPan } from './useZoomPan';
 
 /** 정본 §8.1 「휘발 고지」 — 두 문장과 등록 길이 **한 줄**에 있다. 남은 시간은 세지 않는다. */
 export function VolatileNotice(props: { onRegister: () => void }) {
@@ -135,9 +137,15 @@ export function ExpiredNotice(props: { message: string }) {
 /**
  * 지도. **`tileUrlTemplate` 은 불투명 문자열**이라 그대로 들고 있고 `{z}`·`{x}`·`{y}` 만 바꾼다
  * (`〈68〉` 서명이 실려 있다). 층 겹치기·불투명도·시각 선택은 계약에 없어 두지 않는다.
+ *
+ * **확대(줌)는 선택이다** — `zoom` 을 받으면 층 묶음에 변환을 걸고 컨트롤을 세운다
+ * (정본 §8 「확대(줌)」 · v2.5). 받지 않는 화면(S-08)은 지금까지와 한 글자도 다르지 않다.
+ * ⚠ **변환은 `pv-layers` 하나에 건다** — 층마다 따로 걸면 정본 조건 ⑸(모든 층에 함께)가 깨진다.
+ * ⚠ **범례는 `pv-layers` 밖이다** — 조건 ⑵(확대해도 범례가 바뀌지 않는다)가 그 자리를 정한다.
  */
-export function PreviewMap(props: { result: RenderResult }) {
-  const { result } = props;
+export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; actions?: ReactNode }) {
+  const { result, zoom } = props;
+  const src = resultImageSrc(result);
   return (
     <section
       className="pv-map"
@@ -148,9 +156,40 @@ export function PreviewMap(props: { result: RenderResult }) {
       {...(result.colorRangeStage ? { 'data-color-range-stage': result.colorRangeStage } : {})}
       aria-label="미리보기"
     >
-      {resultImageSrc(result) ? (
-        <img className="pv-tile" src={resultImageSrc(result)} alt="" />
-      ) : null}
+      <div className="pv-mapcol">
+        <div
+          className="pv-viewport"
+          data-testid="preview-viewport"
+          ref={zoom?.viewportRef}
+          {...(zoom
+            ? {
+                onWheel: zoom.onWheel,
+                onMouseDown: zoom.onMouseDown,
+                'data-zoomable': 'true',
+              }
+            : {})}
+        >
+          <div
+            className="pv-layers"
+            data-testid="preview-layers"
+            {...(zoom
+              ? {
+                  'data-zoom-scale': String(zoom.scale),
+                  style: {
+                    transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
+                    transformOrigin: '0 0',
+                  },
+                }
+              : {})}
+          >
+            {src ? (
+              <img className="pv-tile" src={src} alt="" {...(zoom ? { onLoad: zoom.onImageLoad } : {})} />
+            ) : null}
+          </div>
+        </div>
+        {zoom ? <ZoomControls zoom={zoom} /> : null}
+        {props.actions ?? null}
+      </div>
       <dl className="pv-legend" aria-label="범례">
         {result.legend.classes.map((c) => (
           <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
@@ -162,6 +201,33 @@ export function PreviewMap(props: { result: RenderResult }) {
         ))}
       </dl>
     </section>
+  );
+}
+
+/**
+ * 확대 컨트롤. **편집 컨트롤이 아니다** — 정본 §8 `확대·이동` 행이 「확대는 시각화 편집이
+ * 아니라 보기다 … 보기 권한만 있어도 된다」로 못 박았으므로 권한으로 가리지 않는다(조건 ⑹).
+ * 한계 안내 문구는 정본 축자다 — 여기서 새 한국어를 만들지 않는다(조건 ⑷).
+ */
+function ZoomControls(props: { zoom: ZoomPan }) {
+  const { zoom } = props;
+  return (
+    <div className="pv-zoom" data-testid="preview-zoom">
+      <button type="button" onClick={zoom.zoomIn}>
+        확대
+      </button>
+      <button type="button" onClick={zoom.zoomOut}>
+        축소
+      </button>
+      <button type="button" onClick={zoom.reset}>
+        기본 배율로
+      </button>
+      {zoom.atLimit ? (
+        <p className="pv-muted" data-testid="zoom-limit" aria-live="polite">
+          원본 해상도까지 봤어요
+        </p>
+      ) : null}
+    </div>
   );
 }
 

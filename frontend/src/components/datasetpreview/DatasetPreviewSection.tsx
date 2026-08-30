@@ -13,13 +13,14 @@
 // **이 구역이 짓지 않는 것** (범위를 늘리지 않는다 — `CLAUDE.md §5`)
 //  · 팔레트·구간 수 컨트롤과 그에 따른 재렌더 = `V-1`(서버측) · `J-6`(선택 UI). 이 구역은
 //    기본값으로 **한 번 그린다.** 보기 전용 화면에는 정본이 그 컨트롤을 애초에 두지 않는다(`§3.2`).
-//  · 스크린샷 버튼 = **계약 표면은 2026-08-30 에 열렸다**(`createPreviewScreenshot` ·
-//    11차 동결 해제 `PLAN-SoT §9 〈231〉`) — 이 구역은 아직 그 버튼을 세우지 않았고,
-//    세우는 것은 `P3` 의 화면 레인 몫이다. ／ 이전 표기 ~~FE 도달 계약 표면이 없다~~.
-//  · 확대(줌) = **정본 근거와 완료 기준이 2026-08-30 에 적혔다**(`Policy_데이터셋_상세 §8`
-//    「확대(줌) — 왜 넣는가, 무엇이 되면 된 것인가」 조건 6 · `PLAN-SoT §9 〈232〉`).
-//    이 구역은 아직 짓지 않았고 짓는 것은 `P3` 의 화면 레인 몫이다.
 //  · 타일 뷰 · 값 조회 · 겹쳐 보기 = 각각 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
+//
+// **이 구역이 새로 짓는 것 둘** (화면 레인 · `PLAN-SoT §9 〈231〉`·`〈232〉` 뒤)
+//  · **확대(줌)** — 정본 `§8` 「확대(줌) — 왜 넣는가, 무엇이 되면 된 것인가」 조건 여섯.
+//    변환은 **이미 그린 결과 위에서만** 일어난다(조건 ⑶ 렌더 재요청 0) · 상태를 저장하지
+//    않는다(조건 ⑹) · 한계는 **데이터가 가진 해상도**다(조건 ⑷ · `useZoomPan`).
+//  · **스크린샷** — 중계 op `createPreviewScreenshot`(11차 동결 해제 `〈231〉`)에 닿는다.
+//    정본 `§6` 이 **편집 권한자 컨트롤**로 두므로 보기 전용에는 자리째 없다(`§3.2`).
 import { useEffect, useMemo, useState } from 'react';
 import {
   NotRenderableNotice,
@@ -36,6 +37,8 @@ import {
   type RerenderInput,
 } from '../preview/types';
 import { usePreviewRender } from '../preview/usePreviewRender';
+import { useZoomPan } from '../preview/useZoomPan';
+import { ScreenshotButton } from './ScreenshotButton';
 import '../preview/preview.css';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
 import type { DatasetPreviewSource } from './types';
@@ -139,7 +142,12 @@ export function DatasetPreviewSection(props: {
           한 번 읽으므로(S-08 은 이어받은 id 를 들고 들어온다) 나중에 건네면 조회가 시작되지 않는다.
           공용 훅을 고치지 않고 **마운트 시점을 맞춘다** — S-08 의 소비 규약을 건드리지 않기 위해서다. */}
       {start.phase === '시작함' ? (
-        <StartedPreview source={relay} renderId={start.renderId} pollMs={props.pollMs ?? 1000} />
+        <StartedPreview
+          source={relay}
+          datasetSource={source}
+          renderId={start.renderId}
+          pollMs={props.pollMs ?? 1000}
+        />
       ) : null}
     </section>
   );
@@ -155,12 +163,19 @@ function UnavailableNotice(props: { message: string }) {
   );
 }
 
-function StartedPreview(props: { source: PreviewSource; renderId: string; pollMs: number }) {
+function StartedPreview(props: {
+  source: PreviewSource;
+  datasetSource: DatasetPreviewSource;
+  renderId: string;
+  pollMs: number;
+}) {
   const { state } = usePreviewRender({
     source: props.source,
     renderId: props.renderId,
     pollMs: props.pollMs,
   });
+  // **훅은 조건 밖에서 부른다** — 렌더가 어느 단계든 같은 순서로 불려야 한다.
+  const zoom = useZoomPan();
 
   if (state.phase === '그리는 중')
     return state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />;
@@ -170,7 +185,18 @@ function StartedPreview(props: { source: PreviewSource; renderId: string; pollMs
       <>
         {/* 부분 실패는 **오류가 아니다** — 지도를 그대로 그리고 무엇이 빠졌는지 말한다 */}
         {state.partialFailure ? <PartialFailureNotice partial={state.partialFailure} /> : null}
-        <PreviewMap result={state.result} />
+        <PreviewMap
+          result={state.result}
+          zoom={zoom}
+          actions={
+            <ScreenshotButton
+              source={props.datasetSource}
+              renderId={props.renderId}
+              result={state.result}
+              zoom={zoom}
+            />
+          }
+        />
       </>
     );
 

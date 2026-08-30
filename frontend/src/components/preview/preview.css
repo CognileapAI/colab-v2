@@ -172,3 +172,59 @@
   color: var(--ink-3, #888);
   font-size: 13px;
 }
+
+/* ── 확대(줌) — 정본 §8 「확대(줌)」(v2.5). 확대되는 것은 층 묶음뿐이고 범례는 밖에 선다 ── */
+.pv-mapcol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pv-viewport {
+  overflow: hidden;
+  border: 1px solid var(--line, #e2e2e2);
+  border-radius: 8px;
+  background: var(--surface-2, #f5f5f4);
+  /* 끌어 옮기는 자리다 — 그림을 드래그해 가져가는 기본 동작을 끈다 */
+  touch-action: none;
+  user-select: none;
+}
+
+.pv-layers {
+  will-change: transform;
+}
+
+.pv-layers .pv-tile {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  /* 확대는 「촘촘함을 바꿔 끼우는」 것이지 흐리게 늘리는 것이 아니다 (§8 확대·이동) */
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.pv-zoom {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.pv-zoom button,
+.pv-shot button {
+  padding: 4px 10px;
+  border: 1px solid var(--line, #e2e2e2);
+  border-radius: 6px;
+  background: var(--surface-1, #fff);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.pv-shot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
