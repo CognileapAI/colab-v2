@@ -278,15 +278,24 @@ D="$(mkdb sd-noschema)"
 expect red "schema-diff: 선언 스키마 0건" env COLAB_DB_DIR="$D" "$SD"
 
 D="$(mkdb sd-nodb)"; mkschema "$D"
-expect 미선언 "schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언)" env COLAB_DB_DIR="$D" "$SD"
+# ⚠ **「미선언」 케이스는 주변 환경의 값을 물려받지 않는다.** 이 셀프테스트를 도는 셸에
+#   COLAB_APPLIED_DB_URL_* 가 이미 선언돼 있을 수 있고(게이트를 돌리려면 실제로 선언한다),
+#   그러면 「빠졌다」를 재현하려던 케이스가 값을 받아 green 이 되어 **증명이 조용히 사라진다.**
+#   그래서 빠져 있어야 할 변수는 **빈 값으로 명시**한다 — 검사 대상을 줄이는 것이 아니라,
+#   케이스가 의도한 상태를 환경에 맡기지 않고 못 박는 것이다 (2026-08-30 실측으로 드러났다).
+expect 미선언 "schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언)" \
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+      COLAB_APPLIED_DB_URL= "$SD"
 
 D="$(mkdb sd-legacy-only)"; mkschema "$D"
 expect 미선언 "schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+      COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-onlyplatform)"; mkschema "$D"
 expect 미선언 "schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" "$SD"
+  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
+      COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
 
 D="$(mkdb sd-unreachable)"; mkschema "$D"
 expect red "schema-diff: 적용 DB 접속 불가" \
@@ -343,7 +352,8 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
   docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
     'ALTER TABLE d3_dataset DROP COLUMN drifted;' >/dev/null 2>&1
   expect 미선언 "schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" "$SD"
+    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" \
+        COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
 
   docker rm -f "$APPC" >/dev/null 2>&1
   trap 'rm -rf "$TMP"' EXIT

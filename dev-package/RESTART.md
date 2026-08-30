@@ -213,6 +213,51 @@ cd services/<단위> && .venv/bin/python -m pytest
 > tmpfs 라 컨테이너를 지우거나 호스트를 껐다 켜면 **죽는다.** 다시 만든 뒤 각 체인의 `setup-db.sh` 가 찍는 한 줄로 **덮어쓴다.**
 > 파일 머리에 그 두 줄이 적혀 있다. **값은 그 파일 밖 어디에도 적지 않는다.**
 
+#### ⭑ ⟨신설 2026-08-30⟩ ㉮ 게이트용 **적용 DB** 두 줄 — `schema-diff` 를 돌리는 유일한 배선
+
+`gates/run.sh all` 이 `schema-diff` 를 판정하려면 **체인마다 적용 DB 가 하나씩** 있어야 한다.
+게이트 자신이 적은 설계 그대로다 — **체인마다 DB 를 짓고 `alembic upgrade head` 한 뒤 그 URL 을 넘긴다.**
+
+| 이름 | 값 출처 |
+|---|---|
+| `COLAB_APPLIED_DB_URL_PLATFORM` | 아래 절차로 지은 `db/platform` 적용 DB. `schema-diff`·`autometa-loss`·`preview-tile-slot` 셋이 같이 읽는다 |
+| `COLAB_APPLIED_DB_URL_AI` | 같은 절차의 `db/ai` 적용 DB. **하나라도 빠지면 `schema-diff` 는 red(준비·입력미선언)** 다 |
+
+두 줄도 `~/.colab-v2-test.env` 에 산다(앞 절과 같은 관행 · `0600` · 값은 레포에 적지 않는다).
+
+```
+# ④ 의 일회용 컨테이너 안에 **게이트 전용 DB 를 따로 하나씩** 만든다(시험용 DB 를 건드리지 않는다)
+docker exec <플랫폼 컨테이너> createdb -U postgres colab_platform_applied
+docker exec <ai 컨테이너>     createdb -U postgres colab_ai_applied
+
+cd db/platform && COLAB_PLATFORM_DB_URL='<위 DB 의 psycopg URL>' <core-api venv>/bin/alembic upgrade head
+cd db/ai       && COLAB_AI_DB_URL='<위 DB 의 psycopg URL>'       <core-api venv>/bin/alembic upgrade head
+```
+
+⚠ **세 함정** — 실측으로 하나씩 걸렸다.
+
+- **스킴이 다르다.** alembic 에는 `postgresql+psycopg://` 로, **게이트 변수에는 `postgresql://` 로** 넣는다.
+  게이트는 `pg_dump`·`psql` 로 직접 붙으므로 psycopg 스킴을 못 읽는다.
+- **망이 같아야 한다.** 이 두 DB 는 **기본 브리지**에 둔다. `schema-diff` 가 띄우는 일회용 postgres 도
+  기본 브리지에 뜨고, **다른 도커 망의 DB 에는 닿지 않는다**(격리로 막힌다 · 실측 `Operation timed out`).
+- ⛔ **`COLAB_PG_NETWORK` 를 전역에 두지 않는다.** staging 망의 DB 를 쓰려면 그 값이 필요한데,
+  전역으로 두면 셀프테스트의 일회용 컨테이너가 staging 망에 뜨고 `db-selftest` 가 **red 로 뒤집힌다**(실측).
+  staging 적용 DB 를 재고 싶으면 `sessions/I3-DEPLOY-AUTOMATION-PREP.md §6` 처럼 **그 게이트만 따로** 돈다.
+
+> **참고 — staging 실물도 같이 쟀다(2026-08-30 · 읽기 전용).** `schema-diff` 두 체인 다 **드리프트 0**,
+> `autometa-loss` 대조 대상 **0건**, `preview-tile-slot` 지도 타일 **0건**. 위 게이트 전용 DB 로 잰 값과 같은 결론이다.
+
+#### ⭑ ⟨신설 2026-08-30⟩ ㉯ 아직 선언할 수 없는 값 — `COLAB_PREVIEW_TILE_DIR`
+
+`preview-tile-slot` 은 **자리(미리보기 산출물 루트)** 를 받아야 판정으로 넘어간다. 그런데 그 자리가 **아직 없다.**
+
+- 배포의 워커에 `COLAB_WORKER_STAGE2`·`COLAB_WORKER_PREVIEW_DIR` 이 **둘 다 없다**(`docker inspect` 실측).
+- 유일한 미리보기 볼륨은 `viz-render` 의 렌더 산출물 자리이고, **도커 내부라 게이트를 돌리는 사용자가 못 읽는다.**
+- 그래서 **없는 자리를 지어내지 않는다.** `PV-1` 이 그 볼륨을 호스트 경로로 내주면 그때 이 값을 적는다.
+
+⚠ 같은 이유로 `autometa-loss` 도 **대조 대상 0건**이다 — 워커가 stage 1 만 돌아 `file.header-parsed` 가
+발행되지 않는다. **둘 다 「입력을 안 줘서」가 아니라 「stage 2 가 아직 안 돌아서」 red 다.**
+
 ai 체인 일회용 DB 를 세우는 줄 (`postgres:16-alpine` · `--rm` · tmpfs · `PGDATA` · 호스트 포트 미공개):
 
 ```
