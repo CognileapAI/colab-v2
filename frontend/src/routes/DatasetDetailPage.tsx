@@ -1,8 +1,10 @@
-// S-05 데이터셋 상세 — 상단(헤더 + 기본 정보) + **계보 · 족보**(WU-P3).
-// 미리보기·활용 프로젝트 섹션은 WU-P2·P5 가 이어서 채운다 (`sessions/P1.md §1`).
+// S-05 데이터셋 상세 — 상단(헤더 + 기본 정보) + **계보 · 족보** + **미리보기**(WU-P3).
+// 활용 프로젝트 섹션은 WU-P5 가 이어서 채운다 (`sessions/P1.md §1`).
 // 한 페이지 스크롤이고 탭으로 콘텐츠를 숨기지 않는다 (`Policy_데이터셋_상세 §1.3-1`).
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { DatasetPreviewSection } from '../components/datasetpreview/DatasetPreviewSection';
+import type { DatasetPreviewSource } from '../components/datasetpreview/types';
 import { BasicInfoGrid } from '../components/detail/BasicInfoGrid';
 import { DetailHeader } from '../components/detail/DetailHeader';
 import { LockedNotice } from '../components/detail/LockedNotice';
@@ -27,6 +29,7 @@ export function DatasetDetailPage(
   props: {
     source?: DetailSource;
     lineageSource?: LineageGraphSource;
+    previewSource?: DatasetPreviewSource;
     uploadSources?: UploadSources;
   } = {},
 ) {
@@ -108,6 +111,10 @@ export function DatasetDetailPage(
               lastModifiedAt={detail.detail.lastModifiedAt}
             />
           ) : null}
+          {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).
+              **보기는 전원**이라 권한 관문을 두지 않는다 (`§1.3-5`·`§6` 「전 구성원 — 시각화 보기」).
+              잠긴 데이터는 위 `LockedContent` 가 이미 본문째 막는다. */}
+          <DatasetPreviewSection datasetId={datasetId} source={props.previewSource} />
         </LockedContent>
       ) : null}
     </div>
