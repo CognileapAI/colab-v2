@@ -13,7 +13,12 @@ import {
   PreviewUnavailable,
   type RenderJob,
 } from '../preview/types';
-import type { DatasetPreviewSource, DatasetRenderInput, PaletteOption } from './types';
+import type {
+  DatasetPreviewSource,
+  DatasetRenderInput,
+  PaletteOption,
+  ScreenshotRequest,
+} from './types';
 
 /** `ErrorEnvelope.details` 는 자유 객체다. 생성 타입을 고치지 않고 여기서 좁혀 읽는다. */
 function renderableFormatsOf(body: unknown): string[] {
@@ -77,6 +82,17 @@ export function apiDatasetPreviewSource(): DatasetPreviewSource {
       // 진짜 실패를 전부 놓친다 (`P2-viz-report §13`-④).
       if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
       return r.data as RenderJob;
+    },
+
+    async screenshot(request: ScreenshotRequest): Promise<Blob> {
+      // **응답이 `image/png` 다** — 생성 클라이언트가 JSON 으로 읽지 않게 `parseAs` 를 준다.
+      // 실패는 봉투(JSON)로 오고, **빈 이미지를 지어내지 않는다**(계약 503 설명 축자).
+      const r = await api.POST('/preview-screenshots', {
+        body: request as never,
+        parseAs: 'blob',
+      });
+      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      return r.data as unknown as Blob;
     },
 
     async probeTile(url: string) {
