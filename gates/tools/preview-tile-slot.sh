@@ -70,7 +70,9 @@ EXEMPT_COUNT=0
 # ── 2. 입력 둘 — 없으면 red ────────────────────────────────────────────────
 [ -n "$URL" ] || red_undeclared "COLAB_APPLIED_DB_URL_PLATFORM (db/platform 적용 DB)" \
   "적용 DB 없이 사건 발행 건수를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
-   autometa-loss·schema-diff 와 같은 변수·같은 규율이다."
+   schema-diff 와 같은 변수·같은 규율이다.
+   ⚠ autometa-loss 는 2026-08-31 부터 **다른 변수**를 읽는다(대조 정본 = staging 실물 ·
+     PLAN-SoT §9 〈237〉). 규율은 같고 대상이 다르다."
 [ -n "$TILE_DIR" ] || red_undeclared "COLAB_PREVIEW_TILE_DIR (미리보기 산출물 루트)" \
   "자리를 보지 않고 「자리에 놓였다」를 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고
    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).
