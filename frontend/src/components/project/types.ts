@@ -54,4 +54,20 @@ export class ProjectGone extends Error {}
 export interface ProjectSource {
   list(query: ProjectQuery): Promise<ProjectList>;
   get(projectId: string): Promise<ProjectDetail>;
+  /** F-03 새 프로젝트. **필수는 유형·이름뿐**이다 (`Policy_프로젝트 §5` · 계약 산문). */
+  create(input: ProjectCreate): Promise<ProjectDetail>;
+  /** F-04 정보 수정. **`type` 은 보내지 않는다** — 만든 뒤에는 바꾸지 않는다 (계약 산문). */
+  update(projectId: string, input: ProjectUpdate): Promise<ProjectDetail>;
+  /** F-05 닫기 · 다시 열기. 정보 수정과 **권한·확인 절차가 같지 않아** 따로 뗀 op 이다. */
+  setStatus(projectId: string, status: ProjectStatus): Promise<ProjectDetail>;
+  /** 삭제 — **데이터셋 0건일 때만** (`§1.3-6`·`§8`). 1건이라도 붙으면 `ProjectHasDatasets` 다. */
+  remove(projectId: string): Promise<void>;
+  /** 소속 해제 — **연결 기록만** 지운다. 데이터셋은 카탈로그에 남는다 (`§7`). */
+  unlink(projectId: string, datasetId: string): Promise<void>;
 }
+
+export type ProjectCreate = S['ProjectCreate'];
+export type ProjectUpdate = S['ProjectUpdate'];
+
+/** 삭제가 409 다 — 소속 데이터셋이 있다. **데이터를 잃는 경로를 만들지 않는다** (`§1.3-6`). */
+export class ProjectHasDatasets extends Error {}

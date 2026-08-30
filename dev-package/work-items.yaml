@@ -913,9 +913,9 @@ items:
     entry_conditions: ["P1"]
     depends_on: [P1]
     completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미) ＋ P6(승인)·`§1.5` 완료 조건"
-    evidence: "2026-08-24 `W5` 레인 `SC-4` — S-02 목록·S-02b 상세와 `linkProjectDataset` 이 열렸다. 501 표 24 → 21. core-api 260 passed · frontend 198 passed · viz-render 90 · pipeline-worker 104 · 게이트 21 green / 1 red(설계상). 커밋 `e4e552a`·`2a0c489`"
+    evidence: "2026-08-24 `W5` 레인 `SC-4` — S-02 목록·S-02b 상세와 `linkProjectDataset` 이 열렸다. 501 표 24 → 21. core-api 260 passed · frontend 198 passed · viz-render 90 · pipeline-worker 104 · 게이트 21 green / 1 red(설계상). 커밋 `e4e552a`·`2a0c489`. ⭑ **2026-08-30 잔여 회차 (`PLAN-SoT §9 〈229〉` · 워크트리 `lane-p5`)** — `note` 가 적은 잔여 둘을 전건 닫았다. 501 표 **19 → 16**(`deleteProject`·`setProjectStatus`·`unlinkProjectDataset`) ＋ 모달 **F-03·F-04·F-05** 신설. 실측 = core-api **489 → 500 passed** · frontend **315 → 329 passed** · `tsc` exit 0 · 게이트 **green 30 / red 3** — 기준선과 동일하고 이번 변경이 만든 red 는 0건이다"
     deadline: null
-    note: "닫지 않는 이유 둘 — ① 프로젝트 op 넷이 아직 501 이고 P1 배정 ② 새 프로젝트·정보 수정·닫기 확인 모달(F-03~F-05) 부재. ⚠ `03-HANDOFF` 가 가리키는 `§1.5` 는 그 문서에 존재하지 않는 절이다(`WORK-UNITS` 에는 있다)."
+    note: "⭑ **⟨잔여 해소 2026-08-30 · `PLAN-SoT §9 〈229〉`⟩ 종전 잔여 둘이 닫혔다. 종전 본문을 지우지 않고 남긴다.** ⑴ **op 은 넷이 아니라 셋이었다** — `updateProject` 는 `〈150〉` 으로 이미 열려 있었는데 산문 셋(이 `note` · `03-HANDOFF §1 T-P` · `routes/not_implemented.py` 머리글)이 전부 낡은 「넷」을 이어 적고 있었다. `STAGE2-READY.md:230` 만 그것을 알고 있었다. ⑵ 셋의 **`NOT_IMPLEMENTED_P1` 배정이 정본과 어긋났다** — `PRD_프로젝트:65` 가 S-02b 를 「… 소속 해제 · 프로젝트 닫기」로 정의하고 `Policy_프로젝트 §6` 의 허용 행동이 「만들기 · 정보 수정 · 소속 해제 · 닫기 · 다시 열기」이며 `§8` 삭제 버튼 행이 그 자리를 「상세 · 데이터셋 0건」으로 못 박는다. **배정 표기를 실물에 맞춘 것이고 범위 확대가 아니다.** ⑶ 모달 셋은 목업 `프로젝트_260817.html` 의 `newModal`·`editModal`·`closeModal` 을 오라클로 삼아 세웠다. **⛔ 그래도 닫지 않는다 — 남은 것은 「각 P 의 완료 판정」 4항 ③ `staging 배포 green` 하나다**(운영 접촉이라 이 레인에서 충족 불가 · `P3`·`〈227〉`-㉮ 와 같은 자리). **⚠ 완료 정의 자체에 판정이 필요하다 — Ted 판정 대기.** `completion_def` 가 든 「P6(승인)」은 **순환**이다(`P6.depends_on` 이 `P5` 를 든다) ／ 「`§1.5` 완료 조건」은 **v2 전체의 완주 조건**이고 한 P 의 완료 정의가 아니다. 둘 다 문언대로면 `P5` 는 정의상 닫힐 수 없다. **지어내지 않고 물음으로 올린다** — 고치지 않았다. ／ **아래는 종전 본문 — 지우지 않는다.** 닫지 않는 이유 둘 — ① 프로젝트 op 넷이 아직 501 이고 P1 배정 ② 새 프로젝트·정보 수정·닫기 확인 모달(F-03~F-05) 부재. ⚠ `03-HANDOFF` 가 가리키는 `§1.5` 는 그 문서에 존재하지 않는 절이다(`WORK-UNITS` 에는 있다)."
     sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §11"]
 
   - id: P6

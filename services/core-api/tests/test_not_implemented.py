@@ -119,8 +119,16 @@ def test_the_23_unimplemented_operations_are_exactly_these() -> None:
     ⭑ **`P3` — `getDatasetLineage` 가 빠져 20 → 19.** 계보 그래프 화면의 조회 op 이고,
     **계약 개정이 0 건이다** — 계약은 처음부터 이 op 을 들고 있었고 라우트만 없었다.
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+
+    ⭑ **`P5` 잔여 — 프로젝트 op 셋이 빠져 19 → 16.** `deleteProject`·`setProjectStatus`·
+    `unlinkProjectDataset`. 위 문단의 「남은 프로젝트 op 넷 … P1 배정이라 그대로 있다」는
+    **두 겹으로 낡았다** — ⑴ `updateProject` 는 `〈150〉` 으로 이미 열려 넷이 아니라 셋이었고,
+    ⑵ 셋의 `P1` 배정은 정본과 어긋났다: `PRD_프로젝트:65` 가 S-02b 를 「… 소속 해제 ·
+    프로젝트 닫기」로 정의하고 `Policy_프로젝트 §6`·`§8` 이 삭제·닫기·해제를 전부 E-05
+    화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
+    **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 19
+    assert len(OPERATIONS) == 16
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -145,7 +153,8 @@ def test_codes_are_the_two_kinds() -> None:
     #          `〈149〉-㉱` 가 남긴 결손 2건이고 둘 다 「올린 뒤 고칠 길이 없다」의 잔여다.
     #          **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     # 13 → 12: `P3` 이 `getDatasetLineage` 를 가져갔다 — 계보 그래프 화면의 조회 op 이다.
-    assert len(p1) == 12
+    # 12 →  9: `P5` 잔여가 프로젝트 op 셋을 가져갔다 (삭제·닫기·소속 해제).
+    assert len(p1) == 9
     assert no_store & p1 == set()
 
 

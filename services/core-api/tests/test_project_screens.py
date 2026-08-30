@@ -235,3 +235,138 @@ def test_lab_a_never_sees_lab_b_link_notes(client) -> None:
     body = client.get(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_PROF)).json()
     assert "수질 분석에 썼다" not in repr(body)
     assert LAB_A  # 경계값은 시드 상수에서 온다 — 시험이 다시 적지 않는다
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 닫기·다시 열기 (`setProjectStatus`) · 소속 해제 (`unlinkProjectDataset`) ·
+# 삭제 (`deleteProject`) — WU-P5 잔여 셋
+#
+# 오라클 = `Policy_프로젝트 §6`(스위치 하나가 모든 쓰기를 가른다) · `§7`(상태 전이 세 줄) ·
+# `§8`(삭제 버튼은 데이터셋 0건일 때만) · 계약 `fe-core.yaml` 의 응답 코드.
+#
+# **이 블록이 501 표에서 셋을 더 빼는 근거다** — 뺀 자리마다 실동작 시험이 있어야 한다.
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _new_project(client, name: str, token: str = TOKEN_RES) -> str:
+    r = client.post(f"{API_PREFIX}/projects", json={"type": "논문", "name": name},
+                    headers=auth(token))
+    assert r.status_code == 201, r.text
+    return r.json()["projectId"]
+
+
+# ── 닫기 · 다시 열기 ────────────────────────────────────────────────────────
+
+def test_set_project_status_closes_and_keeps_the_linked_datasets(client) -> None:
+    """**닫기는 정리이지 삭제가 아니다** (`§1.3-5`·`§7`) — 소속 데이터셋은 그대로 남는다."""
+    before = client.get(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_RES)).json()
+    r = client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "닫힘"},
+                   headers=auth(TOKEN_RES))
+    assert r.status_code == 200, "setProjectStatus 가 아직 501 이다."
+    body = r.json()
+    assert body["status"] == "닫힘"
+    assert [d["datasetId"] for d in body["datasets"]] == \
+           [d["datasetId"] for d in before["datasets"]], "닫기가 소속을 지웠다."
+
+
+def test_set_project_status_reopens(client) -> None:
+    """닫힘 → 진행 중 (`§7` 두 번째 전이). 되돌아가는 길이 없으면 닫기는 삭제가 된다."""
+    client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "닫힘"},
+               headers=auth(TOKEN_RES))
+    r = client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "진행 중"},
+                   headers=auth(TOKEN_RES))
+    assert r.status_code == 200 and r.json()["status"] == "진행 중"
+
+
+def test_closed_project_shows_up_under_the_closed_filter(client) -> None:
+    """`§8` 숨은 닫힘 건수 — 화면이 같은 조건에 상태만 바꿔 부른 `totalCount` 로 읽는다."""
+    client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "닫힘"},
+               headers=auth(TOKEN_RES))
+    assert client.get(f"{API_PREFIX}/projects", params={"status": "닫힘"},
+                      headers=auth(TOKEN_RES)).json()["totalCount"] == 1
+    assert client.get(f"{API_PREFIX}/projects", params={"status": "진행 중"},
+                      headers=auth(TOKEN_RES)).json()["totalCount"] == 0
+
+
+def test_set_project_status_rejects_a_value_outside_the_enum(client) -> None:
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "보류"},
+                      headers=auth(TOKEN_RES)).status_code == 400
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={},
+                      headers=auth(TOKEN_RES)).status_code == 400
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/status",
+                      json={"status": "닫힘", "name": "x"},
+                      headers=auth(TOKEN_RES)).status_code == 400
+
+
+def test_set_project_status_is_bounded_and_gated(client, sql) -> None:
+    """경계가 권한보다 먼저다 (P-10) · 스위치가 꺼지면 403 (P-11·P-12 · `§6`)."""
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_B}/status", json={"status": "닫힘"},
+                      headers=auth(TOKEN_PROF)).status_code == 404
+    assert client.put(f"{API_PREFIX}/projects/{ABSENT}/status", json={"status": "닫힘"},
+                      headers=auth(TOKEN_RES)).status_code == 404
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/status",
+                      json={"status": "닫힘"}).status_code == 401
+    sql("UPDATE d2_permission_switch SET enabled = false "
+        "WHERE account_id = :a AND switch = '프로젝트 생성'", {"a": ACC_A_RES})
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/status", json={"status": "닫힘"},
+                      headers=auth(TOKEN_RES)).status_code == 403
+
+
+# ── 소속 해제 ───────────────────────────────────────────────────────────────
+
+def test_unlink_removes_only_the_connection(client, sql) -> None:
+    """**연결 기록만 지운다** (`§7` 세 번째 전이) — 데이터셋은 카탈로그에 그대로 있다."""
+    r = client.delete(f"{API_PREFIX}/projects/{PRJ_A}/datasets/{DS_A2}",
+                      headers=auth(TOKEN_RES))
+    assert r.status_code == 204, "unlinkProjectDataset 이 아직 501 이다."
+    assert client.get(f"{API_PREFIX}/projects/{PRJ_A}",
+                      headers=auth(TOKEN_RES)).json()["datasets"] == []
+    assert sql("SELECT 1 AS x FROM d3_dataset WHERE id = :d", {"d": DS_A2}) != [], \
+        "소속 해제가 데이터셋을 지웠다 — 연결만 끊어야 한다."
+
+
+def test_unlink_of_an_absent_connection_is_a_404(client) -> None:
+    """없는 연결을 204 로 받으면 「끊었다」와 「원래 없었다」가 구분되지 않는다."""
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_A}/datasets/{DS_A1}",
+                         headers=auth(TOKEN_RES)).status_code == 404
+
+
+def test_unlink_is_bounded_and_gated(client, sql) -> None:
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_B}/datasets/{DS_B1}",
+                         headers=auth(TOKEN_PROF)).status_code == 404
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_A}/datasets/{DS_A2}").status_code == 401
+    sql("UPDATE d2_permission_switch SET enabled = false "
+        "WHERE account_id = :a AND switch = '프로젝트 생성'", {"a": ACC_A_RES})
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_A}/datasets/{DS_A2}",
+                         headers=auth(TOKEN_RES)).status_code == 403
+
+
+# ── 삭제 ────────────────────────────────────────────────────────────────────
+
+def test_delete_project_removes_an_empty_project(client) -> None:
+    """빠른 생성으로 잘못 만든 것을 지우는 **예외**다 (계약 산문 · `§8` 삭제 버튼 행)."""
+    project_id = _new_project(client, "지울 프로젝트")
+    r = client.delete(f"{API_PREFIX}/projects/{project_id}", headers=auth(TOKEN_RES))
+    assert r.status_code == 204, "deleteProject 가 아직 501 이다."
+    assert client.get(f"{API_PREFIX}/projects/{project_id}",
+                      headers=auth(TOKEN_RES)).status_code == 404
+
+
+def test_delete_project_with_a_linked_dataset_is_a_409(client, sql) -> None:
+    """**데이터를 잃는 경로를 만들지 않는다** (`§1.3-6`) — 1건이라도 붙으면 409 다."""
+    r = client.delete(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_RES))
+    assert r.status_code == 409, r.text
+    assert sql("SELECT 1 AS x FROM d6_project WHERE id = :p", {"p": PRJ_A}) != [], \
+        "409 를 내고도 지웠다."
+
+
+def test_delete_project_is_bounded_and_gated(client, sql) -> None:
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_B}",
+                         headers=auth(TOKEN_PROF)).status_code == 404
+    assert client.delete(f"{API_PREFIX}/projects/{ABSENT}",
+                         headers=auth(TOKEN_RES)).status_code == 404
+    assert client.delete(f"{API_PREFIX}/projects/{PRJ_A}").status_code == 401
+    project_id = _new_project(client, "권한 확인용")
+    sql("UPDATE d2_permission_switch SET enabled = false "
+        "WHERE account_id = :a AND switch = '프로젝트 생성'", {"a": ACC_A_RES})
+    assert client.delete(f"{API_PREFIX}/projects/{project_id}",
+                         headers=auth(TOKEN_RES)).status_code == 403

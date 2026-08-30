@@ -164,6 +164,16 @@ _RESTORE: tuple[str, ...] = (
     """UPDATE d2_permission_switch SET enabled = true
         WHERE account_id = '000000000000000000000000A1'
           AND switch IN ('업로드·편집', '프로젝트 생성')""",
+    # **`P5` 잔여 셋이 시드 행 자체를 바꾼다** — 닫기(`setProjectStatus`)는 `status` 를,
+    # 소속 해제(`unlinkProjectDataset`)는 연결 행을 지운다. 시각 기준 삭제로는 못 되돌린다.
+    # 되돌리지 않으면 「PRJA 에 데이터셋 1건」을 오라클로 삼는 시험이 순서에 따라 갈린다
+    # (`test_delete_project_with_a_linked_dataset_is_a_409` 가 실제로 그렇게 깨졌다).
+    """UPDATE d6_project SET status = '진행 중'
+        WHERE id = '0000000000000000000000PRJA'""",
+    """INSERT INTO d6_project_dataset (id, lab_id, project_id, dataset_id, usage_note) VALUES
+         ('0000000000000000000000PDA1', current_lab_id(), '0000000000000000000000PRJA',
+          '0000000000000000000000DSA2', '격자 입력으로 썼다')
+       ON CONFLICT (id) DO UPDATE SET usage_note = EXCLUDED.usage_note""",
 )
 
 

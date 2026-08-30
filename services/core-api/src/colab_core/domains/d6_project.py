@@ -273,3 +273,61 @@ def upsert_link(session: Session, *, project_id: Ulid, dataset_id: Ulid,
         "id": str(Ulid.generate()), "project_id": str(project_id),
         "dataset_id": str(dataset_id), "usage_note": usage_note,
     })
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 닫기·다시 열기 · 소속 해제 · 삭제 (WU-P5 잔여 — `Policy_프로젝트 §7`·`§8`)
+#
+# 셋 다 **경계는 RLS 가 이미 건다** — `WHERE id = :project_id` 하나로 충분하고,
+# 경계 밖 행은 세션에 보이지 않아 `rowcount` 가 0 이 된다. lab_id 를 조건에 다시
+# 적으면 규칙이 두 곳에 생겨 갈라진다 (`CLAUDE.md §3-5`).
+# ════════════════════════════════════════════════════════════════════════════
+
+#: 닫기·다시 열기. **상태만 바꾼다** — 연결(`d6_project_dataset`)은 손대지 않는다.
+#: 그것이 「닫기는 정리이지 삭제가 아니다」(`§1.3-5`·`§7`)를 저장 층에서 지키는 자리다.
+_SET_STATUS = text("UPDATE d6_project SET status = :status WHERE id = :project_id")
+
+#: 소속 해제 — **연결 행 하나만** 지운다. 데이터셋(`d3_dataset`)은 다른 도메인의 표이고
+#: 여기서 건드리지 않는다 (`CLAUDE.md §3-1`).
+_UNLINK = text("""
+    DELETE FROM d6_project_dataset
+     WHERE project_id = :project_id AND dataset_id = :dataset_id
+""")
+
+#: 삭제 — **데이터셋 0건일 때만**이라는 판정은 부르는 쪽이 `linked_count` 로 하고,
+#: 이 문장은 지우기만 한다. 조건을 두 곳에 적으면 한쪽만 고쳐질 때 데이터가 사라진다.
+_DELETE_PROJECT = text("DELETE FROM d6_project WHERE id = :project_id")
+
+_LINKED_COUNT = text(
+    "SELECT count(*) AS n FROM d6_project_dataset WHERE project_id = :project_id")
+
+_LINK_EXISTS = text("""
+    SELECT 1 FROM d6_project_dataset
+     WHERE project_id = :project_id AND dataset_id = :dataset_id
+""")
+
+
+def set_status(session: Session, *, project_id: Ulid, status: str) -> None:
+    """진행 중 ↔ 닫힘 (`§7` 전이 두 줄). 소속 데이터셋은 그대로 남는다."""
+    session.execute(_SET_STATUS, {"project_id": str(project_id), "status": status})
+
+
+def linked_count(session: Session, project_id: Ulid) -> int:
+    """삭제 가능 판정의 유일한 근거 — **0 이어야 지울 수 있다** (`§1.3-6`·`§8`)."""
+    return int(session.execute(_LINKED_COUNT, {"project_id": str(project_id)}).scalar_one())
+
+
+def link_exists(session: Session, *, project_id: Ulid, dataset_id: Ulid) -> bool:
+    """없는 연결을 204 로 받으면 「끊었다」와 「원래 없었다」가 구분되지 않는다 — 그래서 센다."""
+    return session.execute(_LINK_EXISTS, {
+        "project_id": str(project_id), "dataset_id": str(dataset_id)}).first() is not None
+
+
+def unlink(session: Session, *, project_id: Ulid, dataset_id: Ulid) -> None:
+    """연결 기록만 지운다 — 데이터셋은 카탈로그·검색에 그대로 있다 (`§7`)."""
+    session.execute(_UNLINK, {"project_id": str(project_id), "dataset_id": str(dataset_id)})
+
+
+def delete_project(session: Session, project_id: Ulid) -> None:
+    """빠른 생성의 오타를 지우는 **예외 경로**다 (계약 산문). 평소 정리 수단은 닫기다."""
+    session.execute(_DELETE_PROJECT, {"project_id": str(project_id)})

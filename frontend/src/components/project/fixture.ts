@@ -163,6 +163,26 @@ export function fixtureProjectSource(): ProjectSource {
       if (!found) throw new ProjectGone();
       return found;
     },
+    // ── 쓰기 다섯 — **부르면 죽는다.** ───────────────────────────────────────
+    //
+    // 픽스처는 서버가 없을 때 **읽을 화면을 세우는 자리**이고, 쓰기를 흉내 내면
+    // 저장되지 않은 것을 저장됐다고 말한다. 화면 시험은 자기 출처를 세워서 한다
+    // (`test/project.test.tsx` — 잠긴 데이터셋 시험이 이미 그 무늬다).
+    async create() {
+      throw new Error('픽스처는 쓰기를 흉내 내지 않는다.');
+    },
+    async update() {
+      throw new Error('픽스처는 쓰기를 흉내 내지 않는다.');
+    },
+    async setStatus() {
+      throw new Error('픽스처는 쓰기를 흉내 내지 않는다.');
+    },
+    async remove() {
+      throw new Error('픽스처는 쓰기를 흉내 내지 않는다.');
+    },
+    async unlink() {
+      throw new Error('픽스처는 쓰기를 흉내 내지 않는다.');
+    },
   };
 }
 

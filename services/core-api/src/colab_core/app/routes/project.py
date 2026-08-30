@@ -380,3 +380,97 @@ def link_project_dataset(projectId: str, datasetId: str, body: dict = Body(...),
                            usage_note=usage_note)
     # commit 은 `scoped_db` 가 한다 — 요청 하나 = 트랜잭션 하나 (`app/deps.py`).
     return Response(status_code=204)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 닫기·다시 열기 · 소속 해제 · 삭제 (WU-P5 잔여 셋 — 501 표 23 → 20)
+#
+# **왜 이 셋이 P5 인가.** 셋 다 `NOT_IMPLEMENTED_P1` 로 배정돼 있었으나 정본은 셋 다
+# E-05 화면의 동작으로 적었다 — `PRD_프로젝트:65` 가 S-02b 를 「… 소속 해제 · 프로젝트
+# 닫기」로 정의하고, `Policy_프로젝트 §6` 의 허용 행동이 「만들기 · 정보 수정 · 소속 해제 ·
+# 닫기 · 다시 열기」이며, `§8` 의 삭제 버튼 행이 그 자리를 「상세」로 못 박는다.
+# 배정 표기가 낡았던 것이고 **범위를 늘린 것이 아니다** (`CLAUDE.md §5`).
+#
+# 셋이 공유하는 순서 — **경계가 권한보다 먼저다** (P-10). 남의 연구실 것은 스위치가
+# 다 켜진 교수에게도 404 이고, 그 뒤에 `_can_manage` 가 403 을 가른다 (P-11·P-12 · §6).
+# ════════════════════════════════════════════════════════════════════════════
+
+
+def _managed_project(projectId: str, subject: Subject, db: Session) -> Ulid:
+    """쓰기 세 op 의 공통 관문 — ID 형식 → **경계** → 권한. 순서를 바꾸지 않는다.
+
+    권한을 먼저 보면 스위치가 꺼진 사람에게 403 이 나가고, 그 403 은 **남의 연구실에
+    그 프로젝트가 있다**는 사실을 알린다. 그래서 404 가 먼저다 (P-9·P-10).
+    """
+    if not Ulid.is_valid(projectId):
+        raise errors.bad_request("projectId 가 정규 ID 가 아니다.")
+    project_id = Ulid(projectId)
+    if not d6_project.project_exists(db, project_id):
+        raise errors.not_found()
+    if not _can_manage(db, subject):
+        raise errors.forbidden("`프로젝트 생성` 스위치가 꺼져 있다.")
+    return project_id
+
+
+@router.put("/projects/{projectId}/status", name="setProjectStatus")
+def set_project_status(projectId: str, body: dict = Body(...),
+                       subject: Subject = Depends(current_subject),
+                       db: Session = Depends(scoped_db)) -> dict:
+    """닫기 · 다시 열기 — **정리이지 삭제가 아니다** (`Policy_프로젝트 §1.3-5`·`§7`).
+
+    상태를 `updateProject` 에서 뗀 이유는 계약 산문이 적었다: 「정보 수정과 권한·확인
+    절차가 같지 않아서다」. 화면에서도 닫기는 **확인 모달**(F-05)을 한 겹 더 지난다.
+    """
+    project_id = _managed_project(projectId, subject, db)
+    unknown = sorted(set(body) - {"status"})
+    if unknown:
+        raise errors.bad_request(f"계약에 없는 필드다: {unknown}")
+    status = body.get("status")
+    if status not in _STATUSES:
+        raise errors.bad_request(f"status 는 {list(_STATUSES)} 중 하나다.")
+
+    d6_project.set_status(db, project_id=project_id, status=status)
+    # 갱신된 상세를 그대로 내린다 — 화면이 닫은 뒤 「남은 데이터셋 수」를 다시 알리는데
+    # (`§8` 닫힌 프로젝트 행), 그 값을 따로 부르게 하면 두 응답이 갈릴 수 있다.
+    return get_project(projectId, subject=subject, db=db)
+
+
+@router.delete("/projects/{projectId}/datasets/{datasetId}", name="unlinkProjectDataset",
+               status_code=204)
+def unlink_project_dataset(projectId: str, datasetId: str,
+                           subject: Subject = Depends(current_subject),
+                           db: Session = Depends(scoped_db)) -> Response:
+    """소속 해제 — **연결 기록만 지운다** (`§7`). 데이터셋은 카탈로그·검색에 그대로 있고,
+    다른 프로젝트의 연결도 남는다.
+
+    없는 연결은 **404** 다. 204 로 받으면 「끊었다」와 「원래 없었다」가 한 응답이 되어
+    화면이 「해제함」을 그릴 근거를 잃는다 (`§8` 소속 해제 행).
+    """
+    project_id = _managed_project(projectId, subject, db)
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    if not d6_project.link_exists(db, project_id=project_id, dataset_id=dataset_id):
+        raise errors.not_found()
+
+    d6_project.unlink(db, project_id=project_id, dataset_id=dataset_id)
+    return Response(status_code=204)
+
+
+@router.delete("/projects/{projectId}", name="deleteProject", status_code=204)
+def delete_project(projectId: str, subject: Subject = Depends(current_subject),
+                   db: Session = Depends(scoped_db)) -> Response:
+    """삭제 — **데이터셋 0건일 때만**이다 (계약 산문 · `§1.3-6` · `§8` 삭제 버튼 행).
+
+    업로드 중 빠른 생성으로 잘못 만든 프로젝트를 지우기 위한 **예외**이고, 평소 정리
+    수단은 닫기다. 1건이라도 붙으면 409 — **데이터를 잃는 경로를 만들지 않는다.**
+    오타 정정의 우선 경로는 `updateProject` 다 (결정 2-7).
+    """
+    project_id = _managed_project(projectId, subject, db)
+    linked = d6_project.linked_count(db, project_id)
+    if linked:
+        raise errors.conflict("소속 데이터셋이 있어 지울 수 없어요. 닫기를 쓰세요.",
+                              {"datasetCount": linked})
+
+    d6_project.delete_project(db, project_id)
+    return Response(status_code=204)

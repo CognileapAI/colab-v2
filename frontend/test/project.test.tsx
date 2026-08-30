@@ -11,6 +11,8 @@ import { ProjectDetailPage } from '../src/routes/ProjectDetailPage';
 import { FIXTURE_PROJECTS, fixtureProjectSource } from '../src/components/project/fixture';
 import type { ProjectDetail, ProjectSource } from '../src/components/project/types';
 import { ProjectGone } from '../src/components/project/types';
+import { SessionProvider } from '../src/permission/session';
+import type { CurrentAccount } from '../src/api/client';
 
 /** fireEvent 를 쓴다 — user-event 를 새로 들이지 않는다(집 관례, `test/members.test.tsx`). */
 async function click(el: HTMLElement | null) {
@@ -23,14 +25,33 @@ async function select(el: HTMLElement | null, value: string) {
   await Promise.resolve();
 }
 
-function renderList(source: ProjectSource = fixtureProjectSource()) {
+/**
+ * `+ 새 프로젝트` 는 `프로젝트 생성` 스위치가 켜진 사람만 본다 (§6 · P-12) — 그래서 목록
+ * 시험은 세션을 실어 준다. **역할로 유도하지 않는다**: 값은 `/me` 가 내려준 스위치 그대로다.
+ */
+const MANAGER = {
+  accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AC1',
+  name: '호랑이',
+  email: 'tiger@example.ac.kr',
+  role: '연구원',
+  labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1',
+  labName: '수자원순환연구실',
+  permissions: { '프로젝트 생성': true },
+} as unknown as CurrentAccount;
+
+function renderList(
+  source: ProjectSource = fixtureProjectSource(),
+  account: CurrentAccount | null = MANAGER,
+) {
   return render(
+    <SessionProvider account={account}>
     <MemoryRouter initialEntries={['/projects']}>
       <Routes>
         <Route path="/projects" element={<ProjectsPage source={source} />} />
         <Route path="/projects/:projectId" element={<div>프로젝트 상세</div>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </SessionProvider>,
   );
 }
 
@@ -49,8 +70,31 @@ function renderDetail(projectId: string, source: ProjectSource = fixtureProjectS
 const detailOf = (projectId: string): ProjectDetail =>
   structuredClone(FIXTURE_PROJECTS.find((p) => p.projectId === projectId)!);
 
+/**
+ * 쓰기 다섯의 기본값 — **부르면 죽는다.** 시험이 쓰기를 재려면 그 op 만 갈아 끼운다.
+ * 조용한 no-op 을 기본값으로 두면 「안 불렀다」와 「불렀는데 아무 일도 안 났다」가 같아진다.
+ */
+const NO_WRITES = {
+  create: async () => {
+    throw new Error('create 를 부르지 않아야 한다.');
+  },
+  update: async () => {
+    throw new Error('update 를 부르지 않아야 한다.');
+  },
+  setStatus: async () => {
+    throw new Error('setStatus 를 부르지 않아야 한다.');
+  },
+  remove: async () => {
+    throw new Error('remove 를 부르지 않아야 한다.');
+  },
+  unlink: async () => {
+    throw new Error('unlink 를 부르지 않아야 한다.');
+  },
+} satisfies Omit<ProjectSource, 'list' | 'get'>;
+
 function sourceReturning(detail: ProjectDetail): ProjectSource {
   return {
+    ...NO_WRITES,
     list: async () => ({ items: [], totalCount: 0 }),
     get: async () => detail,
   };
@@ -231,6 +275,7 @@ describe('§8 상세 — 돌아가기는 제목 위 한 줄', () => {
 
   it('없는 프로젝트는 목록으로 돌려보낸다 — 남의 연구실과 지워진 것을 가르지 않는다', async () => {
     renderDetail('없는것', {
+      ...NO_WRITES,
       list: async () => ({ items: [], totalCount: 0 }),
       get: async () => {
         throw new ProjectGone();
@@ -365,5 +410,219 @@ describe('§6 권한 — `프로젝트 생성` 이 꺼지면 쓰기 자리를 �
     empty.datasets = [];
     renderDetail('p3', sourceReturning(empty));
     await waitFor(() => expect(screen.getAllByText('삭제').length).toBeGreaterThan(0));
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// F-03 새 프로젝트 · F-04 정보 수정 · F-05 닫기 확인 — 목업 세 모달
+//
+// 오라클 = 목업 `프로젝트_260817.html` 의 `newModal`·`editModal`·`closeModal`,
+// 그리고 `Policy_프로젝트 §6`(권한) · `§7`(전이) · `§8`(화면 동작) · `§9`(오류 문구).
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('F-03 새 프로젝트 모달', () => {
+  it('정의·범위 안내는 목록이 아니라 이 모달 안에 있다 — 만들기 직전이 그 순간이다 (§8)', async () => {
+    renderList();
+    expect(screen.queryByTestId('project-form-scope-note')).toBeNull();
+    await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
+    const note = await screen.findByTestId('project-form-scope-note');
+    expect(note.textContent).toContain('프로젝트 1건은 국가과제 또는 논문 1건이에요');
+    expect(note.textContent).toContain('공동연구는 아직 지원하지 않아요');
+  });
+
+  it('연결 주소는 설명·기간과 다른 묶음이고 `계보` 표시가 붙는다 (§1.2·§8)', async () => {
+    renderList();
+    await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
+    const group = await screen.findByTestId('project-form-link-group');
+    expect(group.textContent).toContain('성과와 잇는 자리');
+    expect(within(group).getByText('계보')).toBeInTheDocument();
+    expect(within(group).getByLabelText('연결 주소')).toBeInTheDocument();
+  });
+
+  it('이름이 비면 정본 문구로 막고 서버를 부르지 않는다 (§9)', async () => {
+    let called = 0;
+    const source: ProjectSource = {
+      ...NO_WRITES,
+      list: async () => ({ items: [], totalCount: 0 }),
+      get: async () => detailOf('p1'),
+      create: async () => {
+        called += 1;
+        return detailOf('p1');
+      },
+    };
+    renderList(source);
+    await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
+    await click(screen.getByRole('button', { name: '만들기' }));
+    expect((await screen.findByTestId('project-form-error')).textContent).toBe(
+      '이름을 적어 주세요. 나중에 찾을 때 쓰는 유일한 이름이에요.',
+    );
+    expect(called).toBe(0);
+  });
+
+  it('종료가 시작보다 앞서면 정본 문구로 막는다 (§9)', async () => {
+    renderList();
+    await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '가' } });
+    fireEvent.change(screen.getByLabelText('기간'), { target: { value: '2026-05' } });
+    fireEvent.change(screen.getByLabelText('종료'), { target: { value: '2026-01' } });
+    await click(screen.getByRole('button', { name: '만들기' }));
+    expect((await screen.findByTestId('project-form-error')).textContent).toBe(
+      '종료가 시작보다 앞서요. 다시 골라 주세요.',
+    );
+  });
+
+  it('유형·이름만으로 만들어지고 만든 것의 상세로 간다 — 필수는 둘뿐이다 (§5)', async () => {
+    let sent: unknown = null;
+    const made = detailOf('p1');
+    renderList({
+      ...NO_WRITES,
+      list: async () => ({ items: [], totalCount: 0 }),
+      get: async () => made,
+      create: async (input) => {
+        sent = input;
+        return made;
+      },
+    });
+    await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
+    await click(screen.getByRole('button', { name: '논문' }));
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '새 논문' } });
+    await click(screen.getByRole('button', { name: '만들기' }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent).toMatchObject({ type: '논문', name: '새 논문' });
+    expect(await screen.findByText('프로젝트 상세')).toBeInTheDocument();
+  });
+});
+
+describe('F-04 정보 수정 모달', () => {
+  it('유형은 읽기 전용이고 안내문이 붙는다 — 만든 뒤에는 바꾸지 않는다 (계약)', async () => {
+    renderDetail('p1', sourceReturning(detailOf('p1')));
+    await click(await screen.findByRole('button', { name: '정보 수정' }));
+    expect(await screen.findByTestId('project-form-type-fixed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '국가과제' })).toBeNull();
+    expect(screen.getByText(/유형은 나중에 바꿀 수 없어요/)).toBeInTheDocument();
+  });
+
+  it('무엇을 고치는지가 폼 위에 먼저 보이고 값이 채워져 있다 (목업 `target`)', async () => {
+    const detail = detailOf('p1');
+    renderDetail('p1', sourceReturning(detail));
+    await click(await screen.findByRole('button', { name: '정보 수정' }));
+    const target = await screen.findByTestId('project-form-target');
+    expect(target.textContent).toContain(detail.name);
+    expect((screen.getByLabelText('이름') as HTMLInputElement).value).toBe(detail.name);
+  });
+
+  it('저장 본문에 `type` 을 싣지 않는다 — 계약에 없는 필드는 400 이다', async () => {
+    let sent: Record<string, unknown> | null = null;
+    const detail = detailOf('p1');
+    renderDetail('p1', {
+      ...sourceReturning(detail),
+      update: async (_id, input) => {
+        sent = input as Record<string, unknown>;
+        return detail;
+      },
+    });
+    await click(await screen.findByRole('button', { name: '정보 수정' }));
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '고친 이름' } });
+    await click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(sent).not.toBeNull());
+    expect(sent).not.toHaveProperty('type');
+    expect(sent).toMatchObject({ name: '고친 이름' });
+  });
+});
+
+describe('F-05 닫기 확인 모달', () => {
+  it('데이터가 남는다는 안내가 확인 문구보다 먼저다 — 가장 큰 걱정을 먼저 없앤다 (§8)', async () => {
+    const detail = detailOf('p1');
+    renderDetail('p1', sourceReturning(detail));
+    await click(await screen.findByRole('button', { name: '프로젝트 닫기' }));
+    const keep = await screen.findByTestId('project-close-keep');
+    expect(keep.textContent).toContain('데이터는 사라지지 않아요');
+    expect(keep.textContent).toContain(`소속 데이터셋 ${detail.datasets.length}개`);
+    const body = screen.getByTestId('project-close-modal');
+    expect(body.textContent!.indexOf('데이터는 사라지지 않아요')).toBeLessThan(
+      body.textContent!.indexOf('새 데이터를 이 프로젝트에 담을 수 없어요'),
+    );
+  });
+
+  it('확인해야 닫힌다 — 버튼만 눌러서는 서버를 부르지 않는다', async () => {
+    let sent: string | null = null;
+    const detail = detailOf('p1');
+    renderDetail('p1', {
+      ...sourceReturning(detail),
+      setStatus: async (_id, status) => {
+        sent = status;
+        return { ...detail, status };
+      },
+    });
+    await click(await screen.findByRole('button', { name: '프로젝트 닫기' }));
+    expect(sent).toBeNull();
+    await click(screen.getByRole('button', { name: '닫기' }));
+    await waitFor(() => expect(sent).toBe('닫힘'));
+    expect(await screen.findByText('닫힘')).toBeInTheDocument();
+  });
+
+  it('`그대로 두기` 는 아무것도 바꾸지 않는다', async () => {
+    renderDetail('p1', sourceReturning(detailOf('p1')));
+    await click(await screen.findByRole('button', { name: '프로젝트 닫기' }));
+    await click(screen.getByRole('button', { name: '그대로 두기' }));
+    await waitFor(() => expect(screen.queryByTestId('project-close-modal')).toBeNull());
+  });
+});
+
+describe('다시 열기 · 소속 해제 · 삭제', () => {
+  it('다시 열기에는 확인 모달이 없다 — 잃을 것이 없는 전이다 (§7)', async () => {
+    let sent: string | null = null;
+    const detail = { ...detailOf('p1'), status: '닫힘' as const };
+    renderDetail('p1', {
+      ...sourceReturning(detail),
+      setStatus: async (_id, status) => {
+        sent = status;
+        return { ...detail, status };
+      },
+    });
+    await click(await screen.findByRole('button', { name: '다시 열기' }));
+    await waitFor(() => expect(sent).toBe('진행 중'));
+    expect(screen.queryByTestId('project-close-modal')).toBeNull();
+  });
+
+  it('소속 해제는 그 행의 연결만 끊고 상세를 다시 읽는다 (§7)', async () => {
+    const detail = detailOf('p1');
+    const dropped = detail.datasets[0]!.datasetId;
+    let sent: string | null = null;
+    let reads = 0;
+    renderDetail('p1', {
+      ...sourceReturning(detail),
+      get: async () => {
+        reads += 1;
+        return reads === 1 ? detail : { ...detail, datasets: detail.datasets.slice(1) };
+      },
+      unlink: async (_p, datasetId) => {
+        sent = datasetId;
+      },
+    });
+    const table = await screen.findByTestId('project-datasets');
+    await click(within(table).getAllByRole('button', { name: '소속 해제' })[0]!);
+    await waitFor(() => expect(sent).toBe(dropped));
+    await waitFor(() => expect(reads).toBe(2));
+  });
+
+  it('삭제 버튼은 데이터셋 0건일 때만 있다 (§8 삭제 버튼 행)', async () => {
+    const withData = detailOf('p1');
+    expect(withData.datasets.length).toBeGreaterThan(0);
+    const { unmount } = renderDetail('p1', sourceReturning(withData));
+    await screen.findByTestId('project-overview');
+    expect(screen.queryByRole('button', { name: '삭제' })).toBeNull();
+    unmount();
+
+    renderDetail('p1', sourceReturning({ ...withData, datasets: [] }));
+    expect(await screen.findByRole('button', { name: '삭제' })).toBeInTheDocument();
+  });
+
+  it('스위치가 꺼진 사람에게는 쓰기 버튼이 DOM 에서 사라진다 (§6 · P-12)', async () => {
+    renderDetail('p1', sourceReturning({ ...detailOf('p1'), canManage: false, datasets: [] }));
+    await screen.findByTestId('project-overview');
+    for (const label of ['정보 수정', '프로젝트 닫기', '삭제', '소속 해제']) {
+      expect(screen.queryByRole('button', { name: label })).toBeNull();
+    }
   });
 });
