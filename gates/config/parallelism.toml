@@ -102,3 +102,15 @@
 #   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 시험을 돌리지 않으므로
 #   원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
 "e2e-format-coverage-selftest" = "parallel"
+
+# `render-latency` — **시간을 재는 게이트라 경합이 곧 판정을 흔든다.**
+#   다른 게이트와 CPU·디스크를 나눠 쓰면 렌더 시간이 늘고, 그 red 는 **검사 대상이 아니라
+#   배선이 낸 red** 다. 그것을 통과로도 실패로도 셀 수 없다(`preview-tile-slot-selftest` 와 같은 사유).
+#   자원 충돌이 없어서가 아니라 **측정값이 흔들리기 때문에** serial 이다 — 눈금을 늘려
+#   green 을 만들지 않는다.
+"render-latency"            = "serial"
+
+# `render-latency-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 렌더를 돌리지 않으므로
+#   시간도 원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
+"render-latency-selftest"   = "parallel"

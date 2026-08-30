@@ -24,4 +24,8 @@ markers = [
   # 포맷 표식 — `S3` 완료 정의의 「지원 목록 각각 최소 1건이 그려진다」를 기계가 세는 자리다.
   # 게이트(`e2e-format-coverage`)가 junit 속성으로 읽는다. 붙는 값은 `SUPPORTED_FORMATS` 의 이름.
   "e2e_format: 이 케이스가 실데이터로 그려 보이는 포맷 이름(예: e2e_format(\"GeoTIFF\"))",
+  # 성능 표식 — 렌더 합격선(`PLAN-SoT §9 〈233〉`)을 재는 케이스. 게이트 `render-latency` 가
+  # `-m perf` 로 골라 돌리고 junit 속성 `렌더초` 를 판정한다. e2e 와 **갈라 둔다** —
+  # 섞으면 포맷 커버리지 게이트가 성능 케이스까지 커버리지로 세게 된다.
+  "perf: 렌더 소요 시간 측정 — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다",
 ]

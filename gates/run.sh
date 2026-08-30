@@ -14,12 +14,12 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  preview-tile-slot e2e-format-coverage
+  preview-tile-slot e2e-format-coverage render-latency
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest
-  e2e-format-coverage-selftest
+  e2e-format-coverage-selftest render-latency-selftest
 )
 
 case "$GATE" in
@@ -124,6 +124,16 @@ case "$GATE" in
     # 원천 마운트가 없으면 준비 red — skip 이 아니다. 표식 붙은 케이스 0건도 red 다.
     exec "$REPO_ROOT/gates/tools/e2e-format-coverage.sh"
     ;;
+  render-latency)
+    # 미리보기 렌더 성능 합격선 — 실원천으로 재고 눈금(`gates/config/render-latency.toml`)에 댄다
+    # (`PLAN-SoT §9 〈233〉` · 정본 `Policy_데이터셋_상세` v2.6 §8 조건 ⑺).
+    # 원천 마운트가 없으면 준비 red — skip 이 아니다. 표본 0건도 red 다.
+    exec "$REPO_ROOT/gates/tools/render-latency.sh"
+    ;;
+  render-latency-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.
+    exec "$REPO_ROOT/gates/tools/render-latency-selftest.sh"
+    ;;
   e2e-format-coverage-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.
     exec "$REPO_ROOT/gates/tools/e2e-format-coverage-selftest.sh"
@@ -168,7 +178,7 @@ case "$GATE" in
     #   원천·DB·도커 없이 돈다. **본 게이트(e2e-format-coverage)는 CI 에 없다** — 원천 3.5 GB
     #   마운트가 없으면 준비 red 이고, 그 red 는 입력 미선언이지 판정 실패가 아니다.
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done
