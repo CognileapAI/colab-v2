@@ -887,10 +887,10 @@ items:
     entry_conditions: ["P2"]
     depends_on: [P2, D5]
     completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미). 타일 서빙·확대 · `createScreenshot` 이 완료 정의로 올라왔다"
-    evidence: null
+    evidence: "sessions/P3-DETAIL-PREVIEW-20260830.md (2026-08-30 · 착지분과 남은 차단 다섯의 실측) · sessions/P3-SCOPE.md · sessions/P3-LINEAGE-GRAPH.md · sessions/P3-DOWNSTREAM.md"
     deadline: null
-    note: "⭑ **⟨개정 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈204〉`⟩ 이름의 「2D 시각화 3종」 중 경계·점 둘이 범위에서 빠졌다 — 남는 것은 격자다.** 근거 = 원천 5종이 전부 래스터이고 벡터 자료 0건(`sessions/P3-SCOPE.md:48` · Ted 확인 「벡터 자료 아직 없다」). **이름 원문은 지우지 않았다 — 이 줄이 개정 표시다.** 배제와 재개 조건은 별도 항목 `VZ-1` 이 진다. ／ 「P3 은 stage 2 전체다」(`〈74〉`). `D5 → P3` 는 엄격 직렬 의존 — 타일은 COG 없이 못 낸다. advisor 는 D7 흡수에 반대하고 별도 WU 절단을 권고했다."
-    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §11", "PLAN-SoT §9 〈204〉"]
+    note: "⭑ **⟨개정 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈204〉`⟩ 이름의 「2D 시각화 3종」 중 경계·점 둘이 범위에서 빠졌다 — 남는 것은 격자다.** 근거 = 원천 5종이 전부 래스터이고 벡터 자료 0건(`sessions/P3-SCOPE.md:48` · Ted 확인 「벡터 자료 아직 없다」). **이름 원문은 지우지 않았다 — 이 줄이 개정 표시다.** 배제와 재개 조건은 별도 항목 `VZ-1` 이 진다. ／ 「P3 은 stage 2 전체다」(`〈74〉`). `D5 → P3` 는 엄격 직렬 의존 — 타일은 COG 없이 못 낸다. advisor 는 D7 흡수에 반대하고 별도 WU 절단을 권고했다. ⭑ **⟨2026-08-30 · 진입조건 충족 · 착지 1건 · 항목은 열려 있다 — `sessions/P3-DETAIL-PREVIEW-20260830.md`⟩** **진입조건 `P2`·`D5` 가 둘 다 `done` 이라 성립한다** — 직전 회차(`sessions/P3-SCOPE.md §1`)의 「반만 성립」은 `D5` 가 `partial` 이던 시점의 기록이라 낡았다. **착지 = 데이터셋 상세(S-05)의 미리보기(격자) 구역** — 정본 축자 대비 시험 **15건을 red(15 failed) 로 먼저 세우고** 구현해 green 으로 돌렸다(frontend 314 → **329 passed / 0 failed** · `tsc` 종료 0). **계약·`services/**`·DB·운영 스택 무접촉**이고 파일 면은 `frontend/**` 넷뿐이다 — 중계 계약(`createPreviewRender`)이 `datasetId` 대상을 이미 받고 있어 **계약 개정이 0건**이다. **범위 목록의 나머지 실물** = 계보 그래프·`createScreenshot` **서버**는 이미 서 있다(직전 회차들). ⛔ **닫지 않는다 — 남은 차단 다섯** ㈎ **`createScreenshot` 의 화면 도달 경로가 계약에 없다**(`fe-core.yaml` 에 중계 op **0건** — 정본 `§6`·`§8` 은 스크린샷을 편집 권한자 컨트롤로 요구한다). **우회하지 않았다** — 갈 곳 없는 버튼도 중계 없는 직접 호출도 만들지 않았고, **경계 셋 중 ①「Port(중계 op) 하나 추가」로 보고한다**(절차 = 계약 동결 해제 ㉯ · Ted 승인) ㈏ **확대(줌)의 정본 근거 0건** — 의존 쪽 차단은 `D5` 로 풀렸고 남은 것은 「무엇을 지을지가 정본에 없다」 하나다. **`V-2`(값 조회)와 같은 자리이므로 같이 판정받아야 한다** ㈐ **렌더 성능·상한의 합격선 미기재**(몇 초·몇 픽셀이 어느 문서에도 없다) ㈑ **완료 판정 3항 staging 배포 green** `[미확인]` ㈒ **완료 판정 4항 목업 대비 화면 검증** `[미확인]` — 이번 회차는 정본 축자로만 쟀다. ⭑ **다섯 중 셋(㉮·㉯·㉰)이 코드가 아니라 계약·판정·정의의 자리다.** **해제된 하위 항목 0건** — `V-1`·`V-2`·`Y-1`·`S3`·`P6` 다섯은 여전히 `P3` 를 미충족 선행으로 든다."
+    sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2", "WORK-UNITS §11", "PLAN-SoT §9 〈204〉", "sessions/P3-DETAIL-PREVIEW-20260830.md"]
 
   - id: P4
     name: "검색 히어로(S-01) · 검색 결과(S-06)"

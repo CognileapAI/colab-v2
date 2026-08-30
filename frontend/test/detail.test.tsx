@@ -230,12 +230,17 @@ describe('501 → 실서버 전환에 화면 코드가 바뀌지 않는다', () 
   });
 });
 
-describe('계보·미리보기·활용 프로젝트는 이 WU 가 만들지 않는다 (P2·P3·P5)', () => {
-  it('상단만 세운다', async () => {
+describe('활용 프로젝트는 이 WU 가 만들지 않는다 (P5)', () => {
+  /**
+   * ⭑ **⟨개정 · WU-P3⟩ 「미리보기」가 이 목록에서 빠진다** — P3 이 미리보기 구역을 세웠고
+   * 그 구역의 오라클은 `test/dataset-preview.tsx` 다. **원문 표기는 지우지 않는다**:
+   * 이전 판은 `계보·미리보기·활용 프로젝트는 이 WU 가 만들지 않는다 (P2·P3·P5)` 였고
+   * 계보(P2·P3) 도 이미 서 있어 이 자리에서 부재를 단언하지 않는다.
+   * **줄인 것이 아니라 소유가 옮겨 간 것이다** — 두 구역 다 자기 시험 파일이 판정한다.
+   */
+  it('상단은 활용 프로젝트를 세우지 않는다', async () => {
     renderDetail(OPEN_ID);
     await settle('낙동강 유역 강우 (2025)');
-    expect(screen.queryByText('계보')).toBeNull();
-    expect(screen.queryByText('미리보기')).toBeNull();
     expect(screen.queryByText('활용·접근')).toBeNull();
   });
 });
