@@ -255,6 +255,16 @@ cd db/ai       && COLAB_AI_DB_URL='<위 DB 의 psycopg URL>'       <core-api ven
 - 유일한 미리보기 볼륨은 `viz-render` 의 렌더 산출물 자리이고, **도커 내부라 게이트를 돌리는 사용자가 못 읽는다.**
 - 그래서 **없는 자리를 지어내지 않는다.** `PV-1` 이 그 볼륨을 호스트 경로로 내주면 그때 이 값을 적는다.
 
+> ⭑ **⟨증보 2026-08-30 · 워크트리 `lane-pv1`⟩ 위 세 줄 중 첫 줄이 닫혔다 — 나머지 둘은 그대로다.**
+> **배포 선언을 붙였다** — `infra/staging/compose.i2.yml` 의 `pipeline-worker` 에
+> `COLAB_WORKER_STAGE2: "on"` · `COLAB_WORKER_PREVIEW_DIR`(= `viz-render` 의 `COLAB_VIZ_PREVIEW_DIR` 과 같은 값) ·
+> `previews` 볼륨(**쓰기**). 회귀는 시험이 진다(`services/pipeline-worker/tests/test_stage2_deployment_declaration.py` 5건).
+> ⚠ **그래도 이 값은 아직 못 적는다 — 이유가 하나 더 있었다.** 배선이 트리에 있는 것과 **도는 배포에 있는 것**은 다르고
+> (재배포가 아직이다), 재배포를 해도 **미리보기 볼륨은 named volume 이라 게이트 사용자가 못 읽는다** —
+> 실측 = `docker volume inspect` 가 주는 마운트 지점이 **`Permission denied`**. 호스트 경로로 내주려면 볼륨 형태를
+> 바꿔야 하고 그것은 백업 범위를 함께 건드린다. **판정 사항으로 올렸다 — `03-HANDOFF §4` #49.**
+> **빈 임시 디렉터리를 지어내지 않는다는 위 판단은 그대로 둔다.**
+
 ⚠ 같은 이유로 `autometa-loss` 도 **대조 대상 0건**이다 — 워커가 stage 1 만 돌아 `file.header-parsed` 가
 발행되지 않는다. **둘 다 「입력을 안 줘서」가 아니라 「stage 2 가 아직 안 돌아서」 red 다.**
 

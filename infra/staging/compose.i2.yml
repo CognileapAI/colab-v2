@@ -244,8 +244,23 @@ services:
       # **core-api 의 COLAB_CORE_UPLOAD_DIR 과 같은 자리여야 한다.** 바이트를 못 열면
       # 감지가 통째로 실패하고, 그 실패는 「형식 인식 실패」로 위장한다.
       COLAB_WORKER_UPLOAD_DIR: /var/lib/colab/uploads
+      # ⭑ **stage 2 선언** (`PV-1` · 완료 정의 ⑴ 「사건 경유」). 이 두 줄이 **둘 다 없어서**
+      #   워커가 stage 1 만 돌았고, `file.header-parsed`·`file.crs-normalized`·
+      #   `preview.cog-built` 가 **한 건도 발행되지 않았다** — 그 침묵을 게이트
+      #   `autometa-loss`(대조 대상 0건)가 red 로 받고 있었다(`RESTART §2-④-㉯` 실측).
+      #   ⚠ **무언은 면제가 아니다**(`app/worker.py stage2_declaration`) — `on` 을 말해야 돈다.
+      COLAB_WORKER_STAGE2: "on"
+      # ⭑ **지도 타일이 놓이는 자리.** `on` 인데 이 값이 없으면 워커는 **뜨지 않는다** —
+      #   자리를 모른 채 구우면 임시 자리에 떨어뜨리고 성공을 보고한다(`app/worker.py`).
+      #   **viz-render 의 `COLAB_VIZ_PREVIEW_DIR` 과 같은 값이어야 한다** — 미리보기 루트는
+      #   규약상 하나다(`contracts/storage/layout.json previewsRoot`). 굽는 쪽과 찾아 쓰는
+      #   쪽이 갈리면 재사용이 영영 성립하지 않고, 그 실패는 에러가 아니라 「매번 다시
+      #   굽는다」로 조용히 나온다 — 접수분 루트에서 한 번 일어난 그 무늬다(`§4 #20`).
+      COLAB_WORKER_PREVIEW_DIR: /srv/viz-previews
     volumes:
       - uploads:/var/lib/colab/uploads
+      # 굽는 쪽은 **쓰기**다 — viz-render 쪽 `:ro` 와 다른 이유가 여기 있다.
+      - previews:/srv/viz-previews
       # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · uid `10001` · 홈 보관 · 경로는 env).
       - ${COLAB_STAGING_PIPELINE_DB_URL_FILE:?COLAB_STAGING_PIPELINE_DB_URL_FILE 이 필요하다}:/etc/colab/pipeline-db.url:ro
     depends_on:
