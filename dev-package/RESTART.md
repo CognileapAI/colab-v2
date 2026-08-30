@@ -221,7 +221,7 @@ cd services/<단위> && .venv/bin/python -m pytest
 
 | 이름 | 값 출처 |
 |---|---|
-| `COLAB_APPLIED_DB_URL_PLATFORM` | 아래 절차로 지은 `db/platform` 적용 DB. `schema-diff`·`autometa-loss`·`preview-tile-slot` 셋이 같이 읽는다 |
+| `COLAB_APPLIED_DB_URL_PLATFORM` | 아래 절차로 지은 `db/platform` 적용 DB. `schema-diff`·`preview-tile-slot` **둘**이 같이 읽는다. ⭑ **⟨개정 2026-08-31 · `〈237〉`⟩ `autometa-loss` 는 여기서 빠졌다** — 대조 정본이 **staging 실물**로 갈렸다(아래 `㉰`). ／ 이전 표기 ~~셋이 같이 읽는다~~ |
 | `COLAB_APPLIED_DB_URL_AI` | 같은 절차의 `db/ai` 적용 DB. **하나라도 빠지면 `schema-diff` 는 red(준비·입력미선언)** 다 |
 | `COLAB_PREVIEW_TILE_DIR` | ⭑ **⟨신설 2026-08-31⟩ staging 미리보기 루트의 호스트 실체**(`~/.colab-v2-staging.env` 의 `COLAB_STAGING_PREVIEWS_DIR` 과 **같은 값**). `preview-tile-slot` 이 이 자리를 본다 — 없으면 red(준비) |
 
@@ -247,15 +247,16 @@ cd db/ai       && COLAB_AI_DB_URL='<위 DB 의 psycopg URL>'       <core-api ven
   staging 적용 DB 를 재고 싶으면 `sessions/I3-DEPLOY-AUTOMATION-PREP.md §6` 처럼 **그 게이트만 따로** 돈다.
 
 > **참고 — staging 실물도 같이 쟀다(2026-08-30 · 읽기 전용).** `schema-diff` 두 체인 다 **드리프트 0**,
-> `autometa-loss` 대조 대상 **0건**, `preview-tile-slot` 지도 타일 **0건**. 위 게이트 전용 DB 로 잰 값과 같은 결론이다.
+> `autometa-loss` 대조 대상 **0건**(⭑ 이 값은 **stage 2 배포 전**이라 낡았다 — 2026-08-31 재측 = 발행 3 · 반영 3 · 미반영 0), `preview-tile-slot` 지도 타일 **0건**. 위 게이트 전용 DB 로 잰 값과 같은 결론이다.
 
 #### ⭑ ⟨개정 2026-08-31 · `PLAN-SoT §9 〈235〉`⟩ ㉯ **이제 선언한다** — `COLAB_PREVIEW_TILE_DIR`
 
 > ⭑ **닫혔다.** 미리보기 볼륨을 **이름은 그대로 둔 채**(백업이 이름으로 문다) **호스트 경로에 바인드된 named volume** 으로 바꿨고,
 > 그 경로를 `~/.colab-v2-staging.env` 의 `COLAB_STAGING_PREVIEWS_DIR` 과 `~/.colab-v2-test.env` 의 `COLAB_PREVIEW_TILE_DIR` **두 자리에 같은 값**으로 적었다.
 > **실측** = 2026-08-31 재배포 뒤 그 자리에 지도 타일 1건이 놓였고 게이트 `preview-tile-slot` 이 **green** 이다. 이관은 sha256 집계로 대조했다(39 = 39).
-> ⚠ **`autometa-loss` 는 아직 red 다 — 그러나 사유가 바뀌었다.** 「stage 2 가 안 돌아서」가 아니라
-> **「이 게이트가 읽는 적용 DB 에 접수분이 구조적으로 0건이라서」**다(staging 실물로 재면 green — 발행 3 · 반영 3 · 미반영 0). **`03-HANDOFF §4` #50.**
+> ⚠ ~~**`autometa-loss` 는 아직 red 다 — 그러나 사유가 바뀌었다.** 「stage 2 가 안 돌아서」가 아니라
+> **「이 게이트가 읽는 적용 DB 에 접수분이 구조적으로 0건이라서」**다(staging 실물로 재면 green — 발행 3 · 반영 3 · 미반영 0). **`03-HANDOFF §4` #50.**~~
+> ⭑ **⟨2026-08-31 해소 · Ted 판정 `〈237〉`⟩ 닫혔다.** 대조 정본을 **staging 실물**로 옮겼다 — 아래 `㉰`. `autometa-loss` **green**.
 > ／ **종전 문면은 지우지 않는다** — 아래가 그것이다.
 
 ##### ／ 이전 ⟨2026-08-30⟩ 아직 선언할 수 없는 값
@@ -305,6 +306,40 @@ cd services/ai-service && CONTAINER=ai_pg APP_PASSWORD=<임시> tests/fixtures/s
 ```
 uv venv .venv && uv pip install -r requirements.txt -r requirements-dev.txt
 ```
+
+#### ⭑ ⟨신설 2026-08-31 · Ted 판정 `PLAN-SoT §9 〈237〉` · `#50` 해소⟩ ㉰ `autometa-loss` 의 **대조 정본** — `COLAB_AUTOMETA_STAGING_DB_URL`
+
+> ⭑ **`autometa-loss` 는 이제 위 ㉮ 의 적용 DB 를 읽지 않는다.** 대조 정본은 **staging 실물 platform DB** 다.
+> **왜** — 이 게이트의 질문이 「**실제로 접수한 것 중 메타가 빠진 것이 있는가**」이므로 정답지가 실물이어야 한다.
+> ㉮ 의 적용 DB 는 `schema-diff` 와 **공유하는 스키마 전용 일회용 DB** 라 업로드·데이터셋이 **영영 0건**이고,
+> 「대조 대상 0건도 red」가 이 게이트의 설계이므로 **그 배선으로는 어떤 회차에도 green 이 될 수 없었다.** 그것이 `#50` 이었다.
+
+| 이름 | 값 출처 |
+|---|---|
+| `COLAB_AUTOMETA_STAGING_DB_URL` | **staging 실물 platform DB 의 읽기 전용 접속 URL.** 값은 `~/.colab-v2-test.env`(`0600`)에만 산다 — 앞 절과 같은 관행이다. 없으면 `autometa-loss` 는 **red(준비·입력미선언)** 다 |
+
+- **`COLAB_APPLIED_DB_URL_PLATFORM` 으로 대신하지 않는다.** 옛 변수만 선언돼 있으면 게이트가
+  **그 사실을 이름으로 지적하며** red 를 낸다 — 조용히 옛 값으로 떨어지는 경로가 없다.
+  `schema-diff`·`preview-tile-slot` 은 옛 변수를 **그대로** 쓴다. 둘은 다른 질문이라 다른 정본을 본다.
+- **읽기 전용이다 — 그리고 게이트가 매 회차 그것을 다시 증명한다.**
+  ⑴ URL 에 `options=-c default_transaction_read_only=on` 을 단다. **안 달면 red** 다.
+  ⑵ 모든 SQL 이 `BEGIN READ ONLY … ROLLBACK` 안에서 돈다 — 스크립트에 `COMMIT` 이 **한 곳도 없다.**
+  ⑶ 매 회차 **쓰기 탐침**(임시 테이블)을 던지고, **거부당하지 않으면 red** 다. 탐침은 되감기므로 흔적이 0 이다.
+- **롤은 `postgres`(수퍼유저)다 — 감추지 않고 이유를 적는다.** 플랫폼 테이블이 `FORCE ROW LEVEL SECURITY`
+  라 **소유자도 걸러진다**(실측 = `colab_owner` 로 붙으면 `d5_pipeline_event` **0행**). 감사자는 연구실 경계
+  **밖에서 전수**를 봐야 한다. 쓰기는 위 세 겹이 봉한다.
+- **호스트 자리는 staging 망 컨테이너의 IP 다.** 스택을 다시 세우면 바뀔 수 있다 — 다시 얻는 한 줄:
+
+```
+docker inspect colab_v2_staging_pg --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+```
+
+> ⛔ **`COLAB_PG_NETWORK` 를 전역에 두는 길은 여전히 막혀 있다**(앞 ㉮ 의 세 함정 중 셋째).
+> 이 배선은 그 길을 쓰지 않는다 — **호스트에서 staging 망의 DB 에 직접 닿는다**(2026-08-31 실측).
+> 그래서 `db-selftest` 는 뒤집히지 않는다(실측 = green).
+> ／ **실측 2026-08-31** — 이 선언으로 `autometa-loss` **green**: 발행 **3** · 반영 **3** · 면제 **0** · 미반영 **0**.
+> staging 스택 **무접촉**(8/8 healthy · 쓰기 0건 · 재배포 0건).
+
 
 ### ⑤ Remote Control 다시 띄우기 — **시한이 있다**
 

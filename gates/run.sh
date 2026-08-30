@@ -149,7 +149,11 @@ case "$GATE" in
     ;;
   autometa-loss)
     # 사건이 발행되고도 장부에 반영되지 않았는가 (`〈190〉-㉱`). **대상 0건도 red 다.**
-    # 적용 DB 가 없으면 red — schema-diff 와 같은 규율이다(환경 부재를 skip 으로 세지 않는다).
+    # ⭑ ⟨개정 2026-08-31 · `PLAN-SoT §9 〈237〉` · `#50` 해소⟩ **대조 정본 = staging 실물 platform DB**
+    #   (`COLAB_AUTOMETA_STAGING_DB_URL` · 읽기 전용). 이 게이트의 질문이 「실제로 접수한 것 중
+    #   메타가 빠진 것이 있는가」라 정답지가 실물이어야 한다. 종전에는 `schema-diff` 와 **공유하는**
+    #   스키마 전용 일회용 DB 를 봐서 접수분이 구조적으로 0건이었다 — 어떤 회차에도 green 이 될 수 없었다.
+    # 선언이 없으면 red — schema-diff 와 같은 규율이다(환경 부재를 skip 으로 세지 않는다).
     exec "$REPO_ROOT/gates/tools/autometa-loss.sh"
     ;;
   autometa-loss-selftest)

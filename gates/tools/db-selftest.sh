@@ -462,8 +462,11 @@ expect_undeclared_red "원인: schema-diff 적용 DB URL 미선언" \
 expect_undeclared_red "원인: schema-diff 구 변수만 선언(체인을 모른다)" \
   env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
       COLAB_APPLIED_DB_URL="postgresql://x/y" "$SD"
-expect_undeclared_red "원인: autometa-loss 적용 DB URL 미선언" \
-  env COLAB_APPLIED_DB_URL_PLATFORM= "$REPO_ROOT/gates/tools/autometa-loss.sh"
+# ⭑ ⟨개정 2026-08-31 · `PLAN-SoT §9 〈237〉` · `#50` 해소⟩ autometa-loss 의 **대조 정본이 갈렸다** —
+#   `schema-diff` 와 공유하던 스키마 전용 DB 에서 **staging 실물 platform DB** 로. 변수 이름도 갈렸다.
+#   여기서 재는 것은 그대로다: **미선언은 준비 red 이고 종료코드 78 이다.**
+expect_undeclared_red "원인: autometa-loss 대조 정본 미선언" \
+  env COLAB_AUTOMETA_STAGING_DB_URL= "$REPO_ROOT/gates/tools/autometa-loss.sh"
 
 # 반대 방향 — **환경 대기는 입력미선언으로 찍히지 않는다.** 둘이 섞이면 가른 뜻이 없다.
 AW_OUT="$(env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \

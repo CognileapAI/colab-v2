@@ -22,8 +22,26 @@
 # ⚠ **관대한 기본값을 두지 않는다.** 적용 DB URL 이 없으면 red 다 — `schema-diff` 와 같은 규율이고,
 #   같은 이유다: 「DB 가 없어서 검사를 못 했다」를 통과로 세는 것이 v1 의 실패였다.
 #
+# ⭑ ⟨개정 2026-08-31 · Ted 판정 `PLAN-SoT §9 〈237〉` · `03-HANDOFF §4 #50` 해소⟩
+#   **대조 정본은 staging 실물 platform DB 다.** 이 게이트의 질문이 「실제로 접수한 것 중 메타가
+#   빠진 것이 있는가」이므로 정답지는 실물이어야 한다. 종전 배선은 `schema-diff` 와 **공유하는**
+#   스키마 전용 일회용 DB(`COLAB_APPLIED_DB_URL_PLATFORM`)를 봤고, 그 DB 에는 접수분이
+#   **구조적으로 0건**이라 어떤 회차에도 green 이 될 수 없었다.
+#   → 선언을 **분리한다**. `schema-diff` 는 제 적용 DB 를 그대로 쓰고, 이 게이트만 새 선언을 읽는다.
+#
+# ⭑ **접근은 읽기 전용이다 — 주장하지 않고 집행하고, 집행을 다시 증명한다.**
+#   ⑴ 모든 SQL 이 `BEGIN READ ONLY` … `ROLLBACK` 안에서만 돈다. **COMMIT 이 한 곳도 없다.**
+#   ⑵ 매 회차 **쓰기 탐침**을 던진다 — 읽기 전용이면 반드시 거부당해야 하고, 거부당하지 않으면
+#      (= 쓸 수 있는 접속이면) **red** 다. 탐침은 임시 테이블이고 세이브포인트로 되감는다.
+#   즉 「읽기 전용이라고 적어 두었다」가 아니라 **「이 회차에 실제로 쓰지 못했다」**가 증거다.
+#
 # 환경변수
-#   COLAB_APPLIED_DB_URL_PLATFORM  db/platform 이 적용된 DB 접속 URL. 없으면 red (skip 아님)
+#   COLAB_AUTOMETA_STAGING_DB_URL  **대조 정본** — staging 실물 platform DB 의 읽기 전용 접속 URL.
+#                                  없으면 red(준비·입력미선언). 값이 사는 자리는 홈의 0600 env
+#                                  파일 하나뿐이다 (`dev-package/RESTART.md §2-④-㉰`).
+#                                  ⚠ COLAB_APPLIED_DB_URL_PLATFORM 으로 대신하지 않는다 —
+#                                    그 값은 schema-diff 와 공유하는 스키마 전용 DB 이고,
+#                                    그것이 정확히 #50 의 결함이다.
 #   COLAB_AUTOMETA_EXEMPT          면제 선언 파일 (기본 gates/config/autometa-loss.toml)
 #   COLAB_AUTOMETA_PSQL            psql 명령 (기본 psql). selftest 가 일회용 DB 로 바꿔 끼운다
 set -uo pipefail
@@ -31,7 +49,8 @@ set -uo pipefail
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 EXEMPT_FILE="${COLAB_AUTOMETA_EXEMPT:-$REPO_ROOT/gates/config/autometa-loss.toml}"
 PSQL="${COLAB_AUTOMETA_PSQL:-psql}"
-URL="${COLAB_APPLIED_DB_URL_PLATFORM:-}"
+URL="${COLAB_AUTOMETA_STAGING_DB_URL:-}"
+OLD_URL="${COLAB_APPLIED_DB_URL_PLATFORM:-}"
 
 red() { echo "::error::autometa-loss red — $*"; exit 1; }
 
@@ -63,18 +82,63 @@ fi
 EXEMPT_COUNT=0
 [ -n "$EXEMPT_IDS" ] && EXEMPT_COUNT="$(printf '%s' "$EXEMPT_IDS" | tr ',' '\n' | grep -c .)"
 
-# ── 2. 적용 DB — 없으면 red. **skip 하면 그게 정확히 v1 의 실패다** ────────────────
-[ -n "$URL" ] || red_undeclared "COLAB_APPLIED_DB_URL_PLATFORM (db/platform 적용 DB)" \
-  "적용 DB 없이 반영 여부를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
-   schema-diff 와 같은 변수·같은 규율이다.
-   → db/platform 이 적용된 DB 의 URL 을 지정하고 다시 돌린다."
+# ── 2. 대조 정본 — 없으면 red. **skip 하면 그게 정확히 v1 의 실패다** ──────────────
+if [ -z "$URL" ]; then
+  hint="적용 DB 없이 반영 여부를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
+   → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.
+     값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④-㉰)."
+  if [ -n "$OLD_URL" ]; then
+    hint="$hint
+   ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트는 그것을 읽지 않는다.**
+     그 값은 schema-diff 와 공유하는 **스키마 전용** DB 라 접수분이 구조적으로 0건이고,
+     그 배선으로는 어떤 회차에도 green 이 될 수 없었다 (Ted 판정 PLAN-SoT §9 〈237〉 · #50)."
+  fi
+  red_undeclared "COLAB_AUTOMETA_STAGING_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)" "$hint"
+fi
 
+# ── 2-1. 읽기 전용 증명 — **주장이 아니라 이 회차의 실측이다** ──────────────────────
+#   쓰기 탐침이 거부당해야 통과한다. 거부당하지 않으면 = 쓸 수 있는 접속이면 red.
+#   탐침은 임시 테이블이고, 세이브포인트로 되감은 뒤 트랜잭션 전체를 ROLLBACK 한다.
+RO_OUT="$("$PSQL" "$URL" -At -v ON_ERROR_STOP=0 <<'SQL' 2>&1
+SELECT '::decl::' || current_setting('default_transaction_read_only');
+BEGIN READ ONLY;
+SELECT '::ro::' || current_setting('transaction_read_only');
+SAVEPOINT colab_ro_probe;
+CREATE TEMP TABLE colab_autometa_ro_probe (x int);
+SELECT '::wrote::';
+ROLLBACK TO SAVEPOINT colab_ro_probe;
+ROLLBACK;
+SQL
+)"
+case "$RO_OUT" in
+  *'::decl::on'*) : ;;
+  *'::decl::off'*)
+    red "**선언된 접속 자체가 읽기 전용이 아니다** (default_transaction_read_only = off).
+   게이트가 트랜잭션을 읽기 전용으로 여는 것과 별개로, **선언이 그렇게 말해야** 한다.
+   두 층을 다 요구하는 이유는 하나가 빠져도 나머지가 붙들게 하려는 것이다.
+   → 읽기 전용 롤을 쓰거나 URL 에 options=-c default_transaction_read_only=on 을 붙인다." ;;
+  *) : ;;   # 접속 자체가 실패한 경우 — 바로 아래 ::ro:: 검사가 잡는다
+esac
+case "$RO_OUT" in
+  *'::wrote::'*)
+    red "**쓰기 탐침이 통과했다 — 이 접속은 읽기 전용이 아니다.**
+   이 게이트는 실물 staging 을 들여다볼 뿐 한 글자도 쓰지 않는다. 쓸 수 있는 접속으로는 돌지 않는다.
+   → 선언된 URL 을 읽기 전용으로 고친다(읽기 전용 롤 또는 default_transaction_read_only=on)." ;;
+esac
+
+case "$RO_OUT" in
+  *'::ro::on'*) : ;;
+  *) red "읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: $(printf '%s' "$RO_OUT" | tr '\n' ' ' | cut -c1-400)" ;;
+esac
 SQL_ARRAY="ARRAY[]::text[]"
 if [ -n "$EXEMPT_IDS" ]; then
   SQL_ARRAY="ARRAY[$(printf '%s' "$EXEMPT_IDS" | sed "s/[^,]*/'&'/g")]::text[]"
 fi
 
 OUT="$("$PSQL" "$URL" -At -F '|' -v ON_ERROR_STOP=1 <<SQL 2>&1
+BEGIN READ ONLY;   -- 본 질의도 같은 규율 아래 돈다. **COMMIT 은 없다**
 WITH carried AS (
   -- 사건이 **실제로 값을 날랐는가**. 「사건이 있다」가 아니다 — null 을 실어도 사건은 있다.
   SELECT e.upload_id,
@@ -115,11 +179,13 @@ SELECT count(*),
        count(*) FILTER (WHERE NOT applied AND dataset_id = ANY($SQL_ARRAY)),
        count(*) FILTER (WHERE NOT applied AND NOT (dataset_id = ANY($SQL_ARRAY)))
   FROM pairs;
+ROLLBACK;
 SQL
 )" || red "적용 DB 에 질의하지 못했다. 검사를 못 한 것은 통과가 아니다.
    psql 이 낸 말: $(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-400)"
 
-LINE="$(printf '%s' "$OUT" | tail -n 1)"
+# 트랜잭션 태그(BEGIN·ROLLBACK)가 섞이므로 tail 이 아니라 **모양으로** 고른다.
+LINE="$(printf '%s\n' "$OUT" | grep -E '^[0-9]+\|[0-9]+\|[0-9]+\|[0-9]+$' | tail -n 1)"
 case "$LINE" in
   [0-9]*\|[0-9]*\|[0-9]*\|[0-9]*) : ;;
   *) red "질의 결과가 숫자 넷이 아니다 — 무엇을 셌는지 모르는 채로 통과시키지 않는다.
