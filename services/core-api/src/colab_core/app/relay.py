@@ -263,16 +263,25 @@ class HttpLineageSuggestionRelay:
     def __init__(self, base_url: str | None) -> None:
         self._base = None if not base_url else base_url.rstrip("/")
 
-    def suggest(self, *, lab_id: str, lab_name: str, account_id: str, upload_id: str,
-                searched_count: int, dataset_name_draft: str | None,
+    def suggest(self, *, lab_id: str, lab_name: str, account_id: str,
+                file_meta: dict[str, Any], searched_count: int,
+                dataset_name_draft: str | None,
                 subject: str | None) -> dict[str, Any]:
+        """⭑ **⟨정정 2026-08-30⟩ 나가는 본문이 계약과 어긋나 있었다.**
+
+        계약(`core-ai.yaml LineageSuggestionRequest`, 2026-08-22 동결)은 `file` 을
+        required 로 두고 `additionalProperties: false` 인데, 이 중계는 2026-08-23 부터
+        `file` 없이 **계약에 없는 `uploadId`** 를 보내고 있었다. 아무도 못 잡은 이유는
+        **생산자가 없어 거절할 쪽이 없었기 때문**이다 — 계약 게이트는 정적 스펙만 보고
+        실제 요청 바이트를 보지 않는다. 동결이 먼저이므로 **정본은 계약이고 고친 쪽은 여기다.**
+        """
         if self._base is None:
             return honest_empty_suggestions(
                 lab_id=lab_id, lab_name=lab_name, searched_count=searched_count,
                 reason="계보 제안 서비스가 아직 연결되지 않았다 — 제안 없이 등록할 수 있다.")
         payload: dict[str, Any] = {
             "scope": {"labId": lab_id, "labName": lab_name, "searchedCount": searched_count},
-            "uploadId": upload_id,
+            "file": file_meta,
         }
         if dataset_name_draft:
             payload["datasetNameDraft"] = dataset_name_draft
