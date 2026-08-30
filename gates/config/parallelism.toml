@@ -83,6 +83,9 @@
 #   `_pg.sh` 의 `pg_start` 로 컨테이너를 뜨우고 그 안에 자기 DB(`previewtileslot`)를 만들어 쓴다.
 #   픽스처 TIFF·면제 선언·타일 자리는 전부 자기 `mktemp -d` 안이고, 게이트에는 psql 을 주입해
 #   **적용 DB URL 을 아예 쓰지 않는다.** 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
-#   도커 데몬 경합은 `_pg.sh` 의 선언 한도(COLAB_PG_MAX_CONCURRENT)가 이미 받는다 —
-#   `autometa-loss-selftest` 와 같은 무늬다.
-"preview-tile-slot-selftest" = "parallel"
+#   ⚠ **그런데도 `serial` 이다 — 실측 근거가 그쪽이다.** parallel 로 두고 `all -j 2` 를 두 번 돌리니
+#     한 번은 green 28 / red 3, 한 번은 **일회용 postgres 슬롯 고갈로 다른 게이트가 `환경대기` red**
+#     였다(2026-08-30 실측). 이 배포에서 pg 를 쓰는 게이트가 하나 늘어난 만큼 슬롯이 모자란다.
+#     **재현되지 않는 red 는 판정이 아니라 배선이 낸 red 이고, 그것을 통과로도 실패로도 셀 수 없다.**
+#     슬롯 한도를 올려 green 을 만들지 않는다 — 한도는 이 호스트가 감당하는 값이다.
+"preview-tile-slot-selftest" = "serial"
