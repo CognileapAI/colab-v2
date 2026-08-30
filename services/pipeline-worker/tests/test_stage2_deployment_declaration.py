@@ -78,3 +78,57 @@ def test_the_preview_root_owner_is_fixed_before_the_worker_starts():
     root = _env(_service_block("pipeline-worker"), "COLAB_WORKER_PREVIEW_DIR")
     init = _service_block("volume-init")
     assert root and root in init, "volume-init 이 미리보기 루트의 주인을 안 맞춘다"
+
+
+# ── ⭑ ⟨증보 2026-08-31 · `#49` · Ted 판정 `PLAN-SoT §9 〈235〉`⟩ ─────────────────
+# 자리가 **배포 안에만 있으면 아무도 그것을 검사할 수 없다.**
+# 실측(`sessions/PV-1-DEPLOY-WIRING-20260830.md §4-㈏`) = named volume 의 마운트 지점이
+# 게이트를 돌리는 사용자에게 `Permission denied` 였다. 그래서 게이트 `preview-tile-slot` 은
+# 「자리를 못 봐서 검사를 못 했다」로 red(준비) 였고, 그것을 통과로 세는 것이 이 레포의
+# 대표 실패다(`CLAUDE.md §4`). 아래 셋은 **자리가 호스트에서 보이는가**를 잰다.
+
+
+def _volumes_block() -> str:
+    raw = COMPOSE.read_text(encoding="utf-8")
+    m = re.search(r"^volumes:\n(.*)\Z", raw, re.S | re.M)
+    assert m is not None, "compose 에 volumes 선언이 없다"
+    return m.group(1)
+
+
+def _named_volume(name: str) -> str:
+    m = re.search(rf"^  {re.escape(name)}:(.*?)(?=^  \S|\Z)", _volumes_block(), re.S | re.M)
+    assert m is not None, f"volumes 에 `{name}` 이 없다"
+    return m.group(1)
+
+
+@pytest.mark.stage2
+def test_preview_volume_is_backed_by_a_host_path():
+    """미리보기 루트는 **호스트에서 보여야 한다** — 도커 안에만 있으면 검사가 불가능하다."""
+    block = _named_volume("previews")
+    assert re.search(r"^\s+type:\s*none\s*$", block, re.M), "바인드 선언(type: none)이 없다"
+    assert re.search(r"^\s+o:\s*bind\s*$", block, re.M), "바인드 선언(o: bind)이 없다"
+    assert re.search(r"^\s+device:\s*\$\{COLAB_STAGING_PREVIEWS_DIR", block, re.M), \
+        "호스트 경로를 env 로 받지 않는다"
+
+
+@pytest.mark.stage2
+def test_the_host_path_is_required_and_never_written_in_the_repo():
+    """경로는 `:?` 로 **요구**하고 값은 홈의 env 파일에만 둔다(`CLAUDE.md §3-8`)."""
+    block = _named_volume("previews")
+    assert "${COLAB_STAGING_PREVIEWS_DIR:?" in block, \
+        "값이 없어도 조용히 뜨면 자리가 어디인지 아무도 모른다 — `:?` 로 요구한다"
+    assert not re.search(r"device:\s*/(home|mnt|srv|var)/", block), \
+        "compose 에 호스트 절대경로를 적지 않는다"
+
+
+@pytest.mark.stage2
+def test_the_preview_root_is_still_one_root():
+    """루트를 **가르지 않았다** — 규약은 루트가 하나라고 못 박는다(`previewsRoot`).
+
+    붙는 곳이 넷(nginx·worker·viz-render·volume-init)인데 전부 같은 볼륨 이름이어야 한다.
+    """
+    raw = COMPOSE.read_text(encoding="utf-8")
+    mounts = re.findall(r"^\s+- (previews:\S+)\s*$", raw, re.M)
+    assert len(mounts) == 4, f"미리보기 볼륨을 무는 자리가 넷이 아니다: {mounts}"
+    roots = {m.split(":")[1] for m in mounts}
+    assert roots == {"/srv/viz-previews"}, f"루트가 갈렸다: {roots}"

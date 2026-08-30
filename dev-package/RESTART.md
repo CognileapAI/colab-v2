@@ -109,6 +109,7 @@ infra/staging/deploy.sh --target staging
 | `OPENAI_API_KEY` | **비밀** | ai-service |
 | `COLAB_WORKER_LAB_ID` · `COLAB_WORKER_ACCOUNT_ID` | **선택 · 식별자(비밀 아님)** | 시드 ULID. 단독으로는 아무 권한도 주지 않는다 — 원장 행과 짝이라 **회전 대상이 아니다.** ⭑ **2026-08-26 부터 필수가 아니다**(`PLAN-SoT §9 〈110〉`) — 워커는 대상 연구실을 원장(`d1_lab`)에서 읽고 연구실마다 제 스코프로 돈다. `compose.i2.yml` 은 이 둘을 **걸지 않는다.** 값을 되걸면 그 연구실 하나로 다시 좁혀지고, **원장에 없는 값이면 워커가 뜨지 않는다** |
 | `COLAB_STAGING_PGDATA_DIR` · `COLAB_STAGING_SUBJECTS_FILE` · `COLAB_STAGING_CREDENTIALS_FILE` | 경로 | 레포에 절대경로를 적지 않으려고 env 로 받는다 (`CLAUDE.md §3-8`) |
+| `COLAB_STAGING_PREVIEWS_DIR` | 경로 (**`:?` — 없으면 `up` 이 안 뜬다**) | ⭑ **⟨신설 2026-08-31 · `PLAN-SoT §9 〈235〉` · `#49` 해소⟩ 미리보기 산출물 루트의 호스트 실체.** named volume `previews` 가 이 경로에 바인드된다 — **볼륨 이름은 그대로**라 백업 설정은 손댈 것이 없다. **WSL ext4 쪽 경로여야 한다**(Windows 드라이브에는 POSIX 퍼미션이 없어 `volume-init` 의 `chown 10001` 이 안 먹는다). 게이트 쪽 짝은 `~/.colab-v2-test.env` 의 `COLAB_PREVIEW_TILE_DIR` 이고 **같은 자리를 가리킨다** |
 | `COLAB_STAGING_CORE_DB_URL_FILE` · `COLAB_STAGING_PIPELINE_DB_URL_FILE` · `COLAB_STAGING_AI_DB_URL_FILE` · `COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE` · `COLAB_STAGING_AI_OWNER_DB_URL_FILE` | 경로 (**가리키는 파일이 비밀**) | ⭑ **접속 URL 을 값이 아니라 파일로 넘긴다** (`PLAN-SoT §9 〈121〉-㉯` · `03-HANDOFF §4 #34`). 예전에는 접속 문자열이 compose 의 환경변수였고, 그래서 `docker inspect` 에 비밀번호가 통째로 나와 **작업 기록에 남았다.** 다섯 다 `:?` — 하나라도 없으면 `up` 이 뜨지 않는다. 뒤 둘은 `--profile migrate` 러너 전용이라 `up` 만 할 때는 안 쓰이지만, **없으면 마이그레이션이 안 돈다** |
 | `COLAB_CORE_AI_BASE_URL` · `COLAB_MODEL_HELPER` · `COLAB_MODEL_ORCHESTRATOR` | **선택(기본값 있음)** | `W7` 배선(`c5a2fbf`)이 더한 셋. 없어도 `up` 이 뜨고 compose 의 기본값이 쓰인다 — **비밀이 아니다**(주소·모델 이름). `COLAB_CORE_AI_BASE_URL` 을 비우면 core-api 가 relay 를 만들지 않아 **검색·제안이 503 이 된다** |
 
@@ -222,6 +223,7 @@ cd services/<단위> && .venv/bin/python -m pytest
 |---|---|
 | `COLAB_APPLIED_DB_URL_PLATFORM` | 아래 절차로 지은 `db/platform` 적용 DB. `schema-diff`·`autometa-loss`·`preview-tile-slot` 셋이 같이 읽는다 |
 | `COLAB_APPLIED_DB_URL_AI` | 같은 절차의 `db/ai` 적용 DB. **하나라도 빠지면 `schema-diff` 는 red(준비·입력미선언)** 다 |
+| `COLAB_PREVIEW_TILE_DIR` | ⭑ **⟨신설 2026-08-31⟩ staging 미리보기 루트의 호스트 실체**(`~/.colab-v2-staging.env` 의 `COLAB_STAGING_PREVIEWS_DIR` 과 **같은 값**). `preview-tile-slot` 이 이 자리를 본다 — 없으면 red(준비) |
 
 두 줄도 `~/.colab-v2-test.env` 에 산다(앞 절과 같은 관행 · `0600` · 값은 레포에 적지 않는다).
 
@@ -247,7 +249,16 @@ cd db/ai       && COLAB_AI_DB_URL='<위 DB 의 psycopg URL>'       <core-api ven
 > **참고 — staging 실물도 같이 쟀다(2026-08-30 · 읽기 전용).** `schema-diff` 두 체인 다 **드리프트 0**,
 > `autometa-loss` 대조 대상 **0건**, `preview-tile-slot` 지도 타일 **0건**. 위 게이트 전용 DB 로 잰 값과 같은 결론이다.
 
-#### ⭑ ⟨신설 2026-08-30⟩ ㉯ 아직 선언할 수 없는 값 — `COLAB_PREVIEW_TILE_DIR`
+#### ⭑ ⟨개정 2026-08-31 · `PLAN-SoT §9 〈235〉`⟩ ㉯ **이제 선언한다** — `COLAB_PREVIEW_TILE_DIR`
+
+> ⭑ **닫혔다.** 미리보기 볼륨을 **이름은 그대로 둔 채**(백업이 이름으로 문다) **호스트 경로에 바인드된 named volume** 으로 바꿨고,
+> 그 경로를 `~/.colab-v2-staging.env` 의 `COLAB_STAGING_PREVIEWS_DIR` 과 `~/.colab-v2-test.env` 의 `COLAB_PREVIEW_TILE_DIR` **두 자리에 같은 값**으로 적었다.
+> **실측** = 2026-08-31 재배포 뒤 그 자리에 지도 타일 1건이 놓였고 게이트 `preview-tile-slot` 이 **green** 이다. 이관은 sha256 집계로 대조했다(39 = 39).
+> ⚠ **`autometa-loss` 는 아직 red 다 — 그러나 사유가 바뀌었다.** 「stage 2 가 안 돌아서」가 아니라
+> **「이 게이트가 읽는 적용 DB 에 접수분이 구조적으로 0건이라서」**다(staging 실물로 재면 green — 발행 3 · 반영 3 · 미반영 0). **`03-HANDOFF §4` #50.**
+> ／ **종전 문면은 지우지 않는다** — 아래가 그것이다.
+
+##### ／ 이전 ⟨2026-08-30⟩ 아직 선언할 수 없는 값
 
 `preview-tile-slot` 은 **자리(미리보기 산출물 루트)** 를 받아야 판정으로 넘어간다. 그런데 그 자리가 **아직 없다.**
 
