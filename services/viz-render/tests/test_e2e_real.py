@@ -95,6 +95,7 @@ def _assert_drawn(client, job: dict, fmt: str) -> int:
 
 
 # ── ① GeoTIFF 를 가장 먼저 돌린다 ────────────────────────────────────────────
+@pytest.mark.e2e_format("GeoTIFF")
 def test_e2e_1_geotiff(client, put_target):
     d = _fmtdir("file_format_4_tif")
     src = _first("HLS.S30.*.tif", d / "00.Data")
@@ -103,6 +104,7 @@ def test_e2e_1_geotiff(client, put_target):
     _assert_drawn(client, job, "GeoTIFF")
 
 
+@pytest.mark.e2e_format("NetCDF")
 def test_e2e_2_netcdf(client, put_target, source_root):
     d = _fmtdir("file_format_2_nc")
     src = _first("gk2a_*.nc", d / "00.Data")
@@ -115,6 +117,7 @@ def test_e2e_2_netcdf(client, put_target, source_root):
     _assert_drawn(client, job, "NetCDF")
 
 
+@pytest.mark.e2e_format("Binary")
 def test_e2e_3_binary_hsr(client, put_target, source_root):
     d = _fmtdir("file_format_3_bin")
     src = _first("RDR_CMP_HSR_*.bin.gz", d / "00.Data")
@@ -153,6 +156,7 @@ def test_e2e_3_binary_hsr(client, put_target, source_root):
     assert len(store.world_file.path.read_text().strip().splitlines()) == 6
 
 
+@pytest.mark.e2e_format("HDF4")
 def test_e2e_4_hdf4(client, put_target, source_root):
     d = _fmtdir("file_format_5_HDF5")      # 폴더명이 거짓말 — 실체는 HDF4 (`DR-3`·`M-1`)
     src = _first("*h27v05*.hdf", d / "00.Data")
@@ -274,3 +278,57 @@ def test_e2e_8_격자가_없어도_값_미리보기_두_장은_실제로_나온�
     # 값이 실제로 그려졌다 — 알파 0 만 있는 그림이 아니다
     alpha = np.asarray(Image.open(store.detail.path).convert("RGBA"))[..., 3]
     assert (alpha > 0).sum() > 0
+
+
+# ── ⑨ NumPy — 지원 목록 다섯째 (`〈77〉`) ─────────────────────────────────────
+@pytest.mark.e2e_format("NumPy")
+def test_e2e_9_numpy(client, put_target, source_root):
+    """`.npy` 본체 실파일이 **동봉 격자와 짝지어 지도형으로 그려진다**.
+
+    ⚠ **격자 파일이 아니라 본체다.** `04.Lat_Lon_info` 의 `.npy` 는 좌표 기준 격자이고
+    (`DATA-REFERENCE §1`), 여기서 그리는 것은 `01.level-data` 의 **산출 값 배열**이다.
+    둘을 섞으면 「NumPy 를 그렸다」가 「격자를 그렸다」가 된다.
+
+    짝 = `Prediction_*.npy` `(1280, 1280)` ↔ `LAT_crop.npy`·`LON_crop.npy` `(1280, 1280)`
+    (이 세션 실측 · 형상 일치). 같은 폴더의 `LAT.npy`·`LON.npy` 는 `(852, 1200)` 이라
+    **짝이 아니다** — 붙이면 형상 대조에서 거절돼야 한다.
+
+    ⚠ **값 범위는 단언하지 않는다** — 이 산출물의 물리 단위를 말하는 정본이 없다.
+    근거 없는 상·하한을 박으면 레인이 값의 정의를 관례로 정하는 것이 된다.
+    """
+    veg = _root() / "01.level-data" / "02.vegetation" / "02.vegetation"
+    if not veg.is_dir():
+        pytest.fail(f"원천 폴더 없음: {veg}")
+    src = _first("Prediction_*.npy", veg / "Lv.2")
+    tid = put_target(copy_from=[src])
+    g = storage_layout.grid_dir(source_root, tid)
+    g.mkdir(parents=True, exist_ok=True)
+    for axis in ("LAT_crop.npy", "LON_crop.npy"):
+        shutil.copy(veg / "#metadata" / axis, g / axis)
+    job = _render(client, tid)
+    _assert_drawn(client, job, "NumPy")
+    assert job["result"]["precisionBadge"] == "동봉 격자 적용"
+
+
+def test_e2e_10_numpy_짝이_아닌_격자를_붙이면_지도형이_안_선다(client, put_target, source_root):
+    """⑨ 가 **빈 단언이 아님을 실파일로 증명한다** (`M-4` 의 무늬 — 부분 검증의 착각).
+
+    같은 폴더의 `LAT.npy`·`LON.npy` 는 `(852, 1200)` 이고 본체는 `(1280, 1280)` 이다.
+    형상이 다른 격자를 붙이면 **리샘플로 맞추지 않고 거절**한다 — 맞춰 주면
+    좌표를 지어내는 것이 된다(`DR-9`). 지도형이 서면 ⑨ 의 「동봉 격자 적용」은
+    아무 것도 구분하지 못한 것이다.
+    """
+    from colab_viz.domains.d7_visualization.failures import RenderFailure
+
+    veg = _root() / "01.level-data" / "02.vegetation" / "02.vegetation"
+    src = _first("Prediction_*.npy", veg / "Lv.2")
+    tid = put_target(copy_from=[src])
+    g = storage_layout.grid_dir(source_root, tid)
+    g.mkdir(parents=True, exist_ok=True)
+    for axis in ("LAT.npy", "LON.npy"):
+        shutil.copy(veg / "#metadata" / axis, g / axis)
+    job = _render(client, tid)
+    assert job["status"] == "실패", \
+        ("형상이 다른 격자를 붙였는데 그려졌다 — 좌표를 맞춰 지어냈을 수 있다",
+         job.get("result", {}).get("precisionBadge"))
+    assert job["failure"]["code"] == RenderFailure.NO_REFERENCE_GRID

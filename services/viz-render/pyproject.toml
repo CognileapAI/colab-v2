@@ -19,4 +19,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "tests"]
-markers = ["e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다"]
+markers = [
+  "e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다",
+  # 포맷 표식 — `S3` 완료 정의의 「지원 목록 각각 최소 1건이 그려진다」를 기계가 세는 자리다.
+  # 게이트(`e2e-format-coverage`)가 junit 속성으로 읽는다. 붙는 값은 `SUPPORTED_FORMATS` 의 이름.
+  "e2e_format: 이 케이스가 실데이터로 그려 보이는 포맷 이름(예: e2e_format(\"GeoTIFF\"))",
+]

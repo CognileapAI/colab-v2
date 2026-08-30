@@ -89,3 +89,16 @@
 #     **재현되지 않는 red 는 판정이 아니라 배선이 낸 red 이고, 그것을 통과로도 실패로도 셀 수 없다.**
 #     슬롯 한도를 올려 green 을 만들지 않는다 — 한도는 이 호스트가 감당하는 값이다.
 "preview-tile-slot-selftest" = "serial"
+
+# `e2e-format-coverage` — 실측 근거: **원천을 읽기만 하고 자기 임시 파일에만 쓴다.**
+#   `gates/tools/e2e-format-coverage.sh` 는 원천 디렉터리를 `-d` 로 확인만 하고,
+#   시험은 각자 `tmp_path` 안에 대상을 세운다(`put_target` 픽스처). 산출은 `mktemp` 로
+#   받은 junit XML 하나뿐이고, DB·도커·잠금을 쓰지 않는다. 적용 DB 접속 0건.
+#   ⚠ 다만 **원천 3.5 GB 를 읽는 구간이 있어 디스크가 경합 자원이다** — 판정을 바꾸지는
+#     않으므로 parallel 로 둔다. 판정이 흔들리는 것이 관측되면 그때 `serial` 로 선언한다.
+"e2e-format-coverage"       = "parallel"
+
+# `e2e-format-coverage-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 시험을 돌리지 않으므로
+#   원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
+"e2e-format-coverage-selftest" = "parallel"
