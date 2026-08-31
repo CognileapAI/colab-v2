@@ -119,16 +119,18 @@ def test_격자를_잘_붙인_렌더에는_거절_필드가_없다(client, put_t
 def test_지도형_성공에도_썸네일과_값미리보기_URL_이_실린다(client, put_target, tiny_geotiff):
     """③이 주 화면이다. 그때 ①②는 **버려지지 않고** 자기 필드로 간다.
 
-    ⭑ **⟨개정 2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋에서 ③의 자리가
-    `imageUrl` 에서 `tileUrlTemplate` 으로 옮겨졌다.** 재는 성질은 그대로다 — **①②가
-    주 화면 자리를 차지하지 않는다.** ／ 종전 ~~`imageUrl` 이 ②를 가리키면 안 된다~~.
+    ⭑ **⟨재개정 2026-08-31 · Ted 판정 ⑬ · `〈240〉`⟩ 갈래가 스위치가 되어 ③의 자리가
+    기본값에서 다시 `imageUrl` 이다.** ／ 종전 문면 ~~`〈238〉` 으로 `tileUrlTemplate` 으로
+    옮겨졌다~~ — 정본(260826 델타 · POL-021)이 타일을 축자로 배제하고 있어 **기본은
+    「한 장」**이 됐다. 타일을 켠 쪽은 `test_tile_branch_switch.py` 가 잰다.
+    **재는 성질은 두 갈래 어디서나 그대로다 — ①②가 주 화면 자리를 차지하지 않는다.**
     """
     tid = put_target(copy_from=[tiny_geotiff])
     res = _render(client, {"datasetId": tid})["result"]
     assert res["thumbnailUrl"], "①썸네일이 성공 응답에 실릴 자리가 있어야 한다"
     assert res["valuePreviewUrl"], "②비지도형이 성공 응답에 실릴 자리가 있어야 한다"
     # ③이 주 화면이다 — 주 화면 자리가 ①②를 가리키면 지도를 안 그린 것이 된다
-    주화면 = res["tileUrlTemplate"]
+    주화면 = res["imageUrl"]
     assert 주화면 != res["valuePreviewUrl"]
     assert 주화면 != res["thumbnailUrl"]
 

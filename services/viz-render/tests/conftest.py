@@ -63,6 +63,16 @@ def manual_client(source_root):
 
 
 @pytest.fixture
+def tile_client(source_root):
+    """**타일 갈래를 켠** 클라이언트 (`〈240〉`).
+
+    ⚠ 기본 `client` 는 **끈 상태**다 — 정본 문면(「PNG 한 장 + 경계 좌표 4값」)이
+    기본값이고, 타일은 **명시로 켰을 때만**이다. 두 픽스처가 A/B 두 갈래를 각각 잡는다.
+    """
+    return _make_client(source_root, "inline", tile_branch_enabled=True)
+
+
+@pytest.fixture
 def put_target(source_root):
     """대상 하나를 만든다 — 반환값은 ULID. 본체 파일들을 그 아래 놓는다.
 

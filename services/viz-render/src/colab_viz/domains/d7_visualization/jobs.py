@@ -75,6 +75,9 @@ class RenderJob:
     #: `core-viz.yaml#GridRejection` — 붙인 격자를 왜 못 썼는가. 거절이 아니면 `None`.
     grid_rejection: dict | None = None
     tile_url_template: str = ""
+    #: **갈래 스위치**(`〈240〉`). `JobStore` 가 설정에서 받아 작업마다 새긴다.
+    #: **기본값은 꺼짐** — 선언이 없으면 정본 문면대로 `imageUrl` 한 장이다.
+    tile_branch_enabled: bool = False
     artifacts: "PreviewArtifacts | None" = None
     color_range: scale.ColorRange | None = None
     badge: str = preview.BADGE_NO_GRID
@@ -85,10 +88,22 @@ class RenderJob:
     def tile_branch(self) -> bool:
         """이 결과를 **타일 갈래**로 낼 것인가 (`〈238〉` · 경계 ㈏㈐ · ㈎ 는 부르는 자리에서).
 
+        ⭑ **⟨개정 2026-08-31 · Ted 판정 ⑬ · `PLAN-SoT §9 〈240〉`⟩ 선언된 스위치가 켜졌을
+          때만 타일이다.** ／ 종전 문면 ~~등록 데이터셋의 지도형이면 타일 갈래다~~ —
+          그 세 조건이 **암묵적으로 타일을 강제**했다. 정본(260826 델타 · POL-021)은
+          축자로 「**타일 서버도 바탕 지도도 쓰지 않는다**」이고, 타일 전환(`〈238〉`)의
+          근거였던 대장의 「타일 서빙」 문구는 **정본에 없는 문구**였다. 판정 ⑬ 은
+          되돌리는 대신 **두 갈래를 다 두고 A/B 로 비교**하기로 했고, **기본은 한 장**이다.
+
         ⚠ **`is_upload` 로 가른다** — 「등록된 데이터셋인가」는 대상 해석이 이미 아는
         사실이고(`ports/source.ResolvedTarget`) 여기서 다시 판정하지 않는다.
+        ⚠ **스위치는 경계를 넓히지 못한다.** 켜도 비지도형(㈎ · 부르는 자리)·미등록
+        업로드(㈏)·서명 비밀 없음(㈐)은 **언제나 한 장**이다 — 스위치는 「타일을 내라」는
+        선언이지 「없는 경계를 지어내라」는 선언이 아니다.
         """
-        return (not self.spec.target.is_upload) and bool(self.tile_url_template)
+        return (self.tile_branch_enabled
+                and (not self.spec.target.is_upload)
+                and bool(self.tile_url_template))
 
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
@@ -490,7 +505,8 @@ class JobStore:
 
     def __init__(self, *, execution: str, tile_url_base: str, ttl_seconds: int,
                  tile_signing_secret: str | None = None,
-                 signature_ttl_seconds: int | None = None) -> None:
+                 signature_ttl_seconds: int | None = None,
+                 tile_branch_enabled: bool = False) -> None:
         self._jobs: dict[str, RenderJob] = {}
         self._pending: list[RenderJob] = []
         self._lock = threading.Lock()
@@ -499,9 +515,12 @@ class JobStore:
         self._ttl = ttl_seconds
         self._secret = tile_signing_secret
         self._sig_ttl = ttl_seconds if signature_ttl_seconds is None else signature_ttl_seconds
+        # **기본값은 꺼짐이다** (`〈240〉`) — 부르는 자리가 아무 말도 안 하면 한 장이다.
+        self._tile_branch_enabled = tile_branch_enabled
 
     def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool) -> RenderJob:
-        job = RenderJob(render_id=render_id, spec=spec)
+        job = RenderJob(render_id=render_id, spec=spec,
+                        tile_branch_enabled=self._tile_branch_enabled)
         now = datetime.now(timezone.utc)
         if temporary:
             # 등록 전 업로드의 미리보기 결과는 서버에 임시로만 둔다 (정본 §8 ③ · `NB-2`)

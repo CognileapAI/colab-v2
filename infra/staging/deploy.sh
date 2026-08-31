@@ -184,8 +184,34 @@ log "⑨ 앱 롤 GRANT (NOBYPASSRLS · 비소유자 검사 포함)"
 "$HERE/db-bootstrap.sh" app-grants || abort "GRANT" "db-bootstrap.sh app-grants 실패"
 
 # ── ⑩ 교체 ─────────────────────────────────────────────────────────────────
-log "⑩ 5개 배포 단위 + 엣지 교체"
+# ⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈240〉`⟩ 엣지 설정 해시를 실어 보낸다.**
+#   `nginx.i2.conf` 는 compose 의 **바인드 마운트**이고 이 자리는 `up -d` 뿐이다.
+#   nginx 는 이미지·환경이 안 바뀌면 **재생성 대상이 아니다** — 그래서 **설정 파일을
+#   고쳐도 도는 설정은 옛것**일 수 있었다. 직전 회차가 그것을 `[미확인]` 으로 남겼고
+#   (`sessions/P3-EDGE-TILE-20260831.md §3`), 여기서 **우회가 아니라 절차 자체를** 고친다.
+#   해시를 환경에 실으면 compose 가 **설정이 바뀐 회차에만** nginx 를 다시 만든다.
+#   ⚠ 셸 환경이 `--env-file` 보다 우선한다 — 그래서 export 로 넘긴다.
+#   ⚠ 그리고 **넣었다고 믿지 않는다** — 반영 여부는 ⑩-b 가 컨테이너 안의 실물로 판정한다.
+EDGE_CONF="$HERE/nginx.i2.conf"
+[ -f "$EDGE_CONF" ] || abort "교체" "엣지 설정 파일이 없다: nginx.i2.conf"
+export COLAB_EDGE_CONF_SHA="$(sha256sum "$EDGE_CONF" | cut -c1-16)"
+log "⑩ 5개 배포 단위 + 엣지 교체 (엣지 설정 해시 ${COLAB_EDGE_CONF_SHA})"
 dc up -d --remove-orphans || abort "교체" "up -d 실패"
+
+# ── ⑩-b 엣지 설정 반영 판정 — **「고쳤다」 ≠ 「돌고 있다」** ──────────────────
+# 레포의 파일과 **도는 컨테이너 안의 파일**을 바이트로 대조한다. 이 판정이 없으면
+# 「설정을 배포했다」가 검증 없이 단언된다 — `:i2` 재부착이 그랬던 것과 같은 모양이다.
+# **모르면 red 다** — 컨테이너에 못 닿는 것도 red 이지 통과가 아니다.
+log "⑩-b 엣지 설정 반영 판정 — 도는 컨테이너 안의 파일과 바이트 대조"
+running_conf="$(docker exec colab_v2_staging_nginx cat /etc/nginx/conf.d/default.conf 2>/dev/null \
+                 | sha256sum | cut -c1-16)" || running_conf=""
+if [ -z "$running_conf" ]; then
+  abort "엣지 설정 반영" "도는 nginx 에서 설정을 읽지 못했다 — 판정 불가는 red 다"
+fi
+if [ "$running_conf" != "$COLAB_EDGE_CONF_SHA" ]; then
+  abort "엣지 설정 반영" "도는 설정이 레포 판과 다르다(도는 것 ${running_conf} ≠ 레포 ${COLAB_EDGE_CONF_SHA}) — nginx 가 재생성되지 않았다"
+fi
+log "   확인 엣지 설정 — 레포 판과 도는 판이 같다(${COLAB_EDGE_CONF_SHA})"
 
 # ── ⑪ 판정 — **여기가 종료 코드의 근거다** (DR-6 · 완료 정의 2-b) ────────────
 # 종전 ⑦ 은 `dc ps` 로 끝났다. `dc ps` 는 「무엇이 서빙되고 있는가」를 묻지 않는다.

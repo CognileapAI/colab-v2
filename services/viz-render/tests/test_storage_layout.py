@@ -81,8 +81,11 @@ def test_core_api_가_놓은_격자로_지도형이_그려진다(source_root):
         "격자를 올렸는데 렌더러가 못 찾았다 — 배치 규약이 갈라졌다"
     assert result["bounds"]["west"] == pytest.approx(126.0, abs=1e-4)
     assert result["bounds"]["north"] == pytest.approx(38.0, abs=1e-4)
-    # ⭑ ⟨개정 2026-08-31 · `〈238〉`⟩ 등록된 데이터셋의 주 화면은 타일 갈래다
-    assert result["sidecarUrl"] and result["worldFileUrl"] and result["tileUrlTemplate"]
+    # ⭑ ⟨재개정 2026-08-31 · `〈240〉`⟩ 갈래는 스위치다 — **기본값은 「한 장」**이므로
+    #   주 화면 자리는 `imageUrl` 이다. ／ 종전 ~~`〈238〉` 으로 타일 갈래다~~.
+    #   ⚠ 이 시험이 잠그는 것은 **배치 규약**(`#20`)이고 갈래가 아니다 — 두 갈래 어디서나
+    #   격자를 올렸으면 지도형이 나와야 한다는 성질은 같다.
+    assert result["sidecarUrl"] and result["worldFileUrl"] and result["imageUrl"]
 
 
 def test_격자를_안_올리면_그대로_보류다(source_root):
