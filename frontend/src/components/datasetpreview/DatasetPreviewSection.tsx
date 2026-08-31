@@ -13,7 +13,9 @@
 // **이 구역이 짓지 않는 것** (범위를 늘리지 않는다 — `CLAUDE.md §5`)
 //  · 팔레트·구간 수 컨트롤과 그에 따른 재렌더 = `V-1`(서버측) · `J-6`(선택 UI). 이 구역은
 //    기본값으로 **한 번 그린다.** 보기 전용 화면에는 정본이 그 컨트롤을 애초에 두지 않는다(`§3.2`).
-//  · 타일 뷰 · 값 조회 · 겹쳐 보기 = 각각 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
+//  · 값 조회 · 겹쳐 보기 = 각각 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
+//    ⭑ ⟨개정 2026-08-31 · Ted 판정 ⑩ · `PLAN-SoT §9 〈238〉`⟩ **타일 뷰는 이제 이 구역이 짓는다** —
+//    지도 화면을 타일 방식으로 전환했다(`03-HANDOFF §4` `#48`). ／ 이전 표기 ~~타일 뷰 ·~~
 //
 // **이 구역이 새로 짓는 것 둘** (화면 레인 · `PLAN-SoT §9 〈231〉`·`〈232〉` 뒤)
 //  · **확대(줌)** — 정본 `§8` 「확대(줌) — 왜 넣는가, 무엇이 되면 된 것인가」 조건 여섯.
@@ -176,6 +178,26 @@ function StartedPreview(props: {
   });
   // **훅은 조건 밖에서 부른다** — 렌더가 어느 단계든 같은 순서로 불려야 한다.
   const zoom = useZoomPan();
+
+  // **원본 해상도를 한 번만 묻는다** (정본 v2.6 §8 조건 ⑷ · `〈238〉`).
+  // 타일 표면에는 잴 그림 한 장이 없어 사이드카가 그 값을 말한다. **확대 조작은 이
+  // 경로를 다시 타지 않는다** — 의존이 결과 한 건의 사이드카 주소 하나다(조건 ⑶).
+  const done = state.phase === '완료' ? state.result : undefined;
+  const sidecarUrl = done?.tileUrlTemplate ? done.sidecarUrl : undefined;
+  const { datasetSource } = props;
+  const { onNativeWidth } = zoom;
+  useEffect(() => {
+    if (!sidecarUrl) return;
+    let alive = true;
+    void (async () => {
+      const geom = await datasetSource.mapGeometry(sidecarUrl);
+      // **못 읽으면 아무것도 하지 않는다** — 한계를 지어내지 않는다.
+      if (alive && geom) onNativeWidth(geom.width);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [datasetSource, sidecarUrl, onNativeWidth]);
 
   if (state.phase === '그리는 중')
     return state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />;

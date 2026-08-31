@@ -1,11 +1,16 @@
 // 미리보기 **확대(줌)** — 정본 `Policy_데이터셋_상세 §8` 「확대(줌) — 왜 넣는가, 무엇이 되면
-// 된 것인가」(v2.5 · `PLAN-SoT §9 〈232〉`)의 여섯 조건을 지키는 자리.
+// 된 것인가」의 조건을 지키는 자리.
+// ⭑ ⟨개정 2026-08-31⟩ 정본은 **v2.6 · 일곱 조건**이다(⑺ 반응 100 ms · `〈233〉`).
+//   ／ 이전 표기 ~~v2.5 · 여섯 조건~~.
 //
 //  ⑵ **값·팔레트·구간 수 설정과 범례를 건드리지 않는다** — 이 훅은 렌더 요청에 손대지 않고
 //     **이미 그린 결과 위의 변환**만 들고 있다. 범례는 확대되는 층 묶음 밖에 선다.
 //  ⑶ **렌더를 다시 걸지 않는다** — 여기서 `create`·`get` 을 부르는 경로가 없다.
-//  ⑷ **데이터가 가진 해상도가 한계다** — 한계 배율은 지어내지 않고 **그림이 실제로 가진
-//     픽셀 수**(`naturalWidth`)와 화면에 놓인 크기의 비에서 온다. 재기 전에는 확대하지 않는다.
+//  ⑷ **데이터가 가진 해상도가 한계다** — 한계 배율은 지어내지 않고 **원본이 실제로 가진
+//     픽셀 수**와 화면에 놓인 크기의 비에서 온다. 재기 전에는 확대하지 않는다.
+//     ⭑ ⟨2026-08-31 · `〈238〉`⟩ 그 픽셀 수의 출처가 **둘**이 됐다 — 이미지 갈래는 그림의
+//     `naturalWidth`, **타일 갈래는 ③지도형 사이드카의 `width`**(`onNativeWidth`). 타일
+//     표면에는 잴 그림 한 장이 없어서다. **어느 쪽도 지어내지 않는다.**
 //  ⑸ **모든 층에 함께** — 변환은 층 묶음 하나에 걸리고 층마다 걸리지 않는다.
 //  ⑹ **저장하지 않는다** — 상태는 이 훅의 메모리뿐이다. 저장소를 쓰지 않는다.
 //
@@ -31,8 +36,17 @@ export interface ZoomPan {
   /** 데이터가 가진 해상도까지 들어왔는가. 재기 전에는 `false` — 모르는 것을 알린다고 하지 않는다. */
   atLimit: boolean;
   measured: boolean;
+  /** 지금 재어 둔 화면 크기. 아직 못 쟀으면 `undefined` — 타일 모자이크가 이 값을 쓴다. */
+  box: { width: number; height: number } | undefined;
   viewportRef: (el: HTMLDivElement | null) => void;
   onImageLoad: (e: { currentTarget: HTMLImageElement }) => void;
+  /**
+   * **원본 해상도를 그림이 아니라 밖에서 받는 자리** (조건 ⑷).
+   * 타일 표면에는 「그림 한 장」이 없어 `naturalWidth` 를 잴 대상이 없다 — 대신
+   * ③지도형의 사이드카가 담은 `width` 를 받는다(`PREVIEW-IMPLEMENTATION §3.3`).
+   * **모르면 부르지 않는다** — 여기 기본값을 두면 한계를 지어내는 것이 된다.
+   */
+  onNativeWidth: (naturalWidth: number) => void;
   onWheel: (e: { deltaY: number; preventDefault?: () => void }) => void;
   onMouseDown: (e: { clientX: number; clientY: number; button?: number }) => void;
   zoomIn: () => void;
@@ -54,6 +68,9 @@ export function useZoomPan(): ZoomPan {
   const [maxScale, setMaxScale] = useState(1);
   const [measured, setMeasured] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  // 화면 크기는 **상태로도 들고 있어야 한다** — 타일 모자이크가 그 값으로 조각을 세우는데
+  // ref 를 그때그때 읽으면 크기가 늦게 잡혀도 다시 그려지지 않는다.
+  const [boxSize, setBoxSize] = useState<{ width: number; height: number } | undefined>();
   const drag = useRef<{ x: number; y: number } | null>(null);
 
   const box = useCallback(() => {
@@ -148,15 +165,39 @@ export function useZoomPan(): ZoomPan {
     };
   }, [clampView]);
 
-  const onImageLoad = useCallback(
-    (e: { currentTarget: HTMLImageElement }) => {
-      const size = box();
-      const natural = e.currentTarget.naturalWidth;
-      if (!size || !natural) return;
-      setMaxScale(Math.max(1, natural / size.width));
-      setMeasured(true);
+  // **원본 해상도는 한 번 알면 계속 유효하다** — 결과가 바뀌지 않는 한 다시 묻지 않는다.
+  // 화면 크기 쪽은 바뀔 수 있으므로 둘을 갈라 들고, 크기가 바뀌면 한계를 다시 센다.
+  const nativeWidth = useRef(0);
+
+  const remeasure = useCallback(() => {
+    const size = box();
+    if (!size || !nativeWidth.current) return;
+    setBoxSize((prev) =>
+      prev && prev.width === size.width && prev.height === size.height ? prev : size,
+    );
+    setMaxScale(Math.max(1, nativeWidth.current / size.width));
+    setMeasured(true);
+  }, [box]);
+
+  const learn = useCallback(
+    (natural: number) => {
+      if (!natural) return;
+      nativeWidth.current = natural;
+      remeasure();
     },
-    [box],
+    [remeasure],
+  );
+
+  // 화면이 커지고 작아지면 **한계 배율도 달라진다** — 한계는 원본 픽셀 수와 화면에 놓인
+  // 크기의 비이기 때문이다(조건 ⑷). 늘 같은 값으로 두면 한계를 지어내는 쪽이 된다.
+  useEffect(() => {
+    window.addEventListener('resize', remeasure);
+    return () => window.removeEventListener('resize', remeasure);
+  }, [remeasure]);
+
+  const onImageLoad = useCallback(
+    (e: { currentTarget: HTMLImageElement }) => learn(e.currentTarget.naturalWidth),
+    [learn],
   );
 
   const visibleFraction = useCallback((): ZoomBoundsFraction => {
@@ -178,11 +219,13 @@ export function useZoomPan(): ZoomPan {
     y: view.y,
     maxScale,
     measured,
+    box: boxSize,
     atLimit: measured && view.scale >= maxScale && (view.scale > 1 || blocked),
     viewportRef: (node) => {
       el.current = node;
     },
     onImageLoad,
+    onNativeWidth: learn,
     onWheel,
     onMouseDown,
     zoomIn,

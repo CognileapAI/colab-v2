@@ -81,7 +81,8 @@ def test_core_api_가_놓은_격자로_지도형이_그려진다(source_root):
         "격자를 올렸는데 렌더러가 못 찾았다 — 배치 규약이 갈라졌다"
     assert result["bounds"]["west"] == pytest.approx(126.0, abs=1e-4)
     assert result["bounds"]["north"] == pytest.approx(38.0, abs=1e-4)
-    assert result["sidecarUrl"] and result["worldFileUrl"] and result["imageUrl"]
+    # ⭑ ⟨개정 2026-08-31 · `〈238〉`⟩ 등록된 데이터셋의 주 화면은 타일 갈래다
+    assert result["sidecarUrl"] and result["worldFileUrl"] and result["tileUrlTemplate"]
 
 
 def test_격자를_안_올리면_그대로_보류다(source_root):

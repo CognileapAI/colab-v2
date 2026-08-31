@@ -26,8 +26,14 @@ def _render(client, target: dict) -> dict:
 
 
 def test_결과는_이미지_갈래이고_타일틀을_함께_싣지_않는다(client, put_target, tiny_geotiff):
+    """⭑ **⟨개정 2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 대상을 미등록 업로드로 옮겼다.**
+
+    타일 갈래로 넘어간 것은 **등록된 데이터셋의 지도형**이고(`test_render_result_tiles.py`),
+    미등록 업로드는 그대로 이미지 갈래다. **이 시험이 재는 성질(`oneOf` 를 둘 다로 어기지
+    않는다)은 그대로이고 대상만 바뀐다** — 검사를 줄이지 않는다.
+    ／ 종전 대상 ~~`{"datasetId": tid}`~~."""
     tid = put_target(copy_from=[tiny_geotiff])
-    job = _render(client, {"datasetId": tid})
+    job = _render(client, {"uploadId": tid})
     assert job["status"] == "완료", job.get("failure")
     res = job["result"]
 

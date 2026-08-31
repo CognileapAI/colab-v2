@@ -62,6 +62,8 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
+    // 이미지 갈래 시험이라 사이드카를 묻지 않는다 (`〈238〉`)
+    mapGeometry: vi.fn(async () => undefined),
     screenshot: vi.fn(async () => new Blob([new Uint8Array([1])], { type: 'image/png' })),
     ...over,
   };

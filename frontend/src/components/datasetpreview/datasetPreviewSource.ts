@@ -95,6 +95,23 @@ export function apiDatasetPreviewSource(): DatasetPreviewSource {
       return r.data as unknown as Blob;
     },
 
+    async mapGeometry(sidecarUrl: string) {
+      // **타일과 같은 결이다** — 산출물은 중계를 거치지 않는다(`core-viz.yaml` 상단 주석).
+      // 못 읽으면 조용히 모른다고 답한다. **기본값을 지어내지 않는다**(조건 ⑷).
+      try {
+        const res = await fetch(sidecarUrl);
+        if (!res.ok) return undefined;
+        const doc: unknown = await res.json();
+        if (typeof doc !== 'object' || doc === null) return undefined;
+        const { width, height } = doc as { width?: unknown; height?: unknown };
+        if (typeof width !== 'number' || typeof height !== 'number') return undefined;
+        if (!(width > 0) || !(height > 0)) return undefined;
+        return { width, height };
+      } catch {
+        return undefined;
+      }
+    },
+
     async probeTile(url: string) {
       try {
         const res = await fetch(url, { method: 'GET' });

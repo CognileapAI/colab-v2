@@ -117,14 +117,20 @@ def test_격자를_잘_붙인_렌더에는_거절_필드가_없다(client, put_t
 # ── ⑵ 성공 응답이 세 층을 다 말한다 ────────────────────────────────────────
 
 def test_지도형_성공에도_썸네일과_값미리보기_URL_이_실린다(client, put_target, tiny_geotiff):
-    """③이 있으면 `imageUrl` 은 ③이다. 그때 ①②는 **버려지지 않고** 자기 필드로 간다."""
+    """③이 주 화면이다. 그때 ①②는 **버려지지 않고** 자기 필드로 간다.
+
+    ⭑ **⟨개정 2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋에서 ③의 자리가
+    `imageUrl` 에서 `tileUrlTemplate` 으로 옮겨졌다.** 재는 성질은 그대로다 — **①②가
+    주 화면 자리를 차지하지 않는다.** ／ 종전 ~~`imageUrl` 이 ②를 가리키면 안 된다~~.
+    """
     tid = put_target(copy_from=[tiny_geotiff])
     res = _render(client, {"datasetId": tid})["result"]
     assert res["thumbnailUrl"], "①썸네일이 성공 응답에 실릴 자리가 있어야 한다"
     assert res["valuePreviewUrl"], "②비지도형이 성공 응답에 실릴 자리가 있어야 한다"
-    # ③이 주 화면이다 — `imageUrl` 이 ②를 가리키면 지도를 안 그린 것이 된다
-    assert res["imageUrl"] != res["valuePreviewUrl"]
-    assert res["imageUrl"] != res["thumbnailUrl"]
+    # ③이 주 화면이다 — 주 화면 자리가 ①②를 가리키면 지도를 안 그린 것이 된다
+    주화면 = res["tileUrlTemplate"]
+    assert 주화면 != res["valuePreviewUrl"]
+    assert 주화면 != res["thumbnailUrl"]
 
 
 def test_비지도형_성공에도_썸네일_URL_이_실린다(client, put_target):

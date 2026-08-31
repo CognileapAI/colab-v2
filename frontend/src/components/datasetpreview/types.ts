@@ -42,6 +42,16 @@ export interface DatasetPreviewSource {
   /** 타일 한 장을 찔러 본다. 401 = 서명 만료. */
   probeTile(url: string): Promise<'ok' | 'expired'>;
   /**
+   * ③지도형의 **사이드카**(bbox JSON)를 읽어 **원본 해상도**를 받는다.
+   *
+   * **왜 필요한가** — 타일 표면에는 「그림 한 장」이 없어 `naturalWidth` 를 잴 대상이
+   * 없는데, 정본 v2.6 `§8` 조건 ⑷ 는 「**데이터가 가진 해상도가 한계**」를 요구한다.
+   * 그 값을 아는 자리가 사이드카의 `width`·`height` 이고(`PREVIEW-IMPLEMENTATION §3.3`)
+   * 그 URL 은 결과에 이미 실려 있다(계약 `sidecarUrl`). **계약을 고치지 않았다.**
+   * 못 읽으면 `undefined` — **한계를 지어내지 않는다.**
+   */
+  mapGeometry(sidecarUrl: string): Promise<{ width: number; height: number } | undefined>;
+  /**
    * 지금 장면을 PNG 로 뽑는다 (`createPreviewScreenshot` 중계).
    * **그리는 일은 서버가 한다** — 화면은 층과 보고 있는 자리만 실어 보낸다.
    */
