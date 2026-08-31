@@ -17,12 +17,23 @@
 from __future__ import annotations
 
 import json
+import logging
 import urllib.error
 import urllib.request
 from typing import Any
 
 #: 중계 대기 시간(초). 저쪽이 안 답할 때 이쪽 요청 스레드를 무한히 잡아 두지 않는다.
 RELAY_TIMEOUT_SECONDS = 10
+
+#: 계보 제안 실패의 **감시 표면** (`03-HANDOFF §5.5 DR-19`-㉯ · `PLAN-SoT §9 〈246〉`).
+#: 검색 쪽이 먼저 세운 규약과 같은 모양이다 (`routes/catalog.py:_search_log`) — 실패가
+#: 사람의 눈이 아니라 **기계가 긁을 이름**으로 서야 「지금 몇 건 실패했나」를 셀 수 있다.
+#: 이름 셋(로거 · `record.event` · `record.code`)은 문구가 바뀌어도 계약처럼 다룬다.
+SUGGEST_LOGGER = "colab_core.suggest"
+SUGGEST_REJECTED = "LINEAGE_SUGGEST_REJECTED"
+SUGGEST_UNAVAILABLE = "LINEAGE_SUGGEST_UNAVAILABLE"
+
+_suggest_log = logging.getLogger(SUGGEST_LOGGER)
 
 
 class RelayUnavailable(Exception):
@@ -146,6 +157,24 @@ class HttpPreviewRelay:
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
+
+
+def _record_suggest_failure(*, rejected: bool, lab_id: str, status: int | None,
+                            reason: str) -> None:
+    """**응답은 200 인데 실은 실패한 자리**를 기계가 긁을 이름으로 남긴다 (`DR-19`-㉯).
+
+    응답만으로는 「지금 몇 건 거부당했나」를 아무도 못 센다 — 화면은 `degraded` 로
+    「모른다」까지만 말하고, 그것은 사용자에게 맞는 문장이지 운영자에게 맞는 문장이 아니다.
+    **정직한 빈 상태를 깨지 않는 채로** 고장만 따로 드러내는 자리가 여기다.
+    """
+    event = "lineage.suggest.rejected" if rejected else "lineage.suggest.unavailable"
+    code = SUGGEST_REJECTED if rejected else SUGGEST_UNAVAILABLE
+    _suggest_log.log(
+        logging.ERROR if rejected else logging.WARNING,
+        "event=%s code=%s status=%s reason=%s", event, code, status, reason,
+        extra={"event": event, "code": code, "status": status,
+               "reason": reason, "labId": lab_id},
+    )
 
 
 def honest_empty_suggestions(*, lab_id: str, lab_name: str, searched_count: int,
@@ -313,6 +342,9 @@ class HttpLineageSuggestionRelay:
         실제 요청 바이트를 보지 않는다. 동결이 먼저이므로 **정본은 계약이고 고친 쪽은 여기다.**
         """
         if self._base is None:
+            # **아직 연결되지 않은 것은 고장이 아니다** — `K3` 는 착수 전이고, 그것이
+            # 결정된 상태다. 여기에 실패를 기록하면 매 업로드가 오류 한 줄을 내고
+            # 「AI 없이도 v2 는 완결된 제품」이 감시에서 사고처럼 보인다.
             return honest_empty_suggestions(
                 lab_id=lab_id, lab_name=lab_name, searched_count=searched_count,
                 reason="계보 제안 서비스가 아직 연결되지 않았다 — 제안 없이 등록할 수 있다.")
@@ -328,17 +360,27 @@ class HttpLineageSuggestionRelay:
             status, body = _request(f"{self._base}/lineage-suggestions", method="POST",
                                     headers=_scope_headers(lab_id, account_id), body=payload)
         except RelayUnavailable as e:
+            reason = f"계보 제안 서비스에 닿지 못했다: {e}"
+            _record_suggest_failure(rejected=False, lab_id=lab_id, status=None, reason=reason)
             return honest_empty_suggestions(
-                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count,
-                reason=f"계보 제안 서비스에 닿지 못했다: {e}")
+                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count, reason=reason)
         if status != 200 or body is None:
+            # **거부와 장애를 같은 줄로 접지 않는다.** 4xx 는 저쪽이 우리 요청을 물리친 것이라
+            # **우리 쪽 고장**이고 재시도로 낫지 않는다 — 계약 표류가 여기로 떨어진다(`DR-19`).
+            # 5xx·빈 본문은 저쪽 사정이다. 화면은 둘 다 「모른다」로 같지만 고칠 사람이 다르다.
+            reason = f"계보 제안 서비스가 {status} 로 답했다."
+            _record_suggest_failure(rejected=400 <= status < 500,
+                                    lab_id=lab_id, status=status, reason=reason)
             return honest_empty_suggestions(
-                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count,
-                reason=f"계보 제안 서비스가 {status} 로 답했다.")
+                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count, reason=reason)
         # **요청의 범위와 다르면 응답을 버린다** (`core-ai.yaml` LineageSuggestionResponse.scope).
         scope = body.get("scope") if isinstance(body, dict) else None
         if not isinstance(scope, dict) or scope.get("labId") != lab_id:
+            reason = "제안 응답의 범위가 요청과 달라 버렸다."
+            _record_suggest_failure(rejected=True, lab_id=lab_id, status=status, reason=reason)
             return honest_empty_suggestions(
-                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count,
-                reason="제안 응답의 범위가 요청과 달라 버렸다.")
+                lab_id=lab_id, lab_name=lab_name, searched_count=searched_count, reason=reason)
+        # **여기부터가 정직한 빈 상태의 자리다** — 저쪽이 답했고 0건이면 그것이 참인 답이다.
+        # 그 자리에는 실패 기록을 남기지 않는다. 남기면 「없다」와 「못 물어봤다」가
+        # 기록에서 다시 붙고, 감시가 매 업로드마다 울어 아무도 보지 않게 된다.
         return body
