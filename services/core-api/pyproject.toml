@@ -20,3 +20,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+  # `S3` 완료 정의의 계보 조항을 **실파일**로 재는 케이스에 붙는다(`tests/test_e2e_s3_real.py`).
+  # 표식을 등록해 두는 이유는 하나 — **마운트 없이 돌릴 때 명시적으로 빼기 위해서**다
+  # (`-m "not e2e"`). 표식이 없으면 뺄 방법이 없어 조용히 skip 하고 싶어진다.
+  "e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다",
+]
