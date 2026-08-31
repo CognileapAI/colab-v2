@@ -192,7 +192,8 @@ case "$GATE" in
     # 개발 항목 상태의 **대장 ↔ 산문** 불일치 (Ted 판정 2026-08-28).
     # 정본 = dev-package/work-items.yaml. 상태가 산문 세 곳에 흩어져 사람 기억으로
     # 동기화되던 것을 기계가 받는다 — 「관례를 두지 않는다」의 마지막 사각지대였다.
-    # 검사 6종: 스키마 · 완주 체크리스트 · 진실원 표 · 보류 항목 혼입 · 기한 경과 · conflict 잔존.
+    # 검사 7종: 스키마 · 완주 체크리스트 · 진실원 표 · 보류 항목 혼입 · 기한 경과 · conflict 잔존
+    #          · 결정 번호 중복(`PLAN-SoT §9` 의 〈n〉 · 2026-08-31 추가 · `〈252〉`).
     exec python3 "$REPO_ROOT/gates/tools/work_item_consistency.py"
     ;;
   work-item-selftest)

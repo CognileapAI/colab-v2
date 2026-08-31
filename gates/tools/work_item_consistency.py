@@ -20,13 +20,19 @@
   `dev-package/work-items.yaml` 하나뿐. 이 스크립트에 항목표를 다시 적지 않는다.
   산문 문서는 그 대장의 **반영본**이며, 여기서 대조 대상이다.
 
-검사 여섯
+검사 일곱
   ㈎ 대장 스키마 — 필수 필드 · status/stage 값 · depends_on 이 실재하지 않는 id 를 가리킴
   ㈏ 완주 체크리스트 대조 — `WORK-UNITS §11` 코드블록의 상태 토큰과 대장의 상태 일치
   ㈐ 진실원 대조 — `03-HANDOFF §1` 각 트랙 표와 대장의 상태 일치
   ㈑ 보류 항목 혼입 — `status: deferred`(⏸ 계열)가 착수 후보 표에 이름으로 등장하는가
   ㈒ 기한 경과 — `deadline.fired: true` 인데 status 가 open/deferred 로 남아 있는가
   ㈓ conflict 잔존 — 대장에 `status: conflict` 가 하나라도 있으면 red
+  ㈔ 결정 번호 중복 — `PLAN-SoT §9` 표의 `〈n〉` 이 두 번 이상 나오면 red
+
+  ⚠ ㈔ 는 **충돌을 막지 못한다.** 두 레인이 같은 번호를 동시에 집는 것은 각자의 작업 트리에서
+    일어나고, 이 검사는 그 둘이 한 파일에 모인 **병합 시점**에 비로소 본다. 그것이 이 검사가
+    사는 자리다 — 2026-08-31 에 두 레인이 동시에 〈241〉 을 집어 병합 충돌이 났고,
+    그때까지 번호를 지키는 기제가 게이트 25종 중 **0건**이었다(`〈252〉`).
 
   ⚠ ㈏·㈐ 는 **conflict 항목을 비교 대상에서 뺀다.** 산문끼리 갈린 것은 대장이 `conflict` 로
   기록하고 ㈓ 가 잡는다. 같은 사실을 두 검사가 각자 red 로 세면 건수가 부풀고, 그러면
@@ -41,7 +47,8 @@
     오탐이 잦은 검사기는 곧 무시당하고, 무시당하는 검사기는 없는 것과 같다.
 
 fail-closed (CLAUDE.md §4)
-  대장 부재·파싱 실패·항목 0건 · 산문 문서 부재 · 대조 표 0건 · 코드블록 부재 → 전부 red.
+  대장 부재·파싱 실패·항목 0건 · 산문 문서 부재 · 대조 표 0건 · 코드블록 부재 →
+  전부 red. `PLAN-SoT` 부재 · `§9` 절 부재 · 결정 번호 행 0건도 red 다.
 
 green-by-skip 방지
   파싱할 수 없어 **검사하지 못한 자리**는 건수와 함께 출력에 명시한다. 무엇을 안 봤는지를
@@ -71,6 +78,9 @@ HANDOFF = pathlib.Path(
 WORKUNITS = pathlib.Path(
     os.environ.get("COLAB_WORK_ITEMS_WORKUNITS") or (REPO_ROOT / "dev-package/WORK-UNITS.md")
 )
+PLAN = pathlib.Path(
+    os.environ.get("COLAB_WORK_ITEMS_PLAN") or (REPO_ROOT / "dev-package/PLAN-SoT.md")
+)
 
 # 진행 표기 규칙 = WORK-UNITS §12
 GLYPH_TO_STATUS = {
@@ -95,6 +105,12 @@ ID_AT_START = re.compile(r"^(" + ID_RE.pattern + r")\b")
 problems: list[str] = []        # 위반 — red 사유
 unchecked: list[str] = []       # **항목 행인데** 읽지 못한 자리 — 숨기지 않는다
 not_item_tables: list[str] = []  # 애초에 항목표가 아니어서 대상이 아닌 표 — 위와 성격이 다르다
+observations: list[str] = []    # 위반도 결손도 아닌 **관측치** — 판정에 쓰지 않는다
+
+#: `PLAN-SoT §9` 결정 로그 표의 첫 칸. 결정 번호는 **행 첫 칸에만** 산다 —
+#: 본문 안의 `〈n〉` 은 다른 결정을 **가리키는 인용**이라 중복이 정상이다. 그것을 세면
+#: 이 검사는 첫 회차부터 오탐으로 무시당한다.
+DECISION_ROW_RE = re.compile(r"^\|\s*〈\s*(\d+)\s*〉\s*\|")
 
 
 def die(msg: str) -> None:
@@ -462,6 +478,69 @@ def check_conflicts(by_id: dict[str, dict]) -> int:
     return n
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# ㈔ 결정 번호 중복 — PLAN-SoT §9
+# ────────────────────────────────────────────────────────────────────────────
+def check_decision_numbers() -> int:
+    """`PLAN-SoT §9` 표의 결정 번호 `〈n〉` 이 두 번 이상 쓰였는가.
+
+    **왜 첫 칸만 보는가** — 결정 번호가 「선언」되는 자리는 표의 첫 칸 하나뿐이다.
+    본문·비고 안의 `〈n〉` 은 다른 결정을 **가리키는 인용**이고 중복이 정상이다.
+    둘을 섞어 세면 실제 문서에서 즉시 오탐이 나고, 오탐을 내는 검사기는 무시당한다.
+
+    **왜 동그라미 번호(①…㊻)는 이 검사가 세지 않는가** — 실측(2026-08-31): 그 계열은
+    `§9` 안에서 **설계상 두 번 인쇄된다.** 「확정으로 내려간 것」 표가 `⑯`·`⑰`·`⑱`·`⑳`
+    를 이관 기록으로 다시 적는다(중복 4건). 그 재인쇄는 어긋남이 아니라 이력이고,
+    새 결정은 2026-08-24 이후 전건 `〈n〉` 으로만 붙는다(실측 51~243 · 193행).
+    **막으려는 사고(두 레인이 같은 새 번호를 집는 것)가 사는 계열은 `〈n〉` 하나다.**
+
+    **건너뛴 번호를 red 로 삼지 않는다** — 실측에서 51~243 이 **빈칸 0** 이라 지금은
+    어느 쪽으로 정해도 green 이고, 「번호를 비우지 않는다」는 규칙은 이 레포 어디에도
+    쓰여 있지 않다. 없는 규칙을 게이트가 만들어 강제하지 않는다(`CLAUDE.md §5`).
+    대신 **세어서 출력한다** — 생기면 사람이 본다.
+    """
+    if not PLAN.exists():
+        die(f"결정 로그 문서가 없다: {PLAN.name}")
+    lines = section_lines(PLAN.read_text(encoding="utf-8"), r"^9\.\s*결정 로그")
+    if not lines:
+        die("`PLAN-SoT.md` 에서 `## 9. 결정 로그` 절을 찾지 못했다")
+
+    seen: dict[int, int] = {}
+    order: list[int] = []
+    in_fence = False
+    for ln in lines:
+        if ln.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = DECISION_ROW_RE.match(ln.lstrip())
+        if not m:
+            continue
+        n = int(m.group(1))
+        if n not in seen:
+            order.append(n)
+        seen[n] = seen.get(n, 0) + 1
+
+    if not order:
+        die("㈔ `PLAN-SoT §9` 에서 결정 번호 행을 하나도 찾지 못했다 — 검사 대상 0 은 통과가 아니다")
+
+    for n in order:
+        if seen[n] > 1:
+            problems.append(
+                f"㈔ 결정 번호 `〈{n}〉` 이 `PLAN-SoT §9` 에 {seen[n]}번 나온다 — "
+                f"두 회차가 같은 번호를 집었다. 뒤에 온 쪽이 새 번호를 받는다"
+            )
+
+    gaps = [n for n in range(min(order), max(order) + 1) if n not in seen]
+    if gaps:
+        observations.append(
+            f"㈔ 건너뛴 결정 번호 {len(gaps)}건 — {', '.join(f'〈{g}〉' for g in gaps[:20])}"
+            f"{' …' if len(gaps) > 20 else ''} (red 가 아니다 · 위 docstring 참조)"
+        )
+    return len(order)
+
+
 def main() -> int:
     items = load_ledger()
     by_id = check_schema(items)
@@ -471,12 +550,20 @@ def main() -> int:
     n_candidates = check_deferred_in_candidates(by_id)
     n_deadlines = check_deadlines(by_id)
     n_conflicts = check_conflicts(by_id)
+    n_decisions = check_decision_numbers()
 
     print(
         f"work-item-consistency: 대장 {len(by_id)}건 · "
         f"㈐ 진실원 대조 {n_handoff}행 · ㈏ 체크리스트 대조 {n_checklist}건 · "
-        f"㈑ 착수 후보 {n_candidates}행 · ㈒ 기한 {n_deadlines}건 · ㈓ conflict {n_conflicts}건"
+        f"㈑ 착수 후보 {n_candidates}행 · ㈒ 기한 {n_deadlines}건 · ㈓ conflict {n_conflicts}건 · "
+        f"㈔ 결정 번호 {n_decisions}개"
     )
+
+    if observations:
+        # 위반이 아니라 **관측치**다 — 판정에 쓰지 않는다. 섞어 세면 red 건수가 거짓이 된다.
+        print(f"  ── 관측 {len(observations)}건 (위반이 아니다)")
+        for o in observations:
+            print(f"     · {o}")
 
     if unchecked:
         print(f"  ── 검사 대상 밖 {len(unchecked)}건 (파싱하지 못해 **안 본** 자리다 — 통과의 근거가 아니다)")

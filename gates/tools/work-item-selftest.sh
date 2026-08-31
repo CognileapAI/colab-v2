@@ -55,9 +55,15 @@ expect() { # $1=기대(green|red) $2=기호(red 일 때만 · green 이면 -) $3
 
 run() { # $1=fixture 디렉터리 — 대장과 산문 둘 다 fixture 로 고정한다
   local d="$FIX/$1"
+  # 결정 로그는 픽스처가 자기 것을 들고 있으면 그것, 아니면 대조군 것을 쓴다.
+  # ㈔ 하나를 더하면서 기존 red 픽스처 여섯에 같은 파일을 여섯 벌 복사하지 않는다 —
+  # 복사본이 갈리면 그때부터 어느 것이 정본인지 아무도 모른다.
+  local plan="$d/PLAN-SoT.md"
+  [ -f "$plan" ] || plan="$FIX/green/PLAN-SoT.md"
   COLAB_WORK_ITEMS_LEDGER="$d/work-items.yaml" \
   COLAB_WORK_ITEMS_HANDOFF="$d/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$d/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_PLAN="$plan" \
     python3 "$GATE"
 }
 
@@ -65,6 +71,22 @@ run_missing_ledger() { # 대장 부재 — 검사 불가는 통과가 아니다
   COLAB_WORK_ITEMS_LEDGER="$FIX/green/없는-대장.yaml" \
   COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+    python3 "$GATE"
+}
+
+run_missing_plan() { # 결정 로그 문서 부재 — 검사 불가는 통과가 아니다
+  COLAB_WORK_ITEMS_LEDGER="$FIX/green/work-items.yaml" \
+  COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
+  COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_PLAN="$FIX/green/없는-결정로그.md" \
+    python3 "$GATE"
+}
+
+run_plan_no_section() { # `## 9. 결정 로그` 절이 없는 경우 — 대상 0 을 green 으로 세지 않는다
+  COLAB_WORK_ITEMS_LEDGER="$FIX/green/work-items.yaml" \
+  COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
+  COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_PLAN="$FIX/green/WORK-UNITS.md" \
     python3 "$GATE"
 }
 
@@ -78,7 +100,9 @@ run_missing_section() { # 진실원의 §1 절이 사라진 경우 — 대조 �
 echo "══ work-item-selftest ══════════════════════════════════════"
 
 # 대조군 — 이것이 red 면 게이트가 고장난 것이다 (정밀도 손상)
-expect green - "대조군: 대장 ↔ 산문 일치 (T-P 3열 표 · 소문자 접미 식별자 포함)" run green
+# 대조군은 ㈔ 의 **정밀도**도 함께 증명한다 — 동그라미 번호가 이관 표에서 재인쇄되고
+# 본문이 `〈51〉` 을 두 번 인용해도 green 이다. 선언 자리(표 첫 칸)만 세기 때문이다.
+expect green - "대조군: 대장 ↔ 산문 일치 (T-P 3열 표 · 소문자 접미 식별자 포함 · 동그라미 재인쇄·본문 인용 있음)" run green
 
 # 검사 여섯의 fail-closed 증명 — **그 검사가 낸 red 인지 기호로 대조한다**
 expect red "㈎" "㈎ 스키마: depends_on 이 실재하지 않는 id 를 가리킨다"        run red-a-schema
@@ -92,10 +116,15 @@ expect red "㈓" "㈓ 산문끼리 갈린 채 conflict 로 남아 있다"       
 # 대조군은 같은 절에 계측 기준선 표(첫 열 `축`)를 담고 있고 그것은 green 이다 —
 # 둘이 함께 있어야 「정밀도를 올린 것」과 「범위를 줄인 것」이 갈린다.
 expect red "㈑" "㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다 → red (조용한 통과 금지)" run red-g-noitemtable
+# ㈔ — 두 레인이 같은 결정 번호를 집은 모양 (2026-08-31 〈241〉 충돌 · `〈252〉`)
+expect red "㈔" "㈔ 결정 번호 〈52〉 가 두 번 선언됐다"                          run red-h-dupnum
+expect red "㈔" "㈔ §9 는 있는데 결정 번호 행이 0건 → red (검사 대상 0 은 통과가 아니다)" run red-i-nodecision
 
 # 환경 결손 — green-by-skip 방지 (기호가 아니라 die() 경로라 기호 대조는 하지 않는다)
 expect red - "대장 부재 → red (검사 불가는 통과가 아니다)"                  run_missing_ledger
 expect red - "진실원에 §1 진행도 절이 없다 → red (대조 대상 0 은 통과가 아니다)" run_missing_section
+expect red - "결정 로그 부재 → red (검사 불가는 통과가 아니다)"                run_missing_plan
+expect red - "결정 로그에 §9 절이 없다 → red (대조 대상 0 은 통과가 아니다)"   run_plan_no_section
 
 if [ ${#FAILURES[@]} -gt 0 ]; then
   echo "::error::work-item-selftest — ${#FAILURES[@]}건 실패: ${FAILURES[*]}"
