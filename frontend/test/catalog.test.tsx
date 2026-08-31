@@ -301,3 +301,24 @@ describe('§1.2 카탈로그는 AI 를 쓰지 않는다', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 });
+
+describe('§8 상호 안내 — 반대 길이 그 릴리스에 없을 때 (정본 v1.9)', () => {
+  it('점선 박스가 남고, 표 헤더의 조건을 권하는 정본 축자 문구를 그대로 안내한다', async () => {
+    const { container } = renderCatalog();
+    await settle();
+    const box = container.querySelector('.crosslink');
+    expect(box).not.toBeNull();
+    expect(box).toHaveTextContent(
+      '찾을 것이 정해져 있으면 표 헤더의 열 이름을 눌러 조건을 걸어 보세요.',
+    );
+  });
+
+  it('그 릴리스에 없는 검색 화면으로 보내지 않는다 — 링크 0건 · 「AI 검색」 0건', async () => {
+    const { container } = renderCatalog();
+    await settle();
+    const box = container.querySelector('.crosslink')!;
+    expect(box.querySelectorAll('a')).toHaveLength(0);
+    expect(box.textContent).not.toMatch(/AI/);
+    expect(container.querySelector('a[href="/lab"]')).toBeNull();
+  });
+});
