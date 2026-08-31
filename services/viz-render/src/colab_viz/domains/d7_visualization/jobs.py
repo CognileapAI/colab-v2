@@ -13,15 +13,16 @@ from __future__ import annotations
 import hashlib
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
 
 from ...kernel import signing
+from ...kernel.ids import new_ulid
 from ...ports.source import ResolvedTarget, SourcePart
-from . import colormap, downsample, palettes, preview, raster, scale
+from . import colormap, downsample, invalidation, palettes, preview, raster, scale
 from .failures import FAILURE_MESSAGES, NotRenderableError, RenderError, RenderFailure
 from .grid import GridUnavailableError, find_reference_grid
 from .readers import Field, FieldReadError, read_field
@@ -83,6 +84,10 @@ class RenderJob:
     badge: str = preview.BADGE_NO_GRID
     value_variable: str = ""
     value_unit: str | None = None
+    #: 이 작업이 지난 **무효화 범위**(`Y-1` 완료 정의 ⓒ). 자동 경로와 수동 경로가
+    #: **같은 계산기**를 지났음을 여기 남긴다 — 두 경로가 각자 규칙을 갖지 않는다.
+    #: `trigger` 가 `None` 이면 사람이 부른 경로다.
+    invalidation: "invalidation.InvalidationPlan | None" = None
 
     @property
     def tile_branch(self) -> bool:
@@ -509,6 +514,7 @@ class JobStore:
                  tile_branch_enabled: bool = False) -> None:
         self._jobs: dict[str, RenderJob] = {}
         self._pending: list[RenderJob] = []
+        self._pending_events: dict[str, object] = {}
         self._lock = threading.Lock()
         self._execution = execution
         self._tile_url_base = tile_url_base.rstrip("/")
@@ -518,7 +524,9 @@ class JobStore:
         # **기본값은 꺼짐이다** (`〈240〉`) — 부르는 자리가 아무 말도 안 하면 한 장이다.
         self._tile_branch_enabled = tile_branch_enabled
 
-    def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool) -> RenderJob:
+    def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool,
+               event: "invalidation.InvalidationEvent | None" = None) -> RenderJob:
+        """`event` 가 없으면 **사람이 부른 경로**다 — 둘 다 같은 계산기를 지난다(ⓒ)."""
         job = RenderJob(render_id=render_id, spec=spec,
                         tile_branch_enabled=self._tile_branch_enabled)
         now = datetime.now(timezone.utc)
@@ -531,11 +539,18 @@ class JobStore:
 
         if self._execution == "inline":
             _run(job)
+            job.invalidation = self._plan_for(job, event)
         elif self._execution == "manual":
             self._pending.append(job)
+            self._pending_events[job.render_id] = event
         else:
-            threading.Thread(target=_run, args=(job,), daemon=True).start()
+            threading.Thread(target=self._run_and_plan, args=(job, event), daemon=True).start()
         return job
+
+    def _run_and_plan(self, job: RenderJob,
+                      event: "invalidation.InvalidationEvent | None") -> None:
+        _run(job)
+        job.invalidation = self._plan_for(job, event)
 
     def _tile_url(self, render_id: str, expires_at: datetime | None,
                   now: datetime) -> str:
@@ -557,7 +572,81 @@ class JobStore:
     def run_pending(self) -> None:
         """`manual` 실행기 전용 — 시험이 「그리는 중」 상태를 붙잡아 보기 위한 자리다."""
         while self._pending:
-            _run(self._pending.pop(0))
+            job = self._pending.pop(0)
+            _run(job)
+            job.invalidation = self._plan_for(job, self._pending_events.pop(job.render_id, None))
 
     def get(self, render_id: str) -> RenderJob | None:
         return self._jobs.get(render_id)
+
+    # ── 자동 무효화 (`Y-1`) ──────────────────────────────────────────────────
+    def _produced_for(self, target_id: str) -> list[invalidation.StaleCandidate]:
+        """그 대상 때문에 **이 인스턴스가 실제로 구운** 산출물들.
+
+        ⚠ **디렉터리를 훑지 않는다.** 미리보기 자리는 평평하고 대상이 경로에 없으므로
+        (`layout.json` ③) 훑으면 **남의 대상 산출물까지 집는다.** D7 에는 원장이 없고,
+        이 인스턴스가 아는 사실은 「내가 무엇을 구웠는가」뿐이다 — 아는 것만 센다.
+        """
+        out: list[invalidation.StaleCandidate] = []
+        seen: set[str] = set()
+        for job in list(self._jobs.values()):
+            if job.spec.target.target_id != target_id or job.artifacts is None:
+                continue
+            for a in job.artifacts.all():
+                if a.path in seen:
+                    continue
+                seen.add(a.path)
+                out.append(invalidation.StaleCandidate(cache_key=a.cache_key, path=a.path))
+        return out
+
+    def _plan_for(self, job: RenderJob,
+                  event: invalidation.InvalidationEvent | None) -> invalidation.InvalidationPlan:
+        """**자동·수동이 함께 지나는 한 자리**(완료 정의 ⓒ).
+
+        방금 이 작업이 낸 키는 `keep_keys` 로 살린다. 나머지 낡은 것이 범위다.
+        """
+        fresh = {a.cache_key for a in (job.artifacts.all() if job.artifacts else [])}
+        return invalidation.plan(event, produced=self._produced_for(job.spec.target.target_id),
+                                 previews_root=Path(job.spec.preview_dir),
+                                 keep_keys=fresh, target_id=job.spec.target.target_id)
+
+    def regenerate(self, event: invalidation.InvalidationEvent, *,
+                   source) -> "Regeneration":
+        """**stage 1 의 「자동 재생성 안 함」이 뒤집히는 그 한 자리**(완료 정의 ⓓ · `〈247〉`).
+
+        순서 = **사건 감지 → 재생성 → 무효화 범위 계산 → 집행**. 굽기 전에 지우면
+        실패했을 때 볼 그림이 하나도 안 남는다 — **새 것이 선 뒤에 낡은 것을 치운다.**
+
+        ⚠ **대상을 다시 해석한다**(`SourcePort`) — 「파일 추가」·「격자 변경」은 대상
+        디렉터리가 바뀐 사건이라 옛 해석을 그대로 쓰면 사건을 못 본다. ⚠ **원본은 읽기만
+        한다** — 이 경로에 원본·기준 격자를 쓰거나 지우는 자리가 없다(음성 시험이 잠근다).
+        """
+        previous = self._latest_for(event.target_id)
+        if previous is None:
+            raise LookupError(
+                f"이 인스턴스가 그린 적 없는 대상이다: {event.target_id} — "
+                "무효화 범위를 지어내지 않는다")
+        target = source.resolve(dataset_id=None if previous.spec.target.is_upload else event.target_id,
+                                upload_id=event.target_id if previous.spec.target.is_upload else None,
+                                file_ids=None)
+        spec = replace(previous.spec, target=target)
+        job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event)
+        plan = job.invalidation
+        removed = invalidation.apply(plan, previews_root=Path(spec.preview_dir)) if plan else ()
+        return Regeneration(job=job, plan=plan, removed=removed)
+
+    def _latest_for(self, target_id: str) -> RenderJob | None:
+        """그 대상의 가장 최근 완료 작업. **렌더 파라미터를 지어내지 않으려고** 둔다."""
+        found = None
+        for job in self._jobs.values():
+            if job.spec.target.target_id == target_id and job.status == STATUS_DONE:
+                found = job
+        return found
+
+
+@dataclass(frozen=True)
+class Regeneration:
+    """재생성 한 회의 결과 — 세 단계가 각각 관측된다(완료 정의 ⓑ)."""
+    job: RenderJob
+    plan: "invalidation.InvalidationPlan | None"
+    removed: tuple[Path, ...]
