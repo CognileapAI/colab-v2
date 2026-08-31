@@ -74,28 +74,20 @@ class Op:
 #:    `listPalettes` 는 신설과 동시에 구현해 표에 안 든다. `〈88〉` 묶음 4·5·6).
 #: → **20**(`P5` 잔여 — `deleteProject`·`setProjectStatus`·`unlinkProjectDataset`.
 #:    윗 문단이 배정을 넘은 이유를 적었다).
+#: → **12**(`P6` 승인 처리 — 접근 요청 4 ＋ Verified 4. **여덟이 한 회차에 나간다**).
+#:    앞의 여섯은 `NOT_IMPLEMENTED_NO_STORE` 였고 그 사유(「저장처 자체가 P0 스키마에 없다」)를
+#:    마이그레이션 `0010` 이 없앴다 — `d2_dataset_access_request`·`d2_verification_request`.
+#:    뒤의 둘(`approveVerification`·`cancelVerification`)은 `NOT_IMPLEMENTED_P1` 이었다.
+#:    **함께 뺀 이유** — 검토 대기를 만들 수 있는데 승인할 수 없으면 그 회차의 산출은
+#:    「쌓이기만 하는 대기줄」이다. 요청 op 만 열고 처리 op 을 남기는 절단은 정본 §7.1·§7.2 의
+#:    전이표를 반만 세우는 것이라 부분 완료가 된다 (`CLAUDE.md §5`).
+#:    여덟 다 실동작 시험이 뒤에 있다 (`tests/test_approval.py` — 음성 다섯 포함).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
     Op("downloadDataset", "GET", "/datasets/{datasetId}/download", "NOT_IMPLEMENTED_NO_STORE"),
-    Op("createAccessRequest", "POST", "/datasets/{datasetId}/access-requests",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("listPendingAccessRequests", "GET", "/access-requests/pending",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("approveAccessRequest", "POST", "/access-requests/{requestId}/approval",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("rejectAccessRequest", "POST", "/access-requests/{requestId}/rejection",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("requestVerification", "POST", "/datasets/{datasetId}/verification-request",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("listPendingVerificationRequests", "GET", "/verification-requests/pending",
-       "NOT_IMPLEMENTED_NO_STORE"),
-    Op("approveVerification", "POST", "/datasets/{datasetId}/verification",
-       "NOT_IMPLEMENTED_P1"),
-    Op("cancelVerification", "POST", "/datasets/{datasetId}/verification-cancellation",
-       "NOT_IMPLEMENTED_P1"),
     Op("getDashboardSummary", "GET", "/dashboard/summary", "NOT_IMPLEMENTED_P1"),
     Op("getDataMap", "GET", "/dashboard/data-map", "NOT_IMPLEMENTED_P1"),
     Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),

@@ -131,7 +131,12 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     lineageConfirmedAt: '2026-04-18T00:00:00Z',
     basicInfo: null,
     projects: null,
-    actions: NO_ACTIONS,
+    // ⭑ **잠긴 데이터는 요청할 수 있다.** 서버가 그렇게 내린다 —
+    // `routes/catalog.py` 축자 `"canRequestAccess": not body_accessible`
+    // (「잠겨서 못 보는 것은 숨기지 않는다 — 그 자리가 접근 요청이 된다」 · P-13).
+    // 종전 픽스처는 `NO_ACTIONS`(전부 false)라 **실서버와 어긋나 있었다** — WU-P6 이
+    // 그 자리를 채우기 전에는 아무도 그 차이를 볼 수 없었다.
+    actions: { ...NO_ACTIONS, canRequestAccess: true },
   },
 
   '01JYZ9K7WQ3N8V4M2X6C5B0AA2': fromCatalogRowOnly({

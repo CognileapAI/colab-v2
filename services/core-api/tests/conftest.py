@@ -115,6 +115,12 @@ _SEED_DATASETS = ("'0000000000000000000000DSA1'", "'0000000000000000000000DSA2'"
                   "'0000000000000000000000DSB1'")
 _KEEP_DATASETS = f" AND dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
 _CLEANUP: tuple[tuple[str, str, str], ...] = (
+    # **WU-P6 가 더한 셋.** 승인 시험은 요청 행과 **그 요청이 만든 허용 줄**을 함께 남긴다 —
+    # 허용 줄을 안 지우면 다음 회차에서 `DSA2` 가 이미 열린 채로 시작해 잠금 시험이 통째로
+    # 거짓 green 이 된다(`test_body_access.py` 가 제일 먼저 무너진다).
+    ("d2_dataset_access_request", "requested_at", ""),
+    ("d2_verification_request", "requested_at", ""),
+    ("d2_dataset_access_grant", "approved_at", ""),
     ("d6_project_dataset", "created_at", ""),
     # **`d6_project` 는 WU-P5 에서 들어왔다.** `listProjects` 가 생기기 전에는 시험이 만든
     # 프로젝트가 남아도 아무도 세지 않아 드러나지 않았다 — `createProject` 시험이 회차마다
@@ -164,6 +170,22 @@ _RESTORE: tuple[str, ...] = (
     """UPDATE d2_permission_switch SET enabled = true
         WHERE account_id = '000000000000000000000000A1'
           AND switch IN ('업로드·편집', '프로젝트 생성')""",
+    # **위임 성격 둘은 꺼진 채로 되돌린다** (seed.sql:35-36). WU-P6 의 음성 ⑤ 가 `승인 위임` 을
+    # 켜 보고 막히는지를 재는데, 켠 채로 새면 그 다음 회차의 「권한 없는 사람은 승인 불가」가
+    # 조용히 거짓 green 이 된다.
+    """UPDATE d2_permission_switch SET enabled = false
+        WHERE account_id = '000000000000000000000000A1'
+          AND switch IN ('승인 위임', '연구실 설정')""",
+    # Verified 왕복 시험은 시드 배지를 껐다 켠다. 시각 기준 삭제로는 못 되돌린다.
+    """UPDATE d2_verified
+          SET verified = true, approver_account_id = '00000000000000000000000AP1',
+              approved_at = '2026-01-03T00:00:00Z',
+              cancelled_by_account_id = NULL, cancelled_at = NULL, cancellation_reason = NULL
+        WHERE dataset_id = '0000000000000000000000DSA1'""",
+    """UPDATE d2_verified
+          SET verified = false, approver_account_id = NULL, approved_at = NULL,
+              cancelled_by_account_id = NULL, cancelled_at = NULL, cancellation_reason = NULL
+        WHERE dataset_id = '0000000000000000000000DSA2'""",
     # **`P5` 잔여 셋이 시드 행 자체를 바꾼다** — 닫기(`setProjectStatus`)는 `status` 를,
     # 소속 해제(`unlinkProjectDataset`)는 연결 행을 지운다. 시각 기준 삭제로는 못 되돌린다.
     # 되돌리지 않으면 「PRJA 에 데이터셋 1건」을 오라클로 삼는 시험이 순서에 따라 갈린다
