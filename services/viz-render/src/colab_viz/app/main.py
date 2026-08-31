@@ -14,6 +14,7 @@ from ..domains.d7_visualization.jobs import JobStore
 from ..kernel import errors
 from ..kernel.config import Settings, load_settings
 from ..ports.source import FilesystemSourcePort
+from .trigger_bus import SpoolTriggerPort
 from .routes import renders, screenshots, style
 
 API_PREFIX = "/viz/v1"
@@ -35,6 +36,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                               tile_signing_secret=settings.tile_signing_secret,
                               signature_ttl_seconds=settings.tile_signature_ttl_seconds,
                               tile_branch_enabled=settings.tile_branch_enabled)
+    # **받는 자리를 앱이 들고 선다**(`〈253〉` · `Y-1`). 배포가 자리를 안 주면 `None` 이고
+    # 트리거는 오지 않는다 — **자리를 지어내지 않는다.** 이 연결이 코드에 있는 것이
+    # 요점이다: 배포 설정에만 있는 연결은 조용히 끊어져도 아무도 모른다(RULING ㉗ 근거).
+    app.state.triggers = (SpoolTriggerPort(settings.trigger_spool)
+                          if settings.trigger_spool else None)
 
     @app.get("/healthz", include_in_schema=False)
     def _healthz() -> dict:

@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://colab.cognileap.ai/events/envelope.json",
-  "title": "CoLAB v2 이벤트 봉투 (core-api ↔ pipeline-worker)",
-  "description": "async seam 의 공통 껍데기. 모든 이벤트는 이 봉투 하나를 쓴다. 근거: contracts/README.md(이벤트 = JSON-Schema 봉투 + 멱등 키 + DLQ 재처리 규칙) · contracts/events/README.md · DOMAINS §2 D5(outbox/워커) · §4(pipeline-worker 만 워크로드가 다르다). 표기 규칙 — 속성 이름은 영문 lowerCamelCase, **라우팅 키 성격인 `type` 은 ASCII 점 표기**(fe-core.yaml 이 경로에 한국어를 싣지 않는 것과 같은 이유 — 토픽·큐 이름에 퍼센트 인코딩이 붙는다), **도메인 값 집합인 실패 분류·사유는 정본 한국어 표기**(common.json 표기 규칙과 동일). 경계 — 페이로드는 D5 가 소유한 `uploadId`·`fileId` 와 D1(shared kernel) 의 `labId`·`actorAccountId` 만 싣는다. 다른 도메인 테이블을 직접 가리키는 식별자(`datasetId`·`projectId`·계보 관계 ID)를 두지 않는다(CLAUDE.md §3-1). 파생값 2종(`계보 상태`·`가공 단계 Lv`)을 실어 나르지 않는다(PLAN-SoT §9-⑳).",
+  "title": "CoLAB v2 이벤트 봉투 (core-api ↔ pipeline-worker → viz-render)",
+  "description": "async seam 의 공통 껍데기. 모든 이벤트는 이 봉투 하나를 쓴다. 근거: contracts/README.md(이벤트 = JSON-Schema 봉투 + 멱등 키 + DLQ 재처리 규칙) · contracts/events/README.md · DOMAINS §2 D5(outbox/워커) · §4(pipeline-worker 만 워크로드가 다르다). 표기 규칙 — 속성 이름은 영문 lowerCamelCase, **라우팅 키 성격인 `type` 은 ASCII 점 표기**(fe-core.yaml 이 경로에 한국어를 싣지 않는 것과 같은 이유 — 토픽·큐 이름에 퍼센트 인코딩이 붙는다), **도메인 값 집합인 실패 분류·사유는 정본 한국어 표기**(common.json 표기 규칙과 동일). 경계 — 페이로드는 D5 가 소유한 `uploadId`·`fileId` 와 D1(shared kernel) 의 `labId`·`actorAccountId` 만 싣는다. 다른 도메인 테이블을 직접 가리키는 식별자(`datasetId`·`projectId`·계보 관계 ID)를 두지 않는다(CLAUDE.md §3-1). 파생값 2종(`계보 상태`·`가공 단계 Lv`)을 실어 나르지 않는다(PLAN-SoT §9-⑳). ⭑ **⟨증보 2026-08-31 · 12차 동결 해제 · PLAN-SoT §9 〈253〉 · Ted RULING ㉗⟩ 소비자가 하나 늘었다 — viz-render(D7).** 종전에는 이 seam 이 core-api ↔ pipeline-worker 둘뿐이었고, 그래서 `Y-1`(자동 무효화)의 **트리거 발신 배선이 설 자리가 없었다**(03-HANDOFF §4 #55). 더한 것은 **D5 가 내고 D7 이 받는 종류 3종**(`preview.backend-rerun`·`preview.grid-changed`·`preview.file-added`)이고, 봉투·멱등 키·재전달 규약은 **한 글자도 바꾸지 않았다** — 늘어난 것은 `EventType` 열거와 그 페이로드뿐이다. **방향은 한 방향이다**: D5 가 발행하고 D7 은 받기만 한다. D7 이 D5 의 표·outbox 를 읽는 경로는 이 계약에도, 어디에도 없다(CLAUDE.md §3-1).",
 
   "$defs": {
     "EventType": {
-      "description": "이벤트 종류. 7종이며 정본 E-04 가 실제로 요구하는 단계만 있다. 값은 라우팅 키로도 쓰이므로 ASCII 소문자 점 표기다. 순서는 `upload.accepted → file.format-detected → file.header-parsed → file.crs-normalized → preview.cog-built → upload.ready`, 어느 단계에서든 갈라져 나올 수 있는 `upload.failed` 하나. **포맷 감지가 헤더 파싱보다 앞이다** — 정본이 `형식 제한 없음, 헤더 인식만 형식별`(Policy_업로드와_계보_확정 §5 입력값 규칙 — 파일)이라 파서를 고르려면 포맷이 먼저 정해져야 한다.",
+      "description": "이벤트 종류. ⭑ **⟨증보 2026-08-31 · 12차 해제 · 〈253〉⟩ 10종이다** ／ 이전 표기 ~~7종~~ — 앞의 7종은 **E-04 업로드 파이프라인**(core-api ↔ pipeline-worker)이고, 뒤의 3종은 **미리보기 재료가 바뀌었다는 알림**(pipeline-worker → viz-render)이다. 뒤의 3종은 명령이 아니라 **사실**이다 — 「다시 그려라」가 아니라 「무엇이 바뀌었다」이고, 무엇을 무효화할지는 받는 쪽(D7)이 정한다(`Y-1` 완료 정의 ⓔ). **셋으로 가른 이유는 멱등 키다** — 키가 `<타입>:<uploadId>` 라서 한 종류로 묶으면 업로드 하나당 트리거가 **한 번만** 나가고, 「3종이 각각 무효화를 일으킨다」(`Y-1` 완료 정의 ⓑ)가 성립하지 않는다. 정본 E-04 가 실제로 요구하는 단계만 있다. 값은 라우팅 키로도 쓰이므로 ASCII 소문자 점 표기다. 순서는 `upload.accepted → file.format-detected → file.header-parsed → file.crs-normalized → preview.cog-built → upload.ready`, 어느 단계에서든 갈라져 나올 수 있는 `upload.failed` 하나. **포맷 감지가 헤더 파싱보다 앞이다** — 정본이 `형식 제한 없음, 헤더 인식만 형식별`(Policy_업로드와_계보_확정 §5 입력값 규칙 — 파일)이라 파서를 고르려면 포맷이 먼저 정해져야 한다.",
       "type": "string",
       "enum": [
         "upload.accepted",
@@ -15,12 +15,15 @@
         "file.crs-normalized",
         "preview.cog-built",
         "upload.ready",
-        "upload.failed"
+        "upload.failed",
+        "preview.backend-rerun",
+        "preview.grid-changed",
+        "preview.file-added"
       ]
     },
 
     "Source": {
-      "description": "발행한 배포 단위. 근거: DOMAINS §4(배포 단위 5개). `upload.accepted` 만 core-api 가 내고 나머지는 pipeline-worker 가 낸다 — 이 seam 이 한 방향이 아님을 봉투가 말한다.",
+      "description": "발행한 배포 단위. **받는 단위가 아니다** — 12차 해제로 소비자에 viz-render 가 늘었지만 이 열거는 그대로 둘이다(D7 은 받기만 한다). 근거: DOMAINS §4(배포 단위 5개). `upload.accepted` 만 core-api 가 내고 나머지는 pipeline-worker 가 낸다 — 이 seam 이 한 방향이 아님을 봉투가 말한다.",
       "type": "string",
       "enum": ["core-api", "pipeline-worker"]
     },
@@ -74,6 +77,12 @@
           "default": false
         }
       }
+    },
+
+    "InvalidationTrigger": {
+      "description": "**미리보기를 낡게 만드는 사건 3종.** ⭑ ⟨2026-08-31 · 12차 해제 · 〈253〉⟩ 값은 **대장 축자**다 — `WORK-UNITS §10.2-b` `Y-1` 행의 「미리보기 뒷단 재실행 · 격자 변경 · 파일 추가」(첫째 이름은 `〈206〉`-㉮ 가 「재가공」에서 바꿨다). **이름을 계약에서 새로 짓지 않는다.** 값이 한국어인 이유는 `FailureReason` 과 같다 — 라우팅 키인 `type` 은 ASCII 이고, **도메인 값 집합은 정본 표기**다. ⚠ **목록을 넓히는 것은 별도 판정이다** — 특히 「색 범위 잠정→확정 전환」은 여기 없다(`〈74〉`-㉴ 가 stage 1 의 자기 절차로 이미 규정했다).",
+      "type": "string",
+      "enum": ["미리보기 뒷단 재실행", "격자 변경", "파일 추가"]
     },
 
     "FailureClass": {

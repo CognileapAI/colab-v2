@@ -24,7 +24,36 @@ EVENT_TYPES: tuple[str, ...] = (
     "preview.cog-built",
     "upload.ready",
     "upload.failed",
+    # ⭑ ⟨2026-08-31 · 12차 동결 해제 · `PLAN-SoT §9 〈253〉` · Ted RULING ㉗⟩
+    #   **D5 → D7 알림 3종.** 앞의 7종과 성격이 다르다 — 앞은 업로드 하나가 단계를
+    #   지나는 **진행**이고, 이 셋은 「이미 선 미리보기의 재료가 바뀌었다」는 **사실**이다.
+    #   무엇을 지울지는 여기서 말하지 않는다. 받는 쪽(D7)이 계산한다(`Y-1` 완료 정의 ⓔ).
+    "preview.backend-rerun",
+    "preview.grid-changed",
+    "preview.file-added",
 )
+
+#: 트리거 이름 → 이벤트 종류. **이름의 정본은 대장**(`WORK-UNITS §10.2-b` `Y-1` 행 ·
+#: 첫째는 `〈206〉`-㉮ 로 「재가공」에서 바뀌었다)이고 계약이 그것을 열거로 못 박았다
+#: (`envelope.json#/$defs/InvalidationTrigger`). **여기서 새로 짓지 않는다.**
+#:
+#: ⚠ **왜 한 종류가 아니라 셋인가** — 멱등 키가 `<타입>:<uploadId>` 라서다. 한 종류로
+#: 묶으면 업로드 하나당 트리거가 **한 번만** 나가고, 「트리거 3종이 **각각** 무효화를
+#: 일으킨다」(`Y-1` 완료 정의 ⓑ)가 배선에서 성립하지 않는다.
+TYPE_BY_TRIGGER: dict[str, str] = {
+    "미리보기 뒷단 재실행": "preview.backend-rerun",
+    "격자 변경": "preview.grid-changed",
+    "파일 추가": "preview.file-added",
+}
+
+#: **E-04 업로드 파이프라인 7종** — 업로드 하나가 단계를 지나는 진행.
+#: 이름을 준 이유 = `EVENT_TYPES` 가 10종이 된 뒤로 「전 종」과 「파이프라인 전 종」이
+#: 다른 집합이 됐고, 그 둘을 산문으로 구분하면 시험이 갈린다.
+PIPELINE_TYPES: tuple[str, ...] = EVENT_TYPES[:7]
+
+#: **D7 이 받는 종류.** 릴레이가 이벤트 버스로 내보낼 대상을 이 집합으로 가른다 —
+#: 업로드 파이프라인의 내부 진행을 D7 에 흘리지 않는다.
+PREVIEW_STALE_TYPES: frozenset[str] = frozenset(TYPE_BY_TRIGGER.values())
 
 #: 행복 경로의 단계 순서 — 실패는 어느 단계에서든 갈라져 나온다.
 STAGE_ORDER: tuple[str, ...] = (
@@ -161,6 +190,19 @@ def upload_ready_payload(*, renderable: bool, metadata_complete: bool,
     return p
 
 
+def preview_stale_payload(*, trigger: str) -> dict:
+    """⑧⑨⑩ **미리보기가 낡았다** — 담는 것은 「어느 사건이었나」 하나뿐이다.
+
+    대상은 봉투의 `uploadId` 가 이미 말한다. **지울 경로·캐시 키를 싣지 않는다** —
+    발신자가 수신자의 산출물 배치를 알면 그 순간 D5 가 D7 의 저장소를 아는 것이 되고,
+    그것이 `03-HANDOFF §4 #20`(세 곳이 각자 배치를 쓰고 있었다)의 무늬다.
+    """
+    if trigger not in TYPE_BY_TRIGGER:
+        raise ValueError(
+            f"계약에 없는 트리거다: {trigger!r} — {list(TYPE_BY_TRIGGER)} 셋뿐이다")
+    return {"trigger": trigger}
+
+
 def upload_failed_payload(*, failed_at: str, failure_class: str, reason: str,
                           will_retry: bool, detail: str | None = None) -> dict:
     f: dict = {"failedAt": failed_at, "class": failure_class,
@@ -171,7 +213,7 @@ def upload_failed_payload(*, failed_at: str, failure_class: str, reason: str,
 
 
 def sample_payloads(upload_id: str) -> dict[str, dict]:
-    """7종 각각의 최소 유효 페이로드 — 계약 검증 시험이 쓴다."""
+    """전 종 각각의 최소 유효 페이로드 — 계약 검증 시험이 쓴다."""
     fid = "01JQ00000000000000000000F1"
     return {
         "upload.accepted": {"files": [
@@ -190,4 +232,7 @@ def sample_payloads(upload_id: str) -> dict[str, dict]:
         "upload.failed": upload_failed_payload(
             failed_at="file.format-detected", failure_class="영구",
             reason="형식 인식 실패", will_retry=False),
+        "preview.backend-rerun": preview_stale_payload(trigger="미리보기 뒷단 재실행"),
+        "preview.grid-changed": preview_stale_payload(trigger="격자 변경"),
+        "preview.file-added": preview_stale_payload(trigger="파일 추가"),
     }

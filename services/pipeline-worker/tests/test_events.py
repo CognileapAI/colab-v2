@@ -22,7 +22,10 @@ _UPL = "01JQ0000000000000000000003"
 _EV = "01JQ00000000000000000000E1"
 
 
-def test_seven_types_in_canonical_order():
+def test_event_types_in_canonical_order():
+    """⭑ ⟨개정 2026-08-31 · 12차 동결 해제 · `PLAN-SoT §9 〈253〉`⟩ **10종이다** ／
+    이전 표기 ~~7종~~. 앞의 7은 **E-04 업로드 파이프라인**(core-api ↔ pipeline-worker)이고
+    뒤의 3은 **D5 → D7 알림**이다 — 성격이 달라 집합에 각각 이름이 있다."""
     assert EVENT_TYPES == (
         "upload.accepted",
         "file.format-detected",
@@ -31,7 +34,14 @@ def test_seven_types_in_canonical_order():
         "preview.cog-built",
         "upload.ready",
         "upload.failed",
+        "preview.backend-rerun",
+        "preview.grid-changed",
+        "preview.file-added",
     )
+    from colab_pipeline.d5.events import PIPELINE_TYPES, PREVIEW_STALE_TYPES
+    assert len(PIPELINE_TYPES) == 7 and len(PREVIEW_STALE_TYPES) == 3
+    assert set(PIPELINE_TYPES) | PREVIEW_STALE_TYPES == set(EVENT_TYPES)
+    assert set(PIPELINE_TYPES) & PREVIEW_STALE_TYPES == set()
 
 
 def test_idempotency_key_is_deterministic_and_matches_the_contract_pattern():

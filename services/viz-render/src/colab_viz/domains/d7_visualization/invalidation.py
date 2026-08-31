@@ -64,9 +64,16 @@ class StaleCandidate:
 
 @dataclass(frozen=True)
 class InvalidationEvent:
-    """D5 가 보낸 사건 하나. **트리거 이름은 세 값 중 하나여야 한다.**"""
+    """D5 가 보낸 사건 하나. **트리거 이름은 세 값 중 하나여야 한다.**
+
+    ⭑ ⟨증보 2026-08-31 · 12차 해제 · `〈253〉`⟩ `delivery_key` 는 봉투의 **멱등 키**다
+    (`<타입>:<uploadId>`). 받는 자리가 재전달을 거르고 집행을 확인(ack)하는 데 쓴다 —
+    at-least-once 라 같은 사건이 두 번 오는 것은 예외가 아니라 정상이다.
+    **비어 있으면 배선을 거치지 않은 사건**이다(시험·수동 경로).
+    """
     trigger: str
     target_id: str
+    delivery_key: str = ""
 
     def __post_init__(self) -> None:
         if self.trigger not in TRIGGERS:
@@ -99,6 +106,11 @@ class TriggerPort(Protocol):
     """
 
     def poll(self) -> Iterable[InvalidationEvent]: ...
+
+    def ack(self, event: InvalidationEvent) -> None:
+        """집행이 **끝난 뒤** 부른다. 먼저 지우면 실패한 알림이 사라지고 미리보기가
+        낡은 채 굳는다 — 그 상태는 아무 데도 안 적힌다."""
+        ...
 
 
 def _under(root: Path, path: Path) -> bool:

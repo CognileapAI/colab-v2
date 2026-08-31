@@ -20,16 +20,21 @@ from ..d5.axis import REASON_AXIS_UNDECIDED, detect_axes_for_upload
 from ..d5.detect import detect_format
 from ..d5.events import (
     STAGE_ORDER,
+    TYPE_BY_TRIGGER,
     cog_built_payload,
     crs_normalized_payload,
     format_detected_payload,
     header_parsed_payload,
     idempotency_key,
     make_envelope,
+    preview_stale_payload,
     upload_failed_payload,
     upload_ready_payload,
 )
 from ..d5.formats import UNKNOWN
+
+#: 트리거 이름 — **대장 축자**이고 계약이 열거로 못 박았다. 여기서 새로 짓지 않는다.
+TRIGGER_BACKEND_RERUN, TRIGGER_GRID_CHANGED, TRIGGER_FILE_ADDED = tuple(TYPE_BY_TRIGGER)
 from ..d5.pipeline import PipelineResult, run_file
 from ..d5.renderable import is_renderable
 from ..kernel.ids import new_ulid
@@ -133,6 +138,15 @@ class IngestionService:
         res.events.append(env)
         return env
 
+    def _emit_stale(self, work: UploadWork, res: ProcessResult, trigger: str) -> None:
+        """**D5 → D7 트리거 발신** (`〈253〉` · 12차 해제 · Ted RULING ㉗).
+
+        ⚠ **여기서 무효화하지 않는다.** 이 단위가 하는 일은 「무엇이 바뀌었다」를
+        원장에 적는 것까지이고, 어느 산출물이 낡았는지는 D7 이 계산한다
+        (`Y-1` 완료 정의 ⓔ — 무효화·재생성은 D7 소유). 릴레이가 이 행을 버스로 낸다.
+        """
+        self._emit(work, res, TYPE_BY_TRIGGER[trigger], preview_stale_payload(trigger=trigger))
+
     def _fail(self, work: UploadWork, res: ProcessResult, *, stage: str, reason: str,
               klass: str, detail: str | None = None) -> ProcessResult:
         self._ledger.record_status(
@@ -165,7 +179,16 @@ class IngestionService:
         for f in work.files:
             res.files[f.file_id] = FileOutcome(file_id=f.file_id)
 
-        grid_dir, grid_resolution = self._resolve_grid_axes(work, res, grids)
+        # ⭑ **⟨2026-08-31 · `〈253〉`⟩ 트리거 3종의 공통 전제 — 「이미 준비를 마쳤는가」.**
+        #   셋 다 「**이미 선** 미리보기가 낡았다」는 알림이라, 첫 접수 처리에는 나가지
+        #   않는다: 아직 아무것도 안 그려진 업로드에는 낡은 것이 없고, 그때 발신하면 D7 은
+        #   그린 적 없는 대상을 매번 받는다(음성 시험이 이것을 잠근다).
+        was_ready = bool((self._ledger.load_upload(work.upload_id) or {}).get("ready"))
+
+        grid_dir, grid_resolution, grid_rows = self._resolve_grid_axes(work, res, grids)
+        if was_ready and grid_rows:
+            # 격자가 바뀌면 지도형 미리보기의 좌표가 통째로 달라진다.
+            self._emit_stale(work, res, TRIGGER_GRID_CHANGED)
 
         if not bodies and grids:
             # ⟨Ted 판정 2026-08-26 · 해소안 ⓐ⟩ **격자 전용 업로드는 워커 처리 대상 밖이다.**
@@ -195,11 +218,16 @@ class IngestionService:
 
         # ② 포맷 감지 — 매직바이트. 헤더 파싱보다 앞이다(파서를 고르려면 포맷이 먼저다)
         per_file = []
+        first_seen = 0
         for f in bodies:
             det = detect_format(f.path)
             res.files[f.file_id].detected_format = det.format
-            self._ledger.record_detected_format(f.file_id, det.format)
+            if self._ledger.record_detected_format(f.file_id, det.format):
+                first_seen += 1
             per_file.append({"fileId": f.file_id, "format": det.format})
+        if was_ready and first_seen:
+            # 조각이 늘면 합집합이 달라진다(`DataModel §4.3`) — 그린 것이 낡는다.
+            self._emit_stale(work, res, TRIGGER_FILE_ADDED)
         seen = {p["format"] for p in per_file}
         readable = {s for s in seen if s is not None}
         uniform = len(readable) <= 1
@@ -284,6 +312,10 @@ class IngestionService:
         self._emit(work, res, "preview.cog-built", cog_built_payload(
             file_ids=sorted(ok), overview_levels=overview_levels,
             reference_grid_available=(grid_dir is not None) if grid_dir is not None else None))
+        if was_ready:
+            # **미리보기 뒷단(③④⑤)이 이미 준비를 마친 업로드에 다시 돌았다.**
+            # 사실이 다 일어난 **뒤에** 알린다 — 도는 중에 알리면 D7 이 낡은 재료로 굽는다.
+            self._emit_stale(work, res, TRIGGER_BACKEND_RERUN)
 
         # ⑥ 준비 완료 — 저장된 것은 아무것도 없다(`upload.ready` 에 datasetId 가 없는 이유)
         upload = self._ledger.load_upload(work.upload_id) or {}
@@ -297,7 +329,8 @@ class IngestionService:
 
     # ── 격자 축 ────────────────────────────────────────────────────────────
     def _resolve_grid_axes(self, work: UploadWork, res: ProcessResult,
-                           grids: list[UploadFileWork]) -> tuple[Path | None, list[dict]]:
+                           grids: list[UploadFileWork]
+                           ) -> tuple[Path | None, list[dict], int]:
         """축을 판별하고, 그 뒤에 **격자 파일 행을 세운다**(`〈69〉-⑴`).
 
         접수(`createUpload`)는 업로드와 본체 파일 행까지만 만든다 — `d5_upload_file` 의
@@ -313,7 +346,7 @@ class IngestionService:
         **파이썬 딕셔너리 안의 산문**으로만 남고 어떤 페이로드에도 안 실렸다(스윕 `G`).
         """
         if not grids:
-            return work.grid_dir, []
+            return work.grid_dir, [], 0
         by_path = {g.path: g for g in grids}
         detection = detect_axes_for_upload([g.path for g in grids])
         for path, d in detection.resolved.items():
@@ -345,9 +378,10 @@ class IngestionService:
             resolution.append(row)
 
         usable = [p for p in detection.resolved]
+        established = len(detection.resolved)
         if not usable:
-            return work.grid_dir, resolution
-        return (work.grid_dir or Path(usable[0]).parent), resolution
+            return work.grid_dir, resolution, established
+        return (work.grid_dir or Path(usable[0]).parent), resolution, established
 
 
 def _iso(value) -> str | None:
@@ -518,11 +552,22 @@ class SqlLedger:
         """), {"id": file_id, "lab": lab_id, "uid": upload_id, "name": file_name,
                "key": storage_key, "lat": carries_lat, "lon": carries_lon})
 
-    def record_detected_format(self, file_id: str, fmt: str | None) -> None:
+    def record_detected_format(self, file_id: str, fmt: str | None) -> bool:
+        """돌려주는 것은 **이번이 처음 적는 것인가** 다 (`〈253〉`).
+
+        「파일 추가」 트리거의 오라클이 이 한 값이다 — 이미 준비를 마친 업로드에서
+        **처음 보는 조각**을 감지했다는 사실은 원장에만 있고, 그것을 다시 세려면
+        같은 표를 두 번 읽어야 한다. 갱신하는 자리가 그 사실을 함께 돌려준다.
+        """
         from sqlalchemy import text
+        row = self._s.execute(text(
+            "SELECT detected_format FROM d5_upload_file WHERE id = :id"),
+            {"id": file_id}).first()
+        first_time = row is not None and row[0] is None
         self._s.execute(text(
             "UPDATE d5_upload_file SET detected_format = :f WHERE id = :id"),
             {"id": file_id, "f": fmt})
+        return first_time
 
     def record_status(self, upload_id: str, **fields) -> None:
         from sqlalchemy import text

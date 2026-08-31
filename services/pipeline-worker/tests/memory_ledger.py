@@ -77,8 +77,11 @@ class MemoryLedger:
         }
         self.axes[file_id] = (carries_lat, carries_lon)
 
-    def record_detected_format(self, file_id: str, fmt: str | None) -> None:
+    def record_detected_format(self, file_id: str, fmt: str | None) -> bool:
+        """실물과 같은 값을 돌려준다 — **이번이 처음 적는 것인가**(`〈253〉`)."""
+        first_time = file_id not in self.formats
         self.formats[file_id] = fmt
+        return first_time
 
     def record_status(self, upload_id: str, **fields) -> None:
         self.uploads[upload_id].update(fields)
