@@ -413,3 +413,33 @@ describe('완료 정의 ① — 앱 라우팅 표가 S-08 을 세운다', () => 
     expect(await screen.findByTestId('volatile-notice')).toBeInTheDocument();
   });
 });
+
+/**
+ * 완료 정의 **명시적 범위 밖** — 확대 · 타일 (`work-items.yaml` `F-1` ⑶ · `PLAN-SoT §9 〈183〉`).
+ * 미등록 미리보기는 **언제나 한 장**이다. 렌더 결과에 `tileUrlTemplate` 과 `bounds` 가 실려
+ * 있어도(위 `DONE` 이 그렇다) 이 화면은 타일 갈래를 타지 않는다 — 타일 모자이크의 주 화면은
+ * **등록된 데이터셋의 지도**이고 S-08 이 아니다(`〈238〉` · `tiles.ts` 주석).
+ * `usePreviewRender` 의 확대용 선택 인자를 이 화면이 받는 순간 여기가 red 가 된다.
+ */
+describe('완료 정의 범위 밖 — S-08 은 언제나 한 장이다 (타일·확대 갈래가 아니다)', () => {
+  it('타일 조각을 세우지 않고 그림 한 장을 그린다', async () => {
+    const { source } = makeSource();
+    renderPage(source);
+    const map = await screen.findByTestId('preview-map');
+    // 조각도 모자이크도 없다
+    expect(within(map).queryByTestId('preview-mosaic')).toBeNull();
+    expect(within(map).queryAllByTestId('preview-tile')).toHaveLength(0);
+    // 한 장이고, 그 한 장은 0/0/0 이다 (`tiles.ts` `resultImageSrc`)
+    const one = within(map).getByTestId('preview-single-image');
+    expect(one).toHaveAttribute('src', tileUrl(TILE_TEMPLATE, 0, 0, 0));
+  });
+
+  it('확대 컨트롤도 확대 조작 자리도 없다', async () => {
+    const { source } = makeSource();
+    renderPage(source);
+    const map = await screen.findByTestId('preview-map');
+    expect(within(map).queryByTestId('preview-viewport')).not.toHaveAttribute('data-zoomable');
+    expect(within(map).queryByTestId('preview-layers')).not.toHaveAttribute('data-zoom-scale');
+    expect(within(map).queryByTestId('preview-zoom')).toBeNull();
+  });
+});
