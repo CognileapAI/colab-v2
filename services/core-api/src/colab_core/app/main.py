@@ -25,8 +25,8 @@ from ..kernel.db import make_engine, make_session_factory
 from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
-from .routes import (catalog, identity, ingestion, lineage, members, not_implemented,
-                     preview, project, session)
+from .routes import (access, catalog, identity, ingestion, lineage, members,
+                     not_implemented, preview, project, session)
 
 API_PREFIX = "/api/v1"
 
@@ -85,7 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
     for router in (session.router, identity.router, members.router, catalog.router, project.router,
-                   ingestion.router, lineage.router, preview.router):
+                   ingestion.router, lineage.router, preview.router, access.router):
         app.include_router(router, prefix=API_PREFIX)
     not_implemented.register(app, prefix=API_PREFIX)
 

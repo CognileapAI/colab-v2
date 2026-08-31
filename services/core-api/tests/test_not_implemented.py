@@ -60,11 +60,29 @@ P5_REAL = {
 #: op 은 501 로 남아 있었다** — 산문이 낡은 자리다. 계보 그래프 화면(`P3`)은 이 op 없이
 #: 설 수 없다. **뺀 자리에 실동작 시험이 있다**는 규칙은 여기에도 그대로 걸린다.
 P3_REAL = {"getDatasetLineage": "tests/test_lineage_graph_read.py"}
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL}
+#: **`P6` 승인 처리가 표에서 뺀 여덟** (16 → 8). 접근 요청 4 ＋ Verified 4.
+#: 앞의 여섯은 `NOT_IMPLEMENTED_NO_STORE` 였고 그 사유(「저장처 자체가 P0 스키마에 없다」)를
+#: 마이그레이션 `0010` 이 없앴다 — `d2_dataset_access_request`·`d2_verification_request`.
+#: 뒤의 둘은 `NOT_IMPLEMENTED_P1` 이었다. **여덟이 한 회차에 나가는 이유** = 요청 op 만 열고
+#: 처리 op 을 남기면 정본 §7.1·§7.2 의 전이표가 반만 서고, 그 회차의 산출은 「쌓이기만 하는
+#: 대기줄」이 된다 (`CLAUDE.md §5` 부분 완료 금지).
+#: **뺀 자리마다 실동작 시험이 있다** — 여덟 다 `tests/test_approval.py` 가 부르고,
+#: 그 파일은 음성 다섯(경계 누출·미승인 개방·만료·일괄 승인 표면·권한 없는 처리)을 함께 든다.
+P6_REAL = {
+    "createAccessRequest":             "tests/test_approval.py",
+    "listPendingAccessRequests":       "tests/test_approval.py",
+    "approveAccessRequest":            "tests/test_approval.py",
+    "rejectAccessRequest":             "tests/test_approval.py",
+    "requestVerification":             "tests/test_approval.py",
+    "listPendingVerificationRequests": "tests/test_approval.py",
+    "approveVerification":             "tests/test_approval.py",
+    "cancelVerification":              "tests/test_approval.py",
+}
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL}
 REAL = P1_REAL | set(P2_REAL)
 NO_STORE = {
-    "createAccessRequest", "listPendingAccessRequests", "approveAccessRequest",
-    "rejectAccessRequest", "requestVerification", "listPendingVerificationRequests",
+    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`). 남은 하나는
+    #    `downloadDataset` 이고 그 저장처(파일 저장소)는 아직 없다 — `CT-1` 의 마지막 한 칸이다.
     "downloadDataset",
     # ⭑ `updateDataset` 이 여기서 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
     #    `#36`(설명 결손 2건)을 채울 **공개 경로가 그것뿐이었다.**
@@ -83,7 +101,7 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_23_unimplemented_operations_are_exactly_these() -> None:
+def test_the_8_unimplemented_operations_are_exactly_these() -> None:
     """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → 21 → **23**.
 
     ⭑ **이번에는 늘었고, 그것이 옳다** (`PLAN-SoT §9-〈88〉` 묶음 5·6 · 4차 동결 해제).
@@ -128,7 +146,7 @@ def test_the_23_unimplemented_operations_are_exactly_these() -> None:
     화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 16
+    assert len(OPERATIONS) == 8
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -154,7 +172,10 @@ def test_codes_are_the_two_kinds() -> None:
     #          **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     # 13 → 12: `P3` 이 `getDatasetLineage` 를 가져갔다 — 계보 그래프 화면의 조회 op 이다.
     # 12 →  9: `P5` 잔여가 프로젝트 op 셋을 가져갔다 (삭제·닫기·소속 해제).
-    assert len(p1) == 9
+    #  9 →  7: `P6` 이 `approveVerification`·`cancelVerification` 을 가져갔다.
+    #          **둘은 저장 자리가 있었고 로직만 없던 쪽이다** — 검토 대기 표가 서면서
+    #          「요청은 받는데 승인은 못 한다」가 될 자리라 같은 회차에 함께 열었다.
+    assert len(p1) == 7
     assert no_store & p1 == set()
 
 

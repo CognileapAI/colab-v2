@@ -82,13 +82,17 @@ describe('§8 상세 헤더 — 줄마다 한 가지만 말한다', () => {
     expect(header.textContent).not.toContain('올린 사람');
   });
 
-  it('헤더 우측 승인 액션 한 자리는 E-06(P6)이 채우도록 비워 둔다', async () => {
+  // ⭑ **WU-P6 이 이 자리를 채웠다.** 종전 시험은 「비워 둔다」(`data-fills-in="WU-P6"`)를
+  // 오라클로 삼았는데, 그 오라클은 채워지는 순간 수명이 끝난다. **자리가 있다**는 확인은
+  // 그대로 두고, 「비어 있다」를 **「서버가 허락한 것만 그린다」**로 바꾼다 (P-7).
+  it('헤더 우측 승인 액션은 한 자리이고, 허락된 액션이 없으면 버튼을 지어내지 않는다', async () => {
     renderDetail(OPEN_ID);
     await settle('낙동강 유역 강우 (2025)');
-    const slot = screen.getByTestId('detail-header').querySelector('[data-slot="verification-action"]');
-    expect(slot).not.toBeNull();
-    expect(slot).toHaveAttribute('data-fills-in', 'WU-P6');
-    expect(slot!.textContent).toBe('');
+    const header = screen.getByTestId('detail-header');
+    const slots = header.querySelectorAll('[data-slot="verification-action"]');
+    expect(slots).toHaveLength(1);   // **한 자리**다 (§8)
+    // 이 픽스처는 세 액션이 전부 false 다 → 「그 외에는 액션이 없다」(§8 마지막 줄)
+    expect(within(slots[0] as HTMLElement).queryAllByRole('button')).toHaveLength(0);
   });
 });
 
@@ -190,10 +194,11 @@ describe('§7 잠김 (허용 안 됨) — 헤더 요약 + 잠김 안내만', () 
     expect(
       within(body).getByText('요청하면 교수 또는 승인을 맡은 연구원이 검토해요.'),
     ).toBeInTheDocument();
-    // 접근 요청 버튼의 실물은 E-06(WU-P6)이 채운다
+    // ⭑ **WU-P6 이 접근 요청 버튼의 실물을 채웠다.** 종전 시험은 자리가 비어 있음을
+    // 오라클로 삼았다 — 이제 **버튼이 실제로 선다**를 본다 (`Policy_승인_처리 §8` 잠긴 상태 행).
     const slot = body.querySelector('[data-slot="access-request"]');
     expect(slot).not.toBeNull();
-    expect(slot).toHaveAttribute('data-fills-in', 'WU-P6');
+    expect(within(slot as HTMLElement).getByRole('button', { name: '접근 요청' })).toBeInTheDocument();
   });
 });
 

@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { DatasetPreviewSection } from '../components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource } from '../components/datasetpreview/types';
+import { apiApprovalSource } from '../components/approval/approvalSource';
+import type { ApprovalSource } from '../components/approval/types';
 import { BasicInfoGrid } from '../components/detail/BasicInfoGrid';
 import { DetailHeader } from '../components/detail/DetailHeader';
 import { LockedNotice } from '../components/detail/LockedNotice';
@@ -31,6 +33,8 @@ export function DatasetDetailPage(
     lineageSource?: LineageGraphSource;
     previewSource?: DatasetPreviewSource;
     uploadSources?: UploadSources;
+    /** 승인 처리 네 동작 (WU-P6). 시험이 대역을 꽂는 자리다. */
+    approvalSource?: ApprovalSource;
   } = {},
 ) {
   const { datasetId = '' } = useParams();
@@ -40,6 +44,12 @@ export function DatasetDetailPage(
   // 격자를 반영한 뒤 **서버에게 다시 묻는다** — 화면이 값을 손으로 고치지 않는다.
   const [reloadToken, setReloadToken] = useState(0);
   const detail = useDatasetDetail(source, datasetId, reloadToken);
+  // 승인·요청이 끝나면 **서버에게 다시 묻는다** — 화면이 `verified`·`accessRequestPending` 을
+  // 손으로 뒤집으면 서버가 거절해도 참으로 보인다 (격자 반영과 같은 규칙).
+  const approvalSource = useMemo(
+    () => props.approvalSource ?? apiApprovalSource(),
+    [props.approvalSource],
+  );
   // 계보는 **다른 op** 이라 다른 출처로 읽는다 — 상세가 501 이어도 계보가 살아 있을 수 있고 그 반대도 된다
   const lineageSource = useMemo(
     () => props.lineageSource ?? defaultLineageSource(),
@@ -76,8 +86,20 @@ export function DatasetDetailPage(
       {detail.status === 'ready' ? (
         <LockedContent
           bodyAccessible={detail.detail.bodyAccessible}
-          header={<DetailHeader detail={detail.detail} />}
-          request={<LockedNotice />}
+          header={
+            <DetailHeader
+              detail={detail.detail}
+              approvalSource={approvalSource}
+              onChanged={() => setReloadToken((n) => n + 1)}
+            />
+          }
+          request={
+            <LockedNotice
+              detail={detail.detail}
+              approvalSource={approvalSource}
+              onRequested={() => setReloadToken((n) => n + 1)}
+            />
+          }
         >
           {/* 잠기면 `basicInfo` 가 null 이라 기본 정보가 통째로 사라진다 —
               카탈로그 행이 `조각 N` 을 계속 띄우는 것과 달라 보이는 것은 의도다

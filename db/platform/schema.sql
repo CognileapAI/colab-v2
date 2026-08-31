@@ -193,6 +193,83 @@ CREATE INDEX d2_dataset_access_grant_lookup_idx
   ON d2_dataset_access_grant (dataset_id, grantee_account_id, expires_at);
 CREATE INDEX d2_dataset_access_grant_lab_idx ON d2_dataset_access_grant (lab_id);
 
+-- ── 승인 처리 두 갈래의 **요청** 표 2종 (WU-P6 · 정본 §7.1 §7.2) ──────────────
+--
+-- 왜 요청과 결과를 가르나. 아래 두 표는 승인 **전후의 상태**이고, `d2_dataset_access_grant`
+-- (허용 목록) 과 `d2_verified` (배지) 는 승인 **결과**다. 결과 표에 '검토 대기'·'거절됨' 을
+-- 앉히면 잠금 판정(`d3_file` 의 `body_access` RESTRICTIVE) 과 배지 판정이 **상태 문자열에
+-- 의존**하게 된다. 정본 §7.1·§7.2 는 요청의 전이와 결과의 수명(만료·취소)을 **다른 축**으로
+-- 적었고, 표를 가르는 것이 그 축을 지키는 방법이다.
+--
+-- dataset_id 는 두 표 다 **bare 컬럼이다** — D2 가 D3 테이블을 직접 FK 하지 않는다 (CLAUDE.md §3-1).
+
+-- 접근 요청 — 잠긴 데이터를 볼 권한을 여는 요청 (정본 §7.2).
+-- 처리하는 사람은 **교수 + `승인 위임` 연구원**이다 (정본 §1.2 §6). 소유자가 아니다.
+CREATE TABLE d2_dataset_access_request (
+  id                    ulid        PRIMARY KEY,
+  lab_id                ulid        NOT NULL REFERENCES d1_lab(id),
+  dataset_id            ulid        NOT NULL,
+  requester_account_id  ulid        NOT NULL REFERENCES d1_account(id),
+  -- 요청 사유는 0~300자 **선택**이다 (정본 §5). 빈 문자열은 없음과 같으므로 받지 않는다.
+  reason                text        CHECK (reason IS NULL OR
+                                           (length(reason) BETWEEN 1 AND 300)),
+  requested_at          timestamptz NOT NULL DEFAULT now(),
+  -- 상태 3값은 정본 §7.2 전이표 그대로다. **「만료됨」은 여기 없다** — 만료는 허용 줄의
+  -- `expires_at` 이 말하고(P-25), 요청 자체는 승인된 채로 남는다. 여기에 넣으면 만료를
+  -- 지우러 다니는 배치가 필요해지고, 그 배치가 없으면 값이 거짓말을 한다.
+  state                 text        NOT NULL DEFAULT '검토 대기'
+                                    CHECK (state IN ('검토 대기', '승인됨', '거절됨')),
+  decided_by_account_id ulid        REFERENCES d1_account(id),
+  decided_at            timestamptz,
+  -- 거절 사유는 1~300자 **필수**이고 요청자에게 그대로 전달된다 (정본 §5 · P-26).
+  rejection_reason      text        CHECK (rejection_reason IS NULL OR
+                                           (length(rejection_reason) BETWEEN 1 AND 300)),
+  CHECK ((decided_by_account_id IS NULL) = (decided_at IS NULL)),
+  CHECK ((state = '검토 대기') = (decided_at IS NULL)),
+  -- 거절이면 사유가 반드시 있고, 거절이 아니면 사유가 없다. 「사유 없이 거절」은
+  -- 화면이 막기 전에 DB 가 막는다 (정본 §9 첫 줄).
+  CHECK ((state = '거절됨') = (rejection_reason IS NOT NULL))
+);
+-- **한 사람이 한 데이터셋에 검토 대기를 둘 이상 만들 수 없다** (정본 §9 「이미 검토 대기 중」).
+-- 부분 유니크라 처리가 끝난 뒤에는 다시 요청할 수 있다 (§7.2 「재요청 가능」).
+CREATE UNIQUE INDEX d2_dataset_access_request_pending_key
+  ON d2_dataset_access_request (dataset_id, requester_account_id)
+  WHERE state = '검토 대기';
+-- 할 일 함은 **오래된 순**으로 내려간다 — 방치를 막기 위해서다 (정본 §1.3-1).
+CREATE INDEX d2_dataset_access_request_pending_idx
+  ON d2_dataset_access_request (lab_id, requested_at)
+  WHERE state = '검토 대기';
+CREATE INDEX d2_dataset_access_request_lab_idx ON d2_dataset_access_request (lab_id);
+
+-- Verified 승인 요청 — 올린 사람·소유자가 상세 헤더에서 직접 누른다 (정본 §1.2 §7.1).
+-- **자동으로 검토 대기에 들어가지 않는다.** 처리하는 사람은 **교수만**이고 위임되지 않는다
+-- (정본 §1.2 「Verified 는 위임 불가」 · P-22).
+CREATE TABLE d2_verification_request (
+  id                    ulid        PRIMARY KEY,
+  lab_id                ulid        NOT NULL REFERENCES d1_lab(id),
+  dataset_id            ulid        NOT NULL,
+  requester_account_id  ulid        NOT NULL REFERENCES d1_account(id),
+  requested_at          timestamptz NOT NULL DEFAULT now(),
+  -- **거절이 없다** — 정본 §1.2 축자 「거절 ｜ 없음 (승인 / 미승인)」. 접근 요청 표와
+  -- 상태 집합이 다른 것은 실수가 아니라 그 조항이다. 두 표를 하나로 합치면 이 차이가 사라진다.
+  state                 text        NOT NULL DEFAULT '검토 대기'
+                                    CHECK (state IN ('검토 대기', '승인됨')),
+  decided_by_account_id ulid        REFERENCES d1_account(id),
+  decided_at            timestamptz,
+  CHECK ((decided_by_account_id IS NULL) = (decided_at IS NULL)),
+  CHECK ((state = '검토 대기') = (decided_at IS NULL))
+);
+-- **데이터셋당 검토 대기는 하나다** (계약 `requestVerification` 409 「이미 검토 대기이거나
+-- 이미 승인된 데이터다」). 접근 요청과 달리 사람이 열쇠에 안 들어간다 — 대기가 붙는 대상이
+-- 데이터셋이고, 처리자도 교수 하나이기 때문이다.
+CREATE UNIQUE INDEX d2_verification_request_pending_key
+  ON d2_verification_request (dataset_id)
+  WHERE state = '검토 대기';
+CREATE INDEX d2_verification_request_pending_idx
+  ON d2_verification_request (lab_id, requested_at)
+  WHERE state = '검토 대기';
+CREATE INDEX d2_verification_request_lab_idx ON d2_verification_request (lab_id);
+
 -- Verified 기록 (정본 §4.1). 데이터셋 1:1. 배지 1종.
 -- 취소하면 취소한 사람·취소 시각·사유도 남는다 — 데이터와 계보는 남고 배지만 사라진다.
 CREATE TABLE d2_verified (
@@ -740,6 +817,16 @@ CREATE POLICY lab_boundary ON d2_dataset_access FOR ALL
 ALTER TABLE d2_dataset_access_grant ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d2_dataset_access_grant FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d2_dataset_access_grant FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d2_dataset_access_request ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d2_dataset_access_request FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d2_dataset_access_request FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d2_verification_request ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d2_verification_request FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d2_verification_request FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 ALTER TABLE d2_verified             ENABLE ROW LEVEL SECURITY;

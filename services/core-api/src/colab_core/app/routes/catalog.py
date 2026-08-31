@@ -522,6 +522,9 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
 
     role = d2_access.role_of(db, subject.account_id)
     permissions = d2_access.permissions_of(db, subject.account_id, role)
+    # 승인 처리(`P6`)가 쓰는 두 사실. 둘 다 **D2 의 자기 표**에서 온다.
+    pending_requests = d2_access.datasets_with_pending_request(db, ids)
+    verification_pending = d2_access.pending_verification_of(db, dataset_id) is not None
     viewer = str(subject.account_id)
     is_professor = role == "교수"
     is_owner = core.owner_id == viewer
@@ -590,10 +593,12 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         },
         "accessState": "열림" if access is None else access.access_state,
         "bodyAccessible": body_accessible,
-        # 보는 사람이 이미 요청을 보냈는가. **접근 요청의 저장처가 P0 스키마에 없다** —
-        # 그 자리는 P6(`createAccessRequest` = NOT_IMPLEMENTED_NO_STORE)다.
-        # 저장처가 없으므로 지금 참일 수 있는 값은 false 하나뿐이고, 지어내지 않는다.
-        "accessRequestPending": False,
+        # 보는 사람이 이미 요청을 보냈는가 (`Policy_승인_처리 §7.2` 검토 대기).
+        # ⭑ **`P6` 이 저장처를 세우면서 이 값이 참이 될 수 있게 됐다.** 종전 기재
+        # 「저장처가 없으므로 지금 참일 수 있는 값은 false 하나뿐이고, 지어내지 않는다」는
+        # 마이그레이션 `0010`(`d2_dataset_access_request`)으로 해소됐다.
+        # **보는 사람 기준이다** — 남이 건 요청은 이 칩을 켜지 않는다(질의가 `current_account_id()`).
+        "accessRequestPending": datasetId in pending_requests,
         "uploadedAt": _iso(core.uploaded_at),
         "lastModifiedAt": _iso(core.last_modified_at),
         "lineageConfirmedAt": _iso(core.lineage_confirmed_at),
@@ -605,9 +610,12 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             # ① 미승인 + 올린 사람·소유자 → `✓ 승인 요청`
             "canRequestVerification": bool(body_accessible and not verified
                                            and (is_owner or is_uploader)),
-            # ② 검토 대기 + 교수 → `승인`. **검토 대기의 저장처가 없다**(P6) — 대기 건이
-            #    존재할 수 없으므로 지금 참이 될 수 없다. 교수라는 이유만으로 켜지 않는다.
-            "canApproveVerification": False,
+            # ② 검토 대기 + 교수 → `승인`. ⭑ **`P6` 이 검토 대기 표를 세워 참이 될 수 있게 됐다.**
+            #    종전 기재 「대기 건이 존재할 수 없으므로 지금 참이 될 수 없다」는 해소됐다.
+            #    **교수라는 이유만으로 켜지 않는다** — 대기 건이 실제로 있을 때만이다.
+            #    `승인 위임` 은 여기에 들어오지 않는다: Verified 는 위임 불가다 (§1.2 · P-22).
+            "canApproveVerification": bool(is_professor and not verified
+                                           and verification_pending),
             # ③ 승인됨 + 교수 → `⋯` 더보기 → `승인 취소`
             "canCancelVerification": bool(is_professor and verified),
             # 시각화 편집·계보 수정은 `업로드·편집` 스위치다 (Policy_데이터셋_상세 §6).
