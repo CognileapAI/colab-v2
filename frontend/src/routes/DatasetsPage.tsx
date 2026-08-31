@@ -1,7 +1,7 @@
 // S-03 카탈로그 — 뭐가 있는지 훑는 길. **AI 를 쓰지 않는다** (`Policy_데이터_찾기 §1.2`).
 // 조건과 정렬은 전부 표 헤더에 있다. 자연어 입력칸도 조건 툴바도 여기 없다.
 import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AppliedConditions } from '../components/catalog/AppliedConditions';
 import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
@@ -54,12 +54,14 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
         />
       </div>
 
-      {/* 두 길은 서로를 가리킨다 (`§1.3-8`). 검색 진입은 홈 히어로 한 곳이다 (`§1.3-2`) */}
+      {/* 상호 안내 — 반대 길(검색 화면 S-01·S-06)이 이번 릴리스에 없다.
+          정본 `Policy_데이터_찾기 v1.9 §8` 「상호 안내 — 반대 길이 그 릴리스에 없을 때」:
+          점선 박스는 자리와 형태 그대로 두되, 없는 화면으로 가는 링크를 빼고
+          이 표 자신의 조건 거는 법을 권한다. 문구는 정본이 고정한 한 줄이다. */}
       <div className="crosslink">
         <span>
-          찾을 것이 정해져 있으면 <b>홈의 AI 검색</b>이 빨라요.
+          찾을 것이 정해져 있으면 <b>표 헤더의 열 이름</b>을 눌러 조건을 걸어 보세요.
         </span>
-        <Link to="/lab">검색으로</Link>
       </div>
     </div>
   );
