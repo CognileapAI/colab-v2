@@ -81,6 +81,15 @@ class RenderJob:
     value_variable: str = ""
     value_unit: str | None = None
 
+    @property
+    def tile_branch(self) -> bool:
+        """이 결과를 **타일 갈래**로 낼 것인가 (`〈238〉` · 경계 ㈏㈐ · ㈎ 는 부르는 자리에서).
+
+        ⚠ **`is_upload` 로 가른다** — 「등록된 데이터셋인가」는 대상 해석이 이미 아는
+        사실이고(`ports/source.ResolvedTarget`) 여기서 다시 판정하지 않는다.
+        """
+        return (not self.spec.target.is_upload) and bool(self.tile_url_template)
+
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
         body: dict = {"renderId": self.render_id, "status": self.status}
@@ -89,9 +98,22 @@ class RenderJob:
         if self.expires_at is not None:
             body["expiresAt"] = self.expires_at.isoformat().replace("+00:00", "Z")
         if self.status == STATUS_DONE and self.artifacts is not None:
-            # **`oneOf` 다** — stage 1 은 이미지 갈래만 낸다. `tileUrlTemplate` 은 계약에
-            # 살아 있고(stage 2 확대 뷰) 서명도 그대로 발급되지만, **결과에 함께 싣지
-            # 않는다.** 둘을 함께 실으면 「무엇을 그릴지 두 번 적힌 완료」다.
+            # **`oneOf` 다** — 두 갈래를 함께 싣지 않는다. 둘을 함께 실으면 「무엇을
+            # 그릴지 두 번 적힌 완료」다.
+            #
+            # ⭑ **⟨개정 2026-08-31 · Ted 판정 ⑩ · `PLAN-SoT §9 〈238〉`⟩ 등록된 데이터셋의
+            #   지도형 결과는 타일 갈래로 낸다.** ／ 종전 문면 ~~stage 1 은 이미지 갈래만
+            #   낸다 … 결과에 함께 싣지 않는다~~ — 그 한 줄이 `03-HANDOFF §4` `#48` 의
+            #   실물이었다: 타일은 서빙도 서명도 서 있는데 **이음매에만 있고 화면에는 못
+            #   갔다.** 판정이 그 문장을 갈았다.
+            # ⚠ **전환의 경계는 셋이다 — 넓히지 않는다**(`CLAUDE.md §5`).
+            #   ㈎ **지도형만** — 타일은 웹 메르카토르 `z/x/y` 라 경계 없이 낼 자리가 없다.
+            #      ②비지도형은 그대로 `imageUrl` 하나다. **없는 경계를 지어내지 않는다**
+            #      (`DR-9` · `CLAUDE.md §3`).
+            #   ㈏ **등록된 데이터셋만** — `#48` 이 `P3` 소유로 남긴 것은 「데이터셋 상세의
+            #      지도 화면」이다. 미등록 업로드(S-04·S-08)는 손대지 않는다.
+            #   ㈐ **서명 비밀이 있을 때만** — 없으면 `_tile_url` 이 서명 없는 주소를 내므로
+            #      (그 자리는 표면이 503 이라 도달하지 않는다) 이미지 갈래로 남는다.
             #
             # ⚠ **좌표가 있느냐로 갈린다** (`〈85〉` · 동결 2회 해제).
             #   ③이 있으면 지도형 — `bounds`·사이드카·월드파일이 함께 간다.
@@ -111,10 +133,13 @@ class RenderJob:
             result["thumbnailUrl"] = a.thumbnail.url
             result["valuePreviewUrl"] = a.detail.url
             if a.map_image is not None and a.geometry is not None:
-                result["imageUrl"] = a.map_image.url
                 result["sidecarUrl"] = a.sidecar.url
                 result["worldFileUrl"] = a.world_file.url
                 result["bounds"] = a.geometry.bounds_dict()
+                if self.tile_branch:
+                    result["tileUrlTemplate"] = self.tile_url_template
+                else:
+                    result["imageUrl"] = a.map_image.url
             else:
                 # ②가 곧 주 화면인 갈래다 — 같은 URL 을 가리키는 것이 정상이다.
                 result["imageUrl"] = a.detail.url

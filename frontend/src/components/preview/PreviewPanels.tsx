@@ -2,7 +2,8 @@
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
 import type { ReactNode } from 'react';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
-import { resultImageSrc } from './tiles';
+import { resultImageSrc, tileUrl } from './tiles';
+import { baseLevel, levelFor, visibleTiles } from './tileGrid';
 import type { ZoomPan } from './useZoomPan';
 
 /** 정본 §8.1 「휘발 고지」 — 두 문장과 등록 길이 **한 줄**에 있다. 남은 시간은 세지 않는다. */
@@ -145,7 +146,10 @@ export function ExpiredNotice(props: { message: string }) {
  */
 export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; actions?: ReactNode }) {
   const { result, zoom } = props;
-  const src = resultImageSrc(result);
+  // **갈래가 둘이다**(계약 `oneOf`). 타일이면 조각을 세우고, 아니면 그림 한 장이다.
+  // ⭑ ⟨2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도 화면이 타일 쪽이다.
+  const tiled = Boolean(result.tileUrlTemplate && result.bounds && zoom);
+  const src = tiled ? undefined : resultImageSrc(result);
   return (
     <section
       className="pv-map"
@@ -175,6 +179,14 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
             {...(zoom
               ? {
                   'data-zoom-scale': String(zoom.scale),
+                  'data-zoom-max-scale': String(zoom.maxScale),
+                  ...(tiled && zoom.box && result.bounds
+                    ? {
+                        'data-tile-level': String(
+                          levelFor(baseLevel(result.bounds, zoom.box.width), zoom.scale, zoom.maxScale),
+                        ),
+                      }
+                    : {}),
                   style: {
                     transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
                     transformOrigin: '0 0',
@@ -182,8 +194,17 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
                 }
               : {})}
           >
+            {tiled && zoom && result.tileUrlTemplate && result.bounds ? (
+              <TileMosaic template={result.tileUrlTemplate} bounds={result.bounds} zoom={zoom} />
+            ) : null}
             {src ? (
-              <img className="pv-tile" src={src} alt="" {...(zoom ? { onLoad: zoom.onImageLoad } : {})} />
+              <img
+                className="pv-tile"
+                data-testid="preview-single-image"
+                src={src}
+                alt=""
+                {...(zoom ? { onLoad: zoom.onImageLoad } : {})}
+              />
             ) : null}
           </div>
         </div>
@@ -201,6 +222,51 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
         ))}
       </dl>
     </section>
+  );
+}
+
+/**
+ * 타일 모자이크 — **지도 화면의 표면**(`〈238〉`).
+ *
+ * 정본 §8 `확대·이동` 행 축자 「이미 그린 결과 안에서 **그 배율에 맞는 촘촘함으로 바꿔
+ * 끼운다**」가 여기서 레벨 교체로 집행된다. **렌더를 다시 걸지 않는다**(조건 ⑶) —
+ * 이 컴포넌트에 렌더 경로가 없다.
+ *
+ * ⚠ **변환은 여기 걸지 않는다** — 조각마다 걸면 조건 ⑸(모든 층에 함께)가 깨진다.
+ * 층 묶음(`pv-layers`) 하나가 그 자리다.
+ * ⚠ **한계를 모르면 조각을 세우지 않는다** — 화면 크기를 아직 못 쟀다는 뜻이고,
+ * 그때 레벨을 지어내면 조건 ⑷ 를 어긴다.
+ */
+function TileMosaic(props: {
+  template: string;
+  bounds: { west: number; south: number; east: number; north: number };
+  zoom: ZoomPan;
+}) {
+  const { template, bounds, zoom } = props;
+  const box = zoom.box;
+  if (!box) return null;
+  const level = levelFor(baseLevel(bounds, box.width), zoom.scale, zoom.maxScale);
+  const pieces = visibleTiles(bounds, box, level, { scale: zoom.scale, x: zoom.x, y: zoom.y });
+  return (
+    <div className="pv-mosaic" data-testid="preview-mosaic">
+      {pieces.map((t) => (
+        <img
+          key={`${t.z}/${t.x}/${t.y}`}
+          className="pv-tile-piece"
+          data-testid="preview-tile"
+          alt=""
+          // **템플릿은 불투명 문자열이다** — `{z}`·`{x}`·`{y}` 셋만 바꾼다(`〈68〉`)
+          src={tileUrl(template, t.z, t.x, t.y)}
+          style={{
+            position: 'absolute',
+            left: `${t.left}px`,
+            top: `${t.top}px`,
+            width: `${t.width}px`,
+            height: `${t.height}px`,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
