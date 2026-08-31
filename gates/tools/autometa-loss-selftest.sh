@@ -10,6 +10,14 @@
 #   ⓙ **변이① 탐침을 떼면 쓸 수 있는 접속이 통과한다** → 오라클이 그 차이를 만든다는 증명
 #   ⓚ **변이② 읽기 전용 트랜잭션을 풀면 탐침이 실제로 쓰기를 잡는다**(사유까지 대조)
 #
+# ⭑ ⟨증보 2026-09-01 · Ted 판정 `RULING ㉟` · `DATA-REFERENCE §0 M-9`⟩ **롤 판정이 붙었다.**
+#   더한 것 다섯:
+#   ⓛ **경계 롤 이름 미선언 → red(준비)** (대조를 못 한 것을 통과로 세지 않는다)
+#   ⓜ **경계 롤로 접속하면 red** — 경계에 걸리는 롤은 0 을 돌려주고, 그 0 은 「없다」와 모양이 같다
+#   ⓝ **경계 롤 선언이 관리자 롤 자신이면 red** — 두 값이 같으면 경계가 아무것도 가르지 못한 것이다
+#   ⓞ **변이③ 롤 판정 절을 떼면 ⓜ 가 통과한다** → ㉮ 오라클이 그 차이를 만든다는 증명
+#   ⓟ **변이④ ㉯ 대조를 떼면 ⓝ 가 통과한다** → ㉯ 오라클이 그 차이를 만든다는 증명
+#
 # 케이스 12종 — 열은 red 여야 하고 둘은 green 이어야 하며, green 하나는 **건수를 드러내야** 한다.
 #   ⓐ 대조 정본 미지정      → red(준비·입력미선언)  (환경 부재를 skip 으로 세지 않는다.
 #                             다만 「대상이 규율을 어겼다」가 아니라 「입력이 선언되지 않았다」로 말한다)
@@ -28,12 +36,14 @@ GATE="$REPO_ROOT/gates/tools/autometa-loss.sh"
 READINESS="$REPO_ROOT/gates/tools/_readiness.sh"
 SCHEMA="$REPO_ROOT/db/platform/schema.sql"
 SEED="$REPO_ROOT/services/core-api/tests/fixtures/seed.sql"
+APPROLE="$REPO_ROOT/services/core-api/ops/app-role.sql"   # 경계 롤(colab_app)을 세운다 — 정본은 하나다
 DB="autometaloss"
+BROLE="colab_app"      # 경계 롤 = FORCE RLS 에 걸리는 롤. app-role.sql 이 그 성질을 보증한다
 FAILURES=()
 
 red() { echo "::error::autometa-loss-selftest red — $*"; exit 1; }
 
-for f in "$GATE" "$READINESS" "$SCHEMA" "$SEED"; do
+for f in "$GATE" "$READINESS" "$SCHEMA" "$SEED" "$APPROLE"; do
   [ -f "$f" ] || red "판정 재료가 없다: ${f#"$REPO_ROOT"/}. 대상 0건은 통과가 아니다."
 done
 
@@ -52,20 +62,27 @@ su < "$SCHEMA" >"$TMP/err" 2>&1 || red "선언 스키마를 적용하지 못했�
 $(sed 's/^/     /' "$TMP/err")"
 su < "$SEED" >"$TMP/err" 2>&1 || red "시드를 넣지 못했다:
 $(sed 's/^/     /' "$TMP/err")"
+# 경계 롤을 세운다 — 게이트의 ㉯ 대조가 이 롤로 재조회한다. 시드와 마찬가지로 **정본을 그대로** 쓴다.
+su -v owner=colab_owner -v app="$BROLE" -v app_password=gateapp < "$APPROLE" >"$TMP/err" 2>&1 \
+  || red "경계 롤 부트스트랩이 실패했다:
+$(sed 's/^/     /' "$TMP/err")"
 
 # ── psql 주입 — 게이트는 URL 로 부르고, 여기서는 그 URL 을 무시하고 컨테이너 안에서 돈다 ──
 # 두 벌을 만든다. 앞은 **읽기 전용으로 선언된 접속**(실물 URL 이 그러하다),
 # 뒤는 그 선언이 빠진 접속 — 게이트가 그 차이를 잡는지 보려는 것이다.
-mk_psql() { # $1=파일 $2=DB $3=PGOPTIONS
+mk_psql() { # $1=파일 $2=DB $3=PGOPTIONS $4=롤(기본 postgres)
   cat > "$1" <<EOF
 #!/usr/bin/env bash
 shift            # 첫 인자(URL)를 버린다 — 포트를 publish 하지 않으므로 URL 로 못 붙는다
-exec docker exec -e PGOPTIONS="$3" -i "$PGC" psql -U postgres -d "$2" "\$@"
+exec docker exec -e PGOPTIONS="$3" -i "$PGC" psql -U "${4:-postgres}" -d "$2" "\$@"
 EOF
   chmod +x "$1"
 }
 mk_psql "$TMP/psql"    "$DB" "-c default_transaction_read_only=on"
 mk_psql "$TMP/psql-rw" "$DB" ""
+# **경계 롤로 붙는 벌** — 종전 배선이 속던 바로 그 접속이다. 읽기 전용 선언은 그대로 달려 있어
+# 읽기 전용 검사만으로는 걸리지 않는다. 걸러 내는 것은 새로 붙인 롤 판정뿐이다.
+mk_psql "$TMP/psql-boundary" "$DB" "-c default_transaction_read_only=on" "$BROLE"
 
 LAB="0000000000000000000000000A"
 ACC="000000000000000000000000A1"
@@ -103,7 +120,7 @@ EXEMPT_ONE="$TMP/exempt-one.toml"
 printf '[exempt]\ndatasets = ["%s"]\nreason = "소급 반영 별건"\n' "$DS" > "$EXEMPT_ONE"
 
 URL="postgresql://ignored/ignored"        # 주입된 psql 이 무시한다. **값은 출력하지 않는다**
-run_gate() { env COLAB_AUTOMETA_PSQL="$TMP/psql" "$@" "$GATE" 2>&1; }
+run_gate() { env COLAB_AUTOMETA_PSQL="$TMP/psql" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" "$@" "$GATE" 2>&1; }
 
 expect() { # $1=green|red $2=라벨 $3..=환경변수
   local want="$1" label="$2"; shift 2
@@ -190,9 +207,13 @@ docker exec "$PGC" createdb -U postgres "$SCHEMA_ONLY_DB" >/dev/null 2>&1 \
 docker exec -i "$PGC" psql -q -U postgres -d "$SCHEMA_ONLY_DB" -v ON_ERROR_STOP=1 < "$SCHEMA" \
   >"$TMP/err" 2>&1 || red "스키마 전용 DB 에 선언 스키마를 적용하지 못했다:
 $(sed 's/^/     /' "$TMP/err")"
+docker exec -i "$PGC" psql -q -U postgres -d "$SCHEMA_ONLY_DB" -v ON_ERROR_STOP=1 \
+  -v owner=colab_owner -v app="$BROLE" -v app_password=gateapp < "$APPROLE" >"$TMP/err" 2>&1 \
+  || red "스키마 전용 DB 에 경계 롤 권한을 주지 못했다:
+$(sed 's/^/     /' "$TMP/err")"
 mk_psql "$TMP/psql-schemaonly" "$SCHEMA_ONLY_DB" "-c default_transaction_read_only=on"
 out="$(env COLAB_AUTOMETA_PSQL="$TMP/psql-schemaonly" COLAB_AUTOMETA_EXEMPT="$EXEMPT_NONE" \
-        COLAB_AUTOMETA_STAGING_DB_URL="$URL" "$GATE" 2>&1)"; rc=$?
+        COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" COLAB_AUTOMETA_STAGING_DB_URL="$URL" "$GATE" 2>&1)"; rc=$?
 if [ $rc -eq 0 ]; then
   echo "[selftest] ⓖ 스키마 전용 DB → green ✗ — **빈 DB 를 통과시키면 게이트가 아무것도 안 본다**"
   echo "$out" | sed 's/^/           /'; FAILURES+=("ⓖ 스키마 전용 DB")
@@ -221,6 +242,37 @@ case "$LAST_OUT" in
      echo "$LAST_OUT" | sed 's/^/           /'; FAILURES+=("ⓘ 사유") ;;
 esac
 
+# ── 롤 판정 (⭑ 증보 2026-09-01 · RULING ㉟) ──────────────────────────────────
+# ⓛ 경계 롤 이름 미선언 → red(준비). 대조를 못 한 것을 통과로 세지 않는다.
+expect red "ⓛ 경계 롤 미선언" COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" \
+  COLAB_AUTOMETA_STAGING_DB_URL="$URL" COLAB_AUTOMETA_BOUNDARY_ROLE=
+case "$LAST_OUT" in
+  *cause=입력미선언*COLAB_AUTOMETA_BOUNDARY_ROLE*) echo "[selftest] ⓛ 원인 표식(입력미선언) → OK" ;;
+  *) echo "[selftest] ⓛ cause=입력미선언 표식이 없다 ✗ — 미선언이 판정 red 로 찍힌다"
+     echo "$LAST_OUT" | sed 's/^/           /'; FAILURES+=("ⓛ 원인 표식") ;;
+esac
+
+# ⓜ **경계 롤로 붙은 접속** → red. 이것이 M-9 의 사고 그 자체다 —
+#   읽기 전용 선언도 달려 있고 접속도 성공하며 질의도 에러 없이 돈다. 다만 전 표가 0 으로 보인다.
+#   면제 선언은 EXEMPT_ONE 을 쓴다 — 롤 검사가 없으면 **green 이 나던 상태**여야 오라클이 산다.
+expect red "ⓜ 경계 롤 접속" COLAB_AUTOMETA_PSQL="$TMP/psql-boundary" \
+  COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_STAGING_DB_URL="$URL"
+case "$LAST_OUT" in
+  *'관리자 롤이 아니다'*) echo "[selftest] ⓜ 사유(관리자 롤 아님) → OK" ;;
+  *) echo "[selftest] ⓜ 사유가 롤로 말해지지 않는다 ✗"
+     echo "$LAST_OUT" | sed 's/^/           /'; FAILURES+=("ⓜ 사유") ;;
+esac
+
+# ⓝ 경계 롤 선언이 **관리자 롤 자신** → 두 조회가 같은 롤로 돌아 값이 같아진다 → red.
+#   「경계가 실효 중인 표에서 두 값이 같다」는 것은 경계가 아무것도 가르지 못했다는 뜻이다.
+expect red "ⓝ 경계 롤 = 관리자 롤" COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" \
+  COLAB_AUTOMETA_STAGING_DB_URL="$URL" COLAB_AUTOMETA_BOUNDARY_ROLE=postgres
+case "$LAST_OUT" in
+  *'관리자 롤 값과 같다'*) echo "[selftest] ⓝ 사유(두 값이 같다) → OK" ;;
+  *) echo "[selftest] ⓝ 사유가 대조로 말해지지 않는다 ✗"
+     echo "$LAST_OUT" | sed 's/^/           /'; FAILURES+=("ⓝ 사유") ;;
+esac
+
 # ── 변이로 오라클을 증명한다 — **검사를 떼면 통과하는가** ────────────────────────────
 cp "$READINESS" "$TMP/_readiness.sh"
 mutate() { # $1=출력 $2..=sed 식
@@ -232,7 +284,8 @@ mutate() { # $1=출력 $2..=sed 식
 #    ⓘ 의 red 를 만든 것이 바로 그 검사라는 뜻이다. 오라클이 살아 있다는 증명이다.
 mutate "$TMP/mutant-no-probe.sh" '/# ── 2-1\. 읽기 전용 증명/,/^SQL_ARRAY=/{/^SQL_ARRAY=/!d}'
 out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql-rw" \
-        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_STAGING_DB_URL="$URL" \
+        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" \
+        COLAB_AUTOMETA_STAGING_DB_URL="$URL" \
         bash "$TMP/mutant-no-probe.sh" 2>&1)"; rc=$?
 if [ $rc -eq 0 ]; then
   echo "[selftest] ⓙ 변이①(탐침 제거) → green — **오라클 증명 OK**(검사를 떼면 통과한다)"
@@ -248,7 +301,8 @@ mutate "$TMP/mutant-rw-txn.sh" \
   "s/^  \*'::decl::off'\*)/  *'::decl::never-matches'*)/" \
   "s/^BEGIN READ ONLY;\$/BEGIN;/"
 out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql-rw" \
-        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_STAGING_DB_URL="$URL" \
+        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" \
+        COLAB_AUTOMETA_STAGING_DB_URL="$URL" \
         bash "$TMP/mutant-rw-txn.sh" 2>&1)"; rc=$?
 if [ $rc -ne 0 ] && printf '%s' "$out" | grep -q '쓰기 탐침이 통과했다'; then
   echo "[selftest] ⓚ 변이②(읽기 전용 해제) → red(쓰기 탐침 통과) — **탐침이 실제로 쓴다** OK"
@@ -257,9 +311,43 @@ else
   echo "$out" | sed 's/^/           /'; FAILURES+=("ⓚ 변이② 탐침")
 fi
 
+# ⓞ 변이③ — **롤 판정 ㉮ 절(2-2)을 통째로 뗀다.** ⓜ 의 red 를 만든 것이 그 검사임을 보인다.
+#    ⚠ 여기서 「변이하면 green」이 되지는 **않는다** — 경계 롤은 아무것도 못 보므로 아래 「대상 0건」이
+#    대신 잡는다(두 검사가 겹친다 · 의도된 이중 방어). 그러므로 오라클은 **사유의 소멸**로 잰다:
+#    변이본이 「관리자 롤이 아니다」를 더 이상 말하지 않으면 그 red 를 쓴 것이 ㉮ 라는 증명이다.
+#    ⚠ 겹치지 않는 상태도 실재한다 — 경계 롤이 **일부** 행을 보는 접속(GUC 가 걸린 접속)이면
+#    변이본은 걸러진 값을 세고 판정을 내리며, 그것이 정확히 M-9 의 모양이다.
+mutate "$TMP/mutant-no-role.sh" '/# ── 2-2\. 롤 판정/,/^# 본 질의는 \*\*두 번\*\*/{/^# 본 질의는 \*\*두 번\*\*/!d}'
+out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql-boundary" \
+        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" \
+        COLAB_AUTOMETA_STAGING_DB_URL="$URL" bash "$TMP/mutant-no-role.sh" 2>&1)"
+if printf '%s' "$out" | grep -q '관리자 롤이 아니다'; then
+  echo "[selftest] ⓞ 변이③(롤 판정 제거)이 여전히 롤을 사유로 말한다 ✗ — ⓜ 의 red 가 ㉮ 에서 온 것이 아니다"
+  echo "$out" | sed 's/^/           /'; FAILURES+=("ⓞ 변이③ 오라클")
+elif printf '%s' "$out" | grep -q '대조 대상 0건'; then
+  echo "[selftest] ⓞ 변이③(롤 판정 제거) → 사유가 「대상 0건」으로 바뀐다 — **오라클 증명 OK**"
+  echo "           (검사를 떼면 경계가 거른 0 을 그대로 세러 간다)"
+else
+  echo "[selftest] ⓞ 변이③의 사유가 둘 중 어느 쪽도 아니다 ✗"
+  echo "$out" | sed 's/^/           /'; FAILURES+=("ⓞ 변이③ 사유")
+fi
+
+# ⓟ 변이④ — **㉯ 대조만 무력화한다.** 같은 상태(ⓝ)가 green 이 되면, ⓝ 의 red 를 만든 것이
+#    두 값의 대조라는 증명이다. 관리자 롤 판정(㉮)은 그대로 두므로 ㉮ 가 대신 잡아 준 것이 아니다.
+mutate "$TMP/mutant-no-compare.sh" 's/^if \[ "\$LINE" = "\$LINE_BOUNDARY" \]; then$/if false; then/'
+out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql" \
+        COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE=postgres \
+        COLAB_AUTOMETA_STAGING_DB_URL="$URL" bash "$TMP/mutant-no-compare.sh" 2>&1)"; rc=$?
+if [ $rc -eq 0 ]; then
+  echo "[selftest] ⓟ 변이④(㉯ 대조 제거) → green — **오라클 증명 OK**(대조를 떼면 같은 값이 통과한다)"
+else
+  echo "[selftest] ⓟ 변이④가 여전히 red ✗ — ⓝ 의 red 가 ㉯ 대조에서 온 것이 아니다"
+  echo "$out" | sed 's/^/           /'; FAILURES+=("ⓟ 변이④ 오라클")
+fi
+
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::autometa-loss-selftest red — 실패한 케이스: ${FAILURES[*]}"
   exit 1
 fi
-echo "autometa-loss-selftest green — 12 케이스(red 8 · green 2 · 변이 2) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 = 검사 17건 전건 기대대로"
+echo "autometa-loss-selftest green — 17 케이스(red 11 · green 2 · 변이 4) ＋ 사유 대조 7 ＋ 면제 건수 노출 1 = 검사 25건 전건 기대대로"
 exit 0
