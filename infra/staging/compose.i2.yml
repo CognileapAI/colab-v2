@@ -300,6 +300,14 @@ services:
       COLAB_VIZ_SERVICE_TOKEN: ${COLAB_VIZ_SERVICE_TOKEN:?COLAB_VIZ_SERVICE_TOKEN 이 필요하다}
       # 타일 URL 서명 비밀 (`〈68〉`). 코드에 기본값이 없다 — 있으면 모든 배포가 같은 비밀이다.
       COLAB_VIZ_TILE_SIGNING_SECRET: ${COLAB_VIZ_TILE_SIGNING_SECRET:?COLAB_VIZ_TILE_SIGNING_SECRET 이 필요하다}
+      # ⭑ ⟨신설 2026-08-31 · `PLAN-SoT §9 〈241〉`⟩ **미리보기 갈래 스위치**(`〈240〉`-㉲).
+      #   비면 「한 장」이다 — 정본 문면(`Policy_데이터셋_상세` v2.7 `§8`)이 기본값이고,
+      #   **레포에 켜진 값을 박지 않는다.** 켜는 자리는 홈 env 한 곳뿐이다.
+      #   ⚠ 이 줄이 없으면 홈 env 에 무엇을 적어도 컨테이너는 **영영 꺼짐**이었다 —
+      #   `--env-file` 은 compose 의 `${...}` 치환에만 쓰이고 컨테이너 환경으로 흐르지 않는다.
+      #   `#20`(접수분 루트) · `#49`(미리보기 자리)와 같은 무늬라 시험이 회귀를 진다
+      #   (`services/viz-render/tests/test_tile_branch_deployment_declaration.py`).
+      COLAB_VIZ_TILE_BRANCH: ${COLAB_VIZ_TILE_BRANCH:-}
       # ⭑ 바이트를 어디서 여는가 — **core-api·워커와 똑같은 저장소 루트**다.
       #   예전에는 여기에 `/uploads` 를 한 번 더 붙여 「한 층 아래」를 배포 설정이 손으로
       #   세고 있었다. 층은 맞췄지만 **격자 배치는 못 맞췄고**(`grid/` 를 만드는 코드가
