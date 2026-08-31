@@ -89,7 +89,10 @@ done
 
 echo "════ P4 sha256 무결성"
 [ "${#ART[@]}" -gt 0 ] || fail "P4 대조할 산출물이 0건이다 — 대상 0 을 무결성 통과로 읽지 않는다(P2 참조)"
-for K in "${!ART[@]:-}"; do
+# ⚠ `"${!ART[@]:-}"` 로 적으면 bash 가 「invalid variable name」을 내고 **루프가 한 번도 돌지 않는다.**
+#   `fail` 이 안 불리므로 손상된 산출물이 P4 를 조용히 통과했다(2026-08-31 실측 · 셀프테스트 SR19).
+#   대상 0 건은 위 줄이 이미 `fail` 로 막는다 — 여기서 기본값으로 눅이지 않는다.
+for K in "${!ART[@]}"; do
   A="${ART[$K]}"; S="$A.sha256"
   if [ ! -f "$S" ]; then fail "P4 $K — .sha256 이 없다"; continue; fi
   GOT="$(sha256sum "$A" | awk '{print $1}')"; EXP="$(tr -d ' \n' < "$S")"

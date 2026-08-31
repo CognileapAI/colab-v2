@@ -264,6 +264,28 @@ RC=$?
 if [ $RC -eq 0 ]; then echo "  → 기대대로: 미측정은 조용한 성공이 아니다"
 else echo "  → ✗ 미측정을 성공으로 셌거나 적지 않았다 (코드 $RC)"; BAD=$((BAD+1)); fi
 
+# ── P4 sha256 무결성이 **실제로 돌았는가** (2026-08-31 · 판정 〈249〉 회차 실측) ────────────
+# ⭑ 재현하는 결함 = `preflight.sh` P4 루프의 `"${!ART[@]:-}"`.
+#   연관배열 키 확장에 `:-` 기본값을 붙이면 bash 가 「invalid variable name」을 내고
+#   **루프 본문이 한 번도 돌지 않는다.** 그런데 `fail` 이 불리지 않으므로 P4 는 조용히 통과한다 —
+#   산출물이 손상돼 있어도 사전조건이 GREEN 쪽으로 한 칸 다가간다. 이 레포 대표 실패형이다.
+# **대상 0 건을 통과로 세지 않는다**(P2·P4 자신이 적은 규칙)이므로, 여기서는 「돌았는가」를 값으로 잰다.
+S="$W/rt-p4"; mk_store "$S" 20260829T033005 20260829T033005 20260829T033040
+mk_cfg "$W/cfg-p4.env" "$S" "uploads previews"
+
+RAN=$((RAN+1)); echo "──────── SR19 P4 가 산출물 **네 건 전부**를 대조한다 (루프가 실제로 돈다)"
+O="$(pf "$W/cfg-p4.env")"
+N="$(echo "$O" | grep -c 'P4 .* sha256 일치')"
+if [ "$N" = "4" ]; then echo "  → 기대대로: P4 일치 4건 (원장 2 ＋ 볼륨 2)"
+else echo "  → ✗ P4 대조가 $N 건이다 (기대 4) — 루프가 돌지 않았다면 손상을 못 본다"
+     echo "$O" | grep -E 'P4' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR19-b .sha256 이 어긋나면 P4 가 **이름으로** 적발한다"
+echo '0000000000000000000000000000000000000000000000000000000000000000'   > "$S/vol-uploads-20260829T033005.tar.gz.sha256"
+O="$(pf "$W/cfg-p4.env")"
+if echo "$O" | grep -q 'P4 vol-uploads sha256 불일치'; then echo "  → 기대대로: 손상을 이름으로 말한다"
+else echo "  → ✗ 손상된 산출물이 P4 를 통과했다"; echo "$O" | grep -E 'P4' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi
 echo "복원 셀프테스트 RED — $BAD 건이 fail-closed 가 아니다"; exit 1
