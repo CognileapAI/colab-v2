@@ -267,10 +267,22 @@ services:
       #   쪽이 갈리면 재사용이 영영 성립하지 않고, 그 실패는 에러가 아니라 「매번 다시
       #   굽는다」로 조용히 나온다 — 접수분 루트에서 한 번 일어난 그 무늬다(`§4 #20`).
       COLAB_WORKER_PREVIEW_DIR: /srv/viz-previews
+      # ⭑ **⟨신설 2026-08-31 · 12차 동결 해제 · `PLAN-SoT §9 〈253〉` · Ted RULING ㉗⟩
+      #   이벤트 버스 — D5 가 낸 「미리보기가 낡았다」 3종이 여기로 나간다**(`Y-1`).
+      #   **viz-render 의 `COLAB_VIZ_TRIGGER_SPOOL` 과 같은 값이어야 한다** — 내는 쪽과
+      #   받는 쪽이 다른 자리를 보면 트리거는 영영 안 닿고, 그 실패는 에러가 아니라
+      #   「자동 무효화가 그냥 안 된다」로 조용히 나온다. 미리보기 루트에서 한 번 일어난
+      #   그 무늬다(`§4 #20`·`#49`). 시험이 두 값을 대조한다.
+      #   ⚠ **`d5_pipeline_event`(outbox)가 아니다** — outbox 는 D5 의 표이고 D7 이 읽으면
+      #     불변규칙 1 위반이다. 이 자리에 놓이는 것은 **이미 발행된 것**뿐이다.
+      #   ⚠ 값을 안 주면 워커는 뜨되 트리거를 버스로 내지 않는다(원장·표준출력에는 남는다).
+      COLAB_WORKER_EVENT_SPOOL: /srv/viz-events
     volumes:
       - uploads:/var/lib/colab/uploads
       # 굽는 쪽은 **쓰기**다 — viz-render 쪽 `:ro` 와 다른 이유가 여기 있다.
       - previews:/srv/viz-previews
+      # 버스는 **내는 쪽도 받는 쪽도 쓴다** — 받는 쪽이 집행을 마친 알림을 걷기 때문이다.
+      - events:/srv/viz-events
       # ⭑ 접속 문자열 파일 — core-api 와 **같은 규약**(`0600` · uid `10001` · 홈 보관 · 경로는 env).
       - ${COLAB_STAGING_PIPELINE_DB_URL_FILE:?COLAB_STAGING_PIPELINE_DB_URL_FILE 이 필요하다}:/etc/colab/pipeline-db.url:ro
     depends_on:
@@ -315,10 +327,17 @@ services:
       #   이제 층수도 `grid/` 도 `contracts/storage/layout.json` 한 곳이 정한다.
       COLAB_VIZ_SOURCE_ROOT: /var/lib/colab/uploads
       COLAB_VIZ_PREVIEW_DIR: /srv/viz-previews
+      # ⭑ **⟨신설 2026-08-31 · `〈253〉`⟩ 받는 자리** — pipeline-worker 의
+      #   `COLAB_WORKER_EVENT_SPOOL` 과 **같은 값**이다. 안 주면 `app.state.triggers` 가
+      #   `None` 이고 트리거는 오지 않는다 — **자리를 지어내지 않는다**(`kernel/config.py`).
+      #   사람이 부르는 경로(「미리보기 다시 만들기」)는 그 상태에서도 그대로 남는다.
+      COLAB_VIZ_TRIGGER_SPOOL: /srv/viz-events
     volumes:
       # **읽기 전용이다.** 렌더는 접수한 바이트를 열 뿐 고치지 않는다.
       - uploads:/var/lib/colab/uploads:ro
       - previews:/srv/viz-previews
+      # 버스만 쓰기다 — 집행을 마친 **알림**을 걷는다(산출물이 아니다 · `〈247〉`).
+      - events:/srv/viz-events
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -421,6 +440,12 @@ services:
 #    적으면 이 파일에 절대경로가 들어온다(`CLAUDE.md §3-8`).
 volumes:
   uploads: {}
+  # ⭑ **⟨신설 2026-08-31 · 12차 동결 해제 · `PLAN-SoT §9 〈253〉`⟩ 이벤트 버스.**
+  # D5(pipeline-worker)가 낸 「미리보기가 낡았다」 3종이 놓이고 D7(viz-render)이 집는다.
+  # **순수 named volume 으로 둔다** — `previews` 와 달리 게이트가 이 자리를 읽지 않는다
+  # (검사 대상은 산출물이지 알림이 아니다). 호스트 바인드를 만들 이유가 없으면 만들지 않는다.
+  # ⚠ 담기는 것은 **수명이 짧은 알림**이다 — 집행되면 사라진다. 백업 대상이 아니다.
+  events: {}
   # 미리보기 3층 산출물. **정적 자산이다** — 렌더 작업으로 매번 만드는 물건이 아니라
   # 한 번 그려 두고 목록 썸네일도 같은 자리에서 서빙된다(`〈80〉-㉯ 2`).
   #

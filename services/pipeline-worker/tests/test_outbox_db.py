@@ -101,7 +101,10 @@ def test_worker_writes_all_stage_events_into_the_w1_ledger(session, tmp_path):
         "FROM d5_pipeline_event WHERE upload_id = :u ORDER BY occurred_at, event_type"
     ), {"u": upload_id}).all()
     types = {r[0] for r in rows}
-    assert types == set(EVENT_TYPES) - {"upload.failed"}
+    # ⭑ ⟨2026-08-31 · `〈253〉`⟩ **파이프라인 7종**이 기준이다 — D5 → D7 알림 3종은
+    #   「이미 준비를 마친 업로드」에만 나가고, 여기는 첫 처리라 한 건도 안 나온다.
+    from colab_pipeline.d5.events import PIPELINE_TYPES
+    assert types == set(PIPELINE_TYPES) - {"upload.failed"}
     assert all(r[3] is None for r in rows)          # 아직 발행 전 — 릴레이가 채운다
     assert {r[1] for r in rows if r[0] == "upload.accepted"} == {"core-api"}
     assert {r[1] for r in rows if r[0] != "upload.accepted"} == {"pipeline-worker"}
@@ -126,14 +129,24 @@ def test_redelivery_does_not_duplicate_rows(session, tmp_path):
         upload_id=upload_id, lab_id=_LAB, actor_account_id=_ACC, workdir=tmp_path / "w",
         files=[UploadFileWork(file_id=fid, path=src, kind="본체", file_name=src.name)],
     )
+    def _keys() -> list[str]:
+        return [r[0] for r in session.execute(text(
+            "SELECT idempotency_key FROM d5_pipeline_event WHERE upload_id=:u "
+            "ORDER BY occurred_at, event_type"), {"u": upload_id}).all()]
+
     svc = IngestionService(SqlLedger(session))
     svc.process_upload(work)
-    n1 = session.execute(text("SELECT count(*) FROM d5_pipeline_event WHERE upload_id=:u"),
-                         {"u": upload_id}).scalar_one()
+    first = _keys()
     svc.process_upload(work)
-    n2 = session.execute(text("SELECT count(*) FROM d5_pipeline_event WHERE upload_id=:u"),
-                         {"u": upload_id}).scalar_one()
-    assert n1 == n2
+    after = _keys()
+    assert len(after) == len(set(after)), f"같은 작업이 두 벌 생겼다: {after}"
+    assert set(first) <= set(after), "첫 바퀴가 낸 행이 사라졌다"
+    # ⭑ ⟨증보 2026-08-31 · 12차 해제 · `PLAN-SoT §9 〈253〉`⟩ **두 번째 바퀴가 새로 내는
+    #   것은 트리거 하나뿐**이다 — 이미 `ready` 인 업로드를 다시 돌린 것이 곧 「미리보기
+    #   뒷단 재실행」이고, 그것은 **복제가 아니라 새 사실**이다. 멱등 키가 두 벌 발행을
+    #   막는 성질(이 시험의 본론)은 그대로다. ⚠ 이 단언이 **실 DB 에서** 도는 것이
+    #   중요하다 — CHECK·UNIQUE 가 새 종류를 실제로 받는지를 여기서만 잰다.
+    assert sorted(set(after) - set(first)) == [f"preview.backend-rerun:{upload_id}"]
 
 
 def test_relay_marks_published_and_is_the_only_thing_that_does(session, tmp_path):

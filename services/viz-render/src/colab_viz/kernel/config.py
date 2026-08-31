@@ -81,6 +81,11 @@ class Settings:
     tile_signature_ttl_seconds: int = DEFAULT_TILE_SIGNATURE_TTL_SECONDS
     preview_dir: Path = DEFAULT_PREVIEW_DIR
     preview_url_base: str = DEFAULT_PREVIEW_URL_BASE
+    #: **D5 가 낸 트리거가 놓이는 이벤트 버스**(`〈253〉` · 12차 해제 · `Y-1`).
+    #: `None` 이면 배선이 안 된 것이고, **자리를 지어내지 않는다** — 트리거는 안 오고
+    #: 사람이 부르는 경로(「미리보기 다시 만들기」)는 그대로 남는다(완료 정의 ⓒ).
+    #: ⚠ pipeline-worker 의 `COLAB_WORKER_EVENT_SPOOL` 과 **같은 자리**여야 한다.
+    trigger_spool: Path | None = None
 
 
 def load_settings() -> Settings:
@@ -104,4 +109,8 @@ def load_settings() -> Settings:
         preview_dir=Path(os.environ.get("COLAB_VIZ_PREVIEW_DIR") or DEFAULT_PREVIEW_DIR),
         preview_url_base=os.environ.get("COLAB_VIZ_PREVIEW_URL_BASE")
         or DEFAULT_PREVIEW_URL_BASE,
+        # **선언이 없으면 버스가 없는 것이다.** 기본 경로를 하나 지어 넣으면 그 자리가
+        # 모든 배포에서 같은 자리가 되고, 비어 있어도 아무도 그 사실을 모른다.
+        trigger_spool=(Path(os.environ["COLAB_VIZ_TRIGGER_SPOOL"])
+                       if os.environ.get("COLAB_VIZ_TRIGGER_SPOOL") else None),
     )

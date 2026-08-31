@@ -72,8 +72,14 @@ def test_failure_path_emits_upload_failed(tmp_path):
     assert failure["willRetry"] is False
 
 
-def test_two_runs_cover_all_seven_event_types(tmp_path):
-    """행복 1회 + 실패 1회 + 접수(core-api) = 7종. 계측은 합집합으로 한다."""
+def test_two_runs_cover_all_seven_pipeline_event_types(tmp_path):
+    """행복 1회 + 실패 1회 + 접수(core-api) = **파이프라인 7종**. 계측은 합집합으로 한다.
+
+    ⭑ ⟨개정 2026-08-31 · `〈253〉`⟩ 기준을 `EVENT_TYPES`(10종)에서 `PIPELINE_TYPES`(7종)로
+    좁혔다 — D5 → D7 알림 3종은 **이 흐름이 내는 사건이 아니다**(둘 다 첫 처리다).
+    **검사 대상을 줄인 것이 아니라** 두 집합이 갈라진 것이고, 3종은 자기 시험이 받는다
+    (`test_preview_stale_triggers.py`).
+    """
     ledger = MemoryLedger()
     ledger.accept(upload_id=_UPL, lab_id=_LAB, actor_account_id=_ACC)
     ok_src = make_readable_geotiff(tmp_path / "ok.tif")
@@ -89,7 +95,8 @@ def test_two_runs_cover_all_seven_event_types(tmp_path):
         upload_id=upl2, lab_id=_LAB, actor_account_id=_ACC, workdir=tmp_path / "w2",
         files=[UploadFileWork(file_id=_F2, path=bad, kind="본체", file_name=bad.name)],
     ))
-    assert {e["type"] for e in ledger.events} == set(EVENT_TYPES)
+    from colab_pipeline.d5.events import PIPELINE_TYPES
+    assert {e["type"] for e in ledger.events} == set(PIPELINE_TYPES)
 
 
 def test_mixed_formats_fail_permanently(tmp_path):
@@ -125,9 +132,15 @@ def test_replay_is_idempotent(tmp_path):
     )
     svc = _service(ledger)
     svc.process_upload(work)
-    first = list(ledger.events)
+    first = [e["idempotencyKey"] for e in ledger.events]
     svc.process_upload(work)
-    assert [e["idempotencyKey"] for e in ledger.events] == [e["idempotencyKey"] for e in first]
+    keys = [e["idempotencyKey"] for e in ledger.events]
+    assert len(keys) == len(set(keys)), f"같은 작업이 두 벌 생겼다: {keys}"
+    assert keys[:len(first)] == first, "첫 바퀴가 낸 것이 다시 만들어졌다"
+    # ⭑ ⟨증보 2026-08-31 · `〈253〉`⟩ **두 번째 바퀴가 새로 내는 것은 트리거뿐**이고,
+    #   그것도 종류당 한 번이다 — 이미 `ready` 인 업로드를 다시 돌린 것이 곧
+    #   「미리보기 뒷단 재실행」이다. 멱등 키가 두 벌 발행을 막는 성질은 그대로다.
+    assert [k.split(":")[0] for k in keys[len(first):]] == ["preview.backend-rerun"]
 
 
 def test_emitted_envelopes_validate_against_the_frozen_contract(tmp_path, event_validator):

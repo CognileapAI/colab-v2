@@ -37,7 +37,13 @@ class UploadLedgerPort(Protocol):
         """
         ...
 
-    def record_detected_format(self, file_id: str, fmt: str | None) -> None: ...
+    def record_detected_format(self, file_id: str, fmt: str | None) -> bool:
+        """감지한 포맷을 적고, **이번이 처음 적는 것인가**를 돌려준다 (`〈253〉`).
+
+        「파일 추가」 트리거가 이 한 값을 오라클로 쓴다 — 이미 준비를 마친 업로드에서
+        처음 보는 조각을 감지했다는 사실이 그것이다.
+        """
+        ...
 
     def record_status(self, upload_id: str, **fields) -> None: ...
 

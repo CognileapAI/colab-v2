@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://colab.cognileap.ai/events/core-pipeline.json",
-  "title": "core-api ↔ pipeline-worker 이벤트 7종",
-  "description": "E-04 업로드 파이프라인의 async 계약. 봉투는 `envelope.json` 이 정의하고 여기서는 타입별 페이로드와 봉투를 좁힌 구체 이벤트를 정의한다. **정본 E-04 가 실제로 요구하는 단계만 있다** — 정본에 근거가 없는 단계(좌표계 정규화·COG)는 `DOMAINS §2 D5` 가 소유물로 열거한 것이며 각 정의에 그렇게 적었다. 없는 것과 그 이유 — 이어올리기(resume) 상태 이벤트: 정본 `Policy §9`가 `[가정] 이어올리기는 이번 범위 밖`이라 뒀다. 계보·데이터셋 생성 이벤트: 사람이 `데이터셋 만들기`를 눌러야 생기는 동기 행위이고 D3·D4 의 것이다. AI 계보 제안: `core-ai` seam(D10)이고 이 파이프라인을 타지 않는다.",
+  "title": "core-api ↔ pipeline-worker 이벤트 7종 ＋ pipeline-worker → viz-render 3종",
+  "description": "E-04 업로드 파이프라인의 async 계약. 봉투는 `envelope.json` 이 정의하고 여기서는 타입별 페이로드와 봉투를 좁힌 구체 이벤트를 정의한다. **정본 E-04 가 실제로 요구하는 단계만 있다** — 정본에 근거가 없는 단계(좌표계 정규화·COG)는 `DOMAINS §2 D5` 가 소유물로 열거한 것이며 각 정의에 그렇게 적었다. 없는 것과 그 이유 — 이어올리기(resume) 상태 이벤트: 정본 `Policy §9`가 `[가정] 이어올리기는 이번 범위 밖`이라 뒀다. 계보·데이터셋 생성 이벤트: 사람이 `데이터셋 만들기`를 눌러야 생기는 동기 행위이고 D3·D4 의 것이다. AI 계보 제안: `core-ai` seam(D10)이고 이 파이프라인을 타지 않는다. ⭑ **⟨증보 2026-08-31 · 12차 동결 해제 · PLAN-SoT §9 〈253〉 · Ted RULING ㉗⟩ 뒤에 3종이 붙었다** — `preview.backend-rerun`·`preview.grid-changed`·`preview.file-added`. **앞의 7종과 성격이 다르다**: 앞은 업로드 하나가 단계를 지나는 **진행**이고, 뒤는 「이미 선 미리보기의 재료가 바뀌었다」는 **알림**이다. 막고 있던 것 = `Y-1` 의 트리거 발신(`03-HANDOFF §4 #55`) — 받는 자리(`TriggerPort`)는 서 있는데 **보내는 쪽이 없었고**, D7 이 D5 의 표·outbox 를 직접 읽는 우회로는 불변규칙 1 이 막는다. 그래서 **계약을 늘려서** 열었다.",
 
   "$defs": {
     "FileRef": {
@@ -317,8 +317,54 @@
       }
     },
 
+    "PreviewStalePayload": {
+      "description": "**미리보기가 낡았다는 알림 하나** (`Y-1` · 12차 해제 `〈253〉` · Ted RULING ㉗). 담는 것은 **어느 사건이었나** 하나뿐이다 — 대상은 봉투의 `uploadId` 가 이미 말하고(이 seam 의 집계 루트), 무엇을 지우고 무엇을 남길지는 **받는 쪽이 계산한다**(`d7_visualization/invalidation.plan` — 자동·수동이 함께 지나는 유일한 자리). ⚠ **`datasetId` 를 두지 않는다** — 봉투 설명 축자: 다른 도메인 테이블을 직접 가리키는 식별자를 이 seam 에 싣지 않는다(`CLAUDE.md §3-1`). ⚠ **지울 경로·키를 싣지 않는다** — 발신자가 수신자의 산출물 배치를 알면 그 순간 D5 가 D7 의 저장소를 아는 것이 된다. 이벤트는 **사실**이고 명령이 아니다.",
+      "type": "object",
+      "required": ["trigger"],
+      "additionalProperties": false,
+      "properties": {
+        "trigger": { "$ref": "envelope.json#/$defs/InvalidationTrigger" }
+      }
+    },
+
+    "PreviewBackendRerun": {
+      "description": "이벤트 ⑧ — `preview.backend-rerun`. 발행: pipeline-worker(D5). **소비: viz-render(D7).** 뜻 = 「미리보기 뒷단(헤더 파싱·좌표계 통일·COG)이 **이미 준비를 마친 업로드에** 다시 돌았다」. ⚠ 첫 접수 처리는 이 사건이 아니다 — 그때는 낡은 그림이 아예 없다.",
+      "type": "object",
+      "allOf": [{ "$ref": "envelope.json#/$defs/Envelope" }],
+      "properties": {
+        "type": { "const": "preview.backend-rerun" },
+        "schemaVersion": { "const": "1.0" },
+        "source": { "const": "pipeline-worker" },
+        "payload": { "$ref": "#/$defs/PreviewStalePayload" }
+      }
+    },
+
+    "PreviewGridChanged": {
+      "description": "이벤트 ⑨ — `preview.grid-changed`. 발행: pipeline-worker(D5). **소비: viz-render(D7).** 뜻 = 「이미 준비를 마친 업로드의 **기준 격자 축이 새로 섰거나 바뀌었다**」(`〈69〉`-⑴ 의 행이 서는 그 자리). 격자가 바뀌면 지도형 미리보기의 좌표가 통째로 달라진다.",
+      "type": "object",
+      "allOf": [{ "$ref": "envelope.json#/$defs/Envelope" }],
+      "properties": {
+        "type": { "const": "preview.grid-changed" },
+        "schemaVersion": { "const": "1.0" },
+        "source": { "const": "pipeline-worker" },
+        "payload": { "$ref": "#/$defs/PreviewStalePayload" }
+      }
+    },
+
+    "PreviewFileAdded": {
+      "description": "이벤트 ⑩ — `preview.file-added`. 발행: pipeline-worker(D5). **소비: viz-render(D7).** 뜻 = 「이미 준비를 마친 업로드에서 **처음 보는 본체 조각을 감지했다**」. 조각이 늘면 합집합이 달라지므로 그린 것이 낡는다(`DataModel §4.3` 합치는 규칙).",
+      "type": "object",
+      "allOf": [{ "$ref": "envelope.json#/$defs/Envelope" }],
+      "properties": {
+        "type": { "const": "preview.file-added" },
+        "schemaVersion": { "const": "1.0" },
+        "source": { "const": "pipeline-worker" },
+        "payload": { "$ref": "#/$defs/PreviewStalePayload" }
+      }
+    },
+
     "AnyEvent": {
-      "description": "이 seam 을 오가는 모든 메시지. 소비자 검증의 진입점이며, `type` 이 7종 밖이면 여기서 걸린다. `oneOf` 인 이유는 `type` 의 `const` 가 정확히 하나만 맞기 때문이다 — 새 타입을 추가하면 여기에도 한 줄이 늘고, 그 diff 가 계약 리뷰(CODEOWNERS)에 걸린다.",
+      "description": "이 seam 을 오가는 모든 메시지. 소비자 검증의 진입점이며, `type` 이 ⭑ ⟨증보 2026-08-31 · 12차 해제 · 〈253〉⟩ **10종** ／ 이전 표기 ~~7종~~ 밖이면 여기서 걸린다. `oneOf` 인 이유는 `type` 의 `const` 가 정확히 하나만 맞기 때문이다 — 새 타입을 추가하면 여기에도 한 줄이 늘고, 그 diff 가 계약 리뷰(CODEOWNERS)에 걸린다.",
       "oneOf": [
         { "$ref": "#/$defs/UploadAccepted" },
         { "$ref": "#/$defs/FormatDetected" },
@@ -326,7 +372,10 @@
         { "$ref": "#/$defs/CrsNormalized" },
         { "$ref": "#/$defs/CogBuilt" },
         { "$ref": "#/$defs/UploadReady" },
-        { "$ref": "#/$defs/UploadFailed" }
+        { "$ref": "#/$defs/UploadFailed" },
+        { "$ref": "#/$defs/PreviewBackendRerun" },
+        { "$ref": "#/$defs/PreviewGridChanged" },
+        { "$ref": "#/$defs/PreviewFileAdded" }
       ]
     }
   }

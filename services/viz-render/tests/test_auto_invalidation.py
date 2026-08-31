@@ -262,6 +262,11 @@ def test_원본을_지우거나_덮어쓰는_경로가_이_단위에_없다():
         for token in ("shutil.rmtree", "os.remove", "os.unlink"):
             if token in text:
                 offenders.append(f"{p.name}:{token}")
-        if ".unlink(" in text and p.name != "invalidation.py":
+        # ⭑ ⟨증보 2026-08-31 · `〈253〉`⟩ 지우는 자리가 **둘**이고 둘 다 갇혀 있다:
+        #   `invalidation.py` = 미리보기 루트 안의 렌더 산출물 · `trigger_bus.py` = 이벤트
+        #   버스 안의 **알림 파일**(산출물이 아니다). 목록을 넓힌 것이 아니라 **자리마다
+        #   자기 울타리를 증명한다** — `test_trigger_intake.py` 의 「버스 밖의 파일은
+        #   지우지 않는다」가 뒤엣것을 잠근다. ⚠ 이름을 하나 더 넣는 것은 판정 사안이다.
+        if ".unlink(" in text and p.name not in ("invalidation.py", "trigger_bus.py"):
             offenders.append(f"{p.name}:unlink")
     assert offenders == [], f"지우는 자리가 늘었다: {offenders}"

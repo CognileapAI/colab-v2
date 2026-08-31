@@ -132,3 +132,42 @@ def test_the_preview_root_is_still_one_root():
     assert len(mounts) == 4, f"미리보기 볼륨을 무는 자리가 넷이 아니다: {mounts}"
     roots = {m.split(":")[1] for m in mounts}
     assert roots == {"/srv/viz-previews"}, f"루트가 갈렸다: {roots}"
+
+
+# ── 이벤트 버스 (`Y-1` · 12차 동결 해제 · `PLAN-SoT §9 〈253〉`) ─────────────────
+# ⭑ **왜 여기에 붙는가** — 이 파일이 존재하는 이유가 그대로 적용된다: 「선언이 코드에
+#   있고 배포에 없으면 아무 일도 안 난다」. `Y-1` 의 트리거 배선은 **두 배포 단위가 같은
+#   자리를 봐야** 성립하고, 그것은 코드가 아니라 배포가 정한다. Ted RULING ㉗ 이 배포
+#   배선(ⓒ)을 기각한 근거도 같은 실측이다 — 이 회차에 두 번 물렸다(스위치가 배포에 안
+#   실려 「영영 꺼짐」 · 설정을 고쳐도 컨테이너가 안 바뀜). **코드에 연결을 두고, 배포
+#   선언은 시험이 잰다.**
+@pytest.mark.stage2
+def test_deployment_gives_the_worker_an_event_bus():
+    """내는 쪽 — 자리가 없으면 트리거는 원장에만 남고 D7 에 영영 안 닿는다."""
+    assert _env(_service_block("pipeline-worker"), "COLAB_WORKER_EVENT_SPOOL")
+
+
+@pytest.mark.stage2
+def test_publisher_and_subscriber_look_at_the_same_event_bus():
+    """**한 자리다.** 내는 쪽과 받는 쪽이 갈리면 자동 무효화가 조용히 안 된다 —
+    `COLAB_WORKER_PREVIEW_DIR` ↔ `COLAB_VIZ_PREVIEW_DIR` 과 같은 종류의 짝이다."""
+    pub = _env(_service_block("pipeline-worker"), "COLAB_WORKER_EVENT_SPOOL")
+    sub = _env(_service_block("viz-render"), "COLAB_VIZ_TRIGGER_SPOOL")
+    assert pub == sub != None                                     # noqa: E711
+
+
+@pytest.mark.stage2
+def test_the_event_bus_is_actually_mounted_on_both_units():
+    """선언만 있고 볼륨이 없으면 **각자 자기 컨테이너 안의 빈 디렉터리**를 본다 —
+    내는 쪽은 성공을 보고하고 받는 쪽은 영원히 0건을 집는다. 에러는 안 난다."""
+    for unit, key, ro_allowed in (("pipeline-worker", "COLAB_WORKER_EVENT_SPOOL", False),
+                                  ("viz-render", "COLAB_VIZ_TRIGGER_SPOOL", False)):
+        block = _service_block(unit)
+        root = _env(block, key)
+        assert root, f"{unit}: 자리 선언이 없다"
+        mounts = re.findall(r"^\s+- (\S+)\s*$", block, re.M)
+        target = [m for m in mounts if m.split(":")[1:2] == [root]]
+        assert target, f"{unit}: `{root}` 에 볼륨이 안 붙었다 — 선언만 있고 자리가 없다"
+        # **받는 쪽도 쓰기다** — 집행을 마친 알림을 걷는다(`ports/trigger.ack`).
+        assert not target[0].endswith(":ro"), (
+            f"{unit}: 버스가 읽기 전용이면 집행한 알림을 걷지 못해 같은 사건이 영원히 남는다")

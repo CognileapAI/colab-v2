@@ -589,9 +589,14 @@ CREATE TABLE d5_pipeline_event (
   -- 그래서 `file_id` 열을 두지 않는다. 그리고 그것이 멱등 키가 `<타입>:<uploadId>` 만으로
   -- 충돌 없이 성립하는 이유다 — 타입 하나당 업로드 하나당 이벤트 하나.
   upload_id           ulid        NOT NULL REFERENCES d5_upload(id) ON DELETE CASCADE,
+  -- ⭑ ⟨증보 2026-08-31 · 12 차 동결 해제 · `PLAN-SoT §9 〈253〉`⟩ **10 종이다** ／ 이전 7 종.
+  --   ① 앞의 7 = E-04 업로드 파이프라인(core-api ↔ pipeline-worker) — 업로드 하나의 **진행**
+  --   ② 뒤의 3 = D5 → D7 알림(pipeline-worker → viz-render) — 「이미 선 미리보기의 재료가
+  --      바뀌었다」는 **사실**. `Y-1` 의 트리거 발신이 여기 실린다. 무엇을 지울지는 D7 이 정한다.
   event_type          text        NOT NULL CHECK (event_type IN (
                         'upload.accepted', 'file.format-detected', 'file.header-parsed',
-                        'file.crs-normalized', 'preview.cog-built', 'upload.ready', 'upload.failed')),
+                        'file.crs-normalized', 'preview.cog-built', 'upload.ready', 'upload.failed',
+                        'preview.backend-rerun', 'preview.grid-changed', 'preview.file-added')),
   schema_version      text        NOT NULL CHECK (schema_version ~ '^[0-9]+\.[0-9]+$'),
   source              text        NOT NULL CHECK (source IN ('core-api', 'pipeline-worker')),
   occurred_at         timestamptz NOT NULL DEFAULT now(),
@@ -607,6 +612,8 @@ CREATE TABLE d5_pipeline_event (
   payload             jsonb       NOT NULL,
   -- `upload.accepted` **만** core-api 가 낸다 — 봉투가 타입마다 `source` 를 const 로 못박았다.
   -- 산문으로만 있던 그 규칙을 DB 가 강제한다.
+  -- ⚠ 새 3 종(`preview.*`)은 pipeline-worker 가 내므로 이 CHECK 를 **고칠 필요가 없다** —
+  --    core-api 가 그 셋을 내려 하면 여기서 걸린다.
   CONSTRAINT d5_pipeline_event_source_matches_type
     CHECK ((event_type = 'upload.accepted') = (source = 'core-api')),
   -- **재전달 멱등의 DB 층 뿌리.** S2 완료 판정이 요구하고 PoC 에 선례가 없다 (P2.md §10-(나)).

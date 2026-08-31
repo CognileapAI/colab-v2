@@ -18,6 +18,12 @@
 그리는 것은 D7(viz-render)이다(`S1-PLAN-REFOUND §D.6`). 늘어난 것은 단계가 아니라
 `ready` 의 판정 조건뿐이다(`〈79〉-⑷` — 격자 축이 확정되거나 거절됐다).
 
+⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈253〉` · 12차 동결 해제⟩ 소비자가 하나 늘었다 —
+viz-render(D7).** 릴레이가 내보내는 것 중 **「미리보기가 낡았다」 3종**은 이벤트 버스
+(`ENV_EVENT_SPOOL`)로도 나가고 D7 이 그것을 받아 자기 산출물만 다시 굽는다(`Y-1`).
+**방향은 한 방향이다** — D5 가 내고 D7 은 받기만 한다. D7 이 `d5_*` 표나 outbox 를
+읽는 경로는 없다(불변규칙 1).
+
 **발행 대상(큐·브로커)은 아직 고르지 않았다** — `〈61〉` 동결 계약은 봉투만 못박았고 전송
 수단은 정본이 값을 주지 않았다(`[정본 무근거]`). 그래서 기본 발행자는 **표준 출력 한 줄**
 이고, 실제 전송 수단이 정해지면 `publish` 를 갈아 끼운다. **원장에 남는 사실은 같다.**
@@ -30,6 +36,7 @@ import threading
 import time
 from pathlib import Path
 
+from ..d5.events import PREVIEW_STALE_TYPES
 from ..domains.d5_ingestion import (
     IngestionService,
     SqlLedger,
@@ -76,6 +83,16 @@ ENV_PREVIEW_DIR = "COLAB_WORKER_PREVIEW_DIR"
 #:     여기서 프로세스를 죽이지 않는 이유는 하나다 — 이미 도는 배포가 재기동에서 서지 못하면
 #:     그것은 검사가 아니라 사고다. **판정처는 게이트이고, 여기는 그 사실을 말하는 자리다.**
 ENV_STAGE2 = "COLAB_WORKER_STAGE2"
+#: **이벤트 버스의 자리** (`〈253〉` · 12차 해제 · Ted RULING ㉗). D5 가 낸 「미리보기가
+#: 낡았다」 3종이 여기로 나가고 viz-render(D7)가 여기서 받는다.
+#:
+#: ⚠ **`d5_pipeline_event`(outbox)가 아니다.** outbox 는 D5 의 표이고 D7 이 읽으면
+#: 불변규칙 1 위반이다. 이 자리는 **이미 발행된 것**이 놓이는 버스이며, 브로커를 고르지
+#: 않은 지금(`〈61〉` — 전송 수단은 정본이 값을 주지 않았다) 그 실물이 디렉터리 하나다.
+#: 브로커가 정해지면 `publish` 를 갈아 끼우는 것으로 끝난다 — **원장에 남는 사실은 같다.**
+#: ⚠ viz-render 의 `COLAB_VIZ_TRIGGER_SPOOL` 과 **같은 자리**여야 한다.
+#: 안 주면 트리거는 원장·표준출력에만 남고 버스로는 나가지 않는다.
+ENV_EVENT_SPOOL = "COLAB_WORKER_EVENT_SPOOL"
 
 #: 한 바퀴에 처리할 업로드 수의 상한. **없으면 한 바퀴가 얼마나 걸릴지 아무도 모른다.**
 BATCH = 20
@@ -83,6 +100,51 @@ BATCH = 20
 
 def stdout_publish(envelope: dict) -> None:
     print(json.dumps(envelope, ensure_ascii=False), flush=True)
+
+
+def spool_publish(spool_dir):
+    """**이벤트 버스로 내보내는 발행자** — 봉투 하나가 파일 하나다 (`〈253〉`).
+
+    **D7 이 받는 3종만 나간다.** 업로드 파이프라인의 내부 진행(7종)은 D7 이 알 일이
+    아니고, 필요 없는 사실을 흘리면 그것이 다음 회차의 결합이 된다.
+
+    **원자적으로 놓는다** — 임시 이름으로 쓰고 `rename` 한다. 소비자가 반쯤 쓰인 파일을
+    집으면 「봉투가 깨졌다」가 되고, 그 실패는 계약 위반으로 위장한다.
+    파일 이름은 `eventId` 다 — **재전달에서 바뀌지 않으므로** 같은 전달이 두 파일이 되지
+    않는다(봉투 축자: `eventId` = 전달의 정체성).
+    """
+    root = Path(spool_dir)
+
+    def _publish(envelope: dict) -> None:
+        if envelope.get("type") not in PREVIEW_STALE_TYPES:
+            return
+        root.mkdir(parents=True, exist_ok=True)
+        blob = json.dumps(envelope, ensure_ascii=False)
+        tmp = root / f".{envelope['eventId']}.part"
+        tmp.write_text(blob, encoding="utf-8")
+        tmp.replace(root / f"{envelope['eventId']}.json")
+
+    return _publish
+
+
+def fan_publish(spool_dir):
+    """표준출력 **＋** 버스. 스풀이 붙어도 기존 발행자를 **대체하지 않는다** —
+    at-least-once 규약과 운영 로그는 그대로 두고, 소비자만 하나 늘었다."""
+    to_spool = spool_publish(spool_dir)
+
+    def _publish(envelope: dict) -> None:
+        stdout_publish(envelope)
+        to_spool(envelope)
+
+    return _publish
+
+
+def resolve_publisher(env=None):
+    """배선을 값으로 바꾸는 자리. **선언이 없으면 표준출력 하나**다 — 자리를 모르는 채
+    버스를 지어내지 않는다(`ENV_PREVIEW_DIR` 과 같은 자세)."""
+    env = os.environ if env is None else env
+    spool = (env.get(ENV_EVENT_SPOOL) or "").strip()
+    return fan_publish(Path(spool)) if spool else stdout_publish
 
 
 def _storage_path(root: Path, upload_id: str, file_id: str, *,
@@ -246,7 +308,7 @@ def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path
         session.close()
 
 
-def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
+def run_once(*, publish=None) -> tuple[list[str], int, list[str]]:
     """한 바퀴 — **연구실마다 한 번씩** 처리 · 릴레이 · reaper 를 돈다.
 
     돌려주는 것은 (처리한 업로드, 내보낸 건수, 지운 업로드) 의 **전 연구실 합**이다.
@@ -264,6 +326,8 @@ def run_once(*, publish=stdout_publish) -> tuple[list[str], int, list[str]]:
     그 자체라 애초에 RLS 대상이 아니다(`gates/config/rls-allowlist.toml`). 접속 주체는
     그대로 비소유자 · NOBYPASSRLS 앱 롤이고, 연구실의 **자료**는 스코프를 세운 뒤에만 보인다.
     """
+    # **선언이 없으면 종전 그대로다** — 버스 자리가 주어졌을 때만 소비자가 하나 는다.
+    publish = resolve_publisher() if publish is None else publish
     url = resolve_env_or_file(os.environ, ENV_DB)
     if not url:
         raise RuntimeError(
