@@ -20,7 +20,7 @@
   `dev-package/work-items.yaml` 하나뿐. 이 스크립트에 항목표를 다시 적지 않는다.
   산문 문서는 그 대장의 **반영본**이며, 여기서 대조 대상이다.
 
-검사 일곱
+검사 여덟
   ㈎ 대장 스키마 — 필수 필드 · status/stage 값 · depends_on 이 실재하지 않는 id 를 가리킴
   ㈏ 완주 체크리스트 대조 — `WORK-UNITS §11` 코드블록의 상태 토큰과 대장의 상태 일치
   ㈐ 진실원 대조 — `03-HANDOFF §1` 각 트랙 표와 대장의 상태 일치
@@ -28,11 +28,22 @@
   ㈒ 기한 경과 — `deadline.fired: true` 인데 status 가 open/deferred 로 남아 있는가
   ㈓ conflict 잔존 — 대장에 `status: conflict` 가 하나라도 있으면 red
   ㈔ 결정 번호 중복 — `PLAN-SoT §9` 표의 `〈n〉` 이 두 번 이상 나오면 red
+  ㈕ `CLAUDE.md` stage 대조 — 대장의 `stage: after_stage2` 집합과 `CLAUDE.md` 의 표지 블록이 일치하는가
 
   ⚠ ㈔ 는 **충돌을 막지 못한다.** 두 레인이 같은 번호를 동시에 집는 것은 각자의 작업 트리에서
     일어나고, 이 검사는 그 둘이 한 파일에 모인 **병합 시점**에 비로소 본다. 그것이 이 검사가
     사는 자리다 — 2026-08-31 에 두 레인이 동시에 〈241〉 을 집어 병합 충돌이 났고,
     그때까지 번호를 지키는 기제가 게이트 25종 중 **0건**이었다(`〈252〉`).
+
+  ⭑ ㈕ 는 2026-09-01 에 더해졌다(`PLAN-SoT §9 〈268〉`). 그때까지 **`CLAUDE.md` 는 대조 대상이
+    아니었고**, 매 세션 자동으로 읽히는 그 파일이 대장과 갈린 채 오래 서 있었다 — AI 3항목과
+    `P4` 의 stage 3 이동(2026-08-30)이 산문에 한 줄도 반영되지 않았고, 「stage 3」 문자열이
+    산문 4종에 **0건**이었다. 검사가 없으면 그 자리는 다음 회차에도 같은 값으로 남는다.
+
+  ⚠ ㈕ 가 산문 문장을 정규식으로 읽지 않는 이유 — 「stage 3」·「stage 2」라는 낱말은 서술·인용·
+    취소선 안에서 정당하게 쓰인다(이 레포는 종전 문면을 지우지 않는다). 문장을 판정하면 오탐이
+    쏟아지고, 오탐을 내는 검사기는 무시당한다(`gates/README.md`). 그래서 ㈏ 가 `WORK-UNITS §11`
+    **코드블록**을 보는 것과 같은 방식으로, **기계가 읽을 표지 블록 하나**만 본다.
 
   ⚠ ㈏·㈐ 는 **conflict 항목을 비교 대상에서 뺀다.** 산문끼리 갈린 것은 대장이 `conflict` 로
   기록하고 ㈓ 가 잡는다. 같은 사실을 두 검사가 각자 red 로 세면 건수가 부풀고, 그러면
@@ -49,6 +60,8 @@
 fail-closed (CLAUDE.md §4)
   대장 부재·파싱 실패·항목 0건 · 산문 문서 부재 · 대조 표 0건 · 코드블록 부재 →
   전부 red. `PLAN-SoT` 부재 · `§9` 절 부재 · 결정 번호 행 0건도 red 다.
+  `CLAUDE.md` 부재 · 표지 블록 부재 · 표지가 열리고 닫히지 않음도 red 다 — 표지를 지우면
+  검사가 조용히 사라지는 것이 이 레포 대표 실패형(green-by-skip)이다.
 
 green-by-skip 방지
   파싱할 수 없어 **검사하지 못한 자리**는 건수와 함께 출력에 명시한다. 무엇을 안 봤는지를
@@ -80,6 +93,16 @@ WORKUNITS = pathlib.Path(
 )
 PLAN = pathlib.Path(
     os.environ.get("COLAB_WORK_ITEMS_PLAN") or (REPO_ROOT / "dev-package/PLAN-SoT.md")
+)
+CLAUDEMD = pathlib.Path(
+    os.environ.get("COLAB_WORK_ITEMS_CLAUDEMD") or (REPO_ROOT / "CLAUDE.md")
+)
+
+#: `CLAUDE.md` 안의 stage 3 표지. **렌더에 보이지 않는 주석**이라 읽는 사람의 문장을 늘리지
+#: 않으면서 기계가 대조할 자리를 만든다. 여는 표지만 있고 닫는 표지가 없으면 red 다.
+STAGE3_BLOCK_RE = re.compile(
+    r"<!--\s*work-items:after_stage2\s*-->(.*?)<!--\s*/work-items:after_stage2\s*-->",
+    re.S,
 )
 
 # 진행 표기 규칙 = WORK-UNITS §12
@@ -541,6 +564,56 @@ def check_decision_numbers() -> int:
     return len(order)
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# ㈕ CLAUDE.md stage 대조 — 대장의 after_stage2 집합
+# ────────────────────────────────────────────────────────────────────────────
+def check_claude_md(by_id: dict[str, dict]) -> int:
+    """`CLAUDE.md` 의 stage 3 표지 블록이 대장의 `stage: after_stage2` 집합과 같은가.
+
+    **왜 `after_stage2` 하나만 보는가** — `CLAUDE.md` 가 stage 를 말하는 자리가 거기 하나이고,
+    실제로 갈렸던 것도 거기다. 세 단 전부를 `CLAUDE.md` 에 옮겨 적게 하면 그 파일이 대장의
+    사본이 된다 — 사본은 다시 갈린다. **가장 잘 갈리는 한 집합만 기계가 잠근다.**
+
+    **왜 범위를 줄인 것이 아닌가** — 이 검사가 생기기 전 `CLAUDE.md` 는 대조 대상이 **0** 이었다.
+    0 에서 1 로 늘린 것이지 무엇도 검사에서 빼지 않았다.
+    """
+    if not CLAUDEMD.exists():
+        die(f"㈕ 지침 문서가 없다: {CLAUDEMD.name} (검사 불가는 통과가 아니다)")
+    text = CLAUDEMD.read_text(encoding="utf-8")
+    if "work-items:after_stage2" not in text:
+        die(
+            "㈕ `CLAUDE.md` 에 stage 3 표지 블록이 없다 — "
+            "`<!-- work-items:after_stage2 -->` … `<!-- /work-items:after_stage2 -->` "
+            "(표지를 지우면 검사가 조용히 사라진다 · 대조 대상 0 은 통과가 아니다)"
+        )
+    m = STAGE3_BLOCK_RE.search(text)
+    if not m:
+        die("㈕ `CLAUDE.md` 의 stage 3 표지가 열리기만 하고 닫히지 않았다")
+
+    declared = {strip_md(tok) for tok in re.findall(r"`([^`]+)`", m.group(1))}
+    declared = {d for d in declared if d}
+    actual = {
+        iid for iid, it in by_id.items()
+        if it.get("stage") == "after_stage2" and it.get("status") != "conflict"
+    }
+
+    for iid in sorted(actual - declared):
+        problems.append(
+            f"㈕ `{iid}`: 대장 `stage: after_stage2` 인데 `CLAUDE.md` 표지에 없다"
+        )
+    for iid in sorted(declared - actual):
+        stage = by_id.get(iid, {}).get("stage", "(대장에 없다)")
+        problems.append(
+            f"㈕ `{iid}`: `CLAUDE.md` 표지가 stage 3 으로 적었는데 대장은 `{stage}` 다"
+        )
+
+    if not actual:
+        unchecked.append(
+            "㈕ 대장에 `after_stage2` 항목이 0건 — 대조할 것이 없다 (표지 존재는 확인했다)"
+        )
+    return len(actual)
+
+
 def main() -> int:
     items = load_ledger()
     by_id = check_schema(items)
@@ -551,12 +624,13 @@ def main() -> int:
     n_deadlines = check_deadlines(by_id)
     n_conflicts = check_conflicts(by_id)
     n_decisions = check_decision_numbers()
+    n_stage3 = check_claude_md(by_id)
 
     print(
         f"work-item-consistency: 대장 {len(by_id)}건 · "
         f"㈐ 진실원 대조 {n_handoff}행 · ㈏ 체크리스트 대조 {n_checklist}건 · "
         f"㈑ 착수 후보 {n_candidates}행 · ㈒ 기한 {n_deadlines}건 · ㈓ conflict {n_conflicts}건 · "
-        f"㈔ 결정 번호 {n_decisions}개"
+        f"㈔ 결정 번호 {n_decisions}개 · ㈕ CLAUDE.md stage 3 대조 {n_stage3}건"
     )
 
     if observations:

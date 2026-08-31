@@ -24,7 +24,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`e2e-format-coverage`** | **지원 포맷 목록의 각 포맷이 실파일로 실제 그려지는가** (`WORK-UNITS §7` `S3` 행 축자 「4종 각각 최소 1건이 시각화 화면에 그려지고 … 실패 파일은 목록으로 남긴다」). 판정 목록의 정본 = `gates/config/e2e-format-coverage.toml`(같은 행이 `〈77〉` 로 `NumPy` 를 더해 다섯으로 판정하라고 적는다). 세는 단위 = **포맷 표식이 붙은 시험 케이스 1건** — 파일 수로 세지 않는다. **표식 붙은 케이스 0건도 red** 이고, 원천 마운트(`COLAB_REFERENCE_DATA`)가 없어도 red 다(준비 red · skip 아님). 실패·건너뜀 케이스는 **이름으로** 출력에 나온다. 면제는 그 파일에 **포맷 이름으로** 적혀야 하고 그 건수가 출력에 드러난다. ⚠ **이 게이트는 `S3` 를 닫지 않는다** — 계보 확정 상태와 staging 배포 green 은 여기서 재지 않는다 |
 | **`render-latency`** | **미리보기가 합격선 안에 그려지는가** (`PLAN-SoT §9 〈233〉` · 정본 `Policy_데이터셋_상세` v2.6 `§8` 조건 ⑺). 눈금의 정본 = **`gates/config/render-latency.toml` 하나**(미리보기 최초 표시 **p95 10초 · 상한 60초**). 재는 것은 시험(`services/viz-render/tests/test_perf_render_latency.py` · 표식 `perf`)이고 **판정은 여기서만** 한다 — 양쪽에서 재면 기준이 두 곳으로 갈린다. 세는 단위 = **junit 속성 `렌더초` 가 붙은 시험 케이스 1건**. **표본 0건도 red** · 표본 10건 미만·포맷 5종 미만 red · 실패·건너뛴 케이스 red(**그리지 못한 것은 시간이 짧다**) · **상한만이 아니라 p95 도 본다** · 원천 마운트(`COLAB_REFERENCE_DATA`)·venv 부재는 준비 red(skip 아님). ⚠ **이 게이트는 화면 왕복을 재지 않는다** — 잰 지점과 안 잰 넷은 시험 머리말에 이름으로 있다. ⚠ **확대·이동 반응은 이 게이트가 아니라 시험이 진다**(`frontend/test/dataset-preview-zoom-latency.test.tsx`) — 레포에 frontend 시험을 도는 게이트가 없다 |
 | **`seam-consistency`** | **seam ↔ 이벤트 계약의 사이** — G-e 산문 위임 참조(실재하지 않는 seam·op 에의 위임 — `DR-7` 의 모양) · G-b `source: const` 능력 주장(촉발 HTTP op 부재) · ㉠ 신설 op·스키마의 정본 근거 공란 · ㉡ E-04 흐름 완주(사람 고정 fixture 재생) |
-| **`work-item-consistency`** | **개발 항목 상태의 대장 ↔ 산문 불일치** (정본 = `dev-package/work-items.yaml`). ⭑ **⟨증보 2026-08-31 · `PLAN-SoT §9 〈252〉`⟩ 검사 7종** — ㈎ 대장 스키마 · ㈏ `WORK-UNITS §11` 완주 체크리스트 대조 · ㈐ `03-HANDOFF §1` 진실원 표 대조 · ㈑ `⏸`(하지 않기로 한 것)의 착수 후보 표 혼입 · ㈒ 기한 발동인데 안 열린 항목 · ㈓ `conflict` 잔존 · **㈔ `PLAN-SoT §9` 결정 번호 `〈n〉` 중복**. ／ 이전 표기 ~~검사 6종 — ㈎~㈓~~. **상태 관리가 「관례를 두지 않는다」의 마지막 사각지대였다** |
+| **`work-item-consistency`** | **개발 항목 상태의 대장 ↔ 산문 불일치** (정본 = `dev-package/work-items.yaml`). ⭑ **⟨증보 2026-09-01 · `PLAN-SoT §9 〈268〉`⟩ 검사 8종** — 종전 일곱 ＋ **㈕ `CLAUDE.md` stage 3 표지 ↔ 대장 `stage: after_stage2` 집합 대조**(표지 부재·미폐쇄·`CLAUDE.md` 부재는 red). ／ 이전 표기 ~~⭑ ⟨증보 2026-08-31 · `PLAN-SoT §9 〈252〉`⟩ 검사 7종~~ — ㈎ 대장 스키마 · ㈏ `WORK-UNITS §11` 완주 체크리스트 대조 · ㈐ `03-HANDOFF §1` 진실원 표 대조 · ㈑ `⏸`(하지 않기로 한 것)의 착수 후보 표 혼입 · ㈒ 기한 발동인데 안 열린 항목 · ㈓ `conflict` 잔존 · **㈔ `PLAN-SoT §9` 결정 번호 `〈n〉` 중복**. ／ 이전 표기 ~~검사 6종 — ㈎~㈓~~. **상태 관리가 「관례를 두지 않는다」의 마지막 사각지대였다** |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db-boundary · db · rls-effect · seam-consistency · generated · work-item · e2e-format-coverage · render-latency 증명 열). ⚠ **`stage2-markers-selftest` 는 여기 없다** — pipeline-worker 런타임 의존(rasterio 등)이 필요해 `contract-gates` 잡 환경에서 못 돈다. CI 는 `dormant-tests` 잡에서 따로 부른다 |
 
 ## 빨리 도는 것과 덜 보는 것은 다르다
@@ -150,7 +150,9 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 **보는 것** — ① 대장(`dev-package/work-items.yaml`)의 스키마·값·의존 참조 ② `WORK-UNITS §11`
 완주 체크리스트 **코드 블록 안의 `<식별자> <표기>` 쌍** ③ `03-HANDOFF §1` 각 트랙 **표**의
 `WU` 열과 `상태` 열(**헤더명으로 찾는다** — 트랙마다 열 수가 다르고 T-P 만 상태가 3열째다)
-④ `WORK-UNITS §10` 착수 후보 표의 식별자 ⑤ 대장의 `deadline.fired` ⑥ 대장의 `conflict` 잔존.
+④ `WORK-UNITS §10` 착수 후보 표의 식별자 ⑤ 대장의 `deadline.fired` ⑥ 대장의 `conflict` 잔존
+⑦ `PLAN-SoT §9` 결정 번호 행의 중복 ⭑ **⑧ ⟨증보 2026-09-01 · `〈268〉`⟩ `CLAUDE.md` 의 stage 3 표지 블록**
+(`<!-- work-items:after_stage2 -->` … `<!-- /work-items:after_stage2 -->`) **↔ 대장 `stage: after_stage2` 집합.**
 
 **못 보는 것** —
 
@@ -165,6 +167,11 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
   판정하지 않는다(조건이 「stage 1 완료 판정과 동시」 같은 산문이라 값으로 뽑히지 않는다).
   **`fired: unknown` 은 red 가 아니라 「검사 대상 밖」으로 출력된다** — 미판정을 통과로 세지 않되,
   기계가 판정할 수 없는 것을 판정한 척하지도 않는다.
+- ⭑ **⟨증보 2026-09-01 · `〈268〉`⟩ `CLAUDE.md` 의 *나머지*** — ㈕ 가 보는 것은 **표지 블록 하나**다.
+  그 파일의 다른 서술(제품 성격·불변 규칙·금지 목록)은 여전히 대조 대상 밖이다. ／ 이전 표기
+  ~~`CLAUDE.md` 는 아예 대조 대상이 아니다~~ — **0 에서 1 로 늘었지 전수가 된 것이 아니다.**
+- **`after_stage2` 밖의 stage** — `stage1`·`stage2` 는 산문과 대조하지 않는다. 세 단을 다 옮겨
+  적게 하면 `CLAUDE.md` 가 대장의 사본이 되고, **사본은 다시 갈린다.**
 - **산문 안의 서술 문장** — 「~는 아직 열려 있다」 같은 문장은 **일부러 안 본다.** 정규식으로
   산문을 판정하면 오탐이 잦아지고, 오탐이 잦은 게이트는 곧 무시당한다. 표와 코드 블록만 본다.
   **따라서 같은 실수가 표 아닌 서술로 오면 못 잡는다** (`seam-consistency` G-e 와 같은 한계다).

@@ -60,10 +60,14 @@ run() { # $1=fixture 디렉터리 — 대장과 산문 둘 다 fixture 로 고�
   # 복사본이 갈리면 그때부터 어느 것이 정본인지 아무도 모른다.
   local plan="$d/PLAN-SoT.md"
   [ -f "$plan" ] || plan="$FIX/green/PLAN-SoT.md"
+  # ㈕ 의 지침 문서도 같은 규칙 — 픽스처가 자기 것을 들고 있으면 그것, 아니면 대조군 것.
+  local claudemd="$d/CLAUDE.md"
+  [ -f "$claudemd" ] || claudemd="$FIX/green/CLAUDE.md"
   COLAB_WORK_ITEMS_LEDGER="$d/work-items.yaml" \
   COLAB_WORK_ITEMS_HANDOFF="$d/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$d/WORK-UNITS.md" \
   COLAB_WORK_ITEMS_PLAN="$plan" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$claudemd" \
     python3 "$GATE"
 }
 
@@ -71,6 +75,7 @@ run_missing_ledger() { # 대장 부재 — 검사 불가는 통과가 아니다
   COLAB_WORK_ITEMS_LEDGER="$FIX/green/없는-대장.yaml" \
   COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$FIX/green/CLAUDE.md" \
     python3 "$GATE"
 }
 
@@ -79,6 +84,7 @@ run_missing_plan() { # 결정 로그 문서 부재 — 검사 불가는 통과�
   COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
   COLAB_WORK_ITEMS_PLAN="$FIX/green/없는-결정로그.md" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$FIX/green/CLAUDE.md" \
     python3 "$GATE"
 }
 
@@ -87,6 +93,16 @@ run_plan_no_section() { # `## 9. 결정 로그` 절이 없는 경우 — 대상 
   COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
   COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
   COLAB_WORK_ITEMS_PLAN="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$FIX/green/CLAUDE.md" \
+    python3 "$GATE"
+}
+
+run_missing_claudemd() { # 지침 문서 부재 — 검사 불가는 통과가 아니다
+  COLAB_WORK_ITEMS_LEDGER="$FIX/green/work-items.yaml" \
+  COLAB_WORK_ITEMS_HANDOFF="$FIX/green/03-HANDOFF.md" \
+  COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_PLAN="$FIX/green/PLAN-SoT.md" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$FIX/green/없는-지침.md" \
     python3 "$GATE"
 }
 
@@ -94,6 +110,7 @@ run_missing_section() { # 진실원의 §1 절이 사라진 경우 — 대조 �
   COLAB_WORK_ITEMS_LEDGER="$FIX/green/work-items.yaml" \
   COLAB_WORK_ITEMS_HANDOFF="$REPO_ROOT/gates/tools/work-item-selftest.sh" \
   COLAB_WORK_ITEMS_WORKUNITS="$FIX/green/WORK-UNITS.md" \
+  COLAB_WORK_ITEMS_CLAUDEMD="$FIX/green/CLAUDE.md" \
     python3 "$GATE"
 }
 
@@ -119,12 +136,16 @@ expect red "㈑" "㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다
 # ㈔ — 두 레인이 같은 결정 번호를 집은 모양 (2026-08-31 〈241〉 충돌 · `〈252〉`)
 expect red "㈔" "㈔ 결정 번호 〈52〉 가 두 번 선언됐다"                          run red-h-dupnum
 expect red "㈔" "㈔ §9 는 있는데 결정 번호 행이 0건 → red (검사 대상 0 은 통과가 아니다)" run red-i-nodecision
+# ㈕ — CLAUDE.md 가 대장의 stage 3 집합과 갈린 모양 (2026-08-30 이후 레포 실물에서 실제로 일어났다 · `〈268〉`)
+expect red "㈕" "㈕ CLAUDE.md 표지가 대장의 stage 3 집합과 갈린다 (빠진 것 ＋ 없는 것 양방향)" run red-j-stage3mirror
+expect red "㈕" "㈕ CLAUDE.md 의 stage 3 표지가 지워졌다 → red (표지를 지워 검사를 없애지 못한다)"  run red-k-nostage3marker
 
 # 환경 결손 — green-by-skip 방지 (기호가 아니라 die() 경로라 기호 대조는 하지 않는다)
 expect red - "대장 부재 → red (검사 불가는 통과가 아니다)"                  run_missing_ledger
 expect red - "진실원에 §1 진행도 절이 없다 → red (대조 대상 0 은 통과가 아니다)" run_missing_section
 expect red - "결정 로그 부재 → red (검사 불가는 통과가 아니다)"                run_missing_plan
 expect red - "결정 로그에 §9 절이 없다 → red (대조 대상 0 은 통과가 아니다)"   run_plan_no_section
+expect red - "지침 문서(CLAUDE.md) 부재 → red (검사 불가는 통과가 아니다)"      run_missing_claudemd
 
 if [ ${#FAILURES[@]} -gt 0 ]; then
   echo "::error::work-item-selftest — ${#FAILURES[@]}건 실패: ${FAILURES[*]}"
