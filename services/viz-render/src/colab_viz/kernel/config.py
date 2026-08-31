@@ -26,6 +26,23 @@ DEFAULT_RENDER_DEADLINE_SECONDS = 120.0
 #: ⚠ 서명 회전·폐기는 P2 범위가 아니다(`〈68〉` 한계 절).
 DEFAULT_TILE_SIGNATURE_TTL_SECONDS = DEFAULT_RESULT_TTL_SECONDS
 
+#: **갈래 스위치의 기본값 — 「한 장」이다** (`〈240〉` · 정본 `Policy_데이터셋_상세` v2.7 `§8`).
+#: 정본 260826 델타가 축자로 「타일 서버도 바탕 지도도 쓰지 않는다」(POL-021)·「미리보기
+#: 뷰어 = 타일 서버·바탕 지도 없이 **PNG 한 장 + 경계 좌표 4값**」이라 적었다. 그래서
+#: **선언이 없으면 한 장이다.** 타일은 A/B 비교를 위해 **명시로 켰을 때만** 실린다.
+#: ⚠ 값은 홈 env(`COLAB_VIZ_TILE_BRANCH`)에서 온다 — 레포에 켜진 값을 박지 않는다.
+DEFAULT_TILE_BRANCH_ENABLED = False
+
+#: 「켜짐」으로 읽는 표기. 그 밖의 모든 값(빈 문자열 포함)은 **꺼짐**이다 — 오타가
+#: 조용히 타일을 켜지 않게, 켜는 쪽만 열거한다.
+TILE_BRANCH_ON_VALUES = frozenset({"1", "true", "on", "yes"})
+
+
+def _tile_branch_from_env(raw: str | None) -> bool:
+    """스위치 한 자리 — **모르는 값은 꺼짐이다.**"""
+    return (raw or "").strip().lower() in TILE_BRANCH_ON_VALUES
+
+
 #: 미리보기 격자의 한 변 상한. 전체 적재 금지(`DR-11`)의 렌더 쪽 표현이다 — 레포 결정.
 DEFAULT_MAX_PREVIEW_SIDE = 1024
 
@@ -56,6 +73,10 @@ class Settings:
     result_ttl_seconds: int = DEFAULT_RESULT_TTL_SECONDS
     render_deadline_seconds: float = DEFAULT_RENDER_DEADLINE_SECONDS
     max_preview_side: int = DEFAULT_MAX_PREVIEW_SIDE
+    #: **어느 갈래로 낼 것인가** (`〈240〉`). `False` 면 `imageUrl` 한 장, `True` 면
+    #: 지도형·등록 데이터셋·서명 비밀 셋이 다 갖춰졌을 때 `tileUrlTemplate`.
+    #: **기본값은 한 장이다** — 정본 문면이 그쪽이고, 타일은 A/B 를 위해 켜는 것이다.
+    tile_branch_enabled: bool = DEFAULT_TILE_BRANCH_ENABLED
     tile_url_base: str = "/viz/v1"
     tile_signature_ttl_seconds: int = DEFAULT_TILE_SIGNATURE_TTL_SECONDS
     preview_dir: Path = DEFAULT_PREVIEW_DIR
@@ -78,6 +99,8 @@ def load_settings() -> Settings:
         # 기본값을 하나 지어 넣으면 그것이 모든 배포에서 같은 비밀이 된다.
         tile_signing_secret=os.environ.get("COLAB_VIZ_TILE_SIGNING_SECRET") or None,
         execution=os.environ.get("COLAB_VIZ_EXECUTION", "thread"),
+        # **선언이 없으면 한 장이다.** 배포가 아무것도 안 적으면 정본 문면대로 나간다.
+        tile_branch_enabled=_tile_branch_from_env(os.environ.get("COLAB_VIZ_TILE_BRANCH")),
         preview_dir=Path(os.environ.get("COLAB_VIZ_PREVIEW_DIR") or DEFAULT_PREVIEW_DIR),
         preview_url_base=os.environ.get("COLAB_VIZ_PREVIEW_URL_BASE")
         or DEFAULT_PREVIEW_URL_BASE,

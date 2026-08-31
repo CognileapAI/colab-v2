@@ -33,12 +33,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                               tile_url_base=settings.tile_url_base,
                               ttl_seconds=settings.result_ttl_seconds,
                               tile_signing_secret=settings.tile_signing_secret,
-                              signature_ttl_seconds=settings.tile_signature_ttl_seconds)
+                              signature_ttl_seconds=settings.tile_signature_ttl_seconds,
+                              tile_branch_enabled=settings.tile_branch_enabled)
 
     @app.get("/healthz", include_in_schema=False)
     def _healthz() -> dict:
         # 프로세스 생존과 파일 도달성은 다른 질문이다 — 섞으면 멀쩡한 프로세스가 죽는다.
-        return {"unit": "viz-render", "status": "alive", "implemented": True}
+        #
+        # ⭑ **⟨2026-08-31 · `〈240〉`⟩ `tileBranch` 는 A/B 의 관측 자리다.** 「도는 스택이
+        #   지금 어느 갈래인가」를 물어볼 곳이 없으면 A/B 비교는 기억에 의존한다. 이
+        #   레포의 배포 판정은 이미 **헬스 본문 대조**이므로(`verify/verify-deploy.sh` —
+        #   「루트 200 으로 판정하지 않는다」) 같은 자리에 싣는다.
+        # ⚠ **계약 표면이 아니다** — `/healthz` 는 `include_in_schema=False` 이고
+        #   `core-viz.yaml` 은 한 글자도 바뀌지 않았다(동결 해제 0건).
+        # ⚠ **비밀을 싣지 않는다** — 켜짐/꺼짐 두 글자뿐이고 서명 비밀은 나가지 않는다.
+        return {"unit": "viz-render", "status": "alive", "implemented": True,
+                "tileBranch": "켜짐" if settings.tile_branch_enabled else "꺼짐"}
 
     for router in (renders.router, renders.tile_router,
                    screenshots.router, style.router):

@@ -55,9 +55,10 @@ def test_완료_결과는_이미지_경계_범례를_준다(client, put_target, 
     """⚠ **개정** — `〈80〉-㉯ 1` 로 결과가 `oneOf` 가 됐다. 여기서 둘을 함께 요구하면
     `oneOf` 위반을 시험이 강요하게 된다.
 
-    ⭑ **⟨개정 2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도형은 이제 타일
-    갈래다** — 대상이 `datasetId` 라 주 화면 자리가 `tileUrlTemplate` 으로 바뀐다.
-    ／ 종전 문면 ~~stage 1 은 이미지 갈래를 낸다 · 타일 갈래는 stage 2 것이다~~.
+    ⭑ **⟨재개정 2026-08-31 · Ted 판정 ⑬ · `〈240〉`⟩ 갈래가 스위치가 됐고 **기본값은
+    「한 장」**이라, 주 화면 자리가 다시 `imageUrl` 이다.** ／ 종전 문면 ~~`〈238〉` 으로
+    `tileUrlTemplate` 으로 바뀐다~~ — 정본(260826 델타 · POL-021)이 타일을 축자로
+    배제하고 있다. 켠 쪽의 키 집합은 `test_tile_branch_switch.py` 가 잰다.
     **키 집합을 등호로 계속 잠근다 — 검사를 줄이지 않는다.**"""
     tid = put_target(copy_from=[tiny_geotiff])
     rid = _create(client, {"datasetId": tid}).json()["renderId"]
@@ -65,10 +66,10 @@ def test_완료_결과는_이미지_경계_범례를_준다(client, put_target, 
     res = job["result"]
     # ⚠ **개정 2** — `〈88〉` 묶음 3 으로 ①썸네일·②비지도형이 자기 자리를 얻었다.
     # 이전에는 ③이 있으면 ②가 버려졌고 ①은 실패 봉투로만 나갔다(스윕 `A-1`).
-    assert set(res) == {"tileUrlTemplate", "sidecarUrl", "worldFileUrl", "bounds", "legend",
+    assert set(res) == {"imageUrl", "sidecarUrl", "worldFileUrl", "bounds", "legend",
                         "precisionBadge", "colorRangeStage",
                         "thumbnailUrl", "valuePreviewUrl"}
-    assert "imageUrl" not in res, "`oneOf` 다 — 두 갈래를 함께 내지 않는다"
+    assert "tileUrlTemplate" not in res, "`oneOf` 다 — 두 갈래를 함께 내지 않는다"
     assert res["worldFileUrl"].endswith(".pgw")
     b = res["bounds"]
     assert set(b) == {"west", "south", "east", "north"}
