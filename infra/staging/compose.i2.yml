@@ -146,10 +146,11 @@ services:
     image: alpine:3.20
     container_name: colab_v2_staging_volume_init
     user: "0:0"
-    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews && chmod 0755 /var/lib/colab/uploads /srv/viz-previews"]
+    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events && chmod 0755 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events"]
     volumes:
       - uploads:/var/lib/colab/uploads
       - previews:/srv/viz-previews
+      - events:/srv/viz-events
     restart: "no"
 
   # ── 실체가 있는 단위 — P0 골격(34 라우트 · 실질의 5 · 501 두 종).
