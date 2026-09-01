@@ -549,6 +549,12 @@ def create_dataset(request: Request, body: dict = None,
 
     # ⑤ 바이트 — **판정이 다 끝난 뒤에** 옮긴다. 앞에서 실패하면 바이트는 그대로다.
     _relocate(request, files=files, new_keys=new_keys)
+    # ⑥ **올린 일이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
+    #    등록이 다 끝난 뒤에 적는다 — 위에서 떨어진 요청은 데이터셋을 만들지 않았으므로
+    #    활동도 없다(활동만 남으면 목록이 없는 데이터셋을 가리킨다).
+    d8_insight.record_activity(db, actor_id=subject.account_id,
+                               action=d8_insight.ACTION_DATASET_ADDED,
+                               target_kind="데이터셋", target_id=dataset_id)
     return dataset_detail(db, subject, dataset_id)
 
 

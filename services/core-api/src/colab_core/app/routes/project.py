@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d4_lineage, d6_project
+from ...domains import d2_access, d3_catalog, d4_lineage, d6_project, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -141,6 +141,12 @@ def create_project(response: Response, body: dict = Body(...),
         db, type_=type_, name=name, description=body.get("description"),
         period_start=start, period_end=end, link_url=body.get("link"),
     )
+    # **바꾼 일이 최근 활동을 만든다** (`Policy_홈_대시보드 §7` 전이표 · WU-P7).
+    # 여기서 안 적으면 대시보드의 최근 활동은 영원히 비어 있고, 그 빈 목록은
+    # 「연구실이 조용하다」가 아니라 **기록이 없다**는 뜻이 된다.
+    d8_insight.record_activity(db, actor_id=subject.account_id,
+                               action=d8_insight.ACTION_PROJECT_CREATED,
+                               target_kind="프로젝트", target_id=Ulid(row["id"]))
     return {
         "projectId": row["id"],
         "name": row["name"],
@@ -472,5 +478,11 @@ def delete_project(projectId: str, subject: Subject = Depends(current_subject),
         raise errors.conflict("소속 데이터셋이 있어 지울 수 없어요. 닫기를 쓰세요.",
                               {"datasetCount": linked})
 
+    # 지운 일도 활동이다 (계약 `listActivities` 산문). ⚠ **읽는 쪽이 조용히 뺀다** —
+    # 대상이 사라졌으므로 `routes/insight.py:_target` 이 `None` 을 내고 목록에서 빠진다
+    # (`Policy_홈_대시보드 §9`). 기록은 남기고 표시만 안 하는 것이 그 조항의 형태다.
+    d8_insight.record_activity(db, actor_id=subject.account_id,
+                               action=d8_insight.ACTION_PROJECT_DELETED,
+                               target_kind="프로젝트", target_id=project_id)
     d6_project.delete_project(db, project_id)
     return Response(status_code=204)

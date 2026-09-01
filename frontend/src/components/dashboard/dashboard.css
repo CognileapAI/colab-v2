@@ -1,0 +1,331 @@
+/* S-01 연구실 대시보드 — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
+   ⚠ **크림슨 액센트는 검색 히어로에만 쓴다** (`Policy_홈_대시보드 §8` 색 · E-00).
+   데이터 맵·지표·할 일 함에는 AI 행동이 없으므로 크림슨 요소를 두지 않는다. */
+
+.dash-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .dash-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 구획 라벨 — **카드가 아니라 층을 나누는 표식**이라 배경·보더를 두지 않는다 (§4 · §8). */
+.dash-section-label {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg, #1b1f24);
+  text-align: left;
+}
+
+.dash-section-label--opens {
+  cursor: pointer;
+}
+
+.dash-card {
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--bg-card, #fff);
+}
+
+.dash-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dash-card-head h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dash-quiet {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--fg-muted, #667);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ── 데이터 맵 ────────────────────────────────────────────────────────────── */
+.dash-bars {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.dash-bar {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 5px 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+
+.dash-bar-track {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-subtle, #eef1f4);
+  overflow: hidden;
+}
+
+.dash-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-neutral, #5b7089);
+}
+
+.dash-bar-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-note,
+.dash-calc,
+.dash-device-note,
+.dash-zero,
+.dash-loading,
+.dash-lead {
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+}
+
+.dash-calc {
+  margin: 4px 0 12px;
+}
+
+.dash-device-note {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line, #e3e6ea);
+}
+
+.dash-error {
+  color: var(--fg-danger, #a3222b);
+  font-size: 13px;
+}
+
+.dash-open-catalog {
+  margin-top: 6px;
+}
+
+/* ── 요약 지표 — 네 타일 ──────────────────────────────────────────────────── */
+.dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-tile {
+  border: 1px solid var(--line, #e3e6ea);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.dash-tile strong {
+  display: block;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-tile-name {
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+}
+
+.dash-tile-sub {
+  font-size: 12px;
+  color: var(--fg-muted, #667);
+}
+
+/* 눌리는 타일은 **하나뿐**이라 색을 달리하지 않고 커서와 화살표로만 구분한다 (§8). */
+.dash-tile--linked button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+/* ── 최근 활동 ────────────────────────────────────────────────────────────── */
+.dash-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-recent button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: baseline;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 6px 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+
+.dash-recent-who,
+.dash-recent time {
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+}
+
+/* ── 할 일 함 — 마크업은 E-06 목업의 `.todo-grp` / `.titem` 구조 그대로다 (§8) ── */
+.todo-grp + .todo-grp {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #e3e6ea);
+}
+
+.todo-grp h3 {
+  display: flex;
+  align-items: baseline;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.todo-count {
+  margin-left: auto;
+  color: var(--fg-muted, #667);
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-grp ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.titem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.titem-why {
+  grid-column: 1;
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+}
+
+.titem button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.todo-more,
+.todo-all {
+  border: 0;
+  background: none;
+  padding: 4px 0 0;
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  display: block;
+}
+
+/* ── 빈 연구실 온보딩 ─────────────────────────────────────────────────────── */
+.dash-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.dash-step-no {
+  display: inline-block;
+  min-width: 18px;
+  margin-right: 6px;
+  border-radius: 9px;
+  background: var(--bg-subtle, #eef1f4);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 연구실 정보 모달 ─────────────────────────────────────────────────────── */
+.lab-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.lab-info-grid dt {
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+}
+
+.lab-info-grid dd {
+  margin: 2px 0 0;
+}
+
+.todo-total,
+.dash-quiet-note {
+  margin-left: auto;
+  color: var(--fg-muted, #667);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.titem-actions,
+.titem-reject {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.titem-reject {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  font-size: 12px;
+}

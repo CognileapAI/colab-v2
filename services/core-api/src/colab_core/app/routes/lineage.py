@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d4_lineage, d6_project
+from ...domains import d2_access, d3_catalog, d4_lineage, d6_project, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -207,4 +207,8 @@ def confirm_lineage(datasetId: str,
     _require_edit(db, subject)
     if not d3_catalog.confirm_lineage(db, dataset_id):
         raise errors.not_found()
+    # **계보 고침이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
+    d8_insight.record_activity(db, actor_id=subject.account_id,
+                               action=d8_insight.ACTION_LINEAGE_CONFIRMED,
+                               target_kind="데이터셋", target_id=dataset_id)
     return lineage_graph(db, subject, dataset_id)

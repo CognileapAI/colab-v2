@@ -78,7 +78,19 @@ P6_REAL = {
     "approveVerification":             "tests/test_approval.py",
     "cancelVerification":              "tests/test_approval.py",
 }
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL}
+#: **`P7` 연구실 대시보드가 표에서 뺀 셋** (8 → 5). D8 집계 셋이다.
+#: **계약 개정이 0 건이다** — 계약은 처음부터 이 셋을 들고 있었고 라우트만 없었다.
+#: **셋이 한 회차에 나가는 이유** = 지표·맵·활동은 한 화면의 세 구획이고, 하나라도 501 이면
+#: 그 화면은 「불러오지 못했어요」로만 선다 (`CLAUDE.md §5` 부분 완료 금지).
+#: **뺀 자리마다 실동작 시험이 있다** — 셋 다 `tests/test_dashboard.py` 가 부르고,
+#: 그 파일은 **연구실 경계 음성**(B 주체로 같은 세 op 을 불러 A 의 값이 하나도 안 보이는 것)을
+#: 함께 든다. 대시보드는 숫자로 접힌 화면이라 누출이 숫자 안에 숨는다.
+P7_REAL = {
+    "getDashboardSummary": "tests/test_dashboard.py",
+    "getDataMap":          "tests/test_dashboard.py",
+    "listActivities":      "tests/test_dashboard.py",
+}
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL}
 REAL = P1_REAL | set(P2_REAL)
 NO_STORE = {
     # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`). 남은 하나는
@@ -101,7 +113,7 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_8_unimplemented_operations_are_exactly_these() -> None:
+def test_the_5_unimplemented_operations_are_exactly_these() -> None:
     """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → 21 → **23**.
 
     ⭑ **이번에는 늘었고, 그것이 옳다** (`PLAN-SoT §9-〈88〉` 묶음 5·6 · 4차 동결 해제).
@@ -146,7 +158,7 @@ def test_the_8_unimplemented_operations_are_exactly_these() -> None:
     화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 8
+    assert len(OPERATIONS) == 5
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -175,7 +187,10 @@ def test_codes_are_the_two_kinds() -> None:
     #  9 →  7: `P6` 이 `approveVerification`·`cancelVerification` 을 가져갔다.
     #          **둘은 저장 자리가 있었고 로직만 없던 쪽이다** — 검토 대기 표가 서면서
     #          「요청은 받는데 승인은 못 한다」가 될 자리라 같은 회차에 함께 열었다.
-    assert len(p1) == 7
+    #  7 →  4: `P7` 이 D8 집계 셋(`getDashboardSummary`·`getDataMap`·`listActivities`)을
+    #          가져갔다. **셋 다 저장 자리는 있었고 집계만 없던 쪽이다** — `d8_activity` 는
+    #          P0 이 세웠고 지표·맵의 재료는 D3·D4·D2·D6 에 이미 다 있었다.
+    assert len(p1) == 4
     assert no_store & p1 == set()
 
 

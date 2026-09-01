@@ -23,7 +23,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d1_identity, d2_access, d3_catalog
+from ...domains import d1_identity, d2_access, d3_catalog, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -295,6 +295,11 @@ def approve_verification(datasetId: str, subject: Subject = Depends(current_subj
     if d2_access.verified_state(db, dataset_id):
         raise errors.conflict("이미 승인된 데이터예요.")
     d2_access.approve_verification(db, dataset_id=dataset_id, approver_id=subject.account_id)
+    # **승인이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
+    # 취소는 적지 않는다 — 계약 산문이 든 다섯에 없고, 없는 값을 여기서 발명하지 않는다.
+    d8_insight.record_activity(db, actor_id=subject.account_id,
+                               action=d8_insight.ACTION_VERIFIED_APPROVED,
+                               target_kind="데이터셋", target_id=dataset_id)
     return _verification_record(db, dataset_id)
 
 

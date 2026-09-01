@@ -2,8 +2,9 @@
 //
 // **연결 주소를 설명·기간과 같은 묶음에 두지 않는 것**이 이 화면의 중심 결정이다 (§0·§1.2) —
 // 그것이 데이터에서 성과까지 계보를 잇는 값이라서다. 없으면 계보가 논문 앞에서 끊긴다.
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { recordVisit } from '../components/dashboard/visits';
 import { ProjectCloseModal } from '../components/project/ProjectCloseModal';
 import { ProjectDatasetTable } from '../components/project/ProjectDatasetTable';
 import { ProjectFormModal } from '../components/project/ProjectFormModal';
@@ -23,6 +24,13 @@ export function ProjectDetailPage(props: { source?: ProjectSource } = {}) {
   const navigate = useNavigate();
   const source = useMemo(() => props.source ?? defaultProjectSource(), [props.source]);
   const state = useProject(source, projectId);
+
+  // 「내가 열어 본 것」 — **브라우저에만 적는다** (`Policy_홈_대시보드 §10` · WU-P7).
+  useEffect(() => {
+    if (state.status === 'ready') {
+      recordVisit({ kind: '프로젝트', id: projectId, name: state.detail.name });
+    }
+  }, [state, projectId]);
 
   return (
     <div className="project-detail" data-screen="S-02b">
