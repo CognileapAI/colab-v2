@@ -44,6 +44,10 @@
 "rls-coverage"              = "parallel"
 "rls-effect"                = "parallel"
 "work-item-consistency"     = "parallel"
+# `artifact-ownership` — 대조 정본에 **읽기만 한다**(매 회차 쓰기 탐침이 증명) · 자리에는
+#   한 글자도 쓰지 않는다(스냅숏은 자기 임시 자리에 적는다). selftest 는 자기 일회용 컨테이너를 든다.
+"artifact-ownership"        = "parallel"
+"artifact-ownership-selftest" = "parallel"
 "stage2-markers"            = "parallel"
 "contract-selftest"         = "parallel"
 "event-selftest"            = "parallel"

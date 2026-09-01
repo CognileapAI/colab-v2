@@ -154,6 +154,36 @@ def plan(event: InvalidationEvent | None, *, produced: Iterable[StaleCandidate],
                             regenerate=event is not None)
 
 
+def reclaim_plan(groups, ledger, *, previews_root: Path,
+                 target_id: str = "") -> InvalidationPlan:
+    """**소유 회수 계획 — 고아 등급만 치운다**(`A-1` 완료 정의 ⑸ · 단계 6).
+
+    ⭑ **집행 문을 늘리지 않는다**(완료 정의 ⑶). 이 함수는 계획을 새로 계산하지 않고
+    **같은 계산기 `plan()` 을 부른다** — 고아가 **아닌** 키를 전부 `keep_keys` 로 넘기는
+    것이 전부다. 그래서 다음 셋이 공짜로 따라온다:
+      · `tile-` 키는 `kept` — `plan()` 이 이미 지도 타일을 가른다(완료 정의 ⑷)
+      · **미리보기 루트 밖은 `OutOfScope`** — 접수분 루트(원본·기준 격자)·데이터셋 무접촉(`〈247〉`)
+      · 집행은 `apply()` 한 자리 — 지우는 문은 여전히 하나다
+
+    ⚠ **판정 불가(구판)는 `kept` 다.** 없는 필드를 근거로 지우면 그것이 오삭제다(덫 ②).
+    ⚠ **`baked_for` 는 여기서도 읽지 않는다** — 등급은 `ownership.grade()` 가 내고,
+      그 입력은 `sources` ＋ 원장뿐이다(덫 ①).
+    """
+    from . import ownership
+
+    if ledger.is_structurally_empty():
+        raise OutOfScope(
+            "원장이 구조적으로 비어 있다 — 그 0 을 「없다」로 읽으면 전건이 고아가 된다. "
+            "회수 계획을 세우지 않는다 (DATA-REFERENCE §0 M-9)")
+    groups = list(groups)
+    orphans = set(ownership.orphan_keys(groups, ledger))
+    candidates = [StaleCandidate(cache_key=g.cache_key, path=p)
+                  for g in groups for p in g.paths]
+    keep = [g.cache_key for g in groups if g.cache_key not in orphans]
+    return plan(None, produced=candidates, previews_root=previews_root,
+                keep_keys=keep, target_id=target_id)
+
+
 def apply(plan: InvalidationPlan, *, previews_root: Path) -> tuple[Path, ...]:
     """집행 — **미리보기 루트 안의 렌더 산출물만 지운다.**
 
