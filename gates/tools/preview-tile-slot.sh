@@ -26,17 +26,35 @@
 # ⚠ **관대한 기본값을 두지 않는다.** 자리 경로가 없으면 red 다 — 「자리를 못 봐서 검사를 못 했다」를
 #   통과로 세는 것이 이 레포의 대표 실패다.
 #
+# ⭑ ⟨증보 2026-09-02 · Ted 판정 = **ⓒ 둘 다** · `PLAN-SoT §9 〈271〉`-㉮ · `03-HANDOFF §4 #57`⟩
+#   **결함 둘이 겹쳐 있었고, 둘 다 이 회차에 고친다.**
+#   ⓐ **롤 판정이 없었다** — `d5_pipeline_event` 를 접속 롤 확인 없이 셌다. 경계
+#      (`FORCE ROW LEVEL SECURITY`)에 걸리는 롤이면 발행이 **예외 없이 0** 이 되고, 그러면 핵심 판정
+#      (「발행＞0 인데 쓸 수 있는 타일 0」)이 **통째로 건너뛰어져** green 이 났다 — green-by-skip.
+#   ⓑ **배선이 스키마 전용 DB 였다** — `COLAB_APPLIED_DB_URL_PLATFORM` 은 `schema-diff` 와 공유하는
+#      **스키마만 적용된** DB 라 발행이 **구조적으로 0** 이다. 롤만 고쳐도 0 은 그대로다.
+#   그래서 대조 정본을 **staging 실물 platform DB** 로 옮기고(선례 `autometa-loss` · `〈237〉`),
+#   그 위에 **롤 판정 두 겹**(㉮ 관리자 롤인가 · ㉯ 경계 롤로 다시 조회하면 값이 갈리는가)을 얹는다.
+#   그리고 **발행 0 건 자체를 red 로 못 박는다** — 발행이 0 이면 핵심 대조가 돌지 않으므로,
+#   0 을 통과로 세는 것은 검사를 안 한 것이다.
+#
 # 환경변수
-#   COLAB_APPLIED_DB_URL_PLATFORM  db/platform 이 적용된 DB 접속 URL. 없으면 red (skip 아님)
-#   COLAB_PREVIEW_TILE_DIR         미리보기 산출물 루트(지도 타일이 놓이는 자리). 없으면 red
-#   COLAB_PREVIEW_TILE_EXEMPT      면제 선언 파일 (기본 gates/config/preview-tile-slot.toml)
-#   COLAB_PREVIEW_TILE_PSQL        psql 명령 (기본 psql). selftest 가 일회용 DB 로 바꿔 끼운다
+#   COLAB_PREVIEW_TILE_DB_URL         **대조 정본** — staging 실물 platform DB 의 **읽기 전용** 접속 URL.
+#                                     없으면 red(준비·입력미선언).
+#                                     ⚠ COLAB_APPLIED_DB_URL_PLATFORM 으로 대신하지 않는다 —
+#                                       그 DB 는 스키마 전용이라 발행이 구조적으로 0 이다(#57-ⓑ).
+#   COLAB_PREVIEW_TILE_BOUNDARY_ROLE  **경계 롤 이름** — ㉯ 재조회에 쓴다. 없으면 red(준비·입력미선언).
+#   COLAB_PREVIEW_TILE_DIR            미리보기 산출물 루트(지도 타일이 놓이는 자리). 없으면 red
+#   COLAB_PREVIEW_TILE_EXEMPT         면제 선언 파일 (기본 gates/config/preview-tile-slot.toml)
+#   COLAB_PREVIEW_TILE_PSQL           psql 명령 (기본 psql). selftest 가 일회용 DB 로 바꿔 끼운다
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 EXEMPT_FILE="${COLAB_PREVIEW_TILE_EXEMPT:-$REPO_ROOT/gates/config/preview-tile-slot.toml}"
 PSQL="${COLAB_PREVIEW_TILE_PSQL:-psql}"
-URL="${COLAB_APPLIED_DB_URL_PLATFORM:-}"
+URL="${COLAB_PREVIEW_TILE_DB_URL:-}"
+BOUNDARY_ROLE="${COLAB_PREVIEW_TILE_BOUNDARY_ROLE:-}"
+OLD_URL="${COLAB_APPLIED_DB_URL_PLATFORM:-}"
 TILE_DIR="${COLAB_PREVIEW_TILE_DIR:-}"
 
 red() { echo "::error::preview-tile-slot red — $*"; exit 1; }
@@ -68,11 +86,18 @@ EXEMPT_COUNT=0
 [ -n "$EXEMPT_NAMES" ] && EXEMPT_COUNT="$(printf '%s\n' "$EXEMPT_NAMES" | grep -c .)"
 
 # ── 2. 입력 둘 — 없으면 red ────────────────────────────────────────────────
-[ -n "$URL" ] || red_undeclared "COLAB_APPLIED_DB_URL_PLATFORM (db/platform 적용 DB)" \
-  "적용 DB 없이 사건 발행 건수를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
-   schema-diff 와 같은 변수·같은 규율이다.
-   ⚠ autometa-loss 는 2026-08-31 부터 **다른 변수**를 읽는다(대조 정본 = staging 실물 ·
-     PLAN-SoT §9 〈237〉). 규율은 같고 대상이 다르다."
+if [ -z "$URL" ]; then
+  hint="대조 정본 없이 사건 발행 건수를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).
+   → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.
+     값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④)."
+  if [ -n "$OLD_URL" ]; then
+    hint="$hint
+   ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트는 2026-09-02 부터 그것을 읽지 않는다.**
+     그 값은 schema-diff 와 공유하는 **스키마 전용** DB 라 발행이 구조적으로 0건이고,
+     그 배선으로는 핵심 판정이 영원히 건너뛰어진다 (Ted 판정 PLAN-SoT §9 〈271〉-㉮ · #57-ⓑ)."
+  fi
+  red_undeclared "COLAB_PREVIEW_TILE_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)" "$hint"
+fi
 [ -n "$TILE_DIR" ] || red_undeclared "COLAB_PREVIEW_TILE_DIR (미리보기 산출물 루트)" \
   "자리를 보지 않고 「자리에 놓였다」를 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고
    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).
@@ -80,16 +105,108 @@ EXEMPT_COUNT=0
 [ -d "$TILE_DIR" ] || red_undeclared "COLAB_PREVIEW_TILE_DIR 가 가리키는 디렉터리 ($TILE_DIR)" \
   "경로가 선언됐으나 그런 디렉터리가 없다. 없는 자리를 「비어 있다」로 읽지 않는다."
 
-# ── 3. 발행 — 사건이 났는가 ────────────────────────────────────────────────
-EMITTED="$("$PSQL" "$URL" -At -v ON_ERROR_STOP=1 \
-  -c "SELECT count(DISTINCT upload_id) FROM d5_pipeline_event WHERE event_type = 'preview.cog-built';" 2>&1)" \
-  || red "적용 DB 에 질의하지 못했다. 검사를 못 한 것은 통과가 아니다.
-   psql 이 낸 말: $(printf '%s' "$EMITTED" | tr '\n' ' ' | cut -c1-400)"
-EMITTED="$(printf '%s' "$EMITTED" | tail -n 1)"
-case "$EMITTED" in
-  [0-9]*) : ;;
-  *) red "발행 건수가 숫자가 아니다 — 무엇을 셌는지 모르는 채로 통과시키지 않는다: $EMITTED" ;;
+# ── 3-0. 읽기 전용 증명 — **주장이 아니라 이 회차의 실측이다** ─────────────────────
+#   대조 정본이 staging 실물로 옮겨 왔다. 이 게이트는 실물을 들여다볼 뿐 **한 글자도 쓰지 않는다.**
+#   쓰기 탐침이 거부당해야 통과한다. 거부당하지 않으면 = 쓸 수 있는 접속이면 red.
+RO_OUT="$("$PSQL" "$URL" -At -v ON_ERROR_STOP=0 <<'SQL' 2>&1
+SELECT '::decl::' || current_setting('default_transaction_read_only');
+BEGIN READ ONLY;
+SELECT '::ro::' || current_setting('transaction_read_only');
+SAVEPOINT colab_ro_probe;
+CREATE TEMP TABLE colab_preview_ro_probe (x int);
+SELECT '::wrote::';
+ROLLBACK TO SAVEPOINT colab_ro_probe;
+ROLLBACK;
+SQL
+)"
+case "$RO_OUT" in
+  *'::decl::off'*)
+    red "**선언된 접속 자체가 읽기 전용이 아니다** (default_transaction_read_only = off).
+   → 읽기 전용 롤을 쓰거나 URL 에 options=-c default_transaction_read_only=on 을 붙인다." ;;
+  *) : ;;
 esac
+case "$RO_OUT" in
+  *'::wrote::'*)
+    red "**쓰기 탐침이 통과했다 — 이 접속은 읽기 전용이 아니다.**
+   → 선언된 URL 을 읽기 전용으로 고친다(읽기 전용 롤 또는 default_transaction_read_only=on)." ;;
+esac
+case "$RO_OUT" in
+  *'::ro::on'*) : ;;
+  *) red "읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: $(printf '%s' "$RO_OUT" | tr '\n' ' ' | cut -c1-400)" ;;
+esac
+
+# ── 3-1. 롤 판정 ㉮ — **경계에 걸린 조회의 0 을 「발행이 없다」로 읽지 않는다** ────────
+#   여기서 틀리면 아래 발행 계수가 거짓이고, 거짓 0 은 핵심 판정을 통째로 건너뛰게 만든다(#57).
+if [ -z "$BOUNDARY_ROLE" ]; then
+  red_undeclared "COLAB_PREVIEW_TILE_BOUNDARY_ROLE (경계 롤 이름 · ㉯ 재조회에 쓴다)" \
+    "경계 롤을 모르면 「경계가 실제로 걸리는가」를 대조할 수 없다. 대조 없이 낸 발행 건수는
+   경계에 걸린 0 인지 진짜 0 인지 구별되지 않는다 (DATA-REFERENCE §0 M-9 · #57-ⓐ).
+   → 홈의 0600 env 파일에 롤 이름을 선언하고 다시 돌린다."
+fi
+case "$BOUNDARY_ROLE" in
+  [A-Za-z_]*) [ -z "$(printf '%s' "$BOUNDARY_ROLE" | tr -d 'A-Za-z0-9_')" ] || \
+    red "경계 롤 이름에 식별자로 쓸 수 없는 글자가 있다 — 이름을 그대로 SQL 에 넣지 않는다." ;;
+  *) red "경계 롤 이름이 식별자 모양이 아니다." ;;
+esac
+
+ROLE_OUT="$("$PSQL" "$URL" -At -F '|' -v ON_ERROR_STOP=1 <<SQL 2>&1
+BEGIN READ ONLY;
+SELECT '::role::' || current_user
+       || '|' || (SELECT rolsuper::text     FROM pg_roles WHERE rolname = current_user)
+       || '|' || (SELECT rolbypassrls::text FROM pg_roles WHERE rolname = current_user)
+       || '|' || (SELECT count(*)::text FROM pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                   WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relforcerowsecurity);
+ROLLBACK;
+SQL
+)" || red "접속 롤을 확인하지 못했다. 롤을 모르는 채로 계수하지 않는다.
+   psql 이 낸 말: $(printf '%s' "$ROLE_OUT" | tr '\n' ' ' | cut -c1-400)"
+
+ROLE_LINE="$(printf '%s\n' "$ROLE_OUT" | grep -E '^::role::' | tail -n 1)"
+[ -n "$ROLE_LINE" ] || red "접속 롤 표식이 없다 — 무엇으로 붙었는지 모르는 채로 통과시키지 않는다.
+   받은 것: $(printf '%s' "$ROLE_OUT" | tr '\n' ' ' | cut -c1-400)"
+IFS='|' read -r R_NAME R_SUPER R_BYPASS R_FORCED <<< "${ROLE_LINE#::role::}"
+
+if [ "$R_FORCED" = "0" ]; then
+  red "공개 스키마에 **FORCE ROW LEVEL SECURITY 가 걸린 표가 0개**다.
+   경계가 없는 DB 를 대조 정본으로 삼으면 ㉯ 대조가 아무 말도 하지 않는다(두 롤이 늘 같은 값을 낸다).
+   → 선언된 URL 이 정말 staging 실물 platform DB 를 가리키는지 확인한다."
+fi
+# ⚠ psql 은 boolean 을 t/f 로도 true/false 로도 낸다 — 한쪽만 보면 관리자를 관리자가 아니라고 읽는다.
+is_true() { case "$1" in t|true|on|1) return 0 ;; *) return 1 ;; esac; }
+if ! is_true "$R_SUPER" && ! is_true "$R_BYPASS"; then
+  red "**접속 롤 '$R_NAME' 이 관리자 롤이 아니다** — rolsuper=$R_SUPER · rolbypassrls=$R_BYPASS ·
+   FORCE RLS 표 ${R_FORCED}개. 이 롤로 세면 경계가 거른 뒤의 값을 세게 되고, **경계에 걸린 조회는
+   예외가 아니라 0 을 돌려준다.** 그 0 이면 핵심 판정(발행＞0 인데 쓸 수 있는 타일 0)이 통째로
+   건너뛰어져 게이트가 green 을 낸다 — 그것이 #57 이다.
+   → 관리자 롤(rolsuper 또는 rolbypassrls)의 **읽기 전용** 접속 URL 을 선언한다.
+   ⚠ 「이 환경에서는 롤 검사를 건너뛴다」는 길은 두지 않는다 (CLAUDE.md §4)."
+fi
+echo "# 계수 롤 $R_NAME — rolsuper=$R_SUPER · rolbypassrls=$R_BYPASS (경계 밖) · FORCE RLS 표 ${R_FORCED}개"
+
+# ── 3. 발행 — 사건이 났는가. **두 번 센다** — 관리자 롤로 한 번, 경계 롤로 한 번(㉯) ────
+COUNT_SQL="SELECT count(DISTINCT upload_id) FROM d5_pipeline_event WHERE event_type = 'preview.cog-built';"
+EMIT_OUT="$("$PSQL" "$URL" -At -v ON_ERROR_STOP=1 <<SQL 2>&1
+BEGIN READ ONLY;
+$COUNT_SQL
+SET LOCAL ROLE "$BOUNDARY_ROLE";   -- ㉯ 같은 질의를 경계 롤로 한 번 더. 값이 같으면 red 다
+$COUNT_SQL
+ROLLBACK;
+SQL
+)" || red "대조 정본에 질의하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (경계 롤 '$BOUNDARY_ROLE' 로 바꿔 앉지 못한 경우도 여기로 온다 — 대조를 못 한 것은 통과가 아니다.)
+   psql 이 낸 말: $(printf '%s' "$EMIT_OUT" | tr '\n' ' ' | cut -c1-400)"
+
+NUMLINES="$(printf '%s\n' "$EMIT_OUT" | grep -E '^[0-9]+$')"
+if [ "$(printf '%s\n' "$NUMLINES" | grep -c .)" -ne 2 ]; then
+  red "발행 건수가 **두 줄**로 오지 않았다 — 관리자 롤과 경계 롤의 값을 둘 다 얻지 못했다.
+   무엇을 셌는지 모르는 채로 통과시키지 않는다.
+   받은 것: $(printf '%s' "$EMIT_OUT" | tr '\n' ' ' | cut -c1-400)"
+fi
+EMITTED="$(printf '%s\n' "$NUMLINES" | head -n 1)"
+EMITTED_BOUNDARY="$(printf '%s\n' "$NUMLINES" | tail -n 1)"
 
 # ── 4. 자리 — 놓인 지도 타일과 그 상태 ─────────────────────────────────────
 # 지도 타일만 센다. 한 자리에 렌더 산출물과 지도 타일이 함께 살고, 접두사가 둘을 가른다
@@ -154,6 +271,25 @@ if [ "$TOTAL" -eq 0 ]; then
    → 워커의 stage 2 선언(COLAB_WORKER_STAGE2=on)과 미리보기 루트(COLAB_WORKER_PREVIEW_DIR)가
      배포에 들어갔는지, 그리고 새 업로드 1건이 실제로 돌았는지 확인한다."
 fi
+# **발행 0건 자체가 red 다** — 발행이 0 이면 아래 핵심 판정이 돌지 않는다. 안 돈 검사를 통과로
+# 세는 것이 #57 의 green-by-skip 이었고, 그 자리를 여기서 명시로 막는다.
+if [ "$EMITTED" -eq 0 ]; then
+  red "**preview.cog-built 발행 0건** — 핵심 판정(「발행＞0 인데 쓸 수 있는 타일 0」)이 돌지 않는다.
+   자리에 타일이 $TOTAL 건 있어도 **무엇과도 대조되지 않은 채** 통과하게 되므로 red 다.
+   ⚠ 이 0 이 「경계에 걸려 안 보이는 0」이 아님은 위 롤 판정 두 겹이 이미 배제했다 —
+     그러므로 이것은 **진짜로 발행이 없는 상태**이고, 그것이 곧 결함이다.
+   → 대조 정본이 staging 실물 platform DB 인지, 워커의 stage 2 선언(COLAB_WORKER_STAGE2)과
+     미리보기 루트(COLAB_WORKER_PREVIEW_DIR)가 배포에 들어갔는지, 새 업로드 1건이 실제로 돌았는지 본다."
+fi
+# ㉯ 대조 — 경계가 실효 중인데 두 롤이 같은 값을 내면 경계가 아무것도 가르지 못한 것이다.
+if [ "$EMITTED" = "$EMITTED_BOUNDARY" ]; then
+  red "**경계 롤 '$BOUNDARY_ROLE' 로 다시 센 발행 건수가 관리자 롤 값과 같다** (둘 다 $EMITTED).
+   FORCE RLS 표가 ${R_FORCED}개인데 경계가 값을 하나도 가르지 못했다 — 경계가 실효 중이 아니거나,
+   두 조회가 같은 롤로 돌았거나, 둘 다 아무것도 보지 않은 것이다.
+   ⚠ 이 대조가 없으면 경계에 걸린 0 과 진짜 0 이 구별되지 않는다 (DATA-REFERENCE §0 M-9 · #57-ⓐ)."
+fi
+echo "# 경계 대조 — 관리자 롤 $EMITTED ↔ 경계 롤 '$BOUNDARY_ROLE' $EMITTED_BOUNDARY (갈렸다)"
+
 if [ "$EMITTED" -gt 0 ] && [ "$USABLE" -eq 0 ]; then
   red "사건은 $EMITTED 건 발행됐는데 자리에 **쓸 수 있는 타일이 0건**이다.
    「파이프라인은 성공했다는데 산출물이 없다」가 정확히 이 상태다."
