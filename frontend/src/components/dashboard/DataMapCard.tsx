@@ -14,7 +14,8 @@ const ORIGIN_NOTE = '기록 없음이 정상';
 
 /** `확정 71 + 원천 16 = 지표의 계보 확정 87` (§8 「계산 관계 안내 줄」의 형식). */
 export function calcLine(map: DataMap): string {
-  const at = (value: string) => map.byLineageState.find((r) => r.value === value)?.count ?? 0;
+  const rows = map.byLineageState ?? [];
+  const at = (value: string) => rows.find((r) => r.value === value)?.count ?? 0;
   return `확정 ${at('확정')} + 원천 ${at('원천')} = 지표의 계보 확정 ${at('확정') + at('원천')}`;
 }
 
@@ -95,7 +96,7 @@ function DataMapBody(props: {
     <>
       <Bars
         axis="계보 상태별"
-        rows={map.byLineageState}
+        rows={map.byLineageState ?? []}
         total={map.totalCount}
         onOpen={(value) => props.onOpen({ lineageState: value })}
       />
@@ -104,7 +105,7 @@ function DataMapBody(props: {
       <p className="dash-calc">{calcLine(map)}</p>
       <Bars
         axis="주제별"
-        rows={map.byTopic}
+        rows={map.byTopic ?? []}
         total={map.totalCount}
         onOpen={(value) => props.onOpen({ topic: value })}
       />
