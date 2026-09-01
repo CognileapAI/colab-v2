@@ -43,6 +43,12 @@ def _tile_branch_from_env(raw: str | None) -> bool:
     return (raw or "").strip().lower() in TILE_BRANCH_ON_VALUES
 
 
+#: 트리거 버스를 비우는 주기(초) — **`#60` 의 실행자 간격**. pipeline-worker 의
+#: `serve(interval_seconds=5.0)` 와 **같은 값**이다: 내는 쪽이 5초 간격으로 돌므로
+#: 받는 쪽을 그보다 촘촘히 해도 볼 것이 없고, 더 성기게 하면 재생성만 늦는다.
+DEFAULT_TRIGGER_POLL_SECONDS = 5.0
+
+
 #: 미리보기 격자의 한 변 상한. 전체 적재 금지(`DR-11`)의 렌더 쪽 표현이다 — 레포 결정.
 DEFAULT_MAX_PREVIEW_SIDE = 1024
 
@@ -86,6 +92,18 @@ class Settings:
     #: 사람이 부르는 경로(「미리보기 다시 만들기」)는 그대로 남는다(완료 정의 ⓒ).
     #: ⚠ pipeline-worker 의 `COLAB_WORKER_EVENT_SPOOL` 과 **같은 자리**여야 한다.
     trigger_spool: Path | None = None
+    #: 버스를 비우는 주기(초). **버스 자리가 있을 때만 의미가 있다** — 자리가 없으면
+    #: 루프 자체가 서지 않는다.
+    trigger_poll_seconds: float = DEFAULT_TRIGGER_POLL_SECONDS
+
+
+def _poll_seconds_from_env(raw: str | None) -> float:
+    """**못 읽는 값은 기본값이다.** 오타 하나로 루프가 안 뜨거나 폭주하지 않게 한다."""
+    try:
+        value = float((raw or "").strip())
+    except ValueError:
+        return DEFAULT_TRIGGER_POLL_SECONDS
+    return value if value > 0 else DEFAULT_TRIGGER_POLL_SECONDS
 
 
 def load_settings() -> Settings:
@@ -113,4 +131,6 @@ def load_settings() -> Settings:
         # 모든 배포에서 같은 자리가 되고, 비어 있어도 아무도 그 사실을 모른다.
         trigger_spool=(Path(os.environ["COLAB_VIZ_TRIGGER_SPOOL"])
                        if os.environ.get("COLAB_VIZ_TRIGGER_SPOOL") else None),
+        trigger_poll_seconds=_poll_seconds_from_env(
+            os.environ.get("COLAB_VIZ_TRIGGER_POLL_SECONDS")),
     )

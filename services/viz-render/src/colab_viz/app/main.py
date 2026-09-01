@@ -7,6 +7,8 @@
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
@@ -15,6 +17,7 @@ from ..kernel import errors
 from ..kernel.config import Settings, load_settings
 from ..ports.source import FilesystemSourcePort
 from .trigger_bus import SpoolTriggerPort
+from .trigger_loop import TriggerDrainLoop
 from .routes import renders, screenshots, style
 
 API_PREFIX = "/viz/v1"
@@ -22,7 +25,31 @@ API_PREFIX = "/viz/v1"
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """**받는 자리에 실행자를 붙인다**(`#60`). 자리가 없으면 루프도 없다.
+
+        `〈253〉` 이 세운 배선은 `app.state.triggers` 까지였고 그것을 **부르는 자가
+        런타임에 없었다** — 버스에 봉투가 쌓여도 아무 일도 안 일어났다. 여기가 그
+        호출자이고, **HTTP 표면은 한 자리도 늘지 않았다**(계약 개정 0건).
+        """
+        loop = None
+        if app.state.triggers is not None:
+            loop = TriggerDrainLoop(app.state.triggers, jobs=app.state.jobs,
+                                    source=app.state.source,
+                                    interval_seconds=settings.trigger_poll_seconds)
+            loop.start()
+        app.state.trigger_loop = loop
+        try:
+            yield
+        finally:
+            # **스레드를 남기지 않는다** — 남기면 SIGTERM 에 컨테이너가 매달린다.
+            if loop is not None:
+                loop.stop()
+
     app = FastAPI(
+        lifespan=lifespan,
         title="CoLAB v2 — viz-render",
         version="0.1.0",
         # 계약 정본은 contracts/seams/core-viz.yaml 이다. 앱이 계약을 만들지 않는다.

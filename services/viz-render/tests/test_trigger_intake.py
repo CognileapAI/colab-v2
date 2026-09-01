@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import io
 import json
+import threading
+import time
 import tokenize
 from pathlib import Path
 
@@ -28,6 +30,7 @@ from colab_viz.app import triggers as trigger_app
 from colab_viz.domains.d7_visualization import invalidation
 from colab_viz.kernel import storage_layout
 from colab_viz.app import trigger_bus as trigger_port
+from colab_viz.app import trigger_loop
 
 from conftest import AUTH, make_client
 
@@ -244,3 +247,91 @@ def test_버스_밖의_파일은_지우지_않는다(tmp_path):
     with pytest.raises(trigger_port.OutsideSpool):
         port._discard(outsider)
     assert outsider.exists()
+
+
+# ── ⑤ 실행자 — 아무도 안 불러도 스스로 돈다 (`03-HANDOFF §4 #60`) ────────────
+def _wait(predicate, timeout: float = 10.0) -> bool:
+    """조건이 설 때까지 기다린다 — **시험이 집행을 대신 부르지 않는다.**"""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return predicate()
+
+
+def test_앱이_뜨면_아무도_안_불러도_버스가_비워진다(source_root, put_target, tiny_geotiff,
+                                            tmp_path):
+    """**#60 의 본체.** `drain` 에 런타임 호출자가 없어서 버스는 쌓이기만 했다.
+
+    ⚠ 이 시험은 `trigger_app.drain` 을 **부르지 않는다** — 부르면 재는 것이 없어진다.
+    앱을 띄우고(lifespan) 봉투를 놓은 뒤 **기다리기만** 한다.
+    """
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "inline", trigger_spool=bus,
+                         trigger_poll_seconds=0.05)
+    tid = put_target(copy_from=[tiny_geotiff])
+    with client:                       # ← lifespan 이 실행자를 세운다
+        first = _render(client, tid)
+        _envelope(bus, event_type="preview.backend-rerun", trigger="미리보기 뒷단 재실행",
+                  upload_id=tid)
+        assert _wait(lambda: not list(bus.glob("*.json"))), \
+            "루프가 돌지 않았다 — 봉투가 버스에 그대로 남아 있다"
+        loop = client.app.state.trigger_loop
+        assert loop is not None and loop.drained >= 1
+        jobs = client.app.state.jobs
+        latest = jobs._latest_for(tid)
+        assert latest is not None and latest.render_id != first["renderId"], \
+            "버스는 비었는데 재생성이 일어나지 않았다"
+        for a in latest.artifacts.all():
+            assert a.path.exists()
+    assert not [t for t in threading.enumerate() if t.name == "viz-trigger-drain"], \
+        "종료 뒤에도 트리거 스레드가 남았다"
+
+
+def test_버스_자리가_없으면_실행자도_없다(source_root):
+    """**자리를 지어내지 않는다** — 배선이 없으면 루프도 서지 않는다."""
+    client = make_client(source_root, "inline")
+    with client:
+        assert client.app.state.trigger_loop is None
+
+
+def test_한_건이_실패해도_루프는_죽지_않는다(tmp_path):
+    """**실패한 봉투는 걷지 않고 로그만 남긴다.** 다음 바퀴가 다시 집는다."""
+    class 터지는_jobs:
+        def regenerate(self, event, *, source):
+            raise RuntimeError("렌더가 터졌다")
+
+    bus = tmp_path / "bus"
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가",
+              upload_id="01ARZ3NDEKTSV4RRFFQ69G5FAV")
+    loop = trigger_loop.TriggerDrainLoop(trigger_port.SpoolTriggerPort(bus),
+                                         jobs=터지는_jobs(), source=None,
+                                         interval_seconds=0.01)
+    loop.start()
+    try:
+        assert _wait(lambda: loop.passes >= 3), "예외 한 건이 루프를 죽였다"
+    finally:
+        loop.stop()
+    assert list(bus.glob("*.json")), "실패한 봉투가 버스에서 걷혔다"
+
+
+def test_주기는_설정에서_오고_못_읽는_값은_기본값이다(monkeypatch):
+    """간격은 배포가 정한다 — 코드에 박지 않는다. **오타는 기본값으로 떨어진다.**"""
+    from colab_viz.kernel import config as cfg
+    monkeypatch.setenv("COLAB_VIZ_TRIGGER_POLL_SECONDS", "0.5")
+    assert cfg.load_settings().trigger_poll_seconds == 0.5
+    monkeypatch.setenv("COLAB_VIZ_TRIGGER_POLL_SECONDS", "다섯초")
+    assert cfg.load_settings().trigger_poll_seconds == cfg.DEFAULT_TRIGGER_POLL_SECONDS
+    monkeypatch.delenv("COLAB_VIZ_TRIGGER_POLL_SECONDS")
+    assert cfg.load_settings().trigger_poll_seconds == cfg.DEFAULT_TRIGGER_POLL_SECONDS
+
+
+def test_실행자에도_D5_원장이나_발신_경로가_없다():
+    """**음성 · 불변규칙 1.** 실행자가 늘었다고 경계가 늘지 않는다."""
+    src = Path(trigger_loop.__file__).read_bytes()
+    names = {t.string for t in tokenize.tokenize(io.BytesIO(src).readline)
+             if t.type == tokenize.NAME}
+    for forbidden in ("sqlalchemy", "psycopg", "requests", "httpx", "boto3", "kafka",
+                      "publish", "outbox", "d5_upload", "d5_pipeline_event", "d4_lineage"):
+        assert forbidden not in names, f"trigger_loop.py 에 {forbidden} 이 들어왔다"
