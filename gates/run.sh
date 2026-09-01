@@ -14,11 +14,11 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  preview-tile-slot e2e-format-coverage render-latency
+  preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
-  autometa-loss-selftest preview-tile-slot-selftest
+  autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest
 )
 
@@ -169,6 +169,19 @@ case "$GATE" in
   preview-tile-slot-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 대상 0건·못 쓰는 타일·입력 미선언.
     exec "$REPO_ROOT/gates/tools/preview-tile-slot-selftest.sh"
+    ;;
+  artifact-ownership)
+    # **자리에 쌓인 산출물이 지금 누구 것인가** — 사이드카 `sources`(fileId) → `d3_file.dataset_id`
+    # 대조(`A-1` 완료 정의 ⑴⑵⑸ · 갈래 B). 이음은 `d5_upload_file.id = d3_file.id`(`NB-A`)이고
+    # 선례는 `autometa-loss.sh` 의 같은 조인이다. **Port 0 · 계약 0 · 배포 0.**
+    # **대상 0건도 red · 원장 두 표 0행도 red** — 그 0 을 「없다」로 읽으면 전건이 고아로 뜬다.
+    # ⚠ **이 게이트는 아무것도 지우지 않는다** — 회수 집행은 `invalidation.apply()` 한 자리다.
+    exec "$REPO_ROOT/gates/tools/artifact-ownership.sh"
+    ;;
+  artifact-ownership-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 대상 0건·원장 0행·경계 롤·
+    # 구판을 고아로 세는 변이(오삭제 재현)·접수분 무접촉 음성 시험까지.
+    exec "$REPO_ROOT/gates/tools/artifact-ownership-selftest.sh"
     ;;
   stage2-markers-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (0 건 · skip · fail).
