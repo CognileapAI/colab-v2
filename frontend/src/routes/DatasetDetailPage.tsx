@@ -1,7 +1,7 @@
 // S-05 데이터셋 상세 — 상단(헤더 + 기본 정보) + **계보 · 족보** + **미리보기**(WU-P3).
 // 활용 프로젝트 섹션은 WU-P5 가 이어서 채운다 (`sessions/P1.md §1`).
 // 한 페이지 스크롤이고 탭으로 콘텐츠를 숨기지 않는다 (`Policy_데이터셋_상세 §1.3-1`).
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { DatasetPreviewSection } from '../components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource } from '../components/datasetpreview/types';
@@ -20,6 +20,7 @@ import type { LineageGraphSource } from '../components/lineage/graphTypes';
 import { GridAttachEntry } from '../components/upload/GridAttachEntry';
 import type { UploadSources } from '../components/upload/types';
 import { LockedContent } from '../permission/LockedContent';
+import { recordVisit } from '../components/dashboard/visits';
 import '../components/detail/detail.css';
 
 /** 되돌아가기 기본값. 들어온 곳이 프로젝트면 그 프로젝트 이름을 부른다 (`§8` · WU-P5 가 실어 준다). */
@@ -56,6 +57,14 @@ export function DatasetDetailPage(
     [props.lineageSource],
   );
   const lineage = useDatasetLineage(lineageSource, datasetId, reloadToken);
+
+  // 「내가 열어 본 것」 — **브라우저에만 적는다** (`Policy_홈_대시보드 §10` · WU-P7).
+  // 서버로 보내는 경로가 여기 없는 것이 그 조항의 실물이다. 홈의 최근 활동이 이 값을 읽는다.
+  useEffect(() => {
+    if (detail.status === 'ready') {
+      recordVisit({ kind: '데이터셋', id: datasetId, name: detail.detail.name });
+    }
+  }, [detail, datasetId]);
 
   const back = {
     label: state?.backLabel ?? DEFAULT_BACK.label,

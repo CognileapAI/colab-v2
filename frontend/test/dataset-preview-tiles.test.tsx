@@ -277,7 +277,14 @@ describe('§8 확대 조건 ⑹ — 보기 권한만 있어도 확대되고, 확
     renderDetail(makeSource());
     await drawnMap();
     await waitFor(() => expect(scaleOf()).toBe(1));
-    expect(localSpy).not.toHaveBeenCalled();
+    // ⭑ **WU-P7 이 이 단언을 좁혔다.** 종전은 「`setItem` 이 한 번도 안 불린다」였는데,
+    //   그 뒤 상세 화면이 **「내가 열어 본 것」을 브라우저에 적는다**(`Policy_홈_대시보드 §10` ·
+    //   `components/dashboard/visits.ts`). 확대 상태를 저장하지 않는다는 **이 시험의 규칙은
+    //   그대로 지켜지고**, 넓게 잡혀 있던 단언만 그 규칙의 크기로 줄인다 — 확대 관련 키가
+    //   하나도 안 써지는 것을 본다. 넓은 단언을 지우는 것이 아니라 대상을 명시하는 것이다.
+    const keys = localSpy.mock.calls.map((call) => String(call[0]));
+    expect(keys.filter((k) => /zoom|scale|확대/i.test(k))).toEqual([]);
+    expect(keys.every((k) => k === 'colab.v2.visits')).toBe(true);
     localSpy.mockRestore();
   });
 });

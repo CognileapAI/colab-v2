@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CatalogColumn,
+  CatalogFilters,
   CatalogList,
   CatalogQuery,
   CatalogSource,
@@ -25,8 +26,16 @@ export type CatalogState = {
   clearAll: () => void;
 };
 
-export function useCatalog(source: CatalogSource): CatalogState {
-  const [query, setQuery] = useState<CatalogQuery>({ sort: DEFAULT_SORT, filters: {} });
+/**
+ * 처음 걸고 들어오는 조건. **데이터 맵의 막대가 이 자리로 온다** — 「막대는 전부 눌려 그
+ * 조건이 걸린 카탈로그로 간다」(`Policy_홈_대시보드 §8` 축자 · WU-P7). 조건 없이 열면
+ * 맵에서 누른 묶음과 카탈로그가 다른 것을 보여줘 두 화면이 서로 다른 연구실이 된다.
+ *
+ * ⚠ 조건의 **조작 자리는 여전히 표 헤더 하나뿐이다** — 이 값은 첫 상태일 뿐이고
+ * 조건 툴바를 새로 만들지 않는다 (`Policy_데이터_찾기 §1.3-9`).
+ */
+export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters = {}): CatalogState {
+  const [query, setQuery] = useState<CatalogQuery>({ sort: DEFAULT_SORT, filters: initialFilters });
   const [list, setList] = useState<CatalogList | null>(null);
   const [facets, setFacets] = useState<FacetSet | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -74,6 +74,12 @@ class Op:
 #:    `listPalettes` 는 신설과 동시에 구현해 표에 안 든다. `〈88〉` 묶음 4·5·6).
 #: → **20**(`P5` 잔여 — `deleteProject`·`setProjectStatus`·`unlinkProjectDataset`.
 #:    윗 문단이 배정을 넘은 이유를 적었다).
+#: → **9**(`P7` 연구실 대시보드 — D8 집계 셋 `getDashboardSummary`·`getDataMap`·
+#:    `listActivities`). **계약 개정이 0 건이다** — 계약은 처음부터 이 셋을 들고 있었고
+#:    라우트만 없었다(`routes/insight.py`). **셋이 한 회차에 나가는 이유** = 지표·맵·활동은
+#:    한 화면의 세 구획이고, 하나라도 501 이면 그 화면은 「불러오지 못했어요」로만 선다
+#:    (`CLAUDE.md §5` 부분 완료 금지). 셋 다 실동작 시험이 뒤에 있다
+#:    (`tests/test_dashboard.py` — **연구실 경계 음성 포함**).
 #: → **12**(`P6` 승인 처리 — 접근 요청 4 ＋ Verified 4. **여덟이 한 회차에 나간다**).
 #:    앞의 여섯은 `NOT_IMPLEMENTED_NO_STORE` 였고 그 사유(「저장처 자체가 P0 스키마에 없다」)를
 #:    마이그레이션 `0010` 이 없앴다 — `d2_dataset_access_request`·`d2_verification_request`.
@@ -88,9 +94,6 @@ OPERATIONS: tuple[Op, ...] = (
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
     Op("downloadDataset", "GET", "/datasets/{datasetId}/download", "NOT_IMPLEMENTED_NO_STORE"),
-    Op("getDashboardSummary", "GET", "/dashboard/summary", "NOT_IMPLEMENTED_P1"),
-    Op("getDataMap", "GET", "/dashboard/data-map", "NOT_IMPLEMENTED_P1"),
-    Op("listActivities", "GET", "/dashboard/activities", "NOT_IMPLEMENTED_P1"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
     #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데

@@ -1090,15 +1090,15 @@ items:
 
   - id: P7
     name: 연구실 대시보드
-    status: open
+    status: partial
     stage: stage2
     owner: "D8 · D1 / core-api ＋ frontend"
     entry_conditions: ["P6"]
     depends_on: [P6]
     completion_def: "「각 P 의 완료 판정」 4항 (`§7` 말미)"
-    evidence: null
+    evidence: "⭑ 2026-09-02 · 워크트리 `lane-p7` — **넷 중 셋 충족, 셋째(staging 배포 green)가 남았다.** ① 수용 기준 = E-07 의 P7 범위 넷(데이터 맵 · 요약 지표 · 할 일 함 · 최근 활동 ＋ 연구실 정보 읽기 모달)이 화면으로 섰다. ② 게이트 = `all` **green 35 / red 0**(우회·검사 축소 0). ③ **staging 배포 green = 미충족** — 이 회차는 배포 승인 범위 밖이었다. ④ 목업 대비 = `홈_대시보드_260817.html` 축자 대조로 문구 6곳을 실물에 맞췄다(`우리 연구실 데이터 맵` · `기록 없음이 정상` · `미확정 N건` · `대기 N건` · `계보 확인이 필요한 데이터 N건 전부 보기 →` · 상대 시각). **D8 실동작 op 0 이 닫혔다** — 501 표 8 → 5(`getDashboardSummary`·`getDataMap`·`listActivities`), **계약 개정 0 건**. 시험 = core-api **519**(＋9 · 연구실 경계 음성 포함) · frontend **422**(＋23)."
     deadline: null
-    note: "D8 실동작 op 0 이 여기서 닫힌다. ⚠ I5 진입조건이 P7 을 거는데 P7 은 stage 2 다."
+    note: "D8 실동작 op 0 이 여기서 닫혔다. ⚠ I5 진입조건이 P7 을 거는데 P7 은 stage 2 다. ⭑ **`partial` 인 이유는 하나뿐 — staging 배포 green(`§7` 완료 판정 3항)이다.** 코드·시험·게이트는 다 섰고 배포만 다음 회차다. ⚠ **P8 은 아직 열리지 않는다** — `P8.depends_on = [P7]` 이고 P7 이 `done` 이 아니다. ⚠ **정본 안 갈림 하나** — `Policy_홈_대시보드 §5.3` 은 「맵에서 누른 조건이 카탈로그로 전달되는 것」을 Phase 2+ 로 미루는데 같은 문서 `§8`(v1.5)은 「막대는 전부 눌려 그 조건으로 카탈로그를 연다」고 적는다. **뒤에 쓰인 `§8` 을 따랐고**(주소 질의 `lineageState`·`topic` → `useCatalog` 초기 조건), 조건 툴바를 새로 만들지는 않았다. ⚠ **검색 히어로는 손대지 않았다** — 목업의 히어로(예시 질문 3개 등)와 실물이 다르지만 그 자리의 주인은 `P4`(stage 3)다."
     sources: ["03-HANDOFF §1 T-P", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
 
   - id: P8
