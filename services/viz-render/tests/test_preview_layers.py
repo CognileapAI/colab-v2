@@ -18,6 +18,12 @@ from colab_viz.domains.d7_visualization import colormap, preview, scale
 _LUT = colormap.lut256(colormap.VIRIDIS_ANCHORS)
 _KEY_PARAMS = dict(source_digest="deadbeef", fills=(-25000.0, -30000.0),
                    palette="단색-파랑", selection="블록1")
+#: ⭑ ⟨2026-09-02 · `A-1` 안 ⑷⟩ `source` 는 **`fileId`** 다 — 종전 픽스처는 사람 이름을
+#: 넣었고, 그 자리가 무엇인지 못 박은 규약이 없었다. 소유·`fileId` 판정은
+#: `test_sidecar_ownership.py` 가 따로 잰다.
+_FID = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
+_OWNER = preview.BakeOwner(target_id="01ARZ3NDEKTSV4RRFFQ69G5FAW", is_upload=False)
+_SRC = dict(source=_FID, sources=(_FID,), owner=_OWNER)
 
 
 def _range() -> scale.ColorRange:
@@ -35,9 +41,9 @@ def _korea_grid(ny: int = 200, nx: int = 160):
 # ── ①② 좌표 없이 나온다 ────────────────────────────────────────────────────
 def test_썸네일과_비지도형은_좌표_없이_전_포맷에서_나온다(tmp_path):
     values = np.linspace(0, 100, 2881 * 2305, dtype="f4").reshape(2881, 2305)
-    thumb, detail = preview.build_value_layers(
+    thumb, detail, _, _ = preview.build_value_layers(
         values, color_range=_range(), lut=_LUT, out_dir=tmp_path,
-        url_base="/previews", key_params=_KEY_PARAMS)
+        url_base="/previews", key_params=_KEY_PARAMS, **_SRC)
 
     assert thumb.path.read_bytes()[:4] == b"RIFF"        # WEBP
     assert detail.path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
@@ -51,9 +57,9 @@ def test_썸네일과_비지도형은_좌표_없이_전_포맷에서_나온다(t
 def test_결측만_있는_층도_실패가_아니라_전부_투명한_그림이다(tmp_path):
     """`§9` 렌더 행 — 「유효 픽셀 0개」는 실패가 아니다."""
     values = np.full((64, 64), np.nan, dtype="f4")
-    thumb, detail = preview.build_value_layers(
+    thumb, detail, _, _ = preview.build_value_layers(
         values, color_range=_range(), lut=_LUT, out_dir=tmp_path,
-        url_base="/previews", key_params=_KEY_PARAMS)
+        url_base="/previews", key_params=_KEY_PARAMS, **_SRC)
     from PIL import Image
     alpha = np.asarray(Image.open(detail.path).convert("RGBA"))[..., 3]
     assert alpha.max() == 0
@@ -65,16 +71,16 @@ def test_지도형은_3857_PNG_와_사이드카_와_pgw_세_벌이다(tmp_path):
     values, lat, lon = _korea_grid()
     image, sidecar, world, geom = preview.build_map_layer(
         values, lat, lon, color_range=_range(), lut=_LUT, out_dir=tmp_path,
-        url_base="/previews", key_params=_KEY_PARAMS, grid_digest="격자해시",
-        source_name="RDR_CMP_HSR_PUB_202508131000.bin.gz")
+        url_base="/previews", key_params=_KEY_PARAMS, grid_digest="격자해시", **_SRC)
 
     assert image.path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     doc = json.loads(sidecar.path.read_text(encoding="utf-8"))
-    assert set(doc) == {"name", "crs", "bbox_3857", "bbox_4326", "width", "height",
-                        "pixel_size_m", "source", "created"}
+    assert set(doc) == {"sidecarVersion", "name", "layer", "source", "sources",
+                        "baked_for", "crs", "bbox_3857", "bbox_4326", "width", "height",
+                        "pixel_size_m", "created"}
     assert doc["crs"] == "EPSG:3857"
     assert doc["name"] == image.path.name and "/" not in doc["name"]
-    assert doc["source"] == "RDR_CMP_HSR_PUB_202508131000.bin.gz"
+    assert doc["source"] == _FID          # 파일명이 아니라 `fileId` 다
     assert max(doc["width"], doc["height"]) == preview.DETAIL_SIDE
 
     # 사이드카 `bbox_4326` 은 계약 `Bounds` 와 **같은 값·같은 순서**다 (`§3.3`)
@@ -87,8 +93,7 @@ def test_pgw_는_6줄이고_5_6행은_픽셀_중심이라_반_픽셀_어긋난�
     values, lat, lon = _korea_grid()
     _, _, world, geom = preview.build_map_layer(
         values, lat, lon, color_range=_range(), lut=_LUT, out_dir=tmp_path,
-        url_base="/previews", key_params=_KEY_PARAMS, grid_digest=None,
-        source_name="a.bin")
+        url_base="/previews", key_params=_KEY_PARAMS, grid_digest=None, **_SRC)
     lines = [float(v) for v in world.path.read_text().strip().splitlines()]
     assert len(lines) == 6
     assert lines[1] == 0.0 and lines[2] == 0.0        # warp 후라 회전은 항상 0
@@ -111,8 +116,7 @@ def test_축이_뒤바뀐_격자는_지도형을_실패시킨다(tmp_path):
     with pytest.raises(preview.BboxSanityError):
         preview.build_map_layer(values, lon, lat, color_range=_range(), lut=_LUT,
                                 out_dir=tmp_path, url_base="/previews",
-                                key_params=_KEY_PARAMS, grid_digest=None,
-                                source_name="a.bin")
+                                key_params=_KEY_PARAMS, grid_digest=None, **_SRC)
 
 
 def test_사이드카는_위경도_배열도_격자_경로도_싣지_않는다(tmp_path):
@@ -120,8 +124,7 @@ def test_사이드카는_위경도_배열도_격자_경로도_싣지_않는다(t
     values, lat, lon = _korea_grid()
     _, sidecar, _, _ = preview.build_map_layer(
         values, lat, lon, color_range=_range(), lut=_LUT, out_dir=tmp_path,
-        url_base="/previews", key_params=_KEY_PARAMS, grid_digest="격자해시",
-        source_name="a.bin")
+        url_base="/previews", key_params=_KEY_PARAMS, grid_digest="격자해시", **_SRC)
     text = sidecar.path.read_text(encoding="utf-8")
     assert sidecar.size_bytes < 1024
     for banned in ("lat2d", "lon2d", ".npy", "palette", "vmin"):

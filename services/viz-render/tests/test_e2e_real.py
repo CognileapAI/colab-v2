@@ -152,7 +152,16 @@ def test_e2e_3_binary_hsr(client, put_target, source_root):
     import json as _json
     store = client.app.state.jobs.get(job["_renderId"]).artifacts
     doc = _json.loads(store.sidecar.path.read_text(encoding="utf-8"))
-    assert doc["crs"] == "EPSG:3857" and doc["source"] == src.name
+    # ⭑ ⟨2026-09-02 · `A-1` 안 ⑷⟩ `source` 는 **`fileId`** 다 — 파일명이 아니다.
+    # 실배포에서는 본체 키가 `{uploadsPrefix}/{targetId}/{fileId}` 라 디스크 이름이 곧
+    # `fileId` 이지만, **이 픽스처는 사람 이름으로 놓는다** — 그래서 둘이 갈린다.
+    assert doc["crs"] == "EPSG:3857"
+    assert doc["source"] != src.name
+    assert len(doc["source"]) == 26      # ULID 모양 — 파생 `fileId`
+    assert doc["baked_for"]["target_id"] == tid and doc["sidecarVersion"] == 2
+    # 세 층 전부가 사이드카를 갖는다 (완료 정의 ⑹)
+    for sc in (store.thumbnail_sidecar, store.detail_sidecar):
+        assert _json.loads(sc.path.read_text(encoding="utf-8"))["source"] == doc["source"]
     assert len(store.world_file.path.read_text().strip().splitlines()) == 6
 
 
