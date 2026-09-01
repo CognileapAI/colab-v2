@@ -165,25 +165,66 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
 
 
 # ── 동반 파일 ────────────────────────────────────────────────────────────────
-def sidecar_document(geom: MapGeometry, *, name: str, source: str,
+#: 사이드카 판 번호. **1 = `source` 가 파일명이던 구판**(2026-09-02 이전 · 실배포에서만
+#: 우연히 `fileId` 와 같았다), **2 = 이 판** — `source` 가 `fileId` 이고 소유 대상을 싣는다.
+#: ⚠ **읽는 쪽은 구판을 거부하지도 옮겨 적지도 않는다** — 판 번호가 없으면 「구판」으로
+#: 보고 소유 판정을 **하지 않는다**(`A-1` 안 ⑷). 필드가 있어야 기계가 그것을 가른다.
+SIDECAR_VERSION = 2
+
+
+@dataclass(frozen=True)
+class BakeOwner:
+    """**구운 시점의** 소유 대상. `job.spec.target` 이 이미 들고 있는 값이다 — Port 불요.
+
+    ⚠ **등록 전환(`createDataset`) 뒤에는 낡는다.** 그래서 필드 이름이 `baked_for` 다 —
+    「지금 소유」가 아니라 「구울 때의 대상」이다. 최신 소유는 원장 대조(`fileId` →
+    `d3_file.dataset_id`)가 답하고, 그 대조는 이 파일이 하지 않는다.
+    """
+    target_id: str
+    is_upload: bool
+
+    def as_document(self) -> dict:
+        return {"target_id": self.target_id, "is_upload": self.is_upload}
+
+
+def sidecar_document(*, name: str, layer: str, source: str,
+                     sources: tuple[str, ...] | list[str], owner: BakeOwner,
+                     geom: MapGeometry | None = None,
+                     size: tuple[int, int] | None = None,
                      created: datetime | None = None) -> dict:
-    """bbox 사이드카 JSON — 필드 8 (`§3.3`). **PNG 안에는 좌표를 적을 자리가 없다.**
+    """산출물 한 벌의 동반 JSON. **세 층 전부가 이것을 갖는다**(`A-1` 완료 정의 ⑹).
+
+    ⭑ **⟨개정 2026-09-02 · `A-1` 안 ⑷⟩ `source` 는 `fileId` 다.** 종전 문면은 「파일명」
+    이었고(실배포에서만 우연히 `fileId` 와 같았다) 시험 픽스처는 사람 이름을 넣었다.
+    이제 규약이다 — `sources` 는 그 렌더에 들어간 **모든** 조각의 `fileId` 다.
 
     **넣지 않는 것** — 위경도 배열 · 격자 파일 경로 · 스케일 범위·컬러맵(범례가 나른다) ·
-    원본 CRS 파라미터. `name`·`source` 는 **파일명**이고 절대경로가 아니다(`CLAUDE.md §3-8`).
+    원본 CRS 파라미터 · 절대경로(`CLAUDE.md §3-8`). `name` 은 파일명이다.
+    **좌표 칸(`crs`·`bbox_*`·`pixel_size_m`)은 지도형에만 선다** — ①②에는 경계가 없고,
+    **없는 경계를 지어내지 않는다**(`DR-9`).
     """
     when = created or datetime.now(timezone.utc)
-    return {
+    doc: dict = {
+        "sidecarVersion": SIDECAR_VERSION,
         "name": name,
-        "crs": cache.MAP_CRS,
-        "bbox_3857": [round(v, 3) for v in geom.bbox_3857],
-        "bbox_4326": list(geom.bbox_4326),
-        "width": geom.width,
-        "height": geom.height,
-        "pixel_size_m": [geom.pixel_size_m[0], geom.pixel_size_m[1]],
+        "layer": layer,
         "source": source,
-        "created": when.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "sources": list(sources),
+        "baked_for": owner.as_document(),
     }
+    if geom is not None:
+        doc.update({
+            "crs": cache.MAP_CRS,
+            "bbox_3857": [round(v, 3) for v in geom.bbox_3857],
+            "bbox_4326": list(geom.bbox_4326),
+            "width": geom.width,
+            "height": geom.height,
+            "pixel_size_m": [geom.pixel_size_m[0], geom.pixel_size_m[1]],
+        })
+    elif size is not None:
+        doc["width"], doc["height"] = int(size[0]), int(size[1])
+    doc["created"] = when.isoformat(timespec="seconds").replace("+00:00", "Z")
+    return doc
 
 
 def world_file_text(geom: MapGeometry) -> str:
@@ -226,9 +267,23 @@ def _write(out_dir: Path, url_base: str, layer: str, kind: str, key: str,
                     size_bytes=len(blob))
 
 
+def _sidecar_for(out_dir: Path, url_base: str, layer: str, key: str, image: Artifact,
+                 *, source: str, sources, owner: BakeOwner,
+                 geom: "MapGeometry | None" = None,
+                 size: tuple[int, int] | None = None) -> Artifact:
+    """산출물 한 벌의 `.json` 을 **같은 키 아래** 놓는다 — `layout.json` `why ④`."""
+    doc = sidecar_document(name=image.path.name, layer=layer, source=source,
+                           sources=sources, owner=owner, geom=geom, size=size)
+    return _write(out_dir, url_base, layer, "sidecar", key, ".json",
+                  json.dumps(doc, ensure_ascii=False, indent=2).encode("utf-8"))
+
+
 def build_value_layers(values: np.ndarray, *, color_range: ColorRange,
                        lut: np.ndarray, out_dir: Path, url_base: str,
-                       key_params: dict) -> tuple[Artifact, Artifact]:
+                       key_params: dict, source: str,
+                       sources: tuple[str, ...] | list[str],
+                       owner: BakeOwner
+                       ) -> tuple[Artifact, Artifact, Artifact, Artifact]:
     """①썸네일 · ②비지도형 — **좌표를 쓰지 않는다. 전 포맷에서 성립한다**(`〈74〉-㉮`).
 
     ②는 원본 배열을 블록평균으로 1024 px 까지 줄인 것이고, ①은 그 결과를 stride 로
@@ -250,16 +305,27 @@ def build_value_layers(values: np.ndarray, *, color_range: ColorRange,
                                    vmax=color_range.vmax, lut=lut)
     rgba_thumb = colormap.to_rgba(thumb, vmin=color_range.vmin,
                                   vmax=color_range.vmax, lut=lut)
-    return (_write(out_dir, url_base, LAYER_THUMBNAIL, "image", thumb_key, ".webp",
-                   encode_webp(rgba_thumb)),
-            _write(out_dir, url_base, LAYER_DETAIL, "image", detail_key, ".png",
-                   encode_png(rgba_detail)))
+    thumb_art = _write(out_dir, url_base, LAYER_THUMBNAIL, "image", thumb_key, ".webp",
+                       encode_webp(rgba_thumb))
+    detail_art = _write(out_dir, url_base, LAYER_DETAIL, "image", detail_key, ".png",
+                        encode_png(rgba_detail))
+    # ⭑ ⟨2026-09-02 · `A-1` 안 ⑷ · 완료 정의 ⑹⟩ **①②도 사이드카를 갖는다.**
+    # 층이 셋인데 동반 파일이 지도형에만 있으면 나머지 두 층의 산출물은 **누가 왜 구웠는지
+    # 디스크만 보고는 알 수 없다** — 「판정 불가」의 원인이 그것이었다. 좌표는 싣지 않는다.
+    thumb_sidecar = _sidecar_for(out_dir, url_base, LAYER_THUMBNAIL, thumb_key, thumb_art,
+                                 source=source, sources=sources, owner=owner,
+                                 size=(rgba_thumb.shape[1], rgba_thumb.shape[0]))
+    detail_sidecar = _sidecar_for(out_dir, url_base, LAYER_DETAIL, detail_key, detail_art,
+                                  source=source, sources=sources, owner=owner,
+                                  size=(rgba_detail.shape[1], rgba_detail.shape[0]))
+    return thumb_art, detail_art, thumb_sidecar, detail_sidecar
 
 
 def build_map_layer(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                     color_range: ColorRange, lut: np.ndarray, out_dir: Path,
                     url_base: str, key_params: dict, grid_digest: str | None,
-                    source_name: str) -> tuple[Artifact, Artifact, Artifact, MapGeometry]:
+                    source: str, sources: tuple[str, ...] | list[str],
+                    owner: BakeOwner) -> tuple[Artifact, Artifact, Artifact, MapGeometry]:
     """③지도형 — PNG + 사이드카 JSON + `.pgw`. **좌표가 없으면 여기 오지 않는다.**"""
     warped, geom = warp_to_3857(values, lat, lon, max_side=DETAIL_SIDE)
     key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample="warp+blockavg",
@@ -267,9 +333,8 @@ def build_map_layer(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                                  grid_digest=grid_digest, **key_params)
     rgba = colormap.to_rgba(warped, vmin=color_range.vmin, vmax=color_range.vmax, lut=lut)
     image = _write(out_dir, url_base, LAYER_MAP, "image", key, ".png", encode_png(rgba))
-    doc = sidecar_document(geom, name=image.path.name, source=source_name)
-    sidecar = _write(out_dir, url_base, LAYER_MAP, "sidecar", key, ".json",
-                     json.dumps(doc, ensure_ascii=False, indent=2).encode("utf-8"))
+    sidecar = _sidecar_for(out_dir, url_base, LAYER_MAP, key, image, source=source,
+                           sources=sources, owner=owner, geom=geom)
     world = _write(out_dir, url_base, LAYER_MAP, "worldfile", key, ".pgw",
                    world_file_text(geom).encode("ascii"))
     return image, sidecar, world, geom

@@ -203,14 +203,20 @@ class PreviewArtifacts:
     """미리보기 3층의 산출물. **③이 없어도 ①②는 있다**(`§5.5` — 실패가 아니라 보류)."""
     thumbnail: preview.Artifact
     detail: preview.Artifact
+    #: ⭑ ⟨2026-09-02 · `A-1` 완료 정의 ⑹⟩ ①②의 동반 `.json`. **선택이 아니다** —
+    #: 세 층 전부가 사이드카를 가져야 디스크만 보고 소유를 판정할 수 있다.
+    thumbnail_sidecar: preview.Artifact
+    detail_sidecar: preview.Artifact
     map_image: preview.Artifact | None = None
     sidecar: preview.Artifact | None = None
     world_file: preview.Artifact | None = None
     geometry: preview.MapGeometry | None = None
 
     def all(self) -> list[preview.Artifact]:
-        return [a for a in (self.thumbnail, self.detail, self.map_image,
-                            self.sidecar, self.world_file) if a is not None]
+        return [a for a in (self.thumbnail, self.detail,
+                            self.thumbnail_sidecar, self.detail_sidecar,
+                            self.map_image, self.sidecar, self.world_file)
+                if a is not None]
 
 
 @dataclass
@@ -373,10 +379,18 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
     out_dir = Path(spec.preview_dir)
 
     values = reads[0].field.values if len(reads) == 1 else merged.values
-    thumb, detail = preview.build_value_layers(
+    # ⭑ ⟨2026-09-02 · `A-1` 안 ⑷ 최소 묶음 1·3⟩ 사이드카가 실을 두 가지.
+    #   `source`/`sources` = **`fileId`** 다(파일명이 아니다 — `SourcePart.file_id`).
+    #   `owner` = **구운 시점의 대상**이다. 둘 다 **이미 D7 안에 있다 — Port 를 열지 않는다.**
+    source_ids = tuple(r.part.file_id for r in reads)
+    owner = preview.BakeOwner(target_id=spec.target.target_id,
+                              is_upload=spec.target.is_upload)
+    thumb, detail, thumb_sc, detail_sc = preview.build_value_layers(
         values, color_range=color_range, lut=lut, out_dir=out_dir,
-        url_base=spec.preview_url_base, key_params=key_params)
-    artifacts = PreviewArtifacts(thumbnail=thumb, detail=detail)
+        url_base=spec.preview_url_base, key_params=key_params,
+        source=source_ids[0], sources=source_ids, owner=owner)
+    artifacts = PreviewArtifacts(thumbnail=thumb, detail=detail,
+                                 thumbnail_sidecar=thumb_sc, detail_sidecar=detail_sc)
 
     coords = _map_coordinates(reads, merged if not isinstance(merged, _ValuesOnly) else None)
     if coords is None:
@@ -385,7 +399,8 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
     image, sidecar, world, geom = preview.build_map_layer(
         map_values, lat, lon, color_range=color_range, lut=lut, out_dir=out_dir,
         url_base=spec.preview_url_base, key_params=key_params,
-        grid_digest=_grid_digest(reads), source_name=reads[0].part.file_name)
+        grid_digest=_grid_digest(reads), source=source_ids[0], sources=source_ids,
+        owner=owner)
     artifacts.map_image, artifacts.sidecar = image, sidecar
     artifacts.world_file, artifacts.geometry = world, geom
     return artifacts
