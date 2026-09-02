@@ -8,20 +8,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { EMPTY, orEmpty } from '../detail/format';
+// 읽기 표시는 `연구실 설정 > 연구실 정보` 탭과 **같은 컴포넌트**를 쓴다 — 두 벌로 두지 않는다.
+import { LabInfoGrid } from '../lab/LabInfoGrid';
 import type { DashboardSource, Lab } from './types';
-
-/** §5 「연구실 정보 항목」 — 여덟 칸. 순서와 이름을 바꾸지 않는다. */
-const FIELDS: { name: string; of: (lab: Lab) => string }[] = [
-  { name: '연구실 이름', of: (l) => l.name },
-  { name: '소속 대학', of: (l) => orEmpty(l.university) },
-  { name: '학부/학과', of: (l) => orEmpty(l.department) },
-  { name: '책임교수', of: (l) => orEmpty(l.principalInvestigator) },
-  { name: '연구 분야', of: (l) => orEmpty(l.researchField) },
-  { name: '구성원 수', of: (l) => `${l.memberCount}명` },
-  { name: '데이터 공개 범위', of: (l) => l.defaultVisibility ?? EMPTY },
-  { name: '한 줄 소개', of: (l) => orEmpty(l.introduction) },
-];
 
 export function LabInfoModal(props: { source: DashboardSource; onClose: () => void }) {
   const navigate = useNavigate();
@@ -46,16 +35,7 @@ export function LabInfoModal(props: { source: DashboardSource; onClose: () => vo
       <div className="modal lab-info">
         <h2>연구실 정보</h2>
         {error ? <p className="dash-error">{error}</p> : null}
-        {lab ? (
-          <dl className="lab-info-grid">
-            {FIELDS.map((f) => (
-              <div key={f.name}>
-                <dt>{f.name}</dt>
-                <dd>{f.of(lab)}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
+        {lab ? <LabInfoGrid lab={lab} /> : null}
         <div className="modal-foot">
           {/* 편집 버튼만 권한자에게 (§6). 읽기는 열고 **버튼만 숨긴다.** */}
           <PermissionGate requires="연구실 설정">

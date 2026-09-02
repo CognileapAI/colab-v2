@@ -1638,3 +1638,40 @@ items:
       (`〈204〉`-㉳). **계약 산문**(`contracts/seams/core-viz.yaml:34`·`:64`)은 본 회차 계약 무접촉이라
       고치지 않았다 → `[미확인]` · 푸는 법 = 계약을 여는 회차가 산문만 정정한다.
     sources: ["PLAN-SoT §9 〈204〉", "WORK-UNITS §7", "sessions/P3-SCOPE.md"]
+
+  - id: Q-B
+    name: "연구실 설정 > 연구실 정보 탭 — 읽기 본문 + 편집 폼"
+    status: done
+    stage: stage2
+    owner: "D1 identity (frontend)"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      `연구실 설정 > 연구실 정보` 탭이 ⑴ 항목 여덟 칸을 읽기로 보이고
+      (`Policy_홈_대시보드 §5` 「연구실 정보 항목」 축자 · `DataModel_공통_기반 §2`),
+      ⑵ `연구실 설정` 스위치가 켜진 사람에게만 `정보 편집` 을 보이고
+      (`Policy_역할과_권한 나-1`·`나-2` 「연구실 정보 편집 · `연구실 설정` · 거절한다. **읽기는 전 구성원**」),
+      ⑶ 편집 폼 일곱 칸이 계약 `LabUpdate` 형태로 `updateLab` 을 부른다
+      (문안·순서는 `mockups/제품_260817.html` S-07 `연구실 정보` 카드와 편집 모달 축자).
+    evidence: >-
+      2026-09-03 · 워크트리 `lane-q3` · 브랜치 `lane-q3` · `PLAN-SoT §9 〈292〉`.
+      신규 `frontend/src/components/lab/{labSource.ts,LabInfoGrid.tsx,LabInfoPanel.tsx,lab.css}` ·
+      `routes/LabSettingsPage.tsx` 의 빈 `data-fills-in="WU-G4"` 자리를 `LabInfoPanel` 로 채움.
+      읽기 표시(`LabInfoGrid`)와 `GET /lab` 배선(`labSource`)은 홈 읽기 모달과 **한 벌을 공유**한다 —
+      `LabInfoModal.tsx` 와 `dashboardSource.ts` 를 그쪽으로 돌렸다(중복 0).
+      서버 `updateLab` 은 **이미 서 있었다**(`services/core-api/.../routes/identity.py:42` ·
+      권한은 `members._require_lab_settings` · 시험 `tests/test_lab_and_project_update.py`) —
+      **본 회차 서버 변경 0건 · 계약 무접촉.**
+      시험 = `frontend/test/lab-settings-info.test.tsx` **7건 신설**(읽기 8칸 · 권한 꺼짐 숨김 ·
+      읽기 실패 문안 · 폼 7칸 · 계약 형태 호출 · 이름 공백 400 문안 · 저장 거절 시 폼 유지).
+    deadline: null
+    note: >-
+      **신설 2026-09-03** — QA 검수 #1「연구실 정보 탭 백지」. `G4` 는 「읽기 모달 → P7 편입」까지만
+      배정했고 **편집 화면은 어느 WU 도 맡지 않았다** — 그 미배치가 이 WU 다.
+      ⚠ **정본과 계약이 한 자리에서 갈린다** — 목업 편집 모달의 `데이터 공개 범위` 는 산문 3지선다인데
+      계약 `LabDefaultVisibility` 는 `열림`·`잠김` 2값이다(`AccessState` 참조). **계약을 따랐다**
+      (본 회차 계약 무접촉 · 서버도 그 두 값만 받는다 `identity.py:71`).
+      목업 산문을 살릴지는 정본 갱신 묶음이 판정한다 — `[미확인]`.
+      ⚠ CSS 는 `labinfo-` 로 전량 접두했다 — 전역 `.modal`·`.card` 를 새로 정의하지 않는다
+      (`members.css .modal` 이 업로드 모달을 덮은 사고와 같은 모양을 만들지 않기 위해서다).
+    sources: ["PLAN-SoT §9 〈292〉", "notes/QA-SCREENS-20260903.md #1", "notes/QA-STRATEGY-20260903.md §4-3"]
