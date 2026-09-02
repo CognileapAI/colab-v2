@@ -38,13 +38,13 @@ class UploadFileRecord:
     #: 매직바이트로 판정한 포맷. **core-api 는 절대 채우지 않는다** — 확장자를 믿지 않는다
     #: (`P2.md §2-10` · `DR-3`). 파이프라인이 `file.format-detected` 로 채운다.
     detected_format: str | None
-    #: 폴더째 업로드에서 온 `폴더/이름` 상대 경로 (0008 · `〈173〉`). 낱개 파일은 None.
+    #: 폴더째 업로드에서 온 `폴더/이름` 상대 경로 (0008 · `〈276〉`). 낱개 파일은 None.
     relative_path: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
 class TransferFileRecord:
-    """프리사인드 전송 중인 파일 하나 (`d5_upload_transfer_file` · `〈174〉`).
+    """프리사인드 전송 중인 파일 하나 (`d5_upload_transfer_file` · `〈277〉`).
 
     `file_id` 는 전송 완결 시 `d5_upload_file.id`(본체) 혹은 워커가 세울 격자 행의
     id 로 **그대로** 간다 — `NB-A` 동일성이 전송 단계까지 소급된 형태다.

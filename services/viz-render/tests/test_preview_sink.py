@@ -1,4 +1,4 @@
-"""미리보기 출력 싱크 — 산출물을 데이터 버킷 `previews/{name}` 에 놓는다 (`〈178〉-㉮`).
+"""미리보기 출력 싱크 — 산출물을 데이터 버킷 `previews/{name}` 에 놓는다 (`〈281〉-㉮`).
 
 순수 시험 — `put_object` 를 기록하는 스텁이다. numpy·conftest 불필요.
 `../core-api/.venv/bin/python -m pytest tests/test_preview_sink.py -q --noconftest`

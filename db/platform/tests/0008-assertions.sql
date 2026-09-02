@@ -9,7 +9,7 @@
 -- 제약이 실제로 막는지(멀티파트 id 는 파트 크기 없이 못 선다), FORCE RLS 가
 -- 실제로 켜져 있는지까지 본다.
 --
--- 근거 = PLAN-SoT §9 〈173〉·〈174〉 (프리사인드 전송 원장 · relative_path 메타)
+-- 근거 = PLAN-SoT §9 〈276〉·〈277〉 (프리사인드 전송 원장 · relative_path 메타)
 
 \set ON_ERROR_STOP on
 BEGIN;

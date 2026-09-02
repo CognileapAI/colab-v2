@@ -25,19 +25,19 @@ export interface DetailSource {
   get(datasetId: string): Promise<DatasetDetail>;
 }
 
-// ── 파일 관리 (`PLAN-SoT §9 〈175〉` — 회의 결정 · 정본 산문 밖) ─────────────────────────
+// ── 파일 관리 (`PLAN-SoT §9 〈278〉` — 회의 결정 · 정본 산문 밖) ─────────────────────────
 
-/** 등록된 데이터셋의 조각 하나. `byteSize` 가 `null` 이면 **모르는 것**이지 0 이 아니다 (`〈175〉-(가)`). */
+/** 등록된 데이터셋의 조각 하나. `byteSize` 가 `null` 이면 **모르는 것**이지 0 이 아니다 (`〈278〉-(가)`). */
 export type DatasetFile = S['DatasetFile'];
 export type FileKind = S['FileKind'];
-/** 다운로드 티켓 — `url` 이 바이트다. 클라이언트는 그것을 **그대로 내비게이션**한다 (`〈175〉-(다)`). */
+/** 다운로드 티켓 — `url` 이 바이트다. 클라이언트는 그것을 **그대로 내비게이션**한다 (`〈278〉-(다)`). */
 export type DownloadTicket = S['DownloadTicket'];
 
 /** 없거나 경계 밖인 파일·데이터셋 (계약 404). `UploadGone` 과 같은 관례 — 다른 실패와 섞지 않는다. */
 export class FileGone extends Error {}
 
 /**
- * 그 데이터셋의 **마지막 본체 파일**이다 — 본체 ≥ 1 불변식 (`DataModel §4.3` · `〈175〉-(라)` · 계약 409).
+ * 그 데이터셋의 **마지막 본체 파일**이다 — 본체 ≥ 1 불변식 (`DataModel §4.3` · `〈278〉-(라)` · 계약 409).
  * `message` 는 서버가 보낸 문장 그대로다 — 화면은 그것을 바꾸지 않고 보여 준다.
  */
 export class LastBodyFile extends Error {}

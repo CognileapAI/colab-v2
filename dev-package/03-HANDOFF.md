@@ -193,10 +193,10 @@
 ### T-U 업로드 S3 직행 · 파일 관리 (브랜치 `feature/rtf400_s3_upload` · 미푸시)
 | WU | 상태 | 비고 |
 |---|---|---|
-| U-1 S3 직행 + 중단 재개 | 🟧 | 6커밋(`9fa1024`~`6f10eb7`) — 저장 Port · 전송 9 op · `0008` · FE 엔진·배너. 실측 pytest 516 · vitest 284 · 게이트 green · 실버킷 실호출. **Ted 판정 대기(8차 ㉯ `〈174〉`)** — 재개는 정본 Policy §7.1·§9 개정 제안 |
-| F-2 파일 관리 | 🟧 | 코드 완료 5커밋 — `4328c0b` 0009 · `2799376` 계약 동결+파일 메타 · `9491966` 본체 변경 · `8e86097` FE · `ca5ccfc` 다운로드. 실측 pytest 567 · vitest 316 · tsc 0 · 게이트 전 종 green · 실호출 증거 2건(`sessions/F2-evidence-*`·`U1-evidence-*`). 값·근거 = `PLAN-SoT §9 〈175〉〈177〉` · 지시서 `sessions/F2.md`. **🟧 사유 = Ted 판정 대기(9차 ㉯, 8차와 한 번에) + staging 배포 전(0009 백필 창 — 백업 회차 확인 선행)** |
-| I-D dev 환경 | 🟧 | **선다 — 확인 지점 G1~G13 통과**(`〈178〉`-㉸). `deploy_doctor` 14/14 exit 0 · 브라우저 업로드 실측(MODIS HDF4 8건 55 MB). 🟧 인 이유 = **완료 정의의 「미리보기 1건 실호출」이 미충족**(배선은 다 섰고 `previews/` 객체 0건 — 미리보기 개발이 예정돼 지금 재면 곧 무효다). **부분 완료로 닫지 않는다** |
-| V-3 worker·viz S3 읽기 | ✅ | **내려받아 읽기 + 커널 바이트 동일 복제 6**(`〈178〉`-㉴ · 등기 `manifest.toml`). worker `ports/blobs.py` · viz `SourcePort.materialize` + `preview_sink`. 캐시 키는 mtime 이 아니라 **ETag** — 안 그러면 `previews/` 가 렌더마다 는다. **완료 정의는 이 회차에 확정했다** |
+| U-1 S3 직행 + 중단 재개 | 🟧 | 6커밋(`9fa1024`~`6f10eb7`) — 저장 Port · 전송 9 op · `0008` · FE 엔진·배너. 실측 pytest 516 · vitest 284 · 게이트 green · 실버킷 실호출. **Ted 판정 대기(8차 ㉯ `〈277〉`)** — 재개는 정본 Policy §7.1·§9 개정 제안 |
+| F-3 파일 관리 (구 `F-2` — 병합에서 개명) | 🟧 | 코드 완료 5커밋 — `4328c0b` 0009 · `2799376` 계약 동결+파일 메타 · `9491966` 본체 변경 · `8e86097` FE · `ca5ccfc` 다운로드. 실측 pytest 567 · vitest 316 · tsc 0 · 게이트 전 종 green · 실호출 증거 2건(`sessions/F2-evidence-*`·`U1-evidence-*`). 값·근거 = `PLAN-SoT §9 〈278〉〈280〉` · 지시서 `sessions/F2.md`. **🟧 사유 = Ted 판정 대기(9차 ㉯, 8차와 한 번에) + staging 배포 전(0009 백필 창 — 백업 회차 확인 선행)** |
+| I-D dev 환경 | 🟧 | **선다 — 확인 지점 G1~G13 통과**(`〈281〉`-㉸). `deploy_doctor` 14/14 exit 0 · 브라우저 업로드 실측(MODIS HDF4 8건 55 MB). 🟧 인 이유 = **완료 정의의 「미리보기 1건 실호출」이 미충족**(배선은 다 섰고 `previews/` 객체 0건 — 미리보기 개발이 예정돼 지금 재면 곧 무효다). **부분 완료로 닫지 않는다** |
+| V-3 worker·viz S3 읽기 | ✅ | **내려받아 읽기 + 커널 바이트 동일 복제 6**(`〈281〉`-㉴ · 등기 `manifest.toml`). worker `ports/blobs.py` · viz `SourcePort.materialize` + `preview_sink`. 캐시 키는 mtime 이 아니라 **ETag** — 안 그러면 `previews/` 가 렌더마다 는다. **완료 정의는 이 회차에 확정했다** |
 
 ### T-C 정리
 | WU | 상태 | 비고 |

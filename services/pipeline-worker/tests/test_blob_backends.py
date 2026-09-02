@@ -1,4 +1,4 @@
-"""업로드 바이트 읽기 어댑터 두 벌 (`kernel/blob_backends.py` · `PLAN-SoT §9 〈178〉-㉴` V-3).
+"""업로드 바이트 읽기 어댑터 두 벌 (`kernel/blob_backends.py` · `PLAN-SoT §9 〈281〉-㉴` V-3).
 
 로컬 어댑터는 `app/worker.py` 에 있던 `_storage_path`+`_named_view` 의 **이사**라 동작 등가를,
 S3 어댑터는 스텁 클라이언트로 호출 형태(내려받기 → 임시파일 → rename · 크기 대조 · 처리 뒤 삭제)를

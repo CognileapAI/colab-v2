@@ -1,4 +1,4 @@
-"""환경 판정 — `COLAB_VIZ_SOURCE_MODE`·`COLAB_VIZ_PREVIEW_SINK` 와 s3 필수값 (`〈178〉-㉱`).
+"""환경 판정 — `COLAB_VIZ_SOURCE_MODE`·`COLAB_VIZ_PREVIEW_SINK` 와 s3 필수값 (`〈281〉-㉱`).
 
 순수 시험 — `kernel/config.py`·`kernel/health.py` 만 import 한다.
 `../core-api/.venv/bin/python -m pytest tests/test_source_mode_env.py -q --noconftest`

@@ -11,8 +11,8 @@
 가져온 이력 — P2 가 열둘(업로드 6 · 계보 확정 3 · 미리보기 중계 2 · AI 제안 중계 1),
 S1 이 `searchDatasets`·`listPalettes`·`listDatasetFieldSuggestions` 를 **신설과 동시에**
 (`〈80〉-㉯ 5` — 열어 두고 안 만들면 501 이 는다), P5 가 프로젝트 셋, `〈90〉` 세션 둘,
-`〈127〉`·`〈150〉` 수정 op 셋, 8차 해제(`〈174〉`)가 프리사인드 전송 9 op(local 모드에서는
-정직한 501), 9차 해제 C2(`〈175〉-(다)`)가 다운로드 셋(`download.router` — 티켓 둘 + 바이트 하나,
+`〈127〉`·`〈150〉` 수정 op 셋, 8차 해제(`〈277〉`)가 프리사인드 전송 9 op(local 모드에서는
+정직한 501), 9차 해제 C2(`〈278〉-(다)`)가 다운로드 셋(`download.router` — 티켓 둘 + 바이트 하나,
 바이트 op 은 `security: []` 로 **티켓이 곧 자격**이다).
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.authenticators, app.state.session_issuer = authn.build(
         registry=app.state.subjects, signer=_signer,
         credentials=CredentialStore.from_file(settings.credentials_file))
-    # 다운로드 티켓 서명기 — **같은 비밀값**으로 선다 (`〈175〉-(다)`). 비밀값이 없으면 세우지
+    # 다운로드 티켓 서명기 — **같은 비밀값**으로 선다 (`〈278〉-(다)`). 비밀값이 없으면 세우지
     # 않고 다운로드 op 셋이 503 을 낸다(`routes/download.py`). 조용한 기본 키는 없다.
     app.state.download_tickets = (DownloadTicketSigner(settings.session_secret)
                                   if settings.session_secret else None)
@@ -98,7 +98,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
     # 저장 배관 진단 — 배포 검사기(`ops/deploy_doctor.py` ⑪)가 「앱이 어떤 자격증명으로 S3 에 가는가」를
-    # 묻는 자리다 (`PLAN-SoT §9 〈178〉-㉲`). 역시 계약 밖 · `/api/v1` 밖. **키 값은 절대 싣지 않는다** —
+    # 묻는 자리다 (`PLAN-SoT §9 〈281〉-㉲`). 역시 계약 밖 · `/api/v1` 밖. **키 값은 절대 싣지 않는다** —
     # 출처(`env|ecs|imds`)와 만료 시각만. 자격증명 사슬이 1초 안에 답하지 않으면 `credentialSource: null`
     # 과 사유 한 줄로 답한다 — 헬스 경로가 IMDS 타임아웃에 매달리면 오케스트레이터가 멀쩡한 프로세스를 죽인다.
     @app.get("/healthz/storage", include_in_schema=False)

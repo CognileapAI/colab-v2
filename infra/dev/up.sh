@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# EC2 위에서 — 마이그레이션(두 체인) → 앱 4 단위 기동 → **healthy 를 기다린다** (`〈178〉-㉮`).
+# EC2 위에서 — 마이그레이션(두 체인) → 앱 4 단위 기동 → **healthy 를 기다린다** (`〈281〉-㉮`).
 #
 # fail-closed 다: 하나라도 healthy 가 안 되면 exit 1 (staging deploy.sh 가 fail-open 이라 「살아 있다고 대답만 하는」
 # 컨테이너를 놓쳤던 교훈). 환경변수는 /opt/colab-v2/dev.env(0600)에서 — 시크릿 **값**(세션·VIZ 토큰·타일 비밀·OPENAI)

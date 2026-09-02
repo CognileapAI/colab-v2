@@ -1,11 +1,11 @@
 /**
- * S-05 데이터셋 상세 — **파일 관리** (`PLAN-SoT §9 〈175〉` · 회의 결정 · 정본 카피 없음).
+ * S-05 데이터셋 상세 — **파일 관리** (`PLAN-SoT §9 〈278〉` · 회의 결정 · 정본 카피 없음).
  *
  * 정본이 못 박은 두 문장은 그대로다 — 「파일」 칸은 `조각 N개 · 합계 MB` 만 말하고,
- * 「목록은 사람이 눌렀을 때 연다」(`Policy_데이터셋_상세 §5`). 나머지 라벨은 `[정본 무근거 · 〈175〉]`.
+ * 「목록은 사람이 눌렀을 때 연다」(`Policy_데이터셋_상세 §5`). 나머지 라벨은 `[정본 무근거 · 〈278〉]`.
  *
  * 서버는 아직 이 op 들에 501/409 를 낸다 — 시험은 `FileSource` 스텁으로 계약만 본다.
- * 다운로드는 `<a href>` 가 아니라 **티켓**이다 (`〈175〉-(다)` — Bearer 는 링크에 실리지 않는다).
+ * 다운로드는 `<a href>` 가 아니라 **티켓**이다 (`〈278〉-(다)` — Bearer 는 링크에 실리지 않는다).
  * fireEvent 를 쓴다 — user-event 를 새로 들이지 않는다 (집 관례).
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -59,7 +59,7 @@ function FILES(): DatasetFile[] {
       fileId: F3,
       fileName: 'README.txt',
       kind: '본체',
-      byteSize: null, // `d3_file.size_bytes` NULL — 0 이 아니다 (`〈175〉-(가)`)
+      byteSize: null, // `d3_file.size_bytes` NULL — 0 이 아니다 (`〈278〉-(가)`)
       createdAt: '2026-08-11T00:00:00Z',
     },
     {
@@ -286,7 +286,7 @@ describe('파일별 종류 · 크기 · 시각', () => {
   });
 });
 
-describe('다운로드 — 링크가 아니라 티켓이다 (`〈175〉-(다)`)', () => {
+describe('다운로드 — 링크가 아니라 티켓이다 (`〈278〉-(다)`)', () => {
   it('행 다운로드는 `downloadTicket(datasetId, fileId)` 를 부르고 그 티켓이 startDownload 로 간다', async () => {
     const { source, calls } = fakeFiles();
     const { downloads } = mount({ files: source });

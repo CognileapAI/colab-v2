@@ -139,7 +139,7 @@ export function DatasetDetailPage(
               />
               <div className="dt-gridact" data-testid="detail-grid-actions">
                 {/* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
-                    (`〈175〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */}
+                    (`〈278〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */}
                 <ActionGate allowed={detail.detail.actions.canDownload}>
                   <button
                     type="button"
@@ -147,7 +147,7 @@ export function DatasetDetailPage(
                     data-testid="dt-download"
                     onClick={downloadAll}
                   >
-                    다운로드{/* [정본 무근거 · 〈175〉] — 카탈로그 빠른 작업의 같은 낱말 */}
+                    다운로드{/* [정본 무근거 · 〈278〉] — 카탈로그 빠른 작업의 같은 낱말 */}
                   </button>
                 </ActionGate>
                 {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이

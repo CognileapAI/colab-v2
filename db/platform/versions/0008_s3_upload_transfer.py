@@ -1,4 +1,4 @@
-"""0008 — 프리사인드 전송 원장 2표 신설 + `d5_upload_file.relative_path` (〈173〉·〈174〉).
+"""0008 — 프리사인드 전송 원장 2표 신설 + `d5_upload_file.relative_path` (〈276〉·〈277〉).
 
 무엇
   ⑴ `d5_upload_transfer` · `d5_upload_transfer_file` — 저장 모드 s3 의 **전송 전용 원장.**

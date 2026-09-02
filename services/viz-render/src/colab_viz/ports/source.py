@@ -4,7 +4,7 @@
 표를 직접 읽으면 불변규칙 1(도메인은 자기 표 + D1만)을 깬다. 그래서 이 seam 은
 「식별자 → 본체 파일들 + 기준 격자 자리」만 요구하는 Protocol 로 두고, 어댑터를 갈아 끼운다.
 
-어댑터 둘 — **파일시스템**(core-api 가 놓은 디스크 그대로) · **S3**(`PLAN-SoT §9 〈178〉-㉴` V-3 —
+어댑터 둘 — **파일시스템**(core-api 가 놓은 디스크 그대로) · **S3**(`PLAN-SoT §9 〈281〉-㉴` V-3 —
 버킷의 대상을 **작업 디렉터리로 내려받아** 같은 배치로 놓는다). 읽기 쪽(`readers.py`·`detect_format`)은
 로컬 경로·랜덤 액세스를 전제하므로 두 어댑터 모두 `resolve` → `materialize` 뒤에는 **로컬 경로**를 낸다.
 파일시스템의 `materialize` 는 항등이다.
@@ -159,7 +159,7 @@ def _pick(parts: list[SourcePart], file_ids: list[str] | None, target_id: str) -
 
 
 class S3SourcePort:
-    """버킷의 대상을 작업 디렉터리에 **같은 배치로** 내려받는다 (`〈178〉-㉴`).
+    """버킷의 대상을 작업 디렉터리에 **같은 배치로** 내려받는다 (`〈281〉-㉴`).
 
     - `resolve` 는 목록(`ListObjectsV2`, 접두사 하나)만 본다 — 바이트를 만지지 않는다. 크기는 목록 값이고
       경로는 **작업 디렉터리의 예정 경로**다(`storage_layout.storage_path(workdir, …)`).

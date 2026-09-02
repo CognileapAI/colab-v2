@@ -31,7 +31,7 @@ fi
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 
-# ── 접속 경로 두 갈래 (`PLAN-SoT §9 〈178〉-㉰`).
+# ── 접속 경로 두 갈래 (`PLAN-SoT §9 〈281〉-㉰`).
 #   기본(미설정) = 현행 그대로 — staging 의 postgres **컨테이너** 안에서 슈퍼유저로.
 #   `COLAB_PG_MASTER_URL_FILE` 이 있으면 = 그 파일의 마스터 접속 문자열로 **원격 DB(RDS)** 에 —
 #   일회용 `postgres:16-alpine` 컨테이너의 psql 이 붙는다(버전 16 일치). 값은 파일에서만 읽고 출력하지 않는다.
@@ -73,7 +73,7 @@ app-grants)
   # 앱 롤 — core-api 의 유일한 접속 주체. 정본은 services/core-api/ops/app-role.sql 이다.
   # 여기서 다시 쓰지 않고 그 파일을 그대로 먹인다 (마지막 두 검사가 fail-closed 다).
   # colab_ai 에는 만들지 않는다 — 이 롤은 core-api 배포 단위 하나의 접속 주체다.
-  # `su_psql` 을 거친다 — 원격 갈래(RDS)에서도 같은 파일을 같은 롤로 먹인다(`〈178〉`-㉰: 이 줄이 직접 exec 였다).
+  # `su_psql` 을 거친다 — 원격 갈래(RDS)에서도 같은 파일을 같은 롤로 먹인다(`〈281〉`-㉰: 이 줄이 직접 exec 였다).
   su_psql -d colab_platform \
     -v owner=colab_owner -v app=colab_app -v app_password="$COLAB_APP_PASSWORD" \
     < "$REPO/services/core-api/ops/app-role.sql" >/dev/null

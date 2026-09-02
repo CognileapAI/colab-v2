@@ -86,7 +86,7 @@ def create_render(body: RenderRequest, request: Request) -> dict:
                                "targetBytes": total})
 
     # 413 판정은 목록 크기로 했다 — 여기서 바이트를 실제로 놓는다(파일시스템은 항등, s3 는 내려받기).
-    # `detect_format` 이 파일 전체를 요구하므로 요청 스레드에서 한다 — 지연은 `〈176〉` 전환 조건의 실측 항목.
+    # `detect_format` 이 파일 전체를 요구하므로 요청 스레드에서 한다 — 지연은 `〈279〉` 전환 조건의 실측 항목.
     try:
         target = source.materialize(target)
     except (SizeMismatch, WorkspaceExceeded) as e:

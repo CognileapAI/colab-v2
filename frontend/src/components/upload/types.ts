@@ -39,7 +39,7 @@ export class TransferInterrupted extends Error {
 export interface PickedFile {
   file: File;
   kind: FileKind;
-  /** 폴더째 드롭에서 왔을 때의 `폴더/이름` 상대 경로 (`dropTree.ts` · `〈173〉`). 낱개 파일은 없음. */
+  /** 폴더째 드롭에서 왔을 때의 `폴더/이름` 상대 경로 (`dropTree.ts` · `〈276〉`). 낱개 파일은 없음. */
   relativePath?: string;
 }
 
@@ -52,7 +52,7 @@ export class GridAxisTaken extends Error {}
 /** 확정할 격자가 없다 — 판별에 실패했거나 형상이 어긋났다 (계약 400 · `〈66〉`). */
 export class NoResolvedGrid extends Error {}
 
-/** `create` 의 선택 인자 — 프리사인드 전송(〈174〉)에서만 의미를 갖는다. */
+/** `create` 의 선택 인자 — 프리사인드 전송(〈277〉)에서만 의미를 갖는다. */
 export interface UploadCreateOptions {
   /** 배너·목록에 보일 묶음 이름. */
   sourceLabel?: string;
@@ -61,7 +61,7 @@ export interface UploadCreateOptions {
   onProgress?: (p: { sentBytes: number; totalBytes: number }) => void;
 }
 
-/** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈174〉). */
+/** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈277〉). */
 export interface IncompleteTransferItem {
   uploadId: string;
   sourceLabel: string;

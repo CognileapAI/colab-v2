@@ -456,7 +456,7 @@ def dataset_exists(session: Session, dataset_id: Ulid) -> bool:
 
 
 def list_files(session: Session, dataset_id: Ulid) -> list[dict]:
-    """계약 `DatasetFile` 목록. 조립은 `file_ref` 하나가 한다 (`〈175〉-(가)`)."""
+    """계약 `DatasetFile` 목록. 조립은 `file_ref` 하나가 한다 (`〈278〉-(가)`)."""
     rows = session.execute(_FILES, {"dataset_id": str(dataset_id)}).mappings().all()
     return [file_ref(_file_row(r)) for r in rows]
 
@@ -465,11 +465,11 @@ def file_ref(row: FileRow) -> dict:
     """계약 `DatasetFile` 조립 — **모든 파일 응답이 이 함수를 지난다**
     (`listDatasetFiles` · `addDatasetFile` · `attachUploadGridFiles` · `replaceDatasetGridFile`
     · 축 뒤집기). 다섯 자리가 각자 dict 를 만들면 한 자리만 `byteSize` 를 빠뜨려도 계약
-    위반이 조용히 지나간다 (`PLAN-SoT §9 〈175〉-(가)`).
+    위반이 조용히 지나간다 (`PLAN-SoT §9 〈278〉-(가)`).
 
     · `byteSize` — 모르면 `null`. 0 으로 적지 않는다 (계약 산문).
     · `createdAt` — ISO 8601, UTC `Z`.
-    · `relativePath` — **있을 때만** 키가 선다 (`〈175〉-(나)`).
+    · `relativePath` — **있을 때만** 키가 선다 (`〈278〉-(나)`).
     · `gridAxis` — **기준 격자 파일에만** 붙는다 (`K-3` · `〈80〉-㉯ 3`). 본체에 자리를 만들면
       없는 사실을 있는 척하게 된다 — `0004` 의 CHECK 가 축 붙은 본체를 애초에 만들지 않는다.
     """
@@ -495,7 +495,7 @@ _BODY_FILE_COUNT = text("""
 
 def body_file_count(session: Session, dataset_id: Ulid) -> int:
     """그 데이터셋의 **본체** 행 수 — 본체 ≥ 1 불변식(`DataModel §4.3`)의 판정 재료.
-    본체 삭제(`〈175〉-(라)`)가 「마지막 본체인가」를 이 값으로 가른다.
+    본체 삭제(`〈278〉-(라)`)가 「마지막 본체인가」를 이 값으로 가른다.
 
     ⚠ 본체 테이블이라 잠긴 데이터셋에서는 0 이 나온다 — 그 경우 호출자는 이미 `body_access`
     에서 막혀 여기 오지 않는다. 메타 열 `file_count` 를 쓰지 않는 이유는 그 열이 격자를 포함한
@@ -637,7 +637,7 @@ _CONFIRM_LINEAGE = text("""
 """)
 
 # `마지막 수정` 을 **미는** 자리 — 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이
-# 바뀌었을 때**(`〈175〉-(라)` · 권고, Ted 판정 대기)뿐이다. 격자 변경은 여기 오지 않는다(위 주석).
+# 바뀌었을 때**(`〈278〉-(라)` · 권고, Ted 판정 대기)뿐이다. 격자 변경은 여기 오지 않는다(위 주석).
 _TOUCH_LAST_MODIFIED = text("""
     UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id
 """)
@@ -648,7 +648,7 @@ _LOCK_DATASET = text("""
     SELECT id FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL FOR UPDATE
 """)
 
-# `bundle_file_name` 따라가기 (`[정본 무근거]` · `〈175〉-(라)`). 등록 전환이 **첫 본체의 이름**으로
+# `bundle_file_name` 따라가기 (`[정본 무근거]` · `〈278〉-(라)`). 등록 전환이 **첫 본체의 이름**으로
 # 세운 값이라(`routes/ingestion.create_dataset`), 그 본체가 지워지거나 이름이 바뀌면 지워진
 # 파일의 이름이 상세의 `fileName` 에 남는다. **옛 이름과 같을 때만** 남은 본체 중 가장 오래된
 # 것의 이름으로 옮긴다 — 다른 값이 적혀 있으면 사람이 바꾼 묶음 이름이므로 건드리지 않는다.
@@ -675,7 +675,7 @@ class FileRow:
     carries_lon: bool
     #: 행이 선 시각 (`d3_file.created_at`). 계약 `DatasetFile.createdAt` 의 원천.
     created_at: dt.datetime
-    #: 폴더째 업로드의 `폴더/이름` (`0009` · `〈175〉-(나)`). 낱개 파일은 None.
+    #: 폴더째 업로드의 `폴더/이름` (`0009` · `〈278〉-(나)`). 낱개 파일은 None.
     relative_path: str | None = None
 
 
@@ -775,7 +775,7 @@ def touch_last_modified(session: Session, dataset_id: Ulid) -> None:
     """`마지막 수정` 을 지금으로 민다 — 파생인 `계보 상태` 가 `확인 필요` 로 접히는 신호다.
 
     부르는 자리는 둘뿐이다: 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이 바뀌었을 때**
-    (`routes/ingestion._record_body_activity` · `〈175〉-(라)`). 격자 변경은 부르지 않는다(`〈60〉-①`).
+    (`routes/ingestion._record_body_activity` · `〈278〉-(라)`). 격자 변경은 부르지 않는다(`〈60〉-①`).
     """
     session.execute(_TOUCH_LAST_MODIFIED, {"dataset_id": str(dataset_id)})
 
@@ -837,7 +837,7 @@ def replace_file(session: Session, *, file_id: Ulid, file_name: str,
     """교체는 **행을 갈아 끼우지 않고 같은 행의 본체를 바꾼다** — `fileId` 가 유지돼야
     계보·활동 기록이 같은 대상을 가리킨다. 축(`carries_*`)은 건드리지 않는다: 새 파일의
     축은 파일을 읽는 쪽이 다시 정한다. `relative_path`·`created_at` 도 그대로다 — 폴더 안의
-    자리와 행이 선 시각은 바이트를 갈아 끼웠다고 바뀌는 사실이 아니다 (`〈175〉-(나)·(라)`).
+    자리와 행이 선 시각은 바이트를 갈아 끼웠다고 바뀌는 사실이 아니다 (`〈278〉-(나)·(라)`).
     `size_bytes` 의 차분은 `0009` 트리거가 `total_size_bytes` 로 옮긴다."""
     r = session.execute(_UPDATE_FILE, {
         "file_id": str(file_id), "file_name": file_name, "size_bytes": size_bytes,

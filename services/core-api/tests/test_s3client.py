@@ -165,7 +165,7 @@ def test_delete_objects_sends_md5_and_batches():
     assert any(h.lower() == "content-md5" for h in headers)
 
 
-# ── 다운로드 (`〈175〉-(다)`) — presign_get · get_object_stream ──────────────
+# ── 다운로드 (`〈278〉-(다)`) — presign_get · get_object_stream ──────────────
 
 class StreamStub:
     """스트림 전송 대역 — (status, headers, body) 큐. 2xx 본문은 읽기 객체로 준다."""

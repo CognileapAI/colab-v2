@@ -36,7 +36,7 @@ MANIFEST = pathlib.Path(
     os.environ.get("COLAB_DB_BOUNDARY_MANIFEST") or (REPO_ROOT / "gates/config/db-boundaries.toml")
 )
 ROOT = pathlib.Path(os.environ.get("COLAB_DB_BOUNDARY_ROOT") or REPO_ROOT)
-#: 보는 compose 는 **둘 다**다 — staging(`compose.i2.yml`)과 dev(`infra/dev/compose.yml`, `〈178〉`).
+#: 보는 compose 는 **둘 다**다 — staging(`compose.i2.yml`)과 dev(`infra/dev/compose.yml`, `〈281〉`).
 #: `COLAB_DB_BOUNDARY_COMPOSE` 로 바꿀 수 있다(단일 경로 또는 `:` 목록 — selftest 가 단일 경로를 준다).
 #: 목록 중 하나라도 없으면 red 다 — 없는 파일을 건너뛰면 그 배선이 조용히 사각이 된다.
 _COMPOSE_ENV = os.environ.get("COLAB_DB_BOUNDARY_COMPOSE")

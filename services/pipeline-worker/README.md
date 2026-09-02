@@ -77,7 +77,7 @@ HSR 두 격자는 **행·열 각 1셀(500 m) off-by-one** 만큼 어긋난다 �
 - at-least-once 전제 — 소비자가 멱등 키로 거른다
 - TTL 초과 처리중 → 실패로 회수하는 reaper 필요
 
-## 저장 모드 — 바이트를 어디서 읽나 (`ports/blobs.py` · `kernel/blob_backends.py` · `PLAN-SoT §9 〈178〉-㉴`)
+## 저장 모드 — 바이트를 어디서 읽나 (`ports/blobs.py` · `kernel/blob_backends.py` · `PLAN-SoT §9 〈281〉-㉴`)
 
 감지·파싱은 로컬 경로만 본다. 그 경로에 바이트를 놓는 것이 `UploadBlobPort` 다 — s3 모드는 키를
 **통째로 내려받는다**(부분·스트림 아님 — netCDF4·h5py·pyhdf 와 매직 try-open 이 파일 전체를 요구한다).

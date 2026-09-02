@@ -43,7 +43,7 @@ export function CatalogTable(props: {
   state: CatalogState;
   uploaderNames: Map<string, string>;
   onOpen: (datasetId: string) => void;
-  /** 빠른 작업의 다운로드 — 링크가 아니라 **티켓**이다 (`〈175〉-(다)`). 티켓 발급·저장은 부르는 쪽이 한다. */
+  /** 빠른 작업의 다운로드 — 링크가 아니라 **티켓**이다 (`〈278〉-(다)`). 티켓 발급·저장은 부르는 쪽이 한다. */
   onDownload: (datasetId: string) => void;
 }) {
   const { state } = props;
@@ -197,7 +197,7 @@ export function CatalogTable(props: {
                       {EYE}
                     </button>
                     {/* `<a href>` 가 아니다 — Bearer 는 fetch 미들웨어 한 자리에만 붙고 링크에는
-                        실리지 않는다 (`api/client.ts` · `〈175〉-(다)`). 버튼이 티켓을 받아 저장을 연다 */}
+                        실리지 않는다 (`api/client.ts` · `〈278〉-(다)`). 버튼이 티켓을 받아 저장을 연다 */}
                     <button
                       type="button"
                       className="rab"

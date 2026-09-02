@@ -1,4 +1,4 @@
-"""오라클 — 프리사인드 전송 9 op (`routes/upload_transfers.py` · 동결 해제 8차 `〈174〉`).
+"""오라클 — 프리사인드 전송 9 op (`routes/upload_transfers.py` · 동결 해제 8차 `〈277〉`).
 
 S3 는 가짜 클라이언트를 앱 상태에 꽂아 검증한다 — 실전 S3 왕복은 `ops/s3_smoke.py` 와
 동결 해제 증거의 실호출이 한다. 핵심 오라클 다섯:
@@ -288,12 +288,12 @@ def test_permission_gate_blocks_initiate(p2_client) -> None:
 
 # ═════════════════ s3 폴더 종단 — 전송 → 완결 → 등록 → d3_file ═══════════════
 def test_s3_folder_survives_to_d3_file(p2_client, sql) -> None:
-    """폴더째 올린 구조가 **등록 뒤에도** 산다 (`〈175〉`-(나) · `0009`).
+    """폴더째 올린 구조가 **등록 뒤에도** 산다 (`〈278〉`-(나) · `0009`).
 
     ⚠ **이 시험은 red 로 시작하지 않는다.** 승계 코드가 이미 있어 지금도 통과한다.
        오라클이 아니라 **사각지대의 봉인**이다 — `d5→d3` 승계는 form-data 로만 시험됐고
        (`test_dataset_registration.py`), s3(프리사인드) 경로의 종단은 **0건**이었다.
-       WU F-2 완료 정의도 s3 는 「프리사인드 GET 1건」만 요구했다(`WORK-UNITS.md`).
+       WU F-3(구 `F-2`) 완료 정의도 s3 는 「프리사인드 GET 1건」만 요구했다(`WORK-UNITS.md`).
 
     ⚠ `ready` 를 기다리지 않는다 — s3 모드에서 worker·viz 는 로컬 경로만 읽는다(`S3.md §4`).
        기다리면 dev 실물에서 영원히 안 끝나는 조건을 시험이 정답으로 박는다.

@@ -442,8 +442,8 @@ CREATE TABLE d3_file (
   created_at   timestamptz NOT NULL DEFAULT now(),
   carries_lat  boolean     NOT NULL DEFAULT false,
   carries_lon  boolean     NOT NULL DEFAULT false,
-  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0009 · 〈175〉-(나)). 낱개 파일은 NULL.
-  -- 접수 원장 `d5_upload_file.relative_path`(0008 · 〈173〉-③)를 등록 전환 때 **그대로** 승계한다 —
+  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0009 · 〈278〉-(나)). 낱개 파일은 NULL.
+  -- 접수 원장 `d5_upload_file.relative_path`(0008 · 〈276〉-③)를 등록 전환 때 **그대로** 승계한다 —
   -- 저장 키에는 넣지 않는다. 키 규약(contracts/storage/layout.json)은 세 배포 단위의 공유
   -- 정본이라 여기 메타로만 보존한다. **맨 뒤에 선언한다** — `ALTER TABLE ADD COLUMN` 은
   -- 열을 뒤에 붙이고 선언 순서가 다르면 schema-diff 가 red 를 낸다 (d3_dataset 의 0007 주석).
@@ -547,7 +547,7 @@ CREATE TRIGGER d3_file_count_move
   REFERENCING OLD TABLE AS old_files NEW TABLE AS new_files
   FOR EACH STATEMENT EXECUTE FUNCTION sync_dataset_file_count();
 
--- 용량 합계 유지 (`0009` · 〈175〉). `d3_dataset_autometa.total_size_bytes` 를 위의
+-- 용량 합계 유지 (`0009` · 〈278〉). `d3_dataset_autometa.total_size_bytes` 를 위의
 -- `sync_dataset_file_count` 와 **같은 기구**로 움직인다 — `file_count` 와 같은 표·같은 사건을
 -- 다른 기구로 움직이면 드리프트 유형이 둘이 된다.
 --   · **다시 세지 않고 증분으로 더한다** — 다시 세면 `body_access` 아래서 잠긴 데이터셋이 0 이 된다
@@ -715,7 +715,7 @@ CREATE TABLE d5_upload_file (
   -- 파이프라인이 매직바이트로 판정한 포맷 (`file.format-detected`). 확장자가 아니다.
   detected_format  text,
   created_at       timestamptz NOT NULL DEFAULT now(),
-  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0008 · 〈173〉). 낱개 파일은 NULL.
+  -- 폴더째 업로드에서 온 파일의 `폴더/이름` 상대 경로 (0008 · 〈276〉). 낱개 파일은 NULL.
   -- 저장 키에는 넣지 않는다 — 키 규약(contracts/storage/layout.json)은 세 배포 단위의
   -- 공유 정본이라 여기 메타로만 보존한다. 등록 후(d3) 표시는 `0009` 의 `d3_file.relative_path`.
   -- `created_at` **뒤에** 선언한다 — 0008 은 `ALTER TABLE ADD COLUMN` 이라 열이 맨 뒤에 붙고,
@@ -736,7 +736,7 @@ CREATE UNIQUE INDEX d5_upload_file_one_lat_grid_per_upload
 CREATE UNIQUE INDEX d5_upload_file_one_lon_grid_per_upload
   ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lon;
 
--- 프리사인드 전송 원장 (0008 · 〈174〉 동결 해제 8차) — 저장 모드 s3 에서만 쓰인다.
+-- 프리사인드 전송 원장 (0008 · 〈277〉 동결 해제 8차) — 저장 모드 s3 에서만 쓰인다.
 -- **전송이 완결되기 전의 상태**만 담는다: 완결(complete)되는 순간 같은 ULID 로
 -- `d5_upload` 가 서고(upload.accepted 발행), 이후는 기존 원장의 세계다.
 -- 격자 파일도 여기엔 행이 선다 — 축 CHECK 가 없는 전송 전용 표라서다. `d5_upload_file`
@@ -891,7 +891,7 @@ CREATE TABLE d8_download (
   account_id     ulid        NOT NULL REFERENCES d1_account(id),
   dataset_id     ulid        NOT NULL,
   downloaded_at  timestamptz NOT NULL DEFAULT now(),
-  -- 파일 단위 내려받기 (`0009` · 〈175〉-(다)). NULL = 데이터셋 묶음, 값 = 그 파일 하나.
+  -- 파일 단위 내려받기 (`0009` · 〈278〉-(다)). NULL = 데이터셋 묶음, 값 = 그 파일 하나.
   -- **FK 없음** — append-only 이력은 파일이 지워져도 남는다. `[정본 무근거]` — 정본 §6.2 는
   -- 누가·어느 데이터셋·언제까지만 적는다. `dataset_id` 와 같은 bare 컬럼이다 (D8 → D3 직접 FK 금지).
   file_id        ulid

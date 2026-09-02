@@ -7,7 +7,7 @@ P0 은 저장 자리만 만들었고 **WU-P7 이 집계 3종을 열었다** —
 프로젝트)는 D3·D4·D2·D6 의 사실이라 여기서 한 줄도 질의하지 않는다 — 조립 루트가
 각 도메인의 모듈 함수로 받아 합친다 (`CLAUDE.md §3-1` · `routes/catalog.py` 와 같은 무늬).
 
-**쓰는 자리 둘** — `〈60〉` 좌표계·격자 변경 활동 기록(P2) · `〈175〉-(다)` 다운로드 이력(C2).
+**쓰는 자리 둘** — `〈60〉` 좌표계·격자 변경 활동 기록(P2) · `〈278〉-(다)` 다운로드 이력(C2).
 """
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ _INSERT_DOWNLOAD = text("""
 
 def record_download(session: Session, *, account_id: Ulid, dataset_id: Ulid,
                     file_id: Ulid | None) -> str:
-    """다운로드 이력 한 줄 — **티켓 발급 시점**에 (`〈175〉-(다)` · `DataModel §6.2`).
+    """다운로드 이력 한 줄 — **티켓 발급 시점**에 (`〈278〉-(다)` · `DataModel §6.2`).
 
     `file_id` 가 None 이면 데이터셋 묶음(zip), 값이면 그 조각 하나(`0009`). append-only 표라
     고치거나 지울 수 없다. **바이트 시점에는 쓰지 않는다** — 티켓을 받고 안 받는 것은 그 사람의

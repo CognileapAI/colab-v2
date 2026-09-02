@@ -4,7 +4,7 @@
 DeleteObjects, ListObjects. 파일 바이트를 나르는 PUT 은 브라우저가 프리사인드
 URL 로 하므로 여기 없다 — 컨트롤 플레인은 서버, 데이터 플레인은 브라우저 (dev-package/S3.md §3).
 
-**예외 하나 — 묶음 다운로드의 GetObject** (`PLAN-SoT §9 〈175〉-(다)`): zip 은 서버가 만들어야
+**예외 하나 — 묶음 다운로드의 GetObject** (`PLAN-SoT §9 〈278〉-(다)`): zip 은 서버가 만들어야
 하므로 `get_object_stream` 이 S3 GET 을 **청크로** 흘려보낸다. 단일 파일은 여전히 브라우저가
 프리사인드 GET(`presign_get`)으로 직접 받는다. 본문 없는 GET 이라 `content-type` 함정이 없다.
 
@@ -277,7 +277,7 @@ class S3Client:
 
     def presign_get(self, key: str, *, query: dict[str, str] | None = None,
                     expires: int, now: datetime) -> str:
-        """브라우저가 직접 GET 할 프리사인드 URL — `presign_put` 의 대칭 (`〈175〉-(다)` 단일 파일).
+        """브라우저가 직접 GET 할 프리사인드 URL — `presign_put` 의 대칭 (`〈278〉-(다)` 단일 파일).
 
         `query` 에 `response-content-disposition` 을 실으면 S3 가 그 헤더로 응답한다 —
         저장 이름(`DownloadTicket.fileName`)이 core 를 거치지 않고도 지켜지는 길이다.

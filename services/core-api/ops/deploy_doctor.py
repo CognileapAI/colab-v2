@@ -1,4 +1,4 @@
-"""`deploy_doctor` — 배포 상태 검사기 (dev-package/S3.md §2 · PLAN-SoT §9 〈178〉-㉲).
+"""`deploy_doctor` — 배포 상태 검사기 (dev-package/S3.md §2 · PLAN-SoT §9 〈281〉-㉲).
 
 `s3_doctor` 가 「버킷 설정이 맞는가」 하나를 본다면, 이 스크립트는 **배포 한 벌이 서 있는가**를
 14 항목으로 본다 — 운영자 자격증명 · 버킷 둘 · DB 둘 · 스키마 head 둘 · RLS 전수 · 앱 롤 ·

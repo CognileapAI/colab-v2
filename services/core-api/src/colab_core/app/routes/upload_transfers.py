@@ -1,4 +1,4 @@
-"""프리사인드 전송 8 op — 브라우저→S3 직행 (동결 해제 8차 · `PLAN-SoT §9 〈174〉`).
+"""프리사인드 전송 8 op — 브라우저→S3 직행 (동결 해제 8차 · `PLAN-SoT §9 〈277〉`).
 
 컨트롤 플레인(계획·URL 발급·실측 검증·완결·중단)은 서버가, 데이터 플레인(바이트 PUT)은
 브라우저가 프리사인드 URL 로 한다. **파트의 정본은 S3 ListParts 다** — 클라이언트의
@@ -33,7 +33,7 @@ router = APIRouter()
 #: 수명이고 이것은 접수 **전**(전송 중) 상태의 수명이다. 금요일 밤에 끊겨도 월요일에 잇는다.
 TRANSFER_TTL_HOURS = 72
 URL_TTL_SECONDS = 900
-#: form-data 입구(`createUpload`)와 **한 값** — 두 입구가 다른 상한을 갖지 않는다 (`〈175〉`).
+#: form-data 입구(`createUpload`)와 **한 값** — 두 입구가 다른 상한을 갖지 않는다 (`〈278〉`).
 MAX_FILES = MAX_UPLOAD_FILES
 MAX_GRID_FILES = 2          # 〈58〉 — 기준 격자 파일 0~2건
 MAX_PART_URL_BATCH = 16
@@ -203,7 +203,7 @@ def initiate_upload_transfer(request: Request, body: dict = Body(...),
         file_id = str(Ulid.generate())
         try:
             # 저장 키는 세 배포 단위가 공유하는 규약 그대로 — 폴더 구조는 키가 아니라
-            # relative_path 메타에 산다 (〈173〉 — layout.json 은 손대지 않는다).
+            # relative_path 메타에 산다 (〈276〉 — layout.json 은 손대지 않는다).
             key = storage_layout.storage_key(str(transfer_id), file_id=file_id,
                                              kind=kind, file_name=name)
         except storage_layout.UnsafeFileName:
@@ -436,7 +436,7 @@ def complete_upload_transfer(request: Request,
     accept.publish_accepted(upload_id=Ulid(upload_id),
                             actor_account_id=subject.account_id, files=records)
     # `UploadReceipt` 조립은 form-data 입구와 **같은 함수**다 — `relativePath` 가 어느 입구로
-    # 왔든 같은 자리에 같은 값으로 선다 (계약 `UploadFileRef` 산문 · `〈175〉-(나)`).
+    # 왔든 같은 자리에 같은 값으로 선다 (계약 `UploadFileRef` 산문 · `〈278〉-(나)`).
     return {"uploadId": upload_id, "files": _file_records(records)}
 
 

@@ -45,7 +45,7 @@ GRID = "기준 격자 파일"
 #: 계약 `UploadFileRef.fileName` 의 상한과 같은 값. DB CHECK 도 255 다.
 MAX_FILE_NAME = 255
 #: 한 접수의 파일 수 상한 — 계약 `createUpload.files.maxItems` · `UploadTransferDraft.files.maxItems`
-#: 와 **한 값**이다 (`〈175〉`). 프리사인드 라우트(`routes/upload_transfers.MAX_FILES`)가 이것을
+#: 와 **한 값**이다 (`〈278〉`). 프리사인드 라우트(`routes/upload_transfers.MAX_FILES`)가 이것을
 #: import 한다 — 두 입구가 다른 상한을 갖지 않는다.
 MAX_UPLOAD_FILES = 500
 #: 계약 `relativePath` 의 상한 — DB CHECK(`d5_upload_file`·`d3_file`)도 1024 다.
@@ -53,7 +53,7 @@ MAX_RELATIVE_PATH = 1024
 
 
 def _relative_path(raw: str | None) -> str | None:
-    """`relativePath` 한 칸의 정규화 — **프리사인드 경로와 같은 함수·같은 상한** (`〈173〉`·`〈175〉-(나)`).
+    """`relativePath` 한 칸의 정규화 — **프리사인드 경로와 같은 함수·같은 상한** (`〈276〉`·`〈278〉-(나)`).
 
     빈 문자열은 「경로 없음」이다 — multipart 배열은 null 을 싣지 못한다(계약 산문).
     정규화 뒤 세그먼트가 남지 않는 값(`..` · `/` 뿐)은 400. `..` 세그먼트 자체는 정규화가
@@ -73,7 +73,7 @@ def _relative_path(raw: str | None) -> str | None:
 
 # ── 저장 ────────────────────────────────────────────────────────────────────
 # 바이트를 만지는 자리는 전부 저장 Port(`ports/storage.py`) 경유다 — 로컬 디스크와
-# S3 가 여기서 갈린다 (`〈173〉`). **저장 키가 곧 배치**라는 규칙은 그대로다: 키는
+# S3 가 여기서 갈린다 (`〈276〉`). **저장 키가 곧 배치**라는 규칙은 그대로다: 키는
 # `kernel/storage_layout`(정본 `contracts/storage/layout.json`)이 만들고, 세 단위가
 # 같은 생성물을 쓴다 — 키 규칙이 두 곳에 적혀 갈라졌던 실패(`03-HANDOFF §4 #20`)의 봉인.
 def _storage(request: Request) -> UploadStoragePort:
@@ -156,7 +156,7 @@ def _file_records(upload_files) -> list[dict[str, Any]]:
     ⚠ **본체에는 붙이지 않는다.** 축이 붙은 본체는 `0004` 의 CHECK 가 애초에 만들지 않으므로
     거기 `false/false` 를 실으면 **없는 사실**을 말하는 것이 된다.
 
-    `relativePath` 는 **있을 때만** 싣는다 (`〈175〉-(나)`) — 낱개 파일에 빈 키를 만들지 않는다.
+    `relativePath` 는 **있을 때만** 싣는다 (`〈278〉-(나)`) — 낱개 파일에 빈 키를 만들지 않는다.
     """
     out: list[dict[str, Any]] = []
     for f in upload_files:
@@ -188,7 +188,7 @@ async def create_upload(request: Request, response: Response,
 
     **D3 에 행을 만들지 않는다.**
 
-    폴더 경로(`relativePaths`)는 원장 메타로만 보존한다 (`〈173〉`·`〈175〉-(나)`) — 저장 키는
+    폴더 경로(`relativePaths`)는 원장 메타로만 보존한다 (`〈276〉`·`〈278〉-(나)`) — 저장 키는
     그대로 평평하다. 바이트는 `put_stream` 으로 흘려보낸다 — 본문을 통째로 메모리에 올리지 않는다.
     """
     _require_upload_edit(db, subject)
@@ -486,7 +486,7 @@ def create_dataset(request: Request, body: dict = None,
 
     # ② 파일 — **업로드가 발급한 `fileId` 그대로.** 저장 키는 **데이터셋의 자리**다
     #    (`_relocate` 주석 — 승계하면 등록된 데이터셋 전체가 렌더 404 다).
-    #    폴더 경로(`relative_path`)는 원장에서 그대로 승계한다 (`0009` · `〈175〉-(나)`).
+    #    폴더 경로(`relative_path`)는 원장에서 그대로 승계한다 (`0009` · `〈278〉-(나)`).
     new_keys = _dataset_keys(str(dataset_id), files)
     for f in files:
         d3_catalog.insert_file(
@@ -531,7 +531,7 @@ def create_dataset(request: Request, body: dict = None,
 
 
 # ═════════════════════ addDatasetFile · 교체 · 삭제 (〈60〉) ═════════════════
-#: `〈175〉-(라)` — 본체 파일 추가·교체·삭제의 활동 문자열. **`[정본 무근거]`** (`〈177〉-⑦-⑾` Ted 판정 대기).
+#: `〈278〉-(라)` — 본체 파일 추가·교체·삭제의 활동 문자열. **`[정본 무근거]`** (`〈280〉-⑦-⑾` Ted 판정 대기).
 #: 정본 §6.1 은 값 집합을 안 닫았고 `〈60〉` 은 격자 것(`d8_insight.ACTION_GRID_CHANGED`)만 고정했다.
 #: 격자와 **다른** 문자열인 이유 — 바뀐 것이 좌표를 읽을 수단이 아니라 과학 데이터 자체라, 활동
 #: 화면에서 두 사건이 갈려 보여야 한다. 상수가 여기(라우트) 사는 것은 D8 표면을 늘리지 않기 위해서다 —
@@ -554,9 +554,9 @@ def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) ->
 
 
 def _record_body_activity(db: Session, *, subject: Subject, dataset_id: Ulid) -> None:
-    """`〈175〉-(라)` — 본체 추가·교체·삭제. **격자(`_record_grid_activity`)와 셋 다 반대다.**
+    """`〈278〉-(라)` — 본체 추가·교체·삭제. **격자(`_record_grid_activity`)와 셋 다 반대다.**
 
-    ① `마지막 수정` 을 **민다** (`〈175〉` 권고 · Ted 판정 대기 `〈177〉-⑦-⑷`). `〈60〉-①` 이 격자에서
+    ① `마지막 수정` 을 **민다** (`〈278〉` 권고 · Ted 판정 대기 `〈280〉-⑦-⑷`). `〈60〉-①` 이 격자에서
        그 열을 안 건드린 이유는 「바뀐 것이 과학 데이터가 아니라 좌표를 읽을 수단」이어서였다 —
        본체는 **과학 데이터 자체**라 파생 관계를 다시 봐야 하고, 파생인 `계보 상태` 가 `확정` 에서
        `확인 필요` 로 접히는 것이 맞다. 사람이 확인하러 가면 실제로 바뀐 것이 있다.
@@ -581,13 +581,13 @@ async def add_dataset_file(request: Request, datasetId: str,
                            db: Session = Depends(scoped_db)) -> dict:
     """후주입 — **본체는 여기서**, 기준 격자 파일은 `attachUploadGridFiles` 로.
 
-    본체 후주입은 `〈59〉-③` 이 막았던 조작이고 `〈175〉-(라)` 가 번복했다 — 계약이 막지 않고
+    본체 후주입은 `〈59〉-③` 이 막았던 조작이고 `〈278〉-(라)` 가 번복했다 — 계약이 막지 않고
     사람이 판단한다. 격자 0건은 정상 상태다 (`P2.md §2-21`). 그릴 수 없는 것과 등록할 수 없는
-    것은 다르다. 폴더 경로는 `relativePath` 로 받아 `d3_file.relative_path` 에 남긴다 (`〈175〉-(나)`).
+    것은 다르다. 폴더 경로는 `relativePath` 로 받아 `d3_file.relative_path` 에 남긴다 (`〈278〉-(나)`).
 
     본체의 뒷정리는 교체·삭제와 **같은 규칙**(`_record_body_activity`)이다 — `마지막 수정` 이동 ·
     `crs/grid` 무변경 · `본체 파일 변경` 한 행. ⚠ 이 경로가 `_record_grid_activity` 를 불렀던 동안은
-    본체를 하나 더할 때마다 사람이 적은 `crs` 가 지워지고 있었다(실측 — `〈175〉` 집행 전).
+    본체를 하나 더할 때마다 사람이 적은 `crs` 가 지워지고 있었다(실측 — `〈278〉` 집행 전).
     """
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
@@ -647,7 +647,7 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
       · **저장 키를 승계하지 않는다** — 바이트는 데이터셋 자리로 온다(`_relocate`).
         등록 전환과 같은 규칙이고, 승계가 렌더 404 의 원인이었다.
       · **본체를 받지 않는다** — 본체가 든 묶음은 등록 전환의 대상이다. 본체 후주입의 자리는
-        `addDatasetFile` 이다 (`〈175〉-(라)` 가 `〈59〉-③` 을 번복한 뒤에도 이 op 은 격자 전용이다).
+        `addDatasetFile` 이다 (`〈278〉-(라)` 가 `〈59〉-③` 을 번복한 뒤에도 이 op 은 격자 전용이다).
       · **마이그레이션·이벤트 계약을 건드리지 않는다.**
     """
     if not Ulid.is_valid(datasetId):
@@ -735,7 +735,7 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
                                     db: Session = Depends(scoped_db)) -> dict:
     """교체는 **정상 동작**이다 (`〈59〉-①`) — **본체도, 격자도.**
 
-    **⟨`〈175〉-(라)` · `〈59〉-③` 번복⟩** 「본체를 갈아 끼우는 것은 다른 데이터다」는 판단을 **사람이
+    **⟨`〈278〉-(라)` · `〈59〉-③` 번복⟩** 「본체를 갈아 끼우는 것은 다른 데이터다」는 판단을 **사람이
     한다** — 계약이 막지 않는다(계약 산문 · `GridFileReplacement`). `operationId` 는 그대로다.
     본체 교체의 뒷정리는 격자와 반대다 — `_record_body_activity` 주석. `flipAxes` 만은 여전히
     **격자 사이의 조작**이라 본체에 요청하면 409 다(계약 409-②).
@@ -793,7 +793,7 @@ def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
                              subject: Subject = Depends(current_subject),
                              db: Session = Depends(scoped_db)) -> Response:
     """삭제도 정상 동작이다 — **본체도.** 남는 불변식은 **본체 ≥ 1** 하나다 (`DataModel §4.3` ·
-    `〈175〉-(라)` — `〈59〉-③` 의 「본체는 409」 번복). 그래서 409 의 뜻이 「본체다」에서
+    `〈278〉-(라)` — `〈59〉-③` 의 「본체는 409」 번복). 그래서 409 의 뜻이 「본체다」에서
     「**마지막** 본체다」로 바뀌었다. 격자는 0건이 정상이라 그 409 가 없다.
 
     대표 조각(`d3_dataset.representative_file_id`)은 **FK `ON DELETE SET NULL`** 이 되돌린다
@@ -801,7 +801,7 @@ def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
     (파일명 자연 정렬의 첫 조각을 그때그때 고른다 — 열 주석 · 결정 2-4·2-8)이고, 값이 있으면 **사람이
     지정한 것**이다. 그래서 앱 코드가 남은 본체를 골라 써 넣지 않는다 — 써 넣으면 「사람이
     지정했다」는 없는 사실이 된다. 「남은 본체 중 가장 오래된 것으로 갱신」하는 규칙은 그 이유로
-    기각했다 (`〈175〉` 집행 보고 · Ted 판정 대기).
+    기각했다 (`〈278〉` 집행 보고 · Ted 판정 대기).
     `bundle_file_name` 은 FK 가 없어 `sync_bundle_file_name` 이 따라간다 (`[정본 무근거]`).
     """
     row, dataset_id, file_ref = _file_target(db, subject, datasetId, fileId)
@@ -843,7 +843,7 @@ def _flip_grid_axes(db: Session, *, subject: Subject, dataset_id: Ulid, file_ref
 def _file_target(db: Session, subject: Subject, datasetId: str, fileId: str):
     """교체·삭제가 공유하는 관문 — 400 · 403 · 404 를 한 자리에서 가른다.
 
-    ⟨`〈175〉-(라)`⟩ 예전 이름은 `_grid_target` 이었고 여기서 본체를 409 로 막았다(`〈59〉-③`).
+    ⟨`〈278〉-(라)`⟩ 예전 이름은 `_grid_target` 이었고 여기서 본체를 409 로 막았다(`〈59〉-③`).
     번복으로 본체도 대상이다 — 종류별 검사(`flipAxes` 는 격자만 · 마지막 본체는 못 지운다)는
     **각 op 안에** 있다. 없는 파일과 경계 밖은 **같은 404** 다 (P-9·P-10).
     """

@@ -180,7 +180,7 @@ class UploadLedgerAdapter:
                 carries_lat=bool(r["carries_lat"]), carries_lon=bool(r["carries_lon"]),
                 detected_format=r["detected_format"],
                 # 0008 의 열. 쓰기만 하고 읽지 않던 열이었다 — 등록 전환이 `d3_file` 로
-                # 승계하려면(0009 · `〈175〉-(나)`) 여기서 읽어야 한다.
+                # 승계하려면(0009 · `〈278〉-(나)`) 여기서 읽어야 한다.
                 relative_path=r["relative_path"],
             )
             for r in rows
@@ -315,7 +315,7 @@ class UploadLedgerAdapter:
         return [r[0] for r in self._session.execute(_REAP, {"now": now}).all()]
 
 
-# ═══════════════════════ 프리사인드 전송 원장 (〈174〉) ═══════════════════════
+# ═══════════════════════ 프리사인드 전송 원장 (〈277〉) ═══════════════════════
 # `d5_*` 를 만지는 core-api 모듈은 이 파일 하나뿐이라는 규칙(`test_upload_ledger_hidden`)
 # 때문에 전송 원장의 SQL 도 여기 산다. 전송은 `d5_upload` 이전의 세계다 — 완결(complete)
 # 시 라우트가 같은 ULID 로 `accept()` 를 불러 기존 원장으로 승계한다.

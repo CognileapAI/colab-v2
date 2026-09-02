@@ -32,11 +32,11 @@ export function formatBytes(bytes: number): string {
 
 /**
  * 조각 **하나**의 크기. `null` = 모름 — `d3_file.size_bytes` 가 NULL 일 수 있고 그것은 0 과 다르다
- * (`〈175〉-(가)` 「모르는 값을 0 으로 적지 않는다」). `formatBytes` 의 「0 → `—`」 규칙과 **갈라 둔다**:
+ * (`〈278〉-(가)` 「모르는 값을 0 으로 적지 않는다」). `formatBytes` 의 「0 → `—`」 규칙과 **갈라 둔다**:
  * 여기서 0 은 진짜 0 B 다.
  */
 export function formatFileSize(bytes: number | null): string {
-  if (bytes === null) return '모름'; // [정본 무근거 · 〈175〉]
+  if (bytes === null) return '모름'; // [정본 무근거 · 〈278〉]
   return withUnit(bytes);
 }
 

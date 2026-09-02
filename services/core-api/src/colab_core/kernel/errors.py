@@ -52,16 +52,16 @@ def conflict(message: str, details: dict[str, Any] | None = None) -> ApiError:
 
 
 def payload_too_large(message: str) -> ApiError:
-    """413 — 본문이 저장 백엔드의 단일 쓰기 상한을 넘는다 (`〈175〉` — S3 단일 PUT 5 GiB).
+    """413 — 본문이 저장 백엔드의 단일 쓰기 상한을 넘는다 (`〈278〉` — S3 단일 PUT 5 GiB).
 
     400 과 갈라 쓴다: 요청이 틀린 것이 아니라 **이 입구로는 못 받는 크기**다. 그 크기의
-    정문은 프리사인드 전송(`〈174〉`)이고, 메시지가 그쪽을 가리킨다.
+    정문은 프리사인드 전송(`〈277〉`)이고, 메시지가 그쪽을 가리킨다.
     """
     return ApiError(413, "PAYLOAD_TOO_LARGE", message)
 
 
 def gone(message: str) -> ApiError:
-    """410 — 「있었는데 창이 닫혔다 — 다시 발급받으라」 (`〈175〉-(다)` · `getDownloadBytes` 전용).
+    """410 — 「있었는데 창이 닫혔다 — 다시 발급받으라」 (`〈278〉-(다)` · `getDownloadBytes` 전용).
 
     404 와 갈라 쓴다: 404 는 「없거나 접근이 회수됐다」(존재를 흘리지 않는다), 410 은 서명은
     맞는데 수명이 지난 티켓이다. 둘을 접으면 화면이 「없다」와 「다시 받으면 된다」를 구분 못 한다.

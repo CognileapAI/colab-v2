@@ -1,13 +1,13 @@
-"""0009 — 파일 관리: `d3_file.relative_path` · `d8_download.file_id` · 용량 합계 트리거 + 백필 1회 (〈175〉).
+"""0009 — 파일 관리: `d3_file.relative_path` · `d8_download.file_id` · 용량 합계 트리거 + 백필 1회 (〈278〉).
 
 무엇
   ⑴ `d3_file.relative_path text NULL` — 폴더째 업로드의 `폴더/이름` 메타가 **등록 뒤에도** 남는다.
      `0008` 이 `d5_upload_file.relative_path` 로 접수 단계까지만 보존했고 「등록 후(d3) 표시는
-     후속 결정」으로 열어 뒀다(`〈173〉-③`). 그 결정이 `PLAN-SoT §9 〈175〉-(나)`(파일 관리 회의
+     후속 결정」으로 열어 뒀다(`〈276〉-③`). 그 결정이 `PLAN-SoT §9 〈278〉-(나)`(파일 관리 회의
      2026-08-23)다 — 같은 모양·같은 CHECK 로 옮겨 적는다. 저장 키 규약(contracts/storage/layout.json)은
      여전히 손대지 않는다.
   ⑵ `d8_download.file_id ulid NULL` — NULL = 데이터셋 묶음 내려받기, 값 = 파일 단위 내려받기
-     (`〈175〉-(다)`). **FK 를 걸지 않는다** — append-only 이력이라 파일이 지워져도 행은 남아야 한다.
+     (`〈278〉-(다)`). **FK 를 걸지 않는다** — append-only 이력이라 파일이 지워져도 행은 남아야 한다.
      `[정본 무근거]` — 정본 §6.2 는 누가·어느 데이터셋·언제까지만 적고 파일 단위를 말하지 않는다.
   ⑶ `sync_dataset_total_size()` + `d3_file` 문장 트리거 3개 — `d3_dataset_autometa.total_size_bytes`
      를 **증분**으로 유지한다. `file_count`(`0002` ㊼) 와 **같은 표·같은 사건**을 다른 기구로
@@ -52,7 +52,7 @@ ALTER TABLE d8_download
 """
 
 TRIGGERS = r"""
--- 용량 합계 유지 (〈175〉). `sync_dataset_file_count`(㊼) 를 본뜬다 —
+-- 용량 합계 유지 (〈278〉). `sync_dataset_file_count`(㊼) 를 본뜬다 —
 --   · **다시 세지 않고 증분으로 더한다.** 다시 세면 세는 주체가 `body_access` 를 받아
 --     잠긴 데이터셋에 0 을 써 넣는다
 --   · 문장 단위 + 전이 테이블: 전이 테이블은 RLS 로 걸러지지 않는다. 한 문장이 조각 수백 개를

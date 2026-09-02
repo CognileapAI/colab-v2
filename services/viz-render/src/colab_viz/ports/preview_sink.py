@@ -1,4 +1,4 @@
-"""미리보기 산출물을 **서빙되는 자리**로 내보내는 Port (`PLAN-SoT §9 〈178〉-㉮`).
+"""미리보기 산출물을 **서빙되는 자리**로 내보내는 Port (`PLAN-SoT §9 〈281〉-㉮`).
 
 `preview._write` 는 산출물을 `preview_dir` 에 쓰고 `url = {preview_url_base}/{name}` 을 낸다.
 로컬·staging 은 그 디렉터리를 nginx 가 그대로 서빙하므로 싱크가 할 일이 없다. dev(AWS) 는

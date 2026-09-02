@@ -259,7 +259,7 @@ def test_no_extension_to_format_table_exists_in_core_api() -> None:
     assert suspicious == [], f"확장자→포맷 매핑으로 보이는 것이 있다: {suspicious}"
 
 
-# ═══════════ 폴더 경로 — `relativePaths` (`PLAN-SoT §9 〈175〉-(나)` · 0008) ═══════════
+# ═══════════ 폴더 경로 — `relativePaths` (`PLAN-SoT §9 〈278〉-(나)` · 0008) ═══════════
 def _upload_with_paths(client, names, paths, token=TOKEN_RES):
     files = [("files", (n, HDF5_MAGIC, "application/octet-stream")) for n in names]
     return client.post(f"{API_PREFIX}/uploads", files=files, data={"relativePaths": paths},

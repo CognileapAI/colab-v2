@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""프론트 정적 번들(`frontend/dist`)을 웹 버킷에 올린다 (`PLAN-SoT §9 〈178〉-㉮` · 계획서 G7).
+"""프론트 정적 번들(`frontend/dist`)을 웹 버킷에 올린다 (`PLAN-SoT §9 〈281〉-㉮` · 계획서 G7).
 
 AWS CLI 를 쓰지 않는다 — `kernel/s3.py`(자작 SigV4) 가 이미 있고 신규 런타임 의존 0 이 규율이다.
 제품 패키지 밖(`ops/`)이라 배포 이미지에 실리지 않는다. 자격증명은 `kernel/aws_credentials.py` 사슬

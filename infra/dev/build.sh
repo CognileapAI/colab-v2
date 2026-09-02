@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev 이미지 5개를 **개발 기계에서** linux/arm64 로 빌드하고 tar 로 묶는다 (`〈178〉-㉮`).
+# dev 이미지 5개를 **개발 기계에서** linux/arm64 로 빌드하고 tar 로 묶는다 (`〈281〉-㉮`).
 #
 # 레지스트리가 없다 — buildx `--load` → 아키텍처 실측 → `docker save`. 태그는 둘: 움직이는 `:dev` 와
 # 불변 `:dev-<sha>`(되돌리기용 — 직전 이미지를 잃어버렸던 교훈). geo 스택(rasterio·netCDF4·pyhdf)의

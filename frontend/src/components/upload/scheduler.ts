@@ -1,7 +1,7 @@
 // 동시성 제한 큐. 전역 4 — 호스트당 연결 6 에서 프리사인드 PUT 의
 // 매번-프리플라이트와 우리 API 호출이 들어갈 여유를 남긴다.
 // 멀티파트는 동시에 1개 — 큰 파일 하나가 큐 전체를 점유하지 않게.
-// 근거: dev-package/PLAN-SoT.md §9 〈174〉
+// 근거: dev-package/PLAN-SoT.md §9 〈277〉
 
 interface Waiting {
   multipart: boolean;

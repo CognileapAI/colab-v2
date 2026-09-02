@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev DB 백업 — `pg_dump | gzip` → S3 `_ops/backups/dev/` (`〈178〉-㉮` · 배포 계획서 §10-1).
+# dev DB 백업 — `pg_dump | gzip` → S3 `_ops/backups/dev/` (`〈281〉-㉮` · 배포 계획서 §10-1).
 #
 # **왜 EC2 의 cron 인가.** RDS 자동 백업은 Free Plan 상한 때문에 **1일**뿐이다(진행 파일 08-31).
 # 30일치를 들고 있는 것은 이 잡이고, 그 30일은 데이터 버킷 수명 주기 `backups-30d` 가 강제한다.

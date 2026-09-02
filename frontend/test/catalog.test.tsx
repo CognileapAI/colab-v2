@@ -16,7 +16,7 @@ function Where() {
   return <div data-testid="where">{l.pathname}</div>;
 }
 
-/** 다운로드는 티켓이다 (`〈175〉-(다)`) — 표는 `downloadTicket` 만 부르고 바이트는 startDownload 가 받는다. */
+/** 다운로드는 티켓이다 (`〈278〉-(다)`) — 표는 `downloadTicket` 만 부르고 바이트는 startDownload 가 받는다. */
 function fakeFiles() {
   const tickets: string[] = [];
   const source: FileSource = {

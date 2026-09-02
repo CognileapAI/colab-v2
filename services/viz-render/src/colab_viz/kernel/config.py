@@ -2,7 +2,7 @@
 
 `max_render_bytes` 만 정본에서 오고(그것도 `[가정]` 표시가 붙어 있다) 나머지는 레포 결정이다.
 
-**소스 모드·미리보기 싱크**(`PLAN-SoT §9 〈178〉-㉱·㉴`) — `local`(기본) | `s3`. **모르는 값은 기동 거부**다:
+**소스 모드·미리보기 싱크**(`PLAN-SoT §9 〈281〉-㉱·㉴`) — `local`(기본) | `s3`. **모르는 값은 기동 거부**다:
 오타를 local 로 조용히 접으면 dev 가 EC2 디스크를 읽고도 아무도 모른다(core `COLAB_CORE_STORAGE_MODE`
 와 같은 규칙). s3 는 버킷·리전·작업 디렉터리·**상한**이 전부 있어야 뜬다. 상한은 3상태다 —
 숫자 · `none`(명시 무제한) · 미설정(**거부**) — 「없으면 무제한」은 green-by-skip 의 같은 모양이다.
@@ -122,14 +122,14 @@ def _poll_seconds_from_env(raw: str | None) -> float:
     except ValueError:
         return DEFAULT_TRIGGER_POLL_SECONDS
     return value if value > 0 else DEFAULT_TRIGGER_POLL_SECONDS
-    #: 소스 모드 — `local`(디스크, `source_root`) | `s3`(버킷 → `workdir` 로 내려받기). `〈178〉-㉴`
+    #: 소스 모드 — `local`(디스크, `source_root`) | `s3`(버킷 → `workdir` 로 내려받기). `〈281〉-㉴`
     source_mode: str = "local"
     s3_bucket: str | None = None
     s3_region: str | None = None
     workdir: Path | None = None
     #: 작업 디렉터리 상한(바이트). `math.inf` = 명시 무제한. None = 미설정(s3 모드에선 거부).
     work_max_bytes: float | None = None
-    #: 미리보기 싱크 — `local`(디스크를 nginx 가 서빙) | `s3`(데이터 버킷 `previews/`). `〈178〉-㉮`
+    #: 미리보기 싱크 — `local`(디스크를 nginx 가 서빙) | `s3`(데이터 버킷 `previews/`). `〈281〉-㉮`
     preview_sink: str = "local"
     preview_s3_prefix: str = DEFAULT_PREVIEW_S3_PREFIX
 

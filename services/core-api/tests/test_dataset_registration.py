@@ -248,10 +248,10 @@ def test_a_failed_pipeline_does_not_block_registration(p2_client, sql, reason) -
         f"실패({reason})한 업로드가 등록을 막았다 — 정본 :192 위반이다."
 
 
-# ═══════ 파일 메타 승계 — 크기·시각·폴더 경로 · 합계는 트리거가 (`〈175〉`) ═════════
+# ═══════ 파일 메타 승계 — 크기·시각·폴더 경로 · 합계는 트리거가 (`〈278〉`) ═════════
 def test_registered_files_carry_size_created_at_relative_path_and_total_is_not_doubled(
         p2_client, sql) -> None:
-    """`listDatasetFiles` 가 `byteSize`·`createdAt`·`relativePath` 를 내고(`〈175〉-(가)·(나)`),
+    """`listDatasetFiles` 가 `byteSize`·`createdAt`·`relativePath` 를 내고(`〈278〉-(가)·(나)`),
     `total_size_bytes` 가 파일 합계와 **같다 — 두 배가 아니다.**
 
     등록 코드가 합계를 손으로 넣고 파일 INSERT 가 트리거(`0009`)로 한 번 더 더하면 두 배가 된다 —

@@ -98,7 +98,7 @@ DEFAULT_UPLOAD_TTL_HOURS = 24
 #: 201 을 내리지 않기 위해서다 (`routes/ingestion.py` 의 실동작과 일치시킨 서술).
 ENV_UPLOAD_STORAGE_DIR = "COLAB_CORE_UPLOAD_DIR"
 
-#: 업로드 저장 백엔드 — `local`(로컬 디스크, 기본) | `s3` (`PLAN-SoT §9 〈173〉`).
+#: 업로드 저장 백엔드 — `local`(로컬 디스크, 기본) | `s3` (`PLAN-SoT §9 〈276〉`).
 #: 로컬 개발은 local 이 기본값이라 아무 설정 없이 지금까지와 같이 돈다.
 #: s3 를 켜려면 버킷·리전이 **함께** 있어야 한다 — 반쪽 설정이면 뜨지 않는 것이 맞다.
 #: AWS 자격증명은 표준 환경변수 사슬(`kernel/aws_credentials.py` — env→ECS→IMDSv2)로 온다.

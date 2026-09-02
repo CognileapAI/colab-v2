@@ -1,4 +1,4 @@
-"""`addDatasetFile` · `replaceDatasetGridFile` · `deleteDatasetGridFile` — `〈60〉` 과 `〈175〉-(라)`.
+"""`addDatasetFile` · `replaceDatasetGridFile` · `deleteDatasetGridFile` — `〈60〉` 과 `〈278〉-(라)`.
 
 `〈60〉` 이 못 박은 셋을 **격자 경로**에서 실물로 확인한다:
   ① `마지막 수정` 을 **건드리지 않는다** → 파생인 `계보 상태` 가 `확정` → `확인 필요` 로
@@ -6,9 +6,9 @@
   ② `자동으로 읽은 정보`(좌표계·격자)를 **재계산한다.**
   ③ `d8_activity` 에 **`좌표계·격자 변경` 한 행** — 그 문자열 그대로.
 
-`〈175〉-(라)` 가 `〈59〉-③`(본체는 이 경로의 대상이 아니다 — 409)을 **번복**했다. 본체 경로의 규칙은
+`〈278〉-(라)` 가 `〈59〉-③`(본체는 이 경로의 대상이 아니다 — 409)을 **번복**했다. 본체 경로의 규칙은
 격자와 **셋 다 반대**다 — 바뀐 것이 좌표를 읽을 수단이 아니라 **과학 데이터 자체**이기 때문이다:
-  ① `마지막 수정` 이 **움직인다** → `계보 상태` 가 `확인 필요` 로 접힌다 (`〈175〉` 권고 · Ted 판정 대기).
+  ① `마지막 수정` 이 **움직인다** → `계보 상태` 가 `확인 필요` 로 접힌다 (`〈278〉` 권고 · Ted 판정 대기).
   ② `crs/grid` 를 **건드리지 않는다** — `recompute_grid_metadata` 는 사람이 적은 `crs` 를 지운다.
   ③ `d8_activity` 에 **`본체 파일 변경` 한 행** (`[정본 무근거]`).
 남는 불변식은 하나 — **본체 ≥ 1** (마지막 본체 삭제 409). `flipAxes` 는 여전히 격자 사이의 조작이다.
@@ -145,9 +145,9 @@ def test_replacing_a_grid_file_recomputes_the_auto_read_metadata(p2_client, sql)
         "격자를 갈아 끼웠는데 옛 파일에서 읽은 좌표계가 그대로 남았다."
 
 
-# ═════════════════════ 본체 교체 (`〈175〉-(라)` — `〈59〉-③` 번복) ═════════════════════
+# ═════════════════════ 본체 교체 (`〈278〉-(라)` — `〈59〉-③` 번복) ═════════════════════
 def test_replacing_a_body_file_swaps_the_bytes_in_place(p2_client, sql, tmp_path) -> None:
-    """`〈175〉-(라)` — **본체도 갈아 끼운다.** `〈59〉-③` 의 409 는 번복됐다 (계약 산문).
+    """`〈278〉-(라)` — **본체도 갈아 끼운다.** `〈59〉-③` 의 409 는 번복됐다 (계약 산문).
 
     같은 행·같은 `fileId`·같은 저장 키다 — 본체 키(`{datasetId}/{fileId}`)는 이름을 담지 않아
     **키가 불변**이고, 바이트는 그 자리에 덮어써진다. `relative_path`·`created_at` 은 그대로다.
@@ -189,7 +189,7 @@ def test_replacing_a_body_file_moves_the_total_size_by_the_difference(p2_client,
 
 
 def test_a_body_change_leaves_the_human_written_crs_alone(p2_client, sql) -> None:
-    """`〈175〉-(라)` — 본체 경로는 **`crs/grid` 를 건드리지 않는다.**
+    """`〈278〉-(라)` — 본체 경로는 **`crs/grid` 를 건드리지 않는다.**
 
     `crs` 는 `updateDataset` 으로 **사람이 적는 값**이다 (`d3_catalog._UPDATABLE`). 격자 경로의
     재계산(`_CLEAR_GRID_META`)은 그 값을 NULL 로 지운다 — 본체를 바꿨다고 사람이 적은 좌표계를
@@ -236,7 +236,7 @@ def test_a_body_change_records_one_body_activity_row_and_no_grid_row(p2_client, 
 
 
 def test_a_body_change_moves_last_modified_and_folds_the_lineage_state(p2_client, sql) -> None:
-    """`〈175〉` 권고(Ted 판정 대기) — 본체 변경은 **`마지막 수정` 을 민다.**
+    """`〈278〉` 권고(Ted 판정 대기) — 본체 변경은 **`마지막 수정` 을 민다.**
 
     `〈60〉-①` 이 격자 변경에는 그 열을 안 건드린 이유는 「바뀐 것이 과학 데이터가 아니라 좌표를
     읽을 수단」이어서였다. 본체는 **과학 데이터 자체**라 파생 관계를 다시 봐야 하고, 그래서
@@ -245,7 +245,10 @@ def test_a_body_change_moves_last_modified_and_folds_the_lineage_state(p2_client
     client = p2_client()
     receipt = make_upload(client, files=[("files", ("a.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = register(client, receipt,
-                 lineageParents=[{"parentDatasetId": DS_A1, "origin": "사람이 직접 연결"}])
+                 # ⭑ **병합 2026-09-02** — 다른 레인이 계보 출처 레이블을 영어 세 값으로
+                 #   통일했다(`ai`·`manual`·`processed`). 여기 있던 「사람이 직접 연결」은
+                 #   그 통일 **이전의 값**이라 400 이 났다. 뜻은 그대로 「사람이 걸었다」다.
+                 lineageParents=[{"parentDatasetId": DS_A1, "origin": "manual"}])
     assert r.status_code == 201, r.text
     dataset_id = r.json()["datasetId"]
     assert r.json()["lineageState"] == "확정", "전제 확인 — 부모를 확인하고 등록하면 `확정` 이다."
@@ -302,7 +305,7 @@ def test_deleting_a_grid_file_is_normal_and_records_one_activity_row(p2_client, 
 
 
 def test_deleting_the_last_body_file_is_409(p2_client, sql) -> None:
-    """**본체 ≥ 1** — 남는 불변식은 이것 하나다 (`DataModel §4.3` · `〈175〉-(라)`).
+    """**본체 ≥ 1** — 남는 불변식은 이것 하나다 (`DataModel §4.3` · `〈278〉-(라)`).
     시드 DS_A1 의 본체는 한 건이라 그것이 곧 마지막 본체다. 행·이력·`마지막 수정` 전부 그대로다."""
     before = len(_activities(sql, DS_A1, ACTION_BODY_CHANGED))
     times_before = _dataset_times(sql, DS_A1)
@@ -493,13 +496,13 @@ def test_file_operations_need_the_upload_edit_switch(p2_client, sql) -> None:
 def test_the_activity_action_strings_are_exactly_the_ones_fixed() -> None:
     """값 집합이 열린 것은 **아무 문자열이나 써도 된다는 뜻이 아니다** — 정본이 안 닫았다는
     뜻이다 (`〈60〉`). 레인마다 다른 문자열을 쓰면 활동 화면이 뒤죽박죽이 된다.
-    본체 쪽 문자열은 `[정본 무근거]` 이고 `routes/ingestion.py` 한 곳에 산다 (`〈177〉-⑦-⑾` Ted 판정 대기)."""
+    본체 쪽 문자열은 `[정본 무근거]` 이고 `routes/ingestion.py` 한 곳에 산다 (`〈280〉-⑦-⑾` Ted 판정 대기)."""
     assert ACTION_GRID_CHANGED == "좌표계·격자 변경"
     assert ACTION_BODY_CHANGED == "본체 파일 변경"
     assert ACTION_BODY_CHANGED != ACTION_GRID_CHANGED
 
 
-# ═══════════ 파일 메타 — `byteSize`·`createdAt`·`relativePath` (`〈175〉-(가)·(나)`) ═══════════
+# ═══════════ 파일 메타 — `byteSize`·`createdAt`·`relativePath` (`〈278〉-(가)·(나)`) ═══════════
 def test_grid_replace_response_carries_size_and_created_at(p2_client, sql) -> None:
     """모든 파일 응답이 `d3_catalog.file_ref` 하나를 지난다 — 교체 응답에도 크기·시각이 있고,
     `total_size_bytes` 는 트리거가 차분(50 → 8)으로 따라온다."""

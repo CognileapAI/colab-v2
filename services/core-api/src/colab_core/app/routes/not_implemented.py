@@ -2,7 +2,7 @@
 
 ⭑ 2026-08-29 실측 정정 — 이 머리말의 「23 개」는 낡아 있었다. `〈150〉` 이 `updateLab`·`updateProject`
 를 빼 **20** 이 된 뒤에도 머리말만 23 에 머물렀다(같은 자리의 다섯 번째 오기 — 아래 `OPERATIONS`
-주석이 「네 번째」까지 세고 있다). `〈175〉` C1b 가 다운로드 op 둘을 **임시 등재**해 20 → 22 였고,
+주석이 「네 번째」까지 세고 있다). `〈278〉` C1b 가 다운로드 op 둘을 **임시 등재**해 20 → 22 였고,
 **C2(다운로드 집행)가 그 둘과 `downloadDataset` 까지 셋을 뺐다 — 22 → 19.**
 
 두 종으로 나눈다 (NIGHT-20260823 §3).
@@ -97,7 +97,7 @@ class Op:
 #: → **＋2**(`〈278〉`-(다) 9차 동결 해제 — `downloadDatasetFile`·`getDownloadBytes` **임시 등재**.
 #:    이 회차(C1b)는 계약 동결 + 파일 메타만이고 다운로드 집행은 다음 커밋(C2)이다 — **C2 가 뺀다.**
 #:    「신설과 동시에 구현」 규칙(`〈80〉-㉯ 5`)의 예외이고, 예외인 이유가 표에 적혀 있어야 한다.)
-#: → **19**(`〈175〉-(다)` C2 — 다운로드 집행. 임시 등재 둘 + `downloadDataset`(P0 부터 501)을
+#: → **19**(`〈278〉-(다)` C2 — 다운로드 집행. 임시 등재 둘 + `downloadDataset`(P0 부터 501)을
 #:    뺐다. 셋 다 실동작 시험이 뒤에 있다: `tests/test_download.py`. `routes/download.py` 가 진짜
 #:    핸들러이고, `getDownloadBytes` 는 계약대로 `security: []` — 티켓이 곧 자격이다.)
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
@@ -116,7 +116,7 @@ OPERATIONS: tuple[Op, ...] = (
     Op("addUploadFile", "POST", "/uploads/{uploadId}/files", "NOT_IMPLEMENTED_P1"),
     Op("replaceUploadGridFile", "PUT", "/uploads/{uploadId}/files/{fileId}",
        "NOT_IMPLEMENTED_P1"),
-    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈175〉-(다)`⟩ 다운로드 셋은 **C2 가 걷었다** — `routes/download.py`.
+    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈278〉-(다)`⟩ 다운로드 셋은 **C2 가 걷었다** — `routes/download.py`.
     #    C1b 의 임시 등재(`downloadDatasetFile`·`getDownloadBytes`)가 여기 있었고, 그때 적어 둔
     #    「C2 가 뺀다」가 이 줄이다. 걷은 자리의 시험 = `tests/test_download.py`.
 )

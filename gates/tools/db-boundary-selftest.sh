@@ -211,7 +211,7 @@ R="$(mkroot empty-compose)"
 printf 'services: {}\n' > "$R/infra/staging/compose.i2.yml"
 expect red "compose 의 services 가 0건" run "$R"
 
-echo "── compose 둘 (staging + dev · 〈178〉) ─────────────────────────────"
+echo "── compose 둘 (staging + dev · 〈281〉) ─────────────────────────────"
 run2() { # $1=루트 — 두 파일을 `:` 목록으로 준다
   env COLAB_DB_BOUNDARY_ROOT="$1" \
       COLAB_DB_BOUNDARY_MANIFEST="$1/manifest.toml" \

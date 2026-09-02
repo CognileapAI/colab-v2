@@ -1,4 +1,4 @@
-"""오라클 — 저장 백엔드 두 벌 (`kernel/storage_backends.py` · `〈173〉`).
+"""오라클 — 저장 백엔드 두 벌 (`kernel/storage_backends.py` · `〈276〉`).
 
 로컬 백엔드는 기존 라우트 헬퍼의 이사라 동작 등가를, S3 백엔드는 가짜 전송으로
 호출 형태(복사 후 삭제 · 원본 부재 건너뜀 · 실패 시 되돌림)를 못 박는다.
@@ -133,7 +133,7 @@ def test_storage_mode_defaults_to_local(monkeypatch) -> None:
     assert mode == "local"
 
 
-# ── put_stream (`〈175〉` — 업로드 본문을 통째로 메모리에 올리지 않는다) ──────
+# ── put_stream (`〈278〉` — 업로드 본문을 통째로 메모리에 올리지 않는다) ──────
 
 def test_local_put_stream_copies_in_chunks_and_returns_the_size(tmp_path, monkeypatch) -> None:
     """청크 4 바이트로 10 바이트를 옮긴다 — 한 번의 read 로 다 읽는 구현이면 청크 크기가 뜻이 없다."""
@@ -198,7 +198,7 @@ def test_s3_put_stream_over_the_single_put_limit_is_413_before_any_request(
     assert calls == []
 
 
-# ── 다운로드 (`〈175〉-(다)`) — `open` · `presign_get` ─────────────────────────
+# ── 다운로드 (`〈278〉-(다)`) — `open` · `presign_get` ─────────────────────────
 
 def test_local_open_streams_in_chunks_and_a_missing_key_is_file_not_found(tmp_path, monkeypatch) -> None:
     """읽기도 청크다 — 한 번에 다 읽는 구현이면 청크 크기가 뜻이 없다. 없는 키는 **열 때** 예외다

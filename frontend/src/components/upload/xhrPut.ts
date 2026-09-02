@@ -1,7 +1,7 @@
 // S3 로 나가는 PUT — 반드시 XMLHttpRequest. fetch 는 업로드 진행
 // 이벤트가 없다. Blob 을 그대로 보낸다 — FileReader 로 읽으면 메모리가 파일 크기만큼 든다.
 // 타임아웃 대신 스톨 감지(30초간 loaded 정지 → abort) — 느린 회선의 정상 전송과
-// 죽은 연결을 구분한다. 근거: dev-package/PLAN-SoT.md §9 〈174〉
+// 죽은 연결을 구분한다. 근거: dev-package/PLAN-SoT.md §9 〈277〉
 
 export type PutFailure = 'network' | 'stall' | 'aborted';
 

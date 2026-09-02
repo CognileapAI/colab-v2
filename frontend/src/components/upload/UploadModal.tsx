@@ -100,7 +100,7 @@ export function UploadModal(props: {
     renderId: string;
     withoutReferenceGrid: boolean;
   } | null>(null);
-  // 미완결 프리사인드 전송 (〈174〉) — 저장 모드 s3 에서만 값이 온다 (local 은 빈 배열)
+  // 미완결 프리사인드 전송 (〈277〉) — 저장 모드 s3 에서만 값이 온다 (local 은 빈 배열)
   const [incomplete, setIncomplete] = useState<IncompleteTransferItem[]>([]);
   // 재개 대상: 표시용 상태 + 접수 effect 가 읽는 ref. **성공 시에만 비운다** — 상태를
   // deps 로 쓰면 성공 직후 effect 가 한 번 더 돌아 같은 파일이 새 업로드로 중복 접수된다
@@ -120,7 +120,7 @@ export function UploadModal(props: {
   /** 후주입 모드의 기본 파일 종류. 사람이 격자를 붙이러 왔으므로 격자가 기본이다. */
   const defaultKind: FileKind = attach ? '기준 격자 파일' : '본체';
 
-  // 미완결 전송 목록 (〈174〉) — 후주입 모드에서는 묻지 않는다 (격자를 붙이러 온 자리다).
+  // 미완결 전송 목록 (〈277〉) — 후주입 모드에서는 묻지 않는다 (격자를 붙이러 온 자리다).
   const refreshIncomplete = useCallback(() => {
     if (attach || !upload.incomplete) return;
     void upload.incomplete().then(setIncomplete).catch(() => setIncomplete([]));
@@ -291,7 +291,7 @@ export function UploadModal(props: {
   function pick(files: File[], paths?: ReadonlyMap<File, string>) {
     // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
     // **후주입 모드에서는 기본값이 `기준 격자 파일` 이다** — 사람이 격자를 붙이러 왔다.
-    // 폴더째 드롭이면 상대 경로가 함께 온다 (`dropTree.ts` · `〈173〉`).
+    // 폴더째 드롭이면 상대 경로가 함께 온다 (`dropTree.ts` · `〈276〉`).
     setPicked((cur) => [
       ...cur,
       ...files.map((file) => {
@@ -425,7 +425,7 @@ export function UploadModal(props: {
         </div>
 
         <div className="modal-b up-body">
-          {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈174〉) */}
+          {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈277〉) */}
           {!attach && incomplete.length > 0 && (
             <aside className="up-banner" data-testid="up-incomplete" aria-live="polite">
               {incomplete.map((item) => (

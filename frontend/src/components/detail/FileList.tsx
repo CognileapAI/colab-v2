@@ -1,4 +1,4 @@
-// S-05 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉` — 회의 결정 · 정본 산문 밖).
+// S-05 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈278〉` — 회의 결정 · 정본 산문 밖).
 //
 // 정본이 못 박은 두 가지는 그대로다 — 「파일」 칸은 조각 수와 합계만 말하고(`BasicInfoGrid`),
 // **목록은 사람이 눌렀을 때 연다** (`Policy_데이터셋_상세 §5` · `listDatasetFiles` 산문).
@@ -11,7 +11,7 @@
 // 성공하면 **서버에게 다시 묻는다** — 화면이 목록을 손으로 고치지 않는다 (`useDatasetDetail` 의 reloadToken 과 같은 태도).
 // 409(마지막 본체)는 서버 문장을 그대로 보여 준다.
 //
-// 이 파일의 새 문구는 정본에 없다 — 신설마다 `[정본 무근거 · 〈175〉]` 를 남긴다.
+// 이 파일의 새 문구는 정본에 없다 — 신설마다 `[정본 무근거 · 〈278〉]` 를 남긴다.
 import { useState } from 'react';
 import { ActionGate, PermissionGate } from '../../permission/PermissionGate';
 import { useStartDownload } from './download';
@@ -34,10 +34,10 @@ function day(ts: string): string {
 /** 실패를 사람 문장으로. 409 는 **서버 문장 그대로**, 나머지는 최소한의 평범한 라벨이다. */
 export function describeFileError(e: unknown): string {
   if (e instanceof LastBodyFile) return e.message;
-  if (e instanceof FileGone) return '이 파일은 더 이상 없어요.'; // [정본 무근거 · 〈175〉] — 업로드 §9 문장의 앞 절을 빌렸다
-  if (e instanceof NotImplemented) return '아직 지원하지 않아요.'; // [정본 무근거 · 〈175〉]
+  if (e instanceof FileGone) return '이 파일은 더 이상 없어요.'; // [정본 무근거 · 〈278〉] — 업로드 §9 문장의 앞 절을 빌렸다
+  if (e instanceof NotImplemented) return '아직 지원하지 않아요.'; // [정본 무근거 · 〈278〉]
   if (e instanceof Error && e.message) return e.message;
-  return '파일 작업에 실패했어요.'; // [정본 무근거 · 〈175〉]
+  return '파일 작업에 실패했어요.'; // [정본 무근거 · 〈278〉]
 }
 
 /** 파일 입력 한 번 — 고른 파일을 넘기고 입력을 비운다(같은 파일을 다시 고를 수 있게). */
@@ -121,7 +121,7 @@ export function FileList(props: {
           <PermissionGate requires="업로드·편집">
             {/* 교체 = 파일을 하나 고르는 일이다 — 라벨이 곧 버튼이고 입력은 숨긴다 (`FileDropCard` 와 같은 모양) */}
             <label className="btn btn-sm">
-              교체{/* [정본 무근거 · 〈175〉] */}
+              교체{/* [정본 무근거 · 〈278〉] */}
               <input
                 type="file"
                 className="hidden-input"
@@ -140,7 +140,7 @@ export function FileList(props: {
               disabled={busy}
               onClick={() => mutate(() => source.remove(datasetId, f.fileId))}
             >
-              삭제{/* [정본 무근거 · 〈175〉] */}
+              삭제{/* [정본 무근거 · 〈278〉] */}
             </button>
           </PermissionGate>
         </span>
@@ -181,12 +181,12 @@ export function FileList(props: {
           disabled={busy}
           onClick={toggle}
         >
-          {open ? '접기' : '보기'}{/* [정본 무근거 · 〈175〉] — 「목록은 사람이 눌렀을 때 연다」의 그 버튼 */}
+          {open ? '접기' : '보기'}{/* [정본 무근거 · 〈278〉] — 「목록은 사람이 눌렀을 때 연다」의 그 버튼 */}
         </button>
         <PermissionGate requires="업로드·편집">
           {/* 종류는 본체로 고정 — 격자는 `기준 격자 추가`(업로드 모달 재사용)가 맡고 서버도 여기서는 400 을 낸다 */}
           <label className="btn btn-sm">
-            파일 추가{/* [정본 무근거 · 〈175〉] */}
+            파일 추가{/* [정본 무근거 · 〈278〉] */}
             <input
               type="file"
               className="hidden-input"

@@ -1,4 +1,4 @@
-"""미리보기 싱크 두 벌 — 로컬(no-op) · S3 (`ports/preview_sink.py` · `〈178〉-㉮`).
+"""미리보기 싱크 두 벌 — 로컬(no-op) · S3 (`ports/preview_sink.py` · `〈281〉-㉮`).
 
 키 = `{prefix}/{파일명}` 이고 파일명은 `preview._write` 가 정한 `{cache_key}{suffix}` 그대로다 —
 그래야 `COLAB_VIZ_PREVIEW_URL_BASE=/previews` 의 상대 URL 이 CloudFront 를 거쳐 그 객체에 닿는다.

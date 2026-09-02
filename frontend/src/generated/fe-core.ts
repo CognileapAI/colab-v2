@@ -171,9 +171,9 @@ export interface paths {
          *     core-api ↔ 스토리지 사이가 presigned multipart 인 것은 배포 내부 사정이며 이 seam 의 것이 아니다.
          *
          *     **폴더째 업로드의 상대 경로**는 `relativePaths` 로 받아 원장 메타(`relative_path`)로
-         *     보존한다 (`PLAN-SoT §9 〈173〉` · `〈175〉-(나)` 폴더 구조 등록 후 유지 ·
+         *     보존한다 (`PLAN-SoT §9 〈276〉` · `〈278〉-(나)` 폴더 구조 등록 후 유지 ·
          *     [사용자 승인 2026-08-29]). 세 배포 단위가 공유하는 저장 키 규약(`contracts/storage` 정본 ·
-         *     `〈173〉`)은 손대지 않는다 — 경로는 키가 아니라 메타다. 프리사인드 경로(`UploadTransferDraft.files[].relativePath`)와
+         *     `〈276〉`)은 손대지 않는다 — 경로는 키가 아니라 메타다. 프리사인드 경로(`UploadTransferDraft.files[].relativePath`)와
          *     **같은 정규화·같은 상한**을 받는다.
          */
         post: operations["createUpload"];
@@ -194,14 +194,14 @@ export interface paths {
         put?: never;
         /**
          * 프리사인드 전송 계획 — 바이트 없이 접수 초안을 세운다
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 전송 형태는
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 전송 형태는
          *     `[정본 무근거]` 레포 결정이다 — 정본은 `파일을 끌어다 놓는다 → 업로드한다`
          *     (`Policy §2`)까지만 말한다. 파일 바이트는 이 op 으로 들어오지 않는다 —
          *     브라우저가 프리사인드 URL 로 S3 에 직접 놓고, 서버는 계획(전략·파트 크기)과
          *     수명(이어올리기 창 72시간)만 만든다. 완결(`completeUploadTransfer`) 전에는
          *     `d5_upload` 도 `upload.accepted` 도 없다 — 접수는 그때 일어난다.
          *     폴더째 업로드의 상대 경로는 `relativePath` 메타로 보존한다 — 세 배포 단위가
-         *     공유하는 저장 키 규약은 손대지 않는다 (`PLAN-SoT §9 〈173〉`).
+         *     공유하는 저장 키 규약은 손대지 않는다 (`PLAN-SoT §9 〈276〉`).
          */
         post: operations["initiateUploadTransfer"];
         delete?: never;
@@ -219,7 +219,7 @@ export interface paths {
         };
         /**
          * 내 미완결 전송 — 이어올리기 배너의 데이터
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 본인 것만 온다 —
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 본인 것만 온다 —
          *     배너가 남의 미완료를 보여 줄 이유가 없다 (연구실 경계는 RLS 가 먼저 긋는다).
          *     만료(이어올리기 창 72시간)된 전송은 지연 정리로 사라지고 목록에 오르지 않는다.
          */
@@ -244,7 +244,7 @@ export interface paths {
         };
         /**
          * 전송 상태 — 재개에 필요한 실측 사실
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). **파트의 정본은
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). **파트의 정본은
          *     S3 ListParts 다** — `uploadedParts` 는 서버가 실측해 온 값이고, 클라이언트의
          *     자기 보고를 믿지 않는다. 재개는 이 값에서 빠진 파트만 다시 올린다.
          */
@@ -253,7 +253,7 @@ export interface paths {
         post?: never;
         /**
          * 전송 중단 — S3 의 파트·객체까지 치운다
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 미완 멀티파트를
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 미완 멀티파트를
          *     Abort 하고 올라간 객체를 지운 뒤 원장 행을 지운다. 완결된 전송은 중단할 수
          *     없다(409) — 그것은 이미 접수다.
          */
@@ -277,7 +277,7 @@ export interface paths {
         put?: never;
         /**
          * 단일 PUT 프리사인드 URL 발급
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). URL 수명은 짧다
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). URL 수명은 짧다
          *     (자격증명 만료 안쪽으로 클램프) — 소진되면 다시 발급받는다.
          */
         post: operations["issueUploadUrls"];
@@ -306,7 +306,7 @@ export interface paths {
         put?: never;
         /**
          * 멀티파트 시작 — 멱등
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 이미 시작됐으면
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 이미 시작됐으면
          *     같은 계획을 다시 돌려준다 — 재개가 이 멱등성 위에 선다.
          */
         post: operations["initUploadFileMultipart"];
@@ -335,7 +335,7 @@ export interface paths {
         put?: never;
         /**
          * 파트 PUT 프리사인드 URL 발급 (배치)
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 한 번에 1~16개 —
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 한 번에 1~16개 —
          *     URL 수명(짧다)과 왕복 수의 절충이다.
          */
         post: operations["issueUploadPartUrls"];
@@ -364,7 +364,7 @@ export interface paths {
         put?: never;
         /**
          * 파일 완료 — 서버가 S3 실측으로 검증한다
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 멀티파트면
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 멀티파트면
          *     ListParts → Complete, 이어서 HeadObject 로 크기를 신고값과 대조한다.
          *     불일치는 `실패` 로 남고 다시 올려야 한다 — 자기 보고를 믿지 않는다. 멱등.
          */
@@ -389,7 +389,7 @@ export interface paths {
         put?: never;
         /**
          * 전송 완결 — 이때 접수(`upload.accepted`)가 일어난다
-         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈174〉`). 모든 파일이
+         * @description [사용자 승인 2026-08-28] 동결 해제 8차 (`PLAN-SoT §9 〈277〉`). 모든 파일이
          *     실측으로 확인된 뒤에만 성립한다(아니면 409). 같은 ULID 로 `d5_upload` 가 서고
          *     `upload.accepted` 가 발행된다 — 이벤트 계약의 `source: core-api` 능력을
          *     행사하는 두 번째 HTTP 입구다 (`createUpload` 와 같은 능력 · `〈54〉`).
@@ -792,13 +792,13 @@ export interface paths {
          *     후주입은 계보를 접지 않고 활동 기록(D8)에 남는다 (`〈60〉`).
          *     새 파일도 파이프라인(파싱·변환)을 지난다 — 그 비동기 절반은 이벤트 seam 의 것이다.
          *
-         *     **⟨`PLAN-SoT §9 〈175〉-(라)` · [사용자 승인 2026-08-29] — 본체 후주입을 허용한다.
+         *     **⟨`PLAN-SoT §9 〈278〉-(라)` · [사용자 승인 2026-08-29] — 본체 후주입을 허용한다.
          *     `〈59〉-③` 의 번복이다.⟩** 회의(2026-08-23 Ted·phj)가 파일 관리를 1차 목표로 올렸고
          *     그 (라)가 「본체 파일 추가·삭제·교체」다. `〈59〉-③` 이 「본체를 갈아 끼우는 것은 다른
          *     데이터다」라고 한 이유(`DataModel §4.3`)는 그대로 살아 있으나, 그 판단을 **사람이 한다** —
          *     계약이 막지 않는다. 지켜지는 불변식은 하나뿐이다: **본체 ≥ 1**(`deleteDatasetGridFile` 409).
          *     아래 문단의 「본체 후주입은 금지된 조작」은 이 판정으로 **낡았다** — 이력으로 남긴다.
-         *     폴더 구조는 `relativePath` 로 함께 받아 `d3_file.relative_path`(`0009`)에 남긴다 (`〈175〉-(나)`).
+         *     폴더 구조는 `relativePath` 로 함께 받아 `d3_file.relative_path`(`0009`)에 남긴다 (`〈278〉-(나)`).
          *
          *     **⟨Ted 2026-08-25 판정(사용자 관점 우선) — 격자 후주입의 집행 경로는 이 op 이 아니다⟩**
          *     `〈88〉` 묶음 10 이 여기에 `202` 를 열었으나 **그 응답을 낼 수 있는 집행이 없었다**:
@@ -816,7 +816,7 @@ export interface paths {
          *     구현하려 든다.** 격자 후주입의 경로는 `attachUploadGridFiles` 하나다.
          *
          *     ⚠ **이 op 에 남는 집행은 `본체` 뿐이다.** ~~본체 후주입은 `〈59〉-③` 이 금지한 조작이다~~
-         *     → `〈175〉-(라)` 로 허용됐다 (위 문단). 집행은 `kind = 기준 격자 파일` 을 여전히
+         *     → `〈278〉-(라)` 로 허용됐다 (위 문단). 집행은 `kind = 기준 격자 파일` 을 여전히
          *     **400 으로 거절하고 `attachUploadGridFiles` 를 가리킨다** — 축은 파일을 읽는 쪽이 정한다 (`〈66〉`).
          */
         post: operations["addDatasetFile"];
@@ -897,7 +897,7 @@ export interface paths {
          * @description 교체는 정상 동작이다 (`〈59〉-①` — 열린 결정 ⑳ 해소). 판정은 `업로드·편집` 스위치
          *     (`〈59〉-②`).
          *
-         *     **⟨`PLAN-SoT §9 〈175〉-(라)` · [사용자 승인 2026-08-29] — 대상이 본체·격자 모두다.⟩**
+         *     **⟨`PLAN-SoT §9 〈278〉-(라)` · [사용자 승인 2026-08-29] — 대상이 본체·격자 모두다.⟩**
          *     ~~본체 파일은 이 경로의 대상이 아니다 — 본체를 갈아 끼우는 것은 다른 데이터다
          *     (`〈59〉-③`). 대상 파일의 `kind` 가 `본체` 면 409 다.~~ → 번복. `file` 로 **본체도
          *     갈아 끼운다** — 「다른 데이터인가」는 사람이 판단하고 계약은 막지 않는다. `operationId` 는
@@ -928,7 +928,7 @@ export interface paths {
          *     격자를 지우면 그릴 수 없게 될 수 있을 뿐이다 — 그릴 수 없는 것과 등록할 수 없는 것은
          *     다르다 (`Policy_업로드와_계보_확정 §8 기준 격자 파일`).
          *
-         *     **⟨`PLAN-SoT §9 〈175〉-(라)` · [사용자 승인 2026-08-29] — 본체도 지운다.⟩**
+         *     **⟨`PLAN-SoT §9 〈278〉-(라)` · [사용자 승인 2026-08-29] — 본체도 지운다.⟩**
          *     ~~본체 파일은 지우지 않는다 — 대상의 `kind` 가 `본체` 면 409 (`〈59〉-③`).~~ → 번복.
          *     남는 불변식은 **본체 ≥ 1** 하나다 (`DataModel §4.3` — 본체 없는 데이터셋은 데이터가 아니라
          *     좌표다). 그래서 409 의 뜻이 바뀐다: **그 데이터셋의 마지막 본체 파일**이면 409.
@@ -956,12 +956,12 @@ export interface paths {
         };
         /**
          * 파일 단위 다운로드 티켓 — 조각 하나만
-         * @description [사용자 승인 2026-08-29] `PLAN-SoT §9 〈175〉-(다)` — 「다운로드 묶음 + 파일 단위」.
+         * @description [사용자 승인 2026-08-29] `PLAN-SoT §9 〈278〉-(다)` — 「다운로드 묶음 + 파일 단위」.
          *     조각 하나의 다운로드 티켓(`DownloadTicket`)을 발급한다. **바이트는 이 응답에 없다** —
          *     `DownloadTicket.url`(= `getDownloadBytes`)이 바이트다.
          *
          *     ⚠ **정본과 긴장이 있다.** `Policy_데이터셋_상세 §2·§8` 은 「부분 다운로드는 없다, 조각
-         *     묶음이면 묶어서 한 번에」라고 적었다. `〈175〉-(다)` 는 그 문장에 대한 **개정 제안**이며,
+         *     묶음이면 묶어서 한 번에」라고 적었다. `〈278〉-(다)` 는 그 문장에 대한 **개정 제안**이며,
          *     인가 근거는 회의(2026-08-23 Ted·phj) 결정 하나다 — 정본 산문은 아직 그대로다.
          *     묶음 다운로드(`downloadDataset`)는 여전히 「묶어서 한 번에」이고, 이 op 은 그 옆에
          *     **파일 단위**를 더한 것이다. 받은 횟수는 어느 화면에도 내리지 않는다.
@@ -996,7 +996,7 @@ export interface paths {
          *     그 기록이 D8 소유라 프런트가 스토리지를 직접 부르지 않고 core 를 거친다.
          *     받은 횟수는 어느 화면에도 내리지 않는다.
          *
-         *     **⟨`PLAN-SoT §9 〈175〉-(다)` · [사용자 승인 2026-08-29] — 302 + `Location` 에서
+         *     **⟨`PLAN-SoT §9 〈278〉-(다)` · [사용자 승인 2026-08-29] — 302 + `Location` 에서
          *     200 + `DownloadTicket` 으로.⟩** 브라우저는 `<a href>` 로는 Bearer 를 싣지 못하고,
          *     `fetch` 로는 302 를 따라갈 때 자격을 잃는다. 그래서 **응답이 리다이렉트가 아니라 티켓**이고,
          *     바이트는 `DownloadTicket.url`(= `getDownloadBytes`)에서 **서명 티켓으로** 받는다.
@@ -1019,7 +1019,7 @@ export interface paths {
             header?: never;
             path: {
                 /**
-                 * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈175〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
+                 * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈278〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
                  *     식별자가 아니라 자격이라 `common.json#Ulid` 를 쓰지 않는다. 형식은 서버 내부(서명·수명 포함)이고
                  *     클라이언트는 `DownloadTicket.url` 을 그대로 쓴다. 저장 자리가 없다 — 서명이 곧 검증이다.
                  */
@@ -1029,7 +1029,7 @@ export interface paths {
         };
         /**
          * 다운로드 바이트 — 서명 티켓이 자격이다 (Bearer 없음)
-         * @description [사용자 승인 2026-08-29] `PLAN-SoT §9 〈175〉-(다)`. `downloadDataset`·`downloadDatasetFile`
+         * @description [사용자 승인 2026-08-29] `PLAN-SoT §9 〈278〉-(다)`. `downloadDataset`·`downloadDatasetFile`
          *     이 발급한 티켓의 바이트다. **`security: []` 인 이유** — 브라우저가 파일을 저장하려면
          *     내비게이션(`<a href>` · `window.location`)으로 받아야 하고, 거기에는 Bearer 가 실리지 않는다.
          *     그래서 자격은 **짧은 수명의 서명 티켓**이다 — URL 이 곧 자격이고 수명이 곧 노출 창이다.
@@ -1038,7 +1038,7 @@ export interface paths {
          *     (잠김 · 허용 만료 · `body_access`) 연구실 경계 밖이면 **404** — 존재를 알리지 않는다(P-9·P-10).
          *     수명이 지났으면 **410**. 이 op 의 바이트는 core 를 거친다 — 저장 모드 local 전부와 묶음(zip)이
          *     여기로 온다. ⚠ 저장 모드 s3 의 **단일 파일**은 이 op 이 아니라 프리사인드 GET 이다
-         *     (`DownloadTicket.url` 이 그 절대 URL 을 싣는다 · `〈175〉-(다)`) — 그 경우 재판정은 티켓 발급
+         *     (`DownloadTicket.url` 이 그 절대 URL 을 싣는다 · `〈278〉-(다)`) — 그 경우 재판정은 티켓 발급
          *     시점의 것이 전부이고 수명이 노출 창이다.
          *     묶음이면 `application/zip`, 파일 하나면 `application/octet-stream` 이고
          *     `Content-Disposition` 이 저장 이름(`DownloadTicket.fileName`)을 싣는다.
@@ -1883,7 +1883,7 @@ export interface components {
          *     요청은 **택일(`oneOf`)** 이다.
          *     - `file` — 파일을 갈아 끼운다. 축 배정은 그대로 둔다.
          *       등록 뒤(`replaceDatasetGridFile`)에서는 대상이 **본체여도 된다**
-         *       (`PLAN-SoT §9 〈175〉-(라)` — 스키마는 그대로, 대상의 범위만 넓어졌다).
+         *       (`PLAN-SoT §9 〈278〉-(라)` — 스키마는 그대로, 대상의 범위만 넓어졌다).
          *     - `flipAxes: true` — **파일은 그대로 두고 두 기준 격자 파일의 축 배정을 맞바꾼다.**
          *       ⚠ **한 파일만 고치는 형태가 아닌 이유** — `0004:192-195` 의 축별 부분 유니크가
          *       「위도 둘」을 막으므로 **한쪽만 바꾸면 중간 상태가 제약을 깬다.**
@@ -1902,7 +1902,7 @@ export interface components {
          * @description 업로드 안의 파일 하나. 이벤트 seam 의 `FileRef`(`../events/core-pipeline.json`)와 같은
          *     네 값 **+ 폴더 경로**(`relativePath`)다 — 동기 응답과 비동기 페이로드가 같은 사실을
          *     말하게 둔다. ⚠ 폴더 경로는 **이벤트 페이로드에는 싣지 않는다** — `contracts/events` 는
-         *     동결이고, 파이프라인은 경로를 필요로 하지 않는다(키가 곧 배치 · `〈173〉`).
+         *     동결이고, 파이프라인은 경로를 필요로 하지 않는다(키가 곧 배치 · `〈276〉`).
          *     `fileId` 는 등록 전환 후 D3 파일 레코드의 PK 로 그대로 이어진다 — `fileId` 동일성
          *     (`sessions/D2c.md §2-10` `[정본 무근거]` · Ted 승인 2026-08-23 (본인 확인)).
          */
@@ -1912,7 +1912,7 @@ export interface components {
             kind: components["schemas"]["FileKind"];
             byteSize: number;
             /**
-             * @description 폴더째 업로드의 `폴더/이름` 상대 경로 (`PLAN-SoT §9 〈175〉-(나)` · [사용자 승인 2026-08-29]).
+             * @description 폴더째 업로드의 `폴더/이름` 상대 경로 (`PLAN-SoT §9 〈278〉-(나)` · [사용자 승인 2026-08-29]).
              *     **경로가 있을 때만 있다** — 낱개 파일은 키가 없다. 프리사인드 경로(`UploadTransferPlan`)와
              *     form-data 경로(`createUpload.relativePaths`) 어느 쪽으로 왔든 같은 자리에 같은 값이다.
              *     등록 전환 뒤 `DatasetFile.relativePath` 로 그대로 이어진다 (`0009`).
@@ -1934,7 +1934,7 @@ export interface components {
         };
         /**
          * @description [사용자 승인 2026-08-28] 전송 계획 요청 — 바이트 없이 파일의 사실(이름·크기·종류·
-         *     상대 경로)만 신고한다 (`PLAN-SoT §9 〈174〉`).
+         *     상대 경로)만 신고한다 (`PLAN-SoT §9 〈277〉`).
          */
         UploadTransferDraft: {
             /** @description 배너·목록에 보일 묶음 이름. 생략하면 서버가 채운다. */
@@ -1946,14 +1946,14 @@ export interface components {
                 kind?: components["schemas"]["FileKind"];
                 /**
                  * @description 폴더째 업로드의 `폴더/이름` 상대 경로 — 원장 메타로만 보존된다
-                 *     (`PLAN-SoT §9 〈173〉`). 저장 키 규약은 손대지 않는다.
+                 *     (`PLAN-SoT §9 〈276〉`). 저장 키 규약은 손대지 않는다.
                  */
                 relativePath?: string;
             }[];
         };
         /**
          * @description [사용자 승인 2026-08-28] 전송 계획 — 파일마다 전략과 파트 크기가 정해져 있다
-         *     (`PLAN-SoT §9 〈174〉`). 받아들일 수 없던 파일은 `rejected` 에 사유와 함께 남는다 —
+         *     (`PLAN-SoT §9 〈277〉`). 받아들일 수 없던 파일은 `rejected` 에 사유와 함께 남는다 —
          *     조용히 빼지 않는다.
          */
         UploadTransferPlan: {
@@ -1967,7 +1967,7 @@ export interface components {
             }[];
         };
         /**
-         * @description [사용자 승인 2026-08-28] 계획 속 파일 하나 (`PLAN-SoT §9 〈174〉`). `fileId` 는
+         * @description [사용자 승인 2026-08-28] 계획 속 파일 하나 (`PLAN-SoT §9 〈277〉`). `fileId` 는
          *     완결 시 `d5_upload_file.id` 로 그대로 간다 (`NB-A` 동일성의 전송 단계 소급).
          */
         UploadTransferPlanFile: {
@@ -1982,7 +1982,7 @@ export interface components {
             partCount: number | null;
         };
         /**
-         * @description [사용자 승인 2026-08-28] 전송 상태 (`PLAN-SoT §9 〈174〉`). `uploadedParts` 는
+         * @description [사용자 승인 2026-08-28] 전송 상태 (`PLAN-SoT §9 〈277〉`). `uploadedParts` 는
          *     서버가 S3 ListParts 로 실측한 값이다 — 파트의 정본은 S3 다.
          */
         UploadTransferStatus: {
@@ -1997,7 +1997,7 @@ export interface components {
             })[];
         };
         /**
-         * @description [사용자 승인 2026-08-28] 내 미완결 전송 목록 (`PLAN-SoT §9 〈174〉`) — 이어올리기
+         * @description [사용자 승인 2026-08-28] 내 미완결 전송 목록 (`PLAN-SoT §9 〈277〉`) — 이어올리기
          *     배너의 데이터. 본인 것만 온다.
          */
         IncompleteUploadTransfers: {
@@ -2015,7 +2015,7 @@ export interface components {
             }[];
         };
         /**
-         * @description [사용자 승인 2026-08-28] 단일 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈174〉`).
+         * @description [사용자 승인 2026-08-28] 단일 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈277〉`).
          *     수명이 짧다 — 소진되면 다시 발급받는다.
          */
         UploadPutUrls: {
@@ -2026,7 +2026,7 @@ export interface components {
                 expiresAt: string;
             }[];
         };
-        /** @description [사용자 승인 2026-08-28] 파트 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈174〉`). */
+        /** @description [사용자 승인 2026-08-28] 파트 PUT 프리사인드 URL 묶음 (`PLAN-SoT §9 〈277〉`). */
         UploadPartUrls: {
             urls: {
                 partNumber: number;
@@ -2036,7 +2036,7 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description [사용자 승인 2026-08-28] 파일 실측 결과 (`PLAN-SoT §9 〈174〉`) — 서버가 S3 에
+         * @description [사용자 승인 2026-08-28] 파일 실측 결과 (`PLAN-SoT §9 〈277〉`) — 서버가 S3 에
          *     직접 물은 값만 적는다. 실패면 사유가 `detail` 에 있다.
          */
         UploadFileOutcome: {
@@ -2485,7 +2485,7 @@ export interface components {
         };
         /**
          * @description 등록된 데이터셋의 조각 하나. 목록을 펼쳐야 보인다 (`DataModel §4.3`).
-         *     **⟨`PLAN-SoT §9 〈175〉-(가)·(나)` · [사용자 승인 2026-08-29]⟩** 파일 목록 + 파일별 크기가
+         *     **⟨`PLAN-SoT §9 〈278〉-(가)·(나)` · [사용자 승인 2026-08-29]⟩** 파일 목록 + 파일별 크기가
          *     1차 목표에 들어와 `byteSize`·`createdAt` 이 **필수**로, 폴더 구조가 `relativePath` 로 붙는다.
          *     `byteSize` 가 `null` 일 수 있는 것은 `d3_file.size_bytes` 가 NULL 허용이기 때문이다 —
          *     모르는 값을 0 으로 적지 않는다. 합계(`DatasetDetail.basicInfo.files.totalSizeBytes`)는
@@ -2496,7 +2496,7 @@ export interface components {
             /** @description 조각의 실제 파일명. 목록을 펼쳐야 보인다 (`DataModel §4.3`). */
             fileName: string;
             kind: components["schemas"]["FileKind"];
-            /** @description 조각의 크기(바이트). 모르면 `null` — 0 이 아니다 (`〈175〉-(가)`). */
+            /** @description 조각의 크기(바이트). 모르면 `null` — 0 이 아니다 (`〈278〉-(가)`). */
             byteSize: number | null;
             /**
              * Format: date-time
@@ -2504,7 +2504,7 @@ export interface components {
              */
             createdAt: string;
             /**
-             * @description 폴더째 업로드에서 온 `폴더/이름` 상대 경로 (`〈175〉-(나)` · `d3_file.relative_path` `0009`).
+             * @description 폴더째 업로드에서 온 `폴더/이름` 상대 경로 (`〈278〉-(나)` · `d3_file.relative_path` `0009`).
              *     **경로가 있을 때만 있다.** 화면은 이 값으로 트리를 다시 그린다 — 저장 키는 여전히 평평하다.
              */
             relativePath?: string;
@@ -2519,15 +2519,15 @@ export interface components {
             gridAxis?: components["schemas"]["GridAxisAssignment"];
         };
         /**
-         * @description [사용자 승인 2026-08-29] 다운로드 티켓 (`PLAN-SoT §9 〈175〉-(다)`). `downloadDataset`(묶음)·
+         * @description [사용자 승인 2026-08-29] 다운로드 티켓 (`PLAN-SoT §9 〈278〉-(다)`). `downloadDataset`(묶음)·
          *     `downloadDatasetFile`(파일) 이 발급하고, `url` 이 바이트다. 클라이언트는 `url` 을 **그대로
          *     내비게이션**한다 — 어느 쪽인지 가리지 않는다: 저장 모드 local 과 묶음(zip)은 이 seam 의
          *     `getDownloadBytes`(상대 경로 `/downloads/{ticket}`)이고, 저장 모드 s3 의 **단일 파일은 프리사인드
          *     GET(절대 URL)** 이라 바이트가 core 를 거치지 않는다(`S3.md §0` 「컨트롤 플레인만」의 예외 —
-         *     `〈175〉-(다)` 가 그렇게 정했다). 절대 URL 금지 규칙은 `servers` 의 것이지 응답 값의 것이 아니다.
+         *     `〈278〉-(다)` 가 그렇게 정했다). 절대 URL 금지 규칙은 `servers` 의 것이지 응답 값의 것이 아니다.
          *     수명은 짧다 — 값은 `[정본 무근거]` 운영 설정이고 `expiresAt` 이 그것을 말한다.
          *     ⚠ `scope` 의 값 집합은 이 파일에 인라인이다 — 머리말의 「값 집합은 `common.json` 에서만」과
-         *     긴장이 있고, 선례는 `〈174〉` 의 `strategy`·`outcome` 이다(다른 seam 이 공유하지 않는 값).
+         *     긴장이 있고, 선례는 `〈277〉` 의 `strategy`·`outcome` 이다(다른 seam 이 공유하지 않는 값).
          */
         DownloadTicket: {
             /**
@@ -3318,7 +3318,7 @@ export interface components {
             };
         };
         /**
-         * @description 수명이 지난 다운로드 티켓이다 (`PLAN-SoT §9 〈175〉-(다)` — `getDownloadBytes` 전용).
+         * @description 수명이 지난 다운로드 티켓이다 (`PLAN-SoT §9 〈278〉-(다)` — `getDownloadBytes` 전용).
          *     404 와 가른다: 404 는 「없거나 접근이 회수됐다」, 410 은 「있었는데 창이 닫혔다 — 다시 발급받으라」.
          */
         Gone: {
@@ -3365,7 +3365,7 @@ export interface components {
         /** @description 렌더 작업 식별자 (`core-viz.yaml` RenderId 와 같은 값 — 중계라 새 식별자를 만들지 않는다). */
         RenderId: components["schemas"]["Ulid"];
         /**
-         * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈175〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
+         * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈278〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
          *     식별자가 아니라 자격이라 `common.json#Ulid` 를 쓰지 않는다. 형식은 서버 내부(서명·수명 포함)이고
          *     클라이언트는 `DownloadTicket.url` 을 그대로 쓴다. 저장 자리가 없다 — 서명이 곧 검증이다.
          */
@@ -3588,7 +3588,7 @@ export interface operations {
                     /**
                      * @description 파일 바이트 파트들. 순서가 `fileKinds`·`relativePaths` 와 짝이다.
                      *     상한 500 은 프리사인드 경로(`UploadTransferDraft.files`)와 **같은 값**이다 —
-                     *     두 입구가 다른 상한을 갖지 않는다 (`PLAN-SoT §9 〈175〉`).
+                     *     두 입구가 다른 상한을 갖지 않는다 (`PLAN-SoT §9 〈278〉`).
                      */
                     files: string[];
                     /**
@@ -3598,7 +3598,7 @@ export interface operations {
                      */
                     fileKinds?: components["schemas"]["FileKind"][];
                     /**
-                     * @description `files` 와 **같은 순서·같은 개수**의 `폴더/이름` 상대 경로 (`PLAN-SoT §9 〈175〉-(나)`
+                     * @description `files` 와 **같은 순서·같은 개수**의 `폴더/이름` 상대 경로 (`PLAN-SoT §9 〈278〉-(나)`
                      *     · [사용자 승인 2026-08-29]). 생략하면 전부 경로 없음(낱개 파일)이다.
                      *     **빈 문자열 = 그 파일은 경로 없음** — multipart 배열은 null 을 싣지 못한다.
                      *     개수가 `files` 와 다르면 400. `..`·절대 경로는 정규화 뒤 세그먼트가 남지 않으면
@@ -4416,7 +4416,7 @@ export interface operations {
                     file: string;
                     kind: components["schemas"]["FileKind"];
                     /**
-                     * @description `폴더/이름` 상대 경로 — 폴더 구조를 등록 뒤에도 유지한다 (`PLAN-SoT §9 〈175〉-(나)`
+                     * @description `폴더/이름` 상대 경로 — 폴더 구조를 등록 뒤에도 유지한다 (`PLAN-SoT §9 〈278〉-(나)`
                      *     · [사용자 승인 2026-08-29]). `createUpload.relativePaths` 와 같은 정규화·상한.
                      *     생략하면 경로 없음.
                      */
@@ -4427,7 +4427,7 @@ export interface operations {
         responses: {
             /**
              * @description 추가된 파일. **`kind` 가 `본체` 일 때만 이 응답이다** — 축 판별이 필요 없어
-             *     그 자리에서 완결된다. `byteSize`·`createdAt` 이 실려 온다 (`〈175〉-(가)`).
+             *     그 자리에서 완결된다. `byteSize`·`createdAt` 이 실려 온다 (`〈278〉-(가)`).
              */
             201: {
                 headers: {
@@ -4500,7 +4500,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 교체된 파일. `byteSize`·`createdAt` 이 실려 온다 (`〈175〉-(가)`). */
+            /** @description 교체된 파일. `byteSize`·`createdAt` 이 실려 온다 (`〈278〉-(가)`). */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4514,7 +4514,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description 둘 중 하나다 (`PLAN-SoT §9 〈175〉-(라)` 개정 — 「대상이 본체」는 더 이상 409 가 아니다).
+             * @description 둘 중 하나다 (`PLAN-SoT §9 〈278〉-(라)` 개정 — 「대상이 본체」는 더 이상 409 가 아니다).
              *     ① `flipAxes` 인데 그 데이터셋의 기준 격자 파일이 2건이 아니다 — 바꿀 짝이 없다.
              *     ② `flipAxes` 를 **본체**에 요청했다 — 축은 격자 사이의 조작이다.
              */
@@ -4557,7 +4557,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             /**
              * @description 대상이 그 데이터셋의 **마지막 본체 파일**이다 — 본체 ≥ 1 불변식 (`DataModel §4.3` ·
-             *     `PLAN-SoT §9 〈175〉-(라)`). 격자는 0건이 정상이라 이 응답이 없다.
+             *     `PLAN-SoT §9 〈278〉-(라)`). 격자는 0건이 정상이라 이 응답이 없다.
              */
             409: {
                 headers: {
@@ -4633,7 +4633,7 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈175〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
+                 * @description 다운로드 서명 티켓 (`PLAN-SoT §9 〈278〉-(다)` · [사용자 승인 2026-08-29]). **ULID 가 아니다** —
                  *     식별자가 아니라 자격이라 `common.json#Ulid` 를 쓰지 않는다. 형식은 서버 내부(서명·수명 포함)이고
                  *     클라이언트는 `DownloadTicket.url` 을 그대로 쓴다. 저장 자리가 없다 — 서명이 곧 검증이다.
                  */

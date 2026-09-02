@@ -3,14 +3,14 @@
 패턴은 `ports/ingestion.py` 를 승계한다 — Protocol 하나, 구현은 배선 층
 (`kernel/storage_backends.py`)에. 저장 **키**의 정본은 여전히
 `contracts/storage/layout.json`(생성물 `kernel/storage_layout`)이고, 이 Port 는
-그 키가 가리키는 바이트를 **어디에 두는가**만 가른다 (`PLAN-SoT §9 〈173〉`).
+그 키가 가리키는 바이트를 **어디에 두는가**만 가른다 (`PLAN-SoT §9 〈276〉`).
 
 쓰기 네 동작 + 읽기 두 동작이 전부다 — 라우트(`routes/ingestion.py`·`routes/download.py`)가
 바이트를 만지는 자리가 이 여섯 호출로 봉인돼 있기 때문이다. `put`(바이트열)과
 `put_stream`(파일 객체)은 같은 결과를 내고, 라우트는 **`put_stream` 을 쓴다** — 업로드 본문을
-통째로 메모리에 올리지 않기 위해서다 (`PLAN-SoT §9 〈175〉`). `put` 은 남겨 둔다(시험·소규모 쓰기).
+통째로 메모리에 올리지 않기 위해서다 (`PLAN-SoT §9 〈278〉`). `put` 은 남겨 둔다(시험·소규모 쓰기).
 
-읽기 둘(`open`·`presign_get`)은 다운로드 집행(`〈175〉-(다)`)의 것이다. **local 은 `presign_get`
+읽기 둘(`open`·`presign_get`)은 다운로드 집행(`〈278〉-(다)`)의 것이다. **local 은 `presign_get`
 이 None 이다** — 바이트가 core 를 거치는 것 말고 길이 없다. s3 는 단일 파일을 프리사인드 GET
 으로 브라우저에 직접 주고, 묶음(zip)만 `open` 으로 core 를 거친다.
 """

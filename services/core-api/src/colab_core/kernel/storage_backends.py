@@ -1,6 +1,6 @@
 """`ports/storage.py` 의 두 구현 — 로컬 디스크(local) · S3(s3).
 
-어느 쪽이 서는지는 `Settings.storage_mode` 가 정한다 (`kernel/config.py` · `〈173〉`).
+어느 쪽이 서는지는 `Settings.storage_mode` 가 정한다 (`kernel/config.py` · `〈276〉`).
 로컬 개발은 local 이 기본이고, dev/prod 배포가 s3 를 켠다. 저장 키는 두 구현이
 **완전히 같다** — `kernel/storage_layout.storage_key()` 가 POSIX 상대 키를 주므로
 로컬에서는 경로로 접고, S3 에서는 오브젝트 키로 그대로 쓴다.
@@ -25,7 +25,7 @@ from colab_core.kernel.s3 import S3Client, S3Error
 # 같은 이유로 `presign_get` 의 반환 모양(`PresignedGet`)은 **여기** 정의되고 `ports/storage.py`
 # 가 이름만 내놓는다.
 
-#: 스트림 복사 청크. 업로드 본문을 통째로 메모리에 올리지 않는다 (`〈175〉`).
+#: 스트림 복사 청크. 업로드 본문을 통째로 메모리에 올리지 않는다 (`〈278〉`).
 STREAM_CHUNK = 8 * 1024 * 1024
 #: 읽기 청크(다운로드). 쓰기보다 작게 — 응답 첫 바이트까지의 지연이 이 크기에 걸린다.
 READ_CHUNK = 1024 * 1024
@@ -64,7 +64,7 @@ def _read_chunks(fh, chunk_size: int) -> Iterator[bytes]:
         fh.close()
 
 #: S3 단일 PutObject 의 하드 리밋. 그 위는 멀티파트뿐이고, 서버 경유 경로는 멀티파트를
-#: 하지 않는다 — 큰 파일의 정문은 프리사인드 전송(`〈174〉`)이다.
+#: 하지 않는다 — 큰 파일의 정문은 프리사인드 전송(`〈277〉`)이다.
 S3_SINGLE_PUT_MAX = 5 * 1024 ** 3
 
 
@@ -230,7 +230,7 @@ class S3UploadStorage:
             self._client.delete_objects(moved_src)
 
     def open(self, *, key: str) -> Iterator[bytes]:
-        """S3 GET 스트림 — 묶음(zip)만 여기를 지난다 (「컨트롤 플레인만」의 예외 · `〈175〉-(다)`).
+        """S3 GET 스트림 — 묶음(zip)만 여기를 지난다 (「컨트롤 플레인만」의 예외 · `〈278〉-(다)`).
         없는 키는 로컬과 같은 예외(`FileNotFoundError`)로 접는다 — 라우트가 백엔드를 가리지 않게."""
         try:
             return self._client.get_object_stream(key)

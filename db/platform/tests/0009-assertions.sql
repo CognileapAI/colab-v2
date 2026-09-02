@@ -13,7 +13,7 @@
 -- **제약·트리거 시험이지 RLS 시험이 아니다** — superuser 로 돈다. RLS 는 `rls-*` 게이트의 몫이고,
 -- 백필의 RLS 창은 `0009-drift.sh ㈑` 이 소유자 롤(비superuser·NOBYPASSRLS)로 실물 적용해 본다.
 --
--- 근거 = PLAN-SoT §9 〈175〉 (파일 관리 — relative_path 승계 · 파일 단위 내려받기 · 용량 합계 트리거)
+-- 근거 = PLAN-SoT §9 〈278〉 (파일 관리 — relative_path 승계 · 파일 단위 내려받기 · 용량 합계 트리거)
 
 \set ON_ERROR_STOP on
 BEGIN;

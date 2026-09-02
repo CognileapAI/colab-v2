@@ -1,4 +1,4 @@
-"""다운로드 집행 — `downloadDataset` · `downloadDatasetFile` · `getDownloadBytes` (`PLAN-SoT §9 〈175〉-(다)`).
+"""다운로드 집행 — `downloadDataset` · `downloadDatasetFile` · `getDownloadBytes` (`PLAN-SoT §9 〈278〉-(다)`).
 
 오라클 열하나. 티켓 발급이 곧 이력이고(`d8_download` — 파일 단위는 `file_id`, 묶음은 NULL),
 바이트는 서명 티켓만으로 받되 **바이트 시점에 판정을 다시 한다**(경계 · `body_access`).
@@ -362,7 +362,7 @@ def test_s3_mode_file_ticket_is_an_absolute_presigned_get(p2_client, sql) -> Non
 
 def test_s3_mode_bundle_is_relative_and_streams_each_object_into_the_zip(p2_client) -> None:
     """⑪-나 s3 모드 묶음 = 상대 경로 티켓, core-api 가 S3 GET 을 **`ZIP_STORED` 로 흘려보낸다**
-    (「컨트롤 플레인만」의 예외 — `〈175〉-(다)`)."""
+    (「컨트롤 플레인만」의 예외 — `〈278〉-(다)`)."""
     fake = FakeS3Download()
     client = _s3_client(p2_client, fake)
     dataset_id, _ = _dataset(client, name="s3 묶음")

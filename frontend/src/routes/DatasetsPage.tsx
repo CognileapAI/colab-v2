@@ -1,7 +1,7 @@
 // S-03 카탈로그 — 뭐가 있는지 훑는 길. **AI 를 쓰지 않는다** (`Policy_데이터_찾기 §1.2`).
 // 조건과 정렬은 전부 표 헤더에 있다. 자연어 입력칸도 조건 툴바도 여기 없다.
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppliedConditions } from '../components/catalog/AppliedConditions';
 import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
@@ -32,7 +32,7 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
     return filters;
   }, [params]);
   const state = useCatalog(source, initialFilters);
-  // 빠른 작업의 다운로드는 **티켓**이다 (`〈175〉-(다)`). 읽기 폴백을 두는 표와 달리 여기는 폴백이 없다
+  // 빠른 작업의 다운로드는 **티켓**이다 (`〈278〉-(다)`). 읽기 폴백을 두는 표와 달리 여기는 폴백이 없다
   const fileSource = useMemo(() => props.fileSource ?? apiFileSource(), [props.fileSource]);
   const download = useStartDownload();
   const [downloadError, setDownloadError] = useState<string | null>(null);

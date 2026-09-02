@@ -29,7 +29,7 @@
   **`COLAB_VIZ_TILE_SIGNING_SECRET`** 을 `infra/staging/compose.*.yml` 이 넣어야 한다.
   `infra/` 는 이 레인 소유가 아니라 손대지 않았고, **없으면 렌더 표면이 503** 을 낸다(헬스는 산다).
 
-## 소스 모드 · 미리보기 싱크 (`ports/source.py` · `ports/preview_sink.py` · `PLAN-SoT §9 〈178〉-㉮·㉴`)
+## 소스 모드 · 미리보기 싱크 (`ports/source.py` · `ports/preview_sink.py` · `PLAN-SoT §9 〈281〉-㉮·㉴`)
 
 읽기(`readers.py`·`detect_format`)는 로컬 경로만 본다. s3 모드는 대상을 **작업 디렉터리로 통째로 내려받아**
 같은 배치(`storage_layout`)로 놓는다 — 목록 크기로 413 을 판정한 뒤 `materialize` 가 내려받고(HeadObject·받은

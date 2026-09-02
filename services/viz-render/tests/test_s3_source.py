@@ -1,4 +1,4 @@
-"""`S3SourcePort` — 객체 저장소의 대상을 **작업 디렉터리로 내려받아** 그린다 (`PLAN-SoT §9 〈178〉-㉴`).
+"""`S3SourcePort` — 객체 저장소의 대상을 **작업 디렉터리로 내려받아** 그린다 (`PLAN-SoT §9 〈281〉-㉴`).
 
 순수 시험이다 — S3 클라이언트는 스텁이고 numpy·rasterio·conftest 가 필요 없다.
 `../core-api/.venv/bin/python -m pytest tests/test_s3_source.py -q --noconftest` 로 돈다.
@@ -191,7 +191,7 @@ def test_같은_객체를_두_번_materialize_하면_source_digest_가_같다(tm
 
 
 def test_캐시_파일이_지워졌으면_다시_내려받아도_디지스트는_같다(tmp_path):
-    """mtime 이 새로 찍혀도 키가 안 바뀐다 — 이것이 `〈178〉` 어드바이저 정정이 요구한 성질이다."""
+    """mtime 이 새로 찍혀도 키가 안 바뀐다 — 이것이 `〈281〉` 어드바이저 정정이 요구한 성질이다."""
     client = StubS3(_objects(grid=False))
     port = _port(client, tmp_path)
     first = port.materialize(port.resolve(dataset_id=TID, upload_id=None, file_ids=None))

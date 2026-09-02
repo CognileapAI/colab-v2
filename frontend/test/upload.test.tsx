@@ -1628,9 +1628,11 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
     // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
     expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
     expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
+  });
+});
 
 // ───────────────────────────────────────────────────────────────────────────
-// form-data 폴백 (`createUpload`) — 프리사인드가 501 이면 이 경로다 (〈174〉 · 〈175〉-(나)).
+// form-data 폴백 (`createUpload`) — 프리사인드가 501 이면 이 경로다 (〈277〉 · 〈278〉-(나)).
 // 계약: `relativePaths` 는 `files` 와 **같은 순서·같은 개수**이고, 빈 문자열 = 경로 없음.
 describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서로 싣는다', () => {
   afterEach(() => {

@@ -1,4 +1,4 @@
-# CloudFront — dev 배포 1개 · 오리진 3 · 동작 3 (`PLAN-SoT §9 〈178〉-㉮`)
+# CloudFront — dev 배포 1개 · 오리진 3 · 동작 3 (`PLAN-SoT §9 〈281〉-㉮`)
 
 도메인 없이 기본 주소(`https://<id>.cloudfront.net`)로 HTTPS 를 얻는다. HTTPS 가 없으면 브라우저의
 `crypto.subtle`·디렉터리 선택이 보안 컨텍스트 밖이라 이어올리기가 조용히 죽는다.

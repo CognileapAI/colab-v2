@@ -1,6 +1,6 @@
 # infra/dev — AWS dev 환경 배포 런북 (배치 · 재배포 · 진단) — 정본
 
-> 값과 근거는 `dev-package/PLAN-SoT.md §9 〈176〉·〈178〉`. S3 벌(버킷·IAM·CORS·라이프사이클·env) 정본은
+> 값과 근거는 `dev-package/PLAN-SoT.md §9 〈279〉·〈281〉`. S3 벌(버킷·IAM·CORS·라이프사이클·env) 정본은
 > `dev-package/S3.md §1`. 콘솔 체크리스트(G4~G6)는 `dev-package/sessions/ID.md §6`. 집행 계획서 원문은
 > `sessions/ID-AWS-PLAN.md`(참조·비정본). **절차가 실제와 다르면 이 문서를 고친다.**
 
@@ -14,7 +14,7 @@
 | S3 웹 버킷 `colab-platform-web-dev` | 프론트 정적 번들 (`ops/deploy_web.py`) | OAC 만 읽는다 |
 | CloudFront 1 | 오리진 3 · 동작 3 · SPA 함수 | `cloudfront/README.md` |
 
-배치 결정의 이유(왜 nginx 가 없고, 왜 previews 가 데이터 버킷이고, 왜 `_FILE` 인가)는 `〈178〉`-㉮·㉯.
+배치 결정의 이유(왜 nginx 가 없고, 왜 previews 가 데이터 버킷이고, 왜 `_FILE` 인가)는 `〈281〉`-㉮·㉯.
 
 ## 환경변수 — 전체 표 (`compose.yml` 이 정본, 여기는 사람용 요약)
 

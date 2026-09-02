@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 빌드한 tar 와 compose·up.sh 를 EC2 로 실어 `docker load` 한다 (`〈178〉-㉮`).
+# 빌드한 tar 와 compose·up.sh 를 EC2 로 실어 `docker load` 한다 (`〈281〉-㉮`).
 #
 # 호스트·키는 env 로 받는다(레포에 절대경로·주소를 적지 않는다):
 #   COLAB_DEV_SSH      = ec2-user@<탄력적 IP>

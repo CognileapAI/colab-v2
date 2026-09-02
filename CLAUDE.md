@@ -147,7 +147,7 @@ git log --oneline -10
 
 ## 업로드(S3) — 고칠 때 알아야 할 것
 
-업로드 바이트 저장이 **로컬/S3 로 갈린다** (`PLAN-SoT §9 〈173〉·〈174〉` · 운영 정본 `dev-package/S3.md`).
+업로드 바이트 저장이 **로컬/S3 로 갈린다** (`PLAN-SoT §9 〈276〉·〈277〉` · 운영 정본 `dev-package/S3.md`).
 로컬 개발은 local 모드(form-data→디스크)가 기본이라 AWS 없이 그대로 돈다.
 
 - 분기점은 저장 Port(`ports/storage.py`)와 전송 라우트(`routes/upload_transfers.py`) 둘뿐이다.

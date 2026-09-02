@@ -63,7 +63,7 @@ class RenderSpec:
     deadline_seconds: float
     preview_dir: Path
     preview_url_base: str
-    #: 산출물을 서빙 자리로 내보내는 싱크 (`〈178〉-㉮`). 기본은 로컬(no-op — nginx 가 디렉터리를 서빙).
+    #: 산출물을 서빙 자리로 내보내는 싱크 (`〈281〉-㉮`). 기본은 로컬(no-op — nginx 가 디렉터리를 서빙).
     preview_sink: PreviewSinkPort = field(default_factory=LocalPreviewSink)
 
 

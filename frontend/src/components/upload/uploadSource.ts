@@ -22,7 +22,7 @@ let transferUnavailable = false;
 export function apiUploadSource(): UploadSource {
   return {
     async create(files: PickedFile[], opts?: UploadCreateOptions) {
-      // ① 프리사인드 직행(〈174〉)을 먼저 — 브라우저가 S3 에 직접 놓고 재개가 성립한다.
+      // ① 프리사인드 직행(〈277〉)을 먼저 — 브라우저가 S3 에 직접 놓고 재개가 성립한다.
       if (!transferUnavailable) {
         try {
           return await presignedCreate(files, opts ?? {});
@@ -35,7 +35,7 @@ export function apiUploadSource(): UploadSource {
       const form = new FormData();
       for (const f of files) form.append('files', f.file, f.file.name);
       for (const f of files) form.append('fileKinds', f.kind);
-      // 폴더째 업로드의 경로(〈175〉-(나)) — 하나라도 있으면 **전부** 싣는다(같은 개수). 빈 문자열 =
+      // 폴더째 업로드의 경로(〈278〉-(나)) — 하나라도 있으면 **전부** 싣는다(같은 개수). 빈 문자열 =
       // 그 파일은 경로 없음(multipart 배열은 null 을 싣지 못한다). 아무 파일에도 없으면 생략 = 전부 낱개.
       if (files.some((f) => f.relativePath)) {
         for (const f of files) form.append('relativePaths', f.relativePath ?? '');

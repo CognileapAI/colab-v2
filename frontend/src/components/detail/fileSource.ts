@@ -1,4 +1,4 @@
-// 파일 관리 5 op 의 실서버 구현 (`PLAN-SoT §9 〈175〉`). 타입은 전부 생성물에서 온다.
+// 파일 관리 5 op 의 실서버 구현 (`PLAN-SoT §9 〈278〉`). 타입은 전부 생성물에서 온다.
 //
 // **픽스처 폴백을 두지 않는다.** 상세(`detailSource.ts`)는 읽기라 픽스처로 그려도 화면이
 // 거짓말을 하지 않지만, 추가·교체·삭제는 **되돌릴 수 없는 것을 만드는 경로**고 다운로드 티켓은
@@ -35,7 +35,7 @@ export function apiFileSource(): FileSource {
       if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) {
         // 403 = 잠김 + 허용 목록 밖 (P-34). 서버 문장이 있으면 그대로 보여 준다.
-        throw new Error(serverMessage(r.error) ?? '파일 목록을 불러오지 못했어요.'); // [정본 무근거 · 〈175〉]
+        throw new Error(serverMessage(r.error) ?? '파일 목록을 불러오지 못했어요.'); // [정본 무근거 · 〈278〉]
       }
       return r.data.items ?? [];
     },
@@ -51,7 +51,7 @@ export function apiFileSource(): FileSource {
       // 404 = 없거나 경계 밖 — 존재를 알리지 않는다 (P-9·P-10). 잠김(403)은 아래 일반 오류로
       if (r.response.status === 404) throw new FileGone();
       if (r.response.status === 501) throw new NotImplemented();
-      if (!r.data) throw new Error(serverMessage(r.error) ?? '다운로드를 시작하지 못했어요.'); // [정본 무근거 · 〈175〉]
+      if (!r.data) throw new Error(serverMessage(r.error) ?? '다운로드를 시작하지 못했어요.'); // [정본 무근거 · 〈278〉]
       return r.data;
     },
 
@@ -69,7 +69,7 @@ export function apiFileSource(): FileSource {
       if (r.response.status === 404) throw new FileGone();
       if (r.response.status === 501) throw new NotImplemented();
       // 400 = `kind` 가 격자다(→ `attachUploadGridFiles`) 또는 경로 정규화 실패 — 서버 문장 그대로
-      if (!r.data) throw new Error(serverMessage(r.error) ?? '파일을 더하지 못했어요.'); // [정본 무근거 · 〈175〉]
+      if (!r.data) throw new Error(serverMessage(r.error) ?? '파일을 더하지 못했어요.'); // [정본 무근거 · 〈278〉]
       return r.data;
     },
 
@@ -84,7 +84,7 @@ export function apiFileSource(): FileSource {
       if (r.response.status === 404) throw new FileGone();
       if (r.response.status === 501) throw new NotImplemented();
       // 409 는 `flipAxes` 쪽 충돌뿐이다 — 파일 교체에는 없다. 그래도 오면 서버 문장을 그대로
-      if (!r.data) throw new Error(serverMessage(r.error) ?? '파일을 교체하지 못했어요.'); // [정본 무근거 · 〈175〉]
+      if (!r.data) throw new Error(serverMessage(r.error) ?? '파일을 교체하지 못했어요.'); // [정본 무근거 · 〈278〉]
       return r.data;
     },
 
@@ -95,10 +95,10 @@ export function apiFileSource(): FileSource {
       if (r.response.status === 404) throw new FileGone();
       // 409 = 마지막 본체 파일 (본체 ≥ 1). **서버 문장을 그대로** 실어 보낸다
       if (r.response.status === 409) {
-        throw new LastBodyFile(serverMessage(r.error) ?? '마지막 본체 파일은 지울 수 없어요.'); // [정본 무근거 · 〈175〉] 서버 문장이 없을 때만
+        throw new LastBodyFile(serverMessage(r.error) ?? '마지막 본체 파일은 지울 수 없어요.'); // [정본 무근거 · 〈278〉] 서버 문장이 없을 때만
       }
       if (r.response.status === 501) throw new NotImplemented();
-      if (!r.response.ok) throw new Error(serverMessage(r.error) ?? '파일을 지우지 못했어요.'); // [정본 무근거 · 〈175〉]
+      if (!r.response.ok) throw new Error(serverMessage(r.error) ?? '파일을 지우지 못했어요.'); // [정본 무근거 · 〈278〉]
     },
   };
 }

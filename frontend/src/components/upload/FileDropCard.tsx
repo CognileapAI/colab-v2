@@ -71,7 +71,7 @@ export function FileDropCard(props: {
       <div className="card-b">
         {/* 여러 개를 한 번에 받는다 — 드롭 영역이 그렇게 말한다 (§8).
             실제 드롭은 여기 핸들러가 받는다 — 숨긴 1px 인풋에는 드롭이 닿지 않는다.
-            폴더가 떨어지면 dropTree 가 재귀로 펼친다 (`〈173〉`). */}
+            폴더가 떨어지면 dropTree 가 재귀로 펼친다 (`〈276〉`). */}
         <label
           className="dropzone"
           data-testid="up-drop"

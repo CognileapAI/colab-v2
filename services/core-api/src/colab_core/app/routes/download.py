@@ -1,6 +1,6 @@
 """다운로드 집행 3 op — `downloadDataset`(묶음) · `downloadDatasetFile`(파일) · `getDownloadBytes`(바이트).
 
-형태는 `PLAN-SoT §9 〈175〉-(다)` 가 정했다: **200 티켓 + 바이트 op**. 302 는 브라우저가
+형태는 `PLAN-SoT §9 〈278〉-(다)` 가 정했다: **200 티켓 + 바이트 op**. 302 는 브라우저가
 Bearer 를 못 실어 도달 불가라 기각됐다(계약 산문). 흐름은 셋으로 갈린다 —
 
   발급(두 op · Bearer 필수)

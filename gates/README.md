@@ -68,7 +68,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `contract-lint` · `contract-breaking` | ✅ 구현 (WU-D2) | — green |
 | `event-lint` · `event-breaking` | ✅ 구현 (WU-D2b) | — green |
 | `import-boundary` · `banned-import` · `ai-no-lineage-write` | ✅ 구현 (WU-D3) | — **green (2026-08-25 P2 실측).** 이전 판에는 「red — `services/` 에 코드가 없다」라고 적혀 있었으나 P0·P1 이 네 단위를 채운 뒤로 셋 다 green 이다. **이 줄만 낡아 있었다** (`DATA-REFERENCE §0 M-6`) | ⭑ **2026-08-27 — `ai-no-lineage-write` ⑨⑩ 의 산문 오탐 제거**(`PLAN-SoT §9 〈172〉`). `origin/main` 도 같은 red 였다
-| **`db-boundary`** | ✅ 구현 (2026-08-25) · compose 2 (2026-08-30 `〈178〉`) | — green (단위 7 · 스캔 대상 = 소스 + compose **2**(staging·dev) · 위반 0). `COLAB_AI_CATALOG_DB_URL` 이 판정 ㈎ 로 사라진 뒤의 배치를 기준으로 한다. selftest 에 「두 번째 compose 부재 = red · dev 횡단 = red · 둘 정상 = green」 3건 |
+| **`db-boundary`** | ✅ 구현 (2026-08-25) · compose 2 (2026-08-30 `〈281〉`) | — green (단위 7 · 스캔 대상 = 소스 + compose **2**(staging·dev) · 위반 0). `COLAB_AI_CATALOG_DB_URL` 이 판정 ㈎ 로 사라진 뒤의 배치를 기준으로 한다. selftest 에 「두 번째 compose 부재 = red · dev 횡단 = red · 둘 정상 = green」 3건 |
 | `migration-single-head` · `rls-coverage` | ✅ 구현 (WU-D3) | — green (P0 이 `db/` 를 채웠다) |
 | `rls-effect` | ✅ 구현 (WU-D3b) | — green (A2 의 시드·앱 롤을 그대로 쓴다) |
 | `seam-consistency` | ✅ 구현 (WU-D2c) — 단, 5종 중 **G-e·G-b 만** (최소 채택선) + 〈61〉-㉠·㉡ | — green (D2c 개정 후 계약 기준. **G-a 식별자 도달성 · G-c 짝 op 대칭 · G-d 공유 값 집합 재선언은 미구현** — 감추지 않는다, `D2c.md §2-13`) |
@@ -140,7 +140,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 - **파이썬이 아닌 소스** — 프론트엔드 TS·쉘 스크립트·CI 워크플로의 env 선언은 스캔하지 않는다
   (`frontend` 는 `chains = []` 이지만 Dockerfile·compose 만 본다).
 - **두 compose(`infra/staging/compose.i2.yml`·`infra/dev/compose.yml`) 가 아닌 배선** — `.env` 파일·호스트 환경변수·
-  prod 매니페스트는 대상이 아니다. dev 는 `〈178〉` 로 대상에 들어왔고(둘 중 하나라도 없으면 red), prod 가 서면 그 파일도 목록에 넣는다.
+  prod 매니페스트는 대상이 아니다. dev 는 `〈281〉` 로 대상에 들어왔고(둘 중 하나라도 없으면 red), prod 가 서면 그 파일도 목록에 넣는다.
   I2 staging 의 그 파일 하나만 본다.
 - **매니페스트가 틀린 경우** — 표가 정본이라, 표를 넓히면 게이트는 조용해진다. `chains` 를 늘리는 편집은
   경계를 넓히는 결정이지 게이트 수리가 아니다 (`CLAUDE.md §4`).

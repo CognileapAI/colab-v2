@@ -1,4 +1,4 @@
-"""배포 상태 검사기 `ops/deploy_doctor.py` · core `GET /healthz/storage` 오라클 (`PLAN-SoT §9 〈178〉-㉲` · G2).
+"""배포 상태 검사기 `ops/deploy_doctor.py` · core `GET /healthz/storage` 오라클 (`PLAN-SoT §9 〈281〉-㉲` · G2).
 
 **red 를 먼저 봤다** — `ops/deploy_doctor.py` 가 없던 시점에 subprocess 가 파일 부재로 죽었고,
 `/healthz/storage` 는 404 였다.
