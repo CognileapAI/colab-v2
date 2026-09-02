@@ -107,6 +107,22 @@ infra/staging/restore/restore-db.sh --db colab_ai --owner $OWNER \
 문 셋(`--yes-drop-schema` · `COLAB_RESTORE_PRE_BACKUP` · 커넥션 0)이 전부 서야 한 글자라도 쓴다.
 `DROP SCHEMA public CASCADE` 는 되돌릴 수 없다.
 
+### 3.2-b 앱 롤 권한 재부여 — **`DROP SCHEMA` 가 지운 것을 되돌린다** ⭑ 신설 2026-09-03 (`PLAN-SoT §9 〈285〉`)
+
+```
+infra/staging/db-bootstrap.sh app-grants
+```
+
+- **왜 필요한가** — 백업은 `pg_dump --no-owner --no-privileges` 다(`backup/backup.sh:40`). **덤프에 `GRANT` 가 0건**이다.
+  그리고 `§3.2` 의 `DROP SCHEMA public CASCADE` 는 스키마 `USAGE` 와
+  `ALTER DEFAULT PRIVILEGES … IN SCHEMA public` 항목까지 함께 지운다.
+  ⟹ **`§3.2` 만 돌고 나면 `colab_app`·`colab_ai_app` 은 권한이 0 이다.**
+- **위험의 모양** — **헬스는 200 을 낸다.** 앱은 뜨고 **첫 실질 질의에서 죽는다.**
+  「죽은 쪽은 바로 보이고 살아 있는 쪽이 속인다」(`〈153〉` 계열)와 같은 자리다.
+- 정본은 `services/core-api/ops/app-role.sql`(＋ `colab_ai_app` 분) 이고 **멱등**이다. 두 번 돌아도 같다.
+- **순서 — `§3.2` 뒤 · `§3.3` 앞.** 원장이 되돌아온 뒤라야 표에 걸 권한이 존재한다.
+- 이 단계를 빼면 `§5-⑤`(앱 롤 양성·음성)가 RED 다. **`§5` 가 이것을 잡는다 — 헬스는 못 잡는다.**
+
 ### 3.3 볼륨 — **원장보다 뒤**
 
 ```
