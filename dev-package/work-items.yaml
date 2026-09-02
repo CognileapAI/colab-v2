@@ -1389,12 +1389,17 @@ items:
     status: open
     stage: stage1
     owner: "D3 / core-api ＋ contracts ＋ db"
-    entry_conditions: ["⭑ ⟨**등급 확정** 2026-08-31 · Ted RULING ㉝ · `PLAN-SoT §9 〈258〉`⟩ 계약 동결 해제 **등급 ㉯ — Ted 승인 필수**(`sessions/X2-FREEZE-PROTOCOL.md §5-㉯`). **추정이 아니라 검사를 실제로 돌려 매겼다.** 측정 = `contract-breaking` 게이트를 `COLAB_CONTRACTS_REV` 로 **긁힘용 사본**에 물려 `DatasetUpdate.processingLevel` 을 뺀 판으로 실행(레포 `contracts/` 무접촉). **결과 = `1 changes: 0 error, 1 warning, 0 info` · `[request-property-removed]` **WARN 1 · ERR 0** · 게이트 exit 0(green).** **그런데도 ㉮ 자동 허용이 아니다** — §5-㉮ 는 **5조건 전건 충족**을 요구하고, 이 항목은 **조건 2(마이그레이션 0 · 스키마 변경 0)를 어긴다**: 완료 정의 ⓐ 가 `db/platform/schema.sql` 의 `processing_level_user_set` 열·`CHECK` 제거를, ⓒ 가 되돌림 마이그레이션을 요구한다(**마이그레이션 ≥ 1**). §5-㉯ 의 「마이그레이션 ≥ 1 또는 스키마 변경 — 되돌리기 어려운 것은 언제나 사람이 연다」에 그대로 해당하고, **ERR 0 인데 등급 ㉯ 인 선례가 이미 둘 있다**(10차 `〈205〉` · 11차 `〈231〉`). ⚠ **등급이 정해졌다는 것과 승인이 났다는 것은 다르다** — 착수 회차가 Ted 승인을 받고 **다음 해제 회차 번호(12차)**로 등재한다. ／ 이전 ~~계약 동결 해제 등급 판정 — `[미확인]`~~"]
+    entry_conditions: ["⭑ ⟨**등급 확정** 2026-08-31 · Ted RULING ㉝ · `PLAN-SoT §9 〈258〉`⟩ 계약 동결 해제 **등급 ㉯ — Ted 승인 필수**(`sessions/X2-FREEZE-PROTOCOL.md §5-㉯`). **추정이 아니라 검사를 실제로 돌려 매겼다.** 측정 = `contract-breaking` 게이트를 `COLAB_CONTRACTS_REV` 로 **긁힘용 사본**에 물려 `DatasetUpdate.processingLevel` 을 뺀 판으로 실행(레포 `contracts/` 무접촉). **결과 = `1 changes: 0 error, 1 warning, 0 info` · `[request-property-removed]` **WARN 1 · ERR 0** · 게이트 exit 0(green).** **그런데도 ㉮ 자동 허용이 아니다** — §5-㉮ 는 **5조건 전건 충족**을 요구하고, 이 항목은 **조건 2(마이그레이션 0 · 스키마 변경 0)를 어긴다**: 완료 정의 ⓐ 가 `db/platform/schema.sql` 의 `processing_level_user_set` 열·`CHECK` 제거를, ⓒ 가 되돌림 마이그레이션을 요구한다(**마이그레이션 ≥ 1**). §5-㉯ 의 「마이그레이션 ≥ 1 또는 스키마 변경 — 되돌리기 어려운 것은 언제나 사람이 연다」에 그대로 해당하고, **ERR 0 인데 등급 ㉯ 인 선례가 이미 둘 있다**(10차 `〈205〉` · 11차 `〈231〉`). ⚠ **등급이 정해졌다는 것과 승인이 났다는 것은 다르다** — 착수 회차가 Ted 승인을 받고 **다음 해제 회차 번호(12차)**로 등재한다. ⭑ **⟨해소 2026-09-02 · Ted 승인⟩ 계약 동결 해제 **13차** 승인(직전 12차 `〈253〉`). 승인 사유는 파괴성이 아니라 **마이그레이션 ≥ 1 · 스키마 변경**이다(ERR 0 · WARN 2). 회차 번호·§9 등재는 오케스트레이터 몫이고, 등재문 초안은 `dev-package/notes/LV-1-LEDGER-PENDING.md` 에 있다. ／ 종전 표기 ~~12차~~ 는 그 사이 `〈253〉` 이 12차를 가져가 **13차**로 정정한다. ／ 이전 ~~계약 동결 해제 등급 판정 — `[미확인]`~~"]
     depends_on: [P2]
     completion_def: >-
       ⓐ 사람이 고른 값을 담는 경로가 전부 없어졌다 —
       `db/platform/schema.sql` 의 `processing_level_user_set` 열과 `CHECK` 제약 ·
-      계약 `contracts/seams/fe-core.yaml` 의 `DatasetUpdate.processingLevel` ·
+      계약 `contracts/seams/fe-core.yaml` 의 `DatasetUpdate.processingLevel`
+      **＋ `DatasetCreate.processingLevel`**
+      (⭑ **⟨개정 2026-09-02 · Ted⟩ 생성 요청도 범위다.** 종전 문면은 `DatasetUpdate` 만
+      지목했고 `LV-1-UNFREEZE-SCOPE.md §3` 이 그 어긋남을 `[미확인]` 로 올렸다. Ted 판정 =
+      `〈194〉` 의 「예외 없음」이 문면보다 위이므로 **생성 요청에서도 뺀다.** 이 개정으로
+      `contract-breaking` 의 `[request-property-removed]` 가 1 → **2** 가 된다) ·
       수용 경로 `routes/catalog.py` 와 `domains/d3_catalog.py` 의 필드 대응표 ·
       `d3_catalog.py::processing_level` 의 `user_set` 분기 ·
       그 경로를 단언하던 시험
@@ -1407,7 +1412,7 @@ items:
       그 red 는 동결 해제 승인 기록과 짝지어야 한다
       ⓔ 업로드 폼의 읽기 전용 칸(`RegisterArea.tsx` 「계보를 확정하면 정해져요」)은 그대로 둔다 —
       화면 변경이 없다는 것이 이 항목의 전제다
-    evidence: "2026-08-29 실측 — staging `d3_dataset` 전체 12 · `processing_level_user_set` 비-NULL **0건**(읽기 전용 조회). 데이터 이행 대상 0. 산출 `sessions/LINEAGE-LEVEL.md §9.1`"
+    evidence: "⭑ **⟨2026-09-02 실측 · 워크트리 `lane-lv1`⟩ 완료 정의 ⓐ~ⓔ 전건 충족 — 닫는 것은 병합·배포 뒤다.** **ⓐ** 쓰기 경로 전건 제거 — 계약 2자리(`DatasetCreate`·`DatasetUpdate` · 개정된 문면 그대로) · 생성물 `frontend/src/generated/fe-core.ts` 재생성 · `routes/catalog.py`(`_UPDATE_FIELDS` · 수용 검증 블록 · `processing_level` 2호출) · `domains/d3_catalog.py`(SELECT 열 2 · `DatasetCore` 필드 · 행 매핑 2 · `_UPDATABLE` 대응표 · `user_set` 분기) · `schema.sql` 열＋`CHECK`. **응답 5자리와 목록 질의 조건은 그대로 있다**(`:1971`·`:2728`·`:2970`·`:3077`·`:3214` — 계약 축자 「쓰기 바디에는 없다」). ⚠ **생성 요청은 서버가 이미 막고 있었다** — `_ALLOWED_CREATE_FIELDS`(`routes/ingestion.py`)에 `processingLevel` 이 애초에 없어 400 이었다. 계약만 열려 있던 자리이고, 이번 제거가 그 드리프트를 닫는다. **ⓑ** ⭑ **재계수 2026-09-02** — staging `d3_dataset` 전체 **13행** · `processing_level_user_set` 비-NULL **0건**(읽기 전용 조회). ⟹ 표시 Lv 가 바뀌는 행 **0**, 목록 고정 대상 없음. ／ 이전 ~~2026-08-29 전체 12 · 비-NULL 0~~ (전체 수만 늘었고 판정은 같다). **ⓒ** 마이그레이션 `0011_lv1_drop_level_user_set`(head `0010` → `0011`) · **down 있음**(`0007` UPGRADE ⑴ 의 거울) · 적용 DB 에서 `upgrade → downgrade -1 → upgrade` **왕복 실측** · `schema-diff` **두 체인 green** · `migration-single-head` green. **ⓓ** 게이트 4종 전건 green — `contract-lint`·`seam-consistency`·`generated-up-to-date` green · `contract-breaking` = **`2 changes: 0 error, 2 warning, 0 info`** · `[request-property-removed]` × 2(`POST /datasets`·`PATCH /datasets/{datasetId}`) · **ERR 0 · green**. 이 WARN 2 는 **13차 동결 해제(등급 ㉯ · Ted 승인 2026-09-02)** 와 짝지어 등재한다 — 등재문 초안 = `dev-package/notes/LV-1-LEDGER-PENDING.md`. **ⓔ** 화면 변경 **0건** — `frontend/src` 무접촉 · `tsc --noEmit` 통과 · frontend 시험 **422 passed**(기준선과 같다). **전체 게이트 = green 37 / red(판정) 0 / red(준비) 0 (`-j 1`)** · 시험 = core-api **519** · frontend **422** · viz-render **232** · pipeline-worker **222** · ai-service **145**(전건 기준선 일치). ⚠ **남는 것 = staging 배포** — 배포 전까지 staging 실물에는 열이 남아 있다(적용 DB 는 이미 `0011`). ／ 이전 ~~2026-08-29 실측 — staging `d3_dataset` 전체 12 · `processing_level_user_set` 비-NULL 0건. 데이터 이행 대상 0. 산출 `sessions/LINEAGE-LEVEL.md §9.1`~~"
     deadline: null
     note: >-
       stage 판정 근거 = 걷어낼 자리가 **전부 stage 1 에서 이미 지어진 표면**이다

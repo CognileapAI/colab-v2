@@ -325,17 +325,14 @@ CREATE TABLE d3_dataset (
   search_vector tsvector GENERATED ALWAYS AS (
     setweight(to_tsvector('simple', coalesce(source_label, '')), 'B')
   ) STORED,
-  -- ── `0007` 이 더한 셋. **여기 순서는 임의가 아니다** ──────────────────────────
+  -- ── `0007` 이 더한 것. **여기 순서는 임의가 아니다** ──────────────────────────
   -- `ALTER TABLE ADD COLUMN` 은 열을 **뒤에** 붙인다. 선언이 이 순서와 다르면
   -- schema-diff 가 red 를 낸다 — 실제로 그렇게 잡혔다.
-  -- 가공 단계 — **사람이 고른 값만 담는다** (`0007` · `PLAN-SoT §9 〈140〉`).
-  -- ⚠ **계산 결과를 여기 넣지 않는다.** `⑳` 이 「저장 필드를 두지 않는다」고 한 것이 막으려던
-  -- 위험은 `DATAMODEL-BASELINE:166` 이 적은 그것이다 — 「Lv 를 손으로 고치는 칸으로 두면
-  -- 계보를 고쳐도 Lv 가 안 따라가 둘이 갈라진다」. **낡는 것은 계산 결과지 사람의 의도가 아니다.**
-  -- `NULL` = 계보에서 파생하라 · 값 있음 = 사람이 골랐으니 자동 보정이 덮지 않는다 (`POL-020` 예외).
-  processing_level_user_set smallint,
-  CONSTRAINT d3_dataset_processing_level_user_set_range CHECK (
-    processing_level_user_set IS NULL OR processing_level_user_set BETWEEN 0 AND 2),
+  -- ⭑ **2026-09-02 · `0011` · `LV-1` · `PLAN-SoT §9 〈194〉`** — `0007` 이 세운
+  -- `processing_level_user_set` 열과 그 `CHECK` 를 **지웠다.** 「레벨은 언제나 계보에서
+  -- 나온다 — 사람이 직접 정하지 못한다 … 예외 없음」이라 **사람이 고른 값을 담을 자리가
+  -- 없다.** `⑳`(파생값은 저장하지 않는다)이 원래 자리로 돌아온 것이다.
+  -- 삭제 시점 실측 = 전체 13행 · 비-NULL 0건 ⟹ 화면 값이 바뀌는 행 0.
   -- 대표 조각 — 상세 진입 시 미리보기에 그려지는 조각 (결정 2-4).
   -- **`NULL` 이 「자동」이다** — 파일명 오름차순 자연 정렬의 첫 조각(결정 2-8)을 그때그때 고른다.
   -- 값이 있으면 사람이 지정한 것이라 **렌더 결과가 바뀌어도 따라 움직이지 않는다.**

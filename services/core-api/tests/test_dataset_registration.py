@@ -99,6 +99,18 @@ def test_registering_without_parents_is_recorded_as_unknown_not_as_a_guess(p2_cl
     assert p2_client_alias is client
 
 
+def test_the_level_cannot_be_chosen_at_registration(p2_client) -> None:
+    """**`LV-1` · `〈194〉` 「예외 없음」** — 등록 요청에도 사람이 고르는 칸이 없다.
+
+    계약 `DatasetCreate` 에서 `processingLevel` 을 지웠고, 런타임의 강제 자리는
+    `_ALLOWED_CREATE_FIELDS` 다. 조용히 무시하지 않고 **400 으로 드러낸다.**
+    """
+    client = p2_client()
+    r = register(client, make_upload(client), processingLevel=1)
+    assert r.status_code == 400, r.text
+    assert "processingLevel" in r.text
+
+
 # ══════════════ 음성 ㉮ — 우리 산출물로 기록되지 않는다 ═════════════════════
 def test_a_human_uploaded_file_is_never_recorded_as_our_product(p2_client, sql) -> None:
     """**음성 ㉮** — 사람이 올린 파일이 우리 산출물(COG)로 기록되지 않고, 계보에 파생물로

@@ -18,7 +18,6 @@ from ..ports.lineage import LV_CAP, LineageSummary
 _ROWS = text("""
     SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
-           d.processing_level_user_set,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
@@ -60,7 +59,6 @@ _ONE = text("""
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
            d.file_count - _grid.n AS file_count,
-           d.processing_level_user_set,
            dd.name, dd.topic, dd.summary,
            u.name AS uploader_name,
            o.name AS owner_name
@@ -126,9 +124,6 @@ class DatasetCore:
     last_modified_at: object = None
     uploaded_at: object = None
     lineage_confirmed_at: object = None
-    #: **사람이 고른 가공 단계.** `None` 이면 계보에서 파생한다 (`〈140〉`).
-    #: 계산 결과는 여기 담기지 않는다 — 담는 순간 계보와 갈라진다.
-    processing_level_user_set: int | None = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -142,7 +137,6 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
             owner_name=None, source_label=r["source_label"],
             last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
             lineage_confirmed_at=r["lineage_confirmed_at"],
-            processing_level_user_set=r["processing_level_user_set"],
         )
         for r in rows
     ]
@@ -160,7 +154,6 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         owner_name=r["owner_name"], source_label=r["source_label"],
         last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
         lineage_confirmed_at=r["lineage_confirmed_at"],
-        processing_level_user_set=r["processing_level_user_set"],
     )
 
 
@@ -658,7 +651,6 @@ _UPDATABLE = {
     "topic": ("d3_dataset_description", "topic"),
     "summary": ("d3_dataset_description", "summary"),
     "sourceLabel": ("d3_dataset", "source_label"),
-    "processingLevel": ("d3_dataset", "processing_level_user_set"),
     "representativeFileId": ("d3_dataset", "representative_file_id"),
     "variables": ("d3_dataset_autometa", "variables"),
     "crs": ("d3_dataset_autometa", "crs"),
@@ -789,8 +781,7 @@ def confirm_lineage(session: Session, dataset_id: Ulid) -> bool:
     return session.execute(_CONFIRM_LINEAGE, {"dataset_id": str(dataset_id)}).first() is not None
 
 
-def processing_level(summary: LineageSummary | None,
-                     user_set: int | None = None) -> int:
+def processing_level(summary: LineageSummary | None) -> int:
     """원자료 Lv0 · 주입력 부모의 최대 + 1, **상한 `LV_CAP`** (E-00 · common.json#/$defs/ProcessingLevel).
 
     상한은 정본이 준 값이다 — `POL-020` 「연결된 가공 전 데이터 중 가장 높은 Lv + 1,
@@ -801,10 +792,8 @@ def processing_level(summary: LineageSummary | None,
     않는다) Lv 은 깊이가 아니라 종류이므로(`Lv2 = 집계·분석용`) 접어도 잃는 것이
     없다 — 깊이는 계보 그래프에 그대로 남는다.
     """
-    # **사람이 고른 값이 먼저다** — `POL-020` 의 예외이자 `TC-W-001` 이 요구하는 그대로다.
-    # 「Lv1 로 직접 선택 → Lv1 부모를 연결 → 보정하지 않음(사람이 정한 값 유지)」.
-    if user_set is not None:
-        return min(max(int(user_set), 0), LV_CAP)
+    # ⭑ **2026-09-02 · `LV-1` · `〈194〉`** — 사람이 고른 값을 먼저 보는 분기를 없앴다.
+    # 「레벨은 언제나 계보에서 나온다 — 사람이 직접 정하지 못한다 … 예외 없음」.
     if summary is None or summary.max_primary_parent_level is None:
         return 0
     return min(summary.max_primary_parent_level + 1, LV_CAP)
