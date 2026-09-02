@@ -373,18 +373,14 @@ def _bundle(store, pieces: list[dict], *, bundle_name: str) -> StreamingResponse
     """조각이 여럿이면 **묶어서 한 번에** 준다 (`Policy_데이터셋_상세 §2` 축자).
 
     부분 다운로드가 없으므로(같은 문서 `§8`) 조각별 URL 도 두지 않는다.
-    """
-    import io
-    import zipfile
 
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as bundle:
-        for piece in pieces:
-            with store.open(piece["storage_key"]) as handle:
-                bundle.writestr(piece["file_name"], handle.read())
-    buffer.seek(0)
+    ⭑ **2026-09-02 Ted 판정 「용량 상한을 두지 않는다」** — 그래서 **메모리에 쌓지 않는다.**
+    종전에는 `io.BytesIO` 에 zip 전체를 만들었고 메모리가 데이터셋 크기를 따라갔다.
+    지금은 `file_store.stream_bundle` 이 청크마다 내보내는 생성기를 준다 —
+    **응답 계약(302 두 hop · `Content-Disposition`)은 한 글자도 바뀌지 않았다.**
+    """
     return StreamingResponse(
-        buffer, media_type="application/zip",
+        file_store.stream_bundle(store, pieces), media_type="application/zip",
         headers={"Content-Disposition": _disposition(bundle_name)})
 
 
@@ -411,9 +407,10 @@ def download_dataset(datasetId: str, request: Request,
     dataset_id = Ulid(datasetId)
     _dataset_for_download(db, dataset_id)
 
-    pieces = d3_catalog.body_files_for_download(db, dataset_id)
+    # 본체 ＋ 기준 격자 파일 (2026-09-02 Ted 판정 · `d3_catalog.files_for_download`)
+    pieces = d3_catalog.files_for_download(db, dataset_id)
     if not pieces:
-        raise errors.not_found("내려받을 본체 조각이 없다.")
+        raise errors.not_found("내려받을 조각이 없다.")
 
     store = file_store.build(request.app.state.settings, request.app.state)
 

@@ -101,3 +101,88 @@ def resolve_upload_root(settings, state) -> pathlib.Path:
 def build(settings, state) -> FileStore:
     """**저장처를 고르는 유일한 자리.** 객체 저장소가 오면 분기가 여기 한 줄 는다."""
     return VolumeFileStore(root=resolve_upload_root(settings, state))
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 묶음 — **흘려 보낸다**
+#
+# ⭑ ⟨2026-09-02 · Ted 판정 「용량 상한을 두지 않는다」 · `ST-1` `[미확인]` ㈏⟩
+#
+# 상한을 없애는 것은 **스트리밍과 한 벌일 때만** 성립한다. 종전 구현은 `io.BytesIO()` 에
+# zip 전체를 쌓았고, 그러면 **메모리가 데이터셋 크기를 그대로 따라간다** — 상한이 없다는
+# 말은 「메모리를 무한히 쓴다」가 된다. 그래서 상한 대신 **버퍼를 없앤다.**
+#
+# 어떻게 되는가 — `zipfile` 은 출력이 `seekable()` 이 아니면 크기를 미리 못 적는 대신
+# **data descriptor** 를 쓴다. 그 성질을 이용해 `write()` 만 받는 싱크를 주고, 한 조각을
+# 청크로 읽어 넣을 때마다 싱크를 비워 그대로 내보낸다. **한 번에 들고 있는 바이트는
+# 청크 하나 + 항목 헤더뿐이고, 중앙 디렉터리만 끝에 붙는다.**
+# ════════════════════════════════════════════════════════════════════════════
+
+#: 한 번에 읽어 흘리는 양. 크기를 키워도 메모리는 이 값에 묶인다 — 데이터셋 크기가 아니라.
+STREAM_CHUNK = 1 << 20
+
+
+class _ZipSink:
+    """`zipfile` 이 쓰는 바이트를 **모으지 않고 넘겨 주는** 자리.
+
+    `seekable()` 이 `False` 라 `zipfile` 이 되감기를 시도하지 않는다. `tell()` 은 누적
+    오프셋만 돌려준다(중앙 디렉터리가 쓰는 값). `drain()` 이 부를 때마다 **비운다** —
+    비우지 않으면 이 클래스가 곧 `BytesIO` 가 된다.
+    """
+
+    def __init__(self) -> None:
+        self._parts: list[bytes] = []
+        self._pos = 0
+
+    def write(self, data) -> int:
+        chunk = bytes(data)
+        self._parts.append(chunk)
+        self._pos += len(chunk)
+        return len(chunk)
+
+    def tell(self) -> int:
+        return self._pos
+
+    def flush(self) -> None:  # `zipfile` 이 부른다
+        return None
+
+    def seekable(self) -> bool:
+        return False
+
+    def drain(self) -> list[bytes]:
+        parts, self._parts = self._parts, []
+        return parts
+
+
+def stream_bundle(store: FileStore, pieces, *, chunk_size: int = STREAM_CHUNK):
+    """조각들을 zip 으로 **흘려 보낸다**. 반환은 생성기다 — 부르는 쪽이 당길 때 읽는다.
+
+    `pieces` 는 `d3_catalog.files_for_download` 가 준 원장 행(`file_name`·`storage_key`).
+    같은 이름이 둘이면 뒤엣것에 꼬리를 붙인다 — zip 안에서 하나가 다른 하나를 덮지 않게.
+    """
+    import zipfile
+
+    sink = _ZipSink()
+    seen: dict[str, int] = {}
+    with zipfile.ZipFile(sink, "w", zipfile.ZIP_STORED) as bundle:
+        for piece in pieces:
+            name = piece["file_name"]
+            if name in seen:
+                seen[name] += 1
+                stem, dot, ext = name.rpartition(".")
+                name = (f"{stem} ({seen[name]}){dot}{ext}" if dot
+                        else f"{name} ({seen[name]})")
+            else:
+                seen[name] = 0
+            info = zipfile.ZipInfo(name)
+            # 4 GiB 를 넘는 조각도 상한 없이 담는다 — 미리 크기를 모르므로 강제한다.
+            with bundle.open(info, "w", force_zip64=True) as entry, \
+                    store.open(piece["storage_key"]) as handle:
+                while True:
+                    chunk = handle.read(chunk_size)
+                    if not chunk:
+                        break
+                    entry.write(chunk)
+                    yield from sink.drain()      # **쌓지 않고 바로 내보낸다**
+            yield from sink.drain()
+    yield from sink.drain()                       # 중앙 디렉터리
