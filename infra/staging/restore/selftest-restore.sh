@@ -286,6 +286,154 @@ O="$(pf "$W/cfg-p4.env")"
 if echo "$O" | grep -q 'P4 vol-uploads sha256 불일치'; then echo "  → 기대대로: 손상을 이름으로 말한다"
 else echo "  → ✗ 손상된 산출물이 P4 를 통과했다"; echo "$O" | grep -E 'P4' | sed 's/^/    /'; BAD=$((BAD+1)); fi
 
+# ── verify-restored.sh 의 **손검사 2건 자동화** (2026-09-03) ────────────────────
+# ⭑ 재현하는 결함 셋 —
+#   ㈎ 세는 롤이 FORCE RLS 에 걸려 `count(*)` 가 **언제나 0** 인데, 그 0 을 「행이 사라졌다」로 읽던 것.
+#      살아 있는 staging 에서 실측된 자리다(소유자 롤 0 vs 덤프 13). 리허설은 일회용 pg 에
+#      **superuser** 로 붙어 RLS 를 통째로 건너뛰었기 때문에 이 자리를 한 번도 재지 않았다.
+#   ㈏ ③-보(읽는 경로)를 **사람이 돌기로** 두고, 안 돌고도 `--manual-ok` 한 글자로 GREEN 이 되던 것.
+#   ㈐ ⑤(앱 롤 양성·음성)를 **사람이 돌기로** 두던 것. `--no-privileges` 덤프라
+#      제자리 복원 뒤 GRANT 가 통째로 없어지는데, 그것을 아무도 기계로 안 셌다.
+# 세 판정 전부 **주입구**로 docker 없이 돈다.
+VR="$HERE/verify-restored.sh"
+mk_ai_dump() { { echo "COPY public.d9_method_term (term) FROM stdin;"; echo "T"; echo '\.'
+                 echo "COPY public.d9_place_alias (a) FROM stdin;"; echo "P"; echo '\.'
+                 echo "COPY public.d9_topic_synonym (s) FROM stdin;"; echo "S"; echo '\.'
+                 echo "COPY public.d9_concept (c) FROM stdin;"; for i in 1 2 3; do echo "C$i"; done; echo '\.'
+                 echo "COPY public.d9_concept_edge (e) FROM stdin;"; echo "E"; echo '\.'; } | gzip -c > "$1"; }
+mk_pf_dump() { { echo "COPY public.d3_dataset (id) FROM stdin;"; for i in $(seq 1 12); do echo "D$i"; done; echo '\.'
+                 echo "COPY public.d3_file (id) FROM stdin;"; for i in $(seq 1 5); do echo "F$i"; done; echo '\.'
+                 echo "COPY public.d4_lineage_edge (id) FROM stdin;"; for i in $(seq 1 6); do echo "E$i"; done; echo '\.'; } | gzip -c > "$1"; }
+mk_ai_dump "$W/ai.sql.gz"; mk_pf_dump "$W/pf.sql.gz"
+
+# 세는 롤 훅 — 표마다 기대치와 같은 값을 낸다(대조군). `RLSCAUGHT`/`ZERO` 로 결함을 재현한다.
+cat > "$W/count-ok" <<'SH'
+#!/bin/sh
+case "$2" in
+  *rolsuper*)        echo "${SUPER:-true} ${FORCE:-false}" ;;
+  *d3_dataset*)      echo "${D3:-12}" ;;
+  *d3_file*)         echo 5 ;;
+  *d4_lineage_edge*) echo 6 ;;
+  *d9_method_term*|*d9_place_alias*|*d9_topic_synonym*|*d9_concept_edge*) echo 1 ;;
+  *d9_concept*)      echo 3 ;;
+  *d9_topic_synonym\ WHERE*|*synonym\ \<\>*) echo "강우데이터	강우·강수" ;;
+  *d1_account*)      echo "LAB_A	A연구실	ACC1" ;;
+  *GROUP\ BY\ lab_id*) echo "LAB_A	12" ;;
+  *d1_lab*)          echo "LAB_B" ;;
+  *relrowsecurity=false*) echo 0 ;;
+  *) echo "" ;;
+esac
+SH
+# ⚠ 위 case 는 위에서부터 맞는다 — 동의어 조회는 `d9_topic_synonym` 계수와 문자열이 겹치므로
+#   전용 훅을 따로 둔다(겹침을 주석 없이 두면 다음 사람이 계수를 고치다 조회를 깬다).
+cat > "$W/count-ok" <<'SH'
+#!/bin/sh
+case "$2" in
+  # ⚠ 순서가 판정이다 — `rolsuper OR rolbypassrls`(⑤-0) 가 `rolsuper`(세는 롤 성질) 보다 **먼저** 와야 한다.
+  *"rolsuper OR rolbypassrls"*) echo "${APPPROP:-false}" ;;
+  *rolsuper*)               echo "${SUPER:-true} ${FORCE:-false}" ;;
+  *"synonym <> topic"*)     echo "강우데이터	강우·강수" ;;
+  *d1_account*)             echo "LAB_A	A연구실	ACC1" ;;
+  *"GROUP BY lab_id"*)      echo "LAB_A	12" ;;
+  *"FROM d1_lab"*)          echo "LAB_B" ;;
+  *"count(*) FROM d3_dataset"*)      echo "${D3:-12}" ;;
+  *"count(*) FROM d3_file"*)         echo 5 ;;
+  *"count(*) FROM d4_lineage_edge"*) echo 6 ;;
+  *"count(*) FROM d9_concept_edge"*) echo 1 ;;
+  *"count(*) FROM d9_concept"*)      echo 3 ;;
+  *"count(*) FROM d9_"*)             echo 1 ;;
+  *relrowsecurity*)         echo 0 ;;
+  *) echo "" ;;
+esac
+SH
+cat > "$W/app-ok" <<'SH'
+#!/bin/sh
+# $1=DB $2=롤 $3=SQL
+case "$3" in
+  *"app.current_lab='LAB_A'"*) echo "${POS:-12}" ;;
+  *"app.current_lab='LAB_B'"*) echo "${NEG:-0}" ;;
+  *d9_concept*)                echo "${AIC:-3}" ;;
+  *) echo "" ;;
+esac
+SH
+cat > "$W/search-ok" <<'SH'
+#!/bin/sh
+printf '%s\t%s\t%s\n' "${ST:-200}" "${DEG:-false}" "${EXP:-1}"
+SH
+cat > "$W/digest-ok" <<'SH'
+#!/bin/sh
+# --record <파일> 이면 기록만 한다. 대조는 언제나 통과(이 묶음의 대상이 아니다).
+[ "$1" = "--record" ] && echo 'img	sha256:x' > "$2"
+exit 0
+SH
+chmod +x "$W/count-ok" "$W/app-ok" "$W/search-ok" "$W/digest-ok"
+: > "$W/pre.tsv"; echo 'img	sha256:x' > "$W/pre.tsv"
+
+vr() { # 남은 인자는 env 덮어쓰기용
+  env COLAB_BACKUP_CONFIG="$W/cfg1.env" \
+      COLAB_VERIFY_COUNT_HOOK="$W/count-ok" COLAB_VERIFY_APPSQL_HOOK="$W/app-ok" \
+      COLAB_VERIFY_SEARCH_HOOK="$W/search-ok" COLAB_VERIFY_DIGEST_CMD="$W/digest-ok" \
+      "$@" "$VR" --platform-dump "$W/pf.sql.gz" --ai-dump "$W/ai.sql.gz" \
+      --owner colab_owner --pre-digests "$W/pre.tsv" --no-health 2>&1
+}
+
+RAN=$((RAN+1)); echo "──────── SR20 대조군 — 손검사 2건이 **기계로 돌아** GREEN 이 된다 (--manual-ok 없이)"
+O="$(vr env)"; RC=$?
+if [ $RC -eq 0 ] && echo "$O" | grep -q '③-보 POST /searches 200' \
+   && echo "$O" | grep -q '⑤-a 양성' && echo "$O" | grep -q '⑤-b 음성' \
+   && echo "$O" | grep -q '손검사 2건.*기계가 돌았다'; then
+  echo "  → 기대대로 GREEN (exit 0) — 종전의 exit 3 이 사라졌다"
+else echo "  → ✗ 자동화가 GREEN 을 못 냈다 (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR21 ㈎ 세는 롤이 FORCE RLS 에 걸린다 — **0 을 부재로 읽지 않는다**"
+O="$(vr env SUPER=false FORCE=true D3=0)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q 'd3_dataset — 세는 롤(.*)이 FORCE RLS 에 걸린다' \
+   && ! echo "$O" | grep -q 'd3_dataset = 0 · 기대'; then
+  echo "  → 기대대로 RED — 「0 건이라 틀렸다」가 아니라 「못 봤다」로 말한다 (exit $RC)"
+else echo "  → ✗ RLS 에 걸린 0 을 데이터 부재로 읽었다 (exit $RC)"; echo "$O" | grep -E 'd3_dataset' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR21-b 진짜 행 손실은 **그대로 RED** 다 (범위를 줄인 것이 아님의 증거)"
+O="$(vr env D3=7)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q 'd3_dataset = 7 · 기대 12'; then
+  echo "  → 기대대로 RED — 세는 롤을 바꾼 것이 검사를 무르게 하지 않았다"
+else echo "  → ✗ 행 손실을 놓쳤다 (exit $RC)"; echo "$O" | grep -E 'd3_dataset' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR22 ㈏ ③-보 — **상태코드만 200 이고 degraded 면 RED**"
+O="$(vr env DEG=true)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '③-보 POST /searches — 상태 200 · degraded=true'; then
+  echo "  → 기대대로 RED — 200 하나로 통과시키지 않는다"
+else echo "  → ✗ degraded 인데 통과했다 (exit $RC)"; echo "$O" | grep -E '③-보' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR22-b ③-보 — **확장 낱말 0건이면 RED** (사전이 끊긴 모양)"
+O="$(vr env EXP=0)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '③-보 POST /searches — 상태 200 · degraded=false · 확장 낱말 0건'; then
+  echo "  → 기대대로 RED — 사전 표가 차 있어도 배선이 끊기면 여기서 드러난다"
+else echo "  → ✗ 확장 0건을 통과시켰다 (exit $RC)"; echo "$O" | grep -E '③-보' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR23 ㈐ ⑤-a 양성 — 앱 롤이 **못 읽으면 RED** (제자리 복원 뒤 GRANT 소멸)"
+O="$(vr env POS=0)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '⑤-a 양성 실패 — 앱 롤이 본 것 0'; then
+  echo "  → 기대대로 RED — DROP SCHEMA 가 지운 GRANT 를 헬스가 아니라 이 줄이 잡는다"
+else echo "  → ✗ 권한 0 인 앱 롤을 통과시켰다 (exit $RC)"; echo "$O" | grep -E '⑤-' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR23-b ⑤-b 음성 — 남의 연구실 행이 **보이면 RED**"
+O="$(vr env NEG=4)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '⑤-b 음성 실패 — 다른 연구실 맥락에서 4행이 보인다'; then
+  echo "  → 기대대로 RED — 「앱 롤이 읽는다」만으로 GREEN 을 내지 않는다"
+else echo "  → ✗ 경계가 뚫렸는데 통과했다 (exit $RC)"; echo "$O" | grep -E '⑤-' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR23-c ⑤-0 앱 롤이 BYPASSRLS 면 RED (음성 시험이 거짓 green 이 된다)"
+O="$(vr env APPPROP=true)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '⑤-0 앱 롤 .* superuser 이거나 BYPASSRLS 다'; then
+  echo "  → 기대대로 RED"
+else echo "  → ✗ BYPASSRLS 앱 롤을 통과시켰다 (exit $RC)"; echo "$O" | grep -E '⑤-0' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR23-d ⑤-c ai 앱 롤이 사전을 못 읽으면 RED"
+O="$(vr env AIC=0)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '⑤-c ai 앱 롤이 사전을 못 읽는다 — 본 것 0 · 기대 3'; then
+  echo "  → 기대대로 RED — colab_ai 쪽 GRANT 소멸도 따로 잡는다"
+else echo "  → ✗ 사전을 못 읽는데 통과했다 (exit $RC)"; echo "$O" | grep -E '⑤-c' | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi
 echo "복원 셀프테스트 RED — $BAD 건이 fail-closed 가 아니다"; exit 1
