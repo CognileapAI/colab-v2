@@ -122,3 +122,17 @@
   gap: 8px;
   align-items: flex-start;
 }
+
+/* `LV-2` — AI 제안을 부르는 자리. 직접 연결과 같은 무게로 세우고,
+   부르기 전에는 이 블록이 직접 연결 **아래**에 온다 (`LineageStep.tsx` 완료 정의 ⓑ). */
+.lin-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+
+.lin-ask .muted {
+  margin: 0;
+}

@@ -8,6 +8,10 @@
 //    바꾸며 **확인을 다시 받는다** (정본 §8 `수정 버튼`).
 //  - **제안 0건은 정직한 빈 상태**다. 억지 제안을 만들지 않고, **등록은 그대로 끝까지 간다** —
 //    AI 없이도 v2 는 완결된 제품이다.
+//  - **AI 제안은 사용자가 눌러 받는 보조다** (`PLAN-SoT §9 〈197〉`·`〈203〉` · `LV-2`).
+//    마운트만으로 부르지 않는다 — 사람이 시작하지 않은 조회는 「고장」과 「원래 0건」을
+//    같은 무게로 흘려보내고, 사용자가 고장을 모르게 만든다(`〈197〉`-㉰).
+//    누르기 전에는 **직접 연결이 기본 자리**이고, 호출 횟수는 **누른 횟수**와 같다.
 //  - **아무것도 저장하지 않는다.** 확인된 관계는 `createDataset` 의 `lineageParents` 로만 간다.
 //  - **가공 방식은 관계에 붙는다** — 데이터셋이 아니라 「자식 ← 부모」 한 쌍의 라벨이다.
 //  - **가공 단계 Lv 를 화면이 계산하지 않는다.** 파생값이고 core 가 계산한다(`PLAN-SoT §9-⑳`).
@@ -82,26 +86,37 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const [methods, setMethods] = useState<MethodCard[]>([]);
   const [candidates, setCandidates] = useState<DatasetRow[] | null>(null);
   const [adding, setAdding] = useState(false);
+  /** 사용자가 제안을 부른 적이 있는가. **부르기 전에는 결과 영역 자체가 없다.** */
+  const [asked, setAsked] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   // 이름 초안·주제는 **해석 단서일 뿐**이라 값이 바뀔 때마다 다시 물으면 타이핑마다 왕복이 된다.
   // 조회는 업로드 한 건당 한 번이고, 단서는 그 시점 값을 읽는다.
   const clues = useRef({ datasetNameDraft: ctx.datasetNameDraft, subject: ctx.topic });
   clues.current = { datasetNameDraft: ctx.datasetNameDraft, subject: ctx.topic };
 
-  useEffect(() => {
-    if (!uploadId) return;
-    let alive = true;
+  /**
+   * 제안 조회 — **버튼이 부른다.** 마운트·`uploadId` 변화로는 돌지 않는다(완료 정의 ⓐ·ⓔ).
+   * 다시 누르면 앞의 결과를 지우고 새로 받는다 — 옛 결과가 새 판정처럼 남지 않게.
+   */
+  const askSuggestions = useCallback(() => {
+    if (!uploadId || asking) return;
     const { datasetNameDraft, subject } = clues.current;
+    setAsking(true);
+    setAsked(true);
+    setUnavailable(false);
+    setResp(null);
     void source
       .suggestions(uploadId, {
         ...(datasetNameDraft ? { datasetNameDraft } : {}),
         ...(subject ? { subject } : {}),
       })
       .then((r) => {
-        if (!alive) return;
         setResp(r);
-        setParents(
-          r.suggestions.filter(isParentCandidate).map((s) => ({
+        setParents((cur) => [
+          // 사람이 직접 이어 붙인 것은 **AI 결과가 갈아 끼워도 남는다** — 사람 행동이기 때문.
+          ...cur.filter((p) => p.origin === 'manual'),
+          ...r.suggestions.filter(isParentCandidate).map((s) => ({
             key: s.suggestionId,
             parentDatasetId: s.parentDatasetId,
             parentDatasetName: s.parentDatasetName,
@@ -117,7 +132,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
             confirmedMethodText: null,
             picking: false,
           })),
-        );
+        ]);
         setMethods(
           r.suggestions.filter(isProcessingMethod).map((s) => ({
             key: s.suggestionId,
@@ -131,12 +146,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       })
       .catch(() => {
         // **제안을 못 받는 것과 등록을 못 하는 것은 다르다.** 알리기만 하고 길은 그대로 둔다.
-        if (alive) setUnavailable(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [uploadId, source]);
+        setUnavailable(true);
+      })
+      .finally(() => setAsking(false));
+  }, [uploadId, source, asking]);
 
   // 확인된 것만 위로 올린다. 여기가 「사람이 확인한 것만 커밋된다」의 화면 쪽 끝이다.
   useEffect(() => {
@@ -241,6 +254,24 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   }
 
   const scope = resp?.scope;
+
+  /** 직접 연결 — **누르기 전에는 이 자리가 기본**이라 AI 영역보다 위에 선다(완료 정의 ⓑ). */
+  const addBlock = (
+    <div className="lin-add">
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm"
+        data-testid="lin-add"
+        onClick={() => {
+          loadCandidates();
+          setAdding((v) => !v);
+        }}
+      >
+        앞 데이터 직접 추가
+      </button>
+      {adding && picker(addParent, 'lin-picker')}
+    </div>
+  );
 
   return (
     <section className="lin" data-testid="lin-step">
@@ -458,20 +489,29 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         </p>
       )}
 
-      <div className="lin-add">
+      {/* **누르기 전에는 직접 연결이 기본 자리다** — AI 제안 영역이 화면을 선점하지 않는다.
+          부른 뒤에는 결과 아래로 내려가, 제안을 훑고 나서 직접 잇는 순서가 된다. */}
+      {!asked && addBlock}
+
+      {/* `LV-2` — **부르는 주체가 사용자다.** 호출은 업로드 1건당 1회가 아니라 누른 횟수만큼. */}
+      <div className="lin-ask">
         <button
           type="button"
           className="btn btn-secondary btn-sm"
-          data-testid="lin-add"
-          onClick={() => {
-            loadCandidates();
-            setAdding((v) => !v);
-          }}
+          data-testid="lin-ask"
+          disabled={asking || !uploadId}
+          onClick={askSuggestions}
         >
-          앞 데이터 직접 추가
+          {asking ? '앞 데이터를 찾아보는 중이에요…' : asked ? 'AI 제안 다시 받기' : 'AI 제안 받기'}
         </button>
-        {adding && picker(addParent, 'lin-picker')}
+        {!asked && (
+          <p className="muted" data-testid="lin-ask-note">
+            앞 데이터는 <b>직접 이어 붙이는 것이 기본</b>이에요. 필요하면 AI 제안을 받아 볼 수 있어요.
+          </p>
+        )}
       </div>
+
+      {asked && addBlock}
     </section>
   );
 }

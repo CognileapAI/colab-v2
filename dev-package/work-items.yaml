@@ -1399,7 +1399,7 @@ items:
 
   - id: LV-1
     name: 사람이 가공 단계를 직접 고르는 경로 제거 (레벨은 언제나 계보에서 나온다)
-    status: open
+    status: done
     stage: stage1
     owner: "D3 / core-api ＋ contracts ＋ db"
     entry_conditions: ["⭑ ⟨**등급 확정** 2026-08-31 · Ted RULING ㉝ · `PLAN-SoT §9 〈258〉`⟩ 계약 동결 해제 **등급 ㉯ — Ted 승인 필수**(`sessions/X2-FREEZE-PROTOCOL.md §5-㉯`). **추정이 아니라 검사를 실제로 돌려 매겼다.** 측정 = `contract-breaking` 게이트를 `COLAB_CONTRACTS_REV` 로 **긁힘용 사본**에 물려 `DatasetUpdate.processingLevel` 을 뺀 판으로 실행(레포 `contracts/` 무접촉). **결과 = `1 changes: 0 error, 1 warning, 0 info` · `[request-property-removed]` **WARN 1 · ERR 0** · 게이트 exit 0(green).** **그런데도 ㉮ 자동 허용이 아니다** — §5-㉮ 는 **5조건 전건 충족**을 요구하고, 이 항목은 **조건 2(마이그레이션 0 · 스키마 변경 0)를 어긴다**: 완료 정의 ⓐ 가 `db/platform/schema.sql` 의 `processing_level_user_set` 열·`CHECK` 제거를, ⓒ 가 되돌림 마이그레이션을 요구한다(**마이그레이션 ≥ 1**). §5-㉯ 의 「마이그레이션 ≥ 1 또는 스키마 변경 — 되돌리기 어려운 것은 언제나 사람이 연다」에 그대로 해당하고, **ERR 0 인데 등급 ㉯ 인 선례가 이미 둘 있다**(10차 `〈205〉` · 11차 `〈231〉`). ⚠ **등급이 정해졌다는 것과 승인이 났다는 것은 다르다** — 착수 회차가 Ted 승인을 받고 **다음 해제 회차 번호(12차)**로 등재한다. ⭑ **⟨해소 2026-09-02 · Ted 승인⟩ 계약 동결 해제 **13차** 승인(직전 12차 `〈253〉`). 승인 사유는 파괴성이 아니라 **마이그레이션 ≥ 1 · 스키마 변경**이다(ERR 0 · WARN 2). 회차 번호·§9 등재는 오케스트레이터 몫이고, 등재문 초안은 `dev-package/notes/LV-1-LEDGER-PENDING.md` 에 있다. ／ 종전 표기 ~~12차~~ 는 그 사이 `〈253〉` 이 12차를 가져가 **13차**로 정정한다. ／ 이전 ~~계약 동결 해제 등급 판정 — `[미확인]`~~"]
@@ -1440,11 +1440,20 @@ items:
       데이터 이행 대상 0건)을 `03-HANDOFF §4 #53` 에 물음의 형태로 모았다.
       **결정 번호를 쓰지 않았다** — Ted 판정 사항이다.
       ⭑ **⟨집행 등재 2026-09-02 · `PLAN-SoT §9 〈276〉` · 계약 동결 해제 13차⟩ 값·근거는 그 회차에 있다.** 쓰기 바디에서 `processingLevel` 을 뺐다(**생성 요청 포함** — Ted 판정으로 완료 정의 ⓐ 개정) · 응답 필드·목록 질의 조건 존치 · 마이그레이션 `0011_lv1_drop_level_user_set` · `contract-breaking` ERR 0 · WARN 2 · 프런트 소스 변경 0건 · 사람이 값을 넣은 행 재계수 **0건**. ⛔ **닫지 않는다 — `status: open` 유지.** 사유 = **staging 배포 0건**이라 실물 `colab_platform` 에는 열이 그대로 있고, 배포 전까지 「선언＝적용」은 게이트 DB 에서만 성립한다(`〈276〉`-㉷-ⓐ · **다음 회차 진입조건**).
+      ⭑ **⟨닫힘 2026-09-03 · `PLAN-SoT §9 〈288〉` · 워크트리 `lane-loop-a`⟩ 마지막 남은 축이 실측으로 닫혔다.**
+      `〈276〉`-㉷-ⓐ 가 「다음 회차 진입조건」으로 남긴 **staging 실물 열 부재**를 읽기 전용 카탈로그 조회로 1회 확인했다.
+      **실측(2026-09-03 · 서빙 릴리스 `77813d391f94` · 쓰기·DDL·파괴 플래그 0건)** —
+      `information_schema.columns` 에서 `table_name='d3_dataset' AND column_name='processing_level_user_set'` **0행** ·
+      `column_name LIKE 'processing_level%'` 도 **0행** ·
+      `pg_constraint` 에서 `conrelid='d3_dataset'::regclass` 이면서 정의에 `user_set` 을 포함하는 제약 **0행** ·
+      `alembic_version_platform.version_num` = **`0011_lv1_drop_level_user_set`**.
+      ⟹ 완료 정의 ⓐ~ⓔ 전건 충족(`〈276〉`)에 더해 **선언＝적용이 staging 실물에서도 성립한다.**
+      ⚠ 이 회차가 재지 않은 것 — 브라우저 왕복(ⓔ 는 코드 무접촉으로 충족) · `DatasetCreate` 의 다른 계약↔런타임 드리프트(`〈276〉`-㉷-ⓒ · 별건).
     sources: ["PLAN-SoT §9 〈194〉"]
 
   - id: LV-2
     name: AI 계보 추천을 버튼으로 되살린다 (자동 호출 → 사용자가 누르는 보조)
-    status: open
+    status: done
     stage: stage1
     owner: "E-04 프런트 ＋ core-api 중계"
     entry_conditions: ["⭑ ⟨개정 2026-08-29 · `PLAN-SoT §9 〈203〉`⟩ **없음 — 지금 착수 가능하다.** ／ 이전 ~~없음 (프런트 자동 호출 제거만이면 지금 가능) — 다만 stage 가 미정이다~~"]
@@ -1458,7 +1467,7 @@ items:
       ⓓ 「정직한 빈 상태」와 「AI 없이도 등록이 끝까지 간다」는 유지된다
       (`CLAUDE.md §3` · `LineageStep.tsx:9`)
       ⓔ 호출 횟수가 업로드 1건당 1회에서 **누른 횟수**로 바뀐 것을 시험이 단언한다
-    evidence: null
+    evidence: "⭑ **⟨집행·닫힘 2026-09-03 · `PLAN-SoT §9 〈288〉` · 워크트리 `lane-loop-a`⟩ 완료 정의 ⓐ~ⓔ 전건 충족.** **계약 개정 0건 · 마이그레이션 0건 · 중계(`relay.py`) 무접촉** — 바뀐 것은 프런트 두 파일(`frontend/src/components/lineage/LineageStep.tsx` · `lineage.css`)과 시험 하나(`frontend/test/upload.test.tsx`)다. **ⓐ** 마운트 시 자동 조회(`useEffect(…, [uploadId, source])`)를 걷고 `askSuggestions` 콜백으로 옮겼다 — 부르는 자리는 `data-testid=\"lin-ask\"` 버튼 하나다. **ⓑ** `asked` 상태로 순서를 가른다 — 누르기 전에는 직접 연결(`lin-add`)이 AI 버튼 **위**에 서고 결과 영역은 렌더되지 않는다(`resp` 가 `null` 이라 `lin-scope`·`lin-empty` 자체가 없다). 누른 뒤에는 결과 아래로 내려간다. **ⓒ** 「제안 0건」과 「못 받았다」가 갈린다 — 성공 응답은 `lin-empty[data-kind]` 세 값(`nothing-to-search`·`searched-none`·`not-asked`), 실패는 `lin-unavailable`. 두 자리가 동시에 서지 않음을 시험이 단언한다. **ⓓ** 「정직한 빈 상태」·「AI 없이도 등록이 끝까지 간다」 유지 — 누르지 않고 직접 추가만으로 등록이 완주하고 그때 조회 호출 **0건**임을 시험이 단언한다. **ⓔ** 호출 횟수 = **누른 횟수** — 마운트 직후 0 · 1회 누른 뒤 1 · 2회 누른 뒤 2. **시험 = `frontend/test/upload.test.tsx` 에 `LV-2` describe 6건 신설 ＋ 기존 계보 시험 21건을 버튼 경로로 재배선**(자동 조회를 전제하던 자리라 재배선 없이는 실물과 어긋난다). **TDD 순서 실측** — 구현 전 `24 failed / 64 passed`, 구현 후 `88 passed / 0 failed`. **재측정(2026-09-03 · `-j 1`)** — 게이트 39종 green 39 / red 0 · 시험 core-api 538 · frontend 444 · viz-render 232 · pipeline-worker 238 · ai-service 145. ⚠ **버튼을 눌러 실제 제안이 오는 것은 `K3`(stage 3) 이후다** — 완료 정의에 없고 이 항목이 `K3` 순서를 당기지 않는다(`〈197〉`-㉳). ⚠ **배포 필요** — 프런트 변경이라 staging 에 반영되려면 배포 1회가 든다(이 회차 범위 밖)."
     deadline: null
     note: >-
       ⭑ **⟨개정 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈203〉`⟩ stage 를 `stage1` 로 확정했다 —
