@@ -467,3 +467,17 @@
   padding: 0;
   cursor: pointer;
 }
+
+/* 소속 데이터셋 표의 Verified 칸 — **카탈로그와 같은 표기**다 (`〈282〉`-㉮ 규칙 확장 · 검수 #8).
+   ⚠ 규칙을 여기 다시 적는 것은 중복이 아니라 **경계**다. `catalog.css` 는 카탈로그 화면에서만
+   실리고(`routes/DatasetsPage.tsx`), 이 화면은 그것을 싣지 않는다. 전역 이름을 빌려 쓰다
+   폭이 새어 나간 것이 검수 #25 였다 — 선택자를 `.project-detail` 안으로 묶어 둔다. */
+.project-detail .verified {
+  display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill);
+  padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1;
+  background: var(--color-success-50); color: var(--color-success-600);
+}
+.project-detail .verified--pending {
+  background: var(--color-gray-100); color: var(--color-gray-500);
+  text-decoration: line-through; cursor: not-allowed;
+}

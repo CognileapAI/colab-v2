@@ -58,7 +58,7 @@ export function AccessRequestPanel(props: {
       </button>
       {open ? (
         <div className="modal-back">
-          <div className="modal" role="dialog" aria-modal="true" aria-label="접근 요청 보내기">
+          <div className="modal modal--dialog" role="dialog" aria-modal="true" aria-label="접근 요청 보내기">
             <h3>이 데이터에 접근을 요청할까요?</h3>
             <p>교수 또는 승인을 맡은 연구원이 검토해요.</p>
             <label className="ar-reason">

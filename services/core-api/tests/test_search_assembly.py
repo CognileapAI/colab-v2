@@ -106,6 +106,21 @@ def test_해석_없이_찾았으면_근거가_그_사실을_밝힌다() -> None:
     assert all("질의 해석 없이" in h["rationale"] for h in items)
 
 
+def test_근거_한_줄은_해요체다() -> None:
+    """화면 검수 2026-09-03 #12 — 제품 문체는 해요체인데 이 줄만 해라체였다.
+
+    근거 문장은 **서버가 만들어 화면이 그대로 싣는다.** 화면만 고쳐서는 닫히지 않는 자리라
+    오라클도 여기 산다. 정본 = `Policy_데이터_찾기 §120행`(AI 근거 블록) · 제품 문체 = 해요체.
+    """
+    items, _ = _compose(topic="강우·강수")
+    assert items, "근거를 한 건도 못 만들었다 — 이 시험이 아무것도 안 세고 있다."
+    for h in items:
+        r = h["rationale"]
+        assert r.endswith("봐 주세요."), f"해라체 종결이 남아 있다: {r}"
+        for 해라체 in ("맞았다", "뒤졌다", "직접 보라"):
+            assert 해라체 not in r, f"해라체 «{해라체}» 가 남아 있다: {r}"
+
+
 def test_망가진_커서는_처음부터다() -> None:
     assert dataset_search.decode_cursor("!!!") == 0
     assert dataset_search.decode_cursor(None) == 0

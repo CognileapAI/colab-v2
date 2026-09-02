@@ -108,7 +108,7 @@ export function VerificationAction(props: {
           **파생 데이터에는 표시하지 않는다**(§7.1) — 건수만 말하고 끝이다. */}
       {confirming ? (
         <div className="modal-back">
-          <div className="modal" role="dialog" aria-modal="true" aria-label="승인을 취소할까요?">
+          <div className="modal modal--dialog" role="dialog" aria-modal="true" aria-label="승인을 취소할까요?">
             <h3>이 데이터의 승인을 취소할까요?</h3>
             <ul className="vc-impact">
               <li>검색·카탈로그에서 우선 정렬이 사라져요.</li>

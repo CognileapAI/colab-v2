@@ -139,6 +139,20 @@ export function useZoomPan(): ZoomPan {
     [zoomIn, zoomOut],
   );
 
+  // ⭑ **휠은 네이티브 리스너로 건다 — React 의 `onWheel` 은 passive 다** (검수 #24).
+  //   React 17+ 는 `wheel`·`touchmove`·`scroll` 을 루트에 **passive 로** 위임한다. 그래서
+  //   위 `preventDefault()` 가 **아무 일도 하지 않았고**, 브라우저가 상세 화면에서
+  //   `Unable to preventDefault inside passive event listener` 를 14건 찍고 있었다 —
+  //   확대는 되는데 페이지도 같이 스크롤됐다. `{ passive: false }` 로 직접 걸어야 막힌다.
+  //   ⚠ 이 자리를 다시 React 의 `onWheel` 로 되돌리면 그 순간 같은 결함이 돌아온다.
+  const [node, setNode] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!node) return;
+    const handle = (e: WheelEvent) => onWheel(e);
+    node.addEventListener('wheel', handle, { passive: false });
+    return () => node.removeEventListener('wheel', handle);
+  }, [node, onWheel]);
+
   const onMouseDown = useCallback(
     (e: { clientX: number; clientY: number; button?: number }) => {
       if (e.button !== undefined && e.button !== 0) return;
@@ -221,8 +235,9 @@ export function useZoomPan(): ZoomPan {
     measured,
     box: boxSize,
     atLimit: measured && view.scale >= maxScale && (view.scale > 1 || blocked),
-    viewportRef: (node) => {
-      el.current = node;
+    viewportRef: (n) => {
+      el.current = n;
+      setNode(n);
     },
     onImageLoad,
     onNativeWidth: learn,

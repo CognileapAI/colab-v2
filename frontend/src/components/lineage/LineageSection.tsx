@@ -161,7 +161,7 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
   const { edge, node, derived } = props;
   const kind = node?.kind ?? (derived ? '파생' : '가공 전');
   const name = node?.name ?? '—';
-  const hist = `· 확인 ${edge.confirmedBy.name} · ${day(edge.confirmedAt)}${
+  const hist = `확인 ${edge.confirmedBy.name} · ${day(edge.confirmedAt)}${
     derived ? ' · 여기서는 못 고쳐요' : ''
   }`;
   return (
@@ -181,8 +181,10 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
           )}
           <OriginFlag origin={edge.origin} />
         </div>
+        {/* 값이 없으면 **구분자도 없다** (검수 #23 — 빈 가공 방식 앞의 `·` 로 줄이 시작했다).
+            빈 조각을 걷어낸 뒤 남은 것만 `·` 로 잇는다. */}
         <div className="ln-sub">
-          {edge.method ? `가공 방식: ${edge.method} ` : ''}
+          {edge.method ? <span className="way">{`가공 방식: ${edge.method} · `}</span> : null}
           <span className="hist">{hist}</span>
         </div>
       </div>
@@ -289,6 +291,9 @@ export function LineageSection(props: {
                           className="lin-way"
                           data-testid="lin-method"
                           data-origin={e.origin}
+                          /* 상자 폭을 넘으면 …로 접힌다(`lineageGraph.css`). **전문은
+                             여기 남는다** — 접혔다고 값이 사라지면 안 된다 (검수 #22) */
+                          title={e.method ?? undefined}
                         >
                           {e.origin === 'ai' ? `✦ ${e.method}` : e.method}
                         </span>

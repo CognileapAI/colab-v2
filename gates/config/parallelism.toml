@@ -124,6 +124,22 @@
 #   green 을 만들지 않는다.
 "render-latency"            = "serial"
 
+# `frontend-test` — **`serial` 이다.** 자원 충돌이 아니라 **부하** 가 이유다.
+#   `vitest run` 은 시험 파일 24개를 **워커 여럿으로 동시에** 돌린다 — 이 게이트 하나가
+#   이미 호스트의 CPU 를 전부 쓴다. 다른 게이트와 겹치면 ⑴ 저쪽이 느려지고 ⑵ 시간을 재는
+#   `render-latency` 와 같은 사유로 **판정이 흔들릴 수 있다.** 파일 쓰기는 0(읽기 전용 ·
+#   산출물 없음)이고 DB·포트·잠금도 잡지 않으므로 **격리 요구는 없다** — 그런데도 serial 인
+#   것은 `render-latency` 와 같은 배치다(경합이 곧 판정을 흔드는 자리).
+#   ⚠ 이 값을 `parallel` 로 바꾸려면 **실측**이 필요하다 — `-j 2` 이상에서 이 게이트와 다른
+#     게이트의 판정이 단독 실행과 같은지 두 번 이상 재고 그 근거를 여기에 적는다.
+"frontend-test"             = "serial"
+
+# `frontend-test-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   설정 파일만 복사하고 시험은 **자기가 지어 넣는다**(통과 1건 · 실패 1건 · 0건). 진짜
+#   `frontend/test` 446건을 돌리지 않으므로 부하가 작고, `node_modules` 는 링크로 빌려
+#   **읽는다.** 진짜 `frontend/` 에는 한 글자도 쓰지 않는다. DB·도커·포트를 잡지 않는다.
+"frontend-test-selftest"    = "parallel"
+
 # `render-latency-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
 #   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 렌더를 돌리지 않으므로
 #   시간도 원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.

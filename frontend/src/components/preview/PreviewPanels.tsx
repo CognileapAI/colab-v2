@@ -2,6 +2,7 @@
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
 import type { ReactNode } from 'react';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
+import { legendValue } from './format';
 import { resultImageSrc, tileUrl } from './tiles';
 import { baseLevel, levelFor, visibleTiles } from './tileGrid';
 import type { ZoomPan } from './useZoomPan';
@@ -167,7 +168,9 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
           ref={zoom?.viewportRef}
           {...(zoom
             ? {
-                onWheel: zoom.onWheel,
+                /* ⚠ `onWheel` 을 여기 두지 않는다 — React 의 휠 위임은 **passive** 라
+                   `preventDefault` 가 무효다(검수 #24). 리스너는 `useZoomPan` 이
+                   `{ passive: false }` 로 직접 건다. */
                 onMouseDown: zoom.onMouseDown,
                 'data-zoomable': 'true',
               }
@@ -217,7 +220,8 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
             <dt>
               <span className="pv-swatch" style={{ background: c.color }} />
             </dt>
-            <dd>{`${c.min} ~ ${c.max}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
+            {/* 값은 **사람이 읽는 자릿수**로 끊는다 (검수 #20 · 규칙은 `preview/format.ts`) */}
+            <dd>{`${legendValue(c.min)} ~ ${legendValue(c.max)}${result.legend.unit ? ` ${result.legend.unit}` : ''}`}</dd>
           </div>
         ))}
       </dl>
