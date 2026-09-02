@@ -23,6 +23,7 @@ P1_REAL = {"getCurrentAccount", "getLab", "listLabMembers", "saveLabMemberPermis
            "createProject"}
 #: P2 가 가져간 열둘. **뺀 자리마다 실동작 시험이 있다** — 옆 칸이 그 시험 파일이다.
 P2_REAL = {
+    "downloadDataset":              "tests/test_dataset_download.py",
     "createUpload":                 "tests/test_uploads.py",
     "getUploadStatus":              "tests/test_uploads.py",
     "createDataset":                "tests/test_dataset_registration.py",
@@ -92,12 +93,16 @@ P7_REAL = {
 }
 P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL}
 REAL = P1_REAL | set(P2_REAL)
-NO_STORE = {
-    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`). 남은 하나는
-    #    `downloadDataset` 이고 그 저장처(파일 저장소)는 아직 없다 — `CT-1` 의 마지막 한 칸이다.
-    "downloadDataset",
+NO_STORE: set[str] = {
+    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`).
+    # ⭑ ⟨2026-09-02 · `ST-1` · Ted 판정 「저장처는 지금 볼륨을 그대로 쓴다」⟩ 남아 있던
+    #    `downloadDataset` 도 빠졌다 ⟹ **이 집합은 이제 빈 집합이다.**
+    #    ~~"downloadDataset"~~ — 그 사유(「저장처가 없다」)는 반만 참이었다: 이력 표
+    #    `d8_download` 는 P0 이 세웠고 바이트는 접수 볼륨 위에 이미 있었다.
+    #    실동작 시험 = `tests/test_dataset_download.py`(양성 ＋ 잠금·경계 음성).
     # ⭑ `updateDataset` 이 여기서 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
     #    `#36`(설명 결손 2건)을 채울 **공개 경로가 그것뿐이었다.**
+    *()
 }
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -157,8 +162,12 @@ def test_the_5_unimplemented_operations_are_exactly_these() -> None:
     프로젝트 닫기」로 정의하고 `Policy_프로젝트 §6`·`§8` 이 삭제·닫기·해제를 전부 E-05
     화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+
+    ⭑ **`ST-1` — `downloadDataset` 이 빠져 5 → 4.** 저장처는 **접수 볼륨**이고(Ted 판정
+    2026-09-02) 이음매는 `kernel/file_store.py` 하나다. **마이그레이션 0건 · 계약 개정 0건.**
+    **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 5
+    assert len(OPERATIONS) == 4
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
