@@ -126,6 +126,27 @@ def test_4xx_fails_immediately_without_retry():
     assert len(t.calls) == 1
 
 
+# ── PutObject — Cache-Control 은 놓는 쪽이 정하고, 서명 대상이다 ────────────
+# 정적 자산(FE 번들·미리보기 산출물)을 서버가 직접 놓을 때 쓴다. 헤더가 실리기만 하고
+# SignedHeaders 에 빠지면 S3 가 403 을 낸다 — 그래서 실림과 서명 둘 다 단언한다.
+
+def test_put_object_sends_cache_control_and_signs_it():
+    c, t = client((200, {"ETag": '"put"'}, b""))
+    etag = c.put_object("assets/app.js", b"console.log(1)", "text/javascript",
+                        cache_control="public, max-age=31536000, immutable")
+    assert etag == '"put"'
+    method, _url, headers, payload, _timeout = t.calls[0]
+    assert method == "PUT" and payload == b"console.log(1)"
+    lowered = {k.lower(): v for k, v in headers.items()}
+    assert lowered["cache-control"] == "public, max-age=31536000, immutable"
+    assert lowered["content-type"] == "text/javascript"
+    assert "cache-control" in lowered["authorization"].split("SignedHeaders=")[1].split(",")[0]
+    # 안 주면 안 실린다 — 기본값으로 캐시 정책을 지어내지 않는다
+    c2, t2 = client((200, {"ETag": '"x"'}, b""))
+    c2.put_object("k", b"b")
+    assert not any(h.lower() == "cache-control" for h in t2.calls[0][2])
+
+
 # ── HeadObject — 크기·ETag 는 응답 헤더에서 ────────────────────────────────
 
 def test_head_object_reads_headers():

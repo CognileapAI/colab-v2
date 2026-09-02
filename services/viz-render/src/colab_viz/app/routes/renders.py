@@ -19,7 +19,7 @@ from ...domains.d7_visualization.readers import (
 )
 from ...kernel import errors
 from ...kernel.ids import new_ulid
-from ...ports.source import TargetNotFound
+from ...ports.source import SizeMismatch, TargetNotFound, WorkspaceExceeded
 from ..deps import require_caller, require_caller_or_tile_signature
 
 router = APIRouter(tags=["render"], dependencies=[Depends(require_caller)])
@@ -85,6 +85,14 @@ def create_render(body: RenderRequest, request: Request) -> dict:
                               {"limitBytes": settings.max_render_bytes,
                                "targetBytes": total})
 
+    # 413 판정은 목록 크기로 했다 — 여기서 바이트를 실제로 놓는다(파일시스템은 항등, s3 는 내려받기).
+    # `detect_format` 이 파일 전체를 요구하므로 요청 스레드에서 한다 — 지연은 `〈176〉` 전환 조건의 실측 항목.
+    try:
+        target = source.materialize(target)
+    except (SizeMismatch, WorkspaceExceeded) as e:
+        raise errors.ApiError(413, errors.RENDER_TOO_LARGE, TOO_LARGE_MESSAGE,
+                              {"limitBytes": settings.max_render_bytes, "reason": str(e)}) from e
+
     # 어느 조각도 그릴 수 없으면 415 다. **한 조각이라도 그릴 수 있으면 415 가 아니다** —
     # 그것은 부분 실패이고 읽힌 조각으로 그린다.
     drawable = 0
@@ -111,6 +119,7 @@ def create_render(body: RenderRequest, request: Request) -> dict:
         deadline_seconds=settings.render_deadline_seconds,
         preview_dir=settings.preview_dir,
         preview_url_base=settings.preview_url_base,
+        preview_sink=request.app.state.preview_sink,
     )
     job = request.app.state.jobs.submit(new_ulid(), spec,
                                         temporary=body.target.uploadId is not None)

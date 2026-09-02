@@ -1,0 +1,9 @@
+# 레포 루트를 빌드 컨텍스트로 쓰는 이미지(infra/dev/migrator)용. 서비스 이미지는 각 서비스 디렉터리의 .dockerignore.
+.git
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.egg-info
+frontend/dist
+dev-package
+docs

@@ -1,0 +1,13 @@
+{
+  "_comment": "데이터 버킷 정책 — DenyInsecureTransport(S3.md §1) + CloudFront OAC 가 previews/* 만 읽는다. <DISTRIBUTION_ARN> 은 CloudFront 배포 생성 뒤 채운다(콘솔 체크리스트 ID.md §6). 〈178〉-㉮",
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "DenyInsecureTransport", "Effect": "Deny", "Principal": "*", "Action": "s3:*",
+      "Resource": ["arn:aws:s3:::colab-platform-data-dev", "arn:aws:s3:::colab-platform-data-dev/*"],
+      "Condition": { "Bool": { "aws:SecureTransport": "false" } } },
+    { "Sid": "CloudFrontReadsPreviews", "Effect": "Allow",
+      "Principal": { "Service": "cloudfront.amazonaws.com" }, "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::colab-platform-data-dev/previews/*",
+      "Condition": { "StringEquals": { "AWS:SourceArn": "<DISTRIBUTION_ARN>" } } }
+  ]
+}

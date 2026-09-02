@@ -152,6 +152,11 @@ def _positive_int(name: str, raw: str | None, fallback: int) -> int:
 
 
 def _storage_settings() -> tuple[str, str | None, str | None]:
+    # ⚠ **배포에서 이 기본값(`local`)에 기대지 않는다.** 안 주면 조용히 로컬 모드가 이기고,
+    #    업로드는 성공한 것처럼 보이면서 **바이트가 EC2 디스크에만 쌓인다** — 재배포·인스턴스
+    #    재생성으로 사라지고 `pg_dump` 백업에도 RDS 스냅샷에도 안 들어간다. 그래서 dev compose 는
+    #    이 값을 **치환이 아니라 리터럴**로 박았다(`docs/DEPLOY.md §2-1`). 로컬은 local 이 정상이고,
+    #    배포는 s3 가 정상이다. 어긋남은 `GET /healthz/storage` 와 doctor ⑪ 이 잡는다.
     mode = (os.environ.get(ENV_STORAGE_MODE) or "local").strip().lower()
     if mode not in STORAGE_MODES:
         raise RuntimeError(

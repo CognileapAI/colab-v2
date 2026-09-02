@@ -29,6 +29,26 @@
   **`COLAB_VIZ_TILE_SIGNING_SECRET`** 을 `infra/staging/compose.*.yml` 이 넣어야 한다.
   `infra/` 는 이 레인 소유가 아니라 손대지 않았고, **없으면 렌더 표면이 503** 을 낸다(헬스는 산다).
 
+## 소스 모드 · 미리보기 싱크 (`ports/source.py` · `ports/preview_sink.py` · `PLAN-SoT §9 〈178〉-㉮·㉴`)
+
+읽기(`readers.py`·`detect_format`)는 로컬 경로만 본다. s3 모드는 대상을 **작업 디렉터리로 통째로 내려받아**
+같은 배치(`storage_layout`)로 놓는다 — 목록 크기로 413 을 판정한 뒤 `materialize` 가 내려받고(HeadObject·받은
+바이트 크기 대조 — 어긋나면 413), 캐시 키는 mtime 이 아니라 **ETag** 로 든다(내려받을 때마다 mtime 이 새로워져
+`previews/` 가 렌더마다 늘던 결함을 막는다 — `domains/d7_visualization/source_digest.py`).
+
+| env | 모드 | 뜻 |
+|---|---|---|
+| `COLAB_VIZ_SOURCE_MODE` | — | `local`(기본, `COLAB_VIZ_SOURCE_ROOT`) \| `s3`. **모르는 값은 기동 거부** |
+| `COLAB_VIZ_S3_BUCKET` · `COLAB_VIZ_S3_REGION` | s3 소스 또는 s3 싱크 **필수** | core-api 와 같은 버킷·리전. 자격증명은 `kernel/aws_credentials.py` 사슬(env→ECS→IMDSv2) — 액세스 키를 env 에 두지 않는다 |
+| `COLAB_VIZ_WORKDIR` | s3 소스 **필수** | 내려받은 바이트의 자리(캐시 — 상태 아님) |
+| `COLAB_VIZ_WORK_MAX_BYTES` | s3 소스 **필수** | 캐시 상한 3상태 — 숫자(바이트) · `none`(명시 무제한) · **미설정 = 거부**. 넘으면 가장 오래 안 쓴 대상부터 지운다 · 대상 하나가 상한보다 크면 내려받기 전 413 |
+| `COLAB_VIZ_PREVIEW_SINK` | — | `local`(기본 — `preview_dir` 를 nginx 가 서빙) \| `s3`(데이터 버킷 `previews/` 에 PUT, CloudFront 가 `/previews/*` 를 그 버킷으로) |
+| `COLAB_VIZ_PREVIEW_S3_PREFIX` | s3 싱크 선택 | 기본 `previews`. URL(`COLAB_VIZ_PREVIEW_URL_BASE`)은 어느 싱크든 그대로 — FE 무변경 |
+
+- 헬스 본문 `sourceMode`·`previewSink` 는 설정에 **선언된** 값(정적). `deploy_doctor` 가 읽는다.
+- `kernel/{sigv4,aws_credentials,s3}.py` 는 core-api 원본의 byte-identical 복제본(`contracts/codegen/manifest.toml` 등기) —
+  **여기서 고치지 않는다.**
+
 ## 타일 경로 인증 (`PLAN-SoT §9-〈68〉`)
 
 `getRenderTile` 만 **서비스 토큰 또는 렌더에 묶인 단명 서명** 둘 중 하나를 받는다.

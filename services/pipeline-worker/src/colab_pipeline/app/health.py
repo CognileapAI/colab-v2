@@ -14,6 +14,8 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from ..kernel.blob_backends import declared_storage_mode
+
 UNIT = "pipeline-worker"
 PATH = "/healthz"
 
@@ -26,7 +28,9 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_error(404, "not found")
             return
         body = json.dumps(
-            {"unit": UNIT, "status": "alive", "implemented": True},
+            {"unit": UNIT, "status": "alive", "implemented": True,
+             # 정적 판정 — env 에 선언된 모드. 버킷·자격증명·네트워크를 안 본다 (`deploy_doctor` 가 읽는다).
+             "storageMode": declared_storage_mode(os.environ)},
             ensure_ascii=False,
         ).encode("utf-8")
         self.send_response(200)

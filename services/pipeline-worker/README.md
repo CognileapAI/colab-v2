@@ -76,3 +76,21 @@ HSR 두 격자는 **행·열 각 1셀(500 m) off-by-one** 만큼 어긋난다 �
   못박았고, 실행 ID 를 섞으면 재적재 때 키가 달라져 **중복 제거가 뚫린다.** 계약을 따랐다
 - at-least-once 전제 — 소비자가 멱등 키로 거른다
 - TTL 초과 처리중 → 실패로 회수하는 reaper 필요
+
+## 저장 모드 — 바이트를 어디서 읽나 (`ports/blobs.py` · `kernel/blob_backends.py` · `PLAN-SoT §9 〈178〉-㉴`)
+
+감지·파싱은 로컬 경로만 본다. 그 경로에 바이트를 놓는 것이 `UploadBlobPort` 다 — s3 모드는 키를
+**통째로 내려받는다**(부분·스트림 아님 — netCDF4·h5py·pyhdf 와 매직 try-open 이 파일 전체를 요구한다).
+
+| env | 모드 | 뜻 |
+|---|---|---|
+| `COLAB_WORKER_STORAGE_MODE` | — | `local`(기본) \| `s3`. **모르는 값은 기동 거부**(local 로 접지 않는다) |
+| `COLAB_WORKER_UPLOAD_DIR` | local **필수** | core-api `COLAB_CORE_UPLOAD_DIR` 과 같은 자리. s3 모드에선 불요 |
+| `COLAB_WORKER_WORKDIR` | local 선택 · s3 **필수** | 이름 붙은 뷰·산출물·(s3) 내려받은 바이트. local 기본 = `<UPLOAD_DIR>/_work` |
+| `COLAB_WORKER_S3_BUCKET` · `COLAB_WORKER_S3_REGION` | s3 **필수** | core-api 와 같은 버킷·리전. 자격증명은 `kernel/aws_credentials.py` 사슬(env→ECS→IMDSv2) — **액세스 키를 env 에 두지 않는다**(EC2 는 역할) |
+
+- s3 모드의 작업 디렉터리는 **캐시이지 상태가 아니다** — 처리(성공·실패 모두) 뒤 그 업로드 디렉터리를 지운다.
+  상한은 두지 않는다(동시 처리 1 → 업로드 한 건 크기). EBS 사이징은 Ted 판정 항목.
+- 헬스 본문 `storageMode` 는 env 에 **선언된** 값(정적 — 버킷·자격증명을 안 본다). `deploy_doctor` 가 읽는다.
+- `kernel/{sigv4,aws_credentials,s3}.py` 는 core-api 원본의 byte-identical 복제본(`contracts/codegen/manifest.toml` 등기) —
+  **여기서 고치지 않는다.** core 에서 고치고 재생성한다.

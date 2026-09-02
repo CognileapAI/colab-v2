@@ -17,10 +17,13 @@ S1 이 `searchDatasets`·`listPalettes`·`listDatasetFieldSuggestions` 를 **신
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 
-from ..kernel import errors
+from ..kernel import aws_credentials, errors
 from ..kernel import authn
 from ..kernel.auth import SubjectRegistry
 from ..kernel.credentials import CredentialStore
@@ -93,6 +96,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/healthz", include_in_schema=False)
     def _healthz() -> dict:
         return {"unit": "core-api", "status": "alive", "implemented": True}
+
+    # 저장 배관 진단 — 배포 검사기(`ops/deploy_doctor.py` ⑪)가 「앱이 어떤 자격증명으로 S3 에 가는가」를
+    # 묻는 자리다 (`PLAN-SoT §9 〈178〉-㉲`). 역시 계약 밖 · `/api/v1` 밖. **키 값은 절대 싣지 않는다** —
+    # 출처(`env|ecs|imds`)와 만료 시각만. 자격증명 사슬이 1초 안에 답하지 않으면 `credentialSource: null`
+    # 과 사유 한 줄로 답한다 — 헬스 경로가 IMDS 타임아웃에 매달리면 오케스트레이터가 멀쩡한 프로세스를 죽인다.
+    @app.get("/healthz/storage", include_in_schema=False)
+    def _healthz_storage(request: Request) -> dict:
+        s = request.app.state.settings
+        if s.storage_mode != "s3":
+            return {"storageMode": s.storage_mode}
+        out: dict = {"storageMode": "s3", "bucket": s.s3_bucket, "region": s.s3_region}
+        pool = ThreadPoolExecutor(max_workers=1)
+        try:
+            creds, source = pool.submit(aws_credentials.load_credentials).result(timeout=1.0)
+        except FutureTimeout:
+            out.update(credentialSource=None, error="자격증명 조회가 1초 안에 끝나지 않았다 (env→ECS→IMDSv2)")
+        except RuntimeError:
+            out.update(credentialSource=None, error="자격증명을 찾지 못했다 (env→ECS→IMDSv2 — S3.md §1)")
+        else:
+            out["credentialSource"] = source
+            if creds.expires_at is not None:
+                out["expiresAt"] = creds.expires_at.isoformat()
+        finally:
+            pool.shutdown(wait=False)
+        return out
 
     for router in (session.router, identity.router, members.router, catalog.router,
                    # 다운로드 셋 — 경로가 다른 라우터의 글자 경로와 겹치지 않는다(`/datasets/{id}/download`

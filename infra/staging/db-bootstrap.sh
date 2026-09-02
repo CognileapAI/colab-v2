@@ -31,7 +31,25 @@ fi
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 
-su_psql() { docker exec -i -e PGPASSWORD_UNUSED=1 "$PG" psql -v ON_ERROR_STOP=1 -U postgres "$@"; }
+# ── 접속 경로 두 갈래 (`PLAN-SoT §9 〈178〉-㉰`).
+#   기본(미설정) = 현행 그대로 — staging 의 postgres **컨테이너** 안에서 슈퍼유저로.
+#   `COLAB_PG_MASTER_URL_FILE` 이 있으면 = 그 파일의 마스터 접속 문자열로 **원격 DB(RDS)** 에 —
+#   일회용 `postgres:16-alpine` 컨테이너의 psql 이 붙는다(버전 16 일치). 값은 파일에서만 읽고 출력하지 않는다.
+#   호출 규약은 둘 다 `su_psql -d <db> [psql 인자…]` 다 — 원격 갈래는 `-d` 를 URL 의 데이터베이스 자리로 옮긴다.
+MASTER_URL_FILE="${COLAB_PG_MASTER_URL_FILE:-}"
+_url_for_db() { # $1=db → 마스터 URL 의 경로(데이터베이스) 자리를 $1 로 바꾼다
+  local url; url="$(cat "$MASTER_URL_FILE")"
+  printf '%s' "$url" | sed -E "s#(://[^/]+)(/[^/?]*)?(\?.*)?\$#\1/$1\3#"
+}
+su_psql() {
+  if [ -n "$MASTER_URL_FILE" ]; then
+    [ "${1:-}" = "-d" ] || { echo "su_psql: 원격 갈래는 -d <db> 로 시작해야 한다" >&2; return 2; }
+    local db="$2"; shift 2
+    docker run --rm -i postgres:16-alpine psql -v ON_ERROR_STOP=1 "$(_url_for_db "$db")" "$@"
+  else
+    docker exec -i -e PGPASSWORD_UNUSED=1 "$PG" psql -v ON_ERROR_STOP=1 -U postgres "$@"
+  fi
+}
 
 case "$STEP" in
 roles)
@@ -55,7 +73,8 @@ app-grants)
   # 앱 롤 — core-api 의 유일한 접속 주체. 정본은 services/core-api/ops/app-role.sql 이다.
   # 여기서 다시 쓰지 않고 그 파일을 그대로 먹인다 (마지막 두 검사가 fail-closed 다).
   # colab_ai 에는 만들지 않는다 — 이 롤은 core-api 배포 단위 하나의 접속 주체다.
-  docker exec -i "$PG" psql -v ON_ERROR_STOP=1 -U postgres -d colab_platform \
+  # `su_psql` 을 거친다 — 원격 갈래(RDS)에서도 같은 파일을 같은 롤로 먹인다(`〈178〉`-㉰: 이 줄이 직접 exec 였다).
+  su_psql -d colab_platform \
     -v owner=colab_owner -v app=colab_app -v app_password="$COLAB_APP_PASSWORD" \
     < "$REPO/services/core-api/ops/app-role.sql" >/dev/null
   # ── ai-service 의 접속 주체. **`colab_app` 이 아니다.**

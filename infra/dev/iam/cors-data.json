@@ -1,0 +1,10 @@
+[
+  {
+    "_comment": "S3.md §1 값 그대로. AllowedOrigins = 그 환경의 실오리진만 — CloudFront 기본 주소(배포 뒤 채운다) + 로컬 개발(vite). prod 는 와일드카드 금지.",
+    "AllowedOrigins": ["https://<DISTRIBUTION_DOMAIN>", "http://localhost:5173"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Range", "Accept-Ranges", "x-amz-request-id", "x-amz-id-2"],
+    "MaxAgeSeconds": 3000
+  }
+]

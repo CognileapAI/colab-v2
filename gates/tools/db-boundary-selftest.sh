@@ -211,6 +211,46 @@ R="$(mkroot empty-compose)"
 printf 'services: {}\n' > "$R/infra/staging/compose.i2.yml"
 expect red "compose 의 services 가 0건" run "$R"
 
+echo "── compose 둘 (staging + dev · 〈178〉) ─────────────────────────────"
+run2() { # $1=루트 — 두 파일을 `:` 목록으로 준다
+  env COLAB_DB_BOUNDARY_ROOT="$1" \
+      COLAB_DB_BOUNDARY_MANIFEST="$1/manifest.toml" \
+      COLAB_DB_BOUNDARY_COMPOSE="$1/infra/staging/compose.i2.yml:$1/infra/dev/compose.yml" \
+      python3 "$GATE"
+}
+mkdev() { # $1=루트 — 올바른 dev compose (같은 서비스명)
+  mkdir -p "$1/infra/dev"
+  cat > "$1/infra/dev/compose.yml" <<'YML'
+services:
+  core-api:
+    environment:
+      COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+  ai-service:
+    environment:
+      COLAB_AI_DB_URL_FILE: /etc/colab/ai-db.url
+  migrate-ai:
+    environment:
+      COLAB_AI_DB_URL_FILE: /etc/colab/ai-owner-db.url
+YML
+}
+R="$(mkroot two-clean)"; mkdev "$R"
+expect green "두 compose 가 다 올바르다" run2 "$R"
+
+R="$(mkroot two-missing)"
+expect red "두 번째 compose(dev) 가 없다 — 건너뛰지 않고 red" run2 "$R"
+
+R="$(mkroot two-cross)"; mkdev "$R"
+cat > "$R/infra/dev/compose.yml" <<'YML'
+services:
+  core-api:
+    environment:
+      COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+  ai-service:
+    environment:
+      COLAB_CORE_DATABASE_URL: postgresql://x@rds/colab_platform
+YML
+expect red "dev compose 에서 ai-service 가 platform 체인에 붙는다 (횡단)" run2 "$R"
+
 echo "────────────────────────────────────────────────────────────────────"
 if [ ${#FAILURES[@]} -eq 0 ]; then
   echo "db-boundary-selftest: 전부 통과"

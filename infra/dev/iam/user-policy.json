@@ -1,0 +1,18 @@
+{
+  "_comment": "운영자 사용자 colab-platform-s3-uploader-dev(장기 키, 로컬 도구 전용 — s3_doctor·s3_smoke·deploy_doctor·deploy_web). 데이터 버킷 3문 + 웹 버킷 Put/List/Delete + 백업 접두사 읽기. EC2 에는 이 키를 넣지 않는다.",
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "DataBucketOps", "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket",
+                 "s3:AbortMultipartUpload", "s3:ListMultipartUploadParts", "s3:ListBucketMultipartUploads"],
+      "Resource": ["arn:aws:s3:::colab-platform-data-dev", "arn:aws:s3:::colab-platform-data-dev/*"] },
+    { "Sid": "DataBucketDiagnostics", "Effect": "Allow",
+      "Action": ["s3:GetBucketLocation", "s3:GetBucketVersioning", "s3:GetBucketCors", "s3:GetLifecycleConfiguration",
+                 "s3:GetBucketPublicAccessBlock", "s3:GetEncryptionConfiguration", "s3:GetBucketPolicy"],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev" },
+    { "Sid": "WebBucketDeploy", "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::colab-platform-web-dev", "arn:aws:s3:::colab-platform-web-dev/*"] },
+    { "Sid": "Identity", "Effect": "Allow", "Action": "sts:GetCallerIdentity", "Resource": "*" }
+  ]
+}

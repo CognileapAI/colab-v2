@@ -1,0 +1,60 @@
+# deploy_doctor 무입력 실행 원문 (2026-08-30 · env -i · 비밀 없음)
+$ env -i PATH=$PATH .venv/bin/python ops/deploy_doctor.py
+
+  ① 운영자 자격증명
+    ─ (미지정)           (미지정 — --bucket 또는 --web-bucket 를 주면 검사한다)
+  ② 데이터 버킷 설정
+    ─ (미지정)           (미지정 — --bucket 를 주면 검사한다)
+  ③ 웹 버킷
+    ─ (미지정)           (미지정 — --web-bucket 를 주면 검사한다)
+  ④ DB 연결 (platform)
+    ─ (미지정)           (미지정 — --db-url-file 를 주면 검사한다)
+  ⑤ DB 연결 (ai)
+    ─ (미지정)           (미지정 — --ai-db-url-file 를 주면 검사한다)
+  ⑥ 스키마 head (platform)
+    ─ (건너뜀)           ④ DB 연결이 없다
+  ⑦ 스키마 head (ai)
+    ─ (건너뜀)           ⑤ DB 연결이 없다
+  ⑧ RLS 전수 (살아 있는 DB)
+    ─ (미지정)           (미지정 — --db-url-file 와 --ai-db-url-file 둘 다 를 주면 검사한다)
+  ⑨ 앱 롤 속성
+    ─ (건너뜀)           ④ platform DB 연결이 없다
+  ⑩ 5 단위 헬스
+    ─ core-api        (미지정 — --app-base 를 주면 검사한다)
+    ─ pipeline-worker (미지정 — --worker-base 를 주면 검사한다)
+    ─ viz-render      (미지정 — --viz-base 를 주면 검사한다)
+    ─ ai-service      (미지정 — --ai-base 를 주면 검사한다)
+    ─ frontend        (미지정 — --web-bucket 를 주면 검사한다)
+  ⑪ 앱 자격증명 출처 (core /healthz/storage)
+    ─ (미지정)           (미지정 — --app-base 를 주면 검사한다)
+  ⑫ 환경 짝
+    ─ (미지정)           (미지정 — --env dev|prod 를 주면 검사한다)
+  ⑬ 진입·라우팅 (endpoint)
+    ─ (미지정)           (미지정 — --endpoint https://<cloudfront> 를 주면 검사한다)
+  ⑭ 백업 24h
+    ─ (미지정)           (미지정 — --bucket 과 --env 둘 다 를 주면 검사한다)
+
+  ── 요약 ──
+  ① 운영자 자격증명                                 ─
+  ② 데이터 버킷 설정                                ─
+  ③ 웹 버킷                                     ─
+  ④ DB 연결 (platform)                         ─
+  ⑤ DB 연결 (ai)                               ─
+  ⑥ 스키마 head (platform)                      ─
+  ⑦ 스키마 head (ai)                            ─
+  ⑧ RLS 전수 (살아 있는 DB)                        ─
+  ⑨ 앱 롤 속성                                   ─
+  ⑩ 5 단위 헬스                                  ─
+  ⑪ 앱 자격증명 출처 (core /healthz/storage)        ─
+  ⑫ 환경 짝                                     ─
+  ⑬ 진입·라우팅 (endpoint)                        ─
+  ⑭ 백업 24h                                   ─
+
+  항목 14 — ✓ 0 · ✗ 0 · ─ 14
+  RED (검사한 항목 0건 — 대상 0건은 통과가 아니다. 위 ─ 줄이 말하는 인자를 주면 검사한다)
+exit=1
+
+$ … --allow-skip (면제를 명시해도 검사 0건이면 exit 1)
+  항목 14 — ✓ 0 · ✗ 0 · ─ 14
+  RED (검사한 항목 0건 — 대상 0건은 통과가 아니다. 위 ─ 줄이 말하는 인자를 주면 검사한다)
+exit=0
