@@ -37,7 +37,18 @@ done
   || die "COLAB_RESTORE_PRE_BACKUP 이 실재하는 파일을 가리켜야 한다 — 되돌림의 되돌림 재료가 없으면 시작하지 않는다"
 
 # ── 산출물 재확인 — 사고 복원이라 신선도는 뺀다.
-COLAB_BACKUP_MIN_TABLES="${COLAB_BACKUP_MIN_TABLES}" \
+# ⭑ **합격선은 프로파일의 것을 쓴다** (`〈286〉`). 종전에는 전역 `COLAB_BACKUP_MIN_TABLES`(20 ·
+#   platform 형상)를 그대로 넘겨, 표 6개가 정상인 `ai` 원장이 **구조적 거짓 RED** 로 거부됐다
+#   (`sessions/WINDOW-20260903-D3.md §4.2`). 형제 호출 둘은 이미 프로파일 합격선을 쓴다 —
+#   `backup/latest-check.sh` · `backup/restore-rehearsal.sh`. 여기만 빠져 있었다.
+# ⚠ 이것은 **검사 범위를 줄인 것이 아니다** — 각 프로파일의 실측 합격선으로 **갈아 끼운** 것이고,
+#   진짜 잘린 덤프는 여전히 RED 다(`selftest-restore.sh` SR16·SR17 이 두 방향을 못 박는다).
+PROFILE="$(profile_for_db "$DB")"
+[ "$PROFILE" != "미해결" ] \
+  || die "DB '$DB' 에 대응하는 백업 프로파일이 없다 — 합격선을 전역 기본값으로 메우지 않는다 (COLAB_BACKUP_PROFILES · COLAB_BACKUP_DB_<프로파일> 확인)"
+log "합격선 프로파일 = $PROFILE (테이블 $(profile_min_tables "$PROFILE") · 행 $(profile_min_rows "$PROFILE"))"
+COLAB_BACKUP_MIN_TABLES="$(profile_min_tables "$PROFILE")" \
+COLAB_BACKUP_MIN_ROWS="$(profile_min_rows "$PROFILE")" \
   "$HERE/../backup/verify-artifact.sh" "$DUMP" --skip-age || die "덤프가 RED 다. 적재하지 않는다"
 
 # ── 문 ③ 잔여 커넥션 ─────────────────────────────────────────────────────────

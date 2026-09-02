@@ -434,6 +434,76 @@ if [ $RC -ne 0 ] && echo "$O" | grep -q '⑤-c ai 앱 롤이 사전을 못 읽�
   echo "  → 기대대로 RED — colab_ai 쪽 GRANT 소멸도 따로 잡는다"
 else echo "  → ✗ 사전을 못 읽는데 통과했다 (exit $RC)"; echo "$O" | grep -E '⑤-c' | sed 's/^/    /'; BAD=$((BAD+1)); fi
 
+# ══ 프로파일 합격선 — `restore-db.sh` 가 전역 기본값(20 · platform 형상)을 쓰던 결함 (`〈286〉`) ══
+#    D3 회차에서 표 6개가 **정상**인 `ai` 원장 덤프가 합격선 20 에 걸려 거부됐다
+#    (`sessions/WINDOW-20260903-D3.md §4.2`). 아래 넷이 **두 방향**을 동시에 못 박는다 —
+#    ⓐ 온전한 ai 덤프(표 6)는 통과한다  ⓑ **진짜 잘린 덤프는 여전히 RED 다.**
+#    ⓑ 가 없으면 이 수정은 「검사 범위를 줄인 것」과 구별되지 않는다(`CLAUDE.md §4` · 스킬 §3).
+
+# 픽스처 설정 — 홈 env 파일에 의존하지 않게 `COLAB_BACKUP_CONFIG` 로 세계를 고정한다.
+cat > "$W/floors.env" <<'ENV'
+COLAB_BACKUP_TARGET=local
+COLAB_BACKUP_PROFILES="platform ai"
+COLAB_BACKUP_DB_platform=colab_platform
+COLAB_BACKUP_DB_ai=colab_ai
+COLAB_BACKUP_MIN_TABLES_platform=20
+COLAB_BACKUP_MIN_ROWS_platform=190
+COLAB_BACKUP_MIN_TABLES_ai=4
+COLAB_BACKUP_MIN_ROWS_ai=45
+ENV
+: > "$W/pre-backup.sql.gz"
+
+# 재료 — 살아 있는 `colab_ai` 의 실제 형상(표 6 · 행 91)을 본뜬 **온전한** 덤프.
+mk_dump() { # $1=출력 $2=테이블수 $3=테이블당 행수
+  local n=0 i r
+  { echo "-- dump"
+    while [ "$n" -lt "$2" ]; do
+      n=$((n+1))
+      echo "CREATE TABLE public.t$n (id text, payload text);"
+      echo "COPY public.t$n (id, payload) FROM stdin;"
+      i=0; while [ "$i" -lt "$3" ]; do i=$((i+1))
+        r="$(od -An -tx1 -N24 /dev/urandom | tr -d ' \n')"
+        echo "t$n-$i	$r"
+      done
+      echo '\.'
+    done
+  } | gzip -c > "$1"
+}
+mk_dump "$W/ai-intact.sql.gz"      6  16   # 표 6 · 행 96  — 합격선(4·45) 위
+mk_dump "$W/ai-truncated.sql.gz"   2  16   # 표 2 · 행 32  — 표가 모자란다
+mk_dump "$W/plat-cut.sql.gz"       5  60   # 표 5 · 행 300 — platform 합격선 20 에 못 미친다
+
+rdb() { env COLAB_BACKUP_CONFIG="$W/floors.env" COLAB_RESTORE_PRE_BACKUP="$W/pre-backup.sql.gz" \
+        "$HERE/restore-db.sh" "$@" --yes-drop-schema 2>&1; }
+
+RAN=$((RAN+1)); echo "──────── SR24 ⓐ 온전한 ai 덤프(표 6)는 **합격선 검사를 통과한다** — 거짓 RED 가 걷혔다"
+O="$(rdb --db colab_ai --owner owner --dump "$W/ai-intact.sql.gz")"
+if echo "$O" | grep -q '합격선 프로파일 = ai' && echo "$O" | grep -q 'PASS  C4' \
+   && ! echo "$O" | grep -q '덤프가 RED 다'; then
+  echo "  → 기대대로 — ai 합격선(표 4)이 걸렸다. 표 6 이 20 에 걸려 죽지 않는다"
+  echo "$O" | grep -E '합격선 프로파일|C0|C4|C5' | sed 's/^/    /'
+else echo "  → ✗ 온전한 ai 덤프가 여전히 막힌다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+# ⚠ 이 fixture 는 docker 없이 도는 자리까지만 본다 — 합격선 판정 다음 줄(커넥션 세기)에서 선다.
+#    그 뒤는 살아 있는 스택에서 `verify-restored.sh` 가 센다.
+
+RAN=$((RAN+1)); echo "──────── SR25 ⓑ **진짜 잘린 ai 덤프(표 2)는 여전히 RED** — 합격선을 낮춘 것이 아니다"
+O="$(rdb --db colab_ai --owner owner --dump "$W/ai-truncated.sql.gz")"
+if echo "$O" | grep -q '덤프가 RED 다' && echo "$O" | grep -q 'FAIL  C4 CREATE TABLE 2개 < 4'; then
+  echo "  → 기대대로 RED — 표 2 는 ai 합격선 4 에 걸린다"
+  echo "$O" | grep -E 'FAIL|덤프가 RED' | sed 's/^/    /'
+else echo "  → ✗ 잘린 덤프를 통과시켰다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR26 ⓑ′ 중간에서 끊긴 platform 덤프(표 5)도 여전히 RED — 프로파일별로 따로 선다"
+O="$(rdb --db colab_platform --owner owner --dump "$W/plat-cut.sql.gz")"
+if echo "$O" | grep -q '덤프가 RED 다' && echo "$O" | grep -q 'FAIL  C4 CREATE TABLE 5개 < 20'; then
+  echo "  → 기대대로 RED — 같은 수정이 platform 합격선 20 을 그대로 유지한다"
+  echo "$O" | grep -E 'FAIL|덤프가 RED' | sed 's/^/    /'
+else echo "  → ✗ 잘린 platform 덤프를 통과시켰다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+expect_red "SR27 프로파일에 없는 DB 이름 — 합격선을 전역 기본값으로 메우지 않는다" \
+  env COLAB_BACKUP_CONFIG="$W/floors.env" COLAB_RESTORE_PRE_BACKUP="$W/pre-backup.sql.gz" \
+      "$HERE/restore-db.sh" --db colab_unknown --owner owner --dump "$W/ai-intact.sql.gz" --yes-drop-schema
+
 echo
 if [ "$BAD" -eq 0 ]; then echo "복원 셀프테스트 GREEN — fixture $RAN 건 전부 기대대로"; exit 0; fi
 echo "복원 셀프테스트 RED — $BAD 건이 fail-closed 가 아니다"; exit 1
