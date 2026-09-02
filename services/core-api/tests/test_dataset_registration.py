@@ -258,3 +258,76 @@ def test_a_failed_pipeline_does_not_block_registration(p2_client, sql, reason) -
     assert status.json()["failure"] == {"reason": reason}
     assert register(client, receipt).status_code == 201, \
         f"실패({reason})한 업로드가 등록을 막았다 — 정본 :192 위반이다."
+
+
+# ═════════ 변수·좌표계·기간 — 등록 요청이 받는다 (`#62` · 정본 `VAL-006`) ═════════
+def test_the_three_free_input_fields_are_accepted_at_registration(p2_client, sql) -> None:
+    """**`〈138〉` 의 나머지 절반** — 계약 `DatasetCreate` 가 선언한 셋을 서버가 받는다.
+
+    종전에는 `_ALLOWED_CREATE_FIELDS` 에 없어 **400** 이었다(`#62`). 계약은 그대로다 —
+    바뀐 것은 런타임뿐이고, 저장은 `updateDataset` 이 쓰는 **그 경로 하나**를 쓴다.
+    """
+    client = p2_client()
+    r = register(client, make_upload(client),
+                 variables=["tp", "t2m"], crs="EPSG:5179",
+                 period={"start": "2025-06-01T00:00:00Z", "end": "2025-09-30T00:00:00Z"})
+    assert r.status_code == 201, r.text
+    basics = r.json()["basicInfo"]
+    assert basics["variables"] == ["tp", "t2m"]
+    assert basics["crs"] == "EPSG:5179"
+    assert basics["period"]["start"].startswith("2025-06-01")
+
+    rows = sql("SELECT variables, crs, period_start, period_end"
+               "  FROM d3_dataset_autometa WHERE dataset_id = :d",
+               {"d": r.json()["datasetId"]})
+    assert list(rows[0]["variables"]) == ["tp", "t2m"]
+    assert rows[0]["crs"] == "EPSG:5179"
+    assert rows[0]["period_start"].month == 6
+
+
+def test_the_registration_and_update_paths_share_one_validator(p2_client) -> None:
+    """**검사기가 한 벌이다** — 같은 어긋난 값을 두 경로에 넣으면 같은 400 이 난다.
+
+    두 벌을 두면 한쪽만 고쳐지는 날이 오고, 그날 생성 경로는 500 을 낸다.
+    """
+    client = p2_client()
+    bad = {"variables": ["", "tp"]}
+    created = register(client, make_upload(client), **bad)
+    assert created.status_code == 400, created.text
+
+    dataset_id = register(client, make_upload(client)).json()["datasetId"]
+    patched = client.patch(f"{API_PREFIX}/datasets/{dataset_id}", json=bad,
+                           headers=auth(TOKEN_RES))
+    assert patched.status_code == 400, patched.text
+    assert created.json()["message"] == patched.json()["message"]
+
+
+def test_a_malformed_period_is_a_400_on_both_paths(p2_client) -> None:
+    """기간의 **형상**만 본다 (`VAL-006` 「형식 검사는 하지 않는다」).
+
+    형상을 안 보면 저장 코드가 `AttributeError` 로 죽어 **500** 이 난다 — 사용자에게
+    「우리 잘못」으로 보이는 자리에 사용자의 오타가 앉는다.
+    """
+    client = p2_client()
+    created = register(client, make_upload(client), period="2025-06 ~ 2025-09")
+    assert created.status_code == 400, created.text
+
+    dataset_id = register(client, make_upload(client)).json()["datasetId"]
+    patched = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                           json={"period": "2025-06 ~ 2025-09"}, headers=auth(TOKEN_RES))
+    assert patched.status_code == 400, patched.text
+
+
+def test_the_update_path_can_write_a_period(p2_client, sql) -> None:
+    """`_UPDATABLE` 에 `period` 가 없어 **수정 경로의 기간이 통째로 죽어 있었다**
+    (`KeyError` → 500). 시험이 없어 아무도 몰랐다."""
+    client = p2_client()
+    dataset_id = register(client, make_upload(client)).json()["datasetId"]
+    r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                     json={"period": {"start": "2020-01-01T00:00:00Z",
+                                      "end": "2020-02-01T00:00:00Z"}},
+                     headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    rows = sql("SELECT period_start FROM d3_dataset_autometa WHERE dataset_id = :d",
+               {"d": dataset_id})
+    assert rows[0]["period_start"].year == 2020

@@ -48,6 +48,14 @@ function StepOne(props: {
   onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
+  variables: string;
+  onVariables: (v: string) => void;
+  periodStart: string;
+  onPeriodStart: (v: string) => void;
+  periodEnd: string;
+  onPeriodEnd: (v: string) => void;
+  crs: string;
+  onCrs: (v: string) => void;
   nameError: boolean;
 }) {
   const bodies = (props.status?.files ?? []).filter((f) => f.kind === '본체');
@@ -65,11 +73,13 @@ function StepOne(props: {
       <div className="card-b">
         <div className="fieldlbl">파일에서 자동으로 읽었어요</div>
         <div className="form-2" data-testid="reg-auto">
+          {/* ⭑ 2026-09-02 · `#62` — 변수·기간·좌표계가 여기서 빠지고 아래 `사람이 적어요`
+              로 내려갔다. 정본 `VAL-006` = 「변수·기간·좌표계는 자유 입력 · 선택 입력」이고
+              `POLICY-20260825-001` 핵심규칙 1 = 「자동으로 읽는 값은 포맷과 용량뿐」이다.
+              `격자` 는 여기 남는다 — 격자 파일을 붙인 뒤 서버가 세는 값이라 층이 다르고
+              (`〈74〉`), 계약 `DatasetCreate` 에 적을 자리가 없다. */}
           <AutoField label="포맷" value="" />
           <AutoField label={sizeLabel} value={bytes ? humanSize(bytes) : ''} />
-          <AutoField label="변수" value="" />
-          <AutoField label={periodLabel} value="" />
-          <AutoField label="좌표계" value="" />
           <AutoField label="격자" value="" />
         </div>
 
@@ -131,6 +141,55 @@ function StepOne(props: {
               value="계보를 확정하면 정해져요"
             />
           </div>
+        </div>
+        {/* 변수·기간·좌표계 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
+            형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
+            파이프라인이 채울 자리가 영영 막힌다 (`UploadModal.submit`). */}
+        <div className="form-row">
+          <label htmlFor="reg-variables">변수 (선택)</label>
+          <input
+            id="reg-variables"
+            className="inp"
+            data-testid="reg-variables"
+            placeholder="tp · t2m 처럼 가운뎃점으로 나열해요"
+            value={props.variables}
+            onChange={(e) => props.onVariables(e.target.value)}
+          />
+        </div>
+        <div className="form-2">
+          <div className="form-row">
+            <label htmlFor="reg-period-start">{periodLabel} 시작 (선택)</label>
+            <input
+              id="reg-period-start"
+              className="inp"
+              type="date"
+              data-testid="reg-period-start"
+              value={props.periodStart}
+              onChange={(e) => props.onPeriodStart(e.target.value)}
+            />
+          </div>
+          <div className="form-row">
+            <label htmlFor="reg-period-end">{periodLabel} 끝 (선택)</label>
+            <input
+              id="reg-period-end"
+              className="inp"
+              type="date"
+              data-testid="reg-period-end"
+              value={props.periodEnd}
+              onChange={(e) => props.onPeriodEnd(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <label htmlFor="reg-crs">좌표계 (선택)</label>
+          <input
+            id="reg-crs"
+            className="inp"
+            data-testid="reg-crs"
+            placeholder="EPSG:5179"
+            value={props.crs}
+            onChange={(e) => props.onCrs(e.target.value)}
+          />
         </div>
         <div className="form-row">
           <label htmlFor="reg-summary">설명 (선택)</label>
@@ -363,6 +422,14 @@ export function RegisterArea(props: {
   onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
+  variables: string;
+  onVariables: (v: string) => void;
+  periodStart: string;
+  onPeriodStart: (v: string) => void;
+  periodEnd: string;
+  onPeriodEnd: (v: string) => void;
+  crs: string;
+  onCrs: (v: string) => void;
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
   projects: { projectId: string; name: string }[];
@@ -412,6 +479,14 @@ export function RegisterArea(props: {
             onTopic={props.onTopic}
             summary={props.summary}
             onSummary={props.onSummary}
+            variables={props.variables}
+            onVariables={props.onVariables}
+            periodStart={props.periodStart}
+            onPeriodStart={props.onPeriodStart}
+            periodEnd={props.periodEnd}
+            onPeriodEnd={props.onPeriodEnd}
+            crs={props.crs}
+            onCrs={props.onCrs}
             nameError={props.nameError}
           />
         )}

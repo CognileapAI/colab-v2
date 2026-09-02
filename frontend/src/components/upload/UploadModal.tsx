@@ -76,6 +76,12 @@ export function UploadModal(props: {
   const [topic, setTopic] = useState('');
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
+  // 변수·기간·좌표계 — **사람이 적는 자유 입력** (정본 `VAL-006` · 스펙 18·19·20).
+  // 화면은 문자열로 들고 있다가 제출 자리에서 계약 형상으로 바꾼다.
+  const [variables, setVariables] = useState('');
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [crs, setCrs] = useState('');
   const [projects, setProjects] = useState<{ projectId: string; name: string }[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
@@ -263,6 +269,27 @@ export function UploadModal(props: {
     }
   }
 
+  /**
+   * 화면의 문자열 → 계약(`DatasetCreate`)의 형상. **적은 칸만 실린다.**
+   *
+   * ⚠ **정본과 어긋나는 자리 하나** — 스펙 19 는 기간을 「`2025-06 ~ 2025-09`」한 칸의
+   * 자유 문장으로 그린다. 계약 `DataPeriod` 는 `start`·`end` 두 `date-time` 이라
+   * 그 문장을 담을 자리가 없다. 계약은 동결돼 있어 화면이 두 칸으로 받는다.
+   */
+  function humanMetadata(): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    const vars = variables
+      .split('·')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+    if (vars.length > 0) out.variables = vars;
+    if (crs.trim()) out.crs = crs.trim();
+    if (periodStart && periodEnd) {
+      out.period = { start: `${periodStart}T00:00:00Z`, end: `${periodEnd}T00:00:00Z` };
+    }
+    return out;
+  }
+
   async function submit() {
     if (!uploadId) return;
     if (!name.trim()) {
@@ -285,6 +312,9 @@ export function UploadModal(props: {
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
         projectIds: projects.map((p) => p.projectId),
+        // **빈 칸은 싣지 않는다** — 폼 기본값이 지나간 것을 「사람이 적었다」로 저장하면
+        // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
+        ...humanMetadata(),
       });
       props.onClose();
       navigate(`/datasets/${made.datasetId}`);
@@ -433,6 +463,14 @@ export function UploadModal(props: {
               onTopic={setTopic}
               summary={summary}
               onSummary={setSummary}
+              variables={variables}
+              onVariables={setVariables}
+              periodStart={periodStart}
+              onPeriodStart={setPeriodStart}
+              periodEnd={periodEnd}
+              onPeriodEnd={setPeriodEnd}
+              crs={crs}
+              onCrs={setCrs}
               sourceLabel={sourceLabel}
               onSourceLabel={setSourceLabel}
               projects={projects}
