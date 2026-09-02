@@ -38,6 +38,18 @@
 .search-page .notice .hint { color: var(--color-text-muted, #565c63); }
 .search-page .notice--degraded { background: var(--color-warning-50, #fff6ed); border-color: #f0d3b4; margin-bottom: 14px; }
 .search-page .notice--down { background: var(--color-warning-50, #fff6ed); border-color: #f0d3b4; }
+/* 0건 상태 — 목업 F-02. 막다른 길을 만들지 않는 자리라 두 길이 나란히 선다 (검수 #14) */
+.search-page .notice--empty { text-align: center; padding: 28px 18px; }
+.search-page .notice--empty h2 { margin: 0 0 10px; font-size: 18px; }
+.search-page .notice--empty .empty-acts { display: flex; justify-content: center; gap: 8px; margin: 14px 0 0; }
+.search-page .notice--empty .empty-acts .quiet,
+.search-page .notice--empty .empty-acts .strong {
+  display: inline-flex; align-items: center; height: 32px; padding: 0 14px;
+  border-radius: var(--radius-md, 6px); font-size: 13px; text-decoration: none; cursor: pointer;
+}
+.search-page .notice--empty .empty-acts .quiet { border: 1px solid var(--color-border, #dde1e6); background: var(--color-surface, #fff); color: var(--color-text-body, #21272a); }
+.search-page .notice--empty .empty-acts .strong { border: 0; background: var(--color-primary-600, #0f62fe); color: #fff; }
+.search-page .notice--empty .muted { color: var(--color-text-muted, #565c63); font-size: 11px; margin-top: 16px; }
 
 .search-page .hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .search-page .hit {

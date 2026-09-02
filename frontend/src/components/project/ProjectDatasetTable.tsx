@@ -54,9 +54,26 @@ export function ProjectDatasetTable(props: {
                 {row.lineageState}
               </span>
             </td>
-            {/* 상세 표는 데이터 한 건의 **상태**라 글자를 붙인다. 없으면 `—` — 빈칸은
-                「값이 없음」과 「아직 안 봄」이 구분되지 않는다 (§8) */}
-            <td data-testid="dataset-verified">{row.verified ? '승인됨' : '—'}</td>
+            {/* 상세 표는 데이터 한 건의 **상태**라 글자를 붙인다 (§8 `승인됨`).
+                ⭑ 승인이 아직 도착하지 않은 행은 **카탈로그와 같은 표기**를 쓴다 —
+                취소선·회색·꺼진 조작(`〈282〉`-㉮ Ted 판정 2026-09-02 의 규칙 확장 ·
+                검수 #8 「카탈로그는 취소선 `Verified`, 프로젝트 상세 표는 `—` — 같은
+                상태를 두 표기로」). `—` 로 두면 「값이 없음」과 「아직 안 왔음」이
+                두 화면에서 서로 다르게 읽힌다. 규칙은 `catalog.css .verified--pending`. */}
+            <td data-testid="dataset-verified">
+              {row.verified ? (
+                '승인됨'
+              ) : (
+                <span
+                  className="verified verified--pending"
+                  data-testid="verified-pending"
+                  aria-disabled="true"
+                  title="승인 처리가 아직 도착하지 않았다"
+                >
+                  Verified
+                </span>
+              )}
+            </td>
             <td className="right">
               {/* 소속 해제는 `프로젝트 생성` 스위치가 켜진 사람만 (§6). 꺼졌으면 **숨긴다**
                   — 비활성 버튼으로 남기지 않는다 (P-12). */}

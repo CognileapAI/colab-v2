@@ -136,6 +136,12 @@ jobs:
       # 이 잡은 위에서 `npm ci --prefix frontend` 를 이미 돌았다 — node_modules 가 실물로 있다.
       - name: 프런트 타입 검사 (tsc --noEmit · 이미지 빌드와 같은 검사)
         run: ./gates/run.sh frontend-typecheck
+      # 화면 동작 시험 — frontend/package.json 의 `test`(vitest run) 와 같은 명령.
+      # 2026-09-03 이전에는 frontend/test 24파일이 게이트 밖에 있었고, 그래서 정본과
+      # 어긋난 화면이 전 게이트 green 인 채로 서 있었다(화면 검수 30행).
+      # 같은 잡이라 node_modules 가 이미 실물로 있다. 수집된 시험 0건도 red 다.
+      - name: 프런트 화면 동작 시험 (vitest run)
+        run: ./gates/run.sh frontend-test
 
   boundary-gates:
     needs: changes

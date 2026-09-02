@@ -14,14 +14,14 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  frontend-typecheck
+  frontend-typecheck frontend-test
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest
-  frontend-typecheck-selftest
+  frontend-typecheck-selftest frontend-test-selftest
 )
 
 case "$GATE" in
@@ -68,6 +68,17 @@ case "$GATE" in
   frontend-typecheck-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — `74deb54` 실물 결함 재현 포함.
     exec "$REPO_ROOT/gates/tools/frontend-typecheck-selftest.sh"
+    ;;
+  frontend-test)
+    # 화면 동작 시험 — `frontend/package.json` 의 `test`(`vitest run`) 와 **같은 명령**을
+    # 레포의 `vite.config.ts` 설정 그대로 돈다. 2026-09-03 이전에는 `frontend/test` 25파일이
+    # 게이트 밖에 있었고, 그래서 정본과 어긋난 화면이 전 게이트 green 인 채로 서 있었다.
+    # node_modules·vitest 부재는 red(준비) 이고, **수집된 시험 0건도 red** 다.
+    exec "$REPO_ROOT/gates/tools/frontend-test.sh"
+    ;;
+  frontend-test-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 수집 0건 red 포함.
+    exec "$REPO_ROOT/gates/tools/frontend-test-selftest.sh"
     ;;
   import-boundary)
     # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).
@@ -210,7 +221,7 @@ case "$GATE" in
     # ⭑ frontend-typecheck-selftest 도 **여기 있다** — 이 잡이 이미 `npm ci --prefix frontend` 를
     #   돌아 `node_modules` 가 실물로 있다(설치 확인 스텝이 그것을 존재로 본다).
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest frontend-typecheck-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest frontend-typecheck-selftest frontend-test-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

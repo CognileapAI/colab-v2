@@ -28,6 +28,9 @@
   display: inline-flex; align-items: center; height: 23px; border-radius: var(--radius-pill);
   padding: 0 10px; background: var(--color-accent-50); border: 1px solid var(--color-accent-200);
   color: var(--color-accent-700); font-size: 10px; font-weight: 700; white-space: nowrap;
+  /* 라벨이 길면 상자 폭을 넘어 잘려 나갔다(검수 #22). 넘치면 …로 접고 전문은 `title` 이 든다 */
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; display: inline-block;
+  line-height: 23px;
 }
 
 .detail-page .ln {

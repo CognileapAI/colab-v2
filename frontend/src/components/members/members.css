@@ -101,13 +101,17 @@
   background: #12161966;
   z-index: 200;
 }
+/* ⚠ `.modal` 은 이 파일이 처음 두었지만 **전역 이름**이다 — 승인·연구실 정보·업로드가 함께
+   쓴다. 종전에는 여기 `max-width: 520px` 이 붙어 있어 **업로드 전체 화면 모달을 520px 로
+   눌렀다**(검수 #25 · `upload.css` 의 `.modal.modal-takeover{width:100%}` 를 덮었다).
+   폭은 골격이 아니라 **쓰는 자리**가 정한다 — 가운데 대화상자는 `.modal--dialog` 를 붙인다. */
 .modal {
   width: 100%;
-  max-width: 520px;
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
+.modal--dialog { max-width: 520px; }
 .modal-h { padding: 16px 18px; border-bottom: 1px solid var(--color-border); }
 .modal-h h3 { margin: 0; font-size: var(--text-body); }
 .modal-b { padding: 16px 18px; }

@@ -18,8 +18,12 @@ function ScopeLine(props: { scope: AiSearchScope; found: number }) {
   const { scope, found } = props;
   return (
     <p className="scope" data-testid="search-scope">
+      {/* ⚠ 0건일 때 **판정 문장을 여기서 말하지 않는다** — 목업 F-02 의 0건 상태가
+          「…맞는 것이 없었어요」를 자기 안에 이미 담고 있어, 둘을 다 두면 같은 말이 화면에
+          두 번 나온다(검수 #13 · 실물에서 연속 2회 출력). **범위·개수는 그대로 남는다** —
+          정본 §3.3 「0건일 때 원인을 알 수 있다」가 요구하는 것은 이 줄이지 판정이 아니다. */}
       {scope.labName} 데이터 {scope.searchedCount}건을 뒤졌
-      {found > 0 ? `고 ${found}건을 찾았어요.` : '지만 맞는 것이 없었어요.'}
+      {found > 0 ? `고 ${found}건을 찾았어요.` : '어요.'}
     </p>
   );
 }
@@ -57,7 +61,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
 
       {state.status === 'ready' && (
         <>
-          {/* 뒤진 범위가 먼저다 — 0건이어도, degraded 여도 이 줄이 맨 앞이다 */}
+          {/* 뒤진 범위가 먼저다 — 0건이어도, degraded 여도 이 줄이 맨 앞이다 (정본 §3.3) */}
           <ScopeLine scope={state.results.scope} found={state.results.items.length} />
 
           {state.results.degraded && (
@@ -77,16 +81,29 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
             </div>
           ) : state.results.items.length === 0 ? (
             /* 0건은 200 이고 정상이다. **대신 뭘 볼래요? 를 지어내지 않는다.** */
+            /* 0건 상태의 네 조각은 **목업 E-02 `F-02` 축자**다 (`데이터_찾기_260817.html`
+               448~453행 · `Policy_데이터_찾기 §154행` 「"맞는 데이터를 못 찾았어요" + 뒤진
+               범위·개수 + [단어를 바꿔 다시 찾기] [카탈로그에서 훑어보기] + 업로드 권유 한 줄」).
+               막다른 길을 만들지 않는다 — 그리고 **대신 뭘 볼래요? 를 지어내지 않는다.** */
             <div className="notice notice--empty" data-testid="search-empty">
+              <h2>맞는 데이터를 못 찾았어요</h2>
               <p>
-                {state.results.scope.labName} 데이터 {state.results.scope.searchedCount}건을 뒤졌지만
-                맞는 것이 없었어요.
+                {state.results.scope.labName} 데이터 <b>{state.results.scope.searchedCount}개</b>를
+                뒤졌지만 <b>‘{query}’</b>에 맞는 것이 없었어요.
               </p>
-              <p>
+              <p className="hint">
                 이 검색은 데이터에 적혀 있는 낱말을 그대로 찾아요 — 「강수량」으로는 「강수」가 적힌
-                데이터가 나오지 않아요. 적혀 있을 법한 말 그대로 다시 물어보세요.
+                데이터가 나오지 않아요.
               </p>
-              <Link to="/datasets">데이터셋 카탈로그에서 조건으로 좁혀 보기</Link>
+              <div className="empty-acts">
+                <button type="button" className="quiet" onClick={() => navigate('/')}>
+                  단어를 바꿔 다시 찾기
+                </button>
+                <Link className="strong" to="/datasets">
+                  카탈로그에서 훑어보기
+                </Link>
+              </div>
+              <p className="muted">이 데이터를 갖고 계시면 업로드해 주세요.</p>
             </div>
           ) : (
             <ul className="hits" data-testid="search-results">

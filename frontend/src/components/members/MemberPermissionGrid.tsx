@@ -195,7 +195,7 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
         // 확인 모달은 **변경 내역을 다시 나열하지 않는다** (§3 표 · P-20).
         // 방금 표에서 직접 체크했고 표식도 그대로 보인다.
         <div className="modal-back show">
-          <div className="modal" role="dialog" aria-modal="true" aria-label="권한을 이렇게 바꿀까요?">
+          <div className="modal modal--dialog" role="dialog" aria-modal="true" aria-label="권한을 이렇게 바꿀까요?">
             <div className="modal-h">
               <h3>권한을 이렇게 바꿀까요?</h3>
             </div>

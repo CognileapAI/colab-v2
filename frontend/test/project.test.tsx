@@ -333,12 +333,15 @@ describe('§5 소속 데이터셋 표 — 행에서 판단이 끝난다', () => 
     expect(within(single).queryByText(/조각/)).toBeNull();
   });
 
-  it('Verified 는 상태 글자이고, 없으면 `—` 다 — 빈칸을 두지 않는다 (§8)', async () => {
+  it('Verified 는 상태 글자다 — 승인 전은 카탈로그와 같은 취소선 표기다 (§8 · 검수 #8)', async () => {
     renderDetail('p3');
     const yes = await screen.findByTestId('pds-hangang_DEM_5m_Lv1.tif');
     expect(within(yes).getByText('승인됨')).toBeInTheDocument();
     const no = screen.getByTestId('pds-hangang_DEM_10m_Lv1.tif');
-    expect(within(no).getByTestId('dataset-verified').textContent).toBe('—');
+    /* ⭑ ⟨개정 2026-09-03 · 검수 #8⟩ 종전 기대값은 `—` 였다. 카탈로그는 같은 상태를
+       취소선 `Verified` 로 그리고 있어 **같은 상태가 두 화면에서 두 표기**였다.
+       `〈282〉`-㉮ 규칙을 이 표로 확장한다 — 표기는 `Verified` 취소선·비활성이다. */
+    expect(within(no).getByTestId('dataset-verified').textContent?.trim()).toBe('Verified');
   });
 
   it('행을 누르면 데이터셋 상세로 간다 (§2 규칙 맵)', async () => {

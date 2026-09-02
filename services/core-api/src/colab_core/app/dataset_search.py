@@ -70,15 +70,20 @@ def rationale(match: SearchMatch, *, lab_name: str, searched: int, topic: str | 
 
     앞 절은 실행기가 준 사실(뒤진 범위 · 맞은 말 · 맞은 자리)이고, 뒤 절은 **이 검색이 못 본
     것**이다. 좋은 점만 적는 줄이 따로 생기지 않도록 두 절을 한 문장에 붙여 둔다.
+
+    ⭑ **종결은 해요체다** (화면 검수 2026-09-03 #12 · `Policy_데이터_찾기 §120행`). 종전에는
+    「…맞았다 — …직접 보라」로 **해라체**였고, 제품의 다른 모든 문구(「4건을 찾았어요」·
+    「맞는 데이터를 못 찾았어요」)와 한 화면에서 어긋났다. 이 문장은 **서버가 만들어 화면이
+    그대로 싣는다** — 그래서 문체도 여기서 정해진다. 화면에서 고칠 수 없는 자리다.
     """
     heads = [_matched_phrase(t, expansions)
              for t in match.matched_terms[:MAX_TERMS_IN_RATIONALE]]
     matched = ", ".join(heads) or "‘질문의 낱말’"
     where = "·".join(match.where) if match.where else "카탈로그"
-    head = f"{lab_name} 안 {searched}건에서 {matched}가 {where}에 맞았다"
+    head = f"{lab_name} 안 {searched}건에서 {matched}가 {where}에 맞았어요"
     if topic:
-        head += f" (주제 {topic}로 좁혀 뒤졌다)"
-    tail = "기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 보라"
+        head += f" (주제 {topic}로 좁혀 뒤졌어요)"
+    tail = "기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요"
     if interpretation_degraded:
         tail = "질의 해석 없이 질문의 낱말 그대로 찾았고, " + tail
     return f"{head} — {tail}."

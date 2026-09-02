@@ -43,7 +43,7 @@ export function LabInfoModal(props: { source: DashboardSource; onClose: () => vo
 
   return (
     <div className="modal-back" role="dialog" aria-modal="true" aria-label="연구실 정보">
-      <div className="modal lab-info">
+      <div className="modal modal--dialog lab-info">
         <h2>연구실 정보</h2>
         {error ? <p className="dash-error">{error}</p> : null}
         {lab ? (
