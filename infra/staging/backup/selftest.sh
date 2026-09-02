@@ -337,6 +337,90 @@ else
   echo "  → ✗ 읽기 실패인데 remove 가 crontab 을 덮었다 (exit $RC13E)"; BAD=$((BAD+1))
 fi
 
+# ── F14 크론 무인 연속 GREEN 재측정기 (`check-cron-streak.sh`) ────────────────
+# `〈255〉` 남은 조건 ⓑ — ⑴ 을 **회차마다 기계가 다시 재는** 자리다. 그 재측정기가
+# 스스로 fail-closed 인지를 여기서 증명한다. 픽스처는 전부 파일뿐이라 docker 를 쓰지 않는다.
+CCS="$HERE/check-cron-streak.sh"
+CW="$W/ccs"; mkdir -p "$CW/state" "$CW/store"
+: > "$CW/empty.env"          # 홈 설정을 물지 않게 빈 설정으로 격리한다
+
+# 헬퍼 — 상태를 그려 놓고 재측정기를 돌린다.
+#   $1 = LAST-SUCCESS 내용  $2 = 로그 내용  $3 = 볼륨 산출물을 만들 날짜들(YYYYMMDD, 공백 구분. `-` 면 안 만든다)
+ccs_run() {
+  rm -rf "$CW/state" "$CW/store"; mkdir -p "$CW/state" "$CW/store"
+  [ "$1" = "-" ] || printf '%s\n' "$1" > "$CW/state/LAST-SUCCESS.txt"
+  [ "$2" = "-" ] || printf '%s\n' "$2" > "$CW/state/staging-backup.log"
+  if [ "$3" != "-" ]; then
+    for d in $3; do for v in uploads previews; do
+      echo x | gzip -c > "$CW/store/vol-$v-${d}T033000.tar.gz"; done; done
+  fi
+  env COLAB_BACKUP_CONFIG="$CW/empty.env" COLAB_BACKUP_DIR="$CW/store" \
+      COLAB_BACKUP_STATE_DIR="$CW/state" COLAB_VOLBACKUP_VOLUMES="uploads previews" \
+      "$CCS"
+}
+
+# 오늘 기준 최근 3일을 만든다 — 신선도(C1-b)가 달력을 보므로 고정 날짜를 쓸 수 없다.
+D0="$(date +%F)"; D1="$(date -d '1 day ago' +%F)"; D2="$(date -d '2 days ago' +%F)"; D9="$(date -d '9 days ago' +%F)"
+S0="${D0//-/}"; S1="${D1//-/}"; S2="${D2//-/}"
+OK3="$(printf '%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK' "$D2" "$D1" "$D0")"
+LOG3="$(printf '%sT03:30:02 ═══ 1단 · 원장 덤프\n%sT03:30:02 ═══ 1단 · 원장 덤프\n%sT03:30:02 ═══ 1단 · 원장 덤프' "$D2" "$D1" "$D0")"
+
+RAN=$((RAN+1)); echo "──────── F14-0 대조군 — 세 조건을 다 갖추면 GREEN 이다"
+OUT140="$(ccs_run "$OK3" "$LOG3" "$S2 $S1 $S0" 2>&1)"; RC140=$?
+echo "$OUT140" | sed 's/^/    /'
+if [ $RC140 -eq 0 ]; then echo "  → 대조군 GREEN — 재측정기가 무조건 red 를 내는 것이 아니다"
+else echo "  → ✗ 대조군이 RED 다. 증명이 성립하지 않는다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-a 성공 기록 파일이 아예 없다"
+OUT14A="$(ccs_run "-" "$LOG3" "$S2 $S1 $S0" 2>&1)"; RC14A=$?
+echo "$OUT14A" | sed 's/^/    /'
+if [ $RC14A -ne 0 ]; then echo "  → 기대대로 RED"; else echo "  → ✗ 기록이 없는데 GREEN 이 나왔다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-b 전부 **손으로** 돌린 회차다 (예정 시각 창 밖) — 세지 않는다"
+HAND="$(printf '%sT14:02:11+0900 backup-full.sh OK\n%sT15:40:00+0900 backup-full.sh OK\n%sT21:10:00+0900 backup-full.sh OK' "$D2" "$D1" "$D0")"
+OUT14B="$(ccs_run "$HAND" "$LOG3" "$S2 $S1 $S0" 2>&1)"; RC14B=$?
+echo "$OUT14B" | sed 's/^/    /'
+if [ $RC14B -ne 0 ]; then echo "  → 기대대로 RED — 손으로 돌린 GREEN 이 무인으로 세어지지 않는다"
+else echo "  → ✗ 손으로 돌린 회차가 무인 3회로 세어졌다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-c 회차 3건이지만 **날짜가 끊겼다** — 「최근 3줄 OK」를 연속으로 읽지 않는다"
+GAPD="$(printf '%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK' "$D9" "$D1" "$D0")"
+OUT14C="$(ccs_run "$GAPD" "$(printf '%s\n%sT03:30:02 ═══ 1단\n%sT03:30:02 ═══ 1단' "${D9}T03:30:02 ═══ 1단" "$D1" "$D0")" "${D9//-/} $S1 $S0" 2>&1)"; RC14C=$?
+echo "$OUT14C" | sed 's/^/    /'
+if [ $RC14C -ne 0 ]; then echo "  → 기대대로 RED — 구멍 난 3회를 연속으로 세지 않는다"
+else echo "  → ✗ 끊긴 회차가 연속 3회로 통과했다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-d 연속 3회가 **과거에** 있다 — 지금 멈춰 있어도 GREEN 이 유지되지 않는다"
+OLD="$(printf '%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK\n%sT03:30:05+0900 backup-full.sh OK' \
+  "$(date -d '11 days ago' +%F)" "$(date -d '10 days ago' +%F)" "$D9")"
+OLDLOG="$(printf '%sT03:30:02 ═══ 1단\n%sT03:30:02 ═══ 1단\n%sT03:30:02 ═══ 1단' \
+  "$(date -d '11 days ago' +%F)" "$(date -d '10 days ago' +%F)" "$D9")"
+OUT14D="$(ccs_run "$OLD" "$OLDLOG" "$(date -d '11 days ago' +%Y%m%d) $(date -d '10 days ago' +%Y%m%d) ${D9//-/}" 2>&1)"; RC14D=$?
+echo "$OUT14D" | sed 's/^/    /'
+if [ $RC14D -ne 0 ]; then echo "  → 기대대로 RED — 낡은 3회가 오늘의 GREEN 이 되지 않는다"
+else echo "  → ✗ 크론이 9일 멈췄는데 GREEN 이다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-e 로그에 1단 표지가 없다 — 원장 전용 백업이 돌았을 수 있다(〈174〉)"
+OUT14E="$(ccs_run "$OK3" "$(printf '%sT03:30:02 백업 시작\n%sT03:30:02 백업 시작\n%sT03:30:02 백업 시작' "$D2" "$D1" "$D0")" "$S2 $S1 $S0" 2>&1)"; RC14E=$?
+echo "$OUT14E" | sed 's/^/    /'
+if [ $RC14E -ne 0 ]; then echo "  → 기대대로 RED"; else echo "  → ✗ 1단 표지 0건인데 GREEN 이다 — green-by-skip 재현"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-f 같은 회차 스탬프의 볼륨 산출물이 보관처에 없다"
+OUT14F="$(ccs_run "$OK3" "$LOG3" "-" 2>&1)"; RC14F=$?
+echo "$OUT14F" | sed 's/^/    /'
+if [ $RC14F -ne 0 ]; then echo "  → 기대대로 RED — 원장만 뜨고 볼륨이 멈춘 상태를 통과시키지 않는다"
+else echo "  → ✗ 볼륨 산출물 0건인데 GREEN 이다"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── F14-g 검사 대상 볼륨이 0건 선언 — 「대상 0건」은 통과가 아니다"
+rm -rf "$CW/state" "$CW/store"; mkdir -p "$CW/state" "$CW/store"
+printf '%s\n' "$OK3" > "$CW/state/LAST-SUCCESS.txt"; printf '%s\n' "$LOG3" > "$CW/state/staging-backup.log"
+OUT14G="$(env COLAB_BACKUP_CONFIG="$CW/empty.env" COLAB_BACKUP_DIR="$CW/store" \
+  COLAB_BACKUP_STATE_DIR="$CW/state" COLAB_VOLBACKUP_VOLUMES=" " "$CCS" 2>&1)"; RC14G=$?
+echo "$OUT14G" | sed 's/^/    /'
+if [ $RC14G -ne 0 ] && printf '%s' "$OUT14G" | grep -q '검사 대상 볼륨이 0건'; then
+  echo "  → 기대대로 RED — **그 사유로** red 다(대상 0건 가드가 실제로 불렸다)"
+else echo "  → ✗ 대상 0건 가드가 불리지 않았다. red 가 나와도 오라클이 가짜다"; BAD=$((BAD+1)); fi
+
 echo
 if [ "$BAD" -eq 0 ]; then
   echo "셀프테스트 GREEN — fixture $RAN 건 전부 기대대로 RED"
