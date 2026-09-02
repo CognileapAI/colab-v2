@@ -51,6 +51,11 @@ async function flattenEntry(entry: FileSystemEntry, prefix = ''): Promise<Droppe
  * 드롭 이벤트의 `DataTransfer` 를 파일 목록으로 푼다.
  * `webkitGetAsEntry` 가 없는 환경(오래된 브라우저·일부 시험 환경)에서는
  * `dt.files` 로 폴백한다 — 낱개 파일 드롭은 그대로 성립한다.
+ *
+ * ⚠ **배포에서 HTTPS 를 걷어내지 않는다.** 폴더 펼치기는 **보안 컨텍스트**를 전제한다 —
+ *    HTTP 로 서비스하면 이 경로가 조용히 폴백해 **폴더가 낱개 파일 하나로 접힌다**(오류가 안 난다).
+ *    로컬은 `localhost` 라 보안 컨텍스트가 잡혀 **개발 중엔 안 보인다.** dev 에 도메인이 없어
+ *    CloudFront 가 HTTPS 를 주는 유일한 수단인 이유가 이것이다 (`docs/DEPLOY.md §7`).
  */
 export async function collectDrop(dt: DataTransfer): Promise<DroppedFile[]> {
   const items = Array.from(dt.items ?? []);

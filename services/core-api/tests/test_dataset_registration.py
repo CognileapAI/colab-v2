@@ -288,3 +288,21 @@ def test_registered_files_carry_size_created_at_relative_path_and_total_is_not_d
     assert reg.json()["basicInfo"]["files"]["totalSizeBytes"] == len(a) + len(b)
     detail = client.get(f"{API_PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_RES)).json()
     assert detail["basicInfo"]["files"]["totalSizeBytes"] == len(a) + len(b)
+
+
+def test_upload_status_says_whether_it_is_registered(p2_client) -> None:
+    """`getUploadStatus` 가 **등록 여부**를 말한다 (`registered` · 2026-09-02 동결 해제).
+
+    없으면 화면이 브라우저 기억에만 기대야 하고, 등록 직후 탭이 죽으면 **이미 끝낸 것을
+    「등록만 남았어요」라고 말한다.** 화면이 틀린 말을 하는 자리라 필드 하나로 닫았다.
+    """
+    client = p2_client()
+    receipt = make_upload(client)
+    before = client.get(f"{API_PREFIX}/uploads/{receipt['uploadId']}", headers=auth(TOKEN_RES))
+    assert before.status_code == 200, before.text
+    assert before.json()["registered"] is False, "등록 전인데 registered 가 false 가 아니다."
+
+    assert register(client, receipt).status_code == 201
+    after = client.get(f"{API_PREFIX}/uploads/{receipt['uploadId']}", headers=auth(TOKEN_RES))
+    assert after.status_code == 200, after.text
+    assert after.json()["registered"] is True, "등록했는데 registered 가 true 가 아니다."

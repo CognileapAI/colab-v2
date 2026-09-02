@@ -275,6 +275,10 @@ def get_upload_status(uploadId: str,
         "renderable": record.renderable,
         "metadataComplete": record.metadata_complete,
         "expiresAt": record.expires_at.astimezone(dt.timezone.utc).isoformat(),
+        # **등록됐는가** — 도장의 유무만 말한다. 어느 데이터셋인지는 말하지 않는다(원장은 D3 를
+        # 가리키지 않는다 · `d5_ingestion.py` 머리말). 이 값이 없으면 화면이 브라우저 기억에만
+        # 기대게 되고, 등록 직후 탭이 죽으면 **이미 끝낸 것을 「등록만 남았어요」라고 말한다**.
+        "registered": record.registered_at is not None,
         "failure": None if record.failure_reason is None else {"reason": record.failure_reason},
     }
 

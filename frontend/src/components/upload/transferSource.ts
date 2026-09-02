@@ -9,7 +9,8 @@ import { api } from '../../api/client';
 import { MAX_ATTEMPTS, backoffDelay, sleep } from './backoff';
 import { Scheduler } from './scheduler';
 import { xhrPut } from './xhrPut';
-import { NotImplemented, type PickedFile, type UploadReceipt } from './types';
+import { NotImplemented, TransferInterrupted, type PickedFile, type UploadReceipt } from './types';
+import { normalizeName } from './normalizeName';
 
 export interface TransferProgress {
   sentBytes: number;
@@ -36,8 +37,14 @@ interface PlanFile {
   uploadedParts?: number[] | null;
 }
 
+/** 계획(서버)과 선택(브라우저)을 맞물리는 열쇠.
+ *
+ * ⚠ **양쪽을 같은 규칙으로 정규화한다.** 맥은 한글 이름을 NFD 로 주고 서버는 NFC 로 돌려주므로,
+ * 정규화 없이는 **같은 파일인데 못 찾는다** — 「계획에 있는 파일이 선택에 없어요」의 정체다.
+ * 여기 한 자리만 고치면 계획·재개 조회가 전부 맞물린다(모든 조회가 이 함수를 지난다).
+ */
 function identity(name: string, relativePath?: string | null): string {
-  return relativePath ?? name;
+  return normalizeName(relativePath ?? name);
 }
 
 async function initiate(picked: PickedFile[], sourceLabel?: string) {
@@ -55,10 +62,23 @@ async function initiate(picked: PickedFile[], sourceLabel?: string) {
   if (r.response.status === 501) throw new NotImplemented();
   if (!r.data) throw new Error('전송 계획을 세우지 못했어요.');
   if (r.data.rejected.length > 0) {
+    // ⚠ 서버는 성한 파일이 하나라도 있으면 **201 + 원장**을 낸다. 여기서 그냥 던지면 그 원장이
+    //   남아 「실패 세트」가 된다. 그리고 이건 **재개하면 안 되는 실패**다 — 재개는 계획을 그대로
+    //   따르므로 **거부된 파일이 말없이 빠진 채 완결된다.** 사람이 다 올렸다고 믿는 것이 더 나쁘다.
+    await abortTransfer(r.data.uploadId as string);
     const first = r.data.rejected[0];
     throw new Error(`받을 수 없는 파일이 있어요 — ${first?.fileName}: ${first?.reason}`);
   }
   return r.data;
+}
+
+/** 원장을 되돌린다 — S3 조각·객체·행을 서버가 함께 지운다. 실패해도 삼킨다(원래 오류가 더 중요하다). */
+async function abortTransfer(uploadId: string): Promise<void> {
+  try {
+    await api.DELETE('/uploads/transfers/{uploadId}', { params: { path: { uploadId } } });
+  } catch {
+    /* 정리에 실패해도 사람에게는 원래 실패를 말한다. 72h 뒤 지연 정리가 백스톱이다. */
+  }
 }
 
 async function resumePlan(uploadId: string, picked: PickedFile[]) {
@@ -99,6 +119,22 @@ export async function presignedCreate(picked: PickedFile[],
   const plan = opts.resumeUploadId
     ? await resumePlan(opts.resumeUploadId, picked)
     : await initiate(picked, opts.sourceLabel);
+  const uploadId = plan.uploadId as string;
+  try {
+    return await runTransfer(plan, picked, opts);
+  } catch (e) {
+    // **원장이 이미 섰다.** 그 전송은 살아 있고 재개할 수 있다 — 화면이 그 사실을 알아야
+    // 재시도를 「새로 시작」이 아니라 「이어서」로 보낼 수 있다.
+    // 재개(`resumeUploadId`) 중의 실패는 새로 만든 것이 없으므로 감싸지 않는다.
+    if (opts.resumeUploadId || e instanceof TransferInterrupted) throw e;
+    throw new TransferInterrupted(e instanceof Error ? e.message : '전송이 끊겼어요.', uploadId);
+  }
+}
+
+/** 본체 — 계획을 받아 바이트를 올리고 완결한다. */
+async function runTransfer(plan: { uploadId: string; files: unknown[] },
+                           picked: PickedFile[],
+                           opts: TransferOptions): Promise<UploadReceipt> {
   const uploadId = plan.uploadId as string;
   const files = plan.files as PlanFile[];
   const byIdentity = new Map(picked.map((p) => [identity(p.file.name, p.relativePath), p]));

@@ -222,3 +222,139 @@ describe('미완결 전송 배너', () => {
     await waitFor(() => expect(screen.queryByTestId('up-incomplete')).toBeNull());
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// 폴더 경로가 **계획 요청에 실린다** (`〈175〉`-(나))
+//
+// ⚠ 이 시험도 red 로 시작하지 않는다 — 엔진은 이미 싣고 있다. **사각지대의 봉인**이다:
+//   지금까지 이 파일의 픽스처는 경로 없는 파일만 돌았고, s3 경로의 폴더는 시험되지 않았다.
+describe('폴더 업로드 — 상대 경로가 서버까지 간다', () => {
+  it('계획 요청 본문에 `relativePath` 가 실린다 — 같은 이름·다른 폴더도 따로 선다', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    const bodies: unknown[] = [];
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      const json = (b: unknown, status = 200) =>
+        new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        bodies.push(await req.json());
+        return json({
+          uploadId: T1, expiresAt: '2026-08-31T00:00:00Z', rejected: [],
+          files: [
+            { ...planFileSmall(), fileName: '서울.nc', relativePath: '기상/2025/서울.nc' },
+            { ...planFileSmall(), fileId: 'F-2025', fileName: '서울.nc',
+              relativePath: '기상/2024/서울.nc' },
+          ],
+        }, 201);
+      }
+      if (path.endsWith('/put-urls')) {
+        const b = await req.json() as { fileIds: string[] };
+        return json({ urls: b.fileIds.map((id) => ({ fileId: id, url: `https://s3.fake/${id}`, expiresAt: 'x' })) });
+      }
+      // **파일 단위 완료**와 **전송 완결**은 다른 응답이다 — 순서를 뒤집으면 전자가 후자로 답한다.
+      if (path.includes('/files/') && path.endsWith('/complete')) {
+        return json({ fileId: path.split('/files/')[1]?.split('/')[0], outcome: '올라감', detail: null });
+      }
+      if (path.endsWith('/complete')) return json({ uploadId: T1, files: [] }, 201);
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+
+    await presignedCreate([
+      { file: new File(['abcd'], '서울.nc'), kind: '본체', relativePath: '기상/2025/서울.nc' },
+      { file: new File(['abcd'], '서울.nc'), kind: '본체', relativePath: '기상/2024/서울.nc' },
+    ]);
+    const sent = (bodies[0] as { files: { fileName: string; relativePath?: string }[] }).files;
+    expect(sent.map((f) => f.relativePath)).toEqual(['기상/2025/서울.nc', '기상/2024/서울.nc']);
+    expect(sent.every((f) => f.fileName === '서울.nc')).toBe(true);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// 한글 파일명 — **맥은 NFD, 서버는 NFC**
+//
+// `objectpath.py` 머리말: 「macOS 는 파일명을 자모 분해(NFD)로, Windows 는 완성형(NFC)으로 준다 …
+// 한글 파일명이 흔한 환경에서 **반드시 터지는 문제**다. 규칙은 프론트 `normalizeName.ts` 와
+// 한 글자도 다르면 안 된다.」 — 그런데 그 프론트 파일이 **없었다.**
+describe('한글 파일명 — NFD/NFC 가 갈려도 같은 파일로 본다', () => {
+  it('맥이 준 NFD 이름을 서버가 NFC 로 돌려줘도 계획과 선택이 맞물린다', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    const NFD = '자료설명.pptx'.normalize('NFD');
+    const NFC = '자료설명.pptx'.normalize('NFC');
+    expect(NFD).not.toBe(NFC);                      // 전제: 두 문자열은 다르다
+
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      const json = (b: unknown, status = 200) =>
+        new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        // 서버는 **NFC 로 정규화해서** 돌려준다 (실측: dev 실호출로 확인)
+        return json({ uploadId: T1, expiresAt: '2026-08-31T00:00:00Z', rejected: [],
+                      files: [{ ...planFileSmall(), fileName: NFC }] }, 201);
+      }
+      if (path.endsWith('/put-urls')) {
+        const b = await req.json() as { fileIds: string[] };
+        return json({ urls: b.fileIds.map((id) => ({ fileId: id, url: `https://s3.fake/${id}`, expiresAt: 'x' })) });
+      }
+      if (path.includes('/files/') && path.endsWith('/complete')) {
+        return json({ fileId: 'F1', outcome: '올라감', detail: null });
+      }
+      if (path.endsWith('/complete')) return json({ uploadId: T1, files: [] }, 201);
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+
+    // 맥에서 고른 파일 — 이름이 NFD 다
+    const receipt = await presignedCreate([
+      { file: new File(['abcd'], NFD), kind: '본체' },
+    ]);
+    expect(receipt.uploadId).toBe(T1);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// 실패 후 재시도가 **원장을 늘리지 않는다**
+//
+// `initiate()` 는 서버에 전송 원장을 세우고 성공한다. 그 뒤 클라이언트에서 던지면 그 행이 남는데,
+// 다시 시도할 때 새 `initiate` 를 부르면 **행이 하나 더** 선다 — 사용자가 본 「실패 세트 2개」다.
+// 여기가 그것의 정본 오라클이다: **`POST /uploads/transfers` 가 몇 번 나갔는가.**
+describe('재시도 — 원장을 늘리지 않는다', () => {
+  it('전송이 끊기면 오류가 **그 uploadId 를 들고** 나온다 — 재개할 자리를 화면이 알아야 한다', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    // 재시도 없이 즉시 실패하는 자리를 쓴다(파일 실측 확인) — 백오프로 시험을 늘리지 않는다.
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      const json = (b: unknown, s = 200) =>
+        new Response(JSON.stringify(b), { status: s, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        return json({ uploadId: T1, expiresAt: 'x', files: [planFileSmall()], rejected: [] }, 201);
+      }
+      if (path.endsWith('/put-urls')) {
+        const b = await req.json() as { fileIds: string[] };
+        return json({ urls: b.fileIds.map((id) => ({ fileId: id, url: `https://s3.fake/${id}`, expiresAt: 'x' })) });
+      }
+      if (/\/files\/[^/]+\/complete$/.test(path)) {
+        return json({ fileId: F_SMALL, outcome: '실패', detail: '크기 불일치' });
+      }
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+    await expect(presignedCreate([{ file: new File(['abcd'], '작은.nc'), kind: '본체' }]))
+      .rejects.toMatchObject({ uploadId: T1 });
+  });
+
+  it('부분 거부는 **abort 하고** 평범한 오류로 끝난다 — 재개하면 거부된 파일이 말없이 빠진다', async () => {
+    const seen: string[] = [];
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      seen.push(`${req.method} ${path}`);
+      const json = (b: unknown, s = 200) =>
+        new Response(JSON.stringify(b), { status: s, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        return json({ uploadId: T1, expiresAt: 'x', files: [planFileSmall()],
+                      rejected: [{ fileName: '나쁜.nc', reason: 'fileName 을 정규화할 수 없다' }] }, 201);
+      }
+      if (req.method === 'DELETE') return new Response(null, { status: 204 });
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+    await expect(presignedCreate(pickedTwo())).rejects.toThrow(/받을 수 없는 파일/);
+    expect(seen).toContain(`DELETE /uploads/transfers/${T1}`);
+  });
+});

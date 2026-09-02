@@ -254,7 +254,10 @@ export function gridState(input: GridStateInput): GridStateResult | null {
   if (input.failure?.code === FAILURE_CODE.NO_GRID) {
     return classifyGridRejection(detailOf(input.failure), hasGrid);
   }
-  if (input.transfer) return { name: '격자 전송 중' };
+  // ⚠ **`hasGrid` 를 함께 본다.** `transfer` 는 본체+격자 **전체 바이트**라, 격자가 없는데
+  // 이 상태가 서면 화면이 「격자 파일을 받는 중입니다」라고 **틀린 말**을 한다
+  // (`§E.2` 「처리 중이 아닌 것을 처리 중처럼 말하지 않는다」). 침묵보다 나쁘다.
+  if (hasGrid && input.transfer) return { name: '격자 전송 중' };
   if (input.verifying) return { name: '격자 확인 중' };
   if (hasGrid && input.drawing) return { name: '지도에 얹는 중' };
   if (input.result) {

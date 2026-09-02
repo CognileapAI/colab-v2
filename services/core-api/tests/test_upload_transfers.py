@@ -67,6 +67,30 @@ class FakeS3:
             self.deleted.append(k)
 
 
+class FakeStorage:
+    """저장 Port(`ports/storage.py`)의 가짜 — **등록 전환이 부르는 `relocate` 가 여기 있다.**
+
+    ⚠ 이걸 안 꽂으면 s3 모드에서 `POST /datasets` 가 **진짜 S3** 를 두드려 500 이 된다
+      (`routes/ingestion.py:458` → `_storage()` 가 실제 `S3Client` 를 만든다).
+      전송 라우트의 가짜(`upload_transfer_s3`)와 **다른 객체**라 둘 다 꽂아야 한다.
+    """
+
+    def __init__(self, fake: FakeS3) -> None:
+        self.s3 = fake
+        self.relocated: list[tuple[str, str]] = []
+
+    def relocate(self, *, files, new_keys) -> None:
+        for f in files:
+            new_key = new_keys[f.file_id]
+            if not f.storage_key or f.storage_key == new_key:
+                continue
+            size = self.s3.objects.pop(f.storage_key, None)
+            if size is None:      # 원본이 이미 없으면 건너뛴다 — Port 규약 그대로
+                continue
+            self.s3.objects[new_key] = size
+            self.relocated.append((f.storage_key, new_key))
+
+
 def s3_client(p2_client_factory, fake: FakeS3):
     client = p2_client_factory()
     app = client.app
@@ -76,6 +100,7 @@ def s3_client(p2_client_factory, fake: FakeS3):
                                      "s3_bucket": "test-bucket",
                                      "s3_region": "ap-northeast-2"})
     app.state.upload_transfer_s3 = fake
+    app.state.upload_storage = FakeStorage(fake)
     return client
 
 
@@ -134,6 +159,27 @@ def test_initiate_rejects_path_in_file_name(p2_client) -> None:
     assert r.status_code == 201
     assert len(r.json()["rejected"]) == 1
     assert "relativePath" in r.json()["rejected"][0]["reason"]
+
+
+def test_rejection_reason_names_which_field_failed(p2_client) -> None:
+    """거부 사유가 `fileName` 실패와 `relativePath` 실패를 **가른다**.
+
+    둘을 한 `try` 로 묶어 「이름을 정규화할 수 없다」로 뭉개면, 폴더 경로가 문제인데
+    화면은 「이름」이라고 답한다 — 사람이 파일 이름을 고치며 시간을 쓴다.
+    이 사유는 FE 가 **그대로 화면에 올리는 문장**이다.
+    """
+    client = s3_client(p2_client, FakeS3())
+    r = _initiate(client, [
+        {"fileName": "..", "byteSize": 10},                       # 이름이 정규화 불가
+        {"fileName": "좋은.nc", "byteSize": 10, "relativePath": ".."},  # 경로가 정규화 불가
+        SMALL,                                                    # 성한 것 하나 — 전체 400 을 피한다
+    ])
+    assert r.status_code == 201, r.text
+    reasons = [x["reason"] for x in r.json()["rejected"]]
+    assert len(reasons) == 2, reasons
+    assert "fileName" in reasons[0], reasons
+    assert "relativePath" in reasons[1], reasons
+    assert reasons[0] != reasons[1], "두 실패가 같은 문장으로 답하면 가른 것이 아니다"
 
 
 def test_no_upload_row_and_no_event_before_complete(p2_client, sql) -> None:
@@ -238,3 +284,48 @@ def test_permission_gate_blocks_initiate(p2_client) -> None:
     client = s3_client(p2_client, FakeS3())
     r = _initiate(client, [SMALL], token="a1-guest-token")
     assert r.status_code in (401, 403)
+
+
+# ═════════════════ s3 폴더 종단 — 전송 → 완결 → 등록 → d3_file ═══════════════
+def test_s3_folder_survives_to_d3_file(p2_client, sql) -> None:
+    """폴더째 올린 구조가 **등록 뒤에도** 산다 (`〈175〉`-(나) · `0009`).
+
+    ⚠ **이 시험은 red 로 시작하지 않는다.** 승계 코드가 이미 있어 지금도 통과한다.
+       오라클이 아니라 **사각지대의 봉인**이다 — `d5→d3` 승계는 form-data 로만 시험됐고
+       (`test_dataset_registration.py`), s3(프리사인드) 경로의 종단은 **0건**이었다.
+       WU F-2 완료 정의도 s3 는 「프리사인드 GET 1건」만 요구했다(`WORK-UNITS.md`).
+
+    ⚠ `ready` 를 기다리지 않는다 — s3 모드에서 worker·viz 는 로컬 경로만 읽는다(`S3.md §4`).
+       기다리면 dev 실물에서 영원히 안 끝나는 조건을 시험이 정답으로 박는다.
+    """
+    from tests.test_dataset_registration import register
+
+    fake = FakeS3()
+    client = s3_client(p2_client, fake)
+    plan = _initiate(client, [
+        {"fileName": "서울.nc", "byteSize": 1024, "relativePath": "기상/2025/서울.nc"},
+        # **같은 이름·다른 폴더** — 중복 판정이 `relativePath` 우선이라 거부되지 않는다
+        {"fileName": "서울.nc", "byteSize": 2048, "relativePath": "기상/2024/서울.nc"},
+        {"fileName": "낱개.nc", "byteSize": 512},                      # 경로 없는 것도 섞는다
+    ]).json()
+    assert plan["rejected"] == [], plan["rejected"]
+    upload_id = plan["uploadId"]
+
+    for f in plan["files"]:
+        assert _finish_single(client, fake, upload_id, f)["outcome"] == "올라감"
+    receipt = client.post(f"{API_PREFIX}/uploads/transfers/{upload_id}/complete",
+                          headers=auth(TOKEN_RES))
+    assert receipt.status_code == 201, receipt.text
+
+    r = register(client, receipt.json())
+    assert r.status_code == 201, r.text
+
+    rows = sql(
+        "SELECT f.relative_path FROM d3_file f"
+        " JOIN d3_dataset d ON d.id = f.dataset_id"
+        " WHERE d.id = :d ORDER BY f.relative_path NULLS LAST",
+        {"d": r.json()["datasetId"]},
+    )
+    assert [row["relative_path"] for row in rows] == [
+        "기상/2024/서울.nc", "기상/2025/서울.nc", None,
+    ], rows

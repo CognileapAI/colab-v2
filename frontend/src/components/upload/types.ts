@@ -21,6 +21,20 @@ export class UploadGone extends Error {}
 /** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 표). */
 export class NotImplemented extends Error {}
 
+/**
+ * 전송이 **원장을 세운 뒤** 끊겼다 — 그 전송은 아직 살아 있고 **재개할 수 있다**.
+ *
+ * 이 오류가 없으면 화면은 「어느 전송이 실패했는지」를 몰라 재시도를 **새 전송**으로
+ * 보낼 수밖에 없고, 그러면 원장이 시도마다 하나씩 는다(사용자가 본 「실패 세트 2개」).
+ * `uploadId` 를 들고 나오는 것이 재개의 유일한 실마리다.
+ */
+export class TransferInterrupted extends Error {
+  constructor(message: string, readonly uploadId: string) {
+    super(message);
+    this.name = 'TransferInterrupted';
+  }
+}
+
 /** 놓은 파일 한 건 + 사람이 고른 종류. **축은 여기 없다** — 서버가 파일에서 판별한다(`〈63〉-㉰`). */
 export interface PickedFile {
   file: File;

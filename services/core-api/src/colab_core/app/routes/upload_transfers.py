@@ -169,11 +169,19 @@ def initiate_upload_transfer(request: Request, body: dict = Body(...),
         rel_raw = item.get("relativePath")
         if rel_raw is not None and not isinstance(rel_raw, str):
             raise errors.bad_request("relativePath 는 문자열이다.")
+        # ⚠ **두 실패를 가른다.** 한 `try` 로 묶으면 폴더 경로가 문제인데 「이름」이라고 답하고,
+        #    사람은 파일 이름을 고치며 시간을 쓴다. 이 사유는 FE 가 **그대로 화면에 올리는 문장**이다.
         try:
             name = normalize_relative_path(name_raw)
+        except ValueError:
+            rejected.append({"fileName": name_raw,
+                             "reason": "fileName 을 정규화할 수 없다 — 쓸 수 있는 글자가 남지 않는다"})
+            continue
+        try:
             relative_path = None if rel_raw is None else normalize_relative_path(rel_raw)
         except ValueError:
-            rejected.append({"fileName": name_raw, "reason": "이름을 정규화할 수 없다"})
+            rejected.append({"fileName": name_raw,
+                             "reason": "relativePath 를 정규화할 수 없다 — 경로가 없으면 아예 싣지 않는다"})
             continue
         if "/" in name or len(name) > 255:
             rejected.append({"fileName": name_raw,

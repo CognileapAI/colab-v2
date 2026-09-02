@@ -42,7 +42,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   ),
 };
 
-export function Gnb() {
+export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: string } | undefined } = {}) {
   const account = useAccount();
   const logout = useLogout();
   const activeTab = ownerTabOf(useLocation().pathname);
@@ -85,7 +85,7 @@ export function Gnb() {
           화면으로 넘어가지 않고 전체 화면 모달을 연다 (Policy §2.3).
           모달 본체는 E-04 → WU-P2 가 만든다. 여기서는 버튼 자리만 둔다. */}
       <PermissionGate requires="업로드·편집">
-        <UploadEntry />
+        <UploadEntry openRequest={props.openRequest} />
       </PermissionGate>
 
       {/* 연구실 설정 — `연구실 설정` 스위치가 켜진 사람에게만 보인다 (P-12) */}

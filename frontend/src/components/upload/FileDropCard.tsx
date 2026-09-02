@@ -88,7 +88,10 @@ export function FileDropCard(props: {
           }}
         >
           <span className="big">파일을 끌어다 놓으세요</span>
-          <span className="muted">여러 개를 한 번에 놓아도 돼요</span>
+          {/* **폴더는 끌어다 놓아야 한다** — 눌러서 여는 파일 선택창으로는 폴더를 고를 수 없다
+              (인풋에 `webkitdirectory` 를 붙이면 낱개 파일 선택이 죽는다). 화면이 그 말을
+              안 하면, 폴더를 올리려는 사람은 유일하게 눌러 보이는 것을 누르고 막힌다. */}
+          <span className="muted">여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요</span>
           <input
             type="file"
             multiple

@@ -2,7 +2,7 @@
 // 근거: frontend/README.md(생성된 타입·클라이언트만 쓴다) · CLAUDE.md §3-7
 import createClient from 'openapi-fetch';
 import type { paths, components } from '../generated/fe-core';
-import { getToken } from '../auth/store';
+import { clearToken, getToken } from '../auth/store';
 
 // seam 의 servers[0].url. 계약이 정한 값이라 화면이 고르지 않는다.
 export const API_BASE_URL = '/api/v1';
@@ -27,12 +27,29 @@ export const api = createClient<paths>({
 //
 // 로그인 op(`POST /sessions`)만 예외다. 계약이 그 op 에만 `security: []` 를 적었고,
 // 아직 토큰이 없는 자리라 붙일 것도 없다.
+/** 로그인 op 만 예외다 — 계약이 그 op 에만 `security: []` 를 적었다. */
+function isLoginOp(url: string): boolean {
+  return new URL(url).pathname.endsWith('/sessions');
+}
+
 api.use({
   onRequest({ request }) {
-    if (new URL(request.url).pathname.endsWith('/sessions')) return request;
+    if (isLoginOp(request.url)) return request;
     const token = getToken();
     if (token) request.headers.set('Authorization', `Bearer ${token}`);
     return request;
+  },
+
+  // **만료된 세션을 화면이 모르면 사람이 갇힌다** — `AuthGate` 는 `/me` 를 토큰이 **바뀔 때만**
+  // 부르므로, 화면을 띄운 채 세션 수명(12시간)이 지나면 로그인된 것처럼 보이는 화면에서
+  // 모든 동작이 조용히 실패한다. 2026-09-02 dev 에서 실제로 그랬다 — 업로드·목록·팔레트가
+  // 전부 401 인데 화면은 아무 말도 하지 않았다.
+  //
+  // 토큰을 버리면 `subscribe` 가 울고 `AuthGate` 가 로그인 화면을 세운다. **여기 한 자리**다.
+  onResponse({ request, response }) {
+    // 로그인 op 의 401 은 「비밀번호가 다르다」이지 만료가 아니다 — 건드리지 않는다.
+    if (response.status === 401 && !isLoginOp(request.url)) clearToken();
+    return response;
   },
 });
 

@@ -115,6 +115,33 @@ describe('요청 첨부 — 화면이 헤더를 손으로 붙이지 않는다', 
   });
 });
 
+// ───────────────────────────────────────────────────────────────────────────
+// **마운트 뒤에 만료되는 세션** — `AuthGate` 는 `/me` 를 토큰이 **바뀔 때만** 부른다.
+// 그래서 화면을 띄운 채로 12시간(세션 수명)이 지나면, 사람은 로그인된 것처럼 보이는
+// 화면에서 **모든 동작이 조용히 실패하는 상태**에 갇힌다 (2026-09-02 dev 에서 실제로 그랬다).
+describe('세션 만료 — 화면이 갇히지 않는다', () => {
+  it('어느 요청이든 401 이면 토큰을 버린다 — 다음 렌더가 로그인 화면이다', async () => {
+    setToken(TOKEN);
+    stubFetch(() => json(401, { code: 'UNAUTHORIZED', message: '알 수 없는 주체다.' }));
+    await api.GET('/projects');
+    expect(getToken()).toBeNull();
+  });
+
+  it('로그인 op 의 401 은 토큰을 건드리지 않는다 — 비밀번호가 틀린 것이다', async () => {
+    setToken(TOKEN);
+    stubFetch(() => json(401, { code: 'UNAUTHORIZED', message: '비밀번호가 다르다' }));
+    await api.POST('/sessions', { body: { accountName: 'colab', password: 'x' } });
+    expect(getToken()).toBe(TOKEN);
+  });
+
+  it('401 이 아닌 실패는 세션을 버리지 않는다 — 서버 오류로 로그아웃시키지 않는다', async () => {
+    setToken(TOKEN);
+    stubFetch(() => json(500, { code: 'INTERNAL', message: '서버 오류' }));
+    await api.GET('/projects');
+    expect(getToken()).toBe(TOKEN);
+  });
+});
+
 describe('로그인 화면', () => {
   it('성공하면 토큰을 보관하고 앱으로 넘어간다', async () => {
     stubFetch((url) => {
