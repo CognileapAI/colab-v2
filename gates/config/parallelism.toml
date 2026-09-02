@@ -49,6 +49,12 @@
 "artifact-ownership"        = "parallel"
 "artifact-ownership-selftest" = "parallel"
 "stage2-markers"            = "parallel"
+# `frontend-typecheck` — 읽기만 한다(`tsc --noEmit` · 산출 파일 0). 공유 자원은
+#   `frontend/node_modules` 뿐이고 그것도 읽기다. DB·포트·잠금을 잡지 않는다.
+"frontend-typecheck"        = "parallel"
+# `frontend-typecheck-selftest` — 사본 트리를 자기 `mktemp -d` 안에만 만들고
+#   `node_modules` 는 링크로 빌려 **읽는다**. 진짜 `frontend/` 에는 한 글자도 쓰지 않는다.
+"frontend-typecheck-selftest" = "parallel"
 "contract-selftest"         = "parallel"
 "event-selftest"            = "parallel"
 "boundary-selftest"         = "parallel"

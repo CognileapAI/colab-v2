@@ -130,6 +130,12 @@ jobs:
         run: ./gates/run.sh seam-consistency
       - name: 생성물 최신성
         run: ./gates/run.sh generated-up-to-date
+      # 프런트 타입 검사 — frontend/Dockerfile 의 `npm run build` 가 도는 그 검사.
+      # 2026-09-02 이전에는 이 검사가 **이미지 빌드 안에만** 있어서, 깨진 `main` 이
+      # staging 배포가 트일 때까지 10시간 반 동안 전 게이트 green 이었다.
+      # 이 잡은 위에서 `npm ci --prefix frontend` 를 이미 돌았다 — node_modules 가 실물로 있다.
+      - name: 프런트 타입 검사 (tsc --noEmit · 이미지 빌드와 같은 검사)
+        run: ./gates/run.sh frontend-typecheck
 
   boundary-gates:
     needs: changes
