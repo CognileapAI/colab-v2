@@ -38,6 +38,7 @@ block() {
   echo "MAILTO=\"\""
   echo "30 3 * * * \"$HERE/run-scheduled.sh\" backup-full.sh >> \"$LOG\" 2>&1"
   echo "10 4 * * 1 \"$HERE/run-scheduled.sh\" latest-check.sh >> \"$LOG\" 2>&1"
+  echo "40 4 * * * \"$HERE/run-scheduled.sh\" check-cron-streak.sh >> \"$LOG\" 2>&1"
   echo "$END"
 }
 
@@ -75,7 +76,8 @@ verify_installed() {
     echo "  FAIL  블록 표식이 crontab 에 없다 — 설치되지 않았다" >&2; rc=1
   fi
   local line
-  for line in "$HERE/run-scheduled.sh\" backup-full.sh" "$HERE/run-scheduled.sh\" latest-check.sh"; do
+  for line in "$HERE/run-scheduled.sh\" backup-full.sh" "$HERE/run-scheduled.sh\" latest-check.sh" \
+              "$HERE/run-scheduled.sh\" check-cron-streak.sh"; do
     printf '%s\n' "$now" | grep -qF "$line" \
       || { echo "  FAIL  실행 줄이 crontab 에 없다: $line" >&2; rc=1; }
   done
@@ -88,7 +90,7 @@ verify_installed() {
     echo "  PASS  블록 밖 줄 보존 ${post_n}줄 (설치 전 ${want_pre}줄)"
   fi
   if [ "$rc" -ne 0 ]; then echo "스케줄 설치: RED" >&2; return 1; fi
-  echo "스케줄 설치: GREEN (블록 표식 · 실행 줄 2건 · 블록 밖 보존 전부 실측)"
+  echo "스케줄 설치: GREEN (블록 표식 · 실행 줄 3건 · 블록 밖 보존 전부 실측)"
   return 0
 }
 
