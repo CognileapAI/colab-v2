@@ -113,15 +113,6 @@ class Settings:
     #: 버스를 비우는 주기(초). **버스 자리가 있을 때만 의미가 있다** — 자리가 없으면
     #: 루프 자체가 서지 않는다.
     trigger_poll_seconds: float = DEFAULT_TRIGGER_POLL_SECONDS
-
-
-def _poll_seconds_from_env(raw: str | None) -> float:
-    """**못 읽는 값은 기본값이다.** 오타 하나로 루프가 안 뜨거나 폭주하지 않게 한다."""
-    try:
-        value = float((raw or "").strip())
-    except ValueError:
-        return DEFAULT_TRIGGER_POLL_SECONDS
-    return value if value > 0 else DEFAULT_TRIGGER_POLL_SECONDS
     #: 소스 모드 — `local`(디스크, `source_root`) | `s3`(버킷 → `workdir` 로 내려받기). `〈281〉-㉴`
     source_mode: str = "local"
     s3_bucket: str | None = None
@@ -132,6 +123,15 @@ def _poll_seconds_from_env(raw: str | None) -> float:
     #: 미리보기 싱크 — `local`(디스크를 nginx 가 서빙) | `s3`(데이터 버킷 `previews/`). `〈281〉-㉮`
     preview_sink: str = "local"
     preview_s3_prefix: str = DEFAULT_PREVIEW_S3_PREFIX
+
+
+def _poll_seconds_from_env(raw: str | None) -> float:
+    """**못 읽는 값은 기본값이다.** 오타 하나로 루프가 안 뜨거나 폭주하지 않게 한다."""
+    try:
+        value = float((raw or "").strip())
+    except ValueError:
+        return DEFAULT_TRIGGER_POLL_SECONDS
+    return value if value > 0 else DEFAULT_TRIGGER_POLL_SECONDS
 
 
 def parse_work_max_bytes(raw: str | None) -> float | None:
