@@ -7,6 +7,7 @@
 // **권한 403 은 오류가 아니다** — 「그 그룹이 통째로 없다」는 뜻이라 `GroupHidden` 으로 바꾼다
 // (`Policy_홈_대시보드 §6`). 실패로 다루면 처리 권한이 없는 사람의 홈이 오류 화면이 된다.
 import { api } from '../../api/client';
+import { apiLabSource } from '../lab/labSource';
 import { GroupHidden, type DashboardSource, type LineageTodo } from './types';
 
 type Envelope = { message?: string } | undefined;
@@ -36,11 +37,9 @@ export function apiDashboardSource(): DashboardSource {
       if (!r.data) fail(r.error as Envelope, '최근 활동을 불러오지 못했어요.');
       return r.data.items ?? [];
     },
-    async lab() {
-      const r = await api.GET('/lab', {});
-      if (!r.data) fail(r.error as Envelope, '연구실 정보를 불러오지 못했어요.');
-      return r.data;
-    },
+    // `GET /lab` 배선은 `components/lab/labSource.ts` 한 곳뿐이다 — 연구실 설정 탭이
+    // 같은 값을 읽으므로 배선을 두 벌 두면 갈라진다 (계약 `getLab` 산문).
+    lab: apiLabSource().read,
     async lineageTodo() {
       // **카탈로그와 같은 조건으로 묻는다** (`§5` 「묶는 기준은 카탈로그 필터와 같다」).
       // 전용 op 을 새로 열지 않는다 — 계약 개정 없이 되는 일을 계약 개정으로 하지 않는다.
