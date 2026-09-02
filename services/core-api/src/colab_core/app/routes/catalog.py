@@ -97,8 +97,7 @@ def _compose(db: Session) -> list[dict]:
             # 계약의 `minimum: 1` 과 어긋나는 유일한 경우이며 sessions/P0-core-api.md §5 에 적었다.
             "fileCount": core.file_count,
             "topic": core.topic,
-            "processingLevel": d3_catalog.processing_level(
-                summary, core.processing_level_user_set),
+            "processingLevel": d3_catalog.processing_level(summary),
             "projects": {
                 "representative": (None if link is None or link.representative_id is None else
                                    {"projectId": link.representative_id,
@@ -413,7 +412,10 @@ def _project_period(start, end) -> dict:
 #: `DatasetUpdate` 가 받는 열쇠. **계약이 정본이다** — 여기는 그 목록을 서버가
 #: 다시 한 번 지키는 자리다. 계약이 `additionalProperties: false` 라고 적었어도
 #: **런타임에 그것을 강제하는 것은 이 줄뿐이다.**
-_UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel", "processingLevel",
+#: ⭑ **2026-09-02 · `LV-1` · `〈194〉`** — `processingLevel` 을 뺐다. 가공 단계는
+#: 언제나 계보에서 파생하고 **사람이 고르는 칸이 아니다**(「예외 없음」). 실어 보내면
+#: 아래 `unknown` 판정이 400 으로 드러낸다 — 조용히 무시하지 않는다.
+_UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period")
 
 
@@ -456,14 +458,6 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
         name = changes["name"]
         if not isinstance(name, str) or not name.strip():
             raise errors.bad_request("데이터셋 이름을 적어 주세요.")   # ERR-001 문구 그대로
-
-    if "processingLevel" in changes:
-        level = changes["processingLevel"]
-        if level is not None:
-            if isinstance(level, bool) or not isinstance(level, int) \
-                    or not 0 <= level <= LV_CAP:
-                # `Lv3` 은 정본이 「존재할 수 없는 값」이라 했다 (`VAL-005`·`〈133〉`).
-                raise errors.bad_request(f"가공 단계는 0 이상 {LV_CAP} 이하다.")
 
     if "representativeFileId" in changes:
         file_id = changes["representativeFileId"]
@@ -576,8 +570,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         "name": core.name,
         "summary": core.summary,
         "topic": core.topic,
-        "processingLevel": d3_catalog.processing_level(
-                summary, core.processing_level_user_set),
+        "processingLevel": d3_catalog.processing_level(summary),
         "lineageState": d3_catalog.lineage_state(core, summary),
         "verification": {
             "verified": verified,

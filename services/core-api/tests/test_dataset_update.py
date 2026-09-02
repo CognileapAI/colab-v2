@@ -77,48 +77,34 @@ def test_an_empty_body_is_a_no_op_not_an_error(p2_client) -> None:
     assert _patch(client, dataset_id, {}).status_code == 200
 
 
-# ══════════════ ③ 가공 단계 — 사람이 고른 값은 자동 보정이 덮지 않는다 ══════════════
-def test_a_chosen_level_survives_a_later_lineage_change(p2_client) -> None:
-    """**`POL-020` 의 예외와 `TC-W-001` 이 요구하는 그대로다.**
+# ══════════════ ③ 가공 단계 — 사람이 고르는 경로가 없다 (`〈194〉` 「예외 없음」) ══════════════
+def test_the_level_cannot_be_chosen_through_the_update_path(p2_client) -> None:
+    """**`LV-1`** — `DatasetUpdate` 에 `processingLevel` 이 없다.
 
-    「Lv1 로 직접 선택 → Lv1 부모를 연결 → 보정하지 않음(사람이 정한 값 유지)」.
+    종전에는 사람이 고른 값을 실으면 200 이었고 그 값이 자동 보정을 이겼다
+    (`POL-020` 예외 · `TC-W-001`). `〈194〉`(2026-08-29 Ted)가 그 예외를 없앴다 —
+    **레벨은 언제나 계보에서 나온다.** 그래서 이제 계약에 없는 필드이고 400 이다.
     """
     client = p2_client()
+    dataset_id = _new_dataset(client, "가공 단계를 고르려는 자료")
+    r = _patch(client, dataset_id, {"processingLevel": 1})
+    assert r.status_code == 400, r.text
+    assert "processingLevel" not in r.json().get("detail", {}).get("allowed", [])
+    # 상한 밖 값도 「범위 위반」이 아니라 **없는 필드**로 떨어진다.
+    assert _patch(client, dataset_id, {"processingLevel": 3}).status_code == 400
+    assert _patch(client, dataset_id, {"processingLevel": None}).status_code == 400
+
+
+def test_the_level_always_follows_the_lineage(p2_client) -> None:
+    """**파생이 언제나 이긴다** — 덮을 사람 값이 존재하지 않기 때문이다."""
+    client = p2_client()
     parent = _new_dataset(client, "부모 자료")          # 부모 없음 → Lv0
-    child = _new_dataset(client, "가공했지만 계보를 안 적은 자료")
+    child = _new_dataset(client, "자식 자료")
     assert _detail(client, child)["processingLevel"] == 0, "부모가 없으면 파생은 Lv0"
-
-    # 가공했는데 계보를 안 적은 사람이 **1 로 고른다** (Ted 2026-08-27).
-    assert _patch(client, child, {"processingLevel": 1}).status_code == 200
-    assert _detail(client, child)["processingLevel"] == 1
-
-    # 나중에 계보를 이어도 **사람이 고른 값이 이긴다.**
     assert _add_parent(client, child, parent, parentRole="주입력",
                        method="집계").status_code == 201
     assert _detail(client, child)["processingLevel"] == 1, (
-        "자동 보정이 사람이 고른 값을 덮었다 — POL-020 예외 위반")
-
-
-def test_clearing_the_choice_returns_to_the_derived_value(p2_client) -> None:
-    """`null` 을 보내면 **사람의 선택을 지우고 파생으로 되돌린다.**"""
-    client = p2_client()
-    parent = _new_dataset(client, "파생 확인용 부모")
-    child = _new_dataset(client, "파생 확인용 자식")
-    _add_parent(client, child, parent, parentRole="주입력", method="집계")
-    assert _detail(client, child)["processingLevel"] == 1
-
-    _patch(client, child, {"processingLevel": 0})
-    assert _detail(client, child)["processingLevel"] == 0
-    _patch(client, child, {"processingLevel": None})
-    assert _detail(client, child)["processingLevel"] == 1, "파생으로 되돌아와야 한다"
-
-
-def test_a_level_above_the_cap_is_rejected(p2_client) -> None:
-    """**`Lv3` 은 정본이 「존재할 수 없는 값」이라 했다**(`VAL-005`·`〈133〉`)."""
-    client = p2_client()
-    dataset_id = _new_dataset(client, "상한 확인용")
-    assert _patch(client, dataset_id, {"processingLevel": 3}).status_code == 400
-    assert _patch(client, dataset_id, {"processingLevel": -1}).status_code == 400
+        "계보를 이으면 파생값이 그대로 따라와야 한다")
 
 
 # ══════════════ ④ 원천 표기 — 있는데 고칠 길이 없던 값 ══════════════
