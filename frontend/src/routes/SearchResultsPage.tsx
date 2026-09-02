@@ -6,7 +6,7 @@
 //   · 0건은 오류가 아니라 정직한 빈 상태이고 **억지 제안을 하지 않는다**
 //   · `degraded` 는 감추지 않는다. 도는 척(가짜 스피너)도 하지 않는다
 //   · 잠긴 데이터는 사라지지 않는다 (`P-13`·`P-34`)
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchHitCard } from '../components/search/SearchHitCard';
 import { defaultSearchSource } from '../components/search/searchSource';
@@ -14,17 +14,54 @@ import { useSearch } from '../components/search/useSearch';
 import type { AiSearchScope, SearchSource } from '../components/search/types';
 import '../components/search/search.css';
 
-function ScopeLine(props: { scope: AiSearchScope; found: number }) {
-  const { scope, found } = props;
+function ScopeLine(props: { scope: AiSearchScope }) {
+  const { scope } = props;
   return (
     <p className="scope" data-testid="search-scope">
       {/* ⚠ 0건일 때 **판정 문장을 여기서 말하지 않는다** — 목업 F-02 의 0건 상태가
           「…맞는 것이 없었어요」를 자기 안에 이미 담고 있어, 둘을 다 두면 같은 말이 화면에
           두 번 나온다(검수 #13 · 실물에서 연속 2회 출력). **범위·개수는 그대로 남는다** —
-          정본 §3.3 「0건일 때 원인을 알 수 있다」가 요구하는 것은 이 줄이지 판정이 아니다. */}
-      {scope.labName} 데이터 {scope.searchedCount}건을 뒤졌
-      {found > 0 ? `고 ${found}건을 찾았어요.` : '어요.'}
+          정본 §3.3 「0건일 때 원인을 알 수 있다」가 요구하는 것은 이 줄이지 판정이 아니다.
+          ⭑ **찾은 건수는 이 줄이 지지 않는다** (검수 #11 · 정본 §8) — 정본은 범위 표시줄과
+          결과 헤드를 **다른 줄**로 적었고, 건수는 `Verified만 보기` 토글에 따라 갱신되어야
+          하므로 토글과 같은 줄에 있어야 한다. */}
+      {scope.labName} 데이터 {scope.searchedCount}건을 뒤졌어요.
     </p>
+  );
+}
+
+/**
+ * 결과 헤드 — **찾은 건수 · `Verified만 보기` 토글 · 정렬 기준**을 한 줄에
+ * (정본 `Policy_데이터_찾기 §8` 「결과 헤드」·「Verified만 보기」 · 목업 `F-01` 383~387행).
+ *
+ * **정렬 선택 상자를 두지 않는다** — 순서를 고르는 조작은 카탈로그에만 있다(같은 행 축자).
+ * 그래서 오른쪽 끝의 「Verified 우선 · 관련도 순」은 **고른 값이 아니라 고정 문구**다.
+ *
+ * ⚠ **토글은 화면이 건다.** 검색 요청(`SearchQuery`)에는 `verified` 칸이 없고 서버는 계약에
+ * 없는 필드를 400 으로 막는다 — 서버 걸름은 계약 개정이 있어야 서는 자리라 이 회차의 범위
+ * 밖이다(`〈295〉`). 목업의 토글도 같은 자리에서 받은 결과를 걸러 건수를 갱신한다.
+ */
+function ResultHead(props: {
+  found: number;
+  verifiedOnly: boolean;
+  onToggle(): void;
+}) {
+  const { found, verifiedOnly } = props;
+  return (
+    <div className="result-head" data-testid="search-result-head">
+      <b>{found}건</b>을 찾았어요.
+      <button
+        type="button"
+        className={`vfilter${verifiedOnly ? ' on' : ''}`}
+        data-testid="verified-only"
+        aria-pressed={verifiedOnly}
+        onClick={props.onToggle}
+      >
+        <span className="vsw" aria-hidden="true" />
+        Verified만 보기
+      </button>
+      <span className="sortby">Verified 우선 · 관련도 순</span>
+    </div>
   );
 }
 
@@ -34,6 +71,11 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
   const query = params.get('q') ?? '';
   const source = useMemo(() => props.source ?? defaultSearchSource(), [props.source]);
   const state = useSearch(source, query);
+  // `Verified만 보기` — **검색 전용**이다 (정본 §8). 카탈로그에서는 같은 일을 Verified 열의
+  // 조건이 맡으므로 이 상태를 그쪽과 공유하지 않는다.
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const all = state.status === 'ready' ? state.results.items : [];
+  const shown = verifiedOnly ? all.filter((row) => row.verified) : all;
 
   return (
     <div className="search-page" data-screen="S-06">
@@ -62,7 +104,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
       {state.status === 'ready' && (
         <>
           {/* 뒤진 범위가 먼저다 — 0건이어도, degraded 여도 이 줄이 맨 앞이다 (정본 §3.3) */}
-          <ScopeLine scope={state.results.scope} found={state.results.items.length} />
+          <ScopeLine scope={state.results.scope} />
 
           {state.results.degraded && (
             <div className="notice notice--degraded" data-testid="search-degraded">
@@ -79,7 +121,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
                 물어보세요.
               </p>
             </div>
-          ) : state.results.items.length === 0 ? (
+          ) : all.length === 0 ? (
             /* 0건은 200 이고 정상이다. **대신 뭘 볼래요? 를 지어내지 않는다.** */
             /* 0건 상태의 네 조각은 **목업 E-02 `F-02` 축자**다 (`데이터_찾기_260817.html`
                448~453행 · `Policy_데이터_찾기 §154행` 「"맞는 데이터를 못 찾았어요" + 뒤진
@@ -106,17 +148,25 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
               <p className="muted">이 데이터를 갖고 계시면 업로드해 주세요.</p>
             </div>
           ) : (
-            <ul className="hits" data-testid="search-results">
+            <>
+              {/* 건수·토글·정렬 기준 한 줄. **0건 상태에는 두지 않는다** — 켜고 끌 것이 없다 */}
+              <ResultHead
+                found={shown.length}
+                verifiedOnly={verifiedOnly}
+                onToggle={() => setVerifiedOnly((v) => !v)}
+              />
+              <ul className="hits" data-testid="search-results">
               {/* 순서를 다시 매기지 않는다 — 순위는 `tsvector` 가 정했고(`〈72〉`),
                   같은 질의·같은 DB 상태면 같은 순서가 나와야 평가셋이 회귀를 잡는다 */}
-              {state.results.items.map((row) => (
-                <SearchHitCard
-                  key={row.datasetId}
-                  row={row}
-                  onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
-                />
-              ))}
-            </ul>
+                {shown.map((row) => (
+                  <SearchHitCard
+                    key={row.datasetId}
+                    row={row}
+                    onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
+                  />
+                ))}
+              </ul>
+            </>
           )}
         </>
       )}
