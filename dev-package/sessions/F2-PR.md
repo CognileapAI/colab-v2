@@ -1,62 +1,143 @@
-# F-3(구 `F-2`) / U-1 PR 본문 초안 — `feature/rtf400_s3_upload` → `main` (2026-08-29)
+# PR 본문 — `feature/rtf400_deploy` → `main` (2026-09-02)
 
-> 사용자(phj)에게 push 권한이 없어 PR 은 보류 상태다. 이 파일은 PR 을 열 때 붙여넣을 본문이다.
-> **제목**: 업로드 S3 직행·중단 재개 + 파일 관리 (동결 해제 8차·9차 — Ted 판정 필요)
-> **병합 조건**: Ted 판정(㉯) 전 병합 금지 — 항목은 아래 11항 + `PLAN-SoT §9 〈280〉-⑦`.
+> **파일명은 `F2-PR.md` 그대로 둔다** — 인용이 여럿이고 경로를 바꾸면 또 갈린다.
+> 내용은 8차·9차(U-1·F-3)에서 **dev 환경(I-D)·V-3·업로드 수명주기 개편·병합 정리**까지로 넓어졌다.
+> **제목**: 업로드 S3 직행·파일 관리·AWS dev 환경 (동결 해제 8차·9차 — Ted 판정 필요)
+> **병합 조건**: Ted 판정 전 병합 금지. 항목은 아래 「Ted 판정」 절.
 
 ---
 
 ## 요약
 
-업로드 바이트 저장을 **로컬/S3 로 분기**하고(저장 Port), s3 모드에 **프리사인드 직행 전송 + 중단 재개**를 세웠으며, 회의 결정(2026-08-23)으로 1차 목표에 든 **파일 관리 4종**을 닫았다.
+세 덩어리다.
 
-- 저장 Port `ports/storage.py` — local(디스크, 기존 동작 무변경) / s3(`COLAB_CORE_STORAGE_MODE=s3`, 반쪽 설정은 기동 거부)
-- 프리사인드 전송 9 op(`/uploads/transfers`) + 전송 원장 `0008` — **완결이 곧 접수**, 파트의 정본은 S3 ListParts
-- 폴더째 드래그 앤 드롭 — `relative_path` 가 접수(d5)→등록(d3, `0009`)까지 승계
-- 데이터셋 상세 파일 목록(「보기」→ 폴더 트리·크기·시각) · 다운로드(**200 티켓 + 바이트 op**, 파일 단위/묶음 zip, s3 파일 단위는 프리사인드 GET) · 본체 파일 추가·교체·삭제(마지막 본체 409)
-- 마이그레이션 `0008`(additive) · `0009`(additive + `total_size_bytes` 트리거·**백필 1회**)
-- 정본 등재 `PLAN-SoT §9 〈276〉〈277〉〈278〉〈279〉〈280〉` · 운영 정본 `dev-package/S3.md` · 지시서 `sessions/F2.md`
+**① 업로드가 S3 로 직행한다** — 저장 Port 로 local/s3 를 가르고, s3 모드에 프리사인드 직행 전송과 중단 재개를 세웠다. **완결이 곧 접수**다: 전 파일이 S3 실측(ListParts·HeadObject 크기 대조)으로 확인된 뒤에만 `d5_upload` 가 서고 `upload.accepted` 가 발행된다. 파트의 정본은 S3 이고 클라이언트 자기 보고를 어디서도 믿지 않는다.
 
-## ⚠ 병합 조건 — Ted 판정(계약 동결 해제 프로토콜 ㉯) 11항
+**② 파일 관리 4종** — 회의 결정(2026-08-23)으로 1차 목표에 들었다. 상세 파일 목록(폴더 트리·크기·시각) · 폴더 구조가 등록 뒤에도 유지 · 다운로드 · 본체 파일 추가·교체·삭제.
 
-`PLAN-SoT §9 〈280〉-⑦` 그대로. 판정 전 병합하지 않는다.
+**③ AWS dev 환경이 섰다** — 서울 리전 한 벌. 그리고 그 위에서 실제로 써 보니 업로드 결함 다섯이 드러나 함께 닫았다. **넷이 조용히 실패하고 있었다.**
 
-1. `〈277〉` 8차 — 프리사인드 전송 9 op + 중단 재개(정본 Policy §7.1·§9 「이어올리기 범위 밖」의 개정 제안)
-2. `〈280〉` 9차 묶음 — 파일 관리 op 신설 2 + `downloadDataset` 302→200 + 스키마 필드 추가 + `0009` 백필
-3. `〈59〉`-③ 번복 — 본체 파일 추가·교체·삭제 허용
-4. 본체 변경 시 `마지막 수정` 이동(권고: 이동 — 계보 상태가 `확인 필요` 로 접힌다)
-5. 다운로드 형태 — 200 티켓 + 바이트 op(`security: []`, HMAC·10분), s3 묶음은 core-api 경유 zip
-6. `㊻` 개정 — AWS 계정 보류를 dev 벌에 한해 해제(prod ⏸ 유지)
-7. `〈78〉` J-10 폴더 드롭 편의 → 기능 승격(사후 등재 — `613df7d` 가 인용 없이 먼저 집행했다)
-8. `deleteDataset` 범위 밖 유지
-9. worker·viz S3 읽기 방식(V-3 — 완료 정의 미작성)
-10. 격자 op 이름(`replaceDatasetGridFile`·`deleteDatasetGridFile`) 유지(권고) vs 개명(ERR 2)
-11. `[정본 무근거]` 2건 — `d8_download.file_id` · 활동 문자열 「본체 파일 변경」
+## ① 업로드 S3 직행 + 중단 재개 (U-1)
 
-정본 원본(`40 COLAB-기획/`)은 작업 호스트에 없어 `〈278〉〈279〉` 는 회의 결정의 **2차 기재**다 — 원본 개정(`DataModel §4.3` 나열 금지 · `Policy_데이터셋_상세 §2·§8` 부분 다운로드 없음 · `§7.1`·`§9`)은 기획 소유.
+- 저장 Port `ports/storage.py` — local(디스크 · **기존 동작 무변경**) / s3(`COLAB_CORE_STORAGE_MODE=s3`). **반쪽 설정은 기동 거부**다
+- 프리사인드 전송 **9 op**(`/uploads/transfers`) + 전송 원장 `0008`
+- 폴더째 드래그 앤 드롭 — `relative_path` 가 접수(d5) → 등록(d3 `0009`)까지 승계
+- **SigV4 는 표준 라이브러리 자작**이다(`kernel/sigv4.py` — boto3 없음). 그래서 **에뮬레이터로 검증하지 않았다** — 관대한 통과가 진짜 S3 의 403 을 숨긴다
+
+## ② 파일 관리 (F-3 — 구 `F-2`)
+
+- 상세 파일 목록 · 폴더 트리 · 크기 · 시각
+- **다운로드는 302 가 아니라 200 티켓이다** — 브라우저 `<a href>` 는 Bearer 를 못 싣는다. 바이트 op 은 `security: []` 지만 티켓 클레임으로 `apply_scope` 를 심어 **RLS 가 다시 판정**한다. 파일 단위는 프리사인드 GET · 묶음은 `ZIP_STORED` 스트림
+- 본체 추가·교체·삭제(마지막 본체 409 · crs 무변경 · 합계는 `0009` 트리거)
+
+## ③ AWS dev 환경 (I-D) + V-3
+
+서울 리전 한 벌 — VPC(**NAT 없음**) · EC2 `t4g.small` **arm64**(IMDSv2 홉 2) · RDS PG16 프라이빗 · CloudFront · S3 2 · IAM 역할 · 예산 2.
+**서버에 AWS 액세스 키가 없다** — 인스턴스 프로파일이 준다(`credentialSource: imds` 실측).
+
+**V-3 닫힘** — worker·viz 가 S3 를 **내려받아 읽는다**. S3 커널 3파일을 두 단위에 **byte-identical 복제**하고 `manifest.toml` 에 등기했다(단위 간 import 금지라 공유 라이브러리로 못 뺀다). **캐시 키는 mtime 이 아니라 ETag** 다 — mtime 이면 내려받을 때마다 새 키가 되어 `previews/` 가 렌더마다 는다.
+
+남은 문서 — `docs/DEPLOY.md`(운영·진단 22건·재구성 절차) · `DEPLOY_HANDOVER.md`(사람용) · `DEPLOY_NOTES.md`(왜 다른 길을 안 갔나) · `infra/dev/README.md` · `CLAUDE.md` 「배포 — 고칠 때 알아야 할 것」 10개.
+
+## ④ dev 실사용이 드러낸 업로드 결함 5
+
+넷이 **조용히** 실패했다 — 그게 이 묶음의 요점이다.
+
+1. **한글 파일명만 실패** — 맥은 NFD, 서버는 NFC. 영문은 두 형태가 같아 **한글에서만** 터진다 → `normalizeName.ts`(서버 `objectpath.py` 와 **같은 벡터로 시험**)
+2. **재시도가 원장을 늘린다** — `[다시 시도]`가 재개가 아니라 새 `initiate` 였다. **전 회차에 내가 만든 결함이고 시험이 그것을 정답으로 못 박고 있었다** → 실패는 `TransferInterrupted(uploadId)` 로 나오고 재시도는 재개다
+3. **접수 실패가 무음** → 드롭 카드 아래 배너
+4. **세션 만료 401 이 무음** → `client.ts` `onResponse` 가 401 에 토큰을 버린다(로그인 op 제외)
+5. **미완결이 두 종류인데 앞단만 보였다** — 전송 미완(72h·서버 목록)과 **등록 미완**(24h·목록 op 없음) → 메인 화면 카드가 둘을 합쳐 보여준다
+
+**계약 1필드 순수 추가** — `UploadStatus.registered`. 없으면 화면이 브라우저 기억에만 기대고, **등록 직후 탭이 죽으면 이미 끝낸 것을 「등록만 남았어요」라고** 말한다. `undefined` 는 **「모른다」**로 다룬다 — 없는 것을 등록됐다고 단정해 되찾을 길을 지우는 쪽이 더 나쁘다.
+
+## ⑤ 병합 정리 — `origin/main` 212커밋 위로 리베이스
+
+같은 이름이 두 뜻을 갖게 된 자리 넷을 풀었다.
+
+| 자리 | 처리 |
+|---|---|
+| **정본 번호 `〈173〉`~`〈178〉`** | 양쪽이 **다른 결정에** 썼다. 상대 것이 이미 main 에 있으므로 **우리 것을 `〈276〉`~`〈281〉` 로** 옮기고 인용 **371곳**을 고쳤다. 양쪽이 만지는 50파일은 **줄마다 주제를 보고** 갈랐다 — 통째로 바꾸면 상대 인용이 망가진다. **상대 문서는 한 글자도 안 건드렸다** |
+| **WU 이름 `F-2`** | 우리 「파일 관리」 ↔ 상대 「카탈로그 키워드 입력 제거」(이미 done). **우리 것을 `F-3`** 으로. 지시서 파일명은 그대로 둔다 |
+| **마이그레이션** | `0007` 위에서 갈려 `0008`·`0009` 가 양쪽에 하나씩 생겼다. **이름을 다시 붙이지 않고 머지 리비전 `0011` 로 이었다** — 리비전 id 를 바꾸면 그 값이 이미 찍힌 DB 가 자기 위치를 잃는다(dev 는 `0009_file_management` 로 스탬프돼 있었다). 두 갈래가 겹치는 표·열이 **0건**이라 순수 병합이 됐다 |
+| **상태 대장** | 이 레인은 `work-items.yaml` 이 상태 정본이 되기 **전에** 갈라져 산문에만 행이 있었다. `work-item-consistency` ㈑ 가 그 갈라짐을 잡았고 `U-1`·`U-2`·`F-3`·`I-D`·`V-3` 다섯을 등재했다 |
+
+그 밖에 실제로 부딪힌 것 둘 — 계보 출처 레이블이 영어 세 값(`ai`·`manual`·`processed`)으로 통일돼 우리 시험의 옛 값이 400 을 냈고, `LabPage` 는 상대가 P7 대시보드로 채운 뒤라 「올리다 만 것」 카드를 **두 구획 위 별도 절**로 넣었다(할 일 함을 침범하지 않는다는 우리 판단 그대로).
+
+**리베이스가 만든 결함 1건을 배포가 잡았다** — viz `Settings` 필드 여섯이 「양쪽 다 남긴다」 병합에서 **dataclass 밖**에 붙었다. 문법이 맞아 조용했고 dev 에서 `viz-render` 가 unhealthy 로 뜨며 드러났다. 이 체크아웃에 viz venv 가 없어 그 단위 pytest 가 **한 건도 안 돈다**(`stage2-markers` 가 red 로 그 사실을 말하고 있었다). 재발 방지로 세 단위 전 모듈 import 를 확인했다.
 
 ## 실측
 
-- pytest 516 → **567** · vitest 284 → **316** · tsc 0 · op 53 → **64** · 501 표 20 → **19**
-- 게이트 전 종 green — contract-lint · **contract-breaking HEAD 기준 ERR 0(INFO 23) · origin/main 기준 ERR 0(INFO 31)** · generated-up-to-date · seam-consistency(㉠ 신설 인용 전건) · import-boundary · banned-import · rls-coverage · event-lint/breaking · migration-single-head · `0008`/`0009` 드리프트(적용 green · 되돌리면 red 실물 · downgrade 복원) · schema-diff 두 체인. `planning-freshness` 는 작업 호스트에 정본 폴더가 없어 환경 red(브랜치 무관)
-- 실호출 증거(원문 레포 보존) — `dev-package/sessions/U1-evidence-8차-transfer.txt`(실버킷 멀티파트 20 MiB · ListParts 재개 근거 · 완결=접수 · `upload.accepted` 1건) · `dev-package/sessions/F2-evidence-9차-download.txt`(local 파일/묶음 다운로드 sha256 일치 · zip 엔트리 = 폴더 경로 · Bearer 없는 발급 401 · 변조 404 · 진짜 S3 프리사인드 GET 200·`content-disposition` 일치·만료 403·잔여 객체 0)
-- 로컬 모드 = 기존 시험 전건 무변경 green 이 「로컬 동작 안 깨짐」의 오라클
+| | 값 |
+|---|---|
+| 규모 | **169 파일 · +17,771 / −490**(신규 100 · 수정 69 · 삭제 0) · 17 커밋 |
+| 계약 op | **54 → 65**(신규 11 · **사라진 op 0** — 파괴적 변경 없음) |
+| 501 표 | **5 → 4**(`downloadDataset` 이 빠져 `NOT_IMPLEMENTED_NO_STORE` 가 **0건**이 됐다) |
+| 시험 | pytest **654 pass** · vitest **492 pass** · tsc **0** |
+| 마이그레이션 | `0008_s3_upload_transfer` · `0009_file_management` · **`0011` 머지 리비전** |
+| dev 배포 | **`deploy_doctor` 14/14 · ✗0 · ─0** (한 번의 실행) · RDS head `0011` · 4단위 healthy · 저장 모드 전부 `s3` |
+
+**게이트 14종 green** — contract-lint · contract-breaking · event-lint · event-breaking · generated-up-to-date · import-boundary · seam-consistency · banned-import · migration-single-head · db-boundary · work-item-consistency · rls-coverage · rls-effect · ai-no-lineage-write · **schema-diff(두 체인 각각 선언 = 적용)**.
+
+⚠ **못 돈 것을 통과로 세지 않는다 — 4종**
+
+| 못 돈 것 | 사유 |
+|---|---|
+| E2E 5건 | 원천 데이터가 이 기계에 없다. 시험이 skip 을 거부하는 설계라 **`-m "not e2e"` 로 명시적으로** 뺐다 |
+| `stage2-markers` | pipeline-worker venv 없음. **CI 가 돈다** |
+| `autometa-loss` · `preview-tile-slot` | staging 설정값 필요. **staging 은 건드리지 않기로 했다** |
+
+**실호출 증거**(레포 보존) — `sessions/U1-evidence-8차-transfer.txt`(실버킷 멀티파트 · ListParts 재개 · 완결=접수) · `sessions/F2-evidence-9차-download.txt`(sha256 일치 · zip 엔트리 = 폴더 경로 · 변조 404 · 프리사인드 GET 만료 403) · `docs/DEPLOY-evidence-*.txt`.
+dev 실물 — 브라우저에서 **MODIS HDF4 8건 55 MB** 업로드 성공 · **복원 실습 통과**(일회용 PG · 25테이블 · 값 일치) · 정리 잡이 객체·멀티파트·원장 3종을 실제로 지우고 **남의 것 무손상**.
+
+## ⚠ Ted 판정 — 병합 전 필수
+
+**A. 계약 동결 해제 (프로토콜 ㉯)**
+1. `〈277〉` 8차 — 프리사인드 전송 9 op + 중단 재개(정본 `Policy §7.1`·`§9` 「이어올리기 범위 밖」의 **개정 제안**)
+2. `〈280〉` 9차 묶음 — 파일 관리 op 신설 2 + `downloadDataset` 302→200 + 스키마 필드 추가 + `0009` 백필
+3. **`〈281〉`-㉻ `UploadStatus.registered`** — 1필드 순수 추가. **먼저 집행하고 판정을 청한다**(2026-09-02 사용자 결정). 되돌리는 비용 = 계약 3줄 + 라우트 1줄 + FE 조건 1개
+
+**B. 정본 개정**
+4. `〈59〉`-③ 번복 — 본체 파일 추가·교체·삭제 허용
+5. 본체 변경 시 `마지막 수정` 이동(권고: 이동 — 계보 상태가 `확인 필요` 로 접힌다)
+6. 다운로드 형태 — 200 티켓 + 바이트 op(HMAC·10분), s3 묶음은 core-api 경유 zip
+7. `〈78〉` J-10 폴더 드롭 편의 → 기능 승격(**사후 등재** — `613df7d` 가 인용 없이 먼저 집행했다)
+8. **미완결 업로드를 메인 화면(S-01)에 두는 것** — `Policy_홈_대시보드 §8` 개정 · `〈277〉`-⑧-⑶ 번복. **먼저 집행하고 판정을 청한다.** 되돌리는 비용 = 컴포넌트 1 + 컨텍스트 1 삭제
+9. `deleteDataset` 범위 밖 유지
+10. 격자 op 이름 유지(권고) vs 개명(ERR 2)
+11. `[정본 무근거]` 2건 — `d8_download.file_id` · 활동 문자열 「본체 파일 변경」
+
+**C. 배포·인프라**
+12. **`㊻` prod 개정** — dev 벌 한정 해제는 `〈279〉` 로 했다. **prod 는 여전히 ⏸**
+13. `〈279〉` prod 확장 여부
+14. **V-3 방식** — 내려받기 · 커널 복제 등기 · previews 데이터 버킷 vs nginx(대안)
+15. 사이징 — `t4g.small` 2 GB 에 geo 2단위. 실측으로 충분함은 확인했으나 **렌더 부하는 아직 안 쟀다**
+16. 예산 금액 · **dev 소스맵 공개** · 첫 연구실/계정 · ARM64 실패 시 x86 전환
+17. ⭑ **유료 계정 전환 시점** — 아래 「마감」
+
+정본 원본(`40 COLAB-기획/`)이 작업 호스트에 없어 `〈278〉`·`〈279〉` 는 회의 결정의 **2차 기재**다. 원본 개정은 기획 소유.
 
 ## 병합 후 할 일
 
-1. staging — **백업 회차 확인 후** `alembic upgrade head`(`0009` 백필이 `0004` 이후 처음으로 `NO FORCE RLS` 창을 연다 · 같은 트랜잭션 안에서 복구·자가검증) 또는 `setup-db.sh` 재실행
-2. `cd frontend && npm ci` (mac 에서는 `@rolldown/binding-darwin-x64` 재설치 필요 — npm#4828)
-3. 재검증 — pytest 567 · vitest 316 · 5 배포 단위 헬스. staging 은 local 모드 그대로(무영향)
+1. **staging** — 백업 회차 확인 후 `alembic upgrade head`. **`0009` 백필이 `0004` 이후 처음으로 `NO FORCE RLS` 창을 연다**(같은 트랜잭션 안에서 복구·자가검증). staging 은 local 모드 그대로라 저장 분기 무영향
+2. `cd frontend && npm ci` — 맥은 `@rolldown/binding-darwin-*` 재설치가 필요할 수 있다(npm#4828)
+3. 재검증 — pytest 654 · vitest 492 · 5 배포 단위 헬스
 4. nginx — `/api/v1/downloads/` 에 `proxy_buffering off` 권고(대용량 스트림이 임시 파일로 떨어진다)
 
-## 열린 갭 (별 WU)
+## 알고 남긴 것 (별 WU · 숨기지 않는다)
 
-- **V-3** worker·viz 의 S3 읽기 — s3 모드에선 전송·접수·다운로드까지만 성립, 검사·미리보기는 로컬 경로 전제(완료 정의 미작성)
-- **I-D** dev 환경(AWS·s3 모드) — `〈279〉` · 진입 = ㊻ dev 한정 해제 판정 + V-3
-- CI 의 `contract-breaking` 이 `COLAB_BREAKING_BASE_REF` 없이 돌아 **구조적 green-by-skip**(`03-HANDOFF §4 #39`) — 게이트·CI 면, 별건
-- 삭제 확인 단계 없음(서버 409 만 방어) · 「파일 추가」 낱개는 `relative_path` 미탑재 · 묶음 zip 대용량(>166 MB) 미실측
+- **`U-2` S3 고아 바이트** — 치우는 주체가 없다. 워커 만료가 DB 행만 지운다. dev 실측 3건 26,579,847 B 를 **조건문이 아니라 목록으로 고정해** 손으로 지웠다. 판별식 = `d3_dataset`·`d5_upload`·열린 전송 **셋 다 없어야 고아**
+- **완결된 전송 원장 행이 안 지워진다** — `complete()` 는 도장만 찍고 만료 스윕은 `completed_at IS NULL` 만 고른다. 바이트가 아니라 **행**의 누수
+- **`I-D` 는 `partial` 이고 `done` 이 아니다** — 완료 정의의 「미리보기 1건 실호출」 미충족(`previews/` 객체 **0건**). **부분 완료로 닫지 않는다**
+- **상태 2 목록 op 을 안 만들었다** — 브라우저 저장으로 우회해 **다른 기기·시크릿창에서는 못 되찾는다**
+- **기존 staging 을 안 내렸다** — dev 가 선 지 이틀이고 미리보기가 미검증이라 되돌릴 곳을 남겼다
+- **⚠ staging admin 비밀번호가 레포에 평문이다**(`〈155〉`-㉳-ⓐ · 이미 `main` 에 있다). dev 3계정도 같은 값으로 맞췄다 — **prod 를 열기 전 회전이 필수**(`03-HANDOFF §4 #11`)
+- 묶음 zip 대용량(>166 MB) 미실측 · 삭제 확인 단계 없음(서버 409 만 방어)
 
-`frontend/vite.config.ts` 의 dev 프록시는 로컬 편의라 커밋하지 않았다.
+## ⏰ 이 계정의 마감
+
+**Free Plan 이다. 먼저 오는 쪽에서 무료 이용이 끝나고 dev 가 정지된다.**
+크레딧 $120 소진 — **2026-11~12월 추정**(예산 알람이 잡는다) · 무료 플랜 기간 만료 — **2027-02-22**(날짜라 **예산이 못 잡는다. 달력으로 챙긴다**).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
