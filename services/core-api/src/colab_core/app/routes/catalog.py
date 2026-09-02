@@ -516,6 +516,35 @@ _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period")
 
 
+def validate_human_metadata(changes: dict) -> None:
+    """`variables`·`crs`·`period` 의 **형상**을 본다 — **생성과 수정이 이 한 벌을 쓴다.**
+
+    정본 `VAL-006` 은 셋을 「자유 입력 · 선택 입력 · 형식 검사는 하지 않는다」로 뒀다
+    (`〈138〉`). 그래서 여기서 보는 것은 **값의 뜻이 아니라 형상**뿐이다: 형상이 어긋나면
+    아래 저장 코드가 `AttributeError`·타입 오류로 죽고, **사용자의 오타가 500 으로**
+    돌아간다. 400 과 500 은 「누구 잘못인가」가 다르다.
+
+    ⭑ **2026-09-02 · `#62`** — `createDataset` 이 이 함수를 부른다. 검사기를 두 벌 두면
+    한쪽만 고쳐지는 날이 오고, 그날 다른 한쪽은 조용히 틀린다.
+    """
+    if changes.get("variables") is not None and "variables" in changes:
+        variables = changes["variables"]
+        if not isinstance(variables, list) or \
+                any(not isinstance(v, str) or not v.strip() for v in variables):
+            raise errors.bad_request("변수 목록은 빈 문자열 없는 문자열 배열이다.")
+
+    if changes.get("crs") is not None and "crs" in changes:
+        if not isinstance(changes["crs"], str):
+            raise errors.bad_request("좌표계는 문자열이다.")
+
+    if changes.get("period") is not None and "period" in changes:
+        period = changes["period"]
+        # 계약 `DataPeriod` = `required: [start, end]` ＋ `additionalProperties: false`.
+        if not isinstance(period, dict) or set(period) != {"start", "end"} or \
+                any(not isinstance(period[k], str) for k in ("start", "end")):
+            raise errors.bad_request("기간은 `start`·`end` 두 문자열을 가진 객체다.")
+
+
 @router.patch("/datasets/{datasetId}", name="updateDataset")
 def update_dataset(datasetId: str, body: dict | None = Body(default=None),
                    subject: Subject = Depends(current_subject),
@@ -567,11 +596,8 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
                                               dataset_id=dataset_id):
                 raise errors.bad_request("대표 조각은 이 데이터셋의 조각이어야 한다.")
 
-    if "variables" in changes and changes["variables"] is not None:
-        variables = changes["variables"]
-        if not isinstance(variables, list) or \
-                any(not isinstance(v, str) or not v.strip() for v in variables):
-            raise errors.bad_request("변수 목록은 빈 문자열 없는 문자열 배열이다.")
+    # 세 자유 입력 칸의 형상 — **`createDataset` 과 같은 함수다** (`#62`).
+    validate_human_metadata(changes)
 
     if changes:
         d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes)

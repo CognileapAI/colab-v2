@@ -689,6 +689,11 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     """
     by_table: dict[str, dict[str, object]] = {}
     for key, value in changes.items():
+        # `period` 는 한 열이 아니라 **두 열**로 갈라진다 — 아래에서 따로 푼다.
+        # ⭑ **2026-09-02 · `#62`** — 여기서 거르지 않으면 `_UPDATABLE[key]` 가 `KeyError`
+        #   로 죽어 **기간 수정이 통째로 500** 이었다. 시험이 없어 아무도 몰랐다.
+        if key == "period":
+            continue
         table, column = _UPDATABLE[key]
         by_table.setdefault(table, {})[column] = value
 

@@ -809,6 +809,37 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
 });
 
 describe('§8 ① 자동 메타데이터 확인', () => {
+  it('변수·기간·좌표계는 사람이 적는 칸이다 — 자동 칸에 없다 (`VAL-006` · `#62`)', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await openRegister();
+    const auto = screen.getByTestId('reg-auto');
+    expect(auto).not.toHaveTextContent('변수');
+    expect(auto).not.toHaveTextContent('좌표계');
+    for (const id of ['reg-variables', 'reg-crs', 'reg-period-start', 'reg-period-end']) {
+      expect(screen.getByTestId(id)).not.toHaveAttribute('readonly');
+    }
+  });
+
+  it('적은 세 값이 등록 요청에 계약 형상으로 실린다 (`#62`)', async () => {
+    const { sources, calls } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await openRegister();
+    await change(screen.getByTestId('reg-variables'), ' tp · t2m ');
+    await change(screen.getByTestId('reg-crs'), 'EPSG:5179');
+    await change(screen.getByTestId('reg-period-start'), '2025-06-01');
+    await change(screen.getByTestId('reg-period-end'), '2025-09-30');
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+    await waitFor(() => expect(calls.registered.length).toBe(1));
+    const body = calls.registered[0] ?? {};
+    expect(body.variables).toEqual(['tp', 't2m']);
+    expect(body.crs).toBe('EPSG:5179');
+    expect(body.period).toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' });
+  });
+
   it('자동으로 읽은 칸은 읽기 전용 + `자동` 표시다', async () => {
     const { sources } = fakes();
     await openModal(sources);
@@ -833,9 +864,9 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await openModal(sources);
     await dropFiles([makeFile('g_0000.nc'), makeFile('g_0010.nc')]);
     await openRegister();
-    const auto = screen.getByTestId('reg-auto');
-    expect(auto).toHaveTextContent('조각 합계');
-    expect(auto).toHaveTextContent('조각 합집합');
+    expect(screen.getByTestId('reg-auto')).toHaveTextContent('조각 합계');
+    // ⭑ `#62` — 기간은 자동 칸이 아니라 입력 칸이다. 라벨은 그대로 붙는다.
+    expect(screen.getByTestId('reg-s1')).toHaveTextContent('조각 합집합');
   });
 
   it('가공 단계 칸은 입력 불가이고 `계보를 확정하면 정해져요` 라 적는다', async () => {

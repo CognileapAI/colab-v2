@@ -202,3 +202,57 @@ def test_progress_only_events_do_not_write_ledger_columns(p2_client, sql, event_
                  "sourceCrs": "WGS84", "targetCrs": "EPSG:4326", "transformed": False})
     meta = _autometa(sql, _register(client, receipt).json()["datasetId"])
     assert meta["crs"] is None and meta["grid"] is None
+
+
+# ═══════ ㉵ 등록 요청이 실은 사람 값이 파이프라인 사건에 안 덮인다 (`#62`) ═══════
+def test_human_values_sent_at_registration_survive_the_header_parsed_event(
+        p2_client, sql) -> None:
+    """**`#62` 의 핵심 단언** — 등록 요청에 사람이 적은 값과 헤더 파싱 사건이 **같은 회차에**
+    만난다. 이기는 쪽은 **사람**이다.
+
+    `〈138〉`(정본 `VAL-006`)이 변수·좌표계·기간을 「사람이 적는 값」으로 옮겼다. 그런데
+    등록 전환은 `apply_autometa` 로 보류 사건을 같은 트랜잭션에서 반영한다(`〈190〉`).
+    두 값이 한 요청 안에서 겹치므로 **순서가 곧 규칙**이다 — 사람 값을 먼저 쓰고, 사건은
+    `COALESCE` 로 **빈 칸만** 채운다. 순서가 뒤집히면 사용자의 입력이 화면에 아무 말도
+    남기지 않고 사라진다.
+
+    사건이 나른 `format`·`grid` 는 사람이 안 적는 값이라 **그대로 들어와야 한다** —
+    「사람 값을 지켰다」를 「사건을 통째로 버렸다」로 바꿔 통과시키지 않는다.
+    """
+    client = p2_client()
+    receipt = _make_unregistered_upload(client)
+    _hold_event(sql, receipt["uploadId"], "file.format-detected", _format_detected())
+    _hold_event(sql, receipt["uploadId"], "file.header-parsed", _header_parsed())
+
+    r = _register(client, receipt,
+                  variables=["사람이 적은 변수"], crs="EPSG:5179",
+                  period={"start": "1999-01-01T00:00:00Z", "end": "1999-12-31T00:00:00Z"})
+    assert r.status_code == 201, r.text
+    dataset_id = r.json()["datasetId"]
+
+    meta = _autometa(sql, dataset_id)
+    assert list(meta["variables"]) == ["사람이 적은 변수"], "사건이 사람이 적은 변수를 덮었다."
+    assert meta["crs"] == "EPSG:5179", "사건이 사람이 적은 좌표계를 덮었다."
+    assert meta["period_start"].year == 1999 and meta["period_end"].year == 1999, \
+        "사건이 사람이 적은 기간을 덮었다."
+    # 사람이 안 적는 칸은 사건이 그대로 채운다 — 반영 자체를 껐는지 여기서 갈린다.
+    assert meta["format"] == _FORMAT
+    assert meta["grid"] == _GRID
+
+
+def test_empty_form_defaults_are_not_stored_as_human_values(p2_client, sql) -> None:
+    """**폼 기본값 통과 ≠ 사람이 적었다** (`〈140〉`-㉱ 와 같은 실패형).
+
+    빈 배열·빈 문자열을 값으로 저장하면 `_APPLY_AUTOMETA` 의 「빈 칸만 채운다」가 영영
+    막혀 그 세 칸이 **영구 공란**이 된다. 그래서 등록은 빈 값을 **안 보낸 것으로 다룬다.**
+    """
+    client = p2_client()
+    receipt = _make_unregistered_upload(client)
+    _hold_event(sql, receipt["uploadId"], "file.header-parsed", _header_parsed())
+
+    r = _register(client, receipt, variables=[], crs="", period=None)
+    assert r.status_code == 201, r.text
+    meta = _autometa(sql, r.json()["datasetId"])
+    assert list(meta["variables"]) == _VARIABLES, "빈 배열이 저장돼 사건 반영을 막았다."
+    assert meta["crs"] == _CRS, "빈 문자열이 저장돼 사건 반영을 막았다."
+    assert meta["period_start"] is not None

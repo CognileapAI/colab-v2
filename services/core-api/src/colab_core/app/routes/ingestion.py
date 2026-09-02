@@ -29,7 +29,7 @@ from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
-from .catalog import dataset_detail
+from .catalog import dataset_detail, validate_human_metadata
 
 router = APIRouter()
 
@@ -372,8 +372,34 @@ def list_upload_lineage_suggestions(
 
 
 # ═══════════════════════════════ createDataset ══════════════════════════════
+#: ⭑ **2026-09-02 · `#62`** — `variables`·`crs`·`period` 를 **넣었다.** 계약 `DatasetCreate`
+#: 는 `〈138〉`(정본 `VAL-006` 「변수·기간·좌표계는 자유 입력」) 이래 셋을 선언하고 있었는데
+#: 서버는 UPDATE 절반만 세웠다 — 실어 보내면 400 이었다. 계약 변경 0 · 마이그레이션 0
+#: (열은 `d3_dataset_autometa` 에 이미 있다).
 _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
-                          "lineageParents", "projectIds"}
+                          "lineageParents", "projectIds",
+                          "variables", "crs", "period"}
+
+#: 등록 요청이 실어 오는 **사람이 적는 자유 입력 칸.** 저장은 `updateDataset` 이 쓰는
+#: 그 경로 하나를 그대로 쓴다 (`d3_catalog.update_dataset`).
+_HUMAN_METADATA_FIELDS = ("variables", "crs", "period")
+
+
+def _human_metadata(body: dict) -> dict:
+    """**폼 기본값 통과 ≠ 사람이 적었다.**
+
+    빈 배열·빈 문자열·`null` 을 값으로 저장하면 `_APPLY_AUTOMETA` 의 「빈 칸만 채운다」가
+    영영 막혀 그 칸이 **영구 공란**이 된다 (`〈140〉`-㉱ 와 같은 실패형). 그래서 빈 값은
+    **안 보낸 것으로 다룬다** — 지우는 뜻의 `null` 은 등록 시점에 존재할 수 없다
+    (지울 값이 아직 없다).
+    """
+    picked: dict = {}
+    for key in _HUMAN_METADATA_FIELDS:
+        value = body.get(key)
+        if value is None or value == "" or value == []:
+            continue
+        picked[key] = value
+    return picked
 _ALLOWED_PARENT_FIELDS = {"parentDatasetId", "parentRole", "method", "origin",
                           "confirmedMethodText"}
 
@@ -441,6 +467,9 @@ def create_dataset(request: Request, body: dict = None,
     source_label = body.get("sourceLabel")
     if source_label is not None and (not isinstance(source_label, str) or len(source_label) > 60):
         raise errors.bad_request("sourceLabel 은 60자 이하다.")
+    # 세 자유 입력 칸의 형상 — **수정 경로와 같은 함수다.** 두 벌을 두지 않는다 (`#62`).
+    human_metadata = _human_metadata(body)
+    validate_human_metadata(human_metadata)
     parents = _parse_parents(body.get("lineageParents"))
     project_ids = body.get("projectIds") or []
     if not isinstance(project_ids, list) or any(not Ulid.is_valid(p) for p in project_ids):
@@ -482,6 +511,14 @@ def create_dataset(request: Request, body: dict = None,
         bundle_file_name=(body_files[0].file_name if body_files else None),
         total_size_bytes=total,
     )
+
+    # ①-a **사람이 적은 값을 먼저 쓴다** (`#62` · 정본 `VAL-006` · `〈138〉`).
+    #
+    # **순서가 곧 규칙이다.** 바로 아래 `apply_autometa` 는 「빈 칸만 채운다」(`COALESCE`)라,
+    # 사람 값이 **먼저** 들어가 있으면 헤더 파싱 사건이 그것을 덮지 못한다. 뒤집으면
+    # 사용자의 입력이 화면에 아무 말도 남기지 않고 사라진다.
+    if human_metadata:
+        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=human_metadata)
 
     # ①-b **보류된 사건을 반영한다** (`〈190〉` 사건 경유 되쓰기 · 반영 시점 = 여기).
     #
