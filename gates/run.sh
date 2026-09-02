@@ -14,12 +14,14 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
+  frontend-typecheck
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest
+  frontend-typecheck-selftest
 )
 
 case "$GATE" in
@@ -55,6 +57,17 @@ case "$GATE" in
   contract-selftest)
     # 위 두 게이트가 red fixture로 fail-closed임을 증명한다.
     exec "$REPO_ROOT/gates/tools/contract-selftest.sh"
+    ;;
+  frontend-typecheck)
+    # 프런트 타입 검사 — `frontend/Dockerfile` 의 `npm run build` 가 도는 `tsc --noEmit` 과
+    # **같은 검사**를 같은 tsconfig 로 돈다. 2026-09-02 이전에는 이 검사가 이미지 빌드 안에만
+    # 있어서 `main` 이 배포 불가인 채로 전 게이트 green 이었다(10시간 반).
+    # node_modules·tsc 부재는 skip 이 아니라 red(준비)다.
+    exec "$REPO_ROOT/gates/tools/frontend-typecheck.sh"
+    ;;
+  frontend-typecheck-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — `74deb54` 실물 결함 재현 포함.
+    exec "$REPO_ROOT/gates/tools/frontend-typecheck-selftest.sh"
     ;;
   import-boundary)
     # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).
@@ -194,8 +207,10 @@ case "$GATE" in
     # ⭑ e2e-format-coverage-selftest 는 **여기 있다** — 픽스처가 junit XML 과 선언 파일뿐이라
     #   원천·DB·도커 없이 돈다. **본 게이트(e2e-format-coverage)는 CI 에 없다** — 원천 3.5 GB
     #   마운트가 없으면 준비 red 이고, 그 red 는 입력 미선언이지 판정 실패가 아니다.
+    # ⭑ frontend-typecheck-selftest 도 **여기 있다** — 이 잡이 이미 `npm ci --prefix frontend` 를
+    #   돌아 `node_modules` 가 실물로 있다(설치 확인 스텝이 그것을 존재로 본다).
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest frontend-typecheck-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done
