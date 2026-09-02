@@ -14,5 +14,9 @@ export default defineConfig(({ mode }) => ({
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
     include: ['test/**/*.test.tsx', 'test/**/*.test.ts'],
+    // 카탈로그 헤더 고정·취소선을 **계산값**으로 재려면 그 규칙 파일이 실제로 실려야 한다.
+    // vitest 기본값은 css 를 빈 것으로 stub 한다 — 그래서 종전 회차가 `[미확인]` 로 남겼다.
+    // 이 파일 하나만 싣는다(전역 확장 아님).
+    css: { include: [/catalog\.css$/] },
   },
 }));

@@ -275,6 +275,26 @@ describe('§8 표 — 헤더 고정 · 스크롤 래퍼 한 곳', () => {
     expect(wraps).toHaveLength(1);
     expect(wraps[0]!.querySelector('table')).not.toBeNull();
   });
+
+  /**
+   * 정본 `Policy_데이터_찾기.md:156` 축자 「헤더는 세로 스크롤에도 위에 고정된다」.
+   * 종전 회차들은 이 조항을 **읽기로만** 확인했다 — jsdom 이 stylesheet 를 싣지 않아
+   * 계산값이 비었기 때문이다. 원인은 도구가 아니라 설정이었다: `DatasetsPage` 가
+   * `catalog.css` 를 import 하는데 vitest 기본값이 css 를 빈 것으로 stub 한다.
+   * `vite.config.ts` 의 `test.css.include` 로 이 파일 하나만 실제로 싣고 계산값으로 잰다.
+   */
+  it('헤더 칸이 계산값으로 sticky · top 0 이다', async () => {
+    renderCatalog();
+    await settle();
+    const head = within(screen.getAllByRole('rowgroup')[0]!);
+    const ths = head.getAllByRole('columnheader');
+    expect(ths.length).toBeGreaterThan(0);
+    for (const th of ths) {
+      const cs = getComputedStyle(th);
+      expect(cs.position).toBe('sticky');
+      expect(cs.top).toBe('0px');
+    }
+  });
 });
 
 describe('§9 조건 결과 0건', () => {
@@ -338,6 +358,23 @@ describe('§5 Verified 열 — 승인 처리 도착 전의 정직한 상태 (Ted
       expect(cell.textContent?.trim()).toBe('Verified');
       expect(cell.className).toContain('verified--pending');
       expect(cell).toHaveAttribute('aria-disabled', 'true');
+    }
+  });
+
+  /**
+   * 종전 회차가 `[미확인]` 로 남긴 자리 — 취소선을 **계산값으로** 재지 못했다.
+   * 같은 설정(`test.css.include`)으로 닫는다. 규칙은 `catalog.css` `.verified--pending`.
+   * ⚠ 읽는 자리는 `textDecoration` 이다 — jsdom 의 cssstyle 은 `text-decoration` 축약을
+   * `textDecorationLine` 으로 펼치지 않아 그 자리는 `none` 을 준다(실측 2026-09-03).
+   * 값을 만들어 맞추지 않고, **실제로 값이 서는 속성**을 읽는다.
+   */
+  it('취소선이 계산값으로 확인된다', async () => {
+    renderCatalog();
+    await settle();
+    for (const cell of screen.getAllByTestId('verified-pending')) {
+      const cs = getComputedStyle(cell);
+      expect(cs.textDecoration).toContain('line-through');
+      expect(cs.cursor).toBe('not-allowed');
     }
   });
 
