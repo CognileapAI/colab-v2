@@ -331,3 +331,69 @@ def test_the_update_path_can_write_a_period(p2_client, sql) -> None:
     rows = sql("SELECT period_start FROM d3_dataset_autometa WHERE dataset_id = :d",
                {"d": dataset_id})
     assert rows[0]["period_start"].year == 2020
+
+
+# ═══════ 무기한 기간 — 끝은 조건부다 (14차 해제 · Ted 판정 2026-09-02) ═══════
+@pytest.mark.parametrize("period,label", [
+    ({"start": "2025-06-01T00:00:00Z", "end": None}, "끝을 null 로 명시"),
+    ({"start": "2025-06-01T00:00:00Z"}, "끝을 아예 안 보냄"),
+])
+def test_a_period_without_an_end_is_accepted_and_comes_back_open(
+        p2_client, sql, period, label) -> None:
+    """**끝이 없으면 무기한이다.** 계약 `DataPeriod.end` 는 `[string, "null"]` 이다.
+
+    종전에는 `end` 가 `required` ＋ 비-nullable 이라 **진행 중인 데이터를 적을 자리가
+    없었다** — 사용자는 있지도 않은 종료일을 지어내야 했다(`P4X` ㉮).
+
+    ⭑ 열쇠를 아예 뺀 요청도 받는다 — 계약은 `end` 를 required-but-nullable 로 두지만
+    (`ProjectPeriod` 와 같은 모양), 서버가 **빠진 열쇠를 `null` 과 같이 다루는 것**은
+    계약보다 넓은 쪽이라 어떤 계약 문면도 깨지 않는다.
+    """
+    client = p2_client()
+    r = register(client, make_upload(client), period=period)
+    assert r.status_code == 201, f"{label}: {r.text}"
+
+    basics = r.json()["basicInfo"]
+    assert basics["period"] is not None, f"{label}: 시작이 있는데 기간이 통째로 사라졌다."
+    assert basics["period"]["start"].startswith("2025-06-01")
+    assert basics["period"]["end"] is None, f"{label}: 없는 끝을 지어냈다."
+
+    rows = sql("SELECT period_start, period_end FROM d3_dataset_autometa "
+               " WHERE dataset_id = :d", {"d": r.json()["datasetId"]})
+    assert rows[0]["period_start"] is not None and rows[0]["period_end"] is None
+
+
+def test_an_end_without_a_start_is_a_400_on_both_paths(p2_client) -> None:
+    """**시작 없는 끝은 기간이 아니다.** 끝만 조건부이지 시작은 조건부가 아니다.
+
+    문구 규약은 형제 검사(`variables`·`crs`)와 같다 — 형상 한 줄, 400.
+    """
+    client = p2_client()
+    bad = {"period": {"end": "2025-09-30T00:00:00Z"}}
+    created = register(client, make_upload(client), **bad)
+    assert created.status_code == 400, created.text
+
+    dataset_id = register(client, make_upload(client)).json()["datasetId"]
+    patched = client.patch(f"{API_PREFIX}/datasets/{dataset_id}", json=bad,
+                           headers=auth(TOKEN_RES))
+    assert patched.status_code == 400, patched.text
+    assert created.json()["message"] == patched.json()["message"]
+
+
+def test_the_project_dataset_table_carries_an_open_ended_period(p2_client) -> None:
+    """소속 데이터셋 표의 기간도 열려 있을 수 있다.
+
+    `d3_catalog.periods_of` 가 `period_end IS NOT NULL` 로 걸러 **끝 없는 기간을 통째로
+    떨어뜨리고 있었다** — 화면에는 「기간 없음」으로 보이는데 시작은 저장돼 있다.
+    """
+    client = p2_client()
+    dataset_id = register(client, make_upload(client),
+                          period={"start": "2025-06-01T00:00:00Z", "end": None}
+                          ).json()["datasetId"]
+    assert client.put(f"{API_PREFIX}/projects/{PRJ_A}/datasets/{dataset_id}",
+                      json={"usageNote": None}, headers=auth(TOKEN_RES)).status_code == 204
+
+    body = client.get(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_RES)).json()
+    row = next(d for d in body["datasets"] if d["datasetId"] == dataset_id)
+    assert row["period"] is not None, "끝이 없다고 기간을 통째로 떨어뜨렸다."
+    assert row["period"]["end"] is None

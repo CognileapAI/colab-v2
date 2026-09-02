@@ -1419,12 +1419,15 @@ export interface components {
         /**
          * @description 데이터가 다루는 시간 범위. **레코드 시점 3종과 축이 다르다**(`DataModel §4.1`).
          *     조각이 여럿이면 합집합이다 (§4.3).
+         *     **기간 자체가 없을 수 있고**(`period: null`), 있으면 시작은 있고 **끝은 조건부**다 —
+         *     `end` 가 `null` 이면 **무기한·진행 중**이다 (Ted 판정 2026-09-02 · 14차 해제).
+         *     `ProjectPeriod` 와 같은 모양이다 — 열쇠는 늘 둘이고 비어 있음은 `null` 로 말한다.
          */
         DataPeriod: {
             /** Format: date-time */
             start: string;
             /** Format: date-time */
-            end: string;
+            end: string | null;
         };
         /**
          * @description 프로젝트 기간. 시작·종료 각각 **연·월까지**이고, 진행 중이면 종료가 비어 있다

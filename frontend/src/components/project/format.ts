@@ -19,6 +19,9 @@ export function projectPeriod(period: ProjectRow['period']): string {
  */
 export function dataPeriod(period: ProjectDatasetRow['period']): string {
   if (!period) return '—';
+  // **끝이 없으면 무기한이다** (14차 해제). 표기는 바로 위 `projectPeriod` 와 같은
+  // 꼬리 물결이다 — 한 표 안에서 「열려 있다」를 두 모양으로 그리지 않는다.
+  if (!period.end) return `${period.start.slice(0, 4)}-${period.start.slice(5, 7)}~`;
   const [sy, sm] = [period.start.slice(0, 4), period.start.slice(5, 7)];
   const [ey, em] = [period.end.slice(0, 4), period.end.slice(5, 7)];
   if (sy !== ey) return `${sy}-${sm}~${ey}-${em}`;
