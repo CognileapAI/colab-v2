@@ -166,3 +166,17 @@ profile_db()         { local v; v="$(_pvar "COLAB_BACKUP_DB_$1")";         [ -n 
 #     한 파일에 대고 돌릴 때 쓰는 값이고, 그쪽을 없애는 것은 기존 검사를 줄이는 일이다.
 profile_min_tables() { local v; v="$(_pvar "COLAB_BACKUP_MIN_TABLES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }
 profile_min_rows()   { local v; v="$(_pvar "COLAB_BACKUP_MIN_ROWS_$1")";   [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }
+
+# ── DB 이름 → 프로파일 (`〈286〉`) ────────────────────────────────────────────
+# `restore-db.sh` 는 `--db <DB이름>` 을 받는데 합격선은 **프로파일**에 달려 있다.
+# 종전에는 이 다리가 없어 전역 `COLAB_BACKUP_MIN_TABLES`(20 · platform 형상)를 그대로 넘겼고,
+# ai 원장(표 6개 · 합격선 4)이 **구조적 거짓 RED** 로 영영 거부됐다(`sessions/WINDOW-20260903-D3.md §4.2`).
+# 형제 호출 둘(`latest-check.sh`·`restore-rehearsal.sh`)은 이미 `profile_min_tables` 를 쓴다.
+# ⚠ **못 찾으면 기본값으로 떨어지지 않는다** — `미해결` 을 돌려주고 호출처가 선다(`〈171〉-㉯` 와 같은 규약).
+profile_for_db() {
+  local db="$1" p
+  for p in $(backup_profiles); do
+    [ "$(profile_db "$p")" = "$db" ] && { printf '%s' "$p"; return 0; }
+  done
+  printf '미해결'
+}
