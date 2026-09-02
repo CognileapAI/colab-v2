@@ -459,6 +459,25 @@ def list_files(session: Session, dataset_id: Ulid) -> list[dict]:
     return out
 
 
+#: 내려받을 **본체 조각**과 그 저장 키. 잠긴 데이터셋이면 `body_access` 정책이
+#: 이 질의를 0행으로 만든다 — 애플리케이션이 다시 거르기 **전에** DB 가 이미 거른다.
+#: ⚠ 기준 격자 파일은 넣지 않는다 — 정본이 「조각 묶음」이라 부르는 것은 본체이고
+#: (`Policy_데이터셋_상세 §5` 파일 칸 = 본체 수), 격자 포함 여부는 정본이 침묵한다.
+_BODY_FILES_FOR_DOWNLOAD = text("""
+    SELECT f.id, f.file_name, f.storage_key, f.size_bytes
+      FROM d3_file f
+     WHERE f.dataset_id = :dataset_id AND f.kind = '본체'
+     ORDER BY f.file_name, f.id
+""")
+
+
+def body_files_for_download(session: Session, dataset_id: Ulid) -> list[dict]:
+    """내려받기가 읽을 조각 목록. **키는 원장이 들고 있다** — 여기서 짓지 않는다."""
+    return [dict(r) for r in
+            session.execute(_BODY_FILES_FOR_DOWNLOAD,
+                            {"dataset_id": str(dataset_id)}).mappings().all()]
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # 쓰기 — 등록 전환 · 파일 후주입/교체/삭제 · 계보 확인 기록
 #

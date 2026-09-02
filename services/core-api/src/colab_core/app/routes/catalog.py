@@ -12,10 +12,12 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from ...domains import d1_identity, d2_access, d3_catalog, d4_lineage, d6_project
-from ...kernel import errors
+from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d6_project,
+                        d8_insight)
+from ...kernel import errors, file_store
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...kernel.scope import read_only_scope
@@ -344,6 +346,101 @@ def list_dataset_files(datasetId: str, db: Session = Depends(scoped_db)) -> dict
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
     items = d3_catalog.list_files(db, dataset_id)
     return {"items": items, "totalCount": len(items), "nextCursor": None}
+
+
+# ─────────────────────────────── 원본 내려받기 ────────────────────────────────
+# ⭑ ⟨`ST-1` 2026-09-02 · Ted 판정 「파일 저장처는 지금 볼륨을 그대로 쓴다」⟩
+# 종전에는 이 자리가 **501 `NOT_IMPLEMENTED_NO_STORE`** 였다(`routes/not_implemented.py`).
+# 그 사유(「저장처가 없다」)는 사실이 아니었다 — 바이트는 이미 접수 볼륨 위에 있었고
+# 이력 표(`d8_download`)도 P0 이 만들어 두었다. **마이그레이션 0건 · 계약 개정 0건.**
+#
+# **접근 판정을 새로 만들지 않는다.** `listDatasetFiles` 와 **같은 두 줄**을 쓴다 —
+# ⑴ `dataset_exists` 로 경계 밖은 404(존재를 알리지 않는다 · P-9·P-10)
+# ⑵ `body_accessible` 이 거짓이면 403(잠긴 데이터의 본체 · P-34).
+# 그 아래 DB 층에도 `body_access` 정책이 그대로 걸려 있어 조각 질의가 0행이 된다 —
+# **두 겹이고, 둘 다 같은 기존 기계다.**
+
+
+def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
+    if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found()
+    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(str(dataset_id))
+    if access is not None and not access.body_accessible:
+        raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
+
+
+def _bundle(store, pieces: list[dict], *, bundle_name: str) -> StreamingResponse:
+    """조각이 여럿이면 **묶어서 한 번에** 준다 (`Policy_데이터셋_상세 §2` 축자).
+
+    부분 다운로드가 없으므로(같은 문서 `§8`) 조각별 URL 도 두지 않는다.
+    """
+    import io
+    import zipfile
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as bundle:
+        for piece in pieces:
+            with store.open(piece["storage_key"]) as handle:
+                bundle.writestr(piece["file_name"], handle.read())
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer, media_type="application/zip",
+        headers={"Content-Disposition": _disposition(bundle_name)})
+
+
+def _disposition(file_name: str) -> str:
+    from urllib.parse import quote
+    return f"attachment; filename*=UTF-8''{quote(file_name)}"
+
+
+@router.get("/datasets/{datasetId}/download", name="downloadDataset")
+def download_dataset(datasetId: str, request: Request,
+                     db: Session = Depends(scoped_db),
+                     subject: Subject = Depends(current_subject)):
+    """계약대로 **302 ＋ `Location`** 을 낸다. 그 응답 시점에 이력이 쌓인다.
+
+    `Location` 이 가리키는 자리는 **저장처가 정한다**(`kernel/file_store.py`) — 볼륨이면
+    「우리에게 다시 오라」(`?deliver=1`)이고, 객체 저장소로 바꾸면 presigned URL 이 된다.
+    화면도 계약도 그 차이를 모른다. **저장처를 갈아 끼우는 자리는 그 파일 하나다.**
+
+    ⚠ `deliver` 는 **자격증명이 아니다** — 그 표식이 붙은 요청도 위 두 줄의 접근 판정을
+    처음부터 다시 통과해야 한다. 표식으로 판정을 건너뛰면 그것이 green-by-skip 이다.
+    """
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    _dataset_for_download(db, dataset_id)
+
+    pieces = d3_catalog.body_files_for_download(db, dataset_id)
+    if not pieces:
+        raise errors.not_found("내려받을 본체 조각이 없다.")
+
+    store = file_store.build(request.app.state.settings, request.app.state)
+
+    if request.query_params.get(file_store.DELIVER_MARK):
+        missing = [p["file_name"] for p in pieces if not store.exists(p["storage_key"])]
+        if missing:
+            # **200 으로 빈 파일을 내리지 않는다.** 원장은 있는데 바이트가 없는 것은
+            # 저장처의 결손이고, 그 사실을 사용자에게 성공으로 위장하지 않는다.
+            raise errors.ApiError(500, "STORAGE_OBJECT_MISSING",
+                                  "원장에 있는 조각의 바이트가 저장처에 없다.",
+                                  {"fileName": missing})
+        meta = d3_catalog.find_autometa(db, dataset_id)
+        bundle_name = (meta.bundle_file_name if meta is not None
+                       and meta.bundle_file_name else datasetId)
+        if len(pieces) == 1:
+            one = pieces[0]
+            return StreamingResponse(
+                store.open(one["storage_key"]), media_type="application/octet-stream",
+                headers={"Content-Disposition": _disposition(one["file_name"])})
+        if not bundle_name.endswith(".zip"):
+            bundle_name = f"{bundle_name}.zip"
+        return _bundle(store, pieces, bundle_name=bundle_name)
+
+    # **이력은 302 시점에 쌓인다** (계약 산문 축자 「이 응답 시점에 다운로드 이력이 쌓인다」).
+    d8_insight.record_download(db, account_id=subject.account_id, dataset_id=dataset_id)
+    own_url = str(request.url.remove_query_params(file_store.DELIVER_MARK))
+    return RedirectResponse(store.delivery_location(own_url=own_url), status_code=302)
 
 
 @router.get("/datasets/facets", name="listDatasetFacets")

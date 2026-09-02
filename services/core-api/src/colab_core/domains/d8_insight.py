@@ -70,3 +70,24 @@ def recent_activities(session: Session) -> list[dict]:
     식별자만 있다. 붙이는 자리는 조립 루트다.
     """
     return [dict(r) for r in session.execute(_RECENT).mappings()]
+
+
+# ── 다운로드 이력 ────────────────────────────────────────────────────────────
+#: `ST-1`. 자리는 P0 이 만들어 두었고(`d8_download` · 마이그레이션 0건) 쓰는 자리가 없었다.
+#: **append-only 트리거가 걸린 표다** — 한 번 쌓으면 고치지도 지우지도 못한다.
+_INSERT_DOWNLOAD = text("""
+    INSERT INTO d8_download (id, lab_id, account_id, dataset_id)
+    VALUES (:id, current_lab_id(), :account, :dataset_id)
+    RETURNING id
+""")
+
+
+def record_download(session: Session, *, account_id: Ulid, dataset_id: Ulid) -> str:
+    """누가 언제 받았는지 한 줄 (`DataModel §6.2` · `Policy_데이터셋_상세 §8` 다운로드 행).
+
+    **받은 횟수는 어느 화면에도 내리지 않는다** — 쌓기만 한다(정본 1.3 확정 ④).
+    """
+    return session.execute(_INSERT_DOWNLOAD, {
+        "id": str(Ulid.generate()), "account": str(account_id),
+        "dataset_id": str(dataset_id),
+    }).scalar_one()

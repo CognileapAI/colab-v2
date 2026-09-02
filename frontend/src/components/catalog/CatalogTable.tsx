@@ -3,6 +3,7 @@
 // 잠긴 행은 사라지지 않는다 — 자물쇠와 `잠김` 칩이 붙을 뿐이다 (§8 · P-13).
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../api/client';
+import { downloadDataset } from '../../api/download';
 import { COLUMNS, isFilterable } from './columns';
 import { ColumnMenu } from './ColumnMenu';
 import type { CatalogColumn, DatasetRow, FacetValue, SortOrder } from './types';
@@ -47,6 +48,8 @@ export function CatalogTable(props: {
 }) {
   const { state } = props;
   const [openColumn, setOpenColumn] = useState<CatalogColumn | null>(null);
+  // 내려받기가 실패하면 조용히 넘어가지 않는다 — 눌렀는데 아무 일도 안 일어나는 것이 제일 나쁘다.
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // 바깥을 누르면 닫힌다. 열 이름·메뉴 안의 클릭은 stopPropagation 으로 삼킨다
   useEffect(() => {
@@ -195,12 +198,22 @@ export function CatalogTable(props: {
                     >
                       {EYE}
                     </button>
+                    {/* href 는 계약이 정한 실제 자리라 그대로 둔다. 다만 브라우저가 만드는
+                        요청에는 세션 토큰이 안 붙어 401 이 나므로, 누르면 인증된 클라이언트로
+                        받는다 (`api/download.ts`). */}
                     <a
                       className="rab"
                       title="다운로드"
                       aria-label={`${row.name} 다운로드`}
                       href={`${API_BASE_URL}/datasets/${row.datasetId}/download`}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDownloadError(null);
+                        void downloadDataset(row.datasetId).catch(() => {
+                          setDownloadError(`${row.name} 을(를) 내려받지 못했어요.`);
+                        });
+                      }}
                     >
                       {DL}
                     </a>
@@ -211,6 +224,11 @@ export function CatalogTable(props: {
           ))}
         </tbody>
       </table>
+      {downloadError && (
+        <p className="dlerr" role="alert">
+          {downloadError}
+        </p>
+      )}
     </div>
   );
 }

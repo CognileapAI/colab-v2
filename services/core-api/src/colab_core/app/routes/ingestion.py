@@ -17,7 +17,6 @@ from __future__ import annotations
 import datetime as dt
 import os
 import pathlib
-import tempfile
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Response, UploadFile
@@ -25,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d5_ingestion,
                         d6_project, d8_insight)
-from ...kernel import errors, storage_layout
+from ...kernel import errors, file_store, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
@@ -45,24 +44,10 @@ MAX_FILE_NAME = 255
 
 # ── 저장 ────────────────────────────────────────────────────────────────────
 def _storage_root(request: Request) -> pathlib.Path:
-    """접수한 바이트를 두는 자리.
-
-    core-api ↔ 스토리지 사이(presigned multipart 인지 로컬인지)는 **배포 내부 사정**이고
-    이 seam 의 것이 아니다 (`fe-core.yaml createUpload` 산문). 설정이 없으면 프로세스마다
-    한 번 만드는 임시 디렉터리를 쓴다 — **바이트를 버리고 201 을 내리지 않기 위해서다.**
+    """접수한 바이트를 두는 자리. **규칙은 `kernel/file_store` 하나에 있다** —
+    쓰는 쪽(여기)과 읽는 쪽(`downloadDataset`)이 자리를 따로 계산하면 갈린다(`#20`).
     """
-    settings = request.app.state.settings
-    configured = getattr(settings, "upload_storage_dir", None)
-    if configured:
-        root = pathlib.Path(configured)
-    else:
-        cached = getattr(request.app.state, "upload_storage_fallback", None)
-        if cached is None:
-            cached = tempfile.mkdtemp(prefix="colab-uploads-")
-            request.app.state.upload_storage_fallback = cached
-        root = pathlib.Path(cached)
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+    return file_store.resolve_upload_root(request.app.state.settings, request.app.state)
 
 
 def _store(request: Request, *, key: str, payload: bytes) -> None:

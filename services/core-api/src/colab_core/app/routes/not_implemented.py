@@ -88,12 +88,16 @@ class Op:
 #:    「쌓이기만 하는 대기줄」이다. 요청 op 만 열고 처리 op 을 남기는 절단은 정본 §7.1·§7.2 의
 #:    전이표를 반만 세우는 것이라 부분 완료가 된다 (`CLAUDE.md §5`).
 #:    여덟 다 실동작 시험이 뒤에 있다 (`tests/test_approval.py` — 음성 다섯 포함).
+#: → **4**(`ST-1` 저장처 — `downloadDataset` 하나. **`NOT_IMPLEMENTED_NO_STORE` 가 0건이 된다** —
+#:    남은 다섯 중 그 사유를 단 op 은 이것뿐이었고, 그 사유는 처음부터 반만 참이었다:
+#:    이력 표 `d8_download` 는 P0 이 만들어 두었고 바이트는 접수 볼륨 위에 이미 있었다.
+#:    **마이그레이션 0건 · 계약 개정 0건**(계약은 처음부터 이 op 을 302 로 들고 있었다).
+#:    실동작 시험이 뒤에 있다 (`tests/test_dataset_download.py` — **연구실 경계·잠금 음성 포함**).
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
     Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
        "NOT_IMPLEMENTED_P1"),
-    Op("downloadDataset", "GET", "/datasets/{datasetId}/download", "NOT_IMPLEMENTED_NO_STORE"),
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
     #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데
