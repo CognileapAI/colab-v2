@@ -23,6 +23,7 @@ from .grid import GridUnavailableError, find_reference_grid
 from .internal_grid import InternalGridUnavailable, internal_latlon
 from .hsr import decode_block, parse_hsr
 from .parse import AutoMetadata, ParseError, parse_metadata
+from .renderable import RENDERABLE_FORMATS, is_renderable
 from .tiff_probe import classify_tiff
 
 
@@ -116,6 +117,61 @@ def map_tile_key(source: Path, *, grid_dir: Path | None, used_reference_grid: bo
     )
 
 
+#: 이미 COG 인 업로드 — 변환도, 산출물 기록도 없다 (DR-2).
+_ALREADY_COG = object()
+
+
+def _cog_geotiff(path, meta, grid, out_path, kind, res):
+    res.input_cog_class = classify_tiff(path)
+    if res.input_cog_class == "cog":
+        return _ALREADY_COG
+    convert_tif_to_cog(path, out_path, kind=kind)
+
+
+def _cog_binary(path, meta, grid, out_path, kind, res):
+    hsr = parse_hsr(path)
+    data = decode_block(hsr.blocks[0])
+    write_cog_from_grid(data, grid.lat, grid.lon, out_path, kind=kind)
+
+
+def _cog_gridded(path, meta, grid, out_path, kind, res):
+    """NetCDF·HDF4 — 파일 내 좌표가 있으면 그것을, 없으면 기준 격자를 쓴다."""
+    data = _first_2d_array(path, meta.format, meta)
+    lat, lon = (grid.lat, grid.lon) if grid is not None \
+        else _embedded_latlon(path, meta.format)
+    write_cog_from_grid(data, lat, lon, out_path, kind=kind)
+
+
+def _cog_numpy(path, meta, grid, out_path, kind, res):
+    """`.npy` — 배열만 있고 좌표가 없다 ⟹ **기준 격자가 언제나 필요하다**(`#58`).
+
+    `parse` 가 `crs_embedded=False` 로 두므로 3) 단계에서 격자가 이미 섰다.
+    격자가 없으면 여기 오기 전에 실패한다 — 여기서 좌표를 합성하지 않는다(`DR-9`).
+    """
+    arr = np.load(path, mmap_mode="r", allow_pickle=False)
+    data = np.asarray(arr)
+    while data.ndim > 2:          # 시각·밴드 축 — 한 번에 값 하나만 굽는다
+        data = data[0]
+    if data.ndim != 2:
+        raise ParseError(f"2차원 배열이 아니다 — shape={arr.shape}")
+    write_cog_from_grid(np.asarray(data, dtype="f4"), grid.lat, grid.lon,
+                        out_path, kind=kind)
+
+
+#: **그릴 수 있는 포맷 → COG 경로 분기표.** `RENDERABLE_FORMATS` 와의 어긋남은
+#: `tests/test_format_declaration_parity.py` 가 기계로 잡는다 — 새 포맷이 렌더 목록에
+#: 들어오고 여기 안 들어오면 **조용히 「COG 변환 실패」로만 보인다**(`#58` 의 무늬).
+COG_BUILDERS = {
+    "GeoTIFF": _cog_geotiff,
+    "Binary": _cog_binary,
+    "NetCDF": _cog_gridded,
+    "HDF4": _cog_gridded,
+    "NumPy": _cog_numpy,
+}
+assert set(COG_BUILDERS) <= set(RENDERABLE_FORMATS)
+
+
+
 def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
              kind: str = "continuous",
              previews_root: Path | None = None) -> PipelineResult:
@@ -146,6 +202,17 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
             res.input_cog_class = classify_tiff(path)
         except ValueError as e:
             return _fail(res, f"TIFF 구조 판독 실패: {e}")
+
+    # 2-b) **그릴 수 없는 포맷은 여기서 끝난다 — 그것이 실패가 아니다.**
+    #      「그릴 수 없는 것과 등록할 수 없는 것은 다르다」(정본 §9 · 결정 #4 ·
+    #      `renderable.py`). 그리지 않을 것에 기준 격자를 요구하면 **받아서 저장한다가
+    #      거짓이 된다** — 아래 3) 이 정확히 그것을 요구하므로 그 앞에서 갈린다.
+    if not is_renderable(det.format):
+        res.notes.append(
+            f"{det.format} 은 지원 포맷이지만 미리보기 대상이 아니다 — COG 산출 없음"
+            " (〈134〉 결정 2-3). 등록·다운로드·계보 확정은 막지 않는다.")
+        res.status = "SUCCESS"
+        return res
 
     # 3) 좌표 — 파일 내 좌표가 없으면 기준 격자. 못 읽으면 [미상] + FAILURE.
     grid = None
@@ -197,27 +264,15 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
         # 자리를 선언하지 않으면 **매번 다시 굽는다** — 정본이 그렇게 적었다.
         # 조용히 성공으로 세지 않고 사실로 남긴다. 유실 감지가 이 사실을 받는다.
         res.notes.append("자리(미리보기 루트)가 선언되지 않았다 — 재사용 없이 임시 자리에 굽는다")
+    builder = COG_BUILDERS.get(det.format)
+    if builder is None:
+        # 여기 오면 **선언과 구현이 갈린 것**이다 — 목록 밖이 아니다(`#58` 과 같은 무늬).
+        return _fail(res, f"{det.format} 은 그릴 수 있다고 선언됐는데 COG 경로가 없다 "
+                          "— d5/pipeline.py 의 구현 결함이다")
     try:
-        if det.format == "GeoTIFF":
-            res.input_cog_class = classify_tiff(path)
-            if res.input_cog_class == "cog":
-                # 이미 COG 인 업로드 — 변환 불필요. 산출물 기록도 없다 (DR-2).
-                res.status = "SUCCESS"
-                return res
-            convert_tif_to_cog(path, out_path, kind=kind)
-        elif det.format == "Binary":
-            hsr = parse_hsr(path)
-            data = decode_block(hsr.blocks[0])
-            write_cog_from_grid(data, grid.lat, grid.lon, out_path, kind=kind)
-        elif det.format in ("NetCDF", "HDF4"):
-            data = _first_2d_array(path, det.format, meta)
-            if grid is not None:
-                lat, lon = grid.lat, grid.lon
-            else:
-                lat, lon = _embedded_latlon(path, det.format)
-            write_cog_from_grid(data, lat, lon, out_path, kind=kind)
-        else:
-            return _fail(res, f"지원 목록 밖: {det.format}")
+        if builder(path, meta, grid, out_path, kind, res) is _ALREADY_COG:
+            res.status = "SUCCESS"
+            return res
     except Exception as e:
         return _fail(res, f"COG 변환 실패: {e}")
 

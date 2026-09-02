@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .detect import DetectionResult
-from .formats import UNKNOWN
+from .formats import SUPPORTED_FORMATS, UNKNOWN
 from .hsr import HsrResult, parse_hsr
 from .internal_grid import describe_internal_grid
 
@@ -139,19 +139,115 @@ def _parse_binary(path: Path, meta: AutoMetadata) -> HsrResult:
     return r
 
 
+def _parse_numpy(path: Path, meta: AutoMetadata) -> None:
+    """`.npy` — **배열 하나뿐이다. 메타가 없다**(`〈77〉` Ted 판정 · `#58`).
+
+    ⚠ **좌표를 지어내지 않는다.** `.npy` 에는 좌표계·기간·변수명 규약이 **없고**,
+    다른 포맷의 규약을 빌려오면 그것이 곧 값을 지우는 일이다
+    (`viz-render/readers._read_numpy` 가 같은 이유로 결측 규약을 빌리지 않는다).
+    ⟹ `crs_embedded=False` — HSR 과 같은 자리에서 **기준 격자**를 받는다(`§E.4-⑶`).
+
+    ⚠ **`allow_pickle` 을 켜지 않는다.** 켜면 헤더를 읽는 행위가 곧 임의 코드 실행이다.
+    읽을 수 없는 `.npy` 는 **읽을 수 없다고 말한다** — 열어 보고 정한다(`§0 M-8`).
+    """
+    from numpy.lib import format as npformat
+
+    with open(path, "rb") as f:
+        version = npformat.read_magic(f)
+        # 판별 함수는 판마다 다르다 — 사설 API 를 쓰지 않는다.
+        reader = {(1, 0): npformat.read_array_header_1_0,
+                  (2, 0): npformat.read_array_header_2_0}.get(version)
+        if reader is None:
+            raise ParseError(f"모르는 npy 판이다: v{version[0]}.{version[1]}")
+        shape, fortran_order, dtype = reader(f)
+    if dtype.hasobject:
+        raise ParseError(
+            f"`.npy` 가 object dtype 이다 — pickle 을 열지 않는다: {dtype}")
+    meta.variables = [path.stem or "array"]
+    if len(shape) >= 2:
+        meta.grid = (int(shape[-2]), int(shape[-1]))
+    else:
+        meta.notes.append(f"2차원이 아니다 — shape={tuple(shape)}. 격자는 [미상]")
+    meta.notes.append(
+        f"npy v{version[0]}.{version[1]} · dtype={dtype.str} · shape={tuple(shape)}"
+        f" · fortran_order={fortran_order}")
+    # `.npy` 는 좌표를 담지 않는다 — 기준 격자가 필요하다(지어내지 않는다 · DR-9).
+    meta.crs_embedded = False
+
+
+def _parse_grib(path: Path, meta: AutoMetadata) -> None:
+    """GRIB — **0절(section 0)만 읽는다. 디코더를 들이지 않는다.**
+
+    이 포맷은 **지원하되 그릴 수 없다**(`〈134〉` 결정 2-3 — 「5종이어도 grib 은
+    미리보기 대상이 아니다」). `〈134〉-㉰` 이 디코더를 들이지 않았다고 적었고
+    이 회차도 들이지 않는다 — **범위를 늘리지 않는다.**
+
+    ⟹ 읽는 것은 **판(edition) · 메시지 수 · 용량**뿐이고, **변수·격자·기간은
+    [미상] 로 남긴다.** 없는 값을 채우면 그것이 곧 거짓 자동추출이다(`DR-9`).
+
+    0절 배치 — GRIB1 = `GRIB` ＋ 전체 길이 3B ＋ 판 1B(offset 7),
+    GRIB2 = `GRIB` ＋ 예약 2B ＋ 분야 1B ＋ 판 1B(offset 7) ＋ 전체 길이 8B(offset 8).
+    """
+    messages = 0
+    edition: int | None = None
+    with open(path, "rb") as f:
+        while True:
+            head = f.read(16)
+            if len(head) < 8 or not head.startswith(b"GRIB"):
+                break
+            ed = head[7]
+            if ed not in (1, 2):
+                break
+            if edition is None:
+                edition = ed
+            if ed == 1:
+                total = int.from_bytes(head[4:7], "big")
+            else:
+                if len(head) < 16:
+                    break
+                total = int.from_bytes(head[8:16], "big")
+            if total <= 0:
+                break
+            messages += 1
+            start = f.tell() - len(head)
+            f.seek(start + total)
+    if edition is None:
+        raise ParseError("GRIB 0절을 읽지 못했다 — 판(edition)이 1·2 가 아니다")
+    meta.notes.append(
+        f"GRIB 판 {edition} · 메시지 {messages}건 — **0절만 읽었다.** "
+        "변수·격자·기간은 디코더 없이 읽지 않는다([미상] · DR-9).")
+    meta.notes.append("미리보기 대상이 아니다 — 등록·다운로드·계보 확정은 막지 않는다.")
+    meta.crs_embedded = False
+
+
+#: **포맷 → 파서 분기표.** 목록이 아니라 표로 둔 것이 요점이다 —
+#: `SUPPORTED_FORMATS` 와의 어긋남을 `tests/test_format_declaration_parity.py` 가
+#: **기계로** 잡는다. `#58` 은 이 대조가 없어서 「선언 여섯 · 처리 넷」이 오래 살아남은 건이다.
+PARSERS: dict[str, "object"] = {
+    "NetCDF": _parse_netcdf,
+    "HDF4": _parse_hdf4,
+    "GeoTIFF": _parse_geotiff,
+    "Binary": _parse_binary,
+    "NumPy": _parse_numpy,
+    "GRIB": _parse_grib,
+}
+
+
 def parse_metadata(path: Path, detection: DetectionResult) -> AutoMetadata:
     path = Path(path)
     if detection.format is None:
         raise ParseError(f"포맷 미상 — 파싱 불가: {detection.reason}")
     meta = AutoMetadata(format=detection.format, size_bytes=os.stat(path).st_size)
-    if detection.format == "NetCDF":
-        _parse_netcdf(path, meta)
-    elif detection.format == "HDF4":
-        _parse_hdf4(path, meta)
-    elif detection.format == "GeoTIFF":
-        _parse_geotiff(path, meta)
-    elif detection.format == "Binary":
-        _parse_binary(path, meta)
-    else:
+    parser = PARSERS.get(detection.format)
+    if parser is None:
+        # ⭑ **두 상태를 갈라 말한다** (`#58` · `PLAN-SoT §9 〈271〉-㉯`).
+        #   종전에는 어느 쪽이든 「지원 목록 밖」이라 말했고, 그래서 **구현 결함이
+        #   정책처럼 읽혔다.** 선언 안에 있는데 파서가 없으면 그것은 목록의 문제가
+        #   아니라 **이 파일의 문제**다 — 그렇게 말해야 고치는 사람이 여기로 온다.
+        if detection.format in SUPPORTED_FORMATS:
+            raise ParseError(
+                f"{detection.format} 은 지원 포맷인데 파서 구현이 없다 — "
+                "지원 목록의 문제가 아니라 d5/parse.py 의 구현 결함이다")
         raise ParseError(f"지원 목록 밖: {detection.format}")
+    parser(path, meta)
     return meta
