@@ -173,11 +173,23 @@ export function CatalogTable(props: {
                 </span>
               </td>
               <td>
-                {row.verified && (
+                {row.verified ? (
                   <span className="verified" aria-label="Verified">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
                       <path d="M20 6L9 17l-5-5" />
                     </svg>
+                  </span>
+                ) : (
+                  /* 승인 처리가 아직 도착하지 않은 행 — 글자를 취소선·회색·꺼진 조작 모양으로
+                     둔다 (Ted 판정 2026-09-02). 비워 두면 「값이 없다」와 「아직 안 왔다」가
+                     화면에서 갈리지 않는다. 취소선 규칙은 `catalog.css` `.verified--pending`. */
+                  <span
+                    className="verified verified--pending"
+                    data-testid="verified-pending"
+                    aria-disabled="true"
+                    title="승인 처리가 아직 도착하지 않았다"
+                  >
+                    Verified
                   </span>
                 )}
                 {!row.bodyAccessible && <span className="chip chip--warning">잠김</span>}

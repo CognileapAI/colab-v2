@@ -322,3 +322,44 @@ describe('§8 상호 안내 — 반대 길이 그 릴리스에 없을 때 (정�
     expect(container.querySelector('a[href="/lab"]')).toBeNull();
   });
 });
+
+describe('§5 Verified 열 — 승인 처리 도착 전의 정직한 상태 (Ted 판정 2026-09-02)', () => {
+  /**
+   * 종전에는 승인이 오지 않은 행의 `Verified` 칸이 **비어 있었다** — 값이 없는 것인지
+   * 아직 안 온 것인지 화면이 말하지 않았다. Ted 판정 = **글자를 취소선·회색·비활성 모양**으로
+   * 둔다(꺼진 조작처럼). `CT-1` 완료 정의의 `[미확인]` ㈎·㈏ 가 이것으로 닫힌다.
+   */
+  it('승인이 오지 않은 행은 Verified 를 취소선·비활성 모양으로 그린다', async () => {
+    renderCatalog();
+    await settle();
+    const pending = screen.getAllByTestId('verified-pending');
+    expect(pending.length).toBeGreaterThan(0);
+    for (const cell of pending) {
+      expect(cell.textContent?.trim()).toBe('Verified');
+      expect(cell.className).toContain('verified--pending');
+      expect(cell).toHaveAttribute('aria-disabled', 'true');
+    }
+  });
+
+  it('승인이 도착한 행은 평소대로다 — 취소선 표식이 붙지 않는다', async () => {
+    renderCatalog();
+    await settle();
+    const done = screen.getAllByLabelText('Verified');
+    expect(done.length).toBeGreaterThan(0);
+    for (const cell of done) {
+      expect(cell.className).not.toContain('verified--pending');
+      expect(cell).not.toHaveAttribute('aria-disabled');
+    }
+  });
+
+  it('한 행은 둘 중 하나만 그린다 — 승인 전 칸과 승인 칸이 겹치지 않는다', async () => {
+    renderCatalog();
+    await settle();
+    for (const row of bodyRows()) {
+      const w = within(row);
+      const pending = w.queryAllByTestId('verified-pending').length;
+      const done = w.queryAllByLabelText('Verified').length;
+      expect(pending + done).toBe(1);
+    }
+  });
+});

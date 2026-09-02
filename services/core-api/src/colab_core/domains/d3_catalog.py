@@ -459,22 +459,30 @@ def list_files(session: Session, dataset_id: Ulid) -> list[dict]:
     return out
 
 
-#: 내려받을 **본체 조각**과 그 저장 키. 잠긴 데이터셋이면 `body_access` 정책이
+#: 내려받을 **조각**과 그 저장 키. 잠긴 데이터셋이면 `body_access` 정책이
 #: 이 질의를 0행으로 만든다 — 애플리케이션이 다시 거르기 **전에** DB 가 이미 거른다.
-#: ⚠ 기준 격자 파일은 넣지 않는다 — 정본이 「조각 묶음」이라 부르는 것은 본체이고
-#: (`Policy_데이터셋_상세 §5` 파일 칸 = 본체 수), 격자 포함 여부는 정본이 침묵한다.
-_BODY_FILES_FOR_DOWNLOAD = text("""
-    SELECT f.id, f.file_name, f.storage_key, f.size_bytes
+#: 그 정책은 `kind` 를 보지 않으므로 **격자 행도 같은 잠금·같은 연구실 경계를 탄다**
+#: (`db/platform/schema.sql` `body_access` RESTRICTIVE).
+#:
+#: ⭑ **2026-09-02 Ted 판정 — 묶음에 `기준 격자 파일` 을 함께 넣는다.**
+#: 종전에는 `kind = '본체'` 만 골랐고(그 자리는 정본이 침묵하는 `[미확인]` 이었다),
+#: 격자를 못 받으면 받은 사람이 좌표를 다시 만들어야 했다. **본체를 먼저, 격자를 뒤에** 둔다.
+#: ⚠ `Policy_데이터셋_상세 §5` 의 파일 칸 = **본체 수**는 그대로다 — 세는 것과 담는 것이 다르다.
+_FILES_FOR_DOWNLOAD = text("""
+    SELECT f.id, f.file_name, f.storage_key, f.size_bytes, f.kind
       FROM d3_file f
-     WHERE f.dataset_id = :dataset_id AND f.kind = '본체'
-     ORDER BY f.file_name, f.id
+     WHERE f.dataset_id = :dataset_id AND f.kind IN ('본체', '기준 격자 파일')
+     ORDER BY (f.kind <> '본체'), f.file_name, f.id
 """)
 
 
-def body_files_for_download(session: Session, dataset_id: Ulid) -> list[dict]:
-    """내려받기가 읽을 조각 목록. **키는 원장이 들고 있다** — 여기서 짓지 않는다."""
+def files_for_download(session: Session, dataset_id: Ulid) -> list[dict]:
+    """내려받기가 읽을 조각 목록 — 본체 ＋ 기준 격자 파일.
+
+    **키는 원장이 들고 있다** — 여기서 짓지 않는다.
+    """
     return [dict(r) for r in
-            session.execute(_BODY_FILES_FOR_DOWNLOAD,
+            session.execute(_FILES_FOR_DOWNLOAD,
                             {"dataset_id": str(dataset_id)}).mappings().all()]
 
 
