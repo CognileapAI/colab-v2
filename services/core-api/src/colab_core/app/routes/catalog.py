@@ -536,10 +536,18 @@ def validate_human_metadata(changes: dict) -> None:
 
     if changes.get("period") is not None and "period" in changes:
         period = changes["period"]
-        # 계약 `DataPeriod` = `required: [start, end]` ＋ `additionalProperties: false`.
-        if not isinstance(period, dict) or set(period) != {"start", "end"} or \
-                any(not isinstance(period[k], str) for k in ("start", "end")):
-            raise errors.bad_request("기간은 `start`·`end` 두 문자열을 가진 객체다.")
+        # 계약 `DataPeriod` = `required: [start, end]` ＋ `additionalProperties: false`,
+        # **`end` 는 `[string, "null"]`** (14차 해제 · Ted 판정 2026-09-02).
+        #
+        # ⭑ **끝이 없으면 무기한이다** — `null` 도 받고 열쇠가 아예 없는 것도 받는다.
+        #   빠진 열쇠를 `null` 과 같이 다루는 것은 계약보다 **넓은** 쪽이라 문면을 안 깬다.
+        # ⚠ **시작은 조건부가 아니다** — 시작 없는 끝은 기간이 아니라 오타다. 기간을 통째로
+        #   비우는 뜻은 `period: null` 이고, 그것은 위의 `is not None` 이 먼저 걸러 낸다.
+        if not isinstance(period, dict) or not set(period) <= {"start", "end"} \
+                or not isinstance(period.get("start"), str) \
+                or not isinstance(period.get("end"), (str, type(None))):
+            raise errors.bad_request(
+                "기간은 `start` 문자열을 가진 객체다 — `end` 는 없거나 `null` 이면 무기한이다.")
 
 
 @router.patch("/datasets/{datasetId}", name="updateDataset")
@@ -649,9 +657,12 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     basic_info = None
     projects = None
     if body_accessible:
+        # **끝은 조건부다** — 시작만 있으면 무기한이고, 그때 `end` 는 `null` 로 나간다
+        # (14차 해제). 끝의 유무로 기간 전체를 떨어뜨리면 저장된 시작이 화면에서 사라진다.
         period = None
-        if meta is not None and meta.period_start is not None and meta.period_end is not None:
-            period = {"start": _iso(meta.period_start), "end": _iso(meta.period_end)}
+        if meta is not None and meta.period_start is not None:
+            period = {"start": _iso(meta.period_start),
+                      "end": None if meta.period_end is None else _iso(meta.period_end)}
         basic_info = {
             "variables": [] if meta is None else meta.variables,
             "crs": None if meta is None else meta.crs,

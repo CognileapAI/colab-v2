@@ -169,7 +169,8 @@ function StepOne(props: {
             />
           </div>
           <div className="form-row">
-            <label htmlFor="reg-period-end">{periodLabel} 끝 (선택)</label>
+            {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
+            <label htmlFor="reg-period-end">{periodLabel} 끝 (비우면 진행 중)</label>
             <input
               id="reg-period-end"
               className="inp"

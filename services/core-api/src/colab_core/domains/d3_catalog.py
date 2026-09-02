@@ -172,11 +172,13 @@ def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
 
 #: 데이터가 다루는 시간 범위 — **메타 열이라 잠긴 데이터셋도 나온다**(본체가 아니다).
 #: 소속 데이터셋 표(`ProjectDatasetRow.period`)가 이 값을 쓴다.
+#: ⭑ **2026-09-02 · 14차 해제** — `period_end IS NOT NULL` 을 뺐다. 끝이 없는 것은
+#: **무기한**이지 기간이 없는 것이 아닌데, 걸러 내면 저장된 시작이 표에서 사라졌다.
 _PERIODS = text("""
     SELECT dataset_id, period_start, period_end
       FROM d3_dataset_autometa
      WHERE dataset_id = ANY(CAST(:ids AS char(26)[]))
-       AND period_start IS NOT NULL AND period_end IS NOT NULL
+       AND period_start IS NOT NULL
 """)
 
 

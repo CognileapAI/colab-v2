@@ -7,10 +7,16 @@ export const EMPTY = '—';
 /**
  * 기간 = 데이터가 다루는 시간 범위 (`§4` 용어). 목업 표기는 `2025-06 ~ 09` 다 —
  * 해가 같으면 뒤쪽 해를 다시 적지 않는다.
+ *
+ * **끝이 없으면 무기한이다** (`DataPeriod.end`: `[string, "null"]` · 14차 해제).
+ * 빈 칸으로 두면 「기간을 모른다」와 「아직 안 끝났다」가 화면에서 갈리지 않는다.
+ * ⚠ **`[미확인]`** — 화면 정본은 열린 기간의 문면을 정하지 않았다. `~ 진행 중` 은
+ * 레포 안에서 고른 값이고, 스펙 문면이 정해지면 그것이 이긴다.
  */
 export function formatPeriod(p: DatasetBasicInfo['period']): string {
   if (!p) return EMPTY;
   const s = p.start.slice(0, 7);
+  if (!p.end) return `${s} ~ 진행 중`;
   const e = p.end.slice(0, 7);
   return s.slice(0, 4) === e.slice(0, 4) ? `${s} ~ ${e.slice(5, 7)}` : `${s} ~ ${e}`;
 }

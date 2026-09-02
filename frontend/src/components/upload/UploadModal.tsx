@@ -274,7 +274,8 @@ export function UploadModal(props: {
    *
    * ⚠ **정본과 어긋나는 자리 하나** — 스펙 19 는 기간을 「`2025-06 ~ 2025-09`」한 칸의
    * 자유 문장으로 그린다. 계약 `DataPeriod` 는 `start`·`end` 두 `date-time` 이라
-   * 그 문장을 담을 자리가 없다. 계약은 동결돼 있어 화면이 두 칸으로 받는다.
+   * 그 문장을 담을 자리가 없다. **Ted 판정(2026-09-02)이 「두 칸 ＋ 끝 선택」으로
+   * 정리했고**(14차 해제), **스펙 문면 갱신은 레포 밖에 남아 있다.**
    */
   function humanMetadata(): Record<string, unknown> {
     const out: Record<string, unknown> = {};
@@ -284,8 +285,15 @@ export function UploadModal(props: {
       .filter((v) => v.length > 0);
     if (vars.length > 0) out.variables = vars;
     if (crs.trim()) out.crs = crs.trim();
-    if (periodStart && periodEnd) {
-      out.period = { start: `${periodStart}T00:00:00Z`, end: `${periodEnd}T00:00:00Z` };
+    // **끝은 조건부다** (계약 `DataPeriod.end`: `[string, "null"]` · 14차 해제).
+    // 끝을 비우면 무기한이라는 뜻으로 `null` 을 **명시해서** 보낸다 — 열쇠를 빼지 않는
+    // 이유는 계약이 `ProjectPeriod` 와 같은 required-but-nullable 모양이라서다.
+    // 시작이 비면 기간 자체를 싣지 않는다 — 시작 없는 끝은 기간이 아니다.
+    if (periodStart) {
+      out.period = {
+        start: `${periodStart}T00:00:00Z`,
+        end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
+      };
     }
     return out;
   }
