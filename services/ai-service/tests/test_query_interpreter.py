@@ -10,10 +10,13 @@
 from __future__ import annotations
 
 import json
+import logging
+import urllib.error
 
 import pytest
 
-from colab_ai.app.interpret import (SYSTEM_PROMPT, LiteralInterpreter, LlmQueryInterpreter,
+from colab_ai.app.interpret import (INTERPRETER_LOGGER, MODEL_UNREACHABLE_REASON,
+                                    SYSTEM_PROMPT, LiteralInterpreter, LlmQueryInterpreter,
                                     _SEED)
 
 
@@ -96,3 +99,31 @@ def test_프롬프트_정정_3건이_그대로_남아_있다() -> None:
     assert "표기 변형·동의어·상하위어를 만들지 않는다" in SYSTEM_PROMPT
     assert "isDataQuery 는 다음 기준으로만 정한다" in SYSTEM_PROMPT
     assert _SEED == 20260826
+
+
+# ── 형제 자리 — 전송 예외도 응답으로 새지 않는다 (코드리뷰 20260903-F #3) ──────
+_LEAK_URL = "http://ai-gateway.internal:8443/v1/chat/completions"
+
+
+def _leaky_transport(_payload):
+    raise urllib.error.URLError(f"<urlopen error [Errno 111] Connection refused: {_LEAK_URL}>")
+
+
+def test_전송_실패의_원시_예외가_해석_사유로_새지_않는다() -> None:
+    """`degraded_reason` 은 `SearchService` 를 지나 **`degradedReason` 으로 그대로 나간다** —
+    `d10_ai_services` 만 고치고 이쪽을 두면 같은 문자열이 같은 칸으로 계속 나간다.
+    """
+    out = LlmQueryInterpreter(api_key="k", model="m",
+                              transport=_leaky_transport).interpret("강우 데이터")
+    assert out.source == "literal" and out.degraded is True
+    assert out.degraded_reason == MODEL_UNREACHABLE_REASON, out.degraded_reason
+    for leak in ("ai-gateway.internal", "8443", "Errno 111"):
+        assert leak not in out.degraded_reason, out.degraded_reason
+
+
+def test_전송_실패의_원시_예외는_서버_로그에_남는다(caplog) -> None:
+    with caplog.at_level(logging.WARNING, logger=INTERPRETER_LOGGER):
+        LlmQueryInterpreter(api_key="k", model="m",
+                            transport=_leaky_transport).interpret("강우 데이터")
+    assert "ai-gateway.internal" in caplog.text
+    assert "event=search.interpreter.unreachable" in caplog.text, caplog.text
