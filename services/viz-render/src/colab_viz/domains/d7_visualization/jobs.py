@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -577,6 +578,13 @@ def _run(job: RenderJob) -> None:
 #: 마감을 넘긴 렌더는 이미 `TIMEOUT` 으로 끊기고, 이 값은 그 뒤 정리에 주는 시간이다.
 _COMPLETION_GRACE_SECONDS = 10.0
 
+#: 남겨 두는 묘비의 개수 (`CODE-REVIEW-20260903` #11). **묘비도 무한하면 같은 결함이다.**
+#: 묘비 하나는 식별자·경계·만료시각뿐이라 수 KB 도 안 되지만, 「가벼우니 무한히」가
+#: 정확히 이 항목이 고치는 사고방식이다. 이 수를 넘으면 가장 오래된 것부터 놓고,
+#: 그때는 404 다 — 그 id 에 대해 아는 것이 없다는 뜻이라 정직하다.
+#: **`[정본 무근거]`** — 정본은 만료 뒤 화면을 말할 뿐 서버가 얼마나 기억하는지 말하지 않는다.
+_MAX_TOMBSTONES = 4096
+
 
 class JobStore:
     """렌더 작업 보관 — 프로세스 안 메모리다.
@@ -592,6 +600,17 @@ class JobStore:
                  signature_ttl_seconds: int | None = None,
                  tile_branch_enabled: bool = False) -> None:
         self._jobs: dict[str, RenderJob] = {}
+        #: 수명이 붙은 작업의 (만료시각, id). **넣는 순서가 곧 만료 순서**다(TTL 이
+        #: 상수라서). 그래서 앞에서만 보면 되고, 축출이 전체 스캔이 되지 않는다.
+        self._expiring: "deque[tuple[datetime, str]]" = deque()
+        #: 축출된 id 의 묘비 — 만료된 id 도 계약이 요구하는 410 을 계속 답해야 한다.
+        self._tombstones: "deque[str]" = deque()
+        self._max_tombstones = _MAX_TOMBSTONES
+        #: **대상 → 그 대상 때문에 구운 산출물**(`CODE-REVIEW-20260903` #11).
+        #: 작업 표를 훑는 대신 여기서 찾는다. ⚠ **작업에 매달지 않는다** — 작업이
+        #: 축출돼도 디스크의 산출물은 그대로라, 함께 잊으면 그 파일들은 영원히
+        #: 무효화되지 않는다.
+        self._produced: dict[str, dict[str, invalidation.StaleCandidate]] = {}
         self._pending: list[RenderJob] = []
         self._pending_events: dict[str, object] = {}
         self._lock = threading.Lock()
@@ -615,7 +634,11 @@ class JobStore:
             job.expires_at = now + timedelta(seconds=self._ttl)
         job.tile_url_template = self._tile_url(render_id, job.expires_at, now)
         with self._lock:
+            # **새 것을 넣기 전에 지난 것을 놓는다** — 넣는 자리가 곧 치우는 자리다.
+            self._evict_expired(now)
             self._jobs[render_id] = job
+            if job.expires_at is not None:
+                self._expiring.append((job.expires_at, render_id))
 
         # **완료 경로는 하나다**(`CODE-REVIEW-20260903` #2). 실행기마다 「끝난 뒤에 할 일」을
         # 따로 적으면 그중 하나가 빠지고, 빠진 쪽이 하필 운영 기본값이었다.
@@ -646,6 +669,10 @@ class JobStore:
         """
         try:
             _run(job)
+            # **색인이 먼저다** — 방금 구운 것도 후보에 들어야 `keep_keys` 가 그것을
+            # 살리고 나머지가 낡은 것으로 갈린다.
+            with self._lock:
+                self._remember_produced(job)
             plan = self._plan_for(job, event)
             job.invalidation = plan
             if plan.regenerate and job.status == STATUS_DONE:
@@ -678,7 +705,45 @@ class JobStore:
             self._run_and_plan(job, self._pending_events.pop(job.render_id, None))
 
     def get(self, render_id: str) -> RenderJob | None:
-        return self._jobs.get(render_id)
+        with self._lock:
+            self._evict_expired(datetime.now(timezone.utc))
+            return self._jobs.get(render_id)
+
+    # ── 보관 (`CODE-REVIEW-20260903` #11) ────────────────────────────────────
+    def _evict_expired(self, now: datetime) -> None:
+        """**수명이 다한 작업만** 놓는다. 호출자가 이미 잠금을 들고 있다.
+
+        ⚠ **완료 시점이 아니다.** 타일(`getRenderTile`)과 스크린샷(`createScreenshot`)이
+        `job.rendered` 를 메모리에서 읽으므로, 완료 직후에 놓으면 성공한 렌더가 곧바로
+        못 쓰는 렌더가 된다. 놓는 조건은 `expires_at` 하나다 — 개수도, 순서도 아니다.
+
+        ⚠ **묘비를 남긴다.** 만료된 id 는 계약이 요구하는 410 을 계속 답해야 한다
+        (`core-viz.yaml` `getRenderTile` `"410"`). 묘비는 식별자·경계·만료시각만 들고
+        래스터와 산출물 목록을 놓은 같은 객체다 — 부르는 자리(`job.expired` ·
+        `job.lab` · `to_dict`)가 그대로 선다.
+        """
+        while self._expiring and self._expiring[0][0] <= now:
+            _, render_id = self._expiring.popleft()
+            job = self._jobs.get(render_id)
+            if job is None:
+                continue
+            # **여기서만 놓는다** — f4 2D 래스터와 산출물 목록.
+            job.rendered = None
+            job.artifacts = None
+            job.partial = None
+            job.invalidation = None
+            if len(self._tombstones) >= self._max_tombstones:
+                self._jobs.pop(self._tombstones.popleft(), None)
+            self._tombstones.append(render_id)
+
+    def _remember_produced(self, job: RenderJob) -> None:
+        """구운 산출물을 **대상별 색인**에 넣는다 — `_produced_for` 의 입력이다."""
+        if job.artifacts is None:
+            return
+        bucket = self._produced.setdefault(job.spec.target.target_id, {})
+        for a in job.artifacts.all():
+            bucket[str(a.path)] = invalidation.StaleCandidate(cache_key=a.cache_key,
+                                                              path=a.path)
 
     # ── 자동 무효화 (`Y-1`) ──────────────────────────────────────────────────
     def _produced_for(self, target_id: str) -> list[invalidation.StaleCandidate]:
@@ -687,18 +752,12 @@ class JobStore:
         ⚠ **디렉터리를 훑지 않는다.** 미리보기 자리는 평평하고 대상이 경로에 없으므로
         (`layout.json` ③) 훑으면 **남의 대상 산출물까지 집는다.** D7 에는 원장이 없고,
         이 인스턴스가 아는 사실은 「내가 무엇을 구웠는가」뿐이다 — 아는 것만 센다.
+
+        ⭑ ⟨2026-09-03 · 코드리뷰 #11⟩ **작업 표도 훑지 않는다.** 종전에는 submit 마다
+        전 작업을 순회해 1000번째 submit 이 그리기 전에 1000회를 돌았고, 작업이 축출되면
+        그 산출물이 후보에서 사라져 **영원히 무효화되지 않는** 파일이 생겼다.
         """
-        out: list[invalidation.StaleCandidate] = []
-        seen: set[str] = set()
-        for job in list(self._jobs.values()):
-            if job.spec.target.target_id != target_id or job.artifacts is None:
-                continue
-            for a in job.artifacts.all():
-                if a.path in seen:
-                    continue
-                seen.add(a.path)
-                out.append(invalidation.StaleCandidate(cache_key=a.cache_key, path=a.path))
-        return out
+        return list(self._produced.get(target_id, {}).values())
 
     def _plan_for(self, job: RenderJob,
                   event: invalidation.InvalidationEvent | None) -> invalidation.InvalidationPlan:

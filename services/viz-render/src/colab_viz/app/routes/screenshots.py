@@ -62,6 +62,15 @@ class ScreenshotRequest(BaseModel):
 def create_screenshot(body: ScreenshotRequest, request: Request) -> Response:
     """지금 장면을 이미지로 뽑는다. **첫 항목이 맨 아래 층**이다."""
     lab, _ = deps.tenant_scope(request)
+    if len(body.layers) > screenshot.MAX_LAYERS:
+        # ⭑ ⟨2026-09-03 · 코드리뷰 #11⟩ **선언된 상태 코드 안에서 막는다** — 이 op 의
+        #   계약 응답은 200·400·401·404·409·503 이고 **413 이 없다.** 없는 코드를
+        #   지어내면 부르는 쪽이 처음 보는 상태를 만난다. 상한 값을 함께 실어야
+        #   화면이 그 수를 자기 코드에 박지 않는다.
+        raise errors.ApiError(400, errors.TOO_MANY_LAYERS,
+                              "한 장면에 담을 수 있는 층 수를 넘었다.",
+                              {"maxLayers": screenshot.MAX_LAYERS,
+                               "layers": len(body.layers)})
     store = request.app.state.jobs
     scene: list[tuple] = []
     for layer in body.layers:
