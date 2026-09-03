@@ -198,7 +198,13 @@ export function DatasetDetailPage(
           {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).
               **보기는 전원**이라 권한 관문을 두지 않는다 (`§1.3-5`·`§6` 「전 구성원 — 시각화 보기」).
               잠긴 데이터는 위 `LockedContent` 가 이미 본문째 막는다. */}
-          <DatasetPreviewSection datasetId={datasetId} source={props.previewSource} />
+          <DatasetPreviewSection
+            datasetId={datasetId}
+            source={props.previewSource}
+            datasetName={detail.detail.name}
+            fileName={detail.detail.fileName}
+            gridResolution={detail.detail.basicInfo?.grid}
+          />
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}
