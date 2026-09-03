@@ -3,6 +3,10 @@
 > 기준 — `CODE-REVIEW-20260903-PLAN.md §2` 레인 C 행 · 결함 `CODE-REVIEW-20260903.md` #1·#2·#3·#11 + 부록(`_FILE` 부재).
 > 편집 면 — `services/viz-render/**` 만. `contracts/**`·`infra/**`·다른 서비스·프론트 무접촉(실측 — 아래 §6).
 > 브랜치 `worktree-agent-a9df4b7601bb30d66` · 기준 커밋 `d4d11b5` · push 없음 · main 병합 없음.
+>
+> ⭑ **⟨증보 2026-09-03 · 레인 C-fix⟩** 위 다섯 항목은 수용 검토를 지나 **수정 4건**을 받았다.
+> 그 회차는 브랜치 `worktree-agent-a122ec91d6f0834c0`(레인 C 끝 `76b0d7a` 위)에서 돌았고,
+> 내용은 **§2-A** 에 있다. §1 계수표·§5 유보·§6 경계도 그 회차까지 다시 적었다.
 
 ## 1. 계수 — 전/후
 
@@ -13,11 +17,14 @@
 | 항목 2 뒤 | 같음 | 217 passed · 40 deselected |
 | 항목 3 뒤 | 같음 | 231 passed · 40 deselected |
 | 항목 4 뒤 | 같음 | 240 passed · 40 deselected |
-| 항목 5 뒤(최종) | 같음 | **250 passed · 40 deselected** |
+| 항목 5 뒤(레인 C 끝 `76b0d7a`) | 같음 | **250 passed · 40 deselected** |
+| 수용 검토 ①② 뒤(`f6f5b90`) | 같음 | 257 passed · 40 deselected |
+| 수용 검토 ③④ 뒤(`01e7cd7` · 최종) | 같음 | **259 passed · 40 deselected** |
 
-- 계수 기준 — 시험 **함수** 수(파라미터화 전개 포함). 실행 시점 2026-09-03, 이 워크트리, 병렬 없음(단독).
+- 계수 기준 — 시험 **함수** 수(파라미터화 전개 포함). 실행 시점 2026-09-03, 병렬 없음(단독). 레인 C 는 브랜치 `…a9df4b76` 워크트리, 레인 C-fix 는 브랜치 `…a122ec91` 워크트리 — **둘 다 `.venv` 를 새로 세워 실측했다.**
 - **기존 실패 0건** — 기준선이 이미 전건 green 이었다. 이 레인이 고친 것 중 「기존에 red 였던 시험」은 없다(결함 넷 다 시험이 없었다).
-- 신설 45 · 개정 1(`test_아는_종류에_모르는_트리거가_실려_오면_거절한다` → `…격리한다`).
+- 신설 45 · 개정 1(`test_아는_종류에_모르는_트리거가_실려_오면_거절한다` → `…격리한다`). 수용 검토가 **신설 9 · 개정 1** 을 더한다(§2-A).
+- **인용 SHA 실측** — 이 기록이 부르는 커밋 여섯(`d4d11b5` · `67c04d1` · `a2c8edd` · `5de693f` · `3bfa99c` · `39a4fb2`)을 `git cat-file -e <sha>` 로 확인했다. **여섯 다 풀린다** — 고칠 것이 없었다. `d4d11b5` 는 `67c04d1^` 과 같은 커밋이라 「기준 커밋」이라는 말도 참이다.
 
 ## 2. 항목별 — 변경 · 시험 · 전/후
 
@@ -66,6 +73,7 @@
 - **변경 ⑴** — `readers.py:_time_index`·`_parse_instant`·`_instant_labels` 신설. 값 변수의 `dimensions` 에서 시각 축(`time`·`times`·`t`·`valid_time`·`forecast_time`)을 찾아 `netCDF4.num2date` 로 편 뒤 **정확 일치**로 고른다. 생략 → 0(계약 축자). 없는 시각·시각 축 없는 파일에 지정 → `FieldReadError` + 사유(요청값 + 파일에 있는 값 목록).
   - **예외형 판단** — 「그럴 값이 없다」(`variable` 부재)가 이미 `FieldReadError` 이고 시각 부재는 그 형제라 같은 형을 썼다. `NotRenderableError` 는 **파일의 성질**에서 오는 실패(`failures.is_retry_pointless` 가 그것으로 재시도 무의미를 판정한다)이고, 틀린 `instant` 는 요청을 고치면 되는 자리라 성질이 다르다.
   - **표면 노출** — 이 실패는 `_run` 의 마지막 그물을 지나 `failure.code = RENDER_UNKNOWN_ERROR` + `details.detail` 에 사유로 나간다. 전용 실패 코드 신설은 `ErrorEnvelope.code` 가 자유 문자열이라 계약 개정 없이 가능하지만 **이 회차 범위 밖**으로 두었다(§5 유보).
+  - ⭑ **⟨2026-09-03 · 수용 검토에서 뒤집혔다⟩ 위 두 문단은 계획 이탈이었다.** 계획 `CODE-REVIEW-20260903-PLAN.md §2` 레인 C 행은 없는 `instant` 를 **기존 NOT_RENDERABLE 오류**로 내라고 적었고, 이 레인은 그것을 읽고도 자기 판단으로 `FieldReadError` 를 골랐다. 판단의 전제가 틀렸다 — 재시도가 유의미한지는 「요청을 고칠 수 있는가」가 아니라 **「같은 요청을 다시 눌렀을 때 결과가 달라지는가」**이고, 파일이 안 가진 시각은 몇 번을 눌러도 없다. 해소는 §2-A ②.
 - **변경 ⑵** — `cache.py:render_cache_key(instant=…)` + `jobs.py:_build_artifacts` 의 `key_params`. `selection` 이 「어느 변수」면 이것은 「어느 시각」이고 둘은 같은 자격으로 산출물을 가른다.
 - **결함 ⑶ · 변경** — `jobs.py:_grid_digest` 가 lat 의 shape · `nanmin(lat)` · `nanmax(lon)` **세 값만** 해시했다. 그 셋이 같은 다른 격자로 갈아 끼우면 키가 같아지고 `invalidation` 의 `keep_keys` 가 구 산출물을 「신선」으로 보존한다. → `_array_fingerprint` 로 **위도·경도 둘 다** 형상 + 양 끝(전량 실측) + 값을 접는다. 값은 `_DIGEST_FULL_MAX_ELEMENTS`(65,536 = f8 512 KB) 이하면 전량, 그 위는 균등 보폭 `_DIGEST_SAMPLE_COUNT`(4,096)점. NaN 은 표식(`_DIGEST_NAN_SENTINEL`)으로 바꿔 **비트 표현에 기대지 않는다**.
   - **한계(적어 둔다)** — 표본 구간에서 「표본에 안 걸린 한 점」은 잡지 못한다. 검사합이 아니라 digest 이고, 막는 것은 **격자 교체가 같은 키를 내는 것**이다(종전 세 통계는 격자를 통째로 갈아도 같은 키를 냈다). 시험 독스트링에 같은 문장을 적었다.
@@ -80,6 +88,9 @@
   - 묘비 — 축출은 같은 객체에서 `rendered`·`artifacts`·`partial`·`invalidation` 만 놓아 만료된 id 가 계약이 요구하는 **410** 을 계속 답한다. 묘비 개수는 `_MAX_TOMBSTONES = 4096` 으로 묶고 넘으면 가장 오래된 것부터 `_jobs` 에서 제거 — 그때는 404 이고, 「그 id 에 대해 아는 것이 없다」는 뜻이라 정직하다.
   - `jobs.py:JobStore._produced`·`_remember_produced`·`_produced_for` — 대상별 색인. **작업에 매달지 않는다** — 작업이 축출돼도 디스크의 산출물은 그대로라, 함께 잊으면 영원히 무효화되지 않는 파일이 남는다. 색인 갱신은 `_plan_for` **앞**이다(방금 구운 것도 후보에 들어야 `keep_keys` 가 그것을 살린다).
   - `screenshot.py:MAX_LAYERS = 8` + `routes/screenshots.py` 의 **400 `TOO_MANY_LAYERS` + `details.maxLayers`·`details.layers`**.
+- ⭑ **⟨증보 2026-09-03 · 수용 검토⟩ 부르는 쪽이 보는 거동이 하나 바뀌었다 — 위 본문이 그것을 안 적었다.** 축출이 `artifacts` 를 놓으므로 **만료된 렌더의 `getRender` 는 이제 `result` 가 없는 200** 이다: `{renderId, status: "완료", expiresAt}` 뿐인 **묘비 본문**이고, `result`·`legend`·`thumbnailUrl`·`imageUrl`/`tileUrlTemplate` 이 통째로 빠진다. 종전에는 축출 자체가 없어 **전체 본문이 그대로 나갔고 그 안의 타일·이미지 주소는 이미 죽어 있었다**(파일은 지워지고 서명은 만료됐다) — 화면이 200 을 받아 깨진 그림을 그렸다. 지금은 「완료였으나 수명이 다했다」가 본문에서 읽힌다.
+  - ⚠ **`status` 는 `완료`로 남는다** — 만료는 실패가 아니다. 계약이 이 자리에 둔 값(`getRenderTile` 의 **410**)은 타일 경로가 그대로 답한다.
+  - **`[정본 무근거]`** — 정본은 만료 뒤 화면을 말하지만 `getRender` **본문의 모양**을 말하지 않는다. `result` 를 빼는 것은 「없는 것은 키째 뺀다」(`to_dict` 축자)의 귀결이고, 지어낸 규칙이 아니다.
   - 뷰포트 — **손대지 않았다.** 계약 `Viewport.width`·`height` 의 `maximum` 이 이미 4096 이고 `screenshot.MAX_SIDE` 가 같은 값이다. 더 좁히면 계약대로 부르는 쪽이 이유 없이 거절당한다. 음성 시험으로 값 일치를 고정했다.
 - **왜 400 이고 413 이 아닌가** — `createScreenshot` 의 계약 응답은 **200·400·401·404·409·503** 이고 413 이 없다(`createRender` 에만 있다). 없는 상태 코드를 지어내면 부르는 쪽이 처음 보는 상태를 만난다.
 - **왜 8 인가 — `[정본 무근거]`** — 정본 `Policy_데이터셋_상세 §8` 은 「이 데이터」 층에 **얹은 층**을 겹쳐 비교한다고만 적고 개수를 말하지 않는다. 실측 근거는 비용이다: 최대 뷰포트(4096×4096)에서 층 하나가 지나는 전이 할당이 `_sample_rgba` 의 RGBA(u1 67 MB) · 표본값(f4 67 MB) · 색인(i8 134 MB) 과 `_over` 의 f4 중간판(≈340 MB)이라 **층당 수백 MB** 이고, 층 수가 자유면 그 배수가 그대로 한 프로세스에 들어온다(스레드풀 기본 40 이 그것을 동시에 통과시킨다). 8 = 밑판 1 + 얹은 층 7 로 화면이 실제로 비교하는 수를 넉넉히 덮는 값. **기존 상수 중에 쓸 것이 없어**(`MAX_SIDE` 는 한 변, `palettes.MAX_CLASS_COUNT` 는 구간 수) 새로 두었다.
@@ -94,6 +105,47 @@
 - compose 전환은 이 레인의 편집 면이 아니다(`infra/**` 금지 · `PLAN §4` 유보 6, Ted go/no-go). **값은 어디에도 출력하지 않았다.**
 - **시험** — `tests/test_secret_from_file.py` 10건. 실패 확인 8건 → 수정 → green.
 - **전/후** — 240 → 250.
+
+## 2-A. 수용 검토 반영 — 레인 C-fix (2026-09-03)
+
+> 브랜치 `worktree-agent-a122ec91d6f0834c0` · 기준 `76b0d7a`(레인 C 끝) · push 없음 · main 병합 없음.
+> 편집 면 — `services/viz-render/**` + 이 기록 파일. 각 건 **실패하는 시험을 먼저** 세우고 고쳤다.
+
+### 수용 ① — 시각 축을 **찾은 자리에서** 자른다 · 커밋 `f6f5b90`
+
+- **결함** — `_time_index` 는 `var.dimensions` 의 **어느 자리에서든** 시각 축을 찾는데 `_read_netcdf` 는 `raw[t]` 로 **언제나 0축**을 잘랐다. `(time, lat, lon)` 에서는 우연히 맞았지만 `(lat, lon, time)` 에서는 **위도 한 줄**을 골라 `(lon, time)` 판을 그림으로 냈다 — 그것도 2차원이라 `raw.ndim != 2` 검사에 안 걸리고 **예외 하나 없이 틀린 그림**이 나간다. 항목 3 이 축을 찾는 자리를 새로 만들면서 자르는 자리를 같이 안 고친 것이다.
+- **변경** — `_time_index` 가 `(고를 자리, 축)` 을 돌려준다(`dims.index(time_dim)`). `_read_netcdf` 는 `np.take(raw, t, axis=t_axis)` 로 집고, 남은 밴드 축을 첫 자리로 접는 것은 그대로다.
+  - ⚠ **`instant` 생략도 같은 축에서 집는다 — 지시보다 한 걸음 넓다.** 계약이 적은 값은 「생략하면 **첫 시각**」이지 「첫 축」이 아니다. 시각 축이 뒤에 있는 파일에서 0축을 자르면 그것은 첫 위도이므로, 생략 경로에도 **같은 결함이 그대로 남는다**(실측 — 시험 `test_시각을_생략해도_시각_축에서_첫_시각을_집는다` 가 수정 전에 red 였다). 시각 축을 못 찾으면 축은 0 이라 **종전 행동과 같다** — 지어낸 값이 아니다.
+- **시험** — `tests/test_instant_and_grid_digest.py` 에 `(lat, lon, time)` 픽스처 `nc_time_last` + 5건(축 위치 3 · 생략 1 · 표기 오류 1). 오라클은 **형상**이다 — 0축을 자르면 `(5, 3)` 이 나오고 그것도 2차원이라 값 비교만으로는 못 잡는다.
+- **전/후** — 250 → 257(수용 ②와 같은 커밋).
+
+### 수용 ② — 없는 시각은 `NOT_RENDERABLE` · 커밋 `f6f5b90` (**계획 이탈의 해소**)
+
+- **결함** — 계획 레인 C 행이 「기존 NOT_RENDERABLE 오류」로 못박은 자리를 레인 C 가 `FieldReadError` 로 냈고, 그것은 `_run` 의 마지막 그물을 지나 `RENDER_UNKNOWN_ERROR` 로 나갔다. `failures.is_retry_pointless` 는 `NotRenderableError` 로 재시도 무의미를 판정하므로, 파일이 안 가진 시각에 **「다시 그리기」가 뜨고 눌러도 영원히 같은 실패**가 돌아왔다 — 결정 #8 이 그 버튼을 감출 자리를 정해 둔 바로 그 상황이다.
+- **변경**
+  - `readers.py:_time_index` — 없는 시각 → `NotRenderableError`. 사유는 **요청값 + 있는 시각의 개수·처음·마지막**이다. 목록 전량을 안 싣는 것은 8760시각 파일에서 그 사유가 화면을 덮기 때문이다.
+  - `failures.py:RenderFailure.NOT_RENDERABLE` — 값은 `kernel/errors.NOT_RENDERABLE` 과 **같은 문자열**이다. 접수 때 415 로 나가는 것과 그리다 드러나는 것이 같은 성질이라, 부르는 쪽이 코드를 두 번 배우지 않는다. `FAILURE_MESSAGES` 문구도 라우트의 415 와 같은 `NOT_RENDERABLE_MESSAGE` 다 — **봉투 모양을 라우트에 맞춘다**(실물 사유는 `details.detail`).
+  - `jobs.py:_run` — 조각 판독의 `except` 에 `NotRenderableError` 갈래를 **`Exception` 앞에** 둔다. 종전에는 `except (FieldReadError, NotRenderableError, Exception)` 한 줄이라 세 형이 전부 `RENDER_UNKNOWN_ERROR` 로 접혔다 — **표면까지 내려가는 시험이 없으면 못 잡는 자리**다(단위 시험은 예외형만 보고 통과한다).
+  - **표기 오류는 그대로 `FieldReadError`** 다 — `_parse_instant` 가 못 읽는 것은 요청을 고치면 되는 자리라 성질이 다르다. 형이 여기서 갈린다.
+- **남는 것 — 문구** — 만료·형식과 같은 `NOT_RENDERABLE_MESSAGE`(「이 형식은 아직 지도로 못 그려요.」)가 **틀린 시각에는 정확하지 않다.** 코드·재시도 판정·`details.detail` 은 참이고 화면이 읽을 것은 다 있지만, 사람이 읽는 한 줄은 사유와 어긋난다. 봉투 모양을 라우트에 맞추라는 것이 이 회차의 지시라 **문구는 안 갈았다** — §5 유보 7.
+- **시험** — 같은 파일 +2(재시도 무의미 1 · **실패 봉투 코드가 `NOT_RENDERABLE` 인지 라우트까지 내려가서** 1) · 개정 1(`test_없는_시각은_사유와_함께_거절한다` — 예외형과 사유 문구).
+- **전/후** — 250 → 257.
+
+### 수용 ③ — **사라진 대상은 걷는다** · 커밋 `01e7cd7`
+
+- **결함** — 미리보기 뒤에 대상 디렉터리가 없어지면 `source.resolve` 가 `ports.source.TargetNotFound` 를 던진다. 그것은 `LookupError` 가 **아니라** 그냥 `Exception` 이라 `drain` 의 마지막 그물에 걸렸고, 그 갈래는 「다음 바퀴가 다시 집는다」이므로 **ack 하지 않는다.** 같은 봉투를 매 틱 다시 집어 **영원히** 트레이스백만 찍었다 — 항목 2 가 봉투 단위 격리를 세우면서 이 형 하나를 안 본 것이다.
+- **변경** — `app/triggers.py:drain` 이 `except (LookupError, TargetNotFound)` 로 잡고 ack + `logger.info(「그린 적 없는 대상/사라진 대상」)`. **두 선택지 중 이쪽이다** — `regenerate` 에서 `LookupError` 로 되던지는 길도 있었지만, 그러면 도메인이 자기가 안 던진 형으로 사실을 바꿔 말하게 되고 `TargetNotFound` 의 사유 문장이 사라진다. 걷는 판단은 **걷는 자리**가 한다.
+  - 층은 지킨다 — `app` 이 `ports` 를 읽는 것은 정방향이고 `routes/renders.py` 가 이미 같은 형을 import 한다. `import-boundary` green 으로 확인.
+- **시험** — `tests/test_trigger_intake.py` +1 — 그린 뒤 대상 디렉터리를 지우고, 봉투가 **걷히는지**와 **다음 틱에 안 돌아오는지**를 함께 잰다. ⚠ 첫 렌더가 `완료` 인지 먼저 못박는다 — 안 그러면 `_latest_for` 가 `None` 을 답해 `LookupError` 로 빠지고 **시험이 엉뚱한 이유로 green** 이 된다.
+- **전/후** — 257 → 259(수용 ④와 같은 커밋).
+
+### 수용 ④ — **시간 초과는 걷지 않는다** · 커밋 `01e7cd7`
+
+- **결함** — `regenerate` 가 `job.done.wait(timeout=…)` 의 **반환값을 안 봤다.** 시간이 다하면 아직 아무것도 안 한 결과(`plan=None`·`removed=()`)를 그대로 돌려주고 `drain` 이 그것을 성공으로 읽어 알림을 걷었다 — **낡은 미리보기는 남고 사건은 사라진다.** 항목 2 가 「끝난 뒤에 답한다」를 세우면서 「안 끝나면 어떻게 하는가」를 안 적은 자리다.
+- **변경** — `if not job.done.wait(timeout=budget): raise TimeoutError(…)`. `drain` 의 마지막 그물이 그것을 잡아 **ack 하지 않으므로** 다음 바퀴가 다시 집는다(at-least-once 의 소비자 쪽 짝). ⚠ **작업 자체는 안 죽인다** — 계속 돌아 끝나면 제 자리에 선다. 예산은 종전과 같은 `deadline_seconds + _COMPLETION_GRACE_SECONDS` 다.
+  - `TimeoutError` 는 `OSError` 계열이라 위 `except (LookupError, TargetNotFound)` 에 **안 걸린다** — 두 갈래가 섞이지 않는 것이 이 형을 고른 이유다.
+- **시험** — 같은 파일 +1 — `thread` 실행기에서 `_run` 을 막고(`threading.Event`) 마감·유예를 좁혀, 봉투가 **성공으로 보고되지도 걷히지도 않는지**를 잰다.
+- **전/후** — 257 → 259.
 
 ## 3. 계약 델타 초안 — **적용하지 않았다** (`contracts/**` 동결)
 
@@ -139,23 +191,30 @@
 | 축출의 메모리 효과 | RSS 실측 0. 「축출이 일어난다」를 시험으로 잠갔을 뿐 **몇 MB 가 줄었는지는 안 쟀다** | 장시간 부하에서 RSS 추이 측정(스테이지 필요) |
 
 **돌린 게이트** — `import-boundary` **green**(8 kept / 0 broken · `viz-render 층 — app > domains > ports > kernel` 포함) · `banned-import` **green**(.py 127건 · viz-render 40건 · 금지 import 0). `./gates/run.sh all` 은 지시대로 돌리지 않았다.
+**레인 C-fix 재실행** — 같은 둘을 다시 돌려 **같은 값**을 얻었다(`import-boundary` 8 kept / 0 broken · `banned-import` .py 127건 · viz-render 40건 · 금지 0). 수용 ③ 이 `app/triggers.py` 에 `ports.source` import 를 더했으므로 층 검사를 반드시 다시 재야 하는 회차였다 — 정방향(`app > ports`)이라 green.
+⚠ **이 표의 `[미확인]` 다섯은 레인 C-fix 에서도 그대로다** — 원천 데이터(`COLAB_REFERENCE_DATA`)·`COLAB_ARTIFACT_OWNER_DB_URL` 이 없는 것은 이 회차도 같고, e2e·perf 40건은 여전히 **deselected** 다(돌지 않은 것은 통과가 아니다).
 
 ## 5. 유보 — 이 레인이 손대지 않은 것
 
 1. **`expires_at` 이 없는 렌더는 축출 대상이 아니다.** 수명이 붙는 것은 등록 전 업로드뿐이고(정본 §8 ③ · `NB-2`), 등록 데이터셋 렌더에 수명을 지어내면 계약이 「임시로만 둔다」고 못박은 범위를 넘는다 — **Ted 판정 사안**. 지금은 서명 수명(기본 3600초)이 지나면 타일 주소가 죽으므로 그 뒤의 job 은 조회에만 쓰인다.
 2. **`jobs.py:_latest_for` 는 아직 전체 스캔이다.** 리뷰가 지목한 것은 `_produced_for` 이고 그것만 색인으로 바꿨다. 대상별 「가장 최근 완료」 색인은 같은 방식으로 붙일 수 있다.
-3. **틀린 `instant` 의 전용 실패 코드.** 지금은 `RENDER_UNKNOWN_ERROR` + `details.detail` 사유다. `ErrorEnvelope.code` 가 자유 문자열이라 계약 개정 없이 가를 수 있지만, 화면 문구가 따라와야 하는 일이라 범위 밖으로 두었다.
+3. ~~**틀린 `instant` 의 전용 실패 코드.** 지금은 `RENDER_UNKNOWN_ERROR` + `details.detail` 사유다.~~ → **해소** (§2-A ②). `failure.code = NOT_RENDERABLE` 로 나가고 `is_retry_pointless` 가 참이다. **남는 것은 문구 하나**이고 그것이 아래 유보 7 이다.
 4. **`resolve_env_or_file` 손사본 통일** — `PLAN §4` 유보 1 묶음(`ids.py`×4 · `errors.py`×2 · FileKind 리터럴 · ULID 정규식 …)에 이 함수를 더한다. 레시피는 같다(`gen_storage_layout.py` + `manifest.toml`).
 5. **격리된 봉투의 회수 경로 없음.** `_quarantine/` 에 쌓인 봉투를 누가 언제 보는지는 정하지 않았다(관측 자리 `port.quarantined` 만 두었다). 운영 알림에 붙이는 것은 배포 판단.
 6. **compose 의 `_FILE` 전환** — `infra/**` 는 이 레인의 편집 면이 아니다. `PLAN §4` 유보 6(Ted go/no-go) 그대로.
+7. **`NOT_RENDERABLE` 한 문구가 두 사유를 덮는다** (§2-A ② · 수용 검토가 새로 만든 자리). 「이 형식은 아직 지도로 못 그려요.」는 형식 때문에 못 그리는 자리에는 참이지만 **틀린 `instant` 에는 정확하지 않다** — 형식은 멀쩡하고 그 시각이 없을 뿐이다. 코드·재시도 판정·`details.detail` 은 참이라 화면이 읽을 것은 다 있고, 봉투 모양을 라우트에 맞추라는 것이 이 회차의 지시라 문구는 안 갈았다. 푸는 법 둘 — ㈎ `details.detail` 을 화면이 부제로 쓴다(코드 변경 0) ㈏ 사유별 문구를 `FAILURE_MESSAGES` 밖에서 실어 보낸다(`_failure(message=…)` 자리가 이미 있다). **화면 문구는 정본 소유**라 어느 쪽이든 이 레인이 혼자 정할 자리가 아니다.
+8. **`_produced` 색인은 집행 뒤에 정리되지 않는다** (`jobs.py`). `invalidation.apply` 가 파일을 `unlink` 해도 `self._produced[target_id]` 의 그 항목은 **그대로 남는다** — 지우는 자리가 한 곳도 없다. 지금은 **무해하다**: `apply` 가 `if path.exists()` 로 한 번 더 보므로 죽은 항목은 다음 집행에서 조용히 건너뛰어지고, `removed` 계수에도 안 든다. 남는 비용은 **한 대상을 오래 다시 그릴수록 딕셔너리가 자란다**는 것 하나다(항목당 `cache_key` + 경로, 수백 바이트). 항목 4 가 작업 표에서 없앤 무한 성장이 색인에 작게 남아 있는 셈이라 **같은 묶음으로 미룬다** — 고치는 자리는 `_run_and_plan` 이 `invalidation_removed` 를 받은 직후 그 경로들을 `bucket` 에서 빼는 한 줄이다.
 
 ## 6. 경계 실측
 
 ```
-git diff --name-only d4d11b5..HEAD | grep -cv '^services/viz-render/'   →  0
+git diff --name-only d4d11b5..HEAD | grep -v '^services/viz-render/'
+  →  dev-package/sessions/CODE-REVIEW-20260903-C.md      (이 파일 하나)
 ```
-`contracts/**` · `dev-package/{PLAN-SoT.md,work-items.yaml,03-HANDOFF.md,DEPLOY-CURRENT.md}` · `infra/**` · compose · `gates/**` · 다른 서비스 · 프론트 **무접촉**. 이 기록 파일만 `dev-package/sessions/` 에 새로 는다.
-운영 `colab_v2_staging_*` 무접촉(컨테이너 조작 0 · DB 접속 0). 비밀값 출력 0.
+⚠ **레인 C 가 적었던 `→ 0` 은 이 기록 파일이 커밋되기 전의 값이다.** 지금 다시 재면 1 이고 그 하나가 이 파일이다 — 레인 C 산문(「이 기록 파일만 `dev-package/sessions/` 에 새로 는다」)이 말한 것과 같은 사실이며, 수용 검토가 계수만 실물로 맞춰 적는다.
+
+`contracts/**` · `dev-package/{PLAN-SoT.md,work-items.yaml,03-HANDOFF.md,DEPLOY-CURRENT.md}` · `infra/**` · compose · `gates/**` · 다른 서비스 · 프론트 **무접촉** — 레인 C·레인 C-fix 두 회차 다.
+운영 `colab_v2_staging_*` 무접촉(컨테이너 조작 0 · DB 접속 0). 비밀값 출력 0. push 0 · main 병합 0.
 
 ## 7. 등재문 초안 — **번호 없음** (오케스트레이터가 발급·등재)
 
@@ -168,5 +227,8 @@ git diff --name-only d4d11b5..HEAD | grep -cv '^services/viz-render/'   →  0
 > ⑷ **보관** — 만료 뒤에만 축출(완료 시점 아님 — 타일·스크린샷이 메모리를 읽는다), 묘비로 410 유지·개수 상한, `_produced_for` 를 대상별 색인으로. 스크린샷 층 상한 8 = 선언된 400 + `details.maxLayers`.
 > ⑸ 비밀값 `_FILE` 간접참조(core-api 와 같은 규칙 · 손사본은 codegen 통일 후보).
 >
-> 계수 — `pytest -m "not e2e and not perf"` **199 → 250 passed**(신설 45 · 개정 1 · 기존 실패 0). 게이트 `import-boundary`·`banned-import` green. `render-latency`·`e2e-format-coverage` 는 **red(준비 · `COLAB_REFERENCE_DATA` 미선언)** 로 `[미확인]`.
+> **수용 검토 4건**(§2-A) — ㈎ 시각 축을 **찾은 자리에서** 자른다(`np.take(…, axis=)`). 종전엔 축을 찾아 놓고 0축을 잘라 `(lat, lon, time)` 이 **위도 한 줄을 그림으로** 냈다 — 2차원이라 예외가 안 났다. ㈏ 없는 시각을 **`NOT_RENDERABLE`** 로(계획 이탈의 해소) — 재시도 무의미가 표면까지 내려가 「다시 그리기」가 감춰진다. ㈐ **사라진 대상의 알림을 걷는다** — `TargetNotFound` 가 `LookupError` 가 아니라 매 틱 다시 집혔다. ㈑ **시간 초과는 걷지 않는다** — 안 끝난 재생성이 성공으로 ack 되어 사건이 사라졌다.
+>
+> 계수 — `pytest -m "not e2e and not perf"` **199 → 250 → 259 passed**(레인 C 신설 45 · 개정 1, 수용 검토 신설 9 · 개정 1 · 기존 실패 0). 게이트 `import-boundary`·`banned-import` **두 회차 다 green**. `render-latency`·`e2e-format-coverage` 는 **red(준비 · `COLAB_REFERENCE_DATA` 미선언)** 로 `[미확인]` — e2e·perf 40건도 여전히 안 돌았다.
 > 계약 개정 0건 — 델타 초안 셋(경계 헤더 선언 · `getRender` 의 400 · `layers.maxItems`)은 `CODE-REVIEW-20260903-C.md §3`.
+> **거동 변화 1건** — 만료된 렌더의 `getRender` 가 `result` 없는 200 묘비 본문이 된다(§2 항목 4). 종전엔 죽은 타일 주소가 든 전체 본문이 나갔다.
