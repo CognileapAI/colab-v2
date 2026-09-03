@@ -7,10 +7,12 @@
    `uploads/{id}/grid/` 에 그대로 남았다. 격자를 읽는 쪽(viz-render)에는 원장이 없어
    **폴더가 곧 사실**이라, 거절했다면서 그 파일로 그리거나 짝이 셋이 되어 통째로 거절된다.
 
-ⓑ **바이트가 온전히 도착한다** — 여러 메가바이트 · 묶음 · 교체.
-   이 시험들은 **회귀 그물**이다: 업로드가 파일 전체를 메모리에 올리는 대신 흘려 보내도록
-   바뀔 때(#10), 잘리거나 청크가 섞이는 것이 가장 무서운 회귀다. 지금 구현에서도 통과하며,
-   그것이 요점이다 — 그물은 바꾸기 **전에** 쳐 둔다.
+ⓑ **파일 전체를 메모리에 올리지 않는다** (#10).
+   세 업로드 라우트만 `async def` 인데 `await upload_file.read()` 로 전체를 읽고
+   `path.write_bytes` 와 동기 SQLAlchemy 를 이벤트 루프에서 돌렸다 — nginx 상한 8g 까지
+   RSS 가 파일 크기를 따라가고, 그동안 이 프로세스의 **모든 요청(`/healthz` 포함)이 멈춘다.**
+   바이트 무결성 시험 셋이 그 전환의 **회귀 그물**이다: 잘리거나 청크가 섞이는 것이 가장
+   무서운 회귀다. 마지막 시험 하나가 **구조 자체**를 못으로 박는다.
 
 ⚠ 메모리 사용량 자체는 여기서 재지 않는다 (`[미확인]`).
 """
@@ -156,3 +158,29 @@ def test_replacing_a_grid_file_streams_too(p2_client) -> None:
     found = _grid_path(root, DS_A1, GRID_FILE, "교체격자.nc")
     assert found.is_file(), "교체한 격자의 바이트가 없다."
     assert found.read_bytes() == payload
+
+
+def test_the_upload_routes_do_not_read_whole_files_into_memory() -> None:
+    """**구조를 못으로 박는다** — 결과만 재면 다음 사람이 `read()` 로 되돌려도 green 이다.
+
+    세 라우트는 `def`(스레드풀)이고 바이트는 `shutil.copyfileobj` 로 흘러야 한다.
+    `async def` 로 되돌리면 **동기 SQLAlchemy 까지** 이벤트 루프에서 돌아 `/healthz` 가
+    같이 멈춘다 — 그 정지는 업로드한 사람이 아니라 **다른 모든 사람**에게 보인다.
+
+    ⚠ **문자열이 아니라 구문을 본다.** 산문에 `async def` 라는 낱말이 나오는 것과 코드가
+    `async def` 인 것은 다르다 — 문자열로 재면 주석 한 줄이 시험을 뒤집는다.
+    """
+    import ast
+
+    src = (pathlib.Path(__file__).resolve().parents[1]
+           / "src" / "colab_core" / "app" / "routes" / "ingestion.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    coroutines = [n.name for n in ast.walk(tree) if isinstance(n, ast.AsyncFunctionDef)]
+    assert coroutines == [], f"업로드 라우트가 다시 `async def` 가 됐다: {coroutines}"
+    awaits = [n for n in ast.walk(tree) if isinstance(n, ast.Await)]
+    assert awaits == [], "이벤트 루프에서 파일을 읽고 있다."
+    calls = {ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)}
+    assert "shutil.copyfileobj" in calls, \
+        "바이트를 흘려 보내지 않는다 — 전체를 메모리에 올린다."
+    assert "upload_file.read" not in calls and "file.read" not in calls, \
+        "파일 전체를 한 번에 읽는 호출이 남아 있다."
