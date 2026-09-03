@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Co-Lab v2 — 기획 전달본</title>
+<style>
+  :root{--ink:#121619;--body:#434950;--muted:#697077;--line:#DFE3E8;--blue:#1369E9;--bg:#F9FAFB;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--body);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:64px 24px 96px}
+  h1{font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:40px}
+  .card{display:block;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;margin-bottom:14px;text-decoration:none;color:inherit;
+    transition:border-color .15s,transform .15s}
+  .card:hover{border-color:var(--blue);transform:translateY(-1px)}
+  .card h2{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .card p{font-size:14px;color:var(--muted)}
+  .card .go{display:inline-block;margin-top:12px;font-size:13px;font-weight:600;color:var(--blue)}
+  .note{margin-top:36px;padding:16px 18px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--body)}
+  .note ul{margin:8px 0 0 18px}
+  .note li{margin:4px 0}
+  footer{margin-top:40px;font-size:13px;color:var(--muted)}
+  footer a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Co-Lab v2 — 기획 전달본</h1>
+  <p class="sub">브라우저에서 바로 열리는 화면 설계 패키지입니다.</p>
+
+  <a class="card" href="urgent-upload-lineage-rev1/">
+    <h2>업로드와 계보 — 긴급 범위 rev1</h2>
+    <p>업로드 전체 화면 모달(등록 3단계)과 데이터셋 상세(계보·미리보기·활용·접근).
+       화면 + UI 스펙 65항목 + PRD·정책·검증 문서가 한 파일에 들어 있습니다.</p>
+    <span class="go">열기 →</span>
+  </a>
+
+  <div class="note">
+    <b>패키지 안에서 쓸 수 있는 것</b>
+    <ul>
+      <li>화면 아래 안내 바 — 화면 이동(업로드 · 데이터셋 상세 · 상태별 변형)</li>
+      <li>안내 바 <b>Δ 변경점</b> — 이번에 바뀐 자리에 배지를 켭니다. 배지에 올리면 무엇이 왜 바뀌었는지 나옵니다</li>
+      <li>안내 바 <b>목록</b> — 변경 29건 전체. 누르면 그 화면·단계로 데려가 자리를 짚습니다</li>
+      <li>우측 하단 연필 버튼 — UI 스펙 넘버링 65항목</li>
+      <li>우측 하단 문서 버튼 — PRD · 정책 · 검증 3탭</li>
+    </ul>
+  </div>
+
+  <footer>
+    원본 파일과 문서: <a href="https://github.com/CognileapAI/colab-v2/tree/urgent-upload-lineage-rev1/deliverables/urgent-upload-lineage-rev1">저장소에서 보기</a>
+  </footer>
+</div>
+</body>
+</html>
