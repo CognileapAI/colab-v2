@@ -11,10 +11,13 @@
 """
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
+
+import numpy as np
 
 from ..d5.axis import (
     REASON_AXIS_UNDECIDED,
@@ -78,14 +81,26 @@ _FAILURE_MAP: list[tuple[str, str, str, str]] = [
 #: 이 갈래가 `process_upload` 를 뚫고 나오면 `upload.failed` 로 적고 틱은 계속 돈다.
 #: 여기 **없는 것**이 규칙의 절반이다 — `OSError`(원장·디스크) · SQLAlchemy 예외 ·
 #: `BaseException`(종료 신호)은 그대로 던진다. 삼키면 유실이 조용해진다.
+#:
+#: ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #1⟩ **맨 `ValueError`·`IndexError` 를 뺐다.**
+#:   두 형은 파이썬에서 가장 흔한 **프로그래밍·설정 결함**의 형이기도 하다 — 이 모듈만
+#:   해도 원장 불변식 둘(`축이 빈 기준 격자 파일 행을 만들지 않는다` · `업로드 상태에 없는
+#:   열`)이 `ValueError` 고, `kernel/storage_layout` 의 설정 오류도 같은 형이다. 그것이
+#:   여기 잡히면 **고칠 수 있는 결함이 업로드마다 영구 실패 `내부 오류` 로 굳고**, 사람에게
+#:   남는 단서는 `print` 한 줄뿐이다. 결함은 배관으로 터져야 눈에 띈다.
+#:   ⚠ **좁히는 것이지 줄이는 것이 아니다** — numpy 가 제 이름으로 내는 형은 그대로 잡는다.
+#:   `np.exceptions.AxisError` 는 `ValueError`·`IndexError` 의 자식이지만 numpy 전용이라
+#:   프로그래밍 결함과 갈린다. `struct.error` 도 마찬가지로 **바이트가 이상한 것**이다
+#:   (`d5/detect.py`·`d5/hsr.py`·`d5/tiff_probe.py` 가 `struct` 로 헤더를 읽는다).
 DATA_ERRORS: tuple[type[BaseException], ...] = (
     AxisUndeterminedError,      # 축 판별
     GridUnavailableError,       # 기준 격자
     HsrParseError,              # HSR 판독
     ParseError,                 # 헤더 파싱
     CogConversionError,         # COG 재배치
-    ValueError,                 # numpy·struct 가 형상·값에 내는 것
-    IndexError,                 # 같은 갈래 — 리뷰가 실측한 탈출구가 이것이었다
+    np.exceptions.AxisError,    # numpy 전용 — 축 인덱스가 배열 형상 밖이다
+    np.linalg.LinAlgError,      # numpy 전용 — 값이 수치적으로 못 푸는 것이다
+    struct.error,               # 헤더 바이트가 형식과 안 맞는다
 )
 
 

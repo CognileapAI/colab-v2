@@ -150,7 +150,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `work-item-selftest` | **14** ⭑ ⟨2026-08-31 · `〈252〉` 로 ㈔ 4건 증설: 중복·행 0건·문서 부재·§9 부재⟩ ／ 이전 ~~10~~ | 없음 (bash + python3 + pyyaml) — 대조군 1 · red 증명 13. **픽스처가 자기 산문 문서(`03-HANDOFF` · `WORK-UNITS` 스텁)를 들고 다닌다.** 레포 실물의 항목 상태는 정당하게 어긋나 있을 수 있고(그것이 이 게이트를 만든 이유다) selftest 가 거기 볼모잡히면 안 된다 — `db-selftest`·`generated-selftest` 와 같은 이유. red 픽스처의 ㈑ 는 **2026-08-27 실물 재현**(`WORK-UNITS §10` 착수 후보 표에 `I0 ⏸` 가 올라 있던 것) |
 | `generated-selftest` | **9** | 없음 (bash + python3) — green 기준 케이스도 fixture 다. 레포 실물은 재생성 파이프라인 상태에 따라 정당하게 red 일 수 있어, selftest 가 레포 상태에 볼모잡히지 않게 했다 |
 | `service-tests-selftest` | **9** | 서비스 venv 하나(파이썬만 빌린다) — ⓐ 통과 1건 green · ⓑ 실패 1건 red · ⓒ 수집 0건 red · ⓓ 실행 0건(전부 skip) red · ⓔ venv 부재 red(준비 · 78) · ⓕⓖ 필수 인자 부재 red · ⓗ 단위 자리 부재 red · ⓘ 요약줄 계수 노출. 픽스처 = `gates/fixtures/service-tests/` |
-| `selftest` | **선언 19 = 실행 17 ＋ 명시 면제 2** | 구성원은 `ALL_GATES` 에서 뽑는다(손목록 없음). 면제 2건은 이름·사유·건수가 출력에 나온다 |
+| `selftest` | **`ALL_GATES` 의 `*selftest` 전부 = 실행분 ＋ 명시 면제 2** | ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #6⟩ **여기에 숫자를 박지 않는다** — 종전 표기 ~~「선언 19 = 실행 17 ＋ 명시 면제 2」~~ 는 `ALL_GATES` 에 셀프테스트를 하나 더하는 순간 조용히 틀린 값이 된다(문서가 실물보다 낡는 그 무늬 · `CLAUDE.md §0`). 구성원 정본은 `gates/run.sh` 의 `ALL_GATES` 안에서 이름이 `*selftest` 인 것 전부이고, 빼려면 `SELFTEST_EXEMPT` 에 이름과 사유를 적어야 한다(현재 면제 **2건** — `stage2-markers-selftest` · `service-tests-selftest`, 둘 다 CI 의 다른 잡이 돈다). **세는 명령은 게이트의 요약줄이지 이 표가 아니다** — `COLAB_GATE_JOBS=1 ./gates/run.sh selftest` 의 `선언 N · 실행 M · 면제 K` 줄이 정본이다 |
 
 > `db-selftest` 의 픽스처 케이스는 **레포의 `gates/config/rls-allowlist.toml` 을 읽지 않는다.**
 > 합성 스키마에 없는 테이블이 allow-list 에 정당하게 추가되면(K1 이 그랬다) 기준 케이스가 red 가 되기 때문이다 —

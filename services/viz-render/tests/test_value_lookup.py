@@ -180,6 +180,90 @@ def test_내용_키로는_들어올_수_없다(client):
     assert res.status_code == 400
 
 
+# ── 투영 밖 좌표 — 200 ＋ 사유이지 500 이 아니다 (코드리뷰 20260903-F #4) ─────
+#: 램버트 정각원추(LCC)는 **평면 전체를 덮지 않는다** — 원뿔 꼭짓점 반대쪽 극은 투영
+#: 정의역 밖이라 proj 가 「Point outside of projection domain」으로 거절한다.
+#: 실측(2026-09-03 · rasterio 1.5.1 · 이 픽스처) — `CPLE_AppDefinedError` 가 오른다.
+_LCC_PROJ4 = ("+proj=lcc +lat_1=30 +lat_2=60 +lat_0=38 +lon_0=126 "
+              "+x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
+#: 그 정의역 밖의 한 점. **계약 범위 안의 값이다**(위도 −90 은 유효한 위도다) —
+#: 클라이언트 오류가 아니라 **투영이 못 옮기는 좌표**라는 것이 이 시험의 요점이다.
+_OUT_LAT, _OUT_LON = -90.0, 0.0
+
+
+def _lcc_geotiff(tmp_path, name="lcc.tif"):
+    import rasterio
+    from rasterio.crs import CRS
+    from rasterio.transform import from_bounds
+
+    path = tmp_path / name
+    with rasterio.open(path, "w", driver="GTiff", height=8, width=8, count=1,
+                       dtype="float32", crs=CRS.from_proj4(_LCC_PROJ4),
+                       transform=from_bounds(-1e5, -1e5, 1e5, 1e5, 8, 8)) as dst:
+        dst.write(np.arange(64, dtype="float32").reshape(8, 8), 1)
+    return path
+
+
+def test_투영_밖_좌표는_500_이_아니라_사유가_붙은_없다다(tmp_path):
+    """**계약이 정한 답은 200 ＋ 「범위 밖이다」다** (`core-viz.yaml ValueLookupResult`).
+
+    종전에는 `warp_transform` 의 CPLE 예외가 그대로 올라가 표면이 **500** 을 냈다 —
+    같은 파일 아래쪽의 범위 밖 분기(`0 <= row < ds.height`)와 **답이 갈렸다.**
+    투영 정의역 밖이라는 사실은 서버 고장이 아니라 **그 점에 값이 없다**는 사실이다.
+    """
+    src = _lcc_geotiff(tmp_path)
+
+    got = value_lookup.read_point(src, lat=_OUT_LAT, lon=_OUT_LON)
+
+    assert got.available is False
+    assert got.unavailable_reason == value_lookup.OUT_OF_RANGE
+    assert got.value is None and got.cell is None
+    assert got.exactness == value_lookup.SAME_CELL
+
+
+def test_투영_밖_좌표가_먼저_예외로_터지는지_확인한다(tmp_path):
+    """**픽스처가 실제로 그 갈래를 밟는지 잠근다.** 안 밟으면 위 시험은 아무것도 안 잰다
+    (`CLAUDE.md §4` — 대상 0건 green). 날것 rasterio 로 같은 좌표를 옮겨 본다."""
+    import rasterio
+    from rasterio.warp import transform as warp_transform
+
+    src = _lcc_geotiff(tmp_path, "lcc_probe.tif")
+    with rasterio.open(src) as ds:
+        with pytest.raises(Exception) as ei:
+            warp_transform("EPSG:4326", ds.crs, [_OUT_LON], [_OUT_LAT])
+    assert "projection domain" in str(ei.value), str(ei.value)
+
+
+def test_투영_밖_좌표에_표면이_200_으로_답한다(client, source_root, put_target, tmp_path):
+    """같은 사실을 **표면에서** 잰다 — 500 은 장애 계수에 섞이고 화면은 「서버 오류」를 띄운다."""
+    src = _lcc_geotiff(tmp_path, "lcc_http.tif")
+    tid = put_target(copy_from=[src])
+    body = storage_layout.target_dir(source_root, tid) / src.name
+    _bake_tile(client.app.state.settings.preview_dir, body)
+
+    res = client.post("/viz/v1/value-lookups", headers=AUTH, json={
+        "datasetId": tid, "fileId": _file_id(client, tid, body.name),
+        "point": {"lat": _OUT_LAT, "lon": _OUT_LON}})
+
+    assert res.status_code == 200, res.text
+    assert res.json()["unavailableReason"] == "범위 밖이다", res.text
+
+
+def test_투영_안_좌표는_여전히_값을_돌려준다(tmp_path):
+    """**좁히는 것이지 줄이는 것이 아니다** — 잡기 시작한 예외가 정상 경로를 덮지 않는다."""
+    import rasterio
+    from rasterio.warp import transform as warp_transform
+
+    src = _lcc_geotiff(tmp_path, "lcc_inside.tif")
+    with rasterio.open(src) as ds:
+        lon, lat = warp_transform(ds.crs, "EPSG:4326", [ds.xy(4, 4)[0]], [ds.xy(4, 4)[1]])
+        expect = float(ds.read(1)[4, 4])
+
+    got = value_lookup.read_point(src, lat=lat[0], lon=lon[0])
+
+    assert got.available is True and got.value == expect
+
+
 def _file_id(client, target_id, file_name):
     """파일시스템 어댑터가 그 이름에 붙이는 `fileId` — 원장 어댑터가 붙으면 안 쓰인다."""
     return client.app.state.source.file_id(target_id, file_name)

@@ -22,7 +22,22 @@ import 가 아니라 **DB 커넥션**이라 `import-boundary` 가 못 잡았다)
 """
 from __future__ import annotations
 
+import logging
+
 from colab_ai.ports import DictionaryPort, Interpretation, QueryInterpreterPort
+
+#: **응답에 실리는 사유는 상수다** (코드리뷰 20260903-F #3).
+#: 종전에는 `f"... : {e}"` 로 원시 예외를 실었다. 사전은 DB 에서 읽으므로 그 예외는 대개
+#: psycopg 의 접속 실패이고, 그 문구에는 **호스트·주소·포트·롤**이 들어 있다 — 화면은
+#: 안 그려도 브라우저 네트워크 탭에는 그대로 보인다. 사유는 사용자에게 맞는 문장으로
+#: 고정하고 **원인은 서버 로그로만** 보낸다(`_degraded_log`). 지우는 것이 아니라 옮긴다.
+#: 계약 변경 0 — `degradedReason` 은 자유 문자열이다(`core-ai.yaml Degradable`).
+DICTIONARY_UNAVAILABLE_REASON = "온톨로지 사전을 읽지 못해 질문의 낱말 그대로 찾았다."
+
+#: 운영자가 **기계로 긁을 이름**. 규약은 core-api `app/relay.py` 의 `_record_suggest_failure`
+#: 를 그대로 쓴다 — 로거 이름 · `event=` · 사유. 두 벌로 두면 한쪽이 언젠가 다른 말을 한다.
+DEGRADED_LOGGER = "colab_ai.degraded"
+_degraded_log = logging.getLogger(DEGRADED_LOGGER)
 
 #: 검색어를 몇 개까지 내보내는가. 상한이 없으면 사전 확장이 질의를 통째로 넓혀 버린다.
 MAX_TERMS = 24
@@ -148,8 +163,12 @@ class SearchService:
             topic = interpretation.topic or expansion.topic
             hops = getattr(expansion, "graph_hops", ())
         except Exception as e:                                   # noqa: BLE001
+            # **원시 예외는 로그로만 간다** — 응답에는 안정된 문구가 나간다(위 상수 주석).
+            _degraded_log.warning(
+                "event=search.dictionary.unavailable labId=%s exc=%s: %s",
+                lab_id, type(e).__name__, e)
             degraded = True
-            reason = reason or f"온톨로지 사전을 읽지 못해 질문의 낱말 그대로 찾았다: {e}"
+            reason = reason or DICTIONARY_UNAVAILABLE_REASON
 
         # **넓힌 뒤에 한 번 더 뺀다.** 확장이 기능어를 되데려오면 앞의 필터가 있으나 마나다.
         widened, _ = strip_function_words(terms)

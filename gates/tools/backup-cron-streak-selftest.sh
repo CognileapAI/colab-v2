@@ -54,8 +54,14 @@ expect() {  # $1=기대(red|green) $2=이름 $3=로그경로 [$4=출력에 있�
   out="$(COLAB_CRON_STREAK_GATE_LOG="$log" COLAB_CRON_STREAK_NOW="$NOW_EPOCH" \
          COLAB_BACKUP_STATE_DIR="$TMP/없는보관처" "$GATE" 2>&1)"; rc=$?
   # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  # ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #6⟩ **여기서 `FAILED=1` 을 세우지 않는다.**
+  #   세우면 아래 `[ "$FAILED" -ne 0 ] && exit 1` 이 먼저 걸려 종료가 **1(판정 red)** 이
+  #   되고, 정작 준비 실패를 말하는 `expect_readiness_verdict`(종료 78)까지 못 간다.
+  #   실행기는 1 을 「셀프테스트가 게이트의 결함을 찾았다」로 세므로 **「고칠 결함」과
+  #   「환경이 없다」가 다시 섞인다** — `_expect.sh` 가 갈라 놓은 것을 이 한 줄이 도로
+  #   접었다. 판정 못 한 케이스는 `EXPECT_READINESS` 에 남아 있고 그것을 78 로 내는 것이
+  #   `expect_readiness_verdict` 의 일이다. **어느 쪽이든 red 다** — 색이 아니라 사유가 바뀐다.
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
-    [ "${#EXPECT_READINESS[@]}" -eq 0 ] || FAILED=1
     return
   fi
   if [ "$want" = red ] && [ "$rc" -eq 0 ]; then
@@ -102,10 +108,63 @@ expect red "ⓖ 낯선 요약줄 모양" "$TMP/weird.log" "모양이 바뀐 것�
 mk_log "$TMP/ok.log" "2026-09-03T04:40:05" "$GREEN_LINE"
 expect green "ⓗ GREEN · 신선" "$TMP/ok.log" "재실행 0건"
 
+# ── ⓘ~ⓟ **분류기 자체 증명** — `_expect.sh` 의 rc 0 구멍 (코드리뷰 20260903-F #6) ──
+#
+# `expect_classify` 는 `[ "$rc" = 78 ] || 출력에 표식이 있으면` 으로 갈라 **표식만 보고**
+# 준비 실패로 접었다. 그래서 **표식을 찍고 종료 0 으로 나가는 검사기**가 `ready` 로
+# 분류됐다 — 「검사기가 통과를 보고했는데 아무것도 검사하지 않았다」가 바로 그 자리에서
+# 「환경이 없어 못 돌았다」로 위장한다(`CLAUDE.md §4` green-by-skip 의 분류기판).
+# **종료코드가 먼저다.** 0 은 검사기가 「다 됐다」고 말한 것이고, 그 말과 표식이 어긋나면
+# 그것 자체가 결함이지 환경 문제가 아니다.
+#
+# ⚠ 픽스처가 왜 이 파일에 있나 — `_expect.sh` 는 게이트가 아니라 **모든 셀프테스트가
+# source 하는 판정부**라 자기 게이트 자리가 없다(`gates/run.sh ALL_GATES` 는 이 회차의
+# 편집 면 밖이다). 그것을 source 하는 셀프테스트 안에서 증명한다 — 위 8건과 같은 실행에
+# 실려 `selftest` 묶음이 이 증명을 매번 돈다.
+FAKE_RC0="$TMP/rc0-with-marker.sh"
+{ echo '#!/usr/bin/env bash'
+  echo 'echo "::gate-readiness-failure::gate=가짜|waited_for=아무것도|limit=대기 없음|elapsed=0초|detail=표식만 찍고 0 으로 나간다"'
+  echo 'exit 0'
+} > "$FAKE_RC0"
+chmod +x "$FAKE_RC0"
+
+MARK='::gate-readiness-failure::gate=가짜|waited_for=x|limit=대기 없음|elapsed=0초|detail=x'
+UNDECL="$MARK|cause=입력미선언"
+
+classify_is() {  # $1=기대 분류 $2=이름 $3=종료코드 $4=출력
+  local got
+  got="$(expect_classify "$3" "$4")"
+  if [ "$got" = "$1" ]; then
+    echo "  ✓ $2 ($1)"
+  else
+    red "$2 — 분류가 「$got」다(기대 「$1」)"
+  fi
+}
+
+FAKE_OUT="$("$FAKE_RC0" 2>&1)"; FAKE_RC=$?
+classify_is green  "ⓘ 표식 ＋ 종료 0 → green (가짜 검사기 실물)" "$FAKE_RC" "$FAKE_OUT"
+classify_is green  "ⓙ 표식(cause=입력미선언) ＋ 종료 0 → green"  0  "$UNDECL"
+classify_is ready  "ⓚ 종료 78 → ready"                          78 ""
+classify_is 미선언 "ⓛ 종료 78 ＋ cause=입력미선언 → 미선언"      78 "$UNDECL"
+classify_is ready  "ⓜ 표식 ＋ 종료 1 → ready"                   1  "$MARK"
+classify_is red    "ⓝ 표식 없음 ＋ 종료 1 → red"                 1  "아무 말도 없다"
+classify_is green  "ⓞ 표식 없음 ＋ 종료 0 → green"               0  "다 됐다"
+
+# ⓟ **그리고 그 케이스에서 셀프테스트가 실제로 red 로 간다.** 가로채기가 면제를 주면
+#   「판정 못 함」으로 접혀 red 가 안 뜬다 — 부분 셸로 그 자리를 재현해 확인한다.
+if ( FAILURES=(); EXPECT_READINESS=()
+     expect_intercept_readiness "$FAKE_RC" "$FAKE_OUT" "가짜" ready >/dev/null && exit 9
+     [ "${#EXPECT_READINESS[@]}" -eq 0 ] || exit 8
+     exit 0 ); then
+  echo "  ✓ ⓟ 표식＋종료 0 은 「판정 못 함」 면제를 못 받는다 (ready 기대 케이스가 red 로 간다)"
+else
+  red "ⓟ 표식＋종료 0 이 준비 실패로 접혔다 — 검사기가 낸 종료 0 이 가려진다"
+fi
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::backup-cron-streak-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict backup-cron-streak-selftest
-echo "backup-cron-streak-selftest green — 검사 8건 전건 기대대로 (red 7 · green 1)"
+echo "backup-cron-streak-selftest green — 검사 16건 전건 기대대로 (게이트 8건: red 7 · green 1 ＋ 분류기 8건)"

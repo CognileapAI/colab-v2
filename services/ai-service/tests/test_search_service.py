@@ -12,8 +12,13 @@
 from __future__ import annotations
 
 import json
+import logging
 
-from colab_ai.domains.d10_ai_services import SearchService
+from colab_ai.domains.d10_ai_services import (
+    DEGRADED_LOGGER,
+    DICTIONARY_UNAVAILABLE_REASON,
+    SearchService,
+)
 from colab_ai.domains.d9_ontology import Dictionaries, expand
 from colab_ai.ports import Interpretation
 
@@ -207,3 +212,46 @@ def test_데이터_질문이_아니면_빈_질의_안내를_붙이지_않는다(
     body = _search(_service(interpretation=_interp(is_data_query=False)))
     assert body["isDataQuery"] is False and body["degraded"] is False
     assert "degradedReason" not in body
+
+
+# ── 원시 예외가 응답 본문으로 새지 않는다 (코드리뷰 20260903-F #3) ─────────────
+class LeakyDictionaries:
+    """**실물 무늬 그대로다** — psycopg 의 접속 실패 문구에는 호스트·주소·포트·롤이 들어 있다.
+
+    사전은 DB 에서 읽으므로(`app/dictionaries.SqlDictionaries`) 여기서 나오는 예외는
+    대개 DB 예외다. 그 문구를 `degradedReason` 에 실으면 **내부 배선이 응답 본문**으로
+    나간다 — 화면은 안 그려도 브라우저 네트워크 탭에는 그대로 보인다.
+    """
+
+    MESSAGE = ('connection to server at "colab-db-internal" (172.19.0.4), port 5432 '
+               'failed: FATAL:  password authentication failed for user "colab_app_role"')
+
+    def expand(self, terms, query):
+        raise RuntimeError(self.MESSAGE)
+
+
+_LEAKS = ("colab-db-internal", "172.19.0.4", "5432", "colab_app_role", "FATAL")
+
+
+def test_사전_고장의_원시_예외가_degradedReason_으로_새지_않는다() -> None:
+    body = _search(_service(dictionaries=LeakyDictionaries()))
+    assert body["degraded"] is True
+    reason = body["degradedReason"]
+    for leak in _LEAKS:
+        assert leak not in reason, f"응답 본문에 「{leak}」 이 실렸다: {reason}"
+    assert reason == DICTIONARY_UNAVAILABLE_REASON, reason
+
+
+def test_봉투_전체를_직렬화해도_원시_예외가_없다() -> None:
+    """**사유 칸만 보지 않는다** — 같은 문자열이 다른 칸으로 새면 결과는 같다."""
+    raw = json.dumps(_search(_service(dictionaries=LeakyDictionaries())), ensure_ascii=False)
+    for leak in _LEAKS:
+        assert leak not in raw, f"봉투 어딘가에 「{leak}」 이 있다"
+
+
+def test_원시_예외는_서버_로그로만_간다(caplog) -> None:
+    """**지우는 것이 아니라 옮기는 것이다.** 운영자는 여전히 원인을 봐야 한다."""
+    with caplog.at_level(logging.WARNING, logger=DEGRADED_LOGGER):
+        _search(_service(dictionaries=LeakyDictionaries()))
+    assert "colab-db-internal" in caplog.text, "원시 예외가 서버 로그에도 없다"
+    assert "event=search.dictionary.unavailable" in caplog.text, caplog.text

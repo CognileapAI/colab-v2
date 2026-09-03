@@ -41,9 +41,21 @@ declare -p FAILURES  >/dev/null 2>&1 || FAILURES=()
 declare -p EXPECT_READINESS >/dev/null 2>&1 || EXPECT_READINESS=()
 
 # $1=종료코드 $2=출력 → stdout: green | red | ready | 미선언
+#
+# ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #6⟩ **종료코드가 먼저다 — 표식만으로 접지 않는다.**
+#   종전에는 `[ "$rc" = 78 ] || 표식이 있으면` 이라 **종료 0 ＋ 표식**이 `ready`(또는
+#   `미선언`)로 분류됐다. 그 조합의 뜻은 「검사기가 자기 입으로 못 돌았다고 적어 놓고
+#   실행기에는 다 됐다고 말했다」다 — **그것이 결함 그 자체**인데 분류기가 그것을
+#   「환경이 없어 못 돌았다」로 바꿔 적었다. `CLAUDE.md §4` green-by-skip 의 분류기판이고,
+#   그 상태에서는 red 를 기대한 케이스가 「red(준비) OK」로 세어져 **판정된 적 없는 보호
+#   장치가 증명된 것처럼** 보인다.
+#   그래서 준비 갈래의 조건을 **rc 78, 또는 「rc 비영 ＋ 표식」**으로 좁힌다. 종료 0 은
+#   무슨 말을 찍었든 green 이다 — 검사기가 그렇게 말했으므로, 그 말이 틀렸으면 그 케이스가
+#   red 로 터져 눈에 띈다. ⚠ **좁히는 것이지 줄이는 것이 아니다** — 진짜 준비 실패
+#   (78 · 비영＋표식)는 종전 그대로 갈린다(픽스처 ⓚⓛⓜ 가 그것을 잡는다).
 expect_classify() {
   local rc="$1" out="$2"
-  if [ "$rc" = 78 ] || printf '%s' "$out" | grep -q '::gate-readiness-failure::'; then
+  if [ "$rc" = 78 ] || { [ "$rc" != 0 ] && printf '%s' "$out" | grep -q '::gate-readiness-failure::'; }; then
     if printf '%s' "$out" | grep -q 'cause=입력미선언'; then printf '미선언'; else printf 'ready'; fi
     return 0
   fi
