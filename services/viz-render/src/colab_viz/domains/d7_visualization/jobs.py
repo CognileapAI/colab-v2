@@ -66,6 +66,14 @@ class RenderSpec:
 class RenderJob:
     render_id: str
     spec: RenderSpec
+    #: **이 작업이 누구 것인가** (`CODE-REVIEW-20260903` #1). core-api 가 중계에 실어
+    #: 보내는 `X-CoLAB-Lab` 을 접수 때 새기고, 조회·스크린샷이 이 값과 대조한다.
+    #: ⚠ 빈 문자열은 **경계를 모르는 작업**이라 어떤 요청과도 맞지 않는다 — 접수 표면이
+    #: 빈 값을 400 으로 막으므로 실제로 생기지 않지만, 기본값이 「전부와 맞는 값」이면
+    #: 나중에 한 자리만 빠져도 조용히 열린다.
+    lab: str = ""
+    #: 누가 불렀는가. **판정에는 쓰지 않는다** — 출처 표시다.
+    account: str = ""
     status: str = STATUS_DRAWING
     stage: str | None = STAGE_READ
     stage_history: list[str] = field(default_factory=list)
@@ -540,9 +548,10 @@ class JobStore:
         self._tile_branch_enabled = tile_branch_enabled
 
     def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool,
-               event: "invalidation.InvalidationEvent | None" = None) -> RenderJob:
+               event: "invalidation.InvalidationEvent | None" = None,
+               lab: str = "", account: str = "") -> RenderJob:
         """`event` 가 없으면 **사람이 부른 경로**다 — 둘 다 같은 계산기를 지난다(ⓒ)."""
-        job = RenderJob(render_id=render_id, spec=spec,
+        job = RenderJob(render_id=render_id, spec=spec, lab=lab, account=account,
                         tile_branch_enabled=self._tile_branch_enabled)
         now = datetime.now(timezone.utc)
         if temporary:
@@ -645,7 +654,11 @@ class JobStore:
                                 upload_id=event.target_id if previous.spec.target.is_upload else None,
                                 file_ids=None)
         spec = replace(previous.spec, target=target)
-        job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event)
+        # **경계를 직전 작업에서 이어받는다**(코드리뷰 #1). 트리거 봉투에도 `labId` 가
+        # 실려 오지만 이 seam 의 `InvalidationEvent` 에는 그 자리가 없고(계약을 넓히지
+        # 않는다), 재생성은 **이미 그린 적 있는 대상**에만 서므로 직전 작업이 답을 안다.
+        job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event,
+                          lab=previous.lab, account=previous.account)
         plan = job.invalidation
         removed = invalidation.apply(plan, previews_root=Path(spec.preview_dir)) if plan else ()
         return Regeneration(job=job, plan=plan, removed=removed)

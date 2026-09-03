@@ -20,6 +20,7 @@ from ...domains.d7_visualization.readers import (
 from ...kernel import errors
 from ...kernel.ids import new_ulid
 from ...ports.source import TargetNotFound
+from .. import deps
 from ..deps import require_caller, require_caller_or_tile_signature
 
 router = APIRouter(tags=["render"], dependencies=[Depends(require_caller)])
@@ -70,6 +71,9 @@ def _renderable_details() -> dict:
 
 @router.post("/renders", status_code=202)
 def create_render(body: RenderRequest, request: Request) -> dict:
+    # **경계를 가장 먼저 읽는다** — 대상을 해석한 뒤에 읽으면 헤더 없는 요청이 「그 대상이
+    # 있느냐」를 404/200 으로 먼저 알려 주는 신탁이 된다.
+    lab, account = deps.tenant_scope(request)
     settings = request.app.state.settings
     source = request.app.state.source
     try:
@@ -113,16 +117,21 @@ def create_render(body: RenderRequest, request: Request) -> dict:
         preview_url_base=settings.preview_url_base,
     )
     job = request.app.state.jobs.submit(new_ulid(), spec,
-                                        temporary=body.target.uploadId is not None)
+                                        temporary=body.target.uploadId is not None,
+                                        lab=lab, account=account)
     return job.to_dict()
 
 
 @router.get("/renders/{renderId}")
 def get_render(renderId: _Ulid, request: Request) -> dict:
-    """**실패도 200 이다.** 이유는 `failure` 에 담긴다 — 4xx 로 두면 「작업이 없다」와 섞인다."""
-    job = request.app.state.jobs.get(renderId)
-    if job is None:
-        raise errors.not_found("그런 렌더 작업이 없다.")
+    """**실패도 200 이다.** 이유는 `failure` 에 담긴다 — 4xx 로 두면 「작업이 없다」와 섞인다.
+
+    ⭑ ⟨2026-09-03 · 코드리뷰 #1⟩ **서명된 타일 주소가 나가는 문이 여기 하나뿐이다.**
+    그래서 경계를 여기서 닫으면 타일도 함께 닫힌다 — 타일 경로 자신은 헤더를 못 받는
+    자리(브라우저 직접 호출)라 서명만으로 남는다.
+    """
+    lab, _ = deps.tenant_scope(request)
+    job = deps.same_lab_or_missing(request.app.state.jobs.get(renderId), lab)
     return job.to_dict()
 
 

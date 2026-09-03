@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ...domains.d7_visualization import value_lookup
 from ...kernel import errors
 from ...ports.source import TargetNotFound
+from .. import deps
 from ..deps import require_caller
 
 router = APIRouter(tags=["render"], dependencies=[Depends(require_caller)])
@@ -39,6 +40,12 @@ class ValueLookupRequest(BaseModel):
 
 @router.post("/value-lookups")
 def lookup_value(body: ValueLookupRequest, request: Request) -> dict:
+    # **경계 헤더가 없으면 열지 않는다**(코드리뷰 #1). ⚠ 여기서 **대조는 하지 않는다** —
+    # 이 op 은 `renderId` 가 아니라 `datasetId` 로 들어오고, 「그 데이터셋이 어느 연구실
+    # 것인가」를 아는 표가 이 단위에 없다(저장 배치가 평평하다 — `layout.json`). 대조는
+    # core-api 가 `require_body_access` 로 이미 하고(권한 ⓑ), 그 판정을 여기서 다시
+    # 지어내면 **틀린 근거로 남의 것을 열어 주는 길**이 하나 더 생긴다.
+    deps.tenant_scope(request)
     source = request.app.state.source
     try:
         resolved = source.resolve(dataset_id=body.datasetId, upload_id=None,
