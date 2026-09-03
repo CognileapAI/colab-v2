@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import datetime as dt
 import gzip
 from dataclasses import dataclass
 from pathlib import Path
@@ -242,6 +243,74 @@ def _apply_fill_exact(values: np.ndarray, fills: list[float]) -> np.ndarray:
     return out
 
 
+#: 시각 축으로 읽는 차원·변수 이름. **계약이 값을 주지 않았다** — `[정본 무근거]`.
+#: CF 규약의 관행 이름이고, 못 찾으면 **첫 축을 시각 축으로 지어내지 않는다.**
+_TIME_NAMES = ("time", "times", "t", "valid_time", "forecast_time")
+
+
+def _parse_instant(raw: str) -> "dt.datetime":
+    """계약 `Timestamp`(UTC ISO-8601) 하나를 **정확히** 읽는다.
+
+    ⚠ **관대하게 받지 않는다.** 「비슷한 것」을 받아 주면 오타가 조용히 첫 시각으로
+    떨어지고, 그것이 이 결함(`instant` 무시)이 아무도 모르게 살아 있던 모양이다.
+    """
+    text = raw.strip()
+    if text.endswith(("Z", "z")):
+        text = text[:-1] + "+00:00"
+    value = dt.datetime.fromisoformat(text)      # 형식이 아니면 ValueError
+    return value if value.tzinfo else value.replace(tzinfo=dt.timezone.utc)
+
+
+def _instant_labels(var) -> list[str]:
+    """시각 좌표를 계약 표기(UTC ISO-8601)로 편다 — **사유에 실물을 적으려고** 둔다."""
+    from netCDF4 import num2date
+
+    values = num2date(np.asarray(var[:]), units=getattr(var, "units", ""),
+                      calendar=getattr(var, "calendar", "standard"),
+                      only_use_cftime_datetimes=False,
+                      only_use_python_datetimes=True)
+    out = []
+    for v in np.atleast_1d(values):
+        stamp = v if v.tzinfo else v.replace(tzinfo=dt.timezone.utc)
+        out.append(stamp.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z"))
+    return out
+
+
+def _time_index(ds, var, instant: str | None, path: Path) -> int:
+    """그릴 시각의 인덱스. **생략하면 0**(계약 축자 「생략하면 첫 시각이다」).
+
+    ⭑ ⟨2026-09-03 · 코드리뷰 #3⟩ 종전에는 이 함수가 없었고 `while raw.ndim > 2:
+    raw = raw[0]` 이 **언제나 첫 시각**을 집었다 — `instant` 는 서명에만 있고 본문에서
+    한 번도 쓰이지 않았다. 계약이 「층마다 시각을 따로 고른다」고 적은 값이 그렇게
+    조용히 버려졌고, 캐시 키에도 없어서 **틀린 시각이 모든 시각에 대해 서빙**됐다.
+
+    ⚠ **정확 일치로만 고른다.** 가장 가까운 시각으로 바꿔 그리면 사용자는 자기가 다른
+    시각을 보고 있다는 사실을 모른다 — `_apply_fill_exact` 와 같은 자세다.
+    """
+    if instant is None:
+        return 0
+    try:
+        wanted = _parse_instant(instant)
+    except ValueError as e:
+        raise FieldReadError(
+            f"{path.name}: 시각 표기가 계약(UTC ISO-8601) 형태가 아니다 — {instant!r}") from e
+
+    dims = getattr(var, "dimensions", ())
+    time_dim = next((d for d in dims if d.lower() in _TIME_NAMES), None)
+    time_var = ds.variables.get(time_dim) if time_dim else None
+    if time_var is None:
+        # 시각 축이 없는 파일에 시각을 지정한 것이다. **조용히 무시하지 않는다** —
+        # 무시하면 「지정했는데 안 바뀐다」가 그대로 돌아온다.
+        raise FieldReadError(
+            f"{path.name}: 이 값에는 시각 축이 없다 — {instant!r} 을 고를 자리가 없다")
+    labels = _instant_labels(time_var)
+    for i, label in enumerate(labels):
+        if _parse_instant(label) == wanted:
+            return i
+    raise FieldReadError(
+        f"{path.name}: 그럴 시각이 없다 — {instant} ∉ {labels}")
+
+
 def _read_netcdf(path: Path, variable: str | None, instant: str | None,
                  max_side: int) -> Field:
     from netCDF4 import Dataset
@@ -268,10 +337,16 @@ def _read_netcdf(path: Path, variable: str | None, instant: str | None,
         # 그래서 자동 적용을 끄고 **원시값에서 정확일치로 fill 을 판정한 뒤** 스케일한다
         # (`P2.md §10-(가)` 의 순서 규칙 그대로).
         var.set_auto_maskandscale(False)
+        # **시각을 먼저 고른다**(코드리뷰 #3) — 자르기 전에 고르지 않으면 고를 자리가 없다.
+        t = _time_index(ds, var, instant, path)
         arr = var[:]
         raw = np.ma.filled(np.asarray(arr, dtype="f8"), np.nan) if np.ma.isMaskedArray(arr) \
             else np.asarray(arr, dtype="f8")
-        while raw.ndim > 2:             # 시각/밴드 축 — 한 번에 값 하나만 그린다
+        if raw.ndim > 2:
+            # 첫 축이 시각(또는 밴드) 축이다 — 고른 자리를 집는다. 그 아래로 축이 더
+            # 남으면 **첫 자리**로 접는다(밴드 축은 계약에 고르는 자리가 없다).
+            raw = raw[t]
+        while raw.ndim > 2:             # 남은 밴드 축 — 한 번에 값 하나만 그린다
             raw = raw[0]
         if raw.ndim != 2:
             raise NotRenderableError(f"{path.name}: {name} 이 2차원이 아니다")

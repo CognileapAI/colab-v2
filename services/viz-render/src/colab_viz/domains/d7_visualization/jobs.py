@@ -309,14 +309,55 @@ def _source_digest(reads: list[_Read]) -> str:
     return h.hexdigest()
 
 
+#: 이 개수 이하의 격자는 **전량**을 해시한다. f8 기준 512 KB — 해시 비용이 렌더 한 회의
+#: 잡음 안에 든다. 실물 기준 격자(2881²≈8.3M)는 이 위라 표본 구간으로 간다.
+_DIGEST_FULL_MAX_ELEMENTS = 1 << 16
+#: 표본 구간에서 집는 점의 개수. 균등 보폭이라 **자리가 결정적**이다 — 무작위 표본을
+#: 쓰면 같은 격자가 매번 다른 키를 내고, 그것은 캐시가 아니라 난수다.
+_DIGEST_SAMPLE_COUNT = 4096
+#: NaN 자리에 넣는 표식. **NaN 의 비트 표현에 기대지 않는다** — 페이로드가 갈리면
+#: 같은 격자가 다른 키를 낼 수 있다. 실측 좌표가 절대 갖지 않는 크기를 쓴다.
+_DIGEST_NAN_SENTINEL = -9.87654321e30
+
+
+def _array_fingerprint(h: "hashlib._Hash", arr) -> None:
+    """배열 하나를 digest 에 접어 넣는다 — **형상 + 양 끝 + 값 표본**.
+
+    ⭑ ⟨2026-09-03 · 코드리뷰 #3 형제⟩ 종전에는 lat 의 shape · `nanmin(lat)` ·
+    `nanmax(lon)` **세 값**뿐이었다. 그 셋이 같은 다른 격자로 갈아 끼우면 키가 같아지고
+    `invalidation` 의 `keep_keys` 가 구 산출물을 「신선」으로 보존한다 — **격자를 바꿨는데
+    옛 그림이 남는다.** 값 자신을 보지 않는 digest 는 격자 교체를 못 본다.
+    """
+    a = np.asarray(arr, dtype="f8")
+    h.update(f"|shape={a.shape}|".encode())
+    flat = np.ascontiguousarray(a.reshape(-1))
+    # 양 끝은 **전량에서** 정확히 잰다 — 표본이 놓치더라도 범위 변화는 반드시 잡힌다.
+    finite = flat[np.isfinite(flat)]
+    lo = float(finite.min()) if finite.size else float("nan")
+    hi = float(finite.max()) if finite.size else float("nan")
+    h.update(f"min={lo!r}|max={hi!r}|n={flat.size}|".encode())
+    if flat.size > _DIGEST_FULL_MAX_ELEMENTS:
+        step = -(-flat.size // _DIGEST_SAMPLE_COUNT)      # ceil — 보폭이 결정적이다
+        flat = flat[::step]
+    sample = np.where(np.isfinite(flat), flat, _DIGEST_NAN_SENTINEL)
+    h.update(np.ascontiguousarray(sample, dtype="<f8").tobytes())
+
+
 def _grid_digest(reads: list[_Read]) -> str | None:
-    """지도형 키에만 들어가는 격자 값 — **격자를 갈면 지도형만 무효화된다**(`§7.2`)."""
-    parts = [f"{r.reference[0].shape}:{float(np.nanmin(r.reference[0])):.6f}:"
-             f"{float(np.nanmax(r.reference[1])):.6f}"
-             for r in reads if r.from_uploaded_grid and r.reference is not None]
-    if not parts:
+    """지도형 키에만 들어가는 격자 값 — **격자를 갈면 지도형만 무효화된다**(`§7.2`).
+
+    **위도와 경도를 둘 다 본다.** 종전에는 위도의 최솟값과 경도의 최댓값만 봐서,
+    한쪽만 갈린 격자가 그대로 통과했다.
+    """
+    used = [r for r in reads if r.from_uploaded_grid and r.reference is not None]
+    if not used:
         return None
-    return hashlib.sha256("|".join(parts).encode()).hexdigest()
+    h = hashlib.sha256()
+    for r in used:
+        _array_fingerprint(h, r.reference[0])
+        _array_fingerprint(h, r.reference[1])
+        h.update(b"||")
+    return h.hexdigest()
 
 
 def _mesh_from_bounds(values, bounds):
@@ -391,7 +432,9 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
     lut = colormap.lut256(palettes.get(spec.palette).anchors)
     key_params = dict(source_digest=_source_digest(reads),
                       fills=tuple(sorted({f for r in reads for f in r.field.fills})),
-                      palette=spec.palette, selection=merged.variable)
+                      palette=spec.palette, selection=merged.variable,
+                      # **시각도 산출물을 가른다**(코드리뷰 #3) — 없으면 T1·T2 가 한 파일이다.
+                      instant=spec.instant)
     out_dir = Path(spec.preview_dir)
 
     values = reads[0].field.values if len(reads) == 1 else merged.values
