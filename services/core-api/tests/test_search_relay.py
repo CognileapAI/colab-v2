@@ -151,13 +151,24 @@ def test_the_ai_never_names_a_dataset(p2_client, fake_ai) -> None:
     assert r.json()["items"] == [], "AI 가 얹어 보낸 식별자가 결과로 샜다."
 
 
-def test_the_order_is_the_tsvector_relevance_order(p2_client, fake_ai) -> None:
-    """**순서가 이미 관련도다** (`§4`). 「격자화」는 A2 의 이름에만 있고 이름 가중치가 A 다."""
+def test_the_order_is_verified_first_then_the_tsvector_relevance_order(p2_client, fake_ai) -> None:
+    """**순서가 이미 관련도다** (`§4`). 「격자화」는 A2 의 이름에만 있고 이름 가중치가 A 다.
+
+    ⭑ **2026-09-03 개정 (`〈298〉` · 16차) — 관련도 위에 `Verified 우선` 이 얹혔다**
+    (`Policy_데이터_찾기 §8` `:117` 「검색: Verified 우선 + 관련도」 · `〈295〉`-㉯ 가
+    멈춰 둔 한 줄). 시드는 **A1 만 승인**이라, 관련도만이면 `[A2, A1]` 이던 순서가
+    `[A1, A2]` 가 된다. **종전 기재를 지우지 않고 시점을 붙인다** — 관련도 순서 자체는
+    그대로이고, 그 성질은 이제 **무리 안**에서 산다.
+
+    ⚠ 「무리 안의 관련도 순서가 살아 있는가」는 이 시험이 아니라
+    `test_search_verified_16.py::test_relevance_order_survives_inside_each_group` 가 진다 —
+    그쪽이 두 데이터셋의 승인 여부를 같게 맞춰 놓고 `[A2, A1]` 을 오라클로 든다.
+    """
     from conftest import LAB_A
     fake_ai["body"] = _ai_body(["강우", "격자화"], lab_id=LAB_A)
     r = p2_client(ai_base_url=fake_ai["url"]).post(
         SEARCH, json={"query": "강우 격자화"}, headers=auth(TOKEN_RES))
-    assert [i["datasetId"] for i in r.json()["items"]] == [DS_A2, DS_A1]
+    assert [i["datasetId"] for i in r.json()["items"]] == [DS_A1, DS_A2]
 
 
 def test_the_same_query_gives_the_same_order(p2_client, fake_ai) -> None:

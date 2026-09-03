@@ -3,6 +3,10 @@
 // **잠긴 데이터도 이 카드로 선다** (`P-13`·`P-34`) — 이름은 보이고 본체만 막힌다.
 // **관련도는 막대의 길이로만 산다** — 퍼센트·등급 텍스트를 만들면 그 자리가 확신도 숫자가 된다
 // (`CLAUDE.md §3` — 확신도에 숫자 필드가 없다).
+// **`요약`·`기간` 문면을 여기서 다시 만들지 않는다** — 상세 기본 정보가 쓰는 것을 그대로
+// 쓴다(`detail/format.ts`). 같은 값의 표기가 두 화면에서 갈리는 자리를 만들지 않는다.
+// 특히 열린 기간(`~ 진행 중`)은 `〈283〉`(14차 해제)이 정한 성질이라 한 곳에만 있어야 한다.
+import { formatPeriod, orEmpty } from '../detail/format';
 import type { SearchResultRow } from './types';
 
 function day(ts: string): string {
@@ -56,6 +60,13 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
         <span style={{ width }} />
       </div>
 
+      {/* ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약** — 정본 `§8 :120` 의 카드 구성에서 **관련도 막대와
+          AI 근거 사이**다. **잠겨도 선다** (`P-13` — 이름·요약까지 노출).
+          비면 지어내지 않고 빈 표시를 쓴다(상세 기본 정보와 같은 규칙). */}
+      <p className="hit-summary" data-testid="hit-summary">
+        {orEmpty(row.summary)}
+      </p>
+
       <p className="hit-why" data-testid="search-rationale">
         {row.rationale}
       </p>
@@ -71,6 +82,14 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
         <span className={`lvl lvl-${row.processingLevel}`}>Lv{row.processingLevel}</span>
         {row.topic && <span className="chip chip--neutral">{row.topic}</span>}
         {/* 잠긴 행에서 「누구에게 요청할지」가 더 필요하다 (`Policy_데이터_찾기 §5`) */}
+        {/* ⭑ **⟨16차 해제 · `〈298〉`⟩ 기간.** ⚠ **잠긴 카드에는 두지 않는다** —
+            정본 `§8` 「잠긴 결과 카드 … 기간·원천·소유 메타 줄은 두지 않는다」.
+            서버가 값을 빼는 것이 아니라 **화면이 안 그리는 것**이다. */}
+        {!locked && (
+          <span className="span" data-testid="hit-period">
+            {formatPeriod(row.period)}
+          </span>
+        )}
         <span className="who">{row.uploader.name}</span>
         <span className="when">{day(row.lastModifiedAt)}</span>
         <span className="lin">{row.lineageState}</span>

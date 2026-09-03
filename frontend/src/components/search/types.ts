@@ -22,7 +22,13 @@ export const MAX_QUERY_LENGTH = 200;
  */
 export class SearchUnavailable extends Error {}
 
-export type SearchRequest = { query: string; limit?: number };
+/**
+ * ⭑ **⟨16차 해제 · `〈298〉`⟩ `verified` 가 실린다.** `Verified만 보기` 걸름은 **서버가**
+ * 진다 — 화면이 받은 쪽을 거르면 `limit` **한 쪽 안에서만** 걸러져 이어보기 뒤쪽의 승인
+ * 결과가 켜도 오지 않았다(`〈295〉`-㉲-ⓑ 가 적어 둔 한계).
+ * **생략은 「거르지 않는다」다** — `false` 를 굳이 싣지 않는다.
+ */
+export type SearchRequest = { query: string; limit?: number; verified?: boolean };
 
 /**
  * 결과를 채우는 곳. 실서버(`searchDatasets`) 하나뿐이다 —

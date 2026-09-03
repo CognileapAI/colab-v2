@@ -68,6 +68,12 @@
   margin: 10px 0 8px; overflow: hidden;
 }
 .search-page .relbar > span { display: block; height: 100%; background: var(--color-primary-600, #1f5eff); }
+/* 요약 — 카드 본문의 사실 한 줄이다. AI 근거(`.hit-why`)와 **색으로 갈린다** —
+   근거는 코랄 라벨을 단 AI 문장이고 이쪽은 사람이 적은 값이다 (공통 기반 E-00). */
+.search-page .hit-summary {
+  margin: 0 0 6px; font-size: var(--text-body-sm, 13px); line-height: 1.6;
+  color: var(--color-text, #1b1f24);
+}
 .search-page .hit-why { margin: 0 0 8px; font-size: var(--text-body-sm, 13px); line-height: 1.6; }
 .search-page .hit-meta {
   display: flex; gap: 10px; flex-wrap: wrap; align-items: center;

@@ -32,6 +32,10 @@ function hit(over: Partial<SearchResultRow> = {}): SearchResultRow {
     verified: false,
     accessState: '열림',
     bodyAccessible: true,
+    // ⭑ **⟨16차 해제 · `〈298〉`⟩ 두 칸이 늘었다** (`SearchResultRow` 의 두 번째 객체).
+    // 이 파일의 오라클(범위 줄 · 근거 한 줄 · 관련도 막대 · 0건 · 잠김 · 장애)은 그대로다.
+    summary: '한강 유역 지점 강수 관측 원자료',
+    period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
     relevanceBar: 1,
     rationale: '수자원순환연구실 안 128건에서 ‘강수’가 이름에 맞았다 — 기간·지역·품질은 이 검색이 확인하지 못했다.',
     ...over,
