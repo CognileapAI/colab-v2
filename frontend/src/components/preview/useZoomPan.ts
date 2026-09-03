@@ -234,7 +234,15 @@ export function useZoomPan(): ZoomPan {
     maxScale,
     measured,
     box: boxSize,
-    atLimit: measured && view.scale >= maxScale && (view.scale > 1 || blocked),
+    // ⭑ ⟨버그 8⟩ **한계는 들어간 뒤에만 오는 것이 아니다.** 종전 조건은 `view.scale > 1 ||
+    //   blocked` 를 요구해 **한 번이라도 확대했거나 눌러 본 뒤**에만 한계를 말했다. 그런데
+    //   실제 산출물은 폭 808~821 px 이고 상세 뷰포트는 ≈ 820 px 이라 `maxScale` 이 1 로
+    //   떨어진다 — 들어갈 자리가 애초에 없어 `view.scale` 이 1 을 넘을 수 없고, 그래서
+    //   **세 버튼이 무동작인데 화면은 한마디도 하지 않았다.**
+    //   한계 배율이 1 이면 **잰 그 순간이 곧 한계**다. 그 사실을 처음부터 세운다.
+    //   ⚠ **한계 배율의 계산은 여기서 손대지 않는다** — 「데이터가 가진 해상도까지만」
+    //   (조건 ⑷ · `PLAN-SoT §9 〈232〉`)은 정본 규칙이고 상한을 올리는 것은 정본 개정이다.
+    atLimit: measured && view.scale >= maxScale && (view.scale > 1 || blocked || maxScale <= 1),
     viewportRef: (n) => {
       el.current = n;
       setNode(n);

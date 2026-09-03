@@ -210,6 +210,54 @@ describe('§8 확대 조건 ⑷ — 데이터가 가진 해상도가 한계다',
   });
 });
 
+/**
+ * **버그 8 — 확대·축소·기본 배율로가 아무 일도 하지 않는다.**
+ *
+ * 위 블록이 green 이었던 것은 픽스처가 `measure(4096, 512)` 였기 때문이다 — **파이프라인이
+ * 만들지 않는 해상도**다. 산출물 PNG 의 긴 변은 항상 1024 이고 세로로 긴 그림은 폭이
+ * **808~821 px**(recon-B §3 실측표: D-04 = 808 · D-02/D-16 = 821)이며 상세 뷰포트 폭은
+ * **≈ 820 px** 다. 그래서 `maxScale = 808 / 820 → 1` 이고 세 버튼이 전부 무동작인데
+ * **화면은 아무 말도 하지 않는다.**
+ *
+ * ⚠ **한계 배율의 계산을 여기서 고치지 않는다** — 「확대는 데이터가 가진 해상도까지만」
+ * (정본 조건 ⑷ · `PLAN-SoT §9 〈232〉`)은 정본 규칙이고, 상한을 올릴지는 Ted 판정 사항이다.
+ * 이 시험이 요구하는 것은 **한계라는 사실을 처음부터 말하라**는 것 하나다.
+ */
+describe('§8 확대 조건 ⑷ — 확대할 것이 없으면 처음부터 그렇게 말한다 (버그 8)', () => {
+  it('실측 산출물(808 px)이 실측 뷰포트(820 px)에 놓이면 한계 배율이 1이다', async () => {
+    renderDetail(makeSource());
+    await screen.findByTestId('preview-map');
+    measure(808, 820);
+    expect(
+      Number(screen.getByTestId('preview-layers').getAttribute('data-zoom-max-scale')),
+    ).toBe(1);
+  });
+
+  it('첫 클릭 전에 「원본 해상도까지 봤어요」가 서 있다 — 눌러 보고 알게 하지 않는다', async () => {
+    renderDetail(makeSource());
+    await screen.findByTestId('preview-map');
+    measure(808, 820);
+    expect(screen.getByTestId('zoom-limit').textContent).toContain('원본 해상도까지 봤어요');
+  });
+
+  it('「확대」 버튼이 눌리지 않는 상태로 선다 — 눌러도 아무 일이 없는 버튼을 살려 두지 않는다', async () => {
+    renderDetail(makeSource());
+    await screen.findByTestId('preview-map');
+    measure(808, 820);
+    const 확대 = screen.getByRole('button', { name: '확대' });
+    expect(확대).toBeDisabled();
+    fireEvent.click(확대);
+    expect(scaleOf()).toBe(1);
+  });
+
+  it('확대할 수 있는 그림에서는 처음부터 한계를 말하지 않는다 — 회귀 자물쇠', async () => {
+    renderDetail(makeSource());
+    await drawnMap(); // 한계 배율 8
+    expect(screen.queryByTestId('zoom-limit')).toBeNull();
+    expect(screen.getByRole('button', { name: '확대' })).not.toBeDisabled();
+  });
+});
+
 describe('§8 확대 조건 ⑸ — 확대·이동은 모든 층에 함께 적용된다', () => {
   it('배율은 층마다가 아니라 **층 묶음 하나**에 걸린다', async () => {
     renderDetail(makeSource());

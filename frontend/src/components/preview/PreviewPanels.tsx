@@ -333,7 +333,11 @@ function ZoomControls(props: { zoom: ZoomPan }) {
   const { zoom } = props;
   return (
     <div className="pv-zoom" data-testid="preview-zoom">
-      <button type="button" onClick={zoom.zoomIn}>
+      {/* ⭑ ⟨버그 8⟩ **한계에 닿은 확대는 눌리지 않는다.** 종전에는 늘 눌리는 버튼이었고,
+          한계 배율이 1 인 산출물(실측 808~821 px)에서는 눌러도 아무 일이 없었다 —
+          「고장인가」와 「여기가 끝인가」를 화면이 가려 주지 않았다. 아래 한계 안내와
+          **같은 사실 하나**(`zoom.atLimit`)를 말한다. */}
+      <button type="button" onClick={zoom.zoomIn} disabled={zoom.atLimit} aria-disabled={zoom.atLimit}>
         확대
       </button>
       <button type="button" onClick={zoom.zoomOut}>
