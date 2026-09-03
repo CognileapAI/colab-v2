@@ -129,7 +129,11 @@ def create_project(response: Response, body: dict = Body(...),
     name = body.get("name")
     if type_ not in _TYPES:
         raise errors.bad_request(f"type 은 {list(_TYPES)} 중 하나다.")
-    if not isinstance(name, str) or not (1 <= len(name) <= 100):
+    # ⚠ **`strip` 한 길이를 본다** (`CODE-REVIEW-20260903` #12). 종전에는 생성만 `strip`
+    # 없이 길이를 봐서 공백뿐인 이름이 DB CHECK(`length(btrim(name)) > 0`)로 떨어져
+    # **500** 이 됐다. 수정 경로(`update_project`)는 이미 `strip` 한다 — **두 경로의 판정이
+    # 갈려 있던 것**이고, 갈린 판정은 한쪽만 고쳐지는 날이 온다.
+    if not isinstance(name, str) or not (1 <= len(name.strip()) <= 100):
         raise errors.bad_request("name 은 1~100자다.")
     start, end = _period(body.get("period"))
     # **이름 중복 차단** — `VAL-010`·`TC-E-004`·결정 2-6. 결정 #11 로 빠른 생성이

@@ -12,8 +12,11 @@
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError
 
 from ..kernel import errors
 from ..kernel import authn
@@ -29,6 +32,10 @@ from .routes import (access, catalog, identity, ingestion, insight, lineage, mem
                      not_implemented, preview, project, session)
 
 API_PREFIX = "/api/v1"
+
+#: 저장 규칙 위반의 **감시 표면**. 본문에서 뺀 사유는 여기로 간다 — 빼기만 하고 남기지
+#: 않으면 「값이 안 맞는다」만 남고 **무엇이 안 맞았는지 아무도 못 센다.**
+_integrity_log = logging.getLogger("colab_core.integrity")
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -99,5 +106,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return errors.error_response(
             errors.bad_request("요청 값이 규칙에 맞지 않는다.", {"errors": str(exc.errors())})
         )
+
+    # ── 입력 오류 · 저장 규칙 위반 (`CODE-REVIEW-20260903` #12) ──────────────
+    # 종전에는 핸들러가 위 둘뿐이라, 손검사를 빠뜨린 자리에서 **사용자의 오타가 500** 이
+    # 됐다. 500 은 「서버가 깨졌다」는 뜻이고 그 문장은 사람을 재시도하게 만든다 —
+    # 다시 보내도 같은 500 이다. 400·409 는 **누구 잘못인가**를 정확히 말한다.
+    #
+    # ⚠ 가드가 먼저다. 이 두 핸들러는 **가드가 놓친 것을 받는 그물**이지 가드의 대체가
+    # 아니다 — 그물만 두면 어느 자리가 검사를 안 하는지 아무도 모른다.
+    @app.exception_handler(errors.InputError)
+    async def _input_error(_request, exc: errors.InputError):
+        return errors.input_error_response(exc)
+
+    @app.exception_handler(IntegrityError)
+    async def _integrity_error(_request, exc: IntegrityError):
+        # **사유는 서버에만 남긴다.** 본문에 실으면 표·열·제약 이름이 화면까지 간다.
+        _integrity_log.warning("event=%s detail=%s", "db.integrity_error", str(exc.orig))
+        return errors.integrity_error_response()
 
     return app
