@@ -53,6 +53,10 @@ function makeSource(): DatasetPreviewSource {
     probeTile: vi.fn(async () => 'ok' as const),
     // 이미지 갈래 시험이라 사이드카를 묻지 않는다 (`〈238〉`)
     mapGeometry: vi.fn(async () => undefined),
+    // 값 조회는 이 시험의 관심 밖이다 — **자리는 채우되 값을 만들지 않는다**(`〈294〉`)
+    lookupValue: vi.fn(async () => {
+      throw new Error('이 시험은 값 조회를 부르지 않는다');
+    }),
     screenshot: vi.fn(async () => new Blob([new Uint8Array([1])], { type: 'image/png' })),
   };
 }

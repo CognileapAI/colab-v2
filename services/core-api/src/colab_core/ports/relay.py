@@ -34,6 +34,16 @@ class PreviewRenderPort(Protocol):
         core-api 는 그림을 해석하지 않는다."""
         ...
 
+    def lookup_value(self, *, lab_id: str, account_id: str,
+                     request: dict[str, Any]) -> dict[str, Any]:
+        """`lookupValue` 중계 (`〈294〉` · 15차 해제 · `V-2` 값 조회).
+
+        **값을 지어내지 않는다** — 못 닿으면 예외이고 라우트가 503 으로 낸다.
+        `available: false` 는 저쪽이 **읽어 보고 낸 사실**이지 못 물어봤을 때의 기본값이
+        아니다. 둘을 같은 모양으로 접으면 「없다」가 「모른다」를 덮는다.
+        """
+        ...
+
     def palettes(self, *, lab_id: str, account_id: str) -> dict[str, Any]:
         """`RenderStyle.palette` 값 집합 (`〈88〉` 묶음 4). **못 닿으면 예외다** —
         빈 목록은 「고를 것이 없다」는 답이지 「물어보지 못했다」가 아니다."""

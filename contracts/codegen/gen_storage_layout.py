@@ -147,6 +147,44 @@ MAP_TILE_KEY_FIELDS = {tile_fields}
 #: **빈 값이 아니다** — 「격자가 없다」와 「안 물어봤다」를 가른다.
 GRID_DIGEST_EMBEDDED = '내장'
 
+#: **변환 설정 — 키 재료 셋의 정본**(`layout.json` `contentKeys.지도 타일.conversionSettings`).
+#: 승격 이전에는 `pipeline-worker` 안에만 있었고 **굽는 쪽만 키를 지을 수 있었다.**
+#: 읽는 쪽(D7)이 같은 자리를 찾으려면 같은 값이어야 하므로 규약이 정본을 갖는다
+#: (`PLAN-SoT §9 〈294〉`). 사유 전문은 `conversionSettingsWhy`.
+MAP_TILE_CONVERSION_KIND = {tile_conversion_kind!r}
+
+#: `DR-12` 정본 분기 — **값이 아니라 표다.** `conversionKind` 로 골라 쓴다.
+MAP_TILE_OVERVIEW_RESAMPLING = {tile_overview_resampling}
+
+MAP_TILE_COMPRESSION = {tile_compression!r}
+
+
+def map_tile_grid_digest(grid_dir, used_reference_grid: bool) -> str:
+    """`gridDigest` 재료 하나 — **좌표를 준 것의 다이제스트.**
+
+    파일 안 좌표를 썼으면 명시값(`GRID_DIGEST_EMBEDDED`)이다. 빈 값으로 두면
+    「격자가 없다」와 「안 물어봤다」가 같은 키를 얻는다(`fieldsWhy`).
+
+    ⚠ **굽는 쪽과 읽는 쪽이 같은 함수를 부른다.** 같은 규칙을 두 곳에 적으면
+    갈라지고, 갈라진 순간 읽는 쪽은 자리를 영영 못 찾는다 — 그 실패는 에러가 아니라
+    「값 없음」으로 위장한다(`CLAUDE.md §3` 불변규칙 1 · `〈294〉`).
+    """
+    import hashlib as _hashlib
+
+    if not used_reference_grid or grid_dir is None:
+        return GRID_DIGEST_EMBEDDED
+    h = _hashlib.sha256()
+    for f in sorted(Path(grid_dir).iterdir()):
+        if not f.is_file():
+            continue
+        h.update(f.name.encode("utf-8"))
+        fh_digest = _hashlib.sha256()
+        with open(f, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                fh_digest.update(chunk)
+        h.update(fh_digest.hexdigest().encode("ascii"))
+    return h.hexdigest()
+
 
 def map_tile_content_key(**fields) -> str:
     """지도 타일 하나의 **내용 키** — 파이프라인이 실제로 가진 재료만으로 짓는다.
@@ -233,6 +271,12 @@ def render() -> str:
         tile_prefix=tile["prefix"],
         tile_version=tile["version"],
         tile_fields="(\n" + "".join(f"    {f!r},\n" for f in tile["fields"]) + ")",
+        tile_conversion_kind=tile["conversionSettings"]["conversionKind"],
+        tile_overview_resampling=(
+            "{\n" + "".join(
+                f"    {k!r}: {v!r},\n"
+                for k, v in tile["conversionSettings"]["overviewResampling"].items()) + "}"),
+        tile_compression=tile["conversionSettings"]["compression"],
         layout_doc=layout_doc,
         target_id_doc="  " + spec["targetId"],
         previews_root_doc="  " + spec["previewsRoot"],

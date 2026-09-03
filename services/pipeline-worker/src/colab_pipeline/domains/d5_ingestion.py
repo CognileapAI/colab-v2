@@ -37,6 +37,7 @@ from ..d5.formats import UNKNOWN
 TRIGGER_BACKEND_RERUN, TRIGGER_GRID_CHANGED, TRIGGER_FILE_ADDED = tuple(TYPE_BY_TRIGGER)
 from ..d5.pipeline import PipelineResult, run_file
 from ..d5.renderable import is_renderable
+from ..kernel import storage_layout
 from ..kernel.ids import new_ulid
 from ..ports.outbox import EventLedgerPort, UploadLedgerPort
 
@@ -93,7 +94,10 @@ class UploadWork:
     workdir: Path
     files: list[UploadFileWork]
     grid_dir: Path | None = None
-    kind: str = "continuous"      # 오버뷰 리샘플링 분기 (`DR-12`)
+    #: 오버뷰 리샘플링 분기 (`DR-12`). **기본값을 여기서 정하지 않는다** — 이 값이
+    #: 지도 타일 내용 키의 재료(`conversionKind`)라 읽는 쪽도 같은 값을 알아야 한다
+    #: (`〈294〉` · 규약 `contentKeys.지도 타일.conversionSettings.conversionKind`).
+    kind: str = storage_layout.MAP_TILE_CONVERSION_KIND
     #: 지도 타일이 놓일 **미리보기 산출물 루트**. 없으면 산출물은 임시 자리에만 떨어진다 —
     #: 그 상태는 「자리를 안 정한 것」이고 조용히 성공으로 세지 않는다(호출자가 선언한다).
     previews_root: Path | None = None

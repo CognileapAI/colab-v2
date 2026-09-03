@@ -54,6 +54,10 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
     probeTile: vi.fn(async () => 'ok' as const),
     // 이미지 갈래 시험이라 사이드카를 묻지 않는다 (`〈238〉`)
     mapGeometry: vi.fn(async () => undefined),
+    // 값 조회는 이 시험의 관심 밖이다 — **자리는 채우되 값을 만들지 않는다**(`〈294〉`)
+    lookupValue: vi.fn(async () => {
+      throw new Error('이 시험은 값 조회를 부르지 않는다');
+    }),
     screenshot: vi.fn(async () => new Blob([new Uint8Array([1, 2])], { type: 'image/png' })),
     ...over,
   };
@@ -188,7 +192,7 @@ describe('계약 — 중계 op `createPreviewScreenshot` 에 닿는다', () => {
         headers: { 'content-type': 'image/png' },
       });
     });
-    const blob = await apiDatasetPreviewSource().screenshot({
+    const blob = await apiDatasetPreviewSource('0000000000000000000000DSA1').screenshot({
       layers: [{ renderId: RENDER_ID, opacity: 1 }],
       viewport: { width: 512, height: 512, bounds: BOUNDS },
     });

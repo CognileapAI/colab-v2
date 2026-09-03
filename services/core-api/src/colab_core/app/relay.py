@@ -134,6 +134,21 @@ class HttpPreviewRelay:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
 
+    def lookup_value(self, *, lab_id: str, account_id: str,
+                     request: dict[str, Any]) -> dict[str, Any]:
+        """`lookupValue` 중계 (`〈294〉` · 15차 해제).
+
+        **없는 것도 200 이다** — `available: false` ＋ 사유가 몸통에 실려 온다. 그것을
+        여기서 값으로 바꾸거나 4xx 로 승격하지 않는다: 저쪽이 읽어 보고 낸 사실이다.
+        못 닿은 것만 `RelayUnavailable` 이고 라우트가 **503** 으로 낸다.
+        """
+        status, body = _request(f"{self._base}/value-lookups", method="POST",
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body=request)
+        if status != 200 or body is None:
+            raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
+        return body
+
     def screenshot(self, *, lab_id: str, account_id: str,
                    request: dict[str, Any]) -> tuple[int, bytes, str | None]:
         """`createScreenshot` 중계 (`〈231〉` · 11차 해제).

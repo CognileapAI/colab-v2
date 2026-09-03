@@ -145,7 +145,39 @@ export function ExpiredNotice(props: { message: string }) {
  * ⚠ **변환은 `pv-layers` 하나에 건다** — 층마다 따로 걸면 정본 조건 ⑸(모든 층에 함께)가 깨진다.
  * ⚠ **범례는 `pv-layers` 밖이다** — 조건 ⑵(확대해도 범례가 바뀌지 않는다)가 그 자리를 정한다.
  */
-export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; actions?: ReactNode }) {
+/**
+ * 화면의 한 점 → **지도 좌표**(WGS84). 값 조회가 서버에 보내는 그 값이다 (`〈294〉`).
+ *
+ * ⚠ **확대·이동을 빼먹으면 값이 조용히 틀린다.** 층 상자는
+ * `translate(x, y) scale(s)` · `transform-origin: 0 0` 으로 놓이므로, 화면 좌표를
+ * 먼저 그 변환의 역으로 되돌린 뒤에야 경계 안의 비율이 나온다. 배율만 무시해도
+ * 에러 없이 **다른 칸의 값**이 답으로 나가고, 그것이 연구 데이터에서 제일 나쁜 실패다.
+ */
+export function pointFromViewport(
+  offset: { x: number; y: number },
+  box: { width: number; height: number },
+  bounds: NonNullable<RenderResult['bounds']>,
+  zoom: { scale: number; x: number; y: number },
+): { lat: number; lon: number } | undefined {
+  if (!(box.width > 0) || !(box.height > 0) || !(zoom.scale > 0)) return undefined;
+  const fx = (offset.x - zoom.x) / zoom.scale / box.width;
+  const fy = (offset.y - zoom.y) / zoom.scale / box.height;
+  // **밖을 누르면 좌표를 지어내지 않는다.**
+  if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return undefined;
+  return {
+    lon: bounds.west + fx * (bounds.east - bounds.west),
+    lat: bounds.north - fy * (bounds.north - bounds.south),
+  };
+}
+
+export function PreviewMap(props: {
+  result: RenderResult;
+  zoom?: ZoomPan;
+  actions?: ReactNode;
+  /** 값 조회 (`〈294〉`). 주지 않으면 자리째 없다 — 좌표 없는 결과가 그 경우다. */
+  onPickPoint?: ((point: { lat: number; lon: number }) => void) | undefined;
+  valuePanel?: ReactNode;
+}) {
   const { result, zoom } = props;
   // **갈래가 둘이다**(계약 `oneOf`). 타일이면 조각을 세우고, 아니면 그림 한 장이다.
   // ⭑ ⟨2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도 화면이 타일 쪽이다.
@@ -166,6 +198,23 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
           className="pv-viewport"
           data-testid="preview-viewport"
           ref={zoom?.viewportRef}
+          {...(props.onPickPoint && result.bounds
+            ? {
+                onClick: (e: import('react').MouseEvent<HTMLDivElement>) => {
+                  // **상자는 뷰포트가 답한다** — `zoom.box` 는 같은 사각형을 재어 둔 값이고
+                  // 아직 못 잰 순간에도 이 경로가 서야 한다(못 재면 조회 자체가 없어진다).
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const p = pointFromViewport(
+                    { x: e.clientX - rect.left, y: e.clientY - rect.top },
+                    { width: rect.width, height: rect.height },
+                    result.bounds as NonNullable<RenderResult['bounds']>,
+                    zoom ?? { scale: 1, x: 0, y: 0 },
+                  );
+                  if (p) props.onPickPoint?.(p);
+                },
+                'data-value-lookup': 'true',
+              }
+            : {})}
           {...(zoom
             ? {
                 /* ⚠ `onWheel` 을 여기 두지 않는다 — React 의 휠 위임은 **passive** 라
@@ -213,6 +262,7 @@ export function PreviewMap(props: { result: RenderResult; zoom?: ZoomPan; action
         </div>
         {zoom ? <ZoomControls zoom={zoom} /> : null}
         {props.actions ?? null}
+        {props.valuePanel ?? null}
       </div>
       <dl className="pv-legend" aria-label="범례">
         {result.legend.classes.map((c) => (

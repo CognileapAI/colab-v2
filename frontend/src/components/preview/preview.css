@@ -245,3 +245,24 @@
   image-rendering: pixelated;
   pointer-events: none;
 }
+
+/* 값 조회 (`V-2` · `PLAN-SoT §9 〈294〉`). 지도 아래 한 줄 — 새 화면을 만들지 않는다. */
+.pv-value {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.pv-value-body {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+.pv-value-body > div {
+  display: contents;
+}
+.pv-value-body dt {
+  color: #6b7280;
+}
+.pv-value-body dd {
+  margin: 0;
+}
