@@ -47,7 +47,41 @@
 9. D5/D7 격자 탐색 알고리즘 통일(등록 수용 기준 변경 → 상품 판정).
 10. 효율(원본 전체 sha256 매 클릭 · 산출물 재사용 0 · `_compose` 전량 적재 · 5초 엔진 재생성 · 노드당 1쿼리).
 11. 발행 재시도 DLQ · 문서 절대경로 게이트 · 업로드 PreviewPanel 중복 제거.
+12. `upload.failed reason=내부 오류` 비율 경보 · pipeline-worker `print` → logging 통일 · `_produced` 색인 정리 · NOT_RENDERABLE 시각 불일치 전용 문구(정본).
 
-## 5. 실행 기록
+## 5. 실행 기록 (2026-09-03 실측)
 
-- 레인 결과·계수·병합·게이트 실측 — 회차 종료 시 이 절에 기재.
+### 5-1. 하네스 사고와 우회 없는 재기동
+- 손으로 만든 형제 워크트리 `lane-rc-a..e` 에서 서브에이전트 Bash·git 전부 거부(부모 세션의 워크트리 핀 상속). 레인 5개 편집 0 으로 정지.
+- 재기동 = `Agent(isolation:"worktree")` + 첫 명령 `git merge --ff-only lane-review-clean`(기준 `d4d11b5`). 손 워크트리·브랜치 삭제. 이후 레인 브랜치 이름은 `worktree-agent-<id>`.
+
+### 5-2. 레인 결과 (게이트 ② = 어드바이저 수용 검토 · 수정 회차 = 별도 에이전트가 레인 브랜치 위에 적용)
+
+| 레인 | 브랜치(＋수정) | 커밋 | 시험 계수 전 → 후 | 게이트 | ② 판정 |
+|---|---|---|---|---|---|
+| D | `worktree-agent-a160bc4c840f9061d` | 3 | pipeline `not e2e and not dbint` 200 → 225 · dbint 15 → 20(일회용 PG) · ai 88 → 94 | stage2-markers green | accept(후속 2건 → F) |
+| C | `…a9df4b7601bb30d66` ＋ `…a122ec91d6f0834c0` | 6 ＋ 3 | viz `not e2e and not perf` 199 → 250 → 259 | import-boundary·banned-import green · render-latency·e2e-format-coverage red(준비, 원천 마운트 부재) | accept-with-fixes 3건 적용 |
+| B | `…ac72b799fc10afb59` ＋ `…a5a9e4423c858ed14` | 8 ＋ 3 | core-api 전체 553P/5F → 614P/5F(5F = e2e 원천 부재, 기존) · `not e2e` 613 → 620 | import-boundary·banned-import·ai-no-lineage-write·db-boundary green | accept-with-fixes 2건 적용 |
+| E | `…a146c87cfdffbbbf2` ＋ `…a717df09dcc28689b` | 4 ＋ 2 | vitest 32파일/520 → 35/563 · tsc 0 | frontend-typecheck·frontend-test green | accept-with-fixes 2건 적용 |
+| A | `…a26a95673bf502c9e` | 6 | CI 에 실리는 서비스 pytest 케이스 69 → 1070 · selftest 선언 14/실행 14 → 선언 19/실행 17/명시 면제 2 | service-tests ×4 green · service-tests-selftest 9케이스 · db-boundary green | accept-with-fixes 1건 → F |
+| F(후속) | `…a992b5e50a78fd047` | 5 | pipeline 225 → 231 · viz 259 → 269 · ai(`not dictdb`) 125 → 130 | selftest 집합 동일 · stage2-markers green | D·B·A 후속 6항목 |
+| G2 | `frontend-fixture-reach` 게이트 등재 — 결과는 §5-6 | | | | |
+
+### 5-3. 병합 (오케스트레이터 직렬, 전부 `--no-ff`, 텍스트 충돌 0)
+D `11462b5` → C `660f8fe` → E `80296b6` → B `21cfb1f` → A `ad2fe06` → F `3deba47` → `main` `1a26372`(main 측 10커밋 = 문서·대장만, 겹치는 파일 0).
+**main 병합 대상 = `lane-review-clean` 하나** — 레인 브랜치 전부와 수정 회차를 포함한다. 대장 번호 미발급. draft PR #2 = GitHub Actions 실행 확인용.
+
+### 5-4. 통합 트리 `1a26372` 실측 (오케스트레이터 재실행)
+- pipeline-worker 231 passed · viz-render 269 · ai-service 130(`not dictdb`) · core-api 620 passed / 6 deselected(`service-tests-core-api` 게이트, 일회용 PG, 86초) · tsc 0 · vitest 35파일/563.
+- `./gates/run.sh all -j 1`(게이트 입력 env 주입) — **green 47 · red(판정) 0 · red(준비) 1**(`rls-effect-selftest`, 일회용 postgres 준비 대기). 단독 재실행(`COLAB_GATE_JOBS=1`) **green**. 게이트 총수 43 → 48(service-tests 4 ＋ selftest 1). `contract-breaking` green.
+- 병합 지도 노트(`dev-package/notes/REFACTOR-MERGE-MAP-20260903.md` §3) ⓐ 에 대한 답 — core-api relay 5호출 전부 `_scope_headers`(`relay.py` 152·168·184·200·207, 시험 5파일) · 프론트는 viz 를 `tileUrlTemplate`(서명) 로만 접근 · 〈304〉 경로는 core-api op → `values.py` 경계 요구 유지. ⓒ 501 계수 23 → 4 는 대장 한 줄 정정. ⓓ 는 G2 로 등재.
+
+### 5-5. Ted 판정 대기 (코드로 결정하지 않은 것)
+1. 계약 델타 — `fe-core.yaml` `createPreviewRender`·`listPalettes`·`lookupDatasetValue` 에 410/413/415/422 선언(코드는 이미 통과, 되돌릴 자리 `relay.py:PASS_THROUGH_STATUSES`) · `core-viz.yaml` 경계 헤더 선언 · `getRender` 400 · `ScreenshotRequest.layers maxItems 8`.
+2. 로그인 제한 클라이언트 버킷 = `X-Forwarded-For` **마지막 홉**(nginx 관측값). nginx 앞에 LB 가 생기면 단일 버킷(= 기준선 동작). 배포측 후속 = nginx 가 `X-Real-IP` 세팅.
+3. 캐시 키에 시각·격자 digest 추가 → 배포 뒤 기존 산출물 미스 → 재굽기 ＋ 소유 네 등급 재실측(병합 지도 ⓑ).
+4. `artifact-ownership.toml tolerate=true` 기한 · compose 비밀값 `_FILE` 전환 · `expires_at` 없는 등록 데이터셋 렌더 수명 · DLQ.
+5. 미확인 — GitHub Actions 실제 실행(draft PR #2 로 확인) · e2e/perf/dbint/dictdb 미실행 집합(원천 마운트·DB) · 업로드 스트리밍 RSS·`/healthz` 실측 · 각 레인 기록의 `[미확인]` 절.
+
+### 5-6. G2 결과
+- 기재 예정.
