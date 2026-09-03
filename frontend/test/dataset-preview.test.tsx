@@ -239,6 +239,53 @@ describe('§8 미리보기를 그릴 수 없을 때 — 실패는 종류대로 �
   });
 });
 
+/**
+ * **버그 14 — 미리보기 내용이 무엇의 것인지 알 수 없다.**
+ *
+ * recon-B §5 근거: Co-Kriging 파생 화면인데 범례가 DEM 값(2~521.1)과 소수 4자리까지
+ * 일치했다 — 실제로는 계보 「이 데이터」줄이 스크롤에 밀려 보이지 않는 상태에서
+ * 「미리보기」 구역 머리에 데이터셋 이름이 없어 **어느 데이터의 미리보기인지 화면
+ * 스스로 말하지 못했다.** 범례도 `min ~ max (+unit)` 뿐이라 변수가 NDVI인지 고도인지
+ * 화면이 말하지 않는다.
+ *
+ * 최소 수정 = **이미 상세가 들고 있는 값**(`detail.detail.name`·`fileName`·
+ * `legend.variable`)을 화면에 낸다. 새 API·계약 변경 없음.
+ */
+describe('§8 — 미리보기가 어느 데이터의 것인지 스스로 말한다 (버그 14)', () => {
+  it('미리보기 구역 머리에 데이터셋 이름이 선다', async () => {
+    renderDetail(makeSource());
+    const section = await screen.findByTestId('dataset-preview');
+    expect(within(section).getByRole('heading', { level: 2 }).textContent).toContain(
+      '낙동강 유역 강우 (2025)',
+    );
+  });
+
+  it('파일명도 함께 보인다 — 상세가 이미 아는 값이다', async () => {
+    renderDetail(makeSource());
+    await screen.findByTestId('dataset-preview');
+    expect(screen.getByTestId('preview-target-file').textContent).toContain(
+      'nakdong_precip_2025_Lv2.nc',
+    );
+  });
+
+  it('범례가 변수 이름을 함께 낸다 — 값 범위만으로는 무엇을 그렸는지 모른다', async () => {
+    const source = makeSource({
+      create: vi.fn(async () => ({
+        ...DONE,
+        result: { ...DONE.result, legend: { ...LEGEND, variable: '토양수분지수' } },
+      })),
+      get: vi.fn(async () => ({
+        ...DONE,
+        result: { ...DONE.result, legend: { ...LEGEND, variable: '토양수분지수' } },
+      })),
+    });
+    renderDetail(source);
+    const map = await screen.findByTestId('preview-map');
+    const legend = within(map).getByLabelText('범례');
+    expect(legend.textContent).toContain('토양수분지수');
+  });
+});
+
 describe('§1.3-5 · §3.2 · §6 — 보기는 전원, 편집은 권한자다', () => {
   it('보기 권한만이면 미리보기 편집 컨트롤이 화면에 **없다**', async () => {
     renderDetail(makeSource());

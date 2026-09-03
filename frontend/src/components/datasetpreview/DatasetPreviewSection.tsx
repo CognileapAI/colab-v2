@@ -63,12 +63,31 @@ export function DatasetPreviewSection(props: {
   datasetId: string;
   source?: DatasetPreviewSource | undefined;
   pollMs?: number | undefined;
+  /**
+   * ⭑ ⟨버그 14⟩ **이 구역이 어느 데이터의 것인지 스스로 말한다.** 계보 줄이 제목처럼
+   * 읽혀 스크롤 위치에 따라 무엇을 보고 있는지 알 수 없던 결함(recon-B §5)의 최소 수정 —
+   * 상세가 **이미 들고 있는 값**(`detail.detail.name`·`fileName`)을 머리에 낸다.
+   * 새 API·계약을 만들지 않는다.
+   */
+  datasetName?: string | undefined;
+  fileName?: string | null | undefined;
+  /**
+   * ⭑ ⟨버그 13 · Ted 판정⟩ 「상세에서 원본 픽셀 크기를 알 수 있게 해 달라」.
+   * 상세가 **이미 읽어 온** `basicInfo.grid`(격자 간격/해상도) 하나만 받는다 — 원본 배열
+   * 크기(폭×높이)는 렌더가 완료돼야 사이드카에서 나오므로 `StartedPreview` 가 스스로 잰다.
+   */
+  gridResolution?: string | null | undefined;
 }) {
   const source = useMemo(
     () => props.source ?? apiDatasetPreviewSource(props.datasetId),
     [props.source, props.datasetId],
   );
   const [start, setStart] = useState<StartState>({ phase: '시작하는 중' });
+  // 렌더가 완료된 뒤 사이드카가 알려주는 원본 배열 크기. 그때까지 · 못 읽으면 `undefined` —
+  // 확대 한계(`useZoomPan`)가 이미 같은 사이드카를 쓰는 것과 같은 규칙이다(조건 ⑷).
+  const [nativeSize, setNativeSize] = useState<{ width: number; height: number } | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     if (!props.datasetId) return;
@@ -131,7 +150,19 @@ export function DatasetPreviewSection(props: {
 
   return (
     <section className="dt-preview" data-testid="dataset-preview" aria-label="미리보기">
-      <h2 className="pv-h2">미리보기</h2>
+      <h2 className="pv-h2">
+        미리보기{props.datasetName ? ` — ${props.datasetName}` : ''}
+      </h2>
+      {props.fileName ? (
+        <p className="pv-muted" data-testid="preview-target-file">
+          {props.fileName}
+        </p>
+      ) : null}
+      {formatSourceGrid(props.gridResolution, nativeSize) ? (
+        <p className="pv-muted" data-testid="preview-source-grid">
+          {formatSourceGrid(props.gridResolution, nativeSize)}
+        </p>
+      ) : null}
 
       {start.phase === '시작하는 중' ? <RenderStageNotice /> : null}
 
@@ -153,10 +184,26 @@ export function DatasetPreviewSection(props: {
           datasetSource={source}
           renderId={start.renderId}
           pollMs={props.pollMs ?? 1000}
+          onNativeSize={setNativeSize}
         />
       ) : null}
     </section>
   );
+}
+
+/**
+ * ⭑ ⟨버그 13 · Ted 판정⟩ 격자 간격/해상도와 원본 배열 크기를 한 캡션으로 잇는다.
+ * **둘 다 선택 값이다** — 어느 한쪽이 없으면 그 조각만 뺀다. 둘 다 없으면 `undefined`
+ * 를 돌려주고 호출부가 자리째 뺀다(없는 값을 지어내지 않는다).
+ */
+function formatSourceGrid(
+  grid: string | null | undefined,
+  size: { width: number; height: number } | undefined,
+): string | undefined {
+  const parts: string[] = [];
+  if (grid) parts.push(`격자 ${grid}`);
+  if (size) parts.push(`${size.width} × ${size.height}`);
+  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 /** 정본 §8 「그리는 서버에 연결 못 함」 자리. 그릴 수 없는 것과 쓸 수 없는 것은 다르다. */
@@ -174,6 +221,8 @@ function StartedPreview(props: {
   datasetSource: DatasetPreviewSource;
   renderId: string;
   pollMs: number;
+  /** ⭑ ⟨버그 13⟩ 사이드카가 읽어 준 원본 배열 크기를 머리 캡션(부모)에 올려 준다. */
+  onNativeSize?: ((size: { width: number; height: number }) => void) | undefined;
 }) {
   const { state } = usePreviewRender({
     source: props.source,
@@ -192,18 +241,23 @@ function StartedPreview(props: {
   const sidecarUrl = done?.tileUrlTemplate ? done.sidecarUrl : undefined;
   const { datasetSource } = props;
   const { onNativeWidth } = zoom;
+  const { onNativeSize } = props;
   useEffect(() => {
     if (!sidecarUrl) return;
     let alive = true;
     void (async () => {
       const geom = await datasetSource.mapGeometry(sidecarUrl);
       // **못 읽으면 아무것도 하지 않는다** — 한계를 지어내지 않는다.
-      if (alive && geom) onNativeWidth(geom.width);
+      if (alive && geom) {
+        onNativeWidth(geom.width);
+        // ⭑ ⟨버그 13⟩ 같은 사이드카 응답의 `height` 도 마저 써 준다 — 새 왕복이 아니다.
+        onNativeSize?.(geom);
+      }
     })();
     return () => {
       alive = false;
     };
-  }, [datasetSource, sidecarUrl, onNativeWidth]);
+  }, [datasetSource, sidecarUrl, onNativeWidth, onNativeSize]);
 
   if (state.phase === '그리는 중')
     return state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />;

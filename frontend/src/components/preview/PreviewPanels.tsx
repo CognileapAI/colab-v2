@@ -265,6 +265,15 @@ export function PreviewMap(props: {
         {props.valuePanel ?? null}
       </div>
       <dl className="pv-legend" aria-label="범례">
+        {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
+            화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
+            돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
+        {result.legend.variable ? (
+          <div className="pv-legend-row" data-testid="legend-variable">
+            <dt>변수</dt>
+            <dd>{result.legend.variable}</dd>
+          </div>
+        ) : null}
         {result.legend.classes.map((c) => (
           <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
             <dt>
