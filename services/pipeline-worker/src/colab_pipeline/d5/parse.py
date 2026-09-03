@@ -22,6 +22,12 @@ from .internal_grid import describe_internal_grid
 _COORD_VAR_NAMES = {"lat", "lon", "latitude", "longitude", "x", "y", "time",
                     "gk2a_imager_projection", "crs", "spatial_ref"}
 
+#: NetCDF **차원 이름 → 축 역할**. 격자는 `(rows, cols) = (위도 차원, 경도 차원)` 이고
+#: 그 순서는 파일이 차원을 어떤 순서로 선언했든 바뀌지 않는다. 두 목록의 합집합은
+#: 예전 `spatial` 목록과 같다 — 값 집합을 넓힌 것이 아니라 **역할로 갈랐을 뿐**이다.
+_LAT_DIM_NAMES = ("y", "lat", "latitude", "rows", "ydim")
+_LON_DIM_NAMES = ("x", "lon", "longitude", "cols", "xdim")
+
 
 @dataclass
 class AutoMetadata:
@@ -52,11 +58,16 @@ def _parse_netcdf(path: Path, meta: AutoMetadata) -> None:
             meta.crs = "WGS84 (파일 내 좌표 변수)"
             meta.crs_embedded = True
         dims = {d: len(ds.dimensions[d]) for d in ds.dimensions}
-        spatial = [n for n in dims if n.lower() in ("y", "x", "lat", "lon",
-                                                    "latitude", "longitude",
-                                                    "rows", "cols", "ydim", "xdim")]
-        if len(spatial) >= 2:
-            meta.grid = (dims[spatial[0]], dims[spatial[1]])
+        # ⚠ **차원 선언 순서를 격자 순서로 읽지 않는다** (코드리뷰 20260903 #13).
+        #    예전에는 「공간 차원 목록의 앞 두 개」를 그대로 `(rows, cols)` 로 썼고,
+        #    그래서 경도 차원을 먼저 선언한 파일이 `(nx, ny)` 로 전치됐다. 전치되면
+        #    ① `pipeline.run_file` 의 `expect_shape` 대조가 어긋나 **맞는 격자가 있어도**
+        #    「좌표/격자 없음」이 되고, ② 사람이 보는 `grid_text` 도 뒤집힌다.
+        #    **축 역할로 읽는다** — 형제 핸들러 셋(GeoTIFF·HDF4·HSR)이 전부 그렇게 한다.
+        lat_dim = next((n for n in dims if n.lower() in _LAT_DIM_NAMES), None)
+        lon_dim = next((n for n in dims if n.lower() in _LON_DIM_NAMES), None)
+        if lat_dim is not None and lon_dim is not None:
+            meta.grid = (dims[lat_dim], dims[lon_dim])
         elif meta.variables:
             shp = ds.variables[meta.variables[0]].shape
             if len(shp) >= 2:

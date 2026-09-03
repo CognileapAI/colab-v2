@@ -16,8 +16,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from ..d5.axis import REASON_AXIS_UNDECIDED, detect_axes_for_upload
+from ..d5.axis import (
+    REASON_AXIS_UNDECIDED,
+    AxisUndeterminedError,
+    detect_axes_for_upload,
+)
+from ..d5.cog import CogConversionError
 from ..d5.detect import detect_format
+from ..d5.grid import GridUnavailableError
+from ..d5.hsr import HsrParseError
+from ..d5.parse import ParseError
 from ..d5.events import (
     STAGE_ORDER,
     TYPE_BY_TRIGGER,
@@ -64,6 +72,21 @@ _FAILURE_MAP: list[tuple[str, str, str, str]] = [
     ("좌표/격자 없음", "file.crs-normalized", "좌표계 변환 실패", "재시도 가능"),
     ("COG 변환 실패", "preview.cog-built", "미리보기 준비 실패", "재시도 가능"),  # 죽은 분기 — stage 2
 ]
+
+
+#: **파일 내용이 이상한 것** — 배관이 깨진 것이 아니다 (코드리뷰 20260903 #4).
+#: 이 갈래가 `process_upload` 를 뚫고 나오면 `upload.failed` 로 적고 틱은 계속 돈다.
+#: 여기 **없는 것**이 규칙의 절반이다 — `OSError`(원장·디스크) · SQLAlchemy 예외 ·
+#: `BaseException`(종료 신호)은 그대로 던진다. 삼키면 유실이 조용해진다.
+DATA_ERRORS: tuple[type[BaseException], ...] = (
+    AxisUndeterminedError,      # 축 판별
+    GridUnavailableError,       # 기준 격자
+    HsrParseError,              # HSR 판독
+    ParseError,                 # 헤더 파싱
+    CogConversionError,         # COG 재배치
+    ValueError,                 # numpy·struct 가 형상·값에 내는 것
+    IndexError,                 # 같은 갈래 — 리뷰가 실측한 탈출구가 이것이었다
+)
 
 
 def _classify_failure(messages: list[str]) -> tuple[str, str, str]:
@@ -160,6 +183,25 @@ class IngestionService:
             failed_at=stage, failure_class=klass, reason=reason,
             will_retry=(klass == "재시도 가능"), detail=detail))
         return res
+
+    def record_data_failure(self, work: UploadWork, exc: BaseException) -> ProcessResult:
+        """`process_upload` 를 **뚫고 나온** 데이터 오류를 `upload.failed` 로 적는다.
+
+        ⭑ **왜 필요한가** (코드리뷰 20260903 #4). `drive_uploads` 의 산문은 「예외가 나는
+        것은 배관이 깨진 경우뿐」이라고 적어 뒀는데, D5 모듈의 데이터 오류에 보호가 없어
+        그 예외가 `_lab_pass` 의 rollback → `serve()` 종료까지 올라갔다. 롤백은 같은 틱의
+        **다른 업로드·릴레이·reaper 까지** 되돌리고, `ready=false` 가 남아 `pending_uploads`
+        가 같은 건을 다시 먼저 집는다 — 재기동마다 같은 자리에서 죽는 크래시 루프다.
+
+        **새 어휘를 만들지 않는다.** 사유는 `_classify_failure` 의 기존 폴백과 같은
+        `내부 오류`·`영구` 이고, 예외의 종류·문구는 `detail`(운영·로그용 한 줄)에만 싣는다.
+        ⚠ 격자·좌표 실패를 `좌표계 변환 실패`·`재시도 가능` 으로 세분하지 **않는다** —
+        정상 경로(`run_file` → `_classify_failure`)가 이미 그 분류를 하고, 여기까지 온 것은
+        **예상하지 못한 갈래**다. 그 갈래에 재시도를 약속하면 근거 없는 약속이 된다.
+        """
+        res = ProcessResult()
+        return self._fail(work, res, stage="upload.failed", reason="내부 오류",
+                          klass="영구", detail=f"{type(exc).__name__}: {exc}")
 
     # ── 본 흐름 ─────────────────────────────────────────────────────────────
     def process_upload(self, work: UploadWork, *, stage1: bool = False) -> ProcessResult:
@@ -485,6 +527,24 @@ class SqlLedger:
              WHERE id = :id
         """), {"id": event_id})
 
+    def record_delivery_failure(self, event_id: str) -> None:
+        """전달을 시도했으나 못 보냈다 — **횟수만 올린다.**
+
+        `published_at` 은 건드리지 않는다(at-least-once: 못 보낸 것을 보냈다고 적으면
+        조용히 유실된다). 다음 바퀴의 `unpublished()` 가 `attempt > 1` 로 `redelivery`
+        를 세우므로, 봉투가 스스로 재전달이라고 말하게 된다.
+
+        ⚠ **DLQ 는 없다** — `max_attempts` 를 넘겨도 여기서 멈추지 않고 `dead_lettered`
+        도 그대로다. 계약(`envelope.json#Delivery`)이 적은 「상한을 넘으면 DLQ 로
+        보낸다」는 아직 배선이 없다(유보 — 다음 회차 작업항목).
+        """
+        from sqlalchemy import text
+        self._s.execute(text("""
+            UPDATE d5_pipeline_event
+               SET attempt = attempt + 1
+             WHERE id = :id AND published_at IS NULL
+        """), {"id": event_id})
+
     # ── UploadLedgerPort ───────────────────────────────────────────────────
     def load_upload(self, upload_id: str) -> dict | None:
         from sqlalchemy import text
@@ -616,7 +676,18 @@ def relay_unpublished(ledger, *, publish: Callable[[dict], None], limit: int = 1
     """
     sent = 0
     for env in ledger.unpublished(limit=limit):
-        publish(env)
+        try:
+            publish(env)
+        except Exception as e:                 # noqa: BLE001 — 브로커·스풀은 배관이다
+            # ⭑ **재전달이라고 말하게 한다** (코드리뷰 20260903 부록). 예전에는 예외가
+            #   그대로 올라가 `_lab_pass` 가 **그 바퀴의 처리·reaper 까지 롤백**했고,
+            #   `attempt` 는 영영 1 이라 재전달이 첫 전달의 얼굴로 나갔다 —
+            #   `delivery` 블록이 존재하는 이유(소비자가 산술 없이 분기한다)를 어긴다.
+            #   전달 횟수를 **같은 트랜잭션에** 적고 다음 봉투로 간다.
+            ledger.record_delivery_failure(env["eventId"])
+            print(f"발행 실패 — {env['type']} {env['eventId']}: {type(e).__name__}: {e}",
+                  flush=True)
+            continue
         ledger.mark_published(env["eventId"])
         sent += 1
     return sent

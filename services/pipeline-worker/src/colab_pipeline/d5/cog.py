@@ -71,7 +71,12 @@ def regrid_curvilinear_nearest(
     ny, nx = data.shape
     lat_min, lat_max = float(np.nanmin(lat)), float(np.nanmax(lat))
     lon_min, lon_max = float(np.nanmin(lon)), float(np.nanmax(lon))
-    if not (np.isfinite(lat_min) and np.isfinite(lon_min)) or lat_min == lat_max:
+    # ⚠ **네 값을 다 본다** (코드리뷰 20260903 #13). 예전에는 최소 둘과 `lat_min == lat_max`
+    #    만 봐서, 경도가 한 값뿐인 격자(`lon_step = 0`)가 0 나눗셈으로 전부 NaN 인덱스가
+    #    되고 아래 `.astype("i8")` 에서 `INT64_MIN` → `IndexError` 로 터졌다.
+    #    쌍둥이인 D7 `raster.py` 는 이미 네 값을 본다 — 거절 기준을 맞춘다.
+    if not np.isfinite([lat_min, lat_max, lon_min, lon_max]).all() \
+            or lat_min == lat_max or lon_min == lon_max:
         raise CogConversionError("격자 좌표 범위가 퇴화했다 — 재배치 불가")
 
     out = np.full((ny, nx), np.nan, dtype="f4")
@@ -83,7 +88,11 @@ def regrid_curvilinear_nearest(
         d = np.asarray(data[r0:r0 + _CHUNK_ROWS], dtype="f4")
         rows = np.clip(np.rint((lat_max - la) / lat_step), 0, ny - 1).astype("i8")
         cols = np.clip(np.rint((lo - lon_min) / lon_step), 0, nx - 1).astype("i8")
-        valid = np.isfinite(d)
+        # ⚠ **좌표의 결측도 함께 거른다.** 값만 보면(`np.isfinite(d)`) 좌표가 NaN 인 셀의
+        #    인덱스가 `np.rint(nan) → np.clip → .astype("i8")` 로 `INT64_MIN` 이 되고
+        #    아래 대입이 `IndexError` 로 터진다 — 사용자에게는 「COG 변환 실패」로만
+        #    보였다(코드리뷰 20260903 #13). 좌표를 모르는 값은 **놓지 않는다**.
+        valid = np.isfinite(d) & np.isfinite(la) & np.isfinite(lo)
         out[rows[valid], cols[valid]] = d[valid]
     return out, (lon_min, lat_min, lon_max, lat_max)
 

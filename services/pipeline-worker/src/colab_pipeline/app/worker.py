@@ -38,6 +38,7 @@ from pathlib import Path
 
 from ..d5.events import PREVIEW_STALE_TYPES
 from ..domains.d5_ingestion import (
+    DATA_ERRORS,
     IngestionService,
     SqlLedger,
     UploadFileWork,
@@ -209,6 +210,13 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
     **한 건이 실패해도 나머지를 멈추지 않는다** — `process_upload` 는 실패를 예외가 아니라
     `upload.failed` 로 표현하고, 예외가 나는 것은 배관이 깨진 경우뿐이다. 그런 건은 이
     바퀴에서 건너뛰고 다음 바퀴가 다시 집는다(`ready` 가 아직 false 라 집합에 남아 있다).
+
+    ⭑ **그 계약을 코드가 지키게 한다** (코드리뷰 20260903 #4). 위 문장은 산문으로만
+    있었고, D5 모듈이 던지는 데이터 오류(`DATA_ERRORS`)에는 보호가 없었다. 그래서 파일
+    하나의 형상이 `_lab_pass` 의 rollback → `serve()` 종료 → 같은 건 재선택으로 이어져
+    **전 연구실이 정체**했다. 이제 데이터 오류는 여기서 `upload.failed` 로 바뀌어 원장에
+    적히고(같은 트랜잭션의 릴레이가 같은 바퀴에 발행한다) 루프는 다음 건으로 간다.
+    **배관 고장(DB·IO)은 그대로 올라간다** — 삼키면 유실이 조용해진다.
     """
     service = service or IngestionService(ledger)
     done: list[str] = []
@@ -233,11 +241,19 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
         if not files:
             # 접수 이벤트가 파일을 안 실었다 — 지어내지 않는다. 다음 바퀴가 다시 본다.
             continue
-        service.process_upload(UploadWork(
+        work = UploadWork(
             upload_id=upload_id, lab_id=row["lab_id"],
             actor_account_id=row["uploader_account_id"],
             workdir=workdir / upload_id, files=files,
-            previews_root=previews_root), stage1=stage1)
+            previews_root=previews_root)
+        try:
+            service.process_upload(work, stage1=stage1)
+        except DATA_ERRORS as e:
+            # **데이터 오류는 결과지 사고가 아니다.** 실패를 적고(같은 트랜잭션) 다음 건으로
+            # 간다 — 롤백하지 않으므로 이 바퀴의 다른 업로드가 함께 되돌아가지 않고,
+            # `failed_at` 이 서므로 `pending_uploads` 가 같은 건을 다시 집지 않는다.
+            print(f"upload.failed — {upload_id}: {type(e).__name__}: {e}", flush=True)
+            service.record_data_failure(work, e)
         done.append(upload_id)
     return done
 
@@ -374,6 +390,18 @@ def run_once(*, publish=None) -> tuple[list[str], int, list[str]]:
 
 
 def serve(interval_seconds: float = 5.0) -> None:  # pragma: no cover - 배관
+    """**여기에 예외 보호를 두지 않는다** — 그것이 결정이다 (코드리뷰 20260903 #4 검토).
+
+    「로그를 남기고 뒤로 물러서는」 보호를 붙이면 루프가 죽어도 프로세스는 살고,
+    헬스 서버는 **데몬 스레드**라 계속 200 을 낸다 — `main()` 이 문장으로 금지한
+    「조용히 멈춘 워커가 healthy 로 보이는 상태」가 바로 그것이다. 그래서 배관 고장은
+    **그대로 올라가 프로세스를 죽이고** 재기동 정책이 집는다.
+
+    크래시 루프의 원인은 보호의 부재가 아니라 **데이터 오류가 배관 고장의 자리로
+    올라오던 것**이었고, 그 자리는 `drive_uploads` 에서 막았다. 보호를 여기 붙이려면
+    헬스가 「루프가 죽었다」를 말할 수 있어야 한다 — `health.py` 를 함께 고치는 일이라
+    이 회차 밖으로 둔다.
+    """
     while True:
         run_once()
         time.sleep(interval_seconds)
