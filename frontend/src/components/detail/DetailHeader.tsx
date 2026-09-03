@@ -6,12 +6,36 @@ import { VerificationAction } from '../approval/VerificationAction';
 import type { ApprovalSource } from '../approval/types';
 import type { DatasetDetail } from './types';
 
+/**
+ * ⭑ **⟨버그 15 · A안⟩ 설명문의 전각 슬래시 `／` 는 **표시 단계에서만** 줄로 나눈다.**
+ *
+ * 그 `／` 는 시드 `summary` 12건 42개에 사람이 손으로 적은 **원천 문서 문단의 이음매**다
+ * (`infra/staging/manifest-s2.json` · 원문 `sessions/S2b-DATASET-DESCRIPTIONS.md` · 2026-08-26 Ted 승인).
+ * **저장·검색·계약은 손대지 않는다** — 재시드는 운영 접촉이고 승인문을 다시 열게 된다.
+ * 목록·검색 카드(`.hit-summary`)도 종전 한 줄 그대로다. 나누는 곳은 상세 헤더 하나뿐이다.
+ *
+ * `／` 가 없으면 조각이 1개라 **종전과 완전히 같은 한 줄**로 선다 — 사용자가 넣는 설명이 그쪽이다
+ * (`RegisterArea` 는 300자 한 줄 입력이라 `／` 관례가 없다).
+ *
+ * ⚠ 정본 `Policy_데이터셋_상세 §8` 은 이 자리를 「③ 한 줄 요약」이라 부른다. 여러 줄로 펼치는 것은
+ * **Ted 최종 확인 대기**이고, 되돌리려면 이 커밋 하나를 되돌리면 된다.
+ */
+const SUMMARY_SEPARATOR = '／';
+
+function summarySegments(summary: string): string[] {
+  return summary
+    .split(SUMMARY_SEPARATOR)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
 export function DetailHeader(props: {
   detail: DatasetDetail;
   approvalSource: ApprovalSource;
   onChanged?: (() => void) | undefined;
 }) {
   const d = props.detail;
+  const segments = d.summary ? summarySegments(d.summary) : [];
   return (
     <div className="dt-header" data-testid="detail-header">
       <div className="dh-main">
@@ -23,7 +47,20 @@ export function DetailHeader(props: {
         ) : null}
         {d.summary ? (
           <div className="dh-sum" data-testid="dh-sum">
-            {d.summary}
+            {segments.length > 1 ? (
+              <>
+                <p className="dh-sum-lead" data-testid="dh-sum-lead">
+                  {segments[0]}
+                </p>
+                <ul className="dh-sum-list" data-testid="dh-sum-list">
+                  {segments.slice(1).map((seg) => (
+                    <li key={seg}>{seg}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              d.summary
+            )}
           </div>
         ) : null}
         <div className="dh-tags" data-testid="dh-tags">

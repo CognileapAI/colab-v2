@@ -47,6 +47,11 @@
 }
 .detail-page .dh-file { font-family: var(--font-data); font-size: var(--text-body-sm); color: var(--color-text-muted); margin-top: 3px; }
 .detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
+/* 버그 15 · A안 — 설명문의 `／` 를 표시 단계에서만 나눈다. 조각이 1개면 이 규칙이 아예 안 걸린다.
+   촘촘하게 둔다 — 헤더는 칩·기본 정보가 접힘선 위에 남아야 하는 자리다. */
+.detail-page .dh-sum-lead { margin: 0; }
+.detail-page .dh-sum-list { margin: 3px 0 0; padding-left: 16px; list-style: disc; }
+.detail-page .dh-sum-list li { margin-top: 1px; line-height: 1.5; }
 .detail-page .dh-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
 .detail-page .dh-act { margin-left: auto; display: flex; gap: 8px; flex: none; align-items: center; }
 @media (max-width: 860px) { .detail-page .dt-header { flex-wrap: wrap; } .detail-page .dh-act { width: 100%; } }
