@@ -115,3 +115,4 @@ D `11462b5` → C `660f8fe` → E `80296b6` → B `21cfb1f` → A `ad2fe06` → 
 - 게이트 8종 green — frontend-typecheck(오류 0) · frontend-test(570) · frontend-fixture-reach(도달 128 · 금지 모듈 0) · generated-up-to-date(등기부 4건 일치) · seam-consistency(G-e 380 · G-b 10 · ㉠ 0 · ㉡ 18) · contract-lint(seam 3 · 위반 0) · service-tests-core-api(실행 624 전건 통과 · skipped 0 · deselected 6 · 85.2초 · 일회용 Postgres) · import-boundary(8 kept · 0 broken).
 - push 0 · `main` 병합 0 · 대장 번호 발급 0 · 운영 스택 무접촉.
 - `[미확인]` — `./gates/run.sh all` 전량과 GitHub Actions 는 이 병합 뒤로 재지 않았다. 푸는 법 = 통합 트리에서 `./gates/run.sh all -j 1` 재실행 · PR 재실행.
+- 최종 트리 `ae322b6` 게이트 전량 — `./gates/run.sh all -j 1`(게이트 입력 env 주입) **green 50 · red(판정) 0 · red(준비) 0**(19:45). main `6fa0694` 대비 병합 시뮬레이션 충돌 0. main 병합은 Ted 가 main 체크아웃에서 `git merge --no-ff lane-review-clean` 로 실행.
