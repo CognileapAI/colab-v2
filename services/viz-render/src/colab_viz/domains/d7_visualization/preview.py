@@ -100,12 +100,83 @@ def check_bbox_4326(bbox: tuple[float, float, float, float],
                 f"경계가 원본 좌표 범위와 겹치지 않는다: 결과 {bbox} vs 원본 {expect}")
 
 
+def _nearest_seed(seed: np.ndarray, limit2: float) -> np.ndarray:
+    """씨앗이 놓인 출력 격자를 **출력 주도**로 훑어 픽셀마다 가장 가까운 씨앗을 붙인다.
+
+    `seed` 는 (h, w) 정수 배열이고 값은 원본 평면 인덱스(없으면 `-1`)다. 돌려주는 것도
+    같은 모양이고, `limit2`(픽셀 거리 제곱) 안에 씨앗이 없으면 `-1` 로 남는다 —
+    **구멍은 메우되 발자국은 부풀리지 않는다.**
+
+    두 단이다. ⑴ **행 훑기** — 같은 행의 좌·우 최근접을 `accumulate` 두 번으로 한꺼번에
+    찾는다. ⑵ **열 훑기** — 그 결과를 위·아래로 전파하며 `(Δ행)²+(Δ열)²` 이 작은 쪽을
+    남긴다. 픽셀 단위 파이썬 반복이 아니라 **행 단위 반복이고 열 방향은 벡터화**돼 있다.
+    """
+    h, w = seed.shape
+    has = seed >= 0
+    if bool(has.all()):
+        return seed
+    col_ix = np.arange(w, dtype="i8")
+    FAR = np.int64(1) << 40
+
+    # ⑴ 같은 행 안의 좌·우 최근접 — `accumulate` 두 번이면 행 전체가 한꺼번에 풀린다
+    left = np.where(has, col_ix[None, :], np.int64(-1))
+    np.maximum.accumulate(left, axis=1, out=left)
+    right = np.where(has, col_ix[None, :], np.int64(w))
+    right = np.minimum.accumulate(right[:, ::-1], axis=1)[:, ::-1]
+    d_left = np.where(left >= 0, col_ix[None, :] - left, FAR)
+    d_right = np.where(right < w, right - col_ix[None, :], FAR)
+    take_left = d_left <= d_right
+    best_c = np.clip(np.where(take_left, left, right), 0, w - 1)
+    dc = np.minimum(d_left, d_right)
+    found = dc < FAR
+    best_i = np.where(found, np.take_along_axis(seed, best_c, axis=1), np.int64(-1))
+    best_r = np.repeat(np.arange(h, dtype="i8")[:, None], w, axis=1)
+    cost = np.where(found, dc * dc, FAR)          # 같은 행이므로 Δ행 = 0
+
+    # ⑵ 열 방향 전파 — 아래로 한 번, 위로 한 번. `cost` 를 들고 다녀 재계산을 반으로 줄인다
+    def _sweep(order):
+        prev = None
+        for r in order:
+            if prev is not None:
+                dr = r - best_r[prev]
+                dcc = col_ix - best_c[prev]
+                cand = np.where(best_i[prev] >= 0, dr * dr + dcc * dcc, FAR)
+                m = cand < cost[r]
+                if m.any():
+                    best_i[r] = np.where(m, best_i[prev], best_i[r])
+                    best_r[r] = np.where(m, best_r[prev], best_r[r])
+                    best_c[r] = np.where(m, best_c[prev], best_c[r])
+                    cost[r] = np.where(m, cand, cost[r])
+            prev = r
+
+    _sweep(range(h))
+    _sweep(range(h - 1, -1, -1))
+    return np.where((best_i >= 0) & (cost <= limit2), best_i, np.int64(-1))
+
+
 def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                  max_side: int = DETAIL_SIDE) -> tuple[np.ndarray, MapGeometry]:
-    """곡선 격자 + 값 → EPSG:3857 규칙 격자. **격자 평균**으로 리샘플한다.
+    """곡선 격자 + 값 → EPSG:3857 규칙 격자. **출력 주도(역방향) 리샘플**이다.
 
-    최근접이 아니라 평균인 이유는 상세에 stride 를 쓰지 않는 이유와 같다 — 한 출력
-    픽셀에 여러 입력이 떨어지면 **그 전부를 센다.** 값이 없는 출력 픽셀은 결측이다.
+    ⭑ ⟨2026-09-03 · 버그 4·13·14⟩ 종전에는 **전방 산란**이었다 — 원본 셀을 출력 격자에
+    `np.add.at` 으로 던져 넣고 셀이 안 떨어진 픽셀은 결측으로 두었다. 그것은 **원본이
+    출력보다 촘촘할 때만** 옳다. 출력 긴 변은 항상 `max_side` 인데 원본은 그보다 성길 수
+    있고, 그러면 채워진 픽셀이 126×128 원본에서 **1.95 %** 까지 떨어져 화면이 점 격자가
+    된다. 같은 해상도(1024×1024)에서도 lat→y 가 비선형이라 **전 결측 행 2줄**이 남았다
+    (가로 흰 줄). 세로 줄이 없던 이유도 같다 — lon→x 는 선형이다.
+
+    지금은 두 단이다.
+
+    1. **촘촘하면 먼저 줄인다** — 원본 긴 변이 `max_side` 를 넘으면 `block_average` 로
+       내린다(좌표는 평균하지 않고 `sample_centers` 로 집는다). **「촘촘 → 평균」 성질은
+       여기서 지켜진다.** ②비지도형이 쓰는 것과 같은 사다리다.
+    2. **성기면 출력이 원본을 찾아간다** — 출력 픽셀마다 가장 가까운 원본 셀의 값을
+       집는다(최근접). 최근접 판정은 3857 위의 거리로 하고, 3857 은 등각사상이라
+       픽셀 좌표 위의 거리와 같은 순서를 준다.
+
+    **결측은 여전히 결측이다.** 값이 없는 원본 셀도 씨앗으로 자리를 잡으므로 이웃 값이
+    NoData 를 메우지 않는다. 씨앗이 원본 간격보다 멀리 있으면 채우지 않는다 — 그래서
+    곡선 격자의 bbox 모서리는 발자국 밖으로 남는다.
     """
     v = np.asarray(values, dtype="f4")
     la = np.asarray(lat, dtype="f8")
@@ -113,7 +184,15 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     if v.shape != la.shape or la.shape != lo.shape:
         raise BboxSanityError(f"값과 좌표의 형상이 다르다: {v.shape} / {la.shape} / {lo.shape}")
 
-    ok = np.isfinite(v) & np.isfinite(la) & np.isfinite(lo)
+    # ① 촘촘한 원본을 먼저 내린다 — 최근접이 값을 골라 버리기 **전에** 평균한다.
+    steps = downsample.steps_for(v.shape, int(max_side))
+    if steps != (1, 1):
+        v = downsample.block_average(v, steps)
+        la = downsample.sample_centers(la, steps)
+        lo = downsample.sample_centers(lo, steps)
+
+    geo = np.isfinite(la) & np.isfinite(lo)          # 좌표가 있는 자리 — **값 결측을 포함한다**
+    ok = geo & np.isfinite(v)                        # 경계는 값까지 있는 자리에서만 나온다
     if not ok.any():
         raise BboxSanityError("좌표와 값이 함께 유효한 자리가 없다")
     # 위생 검사를 **warp 전에도** 한 번 — 축이 뒤바뀐 격자는 여기서 걸린다
@@ -121,14 +200,16 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                 float(lo[ok].max()), float(la[ok].max()))
     check_bbox_4326(src_bbox)
 
-    xs, ys = _transform("EPSG:4326", "EPSG:3857", lo[ok], la[ok])
+    src_idx = np.flatnonzero(geo)
+    xs, ys = _transform("EPSG:4326", "EPSG:3857", lo[geo], la[geo])
     good = np.isfinite(xs) & np.isfinite(ys)
-    xs, ys, vals = xs[good], ys[good], v[ok][good]
-    if xs.size == 0:
+    xs, ys, src_idx = xs[good], ys[good], src_idx[good]
+    valued = np.isfinite(v.ravel()[src_idx])
+    if not valued.any():
         raise BboxSanityError("3857 로 옮길 수 있는 점이 없다")
 
-    minx, maxx = float(xs.min()), float(xs.max())
-    miny, maxy = float(ys.min()), float(ys.max())
+    minx, maxx = float(xs[valued].min()), float(xs[valued].max())
+    miny, maxy = float(ys[valued].min()), float(ys[valued].max())
     span_x, span_y = max(maxx - minx, 1e-9), max(maxy - miny, 1e-9)
     if span_x >= span_y:
         width = int(max_side)
@@ -139,17 +220,30 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     px = span_x / width
     py = span_y / height
 
-    cols = np.clip(((xs - minx) / px).astype("i8"), 0, width - 1)
-    rows = np.clip(((maxy - ys) / py).astype("i8"), 0, height - 1)
+    # ② 출력 격자에 씨앗을 놓는다 — 한 픽셀에 여럿이면 **픽셀 중심에 가장 가까운** 것이 이긴다
+    fr = (maxy - ys) / py
+    fc = (xs - minx) / px
+    rows = np.floor(fr).astype("i8")
+    cols = np.floor(fc).astype("i8")
+    keep = (rows >= 0) & (rows <= height) & (cols >= 0) & (cols <= width)
+    rows = np.clip(rows[keep], 0, height - 1)
+    cols = np.clip(cols[keep], 0, width - 1)
+    d2 = (fr[keep] - (rows + 0.5)) ** 2 + (fc[keep] - (cols + 0.5)) ** 2
     flat = rows * width + cols
-    sums = np.zeros(width * height, dtype="f8")
-    counts = np.zeros(width * height, dtype="i8")
-    np.add.at(sums, flat, vals.astype("f8"))
-    np.add.at(counts, flat, 1)
-    out = np.full(width * height, np.nan, dtype="f4")
-    hit = counts > 0
-    out[hit] = (sums[hit] / counts[hit]).astype("f4")
-    out = out.reshape(height, width)
+    nearest = np.full(width * height, np.inf)
+    np.minimum.at(nearest, flat, d2)
+    seed = np.full(width * height, np.int64(-1))
+    wins = d2 <= nearest[flat]
+    seed[flat[wins]] = src_idx[keep][wins]
+    seed = seed.reshape(height, width)
+
+    # ③ 씨앗이 없는 픽셀이 씨앗을 찾아간다. 한계는 **원본 간격**이다 — 그보다 멀면 발자국 밖이다
+    seeded = int((seed >= 0).sum())
+    spacing = np.sqrt(width * height / max(1, seeded))
+    limit2 = float(max(2.0, 1.5 * spacing)) ** 2
+    picked = _nearest_seed(seed, limit2)
+    out = np.where(picked >= 0, v.ravel()[np.maximum(picked, 0)],
+                   np.float32(np.nan)).astype("f4")
 
     corner_x = np.array([minx, maxx, minx, maxx])
     corner_y = np.array([miny, miny, maxy, maxy])
