@@ -43,6 +43,12 @@ DB="artifactownership"
 SCHEMA_ONLY_DB="artifactownership_schemaonly"
 BROLE="colab_app"
 FAILURES=()
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 OK 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 red() { echo "::error::artifact-ownership-selftest red — $*"; exit 1; }
 
@@ -133,6 +139,10 @@ expect() { # $1=green|red $2=라벨 $3..=환경변수
   out="$(env COLAB_ARTIFACT_OWNER_PSQL="$TMP/psql" \
              COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE="$BROLE" \
              "$@" "$GATE" 2>&1)"; rc=$?
+  # 뒤따르는 사유·건수 대조가 이 값을 읽는다 — intercept 로 일찍 빠져나가도 비어 있으면 안 된다.
+  LAST_OUT="$out"
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then echo "[selftest] $label → $got OK"
   else
@@ -154,28 +164,28 @@ SLOT="$TMP/slot"; mkdir -p "$SLOT"
 mkgroup "$SLOT" "livekey" "$SC_LIVE"
 
 # ── ⓐ~ⓓ 준비 red ───────────────────────────────────────────────────────────
-expect red "ⓐ 대조 정본 미지정" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+expect 미선언 "ⓐ 대조 정본 미지정" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL=
 says "ⓐ" "cause=입력미선언"
 
-expect red "ⓑ 선언 파일 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/없는파일.toml" \
+expect 미선언 "ⓑ 선언 파일 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/없는파일.toml" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
 
 printf '[exempt]\nreason = "keys 가 없다"\n[legacy]\ntolerate = true\n' > "$TMP/decl-nokeys.toml"
-expect red "ⓑ' keys 항목 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/decl-nokeys.toml" \
+expect 미선언 "ⓑ' keys 항목 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/decl-nokeys.toml" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
 
 printf '[exempt]\nkeys = []\nreason = "tolerate 가 없다"\n[legacy]\nreason = "x"\n' > "$TMP/decl-notol.toml"
-expect red "ⓑ'' tolerate 항목 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/decl-notol.toml" \
+expect 미선언 "ⓑ'' tolerate 항목 부재" COLAB_ARTIFACT_OWNER_EXEMPT="$TMP/decl-notol.toml" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
 
-expect red "ⓒ 자리 경로 미선언" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+expect 미선언 "ⓒ 자리 경로 미선언" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
   COLAB_ARTIFACT_OWNER_DIR= COLAB_ARTIFACT_OWNER_DB_URL="$URL"
 
-expect red "ⓓ 없는 디렉터리" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+expect 미선언 "ⓓ 없는 디렉터리" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
   COLAB_ARTIFACT_OWNER_DIR="$TMP/없는자리" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
 
-expect red "ⓝ 경계 롤 미선언" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+expect 미선언 "ⓝ 경계 롤 미선언" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL" \
   COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE=
 says "ⓝ" "cause=입력미선언"
@@ -360,5 +370,7 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::artifact-ownership-selftest red — 실패한 케이스: ${FAILURES[*]}"
   exit 1
 fi
-echo "artifact-ownership-selftest green — 19 케이스(red 13 · green 4 · 변이 3) ＋ 사유·건수 대조 11 ＋ 무접촉 대조 3 전건 기대대로"
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict artifact-ownership-selftest
+echo "artifact-ownership-selftest green — 19 케이스(red 6 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 11 ＋ 무접촉 대조 3 전건 기대대로"
 exit 0

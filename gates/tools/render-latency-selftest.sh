@@ -26,6 +26,15 @@ FAILED=0
 
 red() { echo "::error::render-latency-selftest red — $*"; FAILED=1; }
 
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 ✓ 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# ⚠ 이 셀프테스트가 부르는 판정부는 오늘 78 을 낼 길이 없다. 그래도 물린다 —
+#   **형제를 찾아 같이 고치지 않으면 남은 쪽이 다음 회차에 같은 거짓말을 한다.**
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+
 [ -f "$JUDGE" ] || { echo "::error::render-latency-selftest red — 판정부가 없다: $JUDGE"; exit 1; }
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" render-lat-XXXXXX)"
@@ -61,6 +70,11 @@ mk_junit() {  # $1=경로, 이후 "포맷:초:이름[:결과]" 반복
 expect() {  # $1=기대(red|green) $2=이름 $3=junit $4=config [$5=출력에 있어야 할 문자열]
   local want="$1" label="$2" xml="$3" cfg="$4" needle="${5:-}" out rc
   out="$(python3 "$JUDGE" --junit "$xml" --config "$cfg" 2>&1)"; rc=$?
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
+    [ "${#EXPECT_READINESS[@]}" -eq 0 ] || FAILED=1
+    return
+  fi
   if [ "$want" = red ] && [ "$rc" -eq 0 ]; then
     red "$label — red 여야 하는데 통과했다:
 $(echo "$out" | sed 's/^/     /')"; return
@@ -127,4 +141,6 @@ if [ "$FAILED" -ne 0 ]; then
   echo "::error::render-latency-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict render-latency-selftest
 echo "render-latency-selftest green — 검사 12건 전건 기대대로 (red 11 · green 1)"
