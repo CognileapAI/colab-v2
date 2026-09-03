@@ -202,19 +202,25 @@ describe('§7 잠김 (허용 안 됨) — 헤더 요약 + 잠김 안내만', () 
   });
 });
 
-describe('§9 지워진 데이터의 주소로 직접 들어옴 — 묘비는 상세가 없다', () => {
-  it('정본 문구를 그대로 말하고 목록으로 보낸다', async () => {
+/**
+ * ⭑ **⟨정정 2026-09-03 · `PLAN-SoT §9 〈299〉` · QA 검수 #6⟩ 종전 단언이 틀렸다.**
+ * 이 시험은 404 를 「묘비」로 단정하고 `§9` 의 묘비 문구를 기대했다. 그런데 서버는
+ * **묘비 · 연구실 경계 밖 · 존재한 적 없는 id 셋을 같은 404 로** 낸다 — 구분해 주면 그 자체가
+ * 존재의 누설이기 때문이다(`routes/catalog.py` `dataset_detail` 축자 · P-9·P-10).
+ * 화면은 그 셋을 가를 수 없으므로 묘비 문구를 쓰면 **있지도 않았던 데이터를 있었다고 말한다.**
+ * 그래서 `Policy_공통_기반 §2.4` 「없는 주소」의 중립 한 줄로 바꿨다 — 오라클이 바뀐 것이지
+ * 단언을 느슨하게 한 것이 아니다(문구 한 줄을 여전히 축자로 못 박는다).
+ */
+describe('§9 · 없는 주소 — 404 를 묘비로 번역하지 않는다', () => {
+  it('중립 문구를 그대로 말하고 목록으로 보낸다', async () => {
     const gone: DetailSource = {
       async get() {
         throw new DatasetGone();
       },
     };
     renderDetail('01JYZ9K7WQ3N8V4M2X6C5B0ZZZ', gone);
-    expect(
-      await screen.findByText(
-        '이 데이터는 지워졌어요. 계보 기록은 관련 데이터의 상세에서 볼 수 있어요.',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('이 주소에는 화면이 없어요.')).toBeInTheDocument();
+    expect(screen.queryByText(/지워졌어요/)).toBeNull();
     expect(screen.getByRole('link', { name: '데이터셋 목록' })).toHaveAttribute(
       'href',
       '/datasets',
