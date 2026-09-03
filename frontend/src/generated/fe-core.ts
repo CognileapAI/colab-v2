@@ -449,7 +449,10 @@ export interface paths {
          * @description 한 페이지 스크롤 화면이 읽는 값 전부. **잠긴 데이터도 200 이다** —
          *     이름·요약·헤더 태그(주제·Lv·Verified)까지 내려가고 `basicInfo` 는 `null` 이 된다
          *     (`Policy_승인_처리 §8` 상세 잠긴 상태 · P-13). 403 을 쓰면 접근 요청 흐름이 죽는다.
-         *     묘비(삭제된 데이터셋)는 상세 화면이 없으므로 404 다 (`Policy_데이터셋_상세 §7`).
+         *     묘비(삭제된 데이터셋)는 상세 화면이 없다 (`Policy_데이터셋_상세 §7`).
+         *     ⭑ **⟨개정 2026-09-03 · 17차 해제 · Ted 판정 ②⟩ 그중 보는 사람의 연구실 묘비만 410 이고,
+         *     남의 연구실 묘비·남의 연구실 생존·없는 id 셋은 그대로 404 다** (`Gone` 응답 산문).
+         *     ／ 종전 표기 ~~묘비는 404 다~~
          */
         get: operations["getDataset"];
         put?: never;
@@ -2942,6 +2945,27 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /**
+         * @description ⭑ **⟨신설 2026-09-03 · 계약 동결 해제 17차 · Ted 판정 ②⟩ 보는 사람의 연구실에서
+         *     지워진 것이다** — 묘비(`Policy_데이터셋_상세 §7`)이고 상세 화면이 없다.
+         *
+         *     **`NotFound` 와 갈라 쓰는 자리는 이 한 칸뿐이다.** 넷 중 하나만 여기로 온다 —
+         *     ⑴ **내 연구실 · 묘비 → 410** · ⑵ 남의 연구실 · 묘비 → 404 · ⑶ 남의 연구실 ·
+         *     생존 → 404 · ⑷ 있었던 적 없는 id → 404. 사유는 누설 면적이다: ⑴ 의 행은 지워지기
+         *     전에 **이미 그 사람 목록에 있던 것**이라 「지워졌다」가 새로 알리는 사실이 0 인 반면,
+         *     ⑵ 를 가르면 「그 연구실에 그런 것이 있었다」가 샌다 (P-9·P-10 은 그대로 산다).
+         *
+         *     화면은 이 응답에서만 `Policy_데이터셋_상세 §9` 의 묘비 문구를 쓰고, 404 에서는
+         *     `Policy_공통_기반 §2.4` 의 중립 문구를 쓴다 (`〈296〉`-㉰).
+         */
+        Gone: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description 지금 상태에서 할 수 없는 동작이다. */
         Conflict: {
             headers: {
@@ -3582,6 +3606,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            410: components["responses"]["Gone"];
             500: components["responses"]["ServerError"];
         };
     };

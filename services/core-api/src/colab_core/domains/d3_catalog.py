@@ -52,6 +52,13 @@ _FILES = text("""
 
 _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL")
 
+# ⭑ ⟨17차 해제 · Ted 판정 ② 2026-09-03⟩ **자기 연구실의 묘비인가.**
+# `lab_id` 조건을 여기에 적지 않는 것이 핵심이다 — RLS `lab_boundary`(`schema.sql:838`
+# `USING (lab_id = current_lab_id())`)가 **남의 연구실 행을 이미 지워** 이 질의에서
+# 참이 되는 행은 **정의상 보는 사람의 연구실 것**이다. 조건을 손으로 한 번 더 적으면
+# 같은 규칙이 두 곳에 있게 되고 그때 한쪽만 고쳐진다.
+_TOMBSTONE = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NOT NULL")
+
 # 상세 한 건. 목록 질의와 같은 형태를 쓰되 소유자 이름까지 함께 읽는다 —
 # 상세의 `기본 정보` 는 소유자와 올린 사람을 **둘 다** 적는다 (Policy_데이터셋_상세 §5 · P-30).
 _ONE = text("""
@@ -437,6 +444,16 @@ def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | No
                          where=_TRGM_WHERE)
              for r in rows],
             int(rows[0]["total_count"]))
+
+
+def is_own_lab_tombstone(session: Session, dataset_id: Ulid) -> bool:
+    """**보는 사람의 연구실에서 지워진 데이터셋인가** (Ted 판정 2026-09-03 · 17차 해제).
+
+    남의 연구실 것은 지워졌든 살아 있든 RLS 가 행을 지워 **여기서 False** 가 되고,
+    호출자는 「없거나 경계 밖」 404 를 그대로 낸다. 즉 이 함수가 참을 낼 수 있는
+    경우는 하나뿐이다 — **내 연구실 · `deleted_at IS NOT NULL`.**
+    """
+    return session.execute(_TOMBSTONE, {"dataset_id": str(dataset_id)}).first() is not None
 
 
 def dataset_exists(session: Session, dataset_id: Ulid) -> bool:
