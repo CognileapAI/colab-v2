@@ -48,6 +48,7 @@
 10. 효율(원본 전체 sha256 매 클릭 · 산출물 재사용 0 · `_compose` 전량 적재 · 5초 엔진 재생성 · 노드당 1쿼리).
 11. 발행 재시도 DLQ · 문서 절대경로 게이트 · 업로드 PreviewPanel 중복 제거.
 12. `upload.failed reason=내부 오류` 비율 경보 · pipeline-worker `print` → logging 통일 · `_produced` 색인 정리 · NOT_RENDERABLE 시각 불일치 전용 문구(정본).
+13. CI 인프라 — `schema-gates` 에 일회용 DB 기동·마이그레이션·URL export 스텝 · `planning-gates` 정본 폴더 체크아웃(둘 다 main 사전존재 red, §5-7).
 
 ## 5. 실행 기록 (2026-09-03 실측)
 
@@ -89,5 +90,10 @@ D `11462b5` → C `660f8fe` → E `80296b6` → B `21cfb1f` → A `ad2fe06` → 
 - `gates/README.md` CI 표의 고정 계수(「실행 17」)를 파생 표기로 정정(오케스트레이터).
 - draft PR #2 첫 Actions 실행 — `changes`·`boundary-gates`·`contract-gates`·`dormant-tests` pass · `frontend-gates`·`planning-gates`·`schema-gates`·`service-tests`×4 fail(6~30초) → 원인 진단은 §5-7.
 
-### 5-7. Actions 실패 진단
+### 5-7. Actions 실패 진단 (run 33732752341, 서브에이전트 실측 `tmp/ci-diagnosis.md`)
+- **이 브랜치 신규 결함** — `service-tests` ×4 · `frontend-gates`: exit 126 `Permission denied`. 게이트 스크립트 20개가 인덱스에 100644(실행비트 없음). 이 호스트는 NTFS 마운트(`core.filemode=false`)라 로컬 chmod 가 추적되지 않아 로컬 `run.sh` 는 통과했다. 그중 12개는 main 에도 100644 로 있으나 그 게이트를 exec 하는 CI 잡이 main 에서 실행된 적이 없어 드러나지 않았다. 조치 = `update-index --chmod=+x` 20건(오케스트레이터), 재실행으로 확인.
+- **main 사전존재(이 회차 변경 아님)** — `schema-gates`: `schema-diff` 가 `COLAB_APPLIED_DB_URL_PLATFORM/_AI` 미선언으로 exit 78(잡에 DB 기동·마이그레이션·URL export 스텝 자체가 없음, main run 33703687384 동일). `planning-gates`: `planning-freshness` 가 「정본 폴더가 없다」 exit 1(정본이 레포 밖 형제 폴더, CI 는 레포만 체크아웃 — main run 33715144510 동일). 둘 다 인프라 결정 필요 → §4 유보 13.
+- `gate-selftest`: 첫 실행에서 `in_progress` 로 남음(도커 기반 셀프테스트 3종이 Actions 에서 처음 도는 회차). 재실행에서 관찰 → 결과는 §5-8.
+
+### 5-8. Actions 재실행 결과
 - 기재 예정.
