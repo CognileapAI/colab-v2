@@ -7,7 +7,7 @@
 |---|---:|---|---|---|---|
 | ① 썸네일 | 128 | stride | WEBP q80 | 없음(원본 배열 방향 그대로) | 없음 |
 | ② 비지도형 | 1024 | 블록평균 | PNG RGBA | 없음 | 없음 |
-| ③ 지도형 | 1024 | warp 후 격자 평균 | PNG RGBA | **EPSG:3857** | `.json` 사이드카 + `.pgw` |
+| ③ 지도형 | 1024 | 축소 후 근사 최근접 | PNG RGBA | **EPSG:3857** | `.json` 사이드카 + `.pgw` |
 
 **결측은 알파 0.** **좌표를 지어내지 않는다** — 못 읽으면 `[미상]` 이고 지도형은 **보류**다
 (`§9`·`DR-9`).
@@ -170,9 +170,17 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     1. **촘촘하면 먼저 줄인다** — 원본 긴 변이 `max_side` 를 넘으면 `block_average` 로
        내린다(좌표는 평균하지 않고 `sample_centers` 로 집는다). **「촘촘 → 평균」 성질은
        여기서 지켜진다.** ②비지도형이 쓰는 것과 같은 사다리다.
-    2. **성기면 출력이 원본을 찾아간다** — 출력 픽셀마다 가장 가까운 원본 셀의 값을
-       집는다(최근접). 최근접 판정은 3857 위의 거리로 하고, 3857 은 등각사상이라
-       픽셀 좌표 위의 거리와 같은 순서를 준다.
+    2. **성기면 출력이 원본을 찾아간다** — 원본 셀을 씨앗으로 심고 2패스(행·열)로
+       가까운 씨앗의 값을 퍼뜨린다. **근사 최근접**이다 — 정확 최근접과의 일치율은
+       126×128→512 에서 약 86 %, 30×32→256 에서 약 95 %(브루트포스 대조 · advisor 게이트 ②).
+       셀 경계가 1 px 들쭉날쭉할 수 있으나 미리보기 배율에서는 식별되지 않는다.
+       판정 거리는 3857 위의 거리이고, 3857 은 등각사상이라 픽셀 좌표 위의 거리와
+       같은 순서를 준다.
+
+    ⚠ **「촘촘 → 평균」은 ① 축소 단계에서만 성립한다.** 긴 변이 `max_side` 이하이면서
+    발자국이 bbox 보다 작은 곡선 격자(예: 크게 회전한 격자)는 한 출력 픽셀에 씨앗이 여럿
+    떨어져도 평균하지 않고 하나만 남는다. 현재 실원천(규칙 격자 · ≤1024)에는 이 부류가
+    없다 — 등재된 한계다.
 
     **결측은 여전히 결측이다.** 값이 없는 원본 셀도 씨앗으로 자리를 잡으므로 이웃 값이
     NoData 를 메우지 않는다. 씨앗이 원본 간격보다 멀리 있으면 채우지 않는다 — 그래서
@@ -422,7 +430,7 @@ def build_map_layer(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                     owner: BakeOwner) -> tuple[Artifact, Artifact, Artifact, MapGeometry]:
     """③지도형 — PNG + 사이드카 JSON + `.pgw`. **좌표가 없으면 여기 오지 않는다.**"""
     warped, geom = warp_to_3857(values, lat, lon, max_side=DETAIL_SIDE)
-    key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample="warp+blockavg",
+    key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample="warp+nearest",
                                  crs=cache.MAP_CRS, color_range=color_range,
                                  grid_digest=grid_digest, **key_params)
     rgba = colormap.to_rgba(warped, vmin=color_range.vmin, vmax=color_range.vmax, lut=lut)
