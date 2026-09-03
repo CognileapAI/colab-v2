@@ -57,7 +57,7 @@
 
 **권장**: 버그 12건을 `work-items.yaml`에 `BF-1`~`BF-N`(Bug Fix) 또는 유사 접두어로 개별 항목 등록(필드: id, name, status(open), stage(stage1), owner, entry_conditions, depends_on, completion_def(=재현→근본원인→실패시험 red→수정→green), evidence, deadline, note(원 버그 번호·스크린샷 경로 링크), sources). 동시에 `PLAN-SoT.md §9`에 등재 결정 1건(신규 버그 배치 판정)을 추가.
 
-**다음 자유 결정 번호**: `〈308〉` (PLAN-SoT.md §9 전체에서 실측한 최댓값 = `〈307〉`).
+**다음 자유 결정 번호**: `〈309〉` (PLAN-SoT.md §9 전체에서 실측한 최댓값 = `〈307〉`).
 
 ## 4. `work-item-consistency` 게이트 (`gates/tools/work_item_consistency.py`, 문서 `gates/README.md`)
 

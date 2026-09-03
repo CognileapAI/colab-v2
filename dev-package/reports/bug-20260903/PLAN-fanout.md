@@ -30,4 +30,4 @@
 L-A ∥ L-B1 ∥ L-B3 ∥ L-C1 ∥ L-C2 ∥ (L-B4+L-B5: `PreviewPanels.tsx`·preview.css 공유 → 한 레인 직렬) ∥ L-C4. 파일 겹침 0 확인됨(recon B·C).
 
 ## 이후
-각 레인 산출 → advisor 게이트 ② → 통합 브랜치에 병합 → `gates/run.sh` 전체 → 대장 등록(BF-1.. + 〈308〉) → PR → 게이트 ③.
+각 레인 산출 → advisor 게이트 ② → 통합 브랜치에 병합 → `gates/run.sh` 전체 → 대장 등록(BF-1.. + 〈309〉) → PR → 게이트 ③.
