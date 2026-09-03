@@ -189,6 +189,9 @@ describe('화면은 못 읽은 것을 없는 것으로 말하지 않는다', () 
     }
     // **「조건에 맞는 데이터가 없어요」로도 접지 않는다** — 없는 것이 아니라 못 읽은 것이다.
     expect(screen.queryByText(/조건에 맞는 데이터가 없어요/)).toBeNull();
+    // 머리의 건수도 **그리지 않는다** — `?? 0` 이 만든 「0건」이나 앞선 성공이 남긴
+    // 「0건 / 전체 N건」은 실패를 「없음」으로 바꿔 말한다 (`CODE-REVIEW-20260903-E` 수용 검토).
+    expect(document.querySelector('.hcnt')).toBeNull();
   });
 
   it('데이터셋 상세 — 못 읽은 것을 「이 주소에는 화면이 없어요」로 그리지 않는다', async () => {
@@ -208,6 +211,9 @@ describe('화면은 못 읽은 것을 없는 것으로 말하지 않는다', () 
       expect(screen.queryByText(p.name)).toBeNull();
     }
     expect(screen.queryByTestId('project-empty')).toBeNull();
+    // 툴바의 건수도 **그리지 않는다** — `catch` 가 `totalCount` 를 0 으로 되돌려 그린
+    // 「0건」은 못 읽은 것을 없는 것으로 말한다 (`CODE-REVIEW-20260903-E` 수용 검토).
+    expect(document.querySelector('.pj-count')).toBeNull();
   });
 
   it('프로젝트 상세 — 못 읽은 것을 「찾을 수 없어요」로 그리지 않는다', async () => {
@@ -220,7 +226,15 @@ describe('화면은 못 읽은 것을 없는 것으로 말하지 않는다', () 
 
   it('세션이 만료되면 카탈로그가 아니라 로그인 화면이 선다', async () => {
     setToken(TOKEN);
-    unauthorized();
+    // **`/me` 는 통한다.** 전부 401 로 세우면 `/me` 도 401 이라 종전 `AuthGate` 갈래만
+    // 지나가고, `api/client.ts` 의 401 응답 미들웨어가 없어도 이 시험이 통과한다 —
+    // 잠그려는 것은 「목록 요청의 401 이 만료로 읽힌다」쪽이다 (`CODE-REVIEW-20260903-E` 수용 검토).
+    vi.stubGlobal('fetch', (input: Request | string) => {
+      const url = typeof input === 'string' ? input : input.url;
+      return new URL(url, 'http://localhost').pathname.endsWith('/me')
+        ? Promise.resolve(json(200, account()))
+        : Promise.resolve(json(401, { code: 'UNAUTHORIZED', message: '만료' }));
+    });
     render(
       <MemoryRouter initialEntries={['/datasets']}>
         <App />

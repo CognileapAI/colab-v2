@@ -36,16 +36,22 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
     [state.list],
   );
 
-  const shown = state.list?.totalCount ?? 0;
+  // **못 읽었으면 건수가 없다.** `?? 0` 은 실패 자리에 「0건」을 세우고, `baseTotal` 은
+  // 앞선 성공이 남긴 수라 「0건 / 전체 N건」까지 만든다 — 둘 다 못 읽은 것을 없는 것으로
+  // 바꿔 말한다 (`CODE-REVIEW-20260903-E` 수용 검토 · 정직한 빈 상태).
+  // 조회 중(`list === null` · `error === null`)에도 아직 모르는 수를 지어내지 않는다.
+  const shown = state.list?.totalCount ?? null;
   const base = state.baseTotal;
 
   return (
     <div className="catalog-page" data-screen="S-03">
       <div className="page-head">
         <h1>데이터셋</h1>
-        <span className="hcnt">
-          {shown}건{base !== null && shown < base ? ` / 전체 ${base}건` : ''}
-        </span>
+        {shown !== null ? (
+          <span className="hcnt">
+            {shown}건{base !== null && shown < base ? ` / 전체 ${base}건` : ''}
+          </span>
+        ) : null}
         <span className="desc">뭐가 있는지부터 훑을 때의 길이에요.</span>
       </div>
 

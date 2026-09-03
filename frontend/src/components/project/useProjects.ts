@@ -21,7 +21,12 @@ export type ProjectsState = {
   query: ProjectQuery;
   view: ProjectView;
   rows: ProjectRow[];
-  totalCount: number;
+  /**
+   * 목록의 총 건수. **모르면 `null` 이다** — 못 불러왔을 때 0 으로 되돌리면 툴바가
+   * 「0건」을 그려 못 읽은 것을 없는 것으로 말한다 (`CODE-REVIEW-20260903-E` 수용 검토).
+   * 첫 조회가 끝나기 전에도 `null` 이다 — 아직 모르는 수를 지어내지 않는다.
+   */
+  totalCount: number | null;
   /** 숨은 닫힘 건수. **봉투에 필드를 만들지 않는다** — 상태만 `닫힘` 으로 바꿔 다시 세운 수다. */
   hiddenClosed: number;
   loading: boolean;
@@ -42,7 +47,7 @@ export function useProjects(source: ProjectSource): ProjectsState {
   const [query, setQuery] = useState<ProjectQuery>(DEFAULT_QUERY);
   const [view, setView] = useState<ProjectView>(DEFAULT_VIEW);
   const [rows, setRows] = useState<ProjectRow[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [hiddenClosed, setHiddenClosed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -72,7 +77,7 @@ export function useProjects(source: ProjectSource): ProjectsState {
         // 화면은 「조건에 맞는 프로젝트가 없어요」로 남았다 — 있는 프로젝트를 없다고 말한 것이다.
         if (!alive) return;
         setRows([]);
-        setTotalCount(0);
+        setTotalCount(null);
         setHiddenClosed(0);
         setFailed(true);
         setLoading(false);

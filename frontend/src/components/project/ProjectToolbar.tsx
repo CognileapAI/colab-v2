@@ -76,11 +76,15 @@ export function ProjectToolbar(props: { state: ProjectsState }) {
         ))}
       </div>
 
-      <span className="pj-count">
-        {state.totalCount}건
-        {/* 숨김과 삭제가 헷갈리지 않게 (§8 숨은 닫힘 건수) */}
-        {state.hiddenClosed > 0 ? ` · 닫힘 ${state.hiddenClosed}건은 숨겨져 있어요` : ''}
-      </span>
+      {/* 건수는 **아는 때에만** 그린다 — 못 불러온 자리의 「0건」은 실패를 「없음」으로
+          바꿔 말한다. `useProjects` 가 그때 `totalCount` 를 `null` 로 둔다 (같은 한 벌의 판단). */}
+      {state.totalCount !== null ? (
+        <span className="pj-count">
+          {state.totalCount}건
+          {/* 숨김과 삭제가 헷갈리지 않게 (§8 숨은 닫힘 건수) */}
+          {state.hiddenClosed > 0 ? ` · 닫힘 ${state.hiddenClosed}건은 숨겨져 있어요` : ''}
+        </span>
+      ) : null}
     </div>
   );
 }
