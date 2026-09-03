@@ -96,6 +96,14 @@ class RenderJob:
     #: **같은 계산기**를 지났음을 여기 남긴다 — 두 경로가 각자 규칙을 갖지 않는다.
     #: `trigger` 가 `None` 이면 사람이 부른 경로다.
     invalidation: "invalidation.InvalidationPlan | None" = None
+    #: 그 범위 중 **실제로 지워진 것**(`CODE-REVIEW-20260903` #2). 계산과 집행은 다른
+    #: 사실이라 따로 남긴다 — 종전에는 집행 결과가 어디에도 안 적혀서, 한 번도 집행되지
+    #: 않고 있다는 사실을 아무도 볼 수 없었다.
+    invalidation_removed: tuple[Path, ...] = ()
+    #: 완료(성공·실패 무관)를 알리는 자리. **바쁜 대기를 쓰지 않으려고 둔다.**
+    #: `to_dict` 가 보지 않으므로 계약 표면에 나가지 않는다.
+    done: threading.Event = field(default_factory=threading.Event, repr=False,
+                                  compare=False)
 
     @property
     def tile_branch(self) -> bool:
@@ -522,6 +530,11 @@ def _run(job: RenderJob) -> None:
         job.failure = _failure(RenderFailure.UNKNOWN, f"{type(e).__name__}: {e}", job)
 
 
+#: 렌더 예산을 다 쓴 작업이 마무리(범위 계산·집행)까지 마칠 여유. **예산이 아니다** —
+#: 마감을 넘긴 렌더는 이미 `TIMEOUT` 으로 끊기고, 이 값은 그 뒤 정리에 주는 시간이다.
+_COMPLETION_GRACE_SECONDS = 10.0
+
+
 class JobStore:
     """렌더 작업 보관 — 프로세스 안 메모리다.
 
@@ -561,9 +574,10 @@ class JobStore:
         with self._lock:
             self._jobs[render_id] = job
 
+        # **완료 경로는 하나다**(`CODE-REVIEW-20260903` #2). 실행기마다 「끝난 뒤에 할 일」을
+        # 따로 적으면 그중 하나가 빠지고, 빠진 쪽이 하필 운영 기본값이었다.
         if self._execution == "inline":
-            _run(job)
-            job.invalidation = self._plan_for(job, event)
+            self._run_and_plan(job, event)
         elif self._execution == "manual":
             self._pending.append(job)
             self._pending_events[job.render_id] = event
@@ -573,8 +587,29 @@ class JobStore:
 
     def _run_and_plan(self, job: RenderJob,
                       event: "invalidation.InvalidationEvent | None") -> None:
-        _run(job)
-        job.invalidation = self._plan_for(job, event)
+        """**렌더가 끝난 자리** — 범위 계산도 집행도 여기서 한다.
+
+        ⭑ ⟨2026-09-03 · 코드리뷰 #2⟩ 집행(`invalidation.apply`)이 `regenerate` 안에,
+        그것도 `submit()` **직후**에 있었다. 기본 실행기(`thread`)에서 그 시점의
+        `job.invalidation` 은 언제나 `None` 이라 **집행이 한 번도 일어나지 않았고**
+        트리거는 ack 됐다 — 레이스가 아니라 상시였다. 집행을 완료 경로로 옮기면
+        thread·inline·manual 셋이 **같은 자리**를 지난다.
+
+        ⚠ **집행은 사건이 있을 때만이다**(`plan.regenerate`). 사람이 부른 평범한 렌더도
+        범위 계산은 지나지만(완료 정의 ⓒ), 거기서 지우면 스타일만 바꿔 다시 그리는
+        요청이 앞의 그림을 지운다.
+        ⚠ **실패한 렌더는 지우지 않는다** — 「새 것이 선 뒤에 낡은 것을 치운다」의
+        나머지 절반이다. 새 것이 못 섰는데 치우면 볼 그림이 하나도 안 남는다.
+        """
+        try:
+            _run(job)
+            plan = self._plan_for(job, event)
+            job.invalidation = plan
+            if plan.regenerate and job.status == STATUS_DONE:
+                job.invalidation_removed = invalidation.apply(
+                    plan, previews_root=Path(job.spec.preview_dir))
+        finally:
+            job.done.set()
 
     def _tile_url(self, render_id: str, expires_at: datetime | None,
                   now: datetime) -> str:
@@ -597,8 +632,7 @@ class JobStore:
         """`manual` 실행기 전용 — 시험이 「그리는 중」 상태를 붙잡아 보기 위한 자리다."""
         while self._pending:
             job = self._pending.pop(0)
-            _run(job)
-            job.invalidation = self._plan_for(job, self._pending_events.pop(job.render_id, None))
+            self._run_and_plan(job, self._pending_events.pop(job.render_id, None))
 
     def get(self, render_id: str) -> RenderJob | None:
         return self._jobs.get(render_id)
@@ -659,9 +693,14 @@ class JobStore:
         # 않는다), 재생성은 **이미 그린 적 있는 대상**에만 서므로 직전 작업이 답을 안다.
         job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event,
                           lab=previous.lab, account=previous.account)
-        plan = job.invalidation
-        removed = invalidation.apply(plan, previews_root=Path(spec.preview_dir)) if plan else ()
-        return Regeneration(job=job, plan=plan, removed=removed)
+        # **끝난 뒤에 답한다**(코드리뷰 #2). 집행은 완료 경로가 하므로, 여기서 기다리지
+        # 않으면 「무효화 몇 건」이 언제나 0 인 보고서가 나가고 트리거는 그 상태로 ack 된다.
+        # ⚠ `manual` 실행기는 `run_pending` 이 부를 때까지 아무것도 돌지 않는다 —
+        #   기다리면 그대로 멈춘다. 그 실행기는 시험 전용이고 시험이 순서를 정한다.
+        if self._execution != "manual":
+            job.done.wait(timeout=spec.deadline_seconds + _COMPLETION_GRACE_SECONDS)
+        return Regeneration(job=job, plan=job.invalidation,
+                            removed=job.invalidation_removed)
 
     def _latest_for(self, target_id: str) -> RenderJob | None:
         """그 대상의 가장 최근 완료 작업. **렌더 파라미터를 지어내지 않으려고** 둔다."""
