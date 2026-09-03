@@ -5,6 +5,7 @@
 // 필터·정렬은 **한 벌**이라 두 보기가 같은 목록을 본다 (`Policy_프로젝트 §5`).
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LoadFailure } from '../components/common/LoadFailure';
 import { ProjectCards } from '../components/project/ProjectCards';
 import { ProjectFormModal } from '../components/project/ProjectFormModal';
 import { ProjectTable } from '../components/project/ProjectTable';
@@ -42,17 +43,30 @@ export function ProjectsPage(props: { source?: ProjectSource } = {}) {
 
       <ProjectToolbar state={state} />
 
-      {state.view === '카드' ? (
-        <ProjectCards rows={state.rows} onOpen={open} />
+      {/* **못 읽은 것과 없는 것을 가른다** — 실패 자리에서는 목록도 「조건에 맞는 프로젝트가
+          없어요」도 세우지 않는다. 종전에는 목록 실패가 픽스처로 덮여 남의 프로젝트가 우리
+          목록으로 그려졌다 (`CODE-REVIEW-20260903` 9). */}
+      {state.failed ? (
+        <LoadFailure
+          message="프로젝트 목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."
+          onRetry={state.reload}
+          testId="project-list-error"
+        />
       ) : (
-        <ProjectTable rows={state.rows} onOpen={open} />
-      )}
+        <>
+          {state.view === '카드' ? (
+            <ProjectCards rows={state.rows} onOpen={open} />
+          ) : (
+            <ProjectTable rows={state.rows} onOpen={open} />
+          )}
 
-      {!state.loading && state.rows.length === 0 ? (
-        <p className="pj-empty" data-testid="project-empty">
-          조건에 맞는 프로젝트가 없어요.
-        </p>
-      ) : null}
+          {!state.loading && state.rows.length === 0 ? (
+            <p className="pj-empty" data-testid="project-empty">
+              조건에 맞는 프로젝트가 없어요.
+            </p>
+          ) : null}
+        </>
+      )}
 
       {creating ? (
         <ProjectFormModal

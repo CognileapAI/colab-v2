@@ -118,7 +118,7 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_5_unimplemented_operations_are_exactly_these() -> None:
+def test_the_4_unimplemented_operations_are_exactly_these() -> None:
     """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → 21 → **23**.
 
     ⭑ **이번에는 늘었고, 그것이 옳다** (`PLAN-SoT §9-〈88〉` 묶음 5·6 · 4차 동결 해제).

@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from ...kernel import errors
 from ...kernel.auth import Subject
-from ...kernel.authn import LoginAttempt
+from ...kernel.authn import LoginAttempt, client_key
 from ..deps import current_subject
 
 router = APIRouter()
@@ -54,17 +54,28 @@ def create_session(body: SessionCredentials, request: Request) -> dict:
             "(COLAB_CORE_SESSION_SECRET).")
     attempt = body.attempt()
     limiter = request.app.state.login_limiter
-    if limiter.blocked(attempt.key):
+    # **버킷 둘을 함께 센다** (`CODE-REVIEW-20260903` #5) — ⑴ 로그인이 겨냥한 자격 ·
+    # ⑵ 부른 클라이언트. 하나만 두면 각각 뚫린다: 자격만 세면 코드를 갈아 가며 하는 열거에
+    # 브레이크가 없고, 클라이언트만 세면 여러 곳에서 한 계정을 두드리는 것을 못 센다.
+    # 한도·창은 **같은 값**을 쓴다 — 두 숫자를 두면 어느 쪽이 걸렸는지 아무도 모른다.
+    buckets = [attempt.key]
+    client = client_key(request.headers.get("x-forwarded-for"))
+    if client:
+        buckets.append(client)
+    if any(limiter.blocked(bucket) for bucket in buckets):
         # 사전 추측을 **느리게** 만드는 최소 보완이다 (`〈108〉-㉰`). 한계는 `kernel/throttle.py`.
+        # **어느 버킷이 걸렸는지 말하지 않는다** — 말하면 열거 도구가 그 답으로 학습한다.
         raise errors.too_many_attempts(
             "로그인 시도가 너무 잦다. 잠시 뒤에 다시 시도한다.")
     issued = issuer.issue(attempt)
     if issued is None:
         # 「없는 계정」과 「틀린 비밀번호」를 가르지 않는다 — 가르는 순간 계정의 존재가 샌다.
         # ⚠ **입력값을 메시지에 담지 않는다** (Ted 2026-08-26 조건 1 — 로그·오류에 값 미출력).
-        limiter.record_failure(attempt.key)
+        for bucket in buckets:
+            limiter.record_failure(bucket)
         raise errors.unauthorized("심어 둔 계정이 아니다. 계정은 개발자가 심는다 (P-17).")
-    limiter.clear(attempt.key)
+    for bucket in buckets:
+        limiter.clear(bucket)
     return {"token": issued.token,
             "expiresAt": issued.expires_at.isoformat().replace("+00:00", "Z")}
 

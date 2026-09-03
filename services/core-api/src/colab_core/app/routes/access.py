@@ -61,7 +61,14 @@ def _living_dataset(db: Session, datasetId: str) -> Ulid:
     """경계 밖·묘비는 **404** 다 — 존재를 알리지 않는다 (P-9·P-10).
 
     403 을 쓰지 않는 이유: 남의 연구실 식별자에 403 을 주면 「그 식별자는 있다」가 새어 나간다.
+
+    ⚠ **모양부터 본다** (`CODE-REVIEW-20260903` #12). `Ulid(...)` 는 모양이 어긋나면
+    `ValueError` 로 탈출하고 그것이 **500** 이 됐다 — 형제 라우트(`catalog.py`·`preview.py`)는
+    전부 `is_valid` 로 먼저 본다. 여기만 안 봤다. 모양이 틀린 것은 **경계 밖이 아니라 400** 이다:
+    404 로 접으면 「없다」와 「그런 모양은 없다」가 같은 답이 되어 화면이 오타를 못 고친다.
     """
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()

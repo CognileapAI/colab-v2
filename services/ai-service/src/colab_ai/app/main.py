@@ -23,7 +23,9 @@
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+import json
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from colab_ai.app.dictionaries import SqlDictionaries
@@ -58,6 +60,18 @@ class _UnavailableDictionaries:
         raise RuntimeError("온톨로지 사전 주소가 배선되지 않았다")
 
 
+async def _raw_body(request: Request) -> bytes:
+    """본문 바이트만 읽는 **비동기 의존**. 읽기는 루프에서, 판단은 스레드풀에서.
+
+    ⭑ **왜 `Body(...)` 가 아니라 의존인가.** 본문을 FastAPI 의 body 파라미터로 선언하면
+    프레임워크가 요청의 `content-type` 을 보고 **먼저 JSON 으로 해석**하고, 실패를
+    `RequestValidationError`(422)로 낸다 — 이 표면이 계약대로 내던 「본문이 JSON 이
+    아니다」 400(`common.json#ErrorEnvelope`)이 사라진다. 바이트만 받아 오면 해석은
+    라우트가 그대로 한다. 그리고 body 파라미터가 없으므로 라우트를 `def` 로 둘 수 있다.
+    """
+    return await request.body()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
@@ -84,9 +98,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"unit": "ai-service", "status": "alive", "implemented": True}
 
     @app.post("/searches")
-    async def search_datasets(request: Request):
+    def search_datasets(request: Request, body: bytes = Depends(_raw_body)):
+        """⭑ **`def` 다 — 코루틴이 아니다** (코드리뷰 20260903 #10 형제).
+
+        이 함수는 막는 일을 한다: `dictionaries.py` 의 사전 조회는 동기 psycopg 로
+        5 SELECT 를 돌고, `llm` 모드에서는 `interpret.py` 의 `urlopen(timeout=8)` 이
+        최대 8초를 붙든다. 코루틴으로 두면 그동안 **이벤트 루프가 통째로 멈추고**,
+        워커가 하나라 같은 프로세스의 `/healthz` 까지 답을 못 한다 — compose 의
+        헬스 체크(3초)가 그 사이에 지나간다. `def` 로 선언하면 FastAPI 가
+        **스레드풀에서** 부르므로 루프는 계속 돈다.
+        """
         try:
-            payload = await request.json()
+            payload = json.loads(body)
         except Exception:                                        # noqa: BLE001
             return _error(400, "bad_request", "본문이 JSON 이 아니다.")
         if not isinstance(payload, dict):

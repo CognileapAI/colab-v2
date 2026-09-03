@@ -16,12 +16,22 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import urllib.error
 import urllib.request
 from typing import Callable
 
 from colab_ai.ports import TOPICS, Interpretation
+
+#: **형제 자리** (코드리뷰 20260903-F #3). 이 사유는 `SearchService` 를 지나 `degradedReason`
+#: 으로 **그대로 응답에 실린다** — `d10_ai_services` 만 고치고 여기를 두면 같은 종류의
+#: 문자열이 같은 칸으로 계속 나간다. urllib 예외 문구에는 **내부 주소·포트**가 들어 있다.
+MODEL_UNREACHABLE_REASON = "질의 해석 모델에 닿지 못했다 — 질문의 낱말 그대로 찾았다."
+
+#: 운영자가 기계로 긁을 이름. `d10_ai_services.DEGRADED_LOGGER` 와 같은 규약이다.
+INTERPRETER_LOGGER = "colab_ai.degraded"
+_degraded_log = logging.getLogger(INTERPRETER_LOGGER)
 
 #: 모델에게 주는 지시. **답의 모양을 여기서 닫는다** — 셋 말고는 요구하지 않는다.
 SYSTEM_PROMPT = (
@@ -162,8 +172,10 @@ class LlmQueryInterpreter:
             raw = self._transport(payload)
         except (urllib.error.URLError, TimeoutError, OSError, KeyError,
                 ValueError, IndexError) as e:
-            return LiteralInterpreter(
-                f"질의 해석 모델에 닿지 못했다({e}) — 질문의 낱말 그대로 찾았다.").interpret(query)
+            # **원시 예외는 로그로만 간다** — 응답에는 안정된 문구가 나간다(위 상수 주석).
+            _degraded_log.warning("event=search.interpreter.unreachable exc=%s: %s",
+                                  type(e).__name__, e)
+            return LiteralInterpreter(MODEL_UNREACHABLE_REASON).interpret(query)
         parsed = self._read(raw)
         if parsed is None:
             return LiteralInterpreter(

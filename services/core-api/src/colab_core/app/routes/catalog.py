@@ -581,6 +581,25 @@ def _project_period(start, end) -> dict:
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period")
 
+#: 주제 4값. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
+#: 계약이 「값 집합은 DB CHECK 4값이 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
+#: 명시했다(`fe-core.yaml DatasetUpdate.topic`). 여기 있는 것은 **그 정본을 코드 층으로
+#: 옮겨 적은 사본**이고, 검사를 안 하면 사용자의 오타가 IntegrityError → 500 이 된다.
+_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
+
+
+def _is_datetime(value: str) -> bool:
+    """계약 `DataPeriod` 는 `format: date-time` 이다 — **자유 문자열이 아니다.**
+
+    검사 없이 내려보내면 `timestamptz` 캐스트가 DB 에서 죽고 **사용자의 오타가 500** 이 된다.
+    `Z` 접미는 3.11+ `fromisoformat` 이 받는다.
+    """
+    try:
+        dt.datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
 
 def validate_human_metadata(changes: dict) -> None:
     """`variables`·`crs`·`period` 의 **형상**을 본다 — **생성과 수정이 이 한 벌을 쓴다.**
@@ -603,6 +622,12 @@ def validate_human_metadata(changes: dict) -> None:
         if not isinstance(changes["crs"], str):
             raise errors.bad_request("좌표계는 문자열이다.")
 
+    if changes.get("topic") is not None and "topic" in changes:
+        # **DB CHECK 4값 밖은 400 이다** (`CODE-REVIEW-20260903` #12). 검사하지 않으면
+        # 그 값이 IntegrityError 로 떨어져 **사용자의 오타가 500** 이 된다.
+        if changes["topic"] not in _TOPICS:
+            raise errors.bad_request("주제는 정해진 4값 중 하나다.", {"allowed": list(_TOPICS)})
+
     if changes.get("period") is not None and "period" in changes:
         period = changes["period"]
         # 계약 `DataPeriod` = `required: [start, end]` ＋ `additionalProperties: false`,
@@ -617,6 +642,12 @@ def validate_human_metadata(changes: dict) -> None:
                 or not isinstance(period.get("end"), (str, type(None))):
             raise errors.bad_request(
                 "기간은 `start` 문자열을 가진 객체다 — `end` 는 없거나 `null` 이면 무기한이다.")
+        # **자유 문자열을 받지 않는다** (`CODE-REVIEW-20260903` #12). 계약이
+        # `format: date-time` 이고, 검사 없이 내려가면 `timestamptz` 캐스트가 DB 에서 죽는다.
+        for key in ("start", "end"):
+            value = period.get(key)
+            if isinstance(value, str) and not _is_datetime(value):
+                raise errors.bad_request(f"기간의 `{key}` 는 날짜·시각(ISO 8601)이다.")
 
 
 @router.patch("/datasets/{datasetId}", name="updateDataset")

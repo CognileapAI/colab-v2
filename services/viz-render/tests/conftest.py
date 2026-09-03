@@ -20,7 +20,19 @@ from colab_viz.kernel.config import Settings
 from colab_viz.kernel.ids import new_ulid
 
 TOKEN = "p2viz-test-token"
-AUTH = {"Authorization": f"Bearer {TOKEN}"}
+#: 경계 헤더의 값. core-api `app/relay._scope_headers` 가 **모든 중계 호출에** 싣는 둘이다.
+#: 시험이 이 값을 기본으로 쓰는 이유 — 운영에서 헤더 없는 호출은 없다. 헤더가 빠진
+#: 경우·다른 연구실인 경우는 **그 시험이 명시로** 만든다(`test_tenant_boundary.py`).
+LAB = "01JQ00000000000000000LAB01"
+ACCOUNT = "01JQ00000000000000000ACC01"
+AUTH = {"Authorization": f"Bearer {TOKEN}",
+        "X-CoLAB-Lab": LAB, "X-CoLAB-Account": ACCOUNT}
+
+
+def auth_as(lab: str, account: str = ACCOUNT) -> dict:
+    """다른 연구실로 부르는 자리 — 경계 시험이 쓴다."""
+    return {"Authorization": f"Bearer {TOKEN}",
+            "X-CoLAB-Lab": lab, "X-CoLAB-Account": account}
 #: 타일 서명 비밀 (`〈68〉`). 서비스 토큰과 **다른 값**이어야 한다 — 같은 값이면
 #: 「서명이 실은 토큰을 그대로 쓰고 있다」를 시험이 구분하지 못한다.
 SIGNING_SECRET = "p2viz-test-tile-secret"

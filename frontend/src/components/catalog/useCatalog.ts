@@ -12,6 +12,12 @@ import type {
 } from './types';
 import { DEFAULT_SORT } from './types';
 
+/**
+ * 못 불러왔을 때의 **한 문장**. 원인을 화면이 지어내지 않고, 실패한 요청의 원문
+ * (`Failed to fetch` 같은 것)도 사람에게 내보내지 않는다 — 결은 `Policy_홈_대시보드 §9`.
+ */
+export const CATALOG_LOAD_FAILED = '데이터셋 목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.';
+
 export type CatalogState = {
   query: CatalogQuery;
   list: CatalogList | null;
@@ -20,6 +26,8 @@ export type CatalogState = {
   baseTotal: number | null;
   error: string | null;
   hasConditions: boolean;
+  /** 다시 불러오기 — 실패 자리의 손잡이가 부른다. 조건·정렬은 그대로 둔다. */
+  reload: () => void;
   setSort: (column: CatalogColumn, order: SortOrder) => void;
   toggleValue: (column: CatalogColumn, value: FacetValue) => void;
   clearColumn: (column: CatalogColumn) => void;
@@ -39,7 +47,9 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
   const [list, setList] = useState<CatalogList | null>(null);
   const [facets, setFacets] = useState<FacetSet | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
   const baseTotal = useRef<number | null>(null);
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   const hasConditions = useMemo(
     () => Object.values(query.filters).some((v) => v && v.length > 0),
@@ -56,13 +66,19 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
         setFacets(f);
         setError(null);
       })
-      .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : '목록을 불러오지 못했어요.');
+      .catch(() => {
+        if (!alive) return;
+        // **앞서 그린 표를 남기지 않는다** — 조건을 바꾼 뒤 실패했는데 옛 행이 남아 있으면
+        // 그 행이 새 조건의 답으로 읽힌다. 그리고 빈 표의 「조건에 맞는 데이터가 없어요」로도
+        // 접지 않는다 (`CODE-REVIEW-20260903` 9 — 없는 것과 못 읽은 것은 다르다).
+        setList(null);
+        setFacets(null);
+        setError(CATALOG_LOAD_FAILED);
       });
     return () => {
       alive = false;
     };
-  }, [source, query, hasConditions]);
+  }, [source, query, hasConditions, nonce]);
 
   const setSort = useCallback((column: CatalogColumn, order: SortOrder) => {
     setQuery((q) => ({ ...q, sort: { column, order } }));
@@ -99,6 +115,7 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
     baseTotal: baseTotal.current,
     error,
     hasConditions,
+    reload,
     setSort,
     toggleValue,
     clearColumn,

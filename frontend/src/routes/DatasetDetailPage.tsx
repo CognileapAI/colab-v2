@@ -9,6 +9,7 @@ import { DatasetPreviewSection } from '../components/datasetpreview/DatasetPrevi
 import type { DatasetPreviewSource } from '../components/datasetpreview/types';
 import { apiApprovalSource } from '../components/approval/approvalSource';
 import type { ApprovalSource } from '../components/approval/types';
+import { LoadFailure } from '../components/common/LoadFailure';
 import { BasicInfoGrid } from '../components/detail/BasicInfoGrid';
 import { DetailHeader } from '../components/detail/DetailHeader';
 import { LockedNotice } from '../components/detail/LockedNotice';
@@ -47,7 +48,7 @@ export function DatasetDetailPage(
 ) {
   const { datasetId = '' } = useParams();
   const state = useLocation().state as BackState;
-  // 실서버가 아직 501 을 내면 픽스처로 그린다 — 서버가 붙는 순간 자동으로 갈아탄다
+  // 서버가 유일한 출처다 — 못 읽으면 못 읽었다고 말한다 (`detailSource.ts` 2026-09-03 개정)
   const source = useMemo(() => props.source ?? defaultDetailSource(), [props.source]);
   // 격자를 반영한 뒤 **서버에게 다시 묻는다** — 화면이 값을 손으로 고치지 않는다.
   const [reloadToken, setReloadToken] = useState(0);
@@ -58,7 +59,7 @@ export function DatasetDetailPage(
     () => props.approvalSource ?? apiApprovalSource(),
     [props.approvalSource],
   );
-  // 계보는 **다른 op** 이라 다른 출처로 읽는다 — 상세가 501 이어도 계보가 살아 있을 수 있고 그 반대도 된다
+  // 계보는 **다른 op** 이라 다른 출처로 읽는다 — 상세가 죽어도 계보가 살아 있을 수 있고 그 반대도 된다
   const lineageSource = useMemo(
     () => props.lineageSource ?? defaultLineageSource(),
     [props.lineageSource],
@@ -122,6 +123,18 @@ export function DatasetDetailPage(
         </div>
       ) : null}
 
+      {/* **못 읽은 것을 「없는 주소」로도 「묘비」로도 말하지 않는다** — 위 두 자리는 각각
+          404·410 만의 것이다. 서버가 500 이거나 닿지 않았을 때 그 문구를 쓰면 있는 데이터를
+          없다고 말한다. 종전에는 이 자리가 픽스처였고, 픽스처가 모르는 id 는 오히려 묘비로
+          그려졌다 (`CODE-REVIEW-20260903` 9). */}
+      {detail.status === 'error' ? (
+        <LoadFailure
+          message="데이터셋을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."
+          onRetry={() => setReloadToken((n) => n + 1)}
+          testId="detail-error"
+        />
+      ) : null}
+
       {detail.status === 'ready' ? (
         <LockedContent
           bodyAccessible={detail.detail.bodyAccessible}
@@ -166,12 +179,20 @@ export function DatasetDetailPage(
               </div>
             </>
           ) : null}
-          {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로 그리지 않는다** —
-              읽지 못하면 구역 자체를 세우지 않는다. */}
+          {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로도, 남의 계보로도
+              그리지 않는다** — 그림을 세우는 대신 못 읽었다는 사실과 다시 불러오기를 둔다
+              (종전에는 픽스처 계보가 이 자리를 채웠다 · `CODE-REVIEW-20260903` 9). */}
           {lineage.status === 'ready' ? (
             <LineageSection
               graph={lineage.graph}
               lastModifiedAt={detail.detail.lastModifiedAt}
+            />
+          ) : null}
+          {lineage.status === 'unavailable' ? (
+            <LoadFailure
+              message="계보를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."
+              onRetry={() => setReloadToken((n) => n + 1)}
+              testId="lineage-error"
             />
           ) : null}
           {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).

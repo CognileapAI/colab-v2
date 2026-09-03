@@ -31,6 +31,12 @@ DB="previewtileslot"
 SCHEMA_ONLY_DB="previewtileslot_schemaonly"
 BROLE="colab_app"      # 경계 롤 = FORCE RLS 에 걸리는 롤. app-role.sql 이 그 성질을 보증한다
 FAILURES=()
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 OK 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 red() { echo "::error::preview-tile-slot-selftest red — $*"; exit 1; }
 
@@ -125,6 +131,10 @@ expect() { # $1=green|red $2=라벨 $3..=환경변수
   local want="$1" label="$2"; shift 2
   local out rc got
   out="$(run_gate "$@")"; rc=$?
+  # 뒤따르는 사유·건수 대조가 이 값을 읽는다 — intercept 로 일찍 빠져나가도 비어 있으면 안 된다.
+  LAST_OUT="$out"
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then echo "[selftest] $label → $got OK"
   else
@@ -138,7 +148,7 @@ expect() { # $1=green|red $2=라벨 $3..=환경변수
 B="COLAB_PREVIEW_TILE_EXEMPT=$EXEMPT_NONE"
 
 # ⓐ 적용 DB 미지정 — red 이되 **원인을 참말로 말해야 한다**
-expect red "ⓐ 대조 정본 미지정" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+expect 미선언 "ⓐ 대조 정본 미지정" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
   COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL=
 case "$LAST_OUT" in
   *cause=입력미선언*missing=*) echo "[selftest] ⓐ 원인 표식(입력미선언) → OK" ;;
@@ -146,20 +156,20 @@ case "$LAST_OUT" in
 esac
 
 # ⓑ 면제 선언 파일 부재
-expect red "ⓑ 면제 선언 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/없는파일.toml" \
+expect 미선언 "ⓑ 면제 선언 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/없는파일.toml" \
   COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
 
 # ⓑ' 파일은 있는데 항목이 없다
 printf '[exempt]\nreason = "항목 자체가 없다"\n' > "$TMP/exempt-empty.toml"
-expect red "ⓑ' 면제 항목 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/exempt-empty.toml" \
+expect 미선언 "ⓑ' 면제 항목 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/exempt-empty.toml" \
   COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
 
 # ⓒ 자리 경로 미선언
-expect red "ⓒ 자리 경로 미선언" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+expect 미선언 "ⓒ 자리 경로 미선언" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
   COLAB_PREVIEW_TILE_DIR= COLAB_PREVIEW_TILE_DB_URL="$URL"
 
 # ⓓ 자리 경로가 없는 디렉터리
-expect red "ⓓ 없는 디렉터리" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+expect 미선언 "ⓓ 없는 디렉터리" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
   COLAB_PREVIEW_TILE_DIR="$TMP/없는자리" COLAB_PREVIEW_TILE_DB_URL="$URL"
 
 # ⓘ 쓸 수 있는 타일 1건 → green
@@ -308,5 +318,7 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::preview-tile-slot-selftest red — 실패한 케이스: ${FAILURES[*]}"
   exit 1
 fi
-echo "preview-tile-slot-selftest green — 14 케이스(red 12 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict preview-tile-slot-selftest
+echo "preview-tile-slot-selftest green — 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
 exit 0

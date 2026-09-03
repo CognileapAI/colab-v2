@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import threading
 import time
 import tokenize
@@ -28,6 +29,7 @@ import pytest
 
 from colab_viz.app import triggers as trigger_app
 from colab_viz.domains.d7_visualization import invalidation
+from colab_viz.domains.d7_visualization import jobs as jobs_domain
 from colab_viz.kernel import storage_layout
 from colab_viz.app import trigger_bus as trigger_port
 from colab_viz.app import trigger_loop
@@ -176,14 +178,99 @@ def test_범위_밖_종류는_트리거가_되지_않는다(tmp_path):
     assert list(port.poll()) == []
 
 
-def test_아는_종류에_모르는_트리거가_실려_오면_거절한다(tmp_path):
+def test_아는_종류에_모르는_트리거가_실려_오면_격리한다(tmp_path):
     """**음성 · 조용히 넘기지 않는다.** 걸러내면 같은 버그가 다음에도 오고 그때는
-    아무도 모른다(`invalidation.OutOfScope` 와 같은 자세)."""
+    아무도 모른다(`invalidation.OutOfScope` 와 같은 자세).
+
+    ⭑ ⟨개정 2026-09-03 · 코드리뷰 #2⟩ **거절의 방식이 바뀌었다.** ／ 종전 문면
+    ~~`poll()` 이 `UnknownTrigger` 를 던진다~~ — 그 예외가 **제너레이터 안**에서 터져
+    `triggers.drain` 의 `list(port.poll())` 를 통째로 죽였고, 그러면 같은 틱의 **멀쩡한
+    봉투까지 한 건도 집행·ack 되지 못한 채** 매 틱 같은 자리에서 다시 터졌다(버전 스큐·
+    수동 투입 시). 지금은 **어긋난 봉투 하나만** 버스 안의 격리 자리로 옮기고 사유를
+    남긴다 — 조용히 걸러내는 것이 아니라, 나머지를 인질로 잡지 않는 것이다.
+    """
     bus = tmp_path / "bus"
-    _envelope(bus, event_type="preview.grid-changed", trigger="색 범위 확정",
-              upload_id="01ARZ3NDEKTSV4RRFFQ69G5FAV")
-    with pytest.raises(invalidation.UnknownTrigger):
-        list(trigger_port.SpoolTriggerPort(bus).poll())
+    path = _envelope(bus, event_type="preview.grid-changed", trigger="색 범위 확정",
+                     upload_id="01ARZ3NDEKTSV4RRFFQ69G5FAV")
+    port = trigger_port.SpoolTriggerPort(bus)
+    assert list(port.poll()) == [], "계약에 없는 트리거가 사건이 됐다"
+    assert not path.exists(), "어긋난 봉투가 버스에 남아 매 틱 다시 터진다"
+    quarantined = bus / trigger_port.QUARANTINE_DIRNAME / path.name
+    assert quarantined.exists(), "어긋난 봉투를 지워 버렸다 — 증거가 남아야 한다"
+    assert len(port.quarantined) == 1
+    assert "색 범위 확정" in port.quarantined[0].reason, "사유가 남지 않았다"
+    # 격리 자리에 놓인 것은 다음 바퀴에 **다시 집히지 않는다.**
+    assert list(port.poll()) == []
+
+
+def test_어긋난_봉투_하나가_그_틱_전체를_막지_않는다(source_root, put_target, tiny_geotiff,
+                                              tmp_path):
+    """**코드리뷰 #2 의 형제** — 격리의 요점은 「나머지가 돈다」이다."""
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    _render(client, tid)
+    # 사전순으로 **어긋난 것이 먼저** 온다 — 종전이면 여기서 틱이 죽었다.
+    bad = _envelope(bus, event_type="preview.grid-changed", trigger="색 범위 확정",
+                    upload_id=tid, event_id="01JQ000000000000000000AC0")
+    good = _envelope(bus, event_type="preview.backend-rerun", trigger="미리보기 뒷단 재실행",
+                     upload_id=tid, event_id="01JQ000000000000000000AC1")
+    port = trigger_port.SpoolTriggerPort(bus)
+    done = trigger_app.drain(port, jobs=client.app.state.jobs,
+                             source=client.app.state.source)
+    assert len(done) == 1, "어긋난 봉투 하나가 멀쩡한 봉투의 집행을 막았다"
+    assert done[0].job.status == "완료"
+    assert not good.exists(), "집행이 끝났는데 알림이 걷히지 않았다"
+    assert not bad.exists() and (bus / trigger_port.QUARANTINE_DIRNAME / bad.name).exists()
+
+
+def test_한_건이_터져도_같은_틱의_다음_건은_집행된다(source_root, put_target, tiny_geotiff,
+                                              tmp_path):
+    """`drain` 독스트링 축자 — 「**한 건이 실패해도 나머지를 멈추지 않는다** — 실패한
+    건의 알림은 걷지 않는다」. 종전 코드는 `LookupError` 만 잡아 그 문장이 거짓이었다."""
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    _render(client, tid)
+    real = client.app.state.jobs
+
+    class 한_건만_터지는_jobs:
+        def __init__(self):
+            self.seen = 0
+
+        def regenerate(self, event, *, source):
+            self.seen += 1
+            if self.seen == 1:
+                raise RuntimeError("렌더가 터졌다")
+            return real.regenerate(event, source=source)
+
+    boom = _envelope(bus, event_type="preview.grid-changed", trigger="격자 변경",
+                     upload_id=tid, event_id="01JQ000000000000000000AD0")
+    good = _envelope(bus, event_type="preview.backend-rerun", trigger="미리보기 뒷단 재실행",
+                     upload_id=tid, event_id="01JQ000000000000000000AD1")
+    done = trigger_app.drain(trigger_port.SpoolTriggerPort(bus),
+                             jobs=한_건만_터지는_jobs(), source=client.app.state.source)
+    assert len(done) == 1, "한 건의 예외가 같은 틱의 다음 건을 막았다"
+    assert boom.exists(), "실패한 건의 알림이 걷혔다 — 다음 바퀴가 다시 집을 수 없다"
+    assert not good.exists()
+
+
+def test_이미_집행한_봉투의_재전달본은_버스에_쌓이지_않는다(tmp_path):
+    """**코드리뷰 #2 의 형제** — 멱등 키로 거르기만 하고 `ack` 를 못 하면 그 파일은
+    `_inflight` 에 등록되지 않아 **영원히 못 걷는다.** 재전달이 정상인 계약에서
+    (at-least-once) 그것은 스풀이 무한히 자라고 매 틱 재파싱된다는 뜻이다."""
+    bus = tmp_path / "bus"
+    port = trigger_port.SpoolTriggerPort(bus)
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가",
+              upload_id="01ARZ3NDEKTSV4RRFFQ69G5FAV", event_id="01JQ000000000000000000AE1")
+    for e in list(port.poll()):
+        port.ack(e)
+    again = _envelope(bus, event_type="preview.file-added", trigger="파일 추가",
+                      upload_id="01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                      event_id="01JQ000000000000000000AE2")
+    assert list(port.poll()) == [], "같은 멱등 키의 재전달이 두 번 집행됐다"
+    assert not again.exists(), "이미 집행한 봉투의 재전달본이 버스에 영구히 남았다"
+    assert list(bus.glob("*.json")) == []
 
 
 def test_그린_적_없는_대상의_트리거는_아무것도_지우지_않는다(source_root, put_target,
@@ -199,6 +286,78 @@ def test_그린_적_없는_대상의_트리거는_아무것도_지우지_않는�
                              jobs=client.app.state.jobs, source=client.app.state.source)
     assert done == []
     assert {p.name: p.read_bytes() for p in sorted(base.rglob("*")) if p.is_file()} == before
+
+
+def test_사라진_대상의_트리거는_걷고_다음_틱에_다시_안_돌아온다(source_root, put_target,
+                                                          tiny_geotiff, tmp_path):
+    """**사라진 대상도 답이 정해져 있다** — 레인 C 수용 검토 #3.
+
+    미리보기를 그린 뒤 대상 디렉터리가 지워지면 `source.resolve` 가
+    `ports.source.TargetNotFound` 를 던진다. 그것은 `LookupError` 가 **아니라** 그냥
+    `Exception` 이라 `drain` 의 마지막 그물에 걸렸고, 그 갈래는 걷지 않으므로 같은
+    봉투를 **매 틱 다시 집어 영원히** 트레이스백을 찍었다. 대상이 사라진 것은 다시
+    해 봐도 같은 결론이라 「그린 적 없는 대상」과 **같은 자리**다.
+    """
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    assert _render(client, tid)["status"] == "완료", \
+        "첫 렌더가 안 끝났다 — `_latest_for` 가 답을 못 해 시험의 전제가 안 선다"
+    shutil.rmtree(storage_layout.target_dir(source_root, tid))
+
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가", upload_id=tid)
+    port = trigger_port.SpoolTriggerPort(bus)
+    assert trigger_app.drain(port, jobs=client.app.state.jobs,
+                             source=client.app.state.source) == []
+    assert list(bus.glob("*.json")) == [], \
+        "사라진 대상의 알림을 걷지 않았다 — 매 틱 다시 집는다"
+    assert trigger_app.drain(port, jobs=client.app.state.jobs,
+                             source=client.app.state.source) == [], \
+        "걷은 봉투가 다음 틱에 다시 돌아왔다"
+
+
+def test_재생성이_시간_안에_안_끝나면_걷지_않는다(source_root, put_target, tiny_geotiff,
+                                          tmp_path, monkeypatch):
+    """**시간 초과는 성공이 아니다** — 레인 C 수용 검토 #4.
+
+    `regenerate` 가 `job.done.wait(timeout=…)` 의 **반환값을 보지 않았다.** 기다리다
+    시간이 다하면 아직 아무것도 안 한 결과(`plan=None`·`removed=()`)를 그대로 돌려주고
+    `drain` 이 그것을 성공으로 읽어 알림을 걷었다 — **낡은 미리보기는 남고 사건은
+    사라진다.** 안 끝난 것은 실패도 성공도 아니므로 다음 바퀴가 다시 집어야 한다.
+    """
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "thread")
+    tid = put_target(copy_from=[tiny_geotiff])
+    r = client.post("/viz/v1/renders", headers=AUTH,
+                    json={"target": {"uploadId": tid}, "style": {"palette": "단색-파랑"}})
+    assert r.status_code == 202, r.text
+    store = client.app.state.jobs
+    first = store.get(r.json()["renderId"])
+    assert first.done.wait(timeout=60), "첫 렌더가 안 끝났다 — 시험의 전제가 안 섰다"
+    assert first.status == "완료", first.failure
+
+    # 재생성 작업을 **막는다** — 끝나지 않는 렌더를 만든다. 마감과 유예를 함께 좁혀
+    # 기다리는 시간이 시험의 시간이 되지 않게 한다.
+    release = threading.Event()
+    original = jobs_domain._run
+
+    def _blocked(job):
+        release.wait(timeout=60)
+        original(job)
+
+    monkeypatch.setattr(jobs_domain, "_run", _blocked)
+    monkeypatch.setattr(jobs_domain, "_COMPLETION_GRACE_SECONDS", 0.0)
+    first.spec.deadline_seconds = 0.05      # 재생성은 직전 작업의 spec 을 이어받는다
+
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가", upload_id=tid)
+    port = trigger_port.SpoolTriggerPort(bus)
+    try:
+        done = trigger_app.drain(port, jobs=store, source=client.app.state.source)
+    finally:
+        release.set()
+    assert done == [], "안 끝난 재생성이 성공으로 보고됐다"
+    assert [p.name for p in bus.glob("*.json")], \
+        "재생성이 시간 안에 안 끝났는데 알림을 걷었다 — 사건이 사라진다"
 
 
 def test_배선을_지나도_원본과_기준_격자는_한_바이트도_안_바뀐다(source_root, put_target,

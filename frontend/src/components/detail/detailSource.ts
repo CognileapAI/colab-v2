@@ -1,13 +1,16 @@
-// 상세를 채우는 두 출처. 얼굴은 하나(`DetailSource`)라 화면은 어느 쪽인지 모른다.
+// 상세를 채우는 출처. **서버가 유일한 출처다.**
 //
-// **전환 방법** — 서버가 `getDataset` 을 구현해 501 을 그만 내면 `defaultDetailSource()` 가
-// 그 응답을 그대로 쓴다. 화면·컴포넌트 코드는 한 줄도 바뀌지 않는다.
+// ⭑ **2026-09-03 개정 — 픽스처 폴백을 걷었다** (`CODE-REVIEW-20260903` 9).
+// 종전 폴백은 `getDataset` 이 501 이던 동안의 것이었다. 지금 그 op 은 구현돼 있고, 남아 있던
+// 폴백은 **실존하는 데이터셋을 픽스처가 모르는 id 라는 이유로 `DatasetGone`** 으로 바꿔
+// 「이 주소에는 화면이 없어요」를 그리고 있었다 (`fixture.ts` 의 모르는 id → `DatasetGone`).
+//
+// ⭑ **2026-09-03 개정 — 17차 해제(Ted 판정 ②)를 그 위에 얹었다.**
+// 지금의 규칙 넷 — 410 은 **내 연구실 묘비**(`DatasetTombstone`) · 404 는 나머지 셋이 접힌
+// 「없는 주소」(`DatasetGone`) · 401 은 `api/client.ts` 가 토큰을 버려 `AuthGate` 로 넘긴다 ·
+// 그 밖의 실패는 **못 읽었다**(`useDatasetDetail` 의 `error`)고 말한다.
 import { api } from '../../api/client';
-import { fixtureDetailSource } from './fixture';
 import { DatasetGone, DatasetTombstone, type DetailSource } from './types';
-
-/** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 두 종). */
-class NotImplemented extends Error {}
 
 export function apiDetailSource(): DetailSource {
   return {
@@ -20,8 +23,8 @@ export function apiDetailSource(): DetailSource {
       //   순서가 중요하다 — 410 을 404 뒤에 두는 실수는 안 나지만, 둘을 한 줄로 합치면
       //   화면이 영영 갈리지 못한다. 501 과도 섞지 않는다.
       if (r.response.status === 410) throw new DatasetTombstone();
+      // 404 는 묘비가 아니라 「없는 주소」다 (`Policy_공통_기반 §2.4`)
       if (r.response.status === 404) throw new DatasetGone();
-      if (r.response.status === 501) throw new NotImplemented();
       const body = r.data;
       if (!body) throw new Error('데이터셋 상세를 불러오지 못했어요.');
       return body;
@@ -30,21 +33,9 @@ export function apiDetailSource(): DetailSource {
 }
 
 /**
- * 실서버를 먼저 부르고, 그 op 이 아직 501 이거나 닿지 않으면 픽스처로 그린다.
- * **못 그리는 두 상태(404 · 410)는 폴백하지 않는다** — 지워졌거나 없는 데이터를 픽스처로
- * 되살리면 화면이 거짓말을 한다.
+ * 화면이 쓰는 출처. **대역이 없다** — 지워진 것(410)도, 없는 주소(404)도, 못 읽은 것도
+ * 각자 그대로 말한다. 픽스처로 되살리면 화면이 거짓말을 한다.
  */
 export function defaultDetailSource(): DetailSource {
-  const live = apiDetailSource();
-  const stub = fixtureDetailSource();
-  return {
-    async get(datasetId) {
-      try {
-        return await live.get(datasetId);
-      } catch (e) {
-        if (e instanceof DatasetGone || e instanceof DatasetTombstone) throw e;
-        return stub.get(datasetId);
-      }
-    },
-  };
+  return apiDetailSource();
 }

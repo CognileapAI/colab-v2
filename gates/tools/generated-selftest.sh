@@ -11,11 +11,19 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GATE="$REPO_ROOT/gates/tools/generated-up-to-date.sh"
 FIX="$REPO_ROOT/gates/fixtures/generated"
 FAILURES=()
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 OK 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 expect() { # $1=기대(green|red) $2=라벨 $3.. = 실행할 명령
   local want="$1" label="$2"; shift 2
   local out rc
   out="$("$@" 2>&1)"; rc=$?
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   local got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then
     echo "[selftest] $label → $got OK"
@@ -53,4 +61,6 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   echo "::error::generated-selftest red — ${#FAILURES[@]}건 실패: ${FAILURES[*]}"
   exit 1
 fi
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict generated-selftest
 echo "generated-selftest green — 9 케이스 전부 기대대로 (green 1 · red 8)."

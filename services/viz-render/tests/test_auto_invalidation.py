@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,16 @@ from colab_viz.domains.d7_visualization import invalidation
 from colab_viz.kernel import storage_layout
 
 from conftest import AUTH, make_client
+
+
+def _wait(predicate, timeout: float = 20.0) -> bool:
+    """조건이 설 때까지 기다린다 — **시험이 실행기를 대신 돌리지 않는다.**"""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return predicate()
 
 
 # ── 도우미 ───────────────────────────────────────────────────────────────────
@@ -206,6 +217,82 @@ def test_재생성은_대상_디렉터리를_다시_읽는다(source_root, put_t
         source=client.app.state.source)
     assert len(outcome.job.spec.target.parts) == 2
     assert first["renderId"] != outcome.job.render_id
+
+
+def test_운영_기본_실행기에서도_무효화가_실제로_집행된다(source_root, put_target,
+                                                  tiny_geotiff):
+    """⭑ ⟨2026-09-03 · 코드리뷰 #2⟩ **레이스가 아니라 상시였다.**
+
+    종전 `regenerate` 는 `submit()` **직후** `job.invalidation` 을 읽었는데, 기본
+    실행기(`COLAB_VIZ_EXECUTION=thread`)에서 그 필드는 렌더가 끝난 뒤에야 채워진다 —
+    즉 운영에서는 **언제나 `None`** 이었고 `invalidation.apply` 호출처가 레포에 그 한
+    곳뿐이라 **낡은 미리보기가 한 번도 지워지지 않은 채** 트리거만 ack 됐다.
+    오류가 없어서 아무도 몰랐다. 이 시험은 **inline 이 아니라 thread** 로 잰다.
+    """
+    client = make_client(source_root, "thread")
+    tid = put_target(copy_from=[tiny_geotiff])
+    r = client.post("/viz/v1/renders", headers=AUTH, json={
+        "target": {"datasetId": tid}, "style": {"palette": "단색-파랑"}})
+    assert r.status_code == 202
+    store = client.app.state.jobs
+    first = store.get(r.json()["renderId"])
+    assert _wait(lambda: first.status == "완료"), "첫 렌더가 끝나지 않았다"
+    old = [a.path for a in first.artifacts.all()]
+    assert old and all(p.exists() for p in old)
+
+    # 조각을 하나 더 놓는다 → 원본 해시가 바뀌어 **다시 구우면 키가 달라진다.**
+    (storage_layout.target_dir(source_root, tid) / "두번째.tif").write_bytes(
+        tiny_geotiff.read_bytes())
+    outcome = store.regenerate(
+        invalidation.InvalidationEvent(trigger=invalidation.TRIGGER_FILE_ADDED,
+                                       target_id=tid),
+        source=client.app.state.source)
+
+    assert outcome.job.status == "완료", "재생성이 끝나기 전에 결과를 돌려줬다"
+    assert outcome.plan is not None, "thread 실행기에서 무효화 범위가 None 이다"
+    assert outcome.removed, "무효화 범위는 있는데 집행이 한 건도 안 됐다"
+    assert outcome.removed == outcome.job.invalidation_removed
+    assert not any(p.exists() for p in old), "낡은 산출물이 그대로 남았다"
+    for a in outcome.job.artifacts.all():
+        assert a.path.exists(), "새로 구운 산출물까지 지웠다"
+
+
+def test_사람이_부른_렌더는_앞의_산출물을_지우지_않는다(source_root, put_target,
+                                                tiny_geotiff):
+    """**음성 · 집행은 트리거 경로에서만 선다.** 무효화 범위 계산은 두 경로가 함께
+    지나지만(완료 정의 ⓒ), **지우는 것**은 사건이 있을 때뿐이다 — 아니면 스타일만
+    바꿔 다시 그리는 평범한 요청이 앞의 그림을 지운다."""
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    first = client.app.state.jobs.get(_render(client, tid)["renderId"])
+    old = [a.path for a in first.artifacts.all()]
+    (storage_layout.target_dir(source_root, tid) / "두번째.tif").write_bytes(
+        tiny_geotiff.read_bytes())
+    second = client.app.state.jobs.get(_render(client, tid)["renderId"])
+    assert second.invalidation is not None and second.invalidation.stale, \
+        "범위 계산은 두 경로가 함께 지나야 한다"
+    assert second.invalidation_removed == (), "수동 경로가 집행까지 했다"
+    assert all(p.exists() for p in old), "사람이 부른 렌더가 앞의 산출물을 지웠다"
+
+
+def test_재생성이_실패하면_낡은_그림을_지우지_않는다(source_root, put_target, tiny_geotiff):
+    """`regenerate` 독스트링 축자 — 「굽기 전에 지우면 실패했을 때 볼 그림이 하나도
+    안 남는다 — **새 것이 선 뒤에 낡은 것을 치운다**」. 새 것이 서지 못했으면 치우지
+    않는 것이 그 문장의 나머지 절반이다."""
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    first = client.app.state.jobs.get(_render(client, tid)["renderId"])
+    old = [a.path for a in first.artifacts.all()]
+    # 그릴 수 없는 바이트로 갈아 끼운다 → 재생성이 실패로 끝난다.
+    for p in storage_layout.target_dir(source_root, tid).iterdir():
+        p.write_bytes(b"\x00" * 64)
+    outcome = client.app.state.jobs.regenerate(
+        invalidation.InvalidationEvent(trigger=invalidation.TRIGGER_BACKEND_RERUN,
+                                       target_id=tid),
+        source=client.app.state.source)
+    assert outcome.job.status == "실패"
+    assert outcome.removed == ()
+    assert all(p.exists() for p in old), "실패한 재생성이 낡은 그림을 지웠다"
 
 
 # ── ④ 수동 경로 흡수 (완료 정의 ⓒ) ───────────────────────────────────────────

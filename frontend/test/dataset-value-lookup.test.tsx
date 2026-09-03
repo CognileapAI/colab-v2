@@ -13,7 +13,7 @@
  * 값**이 나가는데, 그것이 이 기능에서 제일 나쁜 실패다. jsdom 은 실제 레이아웃을 하지
  * 않으므로 순수 함수(`pointFromViewport`)로 배율·이동까지 못 박는다.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource, ValueLookupResult } from '../src/components/datasetpreview/types';
@@ -120,6 +120,71 @@ describe('값 조회 — 지도의 한 점', () => {
     await waitFor(() => expect(screen.getByTestId('value-lookup-value')).toBeTruthy());
 
     expect((source.create as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before);
+  });
+
+  /**
+   * ⭑ **2026-09-03 추가** (`CODE-REVIEW-20260903` 부록) — 순서 보호.
+   * 종전에는 `pick` 이 응답 순서를 보지 않아 **먼저 누른 자리의 늦은 응답**이 나중에 누른
+   * 자리의 값을 덮었다. 오류 없이 **다른 칸의 값**이 그려지는, 이 기능 최악의 실패다.
+   */
+  it('느린 이전 누름이 최신 값을 덮지 않는다', async () => {
+    const source = makeSource(MAPPED, HIT);
+    // 첫 조회는 붙잡아 두고, 둘째 조회를 먼저 끝낸다 — 실제 망에서 나는 순서 뒤집힘이다.
+    let releaseFirst: (() => void) | null = null;
+    let call = 0;
+    source.lookupValue = vi.fn((): Promise<ValueLookupResult> => {
+      call += 1;
+      if (call === 1) {
+        return new Promise((resolve) => {
+          releaseFirst = () => resolve({ ...HIT, value: 111 } as ValueLookupResult);
+        });
+      }
+      return Promise.resolve({ ...HIT, value: 222 } as ValueLookupResult);
+    });
+
+    const viewport = await mountMapped(source);
+    sizeViewport(viewport);
+
+    fireEvent.click(viewport, { clientX: 10, clientY: 10 }); // 첫 누름 — 아직 안 온다
+    fireEvent.click(viewport, { clientX: 190, clientY: 190 }); // 둘째 누름 — 먼저 온다
+
+    await waitFor(() => expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm'));
+
+    // 이제 첫 응답이 도착한다. **최신 값을 덮으면 안 된다.**
+    await act(async () => {
+      releaseFirst?.();
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm');
+    expect(screen.getByTestId('value-lookup-value').textContent).not.toContain('111');
+  });
+
+  it('늦게 온 이전 실패가 최신 값을 「못 읽음」으로 덮지 않는다', async () => {
+    const source = makeSource(MAPPED, HIT);
+    let failFirst: (() => void) | null = null;
+    let call = 0;
+    source.lookupValue = vi.fn((): Promise<ValueLookupResult> => {
+      call += 1;
+      if (call === 1) {
+        return new Promise((_resolve, reject) => {
+          failFirst = () => reject(new Error('늦게 도착한 실패'));
+        });
+      }
+      return Promise.resolve({ ...HIT, value: 222 } as ValueLookupResult);
+    });
+
+    const viewport = await mountMapped(source);
+    sizeViewport(viewport);
+    fireEvent.click(viewport, { clientX: 10, clientY: 10 });
+    fireEvent.click(viewport, { clientX: 190, clientY: 190 });
+    await waitFor(() => expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm'));
+
+    await act(async () => {
+      failFirst?.();
+      await Promise.resolve();
+    });
+    expect(screen.queryByTestId('value-lookup-unavailable')).toBeNull();
+    expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm');
   });
 
   it('⑹ 좌표가 없는 자료에는 조회 자리가 없다', async () => {

@@ -5,8 +5,54 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+
+#: 접미사는 **정확히 `_FILE`** 이다. 읽는 쪽과 배선하는 쪽의 이름이 한 글자라도 어긋나면
+#: 배선은 있는데 아무도 안 읽는 상태가 되고, 그것은 에러를 내지 않는다.
+FILE_SUFFIX = "_FILE"
+
+
+def resolve_env_or_file(env: Mapping[str, str], name: str) -> str | None:
+    """`<VAR>` 또는 `<VAR>_FILE` 에서 값을 뽑는다 (`PLAN-SoT §9 〈121〉-㉯` 와 같은 규칙).
+
+    ① `_FILE` 이 있으면 그 파일을 읽는다 — **끝의 공백·개행만** 벗긴다(`rstrip`).
+    ② 파일이 없거나 못 읽거나 비었으면 **죽는다.** 조용한 폴백은 없다 —
+       「검사를 못 한 것은 통과가 아니다」와 같은 계열이다.
+    ③ 둘 다 있으면 **죽는다.** 두 출처가 갈리면 어느 것이 진실인지 아무도 모른다.
+    ④ 둘 다 없으면 `None` — 지금과 같은 동작이다(표면이 503 을 낸다).
+    ⑤ **값을 로그·예외 메시지에 싣지 않는다.** 경로와 사유만 적는다.
+
+    ⭑ ⟨2026-09-03 · 코드리뷰 #15⟩ **이 단위에는 이 장치 자체가 없었다.** 서비스 토큰과
+    타일 서명 비밀이 생 env 로 들어와 `docker inspect` 한 번에 드러났고,
+    `COLAB_VIZ_TILE_SIGNING_SECRET_FILE` 을 설정해도 **오류 없이 무시**돼 표면이 조용히
+    503 만 냈다 — 무시된 변수 이름은 어디에도 안 나왔다.
+
+    ⚠ **손사본이다.** core-api `kernel/config.resolve_env_or_file` 과 규칙이 같고 글자도
+    거의 같다. 배포 단위가 서로 독립이라 공유 라이브러리로 빼지 않는 것이 이 레포의
+    규율이지만(`CLAUDE.md §3-1`), 같은 규칙이 두 벌로 사는 것은 **codegen 통일 후보**다
+    (`CODE-REVIEW-20260903-PLAN.md §4` 유보 1 — `ids.py`·`errors.py` 와 같은 묶음).
+    """
+    file_env = name + FILE_SUFFIX
+    direct = (env.get(name) or "").strip()
+    path = (env.get(file_env) or "").strip()
+    if path and direct:
+        raise RuntimeError(
+            f"{name} 와 {file_env} 이 둘 다 설정돼 있다 — 두 출처가 갈리면 어느 것이 "
+            "진실인지 아무도 모른다. 하나만 둔다.")
+    if not path:
+        return direct or None
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"{file_env} 이 가리키는 파일을 읽지 못했다: {path} "
+            f"({type(exc).__name__}) — 못 읽은 것을 빈 값으로 넘기지 않는다.") from None
+    value = raw.rstrip()
+    if not value:
+        raise RuntimeError(f"{file_env} 이 가리키는 파일이 비었다: {path}")
+    return value
 
 #: 정본 `Policy_데이터셋_상세 §8` — 「미리보기는 500MB까지 그려요」 **[가정]**.
 #: 정본이 스스로 가정이라 표시한 값이라 우리도 그 표시를 지우지 않는다.
@@ -117,10 +163,14 @@ def load_settings() -> Settings:
     root = os.environ.get("COLAB_VIZ_SOURCE_ROOT")
     return Settings(
         source_root=Path(root) if root else DEFAULT_SOURCE_ROOT,
-        service_token=os.environ.get("COLAB_VIZ_SERVICE_TOKEN") or None,
+        # ⭑ ⟨2026-09-03 · 코드리뷰 #15⟩ **값 대신 경로로 받을 수 있다**(`_FILE`).
+        # 생 env 로 넘기면 `docker inspect` 한 번에 드러난다 — DB 비밀번호가 작업 기록에
+        # 새어 core-api 가 `_FILE` 을 도입했던 바로 그 경로다.
+        service_token=resolve_env_or_file(os.environ, "COLAB_VIZ_SERVICE_TOKEN"),
         # **비밀을 코드에 박지 않는다.** 없으면 None 이고 렌더 표면은 503 이다 —
         # 기본값을 하나 지어 넣으면 그것이 모든 배포에서 같은 비밀이 된다.
-        tile_signing_secret=os.environ.get("COLAB_VIZ_TILE_SIGNING_SECRET") or None,
+        tile_signing_secret=resolve_env_or_file(os.environ,
+                                                "COLAB_VIZ_TILE_SIGNING_SECRET"),
         execution=os.environ.get("COLAB_VIZ_EXECUTION", "thread"),
         # **선언이 없으면 한 장이다.** 배포가 아무것도 안 적으면 정본 문면대로 나간다.
         tile_branch_enabled=_tile_branch_from_env(os.environ.get("COLAB_VIZ_TILE_BRANCH")),

@@ -14,15 +14,18 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  frontend-typecheck frontend-test
+  frontend-typecheck frontend-test frontend-fixture-reach
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   backup-cron-streak
+  service-tests-core-api service-tests-ai-service
+  service-tests-viz-render service-tests-pipeline-worker
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
-  frontend-typecheck-selftest frontend-test-selftest
+  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
+  service-tests-selftest
 )
 
 case "$GATE" in
@@ -80,6 +83,18 @@ case "$GATE" in
   frontend-test-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 수집 0건 red 포함.
     exec "$REPO_ROOT/gates/tools/frontend-test-selftest.sh"
+    ;;
+  frontend-fixture-reach)
+    # 운영 진입점(frontend/src/main.tsx)에서 실제로 닿는 모듈에 개발용 픽스처
+    # (fixture.ts·graphFixture.ts·localEngine.ts)가 섞여드는지 (레인 E · CODE-REVIEW-20260903-E §5·§8).
+    # 판정부는 frontend/scripts/reachable-from-entry.mjs 를 그대로 돈다 — 게이트가 자기 사본을
+    # 만들지 않는다. node·판정부 스크립트·진입점 부재는 skip 이 아니라 red(준비)다.
+    exec "$REPO_ROOT/gates/tools/frontend-fixture-reach.sh"
+    ;;
+  frontend-fixture-reach-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처 도달·도달 0건·별칭 선언·
+    # 판정부·진입점 부재까지.
+    exec "$REPO_ROOT/gates/tools/frontend-fixture-reach-selftest.sh"
     ;;
   import-boundary)
     # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).
@@ -224,21 +239,102 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (0 건 · skip · fail).
     exec "$REPO_ROOT/gates/tools/stage2-markers-selftest.sh"
     ;;
+  service-tests-core-api|service-tests-ai-service|service-tests-viz-render|service-tests-pipeline-worker)
+    # 서비스 pytest 묶음을 **게이트가 판정한다** (2026-09-03 코드리뷰 #6).
+    # 종전 — CI 가 core-api·ai-service·viz-render 의 pytest 를 어느 잡에서도 돌리지 않았고
+    # pipeline-worker 만 `stage2 and not e2e` 부분 집합을 돌았다. 서비스 시험 함수 1102 중
+    # **871 이 CI 에서 한 번도 실행되지 않았다.** 시험이 레포에 있는 것과 CI 가 그것을
+    # 판정하는 것은 다른 사실이다 — `frontend-test` 가 닫은 것과 같은 계열이다.
+    #
+    # 선택자는 **여기 한 곳에만** 적는다(스크립트 안에 기본값을 두지 않는다 — 두면 갈린다):
+    #   viz-render      `not e2e and not perf`  e2e·perf 는 원천 3.5 GB 마운트가 필요하다
+    #   pipeline-worker `not e2e and not dbint` dbint 는 COLAB_PIPELINE_DB_URL 이 필요하다
+    #   ai-service      `not dictdb`            dictdb 는 COLAB_AI_TEST_DICT_DB_URL 이 필요하다
+    #   core-api        `not e2e`               e2e 는 원천 마운트가 필요하다. 나머지 전부는
+    #                                           게이트가 **일회용 Postgres 를 스스로 세워** 돈다
+    # ⚠ 뺀 표식은 **취소가 아니다** — 표식은 붙어 있고, 그 환경이 있는 실행에서 함께 돈다
+    #   (`stage2-markers` 가 e2e 를 빼는 것과 같은 규율). 뺀 건수는 요약줄에 deselected 로 나온다.
+    # 수집 0건 · 실행 0건(전부 skip) · failed/errors 는 전부 red. venv 부재는 red(준비 · 78).
+    case "$GATE" in
+      service-tests-core-api)        exec "$REPO_ROOT/gates/tools/service-tests.sh" core-api        "not e2e" ;;
+      service-tests-ai-service)      exec "$REPO_ROOT/gates/tools/service-tests.sh" ai-service      "not dictdb" ;;
+      service-tests-viz-render)      exec "$REPO_ROOT/gates/tools/service-tests.sh" viz-render      "not e2e and not perf" ;;
+      service-tests-pipeline-worker) exec "$REPO_ROOT/gates/tools/service-tests.sh" pipeline-worker "not e2e and not dbint" ;;
+    esac
+    ;;
+  service-tests-selftest)
+    # 위 네 게이트가 red fixture 로 fail-closed 임을 증명한다
+    # (수집 0건 · 실행 0건 · 실패 1건 · venv 부재 · 필수 인자 부재).
+    exec "$REPO_ROOT/gates/tools/service-tests-selftest.sh"
+    ;;
   selftest)
     # 증명 셋을 한 번에. 하나라도 red 면 red.
-    # stage2-markers-selftest 는 여기 없다 — pipeline-worker 런타임 의존(rasterio 등)이 필요해
-    # contract-gates 잡의 환경으로는 못 돈다. CI 는 dormant-tests 잡에서 따로 부른다.
-    # ⭑ e2e-format-coverage-selftest 는 **여기 있다** — 픽스처가 junit XML 과 선언 파일뿐이라
-    #   원천·DB·도커 없이 돈다. **본 게이트(e2e-format-coverage)는 CI 에 없다** — 원천 3.5 GB
-    #   마운트가 없으면 준비 red 이고, 그 red 는 입력 미선언이지 판정 실패가 아니다.
-    # ⭑ frontend-typecheck-selftest 도 **여기 있다** — 이 잡이 이미 `npm ci --prefix frontend` 를
-    #   돌아 `node_modules` 가 실물로 있다(설치 확인 스텝이 그것을 존재로 본다).
-    rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest frontend-typecheck-selftest frontend-test-selftest; do
-      echo "══ $s ══════════════════════════════════════════════"
-      "$REPO_ROOT/gates/run.sh" "$s" || rc=1
+    #
+    # ⭑ ⟨개정 2026-09-03 · 코드리뷰 #6⟩ **집합을 손으로 적지 않는다.**
+    #   종전에는 이 자리에 이름 14개가 손으로 적혀 있었고, `ALL_GATES` 에는 셀프테스트가 18개
+    #   있었다 — **네 개(`autometa-loss-`·`preview-tile-slot-`·`artifact-ownership-`·
+    #   `stage2-markers-selftest`)가 조용히 빠져 있었다.** 빠진 것이 목록의 부재로만 존재하면
+    #   아무도 그것을 세지 않는다. 그것이 green-by-skip 의 목록판이다 (`CLAUDE.md §4`).
+    #
+    #   그래서 구성원을 **`ALL_GATES` 에서 뽑는다.** 새 셀프테스트를 `ALL_GATES` 에 등록하면
+    #   이 집합에 자동으로 들어오고, 빼려면 **아래 면제표에 이름과 사유를 적어야 한다.**
+    #
+    # ── 세 상태 (`CLAUDE.md §4`) ────────────────────────────────────────────
+    #   선언되면 돈다 · 명시적으로 면제하면 **건수와 사유를 드러낸 채** 넘어간다 · 아무 말 없으면 red.
+    #   ⚠ 면제는 「검사하지 않아도 된다」가 아니다 — **다른 잡이 그것을 돈다**는 선언이고,
+    #     그 잡 이름이 사유에 적혀 있다. `gates/run.sh all` 은 면제 없이 전부 돈다.
+    #
+    # ── red 를 두 갈래로 가른다 ────────────────────────────────────────────
+    #   red(판정) = 셀프테스트가 「게이트가 fail-closed 가 아니다」를 찾았다 → 종료 1
+    #   red(준비) = 셀프테스트가 **못 돌았다**(종료 78 또는 준비 표식) → 종료 78
+    #   준비 red 를 판정 red 로 찍으면 「고칠 결함」과 「환경이 없다」가 섞인다.
+    declare -A SELFTEST_EXEMPT=(
+      ["stage2-markers-selftest"]="pipeline-worker 런타임(rasterio·netCDF4 등)이 필요해 contract-gates 잡 환경에서 못 돈다 — CI 는 dormant-tests 잡이 돈다"
+      ["service-tests-selftest"]="서비스 venv(pytest)가 필요해 contract-gates 잡 환경에서 못 돈다 — CI 는 service-tests 잡이 돈다"
+    )
+    members=(); exempted=()
+    for g in "${ALL_GATES[@]}"; do
+      case "$g" in
+        *selftest)
+          if [ -n "${SELFTEST_EXEMPT[$g]:-}" ]; then exempted+=("$g"); else members+=("$g"); fi ;;
+      esac
     done
-    exit $rc
+    echo "── selftest 집합 ───────────────────────────────────────────"
+    echo "  구성원 정본 = ALL_GATES 안의 *selftest (손목록 없음)"
+    echo "  선언 $(( ${#members[@]} + ${#exempted[@]} ))건 = 실행 ${#members[@]}건 ＋ **명시 면제 ${#exempted[@]}건**"
+    for g in ${exempted[@]+"${exempted[@]}"}; do
+      echo "  면제  $g — ${SELFTEST_EXEMPT[$g]}"
+    done
+    echo "────────────────────────────────────────────────────────────"
+
+    rc=0; n_green=0; n_red_judge=0; n_red_ready=0; READY_NAMES=()
+    for s in "${members[@]}"; do
+      echo "══ $s ══════════════════════════════════════════════"
+      out="$(mktemp -t selftest-agg-XXXXXX)"
+      if "$REPO_ROOT/gates/run.sh" "$s" 2>&1 | tee "$out"; then src=0; else src="${PIPESTATUS[0]}"; fi
+      if [ "$src" -eq 0 ] 2>/dev/null; then
+        n_green=$((n_green + 1))
+      elif [ "$src" = 78 ] || grep -q '^::gate-readiness-failure::' "$out" 2>/dev/null; then
+        # 준비 실패를 「셀프테스트가 결함을 찾았다」로 세지 않는다 — 다른 사실이다.
+        n_red_ready=$((n_red_ready + 1)); READY_NAMES+=("$s")
+      else
+        n_red_judge=$((n_red_judge + 1)); rc=1
+      fi
+      rm -f "$out"
+    done
+
+    echo "── selftest 요약 ───────────────────────────────────────────"
+    echo "  선언 $(( ${#members[@]} + ${#exempted[@]} )) · 실행 ${#members[@]} · 면제 ${#exempted[@]}"
+    echo "  green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
+    if [ "$n_red_ready" -gt 0 ]; then
+      printf '::gate-readiness-failure::gate=selftest|waited_for=셀프테스트 %d건의 실행 환경|limit=케이스별 상한|elapsed=-|detail=%s\n' \
+        "$n_red_ready" "${READY_NAMES[*]}"
+      echo "::error::selftest red(준비) — 아래 증명을 **돌리지 못했다.** 통과로 세지 않는다: ${READY_NAMES[*]}"
+    fi
+    [ "$rc" -eq 0 ] || exit 1
+    [ "$n_red_ready" -eq 0 ] || exit 78
+    echo "selftest green — 실행 ${#members[@]}건 전부 fail-closed 증명 통과 (명시 면제 ${#exempted[@]}건은 위에 이름으로 있다)."
+    exit 0
     ;;
   work-item-consistency)
     # 개발 항목 상태의 **대장 ↔ 산문** 불일치 (Ted 판정 2026-08-28).

@@ -183,4 +183,8 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   printf '  - %s\n' "${FAILURES[@]}"
   exit 1
 fi
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+# 종전에는 풀이 준비 실패를 EXPECT_READINESS 에 쌓아 두기만 하고 이 파일이 그것을
+# 한 번도 읽지 않아, 못 돈 케이스가 조용히 사라진 채 green 이 나갈 수 있었다.
+expect_readiness_verdict event-selftest
 echo "event-selftest green — event-lint · event-breaking 이 틀린 것을 틀렸다고 말한다 (fail-closed 증명)."

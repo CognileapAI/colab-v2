@@ -12,8 +12,11 @@
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError
 
 from ..kernel import errors
 from ..kernel import authn
@@ -29,6 +32,18 @@ from .routes import (access, catalog, identity, ingestion, insight, lineage, mem
                      not_implemented, preview, project, session)
 
 API_PREFIX = "/api/v1"
+
+#: 저장 규칙 위반의 **감시 표면**. 본문에서 뺀 사유는 여기로 간다 — 빼기만 하고 남기지
+#: 않으면 「값이 안 맞는다」만 남고 **무엇이 안 맞았는지 아무도 못 센다.**
+_integrity_log = logging.getLogger("colab_core.integrity")
+
+#: 사용자 오류로 갈라 내는 SQLSTATE **둘뿐**이다 (psycopg 3 `Error.sqlstate` · PostgreSQL
+#: class 23). 나머지 무결성 위반(외래키 `23503` · not-null `23502` …)은 **다시 던진다** —
+#: 그것들은 사용자가 고칠 수 있는 값이 아니라 **우리 코드가 잘못 쓴 것**이고, 4xx 로 접는
+#: 순간 감시에서 사라진다. 상수가 psycopg 실물과 갈리지 않는지는
+#: `tests/test_input_error_paths.py` 가 psycopg 예외 클래스와 대조해 못 박는다.
+SQLSTATE_UNIQUE_VIOLATION = "23505"
+SQLSTATE_CHECK_VIOLATION = "23514"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -99,5 +114,42 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return errors.error_response(
             errors.bad_request("요청 값이 규칙에 맞지 않는다.", {"errors": str(exc.errors())})
         )
+
+    # ── 입력 오류 · 저장 규칙 위반 (`CODE-REVIEW-20260903` #12) ──────────────
+    # 종전에는 핸들러가 위 둘뿐이라, 손검사를 빠뜨린 자리에서 **사용자의 오타가 500** 이
+    # 됐다. 500 은 「서버가 깨졌다」는 뜻이고 그 문장은 사람을 재시도하게 만든다 —
+    # 다시 보내도 같은 500 이다. 400·409 는 **누구 잘못인가**를 정확히 말한다.
+    #
+    # ⚠ 가드가 먼저다. 이 두 핸들러는 **가드가 놓친 것을 받는 그물**이지 가드의 대체가
+    # 아니다 — 그물만 두면 어느 자리가 검사를 안 하는지 아무도 모른다.
+    @app.exception_handler(errors.InputError)
+    async def _input_error(_request, exc: errors.InputError):
+        return errors.input_error_response(exc)
+
+    @app.exception_handler(IntegrityError)
+    async def _integrity_error(_request, exc: IntegrityError):
+        # **SQLSTATE 로 가른다** — 종전에는 `IntegrityError` 전부가 409 한 갈래였다.
+        # 그물이 너무 넓으면 **우리 코드의 결함까지 삼킨다**: 외래키 위반·not-null 위반은
+        # 사용자가 고칠 수 있는 값이 아니라 우리가 잘못 쓴 것인데, 409 로 접히면
+        # 「이미 있어요」로 위장한 채 5xx 계수·경보에서 사라진다.
+        orig = exc.orig
+        sqlstate = getattr(orig, "sqlstate", None)
+        if sqlstate not in (SQLSTATE_UNIQUE_VIOLATION, SQLSTATE_CHECK_VIOLATION):
+            # **다시 던진다.** 모르는 것을 아는 척 접지 않는다 — 500 으로 남아 눈에 보이는
+            # 편이, 이름 붙은 4xx 로 조용히 사라지는 것보다 싸다.
+            raise exc
+        # **사유는 서버에만 남긴다.** 본문에 실으면 표·열·제약 이름이 화면까지 간다.
+        # ⚠ `str(exc.orig)` 를 쓰지 않는다 — psycopg 의 `DETAIL:` 줄은 **사용자가 넣은 값**
+        # (키·컬럼값)을 그대로 담고, 로그는 덤프·티켓·화면 캡처를 따라다닌다. 남길 것은
+        # **무엇이 안 맞았는지**(SQLSTATE · 제약 이름)이지 **어떤 값이었는지**가 아니다.
+        _integrity_log.warning(
+            "event=%s sqlstate=%s constraint=%s", "db.integrity_error", sqlstate,
+            getattr(getattr(orig, "diag", None), "constraint_name", None))
+        if sqlstate == SQLSTATE_CHECK_VIOLATION:
+            # CHECK 위반은 「두 번 일어날 수 없다」가 아니라 **「그 값이 아니다」**이다.
+            # 409 로 접으면 화면은 「이미 있어요」로 읽고 사용자는 고칠 수 있는 값을 안 고친다.
+            return errors.input_error_response(
+                errors.InputError(errors.INTEGRITY_INPUT_MESSAGE))
+        return errors.integrity_error_response()
 
     return app

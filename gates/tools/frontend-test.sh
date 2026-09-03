@@ -59,7 +59,10 @@ VITEST="$FE/node_modules/.bin/vitest"
   "vitest 실행 파일이 없다. frontend/ 에서 npm ci 를 돌린 뒤 재실행한다."
 
 # ⑶ 판정 — package.json 이 선언한 그 명령.
-OUT="$(cd "$FE" && CI=1 "$VITEST" run --reporter=default 2>&1)"; rc=$?
+# 색 코드는 판정부의 입력이 아니다 — 러너(GitHub Actions)는 CI=1 이어도 색을 켜서 「563 passed」 앞에
+# ESC 시퀀스가 붙고, 아래 정규식이 건수를 못 읽어 통과한 시험을 red 로 냈다(draft PR #2 실측).
+OUT="$(cd "$FE" && CI=1 NO_COLOR=1 FORCE_COLOR=0 "$VITEST" run --reporter=default 2>&1)"; rc=$?
+OUT="$(printf '%s\n' "$OUT" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g')"
 
 # ⑷ 수집 0건 검사 — **종료 코드보다 먼저 본다.** 0건인데 green 은 이 레포의 대표 실패 유형이다.
 SUMMARY="$(printf '%s\n' "$OUT" | grep -E '^[[:space:]]*(Tests|Test Files)[[:space:]]+' || true)"

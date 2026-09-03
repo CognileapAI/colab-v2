@@ -1,0 +1,618 @@
+<title>코드리뷰 개선 보고</title>
+<style>
+:root{
+  --bg:#EFF0F3; --surface:#FFFFFF; --surface-2:#F5F6F9;
+  --ink:#111820; --ink-2:#3C4A58; --muted:#6C7A88;
+  --line:#D3D9E1; --line-2:#E5E9EF;
+  --accent:#2B4C93; --accent-soft:#E3E9F8;
+  --done:#1D6B4A; --done-soft:#DCEDE3;
+  --part:#8A5510; --part-soft:#F7E9D5;
+  --hold:#5A6472; --hold-soft:#E6EAEF;
+  --wait:#8A3564; --wait-soft:#F6E3EC;
+  --shadow:0 1px 2px rgba(17,24,32,.05),0 6px 20px rgba(17,24,32,.045);
+  --sans:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1015; --surface:#141A22; --surface-2:#19212B;
+    --ink:#E1E7EF; --ink-2:#B2BECC; --muted:#7E8B9B;
+    --line:#26313D; --line-2:#1C2530;
+    --accent:#7FA5F0; --accent-soft:#141F35;
+    --done:#5CC28D; --done-soft:#102A1E;
+    --part:#E0A455; --part-soft:#2E2210;
+    --hold:#9AA5B4; --hold-soft:#1C232C;
+    --wait:#E58BB6; --wait-soft:#2E1723;
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 8px 26px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1015; --surface:#141A22; --surface-2:#19212B;
+  --ink:#E1E7EF; --ink-2:#B2BECC; --muted:#7E8B9B;
+  --line:#26313D; --line-2:#1C2530;
+  --accent:#7FA5F0; --accent-soft:#141F35;
+  --done:#5CC28D; --done-soft:#102A1E;
+  --part:#E0A455; --part-soft:#2E2210;
+  --hold:#9AA5B4; --hold-soft:#1C232C;
+  --wait:#E58BB6; --wait-soft:#2E1723;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 8px 26px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.72;overflow-x:hidden;letter-spacing:-.005em}
+.wrap{max-width:1000px;margin:0 auto;padding:0 clamp(16px,4vw,36px)}
+.col{max-width:74ch}
+h1,h2,h3,h4{text-wrap:balance;line-height:1.3;margin:0;font-weight:700}
+p,ul,ol{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+code,.k{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;word-break:break-all}
+.num{font-variant-numeric:tabular-nums}
+
+/* rail */
+.rail{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--line)}
+.rail-in{display:flex;align-items:center;gap:16px;height:50px}
+.rail .mark{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.rail nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+.rail nav::-webkit-scrollbar{display:none}
+.rail nav a{font-size:13px;color:var(--ink-2);text-decoration:none;padding:5px 9px;border-radius:6px;white-space:nowrap}
+.rail nav a:hover{background:var(--surface-2);color:var(--ink)}
+.tbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:6px;font-family:var(--mono);font-size:11px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* header */
+header.top{padding:clamp(38px,7vw,72px) 0 8px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(30px,5.4vw,50px);letter-spacing:-.03em;margin:12px 0 0}
+.lede{margin-top:20px;display:flex;flex-direction:column;gap:9px;color:var(--ink-2);font-size:clamp(15.5px,1.9vw,17px)}
+.lede b{color:var(--ink);font-weight:650}
+.stamp{margin-top:22px;font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:5px 18px}
+
+/* sections */
+section{padding:clamp(38px,6vw,64px) 0 0;border-top:1px solid var(--line-2);margin-top:clamp(38px,6vw,64px)}
+.shead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+h2{font-size:clamp(21px,3.2vw,29px);letter-spacing:-.02em}
+.snote{color:var(--ink-2);margin-top:12px;font-size:15px}
+h3{font-size:17px;letter-spacing:-.01em}
+.stack{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.stack-lg{display:flex;flex-direction:column;gap:26px;margin-top:22px}
+
+/* tables */
+.scroll{overflow-x:auto;margin-top:20px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.b{font-weight:650}
+.was{color:var(--muted)}
+.arw{color:var(--muted);padding:0 4px}
+
+/* group band */
+.band{margin-top:34px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.band h3{font-size:18px}
+.band .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+.bandnote{margin-top:10px;font-size:14px;color:var(--muted)}
+
+/* finding */
+.find{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.fh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.chip{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;margin-left:auto}
+.c-done{background:var(--done-soft);color:var(--done)}
+.c-part{background:var(--part-soft);color:var(--part)}
+.c-hold{background:var(--hold-soft);color:var(--hold)}
+.c-wait{background:var(--wait-soft);color:var(--wait)}
+dl{display:grid;grid-template-columns:88px 1fr;gap:8px 16px;margin:0;font-size:14.5px}
+dt{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);padding-top:4px}
+dd{margin:0;color:var(--ink-2)}
+dd b{color:var(--ink);font-weight:650}
+@media (max-width:560px){dl{grid-template-columns:1fr;gap:2px 0}dt{padding-top:10px}}
+details{margin-top:12px;border-top:1px solid var(--line-2);padding-top:10px}
+summary{font-family:var(--mono);font-size:11.5px;color:var(--muted);cursor:pointer}
+summary:hover{color:var(--accent)}
+details p{margin-top:8px;font-size:13.5px;color:var(--muted);line-height:1.65;word-break:break-word}
+
+/* lists */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:22px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.panel h4{font-size:14px;display:flex;align-items:baseline;gap:8px}
+.panel h4 span{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.lst{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--ink-2)}
+.lst li{padding-left:14px;position:relative}
+.lst li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:1px;background:var(--line)}
+.lst.ok li::before{background:var(--done)}
+.lst.hd li::before{background:var(--hold)}
+.lst li b{color:var(--ink);font-weight:650}
+.lst li em{font-style:normal;color:var(--muted)}
+
+/* decision */
+.dec{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--wait);border-radius:10px;padding:16px 18px}
+.dec h3{font-size:16px;margin-bottom:12px}
+.opts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.opts li{font-size:14px;color:var(--ink-2)}
+.opts b{font-family:var(--mono);font-size:12px;color:var(--ink);margin-right:6px}
+.rec{margin-top:12px;padding-top:10px;border-top:1px solid var(--line-2);font-size:14px;color:var(--ink)}
+.rec b{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--accent);display:block}
+
+/* footer */
+footer{margin-top:clamp(38px,6vw,64px);border-top:1px solid var(--line);padding:26px 0 60px;font-size:13.5px;color:var(--muted)}
+footer dl{grid-template-columns:112px 1fr;font-size:13.5px}
+footer dd{color:var(--muted)}
+.tag{font-family:var(--mono);font-size:11px;color:var(--part);background:var(--part-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+</style>
+
+<div class="rail"><div class="wrap rail-in">
+  <span class="mark">code review · 2026-09-03</span>
+  <nav>
+    <a href="#counts">계수</a><a href="#fixes">고친 것</a><a href="#appendix">부록</a>
+    <a href="#ci">검사기</a><a href="#decide">판정</a><a href="#unknown">미확인</a><a href="#src">근거</a>
+  </nav>
+  <button class="tbtn" id="tt" type="button">테마</button>
+</div></div>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">코드리뷰 개선 회차</div>
+  <h1>코드리뷰에서 무엇을 고쳤나</h1>
+  <div class="lede col">
+    <p><b>검토 범위</b> — 레포 전수 코드리뷰 1회. 후보 100건에서 중복을 걷고 검증을 거쳐 확정 69건, 그중 근본 원인 네 갈래에 걸린 <b>15건</b>을 이번 회차의 정원으로 삼음.</p>
+    <p><b>집행</b> — 편집 면을 나눈 작업 갈래 7개를 브랜치 <code>lane-review-clean</code> 하나로 병합. <b>main 병합과 대장 번호 발급은 Ted 승인 대기</b>이며, 지금은 확인용 초안 PR 한 건만 열려 있음.</p>
+    <p><b>결과</b> — 15건 중 완료 10 · 부분 4 · 유보 1. 부록에서 11건을 함께 고치고 13건을 다음 회차로 넘김. 판정이 필요한 항목 8건.</p>
+  </div>
+  <div class="stamp">
+    <span>기준 트리 d9e89a3 → 통합 트리 1a26372</span><span>측정일 2026-09-03</span><span>계약 파일 수정 0건</span>
+  </div>
+</header>
+
+<section id="counts">
+  <div class="shead"><h2>계수 — 전 → 후</h2></div>
+  <p class="snote col">각 줄은 어느 명령으로 어느 트리에서 잰 값인지를 함께 적음. 세는 단위가 다른 값은 빼거나 더하지 않음.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>무엇</th><th>전</th><th>후</th><th>어떻게 쟀나</th></tr></thead>
+    <tbody>
+      <tr><td class="b">CI 가 실행하는 서비스 시험 케이스</td><td class="n was">69</td><td class="n b">1070</td><td>서비스 시험 게이트 4종이 실행한 케이스. 기준 트리 <code>d4d11b5</code></td></tr>
+      <tr><td class="b">core-api 시험</td><td class="n was">553 <em>(전체 · 실패 5 기존)</em></td><td class="n b">620</td><td><code>pytest -m "not e2e"</code> · 일회용 데이터베이스 · 통합 트리 <code>1a26372</code></td></tr>
+      <tr><td class="b">렌더 서비스 시험</td><td class="n was">199</td><td class="n b">269</td><td><code>pytest -m "not e2e and not perf"</code> · 통합 트리</td></tr>
+      <tr><td class="b">업로드 처리 서비스 시험</td><td class="n was">200</td><td class="n b">231</td><td><code>pytest -m "not e2e and not dbint"</code> · 통합 트리</td></tr>
+      <tr><td class="b">AI 서비스 시험</td><td class="n was">88 <em>(6파일 제외)</em> / 125</td><td class="n b">130</td><td><code>pytest -m "not dictdb"</code> · 통합 트리. 88 은 세는 단위가 다른 부분집합</td></tr>
+      <tr><td class="b">화면 시험</td><td class="n was">520</td><td class="n b">563</td><td><code>vitest run</code> · 35파일 · 통합 트리</td></tr>
+      <tr><td class="b">화면 형 검사 오류</td><td class="n was">0</td><td class="n b">0</td><td><code>tsc --noEmit</code> · 전후 동일</td></tr>
+      <tr><td class="b">검사기 총수</td><td class="n was">43</td><td class="n b">50</td><td><code>gates/run.sh</code> 등록 목록</td></tr>
+      <tr><td class="b">검사기 전체 실행</td><td class="n was">—</td><td class="n b">green 47 / red 0</td><td><code>./gates/run.sh all -j 1</code> · 통합 트리. 준비 red 1건은 단독 재실행에서 green</td></tr>
+      <tr><td class="b">GitHub Actions 수동 실행</td><td class="n was">—</td><td class="n b">success 10 / failure 2</td><td>실행 33737748503(head <code>2f86587</code>). failure 2 는 main 사전존재</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="fixes">
+  <div class="shead"><h2>고친 것 — 15건</h2></div>
+  <p class="snote col">근본 원인 네 갈래로 묶음. 각 항목은 「사용자에게 어떻게 보였나 → 원인이 있던 자리 → 무엇을 바꿨나 → 어떻게 확인했나 → 상태」 순.</p>
+
+  <div class="band"><h3>경계·검증이 엉뚱한 자리에 있었다</h3><span class="cnt">5건</span></div>
+  <p class="bandnote col">확인해야 할 자리와 실제로 확인하는 자리가 서로 달랐던 것. 양쪽이 상대가 본다고 믿은 자리.</p>
+  <div class="stack">
+
+    <article class="find">
+      <div class="fh"><h3>렌더 서비스의 연구실 경계</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>다른 연구실의 렌더 식별자 하나만 있으면 그 연구실의 지도·타일 주소·화면 갈무리를 정상 응답으로 받음. 오류 표시 없음.</dd>
+        <dt>원인 자리</dt><dd>core-api 가 모든 중계 요청에 실어 보내는 연구실 표시(<code>X-CoLAB-Lab</code>)를 <code>services/viz-render/</code> 안에서 읽는 줄이 0건. core-api 는 그 응답을 경계 확인으로 삼고 있었음.</dd>
+        <dt>바꾼 것</dt><dd>경계를 읽는 자리를 <code>app/deps.py</code> 한 곳에 둠 · 접수 때 작업에 연구실을 새기고 조회·화면 갈무리가 대조(불일치는 「없다」와 같은 응답, 표시 누락은 400) · <b>타일은 서명만 유지</b>(브라우저가 CDN 을 통해 직접 부르는 유일한 경로라 표시를 실을 수 없음) 대신 서명된 주소가 나가는 문을 닫아 함께 막음.</dd>
+        <dt>확인</dt><dd><code>tests/test_tenant_boundary.py</code> 12건(수정 전 9건 실패) · 렌더 서비스 시험 199 → 211 · <code>import-boundary</code>·<code>banned-import</code> green.</dd>
+      </dl>
+      <details><summary>실패 시나리오 원문</summary><p>연구실 B 사용자가 연구실 A 의 renderId 로 <code>GET /previews/{renderId}</code> 또는 <code>POST /preview-screenshots</code> → viz <code>renders.py:123 job = request.app.state.jobs.get(renderId)</code> / <code>screenshots.py:66 store.get(layer.renderId)</code> 가 200 으로 A 의 job(서명된 tileUrlTemplate·imageUrl·legend·bounds) 반환 또는 A 의 래스터를 PNG 로 합성. <code>grep -rn 'X-CoLAB' services/viz-render/src</code> = 0건 …</p></details>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>접근코드 로그인 제한</h3><span class="chip c-wait">판정 대기</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>아무나 없는 접근코드로 5회 실패시키면 15분간 <b>모든 접근코드 사용자</b>가 로그인 불가. 반대로 성공 한 번이 전원의 실패 계수를 지워 코드를 찍어 보는 시도가 늦춰지지 않음.</dd>
+        <dt>원인 자리</dt><dd><code>services/core-api/src/colab_core/kernel/authn.py</code> 가 접근코드 로그인 전부를 상수 한 칸에 셈. <code>kernel/throttle.py</code> 는 조회만 해도 칸을 만들어 요청마다 항목이 늘어남.</dd>
+        <dt>바꾼 것</dt><dd>접근코드를 해시해 칸을 가름(원문을 열쇠로 쓰지 않음) · 부른 클라이언트 칸을 같은 한도·창으로 함께 셈 · 긴 표시는 고정 칸으로 접어 제한을 끄지 못하게 함 · 조회는 쓰지 않고, 창 밖 칸은 실패 기록 때 정리.</dd>
+        <dt>확인</dt><dd><code>tests/test_login_limiter_buckets.py</code> 13건. 전: 조회 1000회 → 항목 1000건, 후 0건. 전: 남의 성공 1회가 추측 칸을 지움, 후: 지우지 않음.</dd>
+      </dl>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>프로젝트 기간 수정</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>기간을 함께 넣은 프로젝트 수정이 전부 서버 오류. 같은 요청에 담긴 이름·설명 수정까지 되돌아감.</dd>
+        <dt>원인 자리</dt><dd><code>app/routes/project.py</code> 가 변환한 값을 버리고(「형식 검사만 — 저장은 도메인이 한다」 주석) <code>domains/d6_project.py</code> 는 변환하지 않아 <code>2026-01</code> 문자열이 날짜 열에 그대로 들어감. 생성 경로는 정상.</dd>
+        <dt>바꾼 것</dt><dd>라우트가 변환 결과를 그대로 넘기게 함 — <b>생성 경로와 같은 자리로 통일</b>. 두 경로가 갈리면 한쪽만 고쳐짐.</dd>
+        <dt>확인</dt><dd><code>tests/test_lab_and_project_update.py</code> +4건(기간 비우기 · 형식 오류는 400 유지 포함). 전 500 → 후 200 + 저장 왕복 확인.</dd>
+      </dl>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>사용자 입력 검사와 저장 규칙 위반</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>고칠 수 있는 값 다섯 자리가 「서버 오류」로 나옴 — 형식이 아닌 데이터셋 주소 · 한글이 섞인 인증 표시 · 자유 문장으로 넣은 데이터 기간 · 목록 밖 주제 · 공백뿐인 프로젝트 이름. 무엇을 고쳐야 하는지 화면에 도달하지 않음.</dd>
+        <dt>원인 자리</dt><dd><code>app/main.py</code> 에 입력 오류·저장 규칙 위반을 받는 자리가 없고, 계약에서 생성한 모델이 0이라 라우트가 손검사로 버팀(자유형 본문 19곳 · 형 검사 47곳).</dd>
+        <dt>바꾼 것</dt><dd>가드 5곳 신설 · 입력 오류는 400 · 저장 규칙 위반은 데이터베이스 상태코드로 가름(중복은 409 · 값 위반은 400 · 그 밖은 500 으로 남겨 눈에 보이게 함) · 응답과 로그에 표·열·값 이름을 담지 않음.</dd>
+        <dt>확인</dt><dd><code>tests/test_input_error_paths.py</code> 13건(수정 전 3건 실패). 가짜 예외가 실제 라이브러리의 선언값과 같은지 대조 — 그 대조가 없으면 상수가 틀려도 시험은 전부 통과함.</dd>
+      </dl>
+      <details><summary>실패 시나리오 원문</summary><p>확인된 5경로 — <code>access.py:65 Ulid(datasetId)</code> 무검사 → <code>ids.py:29-31</code> ValueError; <code>session_token.py:80 self._mac(payload)</code> 가 try(82) 밖이고 <code>_mac</code> 이 <code>.encode("ascii")</code> → 비ASCII Bearer 로 비인증 500; <code>d3_catalog.py:714 period.get("start")</code> 자유문자열 → timestamptz 파싱 오류; <code>catalog.py:585 validate_human_metadata</code> 가 <code>topic</code> 을 안 봐 DB CHECK IntegrityError; <code>project.py:132</code> 가 strip 없이 길이만 봄 …</p></details>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>비밀값을 파일로 받기</h3><span class="chip c-part">부분</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>(화면에 드러나는 자리 아님) 컨테이너 정보 조회 한 번으로 세션 서명 열쇠와 서비스 토큰이 읽힘 → 임의의 계정·연구실 토큰을 만들 수 있어 연구실 경계가 무력해짐. 파일 참조를 설정하면 조용히 무시되고 로그인이 500 만 냄.</dd>
+        <dt>원인 자리</dt><dd>core-api <code>kernel/config.py</code> 는 데이터베이스 주소에만 파일 참조를 적용. 렌더 서비스 쪽에는 그 장치 자체가 없었음.</dd>
+        <dt>바꾼 것</dt><dd>core-api 2종(세션 서명 열쇠 · 렌더 서비스 토큰)과 렌더 서비스 2종(서비스 토큰 · 타일 서명 비밀)이 같은 규칙 다섯을 지나게 함. 배포 설정을 그대로 둬도 동작하고, 두 출처를 동시에 두면 앱이 뜨지 않음.</dd>
+        <dt>확인</dt><dd>core-api <code>tests/test_secret_file_refs.py</code> 9건 · 렌더 서비스 <code>tests/test_secret_from_file.py</code> 10 + 6건. 두 서비스의 공백 처리가 같음을 시험이 지킴(값은 어디에도 출력하지 않음).</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div class="band"><h3>커널·규칙이 손사본이었다</h3><span class="cnt">3건</span></div>
+  <p class="bandnote col">같은 일을 하는 규칙이 두 서비스에 손으로 두 벌씩 적혀 있어 같은 파일을 서로 다르게 읽던 것.</p>
+  <div class="stack">
+
+    <article class="find">
+      <div class="fh"><h3>NetCDF 시각 선택 · 캐시 열쇠 · 격자 표식</h3><span class="chip c-part">부분</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>시각을 골라도 언제나 첫 시각의 그림. 캐시가 그것을 굳혀 다시 눌러도 같은 그림. 격자를 갈아 끼운 뒤에도 옛 산출물이 최신으로 남음.</dd>
+        <dt>원인 자리</dt><dd><code>d7_visualization/readers.py</code> 가 시각 값을 받기만 하고 본문에서 한 번도 쓰지 않음 · 캐시 열쇠에 시각 없음 · 격자 표식이 통계 세 값만 해시해 격자를 통째로 갈아도 같은 열쇠가 나옴.</dd>
+        <dt>바꾼 것</dt><dd>시각 축을 <b>찾은 자리에서</b> 잘라냄 — 축이 뒤에 선언된 파일에서 위도 한 줄을 그림으로 내던 자리(2차원이라 예외가 나지 않았음) · 파일에 없는 시각은 「그릴 수 없다」로 거절해 「다시 그리기」 손잡이가 감춰짐 · 캐시 열쇠에 시각 추가 · 표식을 위·경도 양 끝과 값 표본으로 강화.</dd>
+        <dt>확인</dt><dd><code>tests/test_instant_and_grid_digest.py</code> 14 + 5 + 2건. 판단기준은 배열 형상 — 값 비교만으로는 잡히지 않음.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">남은 것</span> 사유 문구 한 줄. 「이 형식은 아직 지도로 못 그려요」가 시각이 없는 파일에는 정확하지 않음(코드·재시도 판정·상세 사유는 정확함).</p>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>업로드 처리의 반복 종료</h3><span class="chip c-part">부분</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>1차원 격자 파일 한 건이 업로드 처리 프로세스를 종료시키고, 재기동 뒤 같은 건을 다시 집어 <b>전 연구실의 업로드가 정체</b>. 같은 차례의 다른 업로드와 발행까지 함께 되돌아감.</dd>
+        <dt>원인 자리</dt><dd><code>d5/axis.py</code> 가 차원 검사보다 먼저 배열을 잘라 판별 실패가 아닌 색인 오류로 탈출 · <code>app/worker.py</code> 에 데이터 오류 갈래가 없어 예외가 그대로 올라가 프로세스를 끝냄.</dd>
+        <dt>바꾼 것</dt><dd>차원 검사를 앞으로 옮기고 파일 적재 실패를 판별 실패로 감쌈 · 데이터 오류를 실패 기록(기존 어휘 「내부 오류」·「영구」)으로 분류하고 다음 건으로 진행 · 데이터베이스·입출력 오류는 그대로 던짐 · 후속 회차에서 일반 값 오류를 그 집합에서 빼 배관 결함이 「그 파일이 이상했다」로 굳지 않게 좁힘 · 홀로 올라온 1차원 격자의 거절 사유를 「짝 불일치」에서 「축 판별 실패」로 옮김.</dd>
+        <dt>확인</dt><dd><code>tests/test_axis_data_errors.py</code> 4 + 3건 · <code>tests/test_worker_data_error_isolation.py</code> 5건 · 실제 데이터베이스 시험 5건 · 업로드 처리 시험 200 → 225 → 231.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">남은 것</span> 프로세스 보호. 붙이면 「멈춘 워커가 정상으로 보이는 상태」가 되므로, 상태 응답이 「처리 루프가 죽었다」를 말하게 한 뒤 함께 고칠 일로 유보.</p>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>등록 쪽과 그림 쪽의 두 벌 규칙</h3><span class="chip c-part">부분</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>같은 폴더를 등록 쪽과 그림 쪽이 다르게 읽음 — 등록은 됐는데 미리보기가 거절되고, 좌표에 빈 칸이 있으면 「COG 변환 실패」 한 줄만 남고, 블록이 없는 파일이 색인 오류로 끝나고, 경도를 먼저 선언한 파일은 격자 크기가 뒤집혀 표시됨.</dd>
+        <dt>원인 자리</dt><dd>기준 격자 탐색 · 최근접 재배치 · HSR 판독 · NetCDF 차원 해석 네 자리가 두 서비스에 손으로 두 벌.</dd>
+        <dt>바꾼 것</dt><dd>NetCDF 격자를 차원 선언 순서가 아니라 축 역할로 읽음 · 좌표의 빈 칸을 함께 가리고 퇴화한 경도 범위를 거절(그림 쪽 기준에 맞춤) · 블록 0을 파싱 실패로 거절. <b>거절 기준 세 자리만 맞췄고 알고리즘은 두 벌 그대로.</b></dd>
+        <dt>확인</dt><dd><code>tests/test_parse_netcdf_grid_axes.py</code> 3 · <code>tests/test_cog_nan_coords.py</code> 5 · <code>tests/test_hsr_zero_blocks.py</code> 3건 · <code>stage2-markers</code> 수집 69 → 80.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">남은 것</span> 격자 탐색 알고리즘 통일. 등록 수용 기준이 바뀌는 변경이라 상품 판정이 먼저.</p>
+    </article>
+  </div>
+
+  <div class="band"><h3>검사기가 판정하지 않았다</h3><span class="cnt">4건</span></div>
+  <p class="bandnote col">돌지 않았는데 통과로 세어졌거나, 재는 자리 자체가 없던 것.</p>
+  <div class="stack">
+
+    <article class="find">
+      <div class="fh"><h3>CI 와 검사기</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>(화면에 드러나는 자리 아님) 서비스 시험 대부분이 병합 전에 한 번도 실행되지 않음 · 화면만 바꾼 변경은 검사 잡이 0개 · 셀프테스트가 「못 돌았다」를 「기대한 실패」로 세어 <b>판정된 적 없는 보호 장치가 증명된 것처럼</b> 보임.</dd>
+        <dt>원인 자리</dt><dd><code>.github/workflows/ci.yml</code> 에 시험 호출 0건 · 화면 게이트 2종이 계약 필터 잡 안에 있어 소비처가 없음 · <code>gates/run.sh</code> 의 셀프테스트 집합이 손으로 적은 목록 · 관용 설정이 켜진 검사기가 0건 판정으로 통과.</dd>
+        <dt>바꾼 것</dt><dd>서비스 시험 게이트 4종 신설 — 수집 0건·전부 건너뜀·실패는 red 이고 건너뜀·제외는 건수로 드러냄, core-api 는 게이트가 일회용 데이터베이스를 스스로 세움(포트 미공개 · 접속 문자열 미출력) · 화면 게이트를 자기 잡으로 분리하고 진입점 도달성 게이트를 신설 · 데이터베이스 경계 검사를 CI 에 연결 · 셀프테스트 집합을 목록에서 파생해 3상태로(선언 20 · 실행 18 · 명시 면제 2) · 준비 실패를 「기대한 실패」로 세지 않게 판정부를 한 곳에 모음(뒤집힌 케이스 16건) · 판정부가 종료코드를 먼저 봄 · 검사기 파일 20건의 실행 권한을 인덱스에 명시 · 화면 시험 건수 추출이 색 코드에 걸리던 것 · 셀프테스트 잡에 설정 판독 라이브러리 설치 단계 추가.</dd>
+        <dt>확인</dt><dd>검사기 43 → 50 · CI 서비스 시험 케이스 69 → 1070 · 실패 픽스처로 개정 전후 대조(주입 시 개정 전 통과, 개정 후 준비 실패) · Actions 수동 실행 success 10 / failure 2.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">남은 것</span> 관용 설정의 기한은 판정 대기 · Actions 실패 2건은 main 사전존재 인프라 사안으로 유보.</p>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>미리보기 무효화</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>격자를 바꿔도 낡은 미리보기 파일이 영구히 남음. 오류가 없어 드러나지 않음. 어긋난 알림 봉투 하나가 그 차례의 봉투 전부를 막고 매 차례 반복.</dd>
+        <dt>원인 자리</dt><dd><code>d7_visualization/jobs.py</code> 가 렌더 제출 <b>직후에</b> 결과를 읽는데 기본 실행기에서는 그 값이 렌더 완료 뒤에 채워짐 → 언제나 비어 있었고 알림은 그대로 걷힘. 삭제를 부르는 자리가 레포에 그 한 곳뿐.</dd>
+        <dt>바꾼 것</dt><dd>집행을 완료 경로로 옮겨 실행기 셋이 같은 자리를 지나게 함 · 집행 결과를 작업에 기록 · 봉투 단위 격리와 격리 보관(지우지 않음 — 증거가 남아야 함) · 이미 집행한 재전달본을 그 자리에서 걷음 · 사라진 대상의 알림은 걷고, 시간 초과는 걷지 않음.</dd>
+        <dt>확인</dt><dd><code>tests/test_auto_invalidation.py</code> +3 · <code>tests/test_trigger_intake.py</code> +6건 · 렌더 서비스 시험 211 → 217 → 259.</dd>
+      </dl>
+      <details><summary>실패 시나리오 원문</summary><p><code>preview.grid-changed</code> 발행 → <code>triggers.drain</code> → <code>JobStore.regenerate</code> → <code>submit</code> 이 <code>threading.Thread(...).start()</code> 후 즉시 반환 → <code>plan = job.invalidation</code> None → <code>removed = ()</code> → <code>port.ack(event)</code>. 결과: 격자 교체 뒤 구 PNG/WEBP/PGW/JSON 영구 잔류, 오류 없음.</p></details>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>렌더 작업의 메모리</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>렌더가 쌓일수록 렌더 서비스의 메모리가 계속 늘어 컨테이너가 종료됨. 층을 많이 얹은 화면 갈무리 한 건이 수 GB 를 한꺼번에 잡음.</dd>
+        <dt>원인 자리</dt><dd>작업 표에 제거하는 자리가 한 곳도 없어 완료된 작업이 원본 배열을 프로세스 수명 내내 붙듦 · 제출마다 전체 순회 · 화면 갈무리 층 수에 상한 없음.</dd>
+        <dt>바꾼 것</dt><dd>수명이 다한 뒤에만 축출(완료 직후가 아님 — 타일과 화면 갈무리가 메모리를 읽음) · 묘비를 남겨 만료 응답을 유지하고 묘비 개수에 상한 · 대상별 색인으로 전체 순회 제거 · 화면 갈무리 층 상한 8 과 이미 선언된 상태 코드로 거절(<code>details.maxLayers</code> 동봉).</dd>
+        <dt>확인</dt><dd><code>tests/test_job_retention.py</code> 9건 · 렌더 서비스 시험 231 → 240. <b>거동 변화 1건</b> — 만료된 렌더 조회가 결과 없는 묘비 본문이 됨(종전에는 이미 죽은 주소가 든 전체 본문이 나감).</dd>
+      </dl>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>업로드를 흘려 쓰기</h3><span class="chip c-part">부분</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>큰 파일을 올리는 동안 그 서버의 <b>모든 요청</b>이 멈춤 — 카탈로그·세션·상태 확인 포함. AI 검색도 같은 모양이라 검색 한 건이 상태 확인 시간을 넘김.</dd>
+        <dt>원인 자리</dt><dd>업로드 3라우트만 비동기로 선언된 채 파일 전체를 메모리에 올리고, 이어지는 저장과 데이터베이스 작업까지 같은 자리에서 실행.</dd>
+        <dt>바꾼 것</dt><dd>3라우트를 스레드풀 실행으로 돌리고 1 MiB 씩 흘려 쓰며 실제로 쓴 바이트 수를 돌려줌 · 거절한 격자 파일을 디스크에 남기지 않음(격자를 읽는 쪽에는 원장이 없어 폴더가 곧 사실) · AI 검색 라우트도 스레드풀로 옮기되 본문 읽기만 비동기로 남겨 기존 오류 응답을 보존.</dd>
+        <dt>확인</dt><dd><code>tests/test_upload_streaming.py</code> 6건 — 5 MiB 단건 해시 일치 · 두 파일 상호 오염 없음 · 구조 시험 · <code>tests/test_search_route_threadpool.py</code> 6건.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">남은 것</span> 메모리 사용량과 상태 확인 응답시간을 재지 않음. 회귀의 본체가 그 두 값.</p>
+    </article>
+  </div>
+
+  <div class="band"><h3>화면이 「정직한 빈 상태」를 어겼다</h3><span class="cnt">3건</span></div>
+  <p class="bandnote col">읽지 못한 것을 없는 것으로 말하거나, 고칠 수 있는 실패를 장애로 말하던 것.</p>
+  <div class="stack">
+
+    <article class="find">
+      <div class="fh"><h3>가짜 데이터 폴백 제거</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>세션이 만료되거나 서버가 죽어도 카탈로그에 <b>가짜 6행</b>이 실데이터처럼 그려짐. 로그인 화면으로 돌아가지 않고, 행을 누르면 서버에 없는 자리로 이동. 실존하는 데이터셋이 「이 주소에는 화면이 없어요」로 보이기도 함.</dd>
+        <dt>원인 자리</dt><dd>카탈로그·상세·프로젝트·계보 네 출처의 빈 예외 처리가 인증 만료·서버 오류·네트워크 오류를 전부 시험용 데이터로 바꿈. 근거로 적힌 「미구현」은 이미 죽은 사유(해당 기능 넷은 구현돼 있음).</dd>
+        <dt>바꾼 것</dt><dd>폴백 제거 · 인증 만료는 응답 처리 한 곳에서 기존 만료 신호로 보냄(새 통로를 만들지 않음) · 그 밖의 실패는 「…을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.」 + 「다시 불러오기」 · 실패 자리에서 「조건에 맞는 데이터가 없어요」와 머리의 「0건」을 함께 걷음(모르면 그리지 않음) · 계정 조회 실패는 오류 + 다시 시도로 두고 토큰은 버리지 않음 · 시험용 데이터는 시험이 손으로 꽂을 때만 섬.</dd>
+        <dt>확인</dt><dd>신규 시험 3파일 43건 · 화면 시험 520 → 563 · 형 검사 오류 0 · 진입점에서 닿는 128 모듈에 시험용 데이터 모듈 0건(이 검사를 게이트로 승격).</dd>
+      </dl>
+      <details><summary>실패 시나리오 원문</summary><p>세션 만료 → <code>GET /datasets</code> 401 → <code>catalogSource.ts:34 if (!body) throw</code> → 56-61 catch → <code>stub.list(q)</code> → 카탈로그에 가짜 6행·집계, <code>AuthGate</code> 는 통보받지 못해 로그인으로 돌아가지 않음; 행 클릭은 서버에 없는 id 로 이동.</p></details>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>그릴 수 없는 파일의 응답</h3><span class="chip c-done">완료</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>그릴 수 없는 형식의 파일이 「서버에 연결하지 못했다」로 보여 사용자가 같은 요청을 반복. 지원 형식 목록이 화면에 도달하지 못함. 좌표를 잘못 넣은 요청도 장애 계수에 섞임.</dd>
+        <dt>원인 자리</dt><dd><code>app/relay.py</code> 가 성공 아닌 상태를 전부 「연결 못 함」으로 뭉갬. 화면에 이미 있던 「그릴 수 없는 형식」 분기 4곳이 도달 불가한 죽은 코드.</dd>
+        <dt>바꾼 것</dt><dd>그리는 서버의 400·404·410·413·415·422 를 상태·본문 그대로 올림 · 자격 실패와 서버 오류는 그대로 「지금 못 그린다」로 둠(둘은 성질이 다름) · 값 조회의 위경도는 범위와 참·거짓을 먼저 검사해 그리는 서버까지 나가지 않게 함 · 투영 정의역 밖 좌표는 서버 오류 대신 「범위 밖이다」로 답함.</dd>
+        <dt>확인</dt><dd><code>tests/test_relay_status_passthrough.py</code> 23건(수정 전 15건 실패) · 중계 5호출 전부에 경계 표시가 실림을 시험으로 고정 · <code>tests/test_value_lookup.py</code> +4건.</dd>
+      </dl>
+    </article>
+
+    <article class="find">
+      <div class="fh"><h3>목록 페이징</h3><span class="chip c-hold">유보</span></div>
+      <dl>
+        <dt>사용자에게</dt><dd>데이터셋 50건인 연구실에서 머리는 「50건」인데 표에는 20행, 나머지 30건은 도달 불가. 검색은 100건이 맞아도 「20건을 찾았어요」로 표시.</dd>
+        <dt>원인 자리</dt><dd>서버는 20건씩 자르고 다음 쪽 표시를 내는데 클라이언트가 그것을 보내지도 받지도 않고 「더 보기」 손잡이도 없음. 검색 응답의 전체 건수가 한 쪽 크기.</dd>
+        <dt>바꾼 것</dt><dd>없음 — 이번 회차에서 손대지 않음.</dd>
+        <dt>확인</dt><dd>해당 없음.</dd>
+      </dl>
+      <p class="snote" style="margin-top:12px"><span class="tag">유보 사유</span> 서버의 전체 건수 실값 · 클라이언트 커서 · 「더 보기」 손잡이가 한 묶음이라 화면 갈래 단독으로 닫히지 않음. 다음 회차 착수 순서 네 번째.</p>
+    </article>
+  </div>
+</section>
+
+<section id="appendix">
+  <div class="shead"><h2>부록에서 고친 것 · 유보한 것</h2></div>
+  <p class="snote col">15건 정원 밖에서 검증까지 끝난 항목. 왼쪽은 이번 회차에 닫은 것, 오른쪽은 다음 회차로 넘긴 것과 그 이유.</p>
+  <div class="two">
+    <div class="panel">
+      <h4>고친 것 <span>11건</span></h4>
+      <ul class="lst ok">
+        <li><b>거절한 격자 파일 미저장</b> — 저장이 거절 검사보다 먼저라 거절된 파일이 폴더에 남았음</li>
+        <li><b>계정 조회 실패의 다시 시도</b> — 서버 불통이 영구 빈 화면이던 자리</li>
+        <li><b>값 조회 순서 보호</b> — 느린 이전 클릭의 값이 최신 값을 덮던 것</li>
+        <li><b>구간 수 빈 칸</b> — 빈 칸이 계약 범위 밖 0 으로 나가던 것, 이제 기본값</li>
+        <li><b>「오늘」의 경계</b> — 24시간 창이 아니라 지역 달력 날짜로 셈</li>
+        <li><b>업로드 미리보기 폴링 취소</b> — 옛 렌더의 늦은 응답이 새 화면을 덮던 것</li>
+        <li><b>재전달 계수 정직화</b> — 발행 실패에서 시도 횟수를 올려 재전달 표시가 사실이 됨</li>
+        <li><b>투영 밖 좌표</b> — 서버 오류 대신 「범위 밖이다」를 사유와 함께 정상 응답으로</li>
+        <li><b>AI 서비스의 사유 문구</b> — 응답에 실리던 원시 예외(호스트·포트·롤 포함)를 고정 문구로 바꾸고 원인은 서버 로그로</li>
+        <li><b>미구현 기능 계수</b> — 문서 첫 줄의 「23개」를 실제 4개로</li>
+        <li><b>1차원 격자 거절 사유</b> — 「짝 불일치」에서 「축 판별 실패」로(짝을 붙여도 서지 않는 파일)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>유보한 것 <span>13건</span></h4>
+      <ul class="lst hd">
+        <li><b>커널 손사본을 생성으로 통일</b> <em>— 여러 단위에 걸친 변경이라 병합 순서가 먼저. 레시피는 이미 있는 생성 도구</em></li>
+        <li><b>계약에서 백엔드 모델 생성</b> <em>— 손검사 47곳·자유형 본문 19곳을 대체하는 큰 갈래</em></li>
+        <li><b>목록 페이징</b> <em>— 서버 전체 건수 실값과 클라이언트 커서가 한 묶음</em></li>
+        <li><b>AI 서비스 계약 정렬</b> <em>— 서비스 토큰과 주소 접두가 계약과 코드 양쪽에서 어긋남. 계약이 동결 표면</em></li>
+        <li><b>배포 설정의 비밀값 파일 전환</b> <em>— 배포 변경이라 판정 필요</em></li>
+        <li><b>산출물 소유 검사기의 관용 기한</b> <em>— 기한을 정하는 것이 판정 사안</em></li>
+        <li><b>계보 수정 화면 배선</b> <em>— 서버에 기능 4개가 있고 화면 호출이 0건</em></li>
+        <li><b>격자 탐색 알고리즘 통일</b> <em>— 등록 수용 기준이 바뀌므로 상품 판정이 먼저</em></li>
+        <li><b>효율 항목</b> <em>— 클릭마다 원본 전체 해시 · 산출물 재사용 0 · 연구실 전량 적재 · 노드마다 1질의</em></li>
+        <li><b>발행 재시도의 죽은 편지함</b> <em>— 계약에 상한과 열이 있고 보내는 경로가 레포에 없음</em></li>
+        <li><b>문서 절대경로 검사기</b> <em>— 문서 35줄에 절대경로, 이를 판정하는 검사기 0</em></li>
+        <li><b>업로드 화면의 미리보기 판 중복</b> <em>— 미리보기 화면과 두 벌. 이번에는 취소만 담음</em></li>
+        <li><b>CI 인프라 실패 2건</b> <em>— 적용 데이터베이스 주소 미선언 · 정본 폴더 미체크아웃. 둘 다 main 사전존재</em></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="ci">
+  <div class="shead"><h2>검사기와 CI — 전 · 후</h2></div>
+  <p class="snote col">전 = 기준 트리 <code>d4d11b5</code>, 후 = 통합 트리 <code>1a26372</code> 및 Actions 수동 실행.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>자리</th><th>전</th><th>후</th></tr></thead>
+    <tbody>
+      <tr><td class="b">서비스 시험 잡</td><td class="was">없음 — 시험 호출 0건</td><td>단위 4개 매트릭스 잡. 각 단위 또는 계약 변경 시 실행</td></tr>
+      <tr><td class="b">CI 가 실행한 시험 케이스</td><td class="n was">69</td><td class="n">1070</td></tr>
+      <tr><td class="b">화면 게이트</td><td class="was">계약 필터 잡 안 — 화면만 바꾼 변경은 잡 0개</td><td>자기 잡 3종 — 형 검사 · 시험 · 진입점 도달성</td></tr>
+      <tr><td class="b">데이터베이스 경계 검사</td><td class="was">셀프테스트만 있고 판정 호출 0건</td><td>CI 에서 판정. 단위 7 · 스캔 270건 · 위반 0</td></tr>
+      <tr><td class="b">셀프테스트 집합</td><td class="was">손으로 적은 목록 14 (등록된 18 중)</td><td>목록에서 파생 — 선언 20 · 실행 18 · 명시 면제 2</td></tr>
+      <tr><td class="b">준비 실패 처리</td><td class="was">「기대한 실패」로 셈 — 판정된 적 없는 케이스가 통과로 찍힘</td><td>green · red · 준비 · 미선언 네 갈래. 종료코드를 먼저 봄. 뒤집힌 케이스 16건</td></tr>
+      <tr><td class="b">검사기 실행 권한</td><td class="was">파일 20건이 인덱스에 실행 비트 없음(이 호스트에서 드러나지 않음)</td><td>인덱스에 명시 — Actions 에서 실행 확인</td></tr>
+      <tr><td class="b">시험 건수 추출</td><td class="was">색 코드가 섞이면 빈 값이 나와 판정 불가</td><td>색을 끄고 제어문자를 제거한 뒤 판정(563 확인)</td></tr>
+      <tr><td class="b">검사기 총수</td><td class="n was">43</td><td class="n">50</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="decide">
+  <div class="shead"><h2>판정이 필요한 것</h2></div>
+  <p class="snote col">코드로 결정하지 않고 남긴 항목 8건. 각 항목은 「배경 → 현재 → 선택지 → 고르면 달라지는 것 → 권고와 되돌리는 비용」 순.</p>
+  <div class="stack-lg">
+
+    <div class="dec">
+      <h3>main 병합과 대장 등재</h3>
+      <p><b>배경</b> — 다른 세션이 main 에 병행 커밋 중이라 이 회차는 브랜치 하나에서만 작업하고 번호 발급을 하지 않음.</p>
+      <p><b>현재</b> — 작업 갈래 7개가 <code>lane-review-clean</code> 하나로 병합돼 있고 최신 main 을 끌어와 병합까지 마침(겹치는 파일 0). 확인용 초안 PR 한 건이 열려 있음.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 지금 main 에 병합하고 대장에 등재</li>
+        <li><b>ⓑ</b> 판정 대기 항목(계약 개정·로그인 열쇠)을 먼저 닫고 병합</li>
+        <li><b>ⓒ</b> 초안 PR 상태로 더 둠</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 검사기 50종이 곧바로 main 의 모든 변경을 판정하기 시작함. ⓒ 는 그동안 main 이 계속 검사 없이 병합됨.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ. 되돌리는 비용은 병합 커밋 하나를 되돌리는 것이며, 브랜치는 그대로 남음.</p>
+    </div>
+
+    <div class="dec">
+      <h3>로그인 제한의 클라이언트 열쇠</h3>
+      <p><b>배경</b> — 접근코드 제한을 코드 칸과 클라이언트 칸 둘로 나눴고, 클라이언트를 무엇으로 식별할지가 남음.</p>
+      <p><b>현재</b> — 전달 표시의 <b>마지막 홉</b>. 지금 웹 서버 설정에서 그 값은 웹 서버가 덧붙인 것이라 부른 쪽이 바꾸지 못함.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 첫 홉 — 부른 쪽이 실어 보낸 값</li>
+        <li><b>ⓑ</b> 마지막 홉 — 현재 동작</li>
+        <li><b>ⓒ</b> 웹 서버가 단독으로 세우는 별도 표시(<code>X-Real-IP</code>)</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 표시를 갈아 끼우는 상대에게 제한이 걸리지 않음. ⓑ 는 지금 배포에서 신뢰 가능하되 웹 서버 앞에 로드밸런서가 서면 한 칸으로 접힘(제한이 열리지는 않고 클라이언트 칸이 없던 시절과 같아짐). ⓒ 는 프록시 홉 수 가정이 사라짐, 다만 배포 설정 변경.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓒ, 로드밸런서를 실제로 쓰게 될 때 착수. 되돌리는 비용은 웹 서버 설정 한 줄 + core-api 한 줄. <span class="tag">미확인</span> 실요청으로 재지 않았고 설정 문자열로만 판정.</p>
+    </div>
+
+    <div class="dec">
+      <h3>계약 개정 여부</h3>
+      <p><b>배경</b> — 코드가 계약이 선언하지 않은 자리로 나가는 곳 넷. 미리보기 3기능의 4xx 응답 · 렌더 서비스의 경계 표시 · 렌더 조회의 400 · 화면 갈무리 층 상한.</p>
+      <p><b>현재</b> — 계약 파일 수정 0건. 개정 초안만 각 기록에 적어 둠. 새 스키마는 필요 없고 전부 기존 응답 봉투 참조.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 계약을 열어 실물에 맞춤</li>
+        <li><b>ⓑ</b> 코드를 계약 안으로 되돌림</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 화면에 이미 있는 「그릴 수 없는 형식」 분기가 계약에 서고 다른 팀이 계약대로 코딩할 수 있음. ⓑ 는 「그릴 수 없는 형식」이 다시 「연결 못 함」으로 돌아가고 지원 형식 목록이 화면에 닿지 못함.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ. 되돌리는 비용은 <code>relay.py</code> 의 통과 상태 목록 한 줄.</p>
+    </div>
+
+    <div class="dec">
+      <h3>캐시 열쇠 변경 뒤의 재생성</h3>
+      <p><b>배경</b> — 캐시 열쇠에 시각과 격자 표식이 들어가 배포 직후 기존 산출물이 전부 열쇠 불일치.</p>
+      <p><b>현재</b> — 코드에는 반영됨. 배포 시점과 재실측 일정은 정하지 않음.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 그대로 배포 — 첫 조회가 다시 렌더</li>
+        <li><b>ⓑ</b> 배포 전에 주요 대상을 미리 렌더</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 배포 직후 첫 조회가 느려지고 산출물 소유 등급을 다시 재야 함. ⓑ 는 준비 시간이 들되 첫 조회가 이전과 같음.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ + 소유 등급 재실측 일정을 함께 잡음. 되돌리는 비용은 열쇠 구성 한 줄.</p>
+    </div>
+
+    <div class="dec">
+      <h3>배포 설정의 비밀값 파일 전환</h3>
+      <p><b>배경</b> — 읽는 쪽 네 값은 이번에 파일 참조를 지원하게 됐고 배포 설정은 그대로 둠.</p>
+      <p><b>현재</b> — 뒤로 호환. 값은 여전히 컨테이너 환경변수로 들어가고 정보 조회로 읽힘.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 파일 참조 + 권한 제한 파일로 전환</li>
+        <li><b>ⓑ</b> 그대로 둠</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 컨테이너 정보 조회로 열쇠가 읽히는 자리가 닫힘. 두 출처를 동시에 두면 앱이 뜨지 않으므로 옮길 때 기존 환경변수를 반드시 제거. ⓑ 는 세션 서명 열쇠가 계속 조회 가능한 상태.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ. 되돌리는 비용은 배포 설정 되돌리기 + 재기동. <span class="tag">미확인</span> 배포된 두 값에 앞뒤 공백이 있는지 재지 않음(있으면 두 서비스가 다른 문자열을 쥠).</p>
+    </div>
+
+    <div class="dec">
+      <h3>산출물 소유 검사기의 관용 기한</h3>
+      <p><b>배경</b> — 구판 산출물을 고아로 세어 지우는 오삭제를 막으려고 관용 설정을 켜 둠. 그 상태에서 전건이 판정 불가라 이 검사기는 0건 판정으로 통과 중.</p>
+      <p><b>현재</b> — 손대지 않음. 기한 없음.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 기한을 정함 — 그날 이후 판정이 섬</li>
+        <li><b>ⓑ</b> 지금 끔 — 구판이 오삭제 대상이 됨</li>
+        <li><b>ⓒ</b> 유지 — 검사기가 계속 아무것도 판정하지 않음</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> 판정에 필요한 것은 「구판 산출물을 언제까지 보류할지」 날짜 하나.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ. 되돌리는 비용은 설정 한 줄.</p>
+    </div>
+
+    <div class="dec">
+      <h3>수명이 없는 렌더의 보관</h3>
+      <p><b>배경</b> — 축출 조건이 수명 하나인데, 등록된 데이터셋의 렌더에는 수명이 붙지 않아 축출 대상 밖.</p>
+      <p><b>현재</b> — 서명 수명(기본 3600초)이 지나면 타일 주소가 죽고, 그 뒤의 작업은 조회에만 쓰임.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 등록 데이터셋 렌더에도 수명을 줌</li>
+        <li><b>ⓑ</b> 그대로 둠</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 계약이 「임시로만 둔다」고 못박은 범위를 넘는 판단이 필요. ⓑ 는 조회용 작업이 계속 남음(원본 배열은 이미 놓임).</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓑ 유지 후 다음 회차 판단. 되돌리는 비용은 상수 하나.</p>
+    </div>
+
+    <div class="dec">
+      <h3>재시도 상한과 죽은 편지함</h3>
+      <p><b>배경</b> — 재전달 시도 횟수는 이번 회차로 사실이 됨. 계약에는 상한과 보관 열이 있고 보내는 경로가 레포에 없음.</p>
+      <p><b>현재</b> — 상한을 넘겨도 횟수가 계속 오르고 재시도도 계속됨.</p>
+      <ul class="opts">
+        <li><b>ⓐ</b> 죽은 편지함 경로를 세움</li>
+        <li><b>ⓑ</b> 상한만 지키고 멈춤</li>
+        <li><b>ⓒ</b> 그대로 둠</li>
+      </ul>
+      <p class="rec"><b>고르면 달라지는 것</b> ⓐ 는 실패한 발행을 사람이 볼 자리가 생김. ⓒ 는 실패한 발행이 영구 재시도로 남음.</p>
+      <p class="rec"><b>권고 · 되돌리는 비용</b> ⓐ 를 다음 회차 항목으로. 되돌리는 비용 해당 없음(아직 배선 없음).</p>
+    </div>
+  </div>
+</section>
+
+<section id="unknown">
+  <div class="shead"><h2>미확인 · 이번에 재지 않은 것</h2></div>
+  <p class="snote col">각 기록의 <code>[미확인]</code> 절을 한자리에 모음. 「돌지 않은 것은 통과가 아니다」를 그대로 적용함.</p>
+  <div class="two">
+    <div class="panel">
+      <h4>환경이 없어 실행하지 못한 시험</h4>
+      <ul class="lst">
+        <li>core-api 종단 시험 6건 · 렌더 서비스 종단·성능 40건 — 원천 데이터 마운트 필요. core-api 종단 5건은 <b>기존 실패</b>이며 이 회차가 만든 것이 아님</li>
+        <li>업로드 처리 서비스의 데이터베이스 시험 갈래 · AI 서비스 사전 데이터베이스 시험 26건</li>
+        <li>화면 검사기 셀프테스트 2건 — 의존 설치 필요</li>
+        <li>Actions 러너에서의 서비스 시험 계수 — 잡 로그에 있고 이 기록에 옮기지 않음</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>실측하지 않은 값</h4>
+      <ul class="lst">
+        <li>업로드를 흘려 쓰기의 메모리 사용량과 상태 확인 응답시간</li>
+        <li>렌더 작업 축출로 줄어든 메모리 양</li>
+        <li>격자 표식 충돌의 실데이터 발생 빈도</li>
+        <li>이벤트 스풀 잔류량</li>
+        <li>배포된 비밀값 두 개의 앞뒤 공백 유무(길이만 비교하면 풀림)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>실서버에서 확인하지 않은 경로</h4>
+      <ul class="lst">
+        <li>로그인 클라이언트 열쇠의 실제 신뢰도 — 설정 문자열로만 판정</li>
+        <li>투영 밖 좌표의 정상 응답 전환 — 시험 클라이언트로만 확인</li>
+        <li>AI 서비스 사유 문구의 실제 유출 값 — 실물 모양의 문구로만 확인</li>
+        <li>브라우저 실동작 — 인증 만료 왕복 중 화면 전환 · 실패 자리 배치 · 포커스와 낭독 순서 · 서머타임 지역의 날짜 경계</li>
+        <li>두 push 에서 PR 검사 실행이 생성되지 않은 원인(수동 실행으로 대체 확인)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>계수 단위가 달라 비교하지 않은 것</h4>
+      <ul class="lst">
+        <li>리뷰가 적은 「시험 함수 1102 중 871 미실행」 — 이번에 센 것은 「게이트가 실행한 케이스」라 단위가 다름. 같은 단위로 맞추려면 전수 수집 계수가 필요</li>
+        <li>화면 시험의 개정 전 실패 계수 「19건」 — 출력이 남아 있지 않아 되짚지 못함. 다시 잰 값은 13건과 14건</li>
+        <li>AI 서비스 88 과 125 — 앞은 6파일 제외 부분집합, 뒤는 표식 선택자 기준</li>
+        <li>판정부의 종료코드 구멍을 실제로 밟는 검사기가 지금 있는지는 세지 않음</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="src">
+  <div class="shead"><h2>근거 · 경로</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th>무엇</th><th>어디</th></tr></thead>
+    <tbody>
+      <tr><td class="b">리뷰 결과</td><td><code>dev-package/sessions/CODE-REVIEW-20260903.md</code> — 15건 + 부록 + 재지 않은 것</td></tr>
+      <tr><td class="b">집행 계획과 실행 기록</td><td><code>dev-package/sessions/CODE-REVIEW-20260903-PLAN.md</code> — 편집 면 · 병합 순서 · 통합 트리 실측 · 판정 대기</td></tr>
+      <tr><td class="b">갈래별 집행 기록 7건</td><td><code>dev-package/sessions/CODE-REVIEW-20260903-*.md</code> — 변경 · 시험 · 계수 전후 · 미확인 · 유보</td></tr>
+      <tr><td class="b">병합 지도</td><td><code>dev-package/notes/REFACTOR-MERGE-MAP-20260903.md</code></td></tr>
+      <tr><td class="b">브랜치와 트리</td><td>브랜치 <code>lane-review-clean</code> · 기준 <code>d4d11b5</code> · 통합 <code>1a26372</code> · 리뷰 기준 <code>d9e89a3</code></td></tr>
+      <tr><td class="b">초안 PR</td><td><a href="https://github.com/CognileapAI/colab-v2/pull/2">github.com/CognileapAI/colab-v2/pull/2</a> — Actions 실행 확인용, main 병합 아님</td></tr>
+      <tr><td class="b">진행 지도(아티팩트)</td><td><a href="https://claude.ai/code/artifact/7ac9a418-616d-45e9-87c7-e6c1029f79e2">코드리뷰 개선 회차 지도</a> — 차단 유형별 항목·의존 도식·착수 순서</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <div class="col">
+    <p>측정 기준일 2026-09-03. 모든 계수는 위 표에 적은 명령과 트리에서 잰 값이며, 세는 단위가 다른 값은 서로 빼거나 더하지 않음. 운영 스택 무접촉 · 비밀값 출력 0건 · 계약 파일 수정 0건.</p>
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var b=document.getElementById('tt'),r=document.documentElement;
+  b.addEventListener('click',function(){
+    var cur=r.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+    r.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  });
+})();
+</script>

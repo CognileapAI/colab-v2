@@ -26,6 +26,15 @@ FAILED=0
 
 red() { echo "::error::e2e-format-coverage-selftest red — $*"; FAILED=1; }
 
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 ✓ 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# ⚠ 이 셀프테스트가 부르는 판정부는 오늘 78 을 낼 길이 없다. 그래도 물린다 —
+#   **형제를 찾아 같이 고치지 않으면 남은 쪽이 다음 회차에 같은 거짓말을 한다.**
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+
 [ -f "$JUDGE" ] || { echo "::error::e2e-format-coverage-selftest red — 판정부가 없다: $JUDGE"; exit 1; }
 
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" e2e-fmt-cov-XXXXXX)"
@@ -57,6 +66,17 @@ mk_junit() {  # $1=경로, 이후 "포맷:결과:이름" 반복
 expect() {  # $1=기대(red|green) $2=이름 $3=junit $4=config [$5=출력에 반드시 있어야 할 문자열]
   local want="$1" label="$2" xml="$3" cfg="$4" needle="${5:-}" out rc
   out="$(python3 "$JUDGE" --junit "$xml" --config "$cfg" 2>&1)"; rc=$?
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  # ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #6⟩ **여기서 `FAILED=1` 을 세우지 않는다.**
+  #   세우면 아래 `[ "$FAILED" -ne 0 ] && exit 1` 이 먼저 걸려 종료가 **1(판정 red)** 이
+  #   되고, 정작 준비 실패를 말하는 `expect_readiness_verdict`(종료 78)까지 못 간다.
+  #   실행기는 1 을 「셀프테스트가 게이트의 결함을 찾았다」로 세므로 **「고칠 결함」과
+  #   「환경이 없다」가 다시 섞인다** — `_expect.sh` 가 갈라 놓은 것을 이 한 줄이 도로
+  #   접었다. 판정 못 한 케이스는 `EXPECT_READINESS` 에 남아 있고 그것을 78 로 내는 것이
+  #   `expect_readiness_verdict` 의 일이다. **어느 쪽이든 red 다** — 색이 아니라 사유가 바뀐다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then
+    return
+  fi
   if [ "$want" = red ] && [ "$rc" -eq 0 ]; then
     red "$label — red 여야 하는데 통과했다:
 $(echo "$out" | sed 's/^/     /')"; return
@@ -110,4 +130,6 @@ if [ "$FAILED" -ne 0 ]; then
   echo "::error::e2e-format-coverage-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
+# 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict e2e-format-coverage-selftest
 echo "e2e-format-coverage-selftest green — 검사 11건 전건 기대대로 (red 9 · green 2 · 건수 노출 1)"
