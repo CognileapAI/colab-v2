@@ -16,11 +16,19 @@ GATE="$REPO_ROOT/gates/tools/db_boundary.py"
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" db-boundary-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 FAILURES=()
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
+# 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
+# **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 OK 라고 말했다
+# (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
   local want="$1" label="$2"; shift 2
   local out rc got
   out="$("$@" 2>&1)"; rc=$?
+  # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then
     echo "[selftest] $label → $got OK"
@@ -213,7 +221,9 @@ expect red "compose 의 services 가 0건" run "$R"
 
 echo "────────────────────────────────────────────────────────────────────"
 if [ ${#FAILURES[@]} -eq 0 ]; then
-  echo "db-boundary-selftest: 전부 통과"
+  # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict db-boundary-selftest
+echo "db-boundary-selftest: 전부 통과"
   exit 0
 fi
 echo "::error::db-boundary-selftest 실패 ${#FAILURES[@]}건: ${FAILURES[*]}"

@@ -29,7 +29,9 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`work-item-consistency`** | **개발 항목 상태의 대장 ↔ 산문 불일치** (정본 = `dev-package/work-items.yaml`). ⭑ **⟨증보 2026-09-01 · `PLAN-SoT §9 〈268〉`⟩ 검사 8종** — 종전 일곱 ＋ **㈕ `CLAUDE.md` stage 3 표지 ↔ 대장 `stage: after_stage2` 집합 대조**(표지 부재·미폐쇄·`CLAUDE.md` 부재는 red). ／ 이전 표기 ~~⭑ ⟨증보 2026-08-31 · `PLAN-SoT §9 〈252〉`⟩ 검사 7종~~ — ㈎ 대장 스키마 · ㈏ `WORK-UNITS §11` 완주 체크리스트 대조 · ㈐ `03-HANDOFF §1` 진실원 표 대조 · ㈑ `⏸`(하지 않기로 한 것)의 착수 후보 표 혼입 · ㈒ 기한 발동인데 안 열린 항목 · ㈓ `conflict` 잔존 · **㈔ `PLAN-SoT §9` 결정 번호 `〈n〉` 중복**. ／ 이전 표기 ~~검사 6종 — ㈎~㈓~~. **상태 관리가 「관례를 두지 않는다」의 마지막 사각지대였다** |
 | **`frontend-test`** | **화면 동작 시험(`frontend/test` · vitest)이 게이트 안에서 도는가** — `frontend/package.json` 의 `test`(`vitest run`) 와 **같은 명령**을 레포의 `vite.config.ts`(jsdom · `include`=`test/**/*.test.ts(x)`) 그대로 돈다. ⭑ **2026-09-03 화면 검수** — 시험 24파일 446건이 이미 있는데 **게이트 39개 어디에도 없었다.** `frontend-typecheck` 는 타입만 보고 라벨·문구·표기 규칙 같은 **화면 동작**은 아무도 재지 않았다 — 그래서 정본과 어긋난 화면 30행이 전 게이트 green 인 채로 staging 에 서 있었다. **갈림 방지** — `package.json` 의 `test` 가 `vitest run` 으로 시작하지 않으면 red. ⭑ **수집된 시험 0건도 red** — 통과 0·실패 0 은 「전부 통과」가 아니라 「아무것도 검사하지 않았다」다(`CLAUDE.md §4` green-by-skip). 통과 건수를 요약에서 읽지 못해도 red(`CLAUDE.md §5`). `node_modules`·`.bin/vitest` 부재는 skip 이 아니라 **red(준비 · 코드 78)**. ⚠ jsdom 밖(실제 CSS 레이아웃·휠 이벤트·캔버스 렌더)은 이 게이트가 보지 않는다 — 그 자리는 화면 스모크(Playwright) 물음으로 남아 있다 |
 | **`backup-cron-streak`** | **크론 무인 백업의 연속 GREEN 이 지금도 서 있는가** (`PLAN-SoT §9 〈286〉` ① · 등재 `〈296〉`-㉴). ⚠ **이 게이트는 다시 재지 않는다 — 읽는다.** 판정 입력은 크론 04:40 회차(`infra/staging/backup/check-cron-streak.sh`)가 `~/colab-v2-backups/staging-backup.log` 에 남긴 **마지막 요약줄** 하나다. 재실행하지 않는 이유 = 게이트 호스트가 보관처를 못 보면 재실행은 **항상 RED** 가 되고 그때 「보관처 없음」과 「연속 깨짐」이 **안 갈린다**(`render-latency` 와 같은 「보관처 있는 호스트에서만 도는 게이트」 배치). 세는 단위 = **`크론 연속 GREEN:` 으로 시작하는 요약줄 1건**. ⚠ **요약줄 자체에는 시각이 없다** — 시각은 `run-scheduled.sh` 가 **그 다음 줄**(`… check-cron-streak.sh 성공|실패`)에 적고, 게이트는 둘을 **짝으로** 읽는다. **짝을 못 찾으면 red** 다(나이를 못 재는 GREEN 은 판정이 아니다). red 조건 넷 — ⓐ 로그 부재·요약줄 0건(**대상 0건은 통과가 아니다**) ⓑ 요약줄이 **36시간**보다 오래됨(일 1회 ＋ 12h 여유 · green-by-stale 차단) ⓒ 요약줄이 RED ⓓ 요약줄이 **「검사 0건 · 승인된 SKIP」 GREEN**(`lib.sh verdict` 의 SKIP-GREEN 을 그대로 받지 않는다). 근사 한계(무인 판별 창 `COLAB_CRON_WINDOW_MIN`)는 **게이트 출력에 그대로 옮긴다** — 안 보이는 근사는 거짓말이 된다 |
-| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지** (contract · event · boundary · db-boundary · db · rls-effect · seam-consistency · generated · work-item · e2e-format-coverage · render-latency · backup-cron-streak · frontend-typecheck · frontend-test 증명 열). ⚠ **`stage2-markers-selftest` 는 여기 없다** — pipeline-worker 런타임 의존(rasterio 등)이 필요해 `contract-gates` 잡 환경에서 못 돈다. CI 는 `dormant-tests` 잡에서 따로 부른다 |
+| **`service-tests-core-api`** · **`service-tests-ai-service`** · **`service-tests-viz-render`** · **`service-tests-pipeline-worker`** | **서비스 pytest 묶음이 CI 안에서 도는가** (2026-09-03 코드리뷰 #6). ⭑ **종전에는 `grep -rn pytest .github/` = 0 이었다** — CI 가 도는 pytest 는 `stage2-markers` 의 `stage2 and not e2e` 부분 집합 하나뿐이었고, **서비스 측 시험 함수 1102 중 871 이 CI 에서 한 번도 실행되지 않았다**(core-api 51파일·533함수 · ai-service 13·133 · viz-render 28·205). 시험이 레포에 있는 것과 CI 가 그것을 판정하는 것은 다른 사실이다 — `frontend-test` 가 닫은 것과 같은 계열. 판정부 = `gates/tools/service-tests.sh <단위> <표식 선택자>`, 선택자의 정본은 `gates/run.sh` 의 case 한 곳(viz `not e2e and not perf` · pipeline `not e2e and not dbint` · ai `not dictdb` · core-api `not e2e`). **red 조건 여섯** — ⓐ 단위·선택자 인자 부재(빈 선택자를 「전부」로 읽지 않는다) ⓑ 단위·`tests/` 자리 부재 ⓒ **수집 0건** ⓓ **실행 0건(전부 skip)** ⓔ failed·errors ⓕ pytest 비영 종료. **skipped·deselected 는 막지 않고 요약줄에 건수로 드러낸다** — 감춘 건너뜀이 green-by-skip 이지 드러낸 건너뜀은 판정의 일부다. venv 부재는 skip 이 아니라 **red(준비 · 78)**. `core-api` 는 게이트가 **일회용 Postgres 를 스스로 세운다** (`_pg.sh` ＋ `services/core-api/tests/fixtures/setup-db.sh` — 포트 미공개 · PGDATA tmpfs · `--rm` ＋ trap · **접속 문자열을 출력하지 않는다**). ⚠ 뺀 표식은 **취소가 아니다** — 표식은 붙어 있고 그 환경이 있는 실행에서 함께 돈다. `stage2-markers` 는 그대로 남는다(휴면 모듈의 시험이 **계속 도는지**를 재는 다른 질문이다) |
+| **`service-tests-selftest`** | 위 네 게이트가 red fixture 로 fail-closed 임을 증명한다 — **ⓐ 통과 1건 green(대조군) · ⓑ 실패 1건 red · ⓒ 수집 0건 red · ⓓ 실행 0건(전부 skip) red · ⓔ venv 부재 red(준비 · 78) · ⓕ·ⓖ 필수 인자 부재 red · ⓗ 단위 자리 부재 red · ⓘ 요약줄이 계수를 낸다**. 픽스처 원본 = `gates/fixtures/service-tests/`(트리 넷 ＋ README), 판정은 `mktemp -d` 사본에서만 난다 — `services/**` 에는 한 글자도 쓰지 않고 서비스 묶음을 다시 돌리지 않는다. 서비스 venv 가 하나도 없으면 skip 이 아니라 red(준비 · 78) |
+| `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지.** ⭑ **⟨개정 2026-09-03 · 코드리뷰 #6⟩ 집합을 손으로 적지 않는다** — 구성원 정본은 `gates/run.sh` 의 `ALL_GATES` 안에서 이름이 `*selftest` 인 것 전부다. 종전에는 이 자리에 이름 14개가 손으로 적혀 있었고 `ALL_GATES` 에는 셀프테스트가 18개 있었다 — **`autometa-loss-`·`preview-tile-slot-`·`artifact-ownership-`· `stage2-markers-selftest` 넷이 조용히 빠져 있었다.** 빠진 것이 목록의 부재로만 존재하면 아무도 그것을 세지 않는다(green-by-skip 의 목록판). **세 상태** — 선언되면 돈다 · **명시 면제는 이름과 사유와 건수를 드러낸 채** 넘어간다 · 아무 말 없으면 red. 요약줄이 `선언 N · 실행 M · 면제 K` 와 `green / red(판정) / red(준비)` 를 낸다. 현재 면제 2건 = `stage2-markers-selftest`(pipeline-worker 런타임 필요 · CI 는 `dormant-tests` 잡이 돈다) · `service-tests-selftest`(서비스 venv 필요 · CI 는 `service-tests` 잡이 돈다). ⚠ 면제는 「검사하지 않아도 된다」가 아니라 **다른 잡이 그것을 돈다**는 선언이고, `gates/run.sh all` 은 면제 없이 전부 돈다. 케이스가 종료코드 78 로 나가면 집합 전체가 78 로 나간다 — **못 돈 것을 통과로 세지 않는다** |
 
 ## 빨리 도는 것과 덜 보는 것은 다르다
 
@@ -60,6 +62,54 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 
 "전부 green"과 "전부 무력"은 구분되지 않는다. v1 CI는 DB 없이 돌아 RLS 테스트를 **green-by-skip** 했다.
 각 게이트는 red fixture로 자신이 fail-closed임을 증명해야 한다.
+
+### 셀프테스트의 판정 갈래 — 정본은 `gates/tools/_expect.sh` 하나
+
+⭑ **⟨2026-09-03 · 코드리뷰 #6⟩ 준비 실패(종료코드 78)를 「기대한 red」로 세지 않는다.**
+자체 `expect()` 를 가진 셀프테스트 12개 중 **10개가 78 을 그냥 red 로 접고 있었다.** 가르는 코드는
+`_expect_pool.sh`(병렬판) 안에만 있었고, 직렬판은 각자 `got="green"; [ $rc -eq 0 ] || got="red"` 를
+손으로 적었다. 보호 장치를 떼고 red 를 기대한 케이스가 **준비 실패로** red 가 났다면 그 보호 장치는
+**판정된 적이 없는데 출력은 「red OK」라고 말한다** — 검사기가 아무것도 검사하지 않은 채 통과를
+보고하는 모양이다.
+
+**네 갈래** (판정 축은 하나 — 대상이 판정됐는가):
+
+| 갈래 | 언제 | 기대에 쓰는 이름 |
+|---|---|---|
+| `green` | 종료 0 | `green` |
+| `red` | 종료 0 아님 | `red` |
+| `ready` | 종료 78(또는 준비 표식) — 환경을 기다리다 못 떴다 | `ready` |
+| `미선언` | 종료 78 ＋ `cause=입력미선언` — 필요한 값이 아무 데도 선언되지 않았다 | `미선언` |
+
+`ready` 와 `미선언` 을 가르는 이유 — **미선언은 간헐이 아니다.** 매번 같은 답을 내므로 「판정 못 함」으로
+접지 않고 그 자리에서 판정한다. 기대가 `ready`·`미선언` 이 아닌데 78 이 오면 그 케이스는 **통과로도
+실패로도 세지 않고** `EXPECT_READINESS` 에 쌓이며, 셀프테스트 전체가 **종료코드 78** 로 나간다
+(`expect_readiness_verdict`). 실행기가 요약에서 `red(준비)` 로 갈라 적는다.
+
+⚠ 함께 고친 형제 넷 — ⑴ `stage2-markers-selftest` 의 `expect_red` 도 78 을 「✓ red」로 셌다
+(pipeline-worker venv 가 없는 체크아웃에서 **세 케이스 전부를 판정하지 않은 채 green** 이었다).
+⑵⑶⑷ `contract-selftest`·`event-selftest`·`boundary-selftest` 는 풀이 `EXPECT_READINESS` 에
+쌓아 둔 것을 **한 번도 읽지 않아** 못 돈 케이스가 조용히 사라진 채 green 이 나갈 수 있었다.
+
+## CI 배선 — 어느 잡이 무엇을 판정하나 (2026-09-03 개정)
+
+정본은 `.github/workflows/ci.yml` 이고 아래는 그 요약이다. 게이트를 잡에 **한 번씩만** 싣는다 —
+같은 게이트가 두 잡에 실리면 어느 쪽 결과가 판정인지 사후에만 갈린다.
+
+| 잡 | 조건 | 도는 것 |
+|---|---|---|
+| `contract-gates` | `contracts` | `contract-lint`·`contract-breaking`·`event-lint`·`event-breaking`·`seam-consistency`·`generated-up-to-date` |
+| **`frontend-gates`** ⭑신설 | **`frontend` \|\| `contracts`** | `frontend-typecheck`·`frontend-test` |
+| `boundary-gates` | core-api ∥ ai-service ∥ **viz-render ∥ pipeline-worker ∥ infra ∥ contracts** ⭑확대 | `import-boundary`·`banned-import`·`ai-no-lineage-write`·**`db-boundary`** ⭑신설 |
+| `schema-gates` | `db` ∥ core-api | `migration-single-head`·`schema-diff`·`rls-coverage`·`rls-effect` |
+| `dormant-tests` | pipeline-worker | `stage2-markers-selftest` → `stage2-markers` |
+| **`service-tests`** ⭑신설 | 단위별 `<단위> \|\| contracts` (matrix 4) | `service-tests-selftest` → `service-tests-<단위>` |
+| `planning-gates` | `dev-package` | `work-item-consistency`·`planning-freshness` |
+| `gate-selftest` | `contracts` | `selftest` 집합(실행 17 ＋ 명시 면제 2) |
+
+⭑ **고친 세 자리** — ⑴ 프런트 게이트 2종이 `contracts` 필터 잡 안에 있어 **`frontend/` 만 바꾼 PR 은
+게이트 잡이 0개**였다(`outputs.frontend` 는 선언만 되고 소비처가 0개였다). ⑵ `db-boundary` 는 **판정을
+어느 잡도 돌리지 않았고** 셀프테스트만 CI 에 있었다. ⑶ 서비스 pytest 를 도는 잡이 없었다.
 
 ## 현재 상태 (2026-08-28)
 
@@ -99,7 +149,8 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `stage2-markers-selftest` | **3** | pipeline-worker venv — ⓐ 마커 0건 · ⓑ skip · ⓒ fail 셋이 전부 red 임을 증명한다. ⓑ 가 핵심이다: **green-by-skip 이 v1 의 실패 형태**다 |
 | `work-item-selftest` | **14** ⭑ ⟨2026-08-31 · `〈252〉` 로 ㈔ 4건 증설: 중복·행 0건·문서 부재·§9 부재⟩ ／ 이전 ~~10~~ | 없음 (bash + python3 + pyyaml) — 대조군 1 · red 증명 13. **픽스처가 자기 산문 문서(`03-HANDOFF` · `WORK-UNITS` 스텁)를 들고 다닌다.** 레포 실물의 항목 상태는 정당하게 어긋나 있을 수 있고(그것이 이 게이트를 만든 이유다) selftest 가 거기 볼모잡히면 안 된다 — `db-selftest`·`generated-selftest` 와 같은 이유. red 픽스처의 ㈑ 는 **2026-08-27 실물 재현**(`WORK-UNITS §10` 착수 후보 표에 `I0 ⏸` 가 올라 있던 것) |
 | `generated-selftest` | **9** | 없음 (bash + python3) — green 기준 케이스도 fixture 다. 레포 실물은 재생성 파이프라인 상태에 따라 정당하게 red 일 수 있어, selftest 가 레포 상태에 볼모잡히지 않게 했다 |
-| `selftest` | 위 전부 | |
+| `service-tests-selftest` | **9** | 서비스 venv 하나(파이썬만 빌린다) — ⓐ 통과 1건 green · ⓑ 실패 1건 red · ⓒ 수집 0건 red · ⓓ 실행 0건(전부 skip) red · ⓔ venv 부재 red(준비 · 78) · ⓕⓖ 필수 인자 부재 red · ⓗ 단위 자리 부재 red · ⓘ 요약줄 계수 노출. 픽스처 = `gates/fixtures/service-tests/` |
+| `selftest` | **선언 19 = 실행 17 ＋ 명시 면제 2** | 구성원은 `ALL_GATES` 에서 뽑는다(손목록 없음). 면제 2건은 이름·사유·건수가 출력에 나온다 |
 
 > `db-selftest` 의 픽스처 케이스는 **레포의 `gates/config/rls-allowlist.toml` 을 읽지 않는다.**
 > 합성 스키마에 없는 테이블이 allow-list 에 정당하게 추가되면(K1 이 그랬다) 기준 케이스가 red 가 되기 때문이다 —

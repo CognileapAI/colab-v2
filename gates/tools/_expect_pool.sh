@@ -15,8 +15,11 @@
 #   실패 라벨은 직렬판과 같이 FAILURES 배열에 쌓인다.
 
 POOL_N=0
-# 준비 실패를 모으는 자리. 부르는 쪽이 안 만들었으면 여기서 만든다(set -u 아래서 터지지 않게).
-declare -p READINESS >/dev/null 2>&1 || READINESS=()
+# 판정 갈래(green·red·ready·미선언)는 **직렬판과 한 정의를 쓴다** — 두 벌로 두면 한쪽이
+# 언젠가 관대해진다. 종전에는 여기에만 78 을 가르는 코드가 있었고, 직렬판 10개는 그것을
+# 손으로 다시 적지 않은 채 78 을 「기대한 red」로 셌다 (2026-09-03 코드리뷰 #6).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 POOL_DIR=""
 POOL_JOBS="${COLAB_GATE_JOBS:-}"
 if [ -z "$POOL_JOBS" ]; then
@@ -55,16 +58,8 @@ pool_join() {
     rc="$(cat "$POOL_DIR/$n.rc")"
     # 준비 실패(검사기가 못 돌았다)를 fail-closed 결함으로 세지 않는다 — 다른 사실이다.
     # 통과로도 세지 않는다: READINESS 에 쌓여 부르는 쪽이 red(준비) 로 낸다.
-    if [ "$rc" = 78 ] || grep -q '::gate-readiness-failure::' "$POOL_DIR/$n.out" 2>/dev/null; then
-      grep '::gate-readiness-failure::' "$POOL_DIR/$n.out" 2>/dev/null | sed 's/^/           /'
-      if [ "$want" = "ready" ]; then
-        echo "[selftest] $label → red(준비) OK (이 케이스가 재는 것이 준비 실패다)"
-      else
-        # ⚠ **준비 실패를 「기대한 red」로 세지 않는다.** 보호 장치를 떼고 red 를 기대한 케이스가
-        #   준비 실패로 red 가 났다면 그 보호 장치는 **판정된 적이 없다** — green-by-skip 의 정확한 모양이다.
-        echo "[selftest] $label → red(준비) — 검사기가 못 돌았다. **판정하지 못했다**(기대 $want)"
-        READINESS+=("$label (기대 $want · 판정 못 함)")
-      fi
+    # 가르는 규칙은 `_expect.sh` 한 곳에 있다.
+    if expect_intercept_readiness "$rc" "$(cat "$POOL_DIR/$n.out" 2>/dev/null)" "$label" "$want"; then
       continue
     fi
     got="green"; [ "$rc" -eq 0 ] 2>/dev/null || got="red"

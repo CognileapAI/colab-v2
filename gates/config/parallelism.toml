@@ -140,6 +140,26 @@
 #   **읽는다.** 진짜 `frontend/` 에는 한 글자도 쓰지 않는다. DB·도커·포트를 잡지 않는다.
 "frontend-test-selftest"    = "parallel"
 
+# ── 서비스 pytest 묶음 (2026-09-03 코드리뷰 #6) ─────────────────────────────
+# `service-tests-*` — **넷 다 `serial` 이다.** 자원 충돌이 아니라 **부하**가 이유이고,
+#   `frontend-test` 를 serial 로 둔 것과 같은 배치다. 한 묶음이 수백 건(core-api 552 ·
+#   pipeline-worker 200 · viz-render 199 · ai-service 119)을 돌아 호스트 CPU 를 통째로 쓴다.
+#   겹치면 ⑴ 저쪽이 느려지고 ⑵ 시간을 재는 `render-latency` 와 같은 사유로 **판정이 흔들린다.**
+#   `service-tests-core-api` 는 더해서 **일회용 postgres 슬롯을 하나 잡는다**(`_pg.sh`) —
+#   `preview-tile-slot-selftest` 를 serial 로 만든 슬롯 고갈(2026-08-30 실측)에 기여하는 쪽이다.
+#   ⚠ 이 값을 `parallel` 로 바꾸려면 **실측**이 필요하다 — `-j 2` 이상에서 이 게이트와 다른
+#     게이트의 판정이 단독 실행과 같은지 두 번 이상 재고 그 근거를 여기에 적는다.
+"service-tests-core-api"        = "serial"
+"service-tests-ai-service"      = "serial"
+"service-tests-viz-render"      = "serial"
+"service-tests-pipeline-worker" = "serial"
+
+# `service-tests-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   픽스처 트리(`gates/fixtures/service-tests/`)를 복사해 거기서 돌고, 서비스 묶음은
+#   한 건도 돌리지 않는다(케이스당 시험 0~2건). 서비스 venv 의 파이썬은 **읽기**로만 빌린다.
+#   `services/**` 에도 `gates/config` 에도 한 글자도 쓰지 않는다. DB·도커·포트를 잡지 않는다.
+"service-tests-selftest"        = "parallel"
+
 # `render-latency-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
 #   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 렌더를 돌리지 않으므로
 #   시간도 원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.

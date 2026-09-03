@@ -23,33 +23,17 @@ FAILURES=()
 # 준비 실패로 뒤집힌 케이스를 **fail-closed 결함으로 세지 않는다.**
 # 부하에서 일회용 DB 가 못 뜬 것을 「검사기가 틀렸다」로 적으면 그 보고가 거짓이 된다.
 # ⚠ 여전히 RED 다 — 다만 셀프테스트 전체가 종료코드 78 로 나가 실행기가 `red(준비)` 로 적는다.
-READINESS=()
-expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
+#   그 케이스를 모으는 자리(`EXPECT_READINESS`)는 `_expect.sh` 가 만든다.
+# 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나. 종전에는 이 파일 안에만
+# 78 을 가르는 코드가 있었고, 같은 모양이 필요한 다른 셀프테스트 10개는 그것을 손으로 다시
+# 적지 않은 채 78 을 「기대한 red」로 셌다 (2026-09-03 코드리뷰 #6).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+expect() { # $1=기대(green|red|ready|미선언) $2=라벨 $3.. = 명령
   local want="$1" label="$2"; shift 2
   local out rc got
   out="$("$@" 2>&1)"; rc=$?
-  if [ "$rc" -eq 78 ] || printf '%s' "$out" | grep -q '::gate-readiness-failure::'; then
-    printf '%s\n' "$out" | grep '::gate-readiness-failure::' | sed 's/^/           /'
-    # **입력 미선언은 간헐이 아니다.** 환경이 흔들려 못 돈 것과 달리, 값이 선언되지 않았다는
-    # 사실은 매번 같은 답을 낸다 — 그러므로 「판정 못 함」으로 접어 두지 않고 여기서 판정한다.
-    if printf '%s' "$out" | grep -q 'cause=입력미선언'; then
-      if [ "$want" = "미선언" ]; then
-        echo "[selftest] $label → red(준비·입력미선언) OK"
-      else
-        echo "[selftest] $label → red(준비·입력미선언) (기대 $want) ✗"
-        FAILURES+=("$label: 미선언으로 분류됨(기대 $want)")
-      fi
-      return
-    fi
-    if [ "$want" = "ready" ]; then
-      echo "[selftest] $label → red(준비) OK (이 케이스가 재는 것이 준비 실패다)"
-    else
-      # 준비 실패를 「기대한 red」로 세지 않는다 — 그 케이스는 판정된 적이 없다.
-      echo "[selftest] $label → red(준비) — 검사기가 못 돌았다. **판정하지 못했다**(기대 $want)"
-      READINESS+=("$label (기대 $want · 판정 못 함)")
-    fi
-    return
-  fi
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   got="green"; [ $rc -eq 0 ] || got="red"
   if [ "$got" = "$want" ]; then
     echo "[selftest] $label → $got OK"
@@ -486,12 +470,6 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
   printf '  - %s\n' "${FAILURES[@]}"
   exit 1
 fi
-if [ "${#READINESS[@]}" -gt 0 ]; then
-  # 판정 결함은 하나도 없었지만 **판정하지 못한 케이스가 있다.** 통과로 세지 않는다.
-  printf '::gate-readiness-failure::gate=db-selftest|waited_for=일회용 postgres 가 쓸 수 있는 상태(케이스 %d건)|limit=케이스별 상한|elapsed=-|detail=%s\n' \
-    "${#READINESS[@]}" "${READINESS[*]}"
-  echo "::error::db-selftest red(준비) — 아래 케이스를 **판정하지 못했다**(검사기가 못 돌았다). 통과로 세지 않는다:" >&2
-  printf '  - %s\n' "${READINESS[@]}" >&2
-  exit 78
-fi
+# 판정 결함은 하나도 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
+expect_readiness_verdict db-selftest "일회용 postgres 가 쓸 수 있는 상태"
 echo "db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명)."
