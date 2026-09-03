@@ -6,6 +6,7 @@ import { AppliedConditions } from '../components/catalog/AppliedConditions';
 import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
 import { useCatalog } from '../components/catalog/useCatalog';
+import { LoadFailure } from '../components/common/LoadFailure';
 import type { CatalogFilters, CatalogSource } from '../components/catalog/types';
 import { VerifiedBadgeSlot } from '../placeholders/VerifiedBadgeSlot';
 import { LockIndicatorSlot } from '../placeholders/LockIndicatorSlot';
@@ -13,7 +14,7 @@ import '../components/catalog/catalog.css';
 
 export function DatasetsPage(props: { source?: CatalogSource } = {}) {
   const navigate = useNavigate();
-  // 실서버가 아직 501 을 내면 픽스처로 그린다 — 서버가 붙는 순간 자동으로 갈아탄다
+  // 서버가 유일한 출처다 — 못 읽으면 못 읽었다고 말한다 (`catalogSource.ts` 2026-09-03 개정)
   const source = useMemo(() => props.source ?? defaultCatalogSource(), [props.source]);
   // 홈의 데이터 맵이 「그 조건이 걸린 카탈로그」로 보낸다 (`Policy_홈_대시보드 §8` · WU-P7).
   // **여기서 새 조건을 발명하지 않는다** — 주소가 나르는 것은 카탈로그가 이미 거는
@@ -53,17 +54,26 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
         <VerifiedBadgeSlot />
         <LockIndicatorSlot />
 
-        <AppliedConditions
-          filters={state.query.filters}
-          uploaderNames={uploaderNames}
-          onToggle={state.toggleValue}
-          onClearAll={state.clearAll}
-        />
-        <CatalogTable
-          state={state}
-          uploaderNames={uploaderNames}
-          onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
-        />
+        {/* 못 불러왔으면 **표를 세우지 않는다** — 빈 표의 「조건에 맞는 데이터가 없어요」가
+            읽지 못한 것을 없는 것으로 바꿔 말하기 때문이다. 종전에는 이 자리에서 픽스처
+            여섯 행을 실데이터처럼 그렸다 (`CODE-REVIEW-20260903` 9). */}
+        {state.error ? (
+          <LoadFailure message={state.error} onRetry={state.reload} testId="catalog-error" />
+        ) : (
+          <>
+            <AppliedConditions
+              filters={state.query.filters}
+              uploaderNames={uploaderNames}
+              onToggle={state.toggleValue}
+              onClearAll={state.clearAll}
+            />
+            <CatalogTable
+              state={state}
+              uploaderNames={uploaderNames}
+              onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
+            />
+          </>
+        )}
       </div>
 
       {/* 상호 안내 — 반대 길(검색 화면 S-01·S-06)이 이번 릴리스에 없다.

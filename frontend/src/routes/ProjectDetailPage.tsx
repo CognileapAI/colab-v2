@@ -4,6 +4,7 @@
 // 그것이 데이터에서 성과까지 계보를 잇는 값이라서다. 없으면 계보가 논문 앞에서 끊긴다.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { LoadFailure } from '../components/common/LoadFailure';
 import { recordVisit } from '../components/dashboard/visits';
 import { ProjectCloseModal } from '../components/project/ProjectCloseModal';
 import { ProjectDatasetTable } from '../components/project/ProjectDatasetTable';
@@ -51,6 +52,16 @@ export function ProjectDetailPage(props: { source?: ProjectSource } = {}) {
           <p>이 프로젝트를 찾을 수 없어요.</p>
           <Link to="/projects">프로젝트 목록</Link>
         </div>
+      ) : null}
+
+      {/* 「찾을 수 없다」는 404 만의 말이다. 못 읽은 것을 그 문구로 그리면 살아 있는
+          프로젝트를 없다고 말한다 (`CODE-REVIEW-20260903` 9). */}
+      {state.status === 'error' ? (
+        <LoadFailure
+          message="프로젝트를 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요."
+          onRetry={state.reload}
+          testId="project-detail-error"
+        />
       ) : null}
 
       {state.status === 'ready' ? (
