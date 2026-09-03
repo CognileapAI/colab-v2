@@ -24,6 +24,16 @@ const POLL_MS = 250;
 /** 구간 수 3~9 · 기본 6 (`Policy_데이터셋_상세 §5` · 계약 `RenderStyle.classCount`). */
 const DEFAULT_CLASS_COUNT = 6;
 
+/**
+ * 입력칸의 글자를 구간 수로 읽는다. **빈 칸·숫자가 아닌 것은 값이 아니라 없음**이라
+ * 기본값으로 되돌린다 — `Number('')` 이 0 이라 종전에는 칸을 비우는 순간 계약 밖의 0 이
+ * 다음 그리기에 실려 나갔다.
+ */
+export function classCountOf(raw: string): number {
+  const n = Number(raw);
+  return raw.trim() === '' || !Number.isFinite(n) ? DEFAULT_CLASS_COUNT : n;
+}
+
 /** 격자 흐름이 바깥(모달)에서 받는 사실 + 바깥으로 돌려주는 행동 (`§E.1-㈎`). */
 export interface GridFlowProps extends GridActions {
   /** 사람이 「건너뛰기」를 골랐다 (`§E.2-⑨`). **기본 경로다.** */
@@ -205,7 +215,10 @@ export function PreviewPanel(props: {
             max={9}
             data-testid="up-style-classcount"
             value={classCount}
-            onChange={(e) => setClassCount(Number(e.target.value))}
+            /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
+               그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
+               기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
+            onChange={(e) => setClassCount(classCountOf(e.target.value))}
           />
         </label>
         <div className="vs-act">
