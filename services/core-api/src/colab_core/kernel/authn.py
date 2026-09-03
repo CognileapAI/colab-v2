@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 from typing import Protocol, runtime_checkable
 
 from .auth import Subject, SubjectRegistry
@@ -46,8 +47,54 @@ class LoginAttempt:
 
     @property
     def key(self) -> str:
-        """시도 제한이 세는 식별자. **비밀번호를 담지 않는다.**"""
-        return f"name:{self.account_name}" if self.account_name else "code:*"
+        """시도 제한이 세는 식별자. **비밀번호도 접속 코드 원문도 담지 않는다.**
+
+        ⚠ **종전에는 접속 코드 로그인 전부가 상수 `"code:*"` 한 버킷이었다**
+        (`CODE-REVIEW-20260903` #5). 결과 둘 —
+          · 누구든 5회 실패시키면 창이 닫힐 때까지 **모든 접속 코드 사용자가 429** 다.
+          · 성공 1회가 **전원의 카운터**를 지운다 — 유효 코드 하나를 섞는 추측 공격은
+            한 번도 늦춰지지 않는다.
+        코드를 해시해 버킷을 가른다. **원문을 키로 쓰지 않는다** — 키는 로그·덤프에
+        따라다니고, 접속 코드는 그 자체가 자격이다.
+        """
+        if self.account_name:
+            return f"name:{self.account_name}"
+        if self.access_code:
+            digest = hashlib.sha256(self.access_code.encode("utf-8")).hexdigest()
+            return f"code:{digest[:16]}"
+        # 두 형태 중 정확히 하나를 요구하는 것은 라우트(`routes/session.py`)이므로 여기
+        # 닿지 않는다. 그래도 **키를 지어내지는 않는다** — 한 버킷으로 접히는 자리를
+        # 다시 만들지 않기 위해 이름을 남긴다.
+        return "code:없음"
+
+
+#: 클라이언트 버킷의 접두. 자격 버킷(`name:`·`code:`)과 **한 이름 공간에서 갈린다.**
+CLIENT_PREFIX = "client:"
+#: 열쇠로 쓸 첫 홉의 길이 상한. 헤더는 사용자가 보내는 값이라 길이를 여기서 묶는다.
+_MAX_CLIENT_KEY = 64
+
+
+def client_key(forwarded_for: str | None) -> str | None:
+    """부른 **클라이언트**의 버킷 열쇠 — `X-Forwarded-For` 의 첫 홉.
+
+    **왜 버킷이 둘인가.** 자격 버킷만 두면 코드를 갈아 가며 하는 열거에 브레이크가 없고
+    (`key` 를 코드별로 가른 순간 생기는 구멍이다), 클라이언트 버킷만 두면 여러 곳에서 한
+    계정을 두드리는 것을 못 센다. 둘을 함께 센다.
+
+    ⚠ **[Ted 판정 대기] 첫 홉은 사용자가 보낸 값이다.** `infra/staging/nginx.i2.conf:61`
+    은 `$proxy_add_x_forwarded_for` 를 쓴다 — 들어온 헤더 **뒤에** `$remote_addr` 를 덧붙이는
+    변수라, 클라이언트가 헤더를 실어 보내면 그 값이 첫 홉이 되고 **마지막 홉**이 nginx 가
+    실제로 본 주소다. 그래서 이 버킷이 늦추는 것은 **헤더를 안 만지는 열거**뿐이고,
+    헤더를 돌리는 상대에게는 브레이크가 아니다. 정직한 열쇠는 마지막 홉(또는 nginx 가
+    단독으로 세팅하는 별도 헤더)이고, 그 전환은 배포 설정 변경이라 이 레인 밖이다
+    (`kernel/throttle.py` 산문이 「IP 로 세지 않는다」고 적은 이유가 바로 이것이다).
+    """
+    if not forwarded_for:
+        return None
+    first = forwarded_for.split(",")[0].strip()
+    if not first or len(first) > _MAX_CLIENT_KEY:
+        return None
+    return f"{CLIENT_PREFIX}{first}"
 
 
 
