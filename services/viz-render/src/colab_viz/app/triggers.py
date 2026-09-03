@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import logging
 
+from ..ports.source import TargetNotFound
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,18 +49,28 @@ def _collect(port) -> list:
 def drain(port, *, jobs, source) -> list:
     """버스에 쌓인 것을 한 바퀴 집행하고 **집행한 결과 목록**을 돌려준다.
 
-    **그린 적 없는 대상은 건너뛴다** — `JobStore.regenerate` 가 「무효화 범위를 지어내지
-    않는다」로 거절하는 자리다. 이 인스턴스가 한 번도 그리지 않은 대상에는 낡은 산출물이
-    없으므로 **할 일이 없고**, 그때도 알림은 걷는다(다시 와도 같은 결론이다).
+    **그린 적 없는 대상 · 사라진 대상은 건너뛴다** — 앞은 `JobStore.regenerate` 가
+    「무효화 범위를 지어내지 않는다」로 거절하는 자리(`LookupError`)이고, 뒤는 미리보기
+    뒤에 대상 디렉터리가 없어져 `SourcePort.resolve` 가 거절하는 자리(`TargetNotFound`)다.
+    **둘 다 다시 와도 같은 결론**이라 알림을 걷는다 — 할 일이 없다.
+
+    ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #3⟩ `TargetNotFound` 는 `LookupError` 가 **아니라**
+    그냥 `Exception` 이라 아래 마지막 그물에 걸렸다. 그 갈래는 걷지 않으므로 사라진
+    대상의 봉투를 **매 틱 다시 집어 영원히** 트레이스백만 찍었다. 「실패라서 다시 해
+    본다」가 아니라 **결론이 이미 났는데 못 걷은 것**이라, 자리를 `LookupError` 옆으로 옮긴다.
 
     **한 건이 실패해도 나머지를 멈추지 않는다** — 실패한 건의 알림은 **걷지 않는다.**
-    다음 바퀴가 다시 집는다(at-least-once 의 소비자 쪽 짝).
+    다음 바퀴가 다시 집는다(at-least-once 의 소비자 쪽 짝). 재생성이 시간 안에 안
+    끝난 것도 여기 든다(`regenerate` 가 `TimeoutError` 로 끊는다) — 안 끝난 것은
+    성공이 아니다.
     """
     done: list = []
     for event in _collect(port):
         try:
             outcome = jobs.regenerate(event, source=source)
-        except LookupError:
+        except (LookupError, TargetNotFound):
+            logger.info("그린 적 없는 대상/사라진 대상이다 — 알림을 걷는다: %s",
+                        event.target_id)
             port.ack(event)
             continue
         except Exception:                        # noqa: BLE001

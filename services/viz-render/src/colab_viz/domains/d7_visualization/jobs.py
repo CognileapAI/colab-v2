@@ -809,7 +809,17 @@ class JobStore:
         # ⚠ `manual` 실행기는 `run_pending` 이 부를 때까지 아무것도 돌지 않는다 —
         #   기다리면 그대로 멈춘다. 그 실행기는 시험 전용이고 시험이 순서를 정한다.
         if self._execution != "manual":
-            job.done.wait(timeout=spec.deadline_seconds + _COMPLETION_GRACE_SECONDS)
+            budget = spec.deadline_seconds + _COMPLETION_GRACE_SECONDS
+            if not job.done.wait(timeout=budget):
+                # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #4⟩ **안 끝난 것은 성공이 아니다.**
+                # 종전에는 반환값을 안 보고 아직 아무것도 안 한 결과(`plan=None`·
+                # `removed=()`)를 그대로 돌려줬고, `drain` 이 그것을 성공으로 읽어
+                # 알림을 걷었다 — **낡은 미리보기는 남고 사건은 사라진다.** 던져서
+                # 다음 바퀴가 다시 집게 한다(at-least-once 의 소비자 쪽 짝).
+                # ⚠ 작업 자체는 죽이지 않는다 — 계속 돌아 끝나면 제 자리에 선다.
+                raise TimeoutError(
+                    f"재생성이 {budget:g}초 안에 끝나지 않았다 — 걷지 않는다: "
+                    f"{event.target_id}")
         return Regeneration(job=job, plan=job.invalidation,
                             removed=job.invalidation_removed)
 

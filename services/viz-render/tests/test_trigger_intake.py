@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import threading
 import time
 import tokenize
@@ -28,6 +29,7 @@ import pytest
 
 from colab_viz.app import triggers as trigger_app
 from colab_viz.domains.d7_visualization import invalidation
+from colab_viz.domains.d7_visualization import jobs as jobs_domain
 from colab_viz.kernel import storage_layout
 from colab_viz.app import trigger_bus as trigger_port
 from colab_viz.app import trigger_loop
@@ -284,6 +286,78 @@ def test_그린_적_없는_대상의_트리거는_아무것도_지우지_않는�
                              jobs=client.app.state.jobs, source=client.app.state.source)
     assert done == []
     assert {p.name: p.read_bytes() for p in sorted(base.rglob("*")) if p.is_file()} == before
+
+
+def test_사라진_대상의_트리거는_걷고_다음_틱에_다시_안_돌아온다(source_root, put_target,
+                                                          tiny_geotiff, tmp_path):
+    """**사라진 대상도 답이 정해져 있다** — 레인 C 수용 검토 #3.
+
+    미리보기를 그린 뒤 대상 디렉터리가 지워지면 `source.resolve` 가
+    `ports.source.TargetNotFound` 를 던진다. 그것은 `LookupError` 가 **아니라** 그냥
+    `Exception` 이라 `drain` 의 마지막 그물에 걸렸고, 그 갈래는 걷지 않으므로 같은
+    봉투를 **매 틱 다시 집어 영원히** 트레이스백을 찍었다. 대상이 사라진 것은 다시
+    해 봐도 같은 결론이라 「그린 적 없는 대상」과 **같은 자리**다.
+    """
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    assert _render(client, tid)["status"] == "완료", \
+        "첫 렌더가 안 끝났다 — `_latest_for` 가 답을 못 해 시험의 전제가 안 선다"
+    shutil.rmtree(storage_layout.target_dir(source_root, tid))
+
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가", upload_id=tid)
+    port = trigger_port.SpoolTriggerPort(bus)
+    assert trigger_app.drain(port, jobs=client.app.state.jobs,
+                             source=client.app.state.source) == []
+    assert list(bus.glob("*.json")) == [], \
+        "사라진 대상의 알림을 걷지 않았다 — 매 틱 다시 집는다"
+    assert trigger_app.drain(port, jobs=client.app.state.jobs,
+                             source=client.app.state.source) == [], \
+        "걷은 봉투가 다음 틱에 다시 돌아왔다"
+
+
+def test_재생성이_시간_안에_안_끝나면_걷지_않는다(source_root, put_target, tiny_geotiff,
+                                          tmp_path, monkeypatch):
+    """**시간 초과는 성공이 아니다** — 레인 C 수용 검토 #4.
+
+    `regenerate` 가 `job.done.wait(timeout=…)` 의 **반환값을 보지 않았다.** 기다리다
+    시간이 다하면 아직 아무것도 안 한 결과(`plan=None`·`removed=()`)를 그대로 돌려주고
+    `drain` 이 그것을 성공으로 읽어 알림을 걷었다 — **낡은 미리보기는 남고 사건은
+    사라진다.** 안 끝난 것은 실패도 성공도 아니므로 다음 바퀴가 다시 집어야 한다.
+    """
+    bus = tmp_path / "bus"
+    client = make_client(source_root, "thread")
+    tid = put_target(copy_from=[tiny_geotiff])
+    r = client.post("/viz/v1/renders", headers=AUTH,
+                    json={"target": {"uploadId": tid}, "style": {"palette": "단색-파랑"}})
+    assert r.status_code == 202, r.text
+    store = client.app.state.jobs
+    first = store.get(r.json()["renderId"])
+    assert first.done.wait(timeout=60), "첫 렌더가 안 끝났다 — 시험의 전제가 안 섰다"
+    assert first.status == "완료", first.failure
+
+    # 재생성 작업을 **막는다** — 끝나지 않는 렌더를 만든다. 마감과 유예를 함께 좁혀
+    # 기다리는 시간이 시험의 시간이 되지 않게 한다.
+    release = threading.Event()
+    original = jobs_domain._run
+
+    def _blocked(job):
+        release.wait(timeout=60)
+        original(job)
+
+    monkeypatch.setattr(jobs_domain, "_run", _blocked)
+    monkeypatch.setattr(jobs_domain, "_COMPLETION_GRACE_SECONDS", 0.0)
+    first.spec.deadline_seconds = 0.05      # 재생성은 직전 작업의 spec 을 이어받는다
+
+    _envelope(bus, event_type="preview.file-added", trigger="파일 추가", upload_id=tid)
+    port = trigger_port.SpoolTriggerPort(bus)
+    try:
+        done = trigger_app.drain(port, jobs=store, source=client.app.state.source)
+    finally:
+        release.set()
+    assert done == [], "안 끝난 재생성이 성공으로 보고됐다"
+    assert [p.name for p in bus.glob("*.json")], \
+        "재생성이 시간 안에 안 끝났는데 알림을 걷었다 — 사건이 사라진다"
 
 
 def test_배선을_지나도_원본과_기준_격자는_한_바이트도_안_바뀐다(source_root, put_target,
