@@ -1278,6 +1278,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datasets/{datasetId}/value-lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 지도 한 점의 **그 칸 값**을 읽는다 (중계)
+         * @description **⟨동결 15회 해제 · `PLAN-SoT §9 〈294〉` — Ted 승인 2026-09-03 · 등급 ㉯(op 신설)⟩**
+         *
+         *     정본 `Policy_데이터셋_상세 §8 값 조회` — 조회 자리는 **등록된 데이터셋 · 좌표 있는
+         *     자료 · 본체를 볼 수 있는 사람**에만 선다. 완료 정의 = `PLAN-SoT §9 〈254〉` 여덟 조건.
+         *
+         *     ⚠ **왜 `datasetId` 가 경로에 있나 — 그것이 이 op 의 존재 이유다.**
+         *     완료 정의 권한 ⓑ 축자 「**자리 이름(내용 키)만으로 값을 내주는 길을 만들지 않는다** —
+         *     키에 연구실이 없어(실측 `MAP_TILE_KEY_FIELDS`) 이름을 아는 것이 권한이 되면 경계가
+         *     무너진다. 값 조회는 **언제나 `datasetId` 로 들어와 경계 판정을 지난 뒤** 산출물에
+         *     닿는다」. 그래서 이 중계가 **경계와 본체 권한을 먼저 판정**하고, 그 뒤에야
+         *     `core-viz.yaml#lookupValue` 로 나간다.
+         *
+         *     **접근 판정을 새로 만들지 않는다** — `downloadDataset` 이 쓰는 **같은 두 줄**이다:
+         *     ⑴ 경계 밖이면 404(존재를 알리지 않는다 · P-9·P-10) ⑵ `bodyAccessible` 이 거짓이면
+         *     403. **값은 내용이다** — 확대(보기 권한만)와 다른 자리이고, 정본 1.3 규칙 6 을
+         *     우회하지 않는다(완료 정의 권한 ⓐ).
+         *
+         *     **다시 그리지 않는다** (완료 정의 ⑵) — 이 경로는 렌더 작업을 만들지 않는다.
+         *     **그리는 일도 읽는 일도 한 줄 하지 않는다** (`CLAUDE.md §3-4`).
+         *
+         *     ⚠ **경로가 `core-viz.yaml` 의 `POST /value-lookups` 와 일부러 다르다** — 두 seam 이
+         *     같은 경로를 쓰면 `contract-breaking` 의 합성 비교가 같은 엔드포인트로 합쳐 버린다
+         *     (`createPreviewScreenshot`·`listPalettes` 가 같은 이유로 갈렸다).
+         */
+        post: operations["lookupDatasetValue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/summary": {
         parameters: {
             query?: never;
@@ -1348,6 +1392,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description 값 조회 요청 (`PLAN-SoT §9 〈294〉` · 정본 `Policy_데이터셋_상세 §8 값 조회`).
+         *     **대상은 경로가 말한다** — `datasetId` 는 경로 매개변수이고 본문에 두 번 적지 않는다.
+         *     본문에는 **어느 점인가**만 실린다.
+         *
+         *     ⚠ **조각 식별자(`fileId`)를 화면이 고르지 않는다.** 데이터셋의 본체 조각은 원장이
+         *     알고 있고, 화면이 그 값을 들고 다니면 **원장을 화면이 대신 기억하는 자리**가 생긴다.
+         *     core-api 가 `d3_file` 에서 본체 조각을 뽑아 안쪽 seam 에 넘긴다.
+         *
+         *     ⚠ **내용 키를 받지 않는다.** 자리 이름으로 값을 내주는 길을 만들지 않는 것이
+         *     완료 정의 권한 ⓑ 다 — 키에 연구실이 없어 이름을 아는 것이 권한이 되면 경계가 무너진다.
+         */
+        DatasetValueLookupRequest: {
+            point: components["schemas"]["LookupPoint"];
+        };
         /**
          * @description 로그인 입력. **두 형태 중 하나**이며 **정확히 하나만** 채운다 (`PLAN-SoT §9 〈107〉` ·
          *     `〈108〉`). 둘 다 개발자가 심어 둔 자격이고 **회원가입 경로가 아니다** (P-17).
@@ -2737,6 +2796,67 @@ export interface components {
         ScreenshotRequest: {
             layers: components["schemas"]["ScreenshotLayer"][];
             viewport: components["schemas"]["Viewport"];
+        };
+        /**
+         * @description **지도 위젯이 이미 아는 값**(WGS84)만 오간다 — 이 파일 상단 주석 축자
+         *     「bbox·타일 좌표는 지도 위젯이 이미 아는 값만 오간다」(`PLAN-SoT §9 〈294〉`).
+         *     원본 좌표계는 이 계약에 없다.
+         */
+        LookupPoint: {
+            lat: number;
+            lon: number;
+        };
+        /**
+         * @description 답한 **칸 하나**의 자리와 크기 (`PLAN-SoT §9 〈294〉` · 완료 정의 `〈254〉` ⑷ —
+         *     「답하는 단위가 **한 칸**임을 알린다」). 산문으로만 말하면 화면이 그것을 흘린다.
+         */
+        LookupCell: {
+            row: number;
+            col: number;
+            /** @description 답한 칸의 중심(WGS84). 누른 점이 아니라 **칸**이다. */
+            center: components["schemas"]["LookupPoint"];
+            /** @description 칸 한 변의 크기(도). 규칙 격자가 아니면 null — 지어내지 않는다. */
+            sizeDegrees?: number | null;
+        };
+        /**
+         * @description **약속하지 못하는 것을 먼저 말한다** (정본 `Policy_데이터셋_상세 §8 값 조회` ·
+         *     완료 정의 `PLAN-SoT §9 〈254〉` ⑷) — 답하는 단위가 한 칸이라는 것과,
+         *     좌표를 따로 입힌 격자에서는 「가장 가까운 칸」이라는 것이 값과 **같은 응답**에 실린다.
+         *     따로 실으면 화면이 그것을 안 보여 줄 수 있고, 그러면 원본 해상도 이상을 약속한 셈이 된다.
+         */
+        ValueLookupResult: {
+            /**
+             * @description **읽을 수 있었나.** false 면 `value` 는 `null` 이고 `unavailableReason` 이 사유다 —
+             *     **0 으로 바꾸지 않는다** (완료 정의 ⑸).
+             */
+            available: boolean;
+            /**
+             * @description **그 칸의 값**이다. 블록 평균이 아니다 — 연구 데이터 플랫폼에서 인용되면
+             *     틀린 값이 퍼진다(`〈254〉` 기각 ⓑ).
+             */
+            value: number | null;
+            unit: string | null;
+            /** @description 값이 속한 변수 이름. 모르면 null. */
+            variable?: string | null;
+            /**
+             * @description ⑷ 의 그 고지. 이미 지도 좌표를 가진 격자(tif 계열)는 자리의 산출물이 원본과
+             *     비트 동일이라 `원본과 같은 칸` 이고, 좌표를 따로 입힌 격자(nc·hdf·bin)는
+             *     최근접 재배치를 지나 `가장 가까운 칸` 이다(실측 `〈254〉` ①②).
+             * @enum {string}
+             */
+            exactness: "원본과 같은 칸" | "가장 가까운 칸";
+            /**
+             * @description 답한 칸의 자리와 크기. **답하는 단위가 한 칸임을 값으로 말한다** — 산문으로만
+             *     말하면 화면이 그것을 흘린다. 읽지 못했으면 null.
+             */
+            cell: null | components["schemas"]["LookupCell"];
+            /**
+             * @description **「없다」를 사유로 가른다.** 자리에 구운 것이 아예 없는 것과, 있는데 그 칸이
+             *     빈 것은 사용자에게 다른 사실이다. 자리 없음을 500 으로 만들지 않는다 —
+             *     **경로를 지어내 뒤지지도 않는다**(내용 키가 답을 이미 준다).
+             * @enum {string|null}
+             */
+            unavailableReason?: "자리에 산출물이 없다" | "값이 없는 칸이다" | "범위 밖이다" | null;
         };
     };
     responses: {
@@ -4566,6 +4686,64 @@ export interface operations {
              * @description **그리는 서버에 닿지 못했다 — 실패한 스크린샷이 아니다**
              *     (`ErrorEnvelope.code = RENDER_UNAVAILABLE`). `createPreviewRender` 의 503 과 같은
              *     모양이다. **빈 이미지를 지어내지 않는다** — 0바이트 PNG 는 「장면이 비었다」로 읽힌다.
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lookupDatasetValue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetValueLookupRequest"];
+            };
+        };
+        responses: {
+            /**
+             * @description **없는 것도 200 이다** — `available: false` ＋ 사유다(완료 정의 ⑸).
+             *     스키마는 `core-viz.yaml#ValueLookupResult` 를 그대로 참조하고 **재선언하지
+             *     않는다** — 같은 모양의 두 번째 선언은 갈라질 표면이다.
+             */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValueLookupResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description **잠긴 데이터이고 허용 목록 밖이다** (P-34). `listDatasetFiles`·`downloadDataset`
+             *     과 같은 판정이다 — 값은 메타가 아니라 **본체**다.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다** (`ErrorEnvelope.code = RENDER_UNAVAILABLE`).
+             *     **값을 지어내지 않는다** — 0 도 `null` 도 「못 물어봤다」의 답이 아니다.
              */
             503: {
                 headers: {

@@ -199,9 +199,15 @@ def check_ge(reg: Registry, allow: dict) -> int:
     aliases = set(allow.get("ge", {}).get("seam-aliases", []))
     aliases |= {Path(f).stem for f in reg.seams} | {Path(f).stem for f in reg.events}
     known_files = {f for f in reg.seams} | {f for f in reg.events}
-    for schemas_dir in {reg.seam_dir.parent / "schemas", reg.events_dir.parent / "schemas"}:
-        if schemas_dir.is_dir():
-            known_files |= {p.name for p in schemas_dir.glob("*.json")}
+    # ⭑ ⟨2026-09-03 · `PLAN-SoT §9 〈294〉`⟩ **저장 규약(`contracts/storage/`)도 계약이다.**
+    #   종전에는 `schemas/` 만 알아서, 실재하는 `layout.json` 을 산문이 가리키면 red 가 났다 —
+    #   **오탐이다**(그 파일은 `contracts/codegen/manifest.toml` 등재분이고 세 단위가 그것에서
+    #   생성된 같은 모듈을 쓴다). **범위를 줄인 것이 아니라 정밀도를 올린 것이다** — 없는
+    #   파일을 가리키면 여전히 red 이고, 그것을 `ⓐ 없는 seam 파일 참조` 픽스처가 증명한다.
+    for extra in {reg.seam_dir.parent / "schemas", reg.events_dir.parent / "schemas",
+                  reg.seam_dir.parent / "storage", reg.events_dir.parent / "storage"}:
+        if extra.is_dir():
+            known_files |= {p.name for p in extra.glob("*.json")}
     checked = 0
     reported: set[tuple[str, str]] = set()  # 같은 (파일, 대상) 은 한 번만 적는다
 

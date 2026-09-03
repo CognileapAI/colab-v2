@@ -68,6 +68,10 @@ function makeSource(over: Partial<DatasetPreviewSource> = {}): DatasetPreviewSou
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
+    // 값 조회는 이 시험의 관심 밖이다 — **자리는 채우되 값을 만들지 않는다**(`〈294〉`)
+    lookupValue: vi.fn(async () => {
+      throw new Error('이 시험은 값 조회를 부르지 않는다');
+    }),
     screenshot: vi.fn(async () => new Blob([new Uint8Array([1])], { type: 'image/png' })),
     mapGeometry: vi.fn(async () => ({ width: 4096, height: 4096 })),
     ...over,

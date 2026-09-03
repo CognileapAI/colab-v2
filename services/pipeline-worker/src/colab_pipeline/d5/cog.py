@@ -15,11 +15,14 @@ from pathlib import Path
 
 import numpy as np
 
+from ..kernel import storage_layout
+
 #: DR-12 — 정본 분기. 범주형(토지피복·LULC)=nearest · 연속형(NDVI·강수·반사도)=average
-OVERVIEW_RESAMPLING: dict[str, str] = {
-    "categorical": "nearest",
-    "continuous": "average",
-}
+#: ⭑ **⟨승격 2026-09-03 · `PLAN-SoT §9 〈294〉` · 15차 동결 해제⟩ 값을 여기서 정하지 않는다** —
+#: 이 분기는 지도 타일 내용 키의 재료라 **읽는 쪽(D7)도 같은 값을 알아야** 자리를 찾는다.
+#: 정본은 `contracts/storage/layout.json` `contentKeys.지도 타일.conversionSettings` 이고
+#: 두 단위가 같은 생성물에서 읽는다. ／ 종전에는 이 파일이 값을 직접 적었다 — **값은 같다.**
+OVERVIEW_RESAMPLING: dict[str, str] = dict(storage_layout.MAP_TILE_OVERVIEW_RESAMPLING)
 
 _CHUNK_ROWS = 512
 
@@ -34,7 +37,8 @@ def _cog_translate(src_path: Path, dst_path: Path, kind: str) -> Path:
 
     if kind not in OVERVIEW_RESAMPLING:
         raise CogConversionError(f"kind 는 categorical|continuous — 받은 값: {kind}")
-    profile = cog_profiles.get("deflate")
+    # 압축 이름도 키의 재료다 — 규약에서 읽는다 (`〈294〉`).
+    profile = cog_profiles.get(storage_layout.MAP_TILE_COMPRESSION)
     # 작은 이미지(한 타일에 다 드는)는 rio-cogeo 가 오버뷰 0단을 만든다.
     # 우리 산출물은 COG 판정 정본(타일 + IFD 2개 이상)을 항상 만족해야 하므로
     # 최소 1단을 강제한다 — 판정 규칙을 느슨하게 푸는 쪽은 택하지 않는다 (DR-2).

@@ -38,8 +38,18 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_54() -> None:
-    """45 → 46 → 49 → 50 → 52 → 53 → **54.**
+def test_operation_count_is_55() -> None:
+    """45 → 46 → 49 → 50 → 52 → 53 → 54 → **55.**
+
+    ⭑ **55 의 하나는 `lookupDatasetValue`** — **15차 동결 해제**
+    (`PLAN-SoT §9 〈294〉` · Ted 승인 2026-09-03 · 등급 ㉯ op 신설 · `V-2` 값 조회).
+    ⚠ **이번 회차는 seam 둘이 함께 늘었다** — `core-viz.yaml` 도 5 → 6(`lookupValue`).
+    **seam 마다 총계를 따로 센다**: 이 시험이 세는 것은 `fe-core.yaml` 하나이고,
+    두 seam 의 op 을 합쳐 「54 → 56」으로 읽으면 이 못이 무엇을 잠그는지가 흐려진다.
+    **신설과 동시에 구현했다**(`routes/preview.py` `lookupDatasetValue` ·
+    `services/viz-render/src/colab_viz/app/routes/values.py`) — 집행 없는 신설 금지
+    (`X2-FREEZE-PROTOCOL §5-㉰-4`). 그래서 501 표는 그대로다.
+    `contract-breaking` = 파괴적 변경 없음(순수 추가).
 
     ⭑ **54 의 하나는 `createPreviewScreenshot`** — **11차 동결 해제**
     (`PLAN-SoT §9 〈231〉` · Ted 승인 2026-08-30 · 등급 ㉯ op 신설). 정본이 스크린샷을
@@ -76,7 +86,7 @@ def test_operation_count_is_54() -> None:
     세 회차가 각각 직전 묶음이 세지 않은 축에서 구멍을 남겼다 — 마지막 축이
     **「그 응답을 부를 op 이 있는가」**였다(`sessions/S1-CONTRACT-GAP-SWEEP.md`).
     """
-    assert len(contract_operations()) == 54, "계약의 오퍼레이션이 54 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 55, "계약의 오퍼레이션이 55 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

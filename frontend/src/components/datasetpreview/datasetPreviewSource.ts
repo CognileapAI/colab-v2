@@ -18,6 +18,7 @@ import type {
   DatasetRenderInput,
   PaletteOption,
   ScreenshotRequest,
+  ValueLookupResult,
 } from './types';
 
 /** `ErrorEnvelope.details` 는 자유 객체다. 생성 타입을 고치지 않고 여기서 좁혀 읽는다. */
@@ -40,8 +41,19 @@ function messageOf(body: unknown, fallback: string): string {
 /** 정본 §8 「그리는 서버에 연결 못 함」 행 축자. 여기서 새 한국어를 만들지 않는다. */
 export const UNAVAILABLE_MESSAGE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
 
-export function apiDatasetPreviewSource(): DatasetPreviewSource {
+export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource {
   return {
+    async lookupValue(point: { lat: number; lon: number }): Promise<ValueLookupResult> {
+      // **조각 식별자를 싣지 않는다** — 본체 조각은 원장이 안다(`〈294〉`).
+      const r = await api.POST('/datasets/{datasetId}/value-lookup', {
+        params: { path: { datasetId } },
+        body: { point } as never,
+      });
+      // **「없다」는 200 으로 온다** — 여기서 값을 지어내지 않는다.
+      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      return r.data as ValueLookupResult;
+    },
+
     async palettes(): Promise<PaletteOption[]> {
       const r = await api.GET('/preview-palettes');
       // 503 = `RENDER_UNAVAILABLE`. **빈 배열로 접지 않는다** — 화면이 「팔레트가 없다」고

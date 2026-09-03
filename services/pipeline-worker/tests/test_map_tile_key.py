@@ -123,3 +123,59 @@ def test_without_a_declared_root_the_output_stays_in_the_workdir(tmp_path: Path)
     assert r.status == "SUCCESS", r.failures
     assert r.tile_content_key is None
     assert Path(r.cog_path).parent == tmp_path / "work"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 변환 설정 승격 (`PLAN-SoT §9 〈294〉` · 15차 동결 해제)
+#
+# 셋(`conversionKind`·`overviewResampling`·`compression`)이 D5 상수에서 저장 규약으로
+# 올라갔다. **읽는 쪽(D7)이 같은 키를 지을 수 있게 하는 것**이 목적이고, 그 대가로
+# **굽는 쪽의 키가 한 비트라도 달라지면 이미 구운 산출물 전부가 자리를 잃는다.**
+# 그래서 승격 전 상수로 지은 키를 **못으로 박아** 둔다 — 값이 아니라 못이다.
+# ══════════════════════════════════════════════════════════════════════════════
+
+#: 승격 **이전** 코드(`d5/cog.py OVERVIEW_RESAMPLING` · `d5/pipeline.py COG_COMPRESSION` ·
+#: `UploadWork.kind` 기본값 `"continuous"`)로 지은 키다. 이 값이 바뀌면 승격이
+#: **동작을 바꾼 것**이고, 그것은 조용한 재굽기다.
+_PROOF_BYTES = b"colab-v2 tile key proof\n"
+_PROOF_KEY = "tile-3b64060250079e0c6e4fcc56060306a5afd03b75ee588b4b90b555228109d45b"
+
+
+@pytest.mark.stage2
+def test_promoted_settings_keep_the_key_byte_identical(tmp_path: Path):
+    """**승격 전후로 같은 입력이 같은 키를 낳는다.**"""
+    src = tmp_path / "proof.bin"
+    src.write_bytes(_PROOF_BYTES)
+    got = d5_pipeline.map_tile_key(src, grid_dir=None, used_reference_grid=False,
+                                   kind=storage_layout.MAP_TILE_CONVERSION_KIND)
+    assert got == _PROOF_KEY
+
+
+@pytest.mark.stage2
+def test_promoted_settings_are_the_values_that_were_in_d5():
+    """승격은 **옮긴 것**이지 새로 정한 것이 아니다 — 값이 실물과 같아야 한다."""
+    from colab_pipeline.d5 import cog as d5_cog
+
+    assert storage_layout.MAP_TILE_CONVERSION_KIND == "continuous"
+    assert storage_layout.MAP_TILE_COMPRESSION == "deflate"
+    assert storage_layout.MAP_TILE_OVERVIEW_RESAMPLING == {
+        "categorical": "nearest", "continuous": "average"}
+    # D5 가 여전히 같은 표를 쓴다 — 승격이 `DR-12` 분기를 지우지 않았다.
+    assert d5_cog.OVERVIEW_RESAMPLING == storage_layout.MAP_TILE_OVERVIEW_RESAMPLING
+    assert d5_pipeline.COG_COMPRESSION == storage_layout.MAP_TILE_COMPRESSION
+
+
+@pytest.mark.stage2
+def test_grid_digest_rule_lives_in_one_place(tmp_path: Path):
+    """굽는 쪽과 읽는 쪽이 **같은 함수**로 격자 다이제스트를 짓는다."""
+    grid = tmp_path / "grid"
+    grid.mkdir()
+    (grid / "LAT_x.npy").write_bytes(b"lat")
+    (grid / "LON_x.npy").write_bytes(b"lon")
+
+    assert storage_layout.map_tile_grid_digest(grid, False) == storage_layout.GRID_DIGEST_EMBEDDED
+    assert storage_layout.map_tile_grid_digest(None, True) == storage_layout.GRID_DIGEST_EMBEDDED
+    used = storage_layout.map_tile_grid_digest(grid, True)
+    assert used != storage_layout.GRID_DIGEST_EMBEDDED and len(used) == 64
+    # D5 의 내부 함수가 그 생성물을 부른다 (규칙이 두 곳에 있지 않다).
+    assert d5_pipeline._grid_digest(grid, True) == used

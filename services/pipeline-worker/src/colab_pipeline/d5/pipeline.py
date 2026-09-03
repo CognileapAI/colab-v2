@@ -67,9 +67,10 @@ def _fail(res: PipelineResult, msg: str) -> PipelineResult:
     return res
 
 
-#: COG 프로파일 이름. `cog.py` 가 `cog_profiles.get("deflate")` 로 고정한 값이고,
-#: 내용 키의 재료라 **여기서 다시 정하지 않고 그 사실을 이름으로 옮긴다.**
-COG_COMPRESSION = "deflate"
+#: COG 프로파일 이름. 내용 키의 재료라 **여기서 정하지 않는다** —
+#: 정본은 `contracts/storage/layout.json` `contentKeys.지도 타일.conversionSettings.compression`
+#: 이고 `cog.py` 도 같은 값을 읽어 `cog_profiles.get()` 에 넘긴다 (`〈294〉` · 15차 해제).
+COG_COMPRESSION = storage_layout.MAP_TILE_COMPRESSION
 
 
 def file_digest(path: Path) -> str:
@@ -82,19 +83,13 @@ def file_digest(path: Path) -> str:
 
 
 def _grid_digest(grid_dir: Path | None, used_reference_grid: bool) -> str:
-    """좌표를 준 것의 다이제스트.
+    """좌표를 준 것의 다이제스트 — **규칙은 규약이 갖는다** (`〈294〉` · 15차 해제).
 
-    파일 안 좌표를 썼으면 **명시값**(`내장`)이다 — 빈 값으로 두면 「격자가 없다」와
-    「안 물어봤다」가 같은 키를 얻는다.
+    종전에는 이 함수가 규칙을 직접 적었다. 읽는 쪽(D7)이 같은 자리를 찾으려면 같은
+    다이제스트를 지어야 하는데, 규칙을 두 곳에 적으면 갈라지고 **그 실패는 에러가 아니라
+    「값 없음」으로 위장한다.** 그래서 생성물 하나를 둘이 부른다 — **값은 같다.**
     """
-    if not used_reference_grid or grid_dir is None:
-        return storage_layout.GRID_DIGEST_EMBEDDED
-    h = hashlib.sha256()
-    for f in sorted(Path(grid_dir).iterdir()):
-        if f.is_file():
-            h.update(f.name.encode("utf-8"))
-            h.update(file_digest(f).encode("ascii"))
-    return h.hexdigest()
+    return storage_layout.map_tile_grid_digest(grid_dir, used_reference_grid)
 
 
 def map_tile_key(source: Path, *, grid_dir: Path | None, used_reference_grid: bool,
@@ -173,7 +168,7 @@ assert set(COG_BUILDERS) <= set(RENDERABLE_FORMATS)
 
 
 def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
-             kind: str = "continuous",
+             kind: str = storage_layout.MAP_TILE_CONVERSION_KIND,
              previews_root: Path | None = None) -> PipelineResult:
     """`previews_root` 가 주어지면 산출물은 **미리보기 산출물 자리**에 놓인다.
 

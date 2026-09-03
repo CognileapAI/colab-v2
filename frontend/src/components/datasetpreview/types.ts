@@ -32,6 +32,13 @@ export interface DatasetRenderInput {
   classCount: number;
 }
 
+/**
+ * 값 조회 결과 = **생성물의 `ValueLookupResult` 그대로**다
+ * (`fe-core.yaml#lookupDatasetValue` → `core-viz.yaml#ValueLookupResult`).
+ * 여기서 다시 선언하지 않는다 (`CLAUDE.md §3-7`).
+ */
+export type ValueLookupResult = Schemas['ValueLookupResult'];
+
 export interface DatasetPreviewSource {
   /** `RenderStyle.palette` 값의 유일한 출처. 못 받으면 렌더를 시작하지 않는다. */
   palettes(): Promise<PaletteOption[]>;
@@ -56,4 +63,12 @@ export interface DatasetPreviewSource {
    * **그리는 일은 서버가 한다** — 화면은 층과 보고 있는 자리만 실어 보낸다.
    */
   screenshot(request: ScreenshotRequest): Promise<Blob>;
+  /**
+   * 지도 한 점의 **그 칸 값** (`lookupDatasetValue` 중계 · `PLAN-SoT §9 〈294〉`).
+   *
+   * **다시 그리지 않는다** (완료 정의 ⑵) — 이 호출은 렌더 작업을 만들지 않는다.
+   * **조각 식별자를 화면이 들고 다니지 않는다** — 본체 조각은 원장이 안다.
+   * 못 닿으면 예외다: **값을 지어내지 않는다.**
+   */
+  lookupValue(point: { lat: number; lon: number }): Promise<ValueLookupResult>;
 }

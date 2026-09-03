@@ -361,6 +361,16 @@ def list_dataset_files(datasetId: str, db: Session = Depends(scoped_db)) -> dict
 # **두 겹이고, 둘 다 같은 기존 기계다.**
 
 
+def require_body_access(db: Session, dataset_id: Ulid) -> None:
+    """**본체에 닿는 두 줄** — 내려받기와 값 조회가 같은 판정을 쓴다.
+
+    ⚠ 값 조회(`lookupDatasetValue` · `〈294〉`)가 이 함수를 **그대로** 부른다. 새 판정을
+    만들지 않는 이유는 `〈254〉` 권한 ⓐ 다 — **값은 내용**이고, 확대(보기 권한만)와 다른
+    자리다. 판정을 복사하면 한쪽만 고쳐지는 날이 온다.
+    """
+    return _dataset_for_download(db, dataset_id)
+
+
 def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()

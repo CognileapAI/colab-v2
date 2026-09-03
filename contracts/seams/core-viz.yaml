@@ -219,6 +219,54 @@ paths:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "503": { $ref: "#/components/responses/Error" }
 
+  /value-lookups:
+    post:
+      tags: [render]
+      operationId: lookupValue
+      summary: 지도 한 점의 **그 칸 값**을 읽는다
+      description: |
+        **⟨동결 15회 해제 · `PLAN-SoT §9 〈294〉` — Ted 승인 2026-09-03 · 등급 ㉯(op 신설)⟩**
+
+        정본 `Policy_데이터셋_상세 §8 값 조회` · 완료 정의 `〈254〉` ⑴⑶.
+        **값의 출처는 자리에 구워 둔 COG 하나다** — 원본 재조회도(포맷 5종에 창 읽기가 0건)
+        렌더 부산물도(블록 평균이라 실측값이 아니다) 아니다.
+
+        **다시 그리지 않는다** (완료 정의 ⑵) — 이 op 은 렌더 작업을 만들지 않고 조회하지도
+        않는다. 범례·배율은 이 경로가 건드리지 않는다.
+
+        **자리를 어떻게 찾나 — 표도 사이드카도 없다. 키를 다시 짓는다.**
+        지도 타일의 내용 키는 내용 주소라(`contracts/storage/layout.json`
+        `contentKeys.지도 타일`) 대상↔키 표가 애초에 없다. 그래서 읽는 쪽이 **같은 재료로
+        같은 키를 다시 계산해** 자리를 본다. 재료 여섯 중 변환 설정 셋은 종전에 굽는 쪽
+        (pipeline-worker)에만 있었고, 이번 회차에 **저장 규약으로 승격**해
+        (`conversionSettings`) 두 단위가 같은 생성물에서 읽는다 — **Port 0 · 재굽기 0 ·
+        마이그레이션 0.**
+
+        **권한 판정은 이 seam 이 하지 않는다** (`createScreenshot` 과 같은 선).
+        완료 정의 권한 ⓑ 축자 「값 조회는 **언제나 `datasetId` 로 들어와** 경계 판정을 지난 뒤
+        산출물에 닿는다」 — 그 판정은 core-api 의 몫이고, **자리 이름(내용 키)으로 값을
+        내주는 길을 이 계약이 만들지 않는다.** 요청에 내용 키가 없는 이유다.
+
+        **등록 전에는 대상이 되지 않는다** (완료 정의 ⑺) — `uploadId` 를 받지 않는다.
+        등록 전 업로드에는 자리에 구운 산출물이 없다(실측 `〈254〉` ④).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValueLookupRequest" }
+      responses:
+        "200":
+          description: |
+            **없는 것도 200 이다** — `available: false` ＋ 사유다. 값이 없는 칸을 0 으로
+            바꾸지 않고(완료 정의 ⑸), 자리에 산출물이 없는 것을 500 으로 만들지도 않는다.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValueLookupResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
 components:
 
   securitySchemes:
@@ -244,6 +292,97 @@ components:
 
   schemas:
 
+    LookupCell:
+      type: object
+      description: |
+        답한 **칸 하나**의 자리와 크기 (`PLAN-SoT §9 〈294〉` · 완료 정의 `〈254〉` ⑷ —
+        「답하는 단위가 **한 칸**임을 알린다」). 산문으로만 말하면 화면이 그것을 흘린다.
+      additionalProperties: false
+      required: [row, col, center]
+      properties:
+        row: { type: integer, minimum: 0 }
+        col: { type: integer, minimum: 0 }
+        center:
+          $ref: "#/components/schemas/LookupPoint"
+          description: 답한 칸의 중심(WGS84). 누른 점이 아니라 **칸**이다.
+        sizeDegrees:
+          type: [number, "null"]
+          description: 칸 한 변의 크기(도). 규칙 격자가 아니면 null — 지어내지 않는다.
+    ValueLookupRequest:
+      type: object
+      description: |
+        **식별자와 지도 좌표만 넘긴다** (`PLAN-SoT §9 〈294〉` · 15차 해제).
+        좌표계·격자 구조·픽셀·밴드·NoData 가 요청에 없다 — 그런 값이 필요해지면 core 가
+        파일을 해석하고 있다는 뜻이다(이 파일 상단 주석 · `CLAUDE.md §3-4`).
+      additionalProperties: false
+      required: [datasetId, fileId, point]
+      properties:
+        datasetId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+          description: |
+            **등록된 데이터셋만이다** (완료 정의 ⑺). `uploadId` 자리를 두지 않는다.
+            이 값은 저장 배치의 `targetId` 이기도 하다(`contracts/storage/layout.json` `keys.본체`).
+        fileId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+          description: |
+            값을 읽을 **본체 조각 하나**. 층 하나 = 조각 하나이므로 배열이 아니다
+            (`RenderTarget.fileIds` 와 갈리는 자리 — 저쪽은 여럿을 병합해 그린다).
+        point:
+          $ref: "#/components/schemas/LookupPoint"
+    LookupPoint:
+      type: object
+      description: |
+        **지도 위젯이 이미 아는 값**(WGS84)만 오간다 — 이 파일 상단 주석 축자
+        「bbox·타일 좌표는 지도 위젯이 이미 아는 값만 오간다」(`PLAN-SoT §9 〈294〉`).
+        원본 좌표계는 이 계약에 없다.
+      additionalProperties: false
+      required: [lat, lon]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lon: { type: number, minimum: -180, maximum: 180 }
+    ValueLookupResult:
+      type: object
+      description: |
+        **약속하지 못하는 것을 먼저 말한다** (정본 `Policy_데이터셋_상세 §8 값 조회` ·
+        완료 정의 `PLAN-SoT §9 〈254〉` ⑷) — 답하는 단위가 한 칸이라는 것과,
+        좌표를 따로 입힌 격자에서는 「가장 가까운 칸」이라는 것이 값과 **같은 응답**에 실린다.
+        따로 실으면 화면이 그것을 안 보여 줄 수 있고, 그러면 원본 해상도 이상을 약속한 셈이 된다.
+      additionalProperties: false
+      required: [available, value, unit, exactness, cell]
+      properties:
+        available:
+          type: boolean
+          description: |
+            **읽을 수 있었나.** false 면 `value` 는 `null` 이고 `unavailableReason` 이 사유다 —
+            **0 으로 바꾸지 않는다** (완료 정의 ⑸).
+        value:
+          type: [number, "null"]
+          description: |
+            **그 칸의 값**이다. 블록 평균이 아니다 — 연구 데이터 플랫폼에서 인용되면
+            틀린 값이 퍼진다(`〈254〉` 기각 ⓑ).
+        unit: { type: [string, "null"] }
+        variable: { type: [string, "null"], description: 값이 속한 변수 이름. 모르면 null. }
+        exactness:
+          type: string
+          enum: [원본과 같은 칸, 가장 가까운 칸]
+          description: |
+            ⑷ 의 그 고지. 이미 지도 좌표를 가진 격자(tif 계열)는 자리의 산출물이 원본과
+            비트 동일이라 `원본과 같은 칸` 이고, 좌표를 따로 입힌 격자(nc·hdf·bin)는
+            최근접 재배치를 지나 `가장 가까운 칸` 이다(실측 `〈254〉` ①②).
+        cell:
+          description: |
+            답한 칸의 자리와 크기. **답하는 단위가 한 칸임을 값으로 말한다** — 산문으로만
+            말하면 화면이 그것을 흘린다. 읽지 못했으면 null.
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/LookupCell"
+        unavailableReason:
+          type: [string, "null"]
+          enum: [자리에 산출물이 없다, 값이 없는 칸이다, 범위 밖이다, null]
+          description: |
+            **「없다」를 사유로 가른다.** 자리에 구운 것이 아예 없는 것과, 있는데 그 칸이
+            빈 것은 사용자에게 다른 사실이다. 자리 없음을 500 으로 만들지 않는다 —
+            **경로를 지어내 뒤지지도 않는다**(내용 키가 답을 이미 준다).
     RenderTarget:
       type: object
       description: |

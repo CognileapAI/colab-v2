@@ -13,7 +13,10 @@
 // **이 구역이 짓지 않는 것** (범위를 늘리지 않는다 — `CLAUDE.md §5`)
 //  · 팔레트·구간 수 컨트롤과 그에 따른 재렌더 = `V-1`(서버측) · `J-6`(선택 UI). 이 구역은
 //    기본값으로 **한 번 그린다.** 보기 전용 화면에는 정본이 그 컨트롤을 애초에 두지 않는다(`§3.2`).
-//  · 값 조회 · 겹쳐 보기 = 각각 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
+//  · 겹쳐 보기 = 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
+//    ⭑ ⟨개정 2026-09-03 · `PLAN-SoT §9 〈294〉` · 15차 해제⟩ **값 조회는 이제 이 구역이 짓는다** —
+//    정본 §8 이 조회 자리를 **등록된 데이터셋 · 좌표 있는 자료 · 본체를 볼 수 있는 사람**에만
+//    세우고, 그 셋이 전부 이 자리에서 성립한다(`ValueLookupPanel`). ／ 이전 표기 ~~값 조회 ·~~
 //    ⭑ ⟨개정 2026-08-31 · Ted 판정 ⑩ · `PLAN-SoT §9 〈238〉`⟩ **타일 뷰는 이제 이 구역이 짓는다** —
 //    지도 화면을 타일 방식으로 전환했다(`03-HANDOFF §4` `#48`). ／ 이전 표기 ~~타일 뷰 ·~~
 //
@@ -41,6 +44,7 @@ import {
 import { usePreviewRender } from '../preview/usePreviewRender';
 import { useZoomPan } from '../preview/useZoomPan';
 import { ScreenshotButton } from './ScreenshotButton';
+import { ValueLookupPanel, useValueLookup } from './ValueLookupPanel';
 import '../preview/preview.css';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
 import type { DatasetPreviewSource } from './types';
@@ -61,8 +65,8 @@ export function DatasetPreviewSection(props: {
   pollMs?: number | undefined;
 }) {
   const source = useMemo(
-    () => props.source ?? apiDatasetPreviewSource(),
-    [props.source],
+    () => props.source ?? apiDatasetPreviewSource(props.datasetId),
+    [props.source, props.datasetId],
   );
   const [start, setStart] = useState<StartState>({ phase: '시작하는 중' });
 
@@ -178,6 +182,8 @@ function StartedPreview(props: {
   });
   // **훅은 조건 밖에서 부른다** — 렌더가 어느 단계든 같은 순서로 불려야 한다.
   const zoom = useZoomPan();
+  // 값 조회 (`〈294〉`). **렌더를 다시 시작하지 않는다**(완료 정의 ⑵).
+  const value = useValueLookup(props.datasetSource);
 
   // **원본 해상도를 한 번만 묻는다** (정본 v2.6 §8 조건 ⑷ · `〈238〉`).
   // 타일 표면에는 잴 그림 한 장이 없어 사이드카가 그 값을 말한다. **확대 조작은 이
@@ -210,6 +216,9 @@ function StartedPreview(props: {
         <PreviewMap
           result={state.result}
           zoom={zoom}
+          /* **좌표가 없는 결과에는 자리째 없다**(완료 정의 ⑹) — `bounds` 가 그 판정이다 */
+          onPickPoint={state.result.bounds ? value.pick : undefined}
+          valuePanel={state.result.bounds ? <ValueLookupPanel state={value.state} /> : null}
           actions={
             <ScreenshotButton
               source={props.datasetSource}

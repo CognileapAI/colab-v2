@@ -19,6 +19,7 @@ from fastapi import APIRouter, Body, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from ...domains import d2_access, d3_catalog, d5_ingestion
+from . import catalog
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -196,3 +197,55 @@ def create_preview_screenshot(request: Request, body: dict = Body(...),
                         media_type=content_type or "application/json")
     return Response(content=payload, status_code=200,
                     media_type=content_type or "image/png")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 값 조회 중계 (`V-2` · `PLAN-SoT §9 〈294〉` · 15차 동결 해제)
+#
+# **왜 `datasetId` 로 들어오나** — 완료 정의 `〈254〉` 권한 ⓑ 축자: 「자리 이름(내용 키)만으로
+# 값을 내주는 길을 만들지 않는다. 키에 연구실이 없어(실측 `MAP_TILE_KEY_FIELDS`) 이름을
+# 아는 것이 권한이 되면 경계가 무너진다. 값 조회는 **언제나 `datasetId` 로 들어와 경계
+# 판정을 지난 뒤** 산출물에 닿는다」.
+#
+# **접근 판정을 새로 만들지 않는다** — `downloadDataset` 이 쓰는 `require_body_access` 를
+# 그대로 부른다: ⑴ 경계 밖이면 404(존재를 알리지 않는다 · P-9·P-10) ⑵ `body_accessible`
+# 이 거짓이면 403(P-34). **값은 메타가 아니라 본체다**(권한 ⓐ).
+#
+# **그리는 일도 읽는 일도 하지 않는다** (`CLAUDE.md §3-4`) — 조각을 원장에서 뽑아 넘길 뿐이다.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/datasets/{datasetId}/value-lookup", name="lookupDatasetValue")
+def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...),
+                         subject: Subject = Depends(current_subject),
+                         db: Session = Depends(scoped_db)) -> dict:
+    """한 점의 **그 칸 값**. 중계만 한다 — `core-viz.yaml#ValueLookupResult` 그대로 돌려준다."""
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    point = body.get("point")
+    if not isinstance(point, dict) or not isinstance(point.get("lat"), (int, float)) \
+            or not isinstance(point.get("lon"), (int, float)):
+        raise errors.bad_request("point.lat · point.lon 이 필요하다.")
+
+    # ⑴ 404 · ⑵ 403 — 내려받기와 **같은 두 줄**이다.
+    catalog.require_body_access(db, dataset_id)
+
+    # **본체 조각은 원장이 안다** — 화면이 조각 식별자를 들고 다니지 않는다.
+    pieces = [p for p in d3_catalog.files_for_download(db, dataset_id)
+              if p["kind"] == "본체"]
+    if not pieces:
+        raise errors.not_found("값을 읽을 본체 조각이 없다.")
+
+    relay = request.app.state.previews
+    if relay is None:
+        raise errors.ApiError(503, RENDER_UNAVAILABLE, "그리는 서버에 연결하지 못했다.")
+    try:
+        return relay.lookup_value(
+            lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+            request={"datasetId": datasetId, "fileId": str(pieces[0]["id"]),
+                     "point": {"lat": float(point["lat"]), "lon": float(point["lon"])}})
+    except RelayUnavailable as e:
+        # **값을 지어내지 않는다** — 0 도 null 도 「못 물어봤다」의 답이 아니다.
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              f"그리는 서버에 연결하지 못했다: {e}") from None
