@@ -1,6 +1,74 @@
 /* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
    이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
 
+/* 버그 1·9 — 화면 뿌리가 자기 여백을 직접 갖는 관례(`catalog.css:24`·`detail.css:27`)를
+   여기만 빠뜨렸었다. 카드·제목이 뷰포트 좌단에 붙고(bug01), 상세는 카드 면 없이
+   raw HTML 수준으로 보였다(bug09). 데이터셋 상세와 같은 값으로 맞춘다. */
+.project-page {
+  padding: 24px 20px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.project-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+.project-page .page-head h1 {
+  font-size: var(--text-h2, 24px);
+  margin: 0;
+  letter-spacing: -0.023em;
+}
+
+.project-detail .pd-head h1 {
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin: 0;
+}
+
+/* 되돌아가기 줄 — `detail.css:30~39` 와 같은 마크업(`ProjectDetailPage.tsx:41~46`)인데
+   `.detail-page` 로만 스코프돼 있어 프로젝트 상세엔 닿지 않았다. 여기서 복제해 잇는다
+   (레인 C 은 `detail.css` 를 건드리지 않는다 — `recon-C-layout.md §7`). */
+.project-detail .backrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.project-detail .backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(60vw, 460px);
+  padding: 3px 9px 3px 7px;
+  margin-left: -7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 8px);
+  font-size: var(--text-caption, 13px);
+  color: var(--fg-muted, #667);
+  text-decoration: none;
+  transition: border-color var(--ease, 0.14s), background var(--ease, 0.14s), color var(--ease, 0.14s);
+}
+.project-detail .backlink:hover {
+  border-color: var(--line, #e3e6ea);
+  background: var(--surface, #fff);
+  color: var(--fg, #121619);
+}
+.project-detail .backlink .bl-n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-detail .backlink .bl-a {
+  flex: none;
+  font-size: 11px;
+}
+
 .project-page .page-head,
 .project-detail .pd-head {
   display: flex;
@@ -195,6 +263,8 @@
 
 /* ── 상세 ──────────────────────────────────────────────────────────────────── */
 .project-detail .card {
+  background: var(--surface, #fff);
+  box-shadow: var(--shadow-sm, 0px 1px 2px -1px #1717171a);
   border: 1px solid var(--line, #e3e6ea);
   border-radius: 10px;
   padding: 14px;

@@ -10,6 +10,8 @@ import { ProjectsPage } from '../src/routes/ProjectsPage';
 import { ProjectDetailPage } from '../src/routes/ProjectDetailPage';
 import { FIXTURE_PROJECTS, fixtureProjectSource } from '../src/components/project/fixture';
 import type { ProjectDetail, ProjectSource } from '../src/components/project/types';
+// 규칙 원문 — `vite.config.ts` 의 `test.css.include` 가 `?raw` id 를 허용해야 비지 않는다.
+import projectCss from '../src/components/project/project.css?raw';
 import { ProjectGone } from '../src/components/project/types';
 import { SessionProvider } from '../src/permission/session';
 import type { CurrentAccount } from '../src/api/client';
@@ -627,5 +629,41 @@ describe('다시 열기 · 소속 해제 · 삭제', () => {
     for (const label of ['정보 수정', '프로젝트 닫기', '삭제', '소속 해제']) {
       expect(screen.queryByRole('button', { name: label })).toBeNull();
     }
+  });
+});
+
+/**
+ * 버그 1·9 (레인 C) 회귀 — `project.css` 에 화면 뿌리 규칙(`.project-page`·`.project-detail`)이
+ * 없어 목록·상세가 뷰포트 좌단에 붙고(bug01) 상세는 raw HTML 수준으로 보였다(bug09).
+ * 대조군 = 데이터셋 상세 `detail.css:27`. 계산값은 `vite.config.ts` 의 `test.css.include` 에
+ * `project.css` 를 더해야 실제 값이 잡힌다.
+ */
+describe('버그 1·9 — 프로젝트 목록·상세 뿌리 스타일', () => {
+  it('목록 뿌리(.project-page)는 좌우 여백과 최대폭을 갖는다', async () => {
+    const { container } = renderList();
+    await screen.findByRole('heading', { level: 1, name: '프로젝트' });
+    const root = container.querySelector('.project-page');
+    expect(root).not.toBeNull();
+    const cs = getComputedStyle(root as Element);
+    expect(parseFloat(cs.paddingLeft)).toBeGreaterThan(0);
+    expect(parseFloat(cs.paddingRight)).toBeGreaterThan(0);
+    expect(cs.maxWidth).not.toBe('none');
+  });
+
+  it('상세 뿌리(.project-detail)는 여백을 갖고 카드는 데이터셋 상세처럼 면(배경)을 갖는다', async () => {
+    const { container } = renderDetail('p1');
+    await screen.findByTestId('project-overview');
+    const root = container.querySelector('.project-detail');
+    expect(root).not.toBeNull();
+    const rootCs = getComputedStyle(root as Element);
+    expect(parseFloat(rootCs.paddingTop)).toBeGreaterThan(0);
+    expect(parseFloat(rootCs.paddingLeft)).toBeGreaterThan(0);
+
+    const card = container.querySelector('.project-detail .card');
+    expect(card).not.toBeNull();
+    // jsdom 은 `var()` 배경을 계산값으로 풀지 않는다(항상 transparent) — 카드 면은 규칙 원문으로 잰다.
+    const cardRule = projectCss.match(/\.project-detail \.card \{[^}]*\}/)?.[0] ?? '';
+    expect(cardRule).toMatch(/background:\s*var\(--surface/);
+    expect(cardRule).toMatch(/box-shadow:/);
   });
 });
