@@ -101,8 +101,8 @@ def test_격자_해시는_지도형_키에만_들어간다():
     r = scale.for_dataset("01ARZ3NDEKTSV4RRFFQ69G5FAW", [_ramp(0.0, 10.0)])
     detail_a = _key(r, crs="none", grid_digest=None)
     detail_b = _key(r, crs="none", grid_digest="격자해시B")
-    map_a = _key(r, crs="EPSG:3857", downsample="warp+blockavg", grid_digest="격자해시A")
-    map_b = _key(r, crs="EPSG:3857", downsample="warp+blockavg", grid_digest="격자해시B")
+    map_a = _key(r, crs="EPSG:3857", downsample="warp+nearest", grid_digest="격자해시A")
+    map_b = _key(r, crs="EPSG:3857", downsample="warp+nearest", grid_digest="격자해시B")
     assert detail_a == detail_b, "비지도형 키는 격자를 물지 않는다"
     assert map_a != map_b, "지도형 키는 격자를 문다"
 
