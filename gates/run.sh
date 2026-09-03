@@ -14,7 +14,7 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  frontend-typecheck frontend-test
+  frontend-typecheck frontend-test frontend-fixture-reach
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   backup-cron-streak
   service-tests-core-api service-tests-ai-service
@@ -24,7 +24,7 @@ ALL_GATES=(
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
-  frontend-typecheck-selftest frontend-test-selftest
+  frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   service-tests-selftest
 )
 
@@ -83,6 +83,18 @@ case "$GATE" in
   frontend-test-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 수집 0건 red 포함.
     exec "$REPO_ROOT/gates/tools/frontend-test-selftest.sh"
+    ;;
+  frontend-fixture-reach)
+    # 운영 진입점(frontend/src/main.tsx)에서 실제로 닿는 모듈에 개발용 픽스처
+    # (fixture.ts·graphFixture.ts·localEngine.ts)가 섞여드는지 (레인 E · CODE-REVIEW-20260903-E §5·§8).
+    # 판정부는 frontend/scripts/reachable-from-entry.mjs 를 그대로 돈다 — 게이트가 자기 사본을
+    # 만들지 않는다. node·판정부 스크립트·진입점 부재는 skip 이 아니라 red(준비)다.
+    exec "$REPO_ROOT/gates/tools/frontend-fixture-reach.sh"
+    ;;
+  frontend-fixture-reach-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처 도달·도달 0건·별칭 선언·
+    # 판정부·진입점 부재까지.
+    exec "$REPO_ROOT/gates/tools/frontend-fixture-reach-selftest.sh"
     ;;
   import-boundary)
     # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).

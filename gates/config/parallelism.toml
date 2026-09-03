@@ -55,6 +55,12 @@
 # `frontend-typecheck-selftest` — 사본 트리를 자기 `mktemp -d` 안에만 만들고
 #   `node_modules` 는 링크로 빌려 **읽는다**. 진짜 `frontend/` 에는 한 글자도 쓰지 않는다.
 "frontend-typecheck-selftest" = "parallel"
+# `frontend-fixture-reach` — 읽기만 한다(상대 import 를 따라 파일을 읽을 뿐 산출물이 없다).
+#   공유 자원은 없다 — `frontend/node_modules` 조차 필요 없는 zero-dependency 워커다.
+"frontend-fixture-reach"        = "parallel"
+# `frontend-fixture-reach-selftest` — `gates/fixtures/frontend-fixture-reach/` 를 **읽기만** 한다.
+#   워커가 파일 시스템에 아무것도 쓰지 않으므로 사본을 뜨지 않고 그대로 가리켜 돈다.
+"frontend-fixture-reach-selftest" = "parallel"
 "contract-selftest"         = "parallel"
 "event-selftest"            = "parallel"
 "boundary-selftest"         = "parallel"
