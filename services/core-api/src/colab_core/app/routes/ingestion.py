@@ -621,15 +621,20 @@ async def add_dataset_file(request: Request, datasetId: str,
     file_id = Ulid.generate()
     key = storage_layout.storage_key(datasetId, file_id=str(file_id),
                                      kind=kind, file_name=name)
-    _store(request, key=key, payload=payload)
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
         # 축을 지어내지 않는다 (`〈66〉`). 축 판별은 파일을 읽는 쪽의 일이다.
         # **격자의 자리는 `attachUploadGridFiles` 다** — 거절하면서 갈 곳을 말한다.
+        #
+        # ⚠ **거절이 저장 앞에 온다** (`CODE-REVIEW-20260903` 부록). 종전에는 `_store` 가
+        # 이 검사 앞에 있어 거절한 격자 파일이 `uploads/{id}/grid/` 에 그대로 남았다.
+        # 격자를 읽는 쪽(viz-render)에는 원장이 없어 **폴더가 곧 사실**이다 — 거절했다면서
+        # 그 파일로 그리거나, 짝이 셋이 되어 멀쩡한 격자까지 통째로 거절된다.
         raise errors.bad_request(
             "기준 격자 파일의 축(위도·경도)은 서버가 파일에서 판별한다 — "
             "이 op 은 그 판별을 태우지 않는다. 격자는 업로드로 올려 판별을 마친 뒤 "
             "`/datasets/{datasetId}/grid-files` 로 반영한다.")
+    _store(request, key=key, payload=payload)
     d3_catalog.insert_file(db, file_id=str(file_id), dataset_id=dataset_id, kind=kind,
                            file_name=name, size_bytes=len(payload), storage_key=key,
                            carries_lat=False, carries_lon=False)
