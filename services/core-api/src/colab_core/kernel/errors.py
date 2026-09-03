@@ -38,6 +38,17 @@ def not_found(message: str = "없거나 연구실 경계 밖이다.") -> ApiErro
     return ApiError(404, "NOT_FOUND", message)
 
 
+def gone(message: str = "이 데이터는 지워졌어요.") -> ApiError:
+    """410 — **자기 연구실의 묘비 하나에만** 쓴다 (Ted 판정 2026-09-03 · 17차 해제).
+
+    404(「없거나 경계 밖」)와 갈라 쓰는 자리가 **한 칸뿐**인 이유는 누설 면적이다 —
+    보는 사람이 이미 그 행을 보고 있던 연구실에서는 「지워졌다」가 새로 알리는 사실이
+    없다. 남의 연구실 묘비·남의 연구실 생존·있었던 적 없는 id **셋은 그대로 404** 이고,
+    셋을 가르는 순간 그 자체가 존재의 누설이 된다 (P-9·P-10).
+    """
+    return ApiError(410, "GONE", message)
+
+
 def bad_request(message: str, details: dict[str, Any] | None = None) -> ApiError:
     return ApiError(400, "BAD_REQUEST", message, details)
 

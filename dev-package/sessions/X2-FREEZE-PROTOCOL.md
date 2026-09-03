@@ -24,9 +24,34 @@
 | **14** | **`〈283〉`** | **`DataPeriod.end` 를 `[string, "null"]` 로 — 끝 없는 기간 = 무기한·진행 중**. `required` 는 `[start, end]` 그대로다(`ProjectPeriod` 와 같은 **required-but-nullable**) — 새 무늬를 만들지 않는다. ⚠ **`contract-breaking` ERR 7** (`response-property-became-nullable` × 7 · 응답을 읽는 쪽이 깨진다) ⟹ **㉯**. **마이그레이션 0**(`d3_dataset_autometa.period_end` 가 이미 nullable) · op 총계 54 그대로
 | **15** | **`〈294〉`** | **값 조회 2 op 신설 ＋ 저장 규약에 변환 설정 승격** — `fe-core.yaml#lookupDatasetValue`(중계 · **54 → 55**) · `core-viz.yaml#lookupValue`(조회 · **5 → 6**). **seam 마다 총계를 따로 센다** — 합쳐 「54 → 56」으로 읽지 않는다(14차 정지 회차가 그 혼동을 남겼다 · `sessions/V-2-STOP-20260903.md`). 같은 회차에 `contracts/storage/layout.json` `contentKeys.지도 타일` 에 **변환 설정 셋**(`conversionKind`·`overviewResampling`·`compression`)을 승격했다 — 종전에는 D5 안에만 있어 **굽는 쪽만 자리 이름을 지을 수 있었고**, 읽는 쪽(D7)이 그 값을 자기 코드에 다시 적으면 규칙이 두 곳이 된다. `contract-breaking` **ERR 0 · WARN 0**(「파괴적 변경 없음, 다만 스펙이 다르다」 — 순수 가산) · **마이그레이션 0** · 생성물 4벌 재생성. ⭑ **§5-㉰-4(집행 없는 신설 금지)를 지켰다** — 계약 둘 · core-api 중계 · viz-render 조회 · 화면 소비자 · 값 대조 시험을 **한 회차에** 세웠다. ⚠ **14차 정지 회차는 행이 없다** — 계약을 열지 않았으므로 회차가 성립하지 않았고, `〈290〉` 은 **결번**이다 |
 | **16** | **`〈298〉`** | **검색 계약 확장 — `SearchResultRow` 에 `summary`·`period` ＋ `SearchQuery` 에 `verified`.** ⛔ **`DatasetRow` 는 무변**이다 — 카탈로그 8열이 요약·기간을 안 쓰므로 required 13칸을 안 넓히고, `allOf` 의 **두 번째 객체**에 칸을 더한다(`relevanceBar`·`rationale` 과 같은 자리 · `PENDING-RECS-20260903 §4` 권고 모양 그대로). `period` 는 **`DataPeriod` 재사용**이라 14차(`〈283〉`)의 「끝이 없으면 무기한」이 검색 카드에도 그대로 온다 — 같은 모양의 두 번째 선언을 만들지 않는다. `contract-breaking` **ERR 0 · WARN 0 · INFO 3**(`new-optional-request-property` 1 ＋ `response-required-property-added` 2 — 순수 가산) · **마이그레이션 0** · **op 총계 55 그대로**(표면 3종 각각 `fe-core` 55 · `core-viz` 6 · `core-ai` 2 — seam 마다 따로 센다). ⭑ **§5-㉰-4(집행 없는 신설 금지)를 지켰다** — 계약 · 서버(정렬 ＋ `limit` 앞 걸름 ＋ 요약·기간 조립) · 화면(토글이 질의로 · 카드 두 칸) · 시험을 **한 회차에** 세웠다. ⭑ **막고 있던 것 = `〈295〉` 의 STOP 셋**이다 — 화면 레인이 「계약에 칸이 없다」·「`SearchQuery` 에 `verified` 칸이 없다」로 멈춰 둔 자리이고, 이 회차가 그 셋을 전건 닫았다 |
+| **17** | **`〈303〉`** | **`getDataset` 에 `410` 신설 — 「자기 연구실 묘비만 구분한다」**(Ted 판정 2026-09-03 ②). 종전에는 **내 연구실 묘비 · 남의 연구실 묘비 · 남의 연구실 생존 · 없는 id 넷이 한 404** 였고, 그래서 정본 `Policy_데이터셋_상세 §9` 의 묘비 문구가 **화면에서 도달 불가**였다(`〈299〉` 가 등재한 후속). 이 회차가 **넷 중 하나만** 가른다 — 누설 면적이 판정 기준이다: 내 연구실에서 지워진 행은 지워지기 전에 **이미 내 목록에 있던 것**이라 「지워졌다」가 새로 알리는 사실이 0 이고, 나머지 셋은 가르는 순간 존재가 샌다. **P-9·P-10 은 완화되지 않았다** — 응답 컴포넌트 `Gone` 산문과 `catalog.py` 주석이 넷의 표를 그대로 싣는다. 판정의 전부는 `d3_catalog.is_own_lab_tombstone` 에 **`lab_id` 조건을 적지 않는 것**이다(경계는 RLS `lab_boundary` 가 걸고, 그래서 남의 연구실 묘비는 「묘비 아님」이 아니라 **「행 없음」**으로 떨어진다 — 규칙을 두 곳에 적지 않는다). `contract-breaking` **ERR 0 · WARN 0 · INFO 1**(`response-non-success-status-added` · 순수 가산) · **마이그레이션 0**(`d3_dataset.deleted_at` 이미 실재) · **op 총계 55 그대로**. 정본 `Policy_데이터셋_상세` **v2.8 → 2.9**(§9 행 분리 ＋ 근거 블록 ＋ §12 이력) · 백업 `_backup_260903_R17/` · 패키지 재동기 · `planning-freshness` green 15/15. 시험 **넷을 한 벌로** 잰다 — 내 묘비 410 · 남의 묘비 404 · 남의 생존 404 · 없는 id 404 ＋ **셋의 응답 본문 동일성 대조**(상태코드만 맞추고 문구가 갈리면 존재는 그대로 샌다). ⚠ **같은 판정 회차의 ① (「담당」열)은 열지 않았다** — 아래 §1-b 참조 |
 
 
-**⟨개정 2026-09-03 · `PLAN-SoT §9 〈298〉`⟩ 16차가 발급됐다 — 다음 해제는 17차다.** 원문은 지우지 않는다.
+**⟨개정 2026-09-03 · `PLAN-SoT §9 〈303〉`⟩ 17차가 발급됐다 — 다음 해제는 18차다.** 원문은 지우지 않는다.
+16차(`〈298〉`) 다음이 17차(`〈303〉`)이고 그 사이에 열린 회차는 0건이다.
+
+### 1-b. 17차가 **열지 않은** 것 — Ted 판정 ① 「담당」열 (⛔ 이 회차는 집행하지 않았다)
+
+Ted 는 같은 날 두 건을 판정했고 그중 ①(`DatasetProjectUse` 에 「담당」 추가)은 **이행 보류**다.
+**불복이 아니다** — 판정 자체(정본 §5 와 계약을 맞춘다)는 유효하고, **이행 경로가 「계약 한 줄」이 아니라는 것**이 실측 결과다.
+
+| 전제 (지시문) | 실측 | 근거 |
+|---|---|---|
+| 「D6 의 프로젝트 담당을 Port 로 조인하라」 | **조인할 열이 없다.** `d6_project` = `id·lab_id·type·name·description·period_start·period_end·link_url·status·created_at·updated_at` | `db/platform/schema.sql:706-719` |
+| 「`ProjectDetail` 의 기존 관례를 따르라」 | **계약에 담당이 없다.** `ProjectDetail` = `projectId·name·type·status·period·description·link·datasets·canManage` | `contracts/seams/fe-core.yaml:3372` |
+| 「담당의 정의」 | `Policy_프로젝트`·`DataModel_공통_기반` 에 **0건**. 적은 곳은 `Policy_데이터셋_상세 §5` 표 한 줄뿐이고 그 행은 **`[가정]` 표지**를 달고 있다 | 정본 실측 |
+
+**기획에는 있다 — 떨어진 자리가 DataModel·Policy_프로젝트·DB 다.** `E-05/documents/PRD_프로젝트.md`(S-02b 개요 = 「설명·기간·유형·**담당**·데이터셋 수」) ·
+목업 `프로젝트_260817.html`·`데이터셋_상세_260817.html`(「담당 호랑이」 = **사람 이름 1인**) · `_analysis_upload_lineage_spec.md`(`Project: … 담당자`).
+⟹ 담당 = **프로젝트의 1인 계정 참조**이지 연결(`d6_project_dataset`)의 속성이 아니다.
+대용 후보 둘(`d8_activity.actor_account_id` · `d5_upload.uploader_account_id`)은 **행위자·업로더**라 목업의 뜻과 다르다 — **대용하지 않는다.**
+
+**갈래 둘 — Ted 판정 대기.**
+⑴ **정본 델타**(싼 쪽) — `Policy_데이터셋_상세 §5` 활용 프로젝트 행에서 「담당」을 빼거나 `[가정]` 을 유지한다. **계약 0 · DB 0 · 화면 0.**
+⑵ **D6 속성 신설** — `d6_project.owner_account_id`(nullable · `d1_account` FK) 마이그레이션 ＋ `ProjectCreate`·`ProjectUpdate`·`ProjectDetail` ＋ `DatasetProjectUse.owner` ＋ 입력 화면 ＋ `Policy_프로젝트`·`DataModel_공통_기반` 에 정의. **별도 레인 규모.**
+
+⛔ **이 회차가 하지 않은 것 = 생산자 없는 필드를 계약에 박는 것.** 항상 `null` 인 필드는 시험할 수 없고,
+`〈299〉` 가 같은 자리에서 세운 원칙(「없는 값을 지어내지 않았다」)을 이번 회차가 스스로 깨게 된다.
 종전 기재 ~~「15차가 발급됐다 — 다음 해제는 16차다」~~ 는 **그때는 참이었다**. 15차(`〈294〉`) 다음이 16차(`〈298〉`)이고 그 사이에 열린 회차는 0건이다.
 ／ **아래는 종전 본문 — 지우지 않는다.**
 **⟨개정 2026-09-03 · `PLAN-SoT §9 〈294〉`⟩ 15차가 발급됐다 — 다음 해제는 16차다.** 원문은 지우지 않는다.

@@ -20,6 +20,10 @@ from colab_core.kernel.config import Settings
 DS_A1 = "0000000000000000000000DSA1"   # 열림 · 파일 2 · Verified · 원천 표기
 DS_A2 = "0000000000000000000000DSA2"   # 잠김 · 파일 1 · DSA1 의 자식 · PRJA 에 쓰임
 DS_B1 = "0000000000000000000000DSB1"   # 다른 연구실
+DS_NONE = "0000000000000000000000ZZZZ"  # 형식은 맞고 행이 없다
+LAB_A = "0000000000000000000000000A"
+LAB_B = "0000000000000000000000000B"
+ACC_B_PROF = "00000000000000000000000BP1"
 ACC_A_PROF = "00000000000000000000000AP1"
 ACC_A_RES = "000000000000000000000000A1"
 
@@ -264,30 +268,84 @@ def test_other_lab_dataset_is_404_not_403(client: TestClient) -> None:
     assert r.json()["code"] == "NOT_FOUND"
 
 
-def test_tombstone_has_no_detail_screen(client: TestClient) -> None:
-    """삭제된 데이터셋은 상세 화면이 없다 (Policy_데이터셋_상세 §7)."""
+# ── 묘비 ─────────────────────────────────────────────────────────────────────
+# ⭑ ⟨17차 해제 · Ted 판정 ② 2026-09-03⟩ **자기 연구실 묘비만 구분한다.**
+# 종전에는 넷(자기 연구실 묘비 · 남의 연구실 묘비 · 남의 연구실 생존 · 없는 id)이 **한 404** 였다.
+# 그중 **자기 연구실 묘비 하나만** 410 으로 가른다 — 그 행은 보는 사람이 지우기 전에 이미
+# 보고 있던 것이라 「지워졌다」를 말해도 **새로 새는 사실이 없다.** 나머지 셋은 그대로 404 다.
+# 아래 넷은 **한 벌로 읽는다** — 하나만 남기면 누설 없음이 증명되지 않는다.
+def _tombstone(client: TestClient, dataset_id: str, lab_id: str, actor: str):
+    """`deleted_at` 을 세우고 되돌리는 자리. RLS 안에서만 쓴다."""
+    from contextlib import contextmanager
+
     from sqlalchemy import text
 
     engine = client.app.state.engine
 
     def _scope(conn):
-        conn.execute(text("SELECT set_config('app.current_lab', :l, true)"),
-                     {"l": "0000000000000000000000000A"})
-        conn.execute(text("SELECT set_config('app.current_account', :a, true)"),
-                     {"a": ACC_A_PROF})
+        conn.execute(text("SELECT set_config('app.current_lab', :l, true)"), {"l": lab_id})
+        conn.execute(text("SELECT set_config('app.current_account', :a, true)"), {"a": actor})
 
-    with engine.begin() as conn:
-        _scope(conn)
-        conn.execute(text("UPDATE d3_dataset SET deleted_at = now(), "
-                          "deleted_by_account_id = :a WHERE id = :d"),
-                     {"a": ACC_A_PROF, "d": DS_A1})
-    try:
-        assert get(client, DS_A1, "a1-prof-token").status_code == 404
-    finally:
+    @contextmanager
+    def _cm():
         with engine.begin() as conn:
             _scope(conn)
-            conn.execute(text("UPDATE d3_dataset SET deleted_at = NULL, "
-                              "deleted_by_account_id = NULL WHERE id = :d"), {"d": DS_A1})
+            conn.execute(text("UPDATE d3_dataset SET deleted_at = now(), "
+                              "deleted_by_account_id = :a WHERE id = :d"),
+                         {"a": actor, "d": dataset_id})
+        try:
+            yield
+        finally:
+            with engine.begin() as conn:
+                _scope(conn)
+                conn.execute(text("UPDATE d3_dataset SET deleted_at = NULL, "
+                                  "deleted_by_account_id = NULL WHERE id = :d"),
+                             {"d": dataset_id})
+
+    return _cm()
+
+
+def test_own_lab_tombstone_is_410(client: TestClient) -> None:
+    """⑴ **자기 연구실 묘비** — 여기만 갈라진다 (`Policy_데이터셋_상세 §9` 묘비 문구의 도달 자리).
+
+    종전 오라클은 404 였다. **느슨해진 것이 아니다** — 누설 면적이 늘지 않는 한 칸에서만
+    사실을 더 말하도록 판정이 바뀌었고(Ted 2026-09-03), 아래 셋이 그 면적을 잠근다.
+    """
+    with _tombstone(client, DS_A1, LAB_A, ACC_A_PROF):
+        r = get(client, DS_A1, "a1-prof-token")
+        assert r.status_code == 410, "자기 연구실 묘비는 「지워졌다」를 말한다."
+        assert r.json()["code"] == "GONE"
+
+
+def test_other_lab_tombstone_is_the_same_404(client: TestClient) -> None:
+    """⑵ **남의 연구실 묘비** — 410 을 내면 「그 연구실에 그런 것이 있었다」가 샌다."""
+    with _tombstone(client, DS_B1, LAB_B, ACC_B_PROF):
+        r = get(client, DS_B1, "a1-prof-token")
+        assert r.status_code == 404
+        assert r.json()["code"] == "NOT_FOUND"
+
+
+def test_other_lab_live_dataset_is_the_same_404(client: TestClient) -> None:
+    """⑶ **남의 연구실 생존** — ⑵ 와 한 글자도 다르지 않아야 한다."""
+    r = get(client, DS_B1, "a1-prof-token")
+    assert r.status_code == 404
+    assert r.json()["code"] == "NOT_FOUND"
+
+
+def test_nonexistent_id_is_the_same_404(client: TestClient) -> None:
+    """⑷ **있었던 적 없는 id** — 형식은 맞고 행이 없다. ⑵⑶ 과 같은 응답이다."""
+    r = get(client, DS_NONE, "a1-prof-token")
+    assert r.status_code == 404
+    assert r.json()["code"] == "NOT_FOUND"
+
+
+def test_the_three_hidden_cases_are_byte_identical(client: TestClient) -> None:
+    """⑵⑶⑷ 가 **같은 본문**이어야 한다. 문구가 갈리면 상태코드가 같아도 존재가 샌다."""
+    with _tombstone(client, DS_B1, LAB_B, ACC_B_PROF):
+        gone_other = get(client, DS_B1, "a1-prof-token").json()
+    live_other = get(client, DS_B1, "a1-prof-token").json()
+    missing = get(client, DS_NONE, "a1-prof-token").json()
+    assert gone_other == live_other == missing
 
 
 def test_bad_id_is_400(client: TestClient) -> None:
