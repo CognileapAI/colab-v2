@@ -70,31 +70,47 @@ class LoginAttempt:
 
 #: 클라이언트 버킷의 접두. 자격 버킷(`name:`·`code:`)과 **한 이름 공간에서 갈린다.**
 CLIENT_PREFIX = "client:"
-#: 열쇠로 쓸 첫 홉의 길이 상한. 헤더는 사용자가 보내는 값이라 길이를 여기서 묶는다.
+#: 열쇠로 쓸 홉의 길이 상한. 헤더는 사용자가 보내는 값이라 길이를 여기서 묶는다.
 _MAX_CLIENT_KEY = 64
+#: 상한을 넘긴 홉이 접히는 **고정 버킷**. 상한을 넘겼다고 `None` 을 돌려주면 그 헤더 한 줄이
+#: **제한을 끄는 스위치**가 된다 — 길이 상한은 열쇠가 로그·dict 를 부풀리지 않게 묶는 것이지
+#: 셈을 면제하는 것이 아니다. 접히는 대가는 「긴 헤더를 보내는 모두가 한 버킷」인데,
+#: 그쪽이 「긴 헤더를 보내는 모두가 무제한」보다 낫다.
+CLIENT_OVERSIZE = f"{CLIENT_PREFIX}oversize"
 
 
 def client_key(forwarded_for: str | None) -> str | None:
-    """부른 **클라이언트**의 버킷 열쇠 — `X-Forwarded-For` 의 첫 홉.
+    """부른 **클라이언트**의 버킷 열쇠 — `X-Forwarded-For` 의 **마지막 홉**.
 
     **왜 버킷이 둘인가.** 자격 버킷만 두면 코드를 갈아 가며 하는 열거에 브레이크가 없고
     (`key` 를 코드별로 가른 순간 생기는 구멍이다), 클라이언트 버킷만 두면 여러 곳에서 한
     계정을 두드리는 것을 못 센다. 둘을 함께 센다.
 
-    ⚠ **[Ted 판정 대기] 첫 홉은 사용자가 보낸 값이다.** `infra/staging/nginx.i2.conf:61`
-    은 `$proxy_add_x_forwarded_for` 를 쓴다 — 들어온 헤더 **뒤에** `$remote_addr` 를 덧붙이는
-    변수라, 클라이언트가 헤더를 실어 보내면 그 값이 첫 홉이 되고 **마지막 홉**이 nginx 가
-    실제로 본 주소다. 그래서 이 버킷이 늦추는 것은 **헤더를 안 만지는 열거**뿐이고,
-    헤더를 돌리는 상대에게는 브레이크가 아니다. 정직한 열쇠는 마지막 홉(또는 nginx 가
-    단독으로 세팅하는 별도 헤더)이고, 그 전환은 배포 설정 변경이라 이 레인 밖이다
-    (`kernel/throttle.py` 산문이 「IP 로 세지 않는다」고 적은 이유가 바로 이것이다).
+    **왜 마지막 홉인가.** `infra/staging/nginx.i2.conf:61` 은 `$proxy_add_x_forwarded_for`
+    를 쓴다 — 들어온 헤더 **뒤에** `$remote_addr` 를 덧붙이는 변수다. 그래서 첫 홉은 부른
+    쪽이 지어낸 값이고(헤더 한 줄로 버킷을 무한히 갈 수 있다 = 브레이크가 아니다),
+    **마지막 홉은 nginx 가 실제로 본 주소**라 부른 쪽이 못 바꾼다.
+
+    ⚠ **대가 — 프록시가 한 겹 더 서면 버킷이 하나로 접힌다.** 로드밸런서가 nginx 앞에
+    서면 nginx 가 보는 주소는 늘 그 로드밸런서라 마지막 홉이 전원 공통값이 된다. 그때의
+    동작은 **버킷을 잃는 것이 아니라 한 버킷으로 접히는 것**이다 — 클라이언트 버킷이 없던
+    시절과 같은 셈이 되고(자격 버킷은 그대로 산다), 어느 쪽으로도 **열리지 않는다.**
+    그 배치를 실제로 쓰게 되면 정직한 열쇠는 nginx 가 **단독으로 세팅하는 별도 헤더**
+    (`X-Real-IP` 를 `$remote_addr` 로)이고, 그것은 배포 설정 변경이라 이 레인 밖이다
+    (레인 기록 §5-㈎ ⓒ · Ted 배포 쪽 후속). 바뀌는 자리는 여기 한 곳이다.
+
+    ⓝ 헤더가 아예 없으면 `None` — 클라이언트 버킷을 **지어내지 않는다**(한 버킷으로 접히는
+    자리를 다시 만들지 않기 위해서다). 헤더는 있는데 마지막 홉이 빈 값(`","`)인 경우도
+    같다: nginx 뒤에서는 `$remote_addr` 가 늘 붙으므로 도달하지 않는 모양이다.
     """
     if not forwarded_for:
         return None
-    first = forwarded_for.split(",")[0].strip()
-    if not first or len(first) > _MAX_CLIENT_KEY:
+    last = forwarded_for.split(",")[-1].strip()
+    if not last:
         return None
-    return f"{CLIENT_PREFIX}{first}"
+    if len(last) > _MAX_CLIENT_KEY:
+        return CLIENT_OVERSIZE
+    return f"{CLIENT_PREFIX}{last}"
 
 
 

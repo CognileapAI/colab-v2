@@ -10,14 +10,16 @@
 여기서 재는 것 —
   ⓐ 접속 코드 버킷이 **코드마다 다르고** 원문을 담지 않는다
   ⓑ 코드 A 를 두드려도 코드 B 는 막히지 않고, B 의 성공이 A 의 셈을 지우지 않는다
-  ⓒ **클라이언트 버킷**이 코드를 갈아 가며 하는 열거를 센다
+  ⓒ **클라이언트 버킷**이 코드를 갈아 가며 하는 열거를 센다 — 열쇠는 부른 쪽이 못 바꾸는
+    **마지막 홉**이고, 길이 상한을 넘긴 홉도 버킷을 잃지 않는다(고정 버킷으로 접힌다)
   ⓓ `blocked()` 는 쓰지 않는다 · `record_failure` 는 만료 버킷을 버려 dict 를 묶는다
 """
 from __future__ import annotations
 
 from conftest import TOKEN_PROF, TOKEN_RES
 
-from colab_core.kernel.authn import LoginAttempt, client_key
+from colab_core.kernel.authn import (CLIENT_OVERSIZE, CLIENT_PREFIX, LoginAttempt,
+                                     client_key)
 from colab_core.kernel.throttle import AttemptLimiter
 
 SECRET = "test-session-secret-0123456789"
@@ -87,13 +89,56 @@ def test_another_client_is_not_braked_by_its_neighbour(p2_client) -> None:
     assert ok.status_code == 201, f"옆 클라이언트의 실패가 나를 막았다: {ok.text}"
 
 
-def test_the_client_key_reads_only_the_first_hop() -> None:
-    assert client_key("203.0.113.9, 10.0.0.1, 10.0.0.2") == "client:203.0.113.9"
+def test_the_client_key_reads_the_last_hop_not_the_first() -> None:
+    """**마지막 홉**이 열쇠다 — 첫 홉은 부른 쪽이 지어낼 수 있는 값이다.
+
+    `infra/staging/nginx.i2.conf:61` 은 `$proxy_add_x_forwarded_for` 를 쓴다 — 들어온 헤더
+    **뒤에** `$remote_addr` 를 덧붙이는 변수라, 마지막 홉은 **nginx 가 실제로 본 주소**고
+    부른 쪽이 못 바꾼다. 첫 홉을 읽으면 헤더 한 줄로 버킷을 무한히 갈 수 있어
+    클라이언트 버킷이 브레이크 구실을 못 한다.
+    """
+    assert client_key("203.0.113.9, 10.0.0.1, 10.0.0.2") == "client:10.0.0.2"
     assert client_key("  203.0.113.9  ") == "client:203.0.113.9"
+    assert client_key("2001:db8::1,198.51.100.7") == "client:198.51.100.7"
     assert client_key(None) is None
     assert client_key("") is None
     assert client_key(",") is None
-    assert client_key("x" * 400) is None, "긴 헤더가 그대로 열쇠가 됐다."
+
+
+def test_an_oversize_hop_falls_into_a_sentinel_bucket_not_into_nothing() -> None:
+    """긴 홉은 **버킷을 잃는 것이 아니라 고정 버킷으로 접힌다.**
+
+    종전에는 `None` 이었다 — 상한을 넘기기만 하면 클라이언트 버킷이 통째로 사라졌고,
+    그것은 **제한을 끄는 스위치**였다. 길이 상한은 열쇠가 로그·dict 를 부풀리지 않게
+    묶는 것이지 셈을 면제하는 것이 아니다.
+    """
+    assert client_key("x" * 400) == CLIENT_OVERSIZE
+    assert client_key("203.0.113.9, " + "9" * 400) == CLIENT_OVERSIZE
+    assert CLIENT_OVERSIZE.startswith(CLIENT_PREFIX), "자격 버킷과 이름 공간이 갈라져야 한다."
+
+
+def test_rotating_the_first_hop_does_not_escape_the_client_bucket(p2_client) -> None:
+    """**이 시험이 막는 것이 헤더를 돌리는 열거다.**
+
+    첫 홉을 읽으면 요청마다 다른 값을 실어 버킷을 새로 만들 수 있다. 마지막 홉은
+    nginx 가 덧붙인 값이라 부른 쪽이 못 바꾼다 — 셋을 실패하면 넷째가 막힌다.
+    """
+    client = p2_client(session_secret=SECRET, login_max_failures=3)
+    for i in range(3):
+        r = _login(client, f"추측-{i}", forwarded_for=f"10.9.9.{i}, 203.0.113.9")
+        assert r.status_code == 401, r.text
+    blocked = _login(client, TOKEN_RES, forwarded_for="10.9.9.99, 203.0.113.9")
+    assert blocked.status_code == 429, "첫 홉을 갈아 끼워 클라이언트 버킷을 빠져나갔다."
+
+
+def test_an_oversize_header_is_still_braked(p2_client) -> None:
+    """긴 헤더로 **제한을 끄지 못한다** — 고정 버킷에서 그대로 센다."""
+    client = p2_client(session_secret=SECRET, login_max_failures=3)
+    long_hop = "9" * 300
+    for i in range(3):
+        assert _login(client, f"추측-{i}", forwarded_for=long_hop).status_code == 401
+    blocked = _login(client, TOKEN_RES, forwarded_for=long_hop)
+    assert blocked.status_code == 429, "긴 헤더가 클라이언트 버킷을 통째로 지웠다."
 
 
 # ═══════════════ ⓓ blocked() 는 쓰지 않는다 · dict 가 묶인다 ══════════════════
