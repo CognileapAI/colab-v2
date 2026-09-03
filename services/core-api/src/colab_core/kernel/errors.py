@@ -60,6 +60,50 @@ def too_many_attempts(message: str) -> ApiError:
     return ApiError(429, "TOO_MANY_ATTEMPTS", message)
 
 
+class InputError(Exception):
+    """**입력이 규칙에 맞지 않다** — 400 으로 나간다 (`CODE-REVIEW-20260903` #12).
+
+    ⚠ **`ValueError` 를 통째로 400 에 매지 않는다.** `ValueError` 는 라이브러리·계산 실패도
+    함께 던지는 넓은 형이고, 그것까지 400 으로 접으면 **서버 결함이 「네 요청이 틀렸다」로
+    위장**한다 — 그 순간 결함은 감시에서 사라지고 사용자는 고칠 수 없는 값을 고치려 든다.
+    그래서 형을 따로 세운다: 여기 걸리는 것은 **누군가가 입력 오류라고 판정한 것뿐**이다.
+
+    `ApiError`(=`HTTPException`)와 갈라 두는 이유 — 이 형은 **커널·도메인이 던진다.**
+    커널이 HTTP 를 알면 그 층은 더 이상 교체 가능하지 않다. 상태코드로 바꾸는 일은
+    `app/main.py` 의 핸들러 한 자리가 한다.
+    """
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.details = details
+
+
+def input_error_response(exc: InputError) -> JSONResponse:
+    return JSONResponse(status_code=400,
+                        content=envelope("BAD_REQUEST", exc.message, exc.details))
+
+
+#: `IntegrityError` 가 사용자에게 되는 말. **하나로 고정한다** — 화면이 분기하는 데는
+#: 안정된 코드 하나면 충분하고, 그 이상은 전부 저장 내부의 누출이다.
+INTEGRITY_MESSAGE = "요청한 값이 저장 규칙에 맞지 않아요. 값을 확인해 주세요."
+
+#: CHECK 위반(`23514`)이 사용자에게 되는 말. 유니크 위반과 **문장을 가른다** —
+#: 「이미 있어요」와 「그 값이 아니에요」는 사람이 할 일이 서로 다르다. 여기도 값·제약
+#: 이름은 담지 않는다 (`INTEGRITY_MESSAGE` 와 같은 규칙).
+INTEGRITY_INPUT_MESSAGE = "요청한 값이 허용된 값이 아니에요. 값을 확인해 주세요."
+
+
+def integrity_error_response() -> JSONResponse:
+    """유니크 위반(`23505`) → **409**. **SQL 도 제약 이름도 본문에 싣지 않는다.**
+
+    드라이버의 예외 문자열에는 문장 전문·표 이름·열 이름·제약 이름·키 값이 들어 있다.
+    그대로 실어 보내면 화면의 네트워크 탭에서 스키마가 읽힌다 — 사람에게는 아무 쓸모가
+    없고 공격자에게만 쓸모가 있다. **사유는 서버 로그에 남고, 본문에는 코드만 간다.**
+    """
+    return JSONResponse(status_code=409, content=envelope("CONFLICT", INTEGRITY_MESSAGE))
+
+
 def error_response(exc: HTTPException) -> JSONResponse:
     detail = exc.detail
     if isinstance(detail, dict) and "code" in detail and "message" in detail:

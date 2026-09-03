@@ -60,6 +60,11 @@ ENV_SUBJECTS_FILE = "COLAB_CORE_SUBJECTS_FILE"
 #: 세션 서명 비밀값 (`PLAN-SoT §9 〈90〉-㉯`). **없으면 로그인을 세우지 않는다** —
 #: 서명 없는 세션은 아무나 위조할 수 있고, 그것은 인증이 아니다. 기본값을 코드에 두지 않는 이유도
 #: 같다(`ENV_DATABASE_URL` 과 같은 규칙).
+#:
+#: ⭑ **값 대신 경로로 받는다** — `COLAB_CORE_SESSION_SECRET_FILE` (`CODE-REVIEW-20260903` #15).
+#: 이것이 생 env 뿐이라 `compose.i2.yml` 이 **세션 서명 HMAC 키**를 `docker inspect` 로
+#: 읽히는 자리에 뒀다 — 그 키 하나면 임의의 accountId/labId 토큰을 위조해 **모든 연구실
+#: 경계가 무력**해진다. 게다가 `_FILE` 을 설정하면 오류 없이 무시돼 로그인이 500 만 냈다.
 ENV_SESSION_SECRET = "COLAB_CORE_SESSION_SECRET"
 #: 세션 수명(분). **[정본 무근거]** — 정본에 「세션」이라는 낱말 자체가 없다(2026-08-26 전수 조사).
 #: 그래서 숫자를 정본인 척 적지 않고 **운영 설정**에 둔다 (`〈90〉-㉲`).
@@ -106,6 +111,9 @@ ENV_VIZ_BASE_URL = "COLAB_CORE_VIZ_BASE_URL"
 #: 검사하지 않아 아무도 못 봤다(실서버 2대로 실측). 값이 없으면 **중계를 시도하지 않고
 #: 503 을 낸다** — 「토큰이 없으니 안 보낸다」로 통과시키면 저쪽이 검사를 켜는 순간
 #: 전 표면이 조용히 죽는다.
+#:
+#: ⭑ **값 대신 경로로 받는다** — `COLAB_CORE_VIZ_SERVICE_TOKEN_FILE`
+#: (`CODE-REVIEW-20260903` #15 · 세션 비밀값과 같은 규칙).
 ENV_VIZ_SERVICE_TOKEN = "COLAB_CORE_VIZ_SERVICE_TOKEN"
 ENV_AI_BASE_URL = "COLAB_CORE_AI_BASE_URL"
 
@@ -148,7 +156,12 @@ def load_settings() -> Settings:
     return Settings(
         database_url=url,
         subjects_file=os.environ.get(ENV_SUBJECTS_FILE) or None,
-        session_secret=os.environ.get(ENV_SESSION_SECRET) or None,
+        # ⭑ **비밀값 둘도 `_FILE` 로 받는다** (`CODE-REVIEW-20260903` #15). DB URL 과 같은
+        # 판독기다 — 종전에는 이 둘만 생 env 라 `compose.i2.yml` 이 세션 서명 HMAC 키와
+        # 서비스 토큰을 `docker inspect` 로 읽히는 자리에 뒀고, `_FILE` 을 설정하면
+        # **오류 없이 무시**돼 로그인이 500 만 내는 조용한 실패가 났다.
+        # **뒤로 호환된다** — 생 env 만 있으면 지금과 같다.
+        session_secret=resolve_env_or_file(os.environ, ENV_SESSION_SECRET),
         session_ttl_minutes=_positive_int(
             ENV_SESSION_TTL_MINUTES, os.environ.get(ENV_SESSION_TTL_MINUTES),
             DEFAULT_SESSION_TTL_MINUTES),
@@ -164,6 +177,6 @@ def load_settings() -> Settings:
             DEFAULT_UPLOAD_TTL_HOURS),
         upload_storage_dir=os.environ.get(ENV_UPLOAD_STORAGE_DIR) or None,
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
-        viz_service_token=os.environ.get(ENV_VIZ_SERVICE_TOKEN) or None,
+        viz_service_token=resolve_env_or_file(os.environ, ENV_VIZ_SERVICE_TOKEN),
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,
     )

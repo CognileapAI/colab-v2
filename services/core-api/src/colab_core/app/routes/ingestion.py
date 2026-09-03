@@ -17,6 +17,7 @@ from __future__ import annotations
 import datetime as dt
 import os
 import pathlib
+import shutil
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Response, UploadFile
@@ -41,6 +42,10 @@ GRID = "기준 격자 파일"
 #: 계약 `UploadFileRef.fileName` 의 상한과 같은 값. DB CHECK 도 255 다.
 MAX_FILE_NAME = 255
 
+#: 한 번에 옮기는 바이트. **메모리는 이 값에 묶인다** — 파일 크기가 아니라
+#: (`kernel/file_store.STREAM_CHUNK` 이 내려받기 쪽에 적은 것과 같은 규칙).
+_STREAM_CHUNK = 1 << 20
+
 
 # ── 저장 ────────────────────────────────────────────────────────────────────
 def _storage_root(request: Request) -> pathlib.Path:
@@ -50,7 +55,7 @@ def _storage_root(request: Request) -> pathlib.Path:
     return file_store.resolve_upload_root(request.app.state.settings, request.app.state)
 
 
-def _store(request: Request, *, key: str, payload: bytes) -> None:
+def _store(request: Request, *, key: str, upload_file: UploadFile) -> int:
     """**저장 키가 곧 배치다.** 키는 `kernel/storage_layout` 이 만든다.
 
     ⚠ 예전에는 `sha256(key)` 한 덩이를 루트에 평평하게 깔았다. 그런데 바이트를 여는 쪽
@@ -62,10 +67,22 @@ def _store(request: Request, *, key: str, payload: bytes) -> None:
     는 또 다른 배치를 보고 있었고, 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다.
     그래서 규칙을 주석의 약속이 아니라 **한 정본**(`contracts/storage/layout.json`)으로
     옮겼다. 세 단위가 같은 생성물을 쓰고, `generated-up-to-date` 가 드리프트를 막는다.
+
+    ⭑ **바이트를 흘려 보낸다** (`CODE-REVIEW-20260903` #10). 종전에는 라우트가
+    `await upload_file.read()` 로 파일 **전체**를 메모리에 올려 넘겼다 — nginx 상한 8g 까지
+    RSS 가 파일 크기를 그대로 따라갔고, 그 라우트들만 `async def` 라 **동기 SQLAlchemy 까지
+    이벤트 루프에서** 돌았다. 5GB 업로드 하나가 이 프로세스의 모든 요청(`/healthz` 포함)을
+    멈췄고, 그 정지는 업로드한 사람이 아니라 **다른 모든 사람**에게 보였다.
+
+    돌려주는 것은 **실제로 쓴 바이트 수**다. 미리 받은 `Content-Length` 를 믿으면 원장이
+    적은 크기와 디스크의 실물이 갈릴 수 있고, 그 어긋남은 오류를 내지 않는다.
     """
     path = _storage_root(request) / key
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(payload)
+    upload_file.file.seek(0)
+    with path.open("wb") as sink:
+        shutil.copyfileobj(upload_file.file, sink, _STREAM_CHUNK)
+    return path.stat().st_size
 
 
 def _discard(request: Request, *, key: str | None, keep: str | None = None) -> None:
@@ -210,12 +227,17 @@ def _file_records(upload_files) -> list[dict[str, Any]]:
 
 # ═══════════════════════════════ createUpload ═══════════════════════════════
 @router.post("/uploads", name="createUpload", status_code=201)
-async def create_upload(request: Request, response: Response,
-                        files: list[UploadFile] = File(...),
-                        fileKinds: list[str] | None = Form(default=None),
-                        subject: Subject = Depends(current_subject),
-                        db: Session = Depends(scoped_db)) -> dict:
+def create_upload(request: Request, response: Response,
+                  files: list[UploadFile] = File(...),
+                  fileKinds: list[str] | None = Form(default=None),
+                  subject: Subject = Depends(current_subject),
+                  db: Session = Depends(scoped_db)) -> dict:
     """**`upload.accepted` 를 발행하는 유일한 자리다.**
+
+    ⚠ **`def` 다 — `async def` 가 아니다** (`CODE-REVIEW-20260903` #10). 이 라우트는
+    바이트를 디스크에 쓰고 **동기 SQLAlchemy** 로 원장을 세운다. `async def` 로 두면
+    그 둘이 이벤트 루프에서 돌아 업로드 하나가 프로세스의 모든 요청을 멈춘다. `def` 는
+    스레드풀에서 돈다 — 형제 라우트가 전부 그렇게 서 있다.
 
     봉투가 타입마다 `source` 를 const 로 못 박았고(`envelope.json`), 그 능력을 행사하는
     HTTP 입구가 이 op 이다. `UploadReceipt` 가 `uploadId`·`fileId` 를 **FE 표면에 처음** 내린다
@@ -248,13 +270,12 @@ async def create_upload(request: Request, response: Response,
         name = (upload_file.filename or "").strip()
         if not name or len(name) > MAX_FILE_NAME:
             raise errors.bad_request("파일 이름은 1~255자다.")
-        payload = await upload_file.read()
         file_id = Ulid.generate()
         key = storage_layout.storage_key(str(upload_id), file_id=str(file_id),
                                          kind=kind, file_name=name)
-        _store(request, key=key, payload=payload)
+        byte_size = _store(request, key=key, upload_file=upload_file)
         records.append(UploadFileRecord(
-            file_id=str(file_id), file_name=name, kind=kind, byte_size=len(payload),
+            file_id=str(file_id), file_name=name, kind=kind, byte_size=byte_size,
             storage_key=key,
             # **축을 추측하지 않는다** — 격자 파일의 축은 파일을 읽는 쪽이 정한다 (`〈66〉`).
             carries_lat=False, carries_lon=False,
@@ -596,11 +617,11 @@ def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) ->
 
 
 @router.post("/datasets/{datasetId}/files", name="addDatasetFile", status_code=201)
-async def add_dataset_file(request: Request, datasetId: str,
-                           file: UploadFile = File(...),
-                           kind: str = Form(...),
-                           subject: Subject = Depends(current_subject),
-                           db: Session = Depends(scoped_db)) -> dict:
+def add_dataset_file(request: Request, datasetId: str,
+                     file: UploadFile = File(...),
+                     kind: str = Form(...),
+                     subject: Subject = Depends(current_subject),
+                     db: Session = Depends(scoped_db)) -> dict:
     """후주입 — **기준 격자 파일은 나중에 와도 된다** (`〈58〉-②`).
 
     격자 0건은 정상 상태다 (`P2.md §2-21`). 그릴 수 없는 것과 등록할 수 없는 것은 다르다.
@@ -617,21 +638,25 @@ async def add_dataset_file(request: Request, datasetId: str,
     if not name or len(name) > MAX_FILE_NAME:
         raise errors.bad_request("파일 이름은 1~255자다.")
 
-    payload = await file.read()
     file_id = Ulid.generate()
     key = storage_layout.storage_key(datasetId, file_id=str(file_id),
                                      kind=kind, file_name=name)
-    _store(request, key=key, payload=payload)
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
         # 축을 지어내지 않는다 (`〈66〉`). 축 판별은 파일을 읽는 쪽의 일이다.
         # **격자의 자리는 `attachUploadGridFiles` 다** — 거절하면서 갈 곳을 말한다.
+        #
+        # ⚠ **거절이 저장 앞에 온다** (`CODE-REVIEW-20260903` 부록). 종전에는 `_store` 가
+        # 이 검사 앞에 있어 거절한 격자 파일이 `uploads/{id}/grid/` 에 그대로 남았다.
+        # 격자를 읽는 쪽(viz-render)에는 원장이 없어 **폴더가 곧 사실**이다 — 거절했다면서
+        # 그 파일로 그리거나, 짝이 셋이 되어 멀쩡한 격자까지 통째로 거절된다.
         raise errors.bad_request(
             "기준 격자 파일의 축(위도·경도)은 서버가 파일에서 판별한다 — "
             "이 op 은 그 판별을 태우지 않는다. 격자는 업로드로 올려 판별을 마친 뒤 "
             "`/datasets/{datasetId}/grid-files` 로 반영한다.")
+    byte_size = _store(request, key=key, upload_file=file)
     d3_catalog.insert_file(db, file_id=str(file_id), dataset_id=dataset_id, kind=kind,
-                           file_name=name, size_bytes=len(payload), storage_key=key,
+                           file_name=name, size_bytes=byte_size, storage_key=key,
                            carries_lat=False, carries_lon=False)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return {"fileId": str(file_id), "fileName": name, "kind": kind}
@@ -740,11 +765,11 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
 
 
 @router.put("/datasets/{datasetId}/files/{fileId}", name="replaceDatasetGridFile")
-async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
-                                    file: UploadFile | None = File(default=None),
-                                    flipAxes: bool | None = Form(default=None),
-                                    subject: Subject = Depends(current_subject),
-                                    db: Session = Depends(scoped_db)) -> dict:
+def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
+                              file: UploadFile | None = File(default=None),
+                              flipAxes: bool | None = Form(default=None),
+                              subject: Subject = Depends(current_subject),
+                              db: Session = Depends(scoped_db)) -> dict:
     """교체는 **정상 동작**이다 (`〈59〉-①`). **본체는 이 경로의 대상이 아니다** — 409.
 
     **⟨동결 1회 해제 · `〈80〉-㉯ 3`(`K-3`)⟩ 축 뒤집기가 이 op 안에 든다.**
@@ -768,16 +793,15 @@ async def replace_dataset_grid_file(request: Request, datasetId: str, fileId: st
     name = (file.filename or "").strip()
     if not name or len(name) > MAX_FILE_NAME:
         raise errors.bad_request("파일 이름은 1~255자다.")
-    payload = await file.read()
     key = storage_layout.storage_key(datasetId, file_id=str(file_ref),
                                      kind=row.kind, file_name=name)
-    _store(request, key=key, payload=payload)
+    byte_size = _store(request, key=key, upload_file=file)
     # **옛 바이트를 남기지 않는다.** 격자는 이름으로 자리가 정해지므로(`layout.json`),
     # 이름이 바뀐 교체는 옛 파일을 그 자리에 그대로 둔다 — 그러면 격자 폴더에 위도가
     # 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다. 교체했는데 안 그려지는 실물이 이것이다.
     _discard(request, key=row.storage_key, keep=key)
     updated = d3_catalog.replace_file(db, file_id=file_ref, file_name=name,
-                                      size_bytes=len(payload), storage_key=key)
+                                      size_bytes=byte_size, storage_key=key)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return {"fileId": updated.file_id, "fileName": updated.file_name, "kind": updated.kind}
 

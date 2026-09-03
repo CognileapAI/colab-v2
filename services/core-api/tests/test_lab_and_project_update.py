@@ -159,3 +159,53 @@ def test_editing_a_project_needs_the_switch(p2_client, sql) -> None:
     assert r.status_code == 403, "스위치 없는 사람이 프로젝트 정보를 고쳤다"
     after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES))
     assert after.json()["name"] == "스위치 확인용 프로젝트", "막혔다면서 값이 남았다"
+
+
+# ══════════════════ ③ 기간 — `CODE-REVIEW-20260903` #7 ══════════════════════
+def test_a_period_can_be_set_and_read_back(p2_client) -> None:
+    """**기간이 실린 수정이 전부 500 이었다.**
+
+    라우트가 `_period()` 로 만든 `date` 를 **버리고**(주석 「형식 검사만」) 도메인은 계약의
+    `YYYY-MM` 문자열을 `date` 열에 그대로 바인딩했다 — `'2026-01'::date` 는 파싱 오류다.
+    `create_project` 는 처음부터 `_period()` 의 값을 넘겼다 — **두 경로가 갈려 있던 것**이다.
+    """
+    client = p2_client()
+    pid = _new_project(client, "기간을 적는 프로젝트").json()["projectId"]
+
+    r = _patch_project(client, pid, {"period": {"start": "2026-01", "end": "2026-12"}})
+    assert r.status_code == 200, r.text
+    assert r.json()["period"] == {"start": "2026-01", "end": "2026-12"}
+
+    after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES))
+    assert after.json()["period"] == {"start": "2026-01", "end": "2026-12"}, \
+        "응답에는 있고 저장에는 없다 — 화면이 고쳤다고 믿고 떠난다."
+
+
+def test_a_period_change_does_not_roll_back_its_neighbours(p2_client) -> None:
+    """한 요청에 함께 실린 값이 기간 때문에 사라지지 않는다 — 500 은 전부를 롤백했다."""
+    client = p2_client()
+    pid = _new_project(client, "기간과 이름을 함께 고치는 프로젝트").json()["projectId"]
+    r = _patch_project(client, pid, {"name": "기간과 함께 바뀐 이름",
+                                     "period": {"start": "2025-03", "end": None}})
+    assert r.status_code == 200, r.text
+    after = client.get(f"{API_PREFIX}/projects/{pid}", headers=auth(TOKEN_RES)).json()
+    assert after["name"] == "기간과 함께 바뀐 이름"
+    assert after["period"] == {"start": "2025-03", "end": None}
+
+
+def test_clearing_the_period_is_null(p2_client) -> None:
+    """**비우는 뜻은 `period: null` 이다** — 열쇠 생략(그대로 두기)과 다르다."""
+    client = p2_client()
+    pid = _new_project(client, "기간을 지우는 프로젝트").json()["projectId"]
+    _patch_project(client, pid, {"period": {"start": "2026-01", "end": "2026-12"}})
+    r = _patch_project(client, pid, {"period": None})
+    assert r.status_code == 200, r.text
+    assert r.json()["period"] is None
+
+
+def test_a_malformed_period_is_still_400(p2_client) -> None:
+    """형식 검사는 그대로다 — **넓히지 않았음**을 함께 잰다."""
+    client = p2_client()
+    pid = _new_project(client, "형식이 틀린 기간").json()["projectId"]
+    assert _patch_project(client, pid, {"period": {"start": "2026-13"}}).status_code == 400
+    assert _patch_project(client, pid, {"period": "2026-01"}).status_code == 400

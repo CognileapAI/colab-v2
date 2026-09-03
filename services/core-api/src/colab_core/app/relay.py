@@ -40,6 +40,41 @@ class RelayUnavailable(Exception):
     """중계 대상에 닿지 못했다. **가짜 성공을 만들지 않는다** — 호출자가 봉투로 바꾼다."""
 
 
+class RelayRefused(Exception):
+    """저쪽이 **읽어 보고 물리쳤다** — 못 닿은 것이 아니다 (`CODE-REVIEW-20260903` #8).
+
+    ⚠ 종전에는 이 갈래가 없어 `status not in (200, 201, 202)` 가 전부 `RelayUnavailable`
+    이었고, viz-render 의 **415 NOT_RENDERABLE**(`details.renderableFormats`)·413·400 이
+    core-api 에서 503 「연결하지 못했다」가 됐다. 그 결과 —
+      · 사용자는 **그릴 수 없는 파일**을 「서버 장애」로 읽고 계속 재시도한다.
+      · 지원 형식 목록이 화면에 영영 도달하지 않는다.
+      · FE 의 `status === 415` 분기 4곳이 **죽은 코드**가 된다.
+
+    **상태와 본문을 그대로 들고 간다.** 여기서 해석하면 저쪽이 이미 판정한 것을 두 번
+    판정하는 것이 되고, 그 순간 두 서비스의 답이 갈린다.
+    """
+
+    def __init__(self, status: int, body: dict[str, Any] | None) -> None:
+        super().__init__(f"viz-render 가 {status} 로 답했다.")
+        self.status = status
+        self.body = body
+
+
+#: **저쪽이 읽어 보고 낸 거절**의 상태 집합. 그대로 화면까지 간다.
+#:
+#: ⚠ **401·403 은 여기 없다.** 그것은 우리 서비스 자격 증명이 틀렸다는 뜻이라 **우리 쪽
+#: 고장**이고, 사용자가 고칠 수 있는 것이 아니다 — 통과시키면 화면이 「네 요청이 틀렸다」를
+#: 말한다. 5xx 도 없다: 저쪽 사정은 「지금 그릴 수 없다」이지 「이건 못 그린다」가 아니다.
+#: 둘 다 `RelayUnavailable` → 503 이다.
+PASS_THROUGH_STATUSES = (400, 404, 410, 413, 415, 422)
+
+
+def _refuse_if_client_error(status: int, body: dict[str, Any] | None) -> None:
+    """통과 집합이면 `RelayRefused` 로 올린다. 아니면 아무 일도 하지 않는다."""
+    if status in PASS_THROUGH_STATUSES:
+        raise RelayRefused(status, body)
+
+
 def _request(url: str, *, method: str, headers: dict[str, str],
              body: dict[str, Any] | None) -> tuple[int, dict[str, Any] | None]:
     data = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
@@ -116,6 +151,8 @@ class HttpPreviewRelay:
         status, body = _request(f"{self._base}/renders", method="POST",
                                 headers=_scope_headers(lab_id, account_id, self._token),
                                 body=request)
+        # **거절과 장애를 가른다** — 415 는 「이건 못 그린다」이고 503 은 「지금 못 닿았다」다.
+        _refuse_if_client_error(status, body)
         if status not in (200, 201, 202) or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
@@ -130,6 +167,7 @@ class HttpPreviewRelay:
         status, body = _request(f"{self._base}/palettes", method="GET",
                                 headers=_scope_headers(lab_id, account_id, self._token),
                                 body=None)
+        _refuse_if_client_error(status, body)
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
@@ -145,6 +183,7 @@ class HttpPreviewRelay:
         status, body = _request(f"{self._base}/value-lookups", method="POST",
                                 headers=_scope_headers(lab_id, account_id, self._token),
                                 body=request)
+        _refuse_if_client_error(status, body)
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body

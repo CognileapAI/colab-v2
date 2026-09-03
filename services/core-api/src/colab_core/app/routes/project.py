@@ -104,11 +104,20 @@ def update_project(projectId: str, body: dict | None = Body(default=None),
         # **자기 자신은 중복이 아니다** — 없으면 설명만 고치려는 사람이 막힌다.
         if d6_project.name_is_taken(db, name=name, exclude_id=str(project_id)):
             raise errors.conflict("같은 이름의 프로젝트가 이미 있어요")
+    changes = dict(payload)
     if "period" in payload:
-        _period(payload["period"])          # 형식 검사만 — 저장은 도메인이 한다
+        # ⚠ **변환한 값을 넘긴다** (`CODE-REVIEW-20260903` #7). 종전에는 `_period()` 를
+        # 형식 검사로만 부르고 **그 결과를 버렸다** — 도메인이 계약의 `YYYY-MM` 문자열을
+        # `date` 열에 그대로 바인딩해 `'2026-01'::date` 파싱 오류로 **기간이 실린 모든
+        # `PATCH` 가 500** 이었고, 같은 요청의 이름·설명까지 함께 롤백됐다.
+        # 변환 자리는 **`create_project` 와 같은 쪽(라우트)** 이다 — 두 경로가 갈리면
+        # 한쪽만 고쳐지는 날이 온다.
+        start, end = _period(payload["period"])
+        changes["period"] = (None if payload["period"] is None
+                             else {"start": start, "end": end})
 
-    if payload:
-        d6_project.update_project(db, project_id=project_id, changes=payload)
+    if changes:
+        d6_project.update_project(db, project_id=project_id, changes=changes)
     return get_project(projectId, subject=subject, db=db)
 
 
@@ -129,7 +138,11 @@ def create_project(response: Response, body: dict = Body(...),
     name = body.get("name")
     if type_ not in _TYPES:
         raise errors.bad_request(f"type 은 {list(_TYPES)} 중 하나다.")
-    if not isinstance(name, str) or not (1 <= len(name) <= 100):
+    # ⚠ **`strip` 한 길이를 본다** (`CODE-REVIEW-20260903` #12). 종전에는 생성만 `strip`
+    # 없이 길이를 봐서 공백뿐인 이름이 DB CHECK(`length(btrim(name)) > 0`)로 떨어져
+    # **500** 이 됐다. 수정 경로(`update_project`)는 이미 `strip` 한다 — **두 경로의 판정이
+    # 갈려 있던 것**이고, 갈린 판정은 한쪽만 고쳐지는 날이 온다.
+    if not isinstance(name, str) or not (1 <= len(name.strip()) <= 100):
         raise errors.bad_request("name 은 1~100자다.")
     start, end = _period(body.get("period"))
     # **이름 중복 차단** — `VAL-010`·`TC-E-004`·결정 2-6. 결정 #11 로 빠른 생성이

@@ -72,6 +72,13 @@ class SessionSigner:
     def verify(self, token: str, *, now: dt.datetime | None = None) -> Subject | None:
         """서명·만료 어느 하나라도 어긋나면 **None**. 이유를 밖으로 흘리지 않는다."""
         now = now or dt.datetime.now(dt.timezone.utc)
+        # ⚠ **ASCII 인지 먼저 본다** (`CODE-REVIEW-20260903` #12). 토큰은
+        # `v1.<b64url>.<b64url>` 이라 **구성상 ASCII 다.** 그런데 `_mac` 의
+        # `.encode("ascii")` 가 아래 `try` 밖에 있어, 비ASCII Bearer 하나가
+        # `UnicodeEncodeError` 로 탈출해 **비인증 요청이 500** 을 냈다 — 인증 경계에서
+        # 토큰 모양 하나로 오류율을 올릴 수 있다는 뜻이다. 인증 실패는 **401** 이다.
+        if not token.isascii():
+            return None
         parts = token.split(".")
         if len(parts) != 3 or parts[0] != PREFIX:
             return None

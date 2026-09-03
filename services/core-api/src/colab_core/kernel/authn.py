@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 from typing import Protocol, runtime_checkable
 
 from .auth import Subject, SubjectRegistry
@@ -46,8 +47,70 @@ class LoginAttempt:
 
     @property
     def key(self) -> str:
-        """시도 제한이 세는 식별자. **비밀번호를 담지 않는다.**"""
-        return f"name:{self.account_name}" if self.account_name else "code:*"
+        """시도 제한이 세는 식별자. **비밀번호도 접속 코드 원문도 담지 않는다.**
+
+        ⚠ **종전에는 접속 코드 로그인 전부가 상수 `"code:*"` 한 버킷이었다**
+        (`CODE-REVIEW-20260903` #5). 결과 둘 —
+          · 누구든 5회 실패시키면 창이 닫힐 때까지 **모든 접속 코드 사용자가 429** 다.
+          · 성공 1회가 **전원의 카운터**를 지운다 — 유효 코드 하나를 섞는 추측 공격은
+            한 번도 늦춰지지 않는다.
+        코드를 해시해 버킷을 가른다. **원문을 키로 쓰지 않는다** — 키는 로그·덤프에
+        따라다니고, 접속 코드는 그 자체가 자격이다.
+        """
+        if self.account_name:
+            return f"name:{self.account_name}"
+        if self.access_code:
+            digest = hashlib.sha256(self.access_code.encode("utf-8")).hexdigest()
+            return f"code:{digest[:16]}"
+        # 두 형태 중 정확히 하나를 요구하는 것은 라우트(`routes/session.py`)이므로 여기
+        # 닿지 않는다. 그래도 **키를 지어내지는 않는다** — 한 버킷으로 접히는 자리를
+        # 다시 만들지 않기 위해 이름을 남긴다.
+        return "code:없음"
+
+
+#: 클라이언트 버킷의 접두. 자격 버킷(`name:`·`code:`)과 **한 이름 공간에서 갈린다.**
+CLIENT_PREFIX = "client:"
+#: 열쇠로 쓸 홉의 길이 상한. 헤더는 사용자가 보내는 값이라 길이를 여기서 묶는다.
+_MAX_CLIENT_KEY = 64
+#: 상한을 넘긴 홉이 접히는 **고정 버킷**. 상한을 넘겼다고 `None` 을 돌려주면 그 헤더 한 줄이
+#: **제한을 끄는 스위치**가 된다 — 길이 상한은 열쇠가 로그·dict 를 부풀리지 않게 묶는 것이지
+#: 셈을 면제하는 것이 아니다. 접히는 대가는 「긴 헤더를 보내는 모두가 한 버킷」인데,
+#: 그쪽이 「긴 헤더를 보내는 모두가 무제한」보다 낫다.
+CLIENT_OVERSIZE = f"{CLIENT_PREFIX}oversize"
+
+
+def client_key(forwarded_for: str | None) -> str | None:
+    """부른 **클라이언트**의 버킷 열쇠 — `X-Forwarded-For` 의 **마지막 홉**.
+
+    **왜 버킷이 둘인가.** 자격 버킷만 두면 코드를 갈아 가며 하는 열거에 브레이크가 없고
+    (`key` 를 코드별로 가른 순간 생기는 구멍이다), 클라이언트 버킷만 두면 여러 곳에서 한
+    계정을 두드리는 것을 못 센다. 둘을 함께 센다.
+
+    **왜 마지막 홉인가.** `infra/staging/nginx.i2.conf:61` 은 `$proxy_add_x_forwarded_for`
+    를 쓴다 — 들어온 헤더 **뒤에** `$remote_addr` 를 덧붙이는 변수다. 그래서 첫 홉은 부른
+    쪽이 지어낸 값이고(헤더 한 줄로 버킷을 무한히 갈 수 있다 = 브레이크가 아니다),
+    **마지막 홉은 nginx 가 실제로 본 주소**라 부른 쪽이 못 바꾼다.
+
+    ⚠ **대가 — 프록시가 한 겹 더 서면 버킷이 하나로 접힌다.** 로드밸런서가 nginx 앞에
+    서면 nginx 가 보는 주소는 늘 그 로드밸런서라 마지막 홉이 전원 공통값이 된다. 그때의
+    동작은 **버킷을 잃는 것이 아니라 한 버킷으로 접히는 것**이다 — 클라이언트 버킷이 없던
+    시절과 같은 셈이 되고(자격 버킷은 그대로 산다), 어느 쪽으로도 **열리지 않는다.**
+    그 배치를 실제로 쓰게 되면 정직한 열쇠는 nginx 가 **단독으로 세팅하는 별도 헤더**
+    (`X-Real-IP` 를 `$remote_addr` 로)이고, 그것은 배포 설정 변경이라 이 레인 밖이다
+    (레인 기록 §5-㈎ ⓒ · Ted 배포 쪽 후속). 바뀌는 자리는 여기 한 곳이다.
+
+    ⓝ 헤더가 아예 없으면 `None` — 클라이언트 버킷을 **지어내지 않는다**(한 버킷으로 접히는
+    자리를 다시 만들지 않기 위해서다). 헤더는 있는데 마지막 홉이 빈 값(`","`)인 경우도
+    같다: nginx 뒤에서는 `$remote_addr` 가 늘 붙으므로 도달하지 않는 모양이다.
+    """
+    if not forwarded_for:
+        return None
+    last = forwarded_for.split(",")[-1].strip()
+    if not last:
+        return None
+    if len(last) > _MAX_CLIENT_KEY:
+        return CLIENT_OVERSIZE
+    return f"{CLIENT_PREFIX}{last}"
 
 
 

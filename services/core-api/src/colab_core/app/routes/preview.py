@@ -16,6 +16,7 @@ core-api 가 하는 판정은 **경계 하나뿐**이다 — 대상(`datasetId`�
 from __future__ import annotations
 
 from fastapi import APIRouter, Body, Depends, Request, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from ...domains import d2_access, d3_catalog, d5_ingestion
@@ -24,13 +25,30 @@ from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ..deps import current_subject, scoped_db
-from ..relay import RelayUnavailable
+from ..relay import RelayRefused, RelayUnavailable
 
 router = APIRouter()
 
 #: viz-render 에 닿지 못했을 때의 봉투 코드. `RenderFailureCode` 는 계약에 신설되지 않았고
 #: (`NB-B` — Ted 답 대기) **계약을 고치지 않는다.** 기존 `ErrorEnvelope.code` 로 말한다.
 RENDER_UNAVAILABLE = "RENDER_UNAVAILABLE"
+#: 저쪽이 거절했는데 **본문을 안 준** 드문 경우에만 쓰는 코드. 정상 경로에서는 viz 의 봉투가
+#: 그대로 올라가므로 이 값이 화면에 닿지 않는다 — 상태코드는 사실이니 버리지 않을 뿐이다.
+RENDER_REFUSED = "RENDER_REFUSED"
+
+
+def _refused(exc: RelayRefused) -> JSONResponse:
+    """저쪽이 낸 거절을 **해석하지 않고 그대로 올린다** (`CODE-REVIEW-20260903` #8).
+
+    ⚠ **415 NOT_RENDERABLE 의 본문에는 `details.renderableFormats` 가 실려 있다** —
+    그것이 사용자가 다음 수를 아는 유일한 길이다. 여기서 503 으로 접으면 화면은
+    「서버 장애」만 말하고 사람은 그릴 수 없는 파일을 계속 재시도한다.
+
+    **상태를 지어내지 않는다.** 본문이 없어도 상태는 저쪽이 낸 사실이라 그대로 쓴다.
+    """
+    body = exc.body if isinstance(exc.body, dict) else errors.envelope(
+        RENDER_REFUSED, "그리는 서버가 이 요청을 받아들이지 않았다.")
+    return JSONResponse(status_code=exc.status, content=body)
 
 
 def _target_in_lab(db: Session, target: dict) -> bool:
@@ -64,6 +82,8 @@ def list_palettes(request: Request,
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
         return relay.palettes(lab_id=str(subject.lab_id), account_id=str(subject.account_id))
+    except RelayRefused as e:
+        return _refused(e)
     except RelayUnavailable as e:
         # **빈 목록을 내지 않는다.** 0건은 「고를 것이 없다」는 답이고, 참인 것은
         # 「물어보지 못했다」이다 — `〈87〉-㉯` 가 검색에서 금지한 접기와 같은 모양이다.
@@ -98,6 +118,9 @@ def create_preview_render(request: Request, response: Response, body: dict = Bod
     try:
         return relay.create(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
                             request=body)
+    except RelayRefused as e:
+        # **그릴 수 없는 파일은 장애가 아니다** — 저쪽의 상태·봉투가 그대로 화면까지 간다.
+        return _refused(e)
     except RelayUnavailable as e:
         # **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 여기서 실패해도 등록·다운로드·
         # 계보 확정은 그대로 된다. 가짜 성공을 만들지 않는다.
@@ -224,9 +247,18 @@ def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
     point = body.get("point")
-    if not isinstance(point, dict) or not isinstance(point.get("lat"), (int, float)) \
-            or not isinstance(point.get("lon"), (int, float)):
+    if not isinstance(point, dict):
         raise errors.bad_request("point.lat · point.lon 이 필요하다.")
+    lat, lon = point.get("lat"), point.get("lon")
+    # ⚠ **`bool` 을 먼저 뺀다** — `bool` 은 `int` 의 하위형이라 `isinstance(True, int)` 가
+    # 참이고, 종전 검사는 `{"lat": true}` 를 그대로 통과시켰다 (`CODE-REVIEW-20260903` #8).
+    if isinstance(lat, bool) or isinstance(lon, bool) \
+            or not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+        raise errors.bad_request("point.lat · point.lon 이 필요하다.")
+    # **범위를 여기서 본다.** 종전에는 타입만 봐서 `{"lat": 200}` 이 viz 의 pydantic(ge=-90)
+    # 에서 422 가 되고 그 422 가 503 이 됐다 — **클라이언트 오류가 장애 계수에 섞였다.**
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        raise errors.bad_request("point.lat 은 -90~90, point.lon 은 -180~180 이다.")
 
     # ⑴ 404 · ⑵ 403 — 내려받기와 **같은 두 줄**이다.
     catalog.require_body_access(db, dataset_id)
@@ -244,7 +276,9 @@ def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...
         return relay.lookup_value(
             lab_id=str(subject.lab_id), account_id=str(subject.account_id),
             request={"datasetId": datasetId, "fileId": str(pieces[0]["id"]),
-                     "point": {"lat": float(point["lat"]), "lon": float(point["lon"])}})
+                     "point": {"lat": float(lat), "lon": float(lon)}})
+    except RelayRefused as e:
+        return _refused(e)
     except RelayUnavailable as e:
         # **값을 지어내지 않는다** — 0 도 null 도 「못 물어봤다」의 답이 아니다.
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
