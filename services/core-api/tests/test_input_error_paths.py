@@ -4,14 +4,17 @@
 빠뜨린 다섯 자리에서 **사용자의 오타가 500** 으로 돌아왔다. 500 은 「서버가 깨졌다」는 뜻이고
 그 문장은 사람을 재시도하게 만든다 — 다시 보내도 같은 500 이다.
 
-여기서 재는 것 셋 —
+여기서 재는 것 넷 —
   ⓐ 입력 오류 전용 예외형이 400 봉투가 되는가 (`ValueError` 를 통째로 매지 않는다)
   ⓑ `IntegrityError` 가 **SQL·제약 이름을 흘리지 않는** 409 가 되는가
+  ⓑ′ 그 핸들러가 **SQLSTATE 로 갈라지는가** — 23505 → 409 · 23514 → 400 ·
+     **나머지는 다시 던진다**(500 으로 남아 눈에 보인다)
   ⓒ 500 이던 다섯 경로가 각각 400 인가
 """
 from __future__ import annotations
 
 import json
+import logging
 import pathlib
 import tempfile
 
@@ -24,6 +27,31 @@ from colab_core.kernel import errors
 from colab_core.kernel.config import Settings
 
 BAD_ULID = "not-a-ulid"
+
+#: 드라이버가 실제로 내는 문자열. **이것이 본문에도 로그에도 나가면 안 된다** —
+#: psycopg 의 `DETAIL:` 줄은 **사용자가 넣은 값**(키·컬럼값)을 그대로 담는다.
+DRIVER_TEXT = ('duplicate key value violates unique constraint '
+               '"d3_dataset_description_pkey"\nDETAIL:  Key (id)=(01A) already exists.')
+CONSTRAINT = "d3_dataset_description_pkey"
+
+
+class _FakeDiag:
+    """psycopg 3 의 `Error.diag` 흉내. 우리가 쓰는 필드는 `constraint_name` 뿐이다."""
+
+    def __init__(self, constraint_name: str | None) -> None:
+        self.constraint_name = constraint_name
+
+
+class _FakeOrig(Exception):
+    """psycopg 3 의 `Error` 흉내 — `sqlstate` + `diag`.
+
+    실물 대조는 `test_the_sqlstates_we_branch_on_are_the_ones_psycopg_declares` 가 한다.
+    """
+
+    def __init__(self, sqlstate: str, constraint_name: str | None = CONSTRAINT) -> None:
+        super().__init__(DRIVER_TEXT)
+        self.sqlstate = sqlstate
+        self.diag = _FakeDiag(constraint_name)
 
 
 # ══════════════════════════ ⓐ·ⓑ 핸들러 두 벌 ════════════════════════════════
@@ -42,13 +70,12 @@ def handler_client():
     def _input_error() -> None:
         raise errors.InputError("기간이 날짜 시각이 아니다.", {"field": "period.start"})
 
-    @app.get(API_PREFIX + "/_probe/integrity", include_in_schema=False)
-    def _integrity() -> None:
+    @app.get(API_PREFIX + "/_probe/integrity/{sqlstate}", include_in_schema=False)
+    def _integrity(sqlstate: str) -> None:
         raise IntegrityError(
             "INSERT INTO d3_dataset_description (id, lab_id, topic) VALUES (%(id)s, ...)",
             {"id": "0000000000000000000000DSA1", "topic": "없는 주제"},
-            Exception('duplicate key value violates unique constraint '
-                      '"d3_dataset_description_pkey"\nDETAIL:  Key (id)=(01A) already exists.'),
+            _FakeOrig(sqlstate),
         )
 
     return TestClient(app, raise_server_exceptions=False)
@@ -76,14 +103,14 @@ def test_a_plain_value_error_is_still_a_500(handler_client) -> None:
     assert not issubclass(errors.InputError, ValueError) or True   # 형 자체는 자유
 
 
-def test_integrity_error_becomes_409_without_leaking_sql_or_constraint_names(
+def test_a_unique_violation_becomes_409_without_leaking_sql_or_constraint_names(
         handler_client) -> None:
     """**409 는 사실이되, SQL 도 제약 이름도 사용자에게 주지 않는다.**
 
     본문에 실리면 화면의 네트워크 탭에서 스키마가 그대로 읽힌다 — 표 이름·열 이름·
     제약 이름·키 값까지. 안정된 코드 하나면 화면이 분기하는 데 충분하다.
     """
-    r = handler_client.get(f"{API_PREFIX}/_probe/integrity")
+    r = handler_client.get(f"{API_PREFIX}/_probe/integrity/23505")
     assert r.status_code == 409, r.text
     body = r.json()
     assert body["code"] == "CONFLICT"
@@ -91,6 +118,67 @@ def test_integrity_error_becomes_409_without_leaking_sql_or_constraint_names(
     for leaked in ("INSERT INTO", "d3_dataset_description", "duplicate key",
                    "unique constraint", "DETAIL", "pkey"):
         assert leaked not in raw, f"409 본문이 저장 내부를 흘렸다: {leaked}"
+
+
+# ═══════════ ⓑ′ SQLSTATE 로 갈린다 — 409 하나로 접지 않는다 ══════════════════
+def test_a_check_violation_is_400_not_409(handler_client) -> None:
+    """**CHECK 위반은 「두 번 일어날 수 없다」가 아니라 「그 값이 아니다」이다.**
+
+    409 로 접으면 화면은 「이미 있어요」로 읽고 사용자는 **고칠 수 있는 값을 안 고친다.**
+    409 와 400 은 누구에게 무엇을 하라는 말인지가 다르다.
+    """
+    r = handler_client.get(f"{API_PREFIX}/_probe/integrity/23514")
+    assert r.status_code == 400, r.text
+    body = r.json()
+    assert body["code"] == "BAD_REQUEST"
+    raw = json.dumps(body, ensure_ascii=False)
+    for leaked in ("INSERT INTO", "d3_dataset_description", "duplicate key",
+                   "unique constraint", "DETAIL", "pkey"):
+        assert leaked not in raw, f"400 본문이 저장 내부를 흘렸다: {leaked}"
+
+
+def test_an_unrelated_sqlstate_is_re_raised_and_stays_a_500(handler_client) -> None:
+    """**그물이 결함을 삼키지 않는다.**
+
+    외래키 위반(`23503`)·not-null 위반 같은 것은 **사용자가 고칠 수 있는 값이 아니라
+    우리 코드가 잘못 쓴 것**이다. 그것까지 409 로 접으면 서버 결함이 「값이 안 맞아요」로
+    위장하고, 그 순간 감시(5xx 계수·경보)에서 사라진다. 다시 던져 **500 으로 남긴다.**
+    """
+    r = handler_client.get(f"{API_PREFIX}/_probe/integrity/23503")
+    assert r.status_code == 500, r.text
+    assert '"code":"CONFLICT"' not in r.text.replace(" ", ""), \
+        "관계없는 SQLSTATE 가 409 로 위장했다 — 결함이 감시에서 사라진다."
+
+
+def test_the_integrity_log_carries_the_sqlstate_and_constraint_but_not_the_driver_text(
+        handler_client, caplog) -> None:
+    """**사유는 남기되, 남기는 것이 사용자 값이면 안 된다.**
+
+    psycopg 의 예외 문자열에는 `DETAIL:  Key (id)=(...)` 가 붙는다 — **사용자가 넣은 값**
+    그대로다. 로그는 덤프·티켓·화면 캡처를 따라다니므로 값을 담으면 그 값이 함께 간다.
+    남길 것은 **무엇이 안 맞았는지**(SQLSTATE · 제약 이름)이지 **어떤 값이었는지**가 아니다.
+    """
+    with caplog.at_level(logging.WARNING, logger="colab_core.integrity"):
+        handler_client.get(f"{API_PREFIX}/_probe/integrity/23505")
+    text = "\n".join(r.getMessage() for r in caplog.records)
+    assert "23505" in text, "SQLSTATE 를 안 남기면 무엇이 안 맞았는지 셀 수 없다."
+    assert CONSTRAINT in text, "제약 이름을 안 남기면 어느 규칙인지 못 찾는다."
+    assert "DETAIL" not in text and "Key (id)=" not in text, \
+        "드라이버 문자열이 로그로 갔다 — 그 안에 사용자 값이 있다."
+
+
+def test_the_sqlstates_we_branch_on_are_the_ones_psycopg_declares() -> None:
+    """**가짜 `orig` 가 실물과 갈리지 않게 못 박는다.**
+
+    위 시험들은 `sqlstate` 를 손으로 채운 가짜 예외로 잰다. 그 상수가 psycopg 가 실제로
+    다는 값과 어긋나면 시험은 전부 green 인데 실서버에서는 한 갈래도 안 걸린다.
+    """
+    from psycopg import errors as pg
+
+    assert pg.UniqueViolation.sqlstate == "23505"
+    assert pg.CheckViolation.sqlstate == "23514"
+    assert pg.ForeignKeyViolation.sqlstate == "23503"
+    assert hasattr(pg.UniqueViolation("x"), "diag")
 
 
 # ══════════════════════════ ⓒ 500 이던 다섯 경로 ════════════════════════════
