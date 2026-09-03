@@ -850,7 +850,9 @@ items:
     status: open
     stage: stage2
     owner: "D7 / viz-render"
-    entry_conditions: ["`A-1` 닫힘(회수 기구 실재 · ✅ 2026-09-02 `〈273〉`)"]
+    entry_conditions:
+      - "`A-1` 닫힘(회수 기구 실재 · ✅ 2026-09-02 `〈273〉`)"
+      - "⭑ ⟨순서 증보 2026-09-03 · `PLAN-SoT §9 〈308〉`-㉲⟩ **`BF-2`(③지도형 리샘플 교체 · 캐시 라벨 `warp+nearest`)를 staging 에 배포한 뒤에 재굽기 1회를 돈다** — 배포 전 재굽기는 구 알고리즘(전방 산란)을 굽는 낭비다. staging 은 `〈307〉` 캐시 키 변경 후 재굽기 미실행 상태라 `BF-2` 배포 뒤에도 구판 산출물이 보일 수 있다 — 배포 순서에 재굽기를 넣는다"
     depends_on: [A-1]
     completion_def: "⭑ ⟨신설 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉰ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ **`V-1` 초안 ⓒ 가 「별도 작업이고 소유 미정」이라 적어 둔 자리를 항목으로 세운 것이다 — 요구를 새로 만들지 않았다.** **기구는 `A-1` 이 이미 지었다**(`d7_visualization/invalidation.reclaim_plan()` ＋ 게이트 `artifact-ownership` · `〈272〉`). **없는 것은 한 번 도는 것뿐이다.** — **⑴ 구판 사이드카를 판 2 로 재굽는다.** 지금 자리의 사이드카가 **전건 구판**이라 소유 판정이 서지 않는다(실측 `〈273〉` — 판정 불가 **49** · 재굽기 **0회**). — **⑵ 재굽기 뒤 `reclaim_plan()` 을 1회 돌린다.** 계산기는 새로 짓지 않는다 — `plan()` 을 부르고 고아가 아닌 키를 `keep_keys` 로 넘기는 기존 경로 그대로다. — **⑶ 완료 조건(실측값으로 못 박는다)** = **판정 불가 49 → 19** · **삭제 0** · **재굽기 0회** 였던 세 값이 각각 갱신되어 관측된다. ⚠ **「몇 건을 지운다」로 적지 않는다** — 사후 판정을 관측 개수로 쓰지 않는다(`CLAUDE.md §5`). 지우는 대상은 **고아 등급뿐**이고 그 수는 재기 전에는 모른다. — **⑷ 음성 조건** = 지도 타일(`tile-`)은 `kept` · 접수분 루트는 `OutOfScope` · 원본·기준 격자·데이터셋 **무접촉**(`〈247〉` 과 같은 선 · `A-1` 음성 시험이 이미 잠근다). — ⛔ **범위 밖** = 팔레트 선택 재렌더 경로(`V-1`) · 고르는 UI(`J-6`)."
     evidence: null
@@ -1907,3 +1909,243 @@ items:
       ⭑ 다음 회차 작업항목 13건 전체 목록은 `sessions/CODE-REVIEW-20260903-PLAN.md §4` 에 있고 **이 항목은 그 목록을 삼키지 않는다** —
       여기 담은 것은 **판정이 없으면 못 여는 다섯**뿐이다.
     sources: ["PLAN-SoT §9 〈307〉", "sessions/CODE-REVIEW-20260903-PLAN.md §5-5", "sessions/CODE-REVIEW-20260903-PLAN.md §4", "notes/REFACTOR-MERGE-MAP-20260903.md §3", "notes/REFACTOR-MERGE-MAP-20260903.md §5.3"]
+
+  # ── BF- · 버그 수정 (bugfix) — 2026-09-03 회차 · 등재 `PLAN-SoT §9 〈308〉` · 기록 `sessions/BUG-20260903.md`
+  # 접두사 `BF-` 는 **완료 판정된 stage 1 항목의 회귀·결함**을 담는다. 기능 항목이 아니라 결함 항목이므로
+  # `stage: stage1` 이고, `after_stage2` 표지 블록(`CLAUDE.md §0`)에는 들어가지 않는다.
+  # 완료 정의의 공통 형태 = 재현 → 근본 원인 → 실패 시험 red 선실측 → 최소 수정 → green (`sessions/BUG-20260903.md §0`).
+
+  - id: BF-1
+    name: "계보 그래프 — 빈 칸·고아 화살표 제거 (Ted 3·5·7 · 접수 A-1·A-2·A-3)"
+    status: done
+    stage: stage1
+    owner: "frontend (D4 화면)"
+    entry_conditions: []
+    depends_on: [P3]
+    completion_def: >-
+      가로축이 「노드 종류 = 고정 4칸」을 전제해 종류가 없는 칸도 DOM·폭(178px)을 들고 있었고, 레일 화살표가
+      인접 칸의 노드 유무와 무관하게 항상 그려졌다(`LineageSection.tsx:46-64`·`:214`·`:286-305` · 실측 `reports/bug-20260903/recon-A-lineage.md`).
+      완료 = ⑴ 노드가 있는 칸만 렌더하되 `data-col` 값(칸 번호)은 유지해 `§8` 축 순서를 보존한다
+      ⑵ 화살표는 선 칸과 선 칸 사이에만 · 건너뛴 레일의 가공 방식 라벨은 그 한 칸에 모아 값을 보존한다
+      ⑶ 픽스처 3종(루트+자식 · 잎+부모 · 원천+루트+자식)에서 빈 칸 0 · 화살표 수 = 렌더 칸 수 − 1 · 칸 번호 오름차순
+      ⑷ 원천은 대응 edge 가 없어(core-api) **라벨 없는 화살표**로 남긴다 — 의도된 동작이고 뒷단 결손은 `BF-9` 가 진다.
+    evidence: >-
+      커밋 `4d01d28`(기반 `56eac76` · 3파일 +179/−36 — `LineageSection.tsx`·`lineageGraph.css`·`test/lineage-graph.test.tsx`).
+      RED → GREEN — vitest **36파일 / 575건 전건 통과** · `tsc --noEmit` **0**. 기존 4칸 고정 단언(`cols.length === 4`)은
+      「칸 수 > 0 · `data-col` 오름차순·중복 없음」으로 교체(`§8` 은 순서만 규정, 빈칸 유지는 미규정).
+      `.lin-axis` `min-width: 820px` → `width: max-content; min-width: 100%`. 근거 `reports/bug-20260903/lane-A-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉯. advisor 게이트 ② ACCEPT. 스크린샷 `reports/bug-20260903/bug03-*.png`·`bug05-*.png`·`bug07-*.png`.
+      ⚠ **배포되지 않았다** — 통합 브랜치 `bugfix/20260903-ui-12` 병합·배포는 별도 회차다. 대장이 `done` 인 것과 staging 에 서 있는 것은 다르다.
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
+
+  - id: BF-2
+    name: "③지도형 리샘플 — 전방 산란을 출력 주도(역사상) 근사 최근접으로 교체 ＋ 캐시 키 라벨 (Ted 4 · 접수 B-1 ＋ B-4 흰 줄)"
+    status: done
+    stage: stage1
+    owner: "D7 / viz-render"
+    entry_conditions: []
+    depends_on: [SC-1]
+    completion_def: >-
+      `warp_to_3857` 이 `np.add.at` 전방 산란이라 원본이 출력(1024 px)보다 성기면 출력 픽셀 대부분이 결측(알파 0)으로 남고
+      (126×128 원본 채움 **1.95 %** — bug04 의 실체), 같은 해상도에서도 lat→y 비선형으로 **전 결측 행 2줄**(가로 흰 줄 · bug10·bug11)이 남았다
+      (`reports/bug-20260903/recon-B-preview.md §1·§4`). 완료 = ⑴ 원본 긴 변이 `max_side` 를 넘으면 `block_average` 로 먼저 내린다(「촘촘 → 평균」은 이 단계에서 지켜진다)
+      ⑵ 원본 셀을 3857 출력 격자에 씨앗으로 심고 2패스(행·열) 근사 최근접으로 채운다 — 추정 원본 간격을 넘으면 채우지 않는다(발자국 밖 보존) · 값 NaN 셀도 씨앗이라 이웃 값이 NoData 를 메우지 않는다
+      ⑶ 성긴 원본(126×128) 채움률 ≥ 95 % · 성긴/동해상도 두 케이스 전 결측 행·열 0 · 결측 비율 보존 · 2048² 체크보드가 평균(5.0) · 회전 격자 발자국 보존
+      ⑷ 캐시 키의 다운샘플 라벨을 `warp+blockavg` → **`warp+nearest`** 로 바꿔 배포 즉시 구 PNG 가 키에서 갈라진다(무효화는 키 자신의 일 · `storage_layout.py` 원칙 · 재굽기 규율에 기대지 않는다)
+      ⑸ docstring 이 「2패스 근사 최근접 · 정확 최근접 일치 약 86~95 %」와 「촘촘→평균은 ① 축소 단계에서만」을 적는다.
+    evidence: >-
+      커밋 `40844ea`(역사상 리샘플 · 기반 `56eac76`) ＋ `5f6b75f`(advisor 게이트 ② 지적 2건 — 캐시 키 라벨 `warp+nearest` · docstring 근사 최근접 명기).
+      RED 선실측 = origin/main 원본으로 신규 시험 6건 **전부 실패**(채움 0.0195 · 전 결측 행 잔존 · 흰 줄 2 · 결측 메움 · 촘촘 평균 안 됨 · 발자국 안쪽 채움 0.094).
+      GREEN = 유닛 스위트(`-m "not e2e and not perf"`) **269 → 275 passed · 실패 0**(deselected 40 = e2e/perf) · `tests/test_preview_warp_gaps.py`(+129).
+      자체 지연 실측 = 1024×1024 원본 `warp_to_3857` 5회 **평균 0.378 s · 최대 0.415 s**(게이트 눈금 p95 10.0 s 안 · `render-latency` 게이트는 원천 미마운트로 readiness red — 통과로 세지 않았다).
+      정확 최근접 대조 = 126×128→512 약 **86 %** · 30×32→256 약 **95 %**(브루트포스 · advisor 게이트 ②). 근거 `reports/bug-20260903/lane-B1-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉰. **등재된 한계**(항목을 세우지 않고 여기 적는다) = ㉠ 근사 최근접이라 셀 경계가 1 px 들쭉날쭉할 수 있다(미리보기 배율에서 식별되지 않는다)
+      ㉡ 긴 변 ≤ `max_side` 이면서 발자국이 bbox 보다 작은 곡선 격자(크게 회전한 격자)는 한 출력 픽셀에 씨앗이 여럿 떨어져도 평균하지 않고 하나만 남는다 — 현재 실원천(규칙 격자 · ≤1024)에는 이 부류가 없다.
+      ⚠ **배포 순서** — staging 은 `〈307〉` 캐시 키 변경 후 재굽기(`RC-1`) 미실행 상태라 이 수정 배포 뒤에도 구판 산출물이 보일 수 있다 ⟹ **이 수정을 배포한 뒤 재굽기 1회**(배포 전 재굽기는 구 알고리즘을 굽는 낭비 · `RC-1.entry_conditions`).
+      사양 반영 = `PREVIEW-IMPLEMENTATION.md §2 표 ③행 · §5.3 ⑤ · §7.2`. 스크린샷 `reports/bug-20260903/bug04-*.png`(＋ 흰 줄 `bug10-*`·`bug11-*`).
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B1-report.md", "PREVIEW-IMPLEMENTATION.md §7.2"]
+
+  - id: BF-3
+    name: "확대 한계 안내 — 「확대·축소·기본 배율로」 무동작을 한계 상태 표시로 (Ted 8 · 접수 B-3)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 화면)"
+    entry_conditions: []
+    depends_on: [P3]
+    completion_def: >-
+      `useZoomPan.ts:192` 의 `maxScale = max(1, PNG 폭 / 뷰포트 폭)` 이 실측 808~821 / ≈820 → **1.0** 이라 버튼이 아무것도 못 바꿨다.
+      기존 시험은 `measure(4096, 512)` 픽스처(파이프라인이 만들지 않는 해상도)라 못 잡았다(`reports/bug-20260903/recon-B-preview.md §3`).
+      **Ted 판정 Q1 = ⓐ `maxScale` 규칙 유지**(정본 조건 ⑷ · `〈232〉` 무변). 완료 = ⑴ `maxScale` 계산 무변경
+      ⑵ `atLimit` 조건에 `maxScale <= 1` 을 더해 **첫 클릭 전부터** 「원본 해상도까지 봤어요」 안내 ＋ 확대 버튼 `disabled`
+      ⑶ 실측값 픽스처(808/820)로 RED 를 먼저 본다.
+    evidence: >-
+      커밋 `a1ea2d5`(기반 `56eac76`). RED = origin/main 소스로 신규 2건 실패 확인 → GREEN(레인 합산 vitest **37파일 / 580건** · `tsc` 0).
+      최소 수정 · 무관 편집 0(advisor 게이트 ② 검토). 근거 `reports/bug-20260903/lane-B35-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉮ Q1. ⚠ 「확대가 stage 2 라 안 됨」이 아니다 — `P3` 가 `〈241〉` 로 닫힐 때 확대는 완료 정의 그대로 충족됐고(`recon-D-scope.md §2`), 이것은 **완료된 기능의 표시 결함**이다.
+      스크린샷 `reports/bug-20260903/bug08-*.png`.
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/lane-B35-report.md"]
+
+  - id: BF-4
+    name: "미리보기 이름표 · 범례 변수명 · 원본 격자 캡션 (Ted 11·10 · 접수 B-5·B-4)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 화면)"
+    entry_conditions: []
+    depends_on: [SC-5]
+    completion_def: >-
+      B-5 「정체불명」은 렌더 결함이 아니라 **DEM 페이지(D-02) 오독**이었다 — 범례 `2 ~ 521.1` 이 파이프라인 실행값과 소수 4자리까지 일치(`recon-B-preview.md §5`).
+      남는 결함 = 미리보기 머리에 데이터셋 이름이, 범례에 변수명이 없어 어느 자료를 보는지 화면이 말하지 않는다.
+      **Ted 판정** Q2 = 「상세에서 원본 픽셀 크기를 알 수 있게」 · Q3 = 권고대로(데이터셋 이름 ＋ 범례 변수명).
+      완료 = ⑴ `DatasetPreviewSection` 머리에 `detail.name` ＋ `fileName` ⑵ `PreviewPanels` 범례 첫 줄에 `legend.variable`(서버가 이미 돌려주는 필드 `preview/types.ts:17` · 비면 자리째 뺀다)
+      ⑶ 캡션 「격자 <grid> · W × H」 = `basicInfo.grid` ＋ ③지도형 사이드카 `mapGeometry` 의 `width×height`(확대 한계가 쓰는 같은 응답) · ②비지도형은 격자 간격만 · 둘 다 없으면 캡션 없음
+      ⑷ 새 API·계약 0.
+    evidence: >-
+      커밋 `78cad68`(기반 `56eac76` · 5파일 +240/−4 — `DatasetPreviewSection.tsx`·`PreviewPanels.tsx`·`DatasetDetailPage.tsx`·시험 2파일).
+      RED(소스 되돌림) = **5 failed / 16 passed** — 정확히 신규 5건 → GREEN vitest **37파일 / 580건 전건 통과** · `tsc --noEmit` 0.
+      금지 파일(`LineageSection.tsx`·`.pv-tile` 크기 CSS·`pointFromViewport`·`ScreenshotButton.tsx`) diff 0. 근거 `reports/bug-20260903/lane-B35-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉮ Q2·Q3. ⚠ 레인 보고와 `PLAN-fanout.md` 는 B-4·B-5 를 「버그 13·14」로 적었다 — 접수표(`BUG-INTAKE-20260903.md`)의 Ted 번호는 **10·11** 이다. 정본은 접수표.
+      Ted 10 의 「업로드/상세 배율 차이」는 버그가 아니다 — 블록은 자료 자체(2 km → 100 m 균등 분할)이고 차이는 컨테이너 폭(`max-width:100%` vs `width:100%`)이다. 항목을 세우지 않는다.
+      스크린샷 `reports/bug-20260903/bug10-*.png`·`bug11-*.png`.
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B35-report.md"]
+
+  - id: BF-5
+    name: "프로젝트 화면 뿌리 스타일 ＋ 연구실 설정 버튼 gap (Ted 1·9·2 · 접수 C-1·C-3·C-2)"
+    status: done
+    stage: stage1
+    owner: "frontend (D6 화면 · shell)"
+    entry_conditions: []
+    depends_on: [P5]
+    completion_def: >-
+      이 레포엔 공용 PageShell 이 없고 화면 뿌리 클래스가 자기 여백을 적는 관례(`catalog.css:24`·`detail.css:27`)인데
+      `project.css` 에 `.project-page`·`.project-detail` 뿌리 규칙이 **0건**이었고, 되돌아가기 줄은 `detail.css` 가 `.detail-page` 로만 스코프해 프로젝트 상세에 닿지 않았다.
+      `shell.css:148` `.gnb-settings` 만 `gap` 누락(형제 6~7px). (`reports/bug-20260903/recon-C-layout.md §1~§4`)
+      완료 = ⑴ 뿌리 여백·최대폭(카탈로그·상세와 같은 값) · h1 · backrow/backlink · 상세 카드 `background`·`box-shadow`
+      ⑵ `.gnb-settings { gap: 6px }` ⑶ `vite.config.ts` `test.css.include` 에 `project.css`·`shell.css`(＋ `(\?raw)?`) ⑷ 규칙 원문 시험(jsdom 은 `var()` 배경·`gap` 을 계산값으로 못 낸다).
+    evidence: >-
+      커밋 `61ef95b`(버그 1·9 · `project.css` +70 · `vite.config.ts` · `test/project.test.tsx` +2) ＋ `d3bf37e`(버그 2 · `shell.css` +1 · `test/shell.test.tsx` +1) · 기반 `56eac76`.
+      RED(CSS 되돌린 상태) = **3 failed / 52 passed** — 정확히 신규 3건 → GREEN vitest **36파일 / 573건 전건 통과** · `tsc --noEmit` 0.
+      `node:fs` 우회 배제(`e01-apply-points.test.ts:14` 선례 — 2026-09-02 main 배포 불가의 원인). 근거 `reports/bug-20260903/lane-C-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉯. 곁가지 둘은 항목으로 뗐다 — `LabPage` 뿌리 규칙 부재 = `BF-8` · `project.css` 미정의 토큰 = `BF-11`(이 수정이 그 관례의 토큰 `--line`·`--fg-muted`·`--surface` 를 그대로 썼다).
+      스크린샷 `reports/bug-20260903/bug01-*.png`·`bug02-*.png`·`bug09-*.png`.
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+
+  - id: BF-6
+    name: "데이터셋 설명문 `／` 구분자 — 표시 단계 줄 나눔 (A안) (Ted 15 · 접수 C-4)"
+    status: done
+    stage: stage1
+    owner: "frontend (D3 상세 화면)"
+    entry_conditions: []
+    depends_on: [S2b]
+    completion_def: >-
+      시드 설명문(`S2b`)이 `／` 로 항목을 잇는데 상세 `.dh-sum` 이 한 줄로 그려 읽기 힘들다. **Ted 판정 Q5 = 표시만 분할(A안)** — 저장·목록·검색 카드는 그대로.
+      완료 = ⑴ `DetailHeader.tsx` `SUMMARY_SEPARATOR = '／'` ＋ `summarySegments()`(split → trim → 빈 조각 제거) ⑵ 조각 2개 이상일 때만 `.dh-sum` 안을 `<p class="dh-sum-lead">` ＋ `<ul class="dh-sum-list">` 로 · 1개면 종전 그대로
+      ⑶ `.dh-sum` 껍데기와 `data-testid="dh-sum"` 유지(기존 `detail.test.tsx:63`·`:160` 통과) ⑷ 시드·DB·계약·`SearchHitCard` 무접촉 ⑸ `git revert 02738e4` 한 번으로 되돌아간다.
+    evidence: >-
+      커밋 `02738e4`(기반 `56eac76` · 3파일 +43/−1 ＋ 신규 시험 5건). RED = **2 failed / 3 passed**(통과 3건은 「종전 그대로」 가드 — `／` 없음 · 빈 설명 · 검색 카드 한 줄)
+      → GREEN vitest **37파일 / 575건 전건 통과** · `tsc --noEmit` 0. 근거 `reports/bug-20260903/lane-C4-report.md`.
+    deadline: null
+    note: >-
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈308〉`-㉮ Q5. ⚠ **Ted §8 문구 확인 대기** — 정본 `Policy_데이터셋_상세 §8` 은 이 자리를 「③ **한 줄** 요약」으로 못 박는다(`DetailHeader.tsx:2` 축자).
+      여러 줄로 펼치는 것이 정본 위반인지 Ted 확인이 남았고, 코드는 승인 전제로 넣되 되돌리기 1회로 설계했다. 표시 규약 「`／` = 구분자」는 `〈308〉`-㉳ 에 등재했다 — 본문에 `／` 를 쓴 설명이 뒤에 들어오면 오분할한다(현재 사용자 입력은 `RegisterArea` 300자 한 줄이라 해당 사례 0).
+      스크린샷 `reports/bug-20260903/bug12-*.png`.
+    sources: ["PLAN-SoT §9 〈308〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md §5", "reports/bug-20260903/lane-C4-report.md"]
+
+  - id: BF-7
+    name: "스크린샷 버튼 — 객체 URL 즉시 revoke 로 크롬 다운로드 취소 (recon 발견 · Ted 미보고)"
+    status: open
+    stage: stage1
+    owner: "frontend (D7 화면)"
+    entry_conditions:
+      - "없음 — 원인이 코드에 실재한다(`ScreenshotButton.tsx:72-77` · `a.click()` 직후 같은 tick 에 `URL.revokeObjectURL(url)` · 앵커를 문서에 붙이지 않는다)"
+      - "통합 브랜치 `bugfix/20260903-ui-12` 병합 뒤 착수 — 이 회차는 범위 유지로 등록만 했다(`PLAN-fanout.md` 「스크린샷 버튼」 행)"
+    depends_on: []
+    completion_def: >-
+      ⑴ 실패 시험 red — 다운로드 앵커가 클릭된 뒤 revoke 가 같은 tick 에 일어나지 않음을 단언 ⑵ 회수를 `setTimeout`/`load` 뒤로 미루고 앵커를 문서에 붙였다 뗀다
+      ⑶ 크롬에서 다운로드가 완주함을 실측(브라우저 1회) ⑷ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx:9-10`) — 서버 경로 무접촉.
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈308〉`-㉱. 발견 = `reports/bug-20260903/recon-B-preview.md §3`(「스크린샷 버튼은 별건이다」). Ted 접수 12건에는 없다.
+    sources: ["PLAN-SoT §9 〈308〉", "reports/bug-20260903/recon-B-preview.md"]
+
+  - id: BF-8
+    name: "`LabPage`(S-01) 뿌리 규칙 부재 — 화면 뿌리가 자기 여백을 갖는 관례의 결손"
+    status: open
+    stage: stage1
+    owner: "frontend (D8 화면)"
+    entry_conditions:
+      - "없음 — 실측 `routes/LabPage.tsx:36` 뿌리 `<div data-screen=\"S-01\">` 에 클래스 0 · `dashboard.css:5` `.dash-columns` 좌우 여백 0 · 히어로(`search.css:5`)만 여백을 갖는다"
+      - "`BF-5` 와 같은 무늬 — `BF-5` 병합 뒤 그 관례(`project.css` 뿌리 규칙)를 그대로 따른다"
+    depends_on: [BF-5]
+    completion_def: >-
+      ⑴ 실패 시험 red — S-01 뿌리의 계산값 `padding` > 0 · 최대폭(카탈로그·상세와 같은 값) ⑵ `dashboard.css` 또는 뿌리 클래스에 여백·최대폭 ⑶ 히어로의 자기 여백과 이중이 되지 않는다 ⑷ `vite.config.ts` `test.css.include` 에 해당 CSS.
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈308〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태다.
+    sources: ["PLAN-SoT §9 〈308〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+
+  - id: BF-9
+    name: "core-api 계보 그래프 — 원천 → 루트 edge 부재 (프론트는 라벨 없는 화살표로 수용)"
+    status: open
+    stage: stage1
+    owner: "core-api (D4)"
+    entry_conditions:
+      - "없음 — `routes/lineage.py:87-91` 이 `source_label` 로 원천 **노드**만 만들고(`datasetId: null` · 표기) 대응 **edge** 는 만들지 않는다 · 계약 `fe-core.yaml` `LineageEdge`(`:3257`) 가 원천을 끝점으로 허용하는지는 `[미확인]`"
+      - "계약 변경이 필요하면 멈추고 보고 — 동결 해제 회차로 묶는다(`X2-FREEZE-PROTOCOL`)"
+    depends_on: [BF-1]
+    completion_def: >-
+      ⑴ 원천 노드가 있을 때 원천 → 루트 edge 를 응답에 싣는다(가공 방식 라벨은 원천에 없으므로 `method` 는 null) ⑵ 프론트 `BF-1` 의 「라벨 없는 화살표」 수용 코드가 edge 유무와 무관하게 같은 그림을 낸다
+      ⑶ 시험 — core-api 응답 edge 수 · 프론트 픽스처 「원천+루트+자식」 화살표 2 유지 ⑷ 계약 개정이 없으면 0, 있으면 동결 해제 행 1.
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈308〉`-㉱. `lane-A-report.md` 「보류 사항」 — 프론트는 이를 의도된 동작으로 명시하고 코드 주석에 `routes/lineage.py` 참조를 남겼다. ⚠ 결함이 아니라 **뒷단 결손**일 수 있다 — 화면이 이미 수용하므로 막는 것 0건.
+    sources: ["PLAN-SoT §9 〈308〉", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
+
+  - id: BF-10
+    name: "바탕지도 대안 — 격자선·눈금 옵션 (POL-021 준수 · Ted 6 · 접수 B-2)"
+    status: open
+    stage: stage1
+    owner: "frontend (D7 화면) — 착수 시점은 Ted"
+    entry_conditions:
+      - "**Ted 판정 Q4 (2026-09-03) = 바탕지도는 이번 회차 미착수 · 격자선 옵션을 다음 회차 후보로 등록** — 착수는 Ted 가 회차를 연다"
+      - "POL-021 「타일 서버도 바탕 지도도 쓰지 않는다」(`〈240〉`) 안에서만 — 외부 타일·베이스맵 API 호출 0 · 내장 해안선 오버레이는 회색지대라 **고르지 않는다**(`recon-D-scope.md §2`)"
+      - "⚠ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx:9-10`) — 화면 오버레이만 더하면 저장 PNG 에는 없다. 그 불일치를 받아들일지가 완료 정의에 앞선 판정이다"
+    depends_on: [P3]
+    completion_def: >-
+      ⑴ 위경도 자료(EPSG:4326)의 미리보기에 **경위도 격자선·눈금**(사이드카 bbox 4값에서 계산 · 외부 자원 0)을 켜고 끌 수 있다 ⑵ 기본값 off ⑶ 화면과 저장 PNG 의 불일치 판정을 먼저 받는다 ⑷ 시험 — bbox 픽스처에서 눈금 위치 계산값.
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈308〉`-㉮ Q4. 접수 B-2 의 「해결 가능 여부 검토」 결과 = 정책 위반이 아니라 **정책이 명하는 대로 동작 중**(`recon-D-scope.md §1`). 스크린샷 `reports/bug-20260903/bug06-*.png`.
+      ⚠ 결함이 아니라 **선택 갈래**라 `stage1` 계수에 들어가는 것이 옳은지는 Ted 가 회차를 열 때 다시 본다(`〈308〉`-㉵).
+    sources: ["PLAN-SoT §9 〈308〉", "reports/bug-20260903/recon-B-preview.md §2", "reports/bug-20260903/recon-D-scope.md §2"]
+
+  - id: BF-11
+    name: "`project.css` 미정의 토큰(`--line`·`--fg-muted`·`--surface`·`--fg`) → `tokens.css` 정본 치환 ＋ backlink 공용화"
+    status: open
+    stage: stage1
+    owner: "frontend (shell · D6 화면)"
+    entry_conditions:
+      - "없음 — 실측(origin/main `56eac76`) `project.css` 의 `var(--line` 15 · `var(--fg-muted` 14 · `var(--surface` 1 · `var(--surface-2` 6 · `var(--warn` 4 이고 `shell/tokens.css` 에 이 이름은 **0건** — 전부 폴백 리터럴로만 그려진다(`recon-C-layout.md §4`)"
+      - "`BF-5` 병합 뒤 — `BF-5` 가 backlink 를 `detail.css` 에서 복제하며 같은 토큰을 더 썼다"
+    depends_on: [BF-5]
+    completion_def: >-
+      ⑴ 실패 시험 red — `project.css` 가 `tokens.css` 에 없는 `--*` 이름을 참조하면 실패(정적 대조) ⑵ 다섯 이름을 `--color-border`·`--color-text-muted` 계열 정본 토큰으로 치환 · 폴백 리터럴 제거
+      ⑶ backrow/backlink 규칙을 `detail.css`·`project.css` 두 벌에서 공용 한 벌로 ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx` green).
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈308〉`-㉱. `--fg` 는 지시에 든 이름이고 origin/main 실측은 0건이다 — 레인 C 가 더한 자리가 있으면 병합 뒤 재실측한다. 색이 미묘하게 어긋나는 것 외에 막는 것 0건.
+    sources: ["PLAN-SoT §9 〈308〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
