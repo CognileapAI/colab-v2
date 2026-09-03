@@ -19,6 +19,11 @@ RENDER_TOO_LARGE = "RENDER_TOO_LARGE"
 NOT_RENDERABLE = "NOT_RENDERABLE"
 RENDER_NOT_READY = "RENDER_NOT_READY"
 RENDER_EXPIRED = "RENDER_EXPIRED"
+#: 경계 헤더가 없다 (`CODE-REVIEW-20260903` #1). **안정된 코드다** — 부르는 쪽이
+#: 「배선이 빠졌다」와 「값이 틀렸다」를 가를 수 있어야 한다.
+TENANT_SCOPE_MISSING = "TENANT_SCOPE_MISSING"
+#: 한 장면에 담은 층이 상한을 넘었다 (`CODE-REVIEW-20260903` #11).
+TOO_MANY_LAYERS = "TOO_MANY_LAYERS"
 
 
 def envelope(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:

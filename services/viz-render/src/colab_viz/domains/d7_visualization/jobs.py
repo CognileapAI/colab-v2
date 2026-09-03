@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -66,6 +67,14 @@ class RenderSpec:
 class RenderJob:
     render_id: str
     spec: RenderSpec
+    #: **이 작업이 누구 것인가** (`CODE-REVIEW-20260903` #1). core-api 가 중계에 실어
+    #: 보내는 `X-CoLAB-Lab` 을 접수 때 새기고, 조회·스크린샷이 이 값과 대조한다.
+    #: ⚠ 빈 문자열은 **경계를 모르는 작업**이라 어떤 요청과도 맞지 않는다 — 접수 표면이
+    #: 빈 값을 400 으로 막으므로 실제로 생기지 않지만, 기본값이 「전부와 맞는 값」이면
+    #: 나중에 한 자리만 빠져도 조용히 열린다.
+    lab: str = ""
+    #: 누가 불렀는가. **판정에는 쓰지 않는다** — 출처 표시다.
+    account: str = ""
     status: str = STATUS_DRAWING
     stage: str | None = STAGE_READ
     stage_history: list[str] = field(default_factory=list)
@@ -88,6 +97,14 @@ class RenderJob:
     #: **같은 계산기**를 지났음을 여기 남긴다 — 두 경로가 각자 규칙을 갖지 않는다.
     #: `trigger` 가 `None` 이면 사람이 부른 경로다.
     invalidation: "invalidation.InvalidationPlan | None" = None
+    #: 그 범위 중 **실제로 지워진 것**(`CODE-REVIEW-20260903` #2). 계산과 집행은 다른
+    #: 사실이라 따로 남긴다 — 종전에는 집행 결과가 어디에도 안 적혀서, 한 번도 집행되지
+    #: 않고 있다는 사실을 아무도 볼 수 없었다.
+    invalidation_removed: tuple[Path, ...] = ()
+    #: 완료(성공·실패 무관)를 알리는 자리. **바쁜 대기를 쓰지 않으려고 둔다.**
+    #: `to_dict` 가 보지 않으므로 계약 표면에 나가지 않는다.
+    done: threading.Event = field(default_factory=threading.Event, repr=False,
+                                  compare=False)
 
     @property
     def tile_branch(self) -> bool:
@@ -293,14 +310,55 @@ def _source_digest(reads: list[_Read]) -> str:
     return h.hexdigest()
 
 
+#: 이 개수 이하의 격자는 **전량**을 해시한다. f8 기준 512 KB — 해시 비용이 렌더 한 회의
+#: 잡음 안에 든다. 실물 기준 격자(2881²≈8.3M)는 이 위라 표본 구간으로 간다.
+_DIGEST_FULL_MAX_ELEMENTS = 1 << 16
+#: 표본 구간에서 집는 점의 개수. 균등 보폭이라 **자리가 결정적**이다 — 무작위 표본을
+#: 쓰면 같은 격자가 매번 다른 키를 내고, 그것은 캐시가 아니라 난수다.
+_DIGEST_SAMPLE_COUNT = 4096
+#: NaN 자리에 넣는 표식. **NaN 의 비트 표현에 기대지 않는다** — 페이로드가 갈리면
+#: 같은 격자가 다른 키를 낼 수 있다. 실측 좌표가 절대 갖지 않는 크기를 쓴다.
+_DIGEST_NAN_SENTINEL = -9.87654321e30
+
+
+def _array_fingerprint(h: "hashlib._Hash", arr) -> None:
+    """배열 하나를 digest 에 접어 넣는다 — **형상 + 양 끝 + 값 표본**.
+
+    ⭑ ⟨2026-09-03 · 코드리뷰 #3 형제⟩ 종전에는 lat 의 shape · `nanmin(lat)` ·
+    `nanmax(lon)` **세 값**뿐이었다. 그 셋이 같은 다른 격자로 갈아 끼우면 키가 같아지고
+    `invalidation` 의 `keep_keys` 가 구 산출물을 「신선」으로 보존한다 — **격자를 바꿨는데
+    옛 그림이 남는다.** 값 자신을 보지 않는 digest 는 격자 교체를 못 본다.
+    """
+    a = np.asarray(arr, dtype="f8")
+    h.update(f"|shape={a.shape}|".encode())
+    flat = np.ascontiguousarray(a.reshape(-1))
+    # 양 끝은 **전량에서** 정확히 잰다 — 표본이 놓치더라도 범위 변화는 반드시 잡힌다.
+    finite = flat[np.isfinite(flat)]
+    lo = float(finite.min()) if finite.size else float("nan")
+    hi = float(finite.max()) if finite.size else float("nan")
+    h.update(f"min={lo!r}|max={hi!r}|n={flat.size}|".encode())
+    if flat.size > _DIGEST_FULL_MAX_ELEMENTS:
+        step = -(-flat.size // _DIGEST_SAMPLE_COUNT)      # ceil — 보폭이 결정적이다
+        flat = flat[::step]
+    sample = np.where(np.isfinite(flat), flat, _DIGEST_NAN_SENTINEL)
+    h.update(np.ascontiguousarray(sample, dtype="<f8").tobytes())
+
+
 def _grid_digest(reads: list[_Read]) -> str | None:
-    """지도형 키에만 들어가는 격자 값 — **격자를 갈면 지도형만 무효화된다**(`§7.2`)."""
-    parts = [f"{r.reference[0].shape}:{float(np.nanmin(r.reference[0])):.6f}:"
-             f"{float(np.nanmax(r.reference[1])):.6f}"
-             for r in reads if r.from_uploaded_grid and r.reference is not None]
-    if not parts:
+    """지도형 키에만 들어가는 격자 값 — **격자를 갈면 지도형만 무효화된다**(`§7.2`).
+
+    **위도와 경도를 둘 다 본다.** 종전에는 위도의 최솟값과 경도의 최댓값만 봐서,
+    한쪽만 갈린 격자가 그대로 통과했다.
+    """
+    used = [r for r in reads if r.from_uploaded_grid and r.reference is not None]
+    if not used:
         return None
-    return hashlib.sha256("|".join(parts).encode()).hexdigest()
+    h = hashlib.sha256()
+    for r in used:
+        _array_fingerprint(h, r.reference[0])
+        _array_fingerprint(h, r.reference[1])
+        h.update(b"||")
+    return h.hexdigest()
 
 
 def _mesh_from_bounds(values, bounds):
@@ -375,7 +433,9 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
     lut = colormap.lut256(palettes.get(spec.palette).anchors)
     key_params = dict(source_digest=_source_digest(reads),
                       fills=tuple(sorted({f for r in reads for f in r.field.fills})),
-                      palette=spec.palette, selection=merged.variable)
+                      palette=spec.palette, selection=merged.variable,
+                      # **시각도 산출물을 가른다**(코드리뷰 #3) — 없으면 T1·T2 가 한 파일이다.
+                      instant=spec.instant)
     out_dir = Path(spec.preview_dir)
 
     values = reads[0].field.values if len(reads) == 1 else merged.values
@@ -451,7 +511,16 @@ def _run(job: RenderJob) -> None:
             except RenderError as e:
                 first_error = first_error or e
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
-            except (FieldReadError, NotRenderableError, Exception) as e:  # noqa: BLE001
+            except NotRenderableError as e:
+                # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #2⟩ **「알 수 없는 오류」가 아니다.**
+                # `is_retry_pointless` 가 이 형으로 재시도 무의미를 판정하는데, 여기서
+                # `RENDER_UNKNOWN_ERROR` 로 접어 버리면 화면은 그 판정을 못 본다 —
+                # 없는 시각·안 그리는 포맷에 「다시 그리기」가 뜨고, 눌러도 영원히 같은
+                # 실패가 돌아온다. 코드는 라우트가 415 로 내는 것과 **같은 문자열**이다.
+                first_error = first_error or RenderError(
+                    RenderFailure.NOT_RENDERABLE, str(e))
+                missing.append({"fileId": part.file_id, "fileName": part.file_name})
+            except (FieldReadError, Exception) as e:  # noqa: BLE001
                 first_error = first_error or RenderError(RenderFailure.UNKNOWN, str(e))
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
 
@@ -514,6 +583,18 @@ def _run(job: RenderJob) -> None:
         job.failure = _failure(RenderFailure.UNKNOWN, f"{type(e).__name__}: {e}", job)
 
 
+#: 렌더 예산을 다 쓴 작업이 마무리(범위 계산·집행)까지 마칠 여유. **예산이 아니다** —
+#: 마감을 넘긴 렌더는 이미 `TIMEOUT` 으로 끊기고, 이 값은 그 뒤 정리에 주는 시간이다.
+_COMPLETION_GRACE_SECONDS = 10.0
+
+#: 남겨 두는 묘비의 개수 (`CODE-REVIEW-20260903` #11). **묘비도 무한하면 같은 결함이다.**
+#: 묘비 하나는 식별자·경계·만료시각뿐이라 수 KB 도 안 되지만, 「가벼우니 무한히」가
+#: 정확히 이 항목이 고치는 사고방식이다. 이 수를 넘으면 가장 오래된 것부터 놓고,
+#: 그때는 404 다 — 그 id 에 대해 아는 것이 없다는 뜻이라 정직하다.
+#: **`[정본 무근거]`** — 정본은 만료 뒤 화면을 말할 뿐 서버가 얼마나 기억하는지 말하지 않는다.
+_MAX_TOMBSTONES = 4096
+
+
 class JobStore:
     """렌더 작업 보관 — 프로세스 안 메모리다.
 
@@ -528,6 +609,17 @@ class JobStore:
                  signature_ttl_seconds: int | None = None,
                  tile_branch_enabled: bool = False) -> None:
         self._jobs: dict[str, RenderJob] = {}
+        #: 수명이 붙은 작업의 (만료시각, id). **넣는 순서가 곧 만료 순서**다(TTL 이
+        #: 상수라서). 그래서 앞에서만 보면 되고, 축출이 전체 스캔이 되지 않는다.
+        self._expiring: "deque[tuple[datetime, str]]" = deque()
+        #: 축출된 id 의 묘비 — 만료된 id 도 계약이 요구하는 410 을 계속 답해야 한다.
+        self._tombstones: "deque[str]" = deque()
+        self._max_tombstones = _MAX_TOMBSTONES
+        #: **대상 → 그 대상 때문에 구운 산출물**(`CODE-REVIEW-20260903` #11).
+        #: 작업 표를 훑는 대신 여기서 찾는다. ⚠ **작업에 매달지 않는다** — 작업이
+        #: 축출돼도 디스크의 산출물은 그대로라, 함께 잊으면 그 파일들은 영원히
+        #: 무효화되지 않는다.
+        self._produced: dict[str, dict[str, invalidation.StaleCandidate]] = {}
         self._pending: list[RenderJob] = []
         self._pending_events: dict[str, object] = {}
         self._lock = threading.Lock()
@@ -540,9 +632,10 @@ class JobStore:
         self._tile_branch_enabled = tile_branch_enabled
 
     def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool,
-               event: "invalidation.InvalidationEvent | None" = None) -> RenderJob:
+               event: "invalidation.InvalidationEvent | None" = None,
+               lab: str = "", account: str = "") -> RenderJob:
         """`event` 가 없으면 **사람이 부른 경로**다 — 둘 다 같은 계산기를 지난다(ⓒ)."""
-        job = RenderJob(render_id=render_id, spec=spec,
+        job = RenderJob(render_id=render_id, spec=spec, lab=lab, account=account,
                         tile_branch_enabled=self._tile_branch_enabled)
         now = datetime.now(timezone.utc)
         if temporary:
@@ -550,11 +643,16 @@ class JobStore:
             job.expires_at = now + timedelta(seconds=self._ttl)
         job.tile_url_template = self._tile_url(render_id, job.expires_at, now)
         with self._lock:
+            # **새 것을 넣기 전에 지난 것을 놓는다** — 넣는 자리가 곧 치우는 자리다.
+            self._evict_expired(now)
             self._jobs[render_id] = job
+            if job.expires_at is not None:
+                self._expiring.append((job.expires_at, render_id))
 
+        # **완료 경로는 하나다**(`CODE-REVIEW-20260903` #2). 실행기마다 「끝난 뒤에 할 일」을
+        # 따로 적으면 그중 하나가 빠지고, 빠진 쪽이 하필 운영 기본값이었다.
         if self._execution == "inline":
-            _run(job)
-            job.invalidation = self._plan_for(job, event)
+            self._run_and_plan(job, event)
         elif self._execution == "manual":
             self._pending.append(job)
             self._pending_events[job.render_id] = event
@@ -564,8 +662,33 @@ class JobStore:
 
     def _run_and_plan(self, job: RenderJob,
                       event: "invalidation.InvalidationEvent | None") -> None:
-        _run(job)
-        job.invalidation = self._plan_for(job, event)
+        """**렌더가 끝난 자리** — 범위 계산도 집행도 여기서 한다.
+
+        ⭑ ⟨2026-09-03 · 코드리뷰 #2⟩ 집행(`invalidation.apply`)이 `regenerate` 안에,
+        그것도 `submit()` **직후**에 있었다. 기본 실행기(`thread`)에서 그 시점의
+        `job.invalidation` 은 언제나 `None` 이라 **집행이 한 번도 일어나지 않았고**
+        트리거는 ack 됐다 — 레이스가 아니라 상시였다. 집행을 완료 경로로 옮기면
+        thread·inline·manual 셋이 **같은 자리**를 지난다.
+
+        ⚠ **집행은 사건이 있을 때만이다**(`plan.regenerate`). 사람이 부른 평범한 렌더도
+        범위 계산은 지나지만(완료 정의 ⓒ), 거기서 지우면 스타일만 바꿔 다시 그리는
+        요청이 앞의 그림을 지운다.
+        ⚠ **실패한 렌더는 지우지 않는다** — 「새 것이 선 뒤에 낡은 것을 치운다」의
+        나머지 절반이다. 새 것이 못 섰는데 치우면 볼 그림이 하나도 안 남는다.
+        """
+        try:
+            _run(job)
+            # **색인이 먼저다** — 방금 구운 것도 후보에 들어야 `keep_keys` 가 그것을
+            # 살리고 나머지가 낡은 것으로 갈린다.
+            with self._lock:
+                self._remember_produced(job)
+            plan = self._plan_for(job, event)
+            job.invalidation = plan
+            if plan.regenerate and job.status == STATUS_DONE:
+                job.invalidation_removed = invalidation.apply(
+                    plan, previews_root=Path(job.spec.preview_dir))
+        finally:
+            job.done.set()
 
     def _tile_url(self, render_id: str, expires_at: datetime | None,
                   now: datetime) -> str:
@@ -588,11 +711,48 @@ class JobStore:
         """`manual` 실행기 전용 — 시험이 「그리는 중」 상태를 붙잡아 보기 위한 자리다."""
         while self._pending:
             job = self._pending.pop(0)
-            _run(job)
-            job.invalidation = self._plan_for(job, self._pending_events.pop(job.render_id, None))
+            self._run_and_plan(job, self._pending_events.pop(job.render_id, None))
 
     def get(self, render_id: str) -> RenderJob | None:
-        return self._jobs.get(render_id)
+        with self._lock:
+            self._evict_expired(datetime.now(timezone.utc))
+            return self._jobs.get(render_id)
+
+    # ── 보관 (`CODE-REVIEW-20260903` #11) ────────────────────────────────────
+    def _evict_expired(self, now: datetime) -> None:
+        """**수명이 다한 작업만** 놓는다. 호출자가 이미 잠금을 들고 있다.
+
+        ⚠ **완료 시점이 아니다.** 타일(`getRenderTile`)과 스크린샷(`createScreenshot`)이
+        `job.rendered` 를 메모리에서 읽으므로, 완료 직후에 놓으면 성공한 렌더가 곧바로
+        못 쓰는 렌더가 된다. 놓는 조건은 `expires_at` 하나다 — 개수도, 순서도 아니다.
+
+        ⚠ **묘비를 남긴다.** 만료된 id 는 계약이 요구하는 410 을 계속 답해야 한다
+        (`core-viz.yaml` `getRenderTile` `"410"`). 묘비는 식별자·경계·만료시각만 들고
+        래스터와 산출물 목록을 놓은 같은 객체다 — 부르는 자리(`job.expired` ·
+        `job.lab` · `to_dict`)가 그대로 선다.
+        """
+        while self._expiring and self._expiring[0][0] <= now:
+            _, render_id = self._expiring.popleft()
+            job = self._jobs.get(render_id)
+            if job is None:
+                continue
+            # **여기서만 놓는다** — f4 2D 래스터와 산출물 목록.
+            job.rendered = None
+            job.artifacts = None
+            job.partial = None
+            job.invalidation = None
+            if len(self._tombstones) >= self._max_tombstones:
+                self._jobs.pop(self._tombstones.popleft(), None)
+            self._tombstones.append(render_id)
+
+    def _remember_produced(self, job: RenderJob) -> None:
+        """구운 산출물을 **대상별 색인**에 넣는다 — `_produced_for` 의 입력이다."""
+        if job.artifacts is None:
+            return
+        bucket = self._produced.setdefault(job.spec.target.target_id, {})
+        for a in job.artifacts.all():
+            bucket[str(a.path)] = invalidation.StaleCandidate(cache_key=a.cache_key,
+                                                              path=a.path)
 
     # ── 자동 무효화 (`Y-1`) ──────────────────────────────────────────────────
     def _produced_for(self, target_id: str) -> list[invalidation.StaleCandidate]:
@@ -601,18 +761,12 @@ class JobStore:
         ⚠ **디렉터리를 훑지 않는다.** 미리보기 자리는 평평하고 대상이 경로에 없으므로
         (`layout.json` ③) 훑으면 **남의 대상 산출물까지 집는다.** D7 에는 원장이 없고,
         이 인스턴스가 아는 사실은 「내가 무엇을 구웠는가」뿐이다 — 아는 것만 센다.
+
+        ⭑ ⟨2026-09-03 · 코드리뷰 #11⟩ **작업 표도 훑지 않는다.** 종전에는 submit 마다
+        전 작업을 순회해 1000번째 submit 이 그리기 전에 1000회를 돌았고, 작업이 축출되면
+        그 산출물이 후보에서 사라져 **영원히 무효화되지 않는** 파일이 생겼다.
         """
-        out: list[invalidation.StaleCandidate] = []
-        seen: set[str] = set()
-        for job in list(self._jobs.values()):
-            if job.spec.target.target_id != target_id or job.artifacts is None:
-                continue
-            for a in job.artifacts.all():
-                if a.path in seen:
-                    continue
-                seen.add(a.path)
-                out.append(invalidation.StaleCandidate(cache_key=a.cache_key, path=a.path))
-        return out
+        return list(self._produced.get(target_id, {}).values())
 
     def _plan_for(self, job: RenderJob,
                   event: invalidation.InvalidationEvent | None) -> invalidation.InvalidationPlan:
@@ -645,10 +799,29 @@ class JobStore:
                                 upload_id=event.target_id if previous.spec.target.is_upload else None,
                                 file_ids=None)
         spec = replace(previous.spec, target=target)
-        job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event)
-        plan = job.invalidation
-        removed = invalidation.apply(plan, previews_root=Path(spec.preview_dir)) if plan else ()
-        return Regeneration(job=job, plan=plan, removed=removed)
+        # **경계를 직전 작업에서 이어받는다**(코드리뷰 #1). 트리거 봉투에도 `labId` 가
+        # 실려 오지만 이 seam 의 `InvalidationEvent` 에는 그 자리가 없고(계약을 넓히지
+        # 않는다), 재생성은 **이미 그린 적 있는 대상**에만 서므로 직전 작업이 답을 안다.
+        job = self.submit(new_ulid(), spec, temporary=target.is_upload, event=event,
+                          lab=previous.lab, account=previous.account)
+        # **끝난 뒤에 답한다**(코드리뷰 #2). 집행은 완료 경로가 하므로, 여기서 기다리지
+        # 않으면 「무효화 몇 건」이 언제나 0 인 보고서가 나가고 트리거는 그 상태로 ack 된다.
+        # ⚠ `manual` 실행기는 `run_pending` 이 부를 때까지 아무것도 돌지 않는다 —
+        #   기다리면 그대로 멈춘다. 그 실행기는 시험 전용이고 시험이 순서를 정한다.
+        if self._execution != "manual":
+            budget = spec.deadline_seconds + _COMPLETION_GRACE_SECONDS
+            if not job.done.wait(timeout=budget):
+                # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #4⟩ **안 끝난 것은 성공이 아니다.**
+                # 종전에는 반환값을 안 보고 아직 아무것도 안 한 결과(`plan=None`·
+                # `removed=()`)를 그대로 돌려줬고, `drain` 이 그것을 성공으로 읽어
+                # 알림을 걷었다 — **낡은 미리보기는 남고 사건은 사라진다.** 던져서
+                # 다음 바퀴가 다시 집게 한다(at-least-once 의 소비자 쪽 짝).
+                # ⚠ 작업 자체는 죽이지 않는다 — 계속 돌아 끝나면 제 자리에 선다.
+                raise TimeoutError(
+                    f"재생성이 {budget:g}초 안에 끝나지 않았다 — 걷지 않는다: "
+                    f"{event.target_id}")
+        return Regeneration(job=job, plan=job.invalidation,
+                            removed=job.invalidation_removed)
 
     def _latest_for(self, target_id: str) -> RenderJob | None:
         """그 대상의 가장 최근 완료 작업. **렌더 파라미터를 지어내지 않으려고** 둔다."""

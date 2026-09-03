@@ -29,6 +29,7 @@ def render_cache_key(*, source_digest: str, long_side: int, downsample: str,
                      fills: tuple[float, ...] | list[float], palette: str,
                      crs: str, selection: str | None,
                      color_range: ColorRange,
+                     instant: str | None = None,
                      grid_digest: str | None = None) -> str:
     """산출물 하나를 가리키는 키. **같은 입력이면 같은 문자열**이다.
 
@@ -46,6 +47,11 @@ def render_cache_key(*, source_digest: str, long_side: int, downsample: str,
         "palette": palette,
         "crs": crs,
         "selection": selection,
+        # ⭑ ⟨2026-09-03 · 코드리뷰 #3⟩ **시각이 키에 없었다.** 24시각 파일의 T1·T2 요청이
+        # 같은 키·같은 PNG 를 받았고, 그래서 시각을 바꿔도 그림이 안 바뀌는 것이 캐시로
+        # 굳었다. 선택(`selection`)이 「어느 변수」라면 이것은 「어느 시각」이고, 둘은
+        # 같은 자격으로 산출물을 가른다.
+        "instant": instant,
         # 값 **과** 단계 토큰을 함께 싣는다 — 둘 중 하나만으로는 승격을 못 막는다.
         "range": [color_range.vmin, color_range.vmax, color_range.token()],
         "grid": grid_digest,
