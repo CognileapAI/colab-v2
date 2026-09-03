@@ -57,10 +57,14 @@ export function Gnb() {
 
       {/* 연구실 전환기 — "어느 연구실로 보는 중". 이름의 정본은 서버가 내려주는 labName 이다.
           전환 목록·동작은 P0 범위 밖이라 자리만 둔다. */}
+      {/* ⛔ **`▾` 를 달지 않는다.** 펼침 화살표는 「누르면 목록이 열린다」를 표기로 약속하는 것이고,
+          전환 목록·동작이 P0 범위 밖인 지금 그 약속은 지켜지지 않는다. 계정 1 · 연구실 1 인 현재는
+          전환이라는 동작 자체가 없다 — 전환기가 돌아오는 회차에 `▾` 도 같이 돌아온다(백로그).
+          ⚠ 정본 `Policy_공통_기반 §1` 의 GNB 도식은 `[연구실 전환기 ▾]` 로 적혀 있다.
+             **그 도식은 고치지 않았다** — 델타는 `notes/SPEC-DELTA-PENDING.md` 에 등재돼 있다. */}
       <button type="button" className="labswitch" data-testid="lab-switcher" aria-label={`연구실 전환 · ${account?.labName ?? ''}`}>
         <Icon><path d="M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 12h6v9h-6" /></Icon>
         <span className="ln">{account?.labName ?? ''}</span>
-        <span className="cv" aria-hidden="true">▾</span>
       </button>
 
       {/* 주 내비 3개 — 전원 공통. 남는 가로 여백은 여기서 먹는다 (Policy §1) */}

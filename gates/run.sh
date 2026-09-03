@@ -16,11 +16,12 @@ ALL_GATES=(
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
   frontend-typecheck frontend-test
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
+  backup-cron-streak
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
-  e2e-format-coverage-selftest render-latency-selftest
+  e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   frontend-typecheck-selftest frontend-test-selftest
 )
 
@@ -158,6 +159,18 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.
     exec "$REPO_ROOT/gates/tools/render-latency-selftest.sh"
     ;;
+  backup-cron-streak)
+    # 크론 04:40 회차(`infra/staging/backup/check-cron-streak.sh`)의 **판정 줄을 읽는다**
+    # (`PLAN-SoT §9 〈286〉` ① · 등재 `〈296〉`-㉴). **재실행하지 않는다** — 게이트 호스트가
+    # 보관처를 못 보면 재실행은 항상 RED 가 되고 「보관처 없음」과 「연속 깨짐」이 안 갈린다.
+    # 요약줄 부재·36시간 초과·RED·「검사 0건」 GREEN 은 전부 red 다. 대상 0건 통과 없음.
+    exec "$REPO_ROOT/gates/tools/backup-cron-streak.sh"
+    ;;
+  backup-cron-streak-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 로그 파일이다.
+    # 실제 백업도 크론도 돌리지 않고 `~/colab-v2-backups` 에 한 글자도 쓰지 않는다.
+    exec "$REPO_ROOT/gates/tools/backup-cron-streak-selftest.sh"
+    ;;
   e2e-format-coverage-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.
     exec "$REPO_ROOT/gates/tools/e2e-format-coverage-selftest.sh"
@@ -221,7 +234,7 @@ case "$GATE" in
     # ⭑ frontend-typecheck-selftest 도 **여기 있다** — 이 잡이 이미 `npm ci --prefix frontend` 를
     #   돌아 `node_modules` 가 실물로 있다(설치 확인 스텝이 그것을 존재로 본다).
     rc=0
-    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest frontend-typecheck-selftest frontend-test-selftest; do
+    for s in contract-selftest event-selftest boundary-selftest db-boundary-selftest db-selftest rls-effect-selftest seam-consistency-selftest generated-selftest work-item-selftest e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest frontend-typecheck-selftest frontend-test-selftest; do
       echo "══ $s ══════════════════════════════════════════════"
       "$REPO_ROOT/gates/run.sh" "$s" || rc=1
     done

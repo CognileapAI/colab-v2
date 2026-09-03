@@ -1328,6 +1328,22 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     expect(note).toHaveTextContent('상세');
   });
 
+  it('안내가 **존재하지 않는 쓰기 경로**를 설명하지 않는다 — `〈296〉`-㉲ (근거 `〈288〉`-㉴-⑹)', async () => {
+    // 종전 두 번째 문장 = 「다르면 상세 화면에서 바꿀 수 있고, **바꾼 값은 계보를 고쳐도
+    // 그대로 남아요.**」 그런데 `〈194〉` 축자는 「사람이 고르는 것은 **부모**이고 레벨은 그
+    // 결과다 (**예외 없음**)」이고, 해제 13차 `〈276〉` 가 `processingLevel` 쓰기 경로를
+    // 계약에서 걷었다. **「바꾼 값」이 존재하지 않으므로** 그 문장은 없는 컨트롤 안내다.
+    const { sources } = fakes({ suggestions: kwraSuggestions() });
+    await openLineageWithAi(sources);
+    const note = await screen.findByTestId('lin-lv-note');
+    // ⑴ 새 문면이 그대로 있다 (`〈194〉` 축자에서 만든 문장)
+    expect(note).toHaveTextContent('다르면 상세 화면에서 앞선 데이터를 고치면 함께 바뀌어요.');
+    // ⑵ 종전 문면이 **한 조각도 남지 않았다** — 지운 것을 지웠다고 증명한다
+    expect(note.textContent).not.toMatch(/바꾼 값/);
+    expect(note.textContent).not.toMatch(/그대로 남아요/);
+    expect(note.textContent).not.toMatch(/바꿀 수 있고/);
+  });
+
   it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `manual`', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);

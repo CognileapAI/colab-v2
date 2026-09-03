@@ -1675,3 +1675,31 @@ items:
       ⚠ CSS 는 `labinfo-` 로 전량 접두했다 — 전역 `.modal`·`.card` 를 새로 정의하지 않는다
       (`members.css .modal` 이 업로드 모달을 덮은 사고와 같은 모양을 만들지 않기 위해서다).
     sources: ["PLAN-SoT §9 〈292〉", "notes/QA-SCREENS-20260903.md #1", "notes/QA-STRATEGY-20260903.md §4-3"]
+
+  - id: Q-D
+    name: "데이터셋 상세 섹션3 — 활용 프로젝트 · 다운로드 · 파일 목록 · 접근 요청"
+    status: open
+    stage: stage1
+    owner: "D3 catalog (frontend)"
+    entry_conditions:
+      - "레인 Q-A 종결 — `catalog/*`·`detail/*` 파일 면이 겹친다 (`notes/QA-STRATEGY-20260903.md §4` 충돌 줄)"
+    depends_on: []
+    completion_def: >-
+      데이터셋 상세에 ⑴ `#sec-usage` 앵커를 가진 「어떻게 쓰였나·가져가기」 섹션이 서고,
+      ⑵ 활용 프로젝트 카드와 다운로드 버튼(기존 `GET /datasets/{id}/download`)이 그 안에 있고,
+      ⑶ 잠긴 데이터면 `LockedNotice` 를 재사용해 접근 요청을 그 자리에 내고,
+      ⑷ **`파일` 칸의 `보기` 를 누르면 파일 목록이 나온다** — 목록에 자체 스크롤을 두지 않고
+      기준 격자 유무는 「없으면 없다고」 적는다 (`Policy_데이터셋_상세` 122행 축자).
+      호출은 계약에 이미 있는 `listDatasetFiles` 다 — **`보기` 를 눌렀을 때만** 부른다.
+    evidence: >-
+      **아직 착수하지 않았다.** 이 항목이 지금 갖는 실측은 두 가지뿐이다 —
+      ⑴ `contracts/seams/fe-core.yaml:800~835` 에 `listDatasetFiles` 가 **실재한다**
+      (GET · 403 P-34 · 「`보기` 눌렀을 때만」). ⑵ 화면이 그 op 를 **한 번도 부르지 않는다**.
+    deadline: null
+    note: >-
+      **신설 2026-09-03** — `PLAN-SoT §9 〈296〉`-㉳. 착수 자리는 `notes/QA-STRATEGY-20260903.md §4` 순 6.
+      ⭑ **QA 검수 #4(파일 목록)를 여기로 합류시켰다.** 종전 분류 「진짜 결함 · 판정 선행 — op 없음, 계약」이
+      **틀렸다** — op 는 있고 화면이 안 부르는 것이라 **계약 공백이 아니라 화면 결함**이다.
+      **계약 개정 0건 · Ted 판정 불요.** 정정 근거는 `notes/QA-STRATEGY-20260903.md §2` 정정 주석.
+      ⚠ **이 항목은 `contracts/` 를 열지 않는다** — 여는 순간 성질이 달라지므로 그때 다시 판정한다.
+    sources: ["PLAN-SoT §9 〈296〉", "notes/QA-STRATEGY-20260903.md §2", "notes/QA-STRATEGY-20260903.md §4-6", "notes/QA-SCREENS-20260903.md #4"]
