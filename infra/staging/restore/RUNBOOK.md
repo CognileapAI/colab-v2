@@ -173,7 +173,7 @@ infra/staging/restore/verify-restored.sh \
 | ① ② ⑥ | 데이터셋 · 계보 간선 · 파일 원장 | 스크립트(짝 덤프 기준) |
 | ③ | 사전 3종 ＋ 개념 그래프 2표 | 스크립트(짝 덤프 기준) |
 | ③-보 | **읽는 경로** — `POST /searches` 정문 1회 | **손으로.** `_UnavailableDictionaries` 는 검색 시점에야 터진다 |
-| ④ | 이미지 digest | 스크립트 — **`dev-package/reference/IMAGE-DIGESTS.md` 를 읽는다.** ＋ P8 기록과 대조 |
+| ④ | 이미지 digest | 스크립트 — **자체 빌드 6종은 `~/colab-v2-releases/image-digest-ledger.tsv` 원장의 「서빙 중 회차」 행 · 외부 4종은 `dev-package/reference/IMAGE-DIGESTS.md §3`**(개정 2026-09-03 · `PLAN-SoT §9 〈297〉`) ＋ P8 기록과 대조. ／ 종전 ~~「`IMAGE-DIGESTS.md` 를 읽는다」~~ — 자체 6종의 출처만 바뀌었다 |
 | ⑤ | 권한·RLS | **손으로.** 앱 롤로 붙어 **양성·음성 둘 다** |
 | ⑦ | 헬스 6종 | 스크립트. **루트 하나만 보지 않는다** |
 
