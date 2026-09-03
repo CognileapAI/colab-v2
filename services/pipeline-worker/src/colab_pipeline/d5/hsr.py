@@ -107,6 +107,13 @@ def parse_hsr(path: Path) -> HsrResult:
                     f"블록 {len(blocks)} 이 잘렸다: {len(buf)}/{block_bytes} B")
             arr = np.frombuffer(buf, dtype="<i2").reshape(header.ny, header.nx)
             blocks.append(arr)
+    # **0 블록은 판독 실패다** (코드리뷰 20260903 #13). 예전에는 정상 반환이라
+    # 소비자가 각자 확인해야 했고, 확인하지 않은 소비자(`pipeline._cog_binary` 의
+    # `hsr.blocks[0]`)가 `IndexError` 로 터졌다 — 데이터 오류가 배관 고장으로 위장한다.
+    # 쌍둥이인 D7 `d7_visualization/hsr.py` 도 같은 자리에서 거절한다.
+    # ⚠ 「선언 3 · 실물 1」은 실측된 배포본 무늬라 **여전히 정상**이다.
+    if not blocks:
+        raise HsrParseError("자료 블록이 하나도 없다")
     return HsrResult(
         header=header,
         blocks_present=len(blocks),

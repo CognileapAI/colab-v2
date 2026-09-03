@@ -60,6 +60,19 @@ class MemoryLedger:
             if e["eventId"] == event_id:
                 e["_published"] = True
 
+    def record_delivery_failure(self, event_id: str) -> None:
+        """실물 `SqlLedger` 와 같은 사실만 남긴다 — **전달 횟수만 올린다.**
+
+        실물은 다음 바퀴의 `unpublished()` 가 열 값으로 봉투를 다시 짓지만, 이 대역은
+        저장한 봉투를 그대로 돌려주므로 `redelivery` 도 함께 맞춘다. 값이 갈리면
+        대역이 실물보다 헐거운 것이 된다.
+        """
+        for e in self.events:
+            if e["eventId"] == event_id and not e.get("_published"):
+                d = e["delivery"]
+                d["attempt"] = int(d["attempt"]) + 1
+                d["redelivery"] = d["attempt"] > 1
+
     # ── UploadLedgerPort ───────────────────────────────────────────────────
     def load_upload(self, upload_id: str) -> dict | None:
         return self.uploads.get(upload_id)

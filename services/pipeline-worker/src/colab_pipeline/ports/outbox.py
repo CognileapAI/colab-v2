@@ -23,6 +23,15 @@ class EventLedgerPort(Protocol):
 
     def mark_published(self, event_id: str) -> None: ...
 
+    def record_delivery_failure(self, event_id: str) -> None:
+        """발행을 시도했으나 못 보냈다 — **전달 횟수만 올린다.**
+
+        `published_at` 은 건드리지 않는다. 다음 전달의 봉투가 `attempt > 1` 로
+        `redelivery: true` 를 말하게 하는 것이 이 문의 전부다 — 그것을 안 하면
+        재전달이 첫 전달과 구분되지 않는다(`envelope.json#Delivery`).
+        """
+        ...
+
 
 class UploadLedgerPort(Protocol):
     def load_upload(self, upload_id: str) -> dict | None: ...

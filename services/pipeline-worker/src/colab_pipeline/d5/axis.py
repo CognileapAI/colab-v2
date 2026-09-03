@@ -87,9 +87,14 @@ class _Stats:
 
 # ── 값 읽기 ────────────────────────────────────────────────────────────────
 def _stats(arr) -> _Stats:
-    a = np.asarray(arr[: _MAX_SAMPLE, : _MAX_SAMPLE], dtype="f8")
-    if a.ndim != 2:
+    # ⚠ **`ndim` 을 창보다 먼저 본다.** 예전에는 `arr[:4096, :4096]` 이 검사보다 앞에
+    #   있었고, 그래서 1차원 격자 `.npy` 가 `AxisUndeterminedError` 가 아니라
+    #   `IndexError` 로 탈출했다 — 판별 실패가 **배관 고장으로 위장**했고,
+    #   `process_upload` 에 보호가 없어 워커가 크래시 루프에 들어갔다
+    #   (코드리뷰 20260903 #4). 검사가 먼저다.
+    if getattr(arr, "ndim", None) != 2:
         raise AxisUndeterminedError(f"2차원이 아니다: shape={getattr(arr, 'shape', None)}")
+    a = np.asarray(arr[: _MAX_SAMPLE, : _MAX_SAMPLE], dtype="f8")
     finite = a[np.isfinite(a)]
     if finite.size == 0:
         raise AxisUndeterminedError("유한한 값이 없다")
@@ -99,22 +104,41 @@ def _stats(arr) -> _Stats:
 
 
 def _read_npy(path: Path) -> _Stats:
-    arr = np.load(path, mmap_mode="r", allow_pickle=False)
-    return _stats(arr)
+    """**적재 실패도 판별 실패다.** object dtype·절단 파일처럼 `np.load` 가 거부하는
+    바이트는 파일 내용의 문제이지 배관의 문제가 아니다 — 그것을 날것 예외로 흘리면
+    호출자의 `except AxisUndeterminedError` 를 지나쳐 워커 프로세스까지 올라간다
+    (코드리뷰 20260903 #4). 여기서 **판별 실패의 어휘로 바꿔** 돌려준다.
+    """
+    try:
+        arr = np.load(path, mmap_mode="r", allow_pickle=False)
+        return _stats(arr)
+    except AxisUndeterminedError:
+        raise
+    except Exception as e:                 # 형상·바이트가 이상한 것 — 지어내지 않고 거절한다
+        raise AxisUndeterminedError(f"`.npy` 를 읽을 수 없다: {path.name} — {e}") from e
 
 
 def _read_container(path: Path) -> dict[str, _Stats]:
-    """`.nc`/HDF5 의 2차원 좌표 변수만 골라 읽는다. 없으면 빈 dict."""
+    """`.nc`/HDF5 의 2차원 좌표 변수만 골라 읽는다. 없으면 빈 dict.
+
+    `_read_npy` 와 같은 이유로 적재 실패를 판별 실패로 바꾼다 — 깨진 컨테이너 하나가
+    워커를 세우지 않는다.
+    """
     import h5py
 
     out: dict[str, _Stats] = {}
-    with h5py.File(path, "r") as f:
-        def _visit(name, obj):
-            if isinstance(obj, h5py.Dataset) and obj.ndim == 2:
-                base = name.rsplit("/", 1)[-1].lower()
-                if base in _LAT_NAMES or base in _LON_NAMES:
-                    out[base] = _stats(obj)
-        f.visititems(_visit)
+    try:
+        with h5py.File(path, "r") as f:
+            def _visit(name, obj):
+                if isinstance(obj, h5py.Dataset) and obj.ndim == 2:
+                    base = name.rsplit("/", 1)[-1].lower()
+                    if base in _LAT_NAMES or base in _LON_NAMES:
+                        out[base] = _stats(obj)
+            f.visititems(_visit)
+    except AxisUndeterminedError:
+        raise
+    except Exception as e:
+        raise AxisUndeterminedError(f"컨테이너를 읽을 수 없다: {path.name} — {e}") from e
     return out
 
 
