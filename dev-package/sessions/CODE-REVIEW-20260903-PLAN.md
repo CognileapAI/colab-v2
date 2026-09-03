@@ -83,5 +83,11 @@ D `11462b5` → C `660f8fe` → E `80296b6` → B `21cfb1f` → A `ad2fe06` → 
 4. `artifact-ownership.toml tolerate=true` 기한 · compose 비밀값 `_FILE` 전환 · `expires_at` 없는 등록 데이터셋 렌더 수명 · DLQ.
 5. 미확인 — GitHub Actions 실제 실행(draft PR #2 로 확인) · e2e/perf/dbint/dictdb 미실행 집합(원천 마운트·DB) · 업로드 스트리밍 RSS·`/healthz` 실측 · 각 레인 기록의 `[미확인]` 절.
 
-### 5-6. G2 결과
+### 5-6. G2 결과 (`worktree-agent-ac42c923277ef05d0`, 병합 `7d57028`)
+- `frontend-fixture-reach` 게이트 신설(`gates/tools/frontend-fixture-reach.sh` + selftest 6케이스 + 픽스처) · `ALL_GATES` 등록 · CI `frontend-gates` 잡에 연결 · `reachable-from-entry.mjs` 에 진입점 인자 1줄.
+- 오케스트레이터 재실행 — 게이트 green(진입점 `src/main.tsx` 에서 도달 128 · 금지 모듈 0) · selftest green(red 3 · red(준비) 2 · green 1). selftest 집합 선언 19 → 20, 면제 2 유지. 게이트 총수 48 → 50.
+- `gates/README.md` CI 표의 고정 계수(「실행 17」)를 파생 표기로 정정(오케스트레이터).
+- draft PR #2 첫 Actions 실행 — `changes`·`boundary-gates`·`contract-gates`·`dormant-tests` pass · `frontend-gates`·`planning-gates`·`schema-gates`·`service-tests`×4 fail(6~30초) → 원인 진단은 §5-7.
+
+### 5-7. Actions 실패 진단
 - 기재 예정.

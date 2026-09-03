@@ -106,7 +106,7 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | `dormant-tests` | pipeline-worker | `stage2-markers-selftest` → `stage2-markers` |
 | **`service-tests`** ⭑신설 | 단위별 `<단위> \|\| contracts` (matrix 4) | `service-tests-selftest` → `service-tests-<단위>` |
 | `planning-gates` | `dev-package` | `work-item-consistency`·`planning-freshness` |
-| `gate-selftest` | `contracts` | `selftest` 집합(실행 17 ＋ 명시 면제 2) |
+| `gate-selftest` | `contracts` | `selftest` 집합(`ALL_GATES` 의 `*selftest` 전부 ＋ 명시 면제 2 — 계수는 요약줄이 정본) |
 
 ⭑ **고친 세 자리** — ⑴ 프런트 게이트 2종이 `contracts` 필터 잡 안에 있어 **`frontend/` 만 바꾼 PR 은
 게이트 잡이 0개**였다(`outputs.frontend` 는 선언만 되고 소비처가 0개였다). ⑵ `db-boundary` 는 **판정을
