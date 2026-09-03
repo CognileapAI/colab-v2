@@ -1691,7 +1691,7 @@ items:
 
   - id: Q-D
     name: "데이터셋 상세 섹션3 — 활용 프로젝트 · 다운로드 · 파일 목록 · 접근 요청"
-    status: open
+    status: done
     stage: stage1
     owner: "D3 catalog (frontend)"
     entry_conditions:
@@ -1705,9 +1705,25 @@ items:
       기준 격자 유무는 「없으면 없다고」 적는다 (`Policy_데이터셋_상세` 122행 축자).
       호출은 계약에 이미 있는 `listDatasetFiles` 다 — **`보기` 를 눌렀을 때만** 부른다.
     evidence: >-
-      **아직 착수하지 않았다.** 이 항목이 지금 갖는 실측은 두 가지뿐이다 —
-      ⑴ `contracts/seams/fe-core.yaml:800~835` 에 `listDatasetFiles` 가 **실재한다**
-      (GET · 403 P-34 · 「`보기` 눌렀을 때만」). ⑵ 화면이 그 op 를 **한 번도 부르지 않는다**.
+      **닫혔다 2026-09-03** (워크트리 `lane-qd` · `PLAN-SoT §9 〈299〉` · 등재문 `notes/QD-LEDGER-PENDING.md`).
+      완료 정의 4항 전건 충족 —
+      ⑴ `detail/UsageSection.tsx` 가 `id="sec-usage"` 로 서고 차례는 기본 정보 → 계보 → 미리보기 →
+      활용이다 (`Policy_데이터셋_상세 §4` 판단 순서). `LineageSection.tsx` 의 `href="#sec-usage"` 가
+      **더 이상 죽은 앵커가 아니다**.
+      ⑵ 카드는 **새 op 없이** `DatasetDetail.projects`(계약 `DatasetProjectUse`)를 전건 나열한다 —
+      서버도 이미 채우고 있었다 (`routes/catalog.py` `uses_of`). **계약 개정 0건 · Ted 판정 불요.**
+      다운로드는 기존 `api/download.ts`(ST-1)를 그대로 부르고 `actions.canDownload` 로만 뜬다 (P-7·P-12).
+      ⑶ 접근 요청은 **새로 만들지 않았다** — `LockedContent` → `LockedNotice` → `AccessRequestPanel`
+      (WU-P6) 경로 그대로다. 활용 섹션은 잠기면 서지 않아 **두 번째 요청 버튼이 생기지 않는다**.
+      ⑷ `파일` 칸의 `보기` → `detail/FileList.tsx` · `filesSource.ts`(`listDatasetFiles`).
+      **누르기 전 호출 0회**를 시험이 세고, CSS 에 `overflow`·`max-height` 0건이며, 기준 격자 0건이면
+      「기준 격자 파일이 없어요」를 적는다 (122행 축자).
+      ⭑ 함께 닫은 둘 — **#6** 상세 404 를 중립 문구(`Policy_공통_기반 §2.4`)로 바꿨고,
+      **#9** 주제 열 메뉴를 고정 4목록으로 세웠다 (`catalog/columns.ts` `menuValues`).
+      곁가지 1건 — 픽스처가 열린 데이터에도 `canDownload: false` 라 **실서버와 어긋나 있었다**
+      (서버 축자 `canDownload = body_accessible`). 고치고 전건 대조 시험을 걸었다.
+      ⚠ **재지 않은 것** — staging 실물 대조 0건(**배포 필요**) · 활용 배지 N ↔ 카드 수 동일 출처 미대조 ·
+      `listDatasetFiles` 403(P-34) 실경로 미실측. 목록은 `notes/QD-LEDGER-PENDING.md §5`.
     deadline: null
     note: >-
       **신설 2026-09-03** — `PLAN-SoT §9 〈296〉`-㉳. 착수 자리는 `notes/QA-STRATEGY-20260903.md §4` 순 6.
@@ -1715,4 +1731,12 @@ items:
       **틀렸다** — op 는 있고 화면이 안 부르는 것이라 **계약 공백이 아니라 화면 결함**이다.
       **계약 개정 0건 · Ted 판정 불요.** 정정 근거는 `notes/QA-STRATEGY-20260903.md §2` 정정 주석.
       ⚠ **이 항목은 `contracts/` 를 열지 않는다** — 여는 순간 성질이 달라지므로 그때 다시 판정한다.
-    sources: ["PLAN-SoT §9 〈296〉", "notes/QA-STRATEGY-20260903.md §2", "notes/QA-STRATEGY-20260903.md §4-6", "notes/QA-SCREENS-20260903.md #4"]
+      ⭑ **⟨닫으며 2026-09-03 · `〈299〉`⟩ 계약을 열지 않았다.** 활용 프로젝트도 op 신설이 아니라
+      `DatasetDetail.projects` 였다 — **17차 물음 0건.** 다만 후속 둘을 남긴다(레인 밖) —
+      ㈎ `Policy_데이터셋_상세 §5` 활용 프로젝트 행이 적는 **「담당」이 계약 `DatasetProjectUse` 에 없다**
+      (정본 델타 또는 계약 확장 판정 · 화면은 없는 값을 지어내지 않고 넷만 낸다).
+      ㈏ 서버가 묘비·경계 밖·미존재를 한 404 로 접는 것은 **의도이고 결함이 아니다**
+      (`routes/catalog.py` 축자 「구분해 주면 그 자체가 존재의 누설이다」 · P-9·P-10) —
+      그래서 **core-api 후속 항목을 만들지 않았다.** 남는 것은 그 접힘의 결과로 `§9` 의 묘비 문구가
+      **상세 화면에서 도달 불가**가 됐다는 사실이고, 그 행의 적용 자리를 좁히는 **정본 판정 1건**이다.
+    sources: ["PLAN-SoT §9 〈296〉", "notes/QA-STRATEGY-20260903.md §2", "notes/QA-STRATEGY-20260903.md §4-6", "notes/QA-SCREENS-20260903.md #4", "PLAN-SoT §9 〈299〉", "notes/QD-LEDGER-PENDING.md"]

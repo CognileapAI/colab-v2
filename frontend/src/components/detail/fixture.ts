@@ -32,6 +32,14 @@ const NO_ACTIONS = {
   canRequestAccess: false,
 } satisfies DatasetDetail['actions'];
 
+/**
+ * 열린 데이터가 여는 것 — **다운로드 하나**다. 서버 축자 `"canDownload": body_accessible`
+ * (`routes/catalog.py`). 종전 픽스처는 열린 데이터에도 `false` 라 **실서버와 어긋나 있었고**,
+ * 상세에 다운로드 진입점이 없던 동안에는 아무도 그 차이를 볼 수 없었다 —
+ * `canRequestAccess` 에서 이미 한 번 났던 어긋남과 같은 모양이다 (`PLAN-SoT §9 〈299〉`).
+ */
+const OPEN_ACTIONS = { ...NO_ACTIONS, canDownload: true } satisfies DatasetDetail['actions'];
+
 /** 목업 카탈로그 행만 아는 데이터셋 — 상세 목업이 없어 기본 정보 대부분이 빈 값이다. */
 function fromCatalogRowOnly(row: {
   datasetId: string;
@@ -73,7 +81,7 @@ function fromCatalogRowOnly(row: {
       uploader: row.uploader,
     },
     projects: [],
-    actions: NO_ACTIONS,
+    actions: OPEN_ACTIONS,
   };
 }
 
@@ -107,7 +115,7 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
       uploader: 호랑이,
     },
     projects: [],
-    actions: NO_ACTIONS,
+    actions: OPEN_ACTIONS,
   },
 
   // ── 상세 목업 D-03 잠긴 데이터 상세 ─────────────────────────────────────────

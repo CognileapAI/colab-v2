@@ -1,6 +1,6 @@
 // 열 메뉴 — 위쪽 `정렬(오름/내림)`, 아래쪽 `값 목록(건수)` (`Policy_데이터_찾기 §8` 열 메뉴).
 // 값을 고르는 동안 메뉴는 닫히지 않는다. 조건이 걸린 열에는 `이 열 조건 지우기` 가 생긴다.
-import { isFilterable, valueLabel } from './columns';
+import { isFilterable, menuValues, valueLabel } from './columns';
 import type { CatalogColumn, CatalogSort, FacetSet, FacetValue, SortOrder } from './types';
 
 export function ColumnMenu(props: {
@@ -14,7 +14,10 @@ export function ColumnMenu(props: {
   onClearColumn: (column: CatalogColumn) => void;
 }) {
   const { column, sort, picked } = props;
-  const values = props.facets?.columns.find((c) => c.column === column)?.values ?? [];
+  const values = menuValues(
+    column,
+    props.facets?.columns.find((c) => c.column === column)?.values ?? [],
+  );
 
   return (
     <div

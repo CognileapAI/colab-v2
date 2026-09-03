@@ -87,3 +87,38 @@
 
 .detail-page .gone { padding: 34px 22px; text-align: center; }
 .detail-page .gone p { font-size: var(--text-body); color: var(--color-text-body); margin: 0 0 12px; }
+
+/* ── 파일(조각) 목록 — `보기` 로 열린다 (`Policy_데이터셋_상세 §5` 122행) ──────────────
+   ⛔ **`overflow`·`max-height` 를 두지 않는다.** 목록은 자체 스크롤을 만들지 않고
+   페이지 흐름을 그대로 쓴다 — 한 페이지 스크롤 화면 안에 스크롤 상자를 또 두면
+   휠이 어느 쪽에서 도는지가 커서 위치로 갈린다 (§12 v1.9). */
+.detail-page .infogrid .ig .v .ig-more {
+  margin-left: 8px; padding: 1px 7px; font-size: 11px; font-weight: 700;
+  color: var(--color-primary-700); background: var(--color-primary-100);
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+}
+.detail-page .filelist { margin: -12px 0 var(--space-6); padding: 14px 16px;
+  border: 1px solid var(--color-border); border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md); background: var(--color-surface); }
+.detail-page .filelist .fl-g + .fl-g { margin-top: 12px; }
+.detail-page .filelist .fl-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 5px; }
+.detail-page .filelist .fl-u { list-style: none; margin: 0; padding: 0; }
+.detail-page .filelist .fl-i { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+.detail-page .filelist .fl-n { font-family: var(--font-mono, monospace); font-size: var(--text-body-sm); color: var(--color-text); overflow-wrap: anywhere; }
+.detail-page .filelist .fl-x { font-size: 11px; color: var(--color-gray-500); }
+.detail-page .filelist .fl-none { margin: 0; font-size: var(--text-body-sm); color: var(--color-gray-500); }
+.detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger, #b42318); margin: 0 0 var(--space-6); }
+
+/* ── 활용 · 가져가기 (섹션 4 · `#sec-usage`) ────────────────────────────────── */
+.detail-page .use-sec .use-n { font-size: var(--text-body); font-weight: 600; color: var(--color-text); margin: 0 0 12px; }
+.detail-page .use-sec .use-empty { font-size: var(--text-body-sm); color: var(--color-gray-500); margin: 0 0 18px; }
+.detail-page .use-sec .use-u { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+.detail-page .use-sec .use-c { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px 14px; background: var(--color-surface); }
+.detail-page .use-sec .use-t { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.detail-page .use-sec .use-t a { font-weight: 700; color: var(--color-text); text-decoration: none; }
+.detail-page .use-sec .use-t a:hover { text-decoration: underline; }
+.detail-page .use-sec .use-p { font-size: var(--text-body-sm); color: var(--color-gray-500); font-variant-numeric: tabular-nums; }
+.detail-page .use-sec .use-note { margin: 6px 0 0; font-size: var(--text-body-sm); color: var(--color-text-body); line-height: 1.6; }
+.detail-page .use-sec .use-dl { margin-top: 4px; }
+.detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
+.detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }

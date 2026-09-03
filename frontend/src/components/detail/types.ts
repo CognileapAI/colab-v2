@@ -7,6 +7,7 @@ type S = components['schemas'];
 export type DatasetDetail = S['DatasetDetail'];
 export type DatasetBasicInfo = S['DatasetBasicInfo'];
 export type AccountRef = S['AccountRef'];
+export type DatasetProjectUse = S['DatasetProjectUse'];
 
 /**
  * 묘비(삭제된 데이터셋)다. **상세 화면이 없다** (`Policy_데이터셋_상세 §7`) — 계약은 404 를 낸다.
