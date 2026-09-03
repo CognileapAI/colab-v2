@@ -1784,3 +1784,54 @@ items:
       ㈎ 와 **같은 17차 회차에 묶는다.**
       ⚠ **이 회차는 기재만 했다** — 계약 파일·서버 코드 **0줄** 변경. 17차 등재문·동결 해제 등급은 `lane-r17` 이 쓴다(`〈303〉`).
     sources: ["PLAN-SoT §9 〈296〉", "notes/QA-STRATEGY-20260903.md §2", "notes/QA-STRATEGY-20260903.md §4-6", "notes/QA-SCREENS-20260903.md #4", "PLAN-SoT §9 〈299〉", "notes/QD-LEDGER-PENDING.md"]
+
+  - id: R-17
+    name: "계약 동결 해제 17차 — 자기 연구실 묘비만 구분 (`getDataset` 410)"
+    status: done
+    stage: stage1
+    owner: "D3 catalog (core-api + frontend)"
+    entry_conditions:
+      - "Ted 판정 2026-09-03 ② — `X2-FREEZE-PROTOCOL §5-㉯`(소비자 ≥ 1 · 정본 개정 1건)"
+    depends_on: [Q-D]
+    completion_def: >-
+      ⑴ 계약 `fe-core.yaml#getDataset` 에 `410` 응답이 서고 그 산문이 **넷의 표**(내 연구실 묘비 ·
+      남의 연구실 묘비 · 남의 연구실 생존 · 없는 id)를 그대로 싣는다.
+      ⑵ 서버가 **내 연구실 · `deleted_at IS NOT NULL`** 한 칸에서만 410 을 내고 나머지 셋은
+      **응답 본문까지 같은** 404 다.
+      ⑶ 화면이 410 에서만 `Policy_데이터셋_상세 §9` 묘비 문구를 축자로 내고 404 는
+      `Policy_공통_기반 §2.4` 중립 문구 그대로다.
+      ⑷ 시험이 **넷을 한 벌로** 재고 ⑵⑶⑷ 의 응답 동일성을 직접 대조한다.
+      ⑸ 정본 `Policy_데이터셋_상세` 가 좁혀진 규칙을 적고 `planning-freshness` 가 green 이다.
+    evidence: >-
+      **닫혔다 2026-09-03** (워크트리 `lane-r17` · `PLAN-SoT §9 〈303〉` · 등재문
+      `notes/R17-LEDGER-PENDING.md` · 회차 행 `sessions/X2-FREEZE-PROTOCOL.md §1` 17차).
+      완료 정의 5항 전건 충족 —
+      ⑴ 응답 컴포넌트 `Gone` 신설 ＋ `getDataset` 에 `"410"`. **스키마 무변 · op 총계 55 그대로.**
+      `contract-breaking` **ERR 0 · WARN 0 · INFO 1**(`response-non-success-status-added` · 순수 가산).
+      ⑵ `d3_catalog.is_own_lab_tombstone` ＋ `routes/catalog.py` 의 한 갈래. **판정의 전부는
+      그 질의에 `lab_id` 조건을 적지 않는 것**이다 — 경계는 RLS `lab_boundary` 가 걸고, 그래서
+      남의 연구실 묘비는 「묘비 아님」이 아니라 **「행 없음」**으로 떨어진다. **마이그레이션 0**
+      (`d3_dataset.deleted_at` 이 P0 부터 실재).
+      ⑶ `DatasetTombstone`(410) 을 `DatasetGone`(404) 과 **다른 종류**로 세웠다. 상태 `tombstone`
+      ＋ 패널 `data-testid="detail-tombstone"`. 404 자리의 문구는 한 글자도 안 바뀌었다.
+      ⑷ core-api 신규 5건(넷 ＋ 동일성 대조) · frontend 신규 7건. red 선확인 = core-api 1/6 ·
+      frontend 5/7 — **404 쪽이 처음부터 green 이라는 사실 자체가 「누설 면적이 안 늘었다」의 오라클**이다.
+      기존 1건은 오라클이 바뀌어 정정했다(`test_tombstone_has_no_detail_screen` → `test_own_lab_tombstone_is_410`) —
+      **느슨화가 아니다**: 종전에는 남의 연구실 묘비를 재는 시험이 **0건**이었고 이 회차가 그것을 세웠다.
+      ⑸ `Policy_데이터셋_상세` **v2.8 → 2.9**(§9 행 분리 ＋ 근거 블록 ＋ §12 이력) · 백업
+      `_backup_260903_R17/` · 패키지 재동기 · `planning-freshness` **green 15/15**.
+      ⚠ **재지 않은 것** — staging 실물 대조 0건(**배포 필요 · 서버·프런트 둘 다**). staging 에
+      **묘비 데이터셋이 0건**이라 410 경로는 값을 심기 전에는 실물에서 도달 불가다.
+    deadline: null
+    note: >-
+      **신설 2026-09-03.** Ted 는 같은 날 **두 건**을 판정했고 이 항목은 **② 만** 담는다.
+      ⛔ **①(`DatasetProjectUse` 에 「담당」 추가)은 열지 않았다** — 불복이 아니라 **전제 붕괴 보고**다:
+      조인할 열이 없고(`d6_project` 에 담당·owner·created_by 0건 · `db/platform/schema.sql:706-719`),
+      따를 관례가 없고(`ProjectDetail` 에 담당 0건 · `fe-core.yaml:3372`), 정본에 정의가 없다
+      (`Policy_프로젝트`·`DataModel_공통_기반` 0건 · 적은 한 줄은 `[가정]` 표지).
+      기획(PRD·목업)에는 「담당 호랑이」로 **1인 계정**이 실재하므로 「기획 누락」이 아니라
+      **DataModel·DB 로 내려오지 않은 것**이다. 갈래 둘(정본 델타 / D6 속성 신설)은
+      `notes/SPEC-DELTA-PENDING.md §2-ⓕ` 에 물음으로 세웠다 — **Ted 판정 대기.**
+      ⚠ **생산자 없는 필드를 계약에 박지 않았다** — 항상 `null` 인 필드는 시험할 수 없고,
+      `〈299〉` 가 같은 자리에서 세운 「없는 값을 지어내지 않는다」를 이번 회차가 스스로 깨게 된다.
+    sources: ["PLAN-SoT §9 〈303〉", "sessions/X2-FREEZE-PROTOCOL.md §1", "notes/R17-LEDGER-PENDING.md", "notes/QD-LEDGER-PENDING.md §5", "PLAN-SoT §9 〈299〉"]
