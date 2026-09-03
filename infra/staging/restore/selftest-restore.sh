@@ -75,7 +75,14 @@ services:
   b:
     image: colab-v2/frontend:${COLAB_RELEASE_TAG:?필요}
 YML
-DG=(--compose "$W/compose-2.yml")
+# 자체 빌드 이미지의 기대값은 이제 **`§5` 원장**에서 온다(`〈297〉`). 두 회차를 쌓아 두고
+# 「지금 서빙 중」을 실측 digest 로 고르게 한다 — 롤백으로 별칭이 옛 회차를 가리켜도 같은 규칙으로 잡힌다.
+{ printf '2026-09-01T00:00:00+0900\trel00000000\ti2\tcolab-v2/core-api\t%s\n' "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+  printf '2026-09-01T00:00:00+0900\trel00000000\ti2\tcolab-v2/frontend\t%s\n' "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+  printf '2026-09-02T00:00:00+0900\trel11111111\ti2\tcolab-v2/core-api\t%s\n' "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  printf '2026-09-02T00:00:00+0900\trel11111111\ti2\tcolab-v2/frontend\t%s\n' "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+} > "$W/dledger.tsv"
+DG=(--compose "$W/compose-2.yml" --digest-ledger "$W/dledger.tsv")
 
 RAN=$((RAN+1)); echo "──────── SR3 대조군 — 대장과 실측이 같으면 GREEN"
 if COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" "${DG[@]}" >/dev/null 2>&1; then
@@ -214,10 +221,10 @@ mk_compose "$W/compose.yml"
 
 expect_red "SR15 배포되는 이미지가 대장에 **선언조차 없다** — 대상에서 빠지는 것은 통과가 아니다" \
   env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" \
-      --ledger "$W/ledger.md" --compose "$W/compose.yml"
+      --ledger "$W/ledger.md" --compose "$W/compose.yml" --digest-ledger "$W/dledger.tsv"
 
 RAN=$((RAN+1)); echo "──────── SR15-b 그 RED 가 **어느 이미지가 미선언인지** 이름으로 말한다"
-O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" --compose "$W/compose.yml" 2>&1)"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger.md" --compose "$W/compose.yml" --digest-ledger "$W/dledger.tsv" 2>&1)"
 if echo "$O" | grep -q 'colab-v2/migrator:i2 — 대장에 선언이 없다'; then echo "  → 기대대로"
 else echo "  → ✗ 미선언 이미지를 이름으로 말하지 않는다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
 
@@ -225,7 +232,7 @@ else echo "  → ✗ 미선언 이미지를 이름으로 말하지 않는다"; e
 cp "$W/ledger.md" "$W/ledger-exempt.md"
 echo '| `colab-v2/migrator:i2` | 면제: 배포 때만 도는 일회용 이미지 · 서빙 표면 없음 |' >> "$W/ledger-exempt.md"
 RAN=$((RAN+1)); echo "──────── SR16 명시 면제된 이미지는 통과하되 **요약줄에 건수가 나온다**"
-O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger-exempt.md" --compose "$W/compose.yml" 2>&1)"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" --ledger "$W/ledger-exempt.md" --compose "$W/compose.yml" --digest-ledger "$W/dledger.tsv" 2>&1)"
 RC=$?
 if [ $RC -eq 0 ] && echo "$O" | grep -q 'SKIP  colab-v2/migrator:i2 — 명시 면제' \
    && echo "$O" | grep -qE '승인된 면제 [0-9]+건'; then
@@ -237,7 +244,7 @@ cp "$W/ledger.md" "$W/ledger-noreason.md"
 echo '| `colab-v2/migrator:i2` | 면제: |' >> "$W/ledger-noreason.md"
 expect_red "SR17 사유 없는 면제 — 사유가 없으면 면제가 아니라 RED" \
   env COLAB_DIGEST_INSPECT="$W/inspect-ok" "$HERE/check-image-digests.sh" \
-      --ledger "$W/ledger-noreason.md" --compose "$W/compose.yml"
+      --ledger "$W/ledger-noreason.md" --compose "$W/compose.yml" --digest-ledger "$W/dledger.tsv"
 
 # SR18 — digest 이력 원장: 별칭 태그가 가리킨 것을 **회차마다 한 줄씩** 남긴다
 RAN=$((RAN+1)); echo "──────── SR18 digest 이력 원장 — 별칭 이동마다 append 되고 덮어쓰지 않는다"
@@ -263,6 +270,89 @@ RAN=$((RAN+1)); echo "──────── SR18-b 실측이 안 되는 이�
 RC=$?
 if [ $RC -eq 0 ]; then echo "  → 기대대로: 미측정은 조용한 성공이 아니다"
 else echo "  → ✗ 미측정을 성공으로 셌거나 적지 않았다 (코드 $RC)"; BAD=$((BAD+1)); fi
+
+# ── 〈297〉 자체 6종 = `§5` 원장의 「서빙 회차」 행 · 외부 4종 = 대장 `§3` (Ted 판정 2026-09-03) ──
+#   ⭑ 재현하는 결함 = 대장 `§3` 의 자체 줄이 **손으로만 갱신돼 한 회차 늦는 것**.
+#     `deploy.sh:65` 이 「워킹트리 변경 0」을 착수 조건으로 걸어 배포가 레포 파일을 못 쓰기 때문이다
+#     (배포가 §3 을 고치면 다음 배포가 자기 산출로 막힌다). 원장은 배포가 자동으로 남기고 회차 태그를 가진다.
+#   ⟹ 자체는 원장이 정본이고 `§3` 자체 줄은 **참고**다. 원장에 서빙 회차 행이 없으면 §3 으로 되돌아가지 않는다.
+DA="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+DB="sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+DC="sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+DD="sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+DE="sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+P1="sha256:1111111111111111111111111111111111111111111111111111111111111111"
+P2="sha256:2222222222222222222222222222222222222222222222222222222222222222"
+
+cat > "$W/compose-mix.yml" <<'YML'
+services:
+  a:
+    image: colab-v2/core-api:${COLAB_RELEASE_TAG:?필요}
+  b:
+    image: colab-v2/frontend:${COLAB_RELEASE_TAG:?필요}
+  db:
+    image: postgres:16-alpine
+YML
+cat > "$W/inspect-mix" <<SH
+#!/bin/sh
+case "\$1" in
+  colab-v2/core-api:i2) echo "$DA" ;;
+  colab-v2/frontend:i2) echo "$DB" ;;
+  postgres:16-alpine)   echo "$P1 postgres@$P1" ;;
+esac
+SH
+chmod +x "$W/inspect-mix"
+mk_mixledger() { # $1=출력 $2=core-api 값 $3=frontend 값 $4=postgres 값
+  { echo '| 이미지 | digest |'; echo '|---|---|'
+    echo "| \`colab-v2/core-api:i2\` | \`$2\` |"
+    echo "| \`colab-v2/frontend:i2\` | \`$3\` |"
+    echo "| \`postgres:16-alpine\` | \`$4\` |"; } > "$1"
+}
+mk_mixledger "$W/mix-selfok.md"    "$DA" "$DB" "$P1"   # §3 자체 줄이 맞는 판
+mk_mixledger "$W/mix-selfstale.md" "$DD" "$DE" "$P1"   # §3 자체 줄이 낡은 판
+mk_mixledger "$W/mix-extbad.md"    "$DA" "$DB" "$P2"   # §3 외부 줄이 어긋난 판
+mk_dl() { printf '2026-09-02T00:00:00+0900\trel11111111\ti2\tcolab-v2/core-api\t%s\n2026-09-02T00:00:00+0900\trel11111111\ti2\tcolab-v2/frontend\t%s\n' "$2" "$3" > "$1"; }
+mk_dl "$W/dl-ok.md"    "$DA" "$DB"   # 원장이 실물과 같다
+mk_dl "$W/dl-drift.md" "$DC" "$DB"   # core-api 한 줄만 어긋난다
+printf '2026-09-01T00:00:00+0900\trel00000000\ti2\tcolab-v2/core-api\t%s\n2026-09-01T00:00:00+0900\trel00000000\ti2\tcolab-v2/frontend\t%s\n' "$DD" "$DE" > "$W/dl-norow.md"
+MIX=(--compose "$W/compose-mix.yml")
+
+RAN=$((RAN+1)); echo "──────── SR28 (a) 서빙 회차 행이 원장에 있고 전건 일치 → GREEN · 출처가 줄마다 나온다"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-mix" "$HERE/check-image-digests.sh" \
+      --ledger "$W/mix-selfok.md" --digest-ledger "$W/dl-ok.md" "${MIX[@]}" 2>&1)"; RC=$?
+if [ $RC -eq 0 ] && echo "$O" | grep -q '원장 회차 `rel11111111`' \
+   && echo "$O" | grep -q '외부 이미지 — 기대값 출처: 대장' \
+   && echo "$O" | grep -qE 'digest 대조 GREEN — 3 건 전건 일치'; then
+  echo "  → 기대대로 GREEN — 자체는 원장 회차 rel11111111 · 외부는 §3"
+else echo "  → ✗ (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR29 (b) 서빙 회차 행이 원장에 **없다** → RED · §3 이 맞아도 되돌아가지 않는다"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-mix" "$HERE/check-image-digests.sh" \
+      --ledger "$W/mix-selfok.md" --digest-ledger "$W/dl-norow.md" "${MIX[@]}" 2>&1)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q '서빙 중 릴리스를 원장에서 특정하지 못했다'; then
+  echo "  → 기대대로 RED — §3 자체 줄이 실물과 같은데도 통과시키지 않는다(폴백 없음)"
+else echo "  → ✗ §3 으로 되돌아갔거나 통과시켰다 (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR30 (c) 원장 행은 있으나 자체 한 줄이 실물과 다르다 → RED · 이미지 이름으로 적발"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-mix" "$HERE/check-image-digests.sh" \
+      --ledger "$W/mix-selfok.md" --digest-ledger "$W/dl-drift.md" "${MIX[@]}" 2>&1)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q 'FAIL  colab-v2/core-api:i2' && echo "$O" | grep -q "원장 $DC"; then
+  echo "  → 기대대로 RED — 나머지 5종이 회차를 고정하므로 어긋난 한 줄이 「회차 미상」으로 뭉개지지 않는다"
+else echo "  → ✗ (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR31 (d) 외부 이미지가 \`§3\` 과 다르다 → RED (외부의 정본은 여전히 §3)"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-mix" "$HERE/check-image-digests.sh" \
+      --ledger "$W/mix-extbad.md" --digest-ledger "$W/dl-ok.md" "${MIX[@]}" 2>&1)"; RC=$?
+if [ $RC -ne 0 ] && echo "$O" | grep -q 'FAIL  postgres:16-alpine' && echo "$O" | grep -q "대장 $P2"; then
+  echo "  → 기대대로 RED — 외부 4종은 원장에 안 남으므로 §3 이 계속 정본이다"
+else echo "  → ✗ (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR32 (e) \`§3\` 자체 줄이 낡았는데 원장은 맞다 → GREEN (§3 자체 줄은 참고다)"
+O="$(COLAB_DIGEST_INSPECT="$W/inspect-mix" "$HERE/check-image-digests.sh" \
+      --ledger "$W/mix-selfstale.md" --digest-ledger "$W/dl-ok.md" "${MIX[@]}" 2>&1)"; RC=$?
+if [ $RC -eq 0 ] && echo "$O" | grep -qE 'digest 대조 GREEN — 3 건 전건 일치'; then
+  echo "  → 기대대로 GREEN — §3 의 낡은 자체 값이 판정을 흔들지 않는다"
+else echo "  → ✗ §3 자체 줄이 아직 판정에 끼어든다 (exit $RC)"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
 
 # ── P4 sha256 무결성이 **실제로 돌았는가** (2026-08-31 · 판정 〈249〉 회차 실측) ────────────
 # ⭑ 재현하는 결함 = `preflight.sh` P4 루프의 `"${!ART[@]:-}"`.
