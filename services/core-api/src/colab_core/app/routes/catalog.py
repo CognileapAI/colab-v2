@@ -115,6 +115,13 @@ def _compose(db: Session) -> list[dict]:
             "accessState": "열림" if acc is None else acc.access_state,
             "bodyAccessible": False if acc is None else acc.body_accessible,
             "_lastModifiedAt": core.last_modified_at,
+            # ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약은 밑줄 열쇠로 싣는다.** `DatasetRow` 는
+            # `additionalProperties: false` 에 required 13칸이고 카탈로그 8열이 요약을 안 쓴다 —
+            # 그래서 표 응답에는 나가면 안 되고(`enriched` 가 밑줄 열쇠를 떼어 낸다),
+            # 검색 조립만 이 값을 집어 `SearchResultRow.summary` 로 옮긴다.
+            # **여기서 싣는 이유는 재질의를 안 하기 위해서다** — `list_dataset_cores` 가
+            # 상세와 같은 열(`d3_dataset_description.summary`)을 이미 들고 왔다.
+            "_summary": core.summary,
         })
     return rows
 
@@ -192,6 +199,12 @@ MAX_QUERY = 200
 #: 화면의 `+N건 더 보기` 가 감당하는 폭. 계약 `SearchQuery.limit` 과 같은 상한이다.
 MAX_SEARCH_LIMIT = 100
 DEFAULT_SEARCH_LIMIT = 20
+#: ⭑ **⟨16차 해제 · `〈298〉`⟩ `verified` 를 켰을 때 걸름 전에 훑는 후보 창.**
+#: 승인 여부는 D2 의 값이라 실행기(D3)의 `LIMIT` 앞에서 걸 수가 없다 — 조립 층이 넓게
+#: 받아서 거른다. **이 창을 넘는 후보는 걸름 대상에서 빠진다** — 「전수를 봤다」고 말하지
+#: 않으려고 값을 코드에 드러내 둔다. 조립은 어차피 `_compose` 로 경계 안 데이터셋 전부를
+#: 이미 들고 있어, 이 창이 새로 만드는 비용은 D3 질의 한 번의 폭뿐이다.
+VERIFIED_SCAN_LIMIT = 1000
 
 
 #: 자동완성 후보 상한. 계약 `limit` 과 같은 값이다.
@@ -249,7 +262,7 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     · **AI 가 얹어 보낸 식별자를 읽지 않는다** (중계가 이미 버린다).
     """
     payload = body if isinstance(body, dict) else {}
-    unknown = sorted(set(payload) - {"query", "limit", "cursor"})
+    unknown = sorted(set(payload) - {"query", "limit", "cursor", "verified"})
     if unknown:
         raise errors.bad_request(f"요청에 계약에 없는 필드가 있다: {unknown}")
     query = payload.get("query")
@@ -262,6 +275,13 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     cursor = payload.get("cursor")
     if cursor is not None and not isinstance(cursor, str):
         raise errors.bad_request("cursor 는 문자열이다.")
+    # ⭑ **⟨16차 해제 · `〈298〉`⟩ `Verified만 보기`** (`Policy_데이터_찾기 §8` `:150`).
+    # **생략은 「거르지 않는다」다** — `false` 와 같은 뜻이고, 「승인되지 않은 것만」은
+    # 정본에 없는 조작이라 이 칸이 표현하지 않는다. 문자열 `"true"` 를 참으로 접지 않는다.
+    verified_only = payload.get("verified")
+    if verified_only is not None and not isinstance(verified_only, bool):
+        raise errors.bad_request("verified 는 boolean 이다.")
+    verified_only = bool(verified_only)
 
     lab = d1_identity.find_lab(db)
     lab_name = ("" if lab is None else lab["name"]) or "연구실"
@@ -292,19 +312,29 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     next_cursor = None
     if answer["isDataQuery"] and answer["terms"]:
         offset = dataset_search.decode_cursor(cursor)
+        # ⭑ **⟨16차 해제 · `〈298〉`⟩ `verified` 를 켜면 `limit` 보다 먼저 거른다.**
+        # `verified` 는 D2 의 값이라 실행기(D3)가 볼 수 없다(`〈295〉`-㉯) — 그래서 걸름은
+        # 조립 층의 일이고, 조립이 **한 쪽만 받아서 거르면 「한 쪽 안의 걸름」**이 된다.
+        # 그것이 `〈295〉`-㉲-ⓑ 가 적어 둔 한계이고(이어보기 뒤쪽의 승인 결과가 켜도 안 온다),
+        # 이 회차가 닫는 것이 그 한계다. 켠 요청은 **창을 넓혀 받고 걸른 뒤 잘라 낸다.**
+        #
+        # ⚠ **창 값을 코드에 드러내 둔다.** 이 창을 넘는 결과는 걸름 대상에서 빠진다 —
+        # 「전수를 봤다」고 말하지 않기 위해 상수로 세운다.
+        fetch_limit = VERIFIED_SCAN_LIMIT if verified_only else limit
+        fetch_offset = 0 if verified_only else offset
         # **읽기 전용 트랜잭션**에서 돈다 — 검색이 한 줄도 쓰지 않는다는 것을
         # 문서가 아니라 Postgres 의 거절이 지킨다.
         with read_only_scope(request.app.state.session_factory, subject) as ro:
             matches, total = d3_catalog.search_datasets(
                 ro, terms=answer["terms"], topic=answer["topic"],
-                limit=limit, offset=offset)
+                limit=fetch_limit, offset=fetch_offset)
         hits, next_cursor = dataset_search.compose(
             matches, lab_name=lab_name, searched=searched_count, topic=answer["topic"],
             # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
             interpretation_degraded=answer["source"] != "llm",
             # 그래프가 데려온 말이면 근거 한 줄이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
             expansions=answer.get("expansions"),
-            total=total, offset=offset)
+            total=total, offset=fetch_offset)
 
         by_id = {row["datasetId"]: row for row in _compose(db)}
         for hit in hits:
@@ -316,7 +346,36 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             # **잠김 표시는 여기서 붙는다** — `accessState`·`bodyAccessible` 은 D2 의 값이다.
             enriched["relevanceBar"] = hit["relevanceBar"]
             enriched["rationale"] = hit["rationale"]
+            # ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약** — 상세와 **같은 열**에서 온 값을 옮긴다.
+            enriched["summary"] = row["_summary"]
             items.append(enriched)
+
+        # ⭑ **⟨`〈295〉`-㉯ 가 멈춘 한 줄 · `Policy_데이터_찾기 §8` `:117`⟩ Verified 우선.**
+        # **안정 정렬이라 무리 안의 순서는 관련도 그대로다** — 「우선」은 두 무리로 가르는
+        # 것이지 관련도를 버리는 것이 아니다. 카드의 「교수 승인이라 위로 올렸어요」가
+        # 참이 되는 자리가 여기다(`〈295〉`-㉳).
+        items.sort(key=lambda r: not r["verified"])
+
+        if verified_only:
+            # 걸른 뒤에 자른다. **건수도 걸른 뒤의 건수다** (`Policy :150` 「건수 갱신」).
+            kept = [r for r in items if r["verified"]]
+            items = kept[offset:offset + limit]
+            seen = offset + len(items)
+            next_cursor = dataset_search.encode_cursor(seen) if seen < len(kept) else None
+
+        # ⭑ **⟨16차 해제 · `〈298〉`⟩ 기간** — 상세 `basicInfo.period` 와 **같은 열**
+        # (`d3_dataset_autometa.period_start/end`)에서 한 번에 읽는다. 행마다 다시 묻지 않는다.
+        # `end` 가 `null` 이면 **무기한**이다 (`〈283〉` · 14차 해제) — 끝의 유무로 기간을
+        # 떨어뜨리면 저장된 시작이 카드에서 사라진다.
+        # ⚠ **잠긴 행에서도 값을 빼지 않는다** — 메타 열이라 본체가 아니고(`d3_catalog.periods_of`),
+        # 잠긴 카드가 `기간` 을 안 그리는 것은 화면의 규칙이다 (`Policy §8` 잠긴 결과 카드).
+        periods = d3_catalog.periods_of(db, [Ulid(r["datasetId"]) for r in items])
+        for row_out in items:
+            span = periods.get(row_out["datasetId"])
+            row_out["period"] = None if span is None else {
+                "start": _iso(span[0]),
+                "end": None if span[1] is None else _iso(span[1]),
+            }
 
     out = {
         "scope": {"labId": str(subject.lab_id), "labName": lab_name,

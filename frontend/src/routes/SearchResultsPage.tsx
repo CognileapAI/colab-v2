@@ -37,9 +37,11 @@ function ScopeLine(props: { scope: AiSearchScope }) {
  * **정렬 선택 상자를 두지 않는다** — 순서를 고르는 조작은 카탈로그에만 있다(같은 행 축자).
  * 그래서 오른쪽 끝의 「Verified 우선 · 관련도 순」은 **고른 값이 아니라 고정 문구**다.
  *
- * ⚠ **토글은 화면이 건다.** 검색 요청(`SearchQuery`)에는 `verified` 칸이 없고 서버는 계약에
- * 없는 필드를 400 으로 막는다 — 서버 걸름은 계약 개정이 있어야 서는 자리라 이 회차의 범위
- * 밖이다(`〈295〉`). 목업의 토글도 같은 자리에서 받은 결과를 걸러 건수를 갱신한다.
+ * ⭑ **2026-09-03 개정 (`〈298〉` · 16차 해제) — 걸름이 서버로 갔다.** 종전 기재
+ * 「토글은 화면이 건다 … 서버 걸름은 계약 개정이 있어야 서는 자리」(`〈295〉`)는 **그때는
+ * 참이었다**. 16차가 `SearchQuery.verified` 를 열었으므로 이제 토글은 **다시 묻는 조작**이고,
+ * 화면은 받은 쪽을 다시 거르지 않는다. 그래야 이어보기 뒤쪽의 승인 결과도 온다
+ * (`〈295〉`-㉲-ⓑ 가 ⚠ 로 적어 둔 「한 쪽 안에서만 거른다」가 닫힌다).
  */
 function ResultHead(props: {
   found: number;
@@ -70,12 +72,14 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
   const [params] = useSearchParams();
   const query = params.get('q') ?? '';
   const source = useMemo(() => props.source ?? defaultSearchSource(), [props.source]);
-  const state = useSearch(source, query);
   // `Verified만 보기` — **검색 전용**이다 (정본 §8). 카탈로그에서는 같은 일을 Verified 열의
   // 조건이 맡으므로 이 상태를 그쪽과 공유하지 않는다.
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const all = state.status === 'ready' ? state.results.items : [];
-  const shown = verifiedOnly ? all.filter((row) => row.verified) : all;
+  // ⭑ **⟨16차 해제 · `〈298〉`⟩ 토글이 질의로 들어간다** — 걸름은 서버가 `limit` 앞에서 건다.
+  const state = useSearch(source, query, verifiedOnly);
+  // **받은 것을 다시 거르지 않는다.** 여기서 한 번 더 거르면 「서버가 걸렀나」를 아무도
+  // 못 재고, 서버 걸름이 깨져도 화면이 그 사실을 덮는다.
+  const shown = state.status === 'ready' ? state.results.items : [];
 
   return (
     <div className="search-page" data-screen="S-06">
@@ -121,7 +125,11 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
                 물어보세요.
               </p>
             </div>
-          ) : all.length === 0 ? (
+          ) : /* ⭑ **⟨16차 해제 · `〈298〉`⟩ 토글을 켠 채의 0건은 「못 찾았어요」가 아니다.**
+                 뒤진 결과는 있고 승인된 것이 없을 뿐이라, 여기서 0건 상태로 갈아타면
+                 **토글이 화면에서 사라져 다시 끌 수가 없다.** 그때는 아래 결과 헤드를
+                 0건으로 그린다 (`Policy §8` 「건수 갱신」). */
+            shown.length === 0 && !verifiedOnly ? (
             /* 0건은 200 이고 정상이다. **대신 뭘 볼래요? 를 지어내지 않는다.** */
             /* 0건 상태의 네 조각은 **목업 E-02 `F-02` 축자**다 (`데이터_찾기_260817.html`
                448~453행 · `Policy_데이터_찾기 §154행` 「"맞는 데이터를 못 찾았어요" + 뒤진

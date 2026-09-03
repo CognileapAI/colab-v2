@@ -9,11 +9,13 @@ import { SearchUnavailable, type SearchResults, type SearchSource } from './type
 
 export function apiSearchSource(): SearchSource {
   return {
-    async search({ query, limit }) {
+    async search({ query, limit, verified }) {
       let r;
       try {
         r = await api.POST('/dataset-searches', {
-          body: { query, limit: limit ?? 20 },
+          // **켰을 때만 싣는다** — 계약의 `verified` 는 선택 칸이고 생략이 「거르지 않는다」다.
+          // `false` 를 실어도 뜻은 같지만, 안 걸고 있는 요청이 조건을 단 것처럼 보이지 않게 둔다.
+          body: { query, limit: limit ?? 20, ...(verified ? { verified: true } : {}) },
         });
       } catch (e) {
         // 그물 자체가 끊어졌다. 5xx 와 같은 취급이다.

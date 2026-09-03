@@ -14,6 +14,10 @@
  * ⚠ **정렬 자체는 이 파일이 오라클로 들지 않는다** — 순서는 서버 조립 루트(`routes/catalog.py`)가
  * `verified` 를 읽어야 서고, 그 파일은 이 회차의 범위 밖이다. 화면은 서버가 준 순서를
  * 다시 매기지 않는다(종전 성질 유지).
+ *
+ * ⭑ **2026-09-03 (`〈298〉` · 16차) — 그 자리가 착지했다.** 정렬은
+ * `services/core-api/tests/test_search_verified_16.py` 가, 서버 걸름과 카드의 `요약`·`기간` 은
+ * `test/search-contract-16.test.tsx` 가 진다. 이 파일은 `〈295〉` 의 오라클 셋을 그대로 지킨다.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -38,6 +42,10 @@ function hit(over: Partial<SearchResultRow> = {}): SearchResultRow {
     verified: false,
     accessState: '열림',
     bodyAccessible: true,
+    // ⭑ **⟨16차 해제 · `〈298〉`⟩ 두 칸이 늘었다** — `〈295〉`-㉰ 가 「계약에 칸이 없다」로
+    // 멈춰 둔 자리다. 이 파일의 오라클(정렬 근거 줄 · 토글 · 배지)은 그대로다.
+    summary: '한강 유역 지점 강수 관측 원자료',
+    period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
     relevanceBar: 1,
     rationale: '수자원순환연구실 안 128건에서 ‘강수’가 이름에 맞았어요 — 기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요.',
     ...over,
@@ -59,7 +67,13 @@ function results(items: SearchResultRow[]): SearchResults {
 }
 
 function renderResults(items: SearchResultRow[]) {
-  const source: SearchSource = { search: async () => results(items) };
+  // ⭑ **⟨16차 해제 · `〈298〉`⟩ 걸름이 서버로 갔다** — 그래서 이 흉내 서버가 `verified` 를
+  // 실제로 읽는다. 종전에는 화면이 걸렀으므로 요청을 안 읽어도 시험이 섰다(`〈295〉`).
+  // **값을 지우지 않고 시점을 붙인다** — 아래 오라클(건수 갱신·토글 상태)은 그대로다.
+  const source: SearchSource = {
+    search: async (request) =>
+      results(request.verified ? items.filter((i) => i.verified) : items),
+  };
   return render(
     <MemoryRouter initialEntries={['/datasets/search?q=%EA%B0%95%EC%88%98']}>
       <Routes>
