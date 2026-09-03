@@ -511,7 +511,16 @@ def _run(job: RenderJob) -> None:
             except RenderError as e:
                 first_error = first_error or e
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
-            except (FieldReadError, NotRenderableError, Exception) as e:  # noqa: BLE001
+            except NotRenderableError as e:
+                # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #2⟩ **「알 수 없는 오류」가 아니다.**
+                # `is_retry_pointless` 가 이 형으로 재시도 무의미를 판정하는데, 여기서
+                # `RENDER_UNKNOWN_ERROR` 로 접어 버리면 화면은 그 판정을 못 본다 —
+                # 없는 시각·안 그리는 포맷에 「다시 그리기」가 뜨고, 눌러도 영원히 같은
+                # 실패가 돌아온다. 코드는 라우트가 415 로 내는 것과 **같은 문자열**이다.
+                first_error = first_error or RenderError(
+                    RenderFailure.NOT_RENDERABLE, str(e))
+                missing.append({"fileId": part.file_id, "fileName": part.file_name})
+            except (FieldReadError, Exception) as e:  # noqa: BLE001
                 first_error = first_error or RenderError(RenderFailure.UNKNOWN, str(e))
                 missing.append({"fileId": part.file_id, "fileName": part.file_name})
 

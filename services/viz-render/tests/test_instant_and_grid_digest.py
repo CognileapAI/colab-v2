@@ -67,6 +67,42 @@ def nc_3instants(tmp_path):
     return path
 
 
+@pytest.fixture
+def nc_time_last(tmp_path):
+    """시각 축이 **끝에 있는** NetCDF — `(lat, lon, time)`. 반환은 `(경로, 원본 배열)`.
+
+    ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #1⟩ `_time_index` 는 `var.dimensions` 의 **어느
+    자리에서든** 시각 축을 찾아 인덱스를 돌려주는데, 자르기는 `raw[t]` 로 **언제나 0축**을
+    잘랐다. 그래서 이 배치에서는 위도 한 줄을 골라 `(lon, time)` 판을 2차원 그림으로
+    그렸다 — **오류 없이 틀린 그림**이라 아무도 모른다.
+
+    ⚠ 값은 세 축이 **모두** 달라야 한다. 시각으로만 값이 갈리면 위도를 잘라도 우연히
+    같은 값이 나와 시험이 아무것도 못 가른다.
+    """
+    from netCDF4 import Dataset
+
+    path = tmp_path / "time_last.nc"
+    data = np.arange(4 * 5 * 3, dtype="f4").reshape(4, 5, 3) + 1.0
+    ds = Dataset(str(path), "w", format="NETCDF4")
+    ds.createDimension("lat", 4)
+    ds.createDimension("lon", 5)
+    ds.createDimension("time", 3)
+    t = ds.createVariable("time", "f8", ("time",))
+    t.units = "hours since 2026-06-01 00:00:00"
+    t.calendar = "standard"
+    t[:] = [0.0, 12.0, 24.0]
+    la = ds.createVariable("lat", "f8", ("lat",))
+    la[:] = np.linspace(38.0, 36.0, 4)
+    lo = ds.createVariable("lon", "f8", ("lon",))
+    lo[:] = np.linspace(126.0, 128.0, 5)
+    v = ds.createVariable("precip", "f4", ("lat", "lon", "time"))
+    v.units = "mm"
+    with _quiet_netcdf_write():
+        v[:] = data
+    ds.close()
+    return path, data
+
+
 def _read(path, instant):
     _fmt, field = readers.read_field(path, instant=instant, max_side=64)
     return field
@@ -85,13 +121,69 @@ def test_지정한_시각을_실제로_그린다(nc_3instants, index, instant):
         f"{instant} 를 달라고 했는데 다른 시각을 그렸다"
 
 
+@pytest.mark.parametrize("index,instant", list(enumerate(_INSTANTS)))
+def test_시각_축이_끝에_있어도_그_축에서_고른다(nc_time_last, index, instant):
+    """**축을 찾는 자리와 자르는 자리가 같아야 한다** — 레인 C 수용 검토 #1.
+
+    오라클은 형상이다. `(lat, lon, time)` 을 0축으로 자르면 `(lon, time)` = `(5, 3)` 이
+    나오고 그것도 2차원이라 **아무 예외 없이** 위도 한 줄이 그림이 된다.
+    """
+    path, data = nc_time_last
+    got = _read(path, instant).values
+    assert got.shape == (4, 5), \
+        f"시각 축(2번)이 아니라 다른 축을 잘랐다 — shape={got.shape}"
+    np.testing.assert_allclose(got, data[:, :, index])
+
+
+def test_시각을_생략해도_시각_축에서_첫_시각을_집는다(nc_time_last):
+    """계약 축자 「생략하면 첫 시각이다」는 **축 위치와 무관하게** 참이어야 한다."""
+    path, data = nc_time_last
+    np.testing.assert_allclose(_read(path, None).values, data[:, :, 0])
+
+
 def test_없는_시각은_사유와_함께_거절한다(nc_3instants):
     """**지어내지 않는다** — 가장 가까운 시각으로 바꿔 그리면 사용자는 그 사실을 모른다.
-    「그럴 값이 없다」(`variable`)와 **같은 자세**이고 같은 예외형이다."""
-    with pytest.raises(readers.FieldReadError) as e:
+
+    ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #2⟩ 예외형이 `FieldReadError` 에서
+    `NotRenderableError` 로 갈렸다. 계획 레인 C 행이 이 자리를 「기존 NOT_RENDERABLE
+    오류」로 못박았고, `failures.is_retry_pointless` 가 **그 형으로** 재시도 무의미를
+    판정한다 — 없는 시각을 몇 번 다시 눌러도 결과는 같다.
+
+    사유에는 **요청값 + 있는 시각의 개수·처음·마지막**이 든다. 목록을 통째로 싣지
+    않는 것은 24시각·8760시각 파일에서 사유가 화면을 덮기 때문이다.
+    """
+    with pytest.raises(readers.NotRenderableError) as e:
         _read(nc_3instants, "2026-07-01T00:00:00Z")
-    assert "2026-07-01T00:00:00Z" in str(e.value), "무엇을 요청했는지가 사유에 없다"
-    assert "2026-06-01T12:00:00Z" in str(e.value), "있는 시각이 사유에 없다"
+    reason = str(e.value)
+    assert "2026-07-01T00:00:00Z" in reason, "무엇을 요청했는지가 사유에 없다"
+    assert "3" in reason, "있는 시각의 개수가 사유에 없다"
+    assert _INSTANTS[0] in reason, "처음 시각이 사유에 없다"
+    assert _INSTANTS[-1] in reason, "마지막 시각이 사유에 없다"
+
+
+def test_없는_시각은_재시도가_무의미하다(nc_3instants):
+    """`is_retry_pointless` 가 True 여야 「다시 그리기」 버튼이 감춰진다."""
+    from colab_viz.domains.d7_visualization.failures import is_retry_pointless
+
+    with pytest.raises(readers.NotRenderableError) as e:
+        _read(nc_3instants, "2026-07-01T00:00:00Z")
+    assert is_retry_pointless(e.value) is True
+
+
+def test_없는_시각의_실패_봉투는_NOT_RENDERABLE_이다(client, put_target, nc_3instants):
+    """**표면까지 내려간다** — 단위 시험만으로는 `_run` 이 마지막 그물로 삼켜
+    `RENDER_UNKNOWN_ERROR` 로 바꾸는 것을 못 잡는다(레인 C 가 그 상태였다)."""
+    from conftest import AUTH
+
+    tid = put_target(copy_from=[nc_3instants])
+    r = client.post("/viz/v1/renders", headers=AUTH, json={
+        "target": {"datasetId": tid}, "instant": "2026-07-01T00:00:00Z",
+        "style": {"palette": "단색-파랑"}})
+    assert r.status_code == 202, r.text
+    body = client.get(f"/viz/v1/renders/{r.json()['renderId']}", headers=AUTH).json()
+    assert body["status"] == "실패", body
+    assert body["failure"]["code"] == "NOT_RENDERABLE", body["failure"]
+    assert "2026-07-01T00:00:00Z" in body["failure"]["details"]["detail"]
 
 
 def test_시각_축이_없는_파일에_시각을_지정하면_거절한다(tmp_path):
@@ -109,6 +201,13 @@ def test_시각_축이_없는_파일에_시각을_지정하면_거절한다(tmp_
     assert _read(path, None).values.shape == (3, 3)
     with pytest.raises(readers.FieldReadError):
         _read(path, "2026-06-01T00:00:00Z")
+
+
+def test_시각_표기가_계약_형태가_아니면_거절한다(nc_3instants):
+    """**형이 갈린다** — 표기 오류는 요청을 고치면 되는 자리라 `FieldReadError` 로
+    남고, 없는 시각(파일이 그 시각을 안 가졌다)만 `NotRenderableError` 다."""
+    with pytest.raises(readers.FieldReadError):
+        _read(nc_3instants, "어제")
 
 
 # ── ② 캐시 키가 시각을 접는다 ────────────────────────────────────────────────

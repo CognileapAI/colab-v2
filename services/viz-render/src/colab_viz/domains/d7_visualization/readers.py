@@ -276,27 +276,38 @@ def _instant_labels(var) -> list[str]:
     return out
 
 
-def _time_index(ds, var, instant: str | None, path: Path) -> int:
-    """그릴 시각의 인덱스. **생략하면 0**(계약 축자 「생략하면 첫 시각이다」).
+def _time_index(ds, var, instant: str | None, path: Path) -> tuple[int, int]:
+    """`(고를 자리, 그 자리가 있는 축)`. **생략하면 첫 시각**(계약 축자).
 
     ⭑ ⟨2026-09-03 · 코드리뷰 #3⟩ 종전에는 이 함수가 없었고 `while raw.ndim > 2:
     raw = raw[0]` 이 **언제나 첫 시각**을 집었다 — `instant` 는 서명에만 있고 본문에서
     한 번도 쓰이지 않았다. 계약이 「층마다 시각을 따로 고른다」고 적은 값이 그렇게
     조용히 버려졌고, 캐시 키에도 없어서 **틀린 시각이 모든 시각에 대해 서빙**됐다.
 
+    ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #1⟩ **축 위치를 함께 돌려준다.** 종전에는 자리만
+    돌려주고 `_read_netcdf` 가 `raw[t]` 로 **언제나 0축**을 잘랐다. `(time, lat, lon)`
+    에서는 우연히 맞았지만 `(lat, lon, time)` 에서는 **위도 한 줄**을 골라 `(lon, time)`
+    판을 그림으로 냈다 — 그것도 2차원이라 **예외 하나 없이 틀린 그림**이 나간다.
+    축을 찾는 자리와 자르는 자리가 갈라져 있던 것이 원인이라, 찾은 쪽이 축을 말한다.
+
     ⚠ **정확 일치로만 고른다.** 가장 가까운 시각으로 바꿔 그리면 사용자는 자기가 다른
     시각을 보고 있다는 사실을 모른다 — `_apply_fill_exact` 와 같은 자세다.
     """
+    dims = tuple(getattr(var, "dimensions", ()))
+    time_dim = next((d for d in dims if d.lower() in _TIME_NAMES), None)
+    # 시각 축이 몇 번째인가. **못 찾으면 0** — 남은 축을 첫 자리로 접는 종전 행동 그대로다
+    # (밴드 축은 계약에 고르는 자리가 없다). 지어낸 값이 아니라 「모르니 앞에서부터」다.
+    axis = dims.index(time_dim) if time_dim is not None else 0
     if instant is None:
-        return 0
+        # 생략은 「첫 시각」이다 — **첫 축이 아니다.** 시각 축이 뒤에 있는 파일에서
+        # 0축을 자르면 그것은 첫 위도이고, 계약이 적은 값과 다르다.
+        return 0, axis
     try:
         wanted = _parse_instant(instant)
     except ValueError as e:
         raise FieldReadError(
             f"{path.name}: 시각 표기가 계약(UTC ISO-8601) 형태가 아니다 — {instant!r}") from e
 
-    dims = getattr(var, "dimensions", ())
-    time_dim = next((d for d in dims if d.lower() in _TIME_NAMES), None)
     time_var = ds.variables.get(time_dim) if time_dim else None
     if time_var is None:
         # 시각 축이 없는 파일에 시각을 지정한 것이다. **조용히 무시하지 않는다** —
@@ -306,9 +317,19 @@ def _time_index(ds, var, instant: str | None, path: Path) -> int:
     labels = _instant_labels(time_var)
     for i, label in enumerate(labels):
         if _parse_instant(label) == wanted:
-            return i
-    raise FieldReadError(
-        f"{path.name}: 그럴 시각이 없다 — {instant} ∉ {labels}")
+            return i, axis
+    # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #2⟩ **`NotRenderableError` 다.** 계획 레인 C 행이
+    # 이 자리를 「기존 NOT_RENDERABLE 오류」로 못박았고, `failures.is_retry_pointless` 가
+    # 바로 그 형으로 재시도 무의미를 판정한다 — 파일이 안 가진 시각은 몇 번을 다시
+    # 눌러도 없다. 종전 `FieldReadError` 는 `RENDER_UNKNOWN_ERROR` 로 나가 「다시
+    # 그리기」가 뜨고, 눌러도 영원히 같은 실패가 돌아왔다.
+    #
+    # ⚠ 사유에 **목록을 통째로 싣지 않는다** — 8760시각 파일에서 그 사유가 화면을 덮는다.
+    # 개수 · 처음 · 마지막이면 「내가 요청한 것이 이 파일의 범위 밖인가」를 답할 수 있다.
+    raise NotRenderableError(
+        f"{path.name}: 그럴 시각이 없다 — {instant} ∉ "
+        f"시각 {len(labels)}개"
+        + (f"(처음 {labels[0]} · 마지막 {labels[-1]})" if labels else "(비어 있다)"))
 
 
 def _read_netcdf(path: Path, variable: str | None, instant: str | None,
@@ -338,14 +359,15 @@ def _read_netcdf(path: Path, variable: str | None, instant: str | None,
         # (`P2.md §10-(가)` 의 순서 규칙 그대로).
         var.set_auto_maskandscale(False)
         # **시각을 먼저 고른다**(코드리뷰 #3) — 자르기 전에 고르지 않으면 고를 자리가 없다.
-        t = _time_index(ds, var, instant, path)
+        t, t_axis = _time_index(ds, var, instant, path)
         arr = var[:]
         raw = np.ma.filled(np.asarray(arr, dtype="f8"), np.nan) if np.ma.isMaskedArray(arr) \
             else np.asarray(arr, dtype="f8")
         if raw.ndim > 2:
-            # 첫 축이 시각(또는 밴드) 축이다 — 고른 자리를 집는다. 그 아래로 축이 더
-            # 남으면 **첫 자리**로 접는다(밴드 축은 계약에 고르는 자리가 없다).
-            raw = raw[t]
+            # **시각 축에서** 고른 자리를 집는다 — `raw[t]` 가 아니라 `np.take(…, axis=)`
+            # 다(레인 C 수용 검토 #1). 축을 찾아 놓고 0축을 자르면 `(lat, lon, time)`
+            # 에서 위도 한 줄이 그림이 되고, **그것도 2차원이라 아무도 못 잡는다.**
+            raw = np.take(raw, t, axis=t_axis)
         while raw.ndim > 2:             # 남은 밴드 축 — 한 번에 값 하나만 그린다
             raw = raw[0]
         if raw.ndim != 2:
