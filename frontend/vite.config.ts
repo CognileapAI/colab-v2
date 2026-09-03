@@ -16,7 +16,10 @@ export default defineConfig(({ mode }) => ({
     include: ['test/**/*.test.tsx', 'test/**/*.test.ts'],
     // 카탈로그 헤더 고정·취소선을 **계산값**으로 재려면 그 규칙 파일이 실제로 실려야 한다.
     // vitest 기본값은 css 를 빈 것으로 stub 한다 — 그래서 종전 회차가 `[미확인]` 로 남겼다.
-    // 이 파일 하나만 싣는다(전역 확장 아님).
-    css: { include: [/catalog\.css$/] },
+    // 버그 1·2·9 (레인 C) — 프로젝트 화면 뿌리 여백·상세 카드 면·GNB 아이콘 간격도 같은 이유로
+    // 계산값이 필요해 project.css·shell.css 를 더한다. jsdom 이 못 재는 `var()` 배경·`gap` 은
+    // 규칙 원문(`?raw`)으로 잰다 — 이 스텁은 `?raw` id 까지 빈 문자열로 만들므로 함께 허용한다.
+    // (`node:fs` 는 쓰지 않는다 — `e01-apply-points.test.ts:14` 의 배포 불가 사고.)
+    css: { include: [/catalog\.css$/, /project\.css(\?raw)?$/, /shell\.css(\?raw)?$/] },
   },
 }));
