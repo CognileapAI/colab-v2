@@ -312,12 +312,21 @@ def detect_axes_for_upload(paths: list[Path]) -> UploadAxisResult:
     # ── 남은 거절에 **구조화된 사유**를 붙인다 (`〈88〉` 묶음 8) ──────────────
     # 같은 형상의 짝이 정확히 2건이면 「짝은 있는데 못 갈랐다」 = 축 판별 실패,
     # 아니면 「애초에 한 쌍이 아니다」 = 짝 불일치. **네 번째를 만들지 않는다.**
+    #
+    # ⭑ ⟨개정 2026-09-03 · 코드리뷰 20260903-F #2⟩ **형상을 못 읽은 것도 축 판별 실패다.**
+    #   종전에는 `shape is None` 이 `members = []` 을 지나 「짝 불일치」로 떨어졌다 — 그래서
+    #   홀로 올라온 1차원 `Lat_*.npy` 가 「짝 불일치」로 나갔다. 사유는 사람이 읽고 **다음
+    #   행동을 고르는 값**인데, 「짝 불일치」는 「짝을 맞춰 다시 올려라」로 읽힌다. 그 파일은
+    #   짝을 붙여도 서지 않는다 — 형상조차 못 읽어(`_read_npy` 가 판별 실패로 바꾼다)
+    #   **짝짓기 후보 집합에 들지 못한** 것이고, 원인은 처음부터 끝까지 축 판별이다.
+    #   ⚠ **좁히는 것이지 줄이는 것이 아니다** — 형상을 읽었는데 같은 형상이 2건이 아닌
+    #   경우는 그대로 「짝 불일치」다. 그 자리는 실제로 짝의 문제다.
     for p in list(res.rejected):
         shape = stats[p].shape if p in stats else None
         if shape is not None:
             res.shapes[p] = [int(n) for n in shape]
         members = groups.get(shape, []) if shape is not None else []
-        res.reasons[p] = (REASON_AXIS_UNDECIDED if len(members) == 2
+        res.reasons[p] = (REASON_AXIS_UNDECIDED if shape is None or len(members) == 2
                           else REASON_PAIR_MISMATCH)
 
     return res

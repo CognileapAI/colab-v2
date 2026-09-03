@@ -17,6 +17,8 @@ import numpy as np
 import pytest
 
 from colab_pipeline.d5.axis import (
+    REASON_AXIS_UNDECIDED,
+    REASON_PAIR_MISMATCH,
     AxisUndeterminedError,
     detect_axes,
     detect_axes_for_upload,
@@ -68,3 +70,46 @@ def test_업로드_단위_판별이_1차원_격자에서_터지지_않는다(tmp
     assert bad in res.rejected, "1차원 격자가 거절 목록에 없다"
     assert res.reasons[bad], "거절 사유가 계약 enum 으로 안 붙었다"
     assert good in res.resolved, "정상 격자까지 함께 넘어졌다"
+
+
+def test_홀로_있는_1차원_격자의_사유는_축_판별_실패다(tmp_path):
+    """**「짝 불일치」가 아니다** (코드리뷰 20260903-F #2).
+
+    사유 3값(`common.json#GridRejectionReason`)은 사람이 읽고 다음 행동을 고르는 값이다 —
+    「짝 불일치」는 「짝을 맞춰 다시 올려라」로 읽히는데, 1차원 격자는 짝을 붙여도 안 선다.
+    형상조차 못 읽어(`_read_npy` 가 판별 실패로 바꾼다) **짝짓기 후보 집합에 들지 못한** 것이
+    사유가 「짝」인 채로 나가던 자리다. 원인이 축 판별이면 축 판별이라고 말한다.
+    """
+    lone = _one_dim(tmp_path / "Lat_1d.npy")
+
+    res = detect_axes_for_upload([lone])
+
+    assert res.reasons[lone] == REASON_AXIS_UNDECIDED, res.reasons
+
+
+def test_짝이_없는_2차원_격자는_여전히_짝_불일치다(tmp_path):
+    """**좁히되 줄이지 않는다** — 형상을 읽었는데 같은 형상이 하나뿐이면 그것은 짝 문제다."""
+    a = tmp_path / "a.npy"
+    b = tmp_path / "b.npy"
+    # 값이 [-90,90] 안이라 단독으로는 모호하고, 형상이 서로 달라 짝이 서지 않는다.
+    np.save(a, np.repeat(np.linspace(33.0, 39.0, 8)[:, None], 8, axis=1))
+    np.save(b, np.repeat(np.linspace(33.0, 39.0, 6)[:, None], 6, axis=1))
+
+    res = detect_axes_for_upload([a, b])
+
+    assert res.reasons[a] == REASON_PAIR_MISMATCH, res.reasons
+    assert res.reasons[b] == REASON_PAIR_MISMATCH, res.reasons
+
+
+def test_같은_형상_2건인데_못_갈린_것은_축_판별_실패다(tmp_path):
+    """짝은 섰는데 값으로 못 갈랐다 — 이 자리는 종전에도 「축 판별 실패」였다. 지키기만 한다."""
+    a = tmp_path / "a.npy"
+    b = tmp_path / "b.npy"
+    same = np.repeat(np.linspace(33.0, 39.0, 8)[:, None], 8, axis=1)
+    np.save(a, same)
+    np.save(b, same.copy())
+
+    res = detect_axes_for_upload([a, b])
+
+    assert res.reasons[a] == REASON_AXIS_UNDECIDED, res.reasons
+    assert res.reasons[b] == REASON_AXIS_UNDECIDED, res.reasons

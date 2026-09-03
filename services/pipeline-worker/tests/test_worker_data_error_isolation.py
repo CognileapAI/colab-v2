@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 from colab_pipeline.app.worker import drive_uploads
 from colab_pipeline.d5.axis import AxisUndeterminedError
+from colab_pipeline.d5.grid import GridUnavailableError
 from colab_pipeline.domains.d5_ingestion import IngestionService, relay_unpublished
 from colab_pipeline.kernel import storage_layout
 from fixture_builders import make_readable_geotiff
@@ -110,7 +111,8 @@ def test_데이터_오류는_upload_failed_로_적히고_틱은_계속_돈다(tm
 def test_실패한_업로드를_다음_바퀴가_다시_집지_않는다(tmp_path):
     """크래시 루프의 정체가 이것이다 — 롤백으로 `ready=false` 가 남아 같은 건이 다시 먼저 온다."""
     root, ledger = _two_uploads(tmp_path)
-    svc = _RaisingService(ledger, blow_up_on=_BAD, exc=ValueError("배열 형상이 이상하다"))
+    svc = _RaisingService(ledger, blow_up_on=_BAD,
+                          exc=GridUnavailableError("기준 격자를 못 세운다"))
 
     drive_uploads(ledger, upload_dir=root, workdir=tmp_path / "w", service=svc)
     again = drive_uploads(ledger, upload_dir=root, workdir=tmp_path / "w", service=svc)
@@ -164,5 +166,49 @@ def test_1차원_격자_업로드가_틱을_죽이지_않는다(tmp_path):
     assert done == [_OK]
     ready = next(e for e in ledger.events if e["type"] == "upload.ready")
     rows = ready["payload"]["gridResolution"]
-    assert [r.get("rejectionReason") for r in rows] == ["짝 불일치"], rows
+    # ⭑ **사유는 「축 판별 실패」다** (코드리뷰 20260903-F #2) — 짝이 어긋난 것이 아니라
+    #   그 파일 하나로 축을 못 정한 것이다. 형상조차 못 읽어 짝짓기 후보에도 못 든다.
+    assert [r.get("rejectionReason") for r in rows] == ["축 판별 실패"], rows
     assert ledger.axes == {}, "축이 빈 격자 행이 섰다"
+def test_맨_ValueError_는_데이터가_아니라_배관이라_그대로_올라온다(tmp_path):
+    """**형이 없는 예외를 데이터 오류로 세지 않는다** (코드리뷰 20260903-F #1).
+
+    `DATA_ERRORS` 에 맨 `ValueError`·`IndexError` 가 들어 있으면 **프로그래밍·설정 결함**이
+    데이터 오류로 위장한다 — 원장 불변식(`축이 빈 기준 격자 파일 행을 만들지 않는다` ·
+    `업로드 상태에 없는 열`)과 `storage_layout` 의 설정 오류가 전부 `ValueError` 다.
+    그것이 삼켜지면 업로드마다 **영구 실패 `내부 오류`** 가 적히고 사람에게 남는 것은
+    `print` 한 줄뿐이라, 고칠 수 있는 결함이 「그 파일이 이상했다」로 굳는다.
+
+    여기서 못 박는 것 — 형이 없는 예외는 **올라간다.** 배관은 배관으로 터진다.
+    """
+    root, ledger = _two_uploads(tmp_path)
+    svc = _RaisingService(ledger, blow_up_on=_BAD,
+                          exc=ValueError("축이 빈 기준 격자 파일 행을 만들지 않는다 (〈66〉)"))
+    with pytest.raises(ValueError):
+        drive_uploads(ledger, upload_dir=root, workdir=tmp_path / "w", service=svc)
+    assert ledger.uploads[_BAD]["failed_at"] is None, \
+        "배관 결함을 `upload.failed` 로 적어 「그 파일이 이상했다」로 굳혔다"
+
+
+def test_맨_IndexError_도_그대로_올라온다(tmp_path):
+    """같은 갈래 — `IndexError` 는 대개 인덱싱 결함이지 파일 내용이 아니다."""
+    root, ledger = _two_uploads(tmp_path)
+    svc = _RaisingService(ledger, blow_up_on=_BAD, exc=IndexError("list index out of range"))
+    with pytest.raises(IndexError):
+        drive_uploads(ledger, upload_dir=root, workdir=tmp_path / "w", service=svc)
+
+
+def test_numpy_전용_예외는_데이터_오류로_잡힌다(tmp_path):
+    """좁히되 **줄이지 않는다** — numpy 가 형상·값에 내는 제 이름의 예외는 여전히 데이터다.
+
+    `np.exceptions.AxisError` 는 `ValueError`·`IndexError` 의 자식이지만 **numpy 전용 형**이라
+    프로그래밍 결함과 갈린다. 맨 두 형을 뺀 것이 이 갈래까지 뺀 것이 아님을 여기서 고정한다.
+    """
+    root, ledger = _two_uploads(tmp_path)
+    svc = _RaisingService(ledger, blow_up_on=_BAD,
+                          exc=np.exceptions.AxisError("axis 2 is out of bounds"))
+
+    done = drive_uploads(ledger, upload_dir=root, workdir=tmp_path / "w", service=svc)
+
+    assert _OK in done
+    assert ledger.uploads[_BAD]["failed_at"] is not None
