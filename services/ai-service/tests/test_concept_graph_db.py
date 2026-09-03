@@ -8,7 +8,12 @@ DB 가 없으면 **skip 이 아니라 fail** 이다 (`conftest.py` 와 같은 �
 """
 from __future__ import annotations
 
+import pytest
 from colab_ai.domains.d9_ontology import KIND_OF, SAME_AS
+
+# 이 파일은 `dictionaries` 픽스처(= `COLAB_AI_TEST_DICT_DB_URL`)를 통째로 쓴다.
+# 표식은 **빼기 위한 이름**이지 skip 의 근거가 아니다 — 고른 실행에서는 그대로 판정한다.
+pytestmark = pytest.mark.dictdb
 
 
 def _graphed(dictionaries, query: str):

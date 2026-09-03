@@ -21,6 +21,10 @@ from fastapi.testclient import TestClient
 REPO = pathlib.Path(__file__).resolve().parents[3]
 CONTRACT = REPO / "contracts" / "seams" / "core-ai.yaml"
 
+# 이 파일의 `client` 픽스처가 `dict_db_url`(= `COLAB_AI_TEST_DICT_DB_URL`)을 통째로 쓴다.
+# 표식은 **빼기 위한 이름**이지 skip 의 근거가 아니다 — 고른 실행에서는 그대로 판정한다.
+pytestmark = pytest.mark.dictdb
+
 
 @pytest.fixture(scope="module")
 def spec() -> dict:

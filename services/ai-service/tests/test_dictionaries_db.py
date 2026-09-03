@@ -5,7 +5,12 @@ K2 시드가 적재한 수를 여기서 고정한다 — 13 · 5 · 4 = 22 (실�
 """
 from __future__ import annotations
 
+import pytest
 from colab_ai.domains.d9_ontology import expand
+
+# 이 파일은 `dictionaries` 픽스처(= `COLAB_AI_TEST_DICT_DB_URL`)를 통째로 쓴다.
+# 표식은 **빼기 위한 이름**이지 skip 의 근거가 아니다 — 고른 실행에서는 그대로 판정한다.
+pytestmark = pytest.mark.dictdb
 
 
 def test_시드_22행이_그대로_읽힌다(dictionaries) -> None:
