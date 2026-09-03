@@ -445,5 +445,14 @@ jobs:
         with:
           path: gates/.venv
           key: ${{ runner.os }}-py312-gatevenv-${{ hashFiles('gates/requirements.txt') }}
+      # db-boundary·seam-consistency·work-item 셀프테스트는 시스템 python3 로 pyyaml 을 import 한다 —
+      # boundary-gates 와 같은 설치 스텝이 이 잡에는 없어 셀프테스트 3종이 import 실패로 red 였다(draft PR #2 실측).
+      - name: pyyaml 설치 (핀 = gates/requirements.txt)
+        run: |
+          set -euo pipefail
+          python -m pip install -q --disable-pip-version-check \
+            "$(grep -iE '^PyYAML==' gates/requirements.txt)"
+      - name: 설치 확인 (pyyaml 이 실물로 있는가)
+        run: python -c 'import yaml'
       - name: 전 게이트 fail-closed 증명
         run: ./gates/run.sh selftest
