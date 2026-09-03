@@ -144,3 +144,19 @@
 #   junit XML 과 선언 파일을 직접 지어 판정부에 먹인다. 실제 렌더를 돌리지 않으므로
 #   시간도 원천도 DB 도 도커도 쓰지 않는다. 레포의 `gates/config` 에는 한 글자도 쓰지 않는다.
 "render-latency-selftest"   = "parallel"
+
+# `backup-cron-streak` — 실측 근거: **파일 하나를 읽기만 한다.**
+#   `gates/tools/backup-cron-streak.sh` 는 `~/colab-v2-backups/staging-backup.log` 를
+#   `grep`·`sed`·`tail` 로 읽는 것이 전부다. 쓰기 0 · DB 0 · 도커 0 · 포트 0 · 잠금 0.
+#   **크론 회차를 재실행하지 않으므로**(설계 의도 · `〈286〉` ①) 백업 스크립트와도 경합하지 않는다.
+#   ⚠ **pg 슬롯을 쓰지 않는다** — `preview-tile-slot-selftest` 를 serial 로 만든 슬롯 고갈
+#     (2026-08-30 실측)에 이 게이트는 기여하지 않는다.
+#   실행 순서가 판정을 바꾸지 않는다 — 판정 입력은 이미 04:40 에 확정돼 파일에 적혀 있다.
+"backup-cron-streak"        = "parallel"
+
+# `backup-cron-streak-selftest` — 실측 근거: **자기 `mktemp -d` 안에서만** 산다.
+#   로그 파일을 직접 지어 판정부에 먹인다. 실제 백업도 크론도 돌리지 않으므로 보관처도
+#   DB 도 도커도 쓰지 않는다. `~/colab-v2-backups` 에는 **한 글자도 쓰지 않는다**
+#   (`COLAB_BACKUP_STATE_DIR` 를 자기 임시 자리로 물린다). 기준 시각도 고정 주입이라
+#   실행 시점이 판정을 바꾸지 않는다.
+"backup-cron-streak-selftest" = "parallel"

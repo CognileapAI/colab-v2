@@ -206,29 +206,64 @@ body {
 /* GNB 아이콘 — 라벨 옆에 붙는다. 데스크톱에서는 아이콘·라벨이 함께 보인다 */
 .gnb .ico { flex: none; }
 
-/* ===== 좁은 화면 (아이폰 375px) — GNB 는 아이콘만 남긴다 =====
-   라벨을 감추는 컨트롤에는 전부 aria-label 이 붙어 있다 (Gnb.tsx) — 접근성은 그대로다 */
+/* ===== GNB 반응형 사다리 — 목업 `데이터_찾기_260817.html:138~168` 이식 =====
+   ⭑ ⟨신설 2026-09-03 · `PLAN-SoT §9 〈296〉`-㉳ · 근거 QA 검수 #28⟩
+   종전에는 **640px 한 단계**뿐이었고 그 한 단계가 `.gnb .lbl` 을 통째로 감춰
+   **주 내비 라벨까지 같이 사라졌다.** 목업의 사다리는 반대를 말한다 — 축자
+   「좁아질수록 라벨부터 접고 아이콘만 남긴다. **마지막까지 지키는 건 주 내비와 업로드**다.」
+   그래서 주 내비 라벨은 어느 단에서도 감추지 않고, 560px 에서 **가로 스크롤**로 받는다.
+   ⚠ 이것은 「개선」이 아니라 **목업 미반영의 정정**이다. QA 가 「반응형은 정본 침묵」으로
+     분류했으나 침묵이 아니었다 — 사다리는 목업에 5단으로 서 있었다.
+   라벨을 감추는 컨트롤에는 전부 `aria-label` 이 붙어 있다 (`Gnb.tsx`) — 접근성은 그대로다 */
+
+@media (max-width: 1180px) {
+  .gnb { padding: 0 14px; gap: 8px; }
+  .labswitch { max-width: 180px; }
+}
+
+@media (max-width: 1000px) {
+  .labswitch { max-width: 132px; }
+  .avatar .nm { max-width: 56px; }
+}
+
+@media (max-width: 880px) {
+  .brand .bn { display: none; }
+  .gnb-settings { display: none; }   /* 교수 전용 · 아바타 메뉴에서 도달 가능 */
+  .avatar .nm { display: none; }
+  .mainnav a { padding: 0 9px; }
+}
+
+@media (max-width: 740px) {
+  /* 플라스크 아이콘만 남긴다. `.cv`(펼침 화살표)는 `〈296〉`-㉰ 로 마크업에서 걷혀
+     여기 규칙이 필요 없다 — 없는 요소를 가리키는 선택자를 남기지 않는다. */
+  .labswitch .ln { display: none; }
+  .labswitch { max-width: none; gap: 0; padding: 0 9px; }
+  .gnb-upload .lbl { display: none; }   /* 화살표 아이콘만 */
+  .gnb-upload { padding: 0 11px; gap: 0; }
+  .mainnav { margin-left: 2px; }
+}
+
+@media (max-width: 560px) {
+  .gnb { padding: 0 10px; gap: 4px; }
+  /* **주 내비 라벨은 여기서도 지킨다.** 넘치면 감추지 않고 가로로 굴린다 (목업 :163~168) */
+  .mainnav { overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .mainnav::-webkit-scrollbar { display: none; }
+  .mainnav a { padding: 0 7px; white-space: nowrap; }
+}
+
+/* ===== 좁은 화면 (아이폰 375px) — 기기 고유의 것만 남긴다 =====
+   ⚠ 종전의 `.gnb .lbl { display: none }` 은 **위 사다리가 대신한다** — 여기서 다시 감추면
+     주 내비 라벨이 또 사라진다. 이 블록에는 노치·확대 방지처럼 **폭이 아니라 기기**가
+     이유인 것만 남긴다. */
 @media (max-width: 640px) {
   /* 노치·홈 인디케이터 안쪽 여백 (viewport-fit=cover) */
   .gnb {
-    gap: 4px;
-    padding: 0 10px;
     padding-left: max(10px, env(safe-area-inset-left));
     padding-right: max(10px, env(safe-area-inset-right));
   }
   .appmain { padding-bottom: env(safe-area-inset-bottom); }
   /* iOS 가 포커스에서 자동 확대하지 않게 입력 글자를 16px 아래로 두지 않는다 */
   input, select, textarea { font-size: 16px; }
-  .gnb .lbl,
-  .brand .bn,
-  .avatar .nm,
-  .labswitch .ln,
-  .labswitch .cv { display: none; }
-  .labswitch { gap: 0; padding: 0 9px; }
-  .mainnav { margin-left: 2px; gap: 0; min-width: 0; }
-  .mainnav a { padding: 0 9px; }
-  .gnb-settings,
-  .gnb-upload { padding: 0 10px; gap: 0; }
   .avatar { gap: 2px; padding: 0 6px; }
   /* 로그아웃은 아이콘이 없다 — 감추면 모바일에서 나가는 길이 사라진다. 좁히기만 한다. */
   .gnb-logout { margin-left: 4px; padding: 0 6px; }
