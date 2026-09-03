@@ -80,7 +80,13 @@ _PROJECT_UPDATABLE = {
 
 
 def update_project(session: Session, *, project_id: Ulid, changes: dict) -> None:
-    """프로젝트 정보 부분 수정 (`〈150〉`). 보내지 않은 열쇠는 안 건드린다."""
+    """프로젝트 정보 부분 수정 (`〈150〉`). 보내지 않은 열쇠는 안 건드린다.
+
+    ⚠ **`changes["period"]` 의 값은 `datetime.date` 다** — 계약의 `YYYY-MM` 문자열이
+    아니다. 변환은 라우트(`routes/project.py::_period`)가 하고, 그 자리는 `create_project`
+    가 쓰는 자리와 **같다**(`CODE-REVIEW-20260903` #7). 문자열을 그대로 바인딩하면
+    `period_start`·`period_end`(`date` 열)가 `'2026-01'::date` 로 죽는다.
+    """
     columns: dict[str, object] = {}
     for key, value in changes.items():
         if key in _PROJECT_UPDATABLE:
