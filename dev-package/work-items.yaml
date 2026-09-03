@@ -852,7 +852,7 @@ items:
     owner: "D7 / viz-render"
     entry_conditions:
       - "`A-1` 닫힘(회수 기구 실재 · ✅ 2026-09-02 `〈273〉`)"
-      - "⭑ ⟨순서 증보 2026-09-03 · `PLAN-SoT §9 〈309〉`-㉲⟩ **`BF-2`(③지도형 리샘플 교체 · 캐시 라벨 `warp+nearest`)를 staging 에 배포한 뒤에 재굽기 1회를 돈다** — 배포 전 재굽기는 구 알고리즘(전방 산란)을 굽는 낭비다. staging 은 `〈307〉` 캐시 키 변경 후 재굽기 미실행 상태라 `BF-2` 배포 뒤에도 구판 산출물이 보일 수 있다 — 배포 순서에 재굽기를 넣는다"
+      - "⭑ ⟨순서 증보 2026-09-03 · `PLAN-SoT §9 〈309〉`-㉲⟩ **`BF-2`(③지도형 리샘플 교체 · 캐시 라벨 `warp+nearest`)를 staging 에 배포한 뒤에 재굽기 1회를 돈다** ／ ⭑ ⟨갱신 2026-09-04 · advisor 게이트 ③⟩ 재굽기 1회는 2026-09-04 구 알고리즘으로 이미 돌았다(main 〈308〉). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려 **배포 뒤 재굽기 1회 더** 필요 · 소유 계수 117/84 가 재변동한다 → `RC-1`·`CR-2 ⑶` 재실측"
     depends_on: [A-1]
     completion_def: "⭑ ⟨신설 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉰ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ **`V-1` 초안 ⓒ 가 「별도 작업이고 소유 미정」이라 적어 둔 자리를 항목으로 세운 것이다 — 요구를 새로 만들지 않았다.** **기구는 `A-1` 이 이미 지었다**(`d7_visualization/invalidation.reclaim_plan()` ＋ 게이트 `artifact-ownership` · `〈272〉`). **없는 것은 한 번 도는 것뿐이다.** — **⑴ 구판 사이드카를 판 2 로 재굽는다.** 지금 자리의 사이드카가 **전건 구판**이라 소유 판정이 서지 않는다(실측 `〈273〉` — 판정 불가 **49** · 재굽기 **0회**). — **⑵ 재굽기 뒤 `reclaim_plan()` 을 1회 돌린다.** 계산기는 새로 짓지 않는다 — `plan()` 을 부르고 고아가 아닌 키를 `keep_keys` 로 넘기는 기존 경로 그대로다. — **⑶ 완료 조건(실측값으로 못 박는다)** = **판정 불가 49 → 19** · **삭제 0** · **재굽기 0회** 였던 세 값이 각각 갱신되어 관측된다. ⚠ **「몇 건을 지운다」로 적지 않는다** — 사후 판정을 관측 개수로 쓰지 않는다(`CLAUDE.md §5`). 지우는 대상은 **고아 등급뿐**이고 그 수는 재기 전에는 모른다. — **⑷ 음성 조건** = 지도 타일(`tile-`)은 `kept` · 접수분 루트는 `OutOfScope` · 원본·기준 격자·데이터셋 **무접촉**(`〈247〉` 과 같은 선 · `A-1` 음성 시험이 이미 잠근다). — ⛔ **범위 밖** = 팔레트 선택 재렌더 경로(`V-1`) · 고르는 UI(`J-6`)."
     evidence: null
@@ -1917,7 +1917,7 @@ items:
 
   - id: BF-1
     name: "계보 그래프 — 빈 칸·고아 화살표 제거 (Ted 3·5·7 · 접수 A-1·A-2·A-3)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "frontend (D4 화면)"
     entry_conditions: []
@@ -1938,11 +1938,12 @@ items:
     note: >-
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉯. advisor 게이트 ② ACCEPT. 스크린샷 `reports/bug-20260903/bug03-*.png`·`bug05-*.png`·`bug07-*.png`.
       ⚠ **배포되지 않았다** — 통합 브랜치 `bugfix/20260903-ui-12` 병합·배포는 별도 회차다. 대장이 `done` 인 것과 staging 에 서 있는 것은 다르다.
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
 
   - id: BF-2
     name: "③지도형 리샘플 — 전방 산란을 출력 주도(역사상) 근사 최근접으로 교체 ＋ 캐시 키 라벨 (Ted 4 · 접수 B-1 ＋ B-4 흰 줄)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "D7 / viz-render"
     entry_conditions: []
@@ -1965,13 +1966,14 @@ items:
     note: >-
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉰. **등재된 한계**(항목을 세우지 않고 여기 적는다) = ㉠ 근사 최근접이라 셀 경계가 1 px 들쭉날쭉할 수 있다(미리보기 배율에서 식별되지 않는다)
       ㉡ 긴 변 ≤ `max_side` 이면서 발자국이 bbox 보다 작은 곡선 격자(크게 회전한 격자)는 한 출력 픽셀에 씨앗이 여럿 떨어져도 평균하지 않고 하나만 남는다 — 현재 실원천(규칙 격자 · ≤1024)에는 이 부류가 없다.
-      ⚠ **배포 순서** — staging 은 `〈307〉` 캐시 키 변경 후 재굽기(`RC-1`) 미실행 상태라 이 수정 배포 뒤에도 구판 산출물이 보일 수 있다 ⟹ **이 수정을 배포한 뒤 재굽기 1회**(배포 전 재굽기는 구 알고리즘을 굽는 낭비 · `RC-1.entry_conditions`).
+      ⚠ **배포 순서** ⭑ ⟨갱신 2026-09-04 · advisor 게이트 ③⟩ 재굽기 1회는 2026-09-04 구 알고리즘으로 이미 돌았다(main 〈308〉). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려 **배포 뒤 재굽기 1회 더** 필요 · 소유 계수 117/84 가 재변동한다 → `RC-1`·`CR-2 ⑶` 재실측(`RC-1.entry_conditions`).
       사양 반영 = `PREVIEW-IMPLEMENTATION.md §2 표 ③행 · §5.3 ⑤ · §7.2`. 스크린샷 `reports/bug-20260903/bug04-*.png`(＋ 흰 줄 `bug10-*`·`bug11-*`).
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B1-report.md", "PREVIEW-IMPLEMENTATION.md §7.2"]
 
   - id: BF-3
     name: "확대 한계 안내 — 「확대·축소·기본 배율로」 무동작을 한계 상태 표시로 (Ted 8 · 접수 B-3)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "frontend (D7 화면)"
     entry_conditions: []
@@ -1989,11 +1991,12 @@ items:
     note: >-
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q1. ⚠ 「확대가 stage 2 라 안 됨」이 아니다 — `P3` 가 `〈241〉` 로 닫힐 때 확대는 완료 정의 그대로 충족됐고(`recon-D-scope.md §2`), 이것은 **완료된 기능의 표시 결함**이다.
       스크린샷 `reports/bug-20260903/bug08-*.png`.
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/lane-B35-report.md"]
 
   - id: BF-4
     name: "미리보기 이름표 · 범례 변수명 · 원본 격자 캡션 (Ted 11·10 · 접수 B-5·B-4)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "frontend (D7 화면)"
     entry_conditions: []
@@ -2014,11 +2017,12 @@ items:
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q2·Q3. ⚠ 레인 보고와 `PLAN-fanout.md` 는 B-4·B-5 를 「버그 13·14」로 적었다 — 접수표(`BUG-INTAKE-20260903.md`)의 Ted 번호는 **10·11** 이다. 정본은 접수표.
       Ted 10 의 「업로드/상세 배율 차이」는 버그가 아니다 — 블록은 자료 자체(2 km → 100 m 균등 분할)이고 차이는 컨테이너 폭(`max-width:100%` vs `width:100%`)이다. 항목을 세우지 않는다.
       스크린샷 `reports/bug-20260903/bug10-*.png`·`bug11-*.png`.
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B35-report.md"]
 
   - id: BF-5
     name: "프로젝트 화면 뿌리 스타일 ＋ 연구실 설정 버튼 gap (Ted 1·9·2 · 접수 C-1·C-3·C-2)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "frontend (D6 화면 · shell)"
     entry_conditions: []
@@ -2037,11 +2041,12 @@ items:
     note: >-
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉯. 곁가지 둘은 항목으로 뗐다 — `LabPage` 뿌리 규칙 부재 = `BF-8` · `project.css` 미정의 토큰 = `BF-11`(이 수정이 그 관례의 토큰 `--line`·`--fg-muted`·`--surface` 를 그대로 썼다).
       스크린샷 `reports/bug-20260903/bug01-*.png`·`bug02-*.png`·`bug09-*.png`.
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
 
   - id: BF-6
     name: "데이터셋 설명문 `／` 구분자 — 표시 단계 줄 나눔 (A안) (Ted 15 · 접수 C-4)"
-    status: done
+    status: in_progress
     stage: stage1
     owner: "frontend (D3 상세 화면)"
     entry_conditions: []
@@ -2058,6 +2063,7 @@ items:
       **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q5. ⚠ **Ted §8 문구 확인 대기** — 정본 `Policy_데이터셋_상세 §8` 은 이 자리를 「③ **한 줄** 요약」으로 못 박는다(`DetailHeader.tsx:2` 축자).
       여러 줄로 펼치는 것이 정본 위반인지 Ted 확인이 남았고, 코드는 승인 전제로 넣되 되돌리기 1회로 설계했다. 표시 규약 「`／` = 구분자」는 `〈309〉`-㉳ 에 등재했다 — 본문에 `／` 를 쓴 설명이 뒤에 들어오면 오분할한다(현재 사용자 입력은 `RegisterArea` 300자 한 줄이라 해당 사례 0).
       스크린샷 `reports/bug-20260903/bug12-*.png`.
+      ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
     sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md §5", "reports/bug-20260903/lane-C4-report.md"]
 
   - id: BF-7
