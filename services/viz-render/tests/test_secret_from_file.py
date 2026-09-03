@@ -93,3 +93,55 @@ def test_접미사는_정확히_FILE_이다():
     """읽는 쪽과 배선하는 쪽의 이름이 한 글자라도 어긋나면 배선은 있는데 아무도 안 읽는
     상태가 되고, **그것은 에러를 내지 않는다.** core-api 와 같은 값이어야 한다."""
     assert config.FILE_SUFFIX == "_FILE"
+
+
+# ── 공백 처리가 core-api 와 **한 글자도 다르지 않다** (코드리뷰 20260903-F #5) ────
+#
+# 왜 이 시험이 있나 — `COLAB_VIZ_SERVICE_TOKEN` 은 **두 서비스가 같은 값을 비교**한다.
+# core-api 는 `resolve_env_or_file` 에서 생 env 를 `.strip()` 하는데 viz 가 안 하면,
+# 배포 env 에 공백 하나가 섞인 순간 core 는 `"tok"` 을 보내고 viz 는 `" tok"` 을 기대해
+# **미리보기가 통째로 죽는다.** 그 상태는 설정 오류가 아니라 401 로 보인다.
+#
+# ⚠ **이것은 손사본이다** — 같은 함수가 두 단위의 `kernel/config.py` 에 두 벌로 산다
+# (`CLAUDE.md §3-1` 배포 단위 독립). 지금은 두 벌의 본문이 같다(2026-09-03 실측 · 차이는
+# 줄바꿈과 `pathlib.Path` ↔ `Path` 뿐). **이 시험은 그 사실이 흐트러지는 날을 잡는다.**
+# 손사본을 없애는 것은 codegen 통일 작업항목의 몫이다
+# (`CODE-REVIEW-20260903-PLAN.md §4` 유보 1 — `ids.py`·`errors.py` 와 같은 묶음).
+
+@pytest.mark.parametrize("name,field", [
+    ("COLAB_VIZ_SERVICE_TOKEN", "service_token"),
+    ("COLAB_VIZ_TILE_SIGNING_SECRET", "tile_signing_secret"),
+])
+def test_생_env_의_앞뒤_공백은_양쪽에서_똑같이_벗겨진다(monkeypatch, name, field):
+    """core-api `resolve_env_or_file` 과 **같은 규칙** — 생 env 는 `.strip()` 이다."""
+    s = _load(monkeypatch, **{name: "  tok\n"})
+    assert getattr(s, field) == "tok"
+
+
+@pytest.mark.parametrize("name,field", [
+    ("COLAB_VIZ_SERVICE_TOKEN", "service_token"),
+    ("COLAB_VIZ_TILE_SIGNING_SECRET", "tile_signing_secret"),
+])
+def test_파일_값은_끝의_공백만_벗긴다(monkeypatch, tmp_path, name, field):
+    """**생 env 와 규칙이 다르고, 그 다름이 의도다** — core-api 도 파일은 `rstrip` 이다.
+
+    앞의 공백을 값의 일부로 둘 수 있는 것은 파일뿐이다(`_FILE` 은 값을 그대로 담는
+    자리이지 셸이 자르는 자리가 아니다). 두 규칙을 여기서 이름으로 갈라 둔다 —
+    한쪽을 「통일」하려는 다음 사람이 이 시험을 먼저 만난다.
+    """
+    p = tmp_path / "secret"
+    p.write_text("  tok  \n", encoding="utf-8")
+    s = _load(monkeypatch, **{name + "_FILE": str(p)})
+    assert getattr(s, field) == "  tok"
+
+
+@pytest.mark.parametrize("name,field", [
+    ("COLAB_VIZ_SERVICE_TOKEN", "service_token"),
+    ("COLAB_VIZ_TILE_SIGNING_SECRET", "tile_signing_secret"),
+])
+def test_공백뿐인_생_env_는_배선되지_않은_것이다(monkeypatch, name, field):
+    """빈 문자열 토큰을 세우면 **아무 값과도 안 맞는 열쇠**가 서고 표면은 401 을 낸다 —
+    「배선 안 됨(503)」과 「토큰이 틀림(401)」이 갈려야 고칠 사람이 정해진다."""
+    s = _load(monkeypatch, **{name: "   "})
+    assert getattr(s, field) is None
+

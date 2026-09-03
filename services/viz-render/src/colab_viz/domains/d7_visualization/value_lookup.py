@@ -122,6 +122,24 @@ def find_tile(previews_root, source: Path, *,
     return None
 
 
+def _transform_errors() -> tuple[type[BaseException], ...]:
+    """좌표를 **못 옮길 때** 나는 예외들 — 「그 점에 값이 없다」이지 서버 고장이 아니다.
+
+    ⚠ `CPLE_*` 는 `rasterio._err` 에만 있고 **공개 이름이 없다**(`rasterio.errors` 에는
+    `RasterioError`·`TransformError` 만 노출된다 · 1.5.1 실측). 없는 판에서는 없는 대로
+    두고 지어내지 않는다 — 그때는 `RasterioError` 만으로 잡고, 못 잡은 것은 500 으로
+    올라가 눈에 띈다. **조용히 넓히지 않는다.**
+    """
+    from rasterio.errors import RasterioError
+
+    errs: tuple[type[BaseException], ...] = (RasterioError,)
+    try:
+        from rasterio._err import CPLE_BaseError
+    except ImportError:                        # pragma: no cover — rasterio 판 차이
+        return errs
+    return errs + (CPLE_BaseError,)
+
+
 def read_point(tile: Path, *, lat: float, lon: float,
                used_reference_grid: bool = False) -> LookupOutcome:
     """COG 한 장에서 **그 칸 하나**를 읽는다. 창은 1×1 이다 — 블록 평균이 아니다."""
@@ -129,8 +147,19 @@ def read_point(tile: Path, *, lat: float, lon: float,
     from rasterio.warp import transform as warp_transform
 
     with rasterio.open(tile) as ds:
-        xs, ys = warp_transform("EPSG:4326", ds.crs, [lon], [lat])
-        row, col = ds.index(xs[0], ys[0])
+        # ⭑ ⟨2026-09-03 · 코드리뷰 20260903-F #4⟩ **투영 밖 좌표는 500 이 아니다.**
+        #   LCC 처럼 평면 전체를 덮지 않는 투영에서는 정의역 밖 좌표에 proj 가
+        #   `CPLE_AppDefinedError: Point outside of projection domain` 을 낸다. 그것이
+        #   그대로 올라가 표면이 500 을 냈고 — 화면은 「서버 오류」를 띄우고 그 요청은
+        #   장애 계수에 섞였다. **계약이 정한 답은 200 ＋ 「범위 밖이다」**이고
+        #   (`core-viz.yaml ValueLookupResult.unavailableReason`), 그것이 바로 아래
+        #   격자 밖 분기가 이미 내는 답이다. 같은 사실에 두 답을 두지 않는다.
+        try:
+            xs, ys = warp_transform("EPSG:4326", ds.crs, [lon], [lat])
+            row, col = ds.index(xs[0], ys[0])
+        except _transform_errors():
+            return LookupOutcome(available=False, unavailable_reason=OUT_OF_RANGE,
+                                 exactness=_exactness(used_reference_grid))
         if not (0 <= row < ds.height and 0 <= col < ds.width):
             return LookupOutcome(available=False, unavailable_reason=OUT_OF_RANGE,
                                  exactness=_exactness(used_reference_grid))
