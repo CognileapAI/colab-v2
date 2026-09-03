@@ -16,7 +16,7 @@
 //
 // **다시 그리지 않는다** (완료 정의 ⑵) — 이 구역은 렌더를 시작하지도, 배율·범례를
 // 건드리지도 않는다.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { DatasetPreviewSource, ValueLookupResult } from './types';
 
 type LookupState =
@@ -30,14 +30,24 @@ const UNAVAILABLE = '지금 값을 읽을 수 없어요. 잠시 뒤 다시 시�
 
 export function useValueLookup(source: DatasetPreviewSource) {
   const [state, setState] = useState<LookupState>({ phase: '고르기 전' });
+  /**
+   * 누름의 순번. **늦게 온 이전 응답이 최신 값을 덮지 않게** 한다 —
+   * 이 화면에서 제일 나쁜 실패는 오류 없이 **다른 칸의 값**이 그려지는 것이라
+   * (`〈294〉` 완료 정의의 ⚠), 순서 뒤집힘도 좌표 오산과 같은 등급으로 막는다.
+   * 취소가 아니라 **무시**다 — 계약에 조회 취소가 없고, 서버는 이미 답을 만들었다.
+   */
+  const seq = useRef(0);
 
   const pick = (point: { lat: number; lon: number }) => {
+    const mine = ++seq.current;
     setState({ phase: '읽는 중', point });
     void (async () => {
       try {
         const result = await source.lookupValue(point);
+        if (seq.current !== mine) return;
         setState({ phase: '읽음', point, result });
       } catch {
+        if (seq.current !== mine) return;
         setState({ phase: '못 읽음', message: UNAVAILABLE });
       }
     })();

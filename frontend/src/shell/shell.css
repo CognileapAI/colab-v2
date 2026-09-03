@@ -5,6 +5,34 @@
 
 * { box-sizing: border-box; }
 
+/* ===== 못 불러왔을 때의 한 자리 (`components/common/LoadFailure.tsx`) =====
+   화면마다 다른 CSS 파일을 쓰므로 **전역인 여기**에 둔다 — 카탈로그·상세·프로젝트가
+   같은 실패를 같은 모양으로 말해야 사람이 그것을 「없음」이 아니라 실패로 읽는다. */
+.loadfail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border, #dde1e6);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+}
+.loadfail-msg {
+  margin: 0;
+  font-size: var(--text-body);
+  color: var(--color-text-body, #21272a);
+}
+.loadfail-retry {
+  border: 1px solid var(--color-border, #dde1e6);
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text-body, #21272a);
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);

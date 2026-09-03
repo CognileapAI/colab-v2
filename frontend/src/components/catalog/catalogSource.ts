@@ -1,13 +1,18 @@
-// 표를 채우는 두 출처. 얼굴은 하나(`CatalogSource`)라 화면은 어느 쪽인지 모른다.
+// 표를 채우는 출처. **서버가 유일한 출처다.**
 //
-// **전환 방법** — 서버가 `listDatasets`·`listDatasetFacets` 를 구현해 501 을 그만 내면
-// `defaultCatalogSource()` 가 그 응답을 그대로 쓴다. 화면·컴포넌트 코드는 한 줄도 바뀌지 않는다.
+// ⭑ **2026-09-03 개정 — 픽스처 폴백을 걷었다** (`CODE-REVIEW-20260903` 9).
+// 종전 기재 「실서버를 먼저 부르고 501 이거나 닿지 않으면 픽스처로 그린다」는 `listDatasets`·
+// `listDatasetFacets` 가 아직 501 이던 동안의 기재였다. 지금 그 둘은 구현돼 있고
+// (`not_implemented.py` 의 op 넷에 들어 있지 않다), 남아 있던 폴백은 501 이 아니라
+// **401·500·네트워크 오류**를 픽스처 6행으로 덮고 있었다 — 카탈로그가 남의 연구실
+// 메타데이터를 실데이터처럼 그리고, 세션이 만료돼도 로그인으로 돌아가지 않았다.
+//
+// 지금의 규칙 —
+//   · 401 은 `api/client.ts` 의 응답 미들웨어가 토큰을 버려 `AuthGate` 로 넘긴다.
+//   · 그 밖의 실패는 **못 읽었다고 말한다**(`useCatalog.error` → 화면의 다시 불러오기).
+//   · 픽스처는 시험이 **손으로 꽂을 때만** 선다 (`fixtureCatalogSource()` 를 인자로).
 import { api } from '../../api/client';
-import { fixtureCatalogSource } from './fixture';
 import type { CatalogQuery, CatalogSource, DatasetRow, FacetSet, LineageState } from './types';
-
-/** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 두 종). */
-class NotImplemented extends Error {}
 
 function queryParams(q: CatalogQuery) {
   const f = q.filters;
@@ -29,7 +34,6 @@ export function apiCatalogSource(): CatalogSource {
   return {
     async list(q) {
       const r = await api.GET('/datasets', { params: { query: queryParams(q) } });
-      if (r.response.status === 501) throw new NotImplemented();
       const body = r.data;
       if (!body) throw new Error('카탈로그 목록을 불러오지 못했어요.');
       return { items: body.items as DatasetRow[], totalCount: body.totalCount };
@@ -37,7 +41,6 @@ export function apiCatalogSource(): CatalogSource {
     async facets(q) {
       const { sortColumn: _c, sortOrder: _o, ...rest } = queryParams(q);
       const r = await api.GET('/datasets/facets', { params: { query: rest } });
-      if (r.response.status === 501) throw new NotImplemented();
       const body: FacetSet | undefined = r.data;
       if (!body) throw new Error('열 메뉴의 값별 건수를 불러오지 못했어요.');
       return body;
@@ -45,27 +48,7 @@ export function apiCatalogSource(): CatalogSource {
   };
 }
 
-/**
- * 실서버를 먼저 부르고, 그 op 이 아직 501 이거나 닿지 않으면 픽스처로 그린다.
- * 폴백은 **읽기 전용 표 하나**에만 걸린다 — 쓰기 경로에는 두지 않는다.
- */
+/** 화면이 쓰는 출처. **대역이 없다** — 못 읽으면 못 읽었다고 말하는 것이 이 함수의 전부다. */
 export function defaultCatalogSource(): CatalogSource {
-  const live = apiCatalogSource();
-  const stub = fixtureCatalogSource();
-  return {
-    async list(q) {
-      try {
-        return await live.list(q);
-      } catch {
-        return stub.list(q);
-      }
-    },
-    async facets(q) {
-      try {
-        return await live.facets(q);
-      } catch {
-        return stub.facets(q);
-      }
-    },
-  };
+  return apiCatalogSource();
 }

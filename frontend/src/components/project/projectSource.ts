@@ -1,10 +1,12 @@
-// 목록·상세를 채우는 두 출처. 얼굴은 하나(`ProjectSource`)라 화면은 어느 쪽인지 모른다.
+// 목록·상세를 채우는 출처. **서버가 유일한 출처다.**
 //
-// **전환 방법** — 서버가 `listProjects`·`getProject` 를 구현해 501 을 그만 내면
-// `defaultProjectSource()` 가 그 응답을 그대로 쓴다. 화면·컴포넌트 코드는 한 줄도 바뀌지 않는다.
-// (WU-P5 가 그 셋을 열었으므로 실서버 경로가 이제 살아 있다 — 픽스처는 서버가 없을 때의 자리다.)
+// ⭑ **2026-09-03 개정 — 픽스처 폴백을 걷었다** (`CODE-REVIEW-20260903` 9).
+// 종전 폴백은 `listProjects`·`getProject` 가 501 이던 동안의 것이고, WU-P5 가 그 셋을
+// 열었으므로 남아 있던 폴백은 501 이 아니라 **401·500·네트워크 오류**를 덮고 있었다.
+//
+// 지금의 규칙 — 404 는 그대로 `ProjectGone`, 401 은 `api/client.ts` 가 `AuthGate` 로 넘기고,
+// 그 밖의 실패는 **못 읽었다**고 말한다 (`useProjects`·`useProject` 의 실패 상태).
 import { api } from '../../api/client';
-import { fixtureProjectSource } from './fixture';
 import {
   ProjectGone,
   ProjectHasDatasets,
@@ -15,9 +17,6 @@ import {
   type ProjectStatus,
   type ProjectUpdate,
 } from './types';
-
-/** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 두 종). */
-class NotImplemented extends Error {}
 
 export function apiProjectSource(): ProjectSource {
   return {
@@ -32,16 +31,14 @@ export function apiProjectSource(): ProjectSource {
           },
         },
       });
-      if (r.response.status === 501) throw new NotImplemented();
       const body = r.data;
       if (!body) throw new Error('프로젝트 목록을 불러오지 못했어요.');
       return { items: body.items as ProjectRow[], totalCount: body.totalCount };
     },
     async get(projectId) {
       const r = await api.GET('/projects/{projectId}', { params: { path: { projectId } } });
-      // 남의 연구실과 지워진 것을 **같은 404** 로 받는다 (P-9·P-10). 501 과 섞지 않는다.
+      // 남의 연구실과 지워진 것을 **같은 404** 로 받는다 (P-9·P-10).
       if (r.response.status === 404) throw new ProjectGone();
-      if (r.response.status === 501) throw new NotImplemented();
       const body = r.data;
       if (!body) throw new Error('프로젝트 상세를 불러오지 못했어요.');
       return body as ProjectDetail;
@@ -49,12 +46,10 @@ export function apiProjectSource(): ProjectSource {
 
     // ── 쓰기 다섯 (F-03·F-04·F-05 · 삭제 · 소속 해제) ───────────────────────
     //
-    // **폴백하지 않는다.** 읽기는 서버가 없으면 픽스처로 그려도 화면이 거짓말을 하지
-    // 않지만, 쓰기는 픽스처로 성공을 흉내 내는 순간 **저장되지 않은 것을 저장됐다고**
-    // 말하게 된다. 그래서 아래 `defaultProjectSource` 도 이 다섯은 그대로 통과시킨다.
+    // **폴백하지 않는다.** 픽스처로 성공을 흉내 내는 순간 **저장되지 않은 것을 저장됐다고**
+    // 말하게 된다. 2026-09-03 부터는 읽기도 같다 — 이 파일에 픽스처가 없다.
     async create(input: ProjectCreate) {
       const r = await api.POST('/projects', { body: input });
-      if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('프로젝트를 만들지 못했어요.');
       return r.data as ProjectDetail;
     },
@@ -64,7 +59,6 @@ export function apiProjectSource(): ProjectSource {
         body: input,
       });
       if (r.response.status === 404) throw new ProjectGone();
-      if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('프로젝트를 고치지 못했어요.');
       return r.data as ProjectDetail;
     },
@@ -74,7 +68,6 @@ export function apiProjectSource(): ProjectSource {
         body: { status },
       });
       if (r.response.status === 404) throw new ProjectGone();
-      if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('프로젝트 상태를 바꾸지 못했어요.');
       return r.data as ProjectDetail;
     },
@@ -85,7 +78,6 @@ export function apiProjectSource(): ProjectSource {
       // **409 를 삼키지 않는다** — 소속 데이터셋이 있다는 사실을 화면이 그대로 말한다.
       if (r.response.status === 409) throw new ProjectHasDatasets();
       if (r.response.status === 404) throw new ProjectGone();
-      if (r.response.status === 501) throw new NotImplemented();
       if (r.response.status !== 204) throw new Error('프로젝트를 지우지 못했어요.');
     },
     async unlink(projectId, datasetId) {
@@ -93,42 +85,12 @@ export function apiProjectSource(): ProjectSource {
         params: { path: { projectId, datasetId } },
       });
       if (r.response.status === 404) throw new ProjectGone();
-      if (r.response.status === 501) throw new NotImplemented();
       if (r.response.status !== 204) throw new Error('소속을 해제하지 못했어요.');
     },
   };
 }
 
-/**
- * 실서버를 먼저 부르고, 그 op 이 아직 501 이거나 닿지 않으면 픽스처로 그린다.
- * **404 는 폴백하지 않는다** — 없는 프로젝트를 픽스처로 되살리면 화면이 거짓말을 한다
- * (`detailSource.ts` 의 묘비 규칙과 같다).
- */
+/** 화면이 쓰는 출처. **대역이 없다** — 읽기 둘도 쓰기 다섯과 같은 규칙을 따른다. */
 export function defaultProjectSource(): ProjectSource {
-  const live = apiProjectSource();
-  const stub = fixtureProjectSource();
-  return {
-    async list(query) {
-      try {
-        return await live.list(query);
-      } catch {
-        return stub.list(query);
-      }
-    },
-    async get(projectId) {
-      try {
-        return await live.get(projectId);
-      } catch (e) {
-        if (e instanceof ProjectGone) throw e;
-        return stub.get(projectId);
-      }
-    },
-    // **쓰기 다섯은 폴백이 없다.** 픽스처로 성공을 흉내 내면 저장되지 않은 것을
-    // 저장됐다고 말하게 된다 — 읽기의 폴백과 성질이 다르다.
-    create: live.create,
-    update: live.update,
-    setStatus: live.setStatus,
-    remove: live.remove,
-    unlink: live.unlink,
-  };
+  return apiProjectSource();
 }

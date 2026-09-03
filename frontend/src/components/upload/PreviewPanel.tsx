@@ -24,6 +24,16 @@ const POLL_MS = 250;
 /** 구간 수 3~9 · 기본 6 (`Policy_데이터셋_상세 §5` · 계약 `RenderStyle.classCount`). */
 const DEFAULT_CLASS_COUNT = 6;
 
+/**
+ * 입력칸의 글자를 구간 수로 읽는다. **빈 칸·숫자가 아닌 것은 값이 아니라 없음**이라
+ * 기본값으로 되돌린다 — `Number('')` 이 0 이라 종전에는 칸을 비우는 순간 계약 밖의 0 이
+ * 다음 그리기에 실려 나갔다.
+ */
+export function classCountOf(raw: string): number {
+  const n = Number(raw);
+  return raw.trim() === '' || !Number.isFinite(n) ? DEFAULT_CLASS_COUNT : n;
+}
+
 /** 격자 흐름이 바깥(모달)에서 받는 사실 + 바깥으로 돌려주는 행동 (`§E.1-㈎`). */
 export interface GridFlowProps extends GridActions {
   /** 사람이 「건너뛰기」를 골랐다 (`§E.2-⑨`). **기본 경로다.** */
@@ -67,6 +77,13 @@ export function PreviewPanel(props: {
   const [unreachable, setUnreachable] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const polling = useRef(0);
+  /**
+   * 폴링 **세대**. 새로 그리기 시작할 때와 화면이 사라질 때 올라간다. 이미 날아간 조회는
+   * 취소할 수 없으므로(계약에 취소가 없다) 돌아온 값을 **세대가 다르면 버린다** —
+   * `clearTimeout` 만으로는 이미 응답을 기다리는 중인 조회를 막지 못해, 옛 렌더의 늦은
+   * 응답이 새 렌더의 화면을 덮고 떠난 화면 뒤로 폴링이 다시 예약됐다.
+   */
+  const pollGen = useRef(0);
   // 색 범위가 **조용히** 바뀌지 않게, 앞서 본 잠정 범위를 들고 있는다 (`§D.4`)
   const seenRange = useRef<{ stage: string; key: string } | null>(null);
 
@@ -92,10 +109,18 @@ export function PreviewPanel(props: {
     };
   }, [source]);
 
-  useEffect(() => () => window.clearTimeout(polling.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(polling.current);
+      // 떠난 뒤 도착하는 응답을 버린다 — `clearTimeout` 은 **예약된** 다음 조회만 지운다.
+      pollGen.current += 1;
+    },
+    [],
+  );
 
   async function draw(withoutReferenceGrid: boolean) {
     if (!uploadId || !palette) return;
+    const gen = ++pollGen.current;
     setError(null);
     setTileExpired(false);
     setUnreachable(false);
@@ -106,24 +131,28 @@ export function PreviewPanel(props: {
         style: { palette, classCount },
         withoutReferenceGrid,
       });
+      if (pollGen.current !== gen) return;
       setJob(started);
       props.onRender?.({ renderId: started.renderId, withoutReferenceGrid });
-      poll(started.renderId);
+      poll(started.renderId, gen);
     } catch {
+      if (pollGen.current !== gen) return;
       // 그리는 서버에 닿지 못했다 — **등록은 그대로 진행된다**(`§E.2-⑩`)
       setUnreachable(true);
       setError(UNAVAILABLE);
     }
   }
 
-  function poll(renderId: string) {
+  function poll(renderId: string, gen: number) {
     window.clearTimeout(polling.current);
     polling.current = window.setTimeout(async () => {
       try {
         const next = await source.getRender(renderId);
+        if (pollGen.current !== gen) return;
         setJob(next);
-        if (next.status === '그리는 중') poll(renderId);
+        if (next.status === '그리는 중') poll(renderId, gen);
       } catch {
+        if (pollGen.current !== gen) return;
         setUnreachable(true);
         setError(UNAVAILABLE);
       }
@@ -205,7 +234,10 @@ export function PreviewPanel(props: {
             max={9}
             data-testid="up-style-classcount"
             value={classCount}
-            onChange={(e) => setClassCount(Number(e.target.value))}
+            /* 빈 칸은 **0 이 아니다** — 지우는 중일 뿐이다. `Number('')` 은 0 이고 그 0 이
+               그대로 `RenderStyle.classCount`(3~9)로 나가 서버가 거절한다. 값이 없으면
+               기본값으로 둔다 (`CODE-REVIEW-20260903` 부록 · 화면 소결함). */
+            onChange={(e) => setClassCount(classCountOf(e.target.value))}
           />
         </label>
         <div className="vs-act">
