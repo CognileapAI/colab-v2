@@ -847,15 +847,13 @@ items:
 
   - id: RC-1
     name: "구판 사이드카 재굽기 후 회수 1회"
-    status: open
+    status: done
     stage: stage2
     owner: "D7 / viz-render"
-    entry_conditions:
-      - "`A-1` 닫힘(회수 기구 실재 · ✅ 2026-09-02 `〈273〉`)"
-      - "⭑ ⟨순서 증보 2026-09-03 · `PLAN-SoT §9 〈309〉`-㉲⟩ **`BF-2`(③지도형 리샘플 교체 · 캐시 라벨 `warp+nearest`)를 staging 에 배포한 뒤에 재굽기 1회를 돈다** ／ ⭑ ⟨갱신 2026-09-04 · advisor 게이트 ③⟩ 재굽기 1회는 2026-09-04 구 알고리즘으로 이미 돌았다(main 〈308〉). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려 **배포 뒤 재굽기 1회 더** 필요 · 소유 계수 117/84 가 재변동한다 → `RC-1`·`CR-2 ⑶` 재실측"
+    entry_conditions: ["`A-1` 닫힘(회수 기구 실재 · ✅ 2026-09-02 `〈273〉`)"]
     depends_on: [A-1]
     completion_def: "⭑ ⟨신설 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉰ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ **`V-1` 초안 ⓒ 가 「별도 작업이고 소유 미정」이라 적어 둔 자리를 항목으로 세운 것이다 — 요구를 새로 만들지 않았다.** **기구는 `A-1` 이 이미 지었다**(`d7_visualization/invalidation.reclaim_plan()` ＋ 게이트 `artifact-ownership` · `〈272〉`). **없는 것은 한 번 도는 것뿐이다.** — **⑴ 구판 사이드카를 판 2 로 재굽는다.** 지금 자리의 사이드카가 **전건 구판**이라 소유 판정이 서지 않는다(실측 `〈273〉` — 판정 불가 **49** · 재굽기 **0회**). — **⑵ 재굽기 뒤 `reclaim_plan()` 을 1회 돌린다.** 계산기는 새로 짓지 않는다 — `plan()` 을 부르고 고아가 아닌 키를 `keep_keys` 로 넘기는 기존 경로 그대로다. — **⑶ 완료 조건(실측값으로 못 박는다)** = **판정 불가 49 → 19** · **삭제 0** · **재굽기 0회** 였던 세 값이 각각 갱신되어 관측된다. ⚠ **「몇 건을 지운다」로 적지 않는다** — 사후 판정을 관측 개수로 쓰지 않는다(`CLAUDE.md §5`). 지우는 대상은 **고아 등급뿐**이고 그 수는 재기 전에는 모른다. — **⑷ 음성 조건** = 지도 타일(`tile-`)은 `kept` · 접수분 루트는 `OutOfScope` · 원본·기준 격자·데이터셋 **무접촉**(`〈247〉` 과 같은 선 · `A-1` 음성 시험이 이미 잠근다). — ⛔ **범위 밖** = 팔레트 선택 재렌더 경로(`V-1`) · 고르는 UI(`J-6`)."
-    evidence: null
+    evidence: "⭑ ⟨집행 2026-09-04 · `PLAN-SoT §9 〈309〉` · 워크트리 `lane-rc1` · 근거 `sessions/RC-1-RECLAIM-20260904.md` · Ted 승인 2026-09-04 「전수 스냅숏 후 회수」⟩ **회수 1회를 집행했다 — 고아 14 벌(28 파일)만 지웠다.** ⑴ = `〈308〉` 충족(재굽기 3건 · 9층 200). ⑵ = `invalidation.reclaim_plan()` → `apply()` **한 자리**로 집행 · 계산기 신설 0. ⑶ = 판정 불가 **49→19** 는 `〈308〉` 이 충족했고 **회수 후 재실측도 19 유지** · 삭제 **0 → 28 파일(14 벌)** · 재굽기 **0 → 3건**. ⑷ 음성 = 지도 타일 2 · 판정 불가 19 · 살아 있다 84 가 **전건 `kept`**(누락 0 · `stale` 침범 0) · `OutOfScope` 0 · SQL 쓰기 0 · 컨테이너 수명 조작 0 · 파괴 플래그 0 · hand-`rm` 0. **계수 전후** = `대상 117 · 살아 있다 84 · 접수분 0 · 고아 14 · 판정 불가 19` → `대상 103 · 살아 있다 84 · 접수분 0 · 고아 0 · 판정 불가 19`(자리 파일 255 → 227). **게이트 `artifact-ownership` 이 red(판정) 에서 green 으로 닫혔다** — `〈308〉` 이후 서 있던 유일한 red 였다. **되돌릴 길** = 회수 **전에** 뜬 짝 백업 `platform-20260904T013647` / `vol-previews-20260904T013726`(255건 · 매니페스트 전건 일치)에 28 파일이 그대로 있다. **전수 스냅숏** = `dev-package/sessions/RC-1-SNAPSHOT-20260904T0138.tsv`(255 줄 · 키·확장자·크기·source·sidecarVersion·baked_for·등급·사유). **지운 14 벌의 정체** = `baked_for.is_upload: true` 이고 `source` fileId 셋(`01M1H43V0SX1V7ZPCB2KTC9RN8` 6벌·`01M1H44AYFJA62X9NQQD849DN9` 4·`01M1H4800DAJ0PVH7CTG74TDEE` 4)이 `d3_file` **0행** · `d5_upload_file` **0행** · 대상 3건이 `d3_dataset` **0행** — **등록되지 않고 버려진 접수분의 그림**이라 등록된 데이터셋의 화면은 하나도 바뀌지 않는다. **현물 확인 전후 `diff` 0줄** — 렌더 3건 × 3층 전건 200(바이트 수까지 동일) · 값 조회 3건 200 `available true`. ⚠ **면제 선언은 비운 채다**(`[exempt] keys = []`) — **회수로 닫았지 선언으로 닫지 않았다.** ⚠ **재지 않은 것** = 판정 불가 19 벌의 처분 `[미확인]`(구판은 그 키가 다시 구워질 때만 덮인다 · `tolerate = true` 유지) · 캐시 키가 갈린 원인의 귀속 `[미확인]`(`〈308〉` 과 같다) · 회수한 디스크 용량 합계 미산출."
     deadline: null
     note: "⭑ **⟨신설 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉰⟩ 소유가 없어 `[미확인]` 으로 떠 있던 자리를 항목으로 세웠다.** 종전 기록 = `V-1.completion_def_draft` ⓒ 축자 「**별도 작업**이고, 그 자리는 `J-1` 묶음도 `Y-1` 도 지고 있지 않다 `[미확인] · 소유 미정`」. **왜 `V-1` 이 지지 않는가** = 회수 후보 목록(`_produced_for`)이 **이 프로세스가 스스로 구운 것만** 세고 디렉터리를 훑지 않으므로(코드 주석이 그 이유를 적어 두었다 — 자리가 평평해 훑으면 남의 대상까지 집는다), 그리는 서버가 다시 뜨면 옛 파일은 후보가 아니다. ⟹ **`V-1` 이 서도 쌓인 분은 정리되지 않는다.** ⚠ **`03-HANDOFF §1`·`WORK-UNITS §11` 에는 행을 세우지 않았다** — 신설 시점의 근거가 실측이 아니라 분리 판정이고, 착수 회차가 행을 세운다.⭑ **⟨관측 2026-09-03 · 등재 `PLAN-SoT §9 〈305〉` · 근거 `sessions/V-2-CLOSE-20260903.md §4`⟩ **진입조건으로 읽는다 — 이 항목이 훑을 자리에 산출물이 있는 대상은 14 중 3 건이다.** staging 카탈로그 **14건 전수**를 값 조회 1회씩으로 훑은 실측 = `available:true` **3건**(`01M0YWDXN7CA13KB7MQC9PGEW5` · `01M1JM3JTQSSTKR9A2QQ67QN81` · `01M19RENXAANZ2HDWM4Z46C37Y`) · **11건은 `200 ＋ available:false ＋ 「자리에 산출물이 없다」`**(`E-2` 의 tif·nc·gz·hdf 넷 포함). ⚠ **`E-2` 의 엣지 왕복을 근거로 「그 5종에 타일이 있다」고 읽으면 안 된다** — `E-2` 가 잰 것은 **렌더 한 장의 왕복**이지 **자리에 구운 COG 의 유무**가 아니다. 둘은 다른 자리다. ⚠ **종전 설명은 낡았다** — `〈254〉` 실측 ⑥(「`NumPy`·`GRIB` 는 지원 목록 밖」)은 `#58`(`44bef51`)이 파서를 넷에서 여섯으로 채우며 **부분적으로 뒤집혔다**(`d5/pipeline.py COG_BUILDERS` 실측 **다섯**). ⛔ **원인 `[미확인]` — 추측하지 않는다.** 푸는 법 = staging 의 자리(`previews`)를 **읽기 전용**으로 세어 대상별 `tile-` 벌의 유무를 직접 대조하고 각 데이터셋의 적재 시각과 견준다. ⚠ **차단이 아니다** — 지금 막히는 항목은 0건이고, 이 항목이 훑는 모집단의 크기를 미리 아는 것이 목적이다. ⭑ **⟨진입조건 증보 2026-09-03 · `PLAN-SoT §9 〈307〉`-㉷⑶·㉸ · 워크트리 `lane-307`⟩ 이 항목은 **배포 직후에 서야 하고, 그 전에 소유 계수를 읽으면 안 된다.** `〈307〉` 이 viz-render 캐시 키에 **시각·격자 digest** 를 넣었다 ⟹ 배포 순간 **기존 산출물·타일이 전량 미스**가 된다. ⛔ **하드 진입조건 — `main` 을 staging 에 배포한 뒤, 산출물 재굽기와 소유 네 등급 재실측을 돌리기 전에는 이 항목의 완료 조건(판정 불가 49 → 19)을 판정하지 않는다.** 배포만 하고 재굽기를 건너뛴 채 읽은 계수는 **키가 갈려서 난 미스**이지 소유 판정이 아니다 — 종전 회차가 「바뀌지 않은 것이 정상이다」로 읽던 근거(`〈273〉`-⑸)가 배포 뒤에는 **참이 아니다.** ⚠ **차단이 아니라 순서다** — 막는 것은 0건이고, 정하는 것은 「무엇 뒤에 재는가」다. 값·근거는 `〈307〉` 에만 적는다(이 줄은 링크만 든다). 같은 순서를 `03-HANDOFF §4.5` 「다음 회차가 지고 갈 것」 ⑵ 와 대장 `CR-2` 가 같이 든다.⭑ **⟨하드 진입조건 충족 2026-09-04 · `PLAN-SoT §9 〈308〉` · 워크트리 `lane-window-b3` · 근거 `sessions/WINDOW-20260903-B3.md`⟩ `〈307〉` 이 건 하드 진입조건(「재굽기 전 판정 금지」)이 풀렸다 — **재굽기가 집행됐고 전후 계수가 둘 다 축자로 남았다.** **전**(2026-09-04T01:01:06+09:00) = `산출물 소유 — 대상 한 벌 108 · 살아 있다 75 · 접수분에만 닿는다 0 · 고아 14 · 판정 불가 19` · **후**(2026-09-04T01:06:35+09:00) = `산출물 소유 — 대상 한 벌 117 · 살아 있다 84 · 접수분에만 닿는다 0 · 고아 14 · 판정 불가 19`. 재굽기 = 공개 엣지 `POST /api/v1/previews` 3건(`01M0YWDXN7CA13KB7MQC9PGEW5`·`01M1JM3JTQSSTKR9A2QQ67QN81`·`01M19RENXAANZ2HDWM4Z46C37Y`) · 9층 전건 200 · 실패 0. ⭑ **델타가 말하는 것 = `+9`(3 데이터셋 × 3층)가 전건 `살아 있다` 로 섰고, 판정 불가 19 · 고아 14 는 한 벌도 움직이지 않았다.** **재굽기는 더하기만 한다 — 옛 벌은 그 자리에 남는다.** ⟹ **남은 집행은 회수 한 자리**(`invalidation.reclaim_plan()` → `apply()` · 완료 정의 ⑶). ⛔ **갈라야 할 것 둘** — 고아 14 는 원본이 사라진 것이라 지우는 대상이고, **판정 불가 19 는 「구판 · 판정 보류」라 없는 필드를 근거로 지우면 그것이 오삭제다**(게이트 덫 ②). 보류는 `gates/config/artifact-ownership.toml` `[legacy] tolerate` 에 **이름으로** 선언하고 건수를 드러낸다. ⚠ **이 회차는 아무것도 지우지 않았다 — 삭제 0건** 이고 `status` 는 `open` 그대로다. ⚠ **재지 않은 판단기준** = 캐시 키가 갈린 원인의 귀속(`[미확인]` — 직전 팔레트를 읽을 경로가 상세에도 사이드카에도 없어 팔레트 차이와 리팩터 차이가 갈리지 않는다)."
     sources: ["PLAN-SoT §9 〈289〉"]
@@ -1908,9 +1906,13 @@ items:
       **게이트를 약화시켜 green 을 만들지 않는다**(잡에 없는 준비 단계를 더하는 쪽으로만 푼다).
       ⭑ 다음 회차 작업항목 13건 전체 목록은 `sessions/CODE-REVIEW-20260903-PLAN.md §4` 에 있고 **이 항목은 그 목록을 삼키지 않는다** —
       여기 담은 것은 **판정이 없으면 못 여는 다섯**뿐이다.
+      ⭑ ⟨증보 2026-09-04 · `PLAN-SoT §9 〈310〉`-㉲ · `origin/main` 병합 후⟩ **⑶ 의 순서에 `BF-2` 가 묶인다 — 이 항목이 그 순서를 지고 간다.**
+      `RC-1` 은 〈309〉 로 닫혔다(회수 1회 · 판정 불가 19 유지). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려
+      **배포 뒤 재굽기 1회 더** ＋ 소유 계수(103/84/19) 재실측이 필요하다 — 판정 불가 19 벌의 처분은 〈309〉-㉶⑴ 이 이미 다음 회차 진입조건으로 잡아 두었다.
+      `RC-1` 은 done 이라 다시 열지 않는다(종전 `RC-1.entry_conditions` 증보는 병합 시 철회).
     sources: ["PLAN-SoT §9 〈307〉", "sessions/CODE-REVIEW-20260903-PLAN.md §5-5", "sessions/CODE-REVIEW-20260903-PLAN.md §4", "notes/REFACTOR-MERGE-MAP-20260903.md §3", "notes/REFACTOR-MERGE-MAP-20260903.md §5.3"]
 
-  # ── BF- · 버그 수정 (bugfix) — 2026-09-03 회차 · 등재 `PLAN-SoT §9 〈309〉` · 기록 `sessions/BUG-20260903.md`
+  # ── BF- · 버그 수정 (bugfix) — 2026-09-03 회차 · 등재 `PLAN-SoT §9 〈310〉` · 기록 `sessions/BUG-20260903.md`
   # 접두사 `BF-` 는 **완료 판정된 stage 1 항목의 회귀·결함**을 담는다. 기능 항목이 아니라 결함 항목이므로
   # `stage: stage1` 이고, `after_stage2` 표지 블록(`CLAUDE.md §0`)에는 들어가지 않는다.
   # 완료 정의의 공통 형태 = 재현 → 근본 원인 → 실패 시험 red 선실측 → 최소 수정 → green (`sessions/BUG-20260903.md §0`).
@@ -1936,10 +1938,10 @@ items:
       `.lin-axis` `min-width: 820px` → `width: max-content; min-width: 100%`. 근거 `reports/bug-20260903/lane-A-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉯. advisor 게이트 ② ACCEPT. 스크린샷 `reports/bug-20260903/bug03-*.png`·`bug05-*.png`·`bug07-*.png`.
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉯. advisor 게이트 ② ACCEPT. 스크린샷 `reports/bug-20260903/bug03-*.png`·`bug05-*.png`·`bug07-*.png`.
       ⚠ **배포되지 않았다** — 통합 브랜치 `bugfix/20260903-ui-12` 병합·배포는 별도 회차다. 대장이 `done` 인 것과 staging 에 서 있는 것은 다르다.
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
 
   - id: BF-2
     name: "③지도형 리샘플 — 전방 산란을 출력 주도(역사상) 근사 최근접으로 교체 ＋ 캐시 키 라벨 (Ted 4 · 접수 B-1 ＋ B-4 흰 줄)"
@@ -1964,12 +1966,12 @@ items:
       정확 최근접 대조 = 126×128→512 약 **86 %** · 30×32→256 약 **95 %**(브루트포스 · advisor 게이트 ②). 근거 `reports/bug-20260903/lane-B1-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉰. **등재된 한계**(항목을 세우지 않고 여기 적는다) = ㉠ 근사 최근접이라 셀 경계가 1 px 들쭉날쭉할 수 있다(미리보기 배율에서 식별되지 않는다)
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉰. **등재된 한계**(항목을 세우지 않고 여기 적는다) = ㉠ 근사 최근접이라 셀 경계가 1 px 들쭉날쭉할 수 있다(미리보기 배율에서 식별되지 않는다)
       ㉡ 긴 변 ≤ `max_side` 이면서 발자국이 bbox 보다 작은 곡선 격자(크게 회전한 격자)는 한 출력 픽셀에 씨앗이 여럿 떨어져도 평균하지 않고 하나만 남는다 — 현재 실원천(규칙 격자 · ≤1024)에는 이 부류가 없다.
-      ⚠ **배포 순서** ⭑ ⟨갱신 2026-09-04 · advisor 게이트 ③⟩ 재굽기 1회는 2026-09-04 구 알고리즘으로 이미 돌았다(main 〈308〉). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려 **배포 뒤 재굽기 1회 더** 필요 · 소유 계수 117/84 가 재변동한다 → `RC-1`·`CR-2 ⑶` 재실측(`RC-1.entry_conditions`).
+      ⚠ **배포 순서** ⭑ ⟨갱신 2026-09-04 · advisor 게이트 ③ · `origin/main` 병합 후 재정정⟩ 재굽기 1회는 2026-09-04 구 알고리즘으로 이미 돌았고(main 〈308〉) `RC-1` 은 〈309〉 로 닫혔다(회수 1회 · 판정 불가 19 유지). `BF-2` 배포 즉시 ③지도형 층 키(`warp+nearest`)가 다시 갈려 **배포 뒤 재굽기 1회 더** ＋ 소유 계수(103/84/19) 재실측이 필요하다 — 판정 불가 19 벌의 처분은 〈309〉-㉶⑴ 이 이미 다음 회차 진입조건으로 잡아 두었다. 지고 가는 열린 항목 = `CR-2` ⑶(`RC-1` 은 done 이라 다시 열지 않는다).
       사양 반영 = `PREVIEW-IMPLEMENTATION.md §2 표 ③행 · §5.3 ⑤ · §7.2`. 스크린샷 `reports/bug-20260903/bug04-*.png`(＋ 흰 줄 `bug10-*`·`bug11-*`).
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B1-report.md", "PREVIEW-IMPLEMENTATION.md §7.2"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B1-report.md", "PREVIEW-IMPLEMENTATION.md §7.2"]
 
   - id: BF-3
     name: "확대 한계 안내 — 「확대·축소·기본 배율로」 무동작을 한계 상태 표시로 (Ted 8 · 접수 B-3)"
@@ -1989,10 +1991,10 @@ items:
       최소 수정 · 무관 편집 0(advisor 게이트 ② 검토). 근거 `reports/bug-20260903/lane-B35-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q1. ⚠ 「확대가 stage 2 라 안 됨」이 아니다 — `P3` 가 `〈241〉` 로 닫힐 때 확대는 완료 정의 그대로 충족됐고(`recon-D-scope.md §2`), 이것은 **완료된 기능의 표시 결함**이다.
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉮ Q1. ⚠ 「확대가 stage 2 라 안 됨」이 아니다 — `P3` 가 `〈241〉` 로 닫힐 때 확대는 완료 정의 그대로 충족됐고(`recon-D-scope.md §2`), 이것은 **완료된 기능의 표시 결함**이다.
       스크린샷 `reports/bug-20260903/bug08-*.png`.
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/lane-B35-report.md"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/lane-B35-report.md"]
 
   - id: BF-4
     name: "미리보기 이름표 · 범례 변수명 · 원본 격자 캡션 (Ted 11·10 · 접수 B-5·B-4)"
@@ -2014,11 +2016,11 @@ items:
       금지 파일(`LineageSection.tsx`·`.pv-tile` 크기 CSS·`pointFromViewport`·`ScreenshotButton.tsx`) diff 0. 근거 `reports/bug-20260903/lane-B35-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q2·Q3. ⚠ 레인 보고와 `PLAN-fanout.md` 는 B-4·B-5 를 「버그 13·14」로 적었다 — 접수표(`BUG-INTAKE-20260903.md`)의 Ted 번호는 **10·11** 이다. 정본은 접수표.
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉮ Q2·Q3. ⚠ 레인 보고와 `PLAN-fanout.md` 는 B-4·B-5 를 「버그 13·14」로 적었다 — 접수표(`BUG-INTAKE-20260903.md`)의 Ted 번호는 **10·11** 이다. 정본은 접수표.
       Ted 10 의 「업로드/상세 배율 차이」는 버그가 아니다 — 블록은 자료 자체(2 km → 100 m 균등 분할)이고 차이는 컨테이너 폭(`max-width:100%` vs `width:100%`)이다. 항목을 세우지 않는다.
       스크린샷 `reports/bug-20260903/bug10-*.png`·`bug11-*.png`.
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B35-report.md"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-B-preview.md", "reports/bug-20260903/lane-B35-report.md"]
 
   - id: BF-5
     name: "프로젝트 화면 뿌리 스타일 ＋ 연구실 설정 버튼 gap (Ted 1·9·2 · 접수 C-1·C-3·C-2)"
@@ -2039,10 +2041,10 @@ items:
       `node:fs` 우회 배제(`e01-apply-points.test.ts:14` 선례 — 2026-09-02 main 배포 불가의 원인). 근거 `reports/bug-20260903/lane-C-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉯. 곁가지 둘은 항목으로 뗐다 — `LabPage` 뿌리 규칙 부재 = `BF-8` · `project.css` 미정의 토큰 = `BF-11`(이 수정이 그 관례의 토큰 `--line`·`--fg-muted`·`--surface` 를 그대로 썼다).
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉯. 곁가지 둘은 항목으로 뗐다 — `LabPage` 뿌리 규칙 부재 = `BF-8` · `project.css` 미정의 토큰 = `BF-11`(이 수정이 그 관례의 토큰 `--line`·`--fg-muted`·`--surface` 를 그대로 썼다).
       스크린샷 `reports/bug-20260903/bug01-*.png`·`bug02-*.png`·`bug09-*.png`.
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
 
   - id: BF-6
     name: "데이터셋 설명문 `／` 구분자 — 표시 단계 줄 나눔 (A안) (Ted 15 · 접수 C-4)"
@@ -2060,11 +2062,11 @@ items:
       → GREEN vitest **37파일 / 575건 전건 통과** · `tsc --noEmit` 0. 근거 `reports/bug-20260903/lane-C4-report.md`.
     deadline: null
     note: >-
-      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈309〉`-㉮ Q5. ⚠ **Ted §8 문구 확인 대기** — 정본 `Policy_데이터셋_상세 §8` 은 이 자리를 「③ **한 줄** 요약」으로 못 박는다(`DetailHeader.tsx:2` 축자).
-      여러 줄로 펼치는 것이 정본 위반인지 Ted 확인이 남았고, 코드는 승인 전제로 넣되 되돌리기 1회로 설계했다. 표시 규약 「`／` = 구분자」는 `〈309〉`-㉳ 에 등재했다 — 본문에 `／` 를 쓴 설명이 뒤에 들어오면 오분할한다(현재 사용자 입력은 `RegisterArea` 300자 한 줄이라 해당 사례 0).
+      **신설·닫힘 2026-09-03** — `PLAN-SoT §9 〈310〉`-㉮ Q5. ⚠ **Ted §8 문구 확인 대기** — 정본 `Policy_데이터셋_상세 §8` 은 이 자리를 「③ **한 줄** 요약」으로 못 박는다(`DetailHeader.tsx:2` 축자).
+      여러 줄로 펼치는 것이 정본 위반인지 Ted 확인이 남았고, 코드는 승인 전제로 넣되 되돌리기 1회로 설계했다. 표시 규약 「`／` = 구분자」는 `〈310〉`-㉳ 에 등재했다 — 본문에 `／` 를 쓴 설명이 뒤에 들어오면 오분할한다(현재 사용자 입력은 `RegisterArea` 300자 한 줄이라 해당 사례 0).
       스크린샷 `reports/bug-20260903/bug12-*.png`.
       ⭑ ⟨상태 정정 2026-09-04 · advisor 게이트 ③⟩ `done → in_progress` — 완료 = staging 배포 green(`CLAUDE.md §0`)이고 이 항목은 통합 브랜치 `bugfix/20260903-ui-12` 에만 있다. staging 배포 green 시 `done` — 배포 창이 전환한다.
-    sources: ["PLAN-SoT §9 〈309〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md §5", "reports/bug-20260903/lane-C4-report.md"]
+    sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md §5", "reports/bug-20260903/lane-C4-report.md"]
 
   - id: BF-7
     name: "스크린샷 버튼 — 객체 URL 즉시 revoke 로 크롬 다운로드 취소 (recon 발견 · Ted 미보고)"
@@ -2081,8 +2083,8 @@ items:
     evidence: null
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈309〉`-㉱. 발견 = `reports/bug-20260903/recon-B-preview.md §3`(「스크린샷 버튼은 별건이다」). Ted 접수 12건에는 없다.
-    sources: ["PLAN-SoT §9 〈309〉", "reports/bug-20260903/recon-B-preview.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-B-preview.md §3`(「스크린샷 버튼은 별건이다」). Ted 접수 12건에는 없다.
+    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-B-preview.md"]
 
   - id: BF-8
     name: "`LabPage`(S-01) 뿌리 규칙 부재 — 화면 뿌리가 자기 여백을 갖는 관례의 결손"
@@ -2098,8 +2100,8 @@ items:
     evidence: null
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈309〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태다.
-    sources: ["PLAN-SoT §9 〈309〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태다.
+    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
 
   - id: BF-9
     name: "core-api 계보 그래프 — 원천 → 루트 edge 부재 (프론트는 라벨 없는 화살표로 수용)"
@@ -2116,8 +2118,8 @@ items:
     evidence: null
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈309〉`-㉱. `lane-A-report.md` 「보류 사항」 — 프론트는 이를 의도된 동작으로 명시하고 코드 주석에 `routes/lineage.py` 참조를 남겼다. ⚠ 결함이 아니라 **뒷단 결손**일 수 있다 — 화면이 이미 수용하므로 막는 것 0건.
-    sources: ["PLAN-SoT §9 〈309〉", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `lane-A-report.md` 「보류 사항」 — 프론트는 이를 의도된 동작으로 명시하고 코드 주석에 `routes/lineage.py` 참조를 남겼다. ⚠ 결함이 아니라 **뒷단 결손**일 수 있다 — 화면이 이미 수용하므로 막는 것 0건.
+    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
 
   - id: BF-10
     name: "바탕지도 대안 — 격자선·눈금 옵션 (POL-021 준수 · Ted 6 · 접수 B-2)"
@@ -2134,9 +2136,9 @@ items:
     evidence: null
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈309〉`-㉮ Q4. 접수 B-2 의 「해결 가능 여부 검토」 결과 = 정책 위반이 아니라 **정책이 명하는 대로 동작 중**(`recon-D-scope.md §1`). 스크린샷 `reports/bug-20260903/bug06-*.png`.
-      ⚠ 결함이 아니라 **선택 갈래**라 `stage1` 계수에 들어가는 것이 옳은지는 Ted 가 회차를 열 때 다시 본다(`〈309〉`-㉵).
-    sources: ["PLAN-SoT §9 〈309〉", "reports/bug-20260903/recon-B-preview.md §2", "reports/bug-20260903/recon-D-scope.md §2"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉮ Q4. 접수 B-2 의 「해결 가능 여부 검토」 결과 = 정책 위반이 아니라 **정책이 명하는 대로 동작 중**(`recon-D-scope.md §1`). 스크린샷 `reports/bug-20260903/bug06-*.png`.
+      ⚠ 결함이 아니라 **선택 갈래**라 `stage1` 계수에 들어가는 것이 옳은지는 Ted 가 회차를 열 때 다시 본다(`〈310〉`-㉵).
+    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-B-preview.md §2", "reports/bug-20260903/recon-D-scope.md §2"]
 
   - id: BF-11
     name: "`project.css` 미정의 토큰(`--line`·`--fg-muted`·`--surface`·`--fg`) → `tokens.css` 정본 치환 ＋ backlink 공용화"
@@ -2153,5 +2155,5 @@ items:
     evidence: null
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈309〉`-㉱. `--fg` 는 지시에 든 이름이고 origin/main 실측은 0건이다 — 레인 C 가 더한 자리가 있으면 병합 뒤 재실측한다. 색이 미묘하게 어긋나는 것 외에 막는 것 0건.
-    sources: ["PLAN-SoT §9 〈309〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `--fg` 는 지시에 든 이름이고 origin/main 실측은 0건이다 — 레인 C 가 더한 자리가 있으면 병합 뒤 재실측한다. 색이 미묘하게 어긋나는 것 외에 막는 것 0건.
+    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
