@@ -19,6 +19,14 @@ SIGTERM 에 컨테이너가 매달린다).
 (at-least-once 의 소비자 쪽 짝 — 멱등 키가 중복 집행을 거른다).
 ⚠ **멱등은 여기서 새로 만들지 않는다.** 집행·ack·멱등 키는 전부
 `triggers.drain` + `SpoolTriggerPort` 의 것이고 이 파일은 **부르기만 한다.**
+
+⭑ **⟨증보 2026-09-05 · Ted 판정 「도는 배경 루프에 얹는다」 · `TL-1` ⑹⟩ 이 루프가
+  지도 타일 회수도 부른다.** 셋 중 하나였고(관리 HTTP op · 별도 스레드/크론 · 도는 루프)
+  판정은 셋째다 — **이미 돌고 있고 · HTTP 표면이 0 이며 · 계약 개정이 0** 이다.
+  ⚠ **여기에 회수 규칙이 없다.** 무엇을 지울지는 `tile_liveness` 가 판정하고 범위는
+  `invalidation.plan()` 이 계산하며 집행은 `invalidation.apply()` 하나다. 이 파일이
+  더하는 것은 **부름 한 자리**이고, 그 부름도 `drain` 과 **같은 규칙**으로 감싼다 —
+  **한 바퀴가 터져도 루프는 죽지 않는다.**
 """
 from __future__ import annotations
 
@@ -37,16 +45,22 @@ class TriggerDrainLoop:
     합류에 실패하면 그 사실을 로그로 남긴다(조용히 새는 것을 만들지 않는다).
     """
 
-    def __init__(self, port, *, jobs, source, interval_seconds: float) -> None:
+    def __init__(self, port, *, jobs, source, interval_seconds: float,
+                 reclaim=None) -> None:
         self._port = port
         self._jobs = jobs
         self._source = source
         self._interval = float(interval_seconds)
+        #: 지도 타일 회수 조각(`d7_visualization.tile_reclaim.ReclaimJob`). **`None` 이면
+        #: 얹히지 않는다** — 배선이 없으면 회수도 없다(자리를 지어내지 않는다).
+        self._reclaim = reclaim
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         #: 관측용 — 돈 바퀴 수와 집행 건수. 시험이 「루프가 실제로 돌았는가」를 잰다.
         self.passes = 0
         self.drained = 0
+        #: 관측용 — 회수 바퀴가 실제로 돌았는가. **판정한 바퀴만 센다.**
+        self.reclaim_passes = 0
 
     # ── 수명 ────────────────────────────────────────────────────────────────
     def start(self) -> None:
@@ -80,7 +94,25 @@ class TriggerDrainLoop:
         self.drained += len(done)
         if done:
             log.info("트리거 집행 %d건 — 미리보기를 다시 만들었다", len(done))
+        self._reclaim_tick()
         return len(done)
+
+    def _reclaim_tick(self) -> None:
+        """회수 한 바퀴 — **주기가 됐을 때만** 돌고, **터져도 루프를 죽이지 않는다.**
+
+        ⚠ 트리거 집행과 **격리**돼 있다. 회수가 실패해도 미리보기 재생성은 계속 돌고,
+          그 반대도 같다 — 한쪽의 예외가 다른 쪽을 인질로 잡지 않는다.
+        """
+        if self._reclaim is None:
+            return
+        try:
+            result = self._reclaim.run_due()
+        except Exception:  # noqa: BLE001 — 회수 한 바퀴가 루프를 죽이지 못한다
+            log.exception("지도 타일 회수 한 바퀴가 실패했다 — 다음 주기가 다시 본다")
+            return
+        if result is not None:
+            self.reclaim_passes += 1
+            log.info("%s", result.summary())
 
     def _run(self) -> None:
         while not self._stop.is_set():

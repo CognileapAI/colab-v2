@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 
+from ..domains.d7_visualization import tile_reclaim
 from ..domains.d7_visualization.jobs import JobStore
 from ..kernel import errors
 from ..kernel.config import Settings, load_settings
@@ -37,9 +38,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         loop = None
         if app.state.triggers is not None:
+            # ⭑ ⟨2026-09-05 · `TL-1` ⑹ · Ted 판정⟩ **회수를 도는 루프에 얹는다.**
+            #   주체를 새로 세우지 않는다 — 스레드 하나가 트리거와 회수를 함께 진다.
+            #   ⚠ **기본은 관측 전용**(`settings.tile_reclaim_apply` 기본 `False`)이라
+            #     배포가 명시로 켜기 전에는 세고 적기만 한다.
+            reclaim = tile_reclaim.ReclaimJob(
+                previews_root=settings.preview_dir, storage_root=settings.source_root,
+                apply=settings.tile_reclaim_apply,
+                max_keys=settings.tile_reclaim_max_keys,
+                interval_seconds=settings.tile_reclaim_interval_seconds)
             loop = TriggerDrainLoop(app.state.triggers, jobs=app.state.jobs,
                                     source=app.state.source,
-                                    interval_seconds=settings.trigger_poll_seconds)
+                                    interval_seconds=settings.trigger_poll_seconds,
+                                    reclaim=reclaim)
             loop.start()
         app.state.trigger_loop = loop
         try:
