@@ -238,7 +238,20 @@ function StartedPreview(props: {
   // 타일 표면에는 잴 그림 한 장이 없어 사이드카가 그 값을 말한다. **확대 조작은 이
   // 경로를 다시 타지 않는다** — 의존이 결과 한 건의 사이드카 주소 하나다(조건 ⑶).
   const done = state.phase === '완료' ? state.result : undefined;
-  const sidecarUrl = done?.tileUrlTemplate ? done.sidecarUrl : undefined;
+  // ⭑ ⟨staging 실측 2026-09-04 · `PLAN-SoT §9 〈312〉` · `BF-4`⟩ **사이드카는 타일 갈래의
+  //   부속이 아니다.** 종전 조건은 `done?.tileUrlTemplate ? done.sidecarUrl : undefined` 라
+  //   **타일 갈래에서만** 사이드카를 물었는데, 타일은 **선택 갈래이고 기본이 꺼짐**이다
+  //   (`〈240〉` 판정 ⑬ · 「기본은 한 장」 · staging 홈 env 에 `COLAB_VIZ_TILE_BRANCH` 선언
+  //   없음). 그래서 실화면이 받는 ③지도형 결과(`imageUrl` ＋ `sidecarUrl`)에서는 이 경로가
+  //   **한 번도 돌지 않았고**, 캡션의 「· W × H」 가 3 데이터셋 전부에서 빠졌다.
+  //   계약도 굽는 쪽도 **갈래와 무관하게** 사이드카를 싣는다 — `core-viz.yaml`
+  //   `dependentRequired: sidecarUrl → bounds`(`tileUrlTemplate` 과 별개 항) ·
+  //   `jobs.py`(지도 이미지·좌표가 있으면 `sidecarUrl`). **판정을 그 사실에 맞춘다.**
+  const sidecarUrl = done?.sidecarUrl;
+  // ⚠ **확대 한계의 출처는 손대지 않는다**(`BF-3` · 조건 ⑷) — 이미지 갈래에는 잴 그림
+  //   한 장이 있어 `naturalWidth` 가 이미 그 자리를 채운다. 사이드카가 한계를 말하는 것은
+  //   **잴 그림이 없는 타일 갈래**뿐이다.
+  const tiled = Boolean(done?.tileUrlTemplate);
   const { datasetSource } = props;
   const { onNativeWidth } = zoom;
   const { onNativeSize } = props;
@@ -249,7 +262,7 @@ function StartedPreview(props: {
       const geom = await datasetSource.mapGeometry(sidecarUrl);
       // **못 읽으면 아무것도 하지 않는다** — 한계를 지어내지 않는다.
       if (alive && geom) {
-        onNativeWidth(geom.width);
+        if (tiled) onNativeWidth(geom.width);
         // ⭑ ⟨버그 13⟩ 같은 사이드카 응답의 `height` 도 마저 써 준다 — 새 왕복이 아니다.
         onNativeSize?.(geom);
       }
@@ -257,7 +270,7 @@ function StartedPreview(props: {
     return () => {
       alive = false;
     };
-  }, [datasetSource, sidecarUrl, onNativeWidth, onNativeSize]);
+  }, [datasetSource, sidecarUrl, tiled, onNativeWidth, onNativeSize]);
 
   if (state.phase === '그리는 중')
     return state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />;
