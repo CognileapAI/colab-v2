@@ -53,7 +53,7 @@
 
 - `work-items.yaml`에 `type`/`kind` 필드, "버그" 항목 관행 **없음** — 전 항목이 기능 단위(P1~P7, D-계열, V-, RC-, CR- 등)이고 결함은 해당 기능 항목의 `note`/`evidence`에 "⛔ 새 차단" 형태로 누적 기록되는 관행(`P3`의 ㈎㈏㈐ 등).
 - `dev-package/reports/`는 세션 산출 HTML(진행 보고), `dev-package/sessions/`는 `<주제>-<날짜>.md` 네이밍(예: `V-2-CLOSE-20260903.md`, `X5-AUDIT.md`) — 워크트리·조사 세션 기록.
-- follow-up 항목 id 네이밍 관행: **접두어 2글자 + 일련번호** — `CR-1`/`CR-2`(코드리뷰 후속), `RC-1`(재굽기·회수), `TL-1`(latency), `V-1`/`V-2`(값 조회). 신설 근거는 항상 `PLAN-SoT §9 〈N〉`을 등재 링크로 인용.
+- follow-up 항목 id 네이밍 관행: **접두어 2글자 + 일련번호** — `CR-1`/`CR-2`(코드리뷰 후속), `RC-1`(재굽기·회수), `TL-1`(latency), `V-1`/`V-2`(값 조회). 신설 근거는 항상 `PLAN-SoT §9 〈316〉`을 등재 링크로 인용.
 
 **권장**: 버그 12건을 `work-items.yaml`에 `BF-1`~`BF-N`(Bug Fix) 또는 유사 접두어로 개별 항목 등록(필드: id, name, status(open), stage(stage1), owner, entry_conditions, depends_on, completion_def(=재현→근본원인→실패시험 red→수정→green), evidence, deadline, note(원 버그 번호·스크린샷 경로 링크), sources). 동시에 `PLAN-SoT.md §9`에 등재 결정 1건(신규 버그 배치 판정)을 추가.
 
