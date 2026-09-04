@@ -33,12 +33,15 @@
 """
 from __future__ import annotations
 
-import hashlib
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 from ...kernel import storage_layout
+# ⭑ **키 계산의 정본은 판독기 쪽 한 자리다** (`TL-1` 완료 정의 ⑵ · `PLAN-SoT §9 〈302〉`).
+#   값 조회와 생존 판독이 **같은 이름**을 지어야 하므로 사본을 들지 않는다 — 사본을 들면
+#   그것이 세 번째 규칙이 되고, 갈라진 실패는 에러가 아니라 「값 없음」으로 위장한다.
+from .tile_liveness import candidate_tile_keys, file_digest  # noqa: F401  (재수출)
 
 #: 「없다」의 사유 — 계약 `ValueLookupResult.unavailableReason` enum 그대로.
 NO_TILE = "자리에 산출물이 없다"
@@ -71,41 +74,6 @@ class LookupOutcome:
             "cell": self.cell,
             "unavailableReason": self.unavailable_reason,
         }
-
-
-def file_digest(path: Path) -> str:
-    """본체 바이트의 sha256. **굽는 쪽(`d5/pipeline.file_digest`)과 같은 계산이다** —
-    청크 크기가 달라도 sha256 은 같은 값이라 결과가 갈리지 않는다."""
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def candidate_tile_keys(source: Path, *, grid_dir: Path | None) -> list[tuple[str, bool]]:
-    """규약 규칙이 낳는 **후보 키 전부** — `(키, 기준 격자를 썼는가)`. 최대 둘이다.
-
-    ⚠ **경로를 지어내는 것이 아니다** — 후보는 계약의 키 규칙(`map_tile_content_key`)과
-    승격된 변환 설정만으로 나온다. 그 둘 밖의 이름은 이 함수가 만들 수 없다.
-    """
-    digest = file_digest(source)
-    size = Path(source).stat().st_size
-    kind = storage_layout.MAP_TILE_CONVERSION_KIND
-    common = {
-        "sourceDigest": digest,
-        "sourceByteSize": size,
-        "conversionKind": kind,
-        "overviewResampling": storage_layout.MAP_TILE_OVERVIEW_RESAMPLING[kind],
-        "compression": storage_layout.MAP_TILE_COMPRESSION,
-    }
-    grid_digests = [(storage_layout.map_tile_grid_digest(None, False), False)]
-    if grid_dir is not None and Path(grid_dir).is_dir():
-        with_grid = storage_layout.map_tile_grid_digest(grid_dir, True)
-        if with_grid not in [g for g, _ in grid_digests]:
-            grid_digests.append((with_grid, True))
-    return [(storage_layout.map_tile_content_key(gridDigest=g, **common), used)
-            for g, used in grid_digests]
 
 
 def find_tile(previews_root, source: Path, *,
