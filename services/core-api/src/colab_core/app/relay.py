@@ -95,6 +95,34 @@ def _request(url: str, *, method: str, headers: dict[str, str],
         raise RelayUnavailable(str(e)) from e
 
 
+def _request_timed(url: str, *, method: str, headers: dict[str, str],
+                   body: dict[str, Any] | None) -> tuple[int, dict[str, Any] | None, str | None]:
+    """`_request` ＋ **저쪽이 낸 `Server-Timing` 을 그대로 들고 온다** (`VL-1` ·
+    `PLAN-SoT §9 〈310〉`).
+
+    왜 지나 보내는가 — `〈304〉` 는 벽시계 하나로만 재서 「어디가 느린가」를 못 갈랐다.
+    저쪽 구간을 여기서 버리면 **D7 안이 다시 `[미확인]`** 이 된다. **해석하지 않는다** —
+    이름도 값도 저쪽 것 그대로다(중계의 규율 그대로).
+    """
+    data = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=RELAY_TIMEOUT_SECONDS) as res:
+            raw = res.read()
+            return (res.status, (json.loads(raw) if raw else None),
+                    res.headers.get("Server-Timing"))
+    except urllib.error.HTTPError as e:
+        raw = e.read()
+        try:
+            return e.code, (json.loads(raw) if raw else None), e.headers.get("Server-Timing")
+        except json.JSONDecodeError:
+            return e.code, None, e.headers.get("Server-Timing")
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        raise RelayUnavailable(str(e)) from e
+
+
 def _request_binary(url: str, *, method: str, headers: dict[str, str],
                     body: dict[str, Any] | None) -> tuple[int, bytes, str | None]:
     """**JSON 이 아닌 답을 지나 보내는 전송.** `createPreviewScreenshot` 의 200 은
@@ -180,13 +208,20 @@ class HttpPreviewRelay:
         여기서 값으로 바꾸거나 4xx 로 승격하지 않는다: 저쪽이 읽어 보고 낸 사실이다.
         못 닿은 것만 `RelayUnavailable` 이고 라우트가 **503** 으로 낸다.
         """
-        status, body = _request(f"{self._base}/value-lookups", method="POST",
-                                headers=_scope_headers(lab_id, account_id, self._token),
-                                body=request)
+        body, _timing = self.lookup_value_timed(lab_id=lab_id, account_id=account_id,
+                                                request=request)
+        return body
+
+    def lookup_value_timed(self, *, lab_id: str, account_id: str,
+                           request: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+        """`lookup_value` ＋ **저쪽 `Server-Timing`**. 몸통은 한 글자도 달라지지 않는다."""
+        status, body, timing = _request_timed(
+            f"{self._base}/value-lookups", method="POST",
+            headers=_scope_headers(lab_id, account_id, self._token), body=request)
         _refuse_if_client_error(status, body)
         if status != 200 or body is None:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
-        return body
+        return body, timing
 
     def screenshot(self, *, lab_id: str, account_id: str,
                    request: dict[str, Any]) -> tuple[int, bytes, str | None]:

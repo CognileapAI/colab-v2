@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import hashlib
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -202,12 +203,36 @@ def _size_degrees(ds) -> float | None:
     return None
 
 
-def lookup(previews_root, source: Path, *, grid_dir: Path | None,
-           lat: float, lon: float) -> LookupOutcome:
-    """한 조각 · 한 점. **자리에 산출물이 없으면 「없다」이고 500 이 아니다.**"""
+def lookup_timed(previews_root, source: Path, *, grid_dir: Path | None,
+                 lat: float, lon: float) -> tuple[LookupOutcome, dict[str, float]]:
+    """`lookup` ＋ **구간 시간(밀리초)**. 답은 한 글자도 달라지지 않는다.
+
+    왜 시간을 함께 내는가 (`VL-1` ⑴ · `PLAN-SoT §9 〈310〉`)
+      `〈304〉` 는 공개 엣지 앞 벽시계 하나로만 재서 **서버 단독 시간이 `[미확인]`** 이었다.
+      「느리다」는 관측이고 「어디가 느리다」가 원인이다 — 가르는 자리는 여기다.
+
+    구간 둘 —
+      · `findTile`  = 본체 sha256(`sourceDigest`) ＋ 격자 다이제스트 ＋ 자리 실재 확인
+      · `readPoint` = COG 열기 ＋ 1×1 창 읽기. **자리에 없으면 0 이고 그것이 사실이다.**
+    """
+    t0 = time.perf_counter()
     found = find_tile(previews_root, source, grid_dir=grid_dir)
+    t1 = time.perf_counter()
     if found is None:
         # **자리에 없는 것은 실패가 아니라 사실이다** — 500 도, 경로 추측도 아니다.
-        return LookupOutcome(available=False, unavailable_reason=NO_TILE)
+        return (LookupOutcome(available=False, unavailable_reason=NO_TILE),
+                {"findTile": (t1 - t0) * 1000.0, "readPoint": 0.0})
     tile, used_reference_grid = found
-    return read_point(tile, lat=lat, lon=lon, used_reference_grid=used_reference_grid)
+    outcome = read_point(tile, lat=lat, lon=lon, used_reference_grid=used_reference_grid)
+    t2 = time.perf_counter()
+    return outcome, {"findTile": (t1 - t0) * 1000.0, "readPoint": (t2 - t1) * 1000.0}
+
+
+def lookup(previews_root, source: Path, *, grid_dir: Path | None,
+           lat: float, lon: float) -> LookupOutcome:
+    """한 조각 · 한 점. **자리에 산출물이 없으면 「없다」이고 500 이 아니다.**
+
+    ⚠ **계측판과 두 벌로 두지 않는다** — 규칙이 두 곳이면 갈린다(`CLAUDE.md §3` 불변규칙 1).
+    """
+    outcome, _spans = lookup_timed(previews_root, source, grid_dir=grid_dir, lat=lat, lon=lon)
+    return outcome

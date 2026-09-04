@@ -39,6 +39,7 @@ POINT = {"lat": 37.4, "lon": 126.9}
 class _FakeViz(BaseHTTPRequestHandler):
     received: list = []
     reply = RESULT
+    extra_headers: list = []
 
     def do_POST(self) -> None:                                    # noqa: N802
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
@@ -48,6 +49,8 @@ class _FakeViz(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
+        for k, v in _FakeViz.extra_headers:
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(raw)
 
@@ -59,6 +62,7 @@ class _FakeViz(BaseHTTPRequestHandler):
 def fake_viz():
     _FakeViz.received = []
     _FakeViz.reply = RESULT
+    _FakeViz.extra_headers = []
     server = HTTPServer(("127.0.0.1", 0), _FakeViz)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_port}", _FakeViz
@@ -141,3 +145,44 @@ def test_점이_없으면_400_이다(p2_client, fake_viz) -> None:
                     json={}, headers=auth(TOKEN_PROF))
     assert r.status_code == 400, r.text
     assert fake.received == []
+
+
+# ══════════════ 서버 단독 시간 — `Server-Timing` (`VL-1` · `PLAN-SoT §9 〈310〉`) ══════════════
+#
+# 왜 여기가 그 자리인가 — `〈304〉` 는 공개 엣지 앞 벽시계 하나로만 재서 **서버 단독 p95 가
+# `[미확인]`** 이었다. 사용자가 실제로 부르는 표면은 이 op 이므로, **이 표면이 자기 구간을
+# 말해야** 엣지·nginx 를 뺀 값이 나온다. ⚠ 몸통(`ValueLookupResult`)은 늘지 않는다.
+
+def _spans(res) -> dict:
+    import re
+    header = res.headers.get("Server-Timing")
+    assert header, "값 조회 응답에 Server-Timing 이 없다 — 서버 단독 시간을 가를 재료가 없다."
+    return {m.group(1): float(m.group(2))
+            for m in re.finditer(r"([A-Za-z0-9_]+);dur=([0-9.]+)", header)}
+
+
+def test_중계_응답이_자기_구간을_말한다(p2_client, fake_viz) -> None:
+    base, _fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    r = client.post(f"{API_PREFIX}/datasets/{DS_A1}/value-lookup",
+                    json={"point": POINT}, headers=auth(TOKEN_PROF))
+    assert r.status_code == 200, r.text
+    spans = _spans(r)
+    # `coreAccess` = 경계·권한 판정 ＋ 조각 조회(DB) · `coreRelay` = viz-render 왕복
+    for name in ("coreAccess", "coreRelay", "coreTotal"):
+        assert name in spans, f"{name} 구간이 없다: {spans}"
+    assert spans["coreTotal"] + 1e-6 >= spans["coreAccess"] + spans["coreRelay"]
+
+
+def test_저쪽_구간을_지워버리지_않는다(p2_client, fake_viz) -> None:
+    """**viz-render 가 낸 구간이 화면까지 살아 온다** — 지우면 「어디가 느린가」가
+    core-api 이하로만 갈리고 D7 안이 다시 `[미확인]` 이 된다."""
+    base, fake = fake_viz
+    fake.extra_headers = [("Server-Timing", "vizTotal;dur=7.500")]
+    try:
+        client = p2_client(viz_base_url=base)
+        r = client.post(f"{API_PREFIX}/datasets/{DS_A1}/value-lookup",
+                        json={"point": POINT}, headers=auth(TOKEN_PROF))
+        assert _spans(r)["vizTotal"] == 7.5
+    finally:
+        fake.extra_headers = []

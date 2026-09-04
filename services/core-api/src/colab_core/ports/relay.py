@@ -44,6 +44,16 @@ class PreviewRenderPort(Protocol):
         """
         ...
 
+    def lookup_value_timed(self, *, lab_id: str, account_id: str,
+                           request: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+        """`lookup_value` ＋ **저쪽이 낸 `Server-Timing`** (`VL-1` · `PLAN-SoT §9 〈310〉`).
+
+        몸통은 `lookup_value` 와 **한 글자도 다르지 않다.** 둘째 값은 viz-render 의 구간
+        문자열이고 없으면 `None` 이다 — **해석하지 않고 지나 보낸다**(중계의 규율).
+        `〈304〉` 가 「서버 단독 p95 `[미확인]`」으로 남긴 자리를 푸는 재료다.
+        """
+        ...
+
     def palettes(self, *, lab_id: str, account_id: str) -> dict[str, Any]:
         """`RenderStyle.palette` 값 집합 (`〈88〉` 묶음 4). **못 닿으면 예외다** —
         빈 목록은 「고를 것이 없다」는 답이지 「물어보지 못했다」가 아니다."""

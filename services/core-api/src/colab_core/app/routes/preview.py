@@ -15,6 +15,8 @@ core-api 가 하는 판정은 **경계 하나뿐**이다 — 대상(`datasetId`�
 """
 from __future__ import annotations
 
+import time
+
 from fastapi import APIRouter, Body, Depends, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -238,8 +240,18 @@ def create_preview_screenshot(request: Request, body: dict = Body(...),
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+#: **서버 단독 시간을 응답이 스스로 말한다** (`VL-1` ⑴ · `PLAN-SoT §9 〈310〉`).
+#: `〈304〉` 축자 — 「`Server-Timing` 에 처리 구간이 없어 … 서버 측 p95 = `[미확인]`」.
+#: ⚠ **계약 몸통은 늘지 않는다** — `Server-Timing` 은 표준 응답 헤더다.
+def _timing_header(spans: dict, upstream: str | None) -> str:
+    mine = ", ".join(f"{name};dur={ms:.3f}" for name, ms in spans.items())
+    # **저쪽 구간을 지우지 않는다** — 지우면 D7 안이 다시 `[미확인]` 이 된다.
+    return f"{mine}, {upstream}" if upstream else mine
+
+
 @router.post("/datasets/{datasetId}/value-lookup", name="lookupDatasetValue")
-def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...),
+def lookup_dataset_value(request: Request, response: Response, datasetId: str,
+                         body: dict = Body(...),
                          subject: Subject = Depends(current_subject),
                          db: Session = Depends(scoped_db)) -> dict:
     """한 점의 **그 칸 값**. 중계만 한다 — `core-viz.yaml#ValueLookupResult` 그대로 돌려준다."""
@@ -260,6 +272,7 @@ def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...
     if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
         raise errors.bad_request("point.lat 은 -90~90, point.lon 은 -180~180 이다.")
 
+    t_started = time.perf_counter()
     # ⑴ 404 · ⑵ 403 — 내려받기와 **같은 두 줄**이다.
     catalog.require_body_access(db, dataset_id)
 
@@ -272,11 +285,19 @@ def lookup_dataset_value(request: Request, datasetId: str, body: dict = Body(...
     relay = request.app.state.previews
     if relay is None:
         raise errors.ApiError(503, RENDER_UNAVAILABLE, "그리는 서버에 연결하지 못했다.")
+    t_access = time.perf_counter()
     try:
-        return relay.lookup_value(
+        result, upstream = relay.lookup_value_timed(
             lab_id=str(subject.lab_id), account_id=str(subject.account_id),
             request={"datasetId": datasetId, "fileId": str(pieces[0]["id"]),
                      "point": {"lat": float(lat), "lon": float(lon)}})
+        t_relayed = time.perf_counter()
+        response.headers["Server-Timing"] = _timing_header({
+            "coreAccess": (t_access - t_started) * 1000.0,
+            "coreRelay": (t_relayed - t_access) * 1000.0,
+            "coreTotal": (t_relayed - t_started) * 1000.0,
+        }, upstream)
+        return result
     except RelayRefused as e:
         return _refused(e)
     except RelayUnavailable as e:
