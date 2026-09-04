@@ -60,8 +60,14 @@ describe('§8 계보 그래프 — 항상 표시하고 가로축은 데이터만
     renderDetail(OPEN_ID);
     await settleLineage();
     const cols = screen.getAllByTestId('lin-col');
-    expect(cols.length).toBe(4); // 대상 집합이 비지 않았음을 먼저 못박는다
-    expect(cols.map((c) => c.getAttribute('data-col'))).toEqual(['0', '1', '2', '3']);
+    expect(cols.length).toBeGreaterThan(0); // 대상 집합이 비지 않았음을 먼저 못박는다
+    // §8 이 정한 것은 **순서**다. 「빈 칸도 자리를 지킨다」는 규정이 아니다 —
+    // 그래서 개수가 아니라 오름차순을 잰다 (버그 3·5·7).
+    const order = cols.map((c) => Number(c.getAttribute('data-col')));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(new Set(order).size).toBe(order.length);
+    // 이 픽스처는 네 종류가 다 있어 네 칸이 다 선다
+    expect(order).toEqual([0, 1, 2, 3]);
   });
 
   it('노드는 전부 데이터고 프로젝트 노드를 세우지 않는다 (§1-2)', async () => {
@@ -125,6 +131,129 @@ describe('§8 계보 그래프 — 항상 표시하고 가로축은 데이터만
     const labels = screen.getAllByTestId('lin-method');
     expect(labels.length).toBeGreaterThan(0);
     for (const l of labels) expect(l.textContent).not.toContain('✦');
+  });
+});
+
+/** 렌더된 칸 번호 — 오름차순이 §8 의 축 순서다. */
+function renderedCols(container: HTMLElement): number[] {
+  return Array.from(container.querySelectorAll('[data-testid="lin-col"]')).map((c) =>
+    Number(c.getAttribute('data-col')),
+  );
+}
+
+/** 칸과 칸 사이 화살표. 노드 안의 `›`(`.arw`) 와 다른 클래스다. */
+function arrowCount(container: HTMLElement): number {
+  return container.querySelectorAll('.lin-arw').length;
+}
+
+const DERIVED_A = '01JYZ9K7WQ3N8V4M2X6C5B0AB1'; // 파생 Lv1
+
+/** (a) 부모가 없는 루트 Lv0 — 자식만 있다. 원천·가공 전 칸이 비는 장면 (버그 5). */
+const ROOT_WITH_CHILD: LineageGraph = {
+  ...BASE,
+  unknownParents: false,
+  projectUseCount: 0,
+  nodes: [
+    { kind: '이 데이터', datasetId: OPEN_ID, name: 'nakdong_raw_2025_Lv0.nc', processingLevel: 0,
+      verified: true, navigable: false, bodyAccessible: true, deletedAt: null },
+    { kind: '파생', datasetId: DERIVED_A, name: 'nakdong_precip_2025_Lv1.nc', processingLevel: 1,
+      verified: false, navigable: true, bodyAccessible: true, deletedAt: null },
+  ],
+  edges: [
+    { childDatasetId: DERIVED_A, parentDatasetId: OPEN_ID, parentRole: '주입력',
+      method: '임계값 초과일 집계', origin: 'manual', confirmedBy: 호랑이,
+      confirmedAt: '2026-08-04T00:00:00Z' },
+  ],
+};
+
+/** (b) 1-hop Lv0 → Lv1 이고 이 데이터가 잎이다. 파생 칸이 비는 장면 (버그 3). */
+const LEAF_WITH_PARENT: LineageGraph = {
+  ...BASE,
+  unknownParents: false,
+  projectUseCount: 0,
+  nodes: [
+    { kind: '가공 전', datasetId: PARENT_ID, name: 'ERA5_precip_2025_Lv0.grib', processingLevel: 0,
+      verified: false, navigable: true, bodyAccessible: true, deletedAt: null },
+    { kind: '이 데이터', datasetId: OPEN_ID, name: 'nakdong_precip_2025_Lv1.nc', processingLevel: 1,
+      verified: true, navigable: false, bodyAccessible: true, deletedAt: null },
+  ],
+  edges: [
+    { childDatasetId: OPEN_ID, parentDatasetId: PARENT_ID, parentRole: '주입력',
+      method: '이중선형보간', origin: 'manual', confirmedBy: 호랑이,
+      confirmedAt: '2026-08-05T00:00:00Z' },
+  ],
+};
+
+/** (c) 원천 + 이 데이터 Lv0 + 파생 Lv1. 가공 전 칸이 비는 장면 (버그 7). */
+const SOURCE_ROOT_CHILD: LineageGraph = {
+  ...BASE,
+  unknownParents: false,
+  projectUseCount: 0,
+  nodes: [
+    { kind: '원천', datasetId: null, name: 'NMSC', processingLevel: null,
+      verified: false, navigable: false, bodyAccessible: true, deletedAt: null },
+    { kind: '이 데이터', datasetId: OPEN_ID, name: 'nakdong_raw_2025_Lv0.nc', processingLevel: 0,
+      verified: true, navigable: false, bodyAccessible: true, deletedAt: null },
+    { kind: '파생', datasetId: DERIVED_A, name: 'nakdong_precip_2025_Lv1.nc', processingLevel: 1,
+      verified: false, navigable: true, bodyAccessible: true, deletedAt: null },
+  ],
+  edges: [
+    { childDatasetId: DERIVED_A, parentDatasetId: OPEN_ID, parentRole: '주입력',
+      method: '임계값 초과일 집계', origin: 'manual', confirmedBy: 호랑이,
+      confirmedAt: '2026-08-04T00:00:00Z' },
+  ],
+};
+
+describe('§8 가로축 — 빈 칸도 고아 화살표도 두지 않는다 (버그 3·5·7)', () => {
+  it('루트 Lv0 는 왼쪽에 빈 칸을 두지 않는다 — 이 데이터 · 파생만 선다 (버그 5)', async () => {
+    const { container } = renderDetail(OPEN_ID, only(ROOT_WITH_CHILD));
+    await settleLineage();
+    expect(renderedCols(container)).toEqual([2, 3]);
+    expect(arrowCount(container)).toBe(1);
+  });
+
+  it('잎 Lv1 은 오른쪽에 화살표를 두지 않는다 — 가공 전 · 이 데이터만 선다 (버그 3)', async () => {
+    const { container } = renderDetail(OPEN_ID, only(LEAF_WITH_PARENT));
+    await settleLineage();
+    expect(renderedCols(container)).toEqual([1, 2]);
+    expect(arrowCount(container)).toBe(1);
+  });
+
+  it('원천이 있고 가공 전이 없으면 원천 바로 옆에 이 데이터가 붙는다 (버그 7)', async () => {
+    const { container } = renderDetail(OPEN_ID, only(SOURCE_ROOT_CHILD));
+    await settleLineage();
+    expect(renderedCols(container)).toEqual([0, 2, 3]);
+    expect(arrowCount(container)).toBe(2);
+    // 서버는 원천에 대응하는 edge 를 주지 않는다 — 라벨 없는 화살표 하나이지 빈 칸이 아니다
+    const rails = container.querySelectorAll('.lin-rail');
+    expect(rails).toHaveLength(2);
+    expect(rails[0]!.querySelectorAll('[data-testid="lin-method"]')).toHaveLength(0);
+    expect(rails[0]!.textContent).toContain('→');
+  });
+
+  it('렌더된 칸은 모두 노드를 하나 이상 담는다', async () => {
+    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD, BASE]) {
+      const { container, unmount } = renderDetail(OPEN_ID, only(g));
+      await settleLineage();
+      const cols = Array.from(container.querySelectorAll('[data-testid="lin-col"]'));
+      expect(cols.length).toBeGreaterThan(0);
+      for (const c of cols) {
+        expect(c.querySelectorAll('[data-testid="lin-node"]').length).toBeGreaterThan(0);
+      }
+      unmount();
+    }
+  });
+
+  it('화살표 개수는 언제나 렌더된 칸 수 − 1 이다', async () => {
+    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD, BASE]) {
+      const { container, unmount } = renderDetail(OPEN_ID, only(g));
+      await settleLineage();
+      const cols = renderedCols(container);
+      expect(cols.length).toBeGreaterThan(0);
+      expect(arrowCount(container)).toBe(cols.length - 1);
+      expect(cols).toEqual([...cols].sort((a, b) => a - b));
+      unmount();
+    }
   });
 });
 

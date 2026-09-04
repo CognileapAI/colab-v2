@@ -8,6 +8,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { AppRoutes } from '../src/app/routes';
 import { SessionProvider } from '../src/permission/session';
+// 규칙 원문 — `vite.config.ts` 의 `test.css.include` 가 `?raw` id 를 허용해야 비지 않는다.
+import shellCss from '../src/shell/shell.css?raw';
 import { MAIN_NAV } from '../src/shell/nav';
 import { account } from './factories';
 import type { CurrentAccount } from '../src/api/client';
@@ -53,5 +55,22 @@ describe('완료 판정 #7 — 비워 둘 자리 3곳', () => {
     const { container } = renderAt('/datasets');
     expect(container.querySelector('[data-slot="verified-badge"]')).not.toBeNull();
     expect(container.querySelector('[data-slot="lock-indicator"]')).not.toBeNull();
+  });
+});
+
+/**
+ * 버그 2 (레인 C) 회귀 — `.gnb-settings` 에 `gap` 선언이 없어 아이콘과 「연구실 설정」 글자가
+ * 붙어 보였다(bug02). 형제 버튼 `.gnb-upload`·`.avatar` 는 6px, `.labswitch` 는 7px를 갖는다.
+ */
+describe('버그 2 — 연구실 설정 버튼 아이콘 간격', () => {
+  it('.gnb-settings 는 선언값 gap 이 6px 이상이다', () => {
+    const acc = account({ '연구실 설정': true });
+    renderAt('/lab', acc);
+    const btn = screen.getByTestId('gnb-lab-settings');
+    expect(btn.classList.contains('gnb-settings')).toBe(true);
+    // jsdom 은 `gap` 을 계산값으로 내지 않는다(빈 문자열) — 선언은 규칙 원문으로 잰다.
+    const rule = shellCss.match(/\.gnb-settings \{[^}]*\}/)?.[0] ?? '';
+    const gap = parseFloat(rule.match(/\bgap:\s*([\d.]+)px/)?.[1] ?? 'NaN');
+    expect(gap).toBeGreaterThanOrEqual(6);
   });
 });

@@ -217,6 +217,11 @@ export function LineageSection(props: {
   const rails: LineageEdge[][] = [[], [], []];
   for (const e of g.edges) if (e.method) rails[railOf(e, g)]!.push(e);
 
+  // **빈 칸은 세우지 않는다.** 종류가 없는 칸이 폭(`lineageGraph.css`)과 화살표를 그대로 들고 있어
+  // 루트 왼쪽·잎 오른쪽에 갈 곳 없는 화살표가 남았다 (버그 3·5·7).
+  // §8 이 정한 것은 축의 **순서**지 「빈 칸도 자리를 지킨다」가 아니다 — 걸러도 칸 번호는 오름차순이다.
+  const shown = cols.map((nodes, col) => ({ nodes, col })).filter((c) => c.nodes.length > 0);
+
   const byId = new Map(g.nodes.filter((n) => n.datasetId).map((n) => [n.datasetId!, n]));
   const srcNodes = g.nodes.filter((n) => n.kind === '원천');
   const parentEdges = g.edges.filter(
@@ -270,41 +275,49 @@ export function LineageSection(props: {
           {/* 커지면 가로로 흐른다. 접거나 요약하는 컨트롤을 두지 않는다 (§8) */}
           <div className="lin-graph" data-testid="lin-graph" data-overflow="가로 스크롤">
             <div className="lin-axis">
-              {cols.map((nodes, i) => (
-                <div key={`c${i}`} className="lin-colwrap">
-                  <div className="lin-col" data-testid="lin-col" data-col={i}>
-                    {nodes.map((n, j) => (
-                      <GraphNode key={n.datasetId ?? `${n.kind}-${j}`} node={n} />
-                    ))}
-                    {/* 활용 배지는 **노드가 아니다** — 프로젝트 개수만 알리고 활용 섹션으로 보낸다 */}
-                    {i === 2 && g.projectUseCount > 0 ? (
-                      <a className="lin-use" href="#sec-usage" data-testid="lin-usebadge">
-                        활용 프로젝트 {g.projectUseCount}건 ›
-                      </a>
+              {shown.map(({ nodes, col }, k) => {
+                // 화살표는 **선 칸과 선 칸 사이**에만 있다. 건너뛴 칸의 라벨은 잃지 않는다 —
+                // 사이에 접힌 레일의 가공 방식을 그 한 칸에 모아 싣는다.
+                const next = shown[k + 1];
+                const ways = next ? rails.slice(col, next.col).flat() : [];
+                return (
+                  <div key={`c${col}`} className="lin-colwrap">
+                    <div className="lin-col" data-testid="lin-col" data-col={col}>
+                      {nodes.map((n, j) => (
+                        <GraphNode key={n.datasetId ?? `${n.kind}-${j}`} node={n} />
+                      ))}
+                      {/* 활용 배지는 **노드가 아니다** — 프로젝트 개수만 알리고 활용 섹션으로 보낸다 */}
+                      {col === 2 && g.projectUseCount > 0 ? (
+                        <a className="lin-use" href="#sec-usage" data-testid="lin-usebadge">
+                          활용 프로젝트 {g.projectUseCount}건 ›
+                        </a>
+                      ) : null}
+                    </div>
+                    {next ? (
+                      <div className="lin-rail" data-rail={col}>
+                        {ways.map((e, m) => (
+                          <span
+                            key={`${e.parentDatasetId ?? '원천'}>${e.childDatasetId}#${m}`}
+                            className="lin-way"
+                            data-testid="lin-method"
+                            data-origin={e.origin}
+                            /* 상자 폭을 넘으면 …로 접힌다(`lineageGraph.css`). **전문은
+                               여기 남는다** — 접혔다고 값이 사라지면 안 된다 (검수 #22) */
+                            title={e.method ?? undefined}
+                          >
+                            {e.origin === 'ai' ? `✦ ${e.method}` : e.method}
+                          </span>
+                        ))}
+                        {/* 원천에는 대응하는 edge 가 없다(`routes/lineage.py`) — 라벨 없는
+                            화살표로 남기지, 빈 칸을 만들지 않는다 (버그 7) */}
+                        <span className="lin-arw" aria-hidden="true">
+                          →
+                        </span>
+                      </div>
                     ) : null}
                   </div>
-                  {i < 3 ? (
-                    <div className="lin-rail" data-rail={i}>
-                      {rails[i]!.map((e, k) => (
-                        <span
-                          key={`${e.parentDatasetId ?? '원천'}>${e.childDatasetId}#${k}`}
-                          className="lin-way"
-                          data-testid="lin-method"
-                          data-origin={e.origin}
-                          /* 상자 폭을 넘으면 …로 접힌다(`lineageGraph.css`). **전문은
-                             여기 남는다** — 접혔다고 값이 사라지면 안 된다 (검수 #22) */
-                          title={e.method ?? undefined}
-                        >
-                          {e.origin === 'ai' ? `✦ ${e.method}` : e.method}
-                        </span>
-                      ))}
-                      <span className="lin-arw" aria-hidden="true">
-                        →
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

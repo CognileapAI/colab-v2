@@ -265,6 +265,15 @@ export function PreviewMap(props: {
         {props.valuePanel ?? null}
       </div>
       <dl className="pv-legend" aria-label="범례">
+        {/* ⭑ ⟨버그 14⟩ **값 범위만으로는 무엇을 그렸는지 모른다** — NDVI 인지 고도인지를
+            화면이 말해야 다른 데이터셋의 범례로 착각하지 않는다(recon-B §5). 서버가 이미
+            돌려주는 `legend.variable`(실제로 그린 값)을 낸다 — 새 계약이 아니다. */}
+        {result.legend.variable ? (
+          <div className="pv-legend-row" data-testid="legend-variable">
+            <dt>변수</dt>
+            <dd>{result.legend.variable}</dd>
+          </div>
+        ) : null}
         {result.legend.classes.map((c) => (
           <div className="pv-legend-row" key={`${c.min}-${c.max}`}>
             <dt>
@@ -333,7 +342,11 @@ function ZoomControls(props: { zoom: ZoomPan }) {
   const { zoom } = props;
   return (
     <div className="pv-zoom" data-testid="preview-zoom">
-      <button type="button" onClick={zoom.zoomIn}>
+      {/* ⭑ ⟨버그 8⟩ **한계에 닿은 확대는 눌리지 않는다.** 종전에는 늘 눌리는 버튼이었고,
+          한계 배율이 1 인 산출물(실측 808~821 px)에서는 눌러도 아무 일이 없었다 —
+          「고장인가」와 「여기가 끝인가」를 화면이 가려 주지 않았다. 아래 한계 안내와
+          **같은 사실 하나**(`zoom.atLimit`)를 말한다. */}
+      <button type="button" onClick={zoom.zoomIn} disabled={zoom.atLimit} aria-disabled={zoom.atLimit}>
         확대
       </button>
       <button type="button" onClick={zoom.zoomOut}>
