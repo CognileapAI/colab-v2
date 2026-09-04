@@ -57,9 +57,15 @@ class OutOfScope(Exception):
 
 @dataclass(frozen=True)
 class StaleCandidate:
-    """이 대상 때문에 구워진 산출물 하나. `cache_key` 는 `render_cache_key` 의 값이다."""
+    """이 대상 때문에 구워진 산출물 하나. `cache_key` 는 `render_cache_key` 의 값이다.
+
+    ⭑ ⟨증보 · `V-1` ⑷⟩ `variant_key` = **팔레트를 뺀 서명**(`cache.render_variant_key`).
+    비어 있으면 **모르는 것**이고, 모르는 것은 어떤 회수 대상도 되지 않는다 —
+    `tile-` 처럼 D7 이 굽지 않은 벌이 그 자리다.
+    """
     cache_key: str
     path: Path
+    variant_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -181,6 +187,38 @@ def reclaim_plan(groups, ledger, *, previews_root: Path,
                   for g in groups for p in g.paths]
     keep = [g.cache_key for g in groups if g.cache_key not in orphans]
     return plan(None, produced=candidates, previews_root=previews_root,
+                keep_keys=keep, target_id=target_id)
+
+
+def supersede_plan(produced: Iterable[StaleCandidate], *, previews_root: Path,
+                   variant_key: str, keep_keys: Iterable[str],
+                   target_id: str = "") -> InvalidationPlan:
+    """**팔레트만 바꾼 재렌더가 대체한 옛 벌**(`V-1` 완료 정의 ⑷ · `〈259〉`).
+
+    ⭑ **집행 문도 계산기도 늘리지 않는다**(`Y-1` 완료 정의 ⓒ 와 같은 선). 이 함수는
+    범위를 새로 계산하지 않고 **같은 계산기 `plan()` 을 부른다** — 회수 대상이 **아닌**
+    키를 전부 `keep_keys` 로 넘기는 것이 전부다(`reclaim_plan` 과 같은 모양). 그래서
+    다음 셋이 공짜로 따라온다:
+      · `tile-` 키는 `kept` — `plan()` 이 이미 지도 타일을 가른다(⑷-c)
+      · **미리보기 루트 밖은 `OutOfScope`** — 원본·기준 격자·데이터셋 무접촉(`〈247〉`)
+      · 집행은 `apply()` 한 자리 — 지우는 문은 여전히 하나다
+
+    **회수 대상 = 변이 키가 같고 캐시 키가 다른 벌** 하나뿐이다. 변이 키가 같다는 것은
+    「같은 데이터·같은 색범위·같은 선택·같은 시각·같은 격자」라는 뜻이고, 그 위에서
+    키가 갈렸다는 것은 **팔레트가 갈렸다**는 뜻이다(빠진 입력이 그것 하나다).
+    ⟹ 원본이 바뀐 재렌더는 변이 키부터 갈리므로 **여기 들어오지 않는다** — 「사람이 부른
+    렌더는 앞의 산출물을 지우지 않는다」(`Y-1`)가 그 자리에서 그대로 선다.
+
+    ⚠ **변이 키를 모르는 후보(`""`)는 손대지 않는다.** 없는 근거로 지우면 그것이 오삭제다.
+    """
+    if not variant_key:
+        raise OutOfScope(
+            "변이 키 없이 회수 대상을 고르지 않는다 — 모르는 것을 지우면 그것이 오삭제다")
+    produced = list(produced)
+    fresh = set(keep_keys)
+    keep = [c.cache_key for c in produced
+            if c.variant_key != variant_key or c.cache_key in fresh]
+    return plan(None, produced=produced, previews_root=previews_root,
                 keep_keys=keep, target_id=target_id)
 
 

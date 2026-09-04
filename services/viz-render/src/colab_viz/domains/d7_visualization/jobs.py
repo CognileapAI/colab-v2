@@ -687,6 +687,18 @@ class JobStore:
             if plan.regenerate and job.status == STATUS_DONE:
                 job.invalidation_removed = invalidation.apply(
                     plan, previews_root=Path(job.spec.preview_dir))
+            elif job.status == STATUS_DONE:
+                # ⭑ ⟨`V-1` ⑷ · Ted RULING ㉙ · `PLAN-SoT §9 〈259〉`⟩ **사람이 부른 경로에도
+                # 집행이 선다 — 단, 팔레트가 대체한 벌에만.** 없던 것은 기구가 아니라
+                # **호출 한 자리**였다(`〈250〉` 실측 · `apply` 호출 전수 1건).
+                # ⚠ **범위 전체를 지우지 않는다.** 이 자리의 `plan.stale` 은 그 대상의
+                # 「방금 구운 것 아닌 전부」라, 그대로 집행하면 **다른 변수·다른 시각·다른
+                # 원본의 그림까지** 사라진다. 지우는 것은 「같은 데이터·같은 색범위·같은
+                # 구간 수에서 **색만 바뀐**」 옛 벌 하나뿐이다(완료 정의 ⑴⑷).
+                # ⚠ **새 것이 선 뒤다**(⑷-b) — 이 자리는 `_run(job)` 이 끝나고 성공한
+                # 뒤에만 지나므로 볼 그림이 하나도 없는 순간이 생기지 않는다.
+                job.invalidation_removed = invalidation.apply(
+                    self._supersede_for(job), previews_root=Path(job.spec.preview_dir))
         finally:
             job.done.set()
 
@@ -752,7 +764,8 @@ class JobStore:
         bucket = self._produced.setdefault(job.spec.target.target_id, {})
         for a in job.artifacts.all():
             bucket[str(a.path)] = invalidation.StaleCandidate(cache_key=a.cache_key,
-                                                              path=a.path)
+                                                              path=a.path,
+                                                              variant_key=a.variant_key)
 
     # ── 자동 무효화 (`Y-1`) ──────────────────────────────────────────────────
     def _produced_for(self, target_id: str) -> list[invalidation.StaleCandidate]:
@@ -778,6 +791,33 @@ class JobStore:
         return invalidation.plan(event, produced=self._produced_for(job.spec.target.target_id),
                                  previews_root=Path(job.spec.preview_dir),
                                  keep_keys=fresh, target_id=job.spec.target.target_id)
+
+    def _supersede_for(self, job: RenderJob) -> invalidation.InvalidationPlan:
+        """**팔레트가 대체한 옛 벌**(`V-1` ⑷). 계산기는 여전히 `invalidation.plan()` 이다.
+
+        변이 키(`render_variant_key`)는 **한 작업이 낸 층마다 다르다**(긴 변·다운샘플·
+        좌표계가 층을 가른다). 그래서 층별로 각각 묻고 합친다 — 한 층의 서명으로 다른
+        층의 옛 벌을 판정하면 그 층은 영원히 회수되지 않는다.
+        """
+        fresh = {a.cache_key for a in (job.artifacts.all() if job.artifacts else [])}
+        variants = {a.variant_key for a in (job.artifacts.all() if job.artifacts else [])
+                    if a.variant_key}
+        produced = self._produced_for(job.spec.target.target_id)
+        root = Path(job.spec.preview_dir)
+        stale: list[Path] = []
+        for variant in sorted(variants):
+            part = invalidation.supersede_plan(
+                produced, previews_root=root, variant_key=variant, keep_keys=fresh,
+                target_id=job.spec.target.target_id)
+            stale.extend(part.stale)
+        seen: set[str] = set()
+        unique = tuple(p for p in stale if not (str(p) in seen or seen.add(str(p))))
+        # **남는 것은 「후보 빼기 낡은 것」이다** — 층별 계산을 합쳤으므로 여기서 한 번에
+        # 센다. 한 층의 `kept` 를 그대로 이으면 같은 파일이 여러 번 세어진다.
+        kept = tuple(c.path for c in produced if str(c.path) not in seen)
+        return invalidation.InvalidationPlan(
+            trigger=None, target_id=job.spec.target.target_id, stale=unique,
+            kept=kept, regenerate=False)
 
     def regenerate(self, event: invalidation.InvalidationEvent, *,
                    source) -> "Regeneration":

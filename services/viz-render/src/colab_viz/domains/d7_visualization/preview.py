@@ -74,6 +74,10 @@ class Artifact:
     url: str
     cache_key: str
     size_bytes: int
+    #: ⭑ ⟨`V-1` ⑷ · `〈259〉`⟩ **팔레트를 뺀 서명**(`cache.render_variant_key`).
+    #: 「색만 바뀐 같은 그림」이 무엇을 대체했는지를 이 값이 가른다. **키는 아니다** —
+    #: 자리 이름에 들어가지 않고 디스크에도 안 적힌다(사이드카 무변).
+    variant_key: str = ""
 
 
 # ── 좌표 변환 ────────────────────────────────────────────────────────────────
@@ -356,7 +360,7 @@ def encode_webp(rgba: np.ndarray) -> bytes:
 
 # ── 층 만들기 ────────────────────────────────────────────────────────────────
 def _write(out_dir: Path, url_base: str, layer: str, kind: str, key: str,
-           suffix: str, blob: bytes) -> Artifact:
+           suffix: str, blob: bytes, variant_key: str = "") -> Artifact:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     # 자리는 **규약이 정한다** — `contracts/storage/layout.json` 의 「미리보기 산출물」.
@@ -366,7 +370,7 @@ def _write(out_dir: Path, url_base: str, layer: str, kind: str, key: str,
     path.write_bytes(blob)
     return Artifact(layer=layer, kind=kind, path=path,
                     url=f"{url_base.rstrip('/')}/{name}", cache_key=key,
-                    size_bytes=len(blob))
+                    size_bytes=len(blob), variant_key=variant_key)
 
 
 def _sidecar_for(out_dir: Path, url_base: str, layer: str, key: str, image: Artifact,
@@ -376,8 +380,10 @@ def _sidecar_for(out_dir: Path, url_base: str, layer: str, key: str, image: Arti
     """산출물 한 벌의 `.json` 을 **같은 키 아래** 놓는다 — `layout.json` `why ④`."""
     doc = sidecar_document(name=image.path.name, layer=layer, source=source,
                            sources=sources, owner=owner, geom=geom, size=size)
+    # **동반 파일은 그림의 변이 키를 그대로 물려받는다** — 한 벌은 함께 서고 함께 진다.
     return _write(out_dir, url_base, layer, "sidecar", key, ".json",
-                  json.dumps(doc, ensure_ascii=False, indent=2).encode("utf-8"))
+                  json.dumps(doc, ensure_ascii=False, indent=2).encode("utf-8"),
+                  image.variant_key)
 
 
 def build_value_layers(values: np.ndarray, *, color_range: ColorRange,
@@ -403,14 +409,20 @@ def build_value_layers(values: np.ndarray, *, color_range: ColorRange,
     thumb_key = cache.render_cache_key(long_side=THUMBNAIL_SIDE, downsample="stride",
                                        crs=cache.NO_CRS, color_range=color_range,
                                        **key_params)
+    detail_variant = cache.render_variant_key(long_side=DETAIL_SIDE, downsample="blockavg",
+                                              crs=cache.NO_CRS, color_range=color_range,
+                                              **key_params)
+    thumb_variant = cache.render_variant_key(long_side=THUMBNAIL_SIDE, downsample="stride",
+                                             crs=cache.NO_CRS, color_range=color_range,
+                                             **key_params)
     rgba_detail = colormap.to_rgba(detail, vmin=color_range.vmin,
                                    vmax=color_range.vmax, lut=lut)
     rgba_thumb = colormap.to_rgba(thumb, vmin=color_range.vmin,
                                   vmax=color_range.vmax, lut=lut)
     thumb_art = _write(out_dir, url_base, LAYER_THUMBNAIL, "image", thumb_key, ".webp",
-                       encode_webp(rgba_thumb))
+                       encode_webp(rgba_thumb), thumb_variant)
     detail_art = _write(out_dir, url_base, LAYER_DETAIL, "image", detail_key, ".png",
-                        encode_png(rgba_detail))
+                        encode_png(rgba_detail), detail_variant)
     # ⭑ ⟨2026-09-02 · `A-1` 안 ⑷ · 완료 정의 ⑹⟩ **①②도 사이드카를 갖는다.**
     # 층이 셋인데 동반 파일이 지도형에만 있으면 나머지 두 층의 산출물은 **누가 왜 구웠는지
     # 디스크만 보고는 알 수 없다** — 「판정 불가」의 원인이 그것이었다. 좌표는 싣지 않는다.
@@ -433,10 +445,14 @@ def build_map_layer(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample="warp+nearest",
                                  crs=cache.MAP_CRS, color_range=color_range,
                                  grid_digest=grid_digest, **key_params)
+    variant = cache.render_variant_key(long_side=DETAIL_SIDE, downsample="warp+nearest",
+                                       crs=cache.MAP_CRS, color_range=color_range,
+                                       grid_digest=grid_digest, **key_params)
     rgba = colormap.to_rgba(warped, vmin=color_range.vmin, vmax=color_range.vmax, lut=lut)
-    image = _write(out_dir, url_base, LAYER_MAP, "image", key, ".png", encode_png(rgba))
+    image = _write(out_dir, url_base, LAYER_MAP, "image", key, ".png", encode_png(rgba),
+                   variant)
     sidecar = _sidecar_for(out_dir, url_base, LAYER_MAP, key, image, source=source,
                            sources=sources, owner=owner, geom=geom)
     world = _write(out_dir, url_base, LAYER_MAP, "worldfile", key, ".pgw",
-                   world_file_text(geom).encode("ascii"))
+                   world_file_text(geom).encode("ascii"), variant)
     return image, sidecar, world, geom
