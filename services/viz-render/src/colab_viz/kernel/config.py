@@ -95,6 +95,21 @@ def _tile_branch_from_env(raw: str | None) -> bool:
 DEFAULT_TRIGGER_POLL_SECONDS = 5.0
 
 
+#: **지도 타일 회수의 세 값**(`TL-1` ⑹ · Ted 판정 「도는 배경 루프에 얹는다」).
+#: ⚠ **기본은 관측 전용이다** — 선언이 없으면 세고 적기만 하고 **0건 지운다.** 자동
+#:   삭제를 기본값으로 켜지 않는다: 첫 배포가 계수를 먼저 증명하고 그 다음에 켠다.
+#:   켜는 자리는 배포 env 한 곳(`COLAB_VIZ_TILE_RECLAIM_APPLY`)뿐이고, 레포에 켜진 값을
+#:   박지 않는다(`COLAB_VIZ_TILE_BRANCH` 와 같은 규율).
+DEFAULT_TILE_RECLAIM_APPLY = False
+
+#: 한 바퀴가 지울 수 있는 벌 수의 뚜껑. 정본은 `d7_visualization/tile_reclaim.py` 다.
+DEFAULT_TILE_RECLAIM_MAX_KEYS = 20
+
+#: 회수 주기(초) — **트리거 주기(5초)와 다르다.** 한 바퀴가 주체 전건의 다이제스트를
+#: 다시 뜨므로 촘촘히 돌리면 저장소를 반복해서 읽는다.
+DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS = 3600.0
+
+
 #: 미리보기 격자의 한 변 상한. 전체 적재 금지(`DR-11`)의 렌더 쪽 표현이다 — 레포 결정.
 DEFAULT_MAX_PREVIEW_SIDE = 1024
 
@@ -141,6 +156,27 @@ class Settings:
     #: 버스를 비우는 주기(초). **버스 자리가 있을 때만 의미가 있다** — 자리가 없으면
     #: 루프 자체가 서지 않는다.
     trigger_poll_seconds: float = DEFAULT_TRIGGER_POLL_SECONDS
+    #: **지운다/안 지운다** — 기본은 안 지운다(관측 전용).
+    tile_reclaim_apply: bool = DEFAULT_TILE_RECLAIM_APPLY
+    tile_reclaim_max_keys: int = DEFAULT_TILE_RECLAIM_MAX_KEYS
+    tile_reclaim_interval_seconds: float = DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS
+
+
+def _positive_int_from_env(raw: str | None, default: int) -> int:
+    """**못 읽는 값·0·음수는 기본값이다.** 뚜껑이 오타 하나로 사라지지 않게 한다."""
+    try:
+        value = int((raw or "").strip())
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def _positive_float_from_env(raw: str | None, default: float) -> float:
+    try:
+        value = float((raw or "").strip())
+    except ValueError:
+        return default
+    return value if value > 0 else default
 
 
 def _poll_seconds_from_env(raw: str | None) -> float:
@@ -183,4 +219,14 @@ def load_settings() -> Settings:
                        if os.environ.get("COLAB_VIZ_TRIGGER_SPOOL") else None),
         trigger_poll_seconds=_poll_seconds_from_env(
             os.environ.get("COLAB_VIZ_TRIGGER_POLL_SECONDS")),
+        # **선언이 없으면 지우지 않는다.** 자동 삭제는 명시로만 켠다 —
+        # 모르는 값(오타 포함)도 꺼짐이다(`_tile_branch_from_env` 와 같은 표).
+        tile_reclaim_apply=_tile_branch_from_env(
+            os.environ.get("COLAB_VIZ_TILE_RECLAIM_APPLY")),
+        tile_reclaim_max_keys=_positive_int_from_env(
+            os.environ.get("COLAB_VIZ_TILE_RECLAIM_MAX_KEYS"),
+            DEFAULT_TILE_RECLAIM_MAX_KEYS),
+        tile_reclaim_interval_seconds=_positive_float_from_env(
+            os.environ.get("COLAB_VIZ_TILE_RECLAIM_INTERVAL_SECONDS"),
+            DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS),
     )

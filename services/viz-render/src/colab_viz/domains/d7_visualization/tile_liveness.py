@@ -41,7 +41,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -49,14 +49,24 @@ from ...kernel import storage_layout
 from .ownership import (GRADE_LIVE, GRADE_ORPHAN, GRADE_UNDECIDABLE, GRADE_UPLOAD_ONLY,
                         GRADES, MAP_TILE_PREFIX)
 
-__all__ = ["GRADES", "ORIGIN_DATASET", "ORIGIN_UPLOAD", "ReaderNotReady", "Subject",
+__all__ = ["GRADES", "ORIGIN_DATASET", "ORIGIN_UPLOAD", "ORIGIN_STORAGE",
+           "ReaderNotReady", "Subject",
            "Uncomputable", "Reach", "Verdict", "TileArtifact", "Tally",
            "file_digest", "candidate_tile_keys", "reach", "grade", "scan_tiles",
-           "tally", "unreachable_keys", "unreachable_rows"]
+           "subjects_from_storage", "tally", "unreachable_keys", "unreachable_rows"]
 
 #: 주체의 두 갈래. **등급의 이름이 아니라 주체의 출신이다** — 등급은 `ownership.GRADES` 다.
 ORIGIN_DATASET = "데이터셋 파일"     # d3_file — 등록된 데이터셋이 소유한다
 ORIGIN_UPLOAD = "접수분"            # d5_upload_file — 아직 등록 전이다
+
+#: **원장을 안 열고 자리에서 모은 주체** — 등록 여부(데이터셋인가 접수분인가)를 D7 이 모른다.
+#: ⚠ 지어내지 않는다: 저장 배치는 등록 전후를 **가르지 않는다**(`kernel/storage_layout` 서두
+#:   「`targetId` 가 무엇인가」 — 등록 전에는 `uploadId`, 등록 뒤에는 `datasetId` 이고 자리는
+#:   하나다). `ports/source.FilesystemSourcePort` 도 같은 말을 한다 — 「등록된 데이터셋인지
+#:   등록 전 업로드인지를 **파일 배치로 구분하지 않는다**」. 그래서 출신을 둘 중 하나로
+#:   **찍지 않고** 셋째 이름을 준다. 회수 판정에는 영향이 없다 — 둘 다 「닿는다」이고
+#:   회수 대상은 **어느 주체도 낳지 않는 키** 하나뿐이다.
+ORIGIN_STORAGE = "자리의 주체"
 
 
 class ReaderNotReady(RuntimeError):
@@ -88,11 +98,17 @@ class Uncomputable:
 
 @dataclass(frozen=True)
 class Reach:
-    """지금의 주체들이 낳는 **이름 전부** — 자리를 뒤진 것이 아니라 계약이 낳은 것이다."""
+    """지금의 주체들이 낳는 **이름 전부** — 자리를 뒤진 것이 아니라 계약이 낳은 것이다.
+
+    `storage_keys` 는 **원장 없이 자리에서 모은 주체**(`ORIGIN_STORAGE`)가 낳는 이름이다.
+    등록 여부를 모르므로 `dataset_keys`·`upload_keys` 중 어느 쪽으로도 **섞지 않는다** —
+    섞으면 로그가 모르는 것을 아는 것처럼 적는다.
+    """
     dataset_keys: dict[str, tuple[str, ...]]
     upload_keys: dict[str, tuple[str, ...]]
     uncomputable: tuple[Uncomputable, ...]
     subjects_seen: int
+    storage_keys: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     def is_decidable(self) -> bool:
         """**주체를 한 건이라도 봤고, 못 센 주체가 없다.** 둘 중 하나만 어긋나도 거짓이다."""
@@ -101,7 +117,8 @@ class Reach:
     def reached_by(self, cache_key: str) -> int:
         """그 키를 낳는 주체가 **몇인가** — ⑴ 의 「하나라도」를 세는 자리."""
         return (len(self.dataset_keys.get(cache_key, ()))
-                + len(self.upload_keys.get(cache_key, ())))
+                + len(self.upload_keys.get(cache_key, ()))
+                + len(self.storage_keys.get(cache_key, ())))
 
 
 @dataclass(frozen=True)
@@ -168,6 +185,7 @@ def reach(subjects: Iterable[Subject]) -> Reach:
     """주체 전부를 키로 옮긴다. **못 옮긴 주체는 세어서 드러낸다** — 조용히 빼지 않는다."""
     ds: dict[str, list[str]] = {}
     up: dict[str, list[str]] = {}
+    st: dict[str, list[str]] = {}
     bad: list[Uncomputable] = []
     seen = 0
     for s in subjects:
@@ -177,12 +195,13 @@ def reach(subjects: Iterable[Subject]) -> Reach:
         except (OSError, ValueError) as e:
             bad.append(Uncomputable(s.file_id, f"{type(e).__name__}: {e}"))
             continue
-        bucket = ds if s.origin == ORIGIN_DATASET else up
+        bucket = {ORIGIN_DATASET: ds, ORIGIN_UPLOAD: up}.get(s.origin, st)
         for key, _used in keys:
             bucket.setdefault(key, []).append(s.file_id)
     return Reach(dataset_keys={k: tuple(v) for k, v in ds.items()},
                  upload_keys={k: tuple(v) for k, v in up.items()},
-                 uncomputable=tuple(bad), subjects_seen=seen)
+                 uncomputable=tuple(bad), subjects_seen=seen,
+                 storage_keys={k: tuple(v) for k, v in st.items()})
 
 
 def grade(cache_key: str, reached: Reach) -> Verdict:
@@ -201,6 +220,14 @@ def grade(cache_key: str, reached: Reach) -> Verdict:
     if cache_key in reached.upload_keys:
         return Verdict(GRADE_UPLOAD_ONLY, "미등록 접수분만 이 키를 낳는다 (등록 전)",
                        reached.upload_keys[cache_key])
+    if cache_key in reached.storage_keys:
+        # **닿는다 — 그러나 등록 여부는 모른다.** 원장이 없는 자리(`ORIGIN_STORAGE`)에서
+        # 모은 주체라 「등록된 데이터셋」인지 「등록 전 접수분」인지를 D7 이 가를 수 없다.
+        # ⚠ 회수 판정에는 차이가 없다 — 둘 다 **지우지 않는다.** 사유 문구가 그 사실을
+        #   드러낸 채로 남는 것이 요점이고, 모르는 것을 아는 것처럼 적지 않는다.
+        return Verdict(GRADE_LIVE,
+                       "자리의 주체가 이 키를 낳는다 — 등록 여부는 D7 이 모른다 (원장 없음)",
+                       reached.storage_keys[cache_key])
     return Verdict(GRADE_ORPHAN,
                    "지금의 어느 주체도 이 키를 낳지 않는다 — 키가 갈렸거나 원본이 사라졌다")
 
@@ -220,6 +247,43 @@ def scan_tiles(previews_root) -> list[TileArtifact]:
     for key, paths in sorted(buckets.items()):
         out.append(TileArtifact(cache_key=key, paths=tuple(paths),
                                 mtime=min(p.stat().st_mtime for p in paths)))
+    return out
+
+
+def subjects_from_storage(storage_root) -> list[Subject]:
+    """**원장을 열지 않고** 저장소 루트에서 주체를 모은다 (`TL-1` ⑹ 의 입력).
+
+    **왜 이것이 「살아 있는 주체」인가 — 지어낸 것이 아니라 이 레포가 이미 그렇게 산다.**
+      ⑴ 규약 축자 — 「그리는 쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**」
+         (`kernel/storage_layout` 서두 「`targetId` 가 무엇인가」).
+      ⑵ core-api 가 그 사실을 **유지한다** — 원장에서 사라진 파일은 바이트도 치운다
+         (`services/core-api/src/colab_core/app/routes/ingestion.py` `_discard()` 축자:
+         「원장에서 사라진 격자의 **바이트도** 치운다 … 읽는 쪽(`viz-render`)에는 원장이
+         없어 **폴더가 곧 사실**이라」).
+      ⑶ D7 이 그릴 때 쓰는 자리도 **이 자리 하나**다(`ports/source.FilesystemSourcePort`).
+         그리는 입력과 판독하는 입력이 갈리면 「그려지는데 고아」가 성립한다.
+
+    ⚠ **출신은 `ORIGIN_STORAGE` 다** — 배치가 등록 전후를 가르지 않으므로 둘 중 하나로
+      찍지 않는다. 회수 판정은 「닿는가」 하나라 이 모름이 지우는 쪽으로 기울지 않는다.
+    ⚠ **격자는 주체가 아니다** — `grid/` 아래는 좌표를 준 재료이고, 타일 키의 본체가 아니다.
+      대신 그 자리를 `grid_dir` 로 물려 후보 키 둘이 다 나오게 한다(하나만 내면 나머지가
+      **고아로 둔갑한다**).
+    ⚠ **없는 자리를 「비어 있다」로 읽지 않는다** — 루트가 없으면 빈 목록이고, 빈 목록은
+      `reach()` 가 `is_decidable()` 거짓으로 받아 **판정 자체를 시작하지 않는다**.
+    """
+    root = storage_layout.uploads_root(storage_root)
+    out: list[Subject] = []
+    if not Path(root).is_dir():
+        return out
+    for target in sorted(Path(root).iterdir()):
+        if not target.is_dir():
+            continue
+        grid = target / storage_layout.GRID_DIRNAME
+        for body in sorted(target.iterdir()):
+            if not body.is_file() or body.name == "desktop.ini":
+                continue
+            out.append(Subject(file_id=body.name, origin=ORIGIN_STORAGE, source=body,
+                               grid_dir=grid if grid.is_dir() else None))
     return out
 
 

@@ -129,7 +129,8 @@ def _under(root: Path, path: Path) -> bool:
 
 def plan(event: InvalidationEvent | None, *, produced: Iterable[StaleCandidate],
          previews_root: Path, keep_keys: Iterable[str] = (),
-         target_id: str | None = None) -> InvalidationPlan:
+         target_id: str | None = None,
+         reclaim_map_tiles: bool = False) -> InvalidationPlan:
     """**무효화 범위 계산기 — 자동 경로와 수동 경로가 함께 지나는 유일한 자리**(ⓒ).
 
     남기는 것 셋 —
@@ -137,6 +138,15 @@ def plan(event: InvalidationEvent | None, *, produced: Iterable[StaleCandidate],
       ⑵ **지도 타일 키(`tile-`)** — 같은 슬롯에 살지만 **D5 가 구운 지도용 산출물**이다.
          「그 밖의 산출물을 지우지 않는다」(ⓐ)의 실물이 이 한 줄이다
       ⑶ (해당 없음 — 그 밖의 것은 애초에 후보가 아니다)
+
+    ⭑ **⟨증보 2026-09-05 · `TL-1` ⑷ 후단 · Ted 판정 「도는 배경 루프에 얹는다」⟩
+      `reclaim_map_tiles` 는 ⑵ 를 **명시로만** 여는 문이다.** 종전에 타일을 무조건
+      남긴 이유는 「D7 이 그 벌의 생존을 **판정할 수 없었다**」이고(사이드카 0건),
+      그 결손을 메운 것이 `tile_liveness` 판독기다(`〈313〉`). ⟹ **판정할 수 있게 된
+      경로 하나만** 이 문을 열고, 그 밖의 모든 부름은 **기본값 `False` 로 종전과 글자
+      그대로 같다**(자동 무효화·수동 재렌더·`reclaim_plan`·`supersede_plan`).
+      ⚠ 이 문을 여는 부름은 **`tile_reclaim_plan()` 하나**이고, 그 함수는 판독기의
+      「못 닿는다」 판정 밖의 키를 **전부 `keep_keys` 로** 넘긴다.
 
     거절하는 것 하나 — **미리보기 루트 밖의 경로.** 원본·기준 격자는 **다른 루트**에
     살므로, 이 검사가 곧 `〈247〉` 의 경계다.
@@ -151,7 +161,8 @@ def plan(event: InvalidationEvent | None, *, produced: Iterable[StaleCandidate],
             raise OutOfScope(
                 f"미리보기 루트 밖의 자리는 무효화 대상이 아니다: {Path(c.path).name} — "
                 "원본·기준 격자·데이터셋은 자동으로 다시 만들지 않는다 (〈247〉)")
-        if c.cache_key in keep or storage_layout.is_map_tile_key(c.cache_key):
+        if c.cache_key in keep or (storage_layout.is_map_tile_key(c.cache_key)
+                                   and not reclaim_map_tiles):
             kept.append(c.path)
         else:
             stale.append(c.path)
@@ -220,6 +231,42 @@ def supersede_plan(produced: Iterable[StaleCandidate], *, previews_root: Path,
             if c.variant_key != variant_key or c.cache_key in fresh]
     return plan(None, produced=produced, previews_root=previews_root,
                 keep_keys=keep, target_id=target_id)
+
+
+def tile_reclaim_plan(tiles, reached, *, previews_root: Path,
+                      target_id: str = "") -> InvalidationPlan:
+    """**지도 타일 회수 계획 — 판독기가 「못 닿는다」로 지목한 벌만**(`TL-1` ⑷ 후단).
+
+    ⭑ **계획기를 셋째로 만들지 않는다.** `reclaim_plan`·`supersede_plan` 과 같은 모양으로
+    **같은 계산기 `plan()`** 을 부르고, 회수 대상이 **아닌** 키를 전부 `keep_keys` 로 넘긴다.
+    다른 것은 하나 — 타일을 대상으로 삼는 부름이므로 `reclaim_map_tiles=True` 로 ⑵ 의
+    문을 **명시로** 연다. 그래서 다음이 따라온다:
+      · **미리보기 루트 밖은 `OutOfScope`** — 원본·기준 격자·데이터셋 무접촉(`〈247〉`)
+      · 집행은 `apply()` 한 자리 — 지우는 문은 여전히 하나다
+
+    **fail-closed** — 등급은 `tile_liveness` 가 낸다. 못 센 주체가 하나라도 있거나 주체가
+    0건이면 그 함수가 `ReaderNotReady` 를 던지고 **계획이 서지 않는다.** 여기서 그것을
+    잡아 「고아 0」으로 옮겨 적지 않는다 — 판정하지 못한 회차를 0 으로 적으면 그것이
+    green-by-skip 이고, 그 반대편(못 센 것을 고아로 셈)이 오삭제다(`DATA-REFERENCE §0 M-9`).
+
+    ⚠ **`tile-` 이 아닌 키는 아예 들어오지 못한다.** 입력은 `tile_liveness.scan_tiles()` 의
+      산출이고, 그 함수가 접두사로 이미 걸렀다. 여기서 한 번 더 막는 것은 **이중 방어**다 —
+      다른 규칙(`render_cache_key`)의 산출물은 이 문의 대상이 아니다(`CR-2` ⑶).
+    """
+    from . import tile_liveness
+
+    tiles = list(tiles)
+    for t in tiles:
+        if not storage_layout.is_map_tile_key(t.cache_key):
+            raise OutOfScope(
+                f"지도 타일이 아닌 키는 이 문의 대상이 아니다: {t.cache_key} — "
+                "다른 규칙(render_cache_key)의 산출물은 소유 판정 쪽이 진다")
+    orphans = set(tile_liveness.unreachable_keys(tiles, reached))
+    candidates = [StaleCandidate(cache_key=t.cache_key, path=p)
+                  for t in tiles for p in t.paths]
+    keep = [t.cache_key for t in tiles if t.cache_key not in orphans]
+    return plan(None, produced=candidates, previews_root=previews_root,
+                keep_keys=keep, target_id=target_id, reclaim_map_tiles=True)
 
 
 def apply(plan: InvalidationPlan, *, previews_root: Path) -> tuple[Path, ...]:
