@@ -90,10 +90,14 @@ class TriggerDrainLoop:
             done = triggers.drain(self._port, jobs=self._jobs, source=self._source)
         except Exception:  # noqa: BLE001 — 어떤 봉투도 루프를 죽이지 못한다
             log.exception("트리거 집행 한 바퀴가 실패했다 — 다음 바퀴가 다시 집는다")
-            return 0
-        self.drained += len(done)
-        if done:
-            log.info("트리거 집행 %d건 — 미리보기를 다시 만들었다", len(done))
+            done = []
+        else:
+            self.drained += len(done)
+            if done:
+                log.info("트리거 집행 %d건 — 미리보기를 다시 만들었다", len(done))
+        # **집행이 실패해도 회수는 돈다** — 한쪽의 예외가 다른 쪽을 인질로 잡지 않는다.
+        # ⚠ 순서가 규약이다: 회수는 **집행 뒤**다. 방금 구운 벌이 「못 닿는다」로 보이는
+        #   창을 만들지 않기 위해서다(재생성이 낳는 이름이 곧 닿는 자리다).
         self._reclaim_tick()
         return len(done)
 

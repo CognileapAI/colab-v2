@@ -352,3 +352,26 @@ def test_배포가_회수_스위치를_실어_준다_그리고_켜진_값을_박
         assert m is not None, f"compose 의 viz-render 에 {key} 가 없다 — 영영 꺼짐이다"
         assert m.group(1).startswith("${" + key), f"홈 env 를 통과시키지 않는다: {m.group(1)!r}"
         assert m.group(1).endswith(":-}"), f"레포가 켜진 값을 박았다: {m.group(1)!r}"
+
+
+def test_트리거_집행이_터져도_회수는_돈다():
+    """**격리** — 한쪽의 예외가 다른 쪽을 인질로 잡지 않는다."""
+    from colab_viz.app import trigger_loop
+
+    class 터지는_버스:
+        def poll(self):
+            raise RuntimeError("버스가 터졌다")
+
+    class 세는_회수:
+        def __init__(self):
+            self.calls = 0
+
+        def run_due(self, now=None):
+            self.calls += 1
+            return None
+
+    job = 세는_회수()
+    loop = trigger_loop.TriggerDrainLoop(터지는_버스(), jobs=None, source=None,
+                                         interval_seconds=0.01, reclaim=job)
+    assert loop.tick() == 0
+    assert job.calls == 1, "집행이 터졌다고 회수까지 굶었다"
