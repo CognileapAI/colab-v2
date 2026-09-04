@@ -363,6 +363,43 @@ docker inspect colab_v2_staging_pg --format '{{range .NetworkSettings.Networks}}
   `FORCE RLS` 표 **21** · **경계 대조 = 관리자 롤 `3|3|0|0` ↔ 경계 롤 `0|0|0|0`(갈렸다)** ·
   발행 **3** · 반영 **3** · 면제 **0** · 미반영 **0**. staging 스택 **무접촉**(쓰기 0건 · 전 조회 `BEGIN READ ONLY … ROLLBACK`).
 
+#### ⭑ ⟨신설 2026-09-04 · 호스트 재부팅 실측⟩ ㉲ **재부팅 후 게이트 DB** — 순서·비밀번호·IP 셋이 더 걸린다
+
+> **없는 것을 잡는 검사 = `./gates/run.sh schema-diff` 한 줄이다.** 일회용 컨테이너가 없으면
+> `pg_dump: ... connection to server at "172.17.0.3" ... Host is unreachable` 로 **red(준비)** 가 난다.
+> ⚠ **staging 8개가 healthy 인 것과 무관하다** — staging 은 데몬이 돌아오면 스스로 서지만
+> 이 DB 는 tmpfs 라 돌아오지 않는다(`§1` 표 「검증용 일회용 DB … 죽는다」). **전 게이트를 돌리기 전에 이 한 줄부터 친다.**
+
+절차 자체는 위 `④` ＋ `㉮` 그대로다. **그 위에 재부팅에서만 걸리는 세 가지가 있다 — 셋 다 2026-09-04 실측으로 걸렸다.**
+
+- **① 만드는 순서가 IP 를 정한다.** 기본 브리지는 빈 자리를 낮은 번호부터 준다 —
+  `docker network inspect bridge` 가 비어 있으면 **먼저 만든 컨테이너가 `172.17.0.2`, 다음이 `.3`** 이다.
+  `~/.colab-v2-test.env` 에 이미 적힌 자리와 맞추려면 **ai 체인(`ai_pg`) 을 먼저, platform 체인(`a2_pg`) 을 나중에** 만든다
+  (실측 = `COLAB_APPLIED_DB_URL_AI` 가 `.2` · `COLAB_APPLIED_DB_URL_PLATFORM` 이 `.3`).
+  순서를 바꾸면 IP 가 서로 바뀌고 env 두 줄을 고쳐야 한다. **고치는 것보다 순서를 지키는 쪽이 싸다.**
+- **② `POSTGRES_PASSWORD` 를 새로 짓지 않는다 — env 에 이미 적힌 값이다.**
+  `COLAB_APPLIED_DB_URL_*` 의 롤은 **`postgres`(수퍼유저)** 이고 게이트는 그 비밀번호로 **TCP 로** 붙는다.
+  임의 값으로 컨테이너를 세우면 `setup-db.sh` 도 `alembic upgrade head` 도 **전부 통과한다**
+  (둘 다 `docker exec` · 컨테이너 안 신뢰 접속이라 비밀번호를 안 본다) — 그리고 **`schema-diff` 만**
+  `password authentication failed for user "postgres"` 로 red 를 낸다. **성공 신호가 셋 중 둘이라 고장으로 안 보인다.**
+  같은 이유로 `APP_PASSWORD` 도 지어내지 않는다 — `COLAB_CORE_TEST_DATABASE_URL`·`COLAB_AI_TEST_DICT_DB_URL` 에 적힌 값이다.
+  **값을 읽는 자리는 그 파일(`0600`) 하나이고, 어디에도 옮겨 적지 않는다.**
+- **③ staging 망의 IP 는 재부팅으로 갈린다 — 위 `㉰` 의 `docker inspect` 한 줄로 다시 읽는다.**
+  실측 = `colab_v2_staging_pg` 가 `172.18.0.2` → `172.18.0.6` 으로 옮겨 갔고,
+  **옛 자리에는 `colab_v2_staging_frontend` 가 들어와 있었다** — 고쳐 적지 않으면 **엉뚱한 컨테이너에 붙는다.**
+  갈린 값을 쓰는 키는 `COLAB_AUTOMETA_STAGING_DB_URL` · `COLAB_PREVIEW_TILE_DB_URL` 둘이고,
+  `COLAB_ARTIFACT_OWNER_DB_URL` 은 앞엣것을 참조하므로 함께 따라온다. **키 이름만 적는다 — 값은 적지 않는다.**
+
+> ／ **실측 2026-09-04**(호스트 재부팅 45분 뒤) — 재부팅 직후 `docker ps -a` 에 `a2_pg`·`ai_pg` 가 **둘 다 없었고**
+> `schema-diff` 가 `Host is unreachable` 로 red 였다. 위 순서대로 다시 세운 뒤
+> `schema-diff` · `migration-single-head` · `rls-effect` · `rls-effect-selftest` · `db-selftest` **다섯 다 green**,
+> `autometa-loss` · `preview-tile-slot` · `artifact-ownership` **셋도 green**.
+> **staging 스택 무접촉**(8/8 healthy · 재기동 0회 · 쓰기 0건).
+> ／ 전량 `./gates/run.sh all -j 1` = **`── 계 : green 50 / red(판정) 0 / red(준비) 0`**.
+> ⚠ 앞선 회차는 `service-tests-core-api`·`rls-effect-selftest` 둘이 red 였다 — **둘 다 간헐이다**
+>   (단독 재실행에서 각각 green · `service-tests-core-api` 는 같은 env 로 4회 중 3회 red · 1회 green ·
+>   실패 케이스가 매번 갈리고 계수도 7·7·9 로 달랐다). **간헐을 green 으로 적지 않는다 — 재실행한 사실과 함께 적는다.**
+
 ### ⑤ Remote Control 다시 띄우기 — **시한이 있다**
 
 **staging 이 안 뜨는 것과 뿌리가 같다.** WSL2 가 접히면 안에서 돌던 장기 연결이 조용히 끊기고,
