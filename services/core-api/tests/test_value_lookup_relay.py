@@ -147,7 +147,7 @@ def test_점이_없으면_400_이다(p2_client, fake_viz) -> None:
     assert fake.received == []
 
 
-# ══════════════ 서버 단독 시간 — `Server-Timing` (`VL-1` · `PLAN-SoT §9 〈310〉`) ══════════════
+# ══════════════ 서버 단독 시간 — `Server-Timing` (`VL-1` · `PLAN-SoT §9 〈311〉`) ══════════════
 #
 # 왜 여기가 그 자리인가 — `〈304〉` 는 공개 엣지 앞 벽시계 하나로만 재서 **서버 단독 p95 가
 # `[미확인]`** 이었다. 사용자가 실제로 부르는 표면은 이 op 이므로, **이 표면이 자기 구간을
@@ -171,7 +171,11 @@ def test_중계_응답이_자기_구간을_말한다(p2_client, fake_viz) -> Non
     # `coreAccess` = 경계·권한 판정 ＋ 조각 조회(DB) · `coreRelay` = viz-render 왕복
     for name in ("coreAccess", "coreRelay", "coreTotal"):
         assert name in spans, f"{name} 구간이 없다: {spans}"
-    assert spans["coreTotal"] + 1e-6 >= spans["coreAccess"] + spans["coreRelay"]
+    # ⚠ **허용오차는 헤더 자신의 반올림이 정한다** — `_timing_header` 가 구간마다
+    # `dur={ms:.3f}` 로 **각각** 반올림하므로, 두 조각이 올라가고 총계가 내려가면
+    # 합이 총계를 최대 **0.0015 ms** 앞선다(실측 실패 = 9.092 vs 9.091 · `〈311〉` 수용 검토).
+    # 1e-6 은 그 반올림보다 작아 **참인 코드에서도 빨간불이 뜬다** — 재는 대상이 아니라 눈금의 결함이다.
+    assert spans["coreTotal"] + 2e-3 >= spans["coreAccess"] + spans["coreRelay"]
 
 
 def test_저쪽_구간을_지워버리지_않는다(p2_client, fake_viz) -> None:

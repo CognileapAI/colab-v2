@@ -207,7 +207,7 @@ def lookup_timed(previews_root, source: Path, *, grid_dir: Path | None,
                  lat: float, lon: float) -> tuple[LookupOutcome, dict[str, float]]:
     """`lookup` ＋ **구간 시간(밀리초)**. 답은 한 글자도 달라지지 않는다.
 
-    왜 시간을 함께 내는가 (`VL-1` ⑴ · `PLAN-SoT §9 〈310〉`)
+    왜 시간을 함께 내는가 (`VL-1` ⑴ · `PLAN-SoT §9 〈311〉`)
       `〈304〉` 는 공개 엣지 앞 벽시계 하나로만 재서 **서버 단독 시간이 `[미확인]`** 이었다.
       「느리다」는 관측이고 「어디가 느리다」가 원인이다 — 가르는 자리는 여기다.
 

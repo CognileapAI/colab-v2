@@ -240,7 +240,7 @@ def create_preview_screenshot(request: Request, body: dict = Body(...),
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-#: **서버 단독 시간을 응답이 스스로 말한다** (`VL-1` ⑴ · `PLAN-SoT §9 〈310〉`).
+#: **서버 단독 시간을 응답이 스스로 말한다** (`VL-1` ⑴ · `PLAN-SoT §9 〈311〉`).
 #: `〈304〉` 축자 — 「`Server-Timing` 에 처리 구간이 없어 … 서버 측 p95 = `[미확인]`」.
 #: ⚠ **계약 몸통은 늘지 않는다** — `Server-Timing` 은 표준 응답 헤더다.
 def _timing_header(spans: dict, upstream: str | None) -> str:

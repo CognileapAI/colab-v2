@@ -39,7 +39,7 @@ class ValueLookupRequest(BaseModel):
     point: LookupPoint
 
 
-#: **서버 단독 시간을 응답이 스스로 말한다** (`VL-1` ⑴ · `PLAN-SoT §9 〈310〉`).
+#: **서버 단독 시간을 응답이 스스로 말한다** (`VL-1` ⑴ · `PLAN-SoT §9 〈311〉`).
 #:
 #: `〈304〉` 축자 — 「응답 헤더에 `Server-Timing: cfCacheStatus` 뿐이라 서버 처리 구간을
 #: 가르는 재료가 없다 ⟹ **서버 측 p95 = `[미확인]`**」. 그 재료를 여기서 낸다.

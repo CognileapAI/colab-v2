@@ -98,7 +98,7 @@ def _request(url: str, *, method: str, headers: dict[str, str],
 def _request_timed(url: str, *, method: str, headers: dict[str, str],
                    body: dict[str, Any] | None) -> tuple[int, dict[str, Any] | None, str | None]:
     """`_request` ＋ **저쪽이 낸 `Server-Timing` 을 그대로 들고 온다** (`VL-1` ·
-    `PLAN-SoT §9 〈310〉`).
+    `PLAN-SoT §9 〈311〉`).
 
     왜 지나 보내는가 — `〈304〉` 는 벽시계 하나로만 재서 「어디가 느린가」를 못 갈랐다.
     저쪽 구간을 여기서 버리면 **D7 안이 다시 `[미확인]`** 이 된다. **해석하지 않는다** —
