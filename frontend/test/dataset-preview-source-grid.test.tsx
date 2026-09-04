@@ -41,6 +41,27 @@ const TILED_DONE: RenderJob = {
   },
 } as unknown as RenderJob;
 
+/**
+ * ⭑ ⟨staging 실측 2026-09-04 · `PLAN-SoT §9 〈312〉`⟩ **이미지 갈래인데 ③지도형**.
+ * 타일 갈래 스위치(`COLAB_VIZ_TILE_BRANCH`)는 **기본이 꺼짐**이고(`〈240〉` 판정 ⑬ ·
+ * 「기본은 한 장」) staging 홈 env 에 선언이 없다 — 그래서 실제 화면이 받는 결과는
+ * `imageUrl` ＋ `sidecarUrl` 이다. 계약도 그 모양을 허락한다: `sidecarUrl` 은
+ * `tileUrlTemplate` 에 딸린 값이 아니라 **③지도형이면 실리는 값**이고
+ * (`core-viz.yaml` `dependentRequired: sidecarUrl → bounds`), 굽는 쪽도 갈래와
+ * 무관하게 싣는다(`jobs.py` — `map_image`·`geometry` 가 있으면 `sidecarUrl`).
+ */
+const IMAGE_MAP_DONE: RenderJob = {
+  renderId: RENDER_ID,
+  status: '완료',
+  result: {
+    imageUrl: 'https://viz.example/p/map.png',
+    sidecarUrl: 'https://viz.example/p/map.json',
+    worldFileUrl: 'https://viz.example/p/map.pgw',
+    legend: LEGEND,
+    bounds: { west: 126, south: 34, east: 130, north: 38 },
+  },
+} as unknown as RenderJob;
+
 /** 이미지(②비지도형) 갈래 — 사이드카가 없어 `mapGeometry` 를 아예 묻지 않는다. */
 const IMAGE_DONE: RenderJob = {
   renderId: RENDER_ID,
@@ -102,6 +123,45 @@ describe('§8 — 미리보기 머리가 원본 격자 간격·크기를 말한�
     expect(screen.getByTestId('preview-source-grid').textContent).toContain('0.05° (~5km)');
     expect(screen.getByTestId('preview-source-grid').textContent).not.toContain('×');
     expect(source.mapGeometry).not.toHaveBeenCalled();
+  });
+
+  it('타일 갈래가 꺼져 있어도(이미지 ＋ 사이드카) 원본 배열 크기가 캡션에 선다', async () => {
+    // staging 실측 결함 — 캡션이 `격자 …` 까지만 나오고 「· W × H」 가 3 데이터셋 전부 빠졌다.
+    // 원인은 자료가 아니라 **화면이 사이드카를 타일 갈래에서만 물었다**는 것이다.
+    const source = makeSource({
+      create: vi.fn(async () => IMAGE_MAP_DONE),
+      get: vi.fn(async () => IMAGE_MAP_DONE),
+      mapGeometry: vi.fn(async () => ({ width: 821, height: 1024 })),
+    });
+    renderDetail(source);
+    await screen.findByTestId('preview-map');
+    await waitFor(() =>
+      expect(screen.getByTestId('preview-source-grid').textContent).toContain('821 × 1024'),
+    );
+    expect(screen.getByTestId('preview-source-grid').textContent).toContain('0.05° (~5km)');
+    expect(source.mapGeometry).toHaveBeenCalledWith('https://viz.example/p/map.json');
+  });
+
+  it('격자 해상도가 없어도(GK-2A) 원본 배열 크기만으로 캡션이 선다', async () => {
+    // staging 실측 — GK-2A 는 `basicInfo.grid` 가 없어 **캡션 자리가 통째로 빠졌다**.
+    // 사이드카가 말하는 크기가 있으면 그 조각만으로 캡션이 서야 한다(Ted Q2).
+    const noGrid = {
+      ...FIXTURE_DETAILS,
+      [OPEN_ID]: {
+        ...FIXTURE_DETAILS[OPEN_ID]!,
+        basicInfo: { ...FIXTURE_DETAILS[OPEN_ID]!.basicInfo!, grid: null },
+      },
+    };
+    const source = makeSource({
+      create: vi.fn(async () => IMAGE_MAP_DONE),
+      get: vi.fn(async () => IMAGE_MAP_DONE),
+      mapGeometry: vi.fn(async () => ({ width: 821, height: 1024 })),
+    });
+    renderDetail(source, noGrid);
+    await screen.findByTestId('preview-map');
+    await waitFor(() =>
+      expect(screen.getByTestId('preview-source-grid').textContent).toBe('821 × 1024'),
+    );
   });
 
   it('격자 해상도도 원본 크기도 없으면 자리째 없다', async () => {
