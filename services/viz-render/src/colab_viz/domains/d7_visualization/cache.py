@@ -37,9 +37,47 @@ def render_cache_key(*, source_digest: str, long_side: int, downsample: str,
     `crs` 가 `없음`이면 **여기서 떨군다** — 「지도형만 무효화」를 호출 규율이 아니라
     **키 자신**이 지키게 한다. 규율에 맡기면 언젠가 한 곳이 어긴다.
     """
+    return _digest(_payload(
+        source_digest=source_digest, long_side=long_side, downsample=downsample,
+        fills=fills, palette=palette, crs=crs, selection=selection,
+        color_range=color_range, instant=instant, grid_digest=grid_digest))
+
+
+#: 변이 키가 **빼는** 입력. 지금은 팔레트 하나다 — 넓히는 것은 별도 판정이다.
+_VARIANT_EXCLUDED = ("palette",)
+
+
+def render_variant_key(**kwargs) -> str:
+    """**「같은 그림, 색만 다름」의 서명** — 팔레트를 뺀 나머지 입력 전부로 짓는다(`V-1` ⑴).
+
+    `render_cache_key` 와 **같은 payload 를 쓴다** — 규칙이 두 곳이 되면 언젠가 한 곳이
+    어긋나고, 어긋난 쪽이 「지워도 되는 옛 벌」을 잘못 고른다. 그래서 빼는 열쇠 하나만
+    다르고 나머지는 한 함수가 짓는다.
+
+    쓰임은 하나다 — 팔레트만 바꾼 재렌더가 **무엇을 대체했는가**를 가른다(`〈259〉` ⑷).
+    원본·선택 변수·시각·색범위·격자 중 **하나라도 다르면 변이 키가 갈리고**, 그 벌은
+    「색만 바뀐 같은 그림」이 아니므로 회수 대상이 아니다.
+    """
+    payload = _payload(**kwargs)
+    for k in _VARIANT_EXCLUDED:
+        payload.pop(k)
+    return _digest(payload)
+
+
+def _digest(payload: dict) -> str:
+    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                      separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()
+
+
+def _payload(*, source_digest: str, long_side: int, downsample: str,
+             fills: tuple[float, ...] | list[float], palette: str,
+             crs: str, selection: str | None, color_range: ColorRange,
+             instant: str | None = None, grid_digest: str | None = None) -> dict:
+    """키의 재료 — **여기 한 곳에서만 짓는다.**"""
     if crs == NO_CRS:
         grid_digest = None
-    payload = {
+    return {
         "source": source_digest,
         "longSide": int(long_side),
         "downsample": downsample,
@@ -56,6 +94,3 @@ def render_cache_key(*, source_digest: str, long_side: int, downsample: str,
         "range": [color_range.vmin, color_range.vmax, color_range.token()],
         "grid": grid_digest,
     }
-    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False,
-                      separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()
