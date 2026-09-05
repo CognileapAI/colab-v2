@@ -444,3 +444,33 @@ describe('§9 — 못 불러왔을 때', () => {
     expect(screen.getByText('다시 불러오기')).toBeTruthy();
   });
 });
+
+/**
+ * BF-8 — 화면 뿌리가 자기 여백을 갖는 관례(BF-5 가 `project.css` 에 세운 것)를 S-01 에 적용.
+ * 계산값으로 재려면 `dashboard.css`·`search.css` 가 실려야 한다 (`vite.config.ts` `test.css.include`).
+ */
+describe('S-01 화면 뿌리 여백 (BF-8)', () => {
+  it('뿌리는 좌우 여백과 프로젝트·데이터셋 상세와 같은 최대폭을 갖는다', async () => {
+    const { container } = renderLab(fullSource());
+    await screen.findByText('할 일 함');
+    const root = container.querySelector('[data-screen="S-01"]');
+    expect(root).not.toBeNull();
+    const cs = getComputedStyle(root as Element);
+    expect(parseFloat(cs.paddingLeft)).toBeGreaterThan(0);
+    expect(parseFloat(cs.paddingRight)).toBeGreaterThan(0);
+    expect(cs.maxWidth).toBe('1200px');
+  });
+
+  it('검색 히어로의 좌우 여백은 뿌리 여백과 겹치지 않는다', async () => {
+    const { container } = renderLab(fullSource());
+    await screen.findByText('할 일 함');
+    const hero = container.querySelector('.search-hero');
+    expect(hero).not.toBeNull();
+    const cs = getComputedStyle(hero as Element);
+    expect(parseFloat(cs.paddingLeft)).toBe(0);
+    expect(parseFloat(cs.paddingRight)).toBe(0);
+    // `shell.css` 가 `* { box-sizing: border-box }` 라 720px 은 여백을 포함한 폭이다.
+    // 여백만 0 으로 두면 내용 폭이 680 → 720 으로 넓어진다 — 40px 을 최대폭에서 뺀다.
+    expect(cs.maxWidth).toBe('680px');
+  });
+});

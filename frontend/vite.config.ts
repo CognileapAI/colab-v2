@@ -20,10 +20,6 @@ export default defineConfig(({ mode }) => ({
     // 계산값이 필요해 project.css·shell.css 를 더한다. jsdom 이 못 재는 `var()` 배경·`gap` 은
     // 규칙 원문(`?raw`)으로 잰다 — 이 스텁은 `?raw` id 까지 빈 문자열로 만들므로 함께 허용한다.
     // (`node:fs` 는 쓰지 않는다 — `e01-apply-points.test.ts:14` 의 배포 불가 사고.)
-    // BF-11 — `project.css` 의 토큰 정합·backlink 공용화를 규칙 원문으로 대조하려면
-    // `tokens.css`(정본 토큰)와 `detail.css`(사본이 남았나)의 원문도 읽어야 한다.
-    // `detail.css` 는 **`?raw` 만** 허용한다 — 확장자 자체를 열면 상세 화면 시험의 계산값이
-    // 같이 바뀌어, 이 항목이 재지도 않은 자리를 건드리게 된다.
     css: {
       include: [
         /catalog\.css$/,
@@ -31,6 +27,8 @@ export default defineConfig(({ mode }) => ({
         /shell\.css(\?raw)?$/,
         /tokens\.css(\?raw)?$/,
         /detail\.css\?raw$/,
+        /dashboard\.css(\?raw)?$/,
+        /search\.css(\?raw)?$/,
       ],
     },
   },
