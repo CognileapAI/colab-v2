@@ -172,3 +172,31 @@
 .detail-page .dt-edit .de-err { color: var(--color-warning-600); font-size: var(--text-body-sm); margin: 12px 0 0; }
 .detail-page .dt-edit .de-act { display: flex; gap: 8px; margin-top: 16px; }
 @media (max-width: 860px) { .detail-page .dt-edit .de-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ── WU-A8 · 구역 메뉴 (PRD-24 · 미결-9 ⓑ) ──────────────────────────────────────
+   화면 위에 붙어 남고 현재 구역만 표시가 진해진다. **탭이 아니다** — 이 규칙 어디에도
+   구역을 숨기는 선언이 없다(정본 `Policy_데이터셋_상세 §1.3-1` 무개정). */
+.detail-page .dsec-menu {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 var(--space-4);
+  padding: 8px 0;
+  background: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border);
+}
+.detail-page .dsec-menu-l { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.detail-page .dsec-menu-i {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-body-sm);
+  color: var(--color-gray-600);
+  text-decoration: none;
+}
+.detail-page .dsec-menu-i:hover { background: var(--color-gray-100); }
+.detail-page .dsec-menu-i.is-active {
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  font-weight: 600;
+}
