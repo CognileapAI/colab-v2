@@ -2602,3 +2602,16 @@ items:
     deadline: null
     note: "미결-9 ⓑ 확정 — 이 형태가 최종. 정본 Policy_데이터셋_상세 §1.3-1 을 개정하지 않고 탭·패널 전환을 만들지 않는다"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-24"]
+
+  - id: WU-A9
+    name: 종료 확인 조건 (PRD-14)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12 회귀 방어선 green"]
+    depends_on: ["WU-A12"]
+    completion_def: "빈 상태 닫기는 안 묻고, 한 글자라도 적었거나 계보 부모 1건이면 묻는다. 문면은 종전 그대로다"
+    evidence: "dev-package/sessions/p3-close-guard-<YYYYMMDD>.md"
+    deadline: null
+    note: "미결-15 ⓐ — 조건만 고치고 문면 유지. PRD-34 는 §4 범위 밖"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-14"]
