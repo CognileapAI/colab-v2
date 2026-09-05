@@ -33,6 +33,12 @@ export function DetailHeader(props: {
   detail: DatasetDetail;
   approvalSource: ApprovalSource;
   onChanged?: (() => void) | undefined;
+  /**
+   * ⭑ **WU-A3 이 낸 자리** — 상세 수정 진입점(`DatasetEditEntry`). 권한이 꺼졌으면 그 컴포넌트가
+   * 스스로 `null` 이 되므로 여기는 조건을 알지 못한다 (P-12 · 판정은 한 곳에서만).
+   * 뒤 WU 가 진입점을 늘리더라도 헤더는 이 슬롯 하나만 안다.
+   */
+  editAction?: React.ReactNode;
 }) {
   const d = props.detail;
   const segments = d.summary ? summarySegments(d.summary) : [];
@@ -78,6 +84,13 @@ export function DetailHeader(props: {
       {/* 헤더 우측 **한 자리**가 상태 × 보는 사람에 따라 셋으로 갈린다
           (승인 요청 / 승인 / 승인 취소). 규칙은 `Policy_승인_처리 §8` 이 정본이다.
           ⭑ WU-P6 이 채웠다 — 판정은 서버의 `actions` 세 칸이 한다 (P-7). */}
+      {/* ⭑ WU-A3 — 수정 진입점. 승인 자리와 **다른 판정**이라 다른 슬롯에 선다
+          (승인은 서버 `actions` 세 칸 · 수정은 `업로드·편집` 스위치). */}
+      {props.editAction ? (
+        <div className="dh-edit" data-slot="dataset-edit-entry">
+          {props.editAction}
+        </div>
+      ) : null}
       <VerificationAction
         detail={props.detail}
         source={props.approvalSource}

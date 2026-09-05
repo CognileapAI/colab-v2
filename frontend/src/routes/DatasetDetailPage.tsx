@@ -21,6 +21,11 @@ import { defaultDetailSource } from '../components/detail/detailSource';
 import { useStartDownload } from '../components/detail/download';
 import { apiFileSource } from '../components/detail/fileSource';
 import { useDatasetDetail } from '../components/detail/useDatasetDetail';
+import { useDatasetEdit } from '../components/detail/useDatasetEdit';
+import { DatasetEditEntry } from '../components/detail/DatasetEditEntry';
+import { DatasetEditForm } from '../components/detail/DatasetEditForm';
+import { defaultDatasetUpdateSource } from '../components/detail/updateSource';
+import type { DatasetUpdateSource } from '../components/detail/updateSource';
 import type { DetailSource, FileSource } from '../components/detail/types';
 import { LineageSection } from '../components/lineage/LineageSection';
 import { defaultLineageSource } from '../components/lineage/graphSource';
@@ -51,6 +56,8 @@ export function DatasetDetailPage(
     fileSource?: FileSource;
     /** 승인 처리 네 동작 (WU-P6). 시험이 대역을 꽂는 자리다. */
     approvalSource?: ApprovalSource;
+    /** 상세 수정 저장(WU-A3 · 계약 op `updateDataset`). 시험이 대역을 꽂는 자리다. */
+    updateSource?: DatasetUpdateSource | undefined;
   } = {},
 ) {
   const { datasetId = '' } = useParams();
@@ -80,6 +87,16 @@ export function DatasetDetailPage(
     () => props.filesSource ?? defaultFilesSource(),
     [props.filesSource],
   );
+
+  // ⭑ **WU-A3 — 상세 수정 골격**(진입점 · 권한 게이트 · 저장 왕복 · 낙관적 갱신).
+  // 여는 칸은 `editFields.ts` 의 표가 정한다 — 뒤 WU(A4·A6·R-B)는 그 표에 줄만 더한다.
+  const updateSource = useMemo(
+    () => props.updateSource ?? defaultDatasetUpdateSource(),
+    [props.updateSource],
+  );
+  const edit = useDatasetEdit(updateSource, detail.status === 'ready' ? detail.detail : null);
+  // 저장 중에는 낙관값이, 저장 뒤에는 **서버가 돌려준 상세**가 여기 선다.
+  const shown = edit.detail;
 
   // 「내가 열어 본 것」 — **브라우저에만 적는다** (`Policy_홈_대시보드 §10` · WU-P7).
   // 서버로 보내는 경로가 여기 없는 것이 그 조항의 실물이다. 홈의 최근 활동이 이 값을 읽는다.
@@ -154,19 +171,27 @@ export function DatasetDetailPage(
         />
       ) : null}
 
-      {detail.status === 'ready' ? (
+      {detail.status === 'ready' && shown ? (
         <LockedContent
-          bodyAccessible={detail.detail.bodyAccessible}
+          bodyAccessible={shown.bodyAccessible}
           header={
-            <DetailHeader
-              detail={detail.detail}
-              approvalSource={approvalSource}
-              onChanged={() => setReloadToken((n) => n + 1)}
-            />
+            <>
+              <DetailHeader
+                detail={shown}
+                approvalSource={approvalSource}
+                onChanged={() => setReloadToken((n) => n + 1)}
+                editAction={<DatasetEditEntry onOpen={edit.open} disabled={edit.editing} />}
+              />
+              {/* 수정 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지 않는다
+                  (`§1.3-1` 한 페이지 스크롤 · 미결-9 ⓑ). 다른 구역은 그대로 보인다. */}
+              {edit.editing ? (
+                <DatasetEditForm detail={shown} onSave={edit.save} onCancel={edit.cancel} />
+              ) : null}
+            </>
           }
           request={
             <LockedNotice
-              detail={detail.detail}
+              detail={shown}
               approvalSource={approvalSource}
               onRequested={() => setReloadToken((n) => n + 1)}
             />
@@ -175,11 +200,11 @@ export function DatasetDetailPage(
           {/* 잠기면 `basicInfo` 가 null 이라 기본 정보가 통째로 사라진다 —
               카탈로그 행이 `조각 N` 을 계속 띄우는 것과 달라 보이는 것은 의도다
               (`§7` · `PLAN-SoT §9-㊼-④`) */}
-          {detail.detail.basicInfo ? (
+          {shown.basicInfo ? (
             <>
               <BasicInfoGrid
-                basicInfo={detail.detail.basicInfo}
-                fileName={detail.detail.fileName}
+                basicInfo={shown.basicInfo}
+                fileName={shown.fileName}
                 datasetId={datasetId}
                 filesSource={filesSource}
               />
@@ -203,7 +228,7 @@ export function DatasetDetailPage(
                     모달이 그 문장을 그대로 보여 준다. */}
                 <GridAttachEntry
                   datasetId={datasetId}
-                  datasetName={detail.detail.name}
+                  datasetName={shown.name}
                   onAttached={() => setReloadToken((n) => n + 1)}
                   sources={props.uploadSources}
                 />
@@ -229,7 +254,7 @@ export function DatasetDetailPage(
           {lineage.status === 'ready' ? (
             <LineageSection
               graph={lineage.graph}
-              lastModifiedAt={detail.detail.lastModifiedAt}
+              lastModifiedAt={shown.lastModifiedAt}
             />
           ) : null}
           {lineage.status === 'unavailable' ? (
@@ -245,14 +270,14 @@ export function DatasetDetailPage(
           <DatasetPreviewSection
             datasetId={datasetId}
             source={props.previewSource}
-            datasetName={detail.detail.name}
-            fileName={detail.detail.fileName}
-            gridResolution={detail.detail.basicInfo?.grid}
+            datasetName={shown.name}
+            fileName={shown.fileName}
+            gridResolution={shown.basicInfo?.grid}
           />
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}
-          <UsageSection detail={detail.detail} />
+          <UsageSection detail={shown} />
         </LockedContent>
       ) : null}
     </div>
