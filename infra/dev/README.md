@@ -94,6 +94,7 @@ cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev \
 | `dnf install` 이 `[Errno 2] … .rpm` 으로 죽는다 | 앞선 설치가 중간에 끊겨 **캐시가 깨졌다** | `sudo dnf clean all && sudo rm -rf /var/cache/dnf` 뒤 재시도 |
 | `cat /etc/colab/<파일>` 이 **Permission denied** — 파일 소유자는 맞는데 | 디렉터리가 `700 root` 면 안의 파일을 못 연다(디렉터리 실행 권한이 먼저다) | `sudo chown ec2-user:ec2-user /etc/colab` |
 | `docker compose` 가 없다 | **AL2023 저장소에 컴포즈 플러그인이 없다** — `dnf install docker` 는 엔진만 준다 | `/usr/libexec/docker/cli-plugins/docker-compose` 로 릴리스 바이너리(aarch64)를 직접 놓는다 |
+| `build.sh` 가 **`no match for platform in manifest`**·`exec format error` 로 죽는다. `buildx` 는 있다 | **WSL2 의 buildx 에는 `linux/arm64` 가 없다** — 기본 빌더가 호스트 아키텍처(amd64)만 들고 있고 QEMU 가 등록돼 있지 않다 | 개발 기계에서 먼저 `docker run --privileged --rm tonistiigi/binfmt --install arm64` 로 QEMU 를 등록한 뒤 `build.sh` 를 다시 돌린다. 실측 2026-09-05. 그래도 느리면 위 「탈출구」의 arm64 네이티브 빌드로 간다 |
 
 ## 탈출구
 

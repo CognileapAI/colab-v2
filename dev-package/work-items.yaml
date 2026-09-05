@@ -2462,3 +2462,26 @@ items:
     deadline: null
     note: "⭑ **⟨개번 병합 창 8-a⟩ 이 항목의 id 는 PR #1 에서 `V-3` 이었고 `V-4` 로 옮겼다.** `main` 원장에 **다른 뜻의 `V-3`**(「지도 타일이 소유·회수 규율 밖에 있다」 · D7 · `〈302〉`)이 이미 있어 id 가 겹쳤다 — 두 레인이 대장 합류 전에 갈려 같은 번호를 각자 썼다(`〈N〉` 재실측과 같은 자리 · `〈310〉`·`〈318〉`-㉤ 선례). **더 오래된 쪽(`main`)이 번호를 지킨다.** PR #1 이 들여온 인용은 함께 옮겼다(문서·코드 11파일 28줄). ⛔ 증거 전사(`docs/DEPLOY-evidence-viz.txt`·`-worker.txt`)는 **찍힌 출력이라 고치지 않았다** — 그 안의 `V-3` 은 이 항목을 가리킨다. ⚠ **방식 자체는 Ted 판정 ⑼ 로 여전히 열려 있다** — 뒤집히면 대안은 EC2 nginx alias. 완료 정의는 이 회차에 확정했다(그전까지 「미작성」이었다)."
     sources: ["PLAN-SoT §9 〈342〉"]
+
+  - id: G10
+    name: "단독 선언 게이트 8개 안의 시험 병렬화 — 전수 시간의 대부분이 그 여덟에 있다"
+    status: open
+    stage: stage1
+    owner: "T-G / 게이트 · 서비스 시험"
+    entry_conditions:
+      - "없음 — 실측(창 8-a · 트리 `c6f5e00`) 같은 트리를 `-j 1` 로 41분 · `-j 4` 로 21분에 돌았고 **판정은 같았다**(`green 50 / red(판정) 0 / red(준비) 0`). 병렬도를 올려도 절반에서 멈추는 이유 = `gates/config/parallelism.toml` 이 `serial` 로 선언한 여덟(`service-tests-core-api`·`service-tests-ai-service`·`service-tests-viz-render`·`service-tests-pipeline-worker`·`frontend-test`·`db-selftest`·`preview-tile-slot-selftest`·`render-latency`)이 **단독 구간**을 차지한다"
+      - "그 여덟 중 `service-tests-core-api` 하나가 135.1초 · `service-tests-viz-render` 37.6초 (실측 `dev-package/reports/window-8a/gates-all-3.log`) — 게이트 사이가 아니라 **게이트 안**이 직렬이다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 여덟 게이트 안의 시험을 병렬로 돌린다(`pytest-xdist` 등) — **게이트 사이의 `serial` 선언은 건드리지 않는다**(단독 선언은 서로의 일회용 DB·적용 DB 를 지키려고 있는 것이고, 그것을 푸는 것은 이 항목이 아니다)
+      ⑵ **게이트 자가시험 green** — 각 게이트의 `*-selftest` 가 red fixture 로 여전히 fail-closed 임을 증명한다(수집 0건 red · 실행 0건 red · 실패 1건 red · venv 부재 red(준비 · 78))
+      ⑶ **판정 동일** — 병렬화 전후로 수집·실행·skipped·deselected·failed 계수가 같다. 갈리면 red 이고, **계수가 줄어든 것을 빨라진 것으로 세지 않는다**
+      ⑷ **전수 시간 실측** — 같은 트리에서 병렬화 전후를 각각 한 번의 실행으로 재고 값을 남긴다(`-j 4` 기준).
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-06 · 등록만** — 착수 회차는 열지 않았다. 발견 = 창 8-a 전수 실측(`dev-package/reports/window-8a/lane-report.md §6`).
+      ⛔ **이것은 속도 항목이지 판정 항목이 아니다** — `gates/README.md` 축자 「**빨리 도는 것과 덜 보는 것은 다르다**」. 통과시키려 보는 범위를 줄이는 것은 수정이 아니다(`CLAUDE.md §3`).
+      ⚠ **`serial` 선언을 푸는 쪽으로 새지 않는다** — `db-selftest` 를 병렬로 돌려 거짓 red 가 났던 자리가 실재한다(`gates/README.md` 「격리를 깨는 속도는 속도가 아니다」). 이 항목이 손대는 것은 **게이트 안**뿐이다.
+      ⚠ **`[미확인]` — 병렬화로 실제 몇 분이 줄어드는지.** 이 회차는 재지 않았다(등록만) — **추정값을 적지 않는다.** 해소 = 완료 정의 ⑷.
+    sources: ["dev-package/reports/window-8a/lane-report.md", "gates/README.md", "gates/config/parallelism.toml"]
