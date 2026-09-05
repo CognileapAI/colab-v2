@@ -1904,7 +1904,32 @@ items:
       **둘 다 main 사전존재이고 이 회차가 만든 것이 아니다.**
       ⟹ **닫는 기준 = 다섯이 각각 판정을 받고, 판정이 「집행」이면 그 집행이 실측으로 끝난 것.**
     evidence: >-
-      ⭑ **⟨⑶ 집행·실측 2026-09-05 · staging 단독 창 5b 단계 B · 등재 `PLAN-SoT §9 〈318〉` · 근거 `sessions/WINDOW-20260905-A5b.md §10` · 대상 목록 `sessions/WINDOW-20260905-REBAKE-TARGETS.md`⟩ `status` 는 `open` 그대로 — ⑶ 만 한 회차 돌았고 ⑴⑵⑷⑸ 는 판정 전이다.**
+      ⭑ ⟨18차 해제 2026-09-05 · 워크트리 `lane-r18` · 브랜치 `lane-r18` · 초안 `notes/R18-LEDGER-PENDING.md` ·
+      회차 행 `sessions/X2-FREEZE-PROTOCOL.md §1` 18차 · **결정 번호 미배정**(병합 시 배정)⟩
+      **⑴ 부분 집행 — 병합·배포 대기.** `fe-core.yaml#createPreviewRender` 에 `"413"`·`"415"` **2건** 선언.
+      ⛔ **완료 정의 문면의 「세 op 의 410/413/415/422」(12 쌍)를 그대로 옮기지 않았다** — 12 쌍 전수 실측 결과
+      **실제로 나는 것은 2 쌍뿐**이고, 나머지 10 쌍은 **내는 자리가 0건**이라 넣으면 「생산자 없는 것을 계약에 박기」가 된다.
+      실측 = 413 `viz .../routes/renders.py:88`(봉투 `RENDER_TOO_LARGE`) · 415 같은 파일 `:102`(봉투 `NOT_RENDERABLE`) /
+      **410** 은 `renders.py:148` `getRenderTile` 하나뿐인데 **타일은 core-api 를 통과하지 않는다**(core-api `gone()` 은 `catalog.py:755` `getDataset` 전용 = 17차가 이미 선언) ·
+      **422** 는 viz·core 둘 다 `RequestValidationError` 를 **400 으로 바꾼다**(`main.py:106-108`·`:112-115` · 서비스 소스에 422 를 내는 줄 0건) ·
+      `listPalettes` 는 viz `routes/style.py` 가 200 뿐 · `lookupDatasetValue` 는 viz `routes/values.py` 가 404·400 뿐이고 `value_lookup` 은 `raise` 0건이며 viz 요청 본문을 core-api 가 검증된 값으로 조립한다(`preview.py:290-293`).
+      `relay.py:PASS_THROUGH_STATUSES` 는 **중계의 규율**이지 op 별 발생 목록이 아니라 **그대로 둔다**.
+      **스키마 신설 0**(기존 `ErrorEnvelope` 재사용) · **서버 0 줄** · **마이그레이션 0** · **op 총계 55 그대로** · 정본 무개정.
+      게이트 = `contract-breaking` **ERR 0 · WARN 0 · INFO 2**(`response-non-success-status-added` × 2) · `contract-lint` green ·
+      `generated-up-to-date` green · `frontend-typecheck` green · `frontend-test` green(38파일/595건).
+      시험 = core-api 신설 1(413 봉투 전문) ＋ 인용 1(415 · `test_relay_status_passthrough.py:105`) ＋ viz 단언 강화 2(`test_errors.py`) ·
+      core-api 38 passed · viz `test_errors.py` 8 passed. ⚠ **red 선확인 불성립**(서버 0 줄) — 대신 변이 증명(기대 문자열을 틀리게 하면 2 failed).
+      ⚠ **⑴ 의 나머지 셋은 열지 않았다** — `core-viz.yaml` 경계 헤더 · `getRender` 400 · `ScreenshotRequest.layers maxItems 8`.
+      **⑷ 넷 중 하나 판정 · 셋 귀속.** ⓐ **`expires_at` 없는 등록 데이터셋 렌더 수명 = 영구 보존 유지**(Ted 판정 2026-09-05 · **계약 0 · 코드 0**).
+      ⛔ **문면 정정 — 「데이터셋에 만료일을 안 적은 것」이 아니라 「데이터셋엔 만료일이 없다」**: `expires_at` 이 있는 자리는
+      접근 허가(`db/platform/schema.sql:188` `d2_dataset_access_grant` · 계약 `fe-core.yaml:2444`) · 세션(`fe-core.yaml:2207/2213`) ·
+      임시 업로드(`schema.sql:601` `d5_upload` · `fe-core.yaml:2615-2616` `upload.ready.expiresAt`) **셋뿐**이고 `d3_dataset` 에는 만료 열이 **0건**이다.
+      원 물음 = 「임시 업로드는 만료되는데 등록 뒤 렌더 산출물엔 만료 개념이 없다 — 수명을 둘 것인가」 ·
+      결정 사실 = 데이터셋은 **만료 개념이 없는 대상**이고 회수는 **소유 판정(원천이 사라지면 고아)**이 이미 맡는다 ⟹ 기한을 새로 만들면 회수 규칙이 두 곳이 된다.
+      ⓑ **`artifact-ownership.toml tolerate=true` 기한 = `〈315〉` 로 대체됨** — 기한 연장이 아니라 **구판 재굽기 후 재계수**이고 **staging 창이 집행한다**(`RC-1` note).
+      ⓒ **compose 비밀값 `_FILE` 전환** · ⓓ **발행 재시도 DLQ** = **배포개선 회차 소관** — 이름으로만 남기고 이 레인은 구현 0.
+      ⟹ **⑵⑶⑸ 무변 · `CR-2` 는 닫히지 않는다**(다섯 중 완결 0 · ⑴⑷ 가 전진).
+      ⭑ **⟨⑶ 집행·실측 2026-09-05 · staging 단독 창 5b 단계 B · 등재 `PLAN-SoT §9 〈318〉` · 근거 `sessions/WINDOW-20260905-A5b.md §10` · 대상 목록 `sessions/WINDOW-20260905-REBAKE-TARGETS.md`⟩ `status` 는 `open` 그대로 — ⑶ 만 한 회차 돌았고 ⑵⑸ 는 판정 전이고 ⑴⑷ 는 바로 위 18차 항목이 부분 집행했다.**
       **⑶ 배포 뒤 재굽기 ＋ 소유 네 등급 재실측 = 1회 집행됨.** 배포 `e37808cace69` GREEN → 재굽기 **3 데이터셋 · 3건 전부 `완료` · 실패 0 · 격자 거절 0**(`POST /api/v1/previews` · 팔레트 `단색-파랑` · 대상은 창에서 실측해 **먼저 적고 커밋**한 뒤 집행 — `aa04792`).
       **소유 계수 전 → 후** = 대상 `127 → 136` · 살아 있다 `108 → 117` · 접수분 `0 → 0` · 고아 `0 → 0` · **판정 불가 `19 → 19`** · 자리 파일 `285 → 306`.
       ⛔ **⑶ 이 낳은 판정 하나 — 「재굽기로는 구판이 안 덮인다」(`〈315〉`-㉯ 반증).** 스냅숏 대조 실측 = 전후의 판정 불가 **19개 캐시 키가 집합으로 동일**(사라진 키 0 · 새 키 0) · **사라진 벌 0 · 새 벌 9**.
@@ -1912,7 +1937,7 @@ items:
       **사정거리 실측** — 판정 불가 19벌 = ㉮ 사이드카 판 없음 5 / ㉯ 사이드카 부재 14. ㉮ 5건의 `source` ULID 를 platform DB 에 **읽기 전용**으로 대조해 **3건만** 대상이 섰고,
       ㉯ 14벌은 스냅숏 `source` 칸이 비어 있으며 ㉮ 중 2건은 원천이 `d3_file`·`d5_upload_file` 어디에도 없다 ⟹ **남은 16벌은 재굽기로 대상이 서지 않는다** `[미확인]`.
       ⟹ ⛔ **⑶ 은 「측정됐다」이지 「닫혔다」가 아니다** — 남은 16벌의 처분은 **재굽기가 아니라 회수(`invalidation`)** 여야 하고, 그것은 **새로 열린 Ted 판정**이다(`〈315〉`-㉯ 의 대체).
-      **⑴ 계약 델타 · ⑵ 로그인 제한 XFF · ⑷ tolerate 기한/`_FILE`/DLQ · ⑸ CI 인프라 red 둘 = 이 회차 무접촉 · 판정 전 그대로.**
+      **⑴ 계약 델타 · ⑵ 로그인 제한 XFF · ⑷ tolerate 기한/`_FILE`/DLQ · ⑸ CI 인프라 red 둘 = 창 5b 회차 무접촉**(⑴⑷ 의 전진은 18차 레인 소관 · 위 항목).
     deadline: null
     note: >-
       **신설 2026-09-03** — `PLAN-SoT §9 〈307〉`-㉷. ⚠ **⑶ 은 배포와 순서가 묶여 있다** —

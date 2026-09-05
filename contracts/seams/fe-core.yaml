@@ -1678,6 +1678,40 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "413":
+          description: |
+            ⭑ **⟨신설 2026-09-05 · 계약 동결 해제 18차 · Ted 판정 「계약에 선언 · 18차 · 가산」⟩**
+            **대상 조각의 크기 합이 렌더 상한을 넘었다** (`ErrorEnvelope.code = RENDER_TOO_LARGE`).
+
+            **코드가 먼저 이 상태를 내고 있었고 계약이 뒤따르는 자리다** — `DR-7` 의 모양이다.
+            내는 자리는 viz-render 한 곳(`app/routes/renders.py:88` — `sum(p.size_bytes …) >
+            max_render_bytes`)이고, 문구는 `d7_visualization/failures.py TOO_LARGE_MESSAGE`
+            축자 「미리보기는 500MB까지 그려요. 조각 하나를 골라 그려 보세요.」 ＋
+            `details.limitBytes`·`details.targetBytes` 다. **core-api 는 이 봉투를 만들지도
+            해석하지도 않는다** — 상태·본문 그대로 올린다(`app/relay.py PASS_THROUGH_STATUSES`
+            ＋ `app/routes/preview.py:_refused`). `core-viz.yaml#createRender` 의 `413` 과
+            같은 값이고 **새 봉투를 만들지 않는다**.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "415":
+          description: |
+            ⭑ **⟨신설 2026-09-05 · 계약 동결 해제 18차 · Ted 판정 「계약에 선언 · 18차 · 가산」⟩**
+            **어느 조각도 그릴 수 없는 포맷이다** (`ErrorEnvelope.code = NOT_RENDERABLE`).
+
+            내는 자리는 viz-render 한 곳(`app/routes/renders.py:102` — `drawable == 0`,
+            즉 **한 조각이라도 그릴 수 있으면 415 가 아니다**)이고, 문구는
+            `d7_visualization/failures.py NOT_RENDERABLE_MESSAGE` 축자 「이 형식은 아직
+            지도로 못 그려요.」 다. `details.renderableFormats` 에 **지금 그릴 수 있는 형식
+            목록**이 실린다 — 안 되는 것만 말하면 무엇을 올려야 하는지 모른 채 떠난다.
+            ⚠ **화면은 이 상태에 이미 의존하고 있었다** — `previewSource.ts:41/67` ·
+            `datasetPreviewSource.ts:74/87` 의 `status === 415` 분기가 계약에 이 칸이 없는
+            동안 **도달 불가한 죽은 코드**였다(`sessions/CODE-REVIEW-20260903-B.md §6`).
+            **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 등록·다운로드·계보 확정은
+            그대로 된다. `core-viz.yaml#createRender` 의 `415` 와 같은 값이다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "503":
           description: |
             **그리는 서버에 닿지 못했다 — 실패한 렌더가 아니다**

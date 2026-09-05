@@ -45,7 +45,12 @@ def test_렌더_상한을_넘으면_413(source_root, put_target):
     r = c.post("/viz/v1/renders", json={"target": {"datasetId": tid}, "style": _STYLE},
                headers=AUTH)
     assert r.status_code == 413
-    assert r.json()["code"]
+    # ⭑ ⟨18차 해제 2026-09-05⟩ **코드 문자열을 직접 잰다** — `fe-core.yaml#createPreviewRender`
+    # 의 `413` 산문이 이 값을 축자로 싣고, core-api 는 이 봉투를 **해석하지 않고 그대로**
+    # 올린다. 종전에는 「비어 있지 않다」까지만 재서 **계약 산문의 오라클이 없었다.**
+    assert r.json()["code"] == "RENDER_TOO_LARGE", r.text
+    assert r.json()["details"]["limitBytes"] == 1024
+    assert r.json()["details"]["targetBytes"] > 1024
 
 
 def test_그릴_수_없는_포맷은_415_이고_그릴_수_있는_형식을_함께_말한다(client, put_target):
@@ -55,6 +60,8 @@ def test_그릴_수_없는_포맷은_415_이고_그릴_수_있는_형식을_함�
     assert r.status_code == 415
     body = r.json()
     assert set(body) >= {"code", "message"}
+    # ⭑ ⟨18차 해제 2026-09-05⟩ 같은 이유로 415 의 코드 문자열도 직접 잰다.
+    assert body["code"] == "NOT_RENDERABLE", r.text
     formats = body["details"]["renderableFormats"]
     # 〈51〉·〈77〉 — 숫자가 아니라 목록이다. GRIB 은 v2 범위 밖이고 HDF 는 버전이 다르며,
     # `NumPy` 가 **독립 포맷**으로 들어왔다(Ted 판정 — 「nc 랑은 다른 파일이다」).

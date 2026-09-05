@@ -113,6 +113,35 @@ def test_a_415_from_viz_reaches_the_screen_with_its_renderable_formats(
         "형식 목록이 사라졌다 — 사용자는 다음 수를 알 수 없다."
 
 
+#: viz-render 의 413 본문 (`app/routes/renders.py:88` · 문구는 `failures.py TOO_LARGE_MESSAGE`
+#: 축자). 415 와 같은 규율이다 — **core-api 는 이 모양을 만들지도 해석하지도 않는다.**
+RENDER_TOO_LARGE = {
+    "code": "RENDER_TOO_LARGE",
+    "message": "미리보기는 500MB까지 그려요. 조각 하나를 골라 그려 보세요.",
+    "details": {"limitBytes": 524288000, "targetBytes": 1073741824},
+}
+
+
+def test_a_413_from_viz_reaches_the_screen_with_its_render_too_large_envelope(
+        p2_client, fake_viz) -> None:
+    """**상한을 넘은 것은 장애가 아니다** (`계약 동결 해제 18차` · 2026-09-05).
+
+    ⚠ 이 시험이 재는 것은 **계약 산문의 오라클**이다. `fe-core.yaml#createPreviewRender`
+    의 `413` 이 코드 `RENDER_TOO_LARGE` 와 `details.limitBytes`·`targetBytes` 를 축자로
+    싣는데, 그 값을 재는 자리가 종전에는 **「코드가 비어 있지 않다」까지**였다
+    (`test_a_refusal_without_a_body_still_keeps_the_status`).
+    계약이 값을 약속했으면 그 값을 재는 시험이 있어야 한다.
+    """
+    base, fake = fake_viz
+    fake.status = 413
+    fake.body = RENDER_TOO_LARGE
+    r = _create(p2_client(viz_base_url=base))
+    assert r.status_code == 413, r.text
+    assert r.json() == RENDER_TOO_LARGE
+    assert r.json()["details"]["limitBytes"], \
+        "상한이 사라졌다 — 사용자는 무엇이 넘쳤는지 알 수 없다."
+
+
 @pytest.mark.parametrize("status", [400, 404, 410, 413, 415, 422])
 def test_every_pass_through_status_keeps_its_own_status(p2_client, fake_viz, status) -> None:
     base, fake = fake_viz
