@@ -2,6 +2,24 @@
    ⚠ **크림슨 액센트는 검색 히어로에만 쓴다** (`Policy_홈_대시보드 §8` 색 · E-00).
    데이터 맵·지표·할 일 함에는 AI 행동이 없으므로 크림슨 요소를 두지 않는다. */
 
+/* 화면 뿌리 — 이 레포엔 공용 PageShell 이 없고 **화면 뿌리 클래스가 자기 여백을 적는 관례**다
+   (`project.css` `.project-page`·`.project-detail` · `detail.css` `.detail-page`). S-01 만 그 규칙이
+   없어 히어로 밖 구획(`.dash-columns`)이 창 가장자리에 붙었다. 최대폭은 상세 화면과 같은 1200px 다
+   (`catalog.css` 는 최대폭을 두지 않아 기준으로 삼지 않는다). */
+.lab-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+/* 히어로는 **자기 좌우 여백을 뿌리에 넘긴다** — 둘 다 두면 좁은 창에서 40px 로 겹친다.
+   히어로는 가장자리까지 가는 요소가 아니라 720px 로 가운데 서는 요소라 뿌리 여백 안에서도
+   보이는 폭이 달라지지 않는다 (`search.css` 는 S-06 도 쓰므로 여기서 스코프해 끈다). */
+.lab-page .search-hero {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .dash-columns {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);

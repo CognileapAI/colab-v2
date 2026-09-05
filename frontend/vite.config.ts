@@ -20,6 +20,6 @@ export default defineConfig(({ mode }) => ({
     // 계산값이 필요해 project.css·shell.css 를 더한다. jsdom 이 못 재는 `var()` 배경·`gap` 은
     // 규칙 원문(`?raw`)으로 잰다 — 이 스텁은 `?raw` id 까지 빈 문자열로 만들므로 함께 허용한다.
     // (`node:fs` 는 쓰지 않는다 — `e01-apply-points.test.ts:14` 의 배포 불가 사고.)
-    css: { include: [/catalog\.css$/, /project\.css(\?raw)?$/, /shell\.css(\?raw)?$/] },
+    css: { include: [/catalog\.css$/, /project\.css(\?raw)?$/, /shell\.css(\?raw)?$/, /dashboard\.css(\?raw)?$/, /search\.css(\?raw)?$/] },
   },
 }));
