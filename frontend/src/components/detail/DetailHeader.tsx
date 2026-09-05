@@ -22,6 +22,12 @@ import type { DatasetDetail } from './types';
  */
 const SUMMARY_SEPARATOR = '／';
 
+/**
+ * 설명이 비어 있는 기존 행에 뜨는 한 줄 (PRD-15 축자 · 미결-5 ⓐ).
+ * **문면을 여기 한 곳에만 둔다** — 시험이 이 상수와 화면을 함께 잰다.
+ */
+export const EMPTY_SUMMARY_NOTICE = '설명이 아직 없어요 — 수정에서 채워 주세요';
+
 function summarySegments(summary: string): string[] {
   return summary
     .split(SUMMARY_SEPARATOR)
@@ -50,6 +56,15 @@ export function DetailHeader(props: {
           <div className="dh-file" data-testid="dh-file">
             {d.fileName}
           </div>
+        ) : null}
+        {/* ⭑ **⟨19차 해제 · PRD-15 · 미결-5 ⓐ⟩ 설명이 빈 기존 행의 자리.**
+            설명은 이제 필수지만 **이미 있는 행은 그대로 둔다**(`NOT NULL` 금지 · 일괄
+            채우기 금지). 그래서 이 화면은 **비어 있어도 깨지지 않고**, 대신 어디서
+            채우는지를 한 줄로 알린다. ⛔ 지어낸 요약을 대신 그리지 않는다. */}
+        {!d.summary ? (
+          <p className="dh-sum-empty" data-testid="dh-sum-empty">
+            {EMPTY_SUMMARY_NOTICE}
+          </p>
         ) : null}
         {d.summary ? (
           <div className="dh-sum" data-testid="dh-sum">

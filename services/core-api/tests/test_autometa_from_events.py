@@ -85,7 +85,8 @@ def _autometa(sql, dataset_id: str) -> dict:
 
 
 def _register(client, receipt, **extra):
-    body = {"uploadId": receipt["uploadId"], "name": "자동 정보 반영 시험", **extra}
+    body = {"uploadId": receipt["uploadId"], "name": "자동 정보 반영 시험",
+            "summary": "시험용 설명 한 줄", **extra}
     return client.post(f"{API_PREFIX}/datasets", json=body, headers=auth(TOKEN_RES))
 
 

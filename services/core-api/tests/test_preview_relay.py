@@ -180,7 +180,8 @@ def test_when_the_render_server_is_unreachable_registration_still_works(p2_clien
 
     receipt = make_upload(client)
     registered = client.post(f"{API_PREFIX}/datasets",
-                             json={"uploadId": receipt["uploadId"], "name": "미리보기 없이 등록"},
+                             json={"uploadId": receipt["uploadId"], "name": "미리보기 없이 등록",
+                                   "summary": "시험용 설명 한 줄"},
                              headers=auth(TOKEN_RES))
     assert registered.status_code == 201, "미리보기가 안 된다고 등록이 막혔다 — 정본 :192 위반이다."
 

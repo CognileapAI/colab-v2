@@ -54,13 +54,29 @@
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  max-width: 960px;
+  /* ⭑ ⟨19차 · PRD-28⟩ 좌우 두 칸이 생겨 960px 에서는 입력 칸이 눌린다.
+     수용 기준이 **1280px 폭**을 말하므로 본문이 그 폭을 실제로 쓴다. */
+  max-width: 1232px;
   width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+/* ⭑ ⟨19차 · PRD-28⟩ **미리보기 2 : 입력 3.**
+   rev1 축자 = 「좌우를 반씩 쓰던 것을 미리보기 2 : 입력 3 으로」. 비율은 여기 한 곳에만
+   있다 — 화면 코드가 폭을 계산하면 두 자리가 갈린다.
+   좁은 폭에서는 한 칸으로 접히고 순서는 미리보기 → 입력 그대로다(원본 순서). */
+.up-split {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+  align-items: start;
+}
+.up-split > * { min-width: 0; }
+.up-split-preview, .up-split-form { display: flex; flex-direction: column; gap: 16px; }
+@media (max-width: 1023px) { .up-split { grid-template-columns: 1fr; } }
 
 .up-card, .mapstage, .reggate, .regarea {
   border: 1px solid var(--up-line);
@@ -179,10 +195,29 @@
 .up-steps { margin-top: 16px; }
 .form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 720px) { .form-2 { grid-template-columns: 1fr; } }
+/* ⭑ ⟨19차 · PRD-28⟩ **짧은 값 세 개가 한 줄**이다 — 기간·좌표계·격자.
+   rev1 축자 = 「2+1 로 갈리면 마지막 줄이 반쯤 빈다」. 그래서 2칸 격자에 셋을 넣지 않는다. */
+.form-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .form-3 { grid-template-columns: 1fr; } }
+/* 기간은 두 칸이 한 값이라(`DataPeriod`) 한 셀 안에서 붙는다 — 셀을 둘로 세지 않는다. */
+.form-3 .pair { display: flex; align-items: center; gap: 6px; }
+.form-3 .pair .inp { min-width: 0; flex: 1; }
+.form-3 .pair .tilde { color: var(--up-muted); flex: none; }
 .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .form-row label { font-size: 12px; color: var(--up-muted); display: flex; gap: 6px; align-items: center; }
 .autotag { font-size: 10px; border: 1px solid var(--up-line); border-radius: 9999px; padding: 1px 6px; }
+/* ⭑ ⟨19차 · PRD-15⟩ `필수` 배지. `자동` 과 같은 모양이되 **강조가 반대**다 —
+   자동은 「손대지 마세요」이고 필수는 「여기를 적어 주세요」다. */
+.reqtag {
+  font-size: 10px;
+  border: 1px solid var(--up-ink);
+  border-radius: 9999px;
+  padding: 1px 6px;
+  background: var(--up-ink);
+  color: #fff;
+}
 .inp, .sel { padding: 8px 10px; border: 1px solid var(--up-line); border-radius: 8px; font: inherit; }
+textarea.inp { resize: vertical; line-height: 1.5; }
 .inp[readonly] { background: #fafbfc; color: var(--up-muted); }
 .fieldlbl { font-size: 12px; color: var(--up-muted); margin: 12px 0 8px; }
 

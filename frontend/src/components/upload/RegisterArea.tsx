@@ -8,6 +8,9 @@
 //  - **한 번에 한 단계만 보인다.** 나머지 둘은 화면에서 빠진다.
 //  - **막지 않는다** — 앞 단계를 채웠는지 검사하지 않는다.
 //  - 등록 카드는 미리보기 **아래로 이어 붙는다.** 옆에 요약 레일을 세우지 않는다.
+//    ⭑ ⟨19차 · PRD-28⟩ 화면이 좌우 두 칸(`up-split` · 미리보기 2 : 입력 3)으로 갈리면서
+//    그 「아래」가 **오른쪽 칸 안의 아래**가 됐다. 요약 레일은 여전히 없다 — 오른쪽 칸은
+//    요약이 아니라 **사람이 적는 자리**다. 좁은 폭에서는 한 칸으로 접혀 종전 배치가 된다.
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
@@ -75,6 +78,7 @@ function StepOne(props: {
   crs: string;
   onCrs: (v: string) => void;
   nameError: boolean;
+  summaryError: boolean;
 }) {
   const bodies = (props.status?.files ?? []).filter((f) => f.kind === '본체');
   // 조각의 확장자는 **데이터셋당 1값**이다 (`P-5` · PRD-32) — 첫 조각이 곧 전체다.
@@ -108,7 +112,10 @@ function StepOne(props: {
             value={extension ? formatExtension(extension, null) : ''}
           />
           <AutoField label={sizeLabel} value={bytes ? humanSize(bytes) : ''} />
-          <AutoField label="격자" value="" />
+          {/* ⭑ **⟨PRD-28⟩ `격자` 는 이 줄에서 빠져 아래 짧은 값 세 칸 줄로 갔다.**
+              rev1 축자 = 「짧은 값 세 개(기간·좌표계·격자)는 한 줄에 넣었다. 2+1 로 갈리면
+              마지막 줄이 반쯤 빈다」. 자동으로 읽는 값이라는 성질은 그대로라 `자동` 표시와
+              읽기 전용은 따라간다 — 자리만 옮겼다. */}
         </div>
 
         {/* §9 헤더에서 메타데이터를 읽지 못함 — 등록은 막지 않는다 */}
@@ -184,52 +191,70 @@ function StepOne(props: {
             onChange={(e) => props.onVariables(e.target.value)}
           />
         </div>
-        <div className="form-2">
+        {/* ⭑ **⟨PRD-28⟩ 짧은 값 세 개가 한 줄이다** — 기간 · 좌표계 · 격자.
+            기간은 **두 칸이 한 값**이라(`DataPeriod`) 한 칸 안에서 시작~끝을 잇는다.
+            ⛔ 2+1 로 갈라 두 줄로 쓰지 않는다 — 마지막 줄이 반쯤 빈다(rev1 축자). */}
+        <div className="form-3" data-testid="reg-short-row">
           <div className="form-row">
-            <label htmlFor="reg-period-start">{periodLabel} 시작 (선택)</label>
-            <input
-              id="reg-period-start"
-              className="inp"
-              type="date"
-              data-testid="reg-period-start"
-              value={props.periodStart}
-              onChange={(e) => props.onPeriodStart(e.target.value)}
-            />
+            <label htmlFor="reg-period-start">{periodLabel} (선택)</label>
+            <span className="pair">
+              <input
+                id="reg-period-start"
+                className="inp"
+                type="date"
+                data-testid="reg-period-start"
+                value={props.periodStart}
+                onChange={(e) => props.onPeriodStart(e.target.value)}
+              />
+              <span className="tilde">~</span>
+              {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
+              <input
+                id="reg-period-end"
+                className="inp"
+                type="date"
+                aria-label={`${periodLabel} 끝 (비우면 진행 중)`}
+                data-testid="reg-period-end"
+                value={props.periodEnd}
+                onChange={(e) => props.onPeriodEnd(e.target.value)}
+              />
+            </span>
           </div>
           <div className="form-row">
-            {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
-            <label htmlFor="reg-period-end">{periodLabel} 끝 (비우면 진행 중)</label>
+            <label htmlFor="reg-crs">좌표계 (선택)</label>
             <input
-              id="reg-period-end"
+              id="reg-crs"
               className="inp"
-              type="date"
-              data-testid="reg-period-end"
-              value={props.periodEnd}
-              onChange={(e) => props.onPeriodEnd(e.target.value)}
+              data-testid="reg-crs"
+              placeholder="EPSG:5179"
+              value={props.crs}
+              onChange={(e) => props.onCrs(e.target.value)}
             />
           </div>
+          <AutoField label="격자" value="" />
         </div>
+        {/* ⭑ **⟨PRD-15⟩ 설명은 필수이고 칸은 세 줄이다.**
+            rev1 축자 = 「필수로 만든 칸이 한 줄이면 **짧게 쓰라는 신호**가 된다」 —
+            그래서 `필수` 배지와 `textarea rows=3` 이 한 벌이다.
+            ⛔ 칸 아래 안내 문구를 두지 않는다 — rev1 이 없앴다(설명 대신 칸을 키운다). */}
         <div className="form-row">
-          <label htmlFor="reg-crs">좌표계 (선택)</label>
-          <input
-            id="reg-crs"
-            className="inp"
-            data-testid="reg-crs"
-            placeholder="EPSG:5179"
-            value={props.crs}
-            onChange={(e) => props.onCrs(e.target.value)}
-          />
-        </div>
-        <div className="form-row">
-          <label htmlFor="reg-summary">설명 (선택)</label>
-          <input
+          <label htmlFor="reg-summary">
+            설명
+            <span className="reqtag">필수</span>
+          </label>
+          <textarea
             id="reg-summary"
             className="inp"
             data-testid="reg-summary"
+            rows={3}
             maxLength={300}
             value={props.summary}
             onChange={(e) => props.onSummary(e.target.value)}
           />
+          {props.summaryError && (
+            <p className="warn" data-testid="reg-summary-error">
+              설명을 적어 주세요
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -497,6 +522,7 @@ export function RegisterArea(props: {
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
   nameError: boolean;
+  summaryError: boolean;
   registerError: string | null;
   lineageStep?: LineageStepRender | undefined;
   lineageCtx: LineageStepContext;
@@ -550,6 +576,7 @@ export function RegisterArea(props: {
             crs={props.crs}
             onCrs={props.onCrs}
             nameError={props.nameError}
+            summaryError={props.summaryError}
           />
         )}
         {step === 2 && (
