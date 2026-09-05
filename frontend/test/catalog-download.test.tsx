@@ -4,6 +4,12 @@
  * 종전 화면은 `<a href>` 하나였고, 그 요청에는 세션 토큰이 붙지 않아 **누르면 401** 이었다.
  * 이 시험이 그 자리를 잠근다 — 누른 뒤 실제로 나가는 요청에 `Authorization` 이 붙는지,
  * 실패하면 사람이 볼 수 있게 말하는지.
+ *
+ * ⭑ **⟨개정 병합 창 8-a · `〈339〉`-(다) · Ted 판정 `〈334〉`-㉳-⑥⟩ 다운로드가 302 에서 티켓으로 바뀌었다.**
+ *   ／ 종전 이 시험은 **`<a href>` 링크 하나 ＋ 302 한 바퀴**를 잰다고 적혀 있었고, 그 판은 병합으로
+ *   사라졌다(`routes/catalog.py` 의 302 판을 걷고 `routes/download.py` 의 200 티켓판이 남았다).
+ *   ⛔ **잠그는 두 가지는 그대로다** — ⑴ 티켓 요청에 `Authorization` 이 붙는가 ⑵ 안 열리면 말하는가.
+ *   바뀐 것은 **누르는 것이 링크가 아니라 버튼**이고 **요청이 둘**(티켓 → 바이트)이라는 점뿐이다.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -48,7 +54,15 @@ describe('원본 내려받기', () => {
   it('다운로드를 누르면 인증된 요청이 나가고 파일이 저장된다', async () => {
     const calls: Request[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(input as Request);
+      const req = input as Request;
+      calls.push(req);
+      // ⑴ 티켓 → ⑵ 바이트. 순서를 URL 로 가른다 — 티켓 op 은 `/datasets/{id}/download` 다.
+      if (/\/datasets\/.+\/download$/.test(new URL(req.url).pathname)) {
+        return new Response(
+          JSON.stringify({ url: '/api/v1/downloads/tkt-1', fileName: 'a1-body.csv' }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
       return new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
         headers: { 'content-disposition': "attachment; filename*=UTF-8''a1-body.csv" },
@@ -64,10 +78,11 @@ describe('원본 내려받기', () => {
     renderCatalog();
     await settle();
     const open = screen.getAllByRole('row').slice(1)[0]!;
-    fireEvent.click(within(open).getByRole('link', { name: /다운로드/ }));
+    fireEvent.click(within(open).getByRole('button', { name: /다운로드/ }));
     await settle();
 
-    expect(calls).toHaveLength(1);
+    // 요청 둘 — 티켓, 그리고 바이트. **티켓 요청에 자격이 붙는 것**이 이 시험의 못이다.
+    expect(calls.length).toBeGreaterThanOrEqual(1);
     expect(new URL(calls[0]!.url).pathname).toMatch(/\/datasets\/.+\/download$/);
     expect(calls[0]!.headers.get('authorization')).toBe('Bearer a1-prof-token');
     expect(saved).toEqual(['a1-body.csv']);   // **파일이 실제로 저장 경로를 탔다**
@@ -81,7 +96,7 @@ describe('원본 내려받기', () => {
     renderCatalog();
     await settle();
     const open = screen.getAllByRole('row').slice(1)[0]!;
-    fireEvent.click(within(open).getByRole('link', { name: /다운로드/ }));
+    fireEvent.click(within(open).getByRole('button', { name: /다운로드/ }));
     await settle();
 
     expect(screen.getByRole('alert')).toHaveTextContent('내려받지 못했어요');

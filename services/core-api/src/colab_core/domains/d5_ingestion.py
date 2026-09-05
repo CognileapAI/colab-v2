@@ -28,7 +28,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.ingestion import HeldAutoMetadata, UploadFileRecord, UploadRecord
+from ..ports.ingestion import (HeldAutoMetadata, TransferFileRecord, TransferRecord,
+                               UploadFileRecord, UploadRecord)
 
 #: `upload.accepted` 페이로드의 스키마 버전 (`contracts/events/core-pipeline.json`).
 ACCEPTED_SCHEMA_VERSION = "1.0"
@@ -64,7 +65,7 @@ _FIND = text(f"""
 
 _FILES = text("""
     SELECT id, file_name, kind, byte_size, storage_key,
-           carries_lat, carries_lon, detected_format
+           carries_lat, carries_lon, detected_format, relative_path
       FROM d5_upload_file
      WHERE upload_id = :id
      ORDER BY kind DESC, file_name, id
@@ -104,9 +105,9 @@ _INSERT_UPLOAD = text("""
 _INSERT_FILE = text("""
     INSERT INTO d5_upload_file
       (id, lab_id, upload_id, kind, file_name, byte_size, storage_key,
-       carries_lat, carries_lon)
+       carries_lat, carries_lon, relative_path)
     VALUES (:id, current_lab_id(), :upload_id, :kind, :file_name, :byte_size, :storage_key,
-            :carries_lat, :carries_lon)
+            :carries_lat, :carries_lon, :relative_path)
 """)
 
 # outbox 한 줄. 멱등 키가 `<타입>:<uploadId>` 라 **재기입해도 행이 하나**다 —
@@ -178,6 +179,9 @@ class UploadLedgerAdapter:
                 storage_key=r["storage_key"],
                 carries_lat=bool(r["carries_lat"]), carries_lon=bool(r["carries_lon"]),
                 detected_format=r["detected_format"],
+                # 0008 의 열. 쓰기만 하고 읽지 않던 열이었다 — 등록 전환이 `d3_file` 로
+                # 승계하려면(0009 · `〈339〉-(나)`) 여기서 읽어야 한다.
+                relative_path=r["relative_path"],
             )
             for r in rows
         ]
@@ -277,6 +281,7 @@ class UploadLedgerAdapter:
                 "file_name": f.file_name, "byte_size": f.byte_size,
                 "storage_key": f.storage_key,
                 "carries_lat": f.carries_lat, "carries_lon": f.carries_lon,
+                "relative_path": f.relative_path,
             })
 
     def publish_accepted(self, *, upload_id: Ulid, actor_account_id: Ulid,
@@ -308,3 +313,152 @@ class UploadLedgerAdapter:
 
     def reap_expired(self, now: dt.datetime | None = None) -> list[str]:
         return [r[0] for r in self._session.execute(_REAP, {"now": now}).all()]
+
+
+# ═══════════════════════ 프리사인드 전송 원장 (〈338〉) ═══════════════════════
+# `d5_*` 를 만지는 core-api 모듈은 이 파일 하나뿐이라는 규칙(`test_upload_ledger_hidden`)
+# 때문에 전송 원장의 SQL 도 여기 산다. 전송은 `d5_upload` 이전의 세계다 — 완결(complete)
+# 시 라우트가 같은 ULID 로 `accept()` 를 불러 기존 원장으로 승계한다.
+
+_T_INSERT = text("""
+    INSERT INTO d5_upload_transfer
+      (id, lab_id, uploader_account_id, source_label, expires_at)
+    VALUES (:id, current_lab_id(), :uploader, :source_label, :expires_at)
+""")
+
+_T_INSERT_FILE = text("""
+    INSERT INTO d5_upload_transfer_file
+      (id, lab_id, transfer_id, kind, file_name, relative_path, byte_size,
+       storage_key, part_size)
+    VALUES (:id, current_lab_id(), :transfer_id, :kind, :file_name, :relative_path,
+            :byte_size, :storage_key, :part_size)
+""")
+
+_T_FIND = text("SELECT * FROM d5_upload_transfer WHERE id = :id")
+
+_T_FILES = text("""
+    SELECT * FROM d5_upload_transfer_file
+     WHERE transfer_id = :transfer_id
+     ORDER BY created_at, id
+""")
+
+_T_SET_REF = text("""
+    UPDATE d5_upload_transfer_file SET transfer_ref = :ref
+     WHERE id = :id AND transfer_ref IS NULL
+     RETURNING transfer_ref
+""")
+
+_T_SET_OUTCOME = text("UPDATE d5_upload_transfer_file SET outcome = :outcome WHERE id = :id")
+
+_T_COMPLETE = text("""
+    UPDATE d5_upload_transfer SET completed_at = now()
+     WHERE id = :id AND completed_at IS NULL
+     RETURNING id
+""")
+
+# 본인 것만 — 배너는 남의 미완료를 보여 줄 이유가 없다 (연구실 경계는 RLS 가 먼저 긋는다).
+_T_INCOMPLETE = text("""
+    SELECT t.*,
+           count(*) FILTER (WHERE f.outcome = '올라감')            AS uploaded_files,
+           count(f.id)                                             AS planned_files,
+           COALESCE(sum(f.byte_size) FILTER (WHERE f.outcome = '올라감'), 0) AS uploaded_bytes,
+           COALESCE(sum(f.byte_size), 0)                           AS planned_bytes
+      FROM d5_upload_transfer t
+      JOIN d5_upload_transfer_file f ON f.transfer_id = t.id
+     WHERE t.uploader_account_id = :uploader
+       AND t.completed_at IS NULL
+       AND t.expires_at > COALESCE(:now, now())
+     GROUP BY t.id
+     ORDER BY t.created_at DESC
+""")
+
+_T_EXPIRED = text("""
+    SELECT id FROM d5_upload_transfer
+     WHERE completed_at IS NULL AND expires_at <= COALESCE(:now, now())
+""")
+
+_T_DELETE = text("DELETE FROM d5_upload_transfer WHERE id = :id")
+
+
+def _transfer(row) -> TransferRecord:
+    return TransferRecord(
+        transfer_id=row["id"], uploader_account_id=row["uploader_account_id"],
+        source_label=row["source_label"], created_at=row["created_at"],
+        expires_at=row["expires_at"], completed_at=row["completed_at"],
+    )
+
+
+def _transfer_file(row) -> TransferFileRecord:
+    return TransferFileRecord(
+        file_id=row["id"], file_name=row["file_name"], kind=row["kind"],
+        byte_size=row["byte_size"], storage_key=row["storage_key"],
+        relative_path=row["relative_path"], part_size=row["part_size"],
+        transfer_ref=row["transfer_ref"], outcome=row["outcome"],
+    )
+
+
+class UploadTransferAdapter:
+    """전송 원장의 유일한 구현. 소비자는 `routes/upload_transfers.py` 하나다."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def open(self, *, transfer_id: Ulid, uploader_account_id: Ulid, source_label: str,
+             expires_at: dt.datetime, files: list[TransferFileRecord]) -> None:
+        self._session.execute(_T_INSERT, {
+            "id": str(transfer_id), "uploader": str(uploader_account_id),
+            "source_label": source_label, "expires_at": expires_at,
+        })
+        for f in files:
+            self._session.execute(_T_INSERT_FILE, {
+                "id": f.file_id, "transfer_id": str(transfer_id), "kind": f.kind,
+                "file_name": f.file_name, "relative_path": f.relative_path,
+                "byte_size": f.byte_size, "storage_key": f.storage_key,
+                "part_size": f.part_size,
+            })
+
+    def find(self, transfer_id: Ulid) -> TransferRecord | None:
+        row = self._session.execute(_T_FIND, {"id": str(transfer_id)}).mappings().first()
+        return None if row is None else _transfer(row)
+
+    def files(self, transfer_id: Ulid,
+              file_ids: list[str] | None = None) -> list[TransferFileRecord]:
+        rows = self._session.execute(
+            _T_FILES, {"transfer_id": str(transfer_id)}).mappings().all()
+        out = [_transfer_file(r) for r in rows]
+        if file_ids is not None:
+            wanted = set(file_ids)
+            out = [f for f in out if f.file_id in wanted]
+        return out
+
+    def set_ref(self, file_id: str, ref: str) -> None:
+        """멀티파트 UploadId 는 한 번만 적힌다 — 두 번째 시작 요청은 기존 값을 유지한다."""
+        self._session.execute(_T_SET_REF, {"id": file_id, "ref": ref})
+
+    def set_outcome(self, file_id: str, outcome: str) -> None:
+        self._session.execute(_T_SET_OUTCOME, {"id": file_id, "outcome": outcome})
+
+    def complete(self, transfer_id: Ulid) -> bool:
+        """완결 도장. 이미 찍혀 있으면 False — 호출자가 409 를 낸다."""
+        return self._session.execute(
+            _T_COMPLETE, {"id": str(transfer_id)}).first() is not None
+
+    def incomplete_for(self, uploader_account_id: Ulid,
+                       now: dt.datetime | None = None) -> list[dict]:
+        rows = self._session.execute(
+            _T_INCOMPLETE, {"uploader": str(uploader_account_id), "now": now}).mappings().all()
+        return [{
+            "record": _transfer(r),
+            "uploaded_files": int(r["uploaded_files"]),
+            "planned_files": int(r["planned_files"]),
+            "uploaded_bytes": int(r["uploaded_bytes"]),
+            "planned_bytes": int(r["planned_bytes"]),
+        } for r in rows]
+
+    def expired_open(self, now: dt.datetime | None = None) -> list[str]:
+        """만료된 미완결 전송 id — 지연 정리 대상. **원장이 아는 것만** 지운다 (버킷
+        루트 감사 금지 — 개발자별 버킷에서 다른 원장의 데이터를 지우게 된다)."""
+        return [r[0] for r in self._session.execute(_T_EXPIRED, {"now": now}).all()]
+
+    def delete(self, transfer_id: str) -> None:
+        self._session.execute(_T_DELETE, {"id": transfer_id})

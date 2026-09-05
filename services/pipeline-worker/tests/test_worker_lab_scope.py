@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
+from colab_pipeline.kernel.blob_backends import LocalUploadBlobs
 from colab_pipeline.app.worker import ENV_ACCOUNT, ENV_LAB, ENV_UPLOAD_DIR, run_once
 from colab_pipeline.domains.d5_ingestion import SqlLedger
 from colab_pipeline.kernel import storage_layout
@@ -216,8 +217,13 @@ def test_an_exception_in_one_lab_pass_leaks_no_scope_to_the_next(factory, tmp_pa
 
     monkeypatch.setattr(worker_mod, "drive_uploads", _boom)
     with pytest.raises(RuntimeError):
+        # ⭑ ⟨병합 창 8-a⟩ `upload_dir=<경로>` → `blobs=<UploadBlobPort>`. PR #1 의 저장 Port
+        #   (`〈337〉`·`V-4`)가 바이트를 여는 자리를 Port 뒤로 옮기면서 인자 이름이 바뀌었다.
+        #   ⛔ **이 시험이 재는 것은 그대로다** — 「한 연구실 바퀴가 터져도 다음 바퀴에
+        #   스코프가 새지 않는다」. local 백엔드를 그대로 꽂아 종전과 같은 자리를 가리킨다.
         worker_mod._lab_pass(factory, _LAB_A, worker_account=_ACC_A,
-                             upload_dir=tmp_path / "store", workdir=tmp_path / "w",
+                             blobs=LocalUploadBlobs(tmp_path / "store"),
+                             workdir=tmp_path / "w",
                              publish=lambda _e: None)
 
     s = factory()          # 풀에서 같은 커넥션이 돌아온다

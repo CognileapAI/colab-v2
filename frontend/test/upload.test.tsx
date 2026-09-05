@@ -10,12 +10,13 @@
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
+import { apiUploadSource } from '../src/components/upload/uploadSource';
 import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
 import type { PreviewHandoff } from '../src/components/preview/types';
-import { UploadGone } from '../src/components/upload/types';
+import { TransferInterrupted, UploadGone } from '../src/components/upload/types';
 import type {
   LineageStepContext,
   PreviewSource,
@@ -85,13 +86,24 @@ function fakes(
     projects?: Schemas['ProjectRow'][];
     registerThrows?: unknown;
     attachThrows?: unknown;
+    /** 접수(create)를 실패시킨다 — 이 스위치가 없어서 「접수 실패 시 화면」이 한 번도 시험된 적이 없다. */
+    createThrows?: unknown;
+    /** 이 횟수까지만 던진다(재시도 시험용). 없으면 매번 던진다. */
+    createThrowsUntil?: number;
+    /** 접수 중 진행률을 한 번 흘리고 **전송을 붙잡는다** — `release()` 를 불러야 끝난다. */
+    progress?: { sentBytes: number; totalBytes: number };
     suggestions?: Partial<LineageSuggestionResponse>;
     suggestionsThrows?: unknown;
     candidates?: DatasetRow[];
   } = {},
 ) {
+  let release: () => void = () => {};
   const calls = {
     create: 0,
+    /** 모달이 `onProgress` 를 실제로 넘겼는가 — 배선의 유일한 증거다. */
+    onProgressGiven: false,
+    /** 접수 호출마다 실린 옵션 — **무엇을 싣고 갔는지**가 원장이 느는지를 가른다. */
+    createOpts: [] as (Record<string, unknown> | undefined)[],
     status: 0,
     register: 0,
     createRender: [] as Record<string, unknown>[],
@@ -140,8 +152,18 @@ function fakes(
   let jobIdx = 0;
 
   const upload: UploadSource = {
-    async create(files) {
+    async create(files, opts) {
       calls.create += 1;
+      calls.onProgressGiven = typeof opts?.onProgress === 'function';
+      calls.createOpts.push(opts as unknown as Record<string, unknown> | undefined);
+      if (over.createThrows !== undefined
+          && (over.createThrowsUntil === undefined || calls.create <= over.createThrowsUntil)) {
+        throw over.createThrows;
+      }
+      if (over.progress) {
+        opts?.onProgress?.(over.progress);
+        await new Promise<void>((r) => { release = r; });
+      }
       return {
         uploadId: UPLOAD_ID,
         files: files.map((f, i) => ({
@@ -170,6 +192,8 @@ function fakes(
           fileId: FILE_ID2,
           fileName: 'lat.npy',
           kind: '기준 격자 파일',
+          byteSize: 4,
+          createdAt: '2026-08-29T00:00:00Z',
           gridAxis: { carriesLat: true, carriesLon: false },
         },
       ];
@@ -247,7 +271,12 @@ function fakes(
       );
     },
   };
-  return { sources: { upload, preview, projects, lineage } as UploadSources, calls };
+  return {
+    sources: { upload, preview, projects, lineage } as UploadSources,
+    calls,
+    /** 붙잡아 둔 전송을 끝낸다(`progress` 를 준 경우). */
+    release: () => release(),
+  };
 }
 
 /** KWRA 묶음의 제안 응답 — 부모 후보 2건(주입력 NDVI · 보조입력 DEM) + 가공 방식 1건. */
@@ -394,7 +423,8 @@ describe('§8 파일 놓기 — 여러 개 · 조각 요약 · 파일 종류 2�
     const { sources } = fakes();
     await openModal(sources);
     expect(screen.getByTestId('up-drop-input')).toHaveAttribute('multiple');
-    expect(screen.getByTestId('up-drop')).toHaveTextContent('여러 개를 한 번에 놓아도 돼요');
+    // 폴더는 드롭으로만 받는다 — 화면이 그 말을 해야 사람이 누르다 막히지 않는다.
+    expect(screen.getByTestId('up-drop')).toHaveTextContent('여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요');
     await dropFiles([makeFile('a.nc'), makeFile('b.nc')]);
     expect(screen.getByTestId('up-files')).toBeInTheDocument();
   });
@@ -1069,6 +1099,124 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
   });
 });
 
+// ───────────────────────────────────────────────────────────────────────────
+// §9 접수 실패 — **침묵하지 않는다**
+//
+// 접수(`create`)가 실패하면 화면이 아무 말도 하지 않았다. 엔진(`transferSource`·
+// `uploadSource`)이 만든 구체적 문장이 모달의 `.catch` 에서 통째로 버려졌고,
+// 그것을 그릴 자리조차 없었다. **가짜 소스에 `create` 를 실패시키는 스위치가
+// 없었던 것**이 이 공백의 실물이다 — 그래서 초록불이 유지됐다.
+describe('§9 접수 실패 — 침묵하지 않는다', () => {
+  it('접수가 실패하면 **서버가 준 문장 그대로** 화면에 세운다', async () => {
+    const { sources } = fakes({
+      createThrows: new Error('받을 수 없는 파일이 있어요 — a.nc: 이름을 정규화할 수 없다'),
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    expect(await screen.findByTestId('up-intake-error')).toHaveTextContent(
+      '받을 수 없는 파일이 있어요 — a.nc: 이름을 정규화할 수 없다',
+    );
+  });
+
+  it('메시지가 없는 실패는 정본 문구로 답한다 — 빈 화면을 두지 않는다', async () => {
+    const { sources } = fakes({ createThrows: {} });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    expect(await screen.findByTestId('up-intake-error')).toHaveTextContent(
+      '올리다가 끊겼어요. 다시 시도해 주세요.',
+    );
+  });
+
+  it('[다시 시도]가 **이어서** 접수한다 — 새 전송을 만들지 않는다', async () => {
+    // ⚠ 이 시험의 이전 판은 `calls.create === 2` 만 봤다. 그것 자체는 맞지만 **두 번째가
+    //   무엇을 싣고 갔는지**를 안 봤고, 가짜 소스는 원장을 만들지 않아 중복을 **볼 수 없는
+    //   자리**에서 green 을 냈다. 그 사이 실물은 시도마다 전송 원장을 하나씩 늘리고 있었다.
+    const { sources, calls } = fakes({
+      createThrows: new TransferInterrupted('올리다가 끊겼어요. 다시 시도해 주세요.', UPLOAD_ID),
+      createThrowsUntil: 1,
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('up-intake-error');
+    expect(calls.create).toBe(1);
+
+    await click(screen.getByTestId('up-intake-retry'));
+    expect(calls.create).toBe(2);
+    // **핵심** — 두 번째 접수는 그 전송을 이어받는다. 이것이 없으면 원장이 하나 더 선다.
+    expect(calls.createOpts[1]?.resumeUploadId).toBe(UPLOAD_ID);
+    expect(screen.queryByTestId('up-intake-error')).toBeNull();
+    await screen.findByTestId('reg-gate');
+  });
+
+  it('실패 뒤 **다른 파일**을 놓으면 이어받지 않고 새로 접수한다', async () => {
+    // 실패가 재개를 무장하지만, 사람이 파일을 바꾸면 그 무장은 무효다.
+    // 안 그러면 「이어올리려면 같은 파일을 다시 골라야 해요」가 뜬다 — 그는 바꾸려던 것이다.
+    const { sources, calls } = fakes({
+      createThrows: new TransferInterrupted('올리다가 끊겼어요.', UPLOAD_ID),
+      createThrowsUntil: 1,
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('up-intake-error');
+    await dropFiles([makeFile('b.nc')]);              // **다른 파일**
+    expect(calls.create).toBe(2);
+    expect(calls.createOpts[1]?.resumeUploadId).toBeUndefined();
+  });
+
+  it('접수가 실패한 뒤 [등록]을 눌러도 **조용하지 않다**', async () => {
+    // 등록 게이트는 접수 성패와 무관하게 상시 서 있다. 접수가 실패했으면
+    // `submit()` 이 말없이 return 했다 — 사람은 눌렀는데 아무 일도 안 일어났다.
+    const { sources, calls } = fakes({ createThrows: new Error('올리다가 끊겼어요. 다시 시도해 주세요.') });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('up-intake-error');
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+    expect(await screen.findByTestId('reg-error')).toHaveTextContent(
+      '올리다가 끊겼어요. 다시 시도해 주세요.',
+    );
+    expect(calls.register).toBe(0);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// §D.7 ① 전송 진행률 — **여기만 퍼센트가 정직하다**
+//
+// 엔진(`xhrPut` → `transferSource`)은 진행률을 완비했는데 **모달이 그것을 안 넘겼다.**
+// 그래서 막대가 프로덕션에서 한 번도 그려진 적이 없다.
+describe('§D.7 ① 전송 진행률', () => {
+  it('모달이 접수에 `onProgress` 를 **넘긴다** — 배선이 끊겨 있었다', async () => {
+    const { sources, calls } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    expect(calls.onProgressGiven).toBe(true);
+  });
+
+  it('본체를 올리는 동안 **퍼센트 막대**가 선다', async () => {
+    const { sources, release } = fakes({ progress: { sentBytes: 3, totalBytes: 4 } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const bar = await screen.findByTestId('up-transfer-progress');
+    expect(bar).toHaveAttribute('value', '75');
+    release();
+    await act(async () => {});
+  });
+
+  it('음성 — 본체를 올리는 동안 「격자 파일을 받는 중」이라고 **말하지 않는다**', async () => {
+    // 진행률은 본체+격자 **전체 바이트**다. 격자가 아닌데 격자라고 말하면
+    // 침묵보다 나쁘다 — 틀린 말이다 (`§E.2` 「처리 중이 아닌 것을 처리 중처럼 말하지 않는다」).
+    const { sources, release } = fakes({ progress: { sentBytes: 1, totalBytes: 2 } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);          // 본체 하나 — 격자 없음
+    await screen.findByTestId('up-transfer-progress');
+    expect(screen.queryByTestId('up-grid-progress')).toBeNull();
+    expect(document.body.textContent).not.toContain('격자 파일을 받는 중');
+    release();
+    await act(async () => {});
+  });
+});
+
 
 // ───────────────────────────────────────────────────────────────────────────
 // ③ 계보 확정 (`P2-EXEC §4` `P2-fe-lineage` · `CLAUDE.md §3` AI 응답 규격)
@@ -1640,5 +1788,90 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
     // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
     expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
     expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// form-data 폴백 (`createUpload`) — 프리사인드가 501 이면 이 경로다 (〈338〉 · 〈339〉-(나)).
+// 계약: `relativePaths` 는 `files` 와 **같은 순서·같은 개수**이고, 빈 문자열 = 경로 없음.
+describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서로 싣는다', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * 프리사인드(501) → form-data 로 떨어지는 fetch 라우터. 받은 multipart 를 그대로 기록한다.
+   * `append` 순서도 따로 적는다 — jsdom 의 File 을 undici `Request` 가 직렬화하면서 파일 **이름**을
+   * 잃는다(환경 한계 · 브라우저는 그렇지 않다). 이름·순서는 append 기록으로, 값은 multipart 로 본다.
+   */
+  function installRouter() {
+    const forms: FormData[] = [];
+    const appends: [string, string][] = [];
+    const Real = FormData;
+    vi.stubGlobal(
+      'FormData',
+      class extends Real {
+        override append(name: string, value: string | Blob, filename?: string) {
+          appends.push([name, typeof value === 'string' ? value : (filename ?? (value as File).name)]);
+          // jsdom 은 인자 **개수**로 오버로드를 고른다 — 세 번째를 undefined 로 넘기면 문자열 값도 Blob 으로 본다
+          if (filename === undefined) super.append(name, value as never);
+          else super.append(name, value as Blob, filename);
+        }
+      },
+    );
+    vi.stubGlobal('fetch', async (req: Request) => {
+      const path = new URL(req.url).pathname.replace('/api/v1', '');
+      const json = (body: unknown, status = 200) =>
+        new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+      if (path === '/uploads/transfers' && req.method === 'POST') {
+        return json({ code: 'NOT_IMPLEMENTED', message: '저장 모드 local' }, 501);
+      }
+      if (path === '/uploads' && req.method === 'POST') {
+        const form = await req.formData();
+        forms.push(form);
+        const files = form.getAll('files') as File[];
+        return json({
+          uploadId: UPLOAD_ID,
+          files: files.map((f, i) => ({
+            fileId: i === 0 ? FILE_ID : FILE_ID2, fileName: f.name, kind: '본체', byteSize: f.size,
+          })),
+        }, 201);
+      }
+      throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
+    });
+    return { forms, appends };
+  }
+
+  it('어느 파일이든 경로가 있으면 전부 싣고, 경로 없는 파일은 빈 문자열이다 — `files` 와 같은 순서', async () => {
+    const { forms, appends } = installRouter();
+    await apiUploadSource().create([
+      { file: new File(['a'], 'a.nc'), kind: '본체', relativePath: '2025/06/a.nc' },
+      { file: new File(['b'], 'b.nc'), kind: '본체' },
+      { file: new File(['c'], 'lat.npy'), kind: '기준 격자 파일', relativePath: 'grid/lat.npy' },
+    ]);
+    // ① 싣는 순서 — 세 배열이 같은 순서다
+    expect(appends).toEqual([
+      ['files', 'a.nc'], ['files', 'b.nc'], ['files', 'lat.npy'],
+      ['fileKinds', '본체'], ['fileKinds', '본체'], ['fileKinds', '기준 격자 파일'],
+      ['relativePaths', '2025/06/a.nc'], ['relativePaths', ''], ['relativePaths', 'grid/lat.npy'],
+    ]);
+    // ② 실제로 나간 multipart 에도 같은 값이 같은 순서로 있다 (개수 = `files` 와 같다)
+    expect(forms).toHaveLength(1);
+    const form = forms[0]!;
+    expect(form.getAll('files')).toHaveLength(3);
+    expect(form.getAll('fileKinds')).toEqual(['본체', '본체', '기준 격자 파일']);
+    expect(form.getAll('relativePaths')).toEqual(['2025/06/a.nc', '', 'grid/lat.npy']);
+  });
+
+  it('아무 파일에도 경로가 없으면 `relativePaths` 를 싣지 않는다 (생략 = 전부 낱개)', async () => {
+    const { forms, appends } = installRouter();
+    await apiUploadSource().create([
+      { file: new File(['a'], 'a.nc'), kind: '본체' },
+      { file: new File(['b'], 'b.nc'), kind: '본체' },
+    ]);
+    expect(appends.map(([k]) => k)).toEqual(['files', 'files', 'fileKinds', 'fileKinds']);
+    const form = forms[0]!;
+    expect(form.getAll('files')).toHaveLength(2);
+    expect(form.has('relativePaths')).toBe(false);
   });
 });

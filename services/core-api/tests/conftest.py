@@ -157,10 +157,15 @@ _RESTORE: tuple[str, ...] = (
        ON CONFLICT (id) DO UPDATE
          SET file_name = EXCLUDED.file_name, size_bytes = EXCLUDED.size_bytes,
              storage_key = EXCLUDED.storage_key""",
+    # `total_size_bytes` 는 **0** — 시드와 같은 규율이다(`seed.sql` autometa 주석). 합계는 트리거
+    # (`0009`)가 `d3_file` 의 INSERT/UPDATE/DELETE 차분으로 유지하므로, 위 `d3_file` 복원(재삽입·
+    # 크기 되돌림)이 곧 합계 복원이다. ON CONFLICT 가 이 열을 안 건드리는 것도 같은 이유 —
+    # 여기서 100 을 다시 쓰면 트리거 차분과 두 번 센다. **다시 세지도 않는다** — 앱 롤로 잠긴
+    # DSA2 의 파일을 세면 0 이 나온다(`body_access`).
     """INSERT INTO d3_dataset_autometa (dataset_id, lab_id, format, variables, crs,
                                         total_size_bytes) VALUES
-         ('0000000000000000000000DSA1', current_lab_id(), 'CSV',    '{강우량}', 'EPSG:5179', 100),
-         ('0000000000000000000000DSA2', current_lab_id(), 'NetCDF', '{강우량}', 'EPSG:5179', 200)
+         ('0000000000000000000000DSA1', current_lab_id(), 'CSV',    '{강우량}', 'EPSG:5179', 0),
+         ('0000000000000000000000DSA2', current_lab_id(), 'NetCDF', '{강우량}', 'EPSG:5179', 0)
        ON CONFLICT (dataset_id) DO UPDATE
          SET crs = EXCLUDED.crs, grid = NULL, format = EXCLUDED.format""",
     """UPDATE d3_dataset SET lineage_confirmed_at = NULL

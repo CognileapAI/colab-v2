@@ -1,35 +1,43 @@
-"""core-api 앱 — fe-core seam **46** 오퍼레이션 전부를 등록한다.
+"""core-api 앱 — fe-core seam **64** 오퍼레이션 전부를 등록한다 (2026-08-29 실측 · `test_route_table.py`).
 
-실동작 **22 개**. P2 가 열둘을 가져왔다 (`P2-EXEC §4 W2 P2-api`) —
-업로드 6(`createUpload` `getUploadStatus` `createDataset` `addDatasetFile`
-`replaceDatasetGridFile` `deleteDatasetGridFile`) · 계보 확정 3(`addLineageParent`
-`removeLineageParent` `confirmLineage`) · 미리보기 중계 2 · AI 제안 중계 1.
-그리고 S1 이 `searchDatasets` 하나를 **신설과 동시에** 가져갔다 — `〈80〉-㉯ 5`(승인된 1회
-계약 동결 해제)가 검색 진입점을 열었고, 열어 두고 안 만들면 501 이 24 → 25 가 된다.
-나머지 **24 개**는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3) — 이 수는 S1 에서
-변하지 않는다 (`〈74〉-㉱` · `C1` 통과 조건 2).
-미구현에 404 를 쓰지 않는다 — 404 는 「경계 밖」의 뜻으로 이미 예약돼 있다 (PLAN-SoT §9-㊱).
+실동작 **45 개**, 나머지 **19 개**는 **501 + ErrorEnvelope** 로 응답한다 (NIGHT-20260823 §3 ·
+표는 `routes/not_implemented.py`). 미구현에 404 를 쓰지 않는다 — 404 는 「경계 밖」의 뜻으로
+이미 예약돼 있다 (PLAN-SoT §9-㊱).
+
+⭑ 이 머리말의 수는 여러 번 낡았다(「54 · 22 · 24」가 8차 해제 뒤에도 남아 있었다). 정본은
+`tests/test_route_table.py`(계약 64)와 `tests/test_not_implemented.py`(501 표 19)이고, 여기는
+그 둘을 옮겨 적을 뿐이다 — 두 시험이 red 면 이 줄도 낡은 것이다.
+
+가져온 이력 — P2 가 열둘(업로드 6 · 계보 확정 3 · 미리보기 중계 2 · AI 제안 중계 1),
+S1 이 `searchDatasets`·`listPalettes`·`listDatasetFieldSuggestions` 를 **신설과 동시에**
+(`〈80〉-㉯ 5` — 열어 두고 안 만들면 501 이 는다), P5 가 프로젝트 셋, `〈90〉` 세션 둘,
+`〈127〉`·`〈150〉` 수정 op 셋, 8차 해제(`〈338〉`)가 프리사인드 전송 9 op(local 모드에서는
+정직한 501), 9차 해제 C2(`〈339〉-(다)`)가 다운로드 셋(`download.router` — 티켓 둘 + 바이트 하나,
+바이트 op 은 `security: []` 로 **티켓이 곧 자격**이다).
 """
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
 
-from ..kernel import errors
+from ..kernel import aws_credentials, errors
 from ..kernel import authn
 from ..kernel.auth import SubjectRegistry
 from ..kernel.credentials import CredentialStore
 from ..kernel.throttle import AttemptLimiter
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
+from ..kernel.download_ticket import DownloadTicketSigner
 from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
-from .routes import (access, catalog, identity, ingestion, insight, lineage, members,
-                     not_implemented, preview, project, session)
+from .routes import (access, catalog, download, identity, ingestion, insight, lineage,
+                     members, not_implemented, preview, project, session, upload_transfers)
 
 API_PREFIX = "/api/v1"
 
@@ -71,6 +79,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.authenticators, app.state.session_issuer = authn.build(
         registry=app.state.subjects, signer=_signer,
         credentials=CredentialStore.from_file(settings.credentials_file))
+    # 다운로드 티켓 서명기 — **같은 비밀값**으로 선다 (`〈339〉-(다)`). 비밀값이 없으면 세우지
+    # 않고 다운로드 op 셋이 503 을 낸다(`routes/download.py`). 조용한 기본 키는 없다.
+    app.state.download_tickets = (DownloadTicketSigner(settings.session_secret)
+                                  if settings.session_secret else None)
     # 시도 제한은 **프로세스 안에서만** 센다 — 한계는 `kernel/throttle.py` 가 적었다.
     app.state.login_limiter = AttemptLimiter(
         max_failures=settings.login_max_failures,
@@ -99,7 +111,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def _healthz() -> dict:
         return {"unit": "core-api", "status": "alive", "implemented": True}
 
-    for router in (session.router, identity.router, members.router, catalog.router, project.router,
+    # 저장 배관 진단 — 배포 검사기(`ops/deploy_doctor.py` ⑪)가 「앱이 어떤 자격증명으로 S3 에 가는가」를
+    # 묻는 자리다 (`PLAN-SoT §9 〈342〉-㉲`). 역시 계약 밖 · `/api/v1` 밖. **키 값은 절대 싣지 않는다** —
+    # 출처(`env|ecs|imds`)와 만료 시각만. 자격증명 사슬이 1초 안에 답하지 않으면 `credentialSource: null`
+    # 과 사유 한 줄로 답한다 — 헬스 경로가 IMDS 타임아웃에 매달리면 오케스트레이터가 멀쩡한 프로세스를 죽인다.
+    @app.get("/healthz/storage", include_in_schema=False)
+    def _healthz_storage(request: Request) -> dict:
+        s = request.app.state.settings
+        if s.storage_mode != "s3":
+            return {"storageMode": s.storage_mode}
+        out: dict = {"storageMode": "s3", "bucket": s.s3_bucket, "region": s.s3_region}
+        pool = ThreadPoolExecutor(max_workers=1)
+        try:
+            creds, source = pool.submit(aws_credentials.load_credentials).result(timeout=1.0)
+        except FutureTimeout:
+            out.update(credentialSource=None, error="자격증명 조회가 1초 안에 끝나지 않았다 (env→ECS→IMDSv2)")
+        except RuntimeError:
+            out.update(credentialSource=None, error="자격증명을 찾지 못했다 (env→ECS→IMDSv2 — S3.md §1)")
+        else:
+            out["credentialSource"] = source
+            if creds.expires_at is not None:
+                out["expiresAt"] = creds.expires_at.isoformat()
+        finally:
+            pool.shutdown(wait=False)
+        return out
+
+    for router in (session.router, identity.router, members.router, catalog.router,
+                   # 다운로드 셋 — 경로가 다른 라우터의 글자 경로와 겹치지 않는다(`/datasets/{id}/download`
+                   # · `/datasets/{id}/files/{id}/download` 는 세그먼트 수가 다르고 `/downloads/` 는
+                   # 이 라우터뿐). 순서는 뜻이 없지만 카탈로그 옆에 둔다 — 같은 `catalog` 태그다.
+                   download.router,
+                   project.router,
+                   upload_transfers.router,  # /uploads/transfers 가 /uploads/{uploadId} 보다 먼저
                    ingestion.router, lineage.router, preview.router, access.router,
                    insight.router):
         app.include_router(router, prefix=API_PREFIX)

@@ -23,8 +23,11 @@ import numpy as np
 
 from ...kernel import signing
 from ...kernel.ids import new_ulid
+from ...kernel.preview_sinks import LocalPreviewSink
+from ...ports.preview_sink import PreviewSinkPort
 from ...ports.source import ResolvedTarget, SourcePart
 from . import colormap, downsample, invalidation, palettes, preview, raster, scale
+from .source_digest import source_digest
 from .failures import FAILURE_MESSAGES, NotRenderableError, RenderError, RenderFailure
 from .grid import GridUnavailableError, find_reference_grid
 from .readers import Field, FieldReadError, read_field
@@ -64,6 +67,8 @@ class RenderSpec:
     deadline_seconds: float
     preview_dir: Path
     preview_url_base: str
+    #: 산출물을 서빙 자리로 내보내는 싱크 (`〈342〉-㉮`). 기본은 로컬(no-op — nginx 가 디렉터리를 서빙).
+    preview_sink: PreviewSinkPort = field(default_factory=LocalPreviewSink)
 
 
 @dataclass
@@ -305,17 +310,12 @@ def _read_part(part: SourcePart, spec: RenderSpec) -> _Read:
 
 
 def _source_digest(reads: list[_Read]) -> str:
-    """원본을 가리키는 값 (`§7.2` 「원본 해시」).
+    """원본을 가리키는 값 (`§7.2` 「원본 해시」) — 규칙은 `source_digest.py` 한 곳에 있다.
 
-    ⚠ **내용 해시가 아니다.** 500 MB 를 렌더마다 다시 읽는 비용을 아직 안 쟀다 —
-    `[미측정]`. 지금은 `(파일명, 크기, 수정시각)` 이고, **원본이 바뀌면 키가 바뀐다**는
-    성질은 그대로 선다. 내용 해시로 바꾸는 것은 이 함수 하나를 고치는 일이다.
+    파일시스템 조각은 `(파일명, 크기, 수정시각)` 그대로이고, S3 조각은 ETag 를 쓴다 —
+    내려받은 파일의 mtime 을 키에 넣으면 렌더마다 새 키가 나와 `previews/` 가 무한히 는다.
     """
-    h = hashlib.sha256()
-    for r in sorted(reads, key=lambda r: r.part.file_name):
-        st = r.part.path.stat()
-        h.update(f"{r.part.file_name}|{st.st_size}|{st.st_mtime_ns}|".encode())
-    return h.hexdigest()
+    return source_digest([r.part for r in reads])
 
 
 #: 이 개수 이하의 격자는 **전량**을 해시한다. f8 기준 512 KB — 해시 비용이 렌더 한 회의
@@ -566,6 +566,8 @@ def _run(job: RenderJob) -> None:
             job.rendered = merged
             job.artifacts = _build_artifacts(job, reads, merged, color_range)
             job.badge = _badge_for(reads, job.artifacts.map_image is not None)
+        # 산출물이 디스크에 다 놓인 뒤 서빙 자리로 — 실패는 렌더 실패다(반쪽 미리보기를 「완료」로 내지 않는다).
+        spec.preview_sink.publish(job.artifacts.all())
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),

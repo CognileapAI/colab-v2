@@ -1,6 +1,6 @@
 // S-03 카탈로그 — 뭐가 있는지 훑는 길. **AI 를 쓰지 않는다** (`Policy_데이터_찾기 §1.2`).
 // 조건과 정렬은 전부 표 헤더에 있다. 자연어 입력칸도 조건 툴바도 여기 없다.
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppliedConditions } from '../components/catalog/AppliedConditions';
 import { CatalogTable } from '../components/catalog/CatalogTable';
@@ -8,11 +8,15 @@ import { defaultCatalogSource } from '../components/catalog/catalogSource';
 import { useCatalog } from '../components/catalog/useCatalog';
 import { LoadFailure } from '../components/common/LoadFailure';
 import type { CatalogFilters, CatalogSource } from '../components/catalog/types';
+import { describeFileError } from '../components/detail/FileList';
+import { useStartDownload } from '../components/detail/download';
+import { apiFileSource } from '../components/detail/fileSource';
+import type { FileSource } from '../components/detail/types';
 import { VerifiedBadgeSlot } from '../placeholders/VerifiedBadgeSlot';
 import { LockIndicatorSlot } from '../placeholders/LockIndicatorSlot';
 import '../components/catalog/catalog.css';
 
-export function DatasetsPage(props: { source?: CatalogSource } = {}) {
+export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileSource } = {}) {
   const navigate = useNavigate();
   // 서버가 유일한 출처다 — 못 읽으면 못 읽었다고 말한다 (`catalogSource.ts` 2026-09-03 개정)
   const source = useMemo(() => props.source ?? defaultCatalogSource(), [props.source]);
@@ -29,6 +33,10 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
     return filters;
   }, [params]);
   const state = useCatalog(source, initialFilters);
+  // 빠른 작업의 다운로드는 **티켓**이다 (`〈339〉-(다)`). 읽기 폴백을 두는 표와 달리 여기는 폴백이 없다
+  const fileSource = useMemo(() => props.fileSource ?? apiFileSource(), [props.fileSource]);
+  const download = useStartDownload();
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // 업로더 조건은 계정 ID 로 걸지만 사람에게는 이름을 보인다 (계약 `FilterUploader`)
   const uploaderNames = useMemo(
@@ -42,6 +50,23 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
   // 조회 중(`list === null` · `error === null`)에도 아직 모르는 수를 지어내지 않는다.
   const shown = state.list?.totalCount ?? null;
   const base = state.baseTotal;
+
+  function onDownload(datasetId: string) {
+    setDownloadError(null);
+    // **어느 행이 실패했는지 말한다.** 표에는 행이 여럿이라 서버 문장만 내리면 사람이
+    // 어느 데이터셋 이야기인지 모른다(`main` 줄기 `ST-1`/`CT-1` 의 문안 규약 · 시험이 잠근다).
+    // 서버가 제 문장을 준 경우 그것도 버리지 않는다 — 이름 뒤에 붙인다(PR #1 줄기의 태도).
+    const name = (state.list?.items ?? []).find((r) => r.datasetId === datasetId)?.name ?? null;
+    fileSource
+      .downloadTicket(datasetId)
+      .then(download)
+      .catch((e: unknown) => {
+        const said = describeFileError(e);
+        setDownloadError(
+          name ? `${name} 을(를) 내려받지 못했어요. ${said}` : `내려받지 못했어요. ${said}`,
+        );
+      });
+  }
 
   return (
     <div className="catalog-page" data-screen="S-03">
@@ -73,10 +98,16 @@ export function DatasetsPage(props: { source?: CatalogSource } = {}) {
               onToggle={state.toggleValue}
               onClearAll={state.clearAll}
             />
+            {downloadError ? (
+              <p className="dl-error" role="alert" data-testid="dl-error">
+                {downloadError}
+              </p>
+            ) : null}
             <CatalogTable
               state={state}
               uploaderNames={uploaderNames}
               onOpen={(datasetId) => navigate(`/datasets/${datasetId}`)}
+              onDownload={onDownload}
             />
           </>
         )}

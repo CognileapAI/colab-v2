@@ -10,6 +10,8 @@
 // 「없는 주소」(`DatasetGone`) · 401 은 `api/client.ts` 가 토큰을 버려 `AuthGate` 로 넘긴다 ·
 // 그 밖의 실패는 **못 읽었다**(`useDatasetDetail` 의 `error`)고 말한다.
 import { api } from '../../api/client';
+// ⛔ 픽스처 폴백(`fixtureDetailSource`)은 되살리지 않는다 — `3e74dae`(main)가 걷은 것이고
+//    PR #1 줄기는 그 회차 이전이라 아직 들고 있었다. 되살리면 실존 데이터셋이 「없는 주소」가 된다.
 import { DatasetGone, DatasetTombstone, type DetailSource } from './types';
 
 export function apiDetailSource(): DetailSource {

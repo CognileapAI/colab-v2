@@ -47,7 +47,11 @@ from ..domains.d5_ingestion import (
     relay_unpublished,
 )
 from ..kernel import storage_layout
+from ..kernel.blob_backends import ENV_UPLOAD_DIR as _ENV_UPLOAD_DIR
+from ..kernel.blob_backends import ENV_WORKDIR as _ENV_WORKDIR
+from ..kernel.blob_backends import LocalUploadBlobs, blob_settings, build_blobs
 from ..kernel.env_file import FILE_SUFFIX, resolve_env_or_file
+from ..ports.blobs import UploadBlobPort
 from ..kernel.db import (
     apply_scope,
     clear_scope,
@@ -62,12 +66,10 @@ from ..kernel.db import (
 ENV_DB = "COLAB_PIPELINE_DB_URL"
 ENV_LAB = "COLAB_WORKER_LAB_ID"
 ENV_ACCOUNT = "COLAB_WORKER_ACCOUNT_ID"
-#: 접수한 바이트가 놓인 자리. **core-api 의 `COLAB_CORE_UPLOAD_DIR` 과 같은 곳**이어야 한다 —
-#: 워커가 파일을 못 열면 감지가 통째로 실패하고, 그 실패는 「형식 인식 실패」로 위장한다.
-ENV_UPLOAD_DIR = "COLAB_WORKER_UPLOAD_DIR"
-#: 워커가 산출물을 두는 자리. stage 1 은 산출물을 만들지 않지만 `run_file` 이 stage 2 에서
-#: 쓰므로 인자를 비워 두지 않는다.
-ENV_WORKDIR = "COLAB_WORKER_WORKDIR"
+#: 저장 경로·모드 env(`COLAB_WORKER_UPLOAD_DIR`·`COLAB_WORKER_WORKDIR`·`COLAB_WORKER_STORAGE_MODE`·
+#: `COLAB_WORKER_S3_*`)의 정본은 `kernel/blob_backends.py` 다 — 여기서는 재수출만 한다.
+ENV_UPLOAD_DIR = _ENV_UPLOAD_DIR
+ENV_WORKDIR = _ENV_WORKDIR
 #: 지도 타일이 놓일 **미리보기 산출물 루트**. viz-render 의 `COLAB_VIZ_PREVIEW_DIR` 과
 #: **같은 볼륨**이어야 한다 — 규약(`contracts/storage/layout.json`)이 루트가 둘이라는
 #: 사실만 못 박고 실제 경로는 배포가 준다. 없으면 stage 2 는 **돌지 않는다**(아래 참조).
@@ -202,10 +204,19 @@ def stage2_declaration(env=None) -> tuple[bool, str]:
     return False, f"{ENV_STAGE2} 미선언 — stage 1 만 돈다(면제 선언 아님 · 유실 감지가 받는다)"
 
 
-def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH,
+def drive_uploads(ledger, *, workdir: Path, upload_dir: Path | None = None,
+                  blobs: UploadBlobPort | None = None, limit: int = BATCH,
                   service=None, stage1: bool = True,
                   previews_root: Path | None = None) -> list[str]:
     """접수분을 stage 1 로 태운다. 돌려주는 것은 **처리한 업로드 id** 다.
+
+    바이트는 `blobs`(`ports/blobs.py`)가 가져온다 — 로컬 디스크든 S3 든 감지·파싱은 로컬 경로만 본다.
+    `upload_dir` 만 주면 로컬 어댑터로 감싼다(현행 호출과 호환). **저장 키 규칙은
+    `kernel/storage_layout` 한 곳에만 있다** — 예전에 같은 규칙이 세 곳에 손으로 적혀 있어
+    사람이 올린 격자가 렌더러에 영영 닿지 않았다(`03-HANDOFF §4 #20`). 격자는 **한 디렉터리**
+    (`workdir/<uploadId>/grid`)에 제 이름으로 놓인다 — 축 판별 사다리가 `.npy` 접미사·파일명을 읽고
+    `_resolve_grid_axes` 가 그 디렉터리를 본다. 본체는 `inputs/<fileId>/<이름>` — 이름이 겹쳐도
+    덮어쓰지 않는다.
 
     **한 건이 실패해도 나머지를 멈추지 않는다** — `process_upload` 는 실패를 예외가 아니라
     `upload.failed` 로 표현하고, 예외가 나는 것은 배관이 깨진 경우뿐이다. 그런 건은 이
@@ -217,27 +228,42 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
     **전 연구실이 정체**했다. 이제 데이터 오류는 여기서 `upload.failed` 로 바뀌어 원장에
     적히고(같은 트랜잭션의 릴레이가 같은 바퀴에 발행한다) 루프는 다음 건으로 간다.
     **배관 고장(DB·IO)은 그대로 올라간다** — 삼키면 유실이 조용해진다.
+
+    s3 모드의 작업 디렉터리는 캐시라 처리(성공·실패 모두) 뒤 `discard` 로 치운다.
     """
+    if blobs is None:
+        if upload_dir is None:
+            raise ValueError("drive_uploads 에는 blobs 또는 upload_dir 중 하나가 있어야 한다")
+        blobs = LocalUploadBlobs(upload_dir)
     service = service or IngestionService(ledger)
     done: list[str] = []
     for row in ledger.pending_uploads(limit=limit):
         upload_id = row["id"]
         files = []
-        for ref in ledger.accepted_files(upload_id):
-            file_id = ref.get("fileId")
-            if not file_id:
-                continue
-            kind = ref.get("kind") or storage_layout.BODY_KIND
-            name = ref.get("fileName") or file_id
-            key = storage_layout.storage_key(upload_id, file_id=file_id, kind=kind,
-                                             file_name=name)
-            blob = _storage_path(upload_dir, upload_id, file_id, kind=kind, file_name=name)
-            # **격자는 이미 제 이름으로 놓여 있다** — 배치가 이름을 보존하기 때문이다
-            # (`layout.json`). 본체만 이름을 잃으므로 그쪽에만 이름 붙은 뷰를 만든다.
-            path = blob if storage_layout.is_grid(kind) else _named_view(
-                blob, workdir / upload_id / "inputs" / file_id, name)
-            files.append(UploadFileWork(file_id=file_id, path=path, kind=kind,
-                                        file_name=name, storage_key=key))
+        try:
+            for ref in ledger.accepted_files(upload_id):
+                file_id = ref.get("fileId")
+                if not file_id:
+                    continue
+                kind = ref.get("kind") or storage_layout.BODY_KIND
+                name = ref.get("fileName") or file_id
+                key = storage_layout.storage_key(upload_id, file_id=file_id, kind=kind,
+                                                 file_name=name)
+                holder = (workdir / upload_id / storage_layout.GRID_DIRNAME
+                          if storage_layout.is_grid(kind)
+                          else workdir / upload_id / "inputs" / file_id)
+                path = blobs.materialize(key=key, dest=holder, file_name=name)
+                files.append(UploadFileWork(file_id=file_id, path=path, kind=kind,
+                                            file_name=name, storage_key=key))
+        except Exception as e:  # noqa: BLE001 — 바이트를 못 가져온 건 배관 문제다
+            # **이 한 건을 건너뛰고 다음 바퀴가 다시 집는다**(`ready` 가 false 라 집합에 남는다).
+            # 여기서 던지면 예외가 `serve()` 를 뚫고 나가 **워커 프로세스가 통째로 죽는다** —
+            # 업로드 한 건의 바이트 사고가 전 연구실의 처리를 멈추게 하지 않는다.
+            # (s3 모드에서 키가 없거나 크기가 어긋나는 경우가 여기로 온다.)
+            print(json.dumps({"event": "upload.blobs_unavailable", "uploadId": upload_id,
+                              "reason": type(e).__name__}, ensure_ascii=False), flush=True)
+            blobs.discard(upload_id)
+            continue
         if not files:
             # 접수 이벤트가 파일을 안 실었다 — 지어내지 않는다. 다음 바퀴가 다시 본다.
             continue
@@ -254,6 +280,11 @@ def drive_uploads(ledger, *, upload_dir: Path, workdir: Path, limit: int = BATCH
             # `failed_at` 이 서므로 `pending_uploads` 가 같은 건을 다시 집지 않는다.
             print(f"upload.failed — {upload_id}: {type(e).__name__}: {e}", flush=True)
             service.record_data_failure(work, e)
+        finally:
+            # s3 모드의 작업 디렉터리는 **캐시**다 — 성공·실패 어느 쪽이든 치운다.
+            # `except` 아래가 아니라 `finally` 인 이유: 데이터 오류로 끝난 건의 내려받은
+            # 바이트도 남겨 두면 워커 디스크가 실패 건수만큼 자란다.
+            blobs.discard(upload_id)
         done.append(upload_id)
     return done
 
@@ -295,7 +326,7 @@ def _target_labs(factory, only_lab: str | None) -> list[str]:
     return [only_lab]
 
 
-def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path,
+def _lab_pass(factory, lab: str, *, worker_account: str | None, blobs: UploadBlobPort,
               workdir: Path, publish, stage1: bool = True,
               previews_root: Path | None = None) -> tuple[list[str], int, list[str]]:
     """연구실 **하나**의 한 바퀴 — 제 트랜잭션 · 제 스코프 · 끝나면 해제.
@@ -308,7 +339,7 @@ def _lab_pass(factory, lab: str, *, worker_account: str | None, upload_dir: Path
         session.begin()
         _scope_lab(session, lab, worker_account)
         ledger = SqlLedger(session)
-        processed = drive_uploads(ledger, upload_dir=upload_dir, workdir=workdir,
+        processed = drive_uploads(ledger, blobs=blobs, workdir=workdir,
                                   stage1=stage1, previews_root=previews_root)
         sent = relay_unpublished(ledger, publish=publish)
         reaped = reap_expired_uploads(ledger)
@@ -353,12 +384,11 @@ def run_once(*, publish=None) -> tuple[list[str], int, list[str]]:
     # `ENV_ACCOUNT` 는 그 연구실 소속일 때만 쓰인다. 경계 자체는 원장 행이 정한다.
     only_lab = os.environ.get(ENV_LAB) or None
     worker_account = os.environ.get(ENV_ACCOUNT) or None
-    upload_dir = os.environ.get(ENV_UPLOAD_DIR)
-    if not upload_dir:
-        # 바이트를 못 여는 워커는 **감지를 못 하면서 「형식 인식 실패」를 낸다** —
-        # 없는 것을 있는 척하지 않고 뜨지 않는 쪽을 고른다 (core-api 의 업로드 저장처와 같은 규칙).
-        raise RuntimeError(f"{ENV_UPLOAD_DIR} 가 없다 — 접수한 바이트를 못 여는 워커는 안 돈다")
-    workdir = Path(os.environ.get(ENV_WORKDIR) or (Path(upload_dir) / "_work"))
+    # 저장 모드·경로 판정은 DB 에 붙기 **전에** — 반쪽 설정(s3 인데 버킷·리전·작업 디렉터리 없음 ·
+    # local 인데 업로드 디렉터리 없음)은 그 이름을 말하며 기동을 거부한다 (`kernel/blob_backends.py`).
+    settings = blob_settings(os.environ)
+    blobs = build_blobs(settings)
+    workdir = settings.workdir
 
     stage2, note = stage2_declaration()
     print(note, flush=True)
@@ -378,7 +408,7 @@ def run_once(*, publish=None) -> tuple[list[str], int, list[str]]:
     try:
         for lab in _target_labs(factory, only_lab):
             p, s, r = _lab_pass(factory, lab, worker_account=worker_account,
-                                upload_dir=Path(upload_dir), workdir=workdir,
+                                blobs=blobs, workdir=workdir,
                                 publish=publish, stage1=not stage2,
                                 previews_root=previews_root)
             processed += p

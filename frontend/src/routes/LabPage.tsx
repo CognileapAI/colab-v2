@@ -19,6 +19,12 @@ import { apiDashboardSource } from '../components/dashboard/dashboardSource';
 import { useDashboard } from '../components/dashboard/useDashboard';
 import type { DashboardSource } from '../components/dashboard/types';
 import { useAccount } from '../permission/session';
+import { PermissionGate } from '../permission/PermissionGate';
+import { UnfinishedUploads } from '../components/upload/UnfinishedUploads';
+import { apiUploadSource } from '../components/upload/uploadSource';
+
+/** 소스는 한 번만 만든다 — 렌더마다 새로 만들면 카드의 effect 가 매번 다시 돈다. */
+const uploadSource = apiUploadSource();
 import '../components/search/search.css';
 import '../components/dashboard/dashboard.css';
 
@@ -35,6 +41,13 @@ export function LabPage(props: { source?: DashboardSource } = {}) {
   return (
     <div className="lab-page" data-screen="S-01" data-fills-in="WU-P7">
       <SearchHero />
+
+      {/* ⚠ **올리다 만 업로드는 할 일 함이 아니다.** 아래 두 구획 중 `내 일` 은 정본이 그룹 셋으로
+          열거한 P7 의 자리이고, 이 절은 그 **위의 별도 절**이다 — 침범하지 않는다.
+          이 배치는 **정본 개정 판정 대기**다(`PLAN-SoT §9 〈342〉` · `S3.md §3`). */}
+      <PermissionGate requires="업로드·편집">
+        <UnfinishedUploads upload={uploadSource} />
+      </PermissionGate>
 
       <div className="dash-columns">
         <div className="dash-col" data-section="우리 연구실">

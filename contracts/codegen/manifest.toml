@@ -46,3 +46,49 @@ id = "storage-layout-viz"
 source = "contracts/storage/layout.json"
 output = "services/viz-render/src/colab_viz/kernel/storage_layout.py"
 command = "python3 contracts/codegen/gen_storage_layout.py {OUT}"
+
+# ── S3 커널 복제 등기 — source 가 계약이 아니라 core-api 커널이다.
+#
+# `kernel/{sigv4,aws_credentials,s3}.py`(SigV4 자작 서명기 · 자격증명 사슬 · S3 컨트롤 플레인
+# 클라이언트)는 core-api 가 정본이고 pipeline-worker·viz-render 도 같은 것을 쓴다.
+# 단위 간 import 가 금지(`gates/config/importlinter.ini` units-independent)라 같은 정본을 옮겨
+# 적고(`ids.py`·`env_file.py` 와 같은 방식), 이 등기가 드리프트를 막는다 — 세 단위의 파일이
+# byte-identical 이어야 `generated-up-to-date` 가 green 이다. 복제본 안의 형제 모듈 참조는
+# 상대 import 라 어느 단위에 놓여도 그 단위의 kernel 을 가리킨다.
+# core 커널을 고치면 같은 커밋에 재생성한다: `cp <source> <output>` 여섯 번, 또는 게이트 red 의
+# 지시대로.
+[[output]]
+id = "s3-kernel-sigv4-pipeline"
+source = "services/core-api/src/colab_core/kernel/sigv4.py"
+output = "services/pipeline-worker/src/colab_pipeline/kernel/sigv4.py"
+command = "cp services/core-api/src/colab_core/kernel/sigv4.py {OUT}"
+
+[[output]]
+id = "s3-kernel-sigv4-viz"
+source = "services/core-api/src/colab_core/kernel/sigv4.py"
+output = "services/viz-render/src/colab_viz/kernel/sigv4.py"
+command = "cp services/core-api/src/colab_core/kernel/sigv4.py {OUT}"
+
+[[output]]
+id = "s3-kernel-aws-credentials-pipeline"
+source = "services/core-api/src/colab_core/kernel/aws_credentials.py"
+output = "services/pipeline-worker/src/colab_pipeline/kernel/aws_credentials.py"
+command = "cp services/core-api/src/colab_core/kernel/aws_credentials.py {OUT}"
+
+[[output]]
+id = "s3-kernel-aws-credentials-viz"
+source = "services/core-api/src/colab_core/kernel/aws_credentials.py"
+output = "services/viz-render/src/colab_viz/kernel/aws_credentials.py"
+command = "cp services/core-api/src/colab_core/kernel/aws_credentials.py {OUT}"
+
+[[output]]
+id = "s3-kernel-s3-pipeline"
+source = "services/core-api/src/colab_core/kernel/s3.py"
+output = "services/pipeline-worker/src/colab_pipeline/kernel/s3.py"
+command = "cp services/core-api/src/colab_core/kernel/s3.py {OUT}"
+
+[[output]]
+id = "s3-kernel-s3-viz"
+source = "services/core-api/src/colab_core/kernel/s3.py"
+output = "services/viz-render/src/colab_viz/kernel/s3.py"
+command = "cp services/core-api/src/colab_core/kernel/s3.py {OUT}"

@@ -36,9 +36,16 @@ MANIFEST = pathlib.Path(
     os.environ.get("COLAB_DB_BOUNDARY_MANIFEST") or (REPO_ROOT / "gates/config/db-boundaries.toml")
 )
 ROOT = pathlib.Path(os.environ.get("COLAB_DB_BOUNDARY_ROOT") or REPO_ROOT)
-COMPOSE = pathlib.Path(
-    os.environ.get("COLAB_DB_BOUNDARY_COMPOSE") or (ROOT / "infra/staging/compose.i2.yml")
+#: 보는 compose 는 **둘 다**다 — staging(`compose.i2.yml`)과 dev(`infra/dev/compose.yml`, `〈342〉`).
+#: `COLAB_DB_BOUNDARY_COMPOSE` 로 바꿀 수 있다(단일 경로 또는 `:` 목록 — selftest 가 단일 경로를 준다).
+#: 목록 중 하나라도 없으면 red 다 — 없는 파일을 건너뛰면 그 배선이 조용히 사각이 된다.
+_COMPOSE_ENV = os.environ.get("COLAB_DB_BOUNDARY_COMPOSE")
+COMPOSES: list[pathlib.Path] = (
+    [pathlib.Path(p) for p in _COMPOSE_ENV.split(":") if p]
+    if _COMPOSE_ENV
+    else [ROOT / "infra/staging/compose.i2.yml", ROOT / "infra/dev/compose.yml"]
 )
+COMPOSE = COMPOSES[0]  # 옛 이름 — 단일 경로를 기대하던 호출자용
 
 SRC_SUBDIRS = ("src", "tests")
 
@@ -196,27 +203,29 @@ def main() -> int:
                                 f"어떤 체인에도 붙지 않는다 ({py.relative_to(ROOT)})"
                             )
 
-    # ③ compose
-    svc_envs = compose_envs(COMPOSE)
-    scanned += 1
+    # ③ compose — 파일마다 따로 판정한다. 서비스명이 곧 단위 키다(`compose_service`).
     by_service = {
         spec.get("compose_service"): (unit, spec.get("chains", []))
         for unit, spec in units.items()
         if spec.get("compose_service")
     }
-    for svc, envs in svc_envs.items():
-        db_envs = [e for e in envs if is_db.search(e)]
-        if not db_envs:
-            continue
-        if svc not in by_service:
-            violations.append(
-                f"compose 서비스 `{svc}` 가 DB URL {db_envs} 를 선언하는데 매니페스트에 없다 — "
-                f"허용 체인을 밝히기 전까지 red 다"
-            )
-            continue
-        unit, allowed = by_service[svc]
-        for env in db_envs:
-            judge(unit, allowed, env, f"{COMPOSE.name}:services.{svc}.environment")
+    for compose in COMPOSES:
+        svc_envs = compose_envs(compose)
+        scanned += 1
+        where_file = str(compose.relative_to(ROOT)) if compose.is_relative_to(ROOT) else compose.name
+        for svc, envs in svc_envs.items():
+            db_envs = [e for e in envs if is_db.search(e)]
+            if not db_envs:
+                continue
+            if svc not in by_service:
+                violations.append(
+                    f"compose 서비스 `{svc}` 가 DB URL {db_envs} 를 선언하는데 매니페스트에 없다 — "
+                    f"허용 체인을 밝히기 전까지 red 다 ({where_file})"
+                )
+                continue
+            unit, allowed = by_service[svc]
+            for env in db_envs:
+                judge(unit, allowed, env, f"{where_file}:services.{svc}.environment")
 
     if not units:
         die("매니페스트의 단위가 0건이다")

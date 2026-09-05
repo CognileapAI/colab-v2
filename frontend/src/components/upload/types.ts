@@ -21,10 +21,26 @@ export class UploadGone extends Error {}
 /** 아직 구현되지 않은 op (`PLAN-SoT §9-㊹` 501 표). */
 export class NotImplemented extends Error {}
 
+/**
+ * 전송이 **원장을 세운 뒤** 끊겼다 — 그 전송은 아직 살아 있고 **재개할 수 있다**.
+ *
+ * 이 오류가 없으면 화면은 「어느 전송이 실패했는지」를 몰라 재시도를 **새 전송**으로
+ * 보낼 수밖에 없고, 그러면 원장이 시도마다 하나씩 는다(사용자가 본 「실패 세트 2개」).
+ * `uploadId` 를 들고 나오는 것이 재개의 유일한 실마리다.
+ */
+export class TransferInterrupted extends Error {
+  constructor(message: string, readonly uploadId: string) {
+    super(message);
+    this.name = 'TransferInterrupted';
+  }
+}
+
 /** 놓은 파일 한 건 + 사람이 고른 종류. **축은 여기 없다** — 서버가 파일에서 판별한다(`〈63〉-㉰`). */
 export interface PickedFile {
   file: File;
   kind: FileKind;
+  /** 폴더째 드롭에서 왔을 때의 `폴더/이름` 상대 경로 (`dropTree.ts` · `〈337〉`). 낱개 파일은 없음. */
+  relativePath?: string;
 }
 
 /** 후주입 확정이 돌려주는 `DatasetFile` 들. 축은 **판별의 결과**다. */
@@ -36,9 +52,35 @@ export class GridAxisTaken extends Error {}
 /** 확정할 격자가 없다 — 판별에 실패했거나 형상이 어긋났다 (계약 400 · `〈66〉`). */
 export class NoResolvedGrid extends Error {}
 
+/** `create` 의 선택 인자 — 프리사인드 전송(〈338〉)에서만 의미를 갖는다. */
+export interface UploadCreateOptions {
+  /** 배너·목록에 보일 묶음 이름. */
+  sourceLabel?: string;
+  /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
+  resumeUploadId?: string;
+  onProgress?: (p: { sentBytes: number; totalBytes: number }) => void;
+}
+
+/** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈338〉). */
+export interface IncompleteTransferItem {
+  uploadId: string;
+  sourceLabel: string;
+  uploadedFiles: number;
+  plannedFiles: number;
+  uploadedBytes: number;
+  plannedBytes: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface UploadSource {
-  /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다. */
-  create(files: PickedFile[]): Promise<UploadReceipt>;
+  /** `createUpload` — 접수. 이 응답이 `uploadId`·`fileId` 를 FE 표면에 처음 내린다.
+   *  프리사인드 전송이 서면(저장 모드 s3) 그 경로로, 아니면(501) form-data 로 폴백한다. */
+  create(files: PickedFile[], opts?: UploadCreateOptions): Promise<UploadReceipt>;
+  /** 내 미완결 전송 — 이어올리기 배너. 프리사인드가 안 서는 환경(501)에서는 빈 배열. */
+  incomplete?(): Promise<IncompleteTransferItem[]>;
+  /** 미완결 전송을 지운다 (S3 조각까지). */
+  abortTransfer?(uploadId: string): Promise<void>;
   /** `getUploadStatus` — 이벤트 ②~⑦ 의 결과만 읽는다. 만료면 `UploadGone`. */
   status(uploadId: string): Promise<UploadStatus>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */

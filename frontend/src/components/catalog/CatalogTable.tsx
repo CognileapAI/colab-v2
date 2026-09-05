@@ -2,8 +2,6 @@
 // 조건과 정렬은 **표 헤더에만** 있다. 조건 툴바도 좌측 패싯 사이드바도 두지 않는다 (§1.3-9).
 // 잠긴 행은 사라지지 않는다 — 자물쇠와 `잠김` 칩이 붙을 뿐이다 (§8 · P-13).
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '../../api/client';
-import { downloadDataset } from '../../api/download';
 import { COLUMNS, isFilterable } from './columns';
 import { ColumnMenu } from './ColumnMenu';
 import type { CatalogColumn, DatasetRow, FacetValue, SortOrder } from './types';
@@ -45,11 +43,12 @@ export function CatalogTable(props: {
   state: CatalogState;
   uploaderNames: Map<string, string>;
   onOpen: (datasetId: string) => void;
+  /** 빠른 작업의 다운로드 — 링크가 아니라 **티켓**이다 (`〈339〉-(다)`). 티켓 발급·저장은 부르는 쪽이 한다. */
+  onDownload: (datasetId: string) => void;
 }) {
   const { state } = props;
   const [openColumn, setOpenColumn] = useState<CatalogColumn | null>(null);
   // 내려받기가 실패하면 조용히 넘어가지 않는다 — 눌렀는데 아무 일도 안 일어나는 것이 제일 나쁘다.
-  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // 바깥을 누르면 닫힌다. 열 이름·메뉴 안의 클릭은 stopPropagation 으로 삼킨다
   useEffect(() => {
@@ -210,25 +209,20 @@ export function CatalogTable(props: {
                     >
                       {EYE}
                     </button>
-                    {/* href 는 계약이 정한 실제 자리라 그대로 둔다. 다만 브라우저가 만드는
-                        요청에는 세션 토큰이 안 붙어 401 이 나므로, 누르면 인증된 클라이언트로
-                        받는다 (`api/download.ts`). */}
-                    <a
+                    {/* `<a href>` 가 아니다 — Bearer 는 fetch 미들웨어 한 자리에만 붙고 링크에는
+                        실리지 않는다 (`api/client.ts` · `〈339〉-(다)`). 버튼이 티켓을 받아 저장을 연다 */}
+                    <button
+                      type="button"
                       className="rab"
                       title="다운로드"
                       aria-label={`${row.name} 다운로드`}
-                      href={`${API_BASE_URL}/datasets/${row.datasetId}/download`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
-                        setDownloadError(null);
-                        void downloadDataset(row.datasetId).catch(() => {
-                          setDownloadError(`${row.name} 을(를) 내려받지 못했어요.`);
-                        });
+                        props.onDownload(row.datasetId);
                       }}
                     >
                       {DL}
-                    </a>
+                    </button>
                   </div>
                 )}
               </td>
@@ -236,11 +230,6 @@ export function CatalogTable(props: {
           ))}
         </tbody>
       </table>
-      {downloadError && (
-        <p className="dlerr" role="alert">
-          {downloadError}
-        </p>
-      )}
     </div>
   );
 }

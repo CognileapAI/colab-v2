@@ -1,0 +1,10 @@
+{
+  "_comment": "웹(정적 번들) 버킷 정책 — CloudFront OAC 만 읽는다. 퍼블릭 액세스 차단은 전부 켠 채. <DISTRIBUTION_ARN> 은 배포 생성 뒤.",
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "CloudFrontReadsBundle", "Effect": "Allow",
+      "Principal": { "Service": "cloudfront.amazonaws.com" }, "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::colab-platform-web-dev/*",
+      "Condition": { "StringEquals": { "AWS:SourceArn": "<DISTRIBUTION_ARN>" } } }
+  ]
+}

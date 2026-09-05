@@ -163,7 +163,8 @@ def test_replacing_a_grid_file_streams_too(p2_client) -> None:
 def test_the_upload_routes_do_not_read_whole_files_into_memory() -> None:
     """**구조를 못으로 박는다** — 결과만 재면 다음 사람이 `read()` 로 되돌려도 green 이다.
 
-    세 라우트는 `def`(스레드풀)이고 바이트는 `shutil.copyfileobj` 로 흘러야 한다.
+    세 라우트는 `def`(스레드풀)이고 바이트는 저장 Port 의 `put_stream` → `shutil.copyfileobj`
+    로 흘러야 한다 (병합 창 8-a 로 그 호출이 `kernel/storage_backends` 로 옮겼다).
     `async def` 로 되돌리면 **동기 SQLAlchemy 까지** 이벤트 루프에서 돌아 `/healthz` 가
     같이 멈춘다 — 그 정지는 업로드한 사람이 아니라 **다른 모든 사람**에게 보인다.
 
@@ -180,7 +181,23 @@ def test_the_upload_routes_do_not_read_whole_files_into_memory() -> None:
     awaits = [n for n in ast.walk(tree) if isinstance(n, ast.Await)]
     assert awaits == [], "이벤트 루프에서 파일을 읽고 있다."
     calls = {ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)}
-    assert "shutil.copyfileobj" in calls, \
-        "바이트를 흘려 보내지 않는다 — 전체를 메모리에 올린다."
     assert "upload_file.read" not in calls and "file.read" not in calls, \
         "파일 전체를 한 번에 읽는 호출이 남아 있다."
+
+    # ⭑ ⟨병합 창 8-a⟩ **흘려 보내는 자리가 옮겼다 — 못은 그 자리를 따라간다.**
+    #   종전에는 `ingestion.py` 안에 `shutil.copyfileobj` 가 있었다. PR #1 의 저장 Port
+    #   (`〈337〉`)가 바이트를 만지는 자리를 `kernel/storage_backends` 하나로 모으면서
+    #   그 호출이 `LocalFilesystemStorage.put_stream` 으로 갔다. **약하게 만든 것이 아니다** —
+    #   재는 것은 그대로 「전체를 메모리에 올리지 않는가」이고, 자리만 실물을 따라 옮겼다.
+    #   ⛔ 라우트 쪽 못(`async def` 0 · `await` 0 · 전체 `read()` 0)은 **위에서 그대로 잰다.**
+    backend_src = (pathlib.Path(__file__).resolve().parents[1]
+                   / "src" / "colab_core" / "kernel" / "storage_backends.py"
+                   ).read_text(encoding="utf-8")
+    backend_calls = {ast.unparse(n.func) for n in ast.walk(ast.parse(backend_src))
+                     if isinstance(n, ast.Call)}
+    assert "shutil.copyfileobj" in backend_calls, \
+        "저장 Port 가 바이트를 흘려 보내지 않는다 — 전체를 메모리에 올린다."
+
+    # 라우트가 그 Port 를 실제로 부르는가 — Port 가 스트리밍이어도 라우트가 안 쓰면 뜻이 없다.
+    assert any(c.endswith(".put_stream") for c in calls), \
+        "업로드 라우트가 저장 Port 의 `put_stream` 을 부르지 않는다."

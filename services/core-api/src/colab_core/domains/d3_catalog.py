@@ -6,6 +6,7 @@ D4 사실은 `ports.LineageSummaryPort` 로 받는다 — D4 테이블을 여기
 from __future__ import annotations
 
 import dataclasses
+import datetime as dt
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -43,11 +44,16 @@ _ROWS = text("""
 #: 여기 있는 것은 그 값을 SQL 과 대조하는 상수일 뿐 두 번째 선언이 아니다.
 GRID_KIND = "기준 격자 파일"
 
-_FILES = text("""
-    SELECT f.id, f.file_name, f.kind, f.carries_lat, f.carries_lon
-      FROM d3_file f
-     WHERE f.dataset_id = :dataset_id
-     ORDER BY f.kind DESC, f.file_name, f.id
+#: 파일 행의 열 집합 — 목록·단건·격자·INSERT/UPDATE RETURNING 이 **같은 열**을 읽는다.
+#: 한 곳에서만 넓히면 `FileRow` 매핑이 어느 경로에서 KeyError 를 낸다.
+_FILE_COLUMNS = ("id, dataset_id, kind, file_name, size_bytes, storage_key, "
+                 "carries_lat, carries_lon, created_at, relative_path")
+
+_FILES = text(f"""
+    SELECT {_FILE_COLUMNS}
+      FROM d3_file
+     WHERE dataset_id = :dataset_id
+     ORDER BY kind DESC, file_name, id
 """)
 
 _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL")
@@ -462,20 +468,53 @@ def dataset_exists(session: Session, dataset_id: Ulid) -> bool:
 
 
 def list_files(session: Session, dataset_id: Ulid) -> list[dict]:
-    """계약 `DatasetFile`. **축은 기준 격자 파일에만 붙는다** (`K-3` · `〈80〉-㉯ 3`).
-
-    본체에 `gridAxis` 자리를 만들면 없는 사실을 있는 척하게 된다 — `0004` 의 CHECK 가
-    축 붙은 본체를 애초에 만들지 않으므로, 그 사실을 응답 모양이 그대로 비춘다.
-    """
+    """계약 `DatasetFile` 목록. 조립은 `file_ref` 하나가 한다 (`〈339〉-(가)`)."""
     rows = session.execute(_FILES, {"dataset_id": str(dataset_id)}).mappings().all()
-    out: list[dict] = []
-    for r in rows:
-        item = {"fileId": r["id"], "fileName": r["file_name"], "kind": r["kind"]}
-        if r["kind"] == GRID_KIND:
-            item["gridAxis"] = {"carriesLat": bool(r["carries_lat"]),
-                                "carriesLon": bool(r["carries_lon"])}
-        out.append(item)
-    return out
+    return [file_ref(_file_row(r)) for r in rows]
+
+
+def file_ref(row: FileRow) -> dict:
+    """계약 `DatasetFile` 조립 — **모든 파일 응답이 이 함수를 지난다**
+    (`listDatasetFiles` · `addDatasetFile` · `attachUploadGridFiles` · `replaceDatasetGridFile`
+    · 축 뒤집기). 다섯 자리가 각자 dict 를 만들면 한 자리만 `byteSize` 를 빠뜨려도 계약
+    위반이 조용히 지나간다 (`PLAN-SoT §9 〈339〉-(가)`).
+
+    · `byteSize` — 모르면 `null`. 0 으로 적지 않는다 (계약 산문).
+    · `createdAt` — ISO 8601, UTC `Z`.
+    · `relativePath` — **있을 때만** 키가 선다 (`〈339〉-(나)`).
+    · `gridAxis` — **기준 격자 파일에만** 붙는다 (`K-3` · `〈80〉-㉯ 3`). 본체에 자리를 만들면
+      없는 사실을 있는 척하게 된다 — `0004` 의 CHECK 가 축 붙은 본체를 애초에 만들지 않는다.
+    """
+    item: dict = {
+        "fileId": row.file_id, "fileName": row.file_name, "kind": row.kind,
+        "byteSize": row.size_bytes,
+        "createdAt": row.created_at.astimezone(dt.timezone.utc).isoformat()
+                                   .replace("+00:00", "Z"),
+    }
+    if row.relative_path:
+        item["relativePath"] = row.relative_path
+    if row.kind == GRID_KIND:
+        item["gridAxis"] = {"carriesLat": bool(row.carries_lat),
+                            "carriesLon": bool(row.carries_lon)}
+    return item
+
+
+_BODY_FILE_COUNT = text("""
+    SELECT count(*) FROM d3_file
+     WHERE dataset_id = :dataset_id AND kind = '본체'
+""")
+
+
+def body_file_count(session: Session, dataset_id: Ulid) -> int:
+    """그 데이터셋의 **본체** 행 수 — 본체 ≥ 1 불변식(`DataModel §4.3`)의 판정 재료.
+    본체 삭제(`〈339〉-(라)`)가 「마지막 본체인가」를 이 값으로 가른다.
+
+    ⚠ 본체 테이블이라 잠긴 데이터셋에서는 0 이 나온다 — 그 경우 호출자는 이미 `body_access`
+    에서 막혀 여기 오지 않는다. 메타 열 `file_count` 를 쓰지 않는 이유는 그 열이 격자를 포함한
+    총수이기 때문이다.
+    """
+    return int(session.execute(_BODY_FILE_COUNT,
+                               {"dataset_id": str(dataset_id)}).scalar_one())
 
 
 #: 내려받을 **조각**과 그 저장 키. 잠긴 데이터셋이면 `body_access` 정책이
@@ -564,24 +603,24 @@ _APPLY_AUTOMETA = text("""
               (a.total_size_bytes IS NOT NULL)      AS has_total_size_bytes
 """)
 
-_INSERT_FILE = text("""
+_INSERT_FILE = text(f"""
     INSERT INTO d3_file (id, lab_id, dataset_id, kind, file_name, size_bytes, storage_key,
-                         carries_lat, carries_lon)
+                         carries_lat, carries_lon, relative_path)
     VALUES (:id, current_lab_id(), :dataset_id, :kind, :file_name, :size_bytes, :storage_key,
-            :carries_lat, :carries_lon)
-    RETURNING id
+            :carries_lat, :carries_lon, :relative_path)
+    RETURNING {_FILE_COLUMNS}
 """)
 
-_FIND_FILE = text("""
-    SELECT id, dataset_id, kind, file_name, size_bytes, storage_key, carries_lat, carries_lon
+_FIND_FILE = text(f"""
+    SELECT {_FILE_COLUMNS}
       FROM d3_file
      WHERE id = :file_id AND dataset_id = :dataset_id
 """)
 
 _DELETE_FILE = text("DELETE FROM d3_file WHERE id = :file_id RETURNING id")
 
-_GRID_FILES = text("""
-    SELECT id, dataset_id, kind, file_name, size_bytes, storage_key, carries_lat, carries_lon
+_GRID_FILES = text(f"""
+    SELECT {_FILE_COLUMNS}
       FROM d3_file
      WHERE dataset_id = :dataset_id AND kind = '기준 격자 파일'
      ORDER BY id
@@ -613,12 +652,11 @@ _RESTORE_GRID_AXIS = text("""
      WHERE id = :file_id
 """)
 
-_UPDATE_FILE = text("""
+_UPDATE_FILE = text(f"""
     UPDATE d3_file
        SET file_name = :file_name, size_bytes = :size_bytes, storage_key = :storage_key
      WHERE id = :file_id
-     RETURNING id, dataset_id, kind, file_name, size_bytes, storage_key,
-               carries_lat, carries_lon
+     RETURNING {_FILE_COLUMNS}
 """)
 
 # `〈60〉-②` — 좌표계·격자는 **그 파일에서 나오는 값**이라 격자 파일이 바뀌면 재계산한다.
@@ -637,6 +675,32 @@ _CONFIRM_LINEAGE = text("""
      RETURNING id
 """)
 
+# `마지막 수정` 을 **미는** 자리 — 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이
+# 바뀌었을 때**(`〈339〉-(라)` · 권고, Ted 판정 대기)뿐이다. 격자 변경은 여기 오지 않는다(위 주석).
+_TOUCH_LAST_MODIFIED = text("""
+    UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id
+""")
+
+# 본체 ≥ 1 판정의 **행 잠금**. 잠그지 않으면 마지막 둘을 동시에 지우는 두 요청이 각자 「2건」을
+# 보고 둘 다 통과한다 — 불변식이 에러 없이 깨진다. 데이터셋 행 하나에 직렬화한다.
+_LOCK_DATASET = text("""
+    SELECT id FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL FOR UPDATE
+""")
+
+# `bundle_file_name` 따라가기 (`[정본 무근거]` · `〈339〉-(라)`). 등록 전환이 **첫 본체의 이름**으로
+# 세운 값이라(`routes/ingestion.create_dataset`), 그 본체가 지워지거나 이름이 바뀌면 지워진
+# 파일의 이름이 상세의 `fileName` 에 남는다. **옛 이름과 같을 때만** 남은 본체 중 가장 오래된
+# 것의 이름으로 옮긴다 — 다른 값이 적혀 있으면 사람이 바꾼 묶음 이름이므로 건드리지 않는다.
+# 「가장 오래된 본체」는 대표 조각의 자동 규칙과 같은 축이다 (`created_at, id`).
+_SYNC_BUNDLE_FILE_NAME = text("""
+    UPDATE d3_dataset_autometa a
+       SET bundle_file_name = (SELECT f.file_name FROM d3_file f
+                                WHERE f.dataset_id = a.dataset_id AND f.kind = '본체'
+                                ORDER BY f.created_at, f.id LIMIT 1),
+           updated_at = now()
+     WHERE a.dataset_id = :dataset_id AND a.bundle_file_name = :was
+""")
+
 
 @dataclasses.dataclass(frozen=True)
 class FileRow:
@@ -648,6 +712,10 @@ class FileRow:
     storage_key: str
     carries_lat: bool
     carries_lon: bool
+    #: 행이 선 시각 (`d3_file.created_at`). 계약 `DatasetFile.createdAt` 의 원천.
+    created_at: dt.datetime
+    #: 폴더째 업로드의 `폴더/이름` (`0009` · `〈339〉-(나)`). 낱개 파일은 None.
+    relative_path: str | None = None
 
 
 def _file_row(r) -> FileRow:
@@ -657,6 +725,7 @@ def _file_row(r) -> FileRow:
         size_bytes=(None if r["size_bytes"] is None else int(r["size_bytes"])),
         storage_key=r["storage_key"],
         carries_lat=bool(r["carries_lat"]), carries_lon=bool(r["carries_lon"]),
+        created_at=r["created_at"], relative_path=r["relative_path"],
     )
 
 
@@ -742,9 +811,28 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     # (`DATAMODEL-BASELINE §3-③` — 「마지막 수정 > 계보 확정일」이면 `확인 필요`).
     # 빈 요청이어도 갱신하지 않는다 — 아무것도 안 고쳤으면 고친 것이 아니다.
     if by_table:
-        session.execute(
-            text("UPDATE d3_dataset SET last_modified_at = now() WHERE id = :dataset_id"),
-            {"dataset_id": str(dataset_id)})
+        touch_last_modified(session, dataset_id)
+
+
+def touch_last_modified(session: Session, dataset_id: Ulid) -> None:
+    """`마지막 수정` 을 지금으로 민다 — 파생인 `계보 상태` 가 `확인 필요` 로 접히는 신호다.
+
+    부르는 자리는 둘뿐이다: 사람이 메타를 고쳤을 때(`update_dataset`)와 **본체 파일이 바뀌었을 때**
+    (`routes/ingestion._record_body_activity` · `〈339〉-(라)`). 격자 변경은 부르지 않는다(`〈60〉-①`).
+    """
+    session.execute(_TOUCH_LAST_MODIFIED, {"dataset_id": str(dataset_id)})
+
+
+def lock_dataset(session: Session, dataset_id: Ulid) -> bool:
+    """데이터셋 행을 이 트랜잭션에 잠근다(`FOR UPDATE`). 본체 ≥ 1 판정처럼 **세고 나서 지우는**
+    조작이 동시 요청에도 하나씩 지나가게 한다. 경계 밖·묘비면 False."""
+    return session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)}).first() is not None
+
+
+def sync_bundle_file_name(session: Session, dataset_id: Ulid, *, was: str) -> None:
+    """`bundle_file_name` 이 `was`(지워지거나 이름이 바뀐 본체의 옛 이름)와 같을 때만 남은 본체 중
+    가장 오래된 것의 이름으로 옮긴다. 위 `_SYNC_BUNDLE_FILE_NAME` 주석이 「왜 같을 때만인가」를 적었다."""
+    session.execute(_SYNC_BUNDLE_FILE_NAME, {"dataset_id": str(dataset_id), "was": was})
 
 
 def file_belongs_to(session: Session, *, file_id: str, dataset_id: Ulid) -> bool:
@@ -760,19 +848,25 @@ def file_belongs_to(session: Session, *, file_id: str, dataset_id: Ulid) -> bool
 
 def insert_file(session: Session, *, file_id: str, dataset_id: Ulid, kind: str,
                 file_name: str, size_bytes: int | None, storage_key: str,
-                carries_lat: bool, carries_lon: bool) -> str:
+                carries_lat: bool, carries_lon: bool,
+                relative_path: str | None = None) -> FileRow:
     """**`file_id` 를 여기서 만들지 않는다** — 부르는 쪽이 업로드가 발급한 값을 넘긴다.
 
     이 함수가 ULID 를 새로 뽑는 순간 `NB-A` 동일성이 조용히 깨진다. FK 가 없어
     DB 는 아무 말도 하지 않는다 — 그래서 인자로만 받는다.
+
+    선 행을 그대로 돌려준다(`created_at` 포함) — 호출자가 `file_ref` 로 계약 응답을 만든다.
+    `d3_dataset_autometa.total_size_bytes` 는 여기서 건드리지 않는다 — 트리거가 더한다 (`0009`).
     """
     if not Ulid.is_valid(file_id):
         raise ValueError(f"파일 ID 가 정규 ID 가 아니다: {file_id!r}")
-    return session.execute(_INSERT_FILE, {
+    r = session.execute(_INSERT_FILE, {
         "id": file_id, "dataset_id": str(dataset_id), "kind": kind,
         "file_name": file_name, "size_bytes": size_bytes, "storage_key": storage_key,
         "carries_lat": carries_lat, "carries_lon": carries_lon,
-    }).scalar_one()
+        "relative_path": relative_path,
+    }).mappings().one()
+    return _file_row(r)
 
 
 def find_file(session: Session, *, dataset_id: Ulid, file_id: Ulid) -> FileRow | None:
@@ -785,7 +879,9 @@ def replace_file(session: Session, *, file_id: Ulid, file_name: str,
                  size_bytes: int | None, storage_key: str) -> FileRow:
     """교체는 **행을 갈아 끼우지 않고 같은 행의 본체를 바꾼다** — `fileId` 가 유지돼야
     계보·활동 기록이 같은 대상을 가리킨다. 축(`carries_*`)은 건드리지 않는다: 새 파일의
-    축은 파일을 읽는 쪽이 다시 정한다."""
+    축은 파일을 읽는 쪽이 다시 정한다. `relative_path`·`created_at` 도 그대로다 — 폴더 안의
+    자리와 행이 선 시각은 바이트를 갈아 끼웠다고 바뀌는 사실이 아니다 (`〈339〉-(나)·(라)`).
+    `size_bytes` 의 차분은 `0009` 트리거가 `total_size_bytes` 로 옮긴다."""
     r = session.execute(_UPDATE_FILE, {
         "file_id": str(file_id), "file_name": file_name, "size_bytes": size_bytes,
         "storage_key": storage_key,

@@ -1,0 +1,9 @@
+# 빌드 컨텍스트에서 뺀다 — Dockerfile 이 COPY 하는 것은 requirements*.txt · src/ 뿐이다.
+# .venv 는 84 MB 가 컨텍스트로 실려 빌드마다 전송된다(이미지엔 안 들어가지만 시간을 먹는다).
+.venv
+tests
+ops
+__pycache__
+**/__pycache__
+*.egg-info
+.pytest_cache

@@ -12,12 +12,11 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
-from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d6_project,
                         d8_insight)
-from ...kernel import errors, file_store
+from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...kernel.scope import read_only_scope
@@ -438,75 +437,17 @@ def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
 
 
-def _bundle(store, pieces: list[dict], *, bundle_name: str) -> StreamingResponse:
-    """조각이 여럿이면 **묶어서 한 번에** 준다 (`Policy_데이터셋_상세 §2` 축자).
-
-    부분 다운로드가 없으므로(같은 문서 `§8`) 조각별 URL 도 두지 않는다.
-
-    ⭑ **2026-09-02 Ted 판정 「용량 상한을 두지 않는다」** — 그래서 **메모리에 쌓지 않는다.**
-    종전에는 `io.BytesIO` 에 zip 전체를 만들었고 메모리가 데이터셋 크기를 따라갔다.
-    지금은 `file_store.stream_bundle` 이 청크마다 내보내는 생성기를 준다 —
-    **응답 계약(302 두 hop · `Content-Disposition`)은 한 글자도 바뀌지 않았다.**
-    """
-    return StreamingResponse(
-        file_store.stream_bundle(store, pieces), media_type="application/zip",
-        headers={"Content-Disposition": _disposition(bundle_name)})
-
-
-def _disposition(file_name: str) -> str:
-    from urllib.parse import quote
-    return f"attachment; filename*=UTF-8''{quote(file_name)}"
-
-
-@router.get("/datasets/{datasetId}/download", name="downloadDataset")
-def download_dataset(datasetId: str, request: Request,
-                     db: Session = Depends(scoped_db),
-                     subject: Subject = Depends(current_subject)):
-    """계약대로 **302 ＋ `Location`** 을 낸다. 그 응답 시점에 이력이 쌓인다.
-
-    `Location` 이 가리키는 자리는 **저장처가 정한다**(`kernel/file_store.py`) — 볼륨이면
-    「우리에게 다시 오라」(`?deliver=1`)이고, 객체 저장소로 바꾸면 presigned URL 이 된다.
-    화면도 계약도 그 차이를 모른다. **저장처를 갈아 끼우는 자리는 그 파일 하나다.**
-
-    ⚠ `deliver` 는 **자격증명이 아니다** — 그 표식이 붙은 요청도 위 두 줄의 접근 판정을
-    처음부터 다시 통과해야 한다. 표식으로 판정을 건너뛰면 그것이 green-by-skip 이다.
-    """
-    if not Ulid.is_valid(datasetId):
-        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
-    dataset_id = Ulid(datasetId)
-    _dataset_for_download(db, dataset_id)
-
-    # 본체 ＋ 기준 격자 파일 (2026-09-02 Ted 판정 · `d3_catalog.files_for_download`)
-    pieces = d3_catalog.files_for_download(db, dataset_id)
-    if not pieces:
-        raise errors.not_found("내려받을 조각이 없다.")
-
-    store = file_store.build(request.app.state.settings, request.app.state)
-
-    if request.query_params.get(file_store.DELIVER_MARK):
-        missing = [p["file_name"] for p in pieces if not store.exists(p["storage_key"])]
-        if missing:
-            # **200 으로 빈 파일을 내리지 않는다.** 원장은 있는데 바이트가 없는 것은
-            # 저장처의 결손이고, 그 사실을 사용자에게 성공으로 위장하지 않는다.
-            raise errors.ApiError(500, "STORAGE_OBJECT_MISSING",
-                                  "원장에 있는 조각의 바이트가 저장처에 없다.",
-                                  {"fileName": missing})
-        meta = d3_catalog.find_autometa(db, dataset_id)
-        bundle_name = (meta.bundle_file_name if meta is not None
-                       and meta.bundle_file_name else datasetId)
-        if len(pieces) == 1:
-            one = pieces[0]
-            return StreamingResponse(
-                store.open(one["storage_key"]), media_type="application/octet-stream",
-                headers={"Content-Disposition": _disposition(one["file_name"])})
-        if not bundle_name.endswith(".zip"):
-            bundle_name = f"{bundle_name}.zip"
-        return _bundle(store, pieces, bundle_name=bundle_name)
-
-    # **이력은 302 시점에 쌓인다** (계약 산문 축자 「이 응답 시점에 다운로드 이력이 쌓인다」).
-    d8_insight.record_download(db, account_id=subject.account_id, dataset_id=dataset_id)
-    own_url = str(request.url.remove_query_params(file_store.DELIVER_MARK))
-    return RedirectResponse(store.delivery_location(own_url=own_url), status_code=302)
+# ⭑ ⟨병합 창 8-a · `〈334〉`-㉳-⑥ Ted 판정 「다운로드 = 200 티켓 ＋ 바이트 op」⟩
+#   여기 있던 **`downloadDataset` 302 판**(`_bundle`·`_disposition` 헬퍼 포함)을 걷었다.
+#   `main` 줄기가 `ST-1` 로 세운 「302 ＋ `Location` ＋ `?deliver=1` 재방문」 경로이고,
+#   PR #1 줄기가 세운 **`routes/download.py` 의 200 ＋ `DownloadTicket`** 이 그 자리를 대신한다.
+#   ⛔ **둘을 함께 두지 않는다** — 같은 `operationId`·같은 경로라 라우트 표가 겹치고
+#      (`tests/test_route_table.py` 오라클이 red), 병합된 계약 `fe-core.yaml` 은 이 op 을
+#      **200 `DownloadTicket`** 으로 들고 있다. 302 는 한 번도 집행된 적이 없다(계약 산문).
+#   걷은 판이 지키던 것은 대신 서는 쪽에 그대로 있다 — 묶음 zip 을 **메모리에 쌓지 않고**
+#   청크로 흘려 보내는 것(`download.zip_stream`) · 바이트 결손을 200 으로 위장하지 않는 것 ·
+#   이력을 **티켓 발급 시점**에 쌓는 것(`d8_insight.record_download`).
+#   원문은 `git show 5a9d9f8:services/core-api/src/colab_core/app/routes/catalog.py` 에 있다.
 
 
 @router.get("/datasets/facets", name="listDatasetFacets")

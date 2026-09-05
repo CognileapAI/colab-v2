@@ -91,19 +91,22 @@ P7_REAL = {
     "getDataMap":          "tests/test_dashboard.py",
     "listActivities":      "tests/test_dashboard.py",
 }
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL}
-REAL = P1_REAL | set(P2_REAL)
-NO_STORE: set[str] = {
-    # ⭑ **승인 요청 여섯이 여기서 빠졌다** (`P6` · 마이그레이션 `0010`).
-    # ⭑ ⟨2026-09-02 · `ST-1` · Ted 판정 「저장처는 지금 볼륨을 그대로 쓴다」⟩ 남아 있던
-    #    `downloadDataset` 도 빠졌다 ⟹ **이 집합은 이제 빈 집합이다.**
-    #    ~~"downloadDataset"~~ — 그 사유(「저장처가 없다」)는 반만 참이었다: 이력 표
-    #    `d8_download` 는 P0 이 세웠고 바이트는 접수 볼륨 위에 이미 있었다.
-    #    실동작 시험 = `tests/test_dataset_download.py`(양성 ＋ 잠금·경계 음성).
-    # ⭑ `updateDataset` 이 여기서 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
-    #    `#36`(설명 결손 2건)을 채울 **공개 경로가 그것뿐이었다.**
-    *()
+#: **9차 동결 해제의 다운로드 집행(C2)이 표에서 뺀 셋** (7 → 4 · `〈339〉`-(다)). `downloadDataset`
+#: 은 P0 부터 501 이었고(`㊹` 의 「저장처 없음」 — `0009` 가 `d8_download.file_id` 로 자리를
+#: 만들었다), 나머지 둘은 C1b 가 **임시 등재**했던 것이다. 셋 다 실동작 시험이 뒤에 있다.
+C2_REAL = {
+    "downloadDataset":      "tests/test_download.py",
+    "downloadDatasetFile":  "tests/test_download.py",
+    "getDownloadBytes":     "tests/test_download.py",
 }
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL}
+REAL = P1_REAL | set(P2_REAL)
+#: **비었다 — 그리고 그것이 사실이다.**
+#: ⭑ 승인 요청 여섯이 빠졌다 (`P6` · 마이그레이션 `0010` 이 저장처를 만들었다).
+#: ⭑ `updateDataset` 이 빠졌다 (2026-08-27 · `〈127〉` Ted 판정 ㈎ ＋ ㈏ 범위).
+#: ⭑ **`downloadDataset` 이 빠졌다** (`〈339〉`-(다) C2 다운로드 집행 — 저장 Port 가 그 저장처다).
+#: 「저장처가 없어 못 세운다」로 남은 op 이 **0 건**이다. 다시 생기면 여기 이름이 돌아온다.
+NO_STORE: set[str] = set()
 TOKEN = "a1-test-token"
 ACCOUNT = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 LAB = "01ARZ3NDEKTSV4RRFFQ69G5FAW"
@@ -162,10 +165,22 @@ def test_the_4_unimplemented_operations_are_exactly_these() -> None:
     프로젝트 닫기」로 정의하고 `Policy_프로젝트 §6`·`§8` 이 삭제·닫기·해제를 전부 E-05
     화면의 동작으로 적는다. **배정 표기를 실물에 맞춘 것이지 범위를 늘린 것이 아니다.**
     **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+    
+    ⭑ **병합 2026-09-02 — 5 → 7.** 다른 레인이 `downloadDatasetFile`·`getDownloadBytes` 를
+    **임시 등재**했다(`〈339〉`-(다) 9차 동결 해제). 이 회차(C1b)는 계약 동결 + 파일 메타만이고,
+    다운로드 집행 커밋(C2)이 둘을(그리고 `downloadDataset` 까지) 뺀다.
+    **이 수가 7 에 머문 채 C2 가 닫히면 그것이 red 다.**
+    
+    ⭑ **7 → 4 — C2 가 셋을 뺐다** (`〈339〉`-(다) 다운로드 집행). `downloadDataset` ·
+    `downloadDatasetFile` · `getDownloadBytes`. 앞의 둘은 이 브랜치가 **임시 등재**했던 것이고,
+    `downloadDataset` 은 저장처가 없어 `NO_STORE` 로 있던 것이다 — 저장 Port 가 그 저장처다.
+    **`NOT_IMPLEMENTED_NO_STORE` 가 0 건이 됐다.**
 
-    ⭑ **`ST-1` — `downloadDataset` 이 빠져 5 → 4.** 저장처는 **접수 볼륨**이고(Ted 판정
-    2026-09-02) 이음매는 `kernel/file_store.py` 하나다. **마이그레이션 0건 · 계약 개정 0건.**
-    **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
+    ⭑ **병합(창 8-a) — 표는 그대로 4 다.** `main` 줄기도 같은 회차에 `downloadDataset` 을
+    걷었고(`ST-1` · Ted 판정 2026-09-02 · 「저장처는 지금 볼륨을 그대로 쓴다」), **두 줄기가 걷은
+    op 이 같아 합쳐도 4 다.** 다만 **집행판은 하나만 남는다** — `〈334〉`-㉳-⑥ Ted 판정
+    「다운로드 = 200 티켓 ＋ 바이트 op」에 따라 **`routes/download.py`(200 `DownloadTicket`)**
+    가 정본이고, `main` 의 302 판(`routes/catalog.py`)은 걷었다. 병합된 계약도 200 이다.
     """
     assert len(OPERATIONS) == 4
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
@@ -199,6 +214,9 @@ def test_codes_are_the_two_kinds() -> None:
     #  7 →  4: `P7` 이 D8 집계 셋(`getDashboardSummary`·`getDataMap`·`listActivities`)을
     #          가져갔다. **셋 다 저장 자리는 있었고 집계만 없던 쪽이다** — `d8_activity` 는
     #          P0 이 세웠고 지표·맵의 재료는 D3·D4·D2·D6 에 이미 다 있었다.
+    #  4 →  6: `〈339〉`-(다) 다운로드 둘의 **임시 등재**(C2 가 뺀다). `NO_STORE` 가 아닌 이유 —
+    #          저장 자리는 `0009`(`d8_download.file_id`)가 이미 만들었다. ⚠ 같은 이유로
+    #          `downloadDataset` 의 `NO_STORE` 도 낡았다 — C2 가 셋을 함께 걷는다.
     assert len(p1) == 4
     assert no_store & p1 == set()
 
@@ -211,7 +229,8 @@ def test_returns_501_with_envelope(client: TestClient, op) -> None:
                               .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
     r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
     assert r.status_code == 501, f"{op.operation_id} 가 501 이 아니다 — 가짜 200 은 거짓말이다."
     body = r.json()
@@ -228,7 +247,8 @@ def test_requires_subject(client: TestClient, op) -> None:
                               .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
     r = client.request(op.method, url)
     assert r.status_code == 401, "미구현이어도 인증은 건다 — 경계 밖에 오퍼레이션 목록을 열지 않는다."
     assert r.json()["code"] == "UNAUTHORIZED"
@@ -243,6 +263,7 @@ def test_404_is_never_used_for_unimplemented(client: TestClient) -> None:
                                   .replace("{requestId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{uploadId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
                               .replace("{fileId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
-                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                              .replace("{renderId}", "01ARZ3NDEKTSV4RRFFQ69G5FAV") \
+                              .replace("{ticket}", "not-a-real-ticket")
         r = client.request(op.method, url, headers={"Authorization": f"Bearer {TOKEN}"})
         assert r.status_code != 404

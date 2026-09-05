@@ -1,0 +1,19 @@
+{
+  "_comment": "EC2 인스턴스 프로파일 정책 colab-platform-app-dev-role — S3.md §1 의 3문(업로드 조작·멀티파트·Diagnostics) + previews PUT. Resource 는 dev 데이터 버킷 하나. prod 는 Diagnostics 문을 뺀다. 〈178〉-㉯",
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "UploadObjects", "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::colab-platform-data-dev", "arn:aws:s3:::colab-platform-data-dev/*"] },
+    { "Sid": "Multipart", "Effect": "Allow",
+      "Action": ["s3:AbortMultipartUpload", "s3:ListMultipartUploadParts", "s3:ListBucketMultipartUploads"],
+      "Resource": ["arn:aws:s3:::colab-platform-data-dev", "arn:aws:s3:::colab-platform-data-dev/*"] },
+    { "Sid": "DiagnosticsDevOnly", "Effect": "Allow",
+      "Action": ["s3:GetBucketLocation", "s3:GetBucketVersioning", "s3:GetBucketCors", "s3:GetLifecycleConfiguration",
+                 "s3:GetBucketPublicAccessBlock", "s3:GetEncryptionConfiguration", "s3:GetBucketPolicy"],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev" },
+    { "Sid": "PreviewsPut", "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev/previews/*" }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "_comment": "S3.md §1 라이프사이클 2개 + 백업 접두사 30일. 전체 만료 규칙은 걸지 않는다(장부-창고 어긋남 방지).",
+  "Rules": [
+    { "ID": "abort-incomplete-multipart-7d", "Status": "Enabled", "Filter": { "Prefix": "" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 } },
+    { "ID": "expire-noncurrent-30d", "Status": "Enabled", "Filter": { "Prefix": "" },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 30 } },
+    { "ID": "backups-30d", "Status": "Enabled", "Filter": { "Prefix": "_ops/backups/" },
+      "Expiration": { "Days": 30 } }
+  ]
+}

@@ -1,0 +1,16 @@
+저장 모드: s3 | 버킷: colab-platform-data-local-phj
+① initiateUploadTransfer 201 · uploadId: 01M135FY451CKSBTFVGMY7EM2Q
+   - 작은.nc 단일 partSize: None partCount: None
+   - 큰.nc 멀티파트 partSize: 8388608 partCount: 3
+② issueUploadUrls: 200 → 실 S3 PUT: 200
+③ initUploadFileMultipart: 200 {'partSize': 8388608, 'partCount': 3}
+   파트1 실 S3 PUT: 200
+④ getUploadTransfer — S3 ListParts 실측 uploadedParts: [1] (재개 근거)
+   파트2 실 S3 PUT: 200
+   파트3 실 S3 PUT: 200
+⑤ completeUploadFile: 작은.nc → 올라감 
+⑤ completeUploadFile: 큰.nc → 올라감 
+⑥ completeUploadTransfer: 201 · files: 2
+⑦ d5_upload 행: 0 · relative_path: [] · 이벤트: []
+⑧ S3 실물 크기: [4, 20971520] (신고: 4 · 20971520 )
+뒷정리 완료 — 실호출 증거 수집 끝

@@ -7,7 +7,7 @@ P0 은 저장 자리만 만들었고 **WU-P7 이 집계 3종을 열었다** —
 프로젝트)는 D3·D4·D2·D6 의 사실이라 여기서 한 줄도 질의하지 않는다 — 조립 루트가
 각 도메인의 모듈 함수로 받아 합친다 (`CLAUDE.md §3-1` · `routes/catalog.py` 와 같은 무늬).
 
-**P2 가 쓰는 자리 하나** — `〈60〉` 좌표계·격자 변경 활동 기록.
+**쓰는 자리 둘** — `〈60〉` 좌표계·격자 변경 활동 기록(P2) · `〈339〉-(다)` 다운로드 이력(C2).
 """
 from __future__ import annotations
 
@@ -75,19 +75,23 @@ def recent_activities(session: Session) -> list[dict]:
 # ── 다운로드 이력 ────────────────────────────────────────────────────────────
 #: `ST-1`. 자리는 P0 이 만들어 두었고(`d8_download` · 마이그레이션 0건) 쓰는 자리가 없었다.
 #: **append-only 트리거가 걸린 표다** — 한 번 쌓으면 고치지도 지우지도 못한다.
+#: ⭑ `0009`(PR #1)이 `file_id` 열을 더했다 — 종전 4열 INSERT 는 낡음.
 _INSERT_DOWNLOAD = text("""
-    INSERT INTO d8_download (id, lab_id, account_id, dataset_id)
-    VALUES (:id, current_lab_id(), :account, :dataset_id)
+    INSERT INTO d8_download (id, lab_id, account_id, dataset_id, file_id)
+    VALUES (:id, current_lab_id(), :account_id, :dataset_id, :file_id)
     RETURNING id
 """)
 
 
-def record_download(session: Session, *, account_id: Ulid, dataset_id: Ulid) -> str:
-    """누가 언제 받았는지 한 줄 (`DataModel §6.2` · `Policy_데이터셋_상세 §8` 다운로드 행).
+def record_download(session: Session, *, account_id: Ulid, dataset_id: Ulid,
+                    file_id: Ulid | None) -> str:
+    """다운로드 이력 한 줄 — **티켓 발급 시점**에 (`〈339〉-(다)` · `DataModel §6.2`).
 
-    **받은 횟수는 어느 화면에도 내리지 않는다** — 쌓기만 한다(정본 1.3 확정 ④).
+    `file_id` 가 None 이면 데이터셋 묶음(zip), 값이면 그 조각 하나(`0009`). append-only 표라
+    고치거나 지울 수 없다. **바이트 시점에는 쓰지 않는다** — 티켓을 받고 안 받는 것은 그 사람의
+    선택이고, 「받으려 했다」가 기록의 뜻이다(계약 산문). 받은 횟수는 어느 화면에도 내리지 않는다.
     """
     return session.execute(_INSERT_DOWNLOAD, {
-        "id": str(Ulid.generate()), "account": str(account_id),
-        "dataset_id": str(dataset_id),
+        "id": str(Ulid.generate()), "account_id": str(account_id),
+        "dataset_id": str(dataset_id), "file_id": None if file_id is None else str(file_id),
     }).scalar_one()

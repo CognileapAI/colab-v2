@@ -202,9 +202,15 @@ describe('§E.2 격자 흐름 — 상태와 문구는 정본이 소유한다', (
   });
 
   it('전송 중: 크기 비례라 **여기만** 퍼센트가 정직하다', async () => {
+    // ⚠ `hasReferenceGrid: true` 가 **필요하다.** 이전 판은 격자가 없는데 「격자 파일을
+    //   받는 중」을 단언했다 — `hasReferenceGrid = picked.some(kind === '기준 격자 파일')` 이므로
+    //   **실재할 수 없는 상태**였고, 그 픽스처가 「격자 없이도 격자라고 말한다」를 정답으로
+    //   박아 두고 있었다. `gridState` 를 `hasGrid &&` 로 조이면서 함께 바로잡는다.
     await draw(
       {
+        hasReferenceGrid: true,
         grid: {
+          hasGrid: true,
           transfer: { sentBytes: 13_281_474, totalBytes: 26_562_948 },
           onPickGrid: vi.fn(),
           onSkipGrid: vi.fn(),

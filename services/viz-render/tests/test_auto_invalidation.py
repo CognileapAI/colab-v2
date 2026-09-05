@@ -339,21 +339,70 @@ def test_D7은_트리거를_발신하지_않는다():
     assert hasattr(invalidation, "TriggerPort"), "받는 자리가 Port 로 서 있어야 한다"
 
 
+#: 지우는 것이 허용된 자리와 **그 울타리를 증명하는 시험**. 이름만 늘리지 않는다 —
+#: 자리마다 「무엇 안에서만 지우는가」를 잠그는 시험이 짝으로 있어야 한다.
+DELETION_SITES = {
+    # `〈253〉` — 미리보기 루트 안의 렌더 산출물. 이 파일의 위 시험들이 울타리를 잰다.
+    "invalidation.py": "미리보기 루트 안의 렌더 산출물",
+    # `〈253〉` — 이벤트 버스 안의 **알림 파일**(산출물이 아니다).
+    # 울타리 = `test_trigger_intake.py` 의 「버스 밖의 파일은 지우지 않는다」.
+    "trigger_bus.py": "이벤트 버스 안의 알림 파일",
+    # ⭑ ⟨증보 병합 창 8-a · Ted 판정 `〈334〉`-㉳-⑭ (`V-4` 방식 승인 = **내려받기**)⟩
+    #   `source.py` = **자기가 만든 작업 디렉터리(캐시) 안**. s3 모드에서 원본 바이트를
+    #   `workdir` 로 내려받아 읽고, 반쪽 파일(`.partial`)과 오래된 대상 디렉터리를 치운다.
+    #   ⛔ **원본을 지우는 것이 아니다** — 원본은 S3 객체이고 이 단위는 그것을 **읽기만** 한다.
+    #   울타리 = 아래 `test_source_는_자기_작업_디렉터리_밖을_지우지_않는다`.
+    "source.py": "자기 작업 디렉터리(캐시) 안",
+}
+
+
 def test_원본을_지우거나_덮어쓰는_경로가_이_단위에_없다():
-    """**음성 · `〈247〉` 의 바깥을 코드 전체에서 잠근다.** 지우는 자리는 **하나뿐**이고
-    그것이 미리보기 루트를 검사한다."""
+    """**음성 · `〈247〉` 의 바깥을 코드 전체에서 잠근다.** 지우는 자리는 `DELETION_SITES`
+    에 적힌 것뿐이고, **자리마다 자기 울타리를 증명하는 시험이 짝으로 있다.**"""
     root = Path(invalidation.__file__).resolve().parents[2]   # colab_viz/
     offenders = []
     for p in sorted(root.rglob("*.py")):
         text = p.read_text(encoding="utf-8")
         for token in ("shutil.rmtree", "os.remove", "os.unlink"):
-            if token in text:
+            if token in text and p.name not in DELETION_SITES:
                 offenders.append(f"{p.name}:{token}")
-        # ⭑ ⟨증보 2026-08-31 · `〈253〉`⟩ 지우는 자리가 **둘**이고 둘 다 갇혀 있다:
-        #   `invalidation.py` = 미리보기 루트 안의 렌더 산출물 · `trigger_bus.py` = 이벤트
-        #   버스 안의 **알림 파일**(산출물이 아니다). 목록을 넓힌 것이 아니라 **자리마다
-        #   자기 울타리를 증명한다** — `test_trigger_intake.py` 의 「버스 밖의 파일은
-        #   지우지 않는다」가 뒤엣것을 잠근다. ⚠ 이름을 하나 더 넣는 것은 판정 사안이다.
-        if ".unlink(" in text and p.name not in ("invalidation.py", "trigger_bus.py"):
+        if ".unlink(" in text and p.name not in DELETION_SITES:
             offenders.append(f"{p.name}:unlink")
     assert offenders == [], f"지우는 자리가 늘었다: {offenders}"
+
+
+def test_source_는_자기_작업_디렉터리_밖을_지우지_않는다():
+    """**음성 · `source.py` 의 울타리.** 지우는 두 자리가 **둘 다 `self.workdir` 아래**를
+    가리키는지를 구문으로 잰다 — 산문이 아니라 코드다.
+
+    ⚠ **왜 필요한가.** s3 모드는 원본을 내려받아 캐시에 두고, 캐시는 지워도 되는 것이다.
+    그러나 그 지우개가 `workdir` 밖을 가리키는 순간 **읽기 전용이어야 할 단위가 원본을
+    지운다.** 「캐시니까 괜찮다」는 자리가 갇혀 있을 때만 참이다.
+    """
+    import ast
+
+    src = (Path(invalidation.__file__).resolve().parents[2]
+           / "ports" / "source.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+
+    # ⑴ `shutil.rmtree` 의 인자는 `_target_dirs()`(= `uploads_root(self.workdir)` 아래)에서 온 것뿐이다.
+    rmtrees = [n for n in ast.walk(tree)
+               if isinstance(n, ast.Call) and ast.unparse(n.func) == "shutil.rmtree"]
+    assert rmtrees, "지우는 자리가 사라졌다 — 이 시험이 무엇을 잠그는지 다시 읽는다."
+    for call in rmtrees:
+        arg = ast.unparse(call.args[0])
+        assert arg == "d", f"작업 디렉터리 목록 밖을 지운다: {arg}"
+
+    # ⑵ 목록을 만드는 자리가 `self.workdir` 에 뿌리를 둔다.
+    target_dirs = [n for n in ast.walk(tree)
+                   if isinstance(n, ast.FunctionDef) and n.name == "_target_dirs"]
+    assert target_dirs, "`_target_dirs` 가 없다 — 울타리의 뿌리가 사라졌다."
+    assert "uploads_root(self.workdir)" in ast.unparse(target_dirs[0]), \
+        "`_target_dirs` 가 `self.workdir` 밖을 본다."
+
+    # ⑶ `unlink` 는 반쪽 파일(`partial`) 하나뿐이고, 그 경로는 내려받는 자리에서 만든 것이다.
+    unlinks = [n for n in ast.walk(tree)
+               if isinstance(n, ast.Call) and ast.unparse(n.func).endswith(".unlink")]
+    for call in unlinks:
+        who = ast.unparse(call.func).rsplit(".", 1)[0]
+        assert who == "partial", f"반쪽 파일 밖을 지운다: {who}"

@@ -5,9 +5,15 @@
 `OPERATIONS` 가 정본이고 `tests/test_not_implemented.py` 가 오라클로 못을 박는다 —
 문서가 실물보다 낡은 것이 이 레포의 두 가지 실패 유형 중 하나다 (`CLAUDE.md §0`).
 
+⭑ 병합(PR #1 · 창 8-a) 시점 실측 = **4**. PR #1 쪽 머리말은 **19** 였다 — 그 줄기는
+`〈339〉` C1b 가 다운로드 op 둘을 **임시 등재**해 20 → 22, **C2 가 그 둘 ＋ `downloadDataset`
+셋을 빼 22 → 19** 로 세었다. `main` 줄기가 그 뒤로 더 걷어 **4** 다. **두 줄기가 걷은 대상이
+같으므로 병합 표는 4 다** — 아래 `OPERATIONS` 가 정본이고 `tests/test_not_implemented.py` 가 오라클이다.
+
 두 종으로 나눈다 (NIGHT-20260823 §3).
-  · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2 ·
-    다운로드 1). 구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다.
+  · `NOT_IMPLEMENTED_NO_STORE` — 저장처 자체가 P0 스키마에 없다(접근 요청 4 · Verified 요청 2).
+    구현 전에 스키마가 먼저 필요하다는 사실을 코드가 말한다. ⭑ 다운로드 1 은 `0009`
+    (`d8_download.file_id`)가 자리를 만들었고 C2 가 구현했다 — 이제 여기 없다.
   · `NOT_IMPLEMENTED_P1` — 저장 자리는 있고 로직이 P1 이다.
 
 **200 으로 가짜 값을 내리지 않는다.** 하나 구현할 때마다 이 표가 한 줄씩 줄고,
@@ -93,11 +99,17 @@ class Op:
 #:    「쌓이기만 하는 대기줄」이다. 요청 op 만 열고 처리 op 을 남기는 절단은 정본 §7.1·§7.2 의
 #:    전이표를 반만 세우는 것이라 부분 완료가 된다 (`CLAUDE.md §5`).
 #:    여덟 다 실동작 시험이 뒤에 있다 (`tests/test_approval.py` — 음성 다섯 포함).
-#: → **4**(`ST-1` 저장처 — `downloadDataset` 하나. **`NOT_IMPLEMENTED_NO_STORE` 가 0건이 된다** —
-#:    남은 다섯 중 그 사유를 단 op 은 이것뿐이었고, 그 사유는 처음부터 반만 참이었다:
+#: → **＋2**(`〈339〉`-(다) 9차 동결 해제 — `downloadDatasetFile`·`getDownloadBytes` **임시 등재**.
+#:    이 회차(C1b)는 계약 동결 + 파일 메타만이고 다운로드 집행은 다음 커밋(C2)이다 — **C2 가 뺀다.**
+#:    「신설과 동시에 구현」 규칙(`〈80〉-㉯ 5`)의 예외이고, 예외인 이유가 표에 적혀 있어야 한다.)
+#: → `〈339〉-(다)` C2 — 다운로드 집행. 임시 등재 둘 + `downloadDataset` 을 뺐다.
+#:    셋 다 실동작 시험이 뒤에 있다: `tests/test_download.py`. `routes/download.py` 가 진짜
+#:    핸들러이고, `getDownloadBytes` 는 계약대로 `security: []` — 티켓이 곧 자격이다.
+#: → **4**(`ST-1` 저장처 — `downloadDataset` 을 걷은 자리. **`NOT_IMPLEMENTED_NO_STORE` 가 0건이 된다** —
+#:    그 사유를 단 op 은 이것뿐이었고, 그 사유는 처음부터 반만 참이었다:
 #:    이력 표 `d8_download` 는 P0 이 만들어 두었고 바이트는 접수 볼륨 위에 이미 있었다.
 #:    **마이그레이션 0건 · 계약 개정 0건**(계약은 처음부터 이 op 을 302 로 들고 있었다).
-#:    실동작 시험이 뒤에 있다 (`tests/test_dataset_download.py` — **연구실 경계·잠금 음성 포함**).
+#:    ⭑ 병합(창 8-a) 뒤 `downloadDataset` 의 진짜 핸들러는 `routes/download.py` 다.)
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
     Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
@@ -114,6 +126,9 @@ OPERATIONS: tuple[Op, ...] = (
     Op("addUploadFile", "POST", "/uploads/{uploadId}/files", "NOT_IMPLEMENTED_P1"),
     Op("replaceUploadGridFile", "PUT", "/uploads/{uploadId}/files/{fileId}",
        "NOT_IMPLEMENTED_P1"),
+    # ── ⟨9차 동결 해제 · `PLAN-SoT §9 〈339〉-(다)`⟩ 다운로드 셋은 **C2 가 걷었다** — `routes/download.py`.
+    #    C1b 의 임시 등재(`downloadDatasetFile`·`getDownloadBytes`)가 여기 있었고, 그때 적어 둔
+    #    「C2 가 뺀다」가 이 줄이다. 걷은 자리의 시험 = `tests/test_download.py`.
 )
 
 _MESSAGE = {

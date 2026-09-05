@@ -92,6 +92,8 @@ function fakes(over: { ready?: boolean; attachThrows?: unknown } = {}) {
           fileId: FILE_ID,
           fileName: 'lat.npy',
           kind: '기준 격자 파일',
+          byteSize: 4,
+          createdAt: '2026-08-29T00:00:00Z',
           gridAxis: { carriesLat: true, carriesLon: false },
         },
       ];

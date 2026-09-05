@@ -2,7 +2,7 @@
 // (`Policy_데이터셋_상세 §5`). 공간 범위 칸은 두지 않는다 — 이름과 지도가 이미 말한다.
 // 잠긴 데이터는 이 블록을 통째로 비운다(`basicInfo` null) — 부르는 쪽이 아예 그리지 않는다.
 import { useState } from 'react';
-import { FileList } from './FileList';
+import { PieceList } from './PieceList';
 import { EMPTY, formatFiles, formatPeriod, orEmpty } from './format';
 import type { DatasetFile, FilesSource } from './filesSource';
 import type { DatasetBasicInfo } from './types';
@@ -73,7 +73,7 @@ export function BasicInfoGrid(props: {
             {error}
           </p>
         ) : files ? (
-          <FileList files={files} />
+          <PieceList files={files} />
         ) : (
           <div data-testid="file-list-loading" aria-busy="true" />
         )

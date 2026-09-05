@@ -128,3 +128,20 @@ describe('§〈88〉 묶음 3 — 성공 응답이 세 층을 다 말한다', ()
     expect(layersOf(result).thumbnailUrl).toBeUndefined();
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// `격자 전송 중` 은 **격자가 있을 때만** 성립한다
+//
+// `transfer` 는 본체+격자 전체 바이트라, 격자가 없는데도 이 상태가 서면
+// 화면이 「격자 파일을 받는 중입니다」라고 **틀린 말**을 한다.
+describe('§E.2 격자 전송 중 — 격자가 없으면 그 상태가 아니다', () => {
+  it('격자가 있으면 전송 중이다', () => {
+    const s = gridState({ hasGrid: true, transfer: { sentBytes: 1, totalBytes: 2 } } as never);
+    expect(s?.name).toBe('격자 전송 중');
+  });
+
+  it('격자가 없으면 전송 중이라고 말하지 않는다', () => {
+    const s = gridState({ hasGrid: false, transfer: { sentBytes: 1, totalBytes: 2 } } as never);
+    expect(s?.name).not.toBe('격자 전송 중');
+  });
+});

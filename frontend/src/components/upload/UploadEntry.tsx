@@ -7,7 +7,7 @@
 // 권한이 꺼지면 **버튼이 숨는다 — 비활성이 아니다** (`P-12` · 정본 §6). 그 판정은 `Gnb.tsx` 의
 // `PermissionGate` 가 이미 하고 있고, 여기서도 같은 게이트를 걸어 **이 컴포넌트만 따로 써도
 // 규칙이 유지되게** 한다(두 겹이어도 결과는 같다).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { UploadModal } from './UploadModal';
 import { apiLineageSource } from '../lineage/lineageSource';
@@ -27,12 +27,19 @@ function defaultSources(): UploadSources {
 }
 
 export function UploadEntry(props: {
+  /** 바깥(메인 카드 등)에서 「이 전송을 이어서」 열라고 보낸 신호. 값이 바뀔 때마다 연다. */
+  openRequest?: { seq: number; resumeUploadId?: string } | undefined;
   sources?: UploadSources | undefined;
   /** ③ 계보 확정 자리를 바깥에서 갈아 끼우고 싶을 때만 넘긴다. 없으면 모달이 집 안의 것을 세운다. */
   lineageStep?: LineageStepRender | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
+  // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
+  const seq = props.openRequest?.seq ?? 0;
+  useEffect(() => {
+    if (seq > 0) setOpen(true);
+  }, [seq]);
 
   return (
     <PermissionGate requires="업로드·편집">

@@ -16,9 +16,11 @@ from fastapi.exceptions import RequestValidationError
 from ..domains.d7_visualization import tile_reclaim
 from ..domains.d7_visualization.jobs import JobStore
 from ..kernel import errors
-from ..kernel.config import Settings, load_settings
+from ..kernel.config import Settings, load_settings, validate
+from ..kernel.health import healthz_body
 from ..kernel.logging_setup import configure_logging
-from ..ports.source import FilesystemSourcePort
+from ..kernel.preview_sinks import LocalPreviewSink, S3PreviewSink
+from ..ports.source import FilesystemSourcePort, S3SourcePort
 from .trigger_bus import SpoolTriggerPort
 from .trigger_loop import TriggerDrainLoop
 from .routes import renders, screenshots, style, values
@@ -26,12 +28,21 @@ from .routes import renders, screenshots, style, values
 API_PREFIX = "/viz/v1"
 
 
+def _s3_client(settings: Settings):
+    # core 의 `routes/upload_transfers.py::_s3` 와 같은 모양 — 버킷·리전만 여기서, 자격증명은
+    # 호출 시점에 `load_credentials`(env→ECS→IMDSv2)가 준다. 액세스 키를 env 에 두지 않는다.
+    from ..kernel.s3 import S3Client
+
+    return S3Client(bucket=settings.s3_bucket, region=settings.s3_region)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     # **관측이 되게 하는 한 줄**(`BF-12` · `〈324〉`). 앱을 세우는 자리에서 한 번 설정한다 —
     # 로거를 쓰는 쪽(`trigger_loop` 등)이 각자 설정하면 갈리고, 안 하면 버려진다.
     # ⚠ 멱등이다 — 시험이 앱을 수백 번 세워도 처리기는 하나다.
     configure_logging()
-    settings = settings or load_settings()
+    # ⚠ `validate` 가 `load_settings` 뒤에 온다 — 반쪽 설정으로 기동하지 않는다(`〈342〉`).
+    settings = validate(settings or load_settings())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -73,7 +84,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None, docs_url=None, redoc_url=None,
     )
     app.state.settings = settings
-    app.state.source = FilesystemSourcePort(settings.source_root)
+    client = _s3_client(settings) if "s3" in (settings.source_mode, settings.preview_sink) else None
+    if settings.source_mode == "s3":
+        assert settings.workdir is not None and settings.work_max_bytes is not None  # validate 가 보장
+        app.state.source = S3SourcePort(client, workdir=settings.workdir,
+                                        max_bytes=settings.work_max_bytes)
+    else:
+        app.state.source = FilesystemSourcePort(settings.source_root)
+    app.state.preview_sink = (S3PreviewSink(client, prefix=settings.preview_s3_prefix)
+                              if settings.preview_sink == "s3" else LocalPreviewSink())
     app.state.jobs = JobStore(execution=settings.execution,
                               tile_url_base=settings.tile_url_base,
                               ttl_seconds=settings.result_ttl_seconds,
@@ -97,7 +116,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # ⚠ **계약 표면이 아니다** — `/healthz` 는 `include_in_schema=False` 이고
         #   `core-viz.yaml` 은 한 글자도 바뀌지 않았다(동결 해제 0건).
         # ⚠ **비밀을 싣지 않는다** — 켜짐/꺼짐 두 글자뿐이고 서명 비밀은 나가지 않는다.
-        return {"unit": "viz-render", "status": "alive", "implemented": True,
+        # ⭑ **병합 2026-09-02** — 저장 모드(`sourceMode`·`previewSink`)는 `healthz_body` 가
+        #   낸다(`deploy_doctor` 가 그 키 이름을 읽는다). `tileBranch` 를 그 위에 얹는다.
+        return {**healthz_body(settings),
                 "tileBranch": "켜짐" if settings.tile_branch_enabled else "꺼짐"}
 
     for router in (renders.router, renders.tile_router,

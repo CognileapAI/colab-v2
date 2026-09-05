@@ -15,9 +15,8 @@
 from __future__ import annotations
 
 import datetime as dt
-import os
 import pathlib
-import shutil
+import tempfile
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Response, UploadFile
@@ -25,8 +24,12 @@ from sqlalchemy.orm import Session
 
 from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d5_ingestion,
                         d6_project, d8_insight)
-from ...kernel import errors, file_store, storage_layout
+from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
+from ...kernel.objectpath import normalize_relative_path
+from ...kernel.s3 import S3Client
+from ...kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
+from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
@@ -41,6 +44,31 @@ GRID = "기준 격자 파일"
 
 #: 계약 `UploadFileRef.fileName` 의 상한과 같은 값. DB CHECK 도 255 다.
 MAX_FILE_NAME = 255
+#: 한 접수의 파일 수 상한 — 계약 `createUpload.files.maxItems` · `UploadTransferDraft.files.maxItems`
+#: 와 **한 값**이다 (`〈339〉`). 프리사인드 라우트(`routes/upload_transfers.MAX_FILES`)가 이것을
+#: import 한다 — 두 입구가 다른 상한을 갖지 않는다.
+MAX_UPLOAD_FILES = 500
+#: 계약 `relativePath` 의 상한 — DB CHECK(`d5_upload_file`·`d3_file`)도 1024 다.
+MAX_RELATIVE_PATH = 1024
+
+
+def _relative_path(raw: str | None) -> str | None:
+    """`relativePath` 한 칸의 정규화 — **프리사인드 경로와 같은 함수·같은 상한** (`〈337〉`·`〈339〉-(나)`).
+
+    빈 문자열은 「경로 없음」이다 — multipart 배열은 null 을 싣지 못한다(계약 산문).
+    정규화 뒤 세그먼트가 남지 않는 값(`..` · `/` 뿐)은 400. `..` 세그먼트 자체는 정규화가
+    **떨어뜨린다**(`kernel/objectpath`) — 그 규칙은 FE `normalizeName.ts` 와 한 글자도 다르면 안 되므로
+    여기서 더 엄격한 규칙을 만들지 않는다.
+    """
+    if raw is None or raw == "":
+        return None
+    try:
+        path = normalize_relative_path(raw)
+    except ValueError:
+        raise errors.bad_request(f"relativePath 를 정규화할 수 없다 — 남는 세그먼트가 없다: {raw!r}")
+    if len(path) > MAX_RELATIVE_PATH:
+        raise errors.bad_request(f"relativePath 가 {MAX_RELATIVE_PATH}자를 넘는다.")
+    return path
 
 #: 한 번에 옮기는 바이트. **메모리는 이 값에 묶인다** — 파일 크기가 아니라
 #: (`kernel/file_store.STREAM_CHUNK` 이 내려받기 쪽에 적은 것과 같은 규칙).
@@ -48,58 +76,37 @@ _STREAM_CHUNK = 1 << 20
 
 
 # ── 저장 ────────────────────────────────────────────────────────────────────
-def _storage_root(request: Request) -> pathlib.Path:
-    """접수한 바이트를 두는 자리. **규칙은 `kernel/file_store` 하나에 있다** —
-    쓰는 쪽(여기)과 읽는 쪽(`downloadDataset`)이 자리를 따로 계산하면 갈린다(`#20`).
+# ⭑ 병합(창 8-a) — 종전 `main` 의 `_storage_root`/`_store`/`_discard`(로컬 디스크 직접 조작)는
+#   아래 저장 Port 가 대신한다. 그 셋이 지키던 것 둘은 Port 안에 그대로 있다:
+#     · **바이트를 흘려 보낸다**(`CODE-REVIEW-20260903` #10) — `put_stream` 이 청크로 쓴다.
+#       종전 `await upload_file.read()` 전량 적재가 5GB 업로드 하나로 프로세스를 멈췄다.
+#     · **쓴 바이트 수를 저장한 쪽이 센다** — `Content-Length` 를 믿지 않는다.
+#   ⚠ 라우트는 `main`(`9aed645`)의 판정대로 **`def`** 로 남는다 — `async def` 로 두면 동기
+#     SQLAlchemy 와 디스크 쓰기가 이벤트 루프에서 돈다.
+# 바이트를 만지는 자리는 전부 저장 Port(`ports/storage.py`) 경유다 — 로컬 디스크와
+# S3 가 여기서 갈린다 (`〈337〉`). **저장 키가 곧 배치**라는 규칙은 그대로다: 키는
+# `kernel/storage_layout`(정본 `contracts/storage/layout.json`)이 만들고, 세 단위가
+# 같은 생성물을 쓴다 — 키 규칙이 두 곳에 적혀 갈라졌던 실패(`03-HANDOFF §4 #20`)의 봉인.
+def _storage(request: Request) -> UploadStoragePort:
+    """설정이 정한 저장 백엔드. 앱마다 한 번 만들어 재사용한다.
+
+    local 모드에서 `upload_storage_dir` 이 없으면 프로세스마다 한 번 만드는 임시
+    디렉터리를 쓴다 — **바이트를 버리고 201 을 내리지 않기 위해서다.**
     """
-    return file_store.resolve_upload_root(request.app.state.settings, request.app.state)
-
-
-def _store(request: Request, *, key: str, upload_file: UploadFile) -> int:
-    """**저장 키가 곧 배치다.** 키는 `kernel/storage_layout` 이 만든다.
-
-    ⚠ 예전에는 `sha256(key)` 한 덩이를 루트에 평평하게 깔았다. 그런데 바이트를 여는 쪽
-    (`pipeline-worker` 의 `_storage_path`)은 **키를 경로로 그대로 읽는다** — 같은 규칙이
-    두 곳에 적혀 있다가 실제로 갈라진 자리다. 그 결과 워커가 파일을 못 찾고, 그 실패는
-    에러가 아니라 **「형식 인식 실패」로 위장**한다.
-
-    ⭑ **그 뒤 세 번째 자리가 있었다는 것이 드러났다**(`03-HANDOFF §4 #20`) — `viz-render`
-    는 또 다른 배치를 보고 있었고, 그래서 사람이 올린 격자가 렌더러에 영영 닿지 않았다.
-    그래서 규칙을 주석의 약속이 아니라 **한 정본**(`contracts/storage/layout.json`)으로
-    옮겼다. 세 단위가 같은 생성물을 쓰고, `generated-up-to-date` 가 드리프트를 막는다.
-
-    ⭑ **바이트를 흘려 보낸다** (`CODE-REVIEW-20260903` #10). 종전에는 라우트가
-    `await upload_file.read()` 로 파일 **전체**를 메모리에 올려 넘겼다 — nginx 상한 8g 까지
-    RSS 가 파일 크기를 그대로 따라갔고, 그 라우트들만 `async def` 라 **동기 SQLAlchemy 까지
-    이벤트 루프에서** 돌았다. 5GB 업로드 하나가 이 프로세스의 모든 요청(`/healthz` 포함)을
-    멈췄고, 그 정지는 업로드한 사람이 아니라 **다른 모든 사람**에게 보였다.
-
-    돌려주는 것은 **실제로 쓴 바이트 수**다. 미리 받은 `Content-Length` 를 믿으면 원장이
-    적은 크기와 디스크의 실물이 갈릴 수 있고, 그 어긋남은 오류를 내지 않는다.
-    """
-    path = _storage_root(request) / key
-    path.parent.mkdir(parents=True, exist_ok=True)
-    upload_file.file.seek(0)
-    with path.open("wb") as sink:
-        shutil.copyfileobj(upload_file.file, sink, _STREAM_CHUNK)
-    return path.stat().st_size
-
-
-def _discard(request: Request, *, key: str | None, keep: str | None = None) -> None:
-    """원장에서 사라진 격자의 **바이트도** 치운다.
-
-    ⚠ 바이트를 남기면 원장은 「없다」고 하는데 격자 폴더에는 남아 있는 상태가 된다.
-    격자를 읽는 쪽(`viz-render`)에는 원장이 없어 **폴더가 곧 사실**이라, 지운 격자로
-    계속 그리거나 짝이 셋이 되어 통째로 거절된다. 없는 파일은 조용히 넘어간다 —
-    이미 없는 것을 지우지 못했다고 200 을 500 으로 바꾸지 않는다.
-    """
-    if not key or key == keep:
-        return
-    path = _storage_root(request) / key
-    try:
-        path.unlink()
-    except (FileNotFoundError, IsADirectoryError, PermissionError):
-        return
+    cached = getattr(request.app.state, "upload_storage", None)
+    if cached is not None:
+        return cached
+    settings = request.app.state.settings
+    if getattr(settings, "storage_mode", "local") == "s3":
+        client = S3Client(bucket=settings.s3_bucket, region=settings.s3_region)
+        storage: UploadStoragePort = S3UploadStorage(client)
+    else:
+        configured = getattr(settings, "upload_storage_dir", None)
+        root = pathlib.Path(configured) if configured \
+            else pathlib.Path(tempfile.mkdtemp(prefix="colab-uploads-"))
+        storage = LocalFilesystemStorage(root)
+    request.app.state.upload_storage = storage
+    return storage
 
 
 def _dataset_keys(dataset_id: str, files) -> dict[str, str]:
@@ -107,59 +114,6 @@ def _dataset_keys(dataset_id: str, files) -> dict[str, str]:
     return {f.file_id: storage_layout.storage_key(dataset_id, file_id=f.file_id,
                                                   kind=f.kind, file_name=f.file_name)
             for f in files}
-
-
-def _prune_upload_dirs(root: pathlib.Path, old_keys) -> None:
-    """옮기고 남은 빈 자리를 치운다. 비어 있지 않으면 건드리지 않는다."""
-    stop = storage_layout.uploads_root(root)
-    for key in old_keys:
-        if not key:
-            continue
-        node = (root / key).parent
-        while stop in node.parents:
-            try:
-                node.rmdir()
-            except OSError:
-                break
-            node = node.parent
-
-
-def _relocate(request: Request, *, files, new_keys: dict[str, str]) -> None:
-    """등록 전환·후주입에서 **바이트를 데이터셋 자리로 옮긴다.**
-
-    ⚠ 예전에는 저장 키를 그대로 승계해 바이트가 `uploads/{uploadId}/` 에 남았다. 그리는
-    쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**이라, `datasetId` 로 오는 렌더 요청은 빈
-    자리를 보고 404 를 냈고 그 실패는 중계에서 **503 `RENDER_UNAVAILABLE`** 로 나왔다 —
-    등록된 데이터셋 **전체**가 대상이었다 (`03-HANDOFF §4 #20` 계열).
-
-    **사용자에게 등록은 데이터셋이 성립하는 사건이다.** 그래서 자리도 데이터셋의 것이 된다 —
-    같은 볼륨 안의 이름 바꾸기(`os.replace`)라 바이트를 복사하지 않는다. 그 뒤에 붙는
-    `addDatasetFile`·`replaceDatasetGridFile` 이 이미 `datasetId` 자리에 쓰고 있었으므로,
-    이 이동이 없으면 한 데이터셋의 파일이 **두 디렉터리로 갈라진 채** 남는다.
-
-    호출은 **모든 판정이 끝난 뒤 마지막**이다 — 중간 실패로 트랜잭션이 되감길 때
-    바이트만 옮겨진 상태를 만들지 않는다. 이동 도중 실패하면 옮긴 것을 되돌린다.
-    """
-    root = _storage_root(request)
-    done: list[tuple[pathlib.Path, pathlib.Path]] = []
-    try:
-        for f in files:
-            new_key = new_keys[f.file_id]
-            if not f.storage_key or f.storage_key == new_key:
-                continue
-            src, dst = root / f.storage_key, root / new_key
-            if not src.is_file():
-                # 바이트가 이미 없다. 원장은 새 자리를 적는다 — 두 자리를 만들지 않는다.
-                continue
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(src, dst)
-            done.append((src, dst))
-    except OSError:
-        for src, dst in reversed(done):
-            src.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(dst, src)
-        raise
-    _prune_upload_dirs(root, [f.storage_key for f in files])
 
 
 # ── 권한 ────────────────────────────────────────────────────────────────────
@@ -212,12 +166,16 @@ def _file_records(upload_files) -> list[dict[str, Any]]:
 
     ⚠ **본체에는 붙이지 않는다.** 축이 붙은 본체는 `0004` 의 CHECK 가 애초에 만들지 않으므로
     거기 `false/false` 를 실으면 **없는 사실**을 말하는 것이 된다.
+
+    `relativePath` 는 **있을 때만** 싣는다 (`〈339〉-(나)`) — 낱개 파일에 빈 키를 만들지 않는다.
     """
     out: list[dict[str, Any]] = []
     for f in upload_files:
         row: dict[str, Any] = {
             "fileId": f.file_id, "fileName": f.file_name, "kind": f.kind,
             "byteSize": 0 if f.byte_size is None else f.byte_size}
+        if f.relative_path:
+            row["relativePath"] = f.relative_path
         if f.kind == GRID and (f.carries_lat or f.carries_lon):
             row["gridAxis"] = {"carriesLat": bool(f.carries_lat),
                                "carriesLon": bool(f.carries_lon)}
@@ -230,6 +188,7 @@ def _file_records(upload_files) -> list[dict[str, Any]]:
 def create_upload(request: Request, response: Response,
                   files: list[UploadFile] = File(...),
                   fileKinds: list[str] | None = Form(default=None),
+                  relativePaths: list[str] | None = Form(default=None),
                   subject: Subject = Depends(current_subject),
                   db: Session = Depends(scoped_db)) -> dict:
     """**`upload.accepted` 를 발행하는 유일한 자리다.**
@@ -244,10 +203,15 @@ def create_upload(request: Request, response: Response,
     (`SEAM-AUDIT` I-01·I-06 — 소비만 있고 생산이 없던 두 식별자).
 
     **D3 에 행을 만들지 않는다.**
+
+    폴더 경로(`relativePaths`)는 원장 메타로만 보존한다 (`〈337〉`·`〈339〉-(나)`) — 저장 키는
+    그대로 평평하다. 바이트는 `put_stream` 으로 흘려보낸다 — 본문을 통째로 메모리에 올리지 않는다.
     """
     _require_upload_edit(db, subject)
     if not files:
         raise errors.bad_request("files 가 비었다 — 파일 없이 업로드를 접수하지 않는다.")
+    if len(files) > MAX_UPLOAD_FILES:
+        raise errors.bad_request(f"files 는 1~{MAX_UPLOAD_FILES}개다.")
 
     kinds = list(fileKinds or [])
     if not kinds:
@@ -257,6 +221,13 @@ def create_upload(request: Request, response: Response,
     unknown = sorted(set(kinds) - set(FILE_KINDS))
     if unknown:
         raise errors.bad_request(f"파일 종류가 2값 밖이다: {unknown}")
+    paths_raw = list(relativePaths or [])
+    if not paths_raw:
+        paths: list[str | None] = [None] * len(files)   # 생략하면 전부 경로 없음 (계약 산문)
+    elif len(paths_raw) != len(files):
+        raise errors.bad_request("relativePaths 는 files 와 같은 순서·같은 개수여야 한다.")
+    else:
+        paths = [_relative_path(p) for p in paths_raw]
     # ⚠ **여기서 「본체 1건 이상」을 요구하지 않는다.** 그 불변식은 **데이터셋의 성질**이고
     # (`DataModel §4.3`), 접수는 D3 에 아무것도 만들지 않는다 (`〈64〉-ⓐ`). 그래서 판정은
     # 등록 전환(`createDataset`)이 한다 — 아래 그 자리에 있다.
@@ -266,14 +237,16 @@ def create_upload(request: Request, response: Response,
 
     upload_id = Ulid.generate()
     records: list[UploadFileRecord] = []
-    for upload_file, kind in zip(files, kinds):
+    for upload_file, kind, relative_path in zip(files, kinds, paths):
         name = (upload_file.filename or "").strip()
         if not name or len(name) > MAX_FILE_NAME:
             raise errors.bad_request("파일 이름은 1~255자다.")
         file_id = Ulid.generate()
         key = storage_layout.storage_key(str(upload_id), file_id=str(file_id),
                                          kind=kind, file_name=name)
-        byte_size = _store(request, key=key, upload_file=upload_file)
+        # 크기는 **저장한 쪽이 센 값**이다 — `Content-Length` 도 클라이언트 신고도 믿지 않는다.
+        upload_file.file.seek(0)
+        byte_size = _storage(request).put_stream(key=key, stream=upload_file.file)
         records.append(UploadFileRecord(
             file_id=str(file_id), file_name=name, kind=kind, byte_size=byte_size,
             storage_key=key,
@@ -281,6 +254,7 @@ def create_upload(request: Request, response: Response,
             carries_lat=False, carries_lon=False,
             # **확장자로 포맷을 정하지 않는다** — 매직바이트 판정은 파이프라인의 일이다.
             detected_format=None,
+            relative_path=relative_path,
         ))
 
     ledger = _ledger(db)
@@ -317,6 +291,10 @@ def get_upload_status(uploadId: str,
         "renderable": record.renderable,
         "metadataComplete": record.metadata_complete,
         "expiresAt": record.expires_at.astimezone(dt.timezone.utc).isoformat(),
+        # **등록됐는가** — 도장의 유무만 말한다. 어느 데이터셋인지는 말하지 않는다(원장은 D3 를
+        # 가리키지 않는다 · `d5_ingestion.py` 머리말). 이 값이 없으면 화면이 브라우저 기억에만
+        # 기대게 되고, 등록 직후 탭이 죽으면 **이미 끝낸 것을 「등록만 남았어요」라고 말한다**.
+        "registered": record.registered_at is not None,
         "failure": None if record.failure_reason is None else {"reason": record.failure_reason},
     }
 
@@ -520,7 +498,6 @@ def create_dataset(request: Request, body: dict = None,
         raise errors.conflict("이미 등록 전환된 업로드다.")
 
     dataset_id = Ulid.generate()
-    total = sum(f.byte_size or 0 for f in files)
     body_files = [f for f in files if f.kind == BODY]
     formats = {f.detected_format for f in files if f.detected_format}
     d3_catalog.register_dataset(
@@ -530,7 +507,10 @@ def create_dataset(request: Request, body: dict = None,
         # 포맷은 **파이프라인이 판정한 값**만 옮긴다. 조각마다 다르면 아직 모르는 것이다.
         detected_format=(formats.pop() if len(formats) == 1 else None),
         bundle_file_name=(body_files[0].file_name if body_files else None),
-        total_size_bytes=total,
+        # **합계를 손으로 넣지 않는다.** 0 으로 세우면 아래 ② 의 파일 INSERT 가 트리거
+        # (`0009` `sync_dataset_total_size`)로 합계를 더한다. 여기서 sum 을 쓰면 **두 번 센다** —
+        # 시드가 그렇게 200 == 100 red 를 냈다 (`tests/test_dataset_detail.py`).
+        total_size_bytes=0,
     )
 
     # ①-a **사람이 적은 값을 먼저 쓴다** (`#62` · 정본 `VAL-006` · `〈138〉`).
@@ -559,13 +539,15 @@ def create_dataset(request: Request, body: dict = None,
 
     # ② 파일 — **업로드가 발급한 `fileId` 그대로.** 저장 키는 **데이터셋의 자리**다
     #    (`_relocate` 주석 — 승계하면 등록된 데이터셋 전체가 렌더 404 다).
+    #    폴더 경로(`relative_path`)는 원장에서 그대로 승계한다 (`0009` · `〈339〉-(나)`).
     new_keys = _dataset_keys(str(dataset_id), files)
     for f in files:
         d3_catalog.insert_file(
             db, file_id=f.file_id, dataset_id=dataset_id, kind=f.kind,
             file_name=f.file_name, size_bytes=f.byte_size,
             storage_key=new_keys[f.file_id],
-            carries_lat=f.carries_lat, carries_lon=f.carries_lon)
+            carries_lat=f.carries_lat, carries_lon=f.carries_lon,
+            relative_path=f.relative_path)
 
     # ③ 계보 — **사람이 확인한 것만** 온다. 비어 있으면 `기록 없음` 이고 등록은 막지 않는다.
     if parents:
@@ -591,7 +573,7 @@ def create_dataset(request: Request, body: dict = None,
         d6_project.link_dataset(db, project_id=pid, dataset_id=dataset_id)
 
     # ⑤ 바이트 — **판정이 다 끝난 뒤에** 옮긴다. 앞에서 실패하면 바이트는 그대로다.
-    _relocate(request, files=files, new_keys=new_keys)
+    _storage(request).relocate(files=files, new_keys=new_keys)
     # ⑥ **올린 일이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).
     #    등록이 다 끝난 뒤에 적는다 — 위에서 떨어진 요청은 데이터셋을 만들지 않았으므로
     #    활동도 없다(활동만 남으면 목록이 없는 데이터셋을 가리킨다).
@@ -602,6 +584,14 @@ def create_dataset(request: Request, body: dict = None,
 
 
 # ═════════════════════ addDatasetFile · 교체 · 삭제 (〈60〉) ═════════════════
+#: `〈339〉-(라)` — 본체 파일 추가·교체·삭제의 활동 문자열. **`[정본 무근거]`** (`〈341〉-⑦-⑾` Ted 판정 대기).
+#: 정본 §6.1 은 값 집합을 안 닫았고 `〈60〉` 은 격자 것(`d8_insight.ACTION_GRID_CHANGED`)만 고정했다.
+#: 격자와 **다른** 문자열인 이유 — 바뀐 것이 좌표를 읽을 수단이 아니라 과학 데이터 자체라, 활동
+#: 화면에서 두 사건이 갈려 보여야 한다. 상수가 여기(라우트) 사는 것은 D8 표면을 늘리지 않기 위해서다 —
+#: `record_activity(action=…)` 는 자유 문자열이고 DB CHECK 는 비어 있지 않음만 본다.
+ACTION_BODY_CHANGED = "본체 파일 변경"
+
+
 def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) -> None:
     """`〈60〉` — 후주입·교체·삭제는 **계보를 접지 않고 이력에 남긴다.**
 
@@ -616,15 +606,41 @@ def _record_grid_activity(db: Session, *, subject: Subject, dataset_id: Ulid) ->
         target_kind="데이터셋", target_id=dataset_id)
 
 
+def _record_body_activity(db: Session, *, subject: Subject, dataset_id: Ulid) -> None:
+    """`〈339〉-(라)` — 본체 추가·교체·삭제. **격자(`_record_grid_activity`)와 셋 다 반대다.**
+
+    ① `마지막 수정` 을 **민다** (`〈339〉` 권고 · Ted 판정 대기 `〈341〉-⑦-⑷`). `〈60〉-①` 이 격자에서
+       그 열을 안 건드린 이유는 「바뀐 것이 과학 데이터가 아니라 좌표를 읽을 수단」이어서였다 —
+       본체는 **과학 데이터 자체**라 파생 관계를 다시 봐야 하고, 파생인 `계보 상태` 가 `확정` 에서
+       `확인 필요` 로 접히는 것이 맞다. 사람이 확인하러 가면 실제로 바뀐 것이 있다.
+    ② `crs/grid` 를 **건드리지 않는다** — `recompute_grid_metadata`(`_CLEAR_GRID_META`)는 사람이
+       `updateDataset` 으로 적은 `crs`(`_UPDATABLE`)를 NULL 로 지운다. 본체가 바뀌었다고 사람이 적은
+       좌표계가 틀려지는 것이 아니다 — 「모른다」와 「지웠다」는 다르다.
+    ③ `d8_activity` 에 `본체 파일 변경` 한 행 — 격자 문자열과 갈라 둔다.
+    `total_size_bytes` 는 여기서도 손대지 않는다 — `0009` 트리거가 `d3_file` 차분으로 옮긴다.
+    """
+    d3_catalog.touch_last_modified(db, dataset_id)
+    d8_insight.record_activity(
+        db, actor_id=subject.account_id, action=ACTION_BODY_CHANGED,
+        target_kind="데이터셋", target_id=dataset_id)
+
+
 @router.post("/datasets/{datasetId}/files", name="addDatasetFile", status_code=201)
 def add_dataset_file(request: Request, datasetId: str,
                      file: UploadFile = File(...),
                      kind: str = Form(...),
+                     relativePath: str | None = Form(default=None),
                      subject: Subject = Depends(current_subject),
                      db: Session = Depends(scoped_db)) -> dict:
-    """후주입 — **기준 격자 파일은 나중에 와도 된다** (`〈58〉-②`).
+    """후주입 — **본체는 여기서**, 기준 격자 파일은 `attachUploadGridFiles` 로.
 
-    격자 0건은 정상 상태다 (`P2.md §2-21`). 그릴 수 없는 것과 등록할 수 없는 것은 다르다.
+    본체 후주입은 `〈59〉-③` 이 막았던 조작이고 `〈339〉-(라)` 가 번복했다 — 계약이 막지 않고
+    사람이 판단한다. 격자 0건은 정상 상태다 (`P2.md §2-21`). 그릴 수 없는 것과 등록할 수 없는
+    것은 다르다. 폴더 경로는 `relativePath` 로 받아 `d3_file.relative_path` 에 남긴다 (`〈339〉-(나)`).
+
+    본체의 뒷정리는 교체·삭제와 **같은 규칙**(`_record_body_activity`)이다 — `마지막 수정` 이동 ·
+    `crs/grid` 무변경 · `본체 파일 변경` 한 행. ⚠ 이 경로가 `_record_grid_activity` 를 불렀던 동안은
+    본체를 하나 더할 때마다 사람이 적은 `crs` 가 지워지고 있었다(실측 — `〈339〉` 집행 전).
     """
     if not Ulid.is_valid(datasetId):
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
@@ -637,10 +653,7 @@ def add_dataset_file(request: Request, datasetId: str,
     name = (file.filename or "").strip()
     if not name or len(name) > MAX_FILE_NAME:
         raise errors.bad_request("파일 이름은 1~255자다.")
-
-    file_id = Ulid.generate()
-    key = storage_layout.storage_key(datasetId, file_id=str(file_id),
-                                     kind=kind, file_name=name)
+    relative_path = _relative_path(relativePath)
     if kind == GRID:
         # 축을 모르는 채로는 `d3_file` 의 CHECK 를 통과하지 못한다 — 그리고 통과시키려고
         # 축을 지어내지 않는다 (`〈66〉`). 축 판별은 파일을 읽는 쪽의 일이다.
@@ -650,16 +663,24 @@ def add_dataset_file(request: Request, datasetId: str,
         # 이 검사 앞에 있어 거절한 격자 파일이 `uploads/{id}/grid/` 에 그대로 남았다.
         # 격자를 읽는 쪽(viz-render)에는 원장이 없어 **폴더가 곧 사실**이다 — 거절했다면서
         # 그 파일로 그리거나, 짝이 셋이 되어 멀쩡한 격자까지 통째로 거절된다.
+        # 판정이 저장보다 **앞**이다 — 거절할 바이트를 디스크에 놓고 나서 거절하지 않는다.
         raise errors.bad_request(
             "기준 격자 파일의 축(위도·경도)은 서버가 파일에서 판별한다 — "
             "이 op 은 그 판별을 태우지 않는다. 격자는 업로드로 올려 판별을 마친 뒤 "
             "`/datasets/{datasetId}/grid-files` 로 반영한다.")
-    byte_size = _store(request, key=key, upload_file=file)
-    d3_catalog.insert_file(db, file_id=str(file_id), dataset_id=dataset_id, kind=kind,
-                           file_name=name, size_bytes=byte_size, storage_key=key,
-                           carries_lat=False, carries_lon=False)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
-    return {"fileId": str(file_id), "fileName": name, "kind": kind}
+
+    file_id = Ulid.generate()
+    key = storage_layout.storage_key(datasetId, file_id=str(file_id),
+                                     kind=kind, file_name=name)
+    file.file.seek(0)
+    byte_size = _storage(request).put_stream(key=key, stream=file.file)
+    row = d3_catalog.insert_file(db, file_id=str(file_id), dataset_id=dataset_id, kind=kind,
+                                 file_name=name, size_bytes=byte_size, storage_key=key,
+                                 carries_lat=False, carries_lon=False,
+                                 relative_path=relative_path)
+    # 여기 오는 것은 본체뿐이다 — 격자는 위에서 400 으로 갈 곳을 말하고 끝났다.
+    _record_body_activity(db, subject=subject, dataset_id=dataset_id)
+    return d3_catalog.file_ref(row)
 
 
 _ALLOWED_ATTACH_FIELDS = {"uploadId"}
@@ -683,7 +704,8 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
       · **축을 지어내지 않는다** — 원장에 축이 있는 행만 옮긴다 (`〈66〉`).
       · **저장 키를 승계하지 않는다** — 바이트는 데이터셋 자리로 온다(`_relocate`).
         등록 전환과 같은 규칙이고, 승계가 렌더 404 의 원인이었다.
-      · **본체를 받지 않는다** — 본체 후주입은 `〈59〉-③` 이 금지한 조작이다.
+      · **본체를 받지 않는다** — 본체가 든 묶음은 등록 전환의 대상이다. 본체 후주입의 자리는
+        `addDatasetFile` 이다 (`〈339〉-(라)` 가 `〈59〉-③` 을 번복한 뒤에도 이 op 은 격자 전용이다).
       · **마이그레이션·이벤트 계약을 건드리지 않는다.**
     """
     if not Ulid.is_valid(datasetId):
@@ -749,18 +771,17 @@ def attach_upload_grid_files(request: Request, datasetId: str, body: dict = Body
         # **`fileId` 동일성** — 업로드가 발급한 ULID 가 `d3_file.id` 로 그대로 간다 (`NB-A`).
         # **저장 키는 데이터셋의 자리다** — 등록 전환과 같은 규칙이고, 본체와 격자가 한
         # 디렉터리에 모여야 D7 이 짝을 본다(그쪽에는 원장이 없다).
-        d3_catalog.insert_file(
+        row = d3_catalog.insert_file(
             db, file_id=g.file_id, dataset_id=dataset_id, kind=g.kind,
             file_name=g.file_name, size_bytes=g.byte_size,
             storage_key=new_keys[g.file_id],
-            carries_lat=g.carries_lat, carries_lon=g.carries_lon)
-        out.append({"fileId": g.file_id, "fileName": g.file_name, "kind": g.kind,
-                    "gridAxis": {"carriesLat": bool(g.carries_lat),
-                                 "carriesLon": bool(g.carries_lon)}})
+            carries_lat=g.carries_lat, carries_lon=g.carries_lon,
+            relative_path=g.relative_path)
+        out.append(d3_catalog.file_ref(row))
 
     # `〈60〉` — 계보를 접지 않고 이력에 남긴다. 좌표계·격자는 재계산한다.
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
-    _relocate(request, files=grids, new_keys=new_keys)
+    _storage(request).relocate(files=grids, new_keys=new_keys)
     return {"items": out}
 
 
@@ -770,7 +791,12 @@ def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
                               flipAxes: bool | None = Form(default=None),
                               subject: Subject = Depends(current_subject),
                               db: Session = Depends(scoped_db)) -> dict:
-    """교체는 **정상 동작**이다 (`〈59〉-①`). **본체는 이 경로의 대상이 아니다** — 409.
+    """교체는 **정상 동작**이다 (`〈59〉-①`) — **본체도, 격자도.**
+
+    **⟨`〈339〉-(라)` · `〈59〉-③` 번복⟩** 「본체를 갈아 끼우는 것은 다른 데이터다」는 판단을 **사람이
+    한다** — 계약이 막지 않는다(계약 산문 · `GridFileReplacement`). `operationId` 는 그대로다.
+    본체 교체의 뒷정리는 격자와 반대다 — `_record_body_activity` 주석. `flipAxes` 만은 여전히
+    **격자 사이의 조작**이라 본체에 요청하면 409 다(계약 409-②).
 
     **⟨동결 1회 해제 · `〈80〉-㉯ 3`(`K-3`)⟩ 축 뒤집기가 이 op 안에 든다.**
     뒤집기 = **같은 두 파일의 축 배정을 맞바꾸는 것**이고, 그것이 정확히 `〈59〉` 가 말한
@@ -780,13 +806,17 @@ def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
 
     요청은 **택일**이다 — `file` 이거나 `flipAxes: true` 이거나. 둘 다이거나 둘 다 아니면 400.
     """
-    row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    row, dataset_id, file_ref = _file_target(db, subject, datasetId, fileId)
     if flipAxes is not None and file is not None:
         raise errors.bad_request(
             "`file` 과 `flipAxes` 는 택일이다 — 함께 보내면 어느 쪽을 했는지 응답이 말할 수 없다.")
     if flipAxes is not None:
         if not flipAxes:
             raise errors.bad_request("`flipAxes: false` 는 아무것도 요청하지 않는다.")
+        if row.kind == BODY:
+            # 본체에는 축이 없다(`0004` CHECK ㈏) — 뒤집을 배정 자체가 없다. 짝 수를 세기 전에 가른다.
+            raise errors.conflict(
+                "대상이 본체 파일이다 — `flipAxes` 는 기준 격자 파일 사이의 조작이고 본체에는 축이 없다.")
         return _flip_grid_axes(db, subject=subject, dataset_id=dataset_id, file_ref=file_ref)
     if file is None:
         raise errors.bad_request("`file` 이거나 `flipAxes: true` 여야 한다.")
@@ -795,15 +825,24 @@ def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
         raise errors.bad_request("파일 이름은 1~255자다.")
     key = storage_layout.storage_key(datasetId, file_id=str(file_ref),
                                      kind=row.kind, file_name=name)
-    byte_size = _store(request, key=key, upload_file=file)
-    # **옛 바이트를 남기지 않는다.** 격자는 이름으로 자리가 정해지므로(`layout.json`),
-    # 이름이 바뀐 교체는 옛 파일을 그 자리에 그대로 둔다 — 그러면 격자 폴더에 위도가
-    # 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다. 교체했는데 안 그려지는 실물이 이것이다.
-    _discard(request, key=row.storage_key, keep=key)
+    file.file.seek(0)
+    byte_size = _storage(request).put_stream(key=key, stream=file.file)
+    # **옛 바이트를 남기지 않는다.**
+    #   · 격자는 이름으로 자리가 정해지므로(`layout.json`) 이름이 바뀐 교체는 옛 파일을 그 자리에
+    #     그대로 둔다 — 그러면 격자 폴더에 위도가 두 장 남고 짝짓기가 「짝이 아니다」로 죽는다.
+    #     교체했는데 안 그려지는 실물이 이것이다.
+    #   · 본체는 키가 `{datasetId}/{fileId}` 라 **키 불변**이다 — `put_stream` 이 그 자리에 덮어썼고
+    #     `keep` 이 같은 키를 막아 이 줄은 아무것도 안 한다. 원장 키가 규약 밖인 행(시드·이관분)만
+    #     옛 자리가 지워진다 — 그 바이트는 이제 아무도 가리키지 않는다.
+    _storage(request).discard(key=row.storage_key, keep=key)
     updated = d3_catalog.replace_file(db, file_id=file_ref, file_name=name,
                                       size_bytes=byte_size, storage_key=key)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
-    return {"fileId": updated.file_id, "fileName": updated.file_name, "kind": updated.kind}
+    if row.kind == BODY:
+        d3_catalog.sync_bundle_file_name(db, dataset_id, was=row.file_name)
+        _record_body_activity(db, subject=subject, dataset_id=dataset_id)
+    else:
+        _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    return d3_catalog.file_ref(updated)
 
 
 @router.delete("/datasets/{datasetId}/files/{fileId}", name="deleteDatasetGridFile",
@@ -811,11 +850,35 @@ def replace_dataset_grid_file(request: Request, datasetId: str, fileId: str,
 def delete_dataset_grid_file(request: Request, datasetId: str, fileId: str,
                              subject: Subject = Depends(current_subject),
                              db: Session = Depends(scoped_db)) -> Response:
-    """삭제도 정상 동작이다. **본체는 지우지 않는다** — 409 (`〈59〉-③`)."""
-    row, dataset_id, file_ref = _grid_target(db, subject, datasetId, fileId)
+    """삭제도 정상 동작이다 — **본체도.** 남는 불변식은 **본체 ≥ 1** 하나다 (`DataModel §4.3` ·
+    `〈339〉-(라)` — `〈59〉-③` 의 「본체는 409」 번복). 그래서 409 의 뜻이 「본체다」에서
+    「**마지막** 본체다」로 바뀌었다. 격자는 0건이 정상이라 그 409 가 없다.
+
+    대표 조각(`d3_dataset.representative_file_id`)은 **FK `ON DELETE SET NULL`** 이 되돌린다
+    (`schema.sql` `d3_dataset_representative_file_fk`). 그 열의 `NULL` 은 「없음」이 아니라 **「자동」**
+    (파일명 자연 정렬의 첫 조각을 그때그때 고른다 — 열 주석 · 결정 2-4·2-8)이고, 값이 있으면 **사람이
+    지정한 것**이다. 그래서 앱 코드가 남은 본체를 골라 써 넣지 않는다 — 써 넣으면 「사람이
+    지정했다」는 없는 사실이 된다. 「남은 본체 중 가장 오래된 것으로 갱신」하는 규칙은 그 이유로
+    기각했다 (`〈339〉` 집행 보고 · Ted 판정 대기).
+    `bundle_file_name` 은 FK 가 없어 `sync_bundle_file_name` 이 따라간다 (`[정본 무근거]`).
+    """
+    row, dataset_id, file_ref = _file_target(db, subject, datasetId, fileId)
+    if row.kind == BODY:
+        # 세고 나서 지운다 — 그래서 **데이터셋 행을 먼저 잠근다.** 잠그지 않으면 마지막 둘을 동시에
+        # 지우는 두 요청이 각자 「2건」을 보고 둘 다 통과해 본체 0건이 된다. 에러 없이 깨지는 불변식이다.
+        if not d3_catalog.lock_dataset(db, dataset_id):
+            raise errors.not_found()      # 관문 뒤에 묘비가 됐다 — 없는 것으로 답한다
+        if d3_catalog.body_file_count(db, dataset_id) <= 1:
+            raise errors.conflict(
+                "마지막 본체 파일은 지울 수 없다 — 본체 없는 데이터셋은 데이터가 아니라 좌표다"
+                "(본체 ≥ 1). 데이터를 없애려면 파일이 아니라 데이터셋을 지운다.")
     d3_catalog.delete_file(db, file_ref)
-    _discard(request, key=row.storage_key)
-    _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
+    _storage(request).discard(key=row.storage_key)
+    if row.kind == BODY:
+        d3_catalog.sync_bundle_file_name(db, dataset_id, was=row.file_name)
+        _record_body_activity(db, subject=subject, dataset_id=dataset_id)
+    else:
+        _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     return Response(status_code=204)
 
 
@@ -832,12 +895,16 @@ def _flip_grid_axes(db: Session, *, subject: Subject, dataset_id: Ulid, file_ref
     d3_catalog.swap_grid_axes(db, dataset_id)
     _record_grid_activity(db, subject=subject, dataset_id=dataset_id)
     updated = next(g for g in d3_catalog.grid_files(db, dataset_id) if g.file_id == str(file_ref))
-    return {"fileId": updated.file_id, "fileName": updated.file_name, "kind": updated.kind,
-            "gridAxis": {"carriesLat": updated.carries_lat, "carriesLon": updated.carries_lon}}
+    return d3_catalog.file_ref(updated)
 
 
-def _grid_target(db: Session, subject: Subject, datasetId: str, fileId: str):
-    """교체·삭제가 공유하는 관문 — 404 · 403 · **409(본체)** 를 한 자리에서 가른다."""
+def _file_target(db: Session, subject: Subject, datasetId: str, fileId: str):
+    """교체·삭제가 공유하는 관문 — 400 · 403 · 404 를 한 자리에서 가른다.
+
+    ⟨`〈339〉-(라)`⟩ 예전 이름은 `_grid_target` 이었고 여기서 본체를 409 로 막았다(`〈59〉-③`).
+    번복으로 본체도 대상이다 — 종류별 검사(`flipAxes` 는 격자만 · 마지막 본체는 못 지운다)는
+    **각 op 안에** 있다. 없는 파일과 경계 밖은 **같은 404** 다 (P-9·P-10).
+    """
     if not Ulid.is_valid(datasetId) or not Ulid.is_valid(fileId):
         raise errors.bad_request("정규 ID 가 아니다.")
     dataset_id, file_id = Ulid(datasetId), Ulid(fileId)
@@ -847,7 +914,4 @@ def _grid_target(db: Session, subject: Subject, datasetId: str, fileId: str):
     row = d3_catalog.find_file(db, dataset_id=dataset_id, file_id=file_id)
     if row is None:
         raise errors.not_found()
-    if row.kind == BODY:
-        # 본체를 갈아 끼우는 것은 **다른 데이터**다 — `DataModel §4.3` 이 데이터셋을 나누라고 한다.
-        raise errors.conflict("대상이 본체 파일이다 — 교체·삭제는 기준 격자 파일만 한다.")
     return row, dataset_id, file_id

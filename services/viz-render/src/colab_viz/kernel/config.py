@@ -1,9 +1,15 @@
 """설정 — 값의 근거를 값 옆에 적는다.
 
 `max_render_bytes` 만 정본에서 오고(그것도 `[가정]` 표시가 붙어 있다) 나머지는 레포 결정이다.
+
+**소스 모드·미리보기 싱크**(`PLAN-SoT §9 〈342〉-㉱·㉴`) — `local`(기본) | `s3`. **모르는 값은 기동 거부**다:
+오타를 local 로 조용히 접으면 dev 가 EC2 디스크를 읽고도 아무도 모른다(core `COLAB_CORE_STORAGE_MODE`
+와 같은 규칙). s3 는 버킷·리전·작업 디렉터리·**상한**이 전부 있어야 뜬다. 상한은 3상태다 —
+숫자 · `none`(명시 무제한) · 미설정(**거부**) — 「없으면 무제한」은 green-by-skip 의 같은 모양이다.
 """
 from __future__ import annotations
 
+import math
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -126,6 +132,18 @@ DEFAULT_SOURCE_ROOT = Path("/srv/viz-sources")
 DEFAULT_PREVIEW_DIR = Path("/srv/viz-previews")
 DEFAULT_PREVIEW_URL_BASE = "/previews"
 
+SOURCE_MODES = ("local", "s3")
+PREVIEW_SINKS = ("local", "s3")
+DEFAULT_PREVIEW_S3_PREFIX = "previews"
+
+ENV_SOURCE_MODE = "COLAB_VIZ_SOURCE_MODE"
+ENV_S3_BUCKET = "COLAB_VIZ_S3_BUCKET"
+ENV_S3_REGION = "COLAB_VIZ_S3_REGION"
+ENV_WORKDIR = "COLAB_VIZ_WORKDIR"
+ENV_WORK_MAX_BYTES = "COLAB_VIZ_WORK_MAX_BYTES"
+ENV_PREVIEW_SINK = "COLAB_VIZ_PREVIEW_SINK"
+ENV_PREVIEW_S3_PREFIX = "COLAB_VIZ_PREVIEW_S3_PREFIX"
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -161,6 +179,16 @@ class Settings:
     tile_reclaim_max_keys: int = DEFAULT_TILE_RECLAIM_MAX_KEYS
     tile_reclaim_interval_seconds: float = DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS
 
+    #: 소스 모드 — `local`(디스크, `source_root`) | `s3`(버킷 → `workdir` 로 내려받기). `〈342〉-㉴`
+    source_mode: str = "local"
+    s3_bucket: str | None = None
+    s3_region: str | None = None
+    workdir: Path | None = None
+    #: 작업 디렉터리 상한(바이트). `math.inf` = 명시 무제한. None = 미설정(s3 모드에선 거부).
+    work_max_bytes: float | None = None
+    #: 미리보기 싱크 — `local`(디스크를 nginx 가 서빙) | `s3`(데이터 버킷 `previews/`). `〈342〉-㉮`
+    preview_sink: str = "local"
+    preview_s3_prefix: str = DEFAULT_PREVIEW_S3_PREFIX
 
 def _positive_int_from_env(raw: str | None, default: int) -> int:
     """**못 읽는 값·0·음수는 기본값이다.** 뚜껑이 오타 하나로 사라지지 않게 한다."""
@@ -188,16 +216,59 @@ def _poll_seconds_from_env(raw: str | None) -> float:
     return value if value > 0 else DEFAULT_TRIGGER_POLL_SECONDS
 
 
+def parse_work_max_bytes(raw: str | None) -> float | None:
+    """3상태 — 숫자(양의 정수) · `none`(명시 무제한, `math.inf`) · 미설정/공백(None). 그 외는 거부."""
+    if raw is None:
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    if text.lower() == "none":
+        return math.inf
+    if not text.isdigit() or int(text) <= 0:
+        raise RuntimeError(
+            f"{ENV_WORK_MAX_BYTES} 가 규칙에 맞지 않는다: {raw!r} — 양의 정수(바이트) 또는 `none`(명시 무제한)")
+    return int(text)
+
+
+def _mode(raw: str | None, *, env_name: str, allowed: tuple[str, ...]) -> str:
+    value = (raw or "local").strip().lower() or "local"
+    if value not in allowed:
+        raise RuntimeError(f"{env_name} 가 모르는 값이다: {value!r} — {'|'.join(allowed)} 중 하나. "
+                           "모르는 값을 local 로 접지 않는다")
+    return value
+
+
+def validate(settings: Settings) -> Settings:
+    """반쪽 설정을 그 이름을 말하며 거부한다. `load_settings` 와 `create_app` 둘 다 부른다."""
+    _mode(settings.source_mode, env_name=ENV_SOURCE_MODE, allowed=SOURCE_MODES)
+    _mode(settings.preview_sink, env_name=ENV_PREVIEW_SINK, allowed=PREVIEW_SINKS)
+    if settings.source_mode == "s3" or settings.preview_sink == "s3":
+        missing = [n for n, v in ((ENV_S3_BUCKET, settings.s3_bucket), (ENV_S3_REGION, settings.s3_region))
+                   if not v]
+        if missing:
+            raise RuntimeError(f"s3 를 쓰는데 {' · '.join(missing)} 가 없다 — 반쪽 설정으로 뜨지 않는다")
+    if settings.source_mode == "s3":
+        if settings.workdir is None:
+            raise RuntimeError(f"{ENV_SOURCE_MODE}=s3 인데 {ENV_WORKDIR} 가 없다 — 내려받을 자리가 없다")
+        if settings.work_max_bytes is None:
+            raise RuntimeError(
+                f"{ENV_SOURCE_MODE}=s3 인데 {ENV_WORK_MAX_BYTES} 가 없다 — 상한은 숫자 또는 `none`(명시 무제한)으로 적는다")
+    return settings
+
+
 def load_settings() -> Settings:
     """환경에서 읽는다.
 
     **자격 증명이 없어도 프로세스는 뜬다** — 헬스(`/healthz`)는 배포 배관이라 살아 있어야
     하고, staging 은 지금 이 단위를 헬스로만 보고 있다. 대신 **렌더 표면은 열리지 않고
     503 을 낸다**(계약이 5xx 자리를 이미 뒀다). 인증을 조용히 끄는 것과 정반대다.
-    ⚠ 환경변수 주입은 `infra/staging/compose.*.yml` 이 할 일이고 이 레인의 소유가 아니다.
+    반면 **저장 모드의 반쪽 설정은 뜨지 않는다** — 읽을 자리가 없는 렌더러는 살아 있다고 대답만 한다.
+    ⚠ 환경변수 주입은 `infra/*/compose.*.yml` 이 할 일이고 이 레인의 소유가 아니다.
     """
     root = os.environ.get("COLAB_VIZ_SOURCE_ROOT")
-    return Settings(
+    workdir = os.environ.get(ENV_WORKDIR)
+    settings = Settings(
         source_root=Path(root) if root else DEFAULT_SOURCE_ROOT,
         # ⭑ ⟨2026-09-03 · 코드리뷰 #15⟩ **값 대신 경로로 받을 수 있다**(`_FILE`).
         # 생 env 로 넘기면 `docker inspect` 한 번에 드러난다 — DB 비밀번호가 작업 기록에
@@ -229,4 +300,12 @@ def load_settings() -> Settings:
         tile_reclaim_interval_seconds=_positive_float_from_env(
             os.environ.get("COLAB_VIZ_TILE_RECLAIM_INTERVAL_SECONDS"),
             DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS),
+        source_mode=_mode(os.environ.get(ENV_SOURCE_MODE), env_name=ENV_SOURCE_MODE, allowed=SOURCE_MODES),
+        s3_bucket=os.environ.get(ENV_S3_BUCKET) or None,
+        s3_region=os.environ.get(ENV_S3_REGION) or None,
+        workdir=Path(workdir) if workdir else None,
+        work_max_bytes=parse_work_max_bytes(os.environ.get(ENV_WORK_MAX_BYTES)),
+        preview_sink=_mode(os.environ.get(ENV_PREVIEW_SINK), env_name=ENV_PREVIEW_SINK, allowed=PREVIEW_SINKS),
+        preview_s3_prefix=(os.environ.get(ENV_PREVIEW_S3_PREFIX) or DEFAULT_PREVIEW_S3_PREFIX).strip("/"),
     )
+    return validate(settings)

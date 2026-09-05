@@ -193,9 +193,24 @@ describe('§7·§8 잠긴 상세 — 접근 요청 자리는 하나다', () => {
 });
 
 describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
+  /** 조각 목록 토글 = 기본 정보 격자의 `.ig-more` 하나다 (아래 주석). */
+  const 조각보기 = () => document.querySelector('.ig-more') as HTMLElement;
+  const 조각접기 = 조각보기;
+  // ⭑ ⟨병합 창 8-a⟩ **`보기` 버튼이 이 화면에 둘이 됐다.** `main` 의 조각 목록 토글(`.ig-more` ·
+  //   기본 정보 격자 `파일` 칸 · 이 describe 의 대상)과 PR #1 의 파일 관리 구역 토글
+  //   (`[data-testid=dt-files-toggle]` · `〈339〉`)이 둘 다 「보기」라고 적는다.
+  //   ⛔ **질의를 느슨하게 하지 않는다** — `getAllBy*` 로 첫 번째를 집으면 순서가 바뀌는 날
+  //   이 시험이 **다른 버튼을 재고도 green** 이 된다. 재는 대상을 **자리로 못 박는다.**
+  //   ⚠ 「같은 낱말의 버튼 둘」 자체는 이 회차가 판정하지 않았다 — 사람이 볼 화면의 물음이라
+  //   레인 보고서에 올렸다(`reports/window-8a/lane-report.md`).
+  // ⭑ ⟨병합 창 8-a⟩ `byteSize`·`createdAt` 은 PR #1(`〈339〉`-(가))이 계약에 더한 **필수** 칸이다.
+  //   이 픽스처는 그 전 회차라 빠져 있었고 `tsc` 가 그것을 냈다. **값은 지어낸 것이 아니라
+  //   이 시험이 안 보는 칸**이다(이 describe 가 재는 것은 `보기` 와 종류 표시뿐).
   const 본체: DatasetFile[] = [
-    { fileId: '01JYZ9K7WQ3N8V4M2X6C5B0F01', fileName: 'precip_202506.nc', kind: '본체' },
-    { fileId: '01JYZ9K7WQ3N8V4M2X6C5B0F02', fileName: 'precip_202507.nc', kind: '본체' },
+    { fileId: '01JYZ9K7WQ3N8V4M2X6C5B0F01', fileName: 'precip_202506.nc', kind: '본체',
+      byteSize: null, createdAt: '2026-06-01T00:00:00Z' },
+    { fileId: '01JYZ9K7WQ3N8V4M2X6C5B0F02', fileName: 'precip_202507.nc', kind: '본체',
+      byteSize: null, createdAt: '2026-07-01T00:00:00Z' },
   ];
 
   it('`보기` 를 누르기 전에는 목록 op 을 **부르지 않는다** (계약 축자)', async () => {
@@ -210,7 +225,7 @@ describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
     const files = filesSpy(본체);
     renderDetail(OPEN_ID, sourceOf(detailWith({})), files);
     await settle('낙동강 유역 강우 (2025)');
-    await click(screen.getByRole('button', { name: '보기' }));
+    await click(조각보기());
     expect(files.calls).toBe(1);
     const list = await screen.findByTestId('file-list');
     expect(list.textContent).toContain('precip_202506.nc');
@@ -221,7 +236,7 @@ describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
     const files = filesSpy(본체);
     renderDetail(OPEN_ID, sourceOf(detailWith({})), files);
     await settle('낙동강 유역 강우 (2025)');
-    await click(screen.getByRole('button', { name: '보기' }));
+    await click(조각보기());
     const list = await screen.findByTestId('file-list');
     expect(list.textContent).toContain('기준 격자 파일이 없어요');
   });
@@ -233,12 +248,14 @@ describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
         fileId: '01JYZ9K7WQ3N8V4M2X6C5B0F03',
         fileName: 'lat.nc',
         kind: '기준 격자 파일',
+        byteSize: null,
+        createdAt: '2026-06-01T00:00:00Z',
         gridAxis: { carriesLat: true, carriesLon: false },
       },
     ]);
     renderDetail(OPEN_ID, sourceOf(detailWith({})), files);
     await settle('낙동강 유역 강우 (2025)');
-    await click(screen.getByRole('button', { name: '보기' }));
+    await click(조각보기());
     const list = await screen.findByTestId('file-list');
     expect(within(list).getByTestId('file-grid-group').textContent).toContain('lat.nc');
     expect(list.textContent).not.toContain('기준 격자 파일이 없어요');
@@ -248,7 +265,7 @@ describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
     const files = filesSpy(본체);
     renderDetail(OPEN_ID, sourceOf(detailWith({})), files);
     await settle('낙동강 유역 강우 (2025)');
-    await click(screen.getByRole('button', { name: '보기' }));
+    await click(조각보기());
     const list = await screen.findByTestId('file-list');
     expect(list.style.overflow).toBe('');
     expect(list.style.overflowY).toBe('');
@@ -259,9 +276,9 @@ describe('§5 122행 — `파일` 칸의 `보기` 와 조각 목록', () => {
     const files = filesSpy(본체);
     renderDetail(OPEN_ID, sourceOf(detailWith({})), files);
     await settle('낙동강 유역 강우 (2025)');
-    await click(screen.getByRole('button', { name: '보기' }));
+    await click(조각보기());
     await screen.findByTestId('file-list');
-    await click(screen.getByRole('button', { name: '접기' }));
+    await click(조각접기());
     expect(screen.queryByTestId('file-list')).toBeNull();
     expect(files.calls).toBe(1);
   });

@@ -166,3 +166,6 @@
   .colmenu { min-width: 0; width: max-content; max-width: calc(100vw - 40px); }
   .tbl thead th:nth-last-child(-n+3) .colmenu { left: auto; right: 8px; }
 }
+
+/* 빠른 작업 다운로드가 티켓을 못 받았을 때 (`〈175〉-(다)`) — 표 위 한 줄. 새 색을 만들지 않는다 */
+.catalog-page .dl-error { margin: 0 0 8px; font-size: var(--text-body-sm); color: var(--color-warning-600); }
