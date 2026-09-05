@@ -27,9 +27,11 @@ import tempfile
 # 절대경로를 박지 않는다 (CLAUDE.md §5) — 레포 위치에서 상대로 푸다.
 #   <작업공간>/30 CoLAB-v2/dev-package/tools/  →  <작업공간>/40 COLAB-기획/<정본>
 # 위치의 문서화 자리는 `planning/README.md §1` 이다.
+# ⭑⟨이동 2026-09-05⟩ 40 COLAB-기획/ 재편으로 패키지가 00_기획원본/ 아래로 옮겨졌다
+# (대응표: <작업공간>/40 COLAB-기획/README.md §「경로 대응표」).
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_PLANNING_ROOT = os.path.join(
-    os.path.dirname(_REPO_ROOT), "40 COLAB-기획",
+    os.path.dirname(_REPO_ROOT), "40 COLAB-기획", "00_기획원본",
     "Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌",
 )
 EPICS_DIRNAME = "에픽"          # 에픽
