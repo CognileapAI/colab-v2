@@ -2485,3 +2485,16 @@ items:
       ⚠ **`serial` 선언을 푸는 쪽으로 새지 않는다** — `db-selftest` 를 병렬로 돌려 거짓 red 가 났던 자리가 실재한다(`gates/README.md` 「격리를 깨는 속도는 속도가 아니다」). 이 항목이 손대는 것은 **게이트 안**뿐이다.
       ⚠ **`[미확인]` — 병렬화로 실제 몇 분이 줄어드는지.** 이 회차는 재지 않았다(등록만) — **추정값을 적지 않는다.** 해소 = 완료 정의 ⑷.
     sources: ["dev-package/reports/window-8a/lane-report.md", "gates/README.md", "gates/config/parallelism.toml"]
+
+  - id: WU-A1
+    name: 권한 스위치 기본값 (PRD-25)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "행 없는 연구원이 업로드·편집=true·프로젝트 생성=true 로 내려오고, 명시적 false 행은 그대로다. 회귀 테스트 4건 green"
+    evidence: "dev-package/sessions/p3-perm-default-<YYYYMMDD>.md"
+    deadline: null
+    note: "마이그레이션 0 · DB 기본값 행을 만들지 않는다(서버 상수 한 자리). staging 계정 권한이 실제로 바뀐다 — 배포 전 현재 행 상태 실측 보고"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-25"]
