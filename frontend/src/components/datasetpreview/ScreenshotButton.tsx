@@ -73,8 +73,17 @@ export function ScreenshotButton(props: {
       const a = document.createElement('a');
       a.href = url;
       a.download = `preview-${props.renderId}.png`;
+      // **문서에 붙여 놓고 누른다** — 떠 있는 앵커는 브라우저에 따라 클릭이 먹지 않는다.
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      // **같은 tick 에서 거두지 않는다** — 크롬은 클릭이 돌아온 뒤 별도 태스크에서 `blob:` 을
+      // 읽는다. 그 전에 `revokeObjectURL` 을 부르면 자리가 사라져 내려받기가 **취소**된다.
+      // 그렇다고 흘려 두지도 않는다 — 다음 태스크에서 앵커와 함께 거둔다.
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, 0);
     } catch (e) {
       setFailure(e instanceof Error && e.message ? e.message : UNAVAILABLE_MESSAGE);
     }
