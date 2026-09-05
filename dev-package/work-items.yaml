@@ -2521,3 +2521,16 @@ items:
     deadline: null
     note: "미결-15 ⓐ — 조건만 고치고 문면 유지. PRD-34 는 §4 범위 밖"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-14"]
+
+  - id: WU-A5
+    name: 확장자 표기 (PRD-21)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)"]
+    depends_on: []
+    completion_def: "상세가 *.nc 를 보이고 판별 문자열을 안 보인다 · file_extension backfill 이 기존 13행 파일명과 일치 · 검색은 종전대로 format 으로 잡힌다(「nc 로도 찾는다」는 R-B M-10)"
+    evidence: "dev-package/sessions/p3-extension-label-20260905.md"
+    deadline: null
+    note: "M-9. WU-A6 의 M-6·M-7 과 한 마이그레이션 head 로 묶는다"
+    sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-21", "부록 B M-9"]
