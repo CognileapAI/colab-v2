@@ -469,5 +469,8 @@ describe('S-01 화면 뿌리 여백 (BF-8)', () => {
     const cs = getComputedStyle(hero as Element);
     expect(parseFloat(cs.paddingLeft)).toBe(0);
     expect(parseFloat(cs.paddingRight)).toBe(0);
+    // `shell.css` 가 `* { box-sizing: border-box }` 라 720px 은 여백을 포함한 폭이다.
+    // 여백만 0 으로 두면 내용 폭이 680 → 720 으로 넓어진다 — 40px 을 최대폭에서 뺀다.
+    expect(cs.maxWidth).toBe('680px');
   });
 });
