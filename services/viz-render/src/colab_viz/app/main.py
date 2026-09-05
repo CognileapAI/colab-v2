@@ -17,6 +17,7 @@ from ..domains.d7_visualization import tile_reclaim
 from ..domains.d7_visualization.jobs import JobStore
 from ..kernel import errors
 from ..kernel.config import Settings, load_settings
+from ..kernel.logging_setup import configure_logging
 from ..ports.source import FilesystemSourcePort
 from .trigger_bus import SpoolTriggerPort
 from .trigger_loop import TriggerDrainLoop
@@ -26,6 +27,10 @@ API_PREFIX = "/viz/v1"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    # **관측이 되게 하는 한 줄**(`BF-12` · `〈324〉`). 앱을 세우는 자리에서 한 번 설정한다 —
+    # 로거를 쓰는 쪽(`trigger_loop` 등)이 각자 설정하면 갈리고, 안 하면 버려진다.
+    # ⚠ 멱등이다 — 시험이 앱을 수백 번 세워도 처리기는 하나다.
+    configure_logging()
     settings = settings or load_settings()
 
     @asynccontextmanager
