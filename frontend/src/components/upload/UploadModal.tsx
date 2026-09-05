@@ -77,6 +77,9 @@ export function UploadModal(props: {
   const [confirmClose, setConfirmClose] = useState(false);
 
   const [name, setName] = useState('');
+  // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
+  // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
+  const [nameDraft, setNameDraft] = useState('');
   const [topic, setTopic] = useState('');
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
@@ -187,7 +190,9 @@ export function UploadModal(props: {
         }
         refreshIncomplete();
         const firstBody = receipt.files.find((f) => f.kind === '본체') ?? receipt.files[0];
-        setName((cur) => cur || (firstBody ? nameFromFile(firstBody.fileName) : ''));
+        const draft = firstBody ? nameFromFile(firstBody.fileName) : '';
+        setNameDraft(draft);
+        setName((cur) => cur || draft);
       })
       .catch((e: unknown) => {
         // §9 업로드 중단 — 「올리다가 끊겼어요. 다시 시도해 주세요.」 파일 놓기부터 다시 한다.
@@ -256,6 +261,31 @@ export function UploadModal(props: {
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
   // 헤더에서 읽은 값 중 FE 표면이 실제로 실어 주는 것은 `byteSize` 하나다 (`preview/types.ts`)
   const bodyByteSize = (status?.files.find((f) => f.kind === '본체') ?? status?.files[0])?.byteSize;
+
+  /**
+   * **사람이 입력한 값이 하나라도 있나** — 종료 확인의 판정식이다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
+   *
+   * 세는 것 = ①②③ 의 **사람 입력 필드 전부 ＋ 확정된 계보 부모 건수**.
+   *  - ① 이름(자동 초안과 다를 때만) · 주제 · 변수 · 기간 시작·끝 · 좌표계 · 설명
+   *  - ② 담은 프로젝트·논문 건수
+   *  - ③ 원천 표기 · **확정된** 계보 부모 건수(`LineageStep` 이 확인된 것만 올린다)
+   *
+   * 세지 않는 것 = **자동으로 채워진 값**. 파일명에서 만든 이름 초안 · 확장자 · 용량 ·
+   * 읽기 전용 가공 단계 칸 · (R-B 가 더할) 기본 선택값 `Lv2`·`연구실 구성원 전체`.
+   * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
+   * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
+   */
+  const hasHumanInput =
+    (name.trim() !== '' && name !== nameDraft) ||
+    topic.trim() !== '' ||
+    summary.trim() !== '' ||
+    variables.trim() !== '' ||
+    periodStart.trim() !== '' ||
+    periodEnd.trim() !== '' ||
+    crs.trim() !== '' ||
+    sourceLabel.trim() !== '' ||
+    projects.length > 0 ||
+    lineageParents.length > 0;
 
   const onLineageProgress = useCallback(
     (p: { confirmed: number; total: number }) => setLineage(p),
@@ -337,8 +367,10 @@ export function UploadModal(props: {
   }
 
   function requestClose() {
-    // 등록 단계를 연 채 닫으면 사람이 한 확인이 사라진다 — 그때만 묻는다 (§8 모달 닫기)
-    if (registerOpen) setConfirmClose(true);
+    // 사람이 적거나 확인한 것이 있을 때만 묻는다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
+    // 종전에는 `registerOpen` 만 봤다 — 등록 단계를 열어만 보고 닫아도 되물어서,
+    // 잃을 것이 없는 사람에게 확인이 걸렸다. **문면은 그대로 두고 조건만 고친다.**
+    if (hasHumanInput) setConfirmClose(true);
     else props.onClose();
   }
 

@@ -402,11 +402,16 @@ describe('§8 모달 닫기 — 잃을 것이 있을 때만 묻는다', () => {
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 
-  it('등록 단계가 열려 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
+  // ⚠ 조건이 바뀌었다 (WU-A9 · PRD-14 · 미결-15 ⓐ) — 종전에는 「등록 단계가 열려 있으면」
+  // 무조건 물었다. 지금은 **사람이 입력한 값이 하나라도 있을 때**만 묻는다. 빈 상태로 열어만
+  // 두고 닫는 경우는 `test/close-guard-20260905.test.tsx` 가 「안 묻는다」로 잡는다.
+  // **문면은 그대로다** — 이 시험이 지키는 것이 그 문자열이다.
+  it('사람이 적은 값이 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
     await openRegister();
+    await change(screen.getByTestId('reg-summary'), '가');
     await click(screen.getByTestId('upload-close'));
     const confirm = await screen.findByTestId('upload-close-confirm');
     expect(confirm).toHaveTextContent(
