@@ -84,11 +84,35 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     nodes = [node(datasetId, "이 데이터")]
     nodes += [node(i, "가공 전") for i in sorted(neighbour_ids)]
     nodes += [node(i, "파생") for i in sorted(child_ids)]
+
+    # 원천 표기가 만드는 노드 **한 개와 그에 대응하는 관계 한 개** (`BF-9`).
+    # 종전에는 노드만 세우고 관계를 내지 않았다 — 화면은 그것을 「라벨 없는 화살표」로
+    # 수용했지만(`BF-1` · `LineageSection.tsx`), **화살표를 뒷받침하는 사실이 응답에 없었다.**
+    source_edges: list[dict] = []
     if core.source_label:
         # **`원천` 은 데이터셋이 아니라 표기다** — `datasetId` 가 null 이고 눌리지 않는다.
         nodes.append({"kind": "원천", "datasetId": None, "name": core.source_label,
                       "processingLevel": None, "verified": False, "navigable": False,
                       "bodyAccessible": False, "deletedAt": None})
+        # 계약이 이 자리를 이미 열어 두었다 — `LineageEdge.parentDatasetId` 산문 축자
+        # 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」. **계약 개정 0.**
+        source_edges.append({
+            "childDatasetId": datasetId,
+            "parentDatasetId": None,
+            # `보조입력` 은 Lv 계산에서 빠지는 값이다. 원천은 Lv 계산에 아예 들어가지
+            # 않으므로(부모 수는 `d4_lineage` 관계로만 센다) 기본값 `주입력` 을 그대로 쓴다.
+            "parentRole": "주입력",
+            # **가공 방식은 관계에 붙는데 원천에는 그 값이 없다** — 지어내지 않고 null 로 둔다.
+            # 화면은 `method` 가 없는 관계에 라벨을 그리지 않는다(완료 정의 ⑴).
+            "method": None,
+            # 원천 표기는 **사람이 업로드 때 손으로 적은 값**이다 (`sourceLabel` · D5→D3).
+            # AI 가 만든 것도 가공이 만든 것도 아니므로 `manual` 이다.
+            "origin": MANUAL_ORIGIN,
+            # 확인 기록은 그 표기를 적은 사람과 적힌 시각이다. **없는 사람을 지어내지 않는다** —
+            # `d3_dataset` 이 두 값을 다 들고 있다(`uploader_account_id`·`uploaded_at`).
+            "confirmedBy": {"accountId": core.uploader_id, "name": core.uploader_name},
+            "confirmedAt": _iso(core.uploaded_at),
+        })
 
     permissions = d2_access.permissions_of(
         db, subject.account_id, d2_access.role_of(db, subject.account_id))
@@ -110,7 +134,7 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
                 "confirmedAt": _iso(e["confirmed_at"]),
             }
             for e in edges
-        ],
+        ] + source_edges,
         "projectUseCount": len(d6_project.ProjectLinkAdapter(db).uses_of(dataset_id)),
         "canEdit": bool(permissions.get("업로드·편집", False)),
     }

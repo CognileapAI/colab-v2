@@ -173,3 +173,62 @@ def test_the_response_is_json_serialisable_dates(live_client) -> None:
     json.dumps(body)
     for e in assert_nonempty(body["edges"], "간선"):
         assert isinstance(e["confirmedAt"], str), e
+
+
+# ───────────────── ④ 원천 → 루트 간선 (`BF-9`) ─────────────────
+#
+# `원천` 은 **노드로만** 서 있었고 대응하는 관계가 없었다 — 화면(`BF-1`)이 그것을
+# 「라벨 없는 화살표」로 수용했지만, **응답에는 그 화살표를 뒷받침하는 사실이 없었다.**
+# 계약은 이 자리를 이미 열어 두었다 (`LineageEdge.parentDatasetId` 산문 축자 —
+# 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」). **계약 개정 0.**
+def source_edges(body) -> list:
+    return [e for e in body["edges"] if e["parentDatasetId"] is None]
+
+
+def test_the_contract_already_allows_a_null_parent_endpoint() -> None:
+    """계약이 이미 원천을 부모 자리에 허용한다 — 이 시험이 red 면 계약 개정이 필요하다는 뜻이고,
+    그때는 코드가 아니라 **동결 해제 회차가 먼저**다 (`X2-FREEZE-PROTOCOL`)."""
+    doc = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+    edge = doc["components"]["schemas"]["LineageEdge"]
+    variants = assert_nonempty(
+        edge["properties"]["parentDatasetId"]["oneOf"], "parentDatasetId 갈래")
+    assert {"type": "null"} in variants, variants
+    assert "null" in edge["properties"]["method"]["type"], edge["properties"]["method"]
+    # 원천 관계도 이 넷을 채워야 한다 — 비울 수 있는 자리가 아니다.
+    for key in ("parentRole", "origin", "confirmedBy", "confirmedAt"):
+        assert key in edge["required"], edge["required"]
+
+
+def test_a_source_label_carries_an_edge_into_its_root(live_client) -> None:
+    """`DSA1` 은 원천 표기(`기상청`)를 들고 있다. **노드가 서면 관계도 선다.**"""
+    body = graph(live_client, DS_A1, TOKEN_RES).json()
+    srcs = assert_nonempty([n for n in body["nodes"] if n["kind"] == "원천"],
+                           f"{DS_A1} 의 원천 노드")
+    assert [n["datasetId"] for n in srcs] == [None], srcs
+
+    # 원천 노드 1 → 원천 관계 1. **모수를 세고 단언한다.**
+    edges = assert_counted(source_edges(body), len(srcs), f"{DS_A1} 의 원천 관계")
+    e = edges[0]
+    assert e["childDatasetId"] == DS_A1, e
+    # 가공 방식 라벨은 원천에 없다 — **지어내지 않는다** (완료 정의 ⑴).
+    assert e["method"] is None, e
+    assert e["parentRole"] == "주입력", e
+    assert e["origin"] == "manual", e
+    assert e["confirmedBy"]["accountId"] and e["confirmedBy"]["name"], e
+    assert isinstance(e["confirmedAt"], str) and e["confirmedAt"], e
+
+
+def test_the_source_edge_does_not_displace_the_dataset_edges(live_client) -> None:
+    """더한 것이지 바꾼 것이 아니다 — `DSA1 → DSA2` 파생 관계는 그대로 있다."""
+    body = graph(live_client, DS_A1, TOKEN_RES).json()
+    real = assert_nonempty([e for e in body["edges"] if e["parentDatasetId"] is not None],
+                           f"{DS_A1} 의 데이터셋 간 관계")
+    assert any(e["parentDatasetId"] == DS_A1 and e["childDatasetId"] == DS_A2 for e in real), real
+    assert_counted(body["edges"], len(real) + 1, f"{DS_A1} 의 전체 관계")
+
+
+def test_a_dataset_without_a_source_label_gets_no_such_edge(live_client) -> None:
+    """`DSA2` 는 원천 표기가 없다 — **없는 관계를 지어내지 않는다.**"""
+    body = graph(live_client, DS_A2, TOKEN_RES).json()
+    assert_counted([n for n in body["nodes"] if n["kind"] == "원천"], 0, f"{DS_A2} 의 원천 노드")
+    assert_counted(source_edges(body), 0, f"{DS_A2} 의 원천 관계")
