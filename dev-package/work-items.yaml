@@ -2391,3 +2391,16 @@ items:
       ⚠ **`BF-11` 을 다시 열지 않는다** — 그 항목의 완료 정의는 `project.css` 한 파일이고 이 물음은 그 범위 밖이다. 선례 = `BF-7`~`BF-11` 의 「등록만」(`〈310〉`-㉱).
       ⚠ **`[미확인]` — 지금 실제로 갈린 자리가 있는지.** 이 회차는 **세지 않았다**(원장 등재 회차이고 코드 0줄) — **0 으로 적지 않는다.** 해소법 = ⑴ 의 시험을 세우면 그 red 가 목록을 낸다.
     sources: ["PLAN-SoT §9 〈331〉", "reports/bf-11/lane-report.md"]
+
+  - id: WU-A1
+    name: 권한 스위치 기본값 (PRD-25)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "행 없는 연구원이 업로드·편집=true·프로젝트 생성=true 로 내려오고, 명시적 false 행은 그대로다. 회귀 테스트 4건 green"
+    evidence: "dev-package/sessions/p3-perm-default-<YYYYMMDD>.md"
+    deadline: null
+    note: "마이그레이션 0 · DB 기본값 행을 만들지 않는다(서버 상수 한 자리). staging 계정 권한이 실제로 바뀐다 — 배포 전 현재 행 상태 실측 보고"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-25"]
