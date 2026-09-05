@@ -42,10 +42,22 @@ def named(d, names):
 
 GRID = "기준 격자 파일"; BODY = "본체"
 
+#: 폴더가 쓰는 짧은 이름 → **정본 주제값**. 정본은 `db/platform/schema.sql` 의
+#: `d3_dataset_description.topic` CHECK 6값이다(`PLAN-SoT §9 〈55〉`·`〈354〉`).
+#: ⚠ **여기서 이름을 지어내지 않는다** — CHECK 밖 값을 쓰면 core-api 가 400 을 내고
+#:   `load-seed.py` 가 첫 데이터셋에서 `Abort` 한다(그 실측이 `〈352〉`).
+TOPIC = {
+    "강수":      "강우·강수",
+    "식생":      "식생·NDVI",
+    "가뭄":      "가뭄",           # ⭑ `〈354〉` 로 새로 생긴 자리
+    "파일 포맷": "파일 포맷 예제",  # ⭑ 같은 회차
+}
+
+
 def ds(key, name, topic, summary, rnd, body, grid=(), parents=None):
     files = [{"path": p, "kind": BODY} for p in sorted(body)] + \
             [{"path": p, "kind": GRID} for p in sorted(grid)]
-    d = {"key": key, "round": rnd, "name": name, "topic": topic,
+    d = {"key": key, "round": rnd, "name": name, "topic": TOPIC[topic],
          "summary": summary, "files": files}
     if parents: d["lineageParents"] = parents
     return d

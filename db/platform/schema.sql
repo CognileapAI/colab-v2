@@ -367,7 +367,7 @@ CREATE TABLE d3_dataset_description (
   -- 주제 = **확정 열거값 10번째** (⑲ · 〈55〉). 4값은 `㊸-④-2`(`P04 §5`) 가 못 박았다.
   -- **nullable 을 유지한다** — 강제하는 것은 「값이 있다면 넷 중 하나」이지 「반드시 있다」가 아니다.
   -- 아직 분류하지 않은 상태가 표현되어야 하고, 4값이 담지 못하는 실데이터(`D-11`·`D-12`)는 NULL 로 남는다.
-  topic       text        CHECK (topic IS NULL OR topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC')),
+  topic       text        CHECK (topic IS NULL OR topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC', '가뭄', '파일 포맷 예제')),
   summary     text,
   updated_at  timestamptz NOT NULL DEFAULT now(),
   -- 사람이 적은 말. **이름이 가장 무겁다** — 검색 순위가 여기서 갈린다 (`0005`).

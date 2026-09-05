@@ -153,5 +153,7 @@ export interface LineageStepContext {
 
 export type LineageStepRender = (ctx: LineageStepContext) => React.ReactNode;
 
-/** 주제 고정 4값 (`Policy §5` · `〈55〉` DB CHECK). **빈 값 = 미정**이고 그것이 정상 상태다. */
-export const TOPICS = ['강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC'] as const;
+/** 주제 고정 목록 (`Policy §5` · `〈55〉` DB CHECK · `〈354〉` 로 4값 → 6값).
+ *  **빈 값 = 미정**이고 그것이 정상 상태다. ⚠ 개수를 문장에 박지 않는다. */
+export const TOPICS = ['강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC',
+  '가뭄', '파일 포맷 예제'] as const;

@@ -21,7 +21,8 @@ from typing import Protocol
 #: 주제 고정 4값. **여기서 새로 정하는 것이 아니라** 두 정본(`db/ai/schema.sql`
 #: `d9_topic_synonym.topic` CHECK · `db/platform/schema.sql` `d3_dataset_description`
 #: CHECK)이 같은 값을 각각 적어 둔 것을 코드 쪽에 한 번 더 옮긴 것이다 (`㊸-④-2`).
-TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
+TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC",
+          "가뭄", "파일 포맷 예제")
 
 
 @dataclass(frozen=True)

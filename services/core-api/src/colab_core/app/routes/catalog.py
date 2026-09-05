@@ -522,11 +522,14 @@ def _project_period(start, end) -> dict:
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period")
 
-#: 주제 4값. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
-#: 계약이 「값 집합은 DB CHECK 4값이 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
+#: 주제 어휘. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
+#: 계약이 「값 집합은 DB CHECK 가 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
 #: 명시했다(`fe-core.yaml DatasetUpdate.topic`). 여기 있는 것은 **그 정본을 코드 층으로
 #: 옮겨 적은 사본**이고, 검사를 안 하면 사용자의 오타가 IntegrityError → 500 이 된다.
-_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
+#: ⭑ **⟨2026-09-06 · `〈354〉`⟩ 4값 → 6값** — `가뭄`·`파일 포맷 예제` 추가(마이그레이션 `0013`).
+#: ⚠ **개수를 문장에 박지 않는다** — 넓어질 때 사본만 낡는다.
+_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC",
+           "가뭄", "파일 포맷 예제")
 
 
 def _is_datetime(value: str) -> bool:
@@ -564,10 +567,10 @@ def validate_human_metadata(changes: dict) -> None:
             raise errors.bad_request("좌표계는 문자열이다.")
 
     if changes.get("topic") is not None and "topic" in changes:
-        # **DB CHECK 4값 밖은 400 이다** (`CODE-REVIEW-20260903` #12). 검사하지 않으면
+        # **DB CHECK 어휘 밖은 400 이다** (`CODE-REVIEW-20260903` #12). 검사하지 않으면
         # 그 값이 IntegrityError 로 떨어져 **사용자의 오타가 500** 이 된다.
         if changes["topic"] not in _TOPICS:
-            raise errors.bad_request("주제는 정해진 4값 중 하나다.", {"allowed": list(_TOPICS)})
+            raise errors.bad_request("주제는 정해진 값 중 하나다.", {"allowed": list(_TOPICS)})
 
     if changes.get("period") is not None and "period" in changes:
         period = changes["period"]

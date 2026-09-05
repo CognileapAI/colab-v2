@@ -8,6 +8,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { DatasetsPage } from '../src/routes/DatasetsPage';
 import { fixtureCatalogSource } from '../src/components/catalog/fixture';
+import { TOPICS } from '../src/components/upload/types';
 import { DownloadContext } from '../src/components/detail/download';
 import type { DownloadTicket, FileSource } from '../src/components/detail/types';
 
@@ -141,7 +142,7 @@ describe('§8 열 메뉴', () => {
     );
   });
 
-  it('주제 값 목록은 잠긴 4값(`〈55〉`) 밖으로 나가지 않는다 — 미분류 행은 값을 만들지 않는다', async () => {
+  it('주제 값 목록은 잠긴 어휘(`〈55〉`·`〈354〉`) 밖으로 나가지 않는다 — 미분류 행은 값을 만들지 않는다', async () => {
     renderCatalog();
     await settle();
     await click(screen.getByRole('button', { name: '주제' }));
@@ -149,9 +150,8 @@ describe('§8 열 메뉴', () => {
     const values = within(menu)
       .getAllByRole('menuitemcheckbox')
       .map((el) => el.textContent!.replace(/\s*\(\d+\)\s*$/, '').trim());
-    expect(values.every((v) => ['강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC'].includes(v))).toBe(
-      true,
-    );
+    // ⛔ 목록을 여기 다시 적지 않는다 — 두 곳에 적으면 갈라진다(`〈354〉` 가 넓힌 자리).
+    expect(values.every((v) => (TOPICS as readonly string[]).includes(v))).toBe(true);
   });
 
   it('같은 열 이름을 다시 누르면 닫힌다', async () => {

@@ -935,7 +935,7 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     expect(lv.value).toBe('계보를 확정하면 정해져요');
   });
 
-  it('주제는 고정 4값이고 **미정 상태를 표현할 수 있다**', async () => {
+  it('주제는 고정 목록이고 **미정 상태를 표현할 수 있다** (〈354〉 로 4값 → 6값)', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -947,6 +947,10 @@ describe('§8 ① 자동 메타데이터 확인', () => {
       '식생·NDVI',
       '지형·DEM',
       '토지피복·LULC',
+      // ⭑ ⟨2026-09-06 · `〈354〉`⟩ Ted 판정으로 넓힌 둘. dev 초기 적재의 가뭄 1건 ·
+      //   파일 포맷 예제 5건이 4값에 없어 `NULL` 로 접히던 자리를 없앴다(`〈352〉`).
+      '가뭄',
+      '파일 포맷 예제',
     ]);
     expect(topic.value).toBe('');
   });

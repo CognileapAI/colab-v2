@@ -221,8 +221,8 @@ def test_dataset_period_free_string_is_400(p2_client) -> None:
 def test_dataset_topic_outside_the_db_check_set_is_400(p2_client) -> None:
     """`validate_human_metadata` 가 `topic` 을 안 봐 DB CHECK 로 떨어지던 자리.
 
-    값 집합의 정본은 **DB CHECK 4값**이다 (`db/platform/schema.sql` · 계약 산문
-    「값 집합은 DB CHECK 4값이 지킨다」). 계약 층 enum 을 새로 만들지 않는다.
+    값 집합의 정본은 **DB CHECK** 다 (`db/platform/schema.sql` · 계약 산문
+    「값 집합은 DB CHECK 가 지킨다」). 계약 층 enum 을 새로 만들지 않는다.
     """
     client = p2_client()
     r = client.patch(f"{API_PREFIX}/datasets/{DS_A1}", json={"topic": "없는 주제"},
@@ -232,11 +232,44 @@ def test_dataset_topic_outside_the_db_check_set_is_400(p2_client) -> None:
 
 
 def test_a_topic_inside_the_db_check_set_still_passes(p2_client, sql) -> None:
-    """**넓히지 않았음을 함께 잰다** — 허용 4값 중 하나는 그대로 통과한다."""
+    """**아무 값이나 통과시키지 않음을 함께 잰다** — 허용 어휘 중 하나는 그대로 통과한다."""
     client = p2_client()
     r = client.patch(f"{API_PREFIX}/datasets/{DS_A1}", json={"topic": "강우·강수"},
                      headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
+
+
+@pytest.mark.parametrize("topic", ["가뭄", "파일 포맷 예제"])
+def test_the_two_topics_added_in_354_pass(p2_client, topic) -> None:
+    """⭑ ⟨2026-09-06 · `〈354〉` · 마이그레이션 `0013`⟩ 어휘를 4값 → 6값으로 넓혔다.
+
+    **왜 시험이 필요한가** — 넓힌 자리가 셋이다(DB CHECK · `routes/catalog._TOPICS` ·
+    프론트 `TOPICS`). 하나만 넓히면 **DB 는 받는데 앱이 400** 이거나 그 반대가 되고,
+    둘 다 조용하다. 이 시험은 **앱 층**이 새 두 값을 통과시키는지를 잰다.
+
+    ⛔ 이 시험이 red 로 시작했음을 남긴다 — 넓히기 전에는 `_TOPICS` 에 없어 400 이었다.
+    """
+    client = p2_client()
+    r = client.patch(f"{API_PREFIX}/datasets/{DS_A1}", json={"topic": topic},
+                     headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+
+
+def test_the_topic_vocabulary_matches_the_schema_declaration() -> None:
+    """**두 곳에 적힌 어휘가 갈라지지 않는지 잰다** — 사본(`_TOPICS`)과 정본(schema.sql).
+
+    ⚠ 이 대조가 없으면 마이그레이션만 넓히고 코드를 안 넓힌(또는 그 반대) 상태가
+    **시험 전건 green 으로 지나간다** — `〈352〉` 가 실제로 그 무늬였다.
+    """
+    import re
+
+    from colab_core.app.routes.catalog import _TOPICS
+
+    repo = pathlib.Path(__file__).resolve().parents[3]
+    line = next(l for l in (repo / "db/platform/schema.sql").read_text(encoding="utf-8").splitlines()
+                if l.strip().startswith("topic") and "CHECK" in l)
+    declared = tuple(re.findall(r"'([^']+)'", line))
+    assert declared == _TOPICS, f"schema.sql={declared} vs _TOPICS={_TOPICS}"
 
 
 def test_project_created_with_a_blank_name_is_400(p2_client) -> None:

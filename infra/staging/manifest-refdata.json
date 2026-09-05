@@ -17,7 +17,7 @@
       "key": "LD-PRCP-LV0-HSR",
       "round": 1,
       "name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
-      "topic": "강수",
+      "topic": "강우·강수",
       "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = RDR_CMP_HSR_PUB_*.bin.gz (bin, 변량 = 반사도). ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
       "files": [
         {
@@ -82,7 +82,7 @@
       "key": "LD-PRCP-LV0-RN15",
       "round": 1,
       "name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
-      "topic": "강수",
+      "topic": "강우·강수",
       "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = sfc_grid_rn_15m_*.nc (NetCDF4, 변량 = 15분 누적 강수량).",
       "files": [
         {
@@ -139,7 +139,7 @@
       "key": "LD-PRCP-LV1",
       "round": 2,
       "name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
-      "topic": "강수",
+      "topic": "강우·강수",
       "summary": "Lv.0 두 원자료를 기상청 제공 lat·lon 파일에 맞춰 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본. 형상 (10, 128, 128).",
       "files": [
         {
@@ -178,7 +178,7 @@
       "key": "LD-PRCP-LV2",
       "round": 3,
       "name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
-      "topic": "강수",
+      "topic": "강우·강수",
       "summary": "Lv.1 표본을 입력·검증자료로 학습한 U-Net 계열 딥러닝 모델의 예측 강우장. Z–R 관계식의 단일 픽셀 가정을 image-to-image 변환으로 대체한 산출. 형상 (10, 128, 128).",
       "files": [
         {
@@ -199,7 +199,7 @@
       "key": "LD-VEG-LV0",
       "round": 1,
       "name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
-      "topic": "식생",
+      "topic": "식생·NDVI",
       "summary": "GK-2A/AMI 정규식생지수(NDVI). 식 : NDVI = (NIR − Red) / (NIR + Red), 범위 −1~1. 값이 높을수록 식생이 건강하다. 출처 = 국가기상위성센터(NMSC). 원자료 LCC 좌표계 · 1일 / 2 km. 대상 기간 2023-05-01 ~ 2023-05-31 · 대상지 경기 남부~충청권. 자료 구성 = NDVI · EVI · FVC · DQF · gk2a_imager_projection. ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
       "files": [
         {
@@ -344,7 +344,7 @@
       "key": "LD-VEG-LV1",
       "round": 2,
       "name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
-      "topic": "식생",
+      "topic": "식생·NDVI",
       "summary": "DQF 로 저품질 픽셀을 NaN 처리하고 유효범위 −1~1 밖을 NaN 으로 바꾼 뒤, LCC→WGS84 변환 · NDVI 레이어 추출 · 경기 남부~충청권 영역 추출 · Savitzky-Golay 평활화와 선형보간 · 2 km→100 m 균등분할(Uniform Distribution) · 일→월 평균을 거친 자료.",
       "files": [
         {
@@ -373,7 +373,7 @@
       "key": "LD-VEG-LV1-MODELIN",
       "round": 2,
       "name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
-      "topic": "식생",
+      "topic": "식생·NDVI",
       "summary": "Lv.2 딥러닝 모델의 보조입력(수치표고모형 DEM 100 m · 경사향 Aspect 100 m · 연 단위 토지피복지도 LULC 100 m)과 검증자료(월 단위 HLS S30 NDVI 100 m). ＊이 묶음은 Lv.1 에서 파생되지 않는다 — 별개 원천에서 온 자료라 Lv.1 의 자식이 아니라 형제이고, Lv.2 에 대해서만 보조입력 부모가 된다(#readme 「[2] 메인 처리 프로세스 — NDVI · Lv.2 · 학습 시 활용 자료」).",
       "files": [
         {
@@ -398,7 +398,7 @@
       "key": "LD-VEG-LV2",
       "round": 3,
       "name": "식생 — U-Net NDVI 예측장 (Lv.2)",
-      "topic": "식생",
+      "topic": "식생·NDVI",
       "summary": "월 단위 GK-2A NDVI(Lv.1)를 주입력으로, DEM·경사향·토지피복을 보조입력으로, 월 단위 HLS NDVI 를 검증자료로 학습한 U-Net 계열 모델의 일별 예측 NDVI(Prediction_yyyymmdd.npy).",
       "files": [
         {
@@ -574,7 +574,7 @@
       "key": "FF-GRIB",
       "round": 4,
       "name": "파일 포맷 실습 — GRIB",
-      "topic": "파일 포맷",
+      "topic": "파일 포맷 예제",
       "summary": "GRIB2 격자 기상자료 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(GRIB).",
       "files": [
         {
@@ -719,7 +719,7 @@
       "key": "FF-NC",
       "round": 4,
       "name": "파일 포맷 실습 — NetCDF",
-      "topic": "파일 포맷",
+      "topic": "파일 포맷 예제",
       "summary": "NetCDF4 격자 기상자료 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(NetCDF).",
       "files": [
         {
@@ -1336,7 +1336,7 @@
       "key": "FF-BIN",
       "round": 4,
       "name": "파일 포맷 실습 — 이진(bin)",
-      "topic": "파일 포맷",
+      "topic": "파일 포맷 예제",
       "summary": "레이더 합성자료 이진 포맷 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(이진(bin)).",
       "files": [
         {
@@ -1509,7 +1509,7 @@
       "key": "FF-TIF",
       "round": 4,
       "name": "파일 포맷 실습 — GeoTIFF",
-      "topic": "파일 포맷",
+      "topic": "파일 포맷 예제",
       "summary": "HLS S30 GeoTIFF 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(GeoTIFF).  ⚠ 04.Lat_Lon_info 에 위·경도 쌍이 2벌 있으나 데이터셋당 기준 격자 파일 상한이 2건(〈58〉)이라 한 벌만 격자로 싣고 나머지는 「본체」로 실었다.",
       "files": [
         {
@@ -1602,7 +1602,7 @@
       "key": "FF-HDF5",
       "round": 4,
       "name": "파일 포맷 실습 — HDF5/HDF-EOS",
-      "topic": "파일 포맷",
+      "topic": "파일 포맷 예제",
       "summary": "MODIS HDF-EOS 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(HDF5/HDF-EOS).  ⚠ 04.Lat_Lon_info 에 위·경도 쌍이 2벌 있으나 데이터셋당 기준 격자 파일 상한이 2건(〈58〉)이라 한 벌만 격자로 싣고 나머지는 「본체」로 실었다.",
       "files": [
         {
