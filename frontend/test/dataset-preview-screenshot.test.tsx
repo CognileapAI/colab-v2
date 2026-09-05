@@ -202,3 +202,71 @@ describe('계약 — 중계 op `createPreviewScreenshot` 에 닿는다', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/**
+ * BF-7 — **내려받기가 끝나기 전에 객체 URL 을 거두지 않는다**.
+ *
+ * 브라우저는 `a.click()` 이 돌아온 뒤 **별도 태스크**에서 `blob:` 을 읽는다. 같은 tick 에서
+ * `URL.revokeObjectURL` 을 부르면 그 자리를 먼저 거둬 버려 내려받기가 취소될 수 있다.
+ * microtask 로 미루는 것도 부족하다 — 같은 tick 이 끝나기 전에 도는 자리라서다.
+ * 문서에 붙지 않은 앵커도 브라우저에 따라 클릭이 먹지 않는다.
+ */
+describe('BF-7 — 객체 URL 은 클릭과 같은 tick 에서 거두지 않는다', () => {
+  it('앵커는 문서에 붙은 채 클릭되고, revoke 는 sync 도 microtask 도 아닌 다음 태스크에 온다', async () => {
+    // 클릭 순간부터의 진행 단계 — 같은 tick(`sync`)·`microtask`·`task` 를 값으로 구별한다
+    let phase: 'before-click' | 'sync' | 'microtask' | 'task' = 'before-click';
+    let connectedAtClick: boolean | null = null;
+    let phaseAtRevoke: string | null = null;
+    // **이 시험이 만든 앵커**를 붙잡아 둔다 — 앞선 시험이 문서에 남긴 앵커와 섞지 않는다.
+    let anchor: HTMLAnchorElement | null = null;
+
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        anchor = this;
+        connectedAtClick = this.isConnected;
+        phase = 'sync';
+        queueMicrotask(() => {
+          if (phase === 'sync') phase = 'microtask';
+        });
+        setTimeout(() => {
+          phase = 'task';
+        }, 0);
+      });
+
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      value: vi.fn(() => {
+        phaseAtRevoke = phase;
+      }),
+      configurable: true,
+    });
+
+    // 화면을 세우는 동안은 실제 시계를 쓴다 — 가짜 시계로 세우면 렌더 대기가 멈춘다.
+    renderDetail(makeSource(), editorAccount(true));
+    await screen.findByTestId('preview-map');
+    measure();
+
+    // 회수를 초 단위로 미루므로 실제 시간을 기다리지 않는다. 누르는 순간부터만 가짜 시계다.
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: '스크린샷' }));
+
+      // 대역 응답(마이크로태스크)과 0 ms 표시자까지만 흘린다 — 회수는 아직 오지 않는다.
+      await vi.advanceTimersByTimeAsync(0);
+      expect(click).toHaveBeenCalled();
+      // ⒜ 클릭 시점에 앵커가 문서에 붙어 있다
+      expect(connectedAtClick).toBe(true);
+      // ⒝ 클릭과 같은 tick 에서 거두지 않는다
+      expect(phaseAtRevoke).not.toBe('sync');
+      // ⒞ 그러나 나중에는 반드시 거둔다 — 객체 URL 을 흘리지 않는다.
+      //    `microtask` 는 받지 않는다 — 같은 tick 이 끝나기 전이라 회수 시점으로 이르다.
+      await vi.runAllTimersAsync();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:x');
+      expect(phaseAtRevoke).toBe('task');
+      // ⒟ 거둔 뒤 앵커는 문서에 남지 않는다
+      expect(anchor!.isConnected).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

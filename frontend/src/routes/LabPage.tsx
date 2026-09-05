@@ -33,7 +33,7 @@ export function LabPage(props: { source?: DashboardSource } = {}) {
   const empty = state.summary.kind === '있음' && state.summary.value.datasetCount === 0;
 
   return (
-    <div data-screen="S-01" data-fills-in="WU-P7">
+    <div className="lab-page" data-screen="S-01" data-fills-in="WU-P7">
       <SearchHero />
 
       <div className="dash-columns">

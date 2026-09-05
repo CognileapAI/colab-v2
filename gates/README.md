@@ -64,6 +64,8 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 "전부 green"과 "전부 무력"은 구분되지 않는다. v1 CI는 DB 없이 돌아 RLS 테스트를 **green-by-skip** 했다.
 각 게이트는 red fixture로 자신이 fail-closed임을 증명해야 한다.
 
+⭑ **⟨2026-09-05⟩ 「준비됐다」의 정본은 `_pg.sh` 의 `pg_wait_ready` 하나 — 실서버만 센다.** `postgres:16-alpine` 은 initdb 동안 **임시 서버**를 띄웠다 내리므로(초기화 완료 표식과 실서버 기동 사이 ≈0.2초 공백), 첫 `pg_isready` 성공에서 멈추던 옛 대기는 60초 예산 중 **1초** 만에 red(준비) 오탐을 냈다(`rls-effect-selftest` 단독 3연속). 이제 **초기화 완료 표식 ＋ 그 뒤 `pg_isready` 성공**을 함께 본다 — **대기 정밀화이지 범위 축소가 아니다**(예산 60초·재시도 없음·판정 그대로). 증거 프로브 = `gates/fixtures/pg-ready/temp-server-probe.sh`, fail-closed 케이스 = `rls-effect-selftest` 의 「실서버가 끝내 안 뜨면 상한에서 red(준비)」.
+
 ### 셀프테스트의 판정 갈래 — 정본은 `gates/tools/_expect.sh` 하나
 
 ⭑ **⟨2026-09-03 · 코드리뷰 #6⟩ 준비 실패(종료코드 78)를 「기대한 red」로 세지 않는다.**

@@ -15,6 +15,16 @@ import { UNAVAILABLE_MESSAGE } from './datasetPreviewSource';
 import type { DatasetPreviewSource, ScreenshotRequest } from './types';
 import type { RenderResult } from '../preview/types';
 
+/**
+ * 내려받기 앵커를 누른 뒤 **객체 URL 을 쥐고 있는 시간**.
+ *
+ * 크롬은 내비게이션이 시작되는 순간 `blob:` 핸들을 붙잡아 두므로 `0` 으로도 된다. 그러나
+ * **파이어폭스는 가져오기가 시작되기 전에 회수될 수 있다** — 브라우저마다 클릭과 실제 읽기
+ * 사이의 간격이 다르다. 그래서 다음 태스크가 아니라 **몇 초**를 쥔다(FileSaver.js 는 40초를
+ * 기다리는 선례를 남겼다). 무한정 쥐지는 않는다 — 이 시간이 지나면 반드시 거둔다.
+ */
+const OBJECT_URL_RETENTION_MS = 4000;
+
 /** 소수점 이하를 끝없이 늘리지 않는다. 경계는 WGS84 경위도이고 6자리면 미터 아래다. */
 function round6(v: number): number {
   return Math.round(v * 1e6) / 1e6;
@@ -73,8 +83,17 @@ export function ScreenshotButton(props: {
       const a = document.createElement('a');
       a.href = url;
       a.download = `preview-${props.renderId}.png`;
+      // **문서에 붙여 놓고 누른다** — 떠 있는 앵커는 브라우저에 따라 클릭이 먹지 않는다.
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      // **같은 tick 에서 거두지 않는다** — 클릭이 돌아온 뒤 브라우저가 별도 태스크에서
+      // `blob:` 을 읽는데, 그 전에 `revokeObjectURL` 을 부르면 자리가 사라져 내려받기가
+      // 취소된다. 그렇다고 흘려 두지도 않는다 — 미룬 뒤 앵커와 함께 반드시 거둔다.
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, OBJECT_URL_RETENTION_MS);
     } catch (e) {
       setFailure(e instanceof Error && e.message ? e.message : UNAVAILABLE_MESSAGE);
     }

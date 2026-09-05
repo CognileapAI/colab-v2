@@ -588,8 +588,16 @@ items:
     completion_def: "① 허용자 아님·만료됨 본체 조회 0행 ② 잠긴 데이터셋 메타는 조회됨(P-13 회귀 방지) ③ cross-tenant 0행. 셋 다 red fixture 로 fail-closed 증명 (`§6`)"
     evidence: "2026-08-23 닫힘 — 게이트 `rls-effect` 로 승격. ①본체 음성 ②메타 양성(`P-13`) ③cross-tenant(18표 전수 0행). red fixture 18/18"
     deadline: null
-    note: "부수로 `db-selftest` 결합 결함을 고쳤다 — 게이트가 옳고 selftest 배선이 틀렸다."
-    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11"]
+    note: >-
+      부수로 `db-selftest` 결합 결함을 고쳤다 — 게이트가 옳고 selftest 배선이 틀렸다.
+      ⭑ **⟨증보 2026-09-05 · 등재 `PLAN-SoT §9 〈332〉`⟩ 이 게이트의 판정이 아니라 준비 대기가 틀려 있었다 — 값과 근거는 그 행에 있다.**
+      `postgres:16-alpine` 이 initdb 동안 띄우는 **임시 서버**도 `pg_isready` 에 응답하는데 종전 대기 루프가 거기서 break 했고, 확인 `pg_isready` 가 임시 서버 종료와 실서버 기동 사이 **≈200 ms 공백**에 떨어져
+      `rls-effect-selftest` 단독 실행이 **유휴 호스트에서 3연속 red(준비)**(매번 다른 케이스 · 축자 `limit=60초|elapsed=1초`)를 냈다.
+      ⛔ **검사기의 결함이지 검사 대상의 결함이 아니다** — 같은 회차에 `rls-effect` 본체는 green 이었고 **이 항목의 판정 기준·케이스는 한 건도 줄지 않았다.**
+      고침(브랜치 `gate/pg-ready-wait` · `6e83027`·`6bb3a9b`·`768fccc`)은 준비를 **초기화 완료 표식 ＋ 그 뒤 `pg_isready` 성공**으로 좁히고 세 곳에 흩어져 있던 대기 루프를 `pg_wait_ready` 하나로 모았다 —
+      ⚠ **정밀화이지 범위 축소가 아니다**(예산 60초 그대로 · 재시도 없음 · 상한을 넘기면 여전히 red(준비)). fail-closed 증명은 **18 → 19건**으로 늘었다(엔트리포인트를 `sleep` 으로 바꾼 파생 이미지).
+      ⚠ **`main` 병합은 아직이다** — 이 고침은 `gate/pg-ready-wait` 에 있다. ⛔ **`status` 는 `done` 무변** — 이 항목의 완료 정의는 2026-08-23 에 닫혔고 이번에 고친 것은 그 판정을 **감싸는 대기**다.
+    sources: ["03-HANDOFF §1 T-D", "WORK-UNITS §6", "WORK-UNITS §11", "PLAN-SoT §9 〈332〉", "reports/gate-pg-ready/lane-report.md"]
 
   - id: D5
     name: "인제스트·파이프라인 (포맷 처리)"
@@ -2173,22 +2181,40 @@ items:
     sources: ["PLAN-SoT §9 〈310〉", "sessions/BUG-20260903.md", "reports/bug-20260903/recon-C-layout.md §5", "reports/bug-20260903/lane-C4-report.md"]
 
   - id: BF-7
-    name: "스크린샷 버튼 — 객체 URL 즉시 revoke 로 크롬 다운로드 취소 (recon 발견 · Ted 미보고)"
+    name: "스크린샷 버튼 — 객체 URL 같은 tick 회수·앵커 미부착 경합 (하드닝 · 크롬 취소 증상 미재현)"
     status: open
     stage: stage1
     owner: "frontend (D7 화면)"
     entry_conditions:
-      - "없음 — 원인이 코드에 실재한다(`ScreenshotButton.tsx:72-77` · `a.click()` 직후 같은 tick 에 `URL.revokeObjectURL(url)` · 앵커를 문서에 붙이지 않는다)"
+      - "없음 — 원인이 코드에 실재한다(`ScreenshotButton.tsx` `take()` 의 내려받기 앵커 구간 · `a.click()` 직후 같은 tick 에 `URL.revokeObjectURL(url)` · 앵커를 문서에 붙이지 않는다)"
       - "통합 브랜치 `bugfix/20260903-ui-12` 병합 뒤 착수 — 이 회차는 범위 유지로 등록만 했다(`PLAN-fanout.md` 「스크린샷 버튼」 행)"
     depends_on: []
     completion_def: >-
       ⑴ 실패 시험 red — 다운로드 앵커가 클릭된 뒤 revoke 가 같은 tick 에 일어나지 않음을 단언 ⑵ 회수를 `setTimeout`/`load` 뒤로 미루고 앵커를 문서에 붙였다 뗀다
-      ⑶ 크롬에서 다운로드가 완주함을 실측(브라우저 1회) ⑷ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx:9-10`) — 서버 경로 무접촉.
-    evidence: null
+      ⑶ **완주 실측(증상 미재현 기록)** ⑷ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx` 파일 머리 주석 「그리는 일은 한 줄도 하지 않는다」) — 서버 경로 무접촉.
+    evidence: >-
+      ⭑ **⟨집행 2026-09-05 · 레인 `bf-7/screenshot-revoke-timing` · 기반 `main` `b0c1f34`⟩** 커밋 `932b3f0`(고침 ＋ 시험) · `29e1f2f`(레인 보고) · `3a6cff2`(수용 검토 반영 — 지연 상수화·시험 조임) · `7531d7b`(보고서 커밋 해시 정정).
+      2파일 — `ScreenshotButton.tsx` ＋11/−1 뒤 ＋18/−7 · `test/dataset-preview-screenshot.test.tsx` ＋52 뒤 ＋46/−17.
+      `take()` 의 내려받기 앵커를 `display:none` 으로 `document.body` 에 붙여 누르고, 앵커 제거와 `URL.revokeObjectURL` 을 이름 붙인 상수 `OBJECT_URL_RETENTION_MS`(**4000 ms**) 뒤로 미룬다 —
+      크롬은 내비게이션 시작 시점에 `blob:` 핸들을 잡아 `0` 으로도 되지만 **파이어폭스는 가져오기 전에 회수될 수 있다**(FileSaver.js 40초 대기 선례). **미루되 흘리지 않는다** — 회수 자체를 단언한다.
+      **RED = `1 failed / 8 passed`** — ⒜(클릭 시점 `isConnected` 가 `false` · 축자 `expected false to be true`)와, ⒜ 만 통과시킨 중간 상태에서 잰 ⒝(축자 `expected 'sync' not to be 'sync'`)를 **따로** 냈다 → **GREEN `9 passed (9)`**.
+      오라클은 클릭 대역 안에서 앵커의 `isConnected` 와 회수가 일어난 진행 단계를 함께 기록해 회수 시점을 **`task`** 로 못 박는다 — `sync` 도 `microtask` 도 받지 않는다. 가짜 시계는 해당 `it` 안에서만 쓰고 `finally` 로 되돌린다.
+      게이트(레인 단독 · 축소·비활성 0) **`frontend-test` green 38파일 / 596건 · `frontend-typecheck` green 오류 0**.
+      ⑶ 브라우저 실측 = 개발 서버 위 실제 컴포넌트 · Chrome/148 headless · `waitForEvent(download)` 로 **`failure: null` · 1048576 바이트 전량 수신 · 잔존 앵커 0**(지연 `0` 상태에서 측정 · 4000 ms 는 더 오래 쥐는 방향이라 완주가 뒤집히지 않으나 재측정은 하지 않았다).
+      ⛔ **대조군(고치기 전 관용구)도 1·64·256 MiB 전부 완주했다 — 대장이 적던 「크롬 다운로드 취소」는 이 환경에서 재현되지 않았다.** 재현 실패이지 반증이 아니며, 같은 tick 회수·앵커 미부착은 사양상 경합이라 고침을 유지한다 ⟹ 항목 `name` 과 완료 정의 ⑶ 을 실측에 맞춰 고쳐 적었다(하드닝 · 증상 미재현 기록).
+      서버 렌더 경로 무접촉(⑷ 충족) · 형제 레인 소유 파일(`vite.config.ts`·CSS) 무접촉 · `package-lock.json` 무변경.
+      ⭑ **⟨통합 2026-09-05⟩ 통합 브랜치 `integration/bf-11-8` 에 병합**(`ece6d95` 초판 · `50c9fef` 수용 검토 반영분) — **`main` 병합은 아직이다.**
+      근거 `dev-package/reports/bf-7/lane-report.md`.
     deadline: null
     note: >-
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-B-preview.md §3`(「스크린샷 버튼은 별건이다」). Ted 접수 12건에는 없다.
-    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-B-preview.md"]
+      ⭑ **⟨코드 집행 2026-09-05 · 등재 `PLAN-SoT §9 〈329〉`⟩ `status` 는 `open` 무변 · `03-HANDOFF §1` 표기도 ⬜ 무변.**
+      실질은 「코드 집행 완료 · 통합 브랜치 대기」이고, `CLAUDE.md §0` 기준 완료 = staging 배포 green 이다. 이 항목은 **`main` 에도 아직 없다** — `integration/bf-11-8` 병합 판정이 Ted 에게 남아 있다.
+      선례 = `BF-12`(`〈325〉` — 코드는 `main` 에 들어갔는데도 `open` 무변 · 🟧 는 대장 `partial` 과 짝이라 게이트 ㈐ 가 `open` ↔ 🟧 를 red 로 낸다).
+      ⚠ **`[미확인]` — 실브라우저(headless 아님) 크롬 재현은 여전히 못 쟀다.** `lane-report.md §6` 의 실측은 headless Chromium 148 이고, headless·자동화 창은 다운로드 처리가 일반 크롬과 다르다.
+      해소법 = `frontend` 에서 `npm run dev` 뒤 실브라우저로 데이터셋 상세를 열어 「스크린샷」 을 누른다(Ted 가 직접 볼 수 있는 명령). **별도 항목으로 신설하지 않고 이 항목의 `[미확인]` 로 진다** — 증상이 재현되지 않은 것은 이 항목의 실측 결과이지 다른 결함이 아니다.
+      ⚠ **`[미확인]` — 파이어폭스 재확인.** 4000 ms 의 근거가 파이어폭스인데 그 브라우저에서는 재지 않았다.
+    sources: ["PLAN-SoT §9 〈310〉", "PLAN-SoT §9 〈329〉", "reports/bug-20260903/recon-B-preview.md", "reports/bf-7/lane-report.md"]
 
   - id: BF-8
     name: "`LabPage`(S-01) 뿌리 규칙 부재 — 화면 뿌리가 자기 여백을 갖는 관례의 결손"
@@ -2196,16 +2222,33 @@ items:
     stage: stage1
     owner: "frontend (D8 화면)"
     entry_conditions:
-      - "없음 — 실측 `routes/LabPage.tsx:36` 뿌리 `<div data-screen=\"S-01\">` 에 클래스 0 · `dashboard.css:5` `.dash-columns` 좌우 여백 0 · 히어로(`search.css:5`)만 여백을 갖는다"
+      - "없음 — 실측 `routes/LabPage.tsx` 뿌리 `<div data-screen=\"S-01\">` 에 클래스 0 · `dashboard.css` `.dash-columns` 좌우 여백 0 · 히어로(`search.css` `.search-hero`)만 여백을 갖는다"
       - "`BF-5` 와 같은 무늬 — `BF-5` 병합 뒤 그 관례(`project.css` 뿌리 규칙)를 그대로 따른다"
     depends_on: [BF-5]
     completion_def: >-
-      ⑴ 실패 시험 red — S-01 뿌리의 계산값 `padding` > 0 · 최대폭(카탈로그·상세와 같은 값) ⑵ `dashboard.css` 또는 뿌리 클래스에 여백·최대폭 ⑶ 히어로의 자기 여백과 이중이 되지 않는다 ⑷ `vite.config.ts` `test.css.include` 에 해당 CSS.
-    evidence: null
+      ⑴ 실패 시험 red — S-01 뿌리의 계산값 `padding` > 0 · 최대폭(**`project.css`·`detail.css` 와 같은 값 — 1200px**) ⑵ `dashboard.css` 또는 뿌리 클래스에 여백·최대폭 ⑶ 히어로의 자기 여백과 이중이 되지 않는다 ⑷ `vite.config.ts` `test.css.include` 에 해당 CSS.
+      ⛔ **⟨문구 정정 2026-09-05 · 등재 `PLAN-SoT §9 〈328〉`⟩ 종전 ~~「카탈로그·상세 화면과 같은 값」~~ 은 실물과 어긋난다** — 실측 = `catalog.css` `.catalog-page` 에 `max-width` 선언 **0건**(`padding: 24px 20px 40px` 뿐) ⟹ **S-03 카탈로그는 창 폭 − 40px 로 그려진다.** 최대폭을 실제로 선언한 화면은 `project.css`(`.project-page`·`.project-detail`)·`detail.css`(`.detail-page`) 뿐이고 셋 다 1200px 이다.
+    evidence: >-
+      ⭑ **⟨집행 2026-09-05 · 레인 `bf-8/labpage-root-padding` · 기반 `main` `b0c1f34`⟩** 커밋 `89f0357`(코드·시험) · `6ee4ae5`(레인 보고) · `42638fc`(수용 검토 반영 — 히어로 최대폭 680px).
+      4파일 — `routes/LabPage.tsx` ＋1/−1(뿌리에 `className="lab-page"`) · `dashboard.css` ＋18 · `test/dashboard.test.tsx` ＋27 · `vite.config.ts` ＋1/−1(`test.css.include` 에 `dashboard.css`·`search.css` 두 항목만).
+      **진입조건 재실측 전건 참** — `LabPage.tsx` 뿌리 `<div data-screen="S-01">` 에 클래스 0 · `.dash-columns` 가로 여백 0 · 자기 여백을 가진 것은 `search.css` 히어로뿐(`padding: 40px 20px 28px; max-width: 720px`).
+      값 = `.lab-page { max-width: 1200px; margin: 0 auto; padding: 24px 20px 40px; }` — **1200px 의 근거는 `project.css`·`detail.css`** 이고 `catalog.css` 는 최대폭을 선언하지 않아 기준으로 삼지 않았다(완료 정의 ⑴ 문구 정정의 근거).
+      ⑶ 여백 이중화 — 좁은 창(760px 미만)에서 뿌리 20px ＋ 히어로 20px = 40px 로 겹치므로 `.lab-page .search-hero` 에서 **좌우** 여백만 0 으로 되돌린다(위·아래 40/28px 은 히어로의 세로 리듬이라 유지). 스코프를 `.lab-page` 안으로 한정해 같은 `search.css` 를 쓰는 S-06 엔 닿지 않는다.
+      ⛔ **초판 정정(수용 검토)** — 「보이는 폭은 720px 그대로」는 틀렸다. `shell.css` 의 `* { box-sizing: border-box }` 때문에 좌우 여백을 0 으로 두면 히어로 **내용 폭이 680 → 720px 으로 40px 넓어진다** ⟹ 같은 규칙에 **`max-width: 680px`**(720 − 40)을 박아 **모든 창 폭에서 BF-8 이전과 같은 모양**을 유지한다. 시험이 그 값을 못박는다(**`maxWidth === '680px'`**).
+      **RED = `2 failed / 23 passed`**(축자 — 뿌리 `paddingLeft` `expected +0 to be greater than 0` · 히어로 `expected 20 to be +0`) → **GREEN `25 passed (25)`**. 수용 검토 추가분은 따로 냈다 — RED `1 failed / 24 passed`(축자 `Received: "720px"`) → GREEN `25 passed`.
+      ⭑ 히어로가 RED 에서 20 으로 측정된 것이 **`search.css` 가 실제로 실렸다는 증거**다(스텁이면 빈 문자열 → NaN) — 계산값(`getComputedStyle`)만 썼고 `node:fs` 우회 0.
+      게이트(레인 단독) **`frontend-test` green 38파일 / 597건**(기반 595 ＋ 신규 2 · `css.include` 확장으로 흔들린 기존 시험 0건) · **`frontend-typecheck` green 오류 0**.
+      `project.css`·`detail.css`·`shell.css` 무접촉 · `package-lock.json` 무변경.
+      ⭑ **⟨통합 2026-09-05⟩ `bf-11` 위에 병합**(`dcd0a59` — `vite.config.ts` `test.css.include` 는 두 레인의 **합집합 7항**으로 풀었다) — **`main` 병합은 아직이다.**
+      근거 `dev-package/reports/bf-8/lane-report.md`.
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태다.
-    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. 발견 = `reports/bug-20260903/recon-C-layout.md §8` 곁가지 · `lane-C-report.md` 「등록만」. Ted 접수 12건에는 없다 — S-01 도 같은 결손일 가능성이라 **확인 권고** 상태였다.
+      ⭑ **⟨코드 집행 2026-09-05 · 등재 `PLAN-SoT §9 〈328〉`⟩ `status` 는 `open` 무변 · `03-HANDOFF §1` 표기도 ⬜ 무변** — 실질은 「코드 집행 완료 · 통합 브랜치 대기」이고 `CLAUDE.md §0` 기준 완료는 staging 배포 green 이다. 선례 = `BF-12`(`〈325〉`).
+      ⚠ **`[미확인]` — `catalog.css` 최대폭 부재가 의도인지 누락인지.** 카탈로그는 표 화면이라 창 폭을 다 쓰는 것이 의도일 수 있다. 해소 = `Policy_데이터_찾기`/E-02 목업에서 카탈로그 최대폭 진술을 찾거나 기획자 확인. **이번 범위 밖이라 손대지 않았다.**
+      ⚠ **`[미확인]` — 좁은 창 여백 규칙.** `catalog.css` 는 900px 미만에서 여백을 16px 12px 32px 으로 줄이고 `env(safe-area-inset-*)` 를 쓰는데 `.lab-page` 는 `project.css` 관례를 따라 그 media query 를 두지 않았다. 해소 = 화면별 좁은 창 여백을 한 번에 정하는 별도 항목.
+      ⚠ **`[미확인]` — 실브라우저 눈 확인.** 잰 것은 jsdom 계산값이다. 해소 = staging 배포 뒤 계산 스타일 실측(`BF-5` 가 한 방식).
+    sources: ["PLAN-SoT §9 〈310〉", "PLAN-SoT §9 〈328〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md", "reports/bf-8/lane-report.md"]
 
   - id: BF-9
     name: "core-api 계보 그래프 — 원천 → 루트 edge 부재 (프론트는 라벨 없는 화살표로 수용)"
@@ -2213,17 +2256,33 @@ items:
     stage: stage1
     owner: "core-api (D4)"
     entry_conditions:
-      - "없음 — `routes/lineage.py:87-91` 이 `source_label` 로 원천 **노드**만 만들고(`datasetId: null` · 표기) 대응 **edge** 는 만들지 않는다 · 계약 `fe-core.yaml` `LineageEdge`(`:3257`) 가 원천을 끝점으로 허용하는지는 `[미확인]`"
+      - "없음 — `routes/lineage.py` `lineage_graph()` 가 `source_label` 로 원천 **노드**만 만들고(`datasetId: null` · 표기) 대응 **edge** 는 만들지 않는다 · 계약 `fe-core.yaml` `components.schemas.LineageEdge` 가 원천을 끝점으로 허용하는지는 ~~`[미확인]`~~ ⟹ **해소됨(2026-09-05 · `〈330〉`) — 이미 허용한다**"
       - "계약 변경이 필요하면 멈추고 보고 — 동결 해제 회차로 묶는다(`X2-FREEZE-PROTOCOL`)"
     depends_on: [BF-1]
     completion_def: >-
       ⑴ 원천 노드가 있을 때 원천 → 루트 edge 를 응답에 싣는다(가공 방식 라벨은 원천에 없으므로 `method` 는 null) ⑵ 프론트 `BF-1` 의 「라벨 없는 화살표」 수용 코드가 edge 유무와 무관하게 같은 그림을 낸다
       ⑶ 시험 — core-api 응답 edge 수 · 프론트 픽스처 「원천+루트+자식」 화살표 2 유지 ⑷ 계약 개정이 없으면 0, 있으면 동결 해제 행 1.
-    evidence: null
+    evidence: >-
+      ⭑ **⟨집행 2026-09-05 · 레인 `bf-9/lineage-source-edge` · 기반 `main` `b0c1f34`⟩** 커밋 `026d4d8`(코드·시험) · `6df8816`(레인 보고) · `4ee0876`(보고 보강 — `[미확인]` 1건 추가).
+      4파일 ＋176/−6 — `services/core-api/src/colab_core/app/routes/lineage.py` ＋26/−3 · `services/core-api/tests/test_lineage_graph_read.py` ＋59 · `frontend/src/components/lineage/LineageSection.tsx` ＋14/−3 · `frontend/test/lineage-graph.test.tsx` ＋83/−2.
+      ⭑ **계약 개정 0 · 동결 해제 행 0**(완료 정의 ⑷ 충족 · `X2-FREEZE-PROTOCOL` 회차 불필요) — `LineageEdge.parentDatasetId` 가 **이미** `oneOf: [Ulid, {type: "null"}]` 이고 산문이 축자 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」로 이 자리를 지정한다. `method` 는 `type: [string, "null"]`. **결손은 계약이 아니라 구현이었다.** 이 판정을 시험이 잠갔다(`test_the_contract_already_allows_a_null_parent_endpoint`) — 계약이 뒤로 좁혀지면 red 가 나고 그때는 코드가 아니라 동결 해제가 먼저다.
+      필수 4칸은 nullable 이 아니라 **실재하는 사실**로 채웠다 — `parentRole: 주입력` · `origin: manual` · `confirmedBy` = 올린 사람(`d3_dataset.uploader_account_id` ＋ `d1_account.name`) · `confirmedAt` = 올린 시각(`uploaded_at`). `additionalProperties: false` · `required` 7개 전건 충족 — **필드를 더하지도 비우지도 않았다.**
+      ⑵ 재실측 — 프론트는 `parentDatasetId: null` 관계를 **이미 완전히 수용**하고 있었다(기본 픽스처가 그 모양을 2건 든다 · 레일 라벨은 `method` truthy 만 · 상세 행은 `parentDatasetId !== null` 로 거른다 · 화살표는 `shown.length − 1`). **딱 한 자리가 갈렸다** — 빈 상태 판정 `empty = g.edges.length === 0 && g.unknownParents` 가 원천 관계 하나로 뒤집혔다 ⟹ `empty` 판정에서 원천 관계를 뺀다(「기록 없음」은 **가공 전 데이터를 모른다**는 뜻이고 연구실 밖 출처 표기는 그 물음에 답하지 않는다). 낡은 주석(「원천에는 대응하는 edge 가 없다」)도 실물에 맞췄다.
+      **RED → GREEN** — core-api **`2 failed, 629 passed`**(축자 `AssertionError: 0000000000000000000000DSA1 의 원천 관계: 기대 1 · 실측 0 — []`) → **`631 passed, 6 deselected`** · frontend **`1 failed | 40 passed (41)`**(빈 상태가 원천 관계 하나로 뒤집혔다) → green.
+      ※ 신규 2건 중 「원천 관계가 실려 와도 같은 그림」은 **수정 전에도 통과**한다 — 프론트가 그 모양을 이미 받고 있었다는 재실측의 확인이고 **사실이 아닌 red 를 만들지 않았다.**
+      게이트(레인 단독 · 하나씩 · 건너뜀·축소 0) — `service-tests-core-api` **green**(수집 **631** · 실행 631 · skipped 0 · deselected 6 · failed 0 · errors 0 · 95.0초) · `contract-lint` green(seam 3 · 위반 0) · `contract-breaking` green(`No changes detected`) · `generated-up-to-date` green(등기부 4건 일치 · 등기부 밖 자칭 생성물 0) · `frontend-typecheck` green 0 · `frontend-test` **green 38파일 / 597건**(기반 595 ＋ 신규 2).
+      ⚠ 준비 red 2건은 **준비로 해소했다**(판정 red 아님) — 체크아웃에 `services/core-api/.venv`·`frontend/node_modules` 가 없어 각각 venv 구성 · `npm ci` 뒤 재실행했다. 둘 다 `.gitignore` 대상이라 커밋에 없다. `~/.colab-v2-test.env` 는 쓰지 않았다 — `service-tests-core-api` 는 게이트가 일회용 postgres 를 스스로 세운다. **staging 접촉 0.**
+      ⭑ **⟨통합 2026-09-05⟩ 통합 브랜치 `integration/bf-11-8` 에 병합**(`7358439`) — **`main` 병합은 아직이다.**
+      근거 `dev-package/reports/bf-9/lane-report.md`.
     deadline: null
     note: >-
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `lane-A-report.md` 「보류 사항」 — 프론트는 이를 의도된 동작으로 명시하고 코드 주석에 `routes/lineage.py` 참조를 남겼다. ⚠ 결함이 아니라 **뒷단 결손**일 수 있다 — 화면이 이미 수용하므로 막는 것 0건.
-    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md"]
+      ⭑ **⟨코드 집행 2026-09-05 · 등재 `PLAN-SoT §9 〈330〉`⟩ `status` 는 `open` 무변 · `03-HANDOFF §1` 표기도 ⬜ 무변** — 실질은 「코드 집행 완료 · 통합 브랜치 대기」이고 `CLAUDE.md §0` 기준 완료는 staging 배포 green 이다. 선례 = `BF-12`(`〈325〉`).
+      ⚠ **`[미확인]` — 표기가 업로드 뒤에 바뀐 경우의 확인 기록.** `sourceLabel` 이 업로드 뒤 PATCH(`routes/catalog.py` `_UPDATE_FIELDS`)·AI 제안 수용(`d3_catalog` `SUGGESTABLE_FIELDS`)으로 바뀐 경우, 원천 edge 의 `confirmedAt`(현재 `uploaded_at`)·`origin`(현재 `manual`) 정본 판정 — **저장 기록이 없어 구분 불가 · 화면 노출 0.**
+      ⚠ **`[미확인]` — 원천이 여럿인 데이터셋.** `d3_dataset.source_label` 은 `text` 한 칸이라 데이터셋당 원천 노드는 최대 1이다. 프론트 기본 픽스처는 원천 노드 2개를 그리지만(목업 유래) **서버가 그 모양을 낼 경로가 지금 없다.** 이 레인은 스키마를 건드리지 않았다.
+      ⚠ **`[미확인]` — `parentRole`·`origin` 값 선택.** 정본이 원천 관계의 역할을 명시하지 않아 `default: 주입력` 을 따랐다(원천은 Lv 계산에 들어가지 않아 `보조입력` 과 결과가 갈리지 않는다). `LineageOrigin` 에 「원천 표기」를 가리키는 값이 없어 `manual` 로 읽었고, **값을 늘리는 것은 계약 개정이라 하지 않았다.**
+      ⚠ **`[미확인]` — 원천 표기의 수정 시각.** `d3_dataset` 이 그 칸의 수정 시각을 따로 들지 않아 `confirmedAt`(업로드 시각)은 표기를 고쳐도 움직이지 않는다. 화면이 이 값을 「원천을 확인한 날」로 읽지는 않는다(원천 행은 `confirmedAt` 을 그리지 않는다).
+    sources: ["PLAN-SoT §9 〈310〉", "PLAN-SoT §9 〈330〉", "reports/bug-20260903/recon-A-lineage.md", "reports/bug-20260903/lane-A-report.md", "reports/bf-9/lane-report.md"]
 
   - id: BF-10
     name: "바탕지도 대안 — 격자선·눈금 옵션 (POL-021 준수 · Ted 6 · 접수 B-2)"
@@ -2255,13 +2314,32 @@ items:
       - "`BF-5` 병합 뒤 — `BF-5` 가 backlink 를 `detail.css` 에서 복제하며 같은 토큰을 더 썼다"
     depends_on: [BF-5]
     completion_def: >-
-      ⑴ 실패 시험 red — `project.css` 가 `tokens.css` 에 없는 `--*` 이름을 참조하면 실패(정적 대조) ⑵ 다섯 이름을 `--color-border`·`--color-text-muted` 계열 정본 토큰으로 치환 · 폴백 리터럴 제거
+      ⑴ 실패 시험 red — `project.css` 가 참조하는 `--*` 이름이 **`tokens.css` 또는 그 파일 자신의 `:root`(정본 계열 이름만)에 없으면 실패**(정적 대조) ⑵ 다섯 이름을 `--color-border`·`--color-text-muted` 계열 정본 토큰으로 치환 · 폴백 리터럴 제거
       ⑶ backrow/backlink 규칙을 `detail.css`·`project.css` 두 벌에서 공용 한 벌로 ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx` green).
-    evidence: null
+      ⛔ **⟨문구 정정 2026-09-05 · 등재 `PLAN-SoT §9 〈327〉`⟩ 종전 ⑴ ~~「`tokens.css` 에 없는 `--*` 이름을 참조하면 실패」~~ 를 그대로 쓰면 `detail.css`·`catalog.css` 가 이미 따르는 집 관례(화면 CSS 의 `:root` 로컬 토큰)가 통째로 위반이 되고 `--text-h2`·`--radius-pill` 같은 화면 전용 값을 셸 정본에 밀어 넣게 된다** — 「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 정면으로 부딪힌다. 좁힌 오라클의 구멍(폐기 별칭을 로컬에 되살리기)은 판정 둘로 막았다 — 아래 evidence ⓐⓑ.
+    evidence: >-
+      ⭑ **⟨집행 2026-09-05 · 레인 `bf-11/project-css-tokens` · 기반 `main` `b0c1f34`⟩** 커밋 `d999d60`(치환·공용화·시험) · `41602de`(레인 보고) · `ec0714a`(수용 검토 반영 — 로컬 `:root` 의 폐기 별칭·계열 밖 이름 금지).
+      6파일 — `project.css` ＋62/−84 · `shell.css` ＋48 · `detail.css` −12 · `vite.config.ts` ＋13/−1 · 신규 `test/project-css-tokens.test.ts` ＋79 · `test/project.test.tsx` ＋3/−1.
+      **재실측**(`b0c1f34` · `BF-5` 병합 뒤) `var(--line` **16** · `var(--fg-muted` **15** · `var(--surface` **3** · `var(--surface-2` **6** · `var(--warn` **4** · `var(--fg` **1** — 원장 진입조건(`56eac76`)보다 넷이 늘었고 `--fg` 는 원장 note 가 예고한 대로 `BF-5` 가 더한 자리다. `tokens.css` 에 이 이름들 **0건**.
+      ⭑ **원장에 없던 것 4종** — `--radius-pill`·`--color-gray-100`·`--color-success-50`·`--color-success-600` 은 **폴백조차 없어 선언째 버려지고 있었다**(미정의 총 **13종**). **색이 어긋난 것이 아니라 안 그려졌다.**
+      치환 19종(폴백 전부 제거) · `project.css` 머리 `:root` 에 새로 적은 8개는 값을 `detail.css`·`catalog.css` `:root` 에서 **그대로 옮겼다**(색을 새로 만들지 않았다).
+      **RED = `4 failed | 1 passed (5)`**(축자 `AssertionError: 정의가 없는 토큰: --text-h2 · --fg-muted · --line · --surface · --fg · --surface-2 · --warn · --ok-line · --ok-bg · --radius-pill · --color-success-50 · --color-success-600 · --color-gray-100` 외 3건) → **GREEN `5 passed (5)`**.
+      ⭑ **수용 검토 반영 — 좁힌 오라클의 구멍을 판정부가 막는다.** ⓐ **폐기 별칭 재정의 금지** — `project.css` 로컬 `:root` 가 `--line`·`--fg`·`--fg-muted`·`--surface`·`--surface-2`·`--warn`·`--ok-line`·`--ok-bg` 를 되살리면 red. ⓑ **정본 계열만** — 로컬이 정의한 모든 이름이 `--color-*`·`--text-*`·`--radius-*`·`--space-*`·`--shadow-*`. 추가 RED(주입 사본에 겨눈 일회 실행) 축자 `AssertionError: 되살아난 폐기 별칭: --line: expected [ '--line' ] to deeply equal []` → GREEN `7 passed (7)`.
+      ⭑ **붉은 픽스처를 시험 안에 상주시켰다** — `project.css` 를 고치지 않고 **원문 사본**에만 `:root { --line: #e3e6ea; --pj-gap: 4px; }` 를 주입해 두 판정이 각각 잡는지 매 회차 확인한다. **판정부가 fail-closed 임이 주장이 아니라 값으로 재측정된다.**
+      게이트(레인 단독) **`frontend-test` green 39파일 / 602건**(수용 검토 전 600 ＋ 추가 시험 2) · **`frontend-typecheck` green 오류 0**.
+      `node:fs` 우회 배제 — 입력은 전부 vite `?raw`(`e01-apply-points.test.ts` 머리말 · 2026-09-02 `main` 배포 불가 선례).
+      backrow/backlink 는 `detail.css`·`project.css` 두 벌 → **`shell.css` 한 벌**(`.loadfail` 과 같은 자리·같은 이유) · 선택자는 두 화면으로 **한정한다**(맨 `.backlink` 로 열면 제 모양을 따로 가진 `preview.css` 가 끌려온다).
+      중간 red 2회는 검사 대상을 줄이지 않고 닫았다 — `project.test.tsx` 가 `BF-5` 때 박은 `var(--surface` 단언은 **재는 사실은 그대로 두고 이름만** `var(--color-surface)` 로 옮겼고, `matchAll` 결과의 `string | undefined` 는 단언 3곳으로 닫았다. **게이트를 손대지 않았다.**
+      ⭑ **⟨통합 2026-09-05⟩ 통합 브랜치 `integration/bf-11-8` 의 바닥이다** — `bf-8` 이 이 위에 병합됐다(`dcd0a59` · `vite.config.ts` `test.css.include` 합집합 7항). **`main` 병합은 아직이다.**
+      근거 `dev-package/reports/bf-11/lane-report.md`.
     deadline: null
     note: >-
-      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `--fg` 는 지시에 든 이름이고 origin/main 실측은 0건이다 — 레인 C 가 더한 자리가 있으면 병합 뒤 재실측한다. 색이 미묘하게 어긋나는 것 외에 막는 것 0건.
-    sources: ["PLAN-SoT §9 〈310〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md"]
+      **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `--fg` 는 지시에 든 이름이고 origin/main 실측은 0건이다 — 레인 C 가 더한 자리가 있으면 병합 뒤 재실측한다. ~~색이 미묘하게 어긋나는 것 외에 막는 것 0건.~~ **⟹ 실측이 이 전제를 넓혔다** — 미정의 13종 중 폴백조차 없던 4종은 **선언째 버려지고 있었다**(안 그려졌다).
+      ⭑ **⟨코드 집행 2026-09-05 · 등재 `PLAN-SoT §9 〈327〉`⟩ `status` 는 `open` 무변 · `03-HANDOFF §1` 표기도 ⬜ 무변** — 실질은 「코드 집행 완료 · 통합 브랜치 대기」이고 `CLAUDE.md §0` 기준 완료는 staging 배포 green 이다. 선례 = `BF-12`(`〈325〉`).
+      ⚠ **`[미확인]` — 치환으로 색이 바뀐 자리 5종의 실브라우저 눈 확인.** `--surface-2 #f4f5f7 → #f4f7fb` · `--surface-2 #eceef2 → #e8ecf2` · `--warn #b45309 → #a85400` · `--ok-bg #f2fbf5 → #efffef` · `--fg-muted #667 → #565c63`. **이것이 이 항목의 목적**이다(폴백이 정본과 어긋나 있었다). 해소 = staging 배포 뒤 계산 스타일 실측(`BF-5` 가 한 방식).
+      ⚠ **`[미확인]` — `--color-success-100: #cde9d6` 은 집 토큰에 없는 새 이름이다.** 종전 폴백 값에 이름만 붙였다(색을 새로 만들지 않았다). 해소 = 목업 `프로젝트_260817.html`/`제품_260817.html` 의 `:root` 에서 이 값의 이름을 찾아 그 이름으로 바꾼다.
+      ⚠ **`[미확인]` — `preview.css` 의 backrow/backlink 는 합치지 않았다.** 원장이 말한 것은 두 벌이고 미리보기 사본은 치수·색·hover 가 다른 **별개 디자인**이라 합치면 이 항목이 재지도 않은 화면이 바뀐다. 해소 = S-08 정본에서 되돌아가기 줄이 상세와 같은 모양이어야 하는지 확인.
+    sources: ["PLAN-SoT §9 〈310〉", "PLAN-SoT §9 〈327〉", "reports/bug-20260903/recon-C-layout.md", "reports/bug-20260903/lane-C-report.md", "reports/bf-11/lane-report.md"]
 
   - id: BF-12
     name: "지도 타일 회수 루프 「관측 전용의 관측이 안 된다」 — 앱 로그 설정 부재로 INFO 요약이 버려진다"
@@ -2289,3 +2367,27 @@ items:
       **막는 것** = `TL-1` 첫 한 바퀴 계수(`03-HANDOFF §4.5` ㉢) · `TL-2` ⑴⑸. **`TL-1` 은 다시 열지 않는다** — 기구의 결손이 아니라 로그의 결손이다.
       ⚠ 등급별 계수는 여전히 **「못 봤다」**이고 **0 으로 적지 않는다** · 삭제는 자리 기준 **0건**.
     sources: ["PLAN-SoT §9 〈324〉", "sessions/V-1-STAGING-20260905.md", "PLAN-SoT §9 〈316〉", "PLAN-SoT §9 〈323〉", "PLAN-SoT §9 〈325〉", "notes/BF12-LEDGER-PENDING.md"]
+
+  - id: BF-13
+    name: "화면 CSS 세 파일이 같은 `--color-*` 토큰을 각자 `:root` 에 다시 적는다 — 값 일치를 재는 것이 0건"
+    status: open
+    stage: stage1
+    owner: "frontend (shell · 화면 CSS)"
+    entry_conditions:
+      - "없음 — 실측(`b0c1f34` ＋ `BF-11`) `catalog.css`·`detail.css`·`project.css` 세 파일이 각자 머리 `:root` 에 `--color-*` 계열을 선언하고, 같은 이름이 여러 파일에 겹쳐 적힌다. `shell/tokens.css` 는 셸이 실제로 쓰는 것만 든다(머리말)"
+      - "`BF-11` 이 이 관례를 **따랐다**(위반이 아니다) — `project.css` 머리 `:root` 에 8개를 적으며 값을 `detail.css`·`catalog.css` 에서 그대로 옮겼다. 옮긴 것이 어긋나면 아무도 모른다"
+    depends_on: [BF-11]
+    completion_def: >-
+      ⑴ 실패 시험 red — 같은 `--*` 이름이 둘 이상의 CSS 에 정의돼 있으면 **값이 글자 그대로 같아야** 하고, 갈리면 red(정적 대조 · 입력은 vite `?raw` — `node:fs` 를 쓰지 않는다)
+      ⑵ 갈린 자리가 실측되면 **어느 값이 정본인지 사람이 판정한 뒤** 한 값으로 모은다 — 시험이 고르지 않는다
+      ⑶ 세 파일에 공통인 이름은 `tokens.css` 로 올릴지 화면 로컬로 둘지 판정한다(「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 부딪히지 않게)
+      ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx`·`catalog` 시험 green).
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-05 · 등록만** — `PLAN-SoT §9 〈331〉`. 발견 = `BF-11` 수용 검토(`reports/bf-11/lane-report.md §2`·`§7`).
+      ⭑ **드리프트 위험이지 오늘의 결함이 아니다** — `BF-11` 이 옮겨 적은 값은 원본과 글자 그대로 같음을 그 회차가 확인했고, `BF-11` 의 판정 둘(ⓐ 폐기 별칭 재정의 금지 · ⓑ 정본 계열 이름만)이 **`project.css` 한 파일에 대해서는** 되돌아갈 길을 막는다.
+      ⛔ **막지 못하는 것** = 세 파일 사이의 **값 불일치**다. 같은 이름이 다른 값으로 갈려도 어느 시험도 red 를 내지 않는다 — 그것이 `BF-11` 이 없앤 것(정본과 어긋난 두 번째 이름 체계)과 같은 뿌리이고, 이름이 아니라 값에서 다시 난다.
+      ⚠ **`BF-11` 을 다시 열지 않는다** — 그 항목의 완료 정의는 `project.css` 한 파일이고 이 물음은 그 범위 밖이다. 선례 = `BF-7`~`BF-11` 의 「등록만」(`〈310〉`-㉱).
+      ⚠ **`[미확인]` — 지금 실제로 갈린 자리가 있는지.** 이 회차는 **세지 않았다**(원장 등재 회차이고 코드 0줄) — **0 으로 적지 않는다.** 해소법 = ⑴ 의 시험을 세우면 그 red 가 목록을 낸다.
+    sources: ["PLAN-SoT §9 〈331〉", "reports/bf-11/lane-report.md"]

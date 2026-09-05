@@ -1,6 +1,23 @@
 /* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
    이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
 
+/* BF-11 — 이 화면에만 쓰는 값. 셸 정본(`shell/tokens.css`)에 없는 이름만 여기 적는다
+   (`detail.css`·`catalog.css` 머리 `:root` 와 같은 관례). 값은 그 두 파일의 것을 그대로 옮겼다.
+   종전에는 이 자리가 없어 `--line`·`--fg-muted`·`--surface`·`--fg`·`--surface-2`·`--warn` 이
+   **어디에도 정의되지 않은 채** 폴백 리터럴로만 그려졌고(정본과 미묘하게 어긋난 색),
+   폴백이 없던 `--color-gray-100`·`--color-success-*`·`--radius-pill` 은 선언째 버려졌다. */
+:root {
+  --color-gray-100: #e8ecf2;
+  --color-surface-alt: #f4f7fb;
+  --color-success-50: #efffef;
+  /* 성공 계열 테두리 — 집 토큰에 없는 한 칸이다. 종전 폴백 값을 그대로 이름 붙였다 */
+  --color-success-100: #cde9d6;
+  --color-success-600: #067506;
+  --color-warning-600: #a85400;
+  --text-h2: 24px;
+  --radius-pill: 9999px;
+}
+
 /* 버그 1·9 — 화면 뿌리가 자기 여백을 직접 갖는 관례(`catalog.css:24`·`detail.css:27`)를
    여기만 빠뜨렸었다. 카드·제목이 뷰포트 좌단에 붙고(bug01), 상세는 카드 면 없이
    raw HTML 수준으로 보였다(bug09). 데이터셋 상세와 같은 값으로 맞춘다. */
@@ -17,7 +34,7 @@
 }
 
 .project-page .page-head h1 {
-  font-size: var(--text-h2, 24px);
+  font-size: var(--text-h2);
   margin: 0;
   letter-spacing: -0.023em;
 }
@@ -28,45 +45,6 @@
   letter-spacing: -0.03em;
   line-height: 1.25;
   margin: 0;
-}
-
-/* 되돌아가기 줄 — `detail.css:30~39` 와 같은 마크업(`ProjectDetailPage.tsx:41~46`)인데
-   `.detail-page` 로만 스코프돼 있어 프로젝트 상세엔 닿지 않았다. 여기서 복제해 잇는다
-   (레인 C 은 `detail.css` 를 건드리지 않는다 — `recon-C-layout.md §7`). */
-.project-detail .backrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 0 0 6px;
-}
-.project-detail .backlink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: min(60vw, 460px);
-  padding: 3px 9px 3px 7px;
-  margin-left: -7px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm, 8px);
-  font-size: var(--text-caption, 13px);
-  color: var(--fg-muted, #667);
-  text-decoration: none;
-  transition: border-color var(--ease, 0.14s), background var(--ease, 0.14s), color var(--ease, 0.14s);
-}
-.project-detail .backlink:hover {
-  border-color: var(--line, #e3e6ea);
-  background: var(--surface, #fff);
-  color: var(--fg, #121619);
-}
-.project-detail .backlink .bl-n {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.project-detail .backlink .bl-a {
-  flex: none;
-  font-size: 11px;
 }
 
 .project-page .page-head,
@@ -80,7 +58,7 @@
 
 .project-page .page-head .desc {
   flex-basis: 100%;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
@@ -95,7 +73,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   margin-bottom: 14px;
 }
@@ -109,20 +87,20 @@
 
 .pj-views button {
   padding: 4px 10px;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   background: transparent;
   cursor: pointer;
 }
 
 .pj-views button.on {
-  background: var(--surface-2, #eceef2);
+  background: var(--color-gray-100);
   font-weight: 600;
 }
 
 .pj-count {
   margin-left: auto;
   font-size: 12px;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
 }
 
 /* ── 카드 — 모든 카드가 같은 높이다 (§5 카드 높이) ─────────────────────────── */
@@ -135,7 +113,7 @@
 .pcard {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -144,7 +122,7 @@
 /* 닫힘은 배경을 한 단계 낮춘다. **투명도로 흐리게 만들지 않는다** —
    저시력·고대비 환경에서 안 읽히고 비활성인지 로딩인지도 구분되지 않는다 (§5) */
 .pcard[data-closed='true'] {
-  background: var(--surface-2, #f4f5f7);
+  background: var(--color-surface-alt);
 }
 
 .pc-body {
@@ -162,7 +140,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
@@ -176,8 +154,8 @@
 }
 
 .pc-d.is-empty {
-  color: var(--fg-muted, #99a);
-  border: 1px dashed var(--line, #d6dae0);
+  color: var(--color-gray-400);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 6px;
   padding: 6px 8px;
 }
@@ -187,11 +165,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
-  background: var(--line, #e3e6ea);
+  background: var(--color-border);
 }
 
 .pc-s {
-  background: var(--surface-2, #eceef2);
+  background: var(--color-gray-100);
   padding: 10px 8px;
   text-align: center;
 }
@@ -205,15 +183,15 @@
 .pc-s .k {
   display: block;
   font-size: 11px;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
 }
 
 .pc-s[data-zero='true'] .n {
-  color: var(--fg-muted, #aab);
+  color: var(--color-gray-400);
 }
 
 .pc-s[data-warn='true'] .n {
-  color: var(--warn, #b45309);
+  color: var(--color-warning-600);
 }
 
 /* 이동 안내 — 면을 따로 칠하지 않아 카드 배경을 그대로 물려받는다 (§5) */
@@ -223,7 +201,7 @@
   justify-content: space-between;
   padding: 10px 14px;
   font-size: 12px;
-  border-top: 1px solid var(--line, #e3e6ea);
+  border-top: 1px solid var(--color-border);
 }
 
 /* ── 표 ────────────────────────────────────────────────────────────────────── */
@@ -240,7 +218,7 @@
 .pj-ds td {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--line, #eef0f3);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .pj-table tbody tr,
@@ -249,7 +227,7 @@
 }
 
 .pj-table td[data-warn='true'] {
-  color: var(--warn, #b45309);
+  color: var(--color-warning-600);
   font-weight: 600;
 }
 
@@ -258,14 +236,14 @@
 }
 
 .pj-ds .lin-none {
-  color: var(--warn, #b45309);
+  color: var(--color-warning-600);
 }
 
 /* ── 상세 ──────────────────────────────────────────────────────────────────── */
 .project-detail .card {
-  background: var(--surface, #fff);
-  box-shadow: var(--shadow-sm, 0px 1px 2px -1px #1717171a);
-  border: 1px solid var(--line, #e3e6ea);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 14px;
@@ -286,7 +264,7 @@
 .pd-sect .quiet {
   margin-left: auto;
   font-size: 12px;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
 }
 
 .pd-grid {
@@ -298,7 +276,7 @@
 }
 
 .pd-desc.is-empty {
-  color: var(--fg-muted, #99a);
+  color: var(--color-gray-400);
 }
 
 .pd-linkurl {
@@ -310,7 +288,7 @@
   display: inline-block;
   padding: 1px 7px;
   border-radius: 999px;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   font-size: 11px;
   margin-left: 6px;
 }
@@ -342,8 +320,8 @@
   width: min(560px, 100%);
   max-height: 90vh;
   overflow: hidden;
-  background: var(--surface, #fff);
-  border: 1px solid var(--line, #e3e6ea);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
@@ -353,7 +331,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--line, #eef0f3);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .pj-modal-h h3 {
@@ -366,7 +344,7 @@
   background: none;
   font-size: 18px;
   line-height: 1;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -380,7 +358,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid var(--line, #eef0f3);
+  border-top: 1px solid var(--color-border);
 }
 
 /* ── 폼 칸 ─────────────────────────────────────────────────────────────── */
@@ -392,14 +370,14 @@
   display: block;
   margin-bottom: 5px;
   font-size: 12px;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
 }
 
 .pj-inp,
 .pj-tarea {
   width: 100%;
   padding: 7px 9px;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font: inherit;
   font-size: 13px;
@@ -417,7 +395,7 @@
 
 .pj-seg {
   display: inline-flex;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -432,7 +410,7 @@
 }
 
 .pj-seg button.on {
-  background: var(--surface-2, #eceef2);
+  background: var(--color-gray-100);
   font-weight: 600;
 }
 
@@ -443,14 +421,14 @@
 }
 
 .pj-tilde {
-  color: var(--fg-muted, #99a);
+  color: var(--color-gray-400);
 }
 
 .pj-hint,
 .pj-muted {
   margin: 5px 0 0;
   font-size: 11px;
-  color: var(--fg-muted, #99a);
+  color: var(--color-gray-400);
 }
 
 /* 정의·범위 안내 — **새 프로젝트 모달에만** 있다 (§8) */
@@ -458,17 +436,17 @@
   margin: -6px 0 14px;
   padding: 9px 11px;
   border-radius: 6px;
-  background: var(--surface-2, #f4f5f7);
+  background: var(--color-surface-alt);
   font-size: 12px;
   line-height: 1.6;
-  color: var(--fg-muted, #667);
+  color: var(--color-text-muted);
 }
 
 /* 연결 주소 묶음 — 설명·기간과 **다른 카드**다 (§1.2·§8) */
 .pj-fgroup {
   margin: 4px 0 14px;
   padding: 12px;
-  border: 1px solid var(--line, #e3e6ea);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -489,7 +467,7 @@
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 6px;
-  background: var(--surface-2, #f4f5f7);
+  background: var(--color-surface-alt);
 }
 
 .pj-tn {
@@ -500,15 +478,15 @@
 .pj-tm {
   margin-top: 3px;
   font-size: 11px;
-  color: var(--fg-muted, #99a);
+  color: var(--color-gray-400);
 }
 
 /* **잔존 안내가 먼저다** — 가장 큰 걱정을 누르기 전에 없앤다 (§8 닫기 확인 행) */
 .pj-keepbox {
   padding: 11px 12px;
-  border: 1px solid var(--ok-line, #cde9d6);
+  border: 1px solid var(--color-success-100);
   border-radius: 6px;
-  background: var(--ok-bg, #f2fbf5);
+  background: var(--color-success-50);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -523,7 +501,7 @@
 .pd-notice {
   margin: 12px 0 0;
   font-size: 12px;
-  color: var(--warn, #b45309);
+  color: var(--color-warning-600);
 }
 
 /* `자리`(span)였던 것이 실물 버튼이 됐다 — 브라우저 기본 테두리·배경을 걷어

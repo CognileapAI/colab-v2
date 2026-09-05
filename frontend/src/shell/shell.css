@@ -33,6 +33,54 @@
   cursor: pointer;
 }
 
+/* ===== 되돌아가기 줄 (`backrow`/`backlink`) — 경로(브레드크럼)가 아니다. 헤더 밖 제 줄에 하나 =====
+   BF-11 — 같은 마크업(`DatasetDetailPage.tsx`·`ProjectDetailPage.tsx` 의 `.backrow`)이
+   `detail.css` 와 `project.css` 에 **두 벌**로 적혀 있었고, 프로젝트 사본은 토큰까지 다른 이름을
+   써서 색이 미묘하게 갈렸다. `.loadfail` 과 같은 이유로 **전역인 여기** 한 벌로 모은다 —
+   화면마다 CSS 파일이 다르므로, 같은 줄이 같은 모양이려면 규칙도 한 자리에 있어야 한다.
+   ⚠ 선택자는 두 화면으로 **한정한다** — 맨 `.backlink` 로 열면 제 모양을 따로 가진
+   미등록 미리보기(`preview.css` 의 `.preview-page .backlink`)까지 끌려온다. */
+.detail-page .backrow,
+.project-detail .backrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.detail-page .backlink,
+.project-detail .backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(60vw, 460px);
+  padding: 3px 9px 3px 7px;
+  margin-left: -7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: border-color var(--ease), background var(--ease), color var(--ease);
+}
+.detail-page .backlink:hover,
+.project-detail .backlink:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.detail-page .backlink .bl-n,
+.project-detail .backlink .bl-n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-page .backlink .bl-a,
+.project-detail .backlink .bl-a {
+  flex: none;
+  font-size: 11px;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);

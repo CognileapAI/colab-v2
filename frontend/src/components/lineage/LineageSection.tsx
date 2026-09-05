@@ -205,7 +205,12 @@ export function LineageSection(props: {
   const g = props.graph;
 
   // 관계가 없고 기록 없음 표시가 있을 때만 빈 상태다. 관계가 붙어 있으면 그래프를 그린다 (§8)
-  const empty = g.edges.length === 0 && g.unknownParents;
+  //
+  // **원천 관계는 여기서 세지 않는다** (`BF-9`). 「기록 없음」은 **가공 전 데이터를 모른다**는
+  // 뜻이고(`DataModel §4.2` · 빈 상태 문구 축자 「업로드할 때 가공 전 데이터를 찾지 못해」),
+  // 연구실 밖 출처 표기는 그 물음에 답하지 않는다. 서버가 원천 관계를 싣기 시작해도
+  // 이 판정이 뒤집히지 않아야 **edge 유무와 무관하게 같은 그림**이 나온다 (완료 정의 ⑵).
+  const empty = g.edges.every((e) => e.parentDatasetId === null) && g.unknownParents;
 
   const confirmed = g.lineageConfirmedAt;
   const modified = props.lastModifiedAt ?? null;
@@ -308,8 +313,11 @@ export function LineageSection(props: {
                             {e.origin === 'ai' ? `✦ ${e.method}` : e.method}
                           </span>
                         ))}
-                        {/* 원천에는 대응하는 edge 가 없다(`routes/lineage.py`) — 라벨 없는
-                            화살표로 남기지, 빈 칸을 만들지 않는다 (버그 7) */}
+                        {/* 원천 관계는 `method` 가 null 이라 라벨을 만들지 않는다 — 라벨 없는
+                            화살표로 남기지, 빈 칸을 만들지 않는다 (버그 7).
+                            ⭑ `BF-9` 로 서버(`routes/lineage.py`)가 **원천 → 루트 관계를 싣는다.**
+                            그전에는 대응 edge 자체가 없었고, 화면은 그때도 같은 그림을 냈다 —
+                            둘 다 시험이 잠근다(`test/lineage-graph.test.tsx`). */}
                         <span className="lin-arw" aria-hidden="true">
                           →
                         </span>
