@@ -2482,3 +2482,16 @@ items:
     deadline: null
     note: "계약·서버·DB 변경 0"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-23"]
+
+  - id: WU-A10
+    name: 썸네일 넛지 (PRD-20)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12 회귀 방어선 green"]
+    depends_on: ["WU-A12"]
+    completion_def: "② 단계에 썸네일과 교체 안내가 있고 클릭하면 파일 선택기가 열린다"
+    evidence: "dev-package/sessions/p3-thumb-nudge-<YYYYMMDD>.md"
+    deadline: null
+    note: "저장 경로는 이 WU 밖 — 별건 WU-C2. 계약·서버·DB 변경 0"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-20"]
