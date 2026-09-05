@@ -125,7 +125,7 @@ GREEN (구현 후 · 같은 명령):
 > `shell/tokens.css` 에도 다른 어디에도 **정의가 없었다.** 폴백 리터럴이 달린 것은 정본 색과 미묘하게
 > 어긋난 채 그려졌고, **폴백조차 없던 넷**(`--radius-pill`·`--color-gray-100`·`--color-success-50/600`)은
 > 선언째 버려졌다 — 어느 쪽도 에러를 내지 않는다. 그래서 판정을 **규칙 원문의 정적 대조**로 만든다:
-> 참조한 `--*` 가 `tokens.css` 또는 그 화면 자신의 `:root` 에 없으면 red, 폴백 리터럴이 남아도 red
+> 참조한 `--*` 가 **`tokens.css` 또는 그 파일 자신의 `:root`(정본 계열 이름만)에 없으면 실패**, 폴백 리터럴이 남아도 red
 > (신규 `frontend/test/project-css-tokens.test.ts` · 입력은 전부 vite `?raw` — `node:fs` 를 쓰지 않는다).
 > 셸 정본에 없는 8개 이름은 `project.css` 머리 `:root` 에 적는다 — **화면이 제 화면에만 쓰는 값을 자기
 > `:root` 에 더하는 것은 이미 집 관례**이고(`detail.css`·`catalog.css`), 값도 그 두 파일의 것을 그대로 옮겼다.
@@ -154,3 +154,53 @@ GREEN (구현 후 · 같은 명령):
   **실브라우저 눈 확인은 `[미확인]`** — 해소법 = staging 배포 뒤 계산 스타일 실측(`BF-5` 가 한 방식).
 - **staging 배포 green 미확인** — `CLAUDE.md §0` 기준 이 항목은 아직 닫히지 않는다.
 - 게이트는 지시대로 둘만 돌렸다. 전 게이트 전수는 이 레인이 돌리지 않았다(`[미확인]`).
+
+## 7. 수용 검토 반영 (조건부 수용 → 수정 1건)
+
+**지적** — 오라클을 「`tokens.css` ∪ 그 파일 자신의 `:root`」로 좁힌 대가로 구멍이 하나 남는다:
+누가 `:root { --line: #e3e6ea }` 를 **다시 적으면** ⑴ 시험이 그대로 통과하고,
+이 항목이 없앤 것(정본과 갈린 두 번째 이름 체계)이 되돌아온다.
+
+**수정** — `test/project-css-tokens.test.ts` 에 판정 둘을 더한다.
+로컬 `:root` 가 **무엇을 적을 수 있는지**까지 본다.
+
+- ⓐ **폐기 별칭 재정의 금지** — `definedNames(projectCss)` ∩
+  {`--line`·`--fg`·`--fg-muted`·`--surface`·`--surface-2`·`--warn`·`--ok-line`·`--ok-bg`} = ∅
+- ⓑ **정본 계열만** — 로컬이 정의한 모든 이름이 `--color-*`·`--text-*`·`--radius-*`·`--space-*`·`--shadow-*`
+
+⭑ **붉은 픽스처를 시험 안에 상주시켰다** — `project.css` 를 고치지 않고 **원문 사본**에만
+`:root { --line: #e3e6ea; --pj-gap: 4px; }` 를 주입해 두 판정이 각각 잡는지 확인한다.
+판정부가 fail-closed 임이 매 회차 재측정된다(주장이 아니라 값).
+
+### RED → GREEN (축자)
+
+RED (판정부를 실파일 대신 주입 사본에 겨눈 일회 실행):
+
+```
+× project.css 자신의 `:root` 가 폐기된 별칭을 되살리거나 계열 밖 이름을 만들지 않는다
+AssertionError: 되살아난 폐기 별칭: --line: expected [ '--line' ] to deeply equal []
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+```
+
+GREEN (주입을 되돌리고 붉은 픽스처는 상주시킨 뒤):
+
+```
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+```
+
+### 게이트 재측정 (하나씩)
+
+| 게이트 | 판정 | 축자 |
+|---|---|---|
+| `./gates/run.sh frontend-test` | **green** | `통과 602건 · 실패 0건` · `Test Files 39 passed (39)` |
+| `./gates/run.sh frontend-typecheck` | **green** | `tsc --noEmit(… include=src·test) 오류 0건` |
+
+§4 의 600건에서 **602건**으로 는 것은 이번에 더한 시험 2건이다(신규 파일 5 → 7건).
+
+### 등재 초안 갱신
+
+완료 정의 ⑴ 문구를 **「`tokens.css` 또는 그 파일 자신의 `:root`(정본 계열 이름만)에 없으면 실패」**
+로 바꿨다. §5 의 §9 초안에 반영돼 있다. §6 첫 항목의 「오케스트레이터 판정 필요」는
+이 수정으로 **해소**됐다 — 좁힌 오라클이 되돌아갈 길을 판정부가 막는다.

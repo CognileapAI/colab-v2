@@ -30,6 +30,29 @@ function referencesWithFallback(css: string): string[] {
   return Array.from(new Set(Array.from(css.matchAll(/var\(\s*(--[a-z0-9-]+)\s*,/gi), (m) => m[1] as string)));
 }
 
+/** 이 항목이 없앤 별칭들. 화면 CSS 가 이 이름을 **다시 정의해도** 안 된다. */
+const LEGACY_ALIASES = [
+  '--line',
+  '--fg',
+  '--fg-muted',
+  '--surface',
+  '--surface-2',
+  '--warn',
+  '--ok-line',
+  '--ok-bg',
+];
+
+/** 정본 계열 — 로컬 `:root` 가 만들 수 있는 이름은 이 다섯 갈래뿐이다. */
+const CANONICAL_FAMILY = /^--(color|text|radius|space|shadow)-/;
+
+function localTokenViolations(css: string): { legacy: string[]; offFamily: string[] } {
+  const names = Array.from(definedNames(css));
+  return {
+    legacy: names.filter((n) => LEGACY_ALIASES.includes(n)),
+    offFamily: names.filter((n) => !CANONICAL_FAMILY.test(n)),
+  };
+}
+
 describe('BF-11 · project.css 토큰 정합', () => {
   it('원문이 실려 있다 — 빈 문자열이면 시험이 아무것도 재지 않은 것이다', () => {
     for (const [name, css] of [
@@ -54,6 +77,31 @@ describe('BF-11 · project.css 토큰 정합', () => {
     const known = new Set([...definedNames(tokensCss), ...definedNames(projectCss)]);
     const undefinedNames = referencedNames(projectCss).filter((n) => !known.has(n));
     expect(undefinedNames, `정의가 없는 토큰: ${undefinedNames.join(' · ')}`).toEqual([]);
+  });
+
+  /**
+   * ⑴ 의 오라클을 「`tokens.css` ∪ 그 파일 자신의 `:root`」로 좁힌 대가로 구멍이 하나 생긴다 —
+   * 누가 `:root { --line: #e3e6ea }` 를 다시 적으면 **위 시험이 그대로 통과한다.**
+   * 그러면 이 항목이 없앤 것(정본과 갈린 두 번째 이름 체계)이 그대로 돌아온다.
+   * 그래서 로컬 `:root` 에 **무엇을 적을 수 있는지**까지 판정한다: 폐기된 별칭은 금지 ·
+   * 이름은 정본 계열(`--color-*`·`--text-*`·`--radius-*`·`--space-*`·`--shadow-*`)만.
+   */
+  it('project.css 자신의 `:root` 가 폐기된 별칭을 되살리거나 계열 밖 이름을 만들지 않는다', () => {
+    const v = localTokenViolations(projectCss);
+    expect(v.legacy, `되살아난 폐기 별칭: ${v.legacy.join(' · ')}`).toEqual([]);
+    expect(v.offFamily, `정본 계열 밖 이름: ${v.offFamily.join(' · ')}`).toEqual([]);
+  });
+
+  /**
+   * 붉은 픽스처 — 위 시험이 **fail-closed 인지** 증명한다.
+   * `project.css` 를 고치지 않고 원문 사본에만 위반을 주입한다.
+   */
+  it('붉은 픽스처 — `:root` 에 `--line` 을 되살리면 잡는다', () => {
+    const injected = `${projectCss}\n:root { --line: #e3e6ea; --pj-gap: 4px; }\n`;
+    const v = localTokenViolations(injected);
+    expect(v.legacy).toEqual(['--line']);
+    // `--line` 은 폐기 별칭이면서 계열 밖이기도 하다 — 두 판정에 함께 걸린다.
+    expect(v.offFamily).toEqual(['--line', '--pj-gap']);
   });
 
   it('project.css 에 폴백 리터럴이 남아 있지 않다 — 값의 정본이 두 곳으로 갈린다', () => {
