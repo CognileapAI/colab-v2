@@ -41,6 +41,26 @@ export function formatFiles(files: DatasetBasicInfo['files'], fileName: string |
   return `조각 ${files.count}개 · 합계 ${size}`;
 }
 
+/**
+ * 포맷 칸의 표기 — **확장자는 확장자로만 적는다** (PRD-21 · `P-10`·`R-09`).
+ *
+ * `.hdf` 하나가 서로 호환되지 않는 두 포맷을 가리키므로, 매직 넘버를 읽지 않는 한 단정할 수
+ * 없다. 그래서 화면은 판별 결과 문자열(`format`)을 쓰지 않고 조각의 확장자를 `*.nc` 로 적는다.
+ *
+ * **퇴행 경로가 있다** — 확장자를 못 뽑은 기존 행은 `format` 을 그대로 보인다. 둘 다 없으면
+ * 빈 표시다. 지어내지 않는다.
+ *
+ * ⚠ **조립은 이 함수 하나가 한다.** 상세·목록·등록이 같은 값을 다르게 적으면 화면 사이에서
+ * 같은 데이터가 두 얼굴을 갖는다.
+ */
+export function formatExtension(
+  fileExtension: string | null | undefined,
+  format: string | null | undefined,
+): string {
+  if (fileExtension && fileExtension.length > 0) return `*.${fileExtension}`;
+  return orEmpty(format);
+}
+
 export function orEmpty(v: string | null | undefined): string {
   return v && v.length > 0 ? v : EMPTY;
 }

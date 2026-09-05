@@ -83,7 +83,7 @@ _ONE = text("""
 # 자동으로 읽은 정보. 사람이 타이핑하지 않는다 (Policy_데이터셋_상세 §5).
 _AUTOMETA = text("""
     SELECT format, variables, period_start, period_end, crs, grid,
-           total_size_bytes, bundle_file_name
+           total_size_bytes, bundle_file_name, file_extension
       FROM d3_dataset_autometa
      WHERE dataset_id = :dataset_id
 """)
@@ -111,6 +111,9 @@ class DatasetAutometa:
     grid: str | None
     total_size_bytes: int | None
     bundle_file_name: str | None
+    #: 조각의 확장자 — **점 없는 소문자**(`nc`). 화면이 `*.nc` 로 조립한다 (PRD-21 · `M-9`).
+    #: `None` 이면 파일명이 확장자를 말하지 않는 것이고, 화면은 `format` 으로 퇴행한다.
+    file_extension: str | None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -174,6 +177,7 @@ def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
         crs=r["crs"], grid=r["grid"],
         total_size_bytes=(None if r["total_size_bytes"] is None else int(r["total_size_bytes"])),
         bundle_file_name=r["bundle_file_name"],
+        file_extension=r["file_extension"],
     )
 
 
@@ -530,8 +534,9 @@ _INSERT_DESCRIPTION = text("""
 # 비워 두는 것과 지어내는 것은 다르다.
 _INSERT_AUTOMETA = text("""
     INSERT INTO d3_dataset_autometa (dataset_id, lab_id, format, bundle_file_name,
-                                     total_size_bytes)
-    VALUES (:dataset_id, current_lab_id(), :format, :bundle_file_name, :total_size_bytes)
+                                     total_size_bytes, file_extension)
+    VALUES (:dataset_id, current_lab_id(), :format, :bundle_file_name, :total_size_bytes,
+            :file_extension)
 """)
 
 # 사건이 나른 자동 정보를 장부에 **반영**한다 (`〈190〉` 사건 경유 되쓰기).
@@ -664,7 +669,8 @@ def register_dataset(session: Session, *, dataset_id: Ulid, owner_id: Ulid,
                      uploader_id: Ulid, name: str, topic: str | None,
                      summary: str | None, source_label: str | None,
                      detected_format: str | None, bundle_file_name: str | None,
-                     total_size_bytes: int | None) -> str:
+                     total_size_bytes: int | None,
+                     file_extension: str | None = None) -> str:
     """D3 세 표를 한 트랜잭션에서 세운다.
 
     **반쪽이 남지 않는다** — 요청 하나 = 트랜잭션 하나이고(`app/deps.scoped_db`),
@@ -681,6 +687,9 @@ def register_dataset(session: Session, *, dataset_id: Ulid, owner_id: Ulid,
     session.execute(_INSERT_AUTOMETA, {
         "dataset_id": str(dataset_id), "format": detected_format,
         "bundle_file_name": bundle_file_name, "total_size_bytes": total_size_bytes,
+        # 확장자는 **접수 단계에서 이미 아는 값**이다 — 파일을 열지 않고 이름만 읽는다.
+        # 그래서 파이프라인을 기다리지 않고 여기서 들어간다 (PRD-21 · `M-9`).
+        "file_extension": file_extension,
     })
     return new_id
 

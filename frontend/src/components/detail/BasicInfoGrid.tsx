@@ -3,7 +3,7 @@
 // 잠긴 데이터는 이 블록을 통째로 비운다(`basicInfo` null) — 부르는 쪽이 아예 그리지 않는다.
 import { useState } from 'react';
 import { FileList } from './FileList';
-import { EMPTY, formatFiles, formatPeriod, orEmpty } from './format';
+import { EMPTY, formatExtension, formatFiles, formatPeriod, orEmpty } from './format';
 import type { DatasetFile, FilesSource } from './filesSource';
 import type { DatasetBasicInfo } from './types';
 
@@ -41,7 +41,8 @@ export function BasicInfoGrid(props: {
     ['좌표계', orEmpty(b.crs)],
     ['기간', formatPeriod(b.period)],
     ['격자', orEmpty(b.grid)],
-    ['포맷', orEmpty(b.format)],
+    // **판별 문자열이 아니라 확장자다** (PRD-21) — 못 뽑은 행만 `format` 으로 퇴행한다.
+    ['포맷', formatExtension(b.fileExtension, b.format)],
     ['파일', formatFiles(b.files, props.fileName)],
     ['원천 표기', orEmpty(b.sourceLabel)],
     ['소유자', b.owner.name],

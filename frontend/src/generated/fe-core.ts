@@ -2020,6 +2020,9 @@ export interface components {
          * @description 기본 정보 **아홉 칸** — 구성 · 좌표계 · 기간 · 격자 · 포맷 · 파일 · 원천 표기 · 소유자 · 올린 사람
          *     (`Policy_데이터셋_상세 §5`). 공간 범위 칸은 두지 않는다(이름과 지도가 이미 말한다).
          *     조각이 여럿이면 §4.3 합치는 규칙의 결과가 담긴다.
+         *
+         *     ⭑ **⟨19차 해제 · PRD-21⟩ 포맷 칸이 보이는 값은 `fileExtension` 이다.** `format` 은
+         *     내부 판별값으로 남되 화면에 쓰지 않는다 — 칸 수는 아홉 그대로다.
          */
         DatasetBasicInfo: {
             /** @description 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다. */
@@ -2027,7 +2030,21 @@ export interface components {
             crs: string | null;
             period: components["schemas"]["DataPeriod"] | null;
             grid: string | null;
+            /**
+             * @description **내부 판별값 · 화면에 쓰지 않는다** (PRD-21 · `P-10`·`R-09`).
+             *     `.hdf` 하나가 서로 호환되지 않는 두 포맷을 가리켜 매직 넘버를 읽지 않는 한
+             *     단정할 수 없다 — 화면이 이 값을 적으면 그 자리에서 거짓말이 된다.
+             *     남기는 이유 = 파이프라인·미리보기가 계속 쓰고, `fileExtension` 이 `null` 인
+             *     행의 **퇴행 표시**이며, 검색 색인이 아직 이 값을 문다.
+             */
             format: string | null;
+            /**
+             * @description **화면이 쓰는 값** — 조각의 확장자다 (PRD-21 · `M-9`). **점 없는 소문자**(`nc`)이고
+             *     별표와 점(`*.nc`)은 화면의 문법이라 여기 싣지 않는다.
+             *     데이터셋당 **1값**이다 — 한 데이터셋의 조각은 확장자가 한 종류다(`P-5` · PRD-32).
+             *     `null` 이면 파일명이 확장자를 말하지 않는 것이고, 화면은 `format` 으로 퇴행한다.
+             */
+            fileExtension: string | null;
             /** @description `파일` 칸 — 조각 수와 용량 **합계**만 말한다 (`조각 4개 · 합계 148 MB`). */
             files: {
                 /**

@@ -553,6 +553,11 @@ def create_dataset(request: Request, body: dict = None,
         detected_format=(formats.pop() if len(formats) == 1 else None),
         bundle_file_name=(body_files[0].file_name if body_files else None),
         total_size_bytes=total,
+        # 확장자는 **파일을 열지 않고 아는 값**이라 판정을 기다리지 않는다 (PRD-21 · `M-9`).
+        # 위 `extensions` 는 이미 조각(본체)만 센 뒤 1종임이 강제된 목록이다 — 데이터셋당 1값
+        # (`P-5`)이 성립하는 자리가 바로 그 검사다. 빈 문자열(확장자 없음)은 **NULL** 이다:
+        # 「없다」를 빈 문자열로 적으면 화면이 그것을 값으로 그린다.
+        file_extension=(extensions[0] or None) if extensions else None,
     )
 
     # ①-a **사람이 적은 값을 먼저 쓴다** (`#62` · 정본 `VAL-006` · `〈138〉`).

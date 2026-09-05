@@ -412,7 +412,20 @@ CREATE TABLE d3_dataset_autometa (
     setweight(to_tsvector('simple',
       coalesce(crs, '') || ' ' || coalesce(grid, '') || ' ' ||
       coalesce(bundle_file_name, '')), 'C')
-  ) STORED
+  ) STORED,
+  -- ── `0013` 가 더한 것. **여기 순서는 임의가 아니다** (`d3_dataset` 과 같은 규율) ──────
+  -- `ALTER TABLE ADD COLUMN` 은 열을 **뒤에** 붙인다. 선언이 이 순서와 다르면 schema-diff 가 red 다.
+  --
+  -- 조각의 확장자 (`M-9` · PRD-21 · `〈N〉`). **판별 결과가 아니라 파일명이 말하는 것**이다 —
+  -- `.hdf` 하나가 서로 호환되지 않는 두 포맷을 가리켜(`P-10`·`R-09`) 매직 넘버를 읽지 않는 한
+  -- 단정할 수 없다. 그래서 화면은 단정하지 않고 이 값을 쓴다.
+  -- **데이터셋당 1값**이다 — 한 데이터셋의 조각은 확장자가 한 종류라는 규칙(`P-5`·PRD-32)이
+  -- 등록 전환에서 이미 강제된다(`routes/ingestion.py` 확장자 혼합 400).
+  -- 저장값은 **점 없는 소문자**(`nc`)다. 별표와 점(`*.nc`)은 화면의 문법이지 저장의 값이 아니다.
+  -- ⚠ `format` 은 **남긴다** — 판별 결과는 파이프라인·미리보기가 계속 쓰고, 확장자가 없는 행의
+  --   퇴행 표시이기도 하다. 그리고 `search_vector` 가 아직 `format` 을 문다 — 색인 재정의는
+  --   `M-10` 이고 R-B 에서 한 번만 돈다(생성 컬럼 재계산·GIN 재생성을 두 번 하지 않는다).
+  file_extension text
 );
 CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
 CREATE INDEX d3_dataset_autometa_search_idx

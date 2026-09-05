@@ -2524,7 +2524,7 @@ items:
 
   - id: WU-A5
     name: 확장자 표기 (PRD-21)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)"]

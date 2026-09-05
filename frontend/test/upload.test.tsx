@@ -1651,3 +1651,31 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
     expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// WU-A5 · PRD-21 — 등록 ② 의 자동 칸은 `포맷` 이 아니라 `확장자` 다.
+//
+// 「파일에서 읽는 값은 확장자·용량뿐이에요」(rev1). 판별 결과 문자열을 이 자리에
+// 그리면 `.hdf` 하나로 HDF4·HDF5 를 단정하게 된다 — 그 자리에서 거짓말이 된다.
+describe('PRD-21 — 자동 칸의 라벨은 `확장자` 이고 값은 `*.nc` 다', () => {
+  it('`포맷` 라벨이 사라지고 `확장자` 가 `자동` 태그와 함께 선다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await openRegister();
+    const auto = screen.getByTestId('reg-auto');
+    expect(auto).toHaveTextContent('확장자');
+    expect(auto).not.toHaveTextContent('포맷');
+    expect(within(auto).getAllByText('자동').length).toBeGreaterThan(0);
+  });
+
+  it('값은 조각의 확장자를 `*.nc` 로 조립한 것이다 — 읽기 전용이다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await openRegister();
+    const field = screen.getByTestId('reg-extension') as HTMLInputElement;
+    expect(field.value).toBe('*.nc');
+    expect(field).toHaveAttribute('readonly');
+  });
+});

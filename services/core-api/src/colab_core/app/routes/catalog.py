@@ -788,6 +788,14 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "crs": None if meta is None else meta.crs,
             "period": period,
             "grid": None if meta is None else meta.grid,
+            # **화면이 쓰는 값은 이쪽이다** (PRD-21) — 조각의 확장자. 점 없는 소문자(`nc`)이고
+            # 화면이 `*.nc` 로 조립한다. `None` 이면 파일명이 확장자를 말하지 않는 것이고
+            # 화면은 아래 `format` 으로 퇴행한다 — 지어내지 않는다.
+            "fileExtension": None if meta is None else meta.file_extension,
+            # **내부 판별값이다. 화면에 쓰지 않는다** — `.hdf` 하나가 서로 호환되지 않는 두
+            # 포맷을 가리켜(`P-10`·`R-09`) 화면이 단정하면 그 자리에서 거짓말이 된다.
+            # 남기는 이유 = 파이프라인·미리보기가 계속 쓰고, 확장자가 없는 행의 퇴행 표시이며,
+            # 검색 색인이 아직 이 열을 문다(색인 재정의 `M-10` 은 R-B 에서 한 번만 돈다).
             "format": None if meta is None else meta.format,
             "files": {
                 # 조각 수는 메타 열에서 온다 — 본체를 세지 않는다 (PLAN-SoT §9-㊼).

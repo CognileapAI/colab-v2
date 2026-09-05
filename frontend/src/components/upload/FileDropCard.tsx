@@ -23,6 +23,31 @@ export function totalBytes(files: PickedFile[]): number {
 export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
 
 /**
+ * 업로드 안내는 **업로드 가능 / 미리보기 가능** 둘로 갈린다 (PRD-21 · rev1 축자).
+ *
+ * 가르지 않으면 「미리보기가 되는 확장자」가 「올릴 수 있는 확장자」로 읽힌다 — 실제로는
+ * 무엇이든 올라가고, 지도로 못 그리는 것만 못 그린다. 한 문장으로 두면 사용자가 올릴 수
+ * 있는 파일을 못 올린다고 믿는다.
+ */
+export const UPLOAD_ANY_FORMAT_NOTICE =
+  '어떤 포맷이든 올려요 · 같은 확장자면 여러 개를 한 데이터셋으로 묶어요';
+export const PREVIEWABLE_EXTENSIONS_NOTICE = '지도 미리보기까지 되는 확장자: *.nc *.tif *.hdf *.bin';
+export const NOT_PREVIEWABLE_NOTICE = '이 확장자는 지도로 못 그려요';
+
+/** 지도 미리보기가 되는 확장자 — 위 안내 문면과 **같은 목록**이다. 두 곳에 적지 않는다. */
+export const PREVIEWABLE_EXTENSIONS = ['nc', 'tif', 'hdf', 'bin'] as const;
+
+/**
+ * 미리보기 가능 안내의 판정. **업로드를 막지 않는다** — 말만 다르다.
+ * 확장자가 없는 파일(`''`)도 못 그린다 — 「모른다」와 「된다」를 섞지 않는다.
+ */
+export function previewabilityNotice(extension: string): string {
+  return (PREVIEWABLE_EXTENSIONS as readonly string[]).includes(extension)
+    ? PREVIEWABLE_EXTENSIONS_NOTICE
+    : NOT_PREVIEWABLE_NOTICE;
+}
+
+/**
  * 확장자 — **소문자 기준**이다 (`.NC` 와 `.nc` 는 같은 종류다 · PRD-32).
  * 점이 없는 이름은 빈 문자열로 접는다 — 「확장자 없음」끼리도 한 종류다.
  */
@@ -117,6 +142,18 @@ export function FileDropCard(props: {
             onChange={(e) => handlePick(Array.from(e.target.files ?? []))}
           />
         </label>
+
+        {/* ⑴ 업로드 가능 — **놓기 전에** 말한다. 무엇이든 올라간다는 사실이 먼저다 (PRD-21) */}
+        <p className="up-note" data-testid="up-any-format">
+          {UPLOAD_ANY_FORMAT_NOTICE}
+        </p>
+
+        {/* ⑵ 미리보기 가능 — 놓은 것의 확장자를 보고 말한다. **막지 않는다**, 말만 다르다 */}
+        {props.picked.length > 0 && (
+          <p className="up-note" data-testid="up-previewable">
+            {previewabilityNotice(extensionOf((bodies[0] ?? grids[0])?.p.file.name ?? ''))}
+          </p>
+        )}
 
         {/* 뺀 것이 1건 이상일 때만 말한다 — 문면은 rev1 `H-37` 축자다 */}
         {mixedNotice && (

@@ -11,6 +11,8 @@
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
+import { formatExtension } from '../detail/format';
+import { extensionOf } from './FileDropCard';
 import {
   PROJECT_PANEL_TYPES,
   TOPICS,
@@ -38,14 +40,20 @@ function humanSize(bytes: number): string {
 }
 
 /** 자동으로 읽은 칸 한 개 — 읽기 전용 + `자동` 표시. 사람이 다시 타이핑하지 않는다 (§8). */
-function AutoField(props: { label: string; value: string }) {
+function AutoField(props: { label: string; value: string; testId?: string }) {
   return (
     <div className="form-row">
       <label>
         {props.label}
         <span className="autotag">자동</span>
       </label>
-      <input className="inp mono" type="text" readOnly value={props.value} />
+      <input
+        className="inp mono"
+        type="text"
+        readOnly
+        value={props.value}
+        {...(props.testId ? { 'data-testid': props.testId } : {})}
+      />
     </div>
   );
 }
@@ -69,6 +77,8 @@ function StepOne(props: {
   nameError: boolean;
 }) {
   const bodies = (props.status?.files ?? []).filter((f) => f.kind === '본체');
+  // 조각의 확장자는 **데이터셋당 1값**이다 (`P-5` · PRD-32) — 첫 조각이 곧 전체다.
+  const extension = extensionOf(bodies[0]?.fileName ?? '');
   const sliced = bodies.length > 1;
   const bytes = bodies.reduce((s, f) => s + f.byteSize, 0);
   // 조각이 여러 건이면 용량은 `조각 합계`, 기간은 `조각 합집합` 으로 라벨을 바꿔 단다 (§8).
@@ -88,7 +98,15 @@ function StepOne(props: {
               `POLICY-20260825-001` 핵심규칙 1 = 「자동으로 읽는 값은 포맷과 용량뿐」이다.
               `격자` 는 여기 남는다 — 격자 파일을 붙인 뒤 서버가 세는 값이라 층이 다르고
               (`〈74〉`), 계약 `DatasetCreate` 에 적을 자리가 없다. */}
-          <AutoField label="포맷" value="" />
+          {/* ⭑ **⟨19차 해제 · PRD-21⟩ `포맷` 이 아니라 `확장자` 다.** rev1 축자 —
+              「파일에서 읽는 값은 확장자·용량뿐이에요」. 판별 결과 문자열을 이 자리에 그리면
+              `.hdf` 하나로 HDF4·HDF5 를 단정하게 된다(`P-10`·`R-09`). 조립은 상세와 **같은
+              함수**가 한다 — 같은 값이 두 화면에서 다르게 적히는 자리를 만들지 않는다. */}
+          <AutoField
+            label="확장자"
+            testId="reg-extension"
+            value={extension ? formatExtension(extension, null) : ''}
+          />
           <AutoField label={sizeLabel} value={bytes ? humanSize(bytes) : ''} />
           <AutoField label="격자" value="" />
         </div>
