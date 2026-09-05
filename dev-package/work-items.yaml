@@ -2443,3 +2443,16 @@ items:
     deadline: null
     note: "FE 만 바뀐다(서버·계약은 이미 있다). R-B 가 이 골격을 그대로 쓰고 필드만 늘린다"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-22"]
+
+  - id: WU-A13
+    name: 확장자 혼합 규칙 (PRD-32)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "다른 확장자 파일이 빠지고 토스트 축자가 뜬다. 대소문자는 같은 종류다. API 로 2종을 보내면 400. 기존 데이터 중 2종 이상인 데이터셋 건수를 세어 보고했다"
+    evidence: "dev-package/sessions/p3-ext-mixed-<YYYYMMDD>.md"
+    deadline: null
+    note: "기존 행을 지우거나 쪼개지 않는다 — 세어 보고만 한다"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-32"]
