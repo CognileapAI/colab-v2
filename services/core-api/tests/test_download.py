@@ -56,11 +56,11 @@ def _client(p2_client, **kw):
     return p2_client(session_secret=SECRET, **kw)
 
 
-def _dataset(client, *, name="다운로드 시험", paths=("기상/a.csv", "기상/하위/b.nc"),
+def _dataset(client, *, name="다운로드 시험", paths=("기상/a.csv", "기상/하위/b.csv"),
              token=TOKEN_RES) -> tuple[str, dict]:
     """본체 둘을 폴더 경로와 함께 올려 등록한다. (datasetId, {fileName: UploadFileRef})."""
     files = [("files", ("a.csv", BODY_A, "text/csv")),
-             ("files", ("b.nc", BODY_B, "application/octet-stream"))]
+             ("files", ("b.csv", BODY_B, "text/csv"))]
     r = client.post(f"{API_PREFIX}/uploads", files=files, data={"relativePaths": list(paths)},
                     headers=auth(token))
     assert r.status_code == 201, r.text
@@ -134,13 +134,13 @@ def test_getDownloadBytes_streams_the_original_bytes_of_a_single_file(p2_client)
     `Content-Disposition` 은 계약 형태 그대로, `Content-Length` 는 원장의 크기다."""
     client = _client(p2_client)
     dataset_id, files = _dataset(client)
-    url = _ticket(client, dataset_id, files["b.nc"]["fileId"]).json()["url"]
+    url = _ticket(client, dataset_id, files["b.csv"]["fileId"]).json()["url"]
 
     r = client.get(url)   # 인증 헤더 없음 — `security: []`
     assert r.status_code == 200, r.text
     assert hashlib.sha256(r.content).hexdigest() == hashlib.sha256(BODY_B).hexdigest()
     assert r.headers["content-type"].startswith("application/octet-stream")
-    assert r.headers["content-disposition"] == _disposition("b.nc")
+    assert r.headers["content-disposition"] == _disposition("b.csv")
     assert r.headers["content-length"] == str(len(BODY_B))
 
 
@@ -151,9 +151,9 @@ def test_getDownloadBytes_bundle_is_a_zip_named_by_relative_path_and_grid_dir(
     client = _client(p2_client)
     # 본체 둘(폴더 경로) + 워커가 축을 확정한 격자 하나 — 격자는 등록 전환이 원장에서 그대로 옮긴다.
     files = [("files", ("a.csv", BODY_A, "text/csv")),
-             ("files", ("b.nc", BODY_B, "application/octet-stream"))]
+             ("files", ("b.csv", BODY_B, "text/csv"))]
     r = client.post(f"{API_PREFIX}/uploads", files=files,
-                    data={"relativePaths": ["기상/a.csv", "기상/하위/b.nc"]}, headers=auth(TOKEN_RES))
+                    data={"relativePaths": ["기상/a.csv", "기상/하위/b.csv"]}, headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     upload_id = r.json()["uploadId"]
     grid_id = str(Ulid.generate())
@@ -180,9 +180,9 @@ def test_getDownloadBytes_bundle_is_a_zip_named_by_relative_path_and_grid_dir(
     with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
         assert zf.testzip() is None
         names = {i.filename: i for i in zf.infolist()}
-        assert set(names) == {"기상/a.csv", "기상/하위/b.nc", "grid/g.nc"}
+        assert set(names) == {"기상/a.csv", "기상/하위/b.csv", "grid/g.nc"}
         assert zf.read("기상/a.csv") == BODY_A
-        assert zf.read("기상/하위/b.nc") == BODY_B
+        assert zf.read("기상/하위/b.csv") == BODY_B
         assert zf.read("grid/g.nc") == b"GRIDGRID"
         assert all(i.compress_type == zipfile.ZIP_STORED for i in names.values())
 
@@ -395,8 +395,8 @@ def test_s3_mode_bundle_is_relative_and_streams_each_object_into_the_zip(p2_clie
     with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
         assert zf.testzip() is None
         assert zf.read("기상/a.csv") == BODY_A
-        assert zf.read("기상/하위/b.nc") == BODY_B
-        assert sorted(zf.namelist()) == ["기상/a.csv", "기상/하위/b.nc"]
+        assert zf.read("기상/하위/b.csv") == BODY_B
+        assert sorted(zf.namelist()) == ["기상/a.csv", "기상/하위/b.csv"]
 
 
 def test_bytes_missing_from_storage_is_404_for_a_single_file(p2_client, tmp_path) -> None:

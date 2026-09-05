@@ -384,6 +384,16 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
 _HUMAN_METADATA_FIELDS = ("variables", "crs", "period")
 
 
+def _extension_of(file_name: str) -> str:
+    """확장자 — **소문자 기준**이다 (`.NC` 와 `.nc` 는 같은 종류다 · PRD-32).
+
+    ⛔ 확장자로 **포맷을 정하지 않는다**(`DATA-REFERENCE §0`) — 여기서 세는 것은
+    「사람이 한 번에 묶어 올린 것이 같은 종류인가」뿐이다. 매직바이트 판정은 파이프라인의 일이다.
+    """
+    head, sep, tail = (file_name or "").rpartition(".")
+    return tail.lower() if sep and head else ""
+
+
 def _human_metadata(body: dict) -> dict:
     """**폼 기본값 통과 ≠ 사람이 적었다.**
 
@@ -491,6 +501,18 @@ def create_dataset(request: Request, body: dict = None,
             "본체 파일이 최소 1건 있어야 한다 — 기준 격자 파일만 든 묶음은 "
             "데이터셋이 아니라 좌표다. 이미 있는 데이터셋에 붙이려면 "
             "`/datasets/{datasetId}/grid-files` 로 반영한다.")
+
+    # **확장자 혼합의 최종 방어선** (WU-A13 · PRD-32 · `VAL-002`).
+    #
+    # 화면(`FileDropCard`)이 놓는 순간 걸러도 그것이 **유일한** 방어선이 되면 안 된다.
+    # 판정이 접수가 아니라 여기 있는 이유는 바로 위 「본체 1건 이상」과 같다 — 접수는
+    # D3 에 아무것도 만들지 않고(`〈64〉-ⓐ`), 데이터셋이 되는 것만 막으면 된다.
+    # ⚠ **조각(본체)만 센다** — 기준 격자 파일은 확장자가 달라도 정상이다.
+    # 이 규칙이 `file_extension` 이 데이터셋당 1값인 근거다 (PRD-21).
+    extensions = sorted({_extension_of(f.file_name) for f in files if f.kind == BODY})
+    if len(extensions) > 1:
+        raise errors.bad_request(
+            f"한 데이터셋의 조각은 확장자가 한 종류다 — 2종 이상이 실려 왔다: {extensions}")
 
     # ① 원장 도장을 **먼저** 찍는다. 두 요청이 동시에 오면 UPDATE 의 행 잠금이 하나를
     #    떨어뜨리고, 떨어진 쪽은 409 가 된다 — 데이터셋이 둘 생기지 않는다.

@@ -82,6 +82,16 @@
 .dropzone .muted, .muted { color: var(--up-muted); font-size: 12px; }
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
+/* 확장자 혼합 안내 (WU-A13 · PRD-32) — 뺀 것이 있을 때만 선다. 막는 것이 아니라 알리는 것이다 */
+.up-toast {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--up-radius);
+  background: var(--up-warn-bg);
+  color: var(--up-warn);
+  font-size: 12px;
+}
+
 .filelist { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .filecard {
   display: flex;
