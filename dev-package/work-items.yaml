@@ -2439,7 +2439,7 @@ items:
 
   - id: I-D
     name: "dev 환경(AWS · s3 모드) 신설"
-    status: partial
+    status: done
     stage: stage1
     owner: "인프라 / 플랫폼"
     entry_conditions: ["`〈340〉` 등재(됨) + AWS 계정(`㊻` dev 한정 해제) + `V-3` 완료"]
@@ -2447,7 +2447,7 @@ items:
     completion_def: "`S3.md §1` 7단계 + `ops/s3_doctor.py` 10/10 + `ops/s3_smoke.py` 전 항목 + 5 배포 단위 헬스 + **업로드→등록→미리보기 1건 실호출**."
     evidence: "확인 지점 G1~G13 통과(`PLAN-SoT §9 〈342〉`-㉸). **`deploy_doctor` 14/14 exit 0(`─ 0`)** 한 번의 실행 · 4 단위 healthy · 저장 모드 전부 `s3` · `credentialSource: imds`(EC2 에 액세스 키 0) · 브라우저에서 **MODIS HDF4 8건 55 MB** 업로드 성공 · 복원 실습 통과 · 정리 잡 실측. 운영 문서 `docs/DEPLOY.md` · 인수인계 `docs/DEPLOY_HANDOVER.md`."
     deadline: null
-    note: "⚠ **`partial` 이고 `done` 이 아니다 — 완료 정의의 「미리보기 1건 실호출」이 미충족이다.** 배선은 다 섰지만 `previews/` 객체가 **0건**이고, 미리보기 개발이 예정돼 있어 지금 재면 곧 무효가 된다. **부분 완료로 닫지 않는다**(`CLAUDE.md §5`). ⭑ prod 는 `㊻` 로 여전히 ⏸ — Ted 판정 선행."
+    note: "⭑ **⟨2026-09-06 · `PLAN-SoT §9 〈357〉`·`〈359〉` · `partial` → `done`⟩ 마지막 하나였던 「미리보기 1건 실호출」이 섰다.** 실측 = 재적재로 실데이터 14 데이터셋이 선 뒤 `createPreviewRender` **202** → 폴링 5회에 **`완료`**(대상 `식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)` · 변수 `EVI` · 범례 6구간 · `precisionBadge` = `투영 계산 격자`) · S3 `previews/` **7 객체**. ／ 종전 ~~`partial` — `previews/` 객체가 0건이고 미리보기 개발이 예정돼 있어 지금 재면 곧 무효가 된다~~ — **미리보기가 실제로 그려졌으므로 그 유보는 해소됐다.** ⭑ prod 는 `㊻` 로 여전히 ⏸ — Ted 판정 선행. ⚠ **이 항목이 닫혔다고 dev 가 무결한 것은 아니다** — `〈348〉`(트리거·회수 루프 미기동) · `〈358〉`(바이트 없는 고아 데이터셋 5건)은 열려 있다."
     sources: ["PLAN-SoT §9 〈340〉", "PLAN-SoT §9 〈342〉", "docs/DEPLOY.md"]
 
   - id: V-4

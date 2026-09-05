@@ -1,0 +1,8 @@
+Loaded image: colab-v2/core-api:dev-ea036c50c921
+Loaded image: colab-v2/pipeline-worker:dev-ea036c50c921
+Loaded image: colab-v2/viz-render:dev-ea036c50c921
+Loaded image: colab-v2/ai-service:dev-ea036c50c921
+Loaded image: colab-v2/migrator:dev-ea036c50c921
+loaded: dev-ea036c50c921
+── 실었다: dev-ea036c50c921. 다음 = EC2 에서 /opt/colab-v2/up.sh
+EXIT=0

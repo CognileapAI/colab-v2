@@ -1,0 +1,16 @@
+  이어붙임 [LD-PRCP-LV0-HSR] 강수 — HSR 레이더 합성 반사도 (Lv.0) (12 → 14)
+  이어붙임 [LD-PRCP-LV0-RN15] 강수 — RN15 지상 15분 누적 강수 (Lv.0) (10 → 12)
+  적재     [LD-PRCP-LV1] 강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1) (파일 4)
+  이어붙임 [LD-VEG-LV0] 식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0) (32 → 34)
+  적재     [LD-VEG-LV1] 식생 — GK-2A NDVI 100 m 월평균 (Lv.1) (파일 3)
+  적재     [LD-VEG-LV1-MODELIN] 식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제) (파일 4)
+  적재     [LD-DRGH-LV1] 가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1) (파일 5)
+  이어붙임 [LD-PRCP-LV0-HSR] 강수 — HSR 레이더 합성 반사도 (Lv.0) (12 → 14)
+  이어붙임 [LD-PRCP-LV0-RN15] 강수 — RN15 지상 15분 누적 강수 (Lv.0) (10 → 12)
+  적재     [LD-PRCP-LV1] 강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1) (파일 4)
+  이어붙임 [LD-VEG-LV0] 식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0) (32 → 34)
+  적재     [LD-VEG-LV1] 식생 — GK-2A NDVI 100 m 월평균 (Lv.1) (파일 3)
+  적재     [LD-VEG-LV1-MODELIN] 식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제) (파일 4)
+  적재     [LD-DRGH-LV1] 가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1) (파일 5)
+
+적재 4 · 건너뜀 0 · 이어붙임 3 · 쓰기 호출 14
