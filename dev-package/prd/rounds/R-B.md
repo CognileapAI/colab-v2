@@ -10,7 +10,7 @@
 ## 0. 읽기 규칙 — 이 파일이 유일한 부트스트랩
 
 > ⛔ **아래 4개를 통째로 열지 않는다.** 세션이 느려지는 원인이 이것이다.
-> `dev-package/03-HANDOFF.md`(607 KB) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
+> `dev-package/03-HANDOFF.md`(다이어트 후 약 127 KB, 그래도 통째로 열지 않는다) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
 
 - **허용된 접근은 아래 세 줄뿐이다.**
   1. 결정 번호 최대값 — `bash dev-package/prd/tools/max-decision.sh`

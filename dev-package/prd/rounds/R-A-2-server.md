@@ -8,7 +8,7 @@
 ## 0. 읽기 규칙 — 이 파일이 유일한 부트스트랩
 
 > ⛔ **아래 4개를 통째로 열지 않는다.** 세션이 느려지는 원인이 이것이다.
-> `dev-package/03-HANDOFF.md`(607 KB) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
+> `dev-package/03-HANDOFF.md`(다이어트 후 약 127 KB, 그래도 통째로 열지 않는다) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
 
 - **허용된 접근은 아래 세 줄뿐이다.**
   1. 결정 번호 최대값 — `bash dev-package/prd/tools/max-decision.sh`
@@ -55,7 +55,7 @@
 - **결과**: 시드가 채우지 않은 계정은 **업로드 권한 없이 시작한다.** 새 연구원이 아무것도 못 올린다.
 - **변경 — 서버**: `d2_access.py:76-81` 의 기본값을 스위치별로 가른다 — `업로드·편집`·`프로젝트 생성` 은 행이 없으면 `True`, 나머지 둘은 `False`. `member_permissions`(같은 파일 130-146)도 **같은 판정**을 쓴다.
 - **변경 — DB**: 기본값 상수를 **한 자리에만 둔다.** 서버 상수로 두고 **DB 기본값 행을 만들지 않는다** — 행이 없는 상태가 「기본값」이라는 현행 의미를 유지하는 편이 마이그레이션 없이 끝난다.
-- **변경 — 계약·프론트**: `PermissionSwitchSet.default`(`frontend/src/components/members/permissions.ts:12-15`)가 이미 정본 기본값을 들고 있다 — **서버와 값이 같아지는지 확인만 한다.**
+- **변경 — 계약·프론트**: `PermissionSwitchSet.default`(`contracts/schemas/common.json:46`)가 정본 기본값을 들고 있다 — `frontend/src/components/members/permissions.ts:13`은 그 위치를 가리키는 **주석만**이다. **서버와 값이 같아지는지 확인만 한다.**
 - **기존 데이터 처리**: 저장된 행은 그대로 존중된다. **명시적으로 꺼 둔 계정이 이 변경으로 켜지지 않는다** — 행이 있으면 그 값이 이긴다. 행이 없는 계정만 켜진다.
 - **수용 기준**
   - Given `d2_permission_switch` 에 행이 없는 연구원, When `/me` 조회, Then `업로드·편집=true`·`프로젝트 생성=true`·`승인 위임=false`·`연구실 설정=false`.
@@ -70,7 +70,8 @@
 - **현재 코드**: `services/core-api/src/colab_core/app/routes/preview.py:96-132` `create_preview_render` — `업로드·편집` 검사도, 대상 데이터셋 본체 접근(`require_body_access`) 검사도 **없다.** `_target_in_lab` 으로 연구실 경계만 본다. **잠긴 데이터셋을 대상으로 한 렌더 요청이 막히지 않는다.**
 - **대조**: 같은 파일의 값 조회(`preview.py:252-295`)는 잠긴 데이터셋에 서지 않는다 — 다운로드와 **같은 판정 함수를 재사용**한다. **생성 경로만 비어 있다.**
 - **변경 — 서버**: `create_preview_render` 에 두 검사를 더한다. ⑴ `업로드·편집` 권한 ⑵ `target.datasetId` 가 있으면 그 데이터셋의 본체 접근 판정 — ⛔ **값 조회가 이미 쓰는 함수를 그대로 재사용한다. 새 판정 로직을 만들지 않는다.** `target.uploadId` 는 등록 전 업로드라 **소유자 판정만** 본다.
-- **변경 — 계약·DB·프론트**: 없음. **403 응답이 계약에 이미 있는지 확인한다.**
+- ⚠ 계약 전제 — `POST /previews` 응답에 `403` 이 없다(fe-core.yaml 실측). 403 응답 추가가 필요하면 X2-FREEZE-PROTOCOL §5 로 등급(㉮ 자동 허용 여부)을 먼저 판정하고 진행한다. 계약 변경 0 이라는 문장은 이 판정 결과에 따른다.
+- **변경 — 계약·DB·프론트**: 위 판정이 ㉮ 자동 허용이면 없음. 아니면 `403` 응답 추가가 계약 변경으로 들어간다. **어느 쪽이든 403 응답이 계약에 실제로 있는지부터 확인한다(현재는 없다).**
 - **기존 데이터 처리**: 해당 없음.
 - **수용 기준**
   - Given `업로드·편집` 없는 계정, When `POST /previews`, Then **403**.
@@ -161,7 +162,7 @@
     completion_def: "POST /previews 가 업로드·편집 없으면 403, 잠긴 남의 데이터셋 대상이면 거절, 자기 업로드는 성공, 다른 연구실 id 는 404. 값 조회가 쓰는 판정 함수를 재사용했음을 diff 로 보인다"
     evidence: "dev-package/sessions/p3-preview-guard-<YYYYMMDD>.md"
     deadline: null
-    note: "계약·DB·프론트 변경 0. 403 이 계약에 이미 있는지 확인만 한다"
+    note: "403 이 계약에 없다(실측). X2-FREEZE-PROTOCOL §5 등급 판정 전까지 계약·DB·프론트 변경 0 은 가정일 뿐"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-26"]
 
   - id: WU-A4

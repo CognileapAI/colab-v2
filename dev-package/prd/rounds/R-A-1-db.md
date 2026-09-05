@@ -8,7 +8,7 @@
 ## 0. 읽기 규칙 — 이 파일이 유일한 부트스트랩
 
 > ⛔ **아래 4개를 통째로 열지 않는다.** 세션이 느려지는 원인이 이것이다.
-> `dev-package/03-HANDOFF.md`(607 KB) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
+> `dev-package/03-HANDOFF.md`(다이어트 후 약 127 KB, 그래도 통째로 열지 않는다) · `dev-package/PLAN-SoT.md`(1.17 MB) · `dev-package/work-items.yaml`(513 KB) · `dev-package/WORK-UNITS.md`(138 KB)
 
 - **허용된 접근은 아래 세 줄뿐이다.**
   1. 결정 번호 최대값 — `bash dev-package/prd/tools/max-decision.sh`
@@ -51,7 +51,7 @@
 ### WU-A5 · 확장자 표기 (PRD-21) — 계층 DB·계약·서버·FE · 크기 M · 레인 `p3-extension-label`
 
 - **의존**: 없음. FE 부분은 WU-A3(상세 수정 골격)이 서 있으면 그 위에 얹는다.
-- **현재 코드** — `services/pipeline-worker/.../d3_catalog.py:666,682`(`detected_format` 을 `autometa.format` 에 저장 → 상세가 보이는 `format` 은 **판별 결과 문자열**) · `services/core-api/.../routes/ingestion.py:9`(「확장자로 포맷을 정하지 않는다」 규칙 주석) · `db/platform/schema.sql:411` 부근(`d3_dataset_autometa.search_vector` 가 `format` 을 B 가중치로 물고 있다).
+- **현재 코드** — `services/core-api/src/colab_core/domains/d3_catalog.py:666,682`(`detected_format` 을 `autometa.format` 에 저장 → 상세가 보이는 `format` 은 **판별 결과 문자열**) · `services/core-api/.../routes/ingestion.py:9`(「확장자로 포맷을 정하지 않는다」 규칙 주석) · `db/platform/schema.sql:411` 부근(`d3_dataset_autometa.search_vector` 가 `format` 을 B 가중치로 물고 있다).
 - **판정 (PRD 축자)** — 두 규칙이 **충돌하지 않는다.** 코드 규칙은 「확장자로 포맷을 단정하지 않는다」이고, 문서 요구는 「단정한 포맷 이름을 화면에 쓰지 말고 확장자를 써라」다. 같은 방향이다.
 - **변경 — DB** (부록 B `M-9`): `d3_dataset_autometa` 에 `file_extension text` 신설. 조각의 확장자다(모든 조각이 같은 확장자여야 하므로 **데이터셋당 1값** — `P-5` 정책). `format` 컬럼은 **남긴다**(판별 결과는 파이프라인·미리보기가 계속 쓴다).
 - **변경 — 계약**: `DatasetBasicInfo` 의 표시용 열쇠를 `fileExtension` 로 더한다. `format` 은 유지하되 「내부 판별값 · 화면에 쓰지 않는다」를 description 에 적는다.
@@ -209,7 +209,7 @@ DB 계층 R-A-1 — file_extension · 관측 간격 2칸 · period_granularity �
 |---|---|
 | 마이그레이션 | `db/` 아래 신규 파일 **1개**(M-9·M-6·M-7 합본) ＋ 마이그레이션 원장 행 |
 | 계약 | `contracts/seams/fe-core.yaml` — `DataPeriod` · `DatasetBasicInfo` · `DatasetCreate` · `DatasetUpdate` |
-| 서버 | `services/core-api/.../routes/catalog.py`(`_period()` 계열) · `_ALLOWED_CREATE_FIELDS` |
+| 서버 | `services/core-api/.../routes/catalog.py`(`_period()` 계열) · `_ALLOWED_CREATE_FIELDS`(`routes/ingestion.py:400`) |
 | 프론트 | 포맷 표기 · 관측 간격 입력 · 기간 최소 단위 셀렉트 · 기간 표기 조립 함수(**한 곳**) |
 | 세션 노트 | `dev-package/sessions/p3-extension-label-<YYYYMMDD>.md` · `dev-package/sessions/p3-interval-period-<YYYYMMDD>.md` — **각 ≤ 60행** |
 | 대장 | `dev-package/work-items.yaml` — 위 두 블록. 완료 시 `status: done` ＋ `evidence` 갱신 |
