@@ -2524,3 +2524,16 @@ items:
     deadline: null
     note: "표 14행 중 ⑼(파생 행 읽기 전용)는 PRD-31 ⑶ 소관이라 뺐다. WU-A9·A10·A14 보다 먼저 돈다 — 방어선을 먼저 깐다"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-39"]
+
+  - id: WU-A3
+    name: 상세 수정 UI — 현행 필드만 (PRD-22)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "상세에 수정 진입점이 있고, 권한 없으면 안 보이며, 이름만 바꾼 저장이 나머지를 건드리지 않는다. 편집 대상 = 이름·설명·원천 표기·좌표계·기간. topic 은 읽기 전용"
+    evidence: "dev-package/sessions/p3-detail-edit-<YYYYMMDD>.md"
+    deadline: null
+    note: "FE 만 바뀐다(서버·계약은 이미 있다). R-B 가 이 골격을 그대로 쓰고 필드만 늘린다"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-22"]
