@@ -19,6 +19,35 @@ export function totalBytes(files: PickedFile[]): number {
   return files.reduce((s, f) => s + f.file.size, 0);
 }
 
+/** 확장자 혼합 안내 — rev1 `H-37` **축자**. 한 글자도 바꾸지 않는다. */
+export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
+
+/**
+ * 확장자 — **소문자 기준**이다 (`.NC` 와 `.nc` 는 같은 종류다 · PRD-32).
+ * 점이 없는 이름은 빈 문자열로 접는다 — 「확장자 없음」끼리도 한 종류다.
+ */
+export function extensionOf(fileName: string): string {
+  const dot = fileName.lastIndexOf('.');
+  return dot <= 0 ? '' : fileName.slice(dot + 1).toLowerCase();
+}
+
+/**
+ * WU-A13 · PRD-32 — **성립 전의 선별 규칙**이다.
+ *
+ * 부록 A `P-5`(같은 확장자 여러 개 = 데이터셋 하나)는 성립한 **뒤의 저장 규칙**이고,
+ * 이것은 놓는 순간의 선별이다. **가장 먼저 놓인 파일의 확장자**만 남긴다 — 이미 놓인
+ * 조각이 있으면 그쪽이 기준이고, 없으면 이번 묶음의 첫 파일이 기준이다.
+ */
+export function keepOneExtension(
+  existing: PickedFile[],
+  incoming: File[],
+): { kept: File[]; dropped: number } {
+  const first = existing.find((p) => p.kind === '본체') ?? existing[0];
+  const baseline = first ? extensionOf(first.file.name) : extensionOf(incoming[0]?.name ?? '');
+  const kept = incoming.filter((f) => extensionOf(f.name) === baseline);
+  return { kept, dropped: incoming.length - kept.length };
+}
+
 function FileRow(props: {
   picked: PickedFile;
   onKind: (kind: FileKind) => void;
@@ -55,6 +84,16 @@ export function FileDropCard(props: {
   onKind: (index: number, kind: FileKind) => void;
 }) {
   const [slicesOpen, setSlicesOpen] = useState(false);
+  const [mixedNotice, setMixedNotice] = useState(false);
+
+  /** 놓는 순간 확장자를 세어 **한 종류만** 위로 올린다 (PRD-32 · `VAL-002`). */
+  function handlePick(files: File[]) {
+    if (files.length === 0) return;
+    const { kept, dropped } = keepOneExtension(props.picked, files);
+    setMixedNotice(dropped > 0);
+    if (kept.length > 0) props.onPick(kept);
+  }
+
   const bodies = props.picked
     .map((p, i) => ({ p, i }))
     .filter(({ p }) => p.kind === '본체');
@@ -75,9 +114,16 @@ export function FileDropCard(props: {
             multiple
             className="hidden-input"
             data-testid="up-drop-input"
-            onChange={(e) => props.onPick(Array.from(e.target.files ?? []))}
+            onChange={(e) => handlePick(Array.from(e.target.files ?? []))}
           />
         </label>
+
+        {/* 뺀 것이 1건 이상일 때만 말한다 — 문면은 rev1 `H-37` 축자다 */}
+        {mixedNotice && (
+          <p className="up-toast" data-testid="up-ext-toast" role="status" aria-live="polite">
+            {MIXED_EXTENSION_NOTICE}
+          </p>
+        )}
 
         {props.picked.length > 0 && (
           <div className="filelist" data-testid="up-files">
