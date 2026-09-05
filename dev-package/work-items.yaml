@@ -2618,13 +2618,13 @@ items:
 
   - id: WU-A14
     name: 조각 수 표기 (PRD-38)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-A12 회귀 방어선 green"]
     depends_on: ["WU-A12"]
     completion_def: "상세·목록의 조각 수가 응답 files.count 한 곳에서 오고 하드코드가 0건이다. 하드코드가 0건이면 그 사실과 path:line 을 판정으로 남기고 회귀 시험 1건만 붙이고 닫는다"
-    evidence: "dev-package/sessions/p3-part-count-<YYYYMMDD>.md"
+    evidence: "dev-package/sessions/p3-part-count-20260905.md"
     deadline: null
     note: "결과가 「없음 → 0 작업」일 수 있다. 없는 결함을 고치지 않는다. DB·계약·서버 변경 0"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-38"]
