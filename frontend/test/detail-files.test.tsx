@@ -200,6 +200,15 @@ describe('§5 목록은 사람이 눌렀을 때 연다', () => {
     expect(calls.list).toBe(1);
   });
 
+  it('토글 낱말은 `파일 관리` 다 — 조각 목록 토글(`보기`)과 겹치지 않는다 (〈346〉)', async () => {
+    const { source } = fakeFiles();
+    mount({ files: source });
+    await settle();
+    expect(screen.getByTestId('dt-files-toggle')).toHaveTextContent('파일 관리');
+    await openList();
+    expect(screen.getByTestId('dt-files-toggle')).toHaveTextContent('접기');
+  });
+
   it('잠긴 상세에는 파일 목록 자리 자체가 없다 (본체 쪽이다 · P-34)', async () => {
     const { source, calls } = fakeFiles();
     mount({ files: source, datasetId: LOCKED_ID });
