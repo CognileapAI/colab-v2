@@ -110,8 +110,18 @@ function mount(opts: {
   );
 }
 
+/**
+ * 상세가 선 뒤 **밀린 effect 까지 비운다.**
+ *
+ * `findBy…` 는 커밋(DOM 변화)에서 풀리지만 `useEffect`(passive effect)는 그 커밋 **뒤의 별도
+ * 작업**으로 밀린다. `useDatasetEdit` 의 `[base]` effect 는 그 자리에서 `setEditing(false)` 를
+ * 부르므로, 비우지 않고 `수정` 을 누르면 밀려 있던 그 effect 가 폼을 **다시 닫는다** —
+ * CPU 가 붐빌수록 밀리는 시간이 길어져 드문드문 터졌다. 사람 손으로는 낼 수 없는 순서다.
+ */
 async function settle(name: string) {
-  return screen.findByRole('heading', { level: 1, name });
+  const heading = await screen.findByRole('heading', { level: 1, name });
+  await act(async () => {});
+  return heading;
 }
 
 async function click(el: Element | null) {
@@ -122,8 +132,8 @@ async function click(el: Element | null) {
 async function openForm(opts: Parameters<typeof mount>[0] = {}) {
   mount(opts);
   await settle((opts.detail ?? BASE).name);
-  await click(screen.getByTestId('detail-edit-open'));
-  return screen.getByTestId('detail-edit-form');
+  await click(await screen.findByTestId('detail-edit-open'));
+  return screen.findByTestId('detail-edit-form');
 }
 
 function field(form: HTMLElement, testId: string): HTMLInputElement {
@@ -314,8 +324,8 @@ describe('§2 WU-A3 — 낙관적 갱신과 저장 왕복', () => {
     expect(up.calls).toHaveLength(0);
     expect(screen.queryByTestId('detail-edit-form')).toBeNull();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(BASE.name);
-    await click(screen.getByTestId('detail-edit-open'));
-    expect(field(screen.getByTestId('detail-edit-form'), 'edit-name').value).toBe(BASE.name);
+    await click(await screen.findByTestId('detail-edit-open'));
+    expect(field(await screen.findByTestId('detail-edit-form'), 'edit-name').value).toBe(BASE.name);
   });
 });
 
