@@ -25,6 +25,7 @@ import {
   type LineageStepContext,
   type LineageStepRender,
   type PickedFile,
+  type PickedProject,
   type UploadLineageParent,
   type UploadSources,
   type UploadStatus,
@@ -82,7 +83,7 @@ export function UploadModal(props: {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [crs, setCrs] = useState('');
-  const [projects, setProjects] = useState<{ projectId: string; name: string }[]>([]);
+  const [projects, setProjects] = useState<PickedProject[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
   const [gridSkipped, setGridSkipped] = useState(false);
