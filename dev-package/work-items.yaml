@@ -2639,7 +2639,7 @@ items:
     completion_def: "상세가 *.nc 를 보이고 판별 문자열을 안 보인다 · file_extension backfill 이 기존 13행 파일명과 일치 · 검색은 종전대로 format 으로 잡힌다(「nc 로도 찾는다」는 R-B M-10)"
     evidence: "dev-package/sessions/p3-extension-label-20260905.md"
     deadline: null
-    note: "M-9. WU-A6 의 M-6·M-7 과 한 마이그레이션 head 로 묶는다"
+    note: "M-9. WU-A6 의 M-6·M-7 과 한 마이그레이션 head 로 묶는다 ⛔ [19차 Ted 승인 대기 — 승인 전 main 병합 없음 · 병합 직전 §9 〈N〉 확정]"
     sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-21", "부록 B M-9"]
 
   - id: WU-A4
@@ -2652,7 +2652,7 @@ items:
     completion_def: "설명 없는 등록이 400, 공백만도 400, 기존 NULL 행이 안내 문구와 함께 뜬다. 1280px 에서 좌우 2:3 · 짧은 값 3칸 한 줄"
     evidence: "dev-package/sessions/p3-summary-required-20260905.md"
     deadline: null
-    note: "DB 변경 0 — NOT NULL 금지·일괄 채우기 금지(미결-5 ⓐ). DatasetCreate.required 에 summary 추가가 파괴적 변경이다"
+    note: "DB 변경 0 — NOT NULL 금지·일괄 채우기 금지(미결-5 ⓐ). DatasetCreate.required 에 summary 추가가 파괴적 변경이다 ⛔ [19차 Ted 승인 대기 — 승인 전 main 병합 없음 · 병합 직전 §9 〈N〉 확정]"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-15", "PRD-28"]
 
   - id: WU-A6
@@ -2665,5 +2665,5 @@ items:
     completion_def: "단위 분 선택 시 다섯 칸이 열리고 value=10·unit='분' 이 저장되며 화면이 10분 으로 조립한다 · 숫자만 채우면 400 · 값을 비우면 등록 성공 · granularity NULL 기존 행 표기가 종전과 같다 · 간격이 있으면 기간 뒤 (10분), 없으면 빈 괄호가 없다"
     evidence: "dev-package/sessions/p3-interval-period-20260906.md"
     deadline: null
-    note: "M-6·M-7. DataPeriod 는 additionalProperties:false 라 granularity 추가가 계약 파괴 변경이다"
+    note: "M-6·M-7. DataPeriod 는 additionalProperties:false 라 granularity 추가가 계약 파괴 변경이다 ⛔ [19차 Ted 승인 대기 — 승인 전 main 병합 없음 · 병합 직전 §9 〈N〉 확정]"
     sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-17", "PRD-18", "PRD-35", "부록 B M-6·M-7"]
