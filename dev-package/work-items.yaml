@@ -994,14 +994,19 @@ items:
       ⑷ **삭제는 Ted 의 별도 go 이후** · 상한 **20/바퀴** · **fail-closed 유지**(`TL-1` 이 세운 가드를 낮추지 않는다)
       ⑸ **staging 배포 green 뒤 관측 로그 1바퀴 실측**
       ⛔ **여기 적힌 것 밖의 수를 지어내지 않았다** — 등급별 예상 건수 · 루프 주기 변경 · 기한은 전부 `[미확인]`.
-    evidence: null
+    evidence: >-
+      ⭑ **⟨2026-09-05 착수 보류 — 진입조건 미충족⟩ 진입조건 「`BF-12` 닫힘」이 서지 않아 착수하지 않았다**(`CLAUDE.md §4` 「진입조건 미충족이면 구현하지 말고 보고한다」).
+      `BF-12` 는 코드가 `main` 에 병합됐으나(`14db1a8` · 등재 `PLAN-SoT §9 〈325〉`) **완료 정의 ⑶(staging 배포 뒤 첫 바퀴 요약 1줄 실물)이 미충족이라 `open` 이다.**
+      ⟹ 이 항목의 완료 정의 ⑴⑸ 는 여전히 **잴 수 없다** — 관측 전용 계수가 로그로만 나오는데 그 로그가 아직 staging 에서 확인되지 않았다.
+      **착수 자리** = **다음 배포 창(창 6)** 에서 `docker logs colab_v2_staging_viz_render` 의 회수 요약 1줄이 서는 순간(`03-HANDOFF §4.5`).
+      ⛔ **이 회차의 `TL-2` 관련 코드·시험·계약 변경 0줄.** 등급별 예상 건수·루프 주기·기한은 여전히 `[미확인]`.
     deadline: null
     note: >-
       **신설 2026-09-05 · 등재 `PLAN-SoT §9 〈323〉`** — Ted 판정으로 선택지 ㉮(기구 재사용)를 채택하고 ㉯(1회성 수동 삭제)를 기각했다.
       **`〈315〉`-㉯ 의 「재굽고 재계수한다」를 대체한다**(종전 문면은 `RC-1.note` 와 `〈315〉` 에 원문 그대로 보존).
       ⚠ **순서를 항목 안에 못 박았다** — 관측 전용 계수(삭제 0 확인) → Ted 별도 go → `apply`. 한 회차에 붙이지 않는다.
       ⚠ **`CR-2` ⑶ 이 지는 것은 재굽기·재실측까지**이고 처분은 여기로 왔다.
-    sources: ["PLAN-SoT §9 〈323〉", "PLAN-SoT §9 〈318〉", "PLAN-SoT §9 〈315〉", "PLAN-SoT §9 〈316〉", "PLAN-SoT §9 〈324〉", "sessions/WINDOW-20260905-A5b.md", "work-items.yaml CR-2 ⑶"]
+    sources: ["PLAN-SoT §9 〈323〉", "PLAN-SoT §9 〈318〉", "PLAN-SoT §9 〈315〉", "PLAN-SoT §9 〈316〉", "PLAN-SoT §9 〈324〉", "PLAN-SoT §9 〈325〉", "sessions/WINDOW-20260905-A5b.md", "work-items.yaml CR-2 ⑶"]
 
   - id: VL-1
     name: "값 조회 초기화 지연 — 유휴 후 첫 접촉 p95 1초 초과의 원인 조사와 개선"
@@ -2272,7 +2277,7 @@ items:
       ⑶ **staging 배포 뒤 첫 바퀴 요약 1줄 실물**
       ⑷ **비밀값 미출력 확인**
     evidence: >-
-      ⭑ **⟨집행 2026-09-05 · 워크트리 `agent-ac6173ae`(기준 `main` `59b1c13`) · 등재 초안 `notes/BF12-LEDGER-PENDING.md`⟩ 완료 정의 ⑴⑵⑷ 충족 · ⑶ 미충족 ⟹ **닫지 않는다.** ⑴ **`colab_viz` 로거 하나에** stdout 처리기를 단다 — 신규 `kernel/logging_setup.configure_logging()` 을 `app/main.create_app()` 첫 줄이 부른다. 포맷은 **uvicorn 동일 계열**(`INFO:     …`) · `propagate=False` · 표식 하나로 **멱등**(시험이 앱을 수백 번 세운다). ⛔ **`basicConfig` 로 루트를 갈아엎지 않았다** — 그러면 uvicorn·써드파티 줄까지 우리 포맷이 되고 그것이 두 갈래로 갈리는 길이다. ⑵ **RED 선실측 4건 → GREEN 4건**(`tests/test_app_logging.py`). 축자 RED = `AssertionError: assert '관측 한 줄' in ''` 외 3건 · `4 failed in 3.96s` → `4 passed in 0.30s`. ⭑ **`caplog` 를 쓰지 않았다** — pytest 가 자기 처리기를 루트에 달아 두므로 caplog 로 재면 「설정 없어도 잡힌다」가 되고 **그것이 이 결함이 시험을 통과했던 이유**다. 루트를 미설정으로 되돌린 뒤 진짜 stdout 을 잡는다. ⭑ **형제 자리를 같이 잠갔다**(`〈324〉`-㉰) — 회수 요약과 「트리거 집행 N건」이 **둘 다** 난다는 것을 한 시험이 함께 단언한다. ⑷ **비밀 미출력** — 서비스 토큰·타일 서명 비밀 두 값이 로그에 없음을 단언한다. ⚠ 잰 것은 **회수 요약·기동 경로**이고 「어떤 줄에도 영영 안 실린다」는 `[미확인]`. ⛔ **⑶ staging 배포 뒤 첫 바퀴 요약 1줄 실물은 못 쟀다** — 이 회차 staging 접촉 0 · 배포 0. 해소 조건 = **다음 배포 창**에서 `docker logs colab_v2_staging_viz_render` 에 `지도 타일 회수 — …` 1줄. ⚠ **환경변수를 새로 만들지 않았다** — 수준 INFO 고정. `Settings` 에 수준 자리가 없었고, 내면 `infra/` 에 줄을 더해야 하는데 그 줄이 빠지면 「홈 env 에 무엇을 적어도 영영 꺼짐」이 된다(`#20`·`#49` 무늬) `[미확인]`. ⭑ **레포에 선례가 0건이다** — `services/` 전수에 `basicConfig`·`dictConfig`·`setLevel` 0건이라 core-api 에도 따라 쓸 무늬가 없었다. 다른 배포 단위의 같은 결손 여부는 이 회차가 재지 않았다 `[미확인]`. **게이트 실측 1회** — 선언 50 · **green 34 · red(판정) 1 · red(준비) 15**. `service-tests-viz-render` **green**(수집 330 · 실행 330 · skipped 0 · deselected 40 · failed 0 — 종전 326 ＋ 이번 4) · `service-tests-selftest` green. red(판정) 1 = `generated-up-to-date` 이고 **이 변경 때문이 아니다** — 축자 `frontend/node_modules/.bin/openapi-typescript: No such file or directory`(체크아웃에 의존 트리 부재) · 생성물 수정 0줄. **계약 개정 0 · 마이그레이션 0 · infra 0 · Dockerfile 0 · staging 접촉 0 · 배포 0.**
+      ⭑ **⟨집행 2026-09-05 · 워크트리 `agent-ac6173ae`(기준 `main` `59b1c13`) · 등재 초안 `notes/BF12-LEDGER-PENDING.md`⟩ 완료 정의 ⑴⑵⑷ 충족 · ⑶ 미충족 ⟹ **닫지 않는다.** ⑴ **`colab_viz` 로거 하나에** stdout 처리기를 단다 — 신규 `kernel/logging_setup.configure_logging()` 을 `app/main.create_app()` 첫 줄이 부른다. 포맷은 **uvicorn 동일 계열**(`INFO:     …`) · `propagate=False` · 표식 하나로 **멱등**(시험이 앱을 수백 번 세운다). ⛔ **`basicConfig` 로 루트를 갈아엎지 않았다** — 그러면 uvicorn·써드파티 줄까지 우리 포맷이 되고 그것이 두 갈래로 갈리는 길이다. ⑵ **RED 선실측 4건 → GREEN 4건**(`tests/test_app_logging.py`). 축자 RED = `AssertionError: assert '관측 한 줄' in ''` 외 3건 · `4 failed in 3.96s` → `4 passed in 0.30s`. ⭑ **`caplog` 를 쓰지 않았다** — pytest 가 자기 처리기를 루트에 달아 두므로 caplog 로 재면 「설정 없어도 잡힌다」가 되고 **그것이 이 결함이 시험을 통과했던 이유**다. 루트를 미설정으로 되돌린 뒤 진짜 stdout 을 잡는다. ⭑ **형제 자리를 같이 잠갔다**(`〈324〉`-㉰) — 회수 요약과 「트리거 집행 N건」이 **둘 다** 난다는 것을 한 시험이 함께 단언한다. ⑷ **비밀 미출력** — 서비스 토큰·타일 서명 비밀 두 값이 로그에 없음을 단언한다. ⚠ 잰 것은 **회수 요약·기동 경로**이고 「어떤 줄에도 영영 안 실린다」는 `[미확인]`. ⛔ **⑶ staging 배포 뒤 첫 바퀴 요약 1줄 실물은 못 쟀다** — 이 회차 staging 접촉 0 · 배포 0. 해소 조건 = **다음 배포 창**에서 `docker logs colab_v2_staging_viz_render` 에 `지도 타일 회수 — …` 1줄. ⚠ **환경변수를 새로 만들지 않았다** — 수준 INFO 고정. `Settings` 에 수준 자리가 없었고, 내면 `infra/` 에 줄을 더해야 하는데 그 줄이 빠지면 「홈 env 에 무엇을 적어도 영영 꺼짐」이 된다(`#20`·`#49` 무늬) `[미확인]`. ⭑ **레포에 선례가 0건이다** — `services/` 전수에 `basicConfig`·`dictConfig`·`setLevel` 0건이라 core-api 에도 따라 쓸 무늬가 없었다. 다른 배포 단위의 같은 결손 여부는 이 회차가 재지 않았다 `[미확인]`. **게이트 실측 1회** — 선언 50 · **green 34 · red(판정) 1 · red(준비) 15**. `service-tests-viz-render` **green**(수집 330 · 실행 330 · skipped 0 · deselected 40 · failed 0 — 종전 326 ＋ 이번 4) · `service-tests-selftest` green. red(판정) 1 = `generated-up-to-date` 이고 **이 변경 때문이 아니다** — 축자 `frontend/node_modules/.bin/openapi-typescript: No such file or directory`(체크아웃에 의존 트리 부재) · 생성물 수정 0줄. **계약 개정 0 · 마이그레이션 0 · infra 0 · Dockerfile 0 · staging 접촉 0 · 배포 0.** ⭑ **⟨등재 2026-09-05 · `PLAN-SoT §9 〈325〉`⟩ 위 집행이 원장에 등재됐고 코드는 `main` 에 병합됐다**(`14db1a8` · 병합 트리 `ed8ceb3`). **게이트는 병합 트리 기준으로 다시 쟀다 — 두 실행에 걸쳐 선언 50 · green 50 · red(판정) 0 · red(준비) 0** (첫 실행 `all -j 1` = green 43 · red(판정) 1 · red(준비) 6 · 그 판정 red 1 은 `planning-freshness` 이고 원인은 기획 정본 폴더 이동이라 `370ed99` 로 닫혔다(`〈326〉`) · red(준비) 6 은 셸 입력 미선언이라 `source ~/.colab-v2-test.env` 뒤 재실행 10 종 전건 green). ⚠ **「한 번에 50 green」이 아니다.** ⛔ **`status` 는 `open` 무변** — 완료 정의 ⑶(staging 배포 뒤 첫 바퀴 요약 1줄 실물)이 여전히 미충족이고, 그 자리는 **다음 배포 창(창 6)** 이다(`03-HANDOFF §4.5`).
     deadline: null
     note: >-
       **신설 2026-09-05 · 등재 `PLAN-SoT §9 〈324〉` · 근거 `sessions/V-1-STAGING-20260905.md` ㉶.**
@@ -2283,4 +2288,4 @@ items:
       ⭑ **`stage1` 이 아닌 근거** — `BF-` 전건이 `stage1` 인 것은 회귀한 원본 항목이 stage 1 이라서이고(`〈310〉`), 이 결함이 사는 자리는 `TL-1`(stage2)의 관측 경로다.
       **막는 것** = `TL-1` 첫 한 바퀴 계수(`03-HANDOFF §4.5` ㉢) · `TL-2` ⑴⑸. **`TL-1` 은 다시 열지 않는다** — 기구의 결손이 아니라 로그의 결손이다.
       ⚠ 등급별 계수는 여전히 **「못 봤다」**이고 **0 으로 적지 않는다** · 삭제는 자리 기준 **0건**.
-    sources: ["PLAN-SoT §9 〈324〉", "sessions/V-1-STAGING-20260905.md", "PLAN-SoT §9 〈316〉", "PLAN-SoT §9 〈323〉"]
+    sources: ["PLAN-SoT §9 〈324〉", "sessions/V-1-STAGING-20260905.md", "PLAN-SoT §9 〈316〉", "PLAN-SoT §9 〈323〉", "PLAN-SoT §9 〈325〉", "notes/BF12-LEDGER-PENDING.md"]
