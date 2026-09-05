@@ -110,6 +110,13 @@ GREEN — 아래 게이트 계수.
       ⑵ 는 「edge 없는 픽스처」를 남긴 채 「edge 있는 픽스처」를 더해 **칸·화살표·레일·라벨·상세행 5계수가 같음**을 대조한다. 근거 `reports/bf-9/lane-report.md`.
 ```
 
+대장 `note:` 에 잇는 `[미확인]` 한 줄 —
+
+```yaml
+    note: >-
+      ⚠ `[미확인]` — `sourceLabel` 이 업로드 뒤 PATCH(`routes/catalog.py` `_UPDATE_FIELDS`)·AI 제안 수용(`d3_catalog` `SUGGESTABLE_FIELDS`)으로 바뀐 경우, 원천 edge 의 `confirmedAt`(현재 `uploaded_at`)·`origin`(현재 `manual`) 정본 판정 — 저장 기록이 없어 구분 불가, 화면 노출 0.
+```
+
 ## 7. `PLAN-SoT §9` 초안 (번호 없음 — 병합 직전 `origin/main` 최댓값 ＋1 로 재실측)
 
 > **〈N〉 계보 그래프의 원천은 노드로만 서 있었다 — 관계를 함께 싣는다 (`BF-9`).**
@@ -140,6 +147,9 @@ GREEN — 아래 게이트 계수.
 - **원천 표기의 수정 시각** — `sourceLabel` 은 `updateDataset` 으로 고칠 수 있는데(`test_dataset_update.py`)
   `d3_dataset` 은 그 칸의 수정 시각을 따로 들지 않는다. `confirmedAt` 은 업로드 시각이라 **표기를 고쳐도 움직이지 않는다.**
   화면이 이 값을 「원천을 확인한 날」로 읽지는 않는다(원천 행은 `confirmedAt` 을 그리지 않는다). 판정 `[미확인]`.
+- **표기가 업로드 뒤에 바뀐 경우의 확인 기록** — `sourceLabel` 이 업로드 뒤 PATCH(`routes/catalog.py` `_UPDATE_FIELDS`)·
+  AI 제안 수용(`d3_catalog` `SUGGESTABLE_FIELDS`)으로 바뀐 경우, 원천 edge 의 `confirmedAt`(현재 `uploaded_at`)·
+  `origin`(현재 `manual`) 정본 판정 — **저장 기록이 없어 구분 불가, 화면 노출 0.**
 
 ## 9. 이탈
 
