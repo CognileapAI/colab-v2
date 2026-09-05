@@ -75,6 +75,7 @@ function fromCatalogRowOnly(row: {
       period: null,
       grid: null,
       format: null,
+      fileExtension: null,
       files: { count: row.fileCount, totalSizeBytes: 0, hasReferenceGridFile: false },
       sourceLabel: null,
       owner: row.uploader,
@@ -107,7 +108,10 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
       crs: 'EPSG:5179',
       period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
       grid: '0.05° (~5km)',
-      format: 'nc',
+      // 목업 원장이 담고 있던 `nc` 는 **판별값 자리가 아니라 확장자**였다 (PRD-21).
+      // 판별 결과는 파이프라인이 채우는 값이라 목업에서는 모른다 — 지어내지 않고 null 이다.
+      format: null,
+      fileExtension: 'nc',
       // 목업: `파일 조각 4개 · 합계 148 MB` · `기준 격자 파일 없음`
       files: { count: 4, totalSizeBytes: 148 * 1024 * 1024, hasReferenceGridFile: false },
       sourceLabel: 'ERA5 재분석 · GK2A 위성',

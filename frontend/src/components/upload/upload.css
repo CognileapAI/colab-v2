@@ -92,6 +92,14 @@
   font-size: 12px;
 }
 
+/* 업로드 안내 두 줄 — 업로드 가능 / 미리보기 가능 (PRD-21). 경고가 아니라 안내라
+   `up-toast` 의 경고색을 쓰지 않는다 — 색이 같으면 「뭔가 잘못됐다」로 읽힌다. */
+.up-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--up-muted, #666);
+}
+
 .filelist { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .filecard {
   display: flex;
