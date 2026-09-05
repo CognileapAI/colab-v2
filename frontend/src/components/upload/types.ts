@@ -14,6 +14,21 @@ export type DatasetCreate = Schemas['DatasetCreate'];
 export type UploadLineageParent = Schemas['UploadLineageParent'];
 export type ProjectRow = Schemas['ProjectRow'];
 export type ProjectCreate = Schemas['ProjectCreate'];
+export type ProjectType = Schemas['ProjectType'];
+
+/**
+ * ② 소속 프로젝트 지정에서 사람이 담은 한 건 (`WU-A7` · PRD-23).
+ * **유형이 함께 붙는다** — 화면이 국가과제·논문 두 패널로 가르는 근거가 이 값이다.
+ * 계약은 열지 않았다: `ProjectRow.type` 이 이미 그 값을 준다.
+ */
+export interface PickedProject {
+  projectId: string;
+  name: string;
+  type: ProjectType;
+}
+
+/** 화면이 세우는 패널 두 개 — 0건이어도 사라지지 않는다 (PRD-23). */
+export const PROJECT_PANEL_TYPES: readonly ProjectType[] = ['국가과제', '논문'];
 
 /** 만료됐거나 없는 업로드 (`Policy §7.1`·§9 「이 파일은 더 이상 없어요」 · 계약 404). */
 export class UploadGone extends Error {}
@@ -123,7 +138,7 @@ export interface PreviewSource {
 
 export interface ProjectSource {
   list(): Promise<ProjectRow[]>;
-  create(body: ProjectCreate): Promise<{ projectId: string; name: string }>;
+  create(body: ProjectCreate): Promise<PickedProject>;
 }
 
 export interface UploadSources {

@@ -11,7 +11,17 @@
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { TOPICS, type LineageStepContext, type LineageStepRender, type ProjectRow, type ProjectSource, type UploadStatus } from './types';
+import {
+  PROJECT_PANEL_TYPES,
+  TOPICS,
+  type LineageStepContext,
+  type LineageStepRender,
+  type PickedProject,
+  type ProjectRow,
+  type ProjectSource,
+  type ProjectType,
+  type UploadStatus,
+} from './types';
 
 export type Step = 1 | 2 | 3;
 
@@ -208,16 +218,32 @@ function StepOne(props: {
   );
 }
 
-function StepTwo(props: {
+/** 유형별 빈 상태 한 줄 — 0건이어도 패널이 사라지지 않는다 (PRD-23 · WU-A7). */
+const PANEL_EMPTY: Record<ProjectType, string> = {
+  국가과제: '아직 담은 국가과제가 없어요.',
+  논문: '아직 담은 논문이 없어요.',
+};
+
+/**
+ * ② 소속 프로젝트 지정 — **국가과제 / 논문 두 패널**로 가른다 (`WU-A7` · PRD-23).
+ *
+ * 지키는 것
+ *  - 패널 안은 **칩이 아니라 행**이고 위에서 아래로 쌓인다. 행마다 이름 ＋ `해제`.
+ *  - **0건인 패널도 남는다** — 빈 상태 한 줄을 보인다.
+ *  - `+ 새 프로젝트 만들기` 는 **두 패널 아래 한 곳에만** 둔다. 패널마다 두면 docx image6 의
+ *    실사용 오독이 두 곳으로 는다. 누르면 유형을 **먼저** 고르는 칸이 뜬다.
+ *  - 계약·서버·DB 변경 0 — 유형값은 `ProjectRow.type` 에 이미 있다.
+ */
+export function StepTwo(props: {
   source: ProjectSource;
-  picked: { projectId: string; name: string }[];
-  onPicked: (v: { projectId: string; name: string }[]) => void;
+  picked: PickedProject[];
+  onPicked: (v: PickedProject[]) => void;
 }) {
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
   const [sel, setSel] = useState('');
   const [dup, setDup] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
-  const [qType, setQType] = useState<'국가과제' | '논문'>('국가과제');
+  const [qType, setQType] = useState<ProjectType>('국가과제');
   const [qName, setQName] = useState('');
 
   useEffect(() => {
@@ -241,7 +267,7 @@ function StepTwo(props: {
       return;
     }
     setDup(false);
-    props.onPicked([...props.picked, { projectId: row.projectId, name: row.name }]);
+    props.onPicked([...props.picked, { projectId: row.projectId, name: row.name, type: row.type }]);
   }
 
   async function quickCreate() {
@@ -259,29 +285,46 @@ function StepTwo(props: {
         <span className="sub">선택 · 여러 개 가능</span>
       </div>
       <div className="card-b">
-        {props.picked.length > 0 ? (
-          <div className="chips" data-testid="reg-proj-chips">
-            {props.picked.map((p) => (
-              <span className="chip chip--info" key={p.projectId}>
-                {p.name}
-                <button
-                  type="button"
-                  className="chipx"
-                  aria-label={`${p.name} 빼기`}
-                  onClick={() =>
-                    props.onPicked(props.picked.filter((q) => q.projectId !== p.projectId))
-                  }
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="muted" data-testid="reg-proj-empty">
-            아직 고른 프로젝트가 없어요.
-          </p>
-        )}
+        {/* 두 패널 — 유형이 섞여 보이던 칩 나열을 가른다 (`WU-A7` · PRD-23).
+            **0건이어도 패널을 지우지 않는다** — 담을 자리가 있다는 것을 화면이 계속 말한다. */}
+        <div className="projpanels" data-testid="reg-proj-panels">
+          {PROJECT_PANEL_TYPES.map((t) => {
+            const mine = props.picked.filter((p) => p.type === t);
+            return (
+              <section className="projpanel" data-testid={`reg-proj-panel-${t}`} key={t}>
+                <div className="pp-h">
+                  <span className="pp-t">{t}</span>
+                  <span className="pp-c">{mine.length}</span>
+                </div>
+                {mine.length > 0 ? (
+                  <ul className="projrows" data-testid={`reg-proj-rows-${t}`}>
+                    {mine.map((p) => (
+                      <li className="projrow" key={p.projectId}>
+                        <span className="pr-n" data-testid="reg-proj-row-name">
+                          {p.name}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm pr-x"
+                          aria-label={`${p.name} 해제`}
+                          onClick={() =>
+                            props.onPicked(props.picked.filter((q) => q.projectId !== p.projectId))
+                          }
+                        >
+                          해제
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted" data-testid={`reg-proj-empty-${t}`}>
+                    {PANEL_EMPTY[t]}
+                  </p>
+                )}
+              </section>
+            );
+          })}
+        </div>
 
         {/* 연구실 프로젝트 0건 — 선택 목록과 `+ 추가` 를 끄고 빠른 생성만 남긴다 (§8) */}
         {labEmpty ? (
@@ -324,7 +367,7 @@ function StepTwo(props: {
               data-testid="reg-proj-quick-open"
               onClick={() => setQuickOpen(true)}
             >
-              + 여기서 새 프로젝트 만들기
+              + 새 프로젝트 만들기
             </button>
           ) : (
             <div className="qproj" data-testid="reg-proj-quick">
@@ -334,7 +377,7 @@ function StepTwo(props: {
                   className="sel"
                   aria-label="유형"
                   value={qType}
-                  onChange={(e) => setQType(e.target.value as '국가과제' | '논문')}
+                  onChange={(e) => setQType(e.target.value as ProjectType)}
                 >
                   <option value="국가과제">국가과제</option>
                   <option value="논문">논문</option>
@@ -433,8 +476,8 @@ export function RegisterArea(props: {
   onCrs: (v: string) => void;
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
-  projects: { projectId: string; name: string }[];
-  onProjects: (v: { projectId: string; name: string }[]) => void;
+  projects: PickedProject[];
+  onProjects: (v: PickedProject[]) => void;
   nameError: boolean;
   registerError: string | null;
   lineageStep?: LineageStepRender | undefined;

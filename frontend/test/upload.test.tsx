@@ -241,7 +241,7 @@ function fakes(
     },
     async create(body) {
       calls.createProject += 1;
-      return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: body.name };
+      return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: body.name, type: body.type };
     },
   };
   const lineage: LineageSource = {
@@ -975,21 +975,25 @@ describe('§8 ① 자동 메타데이터 확인', () => {
 });
 
 describe('§8 ② 소속 프로젝트 지정', () => {
-  it('고른 프로젝트가 칩으로 쌓이고 ×로 뺀다. 0건이면 안내가 칩 자리를 대신한다', async () => {
+  // ⭑ 2026-09-05 · `WU-A7`(PRD-23) — 칩 나열이 **국가과제 / 논문 두 패널**로 갈렸다.
+  // 유형별 수용 기준의 정밀 시험은 `test/project-panels-20260905.test.tsx` 가 진다.
+  it('고른 프로젝트가 유형 패널의 행으로 쌓이고 `해제` 로 뺀다. 0건 패널도 남는다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
     await click(stepBtn('②'));
-    expect(await screen.findByTestId('reg-proj-empty')).toHaveTextContent(
-      '아직 고른 프로젝트가 없어요.',
+    expect(await screen.findByTestId('reg-proj-empty-국가과제')).toHaveTextContent(
+      '아직 담은 국가과제가 없어요.',
     );
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
-    const chips = await screen.findByTestId('reg-proj-chips');
-    expect(chips).toHaveTextContent('낙동강 유역 홍수기 강우-유출 응답 분석');
-    await click(within(chips).getByRole('button', { name: /빼기/ }));
-    expect(await screen.findByTestId('reg-proj-empty')).toBeInTheDocument();
+    const panel = await screen.findByTestId('reg-proj-panel-국가과제');
+    expect(panel).toHaveTextContent('낙동강 유역 홍수기 강우-유출 응답 분석');
+    // 논문 패널은 0건이어도 사라지지 않는다
+    expect(screen.getByTestId('reg-proj-empty-논문')).toBeInTheDocument();
+    await click(within(panel).getByRole('button', { name: /해제/ }));
+    expect(await screen.findByTestId('reg-proj-empty-국가과제')).toBeInTheDocument();
   });
 
   it('같은 프로젝트를 두 번 담을 수 없다 — 정본 문구로 알린다', async () => {

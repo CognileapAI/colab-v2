@@ -181,6 +181,20 @@
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 10px; background: #eef2f7; font-size: 12px; }
 .chipx { border: 0; background: none; cursor: pointer; }
+/* ② 연관 프로젝트 — 국가과제 / 논문 두 패널 (WU-A7 · PRD-23).
+   패널 안은 칩이 아니라 **행**이고 위에서 아래로 쌓인다. 0건 패널도 남는다. */
+.projpanels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .projpanels { grid-template-columns: 1fr; } }
+.projpanel { border: 1px solid var(--up-line); border-radius: 10px; padding: 10px 12px; }
+.projpanel .pp-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.projpanel .pp-t { font-size: 12px; font-weight: 600; }
+.projpanel .pp-c { font-size: 11px; color: var(--up-muted); }
+.projpanel .muted { font-size: 12px; }
+.projrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.projrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #f6f8fa; }
+.projrow .pr-n { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
+.projrow .pr-x { flex: none; }
+
 .projpick { display: flex; gap: 8px; margin-top: 8px; }
 .qproj { margin-top: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
