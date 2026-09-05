@@ -1,0 +1,69 @@
+# 좁은 문서 게이트 재실행 — 어드바이저 수용 검토 반영 뒤
+# 집행 2026-09-06 00:37:13 +0900 · 워크트리 agent-acab040cd31080b89 · 브랜치 integration/w8a-pr1
+# 환경 = set -a; . ~/.colab-v2-test.env; set +a
+# 코드 트리 무변 ⟹ 전 게이트 전수 재실행 없음 (선례 〈333〉-⒝)
+
+########## ./gates/run.sh work-item-consistency
+work-item-consistency: 대장 126건 · ㈐ 진실원 대조 99행 · ㈏ 체크리스트 대조 62건 · ㈑ 착수 후보 37행 · ㈒ 기한 6건 · ㈓ conflict 0건 · ㈔ 결정 번호 291개 · ㈕ CLAUDE.md stage 3 대조 15건
+  ── 관측 1건 (위반이 아니다)
+     · ㈔ 건너뛴 결정 번호 1건 — 〈290〉 (red 가 아니다 · 위 docstring 참조)
+  ── 검사 대상 밖 8건 (파싱하지 못해 **안 본** 자리다 — 통과의 근거가 아니다)
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `계약 해제 2·3·4차`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `게이트 db-boundary`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `보안`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `PA 로그인 · 세션`
+     · ㈏ 쌍으로 묶이지 않은 표기가 남은 줄 — 그 부분은 대조 대상 밖: `경계    D1 ✅  D2 ✅  D2b ✅  D3 ✅  D3b ✅   (`
+     · ㈏ 식별자·상태 쌍이 없는 줄 — 대조 대상 밖: `↳ 배선 판정 둘 = 장부 반영은 사건 경유 〈190〉 · 산출물 자리는`
+     · ㈏ 쌍으로 묶이지 않은 표기가 남은 줄 — 그 부분은 대조 대상 밖: `실데이터 5종(NetCDF·Binary·HDF4·GeoTIFF·NumPy`
+     · ㈑ 식별자로 시작하지 않는 착수 후보 행 — 대조 대상 밖: `↳ T-1 완료 정의 (2026-08-27 확장 · 〈`
+  ── 항목표가 아닌 표 2건 (대상이 아니다 — 위의 「검사 대상 밖」과 다르다)
+     · ㈑ 항목표가 아니어서 대상이 아니다(첫 열이 `WU` 가 아님 · 2행): `| 무엇 | P3 에서의 위상 |`
+     · ㈑ 항목표가 아니어서 대상이 아니다(첫 열이 `WU` 가 아님 · 6행): `| 축 | 삭제 전 기준선 (2026-08-28 실측) | 삭제 후 기준선 (2026-08-28 실측) |`
+work-item-consistency: green — 대장과 산문의 불일치 0
+## exit=0
+
+########## ./gates/run.sh planning-freshness
+EPIC             BLOCK      SOURCE                VERDICT  VER   SHA8    
+---------------  ---------  --------------------  -------  ----  --------
+E-00_공통_기반       md-policy  Policy_공통_기반.md       MATCH    1.6   d2d774f4
+E-00_공통_기반       md-prd     DataModel_공통_기반.md    MATCH    1.9   b7516c25
+E-01_역할과_권한      md-policy  Policy_역할과_권한.md      MATCH    1.4   3c3f8290
+E-02_데이터_찾기      md-policy  Policy_데이터_찾기.md      MATCH    2.1   9909cef8
+E-02_데이터_찾기      md-prd     PRD_데이터_찾기.md         MATCH    1.1   4fe6f458
+E-03_데이터셋_상세     md-policy  Policy_데이터셋_상세.md     MATCH    2.10  d2f9724b
+E-03_데이터셋_상세     md-prd     PRD_데이터셋_상세.md        MATCH    1.2   09bc2e6c
+E-04_업로드와_계보_확정  md-policy  Policy_업로드와_계보_확정.md  MATCH    2.4   ba115503
+E-04_업로드와_계보_확정  md-prd     PRD_업로드와_계보_확정.md     MATCH    1.3   7c36cb74
+E-05_프로젝트        md-policy  Policy_프로젝트.md        MATCH    1.7   576bd49f
+E-05_프로젝트        md-prd     PRD_프로젝트.md           MATCH    1.3   15ecab24
+E-06_승인_처리       md-policy  Policy_승인_처리.md       MATCH    1.7   0ac2a5a7
+E-06_승인_처리       md-prd     PRD_승인_처리.md          MATCH    1.2   746d799d
+E-07_홈_대시보드      md-policy  Policy_홈_대시보드.md      MATCH    1.7   6f673bfa
+E-07_홈_대시보드      md-prd     PRD_홈_대시보드.md         MATCH    1.3   8a05946a
+
+# 이 게이트는 문서 임베드만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).
+planning-freshness green — 15개 임베드 블록 전부 원본과 일치.
+## exit=0
+
+########## ./gates/run.sh work-item-selftest
+══ work-item-selftest ══════════════════════════════════════
+[selftest] 대조군: 대장 ↔ 산문 일치 (T-P 3열 표 · 소문자 접미 식별자 포함 · 동그라미 재인쇄·본문 인용 있음) → green OK
+[selftest] ㈎ 스키마: depends_on 이 실재하지 않는 id 를 가리킨다 → red OK
+[selftest] ㈏ 완주 체크리스트가 대장보다 앞서 완료로 적혀 있다 → red OK
+[selftest] ㈐ 진실원 표(T-P · 상태 3열째)가 대장과 갈린다 → red OK
+[selftest] ㈑ ⏸(하지 않기로 한 것)가 착수 후보 표에 재등장한다 → red OK
+[selftest] ㈒ 기한이 발동했는데 status 가 open 으로 남아 있다 → red OK
+[selftest] ㈓ 산문끼리 갈린 채 conflict 로 남아 있다 → red OK
+[selftest] ㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다 → red (조용한 통과 금지) → red OK
+[selftest] ㈔ 결정 번호 〈52〉 가 두 번 선언됐다 → red OK
+[selftest] ㈔ §9 는 있는데 결정 번호 행이 0건 → red (검사 대상 0 은 통과가 아니다) → red OK
+[selftest] ㈕ CLAUDE.md 표지가 대장의 stage 3 집합과 갈린다 (빠진 것 ＋ 없는 것 양방향) → red OK
+[selftest] ㈕ CLAUDE.md 의 stage 3 표지가 지워졌다 → red (표지를 지워 검사를 없애지 못한다) → red OK
+[selftest] 대장 부재 → red (검사 불가는 통과가 아니다) → red OK
+[selftest] 진실원에 §1 진행도 절이 없다 → red (대조 대상 0 은 통과가 아니다) → red OK
+[selftest] 결정 로그 부재 → red (검사 불가는 통과가 아니다) → red OK
+[selftest] 결정 로그에 §9 절이 없다 → red (대조 대상 0 은 통과가 아니다) → red OK
+[selftest] 지침 문서(CLAUDE.md) 부재 → red (검사 불가는 통과가 아니다) → red OK
+work-item-selftest: green — 17 케이스 (대조군 1 · red 증명 16)
+## exit=0
+

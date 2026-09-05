@@ -1,0 +1,12 @@
+── 실행 계획 (병렬도 -j 1) ──────────────────────────────────────
+  선언 정본 = gates/config/parallelism.toml
+  단독 8건 · 병렬 42건 · 미선언 0건
+  단독  frontend-test  (선언: serial)
+  단독  render-latency  (선언: serial)
+  단독  service-tests-core-api  (선언: serial)
+  단독  service-tests-ai-service  (선언: serial)
+  단독  service-tests-viz-render  (선언: serial)
+  단독  service-tests-pipeline-worker  (선언: serial)
+  단독  db-selftest  (선언: serial)
+  단독  preview-tile-slot-selftest  (선언: serial)
+────────────────────────────────────────────────────────────────────

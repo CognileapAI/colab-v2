@@ -1,0 +1,889 @@
+── 실행 계획 (병렬도 -j 4) ──────────────────────────────────────
+  선언 정본 = gates/config/parallelism.toml
+  단독 8건 · 병렬 42건 · 미선언 0건
+  단독  frontend-test  (선언: serial)
+  단독  render-latency  (선언: serial)
+  단독  service-tests-core-api  (선언: serial)
+  단독  service-tests-ai-service  (선언: serial)
+  단독  service-tests-viz-render  (선언: serial)
+  단독  service-tests-pipeline-worker  (선언: serial)
+  단독  db-selftest  (선언: serial)
+  단독  preview-tile-slot-selftest  (선언: serial)
+────────────────────────────────────────────────────────────────────
+══ planning-freshness (exit 0) ═════════════════════════════════════════
+EPIC             BLOCK      SOURCE                VERDICT  VER   SHA8    
+---------------  ---------  --------------------  -------  ----  --------
+E-00_공통_기반       md-policy  Policy_공통_기반.md       MATCH    1.6   d2d774f4
+E-00_공통_기반       md-prd     DataModel_공통_기반.md    MATCH    1.9   b7516c25
+E-01_역할과_권한      md-policy  Policy_역할과_권한.md      MATCH    1.4   3c3f8290
+E-02_데이터_찾기      md-policy  Policy_데이터_찾기.md      MATCH    2.1   9909cef8
+E-02_데이터_찾기      md-prd     PRD_데이터_찾기.md         MATCH    1.1   4fe6f458
+E-03_데이터셋_상세     md-policy  Policy_데이터셋_상세.md     MATCH    2.10  d2f9724b
+E-03_데이터셋_상세     md-prd     PRD_데이터셋_상세.md        MATCH    1.2   09bc2e6c
+E-04_업로드와_계보_확정  md-policy  Policy_업로드와_계보_확정.md  MATCH    2.4   ba115503
+E-04_업로드와_계보_확정  md-prd     PRD_업로드와_계보_확정.md     MATCH    1.3   7c36cb74
+E-05_프로젝트        md-policy  Policy_프로젝트.md        MATCH    1.7   576bd49f
+E-05_프로젝트        md-prd     PRD_프로젝트.md           MATCH    1.3   15ecab24
+E-06_승인_처리       md-policy  Policy_승인_처리.md       MATCH    1.7   0ac2a5a7
+E-06_승인_처리       md-prd     PRD_승인_처리.md          MATCH    1.2   746d799d
+E-07_홈_대시보드      md-policy  Policy_홈_대시보드.md      MATCH    1.7   6f673bfa
+E-07_홈_대시보드      md-prd     PRD_홈_대시보드.md         MATCH    1.3   8a05946a
+
+# 이 게이트는 문서 임베드만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).
+planning-freshness green — 15개 임베드 블록 전부 원본과 일치.
+══ contract-lint (exit 0) ═════════════════════════════════════════
+# 대상 3건 — contracts/seams/core-ai.yaml contracts/seams/core-viz.yaml contracts/seams/fe-core.yaml 
+(node:149828) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+No results with a severity of 'warn' or higher found!
+contract-lint green — seam 3건, 룰 위반 0.
+══ contract-breaking (exit 0) ═════════════════════════════════════════
+No changes detected
+contract-breaking green — 기준 HEAD (3건) 대비 파괴적 변경 없음.
+══ event-lint (exit 0) ═════════════════════════════════════════
+# 스키마 2건 · valid 픽스처 8건 · invalid 픽스처 10건
+  compile OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/contracts/events/core-pipeline.json
+  compile OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/contracts/events/envelope.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/header-parsed-full.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/header-parsed-partial.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/preview-backend-rerun.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/preview-file-added.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/preview-grid-changed.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/upload-accepted.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/upload-failed-permanent.json
+  valid   OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/valid/upload-ready-redelivery.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/bad-ulid-labid.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/cross-domain-id.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/derived-value-in-payload.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/failure-reason-outside-enum.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/missing-delivery.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/nondeterministic-idempotency-key.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/preview-stale-carries-target-path.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/preview-trigger-outside-enum.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/type-payload-mismatch.json
+  invalid 거부 OK — /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/events/invalid/unknown-event-type.json
+event-lint green — 스키마 2건 컴파일 · valid 8건 통과 · invalid 10건 거부.
+══ event-breaking (exit 0) ═════════════════════════════════════════
+# 기준 HEAD (2건) ↔ 대상 (2건)
+# 판정 — ERR 0건 · WARN 0건 (규칙표 = dev-package/sessions/D2b.md §2)
+event-breaking green — 기준 HEAD (2건) 대비 파괴적 변경 없음.
+══ seam-consistency (exit 0) ═════════════════════════════════════════
+# ㉠ — 기준선 대비 신설 검사 대상 0건 (신설 0건이면 대조할 것이 없어 green 이다 — 기준선이 곧 현재라는 뜻)
+# ㉡ — 단계 18건 재생 (이월 4건)
+#   ↩ 단계 4'(헤더 파싱) — 의도적 이월: stage 2 — S1-PLAN §1.2 ㉠(가공 = 휴면). 이벤트 file.header-parsed 는 계약에 남아 있고 stage 1 워커는 발행하지 않는다 (tests/test_stage1_worker.py:52)
+#   ↩ 단계 4''(좌표계 정규화) — 의도적 이월: stage 2 — S1-PLAN §1.2 ㉠. 이벤트 file.crs-normalized 는 계약에 남아 있고 stage 1 워커는 발행하지 않는다 (tests/test_stage1_worker.py:52)
+#   ↩ 단계 4'''(COG 변환) — 의도적 이월: stage 2 — 〈74〉-㉳(타일 서빙·확대·COG 변환은 stage 1 밖) · S1-PLAN §2.2 ⓑ #7(⑸ COG 는 계속 stage 2). 이벤트 preview.cog-built 는 계약에 남아 있다
+#   ↩ 단계 10(직접 검색으로 부모 추가) — 의도적 이월: 계약 부재 — 의도적 P4 이월. fe-core.yaml 위임 산문에 「P4 가 연다」 명기 (D2c §2-3 · §10-3)
+# ㉡ 끊긴 자리: 없음 (㉡-4)
+seam-consistency green — G-e 421건 · G-b 10건 · ㉠ 0건 · ㉡ 18건.
+══ generated-up-to-date (exit 0) ═════════════════════════════════════════
+generated-up-to-date green — 등기부 10건 전부 재생성 일치, 등기부 밖 자칭 생성물 0건.
+══ import-boundary (exit 0) ═════════════════════════════════════════
+# 계약 gates/config/importlinter.ini · 대상 PYTHONPATH=services/ai-service/src:services/viz-render/src:services/pipeline-worker/src:services/core-api/src:
+
+[38;2;0;117;117m╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐[0m
+[38;2;0;117;117m╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │[0m
+[38;2;0;117;117m ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗[0m
+[38;2;0;117;117m ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝[0m
+[38;2;0;117;117m╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║[0m
+[38;2;0;117;117m╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝[0m
+[38;2;0;117;117m  └──▶║║                    ▲ [0m
+[38;2;0;117;117m      ╚╝────────────────────┘[0m
+
+[?25l[32m∙∙∙[0m 🧱 Building graph...[2K[32m∙∙∙[0m 🧱 Building graph...[2K[32m●∙∙[0m 🧱 Building graph...[2K[32m∙●∙[0m 🧱 Building graph...[2K[32m∙●∙[0m 🧱 Building graph...[2K[32m∙∙●[0m 🧱 Building graph...[2K[32m∙∙●[0m 🧱 Building graph...[2K[32m∙∙∙[0m 🧱 Building graph...[2K[32m∙∙∙[0m 🧱 Building graph...[2K[32m∙∙∙[0m 🧱 Building graph...[2K[32m●∙∙[0m 🧱 Building graph...[2K[32m∙●∙[0m 🧱 Building graph...
+[?25h[1A[2K[?25l[2K🧐 Checking contracts [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0/8[0m
+[2K[1A[2K🧐 Checking contracts [38;2;114;156;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m8/8[0m
+[2mChecking D10 은 D9 를 Port 로만 읽는다 [0m[1;2m([0m[2m직접 import 금지[0m[1;2m)[0m[2K[1A[2K🧐 Checking contracts [38;2;114;156;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m8/8[0m
+[?25h[1A[2K[1m---------[0m
+[1mContracts[0m
+[1m---------[0m
+
+[1mAnalyzed 153 files, 337 dependencies.[0m
+[1m-------------------------------------[0m
+
+배포 단위 4개는 서로를 import 하지 않는다 [32mKEPT[0m
+core-api 층 — app > domains > ports > kernel [32mKEPT[0m
+D2·D3·D4·D6·D8 은 서로 직접 참조하지 않는다 (Port 경유) [32mKEPT[0m
+D1(shared kernel)은 다른 도메인을 import 하지 않는다 [32mKEPT[0m
+ai-service 층 — app > d10 > ports > d9 [32mKEPT[0m
+pipeline-worker 층 — app > domains > ports > kernel [32mKEPT[0m
+viz-render 층 — app > domains > ports > kernel [32mKEPT[0m
+D10 은 D9 를 Port 로만 읽는다 (직접 import 금지) [32mKEPT[0m
+
+Contracts: 8 kept, 0 broken.
+import-boundary green — 계약 전부 통과.
+══ banned-import (exit 0) ═════════════════════════════════════════
+# 배포 단위별 대상
+  ai-service       .py   14건 · deny 7개
+  core-api         .py   56건 · deny 18개
+  pipeline-worker  .py   32건 · deny 0개
+  viz-render       .py   51건 · deny 0개
+banned-import green — .py 153건, 금지 import 0.
+══ ai-no-lineage-write (exit 0) ═════════════════════════════════════════
+# 음성 게이트 — 'D10 → D4 쓰기 경로 없음'을 세 층에서 확인한다
+  L1 계약층      seam 3건 (그중 core-ai 1건)
+  L2 코드층      ai-service 텍스트 1744건 (그중 .py 1742건)
+  L3 체인층      db/ai 마이그레이션 12건 · db/platform 23건
+ai-no-lineage-write green — 계약·코드·체인 세 층 모두에서 쓰기 경로가 없다.
+══ db-boundary (exit 0) ═════════════════════════════════════════
+db-boundary: green — 단위 7개 · 스캔 대상 328건 · 위반 0
+══ migration-single-head (exit 0) ═════════════════════════════════════════
+# db 루트 = db · 체인 = platform, ai
+# db/platform: 리비전 15건 · head 1개 (0012_merge_lv1_and_transfer)
+# db/ai: 리비전 5건 · head 1개 (0005_k2b_concept_graph_seed)
+migration-single-head green — 두 체인 모두 head 1개.
+══ schema-diff (exit 0) ═════════════════════════════════════════
+── db/platform ────────────────────────────────────────────
+db/platform green — 드리프트 없음.
+── db/ai ────────────────────────────────────────────
+db/ai green — 드리프트 없음.
+schema-diff green — 두 체인 각각 선언 = 적용.
+══ rls-coverage (exit 0) ═════════════════════════════════════════
+# 조사한 테이블 33건 (db/platform · db/ai)
+# db/platform.alembic_version_platform: RLS 면제(allow-list) — rls=off
+# db/platform.d1_account: rls=on force=on 정책=1
+# db/platform.d1_lab: RLS 면제(allow-list) — rls=off
+# db/platform.d1_lab_profile: rls=on force=on 정책=1
+# db/platform.d2_dataset_access: rls=on force=on 정책=1
+# db/platform.d2_dataset_access_grant: rls=on force=on 정책=1
+# db/platform.d2_dataset_access_request: rls=on force=on 정책=1
+# db/platform.d2_member_role: rls=on force=on 정책=1
+# db/platform.d2_permission_change: rls=on force=on 정책=1
+# db/platform.d2_permission_switch: rls=on force=on 정책=1
+# db/platform.d2_verification_request: rls=on force=on 정책=1
+# db/platform.d2_verified: rls=on force=on 정책=1
+# db/platform.d3_dataset: rls=on force=on 정책=1
+# db/platform.d3_dataset_autometa: rls=on force=on 정책=1
+# db/platform.d3_dataset_description: rls=on force=on 정책=1
+# db/platform.d3_file: rls=on force=on 정책=2
+# db/platform.d4_lineage_edge: rls=on force=on 정책=1
+# db/platform.d4_lineage_unknown: rls=on force=on 정책=1
+# db/platform.d5_pipeline_event: rls=on force=on 정책=1
+# db/platform.d5_upload: rls=on force=on 정책=1
+# db/platform.d5_upload_file: rls=on force=on 정책=1
+# db/platform.d5_upload_transfer: rls=on force=on 정책=1
+# db/platform.d5_upload_transfer_file: rls=on force=on 정책=1
+# db/platform.d6_project: rls=on force=on 정책=1
+# db/platform.d6_project_dataset: rls=on force=on 정책=1
+# db/platform.d8_activity: rls=on force=on 정책=1
+# db/platform.d8_download: rls=on force=on 정책=1
+# db/ai.alembic_version_ai: RLS 면제(allow-list) — rls=off
+# db/ai.d9_concept: RLS 면제(allow-list) — rls=off
+# db/ai.d9_concept_edge: RLS 면제(allow-list) — rls=off
+# db/ai.d9_method_term: RLS 면제(allow-list) — rls=off
+# db/ai.d9_place_alias: RLS 면제(allow-list) — rls=off
+# db/ai.d9_topic_synonym: RLS 면제(allow-list) — rls=off
+rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.
+══ rls-effect (exit 0) ═════════════════════════════════════════
+# 판정 롤 colab_app — rolsuper=f · rolbypassrls=f · public 소유 테이블 0개 (우회 불가)
+# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)
+# ② 메타 양성 — 잠긴 데이터셋의 이름·주제·자동메타·접근상태·Verified·계보 전부 조회됨
+# ③ lab_id 보유 표 25개 전수 — 남의 연구실 0행
+# ③ cross-tenant — 전수 0행 · ID 직접 지정 0행 · 미스코프 0행 · 반대편 1행
+rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가.
+══ work-item-consistency (exit 0) ═════════════════════════════════════════
+work-item-consistency: 대장 125건 · ㈐ 진실원 대조 98행 · ㈏ 체크리스트 대조 62건 · ㈑ 착수 후보 37행 · ㈒ 기한 6건 · ㈓ conflict 0건 · ㈔ 결정 번호 291개 · ㈕ CLAUDE.md stage 3 대조 15건
+  ── 관측 1건 (위반이 아니다)
+     · ㈔ 건너뛴 결정 번호 1건 — 〈290〉 (red 가 아니다 · 위 docstring 참조)
+  ── 검사 대상 밖 8건 (파싱하지 못해 **안 본** 자리다 — 통과의 근거가 아니다)
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `계약 해제 2·3·4차`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `게이트 db-boundary`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `보안`
+     · ㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖: `PA 로그인 · 세션`
+     · ㈏ 쌍으로 묶이지 않은 표기가 남은 줄 — 그 부분은 대조 대상 밖: `경계    D1 ✅  D2 ✅  D2b ✅  D3 ✅  D3b ✅   (`
+     · ㈏ 식별자·상태 쌍이 없는 줄 — 대조 대상 밖: `↳ 배선 판정 둘 = 장부 반영은 사건 경유 〈190〉 · 산출물 자리는`
+     · ㈏ 쌍으로 묶이지 않은 표기가 남은 줄 — 그 부분은 대조 대상 밖: `실데이터 5종(NetCDF·Binary·HDF4·GeoTIFF·NumPy`
+     · ㈑ 식별자로 시작하지 않는 착수 후보 행 — 대조 대상 밖: `↳ T-1 완료 정의 (2026-08-27 확장 · 〈`
+  ── 항목표가 아닌 표 2건 (대상이 아니다 — 위의 「검사 대상 밖」과 다르다)
+     · ㈑ 항목표가 아니어서 대상이 아니다(첫 열이 `WU` 가 아님 · 2행): `| 무엇 | P3 에서의 위상 |`
+     · ㈑ 항목표가 아니어서 대상이 아니다(첫 열이 `WU` 가 아님 · 6행): `| 축 | 삭제 전 기준선 (2026-08-28 실측) | 삭제 후 기준선 (2026-08-28 실측) |`
+work-item-consistency: green — 대장과 산문의 불일치 0
+══ stage2-markers (exit 0) ═════════════════════════════════════════
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33m [ 90%]
+[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[33m                                                                 [100%][0m
+[33m=============================== warnings summary ===============================[0m
+tests/test_cog_nan_coords.py::test_좌표_셀이_NaN_이어도_터지지_않는다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/src/colab_pipeline/d5/cog.py:89: RuntimeWarning: invalid value encountered in cast
+    rows = np.clip(np.rint((lat_max - la) / lat_step), 0, ny - 1).astype("i8")
+
+tests/test_cog_nan_coords.py::test_좌표가_NaN_인_셀의_값은_버린다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/src/colab_pipeline/d5/cog.py:90: RuntimeWarning: invalid value encountered in cast
+    cols = np.clip(np.rint((lo - lon_min) / lon_step), 0, nx - 1).astype("i8")
+
+tests/test_cog_nan_coords.py::test_좌표가_전부_결측이면_거절한다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/src/colab_pipeline/d5/cog.py:72: RuntimeWarning: All-NaN slice encountered
+    lat_min, lat_max = float(np.nanmin(lat)), float(np.nanmax(lat))
+
+tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+  <frozen importlib._bootstrap>:488: RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected 16 from C header, got 96 from PyObject
+
+tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:37: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+  As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+    v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+
+tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:40: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+  As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+    lat[:] = np.linspace(33, 39, _ROWS * _COLS).reshape(_ROWS, _COLS)
+
+tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:41: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+  As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+    lon[:] = np.linspace(124, 130, _ROWS * _COLS).reshape(_ROWS, _COLS)
+
+tests/test_parse_netcdf_grid_axes.py::test_위도_차원을_먼저_선언한_파일은_그대로다
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:70: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+  As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+    v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+
+tests/test_pipeline.py::test_human_uploaded_cog_is_never_our_artifact
+  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/.venv/lib/python3.12/site-packages/rasterio/__init__.py:367: NotGeoreferencedWarning: Dataset has no geotransform, gcps, or rpcs. The identity matrix will be returned.
+    dataset = DatasetReader(path, driver=driver, sharing=sharing, thread_safe=thread_safe, **kwargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[33m[32m80 passed[0m, [33m[1m226 deselected[0m, [33m[1m12 warnings[0m[33m in 6.59s[0m[0m
+stage2 마커 — 수집 80 · skipped 0 · failed 0 · errors 0
+══ autometa-loss (exit 0) ═════════════════════════════════════════
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 23개
+자동 정보 되쓰기 — 발행 6 · 반영 6 · 면제 0 (선언 0 건) · 미반영 0
+  세는 단위 = (업로드, 칸) 쌍 · 칸 = format·crs·grid · 시점 = 2026-09-06T00:12:28+09:00
+# 경계 대조 — 관리자 롤 6|6|0|0 ↔ 경계 롤 'colab_app' 0|0|0|0 (갈렸다)
+autometa-loss green — 반영 6 / 발행 6 · 면제 0
+══ frontend-typecheck (exit 0) ═════════════════════════════════════════
+frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+══ frontend-test (exit 0) ═════════════════════════════════════════
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 677건 · 실패 0건.
+    Test Files  45 passed (45)
+         Tests  677 passed (677)
+══ frontend-fixture-reach (exit 0) ═════════════════════════════════════════
+frontend-fixture-reach green — 진입점 src/main.tsx 에서 도달 141개(진입점 제외 140개), 금지 모듈(fixture.ts·graphFixture.ts·localEngine.ts) 0건.
+══ preview-tile-slot (exit 0) ═════════════════════════════════════════
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 23개
+지도 타일 자리 — 발행 업로드 2 · 자리의 타일 2 · 쓸 수 있음 2 · 면제 0 (선언 0 건) · 못 씀 0
+  세는 단위 = 자리에 놓인 지도 타일 파일 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 시점 = 2026-09-06T00:12:30+09:00
+# 경계 대조 — 관리자 롤 2 ↔ 경계 롤 'colab_app' 0 (갈렸다)
+preview-tile-slot green — 쓸 수 있음 2 / 자리의 타일 2 · 면제 0 · 발행 업로드 2
+══ artifact-ownership (exit 0) ═════════════════════════════════════════
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 23개
+# 경계 대조 — 관리자 롤 (d3_file,d5_upload_file)=(133,133) ↔ 경계 롤 'colab_app' (0,0) (갈렸다)
+산출물 소유 — 대상 한 벌 136 · 살아 있다 117 · 접수분에만 닿는다 0 · 고아 0 · 판정 불가 19
+  지도 타일 2 벌은 **대상이 아니다** — D5 가 구운 것이라 kept 로 산다 (완료 정의 ⑷)
+  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 원장 = d3_file 133 · d5_upload_file 133
+  회수 전 전수 스냅숏 306 줄 → /tmp/artifact-owner-gQM2Ny/snapshot-20260905T151230Z.tsv (키·확장자·크기·사이드카 source·등급)
+  시점 = 2026-09-06T00:12:30+09:00
+::warning::artifact-ownership — 판정 불가(구판) 19 벌이 **건수를 드러낸 채** 통과했다.
+   구판 = sidecarVersion·baked_for 가 없는 사이드카. **고아가 아니라 보류다** (A-1 완료 정의 ⑴).
+artifact-ownership green — 대상 136 벌 (살아 있다 117 · 접수분 0 · 고아 0 · 판정 불가 19) · 지도 타일 2 · 스냅숏 306 줄 · 삭제 0건
+══ e2e-format-coverage (exit 0) ═════════════════════════════════════════
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                          [100%][0m
+[32m[32m[1m15 passed[0m, [33m393 deselected[0m[32m in 23.78s[0m[0m
+실데이터 포맷 완주 — 필수 5종 · 표식 붙은 케이스 5건 · 면제 0종
+  · GeoTIFF — 통과 1 / 관측 1
+  · NetCDF — 통과 1 / 관측 1
+  · Binary — 통과 1 / 관측 1
+  · HDF4 — 통과 1 / 관측 1
+  · NumPy — 통과 1 / 관측 1
+══ render-latency (exit 0) ═════════════════════════════════════════
+[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                [100%][0m
+[32m[32m[1m25 passed[0m, [33m383 deselected[0m[32m in 43.24s[0m[0m
+미리보기 렌더 성능 — 눈금 p95 10초 · 상한 60초 · 최소 표본 10 · 최소 포맷 5
+  · 표본 25건 · 포맷 5종(Binary, GeoTIFF, HDF4, NetCDF, NumPy) · 최소 0.568초 · 중앙값 1.033초 · p95 3.305초 · 최대 3.349초
+    · Binary — 5건 · 중앙값 0.758초 · 최대 0.822초 · 본체 1.3 MB
+    · GeoTIFF — 5건 · 중앙값 1.303초 · 최대 2.110초 · 본체 24.6 MB
+    · HDF4 — 5건 · 중앙값 2.968초 · 최대 3.349초 · 본체 9.7 MB
+    · NetCDF — 5건 · 중앙값 1.033초 · 최대 1.118초 · 본체 0.4 MB
+    · NumPy — 5건 · 중앙값 0.615초 · 최대 1.016초 · 본체 6.6 MB
+══ backup-cron-streak (exit 0) ═════════════════════════════════════════
+════ backup-cron-streak — 크론 04:40 회차의 판정 줄을 읽는다 (재실행하지 않는다)
+  판독 대상: /home/ttlhi10/colab-v2-backups/staging-backup.log  ·  허용 나이 36시간
+  요약줄: 크론 연속 GREEN: GREEN (통과 11건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+  시각  : 2026-09-05T04:40:02 (19시간 전)
+  근사   : 무인 판별은 예정 0330 ±30분 창이다 — 그 시각에 손으로 돌린 회차는 무인으로 세어진다
+backup-cron-streak green — 04:40 회차 판정 GREEN · 19시간 전(허용 36시간) · 재실행 0건
+══ service-tests-core-api (exit 0) ═════════════════════════════════════════
+# 일회용 postgres 준비 완료 — 스키마·앱 롤·시드 적용(접속 문자열은 출력하지 않는다)
+   0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 56%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 66%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 75%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 84%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 94%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                              [100%][0m
+   ----------- generated xml file: /tmp/service-tests-hAoOyi/junit.xml ------------
+   [32m[32m[1m763 passed[0m, [33m6 deselected[0m[32m in 135.14s (0:02:15)[0m[0m
+service-tests-core-api — 선택자 «not e2e» · 수집 763 · 실행 763 · skipped 0 · deselected 6 · failed 0 · errors 0 · 소요 135.1초
+service-tests-core-api green — 실행 763건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).
+══ service-tests-ai-service (exit 0) ═════════════════════════════════════════
+   [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 55%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m               [100%][0m
+   ----------- generated xml file: /tmp/service-tests-gX2OiT/junit.xml ------------
+   [32m[32m[1m130 passed[0m, [33m26 deselected[0m[32m in 3.52s[0m[0m
+service-tests-ai-service — 선택자 «not dictdb» · 수집 130 · 실행 130 · skipped 0 · deselected 26 · failed 0 · errors 0 · 소요 3.5초
+service-tests-ai-service green — 실행 130건 전부 통과 (skipped 0 · deselected 26 은 요약줄에 드러나 있다).
+══ service-tests-viz-render (exit 0) ═════════════════════════════════════════
+   [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 19%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 39%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 58%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 78%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m [ 97%]
+   [0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                 [100%][0m
+   [32m[32m[1m368 passed[0m, [33m40 deselected[0m[32m in 37.71s[0m[0m
+service-tests-viz-render — 선택자 «not e2e and not perf» · 수집 368 · 실행 368 · skipped 0 · deselected 40 · failed 0 · errors 0 · 소요 37.6초
+service-tests-viz-render green — 실행 368건 전부 통과 (skipped 0 · deselected 40 은 요약줄에 드러나 있다).
+══ service-tests-pipeline-worker (exit 0) ═════════════════════════════════════════
+   ange(20, dtype="f4").reshape(4, 5)
+   
+   tests/test_detect.py::test_nc_that_is_hdf5_container
+   tests/test_detect.py::test_classic_netcdf
+   tests/test_worker_events.py::test_mixed_formats_fail_permanently
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/fixture_builders.py:157: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lat[:] = np.linspace(33, 39, 20).reshape(4, 5)
+   
+   tests/test_detect.py::test_nc_that_is_hdf5_container
+   tests/test_detect.py::test_classic_netcdf
+   tests/test_worker_events.py::test_mixed_formats_fail_permanently
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/fixture_builders.py:158: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lon[:] = np.linspace(124, 130, 20).reshape(4, 5)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:37: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:40: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lat[:] = np.linspace(33, 39, _ROWS * _COLS).reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:41: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lon[:] = np.linspace(124, 130, _ROWS * _COLS).reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_위도_차원을_먼저_선언한_파일은_그대로다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:70: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+   
+   tests/test_pipeline.py::test_human_uploaded_cog_is_never_our_artifact
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/services/pipeline-worker/.venv/lib/python3.12/site-packages/rasterio/__init__.py:367: NotGeoreferencedWarning: Dataset has no geotransform, gcps, or rpcs. The identity matrix will be returned.
+       dataset = DatasetReader(path, driver=driver, sharing=sharing, thread_safe=thread_safe, **kwargs)
+   
+   -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+   [33m[32m260 passed[0m, [33m[1m46 deselected[0m, [33m[1m21 warnings[0m[33m in 10.62s[0m[0m
+service-tests-pipeline-worker — 선택자 «not e2e and not dbint» · 수집 260 · 실행 260 · skipped 0 · deselected 46 · failed 0 · errors 0 · 소요 10.5초
+service-tests-pipeline-worker green — 실행 260건 전부 통과 (skipped 0 · deselected 46 은 요약줄에 드러나 있다).
+══ contract-selftest (exit 0) ═════════════════════════════════════════
+[selftest] lint: 규칙을 지킨 스펙 → green OK
+[selftest] lint: operationId 누락 → red OK
+[selftest] lint: 4xx 인라인 에러 스키마 → red OK
+[selftest] lint: ID 인라인 정의 → red OK
+[selftest] lint: nullable ID (oneOf + Ulid) → green OK
+[selftest] lint: nullable 인라인 ID → red OK
+[selftest] lint: 숫자 확신도 필드 → red OK
+[selftest] lint: 배치 승인 엔드포인트 → red OK
+[selftest] lint: seam 0건 → red OK
+[selftest] lint: spectral 부재(설치 실패) → red OK
+[selftest] breaking: 변경 없음 → green OK
+[selftest] breaking: 엔드포인트 제거 → red OK
+[selftest] breaking: 필수 파라미터 추가 → red OK
+[selftest] breaking: seam 0건 → red OK
+[selftest] breaking: docker 불능 → red OK
+[selftest] 케이스 15 건 (동시 1)
+contract-selftest green — 두 게이트 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ event-selftest (exit 0) ═════════════════════════════════════════
+── event-lint ──────────────────────────────────────────────
+── event-breaking ──────────────────────────────────────────
+[selftest] lint: 실제 이벤트 계약 + 픽스처 → green OK
+[selftest] lint: 깨진 JSON → red OK
+[selftest] lint: 끊긴 $ref → red OK
+[selftest] lint: 오탈자 키워드(strict) → red OK
+[selftest] lint: 이벤트 계약 0건 → red OK
+[selftest] lint: valid 픽스처 0건 → red OK
+[selftest] lint: invalid 픽스처 0건 → red OK
+[selftest] lint: 어긴 인스턴스를 valid 로 → red OK
+[selftest] lint: 정상 인스턴스를 invalid 로 → red OK
+[selftest] lint: 진입 스키마 부재 → red OK
+[selftest] lint: common.json 부재 → red OK
+[selftest] lint: ajv 부재(설치 실패) → red OK
+[selftest] breaking: 변경 없음 → green OK
+[selftest] breaking E01: 스키마 파일 제거 → red OK
+[selftest] breaking E02: $def 제거 → red OK
+[selftest] breaking E03: 속성 제거 → red OK
+[selftest] breaking E04: required 추가 → red OK
+[selftest] breaking E05: required 제거 → red OK
+[selftest] breaking E06: enum 값 제거 → red OK
+[selftest] breaking E07: type 축소 → red OK
+[selftest] breaking E08: additionalProperties 조임 → red OK
+[selftest] breaking E09: const 변경 → red OK
+[selftest] breaking E10: maxLength 축소 → red OK
+[selftest] breaking E11: oneOf 분기 제거 → red OK
+[selftest] breaking E12: $ref 대상 변경 → red OK
+[selftest] breaking E13: format 추가 → red OK
+[selftest] breaking E14: $id 변경 → red OK
+[selftest] breaking W01: enum 값 추가(WARN) → green OK
+[selftest] breaking W02: 선택 속성 추가 → green OK
+[selftest] breaking: 제약 완화 → green OK
+[selftest] breaking: 설명 변경 → green OK
+[selftest] breaking: 이벤트 계약 0건 → red OK
+[selftest] breaking: 기준 ref 부재 → red OK
+[selftest] 케이스 33 건 (동시 1)
+event-selftest green — event-lint · event-breaking 이 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ boundary-selftest (exit 0) ═════════════════════════════════════════
+── import-boundary ──────────────────────────────────────────────────
+── banned-import ────────────────────────────────────────────────────
+── ai-no-lineage-write ──────────────────────────────────────────────
+[selftest] import-boundary: 관례대로 놓인 빈 패키지 → green OK
+[selftest] import-boundary: D3 → D4 직접 참조 → red OK
+[selftest] import-boundary: ai-service → core-api 배포 단위 횡단 → red OK
+[selftest] import-boundary: Port 가 도메인을 참조(층 역전) → red OK
+[selftest] import-boundary: D1(shared kernel)이 위를 참조 → red OK
+[selftest] import-boundary: D10 → D9 직접 참조(Port 우회) → red OK
+[selftest] import-boundary: 대상 패키지 0건 → red OK
+[selftest] import-boundary: 도구 설치 실패(skip 아님) → red OK
+[selftest] banned-import: geo 없는 core-api → green OK
+[selftest] banned-import: core-api 가 rasterio → red OK
+[selftest] banned-import: core-api 가 from osgeo import → red OK
+[selftest] banned-import: 동적 import 우회 → red OK
+[selftest] banned-import: viz-render·pipeline-worker 는 geo 허용 → green OK
+[selftest] banned-import: .py 0건 → red OK
+[selftest] banned-import: 파싱 불가 파일(읽지 못함=red) → red OK
+[selftest] ai-no-lineage: 제안만 있는 기준 fixture → green OK
+[selftest] ai-no-lineage ①: 계보 경로의 PUT → red OK
+[selftest] ai-no-lineage ②: 확정 동사 operationId → red OK
+[selftest] ai-no-lineage ③: 계보 확정 스키마 → red OK
+[selftest] ai-no-lineage ④: core-ai seam 0건 → red OK
+[selftest] ai-no-lineage ⑤: 플랫폼 패키지 import → red OK
+[selftest] ai-no-lineage ⑥: D4 테이블 접두사 등장 → red OK
+[selftest] ai-no-lineage ⑦: 쓰기 SQL + D4 테이블 → red OK
+[selftest] ai-no-lineage ⑧: ai-service 코드 0건 → red OK
+[selftest] ai-no-lineage ⑨: db/ai 가 플랫폼 체인 참조(코드) → red OK
+[selftest] ai-no-lineage ⑨: 꼬리 주석이 붙은 줄의 코드 참조 → red OK
+[selftest] ai-no-lineage ⑨: 주석 블록 바로 다음 줄의 코드 참조 → red OK
+[selftest] ai-no-lineage ⑨: 문자열 리터럴로 만든 동적 import(독스트링 아님 = 검사한다) → red OK
+[selftest] ai-no-lineage ⑨: 독스트링·주석 안의 경고문(오탐이던 것) → green OK
+[selftest] ai-no-lineage ⑨: ini 주석 안의 경고문 → green OK
+[selftest] ai-no-lineage ⑨: ini 값(코드)의 체인 횡단 → red OK
+[selftest] ai-no-lineage ⑨: db/ai 에 D4 테이블 → red OK
+[selftest] ai-no-lineage ⑩: db/platform 이 ai 체인 참조(코드) → red OK
+[selftest] ai-no-lineage ⑩: db/platform 주석 안의 언급 → green OK
+[selftest] ai-no-lineage ⑪: 두 체인의 version_table 동일 → red OK
+[selftest] ai-no-lineage ⑪: version_table 미선언 → red OK
+[selftest] ai-no-lineage ⑫: 한쪽 체인 마이그레이션 0건 → red OK
+[selftest] 케이스 37 건 (동시 1)
+boundary-selftest green — 경계 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ db-boundary-selftest (exit 0) ═════════════════════════════════════════
+── 기준선 ───────────────────────────────────────────────────────────
+[selftest] 현재의 올바른 배치 (ai-service 는 db/ai 만) → green OK
+── 실제로 일어난 위반 (2026-08-25) ──────────────────────────────────
+[selftest] ai-service 소스가 COLAB_AI_CATALOG_DB_URL 를 읽는다 → red OK
+[selftest] ai-service Dockerfile 이 카탈로그 체인을 선언한다 → red OK
+[selftest] compose 가 ai-service 에 카탈로그 DB 를 물린다 → red OK
+── 반대 방향 · 그 밖의 횡단 ─────────────────────────────────────────
+[selftest] core-api 가 db/ai 에 붙는다 (반대 방향) → red OK
+[selftest] chains=[] 인 viz-render 가 DB URL 을 선언한다 → red OK
+[selftest] chains=[] 인 viz-render 에 create_engine( 이 있다 → red OK
+[selftest] 어느 체인에도 안 맞는 DB URL (분류 불가는 green 이 아니다) → red OK
+[selftest] 매니페스트에 없는 compose 서비스가 DB 를 잡는다 → red OK
+── 산문은 위반이 아니다 (거짓 red 방지) ─────────────────────────────
+[selftest] 주석·docstring 안의 옛 env 이름은 선언이 아니다 → green OK
+── fail-closed (재료가 없을 때) ─────────────────────────────────────
+[selftest] 매니페스트 부재 → red OK
+[selftest] 매니페스트 파싱 실패 → red OK
+[selftest] 매니페스트에 단위·체인이 0건 → red OK
+[selftest] compose 파일 부재 → red OK
+[selftest] 매니페스트가 가리키는 단위 디렉터리 부재 → red OK
+[selftest] 파이썬 파싱 실패 (읽지 못한 대상은 skip 이 아니다) → red OK
+[selftest] 스캔 대상 0건 (조용한 green 금지) → red OK
+[selftest] compose 의 services 가 0건 → red OK
+── compose 둘 (staging + dev · 〈342〉) ─────────────────────────────
+[selftest] 두 compose 가 다 올바르다 → green OK
+[selftest] 두 번째 compose(dev) 가 없다 — 건너뛰지 않고 red → red OK
+[selftest] dev compose 에서 ai-service 가 platform 체인에 붙는다 (횡단) → red OK
+────────────────────────────────────────────────────────────────────
+db-boundary-selftest: 전부 통과
+══ db-selftest (exit 0) ═════════════════════════════════════════
+── migration-single-head ────────────────────────────────────────────
+[selftest] migration-single-head: 두 체인 각각 선형(head 1개) → green OK
+[selftest] migration-single-head: platform 체인 head 2개 → red OK
+[selftest] migration-single-head: ai 체인 head 2개(체인별로 본다) → red OK
+[selftest] migration-single-head: 머지 리비전으로 합친 분기 → green OK
+[selftest] migration-single-head: 체인을 넘는 down_revision(§3-3) → red OK
+[selftest] migration-single-head: revision 중복 → red OK
+[selftest] migration-single-head: 리비전 순환(head 0개) → red OK
+[selftest] migration-single-head: alembic.ini 부재 → red OK
+[selftest] migration-single-head: 한쪽 체인 마이그레이션 0건 → red OK
+[selftest] migration-single-head: 체인 디렉터리 자체가 없음 → red OK
+[selftest] migration-single-head: 파싱 불가 파일(읽지 못함=red) → red OK
+[selftest] migration-single-head: revision 이 동적(정적 판정 불가) → red OK
+[selftest] migration-single-head: down_revision 미선언 → red OK
+── rls-coverage (판정 코어) ─────────────────────────────────────────
+[selftest] rls-coverage: 관례를 지킨 기준 facts → green OK
+[selftest] rls-coverage: allow-list 밖 테이블에 RLS 없음 → red OK
+[selftest] rls-coverage: ENABLE 만 하고 FORCE 안 함 → red OK
+[selftest] rls-coverage: RLS 는 켰는데 정책 0건 → red OK
+[selftest] rls-coverage: 연구실 경계 정책 이름 없음 → red OK
+[selftest] rls-coverage: 본체 테이블에 본체 정책 누락(P-34 ③) → red OK
+[selftest] rls-coverage: ai 체인 테이블 0건 → red OK
+[selftest] rls-coverage: 테이블 0건(green-by-skip 금지) → red OK
+[selftest] rls-coverage: allow-list 에만 있고 실제엔 없는 낡은 면제 → red OK
+[selftest] rls-coverage: facts 형식 오류 → red OK
+[selftest] rls-coverage: facts 파일 부재 → red OK
+[selftest] rls-coverage: allow-list 설정 부재 → red OK
+── rls-coverage · schema-diff (end-to-end, 도커 필요) ───────────────
+[selftest] rls-coverage(e2e): 관례대로 만든 스키마 → green OK
+[selftest] rls-coverage(e2e): RLS 없는 새 테이블 → red OK
+[selftest] rls-coverage(e2e): FORCE 누락은 엔진으로만 보인다 → red OK
+[selftest] rls-coverage(e2e): 뒤에서 FORCE 를 다시 끈 경우(grep 으로는 못 본다) → red OK
+[selftest] rls-coverage(e2e): schema.sql 0건 → red OK
+[selftest] rls-coverage(e2e): 적용되지 않는 스키마 → red OK
+           ::gate-readiness-failure::gate=rls-coverage|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] rls-coverage(e2e): 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] schema-diff: 선언 스키마 0건 → red OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_PLATFORM (db/platform) · COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_PLATFORM (db/platform)      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세
+[selftest] schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언) → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=체인별 적용 DB URL (구 변수 COLAB_APPLIED_DB_URL 만 있다)|detail=COLAB_APPLIED_DB_URL 은 더 이상 쓰지 않는다 — 어느 체인의 DB 인지 알 수 없다.    db/platform 과 db/ai 는 마이그레이션 체인이 분리된 **서로 다른 DB** 다 (CLAUDE.md §3-3).    한 URL 을 두 체인에 갖다 대면 한 체인만 실제로 검사된다 — 조용히 검사 범위가 줄어드는 게 최악이다.    → COLAB_APPLIED_DB_URL_PLATFORM 과 COLAB
+[selftest] schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red) → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세는 dev-package/sessions/D3-db.md §3.
+[selftest] schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다) → red(준비·입력미선언) OK
+[selftest] schema-diff: 적용 DB 접속 불가 → red OK
+           ::gate-readiness-failure::gate=schema-diff|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] schema-diff: 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] schema-diff(e2e): 두 체인 모두 선언 = 적용 → green OK
+[selftest] schema-diff(e2e): 체인별 URL 을 서로 바꿔 지정 → red OK
+[selftest] schema-diff(e2e): ai 체인만 드리프트(platform 은 일치) → red OK
+[selftest] schema-diff(e2e): platform 체인만 드리프트(ai 는 일치) → red OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세는 dev-package/sessions/D3-db.md §3.
+[selftest] schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락 → red(준비·입력미선언) OK
+[selftest] 구분: rls-coverage 도커 부재 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: schema-diff 도커 부재 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: 슬롯 고갈 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: 선언 스키마 0건 = 판정 실패(준비 아님) → red(판정) OK (exit 1 · 준비 표식 없음)
+[selftest] 원인: schema-diff 적용 DB URL 미선언 → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: schema-diff 구 변수만 선언(체인을 모른다) → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: autometa-loss 대조 정본 미선언 → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: 환경 대기 = waited_for 로 찍힌다 OK (입력미선언과 섞이지 않았다)
+db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ rls-effect-selftest (exit 0) ═════════════════════════════════════════
+── rls-effect ───────────────────────────────────────────────────────
+[selftest] rls-effect: 훼손 없는 스키마 → green OK
+[selftest] rls-effect ③: 경계 조건 한 줄 누락(USING true) → red OK
+[selftest] rls-effect ③: 자식 표에서만 경계 누락(부모는 멀쩡) → red OK
+[selftest] rls-effect ③: 미스코프 기본 거부를 기본 연구실로 바꿈 → red OK
+[selftest] rls-effect ①: 본체 둘째 층 제거(DROP POLICY body_access) → red OK
+[selftest] rls-effect ①: 만료 검사만 제거(목록 검사로는 안 잡힌다) → red OK
+[selftest] rls-effect ①: 둘째 층을 PERMISSIVE 로(두 층이 OR 로 무너짐) → red OK
+[selftest] rls-effect ②: 잠김을 메타까지 RLS 로 얹음(P-13 회귀) → red OK
+[selftest] rls-effect ②: 메타 표에 정책을 하나 더 붙임(행 수로는 안 보인다) → red OK
+[selftest] rls-effect 0: superuser 로 판정(우회 롤은 조용한 통과가 아니라 red) → red OK
+[selftest] rls-effect 0: 앱 롤에 BYPASSRLS 를 붙임 → red OK
+[selftest] rls-effect 0: 앱 롤을 테이블 소유자로 만듦(소유자는 FORCE 를 안 받는 실수의 자리) → red OK
+[selftest] rls-effect 0: 없는 롤로 판정 → red OK
+[selftest] rls-effect: 선언 스키마 부재 → red OK
+[selftest] rls-effect: 시드 부재(대상 0건은 통과가 아니다) → red OK
+[selftest] rls-effect: 앱 롤 부트스트랩 부재 → red OK
+[selftest] rls-effect: 적용되지 않는 스키마 → red OK
+           ::gate-readiness-failure::gate=rls-effect|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] rls-effect: 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+           ::gate-readiness-failure::gate=rls-effect|waited_for=postgres 접속 준비(실서버 · pg_isready · 컨테이너 b3_rlseffect_168743_15022)|limit=5초|elapsed=5초|detail=컨테이너 상태=running · 초기화 완료 표식 없음(initdb 미완 또는 서버 미기동) · 호스트 load average: 10.65, 7.33, 7.29 · 마지막 로그: 
+[selftest] rls-effect: 실서버가 끝내 안 뜨면 상한에서 red(준비) (임시 서버 오인 방지의 fail-closed) → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] 케이스 19 건 (동시 1)
+rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다.
+══ seam-consistency-selftest (exit 0) ═════════════════════════════════════════
+[selftest] G-e: 현행 계약 → green OK
+[selftest] G-b: 현행 계약 → green OK
+[selftest] ㉠: 현행 계약 (기준선 git HEAD) → green OK
+[selftest] ㉡: 현행 계약 + E-04 fixture → green OK
+[selftest] G-e: 개정 전 fe-core.yaml:13-16 원문 (DR-7 실물 — 「이벤트/업로드 seam」) → red OK
+[selftest] G-e: 실재하지 않는 op(createGhostUpload)·파일(upload-seam.yaml) 참조 → red OK
+[selftest] G-b: source const core-api 인데 촉발 op 0건 (I-01·I-05) → red OK
+[selftest] G-b: 촉발 op 이 집계 루트(uploadId)를 다루지 않음 → red OK
+[selftest] ㉠: 신설 op 의 근거 칸 공란 (description 없음, ㉠-1) → red OK
+[selftest] ㉠: 신설 op 에 인용도 [정본 무근거] 표기도 없음 (㉠-1) → red OK
+[selftest] ㉡: 한 단계의 op 이 호출 불가능 (㉡-1) → red OK
+[selftest] ㉡: 어느 단계도 생산하지 않은 식별자를 입력으로 요구 (㉡-2) → red OK
+[selftest] ㉡: fixture 부재는 skip 이 아니라 red → red OK
+seam-consistency-selftest green — 13 케이스 전부 기대대로 (green 4 · red 9).
+══ generated-selftest (exit 0) ═════════════════════════════════════════
+[selftest] 기준: 재생성 = 커밋본 (마커 파일 등기됨) → green OK
+[selftest] stale: source 개정 후 재생성 안 함 → red OK
+[selftest] hand-edit: 생성물 손수정 (CLAUDE.md 규칙 7 위반) → red OK
+[selftest] missing-output: 등기됐는데 커밋된 생성물 없음 → red OK
+[selftest] missing-source: source 계약 파일 없음 → red OK
+[selftest] empty-manifest: 엔트리 0건 = red (빈 등기부 ≠ green) → red OK
+[selftest] missing-manifest: 등기부 부재 = red → red OK
+[selftest] unregistered: 등기부 밖 자칭 생성물 (@generated 마커) → red OK
+[selftest] failing-gen: 재생성 명령 실패는 skip 이 아니라 red → red OK
+generated-selftest green — 9 케이스 전부 기대대로 (green 1 · red 8).
+══ work-item-selftest (exit 0) ═════════════════════════════════════════
+══ work-item-selftest ══════════════════════════════════════
+[selftest] 대조군: 대장 ↔ 산문 일치 (T-P 3열 표 · 소문자 접미 식별자 포함 · 동그라미 재인쇄·본문 인용 있음) → green OK
+[selftest] ㈎ 스키마: depends_on 이 실재하지 않는 id 를 가리킨다 → red OK
+[selftest] ㈏ 완주 체크리스트가 대장보다 앞서 완료로 적혀 있다 → red OK
+[selftest] ㈐ 진실원 표(T-P · 상태 3열째)가 대장과 갈린다 → red OK
+[selftest] ㈑ ⏸(하지 않기로 한 것)가 착수 후보 표에 재등장한다 → red OK
+[selftest] ㈒ 기한이 발동했는데 status 가 open 으로 남아 있다 → red OK
+[selftest] ㈓ 산문끼리 갈린 채 conflict 로 남아 있다 → red OK
+[selftest] ㈑ 항목표 머리글이 바뀌어 대상이 0 표가 됐다 → red (조용한 통과 금지) → red OK
+[selftest] ㈔ 결정 번호 〈52〉 가 두 번 선언됐다 → red OK
+[selftest] ㈔ §9 는 있는데 결정 번호 행이 0건 → red (검사 대상 0 은 통과가 아니다) → red OK
+[selftest] ㈕ CLAUDE.md 표지가 대장의 stage 3 집합과 갈린다 (빠진 것 ＋ 없는 것 양방향) → red OK
+[selftest] ㈕ CLAUDE.md 의 stage 3 표지가 지워졌다 → red (표지를 지워 검사를 없애지 못한다) → red OK
+[selftest] 대장 부재 → red (검사 불가는 통과가 아니다) → red OK
+[selftest] 진실원에 §1 진행도 절이 없다 → red (대조 대상 0 은 통과가 아니다) → red OK
+[selftest] 결정 로그 부재 → red (검사 불가는 통과가 아니다) → red OK
+[selftest] 결정 로그에 §9 절이 없다 → red (대조 대상 0 은 통과가 아니다) → red OK
+[selftest] 지침 문서(CLAUDE.md) 부재 → red (검사 불가는 통과가 아니다) → red OK
+work-item-selftest: green — 17 케이스 (대조군 1 · red 증명 16)
+══ stage2-markers-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 마커 0 건 — red
+  ✓ ⓑ skip — red
+  ✓ ⓒ fail — red
+stage2-markers-selftest green — 0건 · skip · fail 셋 다 red 다 (fail-closed 증명).
+══ autometa-loss-selftest (exit 0) ═════════════════════════════════════════
+           ::gate-readiness-failure::gate=autometa-loss|cause=입력미선언|missing=COLAB_AUTOMETA_STAGING_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)|detail=적용 DB 없이 반영 여부를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).    → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.      값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④-㉰).    ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트는 그것을 
+[selftest] ⓐ 대조 정본 미지정 → red(준비·입력미선언) OK
+[selftest] ⓐ 원인 표식(입력미선언) → OK
+           ::gate-readiness-failure::gate=autometa-loss|cause=입력미선언|missing=면제 선언 파일 (/tmp/autometa-loss-dCm7Ff/없는파일.toml)|detail=이 파일은 면제를 **이름으로** 고정하는 유일한 정본이다. 없으면 무엇이 면제인지 아무도 모른다.    → 빈 목록(datasets = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다.
+[selftest] ⓑ 면제 선언 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=autometa-loss|cause=입력미선언|missing=면제 선언의 datasets 항목 (/tmp/autometa-loss-dCm7Ff/exempt-empty.toml)|detail=항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다.
+[selftest] ⓑ' 면제 항목 부재 → red(준비·입력미선언) OK
+[selftest] ⓓ 유실 3건 → red OK
+[selftest] ⓕ 면제 선언 → green OK
+[selftest] ⓕ 면제 건수 노출 → OK
+[selftest] ⓔ 전건 반영 → green OK
+[selftest] ⓒ 대상 0건 → red OK
+[selftest] ⓖ 스키마 전용 DB → red(대상 0건) OK
+[selftest] ⓗ 접속 실패 → red OK
+[selftest] ⓗ 사유(증명 실패) → OK
+[selftest] ⓘ 읽기 전용 아닌 선언 → red OK
+[selftest] ⓘ 사유(읽기 전용 아님) → OK
+           ::gate-readiness-failure::gate=autometa-loss|cause=입력미선언|missing=COLAB_AUTOMETA_BOUNDARY_ROLE (경계 롤 이름 · ㉯ 재조회에 쓴다)|detail=경계 롤을 모르면 「경계가 실제로 걸리는가」를 대조할 수 없다. 대조 없이 낸 계수는    경계에 걸린 0 인지 진짜 0 인지 구별되지 않는다 (DATA-REFERENCE §0 M-9).    → 홈의 0600 env 파일에 롤 이름을 선언하고 다시 돌린다 (dev-package/RESTART.md §2-④-㉱).    ⚠ COLAB_AUTOMETA_STAGING_DB_URL 로 대신하지 않는다 — 그것
+[selftest] ⓛ 경계 롤 미선언 → red(준비·입력미선언) OK
+[selftest] ⓛ 원인 표식(입력미선언) → OK
+[selftest] ⓜ 경계 롤 접속 → red OK
+[selftest] ⓜ 사유(관리자 롤 아님) → OK
+[selftest] ⓝ 경계 롤 = 관리자 롤 → red OK
+[selftest] ⓝ 사유(두 값이 같다) → OK
+[selftest] ⓙ 변이①(탐침 제거) → green — **오라클 증명 OK**(검사를 떼면 통과한다)
+[selftest] ⓚ 변이②(읽기 전용 해제) → red(쓰기 탐침 통과) — **탐침이 실제로 쓴다** OK
+[selftest] ⓞ 변이③(롤 판정 제거) → 사유가 「대상 0건」으로 바뀐다 — **오라클 증명 OK**
+           (검사를 떼면 경계가 거른 0 을 그대로 세러 간다)
+[selftest] ⓟ 변이④(㉯ 대조 제거) → green — **오라클 증명 OK**(대조를 떼면 같은 값이 통과한다)
+autometa-loss-selftest green — 17 케이스(red 7 · 미선언 4 · green 2 · 변이 4) ＋ 사유 대조 7 ＋ 면제 건수 노출 1 = 검사 25건 전건 기대대로
+══ preview-tile-slot-selftest (exit 0) ═════════════════════════════════════════
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)|detail=대조 정본 없이 사건 발행 건수를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).    → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.      값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④).    ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트는 202
+[selftest] ⓐ 대조 정본 미지정 → red(준비·입력미선언) OK
+[selftest] ⓐ 원인 표식(입력미선언) → OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=면제 선언 파일 (/tmp/preview-tile-Ixga4U/없는파일.toml)|detail=이 파일은 면제를 **이름으로** 고정하는 유일한 정본이다. 없으면 무엇이 면제인지 아무도 모른다.    → 빈 목록(files = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다.
+[selftest] ⓑ 면제 선언 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=면제 선언의 files 항목 (/tmp/preview-tile-Ixga4U/exempt-empty.toml)|detail=항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다.
+[selftest] ⓑ' 면제 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DIR (미리보기 산출물 루트)|detail=자리를 보지 않고 「자리에 놓였다」를 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).    → 배포의 미리보기 볼륨 경로를 지정하고 다시 돌린다.
+[selftest] ⓒ 자리 경로 미선언 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DIR 가 가리키는 디렉터리 (/tmp/preview-tile-Ixga4U/없는자리)|detail=경로가 선언됐으나 그런 디렉터리가 없다. 없는 자리를 「비어 있다」로 읽지 않는다.
+[selftest] ⓓ 없는 디렉터리 → red(준비·입력미선언) OK
+[selftest] ⓘ 쓸 수 있는 타일 1건 → green OK
+[selftest] ⓕ 못 쓰는 타일 1건 → red OK
+[selftest] ⓗ 이름으로 면제 → green OK
+[selftest] ⓗ 면제 건수 노출 → OK
+[selftest] ⓖ 발행 있음·쓸 수 있는 타일 0 → red OK
+[selftest] ⓔ 자리에 타일 0건 → red OK
+[selftest] ⓙ 경계 롤 미선언 → red(준비·입력미선언) OK
+[selftest] ⓚ 경계 롤 접속 → red OK
+[selftest] ⓚ 사유(관리자 롤 아님) → OK
+[selftest] ⓛ 경계 롤 = 관리자 롤 → red OK
+[selftest] ⓛ 사유(두 값이 같다) → OK
+[selftest] ⓜ 스키마 전용 DB → red OK
+[selftest] ⓜ 사유(발행 0건) → OK
+[selftest] ⓝ 변이①(종전 게이트 재현) → green — **음성 증명 OK**
+           같은 상태에서 새 게이트는 red(ⓚ) · 검사를 떼면 green — green-by-skip 이 재현된다
+[selftest] ⓞ 변이②(㉯ 대조 제거) → green — **오라클 증명 OK**
+[selftest] ⓟ 변이③(탐침 제거) → green — **오라클 증명 OK**
+preview-tile-slot-selftest green — 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로
+══ artifact-ownership-selftest (exit 0) ═════════════════════════════════════════
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)|detail=대조 정본 없이 「누구 것인가」를 답할 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).    → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.      값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④).    ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트
+[selftest] ⓐ 대조 정본 미지정 → red(준비·입력미선언) OK
+[selftest] ⓐ 사유·건수 노출 → OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=면제·보류 선언 파일 (/tmp/artifact-owner-st-3DJC9p/없는파일.toml)|detail=이 파일은 면제를 **키 이름으로**, 구판 보류를 **참·거짓으로** 고정하는 유일한 정본이다.    → 빈 목록(keys = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다.
+[selftest] ⓑ 선언 파일 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=선언의 [exempt] keys 항목 (/tmp/artifact-owner-st-3DJC9p/decl-nokeys.toml)|detail=항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다.
+[selftest] ⓑ' keys 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=선언의 [legacy] tolerate 항목 (/tmp/artifact-owner-st-3DJC9p/decl-notol.toml)|detail=구판(판정 보류)을 넘길지 말지를 **선언**해야 한다. 선언 없이 넘기면 그것이 green-by-skip 이다.    ⚠ 구판은 「고아」가 아니다 — 없는 필드를 근거로 지우면 그것이 오삭제다.
+[selftest] ⓑ'' tolerate 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DIR (미리보기 산출물 루트)|detail=자리를 보지 않고 「자리의 산출물 전건」을 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).    → 배포의 미리보기 볼륨 경로를 지정하고 다시 돌린다.
+[selftest] ⓒ 자리 경로 미선언 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DIR 가 가리키는 디렉터리 (/tmp/artifact-owner-st-3DJC9p/없는자리)|detail=경로가 선언됐으나 그런 디렉터리가 없다. 없는 자리를 「비어 있다」로 읽지 않는다.
+[selftest] ⓓ 없는 디렉터리 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE (경계 롤 이름 · ㉯ 재조회에 쓴다)|detail=경계 롤을 모르면 「경계가 실제로 걸리는가」를 대조할 수 없다. 대조 없이 낸 원장 건수는    경계에 걸린 0 인지 진짜 0 인지 구별되지 않는다 (DATA-REFERENCE §0 M-9 · #57-ⓐ).    → 홈의 0600 env 파일에 롤 이름을 선언하고 다시 돌린다.
+[selftest] ⓝ 경계 롤 미선언 → red(준비·입력미선언) OK
+[selftest] ⓝ 사유·건수 노출 → OK
+[selftest] ⓗ·ⓟ 살아 있다 1벌 (baked_for 는 낡은 uploadId) → green OK
+[selftest] ⓟ 덫① 사유·건수 노출 → OK
+[selftest] ⓕ 고아 1벌 미선언 → red OK
+[selftest] ⓕ 사유·건수 노출 → OK
+[selftest] ⓖ 고아를 키로 면제 → green OK
+[selftest] ⓖ 사유·건수 노출 → OK
+[selftest] ⓘ 구판 1벌 ＋ tolerate=true → green OK
+[selftest] ⓘ 덫② 사유·건수 노출 → OK
+[selftest] ⓘ 덫②(고아 0) 사유·건수 노출 → OK
+[selftest] ⓙ 같은 상태 ＋ tolerate=false → red OK
+[selftest] ⓙ 사유·건수 노출 → OK
+[selftest] ⓞ 규약 위반(판 2 인데 sources 가 비었다) → red OK
+[selftest] ⓞ 사유·건수 노출 → OK
+[selftest] ⓠ 음성 — tile- 만 있는 자리 → red OK
+[selftest] ⓠ 사유·건수 노출 → OK
+[selftest] ⓔ 자리에 대상 0건 → red OK
+[selftest] ⓡ 음성 — 회차 뒤 무접촉 확인용 회차 → green OK
+[selftest] ⓡ 접수분 루트 무접촉(원본·기준 격자 그대로) → OK
+[selftest] ⓡ 자리 무접촉(게이트는 지우지 않는다) → OK
+[selftest] ⓚ 경계 롤 접속 → red OK
+[selftest] ⓚ 사유·건수 노출 → OK
+[selftest] ⓛ 경계 롤 = 관리자 롤 → red OK
+[selftest] ⓛ 사유·건수 노출 → OK
+[selftest] ⓜ 스키마 전용 DB (원장 0행) → red OK
+[selftest] ⓜ 사유·건수 노출 → OK
+[selftest] ⓢ 변이①(롤·원장 판정 제거) → **살아 있던 livekey 가 고아로 떠 회수 후보가 된다** — 음성 증명 OK
+           같은 상태에서 새 게이트는 red(ⓚ) · 검사를 떼면 경계가 낸 0 을 「없다」로 읽는다
+[selftest] ⓣ 변이②(구판 판정 제거) → 구판이 **고아로 떠 회수 후보가 된다** — 오삭제 재현 OK
+           정본 규칙: green(판정 불가 1 · 고아 0) · 변이: red(고아 legacykey)
+[selftest] ⓤ 변이③(탐침 제거) → green — 오라클 증명 OK
+artifact-ownership-selftest green — 19 케이스(red 6 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 11 ＋ 무접촉 대조 3 전건 기대대로
+══ e2e-format-coverage-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 선언 파일 부재 (red)
+  ✓ ⓑ 필수 항목 부재 (red)
+  ✓ ⓒ 필수 목록이 비었다 (red)
+  ✓ ⓓ 면제 항목 부재 (red)
+  ✓ ⓔ 시험 리포트 부재 (red)
+  ✓ ⓕ 표식 붙은 케이스 0건 (red)
+  ✓ ⓖ 한 포맷 실패 (red)
+  ✓ ⓗ 한 포맷 건너뜀 (red)
+  ✓ ⓘ 선언에 없는 포맷 표식 (red)
+  ✓ ⓙ 이름으로 면제 (green)
+  ✓ ⓚ 필수 전 포맷 통과 (green)
+e2e-format-coverage-selftest green — 검사 11건 전건 기대대로 (red 9 · green 2 · 건수 노출 1)
+══ render-latency-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 선언 파일 부재 (red)
+  ✓ ⓑ 합격선 절 부재 (red)
+  ✓ ⓒ 눈금 항목 누락 (red)
+  ✓ ⓓ 눈금이 0 이하 (red)
+  ✓ ⓔ 눈금이 뒤집혔다 (red)
+  ✓ ⓕ 시험 리포트 부재 (red)
+  ✓ ⓖ 렌더초 붙은 케이스 0건 (red)
+  ✓ ⓗ 상한 초과 (red)
+  ✓ ⓘ p95 초과 (상한 이내) (red)
+  ✓ ⓙ 한 케이스 실패 (red)
+  ✓ ⓚ 표본·포맷 부족 (red)
+  ✓ ⓛ 전건 눈금 안 (green)
+render-latency-selftest green — 검사 12건 전건 기대대로 (red 11 · green 1)
+══ backup-cron-streak-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 로그 파일 부재 (red)
+  ✓ ⓑ 요약줄 0건 (red)
+  ✓ ⓒ 시각 줄 부재 (red)
+  ✓ ⓓ 36시간 초과 (red)
+  ✓ ⓔ 요약줄 RED (red)
+  ✓ ⓕ 검사 0건 GREEN (red)
+  ✓ ⓖ 낯선 요약줄 모양 (red)
+  ✓ ⓗ GREEN · 신선 (green)
+  ✓ ⓘ 표식 ＋ 종료 0 → green (가짜 검사기 실물) (green)
+  ✓ ⓙ 표식(cause=입력미선언) ＋ 종료 0 → green (green)
+  ✓ ⓚ 종료 78 → ready (ready)
+  ✓ ⓛ 종료 78 ＋ cause=입력미선언 → 미선언 (미선언)
+  ✓ ⓜ 표식 ＋ 종료 1 → ready (ready)
+  ✓ ⓝ 표식 없음 ＋ 종료 1 → red (red)
+  ✓ ⓞ 표식 없음 ＋ 종료 0 → green (green)
+  ✓ ⓟ 표식＋종료 0 은 「판정 못 함」 면제를 못 받는다 (ready 기대 케이스가 red 로 간다)
+backup-cron-streak-selftest green — 검사 16건 전건 기대대로 (게이트 8건: red 7 · green 1 ＋ 분류기 8건)
+══ frontend-typecheck-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓖ 깨끗한 트리 — green
+  ✓ ⓕ 시험 파일이 node:fs·node:path·__dirname 을 쓴다 (74deb54 재현) — red
+  ✓ ⓓ tsconfig include 에서 test 제거 — red
+  ✓ ⓔ build 스크립트에서 tsc --noEmit 이 빠짐 — red
+  ✓ ⓒ tsconfig.json 부재 — red
+  ✓ ⓑ node_modules/.bin/tsc 부재 — red(준비 · 78)
+  ✓ ⓐ node_modules 부재 — red(준비 · 78)
+══ frontend-test-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 깨끗한 트리(통과 시험 1건) — green
+  ✓ ⓑ 시험 1건 실패 — red
+  ✓ ⓒ 수집된 시험 0건 (green-by-skip 금지) — red
+  ✓ ⓓ node_modules/.bin/vitest 부재 — red(준비 · 78)
+══ frontend-fixture-reach-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 깨끗한 진입점 (green)
+  ✓ ⓑ 진입점이 fixture.ts 에 닿는다 (red)
+  ✓ ⓒ 진입점 말고 도달 0건 (red)
+  ✓ ⓓ tsconfig paths·baseUrl 선언 (red)
+           ::gate-readiness-failure::gate=frontend-fixture-reach|waited_for=/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/frontend-fixture-reach/no-script/scripts/reachable-from-entry.mjs|limit=대기 없음|elapsed=0초|detail=판정부 스크립트가 없다. 레인 E 가 만든 도달성 워커가 이 체크아웃에 없으면 검사 대상을 한 건도 보지 못한다.
+[selftest] ⓔ 판정부 스크립트 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+           ::gate-readiness-failure::gate=frontend-fixture-reach|waited_for=/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-acab040cd31080b89/gates/fixtures/frontend-fixture-reach/no-entry/src/main.tsx|limit=대기 없음|elapsed=0초|detail=운영 진입점이 없다.
+[selftest] ⓕ 운영 진입점 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+frontend-fixture-reach-selftest green — 검사 6건 전건 기대대로 (red 3 · red(준비) 2 · green 1).
+══ service-tests-selftest (exit 0) ═════════════════════════════════════════
+  ✓ ⓐ 통과 시험 1건 — green
+  ✓ ⓑ 시험 1건 실패 — red
+  ✓ ⓒ 수집 0건 (green-by-skip 금지) — red
+  ✓ ⓓ 실행 0건 · 전부 skip — red
+  ✓ ⓔ venv·파이썬 부재 — red(준비 · 78)
+  ✓ ⓕ 표식 선택자 인자 없음 — red
+  ✓ ⓖ 단위 이름 인자 없음 — red
+  ✓ ⓗ 단위 자리 부재 — red
+  ✓ ⓘ 요약줄이 수집·실행·skipped·deselected·failed 를 계수로 낸다
+── 요약 ────────────────────────────────────────────────────
+  green  planning-freshness
+  green  contract-lint
+  green  contract-breaking
+  green  event-lint
+  green  event-breaking
+  green  seam-consistency
+  green  generated-up-to-date
+  green  import-boundary
+  green  banned-import
+  green  ai-no-lineage-write
+  green  db-boundary
+  green  migration-single-head
+  green  schema-diff
+  green  rls-coverage
+  green  rls-effect
+  green  work-item-consistency
+  green  stage2-markers
+  green  autometa-loss
+  green  frontend-typecheck
+  green  frontend-test
+  green  frontend-fixture-reach
+  green  preview-tile-slot
+  green  artifact-ownership
+  green  e2e-format-coverage
+  green  render-latency
+  green  backup-cron-streak
+  green  service-tests-core-api
+  green  service-tests-ai-service
+  green  service-tests-viz-render
+  green  service-tests-pipeline-worker
+  green  contract-selftest
+  green  event-selftest
+  green  boundary-selftest
+  green  db-boundary-selftest
+  green  db-selftest
+  green  rls-effect-selftest
+  green  seam-consistency-selftest
+  green  generated-selftest
+  green  work-item-selftest
+  green  stage2-markers-selftest
+  green  autometa-loss-selftest
+  green  preview-tile-slot-selftest
+  green  artifact-ownership-selftest
+  green  e2e-format-coverage-selftest
+  green  render-latency-selftest
+  green  backup-cron-streak-selftest
+  green  frontend-typecheck-selftest
+  green  frontend-test-selftest
+  green  frontend-fixture-reach-selftest
+  green  service-tests-selftest
+  ── 계 : green 50 / red(판정) 0 / red(준비) 0
