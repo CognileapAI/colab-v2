@@ -302,7 +302,13 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
     "${COLAB_PG_IMAGE:-postgres:16-alpine}" >/dev/null 2>&1
   trap 'docker rm -f "$APPC" >/dev/null 2>&1; rm -rf "$TMP"' EXIT
   # 같은 대기 정밀화를 여기도 쓴다 — initdb 임시 서버를 준비로 세면 뒤 질의가 공백에 떨어진다.
-  pg_wait_ready "$APPC" "${COLAB_PG_READY_TIMEOUT:-60}" || true
+  # ⛔ 못 뜨면 **그 자리에서 red(준비) 로 나간다.** 그냥 넘어가면 아래 `expect green "schema-diff(e2e)…"`
+  #    가 그것을 **판정 red 로 잘못 적는다** — 「검사기가 못 돌았다」가 「대상이 틀렸다」로 둔갑한다.
+  APP_READY_LIMIT="${COLAB_PG_READY_TIMEOUT:-60}"; APP_T0="$(pg_now)"
+  pg_wait_ready "$APPC" "$APP_READY_LIMIT" || {
+    pg_readiness_report db-selftest "적용 DB 컨테이너의 postgres 접속 준비(실서버 · pg_isready · 컨테이너 $APPC)" \
+      "${APP_READY_LIMIT}초" "$(( $(pg_now) - APP_T0 ))초" "$(pg_ready_detail "$APPC")"
+    exit "$PG_READINESS_EXIT"; }
   APPIP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$APPC")"
 
   # 체인마다 **다른 DB** 에 **그 체인의 선언만** 적용한다 — 이게 실제 배치 형태다 (§3-3).

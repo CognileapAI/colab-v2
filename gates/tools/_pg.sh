@@ -105,25 +105,20 @@ pg_slot_release() {
 #
 # 그래서 준비의 뜻을 **진짜 서버가 접속을 받는 상태**로 좁힌다:
 #   ⑴ 로그에 엔트리포인트의 초기화 완료 표식이 있고 ⑵ 그 뒤 `pg_isready` 가 성공한다.
-#   PGDATA 가 이미 초기화된 경우(여기서는 tmpfs 라 발생하지 않지만)는 initdb 단계 자체가
-#   없으므로 임시 서버도 없다 — 초기화 표식 없이 접속 준비 로그만 있으면 그대로 준비로 센다.
+#   ⛔ **「이미 초기화된 PGDATA 라면 표식이 없어도 준비로 센다」는 갈래를 두지 않는다**
+#   (수용 검토 2026-09-05). 이 레포의 PGDATA 는 tmpfs 라 **언제나 initdb 를 돈다** — 닿지 않는
+#   갈래다. 그리고 남의 이미지에서는 그 갈래가 정확히 **옛 경합으로 되돌아간다**(표식 없이
+#   접속 로그만 보고 준비로 셈). 표식이 없으면 명확한 red(준비) 로 두는 편이 사실을 더 말한다.
 #
 # ⚠ 이것은 **대기 정밀화**다. 예산(60초)·판정·재시도 정책은 하나도 바뀌지 않는다.
 #   상한을 넘기면 여전히 red(준비) 다.
 PG_INIT_DONE_MARK='PostgreSQL init process complete; ready for start up'
-PG_ACCEPT_MARK='database system is ready to accept connections'
 
 pg_real_server_started() { # $1=컨테이너 → 0=진짜 서버가 떴다 / 1=아직
   local logs
   logs="$(docker logs "$1" 2>&1)" || return 1
   case "$logs" in
     *"$PG_INIT_DONE_MARK"*) return 0 ;;
-  esac
-  # 초기화 흔적이 하나도 없는데 접속 준비 로그가 있다 = 이미 초기화된 PGDATA(임시 서버 없음)
-  case "$logs" in
-    *"$PG_ACCEPT_MARK"*)
-      printf '%s' "$logs" | grep -qE 'initdb|Success\. You can now start the database server' && return 1
-      return 0 ;;
   esac
   return 1
 }
@@ -140,7 +135,7 @@ pg_wait_ready() { # $1=컨테이너 $2=상한(초) → 0=준비 / 1=상한 초�
 }
 
 pg_ready_detail() { # $1=컨테이너 — 상한 초과 시 사유 문자열
-  local c="$1" mark='초기화 완료 표식 없음(임시 서버 단계에서 멈춤)'
+  local c="$1" mark='초기화 완료 표식 없음(initdb 미완 또는 서버 미기동)'
   pg_real_server_started "$c" && mark='초기화 완료 표식은 있으나 pg_isready 가 응답하지 않음'
   printf '컨테이너 상태=%s · %s · 호스트 %s · 마지막 로그: %s' \
     "$(docker inspect -f '{{.State.Status}}' "$c" 2>/dev/null || echo '(조회 실패)')" \

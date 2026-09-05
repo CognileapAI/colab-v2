@@ -102,7 +102,9 @@ expect ready "rls-effect: 도커 부재는 skip 이 아니라 red" \
 # 어떻게: postgres 이미지를 그대로 쓰되 엔트리포인트만 `sleep` 으로 바꾼 이미지를 만든다.
 #   서버가 뜨지 않으니 초기화 완료 표식도 · pg_isready 응답도 영영 없다 → 상한에서 red(준비).
 #   상한은 `COLAB_PG_READY_TIMEOUT` 로 5초로 줄여 선언한다(예산 정책이 아니라 이 케이스의 상한).
+# 파생 이미지는 이 회차 것이다 — 호스트에 남기지 않는다(끝나면 트랩이 지운다).
 NEVER_READY_IMAGE="colab-v2/gatepg-neverready:selftest"
+trap 'docker rmi -f "$NEVER_READY_IMAGE" >/dev/null 2>&1; rm -rf "$TMP"' EXIT
 if printf 'FROM %s\nENTRYPOINT ["sleep"]\nCMD ["120"]\n' "${COLAB_PG_IMAGE:-postgres:16-alpine}" \
      | docker build -q -t "$NEVER_READY_IMAGE" - >/dev/null 2>&1; then
   expect ready "rls-effect: 실서버가 끝내 안 뜨면 상한에서 red(준비) (임시 서버 오인 방지의 fail-closed)" \

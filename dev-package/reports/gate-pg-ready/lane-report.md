@@ -111,7 +111,7 @@ EXIT=78
 
 ## §6 §9 초안 (번호 미부여)
 
-> | 〈N〉 | **게이트 준비 대기가 initdb 의 임시 서버를 「준비됐다」로 세어 60초 예산 중 1초 만에 red(준비) 오탐을 냈다** | **집행 (2026-09-05 · 발견 = `rls-effect-selftest` 단독 3연속 red(준비) · 근거 `dev-package/reports/gate-pg-ready/lane-report.md` · 게이트 도구 5파일 · 계약 0 · 마이그레이션 0 · staging 접촉 0 · 배포 0).** **㉮ 실물** — `postgres:16-alpine` 엔트리포인트는 initdb 동안 **임시 서버**를 띄웠다 내린 뒤 실서버를 띄운다. 실측 시각선 = 임시 ready `.077` → shutting down `.176` → `PostgreSQL init process complete` `.274` → 실서버 ready `.292` (`gates/fixtures/pg-ready/temp-server-probe.sh`). 종전 대기 루프는 **첫 `pg_isready` 성공**(= 임시 서버)에서 break 했고, 뒤이은 확인 `pg_isready` 가 그 **≈215ms 공백**에 떨어졌다. **㉯ 그래서 무엇이 틀렸나 — 상한이 아니라 뜻이다.** 표식은 `limit=60초|elapsed=1초` 를 함께 찍었다 — 기다리다 못 뜬 것이 아니라 **기다리지 않고 떨어진 것**이다. 셀프테스트는 컨테이너를 동시 4개 띄우므로 공백이 벌어져 단독 실행이 매번 다른 케이스에서 red(준비) 를 냈다. ⛔ 이것은 **검사기의 결함이지 검사 대상의 결함이 아니다** — 같은 회차에 `rls-effect` 본체는 green 이었다. **㉰ 집행 — 준비의 뜻을 실서버로 좁혔다.** `_pg.sh` 에 `pg_wait_ready` 를 세워 **초기화 완료 표식 ＋ 그 뒤 `pg_isready` 성공**을 함께 볼 때만 준비로 센다(이미 초기화된 PGDATA 는 initdb 단계가 없으므로 접속 준비 로그만으로 준비). 세 곳에 흩어져 있던 대기 루프(`pg_start` · `rls-effect.sh` · `db-selftest.sh`)를 그 하나로 모았다 — 두 벌로 두면 한쪽이 언젠가 다른 말을 한다. **㉱ ⚠ 대기 정밀화이지 범위 축소가 아니다** — 예산 60초 그대로 · 게이트 재시도 없음 · 병렬도 축소 없음 · 판정 기준·케이스 감소 0 · `COLAB_PG_FORCE_UNAVAILABLE` 주입 경로 그대로 · 표식 필드 모양 그대로. **상한을 넘기면 여전히 red(준비) 다.** **㉲ fail-closed 증명 1건 신설**(`rls-effect-selftest` 18 → 19건) — 엔트리포인트를 `sleep` 으로 바꾼 파생 이미지로 실서버를 영영 안 띄우고 상한 5초를 선언 → `limit=5초|elapsed=6초|detail=… 초기화 완료 표식 없음(임시 서버 단계에서 멈춤)` 로 red(준비). 기존 픽스처 감소 0. **㉳ 실측** — `rls-effect-selftest` 3연속 green(19건) · `db-selftest` green · `rls-effect` green · 집합 `selftest` = green 16 / **red(판정) 0** / red(준비) 2. red(준비) 2 = `frontend-typecheck-selftest`·`frontend-test-selftest`(이 체크아웃에 `frontend/node_modules` 부재 · 이 회차의 변경과 접점 없음) — ⛔ green 으로 접지 않는다. **㉴ ⚠ `[미확인]`** — 고치기 전 baseline 1회는 **green 이 나왔다**(타이밍 의존). 고친 뒤 3연속 green 이 오탐 **소멸**을 증명하는지는 시행 3회로 확정되지 않는다 — 확정 근거는 실행 횟수가 아니라 **§2 의 시각선과 ㉲ 의 fail-closed 케이스**다. |
+> | 〈N〉 | **게이트 준비 대기가 initdb 의 임시 서버를 「준비됐다」로 세어 60초 예산 중 1초 만에 red(준비) 오탐을 냈다** | **집행 (2026-09-05 · 발견 = `rls-effect-selftest` 단독 3연속 red(준비) · 근거 `dev-package/reports/gate-pg-ready/lane-report.md` · 게이트 도구 5파일 · 계약 0 · 마이그레이션 0 · staging 접촉 0 · 배포 0).** **㉮ 실물** — `postgres:16-alpine` 엔트리포인트는 initdb 동안 **임시 서버**를 띄웠다 내린 뒤 실서버를 띄운다. 실측 시각선 = 임시 ready `.077` → shutting down `.176` → `PostgreSQL init process complete` `.274` → 실서버 ready `.292` (`gates/fixtures/pg-ready/temp-server-probe.sh`). 종전 대기 루프는 **첫 `pg_isready` 성공**(= 임시 서버)에서 break 했고, 뒤이은 확인 `pg_isready` 가 그 **≈215ms 공백**에 떨어졌다. **㉯ 그래서 무엇이 틀렸나 — 상한이 아니라 뜻이다.** 표식은 `limit=60초|elapsed=1초` 를 함께 찍었다 — 기다리다 못 뜬 것이 아니라 **기다리지 않고 떨어진 것**이다. 셀프테스트는 컨테이너를 동시 4개 띄우므로 공백이 벌어져 단독 실행이 매번 다른 케이스에서 red(준비) 를 냈다. ⛔ 이것은 **검사기의 결함이지 검사 대상의 결함이 아니다** — 같은 회차에 `rls-effect` 본체는 green 이었다. **㉰ 집행 — 준비의 뜻을 실서버로 좁혔다.** `_pg.sh` 에 `pg_wait_ready` 를 세워 **초기화 완료 표식 ＋ 그 뒤 `pg_isready` 성공**을 함께 볼 때만 준비로 센다(이미 초기화된 PGDATA 는 initdb 단계가 없으므로 접속 준비 로그만으로 준비). 세 곳에 흩어져 있던 대기 루프(`pg_start` · `rls-effect.sh` · `db-selftest.sh`)를 그 하나로 모았다 — 두 벌로 두면 한쪽이 언젠가 다른 말을 한다. **㉱ ⚠ 대기 정밀화이지 범위 축소가 아니다** — 예산 60초 그대로 · 게이트 재시도 없음 · 병렬도 축소 없음 · 판정 기준·케이스 감소 0 · `COLAB_PG_FORCE_UNAVAILABLE` 주입 경로 그대로 · 표식 필드 모양 그대로. **상한을 넘기면 여전히 red(준비) 다.** **㉲ fail-closed 증명 1건 신설**(`rls-effect-selftest` 18 → 19건) — 엔트리포인트를 `sleep` 으로 바꾼 파생 이미지로 실서버를 영영 안 띄우고 상한 5초를 선언 → `limit=5초|elapsed=6초|detail=… 초기화 완료 표식 없음(임시 서버 단계에서 멈춤)` 로 red(준비). 기존 픽스처 감소 0. **㉳ 실측** — `rls-effect-selftest` 3연속 green(19건) · `db-selftest` green · `rls-effect` green · 집합 `selftest` = green 16 / **red(판정) 0** / red(준비) 2. red(준비) 2 = `frontend-typecheck-selftest`·`frontend-test-selftest`(이 체크아웃에 `frontend/node_modules` 부재 · 이 회차의 변경과 접점 없음) — ⛔ green 으로 접지 않는다. **㉴ ⚠ `[미확인]` — 이 레인은 결함을 직접 재현하지 못했다.** 고치기 전 baseline 1회는 **green 이 나왔다**(타이밍 의존). 인과의 근거는 이 레인의 실행이 아니라 **§2 프로브 시각선 ＋ 오케스트레이터의 3연속 관측**이다 — ⛔ 「고친 뒤 green」을 인과의 근거로 세지 않는다. 고친 뒤 green 이 오탐 **소멸**을 증명하는지는 시행 횟수로 확정되지 않는다 — 확정 근거는 실행 횟수가 아니라 **§2 의 시각선과 ㉲ 의 fail-closed 케이스**다. |
 
 ## §7 `[미확인]`
 
@@ -122,3 +122,40 @@ EXIT=78
 - ⚠ `service-tests-core-api` · `schema-diff` · `rls-coverage` · `autometa-loss-selftest` 등 `pg_start` 를 쓰는 다른 게이트는 이 회차에 **돌리지 않았다**. 대기 경로가 하나로 모였으므로 회귀 위험은 같은 자리지만, 실측은 하지 않았다.
 - ⚠ `frontend-typecheck-selftest` · `frontend-test-selftest` 는 **판정되지 않았다**(node_modules 부재). 이 레인이 그것을 green 으로 세지 않았다.
 - ⚠ fail-closed 픽스처는 `docker build` 를 쓴다 — build 를 못 하는 CI 러너에서는 그 케이스가 `FAILURES` 로 red 가 된다(설계 그대로). CI 에서 실제로 도는지는 `[미확인]`.
+
+---
+
+## §8 수용 검토 반영 (2026-09-05)
+
+오케스트레이터 수용 검토의 지적 4건을 그대로 집행했다. 판정 범위·예산은 여전히 불변이다.
+
+| # | 지적 | 집행 |
+|---|---|---|
+| ⑴ | `pg_real_server_started` 의 **ⓑ 갈래**(「접속 준비 로그만 있고 initdb 흔적 없음 = 이미 초기화된 PGDATA」) 삭제 | **삭제했다.** 준비 = **초기화 완료 표식 하나**, 그 뒤 `pg_isready`. 사유 = ⓐ 이 레포에서 닿지 않는 갈래다(PGDATA 가 tmpfs → 언제나 initdb) ⓑ 남의 이미지에서는 그 갈래가 **정확히 옛 경합으로 되돌아간다**(표식 없이 접속 로그만 보고 준비로 셈). 표식이 없으면 명확한 red(준비) 로 두는 편이 사실을 더 말한다. `PG_ACCEPT_MARK` 상수도 함께 뺐다(쓰는 자리가 없어졌다) |
+| ⑵ | `pg_ready_detail` 의 「(임시 서버 단계에서 멈춤)」 문구가 **귀속을 틀리게 한다** | 「**(initdb 미완 또는 서버 미기동)**」 으로 바꿨다. `sleep` 픽스처에는 서버가 **아예 없다** — 옛 문구는 임시 서버 단계를 지났다고 말해 사실과 다르다 |
+| ⑶ | `db-selftest.sh` 의 `APPC` 대기 `\|\| true` | **`pg_readiness_report` ＋ `exit 78`** 로 바꿨다. 그냥 넘어가면 뒤따르는 `expect green "schema-diff(e2e)…"` 가 **준비 실패를 판정 red 로 잘못 적는다** — 「검사기가 못 돌았다」가 「대상이 틀렸다」로 둔갑하는 자리다. 표식 모양은 다른 곳과 같은 `pg_readiness_report` 를 쓴다 |
+| ⑷ | 파생 이미지가 호스트에 남는다 | `rls-effect-selftest` 의 EXIT 트랩에 `docker rmi -f "$NEVER_READY_IMAGE"` 를 더했다(기존 `rm -rf "$TMP"` 유지) |
+
+### 반영 뒤 실측 (축자)
+
+```
+[rls-effect-selftest 1회] [selftest] 케이스 19 건 (동시 4)
+                          rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다.
+                          EXIT=0
+[rls-effect-selftest 2회] [selftest] 케이스 19 건 (동시 4)
+                          rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다.
+                          EXIT=0
+[db-selftest]  db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+               EXIT=0
+[rls-effect]   rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가.
+               EXIT=0
+[rls-coverage] rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.
+               EXIT=0
+[schema-diff]  schema-diff green — 두 체인 각각 선언 = 적용.
+               EXIT=0
+```
+
+- fail-closed 케이스는 문구 교체 뒤에도 그대로 red(준비) 다(축자):
+  `::gate-readiness-failure::gate=rls-effect|waited_for=postgres 접속 준비(실서버 · pg_isready · 컨테이너 b3_rlseffect_2412848_7727)|limit=5초|elapsed=8초|detail=컨테이너 상태=running · 초기화 완료 표식 없음(initdb 미완 또는 서버 미기동) · 호스트 load average: 6.80, 3.76, 2.94 · 마지막 로그:`
+- 파생 이미지 잔존 확인: 셀프테스트 뒤 `docker images | grep gatepg-neverready` → **출력 0행**(트랩이 지웠다).
+- ⚠ `[미확인]` 추가 — ⑶ 의 새 `exit 78` 경로는 **실행으로 밟아 보지 않았다**(적용 DB 컨테이너가 이번 회차에 전부 정상 기동). 코드 경로로만 세웠다.
