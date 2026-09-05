@@ -29,6 +29,8 @@ FAILURES=()
 # 적지 않은 채 78 을 「기대한 red」로 셌다 (2026-09-03 코드리뷰 #6).
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"   # pg_wait_ready — 실서버 대기 정밀화를 공유한다
 expect() { # $1=기대(green|red|ready|미선언) $2=라벨 $3.. = 명령
   local want="$1" label="$2"; shift 2
   local out rc got
@@ -299,7 +301,8 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
     -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust \
     "${COLAB_PG_IMAGE:-postgres:16-alpine}" >/dev/null 2>&1
   trap 'docker rm -f "$APPC" >/dev/null 2>&1; rm -rf "$TMP"' EXIT
-  for i in $(seq 1 60); do docker exec "$APPC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
+  # 같은 대기 정밀화를 여기도 쓴다 — initdb 임시 서버를 준비로 세면 뒤 질의가 공백에 떨어진다.
+  pg_wait_ready "$APPC" "${COLAB_PG_READY_TIMEOUT:-60}" || true
   APPIP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$APPC")"
 
   # 체인마다 **다른 DB** 에 **그 체인의 선언만** 적용한다 — 이게 실제 배치 형태다 (§3-3).

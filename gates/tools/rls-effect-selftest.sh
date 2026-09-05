@@ -96,6 +96,21 @@ expect red "rls-effect: 적용되지 않는 스키마" \
 expect ready "rls-effect: 도커 부재는 skip 이 아니라 red" \
   env COLAB_PG_FORCE_UNAVAILABLE=1 "$GATE"
 
+# ── 대기 정밀화의 fail-closed 증명 ──────────────────────────────────────────
+# 무엇을 재나: 「준비됐다」를 **실서버가 접속을 받는 상태**로 좁힌 뒤에도, 그 상태가
+#   상한 안에 오지 않으면 여전히 red(준비) 인가. 즉 정밀화가 **관대해지지 않았는가.**
+# 어떻게: postgres 이미지를 그대로 쓰되 엔트리포인트만 `sleep` 으로 바꾼 이미지를 만든다.
+#   서버가 뜨지 않으니 초기화 완료 표식도 · pg_isready 응답도 영영 없다 → 상한에서 red(준비).
+#   상한은 `COLAB_PG_READY_TIMEOUT` 로 5초로 줄여 선언한다(예산 정책이 아니라 이 케이스의 상한).
+NEVER_READY_IMAGE="colab-v2/gatepg-neverready:selftest"
+if printf 'FROM %s\nENTRYPOINT ["sleep"]\nCMD ["120"]\n' "${COLAB_PG_IMAGE:-postgres:16-alpine}" \
+     | docker build -q -t "$NEVER_READY_IMAGE" - >/dev/null 2>&1; then
+  expect ready "rls-effect: 실서버가 끝내 안 뜨면 상한에서 red(준비) (임시 서버 오인 방지의 fail-closed)" \
+    env COLAB_PG_IMAGE="$NEVER_READY_IMAGE" COLAB_PG_READY_TIMEOUT=5 "$GATE"
+else
+  FAILURES+=("rls-effect: 대기 fail-closed 픽스처 이미지를 만들지 못했다 — 증명하지 못한 것을 통과로 세지 않는다")
+fi
+
 pool_join
 
 if [ "${#FAILURES[@]}" -gt 0 ]; then

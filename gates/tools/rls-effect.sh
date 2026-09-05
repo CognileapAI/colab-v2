@@ -89,11 +89,11 @@ RUNERR="$(docker run -d --rm --name "$PGC" \
   -e POSTGRES_PASSWORD=gate -e POSTGRES_HOST_AUTH_METHOD=trust \
   "$PG_IMAGE" 2>&1 >/dev/null)" || { PGC=""; ready_red "일회용 postgres 컨테이너 생성(docker run)" \
     "대기 없음" "$(( $(pg_now) - T0 ))초" "도커가 낸 말: ${RUNERR:-(출력 없음)}"; }
+# 대기 판정은 `_pg.sh` 의 `pg_wait_ready` 하나가 쥔다 — initdb 의 **임시 서버**를 준비로 오인하지 않는다.
 READY_LIMIT="${COLAB_PG_READY_TIMEOUT:-60}"; T1="$(pg_now)"
-for _ in $(seq 1 "$READY_LIMIT"); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 \
-  || ready_red "postgres 접속 준비(pg_isready · 컨테이너 $PGC)" "${READY_LIMIT}초" "$(( $(pg_now) - T1 ))초" \
-       "컨테이너 상태=$(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 $(uptime | sed 's/.*load average/load average/') · 마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-200)"
+pg_wait_ready "$PGC" "$READY_LIMIT" \
+  || ready_red "postgres 접속 준비(실서버 · pg_isready · 컨테이너 $PGC)" "${READY_LIMIT}초" "$(( $(pg_now) - T1 ))초" \
+       "$(pg_ready_detail "$PGC")"
 
 su_psql()  { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U postgres  -d "$DB" "$@"; }
 own_psql() { docker exec -i "$PGC" psql -v ON_ERROR_STOP=1 -U "$OWNER"  -d "$DB" "$@"; }

@@ -95,6 +95,60 @@ pg_slot_release() {
   PG_SLOT_FD=""
 }
 
+# ── 「준비됐다」의 뜻을 **실서버**로 좁힌다 ─────────────────────────────────
+# 왜 있는가: `postgres:16-alpine` 의 엔트리포인트는 initdb 동안 **임시 서버**를 띄운다.
+#   그 임시 서버도 「database system is ready to accept connections」를 찍고 `pg_isready` 에
+#   응답한다. 곧바로 그것을 내리고(≈0.1초 뒤) **진짜 서버**를 띄운다. 종전 대기 루프는
+#   임시 서버에서 break 했고, 뒤이은 확인 `pg_isready` 가 그 ~200ms 공백에 떨어져
+#   60초 예산 중 **1초** 만에 red(준비) 를 냈다 — 실제로는 DB 가 곧 떴는데도.
+#   (selftest 는 컨테이너 4개를 동시에 띄우므로 공백이 더 벌어진다.)
+#
+# 그래서 준비의 뜻을 **진짜 서버가 접속을 받는 상태**로 좁힌다:
+#   ⑴ 로그에 엔트리포인트의 초기화 완료 표식이 있고 ⑵ 그 뒤 `pg_isready` 가 성공한다.
+#   PGDATA 가 이미 초기화된 경우(여기서는 tmpfs 라 발생하지 않지만)는 initdb 단계 자체가
+#   없으므로 임시 서버도 없다 — 초기화 표식 없이 접속 준비 로그만 있으면 그대로 준비로 센다.
+#
+# ⚠ 이것은 **대기 정밀화**다. 예산(60초)·판정·재시도 정책은 하나도 바뀌지 않는다.
+#   상한을 넘기면 여전히 red(준비) 다.
+PG_INIT_DONE_MARK='PostgreSQL init process complete; ready for start up'
+PG_ACCEPT_MARK='database system is ready to accept connections'
+
+pg_real_server_started() { # $1=컨테이너 → 0=진짜 서버가 떴다 / 1=아직
+  local logs
+  logs="$(docker logs "$1" 2>&1)" || return 1
+  case "$logs" in
+    *"$PG_INIT_DONE_MARK"*) return 0 ;;
+  esac
+  # 초기화 흔적이 하나도 없는데 접속 준비 로그가 있다 = 이미 초기화된 PGDATA(임시 서버 없음)
+  case "$logs" in
+    *"$PG_ACCEPT_MARK"*)
+      printf '%s' "$logs" | grep -qE 'initdb|Success\. You can now start the database server' && return 1
+      return 0 ;;
+  esac
+  return 1
+}
+
+pg_wait_ready() { # $1=컨테이너 $2=상한(초) → 0=준비 / 1=상한 초과
+  local c="$1" limit="$2" i
+  for (( i = 0; i < limit; i++ )); do
+    if pg_real_server_started "$c" && docker exec "$c" pg_isready -U postgres -q >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+pg_ready_detail() { # $1=컨테이너 — 상한 초과 시 사유 문자열
+  local c="$1" mark='초기화 완료 표식 없음(임시 서버 단계에서 멈춤)'
+  pg_real_server_started "$c" && mark='초기화 완료 표식은 있으나 pg_isready 가 응답하지 않음'
+  printf '컨테이너 상태=%s · %s · 호스트 %s · 마지막 로그: %s' \
+    "$(docker inspect -f '{{.State.Status}}' "$c" 2>/dev/null || echo '(조회 실패)')" \
+    "$mark" \
+    "$(uptime | sed 's/.*load average/load average/')" \
+    "$(docker logs --tail 3 "$c" 2>&1 | tr '\n' ' ' | cut -c1-200)"
+}
+
 pg_cleanup() {
   [ -n "$PGC" ] && docker rm -f "$PGC" >/dev/null 2>&1
   PGC=""
@@ -136,14 +190,10 @@ pg_start() {
         "$(( $(pg_now) - t0 ))초" "도커가 낸 말: ${runerr:-(출력 없음)}"
       PGC=""; return "$PG_READINESS_EXIT"; }
 
-  local i ready_limit="${COLAB_PG_READY_TIMEOUT:-60}" t1; t1="$(pg_now)"
-  for i in $(seq 1 "$ready_limit"); do
-    docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && return 0
-    sleep 1
-  done
-  pg_readiness_report "$gate" "postgres 접속 준비(pg_isready · 컨테이너 $PGC)" \
-    "${ready_limit}초" "$(( $(pg_now) - t1 ))초" \
-    "컨테이너 상태=$(docker inspect -f '{{.State.Status}}' "$PGC" 2>/dev/null || echo '(조회 실패)') · 호스트 $(uptime | sed 's/.*load average/load average/') · 마지막 로그: $(docker logs --tail 3 "$PGC" 2>&1 | tr '\n' ' ' | cut -c1-200)"
+  local ready_limit="${COLAB_PG_READY_TIMEOUT:-60}" t1; t1="$(pg_now)"
+  pg_wait_ready "$PGC" "$ready_limit" && return 0
+  pg_readiness_report "$gate" "postgres 접속 준비(실서버 · pg_isready · 컨테이너 $PGC)" \
+    "${ready_limit}초" "$(( $(pg_now) - t1 ))초" "$(pg_ready_detail "$PGC")"
   pg_cleanup
   return "$PG_READINESS_EXIT"
 }
