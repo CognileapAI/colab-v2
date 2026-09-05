@@ -7,6 +7,10 @@
 //    R-B 가 그 축을 `분류` 로 갈아치우므로, 그 사이 사람이 고친 값은 이관 대조를 흐린다.
 import { useState } from 'react';
 import {
+  GRANULARITIES,
+  GRANULARITY_LABEL,
+  INTERVAL_LABEL,
+  INTERVAL_UNITS,
   PERIOD_LABEL,
   TEXT_FIELDS,
   draftError,
@@ -82,6 +86,21 @@ export function DatasetEditForm(props: {
         <div className="de-row" data-testid="edit-period">
           <span className="de-k">{PERIOD_LABEL}</span>
           <span className="de-v de-period">
+            {/* ⭑ ⟨19차 해제 · PRD-18⟩ 최소 단위는 **기간 입력 앞**에 선다.
+                `''`(미지정)이 기본이고 그때 표기는 종전 그대로다 — 재선택을 강제하지 않는다. */}
+            <select
+              aria-label={GRANULARITY_LABEL}
+              data-testid="edit-period-granularity"
+              value={draft.periodGranularity}
+              onChange={(e) => set('periodGranularity', e.target.value)}
+            >
+              <option value="">최소 단위 미지정</option>
+              {GRANULARITIES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
             <input
               type="date"
               aria-label="기간 시작"
@@ -97,6 +116,34 @@ export function DatasetEditForm(props: {
               value={draft.periodEnd}
               onChange={(e) => set('periodEnd', e.target.value)}
             />
+          </span>
+        </div>
+        {/* ⭑ ⟨19차 해제 · PRD-17⟩ 관측 간격도 **두 칸이 한 값**이다 — 기간과 같은 모양으로 선다.
+            ⛔ 화면이 반쪽을 막지 않는다 — 400 의 문구는 서버 봉투 하나가 갖는다. */}
+        <div className="de-row" data-testid="edit-interval">
+          <span className="de-k">{INTERVAL_LABEL}</span>
+          <span className="de-v de-period">
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label="관측 간격 수치"
+              data-testid="edit-interval-value"
+              value={draft.intervalValue}
+              onChange={(e) => set('intervalValue', e.target.value)}
+            />
+            <select
+              aria-label="관측 간격 단위"
+              data-testid="edit-interval-unit"
+              value={draft.intervalUnit}
+              onChange={(e) => set('intervalUnit', e.target.value)}
+            >
+              <option value="">단위</option>
+              {INTERVAL_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
           </span>
         </div>
       </div>

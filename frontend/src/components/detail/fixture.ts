@@ -73,6 +73,8 @@ function fromCatalogRowOnly(row: {
       variables: [],
       crs: null,
       period: null,
+      // ⭑ ⟨19차 해제 · PRD-17⟩ **기존 행은 전부 `null`** 이고 화면은 「관측 간격 미기재」다.
+      observationInterval: null,
       grid: null,
       format: null,
       fileExtension: null,
@@ -106,7 +108,11 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     basicInfo: {
       variables: ['시간별 격자 강수량 (tp, mm)'],
       crs: 'EPSG:5179',
-      period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
+      // ⭑ ⟨19차 해제 · PRD-18⟩ 목업 원장은 최소 단위를 말하지 않는다 — **미지정(`null`)**이고
+      // 그때 표기는 종전 그대로다. 지어내지 않는다.
+      period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: null },
+      // ⭑ ⟨19차 해제 · PRD-17⟩ 목업이 관측 간격을 담고 있지 않다 — 「미기재」가 정상이다.
+      observationInterval: null,
       grid: '0.05° (~5km)',
       // 목업 원장이 담고 있던 `nc` 는 **판별값 자리가 아니라 확장자**였다 (PRD-21).
       // 판별 결과는 파이프라인이 채우는 값이라 목업에서는 모른다 — 지어내지 않고 null 이다.

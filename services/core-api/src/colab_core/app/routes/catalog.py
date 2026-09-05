@@ -506,6 +506,24 @@ def _account_ref(account_id: str | None, name: str | None) -> dict | None:
     return None if account_id is None or name is None else {"accountId": account_id, "name": name}
 
 
+def _observation_interval(core) -> dict | None:
+    """관측 간격 두 칸 → 계약 `ObservationInterval` 하나 (PRD-17 · `M-6`).
+
+    **없으면 `null` 이고 그것이 전 행의 상태다** — 빈 객체를 내려보내지 않는다. 화면은
+    `null` 자리에서 「관측 간격 미기재」를 보인다(재선택을 강제하지 않는다).
+
+    ⚠ `numeric` 은 드라이버가 `Decimal` 로 올린다. JSON 은 `Decimal` 을 모르므로
+    **여기서 숫자로 내린다** — 안 하면 직렬화가 500 이다. 정수로 떨어지는 값은 정수로
+    내린다(`10.0분` 이 아니라 `10분` 이어야 화면이 조립한 글자가 목업과 같다).
+    """
+    value = core.observation_interval_value
+    unit = core.observation_interval_unit
+    if value is None or unit is None:
+        return None
+    number = float(value)
+    return {"value": int(number) if number.is_integer() else number, "unit": unit}
+
+
 def _project_period(start, end) -> dict:
     """프로젝트 기간은 **연·월까지**이고 진행 중이면 종료가 비어 있다 (Policy_프로젝트 §5)."""
     def month(value):
@@ -519,14 +537,31 @@ def _project_period(start, end) -> dict:
 #: ⭑ **2026-09-02 · `LV-1` · `〈194〉`** — `processingLevel` 을 뺐다. 가공 단계는
 #: 언제나 계보에서 파생하고 **사람이 고르는 칸이 아니다**(「예외 없음」). 실어 보내면
 #: 아래 `unknown` 판정이 400 으로 드러낸다 — 조용히 무시하지 않는다.
+#: ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 이 들어왔다.** 계약이 열쇠를 열고
+#: 서버가 그것을 받는 목록이 이 줄이다 — **한 회차에 함께 선다**(§5-㉰-4 「집행 없는
+#: 신설」 금지). 계약만 열고 이 줄을 다음 회차로 미루면 열쇠는 있는데 400 이 나온다.
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
-                  "representativeFileId", "variables", "crs", "period")
+                  "representativeFileId", "variables", "crs", "period",
+                  "observationInterval")
 
 #: 주제 4값. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
 #: 계약이 「값 집합은 DB CHECK 4값이 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
 #: 명시했다(`fe-core.yaml DatasetUpdate.topic`). 여기 있는 것은 **그 정본을 코드 층으로
 #: 옮겨 적은 사본**이고, 검사를 안 하면 사용자의 오타가 IntegrityError → 500 이 된다.
 _TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
+
+#: 관측 간격의 단위 6값 (PRD-17 · `M-6`). **정본은 DB CHECK 다**
+#: (`d3_dataset_description.observation_interval_unit`) — `_TOPICS` 와 같은 자리이고
+#: 같은 이유로 여기 사본이 있다: 검사를 안 하면 사용자의 오타가 IntegrityError → **500** 이 된다.
+INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+
+#: 기간의 최소 단위 6값 (PRD-18 · `M-7`). 정본은 `d3_dataset_autometa.period_granularity`
+#: CHECK 다. ⚠ 위 목록과 **값은 같고 뜻이 다르다** — 하나는 「얼마 간격으로 재는가」,
+#: 하나는 「기간을 어느 자리까지 말하는가」다. 한 상수로 합치면 두 뜻이 붙어 버린다.
+PERIOD_GRANULARITIES = ("년", "월", "일", "시", "분", "초")
+
+#: 반쪽 관측 간격의 문구 — **한 자리에만 둔다.** 등록과 수정이 같은 문장을 낸다.
+HALF_INTERVAL_MESSAGE = "관측 간격은 숫자와 단위를 함께 적어 주세요."
 
 #: ⭑ **⟨19차 해제 · PRD-15⟩ 설명이 비었을 때의 문구 — 한 자리에만 둔다.**
 #: 등록(`createDataset`)과 수정(`updateDataset`)이 **같은 문장**을 낸다. 두 벌을 두면
@@ -597,17 +632,52 @@ def validate_human_metadata(changes: dict) -> None:
         #   빠진 열쇠를 `null` 과 같이 다루는 것은 계약보다 **넓은** 쪽이라 문면을 안 깬다.
         # ⚠ **시작은 조건부가 아니다** — 시작 없는 끝은 기간이 아니라 오타다. 기간을 통째로
         #   비우는 뜻은 `period: null` 이고, 그것은 위의 `is not None` 이 먼저 걸러 낸다.
-        if not isinstance(period, dict) or not set(period) <= {"start", "end"} \
+        # ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 열쇠 집합에 들어왔다.** 계약이
+        #   `additionalProperties: false` 로 닫아 둔 자리를 연 것이 이번 회차이고,
+        #   **런타임에 그 집합을 강제하는 것은 이 줄뿐이다.**
+        if not isinstance(period, dict) or not set(period) <= {"start", "end", "granularity"} \
                 or not isinstance(period.get("start"), str) \
                 or not isinstance(period.get("end"), (str, type(None))):
             raise errors.bad_request(
                 "기간은 `start` 문자열을 가진 객체다 — `end` 는 없거나 `null` 이면 무기한이다.")
+        # 최소 단위는 **6값 밖이면 400** 이다 — 안 막으면 CHECK 위반이 500 으로 돌아간다.
+        # 열쇠가 없거나 `null` 인 것은 「단위 미지정」이고 그것이 기존 전 행의 상태다.
+        granularity = period.get("granularity")
+        if granularity is not None and granularity not in PERIOD_GRANULARITIES:
+            raise errors.bad_request("기간의 최소 단위는 정해진 6값 중 하나다.",
+                                     {"allowed": list(PERIOD_GRANULARITIES)})
         # **자유 문자열을 받지 않는다** (`CODE-REVIEW-20260903` #12). 계약이
         # `format: date-time` 이고, 검사 없이 내려가면 `timestamptz` 캐스트가 DB 에서 죽는다.
         for key in ("start", "end"):
             value = period.get(key)
             if isinstance(value, str) and not _is_datetime(value):
                 raise errors.bad_request(f"기간의 `{key}` 는 날짜·시각(ISO 8601)이다.")
+
+    # ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 두 칸이 한 값이다.**
+    #
+    # `null` 은 「비운다」이고 위 `is not None` 이 먼저 걸러 낸다 — **선택 입력**이라
+    # 비운 채 등록해도 성공한다(⛔ 등록 게이트가 아니다).
+    if changes.get("observationInterval") is not None and "observationInterval" in changes:
+        interval = changes["observationInterval"]
+        if not isinstance(interval, dict) or not set(interval) <= {"value", "unit"}:
+            raise errors.bad_request("관측 간격은 `value`·`unit` 두 열쇠를 가진 객체다.")
+        value, unit = interval.get("value"), interval.get("unit")
+        # **반쪽을 만들지 않는다** — 숫자만 오면 400 이다(PRD-17 수용 기준 축자).
+        # DB CHECK 가 뒷문에서 같은 것을 막지만, 그 자리에서 걸리면 IntegrityError → 500 이다.
+        # 400 과 500 은 「누구 잘못인가」가 다르다.
+        if (value is None) != (unit is None):
+            raise errors.bad_request(HALF_INTERVAL_MESSAGE)
+        if value is not None:
+            # `bool` 은 `int` 의 하위형이다 — `True` 를 `1분` 으로 받아들이지 않는다.
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise errors.bad_request("관측 간격의 수치는 숫자다.")
+            if value <= 0:
+                # 0 초 간격·음수 간격은 관측이 아니다. 계약이 `type: number` 까지만 말하므로
+                # 뜻의 판정은 여기다.
+                raise errors.bad_request("관측 간격의 수치는 0보다 크다.")
+            if unit not in INTERVAL_UNITS:
+                raise errors.bad_request("관측 간격의 단위는 정해진 6값 중 하나다.",
+                                         {"allowed": list(INTERVAL_UNITS)})
 
 
 @router.patch("/datasets/{datasetId}", name="updateDataset")
@@ -762,11 +832,19 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         period = None
         if meta is not None and meta.period_start is not None:
             period = {"start": _iso(meta.period_start),
-                      "end": None if meta.period_end is None else _iso(meta.period_end)}
+                      "end": None if meta.period_end is None else _iso(meta.period_end),
+                      # ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위를 함께 내린다.** 저장은 종전대로
+                      # 시각값이고(미결-18 ⓐ) 이 열쇠는 **그 시각값을 어느 자리까지 읽을지**를
+                      # 말한다. `None` 이면 단위 미지정이고 화면은 종전 표기 그대로다.
+                      "granularity": meta.period_granularity}
         basic_info = {
             "variables": [] if meta is None else meta.variables,
             "crs": None if meta is None else meta.crs,
             "period": period,
+            # ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 두 칸.** 사람이 적는 값이라 `meta` 가 아니라
+            # `core`(`d3_dataset_description`) 에서 온다. **둘 다 값이거나 둘 다 없다**
+            # (pair CHECK) — 반쪽이 내려가는 경로가 없다. 표시 문자열은 화면이 조립한다.
+            "observationInterval": _observation_interval(core),
             "grid": None if meta is None else meta.grid,
             # **화면이 쓰는 값은 이쪽이다** (PRD-21) — 조각의 확장자. 점 없는 소문자(`nc`)이고
             # 화면이 `*.nc` 로 조립한다. `None` 이면 파일명이 확장자를 말하지 않는 것이고

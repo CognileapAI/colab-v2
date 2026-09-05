@@ -376,13 +376,16 @@ def list_upload_lineage_suggestions(
 #: 는 `〈138〉`(정본 `VAL-006` 「변수·기간·좌표계는 자유 입력」) 이래 셋을 선언하고 있었는데
 #: 서버는 UPDATE 절반만 세웠다 — 실어 보내면 400 이었다. 계약 변경 0 · 마이그레이션 0
 #: (열은 `d3_dataset_autometa` 에 이미 있다).
+#: ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 을 넣었다.** 계약이 `DatasetCreate` 에
+#: 그 열쇠를 여는 **같은 회차**에 서버가 받는다 — 계약만 열고 이 줄을 미루면 열쇠는 있는데
+#: 「계약에 없는 필드다」 400 이 돌아온다(§5-㉰-4 「집행 없는 신설」 금지).
 _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           "lineageParents", "projectIds",
-                          "variables", "crs", "period"}
+                          "variables", "crs", "period", "observationInterval"}
 
 #: 등록 요청이 실어 오는 **사람이 적는 자유 입력 칸.** 저장은 `updateDataset` 이 쓰는
 #: 그 경로 하나를 그대로 쓴다 (`d3_catalog.update_dataset`).
-_HUMAN_METADATA_FIELDS = ("variables", "crs", "period")
+_HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval")
 
 
 def _extension_of(file_name: str) -> str:
@@ -407,6 +410,14 @@ def _human_metadata(body: dict) -> dict:
     for key in _HUMAN_METADATA_FIELDS:
         value = body.get(key)
         if value is None or value == "" or value == []:
+            continue
+        # ⭑ **⟨19차 해제 · PRD-17⟩ 두 칸이 다 빈 관측 간격은 「안 적었다」다.**
+        # 화면이 폼 기본값으로 `{value: null, unit: null}` 을 실어 보내는 경로가 있고,
+        # 그것을 값으로 세면 위 산문의 「폼 기본값 통과 ≠ 사람이 적었다」가 깨진다.
+        # ⚠ **반쪽은 여기서 안 거른다** — 반쪽은 조용히 버릴 것이 아니라 400 이다
+        # (`validate_human_metadata`). 버리면 사용자는 적었다고 믿고 떠난다.
+        if key == "observationInterval" and isinstance(value, dict) \
+                and value.get("value") is None and value.get("unit") is None:
             continue
         picked[key] = value
     return picked

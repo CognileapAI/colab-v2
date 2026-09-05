@@ -16,6 +16,7 @@ import { LineageStep } from '../lineage/LineageStep';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
+import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { previewNavigation } from '../preview/handoff';
 import { forgetPending, rememberPending } from './pendingStore';
 import {
@@ -89,6 +90,15 @@ export function UploadModal(props: {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [crs, setCrs] = useState('');
+  // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위.** `''` = 미지정이고 그것이 기본이자 정상이다 —
+  // 그때 화면은 종전 날짜 칸 두 개를 쓰고 계약의 `granularity` 는 `null` 로 나간다.
+  const [granularity, setGranularity] = useState('');
+  const [startParts, setStartParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
+  const [endParts, setEndParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
+  // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 두 칸.** 화면은 문자열로 쥐고 보낼 때 숫자로 만든다 —
+  // 입력 중인 `1` 과 `10` 사이를 숫자로 쥐면 지우는 순간 값이 튄다.
+  const [intervalValue, setIntervalValue] = useState('');
+  const [intervalUnit, setIntervalUnit] = useState('');
   const [projects, setProjects] = useState<PickedProject[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
@@ -424,10 +434,30 @@ export function UploadModal(props: {
     // 끝을 비우면 무기한이라는 뜻으로 `null` 을 **명시해서** 보낸다 — 열쇠를 빼지 않는
     // 이유는 계약이 `ProjectPeriod` 와 같은 required-but-nullable 모양이라서다.
     // 시작이 비면 기간 자체를 싣지 않는다 — 시작 없는 끝은 기간이 아니다.
-    if (periodStart) {
+    // ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위를 고르면 조립의 재료가 자리 칸들로 바뀐다.**
+    // 안 골랐으면 종전 날짜 칸 두 개 그대로다 — 기존 경로를 갈아치우지 않는다.
+    const assembled = granularity
+      ? { start: assemble(startParts, granularity), end: assemble(endParts, granularity) }
+      : {
+          start: periodStart ? `${periodStart}T00:00:00Z` : null,
+          end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
+        };
+    if (assembled.start) {
       out.period = {
-        start: `${periodStart}T00:00:00Z`,
-        end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
+        start: assembled.start,
+        end: assembled.end,
+        // `''` 은 「미지정」이고 계약은 그것을 `null` 로 말한다 — 빈 문자열을 보내지 않는다.
+        granularity: granularity || null,
+      };
+    }
+    // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 두 칸이 **다 차야** 싣는다.**
+    // 반쪽이면 아예 안 실어 보내는 것이 아니라 **그대로 보내 서버 400 을 받는다** —
+    // 화면이 조용히 버리면 사용자는 적었다고 믿고 떠난다(문구의 정본은 서버 봉투다).
+    const rawInterval = intervalValue.trim();
+    if (rawInterval || intervalUnit) {
+      out.observationInterval = {
+        value: rawInterval ? Number(rawInterval) : null,
+        unit: intervalUnit || null,
       };
     }
     return out;
@@ -714,6 +744,16 @@ export function UploadModal(props: {
                 onPeriodEnd={setPeriodEnd}
                 crs={crs}
                 onCrs={setCrs}
+                granularity={granularity}
+                onGranularity={setGranularity}
+                startParts={startParts}
+                onStartParts={setStartParts}
+                endParts={endParts}
+                onEndParts={setEndParts}
+                intervalValue={intervalValue}
+                onIntervalValue={setIntervalValue}
+                intervalUnit={intervalUnit}
+                onIntervalUnit={setIntervalUnit}
                 sourceLabel={sourceLabel}
                 onSourceLabel={setSourceLabel}
                 projects={projects}

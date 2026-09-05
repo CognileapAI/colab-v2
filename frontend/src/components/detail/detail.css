@@ -209,3 +209,9 @@
   color: var(--color-primary-600);
   font-weight: 600;
 }
+
+/* ⭑ ⟨19차 해제 · PRD-17⟩ 「관측 간격 미기재」 — 값 아래의 보조 한 줄.
+   값과 같은 굵기로 그리면 「미기재」가 값처럼 읽힌다. */
+.detail-page .infogrid .ig .v .ig-note { display: block; font-size: var(--text-caption); font-weight: 400; color: var(--color-text-muted); margin-top: 2px; }
+/* 수정 폼의 관측 간격·최소 단위 칸 — 기간과 같은 모양이다(두 칸이 한 값) */
+.detail-page .dt-edit .de-period select { min-width: 0; }

@@ -326,3 +326,14 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .thumbrow .th-n { font-size: 12px; color: var(--muted, #6b7280); }
 /* 파일 선택기는 **버튼 클릭으로만** 열린다 — 칸 자체는 화면에 두지 않는다 */
 .thumbrow .th-in { display: none; }
+
+/* ⭑ ⟨19차 해제 · PRD-17·18⟩ 관측 간격 한 칸 ＋ 기간의 자리 칸들.
+   토큰만 쓴다 — 색·간격을 이 파일이 새로 지어내지 않는다. */
+.up-body .pair .sel { flex: none; }
+.up-body .partrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.up-body .partrow .pr-side { color: var(--up-muted); flex: none; min-width: 4.5em; }
+.up-body .partrow .pr-cell { display: inline-flex; align-items: center; gap: 2px; }
+.up-body .partrow .pr-in { width: auto; min-width: 0; text-align: right; }
+.up-body .partrow .pr-unit { color: var(--up-muted); }
+/* 등록 미리보기 한 줄 — 사람이 적은 값이 상세에서 어떻게 보일지를 등록 전에 말한다 */
+.up-body .regprev { color: var(--up-muted); font-variant-numeric: tabular-nums; margin: 4px 0 0; }

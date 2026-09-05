@@ -205,15 +205,21 @@ describe('§2 WU-A3 — 부분 수정: 보내지 않은 열쇠는 안 건드린�
 // ── 수용 기준 ④ 주제는 읽기 전용 · R-B 필드는 그리지 않는다 ───────────────────
 
 describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-B 필드 없음)', () => {
-  it('폼의 입력 칸은 이름·설명·원천 표기·좌표계·기간(시작·끝) **여섯 개**다', async () => {
+  // ⭑ **⟨19차 해제 · WU-A6 · PRD-17⟩ 여섯 → 일곱.** 관측 간격의 **수치 칸**이 늘었다
+  //   (단위는 셀렉트라 `textbox` 가 아니다). 골격 산문이 예고한 「표에 줄을 더한다」의
+  //   실물이고, **화면 코드를 다시 짜지 않았다**는 사실이 여기서 유지된다.
+  //   ⛔ 이 수를 「대충 늘어난 만큼」으로 고치지 않는다 — 아래 열쇠 목록이 그 수의 근거다.
+  it('폼의 입력 칸은 이름·설명·원천 표기·좌표계·기간(시작·끝)·관측 간격 **일곱 개**다', async () => {
     const form = await openForm();
     const inputs = within(form).getAllByRole('textbox');
     const dates = form.querySelectorAll('input[type="date"]');
-    expect(inputs.length + dates.length).toBe(6);
+    expect(inputs.length + dates.length).toBe(7);
     for (const id of ['edit-name', 'edit-summary', 'edit-sourceLabel', 'edit-crs',
-                      'edit-period-start', 'edit-period-end']) {
+                      'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }
+    // 셀렉트는 **둘**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17).
+    expect(form.querySelectorAll('select')).toHaveLength(2);
   });
 
   it('`주제` 는 상세에 **표시되지만** 편집 칸이 없다', async () => {
@@ -227,7 +233,9 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
 
   it('R-B 가 더할 칸을 미리 그리지 않는다', async () => {
     const form = await openForm();
-    for (const label of ['분류', '유형', '가공 단계', '공개 범위', '관측 간격', '변수']) {
+    // ⭑ **⟨19차 해제 · WU-A6⟩ `관측 간격` 이 이 목록에서 빠졌다** — 더 이상 「R-B 가 더할
+    //   칸」이 아니라 **이 회차가 세운 칸**이다(PRD-17). 나머지 다섯은 그대로 R-B 몫이다.
+    for (const label of ['분류', '유형', '가공 단계', '공개 범위', '변수']) {
       expect(within(form).queryByText(label)).toBeNull();
     }
   });
@@ -391,7 +399,11 @@ describe('§2 WU-A3 — 골격은 필드 표 하나로 늘어난다', () => {
     expect(next.summary).toBe('S');
     expect(next.basicInfo!.sourceLabel).toBe('L');
     expect(next.basicInfo!.crs).toBe('C');
-    expect(next.basicInfo!.period).toEqual({ start: '2024-01-01T00:00:00Z', end: null });
+    // ⭑ ⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 **한 값**으로 함께 조립된다.
+    // 픽스처가 단위를 안 골랐으므로 `null`(미지정)이고 표기는 종전 그대로다.
+    expect(next.basicInfo!.period).toEqual({
+      start: '2024-01-01T00:00:00Z', end: null, granularity: null,
+    });
     // 건드리지 않은 값은 그대로다
     expect(next.topic).toBe(BASE.topic);
     expect(next.processingLevel).toBe(BASE.processingLevel);

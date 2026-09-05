@@ -85,8 +85,12 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # ⭑ **⟨19차 해제 · PRD-21⟩ `fileExtension` 이 늘었다.** 화면의 칸 수는 아홉 그대로다 —
     # 포맷 칸이 보이는 값이 판별 문자열에서 확장자로 바뀌었고, `format` 은 내부 판별값으로
     # 남아 확장자를 못 뽑은 행의 **퇴행 표시**를 맡는다.
-    assert set(info) == {"variables", "crs", "period", "grid", "format", "fileExtension",
-                         "files", "sourceLabel", "owner", "uploader"}
+    # ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 이 늘었다.** 화면의 칸 수는 **아홉
+    # 그대로**다 — 관측 간격은 자기 칸을 얻지 않고 **기간 뒤 괄호**로 붙는다(PRD-35).
+    # 열쇠가 는 것과 칸이 는 것은 다르다.
+    assert set(info) == {"variables", "crs", "period", "observationInterval", "grid",
+                         "format", "fileExtension", "files", "sourceLabel",
+                         "owner", "uploader"}
     assert info["variables"] == ["강우량"]
     assert info["crs"] == "EPSG:5179"
     assert info["format"] == "CSV"
@@ -94,6 +98,8 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # 으로 퇴행한다.** 「모른다」를 빈 문자열로 적지 않는다.
     assert info["fileExtension"] is None
     assert info["period"] is None and info["grid"] is None
+    # 시드 행은 관측 간격을 안 적었다 — 전 행 NULL 이 정상이고 화면은 「관측 간격 미기재」다.
+    assert info["observationInterval"] is None
     assert info["sourceLabel"] == "기상청"
     assert info["owner"] == {"accountId": ACC_A_PROF, "name": "A 교수"}
     assert info["uploader"] == {"accountId": ACC_A_RES, "name": "A 연구원"}

@@ -14,8 +14,10 @@
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
-import { formatExtension } from '../detail/format';
+import { formatExtension, formatPeriodWithInterval } from '../detail/format';
 import { extensionOf } from './FileDropCard';
+import { GRANULARITIES, assemble, partsFor, type PeriodParts } from './periodParts';
+
 import {
   PROJECT_PANEL_TYPES,
   TOPICS,
@@ -27,6 +29,9 @@ import {
   type ProjectType,
   type UploadStatus,
 } from './types';
+
+/** 관측 간격의 단위 6값 — **정본은 DB CHECK** 다 (PRD-17 · `M-6`). */
+export const INTERVAL_UNITS = ['초', '분', '시', '일', '월', '년'] as const;
 
 export type Step = 1 | 2 | 3;
 
@@ -61,6 +66,44 @@ function AutoField(props: { label: string; value: string; testId?: string }) {
   );
 }
 
+/**
+ * 최소 단위가 연 칸들 한 줄 (PRD-18 · docx `D-2-1` 축자 요구).
+ *
+ * **자리마다 칸 하나다** — 한 칸에 `2025-06-01 00:00` 을 통째로 받으면 「어느 자리까지
+ * 말하는가」가 다시 사람의 타이핑에 맡겨진다. 그것이 최소 단위를 세운 이유와 어긋난다.
+ * 비운 하위 자리는 **저장할 때** 채워진다(`assemble`) — 화면이 미리 0 을 적어 넣지 않는다.
+ */
+function PartRow(props: {
+  side: 'start' | 'end';
+  sideLabel: string;
+  parts: PeriodParts;
+  open: readonly { key: keyof PeriodParts; label: string; width: 2 | 4 }[];
+  onChange: (v: PeriodParts) => void;
+}) {
+  return (
+    <span className="partrow" data-testid={`reg-period-${props.side}-parts`}>
+      <span className="pr-side">{props.sideLabel}</span>
+      {props.open.map((spec) => (
+        <span className="pr-cell" key={spec.key}>
+          <input
+            id={`reg-period-${props.side}-${spec.key}`}
+            className="inp pr-in"
+            type="text"
+            inputMode="numeric"
+            maxLength={spec.width}
+            size={spec.width}
+            aria-label={`${props.sideLabel} ${spec.label}`}
+            data-testid={`reg-period-${props.side}-${spec.key}`}
+            value={props.parts[spec.key]}
+            onChange={(e) => props.onChange({ ...props.parts, [spec.key]: e.target.value })}
+          />
+          <span className="pr-unit">{spec.label}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function StepOne(props: {
   status: UploadStatus | null;
   name: string;
@@ -77,6 +120,18 @@ function StepOne(props: {
   onPeriodEnd: (v: string) => void;
   crs: string;
   onCrs: (v: string) => void;
+  // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위와 그 단위가 여는 칸.**
+  granularity: string;
+  onGranularity: (v: string) => void;
+  startParts: PeriodParts;
+  onStartParts: (v: PeriodParts) => void;
+  endParts: PeriodParts;
+  onEndParts: (v: PeriodParts) => void;
+  // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 숫자 한 칸 ＋ 단위 셀렉트.**
+  intervalValue: string;
+  onIntervalValue: (v: string) => void;
+  intervalUnit: string;
+  onIntervalUnit: (v: string) => void;
   nameError: boolean;
   summaryError: boolean;
 }) {
@@ -88,6 +143,29 @@ function StepOne(props: {
   // 조각이 여러 건이면 용량은 `조각 합계`, 기간은 `조각 합집합` 으로 라벨을 바꿔 단다 (§8).
   const sizeLabel = sliced ? '용량 (조각 합계)' : '용량';
   const periodLabel = sliced ? '기간 (조각 합집합)' : '기간';
+  // 고른 단위가 여는 칸. **빈 배열 = 미지정**이고 그때는 종전 날짜 칸 두 개를 쓴다.
+  const openParts = partsFor(props.granularity);
+
+  // 관측 간격 — **반쪽인가.** 한쪽만 채워지면 서버가 400 이다(pair 규율).
+  const rawValue = props.intervalValue.trim();
+  const half = rawValue.length > 0 !== props.intervalUnit.length > 0;
+  const previewInterval =
+    rawValue.length > 0 && props.intervalUnit
+      ? { value: Number(rawValue), unit: props.intervalUnit }
+      : null;
+
+  // 미리보기가 쓰는 기간 — 지금 열려 있는 입력 방식에서 조립한다.
+  const previewStart =
+    openParts.length === 0
+      ? props.periodStart && `${props.periodStart}T00:00:00Z`
+      : assemble(props.startParts, props.granularity);
+  const previewEnd =
+    openParts.length === 0
+      ? props.periodEnd && `${props.periodEnd}T00:00:00Z`
+      : assemble(props.endParts, props.granularity);
+  const previewPeriod = previewStart
+    ? { start: previewStart, end: previewEnd || null, granularity: props.granularity || null }
+    : null;
 
   return (
     <div className="card is-on" data-testid="reg-s1">
@@ -196,28 +274,66 @@ function StepOne(props: {
             ⛔ 2+1 로 갈라 두 줄로 쓰지 않는다 — 마지막 줄이 반쯤 빈다(rev1 축자). */}
         <div className="form-3" data-testid="reg-short-row">
           <div className="form-row">
-            <label htmlFor="reg-period-start">{periodLabel} (선택)</label>
-            <span className="pair">
-              <input
-                id="reg-period-start"
-                className="inp"
-                type="date"
-                data-testid="reg-period-start"
-                value={props.periodStart}
-                onChange={(e) => props.onPeriodStart(e.target.value)}
-              />
-              <span className="tilde">~</span>
-              {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
-              <input
-                id="reg-period-end"
-                className="inp"
-                type="date"
-                aria-label={`${periodLabel} 끝 (비우면 진행 중)`}
-                data-testid="reg-period-end"
-                value={props.periodEnd}
-                onChange={(e) => props.onPeriodEnd(e.target.value)}
-              />
-            </span>
+            <label htmlFor="reg-period-granularity">{periodLabel} (선택)</label>
+            {/* ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위 셀렉트가 기간 입력 **앞**에 선다.**
+                고른 단위까지만 칸이 열린다 — `분` 이면 연·월·일·시·분 다섯이 Start/End 각각.
+                **안 고른 상태(미지정)가 기본이고 정상이다** — 그때는 종전 날짜 칸 두 개
+                그대로다(기존 전 행이 그 상태이고 재선택을 강제하지 않는다 · PRD-18 축자). */}
+            <select
+              id="reg-period-granularity"
+              className="sel"
+              data-testid="reg-period-granularity"
+              aria-label="기간 최소 단위"
+              value={props.granularity}
+              onChange={(e) => props.onGranularity(e.target.value)}
+            >
+              <option value="">최소 단위 미지정</option>
+              {GRANULARITIES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+            {openParts.length === 0 ? (
+              <span className="pair">
+                <input
+                  id="reg-period-start"
+                  className="inp"
+                  type="date"
+                  data-testid="reg-period-start"
+                  value={props.periodStart}
+                  onChange={(e) => props.onPeriodStart(e.target.value)}
+                />
+                <span className="tilde">~</span>
+                {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
+                <input
+                  id="reg-period-end"
+                  className="inp"
+                  type="date"
+                  aria-label={`${periodLabel} 끝 (비우면 진행 중)`}
+                  data-testid="reg-period-end"
+                  value={props.periodEnd}
+                  onChange={(e) => props.onPeriodEnd(e.target.value)}
+                />
+              </span>
+            ) : (
+              <>
+                <PartRow
+                  side="start"
+                  sideLabel="시작"
+                  parts={props.startParts}
+                  open={openParts}
+                  onChange={props.onStartParts}
+                />
+                <PartRow
+                  side="end"
+                  sideLabel="끝 (비우면 진행 중)"
+                  parts={props.endParts}
+                  open={openParts}
+                  onChange={props.onEndParts}
+                />
+              </>
+            )}
           </div>
           <div className="form-row">
             <label htmlFor="reg-crs">좌표계 (선택)</label>
@@ -232,6 +348,54 @@ function StepOne(props: {
           </div>
           <AutoField label="격자" value="" />
         </div>
+
+        {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 부가 정보의 선택 입력.**
+            숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
+            접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
+            ⛔ **등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다. */}
+        <div className="form-row">
+          <label htmlFor="reg-interval-value">관측 간격 (선택)</label>
+          <span className="pair">
+            <input
+              id="reg-interval-value"
+              className="inp"
+              type="text"
+              inputMode="numeric"
+              data-testid="reg-interval-value"
+              placeholder="예: 10분 · 1시간 · 1일"
+              value={props.intervalValue}
+              onChange={(e) => props.onIntervalValue(e.target.value)}
+            />
+            <select
+              className="sel"
+              aria-label="관측 간격 단위"
+              data-testid="reg-interval-unit"
+              value={props.intervalUnit}
+              onChange={(e) => props.onIntervalUnit(e.target.value)}
+            >
+              <option value="">단위</option>
+              {INTERVAL_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </span>
+          {/* **반쪽은 서버가 400 이다** — 화면은 그 사실을 미리 알린다. 판정을 흉내 내
+              막지는 않는다(문구의 정본은 서버 봉투다 · WU-A4 가 세운 규율 그대로). */}
+          {half ? (
+            <p className="warn" data-testid="reg-interval-half">
+              숫자와 단위를 함께 적어 주세요
+            </p>
+          ) : null}
+        </div>
+
+        {/* ⭑ **⟨19차 해제 · PRD-35⟩ 등록 미리보기** — 상세·목록과 **같은 함수**로 그린다.
+            사람이 지금 적은 값이 상세에서 어떻게 보일지를 등록 전에 보여 준다.
+            간격이 비면 괄호가 없다 — 빈 괄호를 그리지 않는다. */}
+        <p className="regprev" data-testid="reg-period-preview">
+          {formatPeriodWithInterval(previewPeriod, previewInterval)}
+        </p>
         {/* ⭑ **⟨PRD-15⟩ 설명은 필수이고 칸은 세 줄이다.**
             rev1 축자 = 「필수로 만든 칸이 한 줄이면 **짧게 쓰라는 신호**가 된다」 —
             그래서 `필수` 배지와 `textarea rows=3` 이 한 벌이다.
@@ -517,6 +681,17 @@ export function RegisterArea(props: {
   onPeriodEnd: (v: string) => void;
   crs: string;
   onCrs: (v: string) => void;
+  // ⭑ ⟨19차 해제 · PRD-17·18⟩ 최소 단위·자리 칸·관측 간격 — StepOne 으로 그대로 흘린다.
+  granularity: string;
+  onGranularity: (v: string) => void;
+  startParts: PeriodParts;
+  onStartParts: (v: PeriodParts) => void;
+  endParts: PeriodParts;
+  onEndParts: (v: PeriodParts) => void;
+  intervalValue: string;
+  onIntervalValue: (v: string) => void;
+  intervalUnit: string;
+  onIntervalUnit: (v: string) => void;
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
   projects: PickedProject[];
@@ -575,6 +750,16 @@ export function RegisterArea(props: {
             onPeriodEnd={props.onPeriodEnd}
             crs={props.crs}
             onCrs={props.onCrs}
+            granularity={props.granularity}
+            onGranularity={props.onGranularity}
+            startParts={props.startParts}
+            onStartParts={props.onStartParts}
+            endParts={props.endParts}
+            onEndParts={props.onEndParts}
+            intervalValue={props.intervalValue}
+            onIntervalValue={props.onIntervalValue}
+            intervalUnit={props.intervalUnit}
+            onIntervalUnit={props.onIntervalUnit}
             nameError={props.nameError}
             summaryError={props.summaryError}
           />

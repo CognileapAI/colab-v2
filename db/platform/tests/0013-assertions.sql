@@ -87,4 +87,126 @@ BEGIN
   END IF;
 END $$;
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- C. `M-6` — 관측 간격 **두 칸**이 사람이 적는 표에 있고, CHECK 둘이 실제로 문다
+--    (PRD-17 · 미결-4 ⓐ). **존재 확인만 하지 않는다** — 반쪽 값을 실제로 밀어 본다.
+-- ════════════════════════════════════════════════════════════════════════════
+-- ⑴ 단위 `분` ＋ 값 `10` 이 그대로 담기고 그대로 읽힌다.
+DO $$
+DECLARE v numeric; u text;
+BEGIN
+  UPDATE d3_dataset_description
+     SET observation_interval_value = 10, observation_interval_unit = '분'
+   WHERE dataset_id = '0000000000000000000000DST1';
+  SELECT observation_interval_value, observation_interval_unit INTO v, u
+    FROM d3_dataset_description WHERE dataset_id = '0000000000000000000000DST1';
+  IF v IS DISTINCT FROM 10 OR u IS DISTINCT FROM '분' THEN
+    PERFORM _t_fail(format('관측 간격이 (%s, %L) 로 담겼다 — 두 칸이 값을 그대로 못 받는다', v, u));
+  END IF;
+END $$;
+
+-- ⑵ **반쪽은 못 들어간다** — 숫자만 채우면 pair CHECK 가 막는다.
+--    막지 못하면 `10` 인지 `10분` 인지 아무도 모르는 행이 남는다.
+DO $$
+BEGIN
+  UPDATE d3_dataset_description
+     SET observation_interval_value = 10, observation_interval_unit = NULL
+   WHERE dataset_id = '0000000000000000000000DST1';
+  PERFORM _t_fail('숫자만 채운 반쪽 관측 간격이 저장됐다 — 둘 다 NULL 이거나 둘 다 값 CHECK 가 없다');
+EXCEPTION WHEN check_violation THEN
+  NULL;  -- 기대한 거절
+END $$;
+
+-- ⑵-b 단위만 채운 반대쪽도 같다.
+DO $$
+BEGIN
+  UPDATE d3_dataset_description
+     SET observation_interval_value = NULL, observation_interval_unit = '분'
+   WHERE dataset_id = '0000000000000000000000DST1';
+  PERFORM _t_fail('단위만 채운 반쪽 관측 간격이 저장됐다 — pair CHECK 가 한쪽만 본다');
+EXCEPTION WHEN check_violation THEN
+  NULL;
+END $$;
+
+-- ⑶ 단위는 **6값 밖을 거절한다**. 안 막으면 사용자의 오타가 화면에 그대로 그려진다.
+DO $$
+BEGIN
+  UPDATE d3_dataset_description
+     SET observation_interval_value = 10, observation_interval_unit = 'minute'
+   WHERE dataset_id = '0000000000000000000000DST1';
+  PERFORM _t_fail('단위 6값 밖(`minute`)이 저장됐다 — unit CHECK 가 없다');
+EXCEPTION WHEN check_violation THEN
+  NULL;
+END $$;
+
+-- ⑷ 6값이 **전부** 통과한다. 한 값이라도 빠지면 화면 셀렉트와 DB 가 갈린다.
+DO $$
+DECLARE u text;
+BEGIN
+  FOREACH u IN ARRAY ARRAY['초', '분', '시', '일', '월', '년'] LOOP
+    UPDATE d3_dataset_description
+       SET observation_interval_value = 1, observation_interval_unit = u
+     WHERE dataset_id = '0000000000000000000000DST1';
+  END LOOP;
+END $$;
+
+-- ⑸ **둘 다 NULL 로 비울 수 있다** — 선택 입력이고 전 행 NULL 이 정상 상태다.
+DO $$
+BEGIN
+  UPDATE d3_dataset_description
+     SET observation_interval_value = NULL, observation_interval_unit = NULL
+   WHERE dataset_id = '0000000000000000000000DST1';
+EXCEPTION WHEN others THEN
+  PERFORM _t_fail('관측 간격을 비울 수 없다 — NOT NULL 로 조였다(선택 입력이어야 한다)');
+END $$;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- D. `M-7` — 기간의 최소 단위 (PRD-18 · 미결-18 ⓐ)
+-- ════════════════════════════════════════════════════════════════════════════
+-- ⑴ 6값이 담기고, ⑵ 밖은 거절되고, ⑶ NULL 이 「단위 미지정」으로 남는다.
+DO $$
+DECLARE g text;
+BEGIN
+  FOREACH g IN ARRAY ARRAY['년', '월', '일', '시', '분', '초'] LOOP
+    UPDATE d3_dataset_autometa SET period_granularity = g
+     WHERE dataset_id = '0000000000000000000000DST1';
+  END LOOP;
+  SELECT period_granularity INTO g FROM d3_dataset_autometa
+   WHERE dataset_id = '0000000000000000000000DST1';
+  IF g IS DISTINCT FROM '초' THEN
+    PERFORM _t_fail(format('period_granularity 가 %L 다 — 값을 그대로 담지 못한다', g));
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  UPDATE d3_dataset_autometa SET period_granularity = 'day'
+   WHERE dataset_id = '0000000000000000000000DST1';
+  PERFORM _t_fail('period_granularity 6값 밖(`day`)이 저장됐다 — CHECK 가 없다');
+EXCEPTION WHEN check_violation THEN
+  NULL;
+END $$;
+
+DO $$
+BEGIN
+  UPDATE d3_dataset_autometa SET period_granularity = NULL
+   WHERE dataset_id = '0000000000000000000000DST1';
+EXCEPTION WHEN others THEN
+  PERFORM _t_fail('period_granularity 를 비울 수 없다 — 「단위 미지정」을 표현할 자리가 없다');
+END $$;
+
+-- ⑷ **기간 두 칸은 그대로다** — 시각값 저장을 바꾸지 않았다(미결-18 ⓐ).
+--    최소 단위를 더하면서 `timestamptz` 를 문자열로 갈아치우면 이 단언이 red 다.
+DO $$
+DECLARE t text;
+BEGIN
+  SELECT string_agg(data_type, ',' ORDER BY column_name) INTO t
+    FROM information_schema.columns
+   WHERE table_name = 'd3_dataset_autometa'
+     AND column_name IN ('period_start', 'period_end');
+  IF t IS DISTINCT FROM 'timestamp with time zone,timestamp with time zone' THEN
+    PERFORM _t_fail(format('기간 두 칸의 타입이 %L 다 — 시각값 저장을 바꿨다', t));
+  END IF;
+END $$;
+
 ROLLBACK;

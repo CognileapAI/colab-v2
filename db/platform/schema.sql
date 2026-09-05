@@ -375,7 +375,24 @@ CREATE TABLE d3_dataset_description (
     setweight(to_tsvector('simple', coalesce(name, '')),    'A') ||
     setweight(to_tsvector('simple', coalesce(topic, '')),   'B') ||
     setweight(to_tsvector('simple', coalesce(summary, '')), 'C')
-  ) STORED
+  ) STORED,
+  -- ── `0013` 가 더한 것 (`M-6` · PRD-17 · 미결-4 ⓐ). **선언 순서는 맨 뒤**다 —
+  --    `ALTER TABLE ADD COLUMN` 이 열을 뒤에 붙이므로 순서가 다르면 schema-diff 가 red 다.
+  --
+  -- 관측 간격 — **숫자＋단위 두 칸**이다. 자유 텍스트 한 칸으로 접으면 화면이 조립한 구조를
+  -- 저장 직전에 버려 「1시간 이하」 같은 조건 검색이 영영 안 선다(PRD-17 축자).
+  -- **사람이 적는 값이라 여기 있다** — `autometa` 는 파일에서 자동으로 읽은 것만 담는다(§4.1).
+  -- ⛔ **선택 입력이다** — `NOT NULL` 이 아니고 전 행 NULL 이 정상이다. 화면은 그 자리에서
+  --    「관측 간격 미기재」를 보이고 재선택을 강제하지 않는다.
+  observation_interval_value numeric,
+  observation_interval_unit  text,
+  CONSTRAINT d3_dataset_description_interval_unit_check
+    CHECK (observation_interval_unit IS NULL
+           OR observation_interval_unit IN ('초', '분', '시', '일', '월', '년')),
+  -- **둘 다 NULL 이거나 둘 다 값.** 반쪽 행은 화면이 무엇으로도 못 그린다 — `10` 인지
+  -- `10분` 인지 DB 가 모른다. 서버의 400 이 앞문이고 이 CHECK 가 **뒷문**이다.
+  CONSTRAINT d3_dataset_description_interval_pair_check
+    CHECK ((observation_interval_value IS NULL) = (observation_interval_unit IS NULL))
 );
 CREATE INDEX d3_dataset_description_lab_idx ON d3_dataset_description (lab_id);
 CREATE INDEX d3_dataset_description_search_idx
@@ -425,7 +442,18 @@ CREATE TABLE d3_dataset_autometa (
   -- ⚠ `format` 은 **남긴다** — 판별 결과는 파이프라인·미리보기가 계속 쓰고, 확장자가 없는 행의
   --   퇴행 표시이기도 하다. 그리고 `search_vector` 가 아직 `format` 을 문다 — 색인 재정의는
   --   `M-10` 이고 R-B 에서 한 번만 돈다(생성 컬럼 재계산·GIN 재생성을 두 번 하지 않는다).
-  file_extension text
+  file_extension text,
+  -- 기간의 **최소 단위** (`M-7` · PRD-18 · 미결-18 ⓐ). 「이 기간을 어느 자리까지 말하는가」다.
+  -- ⚠ **시각값 저장은 바뀌지 않는다** — 화면이 셀렉트 ＋ Start/End 로 `timestamptz` 를
+  --   조립하고, 이 열은 **그 조립을 되돌려 읽는 열쇠**다. 단위가 없으면
+  --   `2025-06-01T00:00:00Z` 가 「6월 1일」인지 「6월 1일 0시 0분」인지 갈리지 않는다.
+  -- **전 행 NULL = 단위 미지정**이고 화면은 종전과 같이 `date-time` 전체를 보인다.
+  -- ⛔ 백필이 없다 — 저장된 시각값은 사람이 어느 자리까지 의도했는지를 말해 주지 않는다.
+  --    지어내면 그것이 곧 거짓 정밀도다.
+  period_granularity text,
+  CONSTRAINT d3_dataset_autometa_period_granularity_check
+    CHECK (period_granularity IS NULL
+           OR period_granularity IN ('년', '월', '일', '시', '분', '초'))
 );
 CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
 CREATE INDEX d3_dataset_autometa_search_idx

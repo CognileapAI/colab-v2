@@ -877,7 +877,11 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     const body = calls.registered[0] ?? {};
     expect(body.variables).toEqual(['tp', 't2m']);
     expect(body.crs).toBe('EPSG:5179');
-    expect(body.period).toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' });
+    // ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 한 값으로 실린다.** 단위를 안 골랐으니
+    // `null`(미지정)이고, **시각값 두 칸은 종전 그대로**다 — 저장 모양이 바뀐 것이 아니다.
+    expect(body.period).toEqual({
+      start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: null,
+    });
   });
 
   it('끝 칸을 비우면 무기한이다 — `end: null` 로 실린다 (14차 해제)', async () => {
@@ -890,8 +894,9 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));
     // 끝을 지어내지도(오늘로 채우기) 기간을 통째로 버리지도 않는다 — 종전은 후자였다.
+    // ⭑ ⟨19차 해제 · PRD-18⟩ 단위 미지정은 `granularity: null` — 빈 문자열을 보내지 않는다.
     expect((calls.registered[0] ?? {}).period)
-      .toEqual({ start: '2025-06-01T00:00:00Z', end: null });
+      .toEqual({ start: '2025-06-01T00:00:00Z', end: null, granularity: null });
   });
 
   it('시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다', async () => {

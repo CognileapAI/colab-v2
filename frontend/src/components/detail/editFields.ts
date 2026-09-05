@@ -16,6 +16,7 @@ import type { DatasetDetail } from './types';
 
 export type DatasetUpdate = components['schemas']['DatasetUpdate'];
 export type DataPeriod = components['schemas']['DataPeriod'];
+export type ObservationInterval = components['schemas']['ObservationInterval'];
 
 /** 폼이 붙잡는 값. **전부 문자열이다** — 빈 문자열이 「비웠다」이고 계약의 `null` 로 번역된다. */
 export type DatasetEditDraft = {
@@ -26,7 +27,23 @@ export type DatasetEditDraft = {
   /** 기간은 두 칸이 한 값이다 (`DataPeriod`). 날짜 칸이라 `YYYY-MM-DD` 다. */
   periodStart: string;
   periodEnd: string;
+  /**
+   * ⭑ **⟨19차 해제 · PRD-18 · WU-A6⟩ 기간의 최소 단위.** `''` = 미지정이고 계약의 `null` 이다.
+   * 기간과 **한 값**이라 `periodOf` 가 함께 조립한다 — 골격 산문의 「복합 칸」 그대로다.
+   */
+  periodGranularity: string;
+  /**
+   * ⭑ **⟨19차 해제 · PRD-17 · WU-A6⟩ 관측 간격 — 두 칸이 한 값.**
+   * 둘 다 비면 `null`(비운다)이고, 반쪽이면 **그대로 보내 서버 400 을 받는다** — 화면이
+   * 판정을 흉내 내지 않는다(WU-A4 가 세운 규율 그대로 · 문구의 정본은 서버 봉투 하나다).
+   */
+  intervalValue: string;
+  intervalUnit: string;
 };
+
+/** 관측 간격의 단위 6값 · 기간 최소 단위 6값. **정본은 DB CHECK** 다 (`M-6`·`M-7`). */
+export const INTERVAL_UNITS = ['초', '분', '시', '일', '월', '년'] as const;
+export const GRANULARITIES = ['년', '월', '일', '시', '분', '초'] as const;
 
 /** 한 줄로 서는 자유 입력 칸. 라벨은 `Policy_데이터셋_상세 §5` 기본 정보 칸 이름 그대로다. */
 export type TextFieldSpec = {
@@ -55,6 +72,12 @@ export const TEXT_FIELDS: readonly TextFieldSpec[] = [
 /** 기간 칸의 라벨 — 두 칸이 한 값이라 표에서 따로 선다. */
 export const PERIOD_LABEL = '기간';
 
+/** 관측 간격 칸의 라벨 — 두 칸이 한 값이라 표에서 따로 선다 (PRD-17). */
+export const INTERVAL_LABEL = '관측 간격';
+
+/** 기간 최소 단위 셀렉트의 라벨. **기간 입력 앞**에 선다 (PRD-18). */
+export const GRANULARITY_LABEL = '기간 최소 단위';
+
 /** `null` 은 **빈 칸**으로 연다 — 없는 값을 지어내지 않는다 (기존 행이 이 창구로 채워진다). */
 function orBlank(v: string | null | undefined): string {
   return v ?? '';
@@ -79,6 +102,12 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
     crs: orBlank(b?.crs),
     periodStart: toDateInput(b?.period?.start),
     periodEnd: toDateInput(b?.period?.end),
+    periodGranularity: b?.period?.granularity ?? '',
+    intervalValue:
+      b?.observationInterval?.value === null || b?.observationInterval?.value === undefined
+        ? ''
+        : String(b.observationInterval.value),
+    intervalUnit: b?.observationInterval?.unit ?? '',
   };
 }
 
@@ -95,12 +124,35 @@ function periodOf(draft: DatasetEditDraft): DataPeriod | null {
   return {
     start: toTimestamp(draft.periodStart),
     end: draft.periodEnd ? toTimestamp(draft.periodEnd) : null,
+    // ⭑ ⟨19차 해제 · PRD-18⟩ 최소 단위는 기간과 **한 값**이다 — 함께 나가고 함께 비워진다.
+    granularity: draft.periodGranularity || null,
   };
 }
 
 function samePeriod(a: DataPeriod | null, b: DataPeriod | null): boolean {
   if (!a || !b) return !a && !b;
-  return a.start === b.start && (a.end ?? null) === (b.end ?? null);
+  return a.start === b.start && (a.end ?? null) === (b.end ?? null)
+    && (a.granularity ?? null) === (b.granularity ?? null);
+}
+
+/**
+ * ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — `periodOf` 를 본뜬 복합 칸이다** (골격 산문 §2).
+ *
+ * 둘 다 비면 `null` = **비우라는 뜻**이다. 반쪽이면 반쪽 그대로 나가 서버가 400 을 낸다 —
+ * 화면이 조용히 버리면 사용자는 적었다고 믿고 떠난다.
+ */
+function intervalOf(draft: DatasetEditDraft): ObservationInterval | null {
+  const value = draft.intervalValue.trim();
+  if (!value && !draft.intervalUnit) return null;
+  return {
+    value: value ? Number(value) : null,
+    unit: draft.intervalUnit || null,
+  };
+}
+
+function sameInterval(a: ObservationInterval | null, b: ObservationInterval | null): boolean {
+  if (!a || !b) return !a && !b;
+  return (a.value ?? null) === (b.value ?? null) && (a.unit ?? null) === (b.unit ?? null);
 }
 
 /**
@@ -128,6 +180,8 @@ export function toPatch(detail: DatasetDetail, draft: DatasetEditDraft): Dataset
   }
   const nextPeriod = periodOf(draft);
   if (!samePeriod(nextPeriod, periodOf(before))) patch.period = nextPeriod;
+  const nextInterval = intervalOf(draft);
+  if (!sameInterval(nextInterval, intervalOf(before))) patch.observationInterval = nextInterval;
   return patch;
 }
 
@@ -148,6 +202,7 @@ export function applyDraft(detail: DatasetDetail, draft: DatasetEditDraft): Data
           sourceLabel: blank(draft.sourceLabel),
           crs: blank(draft.crs),
           period: periodOf(draft),
+          observationInterval: intervalOf(draft),
         }
       : null,
   };

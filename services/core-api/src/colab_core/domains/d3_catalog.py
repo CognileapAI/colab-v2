@@ -73,6 +73,9 @@ _ONE = text("""
            -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
            d.file_count - _grid.n AS file_count,
            dd.name, dd.topic, dd.summary,
+           -- 관측 간격 **두 칸** (PRD-17 · `M-6`). 사람이 적는 값이라 이 표에 있다.
+           -- 상세만 읽는다 — 목록(`DatasetRow`)에는 이 칸이 계약에도 화면에도 없다.
+           dd.observation_interval_value, dd.observation_interval_unit,
            u.name AS uploader_name,
            o.name AS owner_name
       FROM d3_dataset d
@@ -88,7 +91,7 @@ _ONE = text("""
 
 # 자동으로 읽은 정보. 사람이 타이핑하지 않는다 (Policy_데이터셋_상세 §5).
 _AUTOMETA = text("""
-    SELECT format, variables, period_start, period_end, crs, grid,
+    SELECT format, variables, period_start, period_end, period_granularity, crs, grid,
            total_size_bytes, bundle_file_name, file_extension
       FROM d3_dataset_autometa
      WHERE dataset_id = :dataset_id
@@ -120,6 +123,9 @@ class DatasetAutometa:
     #: 조각의 확장자 — **점 없는 소문자**(`nc`). 화면이 `*.nc` 로 조립한다 (PRD-21 · `M-9`).
     #: `None` 이면 파일명이 확장자를 말하지 않는 것이고, 화면은 `format` 으로 퇴행한다.
     file_extension: str | None
+    #: 기간의 **최소 단위** 6값 (PRD-18 · `M-7`). `None` = 단위 미지정이고 그것이 전 행의
+    #: 상태다 — 그때 화면은 종전과 같이 `date-time` 전체를 보인다. **재선택 없음.**
+    period_granularity: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -140,6 +146,11 @@ class DatasetCore:
     last_modified_at: object = None
     uploaded_at: object = None
     lineage_confirmed_at: object = None
+    #: 관측 간격 — **둘 다 값이거나 둘 다 `None`** 이다 (PRD-17 · `M-6` · pair CHECK).
+    #: 표시 문자열(`10분`)은 여기 없다 — 화면이 조립한다.
+    #: ⚠ **목록 질의는 안 읽는다** — `DatasetRow` 에 이 칸이 없다. 상세(`_ONE`)만 채운다.
+    observation_interval_value: object = None
+    observation_interval_unit: str | None = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -170,6 +181,8 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         owner_name=r["owner_name"], source_label=r["source_label"],
         last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
         lineage_confirmed_at=r["lineage_confirmed_at"],
+        observation_interval_value=r["observation_interval_value"],
+        observation_interval_unit=r["observation_interval_unit"],
     )
 
 
@@ -184,6 +197,7 @@ def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
         total_size_bytes=(None if r["total_size_bytes"] is None else int(r["total_size_bytes"])),
         bundle_file_name=r["bundle_file_name"],
         file_extension=r["file_extension"],
+        period_granularity=r["period_granularity"],
     )
 
 
@@ -794,10 +808,12 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     """
     by_table: dict[str, dict[str, object]] = {}
     for key, value in changes.items():
-        # `period` 는 한 열이 아니라 **두 열**로 갈라진다 — 아래에서 따로 푼다.
+        # `period`·`observationInterval` 은 한 열이 아니라 **여러 열**로 갈라진다 —
+        # 아래에서 따로 푼다.
         # ⭑ **2026-09-02 · `#62`** — 여기서 거르지 않으면 `_UPDATABLE[key]` 가 `KeyError`
         #   로 죽어 **기간 수정이 통째로 500** 이었다. 시험이 없어 아무도 몰랐다.
-        if key == "period":
+        #   `observationInterval` 은 그 실패를 두 번 배우지 않으려고 처음부터 여기 있다.
+        if key in ("period", "observationInterval"):
             continue
         table, column = _UPDATABLE[key]
         by_table.setdefault(table, {})[column] = value
@@ -808,6 +824,20 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
         target = by_table.setdefault("d3_dataset_autometa", {})
         target["period_start"] = None if period is None else period.get("start")
         target["period_end"] = None if period is None else period.get("end")
+        # ⭑ **⟨19차 해제 · PRD-18 · `M-7`⟩ 최소 단위는 기간과 **한 값**이다.**
+        # 기간을 비우면(`period: null`) 단위도 함께 비운다 — 없는 기간에 단위만 남으면
+        # 그 행은 「무엇의 단위인가」를 말할 수 없다. 열쇠가 안 실려 오면 `None` 이고
+        # 그것이 「단위 미지정」이다(재선택을 강제하지 않는다).
+        target["period_granularity"] = None if period is None else period.get("granularity")
+
+    # 관측 간격도 **두 열**이다 (PRD-17 · `M-6`). 반쪽을 만들지 않는 규율이 여기서도
+    # 성립한다 — `null` 이면 **두 열이 함께** 비고, 값이면 **두 열이 함께** 찬다.
+    # (형상 검사는 라우트의 `validate_human_metadata` 가 이미 했다.)
+    if "observationInterval" in changes:
+        interval = changes["observationInterval"]
+        target = by_table.setdefault("d3_dataset_description", {})
+        target["observation_interval_value"] = None if interval is None else interval.get("value")
+        target["observation_interval_unit"] = None if interval is None else interval.get("unit")
 
     for table, columns in by_table.items():
         assignments = ", ".join(f"{c} = :{c}" for c in columns)

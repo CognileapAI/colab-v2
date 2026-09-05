@@ -1817,13 +1817,60 @@ export interface components {
          *     조각이 여럿이면 합집합이다 (§4.3).
          *     **기간 자체가 없을 수 있고**(`period: null`), 있으면 시작은 있고 **끝은 조건부**다 —
          *     `end` 가 `null` 이면 **무기한·진행 중**이다 (Ted 판정 2026-09-02 · 14차 해제).
-         *     `ProjectPeriod` 와 같은 모양이다 — 열쇠는 늘 둘이고 비어 있음은 `null` 로 말한다.
+         *     `ProjectPeriod` 와 같은 모양이다 — 시작·끝 두 열쇠는 늘 있고 비어 있음은 `null` 로 말한다.
+         *
+         *     ⭑ **⟨19차 해제 · PRD-18 · 미결-18 ⓐ⟩ `granularity` 를 더한다.** 이 스키마는
+         *     `additionalProperties: false` 라 **열쇠 추가가 계약 파괴 변경**이고, 그것이 이번
+         *     회차를 등급 ㉯ 로 만든 자리다.
+         *
+         *     **시각값 저장은 바뀌지 않는다** — 저장은 종전대로 `date-time` 두 칸이고, 더해지는
+         *     것은 「이 기간을 **어느 자리까지** 말하는가」 하나다. 그것이 없으면
+         *     `2025-06-01T00:00:00Z` 가 「6월 1일」인지 「6월 1일 0시 0분」인지 화면이 못 가른다.
          */
         DataPeriod: {
             /** Format: date-time */
             start: string;
             /** Format: date-time */
             end: string | null;
+            /**
+             * @description 기간의 **최소 단위** — `년`·`월`·`일`·`시`·`분`·`초` 6값 (PRD-18 · `M-7`).
+             *     값 집합은 DB CHECK 가 지킨다 (`d3_dataset_autometa.period_granularity`) —
+             *     계약 층 enum 은 이 개정이 임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
+             *
+             *     **`null` = 단위 미지정**이고 그것이 기존 전 행의 상태다. 그때 화면은 종전과
+             *     같이 `date-time` 전체를 보인다 — **재선택을 강제하지 않는다.**
+             *
+             *     ⚠ **`required` 에 넣지 않는다.** 이 스키마는 응답만이 아니라 `DatasetCreate`·
+             *     `DatasetUpdate` 의 요청 몸통에도 실린다 — 필수로 만들면 기간을 고치려는 모든
+             *     기존 클라이언트가 400 이 된다. 열쇠 추가 하나로 파괴 폭을 닫는다.
+             */
+            granularity?: string | null;
+        };
+        /**
+         * @description ⭑ **⟨신설 2026-09-05 · 19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 얼마 간격으로
+         *     관측된 자료인가.** `10분` · `1시간` · `1일` 같은 값이다.
+         *
+         *     **숫자＋단위 두 칸으로 싣는다. 표시 문자열을 계약에 싣지 않는다** — `10분` 을
+         *     조립하는 것은 화면의 일이다. 자유 텍스트 한 칸으로 접으면 화면이 이미 갖고 있던
+         *     구조를 저장 직전에 버려 「1시간 이하」 같은 조건 검색이 영영 안 선다(PRD-17 축자).
+         *
+         *     **선택 입력이다** — 값 전체가 `null` 인 것이 정상이고 기존 전 행이 그 상태다.
+         *     ⛔ **등록 게이트가 아니다** — 비운 채 등록하면 성공한다.
+         *
+         *     ⚠ **반쪽은 없다.** 두 열쇠는 **둘 다 값이거나 둘 다 `null`** 이다 — 숫자만 오면
+         *     서버가 400 이고, 어느 경로로 들어와도 DB CHECK 가 뒷문에서 막는다
+         *     (`d3_dataset_description_interval_pair_check`). `10` 만 저장된 행은 화면이 무엇으로도
+         *     못 그린다 — `10분` 인지 `10일` 인지 아무도 모른다.
+         */
+        ObservationInterval: {
+            /** @description 간격의 수치. `unit` 이 값이면 이쪽도 값이다. */
+            value: number | null;
+            /**
+             * @description 단위 — `초`·`분`·`시`·`일`·`월`·`년` 6값. 값 집합은 DB CHECK 가 지킨다
+             *     (`d3_dataset_description.observation_interval_unit`) — 계약 층 enum 은
+             *     만들지 않는다 (`NB-E`).
+             */
+            unit: string | null;
         };
         /**
          * @description 프로젝트 기간. 시작·종료 각각 **연·월까지**이고, 진행 중이면 종료가 비어 있다
@@ -2283,8 +2330,13 @@ export interface components {
             variables?: string[] | null;
             /** @description 좌표계 — **자유 입력** (`VAL-006`). 검사하지 않는다. */
             crs?: string | null;
-            /** @description 기간 — **자유 입력** (`VAL-006`). */
+            /** @description 기간 — **자유 입력** (`VAL-006`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
+            /**
+             * @description ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 선택 입력이다.** 비우면 `null` 이고
+             *     그대로 등록된다. ⛔ 등록을 막는 칸이 아니다.
+             */
+            observationInterval?: components["schemas"]["ObservationInterval"] | null;
             /**
              * @description 소속 프로젝트 복수 지정 (`Policy §5` 소속 프로젝트 — 0건 이상). 등록 폼이 한 번에
              *     제출하므로 등록 후 `linkProjectDataset` N 회 호출이 아니라 여기 실린다 —
@@ -2348,8 +2400,14 @@ export interface components {
             variables?: string[] | null;
             /** @description 좌표계 — **자유 입력** (`VAL-006` · `〈138〉`). */
             crs?: string | null;
-            /** @description 기간 — **자유 입력** (`VAL-006` · `〈138〉`). */
+            /** @description 기간 — **자유 입력** (`VAL-006` · `〈138〉`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
+            /**
+             * @description ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격.** `null` 을 보내면 **비우라는 뜻**이고
+             *     열쇠를 생략하면 **그대로 두라는 뜻**이다 — 이 op 의 다른 칸과 같은 규칙이다.
+             *     기존 행이 이 창구로 채워진다(전 행 NULL 이지만 재선택을 강제하지 않는다).
+             */
+            observationInterval?: components["schemas"]["ObservationInterval"] | null;
         };
         /**
          * @description 카탈로그 표 한 행. 8열 + 빠른 작업 자리를 그리는 데 필요한 값만 담는다.
@@ -2524,7 +2582,18 @@ export interface components {
             /** @description 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다. */
             variables: string[];
             crs: string | null;
+            /**
+             * @description 기간. ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 들어왔다** — `null` 이면
+             *     단위 미지정이고 화면은 종전 표기 그대로다.
+             */
             period: components["schemas"]["DataPeriod"] | null;
+            /**
+             * @description ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격.** `null` 이면 화면이 「관측 간격 미기재」를
+             *     보인다 — 화면이 안 깨지고 재선택을 강제하지 않는다.
+             *     ⚠ **표시 문자열이 아니다** — `10분` 도, 기간 뒤의 ` (10분)` 도 화면이 조립한다
+             *     (PRD-35 · **한 곳에서만 조립하고 세 자리가 그 함수를 쓴다**).
+             */
+            observationInterval: components["schemas"]["ObservationInterval"] | null;
             grid: string | null;
             /**
              * @description **내부 판별값 · 화면에 쓰지 않는다** (PRD-21 · `P-10`·`R-09`).
@@ -5569,6 +5638,25 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            /**
+             * @description ⭑ **⟨신설 2026-09-05 · 계약 동결 해제 19차 · WU-A2⟩ 미리보기를 시작할 권한이 없다.**
+             *
+             *     **코드가 먼저 이 상태를 내고 있고 계약이 뒤따르는 자리다** — `DR-7` 의 모양이며
+             *     18차의 `413`·`415` 와 **같은 종류의 뒤따름**이다. 여기서 더하는 것은 **응답 코드의
+             *     선언 하나**이고 새 스키마도 새 봉투도 만들지 않는다 — 본문은 종전대로
+             *     `ErrorEnvelope` 다.
+             *
+             *     **그릴 수 없는 것과 등록할 수 없는 것은 다르다** — 이 거절은 렌더 시작에만 걸리고
+             *     등록·다운로드·계보 확정은 그대로 된다.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             404: components["responses"]["NotFound"];
             /**
              * @description ⭑ **⟨신설 2026-09-05 · 계약 동결 해제 18차 · Ted 판정 「계약에 선언 · 18차 · 가산」⟩**
