@@ -1,0 +1,43 @@
+창 8-b ⑸ ⓐ — `BF-12` ⑶ viz 회수 요약 1줄 실측
+
+측정 2026-09-06 17:24 UTC · viz-render 기동 뒤 경과 = 「Up About an hour」(≥70분 · 주기 3600초)
+판정 기준(HANDOFF ⓐ) = healthy 뒤 ≥60분 · viz 로그에서 첫 한 바퀴 **계수** ＋ **삭제가 0** 인 것.
+
+[실측]
+  회수 요약 줄 (`지도 타일 회수` | `reclaim` | `liveness` grep)   = 0 건
+  트리거 집행 줄 (`트리거` grep)                                 = 0 건
+  INFO 줄 총수                                                 = 416 건   ← 로깅 자체는 살아 있다
+  viz 컨테이너 env 에 `COLAB_VIZ_TRIGGER_SPOOL`                  = 0 건   ⭐
+
+[판정] red — 첫 바퀴 요약이 없다. ⛔ 「0건 지웠다」로 세지 않는다(못 본 것이지 0 이 아니다).
+
+[원인 — 실측으로 좁혔다]
+  `services/viz-render/src/colab_viz/app/main.py:105-106`
+      app.state.triggers = (SpoolTriggerPort(settings.trigger_spool)
+                            if settings.trigger_spool else None)
+  같은 파일 lifespan — `if app.state.triggers is not None:` 안에서만 `TriggerDrainLoop` 를 만들고
+  **회수(`ReclaimJob`)를 그 루프에 얹는다**(`TL-1` ⑹ · Ted 판정).
+  ⟹ `trigger_spool` 이 비면 **트리거 루프도 회수 루프도 아예 안 뜬다.**
+
+  `infra/dev/compose.yml` 의 viz-render 환경에 **`COLAB_VIZ_TRIGGER_SPOOL` 이 없다.**
+  대조 = `infra/staging/compose.i2.yml:335` `COLAB_VIZ_TRIGGER_SPOOL: /srv/viz-events` (staging 에는 있다).
+
+  ⭑ **`BF-12` 가 고친 것과 다른 결손이다.** `BF-12` 는 「로거가 없어 INFO 가 버려진다」였고 그것은 고쳐졌다
+    (INFO 416줄이 실제로 나온다). 이번 것은 **「루프가 아예 안 돈다」** — dev compose 의 결손이다.
+  ⛔ **재시도로 덮을 수 없다.** 시간을 더 기다려도 도는 주체가 없다.
+
+[막는 것]
+  `BF-12` 완료 정의 ⑶ 이 이 자리에서 서지 않는다 ⟹ `BF-12` **`open` 무변**.
+  덧붙여 **트리거 집행(미리보기 무효화 배달)도 dev 에서는 돌지 않는다** — `TL-1`·`TL-2` 의 관측 자리가
+  staging 에만 있고 dev 에 없다는 뜻이다. 이 레인은 **인프라를 고치지 않았다**(허용된 코드 변경은 〈346〉 하나뿐).
+
+[제안 — 다음 회차가 판정할 것]
+  `infra/dev/compose.yml` 의 viz-render 에 `COLAB_VIZ_TRIGGER_SPOOL`(＋ core-api 쪽 짝 변수)을 더하고
+  두 단위가 같은 자리를 보도록 볼륨을 붙인다. staging `compose.i2.yml:273` 주석이 그 짝 규약을 적어 두었다.
+  ⚠ 이것은 배포 설정 변경이라 창 8-b 의 「코드 변경 1건」 한도 밖이다 — 별도 판정 자리다.
+
+[OOM 감시 — 〈344〉-㉱]
+  `dmesg` 최신 항목 = 2026-09-02 13:29:02 (배포 이전 것 그대로) — **배포 뒤 신규 OOM 0건.**
+  자원 실사용(배포 70분 뒤) — viz 84.3MiB/640MiB · worker 71.8/512 · ai 59.3/256 · core 85.9/384
+  합 ≈ 301MiB / 상한 합 1,792MiB · 스왑 사용 0.
+  ⟹ `t4g.small` 완화 판정(〈344〉)은 이 회차 동안 유지됐다.
