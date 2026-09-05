@@ -2417,3 +2417,16 @@ items:
     deadline: null
     note: "403 이 계약에 없다(실측). X2-FREEZE-PROTOCOL §5 등급 판정 전까지 계약·DB·프론트 변경 0 은 가정일 뿐"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-26"]
+
+  - id: WU-A12
+    name: rev1 유지 항목 실측 (PRD-39)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "실측 13건 각각에 있음/없음 + path:line 이 붙은 표가 나오고, 있음 항목마다 회귀 시험 1건이 green"
+    evidence: "dev-package/sessions/p3-rev1-keep-audit-<YYYYMMDD>.md"
+    deadline: null
+    note: "표 14행 중 ⑼(파생 행 읽기 전용)는 PRD-31 ⑶ 소관이라 뺐다. WU-A9·A10·A14 보다 먼저 돈다 — 방어선을 먼저 깐다"
+    sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-39"]
