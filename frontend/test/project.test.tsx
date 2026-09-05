@@ -663,7 +663,9 @@ describe('버그 1·9 — 프로젝트 목록·상세 뿌리 스타일', () => {
     expect(card).not.toBeNull();
     // jsdom 은 `var()` 배경을 계산값으로 풀지 않는다(항상 transparent) — 카드 면은 규칙 원문으로 잰다.
     const cardRule = projectCss.match(/\.project-detail \.card \{[^}]*\}/)?.[0] ?? '';
-    expect(cardRule).toMatch(/background:\s*var\(--surface/);
+    // BF-11 — 이름이 `--surface`(어디에도 정의 없음 · 폴백으로만 그려짐)에서 정본 `--color-surface` 로 갔다.
+    // 재는 사실은 그대로다: 카드가 제 면을 갖는가.
+    expect(cardRule).toMatch(/background:\s*var\(--color-surface\)/);
     expect(cardRule).toMatch(/box-shadow:/);
   });
 });
