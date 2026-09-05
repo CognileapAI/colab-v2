@@ -2404,3 +2404,16 @@ items:
     deadline: null
     note: "마이그레이션 0 · DB 기본값 행을 만들지 않는다(서버 상수 한 자리). staging 계정 권한이 실제로 바뀐다 — 배포 전 현재 행 상태 실측 보고"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-25"]
+
+  - id: WU-A2
+    name: 미리보기 생성 권한 검사 (PRD-26)
+    status: in_progress
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "POST /previews 가 업로드·편집 없으면 403, 잠긴 남의 데이터셋 대상이면 거절, 자기 업로드는 성공, 다른 연구실 id 는 404. 값 조회가 쓰는 판정 함수를 재사용했음을 diff 로 보인다"
+    evidence: "dev-package/sessions/p3-preview-guard-<YYYYMMDD>.md"
+    deadline: null
+    note: "403 이 계약에 없다(실측). X2-FREEZE-PROTOCOL §5 등급 판정 전까지 계약·DB·프론트 변경 0 은 가정일 뿐"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-26"]
