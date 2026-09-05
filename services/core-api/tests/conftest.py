@@ -167,15 +167,18 @@ _RESTORE: tuple[str, ...] = (
         WHERE id = '0000000000000000000000DSA1'""",
     """UPDATE d3_dataset SET lineage_confirmed_at = '2026-02-03T00:00:00Z'
         WHERE id = '0000000000000000000000DSA2'""",
-    """UPDATE d2_permission_switch SET enabled = true
-        WHERE account_id = '000000000000000000000000A1'
-          AND switch IN ('업로드·편집', '프로젝트 생성')""",
+    # **UPDATE 가 아니라 INSERT ... ON CONFLICT 다** (WU-A1). 기본값 시험은 「행이 없는 계정」을
+    # 만들려고 스위치 행을 **지운다** — UPDATE 로 되돌리면 0 행을 고치고 조용히 지나가서,
+    # 다음 시험이 시드 대신 기본값을 오라클로 삼게 된다. 값은 `seed.sql:33-36` 그대로다.
     # **위임 성격 둘은 꺼진 채로 되돌린다** (seed.sql:35-36). WU-P6 의 음성 ⑤ 가 `승인 위임` 을
     # 켜 보고 막히는지를 재는데, 켠 채로 새면 그 다음 회차의 「권한 없는 사람은 승인 불가」가
     # 조용히 거짓 green 이 된다.
-    """UPDATE d2_permission_switch SET enabled = false
-        WHERE account_id = '000000000000000000000000A1'
-          AND switch IN ('승인 위임', '연구실 설정')""",
+    """INSERT INTO d2_permission_switch (account_id, lab_id, switch, enabled) VALUES
+         ('000000000000000000000000A1', current_lab_id(), '업로드·편집',  true),
+         ('000000000000000000000000A1', current_lab_id(), '프로젝트 생성', true),
+         ('000000000000000000000000A1', current_lab_id(), '승인 위임',    false),
+         ('000000000000000000000000A1', current_lab_id(), '연구실 설정',  false)
+       ON CONFLICT (account_id, switch) DO UPDATE SET enabled = EXCLUDED.enabled""",
     # Verified 왕복 시험은 시드 배지를 껐다 켠다. 시각 기준 삭제로는 못 되돌린다.
     """UPDATE d2_verified
           SET verified = true, approver_account_id = '00000000000000000000000AP1',

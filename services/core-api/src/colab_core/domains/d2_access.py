@@ -15,6 +15,33 @@ from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions
 #: 권한 스위치는 정확히 넷이고 다섯 번째를 만들지 않는다 (common.json#/$defs/PermissionSwitch).
 SWITCHES = ("업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정")
 
+#: **저장된 행이 없을 때의 값** (P-4 · `common.json#/$defs/PermissionSwitchSet.default`).
+#: 앞의 둘은 켜짐, 위임 성격인 뒤의 둘은 꺼짐이다.
+#:
+#: 상수를 **여기 한 자리에만** 둔다 — `d2_permission_switch` 에 기본값 행을 만들지 않는다.
+#: 「행이 없는 상태가 곧 기본값」이라는 현행 의미를 그대로 두는 편이 마이그레이션 0 으로 끝나고,
+#: 값이 DB 와 코드 두 벌로 갈리지도 않는다.
+#:
+#: 종전에는 없는 행을 전부 `False` 로 읽었다. 그래서 **시드가 채우지 않은 계정은 업로드
+#: 권한 없이 시작했다** — 새 연구원이 아무것도 못 올렸다. `schema.sql` 의 `P-4` 주석은
+#: 이 사실을 적어 두고도 코드가 어기고 있었다.
+DEFAULT_SWITCHES: dict[str, bool] = {
+    "업로드·편집": True,
+    "프로젝트 생성": True,
+    "승인 위임": False,
+    "연구실 설정": False,
+}
+
+
+def _resolve(stored: dict[str, bool]) -> dict[str, bool]:
+    """저장된 값에 기본값을 덮어씌운다 — **행이 있으면 그 값이 이긴다.**
+
+    명시적으로 꺼 둔 계정이 이 기본값 때문에 켜지지 않는다. 행이 없는 칸만 기본값을 받는다.
+    `permissions_of`(단건)와 `member_permissions`(격자)가 **같은 함수**를 쓴다 — 두 자리에
+    같은 판정을 두 번 적으면 언젠가 한쪽만 고쳐진다.
+    """
+    return {s: bool(stored.get(s, DEFAULT_SWITCHES[s])) for s in SWITCHES}
+
 _ROLE = text("SELECT role FROM d2_member_role WHERE account_id = :account_id")
 _SWITCHES = text("SELECT switch, enabled FROM d2_permission_switch WHERE account_id = :account_id")
 
@@ -79,7 +106,7 @@ def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict
         return {s: True for s in SWITCHES}
     stored = {r.switch: r.enabled for r in
               session.execute(_SWITCHES, {"account_id": str(account_id)})}
-    return {s: bool(stored.get(s, False)) for s in SWITCHES}
+    return _resolve(stored)
 
 
 class DatasetAccessAdapter:
@@ -142,8 +169,7 @@ def member_permissions(session: Session) -> dict[str, MemberPermissions]:
         if role == "교수":
             switches = {s: True for s in SWITCHES}
         else:
-            saved = stored.get(account_id, {})
-            switches = {s: bool(saved.get(s, False)) for s in SWITCHES}
+            switches = _resolve(stored.get(account_id, {}))
         out[account_id] = MemberPermissions(role=role, switches=switches)
     return out
 
