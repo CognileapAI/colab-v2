@@ -2553,13 +2553,13 @@ items:
 
   - id: WU-A11
     name: 디자인 검수 실측 (PRD-29 · 미결-10)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: []
     depends_on: []
     completion_def: "11건(R-19~R-29) 각각에 있음/없음 판정과 path:line 근거가 붙은 표. 판정 없이 고치지 않는다"
-    evidence: "dev-package/sessions/p3-design-audit-<YYYYMMDD>.md"
+    evidence: "dev-package/sessions/p3-design-audit-20260905.md"
     deadline: null
     note: "산출물은 판정표이고 CSS 를 고치지 않는다. 수정은 R-B 의 WU-B11. 대비 3건(1·3·7)이 접근성 합격선"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-29"]
