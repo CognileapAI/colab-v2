@@ -24,7 +24,7 @@
 
 ## 1. 표 초안 — 정본 5열 그대로 (`화면 | 요소 | 보이는 조건 | 안 보일 때 | 관련 정책`)
 
-### 1.1 화면에서 숨기는 자리 — `PermissionGate` 실물 9곳
+### 1.1 화면에서 숨기는 자리 — `PermissionGate` 실물 10곳
 
 | 화면 | 요소 | 보이는 조건 | 안 보일 때 | 관련 정책 | 출처(실물) | 원칙 대조 |
 |---|---|---|---|---|---|---|
@@ -33,6 +33,7 @@
 | 업로드 전체화면 모달 S-04 | 모달 진입 버튼 | `업로드·편집` 켜짐 | 숨긴다 (진입 자리 자체가 없다) | §4 | `frontend/src/components/upload/UploadEntry.tsx:38` `업로드·편집` | 일치 |
 | 업로드 모달 S-04 · 등록 영역 | `+ 새 프로젝트`(빠른 생성) | `프로젝트 생성` 켜짐 | 숨긴다. 인라인 유지 — 모달 위에 모달을 얹지 않는다 | §4 · `Policy_프로젝트 §6` | `frontend/src/components/upload/RegisterArea.tsx:259` `프로젝트 생성` | 일치 |
 | 데이터셋 상세 S-05 | `기준 격자 추가` | `업로드·편집` 켜짐 | 숨긴다 | §4 · `Policy_데이터셋_상세 §6` | `frontend/src/components/upload/GridAttachEntry.tsx:42` `업로드·편집` | 일치 |
+| 데이터셋 상세 S-05 | `수정`(상세 수정 진입점) | `업로드·편집` 켜짐 | 숨긴다. 비활성 버튼을 두지 않는다 | §4 · `Policy_데이터셋_상세 §6` | `frontend/src/components/detail/DatasetEditEntry.tsx:12` `업로드·편집` | 일치 (신설 WU-A3 · PRD-22 · 2026-09-05) |
 | 데이터셋 상세 S-05 · 미리보기 | `스크린샷` | `업로드·편집` 켜짐 | 숨긴다 | §4 · `Policy_데이터셋_상세 §6` | `frontend/src/components/datasetpreview/ScreenshotButton.tsx:84` `업로드·편집` | 일치 |
 | 프로젝트 목록 S-02 | `+ 새 프로젝트` | `프로젝트 생성` 켜짐 | 숨긴다 | §4 · `Policy_프로젝트 §6` | `frontend/src/routes/ProjectsPage.tsx:36` `프로젝트 생성` | 일치 |
 | 연구실 홈 S-01 · 연구실 정보 모달 | `연구실 정보 편집` | `연구실 설정` 켜짐 | **모달은 열린다 — 버튼만 숨긴다.** 읽기는 전 구성원 | §6 · `Policy_홈_대시보드` | `frontend/src/components/dashboard/LabInfoModal.tsx:61` `연구실 설정` | 일치 |

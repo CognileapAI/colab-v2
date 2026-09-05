@@ -115,3 +115,38 @@
 .detail-page .use-sec .use-dl { margin-top: 4px; }
 .detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
 .detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }
+
+/* ── WU-A3 · 상세 수정 (PRD-22) ─────────────────────────────────────────────────
+   진입점은 헤더 우측, 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지
+   않는다 (`§1.3-1` 한 페이지 스크롤). 색·간격은 전부 토큰이다. */
+.detail-page .dh-edit { margin-left: auto; display: flex; gap: 8px; flex: none; align-items: center; }
+/* 승인 자리(`dh-act`)가 이어서 오면 그쪽은 자동 여백을 다시 쓰지 않는다 */
+.detail-page .dh-edit + .dh-act { margin-left: 0; }
+@media (max-width: 860px) { .detail-page .dh-edit { width: 100%; } }
+
+.detail-page .dt-edit {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 16px;
+  margin-bottom: var(--space-5);
+}
+.detail-page .dt-edit .de-grid { display: grid; gap: 12px; }
+.detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
+.detail-page .dt-edit .de-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; }
+.detail-page .dt-edit .de-v {
+  width: 100%;
+  font: inherit;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+.detail-page .dt-edit .de-period { display: flex; gap: 8px; align-items: center; border: none; background: none; padding: 0; }
+.detail-page .dt-edit .de-period input { font: inherit; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 8px; }
+.detail-page .dt-edit .de-tilde { color: var(--color-gray-500); }
+.detail-page .dt-edit .de-err { color: var(--color-warning-600); font-size: var(--text-body-sm); margin: 12px 0 0; }
+.detail-page .dt-edit .de-act { display: flex; gap: 8px; margin-top: 16px; }
+@media (max-width: 860px) { .detail-page .dt-edit .de-row { grid-template-columns: 1fr; gap: 4px; } }
