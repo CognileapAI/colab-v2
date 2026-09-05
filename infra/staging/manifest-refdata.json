@@ -1,0 +1,1923 @@
+{
+  "_설명": [
+    "CoLAB v2 dev 초기 적재 매니페스트 — 안 A. 소비처 = infra/staging/load-seed.py 의 --manifest.",
+    "path 는 --source-root 기준 상대. source-root = '03 Reference-Data'.",
+    "적재 범위 = 01.level-data/ ＋ 02.File-format/ 전량. 제외 = 03_KWRA_conference-* 전체 · 전 desktop.ini(50건).",
+    "kind 어휘는 contracts/schemas/common.json:78-82 FileKind 의 두 값뿐이다 — '본체'·'기준 격자 파일'.",
+    "계보 = Lv.0 → Lv.1 → Lv.2. Lv.1_(Model_Input_Data) 는 Lv.1 의 형제이고 Lv.2 의 보조입력 부모다."
+  ],
+  "_계수": {
+    "데이터셋": 14,
+    "파일": 434,
+    "바이트": 3780910612,
+    "계보간선": 6
+  },
+  "datasets": [
+    {
+      "key": "LD-PRCP-LV0-HSR",
+      "round": 1,
+      "name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+      "topic": "강수",
+      "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = RDR_CMP_HSR_PUB_*.bin.gz (bin, 변량 = 반사도). ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#readme/자료설명.pptx",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202005151115.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202007221045.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202106031430.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202107031745.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202207110415.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202208100500.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202307140830.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202405151930.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/01.HSR/RDR_CMP_HSR_PUB_202407091315.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "LD-PRCP-LV0-RN15",
+      "round": 1,
+      "name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+      "topic": "강수",
+      "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = sfc_grid_rn_15m_*.nc (NetCDF4, 변량 = 15분 누적 강수량).",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_201907281430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202005151115.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202007221045.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202106031430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202107031745.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202207110415.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202208100500.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202307140830.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202405151930.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_202407091315.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_RN15.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_RN15.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "LD-PRCP-LV1",
+      "round": 2,
+      "name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+      "topic": "강수",
+      "summary": "Lv.0 두 원자료를 기상청 제공 lat·lon 파일에 맞춰 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본. 형상 (10, 128, 128).",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.1/hsr_sample.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.1/rn15_sample.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LAT_crop.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/#metadata/LON_crop.npy",
+          "kind": "기준 격자 파일"
+        }
+      ],
+      "lineageParents": [
+        {
+          "parentKey": "LD-PRCP-LV0-HSR",
+          "origin": "manual",
+          "parentRole": "주입력",
+          "method": "WGS84 좌표변환 ＋ 연구대상지 crop"
+        },
+        {
+          "parentKey": "LD-PRCP-LV0-RN15",
+          "origin": "manual",
+          "parentRole": "보조입력",
+          "method": "WGS84 좌표변환 ＋ 연구대상지 crop"
+        }
+      ]
+    },
+    {
+      "key": "LD-PRCP-LV2",
+      "round": 3,
+      "name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+      "topic": "강수",
+      "summary": "Lv.1 표본을 입력·검증자료로 학습한 U-Net 계열 딥러닝 모델의 예측 강우장. Z–R 관계식의 단일 픽셀 가정을 image-to-image 변환으로 대체한 산출. 형상 (10, 128, 128).",
+      "files": [
+        {
+          "path": "01.level-data/01.precipitation/01.precipitation/Lv.2/pred_sample.npy",
+          "kind": "본체"
+        }
+      ],
+      "lineageParents": [
+        {
+          "parentKey": "LD-PRCP-LV1",
+          "origin": "manual",
+          "parentRole": "주입력",
+          "method": "U-Net based Model"
+        }
+      ]
+    },
+    {
+      "key": "LD-VEG-LV0",
+      "round": 1,
+      "name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+      "topic": "식생",
+      "summary": "GK-2A/AMI 정규식생지수(NDVI). 식 : NDVI = (NIR − Red) / (NIR + Red), 범위 −1~1. 값이 높을수록 식생이 건강하다. 출처 = 국가기상위성센터(NMSC). 원자료 LCC 좌표계 · 1일 / 2 km. 대상 기간 2023-05-01 ~ 2023-05-31 · 대상지 경기 남부~충청권. 자료 구성 = NDVI · EVI · FVC · DQF · gk2a_imager_projection. ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305010000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305020000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305030000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305040000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305050000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305060000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305070000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305080000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305090000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305100000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305110000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305120000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305130000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305140000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305150000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305160000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305170000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305180000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305190000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305200000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305210000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305220000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305230000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305240000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305250000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305260000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305270000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305280000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305290000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305300000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.0/gk2a_ami_le2_vgt_ko_202305310000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/#metadata/LAT.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/#metadata/LON.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "LD-VEG-LV1",
+      "round": 2,
+      "name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+      "topic": "식생",
+      "summary": "DQF 로 저품질 픽셀을 NaN 처리하고 유효범위 −1~1 밖을 NaN 으로 바꾼 뒤, LCC→WGS84 변환 · NDVI 레이어 추출 · 경기 남부~충청권 영역 추출 · Savitzky-Golay 평활화와 선형보간 · 2 km→100 m 균등분할(Uniform Distribution) · 일→월 평균을 거친 자료.",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1/GK2A_NDVI_mean_202305.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/#metadata/LAT_crop.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/#metadata/LON_crop.npy",
+          "kind": "기준 격자 파일"
+        }
+      ],
+      "lineageParents": [
+        {
+          "parentKey": "LD-VEG-LV0",
+          "origin": "manual",
+          "parentRole": "주입력",
+          "method": "DQF 품질필터 → LCC→WGS84 → ROI 추출 → SG 평활·선형보간 → 100 m 균등분할 → 월평균"
+        }
+      ]
+    },
+    {
+      "key": "LD-VEG-LV1-MODELIN",
+      "round": 2,
+      "name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+      "topic": "식생",
+      "summary": "Lv.2 딥러닝 모델의 보조입력(수치표고모형 DEM 100 m · 경사향 Aspect 100 m · 연 단위 토지피복지도 LULC 100 m)과 검증자료(월 단위 HLS S30 NDVI 100 m). ＊이 묶음은 Lv.1 에서 파생되지 않는다 — 별개 원천에서 온 자료라 Lv.1 의 자식이 아니라 형제이고, Lv.2 에 대해서만 보조입력 부모가 된다(#readme 「[2] 메인 처리 프로세스 — NDVI · Lv.2 · 학습 시 활용 자료」).",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/Aspect.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/DEM.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/HLS_S30_NDVI_mean_202305.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/LULC_2023.tif",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "LD-VEG-LV2",
+      "round": 3,
+      "name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+      "topic": "식생",
+      "summary": "월 단위 GK-2A NDVI(Lv.1)를 주입력으로, DEM·경사향·토지피복을 보조입력으로, 월 단위 HLS NDVI 를 검증자료로 학습한 U-Net 계열 모델의 일별 예측 NDVI(Prediction_yyyymmdd.npy).",
+      "files": [
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230501.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230502.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230503.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230504.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230505.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230506.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230507.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230508.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230509.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230510.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230511.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230512.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230513.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230514.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230515.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230516.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230517.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230518.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230519.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230520.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230521.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230522.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230523.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230524.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230525.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230526.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230527.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230528.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230529.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230530.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/02.vegetation/02.vegetation/Lv.2/Prediction_20230531.npy",
+          "kind": "본체"
+        }
+      ],
+      "lineageParents": [
+        {
+          "parentKey": "LD-VEG-LV1",
+          "origin": "manual",
+          "parentRole": "주입력",
+          "method": "U-Net based Model"
+        },
+        {
+          "parentKey": "LD-VEG-LV1-MODELIN",
+          "origin": "manual",
+          "parentRole": "보조입력",
+          "method": "U-Net based Model"
+        }
+      ]
+    },
+    {
+      "key": "LD-DRGH-LV1",
+      "round": 2,
+      "name": "가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)",
+      "topic": "가뭄",
+      "summary": "대한민국 시군구 단위 주간 SPI-4weeks · SPEI-4weeks 가뭄지수. 기상관측소 강우 관측자료로 지수를 산정하고 관측소 주소지 시군구를 대표값으로 가정해 구축했다. 생산 = 차호영(고려대학교) · WGS84 · 1 km · 2000-01-01~2025-12-31 · 주 단위. Data Level = L1 Calibrated. ＊이 주제에는 Lv.0·Lv.2 폴더가 없다 — 계보 간선 0건. 설명 문서(#readme, 여는 코드 ipynb 포함)를 함께 싣는다.",
+      "files": [
+        {
+          "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/01.가뭄 데이터 여는 코드.ipynb",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPEI-4weeks.docx",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPI-4weeks.docx",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/Lv.1/SPEI_4weeks_sig_wide.gpkg",
+          "kind": "본체"
+        },
+        {
+          "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/Lv.1/SPI_4weeks_sig_wide.gpkg",
+          "kind": "본체"
+        }
+      ]
+    },
+    {
+      "key": "FF-GRIB",
+      "round": 4,
+      "name": "파일 포맷 실습 — GRIB",
+      "topic": "파일 포맷",
+      "summary": "GRIB2 격자 기상자료 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(GRIB).",
+      "files": [
+        {
+          "path": "02.File-format/file_format_1_grib/00.Data/surface.grib",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/01.Code/Lv1_Data Processing.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509010500.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509010600.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509010700.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509011400.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509011600.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/02.Results/str/ERA5_str_202509011800.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010000.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010100.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010200.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010300.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010400.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010500.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010600.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010700.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010800.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509010900.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011000.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011100.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011200.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011300.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011400.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011500.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011600.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011700.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011800.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509011900.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509012000.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509012100.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509012200.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/03.Figure/ERA5_ssr_202509012300.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/04.Lat_Lon_info/lat2d.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_1_grib/04.Lat_Lon_info/lon2d.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "FF-NC",
+      "round": 4,
+      "name": "파일 포맷 실습 — NetCDF",
+      "topic": "파일 포맷",
+      "summary": "NetCDF4 격자 기상자료 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(NetCDF).",
+      "files": [
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010010.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010020.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010030.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010040.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010050.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010100.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010110.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010120.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010130.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010140.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010150.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010200.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010210.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010220.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010230.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010240.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010250.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010300.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010310.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010320.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010330.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010340.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010350.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010400.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010410.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010420.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010440.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010450.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010500.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010510.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010520.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010530.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010540.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010550.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010600.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010610.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010620.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010630.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010640.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010650.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010700.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010710.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010720.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010730.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010740.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010750.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010800.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010810.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010820.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010830.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010840.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010850.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010900.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010910.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010920.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010940.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005010950.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011010.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011020.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011030.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011040.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011050.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011100.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011110.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011120.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011130.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011140.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011150.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011200.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011210.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011220.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011230.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011240.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011250.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011300.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011310.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011320.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011330.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011340.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011350.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011400.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011410.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011420.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011430.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011440.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011450.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011500.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011510.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011530.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011540.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011550.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011600.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011610.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011620.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011630.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011640.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011650.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011700.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011710.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011720.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011730.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011740.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011750.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011800.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011810.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011820.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011830.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011840.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011850.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011900.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011910.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011920.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011940.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005011950.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012000.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012010.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012020.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012030.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012040.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012050.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012100.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012110.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012120.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012130.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012140.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012150.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012200.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012210.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012220.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012230.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012240.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012250.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012300.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012310.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012320.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012330.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012340.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/00.Data/gk2a_ami_le2_lst_ko_202005012350.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/01.Code/Lv1_Data Processing.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005011550.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012240.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012250.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012310.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012330.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012340.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/03.Figure/gk2a_ami_le2_lst_ko_202005012350.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/04.Lat_Lon_info/gk2a_ko020lc_latlon.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/04.Lat_Lon_info/lat2d.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_2_nc/04.Lat_Lon_info/lon2d.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "FF-BIN",
+      "round": 4,
+      "name": "파일 포맷 실습 — 이진(bin)",
+      "topic": "파일 포맷",
+      "summary": "레이더 합성자료 이진 포맷 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(이진(bin)).",
+      "files": [
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131000.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131005.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131010.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131015.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131020.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131025.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131030.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131035.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131040.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131045.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131050.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/00.Data/RDR_CMP_HSR_PUB_202508131055.bin.gz",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/01.Code/Lv1_Data Processing.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131000.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131005.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131010.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131015.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131020.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131025.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131030.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131035.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131040.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131045.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131050.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/02.Results/RDR_CMP_HSR_PUB_202508131055.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131000.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131005.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131010.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131015.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131020.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131025.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131030.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131035.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131040.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131045.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131050.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/03.Figure/RDR_CMP_HSR_PUB_202508131055.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/rdr_500m_latlon.nc",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/레이더합성자료포맷정보.pdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lat_HSR.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_3_bin/04.Lat_Lon_info/Lon_HSR.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "FF-TIF",
+      "round": 4,
+      "name": "파일 포맷 실습 — GeoTIFF",
+      "topic": "파일 포맷",
+      "summary": "HLS S30 GeoTIFF 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(GeoTIFF).  ⚠ 04.Lat_Lon_info 에 위·경도 쌍이 2벌 있으나 데이터셋당 기준 격자 파일 상한이 2건(〈58〉)이라 한 벌만 격자로 싣고 나머지는 「본체」로 실었다.",
+      "files": [
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T51SYB.2025359T023019.v2.0.B03.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T51SYB.2025359T023019.v2.0.B04.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T52SCE.2025361T022121.v2.0.B02.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T52SCE.2025361T022121.v2.0.B03.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/00.Data/HLS.S30.T52SCE.2025361T022121.v2.0.B04.tif",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/01.Code/Lv1_Data Processing.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/01.Code/Lv1_Data Processing_SY.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/01.Code/Lv1_Data Processing_SY_ver.2.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T51SYB.2025359T023019.v2.0.B02.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T51SYB.2025359T023019.v2.0.B03.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T51SYB.2025359T023019.v2.0.B04.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T52SCE.2025361T022121.v2.0.B02.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T52SCE.2025361T022121.v2.0.B03.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/02.Results/HLS.S30.T52SCE.2025361T022121.v2.0.B04.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/03.Figure/HLS.S30.T51SYB.2025359T023019.v2.0_RGB.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/03.Figure/HLS.S30.T52SCE.2025361T022121.v2.0_RGB.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/04.Lat_Lon_info/HLS.S30.T52SCE.2025361T022121.v2.0_lat2d.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/04.Lat_Lon_info/HLS.S30.T52SCE.2025361T022121.v2.0_lon2d.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/04.Lat_Lon_info/HLS.S30.T51SYB.2025359T023019.v2.0_lat2d.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_4_tif/04.Lat_Lon_info/HLS.S30.T51SYB.2025359T023019.v2.0_lon2d.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    },
+    {
+      "key": "FF-HDF5",
+      "round": 4,
+      "name": "파일 포맷 실습 — HDF5/HDF-EOS",
+      "topic": "파일 포맷",
+      "summary": "MODIS HDF-EOS 판독 실습 묶음. 원자료(00.Data) · 판독 코드(01.Code) · 산출(02.Results) · 그림(03.Figure) · 좌표정보(04.Lat_Lon_info) 다섯 하위 폴더로 구성된다. 파일 종류 어휘가 「본체」·「기준 격자 파일」 둘뿐이라 이 구분은 경로로만 남는다(HDF5/HDF-EOS).  ⚠ 04.Lat_Lon_info 에 위·경도 쌍이 2벌 있으나 데이터셋당 기준 격자 파일 상한이 2건(〈58〉)이라 한 벌만 격자로 싣고 나머지는 「본체」로 실었다.",
+      "files": [
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019273.h28v05.061.2020313082838.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019281.h27v05.061.2020314051728.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019281.h28v05.061.2020314051209.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019289.h27v05.061.2020315001441.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019289.h28v05.061.2020315003912.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019297.h27v05.061.2020316034423.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/00.Data/MOD15A2H.A2019297.h28v05.061.2020316041359.hdf",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/01.Code/Lv1_Data Processing.py",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h27v05.061.2020313082826_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019273.h28v05.061.2020313082838_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h27v05.061.2020314051728_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019281.h28v05.061.2020314051209_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h27v05.061.2020315001441_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019289.h28v05.061.2020315003912_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h27v05.061.2020316034423_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_FparExtra_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_FparLai_QC.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_FparStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_Fpar_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_LaiStdDev_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/02.Results/MOD15A2H.A2019297.h28v05.061.2020316041359_Lai_500m.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019273.h27v05.061.2020313082826_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019273.h27v05.061.2020313082826_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019273.h28v05.061.2020313082838_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019273.h28v05.061.2020313082838_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019281.h27v05.061.2020314051728_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019281.h27v05.061.2020314051728_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019281.h28v05.061.2020314051209_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019281.h28v05.061.2020314051209_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019289.h27v05.061.2020315001441_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019289.h27v05.061.2020315001441_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019289.h28v05.061.2020315003912_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019289.h28v05.061.2020315003912_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019297.h27v05.061.2020316034423_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019297.h27v05.061.2020316034423_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019297.h28v05.061.2020316041359_Fpar_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/01.shot/MOD15A2H.A2019297.h28v05.061.2020316041359_Lai_500m.png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/03.Figure/02.merge/MOD15A2H A2019273 (h27v05 + h28v05).png",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/04.Lat_Lon_info/lat2d_h28v05.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/04.Lat_Lon_info/lon2d_h28v05.npy",
+          "kind": "본체"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/04.Lat_Lon_info/lat2d_h27v05.npy",
+          "kind": "기준 격자 파일"
+        },
+        {
+          "path": "02.File-format/file_format_5_HDF5/04.Lat_Lon_info/lon2d_h27v05.npy",
+          "kind": "기준 격자 파일"
+        }
+      ]
+    }
+  ]
+}
