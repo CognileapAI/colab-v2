@@ -361,6 +361,11 @@
 > ⭑ **⟨신설 2026-09-05 · 등재 `§9 〈336〉`⟩ 「창 8-b — dev 배포(AWS 필요)」 진입조건 — 2026-09-06 이후.**
 > ⛔ **창 8-a 가 `main` ff 로 닫히기 전에 열지 않는다.**
 > **진입조건 넷 — `〈334〉` 의 ㉡~㉣ 를 그대로 옮긴 것이다.**
+> ⭑ **⟨실측 2026-09-06 · 창 8-b 레인 · 등재 `§9 〈343〉`~`〈345〉`⟩ 진입조건 넷의 실측 상태 — 이 네 줄이 정본이다.**
+> ㉠ **선다(green)** — `main` 이 `87d5b87` 로 ff 됐고 PR #1 은 MERGED, 게이트 전수 `green 50 / red 0` 한 번의 실행. 근거 `reports/window-8a/lane-report.md` · 등재 `〈343〉`.
+> ㉡ **선다(green)** — `aws sts get-caller-identity` 성공(`user/colab-platform-s3-uploader-dev`) ＋ 그 SSH 키로 dev 호스트 접속 성공 · SG 22 규칙 있음.
+> ㉢ **미확인** — 이 레인의 IAM 은 S3 업로드 최소권한이라 `aws support describe-severity-levels` 가 **AccessDenied**. ⛔ 「섰다」로도 「안 섰다」로도 적지 않는다. 콘솔 실측 = **Ted 의 눈 확인**. **dev 배포를 막지 않는다** — 등재 `〈345〉`.
+> ㉣ ⭑ **완화됐다 — `t4g.small` 로 연다**(Ted 판정 2026-09-06 · 등재 `〈344〉`). 실조회값(EC2 IMDS) = **`t4g.small`**(vCPU 2 · 메모리 1,841 MB)이라 종전 조건은 안 선다. **근거** = EC2 `dev.env` 자원 상한이 이미 **384/512/640/256m(합 1.79 GB)** 로 내려 잡혀 있고 · **스왑 4 GB** 가 살아 있고 · **4 단위가 3일간 healthy** 다. ⚠ **위험 존치** — `dmesg` 에 2026-09-02 cgroup OOM-kill 1건. ⛔ **규칙** = ⑸ 중 어떤 단위든 OOM-kill 되면 **그 자리에서 멈추고 보고**한다. 고침은 **`t4g.medium` 승격**이지 재시도가 아니다.
 > ㉠ **창 8-a done**(`main` ff ＋ 게이트 전수 green).
 > ㉡ **AWS 접근 인수 완료** — 회사(Cognileap) 명의 계정의 운영자 IAM 사용자·액세스 키 · SSH 키 `~/.config/colab-platform/dev-key.pem` · SG `colab-platform-app-dev-sg` 22번 규칙. **판정 = `aws sts get-caller-identity` 성공 ＋ 그 키로 dev 호스트에 ssh 접속 성공.** ⚠ **문서 수령은 판정이 아니다.**
 > ㉢ **유료 전환 완료** — **판정 = 계정 지원 플랜이 유료로 뜬다.**
