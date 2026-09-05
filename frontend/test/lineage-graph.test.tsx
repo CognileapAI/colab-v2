@@ -204,6 +204,21 @@ const SOURCE_ROOT_CHILD: LineageGraph = {
   ],
 };
 
+/**
+ * (c′) **같은 장면인데 서버가 원천 관계를 실은 판** (`BF-9` 완료 정의 ⑵).
+ * 노드는 (c) 와 한 글자도 다르지 않고, `edges` 에 `parentDatasetId: null` 한 줄이 더 있다.
+ * 계약이 이 모양을 이미 허용한다 — `LineageEdge.parentDatasetId` 산문 축자
+ * 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」. **가공 방식은 없다.**
+ */
+const SOURCE_ROOT_CHILD_WITH_EDGE: LineageGraph = {
+  ...SOURCE_ROOT_CHILD,
+  edges: [
+    ...SOURCE_ROOT_CHILD.edges,
+    { childDatasetId: OPEN_ID, parentDatasetId: null, parentRole: '주입력', method: null,
+      origin: 'manual', confirmedBy: 호랑이, confirmedAt: '2026-08-03T00:00:00Z' },
+  ],
+};
+
 describe('§8 가로축 — 빈 칸도 고아 화살표도 두지 않는다 (버그 3·5·7)', () => {
   it('루트 Lv0 는 왼쪽에 빈 칸을 두지 않는다 — 이 데이터 · 파생만 선다 (버그 5)', async () => {
     const { container } = renderDetail(OPEN_ID, only(ROOT_WITH_CHILD));
@@ -231,8 +246,71 @@ describe('§8 가로축 — 빈 칸도 고아 화살표도 두지 않는다 (버
     expect(rails[0]!.textContent).toContain('→');
   });
 
+  it('원천 관계가 실려 와도 같은 그림이다 — 화살표 2 · 라벨 0 (BF-9 완료 정의 ⑵)', async () => {
+    // **관계가 하나 늘었는데 그림은 그대로여야 한다.** 늘어난 관계에 `method` 가 없으므로
+    // 레일에 라벨이 생기지 않고, 원천은 자기 칸(0)에 이미 서 있으므로 칸도 늘지 않는다.
+    const before = renderDetail(OPEN_ID, only(SOURCE_ROOT_CHILD));
+    await settleLineage();
+    const shape = {
+      cols: renderedCols(before.container),
+      arrows: arrowCount(before.container),
+      rails: before.container.querySelectorAll('.lin-rail').length,
+      methods: before.container.querySelectorAll('[data-testid="lin-method"]').length,
+      rows: before.container.querySelectorAll('[data-testid="lrow"]').length,
+    };
+    expect(shape).toEqual({ cols: [0, 2, 3], arrows: 2, rails: 2, methods: 1, rows: 3 });
+    before.unmount();
+
+    const { container } = renderDetail(OPEN_ID, only(SOURCE_ROOT_CHILD_WITH_EDGE));
+    await settleLineage();
+    expect({
+      cols: renderedCols(container),
+      arrows: arrowCount(container),
+      rails: container.querySelectorAll('.lin-rail').length,
+      methods: container.querySelectorAll('[data-testid="lin-method"]').length,
+      rows: container.querySelectorAll('[data-testid="lrow"]').length,
+    }).toEqual(shape);
+    // 원천 행은 노드에서 오지 관계에서 오지 않는다 — **행이 겹쳐 생기지 않는다.**
+    const srcRows = Array.from(container.querySelectorAll('[data-testid="lrow"]')).filter(
+      (r) => (r as HTMLElement).dataset.stage === '원천',
+    );
+    expect(srcRows).toHaveLength(1);
+  });
+
+  it('기록 없음은 원천 관계 하나로 뒤집히지 않는다 (BF-9 완료 정의 ⑵)', async () => {
+    // 「기록 없음」은 **가공 전 데이터를 모른다**는 뜻이다. 연구실 밖 출처 표기가 실려 왔다고
+    // 빈 상태가 사라지면 edge 유무로 그림이 갈린다.
+    const unknown: LineageGraph = {
+      ...BASE,
+      unknownParents: true,
+      projectUseCount: 0,
+      nodes: [
+        { kind: '원천', datasetId: null, name: 'NMSC', processingLevel: null,
+          verified: false, navigable: false, bodyAccessible: true, deletedAt: null },
+        { kind: '이 데이터', datasetId: OPEN_ID, name: 'nakdong_raw_2025_Lv0.nc',
+          processingLevel: 0, verified: true, navigable: false, bodyAccessible: true,
+          deletedAt: null },
+      ],
+      edges: [],
+    };
+    const withEdge: LineageGraph = {
+      ...unknown,
+      edges: [
+        { childDatasetId: OPEN_ID, parentDatasetId: null, parentRole: '주입력', method: null,
+          origin: 'manual', confirmedBy: 호랑이, confirmedAt: '2026-08-03T00:00:00Z' },
+      ],
+    };
+    for (const g of [unknown, withEdge]) {
+      const { unmount } = renderDetail(OPEN_ID, only(g));
+      await settleLineage();
+      expect(screen.getByTestId('lin-empty')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('렌더된 칸은 모두 노드를 하나 이상 담는다', async () => {
-    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD, BASE]) {
+    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD,
+      SOURCE_ROOT_CHILD_WITH_EDGE, BASE]) {
       const { container, unmount } = renderDetail(OPEN_ID, only(g));
       await settleLineage();
       const cols = Array.from(container.querySelectorAll('[data-testid="lin-col"]'));
@@ -245,7 +323,8 @@ describe('§8 가로축 — 빈 칸도 고아 화살표도 두지 않는다 (버
   });
 
   it('화살표 개수는 언제나 렌더된 칸 수 − 1 이다', async () => {
-    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD, BASE]) {
+    for (const g of [ROOT_WITH_CHILD, LEAF_WITH_PARENT, SOURCE_ROOT_CHILD,
+      SOURCE_ROOT_CHILD_WITH_EDGE, BASE]) {
       const { container, unmount } = renderDetail(OPEN_ID, only(g));
       await settleLineage();
       const cols = renderedCols(container);
