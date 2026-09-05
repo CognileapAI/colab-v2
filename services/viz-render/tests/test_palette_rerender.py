@@ -23,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-from colab_viz.domains.d7_visualization import invalidation, palettes
+from colab_viz.domains.d7_visualization import invalidation, jobs, palettes
 from colab_viz.kernel import storage_layout
 
 from conftest import AUTH, make_client
@@ -122,6 +122,98 @@ def test_팔레트_재렌더는_새_키를_세우고_옛_벌을_지운다(source
     assert all(p.exists() for p in new_paths), "새 벌이 서지 않았다"
     assert new_job.invalidation_removed, "팔레트 재렌더가 옛 벌을 하나도 안 지웠다"
     assert not any(p.exists() for p in old_paths), "옛 팔레트 벌이 그대로 남았다"
+
+
+# ── ⑷ 회귀 가드 — 「완료」의 뜻이 좁아진 채로 있는가 (2026-09-05) ────────────
+#: 회수를 늦춰 「완료 표시 ↔ 회수 집행」 창을 **결정론으로** 벌린다. 이 창이 실물에서
+#: 15 ms 였고 시험 폴링 주기가 20 ms 라, 원래 red 는 표본 4회 중 3회로만 떴다 —
+#: 운에 기대는 시험은 가드가 아니다. 하네스를 시험 안에 두는 이유 = **게이트가 돌아야**
+#: 한다(레포 밖 플러그인은 CI 가 못 본다).
+_RECLAIM_DELAY_SECONDS = 0.3
+
+
+def _회수를_늦춘다(monkeypatch, seconds: float = _RECLAIM_DELAY_SECONDS) -> None:
+    _orig = invalidation.apply
+
+    def _slow(*args, **kwargs):
+        time.sleep(seconds)
+        return _orig(*args, **kwargs)
+
+    monkeypatch.setattr(invalidation, "apply", _slow)
+
+
+def test_화면이_완료를_본_그_순간_옛_벌은_이미_지워져_있다(source_root, put_target,
+                                                    tiny_geotiff, monkeypatch):
+    """**⑷ 의 순서 가드.** 「완료」는 회수까지 끝난 뒤에만 발행된다.
+
+    ⛔ 이 시험이 잠그는 결함 — `job.status = STATUS_DONE` 이 회수 **앞**에 서면,
+    상태를 폴링하는 진짜 클라이언트가 **「완료」인데 옛 벌이 그대로인 자리**를 본다.
+    오라클은 작업 내부가 아니라 **화면이 보는 것**이다: HTTP 로 `완료` 를 본 그 순간
+    ⑴ 옛 파일이 자리에 없고 ⑵ 집행 결과가 이미 적혀 있다.
+    ⚠ 회수를 늦춰 창을 벌리므로, 순서가 뒤집히면 **매번** red 다(간헐이 아니다).
+    """
+    _회수를_늦춘다(monkeypatch)
+    client = make_client(source_root, "thread")
+    tid = put_target(copy_from=[tiny_geotiff])
+    store = client.app.state.jobs
+    first = _render(client, tid, _BASE)
+    old_paths = [a.path for a in store.get(first["renderId"]).artifacts.all()]
+    assert old_paths and all(p.exists() for p in old_paths)
+
+    r = client.post("/viz/v1/renders", headers=AUTH, json={
+        "target": {"datasetId": tid}, "style": {"palette": _OTHER}})
+    assert r.status_code == 202, r.text
+    rid = r.json()["renderId"]
+
+    # 창이 열려 있는 동안 화면이 보는 것 — **`그리는 중` 하나뿐이고 계약을 벗어나지 않는다.**
+    창을_봤다 = False
+    body: dict = {}
+    deadline = time.monotonic() + 20.0
+    while time.monotonic() < deadline:
+        body = client.get(f"/viz/v1/renders/{rid}", headers=AUTH).json()
+        if body["status"] == "완료":
+            break
+        assert body["status"] == "그리는 중", f"제3의 상태가 보였다: {body['status']}"
+        assert body.get("stage") in (None, *jobs.STAGES), \
+            f"계약 밖 단계가 보였다: {body.get('stage')}"
+        assert "result" not in body, "`그리는 중` 인데 결과가 실렸다"
+        창을_봤다 = True
+        time.sleep(0.02)
+    assert body.get("status") == "완료", "재렌더가 끝나지 않았다"
+    assert 창을_봤다, "창이 아예 안 열렸다 — 이 시험이 순서를 재고 있지 않다"
+
+    job = store.get(rid)
+    assert not any(p.exists() for p in old_paths), \
+        "화면이 「완료」를 봤는데 옛 벌이 아직 자리에 있다 — 「완료」가 회수보다 먼저 발행됐다"
+    assert job.invalidation_removed, \
+        "화면이 「완료」를 봤는데 회수 집행이 아직 안 적혔다"
+
+
+def test_회수가_실패해도_렌더는_완료로_선다(source_root, put_target, tiny_geotiff,
+                                        monkeypatch):
+    """**음성 · ⑷-b 의 반대 절반.** 옛 벌을 못 지운 것은 **새 그림이 못 선 것이 아니다.**
+
+    지우다 실패했다고 렌더를 `실패` 나 영원한 `그리는 중` 으로 만들면, 볼 그림이
+    멀쩡히 서 있는데 화면이 그것을 못 쓴다. **`inline` 실행기로 잰다** — 예외가
+    스레드 안에서 조용히 사라지지 않고 접수 표면까지 올라오는 자리가 여기다.
+    """
+    client = make_client(source_root, "inline")
+    tid = put_target(copy_from=[tiny_geotiff])
+    store = client.app.state.jobs
+    first = _render(client, tid, _BASE)
+    old_paths = [a.path for a in store.get(first["renderId"]).artifacts.all()]
+    assert old_paths and all(p.exists() for p in old_paths)
+
+    def _못_지운다(*args, **kwargs):
+        raise OSError("자리를 지울 수 없다")
+
+    monkeypatch.setattr(invalidation, "apply", _못_지운다)
+    second = _render(client, tid, _OTHER)
+    assert second["status"] == "완료", "회수가 실패했다고 렌더까지 실패로 만들었다"
+    job = store.get(second["renderId"])
+    assert job.invalidation_removed == (), "지우지 못했는데 지웠다고 적혔다"
+    assert all(p.exists() for p in old_paths), "집행이 실패했는데 파일이 사라졌다"
+    assert all(a.path.exists() for a in job.artifacts.all()), "새 벌이 서지 않았다"
 
 
 def test_새_것이_선_뒤에_옛_것을_지운다(source_root, put_target, tiny_geotiff):

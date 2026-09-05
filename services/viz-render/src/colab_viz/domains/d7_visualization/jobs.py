@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 import time
 from collections import deque
@@ -47,6 +48,8 @@ STATUS_FAILED = "실패"
 #: **Binary(HSR) 만 남는다** — 헤더의 투영 파라미터 자리(36~63 B)가 실물에서 전부 0 이라
 #: 재현이 불가능하고, 명세 기재값으로 재구성해도 0.053°(≈5.9 km) 틀린다(`§5.1`).
 MAY_CARRY_COORDINATES = frozenset({"GeoTIFF", "NetCDF", "HDF4"})
+
+log = logging.getLogger("colab_viz.render_jobs")
 
 
 @dataclass
@@ -101,6 +104,11 @@ class RenderJob:
     #: 사실이라 따로 남긴다 — 종전에는 집행 결과가 어디에도 안 적혀서, 한 번도 집행되지
     #: 않고 있다는 사실을 아무도 볼 수 없었다.
     invalidation_removed: tuple[Path, ...] = ()
+    #: **그리기가 성공했는가 — 내부 신호다.** `status` 와 가른 이유가 이 항목이다:
+    #: 「완료」는 **회수까지 끝난 뒤에** 발행되므로(`_run_and_plan`), 그 사이 구간에서
+    #: 「그리기는 됐다」를 물을 자리가 따로 있어야 한다. `to_dict` 가 보지 않으므로
+    #: 계약 표면에 나가지 않는다.
+    render_succeeded: bool = False
     #: 완료(성공·실패 무관)를 알리는 자리. **바쁜 대기를 쓰지 않으려고 둔다.**
     #: `to_dict` 가 보지 않으므로 계약 표면에 나가지 않는다.
     done: threading.Event = field(default_factory=threading.Event, repr=False,
@@ -564,7 +572,14 @@ def _run(job: RenderJob) -> None:
                            "renderedParts": len(reads),
                            "missingParts": missing}
         job.stage = None
-        job.status = STATUS_DONE
+        # ⭑ ⟨2026-09-05 · `V-1` 간헐 red 근원 · advisor 권고 ⓐ⟩ **여기서 `완료`를 발행하지
+        # 않는다.** 종전에는 이 자리가 `job.status = STATUS_DONE` 이었고, 색인 등재 ·
+        # 회수 범위 계산 · `invalidation.apply()` 는 **그 뒤**(`_run_and_plan`)에서 돌았다.
+        # 그래서 상태를 보고 있던 관측자는 **「완료」인데 옛 벌이 아직 그대로**인 순간을
+        # 볼 수 있었다(실측 창 ≈15 ms · 시험 폴링 주기 20 ms → 표본 4회 중 3회 red).
+        # 완료 정의 ⑷ 는 「옛 산출물은 지운다」를 **완료의 구성요소**로 못박았으므로
+        # 「완료」는 그 삭제 뒤에 발행돼야 한다. 발행 자리는 `_run_and_plan` 의 `finally` 다.
+        job.render_succeeded = True
     except preview.BboxSanityError as e:
         # ⑪ — 격자는 있었는데 결과가 상식 밖이다. **지도형만 실패하고 ①②는 남는다.**
         job.stage = None
@@ -684,10 +699,12 @@ class JobStore:
                 self._remember_produced(job)
             plan = self._plan_for(job, event)
             job.invalidation = plan
-            if plan.regenerate and job.status == STATUS_DONE:
+            # ⚠ **`job.status` 로 성공을 묻지 않는다** — 이 시점의 상태는 아직 `그리는 중`
+            # 이다(발행이 아래 `finally` 로 내려갔다). 성공 여부는 `render_succeeded` 가 안다.
+            if plan.regenerate and job.render_succeeded:
                 job.invalidation_removed = invalidation.apply(
                     plan, previews_root=Path(job.spec.preview_dir))
-            elif job.status == STATUS_DONE:
+            elif job.render_succeeded:
                 # ⭑ ⟨`V-1` ⑷ · Ted RULING ㉙ · `PLAN-SoT §9 〈259〉`⟩ **사람이 부른 경로에도
                 # 집행이 선다 — 단, 팔레트가 대체한 벌에만.** 없던 것은 기구가 아니라
                 # **호출 한 자리**였다(`〈250〉` 실측 · `apply` 호출 전수 1건).
@@ -697,9 +714,29 @@ class JobStore:
                 # 구간 수에서 **색만 바뀐**」 옛 벌 하나뿐이다(완료 정의 ⑴⑷).
                 # ⚠ **새 것이 선 뒤다**(⑷-b) — 이 자리는 `_run(job)` 이 끝나고 성공한
                 # 뒤에만 지나므로 볼 그림이 하나도 없는 순간이 생기지 않는다.
-                job.invalidation_removed = invalidation.apply(
-                    self._supersede_for(job), previews_root=Path(job.spec.preview_dir))
+                # ⚠ **지우다 실패해도 렌더는 완료다**(advisor 권고 ⓐ 동반 조건). 옛 벌을
+                # 못 지운 것은 자리가 덜 치워진 것이지 **새 그림이 못 선 것이 아니다** —
+                # 여기서 던져 상태를 `실패`나 영구 `그리는 중` 으로 만들면 ⑷-b 의 반대
+                # 절반(「볼 그림이 하나도 없는 순간이 없다」)을 우리 손으로 깬다.
+                # **조용히 삼키지도 않는다** — 집행 실패는 기록으로 남는다.
+                # ⚠ 자동 경로(`plan.regenerate`)는 감싸지 않는다 — 거기서 던지는 것은
+                # `Y-1` 의 규율이다(`regenerate` 가 그 예외로 트리거를 안 걷는다).
+                try:
+                    job.invalidation_removed = invalidation.apply(
+                        self._supersede_for(job), previews_root=Path(job.spec.preview_dir))
+                except Exception:                    # noqa: BLE001 — 아래 한 줄이 사유다
+                    job.invalidation_removed = ()
+                    log.warning("팔레트 재렌더의 옛 벌 회수가 실패했다 — 렌더는 완료로 둔다: "
+                                "render_id=%s target=%s", job.render_id,
+                                job.spec.target.target_id, exc_info=True)
         finally:
+            # ⭑ **「완료」는 여기서, 회수가 끝난 뒤에 한 번 발행된다**(advisor 권고 ⓐ).
+            # 대입 하나라 원자적이고, 잠금이 필요 없다. `finally` 인 이유 — 범위 계산이
+            # 던져도(`_plan_for`·`_supersede_for`) 그린 렌더가 **영원히 「그리는 중」**
+            # 으로 남지 않게 한다. 그린 적 없는 작업은 `render_succeeded` 가 거짓이라
+            # 이 자리를 지나도 상태가 안 바뀐다.
+            if job.render_succeeded:
+                job.status = STATUS_DONE
             job.done.set()
 
     def _tile_url(self, render_id: str, expires_at: datetime | None,
