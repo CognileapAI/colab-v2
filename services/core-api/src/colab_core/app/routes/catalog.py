@@ -587,6 +587,25 @@ _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
 #: 옮겨 적은 사본**이고, 검사를 안 하면 사용자의 오타가 IntegrityError → 500 이 된다.
 _TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
 
+#: ⭑ **⟨19차 해제 · PRD-15⟩ 설명이 비었을 때의 문구 — 한 자리에만 둔다.**
+#: 등록(`createDataset`)과 수정(`updateDataset`)이 **같은 문장**을 낸다. 두 벌을 두면
+#: 한쪽만 고쳐지는 날이 오고, 그날 사용자는 같은 잘못에 다른 말을 듣는다.
+EMPTY_SUMMARY_MESSAGE = "설명을 적어 주세요."
+
+#: 설명이 **이미 비어 있던 기존 행**을 고칠 때의 문구. 위와 다른 사건이다 — 사용자가
+#: 설명을 지운 것이 아니라 **원래 없던 것**이고, 그래서 「채워 주세요」다(미결-5 ⓐ ·
+#: rev1 상세 문면과 같은 문장).
+BLANK_SUMMARY_ON_UPDATE_MESSAGE = "설명이 아직 없어요 — 수정에서 채워 주세요."
+
+
+def is_blank_summary(value: object) -> bool:
+    """공백만 있는 설명은 **없는 것과 같다.**
+
+    `minLength: 1` 은 공백 세 칸을 통과시킨다 — 계약이 못 막는 자리를 여기서 막는다.
+    `btrim` 후 길이 검사(`d3_dataset_description.name` CHECK 와 같은 모양)의 코드 층 사본이다.
+    """
+    return not isinstance(value, str) or not value.strip()
+
 
 def _is_datetime(value: str) -> bool:
     """계약 `DataPeriod` 는 `format: date-time` 이다 — **자유 문자열이 아니다.**
@@ -689,6 +708,26 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
         name = changes["name"]
         if not isinstance(name, str) or not name.strip():
             raise errors.bad_request("데이터셋 이름을 적어 주세요.")   # ERR-001 문구 그대로
+
+    # ⭑ **⟨19차 해제 · PRD-15 · 미결-5 ⓐ⟩ 설명은 「고치는 순간」 필수가 된다.**
+    #
+    # 두 갈래다 — 둘이 다른 사건이라 문구도 다르다.
+    #  ⑴ **열쇠가 왔다** → 비울 수 없다. 계약이 `type: string, minLength: 1` 로 `null` 을
+    #     닫았고, 공백만 있는 문자열은 `minLength` 가 못 막아 여기서 `strip` 으로 막는다.
+    #  ⑵ **열쇠가 안 왔는데 저장된 값이 비어 있다** → 400. 미결-5 ⓐ 축자 =
+    #     「그 행을 수정할 때 채우게 한다」. 열쇠 생략의 뜻(「그대로 두라」)은 안 바뀌지만,
+    #     **그대로 둔 결과가 빈 설명이면 그 수정은 저장되지 않는다.**
+    #     ⛔ 이것이 「일괄 채우기」가 아닌 이유 — **읽기는 종전대로 되고**(상세가 안내
+    #     문구를 보인다) 행을 서버가 먼저 고치지도 않는다. 사람이 그 행에 손을 댈 때만 묻는다.
+    #     판정은 저장된 값을 봐야 하므로 계약이 낼 수 없다 — 그래서 서버에 있다.
+    if "summary" in changes:
+        if is_blank_summary(changes["summary"]):
+            raise errors.bad_request(EMPTY_SUMMARY_MESSAGE)
+        changes["summary"] = changes["summary"].strip()
+    elif changes:
+        core = d3_catalog.find_dataset_core(db, dataset_id)
+        if core is not None and is_blank_summary(core.summary):
+            raise errors.bad_request(BLANK_SUMMARY_ON_UPDATE_MESSAGE)
 
     if "representativeFileId" in changes:
         file_id = changes["representativeFileId"]

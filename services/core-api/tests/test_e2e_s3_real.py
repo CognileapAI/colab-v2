@@ -77,7 +77,7 @@ def _upload_real(client, path: Path) -> dict:
 
 def _register(client, receipt, name: str) -> str:
     r = client.post(f"{API_PREFIX}/datasets",
-                    json={"uploadId": receipt["uploadId"], "name": name},
+                    json={"uploadId": receipt["uploadId"], "name": name, "summary": "시험용 설명 한 줄"},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     return r.json()["datasetId"]

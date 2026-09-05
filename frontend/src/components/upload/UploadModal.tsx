@@ -91,6 +91,9 @@ export function UploadModal(props: {
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
   const [gridSkipped, setGridSkipped] = useState(false);
   const [nameError, setNameError] = useState(false);
+  //: ⭑ **⟨19차 해제 · PRD-15⟩ 설명도 이름과 같은 자리에 선다** — 필수 칸이 둘이 됐다.
+  //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
+  const [summaryError, setSummaryError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [attaching, setAttaching] = useState(false);
   // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
@@ -341,6 +344,14 @@ export function UploadModal(props: {
       return;
     }
     setNameError(false);
+    if (!summary.trim()) {
+      // PRD-15 — 설명이 필수다. 계약 `DatasetCreate.required` 와 같은 판정을 화면이 먼저 한다.
+      setSummaryError(true);
+      setStep(1);
+      window.setTimeout(() => document.getElementById('reg-summary')?.focus(), 0);
+      return;
+    }
+    setSummaryError(false);
     setRegisterError(null);
     try {
       const made = await upload.register({
@@ -348,7 +359,9 @@ export function UploadModal(props: {
         name: name.trim(),
         // **미정을 표현할 수 있어야 한다** — 4값 CHECK 는 「값이 있다면 넷 중 하나」다
         topic: topic || null,
-        summary: summary.trim() || null,
+        // ⭑ **⟨19차 해제 · PRD-15⟩ `null` 이 아니다** — 계약이 `type: string` 으로 닫았고
+        // 위에서 빈 값을 이미 걸렀다.
+        summary: summary.trim(),
         sourceLabel: sourceLabel.trim() || null,
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
@@ -393,8 +406,13 @@ export function UploadModal(props: {
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
           <FileDropCard picked={picked} onPick={pick} onKind={setKind} />
 
+          {/* ⭑ **⟨19차 · PRD-28⟩ 좌우 두 칸 — 미리보기 2 : 입력 3.**
+              rev1 축자 = 「좌우를 반씩 쓰던 것을 미리보기 2 : 입력 3 으로」. 비율은 CSS
+              (`.up-split`)가 갖는다 — 화면 코드가 폭을 계산하지 않는다. 좁은 폭에서는
+              한 칸으로 접히고, 그때 순서는 미리보기 → 입력 그대로다. */}
           {picked.length > 0 && (
-            <>
+            <div className="up-split" data-testid="up-split">
+              <div className="up-split-preview" data-testid="up-split-preview">
               <PreviewPanel
                 source={props.sources.preview}
                 uploadId={uploadId}
@@ -410,7 +428,10 @@ export function UploadModal(props: {
                   onSkipGrid: () => setGridSkipped(true),
                 }}
               />
+              </div>
 
+              {/* 오른쪽 칸 — 사람이 적는 자리. 등록 게이트도 여기 선다(요약 레일이 아니다). */}
+              <div className="up-split-form" data-testid="up-split-form">
               {/* 후주입 확정 — 등록 게이트와 **같은 자리**다. 화면 개념을 늘리지 않는다.
                   판별이 끝나기 전에는 누를 수 없다 — 축이 정해져야 반영할 것이 있다. */}
               {attach ? (
@@ -485,45 +506,49 @@ export function UploadModal(props: {
                 </div>
               </div>
               ) : null}
-            </>
+
+            {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
+                옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치).
+                  ⭑ ⟨PRD-28⟩ 그 「아래」가 **오른쪽 칸 안의 아래**가 됐다 — 순서는 그대로다. */}
+            {!attach && registerOpen && (
+              <RegisterArea
+                step={step}
+                onStep={setStep}
+                fileName={bodyName}
+                lineage={lineage}
+                status={status}
+                projectSource={props.sources.projects}
+                name={name}
+                onName={setName}
+                topic={topic}
+                onTopic={setTopic}
+                summary={summary}
+                onSummary={setSummary}
+                variables={variables}
+                onVariables={setVariables}
+                periodStart={periodStart}
+                onPeriodStart={setPeriodStart}
+                periodEnd={periodEnd}
+                onPeriodEnd={setPeriodEnd}
+                crs={crs}
+                onCrs={setCrs}
+                sourceLabel={sourceLabel}
+                onSourceLabel={setSourceLabel}
+                projects={projects}
+                onProjects={setProjects}
+                nameError={nameError}
+                summaryError={summaryError}
+                registerError={registerError}
+                lineageStep={lineageStep}
+                lineageCtx={lineageCtx}
+                onCancel={() => setRegisterOpen(false)}
+                onSubmit={() => void submit()}
+              />
+            )}
+              </div>
+            </div>
           )}
 
-          {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
-              옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치) */}
-          {!attach && registerOpen && (
-            <RegisterArea
-              step={step}
-              onStep={setStep}
-              fileName={bodyName}
-              lineage={lineage}
-              status={status}
-              projectSource={props.sources.projects}
-              name={name}
-              onName={setName}
-              topic={topic}
-              onTopic={setTopic}
-              summary={summary}
-              onSummary={setSummary}
-              variables={variables}
-              onVariables={setVariables}
-              periodStart={periodStart}
-              onPeriodStart={setPeriodStart}
-              periodEnd={periodEnd}
-              onPeriodEnd={setPeriodEnd}
-              crs={crs}
-              onCrs={setCrs}
-              sourceLabel={sourceLabel}
-              onSourceLabel={setSourceLabel}
-              projects={projects}
-              onProjects={setProjects}
-              nameError={nameError}
-              registerError={registerError}
-              lineageStep={lineageStep}
-              lineageCtx={lineageCtx}
-              onCancel={() => setRegisterOpen(false)}
-              onSubmit={() => void submit()}
-            />
-          )}
         </div>
       </div>
 

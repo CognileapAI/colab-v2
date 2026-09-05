@@ -2537,13 +2537,13 @@ items:
 
   - id: WU-A4
     name: 설명 필수 + 레이아웃 (PRD-15·28)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)"]
     depends_on: ["WU-A3"]
     completion_def: "설명 없는 등록이 400, 공백만도 400, 기존 NULL 행이 안내 문구와 함께 뜬다. 1280px 에서 좌우 2:3 · 짧은 값 3칸 한 줄"
-    evidence: "dev-package/sessions/p3-summary-required-<YYYYMMDD>.md"
+    evidence: "dev-package/sessions/p3-summary-required-20260905.md"
     deadline: null
     note: "DB 변경 0 — NOT NULL 금지·일괄 채우기 금지(미결-5 ⓐ). DatasetCreate.required 에 summary 추가가 파괴적 변경이다"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-15", "PRD-28"]

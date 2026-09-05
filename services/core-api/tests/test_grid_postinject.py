@@ -48,7 +48,7 @@ def _fresh_dataset(client, *, name: str = "후주입 대상") -> str:
     데이터셋에서 확인한다 — 그것이 실제 사용자 경로이기도 하다.
     """
     upload_id = _upload(client, names=["body.nc"], kinds=[BODY])
-    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name},
+    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name, "summary": "시험용 설명 한 줄"},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     return r.json()["datasetId"]
@@ -98,7 +98,7 @@ def test_registering_a_grid_only_upload_is_400(p2_client) -> None:
     """등록 전환에는 **본체가 있어야 한다** — 격자만 든 묶음은 데이터가 아니라 좌표다."""
     client = p2_client()
     upload_id = _upload(client, names=["lat.npy"], kinds=[GRID])
-    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "격자만"},
+    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "격자만", "summary": "시험용 설명 한 줄"},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 400, r.text
 
@@ -272,7 +272,7 @@ def test_an_attached_upload_cannot_be_registered(p2_client, sql) -> None:
     assert client.post(f"{API_PREFIX}/datasets/{dataset_id}/grid-files",
                        json={"uploadId": upload_id},
                        headers=auth(TOKEN_RES)).status_code == 201
-    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "x"},
+    r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "x", "summary": "시험용 설명 한 줄"},
                     headers=auth(TOKEN_RES))
     assert r.status_code in (400, 409), r.text
 

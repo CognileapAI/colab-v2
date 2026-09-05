@@ -34,13 +34,20 @@ export type TextFieldSpec = {
   label: string;
   /** 여러 줄 입력인가. 설명은 긴 글이라 `textarea` 다. */
   multiline?: boolean;
-  /** 비울 수 없는 칸인가. 지금은 이름 하나다. */
+  /**
+   * 비울 수 없는 칸인가 — **라벨에 `필수` 배지가 선다.**
+   *
+   * ⭑ **⟨19차 해제 · PRD-15 · WU-A4⟩ 설명이 둘째로 들어왔다** (종전은 이름 하나).
+   * ⚠ **`draftError` 는 이름만 본다** — 설명은 보내기 전에 막지 않는다. 설명이 비어 있는
+   *   기존 행은 **서버가 저장된 값을 봐야** 판정할 수 있고(미결-5 ⓐ), 화면이 흉내 내면
+   *   두 판정이 갈린다. 그래서 배지로 알리고 **400 을 그대로 올린다**.
+   */
   required?: boolean;
 };
 
 export const TEXT_FIELDS: readonly TextFieldSpec[] = [
   { key: 'name', label: '이름', required: true },
-  { key: 'summary', label: '설명', multiline: true },
+  { key: 'summary', label: '설명', multiline: true, required: true },
   { key: 'sourceLabel', label: '원천 표기' },
   { key: 'crs', label: '좌표계' },
 ];
@@ -109,6 +116,14 @@ export function toPatch(detail: DatasetDetail, draft: DatasetEditDraft): Dataset
     if (f.key === 'name') continue;
     if (draft[f.key] === before[f.key]) continue;
     const next = draft[f.key].trim();
+    if (f.key === 'summary') {
+      // ⭑ **⟨19차 해제 · PRD-15⟩ 설명에는 「비워라」가 없다** — 계약이 `type: string` 이다.
+      // 빈 칸이면 **빈 문자열을 그대로 보내** 서버 400(`설명을 적어 주세요.`)을 받는다.
+      // ⛔ 화면이 먼저 막지 않는다 — 저장된 값을 봐야 하는 판정(미결-5 ⓐ)까지 흉내 내면
+      //    두 자리가 갈린다. 문구의 정본은 서버 봉투 하나다.
+      patch.summary = next;
+      continue;
+    }
     patch[f.key] = next.length > 0 ? next : null;
   }
   const nextPeriod = periodOf(draft);

@@ -1780,8 +1780,21 @@ export interface components {
              *     임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
              */
             topic?: string | null;
-            /** @description 한 줄 요약. */
-            summary?: string | null;
+            /**
+             * @description 설명 — **필수다** (⟨19차 해제 · PRD-15 · `R-07`·`R-17`⟩).
+             *
+             *     종전은 `[string, "null"]` 선택 칸이었다. rev1 축자 = 「연구자가 직접 쓴 맥락이
+             *     이 데이터의 값어치다」 — 그 맥락이 없으면 남이 이 묶음을 다시 쓸 수 없다.
+             *     그래서 **필수 칸이 이름 ＋ 설명 둘**이 된다 (`VAL-001` 확장).
+             *
+             *     ⚠ **DB 는 그대로 nullable 이다** (미결-5 ⓐ). `NOT NULL` 을 걸지 않고 기존 빈
+             *     행을 일괄로 채우지도 않는다 — 막는 자리는 **쓰기 경로**뿐이고, 이미 있는 행은
+             *     그 행을 고칠 때 채워진다.
+             *
+             *     공백만 있는 문자열은 `minLength` 가 못 막는다 — **서버가 `btrim` 후 길이로
+             *     거절한다**(`d3_dataset_description.name` CHECK 와 같은 모양).
+             */
+            summary: string;
             /** @description 원천 표기 — 데이터셋이 아니라 표기다 (`Policy §4 용어` · 계보 그래프의 점선 노드). */
             sourceLabel?: string | null;
             /**
@@ -1832,7 +1845,16 @@ export interface components {
             name?: string;
             /** @description 값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E). */
             topic?: string | null;
-            summary?: string | null;
+            /**
+             * @description 설명. ⭑ **⟨19차 해제 · PRD-15⟩ 열쇠가 오면 비울 수 없다** — `null` 도 공백도
+             *     받지 않는다. 종전은 `[string, "null"]` 이라 「비우라」가 가능했다.
+             *
+             *     **열쇠를 생략하는 것은 여전히 「그대로 두라」다** — 부분 수정의 뜻은 안 바뀐다.
+             *     다만 **설명이 비어 있는 기존 행을 고치면** 그 수정에 설명이 실려야 한다
+             *     (미결-5 ⓐ 「그 행을 수정할 때 채우게 한다」) — 그 판정은 저장된 값을 봐야 하므로
+             *     계약이 아니라 **서버**가 낸다(400).
+             */
+            summary?: string;
             /**
              * @description 원천 표기 (`VAL-009`). **`DatasetCreate` 에는 있는데 여기 없어서 고칠 길이
              *     없던 값이다.** 연구실 밖 출처의 이름이며 계보 그래프의 점선 노드가 된다.

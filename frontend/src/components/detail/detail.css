@@ -37,6 +37,13 @@
 .detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
 /* 버그 15 · A안 — 설명문의 `／` 를 표시 단계에서만 나눈다. 조각이 1개면 이 규칙이 아예 안 걸린다.
    촘촘하게 둔다 — 헤더는 칩·기본 정보가 접힘선 위에 남아야 하는 자리다. */
+/* ⭑ ⟨19차 · PRD-15 · 미결-5 ⓐ⟩ 설명이 빈 기존 행의 안내 한 줄.
+   본문(`dh-sum`)보다 약하게 — 값이 아니라 **아직 없다는 사실**이다. */
+.detail-page .dh-sum-empty {
+  font-size: var(--text-body);
+  color: var(--color-gray-500);
+  margin: 5px 0 0;
+}
 .detail-page .dh-sum-lead { margin: 0; }
 .detail-page .dh-sum-list { margin: 3px 0 0; padding-left: 16px; list-style: disc; }
 .detail-page .dh-sum-list li { margin-top: 1px; line-height: 1.5; }
@@ -133,7 +140,9 @@
 }
 .detail-page .dt-edit .de-grid { display: grid; gap: 12px; }
 .detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
-.detail-page .dt-edit .de-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; }
+.detail-page .dt-edit .de-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
+/* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */
+.detail-page .dt-edit .de-req { font-size: 9px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
 .detail-page .dt-edit .de-v {
   width: 100%;
   font: inherit;

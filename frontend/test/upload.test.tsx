@@ -331,6 +331,11 @@ async function dropFiles(files: File[]) {
 async function openRegister() {
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ **⟨19차 해제 · PRD-15 · WU-A4⟩ 설명이 필수 칸이 됐다** — 이름과 같은 급이다.
+  // 이 시험들이 재는 것은 설명이 아니라 **그 뒤의 것들**(계보·프로젝트·계약 형상)이므로,
+  // 등록을 여는 준비 단계에서 필수 칸을 채워 둔다. 설명 자체의 판정은
+  // `test/summary-required-20260905.test.tsx` 가 따로 잰다.
+  await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
 }
 
 const stepBtn = (n: '①' | '②' | '③') => screen.getByRole('button', { name: new RegExp(`^${n}`) });

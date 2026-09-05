@@ -30,7 +30,8 @@ from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
-from .catalog import dataset_detail, validate_human_metadata
+from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
+                      validate_human_metadata)
 
 router = APIRouter()
 
@@ -495,6 +496,14 @@ def create_dataset(request: Request, body: dict = None,
     name = body.get("name")
     if not isinstance(name, str) or not name.strip():
         raise errors.bad_request("name 은 1자 이상이다.")
+    # ⭑ **⟨19차 해제 · PRD-15⟩ 설명은 필수다.** 계약 `DatasetCreate.required` 에
+    # `summary` 가 들어갔고, **런타임에 그것을 집행하는 것은 이 줄뿐이다**(§5-㉰-4
+    # 「집행 없는 신설」 금지). `minLength: 1` 은 공백 세 칸을 못 막으므로 **`strip` 후
+    # 길이**로 잰다 — `d3_dataset_description.name` CHECK 와 같은 모양이다.
+    # ⛔ DB 는 그대로 nullable 이다(미결-5 ⓐ) — 막는 자리는 쓰기 경로뿐이다.
+    summary = body.get("summary")
+    if is_blank_summary(summary):
+        raise errors.bad_request(EMPTY_SUMMARY_MESSAGE)
     source_label = body.get("sourceLabel")
     if source_label is not None and (not isinstance(source_label, str) or len(source_label) > 60):
         raise errors.bad_request("sourceLabel 은 60자 이하다.")
@@ -548,7 +557,8 @@ def create_dataset(request: Request, body: dict = None,
     d3_catalog.register_dataset(
         db, dataset_id=dataset_id, owner_id=subject.account_id,
         uploader_id=subject.account_id, name=name.strip(), topic=body.get("topic"),
-        summary=body.get("summary"), source_label=source_label,
+        # 앞뒤 공백은 저장하지 않는다 — 검사한 값과 저장한 값이 갈리지 않게 한다.
+        summary=summary.strip(), source_label=source_label,
         # 포맷은 **파이프라인이 판정한 값**만 옮긴다. 조각마다 다르면 아직 모르는 것이다.
         detected_format=(formats.pop() if len(formats) == 1 else None),
         bundle_file_name=(body_files[0].file_name if body_files else None),

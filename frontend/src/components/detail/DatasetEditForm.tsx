@@ -54,7 +54,11 @@ export function DatasetEditForm(props: {
       <div className="de-grid">
         {TEXT_FIELDS.map((f) => (
           <label className="de-row" key={f.key}>
-            <span className="de-k">{f.label}</span>
+            <span className="de-k">
+              {f.label}
+              {/* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸은 라벨이 그렇게 말한다. */}
+              {f.required ? <span className="de-req">필수</span> : null}
+            </span>
             {f.multiline ? (
               <textarea
                 className="de-v"

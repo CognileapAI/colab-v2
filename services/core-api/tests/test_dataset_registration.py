@@ -26,7 +26,8 @@ def make_upload(client, *, files=None, token=TOKEN_RES) -> dict:
 
 
 def register(client, receipt, **extra):
-    body = {"uploadId": receipt["uploadId"], "name": "등록 시험 데이터셋", **extra}
+    body = {"uploadId": receipt["uploadId"], "name": "등록 시험 데이터셋",
+            "summary": "시험용 설명 한 줄", **extra}
     return client.post(f"{API_PREFIX}/datasets", json=body, headers=auth(TOKEN_RES))
 
 
@@ -133,7 +134,8 @@ def test_a_human_uploaded_file_is_never_recorded_as_our_product(p2_client, sql) 
     # ⓑ 「우리 산출물」·「파생」을 적을 자리가 요청에 없다 — 있으면 400 이다.
     for forged in ({"derived": True}, {"cog": True}, {"isOurProduct": True}):
         r = client.post(f"{API_PREFIX}/datasets",
-                        json={"uploadId": make_upload(client)["uploadId"], "name": "x", **forged},
+                        json={"uploadId": make_upload(client)["uploadId"], "name": "x",
+                              "summary": "시험용 설명 한 줄", **forged},
                         headers=auth(TOKEN_RES))
         assert r.status_code == 400, f"계약에 없는 필드 {forged} 가 통과했다."
 

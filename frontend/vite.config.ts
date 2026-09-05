@@ -29,6 +29,9 @@ export default defineConfig(({ mode }) => ({
         /detail\.css\?raw$/,
         /dashboard\.css(\?raw)?$/,
         /search\.css(\?raw)?$/,
+        // WU-A4 · PRD-28 — 등록 화면 2:3 과 짧은 값 3칸은 **선언**으로만 잴 수 있다
+        // (jsdom 에 레이아웃 엔진이 없다). 규칙 원문을 `?raw` 로 읽는다.
+        /upload\.css\?raw$/,
       ],
     },
   },
