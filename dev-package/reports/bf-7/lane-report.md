@@ -2,7 +2,7 @@
 
 - 대상 항목 = `dev-package/work-items.yaml` `BF-7`
 - 브랜치 = `bf-7/screenshot-revoke-timing` (기반 `b0c1f34`)
-- 커밋 = `932b3f0` · `fa91aee`(수용 검토 반영)
+- 커밋 = `932b3f0` · `3a6cff2`(수용 검토 반영)
 - 작업일 = 2026-09-05
 
 ---
@@ -118,7 +118,7 @@ download.path()   : non-null
 
 ## §6-2 수용 검토 반영 (조건부 수용 → 집행)
 
-지시 4항을 그대로 집행했다. 커밋 `fa91aee`.
+지시 4항을 그대로 집행했다. 커밋 `3a6cff2`.
 
 ### ⑴ 회수 지연을 `0` → 이름 붙인 상수 4000 ms
 
@@ -182,7 +182,7 @@ frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src�
 
 ## §7 대장 `evidence:` 초안 (BF-5 문체)
 
-> 커밋 `932b3f0`(고침 ＋ 시험) ＋ `fa91aee`(수용 검토 반영 — 지연 상수화·시험 조임) · 기반 `b0c1f34`.
+> 커밋 `932b3f0`(고침 ＋ 시험) ＋ `3a6cff2`(수용 검토 반영 — 지연 상수화·시험 조임) · 기반 `b0c1f34`.
 > `ScreenshotButton.tsx` `take()` 의 내려받기 앵커를 `document.body` 에 붙여 누르고, 앵커 제거와
 > `URL.revokeObjectURL` 을 이름 붙인 상수 `OBJECT_URL_RETENTION_MS`(**4000 ms**) 뒤로 미룬다 —
 > 크롬은 내비게이션 시작 시점에 `blob:` 핸들을 잡아 `0` 으로도 되지만 **파이어폭스는 가져오기 전에
