@@ -183,6 +183,9 @@ export function UploadModal(props: {
   const resumeFromRef = useRef<'banner' | 'failure' | null>(null);
   /** 실패로 재개를 무장한 시점의 파일 서명 — 이것과 달라지면 그 무장은 무효다. */
   const armedSignatureRef = useRef<string>('');
+  // ⭑ ⟨advisor ② · F3⟩ 배경 클릭의 **눌린 자리**. 모달 안에서 눌러 배경에서 뗀 드래그는
+  //   click.target 이 공통 조상(배경)이 되므로, 눌린 자리까지 배경일 때만 닫는다.
+  const downOnBackdrop = useRef(false);
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
 
@@ -334,6 +337,7 @@ export function UploadModal(props: {
    *  - ① 이름(자동 초안과 다를 때만) · 주제 · 변수 · 기간 시작·끝 · 좌표계 · 설명
    *  - ② 담은 프로젝트·논문 건수
    *  - ③ 원천 표기 · **확정된** 계보 부모 건수(`LineageStep` 이 확인된 것만 올린다)
+   *  - ② 관측 간격 값·단위 · 기간 최소 단위
    *
    * 세지 않는 것 = **자동으로 채워진 값**. 파일명에서 만든 이름 초안 · 확장자 · 용량 ·
    * 읽기 전용 가공 단계 칸 · (R-B 가 더할) 기본 선택값 `Lv2`·`연구실 구성원 전체`.
@@ -349,6 +353,11 @@ export function UploadModal(props: {
     periodEnd.trim() !== '' ||
     crs.trim() !== '' ||
     sourceLabel.trim() !== '' ||
+    // ⭑ ⟨advisor ② · F2⟩ 관측 간격 3필드도 사람이 적은 값이다. 빠져 있으면 간격만 적은
+    //   사용자가 Esc·배경 클릭 한 번에 되묻히지 않고 잃는다 — PRD-14 가 없애려던 반대 증상.
+    intervalValue.trim() !== '' ||
+    intervalUnit.trim() !== '' ||
+    granularity.trim() !== '' ||
     projects.length > 0 ||
     // ⭑ ⟨WU-A9R · PRD-14 증분⟩ 담은 프로젝트 건수와 **대표 그림 교체 여부**를 함께 센다.
     //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
@@ -432,6 +441,9 @@ export function UploadModal(props: {
     setIntakeError(null);
     setRendered(null);
     setGridSkipped(false);
+    // ⭑ ⟨advisor ② · F1⟩ 대표 그림도 파일에서 왔다. 플래그만 남으면 다시 올린 사람이
+    //   아무것도 안 적고도 되묻힌다.
+    setThumbReplaced(false);
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -519,8 +531,8 @@ export function UploadModal(props: {
         setConfirmClose(false);
         return;
       }
-      if (hasHumanInput) setConfirmClose(true);
-      else props.onClose();
+      // ⭑ ⟨advisor ② · F4⟩ 판정식은 `requestClose()` 한 곳이다 — 갈래를 복제하지 않는다.
+      requestClose();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -664,8 +676,13 @@ export function UploadModal(props: {
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
       //   `event.target === event.currentTarget` 이라 모달 **안쪽** 클릭은 여기 닿지 않는다.
+      //   ⭑ ⟨advisor ② · F3⟩ 누른 자리도 배경이어야 한다 — 모달 안에서 눌러 배경에서 뗀
+      //   드래그(텍스트 선택)는 click.target 이 배경이 되어 확인 없이 취소되던 자리다.
+      onMouseDown={(e) => {
+        downOnBackdrop.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) requestClose();
+        if (e.target === e.currentTarget && downOnBackdrop.current) requestClose();
       }}
     >
       <div

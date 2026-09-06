@@ -134,6 +134,14 @@ async function click(el: Element | null) {
   await act(async () => {});
 }
 
+/** 배경 클릭 = 배경에서 눌러 배경에서 뗀 것. 눌림 자리까지 재야 드래그와 갈린다 (F3). */
+async function backdropClick() {
+  const back = screen.getByTestId('upload-backdrop');
+  fireEvent.mouseDown(back);
+  fireEvent.click(back);
+  await act(async () => {});
+}
+
 async function change(el: Element | null, value: string) {
   fireEvent.change(el as HTMLElement, { target: { value } });
   await act(async () => {});
@@ -271,13 +279,45 @@ describe('PRD-14 증분 — 손댐 판정 2필드', () => {
     expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
+
+  // F1 — 대표 그림 플래그는 파일과 함께 내린다. 파일을 빼면 그 그림도 함께 사라지므로
+  // 플래그만 남으면 다시 올린 사람이 아무것도 안 적고도 되묻힌다.
+  it('파일을 빼면 대표 그림 교체 표시도 내린다 — 재첨부 뒤 닫기는 되묻지 않는다', async () => {
+    await openRegisterWithFile();
+    fireEvent.change(await screen.findByTestId('up-thumb-input'), {
+      target: { files: [makeFile('thumb.png', 1024, 'image/png')] },
+    });
+    await act(async () => {});
+    await click(screen.getByRole('button', { name: /빼기$/ }));
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [makeFile(FILE_NAME)] } });
+    await act(async () => {});
+    await screen.findByTestId('up-files');
+    await click(screen.getByTestId('upload-close'));
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
+  });
+
+  // F2 — PRD-14 「사람 입력 필드 전부」. 관측 간격·최소 단위도 사람이 적은 값이다.
+  it('관측 간격만 적어도 묻는다 — 사람 입력 필드 전부를 센다', async () => {
+    await openRegisterWithFile();
+    await change(screen.getByTestId('reg-interval-value'), '10');
+    await click(screen.getByTestId('upload-close'));
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
+  });
+
+  it('관측 간격 단위만 골라도 묻는다', async () => {
+    await openRegisterWithFile();
+    await change(screen.getByTestId('reg-interval-unit'), '분');
+    await click(screen.getByTestId('upload-close'));
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
+  });
 });
 
 describe('PRD-44 — 배경 클릭', () => {
   it('입력이 있으면 배경 클릭이 닫기 확인을 그대로 탄다', async () => {
     await openRegisterWithFile();
     await change(screen.getByTestId('reg-summary'), '가');
-    await click(screen.getByTestId('upload-backdrop'));
+    await backdropClick();
     const confirm = await screen.findByTestId('upload-close-confirm');
     expect(confirm).toHaveTextContent(copy.UPLOAD_CLOSE_INPUT_ONLY);
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
@@ -285,7 +325,7 @@ describe('PRD-44 — 배경 클릭', () => {
 
   it('아무것도 안 적었으면 배경 클릭이 되묻지 않고 닫는다', async () => {
     await openRegisterWithFile();
-    await click(screen.getByTestId('upload-backdrop'));
+    await backdropClick();
     expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
@@ -294,6 +334,18 @@ describe('PRD-44 — 배경 클릭', () => {
     await openRegisterWithFile();
     await change(screen.getByTestId('reg-summary'), '가');
     await click(screen.getByTestId('upload-modal'));
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
+    expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
+  });
+
+  // F3 — 모달 안에서 누르고 배경에서 뗀 드래그는 click.target 이 배경이 된다(텍스트 선택).
+  // 눌린 자리가 배경이 아니면 닫지 않는다.
+  it('모달 안에서 눌러 배경에서 뗀 드래그는 닫지 않는다', async () => {
+    await openRegisterWithFile();
+    await change(screen.getByTestId('reg-summary'), '가');
+    fireEvent.mouseDown(screen.getByTestId('upload-modal'));
+    fireEvent.click(screen.getByTestId('upload-backdrop'));
+    await act(async () => {});
     expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
   });
@@ -320,7 +372,7 @@ describe('PRD-39 ⑭ — Esc 우선순위', () => {
   it('위에 있는 층(확장보기·찾기·계보 수정)이 열려 있으면 업로드는 Esc 를 먹지 않는다', async () => {
     await openRegisterWithFile();
     await change(screen.getByTestId('reg-summary'), '가');
-    // 위 세 층은 스스로를 `data-esc-layer` 로 표시한다 (`ESC_LAYERS_ABOVE_CLOSE_CONFIRM`).
+    // 위 세 층은 스스로를 `data-esc-layer` 로 표시한다 (`ESC_LAYER_ATTR`).
     const layer = document.createElement('div');
     layer.setAttribute('data-esc-layer', '찾기');
     document.body.appendChild(layer);

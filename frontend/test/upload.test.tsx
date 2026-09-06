@@ -417,7 +417,7 @@ describe('§8 모달 닫기 — 잃을 것이 있을 때만 묻는다', () => {
   // 무조건 물었다. 지금은 **사람이 입력한 값이 하나라도 있을 때**만 묻는다. 빈 상태로 열어만
   // 두고 닫는 경우는 `test/close-guard-20260905.test.tsx` 가 「안 묻는다」로 잡는다.
   // ⭑ ⟨WU-A9R · PRD-34⟩ 문면이 상황별 3종으로 열렸다 — 여기서는 「입력 있음」 갈래를 잰다.
-  it('사람이 적은 값이 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
+  it('사람이 적은 값이 있으면 확인을 받는다 — 입력 있음 갈래 상수', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);

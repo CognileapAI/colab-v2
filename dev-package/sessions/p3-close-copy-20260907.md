@@ -69,6 +69,7 @@ frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 855�
 
 - 미달 1 — **확장보기(라이트박스) 배경 클릭은 넣지 않았다.** 그 오버레이가 코드에 없다(`src/components/` 전수 grep 0건). 라운드 파일 「이 라운드에 없는 것」이 `PRD-39 ⑤ 확장보기 오버레이(M)` 를 R-B `WU-B3` 로 보냈다. 없는 화면에 핸들러를 지어 붙이지 않았다.
 - 미달 2 — **Esc 우선순위 5층 중 앞 3층(확장보기·찾기·계보 수정)은 이 레인에 화면이 없다.** 층 이름을 코드에 박는 대신 표식 `data-esc-layer` 하나를 보게 했다(`UploadModal.tsx:53`) — 표식이 떠 있으면 업로드는 Esc 를 먹지 않는다. 남은 두 층(닫기 확인 → 업로드)의 순서는 실측했다. 앞 3층이 그 표식을 붙이는 것은 그 층을 담는 WU 몫이다.
+- ⭑ 반영 3 — advisor ② 의 F1~F3(대표 그림 플래그 초기화 · 관측 간격 3필드 계수 · 배경 드래그 거짓 닫기 방지)을 이 레인에서 반영했다. 상세는 §6.
 - 초과 1 — `PreviewPanel` 에 프로퍼티 `onThumbPick` 1개를 더했다. 대표 그림 교체 사실이 그 컴포넌트 안에만 있어 모달의 판정식이 닿을 자리가 없었다. 그림 자체는 바깥으로 넘기지 않는다.
 - 초과 2 — 종전 문면을 축자로 잡던 기존 시험 2건의 단언을 상수 참조로 바꿨다. PRD-34 가 문면을 열었으므로 그대로 두면 red 다. 조건 시험(미결-15 ⓐ)은 한 건도 지우지 않았다.
 - 문면 중복 0건 — `test/toast-copy-20260906.test.tsx` 의 「하드코드 중복 0건」 검사 대상 목록(`FIXED_COPY`)에 새 고정 문면 5개를 등재했다(`toastCopy.ts:202-203`). 화면에 문자열을 다시 적으면 그 시험이 red 를 낸다.
@@ -80,3 +81,41 @@ frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 855�
 - `RegisterArea.tsx` 행동 줄(sticky `.reg-actions`)·`UploadModal` 전역 드롭·`removeFile` 초기화(WU-A12R 분) — 되돌리지 않았다.
 - 확인 모달 자체의 배경(`confirm-back`) 클릭 닫기 — 요구에 없다. 지어 붙이지 않았다.
 - 대표 그림 저장 경로(`WU-C2`) — 무변. 고른 그림은 화면에서만 산다.
+
+## 6. advisor ② 반영
+
+어드바이저 게이트 ② 판정 `approve-with-changes`. F1·F2·F3 은 병합 전 필수, F4·F5 는 동반 정정.
+
+| 항목 | 자리 | 내용 |
+|---|---|---|
+| F1 | `UploadModal.tsx` `removeFile()` | `setThumbReplaced(false)` 추가. 파일을 빼면 대표 그림 교체 표시도 내린다 — 재첨부 뒤 아무것도 안 적은 사람이 되묻히던 자리 |
+| F2 | `UploadModal.tsx` `hasHumanInput` | `intervalValue`·`intervalUnit`·`granularity` 를 trim 후 계수에 추가. 판정식 주석의 필드 목록에 「② 관측 간격 값·단위 · 기간 최소 단위」 한 줄 추가 |
+| F3 | `UploadModal.tsx` 배경 `div` | `onMouseDown` 이 `downOnBackdrop` ref 에 눌린 자리를 기록하고, `onClick` 은 `e.target === e.currentTarget && downOnBackdrop.current` 일 때만 `requestClose()`. 모달 안에서 눌러 배경에서 뗀 드래그(텍스트 선택)가 확인 없이 취소시키던 자리 |
+| F4 | `UploadModal.tsx` Esc 갈래 | 손댐 판정 복제를 걷고 `requestClose()` 호출로 교체. 판정 자리 1곳 |
+| F5 | `prd34-close-copy-20260907.test.tsx` · `upload.test.tsx` | 주석의 상수명을 실재하는 `ESC_LAYER_ATTR` 로 정정. `upload.test.tsx` 시험 제목을 「입력 있음 갈래 상수」로 정정(단언 내용과 일치) |
+
+RED 선실측 → GREEN — `frontend/test/prd34-close-copy-20260907.test.tsx` 신규 4건.
+
+```
+     × 파일을 빼면 대표 그림 교체 표시도 내린다 — 재첨부 뒤 닫기는 되묻지 않는다 61ms
+     × 관측 간격만 적어도 묻는다 — 사람 입력 필드 전부를 센다 1027ms
+     × 관측 간격 단위만 골라도 묻는다 1036ms
+     × 모달 안에서 눌러 배경에서 뗀 드래그는 닫지 않는다 27ms
+ Test Files  1 failed (1)
+      Tests  4 failed | 15 passed (19)
+```
+
+GREEN — 같은 파일 19 passed. 기존 Esc 시험 3건·배경 클릭 시험 3건 무변 green(F3 으로 배경 클릭 시험 2건은 `mouseDown` ＋ `click` 을 함께 보내는 `backdropClick()` 헬퍼 경유로 바꿨다 — 실브라우저의 배경 클릭이 그 두 사건 순서이기 때문이고, 단언은 그대로다).
+
+게이트 — `COLAB_GATE_REPORT_DIR=dev-package/reports/R-A2/p3-close-copy bash gates/run.sh <게이트>`.
+
+```
+frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+  green  frontend-typecheck
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+         Tests  859 passed (859)
+  green  frontend-test
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+```
+
+후속(이 레인 밖) — F6 은 오케스트레이터 몫이다. `work-items.yaml` 에 `WU-B3` 항목을 신설하거나 R-B 라운드 파일에 「확장보기 오버레이 = 배경 클릭 닫기 ＋ `data-esc-layer` 표식」 의무를 명기해야, 표식 규약의 소비자가 서고 §4 미달 2 가 닫힌다.
