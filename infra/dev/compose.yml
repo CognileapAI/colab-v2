@@ -28,9 +28,13 @@ services:
     image: alpine:3.20
     container_name: colab_v2_dev_volume_init
     user: "0:0"
-    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews && chown -R 10001:10001 /var/lib/colab/work && chmod 0755 /var/lib/colab/work"]
+    # ⚠ `events` 도 여기서 주인을 맞춘다 — staging 은 이것을 빠뜨려 `#59` 를 냈다(`〈269〉`-㉲):
+    #   `/srv/viz-events` 가 `root:root` 면 내는 쪽도 받는 쪽도 uid 10001 이라 양쪽에서 EACCES 이고,
+    #   **에러가 안 난다** — 내는 쪽은 성공을 보고하고 받는 쪽은 영원히 0건을 집는다.
+    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /srv/viz-events && chown -R 10001:10001 /var/lib/colab/work /srv/viz-events && chmod 0755 /var/lib/colab/work /srv/viz-events"]
     volumes:
       - work:/var/lib/colab/work
+      - events:/srv/viz-events
     restart: "no"
 
   core-api:
@@ -83,8 +87,13 @@ services:
       COLAB_WORKER_S3_REGION: ap-northeast-2
       COLAB_WORKER_WORKDIR: /var/lib/colab/work/worker
       # `COLAB_WORKER_LAB_ID` 를 걸지 않는다 — 연구실마다 제 스코프로 돈다(Ted 2026-08-26 ㈑).
+      # ── 이벤트 버스(`〈253〉` · `Y-1`). **viz-render 의 `COLAB_VIZ_TRIGGER_SPOOL` 과 같은 값이어야 한다** —
+      #    내는 쪽과 받는 쪽이 갈리면 자동 무효화가 **에러 없이** 안 된다.
+      #    ⚠ `COLAB_WORKER_STAGE2` 는 여기서 걸지 않는다 — 이 회차의 판정 대상이 아니다(dev 는 stage 1 그대로).
+      COLAB_WORKER_EVENT_SPOOL: /srv/viz-events
     volumes:
       - work:/var/lib/colab/work
+      - events:/srv/viz-events
       - ${COLAB_DEV_SECRETS_DIR}/pipeline-db.url:/etc/colab/pipeline-db.url:ro
     depends_on:
       volume-init:
@@ -118,8 +127,14 @@ services:
       COLAB_VIZ_PREVIEW_S3_PREFIX: previews
       COLAB_VIZ_PREVIEW_DIR: /var/lib/colab/work/viz-previews
       COLAB_VIZ_PREVIEW_URL_BASE: /previews
+      # ── 트리거 버스 — `COLAB_WORKER_EVENT_SPOOL` 과 **같은 값**이다. 안 주면 `main.py:105` 에서
+      #    `app.state.triggers` 가 `None` 이고 **트리거 루프도 회수 루프도 아예 안 뜬다**
+      #    (창 8-b 실측 = 회수 요약 0줄 · `〈353〉`·`〈361〉`-㉮). Ted 판정 2026-09-06 으로 켠다.
+      #    ⚠ 회수는 **기본이 관측 전용**이다(`tile_reclaim_apply` 기본 `False`) — 세고 적기만 한다.
+      COLAB_VIZ_TRIGGER_SPOOL: /srv/viz-events
     volumes:
       - work:/var/lib/colab/work
+      - events:/srv/viz-events
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -176,3 +191,6 @@ services:
 # 워커는 처리 뒤 제 디렉터리를 지우고, viz 는 상한(LRU)으로 자른다. 인스턴스를 갈아도 잃을 것이 없다.
 volumes:
   work: {}
+  # 이벤트 버스 — D5 가 낸 「미리보기가 낡았다」 봉투가 놓이고 D7 이 집어 간다(`〈253〉`).
+  # **상태가 아니라 통로다** — 집행이 끝난 봉투는 받는 쪽이 `ack` 로 지운다.
+  events: {}

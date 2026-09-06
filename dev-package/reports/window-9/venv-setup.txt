@@ -1,0 +1,7 @@
++ for s in core-api viz-render ai-service pipeline-worker
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/services/core-api'
++ rm -rf .venv
++ python3 -m venv .venv
++ ./.venv/bin/pip install -q --disable-pip-version-check --upgrade pip
++ '[' -f requirements.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
