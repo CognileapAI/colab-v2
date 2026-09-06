@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# dev 이미지 5개를 **개발 기계에서** linux/arm64 로 빌드하고 tar 로 묶는다 (`〈342〉-㉮`).
+# prod 이미지 5개를 **개발 기계에서** linux/arm64 로 빌드하고 tar 로 묶는다 (`〈342〉-㉮` 의 prod 판).
 #
 # 레지스트리가 없다 — buildx `--load` → 아키텍처 실측 → `docker save`. 태그는 둘: 움직이는 `:dev` 와
-# 불변 `:dev-<sha>`(되돌리기용 — 직전 이미지를 잃어버렸던 교훈). geo 스택(rasterio·netCDF4·pyhdf)의
+# 불변 `:prod-<sha>`(되돌리기용 — 직전 이미지를 잃어버렸던 교훈). geo 스택(rasterio·netCDF4·pyhdf)의
 # arm64 휠이 없으면 Dockerfile 의 import 가드가 **빌드 실패**로 드러낸다 — 그것이 `[미확인]` 을 닫는 실측이다.
 #
-# 사용: infra/dev/build.sh [dist 디렉터리]   (기본 ./dist, 레포 밖에 두려면 인자로)
+# 사용: infra/prod/build.sh [dist 디렉터리]   (기본 ./dist, 레포 밖에 두려면 인자로)
+#
+# ⚠ **태그의 근거는 `git HEAD` 다.** 정본 `〈335〉`-㉳ 는 prod 를 「`main` 커밋에 찍은
+#   `prod-YYYYMMDD` 태그에서만」 배포하라고 정했다. 최초 구축 회차는 기능 브랜치 HEAD 로
+#   세우되, **PR 병합 뒤 `main` 에서 다시 빌드·전송해 그 규율로 돌아온다.** 그 전까지
+#   돌고 있는 것은 「브랜치에서 세운 prod」이고, 그 사실을 자산 대장에 적는다.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"

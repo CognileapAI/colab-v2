@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# dev(RDS) 부트스트랩 — staging `../staging/db-bootstrap.sh` 를 **원격 갈래**로 부르는 얇은 래퍼 (`〈342〉-㉰`).
+# prod(RDS) 부트스트랩 — staging `../staging/db-bootstrap.sh` 를 **원격 갈래**로 부르는 얇은 래퍼
+# (`〈342〉-㉰` 의 dev 판과 같은 절차다. 다른 것은 이 파일이 사는 자리와, 그 자리가 가리키는 벌뿐).
 #
 # 절차는 staging 과 같다: ① roles(소유자 롤·DB 2) → ② 마이그레이션(up.sh 가 migrate-platform/ai 를 부른다)
 # → ③ app-grants(앱 롤·ai 앱 롤) → verify. 스키마는 여기서 만들지 않는다 — alembic 체인이 정본이다.
