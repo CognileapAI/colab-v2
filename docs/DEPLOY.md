@@ -275,6 +275,17 @@ docker run --rm --network host --env-file /tmp/op.env \
 > ⚠ **맥에서 터널로 돌리면 ⑫ 가 red 다** — DB 호스트가 `127.0.0.1` 로 보여 「환경이 다르다」로 판정된다. **검사가 옳게 동작한 것이니 무르지 않는다.** 위 방식으로 돌린다.
 > ⚠ **부분 실행 둘을 합쳐서 green 이라 하지 않는다.** `─ 0` 이 나온 한 번의 결과만 근거다.
 
+### 6-1-1. 데이터셋 행 삭제 — `ops/purge_datasets.py` (일회성)
+
+**제품 기능이 아니다.** `deleteDataset` 은 `NOT_IMPLEMENTED_P1` 이고 이 도구가 그것을 여는 것도 아니다.
+**바이트가 이미 없어진 데이터셋의 원장 행**처럼 제품이 표현할 수 없는 상태를 운영자가 치우는 자리다.
+
+⛔ **고정 id 목록 ＋ `--yes-delete` 없이는 돌지 않는다. `PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다.**
+선례 = `〈360〉`(준비·dry-run)·`〈361〉`(집행 114행). 자세한 가드는 파일 docstring.
+
+⚠ **경계를 먼저 건다** — `colab_owner` 는 `NOBYPASSRLS` 이고 표는 FORCE RLS 라
+`set_config('app.current_lab', …, true)` 가 없으면 **DELETE 가 0행에 조용히 성공**한다.
+
 ### 6-2. 재배포 · 되돌리기
 
 재배포 = 1) 절. 되돌리기 = `dev.env` 의 `COLAB_IMAGE_TAG=dev-<직전 sha>` 로 바꾸고 `up.sh`. **마이그레이션은 되돌리지 않는다**(`0009` 처럼 백필이 든 판은 downgrade 가 값을 잃는다).
