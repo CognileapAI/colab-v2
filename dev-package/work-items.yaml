@@ -2683,13 +2683,13 @@ items:
 
   - id: WU-A12R
     name: PRD-39 「없음」 잔여 5건 ＋ 커서 위경도 HUD (rev2 증분 · PRD-39)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-A13R 토스트 문면 green"]
     depends_on: ["WU-A12", "WU-A13R"]
     completion_def: "빌드 목록 6행(① 파일 분석 3단계 ＋ 다음 비활성 · ② 모달 전역 드롭 · ③ 파일 빼기 즉시 반영 ＋ 초기화 고지 · ⑩ 접근 구역 출처 문장 · ⑫ 행동 줄 바닥 고정 ＋ 안내 3문면 · HUD)이 rev1 근거 문면대로 서고, 있음 4건(⑦ ⑧ ⑪ ⑬) ＋ 참고 ⑼ 각각에 회귀 시험 1건이 green"
-    evidence: null
+    evidence: "dev-package/sessions/p3-rev2-build-20260906.md"
     deadline: null
     note: "HUD 는 값 조회를 대체하지 않고 병존한다 — 역산값과 셀값의 출처를 라벨로 가른다(존치 규칙 · 정본 §8 V-2 완료). 서버 왕복 0. ⑤ 확장보기 오버레이는 WU-B3 이관"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-39"]
