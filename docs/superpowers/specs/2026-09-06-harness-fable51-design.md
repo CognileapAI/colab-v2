@@ -4,7 +4,7 @@
 
 **승인** — Ted, 2026-09-06. 원문: 「판정은 전부 권고대로」. 판정 항목 J-0~J-12 전부 설계 권고안대로 확정. 재개봉 금지.
 
-**상태** — 확정 스펙. 이행 10 phase 중 P-T 완료 · P-B 진행 · 나머지 대기(H 절 상태 열).
+**상태** — 확정 스펙. ⭑ **⟨증보 2026-09-06 · 마감⟩ 이행 10 phase 중 9 완료 · `P-C` 부분**(H 절 상태 열 · 원장 `dev-package/PLAN-SoT.md §9 〈368〉`~`〈371〉`). ／ 종전 ~~P-T 완료 · P-B 진행 · 나머지 대기~~
 
 **계보** — 설계 v1 → v2(advisor 게이트① 지적 18건 수용) → v3(「AI-native SDLC 플레이북」 갭 분석 16건 반영) → 이 문서(v3 + Ted 확정 판정 + 이행 상태).
 **근거** — brief · inventory · workflow-profile · market-survey · grill-me 조사(mattpocock) · 실측 재계수 · Anthropic 문서 인용(V1~V4) · 플레이북 인용. 조사 산출물 8건 = `dev-package/reports/harness/2026-09-06/`(M 절).
@@ -47,10 +47,20 @@
 - archive 는 **복사 후 이동**이며 삭제가 아니다(I 절 되돌리기 보증).
 - 이 이동으로 J-0 루트 이동 **이전 구간에서도** S1 이 내려간다.
 
-### 0-2. 진행 중 — P-B
+### 0-2. 실행 완료 — P-B ~ P-J (브랜치 `worktree-harness-fable51-spec`)
 
-- 글로벌 `~/.claude/CLAUDE.md` 슬림화 작업 중(별도 에이전트).
-- 프로젝트 `CLAUDE.md` §1 교체와 H1 훅 등록은 **미착수**. H1 은 J-0 루트 이동에 선행 의존한다(0-3).
+⭑ **⟨증보 2026-09-06 · 마감⟩ 아래 표가 이 브랜치의 실적이다.** 상태 열 원본은 H 절이고 여기는 그 요약이다.
+／ 종전 ~~진행 중 — P-B(글로벌 CLAUDE.md 슬림화 중 · 프로젝트 §1 교체와 H1 등록 미착수)~~ — **둘 다 끝났다.**
+
+| phase | 커밋 | 이 브랜치에서 끝난 것 | 이 브랜치에서 잴 수 없어 다음 세션으로 넘긴 것 |
+|---|---|---|---|
+| P0 · P-B · P-E | `15bc4e0`·`18274f0`·`6de6aa4` | 기준선 `dev-package/reports/harness/baseline.md` · 프로젝트 `CLAUDE.md §1` 라운드 파일 1개 · H1·H2 · `run.sh` 자체 source | 없음 |
+| P-M | `c26072c` | `.claude/rules/colab-rules.md`(규칙형 18 · 파일명 앵커) · 옛 메모리 `MIGRATED` 표기 | **탐침 3문**(새 세션에서만 성립) |
+| P-A | `b7f36c9` | 에이전트 4종 정의 · advisor ② 3항 체크리스트 | **4종 스폰 기동 실측** — 워크트리 세션은 프로젝트 에이전트를 후보에 올리지 않는다 |
+| P-S | `65afcf5` | vendored 8종 · `intent/`·`prd/specs/` 템플릿 · `CLAUDE.md` ≤200행 · `colab-v2-work` ≤110행 | **`grill-me` 실전 1회 → `intent.md` 1건** — 첫 발의는 Ted 가 직접 돌린다 |
+| P-G | `16c4296` | H3·H4·H5 · `renumber-decisions.sh` · merge driver · `exec-bit` 게이트(57건 조치) · README 킬스위치 | 없음 |
+| P-J | `1240b24` | `gate-summary.json` 3상태·`tree` · H6 · H7 | **전수 `all -j 4` 1회** — 병합 전 진입조건 |
+| P-C | `3cd1cb8` | archive 복사 · `30_적용완료` 환류 배선 | ⛔ **옛 메모리 삭제 · `MEMORY.md` 3줄화** — 탐침 3문 통과가 조건 |
 
 ### 0-3. 선행 의존 — J-0 루트 이동은 훅 등록보다 앞선다
 
@@ -67,6 +77,23 @@
 | `.claude/settings.json` | `{"effortLevel": "high"}` (J-10 집행) |
 
 훅·에이전트·rules·`intent/`·`prd/specs/` 폴더는 **이 커밋에 없다** — 각 phase 소관.
+⭑ **⟨증보 2026-09-06⟩ 그 셋은 뒤 커밋에 들어왔다** — 0-2 표 참조. 이 절은 스펙 첫 커밋의 범위 기록으로 남긴다.
+
+### 0-5. 잔여 후속 (보고 09~13 에서 모은 것 · 이 브랜치 범위 밖)
+
+⚠ **아래는 「나중에」가 아니라 목록이다** — 착수하려면 각 항목을 WU 또는 새 `intent.md` 로 낸다(`CLAUDE.md §5`).
+
+| # | 잔여 | 무엇이 막는가 / 무엇을 해야 하는가 | 근거 |
+|---|---|---|---|
+| 1 | **DB 게이트 4종의 접속 실패 분류** — 13곳 · 셀프테스트 4종 동반 | 접속 실패가 `red(판정)` 로 접혀 「준비 red」와 갈리지 않는다. 레인 1개 분량 | `12-gate-json-verification.md §5`·`§6-1` |
+| 2 | **CI `planning-freshness` red** | 기획 정본 `40 COLAB-기획` 이 레포 밖이라 자동화가 못 본다. 푸는 법 셋(면제표 · 레포 안 사본 · CI 마운트)은 **판정 대기** | `13-planning-applied-wiring.md §7-1` · HANDOFF `§4 #70` |
+| 3 | **`planning-freshness-selftest` 가 `ALL_GATES` 에 없다** | 검사기의 `--selftest` 는 실재하나 게이트 이름 미등록 → `run.sh all`·`selftest` 가 안 돈다. 등록하려면 fixture 2·3 의 정본 마운트 의존을 먼저 끊는다 | `13-planning-applied-wiring.md §7-1` |
+| 4 | **`40 COLAB-기획/README.md` 문면이 실제와 갈린다** | README 는 `30_적용완료/` 를 「이관 · `적용일_원파일명`」으로 적었으나 집행은 「사본 · `<라운드>/<원파일명>`」이다. 기획 폴더는 읽기 전용이라 **개정 제안만** 남긴다 | `13-planning-applied-wiring.md §7-2` |
+| 5 | **vendored 스킬의 외부 인용 1건** — `test-driven-development/writing-good-tests.md:51` 의 `superpowers:writing-skills` | 플러그인 비활성 상태에서 가리키는 대상이 없다. 인용 제거 또는 vendoring 판정 | `11-merge-guards-verification.md §8` |
+| 6 | **글로벌 `~/.claude/agents/advisor.md` 삭제** | 프로젝트본이 실제로 뜨는 것을 새 세션에서 확인한 **뒤에** 지운다. 이 브랜치는 글로벌 파일을 건드리지 않았다 | `09-agents-verification.md §4` |
+| 7 | **H7 의 `COLAB_GATE_REPORT_DIR` 는 훅 환경에 거의 안 실린다** | Bash env 가 도구 호출 간 유지되지 않아 실질 경로는 「가장 최근 `gate-summary.json`」이다. 회차 폴더를 레인마다 새로 주는 지금 규약에서는 문제가 없으나 **한계로 기록해 둔다** | `12-gate-json-verification.md §6-3` |
+| 8 | **스펙 D 예시의 필드 이름** — 예시는 `state`·`log`, 실물은 `status`·`state` 둘 다 내고 `log` 는 없다 | 예시를 실물에 맞추면 두 이름을 하나로 줄일 수 있다. 판정 사항 | `12-gate-json-verification.md §6-2` |
+| 9 | **K 미검증 3 — `lane-worker` 의 자율 블록이 advisor ② 를 우회하려는 경향** | **레인 2회차까지 관찰**하고 결과를 `dev-package/reports/harness/2026-09-06/` 에 덧붙인다 | `09-agents-verification.md §4` |
 
 ---
 
@@ -354,16 +381,16 @@ MEMORY.md 는 이 검증 통과 후에만 3줄 포인터로 축소.
 
 | 순서 | Phase | 상태 | 내용 | 검증(측정) | 세션 | 레인 진행 중 가능? |
 |---|---|---|---|---|---|---|
-| 1 | **P0 기준선** | 대기 | S1/S3/S4 현 상태 실측 → `dev-package/reports/harness/baseline.md` | 3지표 수치 기록 | 0.5 | 가능 |
+| 1 | **P0 기준선** | **완료 2026-09-06**(`15bc4e0` 동반) | S1/S3/S4 현 상태 실측 → `dev-package/reports/harness/baseline.md` | 3지표 수치 기록 | 0.5 | 가능 |
 | 2 | **P-T 플러그인 토글** | **완료 2026-09-06** | 플러그인 9 비활성·6 활성, 글로벌 에이전트 12·스킬 5 archive, 루트 에이전트 15·스킬 6 형제 폴더 이동(0-1) | 새 세션 후보 목록 **에이전트 42→≤12** — 다음 새 세션에서 실측 | 0.5 | 가능 |
-| 3 | **P-B CLAUDE.md §1 + H1** | **진행** | 글로벌 CLAUDE.md 슬림화 진행 중. 프로젝트 §1 을 라운드 파일 1개로 교체, `bootstrap-diet.sh` 등록은 **J-0 이행 후** | 새 세션에서 부트스트랩 읽기 바이트 2.4MB→라운드 1개 | 0.5 | 가능 |
-| 4 | **P-E 워크트리 env** | 대기 | H2(`SubagentStart:lane-worker`) + `worktree-setup.sh`(venv 재생성) + run.sh 자체 source | 레인 1개 스폰 → 첫 전수 red(준비) **16→0** | 1 | 가능(새 레인에서 검증) |
-| 5 | **P-M 메모리 이관** | 대기 | `rules/colab-rules.md` 작성, 메모리 33건에 `MIGRATED` 표기(삭제 아님) | G절 탐침 3문 통과 | 1 | 가능 |
-| 6 | **P-A 에이전트** | 대기 | `.claude/agents/` 4개 작성, advisor 글로벌→프로젝트 | 4개 스폰 각 1회 정상 기동, advisor ② 가 revision 체크리스트 포함 | 0.5 | 가능 |
-| 7 | **P-S 스킬 vendoring** | 대기 | superpowers 5 + **mattpocock 3**(`grilling`·`grill-me`·`to-spec`) 복사·Fable 5.1 문안 교정, to-spec 의 이슈트래커 절 제거, `dev-package/intent/`·`prd/specs/` 신설, `colab-v2-work` 축약 | CLAUDE.md ≤200행, colab-v2-work ≤110행, 스킬 후보 47→≤20(vendored 8 포함) **+ grill-me 1회 실전 실행 → intent.md 1건 산출(확인 문장 원문 포함) + to-spec 1회 → spec.md 1건 및 라운드 파일 첫 줄 링크 존재** | 1.5 | 가능 |
-| 8 | **P-G 병합 가드** | 대기 | H3·H4·H5, `renumber-decisions.sh`(**〈N〉 행의 `intent:`·`spec:` 필드 보존·이동 포함**), merge driver, exec-bit 게이트, **README 킬스위치 문안**(J-9) | 의도적 위반 5종 시도 → 5/5 차단 **+ 레인 첫 줄 `merge --ff-only` 1회 통과 확인**(오탐 반증) **+ 재번호 후 표본 5건의 `intent:`·`spec:` 경로가 실존 파일을 가리키는지 확인** | 1 | 가능 |
-| 9 | **P-J 게이트 JSON** | 대기 | `run.sh` 요약 끝에 JSON 배출 + H6·H7 | 전수 1회에서 `counts` 가 요약줄과 일치 | 0.5 | 가능(게이트 로직 무변경이라 공유자산 위험 없음) |
-| 10 | **P-C 정리** | 대기 | 메모리 삭제 실행, MEMORY.md 3줄화, `30_적용완료` 배선(J-1 활성) | 메모리 33→≤4 | 0.5 | 가능 |
+| 3 | **P-B CLAUDE.md §1 + H1** | **완료 2026-09-06**(`15bc4e0` — 프로젝트 `CLAUDE.md §1` 라운드 파일 1개 + H1 등록. 글로벌 `~/.claude/CLAUDE.md` 슬림화는 레포 밖) | 글로벌 CLAUDE.md 슬림화 진행 중. 프로젝트 §1 을 라운드 파일 1개로 교체, `bootstrap-diet.sh` 등록은 **J-0 이행 후** | 새 세션에서 부트스트랩 읽기 바이트 2.4MB→라운드 1개 | 0.5 | 가능 |
+| 4 | **P-E 워크트리 env** | **완료 2026-09-06**(`15bc4e0`·`18274f0`·`6de6aa4` — advisor ② 지적 수정 반영: venv Python 3.12 고정 · 스탬프 기반 외부 venv 판별 · 3.12 전수 로그 커밋 · 기준선 문구 정정) | H2(`SubagentStart:lane-worker`) + `worktree-setup.sh`(venv 재생성) + run.sh 자체 source | 레인 1개 스폰 → 첫 전수 red(준비) **16→0** | 1 | 가능(새 레인에서 검증) |
+| 5 | **P-M 메모리 이관** | **완료 2026-09-06**(`c26072c`) | `rules/colab-rules.md` 작성, 메모리 33건에 `MIGRATED` 표기(삭제 아님) | G절 탐침 3문 통과 | 1 | 가능 |
+| 6 | **P-A 에이전트** | **완료 2026-09-06**(`b7f36c9` — ⚠ **4종 스폰 기동 실측은 다음 세션**. 워크트리 세션에서는 프로젝트 에이전트가 후보에 뜨지 않아 이 브랜치에서 잴 수 없다) | `.claude/agents/` 4개 작성, advisor 글로벌→프로젝트 | 4개 스폰 각 1회 정상 기동, advisor ② 가 revision 체크리스트 포함 | 0.5 | 가능 |
+| 7 | **P-S 스킬 vendoring** | **완료 2026-09-06**(`65afcf5` — ⚠ **`grill-me` 실전 1회 → `intent.md` 1건 산출은 다음 세션**. 첫 발의는 Ted 가 직접 돌린다) | superpowers 5 + **mattpocock 3**(`grilling`·`grill-me`·`to-spec`) 복사·Fable 5.1 문안 교정, to-spec 의 이슈트래커 절 제거, `dev-package/intent/`·`prd/specs/` 신설, `colab-v2-work` 축약 | CLAUDE.md ≤200행, colab-v2-work ≤110행, 스킬 후보 47→≤20(vendored 8 포함) **+ grill-me 1회 실전 실행 → intent.md 1건 산출(확인 문장 원문 포함) + to-spec 1회 → spec.md 1건 및 라운드 파일 첫 줄 링크 존재** | 1.5 | 가능 |
+| 8 | **P-G 병합 가드** | **완료 2026-09-06**(`16c4296` — 의도적 위반 5/5 차단 · `exec-bit` 도입 시 `100644` 57건 조치 · 재번호 역링크 대조 통과) | H3·H4·H5, `renumber-decisions.sh`(**〈N〉 행의 `intent:`·`spec:` 필드 보존·이동 포함**), merge driver, exec-bit 게이트, **README 킬스위치 문안**(J-9) | 의도적 위반 5종 시도 → 5/5 차단 **+ 레인 첫 줄 `merge --ff-only` 1회 통과 확인**(오탐 반증) **+ 재번호 후 표본 5건의 `intent:`·`spec:` 경로가 실존 파일을 가리키는지 확인** | 1 | 가능 |
+| 9 | **P-J 게이트 JSON** | **완료 2026-09-06**(`1240b24`) | `run.sh` 요약 끝에 JSON 배출 + H6·H7 | 전수 1회에서 `counts` 가 요약줄과 일치 | 0.5 | 가능(게이트 로직 무변경이라 공유자산 위험 없음) |
+| 10 | **P-C 정리** | **부분 2026-09-06**(`3cd1cb8` — archive 복사 · `30_적용완료` 환류 배선까지. ⛔ **옛 메모리 삭제 · `MEMORY.md` 3줄화 잔여** — 조건은 새 세션의 탐침 3문 통과) | 메모리 삭제 실행, MEMORY.md 3줄화, `30_적용완료` 배선(J-1 활성) | 메모리 33→≤4 | 0.5 | 가능 |
 
 합계 **약 7.5 세션**(P-S 가 vendoring 3종·실전 1회로 +0.5). 비가역 인접은 P-C 하나뿐이며 그 앞의 archive 복사가 보증한다.
 
@@ -556,7 +583,8 @@ find . -name '*.jsonl' -mtime -30 -print0 | xargs -0 grep -ho '"skill":"\(claude
 
 ## M. 조사 산출물 (근거 원본)
 
-`dev-package/reports/harness/2026-09-06/` — 8건. 이 스펙의 모든 수치·인용의 출처.
+`dev-package/reports/harness/2026-09-06/` — **조사 8건**(아래 표). 이 스펙의 모든 수치·인용의 출처.
+⭑ **⟨증보 2026-09-06⟩ 같은 폴더에 이행 실행·검증 기록 6건이 더 있다** — `08-memory-migration.md`(P-M) · `09-agents-verification.md`(P-A) · `10-skills-vendoring.md`(P-S) · `11-merge-guards-verification.md`(P-G) · `12-gate-json-verification.md`(P-J) · `13-planning-applied-wiring.md`(P-C 부분). **조사와 다른 성질이다** — 조사는 설계의 입력이고 이 여섯은 집행의 증적이다. 색인은 그 폴더 `README.md`.
 
 | 파일 | 내용 |
 |---|---|
