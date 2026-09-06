@@ -577,6 +577,76 @@ def test_storage_failure_rolls_everything_back_and_a_retry_succeeds(p2_client, p
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# ⑬ 계보 — 지워진 이웃은 **묘비 노드**다
+# ════════════════════════════════════════════════════════════════════════════
+
+def test_a_childs_lineage_shows_the_deleted_parent_as_a_tombstone_node(p2_client, planted, sql):
+    """계약 `LineageNode.kind` enum 의 `묘비` 를 서버가 **실제로 낸다.**
+
+    화면(`LineageSection.columnOf`)은 그 값을 처음부터 받고 있었는데 서버가 한 번도 내지
+    않았다 — `deletedAt` 도 `None` 하드코딩이었다. 제품 쓰기가 0건이던 동안에는 드러날 수
+    없던 결함이고, 이 회차가 그 쓰기를 열면서 드러났다.
+
+    ⚠ 묘비 노드는 **눌리지 않고**(`navigable false`) **본체도 없다**
+    (`bodyAccessible false` — 파일 행을 지웠다).
+    """
+    client = p2_client()
+    parent, _ = planted(owner=ACC_A_PROF, files=1, name="지울 부모")
+    child, _ = planted(owner=ACC_A_PROF, files=1, name="남는 자식")
+    sql("""INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id,
+                                        parent_role, method, origin, confirmed_by_account_id,
+                                        confirmed_at)
+           VALUES (:eid, current_lab_id(), :child, :parent, '주입력', '격자화', 'manual',
+                   :actor, now())""",
+        {"eid": str(Ulid.generate()), "child": child, "parent": parent, "actor": ACC_A_PROF})
+
+    before = client.get(f"{PREFIX}/datasets/{child}/lineage", headers=auth(TOKEN_PROF)).json()
+    live = [n for n in before["nodes"] if n["datasetId"] == parent]
+    assert len(live) == 1 and live[0]["kind"] == "가공 전", \
+        "심은 부모가 계보에 안 섰다 — 이 시험은 오라클이 아니다."
+
+    assert client.delete(f"{PREFIX}/datasets/{parent}",
+                         headers=auth(TOKEN_PROF)).status_code == 204
+
+    after = client.get(f"{PREFIX}/datasets/{child}/lineage", headers=auth(TOKEN_PROF)).json()
+    marks = [n for n in after["nodes"] if n["datasetId"] == parent]
+    assert len(marks) == 1, "묘비 노드가 사라졌다 — 지운 데이터가 부모면 자식의 출처가 끊긴다."
+    mark = marks[0]
+    assert mark["kind"] == "묘비"
+    assert mark["name"] == "(지워진 데이터)"
+    assert mark["navigable"] is False
+    assert mark["bodyAccessible"] is False
+    assert mark["deletedAt"] is not None, "지운 날짜가 없다 — hover 문구가 날짜를 못 말한다."
+
+    # 관계 자체는 남는다 (계약 산문 「계보 관계는 남긴다」).
+    assert any(e["parentDatasetId"] == parent and e["childDatasetId"] == child
+               for e in after["edges"])
+
+
+def test_a_neighbour_outside_the_lab_keeps_a_null_deleted_at(p2_client, planted, sql):
+    """경계 밖 이웃도 `find_dataset_core` 가 `None` 을 낸다 — 그때 **날짜를 지어내지 않는다.**
+
+    묘비와 경계 밖은 화면에서 같은 얼굴이어야 하고(P-9·P-10), 다른 것은 **아는 값이 있는가**
+    하나다. 없는 날짜를 채우면 그 자리가 「우리 연구실에서 지웠다」를 알리게 된다.
+    """
+    client = p2_client()
+    child, _ = planted(owner=ACC_A_PROF, files=0, name="남의 것을 부모로 둔 자식")
+    # 경계를 넘는 관계는 앱 경로로 만들 수 없다 — 시드 B 연구실 데이터셋을 부모로 심는다.
+    sql("""INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id,
+                                        parent_role, method, origin, confirmed_by_account_id,
+                                        confirmed_at)
+           VALUES (:eid, current_lab_id(), :child, '0000000000000000000000DSB1',
+                   '주입력', '격자화', 'manual', :actor, now())""",
+        {"eid": str(Ulid.generate()), "child": child, "actor": ACC_A_PROF})
+
+    graph = client.get(f"{PREFIX}/datasets/{child}/lineage", headers=auth(TOKEN_PROF)).json()
+    outside = [n for n in graph["nodes"] if n["datasetId"] == "0000000000000000000000DSB1"]
+    assert len(outside) == 1
+    assert outside[0]["kind"] == "묘비", "경계 밖 이웃도 화면에서는 같은 얼굴이다 (P-9·P-10)."
+    assert outside[0]["deletedAt"] is None, "모르는 날짜를 지어냈다."
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # ⑮ 활동 기록
 # ════════════════════════════════════════════════════════════════════════════
 
