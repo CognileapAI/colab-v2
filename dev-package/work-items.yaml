@@ -2279,7 +2279,7 @@ items:
       ⭑ **⟨통합 2026-09-05⟩ 통합 브랜치 `integration/bf-11-8` 에 병합**(`7358439`) — **`main` 병합은 아직이다.**
       근거 `dev-package/reports/bf-9/lane-report.md`.
 
-      ⭑ **⟨판정 2026-09-06 · 창 9 · 등재 `PLAN-SoT §9 〈371〉` · `open` → `done`⟩ 완료 정의 ⑴ 이 dev 실물에서 섰다.** 막고 있던 것은 코드가 아니라 **잴 대상**이었다 — `〈364〉`-㉯ 축자 「매니페스트에 `sourceLabel` 0건 ⟹ 원천 노드가 없다」. 이 회차가 그 값을 **매니페스트에 넣고**(`infra/staging/manifest-refdata.json` 뿌리 4건 · 값은 각 `summary` 의 「출처 =」·「생산 =」 축자라 **지어낸 것이 0**) dev 에는 **기존 op `updateDataset`** 으로 넣었다(⛔ DB 손질 0 · 새 데이터셋 0 · 삭제 0). **실측** — 뿌리 4건 전건 `PATCH` **200** · 되읽기 4/4 일치 · 계보 응답의 `lineageState` 가 `기록 없음` → **`원천`** 으로 뒤집혔고 **원천 노드 4 · 원천 간선 4** 가 실린다(`parentDatasetId: null` · **`method: null`** · `parentRole: 주입력` · `origin: manual`). ⭑ **원장 계수는 무변이다** — `d4_lineage_edge` **6** 그대로다(원천 간선은 `source_label` 에서 **파생**되는 것이지 저장된 행이 아니다 · `routes/lineage.py:92-94`). ⑵ 는 프론트 시험이 덮는다(`frontend/test/lineage-graph.test.tsx` — 완료 정의가 **눈 확인이 아니라 시험**을 합격선으로 적었고 `03-HANDOFF` ⓔ 에도 눈 확인 표시가 없다 · ⓑⓒⓓ 와 다른 자리다) · ⑶ 시험 green · ⑷ 계약 개정 0. ⟹ **완료 정의 ⑴~⑷ 전건 ＋ dev 배포 green** ⟹ `done`. ⚠ **`[미확인]` 넷은 그대로 남는다**(표기 사후 수정 시각 · 원천 복수 · `parentRole`·`origin` 값 선택) — 닫히는 것은 결손 하나이지 그 물음들이 아니다. 근거 `reports/window-9/post-deploy-e-sourcelabel.txt`.
+      ⭑ **⟨판정 2026-09-06 · 창 9 · 등재 `PLAN-SoT §9 〈376〉` · `open` → `done`⟩ 완료 정의 ⑴ 이 dev 실물에서 섰다.** 막고 있던 것은 코드가 아니라 **잴 대상**이었다 — `〈364〉`-㉯ 축자 「매니페스트에 `sourceLabel` 0건 ⟹ 원천 노드가 없다」. 이 회차가 그 값을 **매니페스트에 넣고**(`infra/staging/manifest-refdata.json` 뿌리 4건 · 값은 각 `summary` 의 「출처 =」·「생산 =」 축자라 **지어낸 것이 0**) dev 에는 **기존 op `updateDataset`** 으로 넣었다(⛔ DB 손질 0 · 새 데이터셋 0 · 삭제 0). **실측** — 뿌리 4건 전건 `PATCH` **200** · 되읽기 4/4 일치 · 계보 응답의 `lineageState` 가 `기록 없음` → **`원천`** 으로 뒤집혔고 **원천 노드 4 · 원천 간선 4** 가 실린다(`parentDatasetId: null` · **`method: null`** · `parentRole: 주입력` · `origin: manual`). ⭑ **원장 계수는 무변이다** — `d4_lineage_edge` **6** 그대로다(원천 간선은 `source_label` 에서 **파생**되는 것이지 저장된 행이 아니다 · `routes/lineage.py:92-94`). ⑵ 는 프론트 시험이 덮는다(`frontend/test/lineage-graph.test.tsx` — 완료 정의가 **눈 확인이 아니라 시험**을 합격선으로 적었고 `03-HANDOFF` ⓔ 에도 눈 확인 표시가 없다 · ⓑⓒⓓ 와 다른 자리다) · ⑶ 시험 green · ⑷ 계약 개정 0. ⟹ **완료 정의 ⑴~⑷ 전건 ＋ dev 배포 green** ⟹ `done`. ⚠ **`[미확인]` 넷은 그대로 남는다**(표기 사후 수정 시각 · 원천 복수 · `parentRole`·`origin` 값 선택) — 닫히는 것은 결손 하나이지 그 물음들이 아니다. 근거 `reports/window-9/post-deploy-e-sourcelabel.txt`.
     deadline: null
     note: >-
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉱. `lane-A-report.md` 「보류 사항」 — 프론트는 이를 의도된 동작으로 명시하고 코드 주석에 `routes/lineage.py` 참조를 남겼다. ⚠ 결함이 아니라 **뒷단 결손**일 수 있다 — 화면이 이미 수용하므로 막는 것 0건.
@@ -2365,7 +2365,7 @@ items:
     evidence: >-
       ⭑ **⟨집행 2026-09-05 · 워크트리 `agent-ac6173ae`(기준 `main` `59b1c13`) · 등재 초안 `notes/BF12-LEDGER-PENDING.md`⟩ 완료 정의 ⑴⑵⑷ 충족 · ⑶ 미충족 ⟹ **닫지 않는다.** ⑴ **`colab_viz` 로거 하나에** stdout 처리기를 단다 — 신규 `kernel/logging_setup.configure_logging()` 을 `app/main.create_app()` 첫 줄이 부른다. 포맷은 **uvicorn 동일 계열**(`INFO:     …`) · `propagate=False` · 표식 하나로 **멱등**(시험이 앱을 수백 번 세운다). ⛔ **`basicConfig` 로 루트를 갈아엎지 않았다** — 그러면 uvicorn·써드파티 줄까지 우리 포맷이 되고 그것이 두 갈래로 갈리는 길이다. ⑵ **RED 선실측 4건 → GREEN 4건**(`tests/test_app_logging.py`). 축자 RED = `AssertionError: assert '관측 한 줄' in ''` 외 3건 · `4 failed in 3.96s` → `4 passed in 0.30s`. ⭑ **`caplog` 를 쓰지 않았다** — pytest 가 자기 처리기를 루트에 달아 두므로 caplog 로 재면 「설정 없어도 잡힌다」가 되고 **그것이 이 결함이 시험을 통과했던 이유**다. 루트를 미설정으로 되돌린 뒤 진짜 stdout 을 잡는다. ⭑ **형제 자리를 같이 잠갔다**(`〈324〉`-㉰) — 회수 요약과 「트리거 집행 N건」이 **둘 다** 난다는 것을 한 시험이 함께 단언한다. ⑷ **비밀 미출력** — 서비스 토큰·타일 서명 비밀 두 값이 로그에 없음을 단언한다. ⚠ 잰 것은 **회수 요약·기동 경로**이고 「어떤 줄에도 영영 안 실린다」는 `[미확인]`. ⛔ **⑶ staging 배포 뒤 첫 바퀴 요약 1줄 실물은 못 쟀다** — 이 회차 staging 접촉 0 · 배포 0. 해소 조건 = **다음 배포 창**에서 `docker logs colab_v2_staging_viz_render` 에 `지도 타일 회수 — …` 1줄. ⚠ **환경변수를 새로 만들지 않았다** — 수준 INFO 고정. `Settings` 에 수준 자리가 없었고, 내면 `infra/` 에 줄을 더해야 하는데 그 줄이 빠지면 「홈 env 에 무엇을 적어도 영영 꺼짐」이 된다(`#20`·`#49` 무늬) `[미확인]`. ⭑ **레포에 선례가 0건이다** — `services/` 전수에 `basicConfig`·`dictConfig`·`setLevel` 0건이라 core-api 에도 따라 쓸 무늬가 없었다. 다른 배포 단위의 같은 결손 여부는 이 회차가 재지 않았다 `[미확인]`. **게이트 실측 1회** — 선언 50 · **green 34 · red(판정) 1 · red(준비) 15**. `service-tests-viz-render` **green**(수집 330 · 실행 330 · skipped 0 · deselected 40 · failed 0 — 종전 326 ＋ 이번 4) · `service-tests-selftest` green. red(판정) 1 = `generated-up-to-date` 이고 **이 변경 때문이 아니다** — 축자 `frontend/node_modules/.bin/openapi-typescript: No such file or directory`(체크아웃에 의존 트리 부재) · 생성물 수정 0줄. **계약 개정 0 · 마이그레이션 0 · infra 0 · Dockerfile 0 · staging 접촉 0 · 배포 0.** ⭑ **⟨등재 2026-09-05 · `PLAN-SoT §9 〈325〉`⟩ 위 집행이 원장에 등재됐고 코드는 `main` 에 병합됐다**(`14db1a8` · 병합 트리 `ed8ceb3`). **게이트는 병합 트리 기준으로 다시 쟀다 — 두 실행에 걸쳐 선언 50 · green 50 · red(판정) 0 · red(준비) 0** (첫 실행 `all -j 1` = green 43 · red(판정) 1 · red(준비) 6 · 그 판정 red 1 은 `planning-freshness` 이고 원인은 기획 정본 폴더 이동이라 `370ed99` 로 닫혔다(`〈326〉`) · red(준비) 6 은 셸 입력 미선언이라 `source ~/.colab-v2-test.env` 뒤 재실행 10 종 전건 green). ⚠ **「한 번에 50 green」이 아니다.** ⛔ **`status` 는 `open` 무변** — 완료 정의 ⑶(staging 배포 뒤 첫 바퀴 요약 1줄 실물)이 여전히 미충족이고, 그 자리는 **다음 배포 창(창 6)** 이다(`03-HANDOFF §4.5`).
 
-      ⛔ ⭑ **⟨재측정 2026-09-06 · 창 9 · 등재 `PLAN-SoT §9 〈372〉` · `open` 무변⟩ 막던 것이 걷혔는데 그 뒤에 다른 것이 있었다 — 완료 정의 ⑶ 은 여전히 안 선다.** **㉮ 종전 원인은 고쳤다** — `〈353〉`·`〈361〉`-㉮ 가 적은 「dev compose 에 `COLAB_VIZ_TRIGGER_SPOOL` 이 없다」를 Ted 판정(`〈368〉`)으로 켰다. **실측 = 루프가 실제로 뜬다** — 두 단위가 `/srv/viz-events` 를 **같은 아이노드**로 보고(`66305:25586325`) 양쪽 **쓰기 성공**(uid 10001 · `volume-init` 의 `chown` 이 먹었다 — staging 이 `#59` 로 물렸던 자리를 피했다) · **회수 요약 줄이 실제로 찍힌다**(0줄 → **찍힌다**). ⟹ `BF-12` ⑴(로거)·⑵(픽스처)는 그대로 서 있고 **⑶ 의 선행이던 「루프 미기동」은 해소됐다.** **㉯ ⛔ 그런데 ⑶ 이 요구하는 「첫 한 바퀴의 계수」가 안 나온다** — 찍힌 줄의 축자는 **「지도 타일 회수 red(준비) — 주체 0건 · 계산 불가 0건 — 판정을 시작하지 않았다」** 다. **㉰ 원인 = 회수의 주체 수집이 로컬 파일시스템 전용인데 dev 는 `s3` 다.** `tile_reclaim.run_pass` 가 `tile_liveness.subjects_from_storage(storage_root)` 로 주체를 모으고, 그 함수는 `storage_layout.uploads_root(storage_root)` **디렉터리를 훑는다**(축자 「그리는 쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**」). dev 는 `COLAB_VIZ_SOURCE_MODE=s3` 라 사실이 **버킷**에 있고 `source_root` 는 쓰이지 않는 로컬 자리다 ⟹ **주체 0건** ⟹ `is_decidable()` 거짓 ⟹ **fail-closed**. ⭑ **이것은 새 결함이 아니라 드러난 결손이다** — staging(로컬 저장)에서는 성립하고 dev(s3)에서는 **구조적으로 성립할 수 없다**. 스풀을 켠 것이 그 사실을 드러냈다. **㉱ 안전 쪽은 지켜졌다** — `apply` 기본 `False` ＋ fail-closed 라 **삭제 0건**이고 회수가 고아를 잘못 지울 창은 열리지 않았다(⑶ 의 「삭제가 0 인 것」 조건은 만족하지만 「첫 한 바퀴의 계수」가 없으므로 **⑶ 을 green 으로 세지 않는다**). **㉲ 남은 것 하나 = s3 모드에서 주체를 모으는 길**(버킷 목록 또는 다른 사실원). 이는 **설정이 아니라 D7 의 설계 판정**이라 이 레인이 열지 않았다 — 등록만 한다. 근거 `reports/window-9/post-deploy-b-spool.txt`.
+      ⛔ ⭑ **⟨재측정 2026-09-06 · 창 9 · 등재 `PLAN-SoT §9 〈377〉` · `open` 무변⟩ 막던 것이 걷혔는데 그 뒤에 다른 것이 있었다 — 완료 정의 ⑶ 은 여전히 안 선다.** **㉮ 종전 원인은 고쳤다** — `〈353〉`·`〈361〉`-㉮ 가 적은 「dev compose 에 `COLAB_VIZ_TRIGGER_SPOOL` 이 없다」를 Ted 판정(`〈373〉`)으로 켰다. **실측 = 루프가 실제로 뜬다** — 두 단위가 `/srv/viz-events` 를 **같은 아이노드**로 보고(`66305:25586325`) 양쪽 **쓰기 성공**(uid 10001 · `volume-init` 의 `chown` 이 먹었다 — staging 이 `#59` 로 물렸던 자리를 피했다) · **회수 요약 줄이 실제로 찍힌다**(0줄 → **찍힌다**). ⟹ `BF-12` ⑴(로거)·⑵(픽스처)는 그대로 서 있고 **⑶ 의 선행이던 「루프 미기동」은 해소됐다.** **㉯ ⛔ 그런데 ⑶ 이 요구하는 「첫 한 바퀴의 계수」가 안 나온다** — 찍힌 줄의 축자는 **「지도 타일 회수 red(준비) — 주체 0건 · 계산 불가 0건 — 판정을 시작하지 않았다」** 다. **㉰ 원인 = 회수의 주체 수집이 로컬 파일시스템 전용인데 dev 는 `s3` 다.** `tile_reclaim.run_pass` 가 `tile_liveness.subjects_from_storage(storage_root)` 로 주체를 모으고, 그 함수는 `storage_layout.uploads_root(storage_root)` **디렉터리를 훑는다**(축자 「그리는 쪽(D7)에는 원장이 없어 **디렉터리가 곧 사실**」). dev 는 `COLAB_VIZ_SOURCE_MODE=s3` 라 사실이 **버킷**에 있고 `source_root` 는 쓰이지 않는 로컬 자리다 ⟹ **주체 0건** ⟹ `is_decidable()` 거짓 ⟹ **fail-closed**. ⭑ **이것은 새 결함이 아니라 드러난 결손이다** — staging(로컬 저장)에서는 성립하고 dev(s3)에서는 **구조적으로 성립할 수 없다**. 스풀을 켠 것이 그 사실을 드러냈다. **㉱ 안전 쪽은 지켜졌다** — `apply` 기본 `False` ＋ fail-closed 라 **삭제 0건**이고 회수가 고아를 잘못 지울 창은 열리지 않았다(⑶ 의 「삭제가 0 인 것」 조건은 만족하지만 「첫 한 바퀴의 계수」가 없으므로 **⑶ 을 green 으로 세지 않는다**). **㉲ 남은 것 하나 = s3 모드에서 주체를 모으는 길**(버킷 목록 또는 다른 사실원). 이는 **설정이 아니라 D7 의 설계 판정**이라 이 레인이 열지 않았다 — 등록만 한다. 근거 `reports/window-9/post-deploy-b-spool.txt`.
     deadline: null
     note: >-
       **신설 2026-09-05 · 등재 `PLAN-SoT §9 〈324〉` · 근거 `sessions/V-1-STAGING-20260905.md` ㉶.**
@@ -2507,7 +2507,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-perm-default-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "마이그레이션 0 · DB 기본값 행을 만들지 않는다(서버 상수 한 자리). staging 계정 권한이 실제로 바뀐다 — 배포 전 현재 행 상태 실측 보고"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-25"]
@@ -2523,7 +2523,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-preview-guard-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "403 이 계약에 없다(실측). X2-FREEZE-PROTOCOL §5 등급 판정 전까지 계약·DB·프론트 변경 0 은 가정일 뿐"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-26"]
@@ -2539,7 +2539,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-rev1-keep-audit-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "표 14행 중 ⑼(파생 행 읽기 전용)는 PRD-31 ⑶ 소관이라 뺐다. WU-A9·A10·A14 보다 먼저 돈다 — 방어선을 먼저 깐다"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-39"]
@@ -2555,7 +2555,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-detail-edit-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "FE 만 바뀐다(서버·계약은 이미 있다). R-B 가 이 골격을 그대로 쓰고 필드만 늘린다"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-22"]
@@ -2571,7 +2571,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-ext-mixed-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "기존 행을 지우거나 쪼개지 않는다 — 세어 보고만 한다"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-32"]
@@ -2587,7 +2587,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-design-audit-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "산출물은 판정표이고 CSS 를 고치지 않는다. 수정은 R-B 의 WU-B11. 대비 3건(1·3·7)이 접근성 합격선"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-29"]
@@ -2603,7 +2603,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-project-panels-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "계약·서버·DB 변경 0"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-23"]
@@ -2619,7 +2619,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-thumb-nudge-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "저장 경로는 이 WU 밖 — 별건 WU-C2. 계약·서버·DB 변경 0"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-20"]
@@ -2635,7 +2635,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-detail-sticky-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "미결-9 ⓑ 확정 — 이 형태가 최종. 정본 Policy_데이터셋_상세 §1.3-1 을 개정하지 않고 탭·패널 전환을 만들지 않는다"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-24"]
@@ -2651,7 +2651,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-close-guard-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "미결-15 ⓐ — 조건만 고치고 문면 유지. PRD-34 는 §4 범위 밖"
     sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-14"]
@@ -2667,7 +2667,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-part-count-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "결과가 「없음 → 0 작업」일 수 있다. 없는 결함을 고치지 않는다. DB·계약·서버 변경 0"
     sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-38"]
@@ -2683,7 +2683,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-extension-label-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "M-9. WU-A6 의 M-6·M-7 과 한 마이그레이션 head 로 묶는다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
     sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-21", "부록 B M-9"]
@@ -2699,7 +2699,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-summary-required-20260905.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "DB 변경 0 — NOT NULL 금지·일괄 채우기 금지(미결-5 ⓐ). DatasetCreate.required 에 summary 추가가 파괴적 변경이다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
     sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-15", "PRD-28"]
@@ -2715,7 +2715,7 @@ items:
     evidence: >-
       dev-package/sessions/p3-interval-period-20260906.md
 
-      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈370〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
+      ⭑ **⟨dev 배포 green 2026-09-06 · 창 9 · `PLAN-SoT §9 〈375〉`⟩ `CLAUDE.md §0` 완료 조건의 배포 축이 섰다** — sha `20b3715d1db0` · 4/4 healthy · platform head `0014_merge_ra1_and_topic_vocab` · ai head `0006_topic_vocab_six` · `deploy_doctor` **`✓ 14 · ✗ 0 · ─ 0` 을 한 번의 실행으로**(exit 0) · CloudFront 가 새 번들 `assets/index-Rwvt3PTb.js` 를 200 으로 준다. R-A 회차 코드가 **도는 이미지 안에 있다**(설치본 실측 — `_TOPICS` 6값 · `INTERVAL_UNITS`·`PERIOD_GRANULARITIES` · `fileExtension` 응답 키 · 확장자 혼합 최종 방어선). ⚠ **이 줄은 배포 사실이지 새 판정이 아니다** — 각 항목의 완료 정의는 이미 `done` 이었고 여기서 다시 열지 않는다. 근거 `reports/window-9/lane-report.md`.
     deadline: null
     note: "M-6·M-7. DataPeriod 는 additionalProperties:false 라 granularity 추가가 계약 파괴 변경이다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
     sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-17", "PRD-18", "PRD-35", "부록 B M-6·M-7"]
