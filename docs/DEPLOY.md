@@ -204,7 +204,20 @@ cd frontend && npm run build && cd ../services/core-api
 | IAM 사용자 | `colab-platform-s3-uploader-prod` + 키 1 | ✅ 콘솔 로그인 없음 · 키는 `~/.config/colab-platform/prod.env`(0600) · **로컬 도구 전용** |
 | IAM 정책(앱) | `colab-platform-app-prod-policy` | ✅ ⭑ dev 의 `DiagnosticsDevOnly` 문을 **뺐다** — 앱은 버킷 설정을 읽을 일이 없고, 서버가 털렸을 때 구성까지 새지 않게 한다 |
 | IAM 역할 | `colab-platform-app-prod-role` | ✅ 신뢰 주체 EC2 · 인스턴스 프로파일로 P6 에서 붙인다 |
-| CloudFront · EC2 · RDS · VPC | — | ⬜ P4~P7 |
+| VPC | `colab-platform-prod-vpc` (`10.1.0.0/16`) | ✅ P4 · 서브넷 4(public 2 · private 2) · IGW · S3 게이트웨이 엔드포인트 · **NAT 없음** · 태그 `Environment=prod` |
+| DB 서브넷 그룹 | `colab-platform-prod-db-subnet-group` | ✅ P4 · 프라이빗 2 (⚠ AZ 만 고르면 안 된다 — **서브넷까지** 골라야 「Subnet IDs are required」가 안 난다) |
+| 보안그룹 | `colab-platform-app-prod-sg` · `colab-platform-db-prod-sg` | ✅ P4 · db 가 app 을 **이름으로** 참조 |
+| RDS | `colab-platform-prod-db` (PG16, `db.t4g.small`) | ✅ P5 · **보존 7일** ⭐ · 퍼블릭 액세스 **아니오** · 스토리지 자동 조정 최대 100 GiB · 암호화 · 삭제 방지 ON · 단일 AZ. 엔드포인트는 **레포에 안 적는다**(dev 도 그렇다) — `~/.config/colab-platform/prod.env`(0600) |
+| CloudFront · EC2 · 탄력적 IP · 키 페어 | — | ⬜ P6~P7 |
+
+⚠ **`db.t3.small` 로 한 번 잘못 만들었다가 「수정 → 즉시 적용」으로 바꿨다**(2026-09-06).
+기능 문제는 없었다 — **RDS 의 CPU 아키텍처는 클라이언트에게 안 보인다.** 값이 더 비쌌을 뿐이고,
+레포의 나머지가 전부 t4g 라 여기만 x86 으로 남으면 다음 사람이 이유를 못 찾는다.
+⛔ **`:39` 의 「x86 이미지는 t4g 에서 안 뜬다」와 헷갈리지 않는다** — 그건 **EC2 의 도커 이미지** 이야기다.
+
+**P5 가 여는 것 — 시점 복구(PITR)**
+보존 7일이 걸리면 그 기간 안의 **어느 시점으로도** 되감을 수 있다. 별도 WAL 기구를 짜지 않는다.
+⛔ **다만 「설정했다」는 관문이 아니다** — 실제로 되감아 보는 것이 `〈256〉` 이 요구한 것이고, P8 이다.
 
 **P3 검증 실측 (2026-09-06)**
 - `ops/s3_doctor.py` **9/10** — 유일한 ✗ 가 **CORS** 이고 **그것이 지금 옳은 상태다**:
