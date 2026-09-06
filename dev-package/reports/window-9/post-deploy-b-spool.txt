@@ -1,0 +1,49 @@
+=== ⓑ 트리거 스풀 — 실제로 떴는가 · 2026-09-06T02:14:59+00:00 ===
+── viz-render env (스풀 선언) ──
+/srv/viz-events
+── pipeline-worker env ──
+/srv/viz-events
+
+── 자리가 실제로 붙었고 **쓸 수 있는가** (Ted 조건: writable mount) ──
+uid=10001(colab) gid=999(colab) groups=999(colab)
+drwxr-xr-x. 2 colab 10001 6 Sep  6 02:11 /srv/viz-events
+viz 쓰기 OK
+uid=10001(colab) gid=999(colab) groups=999(colab)
+drwxr-xr-x. 2 colab 10001 6 Sep  6 02:14 /srv/viz-events
+worker 쓰기 OK
+
+── 같은 자리인가 (내는 쪽 ↔ 받는 쪽) ──
+66305:25586325
+66305:25586325
+
+── viz 로그 (루프 기동 흔적) ──
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8100 (Press CTRL+C to quit)
+WARNING: 지도 타일 회수 red(준비) — 주체 0건 · 계산 불가 0건 — 판정을 시작하지 않았다. 못 센 주체가 가리키던 타일이 고아로 둔갑한다 (DATA-REFERENCE §0 M-9)
+INFO:    지도 타일 회수 red(준비) — 주체 0건 · 계산 불가 0건 — 판정을 시작하지 않았다. 못 센 주체가 가리키던 타일이 고아로 둔갑한다 (DATA-REFERENCE §0 M-9)
+
+── 회수·트리거 요약 줄 계수 (지금까지) ──
+  회수 요약  : 2
+  트리거 집행: 0
+  INFO 총    : 25
+
+── 컨테이너 기동 시각 (60분 시계의 시작) ──
+/colab_v2_dev_core_api StartedAt=2026-09-06T02:11:34.511481717Z RestartCount=0 OOMKilled=false
+/colab_v2_dev_pipeline_worker StartedAt=2026-09-06T02:11:35.506310259Z RestartCount=0 OOMKilled=false
+/colab_v2_dev_viz_render StartedAt=2026-09-06T02:11:35.538248222Z RestartCount=0 OOMKilled=false
+/colab_v2_dev_ai_service StartedAt=2026-09-06T02:11:34.576581014Z RestartCount=0 OOMKilled=false
+
+── 자원 ──
+colab_v2_dev_pipeline_worker|49.8MiB / 512MiB|9.73%
+colab_v2_dev_viz_render|46.84MiB / 640MiB|7.32%
+colab_v2_dev_ai_service|59.53MiB / 256MiB|23.25%
+colab_v2_dev_core_api|99.71MiB / 384MiB|25.97%
+               total        used        free      shared  buff/cache   available
+Mem:            1841         584         468           1         788        1092
+
+── 배포 뒤 신규 OOM ──
+[Sun Sep  6 00:09:16 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,mems_allowed=0,oom_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task=python,pid=3771261,uid=10001
+[Sun Sep  6 00:12:01 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,mems_allowed=0,oom_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task=python,pid=4014327,uid=10001
+[Sun Sep  6 01:31:22 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,mems_allowed=0,oom_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task=python,pid=4015878,uid=10001

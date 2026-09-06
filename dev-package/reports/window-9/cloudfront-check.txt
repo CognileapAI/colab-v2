@@ -1,0 +1,26 @@
+=== ③ CloudFront 실측 — 로컬 dist ↔ 서빙 중인 것 대조 · 2026-09-06T11:20:14+09:00 ===
+
+── 로컬 dist 가 가리키는 것 ──
+  js  = assets/index-Rwvt3PTb.js
+  css = assets/index-DEWaifZ9.css
+
+── CloudFront 가 주는 index.html 이 가리키는 것 ──
+  js  = assets/index-Rwvt3PTb.js
+  css = assets/index-DEWaifZ9.css
+
+── 판정 ──
+  ✓ js 해시 일치
+  ✓ css 해시 일치
+
+── 그 js 가 실제로 200 으로 오는가 ──
+  status=200 bytes=446416 type=text/javascript; charset=utf-8
+  cache-control: public, max-age=31536000, immutable
+  x-cache: Miss from cloudfront
+
+── index.html 은 짧은 캐시인가 (CLAUDE.md 배포 절 5) ──
+  content-type: text/html; charset=utf-8
+  cache-control: no-cache
+
+── 진입·API 라우팅 ──
+  /            → 200
+  /api/v1/me   → 401 {"code":"UNAUTHORIZED","message":"Authorization: Bearer <토큰> 이 없다."}

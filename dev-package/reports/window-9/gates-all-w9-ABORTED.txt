@@ -1,0 +1,19 @@
+=== 전 게이트 전수 — 창 9 · -j 4 · 2026-09-06T11:21:50+09:00 ===
+트리 = 70d1157f940adad1c714edaf3ae20d2daf72b077 · 커밋 = 20b3715d1db0ea86093d75843302c27ee7eeb2d5
+COLAB_PLANNING_ROOT 선언됨(워크트리 전수에는 이것이 든다 · 〈367〉)
+
+── 실행 계획 (병렬도 -j 4) ──────────────────────────────────────
+  선언 정본 = gates/config/parallelism.toml
+  단독 8건 · 병렬 42건 · 미선언 0건
+  단독  frontend-test  (선언: serial)
+  단독  render-latency  (선언: serial)
+  단독  service-tests-core-api  (선언: serial)
+  단독  service-tests-ai-service  (선언: serial)
+  단독  service-tests-viz-render  (선언: serial)
+  단독  service-tests-pipeline-worker  (선언: serial)
+  단독  db-selftest  (선언: serial)
+  단독  preview-tile-slot-selftest  (선언: serial)
+────────────────────────────────────────────────────────────────────
+Terminated
+GATES_EXIT=143
+끝 2026-09-06T11:28:29+09:00

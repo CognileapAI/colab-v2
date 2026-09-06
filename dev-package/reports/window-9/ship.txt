@@ -1,0 +1,11 @@
+=== infra/dev/ship.sh — 창 9 · 2026-09-06T11:10:26+09:00 ===
+롤백 태그(직전) = dev-ea036c50c921
+
+Loaded image: colab-v2/pipeline-worker:dev-20b3715d1db0
+Loaded image: colab-v2/viz-render:dev-20b3715d1db0
+Loaded image: colab-v2/ai-service:dev-20b3715d1db0
+Loaded image: colab-v2/migrator:dev-20b3715d1db0
+Loaded image: colab-v2/core-api:dev-20b3715d1db0
+loaded: dev-20b3715d1db0
+── 실었다: dev-20b3715d1db0. 다음 = EC2 에서 /opt/colab-v2/up.sh
+EXIT=0

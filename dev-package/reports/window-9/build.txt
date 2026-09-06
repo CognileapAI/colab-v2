@@ -1,0 +1,271 @@
+=== infra/dev/build.sh — 창 9 · 2026-09-06T11:06:40+09:00 ===
+HEAD = 20b3715d1db0ea86093d75843302c27ee7eeb2d5  short12 = 20b3715d1db0
+worktree clean? 2 건
+
+── build core-api (linux/arm64)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 892B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 346B 0.0s done
+#3 DONE 0.0s
+
+#4 [1/6] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#4 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 617.82kB 0.3s done
+#5 DONE 0.3s
+
+#6 [2/6] WORKDIR /app
+#6 CACHED
+
+#7 [3/6] COPY requirements.txt /app/requirements.txt
+#7 CACHED
+
+#8 [4/6] RUN pip install --no-deps -r /app/requirements.txt
+#8 CACHED
+
+#9 [5/6] COPY src/ /app/src/
+#9 DONE 0.1s
+
+#10 [6/6] RUN useradd --system --create-home --uid 10001 colab
+#10 4.187 useradd warning: colab's uid 10001 is greater than SYS_UID_MAX 999
+#10 DONE 4.4s
+
+#11 exporting to image
+#11 exporting layers
+#11 exporting layers 0.4s done
+#11 exporting manifest sha256:1f5c7ddfbb4437ce49d7452db43939e530cb8c5e6e6743ef80fe801998b9439a
+#11 exporting manifest sha256:1f5c7ddfbb4437ce49d7452db43939e530cb8c5e6e6743ef80fe801998b9439a 0.0s done
+#11 exporting config sha256:b1529e3ae357af159be279a0bb8f8f59d40c64b514e75d714e35a250e041668d 0.0s done
+#11 exporting attestation manifest sha256:3d2821496411c364e1396277868cd4c69274b815d1956d5712fd0f53a9881a06 0.0s done
+#11 exporting manifest list sha256:4fa78406b2431f36bcc86db9b185b23819c67c7f06dff2e421caaa8e69940e31 0.0s done
+#11 naming to docker.io/colab-v2/core-api:dev
+#11 naming to docker.io/colab-v2/core-api:dev done
+#11 naming to docker.io/colab-v2/core-api:dev-20b3715d1db0 done
+#11 DONE 0.5s
+   core-api → arm64 ✓
+── build pipeline-worker (linux/arm64)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 4.71kB 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 346B 0.0s done
+#3 DONE 0.0s
+
+#4 [builder 1/4] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#4 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 241.53kB 0.1s done
+#5 DONE 0.2s
+
+#6 [stage-1 5/7] RUN python -c "import rasterio, rasterio._env, netCDF4, h5py, pyproj, pyhdf.SD; print('geo import OK', rasterio.__gdal_version__)"
+#6 CACHED
+
+#7 [stage-1 6/7] COPY src/ /app/src/
+#7 CACHED
+
+#8 [stage-1 2/7] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/4] COPY requirements.txt /tmp/requirements.txt
+#9 CACHED
+
+#10 [builder 2/4] RUN apt-get update  && apt-get install -y --no-install-recommends build-essential libhdf4-alt-dev zlib1g-dev libjpeg-dev  && rm -rf /var/lib/apt/lists/*
+#10 CACHED
+
+#11 [builder 4/4] RUN INCLUDE_DIRS=/usr/include/hdf     LIBRARY_DIRS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)     LIBRARIES=mfhdfalt,dfalt,jpeg,z     pip install --no-deps --prefix=/install -r /tmp/requirements.txt
+#11 CACHED
+
+#12 [stage-1 3/7] RUN apt-get update  && apt-get install -y --no-install-recommends libexpat1 libhdf4-0-alt libjpeg62-turbo  && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [stage-1 4/7] COPY --from=builder /install /usr/local
+#13 CACHED
+
+#14 [stage-1 7/7] RUN useradd --system --create-home --uid 10001 colab
+#14 CACHED
+
+#15 exporting to image
+#15 exporting layers done
+#15 exporting manifest sha256:c00b927d06b70c410719a71896216ad79c3cd4bf9c4c71822c5738637d59c41c done
+#15 exporting config sha256:f65588108e6ca9ff9f3af6a5199d0871ca8df72423c3fabed8baa875e03dd7a7 done
+#15 exporting attestation manifest sha256:b058af5f7bb874ba1b58990343d424808d793800478f84f638098dbf707f7d22 0.0s done
+#15 exporting manifest list sha256:ba55b4263745777ba9a0f459752eb21afc45231231017dc9e4ba43d162d74f93 0.0s done
+#15 naming to docker.io/colab-v2/pipeline-worker:dev
+#15 naming to docker.io/colab-v2/pipeline-worker:dev done
+#15 naming to docker.io/colab-v2/pipeline-worker:dev-20b3715d1db0 done
+#15 DONE 0.1s
+   pipeline-worker → arm64 ✓
+── build viz-render (linux/arm64)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 4.72kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 346B 0.0s done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 DONE 0.0s
+
+#5 [builder 1/4] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#5 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#5 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 402.12kB 0.2s done
+#4 DONE 0.2s
+
+#6 [stage-1 2/7] WORKDIR /app
+#6 CACHED
+
+#7 [builder 3/4] COPY requirements.txt /tmp/requirements.txt
+#7 CACHED
+
+#8 [stage-1 5/7] RUN python -c "import rasterio, rasterio._env, netCDF4, pyhdf.SD, PIL.Image; print('geo import OK', rasterio.__gdal_version__)"
+#8 CACHED
+
+#9 [stage-1 6/7] COPY src/ /app/src/
+#9 CACHED
+
+#10 [stage-1 3/7] RUN apt-get update  && apt-get install -y --no-install-recommends libexpat1 libhdf4-0-alt libjpeg62-turbo  && rm -rf /var/lib/apt/lists/*
+#10 CACHED
+
+#11 [builder 2/4] RUN apt-get update  && apt-get install -y --no-install-recommends build-essential libhdf4-alt-dev zlib1g-dev libjpeg-dev  && rm -rf /var/lib/apt/lists/*
+#11 CACHED
+
+#12 [builder 4/4] RUN INCLUDE_DIRS=/usr/include/hdf     LIBRARY_DIRS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)     LIBRARIES=mfhdfalt,dfalt,jpeg,z     pip install --disable-pip-version-check --prefix=/install -r /tmp/requirements.txt
+#12 CACHED
+
+#13 [stage-1 4/7] COPY --from=builder /install /usr/local
+#13 CACHED
+
+#14 [stage-1 7/7] RUN useradd --system --create-home --uid 10001 colab  && mkdir -p /srv/viz-sources && chown colab /srv/viz-sources
+#14 CACHED
+
+#15 exporting to image
+#15 exporting layers done
+#15 exporting manifest sha256:12cb079659cdc3b0bfeeeab512f444ba5047d6a6670a1a5f1b0fa9211186c35f done
+#15 exporting config sha256:2332a84bb9212b6697a5e47d9e3bed4842a3dc80980639d1a0231fb1bfa518b5 done
+#15 exporting attestation manifest sha256:00bd64eac2f544c53792187f606e3bab8cb7c7f58cc4942fb90ffe014a9f2eb1 0.0s done
+#15 exporting manifest list sha256:1e2da2c04aa1519f3491a5e1f06c7f6a6f9b11315fa0ef78a08fb7bc6713493e 0.0s done
+#15 naming to docker.io/colab-v2/viz-render:dev done
+#15 naming to docker.io/colab-v2/viz-render:dev-20b3715d1db0 done
+#15 DONE 0.1s
+   viz-render → arm64 ✓
+── build ai-service (linux/arm64)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.72kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 346B 0.0s done
+#3 DONE 0.0s
+
+#4 [1/6] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#4 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 75.63kB 0.1s done
+#5 DONE 0.1s
+
+#6 [2/6] WORKDIR /app
+#6 CACHED
+
+#7 [3/6] COPY requirements.txt /app/requirements.txt
+#7 CACHED
+
+#8 [4/6] RUN pip install --no-cache-dir --disable-pip-version-check -r /app/requirements.txt
+#8 CACHED
+
+#9 [5/6] COPY src/ /app/src/
+#9 DONE 0.1s
+
+#10 [6/6] RUN useradd --system --create-home --uid 10001 colab
+#10 0.277 useradd warning: colab's uid 10001 is greater than SYS_UID_MAX 999
+#10 DONE 0.3s
+
+#11 exporting to image
+#11 exporting layers 0.1s done
+#11 exporting manifest sha256:1f4554fe31bed811c7eb3b78a8231c7841acdbcc10b058edcb2fe85999d15206 0.0s done
+#11 exporting config sha256:77e1c9b81e8d721e6118a586e4aeedd8df88498923e2ccbfbcd53bfe349f6354 0.0s done
+#11 exporting attestation manifest sha256:ee51ab00cc7335b79f87f9cc56ac992c986d955f4931417c24d7abae88aa7e63 0.0s done
+#11 exporting manifest list sha256:60c2f9a63248f67b7d13913c5b06170b0bfd61eec9e6bfd8668f85493ef0e6de 0.0s done
+#11 naming to docker.io/colab-v2/ai-service:dev done
+#11 naming to docker.io/colab-v2/ai-service:dev-20b3715d1db0 done
+#11 DONE 0.2s
+   ai-service → arm64 ✓
+── build migrator (linux/arm64)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 873B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 283B 0.0s done
+#3 DONE 0.0s
+
+#4 [1/5] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#4 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 473.32kB 0.2s done
+#5 DONE 0.2s
+
+#6 [2/5] RUN pip install "alembic==1.16.5" "SQLAlchemy==2.0.44" "psycopg[binary]==3.2.12"
+#6 CACHED
+
+#7 [3/5] COPY db/platform /chain/platform
+#7 DONE 0.0s
+
+#8 [4/5] COPY db/ai /chain/ai
+#8 DONE 0.0s
+
+#9 [5/5] WORKDIR /chain
+#9 DONE 0.0s
+
+#10 exporting to image
+#10 exporting layers 0.1s done
+#10 exporting manifest sha256:74010b5237e1567d1855cc81a370db269ce33e06ee69fef009c1d19afa2d9dd0 done
+#10 exporting config sha256:4f31fbb9843d8cd0459a7c3de33ce13db5309048150b917339a715955d26f413 done
+#10 exporting attestation manifest sha256:12db4d0563393f36bbbd06a265411cbeaeea79d8c9a3744bdc03dde033102439 0.0s done
+#10 exporting manifest list sha256:f7455423e4cba15dcd7780800ac50515421935a7282ffa0cf3bc7bd75559afa1 0.0s done
+#10 naming to docker.io/colab-v2/migrator:dev done
+#10 naming to docker.io/colab-v2/migrator:dev-20b3715d1db0 done
+#10 DONE 0.2s
+   migrator → arm64 ✓
+── 저장: /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/dist/colab-v2-dev-20b3715d1db0.tar (273M) · 태그 dev-20b3715d1db0
+EXIT=0

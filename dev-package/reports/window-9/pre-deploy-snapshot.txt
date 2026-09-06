@@ -1,0 +1,81 @@
+=== 창 9 배포 전 스냅샷 (읽기 전용) · 2026-09-06T02:07:11+00:00 ===
+
+── ① 도는 sha ──
+ea036c50c921
+
+── ② 컨테이너 ──
+colab_v2_dev_ai_service|Up 8 hours (healthy)|colab-v2/ai-service:dev
+colab_v2_dev_core_api|Up 8 hours (healthy)|colab-v2/core-api:dev
+colab_v2_dev_viz_render|Up 29 minutes (healthy)|colab-v2/viz-render:dev
+colab_v2_dev_pipeline_worker|Up 10 hours (healthy)|colab-v2/pipeline-worker:dev
+
+── ③ 헬스 본문 (조용한 local 을 잡는 자리) ──
+core-api         {"unit":"core-api","status":"alive","implemented":true}
+pipeline-worker  {"unit": "pipeline-worker", "status": "alive", "implemented": true, "storageMode": "s3"}
+viz-render       {"unit":"viz-render","status":"alive","implemented":true,"sourceMode":"s3","previewSink":"s3","tileBranch":"꺼짐"}
+ai-service       {"unit":"ai-service","status":"alive","implemented":true}
+
+── ④ 시크릿 파일 자리 ──
+ai-db.url
+ai-owner-db.url
+backup-ai-db.url
+backup-platform-db.url
+core-database.url
+credentials.json
+master.url
+pipeline-db.url
+platform-owner-db.url
+subjects.json
+
+── ⑤ 두 체인 head (읽기 전용 · **backup 롤**) ──
+⛔ colab_app 롤로 세지 않는다 — RLS 가 전 행을 가려 0 으로 읽힌다(〈363〉).
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+PermissionError: [Errno 13] Permission denied: '/etc/colab/backup-platform-db.url'
+
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+PermissionError: [Errno 13] Permission denied: '/etc/colab/backup-ai-db.url'
+
+── ⑥ 자원 ──
+               total        used        free      shared  buff/cache   available
+Mem:            1841         981         274           1         585         695
+Swap:           4095           0        4095
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p1   20G   13G  7.4G  64% /
+
+── ⑦ OOM (최근) ──
+[Sun Sep  6 00:12:01 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,mems_allowed=0,oom_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task=python,pid=4014327,uid=10001
+[Sun Sep  6 01:31:22 2026] runc:[2:INIT] invoked oom-killer: gfp_mask=0xcc0(GFP_KERNEL), order=0, oom_score_adj=0
+[Sun Sep  6 01:31:22 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,mems_allowed=0,oom_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task_memcg=/system.slice/docker-d3d449b641d3421e7e77f2bcc2fa91c8a123131f4428589c8329695c3a62e01b.scope,task=python,pid=4015878,uid=10001
+
+── ⑧ 롤백 태그 후보 ──
+colab-v2/core-api:dev-0045f2233a04
+colab-v2/core-api:dev-12844dd8c5cb
+colab-v2/core-api:dev-30b3f08f4e81
+colab-v2/core-api:dev-b530a6d6671b
+colab-v2/core-api:dev-ea036c50c921
+login → 201
+listDatasets totalCount = 14 · returned = 14
+
+name                                   files  Lv   원천 lineageState unkPar  sourceLabel
+파일 포맷 실습 — HDF5/HDF-EOS                   76   0    0      기록 없음   True  None
+파일 포맷 실습 — GeoTIFF                        19   0    0      기록 없음   True  None
+파일 포맷 실습 — 이진(bin)                        39   0    0      기록 없음   True  None
+파일 포맷 실습 — NetCDF                        150   0    0      기록 없음   True  None
+파일 포맷 실습 — GRIB                           32   0    0      기록 없음   True  None
+식생 — U-Net NDVI 예측장 (Lv.2)                31   2    0         확정  False  None
+강수 — U-Net 강우 추정 예측장 (Lv.2)                1   2    0         확정  False  None
+가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)         5   0    0      기록 없음   True  None
+식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)           4   0    0      기록 없음   True  None
+식생 — GK-2A NDVI 100 m 월평균 (Lv.1)           1   1    0         확정  False  None
+강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)         2   1    0         확정  False  None
+식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)      32   0    0      기록 없음   True  None
+강수 — RN15 지상 15분 누적 강수 (Lv.0)             10   0    0      기록 없음   True  None
+강수 — HSR 레이더 합성 반사도 (Lv.0)                12   0    0      기록 없음   True  None
+
+데이터셋      = 14 (totalCount 14 )
+파일 합계     = 414
+고유 계보 간선 = 6
+레벨 분포     = {0: 10, 1: 2, 2: 2}
+원천 노드 합계 = 0  ← ⓔ(BF-9) 의 판정 대상

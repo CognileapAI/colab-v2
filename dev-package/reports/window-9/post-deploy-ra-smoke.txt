@@ -1,0 +1,31 @@
+login → 201
+
+── ⑴ DB 층 · WU-A5 확장자 표기 — `file_extension` 이 응답에 실리는가 ──
+  ✓ 상세 응답에 확장자 키가 있다
+      basicInfo keys = ['crs', 'fileExtension', 'files', 'format', 'grid', 'observationInterval', 'owner', 'period', 'sourceLabel', 'uploader', 'variables']
+      /basicInfo/fileExtension = 'docx'
+
+── ⑵ 서버 층 · WU-A4 설명 필수 — 설명 없는 등록이 400 ──
+  ✓ 설명 없는 createDataset → 400
+      400 · {"code": "BAD_REQUEST", "message": "설명을 적어 주세요."}
+  ✓ 공백만 설명 → 400
+      400 · {"code": "BAD_REQUEST", "message": "설명을 적어 주세요."}
+
+── ⑶ 서버 층 · WU-A13 확장자 혼합 — 2종을 보내면 400 ──
+  ✓ 확장자 2종 createUpload → 400
+      400 · {"code": "BAD_REQUEST", "message": "요청 값이 규칙에 맞지 않는다.", "details": {"errors": "[{'type': 'missing', 'loc': ('body', 'files'), 'msg': 'Field required', 'input': None}]"}}
+  ⛔ 대소문자만 다른 같은 확장자는 같은 종류(400 이 아니다)
+      400 · {"code": "BAD_REQUEST", "message": "요청 값이 규칙에 맞지 않는다.", "details": {"errors": "[{'type': 'missing', 'loc': ('body', 'files'), 'msg': 'Field required', 'input': None}]"}}
+
+── ⑷ 서버 층 · WU-A6 관측 간격 — 반쪽이면 400 ──
+  ✓ 숫자만 있고 단위 없는 관측 간격 → 400
+      400 · {"code": "BAD_REQUEST", "message": "관측 간격은 숫자와 단위를 함께 적어 주세요."}
+
+── ⑸ 어휘 6값 — 어휘 밖 주제는 400 ──
+  ✓ 어휘 밖 주제 → 400
+      400 · {"code": "BAD_REQUEST", "message": "주제는 정해진 값 중 하나다.", "details": {"allowed": ["강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC", "가뭄", "파일 포맷 예제"]}}
+
+── ⑹ 계수 무변 (연막이 아무것도 만들지 않았다) ──
+  ✓ totalCount 14 → 14 무변
+
+계 = ⛔ 실패 1건: ['대소문자만 다른 같은 확장자는 같은 종류(400 이 아니다)']
