@@ -21,6 +21,21 @@
 #   · `git fetch` · `git pull --rebase` · `git worktree …` · `git push origin --delete <기능브랜치>`
 #   · git 이 아닌 모든 명령.
 #
+# ⭑ ⟨개정 2026-09-06 · 어드바이저 게이트 ②⟩ **⑴ 은 `agent_id` 가 실린 호출(＝ 서브에이전트·레인)만
+#   막는다.** 같은 근거의 연장이다 — `main` 을 ff 로 밀어 넣는 자리는 오케스트레이터 하나이고
+#   (`rules §2-1`·`§4-2`), 그 승인된 `git push origin main` 까지 막으면 병합 직후 정상 경로가
+#   **첫 명령에서** 걸린다. 오탐이 예정된 차단은 곧 상시 무력화다(위 ⭑ 와 같은 판단).
+#   ／ 종전 ~~누가 부르든 main push 차단~~(`11-merge-guards-verification.md` §2-1 ⑴·⑷).
+#   ⛔ **좁힌 것은 ⑴ 뿐이다** — ⑵ 강제 push(`--force`/`-f`/`--force-with-lease`) · ⑶ non-ff merge
+#   · ⑷ `gh pr merge` · ⑸ `branch -D main` 은 **오케스트레이터에게도 그대로 차단**이다.
+#   판별 근거(문서 축자 https://code.claude.com/docs/en/hooks) —
+#     ⑹ `agent_id` — "Unique identifier for the subagent. **Present only when the hook fires
+#        inside a subagent call.** Use this to distinguish subagent hook calls from main-thread calls."
+#        · "When a subagent calls a tool, tool events such as `PreToolUse` and `PostToolUse` fire the
+#        same configured hooks as in the main conversation, and the input carries the `agent_id` and
+#        `agent_type` common input fields that identify the subagent."
+#   ⇒ 부재 = 메인 스레드. 판정 불가(필드 없음)는 **통과** 쪽으로 접히고, 그것이 이 훅의 기본값이다.
+#
 # ── PreToolUse 입력 스키마 (stdin · 문서 인용) ────────────────────────────────
 #   https://code.claude.com/docs/en/hooks
 #     {
@@ -81,6 +96,7 @@ cmd=ti.get("command") or ""
 # (세그먼트 분리에서 개행은 어차피 `;` 과 같은 자리다.)
 print(d.get("tool_name",""))
 print(d.get("cwd",""))
+print(d.get("agent_id") or "")
 print(str(cmd).replace("\r"," ").replace("\n"," ; "))
 ' 2>/dev/null
 }
@@ -88,7 +104,12 @@ print(str(cmd).replace("\r"," ").replace("\n"," ; "))
 mapfile -t _f < <(read_fields)
 TOOL="${_f[0]:-}"
 CWD="${_f[1]:-}"
-CMD="${_f[2]:-}"
+AGENT_ID="${_f[2]:-}"
+CMD="${_f[3]:-}"
+
+# 서브에이전트(레인)인가 — `agent_id` 유무 하나로 가른다. 문서 축자는 위 ⑹ 인용.
+IS_SUBAGENT=0
+[ -n "$AGENT_ID" ] && IS_SUBAGENT=1
 
 [ "$TOOL" = "Bash" ] || exit 0
 [ -n "$CMD" ] || exit 0
@@ -115,7 +136,7 @@ is_main_ref() { # $1=refspec 토큰 — 목적지(dst)가 main/master 인가
 }
 
 deny() { # $1=사유 한 줄 — stderr 한 줄이 그대로 차단 사유가 된다
-  echo "⛔ 차단(H3 git-guard) — $1 · 이 자리는 오케스트레이터 몫이다(스펙 C H3). 정말 필요하면 COLAB_HOOKS=0 을 앞에 붙여 다시 부른다." >&2
+  echo "⛔ 차단(H3 git-guard) — $1 · 이 자리는 오케스트레이터 몫이다(스펙 C H3). 훅을 끄려면 세션 밖에서 \`COLAB_HOOKS=0 claude\` 로 열거나 .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다 — 명령 앞에 붙이는 형태(\`COLAB_HOOKS=0 git …\`)는 벗겨져 듣지 않는다." >&2
   exit 2
 }
 
@@ -172,20 +193,21 @@ while IFS= read -r seg; do
               ;;
         esac
       done
-      # ⑵ 강제 푸시가 main/master 를 겨눈다
+      # ⑵ 강제 푸시가 main/master 를 겨눈다 — **누가 부르든 차단**(오케스트레이터 포함)
       if [ "$force" -eq 1 ] && [ "$targets_main" -eq 1 ]; then
         deny "main/master 로 강제 푸시(\`--force\`/\`-f\`/\`--force-with-lease\`) — 남의 커밋을 덮는다"
       fi
-      # ⑴-a refspec 이 main/master 를 명시했다
-      if [ "$targets_main" -eq 1 ]; then
-        deny "main/master 로 push — \`main\` 은 오케스트레이터의 ff 병합으로만 움직인다"
+      # ⑵-b refspec 이 없는 강제 push 를 main/master 위에서 — **누가 부르든 차단**
+      if [ "$npos" -le 1 ] && [ "$on_main" -eq 1 ] && [ "$force" -eq 1 ]; then
+        deny "현재 브랜치가 \`$BRANCH\` 인데 refspec 없는 강제 push — main/master 가 그대로 덮인다"
       fi
-      # ⑴-b refspec 이 없고 지금 서 있는 곳이 main/master 다(＝ 현재 브랜치가 그대로 나간다)
-      if [ "$npos" -le 1 ] && [ "$on_main" -eq 1 ]; then
-        if [ "$force" -eq 1 ]; then
-          deny "현재 브랜치가 \`$BRANCH\` 인데 refspec 없는 강제 push — main/master 가 그대로 덮인다"
-        fi
-        deny "현재 브랜치가 \`$BRANCH\` 인데 refspec 없는 push — main/master 가 그대로 나간다"
+      # ⑴-a refspec 이 main/master 를 명시했다 — **레인(서브에이전트)만 차단**
+      if [ "$targets_main" -eq 1 ] && [ "$IS_SUBAGENT" -eq 1 ]; then
+        deny "레인(서브에이전트)이 main/master 로 push — \`main\` 은 오케스트레이터 한 자리에서만 움직인다(rules §2-1·§4-2)"
+      fi
+      # ⑴-b refspec 이 없고 지금 서 있는 곳이 main/master 다 — **레인만 차단**
+      if [ "$npos" -le 1 ] && [ "$on_main" -eq 1 ] && [ "$IS_SUBAGENT" -eq 1 ]; then
+        deny "레인(서브에이전트)이 \`$BRANCH\` 에서 refspec 없는 push — main/master 가 그대로 나간다"
       fi
       ;;
     merge)

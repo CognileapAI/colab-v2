@@ -36,6 +36,10 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | **`service-tests-selftest`** | 위 네 게이트가 red fixture 로 fail-closed 임을 증명한다 — **ⓐ 통과 1건 green(대조군) · ⓑ 실패 1건 red · ⓒ 수집 0건 red · ⓓ 실행 0건(전부 skip) red · ⓔ venv 부재 red(준비 · 78) · ⓕ·ⓖ 필수 인자 부재 red · ⓗ 단위 자리 부재 red · ⓘ 요약줄이 계수를 낸다**. 픽스처 원본 = `gates/fixtures/service-tests/`(트리 넷 ＋ README), 판정은 `mktemp -d` 사본에서만 난다 — `services/**` 에는 한 글자도 쓰지 않고 서비스 묶음을 다시 돌리지 않는다. 서비스 venv 가 하나도 없으면 skip 이 아니라 red(준비 · 78) |
 | `selftest` | **위 게이트들이 실제로 red를 낼 수 있는지.** ⭑ **⟨개정 2026-09-03 · 코드리뷰 #6⟩ 집합을 손으로 적지 않는다** — 구성원 정본은 `gates/run.sh` 의 `ALL_GATES` 안에서 이름이 `*selftest` 인 것 전부다. 종전에는 이 자리에 이름 14개가 손으로 적혀 있었고 `ALL_GATES` 에는 셀프테스트가 18개 있었다 — **`autometa-loss-`·`preview-tile-slot-`·`artifact-ownership-`· `stage2-markers-selftest` 넷이 조용히 빠져 있었다.** 빠진 것이 목록의 부재로만 존재하면 아무도 그것을 세지 않는다(green-by-skip 의 목록판). **세 상태** — 선언되면 돈다 · **명시 면제는 이름과 사유와 건수를 드러낸 채** 넘어간다 · 아무 말 없으면 red. 요약줄이 `선언 N · 실행 M · 면제 K` 와 `green / red(판정) / red(준비)` 를 낸다. 현재 면제 2건 = `stage2-markers-selftest`(pipeline-worker 런타임 필요 · CI 는 `dormant-tests` 잡이 돈다) · `service-tests-selftest`(서비스 venv 필요 · CI 는 `service-tests` 잡이 돈다). ⚠ 면제는 「검사하지 않아도 된다」가 아니라 **다른 잡이 그것을 돈다**는 선언이고, `gates/run.sh all` 은 면제 없이 전부 돈다. 케이스가 종료코드 78 로 나가면 집합 전체가 78 로 나간다 — **못 돈 것을 통과로 세지 않는다** |
 
+## 돌리기 전 — 시험용 값은 실행기가 스스로 읽는다
+
+- **`~/.colab-v2-test.env` 가 없고 `CI`·`GITHUB_ACTIONS` 도 비어 있으면, 게이트 이름을 준 실행은 무엇이든 dispatch 전에 red(준비 · 입력미선언 · 종료코드 78)로 끝난다** — `exec-bit`·`contract-lint`·`work-item-consistency` 처럼 그 값을 안 쓰는 게이트도 예외가 아니다(판정부 = `gates/run.sh` 의 env 블록). 파일이 있으면 실행기가 `set -a; . <파일>; set +a` 를 대신 친다. 자리를 옮기려면 `COLAB_TEST_ENV_FILE=<경로>`, 값이 이미 실려 있으면 `COLAB_TEST_ENV_SOURCED=1`. CI 는 이 파일을 쓰지 않고 게이트가 일회용 DB 를 스스로 세운다. 파일 세우는 법 = `dev-package/RESTART.md §2-④`.
+
 ## 빨리 도는 것과 덜 보는 것은 다르다
 
 게이트를 병렬로 돌린다. **검사 대상·기대값·판정 기준은 하나도 바뀌지 않았고, 바뀐 것은 실행 순서뿐이다.**
@@ -84,6 +88,12 @@ COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> ./gates/run.sh all -
 - `tree` = `HEAD^{tree}`. **직전 판정본과 같으면 전수 재실행을 갈음한다**(`rules §3-2`).
 - 소비자 = `SubagentStop:lane-worker` 훅(H7). 부재 = 「게이트를 돌리지 않은 레인」으로 차단하고,
   `counts.red_판정 > 0` 이면 red 게이트 이름을 열거하며 차단한다.
+- ⭑ **⟨2026-09-06⟩ 이 파일은 추적하지 않는다**(`.gitignore` 의 `dev-package/reports/**/gate-summary.json`).
+  커밋되면 새 체크아웃마다 따라와 H7 의 「가장 최근 하나」가 그것을 뽑고 게이트를 안 돌린 레인이
+  통과한다. 회차 기록으로 남길 한 벌은 이름을 바꾼다(예 `final/gate-summary.record.json`).
+  H7 은 이름 규약에 더해 **JSON 의 `commit`·`tree` 를 그 워크트리의 HEAD 와 대조**하고, 둘 다
+  어긋나면 부재와 같이 차단한다 — **게이트는 마지막 커밋 뒤에 돌린다**(커밋 후 돌리지 않으면
+  JSON 이 직전 트리를 가리킨다).
 - ⚠ **병합 진입 조건은 `red_판정 == 0` 과 `red_준비 == 0` 둘 다**다(준비 red 도 red 다).
   H7 은 레인 종료만 보므로 준비 red 로 종료를 막지 않는다 — 그 판정은 병합 시점 몫이다.
 

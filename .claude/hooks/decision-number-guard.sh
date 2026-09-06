@@ -103,7 +103,10 @@ exp = ", ".join("〈%d〉" % n for n in want)
 sys.stderr.write(
     "⛔ 차단(H5 decision-number-guard) — 새 결정 번호 %s 은(는) 기대값 %s 과 다르다"
     " (기준 %s 최대 〈%d〉 + 1 · 번호는 예약하지 않고 병합 직전 재실측한다)"
-    " · 정말 필요하면 COLAB_HOOKS=0 을 앞에 붙여 다시 부른다.\n" % (got, exp, os.environ["BASE_SRC"], base))
+    " · 훅을 끄려면 세션 밖에서 `COLAB_HOOKS=0 claude` 로 열거나"
+    " .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다"
+    " — 명령 앞에 붙이는 형태는 벗겨져 듣지 않고, Edit·Write 훅에는 앞에 붙일 자리 자체가 없다.\n"
+    % (got, exp, os.environ["BASE_SRC"], base))
 sys.exit(2)
 '
 rc=$?

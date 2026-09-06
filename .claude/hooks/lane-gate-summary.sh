@@ -57,6 +57,10 @@ case "$AGENT" in ""|lane-worker) ;; *) exit 0 ;; esac
 #    상대경로는 레인의 `cwd` 기준으로 푼다 — 실행기가 레포 루트 기준으로 푸는 것과 같은 자리다.
 # ⑵ 없으면 `dev-package/reports/` 아래에서 **가장 최근에 쓰인** gate-summary.json.
 #    (Bash env 는 도구 호출 간 유지되지 않으므로 ⑴ 은 대개 비어 있다 — ⑵ 가 실질 경로다.)
+#    ⚠ 그래서 이 이름은 **추적하지 않는다**(`.gitignore` · 어드바이저 게이트 ② 지적 4) — 커밋되면
+#      새 체크아웃마다 따라와 mtime 이 같은 상태에서 뽑히고, 게이트를 안 돌린 레인이 통과한다.
+#      회차 기록으로 남기는 한 벌은 `*/final/gate-summary.record.json` 처럼 **이름을 바꿔** 둔다.
+#      추가로 아래에서 `commit`·`tree` 를 HEAD 와 대조한다(이름 규약 하나에 기대지 않는다).
 found="$( ( cd "$CWD" && REPORT_DIR="${COLAB_GATE_REPORT_DIR:-}" python3 - <<'PY'
 import glob, os
 d = os.environ.get("REPORT_DIR") or ""
@@ -80,6 +84,46 @@ if [ -z "$found" ]; then
     echo "   찾은 자리: COLAB_GATE_REPORT_DIR=${COLAB_GATE_REPORT_DIR:-(미선언)} · dev-package/reports/**/gate-summary.json = 0건 (기준 cwd=$CWD)"
   } >&2
   exit 2
+fi
+
+# ── 찾은 JSON 이 **지금 이 트리**를 잰 것인가 ────────────────────────────────
+# ⭑ ⟨증보 2026-09-06 · 어드바이저 게이트 ② 지적 4⟩ 위 ⑵ 갈래는 mtime 최신 하나를 고를 뿐이라
+#   **옛 회차의 JSON 이 이번 레인의 게이트로 읽힐 수 있다.** 그때 H7 은 「돌렸다」를 통과시키는데,
+#   그것이 이 훅이 막으려던 바로 그 사실(레인이 말한 것 ≠ 게이트가 낸 것)이다.
+#   배출기가 `commit`·`tree` 를 이미 적으므로(스키마 `colab-gate-summary/1` · `gates/run.sh`
+#   `summary_git_id`) 여기서 대조한다. **어긋나면 부재와 같이 취급한다**(exit 2).
+# 판정 = `commit == HEAD` **또는** `tree == HEAD^{tree}` 이면 최신이다. 트리 동일성을 함께 보는
+#   이유는 `rules §3-2`(같은 트리면 전수 재실행을 갈음한다)와 같은 근거다 — ff·amend 로 커밋
+#   해시만 달라진 경우까지 「안 돌렸다」로 몰지 않는다.
+# ⚠ 판정 불가는 **통과**다(이 훅의 기본값 · 스펙 C) — JSON 에 두 값이 없거나 `cwd` 가 체크아웃이
+#   아니면 대조하지 않는다. 여기서 세우면 훅이 곧 상시 무력화된다.
+HEAD_COMMIT="$( ( cd "$CWD" && git rev-parse HEAD ) 2>/dev/null || true )"
+HEAD_TREE="$( ( cd "$CWD" && git rev-parse 'HEAD^{tree}' ) 2>/dev/null || true )"
+JSON_ID="$(python3 - "$found" <<'PY' 2>/dev/null
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+    print(d.get("commit") or "", d.get("tree") or "", sep="\t")
+except Exception:
+    pass
+PY
+)"
+if [ -n "$JSON_ID" ] && [ -n "$HEAD_COMMIT" ] && [ -n "$HEAD_TREE" ]; then
+  IFS=$'\t' read -r JSON_COMMIT JSON_TREE <<< "$JSON_ID"
+  if [ -n "${JSON_COMMIT:-}" ] || [ -n "${JSON_TREE:-}" ]; then
+    if [ "${JSON_COMMIT:-}" != "$HEAD_COMMIT" ] && [ "${JSON_TREE:-}" != "$HEAD_TREE" ]; then
+      {
+        echo "⛔ 차단(H7 lane-gate-summary) — 찾은 \`gate-summary.json\` 이 **다른 커밋을 잰 것**이다. 부재와 같이 취급한다."
+        echo "   찾은 자리: ${found}"
+        echo "   그 JSON: commit=${JSON_COMMIT:-(없음)} · tree=${JSON_TREE:-(없음)}"
+        echo "   지금 HEAD: commit=${HEAD_COMMIT} · tree=${HEAD_TREE} (기준 cwd=$CWD)"
+        echo "   낼 것: **마지막 커밋 뒤에** 단독 게이트를 배출처를 준 채 다시 돌린다(rules §3-1)."
+        echo "     COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh <게이트>"
+        echo "   ⚠ 옛 회차의 계수를 이번 회차의 근거로 인용하지 않는다 — 마지막으로 적은 값과 최근에 잰 값은 다르다."
+      } >&2
+      exit 2
+    fi
+  fi
 fi
 
 read_counts() { # stdout: <red_판정> <red_준비> <green> <red 게이트 이름들> · 못 읽으면 빈 줄

@@ -69,6 +69,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 - 완료 주장 전에 **원한 결과(proposed outcome) 대조** — 지시문·`dev-package/intent/` 의 항목 중 **미달·초과**를 열거한 뒤에만 완료라고 적는다. 초과분(요청되지 않은 추가 변경)도 적는다.
 - **종료 검사(H7 · 가동 중)** — `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 존재하고 `counts.red_판정 == 0` 이어야 한다. `SubagentStop:lane-worker` 훅이 **부재**와 **red(판정) 1건 이상**을 exit 2 로 차단한다 — 게이트를 돌리지 않은 레인은 종료하지 못한다. red(준비)는 종료를 막지 않지만 **병합 진입 조건은 판정·준비 둘 다 0** 이므로 최종 메시지에 3계수를 그대로 적는다.
+- ⭑ **⟨증보 2026-09-06⟩ 마지막 커밋 뒤에 게이트를 한 번 돌리고 끝낸다.** H7 이 JSON 의 `commit`·`tree` 를 워크트리 HEAD 와 대조하고 **둘 다 어긋나면 부재와 같이 차단**하기 때문이다(옛 회차의 계수가 이번 회차의 근거로 읽히는 자리를 막는다). 그 JSON 은 **커밋하지 않는다** — `.gitignore` 에 있고, 커밋되면 다음 워크트리가 게이트 없이 통과한다(`rules §2-2` 의 「산출물 즉시 커밋」은 이 파일에 적용되지 않는다).
 - 커밋 = 한 WU 의 한 논리적 단계. 계약과 그 소비자는 같은 커밋. 메시지는 한국어(첫 줄 무엇을, 본문 왜).
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋한다(NTFS · `core.filemode=false` · `§4-3`).
 - **최종 메시지** = ≤15행. 결론·값 → 근거 `파일:행` → 남은 위험 → 후속 항목 → `WORKTREE=… BRANCH=…`. 개조식 · 정성어 배제 · 기술 용어에 비유 금지. 산출물(커밋 메시지 · 문서 · 보고)은 한국어, 내부 추론·코드 주석은 영어 허용.

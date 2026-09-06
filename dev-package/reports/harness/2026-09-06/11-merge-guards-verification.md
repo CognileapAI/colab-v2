@@ -81,6 +81,16 @@ README 킬스위치) · **K절**(문서 인용 검증 V1~V4 · 미검증 1). 규
 `COLAB_HOOKS=0` 을 주면 위 ⑴·⑻·⑼ 가 전부 **exit 0** 으로 즉시 통과한다. 모든 훅 스크립트의
 첫 줄이 `[ "${COLAB_HOOKS:-1}" = "0" ] && exit 0` 이다(스펙 C 「킬스위치」).
 
+⭑ **⟨정정 2026-09-06 · 어드바이저 게이트 ② 지적 1⟩ 도구 접두 경로(`COLAB_HOOKS=0 git …`)는
+동작하지 않음 — 실측은 훅 env 로만 했다.** 위 3/3 은 훅 프로세스의 환경변수에 값을 넣고 잰 것이고,
+세션 안에서 도구 명령문 앞에 붙이는 형태는 **재지 않았으며 문서상 성립하지 않는다**
+(hooks 문서 축자 「Leading `VAR=value` assignments are stripped before matching」 ·
+「A hook process inherits the parent environment」 · `git-guard.sh` 자신도 앞머리 `VAR=x` 를 벗기고
+판정한다). 동작하는 형태는 둘 — ⑴ 세션 밖에서 `COLAB_HOOKS=0 claude` ⑵ `.claude/settings.local.json`
+의 `"env": {"COLAB_HOOKS": "0"}`(설정 문서 축자 「Set environment variables for every session and
+its subprocesses」 · 적용 범위 「Any file」). 그 정정은 `README.md` 「전부 끄는 법」과 차단 훅 4종의
+deny 문구에 반영했다.
+
 **계(2026-09-06 도입 시점) — 차단 9/9 · 통과 11/11 · 킬스위치 3/3 · 불일치 0.**
 
 ⭑ **⟨P-J 재실측 2026-09-06⟩ H3 전 케이스 재실행 — 차단 8/8 · 통과 8/8 · 킬스위치 1/1 · 불일치 0** (개정분 ⑸·⑸-b·⑸-c 포함. H4·H5 는 이 회차 변경 대상이 아니라 재실행하지 않았다). 실측표 = `dev-package/reports/harness/2026-09-06/12-gate-json-verification.md` §2.
@@ -105,6 +115,48 @@ README 킬스위치) · **K절**(문서 인용 검증 V1~V4 · 미검증 1). 규
 ⚠ **exit 1 은 통과다**(스펙 C 축자 「차단은 **exit 2** 만 유효(exit 1 은 통과)」). 세 훅 모두
 판정 불가(payload 파싱 실패 · `python3` 부재 · 체크아웃 아님)를 **통과**로 처리한다 — 파싱 실패가
 모든 도구 호출을 막으면 훅이 세션을 세운다.
+
+### 2-5. ⭑ 어드바이저 게이트 ② 반영 재실측 — H3 차단 11 / 통과 13 / 킬스위치 1 · 불일치 0
+
+**바뀐 것** = `git-guard.sh` 의 push-main 갈래 ⑴-a·⑴-b 가 **`agent_id` 가 실린 호출(＝ 서브에이전트·
+레인)에만** 걸린다. 근거 = hooks 문서 축자 「`agent_id` — Unique identifier for the subagent.
+**Present only when the hook fires inside a subagent call.** Use this to distinguish subagent hook
+calls from main-thread calls.」 ＋ 「When a subagent calls a tool, tool events such as `PreToolUse`
+and `PostToolUse` fire the same configured hooks as in the main conversation, and the input carries
+the `agent_id` and `agent_type` common input fields that identify the subagent.」
+⛔ **좁힌 것은 ⑴ 뿐이다** — 강제 push · non-ff merge · `gh pr merge` · `branch -D main` 은
+오케스트레이터에게도 그대로 차단이다.
+
+| 그룹 | 케이스 | 호출자 | 기대 | 실측 |
+|---|---|---|---|---|
+| 신규 | `git push origin main` | 오케스트레이터(`agent_id` 없음) | 0 | **0** ✓ |
+| 신규 | `git push origin main` | 레인(`agent_id` 있음) | 2 | **2** ✓ |
+| 신규 | main 위 refspec 없는 `git push` | 오케스트레이터 | 0 | **0** ✓ |
+| 신규 | main 위 refspec 없는 `git push` | 레인 | 2 | **2** ✓ |
+| 신규 | `git push origin HEAD:refs/heads/main` | 오케스트레이터 | 0 | **0** ✓ |
+| 신규 | `git push origin HEAD:refs/heads/main` | 레인 | 2 | **2** ✓ |
+| 유지 | `git push --force-with-lease origin main` | 오케스트레이터 | 2 | **2** ✓ |
+| 유지 | `git push --force origin main` | 레인 | 2 | **2** ✓ |
+| 유지 | main 위 refspec 없는 `git push -f` | 오케스트레이터 | 2 | **2** ✓ |
+| 유지 | main 위 `git merge lane-x`(ff-only 없음) | 오케스트레이터 | 2 | **2** ✓ |
+| 유지 | main 위 `git merge --no-ff lane-x` | 오케스트레이터 | 2 | **2** ✓ |
+| 유지 | `gh pr merge 12 --squash` | 오케스트레이터 | 2 | **2** ✓ |
+| 유지 | `git branch -D main` | 오케스트레이터 / 레인 | 2 / 2 | **2 / 2** ✓ |
+| 통과 | main 위 `git merge --ff-only lane-x` | 오케스트레이터 | 0 | **0** ✓ |
+| 통과 | `git push origin worktree-x` | 오케스트레이터 / 레인 | 0 / 0 | **0 / 0** ✓ |
+| 통과 | `git fetch --all --prune` · `git pull --rebase` · `git worktree list` | 레인 | 0 | **0** ✓ |
+| 통과 | `git push origin --delete worktree-lane-a` | 레인 | 0 | **0** ✓ |
+| 통과 | `npm ci --prefix frontend` | 레인 | 0 | **0** ✓ |
+| 통과 | 비-main 브랜치의 `git merge --ff-only origin/main`(레인 첫 줄) | 레인 | 0 | **0** ✓ |
+| 통과 | 비-main 브랜치의 refspec 없는 `git push` | 레인 | 0 | **0** ✓ |
+| 킬스위치 | 훅 env `COLAB_HOOKS=0` ＋ 레인 push main | 레인 | 0 | **0** ✓ |
+
+하네스 = 임시 파이썬 스크립트(레포에 남기지 않는다) · 판정 대상 레포는 `tempfile` 아래 일회용
+`git init -b main`(본 체크아웃을 읽지도 쓰지도 않는다). H7 6케이스를 같은 실행에서 함께 쟀다
+— **계 32건 · 불일치 0**(H7 표는 `12-gate-json-verification.md §2-6`).
+
+⚠ **이 회차에도 실 세션 발동은 0회다** — 합성 payload 실측이고, 훅이 실제 세션에서 뜨는지는
+세션 루트를 옮긴 뒤에 확인한다(스펙 0-3 자인 · 첫 세션 체크리스트).
 
 ---
 

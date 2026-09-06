@@ -1,0 +1,10 @@
+# V-3 viz S3SourcePort · S3PreviewSink 실호출 (2026-08-30 · 진짜 S3 · 버킷 이름만 기록)
+# 1차 실행은 ULID 아닌 이름으로 키를 재구성해 404 — _key_of 를 객체 이름 기준으로 고친 뒤 재실행
+bucket=colab-platform-data-local-phj region=ap-northeast-2
+put: body 2097159B · grid 2054B
+resolve: parts=[('01M17EVDNCEV1Z0000000000F1', 2097159)] grid=['Lat.npy']
+materialize: sha256 일치=True · grid bytes 일치=True · version(ETag) 있음=True
+두 번째 materialize: digest 동일=True (캐시 적중)
+파일 삭제 뒤 재다운로드: digest 동일=True (mtime 이 새로워도 키 불변)
+S3PreviewSink.publish: 올라간 객체 4건 = ['evidence.json', 'evidence.pgw', 'evidence.png', 'evidence.webp']
+삭제 뒤 잔여: uploads=0 previews=0

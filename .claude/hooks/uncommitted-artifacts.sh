@@ -89,7 +89,8 @@ if [ -n "$untracked" ]; then
       echo "   (참고 — 추적 중이면서 수정된 것들. 차단 사유는 아니다:)"
       printf '%s\n' "$modified" | sed 's/^/     /'
     }
-    echo "   정말 남겨야 하면 \`COLAB_HOOKS=0\` 을 앞에 붙여 다시 부른다."
+    echo "   정말 남겨야 하면 훅을 끈다 — 세션 밖에서 \`COLAB_HOOKS=0 claude\` 로 열거나 .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다."
+    echo "   (명령 앞에 붙이는 형태는 벗겨져 듣지 않고, SubagentStop 훅에는 앞에 붙일 자리 자체가 없다.)"
   } >&2
   exit 2
 fi

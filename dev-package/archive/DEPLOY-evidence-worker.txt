@@ -1,0 +1,8 @@
+# V-3 worker S3UploadBlobs 실호출 (2026-08-30 · 진짜 S3 · 버킷 이름만 기록)
+bucket=colab-platform-data-local-phj region=ap-northeast-2
+put: body 3145745B · grid 4102B
+materialize body → 01M17EVIDENCEWORKER00000A1/inputs/01M17EVIDENCEWORKER00000F1/증거.nc sha256 일치=True
+materialize grid → 01M17EVIDENCEWORKER00000A1/grid/Lat.npy bytes 일치=True
+임시파일 잔여: []
+discard 뒤 workdir/01M17EVIDENCEWORKER00000A1 존재=False
+삭제 뒤 잔여 객체: 0

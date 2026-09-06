@@ -46,3 +46,13 @@ desktop.ini
 
 # ELI5·판정 브리프 HTML — eli5/<YYYY-MM-DD>/ 에 쌓인다. 추적하지 않는다(Ted 2026-09-06 요청)
 eli5/
+
+# 게이트 요약 JSON — **추적하지 않는다**(어드바이저 게이트 ② 지적 4 · 2026-09-06).
+# 이유: H7(`.claude/hooks/lane-gate-summary.sh`)은 배출처가 안 실렸을 때
+#   `dev-package/reports/**/gate-summary.json` 중 **mtime 최신 하나**를 「이번 레인의 게이트」로
+#   읽는다. 이 이름이 한 번이라도 커밋되면 새 체크아웃마다 그 파일이 함께 오고(체크아웃 직후
+#   mtime 이 서로 같아 아무거나 뽑힌다) 게이트를 안 돌린 레인이 그대로 통과한다.
+# ⚠ 예외를 두지 않는다 — `!<경로>` 부활 규칙을 쓰면 그 파일이 **같은 이름으로** 트리에 남아
+#   위 glob 에 그대로 걸린다(무시 여부와 무관하다). 그래서 회차 기록으로 남길 한 벌은
+#   이름을 바꿔 둔다: `dev-package/reports/harness/2026-09-06/final/gate-summary.record.json`.
+dev-package/reports/**/gate-summary.json
