@@ -52,6 +52,23 @@ frontmatter `description` 은 8종 전부 **≤2문장**(후보 목록 경량 �
 `grill-with-docs`·`to-tickets`·`triage`·`wayfinder`(mattpocock) — CONTEXT.md·ADR 이 `PLAN-SoT §9` 와
 이중화되고, 뒤 셋은 외부 이슈트래커 전제라 원장이 둘로 갈린다.
 
+## 공통 개조 4 — 상류 스킬 참조를 로컬 등가물로 치환 (P-G 후속 · 2026-09-06)
+
+vendoring 은 **파일 5종만** 복사했으므로 `superpowers:<이름>` 형태의 상류 참조는
+**이 레포에서 해소되지 않는다**(플러그인 비활성 · 해당 스킬 미복사). 지시문이 없는 스킬을
+「REQUIRED SUB-SKILL」로 가리키면 그 줄은 실행 불가 지시가 된다. 치환표 —
+
+| 상류 참조 | 로컬 등가물 | 치환 자리 |
+|---|---|---|
+| `superpowers:subagent-driven-development` | 위임 원칙(글로벌 `CLAUDE.md`) ＋ `lane-worker` 에이전트 | `writing-plans/SKILL.md` 2곳 · `executing-plans/SKILL.md` 1곳 |
+| `superpowers:using-git-worktrees` | `lane-worker` `isolation: worktree`(자동) | `executing-plans/SKILL.md` 1곳 |
+| `superpowers:finishing-a-development-branch` | `colab-v2-work` §병합 규약(오케스트레이터 ff 병합·〈N〉 발급) | `executing-plans/SKILL.md` 1곳 |
+| `superpowers:executing-plans` | `executing-plans`(로컬 vendored) | `writing-plans/SKILL.md` 2곳 |
+
+⚠ **남긴 것 1건** — `test-driven-development/writing-good-tests.md:51` 의 `superpowers:writing-skills`.
+문장 안의 **괄호 인용**이지 실행 지시가 아니고, 이 파일은 개조표에서 **무수정**으로 못박혀 있다.
+`receiving-code-review`·`verification-before-completion` 에는 상류 참조가 0건이다.
+
 ## 원본 대조
 
 원본은 이 레포에 두지 않는다. 대조가 필요하면 위 표의 경로·URL 에서 다시 받아

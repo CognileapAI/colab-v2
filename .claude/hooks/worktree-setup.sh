@@ -209,6 +209,20 @@ setup_frontend &
 setup_gate_venv &
 wait
 
+# ── 2-b. 상태 대장 병합 드라이버 (D4 · `rules/colab-rules.md §4-2`) ──────────
+# `.gitattributes` 는 **이름**만 선언한다(`merge=work-items`). 실행 명령은 로컬 설정이 줘야 한다 —
+# 레포 파일이 명령을 지정할 수 있으면 클론이 곧 코드 실행이라 git 이 그렇게 설계돼 있다.
+# 워크트리는 설정을 승계하지 않으므로 스폰마다 여기서 건다. 미설정이면 git 은 조용히 기본
+# 텍스트 병합으로 돌아가고, 병렬 레인의 `items:` 끝 덧붙임이 다시 충돌로 선다.
+MERGE_DRIVER_STATE="미설정"
+if git -C "$WT" rev-parse --git-dir >/dev/null 2>&1; then
+  if git -C "$WT" config merge.work-items.driver \
+       "python3 dev-package/tools/merge-work-items.py %O %A %B" >/dev/null 2>&1 \
+     && git -C "$WT" config merge.work-items.name "work-items.yaml 덧붙임 병합" >/dev/null 2>&1; then
+    MERGE_DRIVER_STATE="설정됨"
+  fi
+fi
+
 # ── 3. 요약 — 한 화면 ────────────────────────────────────────────────────────
 n_new=0; n_keep=0; n_fail=0
 report() { # $1=이름 $2=state 파일
@@ -228,6 +242,7 @@ report "frontend/node_modules" "$LOGDIR/frontend.state"
 for s in $SERVICES; do report "services/$s/.venv" "$LOGDIR/$s.state"; done
 report "gates/.venv" "$LOGDIR/gates.state"
 
+echo "  대장 병합 드라이버 : ${MERGE_DRIVER_STATE} (merge.work-items — work-items.yaml 덧붙임 자동 병합)"
 echo "  ── 계 : 신설 ${n_new} · 재사용 ${n_keep} · 실패 ${n_fail} · $(( $(date +%s) - t0 ))초"
 if [ -f "${HOME}/.colab-v2-test.env" ]; then
   # ⚠ 이 스크립트는 `$CLAUDE_PROJECT_DIR`(= 세션이 뜬 체크아웃)에서 돌지만, 검사하는 대상은 `$WT` 다.

@@ -58,3 +58,40 @@ colab-v2/
 ## 개발 세션 시작
 
 새 Claude 세션은 `dev-package/prd/rounds/` 최신 `R-*.md` 하나만 읽는다(`CLAUDE.md §1`).
+
+## 하네스 훅
+
+**이 레포를 클론하면 Claude Code 훅 5개가 같이 온다.** `.claude/settings.json` 이 **커밋돼 있기**
+때문이고, 그것이 의도다 — 훅이 레포 이력에 있어야 코드와 함께 리뷰·롤백된다(설계 판정 J-9 ·
+스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` C절). 스크립트는
+`.claude/hooks/` 에 있고 전부 사람이 읽을 수 있는 bash 다.
+
+| 훅 | 언제 뜨나 | 무엇을 하나 |
+|---|---|---|
+| `bootstrap-diet.sh` | 세션 시작 | **안내만.** 이번 회차에 읽을 라운드 파일 하나를 찍는다 — 종전 부트스트랩 문서 5개(2.4 MB)를 대체 |
+| `worktree-setup.sh` | `lane-worker` 스폰 | **차단 없음.** 새 워크트리의 `node_modules`·서비스 `.venv`·게이트 venv 를 세우고 대장 병합 드라이버를 건다 |
+| `git-guard.sh` | Bash 실행 전 | **차단.** main/master 로 push · main 으로 강제 push · HEAD 가 main 일 때의 `git merge` · `gh pr merge` · `git branch -D main` 다섯 가지만. 비-main 브랜치의 `merge --ff-only`·기능 브랜치 push·`fetch`·`pull` 은 통과 |
+| `migration-guard.sh` | Edit·Write 전 | **차단.** `origin/main` 에 **이미 있는** Alembic 마이그레이션 수정. 새 revision 은 통과 |
+| `decision-number-guard.sh` | Edit·Write 전 | **차단.** `dev-package/PLAN-SoT.md §9` 에 `origin/main` 최대 + 1 이 아닌 결정 번호 〈N〉 을 새로 쓰는 편집. 기존 번호 인용은 통과 |
+
+### 전부 끄는 법 — `COLAB_HOOKS=0`
+
+```
+COLAB_HOOKS=0 <명령>          # 이 한 번만
+export COLAB_HOOKS=0          # 이 셸 전체
+```
+
+모든 훅 스크립트의 **첫 줄**이 이 값을 보고 즉시 통과한다. 차단 훅이 오탐을 내면 우회 경로를
+찾지 말고 이것을 쓰고, **그 오탐을 결함으로 보고한다** — 훅을 손으로 고쳐 두면 다음 클론이
+같은 자리에서 다시 걸린다.
+
+### 개인별로만 끄는 법
+
+`.claude/settings.local.json` 은 **커밋되지 않는다**(gitignore). 훅 항목은 층 간 **병합**되므로
+`.claude/settings.json` 의 공유 훅은 그대로 두고 개인 훅만 여기에 더한다. 공유 훅 자체를 자기
+기계에서만 쉬게 하려면 `COLAB_HOOKS=0` 을 셸 프로파일에 두는 쪽이 맞다 — 파일을 고치면 diff 가
+남아 다음 병합에서 되돌아온다.
+
+> 훅은 **마찰 장치이지 보안 경계가 아니다.** 한 겹 감싼 명령(`bash -c "…"`)은 잡지 않는다.
+> 잡으려고 문자열 어디에나 있는 `git` 을 세면 무해한 호출이 걸리고, 오탐이 붙은 차단 훅은
+> 곧 상시 비활성으로 끝난다.

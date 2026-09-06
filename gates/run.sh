@@ -48,7 +48,7 @@ ALL_GATES=(
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
   frontend-typecheck frontend-test frontend-fixture-reach
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
-  backup-cron-streak
+  backup-cron-streak exec-bit
   service-tests-core-api service-tests-ai-service
   service-tests-viz-render service-tests-pipeline-worker
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
@@ -56,6 +56,7 @@ ALL_GATES=(
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
+  exec-bit-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   service-tests-selftest
 )
@@ -367,6 +368,17 @@ case "$GATE" in
     [ "$n_red_ready" -eq 0 ] || exit 78
     echo "selftest green — 실행 ${#members[@]}건 전부 fail-closed 증명 통과 (명시 면제 ${#exempted[@]}건은 위에 이름으로 있다)."
     exit 0
+    ;;
+  exec-bit)
+    # `.sh` 의 실행비트가 **인덱스에** 있는가 (D5 · `rules/colab-rules.md §4-3`).
+    # NTFS 마운트라 `core.filemode=false` 이고, 로컬 `chmod +x` 는 인덱스에 안 남는다.
+    # 로컬은 `bash <파일>` 로 불러 통과하는데 Actions 의 `exec` 만 exit 126 으로 죽는다 —
+    # v1 의 `exec-bit-guard` 훅(=`git commit` 문자열 가로채기)을 대체한 자리다(스펙 C).
+    exec "$REPO_ROOT/gates/tools/exec-bit.sh"
+    ;;
+  exec-bit-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 (100644 검출 2종 · 대상 0건 · 정상 green).
+    exec "$REPO_ROOT/gates/tools/exec-bit-selftest.sh"
     ;;
   work-item-consistency)
     # 개발 항목 상태의 **대장 ↔ 산문** 불일치 (Ted 판정 2026-08-28).

@@ -186,3 +186,14 @@
 #   (`COLAB_BACKUP_STATE_DIR` 를 자기 임시 자리로 물린다). 기준 시각도 고정 주입이라
 #   실행 시점이 판정을 바꾸지 않는다.
 "backup-cron-streak-selftest" = "parallel"
+
+# `exec-bit` — 실측 근거: **인덱스를 읽기만 한다.**
+#   판정 입력은 `git ls-files -s -- '*.sh'` 한 줄이고 파일 내용도 열지 않는다.
+#   쓰기 0 · DB 0 · 도커 0 · 포트 0 · 잠금 0 · pg 슬롯 0. 실행 순서가 판정을 바꾸지 않는다.
+"exec-bit"                  = "parallel"
+
+# `exec-bit-selftest` — 실측 근거: **자기 `mktemp -d` 안의 일회용 레포에서만** 산다.
+#   케이스마다 `git init` 으로 픽스처 레포를 세우고 게이트에 `COLAB_EXEC_BIT_ROOT` 로 물린다.
+#   이 레포의 인덱스에는 **한 글자도 쓰지 않는다**(`git update-index` 대상이 전부 픽스처 안).
+#   DB·도커·포트·pg 슬롯을 잡지 않는다.
+"exec-bit-selftest"         = "parallel"

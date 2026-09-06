@@ -9,12 +9,12 @@ description: Use when you have a written implementation plan to execute in a sep
 
 Load plan, review critically, execute all tasks, report when complete.
 
-**Note:** Tell your human partner that Superpowers works much better with access to subagents (Claude Code, Codex CLI, Codex App, Copilot CLI, and Gemini CLI all qualify; see the per-platform tool refs in `../using-superpowers/references/`). If subagents are available, use superpowers:subagent-driven-development instead of this skill.
+**Note:** Prefer delegation over inline execution — 위임 원칙(글로벌 `CLAUDE.md`) ＋ `lane-worker` 에이전트로 태스크당 새 레인을 띄우는 것이 이 레포의 기본값이다. 이 스킬은 레인을 띄우지 않고 이 세션에서 직접 실행할 때 쓴다.
 
 ## The Process
 
 ### Step 1: Load and Review Plan
-1. Ensure an isolated workspace: use superpowers:using-git-worktrees to create one or verify the existing one
+1. Ensure an isolated workspace: `lane-worker` 는 `isolation: worktree`(자동)로 뜬다 — 이미 격리돼 있는지 확인만 한다
 2. Read plan file
 3. Review critically - identify any questions or concerns about the plan
 4. If concerns: Raise them with your human partner before starting
@@ -31,8 +31,8 @@ For each task:
 ### Step 3: Complete Development
 
 After all tasks complete and verified:
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
-- Follow that skill to verify tests, present options, execute choice
+- **REQUIRED:** `colab-v2-work` §병합 규약 — 병합은 오케스트레이터가 ff 로 하고 〈N〉 은 그때 발급한다
+- 레인은 브랜치 이름과 게이트 결과만 반환한다. 스스로 `main` 에 병합하지 않는다
 
 ## When to Stop and Ask for Help
 
