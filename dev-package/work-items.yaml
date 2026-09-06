@@ -3980,3 +3980,89 @@ items:
     deadline: null
     note: "⬜ 진입조건 미충족(회신 전) — 착수하지 않는다. 계약을 좁히는 변경이라 Ted 서명 없이 `main` 에 올리지 않는다(`.claude/rules/colab-rules.md §8`). ⚠ **어느 검사에도 걸리지 않는 결함이 이 항목의 본체다** — 관측 간격·Lv0 출처는 `UF-1` 이 **화면만** 막고 서버는 저장하므로 API 직접 호출 경로가 뚫린 채 남는다. 같은 데이터셋 종류인데 등록 경로에 따라 데이터 품질이 갈리고, 그 비대칭을 재는 게이트·Dockerfile·배포 검사가 0건이다. 이 비대칭 자체를 요구로 볼지 결함으로 볼지도 판정 대상(판정문 `## 미해결 질문`). 세 건(㉯·㉱·㉲)은 묶이지만 개별 승인·기각이 가능하다. 범위 밖 = `DatasetEditForm` 의 필수 판정 정렬 · 기존 행 backfill · 계보 추천 서비스의 개발 순서."
     sources: ["dev-package/intent/2026-09-13-upload-form-rev2.md", "dev-package/reports/upload-form-rev2/lane-A1.md", "dev-package/reports/upload-form-rev2/lane-A2.md"]
+  - id: DL-1
+    name: "데이터셋 삭제 — 묘비 전환 · 파일 바이트 회수 · 대기 접근 요청 자동 닫힘 · 상세 삭제 버튼"
+    status: open
+    stage: stage2
+    owner: "D3·D2·D4 / core-api ＋ S-05 frontend"
+    entry_conditions:
+      - "Ted 판정 ⓐ~ⓕ 회수 (`sessions/DL-1-TED-RULING.md` · **병합 게이트**이지 착수 조건이 아니다)"
+      - "`~/.colab-v2-test.env`"
+      - "`origin/main` 에서 갈라진 레인"
+      - "배포는 prod 브랜치 병합 ＋ main 재빌드 뒤"
+    depends_on: [F-3, P6, P3]
+    completion_def: >-
+      ⑴ `deleteDataset`·`getDatasetDeletionImpact` 가 501 표에서 빠지고
+      (`routes/not_implemented.py` 4 → 2) `tests/test_not_implemented.py` 의 `DL_REAL` 이
+      `tests/test_dataset_deletion.py` 를 가리키며 그 파일이 두 op 을 실제로 부른다
+      ⑵ 판정 순서 400 → 404 → 403 · 소유자 연구원 204 · 비소유 연구원 403 · 교수 204 ·
+      두 번째 DELETE 404 · 삭제 뒤 내 연구실 `getDataset` 410 (타 연구실 404)
+      ⑶ 묘비 뒤 **남는 것 5**(`d3_dataset` 행 · `d3_dataset_description.name` ·
+      `d4_lineage_edge` · `d6_project_dataset` · `d2_verified`) · **사라지는 것 2**
+      (`d3_file` 0행 · 원장이 알던 저장 키 전건 저장소 부재) · **닫히는 것 1**
+      (그 데이터셋의 `검토 대기` 접근 요청 전건 → `거절됨` ＋ 고정 사유 · 처리된 행 무변경) ·
+      목록·검색·프로젝트 상세에서 부재
+      ⑷ **잠긴(`잠김`) 데이터셋도 ⑶ 과 같다** — 잠금 우회 단계를 빼면 `d3_file` 잔존으로 red ·
+      우회 뒤 `d2_dataset_access` 는 종전 값(또는 부재)으로 원복됐음이 시험된다
+      ⑸ 저장소 예외 → 500 ＋ DB 무변경(묘비 아님 · 파일 행 잔존) ＋ 같은 DELETE 재호출 204
+      ⑹ 자식의 `getDatasetLineage` 가 묘비 노드를 `kind="묘비"` · `deletedAt` 값 ·
+      `navigable false` · `bodyAccessible false` · `name "(지워진 데이터)"` 로 낸다
+      ⑺ FE — 「삭제」 진입점이 `actions.canDelete` 로만 켜지고(꺼지면 DOM 부재) · 모달이
+      계약 산문 낱말(파생 N건 「자리가 남아요」 · 「교수 승인이 붙은 데이터예요」 ·
+      「대기 중인 접근 요청 N건이 자동으로 닫혀요」) ＋ 파생 데이터 이름을 말하며 ·
+      성공 시 `/datasets` 이동(토스트 없음) · 실패 시 서버 문장 또는 「데이터를 지우지 못했어요.」 ·
+      파급 조회 실패 시 삭제 비활성 — vitest
+      ⑻ dev 배포 뒤 **검증이 올린 일회용 데이터셋 1건** 실삭제 — 410 첫 실측 ·
+      사전 스냅샷 키의 S3 부재(원장 키 목록 기준 · 접두 스캔 아님) · 계보 상대의 묘비 노드 ·
+      승인함 대기 0 ＋ `deploy_doctor` 14/14 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
+      있고 라우트만 501)에서 왔다. **계약 개정 0**(선례 `〈229〉`-㉰) · **마이그레이션 0**.
+      ⚠ **미리보기는 지우지 않는다** — 계약 산문 「파일·미리보기만 지우고」와의 차이이고
+      형제 `DL-2` 가 닫는다. ⚠ **연구원도 자기가 올린 데이터셋은 지울 수 있다**(사용자 결정 ②
+      「계약대로 소유자 또는 교수」). `.claude/rules/deploy.md` 11 산문(「제품에 삭제 op 을
+      여는 것 = `§5` 범위 늘리기」)은 병합 커밋에서 「제품 op 은 `〈N〉` 으로 열렸다」로 갱신한다.
+      프로젝트 상세는 묘비를 조용히 뺀다(계수 불일치 가능 · 사용자 고지).
+      ⛔ **Ted 판정 ⓐ(`NOT_IMPLEMENTED_P1` → v2 편입)가 병합의 선행조건**이다 —
+      회부문 `dev-package/sessions/DL-1-TED-RULING.md`.
+    sources: ["contracts/seams/fe-core.yaml#deleteDataset", "contracts/seams/fe-core.yaml#getDatasetDeletionImpact", "dev-package/sessions/DL-1-TED-RULING.md"]
+
+  - id: DL-2
+    name: "미리보기 산출물 회수 — `reclaimPreviews`(core-viz) · viz `deletion_plan` ＋ 싱크 `remove` · compose 스풀 배선"
+    status: open
+    stage: stage2
+    owner: "D7 viz-render ＋ core-api 중계 ＋ infra compose"
+    entry_conditions:
+      - "Ted 판정 ⓓ1 — `core-viz.yaml` 동결 해제(`reclaimPreviews` 신설 · 등급 ㉯)"
+      - "Ted 판정 ⓓ2 — `PreviewSinkPort` 에 `remove` 를 얹는가 / Port 를 하나 더하는가"
+      - "Ted 판정 ⓓ3 — 삭제 회수를 원장 등급이 아니라 「지워진 fileId 집합 D」 래퍼로 판정 · `tile-` 무접촉 · CloudFront 300초 수용"
+      - "`DL-1` 병합"
+      - "prod 브랜치 병합 (prod compose 가 그 브랜치에 있다)"
+    depends_on: [DL-1]
+    completion_def: >-
+      ⑴ `core-viz.yaml` 에 `reclaimPreviews`(POST `/reclaims` · 요청 `{targetId, fileIds[]}` ·
+      응답 `{stale, kept, removed[]}` · 서비스 토큰)이 동결 해제 회차(㉯ · Ted 승인 필드)로
+      등재되고 생성물이 재생성된다(`generated-up-to-date`)
+      ⑵ `invalidation.deletion_plan` 이 `reclaim_plan` 과 같은 모양(계산기 신설 0)이며 viz 단위
+      시험 — D 전부 포함 → stale · 일부만 → kept · `tile-` → kept · 사이드카 부재/구판 → kept ·
+      `apply` 뒤 싱크 `remove` 가 **지운 이름만** 받는다
+      ⑶ `S3PreviewSink.remove` 가 `delete_objects([prefix/name…])` 를 부르고
+      `LocalPreviewSink.remove` 는 no-op — 대역 시험
+      ⑷ core-api `deleteDataset` 이 커밋 전 릴레이를 부르고 실패 시 500 · 무변경(pytest 대역)
+      ⑸ dev·prod compose 스풀 배선 ＋ `volume-init` — 기동 뒤 viz 로그에 트리거 루프·회수
+      요약이 **난다**(`〈353〉` 실측 역전)
+      ⑹ dev 실측 — 검증 데이터셋 삭제 뒤 그 산출물 키가 로컬·S3 에서 부재 · 다른 데이터셋의
+      산출물 잔존 · `tile-` 잔존
+    evidence: null
+    deadline: null
+    note: >-
+      **신설 2026-09-06** — `DL-1` 이 남긴 차이(계약 산문 「파일·미리보기만 지우고」)를 닫는
+      형제 항목이다. 사용자 결정 ④·⑤ = 「이번에 같이 — 단 별도 WU 로 바로 이어서」.
+      ⚠ **스풀 seam 에 못 얹는다** — 이벤트 봉투의 집계 루트가 `uploadId` 라 `datasetId` 가
+      구조적으로 없고 발신자가 D5 로 고정돼 있다. 그래서 HTTP op 신설이고, 그것이 `㉯`
+      동결 해제를 부르는 이유다(선례 `〈231〉`·`〈294〉`).
+      열린 값 `[미확인]` — 동결 해제 등급 확정(`X2-FREEZE-PROTOCOL.md §5`) ·
+      `U-2` ⓓ 「버킷 스캔 금지」의 `previews/` 적용 범위.
+    sources: ["dev-package/sessions/DL-1-TED-RULING.md"]
