@@ -1,0 +1,35 @@
+=== R-A 코드가 **설치된 이미지 안에** 있는가 (시험 하네스가 아니라 도는 것) ===
+⛔ 확장자 혼합 400 의 실호출은 2종 확장자 업로드를 만들어야 해서 하지 않았다 —
+   dev 에 deleteDataset 이 없고 매니페스트 밖 데이터를 만들지 않는다(창 8-b ⓖ 선례).
+
+── WU-A13 확장자 혼합 최종 방어선 (ingestion.py) ──
+529-    # D3 에 아무것도 만들지 않고(`〈64〉-ⓐ`), 데이터셋이 되는 것만 막으면 된다.
+530-    # ⚠ **조각(본체)만 센다** — 기준 격자 파일은 확장자가 달라도 정상이다.
+531-    # 이 규칙이 `file_extension` 이 데이터셋당 1값인 근거다 (PRD-21).
+532-    extensions = sorted({_extension_of(f.file_name) for f in files if f.kind == BODY})
+533-    if len(extensions) > 1:
+534-        raise errors.bad_request(
+535:            f"한 데이터셋의 조각은 확장자가 한 종류다 — 2종 이상이 실려 왔다: {extensions}")
+536-
+537-    # ① 원장 도장을 **먼저** 찍는다. 두 요청이 동시에 오면 UPDATE 의 행 잠금이 하나를
+
+── WU-A4 설명 필수 문구 ──
+572:EMPTY_SUMMARY_MESSAGE = "설명을 적어 주세요."
+577:BLANK_SUMMARY_ON_UPDATE_MESSAGE = "설명이 아직 없어요 — 수정에서 채워 주세요."
+
+── WU-A5 file_extension · WU-A6 관측 간격/기간 최소 단위 ──
+559:INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
+561:#: 기간의 최소 단위 6값 (PRD-18 · `M-7`). 정본은 `d3_dataset_autometa.period_granularity`
+564:PERIOD_GRANULARITIES = ("년", "월", "일", "시", "분", "초")
+842:                      "granularity": meta.period_granularity}
+855:            "fileExtension": None if meta is None else meta.file_extension,
+
+── 주제 어휘 6값 사본 ──
+553:_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC",
+554-           "가뭄", "파일 포맷 예제")
+555-
+
+── ai-service 주제 6값 사본 ──
+24:TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC",
+25-          "가뭄", "파일 포맷 예제")
+26-

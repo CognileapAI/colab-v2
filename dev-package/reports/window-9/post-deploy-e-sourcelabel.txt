@@ -1,0 +1,38 @@
+login → 201
+매니페스트가 든 원천 표기 = 4 건
+   강수 — HSR 레이더 합성 반사도 (Lv.0)                 기상청 API허브
+   강수 — RN15 지상 15분 누적 강수 (Lv.0)              기상청 API허브
+   식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)       국가기상위성센터(NMSC)
+   가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)         차호영(고려대학교)
+
+── ⑴ 쓰기 (updateDataset · 기존 op) ──
+   강수 — HSR 레이더 합성 반사도 (Lv.0)             → 200
+   강수 — RN15 지상 15분 누적 강수 (Lv.0)          → 200
+   식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)   → 200
+   가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)     → 200
+
+── ⑵ 되읽기 (상세) ──
+   강수 — HSR 레이더 합성 반사도 (Lv.0)             sourceLabel='기상청 API허브'  ✓
+   강수 — RN15 지상 15분 누적 강수 (Lv.0)          sourceLabel='기상청 API허브'  ✓
+   식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)   sourceLabel='국가기상위성센터(NMSC)'  ✓
+   가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)     sourceLabel='차호영(고려대학교)'  ✓
+
+── ⑶ ⓔ 판정 — 계보에 원천 노드·간선이 실리는가 (`method` = null) ──
+   강수 — HSR 레이더 합성 반사도 (Lv.0)           lineageState='원천' unknownParents=True 원천노드=1
+      노드 {"kind": "원천", "datasetId": null, "name": "기상청 API허브", "processingLevel": null, "verified": false, "navigable": false, "bodyAccessible": false, "deletedAt": null}
+      원천 간선(method=null) {"childDatasetId": "01M1SCC27AN4NZD3K978YFDCVD", "parentDatasetId": null, "parentRole": "주입력", "method": null, "origin": "manual", "confirmedBy": {"accountId": "000000000000000000000000A1", "name": "colab"}, "confirmedAt": "2026-09-05T18:12:56.162367+00:00"}
+   강수 — RN15 지상 15분 누적 강수 (Lv.0)        lineageState='원천' unknownParents=True 원천노드=1
+      노드 {"kind": "원천", "datasetId": null, "name": "기상청 API허브", "processingLevel": null, "verified": false, "navigable": false, "bodyAccessible": false, "deletedAt": null}
+      원천 간선(method=null) {"childDatasetId": "01M1SCC8BZZJSCEW4MRPE4W9M8", "parentDatasetId": null, "parentRole": "주입력", "method": null, "origin": "manual", "confirmedBy": {"accountId": "000000000000000000000000A1", "name": "colab"}, "confirmedAt": "2026-09-05T18:13:02.457612+00:00"}
+   식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.   lineageState='원천' unknownParents=True 원천노드=1
+      노드 {"kind": "원천", "datasetId": null, "name": "국가기상위성센터(NMSC)", "processingLevel": null, "verified": false, "navigable": false, "bodyAccessible": false, "deletedAt": null}
+      원천 간선(method=null) {"childDatasetId": "01M1SCCM2Q4ST81GZK3YM0PFZR", "parentDatasetId": null, "parentRole": "주입력", "method": null, "origin": "manual", "confirmedBy": {"accountId": "000000000000000000000000A1", "name": "colab"}, "confirmedAt": "2026-09-05T18:13:14.449061+00:00"}
+   가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)   lineageState='원천' unknownParents=True 원천노드=1
+      노드 {"kind": "원천", "datasetId": null, "name": "차호영(고려대학교)", "processingLevel": null, "verified": false, "navigable": false, "bodyAccessible": false, "deletedAt": null}
+      원천 간선(method=null) {"childDatasetId": "01M1SCH9DF18DXH793JTP01W61", "parentDatasetId": null, "parentRole": "주입력", "method": null, "origin": "manual", "confirmedBy": {"accountId": "000000000000000000000000A1", "name": "colab"}, "confirmedAt": "2026-09-05T18:15:47.370864+00:00"}
+
+원천 노드 합계 = 4  ← ⓔ 는 이 값이 뿌리 건수와 같을 때 선다
+
+── ⑷ 계수 무변 확인 (배포·이 쓰기가 데이터를 늘리지 않았다) ──
+   totalCount = 14 · 본체 파일 합계 = 414
+   고유 계보 간선 = 10

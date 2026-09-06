@@ -1,0 +1,63 @@
+=== OOM 실사 · 〈349〉-㉱ 규칙의 판정 자리 ===
+── 전체 oom-kill 목록(시각 ＋ cgroup) ──
+[Wed Sep  2 13:29:02 2026] cgroup=d557ec792751 task=python
+[Sun Sep  6 00:09:16 2026] cgroup=d3d449b641d3 task=python
+[Sun Sep  6 00:12:01 2026] cgroup=d3d449b641d3 task=python
+[Sun Sep  6 01:31:22 2026] cgroup=d3d449b641d3 task=python
+
+── 그 cgroup id 가 어느 컨테이너인가 ──
+  d3d449b641d3 → /colab_v2_dev_viz_render colab-v2/viz-render:dev
+  d557ec792751 → (지금 없는 컨테이너)
+
+── 지금 도는 4단위의 컨테이너 id ──
+  00309aee971b colab_v2_dev_ai_service  RestartCount=0  StartedAt=2026-09-05T18:10:46.337129945Z  OOMKilled=false
+  107c5e93eed3 colab_v2_dev_core_api  RestartCount=0  StartedAt=2026-09-05T18:10:46.328272455Z  OOMKilled=false
+  d3d449b641d3 colab_v2_dev_viz_render  RestartCount=4  StartedAt=2026-09-06T01:37:39.237920913Z  OOMKilled=false
+  e08f7603dde4 colab_v2_dev_pipeline_worker  RestartCount=0  StartedAt=2026-09-05T16:15:13.376562805Z  OOMKilled=false
+
+── viz-render 가 왜 29분 전에 떴나 ──
+ExitCode(prev)=0 OOMKilled=false Restarting=false
+INFO:     127.0.0.1:43880 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53778 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43656 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35932 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53372 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33250 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34890 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36654 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51346 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58510 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51128 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52172 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60480 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53914 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41942 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41350 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42762 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35480 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43510 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57636 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33514 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48404 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     172.18.0.1:48786 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41428 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55872 - "GET /healthz HTTP/1.1" 200 OK
+
+── 자원 실사용 ──
+colab_v2_dev_ai_service|62.38MiB / 256MiB|24.37%|0.14%
+colab_v2_dev_core_api|136.9MiB / 384MiB|35.64%|0.15%
+colab_v2_dev_viz_render|436.3MiB / 640MiB|68.17%|0.14%
+colab_v2_dev_pipeline_worker|74.22MiB / 512MiB|14.50%|0.01%
+
+── 시크릿 파일 소유·모드 ──
+total 40
+-rw-------. 1    10001    10001 149 Aug 31 12:29 ai-db.url
+-rw-------. 1    10001    10001 148 Aug 31 12:29 ai-owner-db.url
+-rw-------. 1 root     root     141 Aug 31 13:49 backup-ai-db.url
+-rw-------. 1 root     root     147 Aug 31 13:49 backup-platform-db.url
+-rw-------. 1    10001    10001 152 Aug 31 12:29 core-database.url
+-rw-------. 1    10001    10001 804 Sep  2 00:38 credentials.json
+-rw-------. 1 ec2-user ec2-user 114 Aug 31 12:26 master.url
+-rw-------. 1    10001    10001 152 Aug 31 12:29 pipeline-db.url
+-rw-------. 1    10001    10001 154 Aug 31 12:29 platform-owner-db.url
+-rw-------. 1    10001    10001 550 Aug 31 12:39 subjects.json

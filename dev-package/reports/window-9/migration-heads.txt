@@ -1,0 +1,52 @@
+=== 마이그레이션 head 직접 조회 (읽기 전용 · backup 롤) · 2026-09-06T02:13:02+00:00 ===
+⛔ colab_app 롤로 세지 않는다(〈363〉). backup 롤 파일은 root 소유 0600 이라 sudo 로 마운트한다.
+
+platform  head(s) = ['0014_merge_ra1_and_topic_vocab']   (head 개수 1)
+ai        head(s) = ['0006_topic_vocab_six']   (head 개수 1)
+
+  d3_dataset               14
+  d3_file                  434
+  d4_lineage_edge          6
+  d3_dataset_description   14
+  d1_lab                   2
+  d1_account               4
+
+  d3_file.kind 별:
+     본체               414
+     기준 격자 파일         20
+
+  R-A 신설 열이 실제로 섰는가 (0013_ra1_ext_interval_period):
+     d3_dataset_description.observation_interval_value   있다
+     d3_dataset_description.observation_interval_unit    있다
+     d3_dataset_autometa.file_extension               있다
+     d3_dataset_autometa.period_granularity           있다
+
+  주제 CHECK(platform):
+    CHECK (((topic IS NULL) OR (topic = ANY (ARRAY['강우·강수'::text, '식생·NDVI'::text, '지형·DEM'::text, '토지피복·LULC'::text, '가뭄'::text, '파일 포맷 예제'::text]))))
+
+  d9_topic_synonym = 18
+     가뭄               5
+     파일 포맷 예제         8
+     강우·강수            2
+     지형·DEM           1
+     토지피복·LULC        1
+     식생·NDVI          1
+
+  주제 CHECK(ai):
+    CHECK ((topic = ANY (ARRAY['강우·강수'::text, '식생·NDVI'::text, '지형·DEM'::text, '토지피복·LULC'::text, '가뭄'::text, '파일 포맷 예제'::text])))
+
+  새 동의어 13행:
+     가뭄           → 가뭄
+     가뭄지수         → 가뭄
+     drought      → 가뭄
+     SPEI         → 가뭄
+     SPI          → 가뭄
+     bin          → 파일 포맷 예제
+     geotiff      → 파일 포맷 예제
+     grib         → 파일 포맷 예제
+     hdf          → 파일 포맷 예제
+     hdf5         → 파일 포맷 예제
+     nc           → 파일 포맷 예제
+     netcdf       → 파일 포맷 예제
+     tif          → 파일 포맷 예제
+HEADS_EXIT=0

@@ -1,0 +1,21 @@
+login → 201
+  SPI        → 200 · 1건
+       가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)
+  가뭄         → 200 · 1건
+       가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)
+  SPEI       → 200 · 1건
+       가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)
+  drought    → 200 · 1건
+       가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)
+  grib       → 200 · 5건
+       파일 포맷 실습 — GRIB
+       파일 포맷 실습 — NetCDF
+       파일 포맷 실습 — 이진(bin)
+       파일 포맷 실습 — GeoTIFF
+       파일 포맷 실습 — HDF5/HDF-EOS
+  netcdf     → 200 · 5건
+       파일 포맷 실습 — NetCDF
+       파일 포맷 실습 — GRIB
+       파일 포맷 실습 — 이진(bin)
+       파일 포맷 실습 — GeoTIFF
+       파일 포맷 실습 — HDF5/HDF-EOS

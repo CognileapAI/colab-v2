@@ -1,0 +1,20 @@
+=== /opt/colab-repo 를 배포 sha 로 맞춘다 (〈361〉-㉯ · README 「선행 단계」) ===
+tar rc=0
+
+── 동일성 판정 = deploy_doctor.py md5 대조 ──
+49ad1774d8c315a7d1d18c93b86c9873  /opt/colab-repo/services/core-api/ops/deploy_doctor.py
+
+── 마이그레이션 파일 수 ──
+  platform: 18
+  ai      : 6
+0001_p0_ai.py
+0002_k1_ontology.py
+0003_k2_ontology_seed.py
+0004_k1b_concept_graph.py
+0005_k2b_concept_graph_seed.py
+0006_topic_vocab_six.py
+__pycache__
+
+── 이 회차 신설 파일이 실제로 올라갔는가 ──
+-rwxrwxrwx. 1 ec2-user ec2-user 3670 Sep  6 02:01 /opt/colab-repo/db/ai/seed/topic_synonym_six.sql
+-rwxrwxrwx. 1 ec2-user ec2-user 5430 Sep  6 02:02 /opt/colab-repo/db/ai/versions/0006_topic_vocab_six.py

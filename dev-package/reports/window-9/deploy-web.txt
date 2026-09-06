@@ -1,0 +1,212 @@
+=== ③ 프론트 번들 ＋ deploy_web.py — 창 9 · 2026-09-06T11:19:36+09:00 ===
+자격 출처 = AWS_PROFILE 프로파일을 env 로 export (값 미출력)
+
+> colab-v2-frontend@0.1.0 build
+> tsc --noEmit && vite build
+
+[36mvite v8.2.2 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[0m 167 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[0m[32mindex.html                                          [0m[1;2m  0.40 kB[0m[2m │ gzip:   0.27 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.66-C3HqaDeY.woff2  [0m[1;2m  8.25 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.64-CTbrgYF9.woff2  [0m[1;2m  8.26 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.65-B66rjuyf.woff2  [0m[1;2m 11.10 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.68-DS9B48d0.woff2  [0m[1;2m 16.34 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.73-DMrK970F.woff2  [0m[1;2m 18.33 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.72-pYYGrEQR.woff2  [0m[1;2m 19.50 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.75-CxKdrRNf.woff2  [0m[1;2m 19.99 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.90-BF7RiZjm.woff2  [0m[1;2m 20.85 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.67-BmuXdlDy.woff2  [0m[1;2m 21.84 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.89-DOzqWPpX.woff2  [0m[1;2m 21.86 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.74-D4tQnymK.woff2  [0m[1;2m 22.39 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.84-Brb8EsYQ.woff2  [0m[1;2m 24.49 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.87-Lzui2vbK.woff2  [0m[1;2m 24.66 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.76-DhPm2b_q.woff2  [0m[1;2m 24.92 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.85-Byo_x2hf.woff2  [0m[1;2m 25.10 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.88-CqX6JSgh.woff2  [0m[1;2m 25.64 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.86-XG7lTN_6.woff2  [0m[1;2m 25.71 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.77-DwaxqOC8.woff2  [0m[1;2m 26.04 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.79-XpoyPP38.woff2  [0m[1;2m 26.22 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.81-BZzF9Hb3.woff2  [0m[1;2m 26.30 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.82-BgAHe30u.woff2  [0m[1;2m 26.50 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.78-DhqRbBzT.woff2  [0m[1;2m 26.54 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.83-DF-zBLLe.woff2  [0m[1;2m 26.96 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.70-BUXiAGMT.woff2  [0m[1;2m 27.54 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.37-BD6FyOtY.woff2  [0m[1;2m 27.91 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.71-DuPZj8us.woff2  [0m[1;2m 28.32 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.80-DsV9Qp_h.woff2  [0m[1;2m 28.79 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.63-B35xsm4O.woff2  [0m[1;2m 28.81 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.40-BDaOfdUe.woff2  [0m[1;2m 29.84 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.43-DHdpry7N.woff2  [0m[1;2m 30.38 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.7-E2HaA55t.woff2   [0m[1;2m 31.91 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.1-C-__qv6_.woff2   [0m[1;2m 32.04 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.44-qHopVhdd.woff2  [0m[1;2m 32.13 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.24-CmkE8Q8D.woff2  [0m[1;2m 32.30 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.10-DzSWztS8.woff2  [0m[1;2m 33.03 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.41-BUACvzZC.woff2  [0m[1;2m 33.18 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.50-C8IyFH7L.woff2  [0m[1;2m 33.22 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.54-Dt2-cQkx.woff2  [0m[1;2m 33.34 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.5-K_MNGNCe.woff2   [0m[1;2m 33.62 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.6-Bxhohlcm.woff2   [0m[1;2m 33.96 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.9-Btb3bmS6.woff2   [0m[1;2m 34.01 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.55-jFgflYjX.woff2  [0m[1;2m 34.18 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.39-B_7wfth9.woff2  [0m[1;2m 34.25 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.52-CNgqKOOJ.woff2  [0m[1;2m 34.35 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.0-BHUkWNFR.woff2   [0m[1;2m 34.56 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.53-BSRnyb-u.woff2  [0m[1;2m 34.57 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.42-Dp-5mnyL.woff2  [0m[1;2m 34.60 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.45-BniyRFfm.woff2  [0m[1;2m 34.66 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.36-Dn5IBRQB.woff2  [0m[1;2m 34.68 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.34-CaCS33Md.woff2  [0m[1;2m 34.72 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.69-YT16ymcp.woff2  [0m[1;2m 34.78 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.38-D4hu443z.woff2  [0m[1;2m 34.80 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.62-DGSAWCfb.woff2  [0m[1;2m 34.87 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.33--0OT__YQ.woff2  [0m[1;2m 34.91 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.17-BfZSA-Xc.woff2  [0m[1;2m 34.94 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.4-Bvh2YGoc.woff2   [0m[1;2m 35.15 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.56-BwZdvJZQ.woff2  [0m[1;2m 35.18 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.35-DWFYRGLp.woff2  [0m[1;2m 35.35 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.27-CT6nuW9L.woff2  [0m[1;2m 35.42 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.61-PUuTnod4.woff2  [0m[1;2m 35.64 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.15-D04iXIE3.woff2  [0m[1;2m 35.66 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.13-C42mj_j2.woff2  [0m[1;2m 35.70 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.47-B-cWO2pw.woff2  [0m[1;2m 35.72 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.57-BwFDg-Fs.woff2  [0m[1;2m 35.96 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.51-Bxd0gTAs.woff2  [0m[1;2m 36.02 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.49-BblQVys9.woff2  [0m[1;2m 36.05 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.20-Ig1-z3n5.woff2  [0m[1;2m 36.12 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.14-Bl512uUX.woff2  [0m[1;2m 36.51 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.46-BMRq7xC-.woff2  [0m[1;2m 36.54 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.8-CRbJhhyA.woff2   [0m[1;2m 36.69 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.21-yKPEdLXC.woff2  [0m[1;2m 37.26 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.11-CqVmlKJn.woff2  [0m[1;2m 37.40 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.48-Ct-fWrPO.woff2  [0m[1;2m 37.77 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.60-CeHezjjf.woff2  [0m[1;2m 37.77 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.16-BQUnS2GX.woff2  [0m[1;2m 37.91 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.12-BHuZSgT0.woff2  [0m[1;2m 37.94 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.91-Csm0YNoH.woff2  [0m[1;2m 37.99 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.30-CWDM1c0J.woff2  [0m[1;2m 38.44 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.28-CpO0Y96p.woff2  [0m[1;2m 38.46 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.22-CSqxKoOs.woff2  [0m[1;2m 38.68 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.59-CMkWjhdo.woff2  [0m[1;2m 38.97 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.29-D6hjrUWm.woff2  [0m[1;2m 39.28 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.32-CGnFWD2i.woff2  [0m[1;2m 40.21 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.23-DK80wi0t.woff2  [0m[1;2m 40.28 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.26-Sozl8dw8.woff2  [0m[1;2m 40.32 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.3-Dqw33sf4.woff2   [0m[1;2m 40.64 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.58-DlucQts_.woff2  [0m[1;2m 41.56 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.18-CwAxMC3C.woff2  [0m[1;2m 41.60 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.31-CdmyZ5mm.woff2  [0m[1;2m 41.89 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.25-CsoWBIZB.woff2  [0m[1;2m 42.03 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.19-CJu4Zcdo.woff2  [0m[1;2m 42.32 kB[0m
+[2mdist/[0m[2massets/[0m[32mPretendardVariable.subset.2-dCZkyKLw.woff2   [0m[1;2m 43.92 kB[0m
+[2mdist/[0m[2massets/[0m[35mindex-DEWaifZ9.css                           [0m[1;2m116.51 kB[0m[2m │ gzip:  28.42 kB[0m
+[2mdist/[0m[2massets/[0m[36mindex-Rwvt3PTb.js                            [0m[1;2m446.41 kB[0m[2m │ gzip: 131.68 kB[0m[2m │ map: 2,161.73 kB[0m
+
+[32m✓ built in 1.91s[39m
+BUILD_EXIT=0
+
+── dist 가 가리키는 해시 자산 ──
+assets/index-Rwvt3PTb.js
+assets/index-DEWaifZ9.css
+
+  assets/PretendardVariable.subset.0-BHUkWNFR.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.1-C-__qv6_.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.10-DzSWztS8.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.11-CqVmlKJn.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.12-BHuZSgT0.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.13-C42mj_j2.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.14-Bl512uUX.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.15-D04iXIE3.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.16-BQUnS2GX.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.17-BfZSA-Xc.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.18-CwAxMC3C.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.19-CJu4Zcdo.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.2-dCZkyKLw.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.20-Ig1-z3n5.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.21-yKPEdLXC.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.22-CSqxKoOs.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.23-DK80wi0t.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.24-CmkE8Q8D.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.25-CsoWBIZB.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.26-Sozl8dw8.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.27-CT6nuW9L.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.28-CpO0Y96p.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.29-D6hjrUWm.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.3-Dqw33sf4.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.30-CWDM1c0J.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.31-CdmyZ5mm.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.32-CGnFWD2i.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.33--0OT__YQ.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.34-CaCS33Md.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.35-DWFYRGLp.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.36-Dn5IBRQB.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.37-BD6FyOtY.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.38-D4hu443z.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.39-B_7wfth9.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.4-Bvh2YGoc.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.40-BDaOfdUe.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.41-BUACvzZC.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.42-Dp-5mnyL.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.43-DHdpry7N.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.44-qHopVhdd.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.45-BniyRFfm.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.46-BMRq7xC-.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.47-B-cWO2pw.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.48-Ct-fWrPO.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.49-BblQVys9.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.5-K_MNGNCe.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.50-C8IyFH7L.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.51-Bxd0gTAs.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.52-CNgqKOOJ.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.53-BSRnyb-u.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.54-Dt2-cQkx.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.55-jFgflYjX.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.56-BwZdvJZQ.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.57-BwFDg-Fs.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.58-DlucQts_.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.59-CMkWjhdo.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.6-Bxhohlcm.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.60-CeHezjjf.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.61-PUuTnod4.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.62-DGSAWCfb.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.63-B35xsm4O.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.64-CTbrgYF9.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.65-B66rjuyf.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.66-C3HqaDeY.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.67-BmuXdlDy.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.68-DS9B48d0.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.69-YT16ymcp.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.7-E2HaA55t.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.70-BUXiAGMT.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.71-DuPZj8us.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.72-pYYGrEQR.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.73-DMrK970F.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.74-D4tQnymK.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.75-CxKdrRNf.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.76-DhPm2b_q.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.77-DwaxqOC8.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.78-DhqRbBzT.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.79-XpoyPP38.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.8-CRbJhhyA.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.80-DsV9Qp_h.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.81-BZzF9Hb3.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.82-BgAHe30u.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.83-DF-zBLLe.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.84-Brb8EsYQ.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.85-Byo_x2hf.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.86-XG7lTN_6.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.87-Lzui2vbK.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.88-CqX6JSgh.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.89-DOzqWPpX.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.9-Btb3bmS6.woff2            font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.90-BF7RiZjm.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/PretendardVariable.subset.91-Csm0YNoH.woff2           font/woff2                       public, max-age=31536000, immutable
+  assets/index-DEWaifZ9.css                                    text/css; charset=utf-8          public, max-age=31536000, immutable
+  assets/index-Rwvt3PTb.js                                     text/javascript; charset=utf-8   public, max-age=31536000, immutable
+  assets/index-Rwvt3PTb.js.map                                 application/json                 public, max-age=31536000, immutable
+  index.html                                                   text/html; charset=utf-8         no-cache
+올렸다: 96 파일 · 5682848 B → s3://colab-platform-web-dev (index.html 마지막)
+DEPLOY_WEB_EXIT=0

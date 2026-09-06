@@ -5,3 +5,63 @@
 + ./.venv/bin/pip install -q --disable-pip-version-check --upgrade pip
 + '[' -f requirements.txt ']'
 + ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
++ '[' -f requirements-dev.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements-dev.txt
++ ./.venv/bin/pip install -q --disable-pip-version-check --no-deps -e .
++ echo '== core-api rc=0 =='
+== core-api rc=0 ==
++ for s in core-api viz-render ai-service pipeline-worker
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/services/viz-render'
++ rm -rf .venv
++ python3 -m venv .venv
++ ./.venv/bin/pip install -q --disable-pip-version-check --upgrade pip
++ '[' -f requirements.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
++ '[' -f requirements-dev.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements-dev.txt
++ ./.venv/bin/pip install -q --disable-pip-version-check --no-deps -e .
++ echo '== viz-render rc=0 =='
+== viz-render rc=0 ==
++ for s in core-api viz-render ai-service pipeline-worker
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/services/ai-service'
++ rm -rf .venv
++ python3 -m venv .venv
++ ./.venv/bin/pip install -q --disable-pip-version-check --upgrade pip
++ '[' -f requirements.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
++ '[' -f requirements-dev.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements-dev.txt
++ ./.venv/bin/pip install -q --disable-pip-version-check --no-deps -e .
++ echo '== ai-service rc=0 =='
+== ai-service rc=0 ==
++ for s in core-api viz-render ai-service pipeline-worker
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/services/pipeline-worker'
++ rm -rf .venv
++ python3 -m venv .venv
++ ./.venv/bin/pip install -q --disable-pip-version-check --upgrade pip
++ '[' -f requirements.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
++ '[' -f requirements-dev.txt ']'
++ ./.venv/bin/pip install -q --disable-pip-version-check --no-deps -e .
++ echo '== pipeline-worker rc=0 =='
+== pipeline-worker rc=0 ==
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb'
++ rm -rf gates/.venv
++ python3 -m venv gates/.venv
++ gates/.venv/bin/pip install -q --disable-pip-version-check -r gates/requirements.txt
++ sha256sum gates/requirements.txt
++ cut '-d ' -f1
++ echo '== gates venv rc=0 =='
+== gates venv rc=0 ==
++ cd '/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/agent-af685d3b68124c4bb/frontend'
++ npm ci
++ tail -5
+
+33 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
++ echo '== frontend rc=0 =='
+== frontend rc=0 ==
++ echo 'ALL DONE'
+ALL DONE
