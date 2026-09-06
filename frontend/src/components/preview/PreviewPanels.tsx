@@ -1,5 +1,6 @@
 // S-08 의 조각들. **화면 글자는 전부 정본 §8.1·§9 에서 그대로 온다** — 여기서 새 한국어를
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
 import { legendValue } from './format';
@@ -153,21 +154,69 @@ export function ExpiredNotice(props: { message: string }) {
  * 먼저 그 변환의 역으로 되돌린 뒤에야 경계 안의 비율이 나온다. 배율만 무시해도
  * 에러 없이 **다른 칸의 값**이 답으로 나가고, 그것이 연구 데이터에서 제일 나쁜 실패다.
  */
+/**
+ * 한 축의 비율 되돌리기. 층 상자는 `translate(x, y) scale(s)` · `transform-origin: 0 0`
+ * 으로 놓이므로 **먼저 그 변환의 역**을 취해야 경계 안의 비율이 나온다.
+ * 상자 밖이면 `undefined` — 0..1 로 자르지 않는다(자르면 밖이 가장자리 값으로 답한다).
+ */
+function fractionOf(offset: number, size: number, pan: number, scale: number): number | undefined {
+  if (!(size > 0) || !(scale > 0)) return undefined;
+  const f = (offset - pan) / scale / size;
+  return f < 0 || f > 1 ? undefined : f;
+}
+
+/**
+ * 커서 경도 역산 (`pvLonOf` · rev1 근거 문면 그대로의 이름). **서버 왕복 0** —
+ * 경계 네 숫자와 화면 좌표만 쓴다.
+ */
+export function pvLonOf(
+  offsetX: number,
+  boxWidth: number,
+  bounds: NonNullable<RenderResult['bounds']>,
+  zoom: { scale: number; x: number },
+): number | undefined {
+  const fx = fractionOf(offsetX, boxWidth, zoom.x, zoom.scale);
+  return fx === undefined ? undefined : bounds.west + fx * (bounds.east - bounds.west);
+}
+
+/** 커서 위도 역산 (`pvLatOf`). 화면 위쪽이 북쪽이라 비율을 뒤집어 뺀다. */
+export function pvLatOf(
+  offsetY: number,
+  boxHeight: number,
+  bounds: NonNullable<RenderResult['bounds']>,
+  zoom: { scale: number; y: number },
+): number | undefined {
+  const fy = fractionOf(offsetY, boxHeight, zoom.y, zoom.scale);
+  return fy === undefined ? undefined : bounds.north - fy * (bounds.north - bounds.south);
+}
+
 export function pointFromViewport(
   offset: { x: number; y: number },
   box: { width: number; height: number },
   bounds: NonNullable<RenderResult['bounds']>,
   zoom: { scale: number; x: number; y: number },
 ): { lat: number; lon: number } | undefined {
-  if (!(box.width > 0) || !(box.height > 0) || !(zoom.scale > 0)) return undefined;
-  const fx = (offset.x - zoom.x) / zoom.scale / box.width;
-  const fy = (offset.y - zoom.y) / zoom.scale / box.height;
-  // **밖을 누르면 좌표를 지어내지 않는다.**
-  if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return undefined;
-  return {
-    lon: bounds.west + fx * (bounds.east - bounds.west),
-    lat: bounds.north - fy * (bounds.north - bounds.south),
-  };
+  // **밖을 누르면 좌표를 지어내지 않는다** — 역산 두 함수가 그 판정을 갖는다.
+  const lon = pvLonOf(offset.x, box.width, bounds, zoom);
+  const lat = pvLatOf(offset.y, box.height, bounds, zoom);
+  return lon === undefined || lat === undefined ? undefined : { lat, lon };
+}
+
+/* ── 커서 위경도 HUD (PRD-39 ⑥ 각주 · 상이-17) ───────────────────────────
+ * **값 조회를 대체하지 않는다.** HUD 는 경계 네 숫자에서 **역산**해 커서를 따라가고,
+ * 값 조회는 누른 시점에 **실제 격자 셀**을 서버에 묻는다. 둘이 함께 서므로 화면이
+ * 출처를 라벨로 가른다 — 그러지 않으면 사용자가 역산값을 셀값으로 읽는다.
+ */
+/** 커서가 아직 지도 위에 없을 때. */
+export const HUD_IDLE = '커서를 지도 위로';
+/** 커서가 경계 밖일 때 — 좌표를 지어내지 않는다. */
+export const HUD_OUTSIDE = '지도 밖';
+/** HUD 가 내는 값의 출처. 값 조회의 `셀값` 과 **다른 낱말**이어야 한다. */
+export const HUD_SOURCE_LABEL = '역산값';
+
+/** 값 조회와 같은 자릿수 — 지도가 답하는 단위(한 칸)보다 잘게 쓰지 않는다. */
+function hudCoord(v: number): string {
+  return v.toFixed(4);
 }
 
 export function PreviewMap(props: {
@@ -179,6 +228,8 @@ export function PreviewMap(props: {
   valuePanel?: ReactNode;
 }) {
   const { result, zoom } = props;
+  /** 커서 위경도 HUD 의 상태. `null` = 아직 지도 위가 아니다 · `'밖'` = 경계 밖이다. */
+  const [hud, setHud] = useState<{ lat: number; lon: number } | '밖' | null>(null);
   // **갈래가 둘이다**(계약 `oneOf`). 타일이면 조각을 세우고, 아니면 그림 한 장이다.
   // ⭑ ⟨2026-08-31 · Ted 판정 ⑩ · `〈238〉`⟩ 등록된 데이터셋의 지도 화면이 타일 쪽이다.
   const tiled = Boolean(result.tileUrlTemplate && result.bounds && zoom);
@@ -213,6 +264,20 @@ export function PreviewMap(props: {
                   if (p) props.onPickPoint?.(p);
                 },
                 'data-value-lookup': 'true',
+              }
+            : {})}
+          {...(result.bounds
+            ? {
+                /* **핸들러 하나**로 끝난다 — 상자는 그 순간 재고, 서버는 부르지 않는다. */
+                onMouseMove: (e: import('react').MouseEvent<HTMLDivElement>) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const b = result.bounds as NonNullable<RenderResult['bounds']>;
+                  const z = zoom ?? { scale: 1, x: 0, y: 0 };
+                  const lon = pvLonOf(e.clientX - rect.left, rect.width, b, z);
+                  const lat = pvLatOf(e.clientY - rect.top, rect.height, b, z);
+                  setHud(lon === undefined || lat === undefined ? '밖' : { lat, lon });
+                },
+                onMouseLeave: () => setHud(null),
               }
             : {})}
           {...(zoom
@@ -260,6 +325,18 @@ export function PreviewMap(props: {
             ) : null}
           </div>
         </div>
+        {/* 커서 위경도 HUD — 값 조회 패널 **위**에 서고, 출처 라벨로 그것과 갈린다.
+            `aria-live` 를 걸지 않는다: 커서를 따라 초당 수십 번 바뀌는 값을 읽어 주면
+            보조기술 사용자가 다른 것을 못 듣는다. 그 사람의 길은 값 조회(클릭)다. */}
+        {result.bounds ? (
+          <p className="pv-hud" data-testid="preview-cursor-hud">
+            {hud === null
+              ? HUD_IDLE
+              : hud === '밖'
+                ? HUD_OUTSIDE
+                : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
+          </p>
+        ) : null}
         {zoom ? <ZoomControls zoom={zoom} /> : null}
         {props.actions ?? null}
         {props.valuePanel ?? null}

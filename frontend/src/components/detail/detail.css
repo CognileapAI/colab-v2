@@ -121,6 +121,8 @@
 .detail-page .use-sec .use-note { margin: 6px 0 0; font-size: var(--text-body-sm); color: var(--color-text-body); line-height: 1.6; }
 .detail-page .use-sec .use-dl { margin-top: 4px; }
 .detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
+/* 접근 값의 출처 한 줄 (PRD-39 ⑩) — 버튼보다 작게, 읽기는 되게 */
+.detail-page .use-sec .use-dl-note { margin: 6px 0 0; font-size: 12px; }
 .detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }
 
 /* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,

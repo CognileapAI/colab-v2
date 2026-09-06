@@ -23,6 +23,19 @@ import { projectPeriod } from '../project/format';
 import { formatBytes } from './format';
 import type { DatasetDetail } from './types';
 
+/**
+ * 접근 값의 **출처 문장** (PRD-39 ⑩ · rev1 접근·다운로드 카드 축자).
+ *
+ * 왜 필요한가: 접근 관련 값은 상세에서 처음 보이지만 **정해진 자리는 업로드**다. 어디서 온
+ * 값인지 말하지 않으면 사용자는 이 화면에서 정해진 값으로 읽고, 바꾸려고 여기서 길을 찾는다.
+ * 문장이 그 자리와 바꿀 수 있는 사람을 함께 말한다.
+ *
+ * ⚠ **공개 범위 값 자체는 이 회차의 몫이 아니다** — 그 칸은 R-B 가 세운다(라운드 파일 §2-⑤).
+ *    없는 값을 지어내지 않고, 출처 문장만 이 자리에 둔다.
+ */
+export const ACCESS_ORIGIN_NOTE =
+  '업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요.';
+
 export function UsageSection(props: { detail: DatasetDetail }) {
   const [error, setError] = useState<string | null>(null);
   const uses = props.detail.projects ?? [];
@@ -74,6 +87,10 @@ export function UsageSection(props: { detail: DatasetDetail }) {
               <span className="use-dl-s"> · {formatBytes(files.totalSizeBytes)}</span>
             ) : null}
           </button>
+          {/* 값의 출처 — 버튼 아래 한 줄 (PRD-39 ⑩). 다운로드가 막힌 사람에게는 이 구역째 없다 */}
+          <p className="use-dl-note muted" data-testid="access-origin">
+            {ACCESS_ORIGIN_NOTE}
+          </p>
         </div>
       ) : null}
 

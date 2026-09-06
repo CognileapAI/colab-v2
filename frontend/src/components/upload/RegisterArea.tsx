@@ -35,6 +35,22 @@ export const INTERVAL_UNITS = ['초', '분', '시', '일', '월', '년'] as cons
 
 export type Step = 1 | 2 | 3;
 
+/**
+ * ⑫ 「지금 할 일」 안내 3문면 — rev1 `syncFoot()` 의 등록 갈래 **축자**.
+ *
+ * 진행 줄이 「무슨 일이 있었나」를 말하므로 이 자리는 **「이제 무엇을 하나」만** 말한다.
+ * ⚠ **문면을 단계 이름에 맞춰 고쳐 적지 않는다** — 축자가 정본이고, 어긋나는 자리는
+ *    고치지 말고 보고한다(`rounds/R-A2.md §1` · 판정 없이 고치지 않는다).
+ */
+export const FOOT_HINTS: Record<Step, string> = {
+  1: '분류를 고르고 다음에서 데이터 정보를 입력하세요',
+  2: '데이터 정보를 입력하고 다음에서 연결하세요',
+  3: '연결을 마쳤으면 데이터셋을 만드세요',
+};
+
+/** ① 분석이 안 끝났을 때의 안내 — rev1 `syncFoot()` 의 장면1 갈래 축자. */
+export const NEXT_BLOCKED_HINT = '분석이 끝나면 다음으로 넘어갈 수 있어요';
+
 const STEP_LABELS: Record<Step, string> = {
   1: '① 자동 메타데이터 확인',
   2: '② 소속 프로젝트 지정',
@@ -705,6 +721,11 @@ export function RegisterArea(props: {
   onSubmit: () => void;
 }) {
   const { step } = props;
+  /**
+   * 분석이 아직 안 끝났는가 (① · rev1 `anNext.disabled`).
+   * `status` 가 아직 없으면 **접수·분석 중**이다 — 모르는 것을 끝났다고 하지 않는다.
+   */
+  const analyzing = !props.status?.ready;
   return (
     <div className="regarea" data-testid="reg-area">
       {/* 표시기 — 한 번에 한 단계만 보이고, 눌러서 아무 단계로나 간다 (§8) */}
@@ -783,6 +804,8 @@ export function RegisterArea(props: {
         </p>
       )}
 
+      {/* ⑫ 행동 줄 — **바닥 고정**이고(고정은 CSS `.reg-actions` 가 갖는다) 왼쪽에
+          「지금 할 일」 한 줄을 둔다. 분석이 안 끝났으면 그 사실이 먼저다. */}
       <div className="reg-actions" data-testid="reg-actions">
         {/* 앞으로 가는 버튼들과 나란히 붙어 있으면 잘못 눌린다 — 왼쪽 끝에 따로 (§8) */}
         <button
@@ -793,6 +816,9 @@ export function RegisterArea(props: {
         >
           등록 취소
         </button>
+        <span className="uf-hint" data-testid="reg-foot-hint">
+          {analyzing ? NEXT_BLOCKED_HINT : FOOT_HINTS[step]}
+        </span>
         <span className="sp" />
         {step > 1 && (
           <button
@@ -809,6 +835,9 @@ export function RegisterArea(props: {
             type="button"
             className="btn btn-primary"
             data-testid="reg-next"
+            /* ① 분석이 끝나기 전에는 넘어가지 않는다 — rev1 `anNext.disabled`.
+               넘어가 봐야 자동으로 읽힌 값이 아직 없어 빈 칸만 보인다. */
+            disabled={analyzing}
             onClick={() => props.onStep((step + 1) as Step)}
           >
             다음 →

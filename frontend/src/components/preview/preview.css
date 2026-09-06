@@ -266,3 +266,11 @@
 .pv-value-body dd {
   margin: 0;
 }
+
+/* 커서 위경도 HUD (PRD-39 ⑥ 각주). 값 조회 패널과 **다른 줄**에 서고 라벨로 출처가 갈린다. */
+.pv-hud {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}

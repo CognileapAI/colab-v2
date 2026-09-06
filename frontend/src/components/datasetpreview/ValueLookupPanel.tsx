@@ -55,6 +55,14 @@ export function useValueLookup(source: DatasetPreviewSource) {
   return { state, pick };
 }
 
+/**
+ * 이 패널이 내는 값의 **출처 라벨** (PRD-39 ⑥ 각주 · 존치 규칙 판정-1 ⓐ).
+ *
+ * 미리보기에는 커서 위경도 HUD 가 함께 선다 — 그쪽은 경계 네 숫자에서 **역산**한 값이고
+ * 이쪽은 서버가 읽은 **격자 한 칸**의 값이다. 라벨이 같으면 사용자가 둘을 한 값으로 읽는다.
+ */
+export const VALUE_SOURCE_LABEL = '셀값';
+
 /** 소수 넷째 자리 — 지도가 답하는 단위(한 칸)보다 잘게 쓰지 않는다. */
 function coord(v: number): string {
   return v.toFixed(4);
@@ -85,7 +93,7 @@ export function ValueLookupPanel(props: { state: LookupState }) {
             </dd>
           </div>
           <div>
-            <dt>값</dt>
+            <dt>{VALUE_SOURCE_LABEL}</dt>
             <dd data-testid="value-lookup-value">
               {state.result.available
                 ? `${state.result.value}${state.result.unit ? ` ${state.result.unit}` : ''}`

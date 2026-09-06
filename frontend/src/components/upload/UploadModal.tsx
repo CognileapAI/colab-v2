@@ -13,6 +13,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
+import { Toast } from '../common/Toast';
+import { ANALYZED_CHIP, ANALYZING_CHIP } from '../common/toastCopy';
+import { collectDrop } from './dropTree';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
@@ -37,6 +40,26 @@ import {
 
 /** 업로드 상태 확인 간격. 이벤트 ②~⑦ 의 결과가 오기를 기다린다. */
 const STATUS_POLL_MS = 1000;
+
+/**
+ * ① 파일 분석 **3단계** 표시 — rev1 `pbStatus` 문면 축자.
+ *
+ * 종전 표시는 바이트 진행 바 하나였다. 바이트가 100% 여도 서버가 헤더를 읽는 동안은
+ * 아무 말이 없어, 사람은 끝난 줄 알고 [다음]을 누르고 빈 칸을 본다. 세 단계가 그 사이를 말한다.
+ *
+ * ⚠ **rev1 의 `파일 읽는 중…` 은 여기 서지 않는다** — 화면이 가진 사실은 「전송 중 /
+ *    접수됨·미준비 / 준비됨」 셋이고, 넷째 단계를 세울 근거가 없다. 없는 상태를 지어내
+ *    문면만 늘리면 화면이 거짓을 말한다.
+ */
+export const RECEIVING_STAGE = '파일 올리는 중…';
+export const ANALYZE_STAGES = [
+  RECEIVING_STAGE,
+  '확장자·용량 확인 중…',
+  '분석 완료 · 확장자와 용량을 읽었어요',
+] as const;
+
+/** ③ 파일 빼기 고지 — rev1 `removeFile()` 축자. */
+export const FILE_REMOVED_NOTICE = '파일을 뺐어요. 입력하던 내용은 사라져요';
 
 /** 파일명에서 데이터셋 이름 초안을 만든다 (`Policy §5` — 기본값 = 파일명에서 생성). */
 function nameFromFile(fileName: string): string {
@@ -103,6 +126,8 @@ export function UploadModal(props: {
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
   const [gridSkipped, setGridSkipped] = useState(false);
+  /** ③ 파일을 뺐다는 고지. 토스트가 스스로 사라질 때 함께 내린다. */
+  const [removedNotice, setRemovedNotice] = useState(false);
   const [nameError, setNameError] = useState(false);
   //: ⭑ **⟨19차 해제 · PRD-15⟩ 설명도 이름과 같은 자리에 선다** — 필수 칸이 둘이 됐다.
   //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
@@ -259,6 +284,11 @@ export function UploadModal(props: {
   }, [uploadId, upload]);
 
   const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일');
+  /**
+   * ① 분석 단계 1·2·3. **모르면 앞 단계에 둔다** — 끝났다고 말한 뒤 아니었던 것이
+   * 이 화면에서 제일 나쁜 실패다(사람이 [다음]을 눌러 빈 칸을 본다).
+   */
+  const analyzeStage: 1 | 2 | 3 = !uploadId ? 1 : status?.ready ? 3 : 2;
   // 진행률은 본체+격자 **합계**다. 그래서 격자 블록에 그것을 넘기는 것은 **격자만 올릴 때뿐**이다
   // — 본체가 섞여 있으면 그 퍼센트는 격자의 진행이 아니고, 화면이 틀린 말을 하게 된다.
   const gridOnly = picked.length > 0 && picked.every((p) => p.kind === '기준 격자 파일');
@@ -354,6 +384,56 @@ export function UploadModal(props: {
   function setKind(index: number, kind: FileKind) {
     setPicked((cur) => cur.map((p, i) => (i === index ? { ...p, kind } : p)));
   }
+
+  /**
+   * ③ **파일 빼기 — 즉시 반영하고 초기화를 고지한다** (rev1 `removeFile()`).
+   *
+   * 뺀 파일이 남긴 것은 파일 하나가 아니다: 접수(`uploadId`)·분석 상태·자동으로 만든 이름
+   * 초안이 전부 그 파일에서 왔다. 목록에서만 지우면 화면은 **없는 파일의 분석 결과**를
+   * 계속 보인다. 그래서 고지 문면이 「입력하던 내용은 사라져요」다 — 화면이 실제로 그렇게 한다.
+   *
+   * ⚠ 마지막 파일을 빼면 등록 단계도 걷는다 — 등록할 대상이 없는 등록 카드는 빈 폼이다.
+   */
+  function removeFile(index: number) {
+    setPicked((cur) => cur.filter((_, i) => i !== index));
+    setRemovedNotice(true);
+    // 파일에서 온 것은 파일과 함께 내린다. 접수·상태는 `signature` effect 가 다시 세운다.
+    setName('');
+    setNameDraft('');
+    setRegisterOpen(false);
+    setStep(1);
+    setRegisterError(null);
+    setIntakeError(null);
+    setRendered(null);
+    setGridSkipped(false);
+  }
+
+  /**
+   * ② **모달 전역 드롭 수신** — 종전에는 드롭존 라벨에만 걸려 있어, 모달이 화면을 가득
+   * 채우는데도 그 라벨 밖에 놓으면 브라우저가 파일을 **새 탭으로 열어** 작업이 통째로 날아갔다.
+   * 모달이 서 있는 동안 `document` 가 받아 기본 동작을 막고 같은 `pick()` 으로 보낸다.
+   */
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => e.preventDefault();
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      if (!e.dataTransfer) return;
+      void collectDrop(e.dataTransfer).then((dropped) => {
+        if (dropped.length === 0) return;
+        const paths = new Map(
+          dropped.flatMap((d) => (d.relativePath ? [[d.file, d.relativePath] as const] : [])),
+        );
+        pick(dropped.map((d) => d.file), paths.size > 0 ? paths : undefined);
+      });
+    };
+    document.addEventListener('dragover', onDragOver);
+    document.addEventListener('drop', onDrop);
+    return () => {
+      document.removeEventListener('dragover', onDragOver);
+      document.removeEventListener('drop', onDrop);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultKind]);
 
   /**
    * 「보기만 할게요」 — **등록하지 않겠다는 선택**이고, 정본 §7.2 전이표가 이 선택의 도착지를
@@ -586,7 +666,7 @@ export function UploadModal(props: {
             </aside>
           )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
-          <FileDropCard picked={picked} onPick={pick} onKind={setKind} />
+          <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
 
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.
               위쪽 이어올리기 배너와 섞지 않는다: 그쪽은 「재개 가능」, 이쪽은 「다시 시작」이라
@@ -600,6 +680,35 @@ export function UploadModal(props: {
               data-testid="up-transfer-progress"
               max={100}
               value={Math.min(100, Math.round((transfer.sentBytes / transfer.totalBytes) * 100))}
+            />
+          )}
+
+          {/* ① 파일 분석 3단계 — 바이트 진행 바가 못 말하는 구간을 말한다 (rev1 `pbStatus`).
+              단계는 **화면이 실제로 아는 사실**에서만 온다: 접수 전 / 접수됨·미준비 / 준비됨. */}
+          {picked.length > 0 && (
+            <div
+              className="up-analyze"
+              data-testid="up-analyze"
+              data-stage={String(analyzeStage)}
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                className={analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral'}
+                data-testid="up-analyze-chip"
+              >
+                {analyzeStage === 3 ? ANALYZED_CHIP : ANALYZING_CHIP}
+              </span>
+              <span className="an-txt">{ANALYZE_STAGES[analyzeStage - 1]}</span>
+            </div>
+          )}
+
+          {/* ③ 파일 빼기 고지 — 공통 토스트를 탄다(PRD-43). 스스로 사라진다. */}
+          {removedNotice && (
+            <Toast
+              message={FILE_REMOVED_NOTICE}
+              testId="up-removed-toast"
+              onDismiss={() => setRemovedNotice(false)}
             />
           )}
 

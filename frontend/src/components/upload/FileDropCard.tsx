@@ -84,13 +84,16 @@ export function keepOneExtension(
 function FileRow(props: {
   picked: PickedFile;
   onKind: (kind: FileKind) => void;
+  /** ③ 이 파일을 뺀다. 주지 않으면 `×` 자체가 없다 — 뺄 수 없는 자리에 버튼을 두지 않는다. */
+  onRemove?: (() => void) | undefined;
 }) {
   const { picked } = props;
+  const label = picked.relativePath ?? picked.file.name;
   return (
     <div className="filecard">
       <div className="fmeta">
         {/* 폴더에서 왔으면 어느 폴더의 무엇인지가 곧 이름이다 */}
-        <div className="fn">{picked.relativePath ?? picked.file.name}</div>
+        <div className="fn">{label}</div>
         <div className="fs">{humanSize(picked.file.size)}</div>
       </div>
       <label className="fkind">
@@ -108,6 +111,17 @@ function FileRow(props: {
           ))}
         </select>
       </label>
+      {/* ③ 파일 빼기 — 놓은 것을 되돌리는 유일한 길이다. 없으면 모달을 닫는 수밖에 없었다 */}
+      {props.onRemove ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm frm-x"
+          aria-label={`${label} 빼기`}
+          onClick={props.onRemove}
+        >
+          ×
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -117,6 +131,8 @@ export function FileDropCard(props: {
   /** `paths` 는 폴더째 드롭에서만 온다 — 파일 → `폴더/이름` 상대 경로. */
   onPick: (files: File[], paths?: ReadonlyMap<File, string>) => void;
   onKind: (index: number, kind: FileKind) => void;
+  /** ③ 뺄 파일의 자리. 주지 않으면 `×` 가 서지 않는다 (읽기 전용 쓰임을 끊지 않는다). */
+  onRemove?: ((index: number) => void) | undefined;
 }) {
   const [slicesOpen, setSlicesOpen] = useState(false);
   const [mixedNotice, setMixedNotice] = useState(false);
@@ -223,7 +239,12 @@ export function FileDropCard(props: {
             {(!bundle || slicesOpen) && (
               <div className={bundle ? 'slicelist' : ''} data-testid={bundle ? 'up-slices' : undefined}>
                 {bodies.map(({ p, i }) => (
-                  <FileRow key={`${p.file.name}-${i}`} picked={p} onKind={(k) => props.onKind(i, k)} />
+                  <FileRow
+                    key={`${p.file.name}-${i}`}
+                    picked={p}
+                    onKind={(k) => props.onKind(i, k)}
+                    {...(props.onRemove ? { onRemove: () => props.onRemove?.(i) } : {})}
+                  />
                 ))}
               </div>
             )}
@@ -238,7 +259,11 @@ export function FileDropCard(props: {
               <div className="cline" key={`${p.file.name}-${i}`}>
                 <span className="cn">{p.file.name}</span>
                 <span className="cw">이 파일이 있어야 지도에 그려요</span>
-                <FileRow picked={p} onKind={(k) => props.onKind(i, k)} />
+                <FileRow
+                  picked={p}
+                  onKind={(k) => props.onKind(i, k)}
+                  {...(props.onRemove ? { onRemove: () => props.onRemove?.(i) } : {})}
+                />
               </div>
             ))}
           </div>

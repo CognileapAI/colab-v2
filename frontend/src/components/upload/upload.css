@@ -237,7 +237,17 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .qproj .qnote { color: var(--up-muted); font-size: 11px; margin-top: 8px; }
 
-.reg-actions { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+/* ⑫ 행동 줄 **바닥 고정** (PRD-39 · rev1 `.up-foot`). 길게 스크롤해도 버튼이 따라온다 —
+   고정하지 않으면 ① 의 긴 폼에서 `다음` 을 찾으려 매번 끝까지 내려야 한다.
+   바탕색을 주지 않으면 뒤 내용이 글자 위로 비쳐 읽히지 않는다. */
+.reg-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 16px;
+  position: sticky; bottom: 0; z-index: 5;
+  padding: 10px 0; background: var(--color-surface, #fff);
+}
+/* 「지금 할 일」 한 줄 — 좁은 폭에서는 버튼 자리를 뺏지 않게 감춘다 (rev1 720px 규칙) */
+.reg-actions .uf-hint { flex: 1; min-width: 0; font-size: 12px; color: #6b7280; }
+@media (max-width: 720px) { .reg-actions .uf-hint { display: none; } }
 .reg-actions .sp { flex: 1; }
 .lineage-slot { margin-top: 12px; }
 
@@ -331,3 +341,9 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .up-body .partrow .pr-unit { color: var(--up-muted); }
 /* 등록 미리보기 한 줄 — 사람이 적은 값이 상세에서 어떻게 보일지를 등록 전에 말한다 */
 .up-body .regprev { color: var(--up-muted); font-variant-numeric: tabular-nums; margin: 4px 0 0; }
+
+/* ① 파일 분석 3단계 표시 (PRD-39 · rev1 `pbStatus`) — 진행 바 아래 한 줄 */
+.up-analyze { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.up-analyze .an-txt { font-size: 12px; color: #6b7280; }
+/* ③ 파일 빼기 — 파일 카드 오른쪽 끝 */
+.filecard .frm-x { margin-left: 4px; line-height: 1; }
