@@ -1,0 +1,18 @@
+/* 공통 토스트 한 개 (PRD-43). 치수·색은 종전 인라인 안내(`upload.css` 의 `.up-toast`)를
+   그대로 옮겼다 — 새 모양을 발명하지 않는다.
+   ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 컴포넌트가 처음 쓰는 토큰만
+     여기서 잇는다 (집 관례 — `components/upload/upload.css` 머리말). */
+:root {
+  --toast-fg: #a85400;
+  --toast-bg: #fff6ed;
+  --toast-radius: 12px;
+}
+
+.toast {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--toast-radius);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  font-size: 12px;
+}

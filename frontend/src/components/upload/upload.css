@@ -98,18 +98,12 @@
 .dropzone .muted, .muted { color: var(--up-muted); font-size: 12px; }
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
-/* 확장자 혼합 안내 (WU-A13 · PRD-32) — 뺀 것이 있을 때만 선다. 막는 것이 아니라 알리는 것이다 */
-.up-toast {
-  margin: 8px 0 0;
-  padding: 8px 12px;
-  border-radius: var(--up-radius);
-  background: var(--up-warn-bg);
-  color: var(--up-warn);
-  font-size: 12px;
-}
+/* 확장자 혼합 안내의 규칙은 **여기 없다** (WU-A13R · PRD-43) — 공통 토스트 한 개로 옮겼다
+   (`components/common/toast.css` 의 `.toast`). 치수·색은 그대로 옮겼고, 이 자리에 남겨 두면
+   두 벌이 되어 한쪽만 고쳐지는 날이 온다. */
 
 /* 업로드 안내 두 줄 — 업로드 가능 / 미리보기 가능 (PRD-21). 경고가 아니라 안내라
-   `up-toast` 의 경고색을 쓰지 않는다 — 색이 같으면 「뭔가 잘못됐다」로 읽힌다. */
+   토스트의 경고색을 쓰지 않는다 — 색이 같으면 「뭔가 잘못됐다」로 읽힌다. */
 .up-note {
   margin: 8px 0 0;
   font-size: 12px;

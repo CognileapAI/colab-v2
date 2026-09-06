@@ -59,6 +59,12 @@ function formatPeriodByUnit(start: string, end: string | null, unit: string): st
   if (s.length > 10 && e.length > 10 && s.slice(0, 10) === e.slice(0, 10)) {
     return `${s} ~ ${e.slice(11)}`;
   }
+  // ⭑ **⟨WU-A13R · PRD-43 `D-07`⟩ 단위 `월` 에서 해가 겹치면 뒤의 해를 줄인다** —
+  // 수용 기준 축자 「기간 `2025-06-01 ~ 2025-09-30` · 단위 `월` 이면 `2025-06 ~ 09`」.
+  // ⚠ **`월` 에서만 줄인다.** 단위 `일` 은 PRD-18 수용 기준이 끝을 통째로 적게 하고
+  // (`2025-06-01 ~ 2025-06-30` · `test/interval-period-20260906.test.tsx:311`), 그 시험이
+  // 이 규칙의 경계다. 단위를 안 적은 종전 행은 위 `formatPeriod` 가 같은 생략을 이미 한다.
+  if (unit === '월' && s.slice(0, 4) === e.slice(0, 4)) return `${s} ~ ${e.slice(5, 7)}`;
   return s === e ? s : `${s} ~ ${e}`;
 }
 

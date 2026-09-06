@@ -4,6 +4,8 @@
 // 파일을 열어 보는 일이다.
 // **축(위도·경도)을 사람에게 묻지 않는다** — 서버가 파일에서 판별한다 (`〈63〉-㉰`).
 import { useState } from 'react';
+import { Toast } from '../common/Toast';
+import { MIXED_EXTENSION_NOTICE } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
 import type { FileKind, PickedFile } from './types';
 
@@ -20,8 +22,13 @@ export function totalBytes(files: PickedFile[]): number {
   return files.reduce((s, f) => s + f.file.size, 0);
 }
 
-/** 확장자 혼합 안내 — rev1 `H-37` **축자**. 한 글자도 바꾸지 않는다. */
-export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
+/**
+ * 확장자 혼합 안내 — rev1 `H-37` **축자**. 한 글자도 바꾸지 않는다.
+ *
+ * ⭑ **⟨WU-A13R · PRD-43⟩ 문면의 자리는 `common/toastCopy.ts` 하나로 옮겼다.** 여기 남는
+ * 것은 종전 부르는 쪽을 끊지 않기 위한 **되보냄**이고, 문자열은 두 벌이 되지 않는다.
+ */
+export { MIXED_EXTENSION_NOTICE };
 
 /**
  * 업로드 안내는 **업로드 가능 / 미리보기 가능** 둘로 갈린다 (PRD-21 · rev1 축자).
@@ -177,11 +184,16 @@ export function FileDropCard(props: {
           </p>
         )}
 
-        {/* 뺀 것이 1건 이상일 때만 말한다 — 문면은 rev1 `H-37` 축자다 */}
+        {/* 뺀 것이 1건 이상일 때만 말한다 — 문면은 rev1 `H-37` 축자다.
+            ⭑ **⟨WU-A13R · PRD-43⟩ 공통 토스트를 탄다.** 종전 인라인 `<p class="up-toast">` 는
+            **사라지지 않은 채** 남아 다음 놓기까지 화면에 서 있었다.
+            사라질 때 상태도 함께 내린다 — 안 내리면 두 번째 혼합 놓기에서 다시 뜨지 못한다. */}
         {mixedNotice && (
-          <p className="up-toast" data-testid="up-ext-toast" role="status" aria-live="polite">
-            {MIXED_EXTENSION_NOTICE}
-          </p>
+          <Toast
+            message={MIXED_EXTENSION_NOTICE}
+            testId="up-ext-toast"
+            onDismiss={() => setMixedNotice(false)}
+          />
         )}
 
         {props.picked.length > 0 && (

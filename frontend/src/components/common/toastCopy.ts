@@ -1,0 +1,158 @@
+// 화면 문면의 **한 자리** — PRD-43 「공통 토스트 한 개와 문면 21행」.
+//
+// 왜 한 곳인가: 같은 문장을 두 벌 적으면 한쪽만 고쳐지는 날이 온다. PRD-43 수용 기준이
+// 「21행이 전부 코드에 있고 **하드코드 중복이 0건**이다(한 곳에서 온다)」인 이유다.
+// 시험 `test/toast-copy-20260906.test.tsx` 가 `src/` 전체를 훑어 그 0건을 실측한다.
+//
+// ⛔ **문면을 고쳐 적지 않는다.** 축자 원천은 PRD-43 표이고, 표가 `…` 로 줄인 행(`S-04`)과
+//    표가 종류만 적은 행(`E-07` 「편집 토스트 3종」)은 그 표가 가리키는 rev2 원문에서 떴다.
+//    다르게 적을 사유를 찾으면 고치지 말고 보고한다 (`rounds/R-A2.md §1`).
+//
+// ⚠ **이 파일은 문면만 갖는다.** 각 문면을 화면 어느 자리에서 부르는지는 **그 자리를 담는
+//    WU** 가 정한다(라운드 파일 §2-① 축자). 여기서 화면을 바꾸지 않는다.
+
+/* ── U-14 · 업로드 장면1 — 분석 상태 칩 ─────────────────────────────── */
+export const ANALYZING_CHIP = '분석 중';
+export const ANALYZED_CHIP = '분석 완료';
+
+/* ── U-17 · 업로드 장면1 ────────────────────────────────────────────── */
+export const UPLOAD_DONE = '파일을 올렸어요. 등록을 시작할 수 있어요';
+
+/* ── P-06 · 미리보기 ────────────────────────────────────────────────── */
+export const PREVIEW_DREW_ONE = '파일에서 바로 한 장을 그렸어요';
+
+/* ── P-07 · 업로드 미리보기 푸터 ─────────────────────────────────────── */
+export const UPLOAD_PREVIEW_FOOT =
+  '첫 변수를 미리 그렸어요 · 확장보기(⤢)에서 확대하고 좌표를 읽을 수 있어요';
+
+/* ── V-01 · 뷰어 머리 ＋ 힌트 ────────────────────────────────────────── */
+/**
+ * 뷰어 머리는 **좌표계 값이 앞에 붙는다** — rev2 원문도 `d.meta.crs + ' · PNG + 경계 좌표'` 다.
+ * 좌표계는 데이터셋마다 다르므로 고정 문자열로 적으면 남의 좌표계를 그리게 된다.
+ */
+export const VIEWER_HEAD_SUFFIX = ' · PNG + 경계 좌표';
+export function viewerHead(crs: string): string {
+  return `${crs}${VIEWER_HEAD_SUFFIX}`;
+}
+export const VIEWER_HINT = '휠로 확대하고 끌어서 움직여요';
+
+/* ── B-10 · 등록 ② 기간 ─────────────────────────────────────────────── */
+export const PERIOD_CLEARED = '기간을 지웠어요';
+export const PERIOD_START_NEEDED = '시작할 날을 골라 주세요';
+
+/* ── B-32 · 등록 ② 대표 그림 ────────────────────────────────────────── */
+export const THUMB_REPLACED = '직접 올린 그림으로 바꿨어요';
+export const THUMB_RESTORED = '자동 생성본으로 되돌렸어요';
+
+/* ── L-08 · L-11 · L-14 · 등록 ③ 계보 ───────────────────────────────── */
+export const LINK_REMOVED = '연결을 지웠어요';
+export const LINK_ADDED = '직접 연결했어요. 계보에 들어가요';
+export const UNRECORDED_ON = '기록 없음으로 표시했어요';
+export const UNRECORDED_OFF = '기록 없음 표시를 지웠어요';
+
+/* ── J-08 · J-12 · 등록 ③ 프로젝트 ──────────────────────────────────── */
+export const PROJECT_UNPICKED = '프로젝트 지정을 뺐어요';
+export const QUICK_PROJECT_NOTE = '유형과 이름만 받아요. 나머지는 프로젝트 화면에서 채워요.';
+
+/* ── F-11 · 행동 줄 ─────────────────────────────────────────────────── */
+/** 계보 건수는 **보간값**이다 — 고정 숫자로 적으면 0건인 사람에게도 숫자가 보인다. */
+export function datasetCreated(lineageCount: number): string {
+  return `데이터셋을 만들었어요 (계보 연결 ${lineageCount}건). 상세 화면으로 넘어가요`;
+}
+
+/* ── S-04 · S-05 · 찾기 모달 ────────────────────────────────────────── */
+/** PRD-43 표가 `…` 로 줄인 행. 축자는 rev2 원문(`toast('…')`)에서 떴다. */
+export const STAGE_TOO_HIGH =
+  '이 데이터보다 높은 단계라 연결할 수 없어요. 분류에서 가공 단계를 확인해 주세요';
+export const PICK_TARGET_FIRST = '연결할 데이터를 먼저 골라 주세요';
+
+/* ── X-05 · 계보 수정 모달 ──────────────────────────────────────────── */
+/** `S-05` 와 **같은 문면**이다. 표에 행이 둘이라고 문자열을 둘 적지 않는다. */
+export const PICK_TARGET_FIRST_IN_EDIT = PICK_TARGET_FIRST;
+
+/* ── D-01 · D-07 · D-13 · N-11 · 상세 ───────────────────────────────── */
+export const BACK_TO_ORIGIN = '들어온 곳으로 돌아가요. 필터와 스크롤 위치는 그대로예요';
+/**
+ * `D-07` 기간 축약은 **문면이 아니라 표기 규칙**이라 조립 자리가 따로 있다 —
+ * `detail/format.ts` 의 `formatPeriod`. 여기 다시 구현하면 두 벌이 된다.
+ */
+export const PERIOD_ABBREV_EXAMPLE = '2025-06 ~ 09';
+/** 본체 건수는 **보간값**이다 (`D-13`). */
+export function bodyPieceHead(bodyCount: number): string {
+  return `본체 ${bodyCount}개 · 같은 데이터를 월로 자른 조각이에요`;
+}
+export const LINEAGE_GRAPH_HINT = '각 데이터를 누르면 그 상세로 가요';
+
+/* ── E-07 · 상세 편집 토스트 3종 ────────────────────────────────────── */
+export const EDIT_MODE_ON = '편집 모드예요. 값을 고치고 저장을 누르세요';
+export const EDIT_SAVED = '편집 내용을 저장했어요';
+export const EDIT_CANCELED = '편집을 취소했어요';
+
+/* ── PRD-32 · PRD-31 — 표에 다시 적지 않는 축자 2건 ─────────────────── */
+// PRD-43 축자 — 「이미 요구로 서 있는 토스트 축자 2건은 여기 다시 적지 않는다 …
+// **같은 컴포넌트를 쓴다**」. 21행에 세지 않지만 같은 자리에서 온다.
+/** 확장자 혼합 안내 — rev1 `H-37` 축자. 한 글자도 바꾸지 않는다 (PRD-32). */
+export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
+
+/* ── PRD-43 표 그 자체 ──────────────────────────────────────────────── */
+
+/** PRD-43 표의 행 id. **순서도 표 그대로**다. */
+export const COPY_ROW_IDS = [
+  'U-14', 'U-17', 'P-06', 'P-07', 'V-01', 'B-10', 'B-32',
+  'L-08', 'L-11', 'L-14', 'J-08', 'J-12', 'F-11',
+  'S-04', 'S-05', 'X-05', 'D-01', 'D-07', 'D-13', 'N-11', 'E-07',
+] as const;
+
+export type CopyRowId = (typeof COPY_ROW_IDS)[number];
+
+export type CopyRow = {
+  /** PRD-43 표의 「자리」 열. */
+  place: string;
+  /**
+   * 그 행이 내보내는 문면 전부. 보간행(`F-11`·`D-13`·`V-01`)은 **예시 인자로 만든 값**이라
+   * 화면이 이 배열을 그리지 않는다 — 화면은 위 상수·함수를 부른다. 이 배열은 「21행이
+   * 전부 있는가」를 시험이 셀 수 있게 두는 목록이다.
+   */
+  texts: readonly string[];
+};
+
+/**
+ * ⚠ **문자열을 여기 다시 적지 않는다** — 위 상수를 참조한다. 다시 적으면 이 파일 안에서만
+ * 두 벌이 되고, 「한 곳에서 온다」가 파일 경계로만 성립하는 거짓이 된다.
+ */
+export const COPY_ROWS: Readonly<Record<CopyRowId, CopyRow>> = {
+  'U-14': { place: '업로드 장면1 · 분석 상태 칩', texts: [ANALYZING_CHIP, ANALYZED_CHIP] },
+  'U-17': { place: '업로드 장면1', texts: [UPLOAD_DONE] },
+  'P-06': { place: '미리보기', texts: [PREVIEW_DREW_ONE] },
+  'P-07': { place: '업로드 미리보기 푸터', texts: [UPLOAD_PREVIEW_FOOT] },
+  'V-01': { place: '뷰어 머리 ＋ 힌트', texts: [viewerHead('EPSG:5179'), VIEWER_HINT] },
+  'B-10': { place: '등록 ② 기간', texts: [PERIOD_CLEARED, PERIOD_START_NEEDED] },
+  'B-32': { place: '등록 ② 대표 그림', texts: [THUMB_REPLACED, THUMB_RESTORED] },
+  'L-08': { place: '등록 ③ 계보', texts: [LINK_REMOVED] },
+  'L-11': { place: '등록 ③ 계보', texts: [LINK_ADDED] },
+  'L-14': { place: '등록 ③ 계보', texts: [UNRECORDED_ON, UNRECORDED_OFF] },
+  'J-08': { place: '등록 ③ 프로젝트', texts: [PROJECT_UNPICKED] },
+  'J-12': { place: '등록 ③ 프로젝트 · 빠른 생성 안내', texts: [QUICK_PROJECT_NOTE] },
+  'F-11': { place: '행동 줄', texts: [datasetCreated(3)] },
+  'S-04': { place: '찾기 모달', texts: [STAGE_TOO_HIGH] },
+  'S-05': { place: '찾기 모달', texts: [PICK_TARGET_FIRST] },
+  'X-05': { place: '계보 수정 모달', texts: [PICK_TARGET_FIRST_IN_EDIT] },
+  'D-01': { place: '상세 · 돌아가기', texts: [BACK_TO_ORIGIN] },
+  'D-07': { place: '상세 · 기간 축약 표기', texts: [PERIOD_ABBREV_EXAMPLE] },
+  'D-13': { place: '상세 · 파일 목록 머리', texts: [bodyPieceHead(4)] },
+  'N-11': { place: '상세 · 계보 그래프 머리 힌트', texts: [LINEAGE_GRAPH_HINT] },
+  'E-07': { place: '상세 편집 · 편집 토스트 3종', texts: [EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED] },
+};
+
+/**
+ * 보간이 없는 **고정 문면** 전부 — 「하드코드 중복 0건」 시험의 대상 목록이다.
+ * 보간행(`F-11`·`D-13`·`V-01` 머리·`D-07` 예시)은 값이 인자에 따라 달라 문자열 검색의
+ * 대상이 아니다. `V-01` 은 고정 꼬리(`VIEWER_HEAD_SUFFIX`)만 센다.
+ */
+export const FIXED_COPY: readonly string[] = [
+  ANALYZING_CHIP, ANALYZED_CHIP, UPLOAD_DONE, PREVIEW_DREW_ONE, UPLOAD_PREVIEW_FOOT,
+  VIEWER_HEAD_SUFFIX, VIEWER_HINT, PERIOD_CLEARED, PERIOD_START_NEEDED,
+  THUMB_REPLACED, THUMB_RESTORED, LINK_REMOVED, LINK_ADDED, UNRECORDED_ON, UNRECORDED_OFF,
+  PROJECT_UNPICKED, QUICK_PROJECT_NOTE, STAGE_TOO_HIGH, PICK_TARGET_FIRST, BACK_TO_ORIGIN,
+  LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED, MIXED_EXTENSION_NOTICE,
+];
