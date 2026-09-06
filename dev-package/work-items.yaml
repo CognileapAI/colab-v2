@@ -2696,7 +2696,7 @@ items:
 
   - id: WU-A7R
     name: 연관 프로젝트·논문 한 표 ＋ 유형 열 ＋ 이름 중복 검사 (rev2 증분 · PRD-23 · PRD-42)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-A13R 토스트 문면 green"]
@@ -2704,7 +2704,7 @@ items:
     completion_def: "표 한 장에 행을 쌓고 열이 유형·이름·해제 이며, 유형 배지가 저장값 kind 에서 오고, 연관 0건이면 표가 화면에 없다 ＋ 같은 연구실 안에서 이름이 겹치면 유형이 달라도 거절하고 문면이 뜨며 다른 연구실의 같은 이름은 성공한다"
     evidence: "dev-package/sessions/p3-project-table-20260907.md"
     deadline: null
-    note: "미결-r2-3 ⓐ — 두 패널 분리를 걷는다. 빈 이름 문면은 고치지 않는다(정본). 기존에 겹치는 행은 지우거나 고치지 않고 신규 생성만 막는다. 계약·DB 변경 0"
+    note: "2026-09-07 done — 레인 p3-project-table 2e6f5e5 ＋ advisor ② 1ba50f6 · frontend-typecheck·frontend-test(840)·service-tests-core-api(830) green · 미달 보고 1건(빈 이름 빠른 생성 무반응 · 기존 결함)·경합(UNIQUE 부재)은 라운드 끝 묶음 질의 · 미결-r2-3 ⓐ — 두 패널 분리를 걷는다. 빈 이름 문면은 고치지 않는다(정본). 기존에 겹치는 행은 지우거나 고치지 않고 신규 생성만 막는다. 계약·DB 변경 0"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-23", "PRD-42"]
 
   - id: WU-A9R
