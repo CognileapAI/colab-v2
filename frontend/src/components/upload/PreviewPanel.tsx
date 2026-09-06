@@ -66,6 +66,11 @@ export function PreviewPanel(props: {
    * 짝 파일 없이 그렸는지도 **여기서만 아는 사실**이라 함께 넘긴다.
    */
   onRender?: ((info: { renderId: string; withoutReferenceGrid: boolean }) => void) | undefined;
+  /**
+   * 사람이 대표 그림을 **바꿨다는 사실**만 바깥(S-04 모달)에 알린다 (WU-A9R · PRD-14 증분).
+   * 고른 그림 자체는 여기 남는다 — 종료 확인이 세는 것은 교체 여부 하나다.
+   */
+  onThumbPick?: (() => void) | undefined;
 }) {
   const { source, uploadId } = props;
   const [palettes, setPalettes] = useState<PaletteOption[] | null>(null);
@@ -215,6 +220,7 @@ export function PreviewPanel(props: {
 
   function pickThumb(file: File | null): void {
     if (!file) return;
+    props.onThumbPick?.();
     setPickedThumb((prev) => {
       // 앞서 만든 주소는 놓아준다 — 화면 하나가 blob 을 쌓아 두지 않는다.
       if (prev) URL.revokeObjectURL(prev);

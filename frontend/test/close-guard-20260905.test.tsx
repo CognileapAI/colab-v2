@@ -10,6 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { SessionProvider } from '../src/permission/session';
+import { UPLOAD_CLOSE_INPUT_ONLY, UPLOAD_CLOSE_KEEP, UPLOAD_CLOSE_LEAVE } from '../src/components/common/toastCopy';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import type {
   LineageStepContext,
@@ -21,8 +22,9 @@ import type {
 import type { LineageSource, LineageSuggestionResponse } from '../src/components/lineage/types';
 import type { CurrentAccount, Schemas } from '../src/api/client';
 
-/** 종전 문면 — 이 문자열이 바뀌면 미결-15 ⓐ 위반이다 (PRD-34 는 §4 범위 밖). */
-const CONFIRM_BODY = '확인한 계보와 입력한 내용이 사라져요. 데이터셋은 만들어지지 않아요.';
+// ⭑ ⟨WU-A9R · PRD-34 채택 2026-09-06⟩ 문면은 **상황별 3종**으로 열렸다. 이 파일이 지키는 것은
+//    미결-15 ⓐ 의 **조건**이고, 문면 축자·갈래는 `test/prd34-close-copy-20260907.test.tsx` 가 잰다.
+//    여기서는 상수를 참조한다 — 문자열을 다시 적으면 PRD-43 「한 곳」이 깨진다.
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
@@ -179,14 +181,14 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 
-  it('설명을 한 글자 적으면 확인 모달이 뜬다 — 문면은 종전 그대로다', async () => {
+  it('설명을 한 글자 적으면 확인 모달이 뜬다 — 문면은 「입력 있음」 갈래다', async () => {
     await openRegisterWithFile();
     await change(screen.getByTestId('reg-summary'), '가');
     await click(screen.getByTestId('upload-close'));
     const confirm = await screen.findByTestId('upload-close-confirm');
-    expect(confirm).toHaveTextContent(CONFIRM_BODY);
-    expect(within(confirm).getByRole('button', { name: '계속 작성' })).toBeInTheDocument();
-    expect(within(confirm).getByRole('button', { name: '닫고 나가기' })).toBeInTheDocument();
+    expect(confirm).toHaveTextContent(UPLOAD_CLOSE_INPUT_ONLY);
+    expect(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_KEEP })).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_LEAVE })).toBeInTheDocument();
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
   });
 

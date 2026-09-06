@@ -98,6 +98,45 @@ export const PRE_LINEAGE_ADDED = '가공 전 데이터를 추가했어요. 직�
 /** 업로드 장면1 파일 빼기 고지 — rev1 `removeFile()` 축자 (PRD-39 ③). */
 export const FILE_REMOVED_NOTICE = '파일을 뺐어요. 입력하던 내용은 사라져요';
 
+/* ── PRD-34 · PRD-14 · 업로드 종료 확인 모달 (WU-A9R) ───────────────── */
+// PRD-43 표의 21행은 아니다. 그래도 문면의 자리는 **여기 하나**다 — 화면에 다시 적으면
+// 같은 문장이 두 벌이 되고, 그것이 PRD-43 「한 곳」이 막으려던 바로 그 상태다.
+// ⛔ 축자 원천 = rev2 원문 `10_적용전/업로드_계보_260905_rev2_이태헌.html` 의
+//    `closeUpload()`(본문 3종) · 확인 모달 마크업(제목·버튼). 개발 세션이 새로 짓지 않는다.
+
+/** 확인 모달 제목 — 상황이 셋이어도 제목은 하나다 (PRD-34). */
+export const UPLOAD_CLOSE_TITLE = '업로드를 닫을까요?';
+/** 왼쪽 버튼. 종전 `계속 작성` 을 rev2 축자 `계속하기` 로 바꾼다 (PRD-34). */
+export const UPLOAD_CLOSE_KEEP = '계속하기';
+/** 오른쪽 버튼. rev2 축자 그대로 유지. */
+export const UPLOAD_CLOSE_LEAVE = '닫고 나가기';
+
+/** ⑴ 파일만 — 사람 입력 0 · 확정 계보 0. */
+export const UPLOAD_CLOSE_FILE_ONLY = '올린 파일이 취소돼요. 원본 파일은 그대로라 다시 올리면 돼요.';
+/** ⑵ 입력 있음 — 사람 입력 ≥1 · 확정 계보 0. */
+export const UPLOAD_CLOSE_INPUT_ONLY = '적은 내용이 사라지고, 데이터셋은 만들어지지 않아요. 원본 파일은 그대로예요.';
+/**
+ * ⑶ 입력＋계보 — 사람 입력 ≥1 · 확정 계보 ≥1. 건수는 **보간값**이다.
+ * 고정 숫자로 적으면 1건인 사람에게도 남의 건수가 보인다 (PRD-34 수용 기준).
+ */
+export function uploadCloseWithLineage(lineageCount: number): string {
+  return `적은 내용과 연결한 계보 ${lineageCount}건이 사라지고, 데이터셋은 만들어지지 않아요. 원본 파일은 그대로예요.`;
+}
+
+/**
+ * 상황 → 본문. 판정 기준은 PRD-34 표 그대로다 — 사람 입력 유무와 **확정된** 계보 건수.
+ * 화면이 if 를 세 겹 쓰지 않게 갈래를 여기서 닫는다.
+ */
+export function uploadCloseMessage(state: {
+  hasHumanInput: boolean;
+  lineageCount: number;
+}): string {
+  if (!state.hasHumanInput) return UPLOAD_CLOSE_FILE_ONLY;
+  return state.lineageCount > 0
+    ? uploadCloseWithLineage(state.lineageCount)
+    : UPLOAD_CLOSE_INPUT_ONLY;
+}
+
 /* ── PRD-43 표 그 자체 ──────────────────────────────────────────────── */
 
 /** PRD-43 표의 행 id. **순서도 표 그대로**다. */
@@ -160,4 +199,6 @@ export const FIXED_COPY: readonly string[] = [
   PROJECT_UNPICKED, QUICK_PROJECT_NOTE, STAGE_TOO_HIGH, PICK_TARGET_FIRST, BACK_TO_ORIGIN,
   LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED,
   MIXED_EXTENSION_NOTICE, PRE_LINEAGE_ADDED, FILE_REMOVED_NOTICE,
+  UPLOAD_CLOSE_TITLE, UPLOAD_CLOSE_KEEP, UPLOAD_CLOSE_LEAVE,
+  UPLOAD_CLOSE_FILE_ONLY, UPLOAD_CLOSE_INPUT_ONLY,
 ];

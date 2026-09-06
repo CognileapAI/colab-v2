@@ -14,7 +14,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { apiUploadSource } from '../src/components/upload/uploadSource';
-import { QUICK_PROJECT_NOTE } from '../src/components/common/toastCopy';
+import {
+  QUICK_PROJECT_NOTE,
+  UPLOAD_CLOSE_INPUT_ONLY,
+  UPLOAD_CLOSE_KEEP,
+  UPLOAD_CLOSE_LEAVE,
+} from '../src/components/common/toastCopy';
 import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
 import type { PreviewHandoff } from '../src/components/preview/types';
 import { TransferInterrupted, UploadGone } from '../src/components/upload/types';
@@ -411,7 +416,7 @@ describe('§8 모달 닫기 — 잃을 것이 있을 때만 묻는다', () => {
   // ⚠ 조건이 바뀌었다 (WU-A9 · PRD-14 · 미결-15 ⓐ) — 종전에는 「등록 단계가 열려 있으면」
   // 무조건 물었다. 지금은 **사람이 입력한 값이 하나라도 있을 때**만 묻는다. 빈 상태로 열어만
   // 두고 닫는 경우는 `test/close-guard-20260905.test.tsx` 가 「안 묻는다」로 잡는다.
-  // **문면은 그대로다** — 이 시험이 지키는 것이 그 문자열이다.
+  // ⭑ ⟨WU-A9R · PRD-34⟩ 문면이 상황별 3종으로 열렸다 — 여기서는 「입력 있음」 갈래를 잰다.
   it('사람이 적은 값이 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
     const { sources } = fakes();
     await openModal(sources);
@@ -420,11 +425,9 @@ describe('§8 모달 닫기 — 잃을 것이 있을 때만 묻는다', () => {
     await change(screen.getByTestId('reg-summary'), '가');
     await click(screen.getByTestId('upload-close'));
     const confirm = await screen.findByTestId('upload-close-confirm');
-    expect(confirm).toHaveTextContent(
-      '확인한 계보와 입력한 내용이 사라져요. 데이터셋은 만들어지지 않아요.',
-    );
-    expect(within(confirm).getByRole('button', { name: '계속 작성' })).toBeInTheDocument();
-    expect(within(confirm).getByRole('button', { name: '닫고 나가기' })).toBeInTheDocument();
+    expect(confirm).toHaveTextContent(UPLOAD_CLOSE_INPUT_ONLY);
+    expect(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_KEEP })).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_LEAVE })).toBeInTheDocument();
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
   });
 });

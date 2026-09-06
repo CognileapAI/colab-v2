@@ -14,7 +14,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import { Toast } from '../common/Toast';
-import { ANALYZED_CHIP, ANALYZING_CHIP, FILE_REMOVED_NOTICE } from '../common/toastCopy';
+import {
+  ANALYZED_CHIP,
+  ANALYZING_CHIP,
+  FILE_REMOVED_NOTICE,
+  UPLOAD_CLOSE_KEEP,
+  UPLOAD_CLOSE_LEAVE,
+  UPLOAD_CLOSE_TITLE,
+  uploadCloseMessage,
+} from '../common/toastCopy';
 import { collectDrop } from './dropTree';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
@@ -37,6 +45,12 @@ import {
   type UploadSources,
   type UploadStatus,
 } from './types';
+
+/**
+ * 닫기 확인보다 **위에 있는 층**이 스스로 붙이는 표식 (PRD-39 ⑭ · 확장보기 · 찾기 · 계보 수정).
+ * 표식이 떠 있는 동안 업로드 모달은 Esc 를 처리하지 않는다.
+ */
+export const ESC_LAYER_ATTR = 'data-esc-layer';
 
 /** 업로드 상태 확인 간격. 이벤트 ②~⑦ 의 결과가 오기를 기다린다. */
 const STATUS_POLL_MS = 1000;
@@ -102,6 +116,11 @@ export function UploadModal(props: {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
+  /**
+   * 대표 그림을 사람이 바꿨나 (WU-A9R · PRD-14 증분). 고른 그림 자체는 `PreviewPanel` 안에서만
+   * 살고 서버로 가지 않는다 — 종료 확인이 세는 것은 **바꿨다는 사실 하나**다.
+   */
+  const [thumbReplaced, setThumbReplaced] = useState(false);
 
   const [name, setName] = useState('');
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
@@ -331,6 +350,10 @@ export function UploadModal(props: {
     crs.trim() !== '' ||
     sourceLabel.trim() !== '' ||
     projects.length > 0 ||
+    // ⭑ ⟨WU-A9R · PRD-14 증분⟩ 담은 프로젝트 건수와 **대표 그림 교체 여부**를 함께 센다.
+    //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
+    //   확장자·용량)은 여전히 세지 않는다.
+    thumbReplaced ||
     lineageParents.length > 0;
 
   const onLineageProgress = useCallback(
@@ -480,6 +503,31 @@ export function UploadModal(props: {
   }
 
   /**
+   * Esc 우선순위 (PRD-39 ⑭) — **확장보기 → 찾기 → 계보 수정 → 닫기 확인 → 업로드**.
+   *
+   * 앞의 세 층은 이 모달이 그리지 않는다(R-B). 그래서 층을 이름으로 찾지 않고, 그 층이
+   * 스스로 붙이는 표식 `data-esc-layer` 하나만 본다 — 표식이 하나라도 떠 있으면 업로드는
+   * Esc 를 먹지 않는다. 위 층이 없을 때만 닫기 확인 → 업로드 순으로 내려간다.
+   * 층이 스스로 표식을 붙이므로 여기에 층 목록을 적어 두 벌로 만들지 않는다.
+   */
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector(`[${ESC_LAYER_ATTR}]`)) return;
+      e.preventDefault();
+      if (confirmClose) {
+        setConfirmClose(false);
+        return;
+      }
+      if (hasHumanInput) setConfirmClose(true);
+      else props.onClose();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmClose, hasHumanInput]);
+
+  /**
    * 「이 데이터셋에 반영」 — 후주입의 **마지막 한 걸음**.
    * 화면이 들고 있던 `uploadId` 를 `datasetId` 옆에 놓아 보낸다. 그 짝은 여기서만 존재했다.
    */
@@ -610,7 +658,16 @@ export function UploadModal(props: {
   }
 
   return (
-    <div className="modal-back mb-takeover">
+    <div
+      className="modal-back mb-takeover"
+      data-testid="upload-backdrop"
+      // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
+      //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
+      //   `event.target === event.currentTarget` 이라 모달 **안쪽** 클릭은 여기 닿지 않는다.
+      onClick={(e) => {
+        if (e.target === e.currentTarget) requestClose();
+      }}
+    >
       <div
         className="modal modal-takeover"
         role="dialog"
@@ -750,6 +807,7 @@ export function UploadModal(props: {
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}
                 onRender={setRendered}
+                onThumbPick={() => setThumbReplaced(true)}
                 grid={{
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
@@ -900,10 +958,17 @@ export function UploadModal(props: {
         <div className="modal-back confirm-back">
           <div className="modal" data-testid="upload-close-confirm">
             <div className="modal-h">
-              <h3>업로드를 닫을까요?</h3>
+              <h3>{UPLOAD_CLOSE_TITLE}</h3>
             </div>
             <div className="modal-b">
-              <p>확인한 계보와 입력한 내용이 사라져요. 데이터셋은 만들어지지 않아요.</p>
+              {/* ⭑ ⟨WU-A9R · PRD-34⟩ 본문이 상황별 3종이다. 문면·갈래는 `toastCopy.ts` 가
+                  쥐고 있고 여기서는 지금 상태만 넘긴다 — 화면이 문장을 짓지 않는다. */}
+              <p>
+                {uploadCloseMessage({
+                  hasHumanInput,
+                  lineageCount: lineageParents.length,
+                })}
+              </p>
             </div>
             <div className="modal-f">
               <button
@@ -911,10 +976,10 @@ export function UploadModal(props: {
                 className="btn btn-secondary"
                 onClick={() => setConfirmClose(false)}
               >
-                계속 작성
+                {UPLOAD_CLOSE_KEEP}
               </button>
               <button type="button" className="btn btn-strong" onClick={props.onClose}>
-                닫고 나가기
+                {UPLOAD_CLOSE_LEAVE}
               </button>
             </div>
           </div>
