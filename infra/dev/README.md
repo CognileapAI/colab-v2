@@ -21,7 +21,17 @@
 **리터럴(compose 에 고정 — 빠뜨리면 조용히 local 로 떨어지는 값)**: `COLAB_CORE_STORAGE_MODE=s3` ·
 `COLAB_CORE_S3_BUCKET` · `COLAB_CORE_S3_REGION` · `COLAB_WORKER_STORAGE_MODE=s3` · `COLAB_WORKER_S3_*` ·
 `COLAB_WORKER_WORKDIR` · `COLAB_VIZ_SOURCE_MODE=s3` · `COLAB_VIZ_S3_*` · `COLAB_VIZ_WORKDIR` · `COLAB_VIZ_PREVIEW_SINK=s3` ·
-`COLAB_VIZ_PREVIEW_S3_PREFIX` · `COLAB_VIZ_PREVIEW_URL_BASE=/previews` · `COLAB_CORE_VIZ_BASE_URL` · `COLAB_HEALTH_PORT`.
+`COLAB_VIZ_PREVIEW_S3_PREFIX` · `COLAB_VIZ_PREVIEW_URL_BASE=/previews` · `COLAB_CORE_VIZ_BASE_URL` · `COLAB_HEALTH_PORT` ·
+⭑ **⟨신설 2026-09-06 · 창 9 · Ted 판정⟩ `COLAB_WORKER_EVENT_SPOOL` ＝ `COLAB_VIZ_TRIGGER_SPOOL` ＝ `/srv/viz-events`**
+(named volume `events` · `volume-init` 이 `chown 10001`).
+
+> ⛔ **이 짝은 값이 같아야 하고, 볼륨이 실제로 붙어야 한다.** 둘 중 하나만 서면 **에러가 나지 않는다** —
+> 내는 쪽은 성공을 보고하고 받는 쪽은 영원히 0건을 집는다. staging 이 볼륨 소유권을 빠뜨려 한 번(`〈269〉`-㉲),
+> dev 가 선언을 통째로 빠뜨려 또 한 번(`〈353〉`) 물린 자리다.
+> ⭑ **viz 쪽 선언이 곧 스위치다** — 없으면 `main.py:105` 에서 `app.state.triggers` 가 `None` 이고
+> **트리거 루프도 지도 타일 회수 루프도 아예 안 뜬다**(`BF-12` ⑶ 이 dev 에서 설 수 없던 이유).
+> ⚠ 회수는 **기본이 관측 전용**(`COLAB_VIZ_TILE_RECLAIM_APPLY` 미선언 = `False`) — 세고 적기만 하고 지우지 않는다.
+> ⚠ **`COLAB_WORKER_STAGE2` 는 걸지 않았다** — dev 워커는 stage 1 그대로다(이 회차의 판정 대상이 아니다).
 
 **`dev.env`(EC2 `/opt/colab-v2/dev.env`, 0600) 에 두는 값** — `up.sh` 가 `--env-file` 로 읽는다:
 

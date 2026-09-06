@@ -4,7 +4,8 @@
     "path 는 --source-root 기준 상대. source-root = '03 Reference-Data'.",
     "적재 범위 = 01.level-data/ ＋ 02.File-format/ 전량. 제외 = 03_KWRA_conference-* 전체 · 전 desktop.ini(50건).",
     "kind 어휘는 contracts/schemas/common.json:78-82 FileKind 의 두 값뿐이다 — '본체'·'기준 격자 파일'.",
-    "계보 = Lv.0 → Lv.1 → Lv.2. Lv.1_(Model_Input_Data) 는 Lv.1 의 형제이고 Lv.2 의 보조입력 부모다."
+    "계보 = Lv.0 → Lv.1 → Lv.2. Lv.1_(Model_Input_Data) 는 Lv.1 의 형제이고 Lv.2 의 보조입력 부모다.",
+    "sourceLabel = 뿌리 4건에만. 값은 각 summary 의 「출처 =」·「생산 =」 축자이고 지어낸 것이 0 이다 — 이 값이 있어야 계보에 원천 → 루트 간선(method=null)이 실린다."
   ],
   "_계수": {
     "데이터셋": 14,
@@ -19,6 +20,7 @@
       "name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
       "topic": "강우·강수",
       "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = RDR_CMP_HSR_PUB_*.bin.gz (bin, 변량 = 반사도). ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "sourceLabel": "기상청 API허브",
       "files": [
         {
           "path": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
@@ -84,6 +86,7 @@
       "name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
       "topic": "강우·강수",
       "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = sfc_grid_rn_15m_*.nc (NetCDF4, 변량 = 15분 누적 강수량).",
+      "sourceLabel": "기상청 API허브",
       "files": [
         {
           "path": "01.level-data/01.precipitation/01.precipitation/Lv.0/02.rn15/sfc_grid_rn_15m_201907281430.nc",
@@ -201,6 +204,7 @@
       "name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
       "topic": "식생·NDVI",
       "summary": "GK-2A/AMI 정규식생지수(NDVI). 식 : NDVI = (NIR − Red) / (NIR + Red), 범위 −1~1. 값이 높을수록 식생이 건강하다. 출처 = 국가기상위성센터(NMSC). 원자료 LCC 좌표계 · 1일 / 2 km. 대상 기간 2023-05-01 ~ 2023-05-31 · 대상지 경기 남부~충청권. 자료 구성 = NDVI · EVI · FVC · DQF · gk2a_imager_projection. ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "sourceLabel": "국가기상위성센터(NMSC)",
       "files": [
         {
           "path": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
@@ -547,6 +551,7 @@
       "name": "가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)",
       "topic": "가뭄",
       "summary": "대한민국 시군구 단위 주간 SPI-4weeks · SPEI-4weeks 가뭄지수. 기상관측소 강우 관측자료로 지수를 산정하고 관측소 주소지 시군구를 대표값으로 가정해 구축했다. 생산 = 차호영(고려대학교) · WGS84 · 1 km · 2000-01-01~2025-12-31 · 주 단위. Data Level = L1 Calibrated. ＊이 주제에는 Lv.0·Lv.2 폴더가 없다 — 계보 간선 0건. 설명 문서(#readme, 여는 코드 ipynb 포함)를 함께 싣는다.",
+      "sourceLabel": "차호영(고려대학교)",
       "files": [
         {
           "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/01.가뭄 데이터 여는 코드.ipynb",

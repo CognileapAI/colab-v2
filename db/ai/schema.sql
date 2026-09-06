@@ -81,8 +81,12 @@ CREATE TABLE d9_topic_synonym (
   -- "어느 주제를 고를 것인가"를 구현이 발명하게 된다.
   synonym      text        PRIMARY KEY
                CHECK (btrim(synonym) = synonym AND length(synonym) BETWEEN 1 AND 120),
+  -- ⭑ ⟨2026-09-06 · Ted 판정 · `〈360〉` 해소⟩ 주제 어휘 **6값**. platform 쪽이 먼저 넓혔고
+  --   (`db/platform/schema.sql` · `0013_topic_vocab_six` · `〈359〉`) 이 체인이 **뒤따르지 못한 것**을
+  --   `〈359〉`-㉶ 가 스스로 다음 회차 진입조건으로 적어 두었다. 두 정본이 같은 값을 든다.
   topic        text        NOT NULL
-               CHECK (topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC')),
+               CHECK (topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC',
+                                '가뭄', '파일 포맷 예제')),
   source_note  text        NOT NULL CHECK (length(btrim(source_note)) > 0),
   created_at   timestamptz NOT NULL DEFAULT now()
 );
