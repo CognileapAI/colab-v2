@@ -1,0 +1,6 @@
+# 판정 롤 colab_app — rolsuper=f · rolbypassrls=f · public 소유 테이블 0개 (우회 불가)
+# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)
+# ② 메타 양성 — 잠긴 데이터셋의 이름·주제·자동메타·접근상태·Verified·계보 전부 조회됨
+# ③ lab_id 보유 표 25개 전수 — 남의 연구실 0행
+# ③ cross-tenant — 전수 0행 · ID 직접 지정 0행 · 미스코프 0행 · 반대편 1행
+rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가.

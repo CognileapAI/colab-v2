@@ -1,0 +1,4 @@
+# db 루트 = db · 체인 = platform, ai
+# db/platform: 리비전 18건 · head 1개 (0014_merge_ra1_and_topic_vocab)
+# db/ai: 리비전 5건 · head 1개 (0005_k2b_concept_graph_seed)
+migration-single-head green — 두 체인 모두 head 1개.

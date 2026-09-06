@@ -1,0 +1,37 @@
+── event-lint ──────────────────────────────────────────────
+── event-breaking ──────────────────────────────────────────
+[selftest] lint: 실제 이벤트 계약 + 픽스처 → green OK
+[selftest] lint: 깨진 JSON → red OK
+[selftest] lint: 끊긴 $ref → red OK
+[selftest] lint: 오탈자 키워드(strict) → red OK
+[selftest] lint: 이벤트 계약 0건 → red OK
+[selftest] lint: valid 픽스처 0건 → red OK
+[selftest] lint: invalid 픽스처 0건 → red OK
+[selftest] lint: 어긴 인스턴스를 valid 로 → red OK
+[selftest] lint: 정상 인스턴스를 invalid 로 → red OK
+[selftest] lint: 진입 스키마 부재 → red OK
+[selftest] lint: common.json 부재 → red OK
+[selftest] lint: ajv 부재(설치 실패) → red OK
+[selftest] breaking: 변경 없음 → green OK
+[selftest] breaking E01: 스키마 파일 제거 → red OK
+[selftest] breaking E02: $def 제거 → red OK
+[selftest] breaking E03: 속성 제거 → red OK
+[selftest] breaking E04: required 추가 → red OK
+[selftest] breaking E05: required 제거 → red OK
+[selftest] breaking E06: enum 값 제거 → red OK
+[selftest] breaking E07: type 축소 → red OK
+[selftest] breaking E08: additionalProperties 조임 → red OK
+[selftest] breaking E09: const 변경 → red OK
+[selftest] breaking E10: maxLength 축소 → red OK
+[selftest] breaking E11: oneOf 분기 제거 → red OK
+[selftest] breaking E12: $ref 대상 변경 → red OK
+[selftest] breaking E13: format 추가 → red OK
+[selftest] breaking E14: $id 변경 → red OK
+[selftest] breaking W01: enum 값 추가(WARN) → green OK
+[selftest] breaking W02: 선택 속성 추가 → green OK
+[selftest] breaking: 제약 완화 → green OK
+[selftest] breaking: 설명 변경 → green OK
+[selftest] breaking: 이벤트 계약 0건 → red OK
+[selftest] breaking: 기준 ref 부재 → red OK
+[selftest] 케이스 33 건 (동시 2)
+event-selftest green — event-lint · event-breaking 이 틀린 것을 틀렸다고 말한다 (fail-closed 증명).

@@ -1,0 +1,6 @@
+# 배포 단위별 대상
+  ai-service       .py   14건 · deny 7개
+  core-api         .py   56건 · deny 18개
+  pipeline-worker  .py   32건 · deny 0개
+  viz-render       .py   51건 · deny 0개
+banned-import green — .py 153건, 금지 import 0.

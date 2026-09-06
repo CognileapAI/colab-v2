@@ -1,0 +1,28 @@
+EPIC             BLOCK      SOURCE                VERDICT  VER   SHA8    
+---------------  ---------  --------------------  -------  ----  --------
+E-00_공통_기반       md-policy  Policy_공통_기반.md       MATCH    1.6   d2d774f4
+E-00_공통_기반       md-prd     DataModel_공통_기반.md    MATCH    1.9   b7516c25
+E-01_역할과_권한      md-policy  Policy_역할과_권한.md      MATCH    1.4   3c3f8290
+E-02_데이터_찾기      md-policy  Policy_데이터_찾기.md      MATCH    2.1   9909cef8
+E-02_데이터_찾기      md-prd     PRD_데이터_찾기.md         MATCH    1.1   4fe6f458
+E-03_데이터셋_상세     md-policy  Policy_데이터셋_상세.md     MATCH    2.10  d2f9724b
+E-03_데이터셋_상세     md-prd     PRD_데이터셋_상세.md        MATCH    1.2   09bc2e6c
+E-04_업로드와_계보_확정  md-policy  Policy_업로드와_계보_확정.md  MATCH    2.4   ba115503
+E-04_업로드와_계보_확정  md-prd     PRD_업로드와_계보_확정.md     MATCH    1.3   7c36cb74
+E-05_프로젝트        md-policy  Policy_프로젝트.md        MATCH    1.7   576bd49f
+E-05_프로젝트        md-prd     PRD_프로젝트.md           MATCH    1.3   15ecab24
+E-06_승인_처리       md-policy  Policy_승인_처리.md       MATCH    1.7   0ac2a5a7
+E-06_승인_처리       md-prd     PRD_승인_처리.md          MATCH    1.2   746d799d
+E-07_홈_대시보드      md-policy  Policy_홈_대시보드.md      MATCH    1.7   6f673bfa
+E-07_홈_대시보드      md-prd     PRD_홈_대시보드.md         MATCH    1.3   8a05946a
+
+── 적용 상태 환류 (J-1) — 매니페스트 dev-package/prd/planning-applied.yaml ─────────
+ID               STATUS       ROUND  VERDICT  COPY                                     
+---------------  -----------  -----  -------  -----------------------------------------
+docx-260903-조성진  merged       R-A    COPIED   30_적용완료/R-A/260903_기획안에 대한 의견 정리_조성진.docx
+pdf-260826-이태헌   merged       R-A    COPIED   30_적용완료/R-A/업로드 목업 기획 피드백_260826_이태헌.pdf 
+rev1-260826-이태헌  merged       R-A    COPIED   30_적용완료/R-A/업로드_계보_260826_rev1_이태헌.html  
+rev2-260905-이태헌  in_progress  -      PENDING  -                                        
+
+# 이 게이트는 ① 문서 임베드 일치 ② 적용 상태 환류만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).
+planning-freshness green — 임베드 블록 15개 전부 원본과 일치 · 적용 상태 4건 정합.

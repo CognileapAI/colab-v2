@@ -1,0 +1,33 @@
+# 계약 gates/config/importlinter.ini · 대상 PYTHONPATH=services/ai-service/src:services/viz-render/src:services/pipeline-worker/src:services/core-api/src:
+
+[38;2;0;117;117m╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐[0m
+[38;2;0;117;117m╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │[0m
+[38;2;0;117;117m ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗[0m
+[38;2;0;117;117m ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝[0m
+[38;2;0;117;117m╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║[0m
+[38;2;0;117;117m╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝[0m
+[38;2;0;117;117m  └──▶║║                    ▲ [0m
+[38;2;0;117;117m      ╚╝────────────────────┘[0m
+
+[?25l[32m∙∙∙[0m 🧱 Building graph...[2K[32m∙∙∙[0m 🧱 Building graph...[2K[32m●∙∙[0m 🧱 Building graph...[2K[32m∙●∙[0m 🧱 Building graph...[2K[32m∙●∙[0m 🧱 Building graph...[2K[32m∙∙●[0m 🧱 Building graph...
+[?25h[1A[2K[?25l[2K🧐 Checking contracts [38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0/8[0m
+[2K[1A[2K🧐 Checking contracts [38;2;114;156;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m8/8[0m
+[2mChecking D10 은 D9 를 Port 로만 읽는다 [0m[1;2m([0m[2m직접 import 금지[0m[1;2m)[0m[2K[1A[2K🧐 Checking contracts [38;2;114;156;31m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m8/8[0m
+[?25h[1A[2K[1m---------[0m
+[1mContracts[0m
+[1m---------[0m
+
+[1mAnalyzed 153 files, 337 dependencies.[0m
+[1m-------------------------------------[0m
+
+배포 단위 4개는 서로를 import 하지 않는다 [32mKEPT[0m
+core-api 층 — app > domains > ports > kernel [32mKEPT[0m
+D2·D3·D4·D6·D8 은 서로 직접 참조하지 않는다 (Port 경유) [32mKEPT[0m
+D1(shared kernel)은 다른 도메인을 import 하지 않는다 [32mKEPT[0m
+ai-service 층 — app > d10 > ports > d9 [32mKEPT[0m
+pipeline-worker 층 — app > domains > ports > kernel [32mKEPT[0m
+viz-render 층 — app > domains > ports > kernel [32mKEPT[0m
+D10 은 D9 를 Port 로만 읽는다 (직접 import 금지) [32mKEPT[0m
+
+Contracts: 8 kept, 0 broken.
+import-boundary green — 계약 전부 통과.

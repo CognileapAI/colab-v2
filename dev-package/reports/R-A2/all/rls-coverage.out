@@ -1,0 +1,35 @@
+# 조사한 테이블 33건 (db/platform · db/ai)
+# db/platform.alembic_version_platform: RLS 면제(allow-list) — rls=off
+# db/platform.d1_account: rls=on force=on 정책=1
+# db/platform.d1_lab: RLS 면제(allow-list) — rls=off
+# db/platform.d1_lab_profile: rls=on force=on 정책=1
+# db/platform.d2_dataset_access: rls=on force=on 정책=1
+# db/platform.d2_dataset_access_grant: rls=on force=on 정책=1
+# db/platform.d2_dataset_access_request: rls=on force=on 정책=1
+# db/platform.d2_member_role: rls=on force=on 정책=1
+# db/platform.d2_permission_change: rls=on force=on 정책=1
+# db/platform.d2_permission_switch: rls=on force=on 정책=1
+# db/platform.d2_verification_request: rls=on force=on 정책=1
+# db/platform.d2_verified: rls=on force=on 정책=1
+# db/platform.d3_dataset: rls=on force=on 정책=1
+# db/platform.d3_dataset_autometa: rls=on force=on 정책=1
+# db/platform.d3_dataset_description: rls=on force=on 정책=1
+# db/platform.d3_file: rls=on force=on 정책=2
+# db/platform.d4_lineage_edge: rls=on force=on 정책=1
+# db/platform.d4_lineage_unknown: rls=on force=on 정책=1
+# db/platform.d5_pipeline_event: rls=on force=on 정책=1
+# db/platform.d5_upload: rls=on force=on 정책=1
+# db/platform.d5_upload_file: rls=on force=on 정책=1
+# db/platform.d5_upload_transfer: rls=on force=on 정책=1
+# db/platform.d5_upload_transfer_file: rls=on force=on 정책=1
+# db/platform.d6_project: rls=on force=on 정책=1
+# db/platform.d6_project_dataset: rls=on force=on 정책=1
+# db/platform.d8_activity: rls=on force=on 정책=1
+# db/platform.d8_download: rls=on force=on 정책=1
+# db/ai.alembic_version_ai: RLS 면제(allow-list) — rls=off
+# db/ai.d9_concept: RLS 면제(allow-list) — rls=off
+# db/ai.d9_concept_edge: RLS 면제(allow-list) — rls=off
+# db/ai.d9_method_term: RLS 면제(allow-list) — rls=off
+# db/ai.d9_place_alias: RLS 면제(allow-list) — rls=off
+# db/ai.d9_topic_synonym: RLS 면제(allow-list) — rls=off
+rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.

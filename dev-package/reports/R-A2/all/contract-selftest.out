@@ -1,0 +1,17 @@
+[selftest] lint: 규칙을 지킨 스펙 → green OK
+[selftest] lint: operationId 누락 → red OK
+[selftest] lint: 4xx 인라인 에러 스키마 → red OK
+[selftest] lint: ID 인라인 정의 → red OK
+[selftest] lint: nullable ID (oneOf + Ulid) → green OK
+[selftest] lint: nullable 인라인 ID → red OK
+[selftest] lint: 숫자 확신도 필드 → red OK
+[selftest] lint: 배치 승인 엔드포인트 → red OK
+[selftest] lint: seam 0건 → red OK
+[selftest] lint: spectral 부재(설치 실패) → red OK
+[selftest] breaking: 변경 없음 → green OK
+[selftest] breaking: 엔드포인트 제거 → red OK
+[selftest] breaking: 필수 파라미터 추가 → red OK
+[selftest] breaking: seam 0건 → red OK
+[selftest] breaking: docker 불능 → red OK
+[selftest] 케이스 15 건 (동시 2)
+contract-selftest green — 두 게이트 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).

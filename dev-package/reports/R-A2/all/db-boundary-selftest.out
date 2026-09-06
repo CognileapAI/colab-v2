@@ -1,0 +1,29 @@
+── 기준선 ───────────────────────────────────────────────────────────
+[selftest] 현재의 올바른 배치 (ai-service 는 db/ai 만) → green OK
+── 실제로 일어난 위반 (2026-08-25) ──────────────────────────────────
+[selftest] ai-service 소스가 COLAB_AI_CATALOG_DB_URL 를 읽는다 → red OK
+[selftest] ai-service Dockerfile 이 카탈로그 체인을 선언한다 → red OK
+[selftest] compose 가 ai-service 에 카탈로그 DB 를 물린다 → red OK
+── 반대 방향 · 그 밖의 횡단 ─────────────────────────────────────────
+[selftest] core-api 가 db/ai 에 붙는다 (반대 방향) → red OK
+[selftest] chains=[] 인 viz-render 가 DB URL 을 선언한다 → red OK
+[selftest] chains=[] 인 viz-render 에 create_engine( 이 있다 → red OK
+[selftest] 어느 체인에도 안 맞는 DB URL (분류 불가는 green 이 아니다) → red OK
+[selftest] 매니페스트에 없는 compose 서비스가 DB 를 잡는다 → red OK
+── 산문은 위반이 아니다 (거짓 red 방지) ─────────────────────────────
+[selftest] 주석·docstring 안의 옛 env 이름은 선언이 아니다 → green OK
+── fail-closed (재료가 없을 때) ─────────────────────────────────────
+[selftest] 매니페스트 부재 → red OK
+[selftest] 매니페스트 파싱 실패 → red OK
+[selftest] 매니페스트에 단위·체인이 0건 → red OK
+[selftest] compose 파일 부재 → red OK
+[selftest] 매니페스트가 가리키는 단위 디렉터리 부재 → red OK
+[selftest] 파이썬 파싱 실패 (읽지 못한 대상은 skip 이 아니다) → red OK
+[selftest] 스캔 대상 0건 (조용한 green 금지) → red OK
+[selftest] compose 의 services 가 0건 → red OK
+── compose 둘 (staging + dev · 〈342〉) ─────────────────────────────
+[selftest] 두 compose 가 다 올바르다 → green OK
+[selftest] 두 번째 compose(dev) 가 없다 — 건너뛰지 않고 red → red OK
+[selftest] dev compose 에서 ai-service 가 platform 체인에 붙는다 (횡단) → red OK
+────────────────────────────────────────────────────────────────────
+db-boundary-selftest: 전부 통과

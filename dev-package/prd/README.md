@@ -43,7 +43,7 @@
 | `rounds/R-A-2-server.md` | WU-A1 · WU-A2 · WU-A4 · WU-A13 | 완료(전건) | `p3-perm-default` · `p3-preview-guard` · `p3-summary-required` · `p3-ext-mixed` | A1 `6346648` · A2 `5c9eb7e` · A13 `02c7b2c` (등재 `PLAN-SoT §9 〈345〉`) · A4 `a32e580` (리베이스 전 `2b215f7` · 등재 `〈347〉`) |
 | `rounds/R-A-3-frontend.md` | WU-A3 · WU-A7 · WU-A8 · WU-A9 · WU-A10 | 완료 | `p3-detail-edit` · `p3-project-panels` · `p3-detail-sticky` · `p3-close-guard` · `p3-thumb-nudge` | `b2cfa4c`·`27c85f7`·`5da4f6c`·`d31b6f4`·`ac80c57` ＋ 안정화 `ddbbf9c` (등재 `PLAN-SoT §9 〈344〉`) |
 | `rounds/R-A-4-verify.md` | WU-A12 · WU-A11 · WU-A14 ＋ R-A 종료 검증 | 완료 | `p3-rev1-keep-audit` · `p3-design-audit` · `p3-part-count` | `09247df`·`2a0c53f`·`5bac941` (등재 `PLAN-SoT §9 〈343〉`) |
-| `rounds/R-A2.md` | WU-A13R · A12R · A7R · A9R · A3R · A4R | 대기 — **R-A′ rev2 증분** · spec `specs/R-A2.md` · intent `intent/2026-09-06-r-a2.md` | `integration/r-a2`(기점 `27733ba`) | — |
+| `rounds/R-A2.md` | WU-A13R · A12R · A7R · A9R · A3R · A4R | **완료 2026-09-07** — **R-A′ rev2 증분** 5/5 done · spec `specs/R-A2.md` · intent `intent/2026-09-06-r-a2.md` · 노트 `sessions/R-A2-ROUND-20260907.md` | `integration/r-a2` `596fefc` → `main` ff | 〈372〉 |
 | `rounds/R-B.md` | WU-B1 · B2 · B3 · B4 · B5 · B6 · B7 · B8 · B10 · B11 | 대기 — **R-A 병합 완료(14/14) → 4개로 쪼개기 대상** | §2 표 참조 | — |
 
 - **R-A = 14 WU**(A1~A14, 각 WU 는 정확히 한 파일에만 있다) · **R-B = 10 WU** · **별건 1**(`WU-C2` 대표 그림 저장 경로 — 라운드 없음).

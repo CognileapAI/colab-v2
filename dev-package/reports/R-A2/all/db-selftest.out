@@ -1,0 +1,61 @@
+── migration-single-head ────────────────────────────────────────────
+[selftest] migration-single-head: 두 체인 각각 선형(head 1개) → green OK
+[selftest] migration-single-head: platform 체인 head 2개 → red OK
+[selftest] migration-single-head: ai 체인 head 2개(체인별로 본다) → red OK
+[selftest] migration-single-head: 머지 리비전으로 합친 분기 → green OK
+[selftest] migration-single-head: 체인을 넘는 down_revision(§3-3) → red OK
+[selftest] migration-single-head: revision 중복 → red OK
+[selftest] migration-single-head: 리비전 순환(head 0개) → red OK
+[selftest] migration-single-head: alembic.ini 부재 → red OK
+[selftest] migration-single-head: 한쪽 체인 마이그레이션 0건 → red OK
+[selftest] migration-single-head: 체인 디렉터리 자체가 없음 → red OK
+[selftest] migration-single-head: 파싱 불가 파일(읽지 못함=red) → red OK
+[selftest] migration-single-head: revision 이 동적(정적 판정 불가) → red OK
+[selftest] migration-single-head: down_revision 미선언 → red OK
+── rls-coverage (판정 코어) ─────────────────────────────────────────
+[selftest] rls-coverage: 관례를 지킨 기준 facts → green OK
+[selftest] rls-coverage: allow-list 밖 테이블에 RLS 없음 → red OK
+[selftest] rls-coverage: ENABLE 만 하고 FORCE 안 함 → red OK
+[selftest] rls-coverage: RLS 는 켰는데 정책 0건 → red OK
+[selftest] rls-coverage: 연구실 경계 정책 이름 없음 → red OK
+[selftest] rls-coverage: 본체 테이블에 본체 정책 누락(P-34 ③) → red OK
+[selftest] rls-coverage: ai 체인 테이블 0건 → red OK
+[selftest] rls-coverage: 테이블 0건(green-by-skip 금지) → red OK
+[selftest] rls-coverage: allow-list 에만 있고 실제엔 없는 낡은 면제 → red OK
+[selftest] rls-coverage: facts 형식 오류 → red OK
+[selftest] rls-coverage: facts 파일 부재 → red OK
+[selftest] rls-coverage: allow-list 설정 부재 → red OK
+── rls-coverage · schema-diff (end-to-end, 도커 필요) ───────────────
+[selftest] rls-coverage(e2e): 관례대로 만든 스키마 → green OK
+[selftest] rls-coverage(e2e): RLS 없는 새 테이블 → red OK
+[selftest] rls-coverage(e2e): FORCE 누락은 엔진으로만 보인다 → red OK
+[selftest] rls-coverage(e2e): 뒤에서 FORCE 를 다시 끈 경우(grep 으로는 못 본다) → red OK
+[selftest] rls-coverage(e2e): schema.sql 0건 → red OK
+[selftest] rls-coverage(e2e): 적용되지 않는 스키마 → red OK
+           ::gate-readiness-failure::gate=rls-coverage|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] rls-coverage(e2e): 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] schema-diff: 선언 스키마 0건 → red OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_PLATFORM (db/platform) · COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_PLATFORM (db/platform)      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세
+[selftest] schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언) → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=체인별 적용 DB URL (구 변수 COLAB_APPLIED_DB_URL 만 있다)|detail=COLAB_APPLIED_DB_URL 은 더 이상 쓰지 않는다 — 어느 체인의 DB 인지 알 수 없다.    db/platform 과 db/ai 는 마이그레이션 체인이 분리된 **서로 다른 DB** 다 (CLAUDE.md §3-3).    한 URL 을 두 체인에 갖다 대면 한 체인만 실제로 검사된다 — 조용히 검사 범위가 줄어드는 게 최악이다.    → COLAB_APPLIED_DB_URL_PLATFORM 과 COLAB
+[selftest] schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red) → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세는 dev-package/sessions/D3-db.md §3.
+[selftest] schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다) → red(준비·입력미선언) OK
+[selftest] schema-diff: 적용 DB 접속 불가 → red OK
+           ::gate-readiness-failure::gate=schema-diff|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] schema-diff: 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] schema-diff(e2e): 두 체인 모두 선언 = 적용 → green OK
+[selftest] schema-diff(e2e): 체인별 URL 을 서로 바꿔 지정 → red OK
+[selftest] schema-diff(e2e): ai 체인만 드리프트(platform 은 일치) → red OK
+[selftest] schema-diff(e2e): platform 체인만 드리프트(ai 는 일치) → red OK
+           ::gate-readiness-failure::gate=schema-diff|cause=입력미선언|missing=COLAB_APPLIED_DB_URL_AI (db/ai)|detail=적용 DB 가 지정되지 않았다:      - COLAB_APPLIED_DB_URL_AI (db/ai)    **DB 가 없을 때 skip 하는 것이 v1 CI 의 실패였다.** 한 체인이라도 없으면 red 다.    CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를 alembic 으로 upgrade head →    그 DB 의 URL 을 체인별 변수로 넘긴다. 상세는 dev-package/sessions/D3-db.md §3.
+[selftest] schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락 → red(준비·입력미선언) OK
+[selftest] 구분: rls-coverage 도커 부재 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: schema-diff 도커 부재 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: 슬롯 고갈 = 준비 실패 → red(준비) OK (exit 78 · 표식·대기대상·상한·실경과 있음)
+[selftest] 구분: 선언 스키마 0건 = 판정 실패(준비 아님) → red(판정) OK (exit 1 · 준비 표식 없음)
+[selftest] 원인: schema-diff 적용 DB URL 미선언 → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: schema-diff 구 변수만 선언(체인을 모른다) → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: autometa-loss 대조 정본 미선언 → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+[selftest] 원인: 환경 대기 = waited_for 로 찍힌다 OK (입력미선언과 섞이지 않았다)
+db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).

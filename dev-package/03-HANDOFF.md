@@ -26,6 +26,11 @@
 
 **최종 갱신** 2026-09-06 (**★ 이 회차 = R-A 라운드 `main` 병합 2단계 — 계약 동결 해제 **19차** 묶음(A5·A4·A6). ⟹ **R-A 14/14 가 `main` 에 있다.** 등재 `PLAN-SoT §9 〈346〉`·`〈347〉` · 근거 `dev-package/sessions/R-A-ROUND-20260906.md`.**)
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
+⭑ **⟨증보 2026-09-07 · R-A′ rev2 증분 마감⟩ 최종 갱신 = 2026-09-07 — R-A′ 5 WU(A13R·A12R·A7R·A9R·A3R＋A4R) 전건 done · `integration/r-a2` `596fefc` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈372〉`.**
+게이트 = 전수 `all -j 2` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `596fefc` · `dev-package/reports/R-A2/all/`).
+계약 0 · 스키마 0 · 마이그레이션 0 — 서버 변경 1건(프로젝트 이름 중복 400 · 계약 선언 집합 안) · 배포 0(dev 배포 창 별건 · 창 8-b 와 서로 막지 않는다).
+근거 = `dev-package/sessions/R-A2-ROUND-20260907.md`(WU 지도 · advisor ② 5건 · **Ted 묶음 질의 12건 §4** — 전부 코드 무변 · 차단 아님) · spec `dev-package/prd/specs/R-A2.md`.
+다음 = R-B 착수 준비 — `R-B.md` 를 4개로 쪼갬(§6) · `integration/r-b` 기점 = `main` tip · **계약 동결 해제 20차(㉯ · Ted 승인 필수)** · `WU-B3` 대장 등재(확장보기 오버레이 배경 클릭 ＋ `data-esc-layer` 의무 · 공개 범위 값 재동기 재검증 인계).
 ⭑ **⟨증보 2026-09-06 · R-A′ 준비 완료⟩ 다음 단계 = R-A′ 착수** — 워크트리 `.claude/worktrees/r-a2`(브랜치 `integration/r-a2` · 기점 `origin/main` **`27733ba` 이상** · 현재 HEAD 는 `git rev-parse HEAD` 로 읽는다 — 준비 커밋이 쌓이므로 해시를 박아 두지 않는다) · 서비스 `.venv` 4벌 Python **3.12.3** 신설 · 좁은 게이트 5종(`work-item-consistency`·`exec-bit`·`frontend-typecheck`·`frontend-test`·`service-tests-ai-service`) **green**.
 새 파이프라인 산출물 4자리 = intent `dev-package/intent/2026-09-06-r-a2.md` · spec `dev-package/prd/specs/R-A2.md` · 라운드 `dev-package/prd/rounds/R-A2.md` · PRD 사본 `dev-package/prd/PRD-260905-적용전기획.md`(2026-09-06 판본 · PRD-41~45 반영).
 대장 신규 6건 = `WU-A13R`·`WU-A12R`·`WU-A7R`·`WU-A9R`·`WU-A3R`·`WU-A4R`(`status: open` · id 규칙 = 부모 id ＋ 접미 `R` · **`done` 항목 재개봉 0**) · `work-item-consistency`·`planning-freshness` green.
