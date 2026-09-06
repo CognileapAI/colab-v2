@@ -146,74 +146,12 @@ git log --oneline -10
 
 기획 정본은 이 레포에 없다. 위치와 상태는 `planning/README.md`.
 
-## 업로드(S3) — 고칠 때 알아야 할 것
+## 9. 업로드(S3)·배포 — 규약은 경로 스코프 규칙에 있다
 
-업로드 바이트 저장이 **로컬/S3 로 갈린다** (`PLAN-SoT §9 〈337〉·〈338〉` · 운영 정본 `dev-package/S3.md`).
-로컬 개발은 local 모드(form-data→디스크)가 기본이라 AWS 없이 그대로 돈다.
+⭑ ⟨개정 2026-09-06 · 하네스 재설계 P-S⟩ 두 운영 절의 본문은 **`paths` 프런트매터가 붙은 규칙 파일**로 옮겼다.
+／ 종전 ~~이 파일에 절 두 개로 상주~~ — 문면·규약은 **한 글자도 바뀌지 않았고** 로딩 시점만 바뀌었다(해당 파일을 열 때 지연 로딩).
 
-- 분기점은 저장 Port(`ports/storage.py`)와 전송 라우트(`routes/upload_transfers.py`) 둘뿐이다.
-  s3 모드는 `COLAB_CORE_STORAGE_MODE=s3` + 버킷·리전 — 반쪽 설정은 기동이 거부된다
-- **SigV4 는 표준 라이브러리 자작이다** (`kernel/sigv4.py`) — boto3 없음. S3 API 호출에 본문이
-  있으면 `content-type: application/xml` 을 명시해야 한다 (urllib 기본값이 서명을 깨뜨린다).
-  그래서 **에뮬레이터(MinIO 등) 검증 금지** — 관대한 통과가 진짜 S3 의 403 을 숨긴다
-- **파트의 정본은 S3 ListParts 다** — 재개·완료 검증 어디서도 클라이언트 자기 보고를 믿지 않는다
-- **완결이 곧 접수다** — `completeUploadTransfer` 전에는 `d5_upload` 도 `upload.accepted` 도 없다
-- 만료 전송 정리는 **원장이 아는 것만** 지운다. 버킷 루트 스캔 금지 — 시드 lab_id 가 겹치는
-  버킷에서 남의 데이터를 지운다. 최후 백스톱은 라이프사이클 abort-7d
-- 폴더 업로드의 경로는 저장 키가 아니라 원장 메타(`relative_path`, d5→d3 승계)다 — 키 규약(생성물)은 불변
-- **다운로드는 302 가 아니라 200 티켓이다** — 브라우저 `<a href>` 는 Bearer 를 못 싣는다. 바이트 op
-  (`/downloads/{ticket}`)는 `security: []` 지만 티켓 클레임으로 `apply_scope` 를 심어 RLS 가 다시 판정한다.
-  `session_secret` 이 없으면 500 `DOWNLOAD_UNAVAILABLE`(`createSession` 과 같은 자리) — 조용한 폴백을 두지 않는다
-- AWS 검증은 콘솔 눈이 아니라 `services/core-api` 에서 `.venv/bin/python ops/s3_doctor.py` / `ops/s3_smoke.py`
-- 시크릿 키는 채팅·커밋에 절대 넣지 않는다
+- **업로드(S3)** = `.claude/rules/s3-upload.md` (`services/core-api/**`) — 저장 모드 분기 · SigV4 자작 · 에뮬레이터 검증 금지 · ListParts 정본 · 200 티켓 다운로드. 운영 정본은 `dev-package/S3.md`.
+- **배포** = `.claude/rules/deploy.md` (`infra/**`·`docs/DEPLOY*.md`·`services/core-api/ops/**`) — 깨뜨리면 안 되는 것 11 · `deploy_doctor` 14 항목 · 확장 자리. 운영 문서는 `docs/DEPLOY.md`.
+- ⛔ **데이터셋 행 삭제·`main` 배포 태그 같은 비가역 조작은 그 규칙 파일을 편 뒤에 한다** — 여기 요약만 보고 실행하지 않는다.
 
-## 배포 — 고칠 때 알아야 할 것
-
-운영 문서 `docs/DEPLOY.md` · 변경 요약 `docs/DEPLOY_HANDOVER.md` · 기계적 절차 `infra/dev/README.md`.
-**지금 서 있는 것은 dev 하나**(`d31zgpff2091oh.cloudfront.net`). prod 는 정본 `㊻` 가 ⏸ 다.
-
-### 깨뜨리면 안 되는 것 (전부 이유가 있다)
-
-1. **NAT 게이트웨이를 만들지 않는다.** 월 $45 이고 크레딧이 $120 뿐이다. EC2 가 퍼블릭 서브넷에
-   있어 IGW 로 직접 나가고, RDS 는 밖으로 나갈 일이 없다.
-2. **EC2 env 에 AWS 액세스 키를 넣지 않는다.** IAM 역할이 IMDSv2 로 임시 자격증명을 준다.
-   키를 넣으면 공급자 사슬이 **그것을 먼저 집어** 역할이 무의미해지고 프리사인드 TTL 클램프도
-   함께 죽는다. **IMDSv2 홉 제한은 `2`** 다 — 앱이 컨테이너 안에서 돌아 한 번 더 건넌다.
-3. **CloudFront 를 걷어내지 않는다.** 도메인이 없어 HTTPS 를 주는 유일한 수단이다. HTTPS 가
-   없으면 폴더 드롭이 보안 컨텍스트 밖이라 **폴더가 낱개 파일로 조용히 접힌다.** 로컬은
-   `localhost` 라 보안 컨텍스트가 잡혀 **개발 중엔 안 보인다.**
-4. **`/api/*` 동작의 원본 요청 정책을 `AllViewer` 에서 내리지 않는다.** `Authorization` 헤더가
-   잘려 전량 401 이 된다. **캐시도 켜지 않는다** — API 응답이 남에게 나간다.
-5. **`index.html` 에 긴 캐시를 걸지 않는다.** 배포해도 옛 화면이 계속 보인다. 해시가 붙은
-   `assets/*` 만 `immutable` 이다.
-6. **설정에 관대한 기본값을 도입하지 않는다.** 필수값이 없으면 **기동에 실패하는 것이 의도된
-   동작**이다. 기본값이 있으면 설정을 빠뜨린 채 뜨고, 그게 제일 찾기 어렵다.
-7. **배포 환경의 저장 모드를 로컬 파일로 바꾸지 않는다.** 업로드가 성공한 것처럼 보이면서
-   바이트가 **EC2 디스크에만 쌓인다** — 재배포로 사라지고 `pg_dump` 에도 스냅샷에도 안 들어간다.
-   **로컬은 local 이 정상이고 배포는 s3 가 정상이다.**
-8. **DB 와 저장 백엔드를 따로 바꾸지 않는다.** 환경을 옮길 때는 env 파일을 **통째로 바꿔 끼운다.**
-   한쪽만 바꾸면 dev 작업이 prod 버킷을 오염시키거나 DB 가 없는 객체를 가리킨다.
-9. **정리 잡·백업을 앱 안의 백그라운드 태스크로 옮기지 않는다.** 워커가 여럿이면 중복 실행된다.
-   cron 이 맞다. `pg_dump` 클라이언트는 서버 버전(16) **이상**이어야 한다.
-10. **백업은 `colab_backup` 롤로 뜬다.** RLS 가 FORCE 라 소유자도 정책에 걸리고, 경계가 없으면
-    `current_lab_id()` 가 NULL 이라 **어떤 롤도 전수를 못 읽는다**(RDS 마스터조차).
-    ⚠ 그 자격이 새면 연구실 경계가 통째로 뚫린다.
-    ⭑ **⟨증보 2026-09-06 · `〈363〉`⟩ 읽기 전용 계수의 정본은 API `listDatasets` 또는 `colab_backup` 롤이다.**
-    경계 없이 `colab_app` 으로 세면 **행이 있어도 0 으로 보인다** — 그것을 「비어 있다」로 읽어
-    실제로 틀린 판정을 냈다. **「없다」는 경계가 실린 경로로만 판정한다.** 쓰기도 같다 —
-    `ops/purge_datasets.py` 는 트랜잭션 안에서 `app.current_lab` 을 먼저 걸고, 안 걸면
-    **DELETE 가 0행에 조용히 성공**한다.
-11. **데이터셋 행을 지우는 유일한 자리는 `services/core-api/ops/purge_datasets.py` 다.**
-    **고정 id 목록 ＋ `--yes-delete`** 이고 ⛔ **`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다**
-    (선례 `〈365〉`·`〈366〉`). 제품에 삭제 op 을 여는 것이 아니다 — `§5` 「범위 늘리기」다.
-
-### 고치기 전에 돌릴 것
-
-`cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev …` — 14 항목 중 어디가
-`✗` 인지가 원인의 절반이다. 인자는 `infra/dev/README.md`. **부분 실행 둘을 합쳐 green 이라 하지
-않는다** — `─ 0` 이 나온 한 번의 결과만 근거다. 증상별 진단은 `docs/DEPLOY.md §3`.
-
-### 확장하려면
-
-도메인 연결(**ACM 인증서는 반드시 us-east-1**) · prod(`docs/DEPLOY.md §5` 를 `-prod` 이름으로
-다시 실행) · CI 자동 배포(ECR 부터 — 지금은 `scp` 다). 자리는 `docs/DEPLOY.md §10` 에 있다.
