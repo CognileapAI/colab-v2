@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dev 초기 적재 매니페스트를 원천 폴더에서 다시 짓고 검증한다 (`PLAN-SoT §9 〈351〉`).
+"""dev 초기 적재 매니페스트를 원천 폴더에서 다시 짓고 검증한다 (`PLAN-SoT §9 〈356〉`).
 
 ⛔ **절대경로를 박지 않는다**(`CLAUDE.md §3-8`) — 원천 뿌리는 env 또는 인자로 받는다.
 
@@ -43,13 +43,13 @@ def named(d, names):
 GRID = "기준 격자 파일"; BODY = "본체"
 
 #: 폴더가 쓰는 짧은 이름 → **정본 주제값**. 정본은 `db/platform/schema.sql` 의
-#: `d3_dataset_description.topic` CHECK 6값이다(`PLAN-SoT §9 〈55〉`·`〈354〉`).
+#: `d3_dataset_description.topic` CHECK 6값이다(`PLAN-SoT §9 〈55〉`·`〈359〉`).
 #: ⚠ **여기서 이름을 지어내지 않는다** — CHECK 밖 값을 쓰면 core-api 가 400 을 내고
-#:   `load-seed.py` 가 첫 데이터셋에서 `Abort` 한다(그 실측이 `〈352〉`).
+#:   `load-seed.py` 가 첫 데이터셋에서 `Abort` 한다(그 실측이 `〈357〉`).
 TOPIC = {
     "강수":      "강우·강수",
     "식생":      "식생·NDVI",
-    "가뭄":      "가뭄",           # ⭑ `〈354〉` 로 새로 생긴 자리
+    "가뭄":      "가뭄",           # ⭑ `〈359〉` 로 새로 생긴 자리
     "파일 포맷": "파일 포맷 예제",  # ⭑ 같은 회차
 }
 

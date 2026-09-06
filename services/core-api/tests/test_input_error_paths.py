@@ -241,7 +241,7 @@ def test_a_topic_inside_the_db_check_set_still_passes(p2_client, sql) -> None:
 
 @pytest.mark.parametrize("topic", ["가뭄", "파일 포맷 예제"])
 def test_the_two_topics_added_in_354_pass(p2_client, topic) -> None:
-    """⭑ ⟨2026-09-06 · `〈354〉` · 마이그레이션 `0013`⟩ 어휘를 4값 → 6값으로 넓혔다.
+    """⭑ ⟨2026-09-06 · `〈359〉` · 마이그레이션 `0013`⟩ 어휘를 4값 → 6값으로 넓혔다.
 
     **왜 시험이 필요한가** — 넓힌 자리가 셋이다(DB CHECK · `routes/catalog._TOPICS` ·
     프론트 `TOPICS`). 하나만 넓히면 **DB 는 받는데 앱이 400** 이거나 그 반대가 되고,
@@ -259,7 +259,7 @@ def test_the_topic_vocabulary_matches_the_schema_declaration() -> None:
     """**두 곳에 적힌 어휘가 갈라지지 않는지 잰다** — 사본(`_TOPICS`)과 정본(schema.sql).
 
     ⚠ 이 대조가 없으면 마이그레이션만 넓히고 코드를 안 넓힌(또는 그 반대) 상태가
-    **시험 전건 green 으로 지나간다** — `〈352〉` 가 실제로 그 무늬였다.
+    **시험 전건 green 으로 지나간다** — `〈357〉` 가 실제로 그 무늬였다.
     """
     import re
 

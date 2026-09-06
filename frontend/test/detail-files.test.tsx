@@ -200,7 +200,7 @@ describe('§5 목록은 사람이 눌렀을 때 연다', () => {
     expect(calls.list).toBe(1);
   });
 
-  it('토글 낱말은 `파일 관리` 다 — 조각 목록 토글(`보기`)과 겹치지 않는다 (〈346〉)', async () => {
+  it('토글 낱말은 `파일 관리` 다 — 조각 목록 토글(`보기`)과 겹치지 않는다 (〈351〉)', async () => {
     const { source } = fakeFiles();
     mount({ files: source });
     await settle();

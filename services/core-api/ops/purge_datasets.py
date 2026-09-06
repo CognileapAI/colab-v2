@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""데이터셋 행을 **목록으로 못 박아** 지운다 — 일회성 운영 도구 (`PLAN-SoT §9 〈360〉`).
+"""데이터셋 행을 **목록으로 못 박아** 지운다 — 일회성 운영 도구 (`PLAN-SoT §9 〈365〉`).
 
 ⛔ **제품 기능이 아니다.** `deleteDataset` 은 `NOT_IMPLEMENTED_P1` 이고 이 스크립트가 그것을
 여는 것도 아니다. **바이트가 이미 없어진 데이터셋의 원장 행**(＝ 제품이 표현할 수 없는 상태)을
@@ -13,7 +13,7 @@
 
 1. ⭑ **소유자 롤은 RLS 를 우회하지 않는다.** `ops/app-role.sql` = `colab_owner … NOBYPASSRLS` 이고
    테넌트 표는 전부 **FORCE ROW LEVEL SECURITY** 다. 경계를 안 걸면 `DELETE` 가 **0행에 조용히
-   성공**한다 — `〈358〉` 이 읽기에서 당한 함정의 쓰기판이다. 그래서 트랜잭션 안에서
+   성공**한다 — `〈363〉` 이 읽기에서 당한 함정의 쓰기판이다. 그래서 트랜잭션 안에서
    `set_config('app.current_lab', <lab>, true)` 를 **먼저** 건다(`kernel/scope.GUC_LAB` 과 같은 이름).
 2. ⭑ **순서가 있다.** `d3_dataset(id)` 로 가는 진짜 FK 다섯(`d3_dataset_description`·
    `d3_dataset_autometa`·`d3_file`·`d4_lineage_edge` child/parent·`d4_lineage_unknown`)에 **CASCADE 가

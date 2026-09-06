@@ -281,7 +281,7 @@ docker run --rm --network host --env-file /tmp/op.env \
 **바이트가 이미 없어진 데이터셋의 원장 행**처럼 제품이 표현할 수 없는 상태를 운영자가 치우는 자리다.
 
 ⛔ **고정 id 목록 ＋ `--yes-delete` 없이는 돌지 않는다. `PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다.**
-선례 = `〈360〉`(준비·dry-run)·`〈361〉`(집행 114행). 자세한 가드는 파일 docstring.
+선례 = `〈365〉`(준비·dry-run)·`〈366〉`(집행 114행). 자세한 가드는 파일 docstring.
 
 ⚠ **경계를 먼저 건다** — `colab_owner` 는 `NOBYPASSRLS` 이고 표는 FORCE RLS 라
 `set_config('app.current_lab', …, true)` 가 없으면 **DELETE 가 0행에 조용히 성공**한다.

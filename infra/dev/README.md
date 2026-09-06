@@ -74,7 +74,7 @@ cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/
 
 ## 확인 — 콘솔 눈이 아니라 `deploy_doctor`
 
-> ⭑ **⟨선행 단계 · 실측 2026-09-06 · `〈356〉`-㉯⟩ `deploy_doctor` 전에 EC2 `/opt/colab-repo` 를 배포 sha 로 맞춘다.**
+> ⭑ **⟨선행 단계 · 실측 2026-09-06 · `〈361〉`-㉯⟩ `deploy_doctor` 전에 EC2 `/opt/colab-repo` 를 배포 sha 로 맞춘다.**
 > `deploy_doctor` 는 `--repo` 로 받은 트리에서 **`db/<체인>/versions`(스키마 head 대조)** 와 **`gates/tools`** 를 읽는다 —
 > 레포가 낡으면 ⑥⑦ 이 **옛 head 를 정답으로 삼아** 조용히 틀린다.
 > ⛔ **EC2 에 `git` 이 없다**(AL2023 최소 설치). 그래서 개발 기계에서 tar 로 민다:

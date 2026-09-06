@@ -142,7 +142,7 @@ describe('§8 열 메뉴', () => {
     );
   });
 
-  it('주제 값 목록은 잠긴 어휘(`〈55〉`·`〈354〉`) 밖으로 나가지 않는다 — 미분류 행은 값을 만들지 않는다', async () => {
+  it('주제 값 목록은 잠긴 어휘(`〈55〉`·`〈359〉`) 밖으로 나가지 않는다 — 미분류 행은 값을 만들지 않는다', async () => {
     renderCatalog();
     await settle();
     await click(screen.getByRole('button', { name: '주제' }));
@@ -150,7 +150,7 @@ describe('§8 열 메뉴', () => {
     const values = within(menu)
       .getAllByRole('menuitemcheckbox')
       .map((el) => el.textContent!.replace(/\s*\(\d+\)\s*$/, '').trim());
-    // ⛔ 목록을 여기 다시 적지 않는다 — 두 곳에 적으면 갈라진다(`〈354〉` 가 넓힌 자리).
+    // ⛔ 목록을 여기 다시 적지 않는다 — 두 곳에 적으면 갈라진다(`〈359〉` 가 넓힌 자리).
     expect(values.every((v) => (TOPICS as readonly string[]).includes(v))).toBe(true);
   });
 

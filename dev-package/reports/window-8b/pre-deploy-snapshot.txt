@@ -3,7 +3,7 @@
 
 [인스턴스]
   instance-type = t4g.small   (EC2 IMDS 실조회 · vCPU 2)
-  ⟹ 진입조건 ㉣ 는 안 선다. Ted 완화 판정 = §9 〈344〉.
+  ⟹ 진입조건 ㉣ 는 안 선다. Ted 완화 판정 = §9 〈349〉.
 
 [컨테이너 — docker ps]
   colab_v2_dev_viz_render       Up 3 days (healthy)  colab-v2/viz-render:dev       127.0.0.1:8100->8100
@@ -23,7 +23,7 @@
 [커널 OOM 기록 — dmesg -T | grep]
   [2026-09-02 13:29:02] Memory cgroup out of memory: Killed process 1489286 (python)
                         total-vm 1936388kB · anon-rss 649956kB · UID 10001
-  ⟹ 최근 5일 1건. 〈344〉-㉱ 규칙 = ⑸ 중 OOM 재발이면 멈추고 보고.
+  ⟹ 최근 5일 1건. 〈349〉-㉱ 규칙 = ⑸ 중 OOM 재발이면 멈추고 보고.
 
 [현재 배포 sha — /opt/colab-v2/CURRENT_SHA]
   30b3f08f4e81
@@ -63,5 +63,5 @@
 
 [AWS CLI 권한 — 이 레인의 IAM]
   aws sts get-caller-identity            성공  user/colab-platform-s3-uploader-dev
-  aws support describe-severity-levels   AccessDenied      ⟹ ㉢ 유료 전환 = 미확인(〈345〉)
+  aws support describe-severity-levels   AccessDenied      ⟹ ㉢ 유료 전환 = 미확인(〈350〉)
   aws ec2 describe-instances             UnauthorizedOperation  ⟹ 인스턴스 타입은 IMDS 로 쟀다
