@@ -70,7 +70,9 @@ function makeFile(name: string, size = 1024): File {
 }
 
 /** 접수는 되지만 **분석이 아직 안 끝난** 업로드를 만들 수 있는 가짜 출처. */
-function fakes(over: { ready?: boolean } = {}) {
+function fakes(
+  over: { ready?: boolean; failure?: boolean; projectRows?: { projectId: string; name: string; type: string }[] } = {},
+) {
   const ready = over.ready ?? true;
   const status: Schemas['UploadStatus'] = {
     uploadId: UPLOAD_ID,
@@ -81,7 +83,9 @@ function fakes(over: { ready?: boolean } = {}) {
     renderable: true,
     metadataComplete: true,
     expiresAt: '2026-08-24T00:00:00Z',
-    failure: null,
+    failure: over.failure
+      ? ({ code: '읽기 실패', message: '파일을 읽지 못했어요' } as never)
+      : null,
   } as Schemas['UploadStatus'];
 
   const upload: UploadSource = {
@@ -119,7 +123,8 @@ function fakes(over: { ready?: boolean } = {}) {
     },
   } as unknown as PreviewSource;
 
-  const projects: ProjectSource = { async list() { return []; }, async create() { return { projectId: 'P', name: 'x', type: '논문' }; } } as unknown as ProjectSource;
+  const projectRows = over.projectRows ?? [];
+  const projects: ProjectSource = { async list() { return projectRows; }, async create() { return { projectId: 'P', name: 'x', type: '논문' }; } } as unknown as ProjectSource;
   const lineage = {} as LineageSource;
   return { upload, preview, projects, lineage } as UploadSources;
 }
@@ -176,6 +181,12 @@ describe('PRD-39 ① — 파일 분석 3단계 표시와 완료 전 `다음` 비
     expect(box).not.toHaveAttribute('data-stage', '3');
   });
 
+  it('접수가 실패하면 단계 표시를 걷는다 — 화면이 진행 중과 실패를 함께 말하지 않는다', async () => {
+    await openModal(fakes({ ready: false, failure: true }));
+    await dropFiles([makeFile('a.nc')]);
+    expect(screen.queryByTestId('up-analyze')).toBeNull();
+  });
+
   it('분석이 안 끝났으면 `다음` 이 비활성이고, 끝나면 눌린다', async () => {
     await openModal(fakes({ ready: false }));
     await dropFiles([makeFile('a.nc')]);
@@ -205,6 +216,19 @@ describe('PRD-39 ② — 모달 어디에 놓아도 파일을 받는다', () => 
     fireEvent.drop(body, { dataTransfer: { files: [makeFile('b.nc')], items: [] } });
     await act(async () => {});
     expect(await screen.findByTestId('up-files')).toHaveTextContent('b.nc');
+  });
+
+  it('드롭존 라벨에 놓으면 **한 번만** 받는다 — 문서 핸들러와 이중 수신하지 않는다', async () => {
+    await openModal(fakes());
+    fireEvent.drop(screen.getByTestId('up-drop'), {
+      dataTransfer: { files: [makeFile('a.nc')], items: [] },
+    });
+    await act(async () => {});
+    const list = await screen.findByTestId('up-files');
+    expect(list).toHaveTextContent('a.nc');
+    // 두 벌 접수되면 본체가 2건이 되어 조각 묶음이 선다
+    expect(screen.queryByTestId('up-bundle')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'a.nc 빼기' })).toHaveLength(1);
   });
 
   it('모달이 닫히면 전역 드롭을 더 받지 않는다 — 리스너를 걷는다', async () => {
@@ -239,6 +263,30 @@ describe('PRD-39 ③ — 파일을 빼면 즉시 반영되고 초기화를 알�
     await act(async () => {});
     expect(screen.getByTestId('up-files')).not.toHaveTextContent('c.nc');
     expect(screen.getByTestId('up-removed-toast')).toHaveTextContent(FILE_REMOVED_NOTICE);
+  });
+
+  it('파일을 빼면 고른 프로젝트도 함께 내린다 — 고지가 말한 그대로다', async () => {
+    await openModal(
+      fakes({ projectRows: [{ projectId: 'PJ1', name: '낙동강 과제', type: '국가과제' }] }),
+    );
+    await dropFiles([makeFile('a.nc'), makeFile('c.nc')]);
+    fireEvent.click(screen.getByTestId('reg-open'));
+    await screen.findByTestId('reg-steps');
+    fireEvent.click(screen.getByTestId('reg-next'));
+    await act(async () => {});
+    fireEvent.click(screen.getByRole('button', { name: '+ 추가' }));
+    await act(async () => {});
+    expect(screen.getAllByTestId('reg-proj-row-name')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: '조각 2개 모두 보기' }));
+    fireEvent.click(screen.getByRole('button', { name: 'c.nc 빼기' }));
+    await act(async () => {});
+
+    fireEvent.click(screen.getByTestId('reg-open'));
+    await screen.findByTestId('reg-steps');
+    fireEvent.click(screen.getByTestId('reg-next'));
+    await act(async () => {});
+    expect(screen.queryAllByTestId('reg-proj-row-name')).toHaveLength(0);
   });
 
   it('마지막 파일을 빼면 놓기 전 상태로 돌아간다 — 등록 카드도 걷힌다', async () => {

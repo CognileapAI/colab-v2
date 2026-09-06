@@ -95,6 +95,8 @@ export const EDIT_CANCELED = '편집을 취소했어요';
 export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
 /** 상세 계보 모달에서 부모를 더했을 때 — rev1 `H-46` 축자 (PRD-31). 담는 WU 가 여기서 부른다. */
 export const PRE_LINEAGE_ADDED = '가공 전 데이터를 추가했어요. 직접 연결로 남아요';
+/** 업로드 장면1 파일 빼기 고지 — rev1 `removeFile()` 축자 (PRD-39 ③). */
+export const FILE_REMOVED_NOTICE = '파일을 뺐어요. 입력하던 내용은 사라져요';
 
 /* ── PRD-43 표 그 자체 ──────────────────────────────────────────────── */
 
@@ -157,5 +159,5 @@ export const FIXED_COPY: readonly string[] = [
   THUMB_REPLACED, THUMB_RESTORED, LINK_REMOVED, LINK_ADDED, UNRECORDED_ON, UNRECORDED_OFF,
   PROJECT_UNPICKED, QUICK_PROJECT_NOTE, STAGE_TOO_HIGH, PICK_TARGET_FIRST, BACK_TO_ORIGIN,
   LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED,
-  MIXED_EXTENSION_NOTICE, PRE_LINEAGE_ADDED,
+  MIXED_EXTENSION_NOTICE, PRE_LINEAGE_ADDED, FILE_REMOVED_NOTICE,
 ];

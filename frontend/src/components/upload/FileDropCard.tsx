@@ -162,9 +162,16 @@ export function FileDropCard(props: {
         <label
           className="dropzone"
           data-testid="up-drop"
-          onDragOver={(e) => e.preventDefault()}
+          // ⚠ **버블을 여기서 멈춘다** — 모달이 `document` 에도 같은 드롭을 받는다
+          //    (`UploadModal.tsx` ②). 멈추지 않으면 라벨에 놓은 파일이 두 번 접수돼
+          //    서버에 두 벌 가고 조각 묶음이 거짓으로 선다.
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onDrop={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             void collectDrop(e.dataTransfer).then((dropped) => {
               if (dropped.length === 0) return;
               const paths = new Map(

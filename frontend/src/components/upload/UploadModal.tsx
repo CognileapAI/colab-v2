@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import { Toast } from '../common/Toast';
-import { ANALYZED_CHIP, ANALYZING_CHIP } from '../common/toastCopy';
+import { ANALYZED_CHIP, ANALYZING_CHIP, FILE_REMOVED_NOTICE } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
@@ -58,8 +58,11 @@ export const ANALYZE_STAGES = [
   '분석 완료 · 확장자와 용량을 읽었어요',
 ] as const;
 
-/** ③ 파일 빼기 고지 — rev1 `removeFile()` 축자. */
-export const FILE_REMOVED_NOTICE = '파일을 뺐어요. 입력하던 내용은 사라져요';
+/**
+ * ③ 파일 빼기 고지 — 문면의 자리는 `common/toastCopy.ts` 하나다 (PRD-43).
+ * 여기서는 이미 이 이름으로 부르던 곳을 위해 다시 내보내기만 한다.
+ */
+export { FILE_REMOVED_NOTICE };
 
 /** 파일명에서 데이터셋 이름 초안을 만든다 (`Policy §5` — 기본값 = 파일명에서 생성). */
 function nameFromFile(fileName: string): string {
@@ -406,6 +409,15 @@ export function UploadModal(props: {
     setIntakeError(null);
     setRendered(null);
     setGridSkipped(false);
+    // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
+    // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
+    // 화면이 고지와 다른 말을 한다.
+    setStartParts({ ...EMPTY_PARTS });
+    setEndParts({ ...EMPTY_PARTS });
+    setProjects([]);
+    setLineage(null);
+    setLineageParents([]);
+    setTransfer(null);
   }
 
   /**
@@ -685,7 +697,7 @@ export function UploadModal(props: {
 
           {/* ① 파일 분석 3단계 — 바이트 진행 바가 못 말하는 구간을 말한다 (rev1 `pbStatus`).
               단계는 **화면이 실제로 아는 사실**에서만 온다: 접수 전 / 접수됨·미준비 / 준비됨. */}
-          {picked.length > 0 && (
+          {picked.length > 0 && !status?.failure && !intakeError && (
             <div
               className="up-analyze"
               data-testid="up-analyze"
