@@ -1,0 +1,66 @@
+창 R-A — dev(AWS) 배포 사전점검 (read-only · 쓰기 0)
+측정 2026-09-06 · 호스트 ec2-user@<dev EIP> · 레인 lane-deploy-ra · 대상 HEAD b0671f8
+
+⛔ 판정 = **배포 중단(no-go)**. 지시받은 배포 대상 b0671f8 은 dev 현재 배포분보다 **뒤**다.
+   아래 [계보]·[alembic] 두 실측이 근거다. 1단계의 backup·build·ship 은 **집행하지 않았다**.
+
+[AWS 자격 — aws sts get-caller-identity]
+  Account 606175197146 · user/colab-platform-s3-uploader-dev   (8-b 와 같은 IAM)
+
+[크로스빌드 준비 — docker buildx ls]
+  default/default running v0.28.0 · PLATFORMS 에 linux/arm64 있음  ⟹ QEMU 등록 유효
+
+[EC2 실측]
+  CURRENT_SHA        = 20b3715d1db0        ⭐ (지시문 가정 ea036c50c921 아님)
+  디스크 df -h /      = 20G 중 13G 사용 · **여유 7.1G** (임계 3G 위 — prune 불필요)
+  메모리 free -m      = total 1841 · used 579 · free 469 · available 1097
+  컨테이너 docker ps  = core_api · pipeline_worker · viz_render · ai_service — **4/4 healthy** (Up 32분)
+
+[계보 — git]
+  git merge-base b0671f8 20b3715d1db0  =  b0671f8
+  ⟹ **b0671f8 은 20b3715d1db0 의 조상이다.** dev 는 main 보다 **1 커밋 앞**을 돌고 있다.
+     20b3715 = 「창 9 개시 — dev 트리거 스풀 ＋ ai 주제 동의어 6값 ＋ 매니페스트 원천 표기」
+     소속 브랜치 = integration/w9-dev-deploy (origin 에도 있음)
+  ⟹ b0671f8 배포는 **전진 배포가 아니라 되돌리기**다.
+
+  git diff --stat 20b3715d1db0..HEAD -- db/ contracts/ services/ frontend/
+    db/ai/schema.sql                       |  6 +--
+    db/ai/seed/topic_synonym_six.sql       | 41 ---------------
+    db/ai/versions/0006_topic_vocab_six.py | 96 ----------------------------------
+    3 files changed, 1 insertion(+), 142 deletions(-)
+  ⟹ main 으로 가면 **ai 마이그레이션 0006 이 사라진다**(추가가 아니라 삭제다).
+
+[alembic 실측 — 컨테이너 안에서 read-only SELECT · 쓰기 0]
+  colab_platform · alembic_version_platform = **0014_merge_ra1_and_topic_vocab**
+     ⟹ ⭐ 지시문이 「이번에 적용한다」고 본 0013·0014 는 **이미 적용돼 있다.** migrate-platform 은 no-op.
+  colab_ai      · alembic_version_ai       = **0006_topic_vocab_six**
+     ⟹ ⛔ 이 리비전 파일은 b0671f8 트리에 **없다**(main 의 ai 최신은 0005_k2b_concept_graph_seed).
+        20b3715 의 0006 은 down_revision = 0005_k2b_concept_graph_seed 로 확인.
+
+  로컬 트리 head — db/platform/versions: 0014_merge_ra1_and_topic_vocab (지시문 기대와 일치)
+                   db/ai/versions      : 0005_k2b_concept_graph_seed
+
+[⛔ 차단 사유 1 — up.sh 가 fail-closed 로 죽는다]
+  infra/dev/up.sh:16  dc --profile migrate run --rm migrate-ai
+  migrator 이미지는 빌드 시점 트리의 db/ai/versions 를 굽는다. b0671f8 로 빌드하면 0006 이 없다.
+  DB 는 0006_topic_vocab_six 로 stamp 돼 있으므로 alembic 이 리비전을 못 찾고 죽는다
+  ("Can't locate revision identified by '0006_topic_vocab_six'").
+  up.sh 는 마이그레이션이 `up -d` 앞의 경성 관문이라 **컨테이너가 아예 안 뜬다.**
+  ⟹ 「0013·0014 적용」이라는 2단계 전제 자체가 실물과 다르다.
+
+[⛔ 차단 사유 2 — 8-b 의 red ⓐ 가 되살아난다]
+  COLAB_VIZ_TRIGGER_SPOOL — infra/dev/compose.yml 에 20b3715 는 **2회 있고**, b0671f8 은 **0회**.
+  8-b lane-report §4 ⓐ 의 red 원인이 바로 이 변수 부재다. b0671f8 배포 = 그 고침을 도로 뺀다.
+
+[집행하지 않은 것 — 이유]
+  B 사전 백업 · C build · D ship · doctor 기준선  — 전부 **미집행**.
+  대상 sha 가 재판정돼야 하므로(되돌리기 여부는 Ted 판정 사안), 약 50분짜리 arm64 크로스빌드와
+  DB 스냅샷을 먼저 태우지 않았다. ⛔ 원격에 쓰기 0 · DB 변경 0 · 이미지 변경 0.
+
+[선택지 — 오케스트레이터·Ted 판정 자리]
+  ㉮ 배포 취소. dev 는 이미 main 을 포함한 20b3715 를 돌고 있고 4/4 healthy — 「R-A 배포」의
+     실질(0013·0014 ＋ R-A 14 WU)은 **이미 dev 에 서 있다**. 확인만 하면 된다(doctor 1회).
+  ㉯ 배포 대상을 20b3715d1db0(또는 origin/integration/w9-dev-deploy 최신)으로 **올려** 잡는다.
+  ㉰ 굳이 b0671f8 로 되돌리려면 ai 체인 downgrade 가 선행돼야 한다 — 0006 은 시드가 든 판이라
+     downgrade 가 값을 잃는다(infra/dev/README.md 「되돌리기」: 마이그레이션은 되돌리지 않는다).
+     ⟹ 권고하지 않는다.
