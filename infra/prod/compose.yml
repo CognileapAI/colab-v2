@@ -1,4 +1,4 @@
-# infra/prod — AWS prod 환경의 EC2 한 대 위 compose (`PLAN-SoT §9 〈343〉` · dev 판 `../dev/compose.yml` 의 사본).
+# infra/prod — AWS prod 환경의 EC2 한 대 위 compose (`PLAN-SoT §9 〈372〉` · dev 판 `../dev/compose.yml` 의 사본).
 #
 # ⚠ **dev 를 파라미터화하지 않고 복사했다.** 아래 「저장 모드·버킷·리전은 리터럴이다」가 그 이유다 —
 #    한 파일을 두 환경이 공유하면 그 「빠뜨림」이 **dev 작업 중 prod 를 오염시킬 자리**가 된다
