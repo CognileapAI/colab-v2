@@ -24,7 +24,7 @@ import { apiFileSource } from '../components/detail/fileSource';
 import { useDatasetDetail } from '../components/detail/useDatasetDetail';
 import { useDatasetEdit } from '../components/detail/useDatasetEdit';
 import { DatasetEditEntry } from '../components/detail/DatasetEditEntry';
-import { DatasetEditForm } from '../components/detail/DatasetEditForm';
+import { DatasetEditActions, DatasetEditForm } from '../components/detail/DatasetEditForm';
 import { defaultDatasetUpdateSource } from '../components/detail/updateSource';
 import type { DatasetUpdateSource } from '../components/detail/updateSource';
 import type { DetailSource, FileSource } from '../components/detail/types';
@@ -97,7 +97,14 @@ export function DatasetDetailPage(
   );
   const edit = useDatasetEdit(updateSource, detail.status === 'ready' ? detail.detail : null);
   // 저장 중에는 낙관값이, 저장 뒤에는 **서버가 돌려준 상세**가 여기 선다.
+  // ⭑ **⟨WU-A3R⟩ 판정도 이 값에서 읽는다** — 종전에는 다운로드 관문·파일 목록이 처음 읽은
+  //    `detail.detail.actions` 를 봤고, 저장 응답이 `actions` 를 바꿔도 화면이 옛 판정으로
+  //    남았다(새로고침해야 맞았다). 헤더 칩·공개 범위 설명과 같은 상세에서 와야 한다.
   const shown = edit.detail;
+  /** 편집 중 행동 두 개 — 다운로드가 서 있던 자리를 받는다 (PRD-22 각주 2 ⑴). */
+  const editActions = (
+    <DatasetEditActions saving={edit.saving} onSave={edit.submit} onCancel={edit.cancel} />
+  );
 
   // 「내가 열어 본 것」 — **브라우저에만 적는다** (`Policy_홈_대시보드 §10` · WU-P7).
   // 서버로 보내는 경로가 여기 없는 것이 그 조항의 실물이다. 홈의 최근 활동이 이 값을 읽는다.
@@ -185,9 +192,16 @@ export function DatasetDetailPage(
               />
               {/* 수정 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지 않는다
                   (`§1.3-1` 한 페이지 스크롤 · 미결-9 ⓑ). 다른 구역은 그대로 보인다. */}
-              {edit.editing ? (
-                <DatasetEditForm detail={shown} onSave={edit.save} onCancel={edit.cancel} />
+              {edit.editing && edit.draft ? (
+                <DatasetEditForm
+                  draft={edit.draft}
+                  error={edit.error}
+                  onField={edit.setField}
+                />
               ) : null}
+              {/* 잠긴 상세에는 아래 행동 줄(`dt-gridact`)이 서지 않는다 — 그때만 폼 옆에 둔다.
+                  두 자리에 동시에 그리지 않는다(같은 버튼이 둘이 되면 진입점이 갈린다). */}
+              {edit.editing && !shown.basicInfo ? editActions : null}
             </>
           }
           request={
@@ -214,18 +228,23 @@ export function DatasetDetailPage(
                 filesSource={filesSource}
               />
               <div className="dt-gridact" data-testid="detail-grid-actions">
-                {/* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
-                    (`〈339〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */}
-                <ActionGate allowed={detail.detail.actions.canDownload}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    data-testid="dt-download"
-                    onClick={downloadAll}
-                  >
-                    다운로드{/* [정본 무근거 · 〈339〉] — 카탈로그 빠른 작업의 같은 낱말 */}
-                  </button>
-                </ActionGate>
+                {/* ⭑ **⟨WU-A3R · PRD-22 각주 2 ⑴⟩ 편집 중에는 다운로드가 숨고 이 자리에
+                    `취소`/`저장` 이 온다.** 편집을 끝내면 다운로드가 그대로 돌아온다 —
+                    받는 동작과 고치는 동작을 같은 자리에서 겹쳐 두지 않는다. */}
+                {edit.editing ? editActions : (
+                  /* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
+                     (`〈339〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */
+                  <ActionGate allowed={shown.actions.canDownload}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      data-testid="dt-download"
+                      onClick={downloadAll}
+                    >
+                      다운로드{/* [정본 무근거 · 〈339〉] — 카탈로그 빠른 작업의 같은 낱말 */}
+                    </button>
+                  </ActionGate>
+                )}
                 {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이
                     없으면 그 데이터는 지도 위에 영영 못 선다 (`〈58〉-②`·`〈75〉`).
                     이미 격자가 있으면 남은 축이 없을 수 있으나, **그 판정은 서버가 한다** —
@@ -248,7 +267,7 @@ export function DatasetDetailPage(
               <FileList
                 datasetId={datasetId}
                 source={fileSource}
-                actions={detail.detail.actions}
+                actions={shown.actions}
                 onChanged={() => setReloadToken((n) => n + 1)}
               />
             </>
@@ -286,7 +305,7 @@ export function DatasetDetailPage(
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}
-          <UsageSection detail={shown} />
+          <UsageSection detail={shown} downloadHidden={edit.editing} />
         </LockedContent>
       ) : null}
     </div>

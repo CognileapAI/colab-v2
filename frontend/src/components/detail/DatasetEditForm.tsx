@@ -5,7 +5,6 @@
 //
 // ⛔ **`주제`(`topic`)는 이 폼에 없다** — 표시는 헤더 칩에 남고 편집 진입이 없다.
 //    R-B 가 그 축을 `분류` 로 갈아치우므로, 그 사이 사람이 고친 값은 이관 대조를 흐린다.
-import { useState } from 'react';
 import {
   GRANULARITIES,
   GRANULARITY_LABEL,
@@ -13,45 +12,23 @@ import {
   INTERVAL_UNITS,
   PERIOD_LABEL,
   TEXT_FIELDS,
-  draftError,
-  toDraft,
   type DatasetEditDraft,
 } from './editFields';
-import type { DatasetDetail } from './types';
 
-const SAVE_FAILED = '수정한 내용을 저장하지 못했어요.';
-
+/**
+ * ⭑ **⟨WU-A3R · PRD-22 각주 2⟩ `취소`/`저장` 은 폼 밖 — 다운로드가 있던 행에 선다.**
+ *
+ * 그래서 값·저장 중·문구는 `useDatasetEdit` 이 쥐고, 이 폼은 **그 값을 그리기만** 한다.
+ * 두 자리가 각자 상태를 들면 편집 중 화면과 버튼이 갈린다.
+ */
 export function DatasetEditForm(props: {
-  detail: DatasetDetail;
-  onSave: (draft: DatasetEditDraft) => Promise<void>;
-  onCancel: () => void;
+  draft: DatasetEditDraft;
+  error: string | null;
+  onField: (key: keyof DatasetEditDraft, value: string) => void;
 }) {
-  // **한 번만** 뜬다 — 저장 중 낙관값이 `detail` 을 바꿔도 사람이 적던 값을 덮지 않는다.
-  const [draft, setDraft] = useState<DatasetEditDraft>(() => toDraft(props.detail));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  function set<K extends keyof DatasetEditDraft>(key: K, value: string) {
-    setDraft((d) => ({ ...d, [key]: value }));
-  }
-
-  async function submit() {
-    // 비울 수 없는 칸은 **보내기 전에** 막는다 — 서버와 같은 문구를 쓴다(`ERR-001`).
-    const invalid = draftError(draft);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await props.onSave(draft);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : SAVE_FAILED);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const draft = props.draft;
+  const error = props.error;
+  const set = props.onField;
 
   return (
     <div className="dt-edit" data-testid="detail-edit-form">
@@ -153,27 +130,39 @@ export function DatasetEditForm(props: {
           {error}
         </p>
       ) : null}
+    </div>
+  );
+}
 
-      <div className="de-act">
-        <button
-          type="button"
-          className="btn btn-primary"
-          data-testid="detail-edit-save"
-          disabled={busy}
-          onClick={submit}
-        >
-          저장
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          data-testid="detail-edit-cancel"
-          disabled={busy}
-          onClick={props.onCancel}
-        >
-          취소
-        </button>
-      </div>
+/**
+ * ⭑ **⟨WU-A3R⟩ 편집 중 행동 두 개.** 다운로드가 서 있던 자리에 그대로 선다 —
+ * 편집 중에 다운로드는 DOM 에서 사라지고(P-12 와 같은 관례) 이 둘이 그 자리를 받는다.
+ */
+export function DatasetEditActions(props: {
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="de-act" data-testid="detail-edit-actions">
+      <button
+        type="button"
+        className="btn btn-primary"
+        data-testid="detail-edit-save"
+        disabled={props.saving}
+        onClick={props.onSave}
+      >
+        저장
+      </button>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        data-testid="detail-edit-cancel"
+        disabled={props.saving}
+        onClick={props.onCancel}
+      >
+        취소
+      </button>
     </div>
   );
 }

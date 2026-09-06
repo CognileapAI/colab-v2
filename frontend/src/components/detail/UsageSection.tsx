@@ -36,7 +36,15 @@ import type { DatasetDetail } from './types';
 export const ACCESS_ORIGIN_NOTE =
   '업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요.';
 
-export function UsageSection(props: { detail: DatasetDetail }) {
+export function UsageSection(props: {
+  detail: DatasetDetail;
+  /**
+   * ⭑ **⟨WU-A3R · PRD-22 각주 2 ⑴⟩ 편집 중에는 다운로드를 숨긴다.** 상세에 다운로드
+   * 진입점이 둘(기본 정보 아래 행 · 이 구역)이라, 한쪽만 숨기면 편집 중에도 받는 길이 남는다.
+   * 값의 출처 문장도 그 버튼에 딸린 줄이라 함께 접힌다.
+   */
+  downloadHidden?: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const uses = props.detail.projects ?? [];
   const files = props.detail.basicInfo?.files ?? null;
@@ -69,7 +77,7 @@ export function UsageSection(props: { detail: DatasetDetail }) {
         </ul>
       )}
 
-      {props.detail.actions.canDownload ? (
+      {props.detail.actions.canDownload && props.downloadHidden !== true ? (
         <div className="use-dl">
           <button
             type="button"

@@ -866,6 +866,35 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     }
   });
 
+  // ⭑ **⟨WU-A4R · PRD-28 수용 기준 2026-09-06 · 결정서 III-B ⓐ⟩ 좌표계 칸 보조 라벨.**
+  //    선택 항목인데 보조 라벨이 없는 칸이 짧은 값 한 줄에 남아 있지 않다.
+  it('좌표계 칸 라벨이 `좌표계 (선택)` 이다 (`변수 (선택)` 과 같은 패턴)', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await openRegister();
+    const labels = Array.from(document.querySelectorAll('label[for="reg-crs"]'));
+    expect(labels).toHaveLength(1);
+    expect(labels[0]!.textContent).toBe('좌표계 (선택)');
+    expect(document.querySelector('label[for="reg-variables"]')!.textContent).toBe('변수 (선택)');
+  });
+
+  it('짧은 값 한 줄에서 **사람이 적는 칸**의 라벨이 전부 `(선택)` 으로 끝난다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await openRegister();
+    const row = screen.getByTestId('reg-short-row');
+    // 사람이 적는 칸 = 라벨이 `for` 로 입력을 가리키는 칸. 자동 판독 칸(`격자`)은 선택 항목이
+    // 아니라 **읽기 전용**이고 `자동` 표기를 달므로 이 규율의 대상이 아니다.
+    const texts = Array.from(row.querySelectorAll('label[for]')).map((l) => l.textContent ?? '');
+    expect(texts).toHaveLength(2);
+    for (const t of texts) expect(t).toMatch(/\(선택\)$/);
+    const auto = Array.from(row.querySelectorAll('label:not([for])'));
+    expect(auto).toHaveLength(1);
+    expect(auto[0]!.textContent).toBe('격자자동');
+  });
+
   it('적은 세 값이 등록 요청에 계약 형상으로 실린다 (`#62`)', async () => {
     const { sources, calls } = fakes();
     await openModal(sources);
