@@ -246,6 +246,24 @@ RLS 가 전 행을 가린 것을 「0」으로 읽었다. 실물은 **데이터�
 
 ---
 
+## 7-a. 전 게이트 전수 — **한 번의 실행으로 `green 50 / red 0 / red(준비) 0`**
+
+로그 `gates-all-w8b.txt`(exit 0 · `-j 4` · 단독 8 · 병렬 42 · 미선언 0) · 등재 `§9 〈362〉`.
+이 전수가 덮는 것 = 마이그레이션 `0013_topic_vocab_six` · 주제 6값 · 파일 관리 토글 낱말 ·
+`ops/purge_datasets.py` 와 가드 시험 · 매니페스트·검증기 · 원장·산문 개정 **전부**.
+⟹ **Ted 의 `main` ff 판정이 볼 근거가 한 실행으로 선다.**
+
+주요 값 — `schema-diff`·`migration-single-head`·`generated-up-to-date`·`contract-lint` green ·
+`work-item-consistency` green(대장 126건 · conflict 0) ·
+`service-tests-core-api` **777** · `viz-render` **368** · `pipeline-worker` **260** · `ai-service` **130** ·
+`frontend-test` **678** · `frontend-typecheck` **0**.
+
+⚠ **준비를 먼저 세워야 했다** — 이 워크트리에 서비스 `.venv` 셋이 없었다. 없는 채로 돌리면
+그 게이트가 **red(준비)** 이고 **「전수 green」으로 세지 않는다**. `pip install -e .` 를 빠뜨린
+`core-api` 에서 `deploy_doctor` 시험 9건이 red 였던 것도 **코드 회귀가 아니라 준비 결손**이었다.
+
+---
+
 ## 8. 후속으로 남기는 것
 
 1. **런북 결손** — `deploy_doctor` 앞에 「EC2 `/opt/colab-repo` 를 배포 sha 로 맞춘다」 단계가 `infra/dev/README.md` 에 없다.
