@@ -12,13 +12,15 @@
 //   · 스스로 `focus()` 를 부르지 않는다. 부르는 쪽도 자동 포커스를 넣지 않는다.
 //
 // ⛔ 문면을 여기 적지 않는다 — 문면의 자리는 `toastCopy.ts` 하나다.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import './toast.css';
 
 /**
  * 떠 있는 시간. 한 줄을 읽는 데 드는 시간보다 길고, 다음 동작을 막지 않을 만큼 짧다.
  * 시험이 이 값을 읽어 시계를 돌린다 — 숫자를 시험에 다시 적으면 두 벌이 된다.
+ *
+ * [미확인] 레인 선택값 · 정본 없음
  */
 export const TOAST_DISMISS_MS = 4000;
 
@@ -34,16 +36,23 @@ export function Toast(props: {
   const { message, dismissMs = TOAST_DISMISS_MS, onDismiss } = props;
   const [shown, setShown] = useState(true);
 
+  // `onDismiss` 는 **의존값이 아니라 ref 로 받는다.** 부르는 쪽은 인라인 화살표를 넘기는
+  // 것이 보통이고(`FileDropCard.tsx` · `UploadModal` 은 업로드 퍼센트마다 다시 그린다),
+  // 그 함수를 의존값에 두면 부모가 다시 그릴 때마다 시계가 초기화돼 **토스트가 사라지지
+  // 않는다.** ref 는 최신 콜백을 들고 있으므로 늦게 불러도 옛 값을 잡지 않는다.
+  const cb = useRef(onDismiss);
+  cb.current = onDismiss;
+
   // **문면이 바뀌면 시계가 다시 선다.** 다시 세우지 않으면 뒤에 온 안내가 앞 안내의
   // 남은 시간만큼만 서 있다 — 마지막 안내일수록 짧게 보이는 뒤집힌 규칙이 된다.
   useEffect(() => {
     setShown(true);
     const timer = setTimeout(() => {
       setShown(false);
-      onDismiss?.();
+      cb.current?.();
     }, dismissMs);
     return () => clearTimeout(timer);
-  }, [message, dismissMs, onDismiss]);
+  }, [message, dismissMs]);
 
   if (!shown) return null;
 

@@ -110,8 +110,12 @@ describe('PRD-43 ⑵ — 21행이 한 곳에 있다', () => {
     // 남의 문장(`편집을 취소했어요. 권한은 그대로예요` · `MemberPermissionGrid.tsx:67`)이
     // 걸리고, 그것을 이 상수로 바꾸면 **다른 자리 둘이 한 문면에 묶인다** — PRD-43 이
     // 한 자리의 문면을 고칠 때 무관한 화면이 함께 바뀐다.
-    const literal = (text: string) =>
-      new RegExp(`(['"\`])${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`);
+    // 따옴표 안쪽 전체가 같은 경우 **그리고** JSX 맨몸 텍스트(`<p>문면</p>`)를 함께 센다.
+    // 맨몸 텍스트를 빼면 문면을 따옴표 없이 적은 화면이 「0건」으로 통과한다.
+    const literal = (text: string) => {
+      const esc = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(['"\`])${esc}\\1|>\\s*${esc}\\s*<`);
+    };
 
     const duplicates: string[] = [];
     for (const [path, src] of Object.entries(sources)) {
@@ -229,5 +233,34 @@ describe('PRD-43 ⑴ — 토스트는 스스로 사라지고 포커스를 뺏지
       vi.advanceTimersByTime(200);
     });
     expect(screen.queryByTestId('t-reset')).toBeNull();
+  });
+
+  it('부모가 다시 그려도 시계가 초기화되지 않는다 — `onDismiss` 인라인 화살표로 3회 재렌더', () => {
+    // 실화면(`UploadModal.tsx` 업로드 퍼센트)은 토스트가 떠 있는 동안 부모를 여러 번 다시
+    // 그린다. `onDismiss` 가 인라인 화살표면 매번 identity 가 바뀌므로, 그 값이 effect
+    // 의존값에 있으면 시계가 그때마다 다시 서고 **토스트가 사라지지 않는다.**
+    vi.useFakeTimers();
+    const dismissed: number[] = [];
+    const Parent = (p: { tick: number }) => (
+      <Toast
+        message={copy.PERIOD_CLEARED}
+        testId="t-rerender"
+        onDismiss={() => dismissed.push(p.tick)}
+      />
+    );
+    const { rerender } = render(<Parent tick={0} />);
+    for (const tick of [1, 2, 3]) {
+      act(() => {
+        vi.advanceTimersByTime(TOAST_DISMISS_MS / 4);
+      });
+      rerender(<Parent tick={tick} />);
+    }
+
+    act(() => {
+      vi.advanceTimersByTime(TOAST_DISMISS_MS / 4 + 10);
+    });
+    expect(screen.queryByTestId('t-rerender')).toBeNull();
+    // 마지막으로 받은 콜백을 부른다 — ref 가 최신값을 들고 있다는 실측.
+    expect(dismissed).toEqual([3]);
   });
 });

@@ -93,6 +93,8 @@ export const EDIT_CANCELED = '편집을 취소했어요';
 // **같은 컴포넌트를 쓴다**」. 21행에 세지 않지만 같은 자리에서 온다.
 /** 확장자 혼합 안내 — rev1 `H-37` 축자. 한 글자도 바꾸지 않는다 (PRD-32). */
 export const MIXED_EXTENSION_NOTICE = '확장자가 다른 파일은 뺐어요. 한 번에 한 종류만 묶어요';
+/** 상세 계보 모달에서 부모를 더했을 때 — rev1 `H-46` 축자 (PRD-31). 담는 WU 가 여기서 부른다. */
+export const PRE_LINEAGE_ADDED = '가공 전 데이터를 추가했어요. 직접 연결로 남아요';
 
 /* ── PRD-43 표 그 자체 ──────────────────────────────────────────────── */
 
@@ -154,5 +156,6 @@ export const FIXED_COPY: readonly string[] = [
   VIEWER_HEAD_SUFFIX, VIEWER_HINT, PERIOD_CLEARED, PERIOD_START_NEEDED,
   THUMB_REPLACED, THUMB_RESTORED, LINK_REMOVED, LINK_ADDED, UNRECORDED_ON, UNRECORDED_OFF,
   PROJECT_UNPICKED, QUICK_PROJECT_NOTE, STAGE_TOO_HIGH, PICK_TARGET_FIRST, BACK_TO_ORIGIN,
-  LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED, MIXED_EXTENSION_NOTICE,
+  LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED,
+  MIXED_EXTENSION_NOTICE, PRE_LINEAGE_ADDED,
 ];

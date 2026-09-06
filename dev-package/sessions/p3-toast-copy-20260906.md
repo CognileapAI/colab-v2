@@ -111,3 +111,24 @@ AssertionError: expected [ …(2) ] to deeply equal []
 - 21행 중 `MIXED_EXTENSION_NOTICE`(PRD-32) 외의 **화면 배선 0건** — 라운드 파일 축자대로 그 자리를 담는 WU 몫이다.
 - `contracts/` 무접촉 · Alembic head `0013` 무접촉 · `work-items.yaml` 무접촉 · `PLAN-SoT §9` 무접촉 · 〈N〉 발급 0.
 - 존치 6종 무접촉(컴포넌트·훅·서버 경로·회귀 시험). PRD-34 닫기 문면 미작성(WU-A9R). A6 달력 팝오버·확장보기 오버레이 미착수(WU-B3).
+
+## 10. advisor ② 반영 (지시문 표기 「§6」 — 이 파일의 §6 은 이미 서버 절이라 끝에 붙였다)
+
+- ① `Toast.tsx` — `onDismiss` 를 `useRef` 로 받고(`cb.current = onDismiss`) 타이머 콜백이 `cb.current?.()` 를 부른다. effect 의존값 `[message, dismissMs, onDismiss]` → `[message, dismissMs]`. 종전에는 부모가 다시 그릴 때마다(인라인 화살표 identity 변경) 시계가 초기화돼 실화면에서 토스트가 사라지지 않았다.
+- ① 시험 1건 추가 — `toast-copy-20260906.test.tsx` 「부모가 다시 그려도 시계가 초기화되지 않는다」. 인라인 화살표 `onDismiss` 로 3회 `rerender` 하며 `TOAST_DISMISS_MS/4` 씩 진행, 합계 경과 뒤 사라짐과 `dismissed == [3]`(ref 가 최신 콜백 보유)을 잰다.
+- **RED 선실측** = `toast-copy-20260906.test.tsx` 1건 실패 / 14건 통과. 실패 축자 = `expect(screen.queryByTestId('t-rerender')).toBeNull()` 에서 `data-testid="t-rerender"` 요소 잔존. **GREEN** = 두 파일 18건 통과(`toast-copy` 15 · `ext-mixed-toast` 3).
+- ② `literal()` — 따옴표 구분자에 JSX 맨몸 텍스트 패턴을 더했다: `` new RegExp(`(['"`])${esc}\1|>\s*${esc}\s*<`) ``. 재실행 결과 **새로 걸린 중복 0건** — 중복 목록은 그대로 빈 배열이다.
+- ③ `toastCopy.ts` — PRD-31 문면을 같은 절에 상수로 추가했다(`PRE_LINEAGE_ADDED = '가공 전 데이터를 추가했어요. 직접 연결로 남아요'` · 축자 원천 `PRD-260905-적용전기획.md` PRD-31). 머리 주석 「축자 2건」이 실물과 일치한다. `FIXED_COPY` 에 등재해 중복 계측 대상에 든다. 21행(`COPY_ROW_IDS`)에는 세지 않는다.
+- ④ `TOAST_DISMISS_MS` 주석에 `[미확인] 레인 선택값 · 정본 없음` 1행.
+- 게이트 (배출처 `dev-package/reports/R-A2/p3-toast-copy/` · 커밋 뒤 1회 재실행)
+
+```
+frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 810건 · 실패 0건.
+    Test Files  59 passed (59)
+         Tests  810 passed (810)
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+```
+
+- `frontend-test` 통과 건수 809 → **810**(시험 1건 증가). 시험 파일 수는 59 로 무변.
