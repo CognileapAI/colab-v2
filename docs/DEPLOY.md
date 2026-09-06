@@ -157,7 +157,7 @@ cd frontend && npm run build && cd ../services/core-api
 | CloudFront 함수 | `colab-platform-dev-spa-rewrite` | 기본 동작에 연결 |
 | S3 데이터 버킷 | `colab-platform-data-dev` | 버킷 정책이 배포 ARN 을 가리킨다 |
 | S3 웹 버킷 | `colab-platform-web-dev` | OAC |
-| EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (`t4g.small`, arm64) | 서브넷·SG·역할·EIP |
+| EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (**`t4g.medium`**, arm64) | 서브넷·SG·역할·EIP |
 | 탄력적 IP | `54.116.191.208` | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | RDS | `colab-platform-dev-db` (PG16, `db.t4g.micro`) | 서브넷 그룹·SG · **삭제 방지 ON** |
 | DB 서브넷 그룹 | `colab-platform-dev-db-subnet-group` | 프라이빗 서브넷 2 |
@@ -169,6 +169,28 @@ cd frontend && npm run build && cd ../services/core-api
 | IAM 사용자 | `colab-platform-s3-uploader-dev` + 액세스 키 1 | **로컬 도구 전용.** 키는 `~/.config/colab-platform/dev.env`(0600) · 발급 csv 백업은 저장소 **밖**(0600) |
 | 키 페어 | `colab-platform-dev-key` | |
 | 예산 | `colab-platform-credit-burn`(연 $120) · `colab-platform-monthly-usage`(월 $50) | |
+
+**⭑ dev 를 `t4g.small` → `t4g.medium` 으로 올렸다** (2026-09-06). ／ 종전 ~~`t4g.small`~~
+
+⚠ **인스턴스만 키우면 안 고쳐진다.** 실측 — 커널 OOM 4건이 **전부 `viz-render` 가 자기
+cgroup 상한(640 MiB)에 부딪힌 것**이었다(`constraint=CONSTRAINT_MEMCG` 4 · `CONSTRAINT_NONE` **0**
+⟹ 호스트 RAM 은 한 번도 안 말랐다). 상한을 그대로 두면 **3.7 GiB 에서도 똑같이 650 MB 에서
+죽는다.** `dev.env` 를 prod 와 같은 값으로 올렸다 — `CORE 512m · WORKER 768m · **VIZ 1536m** ·
+AI 384m`(합 3200m ↔ RAM 3830 MB). 종전 1792m ↔ 1843 MB 는 **여유가 0 이라 올릴 자리 자체가 없었다.**
+
+⛔ **천장은 여전히 `[미확인]`** — 「죽지 않을 여유를 줬다」이지 「viz 가 얼마까지 쓰는지 안다」가
+아니다. 큰 래스터를 한 번 돌려 재고 그 값을 적는다.
+
+**이미지 정리 — `docker image prune -a` 를 쓰지 않는다.** 되돌리기가 옛 불변 태그(`dev-<sha>`)에
+의존한다(`infra/dev/README.md`). **최근 3개 sha ＋ `:dev` 를 남기고** 오래된 셋만 걷었다:
+25개 2.178 GB → 14개 1.436 GB(**742 MB 회수**) · 디스크 65% → 62%.
+
+**유형 변경은 정지→변경→시작이고 5~10분이다.** 탄력적 IP·EBS·SG·IAM 역할·`/etc/colab` 전부
+유지되고, 컨테이너는 `restart: unless-stopped` 라 부팅 후 스스로 올라온다(실측: 38초).
+⛔ 중지할 때 **「OS 종료 건너뛰기」를 체크하지 않는다** — 전원 차단과 같아 도커 오버레이가
+어중간하게 남을 수 있다. 정상 중지가 10분 넘게 걸릴 때만 쓰는 최후 수단이다.
+⚠ 한국어 콘솔의 **「인스턴스 시작」은 둘**이다 — 목록 우측 상단의 주황색 버튼은 **새 인스턴스
+생성 마법사**다. 재시작은 인스턴스를 고른 뒤 **「인스턴스 상태 → 인스턴스 시작」**이다.
 
 **지우는 순서** — 안에서 밖으로. 순서를 어기면 「종속성이 있다」로 거부된다.
 
