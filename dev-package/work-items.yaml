@@ -2416,13 +2416,13 @@ items:
     status: open
     stage: stage1
     owner: "D5 / pipeline-worker"
-    entry_conditions: ["`I-D` dev 실측값(고아 3건 · 26,579,847 B · 2026-09-02)"]
+    entry_conditions: ["`I-D` dev 실측값(고아 3건 · 26,579,847 B · 2026-09-02)", "⭑ **prod 실측 (2026-09-06 · 첫 브라우저 한 바퀴)** — 고아 **8건 · 3.00 MB** (`uploads/01M1V05J3K…`·`uploads/01M1V0CNYA…` · 미등록 접수 2건 · `d5_upload.expires_at` 09-07). **지우지 않았다 — 이 항목의 첫 실물 시험 대상으로 둔다**(사용자 판정)"]
     depends_on: [I-D]
     completion_def: "ⓐ 만료 스윕이 원장 행과 **S3 객체를 함께** 지운다 ⓑ **S3 삭제가 실패하면 행이 남는다**(다음 바퀴 재시도 — 조용히 성공으로 세지 않는다) ⓒ **등록된 업로드는 안 건드린다** ⓓ **버킷 루트를 스캔하지 않는다 — 원장이 아는 키만**(시드 lab_id 가 겹치는 버킷에서 남의 데이터를 지운다) ⓔ 판별식(`d3_dataset`·`d5_upload`·열린 전송 **셋 다 없어야 고아**)이 시험으로 고정된다."
-    evidence: "미착수. 실측 근거만 있다 — 워커 만료가 DB 행만 지운다(`d5_ingestion.py`). dev 실측 고아 3건을 **조건문이 아니라 목록으로 고정해** 손으로 지웠다(2026-09-02)."
+    evidence: "미착수. 실측 근거만 있다 — 워커 만료가 DB 행만 지운다(`d5_ingestion.py`). dev 실측 고아 3건을 **조건문이 아니라 목록으로 고정해** 손으로 지웠다(2026-09-02). ⭑ **⟨정정 2026-09-06 · `PLAN-SoT §9 〈368〉`⟩ 「워커 만료가 DB 행만 지운다」는 절반이다** — `UploadLedgerAdapter.reap_expired`(`d5_ingestion.py:314` · `_REAP` = `DELETE FROM d5_upload`)는 **운영 코드에서 호출 0건**이다. 호출처는 테스트뿐(`test_upload_ledger_hidden.py:107,133` · `test_uploads.py:214`). 밤 크론이 부르는 `/uploads/transfers/incomplete` → `_reap_expired`(`upload_transfers.py:142,247`)는 **전송(`UploadTransferAdapter`) 용이라 다른 물건**이고 완결 전송은 안 건드린다. ⟹ 미등록 접수의 행도 바이트도 **영영 안 지워진다**. prod 실측 = 고아 8건 3.00 MB · 미리보기 `previews/` 18건 0.04 MB."
     deadline: null
-    note: "⚠ **워커의 `UploadBlobPort` 는 읽기 Port 다** — 삭제를 얹으면 Port 의 정체가 바뀐다. Port 를 하나 더할지 먼저 판단한다. ⭑ **함께 닫을 것** — 완결된 전송 원장 행이 영영 안 지워진다(`complete()` 는 도장만 찍고 만료 스윕은 `completed_at IS NULL` 만 고른다). 바이트가 아니라 **행**의 누수라 돈·용량이 안 새고, 고치려면 「완결 뒤 얼마나 두는가」를 정해야 한다."
-    sources: ["PLAN-SoT §9 〈342〉"]
+    note: "⚠ **워커의 `UploadBlobPort` 는 읽기 Port 다** — 삭제를 얹으면 Port 의 정체가 바뀐다. Port 를 하나 더할지 먼저 판단한다. ⭑ **함께 닫을 것** — 완결된 전송 원장 행이 영영 안 지워진다(`complete()` 는 도장만 찍고 만료 스윕은 `completed_at IS NULL` 만 고른다). 바이트가 아니라 **행**의 누수라 돈·용량이 안 새고, 고치려면 「완결 뒤 얼마나 두는가」를 정해야 한다. ⭑ **⟨2026-09-06⟩ 설계 제약 재확인 — 완료 정의 ⓓ 가 답이다.** 「S3 와 RDS 를 돌면서 찌꺼기를 지운다」(스캔)는 안 된다 — 객체는 있는데 행이 안 보이는 경우가 **진짜 고아 / RLS 경계 밖의 행 / 지금 올라가는 중** 셋으로 갈리고 스캔은 셋을 구별하지 못한다. **원장이 몰이꾼** — 만료 행의 키를 원장에서 뽑아 → S3 삭제 → 행 삭제. 전송 쪽 `_reap_expired` 가 이미 그 순서다. ⚠ 배선 자체가 없으므로 「부르게 하는 것」이 첫 일이다. `[미확인]` — 미리보기 산출물(`previews/`) 정리(`〈259〉` 「바뀌면 지운다」)가 실제로 도는지는 안 쟀다. 크기가 작아(0.04 MB) 급하지 않다."
+    sources: ["PLAN-SoT §9 〈342〉", "PLAN-SoT §9 〈368〉", "WORK-UNITS §11 U-2"]
 
   - id: F-3
     name: "파일 관리 — 목록·폴더 구조·다운로드·본체 변경"
