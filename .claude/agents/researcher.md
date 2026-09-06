@@ -73,13 +73,14 @@ not find is reported as not found, not as a guess.
 - 초안까지가 역할이다. **교정·커밋은 Ted 가 한다**(커밋이 곧 승인). 초안을 승인된 것처럼 인용하지 않는다.
 - 승인된 intent 는 고치지 않는다. 잔여 결함은 **새 intent 를 낸다.**
 
-## 종료 전 — 산출물 커밋 (H6)
+## 종료 전 — 산출물 커밋 (H6 · 가동 중)
 
-`SubagentStop:researcher` 훅이 `dev-package/sessions/` · `dev-package/reports/` · `dev-package/intent/` 아래 **미추적 파일**이 남아 있으면 exit 2 로 차단하고 경로를 열거한다. 종료 전에 직접 처리한다.
+`SubagentStop:researcher` 훅(`.claude/hooks/uncommitted-artifacts.sh`)이 `dev-package/sessions/` · `dev-package/reports/` · `dev-package/intent/` 아래 **미추적 파일**이 남아 있으면 exit 2 로 차단하고 경로를 열거한다. 종료 전에 직접 처리한다.
 
 - `git add <경로>` — **열거된 경로만.** `git add -A` 를 쓰지 않는다(오케스트레이터 체크아웃의 무관한 변경을 쓸어담는다).
 - 커밋 메시지는 한국어. **push 하지 않는다.** 병합·push 는 오케스트레이터 몫이다.
 - 미추적 산출물은 다음 워크트리에서 보이지 않는다 — 지시문이 근거로 지목할 파일이면 커밋이 선행조건이다(`.claude/rules/colab-rules.md` §2-2).
+- 차단 대상은 **미추적(`??`)뿐이다.** 추적 중인 수정분은 차단하지 않고 안내로만 나온다 — 커밋 여부는 판단해서 정한다.
 
 ## 출력
 

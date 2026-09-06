@@ -8,6 +8,115 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="${1:-}"
 
+# ── 게이트 요약 JSON — 스키마 `colab-gate-summary/1` (스펙 D절 · P-J) ─────────
+# 왜 있나: 3상태 요약은 **사람이 읽는 텍스트로만** 있었고, 레인 종료 검사(H7)와 전수 재실행
+#   갈음(트리 해시 대조)은 그 텍스트를 사람이 옮겨 적은 값에 기대고 있었다. 옮겨 적는 자리는
+#   언젠가 틀린다. 그래서 **같은 변수**로 기계가 읽는 한 벌을 더 배출한다.
+#
+# ⚠ **게이트 로직은 한 줄도 바뀌지 않는다.** 검사·판정·종료코드는 그대로이고, 요약이 이미 센
+#   계수를 직렬화할 뿐이다 (스펙 D 축자 「요약 블록 끝에서 같은 변수로 JSON 한 개만 더 배출한다」).
+# ⚠ 상태는 `green` / `red_판정` / `red_준비` **셋뿐이다. `SKIP` 을 만들지 않는다** — 이 레포는
+#   대상 0건을 red 로 못박았고, SKIP 은 green-by-skip 통로를 다시 여는 것이다(`CLAUDE.md §4`).
+#
+#   COLAB_GATE_REPORT_DIR   배출처. 레인이 `dev-package/reports/<회차>/<레인>` 을 준다.
+#                           상대경로는 레포 루트 기준으로 푼다. **지정하면 단독 게이트도 낸다**
+#                           (레인의 반복 검증은 전수가 아니라 단독 게이트다 — `rules §3-1`).
+#   COLAB_GATE_OUTDIR       `all` 의 산출 디렉터리. 있으면 그 안에도 같은 JSON 을 남긴다.
+#   COLAB_GATE_SUMMARY_CHILD=1
+#                           실행기가 자기를 자식으로 부를 때 세운다. 자식은 JSON 을 내지 않는다 —
+#                           한 실행의 요약은 하나다(`all` 의 자식들이 같은 파일을 덮지 않게).
+GATE_SUMMARY_NAME="gate-summary.json"
+
+summary_now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+
+summary_git_id() { # stdout = <tree><TAB><commit>. 체크아웃이 아니면 빈 칸 둘.
+  local t c
+  t="$( ( cd "$REPO_ROOT" && git rev-parse 'HEAD^{tree}' ) 2>/dev/null || true )"
+  c="$( ( cd "$REPO_ROOT" && git rev-parse HEAD ) 2>/dev/null || true )"
+  printf '%s\t%s' "$t" "$c"
+}
+
+summary_out_paths() { # $1=(선택) 산출 디렉터리 → 배출 경로들. 없으면 아무것도 찍지 않는다.
+  local d
+  if [ -n "${COLAB_GATE_REPORT_DIR:-}" ]; then
+    d="$COLAB_GATE_REPORT_DIR"
+    case "$d" in /*) ;; *) d="$REPO_ROOT/$d" ;; esac
+    printf '%s\n' "$d/$GATE_SUMMARY_NAME"
+  fi
+  [ -n "${1:-}" ] && printf '%s\n' "$1/$GATE_SUMMARY_NAME"
+  return 0
+}
+
+summary_gate_row() { # $1=이름 $2=상태 $3=종료코드 $4=준비 표식 → TSV 한 줄
+  printf '%s\t%s\t%s\t%s' "$1" "$2" "$3" "$4"
+}
+
+summary_head() { # $1=요청대상 $2=시작 $3=끝 $4=병렬도 $5~$8=계수 4개
+  printf 'meta\t%s\t%s\t%s\t%s\t%s\n' "$1" "$(summary_git_id)" "$2" "$3" "$4"
+  printf 'counts\t%s\t%s\t%s\t%s\n' "$5" "$6" "$7" "$8"
+}
+
+summary_emit() { # stdin=TSV · $@=배출 경로. 실패해도 **판정을 바꾸지 않는다**(요약줄이 정본).
+  if [ "$#" -eq 0 ]; then cat >/dev/null; return 0; fi
+  python3 "$REPO_ROOT/gates/tools/gate_summary_json.py" "$@" \
+    || echo "  ⚠ gate-summary.json 배출 실패 — 게이트 판정에는 영향이 없다(요약줄이 정본이다)."
+}
+
+gate_state_of() { # $1=종료코드 $2=준비 표식 → green|red_판정|red_준비
+  # 가르는 규칙은 아래 `all` 요약 블록의 if/elif/else 와 **같다**(78·표식·종료코드 부재 = 준비).
+  if [ "${1:-1}" = "0" ]; then echo "green"
+  elif [ "${1:-1}" = "111" ] || [ "${1:-1}" = "78" ] || [ -n "${2:-}" ]; then echo "red_준비"
+  else echo "red_판정"; fi
+}
+
+# ── 단독 게이트도 요약과 JSON 을 낸다 ────────────────────────────────────────
+# 왜: 레인의 반복 검증은 **단독 게이트**다(`rules §3-1`). H7 이 읽는 자리가 전수에만 생기면
+#   규율대로 일한 레인이 매번 「JSON 부재」로 걸린다.
+# 어떻게: 배출처가 선언된 실행에 한해 자기를 자식으로 한 번 더 부르고, 자식 출력을 **그대로
+#   흘리면서**(tee) 종료코드와 준비 표식을 받아 적는다. 종료코드는 자식 것을 그대로 낸다.
+# ⚠ 배출처가 선언되지 않은 실행(CI·손 실행)은 이 자리를 **그냥 지나간다** — 기존 동작 무변경.
+# ⚠ 이 자리는 시험용 env source **앞**이다. 뒤에 두면 `~/.colab-v2-test.env` 부재 때 부모가
+#   78 로 먼저 끝나 **JSON 이 안 나오고**, H7 은 그것을 「게이트를 안 돌렸다」로 읽는다.
+if [ -n "$GATE" ] && [ "$GATE" != "all" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}" ] \
+   && [ -n "${COLAB_GATE_REPORT_DIR:-}${COLAB_GATE_OUTDIR:-}" ]; then
+  one_started="$(summary_now)"
+  one_out="$(mktemp -t gate-one-XXXXXX)"
+  if COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$GATE" 2>&1 | tee "$one_out"; then
+    one_rc=0
+  else
+    one_rc="${PIPESTATUS[0]}"
+  fi
+  one_finished="$(summary_now)"
+  one_mark="$(grep -m1 '^::gate-readiness-failure::' "$one_out" 2>/dev/null || true)"
+  one_state="$(gate_state_of "$one_rc" "$one_mark")"
+  n_green=0; n_red_judge=0; n_red_ready=0; n_undeclared_input=0
+  echo "── 요약 ────────────────────────────────────────────────────"
+  case "$one_state" in
+    green)
+      echo "  green  $GATE"; n_green=1 ;;
+    red_준비)
+      n_red_ready=1
+      case "$one_mark" in
+        *cause=입력미선언*)
+          echo "  red(준비)  $GATE (exit $one_rc) — **검사에 필요한 입력이 선언되지 않았다.** 검사 대상은 한 건도 판정되지 않았다. ${one_mark#::gate-readiness-failure::}"
+          n_undeclared_input=1 ;;
+        *)
+          echo "  red(준비)  $GATE (exit $one_rc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${one_mark#::gate-readiness-failure::}" ;;
+      esac ;;
+    *)
+      echo "  red(판정)  $GATE (exit $one_rc) — 검사 대상이 규율을 어겼다"; n_red_judge=1 ;;
+  esac
+  echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
+  mapfile -t SUMMARY_OUTS < <(summary_out_paths "${COLAB_GATE_OUTDIR:-}")
+  { summary_head "$GATE" "$one_started" "$one_finished" 1 \
+      "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"
+    printf 'gate\t%s\n' "$(summary_gate_row "$GATE" "$one_state" "$one_rc" "$one_mark")"
+    printf 'target\t%s\n' "$GATE"
+  } | summary_emit ${SUMMARY_OUTS[@]+"${SUMMARY_OUTS[@]}"}
+  rm -f "$one_out"
+  exit "$one_rc"
+fi
+
 # ── 시험용 env 를 **실행기가 스스로 읽는다** (D2) ────────────────────────────
 # 종전에는 사람이 매 전수마다 `set -a; . ~/.colab-v2-test.env; set +a` 를 외워 쳤고, 빠뜨린
 #   회차는 red(준비) 6건으로 섰다. 그 6건은 판정이 아니라 **배선이 낸 red** 였고, 읽는 사람은
@@ -344,7 +453,7 @@ case "$GATE" in
     for s in "${members[@]}"; do
       echo "══ $s ══════════════════════════════════════════════"
       out="$(mktemp -t selftest-agg-XXXXXX)"
-      if "$REPO_ROOT/gates/run.sh" "$s" 2>&1 | tee "$out"; then src=0; else src="${PIPESTATUS[0]}"; fi
+      if COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$s" 2>&1 | tee "$out"; then src=0; else src="${PIPESTATUS[0]}"; fi
       if [ "$src" -eq 0 ] 2>/dev/null; then
         n_green=$((n_green + 1))
       elif [ "$src" = 78 ] || grep -q '^::gate-readiness-failure::' "$out" 2>/dev/null; then
@@ -422,6 +531,7 @@ case "$GATE" in
     inner=$(( ncpu / jobs_n )); [ "$inner" -ge 1 ] || inner=1
     outdir="${COLAB_GATE_OUTDIR:-$(mktemp -d -p "${TMPDIR:-/tmp}" gates-all-XXXXXX)}"
     mkdir -p "$outdir"
+    all_started="$(summary_now)"
 
     # ── 선언을 읽는다 ────────────────────────────────────────────────────────
     manifest="${COLAB_GATE_PARALLELISM_MANIFEST:-$REPO_ROOT/gates/config/parallelism.toml}"
@@ -469,7 +579,7 @@ case "$GATE" in
     run_one() { # $1=게이트 $2=안쪽 병렬도
       local g="$1" ij="$2" st
       st="$(date +%s.%N)"
-      if COLAB_GATE_JOBS="$ij" "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
+      if COLAB_GATE_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
       then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
       printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
     }
@@ -507,11 +617,14 @@ case "$GATE" in
     #   상한 연장·재시도·병렬도 축소·건너뛰기로 green 을 만들지 않는다.
     echo "── 요약 ────────────────────────────────────────────────────"
     n_green=0; n_red_judge=0; n_red_ready=0; n_undeclared_input=0
+    # 게이트별 상태는 **아래 갈래 안에서** 함께 적는다 — 계수를 올리는 그 자리다.
+    # 따로 한 번 더 판정하면 요약줄과 JSON 이 언젠가 다른 말을 한다(스펙 D 「요약줄과 일치」).
+    json_gates=()
     for g in "${ALL_GATES[@]}"; do
       grc="$(cat "$outdir/$g.rc" 2>/dev/null || echo 111)"
       rmark="$(grep -m1 '^::gate-readiness-failure::' "$outdir/$g.out" 2>/dev/null || true)"
-      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1))
-      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1))
+      if [ "$grc" -eq 0 ] 2>/dev/null; then echo "  green  $g"; n_green=$((n_green+1)); json_gates+=("$(summary_gate_row "$g" green "$grc" "")")
+      elif [ "$grc" = 111 ]; then echo "  red(준비)  $g — 종료코드가 없다(실행기가 게이트를 끝까지 돌리지 못했다)"; n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
       elif [ "$grc" = 78 ] || [ -n "$rmark" ]; then
         detail="${rmark#::gate-readiness-failure::}"
         # 원인을 표식에서 읽는다. `cause=` 가 없는 옛 표식은 환경대기다(`_pg.sh`).
@@ -522,8 +635,8 @@ case "$GATE" in
           *)
             echo "  red(준비)  $g (exit $grc) — 검사기가 못 돌았다(환경을 기다리다 못 떴다). ${detail:-사유 표식 없음}" ;;
         esac
-        n_red_ready=$((n_red_ready+1))
-      else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); fi
+        n_red_ready=$((n_red_ready+1)); json_gates+=("$(summary_gate_row "$g" "red_준비" "$grc" "$rmark")")
+      else echo "  red(판정)  $g (exit $grc) — 검사 대상이 규율을 어겼다"; n_red_judge=$((n_red_judge+1)); json_gates+=("$(summary_gate_row "$g" "red_판정" "$grc" "$rmark")"); fi
     done
     echo "  ── 계 : green ${n_green} / red(판정) ${n_red_judge} / red(준비) ${n_red_ready}"
     if [ "$n_red_ready" -gt 0 ]; then
@@ -539,6 +652,15 @@ case "$GATE" in
     if [ "${#undeclared_gates[@]}" -gt 0 ]; then
       echo "  ⚠ 병렬 안전성 **미선언** ${#undeclared_gates[@]}건 — 안전한 쪽으로 단독 실행했다: ${undeclared_gates[*]}"
     fi
+    # ── 요약 JSON — **위 계수 그대로** (스펙 D · P-J) ─────────────────────
+    # 계수는 위 루프가 센 n_green / n_red_judge / n_red_ready / n_undeclared_input 이고,
+    # 게이트별 상태는 그 루프의 같은 갈래에서 적힌 것이다 — 로그를 다시 읽지 않는다.
+    mapfile -t SUMMARY_OUTS < <(summary_out_paths "$outdir")
+    { summary_head "all" "$all_started" "$(summary_now)" "$jobs_n" \
+        "$n_green" "$n_red_judge" "$n_red_ready" "$n_undeclared_input"
+      for row in ${json_gates[@]+"${json_gates[@]}"}; do printf 'gate\t%s\n' "$row"; done
+      for g in "${ALL_GATES[@]}"; do printf 'target\t%s\n' "$g"; done
+    } | summary_emit ${SUMMARY_OUTS[@]+"${SUMMARY_OUTS[@]}"}
     [ -n "${COLAB_GATE_OUTDIR:-}" ] || rm -rf "$outdir"
     exit $rc
     ;;

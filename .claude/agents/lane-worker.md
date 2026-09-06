@@ -51,7 +51,8 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 ## 게이트 (`§3-1` · `§3-4`)
 
-- 반복 검증은 **변경 대상 서비스의 단독 게이트**로 좁힌다(예 `bash gates/run.sh service-tests-viz-render`). 전수 `all` 은 병합 직전 1회이고, 그 1회는 보통 오케스트레이터 또는 `gate-runner` 몫이다.
+- 반복 검증은 **변경 대상 서비스의 단독 게이트**로 좁힌다. 전수 `all` 은 병합 직전 1회이고, 그 1회는 보통 오케스트레이터 또는 `gate-runner` 몫이다.
+- **게이트는 배출처를 준 채 돌린다** — `COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh <게이트>`. 그러면 요약과 같은 계수로 `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 선다(스키마 `colab-gate-summary/1` · `gates/README.md`). 배출처를 빠뜨리면 JSON 이 없고, H7 은 그것을 「게이트를 돌리지 않았다」로 읽는다.
 - 게이트를 우회·비활성화하지 않는다. green 으로 만들려고 검사 대상을 줄이지 않는다.
 - red 를 **판정 red / 준비 red** 로 갈라 읽는다. 준비 red(exit 78 · `::gate-readiness-failure::`)는 환경 미구성이고, 판정 red 는 코드 결함이다. 갈라 적지 않은 계수는 보고에 쓰지 않는다.
 - 워크트리 하나에 전수 두 벌을 동시에 돌리지 않는다.
@@ -67,7 +68,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 ## 완료 조건과 보고
 
 - 완료 주장 전에 **원한 결과(proposed outcome) 대조** — 지시문·`dev-package/intent/` 의 항목 중 **미달·초과**를 열거한 뒤에만 완료라고 적는다. 초과분(요청되지 않은 추가 변경)도 적는다.
-- **P-J 이후** — `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 존재하고 `counts.red_판정 == 0` 이어야 한다. `SubagentStop:lane-worker` 훅(H7)이 부재를 exit 2 로 차단하므로, 게이트를 돌리지 않은 레인은 종료하지 못한다. 그 JSON 배출이 서지 않은 시점에는 게이트 요약 3계수(green / red(판정) / red(준비))와 로그 경로를 최종 메시지에 적는 것으로 갈음한다.
+- **종료 검사(H7 · 가동 중)** — `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 존재하고 `counts.red_판정 == 0` 이어야 한다. `SubagentStop:lane-worker` 훅이 **부재**와 **red(판정) 1건 이상**을 exit 2 로 차단한다 — 게이트를 돌리지 않은 레인은 종료하지 못한다. red(준비)는 종료를 막지 않지만 **병합 진입 조건은 판정·준비 둘 다 0** 이므로 최종 메시지에 3계수를 그대로 적는다.
 - 커밋 = 한 WU 의 한 논리적 단계. 계약과 그 소비자는 같은 커밋. 메시지는 한국어(첫 줄 무엇을, 본문 왜).
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋한다(NTFS · `core.filemode=false` · `§4-3`).
 - **최종 메시지** = ≤15행. 결론·값 → 근거 `파일:행` → 남은 위험 → 후속 항목 → `WORKTREE=… BRANCH=…`. 개조식 · 정성어 배제 · 기술 용어에 비유 금지. 산출물(커밋 메시지 · 문서 · 보고)은 한국어, 내부 추론·코드 주석은 영어 허용.

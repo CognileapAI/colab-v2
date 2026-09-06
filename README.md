@@ -61,7 +61,7 @@ colab-v2/
 
 ## 하네스 훅
 
-**이 레포를 클론하면 Claude Code 훅 5개가 같이 온다.** `.claude/settings.json` 이 **커밋돼 있기**
+**이 레포를 클론하면 Claude Code 훅 7개가 같이 온다.** `.claude/settings.json` 이 **커밋돼 있기**
 때문이고, 그것이 의도다 — 훅이 레포 이력에 있어야 코드와 함께 리뷰·롤백된다(설계 판정 J-9 ·
 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` C절). 스크립트는
 `.claude/hooks/` 에 있고 전부 사람이 읽을 수 있는 bash 다.
@@ -70,9 +70,11 @@ colab-v2/
 |---|---|---|
 | `bootstrap-diet.sh` | 세션 시작 | **안내만.** 이번 회차에 읽을 라운드 파일 하나를 찍는다 — 종전 부트스트랩 문서 5개(2.4 MB)를 대체 |
 | `worktree-setup.sh` | `lane-worker` 스폰 | **차단 없음.** 새 워크트리의 `node_modules`·서비스 `.venv`·게이트 venv 를 세우고 대장 병합 드라이버를 건다 |
-| `git-guard.sh` | Bash 실행 전 | **차단.** main/master 로 push · main 으로 강제 push · HEAD 가 main 일 때의 `git merge` · `gh pr merge` · `git branch -D main` 다섯 가지만. 비-main 브랜치의 `merge --ff-only`·기능 브랜치 push·`fetch`·`pull` 은 통과 |
+| `git-guard.sh` | Bash 실행 전 | **차단.** main/master 로 push · main 으로 강제 push · **HEAD 가 main 일 때 `--ff-only` 없는 `git merge`** · `gh pr merge` · `git branch -D main` 다섯 가지만. 비-main 브랜치의 `merge --ff-only`·**main 에서의 `merge --ff-only`(오케스트레이터의 승인된 병합)**·기능 브랜치 push·`fetch`·`pull` 은 통과 |
 | `migration-guard.sh` | Edit·Write 전 | **차단.** `origin/main` 에 **이미 있는** Alembic 마이그레이션 수정. 새 revision 은 통과 |
 | `decision-number-guard.sh` | Edit·Write 전 | **차단.** `dev-package/PLAN-SoT.md §9` 에 `origin/main` 최대 + 1 이 아닌 결정 번호 〈N〉 을 새로 쓰는 편집. 기존 번호 인용은 통과 |
+| `uncommitted-artifacts.sh` | `researcher` 종료 | **차단.** `dev-package/sessions`·`reports`·`intent` 아래 **미추적 파일**이 남아 있으면 경로를 열거하고 세운다. 자동 커밋은 하지 않는다 — `git add <경로>` 는 사람·에이전트가 직접 한다 |
+| `lane-gate-summary.sh` | `lane-worker` 종료 | **차단.** `dev-package/reports/<회차>/<레인>/gate-summary.json` **부재**(＝ 게이트를 안 돌렸다) 또는 `counts.red_판정 > 0`. 배출은 `COLAB_GATE_REPORT_DIR` 을 준 `gates/run.sh` 가 한다(`gates/README.md`) |
 
 ### 전부 끄는 법 — `COLAB_HOOKS=0`
 

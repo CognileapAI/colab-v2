@@ -11,6 +11,12 @@
 #     ⑴ main/master 로 push ⑵ `--force`/`-f` push ⑶ **HEAD 가 main/master 일 때의** `git merge`
 #     ⑷ `gh pr merge` ⑸ `branch -D main`. 비-main 브랜치에서의 `merge --ff-only` 는 **허용**」
 #
+# ⭑ ⟨개정 2026-09-06 · P-J 설계 판정⟩ **⑶ 은 `--ff-only` 가 없을 때로 좁힌다.**
+#   `main` 에서의 `git merge --ff-only <레인>` 은 오케스트레이터가 승인된 형태로 병합하는
+#   **그 명령 자체**다(`rules §4-2` · `§2-1`). 그것까지 막으면 정상 경로마다 `COLAB_HOOKS=0` 을
+#   붙이게 되고, 상시 무력화된 훅은 훅이 아니다. ff 가 아닌 병합(새 병합 커밋을 만드는 형태)은
+#   **차단 유지** — 전수 green ＋ 〈N〉 재실측을 건너뛴 이력이 `main` 에 남는 자리가 거기다.
+#   ／ 종전 ~~`main` 에서의 모든 `git merge` 차단~~(`11-merge-guards-verification.md` §2-1 ⑸).
 #   허용(exit 0)이 정상인 것 — 비-main 브랜치의 `git merge --ff-only <x>` · `git push origin <기능브랜치>`
 #   · `git fetch` · `git pull --rebase` · `git worktree …` · `git push origin --delete <기능브랜치>`
 #   · git 이 아닌 모든 명령.
@@ -183,10 +189,17 @@ while IFS= read -r seg; do
       fi
       ;;
     merge)
-      # ⑶ **HEAD 가 main/master 일 때만** 막는다. 레인 첫 줄
-      #    `git merge --ff-only <통합브랜치>` 는 비-main 브랜치에서 도는 것이 정상이고 **통과한다**.
-      if [ "$on_main" -eq 1 ]; then
-        deny "현재 브랜치가 \`$BRANCH\` 인 상태의 \`git merge\` — main 병합은 전수 green ＋ 〈N〉 재실측 뒤 오케스트레이터가 한다"
+      # ⑶ **HEAD 가 main/master 이고 `--ff-only` 가 없을 때** 막는다.
+      #    · 비-main 브랜치의 `git merge --ff-only <통합브랜치>`(레인 첫 줄) — 통과.
+      #    · main 에서의 `git merge --ff-only <레인>`(오케스트레이터의 승인된 병합) — **통과**
+      #      (⭑ 개정 2026-09-06 · P-J. 종전에는 이것도 막혔다).
+      #    · main 에서의 그 밖의 `git merge` — 차단. 새 병합 커밋이 게이트 밖에서 생긴다.
+      ff_only=0
+      for tok in "$@"; do
+        case "$tok" in --ff-only) ff_only=1 ;; esac
+      done
+      if [ "$on_main" -eq 1 ] && [ "$ff_only" -eq 0 ]; then
+        deny "현재 브랜치가 \`$BRANCH\` 인 상태의 \`git merge\`(--ff-only 없음) — main 은 전수 green ＋ 〈N〉 재실측 뒤 \`git merge --ff-only <레인>\` 로만 움직인다"
       fi
       ;;
     branch)

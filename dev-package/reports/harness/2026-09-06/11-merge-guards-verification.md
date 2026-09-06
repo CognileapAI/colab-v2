@@ -43,20 +43,25 @@ README 킬스위치) · **K절**(문서 인용 검증 V1~V4 · 미검증 1). 규
 | ⑵ | H3 | `git push origin HEAD:refs/heads/main` | **2** | 〃 (refspec 목적지를 `refs/heads/` 까지 풀어 본다) |
 | ⑶ | H3 | `git push --force-with-lease origin main` | **2** | main/master 로 강제 푸시 — 남의 커밋을 덮는다 |
 | ⑷ | H3 | HEAD 가 `main` 인데 refspec 없는 `git push` | **2** | 현재 브랜치가 `main` 인데 refspec 없는 push |
-| ⑸ | H3 | HEAD 가 `main` 일 때 `git merge --ff-only lane` | **2** | main 병합은 전수 green ＋ 〈N〉 재실측 뒤 오케스트레이터가 한다 |
+| ⑸ | H3 | HEAD 가 `main` 일 때 `git merge lane`(**`--ff-only` 없음**) | **2** | main 은 전수 green ＋ 〈N〉 재실측 뒤 `git merge --ff-only <레인>` 로만 움직인다 |
+| ⑸-b | H3 | HEAD 가 `main` 일 때 `git merge --no-ff lane` | **2** | 〃 (새 병합 커밋이 게이트 밖에서 생긴다) |
 | ⑹ | H3 | `gh pr merge 12 --squash` | **2** | PR 병합은 전수 게이트·〈N〉 재실측을 건너뛴다 |
 | ⑺ | H3 | `git branch -D main` | **2** | 기준 브랜치를 지운다 |
 | ⑻ | H4 | Edit `db/platform/versions/0001_p0_platform.py` | **2** | 계약 파괴: origin/main 에 있는 마이그레이션은 수정 불가 — 새 revision 을 만든다 |
 | ⑼ | H5 | Edit `PLAN-SoT.md` 에 `\| 〈500〉 \|` 행 추가 | **2** | 기대값 〈368〉 과 다르다 (기준 origin/main 최대 〈367〉 + 1) |
 
-⚠ ⑸ 는 **의도된 마찰**이다. `main` 으로의 ff 병합조차 `COLAB_HOOKS=0` 을 앞에 붙여야 돈다 —
-스펙 C 의 「⑶ **HEAD 가 main/master 일 때의** `git merge`」 축자이고 F8 「병합 권한 잠금」의 집행이다.
-차단 사유 한 줄이 그 우회 방법을 함께 알린다.
+⭑ **⟨개정 2026-09-06 · P-J 설계 판정⟩ ⑸ 의 판정 기준이 바뀌었다.**
+／ 종전 ~~`main` 에서의 **모든** `git merge` 차단(ff-only 포함)~~ — 그러면 오케스트레이터의
+**승인된 병합 형태 자체**(`git merge --ff-only <레인>` · `rules §4-2`)가 정상 경로마다
+`COLAB_HOOKS=0` 을 요구한다. 상시 무력화된 훅은 훅이 아니다.
+**지금** — `main` ＋ `--ff-only` = **통과**(아래 ⑸-c) · `main` ＋ 그 밖의 `git merge` = **차단**.
+새 병합 커밋을 만드는 형태만 막는다. 스펙 C 의 ⑶ 을 「ff 가 아닌 병합」으로 좁힌 것이다.
 
 ### 2-2. 통과가 기대값인 것 — 11/11 (오탐 반증)
 
 | # | 훅 | 케이스 | exit |
 |---|---|---|---|
+| ⑸-c | H3 | **HEAD 가 `main` 일 때** `git merge --ff-only <레인>` (⭑ 개정 2026-09-06 · 오케스트레이터의 승인된 병합) | **0** |
 | ⑽ | H3 | **레인 첫 줄** `git merge --ff-only origin/main` (비-main 브랜치) | **0** |
 | ⑾ | H3 | `git push origin worktree-harness-fable51-spec` | **0** |
 | ⑿ | H3 | `git fetch --all --prune` | **0** |
@@ -76,7 +81,9 @@ README 킬스위치) · **K절**(문서 인용 검증 V1~V4 · 미검증 1). 규
 `COLAB_HOOKS=0` 을 주면 위 ⑴·⑻·⑼ 가 전부 **exit 0** 으로 즉시 통과한다. 모든 훅 스크립트의
 첫 줄이 `[ "${COLAB_HOOKS:-1}" = "0" ] && exit 0` 이다(스펙 C 「킬스위치」).
 
-**계 — 차단 9/9 · 통과 11/11 · 킬스위치 3/3 · 불일치 0.**
+**계(2026-09-06 도입 시점) — 차단 9/9 · 통과 11/11 · 킬스위치 3/3 · 불일치 0.**
+
+⭑ **⟨P-J 재실측 2026-09-06⟩ H3 전 케이스 재실행 — 차단 8/8 · 통과 8/8 · 킬스위치 1/1 · 불일치 0** (개정분 ⑸·⑸-b·⑸-c 포함. H4·H5 는 이 회차 변경 대상이 아니라 재실행하지 않았다). 실측표 = `dev-package/reports/harness/2026-09-06/12-gate-json-verification.md` §2.
 
 ### 2-4. 판정 근거로 삼은 문서 인용 (`https://code.claude.com/docs/en/hooks`)
 

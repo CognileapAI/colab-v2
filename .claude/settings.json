@@ -26,6 +26,26 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "matcher": "researcher",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/uncommitted-artifacts.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "lane-worker",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/lane-gate-summary.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",

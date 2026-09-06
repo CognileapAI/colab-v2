@@ -61,6 +61,32 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 - 도구 설치 구간(`gates/.venv` · `node_modules`)에는 잠금을 걸었다(`_lock.sh`). 잠금이 없으면 둘이 동시에
   설치하다 한쪽이 「도구 없음」 red 를 내는데, 그건 검사 결과가 아니라 배선이 만든 red 다.
 
+## 게이트 요약 JSON — 기계가 읽는 한 벌 (스키마 `colab-gate-summary/1`)
+
+요약은 사람이 읽는 3상태 텍스트로만 있었다. 그래서 레인 종료 검사와 「전수를 다시 돌릴 것인가」
+판단이 **사람이 옮겨 적은 계수**에 기대고 있었고, 옮겨 적는 자리는 언젠가 틀린다.
+이제 실행기가 **요약이 이미 센 같은 변수**로 JSON 한 개를 더 낸다. ⚠ **게이트 로직은 무변경이다.**
+
+- 배출처 = `COLAB_GATE_REPORT_DIR=<경로>` (상대경로는 레포 루트 기준). 레인은
+  `dev-package/reports/<회차>/<레인>` 을 준다. `all` 은 `COLAB_GATE_OUTDIR` 안에도 같은 파일을 남긴다.
+- **배출처를 주면 단독 게이트도 요약과 JSON 을 낸다** — 레인의 반복 검증은 전수가 아니라 단독
+  게이트이기 때문이다(`rules §3-1`). 주지 않으면 종전 그대로 아무것도 더 찍지 않는다.
+
+```bash
+COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> ./gates/run.sh service-tests-viz-render
+COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> ./gates/run.sh all -j 4
+```
+
+- 상태값은 **`green` / `red_판정` / `red_준비` 셋뿐이다. `SKIP` 은 없다** — 이 레포는 대상 0건을
+  red 로 못박았고, SKIP 은 green-by-skip 통로를 다시 여는 것이다.
+- `counts` = 요약줄의 그 계수 그대로(`green` · `red_판정` · `red_준비` · `red_준비_입력미선언`).
+  **계수를 다시 세는 자리를 만들지 않았다** — 배출기(`gates/tools/gate_summary_json.py`)는 직렬화만 한다.
+- `tree` = `HEAD^{tree}`. **직전 판정본과 같으면 전수 재실행을 갈음한다**(`rules §3-2`).
+- 소비자 = `SubagentStop:lane-worker` 훅(H7). 부재 = 「게이트를 돌리지 않은 레인」으로 차단하고,
+  `counts.red_판정 > 0` 이면 red 게이트 이름을 열거하며 차단한다.
+- ⚠ **병합 진입 조건은 `red_판정 == 0` 과 `red_준비 == 0` 둘 다**다(준비 red 도 red 다).
+  H7 은 레인 종료만 보므로 준비 red 로 종료를 막지 않는다 — 그 판정은 병합 시점 몫이다.
+
 ## selftest가 있는 이유
 
 "전부 green"과 "전부 무력"은 구분되지 않는다. v1 CI는 DB 없이 돌아 RLS 테스트를 **green-by-skip** 했다.
