@@ -6,7 +6,7 @@
 > 목표 — **AWS 배포까지, v2 전체 완성**
 > 코드 — v2 기준 **신규 구축**. PoC·v1 코드 미계승(도메인 지식·방법론만 참조)
 
-**시작은 [`dev-package/00-START-HERE.md`](dev-package/00-START-HERE.md).**
+**시작은 `CLAUDE.md §1`** — `dev-package/prd/rounds/` 최신 `R-*.md` 한 개만 읽는다.
 
 ---
 
@@ -57,4 +57,4 @@ colab-v2/
 
 ## 개발 세션 시작
 
-새 Claude 세션에 [`dev-package/01-CLAUDE-DRIVER.md`](dev-package/01-CLAUDE-DRIVER.md) 의 킥오프 프롬프트를 붙여넣는다.
+새 Claude 세션은 `dev-package/prd/rounds/` 최신 `R-*.md` 하나만 읽는다(`CLAUDE.md §1`).

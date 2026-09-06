@@ -213,3 +213,10 @@
 - 규칙 = 계약 파괴 변경은 라운드 파일 ㉰ 에 따라 **Ted 서명(동결 해제 N차 승인)** 없이 `main` 에 오르지 못함. 승인 범위 축자는 `PLAN-SoT §9` 한 자리에만 배치.
 - 규칙 = 판정값 자체는 이 파일에 두지 않음. 자리 = `40 COLAB-기획/20_검토/<날짜_주제>/결정서_Ted_<날짜>.md` · `dev-package/prd/PRD-*.md` 확정 열 · `PLAN-SoT §9` · `dev-package/03-HANDOFF.md`.
 - 출처 메모리 = `ted-decisions-260905-prd` · `ted-decisions-260905-deploy-switch` · `ted-decisions-260906-rev2` · `ted-decisions-260906-ra-merge` (전부 상태형 — 이관표 참조).
+
+## 9. 산출물 폴더 · 부하 규칙
+
+- 규칙 = ELI5·판정 브리프 HTML 은 레포 루트 `eli5/<YYYY-MM-DD>/<주제>-<YYYYMMDD>.html` 에 둔다. `.gitignore` 로 제외. 보존이 필요한 판정 근거는 `dev-package/intent/` 또는 원장 〈N〉 에 요약.
+  - 근거 = Ted 2026-09-06 요청, 루트 산개 HTML 9건 이동.
+- 규칙 = 전수 게이트(`gates/run.sh all`) 실행 중에는 다른 실행 레인을 띄우지 않는다. 에이전트 동시 실행 시 `-j 2`.
+  - 근거 = 호스트 메모리 12GB(WSL `.wslconfig`)에서 `-j 4` 전수 + 에이전트 동시 실행 시 OOM 킬 발생(2026-09-06 실측, docker IP 드리프트로 게이트 4건 red 유발).

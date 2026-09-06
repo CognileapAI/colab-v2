@@ -43,3 +43,6 @@ desktop.ini
 
 # 워크트리는 레포에 들어가지 않는다 — git add -A 가 gitlink 로 집어넣는다
 .claude/worktrees/
+
+# ELI5·판정 브리프 HTML — eli5/<YYYY-MM-DD>/ 에 쌓인다. 추적하지 않는다(Ted 2026-09-06 요청)
+eli5/
