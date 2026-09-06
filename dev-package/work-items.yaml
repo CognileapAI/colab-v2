@@ -2722,7 +2722,7 @@ items:
 
   - id: WU-A3R
     name: 상세 편집 각주 2 — 편집 중 다운로드 숨김 ＋ 저장 후 칩 재동기 (rev2 증분 · PRD-22)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-A12R 빌드 목록 green"]
@@ -2730,12 +2730,12 @@ items:
     completion_def: "편집 중에는 다운로드가 숨고 취소/저장 이 그 자리에 온다 ＋ 저장 뒤 헤더 칩과 공개 범위 설명이 같은 값으로 다시 그려진다"
     evidence: "dev-package/sessions/p3-detail-edit2-20260907.md"
     deadline: null
-    note: "R-B 가 더하는 필드는 그리지 않는다. topic 은 읽기 전용 유지. WU-A4R 과 같은 레인에서 돈다"
+    note: "2026-09-07 done — 레인 p3-detail-edit2 87ca9df · advisor ② approve(코드 보정 0) · frontend-typecheck·frontend-test(868)·frontend-fixture-reach green · 재동기 결함 1건 수정(저장 응답 shown.actions) · R-B 가 더하는 필드는 그리지 않는다. topic 은 읽기 전용 유지. WU-A4R 과 같은 레인에서 돈다"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-22"]
 
   - id: WU-A4R
     name: 좌표계 칸 보조 라벨 「좌표계 (선택)」 (rev2 증분 · PRD-28 · 결정서 III-B)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: []
@@ -2743,5 +2743,5 @@ items:
     completion_def: "등록 화면 좌표계 칸 라벨이 좌표계 (선택) 이고 다른 선택 칸(변수 (선택)·기간 시작 (선택))과 같은 패턴이다"
     evidence: "dev-package/sessions/p3-detail-edit2-20260907.md"
     deadline: null
-    note: "결정서 III-B ⓐ — 기획자 확인 요청은 철회하고 통보로 전환됐다. 계약·서버·DB 변경 0. WU-A3R 과 같은 레인"
+    note: "2026-09-07 done — 라벨 좌표계 (선택) 은 기점 a32e580(WU-A4)에서 이미 충족 · 본 레인 87ca9df 는 회귀 시험 2건(upload.test.tsx) 고정 · RED 선실측 불가(세션 노트 기재) · advisor ② approve · 결정서 III-B ⓐ — 기획자 확인 요청은 철회하고 통보로 전환됐다. 계약·서버·DB 변경 0. WU-A3R 과 같은 레인"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-28"]
