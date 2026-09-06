@@ -8,6 +8,38 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="${1:-}"
 
+# ── 시험용 env 를 **실행기가 스스로 읽는다** (D2) ────────────────────────────
+# 종전에는 사람이 매 전수마다 `set -a; . ~/.colab-v2-test.env; set +a` 를 외워 쳤고, 빠뜨린
+#   회차는 red(준비) 6건으로 섰다. 그 6건은 판정이 아니라 **배선이 낸 red** 였고, 읽는 사람은
+#   「내 코드가 깼나」를 20분 뒤졌다. 관용구를 기억에 두지 않고 실행기가 집행한다.
+# 훅으로 하지 않는 이유 — Bash env 는 도구 호출 간 유지되지 않아 훅은 문자열 매칭밖에 못 한다.
+#   이 파일은 HOME 에 있어 **모든 워크트리에서 같은 자리로 보인다**(`.worktreeinclude` 와 무관).
+# ⚠ **검사 내용은 한 줄도 바뀌지 않는다** — 값이 선언되는 자리만 옮겼다.
+# ⚠ 파일이 없으면 **red(준비 · 입력미선언 · 78)** 다. 기본값으로 채워 green 을 만들지 않는다
+#   (`CLAUDE.md §4`). 표식·종료코드는 `gates/tools/_readiness.sh` 의 것을 그대로 쓴다 —
+#   두 벌로 두면 한쪽이 언젠가 다른 말을 한다.
+# ⚠ 예외는 CI 하나다. Actions 는 이 파일을 쓰지 않고 게이트가 **일회용 DB 를 스스로 세운다**.
+#   거기서 이 자리가 판정을 가로채면 전 게이트가 준비 red 로 위장한다. 그래서 통과시키되,
+#   값이 정말로 없는 게이트는 자기 `_readiness.sh` 로 선다 — **미선언을 통과로 세지 않는다.**
+COLAB_TEST_ENV_FILE="${COLAB_TEST_ENV_FILE:-${HOME:-}/.colab-v2-test.env}"
+if [ -n "$GATE" ] && [ -z "${COLAB_TEST_ENV_SOURCED:-}" ]; then
+  if [ -f "$COLAB_TEST_ENV_FILE" ]; then
+    # shellcheck source=/dev/null
+    set -a; . "$COLAB_TEST_ENV_FILE"; set +a
+    export COLAB_TEST_ENV_SOURCED=1   # `all` 이 자식으로 부르는 실행기가 다시 읽지 않게
+  elif [ -n "${CI:-}${GITHUB_ACTIONS:-}" ]; then
+    export COLAB_TEST_ENV_SOURCED=1
+  else
+    # shellcheck source=/dev/null
+    . "$REPO_ROOT/gates/tools/_readiness.sh"
+    readiness_undeclared_input "$GATE" "${COLAB_TEST_ENV_FILE/#${HOME:-}/~}" \
+      "시험용 값(적용 DB URL·시험 DB URL·대조 정본 URL)이 사는 파일이다. 이 파일도 없고 CI 도 아니면
+   게이트가 읽을 값이 아무 데도 선언되지 않은 것이다 — 기다린 것이 없으므로 상한을 늘려도 달라지지 않는다.
+   세우는 법은 dev-package/RESTART.md §2-④ 에 있다. 파일 자리를 바꾸려면 COLAB_TEST_ENV_FILE 로 준다."
+    exit "$READINESS_EXIT"
+  fi
+fi
+
 # 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
 ALL_GATES=(
   planning-freshness contract-lint contract-breaking event-lint event-breaking
