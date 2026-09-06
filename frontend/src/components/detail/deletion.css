@@ -1,0 +1,39 @@
+/* 삭제 확인 모달의 두 구획 (`DL-1`). 골격(`.modal-back`·`.modal`·`.modal--dialog`·
+   `.modal-h/b/f`)은 전역 이름이라 여기서 다시 선언하지 않는다 (`members.css`). */
+
+/* 잔존 안내 — **파급보다 위**에 서고 시각적으로도 먼저 읽힌다 (`ProjectCloseModal` 순서) */
+.dl-keep {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted, transparent);
+}
+.dl-keep p {
+  margin: 6px 0 0;
+  font-size: var(--text-body-sm);
+  line-height: 1.7;
+  color: var(--color-text-body);
+}
+
+.dl-impact {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--text-body-sm);
+  line-height: 1.9;
+  color: var(--color-text-body);
+}
+
+/* ⚠ **스코프 정의다 — 전역 `.btn-danger` 를 만들지 않는다.**
+   레포에 `.btn-danger` 정의가 0건인 채로 `VerificationAction` 이 그 이름을 쓰고 있다
+   (승인 취소 버튼). 전역으로 세우면 그 버튼의 모양이 이 회차에 조용히 바뀐다 — 그 판정은
+   WU-B11 에 회부한다. 여기서는 상세 화면 안에서만 색을 준다. */
+.detail-page .btn-danger {
+  background: var(--color-danger, #b42318);
+  border-color: var(--color-danger, #b42318);
+  color: #fff;
+}
+.detail-page .btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
