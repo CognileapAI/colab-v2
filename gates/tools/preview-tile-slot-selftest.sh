@@ -37,6 +37,7 @@ FAILURES=()
 # (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 red() { echo "::error::preview-tile-slot-selftest red — $*"; exit 1; }
 
@@ -263,7 +264,7 @@ esac
 cp "$READINESS" "$TMP/_readiness.sh"
 mutate() { # $1=출력 $2..=sed 식
   local out="$1"; shift
-  cp "$GATE" "$out"; for e in "$@"; do sed -i "$e" "$out"; done; chmod +x "$out"
+  cp "$GATE" "$out"; fx_sed "$out" "$@"; chmod +x "$out"
 }
 run_mutant() { # $1=변이본 $2..=환경변수
   local m="$1"; shift
@@ -274,7 +275,7 @@ run_mutant() { # $1=변이본 $2..=환경변수
 #   경계 롤 접속(ⓚ 와 **같은 상태**)이 **green** 이 된다. 이것이 #57 의 green-by-skip 이고,
 #   ⓚ 의 red 를 만든 것이 이번 회차가 붙인 검사라는 **음성 증명**이다.
 mutate "$TMP/mutant-old-gate.sh" \
-  '/# ── 3-1\. 롤 판정 ㉮/,/^# ── 3\. 발행 —/{/^# ── 3\. 발행 —/!d}' \
+  '/# ── 3-1\. 롤 판정 ㉮/,/^# ── 3\. 발행 —/{/^# ── 3\. 발행 —/!d;}' \
   's/^if \[ "\$EMITTED" = "\$EMITTED_BOUNDARY" \]; then$/if false; then/' \
   's/^if \[ "\$EMITTED" -eq 0 \]; then$/if false; then/'
 out="$(run_mutant "$TMP/mutant-old-gate.sh" COLAB_PREVIEW_TILE_PSQL="$TMP/psql-boundary" \
@@ -303,7 +304,7 @@ else
 fi
 
 # ⓟ 변이③ — **읽기 전용 탐침 절을 뗀다.** 쓸 수 있는 접속이 통과하면, 탐침이 그 차이를 만든다.
-mutate "$TMP/mutant-no-probe.sh" '/# ── 3-0\. 읽기 전용 증명/,/^# ── 3-1\. 롤 판정/{/^# ── 3-1\. 롤 판정/!d}'
+mutate "$TMP/mutant-no-probe.sh" '/# ── 3-0\. 읽기 전용 증명/,/^# ── 3-1\. 롤 판정/{/^# ── 3-1\. 롤 판정/!d;}'
 out="$(run_mutant "$TMP/mutant-no-probe.sh" COLAB_PREVIEW_TILE_PSQL="$TMP/psql-rw" \
         COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" COLAB_PREVIEW_TILE_DIR="$SLOT" \
         COLAB_PREVIEW_TILE_DB_URL="$URL")"; rc=$?

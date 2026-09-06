@@ -36,14 +36,28 @@ MANIFEST = pathlib.Path(
     os.environ.get("COLAB_DB_BOUNDARY_MANIFEST") or (REPO_ROOT / "gates/config/db-boundaries.toml")
 )
 ROOT = pathlib.Path(os.environ.get("COLAB_DB_BOUNDARY_ROOT") or REPO_ROOT)
-#: 보는 compose 는 **둘 다**다 — staging(`compose.i2.yml`)과 dev(`infra/dev/compose.yml`, `〈342〉`).
+#: 보는 compose 는 **`infra/` 아래 실재하는 전부**다. 예외를 파지 않는다.
+#:   · `staging/compose.i2.yml`   — 살아 있는 staging
+#:   · `staging/compose.yml`      — 자리표시 오리진(DB 없음). 없다고 빼지 않는다 —
+#:                                   **나중에 DB 가 붙는 순간이 사각이 생기는 순간**이다
+#:   · `staging/compose.throwaway.yml` — 일회용 리허설 스택(`〈170〉-㉱`). DB 를 물린다
+#:   · `dev/compose.yml`          — `〈342〉`
+#:   · `prod/compose.yml`         — `〈343〉` · 2026-09-06 신설
+#: 벌이 늘면 여기 한 줄을 더한다. **안 더하면 그 벌의 배선이 조용히 사각이 된다** —
+#: dev 가 `〈342〉` 전까지, prod 가 `〈343〉` 전까지 정확히 그 상태였고, 셀프테스트가
+#: 목록을 늘 덮어써서 **그 사각을 한 번도 잡지 못했다**(2026-09-06). 지금은 잡는다:
+#: `db-boundary-selftest` 가 이 목록을 `ls infra/*/compose*.yml` 실물과 대조한다.
 #: `COLAB_DB_BOUNDARY_COMPOSE` 로 바꿀 수 있다(단일 경로 또는 `:` 목록 — selftest 가 단일 경로를 준다).
 #: 목록 중 하나라도 없으면 red 다 — 없는 파일을 건너뛰면 그 배선이 조용히 사각이 된다.
 _COMPOSE_ENV = os.environ.get("COLAB_DB_BOUNDARY_COMPOSE")
 COMPOSES: list[pathlib.Path] = (
     [pathlib.Path(p) for p in _COMPOSE_ENV.split(":") if p]
     if _COMPOSE_ENV
-    else [ROOT / "infra/staging/compose.i2.yml", ROOT / "infra/dev/compose.yml"]
+    else [ROOT / "infra/dev/compose.yml",
+          ROOT / "infra/prod/compose.yml",
+          ROOT / "infra/staging/compose.i2.yml",
+          ROOT / "infra/staging/compose.throwaway.yml",
+          ROOT / "infra/staging/compose.yml"]
 )
 COMPOSE = COMPOSES[0]  # 옛 이름 — 단일 경로를 기대하던 호출자용
 

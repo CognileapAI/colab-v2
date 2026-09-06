@@ -5,6 +5,7 @@
 # 전부 임시 디렉터리, 실제 계약 디렉터리(contracts/**)에는 한 글자도 쓰지 않는다.
 # 두 번째 스타일을 발명하지 않는다.
 set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LINT="$REPO_ROOT/gates/tools/event-lint.sh"
@@ -48,7 +49,7 @@ expect red "lint: 깨진 JSON" env COLAB_EVENTS_DIR="$D" "$LINT"
 
 # ③ 존재하지 않는 $def 를 $ref — common.json 참조가 끊긴 상태
 D="$(evcopy dangling)"
-sed -i 's|../schemas/common.json#/$defs/Ulid|../schemas/common.json#/$defs/NoSuchDef|g' "$D/$EV"
+fx_replace "$D/$EV" '../schemas/common.json#/$defs/Ulid' '../schemas/common.json#/$defs/NoSuchDef'
 expect red "lint: 끊긴 \$ref" env COLAB_EVENTS_DIR="$D" "$LINT"
 
 # ④ 오탈자 키워드 — ajv strict 가 조용히 무시하지 않는다

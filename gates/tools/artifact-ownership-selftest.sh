@@ -49,6 +49,7 @@ FAILURES=()
 # (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 red() { echo "::error::artifact-ownership-selftest red — $*"; exit 1; }
 
@@ -294,7 +295,7 @@ says "ⓜ" "원장 두 표가 다 0행이다"
 
 # ── 변이로 오라클을 증명한다 — **검사를 떼면 무엇이 달라지는가** ─────────────────
 cp "$READINESS" "$TMP/_readiness.sh"   # 변이본이 곁에서 이것을 읽는다
-mutate() { local out="$1"; shift; cp "$GATE" "$out"; for e in "$@"; do sed -i "$e" "$out"; done; chmod +x "$out"; }
+mutate() { local out="$1"; shift; cp "$GATE" "$out"; fx_sed "$out" "$@"; chmod +x "$out"; }
 run_mutant() { local m="$1"; shift; env REPO_ROOT="$REPO_ROOT" \
   COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE="$BROLE" "$@" bash "$m" 2>&1; }
 
@@ -309,7 +310,7 @@ cp "$GRADER" "$READINESS" "$MUT1/gates/tools/"
 sed 's/^        return not self.dataset_files and not self.upload_files$/        return False/' \
   "$RULE" > "$MUT1/services/viz-render/src/colab_viz/domains/d7_visualization/ownership.py"
 mutate "$MUT1/gates/tools/artifact-ownership.sh" \
-  '/# ── 3-1\. 롤 판정 ㉮/,/^# ── 3-2\. 원장 계수/{/^# ── 3-2\. 원장 계수/!d}' \
+  '/# ── 3-1\. 롤 판정 ㉮/,/^# ── 3-2\. 원장 계수/{/^# ── 3-2\. 원장 계수/!d;}' \
   's/^if \[ "\$D3" -eq 0 \] && \[ "\$D5" -eq 0 \]; then$/if false; then/' \
   's/^if \[ "\$ADMIN_PAIR" = "\$BOUND_PAIR" \]; then$/if false; then/'
 out="$(env REPO_ROOT="$MUT1" COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE="$BROLE" \
@@ -355,7 +356,7 @@ else
 fi
 
 # ⓤ 변이③ — 읽기 전용 탐침을 떼면 **쓸 수 있는 접속이 통과한다.**
-mutate "$TMP/mutant-no-probe.sh" '/# ── 3-0\. 읽기 전용 증명/,/^# ── 3-1\. 롤 판정/{/^# ── 3-1\. 롤 판정/!d}'
+mutate "$TMP/mutant-no-probe.sh" '/# ── 3-0\. 읽기 전용 증명/,/^# ── 3-1\. 롤 판정/{/^# ── 3-1\. 롤 판정/!d;}'
 out="$(run_mutant "$TMP/mutant-no-probe.sh" COLAB_ARTIFACT_OWNER_PSQL="$TMP/psql-rw" \
         COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" COLAB_ARTIFACT_OWNER_DIR="$SLOT" \
         COLAB_ARTIFACT_OWNER_DB_URL="$URL")"; rc=$?
