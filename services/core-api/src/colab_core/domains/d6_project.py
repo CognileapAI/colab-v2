@@ -56,7 +56,7 @@ _NAME_TAKEN = text("""
 
 
 class ProjectNameTaken(Exception):
-    """같은 이름의 프로젝트가 이미 있다. 호출자가 409 로 바꾼다."""
+    """같은 이름의 프로젝트가 이미 있다. 호출자가 생성 400 · 수정 409 로 바꾼다."""
 
 
 def name_is_taken(session: Session, *, name: str, exclude_id: str | None = None) -> bool:

@@ -16,7 +16,7 @@
 | `+ 새 프로젝트 만들기` 는 영역 맨 아래 한 곳 | 충족 | `RegisterArea.tsx:596-599`(표 뒤 `PermissionGate` 안 1개) · 시험 `prd23-project-table-20260907.test.tsx:190` |
 | 같은 연구실 · 이름 겹치면 거절(유형 달라도) | 충족 | `services/core-api/src/colab_core/app/routes/project.py:158` `errors.bad_request("같은 이름의 프로젝트가 이미 있어요. 목록에서 골라 주세요")` · 시험 `services/core-api/tests/test_project_name_duplicate.py:32`·`:41` |
 | 다른 연구실의 같은 이름은 성공 | 충족 | 경계는 RLS 가 건다(`domains/d6_project.py:47-53` `_NAME_TAKEN` 주석) · 시험 `test_project_name_duplicate.py:51` (201) |
-| 빈 이름 문면 무변 | 충족 | `frontend/src/components/project/ProjectFormModal.tsx:56` 무편집 · 음성 시험 `test_project_name_duplicate.py:68` · `prd23-project-table-20260907.test.tsx:257` |
+| 빈 이름 문면 무변 | 미달 · 보고 | 빠른 생성 칸 `RegisterArea.tsx:496` `if (!qName.trim()) return;` 무반응 · `만들고 담기`(`:624`,`:626`) disabled 아님 · 기존 결함 · 이번 레인 무수정 · Ted 판정 요청 |
 | J-12 문면이 `toastCopy.ts` 에서 온다 | 충족 | `RegisterArea.tsx:17`·`:642` `{QUICK_PROJECT_NOTE}` ← `frontend/src/components/common/toastCopy.ts:55` · 시험 `prd23-project-table-20260907.test.tsx:210` |
 
 ## 2. RED → GREEN
@@ -69,9 +69,10 @@ SELECT lab_id, btrim(lower(name)) AS n, count(*) AS c
    그 파일의 주제가 「두 패널로 갈린다 · 0건 패널도 남는다」 전부라 개정본과 정면으로 어긋난다
    (판정 축자 「두 패널 분리를 걷는다」). 살아 있는 수용 기준(링크 1개 · 유형 먼저 · 행이 아래로 붙음)은
    새 파일 `prd23-project-table-20260907.test.tsx` 로 옮겨 전건 유지했다. **존치 6종이 아니다.**
-4. **생성 거절의 상태코드를 409 → 400 으로 바꿨다**(`project.py:158`). 라운드 파일이 「400 with message
-   verbatim」을 명시한다. **수정(`updateProject`) 쪽 409 는 건드리지 않았다** — 그쪽은 이 문면을 띄우는
-   자리가 아니다. 기존 시험 1건의 기대값을 함께 고쳤다(`test_lab_and_project_update.py:116-127`).
+4. **생성 거절의 상태코드를 409 → 400 으로 바꿨다**(`project.py:158`). 근거는 `contracts/seams/fe-core.yaml`
+   POST /projects 선언 응답 = 400·401·403·500 · 409 미선언 → 400 이 계약 정합. PATCH /projects 응답도
+   409 미선언(기존 · 범위 밖 · 후속 항목). **수정(`updateProject`) 쪽 409 는 건드리지 않았다** — 그쪽은
+   이 문면을 띄우는 자리가 아니다. 기존 시험 1건의 기대값을 함께 고쳤다(`test_lab_and_project_update.py:116-127`).
 5. **거절 문면을 화면에서 다시 적지 않았다.** 서버가 보낸 문장을 `projectSource.create`
    (`frontend/src/components/upload/projectSource.ts:20-25`)가 그대로 올리고 화면이 띄운다
    (`RegisterArea.tsx:637`). PRD-43 21행이 아니므로 `toastCopy.ts` 에 넣지 않았다.
@@ -85,3 +86,12 @@ SELECT lab_id, btrim(lower(name)) AS n, count(*) AS c
 - **존치 6종 무접촉** — 기준 격자 파일 흐름 · AI 계보 제안 · 2단 등록 게이트 · 이어올리기 배너 ·
   승인·검증 층 · 값 조회 패널. 회귀 시험 삭제 0.
 - 계약(`contracts/`) · `db/` · `alembic` · `PLAN-SoT.md` · `03-HANDOFF.md` 무접촉.
+- 동시 생성 2건 경합 — 둘 다 `name_is_taken` 통과 후 삽입(UNIQUE 부재) · 후속 마이그레이션 항목 필요(대장 미등재).
+
+## advisor ② 반영
+
+1. §5-4 400 근거 — 「라운드 파일 명시」 삭제 → `contracts/seams/fe-core.yaml` POST /projects 선언 응답
+   400·401·403·500 · 409 미선언(PATCH 도 409 미선언 · 기존 · 범위 밖 · 후속 항목)으로 교체.
+2. §1 「빈 이름 문면 무변」 행 판정을 「미달 · 보고」로 전환 — 빠른 생성 칸 무반응 실측 기재 · Ted 판정 요청.
+3. §6 에 동시 생성 경합 명기 — UNIQUE 부재 · 후속 마이그레이션 항목.
+4. `d6_project.py:59` docstring 「409」 → 「생성 400 · 수정 409」.
