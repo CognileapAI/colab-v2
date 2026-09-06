@@ -125,7 +125,8 @@ def test_a_dataset_without_lineage_still_returns_itself(live_client, p2_client) 
     receipt = make_upload(client, files=[
         ("files", ("orphan.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = client.post(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES),
-                    json={"uploadId": receipt["uploadId"], "name": "계보 없는 데이터"})
+                    json={"uploadId": receipt["uploadId"], "name": "계보 없는 데이터",
+                          "summary": "시험용 설명 한 줄"})
     assert r.status_code == 201, r.text
     orphan = r.json()["datasetId"]
 

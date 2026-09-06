@@ -32,16 +32,22 @@ def _detail(client, dataset_id: str) -> dict:
 
 
 # ══════════════ ① `#36` 의 실제 문제 — 설명을 채울 공개 경로가 없었다 ══════════════
-def test_a_missing_summary_can_be_filled_through_the_public_path(p2_client) -> None:
+def test_a_missing_summary_can_be_filled_through_the_public_path(p2_client, sql) -> None:
     """**이것이 `#36` 이 열려 있던 이유다.**
 
     `D-01`·`D-02` 의 `summary` 가 `NULL` 인 것은 코드 결함이 아니라 화면 적재 시
     선택 입력 공백이었다(`〈115〉-㉱`). 그런데 **채울 수단이 없었다** — `updateDataset`
     501 · `deleteDataset` 501 · 재적재는 12 → 14 를 만들고 · DB 직접 UPDATE 는
     `㊾-③` 위반. **공개 경로 하나가 그 넷을 다 대체한다.**
+
+    ⭑ **⟨19차 해제 · PRD-15 · WU-A4⟩ 그 상태를 등록 경로로는 더 못 만든다** — 설명이
+    필수가 되어서다. 그래도 **이미 있는 행은 그대로 남으므로**(미결-5 ⓐ · `NOT NULL` 금지)
+    이 창구는 그대로 필요하다. 그래서 시험이 과거 상태를 DB 로 재현해 잰다.
     """
     client = p2_client()
     dataset_id = _new_dataset(client, "설명 없이 올린 자료")
+    sql("UPDATE d3_dataset_description SET summary = NULL WHERE dataset_id = :d",
+        {"d": dataset_id})
     assert _detail(client, dataset_id)["summary"] is None
 
     r = _patch(client, dataset_id, {"summary": "GK-2A NDVI 2 km 한반도 (2024-06-15~24)"})
@@ -62,12 +68,19 @@ def test_omitted_keys_are_left_alone(p2_client) -> None:
 
 
 def test_an_explicit_null_clears_the_value(p2_client) -> None:
-    """**생략과 `null` 은 다르다.** 명시적 `null` 은 「비워라」다."""
+    """**생략과 `null` 은 다르다.** 명시적 `null` 은 「비워라」다.
+
+    ⭑ **⟨개정 2026-09-05 · 19차 해제 · PRD-15 · WU-A4⟩ `summary` 는 이 규칙에서 빠졌다.**
+    설명이 필수가 되어 「비워라」의 뜻 자체가 없어졌다(`type: string, minLength: 1`).
+    **규칙이 없어진 것이 아니라 적용 칸이 줄었다** — 그래서 여기서 재는 칸을
+    `sourceLabel` 로 옮긴다. 「생략 ≠ `null`」이 여전히 성립함을 그 칸이 증명하고,
+    설명 쪽이 400 이 되는 것은 `test_summary_required.py` 가 따로 잰다.
+    """
     client = p2_client()
-    dataset_id = _new_dataset(client, "설명 있는 자료", summary="지울 설명")
-    assert _detail(client, dataset_id)["summary"] == "지울 설명"
-    assert _patch(client, dataset_id, {"summary": None}).status_code == 200
-    assert _detail(client, dataset_id)["summary"] is None
+    dataset_id = _new_dataset(client, "원천 표기 있는 자료", sourceLabel="지울 표기")
+    assert _detail(client, dataset_id)["basicInfo"]["sourceLabel"] == "지울 표기"
+    assert _patch(client, dataset_id, {"sourceLabel": None}).status_code == 200
+    assert _detail(client, dataset_id)["basicInfo"]["sourceLabel"] is None
 
 
 def test_an_empty_body_is_a_no_op_not_an_error(p2_client) -> None:
@@ -143,6 +156,9 @@ def test_editing_a_dataset_needs_the_upload_edit_switch(p2_client, sql) -> None:
     sql("UPDATE d2_permission_switch SET enabled = false"
         " WHERE account_id = :a AND switch = '업로드·편집'",
         {"a": ACC_A_RES})
+    before = _detail(client, dataset_id)["summary"]
     r = _patch(client, dataset_id, {"summary": "스위치 없는 사람이 적은 설명"})
     assert r.status_code == 403, "스위치 없는 사람이 데이터셋 정보를 고쳤다"
-    assert _detail(client, dataset_id)["summary"] is None, "막혔다면서 값이 남았다"
+    # ⭑ 등록이 설명을 요구하게 되어(19차 · PRD-15) 이 행은 더 이상 `None` 으로 시작하지
+    #    않는다. 재는 것은 **값이 안 바뀌었다**이지 「값이 없다」가 아니다.
+    assert _detail(client, dataset_id)["summary"] == before, "막혔다면서 값이 바뀌었다"

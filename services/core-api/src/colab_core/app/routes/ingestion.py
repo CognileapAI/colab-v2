@@ -33,7 +33,8 @@ from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
-from .catalog import dataset_detail, validate_human_metadata
+from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
+                      validate_human_metadata)
 
 router = APIRouter()
 
@@ -375,13 +376,26 @@ def list_upload_lineage_suggestions(
 #: 는 `〈138〉`(정본 `VAL-006` 「변수·기간·좌표계는 자유 입력」) 이래 셋을 선언하고 있었는데
 #: 서버는 UPDATE 절반만 세웠다 — 실어 보내면 400 이었다. 계약 변경 0 · 마이그레이션 0
 #: (열은 `d3_dataset_autometa` 에 이미 있다).
+#: ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 을 넣었다.** 계약이 `DatasetCreate` 에
+#: 그 열쇠를 여는 **같은 회차**에 서버가 받는다 — 계약만 열고 이 줄을 미루면 열쇠는 있는데
+#: 「계약에 없는 필드다」 400 이 돌아온다(§5-㉰-4 「집행 없는 신설」 금지).
 _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           "lineageParents", "projectIds",
-                          "variables", "crs", "period"}
+                          "variables", "crs", "period", "observationInterval"}
 
 #: 등록 요청이 실어 오는 **사람이 적는 자유 입력 칸.** 저장은 `updateDataset` 이 쓰는
 #: 그 경로 하나를 그대로 쓴다 (`d3_catalog.update_dataset`).
-_HUMAN_METADATA_FIELDS = ("variables", "crs", "period")
+_HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval")
+
+
+def _extension_of(file_name: str) -> str:
+    """확장자 — **소문자 기준**이다 (`.NC` 와 `.nc` 는 같은 종류다 · PRD-32).
+
+    ⛔ 확장자로 **포맷을 정하지 않는다**(`DATA-REFERENCE §0`) — 여기서 세는 것은
+    「사람이 한 번에 묶어 올린 것이 같은 종류인가」뿐이다. 매직바이트 판정은 파이프라인의 일이다.
+    """
+    head, sep, tail = (file_name or "").rpartition(".")
+    return tail.lower() if sep and head else ""
 
 
 def _human_metadata(body: dict) -> dict:
@@ -396,6 +410,14 @@ def _human_metadata(body: dict) -> dict:
     for key in _HUMAN_METADATA_FIELDS:
         value = body.get(key)
         if value is None or value == "" or value == []:
+            continue
+        # ⭑ **⟨19차 해제 · PRD-17⟩ 두 칸이 다 빈 관측 간격은 「안 적었다」다.**
+        # 화면이 폼 기본값으로 `{value: null, unit: null}` 을 실어 보내는 경로가 있고,
+        # 그것을 값으로 세면 위 산문의 「폼 기본값 통과 ≠ 사람이 적었다」가 깨진다.
+        # ⚠ **반쪽은 여기서 안 거른다** — 반쪽은 조용히 버릴 것이 아니라 400 이다
+        # (`validate_human_metadata`). 버리면 사용자는 적었다고 믿고 떠난다.
+        if key == "observationInterval" and isinstance(value, dict) \
+                and value.get("value") is None and value.get("unit") is None:
             continue
         picked[key] = value
     return picked
@@ -463,6 +485,14 @@ def create_dataset(request: Request, body: dict = None,
     name = body.get("name")
     if not isinstance(name, str) or not name.strip():
         raise errors.bad_request("name 은 1자 이상이다.")
+    # ⭑ **⟨19차 해제 · PRD-15⟩ 설명은 필수다.** 계약 `DatasetCreate.required` 에
+    # `summary` 가 들어갔고, **런타임에 그것을 집행하는 것은 이 줄뿐이다**(§5-㉰-4
+    # 「집행 없는 신설」 금지). `minLength: 1` 은 공백 세 칸을 못 막으므로 **`strip` 후
+    # 길이**로 잰다 — `d3_dataset_description.name` CHECK 와 같은 모양이다.
+    # ⛔ DB 는 그대로 nullable 이다(미결-5 ⓐ) — 막는 자리는 쓰기 경로뿐이다.
+    summary = body.get("summary")
+    if is_blank_summary(summary):
+        raise errors.bad_request(EMPTY_SUMMARY_MESSAGE)
     source_label = body.get("sourceLabel")
     if source_label is not None and (not isinstance(source_label, str) or len(source_label) > 60):
         raise errors.bad_request("sourceLabel 은 60자 이하다.")
@@ -492,6 +522,18 @@ def create_dataset(request: Request, body: dict = None,
             "데이터셋이 아니라 좌표다. 이미 있는 데이터셋에 붙이려면 "
             "`/datasets/{datasetId}/grid-files` 로 반영한다.")
 
+    # **확장자 혼합의 최종 방어선** (WU-A13 · PRD-32 · `VAL-002`).
+    #
+    # 화면(`FileDropCard`)이 놓는 순간 걸러도 그것이 **유일한** 방어선이 되면 안 된다.
+    # 판정이 접수가 아니라 여기 있는 이유는 바로 위 「본체 1건 이상」과 같다 — 접수는
+    # D3 에 아무것도 만들지 않고(`〈64〉-ⓐ`), 데이터셋이 되는 것만 막으면 된다.
+    # ⚠ **조각(본체)만 센다** — 기준 격자 파일은 확장자가 달라도 정상이다.
+    # 이 규칙이 `file_extension` 이 데이터셋당 1값인 근거다 (PRD-21).
+    extensions = sorted({_extension_of(f.file_name) for f in files if f.kind == BODY})
+    if len(extensions) > 1:
+        raise errors.bad_request(
+            f"한 데이터셋의 조각은 확장자가 한 종류다 — 2종 이상이 실려 왔다: {extensions}")
+
     # ① 원장 도장을 **먼저** 찍는다. 두 요청이 동시에 오면 UPDATE 의 행 잠금이 하나를
     #    떨어뜨리고, 떨어진 쪽은 409 가 된다 — 데이터셋이 둘 생기지 않는다.
     if not ledger.mark_registered(upload_id):
@@ -503,7 +545,8 @@ def create_dataset(request: Request, body: dict = None,
     d3_catalog.register_dataset(
         db, dataset_id=dataset_id, owner_id=subject.account_id,
         uploader_id=subject.account_id, name=name.strip(), topic=body.get("topic"),
-        summary=body.get("summary"), source_label=source_label,
+        # 앞뒤 공백은 저장하지 않는다 — 검사한 값과 저장한 값이 갈리지 않게 한다.
+        summary=summary.strip(), source_label=source_label,
         # 포맷은 **파이프라인이 판정한 값**만 옮긴다. 조각마다 다르면 아직 모르는 것이다.
         detected_format=(formats.pop() if len(formats) == 1 else None),
         bundle_file_name=(body_files[0].file_name if body_files else None),
@@ -511,6 +554,11 @@ def create_dataset(request: Request, body: dict = None,
         # (`0009` `sync_dataset_total_size`)로 합계를 더한다. 여기서 sum 을 쓰면 **두 번 센다** —
         # 시드가 그렇게 200 == 100 red 를 냈다 (`tests/test_dataset_detail.py`).
         total_size_bytes=0,
+        # 확장자는 **파일을 열지 않고 아는 값**이라 판정을 기다리지 않는다 (PRD-21 · `M-9`).
+        # 위 `extensions` 는 이미 조각(본체)만 센 뒤 1종임이 강제된 목록이다 — 데이터셋당 1값
+        # (`P-5`)이 성립하는 자리가 바로 그 검사다. 빈 문자열(확장자 없음)은 **NULL** 이다:
+        # 「없다」를 빈 문자열로 적으면 화면이 그것을 값으로 그린다.
+        file_extension=(extensions[0] or None) if extensions else None,
     )
 
     # ①-a **사람이 적은 값을 먼저 쓴다** (`#62` · 정본 `VAL-006` · `〈138〉`).

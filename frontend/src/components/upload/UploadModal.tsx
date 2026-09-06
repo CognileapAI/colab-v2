@@ -16,6 +16,7 @@ import { LineageStep } from '../lineage/LineageStep';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
+import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { previewNavigation } from '../preview/handoff';
 import { forgetPending, rememberPending } from './pendingStore';
 import {
@@ -28,6 +29,7 @@ import {
   type LineageStepRender,
   type IncompleteTransferItem,
   type PickedFile,
+  type PickedProject,
   type UploadLineageParent,
   type UploadSources,
   type UploadStatus,
@@ -76,6 +78,9 @@ export function UploadModal(props: {
   const [confirmClose, setConfirmClose] = useState(false);
 
   const [name, setName] = useState('');
+  // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
+  // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
+  const [nameDraft, setNameDraft] = useState('');
   const [topic, setTopic] = useState('');
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
@@ -85,11 +90,23 @@ export function UploadModal(props: {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [crs, setCrs] = useState('');
-  const [projects, setProjects] = useState<{ projectId: string; name: string }[]>([]);
+  // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위.** `''` = 미지정이고 그것이 기본이자 정상이다 —
+  // 그때 화면은 종전 날짜 칸 두 개를 쓰고 계약의 `granularity` 는 `null` 로 나간다.
+  const [granularity, setGranularity] = useState('');
+  const [startParts, setStartParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
+  const [endParts, setEndParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
+  // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 두 칸.** 화면은 문자열로 쥐고 보낼 때 숫자로 만든다 —
+  // 입력 중인 `1` 과 `10` 사이를 숫자로 쥐면 지우는 순간 값이 튄다.
+  const [intervalValue, setIntervalValue] = useState('');
+  const [intervalUnit, setIntervalUnit] = useState('');
+  const [projects, setProjects] = useState<PickedProject[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
   const [gridSkipped, setGridSkipped] = useState(false);
   const [nameError, setNameError] = useState(false);
+  //: ⭑ **⟨19차 해제 · PRD-15⟩ 설명도 이름과 같은 자리에 선다** — 필수 칸이 둘이 됐다.
+  //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
+  const [summaryError, setSummaryError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   // 접수(create) 실패. **`registerError` 와 섞지 않는다** — 그 자리는 등록 카드 안이라
   // 접수 시점엔 닫혀 있고, `submit()` 이 그것을 null 로 지운다. 수명이 다른 두 사실이다.
@@ -186,7 +203,9 @@ export function UploadModal(props: {
         }
         refreshIncomplete();
         const firstBody = receipt.files.find((f) => f.kind === '본체') ?? receipt.files[0];
-        setName((cur) => cur || (firstBody ? nameFromFile(firstBody.fileName) : ''));
+        const draft = firstBody ? nameFromFile(firstBody.fileName) : '';
+        setNameDraft(draft);
+        setName((cur) => cur || draft);
       })
       .catch((e: unknown) => {
         // §9 업로드 중단 — 「올리다가 끊겼어요. 다시 시도해 주세요.」 파일 놓기부터 다시 한다.
@@ -255,6 +274,31 @@ export function UploadModal(props: {
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
   // 헤더에서 읽은 값 중 FE 표면이 실제로 실어 주는 것은 `byteSize` 하나다 (`preview/types.ts`)
   const bodyByteSize = (status?.files.find((f) => f.kind === '본체') ?? status?.files[0])?.byteSize;
+
+  /**
+   * **사람이 입력한 값이 하나라도 있나** — 종료 확인의 판정식이다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
+   *
+   * 세는 것 = ①②③ 의 **사람 입력 필드 전부 ＋ 확정된 계보 부모 건수**.
+   *  - ① 이름(자동 초안과 다를 때만) · 주제 · 변수 · 기간 시작·끝 · 좌표계 · 설명
+   *  - ② 담은 프로젝트·논문 건수
+   *  - ③ 원천 표기 · **확정된** 계보 부모 건수(`LineageStep` 이 확인된 것만 올린다)
+   *
+   * 세지 않는 것 = **자동으로 채워진 값**. 파일명에서 만든 이름 초안 · 확장자 · 용량 ·
+   * 읽기 전용 가공 단계 칸 · (R-B 가 더할) 기본 선택값 `Lv2`·`연구실 구성원 전체`.
+   * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
+   * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
+   */
+  const hasHumanInput =
+    (name.trim() !== '' && name !== nameDraft) ||
+    topic.trim() !== '' ||
+    summary.trim() !== '' ||
+    variables.trim() !== '' ||
+    periodStart.trim() !== '' ||
+    periodEnd.trim() !== '' ||
+    crs.trim() !== '' ||
+    sourceLabel.trim() !== '' ||
+    projects.length > 0 ||
+    lineageParents.length > 0;
 
   const onLineageProgress = useCallback(
     (p: { confirmed: number; total: number }) => setLineage(p),
@@ -336,8 +380,10 @@ export function UploadModal(props: {
   }
 
   function requestClose() {
-    // 등록 단계를 연 채 닫으면 사람이 한 확인이 사라진다 — 그때만 묻는다 (§8 모달 닫기)
-    if (registerOpen) setConfirmClose(true);
+    // 사람이 적거나 확인한 것이 있을 때만 묻는다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
+    // 종전에는 `registerOpen` 만 봤다 — 등록 단계를 열어만 보고 닫아도 되물어서,
+    // 잃을 것이 없는 사람에게 확인이 걸렸다. **문면은 그대로 두고 조건만 고친다.**
+    if (hasHumanInput) setConfirmClose(true);
     else props.onClose();
   }
 
@@ -388,10 +434,30 @@ export function UploadModal(props: {
     // 끝을 비우면 무기한이라는 뜻으로 `null` 을 **명시해서** 보낸다 — 열쇠를 빼지 않는
     // 이유는 계약이 `ProjectPeriod` 와 같은 required-but-nullable 모양이라서다.
     // 시작이 비면 기간 자체를 싣지 않는다 — 시작 없는 끝은 기간이 아니다.
-    if (periodStart) {
+    // ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위를 고르면 조립의 재료가 자리 칸들로 바뀐다.**
+    // 안 골랐으면 종전 날짜 칸 두 개 그대로다 — 기존 경로를 갈아치우지 않는다.
+    const assembled = granularity
+      ? { start: assemble(startParts, granularity), end: assemble(endParts, granularity) }
+      : {
+          start: periodStart ? `${periodStart}T00:00:00Z` : null,
+          end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
+        };
+    if (assembled.start) {
       out.period = {
-        start: `${periodStart}T00:00:00Z`,
-        end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
+        start: assembled.start,
+        end: assembled.end,
+        // `''` 은 「미지정」이고 계약은 그것을 `null` 로 말한다 — 빈 문자열을 보내지 않는다.
+        granularity: granularity || null,
+      };
+    }
+    // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 두 칸이 **다 차야** 싣는다.**
+    // 반쪽이면 아예 안 실어 보내는 것이 아니라 **그대로 보내 서버 400 을 받는다** —
+    // 화면이 조용히 버리면 사용자는 적었다고 믿고 떠난다(문구의 정본은 서버 봉투다).
+    const rawInterval = intervalValue.trim();
+    if (rawInterval || intervalUnit) {
+      out.observationInterval = {
+        value: rawInterval ? Number(rawInterval) : null,
+        unit: intervalUnit || null,
       };
     }
     return out;
@@ -412,6 +478,14 @@ export function UploadModal(props: {
       return;
     }
     setNameError(false);
+    if (!summary.trim()) {
+      // PRD-15 — 설명이 필수다. 계약 `DatasetCreate.required` 와 같은 판정을 화면이 먼저 한다.
+      setSummaryError(true);
+      setStep(1);
+      window.setTimeout(() => document.getElementById('reg-summary')?.focus(), 0);
+      return;
+    }
+    setSummaryError(false);
     setRegisterError(null);
     try {
       const made = await upload.register({
@@ -419,7 +493,9 @@ export function UploadModal(props: {
         name: name.trim(),
         // **미정을 표현할 수 있어야 한다** — 4값 CHECK 는 「값이 있다면 넷 중 하나」다
         topic: topic || null,
-        summary: summary.trim() || null,
+        // ⭑ **⟨19차 해제 · PRD-15⟩ `null` 이 아니다** — 계약이 `type: string` 으로 닫았고
+        // 위에서 빈 값을 이미 걸렀다.
+        summary: summary.trim(),
         sourceLabel: sourceLabel.trim() || null,
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
@@ -541,8 +617,13 @@ export function UploadModal(props: {
             </p>
           )}
 
+          {/* ⭑ **⟨19차 · PRD-28⟩ 좌우 두 칸 — 미리보기 2 : 입력 3.**
+              rev1 축자 = 「좌우를 반씩 쓰던 것을 미리보기 2 : 입력 3 으로」. 비율은 CSS
+              (`.up-split`)가 갖는다 — 화면 코드가 폭을 계산하지 않는다. 좁은 폭에서는
+              한 칸으로 접히고, 그때 순서는 미리보기 → 입력 그대로다. */}
           {picked.length > 0 && (
-            <>
+            <div className="up-split" data-testid="up-split">
+              <div className="up-split-preview" data-testid="up-split-preview">
               <PreviewPanel
                 source={props.sources.preview}
                 uploadId={uploadId}
@@ -559,7 +640,10 @@ export function UploadModal(props: {
                   ...(gridOnly && transfer ? { transfer } : {}),
                 }}
               />
+              </div>
 
+              {/* 오른쪽 칸 — 사람이 적는 자리. 등록 게이트도 여기 선다(요약 레일이 아니다). */}
+              <div className="up-split-form" data-testid="up-split-form">
               {/* 후주입 확정 — 등록 게이트와 **같은 자리**다. 화면 개념을 늘리지 않는다.
                   판별이 끝나기 전에는 누를 수 없다 — 축이 정해져야 반영할 것이 있다. */}
               {attach ? (
@@ -634,45 +718,59 @@ export function UploadModal(props: {
                 </div>
               </div>
               ) : null}
-            </>
+
+            {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
+                옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치).
+                  ⭑ ⟨PRD-28⟩ 그 「아래」가 **오른쪽 칸 안의 아래**가 됐다 — 순서는 그대로다. */}
+            {!attach && registerOpen && (
+              <RegisterArea
+                step={step}
+                onStep={setStep}
+                fileName={bodyName}
+                lineage={lineage}
+                status={status}
+                projectSource={props.sources.projects}
+                name={name}
+                onName={setName}
+                topic={topic}
+                onTopic={setTopic}
+                summary={summary}
+                onSummary={setSummary}
+                variables={variables}
+                onVariables={setVariables}
+                periodStart={periodStart}
+                onPeriodStart={setPeriodStart}
+                periodEnd={periodEnd}
+                onPeriodEnd={setPeriodEnd}
+                crs={crs}
+                onCrs={setCrs}
+                granularity={granularity}
+                onGranularity={setGranularity}
+                startParts={startParts}
+                onStartParts={setStartParts}
+                endParts={endParts}
+                onEndParts={setEndParts}
+                intervalValue={intervalValue}
+                onIntervalValue={setIntervalValue}
+                intervalUnit={intervalUnit}
+                onIntervalUnit={setIntervalUnit}
+                sourceLabel={sourceLabel}
+                onSourceLabel={setSourceLabel}
+                projects={projects}
+                onProjects={setProjects}
+                nameError={nameError}
+                summaryError={summaryError}
+                registerError={registerError}
+                lineageStep={lineageStep}
+                lineageCtx={lineageCtx}
+                onCancel={() => setRegisterOpen(false)}
+                onSubmit={() => void submit()}
+              />
+            )}
+              </div>
+            </div>
           )}
 
-          {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
-              옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치) */}
-          {!attach && registerOpen && (
-            <RegisterArea
-              step={step}
-              onStep={setStep}
-              fileName={bodyName}
-              lineage={lineage}
-              status={status}
-              projectSource={props.sources.projects}
-              name={name}
-              onName={setName}
-              topic={topic}
-              onTopic={setTopic}
-              summary={summary}
-              onSummary={setSummary}
-              variables={variables}
-              onVariables={setVariables}
-              periodStart={periodStart}
-              onPeriodStart={setPeriodStart}
-              periodEnd={periodEnd}
-              onPeriodEnd={setPeriodEnd}
-              crs={crs}
-              onCrs={setCrs}
-              sourceLabel={sourceLabel}
-              onSourceLabel={setSourceLabel}
-              projects={projects}
-              onProjects={setProjects}
-              nameError={nameError}
-              registerError={registerError}
-              lineageStep={lineageStep}
-              lineageCtx={lineageCtx}
-              onCancel={() => setRegisterOpen(false)}
-              onSubmit={() => void submit()}
-            />
-          )}
         </div>
       </div>
 

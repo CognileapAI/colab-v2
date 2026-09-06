@@ -241,7 +241,7 @@ function fakes(
     },
     async create(body) {
       calls.createProject += 1;
-      return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: body.name };
+      return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: body.name, type: body.type };
     },
   };
   const lineage: LineageSource = {
@@ -360,6 +360,11 @@ async function dropFiles(files: File[]) {
 async function openRegister() {
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ **⟨19차 해제 · PRD-15 · WU-A4⟩ 설명이 필수 칸이 됐다** — 이름과 같은 급이다.
+  // 이 시험들이 재는 것은 설명이 아니라 **그 뒤의 것들**(계보·프로젝트·계약 형상)이므로,
+  // 등록을 여는 준비 단계에서 필수 칸을 채워 둔다. 설명 자체의 판정은
+  // `test/summary-required-20260905.test.tsx` 가 따로 잰다.
+  await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
 }
 
 const stepBtn = (n: '①' | '②' | '③') => screen.getByRole('button', { name: new RegExp(`^${n}`) });
@@ -402,11 +407,16 @@ describe('§8 모달 닫기 — 잃을 것이 있을 때만 묻는다', () => {
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 
-  it('등록 단계가 열려 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
+  // ⚠ 조건이 바뀌었다 (WU-A9 · PRD-14 · 미결-15 ⓐ) — 종전에는 「등록 단계가 열려 있으면」
+  // 무조건 물었다. 지금은 **사람이 입력한 값이 하나라도 있을 때**만 묻는다. 빈 상태로 열어만
+  // 두고 닫는 경우는 `test/close-guard-20260905.test.tsx` 가 「안 묻는다」로 잡는다.
+  // **문면은 그대로다** — 이 시험이 지키는 것이 그 문자열이다.
+  it('사람이 적은 값이 있으면 확인을 받는다 — 정본 문구 그대로', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
     await openRegister();
+    await change(screen.getByTestId('reg-summary'), '가');
     await click(screen.getByTestId('upload-close'));
     const confirm = await screen.findByTestId('upload-close-confirm');
     expect(confirm).toHaveTextContent(
@@ -867,7 +877,11 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     const body = calls.registered[0] ?? {};
     expect(body.variables).toEqual(['tp', 't2m']);
     expect(body.crs).toBe('EPSG:5179');
-    expect(body.period).toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' });
+    // ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 한 값으로 실린다.** 단위를 안 골랐으니
+    // `null`(미지정)이고, **시각값 두 칸은 종전 그대로**다 — 저장 모양이 바뀐 것이 아니다.
+    expect(body.period).toEqual({
+      start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: null,
+    });
   });
 
   it('끝 칸을 비우면 무기한이다 — `end: null` 로 실린다 (14차 해제)', async () => {
@@ -880,8 +894,9 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));
     // 끝을 지어내지도(오늘로 채우기) 기간을 통째로 버리지도 않는다 — 종전은 후자였다.
+    // ⭑ ⟨19차 해제 · PRD-18⟩ 단위 미지정은 `granularity: null` — 빈 문자열을 보내지 않는다.
     expect((calls.registered[0] ?? {}).period)
-      .toEqual({ start: '2025-06-01T00:00:00Z', end: null });
+      .toEqual({ start: '2025-06-01T00:00:00Z', end: null, granularity: null });
   });
 
   it('시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다', async () => {
@@ -979,21 +994,25 @@ describe('§8 ① 자동 메타데이터 확인', () => {
 });
 
 describe('§8 ② 소속 프로젝트 지정', () => {
-  it('고른 프로젝트가 칩으로 쌓이고 ×로 뺀다. 0건이면 안내가 칩 자리를 대신한다', async () => {
+  // ⭑ 2026-09-05 · `WU-A7`(PRD-23) — 칩 나열이 **국가과제 / 논문 두 패널**로 갈렸다.
+  // 유형별 수용 기준의 정밀 시험은 `test/project-panels-20260905.test.tsx` 가 진다.
+  it('고른 프로젝트가 유형 패널의 행으로 쌓이고 `해제` 로 뺀다. 0건 패널도 남는다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
     await click(stepBtn('②'));
-    expect(await screen.findByTestId('reg-proj-empty')).toHaveTextContent(
-      '아직 고른 프로젝트가 없어요.',
+    expect(await screen.findByTestId('reg-proj-empty-국가과제')).toHaveTextContent(
+      '아직 담은 국가과제가 없어요.',
     );
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
-    const chips = await screen.findByTestId('reg-proj-chips');
-    expect(chips).toHaveTextContent('낙동강 유역 홍수기 강우-유출 응답 분석');
-    await click(within(chips).getByRole('button', { name: /빼기/ }));
-    expect(await screen.findByTestId('reg-proj-empty')).toBeInTheDocument();
+    const panel = await screen.findByTestId('reg-proj-panel-국가과제');
+    expect(panel).toHaveTextContent('낙동강 유역 홍수기 강우-유출 응답 분석');
+    // 논문 패널은 0건이어도 사라지지 않는다
+    expect(screen.getByTestId('reg-proj-empty-논문')).toBeInTheDocument();
+    await click(within(panel).getByRole('button', { name: /해제/ }));
+    expect(await screen.findByTestId('reg-proj-empty-국가과제')).toBeInTheDocument();
   });
 
   it('같은 프로젝트를 두 번 담을 수 없다 — 정본 문구로 알린다', async () => {
@@ -1877,5 +1896,32 @@ describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서�
     const form = forms[0]!;
     expect(form.getAll('files')).toHaveLength(2);
     expect(form.has('relativePaths')).toBe(false);
+  });
+});
+
+// WU-A5 · PRD-21 — 등록 ② 의 자동 칸은 `포맷` 이 아니라 `확장자` 다.
+//
+// 「파일에서 읽는 값은 확장자·용량뿐이에요」(rev1). 판별 결과 문자열을 이 자리에
+// 그리면 `.hdf` 하나로 HDF4·HDF5 를 단정하게 된다 — 그 자리에서 거짓말이 된다.
+describe('PRD-21 — 자동 칸의 라벨은 `확장자` 이고 값은 `*.nc` 다', () => {
+  it('`포맷` 라벨이 사라지고 `확장자` 가 `자동` 태그와 함께 선다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await openRegister();
+    const auto = screen.getByTestId('reg-auto');
+    expect(auto).toHaveTextContent('확장자');
+    expect(auto).not.toHaveTextContent('포맷');
+    expect(within(auto).getAllByText('자동').length).toBeGreaterThan(0);
+  });
+
+  it('값은 조각의 확장자를 `*.nc` 로 조립한 것이다 — 읽기 전용이다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
+    await openRegister();
+    const field = screen.getByTestId('reg-extension') as HTMLInputElement;
+    expect(field.value).toBe('*.nc');
+    expect(field).toHaveAttribute('readonly');
   });
 });

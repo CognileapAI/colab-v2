@@ -174,7 +174,7 @@ function bannerSources(overrides: {
       createRender: async () => ({ renderId: 'R1', status: '그리는 중', stage: '파일 읽는 중' }) as never,
       getRender: async () => ({ renderId: 'R1', status: '그리는 중', stage: '파일 읽는 중' }) as never,
     },
-    projects: { list: async () => [], create: async () => ({ projectId: 'P', name: 'p' }) },
+    projects: { list: async () => [], create: async () => ({ projectId: 'P', name: 'p', type: '국가과제' as const }) },
     lineage: { suggest: async () => ({ items: [], degraded: false }) } as never,
   };
 }

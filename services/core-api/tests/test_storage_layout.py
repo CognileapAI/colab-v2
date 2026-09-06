@@ -92,7 +92,7 @@ def test_격자와_본체가_같은_디렉터리에서_섞이지_않는다(p2_cl
 # 빈 자리를 보고 404 를 냈고 그 실패는 중계에서 **503 `RENDER_UNAVAILABLE`** 로 나왔다.
 # 사용자에게 등록은 「데이터셋이 성립하는 사건」이므로 **자리도 데이터셋의 것**이어야 한다.
 def _register(client, upload_id: str, *, name: str = "배치 시험 데이터셋"):
-    return client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name},
+    return client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name, "summary": "시험용 설명 한 줄"},
                        headers=auth(TOKEN_RES))
 
 

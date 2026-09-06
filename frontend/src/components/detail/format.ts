@@ -5,6 +5,14 @@ import type { DatasetBasicInfo } from './types';
 export const EMPTY = '—';
 
 /**
+ * ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격을 안 적은 행의 안내 한 줄.**
+ *
+ * 빈 칸으로 두면 「모른다」와 「간격이 없다」가 화면에서 갈리지 않는다. 문구는 **한 자리**에
+ * 있다 — 두 벌을 두면 한쪽만 고쳐지는 날이 온다. ⛔ 재선택을 강제하지 않는다.
+ */
+export const INTERVAL_MISSING_NOTICE = '관측 간격 미기재';
+
+/**
  * 기간 = 데이터가 다루는 시간 범위 (`§4` 용어). 목업 표기는 `2025-06 ~ 09` 다 —
  * 해가 같으면 뒤쪽 해를 다시 적지 않는다.
  *
@@ -15,10 +23,77 @@ export const EMPTY = '—';
  */
 export function formatPeriod(p: DatasetBasicInfo['period']): string {
   if (!p) return EMPTY;
+  // ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위가 있으면 그 자리까지 적는다.**
+  // `null` 이면 아래 종전 규칙 그대로다 — 기존 전 행이 그 상태이고 **재선택이 없다.**
+  if (p.granularity) return formatPeriodByUnit(p.start, p.end ?? null, p.granularity);
   const s = p.start.slice(0, 7);
   if (!p.end) return `${s} ~ 진행 중`;
   const e = p.end.slice(0, 7);
   return s.slice(0, 4) === e.slice(0, 4) ? `${s} ~ ${e.slice(5, 7)}` : `${s} ~ ${e}`;
+}
+
+/**
+ * 최소 단위별로 시각값을 **어디까지 적는가** (PRD-18 · `M-7`).
+ *
+ * 저장은 종전대로 `date-time` 하나이고(미결-18 ⓐ), 이 표가 그 값을 **되돌려 읽는 열쇠**다.
+ * 단위를 모르면 `2025-06-01T00:00:00Z` 가 「6월 1일」인지 「6월 1일 0시 0분」인지 갈리지 않는다.
+ *
+ * 자리 = ISO 문자열의 **글자 수**다 (`2025-06-01T00:00:00Z`).
+ * ⚠ **`Date` 로 파싱하지 않는다** — 보는 사람의 시간대가 날짜를 하루 밀 수 있고, 그러면
+ *   같은 데이터가 사람마다 다른 기간을 갖게 된다. 종전 규칙(`slice(0, 7)`)도 같은 이유였다.
+ */
+const UNIT_CUT: Record<string, number> = { 년: 4, 월: 7, 일: 10, 시: 13, 분: 16, 초: 19 };
+
+function cut(iso: string, unit: string): string {
+  const n = UNIT_CUT[unit] ?? 16;
+  // `T` 는 저장의 문법이고 화면의 문법이 아니다 — 사람이 읽는 자리에서는 공백이다.
+  return iso.slice(0, n).replace('T', ' ');
+}
+
+function formatPeriodByUnit(start: string, end: string | null, unit: string): string {
+  const s = cut(start, unit);
+  if (!end) return `${s} ~ 진행 중`;
+  const e = cut(end, unit);
+  // **같은 날이면 날짜를 다시 적지 않는다** — 목업 축자 `2020-05-01 00:00 ~ 03:00`.
+  // 종전 규칙이 「해가 같으면 해를 다시 안 적는다」였던 것과 같은 종류의 생략이다.
+  if (s.length > 10 && e.length > 10 && s.slice(0, 10) === e.slice(0, 10)) {
+    return `${s} ~ ${e.slice(11)}`;
+  }
+  return s === e ? s : `${s} ~ ${e}`;
+}
+
+/**
+ * 관측 간격 한 덩이 — `10분` (PRD-17). **두 칸이 한 값**이라 반쪽이면 안 그린다.
+ *
+ * 계약이 표시 문자열을 싣지 않는다 — 조립은 여기서만 한다.
+ */
+export function formatInterval(
+  interval: DatasetBasicInfo['observationInterval'] | undefined,
+): string | null {
+  if (!interval) return null;
+  const { value, unit } = interval;
+  if (value === null || value === undefined || !unit) return null;
+  return `${value}${unit}`;
+}
+
+/**
+ * **기간 표기의 정본 (PRD-35).** 기간을 보이는 **모든 자리**가 이 함수 하나를 쓴다 —
+ * 상세 기본 정보 · 목록 카드 · 등록 미리보기. 세 자리가 같은 값을 다르게 적으면 같은
+ * 데이터가 화면 사이에서 세 얼굴을 갖는다.
+ *
+ * 규칙 = 기간 뒤에 관측 간격을 **괄호로 병기**한다. 목업 축자
+ * `2020-05-01 00:00 ~ 03:00 (10분)`.
+ * ⛔ **관측 간격이 비면 괄호를 그리지 않는다** — 빈 괄호 `()` 는 「없다」가 아니라 잡음이다.
+ */
+export function formatPeriodWithInterval(
+  period: DatasetBasicInfo['period'],
+  interval: DatasetBasicInfo['observationInterval'] | undefined,
+): string {
+  const base = formatPeriod(period);
+  const gap = formatInterval(interval);
+  // 기간 자체가 없으면 빈 표시 하나다 — `— (10분)` 은 무엇의 간격인지 말하지 않는다.
+  if (!gap || base === EMPTY) return base;
+  return `${base} (${gap})`;
 }
 
 /** 단위 표기 — 목업이 쓰는 단위는 `MB` 다(`37 MB` · `148 MB`). */
@@ -54,6 +129,26 @@ export function formatFiles(files: DatasetBasicInfo['files'], fileName: string |
   const size = formatBytes(files.totalSizeBytes);
   if (files.count === 1) return fileName ? `${fileName} · ${size}` : size;
   return `조각 ${files.count}개 · 합계 ${size}`;
+}
+
+/**
+ * 포맷 칸의 표기 — **확장자는 확장자로만 적는다** (PRD-21 · `P-10`·`R-09`).
+ *
+ * `.hdf` 하나가 서로 호환되지 않는 두 포맷을 가리키므로, 매직 넘버를 읽지 않는 한 단정할 수
+ * 없다. 그래서 화면은 판별 결과 문자열(`format`)을 쓰지 않고 조각의 확장자를 `*.nc` 로 적는다.
+ *
+ * **퇴행 경로가 있다** — 확장자를 못 뽑은 기존 행은 `format` 을 그대로 보인다. 둘 다 없으면
+ * 빈 표시다. 지어내지 않는다.
+ *
+ * ⚠ **조립은 이 함수 하나가 한다.** 상세·목록·등록이 같은 값을 다르게 적으면 화면 사이에서
+ * 같은 데이터가 두 얼굴을 갖는다.
+ */
+export function formatExtension(
+  fileExtension: string | null | undefined,
+  format: string | null | undefined,
+): string {
+  if (fileExtension && fileExtension.length > 0) return `*.${fileExtension}`;
+  return orEmpty(format);
 }
 
 export function orEmpty(v: string | null | undefined): string {

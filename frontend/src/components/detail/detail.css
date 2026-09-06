@@ -37,6 +37,13 @@
 .detail-page .dh-sum { font-size: var(--text-body); color: var(--color-text-body); margin-top: 5px; }
 /* 버그 15 · A안 — 설명문의 `／` 를 표시 단계에서만 나눈다. 조각이 1개면 이 규칙이 아예 안 걸린다.
    촘촘하게 둔다 — 헤더는 칩·기본 정보가 접힘선 위에 남아야 하는 자리다. */
+/* ⭑ ⟨19차 · PRD-15 · 미결-5 ⓐ⟩ 설명이 빈 기존 행의 안내 한 줄.
+   본문(`dh-sum`)보다 약하게 — 값이 아니라 **아직 없다는 사실**이다. */
+.detail-page .dh-sum-empty {
+  font-size: var(--text-body);
+  color: var(--color-gray-500);
+  margin: 5px 0 0;
+}
 .detail-page .dh-sum-lead { margin: 0; }
 .detail-page .dh-sum-list { margin: 3px 0 0; padding-left: 16px; list-style: disc; }
 .detail-page .dh-sum-list li { margin-top: 1px; line-height: 1.5; }
@@ -138,3 +145,73 @@
 .detail-page .fl-gh.muted { font-weight: 600; margin-bottom: 0; }
 .detail-page .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .detail-page label.btn { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+/* ── WU-A3 · 상세 수정 (PRD-22) ─────────────────────────────────────────────────
+   진입점은 헤더 우측, 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지
+   않는다 (`§1.3-1` 한 페이지 스크롤). 색·간격은 전부 토큰이다. */
+.detail-page .dh-edit { margin-left: auto; display: flex; gap: 8px; flex: none; align-items: center; }
+/* 승인 자리(`dh-act`)가 이어서 오면 그쪽은 자동 여백을 다시 쓰지 않는다 */
+.detail-page .dh-edit + .dh-act { margin-left: 0; }
+@media (max-width: 860px) { .detail-page .dh-edit { width: 100%; } }
+
+.detail-page .dt-edit {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 16px;
+  margin-bottom: var(--space-5);
+}
+.detail-page .dt-edit .de-grid { display: grid; gap: 12px; }
+.detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
+.detail-page .dt-edit .de-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
+/* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */
+.detail-page .dt-edit .de-req { font-size: 9px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
+.detail-page .dt-edit .de-v {
+  width: 100%;
+  font: inherit;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+.detail-page .dt-edit .de-period { display: flex; gap: 8px; align-items: center; border: none; background: none; padding: 0; }
+.detail-page .dt-edit .de-period input { font: inherit; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 8px; }
+.detail-page .dt-edit .de-tilde { color: var(--color-gray-500); }
+.detail-page .dt-edit .de-err { color: var(--color-warning-600); font-size: var(--text-body-sm); margin: 12px 0 0; }
+.detail-page .dt-edit .de-act { display: flex; gap: 8px; margin-top: 16px; }
+@media (max-width: 860px) { .detail-page .dt-edit .de-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ── WU-A8 · 구역 메뉴 (PRD-24 · 미결-9 ⓑ) ──────────────────────────────────────
+   화면 위에 붙어 남고 현재 구역만 표시가 진해진다. **탭이 아니다** — 이 규칙 어디에도
+   구역을 숨기는 선언이 없다(정본 `Policy_데이터셋_상세 §1.3-1` 무개정). */
+.detail-page .dsec-menu {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 var(--space-4);
+  padding: 8px 0;
+  background: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border);
+}
+.detail-page .dsec-menu-l { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.detail-page .dsec-menu-i {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-body-sm);
+  color: var(--color-gray-600);
+  text-decoration: none;
+}
+.detail-page .dsec-menu-i:hover { background: var(--color-gray-100); }
+.detail-page .dsec-menu-i.is-active {
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  font-weight: 600;
+}
+
+/* ⭑ ⟨19차 해제 · PRD-17⟩ 「관측 간격 미기재」 — 값 아래의 보조 한 줄.
+   값과 같은 굵기로 그리면 「미기재」가 값처럼 읽힌다. */
+.detail-page .infogrid .ig .v .ig-note { display: block; font-size: var(--text-caption); font-weight: 400; color: var(--color-text-muted); margin-top: 2px; }
+/* 수정 폼의 관측 간격·최소 단위 칸 — 기간과 같은 모양이다(두 칸이 한 값) */
+.detail-page .dt-edit .de-period select { min-width: 0; }

@@ -2485,3 +2485,185 @@ items:
       ⚠ **`serial` 선언을 푸는 쪽으로 새지 않는다** — `db-selftest` 를 병렬로 돌려 거짓 red 가 났던 자리가 실재한다(`gates/README.md` 「격리를 깨는 속도는 속도가 아니다」). 이 항목이 손대는 것은 **게이트 안**뿐이다.
       ⚠ **`[미확인]` — 병렬화로 실제 몇 분이 줄어드는지.** 이 회차는 재지 않았다(등록만) — **추정값을 적지 않는다.** 해소 = 완료 정의 ⑷.
     sources: ["dev-package/reports/window-8a/lane-report.md", "gates/README.md", "gates/config/parallelism.toml"]
+
+  - id: WU-A1
+    name: 권한 스위치 기본값 (PRD-25)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "행 없는 연구원이 업로드·편집=true·프로젝트 생성=true 로 내려오고, 명시적 false 행은 그대로다. 회귀 테스트 4건 green"
+    evidence: "dev-package/sessions/p3-perm-default-20260905.md"
+    deadline: null
+    note: "마이그레이션 0 · DB 기본값 행을 만들지 않는다(서버 상수 한 자리). staging 계정 권한이 실제로 바뀐다 — 배포 전 현재 행 상태 실측 보고"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-25"]
+
+  - id: WU-A2
+    name: 미리보기 생성 권한 검사 (PRD-26)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "POST /previews 가 업로드·편집 없으면 403, 잠긴 남의 데이터셋 대상이면 거절, 자기 업로드는 성공, 다른 연구실 id 는 404. 값 조회가 쓰는 판정 함수를 재사용했음을 diff 로 보인다"
+    evidence: "dev-package/sessions/p3-preview-guard-20260905.md"
+    deadline: null
+    note: "403 이 계약에 없다(실측). X2-FREEZE-PROTOCOL §5 등급 판정 전까지 계약·DB·프론트 변경 0 은 가정일 뿐"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-26"]
+
+  - id: WU-A12
+    name: rev1 유지 항목 실측 (PRD-39)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "실측 13건 각각에 있음/없음 + path:line 이 붙은 표가 나오고, 있음 항목마다 회귀 시험 1건이 green"
+    evidence: "dev-package/sessions/p3-rev1-keep-audit-20260905.md"
+    deadline: null
+    note: "표 14행 중 ⑼(파생 행 읽기 전용)는 PRD-31 ⑶ 소관이라 뺐다. WU-A9·A10·A14 보다 먼저 돈다 — 방어선을 먼저 깐다"
+    sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-39"]
+
+  - id: WU-A3
+    name: 상세 수정 UI — 현행 필드만 (PRD-22)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "상세에 수정 진입점이 있고, 권한 없으면 안 보이며, 이름만 바꾼 저장이 나머지를 건드리지 않는다. 편집 대상 = 이름·설명·원천 표기·좌표계·기간. topic 은 읽기 전용"
+    evidence: "dev-package/sessions/p3-detail-edit-20260905.md"
+    deadline: null
+    note: "FE 만 바뀐다(서버·계약은 이미 있다). R-B 가 이 골격을 그대로 쓰고 필드만 늘린다"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-22"]
+
+  - id: WU-A13
+    name: 확장자 혼합 규칙 (PRD-32)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "다른 확장자 파일이 빠지고 토스트 축자가 뜬다. 대소문자는 같은 종류다. API 로 2종을 보내면 400. 기존 데이터 중 2종 이상인 데이터셋 건수를 세어 보고했다"
+    evidence: "dev-package/sessions/p3-ext-mixed-20260905.md"
+    deadline: null
+    note: "기존 행을 지우거나 쪼개지 않는다 — 세어 보고만 한다"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-32"]
+
+  - id: WU-A11
+    name: 디자인 검수 실측 (PRD-29 · 미결-10)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "11건(R-19~R-29) 각각에 있음/없음 판정과 path:line 근거가 붙은 표. 판정 없이 고치지 않는다"
+    evidence: "dev-package/sessions/p3-design-audit-20260905.md"
+    deadline: null
+    note: "산출물은 판정표이고 CSS 를 고치지 않는다. 수정은 R-B 의 WU-B11. 대비 3건(1·3·7)이 접근성 합격선"
+    sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-29"]
+
+  - id: WU-A7
+    name: 프로젝트·논문 패널 분리 (PRD-23)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "국가과제·논문 두 패널이 각각 행을 쌓고, 0건 패널도 빈 상태로 남는다. + 새 프로젝트 만들기 는 화면에 한 개"
+    evidence: "dev-package/sessions/p3-project-panels-20260905.md"
+    deadline: null
+    note: "계약·서버·DB 변경 0"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-23"]
+
+  - id: WU-A10
+    name: 썸네일 넛지 (PRD-20)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12 회귀 방어선 green"]
+    depends_on: ["WU-A12"]
+    completion_def: "② 단계에 썸네일과 교체 안내가 있고 클릭하면 파일 선택기가 열린다"
+    evidence: "dev-package/sessions/p3-thumb-nudge-20260905.md"
+    deadline: null
+    note: "저장 경로는 이 WU 밖 — 별건 WU-C2. 계약·서버·DB 변경 0"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-20"]
+
+  - id: WU-A8
+    name: 상세 구역 메뉴 sticky + 활성 표시 (PRD-24)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "구역 메뉴가 position:sticky 로 화면 위에 남고 현재 구역이 활성 표시되며, 어느 구역도 DOM 에서 숨겨지지 않는다"
+    evidence: "dev-package/sessions/p3-detail-sticky-20260905.md"
+    deadline: null
+    note: "미결-9 ⓑ 확정 — 이 형태가 최종. 정본 Policy_데이터셋_상세 §1.3-1 을 개정하지 않고 탭·패널 전환을 만들지 않는다"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-24"]
+
+  - id: WU-A9
+    name: 종료 확인 조건 (PRD-14)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12 회귀 방어선 green"]
+    depends_on: ["WU-A12"]
+    completion_def: "빈 상태 닫기는 안 묻고, 한 글자라도 적었거나 계보 부모 1건이면 묻는다. 문면은 종전 그대로다"
+    evidence: "dev-package/sessions/p3-close-guard-20260905.md"
+    deadline: null
+    note: "미결-15 ⓐ — 조건만 고치고 문면 유지. PRD-34 는 §4 범위 밖"
+    sources: ["dev-package/prd/rounds/R-A-3-frontend.md", "PRD-14"]
+
+  - id: WU-A14
+    name: 조각 수 표기 (PRD-38)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12 회귀 방어선 green"]
+    depends_on: ["WU-A12"]
+    completion_def: "상세·목록의 조각 수가 응답 files.count 한 곳에서 오고 하드코드가 0건이다. 하드코드가 0건이면 그 사실과 path:line 을 판정으로 남기고 회귀 시험 1건만 붙이고 닫는다"
+    evidence: "dev-package/sessions/p3-part-count-20260905.md"
+    deadline: null
+    note: "결과가 「없음 → 0 작업」일 수 있다. 없는 결함을 고치지 않는다. DB·계약·서버 변경 0"
+    sources: ["dev-package/prd/rounds/R-A-4-verify.md", "PRD-38"]
+
+  - id: WU-A5
+    name: 확장자 표기 (PRD-21)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)"]
+    depends_on: []
+    completion_def: "상세가 *.nc 를 보이고 판별 문자열을 안 보인다 · file_extension backfill 이 기존 13행 파일명과 일치 · 검색은 종전대로 format 으로 잡힌다(「nc 로도 찾는다」는 R-B M-10)"
+    evidence: "dev-package/sessions/p3-extension-label-20260905.md"
+    deadline: null
+    note: "M-9. WU-A6 의 M-6·M-7 과 한 마이그레이션 head 로 묶는다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
+    sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-21", "부록 B M-9"]
+
+  - id: WU-A4
+    name: 설명 필수 + 레이아웃 (PRD-15·28)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)"]
+    depends_on: ["WU-A3"]
+    completion_def: "설명 없는 등록이 400, 공백만도 400, 기존 NULL 행이 안내 문구와 함께 뜬다. 1280px 에서 좌우 2:3 · 짧은 값 3칸 한 줄"
+    evidence: "dev-package/sessions/p3-summary-required-20260905.md"
+    deadline: null
+    note: "DB 변경 0 — NOT NULL 금지·일괄 채우기 금지(미결-5 ⓐ). DatasetCreate.required 에 summary 추가가 파괴적 변경이다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
+    sources: ["dev-package/prd/rounds/R-A-2-server.md", "PRD-15", "PRD-28"]
+
+  - id: WU-A6
+    name: 관측 간격 · 기간 최소 단위 · 기간 표기 (PRD-17·18·35)
+    status: done
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["계약 동결 해제 19차 승인 (등급 ㉯)", "WU-A5 와 같은 마이그레이션 head"]
+    depends_on: ["WU-A3", "WU-A5"]
+    completion_def: "단위 분 선택 시 다섯 칸이 열리고 value=10·unit='분' 이 저장되며 화면이 10분 으로 조립한다 · 숫자만 채우면 400 · 값을 비우면 등록 성공 · granularity NULL 기존 행 표기가 종전과 같다 · 간격이 있으면 기간 뒤 (10분), 없으면 빈 괄호가 없다"
+    evidence: "dev-package/sessions/p3-interval-period-20260906.md"
+    deadline: null
+    note: "M-6·M-7. DataPeriod 는 additionalProperties:false 라 granularity 추가가 계약 파괴 변경이다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
+    sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-17", "PRD-18", "PRD-35", "부록 B M-6·M-7"]

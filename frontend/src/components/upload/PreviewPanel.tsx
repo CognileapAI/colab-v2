@@ -76,6 +76,9 @@ export function PreviewPanel(props: {
   const [tileExpired, setTileExpired] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  /** 사람이 고른 대표 그림의 **화면 전용** 주소(`WU-A10`). 저장 경로는 `WU-C2` 다. */
+  const [pickedThumb, setPickedThumb] = useState<string | null>(null);
+  const thumbInput = useRef<HTMLInputElement | null>(null);
   const polling = useRef(0);
   /**
    * 폴링 **세대**. 새로 그리기 시작할 때와 화면이 사라질 때 올라간다. 이미 날아간 조회는
@@ -202,10 +205,62 @@ export function PreviewPanel(props: {
   // 「맞습니다」를 누른 뒤에는 확인을 다시 청하지 않는다 — 물어 놓고 또 묻지 않는다
   const gridBlock = gs && !(accepted && gs.name === '위치 확인') ? gs : null;
 
+  /**
+   * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
+   * 사람이 고른 그림이 있으면 그것, 없으면 **자동 생성된 미리보기 축소본**이 기본이다.
+   * `pickedThumb` 는 `URL.createObjectURL` 로 만든 **이 화면만의 주소**다 — 서버로 가지 않는다.
+   */
+  const autoThumb = layers?.thumbnailUrl ?? salvage?.thumbnailUrl ?? null;
+  const thumbSrc = pickedThumb ?? autoThumb;
+
+  function pickThumb(file: File | null): void {
+    if (!file) return;
+    setPickedThumb((prev) => {
+      // 앞서 만든 주소는 놓아준다 — 화면 하나가 blob 을 쌓아 두지 않는다.
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }
+
   return (
     <section className="mapstage" data-testid="up-preview">
       <div className="mapbar">
         <span className="mt">미리보기</span>
+      </div>
+
+      {/* 대표 그림(썸네일) — rev1 `thumbrow` · `WU-A10` · PRD-20.
+          자동으로 만들어진 미리보기 축소본이 **기본**이고, 옆 줄이 바꿀 수 있다고 말한다.
+          ⛔ **저장 경로는 이 WU 밖이다**(별건 `WU-C2`). 고른 그림은 화면에서만 바뀌고
+             `representative_file_id` 는 건드리지 않는다 — 그 열은 조각 지정용이다. */}
+      <div className="thumbrow" data-testid="up-thumb-block">
+        <button
+          type="button"
+          className="th-slot"
+          data-testid="up-thumb-pick"
+          aria-label="대표 그림 바꾸기"
+          onClick={() => thumbInput.current?.click()}
+        >
+          {thumbSrc ? (
+            <img className="th-img" alt="" data-testid="up-thumb-img" src={thumbSrc} />
+          ) : (
+            <span className="th-ph" data-testid="up-thumb-empty" aria-hidden="true" />
+          )}
+        </button>
+        <div className="th-txt">
+          <span className="th-t">대표 그림(썸네일)</span>
+          <span className="th-n" data-testid="up-thumb-nudge">
+            눌러서 다른 그림으로 바꿀 수 있어요
+          </span>
+        </div>
+        {/* 클릭 진입만 만든다 — 고른 파일은 어디로도 보내지 않는다. */}
+        <input
+          ref={thumbInput}
+          className="th-in"
+          type="file"
+          accept="image/*"
+          data-testid="up-thumb-input"
+          onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
+        />
       </div>
 
       {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}

@@ -6,7 +6,7 @@
 // **`요약`·`기간` 문면을 여기서 다시 만들지 않는다** — 상세 기본 정보가 쓰는 것을 그대로
 // 쓴다(`detail/format.ts`). 같은 값의 표기가 두 화면에서 갈리는 자리를 만들지 않는다.
 // 특히 열린 기간(`~ 진행 중`)은 `〈283〉`(14차 해제)이 정한 성질이라 한 곳에만 있어야 한다.
-import { formatPeriod, orEmpty } from '../detail/format';
+import { formatPeriodWithInterval, orEmpty } from '../detail/format';
 import type { SearchResultRow } from './types';
 
 function day(ts: string): string {
@@ -85,9 +85,16 @@ export function SearchHitCard(props: { row: SearchResultRow; onOpen(datasetId: s
         {/* ⭑ **⟨16차 해제 · `〈298〉`⟩ 기간.** ⚠ **잠긴 카드에는 두지 않는다** —
             정본 `§8` 「잠긴 결과 카드 … 기간·원천·소유 메타 줄은 두지 않는다」.
             서버가 값을 빼는 것이 아니라 **화면이 안 그리는 것**이다. */}
+        {/* ⭑ **⟨19차 해제 · PRD-35⟩ 목록 카드는 상세와 **같은 함수**로 그린다** —
+            세 자리가 같은 값을 다르게 적으면 같은 데이터가 세 얼굴을 갖는다.
+            ⚠ `SearchResultRow` 는 관측 간격을 **싣지 않는다**(계약 축자 · 이 회차가 여는
+            열쇠는 `DatasetCreate`·`DatasetUpdate`·`DatasetBasicInfo` 셋뿐이다). 그래서
+            여기서 넘기는 값은 `undefined` 이고, **규칙이 같아 괄호가 안 그려진다** —
+            카드가 상세와 다른 규칙을 쓰는 것이 아니라 **같은 규칙에 값이 없는 것**이다.
+            카드가 간격을 보이려면 `SearchResultRow` 에 열쇠가 서야 하고 그것은 별건이다. */}
         {!locked && (
           <span className="span" data-testid="hit-period">
-            {formatPeriod(row.period)}
+            {formatPeriodWithInterval(row.period, undefined)}
           </span>
         )}
         <span className="who">{row.uploader.name}</span>

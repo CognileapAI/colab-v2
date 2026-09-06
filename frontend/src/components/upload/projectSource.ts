@@ -15,7 +15,8 @@ export function apiProjectSource(): ProjectSource {
       const r = await api.POST('/projects', { body });
       if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('프로젝트를 만들지 못했어요.');
-      return { projectId: r.data.projectId, name: r.data.name };
+      // 유형은 화면이 패널을 가르는 데 쓴다 (`WU-A7`). 응답에 없으면 보낸 값을 그대로 쓴다.
+      return { projectId: r.data.projectId, name: r.data.name, type: r.data.type ?? body.type };
     },
   };
 }

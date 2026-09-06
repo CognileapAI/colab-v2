@@ -3,7 +3,15 @@
 // 잠긴 데이터는 이 블록을 통째로 비운다(`basicInfo` null) — 부르는 쪽이 아예 그리지 않는다.
 import { useState } from 'react';
 import { PieceList } from './PieceList';
-import { EMPTY, formatFiles, formatPeriod, orEmpty } from './format';
+import {
+  EMPTY,
+  INTERVAL_MISSING_NOTICE,
+  formatExtension,
+  formatFiles,
+  formatInterval,
+  formatPeriodWithInterval,
+  orEmpty,
+} from './format';
 import type { DatasetFile, FilesSource } from './filesSource';
 import type { DatasetBasicInfo } from './types';
 
@@ -36,12 +44,18 @@ export function BasicInfoGrid(props: {
       );
   }
 
+  // ⭑ **⟨19차 해제 · PRD-35⟩ 기간 뒤에 관측 간격을 괄호로 병기한다.** 조립은
+  // `formatPeriodWithInterval` **한 곳**이고 목록 카드·등록 미리보기가 같은 함수를 쓴다.
+  // 간격이 비면 괄호를 그리지 않고, 대신 아래 「관측 간격 미기재」 한 줄이 선다 (PRD-17) —
+  // ⛔ **빈 괄호 `()` 를 그리지 않는다**: 그것은 「없다」가 아니라 잡음이다.
+  const intervalMissing = formatInterval(b.observationInterval) === null;
   const cells: [string, string][] = [
     ['구성', b.variables.length > 0 ? b.variables.join(' · ') : EMPTY],
     ['좌표계', orEmpty(b.crs)],
-    ['기간', formatPeriod(b.period)],
+    ['기간', formatPeriodWithInterval(b.period, b.observationInterval)],
     ['격자', orEmpty(b.grid)],
-    ['포맷', orEmpty(b.format)],
+    // **판별 문자열이 아니라 확장자다** (PRD-21) — 못 뽑은 행만 `format` 으로 퇴행한다.
+    ['포맷', formatExtension(b.fileExtension, b.format)],
     ['파일', formatFiles(b.files, props.fileName)],
     ['원천 표기', orEmpty(b.sourceLabel)],
     ['소유자', b.owner.name],
@@ -57,6 +71,13 @@ export function BasicInfoGrid(props: {
             </div>
             <div className="v">
               {v}
+              {/* PRD-17 — 안 적은 행은 **그 사실을 말한다.** 「모른다」를 빈 칸으로 두면
+                  「간격이 없다」와 갈리지 않는다. ⛔ 재선택을 강제하지 않는다 — 안내 한 줄이다. */}
+              {k === '기간' && intervalMissing ? (
+                <span className="ig-note" data-testid="ig-interval-missing">
+                  {INTERVAL_MISSING_NOTICE}
+                </span>
+              ) : null}
               {k === '파일' ? (
                 <button type="button" className="ig-more" onClick={toggle}>
                   {open ? '접기' : '보기'}

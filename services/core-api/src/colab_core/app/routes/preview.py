@@ -53,16 +53,31 @@ def _refused(exc: RelayRefused) -> JSONResponse:
     return JSONResponse(status_code=exc.status, content=body)
 
 
-def _target_in_lab(db: Session, target: dict) -> bool:
-    """대상이 이 연구실 것인가. 경계는 RLS 가 이미 걸어 둔 위에서 확인한다."""
+def _require_target_access(db: Session, subject: Subject, target: dict) -> None:
+    """대상에 닿아도 되는가 (`WU-A2` · PRD-26).
+
+    종전에는 **연구실 경계만** 봤다 — 잠긴 남의 데이터셋을 대상으로 한 렌더가 안 막혔고,
+    화면이 못 내려받는 파일을 그림으로는 보여 줬다(`E-01 나-2` = 미적용).
+
+    ⛔ **새 판정을 만들지 않는다.** 데이터셋은 값 조회(`lookupDatasetValue`)·내려받기가
+    쓰는 `catalog.require_body_access` 를 **그대로** 부른다 — ⑴ 경계 밖이면 404(존재를
+    알리지 않는다 · P-9·P-10) ⑵ 잠긴 데이터이고 허용 목록 밖이면 403(P-34). 판정을 복사하면
+    한쪽만 고쳐지는 날이 온다(그 함수 머리 주석 축자).
+
+    **등록 전 업로드는 소유자 판정만 본다** — 원장에 아직 공개 범위가 없다. 남의 업로드는
+    존재를 알리지 않으므로 403 이 아니라 **404** 다.
+    """
     dataset_ref, upload_ref = target.get("datasetId"), target.get("uploadId")
     if dataset_ref is not None:
-        return Ulid.is_valid(dataset_ref) and d3_catalog.dataset_exists(db, Ulid(dataset_ref))
-    if upload_ref is not None:
-        if not Ulid.is_valid(upload_ref):
-            return False
-        return d5_ingestion.UploadLedgerAdapter(db).find(Ulid(upload_ref)) is not None
-    return False
+        if not Ulid.is_valid(dataset_ref):
+            raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
+        catalog.require_body_access(db, Ulid(dataset_ref))
+        return
+    if not Ulid.is_valid(upload_ref):
+        raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
+    record = d5_ingestion.UploadLedgerAdapter(db).find(Ulid(upload_ref))
+    if record is None or str(record.uploader_account_id) != str(subject.account_id):
+        raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
 
 
 @router.get("/preview-palettes", name="listPalettes")
@@ -110,8 +125,14 @@ def create_preview_render(request: Request, response: Response, body: dict = Bod
     if not isinstance(style, dict) or not style.get("palette"):
         # `style.palette` 는 required 다. **값 집합은 viz-render 소유**라 여기서 만들지 않는다.
         raise errors.bad_request("style.palette 가 필요하다.")
-    if not _target_in_lab(db, target):
-        raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
+    # ⑴ **편집 권한** — 스크린샷 중계(`createPreviewScreenshot`)와 **같은 두 줄**이다.
+    #    화면에서 숨긴 것은 서버도 같은 기준으로 막는다(`§3.3`).
+    role = d2_access.role_of(db, subject.account_id)
+    permissions = d2_access.permissions_of(db, subject.account_id, role)
+    if not permissions.get("업로드·편집"):
+        raise errors.forbidden("`업로드·편집` 스위치가 꺼져 있다.")
+    # ⑵ **대상 접근** — 값 조회가 쓰는 판정 함수를 재사용한다 (`_require_target_access`).
+    _require_target_access(db, subject, target)
 
     relay = request.app.state.previews
     if relay is None:
