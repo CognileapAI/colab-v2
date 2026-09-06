@@ -4015,7 +4015,13 @@ items:
       ⑻ dev 배포 뒤 **검증이 올린 일회용 데이터셋 1건** 실삭제 — 410 첫 실측 ·
       사전 스냅샷 키의 S3 부재(원장 키 목록 기준 · 접두 스캔 아님) · 계보 상대의 묘비 노드 ·
       승인함 대기 0 ＋ `deploy_doctor` 14/14 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
-    evidence: null
+    evidence: >-
+      2026-09-06 레인 `lane-dl1-dataset-delete` C0~C3(`36fc8c2`·`60b3e00`·`a9b571b`·`a4a48e1`) ·
+      게이트 3계수 = green 13 / red(판정) 1(`service-tests-core-api` · 원인 = 호스트 도달성 ·
+      판정 미도달 · 게이트 축자 `exit 1` · 사람이 죽임) / red(준비) 1(`schema-diff`) ·
+      pytest 신설 21(red 18/1 → green) · core-api 전수 843/0(손 실행 · 보조) · vitest 17 ·
+      FE 전수 809 · 병합 조건 = Ted ⓐ ＋ CI `service-tests` 1회 green · ⑻ 미집행 —
+      근거 `dev-package/reports/dl-1/lane-report.md`
     deadline: null
     note: >-
       **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
@@ -4066,3 +4072,25 @@ items:
       열린 값 `[미확인]` — 동결 해제 등급 확정(`X2-FREEZE-PROTOCOL.md §5`) ·
       `U-2` ⓓ 「버킷 스캔 금지」의 `previews/` 적용 범위.
     sources: ["dev-package/sessions/DL-1-TED-RULING.md"]
+
+  - id: gate-pg-reach
+    name: "게이트 `_pg.sh` 일회용 postgres 에 호스트가 못 닿으면 준비 red 로 선다(도달성 확인 ＋ `PGCONNECT_TIMEOUT`) — 지금은 판정 없이 매달린다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 컨테이너가 떴는데 호스트에서 5432 에 못 닿으면 `::gate-readiness-failure::` ＋ exit 78
+      ⑵ psycopg 접속에 상한(초)이 걸린다
+      ⑶ 셀프테스트 red fixture(도달 불가 주소)로 fail-closed 증명
+    evidence: "2026-09-06 맥 호스트 실측 — 14분 무판정 대기 · `dev-package/reports/dl-1/gate-service-tests-core-api.log`"
+    deadline: null
+    note: >-
+      **신설 2026-09-07** — `DL-1` 레인이 `service-tests-core-api` 를 돌리다 발견. `_pg.sh` 는 컨테이너가
+      **뜨지 않는** 경우만 red(준비)로 가르고, 「떴는데 호스트에서 못 닿는다」 갈래가 없다. psycopg 에
+      connect 타임아웃이 없어 게이트는 표식도 종료코드도 없이 매달리고, 사람이 죽여야 `red(판정)`
+      (exit 1 · junit 부재)이 난다 — 자동 실행에서는 「도는 중」과 구별되지 않는다. 고치는 자리 =
+      `gates/tools/_pg.sh`(도달성 확인) 또는 `service-tests.sh`(`PGCONNECT_TIMEOUT`).
+      정밀도를 올리는 수정이지 범위 축소가 아니다 — red fixture 로 증명한다(⑶).
+    sources: ["dev-package/reports/dl-1/lane-report.md", "dev-package/reports/dl-1/lane-report.md#3"]
