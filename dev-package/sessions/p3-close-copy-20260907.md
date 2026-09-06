@@ -33,6 +33,20 @@
 - 문면이 열려 종전 축자를 잡고 있던 시험 2건은 상수 참조로 옮겼다 — `test/close-guard-20260905.test.tsx`(조건 시험은 무변) · `test/upload.test.tsx`. 함께 돌린 3파일 `Tests 124 passed (124)`.
 - 처음부터 green 이던 7건은 오라클로 세지 않는다(문면 상수 대조·순수 함수분).
 
+## 2-1. 게이트 (좁은 게이트 2종 · 배출처 `dev-package/reports/R-A2/p3-close-copy`)
+
+```
+frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 855건 · 실패 0건.
+    Test Files  61 passed (61)
+         Tests  855 passed (855)
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+```
+
+- 두 게이트 다 판정 red 0 · 준비 red 0. `gates/run.sh` 는 게이트를 한 번에 하나만 받아 두 번 돌렸다(요약 JSON 은 마지막 실행분).
+- 전수 `all` 은 돌리지 않았다 — 레인 규약 §3-1.
+
 ## 3. 문면 출처 표
 
 원문 = `40 COLAB-기획/10_적용전/업로드_계보_260905_rev2_이태헌.html` (읽기 전용 · 채록본 경유). 개발 세션이 새로 지은 문장 0건.
