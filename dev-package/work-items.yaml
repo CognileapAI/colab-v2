@@ -2709,7 +2709,7 @@ items:
 
   - id: WU-A9R
     name: 닫기 문면 3종 ＋ 배경 클릭 닫기 ＋ 손댐 판정 추가분 (rev2 증분 · PRD-14 · PRD-34 · PRD-44)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-A13R 토스트 문면 green", "WU-A12R 빌드 목록 green"]
@@ -2717,7 +2717,7 @@ items:
     completion_def: "본문이 상황별 3종이고 계보 3건이면 문면에 3 이 보간되며 버튼 라벨이 계속하기·닫고 나가기 다 · 배경 클릭이 닫기 확인을 그대로 타고 모달 내부 클릭은 닫지 않는다 · 손댐 판정에 담은 프로젝트 건수와 대표 그림 교체 여부가 더해진다"
     evidence: "dev-package/sessions/p3-close-copy-20260907.md"
     deadline: null
-    note: "미결-r2-2 ⓐ — 미결-15 ⓐ 의 조건 변경은 그대로 살리고 문면만 연다. 문면 축자는 rev2 원문에서 그대로 뜬다 — 개발 세션이 새로 짓지 않고 못 뜨면 [미상] 으로 멈춘다. PRD-39 ⑭ Esc 우선순위를 함께 받는다"
+    note: "2026-09-07 done — 레인 p3-close-copy 516e252 ＋ advisor ② 2819ea8 · frontend-typecheck·frontend-test(859) green · 문면 3종 rev2 HTML 축자 · 확장보기 오버레이 배경 클릭·data-esc-layer 표식은 R-B WU-B3 이관(라운드 파일 §2 명기) · 미결-r2-2 ⓐ — 미결-15 ⓐ 의 조건 변경은 그대로 살리고 문면만 연다. 문면 축자는 rev2 원문에서 그대로 뜬다 — 개발 세션이 새로 짓지 않고 못 뜨면 [미상] 으로 멈춘다. PRD-39 ⑭ Esc 우선순위를 함께 받는다"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-14", "PRD-34", "PRD-44"]
 
   - id: WU-A3R
