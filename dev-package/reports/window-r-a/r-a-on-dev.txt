@@ -1,0 +1,67 @@
+창 R-A — dev 에 R-A 가 실제로 서 있는가 (API 실측 · 원격 쓰기 0 · DB 변경 0)
+측정 2026-09-06 · endpoint https://d31zgpff2091oh.cloudfront.net · 레인 lane-deploy-ra
+배포분 = 20b3715d1db0 (창 9 · origin/integration/w9-dev-deploy) — b0671f8(R-A main) 을 **포함**한다.
+
+⛔ 이 파일의 모든 호출은 조회 또는 **거절로 끝나는 호출**이다. 데이터 생성 0 · 삭제 0 · 렌더 작업 생성 0.
+⛔ 비밀값 없음 — 계정 이름만 적고 비밀번호는 적지 않는다(값은 dev-secrets/dev-logins.txt).
+
+[0] alembic 현재 head (재기록 · 컨테이너 안 read-only SELECT)
+  alembic_version_platform = 0014_merge_ra1_and_topic_vocab
+  alembic_version_ai       = 0006_topic_vocab_six
+  ⟹ deploy_doctor ⑥⑦ 도 같은 값을 「DB = 레포」로 통과시켰다(doctor-verify.txt).
+
+[1] GET /datasets/{id} — R-A 세 칸이 응답에 있는가   ⭐ green
+  카탈로그 totalCount = 14 · 전건(14/14) 순회.
+  세 키가 **모두 있는 데이터셋 = 14 / 14 · 없는 것 = 0**.
+  위치 = 응답 `basicInfo` 아래 (top-level 아님).
+    basicInfo keys = crs · fileExtension · files · format · grid · observationInterval · owner · period · sourceLabel · uploader · variables
+
+  `fileExtension` — **값이 실제로 찼다.** 14건 분포:
+      npy 4 · docx 3 · nc 2 · tif 2 · hdf 1 · gz 1 · grib 1     (null 0건)
+      예) 「강수 — RN15 지상 15분 누적 강수 (Lv.0)」 → "nc"  (화면 표기는 `*.nc`)
+      ⟹ PRD-21 「포맷 칸이 보이는 값은 fileExtension 이다」가 dev 에 서 있다. `format` 은 14건 전부 null.
+  `observationInterval` — 키는 14/14 있고 **값은 전건 null** (비-null 0/14).
+  `period`              — 키는 14/14 있고 **값은 전건 null** (비-null 0/14).
+  `period.granularity`  — **[미측정]** · 사유 = `period` 가 전건 null 이라 하위 키를 열 자리가 없다.
+      계약상 자리는 확인됨(contracts/seams/fe-core.yaml:2738 `granularity` · 3815 「⟨19차 해제 · PRD-18⟩ granularity 가 들어왔다」).
+  ⟹ 판정 = **계약(키)은 전건 서 있다. 값은 fileExtension 만 찼다** — observationInterval·period 는
+     사람이 적는 자유·선택 입력(`VAL-006`)이고 재적재분이 그 칸을 안 채운 것이다. 결손이 아니라 미입력이다.
+
+[2] POST /datasets — summary 없이 400 인가   ⭐ green
+  계약 `DatasetCreate.required = [uploadId, name, summary]` (fe-core.yaml:3421).
+  summary 없이 (uploadId = 형식만 맞는 미존재 ULID · name 있음)
+      → **400** `{"code":"BAD_REQUEST","message":"설명을 적어 주세요."}`
+  대조군 — 같은 바디에 summary 만 더함
+      → **404** `{"code":"NOT_FOUND","message":"없거나 수명이 다한 업로드다."}`
+  ⟹ 대조군이 404 로 **더 뒤 단계까지 갔다** ⟹ 앞의 400 은 uploadId 탓이 아니라 **summary 누락 그 자체**다.
+     WU-A4 「설명 필수 400」이 dev 에 서 있다. ⛔ 두 호출 다 거절로 끝나 데이터셋이 만들어지지 않았다.
+
+[3] createPreviewRender 권한 거절 403   —   **[미측정]**
+  경로 = `POST /api/v1/previews` (fe-core.yaml:2020).
+  실측: admin · colab · pi 세 계정 모두 → **400** `{"code":"BAD_REQUEST","message":"target 이 없다."}`
+        무토큰 → **401** `{"code":"UNAUTHORIZED","message":"Authorization: Bearer <토큰> 이 없다."}`
+  ⛔ **[미측정] 사유 = dev 에 「권한 없는 계정」이 없다.**
+     GET /me 실측 — 세 계정이 **같은 연구실**(labId `0000000000000000000000000A`)이고
+       admin 교수 / colab 연구원 / pi 교수 — **셋 다 `업로드·편집: true`**.
+     listDatasets 도 세 계정 전부 totalCount 14 로 같다 ⟹ 경계 밖에서 부를 주체를 만들 수 없다.
+     403 을 보려면 다른 연구실 계정을 **심어야** 하는데 그것은 쓰기다(P-17 · 이 회차 범위 밖).
+  ⟹ 확인된 것 = **인증 경계는 산다(무토큰 401)**. 인가 거절 403 은 이 회차에서 잴 대상이 없다.
+
+[4] 화면 — CloudFront   ⭐ green
+  GET /                    → **200** · 409 B (SPA 껍데기)
+  GET /datasets/{id}       → **200** · 409 B  ⟹ SPA 함수가 딥링크를 index.html 로 되돌린다(라우팅 정상)
+  번들 `assets/index-Rwvt3PTb.js` → **200** · 446,416 B
+  번들 문자열 grep — R-A 화면이 실제로 실려 있는가:
+      `detail-edit-open`      ✓ 있음      (상세 「수정」 진입 훅)
+      `수정`                   ✓ 있음
+      `설명이 아직 없어요`         ✓ 있음      (설명 빈 값 문면 · WU-A4)
+      `관측 간격`               ✓ 있음      (observationInterval 칸 · WU-A6)
+      `최소 단위`               ✓ 있음      (period granularity 칸 · PRD-18)
+      `` `*.${ ``             ✓ 있음      (formatExtension 의 `*.<ext>` 조립 · PRD-21)
+      `포맷`                   ✓ 있음
+      (`파일 확장자` 는 없음 — 화면 라벨이 「포맷」이고 값만 `*.nc` 로 적는 설계다. 결손 아님)
+
+[계]
+  green 3 — ⑴ 세 키 14/14 · ⑵ summary 400 · ⑷ 화면·번들
+  [미측정] 2 — period.granularity(값이 전건 null) · createPreviewRender 403(권한 없는 계정 부재)
+  ⟹ **R-A 는 dev 에 서 있다.** 별도 배포가 필요 없다(창 9 배포분이 이미 담고 있다).
