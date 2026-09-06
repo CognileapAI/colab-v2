@@ -1,0 +1,196 @@
+하네스 브랜치 전수 스윕 — 최종 (final sweep lane)
+====================================================
+워크트리 : /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/harness-fable51-spec
+브랜치   : worktree-harness-fable51-spec
+HEAD     : c2bdd5a00258639770271bd3ee9796eeecd9c515
+tree     : 693e2d15b607cf451f486e968323b0409958516f
+명령     : COLAB_GATE_REPORT_DIR=dev-package/reports/harness/2026-09-06/final bash gates/run.sh all -j 2
+시작     : 2026-09-06 17:33:43 KST
+종료     : 2026-09-06 17:48:52 KST
+소요     : 15분 9초
+요약 JSON: dev-package/reports/harness/2026-09-06/final/gate-summary.json
+
+── 게이트별 결과선 (52건) ──────────────────────────────────────────
+══ planning-freshness (exit 0) ══
+  planning-freshness green — 임베드 블록 15개 전부 원본과 일치 · 적용 상태 4건 정합.
+══ contract-lint (exit 0) ══
+  contract-lint green — seam 3건, 룰 위반 0.
+══ contract-breaking (exit 0) ══
+  contract-breaking green — 기준 HEAD (3건) 대비 파괴적 변경 없음.
+══ event-lint (exit 0) ══
+  event-lint green — 스키마 2건 컴파일 · valid 8건 통과 · invalid 10건 거부.
+══ event-breaking (exit 0) ══
+  event-breaking green — 기준 HEAD (2건) 대비 파괴적 변경 없음.
+══ seam-consistency (exit 0) ══
+  seam-consistency green — G-e 422건 · G-b 10건 · ㉠ 0건 · ㉡ 18건.
+══ generated-up-to-date (exit 0) ══
+  generated-up-to-date green — 등기부 10건 전부 재생성 일치, 등기부 밖 자칭 생성물 0건.
+══ import-boundary (exit 0) ══
+  import-boundary green — 계약 전부 통과.
+══ banned-import (exit 0) ══
+  banned-import green — .py 153건, 금지 import 0.
+══ ai-no-lineage-write (exit 0) ══
+  ai-no-lineage-write green — 계약·코드·체인 세 층 모두에서 쓰기 경로가 없다.
+══ db-boundary (exit 0) ══
+  db-boundary: green — 단위 7개 · 스캔 대상 336건 · 위반 0
+══ migration-single-head (exit 0) ══
+  migration-single-head green — 두 체인 모두 head 1개.
+══ schema-diff (exit 0) ══
+  db/platform green — 드리프트 없음.
+  db/ai green — 드리프트 없음.
+  schema-diff green — 두 체인 각각 선언 = 적용.
+══ rls-coverage (exit 0) ══
+  rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.
+══ rls-effect (exit 0) ══
+  rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가.
+══ work-item-consistency (exit 0) ══
+  work-item-consistency: green — 대장과 산문의 불일치 0
+══ stage2-markers (exit 0) ══
+  stage2 마커 — 수집 80 · skipped 0 · failed 0 · errors 0
+══ autometa-loss (exit 0) ══
+  autometa-loss green — 반영 6 / 발행 6 · 면제 0
+══ frontend-typecheck (exit 0) ══
+  frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+══ frontend-test (exit 0) ══
+  frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 792건 · 실패 0건.
+══ frontend-fixture-reach (exit 0) ══
+  frontend-fixture-reach green — 진입점 src/main.tsx 에서 도달 148개(진입점 제외 147개), 금지 모듈(fixture.ts·graphFixture.ts·localEngine.ts) 0건.
+══ preview-tile-slot (exit 0) ══
+  preview-tile-slot green — 쓸 수 있음 2 / 자리의 타일 2 · 면제 0 · 발행 업로드 2
+══ artifact-ownership (exit 0) ══
+  artifact-ownership green — 대상 136 벌 (살아 있다 117 · 접수분 0 · 고아 0 · 판정 불가 19) · 지도 타일 2 · 스냅숏 306 줄 · 삭제 0건
+══ e2e-format-coverage (exit 0) ══
+  · NumPy — 통과 1 / 관측 1
+══ render-latency (exit 0) ══
+  · NumPy — 5건 · 중앙값 0.464초 · 최대 0.470초 · 본체 6.6 MB
+══ backup-cron-streak (exit 0) ══
+  backup-cron-streak green — 04:40 회차 판정 GREEN · 13시간 전(허용 36시간) · 재실행 0건
+══ exec-bit (exit 0) ══
+  exec-bit green — `.sh` 126건 전부 인덱스 모드 100755 (100644 = 0건).
+══ service-tests-core-api (exit 0) ══
+  service-tests-core-api green — 실행 826건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).
+══ service-tests-ai-service (exit 0) ══
+  service-tests-ai-service green — 실행 133건 전부 통과 (skipped 0 · deselected 26 은 요약줄에 드러나 있다).
+══ service-tests-viz-render (exit 0) ══
+  service-tests-viz-render green — 실행 368건 전부 통과 (skipped 0 · deselected 40 은 요약줄에 드러나 있다).
+══ service-tests-pipeline-worker (exit 0) ══
+  service-tests-pipeline-worker green — 실행 260건 전부 통과 (skipped 0 · deselected 46 은 요약줄에 드러나 있다).
+══ contract-selftest (exit 0) ══
+  contract-selftest green — 두 게이트 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ event-selftest (exit 0) ══
+  event-selftest green — event-lint · event-breaking 이 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ boundary-selftest (exit 0) ══
+  boundary-selftest green — 경계 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ db-boundary-selftest (exit 0) ══
+  db-boundary-selftest: 전부 통과
+══ db-selftest (exit 0) ══
+  [selftest] 원인: schema-diff 구 변수만 선언(체인을 모른다) → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+  [selftest] 원인: autometa-loss 대조 정본 미선언 → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)
+  db-selftest green — DB 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).
+══ rls-effect-selftest (exit 0) ══
+  [selftest] rls-effect: 실서버가 끝내 안 뜨면 상한에서 red(준비) (임시 서버 오인 방지의 fail-closed) → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+  rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다.
+══ seam-consistency-selftest (exit 0) ══
+  seam-consistency-selftest green — 13 케이스 전부 기대대로 (green 4 · red 9).
+══ generated-selftest (exit 0) ══
+  generated-selftest green — 9 케이스 전부 기대대로 (green 1 · red 8).
+══ work-item-selftest (exit 0) ══
+  work-item-selftest: green — 17 케이스 (대조군 1 · red 증명 16)
+══ stage2-markers-selftest (exit 0) ══
+  stage2-markers-selftest green — 0건 · skip · fail 셋 다 red 다 (fail-closed 증명).
+══ autometa-loss-selftest (exit 0) ══
+  [selftest] ⓟ 변이④(㉯ 대조 제거) → green — **오라클 증명 OK**(대조를 떼면 같은 값이 통과한다)
+  autometa-loss-selftest green — 17 케이스(red 7 · 미선언 4 · green 2 · 변이 4) ＋ 사유 대조 7 ＋ 면제 건수 노출 1 = 검사 25건 전건 기대대로
+══ preview-tile-slot-selftest (exit 0) ══
+  같은 상태에서 새 게이트는 red(ⓚ) · 검사를 떼면 green — green-by-skip 이 재현된다
+  [selftest] ⓞ 변이②(㉯ 대조 제거) → green — **오라클 증명 OK**
+  [selftest] ⓟ 변이③(탐침 제거) → green — **오라클 증명 OK**
+  preview-tile-slot-selftest green — 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로
+══ artifact-ownership-selftest (exit 0) ══
+  정본 규칙: green(판정 불가 1 · 고아 0) · 변이: red(고아 legacykey)
+  [selftest] ⓤ 변이③(탐침 제거) → green — 오라클 증명 OK
+  artifact-ownership-selftest green — 19 케이스(red 6 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 11 ＋ 무접촉 대조 3 전건 기대대로
+══ e2e-format-coverage-selftest (exit 0) ══
+  ✓ ⓙ 이름으로 면제 (green)
+  ✓ ⓚ 필수 전 포맷 통과 (green)
+  e2e-format-coverage-selftest green — 검사 11건 전건 기대대로 (red 9 · green 2 · 건수 노출 1)
+══ render-latency-selftest (exit 0) ══
+  ✓ ⓛ 전건 눈금 안 (green)
+  render-latency-selftest green — 검사 12건 전건 기대대로 (red 11 · green 1)
+══ backup-cron-streak-selftest (exit 0) ══
+  ✓ ⓞ 표식 없음 ＋ 종료 0 → green (green)
+  backup-cron-streak-selftest green — 검사 16건 전건 기대대로 (게이트 8건: red 7 · green 1 ＋ 분류기 8건)
+══ exec-bit-selftest (exit 0) ══
+  ✓ ⓓ 전부 100755 — green
+  exec-bit-selftest green — 100644 검출 2종 · 대상 0건 · 정상 green 넷 다 설계대로다 (fail-closed 증명).
+══ frontend-typecheck-selftest (exit 0) ══
+  ✓ ⓑ node_modules/.bin/tsc 부재 — red(준비 · 78)
+  ✓ ⓐ node_modules 부재 — red(준비 · 78)
+══ frontend-test-selftest (exit 0) ══
+  ✓ ⓐ 깨끗한 트리(통과 시험 1건) — green
+  ✓ ⓒ 수집된 시험 0건 (green-by-skip 금지) — red
+  ✓ ⓓ node_modules/.bin/vitest 부재 — red(준비 · 78)
+══ frontend-fixture-reach-selftest (exit 0) ══
+  [selftest] ⓔ 판정부 스크립트 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+  [selftest] ⓕ 운영 진입점 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+  frontend-fixture-reach-selftest green — 검사 6건 전건 기대대로 (red 3 · red(준비) 2 · green 1).
+══ service-tests-selftest (exit 0) ══
+  green  service-tests-selftest
+  ── 계 : green 52 / red(판정) 0 / red(준비) 0
+
+── 요약 ────────────────────────────────────────────────────
+  green  planning-freshness
+  green  contract-lint
+  green  contract-breaking
+  green  event-lint
+  green  event-breaking
+  green  seam-consistency
+  green  generated-up-to-date
+  green  import-boundary
+  green  banned-import
+  green  ai-no-lineage-write
+  green  db-boundary
+  green  migration-single-head
+  green  schema-diff
+  green  rls-coverage
+  green  rls-effect
+  green  work-item-consistency
+  green  stage2-markers
+  green  autometa-loss
+  green  frontend-typecheck
+  green  frontend-test
+  green  frontend-fixture-reach
+  green  preview-tile-slot
+  green  artifact-ownership
+  green  e2e-format-coverage
+  green  render-latency
+  green  backup-cron-streak
+  green  exec-bit
+  green  service-tests-core-api
+  green  service-tests-ai-service
+  green  service-tests-viz-render
+  green  service-tests-pipeline-worker
+  green  contract-selftest
+  green  event-selftest
+  green  boundary-selftest
+  green  db-boundary-selftest
+  green  db-selftest
+  green  rls-effect-selftest
+  green  seam-consistency-selftest
+  green  generated-selftest
+  green  work-item-selftest
+  green  stage2-markers-selftest
+  green  autometa-loss-selftest
+  green  preview-tile-slot-selftest
+  green  artifact-ownership-selftest
+  green  e2e-format-coverage-selftest
+  green  render-latency-selftest
+  green  backup-cron-streak-selftest
+  green  exec-bit-selftest
+  green  frontend-typecheck-selftest
+  green  frontend-test-selftest
+  green  frontend-fixture-reach-selftest
+  green  service-tests-selftest
+  ── 계 : green 52 / red(판정) 0 / red(준비) 0
+  요약 JSON  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/harness-fable51-spec/dev-package/reports/harness/2026-09-06/final/gate-summary.json
+  요약 JSON  /tmp/gates-all-MGmSc7/gate-summary.json
