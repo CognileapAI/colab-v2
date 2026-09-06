@@ -208,7 +208,38 @@ cd frontend && npm run build && cd ../services/core-api
 | DB 서브넷 그룹 | `colab-platform-prod-db-subnet-group` | ✅ P4 · 프라이빗 2 (⚠ AZ 만 고르면 안 된다 — **서브넷까지** 골라야 「Subnet IDs are required」가 안 난다) |
 | 보안그룹 | `colab-platform-app-prod-sg` · `colab-platform-db-prod-sg` | ✅ P4 · db 가 app 을 **이름으로** 참조 |
 | RDS | `colab-platform-prod-db` (PG16, `db.t4g.small`) | ✅ P5 · **보존 7일** ⭐ · 퍼블릭 액세스 **아니오** · 스토리지 자동 조정 최대 100 GiB · 암호화 · 삭제 방지 ON · 단일 AZ. 엔드포인트는 **레포에 안 적는다**(dev 도 그렇다) — `~/.config/colab-platform/prod.env`(0600) |
-| CloudFront · EC2 · 탄력적 IP · 키 페어 | — | ⬜ P6~P7 |
+| EC2 | `colab-platform-app-prod` · `i-07e7b2b740bb79619` (`t4g.medium`, arm64) | ✅ P6 · RAM 3.7 GiB · 루트 30 GiB gp3 · 스왑 4 GB(fstab) · IMDSv2 홉 **2** 실측 확인 · 태그 인스턴스＋**볼륨** |
+| 탄력적 IP | `54.116.55.178` | ✅ P6 · ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
+| 키 페어 | `colab-platform-prod-key` | ✅ P6 · ⚠ 내려받은 직후 권한이 `0644` 였다(macOS 기본) — `600` 이 아니면 ssh 가 거부한다 |
+| RDS 안의 것 | 롤 4 · DB 2 · 연구실 1 · 계정 2 | ✅ P6 · 아래 §4-1b |
+| CloudFront | — | ⬜ P7 |
+
+**⭑ prod EC2 사이징이 dev 와 다르다** — `t4g.medium`(dev 는 `t4g.small`). 근거는 `infra/prod/compose.yml`
+의 `viz-render` 주석에 있다(dev 커널 OOM 4건 실측 · 전부 cgroup 상한). 루트 30 GiB 도 실측 근거다 —
+dev 는 20 GiB 에 65% 이고 불변 태그라 배포마다 이미지가 쌓인다.
+
+**⚠ 지금 도는 이미지는 `main` 이 아니라 기능 브랜치에서 빌드한 것이다** — 태그 `prod-3922d01750d0`.
+정본 `〈335〉`-㉳ 는 「`main` 커밋에 찍은 `prod-YYYYMMDD` 태그에서만」이므로, **PR 병합 뒤
+`main` 에서 다시 빌드·전송해 그 규율로 돌아온다.** 그때까지는 「브랜치에서 세운 prod」다.
+
+### 4-1b. prod DB 안에 든 것
+
+| | |
+|---|---|
+| 롤 | `colab_owner`(소유자·마이그레이션) · `colab_app` · `colab_ai_app` · **`colab_backup`**(유일하게 `bypassrls=t`) — 나머지 셋은 전부 `f` 실측 |
+| 데이터베이스 | `colab_platform`(표 27 · head `0012_merge_lv1_and_transfer`) · `colab_ai`(head `0005_k2b_concept_graph_seed`) |
+| FORCE RLS | 27개 중 **25개** 켜짐 (`verify` 통과) |
+| 연구실 | `00000000000000000000HYMETS` 고려대학교 수문학연구실 (`〈52〉` 정본값) |
+| 계정 | `전창현`(PI · 정본 SQL 이 심는다) · **`admin`** `01M1TPA0JBQGND6ZJN47NHPXP7` |
+| 로그인 | ⚠ **`admin` 하나만 만들었다**(사용자 판정 2026-09-06). 비밀번호·주체 토큰은 32자 난수 · `~/.config/colab-platform/prod-secrets/`(0600) |
+
+**P6 검증 실측 (2026-09-06)** — 4 단위 healthy · `storageMode`·`sourceMode`·`previewSink` 전부 **`s3`** ·
+로그인 **201** · 틀린 비밀번호 **401** · 무자격 `/me` **401** · 토큰으로 `/me` **200**(역할 `연구원` ·
+`승인 위임: false` — 최소 권한 그대로).
+
+⚠ **`subjects.json`·`credentials.json` 을 만들기 전에 `up.sh` 를 돌리면 도커가 그 자리에 디렉터리를
+만든다** — `IsADirectoryError` 로 core-api 만 unhealthy 가 되고 나머지 셋은 healthy 다.
+`rmdir` 로 지우고 파일을 놓은 뒤 다시 올린다. **살아 있는 쪽이 속이는** 그 모양이다.
 
 ⚠ **`db.t3.small` 로 한 번 잘못 만들었다가 「수정 → 즉시 적용」으로 바꿨다**(2026-09-06).
 기능 문제는 없었다 — **RDS 의 CPU 아키텍처는 클라이언트에게 안 보인다.** 값이 더 비쌌을 뿐이고,
