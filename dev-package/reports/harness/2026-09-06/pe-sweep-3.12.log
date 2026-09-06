@@ -110,3 +110,38 @@
   green  frontend-fixture-reach-selftest
   green  service-tests-selftest
   ── 계 : green 45 / red(판정) 5 / red(준비) 0
+
+## 2026-09-06 부록 — postgres 접속 red 4건 원인·재실행 결과 (하네스 `harness-fable51-spec` 세션)
+
+- 원인 = 앞서 있었던 호스트 OOM 킬 이후 도커 컨테이너 재기동으로 IP 가 갈렸다.
+  - `schema-diff` 의 적용 DB 컨테이너(`db/ai`·`db/platform` 를 alembic 으로 올려 만드는 것) 두 대가
+    부재했다 — `docker ps -a`·`docker network inspect bridge` 실측 모두 빈 상태. 이 컨테이너는
+    tmpfs 라 재부팅·재기동에 죽는 것이 `dev-package/RESTART.md §④-㉲` 에 이미 기술된 동작이다.
+  - `autometa-loss`·`preview-tile-slot`·`artifact-ownership` 의 대조 정본(`COLAB_AUTOMETA_STAGING_DB_URL`
+    · `COLAB_PREVIEW_TILE_DB_URL`)이 가리키던 IP `172.18.0.6` 은 옛 값이었다. `colab_v2_staging_pg`
+    실측 IP 는 `172.18.0.2`(`docker inspect colab_v2_staging_pg`) — 스택이 그 사이 옮겨졌는데
+    `~/.colab-v2-test.env` 가 갈아 끼워지지 않았다. 같은 이동이 `RESTART.md §④-㉲-③` 에 선례로
+    기술돼 있다(`.2` → `.6`, 이번은 `.6` → `.2` 로 다시 이동).
+- 조치 = `dev-package/RESTART.md` 문서화 절차를 그대로 집행했다(새 절차 신설 없음).
+  1. `services/core-api/.venv` 에 `alembic` 을 설치했다(레포 요구사항 파일 미변경 · `.venv` 는
+     `.gitignore` 대상이라 커밋에 들어가지 않는다).
+  2. `ai_pg`(먼저) → `a2_pg`(다음) 순서로 일회용 postgres 두 대를 기본 브리지에 다시 세웠다 —
+     `~/.colab-v2-test.env` 에 이미 적힌 비밀번호 그대로 사용, 새 IP 는 `.2`·`.3` 로 문서 기대값과
+     그대로 일치했다.
+  3. 각 체인 `alembic upgrade head` 로 `colab_ai_applied`·`colab_platform_applied` 를 재구성했다.
+  4. `~/.colab-v2-test.env` 의 `COLAB_AUTOMETA_STAGING_DB_URL`·`COLAB_PREVIEW_TILE_DB_URL` 호스트를
+     `172.18.0.6` → `172.18.0.2` 로 정정했다(2건 치환, 값 자체는 이 문서에 적지 않는다).
+- 재실행 결과 — 전부 `bash gates/run.sh <게이트>`, 실행 전 `set -a; . ~/.colab-v2-test.env; set +a` 선행:
+  - `schema-diff` green — db/platform·db/ai 각각 「드리프트 없음」.
+  - `autometa-loss` green — 발행 6 · 반영 6 · 미반영 0 · 면제 0.
+  - `preview-tile-slot` green — 발행 업로드 2 · 자리의 타일 2 · 쓸 수 있음 2 · 못 씀 0.
+  - `artifact-ownership` green — 대상 136 벌(살아 있다 117 · 접수분 0 · 고아 0 · 판정 불가 19) ·
+    지도 타일 2 · 스냅숏 306 줄 · 삭제 0건.
+- 후속(이번 세션에서 고치지 않고 보고만 한다) = 4건 전부 `red_undeclared`·`pg_is_readiness_error`
+  판별 경로를 거치지 않고 곧바로 `red`(exit 1)로 떨어졌다. `schema-diff.sh` 의 적용 DB `pg_dump`
+  실패 한 줄, `autometa-loss.sh`·`preview-tile-slot.sh`·`artifact-ownership.sh` 의 대조 정본
+  `psql` 접속 실패 각각은 전부 서버·접속 계열 오류(Host unreachable·Connection refused)인데도
+  `pg_is_readiness_error` 류 판별이 그 자리에 없다 — `_pg.sh` 의 **일회용** 컨테이너 경로에만
+  그 판별이 있고, 세 게이트의 "staging 실물 DB" 접속 경로와 `schema-diff` 의 "적용 DB" 접속
+  경로에는 없다. 그 결과 순수 환경 장애(IP 드리프트)가 `red(준비)` 표식 없이 `red(판정)` 으로
+  뜬다 — 게이트 판별 로직 자체는 이번 세션에서 손대지 않았다.
