@@ -68,6 +68,10 @@ ACTION_LINEAGE_CONFIRMED = "계보 확정"
 ACTION_VERIFIED_APPROVED = "Verified 승인"
 ACTION_PROJECT_CREATED = "프로젝트 만듦"
 ACTION_PROJECT_DELETED = "프로젝트 지움"
+#: ⭑ ⟨`DL-1` 2026-09-06⟩ 데이터셋 삭제(묘비). `ACTION_PROJECT_DELETED` 와 같은 무늬이고
+#: **읽는 쪽이 조용히 뺀다** — 대상이 묘비라 `routes/insight.py:_target` 이 `None` 을 내고
+#: 목록에서 빠진다(`Policy_홈_대시보드 §9`). 기록은 남기고 표시만 안 하는 것이 그 조항의 형태다.
+ACTION_DATASET_DELETED = "데이터셋 지움"
 
 _RECENT = text("""
     SELECT id, actor_account_id, action, target_kind, target_id, occurred_at
