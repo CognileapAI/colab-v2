@@ -212,7 +212,49 @@ cd frontend && npm run build && cd ../services/core-api
 | 탄력적 IP | `54.116.55.178` | ✅ P6 · ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | 키 페어 | `colab-platform-prod-key` | ✅ P6 · ⚠ 내려받은 직후 권한이 `0644` 였다(macOS 기본) — `600` 이 아니면 ssh 가 거부한다 |
 | RDS 안의 것 | 롤 4 · DB 2 · 연구실 1 · 계정 2 | ✅ P6 · 아래 §4-1b |
-| CloudFront | — | ⬜ P7 |
+| CloudFront 배포 | `colab-platform-prod` · `E1HUNU140VL6BK` · `d1aje00ns2hjsl.cloudfront.net` | ✅ P7 · 오리진 3 · 동작 3 · **무료 플랜** · WAF **감시 모드** |
+| CloudFront 함수 | `colab-platform-prod-spa-rewrite` | ✅ P7 · 기본 동작 뷰어 요청 · 태그 `Environment=prod` |
+| 백업 cron | `/etc/cron.d/colab-prod` | ✅ P7 · **한 번 돌려 GREEN 확인** — `_ops/backups/prod/` |
+
+**⭑ prod 는 CloudFront 「무료 플랜」이다**(2026-09-06 신설 · dev 도 같은 날 맞췄다).
+필요한 것이 다 들어간다 — 동작 **3**(한도 5) · 도메인 **1**(한도 1) · Edge compute.
+⚠ 「Custom cache policies 는 Business」 배너가 뜨지만 그건 **새로 만드는** 정책 얘기이고,
+**관리형 `CachingDisabled`·`AllViewer` 는 무료에서 쓴다**(실측으로 확인 — 아래).
+⭑ 고른 이유는 용량이 아니라 **상한**이다 — flat-rate 는 초과 과금이 없고 pay-as-you-go 는
+「no max monthly spend cap」이다. 크레딧 $140 에 예산 경보를 세운 방향과 맞다.
+
+**⚠ WAF 는 감시 모드다.** 무료 플랜에 WAF 가 **포함이고 끄는 선택지가 없다**(옛 콘솔에서
+「비활성화」였던 것과 다르다). 차단 모드면 `/api/*` 의 정상 요청이 오탐으로 막힐 수 있고
+**그 증상이 앱 버그처럼 보인다** — 개통 판정과 브라우저 한 바퀴를 오염시킨다.
+⟹ 감시 모드로 세어 두고, **막았을 요청이 0 이거나 전부 진짜 공격일 때** 차단으로 돌린다.
+측정 안 한 차단 장치를 먼저 켜지 않는다. ⬜ **그 전환은 아직 안 했다.**
+
+**⚠ CloudFront 가 원시 IP 오리진을 더는 받지 않는다**(2026-09-06 실측 · `Origin domain cannot
+be an IP address`). dev 의 `ec2-core-api` 는 그 제한 **전에** 만들어져 DNS 이름으로 들어가 있다
+(`ec2-54-116-191-208.ap-northeast-2.compute.amazonaws.com`). prod 도 같은 형태로 넣었다 —
+**EC2 는 오리진 드롭다운에 안 나온다**(CloudFront 가 열거하지 못한다). 직접 타이핑한다.
+`Origin type: EC2` 는 고르는 것이 아니라 **도메인 패턴을 보고 붙는다.**
+
+**⚠ 앱 SG 8000 은 CloudFront 에서만 연다** — 소스 = 관리형 접두사 목록
+`com.amazonaws.global.cloudfront.origin-facing`. dev 도 같다(실측: 밖에서 `000`,
+CloudFront 로는 401 JSON). ⛔ `0.0.0.0/0` 으로 두면 CloudFront 를 건너뛰어 **WAF·로그·
+오리진 정책이 통째로 우회**된다.
+
+### 4-1c. prod 완료 판정 (2026-09-06)
+
+```
+항목 14 — ✓ 14 · ✗ 0 · ─ 0     전 항목 통과 · exit 0 · 한 번의 실행으로
+```
+
+실행은 `infra/prod/deploy-doctor.sh` 다. **혼자서는 못 맞히는 조건이 넷** 있고 넷 다 red 를
+하나씩 내며 드러났다 — 컨테이너 안에서 돌 것 · **레포를 통째로** 마운트할 것(⑥⑦ 은
+`alembic.ini`, ⑧ 은 `rls_coverage.py` 를 읽는다) · `/etc/colab` 을 **파일 단위로** 줄 것
+(700 root 라 uid 10001 이 못 지난다) · **운영자 키로** 돌 것(IMDS 로 돌면 ③ 이 403 —
+prod 앱 역할은 진단 권한을 일부러 뺐다). 그 넷이 그 스크립트 머리말에 있다.
+
+함께 실측 — `s3_doctor --bucket colab-platform-data-prod` **10/10**(CORS 포함) ·
+CloudFront 로 로그인 **201** → 그 토큰으로 `/me` **200**(⟹ `AllViewer` 가 `Authorization` 을
+넘긴다) · 반복 요청에도 **`x-cache: Miss`**(⟹ `CachingDisabled` 가 실제로 캐시를 막는다).
 
 **⭑ prod EC2 사이징이 dev 와 다르다** — `t4g.medium`(dev 는 `t4g.small`). 근거는 `infra/prod/compose.yml`
 의 `viz-render` 주석에 있다(dev 커널 OOM 4건 실측 · 전부 cgroup 상한). 루트 30 GiB 도 실측 근거다 —
