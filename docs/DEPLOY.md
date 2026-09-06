@@ -151,6 +151,12 @@ cd frontend && npm run build && cd ../services/core-api
 
 **리전은 전부 `ap-northeast-2`(서울).**
 
+⭑ **⟨증보 2026-09-06 · `〈343〉`⟩ 두 벌이 됐다 — 아래 표는 dev 이고, prod 는 그 아래 절이다.**
+이름 규칙이 **접미사로만 갈린다**(`-dev` / `-prod`) — `deploy_doctor` 의 「환경 짝」 검사(⑫)가
+그 접미사로 「다른 환경의 벌을 보고 있지 않은가」를 판정하므로 **규칙을 깨지 않는다.**
+
+### 4-0. dev 한 벌
+
 | 자원 | 이름 | 의존 |
 |---|---|---|
 | CloudFront 배포 | `colab-platform-dev` · ID `E7J6EMHMYCTSK` · `d31zgpff2091oh.cloudfront.net` | 오리진 3 · 함수 1 |
@@ -187,6 +193,26 @@ cd frontend && npm run build && cd ../services/core-api
 11. 키 페어 삭제
 12. 예산 삭제
 ```
+
+### 4-0b. prod 한 벌 (2026-09-06 ~ · `〈343〉`)
+
+| 자원 | 이름 | 상태 |
+|---|---|---|
+| S3 데이터 버킷 | `colab-platform-data-prod` | ✅ 버저닝 · SSE-S3+Bucket Key · `DenyInsecureTransport` · 수명 주기 3 · 태그 `Environment=prod` |
+| S3 웹 버킷 | `colab-platform-web-prod` | ✅ 퍼블릭 차단 4 · 버저닝/CORS/수명 주기 **없음**(정본대로) · 태그 `Environment=prod` |
+| IAM 정책(운영자) | `colab-platform-s3-prod-policy` | ✅ ⭑ dev 와 달리 **`s3:GetBucketTagging` 포함** — 없으면 태그를 도구로 못 잰다(2026-09-06 실측 403) |
+| IAM 사용자 | `colab-platform-s3-uploader-prod` + 키 1 | ✅ 콘솔 로그인 없음 · 키는 `~/.config/colab-platform/prod.env`(0600) · **로컬 도구 전용** |
+| IAM 정책(앱) | `colab-platform-app-prod-policy` | ✅ ⭑ dev 의 `DiagnosticsDevOnly` 문을 **뺐다** — 앱은 버킷 설정을 읽을 일이 없고, 서버가 털렸을 때 구성까지 새지 않게 한다 |
+| IAM 역할 | `colab-platform-app-prod-role` | ✅ 신뢰 주체 EC2 · 인스턴스 프로파일로 P6 에서 붙인다 |
+| CloudFront · EC2 · RDS · VPC | — | ⬜ P4~P7 |
+
+**P3 검증 실측 (2026-09-06)**
+- `ops/s3_doctor.py` **9/10** — 유일한 ✗ 가 **CORS** 이고 **그것이 지금 옳은 상태다**:
+  AllowedOrigins 에 넣을 **배포 주소가 아직 없다**(CloudFront 는 P7). dev 때도 같은 순서였다.
+  ⛔ **통과시키려고 임시값을 넣지 않는다** — 배포가 생기면 그 주소로 채운다.
+- `ops/s3_smoke.py` **전 항목 통과** — 프리사인드 PUT(ASCII·**한글·공백 키**) · CreateMultipartUpload ·
+  파트 2개(5MiB+1KiB) · ListParts→Complete→Head · Abort→소멸 · DeleteObjects 뒷정리(남은 객체 0).
+  ⟹ **자작 SigV4 가 prod 에서도 옳게 서명한다**(에뮬레이터가 아니라 진짜 S3 로 쟀다).
 
 ### 4-1. dev DB 안에 든 것
 
