@@ -1,0 +1,38 @@
+── purge_datasets — 실집행 · 대상 5건 · 연구실 0000000000000000000000000A
+   · 01M1FSEWYJVAV20VPMPT3EDDW9
+   · 01M1C0F19DFGA80AM4HR63S1ND
+   · 01M1H2DYX821ZR33SVVVQGJZ9R
+   · 01M1H4XH0XMQ7CNJ8256WP16SF
+   · 01M1GR9N0DSK2AVRWJEBM5D0SD
+
+── 표별 예정 행수 (경계가 걸린 상태에서 센 값)
+   d3_file                       89   조각 — 먼저 지운다(file_count 트리거)
+   d3_dataset_description         5   사람이 적은 정보
+   d3_dataset_autometa            5   자동 판독값
+   d4_lineage_edge                0   계보 간선 — 자식·부모 양쪽
+   d4_lineage_unknown             5   계보 미상 표기
+   d2_dataset_access              0   공개 범위
+   d2_dataset_access_grant        0   개별 허용
+   d2_dataset_access_request      0   접근 요청
+   d2_verification_request        2   승인 요청
+   d2_verified                    2   승인 기록
+   d6_project_dataset             1   프로젝트 묶음
+   d3_dataset                     5   대장 — 마지막
+   계                            114
+
+── 삭제 (단일 트랜잭션)
+   d3_file                       89
+   d3_dataset_description         5
+   d3_dataset_autometa            5
+   d4_lineage_edge                0
+   d4_lineage_unknown             5
+   d2_dataset_access              0
+   d2_dataset_access_grant        0
+   d2_dataset_access_request      0
+   d2_verification_request        2
+   d2_verified                    2
+   d6_project_dataset             1
+   d3_dataset                     5
+
+── COMMIT. 데이터셋 5 건 · 행 합계 114 건.
+PURGE_EXIT=0
