@@ -89,8 +89,8 @@ items:
     applied_date: null
     decisions: []
     prd: "dev-package/prd/PRD-260905-적용전기획.md"
-    intent: null
-    spec: null
+    intent: "dev-package/intent/2026-09-06-r-a2.md"
+    spec: "dev-package/prd/specs/R-A2.md"
     copy: null
     copied_at: null
     note: "부분 반영 — R-A 에 일부, 잔여 5건은 R-A′(WU-A13·A12·A7·A9·A3), WU-B3·B5·B7 은 R-B(03-HANDOFF §1 증보 2026-09-06). 라운드가 전부 병합되기 전에는 사본을 만들지 않는다."

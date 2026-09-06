@@ -2667,3 +2667,81 @@ items:
     deadline: null
     note: "M-6·M-7. DataPeriod 는 additionalProperties:false 라 granularity 추가가 계약 파괴 변경이다 19차 Ted 승인 2026-09-06 · §9 〈346〉·〈347〉"
     sources: ["dev-package/prd/rounds/R-A-1-db.md", "PRD-17", "PRD-18", "PRD-35", "부록 B M-6·M-7"]
+
+  - id: WU-A13R
+    name: 공통 토스트 ＋ 문면 21행 (rev2 증분 · PRD-32 · PRD-43)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: ["WU-A13"]
+    completion_def: "21행이 전부 코드에 있고 하드코드 중복 0건(한 곳에서 온다) · 토스트가 스스로 사라지고 포커스를 뺏지 않는다 · F-11·D-13 의 건수가 보간값이다 · D-07 축약 표기가 2025-06 ~ 09 다"
+    evidence: null
+    deadline: null
+    note: "rev2 증분 — 부모 WU-A13(done) 을 다시 열지 않고 신규 id 로 등재한다(id 규칙 = 부모 id ＋ 접미 R). 계약·스키마·마이그레이션 0. R-A′ 의 선행"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-32", "PRD-43"]
+
+  - id: WU-A12R
+    name: PRD-39 「없음」 잔여 5건 ＋ 커서 위경도 HUD (rev2 증분 · PRD-39)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A13R 토스트 문면 green"]
+    depends_on: ["WU-A12", "WU-A13R"]
+    completion_def: "빌드 목록 6행(① 파일 분석 3단계 ＋ 다음 비활성 · ② 모달 전역 드롭 · ③ 파일 빼기 즉시 반영 ＋ 초기화 고지 · ⑩ 접근 구역 출처 문장 · ⑫ 행동 줄 바닥 고정 ＋ 안내 3문면 · HUD)이 rev1 근거 문면대로 서고, 있음 4건(⑦ ⑧ ⑪ ⑬) ＋ 참고 ⑼ 각각에 회귀 시험 1건이 green"
+    evidence: null
+    deadline: null
+    note: "HUD 는 값 조회를 대체하지 않고 병존한다 — 역산값과 셀값의 출처를 라벨로 가른다(존치 규칙 · 정본 §8 V-2 완료). 서버 왕복 0. ⑤ 확장보기 오버레이는 WU-B3 이관"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-39"]
+
+  - id: WU-A7R
+    name: 연관 프로젝트·논문 한 표 ＋ 유형 열 ＋ 이름 중복 검사 (rev2 증분 · PRD-23 · PRD-42)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A13R 토스트 문면 green"]
+    depends_on: ["WU-A7", "WU-A13R"]
+    completion_def: "표 한 장에 행을 쌓고 열이 유형·이름·해제 이며, 유형 배지가 저장값 kind 에서 오고, 연관 0건이면 표가 화면에 없다 ＋ 같은 연구실 안에서 이름이 겹치면 유형이 달라도 거절하고 문면이 뜨며 다른 연구실의 같은 이름은 성공한다"
+    evidence: null
+    deadline: null
+    note: "미결-r2-3 ⓐ — 두 패널 분리를 걷는다. 빈 이름 문면은 고치지 않는다(정본). 기존에 겹치는 행은 지우거나 고치지 않고 신규 생성만 막는다. 계약·DB 변경 0"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-23", "PRD-42"]
+
+  - id: WU-A9R
+    name: 닫기 문면 3종 ＋ 배경 클릭 닫기 ＋ 손댐 판정 추가분 (rev2 증분 · PRD-14 · PRD-34 · PRD-44)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A13R 토스트 문면 green", "WU-A12R 빌드 목록 green"]
+    depends_on: ["WU-A9", "WU-A13R", "WU-A12R"]
+    completion_def: "본문이 상황별 3종이고 계보 3건이면 문면에 3 이 보간되며 버튼 라벨이 계속하기·닫고 나가기 다 · 배경 클릭이 닫기 확인을 그대로 타고 모달 내부 클릭은 닫지 않는다 · 손댐 판정에 담은 프로젝트 건수와 대표 그림 교체 여부가 더해진다"
+    evidence: null
+    deadline: null
+    note: "미결-r2-2 ⓐ — 미결-15 ⓐ 의 조건 변경은 그대로 살리고 문면만 연다. 문면 축자는 rev2 원문에서 그대로 뜬다 — 개발 세션이 새로 짓지 않고 못 뜨면 [미상] 으로 멈춘다. PRD-39 ⑭ Esc 우선순위를 함께 받는다"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-14", "PRD-34", "PRD-44"]
+
+  - id: WU-A3R
+    name: 상세 편집 각주 2 — 편집 중 다운로드 숨김 ＋ 저장 후 칩 재동기 (rev2 증분 · PRD-22)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-A12R 빌드 목록 green"]
+    depends_on: ["WU-A3", "WU-A12R"]
+    completion_def: "편집 중에는 다운로드가 숨고 취소/저장 이 그 자리에 온다 ＋ 저장 뒤 헤더 칩과 공개 범위 설명이 같은 값으로 다시 그려진다"
+    evidence: null
+    deadline: null
+    note: "R-B 가 더하는 필드는 그리지 않는다. topic 은 읽기 전용 유지. WU-A4R 과 같은 레인에서 돈다"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-22"]
+
+  - id: WU-A4R
+    name: 좌표계 칸 보조 라벨 「좌표계 (선택)」 (rev2 증분 · PRD-28 · 결정서 III-B)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: []
+    depends_on: ["WU-A4", "WU-A3R"]
+    completion_def: "등록 화면 좌표계 칸 라벨이 좌표계 (선택) 이고 다른 선택 칸(변수 (선택)·기간 시작 (선택))과 같은 패턴이다"
+    evidence: null
+    deadline: null
+    note: "결정서 III-B ⓐ — 기획자 확인 요청은 철회하고 통보로 전환됐다. 계약·서버·DB 변경 0. WU-A3R 과 같은 레인"
+    sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-28"]

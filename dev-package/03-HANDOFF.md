@@ -26,6 +26,11 @@
 
 **최종 갱신** 2026-09-06 (**★ 이 회차 = R-A 라운드 `main` 병합 2단계 — 계약 동결 해제 **19차** 묶음(A5·A4·A6). ⟹ **R-A 14/14 가 `main` 에 있다.** 등재 `PLAN-SoT §9 〈346〉`·`〈347〉` · 근거 `dev-package/sessions/R-A-ROUND-20260906.md`.**)
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
+⭑ **⟨증보 2026-09-06 · R-A′ 준비 완료⟩ 다음 단계 = R-A′ 착수** — 워크트리 `.claude/worktrees/r-a2`(브랜치 `integration/r-a2` · 기점 `origin/main` **`27733ba` 이상** · 현재 HEAD 는 `git rev-parse HEAD` 로 읽는다 — 준비 커밋이 쌓이므로 해시를 박아 두지 않는다) · 서비스 `.venv` 4벌 Python **3.12.3** 신설 · 좁은 게이트 5종(`work-item-consistency`·`exec-bit`·`frontend-typecheck`·`frontend-test`·`service-tests-ai-service`) **green**.
+새 파이프라인 산출물 4자리 = intent `dev-package/intent/2026-09-06-r-a2.md` · spec `dev-package/prd/specs/R-A2.md` · 라운드 `dev-package/prd/rounds/R-A2.md` · PRD 사본 `dev-package/prd/PRD-260905-적용전기획.md`(2026-09-06 판본 · PRD-41~45 반영).
+대장 신규 6건 = `WU-A13R`·`WU-A12R`·`WU-A7R`·`WU-A9R`·`WU-A3R`·`WU-A4R`(`status: open` · id 규칙 = 부모 id ＋ 접미 `R` · **`done` 항목 재개봉 0**) · `work-item-consistency`·`planning-freshness` green.
+범위 = 계약 0 · 스키마 0 · 마이그레이션 0. A6 달력 팝오버·PRD-39 ⑤ 확장보기는 **R-B `WU-B3` 이관**. 결정 번호 〈N〉 은 병합 직전 재실측(현 최대 371).
+**착수 조건** = 레포 루트 `30 CoLAB-v2` 에서 `claude --add-dir "../40 COLAB-기획"` 로 새 세션을 열고 `dev-package/prd/rounds/R-A2.md` 하나만 읽는다.
 **19차 Ted 승인 = 2026-09-06 · ㉯(파괴)** — 계약 변경 5(미리보기 403 선언 · `DataPeriod.granularity` · `ObservationInterval` 3자리 · `summary` 필수화 · `fileExtension` ＋ `DatasetBasicInfo` required 2키) · **승인 범위 축자는 `〈346〉`-⑦ 한 자리**에만 있다.
 R-A-1(DB) 완료 — WU-A5·A6 · 병합 `69d916a`·`364ffce`(리베이스 전 `f722662`·`faa1e55`) · 마이그레이션 **1 파일 head 1**(`0013_ra1_ext_interval_period` · M-9·M-6·M-7 · `down_revision` `0012` · drop 0) · 등재 `〈346〉`
 R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b215f7`)로 실었다 · 파괴 출력 5건(POST·PATCH `/datasets` 의 `summary`) 축자는 `〈347〉`-④ · 소비자 286건 · 마이그레이션 0 · 등재 `〈347〉`

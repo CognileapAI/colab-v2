@@ -43,6 +43,7 @@
 | `rounds/R-A-2-server.md` | WU-A1 · WU-A2 · WU-A4 · WU-A13 | 완료(전건) | `p3-perm-default` · `p3-preview-guard` · `p3-summary-required` · `p3-ext-mixed` | A1 `6346648` · A2 `5c9eb7e` · A13 `02c7b2c` (등재 `PLAN-SoT §9 〈345〉`) · A4 `a32e580` (리베이스 전 `2b215f7` · 등재 `〈347〉`) |
 | `rounds/R-A-3-frontend.md` | WU-A3 · WU-A7 · WU-A8 · WU-A9 · WU-A10 | 완료 | `p3-detail-edit` · `p3-project-panels` · `p3-detail-sticky` · `p3-close-guard` · `p3-thumb-nudge` | `b2cfa4c`·`27c85f7`·`5da4f6c`·`d31b6f4`·`ac80c57` ＋ 안정화 `ddbbf9c` (등재 `PLAN-SoT §9 〈344〉`) |
 | `rounds/R-A-4-verify.md` | WU-A12 · WU-A11 · WU-A14 ＋ R-A 종료 검증 | 완료 | `p3-rev1-keep-audit` · `p3-design-audit` · `p3-part-count` | `09247df`·`2a0c53f`·`5bac941` (등재 `PLAN-SoT §9 〈343〉`) |
+| `rounds/R-A2.md` | WU-A13R · A12R · A7R · A9R · A3R · A4R | 대기 — **R-A′ rev2 증분** · spec `specs/R-A2.md` · intent `intent/2026-09-06-r-a2.md` | `integration/r-a2`(기점 `27733ba`) | — |
 | `rounds/R-B.md` | WU-B1 · B2 · B3 · B4 · B5 · B6 · B7 · B8 · B10 · B11 | 대기 — **R-A 병합 완료(14/14) → 4개로 쪼개기 대상** | §2 표 참조 | — |
 
 - **R-A = 14 WU**(A1~A14, 각 WU 는 정확히 한 파일에만 있다) · **R-B = 10 WU** · **별건 1**(`WU-C2` 대표 그림 저장 경로 — 라운드 없음).
@@ -66,7 +67,7 @@
 | 파일 | 무엇 |
 |---|---|
 | `README.md` | 이 파일 — 읽기 규칙 · 상태표 · 착수 순서 |
-| `PRD-260905-적용전기획.md` | PRD 축자 사본(PRD-01~39 · 35건 유효). §1 확정 결정 · §2 요구사항 · §3 화면 흐름 · §5 추적표 · 부록 A/B |
+| `PRD-260905-적용전기획.md` | PRD 축자 사본(2026-09-06 판본 · PRD-01~45 · rev2 판정 반영 · §0.3-5 존치 규칙 · §1-보·1-보2). §1 확정 결정 · §2 요구사항 · §3 화면 흐름 · §5 추적표 · 부록 A/B |
 | `개발계획서-260905.md` | 개발계획서 축자 사본. §2 라운드 · §3 작업 단위표 · §4-보 계약 동결 해제 절차 · §5 세션 지시문 |
 | `rounds/*.md` | **세션이 여는 파일.** 자립형 · 각 ≤ 300행 |
 | `tools/max-decision.sh` | `PLAN-SoT §9` 최대 결정 번호 한 줄. `PLAN-SoT.md` 를 여는 대신 이것을 돈다 |
