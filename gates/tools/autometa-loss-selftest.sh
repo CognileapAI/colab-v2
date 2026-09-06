@@ -46,6 +46,7 @@ FAILURES=()
 # (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 red() { echo "::error::autometa-loss-selftest red — $*"; exit 1; }
 
@@ -287,12 +288,12 @@ esac
 cp "$READINESS" "$TMP/_readiness.sh"
 mutate() { # $1=출력 $2..=sed 식
   local out="$1"; shift
-  cp "$GATE" "$out"; for e in "$@"; do sed -i "$e" "$out"; done; chmod +x "$out"
+  cp "$GATE" "$out"; fx_sed "$out" "$@"; chmod +x "$out"
 }
 
 # ⓙ 변이① — **읽기 전용 검사(탐침 절)를 통째로 뗀다.** 같은 상태(ⓘ)가 green 이 되면,
 #    ⓘ 의 red 를 만든 것이 바로 그 검사라는 뜻이다. 오라클이 살아 있다는 증명이다.
-mutate "$TMP/mutant-no-probe.sh" '/# ── 2-1\. 읽기 전용 증명/,/^SQL_ARRAY=/{/^SQL_ARRAY=/!d}'
+mutate "$TMP/mutant-no-probe.sh" '/# ── 2-1\. 읽기 전용 증명/,/^SQL_ARRAY=/{/^SQL_ARRAY=/!d;}'
 out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql-rw" \
         COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" \
         COLAB_AUTOMETA_STAGING_DB_URL="$URL" \
@@ -327,7 +328,7 @@ fi
 #    변이본이 「관리자 롤이 아니다」를 더 이상 말하지 않으면 그 red 를 쓴 것이 ㉮ 라는 증명이다.
 #    ⚠ 겹치지 않는 상태도 실재한다 — 경계 롤이 **일부** 행을 보는 접속(GUC 가 걸린 접속)이면
 #    변이본은 걸러진 값을 세고 판정을 내리며, 그것이 정확히 M-9 의 모양이다.
-mutate "$TMP/mutant-no-role.sh" '/# ── 2-2\. 롤 판정/,/^# 본 질의는 \*\*두 번\*\*/{/^# 본 질의는 \*\*두 번\*\*/!d}'
+mutate "$TMP/mutant-no-role.sh" '/# ── 2-2\. 롤 판정/,/^# 본 질의는 \*\*두 번\*\*/{/^# 본 질의는 \*\*두 번\*\*/!d;}'
 out="$(env REPO_ROOT="$REPO_ROOT" COLAB_AUTOMETA_PSQL="$TMP/psql-boundary" \
         COLAB_AUTOMETA_EXEMPT="$EXEMPT_ONE" COLAB_AUTOMETA_BOUNDARY_ROLE="$BROLE" \
         COLAB_AUTOMETA_STAGING_DB_URL="$URL" bash "$TMP/mutant-no-role.sh" 2>&1)"

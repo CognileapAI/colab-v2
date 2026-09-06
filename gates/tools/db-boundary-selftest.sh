@@ -22,6 +22,7 @@ FAILURES=()
 # (2026-09-03 코드리뷰 #6 · `CLAUDE.md §4` green-by-skip).
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 expect() { # $1=기대(green|red) $2=라벨 $3.. = 명령
   local want="$1" label="$2"; shift 2
@@ -138,8 +139,8 @@ expect green "현재의 올바른 배치 (ai-service 는 db/ai 만)" run "$R"
 
 echo "── 실제로 일어난 위반 (2026-08-25) ──────────────────────────────────"
 R="$(mkroot hist-src)"
-sed -i 's/"COLAB_AI_DB_URL"/"COLAB_AI_CATALOG_DB_URL"/' \
-  "$R/services/ai-service/src/colab_ai/kernel/config.py"
+fx_replace "$R/services/ai-service/src/colab_ai/kernel/config.py" \
+  '"COLAB_AI_DB_URL"' '"COLAB_AI_CATALOG_DB_URL"'
 expect red "ai-service 소스가 COLAB_AI_CATALOG_DB_URL 를 읽는다" run "$R"
 
 R="$(mkroot hist-dockerfile)"
@@ -148,14 +149,14 @@ printf 'ENV COLAB_AI_CATALOG_DB_URL=postgresql://x/colab_platform\n' \
 expect red "ai-service Dockerfile 이 카탈로그 체인을 선언한다" run "$R"
 
 R="$(mkroot hist-compose)"
-sed -i 's#      OPENAI_API_KEY: ""#      COLAB_AI_CATALOG_DB_URL: postgresql://x/colab_platform#' \
-  "$R/infra/staging/compose.i2.yml"
+fx_replace "$R/infra/staging/compose.i2.yml" \
+  '      OPENAI_API_KEY: ""' '      COLAB_AI_CATALOG_DB_URL: postgresql://x/colab_platform'
 expect red "compose 가 ai-service 에 카탈로그 DB 를 물린다" run "$R"
 
 echo "── 반대 방향 · 그 밖의 횡단 ─────────────────────────────────────────"
 R="$(mkroot rev)"
-sed -i 's/"COLAB_CORE_DATABASE_URL"/"COLAB_AI_DB_URL"/' \
-  "$R/services/core-api/src/colab_core/kernel/config.py"
+fx_replace "$R/services/core-api/src/colab_core/kernel/config.py" \
+  '"COLAB_CORE_DATABASE_URL"' '"COLAB_AI_DB_URL"'
 expect red "core-api 가 db/ai 에 붙는다 (반대 방향)" run "$R"
 
 R="$(mkroot viz-env)"
@@ -169,13 +170,13 @@ printf 'from sqlalchemy import create_engine\ne = create_engine("x")\n' \
 expect red "chains=[] 인 viz-render 에 create_engine( 이 있다" run "$R"
 
 R="$(mkroot unclassified)"
-sed -i 's/"COLAB_AI_DB_URL"/"COLAB_MYSTERY_DB_URL"/' \
-  "$R/services/ai-service/src/colab_ai/kernel/config.py"
+fx_replace "$R/services/ai-service/src/colab_ai/kernel/config.py" \
+  '"COLAB_AI_DB_URL"' '"COLAB_MYSTERY_DB_URL"'
 expect red "어느 체인에도 안 맞는 DB URL (분류 불가는 green 이 아니다)" run "$R"
 
 R="$(mkroot unknown-svc)"
-sed -i 's#^  viz-render:#  shadow-worker:\n    environment:\n      COLAB_PIPELINE_DB_URL: postgresql://x/colab_platform\n  viz-render:#' \
-  "$R/infra/staging/compose.i2.yml"
+fx_replace "$R/infra/staging/compose.i2.yml" '\n  viz-render:' \
+  '\n  shadow-worker:\n    environment:\n      COLAB_PIPELINE_DB_URL: postgresql://x/colab_platform\n  viz-render:'
 expect red "매니페스트에 없는 compose 서비스가 DB 를 잡는다" run "$R"
 
 echo "── 산문은 위반이 아니다 (거짓 red 방지) ─────────────────────────────"
@@ -258,6 +259,24 @@ services:
       COLAB_CORE_DATABASE_URL: postgresql://x@rds/colab_platform
 YML
 expect red "dev compose 에서 ai-service 가 platform 체인에 붙는다 (횡단)" run2 "$R"
+
+echo "── 기본 compose 목록 — 벌이 늘면 여기도 늘어야 한다 (〈343〉) ────────"
+#: ⚠ **위의 모든 케이스는 `COLAB_DB_BOUNDARY_COMPOSE` 로 목록을 덮어쓴다.**
+#: 그래서 지금까지 **기본 목록 자체는 한 번도 판정된 적이 없었다**(2026-09-06 실측) —
+#: 그 줄에서 한 벌을 빼도 셀프테스트는 전부 green 이었다. dev 가 `〈342〉` 전까지,
+#: prod 가 `〈343〉` 전까지 정확히 그렇게 사각이었다.
+#: ⟹ **레포에 실재하는 compose 는 전부 기본 목록에 있어야 한다.** 적힌 목록끼리가 아니라
+#: **실물을 기준으로** 세므로, 다음 벌을 만들면 이 시험이 **먼저** 빨간불을 낸다.
+_actual=$(cd "$REPO_ROOT" && ls infra/*/compose*.yml 2>/dev/null | sort)
+_listed=$(python3 "$REPO_ROOT/gates/tools/_compose_list.py" "$GATE")
+if [ "$_actual" = "$_listed" ]; then
+  echo "[selftest] 기본 compose 목록이 실재 compose 와 일치한다 ($(printf '%s' "$_actual" | grep -c .)벌) → green OK"
+else
+  FAILURES+=("기본 compose 목록이 실물과 다르다")
+  echo "[selftest] 기본 compose 목록 ✗ — 게이트가 보지 않는 벌이 있다"
+  echo "           실재하는 것:"; printf '%s\n' "$_actual"  | sed 's/^/             /'
+  echo "           목록에 적힌 것:"; printf '%s\n' "$_listed" | sed 's/^/             /'
+fi
 
 echo "────────────────────────────────────────────────────────────────────"
 if [ ${#FAILURES[@]} -eq 0 ]; then
