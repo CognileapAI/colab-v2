@@ -111,7 +111,7 @@ def check_credentials(rep: Report, region: str) -> Credentials | None:
     return creds
 
 
-def check_bucket(rep: Report, bucket: str, region: str, origin: str,
+def check_bucket(rep: Report, bucket: str, region: str, origin: str | None,
                  creds: Credentials) -> bool:
     """설정 항목을 검사한다. 존재 확인이 실패하면 나머지는 ─."""
     rep.section(f"버킷  {bucket}")
@@ -157,6 +157,13 @@ def check_bucket(rep: Report, bucket: str, region: str, origin: str,
         rep.line(OK if algo is not None else BAD, "기본 암호화", detail)
 
     def r_cors(s: int, b: bytes) -> None:
+        # ⭑ **⟨2026-09-06 · `〈343〉`-㉳-⑵⟩ `origin` 이 `None` 이면 「무엇을 찾을지 모른다」다.**
+        # 부르는 쪽이 벌에 맞는 오리진을 못 정한 경우(`--endpoint` 미지정)이고, 그때 임의값으로
+        # 재면 무의미한 red 가 난다. **못 잰 것은 `─` 이지 통과가 아니다** — 부르는 쪽이 이미
+        # 미지정을 `─` 로 적었으므로 여기서는 같은 사실을 한 줄로 남기고 끝낸다.
+        if origin is None:
+            rep.line(SKIP, "CORS", "찾을 오리진이 정해지지 않았다 — 위 미지정 참조")
+            return
         if s != 200:
             rep.line(BAD, "CORS", f"AllowedOrigins 에 {origin} 없음 — 현재: 구성 자체가 없음")
             return

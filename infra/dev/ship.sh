@@ -19,7 +19,14 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
 
 "${SSH[@]}" 'sudo mkdir -p /opt/colab-v2/images && sudo chown -R $(id -u):$(id -g) /opt/colab-v2'
 "${SCP[@]}" "$TAR" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
-"${SCP[@]}" "$HERE/compose.yml" "$HERE/up.sh" "$COLAB_DEV_SSH:/opt/colab-v2/"
+# ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈343〉`-㉳-⑶).
+#    종전에는 `compose.yml`·`up.sh` **둘만** 실었고, `backup.sh`·`install-cron.sh` 를 올리는 절차가
+#    README 어디에도 없었다. 그 둘은 실행 비트도 없어서 `install-cron.sh:21` 의 `[ -x ]` 검사에
+#    그대로 걸렸다 — ⟹ **백업이 아예 안 걸린 채 「배포 완료」가 될 수 있는 구멍**이었다.
+#    scp 는 모드를 보존하므로 레포가 `100755` 인 것이 그대로 실행 가능하게 간다.
+"${SCP[@]}" "$HERE/compose.yml" "$HERE/up.sh" "$HERE/backup.sh" "$HERE/install-cron.sh" \
+  "$COLAB_DEV_SSH:/opt/colab-v2/"
+"${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:dev-$SHA colab-v2/\$u:dev; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && echo 'loaded: dev-$SHA'"

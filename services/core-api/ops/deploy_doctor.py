@@ -63,6 +63,10 @@ MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭"
 CHAINS = ("platform", "ai")
 #: 앱 롤·소유자 롤 이름 — `infra/staging/db-bootstrap.sh` · `ops/app-role.sql` 이 만드는 이름 그대로.
 APP_ROLE, OWNER_ROLE = "colab_app", "colab_owner"
+#: 로컬 개발 화면의 오리진. **dev 버킷 CORS 에만 들어간다** — 그 벌은 개발자가 자기 기계에서
+#: 브라우저로 붙어 프리사인드 PUT 을 쏘기 때문이다.
+#: ⚠ **prod 에는 넣지 않는다** — 정본 `S3.md §1` 이 「AllowedOrigins = 그 환경의 실오리진만 ·
+#: prod 는 와일드카드 금지」로 못 박았다(`infra/dev/iam/cors-data.json:3` 도 같은 말).
 LOCAL_ORIGIN = "http://localhost:5173"
 BACKUP_PREFIX = "_ops/backups/{env}/"
 BACKUP_MAX_AGE = timedelta(hours=24)
@@ -216,8 +220,28 @@ def check_data_bucket(ctx: Ctx, rep: DeployReport) -> None:
     if ctx.creds is None:
         rep.line(SKIP, "(건너뜀)", "① 자격증명 실패")
         return
-    # 기존 7 항목(존재·리전·버저닝·암호화·CORS(localhost)·정책·라이프사이클) — s3_doctor 그대로.
-    if not s3_doctor.check_bucket(rep, ctx.bucket, ctx.region, LOCAL_ORIGIN, ctx.creds):
+    # 기존 7 항목(존재·리전·버저닝·암호화·CORS·정책·라이프사이클) — s3_doctor 그대로.
+    #
+    # ⭑ **⟨2026-09-06 · `〈343〉`-㉳-⑵⟩ CORS 에서 무엇을 찾을지가 벌마다 다르다.**
+    # 종전에는 `--env` 와 무관하게 `LOCAL_ORIGIN`(localhost:5173)을 찾았다. 그런데 정본은
+    # 「prod 는 그 환경의 실오리진만」이라 **prod CORS 를 정본대로 두면 이 검사가 red 를 냈다** —
+    # 둘 중 하나는 반드시 틀리는 자리였다.
+    # ⛔ **CORS 에 localhost 를 넣어 통과시키는 쪽으로 풀지 않았다** — 그건 검사 대상을 줄이는 것이고,
+    #    prod 버킷에 개발 기계의 오리진을 여는 실질적 완화다.
+    # ⟹ **벌에 맞는 오리진을 찾는다** — dev 는 localhost(개발자가 실제로 그 오리진에서 붙는다),
+    #    prod 는 배포 주소. 어느 쪽도 「안 본다」가 아니다.
+    if ctx.env == "dev":
+        cors_origin = LOCAL_ORIGIN
+    elif ctx.endpoint:
+        cors_origin = _origin_of(ctx.endpoint)
+    else:
+        # 벌이 dev 가 아닌데 `--endpoint` 가 없으면 **찾을 오리진 자체를 모른다.**
+        # ⛔ 임의값으로 통과시키지 않는다 — `_origin_of("")` 는 `"://"` 를 돌려주므로
+        #    그것을 그대로 넘기면 「AllowedOrigins 에 :// 없음」이라는 무의미한 red 가 난다.
+        #    미지정은 `─`(못 잼)이고, 요약에서 exit 1 이다.
+        rep.line(SKIP, "CORS", unspecified("--endpoint — dev 가 아닌 벌은 배포 주소가 오리진이다"))
+        cors_origin = None
+    if not s3_doctor.check_bucket(rep, ctx.bucket, ctx.region, cors_origin, ctx.creds):
         rep.line(SKIP, "CORS(endpoint)", "존재 확인 실패로 건너뜀")
         return
     if not ctx.endpoint:
