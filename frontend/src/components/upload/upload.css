@@ -220,17 +220,14 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .chipx { border: 0; background: none; cursor: pointer; }
 /* ② 연관 프로젝트 — 국가과제 / 논문 두 패널 (WU-A7 · PRD-23).
    패널 안은 칩이 아니라 **행**이고 위에서 아래로 쌓인다. 0건 패널도 남는다. */
-.projpanels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 720px) { .projpanels { grid-template-columns: 1fr; } }
-.projpanel { border: 1px solid var(--up-line); border-radius: 10px; padding: 10px 12px; }
-.projpanel .pp-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.projpanel .pp-t { font-size: 12px; font-weight: 600; }
-.projpanel .pp-c { font-size: 11px; color: var(--up-muted); }
-.projpanel .muted { font-size: 12px; }
-.projrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.projrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #f6f8fa; }
-.projrow .pr-n { flex: 1; font-size: 13px; overflow-wrap: anywhere; }
-.projrow .pr-x { flex: none; }
+/* WU-A7R · PRD-23 개정본 — 연관 프로젝트·논문은 **표 한 장**이다(두 패널을 걷었다).
+   열은 `유형` · `이름` · `해제` 이고 변수 표와 같이 위에서 아래로 쌓인다. */
+.projtable { width: 100%; border-collapse: collapse; }
+.projtable th, .projtable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--up-line); }
+.projtable th { font-size: 11px; font-weight: 600; color: var(--up-muted); }
+.projtable td.pr-k { width: 1%; white-space: nowrap; }
+.projtable td.pr-n { font-size: 13px; word-break: break-all; }
+.projtable td.pr-x { width: 1%; white-space: nowrap; text-align: right; }
 
 .projpick { display: flex; gap: 8px; margin-top: 8px; }
 .qproj { margin-top: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }

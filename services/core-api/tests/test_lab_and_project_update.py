@@ -114,11 +114,16 @@ def test_renaming_onto_an_existing_name_is_refused(p2_client) -> None:
 
 
 def test_creating_a_duplicate_name_is_refused(p2_client) -> None:
-    """`VAL-010` — 「같은 이름의 프로젝트가 이미 있어요」. **생성 쪽도 막혀 있어야 한다.**"""
+    """`VAL-010` — **생성 쪽도 막혀 있어야 한다.**
+
+    ⭑ **⟨WU-A7R · PRD-42⟩ 생성 거절은 400 ＋ rev2 축자 문면으로 바뀌었다.** 수정 거절
+    (`test_renaming_onto_an_existing_name_is_refused`)은 409 그대로다 — 그쪽은 화면이
+    이 문면을 띄우는 자리가 아니다. 축자·건수 시험은 `test_project_name_duplicate.py`.
+    """
     client = p2_client()
     _new_project(client, "중복 확인용 이름")
     r = _new_project(client, "중복 확인용 이름")
-    assert r.status_code == 409, r.text
+    assert r.status_code == 400, r.text
 
 
 def test_renaming_to_its_own_name_is_fine(p2_client) -> None:

@@ -147,8 +147,15 @@ def create_project(response: Response, body: dict = Body(...),
     start, end = _period(body.get("period"))
     # **이름 중복 차단** — `VAL-010`·`TC-E-004`·결정 2-6. 결정 #11 로 빠른 생성이
     # 전원에게 열렸으므로 **이것이 이름만 받는 생성 경로의 유일한 방어선**이다.
+    #
+    # ⭑ **⟨WU-A7R · PRD-42⟩ 거절은 400 ＋ rev2 축자 문면이다.** 화면(빠른 생성)이 이 문장을
+    #   그대로 띄운다 — 문면을 화면에서 다시 지으면 서버와 두 얼굴이 된다.
+    #   경계는 **연구실 안**이고 RLS 가 이미 건다(`d6_project._NAME_TAKEN` 주석) — 남의
+    #   연구실의 같은 이름은 보이지 않으므로 겹침이 아니다. 유형(`type`)이 달라도 겹침이다.
+    #   ⚠ **DB UNIQUE 제약은 이번에 걸지 않는다**(마이그레이션 0). 기존에 겹치는 행은 지우거나
+    #   고치지 않고 **신규 생성만** 막는다(라운드 파일 §2-③ 축자).
     if d6_project.name_is_taken(db, name=name):
-        raise errors.conflict("같은 이름의 프로젝트가 이미 있어요")   # ERR 문구 그대로
+        raise errors.bad_request("같은 이름의 프로젝트가 이미 있어요. 목록에서 골라 주세요")
 
     row = d6_project.create_project(
         db, type_=type_, name=name, description=body.get("description"),

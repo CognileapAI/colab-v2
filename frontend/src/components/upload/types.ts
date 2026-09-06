@@ -27,8 +27,6 @@ export interface PickedProject {
   type: ProjectType;
 }
 
-/** 화면이 세우는 패널 두 개 — 0건이어도 사라지지 않는다 (PRD-23). */
-export const PROJECT_PANEL_TYPES: readonly ProjectType[] = ['국가과제', '논문'];
 
 /** 만료됐거나 없는 업로드 (`Policy §7.1`·§9 「이 파일은 더 이상 없어요」 · 계약 404). */
 export class UploadGone extends Error {}

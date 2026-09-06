@@ -14,12 +14,12 @@
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
+import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
 import { formatExtension, formatPeriodWithInterval } from '../detail/format';
 import { extensionOf } from './FileDropCard';
 import { GRANULARITIES, assemble, partsFor, type PeriodParts } from './periodParts';
 
 import {
-  PROJECT_PANEL_TYPES,
   TOPICS,
   type LineageStepContext,
   type LineageStepRender,
@@ -441,19 +441,16 @@ function StepOne(props: {
   );
 }
 
-/** 유형별 빈 상태 한 줄 — 0건이어도 패널이 사라지지 않는다 (PRD-23 · WU-A7). */
-const PANEL_EMPTY: Record<ProjectType, string> = {
-  국가과제: '아직 담은 국가과제가 없어요.',
-  논문: '아직 담은 논문이 없어요.',
-};
-
 /**
- * ② 소속 프로젝트 지정 — **국가과제 / 논문 두 패널**로 가른다 (`WU-A7` · PRD-23).
+ * ② 소속 프로젝트 지정 — **한 표 ＋ 유형 열** (`WU-A7R` · PRD-23 개정본 · 2026-09-06 판정
+ * 미결-r2-3 ⓐ 「두 패널 분리를 걷고 한 표 ＋ 유형 열로 간다」).
  *
  * 지키는 것
- *  - 패널 안은 **칩이 아니라 행**이고 위에서 아래로 쌓인다. 행마다 이름 ＋ `해제`.
- *  - **0건인 패널도 남는다** — 빈 상태 한 줄을 보인다.
- *  - `+ 새 프로젝트 만들기` 는 **두 패널 아래 한 곳에만** 둔다. 패널마다 두면 docx image6 의
+ *  - **표 한 장**이고 열은 `유형` · `이름` · `해제` 다. 칩이 아니라 행이고 위에서 아래로 쌓인다.
+ *  - 유형 배지는 **저장값 `kind`**(`PickedProject.type`)에서 읽는다. 이름 문자열 정규식으로
+ *    판정하지 않는다 — 이름이 바뀌면 배지가 틀린다(수용 기준 4행).
+ *  - **0건이면 표 자체를 숨긴다.** 빈 표·빈 패널을 남기지 않는다.
+ *  - `+ 새 프로젝트 만들기` 는 영역 맨 아래 **한 곳**에만 둔다. 패널마다 두면 docx image6 의
  *    실사용 오독이 두 곳으로 는다. 누르면 유형을 **먼저** 고르는 칸이 뜬다.
  *  - 계약·서버·DB 변경 0 — 유형값은 `ProjectRow.type` 에 이미 있다.
  */
@@ -468,6 +465,8 @@ export function StepTwo(props: {
   const [quickOpen, setQuickOpen] = useState(false);
   const [qType, setQType] = useState<ProjectType>('국가과제');
   const [qName, setQName] = useState('');
+  /** 서버가 되돌린 거절 문면(이름 중복 등) — 화면이 문장을 새로 짓지 않는다 (`WU-A7R`). */
+  const [qError, setQError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -495,10 +494,17 @@ export function StepTwo(props: {
 
   async function quickCreate() {
     if (!qName.trim()) return;
-    const made = await props.source.create({ type: qType, name: qName.trim() });
-    props.onPicked([...props.picked, made]);
-    setQName('');
-    setQuickOpen(false);
+    // **거절을 삼키지 않는다** — 이름 중복(PRD-42)이 400 ＋ 축자 문면으로 온다. 문면은
+    // 서버가 적어 보낸 것을 그대로 띄운다(`projectSource.create`).
+    try {
+      const made = await props.source.create({ type: qType, name: qName.trim() });
+      setQError(null);
+      props.onPicked([...props.picked, made]);
+      setQName('');
+      setQuickOpen(false);
+    } catch (e) {
+      setQError(e instanceof Error ? e.message : '프로젝트를 만들지 못했어요.');
+    }
   }
 
   return (
@@ -508,46 +514,46 @@ export function StepTwo(props: {
         <span className="sub">선택 · 여러 개 가능</span>
       </div>
       <div className="card-b">
-        {/* 두 패널 — 유형이 섞여 보이던 칩 나열을 가른다 (`WU-A7` · PRD-23).
-            **0건이어도 패널을 지우지 않는다** — 담을 자리가 있다는 것을 화면이 계속 말한다. */}
-        <div className="projpanels" data-testid="reg-proj-panels">
-          {PROJECT_PANEL_TYPES.map((t) => {
-            const mine = props.picked.filter((p) => p.type === t);
-            return (
-              <section className="projpanel" data-testid={`reg-proj-panel-${t}`} key={t}>
-                <div className="pp-h">
-                  <span className="pp-t">{t}</span>
-                  <span className="pp-c">{mine.length}</span>
-                </div>
-                {mine.length > 0 ? (
-                  <ul className="projrows" data-testid={`reg-proj-rows-${t}`}>
-                    {mine.map((p) => (
-                      <li className="projrow" key={p.projectId}>
-                        <span className="pr-n" data-testid="reg-proj-row-name">
-                          {p.name}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm pr-x"
-                          aria-label={`${p.name} 해제`}
-                          onClick={() =>
-                            props.onPicked(props.picked.filter((q) => q.projectId !== p.projectId))
-                          }
-                        >
-                          해제
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="muted" data-testid={`reg-proj-empty-${t}`}>
-                    {PANEL_EMPTY[t]}
-                  </p>
-                )}
-              </section>
-            );
-          })}
-        </div>
+        {/* 표 한 장 — 유형이 섞여 보이던 칩 나열을 **열**로 가른다 (`WU-A7R` · PRD-23 개정본).
+            **0건이면 표가 화면에 없다** — 빈 표를 남기면 담은 것이 있는 것처럼 읽힌다. */}
+        {props.picked.length > 0 && (
+          <table className="projtable" data-testid="reg-proj-table">
+            <thead>
+              <tr>
+                <th scope="col">유형</th>
+                <th scope="col">이름</th>
+                <th scope="col">해제</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.picked.map((p) => (
+                <tr className="projrow" key={p.projectId}>
+                  <td className="pr-k">
+                    {/* 저장값에서 온다 — 이름 문자열로 유형을 짐작하지 않는다 */}
+                    <span className="chip chip--info" data-testid="reg-proj-row-kind">
+                      {p.type}
+                    </span>
+                  </td>
+                  <td className="pr-n" data-testid="reg-proj-row-name">
+                    {p.name}
+                  </td>
+                  <td className="pr-x">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      aria-label={`${p.name} 해제`}
+                      onClick={() =>
+                        props.onPicked(props.picked.filter((q) => q.projectId !== p.projectId))
+                      }
+                    >
+                      해제
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {/* 연구실 프로젝트 0건 — 선택 목록과 `+ 추가` 를 끄고 빠른 생성만 남긴다 (§8) */}
         {labEmpty ? (
@@ -627,9 +633,13 @@ export function StepTwo(props: {
                   취소
                 </button>
               </div>
-              <p className="qnote">
-                여기서는 유형과 이름만 받아요. 프로젝트 화면에서 나중에 채우면 돼요.
-              </p>
+              {qError && (
+                <p className="warn" role="alert" data-testid="reg-proj-quick-error">
+                  {qError}
+                </p>
+              )}
+              {/* PRD-43 `J-12` — 문면은 `toastCopy.ts` 한 곳에서 온다(하드코드 중복 0건) */}
+              <p className="qnote">{QUICK_PROJECT_NOTE}</p>
             </div>
           )}
         </PermissionGate>
