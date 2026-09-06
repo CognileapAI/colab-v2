@@ -105,12 +105,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # ⭑ **`viz-render` 의 상한은 dev 와 다르다 — 1536m.** dev(768m·실운영 640m)에서 **실제로 죽었다.**
+  #   2026-09-06 dev 실측(가동 5일 15시간) — 커널 OOM **4건 전부** 이 컨테이너다:
+  #     · `constraint=CONSTRAINT_MEMCG` 4 · `CONSTRAINT_NONE` **0** ⟹ 호스트 RAM 은 한 번도 안 말랐다.
+  #       **자기 cgroup 상한에 부딪혀 죽은 것**이고, 그래서 **인스턴스만 키워도 안 고쳐진다**
+  #     · 죽을 때 rss = 647·648·650 MB ↔ 상한 640 MiB(671 MB). 값이 맞는다
+  #   ⚠ `docs/DEPLOY.md:431` 의 「실측으로 충분함이 확인됐다(55 MB·8파일)」는 **작은 입력의 값**이었다.
+  #     실제 래스터는 그 상한을 넘긴다 — 그 줄을 근거로 상한을 되돌리지 않는다.
+  #   ⟹ prod 는 `t4g.medium`(4 GiB)이고 상한 합은 512+768+1536+384 = **3200m**. 여유 ≈ 600 MB ＋ 스왑 4 GB.
+  #     (dev 는 `t4g.small` 2 GiB 에 상한 합 1792m 이라 **올릴 자리 자체가 없었다.**)
+  #   ⛔ **천장은 아직 모른다(`[미확인]`).** 아는 것은 「640 MiB 보다 많다」뿐이다 —
+  #     큰 래스터를 한 번 돌려 재고 그 값을 여기 적는다. 그때까지 이 1536m 은 **측정값이 아니라 여유**다.
   viz-render:
     image: colab-v2/viz-render:${COLAB_IMAGE_TAG:?COLAB_IMAGE_TAG 가 필요하다 — prod 는 태그에서만 배포한다}
     container_name: colab_v2_prod_viz_render
     restart: unless-stopped
     logging: *logging
-    mem_limit: ${COLAB_MEM_VIZ:-768m}
+    mem_limit: ${COLAB_MEM_VIZ:-1536m}
     cpus: ${COLAB_CPUS_VIZ:-1.0}
     ports:
       - "127.0.0.1:8100:8100"
