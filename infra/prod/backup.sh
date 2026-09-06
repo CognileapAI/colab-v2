@@ -36,7 +36,16 @@ SECRETS="${COLAB_SECRETS_DIR:-/etc/colab}"
 #: ⚠ **prod 는 기본값을 두지 않는다** — dev 판은 `:-dev` 였다. prod 호스트에서 그 기본값이 이기면
 #: **`:dev` 태그 이미지로 prod DB 를 덤프한다**(`ship.sh` 가 그 이름으로 재태그하지 않는 한 아예 없다).
 #: prod 는 **태그에서만 배포**하므로(`〈335〉`-㉳) 「어느 이미지인지 말하지 않으면 뜨지 않는다」가 옳다.
-IMAGE="${COLAB_IMAGE_TAG:?COLAB_IMAGE_TAG 가 필요하다 — prod 는 태그에서만 배포한다}"
+#:
+#: ⭑ 값의 원본은 **`prod.env` 하나**다(`up.sh` 가 배포에 쓰는 그 파일). 여기서 읽는다.
+#:   ⛔ **cron 줄에 태그를 박지 않는다** — 재배포하면 `prod.env` 만 바뀌고 cron 은 그대로라
+#:   **백업이 조용히 옛 이미지로 돈다.** 그 어긋남은 백업이 실패해야 드러나는데, 옛 이미지도
+#:   대개 돌아가므로 **드러나지 않는다.** 2026-09-06 에 이 자리를 그렇게 정했다.
+ENV_FILE="${COLAB_PROD_ENV:-/opt/colab-v2/prod.env}"
+if [ -z "${COLAB_IMAGE_TAG:-}" ] && [ -r "$ENV_FILE" ]; then
+  COLAB_IMAGE_TAG="$(sed -n 's/^COLAB_IMAGE_TAG=//p' "$ENV_FILE" | tail -1)"
+fi
+IMAGE="${COLAB_IMAGE_TAG:?COLAB_IMAGE_TAG 가 필요하다 — prod.env 에도 없고 환경에도 없다}"
 WORK="$(mktemp -d /tmp/colab-backup.XXXXXX)"
 STAMP="$(date -u +%Y-%m-%dT%H%M%SZ)"
 FAILED=0
