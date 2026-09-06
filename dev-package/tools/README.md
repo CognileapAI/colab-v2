@@ -2,7 +2,8 @@
 
 | 도구 | 무엇을 하나 |
 |---|---|
-| `check-package-freshness.py` | 게이트 `planning-freshness` — 기획 정본 패키지 HTML 의 임베드 md ↔ 원본 md 일치 |
+| `check-package-freshness.py` | 게이트 `planning-freshness` — ① 기획 정본 패키지 HTML 의 임베드 md ↔ 원본 md 일치 ② **적용 상태 환류**(매니페스트 `dev-package/prd/planning-applied.yaml` ↔ `40 COLAB-기획/30_적용완료/` 사본) |
+| `planning-applied.py` | 적용이 끝난 기획 입력물을 `30_적용완료/<라운드>/` 로 **복사**하고 매니페스트에 `copied_at` 기록. 기본 dry-run — `python3 dev-package/tools/planning-applied.py --sync [--apply]` |
 | `merge-work-items.py` | `dev-package/work-items.yaml` 전용 3-way 병합 드라이버 (D4 · `rules/colab-rules.md §4-2`) |
 
 ## `merge-work-items.py` — 한 번만 걸어 두는 설정
@@ -41,3 +42,21 @@ git config merge.work-items.name   "work-items.yaml 덧붙임 병합"
 `bash dev-package/tools/merge-work-items-selftest.sh` 가 픽스처 6종(양쪽 덧붙임 · 한쪽 수정 ·
 한쪽 삭제 · 같은 WU 상충 · id 중복 · 머리말 상충)으로 「자동 병합이 되는 자리」와 「충돌로 물러서는
 자리」를 둘 다 보인다. 실물 대장(572 KB · 140항목)에 대한 소요도 함께 잰다(스펙 K 미검증 1).
+
+## `planning-applied.py` — 기획 입력물 생애주기 (J-1)
+
+`40 COLAB-기획/10_적용전/` 은 읽기 전용이라(`rules §7`) 「적용됐다」는 표식을 그 폴더에 남길 자리가
+없다. 그래서 **적용 상태의 원본을 레포에 둔다** — `dev-package/prd/planning-applied.yaml`.
+`30_적용완료/` 는 그 사본 보관소이고, 게이트가 매니페스트와 사본을 대조한다.
+
+| 상태 | 뜻 | 게이트가 요구하는 것 |
+|---|---|---|
+| `merged` | 그 문서를 소비한 라운드가 `main` 에 있다 | `30_적용완료/<라운드>/` 에 **원본과 바이트 동일한 사본** |
+| `in_progress` | 일부 라운드만 병합됐다 | 사본을 만들지 않는다 (있으면 red) |
+| `pending` | 아직 소비되지 않았다 | 같음 |
+
+- **원본은 옮기지도 고치지도 않는다.** `--apply` 는 복사만 하고, 복사 뒤 해시를 다시 대조한다.
+- 매니페스트 갱신은 해당 항목의 줄만 바꾼다(전체 `yaml.dump` 금지 — 주석·순서가 통째로 갈린다).
+  쓰기 전에 되읽어 항목 수·id 가 그대로인지 확인하고, 어긋나면 **쓰지 않는다**.
+- 게이트가 red 로 지목한 것을 해소하는 손이지 판정처가 아니다. 판정은
+  `bash gates/run.sh planning-freshness`.

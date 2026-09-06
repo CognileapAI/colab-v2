@@ -1,0 +1,96 @@
+# 기획 입력물 적용 상태 매니페스트 — `40 COLAB-기획` 생애주기의 레포측 정본
+#
+# 왜 레포에 두는가 —
+#   `10_적용전/` 은 읽기 전용이고 파일명·내용을 고치지 않는다(`.claude/rules/colab-rules.md §7`).
+#   그래서 「이 문서가 적용됐는가」를 기획 폴더 쪽에 표식으로 남길 자리가 없다. 그 표식을
+#   여기에 둔다. **적용 상태의 원본은 이 파일이고, `30_적용완료/` 는 그 사본 보관소다.**
+#
+# 무엇이 이것을 강제하는가 —
+#   게이트 `planning-freshness`(`dev-package/tools/check-package-freshness.py`)가
+#   ㈎ status: merged 인 항목의 `copy` 가 `30_적용완료/` 에 **원본과 바이트 동일한 사본**으로
+#      있는지 ㈏ `30_적용완료/` 아래 모든 파일이 이 매니페스트에 등재돼 있는지를 판정한다.
+#   사본 만들기는 `dev-package/tools/planning-applied.py --sync --apply` 가 한다(기본 dry-run).
+#
+# 필드 —
+#   id           식별자(사본 경로와 무관, 인용용)
+#   source       `40 COLAB-기획` 기준 상대 경로. **이 파일은 읽기 전용이다 — 옮기지도 고치지도 않는다**
+#   author       작성자(기획 충돌 판정 입력 — rules §7)
+#   received     기획자에게 받은 날
+#   rounds       이 문서를 소비한 라운드 전부
+#   applied_round  사본이 들어가는 라운드 폴더 이름(merged 일 때 필수)
+#   status       merged | in_progress | pending — merged 만 사본을 요구한다
+#   applied_date 그 라운드가 `main` 에 병합된 날(merged 일 때 필수)
+#   decisions    `PLAN-SoT §9` 결정 번호(사후 재번호되므로 인용은 참고값이다)
+#   prd / intent / spec  요구사항·발의·명세 문서 경로(레포 기준 상대). 없으면 null
+#   copy         `40 COLAB-기획` 기준 사본 경로. 생략 시 `30_적용완료/<applied_round>/<원파일명>` 으로 파생
+#   copied_at    사본을 만든 날(`--apply` 가 기록)
+#   note         한 줄 근거
+
+version: 1
+copy_root: "30_적용완료"
+source_root: "10_적용전"
+
+items:
+  - id: docx-260903-조성진
+    source: "10_적용전/260903_기획안에 대한 의견 정리_조성진.docx"
+    author: 조성진
+    received: 2026-09-03
+    rounds: ["R-A"]
+    applied_round: "R-A"
+    status: merged
+    applied_date: 2026-09-06
+    decisions: ["343", "344", "345", "346", "347"]
+    prd: "dev-package/prd/PRD-260905-적용전기획.md"
+    intent: null
+    spec: null
+    copy: "30_적용완료/R-A/260903_기획안에 대한 의견 정리_조성진.docx"
+    copied_at: 2026-09-06
+    note: "PRD-260905 §0.2 항목키 D-1~D-9. R-A 14/14 병합(03-HANDOFF §1 최종 갱신 2026-09-06)."
+
+  - id: pdf-260826-이태헌
+    source: "10_적용전/업로드 목업 기획 피드백_260826_이태헌.pdf"
+    author: 이태헌
+    received: 2026-08-26
+    rounds: ["R-A"]
+    applied_round: "R-A"
+    status: merged
+    applied_date: 2026-09-06
+    decisions: ["343", "344", "345", "346", "347"]
+    prd: "dev-package/prd/PRD-260905-적용전기획.md"
+    intent: null
+    spec: null
+    copy: "30_적용완료/R-A/업로드 목업 기획 피드백_260826_이태헌.pdf"
+    copied_at: 2026-09-06
+    note: "PRD-260905 §0.2 항목키 P-1~P-10. 표 3종은 260905 페이지 렌더 전사로 판독(§0.2)."
+
+  - id: rev1-260826-이태헌
+    source: "10_적용전/업로드_계보_260826_rev1_이태헌.html"
+    author: 이태헌
+    received: 2026-08-26
+    rounds: ["R-A"]
+    applied_round: "R-A"
+    status: merged
+    applied_date: 2026-09-06
+    decisions: ["343", "344", "345", "346", "347"]
+    prd: "dev-package/prd/PRD-260905-적용전기획.md"
+    intent: null
+    spec: null
+    copy: "30_적용완료/R-A/업로드_계보_260826_rev1_이태헌.html"
+    copied_at: 2026-09-06
+    note: "PRD-260905 §0.2 항목키 R-01~R-29. rev2 가 후속본이나 WU-A11·A12 근거는 rev1 을 유지한다(40 COLAB-기획/README 상태표)."
+
+  - id: rev2-260905-이태헌
+    source: "10_적용전/업로드_계보_260905_rev2_이태헌.html"
+    author: 이태헌
+    received: 2026-09-05
+    rounds: ["R-A", "R-A′", "R-B"]
+    applied_round: null
+    status: in_progress
+    applied_date: null
+    decisions: []
+    prd: "dev-package/prd/PRD-260905-적용전기획.md"
+    intent: null
+    spec: null
+    copy: null
+    copied_at: null
+    note: "부분 반영 — R-A 에 일부, 잔여 5건은 R-A′(WU-A13·A12·A7·A9·A3), WU-B3·B5·B7 은 R-B(03-HANDOFF §1 증보 2026-09-06). 라운드가 전부 병합되기 전에는 사본을 만들지 않는다."

@@ -10,9 +10,15 @@
   - 정본 폴더가 안 보이면 skip 이 아니라 red 다 (CLAUDE.md §4 — green-by-skip 금지).
   - 이 게이트는 **문서 임베드만** 본다. 화면·목업 최신성은 판정하지 않는다 (그쪽은 WU-G1b).
 
+두 번째 판정(2026-09-06 · J-1) — **적용 상태 환류**. `dev-package/prd/planning-applied.yaml`
+(적용 상태의 원본)과 `40 COLAB-기획/30_적용완료/`(사본 보관소)를 대조한다. 병합된 라운드의
+기획 문서가 사본으로 남지 않으면 red 다. 원본 `10_적용전/` 은 읽기만 한다(rules §7).
+
 사용:
     check-package-freshness.py [정본_루트]
-    COLAB_PLANNING_ROOT=... check-package-freshness.py
+    COLAB_PLANNING_ROOT=... check-package-freshness.py     # 정본 패키지 자리
+    COLAB_PLANNING_HOME=... check-package-freshness.py     # `40 COLAB-기획` 자리
+    COLAB_PLANNING_MANIFEST=... check-package-freshness.py # 적용 상태 매니페스트 자리
     check-package-freshness.py --selftest
 """
 import hashlib
@@ -21,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import unicodedata
 import tempfile
 
 # 정본 루트의 기본 위치 — 이 상수 하나에서만 파생된다.
@@ -29,13 +36,55 @@ import tempfile
 # 위치의 문서화 자리는 `planning/README.md §1` 이다.
 # ⭑⟨이동 2026-09-05⟩ 40 COLAB-기획/ 재편으로 패키지가 00_기획원본/ 아래로 옮겨졌다
 # (대응표: <작업공간>/40 COLAB-기획/README.md §「경로 대응표」).
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# ⭑⟨정정 2026-09-06 · P-C⟩ 워크트리에서 경로가 어긋나던 것을 고쳤다.
+#   종전 = 이 파일에서 세 단계 위를 레포 루트로 봤다. 워크트리에서는 그 자리가
+#   `<레포>/.claude/worktrees/<이름>` 이라 정본을 `<레포>/.claude/worktrees/40 COLAB-기획`
+#   에서 찾고 「정본 폴더가 없다」로 red 를 냈다(실측 로그 = reports/harness/2026-09-06/pe-sweep-3.12.log).
+#   지금 = `git rev-parse --git-common-dir` 이 **워크트리에서도 본 체크아웃의 `.git`** 을 가리키므로
+#   그 부모가 레포 루트이고, 다시 그 부모가 작업공간이다. git 이 없으면 옛 방식으로 물러선다.
+# 두 「루트」를 가른다 —
+#   _CHECKOUT_ROOT = 지금 검사받는 트리(워크트리일 수 있다). **레포 안 파일**은 여기서 찾는다.
+#   _MAIN_REPO_ROOT = 본 체크아웃. 레포 **밖**(작업공간의 기획 폴더)을 짚을 때만 쓴다.
+#   둘을 섞으면 워크트리가 본 체크아웃의 매니페스트를 검사하게 되고 브랜치의 변경분이 안 보인다.
+_TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+_CHECKOUT_ROOT = os.path.dirname(os.path.dirname(_TOOLS_DIR))
+
+
+def _repo_root():
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--git-common-dir"],
+            cwd=_TOOLS_DIR, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return _CHECKOUT_ROOT
+    common = out.stdout.decode("utf-8", "replace").strip()
+    if out.returncode != 0 or not common:
+        return _CHECKOUT_ROOT
+    if not os.path.isabs(common):
+        common = os.path.join(_TOOLS_DIR, common)
+    return os.path.dirname(os.path.abspath(common))
+
+
+_MAIN_REPO_ROOT = _repo_root()
+WORKSPACE_ROOT = os.path.dirname(_MAIN_REPO_ROOT)
+PLANNING_HOME_DIRNAME = "40 COLAB-기획"
+DEFAULT_PLANNING_HOME = os.path.join(WORKSPACE_ROOT, PLANNING_HOME_DIRNAME)
 DEFAULT_PLANNING_ROOT = os.path.join(
-    os.path.dirname(_REPO_ROOT), "40 COLAB-기획", "00_기획원본",
+    DEFAULT_PLANNING_HOME, "00_기획원본",
     "Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌",
 )
 EPICS_DIRNAME = "에픽"          # 에픽
 ENV_VAR = "COLAB_PLANNING_ROOT"
+ENV_HOME_VAR = "COLAB_PLANNING_HOME"
+MANIFEST_ENV_VAR = "COLAB_PLANNING_MANIFEST"
+
+# ── 적용 상태 매니페스트 (J-1 · `30_적용완료` 환류) ────────────────────────
+# 적용 상태의 원본은 레포 쪽 이 파일이다. `10_적용전/` 은 읽기 전용이라 그 폴더에
+# 표식을 남길 수 없다(rules §7). `30_적용완료/` 는 사본 보관소이고, 이 게이트가 둘을 대조한다.
+MANIFEST_REL = os.path.join("dev-package", "prd", "planning-applied.yaml")
+DEFAULT_MANIFEST = os.path.join(_CHECKOUT_ROOT, MANIFEST_REL)
+APPLIED_DIRNAME = "30_적용완료"
 
 # 임베드 블록: 줄머리에서 시작하는 것만 인정한다.
 # (템플릿·JS 주석 안의 `id="md-<docType>"`, `id="md-prd|md-policy|md-validation"` 은 미끼다)
@@ -61,6 +110,18 @@ def sha(text):
 
 def resolve_root(argv_root):
     return argv_root or os.environ.get(ENV_VAR) or DEFAULT_PLANNING_ROOT
+
+
+def resolve_home(argv_root=None):
+    """`40 COLAB-기획` 자체의 자리. 정본 패키지 경로(`resolve_root`)보다 두 단계 위다."""
+    home = os.environ.get(ENV_HOME_VAR)
+    if home:
+        return home
+    override = argv_root or os.environ.get(ENV_VAR)
+    if override:
+        # 패키지 경로만 주어졌으면 `<홈>/00_기획원본/<패키지>` 규약으로 되짚는다.
+        return os.path.dirname(os.path.dirname(os.path.abspath(override)))
+    return DEFAULT_PLANNING_HOME
 
 
 class Unreadable(Exception):
@@ -145,6 +206,152 @@ def _check(root):
     return rows, errors
 
 
+# ------------------------------------------------- 적용 상태 환류 (J-1 · `30_적용완료`)
+
+def _nfc(s):
+    return unicodedata.normalize("NFC", s)
+
+
+def load_manifest(path):
+    """(items, errors). 파서 부재·파일 부재·형식 파손은 전부 red 다 — skip 이 아니다."""
+    try:
+        import yaml
+    except ImportError:
+        return None, ["PyYAML 이 없어 적용 상태를 판정할 수 없다 — 이것은 skip 이 아니라 red 다 "
+                      "(CLAUDE.md §4 green-by-skip 금지): %s" % path]
+    if not os.path.isfile(path):
+        return None, ["적용 상태 매니페스트가 없다: %s" % path]
+    try:
+        with open(path, "rb") as f:
+            doc = yaml.safe_load(f.read().decode("utf-8"))
+    except Exception as e:  # 파손 YAML·인코딩 오류
+        return None, ["매니페스트를 읽지 못했다 (%s): %s" % (e.__class__.__name__, path)]
+    if not isinstance(doc, dict) or not isinstance(doc.get("items"), list):
+        return None, ["매니페스트 형식이 아니다 (`items:` 목록이 필요하다): %s" % path]
+    return doc["items"], []
+
+
+def copy_rel(item):
+    """사본 경로 — 명시 `copy` 우선, 없으면 `30_적용완료/<applied_round>/<원파일명>` 으로 파생."""
+    explicit = item.get("copy")
+    if explicit:
+        return explicit
+    rnd, src = item.get("applied_round"), item.get("source") or ""
+    if not rnd or not src:
+        return None
+    return "%s/%s/%s" % (APPLIED_DIRNAME, rnd, os.path.basename(src))
+
+
+def _abs(home, rel):
+    return os.path.join(home, *rel.split("/"))
+
+
+def _sha_file(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def check_applied(home, manifest_path):
+    """(rows, errors) 반환. rows = (id, status, round, verdict, copy).
+
+    판정 둘 —
+      ㈎ status: merged 인 항목은 `30_적용완료/` 에 **원본과 바이트 동일한 사본**이 있어야 한다.
+         (병합된 라운드인데 사본이 없으면 그것이 기획 드리프트가 숨는 자리다 — 스펙 F 15행)
+      ㈏ `30_적용완료/` 아래 모든 파일은 매니페스트에 등재돼 있어야 한다.
+         (등재 없는 사본은 어느 라운드가 무엇을 반영했는지 아무도 모르는 상태다)
+    원본(`10_적용전/`)은 읽지만 쓰지 않는다 — 읽기 전용 규약(rules §7).
+    """
+    rows, errors = [], []
+    items, errs = load_manifest(manifest_path)
+    if errs:
+        return rows, errs
+
+    expected = {}          # NFC 정규화한 사본 상대경로 → 항목 id
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            errors.append("항목 %d 이 매핑이 아니다" % i)
+            continue
+        iid = item.get("id") or "(id 없음 · 항목 %d)" % i
+        src = item.get("source")
+        status = item.get("status")
+        rnd = item.get("applied_round") or "-"
+        if not src:
+            errors.append("%s: `source` 가 없다" % iid)
+            rows.append((iid, str(status), rnd, "NO-SOURCE", "-"))
+            continue
+        if status not in ("merged", "in_progress", "pending"):
+            errors.append("%s: `status` 가 merged|in_progress|pending 이 아니다 (%r)" % (iid, status))
+        src_abs = _abs(home, src)
+        if not os.path.isfile(src_abs):
+            errors.append("%s: 원본이 없다 — %s (10_적용전 은 옮기지 않는다, rules §7)" % (iid, src))
+            rows.append((iid, str(status), rnd, "SRC-MISSING", "-"))
+            continue
+
+        rel = copy_rel(item)
+        if status == "merged":
+            if not item.get("applied_date"):
+                errors.append("%s: merged 인데 `applied_date` 가 없다" % iid)
+            if not rel:
+                errors.append("%s: merged 인데 사본 경로를 정할 수 없다 "
+                              "(`copy` 또는 `applied_round` 가 필요하다)" % iid)
+                rows.append((iid, status, rnd, "NO-COPY-PATH", "-"))
+                continue
+            expected[_nfc(rel)] = iid
+            dst_abs = _abs(home, rel)
+            if not os.path.isfile(dst_abs):
+                errors.append("%s: 병합된 라운드(%s)인데 사본이 없다 — %s\n"
+                              "   → `dev-package/tools/planning-applied.py --sync --apply` 로 복사한다 "
+                              "(원본은 그대로 둔다)" % (iid, rnd, rel))
+                rows.append((iid, status, rnd, "NOT-COPIED", rel))
+                continue
+            try:
+                same = _sha_file(src_abs) == _sha_file(dst_abs)
+            except OSError as e:
+                errors.append("%s: 사본을 읽지 못했다 (%s): %s" % (iid, e.__class__.__name__, rel))
+                rows.append((iid, status, rnd, "UNREADABLE", rel))
+                continue
+            if not same:
+                errors.append("%s: 사본이 원본과 다르다 — %s (사본은 무수정 보관이다)" % (iid, rel))
+                rows.append((iid, status, rnd, "COPY-DIFFERS", rel))
+                continue
+            rows.append((iid, status, rnd, "COPIED", rel))
+        else:
+            if rel and os.path.isfile(_abs(home, rel)):
+                expected[_nfc(rel)] = iid
+                errors.append("%s: status 가 %s 인데 사본이 이미 있다 — %s "
+                              "(사본은 라운드 병합 뒤에만 만든다)" % (iid, status, rel))
+                rows.append((iid, str(status), rnd, "EARLY-COPY", rel))
+            else:
+                rows.append((iid, str(status), rnd, "PENDING", "-"))
+
+    # ㈏ 등재 없는 사본 — 어느 라운드가 무엇을 반영했는지 모르는 파일이 남지 않게 한다.
+    applied_dir = os.path.join(home, APPLIED_DIRNAME)
+    if os.path.isdir(applied_dir):
+        for dirpath, dirnames, filenames in os.walk(applied_dir):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for fn in filenames:
+                if fn.startswith(".") or fn == ".gitkeep":
+                    continue
+                rel = os.path.relpath(os.path.join(dirpath, fn), home).replace(os.sep, "/")
+                if _nfc(rel) not in expected:
+                    errors.append("등재 없는 사본이다 — %s "
+                                  "(`dev-package/prd/planning-applied.yaml` 에 항목을 적는다)" % rel)
+                    rows.append(("(미등재)", "-", "-", "UNLISTED", rel))
+    elif expected:
+        errors.append("사본 폴더가 없다: %s" % applied_dir)
+    return rows, errors
+
+
+def print_applied_table(rows):
+    hdr = ("ID", "STATUS", "ROUND", "VERDICT", "COPY")
+    w = [max(len(str(r[i])) for r in (rows + [hdr])) for i in range(5)]
+    fmt = "  ".join("{:<%d}" % x for x in w)
+    print(fmt.format(*hdr))
+    print("  ".join("-" * x for x in w))
+    for r in rows:
+        print(fmt.format(*[str(x) for x in r]))
+
+
 def print_table(rows):
     hdr = ("EPIC", "BLOCK", "SOURCE", "VERDICT", "VER", "SHA8")
     w = [max(len(str(r[i])) for r in (rows + [hdr])) for i in range(6)]
@@ -153,6 +360,73 @@ def print_table(rows):
     print("  ".join("-" * x for x in w))
     for r in rows:
         print(fmt.format(*r))
+
+
+def _selftest_applied(tmp):
+    """적용 상태 환류의 red fixture 4종. 반환 = 실패 사유 목록(빈 목록이면 통과)."""
+    import textwrap
+    failures = []
+    home = os.path.join(tmp, "applied-home")
+    src_rel = "10_적용전/샘플_기획_260906.txt"
+    os.makedirs(os.path.join(home, "10_적용전"))
+    os.makedirs(os.path.join(home, APPLIED_DIRNAME, "R-Z"))
+    with open(_abs(home, src_rel), "wb") as f:
+        f.write("원본 본문\n".encode("utf-8"))
+    copy_rel_path = "%s/R-Z/샘플_기획_260906.txt" % APPLIED_DIRNAME
+
+    def manifest(status, extra=""):
+        path = os.path.join(tmp, "manifest-%s.yaml" % status)
+        with open(path, "wb") as f:
+            f.write(textwrap.dedent("""\
+                version: 1
+                items:
+                  - id: fixture
+                    source: "%s"
+                    rounds: ["R-Z"]
+                    applied_round: "R-Z"
+                    status: %s
+                    applied_date: 2026-09-06
+                %s""" % (src_rel, status, extra)).encode("utf-8"))
+        return path
+
+    def expect(label, cond_red, errs):
+        red = bool(errs)
+        if cond_red:
+            verdict = "red OK" if red else "GREEN (자격 없음)"
+        else:
+            verdict = "green OK" if not red else "RED (오탐 — 정합한데 막았다)"
+        print("[selftest 4-%s] %s → %s" % (label[0], label[2:], verdict))
+        if cond_red and not red:
+            failures.append("적용 상태 %s 인데 green 이 나왔다" % label[2:])
+        if not cond_red and red:
+            failures.append("정합한 적용 상태에 red 가 나왔다: %s" % errs)
+
+    # ㈎ 병합됐는데 사본 없음 → red
+    _, e1 = check_applied(home, manifest("merged"))
+    expect("a 병합된 라운드인데 사본 없음", True, e1)
+
+    # ㈏ 사본이 원본과 다름 → red
+    with open(_abs(home, copy_rel_path), "wb") as f:
+        f.write("원본 본문 오염\n".encode("utf-8"))
+    _, e2 = check_applied(home, manifest("merged"))
+    expect("b 사본이 원본과 다름", True, e2)
+
+    # ㈐ 사본이 원본과 같음 → green (검사기가 통과도 낼 수 있어야 자격이 있다)
+    shutil.copy2(_abs(home, src_rel), _abs(home, copy_rel_path))
+    _, e3 = check_applied(home, manifest("merged"))
+    expect("c 사본이 원본과 동일", False, e3)
+
+    # ㈑ 등재 없는 사본이 섞임 → red
+    with open(os.path.join(home, APPLIED_DIRNAME, "R-Z", "미등재.txt"), "wb") as f:
+        f.write(b"x")
+    _, e4 = check_applied(home, manifest("merged"))
+    expect("d 등재 없는 사본", True, e4)
+    os.remove(os.path.join(home, APPLIED_DIRNAME, "R-Z", "미등재.txt"))
+
+    # ㈒ 매니페스트 자체가 없음 → skip 이 아니라 red
+    _, e5 = check_applied(home, os.path.join(tmp, "no-such-manifest.yaml"))
+    expect("e 매니페스트 부재", True, e5)
+    return failures
 
 
 # ---------------------------------------------------------------- selftest
@@ -210,6 +484,9 @@ def selftest():
                 failures.append("읽히지 않는 정본에 green 이 나왔다")
             elif not diagnosed:
                 failures.append("읽기 실패를 낡음과 구분하지 못한다 (오탐 red)")
+        # ④ 적용 상태 환류 (J-1) — 네 갈래 fixture 로 fail-closed 를 증명한다.
+        #    정본 마운트와 무관하게 돈다(자체 fixture 만 쓴다).
+        failures.extend(_selftest_applied(tmp))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -222,21 +499,38 @@ def selftest():
     return 0
 
 
+def resolve_manifest():
+    return os.environ.get(MANIFEST_ENV_VAR) or DEFAULT_MANIFEST
+
+
 def main(argv):
     if "--selftest" in argv:
         return selftest()
-    root = resolve_root(argv[0] if argv else None)
+    argv_root = argv[0] if argv else None
+    root = resolve_root(argv_root)
     rows, errors = check(root)
     if rows:
         print_table(rows)
         print("")
-    print("# 이 게이트는 문서 임베드만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).")
+
+    home, manifest = resolve_home(argv_root), resolve_manifest()
+    arows, aerrors = check_applied(home, manifest)
+    print("── 적용 상태 환류 (J-1) — 매니페스트 %s ─────────" % os.path.relpath(manifest, _CHECKOUT_ROOT))
+    if arows:
+        print_applied_table(arows)
+    else:
+        print("  등재 0건")
+    print("")
+
+    print("# 이 게이트는 ① 문서 임베드 일치 ② 적용 상태 환류만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).")
+    errors = errors + aerrors
     if errors:
         print("::error::planning-freshness red — %d건" % len(errors))
         for e in errors:
             print("  - %s" % e)
         return 1
-    print("planning-freshness green — %d개 임베드 블록 전부 원본과 일치." % len(rows))
+    print("planning-freshness green — 임베드 블록 %d개 전부 원본과 일치 · 적용 상태 %d건 정합."
+          % (len(rows), len(arows)))
     return 0
 
 

@@ -204,6 +204,8 @@
 - 규칙 = `40 COLAB-기획/10_적용전/` 은 **읽기 전용**. 이름·내용 변경 없이 경로로만 참조하고, 고칠 것은 제안만 제출.
 - 규칙 = 기획 충돌 질의는 **작성자별로 분리**. 같은 주제에 두 사람의 문서가 서로 다른 안을 내므로 작성자 식별이 판정 입력.
 - 규칙 = 새 기획 입력물은 `10_적용전` 에 날짜 접두로 배치하고 검토는 `20_검토/<날짜_주제>/` 새 라운드 폴더로. `dev-package` 원장의 옛 경로 인용은 무수정(폴더 README 경로 대응표 참조).
+- 규칙 = **적용 상태의 원본은 `dev-package/prd/planning-applied.yaml` 이다**(J-1 · 2026-09-06). `10_적용전` 이 읽기 전용이라 그 폴더에 표식을 남길 수 없어 레포로 내렸다 — `30_적용완료/<라운드>/` 는 **사본** 보관소이고 원본은 `10_적용전` 에 그대로 남는다. 게이트 `planning-freshness` 가 ㈎ 병합된 라운드의 문서가 사본으로 있는지 ㈏ 사본이 전부 매니페스트에 등재됐는지를 판정한다.
+- 적용 = 라운드 병합 뒤 `python3 dev-package/tools/planning-applied.py --sync`(dry-run) → `--sync --apply`(복사 ＋ `copied_at` 기록) → `bash gates/run.sh planning-freshness` green. 복사만 하고 **원본을 옮기거나 고치지 않는다**.
 - 값의 자리 = 자료·작성자 표 `dev-package/prd/PRD-260905-적용전기획.md` · 무수정 규약 `dev-package/prd/개발계획서-260905.md` · 폴더 색인 `40 COLAB-기획/README.md`.
 - 출처 메모리 = `planning-folder-lifecycle` · `planner-authors` (상태형 — 값은 위 레포 문서에 기록됨. 이관표 참조).
 
