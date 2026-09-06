@@ -260,11 +260,11 @@ services:
 YML
 expect red "dev compose 에서 ai-service 가 platform 체인에 붙는다 (횡단)" run2 "$R"
 
-echo "── 기본 compose 목록 — 벌이 늘면 여기도 늘어야 한다 (〈343〉) ────────"
+echo "── 기본 compose 목록 — 벌이 늘면 여기도 늘어야 한다 (〈372〉) ────────"
 #: ⚠ **위의 모든 케이스는 `COLAB_DB_BOUNDARY_COMPOSE` 로 목록을 덮어쓴다.**
 #: 그래서 지금까지 **기본 목록 자체는 한 번도 판정된 적이 없었다**(2026-09-06 실측) —
 #: 그 줄에서 한 벌을 빼도 셀프테스트는 전부 green 이었다. dev 가 `〈342〉` 전까지,
-#: prod 가 `〈343〉` 전까지 정확히 그렇게 사각이었다.
+#: prod 가 `〈372〉` 전까지 정확히 그렇게 사각이었다.
 #: ⟹ **레포에 실재하는 compose 는 전부 기본 목록에 있어야 한다.** 적힌 목록끼리가 아니라
 #: **실물을 기준으로** 세므로, 다음 벌을 만들면 이 시험이 **먼저** 빨간불을 낸다.
 _actual=$(cd "$REPO_ROOT" && ls infra/*/compose*.yml 2>/dev/null | sort)

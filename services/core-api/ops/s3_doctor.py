@@ -157,7 +157,7 @@ def check_bucket(rep: Report, bucket: str, region: str, origin: str | None,
         rep.line(OK if algo is not None else BAD, "기본 암호화", detail)
 
     def r_cors(s: int, b: bytes) -> None:
-        # ⭑ **⟨2026-09-06 · `〈343〉`-㉳-⑵⟩ `origin` 이 `None` 이면 「무엇을 찾을지 모른다」다.**
+        # ⭑ **⟨2026-09-06 · `〈372〉`-㉳-⑵⟩ `origin` 이 `None` 이면 「무엇을 찾을지 모른다」다.**
         # 부르는 쪽이 벌에 맞는 오리진을 못 정한 경우(`--endpoint` 미지정)이고, 그때 임의값으로
         # 재면 무의미한 red 가 난다. **못 잰 것은 `─` 이지 통과가 아니다** — 부르는 쪽이 이미
         # 미지정을 `─` 로 적었으므로 여기서는 같은 사실을 한 줄로 남기고 끝낸다.

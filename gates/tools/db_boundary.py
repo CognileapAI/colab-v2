@@ -42,9 +42,9 @@ ROOT = pathlib.Path(os.environ.get("COLAB_DB_BOUNDARY_ROOT") or REPO_ROOT)
 #:                                   **나중에 DB 가 붙는 순간이 사각이 생기는 순간**이다
 #:   · `staging/compose.throwaway.yml` — 일회용 리허설 스택(`〈170〉-㉱`). DB 를 물린다
 #:   · `dev/compose.yml`          — `〈342〉`
-#:   · `prod/compose.yml`         — `〈343〉` · 2026-09-06 신설
+#:   · `prod/compose.yml`         — `〈372〉` · 2026-09-06 신설
 #: 벌이 늘면 여기 한 줄을 더한다. **안 더하면 그 벌의 배선이 조용히 사각이 된다** —
-#: dev 가 `〈342〉` 전까지, prod 가 `〈343〉` 전까지 정확히 그 상태였고, 셀프테스트가
+#: dev 가 `〈342〉` 전까지, prod 가 `〈372〉` 전까지 정확히 그 상태였고, 셀프테스트가
 #: 목록을 늘 덮어써서 **그 사각을 한 번도 잡지 못했다**(2026-09-06). 지금은 잡는다:
 #: `db-boundary-selftest` 가 이 목록을 `ls infra/*/compose*.yml` 실물과 대조한다.
 #: `COLAB_DB_BOUNDARY_COMPOSE` 로 바꿀 수 있다(단일 경로 또는 `:` 목록 — selftest 가 단일 경로를 준다).

@@ -20,7 +20,7 @@
 # 사용: sudo /opt/colab-v2/backup.sh        (cron 은 install-cron.sh 가 건다)
 set -uo pipefail
 
-# ⚠ **버킷과 벌 이름에 기본값을 두지 않는다** (2026-09-06 · `〈343〉`-㉳-⑴).
+# ⚠ **버킷과 벌 이름에 기본값을 두지 않는다** (2026-09-06 · `〈372〉`-㉳-⑴).
 #    종전에는 `:-colab-platform-data-dev` · `:-dev` 였다. prod 호스트에 이 파일을 그대로 올리면
 #    **prod DB 를 덤프해 dev 버킷의 `_ops/backups/dev/` 에 올리고 GREEN 을 보고한다** —
 #    접속 문자열은 `/etc/colab/*`(그 호스트 것)이고 버킷만 기본값으로 떨어지기 때문이다.

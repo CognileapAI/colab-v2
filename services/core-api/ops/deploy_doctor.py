@@ -222,7 +222,7 @@ def check_data_bucket(ctx: Ctx, rep: DeployReport) -> None:
         return
     # 기존 7 항목(존재·리전·버저닝·암호화·CORS·정책·라이프사이클) — s3_doctor 그대로.
     #
-    # ⭑ **⟨2026-09-06 · `〈343〉`-㉳-⑵⟩ CORS 에서 무엇을 찾을지가 벌마다 다르다.**
+    # ⭑ **⟨2026-09-06 · `〈372〉`-㉳-⑵⟩ CORS 에서 무엇을 찾을지가 벌마다 다르다.**
     # 종전에는 `--env` 와 무관하게 `LOCAL_ORIGIN`(localhost:5173)을 찾았다. 그런데 정본은
     # 「prod 는 그 환경의 실오리진만」이라 **prod CORS 를 정본대로 두면 이 검사가 red 를 냈다** —
     # 둘 중 하나는 반드시 틀리는 자리였다.
