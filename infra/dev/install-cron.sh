@@ -14,9 +14,15 @@
 # 사용: sudo /opt/colab-v2/install-cron.sh
 set -euo pipefail
 
+# ⚠ **벌 이름을 인자로 받는다** (2026-09-06 · `〈343〉`-㉳-⑴·⑶).
+#    종전에는 `colab-dev` 가 파일명에 박혀 있어 prod 에서 같은 파일을 덮어썼고,
+#    크론 줄이 `backup.sh` 를 **env 없이** 불러 그 스크립트의 dev 기본값이 이겼다.
+#    이제 **크론이 값을 싣고** `backup.sh` 는 값이 없으면 뜨지 않는다(양쪽에서 막는다).
+ENVNAME="${COLAB_ENV:?COLAB_ENV 가 필요하다 — dev|prod. 기본값을 두지 않는다}"
+BUCKET="${COLAB_BACKUP_BUCKET:?COLAB_BACKUP_BUCKET 가 필요하다 — 그 벌의 데이터 버킷}"
 APP=/opt/colab-v2
 LOG=/var/log/colab-backup.log
-CRON=/etc/cron.d/colab-dev
+CRON="/etc/cron.d/colab-$ENVNAME"
 
 [ -x "$APP/backup.sh" ] || { echo "$APP/backup.sh 가 없다 — 먼저 올린다" >&2; exit 2; }
 [ -r "$APP/reap-token" ] || { echo "$APP/reap-token 이 없다 — 심어 둔 주체 토큰 한 줄(0600)" >&2; exit 2; }
@@ -38,9 +44,9 @@ cat > "$CRON" <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/bin:/usr/bin:/bin
 
-# ① DB 백업 → S3 _ops/backups/dev/  (실패하면 종료코드 1 + 로그에 RED)
+# ① DB 백업 → S3 _ops/backups/$ENVNAME/  (실패하면 종료코드 1 + 로그에 RED)
 #    **root 로 돈다** — 소유자 접속 문자열이 uid 10001 소유 0600 이라 ec2-user 로는 못 읽는다.
-0 19 * * * root $APP/backup.sh >> $LOG 2>&1
+0 19 * * * root COLAB_BACKUP_BUCKET=$BUCKET COLAB_BACKUP_ENV=$ENVNAME $APP/backup.sh >> $LOG 2>&1
 
 # ② 만료 전송 지연 정리 깨우기 — 읽기 전용 op 하나를 부른다(부작용은 정리뿐)
 20 19 * * * ec2-user curl -sS -o /dev/null -w '%{time_total}s %{http_code}\\n' -H "Authorization: Bearer \$(cat $APP/reap-token)" http://127.0.0.1:8000/api/v1/uploads/transfers/incomplete >> $LOG 2>&1

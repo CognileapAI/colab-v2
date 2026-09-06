@@ -15,6 +15,14 @@
 set -uo pipefail
 
 # 선언된 타깃. **실행 경로가 있는 것은 staging 하나다.**
+#
+# ⭑ **⟨2026-09-06 · `〈343〉` 확인⟩ prod 가 열렸는데도 이 목록은 그대로다 — 실수가 아니다.**
+# `〈343〉` 이 AWS prod 를 열었지만 **그 배포는 이 파이프라인을 타지 않는다.** AWS 경로는
+# `docs/DEPLOY.md §5`(재구성) + `infra/dev/{build,ship,up}.sh` 이고, 이 스크립트를 부르는 자는
+# `infra/staging/deploy.sh:41` 과 `run-pipeline.sh:32` **둘뿐**이다(전수 grep) — 둘 다 WSL staging 배포다.
+# ⟹ 여기서 `prod` 를 열면 **없는 경로를 있다고 말하는 것**이 되고, 그게 이 파일이 §0 에서
+#    경계한 「조용한 no-op」이다. **AWS prod 를 여는 일과 이 목록은 무관하다.**
+# ⚠ WSL staging 파이프라인으로 prod 를 배포하기로 정하는 날, 그때 이 목록에 타깃 하나를 더한다.
 DECLARED_TARGETS=(staging prod)
 RUNNABLE_TARGETS=(staging)
 

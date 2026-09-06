@@ -20,9 +20,18 @@
 # 사용: sudo /opt/colab-v2/backup.sh        (cron 은 install-cron.sh 가 건다)
 set -uo pipefail
 
-BUCKET="${COLAB_BACKUP_BUCKET:-colab-platform-data-dev}"
+# ⚠ **버킷과 벌 이름에 기본값을 두지 않는다** (2026-09-06 · `〈343〉`-㉳-⑴).
+#    종전에는 `:-colab-platform-data-dev` · `:-dev` 였다. prod 호스트에 이 파일을 그대로 올리면
+#    **prod DB 를 덤프해 dev 버킷의 `_ops/backups/dev/` 에 올리고 GREEN 을 보고한다** —
+#    접속 문자열은 `/etc/colab/*`(그 호스트 것)이고 버킷만 기본값으로 떨어지기 때문이다.
+#    그 뒤 `deploy_doctor --env prod ⑭` 는 `_ops/backups/prod/` 를 보므로 0건 red 를 낸다:
+#    **「백업은 성공, doctor 는 실패」라는 서로 어긋난 신호**가 남는다.
+#    `CLAUDE.md §4` 가 금지한 「관대한 기본값」의 정확한 형태다 — 같은 문제를
+#    `infra/staging/pipeline/approval/target.sh` 는 3상태로 옳게 처리했다(미지정 = exit 64).
+#    ⟹ **선언하면 쓴다 · 아무 말이 없으면 뜨지 않는다.** 리전만 기본값을 둔다(서울 고정).
+BUCKET="${COLAB_BACKUP_BUCKET:?COLAB_BACKUP_BUCKET 가 필요하다 — 벌마다 버킷이 다르다. 기본값을 두지 않는다}"
+ENVNAME="${COLAB_BACKUP_ENV:?COLAB_BACKUP_ENV 가 필요하다 — 접두사 _ops/backups/<벌>/ 이 여기서 나온다}"
 REGION="${COLAB_BACKUP_REGION:-ap-northeast-2}"
-ENVNAME="${COLAB_BACKUP_ENV:-dev}"
 SECRETS="${COLAB_DEV_SECRETS_DIR:-/etc/colab}"
 IMAGE="${COLAB_IMAGE_TAG:-dev}"
 WORK="$(mktemp -d /tmp/colab-backup.XXXXXX)"
