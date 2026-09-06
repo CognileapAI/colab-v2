@@ -2745,3 +2745,133 @@ items:
     deadline: null
     note: "2026-09-07 done — 라벨 좌표계 (선택) 은 기점 a32e580(WU-A4)에서 이미 충족 · 본 레인 87ca9df 는 회귀 시험 2건(upload.test.tsx) 고정 · RED 선실측 불가(세션 노트 기재) · advisor ② approve · 결정서 III-B ⓐ — 기획자 확인 요청은 철회하고 통보로 전환됐다. 계약·서버·DB 변경 0. WU-A3R 과 같은 레인"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-28"]
+
+  - id: WU-B1
+    name: 분류 3축 스키마·계약 (PRD-01·02·03)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)"]
+    depends_on: []
+    completion_def: "5값·6값·4값 CHECK · 계약에 세 열쇠 · 값 집합 밖은 400(500 아님) · 이관된 3쌍이 실측으로 맞고 지형·DEM 만 NULL. processing_level_user_set 재신설은 마이그레이션 0011 의 반전이다 — 삭제 근거 주석과 〈194〉·〈276〉 문면을 남긴 채 반전을 덧붙인다(지우지 않는다)"
+    evidence: null
+    deadline: null
+    note: "M-1·M-2·M-3. R-B 마이그레이션 head 를 여기서 만들고 B2·B4·B6 이 잇는다. 레인 p3-axes-schema"
+    sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-01", "PRD-02", "PRD-03", "부록 B M-1·M-2·M-3"]
+
+  - id: WU-B2
+    name: 변수 행 표 (PRD-16)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
+    depends_on: ["WU-B1"]
+    completion_def: "새 표 d3_dataset_variable ＋ RLS ＋ 대표 1개 부분 UNIQUE. 배열 이관이 순서대로 되고 첫 행이 대표. 변수명 검색이 종전과 같이 잡힌다 · cross-tenant 음성 0건. d3_dataset_variable 은 D3 소유다 — D2 가 D3 표를 FK 하지 않는다"
+    evidence: null
+    deadline: null
+    note: "M-5. M-10(색인 재정의 ＋ 변수 미러 트리거)은 이 WU 뒤에 라운드에서 한 번만 돈다. 레인 p3-variable-rows"
+    sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-16", "부록 B M-5·M-10"]
+
+  - id: WU-B3
+    name: 등록 3단계 재구성 ＋ 값 안내 (PRD-12·04·13·33)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "WU-B1·WU-B2 의 계약 열쇠가 서 있음"]
+    depends_on: ["WU-B1", "WU-B2"]
+    completion_def: "표시기 = ① 분류 · ② 메타데이터 입력 · ③ 연결 이고 눌러서 어느 단계로나 간다(rev1 UI-003) · ① 세 값에 기본 선택값 · 15개 값 전부에 정의·예시 한 줄 · 유형 6값에 참고 · 특이사항 · 설명란에 분류·단계별 힌트 · 모달 재오픈이 늘 ①. WU-A3 이 세운 골격을 재작성하지 않고 필드만 늘린다"
+    evidence: null
+    deadline: null
+    note: "R-A′ 이관 5건을 함께 담는다 — 확장보기 오버레이(배경 클릭 닫기 = requestClose 경유 ＋ data-esc-layer=\"확장보기\" 표식) · A6 기간 달력 팝오버 · 모달 2장면 구조 · 종료 비움 조립(PRD-40) · 공개 범위 값 재동기 재검증(R-A′ 는 상수 문장 표시 여부만 검증했다). 레인 p3-register-steps"
+    sources: ["dev-package/prd/rounds/R-B-3-frontend.md", "dev-package/intent/2026-09-07-r-b.md", "dev-package/sessions/R-A2-ROUND-20260907.md", "PRD-12", "PRD-04", "PRD-13", "PRD-33", "PRD-40"]
+
+  - id: WU-B4
+    name: 공개 범위 3값 (PRD-11)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
+    depends_on: ["WU-B3"]
+    completion_def: "M-4 는 두 표다(d2_dataset_access.state ＋ d1_lab_profile.default_visibility). 한쪽만 넓히면 연구실 기본값이 표현 못 하는 상태가 생긴다. 상태 전이표가 선다 — 잠김 ∧ 유효 grant ≥1 인 행이 어느 시점에도 0건. cross-tenant 음성 여전히 0건(RLS 경계 무개방 증명)"
+    evidence: null
+    deadline: null
+    note: "M-4. RLS 경계를 넓히지 않는다(연구실 밖 공개는 PRD-37 · 범위 밖). 레인 p3-visibility-3"
+    sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-11", "부록 B M-4"]
+
+  - id: WU-B5
+    name: Lv 연결 규칙 (PRD-07·08·09·10)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "WU-B1 의 세 축 열쇠가 계약에 있음"]
+    depends_on: ["WU-B1", "WU-B3"]
+    completion_def: "부모 Lv ≤ 자기 Lv 가 서버 400 으로 선다 · 찾기 모달이 초과 후보를 보이되 못 고르게 하며 사유 대비 4.5:1 이상 · 사후 충돌이 연결을 지우지 않고 확인 필요 로 막는다 · 불일치는 경고만"
+    evidence: null
+    deadline: null
+    note: "계약·서버·FE. 스키마 변경 없음. 유형↔가공 단계 조합 검증을 신설하지 않는다(미결-14 ⓐ). 레인 p3-lv-rules"
+    sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-07", "PRD-08", "PRD-09", "PRD-10"]
+
+  - id: WU-B6
+    name: Lv0 출처 칸 (PRD-19)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
+    depends_on: ["WU-B1", "WU-B3"]
+    completion_def: "M-8. 두 칸은 선택 입력이다 — Lv0 에서 비운 채 등록해도 성공하고 Lv1 이상에서 값을 실어도 거절하지 않고 저장한다. Lv 로 갈리는 것은 두 칸의 화면 표시뿐이고 sourceLabel 은 늘 보인다"
+    evidence: null
+    deadline: null
+    note: "종전 완료 판정(「Lv0 이면 두 칸 필수·400」·「Lv1 이상 값 전송 시 400」)은 폐기됐다 — 근거 = pdf 항목 3 축자 · 미결-11 ⓐ. 레인 p3-lv0-source"
+    sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-19", "부록 B M-8"]
+
+  - id: WU-B7
+    name: 목록 필터·상세 3행 ＋ M-10 색인 재정의 (PRD-05·06 ＋ R-A 이월 PRD-21)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "WU-B1 의 세 축이 서 있음", "WU-B2 의 d3_dataset_variable 이 서 있음(M-10 미러 트리거 대상)"]
+    depends_on: ["WU-B1"]
+    completion_def: "3축 필터가 AND 로 걸리고 각 축에 미지정 항목이 있어 재선택 대상을 찾을 수 있다 · 상세에 3행이 이 순서로 뜬다. 여기 뒤에 M-10 이 붙는다 — R-A 에서 이월된 PRD-21 「nc 로도 찾는다」가 이 자리에서 닫힌다"
+    evidence: null
+    deadline: null
+    note: "M-10 은 라운드에서 한 번만 돈다 — 색인 재정의(topic→category · format＋file_extension) ＋ d3_dataset_variable → autometa.variables 미러 트리거 신설을 한 마이그레이션에 담아 생성 컬럼 재계산·GIN 재생성을 1회로 끝낸다. 자리는 WU-B2 뒤. 라운드 종료 보고에 R-A 이월 1건이 닫혔음을 명시한다. 레인 p3-axis-filters"
+    sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-05", "PRD-06", "PRD-21", "부록 B M-10"]
+
+  - id: WU-B8
+    name: 계보 상태 판정식 ＋ 기록 없음 체크박스 (PRD-27)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)"]
+    depends_on: ["WU-B1", "WU-B3"]
+    completion_def: "스키마 변경 0. d3_catalog.py lineage_state() 를 PRD-27 의 6항 판정식으로 대체하고 ingestion.py 의 자동 mark_unknown 을 걷는다. 부모 0건·체크 안 함·Lv1↑ = 확인 필요 · 체크함 = 기록 없음 · Lv0 = 원천(제외 조항). 부모 1건이면 체크박스 비활성 ＋ 사유 한 줄. 라벨 축자 = 가공 전 데이터를 못 찾았어요 — 기록 없이 등록할게요 이고 종전 문면 문자열이 코드에 없다. 부모 ≥1 경로의 판정이 종전과 같음을 회귀로 증명한다. 홈 대시보드 모수 불일치도 같이 닫는다"
+    evidence: null
+    deadline: null
+    note: "저장 플래그는 이미 있는 d4_lineage_unknown 행이고 바뀌는 것은 그 행을 언제 쓰는가다. 계약은 lineageUnknown 만 연다. 레인 p3-lineage-unknown"
+    sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-27"]
+
+  - id: WU-B10
+    name: 상세 계보 수정·추가 (PRD-31)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "WU-B5 의 Lv 연결 규칙이 서 있음", "WU-B8 의 판정식이 서 있음"]
+    depends_on: ["WU-B5", "WU-B8"]
+    completion_def: "상세에 계보 수정 · 추가 진입 · 기록 없음 상세가 계보 채우기 빈 상태를 그린다 · 모달이 등록 ③ 과 같은 규칙(PRD-07·08·09)을 재사용했음을 diff 로 보인다. 가공 방식 칸은 새 칸이 아니라 이미 있는 d4_lineage_edge.method 를 여는 것이고 이 WU 는 FE 진입만 만든다. 파생 행은 읽기 전용"
+    evidence: null
+    deadline: null
+    note: "WU-B9(연결별 가공 방식)는 지웠다 — method 와 계약 열쇠·등록 화면·상세 표시가 전부 이미 있다(부록 A H-50). 레인 p3-lineage-fix"
+    sources: ["dev-package/prd/rounds/R-B-3-frontend.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-31", "부록 A H-50"]
+
+  - id: WU-B11
+    name: 디자인 검수 수정 (PRD-29 후속 · WU-A11 「있음」 6건)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-A 병합 완료", "WU-A11 판정표 회수"]
+    depends_on: ["WU-A11"]
+    completion_def: "WU-A11 이 있음 으로 판정한 항목만 고친다. 대비 3건(Lv 칩 · 연결 불가 후보 · 그래프 라벨)이 접근성 합격선이라 먼저 돈다. 판정 없이 고치지 않는다"
+    evidence: null
+    deadline: null
+    note: "WU-A11 판정표 = dev-package/sessions/p3-design-audit-20260905.md — 있음 6/11(⑥ 카드 그림자 · ⑦ 계보 그래프 라벨 13px · ⑧ 캡션 눌림 7곳 · ⑨ 보더 2층 · ⑩ 여백 소유권 · ⑪ 죽은 스타일). 접근성 3건 중 살아남은 것은 ⑦뿐(①=4.66:1 통과 · ③=요소 부재) — 없는 결함을 고치지 않는다. 레인 p3-design-fix"
+    sources: ["dev-package/prd/rounds/R-B-4-verify.md", "dev-package/intent/2026-09-07-r-b.md", "dev-package/sessions/p3-design-audit-20260905.md", "PRD-29"]
