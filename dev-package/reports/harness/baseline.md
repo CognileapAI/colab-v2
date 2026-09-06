@@ -65,11 +65,36 @@
 
 ### P-E 실측 (이 워크트리 · 2026-09-06)
 
+**⚠ 측정 기준 = 직접 실행이다.** 아래 수는 `worktree-setup.sh` 를 **손으로 돌린** 것이고,
+`SubagentStart:lane-worker` 로 **레인이 스폰될 때 같은 수가 나오는지는 아직 재지 않았다.**
+`.claude/agents/lane-worker` 가 아직 없어서(P-A 소관) 스폰 자체를 못 한다. 미검증으로 남는 두 가지 —
+⑴ 스펙 K-7 (SubagentStart stdout 이 레인 컨텍스트로 들어가는가), ⑵ `isolation:"worktree"` 스폰에서
+훅이 받는 `cwd` 가 **격리 워크트리**인가 부모 체크아웃인가. 부모라면 훅은 부모 venv 를 다시 짓고
+레인은 red(준비) 10건으로 그대로 연다. **레인 스폰 경유 검증은 P-A 이후 레인 1개로 실측한다.**
+
 | 항목 | 값 |
 |---|---|
-| `worktree-setup.sh` 첫 실행 (5개 신설 · 병렬) | **94초** — frontend 60 · core-api 54 · ai-service 53 · viz-render 66 · pipeline-worker 61 · gates/.venv 재사용 |
+| `worktree-setup.sh` 첫 실행 (5개 신설 · 병렬 · 3.13 판) | **94초** — frontend 60 · core-api 54 · ai-service 53 · viz-render 66 · pipeline-worker 61 · gates/.venv 재사용 |
+| 인터프리터 정정 뒤 재빌드 (서비스 4벌 · 병렬 · frontend 재사용) | **43초** — core-api 28 · ai-service 28 · viz-render 43 · pipeline-worker 37 |
 | 같은 스크립트 재실행 (전부 재사용) | **2초** — 스폰 지연으로 체감되지 않는다(스펙 K 미검증 6 해소) |
+| 스탬프 훼손 실험 (남의 트리 경로 1벌 · 3.13 판 1벌) | **18초** — 훼손된 2벌만 재생성 · 나머지 4벌 재사용 |
 | 전수 red(준비) — env 구축·source 뒤 | **아래 「전수 실측」 절** |
+
+#### 인터프리터 정정 (advisor 게이트 ② 지적 1)
+
+첫 회차의 `uv venv` 는 `--python` 을 주지 않아 **uv 가 관리하는 최신 = CPython 3.13.13** 으로 4벌을 지었다.
+그런데 `services/*/pyproject.toml` 은 전부 `requires-python = "==3.12.*"`, CI 는 `setup-python 3.12`
+(`.github/workflows/ci.yml`), Dockerfile 은 `python:3.12-slim` 이다. **레포가 금지한 판에서 돈 시험의 green 은
+3.12 의 증거가 아니다.** 훅을 고쳤다 — 판은 `pyproject.toml` 의 `requires-python` 에서 읽고
+(`uv python find <판>` → PATH 의 `python<판>` 순으로 찾는다), 못 찾으면 **짓지 않고 요약에 실패로 적는다.**
+지은 뒤 `sys.version_info` 로 되확인한다. 재빌드 후 실측 — 서비스 4벌 + `gates/.venv` 전부 **Python 3.12.3**.
+
+「이 venv 가 내 워크트리 것인가」의 판별도 같이 고쳤다. 옛 검사 3개는 uv venv 에서 전부 헛돌았다 —
+venv 안에서 `sys.prefix` 는 **부른 경로**에서 유도돼 언제나 자기 자신과 같고(항진명제), uv 는 `pyvenv.cfg` 에
+`command =` 를 적지 않으며, uv venv 에는 `bin/pip` 이 없다. 복사본이 「재사용」으로 통과해 **남의 트리 소스를
+시험할 수 있었다.** 지금은 지을 때 `<venv>/.colab-worktree` 에 **워크트리 절대경로 + 파이썬 판**을 박고,
+다음 회차에 그 스탬프를 되읽어 없거나·다른 트리를 가리키거나·판이 다르면 다시 짓는다
+(`pyvenv.cfg` 의 `version`/`version_info` 도 교차로 본다). 위 「스탬프 훼손 실험」 행이 그 실측이다.
 
 ---
 

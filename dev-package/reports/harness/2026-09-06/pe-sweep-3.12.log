@@ -1,0 +1,112 @@
+# P-E 전수 실측 — Python 3.12 venv 재빌드 뒤 (2026-09-06)
+
+- 실행 = `bash gates/run.sh all -j 2` (워크트리 `harness-fable51-spec` 루트)
+- 시작 15:33:49 → 끝 15:50:31 (KST) — 소요 **16분 41초**
+- venv = 서비스 4벌 + `gates/.venv` 전부 Python 3.12.3 (본 lane 수정 반영)
+- 결과 계수 = **green 45 / red(판정) 5 / red(준비) 0**
+- 이 파일은 원본 로그(860행) 중 실행 계획 헤더 · red(판정) 5건의 상세 블록 · 최종 요약 전체를
+  발췌한 것이다(90행, 300행 상한 미달 — 잘라낸 부분은 각 게이트의 개별 stdout 뿐이고 요약·상태줄은
+  전건 포함). 원본은 `/home/ttlhi10/.claude/jobs/b7856d6e/tmp/pe-sweep.log` (세션 로컬, 레포 미포함).
+
+## 판정 메모
+
+`planning-freshness` 는 사전에 알려진 기존 실패(워크트리 경로 — 정본 폴더가
+`.claude/worktrees/...` 하위에 없음)다. 나머지 4건(`schema-diff`·`autometa-loss`·
+`preview-tile-slot`·`artifact-ownership`)은 이번 회차에서 **postgres 접속 실패**로 red(판정)
+났다 — 컨테이너 IP(`172.17.0.3`·`172.18.0.6`)에 `Host is unreachable`/`Connection refused`.
+`red(준비)` 표식(`::gate-readiness-failure::`)이 붙지 않고 곧바로 판정 실패로 떨어졌다 —
+도커 자체는 있었으나 개별 게이트가 스핀업한 일회용 postgres 컨테이너가 검사 시점에 응답하지
+않은 것으로 보인다. 이 lane 이 만진 것은 venv 파이썬 판·스탬프뿐이라 이 4건과 인과가 없어
+보이지만, 사전 통보된 것은 `planning-freshness` 1건뿐이었으므로 판정을 대신 내리지 않고 그대로
+보고한다.
+
+## 실행 계획 헤더 + red(판정) 5건 상세 + 최종 요약
+
+── 실행 계획 (병렬도 -j 2) ──────────────────────────────────────
+  선언 정본 = gates/config/parallelism.toml
+  단독 8건 · 병렬 42건 · 미선언 0건
+  단독  frontend-test  (선언: serial)
+  단독  render-latency  (선언: serial)
+  단독  service-tests-core-api  (선언: serial)
+  단독  service-tests-ai-service  (선언: serial)
+  단독  service-tests-viz-render  (선언: serial)
+  단독  service-tests-pipeline-worker  (선언: serial)
+  단독  db-selftest  (선언: serial)
+  단독  preview-tile-slot-selftest  (선언: serial)
+────────────────────────────────────────────────────────────────────
+══ planning-freshness (exit 1) ═════════════════════════════════════════
+# 이 게이트는 문서 임베드만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).
+::error::planning-freshness red — 1건
+  - 정본 폴더가 없다 (위치 확인 — planning/README.md §1): /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.claude/worktrees/40 COLAB-기획/00_기획원본/Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌/에픽
+
+══ schema-diff (exit 1) ═════════════════════════════════════════
+── db/platform ────────────────────────────────────────────
+::error::schema-diff red — db/platform 적용 DB 덤프 실패(접속 불가도 red 다): pg_dump: error: connection to server at "172.17.0.3", port 5432 failed: Host is unreachable
+	Is the server running on that host and accepting TCP/IP connections?
+
+══ autometa-loss (exit 1) ═════════════════════════════════════════
+::error::autometa-loss red — 읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: psql: error: connection to server at "172.18.0.6", port 5432 failed: Connection refused 	Is the server running on that host and accepting TCP/IP connections?
+
+══ preview-tile-slot (exit 1) ═════════════════════════════════════════
+::error::preview-tile-slot red — 읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: psql: error: connection to server at "172.18.0.6", port 5432 failed: Connection refused 	Is the server running on that host and accepting TCP/IP connections?
+══ artifact-ownership (exit 1) ═════════════════════════════════════════
+::error::artifact-ownership red — 읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: psql: error: connection to server at "172.18.0.6", port 5432 failed: Connection refused 	Is the server running on that host and accepting TCP/IP connections?
+
+── 요약 ────────────────────────────────────────────────────
+  red(판정)  planning-freshness (exit 1) — 검사 대상이 규율을 어겼다
+  green  contract-lint
+  green  contract-breaking
+  green  event-lint
+  green  event-breaking
+  green  seam-consistency
+  green  generated-up-to-date
+  green  import-boundary
+  green  banned-import
+  green  ai-no-lineage-write
+  green  db-boundary
+  green  migration-single-head
+  red(판정)  schema-diff (exit 1) — 검사 대상이 규율을 어겼다
+  green  rls-coverage
+  green  rls-effect
+  green  work-item-consistency
+  green  stage2-markers
+  red(판정)  autometa-loss (exit 1) — 검사 대상이 규율을 어겼다
+  green  frontend-typecheck
+  green  frontend-test
+  green  frontend-fixture-reach
+  red(판정)  preview-tile-slot (exit 1) — 검사 대상이 규율을 어겼다
+  red(판정)  artifact-ownership (exit 1) — 검사 대상이 규율을 어겼다
+  green  e2e-format-coverage
+  green  render-latency
+  green  backup-cron-streak
+  green  service-tests-core-api
+  green  service-tests-ai-service
+  green  service-tests-viz-render
+  green  service-tests-pipeline-worker
+  green  contract-selftest
+  green  event-selftest
+  green  boundary-selftest
+  green  db-boundary-selftest
+  green  db-selftest
+  green  rls-effect-selftest
+  green  seam-consistency-selftest
+  green  generated-selftest
+  green  work-item-selftest
+  green  stage2-markers-selftest
+  green  autometa-loss-selftest
+  green  preview-tile-slot-selftest
+  green  artifact-ownership-selftest
+  green  e2e-format-coverage-selftest
+  green  render-latency-selftest
+  green  backup-cron-streak-selftest
+  green  frontend-typecheck-selftest
+  green  frontend-test-selftest
+  green  frontend-fixture-reach-selftest
+  green  service-tests-selftest
+  ── 계 : green 45 / red(판정) 5 / red(준비) 0

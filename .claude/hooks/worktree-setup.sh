@@ -76,6 +76,25 @@ if [ ! -d "$WT" ] || [ ! -f "$WT/gates/run.sh" ]; then
   exit 0
 fi
 
+# ── 1-b. 파이썬 판을 **레포가 요구하는 것**으로 고정한다 ─────────────────────
+# ⚠ `uv venv` 를 `--python` 없이 부르면 uv 가 관리하는 **최신**(2026-09 기준 3.13)을 잡는다.
+#   그런데 `services/*/pyproject.toml` 은 `requires-python = "==3.12.*"`, CI 는 `setup-python 3.12`,
+#   Dockerfile 은 `python:3.12-slim` 이다. **금지된 판에서 돈 시험의 green 은 3.12 의 증거가 아니다.**
+# 핀은 pyproject 가 쥔다 — 여기서 두 번째 정본을 적지 않고 그 줄을 읽는다.
+PYV="$(sed -n 's/^requires-python[[:space:]]*=[[:space:]]*"[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' \
+        "$WT"/services/*/pyproject.toml 2>/dev/null | head -1)"
+[ -n "$PYV" ] || PYV="3.12"
+
+# 판을 못 구하면 **짓지 않는다.** 틀린 판으로 지으면 시험이 돌긴 도는데 거짓말을 한다.
+PY_BASE=""
+if command -v uv >/dev/null 2>&1; then PY_BASE="$(uv python find "$PYV" 2>/dev/null | head -1 || true)"; fi
+[ -x "$PY_BASE" ] || PY_BASE="$(command -v "python$PYV" 2>/dev/null || true)"
+if [ -x "$PY_BASE" ]; then
+  echo "  파이썬   : $PY_BASE (요구 $PYV · services/*/pyproject.toml)"
+else
+  echo "  ⚠ 파이썬 : python $PYV 를 못 찾았다 — venv 를 짓지 않는다(틀린 판의 green 은 증거가 아니다)."
+fi
+
 # ── 2. 각 자리를 따로 세운다 ─────────────────────────────────────────────────
 LOGDIR="$(mktemp -d -p "${TMPDIR:-/tmp}" wt-setup-XXXXXX)"
 SERVICES="core-api ai-service viz-render pipeline-worker"
@@ -86,21 +105,37 @@ sha_of() { # 인자로 받은 파일들의 sha256 을 한 줄로 — 핀이 바�
   printf '%s' "$acc" | sha256sum | cut -d' ' -f1
 }
 
-venv_is_stale() { # $1=venv 경로 — 「이 워크트리 것인가」를 절대경로로 되묻는다
-  local venv="$1" py="$1/bin/python" cfg="$1/pyvenv.cfg" prefix cmd
-  [ -x "$py" ] || return 0
-  prefix="$("$py" -c 'import sys;print(sys.prefix)' 2>/dev/null || true)"
-  [ "$prefix" = "$venv" ] || return 0
-  # CPython 3.11+ 은 `command = /usr/bin/python3 -m venv <절대경로>` 를 적어 둔다.
+STAMP=".colab-worktree"   # <venv>/.colab-worktree — 1줄: 지을 때의 워크트리 절대경로 · 2줄: 파이썬 판
+
+# ⚠ 「내 것인가」를 venv 스스로에게 물으면 안 된다. venv 안에서 `sys.prefix` 는 **부른 경로**에서
+#   유도되므로 언제나 `$venv` 와 같다 — 항진명제다(복사본도 통과한다). uv venv 는 `command =` 를
+#   적지 않고 `bin/pip` 도 없어서 옛 검사 3개가 전부 헛돌았다. 그래서 **우리가 스탬프를 박고**
+#   다음 회차에 그 스탬프를 되읽는다. 스탬프가 없거나 남의 트리를 가리키면 낡은 것이다.
+venv_is_stale() { # $1=venv 경로 — 「이 워크트리 것인가 · 요구한 판인가」 둘을 되묻는다
+  local venv="$1" py="$1/bin/python" cfg="$1/pyvenv.cfg" root ver cfgver
+  [ -x "$py" ] || return 0                              # ⑴ 실물이 없다
+  [ -f "$venv/$STAMP" ] || return 0                     # ⑵ 우리가 짓지 않았다(스탬프 이전 판 포함)
+  root="$(sed -n 1p "$venv/$STAMP" 2>/dev/null || true)"
+  [ "$root" = "$WT" ] || return 0                       # ⑶ 남의 워크트리에서 복사돼 왔다
+  ver="$(sed -n 2p "$venv/$STAMP" 2>/dev/null || true)"
+  case "$ver" in "$PYV".*) : ;; *) return 0 ;; esac      # ⑷ 스탬프가 다른 판을 말한다
+  # 스탬프만 믿지 않는다 — pyvenv.cfg 의 실물 판도 본다(stdlib=version · uv=version_info).
   if [ -f "$cfg" ]; then
-    cmd="$(sed -n 's/^command[[:space:]]*=[[:space:]]*//p' "$cfg" | head -1)"
-    case "$cmd" in ""|*"$venv") : ;; *) return 0 ;; esac
-  fi
-  # bin/ 의 shebang 이 남의 트리를 가리키면(복사본) 그것도 낡은 것이다.
-  if [ -f "$venv/bin/pip" ]; then
-    case "$(head -1 "$venv/bin/pip")" in "#!$venv/"*|"#!/usr/bin/env "*) : ;; *) return 0 ;; esac
+    cfgver="$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' "$cfg" | head -1)"
+    [ -n "$cfgver" ] || cfgver="$(sed -n 's/^version_info[[:space:]]*=[[:space:]]*//p' "$cfg" | head -1)"
+    case "$cfgver" in ""|"$PYV".*) : ;; *) return 0 ;; esac   # ⑸ 3.13 venv 는 다시 짓는다
   fi
   return 1
+}
+
+make_venv() { # $1=venv 경로 — 판을 준 채로 짓고, 지어진 판을 되확인한 뒤 스탬프를 박는다
+  local venv="$1" v
+  [ -x "$PY_BASE" ] || { echo "python $PYV 를 못 찾았다(uv python find · PATH 둘 다)"; return 1; }
+  if command -v uv >/dev/null 2>&1; then uv venv --python "$PY_BASE" "$venv" || return 1
+  else "$PY_BASE" -m venv "$venv" || return 1; fi
+  v="$("$venv/bin/python" -c 'import sys;print("%d.%d.%d"%sys.version_info[:3])' 2>/dev/null || true)"
+  case "$v" in "$PYV".*) : ;; *) echo "지어진 판이 다르다: ${v:-미상} (요구 $PYV)"; return 1 ;; esac
+  printf '%s\n%s\n' "$WT" "$v" > "$venv/$STAMP"
 }
 
 setup_service() { # $1=단위 이름 — 로그 1개 · 상태 1줄을 남긴다
@@ -111,13 +146,17 @@ setup_service() { # $1=단위 이름 — 로그 1개 · 상태 1줄을 남긴다
   want="$(sha_of "$dir/requirements.txt" "$dir/requirements-dev.txt" "$dir/pyproject.toml")"
   have="$(cat "$venv/.colab-worktree-setup.sha" 2>/dev/null || true)"
   if ! venv_is_stale "$venv" && [ "$want" = "$have" ] && "$venv/bin/python" -c 'import pytest' >/dev/null 2>&1; then
-    echo "재사용|0|핀 동일 · pytest 실물 확인" > "$st"; return 0
+    echo "재사용|0|핀 동일 · pytest 실물 · py $PYV" > "$st"; return 0
+  fi
+  if venv_is_stale "$venv"; then
+    rm -rf "$venv"
+    if ! make_venv "$venv" >"$log" 2>&1; then
+      # 판을 못 구한 것을 「깔았다」로 세지 않는다 — 요약에 이름으로 남고 전수에서 red(준비)로 선다.
+      echo "실패|$(( $(date +%s) - t ))|venv 미생성 — $(tail -2 "$log" | tr '\n' ' ' | cut -c1-120)" > "$st"
+      return 0
+    fi
   fi
   {
-    if venv_is_stale "$venv"; then
-      rm -rf "$venv"
-      if command -v uv >/dev/null 2>&1; then uv venv "$venv"; else python3 -m venv "$venv"; fi
-    fi
     if command -v uv >/dev/null 2>&1; then
       uv pip install --python "$venv/bin/python" -q -r "$dir/requirements.txt"
       [ -f "$dir/requirements-dev.txt" ] && uv pip install --python "$venv/bin/python" -q -r "$dir/requirements-dev.txt"
@@ -127,7 +166,7 @@ setup_service() { # $1=단위 이름 — 로그 1개 · 상태 1줄을 남긴다
       [ -f "$dir/requirements-dev.txt" ] && "$venv/bin/pip" install -q --disable-pip-version-check -r "$dir/requirements-dev.txt"
       "$venv/bin/pip" install -q --disable-pip-version-check -e "$dir"
     fi
-  } >"$log" 2>&1 || rc=$?
+  } >>"$log" 2>&1 || rc=$?
   if [ "$rc" -eq 0 ] && "$venv/bin/python" -c 'import pytest' >/dev/null 2>&1; then
     printf '%s' "$want" > "$venv/.colab-worktree-setup.sha"
     echo "신설|$(( $(date +%s) - t ))|" > "$st"
@@ -191,7 +230,16 @@ report "gates/.venv" "$LOGDIR/gates.state"
 
 echo "  ── 계 : 신설 ${n_new} · 재사용 ${n_keep} · 실패 ${n_fail} · $(( $(date +%s) - t0 ))초"
 if [ -f "${HOME}/.colab-v2-test.env" ]; then
-  echo "  테스트 env : ~/.colab-v2-test.env 있음 — gates/run.sh 가 스스로 source 한다(직접 set -a 불요)"
+  # ⚠ 이 스크립트는 `$CLAUDE_PROJECT_DIR`(= 세션이 뜬 체크아웃)에서 돌지만, 검사하는 대상은 `$WT` 다.
+  #   `baseRef: fresh` 레인의 워크트리는 **origin/main** 이라 P-E 가 병합되기 전에는 그쪽 run.sh 에
+  #   self-source 가 없다. 스크립트가 브랜치에 있다고 트리도 그렇다고 말하면 레인은 6 red(준비)를 본다.
+  if grep -q COLAB_TEST_ENV_SOURCED "$WT/gates/run.sh" 2>/dev/null; then
+    echo "  테스트 env : ~/.colab-v2-test.env 있음 — gates/run.sh 가 스스로 source 한다(직접 set -a 불요)"
+  else
+    echo "  테스트 env : ~/.colab-v2-test.env 있음 — 다만 **이 트리의 run.sh 는 아직 스스로 읽지 않는다**"
+    echo "     (self-source 는 P-E 브랜치에만 있다 · 병합 전까지) → 전수 앞에 직접:"
+    echo "     set -a; . ~/.colab-v2-test.env; set +a"
+  fi
 else
   echo "  ⚠ 테스트 env : ~/.colab-v2-test.env 가 없다 — 게이트는 red(준비·입력미선언 · exit 78)로 선다"
 fi
