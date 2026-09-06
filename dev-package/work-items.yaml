@@ -2670,13 +2670,13 @@ items:
 
   - id: WU-A13R
     name: 공통 토스트 ＋ 문면 21행 (rev2 증분 · PRD-32 · PRD-43)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: []
     depends_on: ["WU-A13"]
     completion_def: "21행이 전부 코드에 있고 하드코드 중복 0건(한 곳에서 온다) · 토스트가 스스로 사라지고 포커스를 뺏지 않는다 · F-11·D-13 의 건수가 보간값이다 · D-07 축약 표기가 2025-06 ~ 09 다"
-    evidence: null
+    evidence: "dev-package/sessions/p3-toast-copy-20260906.md"
     deadline: null
     note: "rev2 증분 — 부모 WU-A13(done) 을 다시 열지 않고 신규 id 로 등재한다(id 규칙 = 부모 id ＋ 접미 R). 계약·스키마·마이그레이션 0. R-A′ 의 선행"
     sources: ["dev-package/prd/rounds/R-A2.md", "dev-package/prd/specs/R-A2.md", "dev-package/intent/2026-09-06-r-a2.md", "PRD-32", "PRD-43"]
