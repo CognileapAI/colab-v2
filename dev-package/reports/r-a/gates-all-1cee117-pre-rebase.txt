@@ -13,7 +13,7 @@
 ══ planning-freshness (exit 1) ═════════════════════════════════════════
 # 이 게이트는 문서 임베드만 본다. 화면·목업 최신성은 판정하지 않는다 (WU-G1b).
 ::error::planning-freshness red — 1건
-  - 정본 폴더가 없다 (위치 확인 — planning/README.md §1): /home/ttlhi10/.claude/jobs/402858d4/tmp/40 COLAB-기획/00_기획원본/Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌/에픽
+  - 정본 폴더가 없다 (위치 확인 — planning/README.md §1): ~/.claude/jobs/402858d4/tmp/40 COLAB-기획/00_기획원본/Co-Lab_ver2_1차마일스톤_목업패키지_260818_이태헌/에픽
 ══ contract-lint (exit 0) ═════════════════════════════════════════
 spectral 미설치 — contracts/package-lock.json 기준으로 설치를 시도한다.
 # 대상 3건 — contracts/seams/core-ai.yaml contracts/seams/core-viz.yaml contracts/seams/fe-core.yaml 
@@ -324,7 +324,7 @@ frontend-fixture-reach green — 진입점 src/main.tsx 에서 도달 134개(진
 ══ preview-tile-slot (exit 0) ═════════════════════════════════════════
 # 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 23개
 지도 타일 자리 — 발행 업로드 2 · 자리의 타일 2 · 쓸 수 있음 2 · 면제 0 (선언 0 건) · 못 씀 0
-  세는 단위 = 자리에 놓인 지도 타일 파일 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 시점 = 2026-09-06T00:44:13+09:00
+  세는 단위 = 자리에 놓인 지도 타일 파일 · 자리 = ~/.colab-v2-staging/previews · 시점 = 2026-09-06T00:44:13+09:00
 # 경계 대조 — 관리자 롤 2 ↔ 경계 롤 'colab_app' 0 (갈렸다)
 preview-tile-slot green — 쓸 수 있음 2 / 자리의 타일 2 · 면제 0 · 발행 업로드 2
 ══ artifact-ownership (exit 0) ═════════════════════════════════════════
@@ -332,7 +332,7 @@ preview-tile-slot green — 쓸 수 있음 2 / 자리의 타일 2 · 면제 0 ·
 # 경계 대조 — 관리자 롤 (d3_file,d5_upload_file)=(133,133) ↔ 경계 롤 'colab_app' (0,0) (갈렸다)
 산출물 소유 — 대상 한 벌 136 · 살아 있다 117 · 접수분에만 닿는다 0 · 고아 0 · 판정 불가 19
   지도 타일 2 벌은 **대상이 아니다** — D5 가 구운 것이라 kept 로 산다 (완료 정의 ⑷)
-  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 원장 = d3_file 133 · d5_upload_file 133
+  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = ~/.colab-v2-staging/previews · 원장 = d3_file 133 · d5_upload_file 133
   회수 전 전수 스냅숏 306 줄 → /tmp/artifact-owner-MlK6cG/snapshot-20260905T154413Z.tsv (키·확장자·크기·사이드카 source·등급)
   시점 = 2026-09-06T00:44:14+09:00
 ::warning::artifact-ownership — 판정 불가(구판) 19 벌이 **건수를 드러낸 채** 통과했다.
@@ -359,7 +359,7 @@ artifact-ownership green — 대상 136 벌 (살아 있다 117 · 접수분 0 ·
     · NumPy — 5건 · 중앙값 0.494초 · 최대 0.635초 · 본체 6.6 MB
 ══ backup-cron-streak (exit 0) ═════════════════════════════════════════
 ════ backup-cron-streak — 크론 04:40 회차의 판정 줄을 읽는다 (재실행하지 않는다)
-  판독 대상: /home/ttlhi10/colab-v2-backups/staging-backup.log  ·  허용 나이 36시간
+  판독 대상: ~/colab-v2-backups/staging-backup.log  ·  허용 나이 36시간
   요약줄: 크론 연속 GREEN: GREEN (통과 11건 · SKIP 0 — 모든 항목이 실제로 돌았다)
   시각  : 2026-09-05T04:40:02 (20시간 전)
   근사   : 무인 판별은 예정 0330 ±30분 창이다 — 그 시각에 손으로 돌린 회차는 무인으로 세어진다
