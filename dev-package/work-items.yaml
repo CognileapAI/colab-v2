@@ -2774,13 +2774,13 @@ items:
 
   - id: WU-B3
     name: 등록 3단계 재구성 ＋ 값 안내 (PRD-12·04·13·33)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "WU-B1·WU-B2 의 계약 열쇠가 서 있음"]
     depends_on: ["WU-B1", "WU-B2"]
     completion_def: "표시기 = ① 분류 · ② 메타데이터 입력 · ③ 연결 이고 눌러서 어느 단계로나 간다(rev1 UI-003) · ① 세 값에 기본 선택값 · 15개 값 전부에 정의·예시 한 줄 · 유형 6값에 참고 · 특이사항 · 설명란에 분류·단계별 힌트 · 모달 재오픈이 늘 ①. WU-A3 이 세운 골격을 재작성하지 않고 필드만 늘린다 · `DatasetCreate.required` 에 `category`·`dataType` 승격 ＋ 서버 미입력 400 「분류를 골라 주세요」(20차 승인 패키지 ⑴ · PRD-01·02 수용 기준 · FE 기본값 송신과 동시 · 마이그레이션 0)"
-    evidence: null
+    evidence: "dev-package/sessions/p3-register-steps-20260907.md"
     deadline: null
     note: "R-A′ 이관 5건을 함께 담는다 — 확장보기 오버레이(배경 클릭 닫기 = requestClose 경유 ＋ data-esc-layer=\"확장보기\" 표식) · A6 기간 달력 팝오버 · 모달 2장면 구조 · 종료 비움 조립(PRD-40) · 공개 범위 값 재동기 재검증(R-A′ 는 상수 문장 표시 여부만 검증했다). 레인 p3-register-steps · B1 advisor ② 로 이관된 required 승격 소유(오케스트레이터 지정 · Ted 추인 대기)"
     sources: ["dev-package/prd/rounds/R-B-3-frontend.md", "dev-package/intent/2026-09-07-r-b.md", "dev-package/sessions/R-A2-ROUND-20260907.md", "PRD-12", "PRD-04", "PRD-13", "PRD-33", "PRD-40"]
