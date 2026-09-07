@@ -28,6 +28,7 @@ import type { LineageStepContext } from '../upload/types';
 import {
   LV_VALUES,
   levelOf,
+  displayLevel,
   PARENT_ROLES,
   type AiConfidence,
   type DatasetRow,
@@ -167,8 +168,11 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
             method: '',
             confirmedMethodText: null,
             picking: false,
-            // 제안은 Lv 를 싣지 않는다 — 지어내지 않고 비운다(위 `parentLevel` 주석).
-            parentLevel: null,
+            // ⭑ **⟨WU-C9 · 21차 해제 ⑸ · 질의 23⟩ 제안이 부모 Lv 를 실어 온다.**
+            //    실려 오면 화면이 **서버 400 전에** 충돌을 경고할 수 있다. 열쇠가 없으면
+            //    종전대로 `null` 이고 충돌로 세지 않는다 — **지어내지 않는다**.
+            //    판정의 정본은 여전히 서버 400 이다(§5-23).
+            parentLevel: s.parentProcessingLevel ?? null,
           })),
         ]);
         setMethods(
@@ -272,7 +276,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       confirmed: false,
       confirmedMethodText: null,
       picking: false,
-      parentLevel: row.processingLevel,
+      parentLevel: displayLevel(row),
     });
   }
 
@@ -293,7 +297,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         confirmedMethodText: null,
         picking: false,
         // 후보 줄이 들고 온 표시 Lv — 사후 충돌을 재는 값이다(PRD-09).
-        parentLevel: row.processingLevel,
+        // ⭑ ⟨WU-C9⟩ 표시 규칙은 네 자리와 같은 `displayLevel` 이다.
+        parentLevel: displayLevel(row),
       },
     ]);
   }

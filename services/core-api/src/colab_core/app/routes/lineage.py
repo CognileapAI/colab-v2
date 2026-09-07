@@ -76,11 +76,11 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "name": "(지워진 데이터)" if c is None else c.name,
             # ⛔ **파생값 그대로다** — 21차가 여기에 사람 값을 덮어 쓰지 않는다.
             #    덮어 쓰면 기존 열쇠의 의미 변경 = 파괴다 (`R-C.md ## 구현 결정` ⑵).
-            "processingLevel": (None if c is None
-                                else d3_catalog.processing_level(summaries.get(node_id))),
-            # ⭑ **⟨21차 해제 · R-B §5 판정 27·41⟩ 사람이 고른 값을 **옆에** 싣는다.**
-            #    표시 규칙(사람 값 우선)은 FE 가 고른다 — 두 값이 다 있어야 고를 수 있다.
-            "processingLevelUserSet": None if c is None else c.processing_level_user_set,
+            # ⭑ **⟨WU-C9⟩ 두 값을 한 조립 함수에서 받는다** (`d3_catalog.level_pair`) —
+            #    소속 데이터셋 표(`routes/project.py`)가 부르는 그 함수다. 두 라우트가
+            #    각자 자르면 언젠가 한쪽만 고쳐진다. 표시 규칙(사람 값 우선)은 FE 가 고른다.
+            **({"processingLevel": None, "processingLevelUserSet": None} if c is None
+               else d3_catalog.level_pair(c, summaries.get(node_id))),
             "verified": False if acc is None else acc.verified,
             # 지워진 데이터셋은 묘비다 — **사라지지 않는다.** 지운 데이터가 부모였다면
             # 자식의 출처가 끊긴다 (schema.sql d3_dataset 주석).

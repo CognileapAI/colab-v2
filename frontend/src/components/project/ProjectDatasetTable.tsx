@@ -8,6 +8,7 @@
 // **활용 의미 문장(`usageNote`) 열은 여기에 없다** — 목업의 여섯 열에 그 자리가 없고,
 // 그 문장을 읽는 자리는 데이터셋 상세의 `활용 프로젝트` 다 (E-03).
 import { LockIndicatorSlot } from '../../placeholders/LockIndicatorSlot';
+import { displayLevel } from '../common/processingLevel';
 import { dataPeriod } from './format';
 import type { ProjectDatasetRow } from './types';
 
@@ -46,7 +47,11 @@ export function ProjectDatasetTable(props: {
               {row.bodyAccessible ? null : <LockIndicatorSlot />}
             </td>
             <td>
-              <span className={`lvl lvl-${row.processingLevel}`}>Lv{row.processingLevel}</span>
+              {/* ⭑ ⟨WU-C9 · 질의 24·27·41⟩ 서버는 파생값과 사람 값을 나란히 내린다 —
+                  고르는 것은 화면이고 그 규칙은 `displayLevel` 하나다. */}
+              {displayLevel(row) === null ? null : (
+                <span className={`lvl lvl-${displayLevel(row)}`}>Lv{displayLevel(row)}</span>
+              )}
             </td>
             <td className="mono">{dataPeriod(row.period)}</td>
             <td>

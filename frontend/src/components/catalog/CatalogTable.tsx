@@ -6,6 +6,7 @@ import { COLUMNS, isFilterable } from './columns';
 import { ColumnMenu } from './ColumnMenu';
 import type { CatalogColumn, DatasetRow, FacetValue, SortOrder } from './types';
 import type { CatalogState } from './useCatalog';
+import { displayLevel } from '../common/processingLevel';
 
 /** 수정일 칸은 날짜만 적는다 (목업 `2026-08-11`). */
 function day(ts: string): string {
@@ -156,7 +157,10 @@ export function CatalogTable(props: {
               </td>
               <td>{row.topic ?? ''}</td>
               <td>
-                <span className={`lvl lvl-${row.processingLevel}`}>Lv{row.processingLevel}</span>
+                {/* ⭑ ⟨WU-C9 · 질의 27·41⟩ 표시 규칙은 `displayLevel` 한 자리다 — 사람 값 우선. */}
+                {displayLevel(row) === null ? null : (
+                  <span className={`lvl lvl-${displayLevel(row)}`}>Lv{displayLevel(row)}</span>
+                )}
               </td>
               <td className="muted" title={row.projects.names.join(' · ')}>
                 {row.projects.representative?.name ?? ''}{' '}

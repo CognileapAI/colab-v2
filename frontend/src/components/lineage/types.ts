@@ -44,9 +44,11 @@ export interface ParentCard {
   picking: boolean;
   /**
    * ⭑ **⟨WU-B5 · PRD-09⟩ 부모의 표시 Lv.** 사후 충돌(연결 뒤 자기 Lv 내림)을 재는 값이다.
-   * `null` 이면 **모른다**는 뜻이고 그때는 충돌로 세지 않는다 — AI 제안 항목은 Lv 를 싣지
-   * 않으므로(`ParentCandidateSuggestion` 에 그 열쇠가 없다) 후보 목록에서 대조될 때까지
-   * 비어 있다. **없는 값을 0 으로 채우지 않는다** — 그러면 모든 제안이 Lv0 으로 읽힌다.
+   * `null` 이면 **모른다**는 뜻이고 그때는 충돌로 세지 않는다.
+   * ⭑ **⟨WU-C9 · 21차 해제 ⑸ · 질의 23⟩ 제안도 이 값을 실어 온다**
+   *   (`ParentCandidateSuggestion.parentProcessingLevel` · optional). 실려 오면 화면이
+   *   서버 400 전에 충돌을 알리고, 없으면 후보 목록에서 대조될 때까지 비어 있다.
+   *   **없는 값을 0 으로 채우지 않는다** — 그러면 모든 제안이 Lv0 으로 읽힌다.
    */
   parentLevel: number | null;
 }
@@ -74,12 +76,8 @@ export interface LineageSource {
   candidates(level?: number | null): Promise<DatasetRow[]>;
 }
 
-/** 가공 단계 4값 (`d3_dataset.processing_level_user_set` CHECK · 미결-7 ⓐ). */
-export const LV_VALUES = [0, 1, 2, 3] as const;
-
-/** `Lv2` 꼴 문자열을 정수로. 안 골랐으면 `null` 이다 — **화면이 값을 지어내지 않는다.** */
-export function levelOf(userSet: string | null | undefined): number | null {
-  if (!userSet || !userSet.startsWith('Lv')) return null;
-  const n = Number(userSet.slice(2));
-  return Number.isInteger(n) ? n : null;
-}
+// ⭑ **⟨WU-C9 · 질의 27·41⟩ Lv 표시 규칙의 집은 `common/processingLevel.ts` 하나다.**
+//    여기서 다시 선언하지 않고 **그대로 다시 내보낸다** — 종전 수입 경로
+//    (`import { levelOf } from '../lineage/types'`)를 끊으면 네 자리가 각자 고쳐진다.
+export { LV_VALUES, levelOf, displayLevel } from '../common/processingLevel';
+export type { LevelBearing } from '../common/processingLevel';

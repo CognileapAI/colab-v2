@@ -5,7 +5,7 @@ import { VerifiedBadge } from '../approval/VerifiedBadge';
 import { accessLabel } from '../common/accessState';
 import { VerificationAction } from '../approval/VerificationAction';
 import type { ApprovalSource } from '../approval/types';
-import { levelOf } from '../lineage/types';
+import { displayLevel, levelOf } from '../common/processingLevel';
 import type { DatasetDetail } from './types';
 
 /**
@@ -50,6 +50,12 @@ export function DetailHeader(props: {
 }) {
   const d = props.detail;
   const segments = d.summary ? summarySegments(d.summary) : [];
+  // ⭑ **⟨WU-C9 · 질의 27·41⟩ 상세가 그리는 Lv — 네 자리 공통 규칙 한 번 호출.**
+  // ⚠ 상세의 `processingLevel` 은 **서버가 이미 고른 표시값**이다(`d3_catalog.level_view` ·
+  //   「사람 값이 `null` 인 행만 파생값으로 대신」 · 계약 산문 축자). 그래서 여기서
+  //   `basicInfo.processingLevelUserSet` 을 **다시 얹지 않는다** — 두 번 고르면 저장 응답이
+  //   돌려준 값을 화면이 옛 사람 값으로 되돌린다. 규칙 함수는 네 자리가 같은 것을 쓴다.
+  const lvShown = displayLevel(d);
   return (
     <div className="dt-header" data-testid="detail-header">
       <div className="dh-main">
@@ -88,9 +94,12 @@ export function DetailHeader(props: {
         ) : null}
         <div className="dh-tags" data-testid="dh-tags">
           {d.topic ? <span className="chip chip--neutral">{d.topic}</span> : null}
-          <span className={`lvl lvl-${Math.min(d.processingLevel, 3)}`}>
-            Lv{d.processingLevel}
-          </span>
+          {/* ⭑ ⟨WU-C9 · 질의 27·41⟩ 네 자리가 같은 함수를 부른다 — 사람 값 우선.
+              상세는 `basicInfo` 에 사람 값을 이미 들고 있다(잠긴 상세면 없고, 그때는
+              파생값으로 물러난다 — 화면을 막지 않는다). */}
+          {lvShown === null ? null : (
+            <span className={`lvl lvl-${Math.min(lvShown, 3)}`}>Lv{lvShown}</span>
+          )}
           {/* 잠긴 상세도 헤더 태그까지는 보인다 (`§3.3` · P-13)
               ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 두 갈래 → 세 갈래.** 종전에는 `잠김` 하나만
               칩이 됐고 나머지는 칩이 없었다. 3값에서는 **`열림` 이 아닌 두 값**이 각자

@@ -279,3 +279,36 @@ def test_an_origin_node_has_no_human_level(live_client) -> None:
     origins = [n for n in body["nodes"] if n["kind"] == "원천"]
     assert_nonempty(origins, "원천 노드")
     assert all(n["processingLevelUserSet"] is None for n in origins)
+
+
+# ── ⭑ ⟨WU-C9 · 질의 24·27·41⟩ 두 라우트가 **한 조립 함수**를 쓴다 ──────────────
+ROUTES = REPO / "services" / "core-api" / "src" / "colab_core" / "app" / "routes"
+
+
+def test_the_node_and_the_project_row_share_one_assembly_helper() -> None:
+    """계보 노드와 소속 데이터셋 표가 **같은 함수**로 두 값을 싣는다.
+
+    ⛔ 두 라우트가 각자 `processing_level()` 을 부르고 각자 사람 값을 붙이면 언젠가 한쪽만
+       고쳐진다 — 질의 27·41 이 잰 현상이 정확히 그것이었다(노드·표는 파생값, 카탈로그·
+       상세는 사람 값). 조립을 한 자리(`d3_catalog.level_pair`)로 모은다.
+    """
+    lineage_src = (ROUTES / "lineage.py").read_text(encoding="utf-8")
+    project_src = (ROUTES / "project.py").read_text(encoding="utf-8")
+    for name, src in (("lineage.py", lineage_src), ("project.py", project_src)):
+        assert "d3_catalog.level_pair(" in src, f"{name} 가 공통 조립 함수를 부르지 않는다."
+        assert "processing_level_user_set" not in src, (
+            f"{name} 가 사람 Lv 열을 **직접** 읽는다 — 조립이 두 벌이 됐다.")
+        assert "d3_catalog.processing_level(" not in src, (
+            f"{name} 가 파생 Lv 를 **직접** 계산한다 — 조립이 두 벌이 됐다.")
+
+
+def test_the_shared_helper_never_overwrites_the_derived_key() -> None:
+    """`level_pair` 는 **고르지 않는다** — 두 값을 나란히 실을 뿐이다(표시 규칙은 FE)."""
+    import types
+
+    from colab_core.domains import d3_catalog
+
+    # 이 함수가 읽는 것은 사람 값 한 칸과 계보 요약뿐이다 — 나머지를 지어내지 않는다.
+    core = types.SimpleNamespace(processing_level_user_set="Lv3")
+    pair = d3_catalog.level_pair(core, None)  # 부모 0건 → 파생 Lv0
+    assert pair == {"processingLevel": 0, "processingLevelUserSet": "Lv3"}, pair

@@ -9,7 +9,7 @@
 //  - **없는 것과 못 고르는 것은 다르다** — 초과 후보도 목록에 남고, 버튼만 비활성이며,
 //    사유 한 줄이 읽힌다. 행 전체를 흐리게 만들지 않는다(`R-21` · `lineage.css`).
 //  - **사유 문면은 이 파일 하나에 있다**(`parentOverReason`). 부르는 쪽이 다시 적지 않는다.
-import { LV_VALUES, type DatasetRow } from './types';
+import { LV_VALUES, displayLevel, type DatasetRow } from './types';
 
 /** 초과 후보의 사유 축자 (PRD-08 rev1). **두 화면이 이 한 함수를 쓴다.** */
 export function parentOverReason(selfLv: number): string {
@@ -59,7 +59,9 @@ export function ParentPicker(props: {
         <ul>
           {candidates.map((row) => {
             // **없는 것과 못 고르는 것은 다르다** — 초과 행도 목록에 남고 사유가 읽힌다.
-            const over = selfLv !== null && row.processingLevel > selfLv;
+            // ⭑ ⟨WU-C9⟩ 후보 줄도 같은 표시 규칙을 지난다.
+            const lv = displayLevel(row);
+            const over = selfLv !== null && lv !== null && lv > selfLv;
             return (
               <li key={row.datasetId} className={over ? 'is-over' : undefined}>
                 <button
@@ -69,7 +71,7 @@ export function ParentPicker(props: {
                   disabled={over}
                   onClick={() => props.onPick(row)}
                 >
-                  {row.name} <span className="lin-lv">Lv{row.processingLevel}</span>
+                  {row.name} <span className="lin-lv">Lv{lv}</span>
                 </button>
                 {over && (
                   // 사유는 **살린다** — 행 전체를 흐리게 만들면 유일한 설명이 무너진다(`R-21`).

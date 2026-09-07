@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toast } from '../common/Toast';
 import { PRE_LINEAGE_ADDED } from '../common/toastCopy';
+import { displayLevel } from '../common/processingLevel';
 import type { LineageEdge, LineageGraph, LineageNode } from './graphTypes';
 import { LineageFixModal, type ParentCandidateSource } from './LineageFixModal';
 import { apiLineageEditSource, type LineageEditSource } from './lineageEditSource';
@@ -89,12 +90,16 @@ function nodeTitle(node: LineageNode): string | undefined {
 
 function NodeBody(props: { node: LineageNode }) {
   const n = props.node;
+  // ⭑ **⟨WU-C9 · 질의 27·41⟩ 노드가 그리는 Lv 도 사람 값 우선이다.** 응답의
+  //    `processingLevel` 은 파생값 그대로이고(서버가 덮어 쓰지 않는다), 옆에 실린
+  //    `processingLevelUserSet` 을 화면이 골라 쓴다 — 규칙은 `displayLevel` 한 자리다.
+  const lv = displayLevel(n);
   return (
     <>
       <span className="n-head">
-        {n.processingLevel === null ? null : (
-          <span className={`lvl lvl-${n.processingLevel}`} data-testid="lin-lv">
-            Lv{n.processingLevel}
+        {lv === null ? null : (
+          <span className={`lvl lvl-${lv}`} data-testid="lin-lv">
+            Lv{lv}
           </span>
         )}
         <span className="n-role">{ROLE_LABEL[n.kind]}</span>
@@ -194,8 +199,8 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
           <span className="hist">{hist}</span>
         </div>
       </div>
-      {node && node.processingLevel !== null ? (
-        <span className={`lvl lvl-${node.processingLevel}`}>Lv{node.processingLevel}</span>
+      {node && displayLevel(node) !== null ? (
+        <span className={`lvl lvl-${displayLevel(node)}`}>Lv{displayLevel(node)}</span>
       ) : (
         <span />
       )}
@@ -240,8 +245,10 @@ export function LineageSection(props: {
     if (openToken > 0 && canEdit) setFixing(true);
   }, [openToken, canEdit]);
   // 기준 = 사람이 고른 Lv(props.selfLv). 안 왔을 때만 그래프 파생값으로 물러난다.
+  // ⭑ ⟨WU-C9⟩ 물러나는 값도 **같은 표시 규칙**을 지난다 — 노드에 사람 값이 실려 있으면
+  //    그것이 기준이다(서버 400 이 보는 값과 같은 축).
   const selfLv =
-    props.selfLv ?? g.nodes.find((n) => n.kind === '이 데이터')?.processingLevel ?? null;
+    props.selfLv ?? displayLevel(g.nodes.find((n) => n.kind === '이 데이터'));
   // 출처는 **한 번만 만든다** — 매 렌더마다 새 객체를 넘기면 모달의 후보 조회가 끝없이 돈다.
   const candidateSource = useMemo(
     () => props.candidateSource ?? apiLineageSource(),
@@ -423,11 +430,11 @@ export function LineageSection(props: {
                 <div>
                   <div className="ln-name">{selfNode.name}</div>
                 </div>
-                {selfNode.processingLevel === null ? (
+                {displayLevel(selfNode) === null ? (
                   <span />
                 ) : (
-                  <span className={`lvl lvl-${selfNode.processingLevel}`}>
-                    Lv{selfNode.processingLevel}
+                  <span className={`lvl lvl-${displayLevel(selfNode)}`}>
+                    Lv{displayLevel(selfNode)}
                   </span>
                 )}
               </div>

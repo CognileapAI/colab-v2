@@ -248,9 +248,9 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
             # 값은 **본체 파일 수**다 — 기준 격자 파일 제외 (Ted 판정 2026-08-26).
             "fileCount": core.file_count,
             # ⛔ **파생값 그대로다** — 21차가 여기에 사람 값을 덮어 쓰지 않는다(㉯ 화 금지).
-            "processingLevel": d3_catalog.processing_level(summary),
-            # ⭑ **⟨21차 해제 · R-B §5 판정 24·27·41⟩ 사람이 고른 값을 옆에 싣는다.**
-            "processingLevelUserSet": core.processing_level_user_set,
+            # ⭑ **⟨WU-C9 · 판정 24·27·41⟩ 두 값을 한 조립 함수에서 받는다** —
+            #    계보 노드(`routes/lineage.py`)가 부르는 그 `level_pair` 다.
+            **d3_catalog.level_pair(core, summary),
             "period": _data_period(periods.get(dataset_id)),
             "lineageState": d3_catalog.lineage_state(
                 core, summary, unknown_declared=dataset_id in unknown),

@@ -1160,6 +1160,31 @@ def user_set_level(core: DatasetCore) -> int | None:
     return int(raw[2:])
 
 
+def level_pair(core: DatasetCore, summary: LineageSummary | None) -> dict:
+    """⭑ **⟨21차 해제 ⑵ · WU-C9 · 질의 24·27·41⟩ 파생값과 사람 값을 **나란히** 싣는 한 벌.**
+
+      · `processingLevel`        = **파생값 그대로다.** 21차가 이 열쇠에 사람 값을 덮어
+                                   쓰지 않는다 — 기존 열쇠의 의미 변경 = 파괴(㉯)다
+                                   (`R-C.md ## 구현 결정` ⑵).
+      · `processingLevelUserSet` = 사람이 고른 값(`Lv0`~`Lv3` 문자열 · 안 골랐으면 `None`).
+
+    ⛔ **표시 규칙(사람 값 우선)은 여기서 고르지 않는다** — 고르는 것은 화면이고
+      (`frontend/src/components/common/processingLevel.ts` 한 자리), 서버는 **두 값을 다**
+      내려보내는 일만 한다. 그래야 파생값을 읽는 자리(불일치 경고·계보 미리보기)가 남는다.
+
+    ⚠ `level_view` 와 **다른 함수**다. 저쪽은 `processingLevel` 자체가 표시용(사람 값 우선)인
+      카탈로그·상세의 한 벌이고(R-B · PRD-10 · 계약 산문 축자), 이쪽은 `processingLevel` 이
+      파생값으로 남는 계보 노드·프로젝트 표의 한 벌이다. 두 계약이 서로 다른 것을 말한다.
+
+    ⛔ **이 조립을 두 벌 만들지 않는다** — 계보 노드(`routes/lineage.py`)와 소속 데이터셋 표
+      (`routes/project.py`)가 전부 여기를 부른다.
+    """
+    return {
+        "processingLevel": processing_level(summary),
+        "processingLevelUserSet": core.processing_level_user_set,
+    }
+
+
 def level_view(core: DatasetCore, summary: LineageSummary | None) -> dict:
     """PRD-10 — **사람 값·파생값·불일치를 셋 다** 내려보내는 한 벌.
 
