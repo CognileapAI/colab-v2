@@ -30,7 +30,7 @@ CHAIN_DIR="$(cd "$HERE/.." && pwd)"
 ALEMBIC="${COLAB_ALEMBIC:-alembic}"
 PG_IMAGE="${COLAB_PG_IMAGE:-postgres:16-alpine}"
 HEAD_REV="0019_rb7_search_index_m10"
-PREV_REV="0017_rb4_access_state_3"
+PREV_REV="0018_rb6_lv0_source"
 
 red() { echo "::error::0019-drift red — $*"; exit 1; }
 

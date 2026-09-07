@@ -73,7 +73,7 @@ from __future__ import annotations
 from alembic import op
 
 revision = "0019_rb7_search_index_m10"
-down_revision = "0017_rb4_access_state_3"
+down_revision = "0018_rb6_lv0_source"
 branch_labels = None
 depends_on = None
 

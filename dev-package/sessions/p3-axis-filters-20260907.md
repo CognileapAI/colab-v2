@@ -68,15 +68,10 @@
 ## 5. 마이그레이션
 
 - head = `0019_rb7_search_index_m10` · 24자 (`alembic_version_platform.version_num` 은 `varchar(32)`).
-- ⛔ **`down_revision = "0017_rb4_access_state_3"` 이다 — 지시받은 `0018_rb6_lv0_source` 가 아니다.**
-  지시문은 「0018 이 `integration/r-b` 에 내릴 때까지 최대 40분 기다린다」였고, **40분을 훨씬
-  넘겨도 안 내렸다**(마지막 실측 `integration/r-b` HEAD = `b982100` · `0018_rb6_lv0_source.py`
-  부재). 없는 리비전에 잇고 커밋하면 이 레인의 `migration-single-head` 가 red 로 서고 그 red 는
-  코드 결함이 아니라 **부재**를 가리킨다. 그래서 **실재하는 0017 에 잇고 green 을 실측**했다.
-  ⭑ **병합자가 할 일 한 줄** — 0018 을 먼저 병합했다면 `0019_rb7_search_index_m10.py` 의
-  `down_revision` 과 `db/platform/tests/0019-drift.sh` 의 `PREV_REV` 를 `0018_rb6_lv0_source`
-  로 바꾸고 `migration-single-head` 를 다시 돈다(두 줄). **head 이름은 안 겹친다**(`0019` ↔ `0018`).
-  ／ 반대로 이 레인을 먼저 병합하면 B6 이 0019 에 이으면 된다.
+- `down_revision = "0018_rb6_lv0_source"` · `0019-drift.sh` `PREV_REV` 도 같다.
+  ⚠ **작업 중에는 `0018` 이 `integration/r-b` 에 없었다** — 그동안 `0017` 에 이어 두고
+  드리프트 오라클을 green 으로 실측했고, `0018` 이 내려온 뒤(`integration/r-b` `5adf9b4`)
+  **리베이스 ＋ 두 줄 재연결 ＋ 재실측**을 했다. head 이름은 겹치지 않는다(`0019` ↔ `0018`).
 - 순서가 **1회**를 강제한다 — ① 색인 DROP ② 생성 컬럼 DROP ③ 미러 열 ADD ④ **백필**
   ⑤ 생성 컬럼 ADD(전 행 재계산 1회) ⑥ GIN CREATE(1회) ⑦ 트리거.
   백필을 ⑤ 앞에 두는 것이 요점이다 — 뒤에 두면 백필 UPDATE 가 생성 컬럼을 **다시** 계산한다.
@@ -147,7 +142,10 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
 | `work-item-consistency` | green — 대장과 산문의 불일치 0 |
 | `db/platform/tests/0019-drift.sh` | green (게이트 목록 밖 · 이 회차가 신설) |
 
-⛔ **`schema-diff` red(판정) 1 — 이 레인의 코드 결함이 아니다.** 원인은 **호스트가 공유하는
+⚠ **`schema-diff` 는 `0018` 병합 전에 red(판정) 1 이었다** — 아래가 그 판독이고, `0018` 을
+리베이스로 받은 뒤 재실측했다(§12).
+
+⛔ **(0018 병합 전 판독) `schema-diff` red 는 이 레인의 코드 결함이 아니었다.** 원인은 **호스트가 공유하는
 「적용 DB」**(`COLAB_APPLIED_DB_URL_PLATFORM` · `colab_platform_applied`)가 이미
 `alembic_version_platform = 0018_rb6_lv0_source` 로 찍혀 있는데(**WU-B6 레인이 올렸다**)
 그 `0018` 이 `integration/r-b` 에도 이 워크트리에도 **없다**는 것이다. 그래서 적용 DB 에는
@@ -156,10 +154,18 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
 **두 방향의 차이가 전부 「0018 이 안 내려왔다」 한 가지에서 나온다.**
 ⛔ **적용 DB 에 손으로 `0019` 를 올리지 않았다** — 그 DB 는 레인들이 공유하고, 스탬프가
 `0018` 인 곳에 `0017` 에 이은 체인을 얹는 것은 비가역 파손이다.
-⭑ **닫는 법** — `0018` 을 `integration/r-b` 에 병합 → `0019` 의 `down_revision` 과
-`0019-drift.sh` 의 `PREV_REV` 를 `0018_rb6_lv0_source` 로 바꿈 → 적용 DB 를
-`alembic upgrade head` → `schema-diff` 재실행. **이 레인의 체인 자체는 증명돼 있다**
-(`0019-drift.sh` green · `0017→0019` 델타를 소유자 롤로 적용해 백필·색인·트리거를 실측).
+⭑ **닫은 방법(§12)** — `0018` 이 `integration/r-b` `5adf9b4` 로 내려온 뒤 그 위로 리베이스하고
+`down_revision`·`PREV_REV` 두 줄을 `0018_rb6_lv0_source` 로 바꿔 재실측했다.
+
+## 12. `0018` 병합 뒤 재실측
+
+- 리베이스 기준 = `integration/r-b` `5adf9b4`(WU-B6 done 포함). 충돌 2건을 손으로 풀었다 —
+  `contracts/seams/fe-core.yaml` `DatasetBasicInfo` 산문(양쪽 문단을 **둘 다** 남김: B6 의
+  `sourceUrl`·`sourceDownloadedOn` optional ＋ 이 회차의 `category`·`dataType` required 승격) ·
+  `frontend/src/components/detail/BasicInfoGrid.tsx`(B6 의 Lv0 출처 세 줄과 이 회차의 3축 유도
+  한 줄이 **같은 `원천 표기`/축 칸 분기 안**에서 만난다 — 둘 다 남겼다).
+  `frontend/src/generated/fe-core.ts` 는 **손으로 풀지 않고 재생성**했다(불변규칙 7).
+- 마이그레이션 재연결 = `down_revision`(마이그레이션) · `PREV_REV`(드리프트 오라클) 두 줄.
 
 ## 10. 자기 표시
 
