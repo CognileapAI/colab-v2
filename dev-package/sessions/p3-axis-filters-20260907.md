@@ -131,7 +131,7 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
 | `contract-lint` | green 1 / red(판정) 0 / red(준비) 0 |
 | `contract-breaking` (`COLAB_BREAKING_BASE_REF=b982100…`) | green 1 / 0 / 0 |
 | `generated-up-to-date` | green 1 / 0 / 0 |
-| `schema-diff` | **green 0 / red(판정) 1 / 0** — §11-⛔ 참조 |
+| `schema-diff` | green 1 / 0 / 0 (§12 — 적용 DB 를 `0019` 로 올린 뒤) |
 | `migration-single-head` | green 1 / 0 / 0 |
 | `db-boundary` | green 1 / 0 / 0 |
 | `autometa-loss` | green 1 / 0 / 0 |
@@ -142,30 +142,20 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
 | `work-item-consistency` | green — 대장과 산문의 불일치 0 |
 | `db/platform/tests/0019-drift.sh` | green (게이트 목록 밖 · 이 회차가 신설) |
 
-⚠ **`schema-diff` 는 `0018` 병합 전에 red(판정) 1 이었다** — 아래가 그 판독이고, `0018` 을
-리베이스로 받은 뒤 재실측했다(§12).
+⚠ **`schema-diff` 는 두 번 red 였다가 green 이 됐다** — 판독은 아래이고, 둘 다 이 레인의
+코드 결함이 아니었다.
 
-⛔ **(0018 병합 전 판독) `schema-diff` red 는 이 레인의 코드 결함이 아니었다.** 원인은 **호스트가 공유하는
-「적용 DB」**(`COLAB_APPLIED_DB_URL_PLATFORM` · `colab_platform_applied`)가 이미
-`alembic_version_platform = 0018_rb6_lv0_source` 로 찍혀 있는데(**WU-B6 레인이 올렸다**)
-그 `0018` 이 `integration/r-b` 에도 이 워크트리에도 **없다**는 것이다. 그래서 적용 DB 에는
-있는 `d3_dataset.source_url`·`source_downloaded_on` 두 열이 `db/platform/schema.sql` 에 없고,
-반대로 이 회차가 세운 `category_mirror`·새 색인식·미러 트리거 3개는 적용 DB 에 없다.
-**두 방향의 차이가 전부 「0018 이 안 내려왔다」 한 가지에서 나온다.**
-⛔ **적용 DB 에 손으로 `0019` 를 올리지 않았다** — 그 DB 는 레인들이 공유하고, 스탬프가
-`0018` 인 곳에 `0017` 에 이은 체인을 얹는 것은 비가역 파손이다.
-⭑ **닫은 방법(§12)** — `0018` 이 `integration/r-b` `5adf9b4` 로 내려온 뒤 그 위로 리베이스하고
-`down_revision`·`PREV_REV` 두 줄을 `0018_rb6_lv0_source` 로 바꿔 재실측했다.
-
-## 12. `0018` 병합 뒤 재실측
-
-- 리베이스 기준 = `integration/r-b` `5adf9b4`(WU-B6 done 포함). 충돌 2건을 손으로 풀었다 —
-  `contracts/seams/fe-core.yaml` `DatasetBasicInfo` 산문(양쪽 문단을 **둘 다** 남김: B6 의
-  `sourceUrl`·`sourceDownloadedOn` optional ＋ 이 회차의 `category`·`dataType` required 승격) ·
-  `frontend/src/components/detail/BasicInfoGrid.tsx`(B6 의 Lv0 출처 세 줄과 이 회차의 3축 유도
-  한 줄이 **같은 `원천 표기`/축 칸 분기 안**에서 만난다 — 둘 다 남겼다).
-  `frontend/src/generated/fe-core.ts` 는 **손으로 풀지 않고 재생성**했다(불변규칙 7).
-- 마이그레이션 재연결 = `down_revision`(마이그레이션) · `PREV_REV`(드리프트 오라클) 두 줄.
+- **⑴ `0018` 병합 전** — 호스트가 공유하는 「적용 DB」(`COLAB_APPLIED_DB_URL_PLATFORM` ·
+  `colab_platform_applied`)가 이미 `alembic_version_platform = 0018_rb6_lv0_source` 로 찍혀
+  있는데(**WU-B6 레인이 올렸다**) 그 `0018` 이 `integration/r-b` 에도 이 워크트리에도 없었다.
+  그래서 적용 DB 에만 있는 `d3_dataset.source_url`·`source_downloaded_on` 두 열이
+  `schema.sql` 에 없었다. `0018` 을 리베이스로 받으면서 사라졌다.
+- **⑵ 리베이스 뒤** — 적용 DB 가 `0018` 에 멈춰 있어 이 회차의 `category_mirror`·새 색인식·
+  미러 트리거 3개가 적용 DB 에 없었다. **게이트가 요구하는 준비 절차**(`schema-diff.sh` 산문
+  「체인마다 DB 를 만들고 → alembic 으로 upgrade head」)를 밟았다 —
+  `alembic upgrade head`(스탬프 `0018` → `0019`, 스키마 전용 DB) → **green**.
+  ⛔ staging 도 데이터 DB 도 아니다. `0018` 스탬프 위에 `0018` 을 down_revision 으로 갖는
+  체인을 올린 것이라 순서가 어긋나지 않는다.
 
 ## 10. 자기 표시
 
