@@ -124,6 +124,9 @@ async function openRegister() {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
+  // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
+  await click(screen.getByRole('button', { name: /^② / }));
 }
 
 /** CSS 선언 한 줄에서 `grid-template-columns` 값을 뽑는다. 없으면 `null` — 지어내지 않는다. */
@@ -178,11 +181,11 @@ describe('WU-A4 · PRD-15 — 설명은 필수 칸이고 세 줄이다', () => {
     expect(row?.querySelectorAll('p').length).toBe(0);
   });
 
-  it('설명을 비운 채 데이터셋을 만들면 등록 ① 로 되돌리고 알린다', async () => {
+  it('설명을 비운 채 데이터셋을 만들면 등록 ② 로 되돌리고 알린다', async () => {
     await openRegister();
     // 이름은 파일명에서 초안이 잡혀 있다 — 막히는 이유가 설명 하나임을 고정한다.
     expect((screen.getByTestId('reg-name') as HTMLInputElement).value.length).toBeGreaterThan(0);
-    await click(screen.getByTestId('reg-next'));
+    // ⭑ ⟨WU-B3⟩ ② 에서 ③ 까지가 한 걸음이다(프로젝트 카드가 ③ 안으로 들어왔다).
     await click(screen.getByTestId('reg-next'));
     await click(screen.getByTestId('reg-done'));
     expect(screen.getByTestId('reg-summary-error')).toBeInTheDocument();

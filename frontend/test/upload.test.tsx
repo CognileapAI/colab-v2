@@ -366,6 +366,9 @@ async function dropFiles(files: File[]) {
 async function openRegister() {
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ ⟨WU-B3 · PRD-12⟩ 등록 카드는 **① 분류**에서 열린다. 이 파일의 시험들이 재는 칸은
+  // ② 메타데이터 입력에 있으므로 표시기로 한 단계 옮겨 둔다 — **재는 것은 그대로다**.
+  await click(screen.getByRole('button', { name: /^② / }));
   // ⭑ **⟨19차 해제 · PRD-15 · WU-A4⟩ 설명이 필수 칸이 됐다** — 이름과 같은 급이다.
   // 이 시험들이 재는 것은 설명이 아니라 **그 뒤의 것들**(계보·프로젝트·계약 형상)이므로,
   // 등록을 여는 준비 단계에서 필수 칸을 채워 둔다. 설명 자체의 판정은
@@ -713,8 +716,9 @@ describe('§8 등록 3단계 표시기 — ①② 는 이 레인, ③ 은 얹히
     await openRegister();
     const steps = screen.getByTestId('reg-steps');
     expect(within(steps).getAllByRole('button', { name: /^[①②③]/ })).toHaveLength(3);
-    expect(screen.getByTestId('reg-s1')).toBeInTheDocument();
-    expect(screen.queryByTestId('reg-s2')).toBeNull();
+    // ⭑ ⟨WU-B3⟩ 헬퍼가 ② 로 옮겨 둔다 — 보이는 카드는 하나이고 나머지 둘은 DOM 에 없다.
+    expect(screen.getByTestId('reg-s2')).toBeInTheDocument();
+    expect(screen.queryByTestId('reg-s1')).toBeNull();
     expect(screen.queryByTestId('reg-s3')).toBeNull();
   });
 
@@ -725,7 +729,7 @@ describe('§8 등록 3단계 표시기 — ①② 는 이 레인, ③ 은 얹히
     await openRegister();
     await click(stepBtn('③'));
     expect(await screen.findByTestId('reg-s3')).toBeInTheDocument();
-    expect(screen.queryByTestId('reg-s1')).toBeNull();
+    expect(screen.queryByTestId('reg-s2')).toBeNull();
   });
 
   it('앞의 `파일 놓기`·`바로 미리보기` 에는 번호를 붙이지 않는다', async () => {
@@ -821,6 +825,8 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
+    // ⭑ ⟨WU-B3⟩ 첫 단계는 ① 분류다 — 헬퍼가 ② 로 옮겨 두므로 여기서 ① 로 되돌려 잰다.
+    await click(stepBtn('①'));
     expect(screen.queryByTestId('reg-prev')).toBeNull();
     expect(screen.getByTestId('reg-next')).toBeInTheDocument();
     await click(screen.getByTestId('reg-next'));
@@ -852,7 +858,7 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
   });
 });
 
-describe('§8 ① 자동 메타데이터 확인', () => {
+describe('§8 ② 메타데이터 입력', () => {
   it('변수·기간·좌표계는 사람이 적는 칸이다 — 자동 칸에 없다 (`VAL-006` · `#62`)', async () => {
     const { sources } = fakes();
     await openModal(sources);
@@ -942,8 +948,10 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await waitFor(() => expect(calls.registered.length).toBe(1));
     // 끝을 지어내지도(오늘로 채우기) 기간을 통째로 버리지도 않는다 — 종전은 후자였다.
     // ⭑ ⟨19차 해제 · PRD-18⟩ 단위 미지정은 `granularity: null` — 빈 문자열을 보내지 않는다.
+    // ⭑ **⟨WU-B3 · PRD-40 판정 ⓐ⟩ 끝을 비우면 저장은 `period_end = period_start` 다** —
+    //   「한 시점」이고, 화면에서만 빈 채로 남는다.
     expect((calls.registered[0] ?? {}).period)
-      .toEqual({ start: '2025-06-01T00:00:00Z', end: null, granularity: null });
+      .toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: null });
   });
 
   it('시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다', async () => {
@@ -984,17 +992,21 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await openRegister();
     expect(screen.getByTestId('reg-auto')).toHaveTextContent('조각 합계');
     // ⭑ `#62` — 기간은 자동 칸이 아니라 입력 칸이다. 라벨은 그대로 붙는다.
-    expect(screen.getByTestId('reg-s1')).toHaveTextContent('조각 합집합');
+    expect(screen.getByTestId('reg-s2')).toHaveTextContent('조각 합집합');
   });
 
-  it('가공 단계 칸은 입력 불가이고 `계보를 확정하면 정해져요` 라 적는다', async () => {
+  // ⭑ **⟨WU-B3 · PRD-03 · 미결-2 ⓐ⟩ 가공 단계는 읽기 전용 칸이 아니라 ① 의 셀렉트다.**
+  //   사람이 고르고(`processingLevelUserSet`) 계보 계산값과 어긋나면 **경고만** 낸다.
+  //   값·정의·기본 선택값의 정밀 시험은 `test/register-steps-20260907.test.tsx` 가 진다.
+  it('가공 단계는 ① 분류의 셀렉트이고 기본값이 `Lv2` 다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    const lv = screen.getByTestId('reg-lv') as HTMLInputElement;
-    expect(lv).toHaveAttribute('readonly');
-    expect(lv.value).toBe('계보를 확정하면 정해져요');
+    await click(stepBtn('①'));
+    const lv = screen.getByTestId('reg-level') as HTMLSelectElement;
+    expect(lv.tagName).toBe('SELECT');
+    expect(lv.value).toBe('Lv2');
   });
 
   it('주제는 고정 목록이고 **미정 상태를 표현할 수 있다** (〈359〉 로 4값 → 6값)', async () => {
@@ -1040,7 +1052,9 @@ describe('§8 ① 자동 메타데이터 확인', () => {
   });
 });
 
-describe('§8 ② 소속 프로젝트 지정', () => {
+// ⭑ **⟨WU-B3 · PRD-12⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다** — 단계 이름만
+//   바뀌었고 표·규칙은 그대로다(`WU-A7R` 재사용).
+describe('§8 ③ 연결 — 연관 프로젝트·논문', () => {
   // ⭑ 2026-09-07 · `WU-A7R`(PRD-23 **개정본** · 판정 미결-r2-3 ⓐ) — 두 패널을 걷고
   // **표 한 장 ＋ 유형 열**로 간다. 0건이면 표 자체가 없다.
   // 열·배지 출처·0건 숨김의 정밀 시험은 `test/prd23-project-table-20260907.test.tsx` 가 진다.
@@ -1049,7 +1063,7 @@ describe('§8 ② 소속 프로젝트 지정', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await click(stepBtn('②'));
+    await click(stepBtn('③'));
     expect(screen.queryByTestId('reg-proj-table')).toBeNull();
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
@@ -1065,7 +1079,7 @@ describe('§8 ② 소속 프로젝트 지정', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await click(stepBtn('②'));
+    await click(stepBtn('③'));
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
     await click(screen.getByRole('button', { name: '+ 추가' }));
@@ -1077,7 +1091,7 @@ describe('§8 ② 소속 프로젝트 지정', () => {
     await openModal(sources, { '업로드·편집': true, '프로젝트 생성': true });
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await click(stepBtn('②'));
+    await click(stepBtn('③'));
     await click(await screen.findByTestId('reg-proj-quick-open'));
     const form = await screen.findByTestId('reg-proj-quick');
     expect(form.closest('[role="dialog"]')).toBe(screen.getByTestId('upload-modal'));
@@ -1091,7 +1105,7 @@ describe('§8 ② 소속 프로젝트 지정', () => {
     await openModal(sources, { '업로드·편집': true, '프로젝트 생성': false });
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await click(stepBtn('②'));
+    await click(stepBtn('③'));
     await screen.findByTestId('reg-proj-select');
     expect(screen.queryByTestId('reg-proj-quick-open')).toBeNull();
   });
@@ -1101,7 +1115,7 @@ describe('§8 ② 소속 프로젝트 지정', () => {
     await openModal(sources, { '업로드·편집': true, '프로젝트 생성': true });
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await click(stepBtn('②'));
+    await click(stepBtn('③'));
     expect(await screen.findByTestId('reg-proj-none')).toHaveTextContent(
       '아직 연구실에 만들어진 프로젝트가 없어요.',
     );
@@ -1135,8 +1149,11 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     await waitFor(() => expect(calls.registered.length).toBe(1));
     const body = calls.registered[0] ?? {};
     expect(body.uploadId).toBe(UPLOAD_ID);
+    // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축이 늘었다** — 기본 선택값이 있어 늘 실린다.
+    //   `category`·`dataType` 은 계약 `required` 이기도 하다(20차 ㉯).
     expect(Object.keys(body).sort()).toEqual(
-      ['lineageParents', 'name', 'projectIds', 'sourceLabel', 'summary', 'topic', 'uploadId'].sort(),
+      ['category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
+       'sourceLabel', 'summary', 'topic', 'uploadId'].sort(),
     );
     expect(body.topic).toBeNull();
   });

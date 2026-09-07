@@ -158,12 +158,12 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
     await pick(P_NATIONAL);
     expect(cells('reg-proj-row-name')).toEqual([ROWS[1]!.name, ROWS[0]!.name]);
     expect(cells('reg-proj-row-kind')).toEqual(['논문', '국가과제']);
-    expect(screen.getByTestId('reg-s2')).toContainElement(table());
+    expect(screen.getByTestId('reg-projects')).toContainElement(table());
   });
 
   it('연관 0건이면 표가 화면에 없다 — 빈 표·빈 패널이 남지 않는다', async () => {
     render(<Harness />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     expect(screen.queryByTestId('reg-proj-table')).toBeNull();
     expect(screen.queryByTestId('reg-proj-panels')).toBeNull();
@@ -199,7 +199,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
 
   it('링크를 누르면 유형(국가과제·논문)을 먼저 고르는 칸이 뜬다', async () => {
     render(<Harness />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     fireEvent.click(screen.getByRole('button', { name: '+ 새 프로젝트 만들기' }));
     const form = await screen.findByTestId('reg-proj-quick');
@@ -209,7 +209,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
 
   it('빠른 생성 안내문은 `toastCopy.ts` 의 J-12 행 축자다', async () => {
     render(<Harness />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     fireEvent.click(screen.getByRole('button', { name: '+ 새 프로젝트 만들기' }));
     const form = await screen.findByTestId('reg-proj-quick');
@@ -220,7 +220,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
 
   it('빠르게 만든 논문이 표의 행으로 붙고 유형 열이 `논문` 이다', async () => {
     render(<Harness />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     fireEvent.click(screen.getByRole('button', { name: '+ 새 프로젝트 만들기' }));
     const form = await screen.findByTestId('reg-proj-quick');
@@ -237,7 +237,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
 
   it('이름이 겹치면 서버가 되돌린 축자 문면이 뜨고 표에 행이 붙지 않는다 (PRD-42)', async () => {
     render(<Harness source={refusingSource} />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     fireEvent.click(screen.getByRole('button', { name: '+ 새 프로젝트 만들기' }));
     const form = await screen.findByTestId('reg-proj-quick');
@@ -256,7 +256,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
 
   it('⚠ 빈 이름 문면은 이 회차가 건드리지 않는다 — 중복 문면이 그 자리에 오지 않는다', async () => {
     render(<Harness source={refusingSource} />);
-    await screen.findByTestId('reg-s2');
+    await screen.findByTestId('reg-projects');
 
     fireEvent.click(screen.getByRole('button', { name: '+ 새 프로젝트 만들기' }));
     const form = await screen.findByTestId('reg-proj-quick');

@@ -163,6 +163,9 @@ async function openRegisterWithFile(opts: {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
+  // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
+  await click(screen.getByRole('button', { name: /^② / }));
 }
 
 describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 묻는다', () => {
@@ -244,9 +247,10 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
     expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 
-  it('② 에서 프로젝트를 담으면 묻는다', async () => {
+  it('③ 에서 프로젝트를 담으면 묻는다', async () => {
     await openRegisterWithFile();
-    await click(screen.getByRole('button', { name: /^②/ }));
+    // ⭑ ⟨WU-B3⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다(PRD-12).
+    await click(screen.getByRole('button', { name: /^③/ }));
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
     await click(screen.getByTestId('upload-close'));

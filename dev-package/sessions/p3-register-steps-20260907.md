@@ -1,0 +1,141 @@
+# WU-B3 · 등록 3단계 재구성 ＋ 값 안내 — 레인 `p3-register-steps` (2026-09-07)
+
+- 라운드 R-B · 계층 FE ＋ 계약·서버 1건 · 기준 HEAD `06e0240`(`integration/r-b`).
+- 오라클 = `dev-package/prd/rounds/R-B-3-frontend.md §2` WU-B3(요구 본체 11 ＋ R-A′ 이관 6) · `dev-package/prd/PRD-260905-적용전기획.md` PRD-01·02·03·04·12·13·33·40.
+
+## 1. 완료 조건 ↔ 판정 ↔ 근거
+
+| 완료 조건 (라운드 §5) | 판정 | 근거 |
+|---|---|---|
+| 표시기 세 라벨 `① 분류 · ② 메타데이터 입력 · ③ 연결` | 충족 | `frontend/src/components/upload/RegisterArea.tsx` `STEP_LABELS` · `test/register-steps-20260907.test.tsx` ① |
+| 눌러서 어느 단계로나 이동 | 충족 | 표시기 버튼에 검증 없음 · 같은 파일 ④⑤ |
+| ① 세 값 기본 선택값 `기상·기후 인자`·`재분석자료`·`Lv2` | 충족 | `axisDict.ts` `DEFAULT_*` · 같은 파일 「기본 선택값 3개」 |
+| 15값 전부 정의·예시 한 줄 · 빈 값 0 | 충족 | `axisDict.ts` 15항목 · 같은 파일 ⑦⑪ |
+| 유형 6값에 `참고 · 특이사항` | 충족 | `reg-datatype-note` · 같은 파일 ⑧⑧b |
+| 설명란에 분류·단계별 힌트 | 충족 | `reg-summary-hint` · 같은 파일 ⑨⑩ |
+| 모달 재오픈이 늘 ① | 충족 | `UploadModal.tsx` 마운트 effect `setStep(1)` · 같은 파일 ⑥ |
+| WU-A3 골격 재작성 없음 | 충족 | diff — `RegisterArea.tsx` 는 단계 카드 추가·이동뿐, `StepMeta`(옛 `StepOne`) 본문·`StepTwo` 본문 무변 |
+| `DatasetCreate.required` 승격 ＋ 서버 400 | 충족 | `contracts/seams/fe-core.yaml` `required: [uploadId, name, summary, category, dataType]` · `services/core-api/src/colab_core/app/routes/ingestion.py` `MISSING_CATEGORY_MESSAGE` |
+| 마이그레이션 0 · 스키마 0 | 충족 | `db/` 변경 0건 |
+
+## 2. 수용 기준 — 요구 본체 11건
+
+| # | 기준 | 판정 | 시험 |
+|---|---|---|---|
+| 1 | 표시기 3라벨 ＋ ① 열림 | green | `register-steps-20260907` ① |
+| 2 | ① 분류·유형 하나가 비면 `다음` 막힘 | green | ② (`classifyBlocked`) |
+| 3 | ③ 에 계보 카드 ＋ 프로젝트·논문 카드 | green | ③ |
+| 4 | ③ → 표시기 ① 조건 없이 이동 | green | ④ |
+| 5 | 이름·설명 비어도 표시기 ③ 이동 | green | ⑤ |
+| 6 | 닫고 다시 열면 ① | green | ⑥ |
+| 7 | 15값 정의·예시 · 빈 정의 0 | green | ⑦ |
+| 8 | 유형 `위성자료` → `참고 · 해상도, 궤도 정보 명시 필요` | green | ⑧ |
+| 9 | `수문 인자`＋`Lv1` → 두 항목 함께 | green | ⑨ |
+| 10 | `Lv0` → 출처·다운로드 일자 없음 | green | ⑩ |
+| 11 | 15값 부가 문구 빈 값 0 | green | ⑪ |
+
+⚠ **수용 기준 2 ↔ rev1 `UI-003` 병존 처리** — 「막지는 않는다」는 **표시기 임의 이동**에 걸고, 기준 2 의 차단은 **순차 이동(`다음`)** 에만 건다. 마지막 게이트(`데이터셋 만들기`)는 종전 그대로다. 근거 = 라운드 §2 의 ⚠ 축자.
+
+## 3. 수용 기준 — R-A′ 이관 6건
+
+| 항 | 기준 | 판정 | 근거 |
+|---|---|---|---|
+| ㈎ | 확장보기 오버레이 · 배경 클릭 닫힘 · `data-esc-layer="확장보기"` · mousedown/click 분리 | green | `PreviewExpandOverlay.tsx` · 시험 3건 |
+| ㈏ | 기간 달력 팝오버 · 최소 단위까지만 칸 | green | `PeriodCalendarPopover.tsx` · 시험 2건 |
+| ㈐ | 3단계 재편 | green | 위 §2 |
+| ㈑ | 2장면 · 배지 `×` → 장면1 ＋ 초기화 고지 · 존치 도달 | green | 시험 3건 |
+| ㈒ | 종료 비움 조립 `period_end = period_start` · 시작>종료 400 | green | `UploadModal.humanMetadata` · `catalog.validate_human_metadata` · FE 2건 ＋ 서버 2건 |
+| ㈓ | 공개 범위 값 재동기 재검증 | **인계** | 값 칸이 WU-B4 몫 — 이 레인은 `reg-visibility-slot` 자리만 세웠다. 헤더 칩 세 갈래(`DetailHeader.tsx:93`)도 B4 |
+
+⚠ **㈎ 의 `requestClose` 해석** — 오버레이의 닫기 경로는 **한 함수(`requestClose` prop)** 이고 배경·× 가 그것을 함께 탄다(A9R 규율). **업로드 모달의 `requestClose`(`UploadModal.tsx:509`)를 부르지는 않는다** — Esc 우선순위가 「확장보기 → … → 업로드」라 위 층이 아래 층을 닫으면 그 순서가 뒤집힌다. 라운드 문면의 축자 해석과 갈리는 유일한 자리이므로 판정에 올린다.
+
+## 4. RED → GREEN
+
+- RED 선실측 — `frontend/test/register-steps-20260907.test.tsx` **20 failed / 5 passed (25)**. 통과한 5는 `axisDict` 상수 단언(구현 선행분)이고 행동 오라클이 아니다.
+- GREEN — 같은 파일 **25 passed**.
+- 서버 RED→GREEN — `services/core-api/tests/test_dataset_registration.py` 신설 6건(필수 축 2 · 빈 문자열 1 · 수정 경로 대조군 1 · 기간 순서 2).
+
+### 라벨·구조 변경으로 갱신한 기존 단언 (의미 보존)
+
+| 파일 | 갱신 | 왜 의미가 보존되는가 |
+|---|---|---|
+| `test/upload.test.tsx` | `openRegister()` 가 ② 로 한 단계 이동 | 재는 칸(이름·설명·기간·좌표계)의 자리가 ① → ② 로 옮겨졌을 뿐 |
+| 〃 | `reg-s1` → `reg-s2` 3자리 · describe 이름 ① → ② | 같은 카드의 testid 가 단계 번호를 따라 옮겨졌다 |
+| 〃 | `가공 단계 칸은 입력 불가` → `① 분류의 셀렉트이고 기본값 Lv2` | 미결-2 ⓐ 로 **사람이 고르는 칸**이 됐다(요구 변경) |
+| 〃 | 요청 열쇠 목록에 `category`·`dataType`·`processingLevelUserSet` 추가 | 기본 선택값이 늘 실린다(계약 required 의 짝) |
+| 〃 | 기간 끝 비움 `end: null` → `end: start` | PRD-40 판정 ⓐ (요구 변경) |
+| 〃 | `단계 이동` 시험이 ① 로 되돌린 뒤 잰다 | 첫 단계가 ① 분류다 |
+| `test/interval-period-20260906.test.tsx` | 헬퍼 ② 이동 · `다음` 2회 → 1회 · `end: null` → `end: start` | 프로젝트 카드가 ③ 으로 들어와 걸음이 하나 줄었다 ＋ PRD-40 |
+| `test/close-guard-20260905.test.tsx` · `test/prd34-close-copy-20260907.test.tsx` | 헬퍼 ② 이동 · 프로젝트 시험은 ③ 으로 | 프로젝트 표가 ③ 안으로 들어왔다 |
+| `test/summary-required-20260905.test.tsx` | 헬퍼 ② 이동 · `다음` 2회 → 1회 · 되돌림 단계 ① → ② | 설명 칸이 ② 에 있다 |
+| `test/prd23-project-table-20260907.test.tsx` | `reg-s2` → `reg-projects` (7자리) | 순수 식별자 개명 — 표·열·규칙 무변 |
+| `test/prd39-rev2-build-20260906.test.tsx` | 프로젝트 시험이 ③ 으로 이동 | 위와 같다 |
+
+⚠ `설명 칸 아래 안내 문구를 두지 않는다`(rev1) 와 PRD-33 ⑵ 힌트의 병존 — 힌트를 **`form-row` 바깥**에 두어 둘 다 성립시켰다. rev1 이 없앤 것은 **설명 칸을 해설하던 문단**이고, 이 줄은 **고른 분류가 요구하는 항목**이라 성격이 다르다.
+
+## 5. 문면 출처 — 새 사용자 문면은 전부 축자다
+
+| 문면 | 출처 |
+|---|---|
+| `목록 필터가 이 세 축을 그대로 받아요` | 기획 HTML `10_적용전/업로드_계보_260905_rev2_이태헌.html` 901행 |
+| `파일에서 읽는 값은 확장자·용량뿐이에요` | 같은 파일 917행 |
+| `한 시점이면 비워 둬요` | 같은 파일 943행 |
+| `최소 단위` · `시작 시각` · `종료 시각` · `지우기` · `적용` · `이전 달` · `다음 달` | 같은 파일 954~975행 |
+| `확장보기 닫기` · `미리보기 크게 보기` | 같은 파일 1432·874행 |
+| 분류 5값 · 유형 6값 · Lv 4값의 정의·예시·부가 문구 15벌 | 라운드 §2 의 PRD-01·02·03 원문 축자 표 |
+| `참고 · {특이사항 및 주의점}` | 라운드 §2 PRD-33 ⑴ 축자 |
+| `분류를 골라 주세요` | 라운드 §2 「변경 — DB·계약·서버」 축자 |
+| `달력에서 고르기` | **집 문면** — 팝오버를 여는 버튼은 rev2 가 캘린더 아이콘(무텍스트)이라 축자 대상이 없다 |
+| `기간의 종료는 시작보다 앞설 수 없다.` | **집 문면** — 서버 400 문장이고 이웃 검사문(`기간의 start 는 날짜·시각(ISO 8601)이다.`)과 같은 어조 |
+
+`[미상]` **0건**.
+
+## 6. contract-breaking 축자
+
+```
+2 changes: 2 error, 0 warning, 0 info
+error	[request-property-became-required] at /w/rev/contracts/seams/fe-core.yaml
+	in API POST /datasets
+		the request property `category` became required
+
+error	[request-property-became-required] at /w/rev/contracts/seams/fe-core.yaml
+	in API POST /datasets
+		the request property `dataType` became required
+::error::contract-breaking red — 기준(06e0240) 대비 파괴적 변경이 있다 (oasdiff exit 1).
+```
+
+⚠ **이 red 는 20차 해제 등급 ㉯ 로 승인된 변경 자체다** — 게이트에 승인 표시 자리(waiver)가 없어 red 로 남는다. 우회·완화하지 않았고, 병합 판정 시 원장 〈N〉 의 근거 칸에 이 축자를 그대로 옮긴다. ⛔ `DatasetUpdate` 는 optional 그대로라 수정 경로에는 파괴가 없다.
+
+## 7. 게이트 (`COLAB_GATE_REPORT_DIR=dev-package/reports/R-B/p3-register-steps`)
+
+| 게이트 | 결과 |
+|---|---|
+| `work-item-consistency` | green |
+| `frontend-typecheck` | green |
+| `frontend-test` | green |
+| `frontend-fixture-reach` | green |
+| `contract-lint` | green |
+| `generated-up-to-date` | green |
+| `contract-breaking`(base `06e0240`) | **red(판정) 1 — 승인된 파괴 변경 · §6** |
+| `service-tests-core-api` | green |
+
+## 8. 자기 표시
+
+- **깨지기 쉬운 자리** — 등록 화면의 시험이 단계 번호에 묶여 있다. 이번에 헬퍼 6곳이 그 때문에 손질됐고, 다음에 단계가 또 움직이면 같은 일이 반복된다.
+- **㈎ 의 `requestClose`** — §3 의 ⚠ 대로 라운드 축자와 구현 해석이 갈린다. 판정 필요.
+- **`달력에서 고르기` 버튼** — 종전 인라인 칸을 걷지 않고 길을 하나 더 냈다. rev2 는 팝오버 하나만 두므로, 인라인 칸 철거 여부는 판정 대상이다.
+- **`대표 그림`** — PRD-12 의 ② 목록에 있으나 실물은 왼쪽 미리보기 칸(`PreviewPanel` · WU-A10)에 이미 서 있다. **중복 구현을 하지 않았다.**
+
+## 9. 하지 않은 것
+
+- **㈓ 공개 범위 값 재동기 재검증** — WU-B4 선행 필요. `reg-visibility-slot` 자리만 세웠고 값·칩 세 갈래는 B4 뒤 재검증으로 인계한다.
+- **Lv0 전용 두 칸**(`sourceUrl`·`sourceDownloadedOn`) — WU-B6 몫. `reg-source-lv0-slot` 자리만.
+- **계보 상태 판정식·연결 규칙** — WU-B5·B8 몫.
+- **Ted 판정 대기 8건** — 임의 확정하지 않았다.
+- **미결-17 잘린 1행** — 추정 전사 없음.
+
+## 10. 후속
+
+1. WU-B4 병합 뒤 ㈓ 재검증(헤더 칩 3갈래 ＋ 공개 범위 설명 동기).
+2. 원장 〈N〉 에 §6 축자를 근거로 기재(병합 직전 번호 재실측).
+3. 판정 요청 2건 — ㈎ `requestClose` 해석 · 기간 인라인 칸 철거 여부.

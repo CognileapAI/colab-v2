@@ -133,12 +133,15 @@ async function openRegister() {
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
+  // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
+  await click(screen.getByRole('button', { name: /^② / }));
 }
 
 /** ③ 까지 넘어가 `데이터셋 만들기` 를 누른다. */
 async function submitRegister() {
   await change(screen.getByTestId('reg-summary'), '설명 한 줄');
-  await click(screen.getByTestId('reg-next'));
+  // ⭑ ⟨WU-B3⟩ ② 에서 ③ 까지는 한 걸음이다 — 프로젝트 카드가 ③ 안으로 들어왔다.
   await click(screen.getByTestId('reg-next'));
   await click(screen.getByTestId('reg-done'));
 }
@@ -228,9 +231,11 @@ describe('WU-A6 · PRD-18 — 조립', () => {
     await change(screen.getByTestId('reg-period-start-month'), '05');
     await change(screen.getByTestId('reg-period-start-day'), '01');
     await submitRegister();
+    // ⭑ **⟨WU-B3 · PRD-40 판정 ⓐ⟩ 종료를 비우면 저장은 `period_end = period_start` 다.**
+    //   화면에서만 비고, 「한 시점」이 `null`(무기한·진행 중)과 갈리게 된 자리다.
     expect(sent?.period).toEqual({
       start: '2020-05-01T00:00:00Z',
-      end: null,
+      end: '2020-05-01T00:00:00Z',
       granularity: '분',
     });
   });

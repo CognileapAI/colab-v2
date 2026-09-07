@@ -272,7 +272,8 @@ describe('PRD-39 ③ — 파일을 빼면 즉시 반영되고 초기화를 알�
     await dropFiles([makeFile('a.nc'), makeFile('c.nc')]);
     fireEvent.click(screen.getByTestId('reg-open'));
     await screen.findByTestId('reg-steps');
-    fireEvent.click(screen.getByTestId('reg-next'));
+    // ⭑ ⟨WU-B3⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다(PRD-12).
+    fireEvent.click(screen.getByRole('button', { name: /^③/ }));
     await act(async () => {});
     fireEvent.click(screen.getByRole('button', { name: '+ 추가' }));
     await act(async () => {});

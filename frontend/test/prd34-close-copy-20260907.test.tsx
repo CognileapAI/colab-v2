@@ -171,6 +171,9 @@ async function openRegisterWithFile(
   await screen.findByTestId('up-files');
   await click(await screen.findByTestId('reg-open'));
   await screen.findByTestId('reg-steps');
+  // ⭑ ⟨WU-B3⟩ 등록 카드가 ① 분류에서 열린다 — 이 시험들이 재는 칸은 ② 메타데이터 입력에
+  // 있으므로 표시기로 한 단계 옮겨 둔다. **재는 것은 그대로다**(단계 이름만 바뀌었다).
+  await click(screen.getByRole('button', { name: /^② / }));
 }
 
 describe('PRD-34 — 닫기 문면 3종은 한 곳에서 온다', () => {
@@ -254,9 +257,10 @@ describe('PRD-34 — 화면이 그 문면을 그대로 그린다', () => {
 });
 
 describe('PRD-14 증분 — 손댐 판정 2필드', () => {
-  it('② 에서 프로젝트를 담으면 묻는다 — 담은 프로젝트 건수', async () => {
+  it('③ 에서 프로젝트를 담으면 묻는다 — 담은 프로젝트 건수', async () => {
     await openRegisterWithFile();
-    await click(screen.getByRole('button', { name: /^②/ }));
+    // ⭑ ⟨WU-B3⟩ 연관 프로젝트·논문 표는 ③ 연결 안으로 들어왔다(PRD-12).
+    await click(screen.getByRole('button', { name: /^③/ }));
     await change(await screen.findByTestId('reg-proj-select'), PROJECT_ID);
     await click(screen.getByRole('button', { name: '+ 추가' }));
     await click(screen.getByTestId('upload-close'));
