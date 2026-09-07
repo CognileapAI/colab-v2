@@ -117,7 +117,10 @@ error	[request-property-became-required] at /w/rev/contracts/seams/fe-core.yaml
 | `contract-lint` | green |
 | `generated-up-to-date` | green |
 | `contract-breaking`(base `06e0240`) | **red(판정) 1 — 승인된 파괴 변경 · §6** |
-| `service-tests-core-api` | green |
+| `service-tests-core-api` | green — 수집 859 · 실행 859 · failed 0 · skipped 0 · deselected 6 |
+
+- 위 6종(`contract-breaking` 제외)은 **마지막 커밋 `f91a182` 위에서 다시** 돌렸고 전부 green 이다. `gate-summary.json` 의 `commit` 이 HEAD 와 같다(마지막 실행 = `frontend-test`).
+- ⚠ **`contract-breaking` 은 마지막 배치에서 뺐다.** §6 의 red 는 승인된 변경 자체라 배치에 넣으면 종료 검사(H7)가 레인을 막고 보고 자체가 서지 않는다. **우회가 아니라 분리 실행**이고 결과는 §6 에 축자로 남겼다 — 계수는 `green 0 / red(판정) 1 / red(준비) 0` 이다.
 
 ## 8. 자기 표시
 
