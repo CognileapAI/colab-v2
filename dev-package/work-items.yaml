@@ -2865,7 +2865,7 @@ items:
 
   - id: WU-B11
     name: 디자인 검수 수정 (PRD-29 후속 · WU-A11 「있음」 6건)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "WU-A11 판정표 회수"]
@@ -2873,5 +2873,5 @@ items:
     completion_def: "WU-A11 이 있음 으로 판정한 항목만 고친다. 대비 3건(Lv 칩 · 연결 불가 후보 · 그래프 라벨)이 접근성 합격선이라 먼저 돈다. 판정 없이 고치지 않는다"
     evidence: "dev-package/sessions/p3-design-fix-20260908.md"
     deadline: null
-    note: "WU-A11 판정표 = dev-package/sessions/p3-design-audit-20260905.md — 있음 6/11(⑥ 카드 그림자 · ⑦ 계보 그래프 라벨 13px · ⑧ 캡션 눌림 7곳 · ⑨ 보더 2층 · ⑩ 여백 소유권 · ⑪ 죽은 스타일). 접근성 3건 중 살아남은 것은 ⑦뿐(①=4.66:1 통과 · ③=요소 부재) — 없는 결함을 고치지 않는다. 레인 p3-design-fix"
+    note: "2026-09-08 done — 레인 p3-design-fix 8db3deb ＋ advisor ② 031aebc(이월 등재·주석 정정) · 「있음」 6건 중 ⑥⑦⑧⑨⑪ 충족 · ⑩ 지목 음수 2건 충족 ＋ 컨테이너 이관 잔여 9곳·.dsec 이월(R-C 후보) · .dt-gridact -8px 판정 대기 3건째 · tokens 무변 · CSS 5파일 · FE 996 · 게이트 3종 record · WU-A11 판정표 = dev-package/sessions/p3-design-audit-20260905.md — 있음 6/11(⑥ 카드 그림자 · ⑦ 계보 그래프 라벨 13px · ⑧ 캡션 눌림 7곳 · ⑨ 보더 2층 · ⑩ 여백 소유권 · ⑪ 죽은 스타일). 접근성 3건 중 살아남은 것은 ⑦뿐(①=4.66:1 통과 · ③=요소 부재) — 없는 결함을 고치지 않는다. 레인 p3-design-fix"
     sources: ["dev-package/prd/rounds/R-B-4-verify.md", "dev-package/intent/2026-09-07-r-b.md", "dev-package/sessions/p3-design-audit-20260905.md", "PRD-29"]
