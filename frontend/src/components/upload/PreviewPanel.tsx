@@ -11,6 +11,7 @@
 //   ⑶ `partialFailure` 는 `status` 를 `실패` 로 만들지 않는다 — 읽힌 조각으로 그리고 `완료` 다.
 //   ⑷ `tileUrlTemplate` 은 **불투명 문자열**이다(`〈68〉` 단명 서명 포함). `{z}`·`{x}`·`{y}` 만 치환한다.
 //   ⑸ 만료된 렌더의 타일은 **401** 로 온다 — 권한 문제가 아니라 만료로 다룬다.
+import { PreviewExpandOverlay } from './PreviewExpandOverlay';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PaletteOption, PreviewSource, RenderJob, RenderResult } from './types';
 import { GridUploadBlock, type GridActions } from './GridUploadBlock';
@@ -73,6 +74,8 @@ export function PreviewPanel(props: {
   onThumbPick?: (() => void) | undefined;
 }) {
   const { source, uploadId } = props;
+  /** ㈎ 확장보기가 열려 있나 (R-A′ 이관). 닫는 길은 `closeExpand` 하나다 — 갈래를 만들지 않는다. */
+  const [expanded, setExpanded] = useState(false);
   const [palettes, setPalettes] = useState<PaletteOption[] | null>(null);
   const [palette, setPalette] = useState('');
   const [classCount, setClassCount] = useState(DEFAULT_CLASS_COUNT);
@@ -232,6 +235,17 @@ export function PreviewPanel(props: {
     <section className="mapstage" data-testid="up-preview">
       <div className="mapbar">
         <span className="mt">미리보기</span>
+        {/* ㈎ 확장보기 (R-A′ 이관 · rev2 `openPvExpand()`) — 오버레이는 **업로드 모달 위**에
+            서고 스스로 `data-esc-layer` 표식을 단다. 여는 자리는 미리보기 줄 하나다. */}
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm pvx-open"
+          data-testid="pv-expand"
+          aria-label="미리보기 크게 보기"
+          onClick={() => setExpanded(true)}
+        >
+          ⤢
+        </button>
       </div>
 
       {/* 대표 그림(썸네일) — rev1 `thumbrow` · `WU-A10` · PRD-20.
@@ -450,6 +464,21 @@ export function PreviewPanel(props: {
           <div className="pt">아직 그리지 않았어요</div>
           <div className="pd">위에서 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
         </div>
+      )}
+
+      {/* ㈎ 확장보기 오버레이 — 배경 클릭·× 가 **같은 한 함수**를 탄다(A9R 규율).
+          ⚠ 업로드 모달의 `requestClose` 를 부르지 않는다 — Esc 우선순위가 「확장보기 →
+             … → 업로드」라 위 층이 먼저 닫힌다. 위 층이 아래 층을 닫으면 그 순서가 뒤집힌다. */}
+      {expanded && (
+        <PreviewExpandOverlay title="미리보기" requestClose={() => setExpanded(false)}>
+          {result?.imageUrl ? (
+            <img className="pvx-img" alt="" data-testid="pv-expand-image" src={result.imageUrl} />
+          ) : (
+            <p className="muted" data-testid="pv-expand-empty">
+              아직 그리지 않았어요
+            </p>
+          )}
+        </PreviewExpandOverlay>
       )}
     </section>
   );
