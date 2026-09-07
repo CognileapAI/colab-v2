@@ -494,6 +494,40 @@ CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
 CREATE INDEX d3_dataset_autometa_search_idx
   ON d3_dataset_autometa USING gin (search_vector);
 
+-- 변수 한 줄씩 (`0016` · `M-5` · PRD-16). **기존 표에 컬럼을 더하지 않는다** —
+-- 「변수 3개에 단위 1개면 어느 변수 것인지 알 수 없다」(rev1 축자)라서 단위·값 범위·
+-- 결측률이 **변수마다** 붙어야 하고, `d3_dataset_autometa` 에 열을 더하면 그 셋이
+-- 데이터셋당 한 칸이 된다(같은 실패의 재현).
+--
+-- ⛔ **D3 소유다** — D2 가 이 표를 FK 하지 않는다 (`CLAUDE.md §3-1`).
+-- ⚠ **`d3_dataset_autometa.variables` 는 지우지 않는다** — 되돌림 경로이자 이관 대조
+--    근거이고, 검색 색인(`search_vector` 의 `d3_search_join(variables)`)이 아직 그 열을
+--    문다. 그 열을 이 표의 미러로 유지하는 트리거는 **`M-10` 소속**이고 R-B 에서 한 번만
+--    돈다(`R-B-2-server.md` · WU-B7). 그때까지 **새로 쓴 변수 행은 색인에 안 들어간다** —
+--    이 회차가 받아들인 잔여 위험이고, 이관된 기존 행의 검색은 그대로다.
+CREATE TABLE d3_dataset_variable (
+  dataset_id ulid    NOT NULL REFERENCES d3_dataset(id),
+  lab_id     ulid    NOT NULL REFERENCES d1_lab(id),
+  -- 순서 = 사람이 화면에서 세운 행 순서. **1 부터**다(`unnest … WITH ORDINALITY` 와 같은 셈).
+  ordinal    integer NOT NULL,
+  name       text    NOT NULL CHECK (length(btrim(name)) > 0),
+  -- 셋 다 **선택 입력**이다. 단위 없는 변수는 그 자체로 뜻이 있어 반쪽 행이 아니다
+  -- (`observation_interval_*` 의 pair CHECK 와 다른 자리다).
+  unit          text,
+  value_range   text,
+  missing_rate  text,
+  is_representative boolean NOT NULL DEFAULT false,
+  -- 행 집합은 등록·수정이 **통째로 교체**한다(delete-then-insert) — 그래서 대리 키가 없다.
+  PRIMARY KEY (dataset_id, ordinal)
+);
+CREATE INDEX d3_dataset_variable_lab_idx ON d3_dataset_variable (lab_id);
+-- 대표는 데이터셋당 **정확히 하나**다 (PRD-16 축자). 앞문은 서버의 400 ＋ 자동 보정
+-- (아무도 안 고르면 첫 행)이고 **뒷문이 이 부분 UNIQUE 색인**이다 — 어느 경로로 들어와도
+-- 둘째 대표가 안 선다. `WHERE is_representative` 라서 `false` 행은 몇 개든 상관없다.
+CREATE UNIQUE INDEX d3_dataset_variable_representative_idx
+  ON d3_dataset_variable (dataset_id)
+  WHERE is_representative;
+
 -- 파일 — 데이터셋 1:N. 종류는 둘뿐이고 기준 격자 파일은 데이터셋당 **0~2건**
 -- (위도·경도 한 쌍이 실물이다 — `〈58〉`. 결합축 파일이면 1건으로 둘 다 선다 — `〈66〉`).
 -- **파일에는 계보가 없다.** 계보는 데이터셋 사이에만 있다 (§4.2·§4.3).
@@ -1051,6 +1085,15 @@ CREATE POLICY lab_boundary ON d3_dataset_description FOR ALL
 ALTER TABLE d3_dataset_autometa     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d3_dataset_autometa     FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d3_dataset_autometa FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+-- 변수 행 — **형제 메타 표와 같은 경계 정책 한 장**이다 (`0016` · PRD-16 축자
+-- 「`lab_id` 에 RLS 를 건다 — 다른 D3 표와 같은 정책이다」). 본체 정책을 걸지 않는다:
+-- 잠긴 데이터도 이름·요약이 보이는 자리와 같은 층이고, 여기에 본체 정책을 더하면
+-- 상세의 변수 표만 이유 없이 비는 화면이 생긴다.
+ALTER TABLE d3_dataset_variable     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_dataset_variable     FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_dataset_variable FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 -- 파일 **본체** — 두 층이 여기서 겹친다.
