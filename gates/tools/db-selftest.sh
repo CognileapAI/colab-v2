@@ -270,27 +270,39 @@ D="$(mkdb sd-nodb)"; mkschema "$D"
 #   그래서 빠져 있어야 할 변수는 **빈 값으로 명시**한다 — 검사 대상을 줄이는 것이 아니라,
 #   케이스가 의도한 상태를 환경에 맡기지 않고 못 박는 것이다 (2026-08-30 실측으로 드러났다).
 expect 미선언 "schema-diff: 적용 DB 미지정(skip 아님 · 입력미선언)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
       COLAB_APPLIED_DB_URL= "$SD"
 
 D="$(mkdb sd-legacy-only)"; mkschema "$D"
 expect 미선언 "schema-diff: 구 단일 변수만 지정(어느 체인인지 알 수 없다 → red)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
       COLAB_APPLIED_DB_URL="postgresql://postgres@127.0.0.1:1/none" "$SD"
 
 D="$(mkdb sd-onlyplatform)"; mkschema "$D"
 expect 미선언 "schema-diff: ai 체인 URL 누락(한 체인만 보고 green 내지 않는다)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
       COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
 
 D="$(mkdb sd-unreachable)"; mkschema "$D"
 expect red "schema-diff: 적용 DB 접속 불가" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://postgres@127.0.0.1:1/none" \
       COLAB_APPLIED_DB_URL_AI="postgresql://postgres@127.0.0.1:1/none" "$SD"
+
+# ⭑ ⟨증보 2026-09-08 · WU-C6 · 질의 17⟩ **준비 단계(alembic upgrade head)가 fail-closed 인가.**
+#   위 케이스들은 `COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1` 로 **비교만** 잰다(픽스처 트리에는
+#   alembic 체인이 없다). 그 생략이 조용한 폴백이 되지 않는다는 것을 여기서 못 박는다 —
+#   생략 선언이 없으면 alembic 부재도, 체인 자리 부재도 **red(준비)** 다. skip 이 아니다.
+D="$(mkdb sd-noalembic)"; mkschema "$D"
+expect 미선언 "schema-diff: 준비 단계 alembic 부재(skip 아님 · 입력미선언)" \
+  env COLAB_DB_DIR="$REPO_ROOT/db" COLAB_ALEMBIC="/nonexistent/alembic" \
+      COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" COLAB_APPLIED_DB_URL_AI="postgresql://x/y" "$SD"
+expect 미선언 "schema-diff: 준비 단계 자리(alembic.ini) 부재 — 생략 선언 없이는 red" \
+  env COLAB_DB_DIR="$D" \
+      COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" COLAB_APPLIED_DB_URL_AI="postgresql://x/y" "$SD"
 
 D="$(mkdb sd-nodocker)"; mkschema "$D"
 expect ready "schema-diff: 도커 부재는 skip 이 아니라 red" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
       COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
 
 # 적용 DB 를 실제로 띄워 체인별 green / drift 경우를 본다.
@@ -321,17 +333,17 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
   U_A="postgresql://postgres@$APPIP:5432/applied_ai"
 
   expect green "schema-diff(e2e): 두 체인 모두 선언 = 적용" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+    env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
 
   # 체인을 뒤바꿔 붙이면 red — 게이트가 정말 체인별로 보고 있다는 증거다.
   expect red "schema-diff(e2e): 체인별 URL 을 서로 바꿔 지정" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_A" COLAB_APPLIED_DB_URL_AI="$U_P" "$SD"
+    env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_A" COLAB_APPLIED_DB_URL_AI="$U_P" "$SD"
 
   # 한 체인(ai)만 드리프트 — 나머지 한 체인이 깨끗해도 red 다.
   docker exec "$APPC" psql -U postgres -d applied_ai -q -c \
     'ALTER TABLE ai_lineage_suggestion ADD COLUMN drifted text;' >/dev/null 2>&1
   expect red "schema-diff(e2e): ai 체인만 드리프트(platform 은 일치)" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+    env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
 
   # 한 체인(platform)만 드리프트 — 반대 방향도 red 여야 한다.
   docker exec "$APPC" psql -U postgres -d applied_ai -q -c \
@@ -339,13 +351,13 @@ if [ "${COLAB_PG_FORCE_UNAVAILABLE:-0}" != "1" ] && command -v docker >/dev/null
   docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
     'ALTER TABLE d3_dataset ADD COLUMN drifted text;' >/dev/null 2>&1
   expect red "schema-diff(e2e): platform 체인만 드리프트(ai 는 일치)" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
+    env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" COLAB_APPLIED_DB_URL_AI="$U_A" "$SD"
 
   # 한 체인의 URL 만 빠진 경우 — 나머지 한 체인이 실제로 일치해도 red (green-by-skip 금지).
   docker exec "$APPC" psql -U postgres -d applied_platform -q -c \
     'ALTER TABLE d3_dataset DROP COLUMN drifted;' >/dev/null 2>&1
   expect 미선언 "schema-diff(e2e): 일치하는 platform 만 지정하고 ai URL 누락" \
-    env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" \
+    env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="$U_P" \
         COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
 
   docker rm -f "$APPC" >/dev/null 2>&1
@@ -392,7 +404,7 @@ D="$(mkdb ready-vs-judge)"; mkschema "$D"
 expect_ready_red "구분: rls-coverage 도커 부재 = 준비 실패" \
   env COLAB_DB_DIR="$D" COLAB_PG_FORCE_UNAVAILABLE=1 "$RC_SH"
 expect_ready_red "구분: schema-diff 도커 부재 = 준비 실패" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
       COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD"
 # 슬롯 고갈 — 선언 한도(1개)를 selftest 가 **직접 잡고** 게이트를 돌린다.
 # 슬롯이 없어 못 돈 것은 판정이 아니라 준비다. (flock 이 없는 호스트에서는 한도 자체가 없으므로 건너뛰되 건수를 드러낸다)
@@ -451,9 +463,9 @@ expect_undeclared_red() { # $1=라벨 $2.. = 명령 — 미선언 입력이 준�
   echo "[selftest] $label → red(준비·입력미선언) OK (exit 78 · cause·missing 있음 · 거짓 원인 없음 · 표식 grep 가능)"
 }
 expect_undeclared_red "원인: schema-diff 적용 DB URL 미선언" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= COLAB_APPLIED_DB_URL= "$SD"
 expect_undeclared_red "원인: schema-diff 구 변수만 선언(체인을 모른다)" \
-  env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
+  env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM= COLAB_APPLIED_DB_URL_AI= \
       COLAB_APPLIED_DB_URL="postgresql://x/y" "$SD"
 # ⭑ ⟨개정 2026-08-31 · `PLAN-SoT §9 〈237〉` · `#50` 해소⟩ autometa-loss 의 **대조 정본이 갈렸다** —
 #   `schema-diff` 와 공유하던 스키마 전용 DB 에서 **staging 실물 platform DB** 로. 변수 이름도 갈렸다.
@@ -462,7 +474,7 @@ expect_undeclared_red "원인: autometa-loss 대조 정본 미선언" \
   env COLAB_AUTOMETA_STAGING_DB_URL= "$REPO_ROOT/gates/tools/autometa-loss.sh"
 
 # 반대 방향 — **환경 대기는 입력미선언으로 찍히지 않는다.** 둘이 섞이면 가른 뜻이 없다.
-AW_OUT="$(env COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
+AW_OUT="$(env COLAB_SCHEMA_DIFF_SKIP_UPGRADE=1 COLAB_DB_DIR="$D" COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" \
               COLAB_APPLIED_DB_URL_AI="postgresql://x/y" COLAB_PG_FORCE_UNAVAILABLE=1 "$SD" 2>&1)"
 if printf '%s' "$AW_OUT" | grep -q 'cause=입력미선언'; then
   echo "[selftest] 원인: 환경 대기가 입력미선언으로 찍혔다 ✗ (구분이 무너졌다)"

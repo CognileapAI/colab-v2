@@ -11,3 +11,16 @@ mdurl==0.1.2
 Pygments==2.21.0
 rich==15.0.0
 typing_extensions==4.16.0
+# ── migration-drift · schema-diff 준비 단계용 alembic (WU-C6) ──────────────
+# 오라클은 alembic 으로 마이그레이션을 렌더하고, schema-diff 준비 단계는 적용 DB 를
+# `upgrade head` 로 올린다. 없으면 skip 이 아니라 red(준비)다 — 그러므로 여기서 핀한다.
+# 버전은 services/core-api/.venv 에 실제로 깔려 있는 것과 같은 것을 고정한다(갈리면 안 된다).
+alembic==1.19.1
+# ── 위 하나의 전이 의존 (해석 결과를 그대로 고정) ───────────────────────────
+Mako==1.4.1
+MarkupSafe==3.0.3
+SQLAlchemy==2.0.44
+greenlet==3.5.5
+# `db/<체인>/env.py` 가 붙는 드라이버 — URL 스킴이 `postgresql+psycopg` 다.
+psycopg==3.2.12
+psycopg-binary==3.2.12

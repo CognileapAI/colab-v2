@@ -24,7 +24,18 @@
 #     둘 중 한 체인만 실제로 검사되고 나머지는 우연히 통과/실패한다 — 조용히 검사 범위가 줄어든다.
 #     검사를 무르게 만드느니 설정 오류로 red 를 내는 쪽이 옳다 (CLAUDE.md §4).
 #     체인별 변수가 **둘 다** 있으면 구 변수는 무시하고 진행한다(마이그레이션 편의).
+#   COLAB_ALEMBIC          alembic 실행 파일. 없으면 services/core-api/.venv → gates/.venv → PATH.
+#                          **없으면 red(준비)** — 준비 단계를 건너뛴 비교는 비교가 아니다.
+#   COLAB_SCHEMA_DIFF_SKIP_UPGRADE  ⚠ 준비 단계를 건너뛴다. **selftest 전용**이고
+#                          그 경우 요약줄에 「준비 단계 생략」이 그대로 찍힌다.
 #   COLAB_PG_IMAGE · COLAB_PG_FORCE_UNAVAILABLE  → _pg.sh
+#
+# ⭑ ⟨증보 2026-09-08 · WU-C6 · 질의 17⟩ **비교 전에 `alembic upgrade head` 를 돌린다.**
+#   종전에는 적용 DB 를 「누군가 이미 올려 뒀다」고 가정하고 바로 덤프했다. 그래서 이 회차의
+#   마이그레이션이 적용 DB 에 안 올라간 상태에서 돌면 **선언 변경 자체가 드리프트로 읽혔다** —
+#   게이트가 낸 red 가 「스키마가 갈라졌다」가 아니라 「아직 안 올렸다」였고, 그 둘이 안 갈렸다.
+#   준비 단계가 먼저 head 까지 올리고, **그 뒤에만** 비교한다. 올리지 못하면 그 자리에서 red 다
+#   (건너뛰고 비교하면 다시 같은 혼동이 생긴다).
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -78,7 +89,57 @@ fi
 
 applied_url() { case "$1" in platform) echo "$URL_PLATFORM";; ai) echo "$URL_AI";; esac; }
 
-# ── 3. 일회용 postgres 확보 ─────────────────────────────────────────────────
+# ── 3. **준비 단계 — 적용 DB 를 `alembic upgrade head` 로 올린다** ────────────
+# 이것을 안 하면 「선언이 바뀌었다」와 「적용 DB 가 낡았다」가 같은 red 로 뭉개진다(질의 17).
+ALEMBIC="${COLAB_ALEMBIC:-}"
+if [ -z "$ALEMBIC" ]; then
+  for cand in "$REPO_ROOT/services/core-api/.venv/bin/alembic" \
+              "$REPO_ROOT/gates/.venv/bin/alembic"; do
+    [ -x "$cand" ] && { ALEMBIC="$cand"; break; }
+  done
+fi
+[ -n "$ALEMBIC" ] || ALEMBIC="alembic"
+
+# 체인별 URL 판독기가 읽는 이름 — db/<체인>/{platform,ai}_db_url.py 의 ENV 상수 그대로.
+chain_url_env() { case "$1" in platform) echo COLAB_PLATFORM_DB_URL;; ai) echo COLAB_AI_DB_URL;; esac; }
+# SQLAlchemy 는 드라이버를 URL 로 고른다. 적용 DB URL 은 `postgresql://` 로 들어오는데
+# 이 레포에 깔린 드라이버는 psycopg(v3) 하나다 — 스킴만 맞춘다(호스트·자격은 손대지 않는다).
+psycopg_url() { case "$1" in postgresql://*) echo "postgresql+psycopg://${1#postgresql://}";; *) echo "$1";; esac; }
+
+if [ -n "${COLAB_SCHEMA_DIFF_SKIP_UPGRADE:-}" ]; then
+  echo "schema-diff — ⚠ 준비 단계 생략(COLAB_SCHEMA_DIFF_SKIP_UPGRADE). 비교만 돈다."
+else
+  { command -v "$ALEMBIC" >/dev/null 2>&1 || [ -x "$ALEMBIC" ]; } || red_undeclared \
+    "alembic 실행 파일 (COLAB_ALEMBIC)" \
+    "준비 단계가 적용 DB 를 head 까지 올려야 비교가 성립한다(질의 17).
+   찾은 자리가 없다: COLAB_ALEMBIC · services/core-api/.venv/bin/alembic · gates/.venv/bin/alembic · PATH.
+   핀은 services/core-api/requirements-dev.txt · gates/requirements.txt 에 있다(WU-C6).
+   ⚠ 준비 단계를 건너뛴 비교는 「선언이 바뀌었다」와 「적용 DB 가 낡았다」를 못 가른다."
+  MISSING_INI=()
+  for c in "${CHAINS[@]}"; do
+    [ -f "$DB_DIR/$c/alembic.ini" ] || MISSING_INI+=("$DB_DIR/$c/alembic.ini")
+  done
+  if [ "${#MISSING_INI[@]}" -gt 0 ]; then
+    red_undeclared "$(printf '%s · ' "${MISSING_INI[@]}" | sed 's/ · $//')" \
+      "준비 단계(alembic upgrade head)가 돌 자리가 없다. 비교만 돌리면 「선언이 바뀌었다」와
+   「적용 DB 가 낡았다」가 같은 red 로 뭉개진다(질의 17). 픽스처 트리로 비교만 재는 곳은
+   COLAB_SCHEMA_DIFF_SKIP_UPGRADE 를 **명시로** 선언한다 — 조용히 건너뛰지 않는다."
+  fi
+  for c in "${CHAINS[@]}"; do
+    UP_TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" schema-diff-up-XXXXXX)"
+    if ! ( cd "$DB_DIR/$c" && env "$(chain_url_env "$c")=$(psycopg_url "$(applied_url "$c")")" \
+             "$ALEMBIC" upgrade head ) > "$UP_TMP/out" 2>&1; then
+      echo "::error::schema-diff red — db/$c 적용 DB 를 alembic upgrade head 로 올리지 못했다."
+      sed 's/^/     /' "$UP_TMP/out" | head -40
+      rm -rf "$UP_TMP"
+      exit 1
+    fi
+    echo "db/$c — 준비 단계: alembic upgrade head 완료(비교는 이 뒤에만 돈다)."
+    rm -rf "$UP_TMP"
+  done
+fi
+
+# ── 4. 일회용 postgres 확보 ─────────────────────────────────────────────────
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
 pg_start schema-diff || exit $?   # 준비 실패는 78 로 그대로 전달한다
@@ -125,4 +186,4 @@ for c in "${CHAINS[@]}"; do
 done
 
 [ $RC -eq 0 ] || exit 1
-echo "schema-diff green — 두 체인 각각 선언 = 적용."
+echo "schema-diff green — 두 체인 각각 alembic upgrade head **뒤에** 선언 = 적용."
