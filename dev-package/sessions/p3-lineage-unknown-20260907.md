@@ -113,3 +113,12 @@ No breaking changes to report, but the specs are different.
 | 3 | `routes/project.py` `ProjectDatasetRow.processingLevel` 이 파생값 그대로 | WU-B5 §10 후속 1 과 같은 자리. 이 WU 는 `lineageState` 만 건드렸다 | **B10** |
 | 4 | 기존 `기록 없음` 행 정리 | PRD-27 축자 「그대로 둔다 — 자동으로 붙은 것이라 어느 쪽이었는지 사후에 알 방법이 없다」 | 하지 않음(판정) |
 | 5 | `.lin-unknown:has(...)` — `:has()` 지원 브라우저 전제 | 대비·판독은 `lin-unknown-why` 가 별도 색으로 이미 든다. 지원 없으면 라벨 색만 진하게 남고 기능 영향 0 | B11 검수 |
+| 6 | **배포 전 staging/prod 「부모 0 ∧ unknown 행 없음 ∧ source_label NULL」 건수 실측** | 게이트 DB 는 값이 바뀌는 행 0 이었으나 운영·staging DB 는 재지 않았다(위 §9-1 과 같은 이유) — 배포 창 전에 실측해 판정 ⑹ 로 몰리는 행 수를 확인한다 | 배포 창 전 점검 |
+
+## advisor ② 반영
+
+`/home/ttlhi10/.claude/jobs/18e71f5e/tmp/advisor2-b8.md` 의 「병합 전 필수」 Fix 1~3 을 RED→GREEN 으로 닫았다.
+
+1. **[병합 전 필수]** `DatasetsPage.tsx:30` `params.get('lineageState')` → `params.getAll('lineageState')`. 첫 값만 읽던 것이 두 값을 다 실었다. FE 시험 ㈒ 에 「그 링크로 카탈로그를 열면 두 값이 그대로 목록 조회에 실린다」를 더했다 — RED: `expected [ '확인 필요' ] to deeply equal [ '확인 필요', '기록 없음' ]` → GREEN: `frontend-test` 9 passed(해당 파일).
+2. `test_registering_without_parents_is_recorded_as_unknown_not_as_a_guess` → `…is_needs_check_not_a_guess`(이름이 새 단언과 맞섰다). `lineage_state()` docstring ⑥ 을 「부모 0 ∧ 선언 없음 ∧ 원천 표기 없음 (사람 Lv NULL 포함)」으로 정정 — 종전 「사람 Lv ≥ Lv1」은 Lv NULL 행이 ⑹ 으로 떨어지는 사실과 어긋났다.
+3. `ingestion.py:551` `sourceLabel` 을 `strip()` 하고 빈 문자열이면 `None` 으로 정규화 — 공백뿐인 값이 판정 ⑸ 의 truthiness 에 걸려 `원천` 이 되던 자리를 막았다. 새 시험 `test_whitespace_only_source_label_is_not_origin` — RED: `AssertionError: assert '원천' == '확인 필요'` → GREEN: `service-tests-core-api` 930 passed(0 failed). `d3_dataset_source_label_normalized` 류 DB 계산 컬럼은 코드베이스에 없어(grep 0건) 이 정규화는 앱 계층 단독이고 스키마·마이그레이션 영향 없음.

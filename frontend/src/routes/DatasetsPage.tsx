@@ -27,9 +27,9 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
   const [params] = useSearchParams();
   const initialFilters = useMemo<CatalogFilters>(() => {
     const filters: CatalogFilters = {};
-    const lineageState = params.get('lineageState');
+    const lineageState = params.getAll('lineageState');
     const topic = params.get('topic');
-    if (lineageState) filters['계보'] = [lineageState];
+    if (lineageState.length) filters['계보'] = lineageState;
     if (topic) filters['주제'] = [topic];
     return filters;
   }, [params]);

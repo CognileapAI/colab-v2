@@ -93,7 +93,7 @@ def test_lineage_parents_and_project_ids_come_in_one_request(p2_client, sql) -> 
     assert r.json()["processingLevel"] == 1, "주입력 부모가 Lv0 이면 자식은 Lv1 이다."
 
 
-def test_registering_without_parents_is_recorded_as_unknown_not_as_a_guess(p2_client) -> None:
+def test_registering_without_parents_is_needs_check_not_a_guess(p2_client) -> None:
     """비어 있어도 **등록을 막지 않고, 부모를 지어내지도 않는다.**
 
     ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 그때의 계보 상태는 `확인 필요` 다.**

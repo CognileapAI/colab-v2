@@ -1173,7 +1173,7 @@ def lineage_state(core: DatasetCore, summary: LineageSummary | None,
       3) 부모 0  ∧ `d4_lineage_unknown` 에 행이 있다      → `기록 없음`
       4) 부모 0  ∧ **사람이 고른 가공 단계 = `Lv0`**       → `원천`
       5) 부모 0  ∧ `source_label` 있음                    → `원천`
-      6) 그 밖 (부모 0 ∧ 선언 없음 ∧ 사람 Lv ≥ `Lv1`)     → `확인 필요`
+      6) 그 밖 (부모 0 ∧ 선언 없음 ∧ 원천 표기 없음, 사람 Lv NULL 포함) → `확인 필요`
 
     ／ 종전 판정식은 ③ 이 `source_label`, ④ 가 「그 밖 → `기록 없음`」이었다. **`확인 필요` 가
       부모 있을 때만 나오는 값이었고**, 「모른다고 선언했다」와 「아직 안 골랐다」가 한 값으로

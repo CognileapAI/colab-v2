@@ -551,6 +551,10 @@ def create_dataset(request: Request, body: dict = None,
     source_label = body.get("sourceLabel")
     if source_label is not None and (not isinstance(source_label, str) or len(source_label) > 60):
         raise errors.bad_request("sourceLabel 은 60자 이하다.")
+    # advisor ② — 공백뿐인 표기는 표기가 아니다. 앞뒤를 지워 빈 문자열이면 「없음」으로 읽는다
+    # (판정 ⑸ 가 truthiness 로 `원천` 을 가르므로 여기서 정규화하지 않으면 새는 자리다).
+    if isinstance(source_label, str):
+        source_label = source_label.strip() or None
     # 세 자유 입력 칸의 형상 — **수정 경로와 같은 함수다.** 두 벌을 두지 않는다 (`#62`).
     human_metadata = _human_metadata(body)
     validate_human_metadata(human_metadata)

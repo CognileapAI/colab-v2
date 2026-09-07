@@ -18,7 +18,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 // @ts-expect-error — 같은 이유.
 import { join, resolve } from 'node:path';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
@@ -30,6 +30,8 @@ import {
   LINEAGE_TODO_PATH,
   UNSETTLED_LINEAGE_STATES,
 } from '../src/components/dashboard/SummaryTiles';
+import { DatasetsPage } from '../src/routes/DatasetsPage';
+import type { CatalogQuery, CatalogSource } from '../src/components/catalog/types';
 import type {
   DatasetRow,
   LineageSource,
@@ -292,5 +294,31 @@ describe('PRD-27 홈 타일의 모수와 링크 목록의 모수가 같다', () 
     expect(src).toContain('UNSETTLED_LINEAGE_STATES');
     // 값 리터럴이 이 파일에 **다시** 적혀 있으면 한쪽만 고쳐지는 자리가 되살아난다.
     expect(src).not.toMatch(/\[\s*'확인 필요'\s*,\s*'기록 없음'\s*\]/);
+  });
+
+  it('그 링크로 카탈로그를 열면 두 값이 그대로 목록 조회에 실린다 — advisor ② gate', async () => {
+    // ㈒ 의 진짜 알맹이: 링크의 두 값이 실제로 목록 필터까지 살아서 간다.
+    // (구현이 첫 값만 읽으면 `계보` 필터는 `['확인 필요']` 뿐이라 여기서 red 다.)
+    const asked: CatalogQuery[] = [];
+    const source: CatalogSource = {
+      async list(q) {
+        asked.push(q);
+        return { items: [], totalCount: 0 };
+      },
+      async facets(q) {
+        asked.push(q);
+        return { columns: [], axes: [] };
+      },
+    };
+    render(
+      <MemoryRouter initialEntries={[LINEAGE_TODO_PATH]}>
+        <Routes>
+          <Route path="/datasets" element={<DatasetsPage source={source} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await act(async () => {});
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked[0]!.filters['계보']).toEqual([...UNSETTLED_LINEAGE_STATES]);
   });
 });

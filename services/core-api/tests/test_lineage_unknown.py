@@ -86,6 +86,16 @@ def test_source_label_without_a_human_level_is_still_origin(p2_client) -> None:
     assert made["lineageState"] == "원천"
 
 
+def test_whitespace_only_source_label_is_not_origin(p2_client) -> None:
+    """advisor ② — 공백뿐인 `sourceLabel` 은 표기가 **없는 것**이다.
+
+    ⛔ 종전에는 `"  "` 도 truthy 라 ⑸ 에 걸려 `원천` 이 됐다 — 공백은 표기가 아니다.
+    사람 Lv `Lv1` ∧ 부모 0 ∧ 선언 없음이면 판정은 ⑹ 로 떨어져 `확인 필요` 다.
+    """
+    made = _created(p2_client(), processingLevelUserSet="Lv1", sourceLabel="  ")
+    assert made["lineageState"] == "확인 필요"
+
+
 def test_nothing_declared_and_no_human_level_is_needs_check(p2_client) -> None:
     """판정 ⑹ — 사람 Lv 도 원천 표기도 선언도 없으면 `확인 필요` 다.
 
