@@ -574,31 +574,54 @@ CREATE UNIQUE INDEX d3_dataset_variable_representative_idx
 -- ⛔ **쓰기 정본은 원천 쪽 하나뿐이다.** 트리거는 사본을 따라 붙일 뿐 값을 만들지 않는다.
 -- ⚠ 트리거는 **호출자 권한**으로 돈다 — 경계(RLS)를 우회하지 않는다. 응용 세션은
 --   `app.current_lab` 을 이미 걸고 있어 같은 연구실 행만 갱신된다.
+-- ⭑ ⟨WU-C7 · `0022` · 질의 36⟩ **문장 단위**다. 행 단위였을 때 `replace_variables` 의
+--   N 행 쓰기가 미러 재집계와 생성 컬럼·GIN 재계산을 N 번 돌렸다(N+1).
+--   ⚠ 트리거만으로는 1회가 되지 않는다 — 쓰기 쪽이 **다중 행 INSERT 한 문장**을 보내는
+--     것과 짝이다(`domains/d3_catalog.replace_variables`).
+--   ⚠ 트리거가 셋인 이유: PostgreSQL 은 **전이 표를 가진 트리거를 한 이벤트에만** 허용한다.
+--     함수는 하나다 — 집계식이 세 곳이 되면 한 곳만 고쳐지는 날 미러가 조용히 낡는다.
 CREATE FUNCTION d3_mirror_variables() RETURNS trigger
   LANGUAGE plpgsql AS $$
-DECLARE target ulid;
 BEGIN
-  -- `DELETE` 에는 `NEW` 가 없다 — PL/pgSQL 에서 만지면 그 자리에서 오류다.
-  IF TG_OP = 'DELETE' THEN target := OLD.dataset_id; ELSE target := NEW.dataset_id; END IF;
-  UPDATE d3_dataset_autometa a
-     SET variables = coalesce(
-           (SELECT array_agg(v.name ORDER BY v.ordinal)
-              FROM d3_dataset_variable v WHERE v.dataset_id = target), '{}'::text[])
-   WHERE a.dataset_id = target;
-  -- 행이 데이터셋을 옮겨 가는 경로도 덮는다(지금은 없지만 생기면 조용히 어긋난다).
-  IF TG_OP = 'UPDATE' AND OLD.dataset_id <> NEW.dataset_id THEN
+  -- 전이 표는 **분기 안에서만** 참조한다. 없는 이름을 적은 문장은 그 자리에서 오류다.
+  IF TG_OP = 'INSERT' THEN
     UPDATE d3_dataset_autometa a
        SET variables = coalesce(
              (SELECT array_agg(v.name ORDER BY v.ordinal)
-                FROM d3_dataset_variable v WHERE v.dataset_id = OLD.dataset_id), '{}'::text[])
-     WHERE a.dataset_id = OLD.dataset_id;
+                FROM d3_dataset_variable v WHERE v.dataset_id = a.dataset_id), '{}'::text[])
+     WHERE a.dataset_id IN (SELECT DISTINCT n.dataset_id FROM newtab n);
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE d3_dataset_autometa a
+       SET variables = coalesce(
+             (SELECT array_agg(v.name ORDER BY v.ordinal)
+                FROM d3_dataset_variable v WHERE v.dataset_id = a.dataset_id), '{}'::text[])
+     WHERE a.dataset_id IN (SELECT DISTINCT o.dataset_id FROM oldtab o);
+  ELSE
+    -- 행이 데이터셋을 옮겨 가는 경로도 덮는다 — 옛 자리와 새 자리를 **둘 다** 다시 센다.
+    UPDATE d3_dataset_autometa a
+       SET variables = coalesce(
+             (SELECT array_agg(v.name ORDER BY v.ordinal)
+                FROM d3_dataset_variable v WHERE v.dataset_id = a.dataset_id), '{}'::text[])
+     WHERE a.dataset_id IN (SELECT o.dataset_id FROM oldtab o
+                            UNION SELECT n.dataset_id FROM newtab n);
   END IF;
   RETURN NULL;
 END $$;
 
-CREATE TRIGGER d3_dataset_variable_mirror
-  AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_variable
-  FOR EACH ROW EXECUTE FUNCTION d3_mirror_variables();
+CREATE TRIGGER d3_dataset_variable_mirror_ins
+  AFTER INSERT ON d3_dataset_variable
+  REFERENCING NEW TABLE AS newtab
+  FOR EACH STATEMENT EXECUTE FUNCTION d3_mirror_variables();
+
+CREATE TRIGGER d3_dataset_variable_mirror_upd
+  AFTER UPDATE ON d3_dataset_variable
+  REFERENCING OLD TABLE AS oldtab NEW TABLE AS newtab
+  FOR EACH STATEMENT EXECUTE FUNCTION d3_mirror_variables();
+
+CREATE TRIGGER d3_dataset_variable_mirror_del
+  AFTER DELETE ON d3_dataset_variable
+  REFERENCING OLD TABLE AS oldtab
+  FOR EACH STATEMENT EXECUTE FUNCTION d3_mirror_variables();
 
 CREATE FUNCTION d3_mirror_category() RETURNS trigger
   LANGUAGE plpgsql AS $$
@@ -1056,7 +1079,12 @@ CREATE TABLE d6_project (
   status        text        NOT NULL DEFAULT '진행 중' CHECK (status IN ('진행 중', '닫힘')),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now(),
-  CHECK (period_start IS NULL OR period_end IS NULL OR period_start <= period_end)
+  CHECK (period_start IS NULL OR period_end IS NULL OR period_start <= period_end),
+  -- ⭑ ⟨WU-C7 · `0020` · PRD-42⟩ **연구실 안에서 이름은 하나다.** 유형(`type`)이 달라도
+  --   겹침이라 열쇠에 `type` 을 넣지 않는다(PRD-42 수용 기준 2행).
+  --   응용 층 400(`routes/project.py` 축자 문면)이 앞문이고 이 제약이 **뒷문**이다 —
+  --   그 함수를 안 타는 경로와 두 요청의 경합은 앞문이 못 막는다.
+  CONSTRAINT d6_project_lab_name_unique UNIQUE (lab_id, name)
 );
 CREATE INDEX d6_project_lab_idx ON d6_project (lab_id);
 

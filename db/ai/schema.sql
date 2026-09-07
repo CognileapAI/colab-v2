@@ -84,7 +84,17 @@ CREATE TABLE d9_topic_synonym (
   topic        text        NOT NULL
                CHECK (topic IN ('강우·강수', '식생·NDVI', '지형·DEM', '토지피복·LULC')),
   source_note  text        NOT NULL CHECK (length(btrim(source_note)) > 0),
-  created_at   timestamptz NOT NULL DEFAULT now()
+  -- ⭑ ⟨WU-C7 · `0006` · PRD-01 · 질의 5⟩ **분류 축 5값.** 주제 축(`topic`)과 **다른 축**이라
+  --   갈아 끼우지 않고 옆에 세운다(PRD-01 이 `d3_dataset_description` 에서 한 것과 같은 모양 —
+  --   「기존 `topic` 컬럼은 삭제하지 않고 유지한다」). 값 집합은 `db/platform/schema.sql`
+  --   `d3_dataset_description.category` 와 **같은 5값**이다.
+  --   ⚠ `지형·DEM` 의 분류는 PRD-01 어느 줄에서도 도출되지 않아 **NULL 로 남는다**([미상]).
+  --   ⚠ **선언 순서는 맨 뒤**다 — `0006` 이 `ADD COLUMN` 으로 붙여 자리(attnum)가 뒤이고,
+  --      순서가 어긋나면 schema-diff 가 red 를 낸다.
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  category     text        CHECK (category IS NULL
+                                  OR category IN ('수문 인자', '기상·기후 인자', '식생·탄소 인자',
+                                                  '사회·경제 인자', '환경 인자'))
 );
 CREATE INDEX d9_topic_synonym_topic_idx ON d9_topic_synonym (topic);
 

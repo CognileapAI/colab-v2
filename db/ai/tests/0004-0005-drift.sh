@@ -119,13 +119,18 @@ else
 fi
 
 # 선언 정본(schema.sql) ↔ 마이그레이션 결과가 갈리지 않는가 (schema-diff 게이트가 보는 것과 같은 사실).
-mkdb decl_db; psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
-for db in head_db decl_db; do
+# ⭑ ⟨WU-C7 2026-09-08⟩ 견주는 상대는 **체인 head** 이지 이 회차의 `0005` 가 아니다 —
+#   `schema.sql` 은 **체인 전체의 선언 정본**이라, 뒤 회차(`0006`)가 서면 `0005` 와는 반드시 갈린다.
+#   종전 문면은 이 파일이 체인의 마지막이던 동안에만 맞았다.
+render "upgrade head" "$TMP/chain_head.sql"
+mkdb chain_db; psql_f chain_db "$TMP/chain_head.sql" || red "체인 head 를 적용하지 못했다."
+mkdb decl_db;  psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
+for db in chain_db decl_db; do
   docker exec "$PGC" pg_dump -U postgres --schema-only --no-owner --no-privileges -d "$db" \
     | grep -vE '^\s*(--|SET |SELECT pg_catalog\.set_config|\\(un)?restrict |$)' \
     | grep -v 'alembic_version_ai' > "$TMP/$db.decl"
 done
-if diff -u "$TMP/decl_db.decl" "$TMP/head_db.decl" > "$TMP/decl.diff"; then
+if diff -u "$TMP/decl_db.decl" "$TMP/chain_db.decl" > "$TMP/decl.diff"; then
   echo "[0004-0005-drift] 선언 정본 schema.sql = 마이그레이션 결과 → OK"
 else
   echo "[0004-0005-drift] schema.sql 과 마이그레이션 결과가 갈렸다 ✗"
