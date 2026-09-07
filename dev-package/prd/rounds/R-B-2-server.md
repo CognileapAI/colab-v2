@@ -179,7 +179,7 @@ grep -n -A14 '^  - id: WU-B8' dev-package/work-items.yaml
 ### ㉰ 계약 동결 해제 — **20차 · 등급 ㉯ · Ted 승인 필수**
 
 근거 문서 = `dev-package/sessions/X2-FREEZE-PROTOCOL.md` §5. **R-A 가 19차를 썼으므로 이 라운드는 20차**다. 회차 번호는 `PLAN-SoT §9` 가 **유일한 발급처**다.
-승인 요청 패키지 = `dev-package/sessions/R-B-C20-REQUEST-20260907.md` — **Ted 미승인**. **이 파일에서 20차를 필요로 하는 것은 WU-B8**(`lineageUnknown` 신설)이고, WU-B5(`processingLevelDerived`·`processingLevelMismatch`·후보 검색 파라미터)·WU-B7(3축 질의 파라미터 ＋ `DatasetBasicInfo` required 확장)이 같은 20차에 함께 실린다.
+승인 요청 패키지 = `dev-package/sessions/R-B-C20-REQUEST-20260907.md` — **Ted 승인 2026-09-07**(원문 축자 「동결해제, 메인 원격 해라 고고」). **이 파일에서 20차를 필요로 하는 것은 WU-B8**(`lineageUnknown` 신설)이고, WU-B5(`processingLevelDerived`·`processingLevelMismatch`·후보 검색 파라미터)·WU-B7(3축 질의 파라미터 ＋ `DatasetBasicInfo` required 확장)이 같은 20차에 함께 실린다.
 ⛔ **§5-㉰-6(묶음 쪼개기) 금지** — WU 별로 쪼개 각 조각을 ㉮ 로 통과시키지 않는다. **목적 단위로 판정한다.**
 
 ```bash
