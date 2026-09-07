@@ -98,6 +98,28 @@ export const EDIT_CANCELED = '편집을 취소했어요';
  */
 export const AT_LEAST_ONE_VARIABLE = '변수는 하나 이상 있어야 해요';
 
+/**
+ * ⭑ **⟨advisor ② F1 · WU-B6⟩ 내려받은 날 형상 오류.** 서버 400 문면과 **같은 문장**이다
+ * (`services/core-api/src/colab_core/app/routes/catalog.py:885`). 화면이 다르게 적으면
+ * 같은 오류가 두 문구로 보인다 — 저작 금지, 이 상수를 그대로 재사용한다.
+ * ⛔ PRD-43 표의 21행이 아니다(`AT_LEAST_ONE_VARIABLE` 과 같은 사유) — `FIXED_COPY` 에 넣지 않는다.
+ */
+export const SOURCE_DOWNLOADED_ON_INVALID = '내려받은 날은 날짜(YYYY-MM-DD)다.';
+
+/**
+ * `SOURCE_DOWNLOADED_ON_INVALID` 판정 함수. 서버 `_is_date`(advisor ② F3)와 같은 형상만
+ * 통과시킨다 — `^\d{4}-\d{2}-\d{2}$` ∧ 유효한 달력 날짜. 등록·수정 두 자리가 이 하나를 쓴다.
+ */
+const SOURCE_DOWNLOADED_ON_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
+export function isValidSourceDownloadedOnShape(value: string): boolean {
+  if (!SOURCE_DOWNLOADED_ON_SHAPE.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(y, m - 1, d));
+  return (
+    parsed.getUTCFullYear() === y && parsed.getUTCMonth() === m - 1 && parsed.getUTCDate() === d
+  );
+}
+
 /* ── PRD-32 · PRD-31 — 표에 다시 적지 않는 축자 2건 ─────────────────── */
 // PRD-43 축자 — 「이미 요구로 서 있는 토스트 축자 2건은 여기 다시 적지 않는다 …
 // **같은 컴포넌트를 쓴다**」. 21행에 세지 않지만 같은 자리에서 온다.

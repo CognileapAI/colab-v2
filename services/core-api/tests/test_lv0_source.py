@@ -153,6 +153,15 @@ def test_invalid_download_date_is_400_on_update(p2_client) -> None:
     assert r.status_code == 400, r.text
 
 
+def test_basic_format_date_is_400(p2_client) -> None:
+    """⑺-c ⟨advisor ② F3⟩ `20260820` — `-` 없는 기본 형식은 계약 `format: date`
+    (RFC3339 full-date)보다 넓다. `date.fromisoformat` 은 3.11+ 에서 이 형식도 받으므로
+    검사 없이 두면 계약보다 넓은 값이 통과한다. **선검사가 이것을 막는다.**
+    """
+    r = _register(p2_client(), sourceDownloadedOn="20260820")
+    assert r.status_code == 400, r.text
+
+
 # ═══════════ 원천 표기는 다른 축이다 — Lv 무관 상시 노출 (미결-11 ⓐ) ═══════════
 def test_source_label_stays_visible_at_every_level(p2_client) -> None:
     """⑻ `sourceLabel` 은 Lv 와 무관하게 상시 그대로다 — 두 칸이 그 값을 대신하지 않는다."""

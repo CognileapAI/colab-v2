@@ -30,10 +30,13 @@ import {
 export function DatasetEditForm(props: {
   draft: DatasetEditDraft;
   error: string | null;
+  /** ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸별 인라인 오류 — 그 칸 아래에 선다. */
+  fieldErrors?: Partial<Record<keyof DatasetEditDraft, string>>;
   onField: (key: keyof DatasetEditDraft, value: string) => void;
 }) {
   const draft = props.draft;
   const error = props.error;
+  const fieldErrors = props.fieldErrors ?? {};
   const set = props.onField;
 
   return (
@@ -63,6 +66,11 @@ export function DatasetEditForm(props: {
                 onChange={(e) => set(f.key, e.target.value)}
               />
             )}
+            {fieldErrors[f.key] ? (
+              <p className="de-err" role="alert" data-testid={`edit-${f.key}-error`}>
+                {fieldErrors[f.key]}
+              </p>
+            ) : null}
           </label>
         ))}
         {/* 기간은 **두 칸이 한 값**이다 (`DataPeriod`). 끝을 비우면 무기한이다. */}

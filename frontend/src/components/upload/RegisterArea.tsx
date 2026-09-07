@@ -935,6 +935,8 @@ function StepThree(props: {
   onSourceUrl: (v: string) => void;
   sourceDownloadedOn: string;
   onSourceDownloadedOn: (v: string) => void;
+  /** ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류 인라인 문구. `null` 이면 서지 않는다. */
+  sourceDownloadedOnError?: string | null;
   lineageStep?: LineageStepRender | undefined;
   ctx: LineageStepContext;
   projectSource: ProjectSource;
@@ -995,6 +997,12 @@ function StepThree(props: {
                   value={props.sourceDownloadedOn}
                   onChange={(e) => props.onSourceDownloadedOn(e.target.value)}
                 />
+                {/* ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸 바로 아래에 선다 — 서버 400 문면을 그대로 쓴다. */}
+                {props.sourceDownloadedOnError ? (
+                  <p className="warn" role="alert" data-testid="reg-source-downloaded-on-error">
+                    {props.sourceDownloadedOnError}
+                  </p>
+                ) : null}
               </div>
               <p className="muted" data-testid="reg-source-lv0-notice">
                 {LV0_SOURCE_NOTICE}
@@ -1055,6 +1063,7 @@ export function RegisterArea(props: {
   onSourceUrl: (v: string) => void;
   sourceDownloadedOn: string;
   onSourceDownloadedOn: (v: string) => void;
+  sourceDownloadedOnError?: string | null;
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
   // ⭑ ⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — ① 이 고르고 ② 의 힌트가 읽는다.
@@ -1174,6 +1183,7 @@ export function RegisterArea(props: {
             onSourceUrl={props.onSourceUrl}
             sourceDownloadedOn={props.sourceDownloadedOn}
             onSourceDownloadedOn={props.onSourceDownloadedOn}
+            sourceDownloadedOnError={props.sourceDownloadedOnError}
             lineageStep={props.lineageStep}
             ctx={props.lineageCtx}
             projectSource={props.projectSource}

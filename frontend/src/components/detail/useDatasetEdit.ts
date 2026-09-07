@@ -8,6 +8,10 @@
 // **서버가 준 값**으로 서는 것이라 두 규칙이 어긋나지 않는다.
 import { useEffect, useState } from 'react';
 import { loweringConfirmCopy } from '../common/accessState';
+import {
+  isValidSourceDownloadedOnShape,
+  SOURCE_DOWNLOADED_ON_INVALID,
+} from '../common/toastCopy';
 import { applyDraft, draftError, toDraft, toPatch, type DatasetEditDraft } from './editFields';
 import type { DatasetUpdateSource } from './updateSource';
 import type { DatasetDetail } from './types';
@@ -28,6 +32,11 @@ export type DatasetEditState = {
   saving: boolean;
   /** 보내기 전 판정(`ERR-001`)과 서버 봉투가 같은 자리에 선다. */
   error: string | null;
+  /**
+   * ⭑ **⟨advisor ② F1 · WU-B6⟩ 칸별 인라인 오류.** `내려받은 날` 형상 오류가 여기 선다 —
+   * `error`(폼 아래 공통 자리)와 달리 **그 칸 아래**에 그려야 해서 따로 둔다.
+   */
+  fieldErrors: Partial<Record<keyof DatasetEditDraft, string>>;
   open(): void;
   cancel(): void;
   setField(key: keyof DatasetEditDraft, value: string): void;
@@ -51,6 +60,9 @@ export function useDatasetEdit(
   const [draft, setDraft] = useState<DatasetEditDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof DatasetEditDraft, string>>>(
+    {},
+  );
   const [confirm, setConfirm] = useState<string | null>(null);
 
   // 서버를 **다시 읽었으면** 화면이 쥐고 있던 값을 버린다 — 새로 읽은 것이 정답이다.
@@ -60,6 +72,7 @@ export function useDatasetEdit(
     setEditing(false);
     setDraft(null);
     setError(null);
+    setFieldErrors({});
     setSaving(false);
     setConfirm(null);
   }, [base]);
@@ -72,12 +85,14 @@ export function useDatasetEdit(
     draft,
     saving,
     error,
+    fieldErrors,
     confirm,
     dismissConfirm: () => setConfirm(null),
     open: () => {
       if (!detail) return;
       setDraft(toDraft(detail));
       setError(null);
+      setFieldErrors({});
       setConfirm(null);
       setEditing(true);
     },
@@ -85,11 +100,23 @@ export function useDatasetEdit(
       setEditing(false);
       setDraft(null);
       setError(null);
+      setFieldErrors({});
       setConfirm(null);
     },
-    setField: (key, value) => setDraft((d) => (d ? { ...d, [key]: value } : d)),
+    setField: (key, value) => {
+      setDraft((d) => (d ? { ...d, [key]: value } : d));
+      // 고치는 순간 그 칸의 인라인 오류를 지운다 — 서버 문구처럼 값을 고쳐도 남지 않는다.
+      setFieldErrors((f) => (f[key] ? { ...f, [key]: undefined } : f));
+    },
     async submit() {
       if (!detail || !draft) return;
+      // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 **보내기 전에** 막는다 — 등록 `submit()` 과
+      //   같은 규율. 칸이 비었으면(선택 입력) 넘어간다.
+      const day = draft.sourceDownloadedOn.trim();
+      if (day && !isValidSourceDownloadedOnShape(day)) {
+        setFieldErrors((f) => ({ ...f, sourceDownloadedOn: SOURCE_DOWNLOADED_ON_INVALID }));
+        return;
+      }
       // 비울 수 없는 칸은 **보내기 전에** 막는다 — 서버와 같은 문구를 쓴다(`ERR-001`).
       const invalid = draftError(draft);
       if (invalid) {

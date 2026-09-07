@@ -204,6 +204,7 @@ export function DatasetDetailPage(
                 <DatasetEditForm
                   draft={edit.draft}
                   error={edit.error}
+                  fieldErrors={edit.fieldErrors}
                   onField={edit.setField}
                 />
               ) : null}

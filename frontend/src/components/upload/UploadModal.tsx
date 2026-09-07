@@ -20,6 +20,8 @@ import {
   ANALYZED_CHIP,
   ANALYZING_CHIP,
   FILE_REMOVED_NOTICE,
+  isValidSourceDownloadedOnShape,
+  SOURCE_DOWNLOADED_ON_INVALID,
   UPLOAD_CLOSE_KEEP,
   UPLOAD_CLOSE_LEAVE,
   UPLOAD_CLOSE_TITLE,
@@ -160,6 +162,8 @@ export function UploadModal(props: {
   //      「숨은 동안 전송하지 않는다」는 저장을 지우는 것이 아니라 **싣지 않는 것**이다.
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceDownloadedOn, setSourceDownloadedOn] = useState('');
+  // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류 인라인 문구 — 칸 아래에 선다. 값을 고치면 지운다.
+  const [sourceDownloadedOnError, setSourceDownloadedOnError] = useState<string | null>(null);
   // ⭑ **⟨20차 해제 · PRD-11 · WU-B4 · advisor ② ㊁⟩ 공개 범위 — 처음은 `null` 이다.**
   // `null` = **사람이 셀렉트를 건드리지 않았다** 이고, 그대로 등록하면 요청에서 열쇠가
   // 빠져 서버가 연구실 기본값을 따른다(PRD-11 「NULL = 연구실 기본값 · 현행 의미 유지」).
@@ -772,6 +776,21 @@ export function UploadModal(props: {
       window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
       return;
     }
+    // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 여기서 막는다 — 서버 400 이 화면에 닿지 않고
+    //   일반 실패 문구(`catch`)로 덮이던 자리다(재시도로 해소되지 않는 원인을 재시도하라는
+    //   안내가 되므로 사용자를 막다른 길로 보낸다). 값이 있고(칸이 비었으면 선택이라 넘어간다)
+    //   형상이 틀렸을 때만 막는다 — `humanMetadata()` 와 같은 조건(`level === LV0`)이다.
+    if (
+      level === LV0 &&
+      sourceDownloadedOn.trim() &&
+      !isValidSourceDownloadedOnShape(sourceDownloadedOn.trim())
+    ) {
+      setStep(3);
+      setSourceDownloadedOnError(SOURCE_DOWNLOADED_ON_INVALID);
+      window.setTimeout(() => document.getElementById('reg-source-downloaded-on')?.focus(), 0);
+      return;
+    }
+    setSourceDownloadedOnError(null);
     setRegisterError(null);
     try {
       const made = await upload.register({
@@ -1107,7 +1126,11 @@ export function UploadModal(props: {
                 sourceUrl={sourceUrl}
                 onSourceUrl={setSourceUrl}
                 sourceDownloadedOn={sourceDownloadedOn}
-                onSourceDownloadedOn={setSourceDownloadedOn}
+                onSourceDownloadedOn={(v) => {
+                  setSourceDownloadedOn(v);
+                  setSourceDownloadedOnError(null);
+                }}
+                sourceDownloadedOnError={sourceDownloadedOnError}
                 projects={projects}
                 onProjects={setProjects}
                 category={category}

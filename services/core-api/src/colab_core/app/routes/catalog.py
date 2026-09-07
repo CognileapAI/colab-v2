@@ -9,6 +9,7 @@ import base64
 import binascii
 import datetime as dt
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
@@ -733,6 +734,12 @@ def is_blank_summary(value: object) -> bool:
     return not isinstance(value, str) or not value.strip()
 
 
+#: ⭑ ⟨advisor ② F3⟩ 계약 `format: date` 는 RFC3339 full-date(`YYYY-MM-DD`) 다.
+#: `date.fromisoformat` 은 3.11+ 에서 `20260820`(기본 형식)·`2026-W34-1`(주 표기)도 받아
+#: 계약보다 넓다 — **형상을 먼저 좁힌 뒤** `fromisoformat` 에 넘긴다.
+_DATE_SHAPE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
 def _is_date(value: object) -> bool:
     """계약 `DatasetCreate.sourceDownloadedOn` 은 `format: date` 다 — **날짜이지 시각이 아니다.**
 
@@ -740,8 +747,10 @@ def _is_date(value: object) -> bool:
     (`_is_datetime` 과 같은 이유 · `CODE-REVIEW-20260903` #12).
     ⚠ `fromisoformat` 은 `2026-08-20T00:00:00` 도 받으므로 **`date.fromisoformat`** 을 쓴다 —
       시각이 실려 오면 「내려받은 날」이 아니고, 그 값을 조용히 잘라 저장하지 않는다.
+    ⭑ ⟨advisor ② F3⟩ `_DATE_SHAPE` 선검사가 **먼저** 온다 — `20260820`·`2026-W34-1` 같이
+      `fromisoformat` 은 받지만 계약 `format: date` 보다 넓은 값을 여기서 좁힌다.
     """
-    if not isinstance(value, str):
+    if not isinstance(value, str) or not _DATE_SHAPE.match(value):
         return False
     try:
         dt.date.fromisoformat(value)
