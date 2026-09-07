@@ -27,8 +27,10 @@
 .catalog-page .hcnt { font-size: var(--text-body-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .catalog-page .desc { font-size: var(--text-caption); color: var(--color-text-muted); }
 .catalog-page .card {
-  background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+  /* ⑥ 카드는 그림자를 지지 않는다 — 그림자는 팝오버(`.colmenu`)의 것이다 (WU-A11 판정 ⑥).
+     ⑨ 바깥선은 안쪽선(`--color-border-strong`)보다 연하지 않다 — 역전 해소 (판정 ⑨). */
+  background: var(--color-surface); border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg); overflow: hidden;
 }
 
 /* 가로·세로 스크롤은 표 래퍼 **한 곳**이 맡는다 — 컨테이너가 둘이면 sticky 기준이 흔들린다 */

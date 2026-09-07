@@ -63,12 +63,16 @@
    칸이 덜 찬 마지막 줄에서 그 배경이 선이 아니라 면으로 드러난다 */
 .detail-page .infogrid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden;
+  /* ⑨ 컨테이너는 `--color-border-strong`, 칸 구분선은 `--color-border` — 두 층을 가른다 (판정 ⑨) */
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden;
   background: var(--color-surface); margin-bottom: var(--space-6);
 }
 .detail-page .infogrid .ig { background: var(--color-surface); padding: 12px 14px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .detail-page .infogrid .ig:nth-child(3n) { border-right: none; }
 .detail-page .infogrid .ig:nth-last-child(-n + 3) { border-bottom: none; }
+/* ⑩ 격자와 파일 목록 사이 여백은 **컨테이너인 격자**가 소유한다 —
+   종전에는 목록이 `margin: -12px` 로 격자의 아래 여백을 되당겼다 (판정 ⑩) */
+.detail-page .infogrid:has(+ .filelist), .detail-page .infogrid:has(+ .fl-err) { margin-bottom: 12px; }
 .detail-page .infogrid .ig .k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
 .detail-page .infogrid .ig .v { font-size: var(--text-body); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 @media (max-width: 720px) {
@@ -97,15 +101,15 @@
   color: var(--color-primary-700); background: var(--color-primary-100);
   border: none; border-radius: var(--radius-sm); cursor: pointer;
 }
-.detail-page .filelist { margin: -12px 0 var(--space-6); padding: 14px 16px;
+.detail-page .filelist { margin: 0 0 var(--space-6); padding: 14px 16px;
   border: 1px solid var(--color-border); border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md); background: var(--color-surface); }
 .detail-page .filelist .fl-g + .fl-g { margin-top: 12px; }
-.detail-page .filelist .fl-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 5px; }
+.detail-page .filelist .fl-k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 5px; }
 .detail-page .filelist .fl-u { list-style: none; margin: 0; padding: 0; }
 .detail-page .filelist .fl-i { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
 .detail-page .filelist .fl-n { font-family: var(--font-mono, monospace); font-size: var(--text-body-sm); color: var(--color-text); overflow-wrap: anywhere; }
-.detail-page .filelist .fl-x { font-size: 11px; color: var(--color-gray-500); }
+.detail-page .filelist .fl-x { font-size: 13px; color: var(--color-gray-500); }
 .detail-page .filelist .fl-none { margin: 0; font-size: var(--text-body-sm); color: var(--color-gray-500); }
 .detail-page .fl-err { font-size: var(--text-body-sm); color: var(--color-danger, #b42318); margin: 0 0 var(--space-6); }
 

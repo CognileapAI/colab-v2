@@ -105,12 +105,15 @@
 /* 업로드 안내 두 줄 — 업로드 가능 / 미리보기 가능 (PRD-21). 경고가 아니라 안내라
    토스트의 경고색을 쓰지 않는다 — 색이 같으면 「뭔가 잘못됐다」로 읽힌다. */
 .up-note {
-  margin: 8px 0 0;
-  font-size: 12px;
+  margin: 0;
+  font-size: 13px;
   color: var(--up-muted, #666);
 }
 
-.filelist { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+/* ⑩ 카드 본문 안 세로 여백은 **컨테이너**가 gap 으로 소유한다 —
+   종전에는 자식이 저마다 `margin-top` 을 지녀 조건부로 나타나는 형제마다 값이 갈렸다 (판정 ⑩) */
+.up-card > .card-b { display: flex; flex-direction: column; gap: 12px; }
+.filelist { display: flex; flex-direction: column; gap: 8px; }
 .filecard {
   display: flex;
   align-items: center;
@@ -132,7 +135,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
   padding: 10px 12px;
   border: 1px solid var(--up-line);
   border-radius: 10px;
