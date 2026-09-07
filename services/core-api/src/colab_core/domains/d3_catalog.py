@@ -129,7 +129,7 @@ _HAS_GRID = text("""
 # ── 변수 행 (`0016` · `M-5` · PRD-16) ────────────────────────────────────────
 #
 # **정본은 이 표다.** `d3_dataset_autometa.variables` 는 그 그림자이고, 그 그림자를
-# 최신으로 유지하는 트리거는 `M-10`(R-B-2 · WU-B7) 소속이라 아직 없다 — 그래서
+# 최신으로 유지하는 것은 `0019`(M-10 · R-B-2 · WU-B7)가 세운 트리거다 — 그래서
 # **등록·수정 경로는 그 배열을 직접 쓰지 않는다**(PRD-16 축자 「트리거만 쓴다」).
 # 두 곳이 같은 칸을 쓰면 순서에 따라 값이 갈린다.
 _VARIABLES = text("""
@@ -713,9 +713,14 @@ _INSERT_AUTOMETA = text("""
 
 # 사건이 나른 자동 정보를 장부에 **반영**한다 (`〈190〉` 사건 경유 되쓰기).
 #
-# **비어 있는 칸만 채운다.** 사람이 고친 값(`update_dataset` 의 `crs`·`variables`)을
-# 사건이 덮으면 사용자의 수정이 조용히 사라진다 — 그 실패는 화면에 아무 말도 남기지 않는다.
-# `COALESCE` 가 그 규율이고, `variables` 는 **빈 배열이 곧 비어 있음**이다(NOT NULL DEFAULT '{}').
+# **비어 있는 칸만 채운다.** 사람이 고친 값(`update_dataset` 의 `crs`)을 사건이 덮으면
+# 사용자의 수정이 조용히 사라진다 — 그 실패는 화면에 아무 말도 남기지 않는다.
+# `COALESCE` 가 그 규율이다.
+#
+# ⛔ **`variables` 는 여기서 쓰지 않는다** (PRD-16 축자 「트리거만 쓴다」 · advisor ② ①).
+# 그 배열의 정본은 `d3_dataset_variable` 행 표이고 배열은 `0019` 의 트리거가 유지하는
+# 사본이다. 이 문장이 헤더 유래 이름을 그 칸에 적으면 **쓰는 곳이 둘**이 되고, 이후
+# 변수 행이 한 번만 바뀌어도 그 값은 `'{}'` 로 덮인다 — 색인이 등록 순서에 따라 갈린다.
 #
 # 돌려주는 것은 **반영 뒤 값이 들어 있는 칸의 이름들**이다(UPDATE 이후 상태). 「불렀다」가
 # 아니라 「값이 있다」를 세야 유실 감지가 성립한다 (`CLAUDE.md §4` — 건수를 드러낸 채 넘어간다).
@@ -726,9 +731,6 @@ _APPLY_AUTOMETA = text("""
            grid         = COALESCE(a.grid, :grid),
            period_start = COALESCE(a.period_start, CAST(:period_start AS timestamptz)),
            period_end   = COALESCE(a.period_end, CAST(:period_end AS timestamptz)),
-           variables    = CASE WHEN cardinality(a.variables) > 0
-                                 OR CAST(:variables AS text[]) IS NULL
-                               THEN a.variables ELSE CAST(:variables AS text[]) END,
            total_size_bytes = COALESCE(a.total_size_bytes, :total_size_bytes),
            updated_at   = now()
      WHERE a.dataset_id = :dataset_id
@@ -737,7 +739,6 @@ _APPLY_AUTOMETA = text("""
               (a.grid IS NOT NULL)                  AS has_grid,
               (a.period_start IS NOT NULL)          AS has_period_start,
               (a.period_end IS NOT NULL)            AS has_period_end,
-              (cardinality(a.variables) > 0)        AS has_variables,
               (a.total_size_bytes IS NOT NULL)      AS has_total_size_bytes
 """)
 
@@ -955,7 +956,7 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
 
     # ⭑ **⟨20차 해제 · PRD-16⟩ 변수는 열이 아니라 다른 표의 행 집합이다.**
     # 통째로 교체한다 — `by_table` 의 UPDATE 와 **같은 트랜잭션**이라 반쪽이 남지 않는다.
-    # ⛔ **`autometa.variables` 를 여기서 쓰지 않는다** — 그 배열의 미러 유지는 `M-10` 이다.
+    # ⛔ **`autometa.variables` 를 여기서 쓰지 않는다** — 그 배열은 `0019` 의 트리거가 유지한다.
     if "variables" in changes:
         replace_variables(session, dataset_id, changes["variables"])
 
@@ -1183,32 +1184,28 @@ def lineage_state(core: DatasetCore, summary: LineageSummary | None) -> str:
 #: 사건이 채울 수 있는 칸 ↔ `HeldAutoMetadata` 의 값 이름. **정본은 사건 계약이다**
 #: (`contracts/events/core-pipeline.json` FormatDetected·HeaderParsed) — 여기는 그것을
 #: 장부 열로 옮긴 표일 뿐이다. 표를 늘리려면 계약이 먼저 그 값을 날라야 한다.
+#:
+#: ⛔ **`variables` 는 이 표에 없다** — 사건은 그 값을 나르지만 장부의 그 칸을 쓰는 것은
+#: `0019` 의 트리거 하나뿐이다(PRD-16 「트리거만 쓴다」). 여기 두면 「반영했다」를
+#: 세는 자리에 **쓰지 않은 칸**이 섞인다.
 AUTOMETA_FROM_EVENTS = (
-    "format", "crs", "grid", "period_start", "period_end", "variables", "total_size_bytes",
+    "format", "crs", "grid", "period_start", "period_end", "total_size_bytes",
 )
 
 
 def apply_autometa(session: Session, *, dataset_id: Ulid, format: str | None = None,
                    crs: str | None = None, grid: str | None = None,
                    period_start=None, period_end=None,
-                   variables: list[str] | None = None,
                    total_size_bytes: int | None = None) -> tuple[str, ...]:
     """보류된 사건이 나른 값을 장부에 적는다. **돌려주는 것은 반영 뒤 값이 있는 칸**이다.
 
     ⚠ **「불렀다」를 「값이 있다」로 세지 않는다.** 대상 행이 없으면 빈 tuple 이고,
     사건이 값을 안 날랐으면 그 칸은 목록에 없다 — 그 둘을 통과로 접으면 유실이 안 보인다.
     """
-    # `text[]` 파라미터는 **리터럴로 넘긴다** — 드라이버 어댑터에 기대면 배열이 조용히
-    # 한 원소 문자열로 접히는 경로가 생긴다. 비어 있으면 아예 넘기지 않는다(NULL).
-    arr = None
-    if variables:
-        esc = ",".join('"' + str(v).replace("\\", "\\\\").replace('"', '\\"') + '"'
-                       for v in variables)
-        arr = "{" + esc + "}"
     row = session.execute(_APPLY_AUTOMETA, {
         "dataset_id": str(dataset_id), "format": format, "crs": crs, "grid": grid,
         "period_start": period_start, "period_end": period_end,
-        "variables": arr, "total_size_bytes": total_size_bytes,
+        "total_size_bytes": total_size_bytes,
     }).mappings().first()
     if row is None:
         return ()

@@ -115,7 +115,9 @@ def test_events_held_before_registration_are_applied_at_registration(p2_client, 
     assert meta["format"] == _FORMAT
     assert meta["crs"] == _CRS
     assert meta["grid"] == _GRID
-    assert list(meta["variables"]) == _VARIABLES
+    # ⛔ ⟨advisor ② ①⟩ **`variables` 는 사건이 날라도 이 경로가 쓰지 않는다** —
+    #    그 배열은 `0019` 의 트리거가 행 표에서 유지한다(PRD-16 「트리거만 쓴다」).
+    assert list(meta["variables"]) == []
     assert meta["period_start"] is not None and meta["period_end"] is not None
 
 
@@ -270,6 +272,32 @@ def test_empty_form_defaults_are_not_stored_as_human_values(p2_client, sql) -> N
     r = _register(client, receipt, crs="", period=None)
     assert r.status_code == 201, r.text
     meta = _autometa(sql, r.json()["datasetId"])
-    assert list(meta["variables"]) == _VARIABLES, "열쇠 부재가 사건 반영을 막았다."
+    # ⛔ ⟨advisor ② ①⟩ 배열은 이 경로가 안 쓴다 — 변수 행 0 개면 `'{}'` 그대로다.
+    assert list(meta["variables"]) == []
     assert meta["crs"] == _CRS, "빈 문자열이 저장돼 사건 반영을 막았다."
     assert meta["period_start"] is not None
+
+
+# ═════════════════ ㉳ 배열은 트리거만 쓴다 (PRD-16 · advisor ② ①) ═══════════
+def test_header_variables_do_not_reach_the_mirror_array(p2_client, sql) -> None:
+    """**행 표가 정본이고 배열은 그 사본이다** — 헤더가 읽은 변수명은 배열에 들어가지 않는다.
+
+    `0019` 이후 `d3_dataset_autometa.variables` 를 쓰는 것은 트리거 하나뿐이다
+    (PRD-16 축자 「트리거만 쓴다」). 등록 경로가 헤더 유래 이름을 그 배열에 직접 적으면
+    **쓰는 곳이 둘**이 되고, 이후 변수 행이 한 번만 바뀌어도 그 값은 `'{}'` 로 사라진다 —
+    색인이 등록 순서에 따라 갈리는 상태이고, 게이트는 그것을 재지 않는다.
+
+    여기서 변수 행은 **0 개**다(등록 본문에 `variables` 열쇠 없음). 그래도 사건은
+    `_VARIABLES` 를 날랐다 — 그 둘이 갈리는 자리가 이 시험이다.
+    """
+    client = p2_client()
+    receipt = _make_unregistered_upload(client)
+    _hold_event(sql, receipt["uploadId"], "file.header-parsed", _header_parsed())
+
+    dataset_id = _register(client, receipt).json()["datasetId"]
+
+    rows = sql("SELECT count(*) AS n FROM d3_dataset_variable WHERE dataset_id = :d",
+               {"d": dataset_id})
+    assert rows[0]["n"] == 0, "이 시험의 전제는 변수 행 0 개다."
+    assert list(_autometa(sql, dataset_id)["variables"]) == [], \
+        "등록 경로가 헤더 유래 변수명을 미러 배열에 직접 썼다 — 쓰는 곳이 둘이다."

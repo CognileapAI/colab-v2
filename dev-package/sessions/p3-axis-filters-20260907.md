@@ -187,8 +187,113 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
   WU-B7 몫으로 적었으나 **라운드 파일 축자가 이긴다** — 필요하면 후속으로 연다.
 - ⛔ 등록 화면(`RegisterArea.tsx`·`UploadModal.tsx`·`LineageStep.tsx`)·`ingestion.py` 의
   수용 목록을 **건드리지 않았다**(WU-B6 병렬 레인 회피).
-- ⛔ **공유 적용 DB 에 마이그레이션을 올리지 않았다**(§9 ⛔). 병합자 몫이다.
+- ⛔ **staging 실물 platform DB 에 `0016`~`0019` 를 올리지 않았다**(§9 ⛔). 병합자 몫이다.
+  ⭑ ⟨정정 · advisor ② ③⟩ 종전 문면 ~~「공유 적용 DB 에 마이그레이션을 올리지 않았다」~~ 는 대상을
+  틀리게 가리켰다. **스키마 전용 적용 DB(`COLAB_APPLIED_DB_URL_PLATFORM`)는 이 회차에
+  `alembic upgrade head` 로 올렸고**(그래서 `schema-diff` 가 green 이다), 안 올린 것은
+  `autometa-loss` 의 대조 정본인 **staging 실물 DB** 다(`COLAB_AUTOMETA_STAGING_DB_URL`).
+  두 DB 는 `〈237〉` 로 선언이 분리돼 있다.
 - ⛔ 이관 항목 3건 · `40 COLAB-기획/` · `03-HANDOFF.md` · `PLAN-SoT.md` 무접촉. 〈N〉 미발급.
 - ⭑ **라운드 종료 보고 문안** — 「**R-A 이월 1건(PRD-21 `nc` 검색) 닫힘**」. 근거 =
   `0019-assertions.sql` C-⑴ ＋ `0019-existing-rows-assertions.sql` ①(기존 행) ·
   대조군 ㈏(0018 까지만 → red)가 「종전에는 안 잡혔다」를 함께 잰다.
+
+
+## 12. advisor ② 반영 (2026-09-07 · 검토 `approve-with-changes`)
+
+### ① `autometa.variables` 의 두 번째 작성자 제거 — **[필수]**
+
+- 결함 = `_APPLY_AUTOMETA` 가 `variables` 를 썼다. 등록 경로 순서(autometa INSERT →
+  `replace_variables` → `apply_autometa`)에서 **변수 행이 0 개면 헤더 유래 이름이 미러 배열에
+  들어가고**, 이후 변수 행이 한 번만 바뀌면 트리거가 그 값을 `'{}'` 로 덮는다. 색인이 등록
+  순서에 따라 갈린다 — PRD-16 축자 「행 표가 정본 · 트리거만 쓴다」 위반.
+- 집행 = **기본값(제거)** 을 골랐다. 대안(배열을 「행 표 ∪ 헤더」로 재정의)은 설계 변경이라
+  Ted 판정 몫이고, 이 레인은 열지 않았다.
+  - `d3_catalog.py` `_APPLY_AUTOMETA` — `variables` SET 절 ＋ `has_variables` RETURNING 제거.
+  - `d3_catalog.apply_autometa` — `variables` 인자 ＋ `text[]` 리터럴 조립 블록 제거.
+  - `d3_catalog.AUTOMETA_FROM_EVENTS` — `"variables"` 제거(7 → 6). **튜플이 RETURNING 열쇠와
+    한 짝**이라 한쪽만 고치면 `KeyError` 다. 여기 두면 「반영했다」를 세는 자리에 **쓰지 않는
+    칸**이 섞인다.
+  - `routes/ingestion.py` — `apply_autometa(..., variables=held.variables, ...)` 인자 제거.
+- `autometa-loss` 게이트 영향 = **없다.** 그 게이트가 대조하는 칸은 `format`·`crs`·`grid`
+  셋뿐이고(`gates/tools/autometa-loss.sh:214-222`), `gates/config/autometa-loss.toml` 은
+  **면제 데이터셋 목록**이지 칸 목록이 아니다 — 즉 「toml 에 `variables` 가 없다」는 대조 칸의
+  부재가 아니라 그 파일이 칸을 아예 안 적는다는 뜻이다. 튜플 정렬은 게이트가 아니라
+  `apply_autometa` 의 반환 계약 때문에 필요했다.
+- RED 선실측 (`tests/test_autometa_from_events.py::test_header_variables_do_not_reach_the_mirror_array`) —
+
+```
+E       AssertionError: 등록 경로가 헤더 유래 변수명을 미러 배열에 직접 썼다 — 쓰는 곳이 둘이다.
+E       assert ['LST', 'QC'] == []
+```
+
+- GREEN = `tests/test_autometa_from_events.py` **11건** · `tests/test_axis_filters.py` **14건** ·
+  `tests/test_variable_rows.py` 포함 3파일 **34건** 전건 통과.
+- ⚠ 같은 파일의 기존 시험 **2건**이 옛 동작(배열에 헤더 값이 들어옴)을 오라클로 들고 있었다 —
+  `..._are_applied_at_registration` · `test_empty_form_defaults_are_not_stored_as_human_values`.
+  둘 다 `== []` 로 고쳤다. **시험이 결함을 못 잡은 게 아니라 결함을 못 박고 있었다.**
+
+### ①-b 0019 백필 손실 계수 — **실측**
+
+| 대조 대상 | 데이터셋 | 배열 비어 있지 않은 행 | `d3_dataset_variable` | **손실 대상** |
+|---|---|---|---|---|
+| `autometa-loss` 대조 정본 = staging 실물 platform DB (`COLAB_AUTOMETA_STAGING_DB_URL`) | 14 | 13 | 표 부재(`0016` 미적용) | **0** |
+| 스키마 전용 적용 DB (`COLAB_APPLIED_DB_URL_PLATFORM`) | 0 | 0 | 0행 | **0** |
+| 실 dev DB | `[미측정]` | `[미측정]` | `[미측정]` | `[미측정]` |
+
+- 손실이 **0** 인 사유 = `0016` 이 **배열 원소를 전수 행으로 이관한 뒤**(`unnest … WITH
+  ORDINALITY` · 제외 조건은 공백 이름뿐) `0019` 가 그 행에서 배열을 되쓴다. 두 마이그레이션이
+  한 사슬로 도는 한 「행 0 개 ＋ 배열 비어 있지 않음」인 행은 백필 시점에 **존재하지 않는다**.
+- 손실이 생기는 유일한 창 = `0016` 적용 **뒤** `0019` 적용 **전**에, 방금 제거한 그 경로로
+  헤더 유래 이름이 배열에 새로 들어가는 것. 그 창은 이 수정으로 닫혔다.
+- 접근은 읽기 전용(`BEGIN READ ONLY`) · 쓰기 0건.
+
+### ② `contract-breaking` 리베이스 후 재실행 — **[필수]** 「기준 5adf9b4」
+
+```
+COLAB_BREAKING_BASE_REF=5adf9b4 COLAB_GATE_REPORT_DIR=dev-package/reports/R-B/p3-axis-filters bash gates/run.sh contract-breaking
+No breaking changes to report, but the specs are different.
+Run 'oasdiff diff' to see structural differences.
+contract-breaking green — 기준 5adf9b4 (3건) 대비 파괴적 변경 없음.
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+```
+
+- §6 의 축자는 **리베이스 전 기준(`b982100`)** 이다. `b982100..5adf9b4` 는 계약 +81 행(B6 추가분)
+  이므로 옛 기준은 초과 검출 방향이었으나, 리베이스 후 근거가 기록에 없었다 — 이 절이 그 자리다.
+- 요약을 `gate-summary.contract-breaking.record.json` 으로 덮어썼다.
+
+### ③ 산문 정정 (`d3_catalog.py`)
+
+- `:131-133` ~~「그 그림자를 최신으로 유지하는 트리거는 `M-10`(R-B-2 · WU-B7) 소속이라 아직 없다」~~
+  → 「유지하는 것은 `0019`(M-10 · R-B-2 · WU-B7)가 세운 트리거다」. **0019 가 이 회차에 섰다.**
+- `:958` ~~「그 배열의 미러 유지는 `M-10` 이다」~~ → 「그 배열은 `0019` 의 트리거가 유지한다」.
+- `_APPLY_AUTOMETA` 머리글 = 「사람이 고친 값(`crs`·`variables`)」에서 `variables` 를 빼고,
+  「여기서 `variables` 를 쓰지 않는다」와 그 사유(쓰는 곳이 둘이 되는 자리)를 적었다.
+- §11 「공유 적용 DB …」 한 줄 = 위 §11 에서 정정(스키마 전용 적용 DB 는 `alembic upgrade head`
+  로 올렸고, 안 올린 것은 staging 실물 DB).
+
+### ④ 분류 미러 — **앱 롤 런타임 경로 시험 1건**
+
+- `tests/test_axis_filters.py::test_a_category_edit_by_the_app_role_reaches_the_search_index`.
+- 재는 것 = 앱 롤(`t_app`)의 `PATCH /datasets/{id}` `category` → 트리거가
+  `description.category` → `autometa.category_mirror` → `search_vector`(B 가중치)까지 나른다.
+  질의어는 분류 낱말 하나이고 그 낱말은 이름·요약 어디에도 없다 — 잡히면 **미러를 거친 것**이다.
+  옛 분류 낱말이 색인에서 빠지는 것까지 함께 잰다.
+- **오라클 유효성 실측** = 트리거를 끄고(`ALTER TABLE … DISABLE TRIGGER
+  d3_dataset_description_category_mirror`) 같은 시험을 돌려 red 를 확인했다 —
+
+```
+E        +  where False = ..._hits('수문')
+AssertionError: 등록 시점의 분류가 색인에 없다 — 미러가 처음부터 안 섰다.
+```
+
+  green-by-skip 이 아니다. 확인 뒤 트리거를 되켰다(일회용 DB).
+- ⚠ `0019-assertions.sql` 은 **관리자 롤**로 돈다 — 트리거 함수가 경계에 걸리면 관리자 롤에서만
+  통과하고 앱 롤에서 조용히 0행이 되는 자리가 열린다. 그 자리를 이 시험이 닫는다.
+
+### 반영하지 않은 것
+
+- ⑤ Ted 등재 항목(`AXIS_UNSET_NUDGE` 문면 · 홈 데이터 맵 분류 축 전환 · M-10 가정 의존) ·
+  ⑥ 후속(`d3_dataset_variable_mirror` 를 statement-level 로 전환) — **레인 몫이 아니다.**
+  ⛔ 〈N〉 미발급 · `PLAN-SoT.md`·`03-HANDOFF.md`·`work-items.yaml`·`contracts/` 무접촉.
+- ⚠ 위험 3(`replace_variables` 의 DELETE → 행별 INSERT 로 미러 N+1 회 재작성)은 그대로다.

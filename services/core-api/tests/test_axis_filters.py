@@ -210,3 +210,44 @@ def test_facets_apply_the_other_axes_conditions_first(p2_client) -> None:
     axes = _axes(client, category="수문 인자")
     assert axes["분류"]["환경 인자"] == 1, axes
     assert axes["유형"]["위성자료"] == 1, axes
+
+
+# ═════════════════ ⑺ 분류 미러 — **앱 롤 런타임 경로** (advisor ② ④) ══════════
+#
+# 여기서 재는 것 = `0019` 의 트리거(`d3_dataset_description.category` →
+# `d3_dataset_autometa.category_mirror` → `search_vector` B 가중치)가 **앱 롤(`t_app`)의
+# 요청 안에서** 실제로 도는가. 게이트가 이것을 재지 않는다 — `rls-effect` 는 본체 음성 ·
+# 메타 양성 · cross-tenant 셋만 재고 트리거를 보지 않는다.
+#
+# ⚠ 마이그레이션 단언(`0019-assertions.sql`)은 **관리자 롤**로 돈다. 트리거 함수가
+# `SECURITY DEFINER` 없이 서고 대상 표에 경계가 걸려 있으면, 관리자 롤에서는 통과하고
+# 앱 롤에서만 조용히 0행이 되는 자리가 열린다 — 그 자리를 이 시험이 닫는다.
+def test_a_category_edit_by_the_app_role_reaches_the_search_index(p2_client, sql) -> None:
+    """⑺ PATCH `category` → 그 분류 낱말로 **검색 색인이 잡는다**.
+
+    검색 색인은 `search_vector` 이고 그 칸은 트리거가 유지한다. 질의어는 분류 낱말
+    하나이고, 그 낱말은 데이터셋의 이름·요약 어디에도 없다 — 그러니 잡히면 그것은
+    **미러를 거친 것**이다.
+    """
+    client = p2_client()
+    dataset_id = _created(client, category="수문 인자", dataType="위성자료")
+
+    def _hits(term: str) -> bool:
+        rows = sql("SELECT 1 FROM d3_dataset_autometa"
+                   " WHERE dataset_id = :d"
+                   "   AND search_vector @@ websearch_to_tsquery('simple', :q)",
+                   {"d": dataset_id, "q": term})
+        return len(rows) == 1
+
+    assert _hits("수문"), "등록 시점의 분류가 색인에 없다 — 미러가 처음부터 안 섰다."
+    assert not _hits("환경"), "이 시험의 전제는 새 분류 낱말이 아직 없다는 것이다."
+
+    r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                     json={"category": "환경 인자"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+
+    mirror = sql("SELECT category_mirror FROM d3_dataset_autometa WHERE dataset_id = :d",
+                 {"d": dataset_id})[0]["category_mirror"]
+    assert mirror == "환경 인자", "앱 롤의 수정이 미러에 닿지 않았다."
+    assert _hits("환경"), "미러는 바뀌었는데 색인이 안 따라왔다."
+    assert not _hits("수문"), "옛 분류 낱말이 색인에 남았다."

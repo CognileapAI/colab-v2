@@ -636,7 +636,9 @@ def create_dataset(request: Request, body: dict = None,
     d3_catalog.apply_autometa(
         db, dataset_id=dataset_id, format=held.format, crs=held.crs, grid=held.grid,
         period_start=held.period_start, period_end=held.period_end,
-        variables=held.variables, total_size_bytes=held.byte_size_total)
+        # ⛔ `held.variables` 는 넘기지 않는다 — `autometa.variables` 를 쓰는 것은
+        #    `0019` 의 트리거 하나뿐이다(PRD-16 「트리거만 쓴다」 · advisor ② ①).
+        total_size_bytes=held.byte_size_total)
 
     # ② 파일 — **업로드가 발급한 `fileId` 그대로.** 저장 키는 **데이터셋의 자리**다
     #    (`_relocate` 주석 — 승계하면 등록된 데이터셋 전체가 렌더 404 다).
