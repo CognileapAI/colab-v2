@@ -284,3 +284,51 @@ describe('〈194〉 반전 — 자동 보정 문면이 남아 있지 않다', ()
     expect(rendered).toHaveLength(0);
   });
 });
+
+// ═══ ㈔ ⟨advisor ② · Fix 1⟩ 파일을 빼면 연결 카드·충돌도 함께 내린다 ═══
+describe('PRD-09 · 파일 제거는 연결 상태까지 내린다', () => {
+  it('연결·충돌이 있는 상태에서 파일을 빼고 다시 올리면 카드 0 · 충돌 칩 0 이다', async () => {
+    const { sources } = fakes();
+    await openLineage(sources, 'Lv2');
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    await click(screen.getByTestId(`lin-pick-${LV2}`));
+    await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
+    // 자기 Lv 를 내려 사후 충돌을 만든다 — 지우는 것이 아니라 칩이 선다.
+    await click(screen.getByRole('button', { name: /^①/ }));
+    await change(screen.getByTestId('reg-level'), 'Lv1');
+    await click(screen.getByRole('button', { name: /^③/ }));
+    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
+    expect(screen.getByTestId('lin-need-check')).toBeTruthy();
+
+    // 파일을 빼고 같은 파일을 다시 올린다 — 고지 문면이 「입력하던 내용은 사라져요」다.
+    await click(screen.getByLabelText(/빼기$/));
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [makeFile()] } });
+    await act(async () => {});
+    await screen.findByTestId('up-files');
+    await click(await screen.findByTestId('reg-open'));
+    await screen.findByTestId('reg-steps');
+    await click(screen.getByRole('button', { name: /^③/ }));
+    await screen.findByTestId('lin-step');
+    expect(screen.queryAllByTestId('lin-card')).toHaveLength(0);
+    expect(screen.queryByTestId('lin-need-check')).toBeNull();
+    expect(screen.queryByTestId('lin-conflict-note')).toBeNull();
+  });
+});
+
+// ═══ ㈕ ⟨advisor ② · Fix 3⟩ 미확인 연결 카드도 「손댐」이다 (PRD-14) ═══
+describe('PRD-14 되묻기 — 확인 전 카드도 센다', () => {
+  it('연결 카드를 만들고 확인하지 않은 채 Esc 를 누르면 닫기 확인이 뜬다', async () => {
+    const { sources } = fakes();
+    // 자기 Lv 는 기본값 그대로 둔다 — 세는 것이 카드 하나뿐임을 분명히 한다.
+    await openLineage(sources, 'Lv2');
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    await click(screen.getByTestId(`lin-pick-${LV2}`));
+    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
+    // 확인(`lin-confirm`)을 누르지 않는다 — 승격된 카드는 언마운트로 사라지지 않으므로 셀 수 있다.
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await act(async () => {});
+    expect(screen.getByTestId('upload-close-confirm')).toBeTruthy();
+  });
+});

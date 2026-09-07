@@ -429,7 +429,10 @@ export function UploadModal(props: {
     level !== DEFAULT_PROCESSING_LEVEL ||
     // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
     accessState !== null ||
-    lineageParents.length > 0;
+    lineageParents.length > 0 ||
+    // ⭑ ⟨advisor ② · Fix 3⟩ **확인 전 연결 카드도 사람이 고른 것이다**(PRD-14 「입력한 값
+    //   하나라도」). 카드 상태 승격 전에는 언마운트로 소실돼 셀 수 없었고, 지금은 남는다.
+    lineageCards.length > 0;
 
   const onLineageProgress = useCallback(
     (p: { confirmed: number; total: number }) => setLineage(p),
@@ -533,6 +536,11 @@ export function UploadModal(props: {
     setProjects([]);
     setLineage(null);
     setLineageParents([]);
+    // ⭑ ⟨advisor ② · Fix 1⟩ 승격된 연결 카드와 충돌 계수도 함께 내린다. 카드 상태가 ③ 에서
+    //   이 모달로 올라오면서 파일과 함께 언마운트되던 수명이 없어졌다 — 지우지 않으면
+    //   파일을 다시 올린 사람에게 지운 파일의 연결과 `확인 필요` 칩이 그대로 보인다.
+    setLineageCards([]);
+    setLineageConflicts(0);
     setTransfer(null);
   }
 
