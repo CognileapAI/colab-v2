@@ -207,6 +207,21 @@ def is_unknown(session: Session, dataset_id: Ulid) -> bool:
         {"id": str(dataset_id)}).first() is not None
 
 
+def unknown_dataset_ids(session: Session, dataset_ids: list[Ulid]) -> set[str]:
+    """⭑ **⟨PRD-27 · WU-B8⟩ 선언한 데이터셋 식별자를 한 번에 읽는다** — 판정 ⑶ 의 입력.
+
+    ⚠ **`is_unknown` 을 목록에서 반복하지 않는다.** 계보 상태는 카탈로그 한 행마다 계산되고,
+    그 자리에서 한 건씩 물으면 행 수만큼 질의가 열린다(N+1). 연구실 경계는 RLS 가 이미
+    걸었으므로 여기에 `lab_id` 조건을 다시 적지 않는다 — 목록 질의와 같은 규율이다.
+    """
+    if not dataset_ids:
+        return set()
+    rows = session.execute(
+        text("SELECT dataset_id FROM d4_lineage_unknown WHERE dataset_id = ANY(:ids)"),
+        {"ids": [str(i) for i in dataset_ids]}).scalars().all()
+    return {str(r) for r in rows}
+
+
 def edges_of(session: Session, dataset_id: Ulid) -> list[dict]:
     """이 데이터셋이 자식이거나 부모인 관계 전부. 그래프 조립은 app 이 한다."""
     return [dict(r) for r in

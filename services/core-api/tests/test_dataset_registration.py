@@ -94,10 +94,17 @@ def test_lineage_parents_and_project_ids_come_in_one_request(p2_client, sql) -> 
 
 
 def test_registering_without_parents_is_recorded_as_unknown_not_as_a_guess(p2_client) -> None:
-    """비어 있으면 **`기록 없음`으로 등록된다** — 등록을 막지 않고, 부모를 지어내지도 않는다."""
+    """비어 있어도 **등록을 막지 않고, 부모를 지어내지도 않는다.**
+
+    ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 그때의 계보 상태는 `확인 필요` 다.**
+    ／ 종전 단언 = `기록 없음` — 부모가 0건이면 서버가 **자동으로** `d4_lineage_unknown` 을
+    붙이던 때의 값이다. 그 자동 호출이 걷혀 「모른다고 **선언**했다」와 「아직 안 골랐다」가
+    갈렸고, 후자가 이 자리다(판정 ⑹). `기록 없음` 쪽은
+    `test_lineage_unknown.py::test_no_parents_checked_is_no_record` 가 잰다.
+    """
     client = p2_client()
     detail = register(p2_client_alias := client, make_upload(client)).json()
-    assert detail["lineageState"] == "기록 없음"
+    assert detail["lineageState"] == "확인 필요"
     assert detail["processingLevel"] == 0
     assert p2_client_alias is client
 

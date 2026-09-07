@@ -228,6 +228,8 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
     cores = {c.dataset_id: c for c in d3_catalog.list_dataset_cores(db)}
     periods = d3_catalog.periods_of(db, ids)
     summaries = d4_lineage.LineageSummaryAdapter(db).summaries(ids)
+    # ⭑ **⟨PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다** (카탈로그 목록과 같은 규율).
+    unknown = d4_lineage.unknown_dataset_ids(db, ids)
     access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
 
     out: dict[str, dict] = {}
@@ -247,7 +249,8 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
             "fileCount": core.file_count,
             "processingLevel": d3_catalog.processing_level(summary),
             "period": _data_period(periods.get(dataset_id)),
-            "lineageState": d3_catalog.lineage_state(core, summary),
+            "lineageState": d3_catalog.lineage_state(
+                core, summary, unknown_declared=dataset_id in unknown),
             "verified": False if acc is None else acc.verified,
             "accessState": "열림" if acc is None else acc.access_state,
             # 닫히는 것은 본체뿐이다 (P-34). 화면은 이 값으로 잠김 자리를 그린다.

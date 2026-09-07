@@ -391,6 +391,11 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           #    `DatasetCreate` 에 두 열쇠를 여는 **같은 회차**에 서버가
                           #    받는다 — 미루면 열쇠는 있는데 400 이다(§5-㉰-4).
                           "sourceUrl", "sourceDownloadedOn",
+                          # ⭑ ⟨20차 해제 · PRD-27 · WU-B8⟩ 「가공 전 데이터를 못 찾았다」는
+                          #    **사람의 선언**. `d4_lineage_unknown` 에 쓰는 값이라 D3 저장
+                          #    경로(`_HUMAN_METADATA_FIELDS`)에는 넣지 않는다 — `accessState`
+                          #    와 같은 자리다.
+                          "lineageUnknown",
                           # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위. **D2 의 값이라
                           #    `_HUMAN_METADATA_FIELDS`(D3 저장 경로)에는 넣지 않는다.**
                           "accessState"}
@@ -652,7 +657,14 @@ def create_dataset(request: Request, body: dict = None,
             carries_lat=f.carries_lat, carries_lon=f.carries_lon,
             relative_path=f.relative_path)
 
-    # ③ 계보 — **사람이 확인한 것만** 온다. 비어 있으면 `기록 없음` 이고 등록은 막지 않는다.
+    # ③ 계보 — **사람이 확인한 것만** 온다. 비어 있으면 **`확인 필요`** 이고 등록은 막지 않는다.
+    # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 「모른다」는 사람이 선언한다.**
+    #    ⛔ **「모른다」와 「이것이 부모다」를 한 요청에 담을 수 없다** — 400 이다. 화면도 확정
+    #       부모가 1건 이상이면 체크박스를 비활성으로 두지만, **서버 400 이 최종 방어선**이다.
+    lineage_unknown = bool(body.get("lineageUnknown"))
+    if lineage_unknown and parents:
+        raise errors.bad_request(
+            "가공 전 데이터를 이어 붙인 채로 「기록 없음」을 선언할 수 없다.")
     if parents:
         for p in parents:
             if not d3_catalog.dataset_exists(db, p["parent_id"]):
@@ -672,7 +684,13 @@ def create_dataset(request: Request, body: dict = None,
             except d4_lineage.LineageCycle as e:
                 raise errors.conflict(str(e)) from None
         d3_catalog.confirm_lineage(db, dataset_id)
-    else:
+    elif lineage_unknown:
+        # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 사람이 선언했을 때만 표시를 붙인다.**
+        #    ／ 종전 = `else:` — 부모가 0건이면 **무조건** 붙였다. 그래서 「모른다고 선언했다」와
+        #    「아직 안 골랐다」가 `기록 없음` 한 값으로 접혔고, `확인 필요` 는 부모가 있을 때만
+        #    나오는 값이었다. 자동 호출을 걷어야 판정식 ⑹ 이 `확인 필요` 를 낼 자리가 생긴다.
+        #    ⛔ **기존 `기록 없음` 행은 건드리지 않는다** — 자동으로 붙은 것이라 어느 쪽이었는지
+        #       사후에 알 방법이 없다(PRD-27 「기존 데이터」).
         d4_lineage.mark_unknown(db, dataset_id=dataset_id, actor_id=subject.account_id)
 
     # ③-b ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위를 `d2_dataset_access` 에 쓴다.**

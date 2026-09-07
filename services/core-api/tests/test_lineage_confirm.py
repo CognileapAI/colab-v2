@@ -176,9 +176,15 @@ def test_add_lineage_parent_always_records_a_manual_origin(p2_client, sql) -> No
 
 
 def test_adding_a_parent_clears_the_unknown_mark(p2_client, sql) -> None:
-    """`기록 없음` 표시는 관계가 붙으면 사라진다 (`DataModel §4.2`)."""
+    """`기록 없음` 표시는 관계가 붙으면 사라진다 (`DataModel §4.2`).
+
+    ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 표시를 `lineageUnknown=True` 로 **선언해서** 세운다.**
+    ／ 종전에는 부모 0건 등록만으로 서버가 자동으로 붙여 줬다. 그 자동 호출이 걷혔으므로
+    선언 없이는 세울 행이 없다 — **재는 것(관계가 붙으면 표시가 사라진다)은 무변**이고
+    표시를 만드는 방법만 바뀌었다.
+    """
     client = p2_client()
-    child = _new_dataset(client, "기록 없음 시험")
+    child = _new_dataset(client, "기록 없음 시험", lineageUnknown=True)
     assert sql("SELECT count(*) AS n FROM d4_lineage_unknown WHERE dataset_id = :d",
                {"d": child})[0]["n"] == 1
     graph = _add_parent(client, child, DS_A1).json()

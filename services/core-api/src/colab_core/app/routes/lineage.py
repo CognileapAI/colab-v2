@@ -117,11 +117,15 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
 
     permissions = d2_access.permissions_of(
         db, subject.account_id, d2_access.role_of(db, subject.account_id))
+    unknown_parents = d4_lineage.is_unknown(db, dataset_id)
     return {
         "datasetId": datasetId,
-        "lineageState": d3_catalog.lineage_state(core, summaries.get(datasetId)),
+        # ⭑ **⟨PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력은 아래 `unknownParents` 와 **같은 사실**이다 —
+        #    한 번 재서 둘이 나눠 쓴다. 두 번 물으면 한 응답 안에서 갈릴 자리가 생긴다.
+        "lineageState": d3_catalog.lineage_state(
+            core, summaries.get(datasetId), unknown_declared=unknown_parents),
         "lineageConfirmedAt": _iso(core.lineage_confirmed_at),
-        "unknownParents": d4_lineage.is_unknown(db, dataset_id),
+        "unknownParents": unknown_parents,
         "nodes": nodes,
         "edges": [
             {

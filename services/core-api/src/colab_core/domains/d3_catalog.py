@@ -1161,24 +1161,48 @@ def level_view(core: DatasetCore, summary: LineageSummary | None) -> dict:
     }
 
 
-def lineage_state(core: DatasetCore, summary: LineageSummary | None) -> str:
+def lineage_state(core: DatasetCore, summary: LineageSummary | None,
+                  *, unknown_declared: bool = False) -> str:
     """계보 상태 4값을 계산한다. 저장 컬럼이 없는 것이 이 계산의 강제다 (DATAMODEL-BASELINE §3-③).
 
-    판정 순서 —
-      1) 부모가 있고 `마지막 수정 > 계보 확정일`(또는 확정일 없음) → `확인 필요`
-         (DATAMODEL-BASELINE §3-③ 이 못 박은 유일한 판정식)
-      2) 부모가 있고 확정일이 최신 → `확정`
-      3) 부모가 없고 원천 표기가 있다 → `원천`
-      4) 그 밖 → `기록 없음`
+    ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 6항 판정식 — 위에서부터 먼저 맞는 항이 이긴다.**
+
+      1) 부모 ≥1 ∧ (확정일 없음 ∨ 마지막 수정 > 확정일)  → `확인 필요`
+         (DATAMODEL-BASELINE §3-③ 이 못 박은 유일한 판정식 — **무변**)
+      2) 부모 ≥1 ∧ 확정일이 최신                          → `확정`   (**무변**)
+      3) 부모 0  ∧ `d4_lineage_unknown` 에 행이 있다      → `기록 없음`
+      4) 부모 0  ∧ **사람이 고른 가공 단계 = `Lv0`**       → `원천`
+      5) 부모 0  ∧ `source_label` 있음                    → `원천`
+      6) 그 밖 (부모 0 ∧ 선언 없음 ∧ 사람 Lv ≥ `Lv1`)     → `확인 필요`
+
+    ／ 종전 판정식은 ③ 이 `source_label`, ④ 가 「그 밖 → `기록 없음`」이었다. **`확인 필요` 가
+      부모 있을 때만 나오는 값이었고**, 「모른다고 선언했다」와 「아직 안 골랐다」가 한 값으로
+      접혔다 — 자동 `mark_unknown` 이 부모 0건 전부에 행을 붙였기 때문이다(PRD-27).
+
+    ⭑ **⑷ 가 Lv0 제외 조항이다.** Lv0 은 부모가 없는 것이 정상이라(rev1 축자 「원시 데이터라
+      부모가 없어요」) 확인을 요구할 대상이 아니다. 이 조항이 없으면 **Lv0 전부가 `확인 필요`** 다.
+
+    ⛔ **⑷ 는 사람이 고른 Lv(`processing_level_user_set`)만 본다 — 파생 Lv 를 쓰지 않는다.**
+      `processing_level()` 은 부모가 없으면 `0` 을 돌려주므로, 파생값으로 판정하면 부모 0건
+      행이 **전부** Lv0 이 되어 조항 자체가 무의미해진다. 사람 Lv 가 NULL 인 행은 ⑷ 를 지나
+      ⑸·⑹ 으로 간다.
+
+    :param unknown_declared: `d4_lineage_unknown` 에 이 데이터셋의 행이 있는가(판정 ⑶).
+        ⚠ **이 함수는 DB 를 보지 않는다** — 부르는 쪽이 자기 질의로 한 번에 재서 넘긴다
+        (목록 경로가 N+1 질의를 열지 않게 한다).
     """
     if summary is not None and summary.parent_count > 0:
         confirmed = core.lineage_confirmed_at
         if confirmed is None or core.last_modified_at > confirmed:
             return "확인 필요"
         return "확정"
+    if unknown_declared:
+        return "기록 없음"
+    if user_set_level(core) == 0:
+        return "원천"
     if core.source_label:
         return "원천"
-    return "기록 없음"
+    return "확인 필요"
 
 
 #: 사건이 채울 수 있는 칸 ↔ `HeldAutoMetadata` 의 값 이름. **정본은 사건 계약이다**

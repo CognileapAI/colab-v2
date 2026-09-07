@@ -103,6 +103,9 @@ def _compose(db: Session) -> list[dict]:
     cores = d3_catalog.list_dataset_cores(db)
     ids = [Ulid(c.dataset_id) for c in cores]
     lineage = d4_lineage.LineageSummaryAdapter(db).summaries(ids)
+    # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다.**
+    #    행마다 `is_unknown` 을 부르면 목록 길이만큼 질의가 열린다(N+1).
+    unknown = d4_lineage.unknown_dataset_ids(db, ids)
     access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
     links = d6_project.ProjectLinkAdapter(db).projects_of(ids)
 
@@ -133,7 +136,8 @@ def _compose(db: Session) -> list[dict]:
             },
             "uploader": {"accountId": core.uploader_id, "name": core.uploader_name},
             "lastModifiedAt": _iso(core.last_modified_at),
-            "lineageState": d3_catalog.lineage_state(core, summary),
+            "lineageState": d3_catalog.lineage_state(
+                core, summary, unknown_declared=core.dataset_id in unknown),
             "lineageConfirmedAt": _iso(core.lineage_confirmed_at),
             "verified": False if acc is None else acc.verified,
             "accessState": "열림" if acc is None else acc.access_state,
@@ -1234,6 +1238,8 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     access = access_adapter.dataset_access(ids).get(datasetId)
     verification = access_adapter.verification(ids).get(datasetId)
     summary = d4_lineage.LineageSummaryAdapter(db).summaries(ids).get(datasetId)
+    # ⭑ **⟨PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력.** 상세는 한 건이라 집합의 크기가 0 이거나 1 이다.
+    unknown_declared = datasetId in d4_lineage.unknown_dataset_ids(db, ids)
     body_accessible = False if access is None else access.body_accessible
 
     role = d2_access.role_of(db, subject.account_id)
@@ -1338,7 +1344,8 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         # ⭑ **⟨PRD-10 · WU-B5⟩ 표시용이라 사람 값이 우선이다.** 파생값·불일치는
         # `basicInfo` 두 열쇠가 싣는다(`DatasetDetail` 은 `additionalProperties: false`).
         "processingLevel": d3_catalog.level_view(core, summary)["processingLevel"],
-        "lineageState": d3_catalog.lineage_state(core, summary),
+        "lineageState": d3_catalog.lineage_state(
+            core, summary, unknown_declared=unknown_declared),
         "verification": {
             "verified": verified,
             "approver": None if verification is None
