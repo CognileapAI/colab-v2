@@ -31,6 +31,7 @@ import type { DetailSource, FileSource } from '../components/detail/types';
 import { LineageSection } from '../components/lineage/LineageSection';
 import { defaultLineageSource } from '../components/lineage/graphSource';
 import { useDatasetLineage } from '../components/lineage/useDatasetLineage';
+import { levelOf } from '../components/lineage/types';
 import type { LineageGraphSource } from '../components/lineage/graphTypes';
 import type { ParentCandidateSource } from '../components/lineage/LineageFixModal';
 import type { LineageEditSource } from '../components/lineage/lineageEditSource';
@@ -296,6 +297,11 @@ export function DatasetDetailPage(
           {lineage.status === 'ready' ? (
             <LineageSection
               graph={lineage.graph}
+              // ⭑ ⟨advisor ② F1⟩ 서버 400 이 재는 기준은 **사람이 고른 Lv**다
+              // (`levelOf(processingLevelUserSet)` — `DetailHeader.tsx` 와 같은 함수). 그래프
+              // 노드의 파생 Lv(부모 없으면 0)를 여기서 넘기지 않는다 — 두 기준이 갈리면
+              // 화면이 못 고르게 막는 후보와 서버가 받는 후보가 어긋난다.
+              selfLv={levelOf(shown.basicInfo?.processingLevelUserSet)}
               lastModifiedAt={shown.lastModifiedAt}
               openToken={lineageFixToken}
               {...(props.lineageCandidateSource

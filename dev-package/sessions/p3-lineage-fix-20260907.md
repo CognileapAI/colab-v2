@@ -56,7 +56,16 @@ frontend-fixture-reach  green — 진입점 도달 151개, 금지 모듈 0건
 
 ## 5. 자기 표시
 
-- **`이 데이터` 노드의 `processingLevel` 을 기준 Lv 로 삼았다.** 등록 ③ 은 사람이 ① 에서 고른 값(`processingLevelUserSet`)을 쓰지만, 상세에는 그 화면 상태가 없고 서버가 그래프에 실어 준 값이 유일한 기준이다. 그래서 두 화면의 **규칙은 같고 기준값의 출처만 다르다** — 서버 400 이 최종 방어선인 것도 그대로다.
+- **기준값 출처 차이 = 결함 · F1 로 정정(사람 값 우선).** 종전엔 「이 데이터」 노드의 `processingLevel`(서버 파생값 · 부모 없으면 0 · 상한 Lv2)을 기준 Lv 로 삼았으나, 서버의 400 판정은 `user_set_level()`(사람이 ①에서 고른 값)을 쓴다 — 두 기준이 갈리면 화면이 정상 후보까지 막거나(파생<사람) 서버가 거절할 후보를 화면이 허용(파생>사람)했다. advisor gate ② F1 로 정정.
+
+### advisor ② 반영 (F1·F2)
+
+- **F1** — `DatasetDetailPage.tsx` 가 `selfLv={levelOf(shown.basicInfo?.processingLevelUserSet)}`(`DetailHeader.tsx` 와 같은 `levelOf`)를 `LineageSection` → `LineageFixModal` 로 내려보낸다. `LineageSection.tsx` 의 노드 기반 계산은 **사람 값이 없을 때만** 쓰는 대비로 물러났다(잠긴 상세처럼 `basicInfo` 가 없는 경우).
+  - RED(선실측, `frontend/test/lineage-fix-20260907.test.tsx`): `그래프 노드는 Lv0(기록 없음 실값)이어도 사람 값 Lv2 가 기준이라 Lv1·Lv2 후보가 열린다` — `expected true to be false`(고정 전 `PARENT`(Lv1) 후보가 막혀 있었다).
+  - GREEN: 같은 시험 통과, ⑶ 기존 초과 후보 시험도 그대로 green.
+- **F2** — `lineageEditSource.ts` 의 `addParent` 가 관례(`approvalSource.ts` `fail`·`datasetPreviewSource.ts` `messageOf`)를 따라 `r.error` 의 `message` 를 그대로 올린다(빈 봉투일 때만 고정 문구 「계보를 고치지 못했어요.」).
+  - RED(선실측): `apiLineageEditSource().addParent 는 서버 봉투의 message 를 그대로 올린다` — `Received: '계보를 고치지 못했어요.'` (서버 문구가 삼켜졌다).
+  - GREEN: 같은 시험 통과 · UI 단 `addParent` 거절 시 `lin-fix-error` 축자 노출·모달 유지 시험도 통과(기존 오류 경로에 서버 문구 축자 검증 추가).
 - **아래쪽 `lin-act` 진입점을 걷고 헤더 하나로 모았다.** 라운드 파일 축자가 「구역 헤더에」이고, 둘을 두면 같은 모달로 가는 버튼이 두 개가 된다. 종전 버튼의 `data-fills-in="E-04 검색 창 미연결"` 표식도 함께 사라졌다(연결됐으므로).
 - **모달은 부모 추가 하나만 연다** — `removeLineageParent`·`confirmLineage` 는 수용 기준 밖이라 화면 진입을 만들지 않았다(경로는 서버에 이미 있다). `.lin-fix` CSS 는 폭·두 줄뿐이고 전역 모달 이름(`members.css` 정본)을 다시 정의하지 않았다.
 

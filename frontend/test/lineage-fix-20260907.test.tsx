@@ -15,7 +15,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
-import { fixtureDetailSource } from '../src/components/detail/fixture';
+import { FIXTURE_DETAILS, fixtureDetailSource } from '../src/components/detail/fixture';
 import { SessionProvider } from '../src/permission/session';
 import type { CurrentAccount, PermissionSwitchSet } from '../src/api/client';
 import { parentOverReason } from '../src/components/lineage/ParentPicker';
@@ -25,7 +25,8 @@ import type {
   LineageGraph,
   LineageGraphSource,
 } from '../src/components/lineage/graphTypes';
-import type { LineageEditSource } from '../src/components/lineage/lineageEditSource';
+import { apiLineageEditSource, type LineageEditSource } from '../src/components/lineage/lineageEditSource';
+import type { DatasetDetail, DetailSource } from '../src/components/detail/types';
 import type { DatasetRow, LineageSource } from '../src/components/lineage/types';
 
 const SELF = '01JYZ9K7WQ3N8V4M2X6C5B0AA3'; // nakdong_DEM_10m.tif — 기록 없음 장면
@@ -34,15 +35,18 @@ const OVER = '01JYZ9K7WQ3N8V4M2X6C5B0AA7'; // Lv3 — 자기(Lv2)보다 높다
 const CHILD = '01JYZ9K7WQ3N8V4M2X6C5B0AA8'; // 파생
 const 호랑이 = { accountId: '01JYZ9K7WQ3N8V4M2X6C5B0U01', name: '호랑이' };
 
-/** 자기 Lv2 · 부모 0건 · 파생 1건. 기록 없음 선언이 붙어 있다. */
-function emptyGraph(canEdit: boolean): LineageGraph {
+/** 자기 Lv2(그래프 파생값) · 부모 0건 · 파생 1건. 기록 없음 선언이 붙어 있다.
+ *  `selfProcessingLevel` 로 그래프 노드가 들고 있는 **파생** Lv 를 바꿔 잴 수 있다 —
+ *  F1 은 이 값이 아니라 사람이 고른 `processingLevelUserSet` 이 기준이어야 함을 잠근다. */
+function emptyGraph(canEdit: boolean, selfProcessingLevel = 2): LineageGraph {
   return {
     datasetId: SELF,
     lineageState: '기록 없음',
     lineageConfirmedAt: null,
     unknownParents: true,
     nodes: [
-      { kind: '이 데이터', datasetId: SELF, name: 'nakdong_DEM_10m.tif', processingLevel: 2,
+      { kind: '이 데이터', datasetId: SELF, name: 'nakdong_DEM_10m.tif',
+        processingLevel: selfProcessingLevel,
         verified: false, navigable: false, bodyAccessible: true, deletedAt: null },
     ],
     edges: [],
@@ -127,6 +131,7 @@ const ACCOUNT: CurrentAccount = {
 function renderDetail(
   graph: LineageGraph,
   editSource?: LineageEditSource,
+  detailSource?: DetailSource,
 ) {
   return render(
     <MemoryRouter initialEntries={[`/datasets/${SELF}`]}>
@@ -136,7 +141,7 @@ function renderDetail(
           path="/datasets/:datasetId"
           element={
             <DatasetDetailPage
-              source={fixtureDetailSource()}
+              source={detailSource ?? fixtureDetailSource()}
               lineageSource={only(graph)}
               lineageCandidateSource={candidateSource()}
               {...(editSource ? { lineageEditSource: editSource } : {})}
@@ -307,5 +312,67 @@ describe('PRD-22 — 편집 화면은 계보 표를 그리지 않고 이 모달�
     expect(within(form).queryByTestId('lin-graph')).toBeNull();
     fireEvent.click(within(form).getByTestId('edit-lineage-fix'));
     expect(await screen.findByTestId('lin-fix-modal')).toBeTruthy();
+  });
+});
+
+describe('⑺ ⟨advisor ② F1⟩ 기준 Lv — 그래프 파생값이 아니라 사람이 고른 값', () => {
+  it('그래프 노드는 Lv0(기록 없음 실값)이어도 사람 값 Lv2 가 기준이라 Lv1·Lv2 후보가 열린다', async () => {
+    const details: Record<string, DatasetDetail> = {
+      ...FIXTURE_DETAILS,
+      [SELF]: {
+        ...(FIXTURE_DETAILS[SELF] as DatasetDetail),
+        basicInfo: {
+          ...(FIXTURE_DETAILS[SELF] as DatasetDetail).basicInfo!,
+          processingLevelUserSet: 'Lv2',
+        },
+      },
+    };
+    // 그래프의 「이 데이터」 노드는 서버 파생값(부모 없음 → Lv0)을 그대로 들고 온다 —
+    // 이 값이 기준이면 Lv1 후보(`PARENT`)까지 막혀야 정상이다(버그 재현).
+    renderDetail(emptyGraph(true, 0), undefined, fixtureDetailSource(details));
+    const modal = await (async () => {
+      fireEvent.click(await screen.findByTestId('lin-edit'));
+      return screen.findByTestId('lin-fix-modal');
+    })();
+    await within(modal).findByTestId('lin-fix-picker');
+    const parentBtn = within(modal).getByTestId(`lin-pick-${PARENT}`) as HTMLButtonElement;
+    const overBtn = within(modal).getByTestId(`lin-pick-${OVER}`) as HTMLButtonElement;
+    // 기준 = 사람 값 Lv2 → Lv1(`PARENT`) 은 고를 수 있고 Lv3(`OVER`) 만 막힌다
+    expect(parentBtn.disabled).toBe(false);
+    expect(overBtn.disabled).toBe(true);
+    expect(within(modal).getByTestId(`lin-over-${OVER}`).textContent).toBe(parentOverReason(2));
+  });
+});
+
+describe('⑻ ⟨advisor ② F2⟩ 서버 400 문구 — 봉투 message 를 그대로 올린다', () => {
+  it('addParent 거절 시 서버 문구가 `lin-fix-error` 에 축자로 뜨고 모달은 열린 채 남는다', async () => {
+    renderDetail(emptyGraph(true), { async addParent() { throw new Error('넘어간 Lv 예요.'); } });
+    const modal = await (async () => {
+      fireEvent.click(await screen.findByTestId('lin-edit'));
+      return screen.findByTestId('lin-fix-modal');
+    })();
+    await within(modal).findByTestId('lin-fix-picker');
+    fireEvent.click(within(modal).getByTestId(`lin-pick-${PARENT}`));
+    fireEvent.click(within(modal).getByTestId('lin-fix-save'));
+    expect((await within(modal).findByTestId('lin-fix-error')).textContent).toBe('넘어간 Lv 예요.');
+    expect(screen.queryByTestId('lin-fix-modal')).toBeTruthy();
+  });
+
+  it('`apiLineageEditSource().addParent` 는 서버 봉투의 `message` 를 그대로 올린다', async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: '이 부모는 자기보다 높은 단계예요.' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        }),
+    ) as typeof fetch;
+    try {
+      await expect(
+        apiLineageEditSource().addParent(SELF, { parentDatasetId: PARENT, parentRole: '주입력' }),
+      ).rejects.toThrow('이 부모는 자기보다 높은 단계예요.');
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 });

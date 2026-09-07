@@ -205,6 +205,14 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
 
 export function LineageSection(props: {
   graph: LineageGraph;
+  /**
+   * ⭑ **⟨advisor ② F1⟩ 모달 기준 Lv — 사람이 고른 값**(`levelOf(processingLevelUserSet)`,
+   * `DatasetDetailPage.tsx` 가 넘긴다). 서버 400 도 이 값을 기준으로 판정한다(`lineage.py
+   * user_set_level()`) — 그래프 노드의 파생 Lv 와는 다른 값일 수 있다. `null`/미전달이면
+   * **그때만** 그래프의 「이 데이터」 노드 파생 Lv 로 물러난다(잠긴 상세처럼 `basicInfo` 가
+   * 없을 때의 대비다 — 화면을 완전히 막지 않는다).
+   */
+  selfLv?: number | null;
   /** 상세가 이미 읽어 온 값. 계보 응답에는 없다 — 「이후 수정됨」은 이 둘을 나란히 놓는 표시다 (§2). */
   lastModifiedAt?: string | null;
   /**
@@ -231,7 +239,9 @@ export function LineageSection(props: {
     // 최초 렌더(0)로는 열지 않는다 — 편집 화면이 눌렀을 때만 오른다.
     if (openToken > 0 && canEdit) setFixing(true);
   }, [openToken, canEdit]);
-  const selfLv = g.nodes.find((n) => n.kind === '이 데이터')?.processingLevel ?? null;
+  // 기준 = 사람이 고른 Lv(props.selfLv). 안 왔을 때만 그래프 파생값으로 물러난다.
+  const selfLv =
+    props.selfLv ?? g.nodes.find((n) => n.kind === '이 데이터')?.processingLevel ?? null;
   // 출처는 **한 번만 만든다** — 매 렌더마다 새 객체를 넘기면 모달의 후보 조회가 끝없이 돈다.
   const candidateSource = useMemo(
     () => props.candidateSource ?? apiLineageSource(),

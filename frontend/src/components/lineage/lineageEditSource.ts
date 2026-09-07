@@ -14,6 +14,16 @@ import { api } from '../../api/client';
 import type { LineageGraph } from './graphTypes';
 import type { ParentRole } from './types';
 
+/** `ErrorEnvelope` 의 `message` 만 읽는다 — 화면이 상태 코드로 문구를 다시 짓지 않는다
+ *  (`approvalSource.ts` `fail` · `datasetPreviewSource.ts` `messageOf` 와 같은 관례). */
+function messageOf(body: unknown, fallback: string): string {
+  if (typeof body === 'object' && body !== null) {
+    const m = (body as { message?: unknown }).message;
+    if (typeof m === 'string' && m.length > 0) return m;
+  }
+  return fallback;
+}
+
 export interface AddParentBody {
   parentDatasetId: string;
   parentRole: ParentRole;
@@ -38,7 +48,7 @@ export function apiLineageEditSource(): LineageEditSource {
           ...(body.method ? { method: body.method } : {}),
         },
       });
-      if (!r.data) throw new Error('계보를 고치지 못했어요.');
+      if (!r.data) throw new Error(messageOf(r.error, '계보를 고치지 못했어요.'));
       return r.data as LineageGraph;
     },
   };
