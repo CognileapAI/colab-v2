@@ -447,7 +447,10 @@ function StepMeta(props: {
             기간은 **두 칸이 한 값**이라(`DataPeriod`) 한 칸 안에서 시작~끝을 잇는다.
             ⛔ 2+1 로 갈라 두 줄로 쓰지 않는다 — 마지막 줄이 반쯤 빈다(rev1 축자). */}
         <div className="form-3" data-testid="reg-short-row">
-          <div className="form-row">
+          {/* ⭑ ⟨advisor ② · F1⟩ `daterange` = rev2 `.daterange{position:relative}` —
+              달력 팝오버(`.dr-pop`)가 이 칸을 기준으로 뜬다. 이 클래스가 없으면
+              `position:absolute` 가 화면 전체를 기준으로 잡는다. */}
+          <div className="form-row daterange">
             <label htmlFor="reg-period-granularity">{periodLabel} (선택)</label>
             {/* ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위 셀렉트가 기간 입력 **앞**에 선다.**
                 고른 단위까지만 칸이 열린다 — `분` 이면 연·월·일·시·분 다섯이 Start/End 각각.

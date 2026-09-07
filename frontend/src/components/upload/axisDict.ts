@@ -169,6 +169,15 @@ export const PROCESSING_LEVELS: readonly AxisValue[] = [
 ] as const;
 
 /** 기본 선택값 — rev1 `<option selected>` ＋ Policy `VAL-004`·`VAL-004b` 축자. */
+/**
+ * ⭑ ⟨advisor ② · F3⟩ 분류·유형이 빈 채 등록을 누른 자리의 문면.
+ *
+ * **서버 문면 그대로다** — `core-api` `catalog.py` `MISSING_CATEGORY_MESSAGE`.
+ * 화면이 먼저 막고 서버가 뒤에서 다시 막는데 두 문장이 다르면, 같은 거절이 사람에게
+ * 두 얼굴로 보인다. 새로 지어내지 않고 그 한 문장을 여기 한 자리에 둔다.
+ */
+export const MISSING_CATEGORY_MESSAGE = '분류를 골라 주세요';
+
 export const DEFAULT_CATEGORY = '기상·기후 인자';
 export const DEFAULT_DATA_TYPE = '재분석자료';
 export const DEFAULT_PROCESSING_LEVEL = 'Lv2';

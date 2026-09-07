@@ -13,7 +13,7 @@
 | 15값 전부 정의·예시 한 줄 · 빈 값 0 | 충족 | `axisDict.ts` 15항목 · 같은 파일 ⑦⑪ |
 | 유형 6값에 `참고 · 특이사항` | 충족 | `reg-datatype-note` · 같은 파일 ⑧⑧b |
 | 설명란에 분류·단계별 힌트 | 충족 | `reg-summary-hint` · 같은 파일 ⑨⑩ |
-| 모달 재오픈이 늘 ① | 충족 | `UploadModal.tsx` 마운트 effect `setStep(1)` · 같은 파일 ⑥ |
+| 모달 재오픈이 늘 ① | 충족 | 리셋은 `UploadEntry.tsx:71` 언마운트가 한다(`{open && <UploadModal …/>}`) — 다시 열면 `useState(1)` 초깃값이 ① 이다 · 시험 ⑥ ／ ⟨정정 2026-09-07 · advisor ② F5⟩ 종전 표기 ~~`UploadModal.tsx` 마운트 effect `setStep(1)`~~ 은 무동작 코드였고 지웠다 |
 | WU-A3 골격 재작성 없음 | 충족 | diff — `RegisterArea.tsx` 는 단계 카드 추가·이동뿐, `StepMeta`(옛 `StepOne`) 본문·`StepTwo` 본문 무변 |
 | `DatasetCreate.required` 승격 ＋ 서버 400 | 충족 | `contracts/seams/fe-core.yaml` `required: [uploadId, name, summary, category, dataType]` · `services/core-api/src/colab_core/app/routes/ingestion.py` `MISSING_CATEGORY_MESSAGE` |
 | 마이그레이션 0 · 스키마 0 | 충족 | `db/` 변경 0건 |
@@ -142,3 +142,86 @@ error	[request-property-became-required] at /w/rev/contracts/seams/fe-core.yaml
 1. WU-B4 병합 뒤 ㈓ 재검증(헤더 칩 3갈래 ＋ 공개 범위 설명 동기).
 2. 원장 〈N〉 에 §6 축자를 근거로 기재(병합 직전 번호 재실측).
 3. 판정 요청 2건 — ㈎ `requestClose` 해석 · 기간 인라인 칸 철거 여부.
+
+
+---
+
+## 11. advisor ② 반영 (2026-09-07)
+
+검토문 = advisor ② WU-B3(`06e0240..7a65a55`) §Fixes. 필수 4건(F1~F4) ＋ F5·F6·F7 반영.
+계약 0 · 스키마 0 · 마이그레이션 0 · 서버 0.
+
+### 11-1. RED 선실측 → GREEN
+
+RED 실측 = 구현 전 `npx vitest run` 3파일 — `Tests 5 failed | 59 passed (64)`.
+
+| 항목 | 시험 | RED 축자 한 줄 |
+|---|---|---|
+| F2 오버레이 Esc | `test/register-steps-20260907.test.tsx` 「Esc 로 확장보기만 닫히고 업로드 모달은 남는다」 | `AssertionError: expected <div …(3)><div …(5)>…(2)</div></div> to be null` |
+| F2 팝오버 Esc | 같은 파일 「Esc 로 팝오버만 닫히고 업로드 모달은 남는다」 | `AssertionError: expected null to be '기간' // Object.is equality` |
+| F3 최종 게이트 | 같은 파일 「분류를 비운 채 `데이터셋 만들기` 를 누르면 ① 로 가고 서버와 같은 문면이 선다」 | `AssertionError: expected [ { …(10) } ] to have a length of +0 but got 1` |
+| F3 dirty-check | `test/close-guard-20260905.test.tsx` 「분류·유형·가공 단계 중 하나라도 기본값에서 바꾸면 묻는다」 | `TestingLibraryElementError: Unable to find an element by: [data-testid="upload-close-confirm"]` |
+| F4 한 값 표시 | `test/interval-period-20260906.test.tsx` 「시작과 끝이 같으면 한 값으로 적고 간격 괄호는 그대로다 (PRD-40)」 | `AssertionError: expected '2020-06-01 00:00 ~ 00:00 (10분)' to be '2020-06-01 00:00 (10분)'` |
+
+GREEN = 같은 3파일 `Tests 64 passed (64)`.
+
+⚠ **F6 은 RED 가 아니었다.** 이어올리기 배너 → 장면2 도달 시험(㈑ 문면 3종 중 미검증 1종)은
+작성 시점에 이미 green 이라 **오라클이 아니라 도달 범위 계측**이다. 그대로 적는다.
+F3 dirty-check 의 「기본값 그대로면 묻지 않는다」도 같은 성질(대조군)이다.
+
+### 11-2. F1 — 신설 클래스 CSS 이식 출처 대조
+
+원천 = `40 COLAB-기획/10_적용전/업로드_계보_260905_rev2_이태헌.html` `<style>`(행 210~299).
+자리 = `frontend/src/components/upload/upload.css` 말미.
+
+| 클래스 | 출처 | 판정 |
+|---|---|---|
+| `.fieldnote` · `.axis-def`(＋`b`·`.ad-more`) | rev2 `:210`·`:212~214` | **축자** |
+| `.daterange` | rev2 `:220` | **축자** (팝오버의 기준 상자 — `RegisterArea` 기간 `form-row` 에 클래스 1개 추가) |
+| `.dr-pop` | rev2 `:240~242` | **각색** — `display:none` ＋ `.dr-pop.open{display:block}` 2줄만 걷었다(React 가 열렸을 때만 그린다). 위치·z-index·배경·테두리·그림자·폭은 축자 |
+| `.dr-times`(＋`.form-row`) · `.dr-nav`(＋`button`·`:hover`·`.sp`) · `.dr-cals` · `.dr-cal` · `.dr-cal-h` · `.dr-foot` · `.dr-units`(＋`.du-l`) · `.dr-useg`(＋`button`·`+button`·`:hover`·`.on`) · `@media(max-width:760px)` 2줄 | rev2 `:244~255`·`:275~276`·`:281~289`·`:297~300` | **축자** |
+| `.dr-cal-g` | rev2 `.dr-grid`(`:256`) | **각색(이름만)** — 규칙 동일(7열 격자) |
+| `.dr-cal-d`(＋`:hover`) | rev2 `.dr-d`(`:260~262`)·`.dr-d:hover`(`:265`) | **각색(이름만)** |
+| `.dr-cal-pad` | rev2 `.dr-d.out`(`:263`) | **각색(이름만 ＋ 높이 32px 명시)** — 버튼이 아닌 `span` 이라 높이를 스스로 갖는다 |
+| `.dr-parts`(＋`.partrow` 5줄) | rev2 무존재 | **신설** — 같은 파일 `.up-body .partrow` 규칙의 팝오버 사본 |
+| `.axis-note` | rev2 무존재(어조 문구가 rev2 에서는 정의 줄 안) | **신설** — `.axis-def` 와 같은 회색 한 줄 |
+| `.pvx-back` · `.pvx` · `.pvx-b` · `.pvx-img` · `.pvx-open` | rev2 `#pvExpandBack` 인라인 `style`(`:1430~1435`) | **각색** — 인라인 값(`z-index:250` · `max-width:min(96vw,1100px)` · `height:min(70vh,640px)` · `image-rendering:pixelated`)을 클래스로 옮겼다. rev2 에 `.pvx*` 규칙은 없다 |
+
+계수 = 지시 15 클래스 전건 정의(＋`.daterange`·`.dr-cal-h`·`.dr-cals`·`.pvx-b` 4건 동반).
+축자 계열 21 규칙 · 각색 6 · 신설 2.
+
+토큰 — `shell/tokens.css`(공유)를 건드리지 않고 `upload.css` `:root` 에 13개를 이었다
+(`--color-border-control` · `--color-primary-50`·`-100` · `--color-text-on-primary` ·
+`--color-text-subtle` · `--color-danger-600` · `--font-data` · `--leading-body-sm` ·
+`--radius-lg` · `--shadow-lg` · `--space-1`·`--space-2`). 값은 rev2 `:root` 축자.
+
+### 11-3. F2 — Esc
+
+- `escLayer.ts` 신설(F7 선택분 수행) — `ESC_LAYER_ATTR` ＋ `useEscLayer`.
+  `UploadModal → PreviewPanel → PreviewExpandOverlay → UploadModal` 순환 import 를 끊는다.
+  `UploadModal` 은 종전 import 경로 보존을 위해 그대로 다시 내보낸다(`export { ESC_LAYER_ATTR } from './escLayer'`).
+- `PreviewExpandOverlay` — Esc → `props.requestClose()`(배경·× 와 **같은 한 곳**).
+- `PeriodCalendarPopover` — 루트에 `{[ESC_LAYER_ATTR]: '기간'}` ＋ Esc → `props.onClose()`.
+- 아래 층은 `UploadModal:570` 의 `[data-esc-layer]` 검사로 스스로 물러난다 — 전파를 끊지 않는다.
+
+### 11-4. F3 · F4 · F5
+
+- `hasHumanInput` 에 세 축 비교 3항 추가(`UploadModal.tsx`). 기본값 그대로면 세지 않는다.
+- `submit()` 최종 게이트 — `!category || !dataType` → `setStep(1)` ＋ `reg-category` 초점 ＋
+  `registerError` = `MISSING_CATEGORY_MESSAGE`. 문면은 **서버 `catalog.py:654` 축자 재사용**이고
+  자리는 `axisDict.ts` 한 곳이다(FE 에 그 문자열이 없어 새로 세웠다 — `toastCopy.ts` 는 PRD-43
+  21행 전용이라 넣지 않았다).
+- `detail/format.ts` — `formatPeriod`·`formatPeriodByUnit` 첫 분기 `start === end` → 한 값.
+  괄호 병기(`formatPeriodWithInterval`)는 무변. D-07 「같은 해 `월` 생략」 규칙 무변(기존 시험 green).
+- F5 — 마운트 전용 `useEffect(…, [])` 삭제 ＋ 주석을 「리셋은 `UploadEntry:71` 언마운트가 한다」로
+  정정. §1 표 진술도 같은 값으로 고쳤다(위 정정 표기).
+
+### 11-5. F7 — 라운드 파일 errata
+
+`dev-package/prd/rounds/R-B-3-frontend.md` — 원문 삭제 없이 2행 병기.
+⑴ 머리 ⛔ 아래 `required` 승격 1건 · ⑵ ㈎ `requestClose` 해석(자기 닫기 함수 한 곳 · 업로드 모달
+`requestClose` 미호출).
+
+### 11-6. 게이트
+
+배출처 `dev-package/reports/R-B/p3-register-steps` · 마지막 커밋 위 재실행.

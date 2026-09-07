@@ -8,9 +8,12 @@
 //    층 목록을 모달에 적어 두 벌로 만들지 않는다.
 //  - **mousedown 과 click 을 가른다**(A9R `downOnBackdrop` 패턴) — 안쪽에서 눌러 배경에서 뗀
 //    드래그(텍스트·지도 끌기)는 click.target 이 배경이 되어 확인 없이 닫히던 자리다.
+//  - **Esc 는 이 층이 스스로 받는다**(⟨advisor ② · F2⟩) — 배경·×·Esc 세 갈래가 같은
+//    `requestClose` 한 곳으로 모인다. 표식이 떠 있어 업로드 모달은 물러나 있으므로,
+//    이 층이 Esc 를 안 받으면 Esc 가 아무 일도 하지 않는다(A9R 규율의 빠진 갈래였다).
 //  - **내부 클릭은 무동작이다.**
-import { useRef, type ReactNode } from 'react';
-import { ESC_LAYER_ATTR } from './UploadModal';
+import { useCallback, useRef, type ReactNode } from 'react';
+import { ESC_LAYER_ATTR, useEscLayer } from './escLayer';
 
 export function PreviewExpandOverlay(props: {
   title: string;
@@ -19,6 +22,8 @@ export function PreviewExpandOverlay(props: {
   children: ReactNode;
 }) {
   const downOnBackdrop = useRef(false);
+  const { requestClose } = props;
+  useEscLayer(useCallback(() => requestClose(), [requestClose]));
   return (
     <div
       className="modal-back pvx-back"

@@ -23,6 +23,13 @@ export const INTERVAL_MISSING_NOTICE = '관측 간격 미기재';
  */
 export function formatPeriod(p: DatasetBasicInfo['period']): string {
   if (!p) return EMPTY;
+  // ⭑ **⟨advisor ② · F4 · PRD-40⟩ 한 시점이면 한 값으로 적는다.**
+  // 종료를 비운 행은 저장이 `period_end = period_start` 다(`UploadModal.humanMetadata`).
+  // 그대로 범위 규칙에 태우면 `2020-06-01 00:00 ~ 00:00` 이 되어, 화면이 있지도 않은
+  // 「범위」를 말한다. 괄호 병기(`formatPeriodWithInterval`)는 이 값 뒤에 그대로 붙는다.
+  if (p.end && p.start === p.end) {
+    return p.granularity ? cut(p.start, p.granularity) : p.start.slice(0, 10);
+  }
   // ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위가 있으면 그 자리까지 적는다.**
   // `null` 이면 아래 종전 규칙 그대로다 — 기존 전 행이 그 상태이고 **재선택이 없다.**
   if (p.granularity) return formatPeriodByUnit(p.start, p.end ?? null, p.granularity);
@@ -51,6 +58,10 @@ function cut(iso: string, unit: string): string {
 }
 
 function formatPeriodByUnit(start: string, end: string | null, unit: string): string {
+  // ⭑ ⟨advisor ② · F4⟩ 한 시점 규칙은 「같은 날」 생략보다 **먼저** 걸린다 — 순서가 뒤집히면
+  //   `2020-06-01 00:00 ~ 00:00` 이 다시 나온다. `formatPeriod` 가 이미 걸렀지만, 이 함수를
+  //   직접 부르는 자리가 생겨도 같은 값을 내도록 여기서도 첫 분기다.
+  if (end && start === end) return cut(start, unit);
   const s = cut(start, unit);
   if (!end) return `${s} ~ 진행 중`;
   const e = cut(end, unit);

@@ -4,6 +4,7 @@
 > 이 파일은 `dev-package/prd/rounds/R-B.md` §6 의 분할표대로 잘라 낸 것이다.
 > 라운드 의도 = `dev-package/intent/2026-09-07-r-b.md` (**미승인 초안** — 판정 입력으로 쓰지 않는다).
 > ⛔ **이 파일의 두 WU 는 마이그레이션도 계약 개정도 하지 않는다.**
+> ⟨errata 2026-09-07 · advisor ②⟩ WU-B3 는 B1 advisor ② 이관으로 `DatasetCreate.required` 승격 1건을 가진다(20차 범위). 마이그레이션은 0 그대로다.
 
 ---
 
@@ -126,7 +127,7 @@
   - Given 가공 단계 `Lv0`, When ② 단계 설명 칸 확인, Then 힌트에 `출처(Source URL), 다운로드 일자` 가 없다.
   - Given 15개 값 전부, When 각각 선택, Then 부가 문구가 빈 값이 하나도 없다.
 - **수용 기준 — R-A′ 이관 6건** (출처 `dev-package/sessions/R-A2-ROUND-20260907.md` §5)
-  - ㈎ **확장보기 오버레이** — Given 확장보기가 열려 있음, When 배경 클릭, Then 닫힌다. **닫기는 `requestClose`(`UploadModal.tsx:509`)를 경유한다** — ⛔ 직접 close 금지. Given 확장보기가 열려 있는 동안, When DOM 확인, Then 그 층에 `data-esc-layer="확장보기"` 표식이 붙어 있고(`ESC_LAYER_ATTR` 정의 `:53`) 업로드 모달의 Esc 처리(`:528`)가 삼켜지지 않는다. ⚠ **전용 확장보기 컴포넌트가 아직 없다 — 이 WU 가 만든다.**
+  - ㈎ **확장보기 오버레이** — Given 확장보기가 열려 있음, When 배경 클릭, Then 닫힌다. **닫기는 `requestClose`(`UploadModal.tsx:509`)를 경유한다** — ⛔ 직접 close 금지. ⟨errata 2026-09-07 · advisor ②⟩ 「`requestClose` 경유」는 **한 함수 경유·직접 close 금지 규율**로 읽는다 — 상위 층은 **자기 닫기 함수 한 곳**으로 닫고, **업로드 모달의 `requestClose` 를 호출하지 않는다**(Esc 우선순위 · rev2 1432행 × 가 `closePvExpand()` 이고 모달 닫기가 아니다). Given 확장보기가 열려 있는 동안, When DOM 확인, Then 그 층에 `data-esc-layer="확장보기"` 표식이 붙어 있고(`ESC_LAYER_ATTR` 정의 `:53`) 업로드 모달의 Esc 처리(`:528`)가 삼켜지지 않는다. ⚠ **전용 확장보기 컴포넌트가 아직 없다 — 이 WU 가 만든다.**
   - ㈏ **WU-A6 기간 달력 팝오버** — R-A′ 에서 이관됨(판정-2 무변 · 담는 WU 만 바뀜). Given 기간 입력, When 위젯 확인, Then 달력 팝오버이고 최소 단위(PRD-18)까지만 칸이 열린다.
   - ㈐ **등록 3단계 재편** — Given 현재 라벨 `RegisterArea.tsx:55-57`, When 변경 후 확인, Then 세 라벨이 `① 분류 · ② 메타데이터 입력 · ③ 연결` 이고 표시기로 어느 단계로나 이동하며 모달 재오픈이 늘 ① 이다. ⛔ **WU-A3 골격 재작성 금지 — 필드만 늘린다.**
   - ㈑ **모달 2장면 구조** — Given 파일 0개, When 모달 열기, Then 드롭존만 보이고 등록 폼·미리보기가 DOM 에 없다. Given 파일 1개, When 확인, Then 장면2 이고 좌측 미리보기 ＋ 우측 ① 분류다. Given 장면2, When 파일 배지 `×`, Then 장면1 로 돌아가고 입력값 초기화 고지가 뜬다. Given 장면2, When 확인, Then 2단 등록 게이트·이어올리기 배너·기준 격자 첨부 자리가 여전히 도달 가능하다.

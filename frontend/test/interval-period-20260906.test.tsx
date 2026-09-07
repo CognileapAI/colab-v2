@@ -301,6 +301,25 @@ describe('WU-A6 · PRD-35 — 기간 뒤 괄호는 한 곳에서 조립한다', 
     expect(formatPeriodWithInterval(period, null)).not.toContain('(');
   });
 
+  // ⭑ ⟨advisor ② · F4⟩ PRD-40 — 한 시점이면 종료를 비운다. 저장은 `end = start` 이므로
+  //   표시가 `2020-06-01 00:00 ~ 00:00` 이 되면 화면이 「범위」라고 거짓말한다.
+  it('시작과 끝이 같으면 한 값으로 적고 간격 괄호는 그대로다 (PRD-40)', () => {
+    const point = {
+      start: '2020-06-01T00:00:00Z',
+      end: '2020-06-01T00:00:00Z',
+      granularity: '분',
+    };
+    expect(formatPeriodWithInterval(point, { value: 10, unit: '분' })).toBe(
+      '2020-06-01 00:00 (10분)',
+    );
+    expect(formatPeriod(point)).toBe('2020-06-01 00:00');
+    expect(formatPeriod(point)).not.toContain('~');
+    // 최소 단위를 안 적은 행도 같다 — 날짜 한 값이다.
+    expect(
+      formatPeriod({ start: '2020-06-01T00:00:00Z', end: '2020-06-01T00:00:00Z' }),
+    ).toBe('2020-06-01');
+  });
+
   it('반쪽 간격도 괄호를 그리지 않는다 — 화면이 `10` 만 적지 않는다', () => {
     expect(formatInterval({ value: 10, unit: null })).toBeNull();
     expect(formatPeriodWithInterval(period, { value: 10, unit: null })).not.toContain('(');

@@ -209,6 +209,25 @@ describe('WU-A9 — 종료 확인은 사람이 입력한 값이 있을 때만 �
     expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
   });
 
+  // ⭑ ⟨advisor ② · F3⟩ 세 축은 **사람이 고를 수 있는 칸**이다. 기본값에서 바꾼 뒤
+  //   Esc·배경 클릭으로 닫으면 확인 없이 사라지던 자리(A9R F2 와 같은 증상).
+  it('세 축 기본값 그대로면 묻지 않는다', async () => {
+    await openRegisterWithFile();
+    await click(screen.getByTestId('upload-close'));
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
+  });
+
+  it('분류·유형·가공 단계 중 하나라도 기본값에서 바꾸면 묻는다', async () => {
+    await openRegisterWithFile();
+    // ① 분류로 되돌아가 축을 바꾼다 (기본값 `기상·기후 인자` → 다른 값).
+    await click(screen.getByRole('button', { name: /^① / }));
+    await change(screen.getByTestId('reg-category'), '수문 인자');
+    await click(screen.getByTestId('upload-close'));
+    expect(await screen.findByTestId('upload-close-confirm')).toBeInTheDocument();
+    expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
+  });
+
   it('계보 부모를 1건 확정하면 묻는다', async () => {
     let ctx: LineageStepContext | null = null;
     await openRegisterWithFile({

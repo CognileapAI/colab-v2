@@ -7,7 +7,11 @@
 //    하루 민다. 달력 격자는 요일 계산에만 `Date.UTC` 를 쓰고, 값은 문자열 자리로만 옮긴다.
 //  - **적용을 누를 때만 바깥 값이 바뀐다.** 팝오버 안의 조작은 되돌릴 수 있어야 한다.
 //  - ⛔ 종전 인라인 칸(`최소 단위` 셀렉트 ＋ 자리 칸)을 걷지 않는다 — 이 팝오버는 **더해진 길**이다.
-import { useState } from 'react';
+//  - **Esc 는 이 층이 스스로 받는다**(⟨advisor ② · F2⟩). 열려 있는 동안
+//    `data-esc-layer="기간"` 표식을 달아 업로드 모달이 Esc 를 먹지 않게 하고, 그 Esc 로
+//    팝오버 하나만 닫는다 — 표식만 달고 Esc 를 안 받으면 Esc 가 무동작이 된다.
+import { useCallback, useState } from 'react';
+import { ESC_LAYER_ATTR, useEscLayer } from './escLayer';
 import { GRANULARITIES, PARTS, partsFor, type PeriodParts } from './periodParts';
 
 /** 그 달의 날 수 — 윤년 포함. 문자열 자리 계산이라 시간대가 끼지 않는다. */
@@ -83,6 +87,8 @@ export function PeriodCalendarPopover(props: {
   const [start, setStart] = useState<PeriodParts>({ ...props.startParts });
   const [end, setEnd] = useState<PeriodParts>({ ...props.endParts });
   const [shown, setShown] = useState(() => initialMonth(props.startParts));
+  const { onClose } = props;
+  useEscLayer(useCallback(() => onClose(), [onClose]));
 
   const open = partsFor(unit);
   const openKeys = new Set(open.map((p) => p.key));
@@ -112,7 +118,13 @@ export function PeriodCalendarPopover(props: {
   }
 
   return (
-    <div className="dr-pop" role="dialog" aria-label="기간 고르기" data-testid="reg-period-pop">
+    <div
+      className="dr-pop"
+      role="dialog"
+      aria-label="기간 고르기"
+      data-testid="reg-period-pop"
+      {...{ [ESC_LAYER_ATTR]: '기간' }}
+    >
       {/* 최소 단위 — 이 데이터의 시간 해상도를 먼저 고르고 아래 칸이 그에 맞춰 바뀐다 */}
       <div className="dr-units">
         <span className="du-l">최소 단위</span>

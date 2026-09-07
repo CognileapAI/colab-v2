@@ -13,6 +13,7 @@ import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { ESC_LAYER_ATTR } from '../src/components/upload/UploadModal';
 import { PERIOD_SINGLE_POINT_HINT, STEP_LABELS } from '../src/components/upload/RegisterArea';
+import { MISSING_CATEGORY_MESSAGE } from '../src/components/upload/axisDict';
 import {
   CATEGORIES,
   DATA_TYPES,
@@ -415,6 +416,20 @@ describe('㈎ 확장보기 오버레이', () => {
     expect(screen.queryByTestId('pv-expand-overlay')).toBeNull();
   });
 
+  // ⭑ ⟨advisor ② · F2⟩ A9R 규율의 세 갈래(배경 · × · Esc)에서 Esc 가 빠져 있었다.
+  it('Esc 로 확장보기만 닫히고 업로드 모달은 남는다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropOne();
+    await click(await screen.findByTestId('pv-expand'));
+    await screen.findByTestId('pv-expand-overlay');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await act(async () => {});
+    expect(screen.queryByTestId('pv-expand-overlay')).toBeNull();
+    expect(screen.queryByTestId('upload-modal')).not.toBeNull();
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
+  });
+
   it('확장보기가 떠 있는 동안 Esc 가 업로드 모달을 닫지 않는다', async () => {
     const { sources } = fakes();
     await openModal(sources);
@@ -448,6 +463,21 @@ describe('㈏ 기간 달력 팝오버 (PRD-18)', () => {
     expect(
       within(screen.getByTestId('reg-period-pop')).getByTestId('reg-period-time-start'),
     ).toBeTruthy();
+  });
+
+  // ⭑ ⟨advisor ② · F2⟩ 팝오버도 Esc 층이다 — 표식이 없으면 Esc 가 업로드 모달까지 내려간다.
+  it('Esc 로 팝오버만 닫히고 업로드 모달은 남는다', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    await click(screen.getByTestId('reg-period-open'));
+    const pop = await screen.findByTestId('reg-period-pop');
+    expect(pop.getAttribute(ESC_LAYER_ATTR)).toBe('기간');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await act(async () => {});
+    expect(screen.queryByTestId('reg-period-pop')).toBeNull();
+    expect(screen.queryByTestId('upload-modal')).not.toBeNull();
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
   });
 
   it('달력에서 날을 골라 적용하면 기간 값이 선다', async () => {
@@ -487,6 +517,37 @@ describe('㈑ 모달 2장면', () => {
     expect(kinds.map((o) => (o as HTMLOptionElement).value)).toContain('기준 격자 파일');
   });
 
+  // ⭑ ⟨advisor ② · F6⟩ 라운드 ㈑ 문면 3종 중 미검증분 — 이어올리기 배너에서 장면2 도달.
+  it('이어올리기 배너에서 파일을 다시 놓으면 장면2 로 간다', async () => {
+    const { sources } = fakes();
+    (sources.upload as unknown as { incomplete: () => Promise<unknown[]> }).incomplete =
+      async () => [
+        {
+          uploadId: UPLOAD_ID,
+          sourceLabel: 'nakdong_precip_2025_Lv2.nc',
+          uploadedFiles: 1,
+          plannedFiles: 2,
+          uploadedBytes: 100,
+          plannedBytes: 349_000,
+          createdAt: '2026-09-07T00:00:00Z',
+          expiresAt: '2026-09-14T00:00:00Z',
+        },
+      ];
+    await openModal(sources);
+    // 장면1 — 배너만 서 있고 등록 폼·미리보기는 아직 DOM 에 없다.
+    const banner = await screen.findByTestId('up-incomplete');
+    expect(within(banner).getByTestId(`up-resume-${UPLOAD_ID}`)).toBeTruthy();
+    expect(screen.queryByTestId('up-split')).toBeNull();
+    await click(screen.getByTestId(`up-resume-${UPLOAD_ID}`));
+    expect(screen.getByTestId('up-resume-hint')).toBeTruthy();
+    // 안내대로 같은 파일을 다시 놓으면 장면2 다.
+    await dropOne();
+    expect(screen.getByTestId('up-split')).toBeTruthy();
+    expect(screen.getByTestId('up-split-preview')).toBeTruthy();
+    await click(await screen.findByTestId('reg-open'));
+    expect(await screen.findByTestId('reg-s1')).toBeTruthy();
+  });
+
   it('파일 배지 `×` 를 누르면 장면1 로 돌아가고 초기화 고지가 뜬다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
@@ -519,5 +580,25 @@ describe('㈒ PRD-40 종료 비움', () => {
     const period = calls.registered[0]!.period as { start: string; end: string | null };
     expect(period.start).toBe('2020-06-01T00:00:00Z');
     expect(period.end).toBe('2020-06-01T00:00:00Z');
+  });
+});
+
+// ═══ ⭑ ⟨advisor ② · F3⟩ 최종 게이트 — 분류·유형이 비면 ① 로 되돌린다 ══════════
+describe('advisor ② F3 — 등록 최종 게이트', () => {
+  it('분류를 비운 채 `데이터셋 만들기` 를 누르면 ① 로 가고 서버와 같은 문면이 선다', async () => {
+    const { sources, calls } = fakes();
+    await openRegister(sources);
+    await change(screen.getByTestId('reg-category'), '');
+    await click(stepBtn('②'));
+    await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    // 서버까지 가지 않는다 — 화면이 먼저 판정한다.
+    expect(calls.registered).toHaveLength(0);
+    // 적을 칸이 있는 단계로 데려간다 (이름·설명 경로와 같은 규율).
+    expect(screen.getByTestId('reg-s1')).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByTestId('reg-category'));
+    expect(screen.getByTestId('reg-area').textContent).toContain(MISSING_CATEGORY_MESSAGE);
+    expect(MISSING_CATEGORY_MESSAGE).toBe('분류를 골라 주세요');
   });
 });

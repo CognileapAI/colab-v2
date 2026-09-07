@@ -24,6 +24,7 @@ import {
   uploadCloseMessage,
 } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
+import { ESC_LAYER_ATTR } from './escLayer';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
@@ -31,6 +32,7 @@ import {
   DEFAULT_CATEGORY,
   DEFAULT_DATA_TYPE,
   DEFAULT_PROCESSING_LEVEL,
+  MISSING_CATEGORY_MESSAGE,
 } from './axisDict';
 import {
   emptyVariableRow,
@@ -59,8 +61,12 @@ import {
 /**
  * 닫기 확인보다 **위에 있는 층**이 스스로 붙이는 표식 (PRD-39 ⑭ · 확장보기 · 찾기 · 계보 수정).
  * 표식이 떠 있는 동안 업로드 모달은 Esc 를 처리하지 않는다.
+ *
+ * ⭑ ⟨advisor ② · F7⟩ **정의는 `escLayer.ts` 로 내렸다** — 위 층들이 이 파일을 import 하면
+ *   `UploadModal → PreviewPanel → PreviewExpandOverlay → UploadModal` 순환이 선다.
+ *   여기서는 종전 import 경로를 유지하려고 그대로 다시 내보내기만 한다.
  */
-export const ESC_LAYER_ATTR = 'data-esc-layer';
+export { ESC_LAYER_ATTR } from './escLayer';
 
 /** 업로드 상태 확인 간격. 이벤트 ②~⑦ 의 결과가 오기를 기다린다. */
 const STATUS_POLL_MS = 1000;
@@ -211,15 +217,18 @@ export function UploadModal(props: {
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
 
-  /**
+  /*
    * PRD-13 — **모달을 열 때마다 ① 로 되돌린다.** rev1 축자 = 「단계가 둘일 때는 안 드러났고
-   * 셋이 되며 나왔다」. 언마운트 여부에 기대지 않는다 — DOM 에 남는 구현으로 바뀌어도
-   * 이 자리가 같은 일을 한다.
+   * 셋이 되며 나왔다」.
+   *
+   * ⭑ ⟨advisor ② · F5⟩ **리셋은 `UploadEntry:71` 언마운트가 한다** — 그 자리가
+   * `{open && <UploadModal …/>}` 라 닫을 때 이 컴포넌트가 통째로 사라지고, 다시 열면
+   * `useState(1)`·`useState(false)` 초깃값이 그대로 ① 이다. 여기 있던 마운트 전용
+   * `useEffect(…, [])` 는 그 초깃값을 한 번 더 쓰는 무동작이었고, 「DOM 잔존 구현이어도
+   * 같다」를 증명하지도 못했다(그 구현에서는 마운트가 일어나지 않는다). 지운다 —
+   * 하는 일이 없는 코드가 규칙을 지키는 것처럼 읽히는 자리를 남기지 않는다.
+   * ⚠ 모달을 DOM 에 남기는 구현으로 바꾸려면 **그 커밋이** 이 리셋을 다시 세워야 한다.
    */
-  useEffect(() => {
-    setStep(1);
-    setRegisterOpen(false);
-  }, []);
 
   const attach = props.attach;
   /** 후주입 모드의 기본 파일 종류. 사람이 격자를 붙이러 왔으므로 격자가 기본이다. */
@@ -395,6 +404,11 @@ export function UploadModal(props: {
     //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
     //   확장자·용량)은 여전히 세지 않는다.
     thumbReplaced ||
+    // ⭑ ⟨advisor ② · F3⟩ 세 축도 **사람이 고르는 칸**이다. 기본값 그대로면 세지 않고
+    //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
+    category !== DEFAULT_CATEGORY ||
+    dataType !== DEFAULT_DATA_TYPE ||
+    level !== DEFAULT_PROCESSING_LEVEL ||
     lineageParents.length > 0;
 
   const onLineageProgress = useCallback(
@@ -685,6 +699,15 @@ export function UploadModal(props: {
       return;
     }
     setSummaryError(false);
+    // ⭑ ⟨advisor ② · F3⟩ 분류·유형은 계약 `DatasetCreate.required` 다 — 화면이 먼저 막는다.
+    //   막기만 하고 세워 두면 사람은 ③ 에서 ① 의 빈 칸을 못 본다. 이름·설명 경로와 같은
+    //   규율로 **적을 칸이 있는 단계로 데려가고 그 칸에 초점을 준다.**
+    if (!category || !dataType) {
+      setStep(1);
+      setRegisterError(MISSING_CATEGORY_MESSAGE);
+      window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
+      return;
+    }
     setRegisterError(null);
     try {
       const made = await upload.register({
