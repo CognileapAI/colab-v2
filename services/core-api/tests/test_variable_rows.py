@@ -178,3 +178,104 @@ def test_registration_does_not_write_autometa_variables(p2_client, sql) -> None:
     assert len(canon) > 0, "행 표가 비었다 — 이 시험의 대상이 없다(빈 집합 통과 금지)."
     assert list(mirrored) == canon, \
         "autometa.variables 가 행 표의 미러가 아니다 — M-10 트리거가 안 돈다(정본은 행 표다)."
+
+
+# ═══════ ⟨WU-C7 · R-B 판정 9⟩ **0행 읽기 퇴행을 걷었다** ══════════════════
+def test_zero_rows_read_as_an_empty_list_not_the_legacy_array(p2_client, sql) -> None:
+    """행이 0개면 **빈 목록**이다 — `autometa.variables` 로 퇴행하지 않는다.
+
+    종전에는 0행일 때 그 배열(파이프라인이 헤더에서 읽은 이름)을 읽었다. `0019` 가 그 배열을
+    **행 표의 사본**으로 바꾼 뒤로 그것은 다리가 아니라 되먹임이다 — 사람이 변수를 전부 지운
+    자리에서 화면이 **지운 변수를 계속 본다**.
+
+    ⚠ 재료를 만드는 순서가 규칙이다 — 행을 **먼저** 지우고(트리거가 배열을 `{}` 로 만든다)
+      그 뒤에 배열에 옛 값을 심는다. 순서를 뒤집으면 트리거가 심은 값을 곧바로 지운다.
+
+    red 만드는 법 — `_variables_payload` 에 `if rows:` 퇴행 분기를 되돌린다.
+    """
+    client = p2_client()
+    dataset_id = _register_with(client, variables=THREE).json()["datasetId"]
+    sql("DELETE FROM d3_dataset_variable WHERE dataset_id = :d", {"d": dataset_id})
+    sql("UPDATE d3_dataset_autometa SET variables = ARRAY['legacy_a', 'legacy_b']"
+        " WHERE dataset_id = :d", {"d": dataset_id})
+
+    got = client.get(f"{API_PREFIX}/datasets/{dataset_id}",
+                     headers=auth(TOKEN_RES)).json()["basicInfo"]["variables"]
+    assert got == [], f"0행인데 옛 배열로 퇴행했다: {got!r}"
+
+
+# ═══════ ⟨WU-C7 · 질의 36⟩ N행 쓰기에 트리거는 **1회** ═══════════════════
+#
+# 두 사실이 함께여야 「1회」다 —
+#   ㈎ DB 쪽: 미러 트리거가 **문장 단위**다 (`0022`).
+#   ㈏ 서버 쪽: `replace_variables` 가 INSERT 를 **한 문장**으로 보낸다.
+# 한쪽만 있으면 여전히 N 번 뛴다. 그래서 둘을 따로 잰다.
+def test_the_mirror_triggers_are_statement_level(sql) -> None:
+    """㈎ — 셋 다 `FOR EACH STATEMENT` 이고 전이 표를 갖는다.
+
+    red 만드는 법 — `0022` 를 downgrade 해 행 단위 한 벌로 되돌린다.
+    """
+    defs = sql("""
+        SELECT tgname, pg_get_triggerdef(oid) AS def
+          FROM pg_trigger
+         WHERE NOT tgisinternal AND tgrelid = 'd3_dataset_variable'::regclass
+         ORDER BY tgname
+    """)
+    assert [r["tgname"] for r in defs] == [
+        "d3_dataset_variable_mirror_del",
+        "d3_dataset_variable_mirror_ins",
+        "d3_dataset_variable_mirror_upd",
+    ], f"변수 표의 트리거가 {[r['tgname'] for r in defs]!r} 다."
+    for r in defs:
+        assert "FOR EACH STATEMENT" in r["def"], f"{r['tgname']} 가 행 단위다: {r['def']}"
+        assert "REFERENCING" in r["def"], f"{r['tgname']} 에 전이 표가 없다: {r['def']}"
+
+
+def test_replace_variables_sends_exactly_one_insert_statement() -> None:
+    """㈏ — 행이 몇이든 INSERT 는 **한 문장**이다 (문장 단위 트리거가 한 번 뛰는 조건).
+
+    DB 없이 잰다 — 이 사실은 「몇 문장을 보내는가」이지 「DB 가 무엇을 하는가」가 아니다.
+    red 만드는 법 — `replace_variables` 의 배열 바인딩을 행별 루프로 되돌린다.
+    """
+    from colab_core.domains import d3_catalog
+    from colab_core.kernel.ids import Ulid
+
+    class _Recorder:
+        def __init__(self) -> None:
+            self.statements: list[str] = []
+
+        def execute(self, statement, params=None):
+            self.statements.append(str(statement))
+            return None
+
+    rec = _Recorder()
+    d3_catalog.replace_variables(rec, Ulid(DS_A1), list(THREE))
+    inserts = [s for s in rec.statements if "INSERT INTO d3_dataset_variable" in s]
+    assert len(inserts) == 1, f"3행에 INSERT 문이 {len(inserts)}개다 (기대 1) — 트리거가 그만큼 뛴다."
+    deletes = [s for s in rec.statements if "DELETE FROM d3_dataset_variable" in s]
+    assert len(deletes) == 1, "지우기도 한 문장이어야 한다(delete-then-insert)."
+
+
+def test_zero_rows_send_no_insert_statement_at_all() -> None:
+    """행이 0개면 **빈 INSERT 를 보내지 않는다** — 지우기 한 문장으로 끝이다."""
+    from colab_core.domains import d3_catalog
+    from colab_core.kernel.ids import Ulid
+
+    seen: list[str] = []
+
+    class _Recorder:
+        def execute(self, statement, params=None):
+            seen.append(str(statement))
+            return None
+
+    d3_catalog.replace_variables(_Recorder(), Ulid(DS_A1), [])
+    assert not [s for s in seen if "INSERT INTO d3_dataset_variable" in s]
+
+
+def test_the_mirror_still_matches_the_rows_after_a_batched_write(p2_client, sql) -> None:
+    """회귀 — 한 문장으로 바꾼 뒤에도 미러가 **행 표와 정확히 같다**(순서까지)."""
+    client = p2_client()
+    dataset_id = _register_with(client, variables=THREE).json()["datasetId"]
+    mirrored = sql("SELECT variables FROM d3_dataset_autometa WHERE dataset_id = :d",
+                   {"d": dataset_id})[0]["variables"]
+    assert list(mirrored) == [v["name"] for v in THREE]

@@ -5,8 +5,12 @@
 (`업로드_계보_260905_rev2_이태헌.html` `makeQuickProj()` · `toast('…')`).
 
 ⚠ **빈 이름 문면은 이 회차가 고치지 않는다** (`Policy_프로젝트 §9` 가 정본이고 이긴다).
-⚠ **DB UNIQUE 제약을 이번에 걸지 않는다** — 응용 층 검사다. 기존에 겹치는 행은
-   지우거나 고치지 않고 **신규 생성만** 막는다(라운드 파일 §2-③ 축자).
+⭑ **⟨개정 2026-09-08 · WU-C7 · `0020`⟩ DB UNIQUE 제약이 섰다.**
+／ 종전 ~~「DB UNIQUE 제약을 이번에 걸지 않는다 — 응용 층 검사다」~~ — 그 자리가 **유일한
+   방어선**이라 그 함수를 안 타는 경로에서는 같은 이름이 그대로 들어갔다. 응용 400 은
+   **문면을 주는 앞문**이고 `d6_project_lab_name_unique` 가 **뒷문**이다.
+⚠ 기존에 겹치는 행은 여전히 지우거나 고치지 않는다 — 마이그레이션이 **멈추고 건수를 적는다**
+   (그쪽 오라클은 `db/platform/tests/0020-drift.sh` ㈑ 다).
 
 경계 시험이 **다른 연구실**을 쓴다 — 그쪽 행은 `p2_client` 정리(`LAB_A` 스코프)가
 닿지 않는다. 그래서 시험이 **자기가 만든 B 연구실 행을 스스로 지운다**(`deleteProject`
@@ -16,7 +20,9 @@
 """
 from __future__ import annotations
 
-from conftest import TOKEN_B, TOKEN_RES, auth
+import pytest
+from conftest import ACC_B_PROF, LAB_B, TOKEN_B, TOKEN_RES, auth
+from sqlalchemy.exc import IntegrityError
 
 from colab_core.app.main import API_PREFIX
 
@@ -71,3 +77,54 @@ def test_the_empty_name_message_is_untouched(p2_client) -> None:
     r = _create(client, "   ")
     assert r.status_code == 400, r.text
     assert r.json()["message"] != DUPLICATE_NAME_MESSAGE
+
+
+# ═══════ ⟨WU-C7 · `0020`⟩ 뒷문 — **앱을 우회해도 DB 가 거절한다** ══════════
+#: 응용 층을 한 번도 타지 않는 경로. `routes/project.py` 의 400 은 여기서 안 돈다.
+_RAW_INSERT = ("INSERT INTO d6_project (id, lab_id, type, name)"
+               " VALUES (:id, current_lab_id(), '국가과제', :name)")
+
+
+def test_the_db_refuses_a_duplicate_name_even_when_the_app_is_bypassed(p2_client, sql) -> None:
+    """수용 기준 축자 — 「같은 연구실 같은 이름 INSERT 가 **DB 에서** 거절(앱 우회)」.
+
+    red 만드는 법 — `ALTER TABLE d6_project DROP CONSTRAINT d6_project_lab_name_unique`.
+    """
+    client = p2_client()
+    name = "DB 뒷문 확인용 이름"
+    assert _create(client, name).status_code == 201
+    with pytest.raises(IntegrityError):
+        sql(_RAW_INSERT, {"id": "00000000000000000000000CX1", "name": name})
+
+
+def test_the_same_name_in_another_lab_still_passes_the_db(p2_client, sql) -> None:
+    """판정 축은 **연구실 경계 안**이다 — 제약이 `(lab_id, name)` 두 칸이라 남의 연구실은 통과한다.
+
+    ⚠ B 연구실 행은 `p2_client` 정리(`LAB_A` 스코프)가 닿지 않는다 — **스스로 지운다**.
+    """
+    client = p2_client()
+    name = "DB 뒷문 · 다른 연구실 동명"
+    assert _create(client, name).status_code == 201
+    made = "00000000000000000000000CX2"
+    try:
+        sql(_RAW_INSERT, {"id": made, "name": name},
+            account_id=ACC_B_PROF, lab_id=LAB_B)
+        left = sql("SELECT count(*) AS n FROM d6_project WHERE id = :id", {"id": made},
+                   account_id=ACC_B_PROF, lab_id=LAB_B)[0]["n"]
+        assert left == 1, "다른 연구실의 동명이 서지 않았다 — 제약이 연구실을 안 가른다."
+    finally:
+        sql("DELETE FROM d6_project WHERE id = :id", {"id": made},
+            account_id=ACC_B_PROF, lab_id=LAB_B)
+
+
+def test_the_constraint_is_two_columns_not_three(sql) -> None:
+    """⛔ 열쇠에 `type` 이 섞이면 유형이 다른 동명이 뒷문을 통과한다(PRD-42 수용 기준 2행)."""
+    cols = sql("""
+        SELECT string_agg(a.attname, ',' ORDER BY k.ord) AS cols
+          FROM pg_constraint c
+          JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord) ON true
+          JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+         WHERE c.conrelid = 'd6_project'::regclass
+           AND c.conname = 'd6_project_lab_name_unique'
+    """)[0]["cols"]
+    assert cols == "lab_id,name", f"제약 열쇠가 {cols!r} 다 (기대 lab_id,name)."

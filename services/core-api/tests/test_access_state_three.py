@@ -296,3 +296,60 @@ def test_approval_and_lowering_cannot_interleave(session_factory, sql) -> None:
                         WHERE g.dataset_id = a.dataset_id AND g.expires_at > now())
     """)
     assert rows[0]["n"] == 0, "승인 ∥ 내림이 겹쳐 잠김 ∧ 유효 grant 가 생겼다."
+
+
+# ═══════ ⟨WU-C7 · R-B 판정 19⟩ 내림 = **소유자 한정** (403) ═══════════════
+#
+# 종전 판정은 `업로드·편집` 스위치 보유자 **전원**이었다(WU-B4). 그 스위치는 연구실에 여럿이라
+# 「남이 올린 데이터를 남이 잠근다」가 그 규칙의 실제 결과였고, PRD 문면의 「소유자」보다 넓다.
+# ⚠ **좁히는 방향만** 이 관문을 탄다 — 넓히는 방향과 다른 필드는 종전 규칙 그대로다.
+def _patch_state(client, dataset_id, state, token):
+    from colab_core.app.main import API_PREFIX as _P
+    return client.patch(f"{_P}/datasets/{dataset_id}", json={"accessState": state},
+                        headers=auth(token))
+
+
+def test_a_non_owner_cannot_narrow_the_access_state(p2_client) -> None:
+    """소유자가 아니면 **403** 이다. `업로드·편집` 스위치를 가졌어도 그렇다.
+
+    red 만드는 법 — `catalog.require_owner_for_downgrade` 호출 한 줄을 지운다.
+    """
+    client = p2_client()
+    dataset_id = _register_with(client, accessState="열림").json()["datasetId"]
+    r = _patch_state(client, dataset_id, "잠김", TOKEN_PROF)   # 교수 = 스위치 보유 · 비소유자
+    assert r.status_code == 403, r.text
+    assert "소유자" in r.text
+
+
+def test_the_owner_can_narrow_the_access_state(p2_client, sql) -> None:
+    """소유자는 **200** 이고 값이 실제로 내려간다 — 관문이 정상 경로를 막지 않는다."""
+    client = p2_client()
+    dataset_id = _register_with(client, accessState="열림").json()["datasetId"]
+    r = _patch_state(client, dataset_id, "잠김", TOKEN_RES)     # 등록자 = 소유자
+    assert r.status_code == 200, r.text
+    assert _state_of(sql, dataset_id) == "잠김"
+
+
+def test_a_non_owner_can_still_widen_the_access_state(p2_client, sql) -> None:
+    """⛔ **넓히는 방향은 이 회차가 안 건드린다** — 종전 `업로드·편집` 규칙 그대로다.
+
+    관문을 방향 없이 걸면 「잠긴 데이터를 교수가 열어 준다」가 함께 죽는다.
+    """
+    client = p2_client()
+    dataset_id = _register_with(client, accessState="잠김").json()["datasetId"]
+    r = _patch_state(client, dataset_id, "열림", TOKEN_PROF)
+    assert r.status_code == 200, r.text
+    assert _state_of(sql, dataset_id) == "열림"
+
+
+def test_narrowing_through_the_lab_default_is_guarded_too(p2_client) -> None:
+    """`null` 은 「따로 정하지 않음」이라 뒤 상태가 **연구실 기본값**이다.
+
+    A 연구실 기본값은 `열림` 이라 `null` 은 내림이 아니다 — 그래서 여기서는 200 이다.
+    값만 보고 판정했다면 이 경로로 관문을 우회할 수 있다는 사실을 이 시험이 붙잡아 둔다
+    (기본값이 좁은 연구실의 오라클은 `db/platform/tests/0021-drift.sh` 픽스처가 잰다).
+    """
+    client = p2_client()
+    dataset_id = _register_with(client, accessState="잠김").json()["datasetId"]
+    r = _patch_state(client, dataset_id, None, TOKEN_PROF)
+    assert r.status_code == 200, r.text
