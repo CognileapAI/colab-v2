@@ -2826,13 +2826,13 @@ items:
 
   - id: WU-B7
     name: 목록 필터·상세 3행 ＋ M-10 색인 재정의 (PRD-05·06 ＋ R-A 이월 PRD-21)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "WU-B1 의 세 축이 서 있음", "WU-B2 의 d3_dataset_variable 이 서 있음(M-10 미러 트리거 대상)"]
     depends_on: ["WU-B1"]
     completion_def: "3축 필터가 AND 로 걸리고 각 축에 미지정 항목이 있어 재선택 대상을 찾을 수 있다 · 상세에 3행이 이 순서로 뜬다. 여기 뒤에 M-10 이 붙는다 — R-A 에서 이월된 PRD-21 「nc 로도 찾는다」가 이 자리에서 닫힌다"
-    evidence: null
+    evidence: "dev-package/sessions/p3-axis-filters-20260907.md"
     deadline: null
     note: "M-10 은 라운드에서 한 번만 돈다 — 색인 재정의(topic→category · format＋file_extension) ＋ d3_dataset_variable → autometa.variables 미러 트리거 신설을 한 마이그레이션에 담아 생성 컬럼 재계산·GIN 재생성을 1회로 끝낸다. 자리는 WU-B2 뒤. 라운드 종료 보고에 R-A 이월 1건이 닫혔음을 명시한다. 레인 p3-axis-filters"
     sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-05", "PRD-06", "PRD-21", "부록 B M-10"]
