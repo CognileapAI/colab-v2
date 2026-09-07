@@ -1152,7 +1152,8 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축이 늘었다** — 기본 선택값이 있어 늘 실린다.
     //   `category`·`dataType` 은 계약 `required` 이기도 하다(20차 ㉯).
     expect(Object.keys(body).sort()).toEqual(
-      ['category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
+      // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위도 늘 실린다 — 기본 선택값이 있다.
+      ['accessState', 'category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
        'sourceLabel', 'summary', 'topic', 'uploadId'].sort(),
     );
     expect(body.topic).toBeNull();

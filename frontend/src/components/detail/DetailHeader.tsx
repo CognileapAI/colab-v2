@@ -2,6 +2,7 @@
 // ① 제목 = 사람이 붙인 이름 ② 파일명(작게·고정폭) ③ 한 줄 요약 ④ 판단에 쓰는 칩만.
 // 소유자·올린 사람·포맷은 여기 두지 않는다 — 기본 정보가 라벨:값으로 맡는다 (§12 v1.6 중복 3건 제거).
 import { VerifiedBadge } from '../approval/VerifiedBadge';
+import { accessLabel } from '../common/accessState';
 import { VerificationAction } from '../approval/VerificationAction';
 import type { ApprovalSource } from '../approval/types';
 import type { DatasetDetail } from './types';
@@ -89,8 +90,18 @@ export function DetailHeader(props: {
           <span className={`lvl lvl-${Math.min(d.processingLevel, 3)}`}>
             Lv{d.processingLevel}
           </span>
-          {/* 잠긴 상세도 헤더 태그까지는 보인다 (`§3.3` · P-13) */}
-          {d.accessState === '잠김' ? <span className="chip chip--warning">잠김</span> : null}
+          {/* 잠긴 상세도 헤더 태그까지는 보인다 (`§3.3` · P-13)
+              ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 두 갈래 → 세 갈래.** 종전에는 `잠김` 하나만
+              칩이 됐고 나머지는 칩이 없었다. 3값에서는 **`열림` 이 아닌 두 값**이 각자
+              보여야 한다 — `지정한 사람만` 과 `나만 보기` 는 범위가 다르고, 둘을 한 칩으로
+              접으면 소유자가 자기 데이터의 상태를 헤더에서 못 가린다.
+              ⚠ `열림` 은 여전히 칩이 없다 — 기본 상태에 배지를 붙이면 모든 상세에 칩이 선다.
+              표기는 `common/accessState.ts` 한 자리에서 온다(등록 셀렉트와 같은 표). */}
+          {d.accessState !== '열림' ? (
+            <span className="chip chip--warning" data-testid="dh-access-chip">
+              {accessLabel(d.accessState)}
+            </span>
+          ) : null}
           {/* Verified 배지 — **표시 전용**이다 (`§8` · `Policy_승인_처리 §1.5`).
               ⭑ WU-P6 이 자리(`VerifiedBadgeSlot`)를 실물로 갈아 끼웠다. */}
           <VerifiedBadge verified={props.detail.verification.verified} />

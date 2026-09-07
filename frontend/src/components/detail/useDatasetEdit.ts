@@ -7,6 +7,7 @@
 // 다시 묻는 왕복을 한 번 더 도는 대신 그 응답으로 갈아탄다 — 화면이 값을 지어내는 것이 아니라
 // **서버가 준 값**으로 서는 것이라 두 규칙이 어긋나지 않는다.
 import { useEffect, useState } from 'react';
+import { loweringConfirmCopy } from '../common/accessState';
 import { applyDraft, draftError, toDraft, toPatch, type DatasetEditDraft } from './editFields';
 import type { DatasetUpdateSource } from './updateSource';
 import type { DatasetDetail } from './types';
@@ -30,6 +31,13 @@ export type DatasetEditState = {
   open(): void;
   cancel(): void;
   setField(key: keyof DatasetEditDraft, value: string): void;
+  /**
+   * ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 되묻는 문면.** `나만 보기` 로 **내리는** 변경이고
+   * 지금 볼 수 있는 사람이 1명 이상일 때만 선다. `null` 이면 되묻지 않는다.
+   */
+  confirm: string | null;
+  /** 되묻기에서 물러난다 — **편집을 닫지 않는다**(고른 값은 그대로 남는다). */
+  dismissConfirm(): void;
   /** 실패하면 **낙관값을 되돌리고** 문구를 세운다 — 화면은 저장된 것처럼 남지 않는다. */
   submit(): Promise<void>;
 };
@@ -43,6 +51,7 @@ export function useDatasetEdit(
   const [draft, setDraft] = useState<DatasetEditDraft | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<string | null>(null);
 
   // 서버를 **다시 읽었으면** 화면이 쥐고 있던 값을 버린다 — 새로 읽은 것이 정답이다.
   // `base` 는 다시 읽을 때만 다른 객체가 되므로 저장 직후에는 돌지 않는다.
@@ -52,6 +61,7 @@ export function useDatasetEdit(
     setDraft(null);
     setError(null);
     setSaving(false);
+    setConfirm(null);
   }, [base]);
 
   const detail = patched ?? base;
@@ -62,16 +72,20 @@ export function useDatasetEdit(
     draft,
     saving,
     error,
+    confirm,
+    dismissConfirm: () => setConfirm(null),
     open: () => {
       if (!detail) return;
       setDraft(toDraft(detail));
       setError(null);
+      setConfirm(null);
       setEditing(true);
     },
     cancel: () => {
       setEditing(false);
       setDraft(null);
       setError(null);
+      setConfirm(null);
     },
     setField: (key, value) => setDraft((d) => (d ? { ...d, [key]: value } : d)),
     async submit() {
@@ -83,6 +97,19 @@ export function useDatasetEdit(
         return;
       }
       const patch = toPatch(detail, draft);
+      // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ `나만 보기` 로 내리기 전에 되묻는다.**
+      //
+      // 그 변경은 **같은 트랜잭션에서 유효 허용 줄을 전부 만료**시킨다 — 저장 뒤에 되돌려도
+      // 끊긴 사람이 자동으로 되돌아오지 않는다(다시 요청·승인을 밟아야 한다). 되돌릴 수
+      // 없는 결과라 화면이 수를 보이고 한 번 묻는다.
+      // ⚠ 끊길 사람이 0명이면 묻지 않는다 — 잃을 것이 없는데 되묻으면 그 확인은 반사가 된다.
+      // ⚠ 판정이 여기 있는 이유 — 값(`patch.accessState`)과 수(`detail.activeGrantCount`)를
+      //   둘 다 쥔 자리가 여기뿐이다. 폼은 값만, 서버는 수만 안다.
+      if (patch.accessState === '잠김' && detail.activeGrantCount > 0 && confirm === null) {
+        setConfirm(loweringConfirmCopy(detail.activeGrantCount));
+        return;
+      }
+      setConfirm(null);
       const previous = patched;
       setSaving(true);
       setError(null);

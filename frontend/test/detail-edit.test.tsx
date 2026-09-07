@@ -218,8 +218,9 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
                       'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }
-    // 셀렉트는 **둘**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17).
-    expect(form.querySelectorAll('select')).toHaveLength(2);
+    // 셀렉트는 **셋**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17) ·
+    // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위.
+    expect(form.querySelectorAll('select')).toHaveLength(3);
   });
 
   it('`주제` 는 상세에 **표시되지만** 편집 칸이 없다', async () => {
@@ -234,8 +235,10 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
   it('R-B 가 더할 칸을 미리 그리지 않는다', async () => {
     const form = await openForm();
     // ⭑ **⟨19차 해제 · WU-A6⟩ `관측 간격` 이 이 목록에서 빠졌다** — 더 이상 「R-B 가 더할
-    //   칸」이 아니라 **이 회차가 세운 칸**이다(PRD-17). 나머지 다섯은 그대로 R-B 몫이다.
-    for (const label of ['분류', '유형', '가공 단계', '공개 범위', '변수']) {
+    //   칸」이 아니라 **이 회차가 세운 칸**이다(PRD-17).
+    // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ `공개 범위` 도 빠졌다** — 이 회차가 세웠다.
+    //   나머지 넷은 그대로 R-B 의 다른 WU 몫이다.
+    for (const label of ['분류', '유형', '가공 단계', '변수']) {
       expect(within(form).queryByText(label)).toBeNull();
     }
   });

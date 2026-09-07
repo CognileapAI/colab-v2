@@ -11,6 +11,7 @@
 //    같은 화면을 두 번 만들게 된다.
 // ⛔ **`topic` 은 이 표에 없다.** R-B PRD-01 이 그 축을 `category` 로 갈아치우므로 곧 지울
 //    칸을 만들 이유가 없고, 그 사이 사람이 고친 값이 이관 대조를 흐린다. 표시는 남고 읽기 전용이다.
+import { DEFAULT_ACCESS_STATE, type AccessState } from '../common/accessState';
 import type { components } from '../../generated/fe-core';
 import type { DatasetDetail } from './types';
 
@@ -39,6 +40,12 @@ export type DatasetEditDraft = {
    */
   intervalValue: string;
   intervalUnit: string;
+  /**
+   * ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위.** 다른 칸과 달리 **빈 문자열이 없다** —
+   * 3값 중 하나가 늘 선택돼 있다(상세는 언제나 값 하나가 걸려 있다 · 행이 없으면 연구실
+   * 기본값이 그 자리를 채워 내려온다). 그래서 「비운다」가 이 칸에는 없다.
+   */
+  accessState: AccessState;
 };
 
 /** 관측 간격의 단위 6값 · 기간 최소 단위 6값. **정본은 DB CHECK** 다 (`M-6`·`M-7`). */
@@ -108,6 +115,8 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
         ? ''
         : String(b.observationInterval.value),
     intervalUnit: b?.observationInterval?.unit ?? '',
+    // 상세가 내려준 값이 그대로 초기값이다 — 화면이 기본값을 덮어씌우지 않는다.
+    accessState: detail.accessState ?? DEFAULT_ACCESS_STATE,
   };
 }
 
@@ -182,6 +191,9 @@ export function toPatch(detail: DatasetDetail, draft: DatasetEditDraft): Dataset
   if (!samePeriod(nextPeriod, periodOf(before))) patch.period = nextPeriod;
   const nextInterval = intervalOf(draft);
   if (!sameInterval(nextInterval, intervalOf(before))) patch.observationInterval = nextInterval;
+  // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 바뀐 때만 싣는다 — 안 건드린 칸을 보내면 서버가
+  //   `잠김` 내림 경로(유효 grant 전부 만료)를 뜻 없이 다시 탄다.
+  if (draft.accessState !== before.accessState) patch.accessState = draft.accessState;
   return patch;
 }
 
@@ -196,6 +208,9 @@ export function applyDraft(detail: DatasetDetail, draft: DatasetEditDraft): Data
     ...detail,
     name: draft.name.trim(),
     summary: blank(draft.summary),
+    // ⭑ ⟨WU-B4⟩ 헤더 칩·공개 범위 설명이 **저장을 기다리지 않고** 고친 값으로 선다.
+    //   서버가 200 으로 돌려준 상세가 오면 그것이 이긴다(`useDatasetEdit` 왕복).
+    accessState: draft.accessState,
     basicInfo: detail.basicInfo
       ? {
           ...detail.basicInfo,

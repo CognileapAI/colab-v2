@@ -14,6 +14,12 @@
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
 import { VariableTable, type VariableRow } from '../common/VariableTable';
 import { useEffect, useState } from 'react';
+import {
+  ACCESS_LABEL,
+  ACCESS_NOTE,
+  ACCESS_STATES,
+  type AccessState,
+} from '../common/accessState';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
 import { formatExtension, formatPeriodWithInterval } from '../detail/format';
@@ -307,6 +313,9 @@ function StepMeta(props: {
   onIntervalUnit: (v: string) => void;
   nameError: boolean;
   summaryError: boolean;
+  // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 부가 정보의 셀렉트 한 칸.**
+  accessState: AccessState;
+  onAccessState: (v: AccessState) => void;
   // ⭑ ⟨PRD-33 ⑵⟩ 설명 칸 아래 힌트가 읽는 두 축. 값 자체는 ① 이 쥐고 있다.
   category: string;
   level: string;
@@ -642,12 +651,33 @@ function StepMeta(props: {
           </p>
         )}
 
-        {/* ⭑ **⟨PRD-12 부가 정보⟩ 공개 범위 — 자리만이다.**
-            값 3값(`연구실 구성원 전체`·`나만 보기`·`지정한 사람만` · 미결-1 ⓐ)과 그 저장
-            (`열림`·`잠김`·`지정 공개`)은 **WU-B4** 가 세운다. 여기서 임시 칸을 만들면
-            그 WU 가 두 벌을 걷어야 한다. */}
+        {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — WU-B3 이 세운 자리를 채운다.**
+            표기 3값은 rev1 셀렉트 축자(`연구실 구성원 전체`·`나만 보기`·`지정한 사람만` ·
+            미결-1 ⓐ)이고 저장은 `열림`·`잠김`·`지정 공개` 다. 대응표는 `common/accessState.ts`
+            **한 자리**에 있다 — 상세 헤더 칩·공개 범위 설명·수정 폼이 같은 표를 읽는다.
+            ⚠ **rev2 목업의 3값(전체 공개·조건부 공개·비공개)을 쓰지 않는다** — 기준축이
+              연구실 **밖**이라 한 칸씩 어긋난다(PRD-11 대응표 · 미결-1 ⓐ 가 rev1 을 확정했다).
+            기본 선택은 `연구실 구성원 전체` 라 대개 그대로 두고 넘어간다. */}
         <div className="form-row" data-testid="reg-visibility-slot">
-          <label>공개 범위</label>
+          <label htmlFor="reg-visibility">공개 범위</label>
+          <select
+            id="reg-visibility"
+            className="sel"
+            data-testid="reg-visibility"
+            value={props.accessState}
+            onChange={(e) => props.onAccessState(e.target.value as AccessState)}
+          >
+            {ACCESS_STATES.map((v) => (
+              <option key={v} value={v}>
+                {ACCESS_LABEL[v]}
+              </option>
+            ))}
+          </select>
+          {/* 고른 값의 **범위**를 한 줄로 적는다 — `지정한 사람만` 은 허용 목록 0건으로
+              시작해 사실상 `나만 보기` 와 같다는 사실이 여기서 드러난다(PRD-11 ⚠). */}
+          <p className="fieldnote" data-testid="reg-visibility-note">
+            {ACCESS_NOTE[props.accessState]}
+          </p>
         </div>
       </div>
     </div>
@@ -966,6 +996,9 @@ export function RegisterArea(props: {
   onDataType: (v: string) => void;
   level: string;
   onLevel: (v: string) => void;
+  // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — ② 부가 정보로 그대로 흘린다.
+  accessState: AccessState;
+  onAccessState: (v: AccessState) => void;
   nameError: boolean;
   summaryError: boolean;
   registerError: string | null;
@@ -1057,6 +1090,8 @@ export function RegisterArea(props: {
             onIntervalUnit={props.onIntervalUnit}
             nameError={props.nameError}
             summaryError={props.summaryError}
+            accessState={props.accessState}
+            onAccessState={props.onAccessState}
             category={props.category}
             level={props.level}
           />

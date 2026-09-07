@@ -103,7 +103,15 @@ export function DatasetDetailPage(
   const shown = edit.detail;
   /** 편집 중 행동 두 개 — 다운로드가 서 있던 자리를 받는다 (PRD-22 각주 2 ⑴). */
   const editActions = (
-    <DatasetEditActions saving={edit.saving} onSave={edit.submit} onCancel={edit.cancel} />
+    <DatasetEditActions
+      saving={edit.saving}
+      onSave={edit.submit}
+      onCancel={edit.cancel}
+      // ⭑ ⟨WU-B4 · PRD-11⟩ `나만 보기` 로 내릴 때의 되묻기. 판정은 `useDatasetEdit` 이 한다.
+      confirm={edit.confirm}
+      onConfirm={edit.submit}
+      onConfirmCancel={edit.dismissConfirm}
+    />
   );
 
   // 「내가 열어 본 것」 — **브라우저에만 적는다** (`Policy_홈_대시보드 §10` · WU-P7).

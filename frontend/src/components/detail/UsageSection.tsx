@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { downloadDataset } from '../../api/download';
 import { projectPeriod } from '../project/format';
+import { accessLabel, accessNote } from '../common/accessState';
 import { formatBytes } from './format';
 import type { DatasetDetail } from './types';
 
@@ -30,8 +31,10 @@ import type { DatasetDetail } from './types';
  * 값인지 말하지 않으면 사용자는 이 화면에서 정해진 값으로 읽고, 바꾸려고 여기서 길을 찾는다.
  * 문장이 그 자리와 바꿀 수 있는 사람을 함께 말한다.
  *
- * ⚠ **공개 범위 값 자체는 이 회차의 몫이 아니다** — 그 칸은 R-B 가 세운다(라운드 파일 §2-⑤).
- *    없는 값을 지어내지 않고, 출처 문장만 이 자리에 둔다.
+ * ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 값 칸이 섰다** — 종전 기재 「공개 범위 값 자체는 이
+ *    회차의 몫이 아니다 · 없는 값을 지어내지 않고 출처 문장만 이 자리에 둔다」는 해소됐다.
+ *    이제 이 구역이 `detail.accessState` 를 읽어 **표기 ＋ 범위 한 줄**을 그리고, 그 아래에
+ *    종전 출처 문장이 그대로 선다. 표기는 `common/accessState.ts` 한 자리에서 온다.
  */
 export const ACCESS_ORIGIN_NOTE =
   '업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요.';
@@ -76,6 +79,15 @@ export function UsageSection(props: {
           ))}
         </ul>
       )}
+
+      {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 값과 그 범위를 함께 적는다.**
+          ⚠ **다운로드 권한과 무관하게 보인다** — 잠긴 데이터를 만난 사람에게도 「왜 못 받나」가
+            이 한 줄로 설명되고, 그 설명이 다운로드 버튼 안에 숨으면 막힌 사람에게만 사라진다.
+          ⛔ 허용된 **사람 목록**은 내리지 않는다 — 이 자리에 필요한 것은 범위이지 명단이 아니다. */}
+      <p className="use-scope" data-testid="usage-access-state">
+        공개 범위 · {accessLabel(props.detail.accessState)}
+        <span className="muted"> — {accessNote(props.detail.accessState)}</span>
+      </p>
 
       {props.detail.actions.canDownload && props.downloadHidden !== true ? (
         <div className="use-dl">

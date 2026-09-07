@@ -164,7 +164,10 @@ describe('§7 잠김 (허용 안 됨) — 헤더 요약 + 잠김 안내만', () 
     expect(FIXTURE_DETAILS[LOCKED_ID]!.topic).toBeNull();
     expect(tags.querySelectorAll('.chip--neutral')).toHaveLength(0);
     expect(within(tags).getByText('Lv2')).toBeInTheDocument();
-    expect(within(tags).getByText('잠김')).toBeInTheDocument();
+    // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 칩 문면이 저장값에서 화면 표기로 바뀌었다** —
+    //   `잠김` → `나만 보기`. 3값이 되면서 `지정한 사람만` 과 갈려 보여야 하고, 저장값
+    //   그대로 두면 사람에게 두 값의 범위 차이가 안 드러난다(표기 정본 = `common/accessState.ts`).
+    expect(within(tags).getByText('나만 보기')).toBeInTheDocument();
   });
 
   it('`기본 정보` 블록을 통째로 비운다 (basicInfo null · PLAN-SoT §9-㊼-④)', async () => {

@@ -6,6 +6,12 @@
 // ⛔ **`주제`(`topic`)는 이 폼에 없다** — 표시는 헤더 칩에 남고 편집 진입이 없다.
 //    R-B 가 그 축을 `분류` 로 갈아치우므로, 그 사이 사람이 고친 값은 이관 대조를 흐린다.
 import {
+  ACCESS_LABEL,
+  ACCESS_NOTE,
+  ACCESS_STATES,
+  type AccessState,
+} from '../common/accessState';
+import {
   GRANULARITIES,
   GRANULARITY_LABEL,
   INTERVAL_LABEL,
@@ -123,6 +129,28 @@ export function DatasetEditForm(props: {
             </select>
           </span>
         </div>
+        {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 셀렉트 한 칸.**
+            `나만 보기` 로 내리는 것은 **되돌릴 수 없는 결과**(허용 줄 전부 만료)를 만들어
+            `useDatasetEdit` 이 저장 전에 되묻는다. 이 폼은 값을 고르기만 한다 —
+            되묻는 문면은 저장 자리(`취소`/`저장` 이 서는 행)에 선다. */}
+        <div className="de-row" data-testid="edit-access-state">
+          <span className="de-k">공개 범위</span>
+          <span className="de-v">
+            <select
+              aria-label="공개 범위"
+              data-testid="edit-access-state-select"
+              value={draft.accessState}
+              onChange={(e) => set('accessState', e.target.value as AccessState)}
+            >
+              {ACCESS_STATES.map((v) => (
+                <option key={v} value={v}>
+                  {ACCESS_LABEL[v]}
+                </option>
+              ))}
+            </select>
+            <span className="de-note muted"> {ACCESS_NOTE[draft.accessState]}</span>
+          </span>
+        </div>
       </div>
 
       {error ? (
@@ -142,7 +170,41 @@ export function DatasetEditActions(props: {
   saving: boolean;
   onSave: () => void;
   onCancel: () => void;
+  /**
+   * ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ `나만 보기` 로 내릴 때의 되묻는 문면.**
+   * `null` 이면 되묻지 않는다 — 끊길 사람이 없거나 내리는 변경이 아니다.
+   * 판정은 `useDatasetEdit` 이 한다(값과 `activeGrantCount` 를 둘 다 쥔 자리다).
+   */
+  confirm?: string | null;
+  onConfirm?: () => void;
+  /** 되묻는 문면에서 물러난다 — **편집을 닫지 않는다**(고른 값은 그대로 남는다). */
+  onConfirmCancel?: () => void;
 }) {
+  if (props.confirm) {
+    return (
+      <div className="de-act de-confirm" data-testid="detail-edit-confirm" role="alertdialog">
+        <p className="de-confirm-msg">{props.confirm}</p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          data-testid="detail-edit-confirm-ok"
+          disabled={props.saving}
+          onClick={props.onConfirm}
+        >
+          확인
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          data-testid="detail-edit-confirm-cancel"
+          disabled={props.saving}
+          onClick={props.onConfirmCancel ?? props.onCancel}
+        >
+          취소
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="de-act" data-testid="detail-edit-actions">
       <button
