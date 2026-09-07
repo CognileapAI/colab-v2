@@ -2852,7 +2852,7 @@ items:
 
   - id: WU-B10
     name: 상세 계보 수정·추가 (PRD-31)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "WU-B5 의 Lv 연결 규칙이 서 있음", "WU-B8 의 판정식이 서 있음"]
@@ -2860,7 +2860,7 @@ items:
     completion_def: "상세에 계보 수정 · 추가 진입 · 기록 없음 상세가 계보 채우기 빈 상태를 그린다 · 모달이 등록 ③ 과 같은 규칙(PRD-07·08·09)을 재사용했음을 diff 로 보인다. 가공 방식 칸은 새 칸이 아니라 이미 있는 d4_lineage_edge.method 를 여는 것이고 이 WU 는 FE 진입만 만든다. 파생 행은 읽기 전용"
     evidence: "dev-package/sessions/p3-lineage-fix-20260907.md"
     deadline: null
-    note: "WU-B9(연결별 가공 방식)는 지웠다 — method 와 계약 열쇠·등록 화면·상세 표시가 전부 이미 있다(부록 A H-50). 레인 p3-lineage-fix"
+    note: "2026-09-08 done — 레인 p3-lineage-fix 1ae8c37 ＋ advisor ② 845d68d(모달 기준 Lv 사람 값 · 거절 문구 봉투) · ParentPicker 공통화(등록 ③·상세 재사용) · 새 op 0 · 계약·서버·DB 0 · 게이트 3종 record · FE 979 · 후속 = 사후 기록 없음 선언·method 수정 op(계약 필요) · WU-B9(연결별 가공 방식)는 지웠다 — method 와 계약 열쇠·등록 화면·상세 표시가 전부 이미 있다(부록 A H-50). 레인 p3-lineage-fix"
     sources: ["dev-package/prd/rounds/R-B-3-frontend.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-31", "부록 A H-50"]
 
   - id: WU-B11
