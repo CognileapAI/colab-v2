@@ -2748,7 +2748,7 @@ items:
 
   - id: WU-B1
     name: 분류 3축 스키마·계약 (PRD-01·02·03)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)"]
@@ -2756,7 +2756,7 @@ items:
     completion_def: "5값·6값·4값 CHECK · 계약에 세 열쇠 · 값 집합 밖은 400(500 아님) · 기존 행은 3열 전 행 NULL · 자동 매핑 없음 · `topic` 무변(미결-3 ⓐ). processing_level_user_set 재신설은 마이그레이션 0011 의 반전이다 — 삭제 근거 주석과 〈194〉·〈276〉 문면을 남긴 채 반전을 덧붙인다(지우지 않는다)"
     evidence: "dev-package/sessions/p3-axes-schema-20260907.md"
     deadline: null
-    note: "M-1·M-2·M-3. R-B 마이그레이션 head 를 여기서 만들고 B2·B4·B6 이 잇는다. 레인 p3-axes-schema"
+    note: "2026-09-07 done — 레인 p3-axes-schema de4cc4a ＋ advisor ② 4501910 · head 0015_rb1_axes_category_type_lv · 게이트 8종 green(contract-breaking 기준 f6b9c48 · 열쇠 optional 이라 파괴 0) · core-api 843 · required 승격＋미입력 400 은 WU-B3 소유 · M-1·M-2·M-3. R-B 마이그레이션 head 를 여기서 만들고 B2·B4·B6 이 잇는다. 레인 p3-axes-schema"
     sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-01", "PRD-02", "PRD-03", "부록 B M-1·M-2·M-3"]
 
   - id: WU-B2
