@@ -296,7 +296,9 @@ D="$(mkdb sd-noalembic)"; mkschema "$D"
 expect 미선언 "schema-diff: 준비 단계 alembic 부재(skip 아님 · 입력미선언)" \
   env COLAB_DB_DIR="$REPO_ROOT/db" COLAB_ALEMBIC="/nonexistent/alembic" \
       COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" COLAB_APPLIED_DB_URL_AI="postgresql://x/y" "$SD"
-expect 미선언 "schema-diff: 준비 단계 자리(alembic.ini) 부재 — 생략 선언 없이는 red" \
+# 픽스처 체인은 `alembic.ini` 는 있고 `env.py` 는 없다 — 준비 단계가 **실패**한다.
+# 그때 게이트는 비교로 넘어가지 않고 그 자리에서 red 다(생략을 선언하지 않았으므로).
+expect red "schema-diff: 준비 단계 실패 — 생략 선언 없이는 비교로 넘어가지 않는다" \
   env COLAB_DB_DIR="$D" \
       COLAB_APPLIED_DB_URL_PLATFORM="postgresql://x/y" COLAB_APPLIED_DB_URL_AI="postgresql://x/y" "$SD"
 
