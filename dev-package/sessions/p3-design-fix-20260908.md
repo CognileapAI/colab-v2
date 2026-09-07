@@ -28,7 +28,7 @@
 | `lineageGraph.css` 13px 미만 선언 0건 | green — 13건 승격 |
 | 지목 캡션 7곳 13px 이상 | green — 6곳 승격 ＋ `.vizerr,.warn` 은 이미 13px(무접촉) |
 | 상세 컨테이너 ↔ 칸 구분선 상이 토큰 · 카탈로그 바깥 ≥ 안쪽 진하기 | green — 휘도 계산으로 계측 |
-| 지목 음수 상쇄 2건 0건 · 여백 컨테이너 소유 | green |
+| 지목 음수 상쇄 2건 0건 · 여백 컨테이너 소유 | 지목 음수 2건 = 충족 · 컨테이너 이관 = 부분(이월 등재) |
 | 덮인 `display` 0건 ＋ 미정의 토큰 참조 0건 | green — 11건 → 0 |
 | `frontend-typecheck`·`frontend-test`·`frontend-fixture-reach` green | green |
 
@@ -61,10 +61,21 @@ green  frontend-fixture-reach  — 계 green 1 / red(판정) 0 / red(준비) 0
 - `upload.css` `.vizph` — 판정표 미지목이라 무접촉(`font-size` 선언 자체가 없다).
 - `upload.css` `.vizerr, .warn` — 이미 13px 이라 다시 고치지 않았다.
 - `lineageGraph.css:7` `.dsec { margin-top: 34px }` 의 컨테이너 이관 — **하지 않았다.** `.dsec` 형제들의 부모가 `LockedContent.tsx` 의 무클래스 `div[data-locked]` 라 CSS 만으로는 잡을 자리가 없고, 그 div 를 flex 컬럼으로 바꾸면 머리·기본 정보 사이에도 34px 이 끼어 B3·B10 이 세운 구조를 건드린다. 이 WU 는 CSS 만 고친다.
+- ⑩ 컨테이너 이관 잔여 — `upload.css` 자식 `margin-top` **9곳**: `:147` `.vizsetup` · `:150` `.vizload` · `:159` (선택자는 위 규칙 블록, 조건부 표시) · `:166` `.vizpartial` · `:168` `.mapcanvas` · `:170` `.vizph` · `:191` `.up-steps` · `:234~237` `.projpick`·`.qproj`·`.qproj .qf`·`.qproj .qnote` · `:243` (버튼 행 블록) · `:251` `.lineage-slot` — 부모 컨테이너 클래스 실체를 확인하지 못해 집행하지 않았다. `lineageGraph.css:7` `.dsec` 건과 함께 **이월** — 대장 신규 WU 또는 R-C 후보.
 
 ## 후속
 
 - `catalog.css:125-127` 에 `.lvl-3` 이 없다 — 마크업 `CatalogTable.tsx:159` 이 `lvl-3` 을 낸다. **미결-7 ⓐ(Lv0~Lv3 네 단)와 맞물린 Ted 판정 대상.** 이 WU 가 4단째 색을 임의로 정하지 않았다.
 - `catalog.css:135` `.lin--none` = `--color-gray-400` on 흰 배경 → **3.41:1**(AA 미달). 판정 대기 → Ted.
-- `detail.css:130` `.dt-gridact { margin: -8px 0 var(--space-4) }` = 음수 상쇄 **3건째**. WU-A11 도 R-B-4 재측정도 「2건」으로 세어 이 자리를 지목하지 않았다 — 판정 없이 고치지 않았다. 다음 회차 판정 대상.
+- `detail.css:134` `.dt-gridact { margin: -8px 0 var(--space-4) }` = **판정 대기 3건째**(A11·R-B-4 모두 미지목). WU-A11 도 R-B-4 재측정도 「2건」으로 세어 이 자리를 지목하지 않았다 — 판정 없이 고치지 않았다. 다음 회차 판정 대상.
 - `lineageGraph.css` 코랄 액센트 색(`--color-accent-*`·`--color-ai`) 복원 — 목업 `:root` 회수 뒤.
+- 부수 간격 변화(⑩ 컨테이너 이관 집행분에 수반, 별도 판정 없이 발생) — `upload.css` `.up-card > .card-b` gap 12px 신설로 `.up-note` 상단 간격 8→12px · `.toast`(`toast.css:12 margin:8px 0 0`)와 합산 시 8+12=20px · `shell.css` `.backlink` hover/focus 테두리 좌우 비대칭(좌 padding 0 / 우 9) — 실화면 미계측, 이월 등재.
+
+## advisor ② 반영
+
+검토자 `advisor2-b11.md`(approve-with-changes) 대응 — 코드 수정 없음, 등재·주석만.
+
+- **등재(병합 전 필수)**: 위 「하지 않은 것」에 ⑩ 컨테이너 이관 잔여 = `upload.css` 자식 `margin-top` 9곳(`:147·150·159·166·168·170·191·234~237·243·251`) ＋ `lineageGraph.css:7` `.dsec`(부모 `div[data-locked]` 무클래스 · `LockedContent.tsx` 클래스 부여 필요 · TSX WU) → 이월(대장 신규 또는 R-C 후보) 등재. 「후속」에 `detail.css:134` `.dt-gridact margin:-8px`를 판정 대기 3건째로 등재. 위 「수용 기준 7」 표 ⑩ 행을 「지목 음수 2건 = 충족 · 컨테이너 이관 = 부분(이월 등재)」로 정정 — 종전 「green」 단일 판정은 이관 집행분의 존재를 감췄다.
+  - **고치지 않은 이유**: 검토자 [병합 전 필수·택1]은 등재 대안으로 `upload.css` 9곳 중 부모 클래스가 있는 자리는 이관 집행을 허용했으나, 9곳 각각의 부모 컨테이너 실체(클래스 유무)를 이 WU 에서 확인하지 못했다 — 잘못 집행하면 조건부 표시 형제 간 간격이 갈리는 종전 결함(판정 ⑩ 원인)을 재현한다. 등재만으로 검토자 기준을 충족하므로 집행은 다음 WU 로 넘긴다.
+- **주석 정정(선택)**: `shell/shell.css:57` 주석을 실체와 맞게 「음수 상쇄 제거 · hover 상자 좌측 padding 0」로 교정(종전 문구는 `.backrow` 컨테이너가 여백을 실제로 받는 것처럼 강하게 읽혔다). `lineageGraph.css:27` 주석 「코랄은 이 화면에서 계보의 AI 표식에만 쓴다」를 「액센트 복원 전 중립 토큰(목업 :root 회수 뒤 복원)」으로 교정 — 코랄 액센트 사용이 0건인 현재 상태에서 종전 문구는 거짓이었다.
+- **부수 간격 기재(선택)**: 위 「후속」에 `.up-note` 8→12px · `.toast` 8+12=20px · `.backlink` hover 상자 좌우 비대칭을 이미 등재.

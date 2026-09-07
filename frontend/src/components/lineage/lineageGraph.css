@@ -24,7 +24,7 @@
 .detail-page .lin-col { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 178px; }
 .detail-page .lin-rail { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 14px; }
 .detail-page .lin-arw { color: var(--color-gray-500); font-size: 15px; line-height: 1; }
-/* 가공 방식 라벨 — 코랄은 이 화면에서 계보의 AI 표식에만 쓴다 */
+/* 가공 방식 라벨 — 액센트 복원 전 중립 토큰(목업 :root 회수 뒤 복원) */
 .detail-page .lin-way {
   display: inline-flex; align-items: center; height: 23px; border-radius: var(--radius-pill);
   padding: 0 10px; background: var(--color-gray-50); border: 1px solid var(--color-border-strong);

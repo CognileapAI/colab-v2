@@ -54,7 +54,7 @@
   align-items: center;
   gap: 6px;
   max-width: min(60vw, 460px);
-  /* ⑩ 왼쪽 여백은 컨테이너(`.backrow`)가 소유한다 — 종전 `margin-left: -7px` 는
+  /* ⑩ 음수 상쇄 제거 · hover 상자 좌측 padding 0 — 종전 `margin-left: -7px` 는
      자기 왼쪽 padding 을 되당기는 음수 상쇄였다. 글자 시작 위치는 그대로다 (판정 ⑩) */
   padding: 3px 9px 3px 0;
   border: 1px solid transparent;
