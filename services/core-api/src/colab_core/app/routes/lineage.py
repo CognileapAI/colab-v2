@@ -1,4 +1,6 @@
-"""D4 — 계보 확정 3 op: `addLineageParent` · `removeLineageParent` · `confirmLineage`.
+"""D4 — 계보 확정 **5 op**: `addLineageParent` · `removeLineageParent` ·
+`confirmLineage` ＋ 21차 신설 둘 `updateLineageParentMethod` ·
+`declareLineageUnknown`(둘 다 **사람이 부른다** — D10→D4 경로가 아니다).
 
 **여기가 되돌릴 수 없는 것이 만들어지는 자리다.** 규칙 넷을 코드가 지킨다.
 
@@ -72,8 +74,13 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "kind": kind,
             "datasetId": node_id,
             "name": "(지워진 데이터)" if c is None else c.name,
+            # ⛔ **파생값 그대로다** — 21차가 여기에 사람 값을 덮어 쓰지 않는다.
+            #    덮어 쓰면 기존 열쇠의 의미 변경 = 파괴다 (`R-C.md ## 구현 결정` ⑵).
             "processingLevel": (None if c is None
                                 else d3_catalog.processing_level(summaries.get(node_id))),
+            # ⭑ **⟨21차 해제 · R-B §5 판정 27·41⟩ 사람이 고른 값을 **옆에** 싣는다.**
+            #    표시 규칙(사람 값 우선)은 FE 가 고른다 — 두 값이 다 있어야 고를 수 있다.
+            "processingLevelUserSet": None if c is None else c.processing_level_user_set,
             "verified": False if acc is None else acc.verified,
             # 지워진 데이터셋은 묘비다 — **사라지지 않는다.** 지운 데이터가 부모였다면
             # 자식의 출처가 끊긴다 (schema.sql d3_dataset 주석).
@@ -92,8 +99,10 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     source_edges: list[dict] = []
     if core.source_label:
         # **`원천` 은 데이터셋이 아니라 표기다** — `datasetId` 가 null 이고 눌리지 않는다.
+        # `원천` 은 데이터셋이 아니라 표기라 **사람이 고른 Lv 도 없다** — null 이다.
         nodes.append({"kind": "원천", "datasetId": None, "name": core.source_label,
-                      "processingLevel": None, "verified": False, "navigable": False,
+                      "processingLevel": None, "processingLevelUserSet": None,
+                      "verified": False, "navigable": False,
                       "bodyAccessible": False, "deletedAt": None})
         # 계약이 이 자리를 이미 열어 두었다 — `LineageEdge.parentDatasetId` 산문 축자
         # 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」. **계약 개정 0.**
@@ -227,6 +236,77 @@ def remove_lineage_parent(datasetId: str, parentDatasetId: str,
     if not d4_lineage.remove_parent(db, child_id=dataset_id, parent_id=Ulid(parentDatasetId)):
         raise errors.not_found("그런 관계가 없다.")
     return Response(status_code=204)
+
+
+@router.patch("/datasets/{datasetId}/lineage/parents/{parentDatasetId}",
+              name="updateLineageParentMethod")
+def update_lineage_parent_method(datasetId: str, parentDatasetId: str, body: dict = Body(...),
+                                 subject: Subject = Depends(current_subject),
+                                 db: Session = Depends(scoped_db)) -> dict:
+    """⭑ **⟨21차 해제 · 판정 42⟩ 가공 방식 문장 한 칸만 고친다.**
+
+    ⛔ **`confirmedAt`·`confirmedBy` 를 바꾸지 않는다** — 이 op 은 확인이 아니다.
+       종전에는 오타를 고치려면 관계를 지웠다 다시 붙여야 했고, 그때 **사람이 한 확인
+       기록이 오타 수정으로 사라졌다.** 다시 확인하는 자리는 `confirmLineage` 뿐이다(규칙 ④).
+    ⛔ `parentRole` 을 받지 않는다 — 역할은 Lv 계산에 드는 값이라 고치는 것이 아니라
+       관계를 다시 세우는 일이다(`removeLineageParent` → `addLineageParent`).
+    **권한·경계는 `addLineageParent` 와 같은 두 줄이다.**
+    """
+    if not Ulid.is_valid(datasetId) or not Ulid.is_valid(parentDatasetId):
+        raise errors.bad_request("정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    _require_edit(db, subject)
+    if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found()
+
+    unknown = set(body) - {"method"}
+    if unknown:
+        raise errors.bad_request(f"계약에 없는 필드다: {sorted(unknown)}")
+    if "method" not in body:
+        # required 다 — 생략으로 「안 바꾼다」를 말할 수 없게 계약이 그렇게 적었다.
+        raise errors.bad_request("method 가 없다.")
+    method = body["method"]
+    if method is not None and not isinstance(method, str):
+        raise errors.bad_request("method 는 문장이거나 null 이다.")
+
+    if not d4_lineage.update_parent_method(db, child_id=dataset_id,
+                                           parent_id=Ulid(parentDatasetId), method=method):
+        raise errors.not_found("그런 관계가 없다.")
+    return lineage_graph(db, subject, dataset_id)
+
+
+@router.post("/datasets/{datasetId}/lineage/unknown-declaration",
+             name="declareLineageUnknown")
+def declare_lineage_unknown(datasetId: str,
+                            subject: Subject = Depends(current_subject),
+                            db: Session = Depends(scoped_db)) -> dict:
+    """⭑ **⟨21차 해제 · 판정 42⟩ 사후 「기록 없음」 선언.**
+
+    ⛔ **확정 부모가 1건이라도 있으면 400 이다** — 새 규칙이 아니라 등록 경로
+       (`registerDataset.lineageUnknown`)의 **같은 규칙**이고(20차 PRD-27), 화면도 확정
+       부모가 있으면 체크박스를 비활성으로 두지만 **서버 400 이 최종 방어선**이다.
+       ⚠ 문면도 등록 경로와 **같은 문장**이다 — 두 자리가 다른 말을 하면 사람은 규칙이
+         둘이라고 읽는다.
+    ⚠ **멱등이다** — `mark_unknown` 이 `ON CONFLICT DO NOTHING` 이라 두 번 불러도 사실은 하나다.
+    ⚠ **선언 취소 op 을 만들지 않는다** — 되돌림은 부모를 붙이는 것이고, 표시는 관계가
+      붙으면 사라진다(`add_parent` 의 `_CLEAR_UNKNOWN` · `DataModel §4.2`).
+    **사람이 부른다** — D10 → D4 쓰기 경로가 아니다 (`CLAUDE.md §3-2`).
+    """
+    if not Ulid.is_valid(datasetId):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(datasetId)
+    _require_edit(db, subject)
+    if not d3_catalog.dataset_exists(db, dataset_id):
+        raise errors.not_found()
+
+    has_parent = any(e["child_dataset_id"] == datasetId
+                     for e in d4_lineage.edges_of(db, dataset_id))
+    if has_parent:
+        raise errors.bad_request(
+            "가공 전 데이터를 이어 붙인 채로 「기록 없음」을 선언할 수 없다.")
+
+    d4_lineage.mark_unknown(db, dataset_id=dataset_id, actor_id=subject.account_id)
+    return lineage_graph(db, subject, dataset_id)
 
 
 @router.post("/datasets/{datasetId}/lineage/confirmation", name="confirmLineage")

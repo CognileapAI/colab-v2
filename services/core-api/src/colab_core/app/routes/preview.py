@@ -108,6 +108,48 @@ def list_palettes(request: Request,
                               f"그리는 서버에 연결하지 못했다: {e}") from None
 
 
+@router.post("/preview-target-descriptions", name="describeTarget")
+def describe_target(request: Request, body: dict = Body(...),
+                    subject: Subject = Depends(current_subject),
+                    db: Session = Depends(scoped_db)) -> dict:
+    """대상에서 그릴 수 있는 **변수와 시각** — 중계만 한다 (21차 해제 · 첨가 ⑴).
+
+    ⚠ **이 op 이 없어서 화면이 변수·시각을 고를 길이 없었다.** `RenderRequest.variable`·
+    `instant` 는 열려 있는데 그 값 집합의 출처가 FE 표면에 0건이었다 —
+    `listPalettes` 부재(`〈88〉` 묶음 4)와 **같은 모양의 구멍**이다.
+
+    **core-api 가 하는 판정은 경계 하나뿐이다.** `createPreviewRender` 가 쓰는
+    `_require_target_access` 를 **그대로** 부른다 — 판정을 복사하면 한쪽만 고쳐지는
+    날이 온다.
+    ⛔ **`업로드·편집` 을 보지 않는다** — 읽기 전용이고, 보기만 하는 사람도 미리보기
+    변수를 골라야 한다. 렌더 생성(`createPreviewRender`)이 그 스위치를 보는 자리다.
+    ⛔ **파일을 열지 않는다** (`CLAUDE.md §3-4`) — 식별자만 넘긴다.
+    """
+    if not isinstance(body, dict):
+        raise errors.bad_request("target 이 없다.")
+    has_dataset = body.get("datasetId") is not None
+    has_upload = body.get("uploadId") is not None
+    if has_dataset == has_upload:
+        raise errors.bad_request("target 은 datasetId 또는 uploadId 정확히 하나다.")
+    _require_target_access(db, subject, body)
+
+    relay = request.app.state.previews
+    if relay is None:
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
+    try:
+        return relay.describe_target(lab_id=str(subject.lab_id),
+                                     account_id=str(subject.account_id), request=body)
+    except RelayRefused as e:
+        # **그릴 수 없는 파일은 장애가 아니다** — 저쪽의 상태·봉투가 그대로 화면까지 간다.
+        return _refused(e)
+    except RelayUnavailable as e:
+        # **빈 목록을 내지 않는다** — 0건은 「고를 것이 없다」는 답이고, 참인 것은
+        # 「물어보지 못했다」이다 (`listPalettes` 와 같은 자세).
+        raise errors.ApiError(503, RENDER_UNAVAILABLE,
+                              f"그리는 서버에 연결하지 못했다: {e}") from None
+
+
 @router.post("/previews", name="createPreviewRender", status_code=202)
 def create_preview_render(request: Request, response: Response, body: dict = Body(...),
                           subject: Subject = Depends(current_subject),

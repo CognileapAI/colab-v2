@@ -247,7 +247,10 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
             # 조각 수는 메타 열이다 — 본체를 세지 않는다 (㊼). 잠긴 행에서 0 이 되는 것을 막는다.
             # 값은 **본체 파일 수**다 — 기준 격자 파일 제외 (Ted 판정 2026-08-26).
             "fileCount": core.file_count,
+            # ⛔ **파생값 그대로다** — 21차가 여기에 사람 값을 덮어 쓰지 않는다(㉯ 화 금지).
             "processingLevel": d3_catalog.processing_level(summary),
+            # ⭑ **⟨21차 해제 · R-B §5 판정 24·27·41⟩ 사람이 고른 값을 옆에 싣는다.**
+            "processingLevelUserSet": core.processing_level_user_set,
             "period": _data_period(periods.get(dataset_id)),
             "lineageState": d3_catalog.lineage_state(
                 core, summary, unknown_declared=dataset_id in unknown),

@@ -519,6 +519,81 @@ def _read_numpy(path: Path, max_side: int) -> Field:
                  unit=None, native_shape=native, steps=steps, fills=())
 
 
+def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
+    """`(포맷, 그릴 수 있는 이름들, 시각 표기들)` — **값을 읽지 않는다.**
+
+    ⭑ ⟨21차 해제 · `core-viz.yaml#describeTarget`⟩ 화면의 변수 고르개·시각 고르개가
+    값을 얻는 자리다. 종전에는 `RenderRequest.variable`·`instant` 가 고를 값을 열어
+    두고도 **그 목록을 얻을 경로가 0건**이었다.
+
+    ⚠ **`read_field` 의 규칙을 다시 적지 않는다** — 같은 상수(`_COORD_NAMES` ·
+    `_TIME_NAMES`)와 같은 판정(2차원 이상 · `band1..N` · `block_label`)을 쓴다. 여기서
+    한 벌 더 적으면 「고를 수 있다고 한 이름」과 「실제로 그려지는 이름」이 갈린다.
+
+    ⚠ **배열을 만들지 않는다** — 격자를 재투영하지도 소수화하지도 않는다. 이 함수는
+    렌더 부작용이 없고 캐시 키에 닿지 않는다(계약 산문 축자).
+
+    ⚠ **시각은 기본 변수의 축이다.** 파일 안에서 변수마다 시각 축이 다를 수 있지만
+    `_time_index` 도 **고른 변수의 dims** 에서 축을 찾는다 — 같은 자리를 본다.
+    """
+    path = Path(path)
+    fmt = detect_format(path)
+    try:
+        if fmt == "GeoTIFF":
+            import rasterio
+
+            with rasterio.open(path) as src:
+                # `_read_geotiff` 와 **같은 줄**이다 — 밴드 이름은 1부터다.
+                bands = [f"band{i}" for i in range(1, src.count + 1)]
+            if not bands:
+                raise NotRenderableError(f"{path.name}: 밴드가 없다")
+            # GeoTIFF 에는 계약이 고를 시각 축이 없다 — 빈 목록이지 「0개의 시각」이 아니다.
+            return fmt, bands, []
+
+        if fmt == "NetCDF":
+            from netCDF4 import Dataset
+
+            ds = Dataset(str(path), "r")
+            try:
+                drawable = [n for n in ds.variables
+                            if n.lower() not in _COORD_NAMES and ds.variables[n].ndim >= 2]
+                if not drawable:
+                    raise NotRenderableError(f"{path.name}: 2차원 이상 값 변수가 없다")
+                var = ds.variables[_pick_default(drawable)]
+                dims = tuple(getattr(var, "dimensions", ()))
+                time_dim = next((d for d in dims if d.lower() in _TIME_NAMES), None)
+                time_var = ds.variables.get(time_dim) if time_dim else None
+                labels = [] if time_var is None else _instant_labels(time_var)
+                return fmt, drawable, labels
+            finally:
+                ds.close()
+
+        if fmt == "HDF4":
+            from pyhdf.SD import SD, SDC
+
+            sd = SD(str(path), SDC.READ)
+            try:
+                drawable = [n for n, v in sd.datasets().items() if len(v[1]) >= 2]
+            finally:
+                sd.end()
+            if not drawable:
+                raise NotRenderableError(f"{path.name}: 2차원 이상 SDS 가 없다")
+            return fmt, drawable, []
+
+        if fmt == "Binary":
+            result = parse_hsr(path)
+            return fmt, [result.block_label(i) for i in range(len(result.blocks))], []
+
+        if fmt == "NumPy":
+            # `_read_numpy` 와 같다 — 배열 하나뿐이고 이름은 파일 이름이다.
+            return fmt, [path.stem], []
+    except (NotRenderableError, FieldReadError):
+        raise
+    except Exception as e:                       # 포맷은 맞는데 이 파일이 깨졌다
+        raise FieldReadError(f"{path.name}: {type(e).__name__}: {e}") from e
+    raise NotRenderableError(f"지원 목록 밖: {fmt}")
+
+
 def read_field(path: Path, *, variable: str | None = None, instant: str | None = None,
                max_side: int = 1024) -> tuple[str, Field]:
     """(포맷, 값 하나). 위치가 파일 안에 없으면 `Field.has_position` 이 False 다."""

@@ -1,8 +1,9 @@
-"""viz-render 앱 — `core-viz.yaml` 의 표면 **6 op**.
+"""viz-render 앱 — `core-viz.yaml` 의 표면 **7 op**.
 
 등록된 것 — `createRender` · `getRender` · `getRenderTile` · `listPalettes`,
 **`createScreenshot`**(P3 · `WORK-UNITS §10.2` 말미가 완료 정의로 올렸다),
-그리고 **`lookupValue`**(`V-2` 값 조회 · `PLAN-SoT §9 〈294〉` · 15차 해제).
+**`lookupValue`**(`V-2` 값 조회 · `PLAN-SoT §9 〈294〉` · 15차 해제),
+그리고 **`describeTarget`**(대상 기술 · 21차 해제 · 읽기 전용).
 없는 경로는 라우트 표에 없는 것이 정직하다 — 501 로 자리만 잡아 두지 않는다:
 이 seam 에는 「미구현 표」 규약이 없다(그것은 `fe-core` 쪽 장치다).
 """
@@ -23,7 +24,7 @@ from ..kernel.preview_sinks import LocalPreviewSink, S3PreviewSink
 from ..ports.source import FilesystemSourcePort, S3SourcePort
 from .trigger_bus import SpoolTriggerPort
 from .trigger_loop import TriggerDrainLoop
-from .routes import renders, screenshots, style, values
+from .routes import describe, renders, screenshots, style, values
 
 API_PREFIX = "/viz/v1"
 
@@ -122,7 +123,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "tileBranch": "켜짐" if settings.tile_branch_enabled else "꺼짐"}
 
     for router in (renders.router, renders.tile_router,
-                   screenshots.router, style.router, values.router):
+                   screenshots.router, style.router, values.router,
+                   describe.router):
         app.include_router(router, prefix=API_PREFIX)
 
     @app.exception_handler(HTTPException)

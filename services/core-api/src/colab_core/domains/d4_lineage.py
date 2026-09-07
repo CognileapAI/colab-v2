@@ -100,6 +100,18 @@ _DELETE_EDGE = text("""
      RETURNING id
 """)
 
+# ⭑ **⟨21차 해제 · 판정 42⟩ `method` **한 칸만** 고친다.
+# ⛔ `confirmed_at`·`confirmed_by_account_id`·`parent_role` 이 SET 절에 **없는 것이 뜻이다** —
+#    종전에는 오타 한 글자를 고치려면 관계를 지웠다 붙여야 했고, 그러면 「누가 언제
+#    확인했는가」가 지워지고 새로 찍혔다. 다시 확인하는 자리는 `confirmLineage` 뿐이다.
+# ⚠ 테이블에 `updated_at` 류 열이 없다 — 없는 열을 이 회차에 만들지 않는다(마이그레이션 0).
+_UPDATE_EDGE_METHOD = text("""
+    UPDATE d4_lineage_edge
+       SET method = :method
+     WHERE child_dataset_id = :child AND parent_dataset_id = :parent
+     RETURNING id
+""")
+
 _MARK_UNKNOWN = text("""
     INSERT INTO d4_lineage_unknown (dataset_id, lab_id, marked_by_account_id)
     VALUES (:dataset_id, current_lab_id(), :actor)
@@ -194,6 +206,18 @@ def remove_parent(session: Session, *, child_id: Ulid, parent_id: Ulid) -> bool:
     """관계 한 쌍만 지운다 — **데이터셋은 지워지지 않는다.**"""
     return session.execute(_DELETE_EDGE, {
         "child": str(child_id), "parent": str(parent_id)}).first() is not None
+
+
+def update_parent_method(session: Session, *, child_id: Ulid, parent_id: Ulid,
+                         method: str | None) -> bool:
+    """가공 방식 문장 한 칸만 고친다. 없는 관계면 `False` — 라우트가 404 로 낸다.
+
+    ⛔ **확인 기록을 밀지 않는다** (`_UPDATE_EDGE_METHOD` 주석). 이 op 은 확인이 아니다.
+    ⚠ 순환 판정도 락도 없다 — **그래프 모양이 바뀌지 않는다.** 없는 위험에 락을 걸면
+      계보 쓰기 전체가 라벨 수정을 기다린다.
+    """
+    return session.execute(_UPDATE_EDGE_METHOD, {
+        "child": str(child_id), "parent": str(parent_id), "method": method}).first() is not None
 
 
 def mark_unknown(session: Session, *, dataset_id: Ulid, actor_id: Ulid) -> None:

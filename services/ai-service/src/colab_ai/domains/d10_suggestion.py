@@ -56,6 +56,9 @@ class Suggestion:
     parent_dataset_id: str | None = None
     parent_dataset_name: str | None = None
     suggested_parent_role: str = DEFAULT_PARENT_ROLE
+    #: ⭑ ⟨21차 해제 · R-B §5 판정 23⟩ 후보의 가공 단계 — **모르면 `None` 이고 열쇠가 안 생긴다.**
+    #: `0` 을 기본값으로 두면 「모른다」가 「Lv0 이다」로 읽힌다 — 다른 사실이다.
+    parent_processing_level: int | None = None
     method_text: str | None = None
     applies_to_parent_dataset_id: str | None = None
 
@@ -80,6 +83,15 @@ class Suggestion:
                 raise ValueError("부모 데이터셋 이름이 없다 — 화면이 대조할 것이 없어진다.")
             if self.suggested_parent_role not in ("주입력", "보조입력"):
                 raise ValueError(f"부모 역할이 계약 밖이다: {self.suggested_parent_role!r}")
+            # 계약 `ProcessingLevel` = `integer · minimum 0`. ⚠ `bool` 을 먼저 막는다 —
+            # 파이썬에서 `True` 는 `1` 이라 `isinstance(x, int)` 하나뿐이면 샌다.
+            if self.parent_processing_level is not None:
+                if isinstance(self.parent_processing_level, bool) \
+                        or not isinstance(self.parent_processing_level, int) \
+                        or self.parent_processing_level < 0:
+                    raise ValueError(
+                        f"부모 가공 단계가 계약 밖이다: {self.parent_processing_level!r} — "
+                        "`common.json#/$defs/ProcessingLevel` 는 0 이상 정수다.")
             if self.method_text is not None:
                 raise ValueError("가공 전 데이터 제안에 가공 방식 문장을 싣지 않는다.")
         else:
@@ -101,6 +113,10 @@ class Suggestion:
             body["parentDatasetId"] = self.parent_dataset_id
             body["parentDatasetName"] = self.parent_dataset_name
             body["suggestedParentRole"] = self.suggested_parent_role
+            # ⭑ ⟨21차 해제 · 판정 23⟩ **모르면 열쇠 자체를 만들지 않는다** — optional 이고,
+            #    `null` 을 실으면 화면이 그것을 값으로 읽는다(이 메서드 머리 주석 축자).
+            if self.parent_processing_level is not None:
+                body["parentProcessingLevel"] = self.parent_processing_level
         else:
             body["methodText"] = self.method_text
             if self.applies_to_parent_dataset_id:

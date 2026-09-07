@@ -25,7 +25,8 @@ from ...domains import d1_identity, d3_catalog, d6_project, d8_insight
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ..deps import current_subject, scoped_db
-from .catalog import LINEAGE_STATES, PAGE_SIZE, _compose, _decode_cursor, _encode_cursor, _iso
+from .catalog import (LINEAGE_STATES, PAGE_SIZE, _CATEGORIES, _compose, _decode_cursor,
+                      _encode_cursor, _iso)
 
 router = APIRouter()
 
@@ -39,6 +40,11 @@ assert set(MAP_STATE_ORDER) == set(LINEAGE_STATES)
 #: 지표의 「계보 확정」에 드는 상태 (§5 · §4 용어 정의 축자 —
 #: 「원천은 가공 전 데이터가 없는 것이 정상이라 미확정으로 세지 않는다」).
 SETTLED_STATES = ("확정", "원천")
+
+#: ⭑ **⟨21차 해제 · R-B §5 판정 33⟩ 데이터 맵 분류 축의 **줄 순서**.**
+#: 값 자체는 카탈로그의 것을 그대로 쓴다 — `_CATEGORIES` 를 여기서 다시 적지 않는다.
+#: 그것이 「묶는 기준은 카탈로그 필터와 같아야 한다」(§5)를 기계가 지키게 하는 유일한 방법이다.
+MAP_CATEGORY_ORDER = _CATEGORIES
 
 
 @router.get("/dashboard/summary", name="getDashboardSummary")
@@ -76,18 +82,27 @@ def get_data_map(subject: Subject = Depends(current_subject),
     """
     rows = _compose(db)
     by_state = {state: 0 for state in MAP_STATE_ORDER}
+    by_category = {value: 0 for value in MAP_CATEGORY_ORDER}
     by_topic: dict[str, int] = {}
     for row in rows:
         by_state[row["lineageState"]] += 1
         topic = row["topic"]
         if topic:
             by_topic[topic] = by_topic.get(topic, 0) + 1
+        # ⭑ **⟨21차 해제 · 판정 33⟩ 분류 축.** 값은 `_compose` 가 이미 실었다(`_category`) —
+        #   여기서 다시 질의하지 않는다. NULL 인 행은 어느 줄에도 들지 않는다.
+        category = row["_category"]
+        if category in by_category:
+            by_category[category] += 1
     return {
         "totalCount": len(rows),
         "byLineageState": [{"value": s, "count": by_state[s]} for s in MAP_STATE_ORDER],
         # 큰 묶음이 먼저 — 같으면 이름순이라 회차마다 순서가 흔들리지 않는다.
         "byTopic": [{"value": v, "count": c}
                     for v, c in sorted(by_topic.items(), key=lambda kv: (-kv[1], kv[0]))],
+        # ⭑ **5값 전부 담는다 — 0이어도 줄을 지우지 않는다** (`byLineageState` 와 같은 규칙).
+        #   순서는 카탈로그 필터가 쓰는 `_CATEGORIES` 그대로다 — 회차마다 흔들리지 않는다.
+        "byCategory": [{"value": c, "count": by_category[c]} for c in MAP_CATEGORY_ORDER],
     }
 
 

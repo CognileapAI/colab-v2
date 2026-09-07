@@ -200,6 +200,23 @@ class HttpPreviewRelay:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
 
+    def describe_target(self, *, lab_id: str, account_id: str,
+                        request: dict[str, Any]) -> dict[str, Any]:
+        """`describeTarget` 중계 (21차 해제 · 첨가 ⑴).
+
+        **`palettes` 와 같은 규율이다** — 목록을 여기서 만들지 않고, 저쪽이 못 답할 때
+        기본값을 끼워 넣지도 않는다. 변수 목록을 core 가 지어내려면 NetCDF 를 열어야
+        하고, 그 순간 geo 라이브러리가 core 에 들어온다 (`CLAUDE.md §3-4`).
+        """
+        status, body = _request(f"{self._base}/target-descriptions", method="POST",
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body=request)
+        # **거절과 장애를 가른다** — 415 는 「이건 못 그린다」이고 503 은 「지금 못 닿았다」다.
+        _refuse_if_client_error(status, body)
+        if status != 200 or body is None:
+            raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
+        return body
+
     def lookup_value(self, *, lab_id: str, account_id: str,
                      request: dict[str, Any]) -> dict[str, Any]:
         """`lookupValue` 중계 (`〈294〉` · 15차 해제).
