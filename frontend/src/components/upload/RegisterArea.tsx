@@ -936,7 +936,7 @@ function StepThree(props: {
   sourceDownloadedOn: string;
   onSourceDownloadedOn: (v: string) => void;
   /** ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류 인라인 문구. `null` 이면 서지 않는다. */
-  sourceDownloadedOnError?: string | null;
+  sourceDownloadedOnError: string | null;
   lineageStep?: LineageStepRender | undefined;
   ctx: LineageStepContext;
   projectSource: ProjectSource;
@@ -1063,7 +1063,7 @@ export function RegisterArea(props: {
   onSourceUrl: (v: string) => void;
   sourceDownloadedOn: string;
   onSourceDownloadedOn: (v: string) => void;
-  sourceDownloadedOnError?: string | null;
+  sourceDownloadedOnError: string | null;
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
   // ⭑ ⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — ① 이 고르고 ② 의 힌트가 읽는다.

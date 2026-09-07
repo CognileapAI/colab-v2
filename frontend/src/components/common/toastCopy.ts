@@ -110,10 +110,13 @@ export const SOURCE_DOWNLOADED_ON_INVALID = '내려받은 날은 날짜(YYYY-MM-
  * `SOURCE_DOWNLOADED_ON_INVALID` 판정 함수. 서버 `_is_date`(advisor ② F3)와 같은 형상만
  * 통과시킨다 — `^\d{4}-\d{2}-\d{2}$` ∧ 유효한 달력 날짜. 등록·수정 두 자리가 이 하나를 쓴다.
  */
-const SOURCE_DOWNLOADED_ON_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
+const SOURCE_DOWNLOADED_ON_SHAPE = /^(\d{4})-(\d{2})-(\d{2})$/;
 export function isValidSourceDownloadedOnShape(value: string): boolean {
-  if (!SOURCE_DOWNLOADED_ON_SHAPE.test(value)) return false;
-  const [y, m, d] = value.split('-').map(Number);
+  const match = SOURCE_DOWNLOADED_ON_SHAPE.exec(value);
+  if (!match) return false;
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
   const parsed = new Date(Date.UTC(y, m - 1, d));
   return (
     parsed.getUTCFullYear() === y && parsed.getUTCMonth() === m - 1 && parsed.getUTCDate() === d
