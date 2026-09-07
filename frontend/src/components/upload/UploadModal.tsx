@@ -14,10 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import { Toast } from '../common/Toast';
-import {
-  DEFAULT_ACCESS_STATE,
-  type AccessState,
-} from '../common/accessState';
+import { type AccessState } from '../common/accessState';
 import {
   ANALYZED_CHIP,
   ANALYZING_CHIP,
@@ -156,10 +153,12 @@ export function UploadModal(props: {
   const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
-  // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 기본 선택은 `연구실 구성원 전체`(＝`열림`).**
-  // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 칸을 **기본값일 때는**
-  //    세지 않는다(파일만 올린 사람을 되묻지 않는다 · 세 축과 같은 규율).
-  const [accessState, setAccessState] = useState<AccessState>(DEFAULT_ACCESS_STATE);
+  // ⭑ **⟨20차 해제 · PRD-11 · WU-B4 · advisor ② ㊁⟩ 공개 범위 — 처음은 `null` 이다.**
+  // `null` = **사람이 셀렉트를 건드리지 않았다** 이고, 그대로 등록하면 요청에서 열쇠가
+  // 빠져 서버가 연구실 기본값을 따른다(PRD-11 「NULL = 연구실 기본값 · 현행 의미 유지」).
+  // ⛔ 기본값을 골라 넣지 않는다 — 넣으면 연구실 기본값을 바꿔도 옛 값으로 굳고,
+  //    기본값이 `잠김` 인 연구실에서 파일만 올린 사람의 데이터셋이 `열림` 으로 저장된다.
+  const [accessState, setAccessState] = useState<AccessState | null>(null);
   // 변수·기간·좌표계 — **사람이 적는 자유 입력** (정본 `VAL-006` · 스펙 18·19·20).
   // 화면은 문자열로 들고 있다가 제출 자리에서 계약 형상으로 바꾼다.
   // ⭑ **⟨WU-B2 · PRD-16⟩ 변수는 문자열이 아니라 5열 행 집합이다.** 한 행으로 시작한다 —
@@ -417,8 +416,8 @@ export function UploadModal(props: {
     category !== DEFAULT_CATEGORY ||
     dataType !== DEFAULT_DATA_TYPE ||
     level !== DEFAULT_PROCESSING_LEVEL ||
-    // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 기본값에서 바꾼 순간부터 「잃을 것」이다.
-    accessState !== DEFAULT_ACCESS_STATE ||
+    // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
+    accessState !== null ||
     lineageParents.length > 0;
 
   const onLineageProgress = useCallback(
@@ -733,11 +732,10 @@ export function UploadModal(props: {
         // 펼침은 `Record<string, unknown>` 이라 타입 검사가 이 둘을 못 본다.
         category,
         dataType,
-        // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 늘 실린다.** 기본 선택값이 있어
-        // 빈 값으로 나갈 자리가 없고, 서버는 이 값을 `d2_dataset_access` 에 쓴다.
-        // ⚠ `null`(＝연구실 기본값)은 이 화면에서 **고를 수 없다** — 3값 중 하나가 늘 선택돼
-        //   있다. 계약이 nullable 인 것은 다른 클라이언트·수정 경로를 위해서다.
-        accessState,
+        // ⭑ **⟨advisor ② ㊁ · PRD-11⟩ 공개 범위 — 사람이 골랐을 때만 실린다.**
+        // 안 골랐으면 열쇠 자체가 없고, 서버는 `d2_dataset_access` 행을 만들지 않는다
+        // (NULL = 연구실 기본값 · 「현행 의미 유지」). 골랐으면 그 값을 그대로 쓴다.
+        ...(accessState === null ? {} : { accessState }),
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
         projectIds: projects.map((p) => p.projectId),

@@ -27,6 +27,18 @@ export const ACCESS_LABEL: Record<AccessState, string> = {
   '지정 공개': '지정한 사람만',
 };
 
+/** ⭑ **⟨advisor ② ㊁ · PRD-11⟩ 「아직 고르지 않았다」 한 칸.**
+ *
+ * 등록 셀렉트의 **첫 칸**이고 값이 아니다 — 이 상태로 등록하면 요청에 `accessState` 열쇠가
+ * 실리지 않고, 서버가 `d2_dataset_access` 행을 만들지 않는다(NULL = 연구실 기본값 ·
+ * 「현행 의미 유지」). 기본값을 화면이 복사해 실으면 연구실 기본값을 나중에 바꿔도 옛 값으로
+ * 굳고, 기본값이 `잠김` 인 연구실에서 파일만 올린 사람의 데이터셋이 `열림` 으로 저장된다.
+ * ⚠ 라벨이 실제 기본값(`열림`/`잠김`)이 아니라 **중립 문면**인 이유 — `CurrentAccount` 에
+ *   `defaultVisibility` 가 없다(계약 동결 · `GET /labs/{id}` 를 등록 화면이 부르지 않는다).
+ *   그 값을 여기서 지어내지 않는다. */
+export const LAB_DEFAULT_LABEL = '연구실 기본값';
+export const LAB_DEFAULT_NOTE = '연구실 설정의 데이터 공개 범위를 그대로 따른다';
+
 /** 저장값 → 한 줄 설명. 값의 **범위**를 말한다(PRD-11 대응표 「뜻」 열 축자). */
 export const ACCESS_NOTE: Record<AccessState, string> = {
   열림: '연구실 안 누구나 뷰·다운로드',

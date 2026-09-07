@@ -608,38 +608,65 @@ describe('advisor ② F3 — 등록 최종 게이트', () => {
 // 이 자리는 `reg-visibility-slot` 이고 WU-B3 이 **라벨만** 세워 뒀다. WU-B4 가 값을 채우면서
 // 그 슬롯이 실물 셀렉트가 됐다 — 그래서 오라클도 이 파일에 붙는다(같은 화면·같은 harness).
 describe('WU-B4 · PRD-11 공개 범위 3값', () => {
-  it('② 부가 정보의 자리가 **3값 셀렉트**이고 표기가 rev1 축자다', async () => {
+  it('② 부가 정보의 자리가 **3값 셀렉트 ＋ 미조작 칸**이고 표기가 rev1 축자다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
     const slot = screen.getByTestId('reg-visibility-slot');
     const options = within(slot).getAllByRole('option');
-    expect(options).toHaveLength(3);
+    // ⭑ **⟨advisor ② ㊁⟩ 첫 칸은 값이 아니라 「아직 고르지 않았다」다.**
+    //   그 상태로 등록하면 열쇠가 빠지고 서버가 연구실 기본값을 쓴다(PRD-11 「현행 의미 유지」).
+    expect(options).toHaveLength(4);
     expect(options.map((o) => o.textContent)).toEqual([
+      '연구실 기본값',
       '연구실 구성원 전체',
       '나만 보기',
       '지정한 사람만',
     ]);
     // **저장값은 표기와 다르다** — 「열림/잠김」 어휘를 지우지 않는다(PRD-11 축자).
     expect(options.map((o) => (o as HTMLOptionElement).value)).toEqual([
+      '',
       '열림',
       '잠김',
       '지정 공개',
     ]);
   });
 
-  it('기본 선택이 `연구실 구성원 전체` 이고 고른 값의 **범위**가 한 줄로 뜬다', async () => {
+  it('처음 선택은 `연구실 기본값` 이고 고른 값의 **범위**가 한 줄로 뜬다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
     const select = screen.getByTestId('reg-visibility') as HTMLSelectElement;
-    expect(select.value).toBe('열림');
+    expect(select.value).toBe('');
     expect(screen.getByTestId('reg-visibility-note').textContent)
-      .toBe('연구실 안 누구나 뷰·다운로드');
+      .toBe('연구실 설정의 데이터 공개 범위를 그대로 따른다');
     await change(select, '지정 공개');
     expect((screen.getByTestId('reg-visibility') as HTMLSelectElement).value).toBe('지정 공개');
     // `지정한 사람만` 은 허용 목록 0건으로 시작해 사실상 `나만 보기` 와 같다 — 그 사실이 뜬다.
     expect(screen.getByTestId('reg-visibility-note').textContent)
       .toBe('허용 목록에 오른 사람만. 만료 = 승인일 + 6개월');
+  });
+
+  it('셀렉트를 건드리지 않으면 등록 요청에 `accessState` 열쇠가 **없다**', async () => {
+    const { sources, calls } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    expect(calls.registered).toHaveLength(1);
+    expect('accessState' in calls.registered[0]!).toBe(false);
+  });
+
+  it('셀렉트를 고르면 그 값이 등록 요청에 실린다', async () => {
+    const { sources, calls } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    await change(screen.getByTestId('reg-visibility'), '잠김');
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    expect(calls.registered).toHaveLength(1);
+    expect(calls.registered[0]!.accessState).toBe('잠김');
   });
 });

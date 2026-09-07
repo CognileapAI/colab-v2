@@ -176,7 +176,9 @@ CREATE TABLE d2_dataset_access (
 );
 CREATE INDEX d2_dataset_access_lab_idx ON d2_dataset_access (lab_id);
 
--- 볼 수 있는 사람 목록 — 잠김일 때만 쓰인다. 줄마다 만료일 = 승인일 + 6개월 (P-24 · P-25).
+-- 볼 수 있는 사람 목록 — `지정 공개` 가 쓰는 표다. 줄마다 만료일 = 승인일 + 6개월 (P-24 · P-25).
+-- ⭑ ⟨WU-B4 · PRD-11⟩ 3값이 된 뒤로 `잠김` 은 **허용 목록이 비어 있다**는 뜻이다 —
+--   유효 줄이 있으면 그 데이터셋의 상태는 `지정 공개` 다(불변식 · `0017` 이관).
 -- 승인 단위는 데이터 한 건이다 — 사람 단위·연구실 단위 일괄 승인 자리를 만들지 않는다.
 CREATE TABLE d2_dataset_access_grant (
   id                   ulid        PRIMARY KEY,

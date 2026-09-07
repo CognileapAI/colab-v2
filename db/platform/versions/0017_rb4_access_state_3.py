@@ -158,6 +158,23 @@ ALTER TABLE d1_lab_profile NO FORCE ROW LEVEL SECURITY;
 UPDATE d1_lab_profile SET default_visibility = '잠김' WHERE default_visibility = '지정 공개';
 ALTER TABLE d1_lab_profile FORCE ROW LEVEL SECURITY;
 
+-- ⭑ **⟨advisor ② · Missed⟩ 되올렸는지 DB 에게 되묻는다 — upgrade 와 같은 단언이다.**
+--   되돌림 창도 두 표의 FORCE 를 내렸다 왔다. 단언이 upgrade 에만 있으면 downgrade 로
+--   내려간 DB 는 RLS 가 풀린 채로 남고, 그 사실을 아무 검사도 잡지 않는다.
+DO $$
+DECLARE loose text;
+BEGIN
+  SELECT string_agg(relname, ', ') INTO loose
+    FROM pg_class
+   WHERE relnamespace = 'public'::regnamespace
+     AND relname IN ('d2_dataset_access', 'd1_lab_profile')
+     AND NOT relforcerowsecurity;
+  IF loose IS NOT NULL THEN
+    RAISE EXCEPTION 'FORCE ROW LEVEL SECURITY 가 복구되지 않았다 (%) — 되돌림을 되돌린다', loose;
+  END IF;
+END
+$$;
+
 -- ⑵ 2값으로 좁힌다.
 ALTER TABLE d2_dataset_access DROP CONSTRAINT IF EXISTS d2_dataset_access_state_check;
 ALTER TABLE d2_dataset_access

@@ -307,6 +307,20 @@ _EXPIRE_GRANTS = text("""
      WHERE dataset_id = :dataset_id AND expires_at > now()
 """)
 
+#: ⭑ **⟨advisor ② ㊀ · WU-B4⟩ 데이터셋 단위 직렬화.** 두 쓰기 경로(승인 승격 · 잠김 내림)의
+#: **첫 문장**이 이것을 잡는다. 불변식 「`잠김` ∧ 유효 grant ≥1 = 0건」이 **두 표에 걸친**
+#: 조건이라 행 잠금으로는 못 덮는다 — 상태 행이 아직 없는 데이터셋(NULL = 연구실 기본값)에는
+#: 잠글 행 자체가 없고, grant 표에는 겹칠 줄이 없다. 그래서 **데이터셋 id 하나**를 잠근다.
+#: `xact` 판이라 트랜잭션이 끝나면 자동으로 풀린다 — 푸는 문장을 잊을 자리가 없다.
+_LOCK_DATASET = text("SELECT pg_advisory_xact_lock(hashtext(:dataset_id))")
+
+#: 같은 잠금을 **요청 id** 로 잡는다 — 승인 경로는 데이터셋 id 를 요청 줄에서 얻는다.
+#: 행이 없으면 0행이라 잠금도 없다(그 갈래는 어차피 `None` 으로 끝난다).
+_LOCK_REQUEST_DATASET = text("""
+    SELECT pg_advisory_xact_lock(hashtext(dataset_id))
+      FROM d2_dataset_access_request WHERE id = :id
+""")
+
 #: 승인이 상태를 함께 올린다 — **`잠김` 일 때만**이다. `지정 공개` 는 그대로고(전이표),
 #: `열림` 은 애초에 요청이 성립하지 않는다. 행이 없으면(NULL = 연구실 기본값) 건드리지
 #: 않는다 — 연구실 기본값이 `잠김` 인 경우는 아래 `raise_state_on_approval` 이 판정한다.
@@ -446,6 +460,9 @@ def set_access_state(session: Session, *, dataset_id: Ulid, state: str | None) -
     """
     if state is not None and state not in ACCESS_STATES:
         raise ValueError(state)
+    # ⭑ ⟨advisor ② ㊀⟩ **첫 문장**이 데이터셋을 잠근다 — 겹친 승인이 커밋을 마칠 때까지
+    #   기다렸다가 만료를 돌아야 그 grant 를 본다.
+    session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)})
     expired = 0
     if state == LOCKED:
         expired = session.execute(_EXPIRE_GRANTS, {"dataset_id": str(dataset_id)}).rowcount
@@ -464,6 +481,10 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
     승인이면 같은 트랜잭션에서 허용 목록 한 줄을 함께 쓴다 — 상태만 바뀌고 허용 줄이
     없는 상태가 생기면 요청자는 「승인됐다」고 듣고 본체는 계속 닫혀 있다.
     """
+    # ⭑ ⟨advisor ② ㊀⟩ **첫 문장**이 그 요청의 데이터셋을 잠근다. 요청 줄에서 id 를 먼저
+    #   읽는다 — 요청의 `dataset_id` 는 만들어진 뒤 바뀌지 않으므로 잠금 전 읽기로 족하다.
+    #   줄이 없으면 0행이고 잠금도 없다(아래에서 `None` 으로 떨어진다).
+    session.execute(_LOCK_REQUEST_DATASET, {"id": request_id})
     decided = session.execute(_DECIDE_ACCESS_REQUEST, {
         "id": request_id, "state": "승인됨" if approve else "거절됨",
         "decider": str(decider_id), "rejection_reason": None if approve else rejection_reason,

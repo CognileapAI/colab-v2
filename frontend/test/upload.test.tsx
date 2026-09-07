@@ -1152,10 +1152,14 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축이 늘었다** — 기본 선택값이 있어 늘 실린다.
     //   `category`·`dataType` 은 계약 `required` 이기도 하다(20차 ㉯).
     expect(Object.keys(body).sort()).toEqual(
-      // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위도 늘 실린다 — 기본 선택값이 있다.
-      ['accessState', 'category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
+      // ⭑ **⟨advisor ② ㊁ · PRD-11⟩ 공개 범위는 사람이 셀렉트를 건드렸을 때만 실린다.**
+      //   건드리지 않으면 열쇠가 **없고**, 서버는 그것을 「연구실 기본값을 따른다」로 읽는다
+      //   (NULL = 연구실 기본값 · 「현행 의미 유지」). 기본값을 복사해 실으면 연구실 기본값을
+      //   바꿔도 옛 값으로 굳고, 기본값이 `잠김` 인 연구실에서 `열림` 으로 저장된다.
+      ['category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
        'sourceLabel', 'summary', 'topic', 'uploadId'].sort(),
     );
+    expect('accessState' in body).toBe(false);
     expect(body.topic).toBeNull();
   });
 

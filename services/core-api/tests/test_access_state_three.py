@@ -211,3 +211,88 @@ def test_another_lab_sees_no_access_rows(p2_client, sql) -> None:
     mine = sql("SELECT count(*) AS n FROM d2_dataset_access",
                account_id=ACC_A_RES, lab_id=LAB_A)
     assert mine[0]["n"] >= 2, "A 세션에서도 0 이면 위의 0 은 경계가 만든 0 이 아니다."
+
+
+# ═══════ ㈑ 이어서 — **동시성**: 승인 ∥ 내림이 겹쳐도 불변식이 0건 ══════════
+#
+# ⭑ **⟨advisor ② ㊀⟩ 「어느 시점에도」는 직렬 경로만으로는 참이 아니다.**
+#
+# READ COMMITTED 에서 잠금이 없으면 두 트랜잭션이 이렇게 엇갈린다 —
+#   T1(승인)  INSERT grant → UPDATE state='지정 공개'        … 아직 커밋 전
+#   T2(내림)  UPDATE grants SET expires_at=now()             … T1 의 grant 가 안 보여 0행
+#             UPSERT state='잠김' → 커밋
+#   T1 커밋   → `잠김` ∧ 유효 grant 1건 = **불변식 위반**
+#
+# 그래서 두 쓰기 경로의 **첫 문장**이 데이터셋 단위 `pg_advisory_xact_lock` 을 잡는다.
+# 이 시험은 그 잠금이 실제로 **막는지**를 잰다 — 두 세션을 동시에 열고, T2 가 T1 커밋
+# 전에 끝나지 않음을 확인한 뒤, 커밋 순서를 강제하고 불변식을 센다.
+def test_approval_and_lowering_cannot_interleave(session_factory, sql) -> None:
+    """두 세션이 겹쳐도 `잠김` ∧ 유효 grant = 0건. **잠금이 없으면 red 다.**"""
+    import threading
+
+    from colab_core.kernel.auth import Subject
+    from colab_core.kernel.ids import Ulid
+    from colab_core.kernel.scope import apply_scope
+
+    from colab_core.domains import d2_access
+
+    # 요청 한 줄을 미리 세워 둔다 — 승인 경로가 소비할 재료다.
+    request_id = "0000000000000000000000AR90"
+    sql("""
+        INSERT INTO d2_dataset_access_request
+          (id, lab_id, dataset_id, requester_account_id, reason)
+        VALUES (:id, current_lab_id(), :ds, :requester, '동시성 시험')
+    """, {"id": request_id, "ds": DS_A2, "requester": ACC_A_RES},
+        account_id=ACC_A_PROF)
+
+    def opened(account_id: str):
+        s = session_factory()
+        s.begin()
+        apply_scope(s, Subject(account_id=Ulid(account_id), lab_id=Ulid(LAB_A)))
+        return s
+
+    t1 = opened(ACC_A_PROF)       # 승인
+    t2 = opened(ACC_A_PROF)       # 내림
+    lowered: list = []
+    failed: list = []
+
+    def lower() -> None:
+        try:
+            lowered.append(d2_access.set_access_state(
+                t2, dataset_id=Ulid(DS_A2), state="잠김"))
+            t2.commit()
+        except Exception as exc:      # noqa: BLE001 — 실패 원인을 본체로 옮긴다
+            failed.append(exc)
+            t2.rollback()
+
+    try:
+        d2_access.decide_access_request(
+            t1, request_id=request_id, decider_id=Ulid(ACC_A_PROF),
+            approve=True, rejection_reason=None)
+        # T1 은 아직 커밋 전이다 — 여기서 T2 를 띄운다.
+        worker = threading.Thread(target=lower, daemon=True)
+        worker.start()
+        worker.join(timeout=2.0)
+        assert worker.is_alive(), \
+            "내림이 승인 트랜잭션 커밋 전에 끝났다 — 데이터셋 단위 잠금이 없다."
+        t1.commit()
+        worker.join(timeout=10.0)
+        assert not worker.is_alive(), "잠금 해제 뒤에도 내림이 끝나지 않았다."
+        assert not failed, f"내림이 예외로 끝났다: {failed!r}"
+        # 잠금이 걸렸으므로 T2 의 만료가 T1 의 grant 를 **본다**.
+        assert lowered == [1], f"끊긴 사람 수가 1 이 아니다: {lowered!r}"
+    finally:
+        for s in (t1, t2):
+            try:
+                s.rollback()
+            finally:
+                s.close()
+
+    rows = sql("""
+        SELECT count(*) AS n
+          FROM d2_dataset_access a
+         WHERE a.state = '잠김'
+           AND EXISTS (SELECT 1 FROM d2_dataset_access_grant g
+                        WHERE g.dataset_id = a.dataset_id AND g.expires_at > now())
+    """)
+    assert rows[0]["n"] == 0, "승인 ∥ 내림이 겹쳐 잠김 ∧ 유효 grant 가 생겼다."

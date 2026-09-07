@@ -18,6 +18,8 @@ import {
   ACCESS_LABEL,
   ACCESS_NOTE,
   ACCESS_STATES,
+  LAB_DEFAULT_LABEL,
+  LAB_DEFAULT_NOTE,
   type AccessState,
 } from '../common/accessState';
 import { PermissionGate } from '../../permission/PermissionGate';
@@ -314,8 +316,9 @@ function StepMeta(props: {
   nameError: boolean;
   summaryError: boolean;
   // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 부가 정보의 셀렉트 한 칸.**
-  accessState: AccessState;
-  onAccessState: (v: AccessState) => void;
+  //   `null` = 아직 고르지 않았다(연구실 기본값을 따른다 · advisor ② ㊁).
+  accessState: AccessState | null;
+  onAccessState: (v: AccessState | null) => void;
   // ⭑ ⟨PRD-33 ⑵⟩ 설명 칸 아래 힌트가 읽는 두 축. 값 자체는 ① 이 쥐고 있다.
   category: string;
   level: string;
@@ -664,9 +667,15 @@ function StepMeta(props: {
             id="reg-visibility"
             className="sel"
             data-testid="reg-visibility"
-            value={props.accessState}
-            onChange={(e) => props.onAccessState(e.target.value as AccessState)}
+            value={props.accessState ?? ''}
+            onChange={(e) =>
+              props.onAccessState(e.target.value === '' ? null : (e.target.value as AccessState))
+            }
           >
+            {/* ⭑ **⟨advisor ② ㊁⟩ 첫 칸은 값이 아니라 「아직 고르지 않았다」다.**
+                이 상태로 등록하면 요청에 열쇠가 빠지고 서버가 연구실 기본값을 쓴다 —
+                PRD-11 「NULL = 연구실 기본값(현행 의미 유지)」. */}
+            <option value="">{LAB_DEFAULT_LABEL}</option>
             {ACCESS_STATES.map((v) => (
               <option key={v} value={v}>
                 {ACCESS_LABEL[v]}
@@ -676,7 +685,7 @@ function StepMeta(props: {
           {/* 고른 값의 **범위**를 한 줄로 적는다 — `지정한 사람만` 은 허용 목록 0건으로
               시작해 사실상 `나만 보기` 와 같다는 사실이 여기서 드러난다(PRD-11 ⚠). */}
           <p className="fieldnote" data-testid="reg-visibility-note">
-            {ACCESS_NOTE[props.accessState]}
+            {props.accessState === null ? LAB_DEFAULT_NOTE : ACCESS_NOTE[props.accessState]}
           </p>
         </div>
       </div>
@@ -997,8 +1006,8 @@ export function RegisterArea(props: {
   level: string;
   onLevel: (v: string) => void;
   // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — ② 부가 정보로 그대로 흘린다.
-  accessState: AccessState;
-  onAccessState: (v: AccessState) => void;
+  accessState: AccessState | null;
+  onAccessState: (v: AccessState | null) => void;
   nameError: boolean;
   summaryError: boolean;
   registerError: string | null;
