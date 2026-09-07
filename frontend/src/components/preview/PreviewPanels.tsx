@@ -6,7 +6,8 @@ import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from
 import { legendValue } from './format';
 import { resultImageSrc, tileUrl } from './tiles';
 import { baseLevel, levelFor, visibleTiles } from './tileGrid';
-import type { ZoomPan } from './useZoomPan';
+import { centeredPanFor, type ZoomPan } from './useZoomPan';
+import { BoundsOutline, PreviewZoomControls } from './PreviewZoomControls';
 
 /** 정본 §8.1 「휘발 고지」 — 두 문장과 등록 길이 **한 줄**에 있다. 남은 시간은 세지 않는다. */
 export function VolatileNotice(props: { onRegister: () => void }) {
@@ -255,11 +256,16 @@ export function PreviewMap(props: {
                   // **상자는 뷰포트가 답한다** — `zoom.box` 는 같은 사각형을 재어 둔 값이고
                   // 아직 못 잰 순간에도 이 경로가 서야 한다(못 재면 조회 자체가 없어진다).
                   const rect = e.currentTarget.getBoundingClientRect();
+                  // ⭑ ⟨WU-C4⟩ **역산은 화면에 실제로 걸린 변환을 써야 한다.** 사다리가
+                  //   1 보다 작은 배율을 세우면 데이터는 틀 한가운데로 밀려 있고, 그
+                  //   밀린 양은 여기서 방금 잰 상자에서 나온다(훅이 못 잰 순간도 있다).
+                  const z = zoom ?? { scale: 1, x: 0, y: 0 };
+                  const zc = { scale: z.scale, ...centeredPanFor(z, { width: rect.width, height: rect.height }) };
                   const p = pointFromViewport(
                     { x: e.clientX - rect.left, y: e.clientY - rect.top },
                     { width: rect.width, height: rect.height },
                     result.bounds as NonNullable<RenderResult['bounds']>,
-                    zoom ?? { scale: 1, x: 0, y: 0 },
+                    zc,
                   );
                   if (p) props.onPickPoint?.(p);
                 },
@@ -272,7 +278,8 @@ export function PreviewMap(props: {
                 onMouseMove: (e: import('react').MouseEvent<HTMLDivElement>) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const b = result.bounds as NonNullable<RenderResult['bounds']>;
-                  const z = zoom ?? { scale: 1, x: 0, y: 0 };
+                  const z0 = zoom ?? { scale: 1, x: 0, y: 0 };
+                  const z = { scale: z0.scale, ...centeredPanFor(z0, { width: rect.width, height: rect.height }) };
                   const lon = pvLonOf(e.clientX - rect.left, rect.width, b, z);
                   const lat = pvLatOf(e.clientY - rect.top, rect.height, b, z);
                   setHud(lon === undefined || lat === undefined ? '밖' : { lat, lon });
@@ -286,6 +293,9 @@ export function PreviewMap(props: {
                    `preventDefault` 가 무효다(검수 #24). 리스너는 `useZoomPan` 이
                    `{ passive: false }` 로 직접 건다. */
                 onMouseDown: zoom.onMouseDown,
+                /* 더블클릭 = **데이터 경계에 맞춤**(여백 0 · 판정 축자). 경계가 없으면
+                   기본 배율과 같은 자리라 아무 일도 하지 않는 것과 같다. */
+                onDoubleClick: zoom.fitToData,
                 'data-zoomable': 'true',
               }
             : {})}
@@ -297,6 +307,8 @@ export function PreviewMap(props: {
               ? {
                   'data-zoom-scale': String(zoom.scale),
                   'data-zoom-max-scale': String(zoom.maxScale),
+                  'data-zoom-base-scale': String(zoom.baseScale),
+                  ...(zoom.rungKm !== undefined ? { 'data-scale-rung-km': String(zoom.rungKm) } : {}),
                   ...(tiled && zoom.box && result.bounds
                     ? {
                         'data-tile-level': String(
@@ -314,6 +326,7 @@ export function PreviewMap(props: {
             {tiled && zoom && result.tileUrlTemplate && result.bounds ? (
               <TileMosaic template={result.tileUrlTemplate} bounds={result.bounds} zoom={zoom} />
             ) : null}
+            {zoom?.showBoundsOutline ? <BoundsOutline /> : null}
             {src ? (
               <img
                 className="pv-tile"
@@ -337,7 +350,7 @@ export function PreviewMap(props: {
                 : `${HUD_SOURCE_LABEL} · 위도 ${hudCoord(hud.lat)} · 경도 ${hudCoord(hud.lon)}`}
           </p>
         ) : null}
-        {zoom ? <ZoomControls zoom={zoom} /> : null}
+        {zoom ? <PreviewZoomControls zoom={zoom} /> : null}
         {props.actions ?? null}
         {props.valuePanel ?? null}
       </div>
@@ -410,36 +423,9 @@ function TileMosaic(props: {
   );
 }
 
-/**
- * 확대 컨트롤. **편집 컨트롤이 아니다** — 정본 §8 `확대·이동` 행이 「확대는 시각화 편집이
- * 아니라 보기다 … 보기 권한만 있어도 된다」로 못 박았으므로 권한으로 가리지 않는다(조건 ⑹).
- * 한계 안내 문구는 정본 축자다 — 여기서 새 한국어를 만들지 않는다(조건 ⑷).
- */
-function ZoomControls(props: { zoom: ZoomPan }) {
-  const { zoom } = props;
-  return (
-    <div className="pv-zoom" data-testid="preview-zoom">
-      {/* ⭑ ⟨버그 8⟩ **한계에 닿은 확대는 눌리지 않는다.** 종전에는 늘 눌리는 버튼이었고,
-          한계 배율이 1 인 산출물(실측 808~821 px)에서는 눌러도 아무 일이 없었다 —
-          「고장인가」와 「여기가 끝인가」를 화면이 가려 주지 않았다. 아래 한계 안내와
-          **같은 사실 하나**(`zoom.atLimit`)를 말한다. */}
-      <button type="button" onClick={zoom.zoomIn} disabled={zoom.atLimit} aria-disabled={zoom.atLimit}>
-        확대
-      </button>
-      <button type="button" onClick={zoom.zoomOut}>
-        축소
-      </button>
-      <button type="button" onClick={zoom.reset}>
-        기본 배율로
-      </button>
-      {zoom.atLimit ? (
-        <p className="pv-muted" data-testid="zoom-limit" aria-live="polite">
-          원본 해상도까지 봤어요
-        </p>
-      ) : null}
-    </div>
-  );
-}
+/* 확대 컨트롤은 **세 화면 공용 컴포넌트 한 자리**로 옮겼다(WU-C4 ·
+   `PreviewZoomControls.tsx`) — 상세·업로드·확장보기가 같은 마크업을 쓴다. 문면·`atLimit`
+   판정·`data-testid` 는 옮기면서 한 글자도 바꾸지 않았다. */
 
 /**
  * 정본 §8.1 「계보·족보」와 「검색·공유·승인」 — **빈 자리 + 안내 문구.**

@@ -193,6 +193,19 @@
 
 .pv-layers {
   will-change: transform;
+  /* WU-C4 — 경계 외곽선이 층 묶음을 기준으로 선다. 모자이크 조각은 이미 절대 배치다. */
+  position: relative;
+}
+
+/* WU-C4 — **「지금 어디를 보고 있는지」 외곽선.** 층 묶음의 좌표계에서 데이터 경계는 곧
+   층 전체라 상자 하나로 끝난다. 변환은 층에 걸린 것 하나를 함께 탄다(정본 §8 조건 ⑸).
+   ⚠ 배경 지도(해안선·국경)는 WU-C5 다 — 이 사각형은 자산 없이 선다. */
+.pv-bounds-outline {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--accent, #2f6feb);
+  border-radius: 2px;
+  pointer-events: none;
 }
 
 .pv-layers .pv-tile {

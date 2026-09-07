@@ -336,7 +336,11 @@ function StartedPreview(props: {
     onSlotState?.(slot);
   }, [onSlotState, slot]);
   // **훅은 조건 밖에서 부른다** — 렌더가 어느 단계든 같은 순서로 불려야 한다.
-  const zoom = useZoomPan();
+  // ⭑ ⟨WU-C4⟩ 경계를 넘긴다 — 기본 배율을 **축척 사다리**가 정한다(축 ①-⑤).
+  //   완료 전에는 경계가 없고, 그때 훅은 종전과 같이 움직인다.
+  const zoom = useZoomPan({
+    bounds: state.phase === '완료' ? state.result.bounds : undefined,
+  });
   // 값 조회 (`〈294〉`). **렌더를 다시 시작하지 않는다**(완료 정의 ⑵).
   const value = useValueLookup(props.datasetSource);
 

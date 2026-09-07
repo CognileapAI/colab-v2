@@ -18,6 +18,8 @@ import { GridUploadBlock, type GridActions } from './GridUploadBlock';
 import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
+import { BoundsOutline, PreviewZoomControls } from '../preview/PreviewZoomControls';
+import { useZoomPan } from '../preview/useZoomPan';
 import { PreviewPickRow } from '../preview/PreviewPickRow';
 import {
   createWithPieceFallback,
@@ -236,6 +238,13 @@ export function PreviewPanel(props: {
   const salvage = salvageOf(failure);
   // **성공 경로의 ①②** (`〈88〉` 묶음 3). 이전에는 성공하면 오히려 사라지던 자리다.
   const layers = result ? layersOf(result) : null;
+
+  // ⭑ ⟨WU-C4⟩ **업로드 화면도 상세와 같은 훅·같은 버튼을 쓴다**(판정 축자 「세 화면 공유」).
+  //   확장보기는 **자기 층의 배율을 따로 쥔다** — 같은 상태를 두 층이 나눠 쓰면 뒤 층을
+  //   확대해 둔 채로 앞 층이 열리는 자리가 생긴다. 훅은 **조건 밖**에서 둘 다 부른다.
+  const mapBounds = result?.bounds;
+  const zoom = useZoomPan({ bounds: mapBounds });
+  const expandZoom = useZoomPan({ bounds: mapBounds });
 
   // 색 범위 — **조용히 바뀌지 않는다.** 앞서 본 범위와 견줘 바뀜을 한 번 말한다 (`§D.4`)
   const stage = result?.colorRangeStage ?? salvage?.colorRangeStage;
@@ -479,15 +488,41 @@ export function PreviewPanel(props: {
             />
           ) : null}
           {previewImageSrc(result) ? (
-            <img
-              className="tile"
-              alt="미리보기"
-              /* 계약이 `oneOf` 라 갈래마다 다른 자리다 — 단일 이미지(stage 1)와 타일(stage 2) */
-              data-testid={result.imageUrl ? 'up-preview-image' : 'up-preview-tile'}
-              src={previewImageSrc(result)}
-              onError={() => setTileExpired(true)}
-            />
+            <div
+              className="pv-viewport"
+              data-testid="up-preview-viewport"
+              ref={zoom.viewportRef}
+              onMouseDown={zoom.onMouseDown}
+              /* 더블클릭 = 데이터 경계에 맞춤(여백 0). 상세와 같은 규칙이다. */
+              onDoubleClick={zoom.fitToData}
+              data-zoomable="true"
+            >
+              <div
+                className="pv-layers"
+                data-testid="up-preview-layers"
+                data-zoom-scale={String(zoom.scale)}
+                data-zoom-base-scale={String(zoom.baseScale)}
+                {...(zoom.rungKm !== undefined ? { 'data-scale-rung-km': String(zoom.rungKm) } : {})}
+                style={{
+                  transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`,
+                  transformOrigin: '0 0',
+                }}
+              >
+                {zoom.showBoundsOutline ? <BoundsOutline /> : null}
+                <img
+                  className="tile pv-tile"
+                  alt="미리보기"
+                  /* 계약이 `oneOf` 라 갈래마다 다른 자리다 — 단일 이미지(stage 1)와 타일(stage 2) */
+                  data-testid={result.imageUrl ? 'up-preview-image' : 'up-preview-tile'}
+                  src={previewImageSrc(result)}
+                  onLoad={zoom.onImageLoad}
+                  onError={() => setTileExpired(true)}
+                />
+              </div>
+            </div>
           ) : null}
+          {/* 확대/축소 줄 — 상세·확장보기와 **같은 컴포넌트**다(사용자 스토리 7) */}
+          <PreviewZoomControls zoom={zoom} testId="up-preview-zoom" />
           {tileExpired && (
             <div className="vizerr" role="alert" aria-live="assertive" data-testid="up-preview-expired">
               타일 주소의 수명이 다했어요. 미리보기를 다시 그려 주세요.
@@ -558,7 +593,40 @@ export function PreviewPanel(props: {
       {expanded && (
         <PreviewExpandOverlay title="미리보기" requestClose={() => setExpanded(false)}>
           {result?.imageUrl ? (
-            <img className="pvx-img" alt="" data-testid="pv-expand-image" src={result.imageUrl} />
+            <>
+              <div
+                className="pv-viewport"
+                data-testid="pv-expand-viewport"
+                ref={expandZoom.viewportRef}
+                onMouseDown={expandZoom.onMouseDown}
+                onDoubleClick={expandZoom.fitToData}
+                data-zoomable="true"
+              >
+                <div
+                  className="pv-layers"
+                  data-testid="pv-expand-layers"
+                  data-zoom-scale={String(expandZoom.scale)}
+                  data-zoom-base-scale={String(expandZoom.baseScale)}
+                  {...(expandZoom.rungKm !== undefined
+                    ? { 'data-scale-rung-km': String(expandZoom.rungKm) }
+                    : {})}
+                  style={{
+                    transform: `translate(${expandZoom.x}px, ${expandZoom.y}px) scale(${expandZoom.scale})`,
+                    transformOrigin: '0 0',
+                  }}
+                >
+                  {expandZoom.showBoundsOutline ? <BoundsOutline /> : null}
+                  <img
+                    className="pvx-img pv-tile"
+                    alt=""
+                    data-testid="pv-expand-image"
+                    src={result.imageUrl}
+                    onLoad={expandZoom.onImageLoad}
+                  />
+                </div>
+              </div>
+              <PreviewZoomControls zoom={expandZoom} testId="pv-expand-zoom" />
+            </>
           ) : (
             <p className="muted" data-testid="pv-expand-empty">
               아직 그리지 않았어요
