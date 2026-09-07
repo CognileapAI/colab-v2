@@ -367,8 +367,10 @@ describe('WU-A6 — 상세 기본 정보', () => {
       INTERVAL_MISSING_NOTICE,
     );
     expect(INTERVAL_MISSING_NOTICE).toBe('관측 간격 미기재');
-    // 기본 정보는 **아홉 칸 그대로**다 — 칸을 늘리지 않았다 (`Policy_데이터셋_상세 §5`).
-    expect(screen.getByTestId('basic-info').querySelectorAll('.ig')).toHaveLength(9);
+    // ⭑ **⟨20차 해제 · PRD-06 · WU-B7⟩ 3축 3행이 앞에 서서 열두 칸이다.**
+    // ／ 종전 ~~아홉~~ — **관측 간격이 칸을 늘린 것이 아니라는 이 시험의 뜻은 그대로다**:
+    // 간격은 여전히 기간 칸 안에 산다(아래 두 줄이 그것을 잰다).
+    expect(screen.getByTestId('basic-info').querySelectorAll('.ig')).toHaveLength(12);
     expect(screen.getByTestId('ig-기간').textContent).not.toContain('()');
   });
 });
