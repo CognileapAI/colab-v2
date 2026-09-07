@@ -491,7 +491,13 @@ describe('㈏ 기간 달력 팝오버 (PRD-18)', () => {
     expect(days.length).toBeGreaterThan(27);
     await click(days[0]!);
     await click(within(screen.getByTestId('reg-period-pop')).getByTestId('reg-period-apply'));
-    expect((screen.getByTestId('reg-period-start-year') as HTMLInputElement).value).not.toBe('');
+    // ⭑ ⟨R-C · WU-C8 · §5-14⟩ 인라인 자리 칸이 걷혔으므로 「값이 섰다」는 다시 열어 본
+    //    팝오버가 고른 날을 **들고 돌아오는가**로 잰다 — 적용이 바깥 상태를 바꿨다는 사실은
+    //    같은 것이고, 그것이 요청에 실린다는 사실은 아래 ㈒ 와 `fe-small-rc8` 이 잰다.
+    await click(screen.getByTestId('reg-period-open'));
+    const reopened = await screen.findByTestId('reg-period-pop');
+    expect((within(reopened).getByTestId('reg-period-pop-start-year') as HTMLInputElement).value)
+      .not.toBe('');
   });
 });
 
@@ -573,7 +579,13 @@ describe('㈒ PRD-40 종료 비움', () => {
     await openRegister(sources);
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
-    await change(screen.getByTestId('reg-period-start'), '2020-06-01');
+    // ⭑ ⟨R-C · WU-C8 · §5-14⟩ 기간은 달력 팝오버 하나로만 받는다.
+    await click(screen.getByTestId('reg-period-open'));
+    await click(screen.getByTestId('reg-period-unit-일'));
+    await change(screen.getByTestId('reg-period-pop-start-year'), '2020');
+    await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+    await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+    await click(screen.getByTestId('reg-period-apply'));
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);

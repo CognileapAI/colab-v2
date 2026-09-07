@@ -26,7 +26,7 @@ import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
 import { formatExtension, formatPeriodWithInterval } from '../detail/format';
 import { extensionOf } from './FileDropCard';
-import { EMPTY_PARTS, GRANULARITIES, assemble, partsFor, type PeriodParts } from './periodParts';
+import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { PeriodCalendarPopover } from './PeriodCalendarPopover';
 import {
   CATEGORIES,
@@ -253,44 +253,6 @@ function AutoField(props: { label: string; value: string; testId?: string }) {
 }
 
 /**
- * 최소 단위가 연 칸들 한 줄 (PRD-18 · docx `D-2-1` 축자 요구).
- *
- * **자리마다 칸 하나다** — 한 칸에 `2025-06-01 00:00` 을 통째로 받으면 「어느 자리까지
- * 말하는가」가 다시 사람의 타이핑에 맡겨진다. 그것이 최소 단위를 세운 이유와 어긋난다.
- * 비운 하위 자리는 **저장할 때** 채워진다(`assemble`) — 화면이 미리 0 을 적어 넣지 않는다.
- */
-function PartRow(props: {
-  side: 'start' | 'end';
-  sideLabel: string;
-  parts: PeriodParts;
-  open: readonly { key: keyof PeriodParts; label: string; width: 2 | 4 }[];
-  onChange: (v: PeriodParts) => void;
-}) {
-  return (
-    <span className="partrow" data-testid={`reg-period-${props.side}-parts`}>
-      <span className="pr-side">{props.sideLabel}</span>
-      {props.open.map((spec) => (
-        <span className="pr-cell" key={spec.key}>
-          <input
-            id={`reg-period-${props.side}-${spec.key}`}
-            className="inp pr-in"
-            type="text"
-            inputMode="numeric"
-            maxLength={spec.width}
-            size={spec.width}
-            aria-label={`${props.sideLabel} ${spec.label}`}
-            data-testid={`reg-period-${props.side}-${spec.key}`}
-            value={props.parts[spec.key]}
-            onChange={(e) => props.onChange({ ...props.parts, [spec.key]: e.target.value })}
-          />
-          <span className="pr-unit">{spec.label}</span>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/**
  * ② 메타데이터 입력 — 이름·설명·기간·좌표계·격자·확장자(자동)·용량(자동)·변수 표·
  * 부가 정보(관측 간격·공개 범위)·대표 그림 (PRD-12).
  *
@@ -309,13 +271,9 @@ function StepMeta(props: {
   variables: VariableRow[];
   onVariables: (v: VariableRow[]) => void;
   onVariablesBlocked: (message: string) => void;
-  periodStart: string;
-  onPeriodStart: (v: string) => void;
-  periodEnd: string;
-  onPeriodEnd: (v: string) => void;
   crs: string;
   onCrs: (v: string) => void;
-  // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위와 그 단위가 여는 칸.**
+  // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위와 그 단위가 여는 칸 — 값은 달력 팝오버가 받는다.**
   granularity: string;
   onGranularity: (v: string) => void;
   startParts: PeriodParts;
@@ -338,7 +296,12 @@ function StepMeta(props: {
   level: string;
 }) {
   const bodies = (props.status?.files ?? []).filter((f) => f.kind === '본체');
-  // ㈏ 기간 달력 팝오버 — **더해진 길**이다. 종전 인라인 칸은 그대로 산다.
+  // ⭑ **⟨R-C · WU-C8 · R-B §5-14 판정⟩ 기간을 받는 길은 **달력 팝오버 하나**다.**
+  //   종전에는 인라인 칸(최소 단위 셀렉트 ＋ 날짜 두 칸 / 자리 칸 두 줄)과 팝오버가 나란히
+  //   살아 두 벌이었다 — 같은 값을 두 자리에서 받으면 어느 쪽이 이기는지 화면이 말하지 않고,
+  //   rev2 목업에는 팝오버 하나뿐이다. 인라인 칸을 걷고 팝오버만 남긴다.
+  //   ⛔ 요청에 실리는 열쇠는 **무변**이다 — `granularity`·`startParts`·`endParts` 그대로이고
+  //      팝오버의 `적용` 이 그 셋을 한 번에 채운다(`humanMetadata`).
   const [periodPopOpen, setPeriodPopOpen] = useState(false);
   // PRD-33 ⑵ — 고른 분류의 `메타데이터 항목` ＋ 고른 가공 단계의 `메타데이터 필수 항목`.
   // ⛔ **Lv0 은 넣지 않는다** — 그 두 칸은 별도 칸(PRD-19 · WU-B6) 소관이다.
@@ -352,9 +315,6 @@ function StepMeta(props: {
   // 조각이 여러 건이면 용량은 `조각 합계`, 기간은 `조각 합집합` 으로 라벨을 바꿔 단다 (§8).
   const sizeLabel = sliced ? '용량 (조각 합계)' : '용량';
   const periodLabel = sliced ? '기간 (조각 합집합)' : '기간';
-  // 고른 단위가 여는 칸. **빈 배열 = 미지정**이고 그때는 종전 날짜 칸 두 개를 쓴다.
-  const openParts = partsFor(props.granularity);
-
   // 관측 간격 — **반쪽인가.** 한쪽만 채워지면 서버가 400 이다(pair 규율).
   const rawValue = props.intervalValue.trim();
   const half = rawValue.length > 0 !== props.intervalUnit.length > 0;
@@ -363,15 +323,9 @@ function StepMeta(props: {
       ? { value: Number(rawValue), unit: props.intervalUnit }
       : null;
 
-  // 미리보기가 쓰는 기간 — 지금 열려 있는 입력 방식에서 조립한다.
-  const previewStart =
-    openParts.length === 0
-      ? props.periodStart && `${props.periodStart}T00:00:00Z`
-      : assemble(props.startParts, props.granularity);
-  const previewEnd =
-    openParts.length === 0
-      ? props.periodEnd && `${props.periodEnd}T00:00:00Z`
-      : assemble(props.endParts, props.granularity);
+  // 미리보기가 쓰는 기간 — 팝오버가 채운 자리 칸에서 조립한다(`humanMetadata` 와 같은 재료).
+  const previewStart = props.granularity ? assemble(props.startParts, props.granularity) : '';
+  const previewEnd = props.granularity ? assemble(props.endParts, props.granularity) : '';
   const previewPeriod = previewStart
     ? { start: previewStart, end: previewEnd || null, granularity: props.granularity || null }
     : null;
@@ -477,75 +431,20 @@ function StepMeta(props: {
               달력 팝오버(`.dr-pop`)가 이 칸을 기준으로 뜬다. 이 클래스가 없으면
               `position:absolute` 가 화면 전체를 기준으로 잡는다. */}
           <div className="form-row daterange">
-            <label htmlFor="reg-period-granularity">{periodLabel} (선택)</label>
-            {/* ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위 셀렉트가 기간 입력 **앞**에 선다.**
-                고른 단위까지만 칸이 열린다 — `분` 이면 연·월·일·시·분 다섯이 Start/End 각각.
-                **안 고른 상태(미지정)가 기본이고 정상이다** — 그때는 종전 날짜 칸 두 개
-                그대로다(기존 전 행이 그 상태이고 재선택을 강제하지 않는다 · PRD-18 축자). */}
-            <select
-              id="reg-period-granularity"
-              className="sel"
-              data-testid="reg-period-granularity"
-              aria-label="기간 최소 단위"
-              value={props.granularity}
-              onChange={(e) => props.onGranularity(e.target.value)}
-            >
-              <option value="">최소 단위 미지정</option>
-              {GRANULARITIES.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
-            {openParts.length === 0 ? (
-              <span className="pair">
-                <input
-                  id="reg-period-start"
-                  className="inp"
-                  type="date"
-                  data-testid="reg-period-start"
-                  value={props.periodStart}
-                  onChange={(e) => props.onPeriodStart(e.target.value)}
-                />
-                <span className="tilde">~</span>
-                {/* 비우면 무기한·진행 중이다 — 없는 끝을 지어내게 하지 않는다 (14차 해제). */}
-                <input
-                  id="reg-period-end"
-                  className="inp"
-                  type="date"
-                  aria-label={`${periodLabel} 끝 (비우면 진행 중)`}
-                  data-testid="reg-period-end"
-                  value={props.periodEnd}
-                  onChange={(e) => props.onPeriodEnd(e.target.value)}
-                />
-              </span>
-            ) : (
-              <>
-                <PartRow
-                  side="start"
-                  sideLabel="시작"
-                  parts={props.startParts}
-                  open={openParts}
-                  onChange={props.onStartParts}
-                />
-                <PartRow
-                  side="end"
-                  sideLabel="끝 (비우면 진행 중)"
-                  parts={props.endParts}
-                  open={openParts}
-                  onChange={props.onEndParts}
-                />
-              </>
-            )}
+            {/* ⭑ ⟨WU-C8 · §5-14⟩ 값 칸이 없다 — 누르면 달력 팝오버가 뜨고 거기서만 받는다.
+                `htmlFor` 는 그 버튼을 가리킨다(라벨이 가리킬 칸이 여기 남아 있지 않다). */}
+            <label htmlFor="reg-period-open">{periodLabel} (선택)</label>
             {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다.** 필수 표시를 걷고 안내 한 줄을 둔다 —
                 저장은 `period_end = period_start` 로 채워지고(`UploadModal.humanMetadata`)
                 표시는 시작=끝이면 한 값으로 그린다(PRD-35 괄호 병기 그대로). */}
             <p className="fieldnote" data-testid="reg-period-single-hint">
               {PERIOD_SINGLE_POINT_HINT}
             </p>
-            {/* ㈏ 달력 팝오버 (R-A′ 이관 · PRD-18) — 종전 칸을 걷지 않고 **길을 하나 더** 낸다 */}
+            {/* ㈏ 달력 팝오버 (R-A′ 이관 · PRD-18 · WU-C8 §5-14) — 기간을 받는 **유일한 길**.
+                버튼 문면은 §5-15 판정이 채택한 것을 그대로 둔다. */}
             <button
               type="button"
+              id="reg-period-open"
               className="btn btn-secondary btn-sm"
               data-testid="reg-period-open"
               aria-haspopup="dialog"
@@ -1039,13 +938,10 @@ export function RegisterArea(props: {
   variables: VariableRow[];
   onVariables: (v: VariableRow[]) => void;
   onVariablesBlocked: (message: string) => void;
-  periodStart: string;
-  onPeriodStart: (v: string) => void;
-  periodEnd: string;
-  onPeriodEnd: (v: string) => void;
   crs: string;
   onCrs: (v: string) => void;
-  // ⭑ ⟨19차 해제 · PRD-17·18⟩ 최소 단위·자리 칸·관측 간격 — StepOne 으로 그대로 흘린다.
+  // ⭑ ⟨19차 해제 · PRD-17·18 · WU-C8 §5-14⟩ 최소 단위·자리 칸·관측 간격 — StepMeta 로
+  //    그대로 흘린다. 종전 날짜 두 칸(`periodStart`·`periodEnd`)은 인라인 칸과 함께 걷혔다.
   granularity: string;
   onGranularity: (v: string) => void;
   startParts: PeriodParts;
@@ -1151,10 +1047,6 @@ export function RegisterArea(props: {
             variables={props.variables}
             onVariables={props.onVariables}
             onVariablesBlocked={props.onVariablesBlocked}
-            periodStart={props.periodStart}
-            onPeriodStart={props.onPeriodStart}
-            periodEnd={props.periodEnd}
-            onPeriodEnd={props.onPeriodEnd}
             crs={props.crs}
             onCrs={props.onCrs}
             granularity={props.granularity}

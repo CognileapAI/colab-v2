@@ -9,6 +9,7 @@ import {
   GridAxisTaken,
   NoResolvedGrid,
   NotImplemented,
+  RegisterRejected,
   UploadGone,
   type DatasetCreate,
   type PickedFile,
@@ -73,6 +74,13 @@ export function apiUploadSource(): UploadSource {
       const r = await api.POST('/datasets', { body });
       if (r.response.status === 404) throw new UploadGone();
       if (r.response.status === 501) throw new NotImplemented();
+      // ⭑ **⟨WU-C8 · R-B §5-31⟩ 400 = 서버가 적어 보낸 거절이다.** 봉투의 `message` 를
+      // 그대로 들어 올린다 — `projectSource.create` 와 같은 규율이고, 문면을 여기서
+      // 짓지 않는다. 문면이 없는 400 만 아래 일반 문장으로 떨어진다.
+      if (r.response.status === 400) {
+        const message = (r.error as { message?: unknown } | undefined)?.message;
+        if (typeof message === 'string' && message) throw new RegisterRejected(message);
+      }
       if (!r.data) throw new Error('데이터셋을 만들지 못했어요.');
       return { datasetId: r.data.datasetId };
     },

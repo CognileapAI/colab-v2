@@ -237,8 +237,10 @@ describe('WU-A4 · PRD-28 — 미리보기 2 : 입력 3, 짧은 값 세 개는 �
     expect(row.querySelectorAll(':scope > .form-row').length).toBe(3);
     expect(row.textContent).toContain('좌표계');
     expect(row.textContent).toContain('격자');
-    expect(within(row).getByTestId('reg-period-start')).toBeInTheDocument();
-    expect(within(row).getByTestId('reg-period-end')).toBeInTheDocument();
+    // ⭑ ⟨R-C · WU-C8 · §5-14⟩ 기간 칸의 자리는 그대로이고, 값을 받는 길이 **달력 팝오버
+    //    하나**로 줄었다 — 세 칸 줄이라는 이 시험의 요구는 무변이다.
+    expect(row.textContent).toContain('기간');
+    expect(within(row).getByTestId('reg-period-open')).toBeInTheDocument();
   });
 
   it('`.form-3` 은 세 칸 격자로 선언돼 있다', () => {

@@ -91,9 +91,14 @@ describe('연구실 정보 탭 — 편집은 `연구실 설정` 스위치', () =
                          '한 줄 소개', '데이터 공개 범위']) {
       expect(screen.getByLabelText(label)).toBeTruthy();
     }
-    // 공개 범위는 계약이 고정한 두 값이다.
+    // ⭑ **⟨R-C · WU-C8 · R-B §5-16 판정⟩ 공개 범위는 계약이 고정한 **세 값**이다** —
+    //    `AccessState` 가 20차에 3값이 됐는데 이 셀렉트만 2값으로 남아 연구실 기본값에서
+    //    `지정 공개` 를 못 고르던 자리다. 표기는 등록 화면과 같은 표를 읽는다(미결-1 ⓐ).
     const scope = screen.getByLabelText('데이터 공개 범위') as HTMLSelectElement;
-    expect([...scope.options].map((o) => o.value)).toEqual(['열림', '잠김']);
+    expect([...scope.options].map((o) => o.value)).toEqual(['열림', '잠김', '지정 공개']);
+    expect([...scope.options].map((o) => o.textContent)).toEqual([
+      '연구실 구성원 전체', '나만 보기', '지정한 사람만',
+    ]);
   });
 
   it('저장하면 계약 `LabUpdate` 형태로 updateLab 을 부른다', async () => {

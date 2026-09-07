@@ -858,6 +858,31 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
   });
 });
 
+
+/**
+ * ⭑ **⟨R-C · WU-C8 · R-B §5-14 판정⟩ 기간을 넣는 길은 **달력 팝오버 하나**다.**
+ *
+ * 종전 인라인 칸(`reg-period-start`·`reg-period-end`)이 걷혔으므로 이 시험들도 사람이
+ * 실제로 쓰는 길로 값을 넣는다 — **재는 것은 그대로**(요청에 실리는 `period` 세 열쇠)이고
+ * 넣는 자리만 바뀌었다. 날짜는 달력 대신 자리 칸에 적는다(같은 상태를 쓴다).
+ * ⚠ 팝오버는 최소 단위를 **반드시** 함께 정한다 — 그래서 `granularity: null` 은 이제
+ *   화면으로는 만들 수 없는 값이고, 「안 고르고 지나간 행」은 기간 자체가 안 실린다.
+ */
+async function setPeriod(opts: { unit?: string; start?: string; end?: string }) {
+  const unit = opts.unit ?? '일';
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId(`reg-period-unit-${unit}`));
+  for (const side of ['start', 'end'] as const) {
+    const iso = side === 'start' ? opts.start : opts.end;
+    if (!iso) continue;
+    const [year, month, day] = iso.split('-');
+    await change(screen.getByTestId(`reg-period-pop-${side}-year`), year!);
+    await change(screen.getByTestId(`reg-period-pop-${side}-month`), month!);
+    await change(screen.getByTestId(`reg-period-pop-${side}-day`), day!);
+  }
+  await click(screen.getByTestId('reg-period-apply'));
+}
+
 describe('§8 ② 메타데이터 입력', () => {
   it('변수·기간·좌표계는 사람이 적는 칸이다 — 자동 칸에 없다 (`VAL-006` · `#62`)', async () => {
     const { sources } = fakes();
@@ -868,9 +893,13 @@ describe('§8 ② 메타데이터 입력', () => {
     expect(auto).not.toHaveTextContent('변수');
     expect(auto).not.toHaveTextContent('좌표계');
     // ⭑ ⟨WU-B2 · PRD-16⟩ 변수는 한 칸이 아니라 5열 표다 — 첫 행의 이름 칸으로 잰다.
-    for (const id of ['vt-name-0', 'reg-crs', 'reg-period-start', 'reg-period-end']) {
+    // ⭑ ⟨WU-C8 · §5-14⟩ 기간 인라인 칸이 걷혀 여기서 셀 칸이 아니다 — 기간은 팝오버가
+    //    받고, 그 칸들도 읽기 전용이 아니다(아래에서 함께 잰다).
+    for (const id of ['vt-name-0', 'reg-crs']) {
       expect(screen.getByTestId(id)).not.toHaveAttribute('readonly');
     }
+    await click(screen.getByTestId('reg-period-open'));
+    expect(screen.getByTestId('reg-period-pop-start-year')).not.toHaveAttribute('readonly');
   });
 
   // ⭑ **⟨WU-A4R · PRD-28 수용 기준 2026-09-06 · 결정서 III-B ⓐ⟩ 좌표계 칸 보조 라벨.**
@@ -919,8 +948,7 @@ describe('§8 ② 메타데이터 입력', () => {
     await change(screen.getByTestId('vt-name-1'), ' t2m ');
     await change(screen.getByTestId('vt-unit-1'), 'K');
     await change(screen.getByTestId('reg-crs'), 'EPSG:5179');
-    await change(screen.getByTestId('reg-period-start'), '2025-06-01');
-    await change(screen.getByTestId('reg-period-end'), '2025-09-30');
+    await setPeriod({ unit: '일', start: '2025-06-01', end: '2025-09-30' });
     await click(stepBtn('③'));
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));
@@ -930,10 +958,11 @@ describe('§8 ② 메타데이터 입력', () => {
       { name: 't2m', unit: 'K', valueRange: null, missingRate: null, representative: false },
     ]);
     expect(body.crs).toBe('EPSG:5179');
-    // ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 한 값으로 실린다.** 단위를 안 골랐으니
-    // `null`(미지정)이고, **시각값 두 칸은 종전 그대로**다 — 저장 모양이 바뀐 것이 아니다.
+    // ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 한 값으로 실린다.**
+    // ⭑ **⟨WU-C8 · §5-14⟩ 팝오버가 단위를 함께 정하므로 그 값이 실린다** — 시각값 두 칸의
+    //    **모양은 종전 그대로**다(저장 형상이 바뀐 것이 아니라 넣는 자리가 하나로 줄었다).
     expect(body.period).toEqual({
-      start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: null,
+      start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: '일',
     });
   });
 
@@ -942,16 +971,15 @@ describe('§8 ② 메타데이터 입력', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await change(screen.getByTestId('reg-period-start'), '2025-06-01');
+    await setPeriod({ unit: '일', start: '2025-06-01' });
     await click(stepBtn('③'));
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));
     // 끝을 지어내지도(오늘로 채우기) 기간을 통째로 버리지도 않는다 — 종전은 후자였다.
-    // ⭑ ⟨19차 해제 · PRD-18⟩ 단위 미지정은 `granularity: null` — 빈 문자열을 보내지 않는다.
     // ⭑ **⟨WU-B3 · PRD-40 판정 ⓐ⟩ 끝을 비우면 저장은 `period_end = period_start` 다** —
     //   「한 시점」이고, 화면에서만 빈 채로 남는다.
     expect((calls.registered[0] ?? {}).period)
-      .toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: null });
+      .toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: '일' });
   });
 
   it('시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다', async () => {
@@ -959,7 +987,7 @@ describe('§8 ② 메타데이터 입력', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await change(screen.getByTestId('reg-period-end'), '2025-09-30');
+    await setPeriod({ unit: '일', end: '2025-09-30' });
     await click(stepBtn('③'));
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));

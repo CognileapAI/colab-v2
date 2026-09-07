@@ -327,19 +327,23 @@ export function LineageSection(props: {
           <div className="d">
             업로드할 때 가공 전 데이터를 찾지 못해 <b>모름</b>으로 남겨 뒀어요.
           </div>
+          {/* ⭑ **⟨R-C · WU-C8 · R-B §5-43 판정⟩ 빈 상태 3문면은 **권한과 무관**하다.**
+              종전에는 이 셋째 문장이 `canEdit` 안에 있어, 고칠 권한이 없는 계정은 2문면만
+              보고 「내가 뭔가 안 한 탓」으로 읽었다. 문장은 **사실 설명**이고 사실은 권한에
+              따라 달라지지 않는다(PRD-31 ⑵ 「빈 상태 3문면」).
+              ⛔ **가려지는 것은 행동뿐이다** — `계보 채우기` 버튼은 그대로 `canEdit` 안에
+                 남고, 권한이 없으면 DOM 에 없다(P-12 관례 · 비활성이 아니다). */}
           {canEdit ? (
-            <>
-              <button
-                type="button"
-                className="btn btn-strong btn-sm"
-                data-testid="lin-fill"
-                onClick={() => setFixing(true)}
-              >
-                계보 채우기
-              </button>
-              <p className="muted">원자료(Lv0)라 부모가 없다면 그대로 두어도 괜찮아요.</p>
-            </>
+            <button
+              type="button"
+              className="btn btn-strong btn-sm"
+              data-testid="lin-fill"
+              onClick={() => setFixing(true)}
+            >
+              계보 채우기
+            </button>
           ) : null}
+          <p className="muted">원자료(Lv0)라 부모가 없다면 그대로 두어도 괜찮아요.</p>
         </div>
       ) : (
         <>

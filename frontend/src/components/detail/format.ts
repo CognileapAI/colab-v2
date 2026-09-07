@@ -13,7 +13,12 @@ export const EMPTY = '—';
 export const INTERVAL_MISSING_NOTICE = '관측 간격 미기재';
 
 /**
- * ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ 파생 Lv 가 Lv0 인데 출처 두 칸이 빈 기존 행의 안내.**
+ * ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 인데 출처 두 칸이 빈 행의 안내.**
+ *
+ * ⭑ **⟨R-C · WU-C8 · R-B §5-28 판정⟩ 기준은 **사람 Lv** 다** — 사람이 고른 값이 있으면
+ *   그것이고, 안 골랐을 때만 파생 Lv 다(`common/processingLevel.displayLevel`). 종전은
+ *   파생 Lv 만 봐서 화면에 보이는 Lv 와 안내가 어긋났다. 판정 코드는 `BasicInfoGrid` 에 있고
+ *   여기 있는 것은 문면뿐이다.
  *
  * 마이그레이션 `0018` 이 backfill 을 하지 않아 **기존 전 행이 두 칸 다 비어 있다**. 그 사실을
  * 빈 칸으로만 두면 「원래 없다」와 「아직 안 적었다」가 화면에서 갈리지 않는다.

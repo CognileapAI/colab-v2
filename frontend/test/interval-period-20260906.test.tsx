@@ -163,41 +163,75 @@ function renderDetail(detail: DatasetDetail) {
   );
 }
 
+
+/**
+ * ⭑ **⟨R-C · WU-C8 · R-B §5-14 판정⟩ 기간을 넣는 길은 **달력 팝오버 하나**다.**
+ *
+ * 인라인 칸(최소 단위 셀렉트 ＋ 날짜 두 칸 / 자리 칸 두 줄)이 걷혔다. 이 파일이 재는 것은
+ * **자리 칸의 개수와 값**이고 그 사실은 무변이다 — 칸이 사는 곳만 팝오버 안으로 옮겼다.
+ * ⚠ 팝오버는 열려 있는 동안에만 DOM 에 있고, `적용` 을 눌러야 바깥 값이 바뀐다.
+ */
+async function openPeriodPop(unit?: string) {
+  await click(screen.getByTestId('reg-period-open'));
+  const pop = await screen.findByTestId('reg-period-pop');
+  if (unit) await click(within(pop).getByTestId(`reg-period-unit-${unit}`));
+  return screen.getByTestId('reg-period-pop');
+}
+
+/** 팝오버에서 단위·자리를 채우고 `적용` 까지 — 바깥 상태에 값이 서는 데까지가 한 걸음이다. */
+async function applyPeriod(unit: string, parts: Record<string, string>) {
+  await openPeriodPop(unit);
+  for (const [key, value] of Object.entries(parts)) {
+    await change(screen.getByTestId(`reg-period-pop-${key}`), value);
+  }
+  await click(screen.getByTestId('reg-period-apply'));
+}
+
 // ═══════════════ PRD-18 · 고른 단위까지만 칸이 열린다 ════════════════════════
 describe('WU-A6 · PRD-18 — 최소 단위가 여는 칸', () => {
-  it('단위를 안 고르면 **종전 날짜 칸 두 개** 그대로다 (기존 행이 그 상태다)', async () => {
+  // ⭑ ⟨WU-C8 · §5-14⟩ 종전의 「단위를 안 고르면 날짜 칸 두 개」 시험은 **인라인 칸의
+  //    존재**를 재던 것이고, 그 칸이 판정으로 걷혔다. 그 자리를 「인라인 0 · 팝오버 1」이
+  //    대신 잠근다(`fe-small-rc8.test.tsx` ㈐ 가 세는 시험을 함께 든다).
+  it('② 에 인라인 기간 칸이 없고 값은 팝오버 안에서만 받는다', async () => {
     await openRegister();
-    expect(screen.getByTestId('reg-period-start')).toBeInTheDocument();
-    expect(screen.getByTestId('reg-period-end')).toBeInTheDocument();
+    expect(screen.queryByTestId('reg-period-start')).toBeNull();
+    expect(screen.queryByTestId('reg-period-end')).toBeNull();
     expect(screen.queryByTestId('reg-period-start-parts')).toBeNull();
+    expect(screen.queryByTestId('reg-period-granularity')).toBeNull();
+    const pop = await openPeriodPop('일');
+    expect(within(pop).getByTestId('reg-period-pop-start')).toBeInTheDocument();
   });
 
   it('단위 `일` 을 고르면 연·월·일 **세 칸**만 열린다', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '일');
-    const row = screen.getByTestId('reg-period-start-parts');
+    const pop = await openPeriodPop('일');
+    const row = within(pop).getByTestId('reg-period-pop-start');
     expect(within(row).getAllByRole('textbox')).toHaveLength(3);
     for (const key of ['year', 'month', 'day']) {
-      expect(screen.getByTestId(`reg-period-start-${key}`)).toBeInTheDocument();
+      expect(within(row).getByTestId(`reg-period-pop-start-${key}`)).toBeInTheDocument();
     }
-    expect(screen.queryByTestId('reg-period-start-hour')).toBeNull();
+    expect(within(row).queryByTestId('reg-period-pop-start-hour')).toBeNull();
   });
 
   it('단위 `분` 이면 **다섯 칸**이 Start/End 각각 열린다 (docx `D-2-1` 축자)', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '분');
+    const pop = await openPeriodPop('분');
     for (const side of ['start', 'end']) {
-      const row = screen.getByTestId(`reg-period-${side}-parts`);
+      const row = within(pop).getByTestId(`reg-period-pop-${side}`);
       expect(within(row).getAllByRole('textbox')).toHaveLength(5);
-      expect(screen.queryByTestId(`reg-period-${side}-second`)).toBeNull();
+      expect(within(row).queryByTestId(`reg-period-pop-${side}-second`)).toBeNull();
     }
   });
 
-  it('단위를 고르면 종전 날짜 칸 두 개는 **사라진다** — 두 입력 방식이 겹치지 않는다', async () => {
+  it('단위를 좁히면 열리지 않은 자리는 **값으로 남지 않는다** — 두 벌이 겹치지 않는다', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '분');
-    expect(screen.queryByTestId('reg-period-start')).toBeNull();
-    expect(screen.queryByTestId('reg-period-end')).toBeNull();
+    await applyPeriod('분', {
+      'start-year': '2020', 'start-month': '05', 'start-day': '01', 'start-hour': '03',
+    });
+    // 다시 열어 `일` 로 좁히고 적용하면 시 자리가 걷힌다.
+    await applyPeriod('일', {});
+    await openPeriodPop();
+    expect(screen.queryByTestId('reg-period-pop-start-hour')).toBeNull();
   });
 
   it('`partsFor` 는 6값 전부에 자리 수를 낸다 — 화면 셀렉트와 규칙이 갈리지 않는다', () => {
@@ -226,10 +260,7 @@ describe('WU-A6 · PRD-18 — 조립', () => {
 
   it('등록 요청이 조립된 시각값 ＋ `granularity` 를 싣는다', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '분');
-    await change(screen.getByTestId('reg-period-start-year'), '2020');
-    await change(screen.getByTestId('reg-period-start-month'), '05');
-    await change(screen.getByTestId('reg-period-start-day'), '01');
+    await applyPeriod('분', { 'start-year': '2020', 'start-month': '05', 'start-day': '01' });
     await submitRegister();
     // ⭑ **⟨WU-B3 · PRD-40 판정 ⓐ⟩ 종료를 비우면 저장은 `period_end = period_start` 다.**
     //   화면에서만 비고, 「한 시점」이 `null`(무기한·진행 중)과 갈리게 된 자리다.
@@ -378,14 +409,10 @@ describe('WU-A6 — 상세 기본 정보', () => {
 describe('WU-A6 — 등록 미리보기 (PRD-35 세 번째 자리)', () => {
   it('사람이 적은 값이 상세와 **같은 문면**으로 미리 보인다', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '분');
-    await change(screen.getByTestId('reg-period-start-year'), '2020');
-    await change(screen.getByTestId('reg-period-start-month'), '05');
-    await change(screen.getByTestId('reg-period-start-day'), '01');
-    await change(screen.getByTestId('reg-period-end-year'), '2020');
-    await change(screen.getByTestId('reg-period-end-month'), '05');
-    await change(screen.getByTestId('reg-period-end-day'), '01');
-    await change(screen.getByTestId('reg-period-end-hour'), '03');
+    await applyPeriod('분', {
+      'start-year': '2020', 'start-month': '05', 'start-day': '01',
+      'end-year': '2020', 'end-month': '05', 'end-day': '01', 'end-hour': '03',
+    });
     await change(screen.getByTestId('reg-interval-value'), '10');
     await change(screen.getByTestId('reg-interval-unit'), '분');
     expect(screen.getByTestId('reg-period-preview')).toHaveTextContent(
@@ -395,10 +422,7 @@ describe('WU-A6 — 등록 미리보기 (PRD-35 세 번째 자리)', () => {
 
   it('간격을 비우면 미리보기에도 **빈 괄호가 없다**', async () => {
     await openRegister();
-    await change(screen.getByTestId('reg-period-granularity'), '일');
-    await change(screen.getByTestId('reg-period-start-year'), '2025');
-    await change(screen.getByTestId('reg-period-start-month'), '06');
-    await change(screen.getByTestId('reg-period-start-day'), '01');
+    await applyPeriod('일', { 'start-year': '2025', 'start-month': '06', 'start-day': '01' });
     expect(screen.getByTestId('reg-period-preview').textContent).not.toContain('(');
   });
 });

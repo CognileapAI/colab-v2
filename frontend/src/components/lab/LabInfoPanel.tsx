@@ -14,6 +14,7 @@ import './lab.css';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { LabInfoGrid } from './LabInfoGrid';
 import { apiLabSource, type Lab, type LabSource, type LabUpdate } from './labSource';
+import { ACCESS_LABEL, ACCESS_STATES } from '../common/accessState';
 
 /** 편집 폼 일곱 칸 — 목업 편집 모달의 라벨·순서를 한 자도 바꾸지 않는다. */
 type Draft = {
@@ -26,8 +27,14 @@ type Draft = {
   defaultVisibility: Lab['defaultVisibility'];
 };
 
-/** `데이터 공개 범위` 는 계약이 두 값으로 고정한다 (`LabDefaultVisibility` → `AccessState`). */
-const VISIBILITIES: Lab['defaultVisibility'][] = ['열림', '잠김'];
+/** ⭑ **⟨R-C · WU-C8 · R-B §5-16 판정⟩ `데이터 공개 범위` 는 계약이 **세 값**이다**
+ *  (`LabDefaultVisibility` → `AccessState` = `열림`·`잠김`·`지정 공개`). 2값이 남아 있어
+ *  연구실 기본값에서 `지정 공개` 를 고를 수 없던 자리다.
+ *
+ *  ⛔ **여기서 목록을 다시 적지 않는다** — 값도 표기도 등록 화면과 **같은 한 자리**
+ *  (`common/accessState`)를 읽는다. 두 벌을 두면 언젠가 한쪽만 고쳐지고, 같은 값이
+ *  연구실 설정과 등록 화면에서 다른 글자로 보인다. */
+const VISIBILITIES: readonly Lab['defaultVisibility'][] = ACCESS_STATES;
 
 function draftOf(lab: Lab): Draft {
   return {
@@ -204,9 +211,11 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
                   edit({ defaultVisibility: e.target.value as Lab['defaultVisibility'] })
                 }
               >
+                {/* 저장값은 `열림`·`잠김`·`지정 공개` 이고 사람이 보는 글자는 등록 화면과
+                    같은 3값이다(`ACCESS_LABEL` · 미결-1 ⓐ 축자). */}
                 {VISIBILITIES.map((v) => (
                   <option key={v} value={v}>
-                    {v}
+                    {ACCESS_LABEL[v]}
                   </option>
                 ))}
               </select>

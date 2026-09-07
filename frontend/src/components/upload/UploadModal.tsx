@@ -49,6 +49,7 @@ import { forgetPending, rememberPending } from './pendingStore';
 import {
   GridAxisTaken,
   NoResolvedGrid,
+  RegisterRejected,
   TransferInterrupted,
   UploadGone,
   type FileKind,
@@ -178,11 +179,11 @@ export function UploadModal(props: {
   const [variables, setVariables] = useState<VariableRow[]>([emptyVariableRow()]);
   // 마지막 행 삭제 차단 고지. 공통 토스트를 탄다(PRD-43 과 같은 컴포넌트).
   const [variableNotice, setVariableNotice] = useState<string | null>(null);
-  const [periodStart, setPeriodStart] = useState('');
-  const [periodEnd, setPeriodEnd] = useState('');
   const [crs, setCrs] = useState('');
   // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위.** `''` = 미지정이고 그것이 기본이자 정상이다 —
-  // 그때 화면은 종전 날짜 칸 두 개를 쓰고 계약의 `granularity` 는 `null` 로 나간다.
+  // 계약의 `granularity` 는 그때 `null` 로 나가고 기간 자체가 실리지 않는다.
+  // ⭑ **⟨R-C · WU-C8 · §5-14⟩ 이 셋을 채우는 자리는 달력 팝오버 **하나**다** — 종전
+  //   날짜 두 칸(`periodStart`·`periodEnd`)은 인라인 칸과 함께 걷혔다.
   const [granularity, setGranularity] = useState('');
   const [startParts, setStartParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
   const [endParts, setEndParts] = useState<PeriodParts>({ ...EMPTY_PARTS });
@@ -423,8 +424,6 @@ export function UploadModal(props: {
     topic.trim() !== '' ||
     summary.trim() !== '' ||
     variables.some((v) => v.name.trim() !== '') ||
-    periodStart.trim() !== '' ||
-    periodEnd.trim() !== '' ||
     crs.trim() !== '' ||
     sourceLabel.trim() !== '' ||
     // ⭑ ⟨WU-B6 · PRD-19⟩ Lv0 두 칸도 사람이 적은 값이다 — 빠져 있으면 출처만 적은
@@ -709,14 +708,13 @@ export function UploadModal(props: {
     // 끝을 비우면 무기한이라는 뜻으로 `null` 을 **명시해서** 보낸다 — 열쇠를 빼지 않는
     // 이유는 계약이 `ProjectPeriod` 와 같은 required-but-nullable 모양이라서다.
     // 시작이 비면 기간 자체를 싣지 않는다 — 시작 없는 끝은 기간이 아니다.
-    // ⭑ **⟨19차 해제 · PRD-18⟩ 최소 단위를 고르면 조립의 재료가 자리 칸들로 바뀐다.**
-    // 안 골랐으면 종전 날짜 칸 두 개 그대로다 — 기존 경로를 갈아치우지 않는다.
+    // ⭑ **⟨19차 해제 · PRD-18 · R-C WU-C8 §5-14⟩ 조립의 재료는 자리 칸들 하나다.**
+    // 달력 팝오버의 `적용` 이 최소 단위와 자리 칸을 **함께** 채운다 — 단위 없이 자리 칸만
+    // 찬 상태는 만들어지지 않는다. 안 고르고 지나가면 기간 열쇠 자체가 안 실린다(종전과 같다).
+    // ⛔ **실리는 열쇠는 무변이다** — `period.start`·`end`·`granularity` 그대로다.
     const assembled = granularity
       ? { start: assemble(startParts, granularity), end: assemble(endParts, granularity) }
-      : {
-          start: periodStart ? `${periodStart}T00:00:00Z` : null,
-          end: periodEnd ? `${periodEnd}T00:00:00Z` : null,
-        };
+      : { start: null, end: null };
     if (assembled.start) {
       out.period = {
         start: assembled.start,
@@ -842,10 +840,19 @@ export function UploadModal(props: {
       if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
       navigate(`/datasets/${made.datasetId}`);
     } catch (e) {
+      // ⭑ **⟨R-C · WU-C8 · R-B §5-31 판정⟩ 서버 400 을 일반 문구로 덮지 않는다.**
+      //
+      // 400 = 서버가 **어느 칸이 왜 막혔는지** 적어 보낸 거절이다(기간 역전·변수 0건 …).
+      // 그것을 「잠시 뒤 다시 시도해 주세요」로 덮으면 사람은 고칠 칸을 못 찾고 같은 값으로
+      // 다시 누른다(B3 유산). 문면은 **서버 것을 그대로** 올린다 — 화면이 다시 지으면
+      // 서버와 두 얼굴이 된다. ⛔ 새 문면을 만들지 않는다.
+      // ⚠ 400 **밖**은 종전 그대로다 — 500·끊김은 사람이 고칠 것이 없다.
       setRegisterError(
         e instanceof UploadGone
           ? '이 파일은 더 이상 없어요. 다시 올려 주세요.'
-          : '데이터셋을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.',
+          : e instanceof RegisterRejected
+            ? e.message
+            : '데이터셋을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.',
       );
     }
   }
@@ -1125,10 +1132,6 @@ export function UploadModal(props: {
                 variables={variables}
                 onVariables={setVariables}
                 onVariablesBlocked={setVariableNotice}
-                periodStart={periodStart}
-                onPeriodStart={setPeriodStart}
-                periodEnd={periodEnd}
-                onPeriodEnd={setPeriodEnd}
                 crs={crs}
                 onCrs={setCrs}
                 granularity={granularity}

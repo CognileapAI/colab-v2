@@ -17,6 +17,7 @@ import {
 import type { DatasetFile, FilesSource } from './filesSource';
 import type { DatasetBasicInfo } from './types';
 import { AXIS_UNSET_NUDGE, UNSPECIFIED_CELL } from '../catalog/axisFilters';
+import { displayLevel } from '../common/processingLevel';
 
 export function BasicInfoGrid(props: {
   basicInfo: DatasetBasicInfo;
@@ -56,13 +57,22 @@ export function BasicInfoGrid(props: {
   // 컴포넌트**를 읽기 전용으로 그린다(열 순서·라벨이 갈리지 않게 하는 자리).
   // 행이 0개인 데이터셋은 이관 대상이 아니었던 기존 행이고, 그때는 종전대로 `EMPTY` 다.
   const variableRows = toVariableRows(b.variables);
-  // ⭑ **⟨WU-B6 · PRD-19⟩ 파생 Lv 가 Lv0 이고 두 칸이 다 비었는가.**
+  // ⭑ **⟨R-C · WU-C8 · R-B §5-28 판정⟩ 화면에 보이는 Lv 가 Lv0 이고 두 칸이 다 비었는가.**
   //
-  // ⚠ **파생 Lv 를 본다** — 사람 값(`processingLevelUserSet`)이 아니다. 안내가 겨냥하는 것은
-  //    마이그레이션 뒤의 **기존 행**이고 그 행들은 사람 값이 `null` 이다(backfill 0).
+  // ⚠ **사람 Lv 기준이다** — 종전은 파생 Lv(`processingLevelDerived`)만 봤고, 그래서
+  //    사람이 `Lv0` 으로 고쳤는데 계보가 파생 Lv≠0 을 내는 신규 행에는 안내가 뜨지 않았다.
+  //    반대로 사람이 `Lv2` 로 고친 행은 파생이 0 이라는 이유로 안내가 떴다 — 둘 다 화면에
+  //    보이는 Lv 와 안내가 어긋난 자리다.
+  // ⛔ **판정 규칙을 여기서 다시 적지 않는다** — 어느 값을 보이는가는 `common/processingLevel`
+  //    한 자리가 쥔다(WU-C9). 안내는 그 값을 그대로 따라간다.
   // ⛔ 안내로만이다 — 저장을 막지 않고 재입력을 강제하지 않는다.
   const lv0SourceMissing =
-    b.processingLevelDerived === 0 && !b.sourceUrl && !b.sourceDownloadedOn;
+    displayLevel({
+      processingLevel: b.processingLevelDerived,
+      processingLevelUserSet: b.processingLevelUserSet,
+    }) === 0 &&
+    !b.sourceUrl &&
+    !b.sourceDownloadedOn;
   // ⭑ **⟨20차 해제 · PRD-06 · WU-B7⟩ 분류 3축 3행이 **이 순서로** 맨 앞에 선다.**
   // 값은 목록 필터에 넣는 문자열과 **같다** — 다르면 사람이 상세에서 본 글자를 필터에
   // 넣었을 때 0건이 나온다(수용 기준 축자).
@@ -111,7 +121,8 @@ export function BasicInfoGrid(props: {
               ) : null}
               {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 출처 두 칸은 원천 표기 칸 **안쪽**에 붙는다** —
                   값이 있으면 그대로 보이고(Lv 로 가리지 않는다),
-                  파생 Lv 가 Lv0 인데 둘 다 비면 안내 한 줄이 대신 선다. */}
+                  화면에 보이는 Lv(사람 값 우선 · WU-C8 · §5-28)가 Lv0 인데 둘 다 비면
+                  안내 한 줄이 대신 선다. */}
               {k === '원천 표기' && b.sourceUrl ? (
                 <span className="ig-note" data-testid="ig-source-url">
                   {b.sourceUrl}

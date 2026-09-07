@@ -365,9 +365,14 @@ function mountDetail(detail: DatasetDetail) {
 }
 
 describe('WU-B6 · PRD-19 상세 — 기존 행 안내', () => {
-  it('파생 Lv 가 Lv0 이고 두 칸이 비면 **안내로만** 뜬다 (저장을 막지 않는다)', async () => {
+  // ⭑ **⟨R-C · WU-C8 · R-B §5-28 판정⟩ 기준이 파생 Lv → **사람 Lv** 로 바뀌었다.**
+  //   이 시험이 겨냥한 것은 backfill 되지 않은 **기존 행**이고 그 행은 사람 값이 `null`
+  //   이라 파생 Lv 로 물러난다 — 재는 사실은 그대로이고, 그 「사람 값 없음」을 픽스처가
+  //   이제 **명시**한다. 새 기준 자체(사람 0·파생≠0 / 사람≠0·파생 0)는 `fe-small-rc8` 이 잰다.
+  it('사람 Lv 가 없고 파생 Lv 가 Lv0 이며 두 칸이 비면 **안내로만** 뜬다 (저장을 막지 않는다)', async () => {
     mountDetail(detailWith({
       processingLevelDerived: 0,
+      processingLevelUserSet: null,
       sourceUrl: null,
       sourceDownloadedOn: null,
     }));
@@ -384,6 +389,7 @@ describe('WU-B6 · PRD-19 상세 — 기존 행 안내', () => {
   it('두 칸 중 하나라도 차 있으면 안내가 서지 않고 값이 그대로 보인다', async () => {
     mountDetail(detailWith({
       processingLevelDerived: 0,
+      processingLevelUserSet: null,
       sourceUrl: 'https://example.org/era5',
       sourceDownloadedOn: null,
     }));
@@ -393,9 +399,10 @@ describe('WU-B6 · PRD-19 상세 — 기존 행 안내', () => {
     expect(screen.getByTestId('ig-source-url').textContent).toBe('https://example.org/era5');
   });
 
-  it('파생 Lv 가 Lv0 이 아니면 두 칸이 비어도 안내가 서지 않는다', async () => {
+  it('보이는 Lv 가 Lv0 이 아니면 두 칸이 비어도 안내가 서지 않는다', async () => {
     mountDetail(detailWith({
       processingLevelDerived: 2,
+      processingLevelUserSet: null,
       sourceUrl: null,
       sourceDownloadedOn: null,
     }));
