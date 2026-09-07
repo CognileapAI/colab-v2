@@ -2761,13 +2761,13 @@ items:
 
   - id: WU-B2
     name: 변수 행 표 (PRD-16)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
     depends_on: ["WU-B1"]
     completion_def: "새 표 d3_dataset_variable ＋ RLS ＋ 대표 1개 부분 UNIQUE. 배열 이관이 순서대로 되고 첫 행이 대표. 변수명 검색이 종전과 같이 잡힌다 · cross-tenant 음성 0건. d3_dataset_variable 은 D3 소유다 — D2 가 D3 표를 FK 하지 않는다"
-    evidence: null
+    evidence: "dev-package/sessions/p3-variable-rows-20260907.md"
     deadline: null
     note: "M-5. M-10(색인 재정의 ＋ 변수 미러 트리거)은 이 WU 뒤에 라운드에서 한 번만 돈다. 레인 p3-variable-rows"
     sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-16", "부록 B M-5·M-10"]
