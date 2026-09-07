@@ -2813,13 +2813,13 @@ items:
 
   - id: WU-B6
     name: Lv0 출처 칸 (PRD-19)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
     depends_on: ["WU-B1", "WU-B3"]
     completion_def: "M-8. 두 칸은 선택 입력이다 — Lv0 에서 비운 채 등록해도 성공하고 Lv1 이상에서 값을 실어도 거절하지 않고 저장한다. Lv 로 갈리는 것은 두 칸의 화면 표시뿐이고 sourceLabel 은 늘 보인다"
-    evidence: null
+    evidence: "dev-package/sessions/p3-lv0-source-20260907.md"
     deadline: null
     note: "종전 완료 판정(「Lv0 이면 두 칸 필수·400」·「Lv1 이상 값 전송 시 400」)은 폐기됐다 — 근거 = pdf 항목 3 축자 · 미결-11 ⓐ. 레인 p3-lv0-source"
     sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-19", "부록 B M-8"]
