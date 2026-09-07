@@ -294,6 +294,17 @@ describe('§1.3-5 · §3.2 · §6 — 보기는 전원, 편집은 권한자다',
     expect(within(section).queryByTestId('palette-control')).toBeNull();
     expect(within(section).queryByLabelText('구간 수')).toBeNull();
     expect(within(section).queryByRole('button', { name: /스크린샷/ })).toBeNull();
-    expect(within(section).queryByRole('combobox')).toBeNull();
+    // ⭑ ⟨개정 2026-09-08 · WU-C3⟩ 종전의 「combobox 0개」는 위 셋을 **한 번 더 훑는**
+    //   포괄 줄이었다. 21차 계약이 그 포괄을 좁힌다 — `describeTarget` 산문 축자:
+    //   「**읽기 전용이다** — 렌더 작업을 만들지 않는다. `업로드·편집` 스위치를 보지
+    //   않는 것도 그래서다(**보기만 하는 사람이 미리보기를 고를 수 있어야 한다**)」.
+    //   그래서 파일·변수·시각 고르개 셋은 §3.2 가 이름으로 든 편집 컨트롤이 **아니다**.
+    //   ⛔ 앞 세 줄(팔레트·구간 수·스크린샷)은 **그대로 남는다** — 걷지 않는다.
+    //   ／ 이전 표기 ~~expect(within(section).queryByRole('combobox')).toBeNull();~~
+    const pickRow = within(section).getByTestId('dt-pick-row');
+    const boxes = within(section).queryAllByRole('combobox');
+    // 건수가 오라클이다 — 편집 고르개가 하나라도 새로 서면 3을 넘어 red 다.
+    expect(boxes.length).toBe(3);
+    expect(boxes.every((b) => pickRow.contains(b))).toBe(true);
   });
 });
