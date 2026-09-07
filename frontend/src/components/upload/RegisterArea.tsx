@@ -18,7 +18,16 @@ import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
 import { formatExtension, formatPeriodWithInterval } from '../detail/format';
 import { extensionOf } from './FileDropCard';
-import { GRANULARITIES, assemble, partsFor, type PeriodParts } from './periodParts';
+import { EMPTY_PARTS, GRANULARITIES, assemble, partsFor, type PeriodParts } from './periodParts';
+import { PeriodCalendarPopover } from './PeriodCalendarPopover';
+import {
+  CATEGORIES,
+  DATA_TYPES,
+  PROCESSING_LEVELS,
+  bilingual,
+  findAxis,
+  type AxisValue,
+} from './axisDict';
 
 import {
   TOPICS,
@@ -52,11 +61,149 @@ export const FOOT_HINTS: Record<Step, string> = {
 /** ① 분석이 안 끝났을 때의 안내 — rev1 `syncFoot()` 의 장면1 갈래 축자. */
 export const NEXT_BLOCKED_HINT = '분석이 끝나면 다음으로 넘어갈 수 있어요';
 
-const STEP_LABELS: Record<Step, string> = {
-  1: '① 자동 메타데이터 확인',
-  2: '② 소속 프로젝트 지정',
-  3: '③ 계보 확정',
+/**
+ * 등록 3단계 (PRD-12) — 「분류 체계와 자유 입력은 성격이 다르고, 가공 단계가 뒤 논리를
+ * 좌우해 가장 먼저 정해야 한다」. 종전 세 라벨(`자동 메타데이터 확인`·`소속 프로젝트 지정`·
+ * `계보 확정`)은 단계 수만 같았고 내용물이 전부 달랐다.
+ */
+export const STEP_LABELS: Record<Step, string> = {
+  1: '① 분류',
+  2: '② 메타데이터 입력',
+  3: '③ 연결',
 };
+
+/** 카드 부제 두 줄 — rev2 `card-h .sub` 축자. */
+export const CLASSIFY_SUBTITLE = '목록 필터가 이 세 축을 그대로 받아요';
+export const METADATA_SUBTITLE = '파일에서 읽는 값은 확장자·용량뿐이에요';
+
+/** PRD-40 · 판정 ⓐ — 종료 칸의 안내 한 줄. rev2 `prVe` 자리 문면 축자. */
+export const PERIOD_SINGLE_POINT_HINT = '한 시점이면 비워 둬요';
+
+/**
+ * 축 값 하나의 정의 줄 (PRD-04 축자 형식) — `<b>{정의}</b> · 예: {예시}`.
+ * 가공 단계만 뒤에 줄을 바꿔 부가 안내를 덧붙인다.
+ */
+function AxisDefLine(props: { value: AxisValue | null; testId: string; withExtra?: boolean }) {
+  if (!props.value) return null;
+  return (
+    <p className="axis-def" data-testid={props.testId}>
+      <b>{props.value.def}</b> · 예: {props.value.example}
+      {props.withExtra ? (
+        <>
+          <br />
+          {props.value.extra}
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+/**
+ * ① 분류 — 세 축(분류·유형·가공 단계)을 고르는 첫 단계 (PRD-12 · 04 · 33 ⑴).
+ *
+ * 지키는 것
+ *  - 셋 다 **필수**이고 셋 다 **기본 선택값**이 있다(`기상·기후 인자`·`재분석자료`·`Lv2`).
+ *  - 옵션 표기는 **국문＋영문 병기**, 저장값은 **국문 단일**이다(미결-13 ⓐ).
+ *  - 유형 아래 한 줄 더 — `참고 · {특이사항 및 주의점}` (PRD-33 ⑴). **저장을 막지 않는다.**
+ *  - ⛔ 유형↔가공 단계 조합 검증을 만들지 않는다(미결-14 ⓐ).
+ */
+function StepClassify(props: {
+  category: string;
+  onCategory: (v: string) => void;
+  dataType: string;
+  onDataType: (v: string) => void;
+  level: string;
+  onLevel: (v: string) => void;
+}) {
+  const cat = findAxis(CATEGORIES, props.category);
+  const type = findAxis(DATA_TYPES, props.dataType);
+  const lv = findAxis(PROCESSING_LEVELS, props.level);
+  return (
+    <div className="card is-on" data-testid="reg-s1">
+      <div className="card-h">
+        <h3>{STEP_LABELS[1]}</h3>
+        <span className="sub" data-testid="reg-s1-sub">
+          {CLASSIFY_SUBTITLE}
+        </span>
+      </div>
+      <div className="card-b">
+        <div className="form-row">
+          <label htmlFor="reg-category">
+            분류
+            <span className="reqtag">필수</span>
+          </label>
+          <select
+            id="reg-category"
+            className="sel"
+            data-testid="reg-category"
+            value={props.category}
+            onChange={(e) => props.onCategory(e.target.value)}
+          >
+            {/* 빈 값은 「아직 안 골랐다」이고 그때 `다음` 이 막힌다(수용 기준 2). */}
+            <option value="">아직 고르지 않음</option>
+            {CATEGORIES.map((v) => (
+              <option key={v.value} value={v.value}>
+                {bilingual(v)}
+              </option>
+            ))}
+          </select>
+          <AxisDefLine value={cat} testId="reg-category-def" />
+        </div>
+
+        <div className="form-row">
+          <label htmlFor="reg-datatype">
+            유형
+            <span className="reqtag">필수</span>
+          </label>
+          <select
+            id="reg-datatype"
+            className="sel"
+            data-testid="reg-datatype"
+            value={props.dataType}
+            onChange={(e) => props.onDataType(e.target.value)}
+          >
+            <option value="">아직 고르지 않음</option>
+            {DATA_TYPES.map((v) => (
+              <option key={v.value} value={v.value}>
+                {bilingual(v)}
+              </option>
+            ))}
+          </select>
+          <AxisDefLine value={type} testId="reg-datatype-def" />
+          {/* PRD-33 ⑴ — 정의 줄 **다음 줄**의 회색 한 줄. 문면은 표의 `특이사항 및 주의점` 축자다 */}
+          {type ? (
+            <p className="axis-note muted" data-testid="reg-datatype-note">
+              참고 · {type.extra}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="form-row">
+          <label htmlFor="reg-level">
+            가공 단계
+            <span className="reqtag">필수</span>
+          </label>
+          {/* ⚠ 빈 선택지가 없다 — 기본값 `Lv2` 가 늘 서 있어 「비어 있음」이 성립하지 않는다.
+              계보에서 나온 파생값(`processingLevel`)과 **다른 칸**이다(미결-2 ⓐ). */}
+          <select
+            id="reg-level"
+            className="sel"
+            data-testid="reg-level"
+            value={props.level}
+            onChange={(e) => props.onLevel(e.target.value)}
+          >
+            {PROCESSING_LEVELS.map((v) => (
+              <option key={v.value} value={v.value}>
+                {v.label}
+              </option>
+            ))}
+          </select>
+          <AxisDefLine value={lv} testId="reg-level-def" withExtra />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function humanSize(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
@@ -121,7 +268,15 @@ function PartRow(props: {
   );
 }
 
-function StepOne(props: {
+/**
+ * ② 메타데이터 입력 — 이름·설명·기간·좌표계·격자·확장자(자동)·용량(자동)·변수 표·
+ * 부가 정보(관측 간격·공개 범위)·대표 그림 (PRD-12).
+ *
+ * ⚠ **대표 그림은 왼쪽 미리보기 칸이 이미 그린다**(`PreviewPanel` · `WU-A10` · PRD-20) —
+ *    같은 칸을 두 곳에 그리지 않는다.
+ * ⚠ **공개 범위의 값 칸은 WU-B4 몫이다** — 여기서는 자리만 세운다.
+ */
+function StepMeta(props: {
   status: UploadStatus | null;
   name: string;
   onName: (v: string) => void;
@@ -152,8 +307,18 @@ function StepOne(props: {
   onIntervalUnit: (v: string) => void;
   nameError: boolean;
   summaryError: boolean;
+  // ⭑ ⟨PRD-33 ⑵⟩ 설명 칸 아래 힌트가 읽는 두 축. 값 자체는 ① 이 쥐고 있다.
+  category: string;
+  level: string;
 }) {
   const bodies = (props.status?.files ?? []).filter((f) => f.kind === '본체');
+  // ㈏ 기간 달력 팝오버 — **더해진 길**이다. 종전 인라인 칸은 그대로 산다.
+  const [periodPopOpen, setPeriodPopOpen] = useState(false);
+  // PRD-33 ⑵ — 고른 분류의 `메타데이터 항목` ＋ 고른 가공 단계의 `메타데이터 필수 항목`.
+  // ⛔ **Lv0 은 넣지 않는다** — 그 두 칸은 별도 칸(PRD-19 · WU-B6) 소관이다.
+  const catHint = findAxis(CATEGORIES, props.category);
+  const lvHint = props.level === 'Lv0' ? null : findAxis(PROCESSING_LEVELS, props.level);
+  const summaryHints = [catHint?.extra, lvHint?.extra].filter((t): t is string => !!t);
   // 조각의 확장자는 **데이터셋당 1값**이다 (`P-5` · PRD-32) — 첫 조각이 곧 전체다.
   const extension = extensionOf(bodies[0]?.fileName ?? '');
   const sliced = bodies.length > 1;
@@ -186,9 +351,12 @@ function StepOne(props: {
     : null;
 
   return (
-    <div className="card is-on" data-testid="reg-s1">
+    <div className="card is-on" data-testid="reg-s2">
       <div className="card-h">
-        <h3>{STEP_LABELS[1]}</h3>
+        <h3>{STEP_LABELS[2]}</h3>
+        <span className="sub" data-testid="reg-s2-sub">
+          {METADATA_SUBTITLE}
+        </span>
       </div>
       <div className="card-b">
         <div className="fieldlbl">파일에서 자동으로 읽었어요</div>
@@ -257,21 +425,9 @@ function StepOne(props: {
               ))}
             </select>
           </div>
-          <div className="form-row">
-            <label htmlFor="reg-lv">
-              가공 단계
-              <span className="autotag">계보에서 자동</span>
-            </label>
-            {/* Lv 를 사람이 지어내지 않는다 (§8 가공 단계 칸) */}
-            <input
-              id="reg-lv"
-              className="inp"
-              type="text"
-              data-testid="reg-lv"
-              readOnly
-              value="계보를 확정하면 정해져요"
-            />
-          </div>
+          {/* ⭑ **⟨WU-B3 · PRD-03 · 미결-2 ⓐ⟩ 가공 단계 칸은 ① 분류로 갔다.**
+              사람이 고르는 값이 됐고(`processingLevelUserSet`), 계보 계산값과 어긋나면
+              **경고만** 낸다 — 등록을 막지 않는다. 읽기 전용 안내 칸은 그래서 사라졌다. */}
         </div>
         {/* 변수·기간·좌표계 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
             형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
@@ -351,6 +507,40 @@ function StepOne(props: {
                   onChange={props.onEndParts}
                 />
               </>
+            )}
+            {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다.** 필수 표시를 걷고 안내 한 줄을 둔다 —
+                저장은 `period_end = period_start` 로 채워지고(`UploadModal.humanMetadata`)
+                표시는 시작=끝이면 한 값으로 그린다(PRD-35 괄호 병기 그대로). */}
+            <p className="fieldnote" data-testid="reg-period-single-hint">
+              {PERIOD_SINGLE_POINT_HINT}
+            </p>
+            {/* ㈏ 달력 팝오버 (R-A′ 이관 · PRD-18) — 종전 칸을 걷지 않고 **길을 하나 더** 낸다 */}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              data-testid="reg-period-open"
+              aria-haspopup="dialog"
+              aria-expanded={periodPopOpen}
+              onClick={() => setPeriodPopOpen((v) => !v)}
+            >
+              달력에서 고르기
+            </button>
+            {periodPopOpen && (
+              <PeriodCalendarPopover
+                granularity={props.granularity}
+                startParts={props.startParts}
+                endParts={props.endParts}
+                onApply={(v) => {
+                  props.onGranularity(v.granularity);
+                  props.onStartParts(v.startParts);
+                  props.onEndParts(v.endParts);
+                }}
+                onClear={() => {
+                  props.onStartParts({ ...EMPTY_PARTS });
+                  props.onEndParts({ ...EMPTY_PARTS });
+                }}
+                onClose={() => setPeriodPopOpen(false)}
+              />
             )}
           </div>
           <div className="form-row">
@@ -438,6 +628,24 @@ function StepOne(props: {
             </p>
           )}
         </div>
+        {/* ⭑ **⟨PRD-33 ⑵⟩ 설명 칸 **아래** 힌트** — 고른 분류의 `메타데이터 항목` ＋ 고른
+            가공 단계의 `메타데이터 필수 항목`. 문면은 PRD-01·03 표 축자이고 화면이 짓지 않는다.
+            ⛔ Lv0 은 이 줄에 없다(별도 칸 소관 · PRD-19 · WU-B6).
+            ⚠ **칸(`form-row`) 바깥이다** — rev1 이 없앤 「칸 아래 안내 문구」는 설명 칸 자체를
+               해설하던 문단이고, 이 줄은 **고른 분류가 요구하는 항목**이라 성격이 다르다. */}
+        {summaryHints.length > 0 && (
+          <p className="fieldnote" data-testid="reg-summary-hint">
+            {summaryHints.join(' · ')}
+          </p>
+        )}
+
+        {/* ⭑ **⟨PRD-12 부가 정보⟩ 공개 범위 — 자리만이다.**
+            값 3값(`연구실 구성원 전체`·`나만 보기`·`지정한 사람만` · 미결-1 ⓐ)과 그 저장
+            (`열림`·`잠김`·`지정 공개`)은 **WU-B4** 가 세운다. 여기서 임시 칸을 만들면
+            그 WU 가 두 벌을 걷어야 한다. */}
+        <div className="form-row" data-testid="reg-visibility-slot">
+          <label>공개 범위</label>
+        </div>
       </div>
     </div>
   );
@@ -510,9 +718,9 @@ export function StepTwo(props: {
   }
 
   return (
-    <div className="card is-on" data-testid="reg-s2">
+    <div className="card is-on" data-testid="reg-projects">
       <div className="card-h">
-        <h3>{STEP_LABELS[2]}</h3>
+        <h3>연관 프로젝트·논문</h3>
         <span className="sub">선택 · 여러 개 가능</span>
       </div>
       <div className="card-b">
@@ -650,14 +858,27 @@ export function StepTwo(props: {
   );
 }
 
+/**
+ * ③ 연결 — **계보 부모 ＋ 원천 표기 ＋ 연관 프로젝트·논문이 한 단계에 있다** (PRD-12).
+ *
+ * rev2 축자 = 「계보 = 어디서 왔나(상류) · 프로젝트·논문 = 어디에 쓰나(하류)」. 둘은
+ * 카드 두 장이고 단계는 하나다 — 종전처럼 ②③ 으로 갈라 두지 않는다.
+ *
+ * ⚠ **Lv0 전용 두 칸(`sourceUrl`·`sourceDownloadedOn`)은 WU-B6 몫이다** — 자리만이다.
+ *    원천 표기(`sourceLabel`)는 Lv 무관 상시 노출이고 그것은 여기 있다(미결-11 ⓐ).
+ */
 function StepThree(props: {
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
   lineageStep?: LineageStepRender | undefined;
   ctx: LineageStepContext;
+  projectSource: ProjectSource;
+  projects: PickedProject[];
+  onProjects: (v: PickedProject[]) => void;
 }) {
   return (
-    <div className="card is-on" data-testid="reg-s3">
+    <div data-testid="reg-s3">
+    <div className="card is-on">
       <div className="card-h">
         <h3>{STEP_LABELS[3]}</h3>
       </div>
@@ -683,7 +904,17 @@ function StepThree(props: {
             <p className="muted">계보 확정을 열 수 없어요.</p>
           )}
         </div>
+        {/* ⚠ Lv0 전용 두 칸(출처 URL · 다운로드 일자)의 자리 — **WU-B6** 이 세운다. */}
+        <div className="form-row" data-testid="reg-source-lv0-slot" />
       </div>
+    </div>
+
+    {/* 어디에 쓰나(하류) — 같은 단계 안의 두 번째 카드다 (`WU-A7R` 표 그대로 재사용) */}
+    <StepTwo
+      source={props.projectSource}
+      picked={props.projects}
+      onPicked={props.onProjects}
+    />
     </div>
   );
 }
@@ -725,6 +956,13 @@ export function RegisterArea(props: {
   onSourceLabel: (v: string) => void;
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
+  // ⭑ ⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — ① 이 고르고 ② 의 힌트가 읽는다.
+  category: string;
+  onCategory: (v: string) => void;
+  dataType: string;
+  onDataType: (v: string) => void;
+  level: string;
+  onLevel: (v: string) => void;
   nameError: boolean;
   summaryError: boolean;
   registerError: string | null;
@@ -739,6 +977,15 @@ export function RegisterArea(props: {
    * `status` 가 아직 없으면 **접수·분석 중**이다 — 모르는 것을 끝났다고 하지 않는다.
    */
   const analyzing = !props.status?.ready;
+  /**
+   * ① 의 **분류·유형이 비어 있으면 `다음` 이 막힌다** (수용 기준 2).
+   *
+   * ⚠ **표시기 이동은 막지 않는다** — rev1 `UI-003` 축자 「언제나 · 눌러서 아무 단계로나
+   *    이동」과 병존하는 자리다. 순차 이동(`다음`)만 ① 의 빈 값에서 서고, 임의 이동과
+   *    마지막 게이트(`데이터셋 만들기`)는 종전 그대로다.
+   * ⚠ 가공 단계는 기본값 `Lv2` 가 늘 서 있어 빈 상태가 성립하지 않는다.
+   */
+  const classifyBlocked = step === 1 && (!props.category || !props.dataType);
   return (
     <div className="regarea" data-testid="reg-area">
       {/* 표시기 — 한 번에 한 단계만 보이고, 눌러서 아무 단계로나 간다 (§8) */}
@@ -768,7 +1015,17 @@ export function RegisterArea(props: {
 
       <div className="up-steps">
         {step === 1 && (
-          <StepOne
+          <StepClassify
+            category={props.category}
+            onCategory={props.onCategory}
+            dataType={props.dataType}
+            onDataType={props.onDataType}
+            level={props.level}
+            onLevel={props.onLevel}
+          />
+        )}
+        {step === 2 && (
+          <StepMeta
             status={props.status}
             name={props.name}
             onName={props.onName}
@@ -797,10 +1054,9 @@ export function RegisterArea(props: {
             onIntervalUnit={props.onIntervalUnit}
             nameError={props.nameError}
             summaryError={props.summaryError}
+            category={props.category}
+            level={props.level}
           />
-        )}
-        {step === 2 && (
-          <StepTwo source={props.projectSource} picked={props.projects} onPicked={props.onProjects} />
         )}
         {step === 3 && (
           <StepThree
@@ -808,6 +1064,9 @@ export function RegisterArea(props: {
             onSourceLabel={props.onSourceLabel}
             lineageStep={props.lineageStep}
             ctx={props.lineageCtx}
+            projectSource={props.projectSource}
+            projects={props.projects}
+            onProjects={props.onProjects}
           />
         )}
       </div>
@@ -851,7 +1110,7 @@ export function RegisterArea(props: {
             data-testid="reg-next"
             /* ① 분석이 끝나기 전에는 넘어가지 않는다 — rev1 `anNext.disabled`.
                넘어가 봐야 자동으로 읽힌 값이 아직 없어 빈 칸만 보인다. */
-            disabled={analyzing}
+            disabled={analyzing || classifyBlocked}
             onClick={() => props.onStep((step + 1) as Step)}
           >
             다음 →

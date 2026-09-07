@@ -28,6 +28,11 @@ import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
 import {
+  DEFAULT_CATEGORY,
+  DEFAULT_DATA_TYPE,
+  DEFAULT_PROCESSING_LEVEL,
+} from './axisDict';
+import {
   emptyVariableRow,
   variablesPayload,
   type VariableRow,
@@ -132,6 +137,13 @@ export function UploadModal(props: {
   // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
   const [nameDraft, setNameDraft] = useState('');
   const [topic, setTopic] = useState('');
+  // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — 기본 선택값이 있고 그대로 실려 나간다.**
+  // 계약 `DatasetCreate.required` 에 `category`·`dataType` 이 올라(20차 ㉯) 서버가 400
+  // 「분류를 골라 주세요」를 내므로, 화면은 **늘 값을 실어 보낸다**.
+  // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 셋을 세지 않는다.
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
+  const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   // 변수·기간·좌표계 — **사람이 적는 자유 입력** (정본 `VAL-006` · 스펙 18·19·20).
@@ -198,6 +210,16 @@ export function UploadModal(props: {
   const downOnBackdrop = useRef(false);
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
+
+  /**
+   * PRD-13 — **모달을 열 때마다 ① 로 되돌린다.** rev1 축자 = 「단계가 둘일 때는 안 드러났고
+   * 셋이 되며 나왔다」. 언마운트 여부에 기대지 않는다 — DOM 에 남는 구현으로 바뀌어도
+   * 이 자리가 같은 일을 한다.
+   */
+  useEffect(() => {
+    setStep(1);
+    setRegisterOpen(false);
+  }, []);
 
   const attach = props.attach;
   /** 후주입 모드의 기본 파일 종류. 사람이 격자를 붙이러 왔으므로 격자가 기본이다. */
@@ -454,6 +476,11 @@ export function UploadModal(props: {
     // ⭑ ⟨advisor ② · F1⟩ 대표 그림도 파일에서 왔다. 플래그만 남으면 다시 올린 사람이
     //   아무것도 안 적고도 되묻힌다.
     setThumbReplaced(false);
+    // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
+    //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
+    setCategory(DEFAULT_CATEGORY);
+    setDataType(DEFAULT_DATA_TYPE);
+    setLevel(DEFAULT_PROCESSING_LEVEL);
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -607,7 +634,11 @@ export function UploadModal(props: {
     if (assembled.start) {
       out.period = {
         start: assembled.start,
-        end: assembled.end,
+        // ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 화면에서만 비운다 — 저장은 `period_end = period_start`.**
+        // 「한 시점」은 끝이 없는 것이 아니라 **시작과 같은 끝**이다. `null` 로 보내면
+        // 그 자료가 「무기한·진행 중」으로 읽혀 한 시점 자료와 구별되지 않는다.
+        // ⛔ 스키마·계약·CHECK 는 무변이다 — 조립만 화면이 한다.
+        end: assembled.end || assembled.start,
         // `''` 은 「미지정」이고 계약은 그것을 `null` 로 말한다 — 빈 문자열을 보내지 않는다.
         granularity: granularity || null,
       };
@@ -622,6 +653,11 @@ export function UploadModal(props: {
         unit: intervalUnit || null,
       };
     }
+    // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 세 축은 늘 실린다.** 계약 `required` 가 앞의 둘을
+    // 잡았고(20차 ㉯), 기본 선택값이 있어 빈 값으로 나갈 자리가 없다.
+    // ⚠ `category`·`dataType` 은 여기서 싣지 않는다 — 계약 `required` 라 `register()`
+    //    호출부가 **명시로** 싣는다(타입 검사가 그 자리를 본다).
+    if (level) out.processingLevelUserSet = level;
     return out;
   }
 
@@ -635,7 +671,8 @@ export function UploadModal(props: {
     if (!name.trim()) {
       // §9 이름 없이 데이터셋 만들기 — 이름 칸으로 초점을 옮긴다
       setNameError(true);
-      setStep(1);
+      // ⭑ ⟨WU-B3⟩ 이름 칸은 ② 메타데이터 입력에 있다 — 적을 칸으로 데려간다.
+      setStep(2);
       window.setTimeout(() => document.getElementById('reg-name')?.focus(), 0);
       return;
     }
@@ -643,7 +680,7 @@ export function UploadModal(props: {
     if (!summary.trim()) {
       // PRD-15 — 설명이 필수다. 계약 `DatasetCreate.required` 와 같은 판정을 화면이 먼저 한다.
       setSummaryError(true);
-      setStep(1);
+      setStep(2);
       window.setTimeout(() => document.getElementById('reg-summary')?.focus(), 0);
       return;
     }
@@ -659,6 +696,10 @@ export function UploadModal(props: {
         // 위에서 빈 값을 이미 걸렀다.
         summary: summary.trim(),
         sourceLabel: sourceLabel.trim() || null,
+        // ⭑ **⟨WU-B3 · 20차 ㉯⟩ 계약 `required` 라 열쇠를 **명시**한다** — `humanMetadata()` 의
+        // 펼침은 `Record<string, unknown>` 이라 타입 검사가 이 둘을 못 본다.
+        category,
+        dataType,
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
         projectIds: projects.map((p) => p.projectId),
@@ -974,6 +1015,12 @@ export function UploadModal(props: {
                 onSourceLabel={setSourceLabel}
                 projects={projects}
                 onProjects={setProjects}
+                category={category}
+                onCategory={setCategory}
+                dataType={dataType}
+                onDataType={setDataType}
+                level={level}
+                onLevel={setLevel}
                 nameError={nameError}
                 summaryError={summaryError}
                 registerError={registerError}
