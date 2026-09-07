@@ -42,7 +42,7 @@
   6 failed, 3 passed in 5.18s
   ```
   통과한 3건 = 대표 둘 400 · 빈 이름 400 · cross-tenant 음성. **앞 둘은 그 시점에 오라클이 아니었다** — 「계약에 없는 필드」가 아니라 「문자열 배열이 아니다」로 400 이 났고, 구현 뒤 뜻이 값 검사로 바뀌어 green 이다.
-- GREEN — `tests/test_variable_rows.py` **9건 전부 통과** · `service-tests-core-api` 전체 **858 통과 · 0 실패**.
+- GREEN — `tests/test_variable_rows.py` **9건 전부 통과** · `service-tests-core-api` 전체 **852 실행 전건 통과 · 0 실패**(직접 `pytest` 는 858 · 게이트가 6건을 deselect 한다).
 - 화면 — `frontend/test/variable-rows-20260907.test.tsx` **8건** · 전체 **876 통과 / 63 파일**.
 - 드리프트 오라클의 red 는 스크립트가 스스로 만든다 — ㈏(0016 없음) · ㈐(downgrade 뒤) · ㈑-b(대표 이동) 셋이 red 여야 green 이다.
 - 기존 시험 개정 4건(계약 소비자) — `test_dataset_detail.py`(구성 칸 오라클을 객체 배열로) · `test_dataset_registration.py`(요청 형상 ＋ 저장 자리가 `d3_dataset_variable` 로 옮겨짐) · `test_autometa_from_events.py` 2건(아래 「받아들인 잔여 위험」) · `frontend/test/upload.test.tsx` 3건(입력 칸 → 표).
@@ -108,17 +108,17 @@ error	[response-property-type-changed] in API POST /datasets
 | `schema-diff` | `schema-diff green — 두 체인 각각 선언 = 적용.` |
 | `migration-single-head` | `migration-single-head green — 두 체인 모두 head 1개.`(platform 리비전 20 · head `0016_rb2_dataset_variable`) |
 | `contract-lint` | `contract-lint green — seam 3건, 룰 위반 0.` |
-| `contract-breaking`(기본 기준 `HEAD`) | `green contract-breaking` — 기준을 `3889c30` 로 옮기면 **red 14건**(위 축자 · 20차 승인분) |
+| `contract-breaking`(기본 기준 `HEAD`) | `contract-breaking green — 기준 HEAD (3건) 대비 파괴적 변경 없음.` — 기준을 `3889c30` 로 옮기면 **red 14건**(위 축자 · 20차 승인분) |
 | `generated-up-to-date` | `generated-up-to-date green — 등기부 10건 전부 재생성 일치, 등기부 밖 자칭 생성물 0건.` |
-| `db-boundary` | `green db-boundary` |
-| `rls-coverage` | `green rls-coverage` |
-| `rls-effect` | `green rls-effect` |
-| `autometa-loss` | `green autometa-loss` |
-| `service-tests-core-api` | `green service-tests-core-api` (858 통과 · 0 실패) |
-| `frontend-typecheck` | `green frontend-typecheck` |
-| `frontend-test` | `green frontend-test` (876 통과 / 63 파일) |
+| `db-boundary` | `db-boundary: green — 단위 7개 · 스캔 대상 339건 · 위반 0` |
+| `rls-coverage` | `rls-coverage green — allow-list 밖 테이블 전부 FORCE RLS + 연구실 경계 정책, 본체 테이블은 본체 정책까지.` |
+| `rls-effect` | `rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가.` |
+| `autometa-loss` | `autometa-loss green — 반영 6 / 발행 6 · 면제 0` |
+| `service-tests-core-api` | `service-tests-core-api green — 실행 852건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).` |
+| `frontend-typecheck` | `frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.` |
+| `frontend-test` | `frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 876건 · 실패 0건.` |
 
-계 = **green 12 / red(판정) 0 / red(준비) 0.** `all` 은 돌지 않았다(레인 규약 §3-1).
+계 = **green 13 / red(판정) 0 / red(준비) 0**(위 12 ＋ `work-item-consistency`). 마지막 커밋 뒤에 13건을 다시 돌렸다 — `all` 은 돌지 않았다(레인 규약 §3-1).
 
 ## 자기 표시
 
