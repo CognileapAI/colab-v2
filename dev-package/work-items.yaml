@@ -2969,13 +2969,13 @@ items:
 
   - id: WU-C8
     name: FE 소형 5건 — VISIBILITIES 3값 · submit 400 표면화 · 기간 인라인 철거 · Lv0 안내 사람 Lv · 빈 상태 3문면 권한 무관 (R-B §5-16·31·14·28·43)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C9 done", "WU-C5 done"]
     depends_on: ["WU-C9", "WU-C5"]
     completion_def: "LabInfoPanel 셀렉트 3값 · 서버 400 문면 그대로/500 은 일반 문구 · 인라인 기간 칸 0＋팝오버 1 · 사람 Lv0＋파생≠0 행에 출처 안내 · canEdit=false 계정도 빈 상태 3문면"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c8 ba636e5 → integration/r-c rebase·ff · §5-16 ACCESS_STATES 3값 · §5-31 RegisterRejected 400 축자 노출(types·uploadSource 매핑 추가) · §5-14 인라인 칸＋최소 단위 셀렉트 철거(팝오버 하나 · granularity null 화면 도달 불가) · §5-28 displayLevel 사람 Lv 기준 · §5-43 3문면 권한 무관 · 시험 10건(전 7 red) · 기존 16건 판정 맞춰 정정 · frontend-test green 1037"
     deadline: null
     note: "2026-09-08 등재 — R-B 판정 A 14·16·28·31·43. 레인 rc-fe-fix"
     sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
