@@ -1,6 +1,6 @@
 # `DL-1` 레인 보고 — 데이터셋 삭제(묘비)
 
-／ 브랜치 `lane-dl1-dataset-delete` · 기준 `origin/main` = `27733ba`
+／ 브랜치 `lane-dl1-dataset-delete` · 기준 `origin/main` = ~~`27733ba`~~ → **`d969f34`**(리베이스 2026-09-08 · §9 · §1~§4 의 sha 는 옛 것이다)
 ／ 워크트리 = `.claude/worktrees/agent-a10ad0543e2da26d4`
 ／ 계획서 = 승인분(사용자 홈 `plans/eventual-forging-piglet.md`) · 회부문 = `dev-package/sessions/DL-1-TED-RULING.md`
 
@@ -201,3 +201,84 @@ testid 3건** — 둘 다 계획의 완료 정의를 잠그기 위한 것이고 
 8. **ⓙ** `*_REAL` 오라클 강화(문자열 포함 → 실제 호출 검증)의 범위와 시점.
 9. **병합 조건 재확인** — Ted ⓐ ＋ CI `service-tests` 1회 green. 이 기계의 `service-tests-core-api` 는 red(판정)이고
    그 원인(호스트 도달성)은 `gate-pg-reach` 가 닫는다. 완료 정의 ⑻ 은 병합 뒤 dev 배포 회차 — `DL-1` 은 그때까지 `open`.
+
+---
+
+## 9. 리베이스 (2026-09-08)
+
+### 9-1. 기준 · 커밋
+
+- 새 기준 = `origin/main` **`d969f34`**(종전 `27733ba` 뒤 **110 커밋** · R-B 라운드 · `〈373〉`·`〈374〉` · 마이그레이션 `0015_rb1_axes_category_type_lv`~`0019_rb7_search_index_m10`).
+- 커밋 5 재발급(내용 무변 · C4 만 충돌 해소분 포함) ＋ C5(이 절):
+
+| 순 | 옛 sha | 새 sha | 무엇 |
+|---|---|---|---|
+| C0 | `36fc8c2` | `b590847` | 대장 등재 ＋ 회부문 ＋ 권한 표 |
+| C1 | `60b3e00` | `89d1a57` | 서버 두 op ＋ 도메인 함수 ＋ 501 표 4 → 2 |
+| C2 | `a9b571b` | `2f4d103` | 계보 묘비 노드 |
+| C3 | `a4a48e1` | `2f48a73` | FE 진입점·모달·소스 |
+| C4 | `d811b74` | `3a761f9` | 마감(HANDOFF 충돌 해소 포함 · amend 1회) |
+| C5 | — | (이 커밋) | `0017` 정합 코드 ＋ 시험 1 ＋ 보고서·세션·대장 |
+
+- `git diff --name-only origin/main` 25 파일 — `contracts/`·`db/platform/versions`·`routes/catalog.py`·`ports/storage.py`·`d4_lineage.py`·`DetailHeader.tsx` **부재 확인**(계획 §10 터치 0 유지).
+
+### 9-2. 충돌 파일 · 해소
+
+| 파일 | 충돌 자리 | 해소 |
+|---|---|---|
+| `dev-package/work-items.yaml` | C0 · C4 두 번 | 규칙 §4-2 — 레포 드라이버 `dev-package/tools/merge-work-items.py` 를 `gates/.venv` python 으로 손 실행(git 이 부른 시스템 python3 에 PyYAML 부재 → 드라이버가 손을 뗌). HEAD(main) 전체 ＋ 상대 신규 블록 덧붙임(C0: `DL-1`·`DL-2` 2건 · C4: `gate-pg-reach` 1건 ＋ `DL-1` 한쪽 수정 취함) · `yaml.safe_load` ＋ id 유일성 = 159건 · 중복 0 |
+| `dev-package/03-HANDOFF.md` | C4 · 상단 증보 블록 | main 의 R-B 마감 증보(09-08) 블록 보존 ＋ 우리 증보 1행을 그 아래 삽입. §1 `DL-1`·`DL-2` 두 행(T-P 표 4열)과 §4 **71**·**72** 두 행은 자동 병합(main 마지막 번호 70 · 충돌 없음) |
+| `frontend/src/routes/DatasetDetailPage.tsx` | C3 · import 1행 | main 의 `{ DatasetEditActions, DatasetEditForm }` 보존 ＋ 우리 import 2행 유지. `deletionSource` prop·훅·`editAction` 슬롯(진입점 둘)은 자동 병합 |
+| `d2_access.py` · `d3_catalog.py` · `routes/lineage.py` · `not_implemented.py` · `test_not_implemented.py` | 충돌 없음(자동) | main 판 전체 ＋ 우리 덧붙임 · `def` 중복 0 · 501 표 4 → 2 그대로(main 이 다른 행을 걷지 않았다) · `node()` 묘비 분기 유지 |
+
+### 9-3. `0017_rb4_access_state_3` 정합 (C5)
+
+- 실물 — `d2_dataset_access` 열 4개 무변(`dataset_id`·`lab_id`·`state`·`updated_at`) · CHECK 만 `('열림','잠김','지정 공개')` 3값 · `열림` 어휘 존속(마이그레이션 산문 「열림/잠김 어휘를 지우지 않는다」).
+- main(WU-B4)이 그 표의 **제품 쓰기 헬퍼**를 뒀다 — `d2_access.set_access_state(session, *, dataset_id, state)`(upsert ＋ 데이터셋 advisory 잠금 ＋ `잠김` 일 때만 grant 만료). ⟹ 우리 `_OPEN_ACCESS` upsert 를 지우고 `open_access_for_deletion` 이 `set_access_state(state="열림")` 을 부른다(중복 0). `열림` 갈래는 grant 를 건드리지 않고, advisory 잠금은 겹친 승인(`decide_access_request`)과 삭제 트랜잭션을 직렬화한다(잠금 순서 = 삭제가 `d3_dataset FOR UPDATE` → advisory · 승인 경로는 `d3_dataset` 을 잠그지 않아 순환 없음).
+- `snapshot_access`·`restore_access` 는 **유지** — main 에 「`updated_at` 까지 되돌리기」·「행 부재를 부재로 되돌리기」 헬퍼가 없다(`set_access_state(None)` 은 `state=NULL` 행을 남긴다).
+- 시험 ⑪-b 신설 `test_a_designated_dataset_is_restored_with_its_grant_intact` — `지정 공개` ＋ 유효 grant 1 → DELETE 204 → `state` 그대로 · `updated_at` 그대로 · grant 유효 1 · 파일 0행 · 바이트 부재. **red 먼저**(원복을 `잠김` 으로 고정한 임시 결함 → `AssertionError: 원복이 지정 공개 를 다른 값으로 뭉갰다` · `rebase/pytest-red-c5.txt`) → 되돌린 뒤 green.
+- 기존 픽스처(`planted(locked=True)` = `잠김` 직접 INSERT)는 3값 CHECK 와 충돌 없음.
+
+### 9-4. 시험 DB → 0019
+
+- `colab_platform_test` = `tests/fixtures/setup-db.sh`(`CONTAINER=colab_local_pg DB=colab_platform_test`)로 레인 트리 `db/platform/schema.sql` 재적용 — 표 27 → 28 · `d2_dataset_access_state_check` 3값 실측.
+- `colab_platform` = 본 체크아웃 venv 의 `alembic upgrade head` → `alembic_version_platform` = `0019_rb7_search_index_m10`(종전 `0014_merge_ra1_and_topic_vocab`). staging·dev·prod 무접촉.
+
+### 9-5. 재검증 3계수 — **green 13 / red(판정) 0 / red(준비) 1**(14 게이트 실행 · `service-tests` 미실행)
+
+| 게이트 | 판정 | 요약줄(축자) | 로그(`dev-package/reports/dl-1/rebase/`) |
+|---|---|---|---|
+| `work-item-consistency` | green | 대장 159건 · 불일치 0 (C5 대장 갱신 뒤 재실행 §9-6) | `gate-work-item-consistency.log` |
+| `frontend-typecheck` | green | `tsc --noEmit` 오류 0 | `gate-frontend-typecheck.log` |
+| `frontend-test` | green(2회차) | **73 files / 1013 tests passed**(종전 809 → main 증가분 ＋ 우리 17) | `gate-frontend-test.log` |
+| ↳ 1회차 | red(판정 · exit 1) | 「수집된 시험 0건」 · 73 unhandled `ERR_REQUIRE_ESM`(`html-encoding-sniffer` → `@exodus/bytes` ESM require) | `gate-frontend-test-node22.9-noflag.log` |
+| `frontend-fixture-reach` | green | 도달 167 · 금지 모듈 0 | `gate-frontend-fixture-reach.log` |
+| `contract-lint` | green | seam 3 · 위반 0 | `gate-contract-lint.log` |
+| `contract-breaking` | green | 기준 `origin/main` 대비 파괴적 변경 없음 | `gate-contract-breaking.log` |
+| `generated-up-to-date` | green | 등기부 10건 재생성 일치 | `gate-generated-up-to-date.log` |
+| `db-boundary` | green | 단위 7 · 스캔 346 · 위반 0 | `gate-db-boundary.log` |
+| `exec-bit` | green | `.sh` 131건 100755 | `gate-exec-bit.log` |
+| `import-boundary` | green | 계약 전부 KEPT | `gate-import-boundary.log` |
+| `banned-import` | green | `.py` 154 · 금지 0 | `gate-banned-import.log` |
+| `rls-coverage` | green | allow-list 밖 전부 FORCE RLS ＋ 경계 정책 | `gate-rls-coverage.log` |
+| `rls-effect` | green | 본체 음성 · 메타 양성 · cross-tenant 셋 다 차단 | `gate-rls-effect.log` |
+| `schema-diff` | red(준비 · exit 78) | 적용 DB 미선언(`COLAB_APPLIED_DB_URL_*`) — 종전과 같음 | `gate-schema-diff.log` |
+| `service-tests` | **미실행** | 이 맥에서 일회용 postgres 무판정 매달림(§3 · `gate-pg-reach`) — 직접 pytest 로 갈음(아래) | — |
+
+- **`frontend-test` 1회차 red 의 원인 = 호스트 node.** `jsdom 29.1.1` engines `^20.19.0 || ^22.13.0 || >=24`, `@exodus/bytes` `^22.12.0`(require(esm) 지원선) — 이 기계의 node 는 `22.9.0`(지시된 경로)·`21.4.0`(기본) 둘 다 미만. 2회차 = 같은 node 22.9.0 에 `NODE_OPTIONS=--experimental-require-module`(cmux 의 `--require` 옵션을 치우고 이 플래그만) — **검사 대상·설정 무변**, 런타임 플래그만. `package-lock.json` 은 `27733ba`↔`d969f34` diff 0 이라 09-06 green 과 같은 의존 트리다(그때의 node 플래그는 `[미확인]`). CI 는 `setup-node 20`(jsdom 선 `^20.19`).
+- **pytest 전수**(`-m "not e2e"` · 로그 `rebase/pytest-full.txt`) = **948 passed / 0 failed / 6 deselected · 175.7s**(기준선 843 → main 증가분 104 ＋ 우리 신설 1 · `test_dataset_deletion.py` 22). 실행 트리 = C5(정합 코드 포함).
+- **vitest** = 1013/0(위).
+
+### 9-6. 계획(§11-b)과 달라진 것
+
+| # | 계획 | 실제 | 왜 |
+|---|---|---|---|
+| ⑴ | 대장 충돌은 규칙 4-2 로 손 해소 | 레포 병합 드라이버를 `gates/.venv` python 으로 손 실행 | 드라이버가 이미 §4-2 를 기계로 옮겼고, git 이 부른 python3 에만 PyYAML 이 없었다. 결과 검증(파싱·id 유일성)은 같은 python 으로 별도 확인 |
+| ⑵ | `0017` 정합 = 값·열 확인 | 확인 ＋ **쓰기 문장 재사용**(`set_access_state`) ＋ 시험 1 | 지시 「제품 쓰기 헬퍼가 있으면 재사용하고 우리 것을 지운다」. 코드 변경이 C5 에 들어간 것은 지시 「커밋 1개」 때문 — C1 에 fixup 하면 sha 가 다시 바뀐다 |
+| ⑶ | `frontend-test` 1회 | 2회(1회차 red 기록 보존) | 원인이 검사 대상이 아니라 호스트 node 지원선이라 플래그로 재실행. 1회차 로그를 지우지 않았다 |
+| ⑷ | C4 그대로 재적용 | C4 amend 1회 | HANDOFF 해소 스크립트가 단언에서 멈춘 채 `git add` 가 먼저 돌아 표식이 커밋됐다 → 표식 0 으로 고쳐 amend. 최종 `git grep` 표식 0건 |
+
+### 9-7. 열린 것
+
+- Ted 판정 ⓐ 회수 · `〈N〉` 발급(병합 직전 · `PLAN-SoT` 무접촉) · CI `service-tests` 1회 green · 병합 · dev 배포(0015~0019 실적용 동반) · 완료 정의 ⑻.
+- `frontend-test` 가 이 맥에서 플래그 없이 red 인 것 — 호스트 node 를 `22.13+` 로 올리거나 게이트 진입조건에 적는 것은 별건(`gate-pg-reach` 계열 · 이 레인 범위 밖).

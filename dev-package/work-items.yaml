@@ -4021,7 +4021,13 @@ items:
       판정 미도달 · 게이트 축자 `exit 1` · 사람이 죽임) / red(준비) 1(`schema-diff`) ·
       pytest 신설 21(red 18/1 → green) · core-api 전수 843/0(손 실행 · 보조) · vitest 17 ·
       FE 전수 809 · 병합 조건 = Ted ⓐ ＋ CI `service-tests` 1회 green · ⑻ 미집행 —
-      근거 `dev-package/reports/dl-1/lane-report.md`
+      근거 `dev-package/reports/dl-1/lane-report.md` ·
+      **리베이스 `origin/main` `d969f34`(2026-09-08 · 110 커밋 · 0015~0019)** — 충돌 3파일
+      (대장·HANDOFF·`DatasetDetailPage.tsx` import 1행) 해소 · `0017` 3값 정합 =
+      `open_access_for_deletion` 이 WU-B4 `set_access_state("열림")` 재사용 ＋ `지정 공개`
+      원복 시험 1(red 1 → green) · 재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1
+      (`schema-diff`) · pytest 948/0(신설 파일 22) · vitest 1013/0 · `service-tests` 게이트 미실행
+      (이 맥 무판정 매달림 · 직접 pytest 로 갈음) — `lane-report.md §9`
     deadline: null
     note: >-
       **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터

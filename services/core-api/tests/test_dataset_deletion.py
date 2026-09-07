@@ -521,6 +521,49 @@ def test_a_locked_dataset_loses_its_files_and_bytes_too(p2_client, planted, sql,
         "「열림」 창이 트랜잭션 밖으로 샜다 — 잠긴 데이터가 열린 채로 남는다."
 
 
+def test_a_designated_dataset_is_restored_with_its_grant_intact(p2_client, planted, sql,
+                                                                tmp_path):
+    """⑪-b ⟨리베이스 2026-09-08 · `0017_rb4_access_state_3`⟩ 3값의 세 번째 — `지정 공개`.
+
+    `잠김` 과 같은 접근 판정 경로(grant 갈래)를 타므로 소유자·교수에게 파일이 안 보이는 것은
+    같고, 「열림」 창을 지난 뒤 **`지정 공개` 그대로 · `updated_at` 그대로 · 허용 줄 유효**
+    셋이 다 돌아와 있어야 한다. 원복이 `잠김` 으로 뭉개면 `set_access_state` 의 만료 갈래처럼
+    허용자가 끊기고, `updated_at` 이 밀리면 사람이 바꾼 이력과 구별되지 않는다.
+    """
+    client = p2_client()
+    dataset_id, keys = planted(owner=ACC_A_PROF, files=1, locked=False)
+    _write_bytes(tmp_path, keys)
+    sql("""INSERT INTO d2_dataset_access (dataset_id, lab_id, state, updated_at)
+           VALUES (:id, current_lab_id(), '지정 공개', now() - interval '1 day')""",
+        {"id": dataset_id}, account_id=ACC_A_PROF)
+    sql("""INSERT INTO d2_dataset_access_grant
+             (id, lab_id, dataset_id, grantee_account_id, approver_account_id, expires_at)
+           VALUES (:gid, current_lab_id(), :id, :grantee, :approver, now() + interval '6 months')""",
+        {"gid": str(Ulid.generate()), "id": dataset_id, "grantee": ACC_A_RES,
+         "approver": ACC_A_PROF}, account_id=ACC_A_PROF)
+    before = sql("SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :id",
+                 {"id": dataset_id})[0]
+    assert before["state"] == "지정 공개"
+    # 전제 — 소유자(교수)에게도 파일은 0행이다 (허용 줄은 연구원 것이다).
+    assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
+               {"id": dataset_id}, account_id=ACC_A_PROF)[0]["n"] == 0
+
+    assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                         headers=auth(TOKEN_PROF)).status_code == 204
+
+    after = sql("SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :id",
+                {"id": dataset_id})[0]
+    assert after["state"] == "지정 공개", "원복이 `지정 공개` 를 다른 값으로 뭉갰다."
+    assert after["updated_at"] == before["updated_at"], "원복이 `updated_at` 을 밀었다."
+    assert sql("""SELECT count(*) AS n FROM d2_dataset_access_grant
+                   WHERE dataset_id = :id AND expires_at > now()""",
+               {"id": dataset_id})[0]["n"] == 1, "「열림」 창이 허용 줄을 만료시켰다."
+    # 허용자(연구원)에게는 파일이 보이는 경로인데 — 행이 지워졌으니 0 이어야 한다.
+    assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
+               {"id": dataset_id}, account_id=ACC_A_RES)[0]["n"] == 0
+    assert _present(tmp_path, keys) == []
+
+
 def test_an_open_dataset_without_an_access_row_stays_without_one(p2_client, planted, sql):
     """접근 상태 행이 **없던** 데이터셋은 삭제 뒤에도 없어야 한다 (`restore` 는 부재도 되돌린다).
 

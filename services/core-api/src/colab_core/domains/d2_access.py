@@ -618,6 +618,8 @@ def cancel_verification(session: Session, *, dataset_id: Ulid, actor_id: Ulid,
 # **부르는 자리는 `routes/deletion.py` 하나다.** 아래 셋(`snapshot_access` ·
 # `open_access_for_deletion` · `restore_access`)은 **묶어서만 뜻이 있다** — 「열림」 창은
 # 그 트랜잭션 안에서만 존재해야 하고, 원복을 빠뜨리면 잠긴 데이터가 열린 채로 커밋된다.
+# ⭑ 상태 어휘는 위 `ACCESS_STATES`(3값 · `0017`)와 같은 한 벌이다 — 원복은 스냅샷 값을
+#   **그대로** 되돌리므로 `지정 공개` 도 이 창을 지나 제자리로 간다(시험 ⑪-b).
 # ════════════════════════════════════════════════════════════════════════════
 
 #: 그 데이터셋의 **검토 대기** 요청 수. 삭제 확인 모달의 「대기 중인 접근 요청 N건」이다.
@@ -639,14 +641,6 @@ _CLOSE_PENDING_ACCESS = text("""
 
 _ACCESS_ROW = text("""
     SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :dataset_id
-""")
-
-#: 행이 없을 수 있고(연구실 기본값을 따르는 데이터셋) 그때 기본값이 `잠김` 일 수 있으므로
-#: **upsert** 다. `INSERT ... ON CONFLICT` 하나로 두 경우가 닫힌다.
-_OPEN_ACCESS = text("""
-    INSERT INTO d2_dataset_access (dataset_id, lab_id, state)
-    VALUES (:dataset_id, current_lab_id(), '열림')
-    ON CONFLICT (dataset_id) DO UPDATE SET state = '열림', updated_at = now()
 """)
 
 #: 원복 — `updated_at` 까지 되돌린다. 상태만 되돌리면 「누가 언제 접근 상태를 바꿨나」가
@@ -718,8 +712,14 @@ def open_access_for_deletion(session: Session, dataset_id: Ulid) -> None:
 
     ⛔ **반드시 같은 트랜잭션 안에서 `restore_access` 로 원복한다.** 「열림」 창이 커밋되면
     잠긴 데이터가 열린 채로 남는다 — 그것은 삭제 실패보다 나쁘다.
+
+    ⭑ **⟨리베이스 2026-09-08 · `0017_rb4_access_state_3` 정합⟩ 쓰기 문장은 WU-B4 의
+    `set_access_state` 하나다** — 이 표의 upsert 를 두 벌 두지 않는다. `열림` 은 grant 를
+    만료시키지 않는 갈래라 그 헬퍼의 부작용은 **데이터셋 advisory 잠금 하나**뿐이고, 그 잠금이
+    겹친 승인(`decide_access_request`)과 이 삭제 트랜잭션을 직렬화한다. 행이 없을 수 있고
+    (연구실 기본값 · 3값이 된 뒤에도 `잠김`·`지정 공개` 일 수 있다) 그때도 upsert 라 닫힌다.
     """
-    session.execute(_OPEN_ACCESS, {"dataset_id": str(dataset_id)})
+    set_access_state(session, dataset_id=dataset_id, state="열림")
 
 
 def restore_access(session: Session, dataset_id: Ulid, snapshot: AccessRow | None) -> None:
