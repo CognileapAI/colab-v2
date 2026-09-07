@@ -16,7 +16,8 @@
 //
 // **속도·상한의 수치를 정하지 않는다**(정본 §8 말미) — 배율 한계는 데이터에서 오는 값이고,
 // 여기 상수로 박힌 것은 사람이 한 번에 얼마나 들어가는가(`STEP`) 하나다.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { baseScaleFor, needsBoundsOutline, snapWidthKm, boundsWidthKm, type GeoBounds } from './scaleLadder';
 
 /** 한 번 누를 때 들어가는 정도. 화면 조작의 단위이지 상한이 아니다. */
 const STEP = 2;
@@ -28,11 +29,30 @@ export interface ZoomBoundsFraction {
   y1: number;
 }
 
+export interface UseZoomPanOptions {
+  /**
+   * ③지도형이 서버에서 받아 온 경계 네 값. **있을 때만 사다리가 선다** —
+   * 없으면(②비지도형) 이 훅은 종전과 한 글자도 다르지 않게 움직인다(`DR-9`).
+   */
+  bounds?: GeoBounds | undefined;
+}
+
 export interface ZoomPan {
   scale: number;
   x: number;
   y: number;
   maxScale: number;
+  /**
+   * **기본 배율** — 축척 사다리가 정한 시작 자리(`scaleLadder.baseScaleFor`).
+   * 경계가 없으면 `1` 이고, 그때 이 훅의 거동은 종전과 같다.
+   */
+  baseScale: number;
+  /** 스냅된 사다리 단(km). 경계가 없으면 `undefined` — 없는 축척을 지어내지 않는다. */
+  rungKm: number | undefined;
+  /** 「지금 어디를 보고 있는지」 외곽선을 세울 것인가(작은 유역). */
+  showBoundsOutline: boolean;
+  /** 더블클릭 — **데이터 경계에 정확히 맞춘다**(여백 0). */
+  fitToData: () => void;
   /** 데이터가 가진 해상도까지 들어왔는가. 재기 전에는 `false` — 모르는 것을 알린다고 하지 않는다. */
   atLimit: boolean;
   measured: boolean;
@@ -62,9 +82,45 @@ function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
 }
 
-export function useZoomPan(): ZoomPan {
+/**
+ * **틀보다 작은 데이터는 한가운데에 놓는다** (판정 축자 「`bounds` 중심」).
+ * 배율이 1 이상이면 손대지 않는다 — 그때는 사람이 옮긴 자리가 답이다.
+ * 크기를 아직 모르면 그대로 둔다 — **없는 크기로 자리를 지어내지 않는다.**
+ */
+export function centeredPanFor(
+  view: { scale: number; x: number; y: number },
+  size: { width: number; height: number } | undefined,
+): { x: number; y: number } {
+  if (view.scale >= 1 || !size) return { x: view.x, y: view.y };
+  return {
+    x: (size.width * (1 - view.scale)) / 2,
+    y: (size.height * (1 - view.scale)) / 2,
+  };
+}
+
+export function useZoomPan(options?: UseZoomPanOptions): ZoomPan {
+  const bounds = options?.bounds;
+  // 경계 네 값은 **객체가 매번 새로 오더라도 같은 값이면 같은 축척**이어야 한다 —
+  // 네 숫자로 기억을 건다.
+  const west = bounds?.west;
+  const south = bounds?.south;
+  const east = bounds?.east;
+  const north = bounds?.north;
+  const geo = useMemo<GeoBounds | undefined>(
+    () =>
+      west === undefined || south === undefined || east === undefined || north === undefined
+        ? undefined
+        : { west, south, east, north },
+    [west, south, east, north],
+  );
+  // **기본 배율은 화면 폭이 아니라 데이터가 정한다**(축 ①-⑤). 경계가 없으면 1 이고,
+  // 그때 아래 모든 식은 종전과 같은 수를 낸다.
+  const baseScale = useMemo(() => (geo ? baseScaleFor(geo) : 1), [geo]);
+  const rungKm = useMemo(() => (geo ? snapWidthKm(boundsWidthKm(geo)) : undefined), [geo]);
+  const showBoundsOutline = useMemo(() => needsBoundsOutline(geo), [geo]);
+
   const el = useRef<HTMLDivElement | null>(null);
-  const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const [view, setView] = useState(() => ({ scale: 1, x: 0, y: 0 }));
   const [maxScale, setMaxScale] = useState(1);
   const [measured, setMeasured] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -87,6 +143,12 @@ export function useZoomPan(): ZoomPan {
     (next: { scale: number; x: number; y: number }) => {
       const size = box();
       if (!size) return { scale: next.scale, x: 0, y: 0 };
+      // ⭑ ⟨WU-C4⟩ **배율이 1 보다 작을 수 있게 됐다** — 축척 사다리가 데이터보다 넓은 틀을
+      //   기본으로 세우기 때문이다(작은 유역). 그때는 **옮길 곳이 없다** — 데이터가 틀보다
+      //   작아 어디로 밀어도 빈 자리만 늘어난다. 그래서 이동값을 0 으로 두고, 화면에
+      //   내보낼 때 `centeredPanFor` 가 한가운데로 놓는다(아래 반환부).
+      //   **1 이상에서는 종전 식 그대로다.**
+      if (next.scale < 1) return { scale: next.scale, x: 0, y: 0 };
       return {
         scale: next.scale,
         x: clamp(next.x, size.width * (1 - next.scale), 0),
@@ -100,7 +162,7 @@ export function useZoomPan(): ZoomPan {
     (target: number, anchorX?: number, anchorY?: number) => {
       setView((cur) => {
         const size = box();
-        const next = clamp(target, 1, maxScale);
+        const next = clamp(target, baseScale, maxScale);
         if (next === cur.scale) return cur;
         const ax = anchorX ?? (size ? size.width / 2 : 0);
         const ay = anchorY ?? (size ? size.height / 2 : 0);
@@ -108,7 +170,7 @@ export function useZoomPan(): ZoomPan {
         return clampView({ scale: next, x: ax - (ax - cur.x) * ratio, y: ay - (ay - cur.y) * ratio });
       });
     },
-    [box, clampView, maxScale],
+    [box, clampView, maxScale, baseScale],
   );
 
   const zoomIn = useCallback(() => {
@@ -126,6 +188,16 @@ export function useZoomPan(): ZoomPan {
   }, [view.scale, zoomTo]);
 
   const reset = useCallback(() => {
+    setBlocked(false);
+    setView({ scale: baseScale, x: 0, y: 0 });
+  }, [baseScale]);
+
+  /**
+   * **더블클릭 = 데이터에 맞춤**(판정 축자 「더블클릭으로 데이터에 맞춤」).
+   * 여백 0 — 층 묶음의 좌표계에서 데이터 경계는 곧 틀 전체이므로 배율 1·이동 0 이다.
+   * 경계가 없으면(②비지도형) 기본 배율과 같은 자리라 **아무 일도 하지 않는 것과 같다**.
+   */
+  const fitToData = useCallback(() => {
     setBlocked(false);
     setView({ scale: 1, x: 0, y: 0 });
   }, []);
@@ -189,6 +261,9 @@ export function useZoomPan(): ZoomPan {
     setBoxSize((prev) =>
       prev && prev.width === size.width && prev.height === size.height ? prev : size,
     );
+    // 한계는 여전히 **원본 픽셀 수 ÷ 화면 폭**이다(조건 ⑷ · 수치 하드코드 0).
+    // ⚠ **사다리는 바닥만 내린다** — 천장(1 = 데이터가 틀을 꽉 채우는 자리)은 손대지 않는다.
+    //   여기를 `baseScale` 로 내리면 「데이터에 맞춤」보다 덜 들어간 곳이 한계가 된다.
     setMaxScale(Math.max(1, nativeWidth.current / size.width));
     setMeasured(true);
   }, [box]);
@@ -209,6 +284,13 @@ export function useZoomPan(): ZoomPan {
     return () => window.removeEventListener('resize', remeasure);
   }, [remeasure]);
 
+  // **시작 자리는 사다리가 정한다.** 경계가 없으면(`baseScale === 1`) 아무 것도 하지
+  // 않는다 — ②비지도형의 거동을 한 글자도 바꾸지 않기 위해서다.
+  useEffect(() => {
+    if (baseScale >= 1) return;
+    setView((cur) => (cur.scale === baseScale ? cur : { scale: baseScale, x: 0, y: 0 }));
+  }, [baseScale]);
+
   const onImageLoad = useCallback(
     (e: { currentTarget: HTMLImageElement }) => learn(e.currentTarget.naturalWidth),
     [learn],
@@ -227,11 +309,19 @@ export function useZoomPan(): ZoomPan {
     };
   }, [box, view]);
 
+  // **한가운데 놓기는 내보낼 때 한다** — 상태에 넣어 두면 화면 크기를 아직 못 잰 순간에
+  // 0 으로 굳어 버리고, 그 뒤 크기를 알아도 다시 계산되지 않는다. 크기는 렌더마다 잰다.
+  const pan = centeredPanFor(view, box());
+
   return {
     scale: view.scale,
-    x: view.x,
-    y: view.y,
+    x: pan.x,
+    y: pan.y,
     maxScale,
+    baseScale,
+    rungKm,
+    showBoundsOutline,
+    fitToData,
     measured,
     box: boxSize,
     // ⭑ ⟨버그 8⟩ **한계는 들어간 뒤에만 오는 것이 아니다.** 종전 조건은 `view.scale > 1 ||
@@ -242,7 +332,8 @@ export function useZoomPan(): ZoomPan {
     //   한계 배율이 1 이면 **잰 그 순간이 곧 한계**다. 그 사실을 처음부터 세운다.
     //   ⚠ **한계 배율의 계산은 여기서 손대지 않는다** — 「데이터가 가진 해상도까지만」
     //   (조건 ⑷ · `PLAN-SoT §9 〈232〉`)은 정본 규칙이고 상한을 올리는 것은 정본 개정이다.
-    atLimit: measured && view.scale >= maxScale && (view.scale > 1 || blocked || maxScale <= 1),
+    atLimit:
+      measured && view.scale >= maxScale && (view.scale > baseScale || blocked || maxScale <= baseScale),
     viewportRef: (n) => {
       el.current = n;
       setNode(n);
