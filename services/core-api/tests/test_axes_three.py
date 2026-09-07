@@ -172,3 +172,15 @@ def test_topic_still_works_alongside_category(p2_client) -> None:
     detail = _read(client, r.json()["datasetId"])
     assert detail["topic"] == "강우·강수", detail
     assert detail["basicInfo"]["category"] == "기상·기후 인자"
+
+
+def test_update_path_accepts_null_to_clear_category(p2_client) -> None:
+    """`category` 를 이미 가진 데이터셋에 `null` 을 실으면 되돌려진다(advisor ② 회귀 고정)."""
+    client = p2_client()
+    dataset_id = _register(client, category="수문 인자").json()["datasetId"]
+    r = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                     json={"category": None},
+                     headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    basic = _read(client, dataset_id)["basicInfo"]
+    assert basic["category"] is None, basic

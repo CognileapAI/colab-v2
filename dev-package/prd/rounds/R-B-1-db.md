@@ -249,7 +249,7 @@ R-B-1(DB) 완료 — WU-B1·B2·B4·B6, 레인 p3-axes-schema · p3-variable-row
 
 ## 5. 완료 판정
 
-- **WU-B1** — 5값·6값·4값 CHECK 가 서고 계약에 세 열쇠가 있다 · 값 집합 밖은 **400**(500 아님) · 기존 13행이 전부 `category`·`data_type`·`processing_level_user_set` NULL 이고 `topic` 값은 그대로 · 사람 Lv 와 파생 Lv 불일치가 **경고만** · 유형↔Lv 조합 제약 **없음**.
+- **WU-B1** — 5값·6값·4값 CHECK 가 서고 계약에 세 열쇠가 있다 · 값 집합 밖은 **400**(500 아님) · 기존 13행이 전부 `category`·`data_type`·`processing_level_user_set` NULL 이고 `topic` 값은 그대로 · 사람 Lv 와 파생 Lv 불일치가 **경고만** · 유형↔Lv 조합 제약 **없음**. ⚠ `DatasetCreate.required` 승격 ＋ 미입력 400 → WU-B3(advisor ②).
 - **WU-B2** — `d3_dataset_variable` 이 서고 RLS ＋ 대표 1개 부분 UNIQUE 가 걸린다 · 배열 이관이 **순서대로** 되고 **첫 행이 대표** · 마지막 행 삭제가 막힌다 · **cross-tenant 음성 0건** · 변수명 검색이 이관 전후 같은 데이터셋을 낸다. ⚠ 미러 트리거는 `M-10` 소속(이 파일 밖).
 - **WU-B4** — `state` 3값 ＋ `default_visibility` 3값이 **둘 다** 선다 · 자동 매핑 후 기존 허용자의 접근이 종전과 같다(**양성·음성 둘 다**) · 승인이 상태를 같은 트랜잭션에서 올린다 · **`state='잠김'` ∧ 유효 grant ≥1 인 행이 어느 시점에도 0건** · **cross-tenant 음성 0건**.
 - **WU-B6** — 두 칸이 서고 **선택 입력**이다 · Lv0 에서 비운 채 등록 **성공** · Lv1 이상에서 값을 실어도 **저장** · `sourceLabel` 은 **늘 보인다** · Lv 변경 시 두 칸이 열리고 닫히며 숨은 값이 전송되지 않는다.

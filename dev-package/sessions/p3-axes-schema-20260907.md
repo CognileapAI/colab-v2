@@ -58,7 +58,7 @@
 | `schema-diff` | `schema-diff green — 두 체인 각각 선언 = 적용.` |
 | `migration-single-head` | `migration-single-head green — 두 체인 모두 head 1개.` |
 | `contract-lint` | `contract-lint green — seam 3건, 룰 위반 0.` |
-| `contract-breaking` | `No breaking changes to report, but the specs are different.` / `Run 'oasdiff diff' to see structural differences.` / `contract-breaking green — 기준 HEAD (3건) 대비 파괴적 변경 없음.` |
+| `contract-breaking`(기준 ref `f6b9c48`) | `No breaking changes to report, but the specs are different.` / `Run 'oasdiff diff' to see structural differences.` / `contract-breaking green — 기준 f6b9c48 (3건) 대비 파괴적 변경 없음.` |
 | `generated-up-to-date` | `generated-up-to-date green — 등기부 10건 전부 재생성 일치, 등기부 밖 자칭 생성물 0건.` |
 | `db-boundary` | `db-boundary: green — 단위 7개 · 스캔 대상 338건 · 위반 0` |
 | `service-tests-core-api` | `service-tests-core-api green — 실행 842건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).` |
@@ -82,6 +82,8 @@
   ⑵ PRD-03 「계약 `DatasetCreate`·`DatasetUpdate` 에 `processingLevel`」 → 열쇠 이름을 **`processingLevelUserSet`** 으로 했다. 라운드 §2 가 그 이름을 쓰고, `processingLevel` 은 응답의 파생 정수로 이미 점유돼 있다(같은 이름에 두 뜻을 붙이면 갈린다).
 - **불일치 경고의 자리를 로그로 정했다** — 라운드·PRD-03 은 「경고만」이라고만 적고 모양을 정하지 않았다. 응답 열쇠를 새로 만들면 이번 회차의 계약 열쇠가 셋을 넘고, 그 열쇠(`processingLevelMismatch`)는 `R-B-2-server.md:54` 가 이미 WU-B5 에 배정했다. **모양은 `[미상]` 이고 지어내지 않았다.**
 - **환경 조치 1건** — 워크트리 `services/core-api/.venv` 에 `alembic` 이 없어 드리프트 시험이 못 돌았다. `uv pip install alembic`(1.19.2)로 채웠다. 레포 파일 변경 0.
+- 대장 완료 정의 「지형·DEM 만 NULL」은 미결-3 ⓐ 와 충돌 → PRD 승 · 문면 정정(advisor ②).
+- advisor ② 시험 D(`test_update_path_accepts_null_to_clear_category`) 추가 후 `service-tests-core-api` 가 `test_viz_service_credential.py::test_렌더_생성_중계도_같은_자격_증명을_싣는다` 에서 red 로 재현(2/2회 결정적, 시험 D 미포함 시 1/1회 green) — 원인은 그 시험의 `SELECT id FROM d3_dataset LIMIT 1`(정렬 없음)이 물리 스캔 순서에 의존하고, `d3_dataset` 에 등록·삭제 사이클이 하나 더 늘면(오토배큠 문턱) 그 순서가 바뀌어 잠긴 데이터셋을 집는다. 시험 D 자체(842건 중 통과 포함)와 대장 3건(A·B·C)은 이 원인과 무관. 어느 게이트에 걸리는가 = `service-tests-core-api`. 수정은 `test_viz_service_credential.py` 소유이고 이 레인 범위 밖이라 손대지 않았다 — 후속 항목으로 올린다.
 
 ## 하지 않은 것
 
@@ -92,9 +94,11 @@
 - **ai-service `d9_topic_synonym` 4값 이관 · 픽스처 주제 값** — PRD-01 「영향 범위」가 지목했으나 라운드 WU-B1 절 범위 밖이고 체인이 분리돼 있다(`CLAUDE.md §3-3`). **후속 항목으로 올린다.**
 - **`PLAN-SoT §9` 〈N〉·〈N+1〉 등재** — 병합 직전 오케스트레이터 몫(§4-1). 착수 시점 최대값 실측 = **372**(발급하지 않았다).
 - **`03-HANDOFF.md` 수정** — 레인이 하지 않는다.
+- **PRD-01·02 「미입력 → 400」 2건** → WU-B3.
 
 ## 후속 항목
 
 1. **`db/platform/tests/*-drift.sh` 가 어느 게이트에도 안 걸린다** — `grep -rn "drift.sh" gates/ .github/` = 0건. 마이그레이션 오라클 4벌(`0004`·`0005`·`0006`·`0008`·`0009`·`0013`·`0015`)이 사람이 손으로 부를 때만 돈다. 「검사가 게이트 밖에만 있으면 그 자체가 결함」(`colab-rules §3-3`-⑷)에 해당하므로 게이트 승격 대상이다.
 2. **`alembic` 이 어느 `requirements*.txt` 에도 없다** — 루트 체크아웃 `services/core-api/.venv` 에만 임시로 들어 있어 새 워크트리에서 마이그레이션 도구가 없다. 위 1번을 게이트로 올리면 그 게이트가 red(준비)로 항상 뜬다.
 3. **`ai-service` 주제 4값 ↔ 분류 5값 이관**(PRD-01 영향 범위) — 소유 WU 미지정.
+4. **`test_viz_service_credential.py::test_렌더_생성_중계도_같은_자격_증명을_싣는다` 의 `SELECT id FROM d3_dataset LIMIT 1`(정렬 없음)** — `d3_dataset` 등록·삭제 사이클이 하나 더 늘면(오토배큠 문턱) 물리 스캔 순서가 바뀌어 잠긴 데이터셋을 집는다(2026-09-07 실측 · advisor ② 시험 D 로 재현). 정렬·잠금 제외 조건을 붙이는 수정은 이 파일 소유가 아니다.
