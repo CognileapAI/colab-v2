@@ -2813,7 +2813,7 @@ items:
 
   - id: WU-B6
     name: Lv0 출처 칸 (PRD-19)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
@@ -2821,7 +2821,7 @@ items:
     completion_def: "M-8. 두 칸은 선택 입력이다 — Lv0 에서 비운 채 등록해도 성공하고 Lv1 이상에서 값을 실어도 거절하지 않고 저장한다. Lv 로 갈리는 것은 두 칸의 화면 표시뿐이고 sourceLabel 은 늘 보인다"
     evidence: "dev-package/sessions/p3-lv0-source-20260907.md"
     deadline: null
-    note: "종전 완료 판정(「Lv0 이면 두 칸 필수·400」·「Lv1 이상 값 전송 시 400」)은 폐기됐다 — 근거 = pdf 항목 3 축자 · 미결-11 ⓐ. 레인 p3-lv0-source"
+    note: "2026-09-07 done — 레인 p3-lv0-source df99a9c ＋ advisor ② 7e69a59(내려받은 날 인라인 선검사 · _is_date 좁힘 · 20260820 500→400) · head 0018_rb6_lv0_source · 계약 추가 2키(nullable · breaking green) · 게이트 9종 record · core-api 900 · FE 949 · 종전 완료 판정(「Lv0 이면 두 칸 필수·400」·「Lv1 이상 값 전송 시 400」)은 폐기됐다 — 근거 = pdf 항목 3 축자 · 미결-11 ⓐ. 레인 p3-lv0-source"
     sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-19", "부록 B M-8"]
 
   - id: WU-B7
