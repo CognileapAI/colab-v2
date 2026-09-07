@@ -209,12 +209,18 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
   //   (단위는 셀렉트라 `textbox` 가 아니다). 골격 산문이 예고한 「표에 줄을 더한다」의
   //   실물이고, **화면 코드를 다시 짜지 않았다**는 사실이 여기서 유지된다.
   //   ⛔ 이 수를 「대충 늘어난 만큼」으로 고치지 않는다 — 아래 열쇠 목록이 그 수의 근거다.
-  it('폼의 입력 칸은 이름·설명·원천 표기·좌표계·기간(시작·끝)·관측 간격 **일곱 개**다', async () => {
+  // ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ 일곱 → 아홉.** Lv0 출처 두 칸(`sourceUrl`·
+  //   `sourceDownloadedOn`)이 늘었다 — 상세가 「Lv0 인데 비어 있어요 — **수정에서** 채워
+  //   주세요」로 안내하므로 그 안내가 실행 가능하려면 두 칸이 이 폼에 있어야 한다.
+  //   ⛔ 두 칸은 **Lv 로 가리지 않는다** — 서버가 Lv 를 안 보므로(PRD-19) 가리면 Lv1 이상
+  //      행의 저장된 값을 고칠 길이 사라진다. 그래서 이 수가 장면마다 흔들리지 않는다.
+  it('폼의 입력 칸은 이름·설명·원천 표기·출처 주소·내려받은 날·좌표계·기간(시작·끝)·관측 간격 **아홉 개**다', async () => {
     const form = await openForm();
     const inputs = within(form).getAllByRole('textbox');
     const dates = form.querySelectorAll('input[type="date"]');
-    expect(inputs.length + dates.length).toBe(7);
-    for (const id of ['edit-name', 'edit-summary', 'edit-sourceLabel', 'edit-crs',
+    expect(inputs.length + dates.length).toBe(9);
+    for (const id of ['edit-name', 'edit-summary', 'edit-sourceLabel',
+                      'edit-sourceUrl', 'edit-sourceDownloadedOn', 'edit-crs',
                       'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }
