@@ -2917,13 +2917,13 @@ items:
 
   - id: WU-C4
     name: 축척 사다리 스냅 ＋ 공유 확대/축소 세 화면 (R-C 축 ①-⑤a)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C3 done"]
     depends_on: ["WU-C1", "WU-C3"]
     completion_def: "기본 배율 = 데이터 bounds 중심 ＋ 표준 축척 사다리 스냅(상수 한 자리 · 단 값은 레인 실측) · useZoomPan/.pv-zoom 을 상세·업로드·확장보기가 공유 · 작은 유역은 외곽선 ＋ 더블클릭 맞춤 · 비지도형 현행 회귀 green. 한반도 고정 프레임 없음(Ted 철회)"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c4 3커밋 → integration/r-c ff · scaleLadder.ts 5단 150·400·1,200·3,000·10,000 km(실측 bbox 11건 분포 근거 · 후보 100·300·1,000 은 HSR 1,034.8 km 가 3,000 단으로 떨어짐) · useZoomPan 기본 = bounds 중심＋사다리 스냅 · 더블클릭 맞춤 · PreviewZoomControls 세 화면 공유 · bounds 외곽선(OUTLINE_FILL_THRESHOLD 0.9 ⓐ) · 시험 16건 red→green · frontend-test green 1039 · [미상] staging 실물 bounds 분포(배포 창)"
     deadline: null
     note: "2026-09-08 등재 — 축 ① 판정 Q11·Q12·Q15 ＋ R3 「데이터 중심 ＋ 표준 축척 사다리에 스냅」 · Ted 원문 「다른지역이 나올수도있는데 데이터를 읽고 그걸 맞추지 못하나?」. 사다리 단 값 [미측정]. 레인 rc-scale-ladder"
     sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
