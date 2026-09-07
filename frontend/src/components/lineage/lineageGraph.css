@@ -4,7 +4,13 @@
      노드 수가 응답에 따라 달라지는데 좌표를 화면이 계산하면 겹치거나 잘린다.
      규칙(축 순서 · 점선 원천 · 굵은 이 데이터 · 화살표 라벨 · 가로 스크롤)은 그대로다. */
 
-.detail-page .dsec { margin-top: 34px; }
+/* ⭑ ⟨WU-C11 · 판정 48⟩ **AI 액센트 복원** — 목업 `:root` 를 회수했다
+   (`mockups/제품_260817.html` · `에픽/E-03_데이터셋_상세/mockups/데이터셋_상세_260817.html`).
+   회수 결과 액센트는 **코랄이 아니라 Montage accent violet** 이다 — 「코랄」은 이름만 남은 오기였다.
+   값은 목업 `:root` 에서 한 자도 바꾸지 않고 옮겼다 — 토큰 선언은 `detail.css` 의 `:root` 에 둔다
+   (이 화면의 토큰 정의처가 거기다 · B11 「미정의 토큰 참조 0건」 회귀와 같은 자리). */
+/* ⟨WU-C11 · 판정 49⟩ 구역 사이 여백은 컨테이너(`detail.css` 의 `.dt-secs`)가 gap 으로 갖는다 —
+   종전에는 이 자리에서 자식이 `margin-top: 34px` 을 지고 있었다(⑩ 형태). */
 .detail-page .dsec-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .detail-page .dsec-h h2 { font-size: var(--text-h2); font-weight: var(--weight-heading); margin: 0; }
 .detail-page .dsec-h .hint { font-size: 13px; color: var(--color-text-muted); }
@@ -24,11 +30,11 @@
 .detail-page .lin-col { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 178px; }
 .detail-page .lin-rail { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 14px; }
 .detail-page .lin-arw { color: var(--color-gray-500); font-size: 15px; line-height: 1; }
-/* 가공 방식 라벨 — 액센트 복원 전 중립 토큰(목업 :root 회수 뒤 복원) */
+/* 가공 방식 라벨 — 목업 `.w-box`/`.w-t` 축자(액센트 틴트 면 · 액센트 보더 · 액센트 텍스트) */
 .detail-page .lin-way {
   display: inline-flex; align-items: center; height: 23px; border-radius: var(--radius-pill);
-  padding: 0 10px; background: var(--color-gray-50); border: 1px solid var(--color-border-strong);
-  color: var(--color-text-muted); font-size: 13px; font-weight: 700; white-space: nowrap;
+  padding: 0 10px; background: var(--color-accent-50); border: 1px solid var(--color-accent-200);
+  color: var(--color-accent-700); font-size: 13px; font-weight: 700; white-space: nowrap;
   /* 라벨이 길면 상자 폭을 넘어 잘려 나갔다(검수 #22). 넘치면 …로 접고 전문은 `title` 이 든다 */
   max-width: 150px; overflow: hidden; text-overflow: ellipsis;
   line-height: 23px;
@@ -80,8 +86,8 @@
 .detail-page .lrow .ln-go .arw { color: var(--color-gray-400); margin-left: 3px; }
 .detail-page .lrow .ln-sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
 .detail-page .hist { font-size: 13px; color: var(--color-text-muted); }
-.detail-page .aiflag { display: inline-flex; align-items: center; gap: 4px; height: 20px; font-size: 13px; font-weight: 700; color: var(--color-text); background: var(--color-gray-100); border-radius: var(--radius-pill); padding: 0 7px; }
-.detail-page .aiflag .sp { color: var(--color-primary-600); }
+.detail-page .aiflag { display: inline-flex; align-items: center; gap: 4px; height: 20px; font-size: 13px; font-weight: 700; color: var(--color-accent-700); background: var(--color-accent-50); border-radius: var(--radius-pill); padding: 0 7px; }
+.detail-page .aiflag .sp { color: var(--color-ai); }
 .detail-page .manflag { display: inline-flex; align-items: center; height: 20px; font-size: 13px; font-weight: 700; color: var(--color-primary-700); background: var(--color-primary-50); border-radius: var(--radius-pill); padding: 0 7px; }
 
 /* 기록 없음 빈 상태 — 부끄러운 상태가 아니라 정직한 기록이라 경고가 아닌 중립 톤으로 */

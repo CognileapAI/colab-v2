@@ -10,6 +10,15 @@
   --color-warning-600: #a85400;
   --color-primary-50: #edf4ff;
   --color-primary-100: #e2eeff;
+  /* ⟨WU-C11 · 판정 45⟩ Lv3 4단째 — 목업 `:root` 축자(blue90 · blue30) */
+  --color-primary-200: #bad7ff;
+  --color-primary-800: #0b4eb6;
+  /* AI 액센트 = Montage accent violet (목업 `:root` 축자 · 판정 48). 코랄이 아니다 */
+  --color-accent-50: #f1e8ff;
+  --color-accent-200: #d2b6ff;
+  --color-accent-500: #6742f5;
+  --color-accent-700: #4821db;
+  --color-ai: var(--color-accent-500);
   --color-band-dark-2: #121619;
   --color-on-dark: #ffffff;
   --color-on-dark-muted: rgba(255, 255, 255, 0.72);
@@ -57,7 +66,10 @@
 .detail-page .lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 11px; font-weight: 600; line-height: 1; }
 .detail-page .lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
 .detail-page .lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }
-.detail-page .lvl-2, .detail-page .lvl-3 { background: var(--color-primary-100); color: var(--color-primary-700); }
+/* ⟨WU-C11 · 판정 45⟩ Lv2 와 Lv3 을 한 규칙에 묶어 두어 4단째가 무색이었다 — 갈라 세운다.
+   Lv3 배경은 목업 축자 blue90, 글자는 AA 를 위해 같은 계열 blue30 (5.13:1 · blue40 은 3.71:1). */
+.detail-page .lvl-2 { background: var(--color-primary-100); color: var(--color-primary-700); }
+.detail-page .lvl-3 { background: var(--color-primary-200); color: var(--color-primary-800); }
 
 /* 격자선은 셀이 직접 긋는다. gap 으로 컨테이너 배경을 비쳐 만들면
    칸이 덜 찬 마지막 줄에서 그 배경이 선이 아니라 면으로 드러난다 */
@@ -65,14 +77,14 @@
   display: grid; grid-template-columns: repeat(3, 1fr);
   /* ⑨ 컨테이너는 `--color-border-strong`, 칸 구분선은 `--color-border` — 두 층을 가른다 (판정 ⑨) */
   border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden;
-  background: var(--color-surface); margin-bottom: var(--space-6);
+  background: var(--color-surface);
 }
 .detail-page .infogrid .ig { background: var(--color-surface); padding: 12px 14px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .detail-page .infogrid .ig:nth-child(3n) { border-right: none; }
 .detail-page .infogrid .ig:nth-last-child(-n + 3) { border-bottom: none; }
-/* ⑩ 격자와 파일 목록 사이 여백은 **컨테이너인 격자**가 소유한다 —
-   종전에는 목록이 `margin: -12px` 로 격자의 아래 여백을 되당겼다 (판정 ⑩) */
-.detail-page .infogrid:has(+ .filelist), .detail-page .infogrid:has(+ .fl-err) { margin-bottom: 12px; }
+/* ⑩ 격자와 파일 목록 사이 여백은 이제 **오른쪽 열 컨테이너**(`.dt-split-r` 의 gap)가 소유한다 —
+   A11 판정 ⑩ 당시 목록의 `margin: -12px` 를 격자의 `margin-bottom` 으로 옮겼던 것을,
+   WU-C11 이 컨테이너 gap 한 자리로 모았다(격자·행동 줄·목록 모두 같은 16px). */
 .detail-page .infogrid .ig .k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
 .detail-page .infogrid .ig .v { font-size: var(--text-body); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 @media (max-width: 720px) {
@@ -131,8 +143,13 @@
 
 /* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,
    같은 면·같은 보더로 잇고 새 색을 만들지 않는다. */
-.detail-page .dt-gridact { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: -8px 0 var(--space-4); }
-.detail-page .dt-files { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); margin-bottom: var(--space-6); }
+/* ⟨WU-C11 · 판정 47⟩ 종전 `margin: -8px 0 var(--space-4)` — 격자의 아래 여백(24px)을 8px 되당겨
+   16px 를 만들던 음수 상쇄다. 여백은 부모 `.dt-split-r` 이 `gap` 으로 소유한다(같은 16px). */
+.detail-page .dt-gridact { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* ⟨WU-C11 · 판정 49⟩ 전폭 구역(계보·활용)의 사이 여백도 컨테이너가 갖는다 —
+   종전에는 `.dsec` 자식마다 `margin-top: 34px` 이었다 (`lineageGraph.css:7`). */
+.detail-page .dt-secs { display: flex; flex-direction: column; gap: 34px; margin-top: 34px; }
+.detail-page .dt-files { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .detail-page .dt-files-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; }
 .detail-page .dt-files-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-right: auto; }
 .detail-page .dt-files-error { margin: 0 14px 10px; font-size: var(--text-body-sm); color: var(--color-warning-600); }
@@ -262,7 +279,8 @@
     top: var(--dt-split-sticky-top);
     min-width: 0;
   }
-  .detail-page .dt-split-r { min-width: 0; }
+  /* 오른쪽 열의 세로 여백은 컨테이너가 gap 으로 갖는다 — 자식이 저마다 margin 을 지지 않는다 (WU-C11) */
+  .detail-page .dt-split-r { min-width: 0; display: flex; flex-direction: column; gap: var(--space-4); }
 }
 @media (max-width: 959px) {
   .detail-page .dt-split {
@@ -272,4 +290,6 @@
     position: static;
     margin-bottom: var(--dt-split-gap);
   }
+  /* 한 열에서도 오른쪽 열 안의 여백은 컨테이너가 갖는다 (WU-C11) */
+  .detail-page .dt-split-r { display: flex; flex-direction: column; gap: var(--space-4); }
 }

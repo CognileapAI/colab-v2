@@ -86,6 +86,8 @@
   gap: 12px;
 }
 
+/* ⑩ `.regarea` 안(표시기 줄 · 단계 본문 · 행동 줄)의 세로 여백은 컨테이너가 gap 으로 갖는다 */
+.regarea { display: flex; flex-direction: column; gap: 16px; }
 .up-card, .mapstage, .reggate, .regarea {
   border: 1px solid var(--up-line);
   border-radius: var(--up-radius);
@@ -152,10 +154,11 @@
 .companion .cw { color: var(--up-muted); font-size: 12px; }
 .companion .cline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
 
-.vizsetup { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+/* 여백 소유 = 컨테이너: `.mapstage` 의 gap 12px 이 줄 간격을 갖는다 — 자식은 `margin-top` 을 지지 않는다 (WU-C11 · 판정 49) */
+.vizsetup { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .vizsetup .vs-f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .vizsetup .vs-act { margin-left: auto; }
-.vizload { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.vizload { display: flex; align-items: center; gap: 8px; }
 .vizload .spin {
   width: 12px; height: 12px; border-radius: 50%;
   border: 2px solid var(--up-line); border-top-color: var(--up-ink);
@@ -164,14 +167,13 @@
 @keyframes up-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .vizload .spin { animation: none; } }
 .vizerr, .warn {
-  margin-top: 8px;
   padding: 8px 10px;
   border-radius: 8px;
   background: var(--up-warn-bg);
   color: var(--up-warn);
   font-size: 13px;
 }
-.vizpartial { margin-top: 8px; color: var(--up-muted); font-size: 13px; }
+.vizpartial { color: var(--up-muted); font-size: 13px; }
 .vizpartial .names { display: block; }
 .mapcanvas .tile { max-width: 100%; display: block; }
 .vizph { color: var(--up-muted); }
@@ -195,7 +197,8 @@
 .regsteps .rs-f { margin-left: auto; color: var(--up-muted); font-size: 12px; }
 @media (max-width: 720px) { .regsteps .rs-f { display: none; } }
 
-.up-steps { margin-top: 16px; }
+/* ⑩ 단계 본문 안 세로 여백도 컨테이너가 갖는다 — 위 여백은 `.regarea` 의 gap 16px */
+.up-steps { display: flex; flex-direction: column; gap: 16px; }
 .form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 720px) { .form-2 { grid-template-columns: 1fr; } }
 /* ⭑ ⟨19차 · PRD-28⟩ **짧은 값 세 개가 한 줄**이다 — 기간·좌표계·격자.
@@ -238,16 +241,17 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .projtable td.pr-n { font-size: 13px; word-break: break-all; }
 .projtable td.pr-x { width: 1%; white-space: nowrap; text-align: right; }
 
-.projpick { display: flex; gap: 8px; margin-top: 8px; }
-.qproj { margin-top: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
-.qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.qproj .qnote { color: var(--up-muted); font-size: 11px; margin-top: 8px; }
+/* ⑩ 위 여백은 `.card-b` 의 gap 12px. `.qproj` 는 이 줄 아래로 접히므로 row-gap 8px 이 그 자리다 */
+.projpick { display: flex; flex-wrap: wrap; gap: 8px; }
+.qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
+.qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; }
+.qproj .qnote { color: var(--up-muted); font-size: 11px; }
 
 /* ⑫ 행동 줄 **바닥 고정** (PRD-39 · rev1 `.up-foot`). 길게 스크롤해도 버튼이 따라온다 —
    고정하지 않으면 ① 의 긴 폼에서 `다음` 을 찾으려 매번 끝까지 내려야 한다.
    바탕색을 주지 않으면 뒤 내용이 글자 위로 비쳐 읽히지 않는다. */
 .reg-actions {
-  display: flex; align-items: center; gap: 8px; margin-top: 16px;
+  display: flex; align-items: center; gap: 8px;
   position: sticky; bottom: 0; z-index: 5;
   padding: 10px 0; background: var(--color-surface, #fff);
 }
@@ -255,7 +259,8 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .reg-actions .uf-hint { flex: 1; min-width: 0; font-size: 12px; color: #6b7280; }
 @media (max-width: 720px) { .reg-actions .uf-hint { display: none; } }
 .reg-actions .sp { flex: 1; }
-.lineage-slot { margin-top: 12px; }
+/* ⑩ 위 여백은 `.card-b` 의 gap 12px 이 갖는다 */
+.lineage-slot { display: flex; flex-direction: column; gap: 12px; }
 
 .confirm-back {
   position: fixed;

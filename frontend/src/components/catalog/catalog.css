@@ -13,6 +13,10 @@
   --color-warning-600: #a85400;
   --color-primary-50: #edf4ff;
   --color-primary-100: #e2eeff;
+  /* ⟨WU-C11 · R-B 판정 45⟩ Lv3 칩 4단째 — 목업 `:root` 축자(blue90 · blue30).
+     `--color-primary-800` 은 목업 주석이 「밝은 틴트 위 파랑 텍스트(칩 4.5:1 확보)」로 못박은 값이다. */
+  --color-primary-200: #bad7ff;
+  --color-primary-800: #0b4eb6;
   --color-surface-alt: #f4f7fb;
   --color-border-control: #848c94;
   --font-data: var(--font-sans);
@@ -127,6 +131,9 @@
 .lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
 .lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }
 .lvl-2 { background: var(--color-primary-100); color: var(--color-primary-700); }
+/* ⟨WU-C11 · 판정 45⟩ 4단째 = Lv2 와 같은 계열 한 단 진하게(blue90). 글자는 목업의 `.lvl-3` 축자인
+   `--color-primary-700` 이면 3.71:1 로 AA 미달이라 같은 계열 한 단 더 진한 `-800` 을 쓴다 (5.13:1). */
+.lvl-3 { background: var(--color-primary-200); color: var(--color-primary-800); }
 .verified { display: inline-flex; align-items: center; gap: 4px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; background: var(--color-success-50); color: var(--color-success-600); }
 .verified svg { width: 11px; height: 11px; flex: none; }
 /* 승인 처리 도착 전 — 꺼진 조작처럼 (Ted 판정 2026-09-02 · `CT-1` [미확인] ㈎·㈏) */
@@ -134,7 +141,9 @@
 .lin { display: inline-flex; align-items: center; gap: 4px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; }
 .lin--done { background: var(--color-primary-50); color: var(--color-primary-700); }
 .lin--wait { background: var(--color-warning-50); color: var(--color-warning-600); }
-.lin--none { color: var(--color-gray-400); font-weight: 500; }
+/* ⟨WU-C11 · 판정 46⟩ `--color-gray-400` 은 흰 면 3.41:1 로 AA 미달이었다 —
+   같은 뉴트럴 램프 한 단 진한 `-500` 으로 올린다 (5.02:1). */
+.lin--none { color: var(--color-gray-500); font-weight: 500; }
 
 /* 행 빠른 작업 — 평소엔 자리만 잡고 있다가 행 hover·키보드 포커스에서 나타난다 */
 .tbl th.rowact, .tbl td.rowact { width: 74px; padding-right: 14px; }

@@ -316,6 +316,10 @@ export function DatasetDetailPage(
             ) : null}
             </div>
           </div>
+          {/* ⭑ ⟨WU-C11 · 판정 49⟩ 전폭 구역(계보·활용)을 감싸는 컨테이너 한 겹 — 구역 사이 여백을
+              `.dsec` 자식이 `margin-top` 으로 지던 것을 이 컨테이너의 `gap` 이 갖는다(`detail.css`).
+              앵커 id 3개·차례·구역 메뉴는 그대로다. */}
+          <div className="dt-secs" data-testid="detail-full-sections">
           {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로도, 남의 계보로도
               그리지 않는다** — 그림을 세우는 대신 못 읽었다는 사실과 다시 불러오기를 둔다
               (종전에는 픽스처 계보가 이 자리를 채웠다 · `CODE-REVIEW-20260903` 9). */}
@@ -346,6 +350,7 @@ export function DatasetDetailPage(
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}
           <UsageSection detail={shown} downloadHidden={edit.editing} />
+          </div>
         </LockedContent>
       ) : null}
     </div>
