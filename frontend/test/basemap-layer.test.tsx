@@ -13,7 +13,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+// @ts-expect-error — 타입 선언 없이 런타임만 쓴다(vitest 는 node 위에서 돈다 · `design-fix-20260908` 과 같은 규율).
 import { statSync } from 'node:fs';
+// @ts-expect-error — 같은 이유.
 import { resolve } from 'node:path';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
 import { fixtureDetailSource } from '../src/components/detail/fixture';
@@ -29,7 +31,9 @@ import boundaries from '../src/assets/basemap/ne_110m_admin_0_boundary_lines_lan
 /** 판정 축자 「파일 상한 500KB」. 값은 **여기 한 자리**에만 산다. */
 const SIZE_CAP_BYTES = 500 * 1024;
 
-const ASSET_DIR = resolve(__dirname, '../src/assets/basemap');
+// vitest 의 실행 뿌리는 `frontend/` 다(`vite.config.ts` 자리 · `design-fix-20260908` 과 같은 규율).
+declare const process: { cwd(): string };
+const ASSET_DIR = resolve(process.cwd(), 'src/assets/basemap');
 const ASSETS = ['ne_110m_coastline.json', 'ne_110m_admin_0_boundary_lines_land.json'] as const;
 
 const OPEN_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1';
