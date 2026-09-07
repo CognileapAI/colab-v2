@@ -2875,3 +2875,159 @@ items:
     deadline: null
     note: "2026-09-08 done — 레인 p3-design-fix 8db3deb ＋ advisor ② 031aebc(이월 등재·주석 정정) · 「있음」 6건 중 ⑥⑦⑧⑨⑪ 충족 · ⑩ 지목 음수 2건 충족 ＋ 컨테이너 이관 잔여 9곳·.dsec 이월(R-C 후보) · .dt-gridact -8px 판정 대기 3건째 · tokens 무변 · CSS 5파일 · FE 996 · 게이트 3종 record · WU-A11 판정표 = dev-package/sessions/p3-design-audit-20260905.md — 있음 6/11(⑥ 카드 그림자 · ⑦ 계보 그래프 라벨 13px · ⑧ 캡션 눌림 7곳 · ⑨ 보더 2층 · ⑩ 여백 소유권 · ⑪ 죽은 스타일). 접근성 3건 중 살아남은 것은 ⑦뿐(①=4.66:1 통과 · ③=요소 부재) — 없는 결함을 고치지 않는다. 레인 p3-design-fix"
     sources: ["dev-package/prd/rounds/R-B-4-verify.md", "dev-package/intent/2026-09-07-r-b.md", "dev-package/sessions/p3-design-audit-20260905.md", "PRD-29"]
+
+  - id: WU-C1
+    name: 미리보기 자리 선점 4:3 틀 (R-C 축 ① · 업로드 장면2＋상세)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["Ted intent 2건 커밋(승인)", "21차 승인 문장 기입"]
+    depends_on: []
+    completion_def: "파일 선택 직후·상세 열림 직후 aspect-ratio 4:3 틀이 서고 idle·drawing·done·failed 네 상태에서 바깥 치수가 불변이다. 문면 신설 0(UNAVAILABLE·진행 3단계·아직 그리지 않았어요 그대로). 장면1 에는 틀이 없다(PRD-260905:385 무개정)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 축 ① 판정 Q1·Q2·Q3·Q4(intent preview-slot ## 미해결 질문 → 판정). 레인 rc-preview-slot"
+    sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
+
+  - id: WU-C2
+    name: 데이터셋 상세 좌우 배치 (R-C 축 ① · 좌 미리보기 sticky · 우 기본정보＋파일)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C1 done"]
+    depends_on: ["WU-C1"]
+    completion_def: "1200px 에서 2열(좌 미리보기 · 우 기본 정보＋파일) · 계보·활용은 아래 전폭 · 960px 미만 1열이고 미리보기가 먼저 · SectionMenu 앵커 3개 무변 · 업로드 모달 무접촉"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 축 ① 판정 Q5 ＋ R2 「좌 미리보기(sticky) · 우 기본정보＋파일 · 계보·활용은 아래 전폭」. 레인 rc-detail-split"
+    sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
+
+  - id: WU-C3
+    name: 500MB 조각 폴백 ＋ 파일·변수·시각 선택 UI (R-C 축 ① · describe 소비)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C1 done", "WU-C10 done(core-viz describe 첨가 병합)"]
+    depends_on: ["WU-C1", "WU-C10"]
+    completion_def: "413 RENDER_TOO_LARGE 수신 시 files 조회 → 첫 renderable 조각을 fileIds 로 자동 재요청(createRender 2회) · 파일·변수·시각 드롭다운 3개 · 바꾸면 fileIds/variable/instant 를 실어 바꿔 그리기 · 기본값 = describe 서버 선택값 표시 · 컴포넌트 상태 · 업로드·상세 양쪽 · 상한값·서버 무변"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 축 ① 판정 Q6·Q7·Q8·Q9 ＋ R1 「상한 유지 ＋ 조각 폴백 자동화」 · R2 「파일·변수·시각 셋 · 변수 목록 조회 신설 = 21차」. 레인 rc-preview-pick"
+    sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md", "contracts/seams/core-viz.yaml"]
+
+  - id: WU-C4
+    name: 축척 사다리 스냅 ＋ 공유 확대/축소 세 화면 (R-C 축 ①-⑤a)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C3 done"]
+    depends_on: ["WU-C1", "WU-C3"]
+    completion_def: "기본 배율 = 데이터 bounds 중심 ＋ 표준 축척 사다리 스냅(상수 한 자리 · 단 값은 레인 실측) · useZoomPan/.pv-zoom 을 상세·업로드·확장보기가 공유 · 작은 유역은 외곽선 ＋ 더블클릭 맞춤 · 비지도형 현행 회귀 green. 한반도 고정 프레임 없음(Ted 철회)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 축 ① 판정 Q11·Q12·Q15 ＋ R3 「데이터 중심 ＋ 표준 축척 사다리에 스냅」 · Ted 원문 「다른지역이 나올수도있는데 데이터를 읽고 그걸 맞추지 못하나?」. 사다리 단 값 [미측정]. 레인 rc-scale-ladder"
+    sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
+
+  - id: WU-C5
+    name: 자립형 배경 지도 NE 1:110m 해안선＋국경 (R-C 축 ①-⑤b · POL-021 부분 반전)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C4 done"]
+    depends_on: ["WU-C4"]
+    completion_def: "bounds 있는 결과에 배경 SVG 1개 · 없는 결과 0개 · 자산 ≤500KB 를 시험이 센다 · 외부 요청 0 · 도시 표기 0 · POL-021 부분 반전 〈N〉 초안(원문 무삭제 · 병합 직전 R-C-3 등재)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 축 ① 판정 Q13·Q14·Q16 ＋ R1 「자립형 벡터 해안선 · POL-021 부분 반전」. NE 파일 실크기 [미측정]. 레인 rc-basemap"
+    sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md", "POL-021"]
+
+  - id: WU-C6
+    name: 게이트 승격 3종 — migration-drift 오라클 · alembic upgrade head 준비 단계 · alembic requirements (R-B §5-3·4·17·30)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["Ted intent 2건 커밋(승인)"]
+    depends_on: []
+    completion_def: "게이트 migration-drift ＋ selftest 짝이 db/platform/tests/*-drift.sh 11벌 전부를 돌고 건수를 출력한다 · 1벌 부재·대상 0건 red · alembic 부재 red(준비) · schema-diff 가 alembic upgrade head 뒤에만 비교 · alembic 이 requirements 에 핀 버전으로 있다"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — R-B §6 게이트 승격 3종 묶음(§6 「7벌」은 낡은 수 · 실측 11). 레인 rc-gate-drift"
+    sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md"]
+
+  - id: WU-C7
+    name: 서버 소형 ＋ 마이그레이션 0020·0021 (R-B §5-9·19·20·36·5 ＋ 프로젝트 이름 UNIQUE)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C10 done"]
+    depends_on: ["WU-C10"]
+    completion_def: "0020 UNIQUE (lab_id, name)(중복 행이면 멈추고 보고 · 자동 개명 0) → 0021 이관 빈틈 보정(NULL ∧ 연구실 잠김 ∧ grant ≥1 → 지정 공개 · 이동 행 수 출력 · 실물 건수는 배포 창) · head 1 · drop 0 · drift 짝 2 · 공개 범위 내림 소유자 한정(403) · ordinal 0행 퇴행 제거 · replace_variables statement-level 트리거 · db/ai 0004 d9_topic_synonym 5값. 변수명 UNIQUE 는 만들지 않는다(판정 A)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — R-B 판정 A 9·19·20·36·5 ＋ R-A′ 이월 C-2(앱 400 은 WU-A7R 에 있음 · DB 제약만). 레인 rc-server-fix"
+    sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md"]
+
+  - id: WU-C8
+    name: FE 소형 5건 — VISIBILITIES 3값 · submit 400 표면화 · 기간 인라인 철거 · Lv0 안내 사람 Lv · 빈 상태 3문면 권한 무관 (R-B §5-16·31·14·28·43)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C9 done", "WU-C5 done"]
+    depends_on: ["WU-C9", "WU-C5"]
+    completion_def: "LabInfoPanel 셀렉트 3값 · 서버 400 문면 그대로/500 은 일반 문구 · 인라인 기간 칸 0＋팝오버 1 · 사람 Lv0＋파생≠0 행에 출처 안내 · canEdit=false 계정도 빈 상태 3문면"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — R-B 판정 A 14·16·28·31·43. 레인 rc-fe-fix"
+    sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
+
+  - id: WU-C9
+    name: Lv 표시 사람 값 통일 ＋ AI 제안 부모 Lv ＋ ProjectDatasetRow 사람 값 (R-B §5-27·41·23·24 · 21차 ⑵⑸)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C10 done", "WU-C7 done"]
+    depends_on: ["WU-C10", "WU-C7"]
+    completion_def: "서버 조립 함수 하나(사람 값＋파생값 · processingLevel 의미 무변 · processingLevelUserSet 첨가)를 계보 노드·프로젝트 표가 쓰고 FE 4자리(카탈로그·상세·노드·프로젝트 표)가 같은 표시 규칙(사람 값 우선)을 쓴다 · ParentCandidateSuggestion.parentProcessingLevel 로 화면 충돌 판정 · processingLevel 회귀 0"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — R-B 판정 A 27·41(「Lv 표시 사람 값 통일 R-C(계약 21차)」)·23·24. 서버가 processingLevel 을 덮어 쓰면 ㉯ — 하지 않는다. 레인 rc-lv-unify"
+    sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md"]
+
+  - id: WU-C10
+    name: 계약 동결 해제 21차 패키지 집행 — 첨가 6건 (describe · processingLevelUserSet · byCategory · 기록 없음 선언＋method op · parentProcessingLevel)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C6 done", "Ted 21차 승인 문장이 intent/2026-09-08-r-c.md ## 확인 에 기입"]
+    depends_on: ["WU-C6"]
+    completion_def: "승인 요청 패키지 R-C-C21-REQUEST → Ted 승인 → contracts/ 첨가 6건(core-viz describe ＋ fe-core 릴레이 · processingLevelUserSet optional · DataMap.byCategory · declareLineageUnknown＋updateLineageParentMethod 신설 · core-ai parentProcessingLevel) ＋ 서버 집행 동시 · contract-lint·generated-up-to-date green · contract-breaking 출력 축자 파괴 0(㉯ 면 멈추고 보고) · 승인 커밋이 contracts/ 첫 수정보다 먼저(커밋 순서)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 우산 intent Q2(21차 패키지 6건 · 등급 전망 ㉮). 회차 번호 발급처 PLAN-SoT §9. 레인 rc-contract-21"
+    sources: ["dev-package/intent/2026-09-08-r-c.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md", "dev-package/sessions/X2-FREEZE-PROTOCOL.md"]
+
+  - id: WU-C11
+    name: CSS 잔여 — .lvl-3 · .lin--none 대비 · .dt-gridact 음수 · 여백 컨테이너 이관 9곳＋.dsec · 코랄 조건부 (R-B §5-45~49)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C8 done"]
+    depends_on: ["WU-C8"]
+    completion_def: ".lvl-3 존재(Lv2 보다 한 단 진한 같은 계열)＋대비 AA · .lin--none ≥ 4.5:1 · .dt-gridact 음수 margin 0 · upload.css 자식 margin-top 0곳 · .dsec 부모 클래스 존재 · 미정의 토큰 0건 · 코랄은 목업 :root 회수 시에만(없으면 [미상] 보고)"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — WU-B11 이월(컨테이너 이관 잔여 9곳·.dsec · .dt-gridact 3건째) ＋ 판정 A 45·46·47·48. 레인 rc-css-residual"
+    sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
+
+  - id: WU-C12
+    name: R-C 종료 검증 — 디자인 재실측 ＋ 전수 게이트 ＋ intent 대조 ＋ 병합·등재 〈N〉 3행
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-C1~C11 전건 done"]
+    depends_on: ["WU-C1", "WU-C2", "WU-C3", "WU-C4", "WU-C5", "WU-C6", "WU-C7", "WU-C8", "WU-C9", "WU-C10", "WU-C11"]
+    completion_def: "재실측 16항 판정값([미상] 0) · all -j 1 한 번의 실행 green/red(판정) 0/red(준비) 0 · intent 원한 결과 미달·초과 열거 · 축 ② 19건 소유 대조표 · 경계 3·회귀 4·절차 5 · integration/r-c → main ff 한 줄 · PLAN-SoT §9 3행(R-C 집행 · POL-021 부분 반전 · 21차) 병합 직전 실측 번호 · planning-freshness green"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 결함을 이 레인에서 고치지 않는다(R-D 등재). 배포 창 인계 4건 명시. 레인 rc-verify"
+    sources: ["dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-3-verify.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/intent/2026-09-08-preview-slot.md"]
