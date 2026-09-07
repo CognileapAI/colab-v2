@@ -43,6 +43,10 @@ import type {
 } from '../src/components/upload/types';
 import type { CurrentAccount, Schemas } from '../src/api/client';
 
+// vitest 의 실행 뿌리는 `frontend/` 다(`vite.config.ts` 자리). 타입 선언 없이 런타임만 쓴다 —
+// `@types/node` 를 tsconfig 의 `types` 에 넣지 않는 규율은 `lv-rules-20260907` 과 같다.
+declare const process: { cwd(): string };
+
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
 const LV0 = '01JYZ9K7WQ3N8V4M2X6C5B0D00';
@@ -252,7 +256,9 @@ describe('PRD-27 종전 문면은 코드에 남지 않는다', () => {
   it('폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다', () => {
     // **조각에서 조립한다** — 통째로 적으면 이 시험 파일 자신이 걸려 언제나 red 다.
     const LEGACY_LABEL = ['못 ', '찾은 것이 있어요 (기록 없음)'].join('');
-    const roots = ['src', 'test'].map((d) => resolve(__dirname, '..', d));
+    // 기준은 `process.cwd()`(= `frontend/`) — `__dirname` 은 이 tsconfig 의 타입에 없다
+    // (`lv-rules-20260907` 과 같은 규율).
+    const roots = ['src', 'test'].map((d) => resolve(process.cwd(), d));
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
@@ -282,7 +288,7 @@ describe('PRD-27 홈 타일의 모수와 링크 목록의 모수가 같다', () 
 
   it('할 일 함의 조회가 타일과 **같은 상수**를 쓴다 — 값을 두 곳에 적지 않는다', () => {
     const src = readFileSync(
-      resolve(__dirname, '..', 'src/components/dashboard/dashboardSource.ts'), 'utf8');
+      resolve(process.cwd(), 'src/components/dashboard/dashboardSource.ts'), 'utf8');
     expect(src).toContain('UNSETTLED_LINEAGE_STATES');
     // 값 리터럴이 이 파일에 **다시** 적혀 있으면 한쪽만 고쳐지는 자리가 되살아난다.
     expect(src).not.toMatch(/\[\s*'확인 필요'\s*,\s*'기록 없음'\s*\]/);
