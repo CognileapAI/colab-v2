@@ -131,7 +131,35 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
 
 ## 9. 게이트 (`COLAB_GATE_REPORT_DIR=dev-package/reports/R-B/p3-axis-filters`)
 
-<!-- 게이트 줄은 마지막 커밋 뒤 재실행분으로 채운다 -->
+| 게이트 | 계 |
+|---|---|
+| `contract-lint` | green 1 / red(판정) 0 / red(준비) 0 |
+| `contract-breaking` (`COLAB_BREAKING_BASE_REF=b982100…`) | green 1 / 0 / 0 |
+| `generated-up-to-date` | green 1 / 0 / 0 |
+| `schema-diff` | **green 0 / red(판정) 1 / 0** — §11-⛔ 참조 |
+| `migration-single-head` | green 1 / 0 / 0 |
+| `db-boundary` | green 1 / 0 / 0 |
+| `autometa-loss` | green 1 / 0 / 0 |
+| `rls-effect` | green 1 / 0 / 0 |
+| `service-tests-core-api` | green 1 / 0 / 0 (실행 902 · skipped 0 · deselected 6) |
+| `frontend-typecheck` | green 1 / 0 / 0 |
+| `frontend-test` | green 1 / 0 / 0 |
+| `work-item-consistency` | green — 대장과 산문의 불일치 0 |
+| `db/platform/tests/0019-drift.sh` | green (게이트 목록 밖 · 이 회차가 신설) |
+
+⛔ **`schema-diff` red(판정) 1 — 이 레인의 코드 결함이 아니다.** 원인은 **호스트가 공유하는
+「적용 DB」**(`COLAB_APPLIED_DB_URL_PLATFORM` · `colab_platform_applied`)가 이미
+`alembic_version_platform = 0018_rb6_lv0_source` 로 찍혀 있는데(**WU-B6 레인이 올렸다**)
+그 `0018` 이 `integration/r-b` 에도 이 워크트리에도 **없다**는 것이다. 그래서 적용 DB 에는
+있는 `d3_dataset.source_url`·`source_downloaded_on` 두 열이 `db/platform/schema.sql` 에 없고,
+반대로 이 회차가 세운 `category_mirror`·새 색인식·미러 트리거 3개는 적용 DB 에 없다.
+**두 방향의 차이가 전부 「0018 이 안 내려왔다」 한 가지에서 나온다.**
+⛔ **적용 DB 에 손으로 `0019` 를 올리지 않았다** — 그 DB 는 레인들이 공유하고, 스탬프가
+`0018` 인 곳에 `0017` 에 이은 체인을 얹는 것은 비가역 파손이다.
+⭑ **닫는 법** — `0018` 을 `integration/r-b` 에 병합 → `0019` 의 `down_revision` 과
+`0019-drift.sh` 의 `PREV_REV` 를 `0018_rb6_lv0_source` 로 바꿈 → 적용 DB 를
+`alembic upgrade head` → `schema-diff` 재실행. **이 레인의 체인 자체는 증명돼 있다**
+(`0019-drift.sh` green · `0017→0019` 델타를 소유자 롤로 적용해 백필·색인·트리거를 실측).
 
 ## 10. 자기 표시
 
@@ -163,6 +191,7 @@ NULL 이 되는 법이 없어 그 행을 표현할 수단이 없다.
   WU-B7 몫으로 적었으나 **라운드 파일 축자가 이긴다** — 필요하면 후속으로 연다.
 - ⛔ 등록 화면(`RegisterArea.tsx`·`UploadModal.tsx`·`LineageStep.tsx`)·`ingestion.py` 의
   수용 목록을 **건드리지 않았다**(WU-B6 병렬 레인 회피).
+- ⛔ **공유 적용 DB 에 마이그레이션을 올리지 않았다**(§9 ⛔). 병합자 몫이다.
 - ⛔ 이관 항목 3건 · `40 COLAB-기획/` · `03-HANDOFF.md` · `PLAN-SoT.md` 무접촉. 〈N〉 미발급.
 - ⭑ **라운드 종료 보고 문안** — 「**R-A 이월 1건(PRD-21 `nc` 검색) 닫힘**」. 근거 =
   `0019-assertions.sql` C-⑴ ＋ `0019-existing-rows-assertions.sql` ①(기존 행) ·
