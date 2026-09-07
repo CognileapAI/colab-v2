@@ -7,6 +7,7 @@ import { VariableTable, toVariableRows } from '../common/VariableTable';
 import {
   EMPTY,
   INTERVAL_MISSING_NOTICE,
+  LV0_SOURCE_MISSING_NOTICE,
   formatExtension,
   formatFiles,
   formatInterval,
@@ -54,6 +55,13 @@ export function BasicInfoGrid(props: {
   // 컴포넌트**를 읽기 전용으로 그린다(열 순서·라벨이 갈리지 않게 하는 자리).
   // 행이 0개인 데이터셋은 이관 대상이 아니었던 기존 행이고, 그때는 종전대로 `EMPTY` 다.
   const variableRows = toVariableRows(b.variables);
+  // ⭑ **⟨WU-B6 · PRD-19⟩ 파생 Lv 가 Lv0 이고 두 칸이 다 비었는가.**
+  //
+  // ⚠ **파생 Lv 를 본다** — 사람 값(`processingLevelUserSet`)이 아니다. 안내가 겨냥하는 것은
+  //    마이그레이션 뒤의 **기존 행**이고 그 행들은 사람 값이 `null` 이다(backfill 0).
+  // ⛔ 안내로만이다 — 저장을 막지 않고 재입력을 강제하지 않는다.
+  const lv0SourceMissing =
+    b.processingLevelDerived === 0 && !b.sourceUrl && !b.sourceDownloadedOn;
   const cells: [string, string][] = [
     ['구성', variableRows.length > 0 ? '' : EMPTY],
     ['좌표계', orEmpty(b.crs)],
@@ -85,6 +93,24 @@ export function BasicInfoGrid(props: {
               {k === '기간' && intervalMissing ? (
                 <span className="ig-note" data-testid="ig-interval-missing">
                   {INTERVAL_MISSING_NOTICE}
+                </span>
+              ) : null}
+              {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 출처 두 칸은 원천 표기 칸 **안쪽**에 붙는다** —
+                  칸 수는 아홉 그대로다. 값이 있으면 그대로 보이고(Lv 로 가리지 않는다),
+                  파생 Lv 가 Lv0 인데 둘 다 비면 안내 한 줄이 대신 선다. */}
+              {k === '원천 표기' && b.sourceUrl ? (
+                <span className="ig-note" data-testid="ig-source-url">
+                  {b.sourceUrl}
+                </span>
+              ) : null}
+              {k === '원천 표기' && b.sourceDownloadedOn ? (
+                <span className="ig-note" data-testid="ig-source-downloaded-on">
+                  {b.sourceDownloadedOn}
+                </span>
+              ) : null}
+              {k === '원천 표기' && lv0SourceMissing ? (
+                <span className="ig-note" data-testid="ig-lv0-source-missing">
+                  {LV0_SOURCE_MISSING_NOTICE}
                 </span>
               ) : null}
               {k === '파일' ? (

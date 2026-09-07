@@ -85,6 +85,11 @@ _ONE = text("""
            -- ⛔ `dd.topic` 은 위에 그대로 있다 — 되돌림 경로이자 이관 대조 근거다.
            dd.category, dd.data_type,
            d.processing_level_user_set,
+           -- ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸.** 사람이 적는 값이라
+           -- `d3_dataset` 에 있다(`source_label` 옆). **상세만 읽는다** — 목록
+           -- (`DatasetRow`)에는 이 칸이 계약에도 화면에도 없다.
+           -- ⛔ `d.source_label` 은 위에 그대로 있다 — Lv 무관 상시 노출이다(미결-11 ⓐ).
+           d.source_url, d.source_downloaded_on,
            u.name AS uploader_name,
            o.name AS owner_name
       FROM d3_dataset d
@@ -193,6 +198,14 @@ class DatasetCore:
     category: str | None = None
     data_type: str | None = None
     processing_level_user_set: str | None = None
+    #: Lv0 출처 두 칸 (PRD-19 · `M-8`). **둘 다 `None` 이 정상**이다 — 마이그레이션 `0018`
+    #: 이 backfill 을 하지 않았고, 그것이 기존 행의 상태다.
+    #: ⚠ **목록 질의는 안 읽는다** — `DatasetRow` 에 이 칸이 없다. 상세(`_ONE`)만 채운다.
+    #: ⚠ **`source_label` 과 다른 축이다** — 그쪽은 출처의 **이름**이고 Lv 무관 상시 노출이다
+    #: (미결-11 ⓐ). 이 둘은 그 값을 대신하지 않는다.
+    #: ⚠ 저장·조회 어디에도 Lv 조건이 없다 — Lv 로 갈리는 것은 **화면 표시뿐**이다.
+    source_url: str | None = None
+    source_downloaded_on: object = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -228,6 +241,7 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         observation_interval_unit=r["observation_interval_unit"],
         category=r["category"], data_type=r["data_type"],
         processing_level_user_set=r["processing_level_user_set"],
+        source_url=r["source_url"], source_downloaded_on=r["source_downloaded_on"],
     )
 
 
@@ -899,6 +913,12 @@ _UPDATABLE = {
     "category": ("d3_dataset_description", "category"),
     "dataType": ("d3_dataset_description", "data_type"),
     "processingLevelUserSet": ("d3_dataset", "processing_level_user_set"),
+    # ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸.** 사람이 적는 값이라
+    # `d3_dataset` 이다 — `source_label` 과 같은 표이고 **다른 축**이다(미결-11 ⓐ).
+    # ⛔ **Lv 조건을 여기 걸지 않는다** — 저장 경로는 Lv 를 보지 않는다. Lv 로 갈리는 것은
+    #    화면 표시뿐이고, 종전 판정(「Lv1 이상 값 전송 시 400」)은 폐기됐다(PRD-19).
+    "sourceUrl": ("d3_dataset", "source_url"),
+    "sourceDownloadedOn": ("d3_dataset", "source_downloaded_on"),
 }
 
 

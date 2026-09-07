@@ -24,6 +24,17 @@ export type DatasetEditDraft = {
   name: string;
   summary: string;
   sourceLabel: string;
+  /**
+   * ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸.**
+   *
+   * 상세가 「Lv0 인데 비어 있어요 — **수정에서** 채워 주세요」로 안내하므로 그 안내가
+   * 실행 가능하려면 두 칸이 **이 폼에** 있어야 한다. 다른 텍스트 칸과 같은 규율이다 —
+   * 빈 문자열이 「비웠다」이고 계약의 `null` 로 번역된다.
+   * ⛔ **Lv 로 가리지 않는다** — 수정 폼은 등록 ③ 과 달리 조건 표시를 두지 않는다.
+   *    서버가 Lv 를 안 보므로(PRD-19) 가리면 Lv1 이상 행의 저장된 값을 고칠 길이 사라진다.
+   */
+  sourceUrl: string;
+  sourceDownloadedOn: string;
   crs: string;
   /** 기간은 두 칸이 한 값이다 (`DataPeriod`). 날짜 칸이라 `YYYY-MM-DD` 다. */
   periodStart: string;
@@ -54,7 +65,7 @@ export const GRANULARITIES = ['년', '월', '일', '시', '분', '초'] as const
 
 /** 한 줄로 서는 자유 입력 칸. 라벨은 `Policy_데이터셋_상세 §5` 기본 정보 칸 이름 그대로다. */
 export type TextFieldSpec = {
-  key: 'name' | 'summary' | 'sourceLabel' | 'crs';
+  key: 'name' | 'summary' | 'sourceLabel' | 'sourceUrl' | 'sourceDownloadedOn' | 'crs';
   label: string;
   /** 여러 줄 입력인가. 설명은 긴 글이라 `textarea` 다. */
   multiline?: boolean;
@@ -73,6 +84,10 @@ export const TEXT_FIELDS: readonly TextFieldSpec[] = [
   { key: 'name', label: '이름', required: true },
   { key: 'summary', label: '설명', multiline: true, required: true },
   { key: 'sourceLabel', label: '원천 표기' },
+  // ⭑ ⟨WU-B6 · PRD-19⟩ 원천 표기 **바로 아래**다 — 상세의 배치와 같은 순서로 둔다.
+  //    `required` 를 붙이지 않는다: 두 칸은 선택 입력이다(목업 필수 배지를 채택하지 않는다).
+  { key: 'sourceUrl', label: '출처 주소' },
+  { key: 'sourceDownloadedOn', label: '내려받은 날' },
   { key: 'crs', label: '좌표계' },
 ];
 
@@ -106,6 +121,8 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
     name: detail.name,
     summary: orBlank(detail.summary),
     sourceLabel: orBlank(b?.sourceLabel),
+    sourceUrl: orBlank(b?.sourceUrl),
+    sourceDownloadedOn: orBlank(b?.sourceDownloadedOn),
     crs: orBlank(b?.crs),
     periodStart: toDateInput(b?.period?.start),
     periodEnd: toDateInput(b?.period?.end),
@@ -215,6 +232,8 @@ export function applyDraft(detail: DatasetDetail, draft: DatasetEditDraft): Data
       ? {
           ...detail.basicInfo,
           sourceLabel: blank(draft.sourceLabel),
+          sourceUrl: blank(draft.sourceUrl),
+          sourceDownloadedOn: blank(draft.sourceDownloadedOn),
           crs: blank(draft.crs),
           period: periodOf(draft),
           observationInterval: intervalOf(draft),

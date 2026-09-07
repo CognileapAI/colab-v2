@@ -29,7 +29,7 @@ import { collectDrop } from './dropTree';
 import { ESC_LAYER_ATTR } from './escLayer';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
-import { RegisterArea, type Step } from './RegisterArea';
+import { LV0, RegisterArea, type Step } from './RegisterArea';
 import {
   DEFAULT_CATEGORY,
   DEFAULT_DATA_TYPE,
@@ -154,6 +154,12 @@ export function UploadModal(props: {
   const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
+  // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** `sourceLabel` 옆에 두되 **다른 축**이다 —
+  //   그쪽은 Lv 무관 상시 노출이고 이 둘만 ① 의 Lv 로 표시가 갈린다(미결-11 ⓐ).
+  //   ⛔ Lv 를 바꿔도 **값을 지우지 않는다** — 되돌아오면 적어 둔 것이 그대로 있어야 한다.
+  //      「숨은 동안 전송하지 않는다」는 저장을 지우는 것이 아니라 **싣지 않는 것**이다.
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceDownloadedOn, setSourceDownloadedOn] = useState('');
   // ⭑ **⟨20차 해제 · PRD-11 · WU-B4 · advisor ② ㊁⟩ 공개 범위 — 처음은 `null` 이다.**
   // `null` = **사람이 셀렉트를 건드리지 않았다** 이고, 그대로 등록하면 요청에서 열쇠가
   // 빠져 서버가 연구실 기본값을 따른다(PRD-11 「NULL = 연구실 기본값 · 현행 의미 유지」).
@@ -412,6 +418,10 @@ export function UploadModal(props: {
     periodEnd.trim() !== '' ||
     crs.trim() !== '' ||
     sourceLabel.trim() !== '' ||
+    // ⭑ ⟨WU-B6 · PRD-19⟩ Lv0 두 칸도 사람이 적은 값이다 — 빠져 있으면 출처만 적은
+    //   사용자가 Esc 한 번에 되묻히지 않고 잃는다(`advisor ② · F2` 와 같은 자리).
+    sourceUrl.trim() !== '' ||
+    sourceDownloadedOn.trim() !== '' ||
     // ⭑ ⟨advisor ② · F2⟩ 관측 간격 3필드도 사람이 적은 값이다. 빠져 있으면 간격만 적은
     //   사용자가 Esc·배경 클릭 한 번에 되묻히지 않고 잃는다 — PRD-14 가 없애려던 반대 증상.
     intervalValue.trim() !== '' ||
@@ -533,6 +543,9 @@ export function UploadModal(props: {
     // 화면이 고지와 다른 말을 한다.
     setStartParts({ ...EMPTY_PARTS });
     setEndParts({ ...EMPTY_PARTS });
+    // ⭑ ⟨WU-B6 · PRD-19⟩ 두 칸도 함께 내린다 — 고지 문면이 「입력하던 내용은 사라져요」다.
+    setSourceUrl('');
+    setSourceDownloadedOn('');
     setProjects([]);
     setLineage(null);
     setLineageParents([]);
@@ -710,6 +723,19 @@ export function UploadModal(props: {
     // ⚠ `category`·`dataType` 은 여기서 싣지 않는다 — 계약 `required` 라 `register()`
     //    호출부가 **명시로** 싣는다(타입 검사가 그 자리를 본다).
     if (level) out.processingLevelUserSet = level;
+    // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 두 칸은 「보이는 동안 적은 것」만 싣는다.**
+    //
+    // 화면이 숨긴 값을 몰래 보내면 사용자가 지운 적 없는 값이 저장되고, 상세에 그 값이
+    // 뜨는 순간 「내가 적은 적 없는 출처」가 된다. 그래서 **표시 조건과 전송 조건을 같은
+    // 식으로 둔다**(`RegisterArea` 의 `ctx.processingLevelUserSet === 'Lv0'`).
+    // ⚠ 서버는 이 조건을 걸지 않는다 — Lv1 이상에서 값이 와도 저장한다(PRD-19). 여기 조건은
+    //   **화면이 숨긴 값을 안 보낸다**는 화면 쪽 규율이고, 서버의 거절 규칙이 아니다.
+    // ⛔ 빈 문자열을 `null` 로 실어 보내지 않는다 — 안 적은 것과 비우라는 것은 다르고,
+    //    등록은 「안 적었다」뿐이다(수정 경로가 비우는 자리를 따로 가진다).
+    if (level === LV0) {
+      if (sourceUrl.trim()) out.sourceUrl = sourceUrl.trim();
+      if (sourceDownloadedOn.trim()) out.sourceDownloadedOn = sourceDownloadedOn.trim();
+    }
     return out;
   }
 
@@ -1078,6 +1104,10 @@ export function UploadModal(props: {
                 onIntervalUnit={setIntervalUnit}
                 sourceLabel={sourceLabel}
                 onSourceLabel={setSourceLabel}
+                sourceUrl={sourceUrl}
+                onSourceUrl={setSourceUrl}
+                sourceDownloadedOn={sourceDownloadedOn}
+                onSourceDownloadedOn={setSourceDownloadedOn}
                 projects={projects}
                 onProjects={setProjects}
                 category={category}

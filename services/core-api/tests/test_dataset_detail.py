@@ -96,11 +96,18 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 파생·불일치 두 열쇠가 늘었다** —
     # `processingLevelDerived`·`processingLevelMismatch`. 사람 값과 **병존**하는 값이고,
     # 여기서도 칸 수가 아니라 **열쇠 집합**을 잰다.
+    # ⭑ **⟨20차 해제 · PRD-19 · `WU-B6`⟩ Lv0 출처 두 열쇠가 늘었다** —
+    # `sourceUrl`·`sourceDownloadedOn`. **원천 표기 칸 안쪽에 붙는 값**이라 칸 수는 아홉
+    # 그대로이고, 여기서도 재는 것은 열쇠 집합이다. `sourceLabel` 은 그대로 산다 —
+    # 그쪽은 Lv 무관 상시 노출이고 두 열쇠가 그 칸을 대신하지 않는다(미결-11 ⓐ).
     assert set(info) == {"category", "dataType", "processingLevelUserSet",
                          "processingLevelDerived", "processingLevelMismatch",
                          "variables", "crs", "period", "observationInterval", "grid",
                          "format", "fileExtension", "files", "sourceLabel",
+                         "sourceUrl", "sourceDownloadedOn",
                          "owner", "uploader"}
+    # 시드 행은 마이그레이션 `0018` 뒤 기존 행과 같은 상태다 — 두 칸 다 `None`(backfill 0).
+    assert info["sourceUrl"] is None and info["sourceDownloadedOn"] is None
     # 시드 행은 마이그레이션 뒤 기존 행과 같은 상태다 — 셋 다 `None`(미결-3 ⓐ · backfill 0).
     assert info["category"] is None and info["dataType"] is None
     assert info["processingLevelUserSet"] is None

@@ -61,6 +61,15 @@ def _iso(value: Any) -> Any:
     return value.astimezone(dt.timezone.utc).isoformat() if isinstance(value, dt.datetime) else value
 
 
+def _date_iso(value: Any) -> Any:
+    """`date` 를 `YYYY-MM-DD` 로 내린다 — **시각을 붙이지 않는다** (PRD-19 · 계약 `format: date`).
+
+    `_iso` 를 쓰면 안 된다: `date` 는 `datetime` 이 아니라 그 함수를 그대로 통과하고,
+    `datetime` 이었다면 시간대까지 붙어 「내려받은 날」이 시각이 된다. 두 축을 가르는 자리다.
+    """
+    return value.isoformat() if isinstance(value, dt.date) else value
+
+
 def _encode_cursor(offset: int) -> str:
     return base64.urlsafe_b64encode(f"o:{offset}".encode()).decode().rstrip("=")
 
@@ -574,6 +583,9 @@ _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period",
                   "observationInterval",
                   "category", "dataType", "processingLevelUserSet",
+                  # ⭑ ⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸. 등록만 열고 이 줄을
+                  #    미루면 「수정에서 채워 주세요」 안내가 실행 불가능한 문장이 된다.
+                  "sourceUrl", "sourceDownloadedOn",
                   # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위. **D2 의 값이라
                   #    `d3_catalog.update_dataset` 의 D3 열 목록에는 들어가지 않는다** —
                   #    아래 `update_dataset` 이 D2 경로로 따로 쓴다.
@@ -721,6 +733,23 @@ def is_blank_summary(value: object) -> bool:
     return not isinstance(value, str) or not value.strip()
 
 
+def _is_date(value: object) -> bool:
+    """계약 `DatasetCreate.sourceDownloadedOn` 은 `format: date` 다 — **날짜이지 시각이 아니다.**
+
+    검사 없이 내려보내면 `date` 캐스트가 DB 에서 죽고 **사용자의 오타가 500** 이 된다
+    (`_is_datetime` 과 같은 이유 · `CODE-REVIEW-20260903` #12).
+    ⚠ `fromisoformat` 은 `2026-08-20T00:00:00` 도 받으므로 **`date.fromisoformat`** 을 쓴다 —
+      시각이 실려 오면 「내려받은 날」이 아니고, 그 값을 조용히 잘라 저장하지 않는다.
+    """
+    if not isinstance(value, str):
+        return False
+    try:
+        dt.date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def _is_datetime(value: str) -> bool:
     """계약 `DataPeriod` 는 `format: date-time` 이다 — **자유 문자열이 아니다.**
 
@@ -839,6 +868,21 @@ def validate_human_metadata(changes: dict) -> None:
             if changes[key] not in allowed:
                 raise errors.bad_request(f"{label}는 정해진 값 중 하나다.",
                                          {"allowed": list(allowed)})
+
+    # ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸 — 형상만 본다.**
+    # 두 칸은 **선택 입력**이라 `null`·열쇠 없음은 그냥 지나간다(그것이 기존 전 행의 상태다).
+    # ⛔ **Lv 를 보지 않는다** — 종전 판정(「Lv0 이면 필수」·「Lv1 이상이면 400」)은
+    #    폐기됐다(PRD-19 · 미결-11 ⓐ). 목업 배지를 근거로 400 을 세우지 않는다.
+    if changes.get("sourceUrl") is not None and "sourceUrl" in changes:
+        # 형식 검사는 하지 않는다(`VAL-006` 계열 자유 입력) — 문자열인지만 본다.
+        if not isinstance(changes["sourceUrl"], str):
+            raise errors.bad_request("출처 주소는 문자열이다.")
+    if changes.get("sourceDownloadedOn") is not None and "sourceDownloadedOn" in changes:
+        # **날짜 형상은 여기서 막는다** — 안 막으면 `date` 캐스트가 DB 에서 죽어
+        # 사용자의 오타가 **500** 이 된다(`CODE-REVIEW-20260903` #12 와 같은 자리).
+        # ⚠ 시각이 아니라 날짜다 — `2026-08-20T00:00:00Z` 는 「내려받은 날」의 형이 아니다.
+        if not _is_date(changes["sourceDownloadedOn"]):
+            raise errors.bad_request("내려받은 날은 날짜(YYYY-MM-DD)다.")
 
     if changes.get("period") is not None and "period" in changes:
         period = changes["period"]
@@ -1122,6 +1166,13 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
                 "hasReferenceGridFile": d3_catalog.has_reference_grid_file(db, dataset_id),
             },
             "sourceLabel": core.source_label,
+            # ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸.** `null` 이면 안 적은 것이고
+            # 그것이 마이그레이션 `0018` 뒤 기존 전 행의 상태다. **Lv 로 가리지 않는다** —
+            # 파생 Lv 가 무엇이든 저장된 값을 그대로 내린다. 「Lv0 인데 비어 있어요」 안내를
+            # 그리는 것은 **화면**이고, 서버는 그 판정을 대신하지 않는다.
+            # ⚠ 날짜는 `date` 라 `_iso` 가 아니라 `isoformat()` 이다(시각을 붙이지 않는다).
+            "sourceUrl": core.source_url,
+            "sourceDownloadedOn": _date_iso(core.source_downloaded_on),
             "owner": _account_ref(core.owner_id, core.owner_name),
             "uploader": _account_ref(core.uploader_id, core.uploader_name),
         }

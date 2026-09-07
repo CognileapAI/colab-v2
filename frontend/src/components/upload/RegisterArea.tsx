@@ -88,6 +88,20 @@ export const METADATA_SUBTITLE = '파일에서 읽는 값은 확장자·용량�
 export const PERIOD_SINGLE_POINT_HINT = '한 시점이면 비워 둬요';
 
 /**
+ * ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 출처 블록의 문면 — rev1 축자다.**
+ *
+ * 「원시 데이터라 부모가 없어요」가 이 블록이 서는 이유다: Lv0 은 부모가 없어 **계보로는
+ * 출처를 말할 수 없고**, 그 자리를 두 칸이 메운다.
+ * ⛔ **`필수` 배지를 붙이지 않는다** — 두 칸은 선택 입력이다. rev2 목업이 필수 배지를
+ *    그렸으나 **정본은 「선택 입력」이고 목업 배지를 채택하지 않는다**(PRD-19 감사 교차 확인).
+ */
+export const LV0_SOURCE_NOTICE = '원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.';
+export const LV0_SOURCE_URL_PLACEHOLDER = '예: https://cds.climate.copernicus.eu/...';
+export const LV0_SOURCE_DATE_PLACEHOLDER = '예: 2026-08-20';
+/** 이 블록이 열리는 유일한 조건 — ① 이 고른 자기 Lv 다. 파생 Lv 가 아니다. */
+export const LV0 = 'Lv0';
+
+/**
  * 축 값 하나의 정의 줄 (PRD-04 축자 형식) — `<b>{정의}</b> · 예: {예시}`.
  * 가공 단계만 뒤에 줄을 바꿔 부가 안내를 덧붙인다.
  */
@@ -906,12 +920,21 @@ export function StepTwo(props: {
  * rev2 축자 = 「계보 = 어디서 왔나(상류) · 프로젝트·논문 = 어디에 쓰나(하류)」. 둘은
  * 카드 두 장이고 단계는 하나다 — 종전처럼 ②③ 으로 갈라 두지 않는다.
  *
- * ⚠ **Lv0 전용 두 칸(`sourceUrl`·`sourceDownloadedOn`)은 WU-B6 몫이다** — 자리만이다.
- *    원천 표기(`sourceLabel`)는 Lv 무관 상시 노출이고 그것은 여기 있다(미결-11 ⓐ).
+ * ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸(`sourceUrl`·`sourceDownloadedOn`)이 자리를 채웠다.**
+ *    ① 이 고른 Lv 가 `Lv0` 일 때만 그린다 — 바꾸면 **즉시** 열리고 닫힌다(파생 상태가 아니라
+ *    `props.ctx.processingLevelUserSet` 을 그대로 읽으므로 ① 의 변경이 그대로 반영된다).
+ *    ⛔ **숨은 동안에는 값을 싣지 않는다** — 그 판정은 `UploadModal.submit` 이 같은 조건으로 한다.
+ * ⚠ 원천 표기(`sourceLabel`)는 **Lv 무관 상시 노출**이고 그것은 이 블록 밖에 있다(미결-11 ⓐ) —
+ *    Lv 로 갈리는 것은 아래 두 칸의 표시뿐이다.
  */
 function StepThree(props: {
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
+  /** ⭑ ⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸. **표시 조건은 `ctx.processingLevelUserSet`** 이다. */
+  sourceUrl: string;
+  onSourceUrl: (v: string) => void;
+  sourceDownloadedOn: string;
+  onSourceDownloadedOn: (v: string) => void;
   lineageStep?: LineageStepRender | undefined;
   ctx: LineageStepContext;
   projectSource: ProjectSource;
@@ -946,8 +969,39 @@ function StepThree(props: {
             <p className="muted">계보 확정을 열 수 없어요.</p>
           )}
         </div>
-        {/* ⚠ Lv0 전용 두 칸(출처 URL · 다운로드 일자)의 자리 — **WU-B6** 이 세운다. */}
-        <div className="form-row" data-testid="reg-source-lv0-slot" />
+        {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** 슬롯 자체는 늘 있고 Lv0 이 아니면
+            **안이 비었다** — 자리를 없애면 시험이 「블록이 없다」와 「Lv0 이 아니다」를 못 가른다. */}
+        <div className="form-row" data-testid="reg-source-lv0-slot">
+          {props.ctx.processingLevelUserSet === LV0 ? (
+            <div data-testid="reg-source-lv0">
+              <div className="form-row">
+                <label htmlFor="reg-source-url">출처 주소 (선택)</label>
+                <input
+                  id="reg-source-url"
+                  className="inp"
+                  data-testid="reg-source-url"
+                  placeholder={LV0_SOURCE_URL_PLACEHOLDER}
+                  value={props.sourceUrl}
+                  onChange={(e) => props.onSourceUrl(e.target.value)}
+                />
+              </div>
+              <div className="form-row">
+                <label htmlFor="reg-source-downloaded-on">내려받은 날 (선택)</label>
+                <input
+                  id="reg-source-downloaded-on"
+                  className="inp"
+                  data-testid="reg-source-downloaded-on"
+                  placeholder={LV0_SOURCE_DATE_PLACEHOLDER}
+                  value={props.sourceDownloadedOn}
+                  onChange={(e) => props.onSourceDownloadedOn(e.target.value)}
+                />
+              </div>
+              <p className="muted" data-testid="reg-source-lv0-notice">
+                {LV0_SOURCE_NOTICE}
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
 
@@ -996,6 +1050,11 @@ export function RegisterArea(props: {
   onIntervalUnit: (v: string) => void;
   sourceLabel: string;
   onSourceLabel: (v: string) => void;
+  /** ⭑ ⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸. **표시 조건은 `ctx.processingLevelUserSet`** 이다. */
+  sourceUrl: string;
+  onSourceUrl: (v: string) => void;
+  sourceDownloadedOn: string;
+  onSourceDownloadedOn: (v: string) => void;
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
   // ⭑ ⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — ① 이 고르고 ② 의 힌트가 읽는다.
@@ -1111,6 +1170,10 @@ export function RegisterArea(props: {
           <StepThree
             sourceLabel={props.sourceLabel}
             onSourceLabel={props.onSourceLabel}
+            sourceUrl={props.sourceUrl}
+            onSourceUrl={props.onSourceUrl}
+            sourceDownloadedOn={props.sourceDownloadedOn}
+            onSourceDownloadedOn={props.onSourceDownloadedOn}
             lineageStep={props.lineageStep}
             ctx={props.lineageCtx}
             projectSource={props.projectSource}

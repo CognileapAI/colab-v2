@@ -387,6 +387,10 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           "lineageParents", "projectIds",
                           "variables", "crs", "period", "observationInterval",
                           "category", "dataType", "processingLevelUserSet",
+                          # ⭑ ⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸. 계약이
+                          #    `DatasetCreate` 에 두 열쇠를 여는 **같은 회차**에 서버가
+                          #    받는다 — 미루면 열쇠는 있는데 400 이다(§5-㉰-4).
+                          "sourceUrl", "sourceDownloadedOn",
                           # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위. **D2 의 값이라
                           #    `_HUMAN_METADATA_FIELDS`(D3 저장 경로)에는 넣지 않는다.**
                           "accessState"}
@@ -396,8 +400,13 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
 #: ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축이 여기 있다.** 셋 다 **사람이 고르는 값**이고
 #: 저장 경로가 `update_dataset` 하나라는 규율을 그대로 탄다 — 등록 전용 쓰기 경로를
 #: 따로 만들면 등록과 수정이 다른 열에 쓰는 날이 온다.
+#: ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸이 여기 있다.** 둘 다 **사람이 적는
+#: 값**이고 저장 경로가 `update_dataset` 하나라는 규율을 그대로 탄다 — 등록 전용 쓰기
+#: 경로를 따로 만들면 등록과 수정이 다른 열에 쓰는 날이 온다.
+#: ⛔ **Lv 로 거르지 않는다** — `processingLevelUserSet` 이 무엇이든 실려 온 값을 저장한다.
 _HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval",
-                          "category", "dataType", "processingLevelUserSet")
+                          "category", "dataType", "processingLevelUserSet",
+                          "sourceUrl", "sourceDownloadedOn")
 
 
 def _extension_of(file_name: str) -> str:
