@@ -3008,13 +3008,13 @@ items:
 
   - id: WU-C11
     name: CSS 잔여 — .lvl-3 · .lin--none 대비 · .dt-gridact 음수 · 여백 컨테이너 이관 9곳＋.dsec · 코랄 조건부 (R-B §5-45~49)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C8 done"]
     depends_on: ["WU-C8"]
     completion_def: ".lvl-3 존재(Lv2 보다 한 단 진한 같은 계열)＋대비 AA · .lin--none ≥ 4.5:1 · .dt-gridact 음수 margin 0 · upload.css 자식 margin-top 0곳 · .dsec 부모 클래스 존재 · 미정의 토큰 0건 · 코랄은 목업 :root 회수 시에만(없으면 [미상] 보고)"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c11 1a62ad8 → integration/r-c rebase·ff · .lvl-3 = primary-200 배경＋primary-800 글자 5.13:1(목업 primary-700 은 3.71 AA 미달 ⓐ) · .lin--none gray-500 5.02:1 · .dt-gridact 음수 제거(.dt-split-r gap 16 등가) · upload.css margin-top 11곳 → 컨테이너 gap · .dsec → .dt-secs gap 34 ＋ TSX 부모 · 목업 :root 회수 = 액센트는 violet(코랄 아님) accent-50/200/500/700·--color-ai 축자 복원 · 시험 21건(전 16 red) · frontend-test green 1083 · 판정 밖 잔여: project.css:436 음수 margin 4건째 · upload.css margin-top 5곳(후속 WU 유래)"
     deadline: null
     note: "2026-09-08 등재 — WU-B11 이월(컨테이너 이관 잔여 9곳·.dsec · .dt-gridact 3건째) ＋ 판정 A 45·46·47·48. 레인 rc-css-residual"
     sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
