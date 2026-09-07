@@ -364,7 +364,24 @@ CREATE TABLE d3_dataset (
   -- 여기서 파생 상한을 건드리지 않는다(그 자리는 PRD-07~10 · `WU-B5`).
   processing_level_user_set text
     CHECK (processing_level_user_set IS NULL
-           OR processing_level_user_set IN ('Lv0', 'Lv1', 'Lv2', 'Lv3'))
+           OR processing_level_user_set IN ('Lv0', 'Lv1', 'Lv2', 'Lv3')),
+  -- ── `0018` 이 더한 것 (`M-8` · PRD-19 · WU-B6). **선언 순서는 맨 뒤**다 —
+  --    `ALTER TABLE ADD COLUMN` 이 열을 뒤에 붙이므로 순서가 다르면 schema-diff 가 red 다.
+  --
+  -- Lv0 출처 두 칸 — 어디서(`source_url`) 언제(`source_downloaded_on`) 받았는가.
+  -- PRD-19 축자 「원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.」
+  -- ⛔ **CHECK 도 NOT NULL 도 없다** — 두 칸은 **선택 입력**이다. 비어도 등록되고
+  --    `Lv1` 이상에서 값이 와도 거절하지 않고 저장한다. 종전 완료 판정(「Lv0 이면 두 칸
+  --    필수·400」·「Lv1 이상 값 전송 시 400」)은 폐기됐다(PRD-19 · 미결-11 ⓐ).
+  --    **Lv 로 갈리는 것은 두 칸의 화면 표시뿐**이고 저장·검증은 Lv 를 보지 않는다.
+  -- ⛔ **전 행 NULL 이고 backfill 이 없다** — `source_label` 은 출처의 **이름**이지 주소가
+  --    아니고 내려받은 날은 어디에도 기록돼 있지 않다. 지어내면 거짓 출처가 박힌다.
+  -- ⚠ `source_downloaded_on` 은 `date` 다 — 「내려받은 날」은 날짜이고 시각이 아니다.
+  --    잘못된 날짜 문자열은 캐스트(500)가 아니라 **서버가 400** 으로 되돌린다.
+  -- ⚠ **원천 표기(`source_label`)는 이 두 칸과 다른 축이다** — 그 열과 정규화 열·자동완성
+  --    색인은 그대로이고 Lv 무관 상시 노출이다(미결-11 ⓐ).
+  source_url           text,
+  source_downloaded_on date
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
 CREATE INDEX d3_dataset_search_idx ON d3_dataset USING gin (search_vector);
