@@ -2800,13 +2800,13 @@ items:
 
   - id: WU-B5
     name: Lv 연결 규칙 (PRD-07·08·09·10)
-    status: open
+    status: in_progress
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "WU-B1 의 세 축 열쇠가 계약에 있음"]
     depends_on: ["WU-B1", "WU-B3"]
     completion_def: "부모 Lv ≤ 자기 Lv 가 서버 400 으로 선다 · 찾기 모달이 초과 후보를 보이되 못 고르게 하며 사유 대비 4.5:1 이상 · 사후 충돌이 연결을 지우지 않고 확인 필요 로 막는다 · 불일치는 경고만"
-    evidence: null
+    evidence: "dev-package/sessions/p3-lv-rules-20260907.md"
     deadline: null
     note: "계약·서버·FE. 스키마 변경 없음. 유형↔가공 단계 조합 검증을 신설하지 않는다(미결-14 ⓐ). 레인 p3-lv-rules"
     sources: ["dev-package/prd/rounds/R-B-2-server.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-07", "PRD-08", "PRD-09", "PRD-10"]
