@@ -2339,10 +2339,14 @@ export interface components {
              *     저장값은 **국문뿐**이다(미결-13 ⓐ). 화면이 `기상·기후 인자 (Meteorological &
              *     Climatic Factors)` 로 병기하고, DB·필터·색인은 앞의 국문만 안다.
              *     값 집합은 DB CHECK 가 지킨다 — 계약 층 enum 을 만들지 않는다(`〈55〉` 규약).
-             *     **선택 입력이다** — 열쇠가 없거나 `null` 이면 「아직 안 골랐다」이고
-             *     그것이 마이그레이션 뒤 기존 행의 상태다.
+             *
+             *     ⭑ **⟨WU-B3⟩ 이 열쇠는 `required` 다** — 화면에 기본 선택값이 서서 「안 고른 채
+             *     등록」이 성립하지 않는다. 형은 `[string, "null"]` 그대로이고(파괴 변경을 넓히지
+             *     않는다) **`null`·빈 문자열을 400 으로 되돌리는 것은 서버**다 —
+             *     문면 = `분류를 골라 주세요`. 기존 행이 NULL 인 사실은 `DatasetUpdate`
+             *     (여전히 optional)와 조회 응답이 그대로 안는다(미결-3 ⓐ).
              */
-            category?: string | null;
+            category: string | null;
             /**
              * @description ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 — 국문 6값.**
              *
@@ -2350,7 +2354,7 @@ export interface components {
              *     겹친다(PRD-02 축자). 저장값·enum 규약은 `category` 와 같다.
              *     ⛔ **유형↔가공 단계 조합 검증이 없다**(미결-14 ⓐ) — 세 축은 서로 독립이다.
              */
-            dataType?: string | null;
+            dataType: string | null;
             /**
              * @description ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 — 4값(`Lv0`~`Lv3`).**
              *

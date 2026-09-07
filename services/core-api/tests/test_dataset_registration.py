@@ -27,7 +27,9 @@ def make_upload(client, *, files=None, token=TOKEN_RES) -> dict:
 
 def register(client, receipt, **extra):
     body = {"uploadId": receipt["uploadId"], "name": "등록 시험 데이터셋",
-            "summary": "시험용 설명 한 줄", **extra}
+            "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료", **extra}
     return client.post(f"{API_PREFIX}/datasets", json=body, headers=auth(TOKEN_RES))
 
 
@@ -135,7 +137,9 @@ def test_a_human_uploaded_file_is_never_recorded_as_our_product(p2_client, sql) 
     for forged in ({"derived": True}, {"cog": True}, {"isOurProduct": True}):
         r = client.post(f"{API_PREFIX}/datasets",
                         json={"uploadId": make_upload(client)["uploadId"], "name": "x",
-                              "summary": "시험용 설명 한 줄", **forged},
+                              "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료", **forged},
                         headers=auth(TOKEN_RES))
         assert r.status_code == 400, f"계약에 없는 필드 {forged} 가 통과했다."
 
@@ -465,3 +469,53 @@ def test_upload_status_says_whether_it_is_registered(p2_client) -> None:
     after = client.get(f"{API_PREFIX}/uploads/{receipt['uploadId']}", headers=auth(TOKEN_RES))
     assert after.status_code == 200, after.text
     assert after.json()["registered"] is True, "등록했는데 registered 가 true 가 아니다."
+
+
+# ═══════ WU-B3 · 분류·유형 필수 ＋ 기간 순서 (20차 ㉯ · PRD-01·02 · PRD-40) ═══════
+@pytest.mark.parametrize("missing", ["category", "dataType"])
+def test_create_rejects_missing_axis(p2_client, missing) -> None:
+    """계약 `DatasetCreate.required` 를 **런타임이 집행한다** — 문면은 `분류를 골라 주세요`."""
+    client = p2_client()
+    receipt = make_upload(client)
+    r = register(client, receipt, **{missing: None})
+    assert r.status_code == 400, r.text
+    assert "분류를 골라 주세요" in r.text
+
+
+def test_create_rejects_blank_axis(p2_client) -> None:
+    """빈 문자열도 「안 골랐다」다 — `minLength` 가 못 막는 공백 세 칸까지 같이 본다."""
+    client = p2_client()
+    receipt = make_upload(client)
+    r = register(client, receipt, category="   ")
+    assert r.status_code == 400, r.text
+    assert "분류를 골라 주세요" in r.text
+
+
+def test_update_does_not_require_axes(p2_client) -> None:
+    """대조군 — **수정 경로는 required 가 아니다**(기존 전 행이 NULL · 미결-3 ⓐ)."""
+    client = p2_client()
+    receipt = make_upload(client)
+    made = register(client, receipt)
+    assert made.status_code == 201, made.text
+    r = client.patch(f"{API_PREFIX}/datasets/{made.json()['datasetId']}",
+                     json={"summary": "설명만 고친다"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+
+
+def test_create_rejects_period_end_before_start(p2_client) -> None:
+    """PRD-40 ㈒ — 시작보다 앞선 종료는 400 이다."""
+    client = p2_client()
+    receipt = make_upload(client)
+    r = register(client, receipt,
+                 period={"start": "2020-06-01T00:00:00Z", "end": "2020-05-01T00:00:00Z"})
+    assert r.status_code == 400, r.text
+    assert "종료는 시작보다 앞설 수 없다" in r.text
+
+
+def test_create_accepts_single_point_period(p2_client) -> None:
+    """대조군 — 시작＝끝(한 시점)은 성립한다. 화면이 비운 종료를 그렇게 조립해 보낸다."""
+    client = p2_client()
+    receipt = make_upload(client)
+    r = register(client, receipt,
+                 period={"start": "2020-06-01T00:00:00Z", "end": "2020-06-01T00:00:00Z"})
+    assert r.status_code == 201, r.text

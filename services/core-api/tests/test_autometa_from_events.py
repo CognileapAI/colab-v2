@@ -86,7 +86,9 @@ def _autometa(sql, dataset_id: str) -> dict:
 
 def _register(client, receipt, **extra):
     body = {"uploadId": receipt["uploadId"], "name": "자동 정보 반영 시험",
-            "summary": "시험용 설명 한 줄", **extra}
+            "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료", **extra}
     return client.post(f"{API_PREFIX}/datasets", json=body, headers=auth(TOKEN_RES))
 
 

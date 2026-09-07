@@ -126,7 +126,9 @@ def test_a_dataset_without_lineage_still_returns_itself(live_client, p2_client) 
         ("files", ("orphan.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = client.post(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES),
                     json={"uploadId": receipt["uploadId"], "name": "계보 없는 데이터",
-                          "summary": "시험용 설명 한 줄"})
+                          "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료"})
     assert r.status_code == 201, r.text
     orphan = r.json()["datasetId"]
 

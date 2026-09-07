@@ -646,6 +646,13 @@ EMPTY_SUMMARY_MESSAGE = "설명을 적어 주세요."
 #: rev1 상세 문면과 같은 문장).
 BLANK_SUMMARY_ON_UPDATE_MESSAGE = "설명이 아직 없어요 — 수정에서 채워 주세요."
 
+#: ⭑ **⟨20차 해제 · PRD-01·02 · WU-B3⟩ 분류·유형을 안 실었을 때의 문구.**
+#: 계약 `DatasetCreate.required` 에 `category`·`dataType` 이 올랐고, **런타임에 그것을
+#: 집행하는 것은 등록 경로뿐이다**(집행 없는 신설 금지 · X2 §5-㉰-4). 화면에는 기본
+#: 선택값이 서 있으므로 이 400 은 **계약을 안 지킨 호출자**에게만 간다.
+#: ⛔ `DatasetUpdate` 는 이 검사를 하지 않는다 — 기존 전 행이 NULL 이다(미결-3 ⓐ).
+MISSING_CATEGORY_MESSAGE = "분류를 골라 주세요"
+
 
 def is_blank_summary(value: object) -> bool:
     """공백만 있는 설명은 **없는 것과 같다.**
@@ -781,6 +788,18 @@ def validate_human_metadata(changes: dict) -> None:
             value = period.get(key)
             if isinstance(value, str) and not _is_datetime(value):
                 raise errors.bad_request(f"기간의 `{key}` 는 날짜·시각(ISO 8601)이다.")
+        # ⭑ **⟨WU-B3 · PRD-40 수용 기준 ㈒⟩ 시작보다 앞선 종료는 400 이다.**
+        # 화면은 종료를 비울 수 있게 됐고(비우면 `period_end = period_start`), 그래서 뒤집힌
+        # 기간이 들어올 자리는 **직접 적은 값**뿐이다. 안 막으면 그 행의 기간 표시가
+        # 「끝이 시작보다 앞」인 문장이 되고, 기간 조건 질의가 그 행을 영영 못 찾는다.
+        # ⚠ **문자열 비교를 하지 않는다** — 시간대 표기가 다르면 같은 시각이 다르게 정렬된다.
+        start_at, end_at = period.get("start"), period.get("end")
+        if isinstance(start_at, str) and isinstance(end_at, str):
+            start_dt = dt.datetime.fromisoformat(start_at)
+            end_dt = dt.datetime.fromisoformat(end_at)
+            # 한쪽만 시간대를 달았으면 견줄 수 없다 — 그 자리는 다투지 않고 지나간다.
+            if (start_dt.tzinfo is None) == (end_dt.tzinfo is None) and end_dt < start_dt:
+                raise errors.bad_request("기간의 종료는 시작보다 앞설 수 없다.")
 
     # ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 두 칸이 한 값이다.**
     #

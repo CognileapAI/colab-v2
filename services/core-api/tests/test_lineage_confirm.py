@@ -20,7 +20,9 @@ from colab_core.app.main import API_PREFIX
 def _new_dataset(client, name: str, **extra) -> str:
     receipt = make_upload(client, files=[
         ("files", (f"{name}.nc", HDF5_MAGIC, "application/octet-stream"))])
-    body = {"uploadId": receipt["uploadId"], "name": name, "summary": "시험용 설명 한 줄", **extra}
+    body = {"uploadId": receipt["uploadId"], "name": name, "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료", **extra}
     r = client.post(f"{API_PREFIX}/datasets", json=body, headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     return r.json()["datasetId"]

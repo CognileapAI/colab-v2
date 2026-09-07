@@ -66,7 +66,9 @@ def test_the_manual_add_records_manual(p2_client, sql) -> None:
         ("files", ("manual.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = client.post(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES),
                     json={"uploadId": receipt["uploadId"], "name": "수동 추가 대상",
-                          "summary": "시험용 설명 한 줄"})
+                          "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료"})
     assert r.status_code == 201, r.text
     child = r.json()["datasetId"]
 
@@ -96,6 +98,8 @@ def test_the_registration_rejects_the_old_korean_values(p2_client, old: str) -> 
         ("files", ("old.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = client.post(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES), json={
         "uploadId": receipt["uploadId"], "name": f"옛 값 {old}", "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료",
         "lineageParents": [{"parentDatasetId": DS_A1, "origin": old}]})
     assert r.status_code == 400, r.text
 
@@ -109,6 +113,8 @@ def test_the_registration_accepts_ai(p2_client, sql) -> None:
         ("files", ("ai.nc", HDF5_MAGIC, "application/octet-stream"))])
     r = client.post(f"{API_PREFIX}/datasets", headers=auth(TOKEN_RES), json={
         "uploadId": receipt["uploadId"], "name": "새 값 ai", "summary": "시험용 설명 한 줄",
+            # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
+            "category": "기상·기후 인자", "dataType": "재분석자료",
         "lineageParents": [{"parentDatasetId": DS_A1, "origin": "ai"}]})
     assert r.status_code == 201, r.text
     child = r.json()["datasetId"]

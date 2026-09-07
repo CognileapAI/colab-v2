@@ -34,7 +34,8 @@ from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
-                      validate_human_metadata, warn_if_level_mismatch)
+                      MISSING_CATEGORY_MESSAGE, validate_human_metadata,
+                      warn_if_level_mismatch)
 
 router = APIRouter()
 
@@ -510,6 +511,16 @@ def create_dataset(request: Request, body: dict = None,
     summary = body.get("summary")
     if is_blank_summary(summary):
         raise errors.bad_request(EMPTY_SUMMARY_MESSAGE)
+    # ⭑ **⟨20차 해제 · PRD-01·02 · WU-B3⟩ 분류·유형은 필수다.** 계약
+    # `DatasetCreate.required` 에 두 열쇠가 올랐고, **런타임 집행은 이 줄뿐이다**
+    # (집행 없는 신설 금지 · X2 §5-㉰-4). 값 집합 검사는 아래
+    # `validate_human_metadata` 가 종전대로 하고, 여기서는 **비었는가**만 본다.
+    # ⛔ `updateDataset` 은 이 검사를 하지 않는다 — 기존 전 행이 NULL 이라(미결-3 ⓐ)
+    #    이름 한 글자 고치는 데 분류를 강제하게 된다.
+    for axis in ("category", "dataType"):
+        value = body.get(axis)
+        if not isinstance(value, str) or not value.strip():
+            raise errors.bad_request(MISSING_CATEGORY_MESSAGE)
     source_label = body.get("sourceLabel")
     if source_label is not None and (not isinstance(source_label, str) or len(source_label) > 60):
         raise errors.bad_request("sourceLabel 은 60자 이하다.")

@@ -3455,7 +3455,15 @@ components:
         불가)이고, `grid` 는 업로드 폼이 읽는 값이 아니라 **격자 파일을 붙인 뒤 서버가 세는
         값**이라 층이 다르다 (`〈74〉`).
       type: object
-      required: [uploadId, name, summary]
+      # ⭑ **⟨20차 해제 · PRD-01·02 · WU-B3⟩ `category`·`dataType` 이 required 로 올라왔다.**
+      # 화면이 세 축에 **기본 선택값**을 세우면서(`기상·기후 인자`·`재분석자료`·`Lv2`)
+      # 「안 고른 채 등록」이 성립하지 않게 됐고, 그 사실을 계약이 먼저 말한다.
+      # 서버는 미입력을 400 「분류를 골라 주세요」로 되돌린다(집행 없는 신설 금지 · X2 §5-㉰-4).
+      # ⚠ `processingLevelUserSet` 은 required 가 아니다 — 계보 파생값과 어긋날 수 있는
+      #   **사람의 선택**이고, 비면 「안 골랐다」가 그대로 뜻이 된다(미결-2 ⓐ).
+      # ⚠ `DatasetUpdate` 는 optional 그대로다 — 기존 전 행이 NULL 이라(미결-3 ⓐ)
+      #   수정 경로가 required 를 걸면 이름 한 글자 고치는 데 분류를 강제하게 된다.
+      required: [uploadId, name, summary, category, dataType]
       additionalProperties: false
       properties:
         uploadId:
@@ -3480,8 +3488,12 @@ components:
             저장값은 **국문뿐**이다(미결-13 ⓐ). 화면이 `기상·기후 인자 (Meteorological &
             Climatic Factors)` 로 병기하고, DB·필터·색인은 앞의 국문만 안다.
             값 집합은 DB CHECK 가 지킨다 — 계약 층 enum 을 만들지 않는다(`〈55〉` 규약).
-            **선택 입력이다** — 열쇠가 없거나 `null` 이면 「아직 안 골랐다」이고
-            그것이 마이그레이션 뒤 기존 행의 상태다.
+
+            ⭑ **⟨WU-B3⟩ 이 열쇠는 `required` 다** — 화면에 기본 선택값이 서서 「안 고른 채
+            등록」이 성립하지 않는다. 형은 `[string, "null"]` 그대로이고(파괴 변경을 넓히지
+            않는다) **`null`·빈 문자열을 400 으로 되돌리는 것은 서버**다 —
+            문면 = `분류를 골라 주세요`. 기존 행이 NULL 인 사실은 `DatasetUpdate`
+            (여전히 optional)와 조회 응답이 그대로 안는다(미결-3 ⓐ).
           type: [string, "null"]
         dataType:
           description: |
