@@ -22,6 +22,11 @@ SWITCHES = ("업로드·편집", "프로젝트 생성", "승인 위임", "연구
 #: 화면 표기는 `연구실 구성원 전체`·`나만 보기`·`지정한 사람만` 이고 **저장값은 이 셋뿐**이다.
 ACCESS_STATES = ("열림", "잠김", "지정 공개")
 
+#: 공개 범위의 **넓이 순서**. 「내림」이 무엇인지 이 한 자리가 정한다 (WU-C7 · R-B 판정 19).
+#: `열림`(연구실 전체) ⊃ `지정 공개`(지정한 사람만) ⊃ `잠김`(나만 보기) — PRD-11 의 3값 정의
+#: 그대로다. ⛔ 값을 넓히는 회차는 **여기도 함께** 넓힌다.
+ACCESS_WIDTH = {"잠김": 0, "지정 공개": 1, "열림": 2}
+
 #: 허용 목록이 비어 있어야 하는 상태. 불변식 「`잠김` 이면 유효 grant 0건」의 주어다.
 LOCKED = "잠김"
 #: 허용 목록에 사람이 있는 상태. `잠김` 과 **같은 접근 판정 경로**를 탄다(grant 갈래).
@@ -332,6 +337,10 @@ _RAISE_LOCKED_TO_DESIGNATED = text("""
 """)
 
 #: 상태 한 칸 — 승인 응답이 실을 값이다. 행이 없으면 연구실 기본값으로 떨어진다(P-27).
+_LAB_DEFAULT = text("""
+    SELECT default_visibility FROM d1_lab_profile WHERE lab_id = current_lab_id()
+""")
+
 _EFFECTIVE_STATE = text("""
     SELECT COALESCE(a.state, p.default_visibility, '열림') AS state
       FROM d1_lab_profile p
@@ -434,6 +443,13 @@ def datasets_with_pending_request(session: Session, dataset_ids: list[Ulid]) -> 
         return set()
     rows = session.execute(_PENDING_ACCESS_FOR_VIEWER, {"ids": [str(i) for i in dataset_ids]})
     return {r.dataset_id.strip() for r in rows}
+
+
+def lab_default_visibility(session: Session) -> str:
+    """연구실 기본 공개 범위 한 칸. 프로필 행이 없으면 `열림` 이다 — `_EFFECTIVE_STATE` 의
+    `COALESCE(…, '열림')` 과 **같은 규칙**이고, 두 자리가 갈리면 「따로 정하지 않음」의 뜻이
+    경로마다 달라진다."""
+    return session.execute(_LAB_DEFAULT).scalar_one_or_none() or "열림"
 
 
 def effective_access_state(session: Session, dataset_id: Ulid) -> str:

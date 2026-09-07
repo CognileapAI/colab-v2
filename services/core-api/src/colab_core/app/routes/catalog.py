@@ -663,20 +663,17 @@ def _account_ref(account_id: str | None, name: str | None) -> dict | None:
 def _variables_payload(db, dataset_id, meta) -> list[dict]:
     """계약 `DatasetBasicInfo.variables` 를 조립한다 — **정본은 `d3_dataset_variable`** 이다.
 
-    행이 0개일 때만 `d3_dataset_autometa.variables`(파이프라인이 헤더에서 읽은 이름 배열)로
-    퇴행한다. 그 배열에는 단위·값 범위·결측률이 없으므로 셋은 `null` 이고 **첫 이름이 대표**다
-    — 이관 마이그레이션(`0016`)이 기존 행에 한 것과 같은 규칙이라 두 경로가 같은 그림을 낸다.
-    ⚠ 퇴행은 **읽기 투영**이다 — 쓰기 정본은 여전히 표 하나뿐이다.
+    ⭑ **⟨WU-C7 · R-B 판정 9⟩ 0행 읽기 퇴행을 걷었다.** 종전에는 행이 0개일 때
+    `d3_dataset_autometa.variables`(파이프라인이 헤더에서 읽은 이름 배열)로 퇴행했다 —
+    `0016` 이관 직후의 다리였고, `0019` 가 세운 미러 트리거가 그 배열을 **행 표의 사본**으로
+    바꾼 뒤로는 다리가 아니라 **되먹임**이다: 사람이 변수를 전부 지우면 트리거가 배열을
+    `{}` 로 만들고, 그 사이 어느 경로로든 배열이 남아 있으면 화면은 **지운 변수를 계속 본다.**
+    ⛔ 그래서 0행은 **빈 목록**이다. 사본을 정본처럼 읽는 자리를 남기지 않는다.
     """
     rows = d3_catalog.list_variables(db, dataset_id)
-    if rows:
-        return [{"name": v.name, "unit": v.unit, "valueRange": v.value_range,
-                 "missingRate": v.missing_rate, "representative": v.representative}
-                for v in rows]
-    names = [] if meta is None else list(meta.variables)
-    return [{"name": n, "unit": None, "valueRange": None, "missingRate": None,
-             "representative": i == 0}
-            for i, n in enumerate(names)]
+    return [{"name": v.name, "unit": v.unit, "valueRange": v.value_range,
+             "missingRate": v.missing_rate, "representative": v.representative}
+            for v in rows]
 
 
 def _observation_interval(core) -> dict | None:
@@ -974,6 +971,35 @@ def validate_access_state(changes: dict) -> None:
                                  {"allowed": list(d2_access.ACCESS_STATES)})
 
 
+#: R-B 판정 19 축자 「공개 범위 내림 = 소유자 한정」. 문면은 형제 403 들과 같은 어투다.
+NOT_OWNER_DOWNGRADE_MESSAGE = "공개 범위를 좁히는 것은 데이터셋 소유자만 할 수 있어요."
+
+
+def require_owner_for_downgrade(db, dataset_id, subject, changes: dict) -> None:
+    """**공개 범위를 좁히는 것만** 소유자로 한정한다 (R-B 판정 19 · PRD-11).
+
+    ⛔ `업로드·편집` 스위치 하나로 판정하던 자리였다(WU-B4). 그 스위치를 가진 사람은
+    연구실에 여럿이고, 「남이 올린 데이터를 남이 잠근다」가 그 규칙의 실제 결과였다 —
+    PRD 문면의 「소유자」보다 **넓다**는 것이 advisor 가 잡은 자리다.
+
+    ⚠ **좁히는 방향만** 이 관문을 탄다. 넓히는 방향(`잠김` → `열림`)과 같은 자리 유지는
+    종전대로 `업로드·편집` 스위치가 판정한다 — 다른 필드와 같은 규칙 하나를 쓰는 것이
+    `updateDataset` 의 규율이고, 이 회차가 여는 것은 **내림 한 방향**뿐이다.
+    ⚠ `null` 은 「따로 정하지 않음」이라 **연구실 기본값**이 뒤 상태다. 기본값이 좁으면
+    `null` 도 내림이다 — 값만 보고 판정하면 그 경로로 관문을 우회한다.
+    """
+    if "accessState" not in changes:
+        return
+    requested = changes["accessState"]
+    after = d2_access.lab_default_visibility(db) if requested is None else requested
+    before = d2_access.effective_access_state(db, dataset_id)
+    if d2_access.ACCESS_WIDTH.get(after, 2) >= d2_access.ACCESS_WIDTH.get(before, 2):
+        return                                   # 넓히거나 그대로 — 종전 규칙이 판정한다
+    core = d3_catalog.find_dataset_core(db, dataset_id)
+    if core is None or core.owner_id != str(subject.account_id):
+        raise errors.forbidden(NOT_OWNER_DOWNGRADE_MESSAGE)
+
+
 def validate_human_metadata(changes: dict) -> None:
     """`variables`·`crs`·`period` 의 **형상**을 본다 — **생성과 수정이 이 한 벌을 쓴다.**
 
@@ -1171,6 +1197,9 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
     # 세 자유 입력 칸의 형상 — **`createDataset` 과 같은 함수다** (`#62`).
     validate_human_metadata(changes)
     validate_access_state(changes)
+    # ⭑ ⟨WU-C7 · R-B 판정 19⟩ **내림은 소유자만**이다 — 값의 형상을 본 **뒤**,
+    #   쓰기 **전**이다. 순서를 뒤집으면 형상이 틀린 값으로 403 이 나간다.
+    require_owner_for_downgrade(db, dataset_id, subject, changes)
 
     # ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위는 D2 의 값이다.** D3 변경분에서 **떼어 낸 뒤**
     # `d2_access` 경로로 쓴다 — `d3_catalog.update_dataset` 에 넘기면 없는 열을 고치려 든다.

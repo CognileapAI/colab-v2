@@ -144,11 +144,26 @@ _DELETE_VARIABLES = text("DELETE FROM d3_dataset_variable WHERE dataset_id = :da
 # `lab_id` 를 인자로 받지 않고 **데이터셋 행에서 읽는다** — 경계를 두 번 적으면 갈리고,
 # RLS 가 이미 그 SELECT 를 자기 연구실로 좁힌다(다른 연구실 데이터셋이면 0행이라 INSERT 가
 # 한 줄도 안 난다).
-_INSERT_VARIABLE = text("""
+# ⭑ **⟨WU-C7 · 질의 36⟩ 행이 몇이든 INSERT 는 한 문장이다.** 종전에는 이 문장을 N 번
+# 보냈고, `0019` 의 미러 트리거가 `FOR EACH ROW` 라 미러 재집계와 생성 컬럼·GIN 재계산이
+# **N 번** 돌았다(마지막 한 번을 뺀 N-1 번은 곧바로 덮인다). `0022` 가 트리거를 문장 단위로
+# 내렸고, **쓰기 쪽이 한 문장이어야** 그 트리거도 한 번 뛴다 — 두 쪽이 짝이다.
+# ⚠ 배열을 `unnest` 로 푼다. 값이 아니라 **배열 하나씩**을 바인딩하므로 행 수가 늘어도
+#   바인딩 개수가 그대로다(질의 계획 캐시도 한 벌이다).
+_INSERT_VARIABLES = text("""
     INSERT INTO d3_dataset_variable
       (dataset_id, lab_id, ordinal, name, unit, value_range, missing_rate, is_representative)
-    SELECT d.id, d.lab_id, :ordinal, :name, :unit, :value_range, :missing_rate, :representative
-      FROM d3_dataset d WHERE d.id = :dataset_id
+    SELECT d.id, d.lab_id, v.ordinal, v.name, v.unit, v.value_range, v.missing_rate, v.representative
+      FROM d3_dataset d
+      CROSS JOIN unnest(
+             cast(:ordinals        AS integer[]),
+             cast(:names           AS text[]),
+             cast(:units           AS text[]),
+             cast(:value_ranges    AS text[]),
+             cast(:missing_rates   AS text[]),
+             cast(:representatives AS boolean[])
+           ) AS v(ordinal, name, unit, value_range, missing_rate, representative)
+     WHERE d.id = :dataset_id
 """)
 
 
@@ -295,14 +310,18 @@ def replace_variables(session: Session, dataset_id: Ulid, rows: list[dict]) -> N
     """
     session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)})
     session.execute(_DELETE_VARIABLES, {"dataset_id": str(dataset_id)})
+    if not rows:
+        return                                  # 지우기 한 문장으로 끝이다 — 빈 INSERT 를 보내지 않는다
     chosen = next((i for i, r in enumerate(rows) if r.get("representative")), 0)
-    for i, row in enumerate(rows):
-        session.execute(_INSERT_VARIABLE, {
-            "dataset_id": str(dataset_id), "ordinal": i + 1,
-            "name": str(row["name"]).strip(),
-            "unit": row.get("unit"), "value_range": row.get("valueRange"),
-            "missing_rate": row.get("missingRate"), "representative": i == chosen,
-        })
+    session.execute(_INSERT_VARIABLES, {
+        "dataset_id": str(dataset_id),
+        "ordinals": [i + 1 for i in range(len(rows))],
+        "names": [str(r["name"]).strip() for r in rows],
+        "units": [r.get("unit") for r in rows],
+        "value_ranges": [r.get("valueRange") for r in rows],
+        "missing_rates": [r.get("missingRate") for r in rows],
+        "representatives": [i == chosen for i in range(len(rows))],
+    })
 
 
 def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
