@@ -153,7 +153,7 @@ fi
 ALL_GATES=(
   planning-freshness contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
-  ai-no-lineage-write db-boundary migration-single-head schema-diff
+  ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
   frontend-typecheck frontend-test frontend-fixture-reach
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
@@ -165,7 +165,7 @@ ALL_GATES=(
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
-  exec-bit-selftest
+  exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   service-tests-selftest
 )
@@ -269,6 +269,19 @@ case "$GATE" in
     # alembic head 분기 검출 — db/platform · db/ai 두 체인 각각 (CLAUDE.md §3-3).
     # DB 접속 없이 down_revision 그래프를 직접 판정한다. 마이그레이션 0건은 red.
     exec python3 "$REPO_ROOT/gates/tools/migration_single_head.py"
+    ;;
+  migration-drift)
+    # `db/<체인>/tests/*-drift.sh` 오라클을 **실제로 돌린다** (WU-C6 · 질의 3·4·30).
+    # 종전에는 오라클 12벌이 레포에 있는데 어느 게이트에도 안 걸려 있었다 —
+    # 시험이 레포에 있는 것과 게이트가 그것을 판정하는 것은 다른 사실이다.
+    # 기대 건수의 정본 = gates/config/migration-drift.toml. 대상 0건·건수 미달은 red.
+    # alembic·docker 부재는 skip 이 아니라 red(준비 · 78).
+    exec "$REPO_ROOT/gates/tools/migration-drift.sh"
+    ;;
+  migration-drift-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다
+    # (대조군 green · 되돌린 델타 red · 대상 0건 red · alembic/docker 부재 red(준비) · 건수 미달 red).
+    exec "$REPO_ROOT/gates/tools/migration-drift-selftest.sh"
     ;;
   schema-diff)
     # 선언 스키마(db/<체인>/schema.sql) ↔ 적용 DB 드리프트.
