@@ -2982,13 +2982,13 @@ items:
 
   - id: WU-C9
     name: Lv 표시 사람 값 통일 ＋ AI 제안 부모 Lv ＋ ProjectDatasetRow 사람 값 (R-B §5-27·41·23·24 · 21차 ⑵⑸)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C10 done", "WU-C7 done"]
     depends_on: ["WU-C10", "WU-C7"]
     completion_def: "서버 조립 함수 하나(사람 값＋파생값 · processingLevel 의미 무변 · processingLevelUserSet 첨가)를 계보 노드·프로젝트 표가 쓰고 FE 4자리(카탈로그·상세·노드·프로젝트 표)가 같은 표시 규칙(사람 값 우선)을 쓴다 · ParentCandidateSuggestion.parentProcessingLevel 로 화면 충돌 판정 · processingLevel 회귀 0"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c9 44f049b(rebase 후 재해시) → integration/r-c ff · d3_catalog.level_pair · FE common/processingLevel.ts · 4자리(카탈로그·상세·계보 노드·프로젝트 표) 통일 시험 lv-display-unify-20260908.test.tsx(red Lv3/Lv3/Lv1/Lv1 → green Lv3×4) · 제안 parentProcessingLevel 충돌 안내 · frontend-test green · service-tests-core-api green 970(rebase 후 재실측) · ai 생산자 부재 [미상]"
     deadline: null
     note: "2026-09-08 등재 — R-B 판정 A 27·41(「Lv 표시 사람 값 통일 R-C(계약 21차)」)·23·24. 서버가 processingLevel 을 덮어 쓰면 ㉯ — 하지 않는다. 레인 rc-lv-unify"
     sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md"]
