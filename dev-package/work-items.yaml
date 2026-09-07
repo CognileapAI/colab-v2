@@ -2891,13 +2891,13 @@ items:
 
   - id: WU-C2
     name: 데이터셋 상세 좌우 배치 (R-C 축 ① · 좌 미리보기 sticky · 우 기본정보＋파일)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C1 done"]
     depends_on: ["WU-C1"]
     completion_def: "1200px 에서 2열(좌 미리보기 · 우 기본 정보＋파일) · 계보·활용은 아래 전폭 · 960px 미만 1열이고 미리보기가 먼저 · SectionMenu 앵커 3개 무변 · 업로드 모달 무접촉"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c2 1c06a35 → integration/r-c rebase·ff · .dt-split(좌 #sec-preview sticky · 우 기본정보＋파일 · 계보·활용 전폭 · <960px 한 열) · 토큰 4 신설 hex 0 · 앵커 3개 유지 · 시험 7건(전 6 red) · frontend-test green 1011 · typecheck·fixture-reach green · [미상] 좌우 폭 비율 1:1.15 정본 근거"
     deadline: null
     note: "2026-09-08 등재 — 축 ① 판정 Q5 ＋ R2 「좌 미리보기(sticky) · 우 기본정보＋파일 · 계보·활용은 아래 전폭」. 레인 rc-detail-split"
     sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md"]
