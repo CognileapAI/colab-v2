@@ -235,62 +235,87 @@ export function DatasetDetailPage(
               미결-9 ⓑ). **탭이 아니다** — 누른다고 다른 구역이 숨겨지지 않고, 정본
               `Policy_데이터셋_상세 §1.3-1` 을 개정하지 않는다. */}
           <SectionMenu />
-          {/* 잠기면 `basicInfo` 가 null 이라 기본 정보가 통째로 사라진다 —
-              카탈로그 행이 `조각 N` 을 계속 띄우는 것과 달라 보이는 것은 의도다
-              (`§7` · `PLAN-SoT §9-㊼-④`) */}
-          {shown.basicInfo ? (
-            <>
-              <BasicInfoGrid
-                basicInfo={shown.basicInfo}
+          {/* ⭑ ⟨WU-C2 · 축 ①-② 판정⟩ **상세를 좌우로 가른다** — grid 컨테이너 한 겹만 덧댄다.
+              좌 = 미리보기(sticky) · 우 = 기본 정보＋파일. 계보·활용은 이 컨테이너 **밖**
+              아래에서 전폭으로 남는다. 960px 미만은 한 열이고 DOM 차례 그대로
+              **미리보기가 먼저** 온다(`order:` 뒤집기를 쓰지 않는다).
+              구역 메뉴(`SectionMenu`)의 이름표·차례와 앵커 id 3개는 건드리지 않는다. */}
+          <div className="dt-split" data-testid="detail-split">
+            <div className="dt-split-l">
+            {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).
+                **보기는 전원**이라 권한 관문을 두지 않는다 (`§1.3-5`·`§6` 「전 구성원 — 시각화 보기」).
+                잠긴 데이터는 위 `LockedContent` 가 이미 본문째 막는다. */}
+            {/* 앵커는 **감싸는 자리**에 둔다 — 미리보기 구성요소(`components/datasetpreview/`)를
+                건드리지 않고 구역 메뉴가 가리킬 id 하나만 세운다 (WU-A8). */}
+            <div id="sec-preview" data-testid="detail-preview-anchor">
+              <DatasetPreviewSection
+                datasetId={datasetId}
+                source={props.previewSource}
+                datasetName={shown.name}
                 fileName={shown.fileName}
-                datasetId={datasetId}
-                filesSource={filesSource}
+                gridResolution={shown.basicInfo?.grid}
               />
-              <div className="dt-gridact" data-testid="detail-grid-actions">
-                {/* ⭑ **⟨WU-A3R · PRD-22 각주 2 ⑴⟩ 편집 중에는 다운로드가 숨고 이 자리에
-                    `취소`/`저장` 이 온다.** 편집을 끝내면 다운로드가 그대로 돌아온다 —
-                    받는 동작과 고치는 동작을 같은 자리에서 겹쳐 두지 않는다. */}
-                {edit.editing ? editActions : (
-                  /* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
-                     (`〈339〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */
-                  <ActionGate allowed={shown.actions.canDownload}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      data-testid="dt-download"
-                      onClick={downloadAll}
-                    >
-                      다운로드{/* [정본 무근거 · 〈339〉] — 카탈로그 빠른 작업의 같은 낱말 */}
-                    </button>
-                  </ActionGate>
-                )}
-                {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이
-                    없으면 그 데이터는 지도 위에 영영 못 선다 (`〈58〉-②`·`〈75〉`).
-                    이미 격자가 있으면 남은 축이 없을 수 있으나, **그 판정은 서버가 한다** —
-                    화면이 조건을 임의로 정하지 않는다 (`P-7`). 서버는 409 로 답하고
-                    모달이 그 문장을 그대로 보여 준다. */}
-                <GridAttachEntry
+            </div>
+            </div>
+            <div className="dt-split-r" data-testid="detail-split-right">
+            {/* 잠기면 `basicInfo` 가 null 이라 기본 정보가 통째로 사라진다 —
+                카탈로그 행이 `조각 N` 을 계속 띄우는 것과 달라 보이는 것은 의도다
+                (`§7` · `PLAN-SoT §9-㊼-④`) */}
+            {shown.basicInfo ? (
+              <>
+                <BasicInfoGrid
+                  basicInfo={shown.basicInfo}
+                  fileName={shown.fileName}
                   datasetId={datasetId}
-                  datasetName={shown.name}
-                  onAttached={() => setReloadToken((n) => n + 1)}
-                  sources={props.uploadSources}
+                  filesSource={filesSource}
                 />
-              </div>
-              {downloadError ? (
-                <p className="dt-files-error" role="alert" data-testid="dt-download-error">
-                  {downloadError}
-                </p>
-              ) : null}
-              {/* 파일 목록은 사람이 눌렀을 때 연다 (`§5`). 추가·교체·삭제 뒤에는 상세를 다시 읽어
-                  `파일` 칸의 조각 수·합계가 서버 값으로 돌아온다 */}
-              <FileList
-                datasetId={datasetId}
-                source={fileSource}
-                actions={shown.actions}
-                onChanged={() => setReloadToken((n) => n + 1)}
-              />
-            </>
-          ) : null}
+                <div className="dt-gridact" data-testid="detail-grid-actions">
+                  {/* ⭑ **⟨WU-A3R · PRD-22 각주 2 ⑴⟩ 편집 중에는 다운로드가 숨고 이 자리에
+                      `취소`/`저장` 이 온다.** 편집을 끝내면 다운로드가 그대로 돌아온다 —
+                      받는 동작과 고치는 동작을 같은 자리에서 겹쳐 두지 않는다. */}
+                  {edit.editing ? editActions : (
+                    /* 묶음 다운로드 — 조각 묶음이면 묶어서 한 번에 (`§2·§8`). 링크가 아니라 **티켓**이다
+                       (`〈339〉-(다)` — `<a href>` 에는 Bearer 가 실리지 않는다). 판정은 서버의 `canDownload` (P-7) */
+                    <ActionGate allowed={shown.actions.canDownload}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        data-testid="dt-download"
+                        onClick={downloadAll}
+                      >
+                        다운로드{/* [정본 무근거 · 〈339〉] — 카탈로그 빠른 작업의 같은 낱말 */}
+                      </button>
+                    </ActionGate>
+                  )}
+                  {/* **진입점 하나.** 격자 0건은 정상 상태이고(`P2.md §2-21`), 나중에 붙이는 길이
+                      없으면 그 데이터는 지도 위에 영영 못 선다 (`〈58〉-②`·`〈75〉`).
+                      이미 격자가 있으면 남은 축이 없을 수 있으나, **그 판정은 서버가 한다** —
+                      화면이 조건을 임의로 정하지 않는다 (`P-7`). 서버는 409 로 답하고
+                      모달이 그 문장을 그대로 보여 준다. */}
+                  <GridAttachEntry
+                    datasetId={datasetId}
+                    datasetName={shown.name}
+                    onAttached={() => setReloadToken((n) => n + 1)}
+                    sources={props.uploadSources}
+                  />
+                </div>
+                {downloadError ? (
+                  <p className="dt-files-error" role="alert" data-testid="dt-download-error">
+                    {downloadError}
+                  </p>
+                ) : null}
+                {/* 파일 목록은 사람이 눌렀을 때 연다 (`§5`). 추가·교체·삭제 뒤에는 상세를 다시 읽어
+                    `파일` 칸의 조각 수·합계가 서버 값으로 돌아온다 */}
+                <FileList
+                  datasetId={datasetId}
+                  source={fileSource}
+                  actions={shown.actions}
+                  onChanged={() => setReloadToken((n) => n + 1)}
+                />
+              </>
+            ) : null}
+            </div>
+          </div>
           {/* 계보 · 족보 (`§8` — 항상 표시). **못 읽은 것을 빈 계보로도, 남의 계보로도
               그리지 않는다** — 그림을 세우는 대신 못 읽었다는 사실과 다시 불러오기를 둔다
               (종전에는 픽스처 계보가 이 자리를 채웠다 · `CODE-REVIEW-20260903` 9). */}
@@ -317,20 +342,6 @@ export function DatasetDetailPage(
               testId="lineage-error"
             />
           ) : null}
-          {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).
-              **보기는 전원**이라 권한 관문을 두지 않는다 (`§1.3-5`·`§6` 「전 구성원 — 시각화 보기」).
-              잠긴 데이터는 위 `LockedContent` 가 이미 본문째 막는다. */}
-          {/* 앵커는 **감싸는 자리**에 둔다 — 미리보기 구성요소(`components/datasetpreview/`)를
-              건드리지 않고 구역 메뉴가 가리킬 id 하나만 세운다 (WU-A8). */}
-          <div id="sec-preview" data-testid="detail-preview-anchor">
-            <DatasetPreviewSection
-              datasetId={datasetId}
-              source={props.previewSource}
-              datasetName={shown.name}
-              fileName={shown.fileName}
-              gridResolution={shown.basicInfo?.grid}
-            />
-          </div>
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}

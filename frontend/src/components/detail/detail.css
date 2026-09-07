@@ -234,3 +234,42 @@
   font-size: var(--text-body-sm);
   line-height: 1.6;
 }
+
+/* ── WU-C2 · 상세 좌우 배치 (축 ①-② · Ted 판정 「좌 미리보기 sticky · 우 기본 정보＋파일」) ──
+   컨테이너는 **한 겹**이다. 계보·활용은 이 컨테이너 밖 아래에서 전폭으로 남고,
+   `.detail-page { max-width: 1200px }` 도 그대로다.
+   분기는 **둘뿐**이다 — ≥960px 두 열 · ≤959px 한 열(DOM 차례 그대로 미리보기 먼저).
+   왼쪽 열 폭은 4:3 틀(`--pv-frame-ratio`)이 결정한다 — 여기서 비율을 다시 쓰지 않는다. */
+.detail-page {
+  /* 구역 메뉴(`.dsec-menu` · sticky top:0)가 덮는 높이만큼 내려 붙인다 */
+  --dt-split-sticky-top: 56px;
+  --dt-split-gap: var(--space-6);
+  /* 오른쪽 열은 `.infogrid` 3열이 접히지 않을 만큼은 있어야 한다 */
+  --dt-split-right-min: 520px;
+  --dt-split-left-min: 380px;
+}
+@media (min-width: 960px) {
+  .detail-page .dt-split {
+    display: grid;
+    grid-template-columns:
+      minmax(var(--dt-split-left-min), 1fr)
+      minmax(var(--dt-split-right-min), 1.15fr);
+    gap: var(--dt-split-gap);
+    align-items: start;
+  }
+  .detail-page .dt-split-l {
+    position: sticky;
+    top: var(--dt-split-sticky-top);
+    min-width: 0;
+  }
+  .detail-page .dt-split-r { min-width: 0; }
+}
+@media (max-width: 959px) {
+  .detail-page .dt-split {
+    display: block;
+  }
+  .detail-page .dt-split-l {
+    position: static;
+    margin-bottom: var(--dt-split-gap);
+  }
+}
