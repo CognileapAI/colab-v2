@@ -102,7 +102,7 @@ CREATE TABLE d1_lab_profile (
   research_field          text,
   introduction            text,                       -- 한 줄 소개
   default_visibility      text        NOT NULL DEFAULT '열림'
-                          CHECK (default_visibility IN ('열림', '잠김')),
+                          CHECK (default_visibility IN ('열림', '잠김', '지정 공개')),
   created_at              timestamptz NOT NULL DEFAULT now(),
   updated_at              timestamptz NOT NULL DEFAULT now()
 );
@@ -171,7 +171,7 @@ CREATE TRIGGER d2_permission_change_append_only
 CREATE TABLE d2_dataset_access (
   dataset_id  ulid        PRIMARY KEY,
   lab_id      ulid        NOT NULL REFERENCES d1_lab(id),
-  state       text        CHECK (state IN ('열림', '잠김')),
+  state       text        CHECK (state IN ('열림', '잠김', '지정 공개')),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX d2_dataset_access_lab_idx ON d2_dataset_access (lab_id);
