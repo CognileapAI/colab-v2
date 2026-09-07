@@ -355,3 +355,29 @@
 .pv-pick-f > span {
   font-size: 12px;
 }
+
+/* ── 자립형 벡터 배경 (WU-C5 · 축 ①-⑤b) ────────────────────────────────────
+   층 묶음을 가득 채우고 **래스터 아래**에 선다(DOM 순서가 그 순서다). 색은 셸 토큰
+   (`shell/tokens.css`)의 회색 두 단을 그대로 쓴다 — 여기서 색을 새로 만들지 않는다.
+   `vector-effect` 로 선 굵기가 배율을 타지 않게 한다 — 확대하면 배경이 뭉개지던 자리다. */
+.pv-basemap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+}
+
+.pv-basemap-coast {
+  stroke: var(--color-gray-500, #697077);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.pv-basemap-border {
+  stroke: var(--color-gray-400, #848c94);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  vector-effect: non-scaling-stroke;
+}

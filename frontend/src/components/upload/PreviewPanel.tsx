@@ -19,6 +19,7 @@ import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 import { BoundsOutline, PreviewZoomControls } from '../preview/PreviewZoomControls';
+import { BasemapLayer } from '../preview/BasemapLayer';
 import { useZoomPan } from '../preview/useZoomPan';
 import { PreviewPickRow } from '../preview/PreviewPickRow';
 import {
@@ -508,6 +509,8 @@ export function PreviewPanel(props: {
                   transformOrigin: '0 0',
                 }}
               >
+                {/* ⭑ ⟨WU-C5⟩ 자립형 벡터 배경 — 래스터 아래 · 경계 있을 때만(외부 요청 0) */}
+                {mapBounds ? <BasemapLayer bounds={mapBounds} /> : null}
                 {zoom.showBoundsOutline ? <BoundsOutline /> : null}
                 <img
                   className="tile pv-tile"
@@ -615,6 +618,7 @@ export function PreviewPanel(props: {
                     transformOrigin: '0 0',
                   }}
                 >
+                  {mapBounds ? <BasemapLayer bounds={mapBounds} /> : null}
                   {expandZoom.showBoundsOutline ? <BoundsOutline /> : null}
                   <img
                     className="pvx-img pv-tile"

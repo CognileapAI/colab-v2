@@ -8,6 +8,8 @@ import { resultImageSrc, tileUrl } from './tiles';
 import { baseLevel, levelFor, visibleTiles } from './tileGrid';
 import { centeredPanFor, type ZoomPan } from './useZoomPan';
 import { BoundsOutline, PreviewZoomControls } from './PreviewZoomControls';
+import { BasemapLayer } from './BasemapLayer';
+import { lonAtFraction, latAtFraction } from './projection';
 
 /** 정본 §8.1 「휘발 고지」 — 두 문장과 등록 길이 **한 줄**에 있다. 남은 시간은 세지 않는다. */
 export function VolatileNotice(props: { onRegister: () => void }) {
@@ -177,7 +179,8 @@ export function pvLonOf(
   zoom: { scale: number; x: number },
 ): number | undefined {
   const fx = fractionOf(offsetX, boxWidth, zoom.x, zoom.scale);
-  return fx === undefined ? undefined : bounds.west + fx * (bounds.east - bounds.west);
+  // 변환 정본은 `projection.ts` 하나다 — 배경 벡터(WU-C5)가 같은 함수의 **역**을 쓴다.
+  return fx === undefined ? undefined : lonAtFraction(fx, bounds);
 }
 
 /** 커서 위도 역산 (`pvLatOf`). 화면 위쪽이 북쪽이라 비율을 뒤집어 뺀다. */
@@ -188,7 +191,7 @@ export function pvLatOf(
   zoom: { scale: number; y: number },
 ): number | undefined {
   const fy = fractionOf(offsetY, boxHeight, zoom.y, zoom.scale);
-  return fy === undefined ? undefined : bounds.north - fy * (bounds.north - bounds.south);
+  return fy === undefined ? undefined : latAtFraction(fy, bounds);
 }
 
 export function pointFromViewport(
@@ -323,6 +326,9 @@ export function PreviewMap(props: {
                 }
               : {})}
           >
+            {/* ⭑ ⟨WU-C5⟩ **자립형 벡터 배경은 래스터 아래**에 선다 — 데이터를 가리지 않는다.
+                경계가 없는 결과(②비지도형)에는 자리째 없다. 외부 요청 0(정적 import). */}
+            {result.bounds ? <BasemapLayer bounds={result.bounds} /> : null}
             {tiled && zoom && result.tileUrlTemplate && result.bounds ? (
               <TileMosaic template={result.tileUrlTemplate} bounds={result.bounds} zoom={zoom} />
             ) : null}
