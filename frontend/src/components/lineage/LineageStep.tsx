@@ -48,6 +48,22 @@ function scopeNotice(selfLv: number): string {
   return `지금 이 데이터는 Lv${selfLv} · ${range} 가공 전 데이터만 연결할 수 있어요.`;
 }
 
+/**
+ * ⭑ **⟨PRD-27 · WU-B8 · 미결-6 ⓐ⟩ 「기록 없음」 선언 체크박스의 라벨 — 축자다.**
+ * ／ 종전 문면(rev1 `#unknownChk` 의 한 줄)은 폐기됐다 — docx `J-20` 「무슨 말인지 잘 이해가
+ * 안될 것 같습니다」를 조성진이 두 번 적었다. ⛔ **그 문자열은 코드 어디에도 남기지 않는다** —
+ * 주석에도 적지 않는다(시험이 `src`·`test` 전체에서 0건을 센다).
+ */
+export const LINEAGE_UNKNOWN_LABEL = '가공 전 데이터를 못 찾았어요 — 기록 없이 등록할게요';
+
+/**
+ * 확정 부모가 1건 이상일 때 체크박스에 붙는 **사유 한 줄** (미결-6 ⓐ).
+ * ⛔ 숨기지 않고, 연결을 지우지도 않는다 — docx `D-6-1` 「가공 전 데이터가 있는데 저
+ * 체크박스가 나타나는게 이상하다」를 **비활성 ＋ 사유**로 해소한다.
+ */
+export const LINEAGE_UNKNOWN_DISABLED_REASON =
+  '가공 전 데이터를 이어 붙였어요. 연결을 지우면 다시 고를 수 있어요.';
+
 /** 초과 후보의 사유 축자 (PRD-08 rev1). */
 function overReason(selfLv: number): string {
   return `이 데이터(Lv${selfLv})보다 높은 단계예요. 연결을 지우거나 분류에서 가공 단계를 올려 주세요.`;
@@ -88,6 +104,15 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const setParents = ctx.onParentsChange;
   /** ① 에서 고른 자기 Lv. **기준값**이고, 안 골랐으면 `null` 이라 규칙이 서지 않는다. */
   const selfLv = levelOf(ctx.processingLevelUserSet);
+  /**
+   * ⭑ **⟨PRD-27 · WU-B8⟩ 「기록 없음」 체크박스의 두 성질.**
+   *  · **확정 부모 ≥1 → 비활성 ＋ 사유 한 줄.** 칸은 **사라지지 않고** 연결도 지우지 않는다.
+   *  · **자기 Lv 가 `Lv0` → 보이지 않는다.** 판정 ⑷ 가 이미 `원천` 으로 가르므로 물을 것이
+   *    없다 — 물으면 「원시 데이터인데 왜 못 찾았냐고 묻나」가 된다.
+   */
+  const confirmedParentCount = parents.filter((p) => p.confirmed).length;
+  const unknownDisabled = confirmedParentCount > 0;
+  const unknownVisible = selfLv !== 0;
 
   const [resp, setResp] = useState<LineageSuggestionResponse | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -635,6 +660,33 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       </div>
 
       {asked && addBlock}
+
+      {/* ⭑ **⟨PRD-27 · WU-B8 · 미결-6 ⓐ⟩ 「기록 없음」 선언.**
+          이 체크박스가 **「모른다고 선언했다」와 「아직 안 골랐다」를 가른다** — 종전에는
+          부모가 0건이면 서버가 자동으로 표시를 붙여 둘이 한 값으로 접혔다. 체크하지 않고
+          등록하면 계보 상태는 `확인 필요` 이고, 체크해야 `기록 없음` 이다.
+          ⛔ **Lv0 이면 칸 자체가 없다** — 판정 ⑷ 가 이미 `원천` 으로 가른다.
+          ⛔ **확정 부모가 있으면 비활성이되 사라지지 않는다** — 사유 한 줄이 왜인지 말한다. */}
+      {unknownVisible && (
+        <div className="lin-unknown" data-testid="lin-unknown">
+          <label htmlFor="lin-unknown-check">
+            <input
+              id="lin-unknown-check"
+              type="checkbox"
+              data-testid="lin-unknown-check"
+              checked={ctx.lineageUnknown && !unknownDisabled}
+              disabled={unknownDisabled}
+              onChange={(e) => ctx.onLineageUnknownChange(e.target.checked)}
+            />
+            {LINEAGE_UNKNOWN_LABEL}
+          </label>
+          {unknownDisabled && (
+            <p className="lin-unknown-why muted" data-testid="lin-unknown-why">
+              {LINEAGE_UNKNOWN_DISABLED_REASON}
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

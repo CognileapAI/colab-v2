@@ -180,6 +180,13 @@ export interface LineageStepContext {
    */
   parents: ParentCard[];
   onParentsChange: React.Dispatch<React.SetStateAction<ParentCard[]>>;
+  /**
+   * ⭑ **⟨WU-B8 · PRD-27⟩ 「가공 전 데이터를 못 찾았다」는 선언.** ③ 의 체크박스가 쥔다.
+   * 값이 모달에 있어야 ① 왕복 뒤에도 남는다 — 연결 카드와 같은 이유다.
+   * ⛔ 체크하지 않은 것은 `기록 없음` 이 아니라 **`확인 필요`** 다.
+   */
+  lineageUnknown: boolean;
+  onLineageUnknownChange(next: boolean): void;
 }
 
 export type LineageStepRender = (ctx: LineageStepContext) => React.ReactNode;

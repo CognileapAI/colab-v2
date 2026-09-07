@@ -230,3 +230,39 @@
   background: var(--lin-over-bg);
   color: var(--lin-over-ink);
 }
+
+/* ═══ WU-B8 · 「기록 없음」 선언 체크박스 (PRD-27 · 미결-6 ⓐ) ══════════════════
+   ⛔ **비활성일 때 칸을 숨기거나 지우지 않는다** — docx `D-6-1` 이 지적한 것은 「부모가
+   있는데 체크박스가 뜬다」이고, 해소는 **비활성 ＋ 사유**다(숨기면 왜 못 고르는지가 사라진다).
+   그래서 사유 문구는 `lin-over-why` 와 같은 규율로 **진한 색을 유지한다** — 흐려지는 것은
+   컨트롤이고 설명이 아니다. */
+.lin-unknown {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #e3e6ec);
+}
+
+.lin-unknown label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.lin-unknown input:disabled {
+  cursor: not-allowed;
+}
+
+.lin-unknown:has(input:disabled) label {
+  cursor: not-allowed;
+  color: var(--lin-over-ink, #5b6472);
+}
+
+.lin-unknown-why {
+  margin: 4px 0 0 24px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--lin-over-ink, #5b6472);
+}

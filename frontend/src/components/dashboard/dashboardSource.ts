@@ -8,6 +8,7 @@
 // (`Policy_홈_대시보드 §6`). 실패로 다루면 처리 권한이 없는 사람의 홈이 오류 화면이 된다.
 import { api } from '../../api/client';
 import { apiLabSource } from '../lab/labSource';
+import { UNSETTLED_LINEAGE_STATES } from './SummaryTiles';
 import { GroupHidden, type DashboardSource, type LineageTodo } from './types';
 
 type Envelope = { message?: string } | undefined;
@@ -16,8 +17,14 @@ function fail(body: Envelope, fallback: string): never {
   throw new Error(body?.message || fallback);
 }
 
-/** 계보 확인이 필요한 두 상태. `§4` 용어 정의 축자 — 「확인 필요 + 기록 없음」이다. */
-const UNSETTLED = ['확인 필요', '기록 없음'] as const;
+/**
+ * 계보 확인이 필요한 두 상태. `§4` 용어 정의 축자 — 「확인 필요 + 기록 없음」이다.
+ *
+ * ⭑ **⟨PRD-27 · WU-B8⟩ 값을 여기서 다시 적지 않는다** — 타일의 링크(`LINEAGE_TODO_PATH`)와
+ * 이 조회가 **같은 모수**여야 타일 숫자와 링크가 여는 목록의 건수가 같다. 두 곳에 적혀
+ * 있었을 때 실제로 갈렸다.
+ */
+const UNSETTLED = UNSETTLED_LINEAGE_STATES;
 
 export function apiDashboardSource(): DashboardSource {
   return {

@@ -203,6 +203,11 @@ export function UploadModal(props: {
    * 이 상태가 모달에 있어야 「① 에 다녀와도 연결이 남는다」가 성립한다.
    */
   const [lineageCards, setLineageCards] = useState<ParentCard[]>([]);
+  /**
+   * ⭑ **⟨WU-B8 · PRD-27⟩ 「가공 전 데이터를 못 찾았어요」 선언.**
+   * ③ 이 단계 이동마다 언마운트되므로 연결 카드와 같이 모달이 쥔다.
+   */
+  const [lineageUnknown, setLineageUnknown] = useState(false);
   const [gridSkipped, setGridSkipped] = useState(false);
   /** ③ 파일을 뺐다는 고지. 토스트가 스스로 사라질 때 함께 내린다. */
   const [removedNotice, setRemovedNotice] = useState(false);
@@ -457,6 +462,15 @@ export function UploadModal(props: {
     [],
   );
   const onLineageConflictChange = useCallback((count: number) => setLineageConflicts(count), []);
+  const onLineageUnknownChange = useCallback((next: boolean) => setLineageUnknown(next), []);
+  /**
+   * ⭑ **⟨WU-B8 · PRD-27⟩ 실제로 실리는 값 — 화면과 요청이 한 식을 쓴다.**
+   * 확정 부모가 1건이라도 있으면 **서버가 400** 이고(「모른다」와 「이것이 부모다」를 한
+   * 요청에 담을 수 없다), Lv0 이면 판정 ⑷ 가 이미 `원천` 이라 물을 것이 없다. 체크한 뒤
+   * ① 로 돌아가 Lv0 을 고르거나 부모를 붙인 경로에서 옛 `true` 가 그대로 실리는 것을 막는다.
+   */
+  const lineageUnknownEffective =
+    lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => setStep(1), []);
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
@@ -477,9 +491,12 @@ export function UploadModal(props: {
       onLineageConflictChange,
       parents: lineageCards,
       onParentsChange: setLineageCards,
+      lineageUnknown,
+      onLineageUnknownChange,
     }),
-    [uploadId, name, topic, level, lineageCards, onGoToClassify, onLineageProgress,
-     onLineageParentsChange, onLineageConflictChange],
+    [uploadId, name, topic, level, lineageCards, lineageUnknown, onGoToClassify,
+     onLineageProgress, onLineageParentsChange, onLineageConflictChange,
+     onLineageUnknownChange],
   );
 
   /**
@@ -812,6 +829,9 @@ export function UploadModal(props: {
         ...(accessState === null ? {} : { accessState }),
         // 사람이 항목마다 확인한 것만 온다. 일괄 승인 필드가 아니다
         lineageParents,
+        // ⭑ **⟨WU-B8 · PRD-27⟩ 선언했을 때만 싣는다** — 열쇠 없음과 `false` 는 같은 뜻이고,
+        //   그 상태의 계보 상태는 `기록 없음` 이 아니라 `확인 필요` 다.
+        ...(lineageUnknownEffective ? { lineageUnknown: true } : {}),
         projectIds: projects.map((p) => p.projectId),
         // **빈 칸은 싣지 않는다** — 폼 기본값이 지나간 것을 「사람이 적었다」로 저장하면
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
