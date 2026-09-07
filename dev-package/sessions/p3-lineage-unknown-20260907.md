@@ -1,7 +1,7 @@
 # WU-B8 · 계보 상태 판정식 6항 ＋ 「기록 없음」 체크박스 — 레인 `p3-lineage-unknown` (2026-09-07)
 
 - 라운드 R-B · 파일 `dev-package/prd/rounds/R-B-2-server.md` §2 WU-B8 · PRD-27 · 크기 M · **스키마 0 · 마이그레이션 0**.
-- 기준 HEAD = `5adf9b4`(`integration/r-b` · ff-only 확인). 브랜치 `lane/p3-lineage-unknown`.
+- 기준 HEAD = `5adf9b4`(`integration/r-b` · ff-only 확인) → **최종 커밋 전 `3427ec4` 로 리베이스**(형제 레인 WU-B7 이 먼저 병합). **충돌 0** — 겹치는 파일은 `d3_catalog.py` 하나이고 B7 은 `_APPLY_AUTOMETA`, 이 레인은 `lineage_state()` 로 자리가 갈렸다. 브랜치 `lane/p3-lineage-unknown`.
 - 계약 개방 근거 = 20차 · 등급 ㉯ · Ted 승인 **2026-09-07**(`dev-package/sessions/R-B-C20-REQUEST-20260907.md`). 승인이 `contracts/` 첫 수정보다 앞선다.
 - 선행 = WU-B1(사람 Lv `processing_level_user_set`) · WU-B3(등록 ③ 골격). 둘 다 통합 브랜치에 있다.
 
@@ -77,9 +77,23 @@ No breaking changes to report, but the specs are different.
 ```
 기준 `COLAB_BREAKING_BASE_REF=5adf9b4` · 대상 seam 3건. 여는 값 = `DatasetCreate.lineageUnknown` **1건**(optional boolean · 20차 범위 안).
 
-## 7. 게이트
+## 7. 게이트 — 리베이스된 트리에서 재실행
 
-(최종 커밋 뒤 재실행 · 기록본 `dev-package/reports/R-B/p3-lineage-unknown/gate-summary.<게이트>.record.json`)
+배출처 `dev-package/reports/R-B/p3-lineage-unknown` · 기록본 `gate-summary.<게이트>.record.json` **7개**.
+
+| 게이트 | 요약줄 |
+|---|---|
+| `contract-lint` | `contract-lint green — seam 3건, 룰 위반 0.` |
+| `contract-breaking` | `contract-breaking green — 기준 5adf9b4 (3건) 대비 파괴적 변경 없음.` |
+| `generated-up-to-date` | `generated-up-to-date green — 등기부 10건 전부 재생성 일치, 등기부 밖 자칭 생성물 0건.` |
+| `service-tests-core-api` | `service-tests-core-api green — 실행 929건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).` |
+| `ai-no-lineage-write` | `ai-no-lineage-write green` — 존치 6종 중 AI 계보 제안이 그대로임의 근거 |
+| `frontend-typecheck` | `frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.` |
+| `frontend-test` | `frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 966건 · 실패 0건.` |
+
+**계 = green 7 / red(판정) 0 / red(준비) 0.** ⛔ 전수 `all` 은 돌리지 않았다(병합 직전 1회 · 오케스트레이터 몫).
+
+⚠ **`frontend-typecheck` 가 한 번 red 였다** — 새 시험이 `__dirname`·`process` 를 타입 선언 없이 썼다(`error TS2304`·`TS2591` 2건). 「기존」이 아니라 **이 레인이 만든 결함**이고, **게이트가 잡았다**(Dockerfile 밖 · 배포 밖 아님). 형제 시험 `lv-rules-20260907` 과 같은 규율(`declare const process`)로 닫았다.
 
 ## 8. 자기 표시
 
