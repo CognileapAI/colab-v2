@@ -15,6 +15,18 @@ from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions
 #: 권한 스위치는 정확히 넷이고 다섯 번째를 만들지 않는다 (common.json#/$defs/PermissionSwitch).
 SWITCHES = ("업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정")
 
+#: ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 3값.** **정본은 DB CHECK 다**
+#: (`db/platform/schema.sql` `d2_dataset_access.state` ＋ `d1_lab_profile.default_visibility` —
+#: 두 표가 **같은 어휘 한 벌**을 쓴다). 여기 있는 것은 그 정본을 코드 층으로 옮겨 적은
+#: 사본이고, 검사를 안 하면 사용자의 오타가 IntegrityError → **500** 이 된다.
+#: 화면 표기는 `연구실 구성원 전체`·`나만 보기`·`지정한 사람만` 이고 **저장값은 이 셋뿐**이다.
+ACCESS_STATES = ("열림", "잠김", "지정 공개")
+
+#: 허용 목록이 비어 있어야 하는 상태. 불변식 「`잠김` 이면 유효 grant 0건」의 주어다.
+LOCKED = "잠김"
+#: 허용 목록에 사람이 있는 상태. `잠김` 과 **같은 접근 판정 경로**를 탄다(grant 갈래).
+DESIGNATED = "지정 공개"
+
 #: **저장된 행이 없을 때의 값** (P-4 · `common.json#/$defs/PermissionSwitchSet.default`).
 #: 앞의 둘은 켜짐, 위임 성격인 뒤의 둘은 꺼짐이다.
 #:
@@ -263,6 +275,56 @@ _INSERT_GRANT = text("""
     RETURNING approved_at, expires_at
 """)
 
+#: ⭑ **⟨WU-B4⟩ 공개 범위를 쓴다.** `d2_dataset_access` 는 데이터셋 1:1 이라 **upsert** 다 —
+#: 등록 시점에 행이 없고 수정 시점에는 있다. 두 경로가 같은 문장을 쓴다.
+_UPSERT_ACCESS_STATE = text("""
+    INSERT INTO d2_dataset_access (dataset_id, lab_id, state)
+    VALUES (:dataset_id, current_lab_id(), :state)
+    ON CONFLICT (dataset_id) DO UPDATE
+      SET state = EXCLUDED.state, updated_at = now()
+""")
+
+#: **NULL 로 되돌리는 것은 행을 지우는 것이 아니다** — 「따로 정하지 않음」을 명시적으로
+#: 저장한다. 행을 지우면 `updated_at` 이력이 사라지고 「한 번도 안 정했다」와 구별이 없어진다.
+_CLEAR_ACCESS_STATE = text("""
+    UPDATE d2_dataset_access SET state = NULL, updated_at = now()
+     WHERE dataset_id = :dataset_id
+""")
+
+#: 지금 볼 수 있는 사람 수 — 되묻는 문면의 `N명` 이다. **만료된 줄은 세지 않는다**(P-25).
+_ACTIVE_GRANT_COUNT = text("""
+    SELECT count(*) FROM d2_dataset_access_grant
+     WHERE dataset_id = :dataset_id AND expires_at > now()
+""")
+
+#: `잠김` 으로 내릴 때 유효 grant 를 **전부 만료**한다. ⛔ 지우지 않는다 —
+#: 허용 이력은 남기고 효력만 끊는다(`d2_dataset_access_grant` 는 승인 기록이기도 하다).
+#: 만료 시각을 `now()` 로 미는 것이 곧 「지금부터 못 본다」다 —
+#: `body_access` 정책의 조건이 `expires_at > now()` 하나라, 여기 한 문장이 접근을 끊는다.
+_EXPIRE_GRANTS = text("""
+    UPDATE d2_dataset_access_grant
+       SET expires_at = now()
+     WHERE dataset_id = :dataset_id AND expires_at > now()
+""")
+
+#: 승인이 상태를 함께 올린다 — **`잠김` 일 때만**이다. `지정 공개` 는 그대로고(전이표),
+#: `열림` 은 애초에 요청이 성립하지 않는다. 행이 없으면(NULL = 연구실 기본값) 건드리지
+#: 않는다 — 연구실 기본값이 `잠김` 인 경우는 아래 `raise_state_on_approval` 이 판정한다.
+_RAISE_LOCKED_TO_DESIGNATED = text("""
+    UPDATE d2_dataset_access
+       SET state = '지정 공개', updated_at = now()
+     WHERE dataset_id = :dataset_id AND state = '잠김'
+    RETURNING state
+""")
+
+#: 상태 한 칸 — 승인 응답이 실을 값이다. 행이 없으면 연구실 기본값으로 떨어진다(P-27).
+_EFFECTIVE_STATE = text("""
+    SELECT COALESCE(a.state, p.default_visibility, '열림') AS state
+      FROM d1_lab_profile p
+      LEFT JOIN d2_dataset_access a ON a.dataset_id = :dataset_id
+     WHERE p.lab_id = current_lab_id()
+""")
+
 _INSERT_VERIFICATION_REQUEST = text("""
     INSERT INTO d2_verification_request
       (id, lab_id, dataset_id, requester_account_id)
@@ -360,6 +422,41 @@ def datasets_with_pending_request(session: Session, dataset_ids: list[Ulid]) -> 
     return {r.dataset_id.strip() for r in rows}
 
 
+def effective_access_state(session: Session, dataset_id: Ulid) -> str:
+    """지금 걸려 있는 공개 범위 한 칸. 행이 없으면 연구실 기본값이다 (P-27)."""
+    return session.execute(_EFFECTIVE_STATE, {"dataset_id": str(dataset_id)}).scalar_one()
+
+
+def active_grant_count(session: Session, dataset_id: Ulid) -> int:
+    """지금 볼 수 있는 사람 수. 화면이 「지금 볼 수 있는 사람 N명의 접근이 끊깁니다」로 되묻는다."""
+    return int(session.execute(_ACTIVE_GRANT_COUNT, {"dataset_id": str(dataset_id)}).scalar_one())
+
+
+def set_access_state(session: Session, *, dataset_id: Ulid, state: str | None) -> int:
+    """공개 범위를 쓴다. **`잠김` 으로 내리면 같은 트랜잭션에서 유효 grant 를 전부 만료**한다.
+
+    돌려주는 값 = **끊긴 사람 수**다. 그것이 「`잠김` = 허용 목록이 비어 있다」를 지키는
+    유일한 자리이고(PRD-11 상태 전이표 마지막 줄), 불변식을 서버가 지킨다는 말의 실체다 —
+    DB CHECK 로는 못 건다(`d2_dataset_access` 와 `d2_dataset_access_grant` **두 표에 걸친**
+    조건이라 행 단위 CHECK 의 사정거리 밖이다).
+
+    ⚠ **만료를 먼저 하고 상태를 쓴다.** 순서를 뒤집으면 같은 트랜잭션 안이라도 「상태는
+    잠김인데 유효 grant 가 있다」는 중간 상태가 생기고, 그 사이에 도는 트리거·정책이
+    그 상태를 본다.
+    """
+    if state is not None and state not in ACCESS_STATES:
+        raise ValueError(state)
+    expired = 0
+    if state == LOCKED:
+        expired = session.execute(_EXPIRE_GRANTS, {"dataset_id": str(dataset_id)}).rowcount
+    if state is None:
+        session.execute(_CLEAR_ACCESS_STATE, {"dataset_id": str(dataset_id)})
+    else:
+        session.execute(_UPSERT_ACCESS_STATE,
+                        {"dataset_id": str(dataset_id), "state": state})
+    return int(expired)
+
+
 def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid,
                           approve: bool, rejection_reason: str | None):
     """검토 대기 → 승인됨/거절됨. **이미 처리된 줄이면 `None`** 을 돌려준다 (정본 §9).
@@ -379,9 +476,29 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
         "id": str(Ulid.generate()), "dataset_id": decided["dataset_id"],
         "grantee": decided["requester_account_id"], "approver": str(decider_id),
     }).mappings().one()
+    # ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 승인이 상태를 함께 올린다** — `잠김` → `지정 공개`.
+    #
+    # 종전 2값에서는 `잠김` 인 채로 허용 줄이 느는 것이 정상이었다. 3값에서는 `잠김` 의
+    # 뜻이 「허용 목록이 비어 있다」로 좁아져, 상태를 안 올리면 **「상태는 잠김인데 볼 수
+    # 있는 사람이 있다」**가 생긴다. 그것이 새 불변식의 위반이다.
+    # **같은 트랜잭션이다** — 허용 줄과 상태가 따로 서는 순간이 없다.
+    # ⚠ `지정 공개` 는 그대로 두고(`WHERE state = '잠김'`), `열림` 은 애초에 요청이
+    #   성립하지 않는다(전이표 첫 줄). 상태 행이 없으면(NULL = 연구실 기본값) 이 UPDATE 가
+    #   0행이고, 아래 `effective_access_state` 가 실제로 걸린 값을 되읽는다.
+    dataset_id = Ulid(decided["dataset_id"].strip())
+    session.execute(_RAISE_LOCKED_TO_DESIGNATED, {"dataset_id": str(dataset_id)})
+    state = effective_access_state(session, dataset_id)
+    if state == LOCKED:
+        # 상태 행이 없는데 **연구실 기본값이 `잠김`** 인 갈래다. 위 UPDATE 는 0행이고,
+        # 그대로 두면 「잠김 ∧ 유효 grant ≥1」이 그 자리에서 성립한다. 데이터셋 쪽에
+        # 값을 명시해 불변식을 지킨다 — 데이터셋 값이 기본값을 이긴다(P-27).
+        session.execute(_UPSERT_ACCESS_STATE,
+                        {"dataset_id": str(dataset_id), "state": DESIGNATED})
+        state = DESIGNATED
     return {
         "dataset_id": decided["dataset_id"], "grantee": decided["requester_account_id"],
         "approved_at": grant["approved_at"], "expires_at": grant["expires_at"],
+        "access_state": state,
     }
 
 

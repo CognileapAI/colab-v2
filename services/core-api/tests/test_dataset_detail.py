@@ -64,7 +64,8 @@ def test_the_response_has_exactly_the_contract_keys(client: TestClient) -> None:
     b = get(client, DS_A1, "a1-prof-token").json()
     assert set(b) == {
         "datasetId", "name", "fileName", "summary", "topic", "processingLevel",
-        "lineageState", "verification", "accessState", "bodyAccessible",
+        # ⭑ ⟨WU-B4 · PRD-11⟩ `activeGrantCount` = 지금 볼 수 있는 사람 수(되묻는 문면의 N명).
+        "lineageState", "verification", "accessState", "activeGrantCount", "bodyAccessible",
         "accessRequestPending", "uploadedAt", "lastModifiedAt", "lineageConfirmedAt",
         "basicInfo", "projects", "actions",
     }

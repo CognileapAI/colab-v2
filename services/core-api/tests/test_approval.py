@@ -107,7 +107,11 @@ def test_approval_writes_the_allow_list_row_and_opens_the_body(live_client, sql)
                                 headers=auth(TOKEN_PROF))
     assert approved.status_code == 200, approved.text
     grant = approved.json()
-    assert set(grant) == {"dataset", "grantee", "approver", "approvedAt", "expiresAt"}
+    # ⭑ ⟨WU-B4 · PRD-11⟩ 승인 응답이 **바뀐 상태**를 싣는다 — 승인이 `잠김` → `지정 공개` 로
+    # 같은 트랜잭션에서 상태를 올렸고, 화면이 그것을 되읽지 않는다.
+    assert set(grant) == {"dataset", "grantee", "approver", "approvedAt", "expiresAt",
+                          "accessState"}
+    assert grant["accessState"] == "지정 공개"
     assert grant["dataset"]["datasetId"] == DS_A2
     assert grant["grantee"]["accountId"] == ACC_A_RES
     assert grant["approver"]["accountId"] == ACC_A_PROF

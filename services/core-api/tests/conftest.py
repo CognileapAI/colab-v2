@@ -127,6 +127,10 @@ _CLEANUP: tuple[tuple[str, str, str], ...] = (
     # 허용 줄을 안 지우면 다음 회차에서 `DSA2` 가 이미 열린 채로 시작해 잠금 시험이 통째로
     # 거짓 green 이 된다(`test_body_access.py` 가 제일 먼저 무너진다).
     ("d2_dataset_access_request", "requested_at", ""),
+    # ⭑ **⟨WU-B4 · PRD-11⟩ 등록이 공개 범위를 쓰면서 이 표에 시험 행이 생긴다.**
+    # 안 지우면 `d3_dataset` DELETE 가 FK 로 막히는 것이 아니라(bare 컬럼이다) **행이
+    # 쌓여** cross-tenant 셈이 회차마다 는다. 시드 두 행은 아래 `_RESTORE` 가 되돌린다.
+    ("d2_dataset_access", "updated_at", _KEEP_DATASETS),
     ("d2_verification_request", "requested_at", ""),
     ("d2_dataset_access_grant", "approved_at", ""),
     ("d6_project_dataset", "created_at", ""),
@@ -189,6 +193,13 @@ _RESTORE: tuple[str, ...] = (
          ('0000000000000000000000DSA1', current_lab_id(), 2, '기온',   '℃',   '-30~40', NULL,   false),
          ('0000000000000000000000DSA1', current_lab_id(), 3, '유출량', 'm3/s', NULL,     NULL,   false),
          ('0000000000000000000000DSA2', current_lab_id(), 1, '강우량', 'mm',   NULL,     NULL,   true)""",
+    # ⭑ **⟨WU-B4 · PRD-11⟩ 공개 범위 시험이 시드 상태를 바꾼다**(잠김 → 지정 공개 → 잠김).
+    # 되돌리지 않으면 「DSA2 는 잠김」을 오라클로 삼는 시험 전부가 순서에 따라 갈린다
+    # (`test_body_access.py` 가 제일 먼저 무너진다). 값은 `tests/fixtures/seed.sql` 그대로다.
+    """INSERT INTO d2_dataset_access (dataset_id, lab_id, state) VALUES
+         ('0000000000000000000000DSA1', current_lab_id(), '열림'),
+         ('0000000000000000000000DSA2', current_lab_id(), '잠김')
+       ON CONFLICT (dataset_id) DO UPDATE SET state = EXCLUDED.state""",
     """UPDATE d3_dataset SET lineage_confirmed_at = NULL
         WHERE id = '0000000000000000000000DSA1'""",
     """UPDATE d3_dataset SET lineage_confirmed_at = '2026-02-03T00:00:00Z'

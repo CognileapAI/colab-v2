@@ -1993,6 +1993,12 @@ export interface components {
             approver: components["schemas"]["AccountRef"];
             approvedAt: components["schemas"]["Timestamp"];
             expiresAt: components["schemas"]["Timestamp"];
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 승인 뒤의 데이터셋 상태.** 승인은 허용 줄만
+             *     쓰는 것이 아니라 **같은 트랜잭션에서 `잠김` → `지정 공개`** 로 상태를 올린다
+             *     (상태 전이표). 그 값을 여기 실어 화면이 되읽지 않게 한다.
+             */
+            accessState: components["schemas"]["AccessState"];
         };
         VerificationRequest: {
             dataset: components["schemas"]["DatasetRef"];
@@ -2411,6 +2417,15 @@ export interface components {
              */
             observationInterval?: components["schemas"]["ObservationInterval"] | null;
             /**
+             * @description ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 업로드에서 받는다.**
+             *     값은 `AccessState` 3값(`열림`·`잠김`·`지정 공개`)이고 화면 표기는
+             *     `연구실 구성원 전체`·`나만 보기`·`지정한 사람만` 이다(미결-1 ⓐ · rev1 축자).
+             *     **`null` 은 「따로 정하지 않음」이고 연구실 기본값(`d1_lab_profile.default_visibility`)이
+             *     적용된다** — 현행 의미 그대로다. 열쇠를 생략한 것도 같은 뜻이라 상태 행을 만들지 않는다.
+             *     ⛔ 3값 밖 문자열은 **400** 이다(CHECK 위반을 500 으로 떨어뜨리지 않는다).
+             */
+            accessState?: string | null;
+            /**
              * @description 소속 프로젝트 복수 지정 (`Policy §5` 소속 프로젝트 — 0건 이상). 등록 폼이 한 번에
              *     제출하므로 등록 후 `linkProjectDataset` N 회 호출이 아니라 여기 실린다 —
              *     연결의 `usageNote` 는 여기 없다: 업로드 화면이 그 문장을 받는 자리가 정본에 없어
@@ -2494,6 +2509,15 @@ export interface components {
             crs?: string | null;
             /** @description 기간 — **자유 입력** (`VAL-006` · `〈138〉`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위를 고친다.** 값은 `AccessState` 3값이고
+             *     `null` 은 **비우라는 뜻**(연구실 기본값으로 되돌린다), 열쇠 생략은 **그대로 두라는
+             *     뜻**이다 — 이 op 의 다른 칸과 같은 규칙이다.
+             *     ⭑ **`잠김` 으로 내리면 같은 트랜잭션에서 유효 허용 줄이 전부 만료된다** —
+             *     그것이 「`잠김` = 허용 목록이 비어 있다」를 지키는 유일한 자리다(PRD-11 상태 전이표).
+             *     끊긴 사람 수는 응답 `DatasetDetail.activeGrantCount` 가 말한다(내린 뒤에는 0 이다).
+             */
+            accessState?: string | null;
             /**
              * @description ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격.** `null` 을 보내면 **비우라는 뜻**이고
              *     열쇠를 생략하면 **그대로 두라는 뜻**이다 — 이 op 의 다른 칸과 같은 규칙이다.
@@ -2778,6 +2802,13 @@ export interface components {
             lineageState: components["schemas"]["LineageState"];
             verification: components["schemas"]["VerificationRecord"];
             accessState: components["schemas"]["AccessState"];
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 지금 볼 수 있는 사람 수** — 만료되지 않은
+             *     허용 줄(`d2_dataset_access_grant`)의 수다. 소유자가 `나만 보기` 로 내릴 때
+             *     화면이 「지금 볼 수 있는 사람 N명의 접근이 끊깁니다」로 되묻는 그 N 이고,
+             *     내린 뒤에는 0 이다. ⛔ 사람 목록을 내리지 않는다 — 되묻는 문면에 필요한 것은 수다.
+             */
+            activeGrantCount: number;
             bodyAccessible: boolean;
             /**
              * @description 보는 사람이 이미 요청을 보냈는가. `검토 대기` 칩과 "결과가 정해지면 알려드려요"가
@@ -3112,11 +3143,11 @@ export interface components {
             [key: string]: boolean;
         };
         /**
-         * @description 데이터셋 접근 상태. 2값이고 새 데이터셋의 기본값은 `열림`. 근거: DataModel_공통_기반 §4.1(접근 상태) · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-24·P-32.
+         * @description 데이터셋 접근 상태. 2값이고 새 데이터셋의 기본값은 `열림`. 근거: DataModel_공통_기반 §4.1(접근 상태) · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-24·P-32. ⭑ 2026-09-07 개정(20차 해제 · 등급 ㉯ · PRD-11 · WU-B4) — **3값이다.** `열림`(화면 표기 `연구실 구성원 전체`) · `잠김`(`나만 보기` — 허용 목록이 비어 있다) · `지정 공개`(`지정한 사람만` — d2_dataset_access_grant 에 오른 사람만, 만료 = 승인일 + 6개월). 기준축은 **연구실 내부**이고 연구실 밖 열람 상태를 만들지 않는다 — RLS 경계는 그대로다(PRD-37 은 범위 밖). 불변식 「`잠김` 이면 허용 목록이 비어 있다」는 서버가 지킨다(두 표에 걸친 조건이라 행 단위 CHECK 의 사정거리 밖이다).
          * @default 열림
          * @enum {string}
          */
-        AccessState: "열림" | "잠김";
+        AccessState: "열림" | "잠김" | "지정 공개";
         /**
          * Format: date-time
          * @description UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다. 근거: DataModel_공통_기반 §4.1(레코드 시점).

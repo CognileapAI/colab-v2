@@ -34,8 +34,8 @@ from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
-                      MISSING_CATEGORY_MESSAGE, validate_human_metadata,
-                      warn_if_level_mismatch)
+                      MISSING_CATEGORY_MESSAGE, validate_access_state,
+                      validate_human_metadata, warn_if_level_mismatch)
 
 router = APIRouter()
 
@@ -386,7 +386,10 @@ def list_upload_lineage_suggestions(
 _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           "lineageParents", "projectIds",
                           "variables", "crs", "period", "observationInterval",
-                          "category", "dataType", "processingLevelUserSet"}
+                          "category", "dataType", "processingLevelUserSet",
+                          # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위. **D2 의 값이라
+                          #    `_HUMAN_METADATA_FIELDS`(D3 저장 경로)에는 넣지 않는다.**
+                          "accessState"}
 
 #: 등록 요청이 실어 오는 **사람이 적는 자유 입력 칸.** 저장은 `updateDataset` 이 쓰는
 #: 그 경로 하나를 그대로 쓴다 (`d3_catalog.update_dataset`).
@@ -527,6 +530,9 @@ def create_dataset(request: Request, body: dict = None,
     # 세 자유 입력 칸의 형상 — **수정 경로와 같은 함수다.** 두 벌을 두지 않는다 (`#62`).
     human_metadata = _human_metadata(body)
     validate_human_metadata(human_metadata)
+    # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위는 **D2 의 값**이라 `_human_metadata`(D3 저장
+    # 경로)에 섞지 않고 여기서 따로 잰다. 값 집합 밖은 **400**(IntegrityError 500 이 아니다).
+    validate_access_state(body)
     parents = _parse_parents(body.get("lineageParents"))
     project_ids = body.get("projectIds") or []
     if not isinstance(project_ids, list) or any(not Ulid.is_valid(p) for p in project_ids):
@@ -640,6 +646,14 @@ def create_dataset(request: Request, body: dict = None,
         d3_catalog.confirm_lineage(db, dataset_id)
     else:
         d4_lineage.mark_unknown(db, dataset_id=dataset_id, actor_id=subject.account_id)
+
+    # ③-b ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위를 `d2_dataset_access` 에 쓴다.**
+    #     **열쇠가 없으면 아무것도 안 쓴다** — NULL(＝행 없음)이 「따로 정하지 않음」이고
+    #     연구실 기본값이 적용된다(P-27). 여기서 기본값을 복사해 넣으면 그 뒤에 연구실
+    #     기본값을 바꿔도 이 데이터셋만 옛 값으로 굳는다.
+    #     ⚠ 값 검사는 **위에서 이미 했다**(`validate_access_state`) — 3값 밖은 400 이다.
+    if "accessState" in body and body["accessState"] is not None:
+        d2_access.set_access_state(db, dataset_id=dataset_id, state=body["accessState"])
 
     # ④ 프로젝트 — 등록 폼이 한 번에 제출한다.
     for project_id in project_ids:

@@ -564,7 +564,11 @@ def _project_period(start, end) -> dict:
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period",
                   "observationInterval",
-                  "category", "dataType", "processingLevelUserSet")
+                  "category", "dataType", "processingLevelUserSet",
+                  # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위. **D2 의 값이라
+                  #    `d3_catalog.update_dataset` 의 D3 열 목록에는 들어가지 않는다** —
+                  #    아래 `update_dataset` 이 D2 경로로 따로 쓴다.
+                  "accessState")
 
 #: 주제 어휘. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
 #: 계약이 「값 집합은 DB CHECK 가 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
@@ -718,6 +722,29 @@ def _validate_variables(variables: object) -> None:
         # 아무도 안 고른 경우는 400 이 아니다 — **첫 행이 대표**가 된다(자동 보정 ·
         # `d3_catalog.replace_variables`). 대표 없는 저장이 성립하지 않게 하는 자리다.
         raise errors.bad_request("대표 변수는 한 행만 고를 수 있다.")
+
+
+#: ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 거절 문면.** 값 집합의 정본은 DB CHECK 이고
+#: (`d2_dataset_access.state` ＋ `d1_lab_profile.default_visibility` 두 표), 코드 층 사본은
+#: `d2_access.ACCESS_STATES` 한 자리다 — 문면만 여기 둔다(봉투의 `allowed` 가 값을 말한다).
+INVALID_ACCESS_STATE_MESSAGE = "공개 범위는 열림 · 잠김 · 지정 공개 중 하나예요."
+
+
+def validate_access_state(changes: dict) -> None:
+    """공개 범위 한 칸의 형상. **등록과 수정이 같은 함수를 쓴다** (`variables` 와 같은 규율).
+
+    ⛔ 3값 밖 문자열을 그대로 흘리면 DB CHECK 위반이 IntegrityError → **500** 이 된다.
+    사용자의 오타는 400 이다 — `catalog.py` 의 `topic`·`category` 와 같은 자리다.
+    ⚠ `null` 은 값이 아니라 **「따로 정하지 않음」**이라 통과시킨다(연구실 기본값 경로).
+    """
+    if "accessState" not in changes:
+        return
+    value = changes["accessState"]
+    if value is None:
+        return
+    if not isinstance(value, str) or value not in d2_access.ACCESS_STATES:
+        raise errors.bad_request(INVALID_ACCESS_STATE_MESSAGE,
+                                 {"allowed": list(d2_access.ACCESS_STATES)})
 
 
 def validate_human_metadata(changes: dict) -> None:
@@ -901,6 +928,14 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
 
     # 세 자유 입력 칸의 형상 — **`createDataset` 과 같은 함수다** (`#62`).
     validate_human_metadata(changes)
+    validate_access_state(changes)
+
+    # ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위는 D2 의 값이다.** D3 변경분에서 **떼어 낸 뒤**
+    # `d2_access` 경로로 쓴다 — `d3_catalog.update_dataset` 에 넘기면 없는 열을 고치려 든다.
+    # `잠김` 으로 내리면 그 함수가 **같은 트랜잭션에서** 유효 grant 를 전부 만료한다.
+    if "accessState" in changes:
+        d2_access.set_access_state(db, dataset_id=dataset_id,
+                                   state=changes.pop("accessState"))
 
     if changes:
         d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes)
@@ -1065,6 +1100,10 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
                                   else verification.cancellation_reason,
         },
         "accessState": "열림" if access is None else access.access_state,
+        # ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 지금 볼 수 있는 사람 수.** 소유자가 `나만 보기` 로
+        # 내릴 때 화면이 「지금 볼 수 있는 사람 N명의 접근이 끊깁니다」로 되묻는 그 N 이다.
+        # ⛔ 사람 목록을 내리지 않는다 — 되묻는 문면에 필요한 것은 수다.
+        "activeGrantCount": d2_access.active_grant_count(db, dataset_id),
         "bodyAccessible": body_accessible,
         # 보는 사람이 이미 요청을 보냈는가 (`Policy_승인_처리 §7.2` 검토 대기).
         # ⭑ **`P6` 이 저장처를 세우면서 이 값이 참이 될 수 있게 됐다.** 종전 기재

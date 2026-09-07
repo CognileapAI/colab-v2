@@ -191,6 +191,9 @@ def approve_access_request(requestId: str, subject: Subject = Depends(current_su
         "approver": _account(db, str(subject.account_id)),
         "approvedAt": _iso(result["approved_at"]),
         "expiresAt": _iso(result["expires_at"]),
+        # ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 승인 뒤의 상태.** 승인이 `잠김` → `지정 공개` 로
+        # 상태를 **같은 트랜잭션에서** 올렸고, 그 값을 여기 실어 화면이 되읽지 않게 한다.
+        "accessState": result["access_state"],
     }
 
 
