@@ -46,6 +46,7 @@ import { useZoomPan } from '../preview/useZoomPan';
 import { ScreenshotButton } from './ScreenshotButton';
 import { ValueLookupPanel, useValueLookup } from './ValueLookupPanel';
 import '../preview/preview.css';
+import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
 import type { DatasetPreviewSource } from './types';
 
@@ -83,6 +84,8 @@ export function DatasetPreviewSection(props: {
     [props.source, props.datasetId],
   );
   const [start, setStart] = useState<StartState>({ phase: '시작하는 중' });
+  // WU-C1 — 틀 안쪽 상태(렌더가 시작된 뒤). **바깥 상자는 이 값과 무관하게 같다.**
+  const [startedSlot, setStartedSlot] = useState<PreviewSlotState>('drawing');
   // 렌더가 완료된 뒤 사이드카가 알려주는 원본 배열 크기. 그때까지 · 못 읽으면 `undefined` —
   // 확대 한계(`useZoomPan`)가 이미 같은 사이드카를 쓰는 것과 같은 규칙이다(조건 ⑷).
   const [nativeSize, setNativeSize] = useState<{ width: number; height: number } | undefined>(
@@ -148,6 +151,14 @@ export function DatasetPreviewSection(props: {
     [source, props.datasetId],
   );
 
+  // 틀 안쪽 상태. **시작 단계는 여기서 정하고**, `시작함` 뒤로는 렌더가 알려 준다.
+  const slotState: PreviewSlotState =
+    start.phase === '시작하는 중'
+      ? 'drawing'
+      : start.phase === '시작함'
+        ? startedSlot
+        : 'failed';
+
   return (
     <section className="dt-preview" data-testid="dataset-preview" aria-label="미리보기">
       <h2 className="pv-h2">
@@ -164,6 +175,9 @@ export function DatasetPreviewSection(props: {
         </p>
       ) : null}
 
+      {/* ⬛ 자리 선점 틀 — **상세를 여는 즉시 선다**(`시작하는 중` 포함 · 축 ① · 4:3).
+          안쪽만 갈리고 바깥 치수는 네 상태에서 바뀌지 않는다 (WU-C1). */}
+      <PreviewSlot state={slotState} testId="dt-preview-slot">
       {start.phase === '시작하는 중' ? <RenderStageNotice /> : null}
 
       {start.phase === '그릴 수 없음' ? (
@@ -185,8 +199,10 @@ export function DatasetPreviewSection(props: {
           renderId={start.renderId}
           pollMs={props.pollMs ?? 1000}
           onNativeSize={setNativeSize}
+          onSlotState={setStartedSlot}
         />
       ) : null}
+      </PreviewSlot>
     </section>
   );
 }
@@ -216,6 +232,17 @@ function UnavailableNotice(props: { message: string }) {
   );
 }
 
+/**
+ * 렌더 단계 → 틀 안쪽 상태 (WU-C1). **바깥 상자는 넷 어디서도 같은 치수다.**
+ * `그리는 중` 만 진행이고, 그리지 못한 넷(`실패`·`그릴 수 없음`·`만들 수 없음`·`만료됨`)은
+ * 전부 `failed` 다 — 문면은 각자의 정본 문구를 그대로 쓴다(신설 0).
+ */
+function slotStateOfRender(phase: string): PreviewSlotState {
+  if (phase === '그리는 중') return 'drawing';
+  if (phase === '완료') return 'done';
+  return 'failed';
+}
+
 function StartedPreview(props: {
   source: PreviewSource;
   datasetSource: DatasetPreviewSource;
@@ -223,12 +250,19 @@ function StartedPreview(props: {
   pollMs: number;
   /** ⭑ ⟨버그 13⟩ 사이드카가 읽어 준 원본 배열 크기를 머리 캡션(부모)에 올려 준다. */
   onNativeSize?: ((size: { width: number; height: number }) => void) | undefined;
+  /** WU-C1 — 안쪽 상태를 틀(부모)에게 알린다. **틀의 치수는 이 값과 무관하다.** */
+  onSlotState?: ((slot: PreviewSlotState) => void) | undefined;
 }) {
   const { state } = usePreviewRender({
     source: props.source,
     renderId: props.renderId,
     pollMs: props.pollMs,
   });
+  const slot = slotStateOfRender(state.phase);
+  const { onSlotState } = props;
+  useEffect(() => {
+    onSlotState?.(slot);
+  }, [onSlotState, slot]);
   // **훅은 조건 밖에서 부른다** — 렌더가 어느 단계든 같은 순서로 불려야 한다.
   const zoom = useZoomPan();
   // 값 조회 (`〈294〉`). **렌더를 다시 시작하지 않는다**(완료 정의 ⑵).

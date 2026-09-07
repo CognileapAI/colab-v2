@@ -17,6 +17,7 @@ import type { PaletteOption, PreviewSource, RenderJob, RenderResult } from './ty
 import { GridUploadBlock, type GridActions } from './GridUploadBlock';
 import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
+import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 
 /** 정본 §9 「그리는 서버에 연결 못 함」. 코드가 없을 때 쓰는 기본 문구. */
 const UNAVAILABLE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
@@ -214,6 +215,18 @@ export function PreviewPanel(props: {
   const gridBlock = gs && !(accepted && gs.name === '위치 확인') ? gs : null;
 
   /**
+   * 자리 선점 틀의 **안쪽** 상태 (WU-C1). 바깥 상자는 이 값과 무관하게 같은 치수다 —
+   * 파일을 고른 장면2 진입 즉시 서고, 그리는 중에도 실패해도 접히지 않는다.
+   */
+  const slotState: PreviewSlotState = drawing
+    ? 'drawing'
+    : failure || error
+      ? 'failed'
+      : result
+        ? 'done'
+        : 'idle';
+
+  /**
    * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
    * 사람이 고른 그림이 있으면 그것, 없으면 **자동 생성된 미리보기 축소본**이 기본이다.
    * `pickedThumb` 는 `URL.createObjectURL` 로 만든 **이 화면만의 주소**다 — 서버로 가지 않는다.
@@ -347,6 +360,9 @@ export function PreviewPanel(props: {
         </div>
       )}
 
+      {/* ⬛ 자리 선점 틀 — **파일을 고른 순간 이미 서 있다**(축 ① · 4:3 · 네 상태 치수 불변).
+          안쪽만 idle(`.vizph`) → drawing(3단계) → done(그림) | failed(`.vizerr` · salvage)로 갈린다. */}
+      <PreviewSlot state={slotState} testId="up-preview-slot">
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">
@@ -441,6 +457,14 @@ export function PreviewPanel(props: {
         </div>
       ) : null}
 
+      {!job && !error && (
+        <div className="vizph">
+          <div className="pt">아직 그리지 않았어요</div>
+          <div className="pd">위에서 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
+        </div>
+      )}
+      </PreviewSlot>
+
       {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다 */}
       {grid && gridBlock ? (
         <GridUploadBlock
@@ -458,13 +482,6 @@ export function PreviewPanel(props: {
           }}
         />
       ) : null}
-
-      {!job && !error && (
-        <div className="vizph">
-          <div className="pt">아직 그리지 않았어요</div>
-          <div className="pd">위에서 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
-        </div>
-      )}
 
       {/* ㈎ 확장보기 오버레이 — 배경 클릭·× 가 **같은 한 함수**를 탄다(A9R 규율).
           ⚠ 업로드 모달의 `requestClose` 를 부르지 않는다 — Esc 우선순위가 「확장보기 →

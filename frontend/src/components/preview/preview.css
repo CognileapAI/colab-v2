@@ -274,3 +274,54 @@
   color: #6b7280;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── 자리 선점 틀 (WU-C1 · 축 ①) ────────────────────────────────────────────
+   비율은 **여기 한 자리**에만 산다 — WU-C4(축척 사다리)·WU-C5(배경 SVG)가 같은 토큰을
+   다시 쓴다. 값을 두 곳에 두면 두 화면의 상자가 갈린다. */
+:root {
+  --pv-frame-ratio: 4 / 3;
+}
+
+/* 바깥 상자 — idle·drawing·done·failed 네 상태에서 **치수가 바뀌지 않는다**.
+   상태에 따라 높이가 늘면 그리기 완료 순간 레이아웃이 튄다(측정 원문의 그 결함). */
+.pv-frame {
+  width: 100%;
+  aspect-ratio: var(--pv-frame-ratio);
+  border: 1px solid var(--line, #e2e2e2);
+  border-radius: 8px;
+  background: var(--surface-2, #f5f5f4);
+  overflow: hidden;
+  display: flex;
+}
+
+/* 안쪽만 바뀐다. 내용이 넘치면 **상자가 커지는 대신 안에서 스크롤한다**. */
+.pv-frame-in {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  overflow: auto;
+}
+
+/* 그림은 **찌그러뜨리지 않는다** — 상자 안에 맞춰 넣는다. */
+.pv-frame img,
+.pv-frame .tile,
+.pv-frame .thumb,
+.pv-frame .pv-tile {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 확대/이동 자리도 같은 틀 안에서 비율을 지킨다(`useZoomPan` 동작 무변). */
+.pv-frame .pv-viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}

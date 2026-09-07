@@ -78,6 +78,14 @@
 .up-split-preview, .up-split-form { display: flex; flex-direction: column; gap: 16px; }
 @media (max-width: 1023px) { .up-split { grid-template-columns: 1fr; } }
 
+.mapstage {
+  /* 틀(`preview.css` 의 `.pv-frame`)이 그림 자리를 쥐고, 이 컨테이너는 줄 간격만 쥔다.
+     자식마다 `margin-top` 을 두면 틀과 여백이 두 벌이 된다 (WU-C1). */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .up-card, .mapstage, .reggate, .regarea {
   border: 1px solid var(--up-line);
   border-radius: var(--up-radius);
@@ -165,9 +173,8 @@
 }
 .vizpartial { margin-top: 8px; color: var(--up-muted); font-size: 13px; }
 .vizpartial .names { display: block; }
-.mapcanvas { margin-top: 12px; }
 .mapcanvas .tile { max-width: 100%; display: block; }
-.vizph { margin-top: 12px; color: var(--up-muted); }
+.vizph { color: var(--up-muted); }
 
 .reggate { display: flex; align-items: center; gap: 16px; }
 .reggate .rg-t { font-weight: 600; }
