@@ -2943,13 +2943,13 @@ items:
 
   - id: WU-C6
     name: 게이트 승격 3종 — migration-drift 오라클 · alembic upgrade head 준비 단계 · alembic requirements (R-B §5-3·4·17·30)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["Ted intent 2건 커밋(승인)"]
     depends_on: []
     completion_def: "게이트 migration-drift ＋ selftest 짝이 db/platform/tests/*-drift.sh 11벌 전부를 돌고 건수를 출력한다 · 1벌 부재·대상 0건 red · alembic 부재 red(준비) · schema-diff 가 alembic upgrade head 뒤에만 비교 · alembic 이 requirements 에 핀 버전으로 있다"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · integration/r-c 5cf9c9e·e1388a9·c416e59 · migration-drift green — 오라클 12 · 실행 12 · 실패 0(platform 11 ＋ ai 1) · migration-drift-selftest green 케이스 7종 · schema-diff green(alembic upgrade head 뒤 비교) · migration-single-head green · exec-bit green · work-item-consistency green · alembic 1.19.1 핀(services/core-api/requirements-dev · gates/requirements)"
     deadline: null
     note: "2026-09-08 등재 — R-B §6 게이트 승격 3종 묶음(§6 「7벌」은 낡은 수 · 실측 11). 레인 rc-gate-drift"
     sources: ["dev-package/sessions/R-B-ROUND-20260908.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-1-contract-db.md"]
