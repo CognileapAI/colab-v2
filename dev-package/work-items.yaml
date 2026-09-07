@@ -3021,13 +3021,13 @@ items:
 
   - id: WU-C12
     name: R-C 종료 검증 — 디자인 재실측 ＋ 전수 게이트 ＋ intent 대조 ＋ 병합·등재 〈N〉 3행
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C1~C11 전건 done"]
     depends_on: ["WU-C1", "WU-C2", "WU-C3", "WU-C4", "WU-C5", "WU-C6", "WU-C7", "WU-C8", "WU-C9", "WU-C10", "WU-C11"]
     completion_def: "재실측 16항 판정값([미상] 0) · all -j 1 한 번의 실행 green/red(판정) 0/red(준비) 0 · intent 원한 결과 미달·초과 열거 · 축 ② 19건 소유 대조표 · 경계 3·회귀 4·절차 5 · integration/r-c → main ff 한 줄 · PLAN-SoT §9 3행(R-C 집행 · POL-021 부분 반전 · 21차) 병합 직전 실측 번호 · planning-freshness green"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · integration/r-c · all -j 1 green 54 / red(판정) 0 / red(준비) 0 (트리 9aebd67 · reports/R-C/all/all-j1.log) · R-C-VERIFY 미달 3 · 초과 2 · 존치 7 · 등재 〈375〉〈376〉〈377〉"
     deadline: null
     note: "2026-09-08 등재 — 결함을 이 레인에서 고치지 않는다(R-D 등재). 배포 창 인계 4건 명시. 레인 rc-verify"
     sources: ["dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-3-verify.md", "dev-package/intent/2026-09-08-r-c.md", "dev-package/intent/2026-09-08-preview-slot.md"]
