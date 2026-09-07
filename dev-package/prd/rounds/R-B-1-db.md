@@ -153,7 +153,7 @@
 ### ㉰ 계약 동결 해제 — **20차 · 등급 ㉯ · Ted 승인 필수**
 
 근거 문서 = `dev-package/sessions/X2-FREEZE-PROTOCOL.md` §5. 직전 회차 = **19차(R-A)**. 이 라운드가 여는 것은 **20차**다.
-승인 요청 패키지 = `dev-package/sessions/R-B-C20-REQUEST-20260907.md` — **Ted 미승인**. ⚠ 실측 — 이 트리에 해당 파일 **부재**(`ls dev-package/sessions/ | grep C20` → 0건).
+승인 요청 패키지 = `dev-package/sessions/R-B-C20-REQUEST-20260907.md` — **Ted 승인 2026-09-07**(원문 축자 「동결해제, 메인 원격 해라 고고」 · 조건 없음 · `M-10` 은 가정 ⓐ 명시). ⟹ `contracts/` 개방 가능. 〈N〉·〈N+1〉 은 병합 시 등재.
 **이 파일이 여는 값** — `category`·`dataType`·`processingLevelUserSet`(B1) · `variables` 문자열 배열 → **객체 배열**(B2) · `AccessState` **2값 → 3값**(B4) · `sourceUrl`·`sourceDownloadedOn`(B6).
 ㉯ 인 사유 = 파괴적 변경 ＋ 마이그레이션 ≥1(M-1·M-2·M-3·M-5·M-4·M-8) ＋ 소비자 다수 ＋ 설계 판단 다수(기각한 대안이 있다 — PRD-16 ⓑ).
 
