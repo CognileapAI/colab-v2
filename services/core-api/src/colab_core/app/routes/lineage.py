@@ -23,6 +23,7 @@ from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ..deps import current_subject, scoped_db
+from .catalog import enforce_parent_level_rule
 
 router = APIRouter()
 
@@ -189,6 +190,13 @@ def add_lineage_parent(datasetId: str, body: dict = Body(...),
     if not d3_catalog.dataset_exists(db, parent_id):
         # 경계 밖이면 RLS 가 이미 행을 지웠다 — 404 로 답한다(존재를 누설하지 않는다).
         raise errors.not_found()
+    # ⭑ **⟨20차 해제 · PRD-07 · WU-B5⟩ `부모 Lv ≤ 자기 Lv`.** 등록만 막으면 뒷문이 열려
+    #    있다 — 상세 화면의 수동 추가가 이 경로다. 기준은 **이 데이터셋이 저장하고 있는
+    #    사람 Lv** 이고, 그것이 NULL 이면 기준값이 없어 검사하지 않는다(기존 엣지).
+    child_core = d3_catalog.find_dataset_core(db, dataset_id)
+    enforce_parent_level_rule(
+        db, self_level=None if child_core is None else d3_catalog.user_set_level(child_core),
+        parent_ids=[parent_id])
 
     try:
         d4_lineage.add_parent(db, child_id=dataset_id, parent_id=parent_id, parent_role=role,
@@ -229,6 +237,16 @@ def confirm_lineage(datasetId: str,
         raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
     dataset_id = Ulid(datasetId)
     _require_edit(db, subject)
+    # ⭑ **⟨20차 해제 · PRD-07·09 · WU-B5⟩ 사후 충돌의 최종 방어선.**
+    #    연결한 뒤 자기 Lv 를 내리면 **연결은 그대로 남고**(사람이 한 것을 시스템이 되돌리지
+    #    않는다) 이 확정만 400 이 된다. 되돌리면 같은 호출이 다시 200 이다 — 상태이지 도장이 아니다.
+    #    ⚠ 도장을 찍기 **전에** 잰다 — 찍고 나서 400 을 내면 확정일만 갱신된 반쪽이 남는다.
+    core = d3_catalog.find_dataset_core(db, dataset_id)
+    if core is not None:
+        parent_ids = [e["parent_dataset_id"] for e in d4_lineage.edges_of(db, dataset_id)
+                      if e["child_dataset_id"] == datasetId]
+        enforce_parent_level_rule(db, self_level=d3_catalog.user_set_level(core),
+                                  parent_ids=parent_ids)
     if not d3_catalog.confirm_lineage(db, dataset_id):
         raise errors.not_found()
     # **계보 고침이 최근 활동을 만든다** (계약 `listActivities` 산문 · WU-P7).

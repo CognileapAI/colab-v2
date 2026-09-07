@@ -98,7 +98,11 @@ def _compose(db: Session) -> list[dict]:
             # 계약의 `minimum: 1` 과 어긋나는 유일한 경우이며 sessions/P0-core-api.md §5 에 적었다.
             "fileCount": core.file_count,
             "topic": core.topic,
-            "processingLevel": d3_catalog.processing_level(summary),
+            # ⭑ **⟨20차 해제 · PRD-10 · WU-B5⟩ 세 값이 한 벌로 나간다.** 표시용
+            # `processingLevel` 은 **사람 값 우선**이고, 파생값과 불일치 플래그가 옆에 선다.
+            # ⚠ 필터·정렬이 읽는 것도 이 `processingLevel` 이다 — 「이 데이터가 무엇이라고
+            #   **선언**됐는가」를 찾는 자리이고, 파생값은 선언이 아니라 경고 신호다.
+            **d3_catalog.level_view(core, summary),
             "projects": {
                 "representative": (None if link is None or link.representative_id is None else
                                    {"projectId": link.representative_id,
@@ -135,6 +139,9 @@ def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, upload
     if topic and skip != "주제":
         rows = [r for r in rows if r["topic"] in set(topic)]
     if processingLevel and skip != "Level":
+        # ⭑ **⟨PRD-10⟩ 거르는 값은 `processingLevel`(사람 값 우선)이다.**
+        # 사람 값이 NULL 인 행만 파생값으로 대신 걸린다 — 그 행은 아직 선언이 없어
+        # 파생값이 유일한 분류다. ⛔ `processingLevelDerived` 로 거르지 않는다.
         rows = [r for r in rows if r["processingLevel"] in set(processingLevel)]
     if uploader and skip != "업로더":
         rows = [r for r in rows if r["uploader"]["accountId"] in set(uploader)]
@@ -147,10 +154,12 @@ def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, upload
 
 def _validate_filters(processingLevel, lineageState) -> None:
     for level in processingLevel or ():
-        # 상한도 함께 본다 — 없으면 `Lv3` 필터가 **조용히 빈 결과**를 낸다.
+        # 상한도 함께 본다 — 없으면 상한 밖 필터가 **조용히 빈 결과**를 낸다.
         # 「없는 값으로 걸렀더니 0 건」과 「있는 값으로 걸렀더니 0 건」은 다르고,
-        # 화면은 그 둘을 구분하지 못한다. `Lv3` 은 정본이 「존재할 수 없는 값」이라
-        # 못 박았으므로(`VAL-005`·`POL-020`) 빈 상태가 아니라 잘못된 요청이다.
+        # 화면은 그 둘을 구분하지 못한다.
+        # ⭑ **⟨개정 2026-09-07 · WU-B5 · 미결-7 ⓐ⟩ `LV_CAP` 이 `3` 이라 `Lv3` 이 통과한다.**
+        # ／ 종전 ~~「`Lv3` 은 정본이 「존재할 수 없는 값」이라 못 박았으므로 잘못된
+        #   요청이다」~~ — 그 rev1 정본이 4단으로 개정됐다(`ports/lineage.py` LV_CAP 주석).
         if level < 0 or level > LV_CAP:
             raise errors.bad_request(f"processingLevel 은 0 이상 {LV_CAP} 이하다.")
     for state in lineageState or ():
@@ -637,6 +646,51 @@ def warn_if_level_mismatch(db: Session, dataset_id: Ulid, user_set: object) -> N
             dataset_id, user_set, derived)
 
 
+def parent_level_violations(db: Session, *, self_level: int | None,
+                            parent_ids: list) -> list[dict]:
+    """`부모 Lv ≤ 자기 Lv` 를 어기는 부모만 골라 낸다 (PRD-07 · `R-B-2-server.md` WU-B5).
+
+    **기준은 분류에서 고른 자기 Lv 다.** `self_level` 이 `None`(사람이 아직 안 골랐다)이면
+    기준값 자체가 없으므로 **아무것도 검사하지 않는다** — 기존 엣지가 여기로 들어온다
+    (PRD-07 기존 데이터 축자). **같은 단계는 위반이 아니다** — 부등호가 `≤` 다.
+
+    부모 쪽에서 견주는 값도 **사람 값 우선**(`level_view`)이다. 화면이 후보 줄에 그리는
+    숫자와 서버가 재는 숫자가 갈리면, 사용자는 고를 수 있어 보이는 것을 못 고르게 된다.
+    """
+    if self_level is None or not parent_ids:
+        return []
+    keys = [Ulid(str(p)) for p in parent_ids]
+    summaries = d4_lineage.LineageSummaryAdapter(db).summaries(keys)
+    out: list[dict] = []
+    for key in keys:
+        core = d3_catalog.find_dataset_core(db, key)
+        if core is None:
+            # 없는 부모는 이 규칙이 답할 자리가 아니다 — 존재 판정은 호출부가 이미 한다.
+            continue
+        level = d3_catalog.level_view(core, summaries.get(str(key)))["processingLevel"]
+        if level > self_level:
+            out.append({"datasetId": str(key), "name": core.name, "processingLevel": level})
+    return out
+
+
+def enforce_parent_level_rule(db: Session, *, self_level: int | None, parent_ids: list) -> None:
+    """위반이면 **400** 이고 문면이 **위반 항목을 열거**한다 (PRD-07 축자).
+
+    ⛔ **화면 차단이 유일한 방어선이 되지 않게 한다** — 등록·계보 확정 두 경로가 다 이
+       함수를 지난다. ⛔ 초과 후보를 **지우지 않는다** — 지우는 것은 이 함수의 일이 아니고
+       (`_apply_filters` 도 자기 Lv 를 모른다) 전부 내려간 뒤 화면이 상태로 가른다.
+    """
+    offenders = parent_level_violations(db, self_level=self_level, parent_ids=parent_ids)
+    if not offenders:
+        return
+    listed = ", ".join(f"{o['name']}(Lv{o['processingLevel']} · {o['datasetId']})"
+                       for o in offenders)
+    raise errors.bad_request(
+        f"가공 전 데이터는 이 데이터(Lv{self_level})보다 높은 단계일 수 없어요 — "
+        f"넘는 것 {len(offenders)}건: {listed}",
+        {"offenders": offenders})
+
+
 #: 반쪽 관측 간격의 문구 — **한 자리에만 둔다.** 등록과 수정이 같은 문장을 낸다.
 HALF_INTERVAL_MESSAGE = "관측 간격은 숫자와 단위를 함께 적어 주세요."
 
@@ -1031,6 +1085,11 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "category": core.category,
             "dataType": core.data_type,
             "processingLevelUserSet": core.processing_level_user_set,
+            # ⭑ **⟨20차 해제 · PRD-10 · WU-B5⟩ 파생값과 불일치 플래그.** 위 사람 값과
+            # **병존**한다 — 어느 하나가 다른 하나를 대신하지 않는다. 불일치는 **경고만**이라
+            # 저장을 막지 않고, 사람 값이 NULL 이면 `mismatch` 는 `false` 다(정의되지 않는 자리).
+            "processingLevelDerived": d3_catalog.level_view(core, summary)["processingLevelDerived"],
+            "processingLevelMismatch": d3_catalog.level_view(core, summary)["processingLevelMismatch"],
             # ⭑ **⟨20차 해제 · PRD-16⟩ 정본은 `d3_dataset_variable` 이다.**
             # ⚠ 행이 0개면 **`autometa.variables` 로 퇴행한다** — 파이프라인이 헤더에서 읽어
             #   채운 이름이 그 배열에만 있는 데이터셋이 있고(등록·수정 경로는 그 배열을 안
@@ -1085,7 +1144,9 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         "name": core.name,
         "summary": core.summary,
         "topic": core.topic,
-        "processingLevel": d3_catalog.processing_level(summary),
+        # ⭑ **⟨PRD-10 · WU-B5⟩ 표시용이라 사람 값이 우선이다.** 파생값·불일치는
+        # `basicInfo` 두 열쇠가 싣는다(`DatasetDetail` 은 `additionalProperties: false`).
+        "processingLevel": d3_catalog.level_view(core, summary)["processingLevel"],
         "lineageState": d3_catalog.lineage_state(core, summary),
         "verification": {
             "verified": verified,

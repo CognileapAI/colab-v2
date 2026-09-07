@@ -33,8 +33,8 @@ from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
-from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
-                      MISSING_CATEGORY_MESSAGE, validate_access_state,
+from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, enforce_parent_level_rule,
+                      is_blank_summary, MISSING_CATEGORY_MESSAGE, validate_access_state,
                       validate_human_metadata, warn_if_level_mismatch)
 
 router = APIRouter()
@@ -446,6 +446,16 @@ _ALLOWED_PARENT_FIELDS = {"parentDatasetId", "parentRole", "method", "origin",
                           "confirmedMethodText"}
 
 
+def _user_set_level(raw: Any) -> int | None:
+    """요청이 실은 사람 Lv(`Lv2` 꼴)를 정수로 읽는다. 안 실었으면 `None` — **기준값이 없다.**
+
+    값 집합 검사(`validate_human_metadata`)를 이미 지난 뒤에 불린다.
+    """
+    if not isinstance(raw, str) or not raw.startswith("Lv") or not raw[2:].isdigit():
+        return None
+    return int(raw[2:])
+
+
 def _parse_parents(raw: Any) -> list[dict]:
     if raw is None:
         return []
@@ -636,6 +646,13 @@ def create_dataset(request: Request, body: dict = None,
         for p in parents:
             if not d3_catalog.dataset_exists(db, p["parent_id"]):
                 raise errors.bad_request("부모 데이터셋이 없거나 연구실 경계 밖이다.")
+        # ⭑ **⟨20차 해제 · PRD-07 · WU-B5⟩ `부모 Lv ≤ 자기 Lv` — 서버 400 이 최종 방어선이다.**
+        #    **존재 판정을 먼저 지나고 붙이기 전에** 잰다 — 반쯤 붙은 계보를 만들지 않는다.
+        #    기준은 **이 요청이 실은 사람 Lv** 다. 안 실었으면 기준값이 없어 검사하지 않는다.
+        enforce_parent_level_rule(
+            db, self_level=_user_set_level(body.get("processingLevelUserSet")),
+            parent_ids=[p["parent_id"] for p in parents])
+        for p in parents:
             try:
                 d4_lineage.add_parent(
                     db, child_id=dataset_id, parent_id=p["parent_id"],

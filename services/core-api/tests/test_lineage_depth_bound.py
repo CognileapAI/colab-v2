@@ -7,6 +7,11 @@
 - 용어 = 「Lv0 원자료 · Lv1 1차 가공 · Lv2 집계·분석용. 상한 Lv2」
 - 재검토 판정 = 「**Lv3 은 존재할 수 없는 값이다**」
 
+⭑ **⟨개정 2026-09-07 · `WU-B5` · 미결-7 ⓐ⟩ 상한이 `Lv2` → `Lv3` 이다.** 위 네 줄은
+**지우지 않는다** — rev1 정본의 인용이고, 그 정본이 2026-09-05 판정으로 **4단**
+(`Lv0`~`Lv3`)이 됐다. 바뀐 것은 **상한값 하나**이고 「깊이가 아니라 종류」·「자르기만
+하고 금지하지 않는다」는 그대로다. 아래 시험의 기대값도 그 한 값만 따라 움직인다.
+
 **Lv 은 깊이가 아니라 종류다.** 5홉 떨어진 데이터도 여전히 「집계·분석용」이므로
 Lv2 로 접어도 잃는 것이 없다 — 깊이는 계보 그래프에 그대로 남는다.
 
@@ -41,27 +46,28 @@ def _chain(client, length: int) -> list[str]:
     return ids
 
 
-# ═════════════════ ① Lv 클램프 — 상한 Lv2 (POL-020 · VAL-005) ═════════════════
-def test_lv_is_clamped_at_2_because_it_is_a_kind_not_a_depth(p2_client) -> None:
-    """**Lv3 은 존재할 수 없는 값이다.** 4단 사슬이어도 마지막은 Lv2 다."""
+# ═════════════════ ① Lv 클램프 — 상한 Lv3 (미결-7 ⓐ · 종전 Lv2) ═════════════════
+def test_lv_is_clamped_at_the_cap_because_it_is_a_kind_not_a_depth(p2_client) -> None:
+    """5단 사슬이어도 마지막은 상한에서 멈춘다 — **접는 것이지 막는 것이 아니다.**"""
     client = p2_client()
-    ids = _chain(client, 4)
+    ids = _chain(client, 5)
 
     assert _lv(client, ids[0]) == 0, "부모가 없으면 Lv0 (원자료)."
     assert _lv(client, ids[1]) == 1, "Lv0 의 자식은 Lv1 (1차 가공)."
     assert _lv(client, ids[2]) == 2, "Lv1 의 자식은 Lv2 (집계·분석용)."
-    assert _lv(client, ids[3]) == 2, (
-        "Lv2 의 자식도 Lv2 다 — POL-020 이 상한 Lv2 로 자른다. "
-        "Lv3 이 나오면 정본이 「존재할 수 없다」고 한 값을 만든 것이다.")
+    assert _lv(client, ids[3]) == 3, "Lv2 의 자식은 Lv3 — 4단으로 넓어진 자리다(미결-7 ⓐ)."
+    assert _lv(client, ids[4]) == 3, (
+        "Lv3 의 자식도 Lv3 다 — 상한에서 접힌다. 상한을 넘는 값이 나오면 "
+        "사람이 고르는 4값 집합 밖의 수를 만든 것이다.")
 
 
 def test_a_long_chain_never_exceeds_the_cap(p2_client) -> None:
-    """사슬이 길어져도 Lv 는 2 를 넘지 않는다. **깊은 사슬 자체는 합법이다** —
+    """사슬이 길어져도 Lv 는 상한을 넘지 않는다. **깊은 사슬 자체는 합법이다** —
     `POL-020` 은 자르기만 하고 금지하지 않으므로 오류가 아니라 클램프다."""
     client = p2_client()
     ids = _chain(client, 8)
-    for dataset_id in ids[2:]:
-        assert _lv(client, dataset_id) == 2, "상한을 넘는 Lv 가 나왔다."
+    for dataset_id in ids[3:]:
+        assert _lv(client, dataset_id) == 3, "상한을 넘는 Lv 가 나왔다."
 
 
 # ═════════════ ② 다이아몬드 — 합법이고, 응답이 상한 안에서 끝난다 ═════════════
@@ -96,4 +102,4 @@ def test_a_diamond_lineage_is_legal_and_the_catalog_still_opens(p2_client) -> No
     assert elapsed < 5.0, (
         f"카탈로그 목록이 {elapsed:.1f}s 걸렸다 — 재귀가 경로를 열거하고 있다. "
         f"마름모 {depth} 겹이면 경로가 2^{depth} 이다.")
-    assert _lv(client, current) == 2, "다이아몬드여도 상한은 Lv2 다."
+    assert _lv(client, current) == 3, "다이아몬드여도 상한에서 접힌다."

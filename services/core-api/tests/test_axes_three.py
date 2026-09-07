@@ -112,14 +112,21 @@ def test_mismatch_between_human_and_derived_level_still_succeeds(p2_client) -> N
 
     ⚠ 불일치를 알리는 응답 열쇠(`processingLevelMismatch`)는 **WU-B5** 몫이라 여기서
        만들지 않는다. 이 시험이 붙잡는 것은 **400 이 아니다**라는 사실 하나다.
+
+    ⭑ **⟨개정 2026-09-07 · `WU-B5` · PRD-10⟩ `processingLevel` 의 뜻이 바뀌었다** —
+    표시용이고 **사람 값이 우선**이다. ／ 종전 ~~`detail["processingLevel"] == 0`(파생값
+    그대로)~~ — 그 단언은 B1 회차의 잠정값이었고(`p3-axes-schema` 노트 §인계 5) 파생값은
+    이제 `basicInfo.processingLevelDerived` 가 싣는다. **잰 사실(등록이 성공한다)은 무변.**
     """
     client = p2_client()
     r = _register(client, processingLevelUserSet="Lv3")
     assert r.status_code == 201, r.text
     detail = _read(client, r.json()["datasetId"])
     assert detail["basicInfo"]["processingLevelUserSet"] == "Lv3"
-    # 파생값은 종전 그대로 계산된다 — 부모가 없으므로 0 이다.
-    assert detail["processingLevel"] == 0, detail["processingLevel"]
+    # 표시용은 사람 값이다. 파생값은 종전 그대로 계산된다 — 부모가 없으므로 0 이다.
+    assert detail["processingLevel"] == 3, detail["processingLevel"]
+    assert detail["basicInfo"]["processingLevelDerived"] == 0, detail["basicInfo"]
+    assert detail["basicInfo"]["processingLevelMismatch"] is True, detail["basicInfo"]
 
 
 # ═══════════════════════════ 공통 ═══════════════════════════

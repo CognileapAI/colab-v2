@@ -20,6 +20,10 @@ _ROWS = text("""
     SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            dd.name, dd.topic, dd.summary,
+           -- ⭑ **⟨20차 해제 · PRD-10 · WU-B5⟩ 사람이 고른 가공 단계.** 목록도 상세와
+           -- **같은 표시 규칙**(사람 값 우선)을 따라야 하고, 필터가 거르는 축이 이 값이다.
+           -- 이 열이 없으면 목록만 파생값으로 답해 두 화면이 다른 수를 그린다.
+           d.processing_level_user_set,
            u.name AS uploader_name,
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
            -- `body_access` RESTRICTIVE 아래서 본체 테이블을 세면 잠긴 행이 0 을 낸다(실측).
@@ -202,6 +206,7 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
             owner_name=None, source_label=r["source_label"],
             last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
             lineage_confirmed_at=r["lineage_confirmed_at"],
+            processing_level_user_set=r["processing_level_user_set"],
         )
         for r in rows
     ]
@@ -1091,6 +1096,40 @@ def processing_level(summary: LineageSummary | None) -> int:
     if summary is None or summary.max_primary_parent_level is None:
         return 0
     return min(summary.max_primary_parent_level + 1, LV_CAP)
+
+
+def user_set_level(core: DatasetCore) -> int | None:
+    """사람이 고른 가공 단계를 **정수**로 읽는다. 안 골랐으면 `None` 이다.
+
+    저장값은 `Lv0`~`Lv3` 문자열(`d3_dataset.processing_level_user_set` CHECK)이고 응답의
+    `processingLevel` 은 정수(`common.json#/$defs/ProcessingLevel`)라, 두 축을 견주려면
+    한 번은 옮겨 적어야 한다. **그 자리를 한 곳으로 모은다** — 세 라우트가 각자 자르면
+    갈라진다.
+    """
+    raw = core.processing_level_user_set
+    if not isinstance(raw, str) or not raw.startswith("Lv") or not raw[2:].isdigit():
+        return None
+    return int(raw[2:])
+
+
+def level_view(core: DatasetCore, summary: LineageSummary | None) -> dict:
+    """PRD-10 — **사람 값·파생값·불일치를 셋 다** 내려보내는 한 벌.
+
+      · `processingLevel`        = **표시용**이고 **사람 값이 우선**이다. 사람 값이
+                                   NULL 인 행만 파생값으로 대신한다.
+      · `processingLevelDerived` = 계보에서 계산한 값. 언제나 있다(부모 0이면 `0`).
+      · `processingLevelMismatch`= 두 값이 어긋나는가. 사람 값이 NULL 이면 **`False`** 다 —
+                                   불일치가 **정의되지 않는 자리**를 `true` 로 만들지 않는다.
+
+    ⛔ 불일치는 **경고 신호**이지 차단이 아니다(미결-2 ⓐ). 이 함수는 아무것도 raise 하지 않는다.
+    """
+    derived = processing_level(summary)
+    human = user_set_level(core)
+    return {
+        "processingLevel": derived if human is None else human,
+        "processingLevelDerived": derived,
+        "processingLevelMismatch": human is not None and human != derived,
+    }
 
 
 def lineage_state(core: DatasetCore, summary: LineageSummary | None) -> str:

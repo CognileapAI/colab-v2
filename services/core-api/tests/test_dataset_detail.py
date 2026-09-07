@@ -93,13 +93,20 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # `category`·`dataType`·`processingLevelUserSet`. **화면의 칸 수를 여기서 세지 않는다** —
     # 상세에 3행을 그리는 것은 PRD-06 이고 `WU-B7` 이 연다. 이 시험이 재는 것은
     # **계약 열쇠 집합**이고, 열쇠가 는 것과 칸이 는 것은 위 주석대로 다른 사건이다.
+    # ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 파생·불일치 두 열쇠가 늘었다** —
+    # `processingLevelDerived`·`processingLevelMismatch`. 사람 값과 **병존**하는 값이고,
+    # 여기서도 칸 수가 아니라 **열쇠 집합**을 잰다.
     assert set(info) == {"category", "dataType", "processingLevelUserSet",
+                         "processingLevelDerived", "processingLevelMismatch",
                          "variables", "crs", "period", "observationInterval", "grid",
                          "format", "fileExtension", "files", "sourceLabel",
                          "owner", "uploader"}
     # 시드 행은 마이그레이션 뒤 기존 행과 같은 상태다 — 셋 다 `None`(미결-3 ⓐ · backfill 0).
     assert info["category"] is None and info["dataType"] is None
     assert info["processingLevelUserSet"] is None
+    # 사람 값이 NULL 이라 **불일치가 정의되지 않는다** — `false` 이고 파생값은 그대로 내려간다.
+    assert info["processingLevelMismatch"] is False
+    assert info["processingLevelDerived"] == 0
     # ⭑ **⟨20차 해제 · PRD-16⟩ `variables` 는 객체 배열이다** — 시드 DSA1 은 단위가
     # 셋 다 다른 3행이고(`fixtures/seed.sql`), 그 세 행이 각자의 단위와 함께 내려온다.
     assert [v["name"] for v in info["variables"]] == ["강우량", "기온", "유출량"]

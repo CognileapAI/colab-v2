@@ -2541,7 +2541,22 @@ export interface components {
              */
             fileCount: number;
             topic: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 표시용이고 사람 값이 우선이다.**
+             *     사람 값이 `null` 인 행만 아래 파생값이 이 자리에 선다. 목록 필터·정렬이 읽는
+             *     값도 이것이다 — 목록과 상세가 다른 수를 그리지 않는다.
+             */
             processingLevel: components["schemas"]["ProcessingLevel"];
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 계보에서 계산한 값.** `DatasetBasicInfo`
+             *     의 같은 이름 열쇠와 같은 뜻이다 — 표가 상세와 다른 사실을 말하지 않는다.
+             */
+            processingLevelDerived?: number | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 두 값이 어긋나는가. 경고만이다.**
+             *     사람 값이 `null` 인 행은 `false` 다.
+             */
+            processingLevelMismatch?: boolean | null;
             /**
              * @description **대표 1건 + `외 N`** (`Policy_데이터_찾기 §5` 프로젝트 열). 대표는 가장 먼저 연결된 것이다.
              *     0건이면 `representative` 가 null 이고 화면은 빈 칸으로 둔다. 정확한 목록은 상세가 보여준다.
@@ -2714,6 +2729,20 @@ export interface components {
              *     (파생 정수)에 화면이 `자동` 표기를 붙인다 — 값이 바뀌는 행은 없다.
              */
             processingLevelUserSet?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 계보에서 계산한 가공 단계.**
+             *     위 사람 값과 **병존**한다 — 어느 하나가 다른 하나를 대신하지 않는다.
+             *     상세·목록의 `processingLevel` 은 **표시용**이고 사람 값이 우선이며, 사람 값이
+             *     `null` 인 행에서만 이 값이 그 자리에 선다. ⛔ **이 값으로 거르는 질의
+             *     파라미터를 만들지 않는다**(`FilterProcessingLevel` 산문).
+             */
+            processingLevelDerived?: number | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 사람 값과 파생값이 어긋나는가.**
+             *     **경고 신호일 뿐 차단이 아니다** — 어긋나도 등록·수정은 성공한다(미결-2 ⓐ).
+             *     사람 값이 `null` 인 행은 불일치가 **정의되지 않으므로 `false`** 다.
+             */
+            processingLevelMismatch?: boolean | null;
             /**
              * @description 구성(변수 목록) — ⭑ **⟨20차 해제 · PRD-16⟩ 객체 배열이다**(**파괴적 변경**).
              *     상세가 이 배열을 **5열 표**(변수 · 단위 · 값 범위 · 결측률 · 대표)로 읽기 전용으로 그린다.
@@ -3824,7 +3853,21 @@ export interface components {
         SortOrder: components["schemas"]["SortOrder"];
         /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
         FilterTopic: string[];
-        /** @description Level 열 조건. 파생값이지만 조건으로는 걸 수 있다 — 쓰기 바디에는 없다. */
+        /**
+         * @description Level 열 조건. 쓰기 바디에는 없다.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 거르는 값은 「사람이 고른 가공 단계」다.**
+         *     ／ 종전 ~~「파생값이지만 조건으로는 걸 수 있다」~~ — 필터는 **「이 데이터가 무엇이라고
+         *     선언됐는가」**를 찾는 자리이고, 파생값은 선언이 아니라 **경고 신호**다.
+         *     사람 값(`processingLevelUserSet`)이 `null` 인 행만 **파생값으로 대신** 걸린다 —
+         *     그 행은 아직 선언이 없어 파생값이 유일한 분류다.
+         *     ⛔ **`processingLevelDerived` 로 거르는 질의 파라미터를 만들지 않는다**(PRD-10 축자).
+         *
+         *     ⭑ **같은 파라미터가 부모 후보 검색의 축이다** — 등록 ③ 「찾기」 모달의 가공 단계
+         *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
+         *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
+         *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+         */
         FilterProcessingLevel: number[];
         /** @description 업로더 열 조건. 계정 ID 로 건다. */
         FilterUploader: components["schemas"]["Ulid"][];
@@ -4512,7 +4555,21 @@ export interface operations {
                 sortOrder?: components["parameters"]["SortOrder"];
                 /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
                 topic?: components["parameters"]["FilterTopic"];
-                /** @description Level 열 조건. 파생값이지만 조건으로는 걸 수 있다 — 쓰기 바디에는 없다. */
+                /**
+                 * @description Level 열 조건. 쓰기 바디에는 없다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 거르는 값은 「사람이 고른 가공 단계」다.**
+                 *     ／ 종전 ~~「파생값이지만 조건으로는 걸 수 있다」~~ — 필터는 **「이 데이터가 무엇이라고
+                 *     선언됐는가」**를 찾는 자리이고, 파생값은 선언이 아니라 **경고 신호**다.
+                 *     사람 값(`processingLevelUserSet`)이 `null` 인 행만 **파생값으로 대신** 걸린다 —
+                 *     그 행은 아직 선언이 없어 파생값이 유일한 분류다.
+                 *     ⛔ **`processingLevelDerived` 로 거르는 질의 파라미터를 만들지 않는다**(PRD-10 축자).
+                 *
+                 *     ⭑ **같은 파라미터가 부모 후보 검색의 축이다** — 등록 ③ 「찾기」 모달의 가공 단계
+                 *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
+                 *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
+                 *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+                 */
                 processingLevel?: components["parameters"]["FilterProcessingLevel"];
                 /** @description 업로더 열 조건. 계정 ID 로 건다. */
                 uploader?: components["parameters"]["FilterUploader"];
@@ -4597,7 +4654,21 @@ export interface operations {
             query?: {
                 /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
                 topic?: components["parameters"]["FilterTopic"];
-                /** @description Level 열 조건. 파생값이지만 조건으로는 걸 수 있다 — 쓰기 바디에는 없다. */
+                /**
+                 * @description Level 열 조건. 쓰기 바디에는 없다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-10 · `WU-B5`⟩ 거르는 값은 「사람이 고른 가공 단계」다.**
+                 *     ／ 종전 ~~「파생값이지만 조건으로는 걸 수 있다」~~ — 필터는 **「이 데이터가 무엇이라고
+                 *     선언됐는가」**를 찾는 자리이고, 파생값은 선언이 아니라 **경고 신호**다.
+                 *     사람 값(`processingLevelUserSet`)이 `null` 인 행만 **파생값으로 대신** 걸린다 —
+                 *     그 행은 아직 선언이 없어 파생값이 유일한 분류다.
+                 *     ⛔ **`processingLevelDerived` 로 거르는 질의 파라미터를 만들지 않는다**(PRD-10 축자).
+                 *
+                 *     ⭑ **같은 파라미터가 부모 후보 검색의 축이다** — 등록 ③ 「찾기」 모달의 가공 단계
+                 *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
+                 *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
+                 *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+                 */
                 processingLevel?: components["parameters"]["FilterProcessingLevel"];
                 /** @description 업로더 열 조건. 계정 ID 로 건다. */
                 uploader?: components["parameters"]["FilterUploader"];
