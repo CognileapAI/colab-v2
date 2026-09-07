@@ -26,6 +26,11 @@
 
 **최종 갱신** 2026-09-06 (**★ 이 회차 = R-A 라운드 `main` 병합 2단계 — 계약 동결 해제 **19차** 묶음(A5·A4·A6). ⟹ **R-A 14/14 가 `main` 에 있다.** 등재 `PLAN-SoT §9 〈346〉`·`〈347〉` · 근거 `dev-package/sessions/R-A-ROUND-20260906.md`.**)
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
+⭑ **⟨증보 2026-09-08 · R-B 마감⟩ 최종 갱신 = 2026-09-08 — R-B 10 WU(B1~B8·B10·B11) 전건 done · `integration/r-b` `2f67649` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈373〉`(20차 집행)·`〈374〉`(〈194〉·〈276〉 반전).**
+게이트 = 전수 `all -j 1` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `2f67649` · `dev-package/reports/R-B/all/`).
+계약 동결 해제 **20차(㉯ · Ted 2026-09-07)** · 계약 파괴 B2 14·B3 2(승인분) · **마이그레이션 5 head 1(0015→0019) — 어느 환경에도 미적용** · 배포 0(다음 배포 창 = 5건 실적용 ＋ `deploy_doctor` ＋ 배포 전 실측 3건).
+근거 = `dev-package/sessions/R-B-ROUND-20260908.md`(WU 지도 · advisor ② 10건 · **Ted 묶음 질의 49건 §5** · 후속 §6) · `planning-applied` rev2 = merged.
+다음 = ⑴ Ted 질의 49건 판정(가정 6건 추인 포함) ⑵ 배포 창(staging 예행 → dev) ⑶ 게이트 승격 3종·이월 항목을 R-C intent 로(grill-me) ⑷ `w9-dev-deploy-rebased` 처리.
 ⭑ **⟨증보 2026-09-07 · R-A′ rev2 증분 마감⟩ 최종 갱신 = 2026-09-07 — R-A′ 5 WU(A13R·A12R·A7R·A9R·A3R＋A4R) 전건 done · `integration/r-a2` `596fefc` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈372〉`.**
 게이트 = 전수 `all -j 2` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `596fefc` · `dev-package/reports/R-A2/all/`).
 계약 0 · 스키마 0 · 마이그레이션 0 — 서버 변경 1건(프로젝트 이름 중복 400 · 계약 선언 집합 안) · 배포 0(dev 배포 창 별건 · 창 8-b 와 서로 막지 않는다).

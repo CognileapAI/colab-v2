@@ -1,0 +1,7 @@
+  ✓ ⓖ 깨끗한 트리 — green
+  ✓ ⓕ 시험 파일이 node:fs·node:path·__dirname 을 쓴다 (74deb54 재현) — red
+  ✓ ⓓ tsconfig include 에서 test 제거 — red
+  ✓ ⓔ build 스크립트에서 tsc --noEmit 이 빠짐 — red
+  ✓ ⓒ tsconfig.json 부재 — red
+  ✓ ⓑ node_modules/.bin/tsc 부재 — red(준비 · 78)
+  ✓ ⓐ node_modules 부재 — red(준비 · 78)

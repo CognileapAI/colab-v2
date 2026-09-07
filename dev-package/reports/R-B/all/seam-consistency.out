@@ -1,0 +1,8 @@
+# ㉠ — 기준선 대비 신설 검사 대상 0건 (신설 0건이면 대조할 것이 없어 green 이다 — 기준선이 곧 현재라는 뜻)
+# ㉡ — 단계 18건 재생 (이월 4건)
+#   ↩ 단계 4'(헤더 파싱) — 의도적 이월: stage 2 — S1-PLAN §1.2 ㉠(가공 = 휴면). 이벤트 file.header-parsed 는 계약에 남아 있고 stage 1 워커는 발행하지 않는다 (tests/test_stage1_worker.py:52)
+#   ↩ 단계 4''(좌표계 정규화) — 의도적 이월: stage 2 — S1-PLAN §1.2 ㉠. 이벤트 file.crs-normalized 는 계약에 남아 있고 stage 1 워커는 발행하지 않는다 (tests/test_stage1_worker.py:52)
+#   ↩ 단계 4'''(COG 변환) — 의도적 이월: stage 2 — 〈74〉-㉳(타일 서빙·확대·COG 변환은 stage 1 밖) · S1-PLAN §2.2 ⓑ #7(⑸ COG 는 계속 stage 2). 이벤트 preview.cog-built 는 계약에 남아 있다
+#   ↩ 단계 10(직접 검색으로 부모 추가) — 의도적 이월: 계약 부재 — 의도적 P4 이월. fe-core.yaml 위임 산문에 「P4 가 연다」 명기 (D2c §2-3 · §10-3)
+# ㉡ 끊긴 자리: 없음 (㉡-4)
+seam-consistency green — G-e 425건 · G-b 10건 · ㉠ 0건 · ㉡ 18건.

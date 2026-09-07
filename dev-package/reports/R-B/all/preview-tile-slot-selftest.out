@@ -1,0 +1,29 @@
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)|detail=대조 정본 없이 사건 발행 건수를 셀 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).    → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.      값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④).    ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트는 202
+[selftest] ⓐ 대조 정본 미지정 → red(준비·입력미선언) OK
+[selftest] ⓐ 원인 표식(입력미선언) → OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=면제 선언 파일 (/tmp/preview-tile-4sTSlz/없는파일.toml)|detail=이 파일은 면제를 **이름으로** 고정하는 유일한 정본이다. 없으면 무엇이 면제인지 아무도 모른다.    → 빈 목록(files = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다.
+[selftest] ⓑ 면제 선언 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=면제 선언의 files 항목 (/tmp/preview-tile-4sTSlz/exempt-empty.toml)|detail=항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다.
+[selftest] ⓑ' 면제 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DIR (미리보기 산출물 루트)|detail=자리를 보지 않고 「자리에 놓였다」를 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).    → 배포의 미리보기 볼륨 경로를 지정하고 다시 돌린다.
+[selftest] ⓒ 자리 경로 미선언 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=preview-tile-slot|cause=입력미선언|missing=COLAB_PREVIEW_TILE_DIR 가 가리키는 디렉터리 (/tmp/preview-tile-4sTSlz/없는자리)|detail=경로가 선언됐으나 그런 디렉터리가 없다. 없는 자리를 「비어 있다」로 읽지 않는다.
+[selftest] ⓓ 없는 디렉터리 → red(준비·입력미선언) OK
+[selftest] ⓘ 쓸 수 있는 타일 1건 → green OK
+[selftest] ⓕ 못 쓰는 타일 1건 → red OK
+[selftest] ⓗ 이름으로 면제 → green OK
+[selftest] ⓗ 면제 건수 노출 → OK
+[selftest] ⓖ 발행 있음·쓸 수 있는 타일 0 → red OK
+[selftest] ⓔ 자리에 타일 0건 → red OK
+[selftest] ⓙ 경계 롤 미선언 → red(준비·입력미선언) OK
+[selftest] ⓚ 경계 롤 접속 → red OK
+[selftest] ⓚ 사유(관리자 롤 아님) → OK
+[selftest] ⓛ 경계 롤 = 관리자 롤 → red OK
+[selftest] ⓛ 사유(두 값이 같다) → OK
+[selftest] ⓜ 스키마 전용 DB → red OK
+[selftest] ⓜ 사유(발행 0건) → OK
+[selftest] ⓝ 변이①(종전 게이트 재현) → green — **음성 증명 OK**
+           같은 상태에서 새 게이트는 red(ⓚ) · 검사를 떼면 green — green-by-skip 이 재현된다
+[selftest] ⓞ 변이②(㉯ 대조 제거) → green — **오라클 증명 OK**
+[selftest] ⓟ 변이③(탐침 제거) → green — **오라클 증명 OK**
+preview-tile-slot-selftest green — 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로

@@ -45,10 +45,10 @@
 | `rounds/R-A-4-verify.md` | WU-A12 · WU-A11 · WU-A14 ＋ R-A 종료 검증 | 완료 | `p3-rev1-keep-audit` · `p3-design-audit` · `p3-part-count` | `09247df`·`2a0c53f`·`5bac941` (등재 `PLAN-SoT §9 〈343〉`) |
 | `rounds/R-A2.md` | WU-A13R · A12R · A7R · A9R · A3R · A4R | **완료 2026-09-07** — **R-A′ rev2 증분** 5/5 done · spec `specs/R-A2.md` · intent `intent/2026-09-06-r-a2.md` · 노트 `sessions/R-A2-ROUND-20260907.md` | `integration/r-a2` `596fefc` → `main` ff | 〈372〉 |
 | `rounds/R-B.md` | WU-B1 · B2 · B3 · B4 · B5 · B6 · B7 · B8 · B10 · B11 | **쪼갬 2026-09-07 — 아래 4행으로 대체 · 대조용으로 남긴다** | §2 표 참조 | — |
-| `rounds/R-B-1-db.md` | WU-B1 · B2 · B4 · B6 | 대기 — DB·마이그레이션 계층 · 계약 동결 해제 **20차** 필요 · head 1개(M-1·M-2·M-3·M-5·M-4·M-8) | `integration/r-b` 기점 `ccd9372` | 〈N〉 — |
-| `rounds/R-B-2-server.md` | WU-B5 · B7 · B8 | 대기 — 계약·서버 계층 · `M-10` 1회(WU-B7 뒤) · R-A 이월 PRD-21 「`nc` 로도 찾는다」가 여기서 닫힌다 | `integration/r-b` 기점 `ccd9372` | 〈N〉 — |
-| `rounds/R-B-3-frontend.md` | WU-B3 · B10 | 대기 — 프론트 계층 · R-A′ 이관 6건(확장보기 오버레이 · A6 달력 팝오버 · 등록 3단계 재편 · 모달 2장면 · PRD-40 종료 비움 · 공개 범위 값 재동기)을 WU-B3 이 받는다 | `integration/r-b` 기점 `ccd9372` | 〈N〉 — |
-| `rounds/R-B-4-verify.md` | WU-B11 ＋ R-B 종료 검증 | 대기 — 진입조건 = R-A 병합 완료 ＋ WU-A11 판정표 회수(둘 다 충족 · 판정표 `sessions/p3-design-audit-20260905.md` · 「있음」 6건) | `integration/r-b` 기점 `ccd9372` | 〈N〉 — |
+| `rounds/R-B-1-db.md` | WU-B1 · B2 · B4 · B6 | **완료 2026-09-08** — DB·마이그레이션 계층 · 20차 집행 · head 1(0015→0019 중 4) | `integration/r-b` `2f67649` → `main` ff | 〈373〉·〈374〉 |
+| `rounds/R-B-2-server.md` | WU-B5 · B7 · B8 | **완료 2026-09-08** — 계약·서버 계층 · M-10 1회(B7) · R-A 이월 PRD-21 `nc` 닫힘 · 판정식 6항(B8) | `integration/r-b` `2f67649` → `main` ff | 〈373〉·〈374〉 |
+| `rounds/R-B-3-frontend.md` | WU-B3 · B10 | **완료 2026-09-08** — 등록 3단계·R-A′ 이관 6건(B3) · 상세 계보 모달 `ParentPicker` 공통화(B10) | `integration/r-b` `2f67649` → `main` ff | 〈373〉 |
+| `rounds/R-B-4-verify.md` | WU-B11 ＋ R-B 종료 검증 | **완료 2026-09-08** — 「있음」 6건(⑩ 잔여 이월) · 전수 `all -j 1` green 52/0/0 · 노트 `sessions/R-B-ROUND-20260908.md` | `integration/r-b` `2f67649` → `main` ff | 〈373〉 |
 
 - **R-A = 14 WU**(A1~A14, 각 WU 는 정확히 한 파일에만 있다) · **R-A′ = 5 WU**(접미 `R`) · **R-B = 10 WU**(4개 파일로 쪼갬 2026-09-07 · intent `intent/2026-09-07-r-b.md` **미승인 초안** · 20차 승인 요청 `sessions/R-B-C20-REQUEST-20260907.md`) · **별건 1**(`WU-C2` 대표 그림 저장 경로 — 라운드 없음).
 - WU 하나 완료 시 그 행의 `status` 를 `진행`→`완료` 로 바꾸고 병합 커밋 SHA 를 적는다. **이 표는 반영본이고, 상태의 원본은 `work-items.yaml` 이다.**

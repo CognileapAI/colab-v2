@@ -1,0 +1,5 @@
+# 음성 게이트 — 'D10 → D4 쓰기 경로 없음'을 세 층에서 확인한다
+  L1 계약층      seam 3건 (그중 core-ai 1건)
+  L2 코드층      ai-service 텍스트 1252건 (그중 .py 1250건)
+  L3 체인층      db/ai 마이그레이션 12건 · db/platform 49건
+ai-no-lineage-write green — 계약·코드·체인 세 층 모두에서 쓰기 경로가 없다.

@@ -1,0 +1,24 @@
+── rls-effect ───────────────────────────────────────────────────────
+[selftest] rls-effect: 훼손 없는 스키마 → green OK
+[selftest] rls-effect ③: 경계 조건 한 줄 누락(USING true) → red OK
+[selftest] rls-effect ③: 자식 표에서만 경계 누락(부모는 멀쩡) → red OK
+[selftest] rls-effect ③: 미스코프 기본 거부를 기본 연구실로 바꿈 → red OK
+[selftest] rls-effect ①: 본체 둘째 층 제거(DROP POLICY body_access) → red OK
+[selftest] rls-effect ①: 만료 검사만 제거(목록 검사로는 안 잡힌다) → red OK
+[selftest] rls-effect ①: 둘째 층을 PERMISSIVE 로(두 층이 OR 로 무너짐) → red OK
+[selftest] rls-effect ②: 잠김을 메타까지 RLS 로 얹음(P-13 회귀) → red OK
+[selftest] rls-effect ②: 메타 표에 정책을 하나 더 붙임(행 수로는 안 보인다) → red OK
+[selftest] rls-effect 0: superuser 로 판정(우회 롤은 조용한 통과가 아니라 red) → red OK
+[selftest] rls-effect 0: 앱 롤에 BYPASSRLS 를 붙임 → red OK
+[selftest] rls-effect 0: 앱 롤을 테이블 소유자로 만듦(소유자는 FORCE 를 안 받는 실수의 자리) → red OK
+[selftest] rls-effect 0: 없는 롤로 판정 → red OK
+[selftest] rls-effect: 선언 스키마 부재 → red OK
+[selftest] rls-effect: 시드 부재(대상 0건은 통과가 아니다) → red OK
+[selftest] rls-effect: 앱 롤 부트스트랩 부재 → red OK
+[selftest] rls-effect: 적용되지 않는 스키마 → red OK
+           ::gate-readiness-failure::gate=rls-effect|waited_for=일회용 postgres(주입된 부재 · COLAB_PG_FORCE_UNAVAILABLE=1)|limit=대기 없음|elapsed=0초|detail=selftest 가 도커 부재를 주입했다.
+[selftest] rls-effect: 도커 부재는 skip 이 아니라 red → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+           ::gate-readiness-failure::gate=rls-effect|waited_for=postgres 접속 준비(실서버 · pg_isready · 컨테이너 b3_rlseffect_2798910_5937)|limit=5초|elapsed=5초|detail=컨테이너 상태=running · 초기화 완료 표식 없음(initdb 미완 또는 서버 미기동) · 호스트 load average: 2.57, 2.11, 2.96 · 마지막 로그: 
+[selftest] rls-effect: 실서버가 끝내 안 뜨면 상한에서 red(준비) (임시 서버 오인 방지의 fail-closed) → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] 케이스 19 건 (동시 4)
+rls-effect-selftest green — 보호 장치를 하나씩 떼면 실제로 red 가 난다. 틀린 롤도 red 다.
