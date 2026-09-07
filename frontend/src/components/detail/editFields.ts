@@ -91,6 +91,17 @@ export const TEXT_FIELDS: readonly TextFieldSpec[] = [
   { key: 'crs', label: '좌표계' },
 ];
 
+/**
+ * ⭑ **⟨WU-B10 · PRD-22 편집 대상 확장 · PRD-31⟩ 계보 부모 연결.**
+ *
+ * 편집 대상 목록에는 **있고**, 편집 폼은 그 값을 **그리지 않는다** — 계보 표를 여기 한 벌 더
+ * 그리면 PRD-07·08·09 의 규칙을 두 곳이 각자 구현하게 된다. 폼은 계보 구역의 `계보 수정 ·
+ * 추가` 모달로 **보내기만** 한다(각 연결의 `가공 방식` 도 그 모달 안에서 열린다 —
+ * 별도 항목이 아니다). 그래서 `DatasetEditDraft` 에 열쇠가 없고 `toPatch` 도 싣지 않는다.
+ */
+export const LINEAGE_LINK_LABEL = '계보 부모 연결';
+export const LINEAGE_LINK_ACTION = '계보 수정 · 추가';
+
 /** 기간 칸의 라벨 — 두 칸이 한 값이라 표에서 따로 선다. */
 export const PERIOD_LABEL = '기간';
 

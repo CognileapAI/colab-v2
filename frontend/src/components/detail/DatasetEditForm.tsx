@@ -16,6 +16,8 @@ import {
   GRANULARITY_LABEL,
   INTERVAL_LABEL,
   INTERVAL_UNITS,
+  LINEAGE_LINK_ACTION,
+  LINEAGE_LINK_LABEL,
   PERIOD_LABEL,
   TEXT_FIELDS,
   type DatasetEditDraft,
@@ -33,6 +35,11 @@ export function DatasetEditForm(props: {
   /** ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸별 인라인 오류 — 그 칸 아래에 선다. */
   fieldErrors?: Partial<Record<keyof DatasetEditDraft, string>>;
   onField: (key: keyof DatasetEditDraft, value: string) => void;
+  /**
+   * ⭑ **⟨WU-B10 · PRD-22⟩ 계보 부모 연결로 보내는 길.** 없으면 그 줄이 서지 않는다 —
+   * 이 폼을 다른 자리에서 쓸 때 갈 곳 없는 버튼을 만들지 않는다.
+   */
+  onOpenLineageFix?: () => void;
 }) {
   const draft = props.draft;
   const error = props.error;
@@ -159,6 +166,24 @@ export function DatasetEditForm(props: {
             <span className="de-note muted"> {ACCESS_NOTE[draft.accessState]}</span>
           </span>
         </div>
+        {/* ⭑ **⟨WU-B10 · PRD-22 확장⟩ 편집 대상에 계보 부모 연결이 있다 — 다만 여기서
+            **표를 그리지 않는다.** 규칙의 자리는 계보 구역의 모달 하나다(PRD-31). */}
+        {props.onOpenLineageFix ? (
+          <div className="de-row" data-testid="edit-lineage">
+            <span className="de-k">{LINEAGE_LINK_LABEL}</span>
+            <span className="de-v">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                data-testid="edit-lineage-fix"
+                onClick={props.onOpenLineageFix}
+              >
+                {LINEAGE_LINK_ACTION}
+              </button>
+              <span className="de-note muted"> 부모 연결과 가공 방식은 계보 구역에서 고쳐요.</span>
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {error ? (

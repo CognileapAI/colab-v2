@@ -9,8 +9,14 @@
 //  - **파생은 읽기 전용**이다. 자식을 올릴 때 확정된 이력이라 여기서 고치지 않는다 (§3.2).
 //  - **편집 컨트롤은 `canEdit` 이 켜졌을 때만 화면에 존재한다** (§3.2·§6 · P-12).
 //  - 화면 글자는 정본·목업에서 그대로 온다. 없는 값을 지어내지 않는다.
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Toast } from '../common/Toast';
+import { PRE_LINEAGE_ADDED } from '../common/toastCopy';
 import type { LineageEdge, LineageGraph, LineageNode } from './graphTypes';
+import { LineageFixModal, type ParentCandidateSource } from './LineageFixModal';
+import { apiLineageEditSource, type LineageEditSource } from './lineageEditSource';
+import { apiLineageSource } from './lineageSource';
 import './lineageGraph.css';
 
 /** 목업 `linHint` 두 문장. 기록 없음은 별도 화면이 아니라 이 구역의 상태 변형이다. */
@@ -201,8 +207,50 @@ export function LineageSection(props: {
   graph: LineageGraph;
   /** 상세가 이미 읽어 온 값. 계보 응답에는 없다 — 「이후 수정됨」은 이 둘을 나란히 놓는 표시다 (§2). */
   lastModifiedAt?: string | null;
+  /**
+   * ⭑ **⟨WU-B10 · PRD-31⟩ 계보 수정·추가 모달의 두 출처.** 시험이 대역을 꽂는 자리이고,
+   * 기본값은 실서버다 — 후보는 **등록 ③ 이 쓰는 그 출처**(`apiLineageSource`)를 그대로 쓴다.
+   */
+  candidateSource?: ParentCandidateSource;
+  editSource?: LineageEditSource;
+  /**
+   * PRD-22 — 편집 화면의 `계보 부모 연결` 이 이 모달을 연다. 값이 오를 때마다 한 번 열린다.
+   * ⛔ 편집 폼 안에 계보 표를 그리지 않는다 — 같은 규칙을 두 곳이 각자 구현하지 않게 한다.
+   */
+  openToken?: number;
 }) {
-  const g = props.graph;
+  // 저장 응답으로 온 그래프가 **재조회 없이** 이 자리를 받는다. 화면이 값을 손으로 조립하지
+  // 않고 **서버가 돌려준 그래프**를 그대로 세운다 — 낙관적 갱신이 아니다.
+  const [saved, setSaved] = useState<LineageGraph | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const g = saved ?? props.graph;
+  const canEdit = g.canEdit;
+  const openToken = props.openToken ?? 0;
+  useEffect(() => {
+    // 최초 렌더(0)로는 열지 않는다 — 편집 화면이 눌렀을 때만 오른다.
+    if (openToken > 0 && canEdit) setFixing(true);
+  }, [openToken, canEdit]);
+  const selfLv = g.nodes.find((n) => n.kind === '이 데이터')?.processingLevel ?? null;
+  // 출처는 **한 번만 만든다** — 매 렌더마다 새 객체를 넘기면 모달의 후보 조회가 끝없이 돈다.
+  const candidateSource = useMemo(
+    () => props.candidateSource ?? apiLineageSource(),
+    [props.candidateSource],
+  );
+  const editSource = useMemo(
+    () => props.editSource ?? apiLineageEditSource(),
+    [props.editSource],
+  );
+  const fixEntry = canEdit ? (
+    <button
+      type="button"
+      className="btn btn-secondary btn-sm"
+      data-testid="lin-edit"
+      onClick={() => setFixing(true)}
+    >
+      계보 수정 · 추가
+    </button>
+  ) : null;
 
   // 관계가 없고 기록 없음 표시가 있을 때만 빈 상태다. 관계가 붙어 있으면 그래프를 그린다 (§8)
   //
@@ -237,9 +285,12 @@ export function LineageSection(props: {
 
   return (
     <section className="dsec lin-sec" id="sec-lineage" data-testid="lineage-section">
-      <div className="dsec-h">
+      {/* ⭑ **⟨WU-B10 · PRD-31 ⑴⟩ 진입점은 구역 **헤더**에 선다** — 빈 상태든 그래프든 같은
+          자리다. 권한이 없으면 **DOM 에 없다**(비활성이 아니다 · P-12 관례). */}
+      <div className="dsec-h" data-testid="lin-sec-head">
         <h2>계보 · 족보</h2>
         <span className="hint">{empty ? HINT_EMPTY : HINT}</span>
+        {fixEntry}
       </div>
 
       {/* 확정을 지우지 않는다. 확정일과 수정일을 나란히 놓고 판단은 사람에게 남긴다 (§2·§3.2) */}
@@ -259,9 +310,14 @@ export function LineageSection(props: {
           <div className="d">
             업로드할 때 가공 전 데이터를 찾지 못해 <b>모름</b>으로 남겨 뒀어요.
           </div>
-          {g.canEdit ? (
+          {canEdit ? (
             <>
-              <button type="button" className="btn btn-strong btn-sm" data-testid="lin-fill">
+              <button
+                type="button"
+                className="btn btn-strong btn-sm"
+                data-testid="lin-fill"
+                onClick={() => setFixing(true)}
+              >
                 계보 채우기
               </button>
               <p className="muted">원자료(Lv0)라 부모가 없다면 그대로 두어도 괜찮아요.</p>
@@ -377,21 +433,31 @@ export function LineageSection(props: {
             ))}
           </div>
 
-          {/* 편집 권한자에게만 존재한다. 검색 창(E-04 패턴)은 아직 이 화면에 없다 — 자리만 잡는다 */}
-          {g.canEdit ? (
-            <div className="lin-act">
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                data-testid="lin-edit"
-                data-fills-in="E-04 검색 창 미연결"
-              >
-                계보 수정 · 추가
-              </button>
-            </div>
-          ) : null}
         </>
       )}
+
+      {/* ⭑ **⟨WU-B10⟩ 모달은 자기 닫기 함수 한 곳으로 닫힌다**(A9R) — Esc·배경·×·취소·저장. */}
+      {fixing ? (
+        <LineageFixModal
+          datasetId={g.datasetId}
+          selfLv={selfLv}
+          candidateSource={candidateSource}
+          editSource={editSource}
+          onSaved={(next) => {
+            setSaved(next);
+            setNotice(PRE_LINEAGE_ADDED);
+          }}
+          requestClose={() => setFixing(false)}
+        />
+      ) : null}
+
+      {notice ? (
+        <Toast
+          message={notice}
+          testId="lin-fix-toast"
+          onDismiss={() => setNotice(null)}
+        />
+      ) : null}
     </section>
   );
 }

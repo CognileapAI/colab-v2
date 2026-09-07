@@ -40,6 +40,11 @@ import {
   type ProcessingMethodSuggestion,
   type UploadLineageParent,
 } from './types';
+// ⭑ **⟨WU-B10 · PRD-31⟩ 찾기·연결 UI 와 초과 사유 문면은 `ParentPicker` 한 벌뿐이다** —
+//   상세 계보 모달(`LineageFixModal`)이 **같은 컴포넌트·같은 함수**를 부른다. 종전에는 이
+//   화면 안의 `picker()`·`overReason()` 이 유일본이었고, 모달이 사본을 뜨면 PRD-07·08·09 의
+//   규칙이 두 벌이 된다.
+import { ParentPicker, parentOverReason } from './ParentPicker';
 import './lineage.css';
 
 /** 안내 줄 축자 (PRD-07 rev1). `Lv0` 이면 범위 문면이 `Lv0` 하나다. */
@@ -64,10 +69,6 @@ export const LINEAGE_UNKNOWN_LABEL = '가공 전 데이터를 못 찾았어요 �
 export const LINEAGE_UNKNOWN_DISABLED_REASON =
   '가공 전 데이터를 이어 붙였어요. 연결을 지우면 다시 고를 수 있어요.';
 
-/** 초과 후보의 사유 축자 (PRD-08 rev1). */
-function overReason(selfLv: number): string {
-  return `이 데이터(Lv${selfLv})보다 높은 단계예요. 연결을 지우거나 분류에서 가공 단계를 올려 주세요.`;
-}
 
 /** 가공 방식 제안 한 건 — 어느 **관계**에 붙일지가 정해져야 확인할 수 있다. */
 interface MethodCard {
@@ -304,58 +305,14 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
 
   function picker(onPick: (row: DatasetRow) => void, testid: string) {
     return (
-      <div className="lin-picker" data-testid={testid}>
-        {/* ⭑ **⟨PRD-08⟩ 가공 단계 셀렉트.** 거르는 것은 **서버 질의 파라미터**이고,
-            자기 Lv 로 자동으로 걸지 않는다 — 초과 후보도 내려와야 아래 `is-over` 가
-            「보이되 못 고름」을 그릴 수 있다. */}
-        <label className="lin-lvfilter">
-          <span>가공 단계</span>
-          <select
-            className="sel"
-            data-testid="lin-lv-filter"
-            value={levelFilter === null ? '' : String(levelFilter)}
-            onChange={(e) => changeLevelFilter(e.target.value === '' ? null : Number(e.target.value))}
-          >
-            <option value="">전체</option>
-            {LV_VALUES.map((v) => (
-              <option key={v} value={v}>
-                Lv{v}
-              </option>
-            ))}
-          </select>
-        </label>
-        {candidates === null ? (
-          <p className="muted">연구실 데이터를 읽는 중이에요…</p>
-        ) : candidates.length === 0 ? (
-          <p className="muted">고를 수 있는 연구실 데이터가 아직 없어요.</p>
-        ) : (
-          <ul>
-            {candidates.map((row) => {
-              // **없는 것과 못 고르는 것은 다르다** — 초과 행도 목록에 남고 사유가 읽힌다.
-              const over = selfLv !== null && row.processingLevel > selfLv;
-              return (
-                <li key={row.datasetId} className={over ? 'is-over' : undefined}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    data-testid={`lin-pick-${row.datasetId}`}
-                    disabled={over}
-                    onClick={() => onPick(row)}
-                  >
-                    {row.name} <span className="lin-lv">Lv{row.processingLevel}</span>
-                  </button>
-                  {over && (
-                    // 사유는 **살린다** — 행 전체를 흐리게 만들면 유일한 설명이 무너진다(`R-21`).
-                    <p className="lin-over-why" data-testid={`lin-over-${row.datasetId}`}>
-                      {overReason(selfLv as number)}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <ParentPicker
+        selfLv={selfLv}
+        candidates={candidates}
+        levelFilter={levelFilter}
+        onLevelFilterChange={changeLevelFilter}
+        onPick={onPick}
+        testId={testid}
+      />
     );
   }
 
@@ -397,7 +354,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       {/* ⭑ **⟨PRD-09⟩ 사후 충돌 — 연결은 그대로 두고 등록만 막는다.** */}
       {conflicts.length > 0 && (
         <p className="lin-note lin-conflict" role="alert" data-testid="lin-conflict-note">
-          {overReason(selfLv as number)}
+          {parentOverReason(selfLv as number)}
         </p>
       )}
 

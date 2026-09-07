@@ -32,6 +32,8 @@ import { LineageSection } from '../components/lineage/LineageSection';
 import { defaultLineageSource } from '../components/lineage/graphSource';
 import { useDatasetLineage } from '../components/lineage/useDatasetLineage';
 import type { LineageGraphSource } from '../components/lineage/graphTypes';
+import type { ParentCandidateSource } from '../components/lineage/LineageFixModal';
+import type { LineageEditSource } from '../components/lineage/lineageEditSource';
 import { GridAttachEntry } from '../components/upload/GridAttachEntry';
 import type { UploadSources } from '../components/upload/types';
 import { LockedContent } from '../permission/LockedContent';
@@ -48,6 +50,9 @@ export function DatasetDetailPage(
   props: {
     source?: DetailSource;
     lineageSource?: LineageGraphSource;
+    /** ⭑ ⟨WU-B10 · PRD-31⟩ 계보 수정·추가 모달의 두 출처. 시험이 대역을 꽂는 자리다. */
+    lineageCandidateSource?: ParentCandidateSource;
+    lineageEditSource?: LineageEditSource;
     previewSource?: DatasetPreviewSource;
     uploadSources?: UploadSources;
     /** 파일(조각) 목록 — `보기` 를 눌렀을 때만 부른다. 시험이 대역을 꽂는 자리다. */
@@ -84,6 +89,9 @@ export function DatasetDetailPage(
     [props.lineageSource],
   );
   const lineage = useDatasetLineage(lineageSource, datasetId, reloadToken);
+  // ⭑ **⟨WU-B10 · PRD-22⟩ 편집 화면의 `계보 부모 연결` 이 계보 구역의 **그 모달**을 연다.**
+  //   편집 폼 안에 계보 표를 두 벌로 그리지 않는다 — 규칙의 자리는 모달 하나다.
+  const [lineageFixToken, setLineageFixToken] = useState(0);
   const filesSource = useMemo(
     () => props.filesSource ?? defaultFilesSource(),
     [props.filesSource],
@@ -206,6 +214,7 @@ export function DatasetDetailPage(
                   error={edit.error}
                   fieldErrors={edit.fieldErrors}
                   onField={edit.setField}
+                  onOpenLineageFix={() => setLineageFixToken((n) => n + 1)}
                 />
               ) : null}
               {/* 잠긴 상세에는 아래 행동 줄(`dt-gridact`)이 서지 않는다 — 그때만 폼 옆에 둔다.
@@ -288,6 +297,11 @@ export function DatasetDetailPage(
             <LineageSection
               graph={lineage.graph}
               lastModifiedAt={shown.lastModifiedAt}
+              openToken={lineageFixToken}
+              {...(props.lineageCandidateSource
+                ? { candidateSource: props.lineageCandidateSource }
+                : {})}
+              {...(props.lineageEditSource ? { editSource: props.lineageEditSource } : {})}
             />
           ) : null}
           {lineage.status === 'unavailable' ? (
