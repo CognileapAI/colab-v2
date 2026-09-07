@@ -5,6 +5,7 @@ import { VerifiedBadge } from '../approval/VerifiedBadge';
 import { accessLabel } from '../common/accessState';
 import { VerificationAction } from '../approval/VerificationAction';
 import type { ApprovalSource } from '../approval/types';
+import { levelOf } from '../lineage/types';
 import type { DatasetDetail } from './types';
 
 /**
@@ -106,6 +107,16 @@ export function DetailHeader(props: {
               ⭑ WU-P6 이 자리(`VerifiedBadgeSlot`)를 실물로 갈아 끼웠다. */}
           <VerifiedBadge verified={props.detail.verification.verified} />
         </div>
+        {/* ⭑ **⟨20차 해제 · PRD-10 · WU-B5⟩ 사람 값 ↔ 파생값 불일치는 경고 한 줄이다.**
+            **막지 않는다** — 이 줄이 뜬 상태로도 수정·저장이 성공한다(미결-2 ⓐ).
+            값은 서버가 셋 다 내려보낸다(`basicInfo.processingLevelDerived`) — 화면이
+            계보를 다시 훑어 계산하지 않는다. 잠긴 상세는 `basicInfo` 가 `null` 이라
+            이 줄이 서지 않는다(그 화면에는 그 사실이 없다). */}
+        {d.basicInfo?.processingLevelMismatch ? (
+          <p className="dh-lv-mismatch" data-testid="dh-lv-mismatch">
+            {`고른 가공 단계는 Lv${levelOf(d.basicInfo.processingLevelUserSet)}이고, 연결한 데이터로 계산하면 Lv${d.basicInfo.processingLevelDerived}이에요. 그대로 두어도 등록돼요.`}
+          </p>
+        ) : null}
       </div>
       {/* 헤더 우측 **한 자리**가 상태 × 보는 사람에 따라 셋으로 갈린다
           (승인 요청 / 승인 / 승인 취소). 규칙은 `Policy_승인_처리 §8` 이 정본이다.

@@ -217,3 +217,16 @@
 .detail-page .infogrid .ig .v .ig-note { display: block; font-size: var(--text-caption); font-weight: 400; color: var(--color-text-muted); margin-top: 2px; }
 /* 수정 폼의 관측 간격·최소 단위 칸 — 기간과 같은 모양이다(두 칸이 한 값) */
 .detail-page .dt-edit .de-period select { min-width: 0; }
+
+/* ⭑ ⟨20차 해제 · PRD-10 · WU-B5⟩ 사람 값 ↔ 파생값 불일치 안내.
+   **경고 한 줄이고 차단이 아니다** — 저장 버튼도 편집 칸도 이 줄이 막지 않는다.
+   대비 = `--color-warning-600` #a85400 on `--color-warning-50` #fff6ed = 5.00:1. */
+.detail-page .dh-lv-mismatch {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+}

@@ -4,7 +4,7 @@
 // 타입은 전부 생성물에서 온다 — 여기서 계약 스키마를 다시 선언하지 않는다
 // (`CLAUDE.md §3-6·§3-7` · `frontend/src/generated/README.md`).
 import type { Schemas } from '../../api/client';
-import type { LineageSource } from '../lineage/types';
+import type { LineageSource, ParentCard } from '../lineage/types';
 
 export type FileKind = Schemas['FileKind'];
 export type UploadReceipt = Schemas['UploadReceipt'];
@@ -158,10 +158,28 @@ export interface LineageStepContext {
   datasetNameDraft: string;
   /** 고른 주제. 아직 안 골랐으면 `null` (`P2.md §2-17` — 미정이 정상 상태다). */
   topic: string | null;
+  /**
+   * ⭑ **⟨WU-B5 · PRD-07⟩ ① 분류에서 고른 자기 Lv**(`Lv0`~`Lv3`). 연결 규칙의 **기준값**이다.
+   * ⛔ 이 화면이 이 값을 바꾸거나 잠그지 않는다 — 바꾸는 자리는 ① 하나뿐이다.
+   */
+  processingLevelUserSet: string;
+  /** 안내 줄의 `분류에서 바꾸기` — ① 로 데려간다. 값을 고치지 않고 **자리로 보낸다.** */
+  onGoToClassify(): void;
+  /**
+   * ⭑ **⟨WU-B5 · PRD-09⟩ 사후 충돌 건수.** 1건 이상이면 `데이터셋 만들기` 가 비활성이다.
+   * ⛔ 연결을 지우지 않는다 — 사람이 한 연결을 시스템이 되돌리지 않는다.
+   */
+  onLineageConflictChange(count: number): void;
   /** 표시기의 확정 건수(`③ 계보 확정 0 / 3`)를 갱신한다. 0건이면 부르지 않는다. */
   onLineageProgress(p: { confirmed: number; total: number }): void;
   /** 등록 요청에 실릴 **확인된** 계보 관계. 사람이 확인한 것만 온다. */
   onLineageParentsChange(parents: UploadLineageParent[]): void;
+  /**
+   * ⭑ **⟨WU-B5 · PRD-09⟩ 연결 카드 상태 — 모달이 쥐고 ③ 이 빌려 쓴다.**
+   * ③ 은 단계 이동 때마다 언마운트되므로 여기 두지 않으면 연결이 사라진다.
+   */
+  parents: ParentCard[];
+  onParentsChange: React.Dispatch<React.SetStateAction<ParentCard[]>>;
 }
 
 export type LineageStepRender = (ctx: LineageStepContext) => React.ReactNode;

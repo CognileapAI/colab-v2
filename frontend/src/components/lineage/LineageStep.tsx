@@ -14,10 +14,20 @@
 //    누르기 전에는 **직접 연결이 기본 자리**이고, 호출 횟수는 **누른 횟수**와 같다.
 //  - **아무것도 저장하지 않는다.** 확인된 관계는 `createDataset` 의 `lineageParents` 로만 간다.
 //  - **가공 방식은 관계에 붙는다** — 데이터셋이 아니라 「자식 ← 부모」 한 쌍의 라벨이다.
-//  - **가공 단계 Lv 를 화면이 계산하지 않는다.** 파생값이고 core 가 계산한다(`PLAN-SoT §9-⑳`).
+//  - ⭑ **⟨반전 2026-09-07 · `〈194〉` 반전 · PRD-03·07·10 · 미결-2 ⓐ⟩ 가공 단계 Lv 는
+//    **사람이 ① 분류에서 고른다**(`processingLevelUserSet`). 이 화면은 그 값을 **기준으로
+//    쓰기만 하고 바꾸거나 잠그지 않는다.**
+//    ／ 종전 ~~「가공 단계 Lv 를 화면이 계산하지 않는다. 파생값이고 core 가 계산한다
+//    (`PLAN-SoT §9-⑳`)」~~ — 그 문장은 **레벨이 오직 계보에서만 나오던 때**의 것이다.
+//    ⚠ **파생 계산 자체는 그대로 core 몫이다** — 아래 미리보기는 확인된 부모의 표시 Lv 로
+//    만든 **추정**이고, 판정은 서버 응답(`processingLevelDerived`)이 한다.
+//  - **규칙은 하나다 — 부모 Lv ≤ 자기 Lv.** 같은 단계는 허용이고, 초과 후보는 **보이되
+//    고를 수 없다**(숨기지 않는다). **서버 400 이 최종 방어선**이고 이 화면은 그 앞이다.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LineageStepContext } from '../upload/types';
 import {
+  LV_VALUES,
+  levelOf,
   PARENT_ROLES,
   type AiConfidence,
   type DatasetRow,
@@ -25,29 +35,22 @@ import {
   type LineageSource,
   type LineageSuggestionResponse,
   type ParentCandidateSuggestion,
+  type ParentCard,
   type ParentRole,
   type ProcessingMethodSuggestion,
   type UploadLineageParent,
 } from './types';
 import './lineage.css';
 
-/** 부모 관계 한 건 — 화면 상태다. 저장되지 않았고, 확인해야만 등록 요청에 실린다. */
-interface ParentCard {
-  key: string;
-  parentDatasetId: string;
-  parentDatasetName: string;
-  role: ParentRole;
-  /** 제안에서 온 확신도. **사람이 수정하면 `null` 이 된다** — AI 행동이 아니게 되므로. */
-  confidence: AiConfidence | null;
-  rationale: string | null;
-  origin: LineageOrigin;
-  confirmed: boolean;
-  /** 사람이 직접 적은 가공 방식 → 요청의 `method`. */
-  method: string;
-  /** 제안을 확인·수정한 가공 방식 → 요청의 `confirmedMethodText`. 둘 다 실으면 400 이다. */
-  confirmedMethodText: string | null;
-  /** `수정` 을 눌러 대상을 다시 고르는 중인가. */
-  picking: boolean;
+/** 안내 줄 축자 (PRD-07 rev1). `Lv0` 이면 범위 문면이 `Lv0` 하나다. */
+function scopeNotice(selfLv: number): string {
+  const range = selfLv === 0 ? 'Lv0' : `Lv0~Lv${selfLv}`;
+  return `지금 이 데이터는 Lv${selfLv} · ${range} 가공 전 데이터만 연결할 수 있어요.`;
+}
+
+/** 초과 후보의 사유 축자 (PRD-08 rev1). */
+function overReason(selfLv: number): string {
+  return `이 데이터(Lv${selfLv})보다 높은 단계예요. 연결을 지우거나 분류에서 가공 단계를 올려 주세요.`;
 }
 
 /** 가공 방식 제안 한 건 — 어느 **관계**에 붙일지가 정해져야 확인할 수 있다. */
@@ -78,13 +81,20 @@ function ConfidenceChip(props: { value: AiConfidence }) {
 
 export function LineageStep(props: { source: LineageSource; ctx: LineageStepContext }) {
   const { source, ctx } = props;
-  const { uploadId, onLineageProgress, onLineageParentsChange } = ctx;
+  const { uploadId, onLineageProgress, onLineageParentsChange, onLineageConflictChange } = ctx;
+  // ⭑ **⟨WU-B5 · PRD-09⟩ 연결 카드는 모달이 쥔다** — 이 화면은 단계 이동 때마다
+  //   언마운트되므로 여기 `useState` 로 두면 ① 에 다녀오는 순간 연결이 사라진다.
+  const parents = ctx.parents;
+  const setParents = ctx.onParentsChange;
+  /** ① 에서 고른 자기 Lv. **기준값**이고, 안 골랐으면 `null` 이라 규칙이 서지 않는다. */
+  const selfLv = levelOf(ctx.processingLevelUserSet);
 
   const [resp, setResp] = useState<LineageSuggestionResponse | null>(null);
   const [unavailable, setUnavailable] = useState(false);
-  const [parents, setParents] = useState<ParentCard[]>([]);
   const [methods, setMethods] = useState<MethodCard[]>([]);
   const [candidates, setCandidates] = useState<DatasetRow[] | null>(null);
+  /** 찾기 모달의 가공 단계 셀렉트. `null` = 전체 (PRD-08). */
+  const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   /** 사용자가 제안을 부른 적이 있는가. **부르기 전에는 결과 영역 자체가 없다.** */
   const [asked, setAsked] = useState(false);
@@ -131,6 +141,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
             method: '',
             confirmedMethodText: null,
             picking: false,
+            // 제안은 Lv 를 싣지 않는다 — 지어내지 않고 비운다(위 `parentLevel` 주석).
+            parentLevel: null,
           })),
         ]);
         setMethods(
@@ -175,13 +187,49 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     onLineageProgress({ confirmed: parents.filter((p) => p.confirmed).length, total: parents.length });
   }, [parents, onLineageProgress]);
 
-  const loadCandidates = useCallback(() => {
-    if (candidates) return;
-    void source
-      .candidates()
-      .then((rows) => setCandidates(rows))
-      .catch(() => setCandidates([]));
-  }, [candidates, source]);
+  const loadCandidates = useCallback(
+    (level: number | null = levelFilter, force = false) => {
+      if (candidates && !force) return;
+      setCandidates(null);
+      void source
+        .candidates(level)
+        .then((rows) => setCandidates(rows))
+        .catch(() => setCandidates([]));
+    },
+    [candidates, source, levelFilter],
+  );
+
+  /** 셀렉트가 바뀌면 **다시 묻는다** — 거르는 자리는 서버다(질의 파라미터 · PRD-08). */
+  function changeLevelFilter(next: number | null) {
+    setLevelFilter(next);
+    loadCandidates(next, true);
+  }
+
+  /**
+   * ⭑ **⟨PRD-09⟩ 사후 충돌 건수.** 확인된 부모 중 자기 Lv 를 넘는 것.
+   * **연결을 지우지 않는다** — 세기만 하고, 막는 것은 `데이터셋 만들기` 버튼 하나다.
+   */
+  const conflicts = parents.filter(
+    (p) => selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv,
+  );
+
+  useEffect(() => {
+    onLineageConflictChange(conflicts.length);
+  }, [conflicts.length, onLineageConflictChange]);
+
+  /**
+   * 파생 Lv **미리보기** — 확인된 부모의 표시 Lv 중 최대 + 1, 상한 3(`LV_CAP`).
+   * ⚠ **판정이 아니다.** 등록 전에는 서버가 계산한 값이 없어(데이터셋이 아직 없다)
+   *   화면이 같은 식으로 미리 보여 줄 뿐이고, 저장 뒤의 정본은 응답의
+   *   `processingLevelDerived` 다. 부모 Lv 를 하나라도 모르면 미리보기를 만들지 않는다.
+   */
+  const known = parents.filter((p) => p.confirmed).map((p) => p.parentLevel);
+  const derivedPreview =
+    known.length === 0 || known.some((v) => v === null)
+      ? null
+      // 상한은 `LV_VALUES` 의 마지막 값이다 — 목록을 넓히면 여기가 따라 넓어진다.
+      : Math.min(Math.max(...(known as number[])) + 1, LV_VALUES[LV_VALUES.length - 1] as number);
+  const mismatch = selfLv !== null && derivedPreview !== null && derivedPreview !== selfLv;
 
   function patch(key: string, next: Partial<ParentCard>) {
     setParents((cur) => cur.map((p) => (p.key === key ? { ...p, ...next } : p)));
@@ -198,6 +246,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       confirmed: false,
       confirmedMethodText: null,
       picking: false,
+      parentLevel: row.processingLevel,
     });
   }
 
@@ -217,6 +266,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         method: '',
         confirmedMethodText: null,
         picking: false,
+        // 후보 줄이 들고 온 표시 Lv — 사후 충돌을 재는 값이다(PRD-09).
+        parentLevel: row.processingLevel,
       },
     ]);
   }
@@ -229,24 +280,54 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   function picker(onPick: (row: DatasetRow) => void, testid: string) {
     return (
       <div className="lin-picker" data-testid={testid}>
+        {/* ⭑ **⟨PRD-08⟩ 가공 단계 셀렉트.** 거르는 것은 **서버 질의 파라미터**이고,
+            자기 Lv 로 자동으로 걸지 않는다 — 초과 후보도 내려와야 아래 `is-over` 가
+            「보이되 못 고름」을 그릴 수 있다. */}
+        <label className="lin-lvfilter">
+          <span>가공 단계</span>
+          <select
+            className="sel"
+            data-testid="lin-lv-filter"
+            value={levelFilter === null ? '' : String(levelFilter)}
+            onChange={(e) => changeLevelFilter(e.target.value === '' ? null : Number(e.target.value))}
+          >
+            <option value="">전체</option>
+            {LV_VALUES.map((v) => (
+              <option key={v} value={v}>
+                Lv{v}
+              </option>
+            ))}
+          </select>
+        </label>
         {candidates === null ? (
           <p className="muted">연구실 데이터를 읽는 중이에요…</p>
         ) : candidates.length === 0 ? (
           <p className="muted">고를 수 있는 연구실 데이터가 아직 없어요.</p>
         ) : (
           <ul>
-            {candidates.map((row) => (
-              <li key={row.datasetId}>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  data-testid={`lin-pick-${row.datasetId}`}
-                  onClick={() => onPick(row)}
-                >
-                  {row.name}
-                </button>
-              </li>
-            ))}
+            {candidates.map((row) => {
+              // **없는 것과 못 고르는 것은 다르다** — 초과 행도 목록에 남고 사유가 읽힌다.
+              const over = selfLv !== null && row.processingLevel > selfLv;
+              return (
+                <li key={row.datasetId} className={over ? 'is-over' : undefined}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    data-testid={`lin-pick-${row.datasetId}`}
+                    disabled={over}
+                    onClick={() => onPick(row)}
+                  >
+                    {row.name} <span className="lin-lv">Lv{row.processingLevel}</span>
+                  </button>
+                  {over && (
+                    // 사유는 **살린다** — 행 전체를 흐리게 만들면 유일한 설명이 무너진다(`R-21`).
+                    <p className="lin-over-why" data-testid={`lin-over-${row.datasetId}`}>
+                      {overReason(selfLv as number)}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -263,7 +344,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         className="btn btn-secondary btn-sm"
         data-testid="lin-add"
         onClick={() => {
-          loadCandidates();
+          loadCandidates(levelFilter, true);
           setAdding((v) => !v);
         }}
       >
@@ -275,6 +356,33 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
 
   return (
     <section className="lin" data-testid="lin-step">
+      {/* ⭑ **⟨PRD-07⟩ 연결 규칙 안내 — 이 단계의 맨 위다.** 문면은 rev1 축자이고
+          `분류에서 바꾸기` 는 ① 로 데려가는 길이다. ⛔ **자기 Lv 를 여기서 바꾸지 않는다.**
+          자기 Lv 를 아직 안 골랐으면(`null`) 기준값이 없어 이 줄이 서지 않는다. */}
+      {selfLv !== null && (
+        <p className="lin-scope-lv" data-testid="lin-lv-scope">
+          {scopeNotice(selfLv)}{' '}
+          <button type="button" className="lin-link" data-testid="lin-goto-classify"
+                  onClick={ctx.onGoToClassify}>
+            분류에서 바꾸기
+          </button>
+        </p>
+      )}
+
+      {/* ⭑ **⟨PRD-09⟩ 사후 충돌 — 연결은 그대로 두고 등록만 막는다.** */}
+      {conflicts.length > 0 && (
+        <p className="lin-note lin-conflict" role="alert" data-testid="lin-conflict-note">
+          {overReason(selfLv as number)}
+        </p>
+      )}
+
+      {/* ⭑ **⟨PRD-10⟩ 불일치는 경고만이다 — 저장을 막지 않는다.** */}
+      {mismatch && (
+        <p className="lin-note" data-testid="lin-lv-mismatch">
+          {`고른 가공 단계는 Lv${selfLv}이고, 연결한 데이터로 계산하면 Lv${derivedPreview}이에요. 그대로 두어도 등록돼요.`}
+        </p>
+      )}
+
       {/* **범위를 먼저 밝힌다** — 무엇을 근거로 삼았는지가 제안보다 위에 선다 */}
       {scope && (
         <p className="lin-scope" data-testid="lin-scope">
@@ -315,6 +423,13 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               <span className="lin-name">{p.parentDatasetName}</span>
               {p.confidence && <ConfidenceChip value={p.confidence} />}
               {p.confirmed && <span className="lin-ok">확인함</span>}
+              {/* ⭑ **⟨PRD-09⟩ 사후 충돌 표시.** 연결은 남고 이 칩만 붙는다 —
+                  되돌리면 칩이 사라지고 `데이터셋 만들기` 가 다시 눌린다. */}
+              {selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv && (
+                <span className="chip chip--warning" data-testid="lin-need-check">
+                  확인 필요
+                </span>
+              )}
             </div>
 
             {p.rationale && (
@@ -374,7 +489,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
                 className="btn btn-secondary btn-sm"
                 data-testid="lin-edit"
                 onClick={() => {
-                  loadCandidates();
+                  loadCandidates(levelFilter, true);
                   patch(p.key, { picking: !p.picking });
                 }}
               >
@@ -490,12 +605,12 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
             `processingLevel` 쓰기 경로를 계약에서 걷었다. 즉 **「바꾼 값」이라는 것이 존재하지 않고**,
             계보를 고치면 가공 단계는 **반드시 따라 바뀐다.** 정본에 이 자리의 문면이 따로 없어
             `〈194〉` 축자에서 만들었다. */}
-      {parents.length > 0 && (
-        <p className="lin-note" data-testid="lin-lv-note">
-          가공 단계는 이어 붙인 앞선 데이터에서 <b>자동으로 정해져요.</b> 다르면 상세 화면에서
-          앞선 데이터를 고치면 함께 바뀌어요.
-        </p>
-      )}
+      {/* ⭑ **⟨반전 2026-09-07 · `〈194〉` 반전 · PRD-03·07·10⟩ 이 자리의 문단을 걷었다.**
+          종전 = 「가공 단계는 이어 붙인 앞선 데이터에서 **자동으로 정해져요.** 다르면 상세
+          화면에서 앞선 데이터를 고치면 함께 바뀌어요.」 — 그 두 문장은 **자동 보정이 규칙이던
+          때**의 것이고, 미결-2 ⓐ 로 **사람이 ① 에서 고르는 값**이 되면서 둘 다 거짓이 됐다.
+          ⛔ **대체 문장을 지어내지 않았다** — 이 자리가 하던 설명(어떻게 정해지는가 · 어긋나면
+          어떻게 되는가)은 위 두 축자 문면이 그대로 맡는다: 안내 줄(PRD-07)과 불일치 줄(PRD-10). */}
 
       {/* **누르기 전에는 직접 연결이 기본 자리다** — AI 제안 영역이 화면을 선점하지 않는다.
           부른 뒤에는 결과 아래로 내려가, 제안을 훑고 나서 직접 잇는 순서가 된다. */}

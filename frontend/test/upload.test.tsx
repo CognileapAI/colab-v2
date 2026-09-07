@@ -1557,30 +1557,36 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     // `주입력` 이며, 고치는 자리는 **상세의 계보 수정**이다. 그런데 종전 안내는
     // 「`보조입력` 으로 표시한 부모는…」이라 **표시할 방법이 없는 값을 설명**했다.
     // 사용자는 그 표시를 찾다가 못 찾고, 안 보이는 기능이 있다고 믿는다.
+    //
+    // ⭑ **⟨개정 2026-09-07 · `WU-B5` · `〈194〉` 반전⟩ 재는 자리가 `lin-lv-note` →
+    //   `lin-lv-scope` 로 옮겼다.** 종전 문단은 자동 보정 안내라 이번 반전이 걷었고
+    //   (`LineageStep.tsx` 의 철거 주석), 그 자리를 PRD-07 축자 안내가 잇는다.
+    //   **재는 사실은 그대로다** — 안내가 화면에 없는 컨트롤을 설명하지 않는가.
     const { sources } = fakes({ suggestions: kwraSuggestions() });
     await openLineageWithAi(sources);
-    const note = await screen.findByTestId('lin-lv-note');
+    const note = await screen.findByTestId('lin-lv-scope');
     expect(note.textContent).not.toMatch(/보조입력/);
-    // Lv 는 파생값이라 등록 뒤 core 가 계산한다 (`PLAN-SoT §9-⑳`) — 여기서 숫자를 짓지 않는다.
-    expect(note.textContent).not.toMatch(/Lv\s*\d/);
-    // **고칠 수 있다는 사실은 말한다** — `〈127〉` 로 상세에서 고치는 길이 열렸다.
-    expect(note).toHaveTextContent('상세');
+    // ⚠ **Lv 숫자가 있는 것이 이제 정상이다** — 그 수는 파생값 추정이 아니라
+    //   ① 에서 **사람이 고른 값**이고, 고치는 컨트롤이 실재한다(`분류에서 바꾸기`).
+    //   ／ 종전 ~~「여기서 숫자를 짓지 않는다」~~ 는 레벨이 파생 전용이던 때의 규율이다.
+    expect(note.textContent).toContain('Lv2');
+    expect(screen.getByTestId('lin-goto-classify').textContent).toBe('분류에서 바꾸기');
   });
 
   it('안내가 **존재하지 않는 쓰기 경로**를 설명하지 않는다 — `〈296〉`-㉲ (근거 `〈288〉`-㉴-⑹)', async () => {
     // 종전 두 번째 문장 = 「다르면 상세 화면에서 바꿀 수 있고, **바꾼 값은 계보를 고쳐도
-    // 그대로 남아요.**」 그런데 `〈194〉` 축자는 「사람이 고르는 것은 **부모**이고 레벨은 그
-    // 결과다 (**예외 없음**)」이고, 해제 13차 `〈276〉` 가 `processingLevel` 쓰기 경로를
-    // 계약에서 걷었다. **「바꾼 값」이 존재하지 않으므로** 그 문장은 없는 컨트롤 안내다.
+    // 그대로 남아요.**」 그리고 그 뒤 문면 = 「가공 단계는 … **자동으로 정해져요.**」
+    // ⭑ **⟨개정 2026-09-07 · `WU-B5` · `〈194〉` 반전⟩ 두 문면이 **둘 다** 없어졌다.**
+    //   앞의 것은 `〈296〉`-㉲ 가, 뒤의 것은 이번 반전이 걷었다(사람이 고르는 값이 됐다).
+    //   **재는 사실은 그대로다** — 없는 컨트롤을 설명하는 문장이 화면에 0건인가.
     const { sources } = fakes({ suggestions: kwraSuggestions() });
     await openLineageWithAi(sources);
-    const note = await screen.findByTestId('lin-lv-note');
-    // ⑴ 새 문면이 그대로 있다 (`〈194〉` 축자에서 만든 문장)
-    expect(note).toHaveTextContent('다르면 상세 화면에서 앞선 데이터를 고치면 함께 바뀌어요.');
-    // ⑵ 종전 문면이 **한 조각도 남지 않았다** — 지운 것을 지웠다고 증명한다
-    expect(note.textContent).not.toMatch(/바꾼 값/);
-    expect(note.textContent).not.toMatch(/그대로 남아요/);
-    expect(note.textContent).not.toMatch(/바꿀 수 있고/);
+    const step = await screen.findByTestId('lin-step');
+    expect(screen.queryByTestId('lin-lv-note')).toBeNull();
+    for (const gone of ['자동으로 정해져요', '바꾼 값', '그대로 남아요', '바꿀 수 있고',
+                        '앞선 데이터를 고치면 함께 바뀌어요']) {
+      expect(step.textContent).not.toContain(gone);
+    }
   });
 
   it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `manual`', async () => {

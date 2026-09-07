@@ -136,3 +136,97 @@
 .lin-ask .muted {
   margin: 0;
 }
+
+/* ═══ WU-B5 · Lv 연결 규칙 (PRD-07·08·09·10) ═══════════════════════════════
+   ⭑ **대비는 계측값이다** (PRD-08 수용 기준 「4.5:1 이상」 · rev1 디자인 검수 `R-21`).
+   `R-21` 축자 = 「행 전체를 흐리게 만들어 유일한 설명 문구의 대비가 2.33:1 로 무너져
+   있었다. **못 고르는 부분만 색을 내리고 이유는 살렸다.**」 그 규율을 그대로 쓴다 —
+   흐려지는 것은 **이름 버튼 하나**이고 사유 문구는 진한 색을 유지한다.
+
+     · 사유 `--lin-over-ink` #a85400 on `--lin-over-bg` #fff6ed = **5.00:1** (합격)
+     · `확인 필요` 칩 = 같은 두 값 = **5.00:1** (합격)
+     · 안내 줄 #5b6472 on #f7f8fa = **5.63:1** (합격)
+     · 흐려진 이름 #8a93a0 on #fff6ed = 2.91:1 — **비활성 컨트롤**이라 4.5:1 대상이 아니고,
+       그 행이 무엇인지·왜 못 고르는지는 위 5.00:1 문구가 말한다.
+   ⚠ **불투명도로 흐리지 않는다** — `opacity` 를 걸면 사유 문구까지 함께 내려가
+   위 `R-21` 이 고친 자리가 그대로 되돌아온다. */
+:root {
+  --lin-over-bg: #fff6ed;
+  --lin-over-ink: #a85400;
+  --lin-over-name: #8a93a0;
+}
+
+/* 연결 규칙 안내 한 줄 — 이 단계의 맨 위 */
+.lin-scope-lv {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e3e6ec);
+  border-radius: 8px;
+  background: #f7f8fa;
+  color: #5b6472;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* `분류에서 바꾸기` — 값을 고치지 않고 ① 로 데려간다 */
+.lin-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: #1f5fa8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 사후 충돌 안내 */
+.lin-conflict {
+  border-color: var(--lin-over-ink);
+  background: var(--lin-over-bg);
+  color: var(--lin-over-ink);
+}
+
+/* 찾기 모달의 가공 단계 셀렉트 */
+.lin-lvfilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.lin-lv {
+  font-size: 12px;
+  color: #5b6472;
+}
+
+/* 초과 후보 — **보이되 못 고른다.** 지우거나 숨기지 않는다 */
+.lin-picker li.is-over {
+  background: var(--lin-over-bg);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.lin-picker li.is-over > button[disabled] {
+  color: var(--lin-over-name);
+  cursor: not-allowed;
+}
+.lin-picker li.is-over .lin-lv {
+  color: var(--lin-over-name);
+}
+.lin-over-why {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--lin-over-ink);
+}
+
+/* `확인 필요` 칩 — 카탈로그·상세와 같은 두 값을 쓴다 */
+.lin .chip {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+.lin .chip--warning {
+  background: var(--lin-over-bg);
+  color: var(--lin-over-ink);
+}

@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
+import type { ParentCard } from '../lineage/types';
 import { Toast } from '../common/Toast';
 import { type AccessState } from '../common/accessState';
 import {
@@ -182,6 +183,16 @@ export function UploadModal(props: {
   const [projects, setProjects] = useState<PickedProject[]>([]);
   const [lineage, setLineage] = useState<{ confirmed: number; total: number } | null>(null);
   const [lineageParents, setLineageParents] = useState<UploadLineageParent[]>([]);
+  /**
+   * ⭑ **⟨WU-B5 · PRD-09⟩ 사후 충돌 건수.** 1건 이상이면 `데이터셋 만들기` 가 비활성이다.
+   * ⛔ 연결을 지우지 않는다 — 되돌리면 이 수가 0 이 되고 버튼이 다시 눌린다.
+   */
+  const [lineageConflicts, setLineageConflicts] = useState(0);
+  /**
+   * ⭑ **⟨WU-B5 · PRD-09⟩ ③ 의 연결 카드.** ③ 은 단계 이동마다 언마운트되므로
+   * 이 상태가 모달에 있어야 「① 에 다녀와도 연결이 남는다」가 성립한다.
+   */
+  const [lineageCards, setLineageCards] = useState<ParentCard[]>([]);
   const [gridSkipped, setGridSkipped] = useState(false);
   /** ③ 파일을 뺐다는 고지. 토스트가 스스로 사라질 때 함께 내린다. */
   const [removedNotice, setRemovedNotice] = useState(false);
@@ -428,6 +439,9 @@ export function UploadModal(props: {
     (parents: UploadLineageParent[]) => setLineageParents(parents),
     [],
   );
+  const onLineageConflictChange = useCallback((count: number) => setLineageConflicts(count), []);
+  /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
+  const onGoToClassify = useCallback(() => setStep(1), []);
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
   // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
   const lineageStep: LineageStepRender =
@@ -438,10 +452,17 @@ export function UploadModal(props: {
       uploadId: uploadId ?? '',
       datasetNameDraft: name,
       topic: topic || null,
+      // ⭑ **⟨WU-B5 · PRD-07⟩ ① 이 고른 자기 Lv 가 연결 규칙의 기준값이다.**
+      processingLevelUserSet: level,
+      onGoToClassify,
       onLineageProgress,
       onLineageParentsChange,
+      onLineageConflictChange,
+      parents: lineageCards,
+      onParentsChange: setLineageCards,
     }),
-    [uploadId, name, topic, onLineageProgress, onLineageParentsChange],
+    [uploadId, name, topic, level, lineageCards, onGoToClassify, onLineageProgress,
+     onLineageParentsChange, onLineageConflictChange],
   );
 
   /**
@@ -1064,6 +1085,7 @@ export function UploadModal(props: {
                 registerError={registerError}
                 lineageStep={lineageStep}
                 lineageCtx={lineageCtx}
+                lineageConflicts={lineageConflicts}
                 onCancel={() => setRegisterOpen(false)}
                 onSubmit={() => void submit()}
               />

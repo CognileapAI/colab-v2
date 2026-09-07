@@ -1013,6 +1013,8 @@ export function RegisterArea(props: {
   registerError: string | null;
   lineageStep?: LineageStepRender | undefined;
   lineageCtx: LineageStepContext;
+  /** ⭑ **⟨WU-B5 · PRD-09⟩ 사후 충돌 건수.** 1건 이상이면 마지막 게이트가 막힌다. */
+  lineageConflicts?: number | undefined;
   onCancel: () => void;
   onSubmit: () => void;
 }) {
@@ -1167,6 +1169,11 @@ export function RegisterArea(props: {
             type="button"
             className="btn btn-primary"
             data-testid="reg-done"
+            /* ⭑ **⟨WU-B5 · PRD-09⟩ 자기 Lv 를 넘는 연결이 남아 있으면 막는다.**
+               ⛔ **연결을 지우지 않는다** — 사람이 한 연결을 시스템이 되돌리지 않고,
+               되돌리는 것은 사람이다(자기 Lv 를 올리거나 그 연결을 지운다). 그러면
+               이 수가 0 이 되고 버튼이 다시 눌린다. 서버 400 이 그 뒤에 또 선다. */
+            disabled={(props.lineageConflicts ?? 0) > 0}
             onClick={props.onSubmit}
           >
             데이터셋 만들기 →
