@@ -123,17 +123,22 @@ def test_mismatch_between_human_and_derived_level_still_succeeds(p2_client) -> N
 
 
 # ═══════════════════════════ 공통 ═══════════════════════════
-def test_three_axes_are_optional_and_default_to_null(p2_client) -> None:
-    """⑻·⑼ 세 칸을 안 실으면 전부 `null` 이고 `processingLevel` 은 **파생값 그대로**다.
+def test_user_set_level_is_optional_and_defaults_to_null(p2_client) -> None:
+    """⑻·⑼ 가공 단계를 안 실으면 `null` 이고 `processingLevel` 은 **파생값 그대로**다.
 
-    이것이 마이그레이션 뒤 기존 13행의 상태다 — 재선택을 강제하지 않는다(미결-3 ⓐ).
+    ⭑ **⟨WU-B3 · 20차 ㉯ 개정⟩ 종전 문면은 「세 칸을 안 실으면 전부 `null`」이었다.**
+    `category`·`dataType` 이 `DatasetCreate.required` 로 올라(PRD-01·02 수용 기준) **등록
+    경로에서는 그 상태가 성립하지 않는다** — 안 실으면 400 이고, 그 400 은
+    `test_dataset_registration.py` 가 잰다. 기존 13행의 NULL 은 마이그레이션이 남긴 것이고
+    **수정 경로가 재선택을 강제하지 않는다**(미결-3 ⓐ) — 그것은 아래 수정 경로 시험이 잰다.
     """
     client = p2_client()
     r = _register(client)
     assert r.status_code == 201, r.text
     detail = _read(client, r.json()["datasetId"])
     basic = detail["basicInfo"]
-    assert basic["category"] is None and basic["dataType"] is None, basic
+    # 필수가 된 두 칸은 보낸 값 그대로 돌아온다(`_register` 의 기본 픽스처).
+    assert basic["category"] == "기상·기후 인자" and basic["dataType"] == "재분석자료", basic
     assert basic["processingLevelUserSet"] is None, basic
     assert detail["processingLevel"] == 0, detail
 
