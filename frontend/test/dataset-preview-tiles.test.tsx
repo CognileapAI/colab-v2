@@ -25,6 +25,15 @@ import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
 import { fixtureDetailSource } from '../src/components/detail/fixture';
 import type { RenderJob } from '../src/components/preview/types';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
+import { baseScaleFor } from '../src/components/preview/scaleLadder';
+
+/**
+ * ⭑ ⟨WU-C4⟩ **기본 배율의 값이 바뀌었다 — 조건 ⑴~⑹ 은 그대로다.** 축척 사다리가 서면서
+ *   ③지도형의 시작 배율은 1 이 아니라 **데이터 폭 ÷ 스냅된 단**이다. 아래 시험이 재는
+ *   것(한 번 누르면 두 배 · 되돌아옴 · 층 묶음 하나 · 한계 · 저장 안 함)은 한 줄도 걷지
+ *   않았고, 「1」·「2」로 적혀 있던 자리만 **상수 한 자리에서 계산한 값**으로 바뀐다.
+ */
+const BASE = baseScaleFor({ west: 126, south: 34, east: 130, north: 38 });
 
 const OPEN_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1';
 const RENDER_ID = '01JYZ9K7WQ3N8V4M2X6C5B0RE9';
@@ -151,11 +160,11 @@ describe('§8 확대 조건 ⑴ — 그린 뒤 확대·축소·이동이 된다'
     renderDetail(makeSource());
     await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(scaleOf()).toBe(2);
+    expect(scaleOf()).toBeCloseTo(BASE * 2, 6);
     fireEvent.click(screen.getByRole('button', { name: '축소' }));
-    expect(scaleOf()).toBe(1);
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
     fireEvent.click(screen.getByRole('button', { name: '축소' }));
-    expect(scaleOf()).toBe(1);
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
   });
 
   it('끌어 옮기면 보는 자리가 움직인다', async () => {
@@ -242,7 +251,7 @@ describe('§8 확대 조건 ⑷ — 데이터가 가진 해상도가 한계다',
     Object.defineProperty(viewport, 'clientHeight', { value: 512, configurable: true });
     fireEvent(window, new Event('resize'));
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(scaleOf()).toBe(1);
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
     expect(screen.queryByTestId('zoom-limit')).toBeNull();
     // 조각도 세우지 않는다 — 레벨을 지어내야 세울 수 있다
     expect(tiles()).toHaveLength(0);
@@ -254,7 +263,7 @@ describe('§8 확대 조건 ⑸ — 확대·이동은 모든 층에 함께 적�
     renderDetail(makeSource());
     await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(layers().style.transform).toContain('scale(2)');
+    expect(layers().style.transform).toContain(`scale(${BASE * 2})`);
     for (const t of tiles()) {
       expect(t.style.transform).toBe('');
       expect(layers().contains(t)).toBe(true);
@@ -268,7 +277,7 @@ describe('§8 확대 조건 ⑹ — 보기 권한만 있어도 확대되고, 확
     await drawnMap();
     expect(screen.queryByRole('button', { name: /스크린샷/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(scaleOf()).toBe(2);
+    expect(scaleOf()).toBeCloseTo(BASE * 2, 6);
   });
 
   it('화면을 떠났다 오면 기본 배율이다 — 어디에도 저장하지 않는다', async () => {
@@ -276,11 +285,11 @@ describe('§8 확대 조건 ⑹ — 보기 권한만 있어도 확대되고, 확
     const first = renderDetail(makeSource());
     await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(scaleOf()).toBe(2);
+    expect(scaleOf()).toBeCloseTo(BASE * 2, 6);
     first.unmount();
     renderDetail(makeSource());
     await drawnMap();
-    await waitFor(() => expect(scaleOf()).toBe(1));
+    await waitFor(() => expect(scaleOf()).toBeCloseTo(BASE, 6));
     // ⭑ **WU-P7 이 이 단언을 좁혔다.** 종전은 「`setItem` 이 한 번도 안 불린다」였는데,
     //   그 뒤 상세 화면이 **「내가 열어 본 것」을 브라우저에 적는다**(`Policy_홈_대시보드 §10` ·
     //   `components/dashboard/visits.ts`). 확대 상태를 저장하지 않는다는 **이 시험의 규칙은

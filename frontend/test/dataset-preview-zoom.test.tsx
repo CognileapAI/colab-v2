@@ -42,7 +42,11 @@ const DONE: RenderJob = {
   result: {
     imageUrl: 'https://viz.example/d/map.png',
     legend: LEGEND,
-    bounds: { west: 126, south: 34, east: 130, north: 38 },
+    // ⭑ ⟨WU-C4⟩ **이 파일은 ②비지도형 회귀 자물쇠다**(R-C-2 WU-C4 수용 기준 축자
+    //   「비지도형 회귀 green(`dataset-preview-zoom.test.tsx` 304행)」). 경계가 없으면
+    //   축척 사다리가 서지 않고 기본 배율은 1 이다 — 아래 304행이 **한 줄도 바뀌지 않는
+    //   이유**가 그것이다. 사다리가 선 지도형의 기본 배율은 `scale-ladder.test.tsx` 가 잰다.
+    //   ／ 이전 표기 ~~`bounds: { west: 126, south: 34, east: 130, north: 38 }`~~.
   },
 } as unknown as RenderJob;
 

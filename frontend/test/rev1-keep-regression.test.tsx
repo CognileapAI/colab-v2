@@ -22,6 +22,10 @@ import { FIXTURE_LINEAGE } from '../src/components/lineage/graphFixture';
 import { BasicInfoGrid } from '../src/components/detail/BasicInfoGrid';
 import { FileDropCard } from '../src/components/upload/FileDropCard';
 import { formatFiles } from '../src/components/detail/format';
+import {
+  baseScaleFor,
+  type GeoBounds,
+} from '../src/components/preview/scaleLadder';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 import type { RenderJob } from '../src/components/preview/types';
 import type { DatasetBasicInfo } from '../src/components/detail/types';
@@ -98,13 +102,24 @@ function renderDetailPreview() {
   );
 }
 
+/**
+ * ⭑ ⟨WU-C4⟩ **기본 배율의 값이 바뀌었다 — 규칙은 그대로다.** 축척 사다리가 서면서
+ *   ③지도형의 시작 배율은 1 이 아니라 **데이터 폭 ÷ 스냅된 단**이다(R-C spec 「축척은
+ *   사다리다」). 아래 세 시험이 재는 것(휠로 올라간다 · 끌면 움직인다 · 「기본 배율로」가
+ *   한 번에 되돌린다)은 **한 줄도 걷지 않았고**, 「1」이라 적혀 있던 자리만 **상수 한
+ *   자리에서 계산한 값**으로 바뀐다 — 숫자를 다시 적지 않는다.
+ */
+const BASE = baseScaleFor(
+  (DONE as unknown as { result: { bounds: GeoBounds } }).result.bounds,
+);
+
 describe('rev1 #6 — 뷰어 휠 확대 · 끌어 이동 · 초기화', () => {
   it('휠을 올리면 배율이 올라간다 (`makePanZoom` 의 휠 확대)', async () => {
     renderDetailPreview();
     const viewport = await drawnMap();
-    expect(scaleOf()).toBe(1);
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
     fireEvent.wheel(viewport, { deltaY: -100, clientX: 256, clientY: 256 });
-    expect(scaleOf()).toBeGreaterThan(1);
+    expect(scaleOf()).toBeGreaterThan(BASE);
   });
 
   it('끌면 보는 자리가 움직인다 (`makePanZoom` 의 끌어 이동)', async () => {
@@ -123,9 +138,9 @@ describe('rev1 #6 — 뷰어 휠 확대 · 끌어 이동 · 초기화', () => {
     renderDetailPreview();
     await drawnMap();
     fireEvent.click(screen.getByRole('button', { name: '확대' }));
-    expect(scaleOf()).toBeGreaterThan(1);
+    expect(scaleOf()).toBeGreaterThan(BASE);
     fireEvent.click(screen.getByRole('button', { name: '기본 배율로' }));
-    expect(scaleOf()).toBe(1);
+    expect(scaleOf()).toBeCloseTo(BASE, 6);
   });
 });
 

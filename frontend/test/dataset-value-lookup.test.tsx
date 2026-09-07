@@ -18,6 +18,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
 import type { DatasetPreviewSource, ValueLookupResult } from '../src/components/datasetpreview/types';
 import { pointFromViewport } from '../src/components/preview/PreviewPanels';
+import { baseScaleFor } from '../src/components/preview/scaleLadder';
 import type { RenderJob } from '../src/components/preview/types';
 
 const RENDER_ID = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
@@ -65,8 +66,22 @@ function makeSource(job: RenderJob, lookup: ValueLookupResult): DatasetPreviewSo
   };
 }
 
+/**
+ * ⭑ ⟨WU-C4⟩ **데이터가 틀 전체를 덮지 않게 됐다.** 축척 사다리가 서면서 ③지도형은
+ *   「데이터 폭을 담는 가장 작은 단」만큼의 틀 안에 **한가운데로** 놓인다. 그래서
+ *   `10,10`·`190,190` 같은 **모서리 좌표는 이제 지도 밖**이고, 밖을 누르면 좌표를
+ *   지어내지 않는다(`pvLonOf` 판정 · 종전부터의 규칙). 시험이 재는 것(값·단위·순서
+ *   보호)은 그대로 두고, **누르는 자리만 데이터 안으로** 옮긴다 — 상수 한 자리에서
+ *   계산한다(숫자를 다시 적지 않는다).
+ */
+const VIEW_PX = 200;
+const BASE = baseScaleFor(BOUNDS);
+/** 데이터가 실제로 놓인 구간 [IN_LO, IN_HI] 안의 두 점. */
+const IN_LO = Math.ceil((VIEW_PX * (1 - BASE)) / 2) + 2;
+const IN_HI = Math.floor((VIEW_PX * (1 + BASE)) / 2) - 2;
+
 /** jsdom 은 레이아웃을 안 한다 — 뷰포트 크기를 시험이 명시적으로 준다. */
-function sizeViewport(el: Element, width = 200, height = 200) {
+function sizeViewport(el: Element, width = VIEW_PX, height = VIEW_PX) {
   el.getBoundingClientRect = () =>
     ({ left: 0, top: 0, width, height, right: width, bottom: height, x: 0, y: 0,
        toJSON: () => ({}) }) as DOMRect;
@@ -102,7 +117,7 @@ describe('값 조회 — 지도의 한 점', () => {
     const viewport = await mountMapped(source);
     sizeViewport(viewport);
 
-    fireEvent.click(viewport, { clientX: 10, clientY: 10 });
+    fireEvent.click(viewport, { clientX: IN_LO, clientY: IN_LO });
 
     await waitFor(() => expect(screen.getByTestId('value-lookup-value')).toBeTruthy());
     expect(screen.getByTestId('value-lookup-value').textContent).toBe('없음');
@@ -145,8 +160,8 @@ describe('값 조회 — 지도의 한 점', () => {
     const viewport = await mountMapped(source);
     sizeViewport(viewport);
 
-    fireEvent.click(viewport, { clientX: 10, clientY: 10 }); // 첫 누름 — 아직 안 온다
-    fireEvent.click(viewport, { clientX: 190, clientY: 190 }); // 둘째 누름 — 먼저 온다
+    fireEvent.click(viewport, { clientX: IN_LO, clientY: IN_LO }); // 첫 누름 — 아직 안 온다
+    fireEvent.click(viewport, { clientX: IN_HI, clientY: IN_HI }); // 둘째 누름 — 먼저 온다
 
     await waitFor(() => expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm'));
 
@@ -175,8 +190,8 @@ describe('값 조회 — 지도의 한 점', () => {
 
     const viewport = await mountMapped(source);
     sizeViewport(viewport);
-    fireEvent.click(viewport, { clientX: 10, clientY: 10 });
-    fireEvent.click(viewport, { clientX: 190, clientY: 190 });
+    fireEvent.click(viewport, { clientX: IN_LO, clientY: IN_LO });
+    fireEvent.click(viewport, { clientX: IN_HI, clientY: IN_HI });
     await waitFor(() => expect(screen.getByTestId('value-lookup-value').textContent).toBe('222 mm'));
 
     await act(async () => {
