@@ -46,6 +46,17 @@ FILTERABLE_COLUMNS = ("주제", "Level", "업로더", "계보", "Verified")
 #: 계보 열의 값은 이 넷뿐이고 숫자를 붙이지 않는다 (`§5` 계보 열 표기).
 LINEAGE_STATES = ("확정", "확인 필요", "기록 없음", "원천")
 
+#: ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 「값이 NULL 인 행」을 고르는 파수꼴 — 정본은 이 한 줄이다.**
+#: 기존 행이 3축 전 행 NULL 이라(미결-3 ⓐ) **재선택이 필요한 행을 사람이 찾아낼 유일한
+#: 경로**가 이 항목이다(PRD-05 축자). 세 축의 저장값(5·6·4값)에 이 글자가 없어 겹치지 않는다.
+#: ⛔ 두 벌로 적지 않는다 — 계약(`FilterCategory` 산문)·화면(`axisFilters.ts`)이 이 값을 옮겨 적고,
+#:    갈리면 필터가 조용히 0건을 낸다.
+UNSPECIFIED = "미지정"
+
+#: 분류 3축의 이름. **표의 열이 아니다** — 정렬 대상이 아니라 `CatalogColumn` 에 넣지 않았고
+#: 패싯도 `axes` 로 갈라 낸다(계약 `FacetSet.axes`).
+AXES = ("분류", "유형", "가공 단계")
+
 _SORT_KEYS = {
     "데이터셋": lambda row: row["name"],
     "주제": lambda row: row["topic"] or "",
@@ -135,24 +146,68 @@ def _compose(db: Session) -> list[dict]:
             # **여기서 싣는 이유는 재질의를 안 하기 위해서다** — `list_dataset_cores` 가
             # 상세와 같은 열(`d3_dataset_description.summary`)을 이미 들고 왔다.
             "_summary": core.summary,
+            # ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 3축 조건이 읽는 값.** 밑줄 열쇠인 이유는
+            # `DatasetRow` 가 `additionalProperties: false` 이고 표 8열이 이 값을 안 그리기
+            # 때문이다 — 조건은 걸어야 하고 응답에는 나가면 안 된다(`_lastModifiedAt` 과 같은 규율).
+            # ⚠ 가공 단계 축이 보는 것은 **사람이 고른 값**이다. 표시용 `processingLevel` 은
+            #   파생값으로 채워져 NULL 이 되는 법이 없어 `미지정` 을 표현할 수가 없다.
+            "_category": core.category,
+            "_dataType": core.data_type,
+            "_processingLevelUserSet": d3_catalog.user_set_level(core),
         })
     return rows
 
 
+def _axis_value(row: dict, axis: str):
+    """축 하나가 보는 행의 값. **여기 한 곳이 축 ↔ 열쇠의 대응표**다."""
+    if axis == "분류":
+        return row["_category"]
+    if axis == "유형":
+        return row["_dataType"]
+    level = row["_processingLevelUserSet"]
+    return None if level is None else f"Lv{level}"
+
+
+def _axis_matches(row: dict, axis: str, picked) -> bool:
+    """고른 값 중 하나와 맞는가. **`미지정` 은 NULL 을 고른다** (`UNSPECIFIED` 산문)."""
+    value = _axis_value(row, axis)
+    return (value in set(picked)) or (value is None and UNSPECIFIED in set(picked))
+
+
 def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, uploader=None,
-                   lineageState=None, verified=None, skip: str | None = None) -> list[dict]:
-    """열 조건을 건다. `skip` 은 **자기 열의 조건을 빼는 자리**다.
+                   lineageState=None, verified=None, category=None, dataType=None,
+                   skip: str | None = None) -> list[dict]:
+    """열 조건과 **분류 3축 조건**을 건다. `skip` 은 **자기 조건을 빼는 자리**다.
 
     값별 건수를 셀 때 자기 조건까지 걸면 고른 값만 남아 다른 값으로 갈아탈 수가 없다
     (`Policy_데이터_찾기 §5` 값별 건수 — "다른 열에 걸린 조건을 먼저 적용한 뒤에 센다").
+
+    ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 세 축은 서로 AND 이고 열 조건과도 AND 다.**
+    한 축 **안**에서 여러 값을 고르면 그 축은 OR 다 — 열 조건과 같은 규율이다.
+    ⛔ 조합 검증을 만들지 않는다(미결-14 ⓐ) — 세 축을 각자 따로 본다.
     """
+    if category and skip != "분류":
+        rows = [r for r in rows if _axis_matches(r, "분류", category)]
+    if dataType and skip != "유형":
+        rows = [r for r in rows if _axis_matches(r, "유형", dataType)]
     if topic and skip != "주제":
         rows = [r for r in rows if r["topic"] in set(topic)]
-    if processingLevel and skip != "Level":
+    if processingLevel and skip in ("Level", "가공 단계"):
+        pass
+    elif processingLevel:
         # ⭑ **⟨PRD-10⟩ 거르는 값은 `processingLevel`(사람 값 우선)이다.**
         # 사람 값이 NULL 인 행만 파생값으로 대신 걸린다 — 그 행은 아직 선언이 없어
         # 파생값이 유일한 분류다. ⛔ `processingLevelDerived` 로 거르지 않는다.
-        rows = [r for r in rows if r["processingLevel"] in set(processingLevel)]
+        #
+        # ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 파수꼴 `미지정` 하나가 더 온다.**
+        # **정수 조건의 판정은 한 글자도 바뀌지 않았다**(WU-B5 회귀) — 파수꼴은 그 옆에서
+        # 「사람이 아직 안 골랐다」를 고른다. 표시용 값으로는 그 행을 고를 수가 없다:
+        # 파생값이 언제나 채워져 NULL 이 되는 법이 없다.
+        levels = {v for v in processingLevel if v != UNSPECIFIED}
+        want_unset = UNSPECIFIED in set(processingLevel)
+        rows = [r for r in rows
+                if r["processingLevel"] in levels
+                or (want_unset and r["_processingLevelUserSet"] is None)]
     if uploader and skip != "업로더":
         rows = [r for r in rows if r["uploader"]["accountId"] in set(uploader)]
     if lineageState and skip != "계보":
@@ -162,8 +217,46 @@ def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, upload
     return rows
 
 
+def _parse_levels(raw) -> list:
+    """`processingLevel` 질의값을 **정수 또는 파수꼴**로 읽는다.
+
+    계약이 이 파라미터를 `anyOf[integer, "미지정"]` 으로 넓혔으므로 받는 형은 문자열이고,
+    정수로 읽히는 값은 정수로 되돌린다 — 조건 판정은 종전 그대로다(WU-B5 회귀).
+    ⛔ **둘 중 어느 것도 아니면 400 이다.** 조용히 버리면 「없는 값으로 걸렀더니 0건」과
+       「있는 값으로 걸렀더니 0건」이 화면에서 갈리지 않는다.
+    """
+    parsed: list = []
+    for value in raw or ():
+        if value == UNSPECIFIED:
+            parsed.append(UNSPECIFIED)
+            continue
+        text = str(value)
+        if text.lstrip("-").isdigit():
+            parsed.append(int(text))
+            continue
+        raise errors.bad_request(
+            f"processingLevel 은 정수이거나 `{UNSPECIFIED}` 다.", {"value": text})
+    return parsed
+
+
+def _validate_axes(category, dataType) -> None:
+    """축 값의 형상. **집합 밖 값을 400 으로 막지 않는다** — 조건은 저장이 아니다.
+
+    ⚠ 여기서 보는 것은 **빈 문자열**뿐이다. 값 집합 검사(`_CATEGORIES`·`_DATA_TYPES`)는
+    **쓰기 경로의 일**이고(`validate_human_metadata`), 조건 경로에서 그것을 되풀이하면
+    어휘가 넓어지는 날 필터만 낡아 조용히 400 을 낸다.
+    """
+    for name, values in (("category", category), ("dataType", dataType)):
+        for value in values or ():
+            if not isinstance(value, str) or not value.strip():
+                raise errors.bad_request(f"{name} 조건은 빈 값일 수 없다.")
+
+
 def _validate_filters(processingLevel, lineageState) -> None:
     for level in processingLevel or ():
+        if level == UNSPECIFIED:
+            # 파수꼴은 Lv 상한과 무관하다 — 「아직 안 골랐다」에는 숫자가 없다.
+            continue
         # 상한도 함께 본다 — 없으면 상한 밖 필터가 **조용히 빈 결과**를 낸다.
         # 「없는 값으로 걸렀더니 0 건」과 「있는 값으로 걸렀더니 0 건」은 다르고,
         # 화면은 그 둘을 구분하지 못한다.
@@ -184,7 +277,12 @@ def list_datasets(
     sortColumn: str | None = Query(default=None),
     sortOrder: str | None = Query(default=None),
     topic: list[str] | None = Query(default=None),
-    processingLevel: list[int] | None = Query(default=None),
+    # ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 분류 3축 조건.** 가공 단계는 **있던 파라미터를
+    # 그대로 쓴다** — 새로 만들지 않는다(PRD-05 축자). 받는 형이 문자열인 이유는 파수꼴
+    # `미지정` 하나 때문이고, `_parse_levels` 가 정수로 되돌린다.
+    category: list[str] | None = Query(default=None),
+    dataType: list[str] | None = Query(default=None),
+    processingLevel: list[str] | None = Query(default=None),
     uploader: list[str] | None = Query(default=None),
     lineageState: list[str] | None = Query(default=None),
     verified: bool | None = Query(default=None),
@@ -194,9 +292,12 @@ def list_datasets(
     if sortOrder is not None and sortOrder not in ("오름", "내림"):
         raise errors.bad_request("sortOrder 는 `오름`·`내림` 이다.")
 
-    _validate_filters(processingLevel, lineageState)
-    rows = _apply_filters(_compose(db), topic=topic, processingLevel=processingLevel,
-                          uploader=uploader, lineageState=lineageState, verified=verified)
+    levels = _parse_levels(processingLevel)
+    _validate_axes(category, dataType)
+    _validate_filters(levels, lineageState)
+    rows = _apply_filters(_compose(db), topic=topic, processingLevel=levels,
+                          uploader=uploader, lineageState=lineageState, verified=verified,
+                          category=category, dataType=dataType)
 
     # 기본 정렬은 수정일 최신순 (Policy_데이터_찾기 §5).
     column = sortColumn or "수정일"
@@ -208,7 +309,9 @@ def list_datasets(
     page = rows[offset:offset + PAGE_SIZE]
     next_cursor = _encode_cursor(offset + PAGE_SIZE) if offset + PAGE_SIZE < total else None
     for r in page:
-        r.pop("_lastModifiedAt", None)
+        # 조건용 밑줄 열쇠는 응답에 나가지 않는다 — `DatasetRow` 는 `additionalProperties: false` 다.
+        for key in ("_lastModifiedAt", "_category", "_dataType", "_processingLevelUserSet"):
+            r.pop(key, None)
     return {"items": page, "totalCount": total, "nextCursor": next_cursor}
 
 
@@ -473,7 +576,9 @@ def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
 def list_dataset_facets(
     db: Session = Depends(scoped_db),
     topic: list[str] | None = Query(default=None),
-    processingLevel: list[int] | None = Query(default=None),
+    category: list[str] | None = Query(default=None),
+    dataType: list[str] | None = Query(default=None),
+    processingLevel: list[str] | None = Query(default=None),
     uploader: list[str] | None = Query(default=None),
     lineageState: list[str] | None = Query(default=None),
     verified: bool | None = Query(default=None),
@@ -485,10 +590,13 @@ def list_dataset_facets(
     세는 것만 조건을 건 뒤에 한다. 이 경로는 **`/datasets/{datasetId}` 보다 먼저 등록된다** —
     뒤에 두면 `facets` 가 datasetId 로 먹힌다.
     """
-    _validate_filters(processingLevel, lineageState)
+    levels = _parse_levels(processingLevel)
+    _validate_axes(category, dataType)
+    _validate_filters(levels, lineageState)
     all_rows = _compose(db)
-    filters = {"topic": topic, "processingLevel": processingLevel, "uploader": uploader,
-               "lineageState": lineageState, "verified": verified}
+    filters = {"topic": topic, "processingLevel": levels, "uploader": uploader,
+               "lineageState": lineageState, "verified": verified,
+               "category": category, "dataType": dataType}
 
     #: 값의 모집합. `계보` 만은 enum 넷이 고정이라 행에서 뽑지 않는다 — 한 값이 0건이 되는 순간
     #: 그 조건이 화면에서 사라지면 안 된다.
@@ -518,7 +626,30 @@ def list_dataset_facets(
             "column": column,
             "values": [{"value": v, "count": counted.get(v, 0)} for v in universe[column]],
         })
-    return {"columns": columns}
+
+    # ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 분류 3축의 값별 건수.**
+    # 규율은 열과 같다 — **자기 축의 조건만 빼고** 세고, **0건인 값을 지우지 않는다**
+    # (`Policy_데이터_찾기 §5`). 축의 값 모집합은 행이 아니라 **고정 어휘**에서 온다:
+    # 아직 아무도 안 고른 값이 메뉴에서 통째로 사라지면 「그 값이 없다」와 「그 값으로
+    # 걸 수 없다」가 화면에서 갈리지 않는다(카탈로그 `주제` 열이 배운 자리와 같다).
+    # 마지막 값은 언제나 파수꼴 `미지정` 이다 — 재선택 대상을 찾는 항목이다.
+    axis_universe = {
+        "분류": [*_CATEGORIES, UNSPECIFIED],
+        "유형": [*_DATA_TYPES, UNSPECIFIED],
+        "가공 단계": [*_PROCESSING_LEVELS, UNSPECIFIED],
+    }
+    axes = []
+    for axis in AXES:
+        scoped = _apply_filters(all_rows, skip=axis, **filters)
+        counted = {}
+        for row in scoped:
+            value = _axis_value(row, axis) or UNSPECIFIED
+            counted[value] = counted.get(value, 0) + 1
+        axes.append({
+            "axis": axis,
+            "values": [{"value": v, "count": counted.get(v, 0)} for v in axis_universe[axis]],
+        })
+    return {"columns": columns, "axes": axes}
 
 
 def _account_ref(account_id: str | None, name: str | None) -> dict | None:

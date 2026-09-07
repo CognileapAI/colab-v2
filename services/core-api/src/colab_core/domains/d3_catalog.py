@@ -24,6 +24,11 @@ _ROWS = text("""
            -- **같은 표시 규칙**(사람 값 우선)을 따라야 하고, 필터가 거르는 축이 이 값이다.
            -- 이 열이 없으면 목록만 파생값으로 답해 두 화면이 다른 수를 그린다.
            d.processing_level_user_set,
+           -- ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 목록 필터의 두 축.** 이 열이 없으면 3축
+           -- 조건이 전 행 NULL 로 읽혀 **모든 축 필터가 조용히 0건**을 낸다.
+           -- ⚠ 응답에는 안 나간다 — `DatasetRow` 는 `additionalProperties: false` 이고
+           --   표 8열이 이 값을 안 그린다. 조립 층이 밑줄 열쇠로 들고 조건만 건다.
+           dd.category, dd.data_type,
            u.name AS uploader_name,
            -- **조각 수는 메타다** — `d3_file` 을 세지 않는다 (PLAN-SoT §9-㊼).
            -- `body_access` RESTRICTIVE 아래서 본체 테이블을 세면 잠긴 행이 0 을 낸다(실측).
@@ -192,7 +197,9 @@ class DatasetCore:
     observation_interval_unit: str | None = None
     #: 분류 3축 (PRD-01·02·03). **셋 다 `None` 이 정상**이다 — 마이그레이션 `0015` 가
     #: backfill 을 하지 않았고, 그것이 기존 행의 상태다(미결-3 ⓐ).
-    #: ⚠ **목록 질의는 안 읽는다** — `DatasetRow` 에 이 칸이 없다(`WU-B7`). 상세만 채운다.
+    #: ⭑ **⟨20차 해제 · WU-B7⟩ 목록 질의도 `category`·`data_type` 을 읽는다** — 3축 필터의
+    #: 축이기 때문이다. ／ 종전 ~~「목록 질의는 안 읽는다」~~. **응답에는 여전히 안 나간다**
+    #: (`DatasetRow` 무변) — 조립 층이 밑줄 열쇠로 들고 조건만 건다.
     #: ⚠ `processing_level_user_set` 은 **파생 `processing_level()` 과 다른 축**이다 —
     #: 하나는 사람이 고른 문자열, 하나는 계보에서 나온 정수다.
     category: str | None = None
@@ -219,6 +226,7 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
             owner_name=None, source_label=r["source_label"],
             last_modified_at=r["last_modified_at"], uploaded_at=r["uploaded_at"],
             lineage_confirmed_at=r["lineage_confirmed_at"],
+            category=r["category"], data_type=r["data_type"],
             processing_level_user_set=r["processing_level_user_set"],
         )
         for r in rows

@@ -2750,8 +2750,30 @@ export interface components {
              */
             rationale: components["schemas"]["AiRationale"];
         };
-        /** @description 조건을 걸 수 있는 다섯 열의 값별 건수. */
+        /**
+         * @description 조건을 걸 수 있는 다섯 열의 값별 건수.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ `axes` 가 옆에 섰다** — 분류 3축은 표의 **열이
+         *     아니다**(정렬 대상이 아니고 `CatalogColumn` enum 에 넣지 않는다). 필터 바가 읽는
+         *     자리라 `columns` 와 갈라 둔다. **선택 열쇠다** — 옛 소비자는 이 열쇠를 안 본다.
+         */
         FacetSet: {
+            /**
+             * @description 분류 3축의 값별 건수. `columns` 와 같은 규율이다 — **다른 조건을 먼저 적용한
+             *     뒤 세고, 0건인 값을 지우지 않는다**(`Policy_데이터_찾기 §5`).
+             *     각 축의 마지막 값은 파수꼴 `미지정`(그 축이 NULL 인 행)이다.
+             */
+            axes?: {
+                /**
+                 * @description 축 이름. 화면 라벨과 같은 글자다(`분류`·`유형`·`가공 단계`).
+                 * @enum {string}
+                 */
+                axis: "분류" | "유형" | "가공 단계";
+                values: {
+                    value: string;
+                    count: number;
+                }[];
+            }[];
             columns: {
                 column: components["schemas"]["CatalogColumn"];
                 values: {
@@ -2770,26 +2792,28 @@ export interface components {
          *     내부 판별값으로 남되 화면에 쓰지 않는다 — 칸 수는 아홉 그대로다.
          *
          *     ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠가 들어왔다** —
-         *     `category`·`dataType`·`processingLevelUserSet`. **셋 다 optional 이다** —
-         *     마이그레이션 뒤 기존 행이 전부 `null` 이라 `required` 에 올리면 그 행의 상세가
-         *     계약 위반이 된다(미결-3 ⓐ 「전 행 NULL · 자동 매핑 없음」). `required` 승격과
-         *     `DatasetRow`·`SearchHit` 확장은 **`WU-B7`** 몫이다.
+         *     `category`·`dataType`·`processingLevelUserSet`.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-06 · `WU-B7`⟩ `category`·`dataType` 이 required 로 올라왔다.**
+         *     ／ 종전 ~~「셋 다 optional 이다 — 기존 행이 전부 `null` 이라 required 에 올리면
+         *     그 행의 상세가 계약 위반이 된다」~~ — **값이 아니라 열쇠를 승격했다.** 두 열쇠는
+         *     `[string, "null"]` 그대로라 전 행 NULL 이 계약을 안 깬다(미결-3 ⓐ 유지).
+         *     `processingLevelUserSet` 은 종전대로 optional 이다.
          *
          *     ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 열쇠가 들어왔다** —
          *     `sourceUrl`·`sourceDownloadedOn`. **둘 다 optional 이다** — 마이그레이션 `0018`
          *     뒤 기존 행이 전부 `null` 이라 `required` 에 올리면 그 행의 상세가 계약 위반이 된다.
          *     ⚠ **원천 표기(`sourceLabel`)는 그대로 `required` 다** — 그쪽은 Lv 무관 상시 노출이고
-         *     (미결-11 ⓐ) 두 열쇠가 그 칸을 대신하지 않는다. 칸 수는 아홉 그대로이고, 두 열쇠는
-         *     원천 표기 칸 **안쪽**에 붙는 값이다.
+         *     (미결-11 ⓐ) 두 열쇠가 그 칸을 대신하지 않는다. 두 열쇠는 원천 표기 칸 **안쪽**에 붙는 값이다.
          */
         DatasetBasicInfo: {
             /**
              * @description ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 5값.** `null` 이면 화면이
              *     「분류를 아직 안 골랐어요」를 보인다 — 화면이 안 깨지고 재선택을 강제하지 않는다.
              */
-            category?: string | null;
+            category: string | null;
             /** @description ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 6값.** `null` 이면 화면이 「유형 미지정」이다. */
-            dataType?: string | null;
+            dataType: string | null;
             /**
              * @description ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 4값.**
              *     `null` 이면 사람이 아직 고르지 않은 것이고, 그때 상세의 `processingLevel`
@@ -3932,8 +3956,30 @@ export interface components {
         CatalogSortColumn: components["schemas"]["CatalogColumn"];
         /** @description 열 메뉴의 정렬(오름/내림) (`Policy_데이터_찾기 §8` 열 메뉴). */
         SortOrder: components["schemas"]["SortOrder"];
-        /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
+        /**
+         * @description 주제 열 조건. 한 열에서 값을 여러 개 고른다.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 이관 중 · 신규 사용 금지.**
+         *     분류 3축(`category`·`dataType`·`processingLevel`)이 목록 필터의 자리를 받았고
+         *     이 파라미터는 **한 릴리즈 동안만** 살아 있다(PRD-05 축자). 새 호출자는 `category`
+         *     를 쓴다. ⛔ `topic` **컬럼**은 지우지 않는다 — 되돌림 경로다(미결-3 ⓐ).
+         */
         FilterTopic: string[];
+        /**
+         * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 분류 축 조건**(국문 5값 · PRD-01).
+         *     세 축은 **AND** 로 걸린다 — 한 축 안에서 값을 여러 개 고르면 그 축은 OR 다.
+         *
+         *     ⭑ **`미지정` 은 「값이 NULL 인 행」을 고르는 파수꼴(sentinel)이다** —
+         *     기존 행이 전 행 NULL 이라(미결-3 ⓐ) 이 항목이 **재선택이 필요한 행을 사람이
+         *     찾아낼 유일한 경로**다(PRD-05 축자). 저장값 5값에 이 글자가 없으므로 겹치지 않는다.
+         */
+        FilterCategory: string[];
+        /**
+         * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 유형 축 조건**(국문 6값 · PRD-02).
+         *     `미지정` 파수꼴은 `category` 와 같다 — 값이 NULL 인 행을 고른다.
+         *     ⚠ 열쇠는 `dataType` 이고 컬럼은 `data_type` 이다(PRD-02 축자).
+         */
+        FilterDataType: string[];
         /**
          * @description Level 열 조건. 쓰기 바디에는 없다.
          *
@@ -3948,8 +3994,13 @@ export interface components {
          *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
          *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
          *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 가공 단계 축이 이 파라미터를 그대로 쓴다** —
+         *     새로 만들지 않는다. 정수는 종전과 같은 뜻이고(`Lv` 값), **문자열 `미지정` 하나만
+         *     더 받는다**: 사람이 고른 가공 단계(`processingLevelUserSet`)가 NULL 인 행이다.
+         *     ⚠ 정수 조건의 판정은 한 글자도 바뀌지 않는다(WU-B5 회귀).
          */
-        FilterProcessingLevel: number[];
+        FilterProcessingLevel: (number | "미지정")[];
         /** @description 업로더 열 조건. 계정 ID 로 건다. */
         FilterUploader: components["schemas"]["Ulid"][];
         /** @description 계보 열 조건. 값은 `LineageState` 넷뿐이고 숫자를 붙이지 않는다. */
@@ -4634,8 +4685,30 @@ export interface operations {
                 sortColumn?: components["parameters"]["CatalogSortColumn"];
                 /** @description 열 메뉴의 정렬(오름/내림) (`Policy_데이터_찾기 §8` 열 메뉴). */
                 sortOrder?: components["parameters"]["SortOrder"];
-                /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
+                /**
+                 * @description 주제 열 조건. 한 열에서 값을 여러 개 고른다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 이관 중 · 신규 사용 금지.**
+                 *     분류 3축(`category`·`dataType`·`processingLevel`)이 목록 필터의 자리를 받았고
+                 *     이 파라미터는 **한 릴리즈 동안만** 살아 있다(PRD-05 축자). 새 호출자는 `category`
+                 *     를 쓴다. ⛔ `topic` **컬럼**은 지우지 않는다 — 되돌림 경로다(미결-3 ⓐ).
+                 */
                 topic?: components["parameters"]["FilterTopic"];
+                /**
+                 * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 분류 축 조건**(국문 5값 · PRD-01).
+                 *     세 축은 **AND** 로 걸린다 — 한 축 안에서 값을 여러 개 고르면 그 축은 OR 다.
+                 *
+                 *     ⭑ **`미지정` 은 「값이 NULL 인 행」을 고르는 파수꼴(sentinel)이다** —
+                 *     기존 행이 전 행 NULL 이라(미결-3 ⓐ) 이 항목이 **재선택이 필요한 행을 사람이
+                 *     찾아낼 유일한 경로**다(PRD-05 축자). 저장값 5값에 이 글자가 없으므로 겹치지 않는다.
+                 */
+                category?: components["parameters"]["FilterCategory"];
+                /**
+                 * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 유형 축 조건**(국문 6값 · PRD-02).
+                 *     `미지정` 파수꼴은 `category` 와 같다 — 값이 NULL 인 행을 고른다.
+                 *     ⚠ 열쇠는 `dataType` 이고 컬럼은 `data_type` 이다(PRD-02 축자).
+                 */
+                dataType?: components["parameters"]["FilterDataType"];
                 /**
                  * @description Level 열 조건. 쓰기 바디에는 없다.
                  *
@@ -4650,6 +4723,11 @@ export interface operations {
                  *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
                  *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
                  *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 가공 단계 축이 이 파라미터를 그대로 쓴다** —
+                 *     새로 만들지 않는다. 정수는 종전과 같은 뜻이고(`Lv` 값), **문자열 `미지정` 하나만
+                 *     더 받는다**: 사람이 고른 가공 단계(`processingLevelUserSet`)가 NULL 인 행이다.
+                 *     ⚠ 정수 조건의 판정은 한 글자도 바뀌지 않는다(WU-B5 회귀).
                  */
                 processingLevel?: components["parameters"]["FilterProcessingLevel"];
                 /** @description 업로더 열 조건. 계정 ID 로 건다. */
@@ -4733,8 +4811,30 @@ export interface operations {
     listDatasetFacets: {
         parameters: {
             query?: {
-                /** @description 주제 열 조건. 한 열에서 값을 여러 개 고른다. */
+                /**
+                 * @description 주제 열 조건. 한 열에서 값을 여러 개 고른다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 이관 중 · 신규 사용 금지.**
+                 *     분류 3축(`category`·`dataType`·`processingLevel`)이 목록 필터의 자리를 받았고
+                 *     이 파라미터는 **한 릴리즈 동안만** 살아 있다(PRD-05 축자). 새 호출자는 `category`
+                 *     를 쓴다. ⛔ `topic` **컬럼**은 지우지 않는다 — 되돌림 경로다(미결-3 ⓐ).
+                 */
                 topic?: components["parameters"]["FilterTopic"];
+                /**
+                 * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 분류 축 조건**(국문 5값 · PRD-01).
+                 *     세 축은 **AND** 로 걸린다 — 한 축 안에서 값을 여러 개 고르면 그 축은 OR 다.
+                 *
+                 *     ⭑ **`미지정` 은 「값이 NULL 인 행」을 고르는 파수꼴(sentinel)이다** —
+                 *     기존 행이 전 행 NULL 이라(미결-3 ⓐ) 이 항목이 **재선택이 필요한 행을 사람이
+                 *     찾아낼 유일한 경로**다(PRD-05 축자). 저장값 5값에 이 글자가 없으므로 겹치지 않는다.
+                 */
+                category?: components["parameters"]["FilterCategory"];
+                /**
+                 * @description ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 유형 축 조건**(국문 6값 · PRD-02).
+                 *     `미지정` 파수꼴은 `category` 와 같다 — 값이 NULL 인 행을 고른다.
+                 *     ⚠ 열쇠는 `dataType` 이고 컬럼은 `data_type` 이다(PRD-02 축자).
+                 */
+                dataType?: components["parameters"]["FilterDataType"];
                 /**
                  * @description Level 열 조건. 쓰기 바디에는 없다.
                  *
@@ -4749,6 +4849,11 @@ export interface operations {
                  *     셀렉트가 `listDatasets` 를 이 조건으로 부른다. ⛔ **서버가 자기 Lv 초과 후보를
                  *     지우지 않는다**(PRD-08 축자 「숨기지는 않는다」) — 이 파라미터는 **사람이 고른 조건**
                  *     이지 자기 Lv 로 자동으로 걸리는 문이 아니다. 전부 내려가고 화면이 상태로 가른다.
+                 *
+                 *     ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 가공 단계 축이 이 파라미터를 그대로 쓴다** —
+                 *     새로 만들지 않는다. 정수는 종전과 같은 뜻이고(`Lv` 값), **문자열 `미지정` 하나만
+                 *     더 받는다**: 사람이 고른 가공 단계(`processingLevelUserSet`)가 NULL 인 행이다.
+                 *     ⚠ 정수 조건의 판정은 한 글자도 바뀌지 않는다(WU-B5 회귀).
                  */
                 processingLevel?: components["parameters"]["FilterProcessingLevel"];
                 /** @description 업로더 열 조건. 계정 ID 로 건다. */
