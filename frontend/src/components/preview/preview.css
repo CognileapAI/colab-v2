@@ -325,3 +325,20 @@
   border-radius: 0;
   background: none;
 }
+
+/* WU-C3 — 틀 안 컨트롤 줄(파일·변수·시각). **자리가 상태마다 사라지지 않는다** —
+   후보가 없어도 잠긴 채 서 있다(WU-C1 의 치수 불변 규율과 같은 이유). */
+.pv-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pv-pick-f {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pv-pick-f > span {
+  font-size: 12px;
+}

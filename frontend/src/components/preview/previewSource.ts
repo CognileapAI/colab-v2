@@ -14,6 +14,13 @@ import {
   type RenderJob,
   type RerenderInput,
 } from './types';
+import {
+  RenderTooLarge,
+  isRenderTooLarge,
+  pieceOfUploadFile,
+  type PreviewPiece,
+  type TargetDescription,
+} from './pick';
 
 /** `ErrorEnvelope.details` 는 자유 객체다. 생성 타입을 고치지 않고 여기서 좁혀 읽는다. */
 function renderableFormatsOf(body: unknown): string[] {
@@ -24,7 +31,9 @@ function renderableFormatsOf(body: unknown): string[] {
   return Array.isArray(list) ? list.filter((v): v is string => typeof v === 'string') : [];
 }
 
-function messageOf(body: unknown, fallback: string): string {
+function messageOf(body: unknown, fallback: string): string;
+function messageOf(body: unknown, fallback: undefined): string | undefined;
+function messageOf(body: unknown, fallback: string | undefined): string | undefined {
   if (typeof body === 'object' && body !== null) {
     const m = (body as { message?: unknown }).message;
     if (typeof m === 'string' && m.length > 0) return m;
@@ -32,7 +41,7 @@ function messageOf(body: unknown, fallback: string): string {
   return fallback;
 }
 
-export function apiPreviewSource(): PreviewSource {
+export function apiPreviewSource(uploadId: string): PreviewSource {
   return {
     async get(renderId) {
       const r = await api.GET('/previews/{renderId}', { params: { path: { renderId } } });
@@ -58,11 +67,21 @@ export function apiPreviewSource(): PreviewSource {
     async create(input: RerenderInput) {
       const r = await api.POST('/previews', {
         body: {
-          target: { uploadId: input.uploadId },
+          // 고르개가 고른 것만 실린다 — **생략은 「서버가 고른다」는 뜻이다**(계약 산문).
+          target: {
+            uploadId: input.uploadId,
+            ...(input.fileIds ? { fileIds: input.fileIds } : {}),
+          },
           style: { palette: input.palette, classCount: input.classCount },
+          ...(input.variable ? { variable: input.variable } : {}),
+          ...(input.instant ? { instant: input.instant } : {}),
           withoutReferenceGrid: input.withoutReferenceGrid,
         } as never,
       });
+      // WU-C3 — **413 은 만들 수 없음이 아니다.** 조각 하나로 다시 그릴 수 있다는 사실이다.
+      if (isRenderTooLarge(r.response.status, r.error)) {
+        throw new RenderTooLarge(messageOf(r.error, undefined));
+      }
       if (r.response.status === 404 || r.response.status === 410) throw new PreviewGone();
       if (r.response.status === 415) {
         throw new NotRenderableError(
@@ -76,6 +95,25 @@ export function apiPreviewSource(): PreviewSource {
         );
       }
       return r.data as RenderJob;
+    },
+
+    /** WU-C3 — 등록 전 업로드의 조각 목록. 원장이 `UploadStatus.files` 로 이미 말한다. */
+    async files(): Promise<PreviewPiece[]> {
+      const r = await api.GET('/uploads/{uploadId}', { params: { path: { uploadId } } });
+      if (!r.data) throw new PreviewUnavailable('조각 목록을 받지 못했어요.');
+      return (r.data.files ?? []).map(pieceOfUploadFile);
+    },
+
+    /** WU-C3 — 변수·시각 후보. **중계 경로가 core-viz 와 일부러 다르다**(계약 산문 축자). */
+    async describe(): Promise<TargetDescription> {
+      const r = await api.POST('/preview-target-descriptions', {
+        body: { uploadId } as never,
+      });
+      if (isRenderTooLarge(r.response.status, r.error)) {
+        throw new RenderTooLarge(messageOf(r.error, undefined));
+      }
+      if (!r.data) throw new PreviewUnavailable('고를 수 있는 값을 받지 못했어요.');
+      return r.data as TargetDescription;
     },
 
     async probeTile(url) {

@@ -1,6 +1,7 @@
 // S-08 미등록 미리보기의 타입·포트. **타입은 전부 생성물에서 온다** — 여기서 다시 선언하지 않는다
 // (`CLAUDE.md §3-7` · `frontend/README.md`). 이 파일이 새로 만드는 것은 화면 쪽 어휘뿐이다.
 import type { Schemas } from '../../api/client';
+import type { PreviewPiece, TargetDescription } from './pick';
 
 export type RenderJob = Schemas['RenderJob'];
 export type RenderStage = Schemas['RenderStage'];
@@ -43,12 +44,22 @@ export interface PreviewHandoff {
   files: UploadFileRef[];
 }
 
-/** 다시 그리기 요청. 컨트롤이 정본에서 둘뿐이라 실리는 값도 둘뿐이다. */
+/**
+ * 다시 그리기 요청. 표현 컨트롤은 정본에서 둘뿐이고(팔레트·구간 수), **고르개 셋(WU-C3)이
+ * 얹히는 자리는 그 옆이다** — 계약 `RenderTarget.fileIds` · `RenderRequest.variable`·`instant`.
+ * 셋 다 **선택**이다: 생략하면 서버가 고른다(계약 산문 축자).
+ */
 export interface RerenderInput {
   uploadId: string;
   palette: string;
   classCount: number;
   withoutReferenceGrid: boolean;
+  /** 그릴 조각. 생략하면 대상 전체다 — 500MB 폴백이 여기로 온다. */
+  fileIds?: string[] | undefined;
+  /** 그릴 값 하나. 생략하면 viz-render 가 고른다. */
+  variable?: string | undefined;
+  /** 그릴 시각. 생략하면 첫 시각이다. */
+  instant?: string | undefined;
 }
 
 /**
@@ -78,4 +89,12 @@ export interface PreviewSource {
   create(input: RerenderInput): Promise<RenderJob>;
   /** 타일 한 장을 찔러 본다. 401 = 만료 (서명이 결과 수명과 함께 죽는다, `〈68〉`-ⓓ). */
   probeTile(url: string): Promise<'ok' | 'expired'>;
+  /**
+   * WU-C3 — 대상의 조각 목록. **413 폴백과 파일 고르개의 유일한 후보 출처다.**
+   * 선택 메서드인 것은 이 포트를 이미 구현한 자리(시험 픽스처 포함)를 깨지 않기 위해서다 —
+   * 없으면 폴백을 하지 않고 **기존 실패 경로**로 간다(없는 것을 지어내지 않는다).
+   */
+  files?(): Promise<PreviewPiece[]>;
+  /** WU-C3 — 변수·시각 후보와 **서버 기본값** (`describeTarget` 중계). */
+  describe?(): Promise<TargetDescription>;
 }

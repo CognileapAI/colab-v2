@@ -46,7 +46,10 @@ export function UnregisteredPreviewPage(props: { source?: PreviewSource; pollMs?
   const handoff = useMemo(() => readPreviewHandoff(location.state), [location.state]);
   const renderId = params.get(RENDER_QUERY_KEY) ?? handoff?.renderId;
 
-  const source = useMemo(() => props.source ?? apiPreviewSource(), [props.source]);
+  const source = useMemo(
+    () => props.source ?? apiPreviewSource(uploadId),
+    [props.source, uploadId],
+  );
   const { state, rerender } = usePreviewRender({
     source,
     renderId: renderId ?? undefined,

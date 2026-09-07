@@ -20,6 +20,14 @@ import type {
   ScreenshotRequest,
   ValueLookupResult,
 } from './types';
+import {
+  RenderTooLarge,
+  TOO_LARGE_MESSAGE,
+  isRenderTooLarge,
+  pieceOfDatasetFile,
+  type PreviewPiece,
+  type TargetDescription,
+} from '../preview/pick';
 
 /** `ErrorEnvelope.details` 는 자유 객체다. 생성 타입을 고치지 않고 여기서 좁혀 읽는다. */
 function renderableFormatsOf(body: unknown): string[] {
@@ -54,6 +62,27 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
       return r.data as ValueLookupResult;
     },
 
+    /** WU-C3 — 조각 목록. 「보기」를 누르는 목록과 **같은 op** 을 쓴다(새 경로 0). */
+    async files(): Promise<PreviewPiece[]> {
+      const r = await api.GET('/datasets/{datasetId}/files', {
+        params: { path: { datasetId } },
+      });
+      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      return (r.data.items ?? []).map(pieceOfDatasetFile);
+    },
+
+    /** WU-C3 — 변수·시각 후보와 서버 기본값. **읽기 전용이다** — 렌더를 만들지 않는다. */
+    async describe(): Promise<TargetDescription> {
+      const r = await api.POST('/preview-target-descriptions', {
+        body: { datasetId } as never,
+      });
+      if (isRenderTooLarge(r.response.status, r.error)) {
+        throw new RenderTooLarge(messageOf(r.error, TOO_LARGE_MESSAGE));
+      }
+      if (!r.data) throw new PreviewUnavailable(messageOf(r.error, UNAVAILABLE_MESSAGE));
+      return r.data as TargetDescription;
+    },
+
     async palettes(): Promise<PaletteOption[]> {
       const r = await api.GET('/preview-palettes');
       // 503 = `RENDER_UNAVAILABLE`. **빈 배열로 접지 않는다** — 화면이 「팔레트가 없다」고
@@ -66,10 +95,20 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
       const r = await api.POST('/previews', {
         body: {
           // **대상은 정확히 하나다** (`core-viz.yaml` RenderTarget). 등록된 데이터셋이다.
-          target: { datasetId: input.datasetId },
+          // 고른 조각·값·시각은 **고른 것만** 실린다 — 생략은 「서버가 고른다」는 뜻이다.
+          target: {
+            datasetId: input.datasetId,
+            ...(input.fileIds ? { fileIds: input.fileIds } : {}),
+          },
           style: { palette: input.palette, classCount: input.classCount },
+          ...(input.variable ? { variable: input.variable } : {}),
+          ...(input.instant ? { instant: input.instant } : {}),
         } as never,
       });
+      // WU-C3 — 413 은 **조각 하나로 다시 그릴 수 있다**는 사실이다. 「만들 수 없음」이 아니다.
+      if (isRenderTooLarge(r.response.status, r.error)) {
+        throw new RenderTooLarge(messageOf(r.error, TOO_LARGE_MESSAGE));
+      }
       if (r.response.status === 404 || r.response.status === 410) throw new PreviewGone();
       if (r.response.status === 415) {
         throw new NotRenderableError(

@@ -8,6 +8,7 @@
 // 정확히 하나다」). **계약을 고치지 않았다.**
 import type { Schemas } from '../../api/client';
 import type { RenderJob } from '../preview/types';
+import type { PreviewPiece, TargetDescription } from '../preview/pick';
 
 /**
  * 스크린샷 요청 = **생성물의 `ScreenshotRequest` 그대로**다
@@ -30,6 +31,14 @@ export interface DatasetRenderInput {
   palette: string;
   /** `Policy_데이터셋_상세 §5` — 3~9 단계. 기본 6. */
   classCount: number;
+  /**
+   * WU-C3 — 고르개 셋이 싣는 값. **표현 종류가 아니다**: 무엇을 그릴지(조각·값·시각)이고
+   * 계약이 이미 받는 자리다(`RenderTarget.fileIds`·`RenderRequest.variable`·`instant`).
+   * 셋 다 생략하면 서버가 고른다.
+   */
+  fileIds?: string[] | undefined;
+  variable?: string | undefined;
+  instant?: string | undefined;
 }
 
 /**
@@ -71,4 +80,12 @@ export interface DatasetPreviewSource {
    * 못 닿으면 예외다: **값을 지어내지 않는다.**
    */
   lookupValue(point: { lat: number; lon: number }): Promise<ValueLookupResult>;
+  /**
+   * WU-C3 — 조각 목록 (`listDatasetFiles`). **413 폴백과 파일 고르개의 후보 출처다.**
+   * 선택 메서드인 것은 이 포트를 이미 구현한 자리를 깨지 않기 위해서다 — 없으면 폴백을
+   * 하지 않고 기존 실패 경로로 간다.
+   */
+  files?(): Promise<PreviewPiece[]>;
+  /** WU-C3 — 변수·시각 후보와 서버 기본값 (`describeTarget` 중계). */
+  describe?(): Promise<TargetDescription>;
 }

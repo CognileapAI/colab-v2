@@ -17,6 +17,7 @@ import {
   type RerenderInput,
 } from './types';
 import { tileUrl } from './tiles';
+import { createWithPieceFallback, RenderTooLarge, type PreviewPiece } from './pick';
 
 /** 만료 문구는 정본 §8.1 수명 행·§9 마지막 행 그대로다. 여기서 새로 쓰지 않는다. */
 export const EXPIRED_MESSAGE = '이 파일은 더 이상 없어요. 다시 올려 주세요.';
@@ -39,6 +40,8 @@ export interface UsePreviewRenderInput {
 export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderInput): {
   state: PreviewState;
   rerender: (input: RerenderInput) => void;
+  /** WU-C3 — 500MB 폴백이 **실제로 그린 조각**. 없으면 폴백이 돌지 않았다는 뜻이다. */
+  fallbackPiece: PreviewPiece | undefined;
 } {
   // 다시 그리기가 **같은 renderId** 를 돌려줄 수도 있으므로 회차를 함께 센다 —
   // id 만 보면 그 경우에 조회가 다시 시작되지 않고 화면이 `그리는 중` 에 멈춘다
@@ -49,6 +52,8 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     renderId ? { phase: '그리는 중' } : { phase: '이어받은 미리보기 없음' },
   );
   const probed = useRef<string | null>(null);
+  // WU-C3 — 폴백이 고른 조각. **틀 안 안내가 이 값 하나로 선다.**
+  const [fallbackPiece, setFallbackPiece] = useState<PreviewPiece | undefined>(undefined);
 
   useEffect(() => {
     if (!current) return;
@@ -125,9 +130,19 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     (input: RerenderInput) => {
       setState({ phase: '그리는 중' });
       probed.current = null;
-      source
-        .create(input)
-        .then((job) => setCurrent((prev) => ({ id: job.renderId, nonce: (prev?.nonce ?? 0) + 1 })))
+      // ⑴ **500MB 조각 폴백은 여기 한 자리다** — 두 화면(S-08 · 상세)이 전부 이 훅을 지난다.
+      //    413 `RENDER_TOO_LARGE` → files 조회 → 첫 renderable → `fileIds:[그것]` 재요청.
+      //    폴백 자체가 실패하면 아래 **기존 실패 경로**가 그대로 받는다.
+      const files = source.files ? () => source.files!() : undefined;
+      createWithPieceFallback({
+        create: (fileIds) =>
+          source.create(fileIds ? { ...input, fileIds } : { ...input, fileIds: input.fileIds }),
+        files,
+      })
+        .then(({ job, piece }) => {
+          setFallbackPiece(piece);
+          setCurrent((prev) => ({ id: job.renderId, nonce: (prev?.nonce ?? 0) + 1 }));
+        })
         .catch((e) => {
           if (e instanceof PreviewGone) setState({ phase: '만료됨' });
           else if (e instanceof NotRenderableError)
@@ -139,8 +154,9 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
           else
             setState({
               phase: '만들 수 없음',
+              // 폴백까지 못 간 413 은 **서버 문면 그대로** 말한다 — 새 문장을 짓지 않는다.
               message:
-                e instanceof PreviewUnavailable
+                e instanceof PreviewUnavailable || e instanceof RenderTooLarge
                   ? e.message
                   : '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.',
             });
@@ -149,5 +165,5 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     [source],
   );
 
-  return { state, rerender };
+  return { state, rerender, fallbackPiece };
 }

@@ -5,6 +5,7 @@
 // (`CLAUDE.md §3-6·§3-7` · `frontend/src/generated/README.md`).
 import type { Schemas } from '../../api/client';
 import type { LineageSource, ParentCard } from '../lineage/types';
+import type { PreviewPiece, TargetDescription } from '../preview/pick';
 
 export type FileKind = Schemas['FileKind'];
 export type UploadReceipt = Schemas['UploadReceipt'];
@@ -132,6 +133,13 @@ export interface PreviewSource {
   palettes(): Promise<PaletteOption[]>;
   createRender(req: RenderRequest): Promise<RenderJob>;
   getRender(renderId: string): Promise<RenderJob>;
+  /**
+   * WU-C3 — 대상의 조각 목록. **500MB 폴백과 파일 고르개의 유일한 후보 출처다.**
+   * 선택 메서드인 것은 이 포트를 이미 구현한 자리(시험 픽스처 포함)를 깨지 않기 위해서다.
+   */
+  files?(uploadId: string): Promise<PreviewPiece[]>;
+  /** WU-C3 — 변수·시각 후보와 **서버 기본값** (`describeTarget` 중계). */
+  describe?(uploadId: string): Promise<TargetDescription>;
 }
 
 export interface ProjectSource {

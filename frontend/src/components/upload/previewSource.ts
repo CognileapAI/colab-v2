@@ -6,6 +6,14 @@
 // ⑶ 만료된 렌더의 타일은 FE 에 **401** 로 온다 — 사람 권한 문제가 아니라 만료다.
 import { api } from '../../api/client';
 import { NotImplemented, type PaletteOption, type PreviewSource, type RenderRequest } from './types';
+import {
+  RenderTooLarge,
+  TOO_LARGE_MESSAGE,
+  isRenderTooLarge,
+  pieceOfUploadFile,
+  type PreviewPiece,
+  type TargetDescription,
+} from '../preview/pick';
 
 /**
  * ⭑ **⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 4⟩ `listPalettes` 중계가 열렸다.**
@@ -37,8 +45,27 @@ export function apiPreviewSource(): PreviewSource {
     async createRender(req: RenderRequest) {
       const r = await api.POST('/previews', { body: req });
       if (r.response.status === 501) throw new NotImplemented();
+      // WU-C3 — **413 은 조각 하나로 다시 그릴 수 있다는 사실이다.** 일반 실패로 접지 않는다.
+      if (isRenderTooLarge(r.response.status, r.error)) throw new RenderTooLarge(TOO_LARGE_MESSAGE);
       if (!r.data) throw new Error('미리보기를 시작하지 못했어요.');
       return r.data;
+    },
+
+    /** WU-C3 — 등록 전 업로드의 조각 목록. 원장이 `UploadStatus.files` 로 이미 말한다. */
+    async files(uploadId: string): Promise<PreviewPiece[]> {
+      const r = await api.GET('/uploads/{uploadId}', { params: { path: { uploadId } } });
+      if (r.response.status === 501) throw new NotImplemented();
+      if (!r.data) throw new Error('조각 목록을 받지 못했어요.');
+      return (r.data.files ?? []).map(pieceOfUploadFile);
+    },
+
+    /** WU-C3 — 변수·시각 후보. 중계 경로는 core-viz 와 **일부러 다르다**(계약 산문 축자). */
+    async describe(uploadId: string): Promise<TargetDescription> {
+      const r = await api.POST('/preview-target-descriptions', { body: { uploadId } as never });
+      if (r.response.status === 501) throw new NotImplemented();
+      if (isRenderTooLarge(r.response.status, r.error)) throw new RenderTooLarge(TOO_LARGE_MESSAGE);
+      if (!r.data) throw new Error('고를 수 있는 값을 받지 못했어요.');
+      return r.data as TargetDescription;
     },
 
     async getRender(renderId: string) {
