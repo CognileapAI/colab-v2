@@ -1,6 +1,8 @@
 // 카탈로그의 화면 상태. 조건·정렬은 여기 한 곳에만 산다 (표 헤더가 유일한 조작 자리이므로).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  AxisFilters,
+  AxisName,
   CatalogColumn,
   CatalogFilters,
   CatalogList,
@@ -28,6 +30,11 @@ export type CatalogState = {
   hasConditions: boolean;
   /** 다시 불러오기 — 실패 자리의 손잡이가 부른다. 조건·정렬은 그대로 둔다. */
   reload: () => void;
+  /**
+   * ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 축 하나를 고른다.** `null` 이면 그 축의 조건을 푼다
+   * (`분류 전체`). 축은 한 값이라 토글이 아니라 **치환**이다.
+   */
+  setAxis: (axis: AxisName, value: string | null) => void;
   setSort: (column: CatalogColumn, order: SortOrder) => void;
   toggleValue: (column: CatalogColumn, value: FacetValue) => void;
   clearColumn: (column: CatalogColumn) => void;
@@ -42,8 +49,16 @@ export type CatalogState = {
  * ⚠ 조건의 **조작 자리는 여전히 표 헤더 하나뿐이다** — 이 값은 첫 상태일 뿐이고
  * 조건 툴바를 새로 만들지 않는다 (`Policy_데이터_찾기 §1.3-9`).
  */
-export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters = {}): CatalogState {
-  const [query, setQuery] = useState<CatalogQuery>({ sort: DEFAULT_SORT, filters: initialFilters });
+export function useCatalog(
+  source: CatalogSource,
+  initialFilters: CatalogFilters = {},
+  initialAxes: AxisFilters = {},
+): CatalogState {
+  const [query, setQuery] = useState<CatalogQuery>({
+    sort: DEFAULT_SORT,
+    filters: initialFilters,
+    axes: initialAxes,
+  });
   const [list, setList] = useState<CatalogList | null>(null);
   const [facets, setFacets] = useState<FacetSet | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +67,10 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   const hasConditions = useMemo(
-    () => Object.values(query.filters).some((v) => v && v.length > 0),
-    [query.filters],
+    () =>
+      Object.values(query.filters).some((v) => v && v.length > 0) ||
+      Object.values(query.axes).some((v) => !!v),
+    [query.filters, query.axes],
   );
 
   useEffect(() => {
@@ -106,7 +123,16 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
     });
   }, []);
 
-  const clearAll = useCallback(() => setQuery((q) => ({ ...q, filters: {} })), []);
+  const setAxis = useCallback((axis: AxisName, value: string | null) => {
+    setQuery((q) => {
+      const axes = { ...q.axes };
+      if (value === null) delete axes[axis];
+      else axes[axis] = value;
+      return { ...q, axes };
+    });
+  }, []);
+
+  const clearAll = useCallback(() => setQuery((q) => ({ ...q, filters: {}, axes: {} })), []);
 
   return {
     query,
@@ -116,6 +142,7 @@ export function useCatalog(source: CatalogSource, initialFilters: CatalogFilters
     error,
     hasConditions,
     reload,
+    setAxis,
     setSort,
     toggleValue,
     clearColumn,

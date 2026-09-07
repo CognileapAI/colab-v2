@@ -13,15 +13,37 @@
 //   · 픽스처는 시험이 **손으로 꽂을 때만** 선다 (`fixtureCatalogSource()` 를 인자로).
 import { api } from '../../api/client';
 import type { CatalogQuery, CatalogSource, DatasetRow, FacetSet, LineageState } from './types';
+import { UNSPECIFIED } from './axisFilters';
 
-function queryParams(q: CatalogQuery) {
+/**
+ * ⭑ **⟨20차 해제 · PRD-05 · `WU-B7`⟩ 가공 단계 축과 `Level` 열이 같은 파라미터를 쓴다.**
+ * 계약이 그 파라미터를 새로 만들지 말라고 했고(PRD-05 축자), 받는 형이 문자열인 이유는
+ * 파수꼴 `미지정` 하나 때문이다 — 정수는 정수 글자 그대로 실린다(WU-B5 회귀).
+ */
+function levelParams(q: CatalogQuery): (number | '미지정')[] {
+  const fromColumn = (q.filters['Level'] ?? []).map(Number);
+  const fromAxis = q.axes['가공 단계'];
+  // 축은 `Lv2` 라벨을 들고 있지만 파라미터는 **정수**다 — 파수꼴만 글자 그대로 간다.
+  const axisValue: (number | '미지정')[] =
+    fromAxis === undefined ? [] : [fromAxis === UNSPECIFIED ? UNSPECIFIED : Number(fromAxis.slice(2))];
+  return [...fromColumn, ...axisValue];
+}
+
+/**
+ * 화면 상태 → 계약 질의 파라미터. **export 인 이유는 시험이 이 대응을 직접 재기 위해서다** —
+ * 축을 골랐는데 파라미터 이름이 갈리면 표는 조용히 전건을 그린다(0건이 아니라서 안 드러난다).
+ */
+export function queryParams(q: CatalogQuery) {
   const f = q.filters;
   const verified = f['Verified'];
+  const levels = levelParams(q);
   return {
     sortColumn: q.sort.column,
     sortOrder: q.sort.order,
     ...(f['주제']?.length ? { topic: f['주제'].map(String) } : {}),
-    ...(f['Level']?.length ? { processingLevel: f['Level'].map(Number) } : {}),
+    ...(q.axes['분류'] ? { category: [q.axes['분류']] } : {}),
+    ...(q.axes['유형'] ? { dataType: [q.axes['유형']] } : {}),
+    ...(levels.length ? { processingLevel: levels } : {}),
     ...(f['업로더']?.length ? { uploader: f['업로더'].map(String) } : {}),
     // 값은 계보 열 메뉴(=`LineageState` 넷)에서만 온다
     ...(f['계보']?.length ? { lineageState: f['계보'].map(String) as LineageState[] } : {}),

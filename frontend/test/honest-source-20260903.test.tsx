@@ -82,14 +82,14 @@ describe('출처 넷은 실패를 픽스처로 덮지 않는다', () => {
   }> = [
     {
       name: 'catalogSource.list',
-      call: () => apiCatalogSource().list({ sort: DEFAULT_SORT, filters: {} }),
+      call: () => apiCatalogSource().list({ sort: DEFAULT_SORT, filters: {}, axes: {} }),
       ok: { items: [], totalCount: 7 },
       read: (v) => (v as { totalCount: number }).totalCount,
       expected: 7,
     },
     {
       name: 'catalogSource.facets',
-      call: () => apiCatalogSource().facets({ sort: DEFAULT_SORT, filters: {} }),
+      call: () => apiCatalogSource().facets({ sort: DEFAULT_SORT, filters: {}, axes: {} }),
       ok: { 주제: [{ value: '수문', count: 3 }] },
       read: (v) => (v as Record<string, unknown[]>)['주제']?.length,
       expected: 1,

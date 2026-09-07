@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppliedConditions } from '../components/catalog/AppliedConditions';
+import { AxisFilterBar } from '../components/catalog/AxisFilterBar';
 import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
 import { useCatalog } from '../components/catalog/useCatalog';
 import { LoadFailure } from '../components/common/LoadFailure';
-import type { CatalogFilters, CatalogSource } from '../components/catalog/types';
+import type { AxisFilters, CatalogFilters, CatalogSource } from '../components/catalog/types';
 import { describeFileError } from '../components/detail/FileList';
 import { useStartDownload } from '../components/detail/download';
 import { apiFileSource } from '../components/detail/fileSource';
@@ -32,7 +33,19 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
     if (topic) filters['주제'] = [topic];
     return filters;
   }, [params]);
-  const state = useCatalog(source, initialFilters);
+  // ⭑ **⟨20차 해제 · PRD-05 · WU-B7⟩ 3축도 주소로 걸고 들어올 수 있다.** 홈에서 오는 링크가
+  // 이 자리를 쓴다 — 카탈로그가 이미 거는 조건만 주소가 나른다(옛 두 열과 같은 규율).
+  const initialAxes = useMemo<AxisFilters>(() => {
+    const axes: AxisFilters = {};
+    const category = params.get('category');
+    const dataType = params.get('dataType');
+    const level = params.get('processingLevel');
+    if (category) axes['분류'] = category;
+    if (dataType) axes['유형'] = dataType;
+    if (level) axes['가공 단계'] = level;
+    return axes;
+  }, [params]);
+  const state = useCatalog(source, initialFilters, initialAxes);
   // 빠른 작업의 다운로드는 **티켓**이다 (`〈339〉-(다)`). 읽기 폴백을 두는 표와 달리 여기는 폴백이 없다
   const fileSource = useMemo(() => props.fileSource ?? apiFileSource(), [props.fileSource]);
   const download = useStartDownload();
@@ -92,6 +105,8 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
           <LoadFailure message={state.error} onRetry={state.reload} testId="catalog-error" />
         ) : (
           <>
+            {/* 3축 필터 바 — 표 헤더의 열 조건과 **나란히** 선다 (PRD-05) */}
+            <AxisFilterBar axes={state.query.axes} facets={state.facets} onPick={state.setAxis} />
             <AppliedConditions
               filters={state.query.filters}
               uploaderNames={uploaderNames}

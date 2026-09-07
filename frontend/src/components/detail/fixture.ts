@@ -71,6 +71,10 @@ function fromCatalogRowOnly(row: {
     lastModifiedAt: row.lastModifiedAt,
     lineageConfirmedAt: row.lineageConfirmedAt,
     basicInfo: {
+      // ⭑ ⟨WU-B7 · PRD-06⟩ 두 열쇠는 **required** 다 — 값이 NULL 이어도 열쇠는 있다.
+      //    기존 행이 전 행 NULL 이라(미결-3 ⓐ) 픽스처의 기본도 `null` 이다.
+      category: null,
+      dataType: null,
       variables: [],
       crs: null,
       period: null,
@@ -108,6 +112,11 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     lastModifiedAt: '2026-08-11T00:00:00Z',
     lineageConfirmedAt: '2026-07-30T00:00:00Z',
     basicInfo: {
+      // ⭑ ⟨WU-B7 · PRD-06⟩ 상세 3행이 읽는 값. 목업 원장이 말하지 않는 칸은 `null` 이고
+      //    화면은 그 자리에서 「미지정」을 보인다 — 지어내지 않는다.
+      category: '수문 인자',
+      dataType: '재분석자료',
+      processingLevelUserSet: 'Lv2',
       // ⭑ ⟨WU-B2 · PRD-16⟩ 객체 배열이다. 목업 원장은 이름 한 줄만 말하므로 단위·값
       // 범위·결측률은 **`null`** 이고 그 한 행이 대표다 — 지어내지 않는다.
       variables: [

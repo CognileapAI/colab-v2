@@ -16,6 +16,7 @@ import {
 } from './format';
 import type { DatasetFile, FilesSource } from './filesSource';
 import type { DatasetBasicInfo } from './types';
+import { AXIS_UNSET_NUDGE, UNSPECIFIED_CELL } from '../catalog/axisFilters';
 
 export function BasicInfoGrid(props: {
   basicInfo: DatasetBasicInfo;
@@ -62,7 +63,20 @@ export function BasicInfoGrid(props: {
   // ⛔ 안내로만이다 — 저장을 막지 않고 재입력을 강제하지 않는다.
   const lv0SourceMissing =
     b.processingLevelDerived === 0 && !b.sourceUrl && !b.sourceDownloadedOn;
+  // ⭑ **⟨20차 해제 · PRD-06 · WU-B7⟩ 분류 3축 3행이 **이 순서로** 맨 앞에 선다.**
+  // 값은 목록 필터에 넣는 문자열과 **같다** — 다르면 사람이 상세에서 본 글자를 필터에
+  // 넣었을 때 0건이 나온다(수용 기준 축자).
+  // NULL 이면 「미지정」이고 그 옆에 수정 진입 유도 한 줄이 선다 — ⛔ 재선택을 강제하지
+  // 않는다(미결-3 ⓐ · 「관측 간격 미기재」와 같은 결).
+  const axisCells: [string, string | null][] = [
+    ['분류', b.category],
+    ['유형', b.dataType],
+    // 표시용 정수가 아니라 **사람이 고른 값**이다 — 「아직 안 골랐다」를 말할 수 있는 유일한 칸.
+    ['가공 단계', b.processingLevelUserSet ?? null],
+  ];
+  const unsetAxes = new Set(axisCells.filter(([, v]) => !v).map(([k]) => k));
   const cells: [string, string][] = [
+    ...axisCells.map(([k, v]) => [k, v ?? UNSPECIFIED_CELL] as [string, string]),
     ['구성', variableRows.length > 0 ? '' : EMPTY],
     ['좌표계', orEmpty(b.crs)],
     ['기간', formatPeriodWithInterval(b.period, b.observationInterval)],
@@ -96,7 +110,7 @@ export function BasicInfoGrid(props: {
                 </span>
               ) : null}
               {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 출처 두 칸은 원천 표기 칸 **안쪽**에 붙는다** —
-                  칸 수는 아홉 그대로다. 값이 있으면 그대로 보이고(Lv 로 가리지 않는다),
+                  값이 있으면 그대로 보이고(Lv 로 가리지 않는다),
                   파생 Lv 가 Lv0 인데 둘 다 비면 안내 한 줄이 대신 선다. */}
               {k === '원천 표기' && b.sourceUrl ? (
                 <span className="ig-note" data-testid="ig-source-url">
@@ -111,6 +125,12 @@ export function BasicInfoGrid(props: {
               {k === '원천 표기' && lv0SourceMissing ? (
                 <span className="ig-note" data-testid="ig-lv0-source-missing">
                   {LV0_SOURCE_MISSING_NOTICE}
+                </span>
+              ) : null}
+              {/* PRD-06 — 「미지정」은 사실이고, 그 옆 한 줄이 고치는 길을 말한다. */}
+              {unsetAxes.has(k) ? (
+                <span className="ig-note" data-testid={`ig-unset-${k}`}>
+                  {AXIS_UNSET_NUDGE}
                 </span>
               ) : null}
               {k === '파일' ? (
