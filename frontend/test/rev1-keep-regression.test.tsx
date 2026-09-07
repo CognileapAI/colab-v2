@@ -210,7 +210,7 @@ describe('rev1 #8 — 계보 노드 이동과 원천 노드의 이동 없음', (
  * ────────────────────────────────────────────────────────────────────────── */
 
 const BASIC: DatasetBasicInfo = {
-  variables: ['강수량'],
+  variables: [{ name: '강수량', representative: true }],
   crs: 'EPSG:4326',
   period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z' },
   grid: '1 km',

@@ -421,7 +421,9 @@ def _human_metadata(body: dict) -> dict:
         # 계약이 `minItems: 1` 로 못 박았고(「행이 0개인 데이터셋은 허용하지 않는다」),
         # 여기서 조용히 버리면 마지막 행을 지운 사람이 **성공했다고 믿고 떠난다**.
         # 열쇠를 아예 안 실은 경우는 종전 그대로 「안 적었다」다.
-        if key == "variables" and value == []:
+        # ⚠ `variables: null` 도 **같이 400** 이다 — 계약이 `null` 을 안 받고(`DatasetCreate`),
+        # 조용히 버리면 `[]` 와 응답이 갈려 같은 「행 0개」가 한쪽만 막힌다.
+        if key == "variables" and key in body and (value is None or value == []):
             picked[key] = value
             continue
         if value is None or value == "" or value == []:

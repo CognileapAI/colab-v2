@@ -39,6 +39,8 @@
 형제 메타 표(`d3_dataset_description`·`d3_dataset_autometa`)와 **같은 경계 정책 한 장** ＋
 FORCE 다. ⚠ **정책은 이관 INSERT 뒤에 켠다** — 켠 뒤에 넣으면 소유자 세션이 FORCE 에
 걸려 이관이 0행으로 조용히 끝난다(`0013` 이 `NO FORCE` 구간으로 배운 자리의 다른 얼굴).
+⚠ **원천 `d3_dataset_autometa` 도 FORCE 다** — 그래서 이관 SELECT 구간만 `NO FORCE` 로
+내리고 곧바로 되올린다. 되올림과 이관 건수는 DO 블록 단언 둘이 DB 에게 되묻는다.
 
 ━━ 되돌림 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -86,6 +88,13 @@ CREATE UNIQUE INDEX d3_dataset_variable_representative_idx
 --    공백뿐인 원소를 먼저 걸러 낸 뒤 `row_number()` 로 다시 번호를 매긴다 —
 --    걸러 낸 자리를 그대로 두면 `ordinal` 에 구멍이 나고, 첫 원소가 공백이면
 --    대표가 한 행도 없는 데이터셋이 생긴다.
+--
+-- ⚠ **원천을 읽는 이 한 구간만 FORCE 를 내린다**(`0013` 과 같은 이유). 마이그레이터 롤은
+--   `colab_owner`(NOSUPERUSER · NOBYPASSRLS)이고 `app.current_lab` 이 없으므로
+--   `current_lab_id()` 가 NULL 이다 — FORCE 아래에서는 `d3_dataset_autometa` SELECT 가
+--   0행을 내고 INSERT 가 **오류 없이 0행**으로 끝난다. 대상 표는 아직 정책이 없다(⑶ 이 켠다).
+ALTER TABLE d3_dataset_autometa NO FORCE ROW LEVEL SECURITY;
+
 INSERT INTO d3_dataset_variable
   (dataset_id, lab_id, ordinal, name, unit, value_range, missing_rate, is_representative)
 SELECT s.dataset_id, s.lab_id,
@@ -100,6 +109,40 @@ FROM (
   WHERE length(btrim(v.name)) > 0
 ) s
 WINDOW w AS (PARTITION BY s.dataset_id ORDER BY s.ord);
+
+-- 이관이 실제로 한 일을 DB 에게 되묻는다. **「돌았다」가 아니라 「맞다」를 센다.**
+-- ⚠ 이 단언은 **NO FORCE 구간 안 · 정책을 켜기 전**에 둔다 — 밖에 두면 두 쪽(원천 배열 ·
+--   대상 표)이 다 RLS 에 막혀 `0 = 0` 으로 green 이 되고, 단언이 결함을 못 잡는다.
+DO $$
+DECLARE want bigint; got bigint;
+BEGIN
+  SELECT count(*) INTO want
+    FROM d3_dataset_autometa a
+    CROSS JOIN LATERAL unnest(a.variables) AS v(name)
+   WHERE length(btrim(v.name)) > 0;
+  SELECT count(*) INTO got FROM d3_dataset_variable;
+  IF got <> want THEN
+    RAISE EXCEPTION '변수 이관 건수가 % 다 (기대 % = 공백 제외 배열 원소 수) — 이관이 전수를 못 덮었다 (M-5)',
+      got, want;
+  END IF;
+END
+$$;
+
+-- FORCE 를 되올리고, 되올렸는지 DB 에게 되묻는다.
+ALTER TABLE d3_dataset_autometa FORCE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class
+     WHERE relname = 'd3_dataset_autometa'
+       AND relnamespace = 'public'::regnamespace
+       AND NOT relforcerowsecurity
+  ) THEN
+    RAISE EXCEPTION 'FORCE ROW LEVEL SECURITY 가 복구되지 않았다 — 마이그레이션을 되돌린다';
+  END IF;
+END
+$$;
 
 -- ⑶ 경계 정책 — **이관 뒤에** 켠다(모듈 산문 「RLS」).
 ALTER TABLE d3_dataset_variable ENABLE ROW LEVEL SECURITY;

@@ -6,10 +6,14 @@
 #   ㈎ head (0016 적용)        → 구조 오라클 green
 #   ㈏ 0015 까지만             → 구조 오라클 red     ← 「되돌리면 red」
 #   ㈐ head → downgrade 0015   → 구조 오라클 red + pg_dump 로 0015 형태 복원 확인
-#   ㈑ 0015 에 기존 행을 심고 → 0015:0016 델타 적용 → **기존 행 오라클 green**
+#   ㈑ 0015 에 기존 행을 심고 → 0015:0016 델타를 **소유자 롤(NOSUPERUSER NOBYPASSRLS)로**
+#      적용 → **기존 행 오라클 green**
 #      (3원소 → 3행 순서대로 · 첫 행만 대표 · 빈 배열 0행 · 원본 배열 무변 · 검색 무변).
 #      그리고 **대표를 첫 행에서 떼어 놓은** DB 에서는 그 오라클이 red 다
 #      (오라클이 오라클임의 증명 — 「옮겼다」와 「순서·대표까지 옮겼다」를 가른다)
+#   ㈑-c 같은 소유자 롤에 **수정 전 델타**(원천 NO FORCE 구간 없음)를 적용 → 이관 0행 → red
+#      (실배포 롤에서 이관이 0행이 되는 결함을 기계가 잰다. superuser 로 적용하면 RLS 를
+#       무조건 우회해 이 대조군이 green 이 되고, 그때 ㈑ 는 수용 기준의 증거가 아니다)
 #
 # 원칙 (CLAUDE.md §4): 도커·alembic 이 없으면 **skip 이 아니라 red** 다.
 # staging 을 건드리지 않는다 — 일회용 컨테이너는 `s1db_` 접두사이고 호스트 포트를 하나도 열지 않는다.
@@ -81,6 +85,42 @@ docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || red "postgres �
 psql_f() { docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" < "$2"; }
 mkdb()   { docker exec "$PGC" createdb -U postgres "$1" >/dev/null; }
 
+# ── 소유자 롤 — **실배포의 마이그레이터와 같은 자격**이다 ──────────────────────────
+# `infra/dev/db-bootstrap.sh` 의 `colab_owner` 가 NOSUPERUSER · NOBYPASSRLS 다. superuser
+# `postgres` 로 델타를 적용하면 RLS 를 무조건 우회하므로 「FORCE 원천을 못 읽어 0행 이관」
+# 결함이 시험에 안 잡힌다. 그래서 ㈑ 계열은 이 롤로 적용한다.
+docker exec "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d postgres \
+  -c "CREATE ROLE t_owner LOGIN NOSUPERUSER NOBYPASSRLS;" >/dev/null \
+  || red "소유자 롤 t_owner 를 만들지 못했다."
+
+# `REASSIGN OWNED BY postgres` 는 부트스트랩 superuser 라 거부된다 — public 스키마의
+# 객체만 하나씩 넘긴다(표·시퀀스·뷰 · 함수 · 도메인/타입 ＋ 스키마 ＋ DB).
+handover() {  # $1=DB — 그 DB 의 public 객체·DB 소유권을 t_owner 로 넘긴다
+  docker exec "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" -c "
+    DO \$hand\$
+    DECLARE r record;
+    BEGIN
+      FOR r IN SELECT c.oid::regclass::text AS n FROM pg_class c
+                 JOIN pg_namespace ns ON ns.oid = c.relnamespace
+                WHERE ns.nspname = 'public' AND c.relkind IN ('r','p','S','v','m')
+      LOOP EXECUTE format('ALTER TABLE %s OWNER TO t_owner', r.n); END LOOP;
+      FOR r IN SELECT p.oid::regprocedure::text AS n FROM pg_proc p
+                 JOIN pg_namespace ns ON ns.oid = p.pronamespace
+                WHERE ns.nspname = 'public'
+      LOOP EXECUTE format('ALTER FUNCTION %s OWNER TO t_owner', r.n); END LOOP;
+      FOR r IN SELECT t.oid::regtype::text AS n FROM pg_type t
+                 JOIN pg_namespace ns ON ns.oid = t.typnamespace
+                WHERE ns.nspname = 'public' AND t.typtype = 'd'
+      LOOP EXECUTE format('ALTER DOMAIN %s OWNER TO t_owner', r.n); END LOOP;
+    END
+    \$hand\$;
+    ALTER SCHEMA public OWNER TO t_owner;" >/dev/null \
+    && docker exec "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d postgres \
+    -c "ALTER DATABASE $1 OWNER TO t_owner;" >/dev/null \
+    || red "소유권을 t_owner 로 넘기지 못했다($1)."
+}
+psql_owner() { docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U t_owner -d "$1" < "$2"; }
+
 FAILURES=()
 oracle() {   # $1=DB $2=기대(green|red) $3=라벨 $4=오라클 파일
   local out rc got
@@ -128,8 +168,9 @@ fi
 # 0015 상태에 기존 행을 심고, 그 위에 0015→0016 델타만 적용한다. 실제 배포와 같은 순서다.
 mkdb keep_db;  psql_f keep_db "$TMP/prev.sql"          || red "0015 적용 실패(㈑)."
 psql_f keep_db "$HERE/0016-existing-rows-seed.sql"     || red "기존 행 재료를 심지 못했다(㈑)."
-psql_f keep_db "$TMP/delta.sql"                        || red "0015→0016 델타가 적재 데이터 위에서 돌지 않았다(㈑)."
-oracle keep_db green "㈑ 기존 행 — 3원소가 순서대로 3행이 되고 첫 행이 대표인가" \
+handover keep_db
+psql_owner keep_db "$TMP/delta.sql"                    || red "0015→0016 델타가 소유자 롤에서 돌지 않았다(㈑)."
+oracle keep_db green "㈑ 기존 행(소유자 롤 적용) — 3원소가 순서대로 3행이 되고 첫 행이 대표인가" \
        0016-existing-rows-assertions.sql
 
 # 오라클이 오라클임의 증명 — **대표를 첫 행에서 떼면 red** 여야 한다.
@@ -137,7 +178,8 @@ oracle keep_db green "㈑ 기존 행 — 3원소가 순서대로 3행이 되고 
 # 대표다」가 아무에게도 안 걸린다.
 mkdb moved_db; psql_f moved_db "$TMP/prev.sql"         || red "0015 적용 실패(㈑-b)."
 psql_f moved_db "$HERE/0016-existing-rows-seed.sql"    || red "기존 행 재료를 심지 못했다(㈑-b)."
-psql_f moved_db "$TMP/delta.sql"                       || red "델타 적용 실패(㈑-b)."
+handover moved_db
+psql_owner moved_db "$TMP/delta.sql"                   || red "델타 적용 실패(㈑-b)."
 docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d moved_db \
   -c "SET app.current_lab = '0000000000000000000000000T';
       UPDATE d3_dataset_variable SET is_representative = false
@@ -148,9 +190,25 @@ docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d moved_db \
 oracle moved_db red "㈑-b 대표를 둘째 행으로 옮김 — 오라클이 red 를 내는가" \
        0016-existing-rows-assertions.sql
 
+# ── ㈑-c 대조군 — **수정 전 델타**(원천 NO FORCE 구간 없음)를 같은 소유자 롤로 ──────────
+# 델타에서 원천의 `NO FORCE` 한 줄만 지우면 수정 전 마이그레이션과 같은 자리가 된다.
+# 그 상태의 소유자 롤은 `current_lab_id()` 가 NULL 이라 원천을 0행으로 읽고, INSERT 가
+# **오류 없이 0행**으로 끝난다 → 기존 행 오라클 red. 이 대조군이 green 이 되면 시험이
+# 결함을 못 재는 것이므로 그때는 ㈑ 도 증거가 아니다.
+grep -v 'd3_dataset_autometa NO FORCE ROW LEVEL SECURITY' "$TMP/delta.sql" > "$TMP/delta-nofix.sql"
+if diff -q "$TMP/delta.sql" "$TMP/delta-nofix.sql" >/dev/null; then
+  red "델타에 원천 d3_dataset_autometa 의 NO FORCE 구간이 없다 — 마이그레이션이 FORCE 원천을 그대로 읽는다(실배포 0행 이관)."
+fi
+mkdb nofix_db; psql_f nofix_db "$TMP/prev.sql"         || red "0015 적용 실패(㈑-c)."
+psql_f nofix_db "$HERE/0016-existing-rows-seed.sql"    || red "기존 행 재료를 심지 못했다(㈑-c)."
+handover nofix_db
+psql_owner nofix_db "$TMP/delta-nofix.sql"             || red "수정 전 델타가 돌지 않았다(㈑-c) — 대조군은 오류 없이 0행으로 끝나야 한다."
+oracle nofix_db red "㈑-c 수정 전 델타(소유자 롤) — 이관 0행으로 오라클이 red 를 내는가" \
+       0016-existing-rows-assertions.sql
+
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   printf '::error::0016-drift red — 실패 %d건:\n' "${#FAILURES[@]}"
   printf '     - %s\n' "${FAILURES[@]}"
   exit 1
 fi
-echo "0016-drift green — ㈎ 적용 green · ㈏ 0016 없으면 red · ㈐ downgrade 실물 동작 + 0015 복원 · ㈑ 기존 행 순서·대표 이관(대조군 red)."
+echo "0016-drift green — ㈎ 적용 green · ㈏ 0016 없으면 red · ㈐ downgrade 실물 동작 + 0015 복원 · ㈑ 소유자 롤 이관 green(대조군 ㈑-b 대표 이동 red · ㈑-c 수정 전 델타 0행 red)."

@@ -54,7 +54,7 @@
 - 담은 것 = `M-5` 하나. 표 ＋ 색인 2 ＋ 경계 정책 ＋ **이관 INSERT**. ⛔ `search_vector` 무수정 · 트리거 0(그 둘은 `M-10` · `R-B-2-server.md` WU-B7).
 - 이관식 = `unnest(variables) WITH ORDINALITY` → 공백 원소 제거 → `row_number() OVER (PARTITION BY dataset_id ORDER BY ord)`. `ordinal` **1부터** · 첫 행만 `is_representative`. 빈 배열은 0행.
 - **정책은 이관 INSERT 뒤에 켠다** — 먼저 켜면 FORCE 아래에서 소유자 세션도 정책을 받아 이관이 0행으로 조용히 끝난다.
-- 되돌림 = `DROP TABLE d3_dataset_variable`. **이관된 이름은 안 사라진다**(원본 배열 존치). ⚠ 배포 뒤 사람이 적은 **단위·값 범위·결측률·대표**는 그 배열에 자리가 없어 사라진다 — 그때의 정규 경로는 소비를 멈추는 쪽이고, 표까지 지우는 것은 그 세 칸이 전 행 NULL 일 때만.
+- 되돌림 = **표 DROP → 사람 입력 3칸＋대표 소실 · 정규 경로는 소비 중단**. `DROP TABLE d3_dataset_variable`. **이관된 이름은 안 사라진다**(원본 배열 존치). ⚠ 배포 뒤 사람이 적은 **단위·값 범위·결측률·대표**는 그 배열에 자리가 없어 사라진다 — 그때의 정규 경로는 소비를 멈추는 쪽이고, 표까지 지우는 것은 그 세 칸이 전 행 NULL 일 때만.
 - 드리프트 시험 출력 축자 —
   `0016-drift green — ㈎ 적용 green · ㈏ 0016 없으면 red · ㈐ downgrade 실물 동작 + 0015 복원 · ㈑ 기존 행 순서·대표 이관(대조군 red).`
 
@@ -146,3 +146,47 @@ error	[response-property-type-changed] in API POST /datasets
 3. **시험 DB `colab_platform` 이 호스트에서 사라져 있었다** — 재구성 절차는 `services/core-api/tests/fixtures/setup-db.sh` 이고 `dev-package/RESTART.md` 가 그 자리를 적는다. 어느 게이트도 「그 DB 가 있는가」를 미리 말해 주지 않고 `service-tests-core-api` 가 red(준비)로만 드러낸다.
 4. **`M-10` 착수 시 이 회차의 시험 2건이 먼저 red 를 낸다** — `test_registration_does_not_write_autometa_variables` 와 `test_autometa_from_events.py::test_human_values_sent_at_registration_survive_the_header_parsed_event`. 기대값을 미러로 바꾸는 것이 그 WU 의 일부다.
 5. **`d3_catalog.SUGGESTABLE_FIELDS` 의 `variables` 자동완성이 아직 `autometa.variables` 를 훑는다**(`unnest`) — 이관분은 맞고 새 행은 안 잡힌다. `M-10` 이 미러를 세우면 저절로 맞고, 안 세우면 그 자리를 행 표로 옮겨야 한다.
+
+## advisor ② 반영
+
+- **결함(축자)** — 「이관이 실배포에서 0행이다. `0016` UPGRADE ⑵ 는 `d3_dataset_autometa`(FORCE RLS · `schema.sql:1085-1086`)를 읽는데 마이그레이터 롤은 `colab_owner NOSUPERUSER NOBYPASSRLS`(`infra/dev/db-bootstrap.sh:33`). `app.current_lab` 미설정 → `current_lab_id()` NULL → SELECT 0행 → INSERT 0행, 오류 없음.」 **거짓 green 의 원인** = 드리프트 ㈑ 가 `psql -U postgres`(superuser · RLS 무조건 우회)로 델타를 적용했다 — 실배포 롤에서 0행이 되는 자리를 시험이 못 쟀다.
+- **RED 선실측**(수정 전 마이그레이션 · 소유자 롤 `t_owner` NOSUPERUSER NOBYPASSRLS 로 델타 적용) 축자 —
+
+```
+[0016-drift] ㈑ 기존 행(소유자 롤 적용) — 3원소가 순서대로 3행이 되고 첫 행이 대표인가 → red (기대 green) ✗
+           ERROR:  0016 기존 행 오라클 실패 — DSV1 의 변수 행이 NULL 다 (기대 '1:precipitation,2:temperature,3:runoff') — 배열 순서가 ordinal 로 안 옮겨졌다
+::error::0016-drift red — 델타에 원천 d3_dataset_autometa 의 NO FORCE 구간이 없다 — 마이그레이션이 FORCE 원천을 그대로 읽는다(실배포 0행 이관).
+```
+
+- **수정 ⑴ 마이그레이션**(`db/platform/versions/0016_rb2_dataset_variable.py`) — 이관 INSERT 앞 `ALTER TABLE d3_dataset_autometa NO FORCE ROW LEVEL SECURITY;` · INSERT 뒤 `FORCE` 복원(`0013_ra1_ext_interval_period.py:38-40, 116-117` 과 같은 자리). 원천은 그 한 표뿐이다 — 이관 SELECT 가 다른 표를 조인하지 않고 `lab_id` 도 `d3_dataset_autometa` 에서 온다. 대상 표는 이관 시점에 정책이 없다(⑶ 이 켠다).
+- **수정 ⑴ 단언 2건**(둘 다 `0013` 식 DO 블록) — ⓐ **건수** `count(d3_dataset_variable)` = `공백 제외 배열 원소 수` 불일치 시 `RAISE EXCEPTION` ⓑ **복원** `pg_class.relforcerowsecurity = true` 아니면 `RAISE EXCEPTION`. ⚠ ⓐ 는 **NO FORCE 구간 안 · 정책 켜기 전**에 뒀다 — 밖에 두면 원천·대상이 다 RLS 에 막혀 `0 = 0` 으로 green 이 되고 단언이 결함을 못 잡는다. 선언 변경 0 → `schema.sql` 무수정(`schema-diff` green).
+- **수정 ⑵ 드리프트 오라클**(`db/platform/tests/0016-drift.sh`) — 롤 `t_owner`(`LOGIN NOSUPERUSER NOBYPASSRLS`) 를 만들고 `handover()` 가 public 객체·스키마·DB 소유권을 넘긴 뒤 ㈑·㈑-b 델타를 그 롤로 적용한다(`REASSIGN OWNED BY postgres` 는 부트스트랩 superuser 라 거부되므로 객체별 `ALTER … OWNER`). 대조군 **㈑-c** 추가 = 델타에서 원천 `NO FORCE` 한 줄을 지운 **수정 전** 텍스트를 같은 롤로 적용 → 이관 0행 → 오라클 red 기대.
+- **GREEN**(수정 후) 축자 —
+
+```
+[0016-drift] ㈎ 0016 적용 후 — 구조 오라클 → green OK
+[0016-drift] ㈏ 0016 없음 — 오라클이 red 를 내는가 → red OK
+[0016-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+[0016-drift] ㈐ downgrade 결과 = 0015 상태 (pg_dump 동일) → OK
+[0016-drift] ㈑ 기존 행(소유자 롤 적용) — 3원소가 순서대로 3행이 되고 첫 행이 대표인가 → green OK
+[0016-drift] ㈑-b 대표를 둘째 행으로 옮김 — 오라클이 red 를 내는가 → red OK
+[0016-drift] ㈑-c 수정 전 델타(소유자 롤) — 이관 0행으로 오라클이 red 를 내는가 → red OK
+0016-drift green — ㈎ 적용 green · ㈏ 0016 없으면 red · ㈐ downgrade 실물 동작 + 0015 복원 · ㈑ 소유자 롤 이관 green(대조군 ㈑-b 대표 이동 red · ㈑-c 수정 전 델타 0행 red).
+```
+
+- **권고 3건 반영** — ⑴ `d3_catalog.replace_variables` 첫 줄에 `_LOCK_DATASET`(`FOR UPDATE`) 잠금(동시 PATCH 2건의 PK 충돌 500 차단). 시험은 안 붙였다 — 레포에 동시성 시험 패턴이 없다(`grep -rn "lock_dataset\|FOR UPDATE" services/core-api/tests` = 0건). ⑵ `routes/ingestion._human_metadata` 의 `variables: null` 을 `[]` 와 같이 400 으로 통일 ＋ 시험 `test_null_variable_list_is_rejected_like_the_empty_one`. ⑶ `frontend/test/rev1-keep-regression.test.tsx:212` 를 객체 배열 `[{ name: '강수량', representative: true }]` 로 교정 — `as unknown as` 캐스트는 **존치**(제거하면 `files.hasReferenceGridFile` 누락으로 `TS2741`, 변수 때문에 붙은 캐스트가 아니다).
+
+### 게이트 재실행 (배출처 `dev-package/reports/R-B/p3-variable-rows` · 마지막 커밋 뒤)
+
+| 게이트 | 요약줄 축자 |
+|---|---|
+| `schema-diff` | `green  schema-diff` |
+| `migration-single-head` | `green  migration-single-head` |
+| `service-tests-core-api` | `service-tests-core-api green — 실행 853건 전부 통과 (skipped 0 · deselected 6 은 요약줄에 드러나 있다).` |
+| `db-boundary` | `green  db-boundary` |
+| `rls-effect` | `green  rls-effect` |
+| `frontend-typecheck` | `green  frontend-typecheck` |
+| `frontend-test` | `green  frontend-test` |
+| `0016-drift.sh` | 위 GREEN 축자 |
+
+계 = **green 7 / red(판정) 0 / red(준비) 0**.

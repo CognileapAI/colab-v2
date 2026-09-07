@@ -93,6 +93,19 @@ def test_empty_variable_list_is_rejected_with_the_copy(p2_client) -> None:
         "생성과 수정이 다른 문면을 낸다 — 검사기가 두 벌이다."
 
 
+def test_null_variable_list_is_rejected_like_the_empty_one(p2_client) -> None:
+    """`variables: null` 도 **400** 이다 — 계약이 `null` 을 안 받는다(`DatasetCreate`).
+    생성이 조용히 버리면 같은 「행 0개」가 생성에서만 통과해 수정과 응답이 갈린다."""
+    client = p2_client()
+    created = _register_with(client, variables=None)
+    assert created.status_code == 400, created.text
+
+    dataset_id = _register_with(client, variables=THREE).json()["datasetId"]
+    patched = client.patch(f"{API_PREFIX}/datasets/{dataset_id}", json={"variables": None},
+                           headers=auth(TOKEN_RES))
+    assert patched.status_code == 400, patched.text
+
+
 # ═══════ ㈑ 대표 둘은 400 (500 이 아니다) ═════════════════════════════════
 def test_two_representatives_are_a_400_not_a_500(p2_client) -> None:
     """부분 UNIQUE 색인이 뒷문이고 **앞문이 400** 이다. 앞문이 없으면 IntegrityError 가

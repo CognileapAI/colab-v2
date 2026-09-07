@@ -260,7 +260,13 @@ def replace_variables(session: Session, dataset_id: Ulid, rows: list[dict]) -> N
     라우트가 이미 400 으로 떨어뜨렸고, 뒷문은 부분 UNIQUE 색인이다.
     ⚠ `ordinal` 은 **여기서 1부터 다시 매긴다** — 화면이 보낸 순서가 곧 값이고, 클라이언트가
     번호를 지어 보내면 구멍·중복이 그대로 저장된다.
+
+    ⭑ **데이터셋 행을 먼저 잠근다**(`_LOCK_DATASET`). 잠그지 않으면 같은 데이터셋에 동시에
+    들어온 PATCH 둘이 각자 지우고 각자 넣어 뒤 트랜잭션의 INSERT 가 앞 트랜잭션이 커밋한
+    행과 PK(`dataset_id, ordinal`) 충돌을 내고 500 이 된다. 삭제 경로(`lock_dataset`)와
+    **같은 행 하나**에 직렬화한다.
     """
+    session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)})
     session.execute(_DELETE_VARIABLES, {"dataset_id": str(dataset_id)})
     chosen = next((i for i, r in enumerate(rows) if r.get("representative")), 0)
     for i, row in enumerate(rows):
