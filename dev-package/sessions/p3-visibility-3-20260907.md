@@ -142,7 +142,7 @@ contract-breaking green — 기준 3e2dcd8 (3건) 대비 파괴적 변경 없음
 - **`DatasetDetail.activeGrantCount` 를 신설했다(요청되지 않은 초과분에 가깝다).** 지시문은 「API 가 되묻는 문면용 수를 돌려준다」까지만 적었고 그 자리를 지정하지 않았다. 되묻기는 **저장 전에** 일어나므로 수정 응답만으로는 늦다 — 상세가 그 수를 갖고 있어야 화면이 물을 수 있다. **사람 목록은 안 내렸다** — 필요한 것은 범위가 아니라 수다.
 - **되묻기를 `window.confirm` 이 아니라 화면 요소로 만들었다** — 저장 행(`DatasetEditActions`)이 확인/취소 두 갈래로 바뀐다. 브라우저 대화상자는 시험이 잡지 못하고 문면도 조절할 수 없다.
 - **`updateDataset` 에 공개 범위 칸을 열었다** — 「소유자가 내린다」를 집행할 경로가 그것뿐이다. 편집 폼 셀렉트가 함께 섰고, 그래서 `detail-edit.test.tsx` 의 「R-B 가 더할 칸」 목록에서 `공개 범위` 가 빠졌다(나머지 넷은 그대로 R-B 다른 WU 몫).
-- **`null` 을 화면에서 못 고르게 했다** — 등록 셀렉트에 「연구실 기본값 따름」 선택지를 두지 않았다. rev1 셀렉트가 3값이고 기본 선택이 있어 빈 상태가 없다. 계약은 nullable 이라 다른 경로가 그 뜻을 쓸 수 있다.
+- ~~**`null` 을 화면에서 못 고르게 했다**~~ ⭑ **⟨advisor ② ㊁ 로 뒤집혔다 — 아래 「advisor ② 반영」 절⟩** 등록 셀렉트 첫 칸이 「연구실 기본값」(미조작)이고, 그 상태로 등록하면 요청에서 열쇠가 빠진다. 종전 기재(「rev1 셀렉트가 3값이고 기본 선택이 있어 빈 상태가 없다」)는 PRD-11 「NULL = 연구실 기본값(현행 의미 유지)」와 어긋났다.
 - **수정에서 `null` 이 행을 안 지우게 했다** — 지우면 `updated_at` 이 사라져 「한 번도 안 정했다」와 구별이 없어진다. 라운드가 그 갈래를 정하지 않아 여기서 정했다.
 - **거절 전이(잠김 ＋ 거절 → 잠김)에 시험을 하나 더 붙였다** — 라운드 수용 기준 6건에 없다. 승인이 상태를 올리는 코드가 거절 경로에도 새면 불변식이 반대 방향으로 깨진다.
 - **환경 조치 2건** — ⑴ 워크트리 `services/core-api/.venv` 에 `alembic` 부재 → `uv pip install alembic`(1.19.2) ⑵ 시험 DB `colab_platform` 을 `tests/fixtures/setup-db.sh` 로 재구성(선언 스키마가 바뀌었다) ＋ `colab_platform_applied` 에 `alembic upgrade head`(schema-diff 의 「적용 DB」). 둘 다 레포 파일 변경 0.
@@ -163,4 +163,59 @@ contract-breaking green — 기준 3e2dcd8 (3건) 대비 파괴적 변경 없음
 2. **`alembic` 이 어느 `requirements*.txt` 에도 없다** — 새 워크트리마다 손으로 채운다(B2 후속 2와 같다).
 3. **`colab_platform_applied`(schema-diff 의 「적용 DB」)를 최신 head 로 올리는 절차가 게이트 밖에 있다** — 마이그레이션을 더한 레인이 손으로 `alembic upgrade head` 를 돌려야 하고, 안 돌리면 `schema-diff` 가 **선언 쪽 변경을 드리프트로 읽어** 판정 red 를 낸다. 실측으로 이번 회차가 밟았다. 절차를 게이트나 `RESTART.md` 에 세울 대상.
 4. **연구실 설정 화면이 `지정 공개` 를 못 고른다** — `frontend/src/components/lab/LabInfoPanel.tsx:30` `VISIBILITIES = ['열림', '잠김']` (실측). 계약·DB 는 3값이라 값을 받으면 표시는 되고 **고르는 자리**만 없다. 어느 게이트도 이것을 red 로 내지 않는다 — 화면 상수는 계약 enum 을 참조하지 않고 손으로 적힌 배열이라 `frontend-typecheck` 가 좁은 쪽(2값)을 그대로 허용한다. 소유 WU 미지정.
-5. **`지정 공개` 를 연구실 기본값으로 고르면 새 데이터셋이 허용 목록 0건으로 시작한다**(PRD-11 ⚠). 등록 셀렉트 아래 한 줄이 그 사실을 적지만, **연구실 설정 화면**에도 같은 줄이 필요하다(4번과 한 묶음).
+5. **`지정 공개` 를 연구실 기본값으로 고르면 새 데이터셋이 허용 목록 0건으로 시작한다**(PRD-11 ⚠). ⚠ **등록 셀렉트 아래 한 줄은 그 사실을 적지 않는다** — 실제 문면은 `허용 목록에 오른 사람만. 만료 = 승인일 + 6개월`(`ACCESS_NOTE['지정 공개']`)이고 「0건으로 시작」 언급이 없다(advisor ② 지적 · 종전 기재는 과장이었다). 0건 시작 안내는 등록 화면과 **연구실 설정 화면** 둘 다에 없다(4번과 한 묶음).
+
+---
+
+## advisor ② 반영 (검토문 `advisor2-b4.md` · verdict = approve-with-changes)
+
+### ㊀ [필수] 경합 잠금 — 데이터셋 단위 `pg_advisory_xact_lock`
+
+- **지적** = 완료 조건 「`잠김` ∧ 유효 grant ≥1 이 **어느 시점에도** 0건」을 직렬 경로만으로 증명했다. READ COMMITTED 에서 승인(T1)과 내림(T2)이 겹치면 T2 의 만료가 T1 의 미커밋 grant 를 못 보고, T2 의 상태 UPSERT 가 `잠김` 으로 덮는다.
+- **조치** = `services/core-api/src/colab_core/domains/d2_access.py` — `set_access_state` 와 `decide_access_request` 의 **첫 문장**이 `SELECT pg_advisory_xact_lock(hashtext(...))` 을 잡는다. 상수 `_LOCK_DATASET`(데이터셋 id) ＋ `_LOCK_REQUEST_DATASET`(요청 줄에서 데이터셋 id 를 읽어 잠근다). **행 없는 케이스도 덮는다** — 상태 행이 아직 없는 데이터셋(NULL = 연구실 기본값)에는 잠글 행이 없어 행 잠금으로는 못 막는다. `xact` 판이라 트랜잭션 종료 시 자동 해제다.
+- **시험 = 진짜 동시성이다**(잠금 존재 확인으로 갈음하지 않았다). `session_factory` 가 독립 커넥션을 주므로 두 트랜잭션을 실제로 겹쳤다 — T1 승인(커밋 전) → 스레드로 T2 내림 → `worker.is_alive()` 로 **막혔음**을 확인 → T1 커밋 → T2 완주 → 끊긴 사람 수 1 ＋ 불변식 0건.
+- **RED 축자** — `AssertionError: 끊긴 사람 수가 1 이 아니다: [0]` / `assert [0] == [1]` (`tests/test_access_state_three.py:283`).
+  잠금 없이도 T2 는 `d2_dataset_access` **행 잠금**에 막혀 기다렸으나, 그 사이 이미 돈 만료 UPDATE 가 0행이라 `잠김` ∧ 유효 grant 1건이 성립했다 — advisor 가 적은 파손 경로 그대로다.
+- **GREEN** — `services/core-api/tests/test_access_state_three.py`:13건(증보 1건 `test_approval_and_lowering_cannot_interleave`).
+
+### ㊁ [필수 · 판정] 미조작 시 `accessState` 생략 — **오케스트레이터 채택 (a) · Ted 추인 대기**
+
+- **지적** = `UploadModal` 이 `accessState` 를 늘 실어, 연구실 기본값 경로가 UI 등록분에서 소멸했다. 기본값 `잠김` 인 연구실에서 파일만 올린 사람의 데이터셋이 `열림` 으로 저장된다(개방 방향 회귀 · PRD-11 「NULL = 연구실 기본값(현행 의미 유지)」와 어긋남).
+- **판정** = advisor 선택지 **(a) 채택** — 사용자가 공개 범위 셀렉트를 **건드리지 않으면 열쇠를 생략**한다. ⚠ **오케스트레이터 채택이고 Ted 추인 대기다.**
+- **조치**
+  - `frontend/src/components/upload/UploadModal.tsx` — 상태가 `AccessState | null` 이고 초기값 `null`. 제출 본문은 `...(accessState === null ? {} : { accessState })`. `hasHumanInput` 도 `accessState !== null` 로 바뀌었다(고른 순간부터 「잃을 것」).
+  - `frontend/src/components/upload/RegisterArea.tsx` — 셀렉트 **첫 칸이 `연구실 기본값`**(값 `''` = 미조작)이고 그 아래 한 줄은 `연구실 설정의 데이터 공개 범위를 그대로 따른다`.
+  - `frontend/src/components/common/accessState.ts` — `LAB_DEFAULT_LABEL`·`LAB_DEFAULT_NOTE` 신설.
+- **초기 표시가 실제 기본값 라벨이 아니라 중립 문면인 이유** = `CurrentAccount` 에 `defaultVisibility` 가 **없다**(`frontend/src/generated/fe-core.ts` CurrentAccount 정의 · 계약 동결). 등록 화면은 `GET /labs/{id}` 를 부르지 않는다 — API 를 지어내지 않고 advisor 지시의 **중립 옵션** 갈래를 택했다. 실제 기본값 라벨 표시는 계약·화면 배선이 필요해 후속.
+- **RED 축자** — 4건.
+  `expected [ <option value="열림"></option>, …(2) ] to have a length of 4 but got 3` ·
+  `expected '열림' to be ''` ·
+  `expected true to be false`(미조작인데 열쇠가 실렸다) ·
+  `expected [ 'accessState', 'category', …(9) ] to deeply equal [ 'category', 'dataType', …(8) ]`
+- **GREEN** — `frontend/test/register-steps-20260907.test.tsx`(증보 2건 · 기존 2건 개정) ＋ `frontend/test/upload.test.tsx`(열쇠 목록 개정 ＋ `'accessState' in body === false`) → **136건 통과 / 실패 0**.
+- **서버 쪽 짝은 이미 있다** — `test_registration_without_the_key_falls_back_to_the_lab_default`(열쇠 없이 만들면 `d2_dataset_access` 행을 **만들지 않고** 응답이 연구실 기본값을 싣는다).
+
+### 작은 항목 (§Missed)
+
+- `db/platform/versions/0017_rb4_access_state_3.py` — **downgrade 창에 FORCE 복구 단언 추가**(upgrade 와 같은 형태 · `pg_class.relforcerowsecurity` 로 `d2_dataset_access`·`d1_lab_profile` 두 표). 종전엔 upgrade 에만 있어 되돌린 DB 가 RLS 풀린 채 남을 수 있었다.
+- `db/platform/schema.sql` — `d2_dataset_access_grant` 머리 주석 「잠김일 때만 쓰인다」를 고쳤다(`지정 공개` 가 쓰는 표다 ＋ 3값 뒤 `잠김` 의 뜻). **주석만이라 `schema-diff` green 유지**(실측).
+- 이 노트 후속 5번 — 「등록 셀렉트 아래 한 줄이 0건 시작을 적는다」는 과장이었다. 실제 문면을 인용하고 「그 안내가 없다」로 고쳤다.
+- 이 노트 「자기 표시」의 `null` 항목 — ㊁ 로 뒤집혔으므로 그 자리에 표시했다.
+
+### 게이트 재실행 (배출처 `dev-package/reports/R-B/p3-visibility-3` · 마지막 커밋 뒤)
+
+| 게이트 | 출력 |
+|---|---|
+| `schema-diff` | `green  schema-diff` — 계 green 1 / red(판정) 0 / red(준비) 0 |
+| `service-tests-core-api` | `green  service-tests-core-api` — 계 green 1 / red(판정) 0 / red(준비) 0 |
+| `rls-effect` | `green  rls-effect` — 계 green 1 / red(판정) 0 / red(준비) 0 |
+| `frontend-typecheck` | `green  frontend-typecheck` — 계 green 1 / red(판정) 0 / red(준비) 0 |
+| `frontend-test` | `green  frontend-test` — 계 green 1 / red(판정) 0 / red(준비) 0 |
+
+계 = **green 5 / red(판정) 0 / red(준비) 0**. `gates/run.sh` 는 한 번에 한 게이트라 `gate-summary.json` 은 **마지막 실행분**이 남는다(위 다섯을 순서대로 돌린 뒤 `frontend-test` 분).
+
+### 남은 위험 (advisor §Risks 중 미해소 — 후속)
+
+- **Risk 3 이관 빈틈** — 상태 행 NULL ＋ 연구실 기본값 `잠김` ＋ 유효 grant 인 조합은 이관 후에도 실효 `잠김` 인데 허용자가 있다. 라운드 spec(NULL→NULL)의 빈틈이라 이 레인이 정하지 않는다.
+- **Risk 4 내림 권한** — `_require_upload_edit`(업로드·편집 스위치 보유자 전원)이 PRD 문면 「소유자」보다 넓다. 설계 판정 대상.
+- **Risk 5** — `_EXPIRE_GRANTS` 의 `expires_at = now()` 와 CHECK `expires_at > approved_at` 이 같은 tx 시각에서 충돌할 수 있다. 두 경로가 같은 tx 에 없어 현재는 이론상이다.
