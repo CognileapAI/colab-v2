@@ -2930,13 +2930,13 @@ items:
 
   - id: WU-C5
     name: 자립형 배경 지도 NE 1:110m 해안선＋국경 (R-C 축 ①-⑤b · POL-021 부분 반전)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-C4 done"]
     depends_on: ["WU-C4"]
     completion_def: "bounds 있는 결과에 배경 SVG 1개 · 없는 결과 0개 · 자산 ≤500KB 를 시험이 센다 · 외부 요청 0 · 도시 표기 0 · POL-021 부분 반전 〈N〉 초안(원문 무삭제 · 병합 직전 R-C-3 등재)"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 · lane/wu-c5 6커밋 → integration/r-c rebase·ff · Natural Earth v5.1.2 110m 해안선＋국경 GeoJSON(.json · Public Domain · 96,757＋75,446 = 172,203 B = 상한 500KB 의 33.6% · 좌표 3자리 반올림·중복 점 제거·기하 삭제 0·지역 자르기 0 · simplify-basemap.mjs) · BasemapLayer.tsx ＋ projection.ts(C4 pvLonOf 공유) · 지도형만 · 외부 요청 0 · 시험 9건(전 3 red) · frontend-test green 1052 · 번들 index.js +168.5 kB · gzip +57.3 kB(실측) · POL-021 부분 반전 〈N〉 초안 = sessions/WU-C5-basemap-20260908.md"
     deadline: null
     note: "2026-09-08 등재 — 축 ① 판정 Q13·Q14·Q16 ＋ R1 「자립형 벡터 해안선 · POL-021 부분 반전」. NE 파일 실크기 [미측정]. 레인 rc-basemap"
     sources: ["dev-package/intent/2026-09-08-preview-slot.md", "dev-package/prd/specs/R-C.md", "dev-package/prd/rounds/R-C-2-frontend.md", "POL-021"]
