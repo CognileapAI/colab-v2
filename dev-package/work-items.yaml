@@ -2787,7 +2787,7 @@ items:
 
   - id: WU-B4
     name: 공개 범위 3값 (PRD-11)
-    status: in_progress
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-A 병합 완료", "계약 동결 해제 20차 승인 (등급 ㉯)", "WU-B1 head 위"]
@@ -2795,7 +2795,7 @@ items:
     completion_def: "M-4 는 두 표다(d2_dataset_access.state ＋ d1_lab_profile.default_visibility). 한쪽만 넓히면 연구실 기본값이 표현 못 하는 상태가 생긴다. 상태 전이표가 선다 — 잠김 ∧ 유효 grant ≥1 인 행이 어느 시점에도 0건. cross-tenant 음성 여전히 0건(RLS 경계 무개방 증명)"
     evidence: "dev-package/sessions/p3-visibility-3-20260907.md"
     deadline: null
-    note: "M-4. RLS 경계를 넓히지 않는다(연구실 밖 공개는 PRD-37 · 범위 밖). 레인 p3-visibility-3"
+    note: "2026-09-07 done — 레인 p3-visibility-3 d4f4992 ＋ advisor ② f1da024(데이터셋 advisory lock · 미조작 시 accessState 생략) · head 0017_rb4_access_state_3 · AccessState 3값(contract-breaking green · 응답 enum 추가 = warning 11) · activeGrantCount 신설(20차 확장분 · 〈N〉 기재) · 게이트 12종 green · core-api 872 · FE 922 · B3 ㈓ 재검증 충족 · M-4. RLS 경계를 넓히지 않는다(연구실 밖 공개는 PRD-37 · 범위 밖). 레인 p3-visibility-3"
     sources: ["dev-package/prd/rounds/R-B-1-db.md", "dev-package/intent/2026-09-07-r-b.md", "PRD-11", "부록 B M-4"]
 
   - id: WU-B5
