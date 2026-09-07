@@ -1,0 +1,29 @@
+{
+ "schema": "colab-gate-summary/1",
+ "tree": "1b355711f097fad4ac32998099fe85cf2b1bca07",
+ "commit": "1ae8c37ed765f825c40d7ff8a1361a0f74d81acf",
+ "started": "2026-09-07T14:34:15Z",
+ "finished": "2026-09-07T14:34:23Z",
+ "parallelism": 1,
+ "counts": {
+  "green": 1,
+  "red_판정": 0,
+  "red_준비": 0,
+  "red_준비_입력미선언": 0
+ },
+ "gates": [
+  {
+   "name": "frontend-typecheck",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  }
+ ],
+ "targets": {
+  "requested": "frontend-typecheck",
+  "selected": [
+   "frontend-typecheck"
+  ]
+ }
+}
