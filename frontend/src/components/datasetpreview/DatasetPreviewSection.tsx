@@ -47,6 +47,14 @@ import { ScreenshotButton } from './ScreenshotButton';
 import { ValueLookupPanel, useValueLookup } from './ValueLookupPanel';
 import '../preview/preview.css';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
+import { PreviewPickRow } from '../preview/PreviewPickRow';
+import {
+  createWithPieceFallback,
+  onceFiles,
+  type PickSelection,
+  type PreviewPiece,
+  type TargetDescription,
+} from '../preview/pick';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
 import type { DatasetPreviewSource } from './types';
 
@@ -91,6 +99,39 @@ export function DatasetPreviewSection(props: {
   const [nativeSize, setNativeSize] = useState<{ width: number; height: number } | undefined>(
     undefined,
   );
+  // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영 · 판정 축자). 바꾸면 다시 그린다.
+  const [pieces, setPieces] = useState<PreviewPiece[]>([]);
+  const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
+  const [pick, setPick] = useState<PickSelection>({});
+  const [fallbackPiece, setFallbackPiece] = useState<PreviewPiece | undefined>(undefined);
+  // 고르개 후보와 413 폴백이 **같은 한 번의 조회**를 쓴다 (수용 기준 「files 조회 1회」).
+  const loadFiles = useMemo(
+    () => (source.files ? onceFiles(() => source.files!()) : undefined),
+    [source],
+  );
+
+  // 후보는 **서버가 준 값뿐이다.** 못 받으면 그 고르개만 잠긴다 — 지어내지 않는다.
+  useEffect(() => {
+    if (!props.datasetId) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const list = await loadFiles?.();
+        if (alive && list) setPieces(list);
+      } catch {
+        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 보기·다운로드는 그대로다. */
+      }
+      try {
+        const desc = await source.describe?.();
+        if (alive && desc) setDescription(desc);
+      } catch {
+        /* 변수·시각 후보가 없으면 그 둘이 잠긴다. 기본값은 서버가 고른다. */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [source, props.datasetId, loadFiles]);
 
   useEffect(() => {
     if (!props.datasetId) return;
@@ -106,12 +147,22 @@ export function DatasetPreviewSection(props: {
           setStart({ phase: '만들 수 없음', message: UNAVAILABLE_MESSAGE });
           return;
         }
-        const job = await source.create({
-          datasetId: props.datasetId,
-          palette,
-          classCount: DEFAULT_CLASS_COUNT,
+        // ⑴ 500MB 폴백 — 413 이면 조각 목록을 묻고 **첫 renderable 조각으로 다시 부른다.**
+        //    두 화면이 같은 함수를 지난다(`preview/pick.ts` — 한 자리 규약).
+        const { job, piece } = await createWithPieceFallback({
+          create: (fileIds) =>
+            source.create({
+              datasetId: props.datasetId,
+              palette,
+              classCount: DEFAULT_CLASS_COUNT,
+              ...(fileIds ? { fileIds } : pick.fileId ? { fileIds: [pick.fileId] } : {}),
+              ...(pick.variable ? { variable: pick.variable } : {}),
+              ...(pick.instant ? { instant: pick.instant } : {}),
+            }),
+          files: loadFiles,
         });
         if (!alive) return;
+        if (piece) setFallbackPiece(piece);
         setStart({ phase: '시작함', renderId: job.renderId });
       } catch (e) {
         if (!alive) return;
@@ -133,7 +184,9 @@ export function DatasetPreviewSection(props: {
     return () => {
       alive = false;
     };
-  }, [source, props.datasetId]);
+    // ⚠ `pick` 이 바뀌면 이 효과가 **다시 돈다** — 그것이 바꿔 그리기다. 앞 회차의 응답은
+    //   `alive` 가 끊어 버린다(겹쳐 그리기 0 · 한 번에 하나).
+  }, [source, props.datasetId, pick, loadFiles]);
 
   // 렌더 경로 소비 규약(실패는 200+`failure` · 단계 · 부분 실패 · 만료)은 **한 자리에만 둔다** —
   // S-08 과 두 벌로 두면 두 화면의 판정이 갈린다.
@@ -146,7 +199,13 @@ export function DatasetPreviewSection(props: {
           datasetId: props.datasetId,
           palette: input.palette,
           classCount: input.classCount,
+          // 고른 것만 실린다 — 생략은 「서버가 고른다」는 뜻이다(계약 산문).
+          ...(input.fileIds ? { fileIds: input.fileIds } : {}),
+          ...(input.variable ? { variable: input.variable } : {}),
+          ...(input.instant ? { instant: input.instant } : {}),
         }),
+      // 폴백은 **훅 안에서도** 돈다(`usePreviewRender`) — 같은 조각 목록을 건넨다.
+      ...(loadFiles ? { files: loadFiles } : {}),
     }),
     [source, props.datasetId],
   );
@@ -178,6 +237,16 @@ export function DatasetPreviewSection(props: {
       {/* ⬛ 자리 선점 틀 — **상세를 여는 즉시 선다**(`시작하는 중` 포함 · 축 ① · 4:3).
           안쪽만 갈리고 바깥 치수는 네 상태에서 바뀌지 않는다 (WU-C1). */}
       <PreviewSlot state={slotState} testId="dt-preview-slot">
+      {/* ⑵ 고르개 셋 — 업로드 화면과 **같은 컴포넌트**다. 한 번에 값 하나 · 컴포넌트 상태. */}
+      <PreviewPickRow
+        idPrefix="dt"
+        pieces={pieces}
+        description={description}
+        selection={pick}
+        disabled={start.phase === '시작하는 중'}
+        fallbackPiece={fallbackPiece}
+        onPick={(next) => setPick((prev) => ({ ...prev, ...next }))}
+      />
       {start.phase === '시작하는 중' ? <RenderStageNotice /> : null}
 
       {start.phase === '그릴 수 없음' ? (
@@ -194,6 +263,9 @@ export function DatasetPreviewSection(props: {
           공용 훅을 고치지 않고 **마운트 시점을 맞춘다** — S-08 의 소비 규약을 건드리지 않기 위해서다. */}
       {start.phase === '시작함' ? (
         <StartedPreview
+          /* 바꿔 그리기가 **새 렌더로 갈릴 때 훅을 다시 세운다** — `usePreviewRender` 는
+             `renderId` 를 마운트 시점에 한 번 읽는다(바로 위 주석). */
+          key={start.renderId}
           source={relay}
           datasetSource={source}
           renderId={start.renderId}

@@ -13,11 +13,19 @@
 //   ⑸ 만료된 렌더의 타일은 **401** 로 온다 — 권한 문제가 아니라 만료로 다룬다.
 import { PreviewExpandOverlay } from './PreviewExpandOverlay';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PaletteOption, PreviewSource, RenderJob, RenderResult } from './types';
+import type { PaletteOption, PreviewSource, RenderJob, RenderRequest, RenderResult } from './types';
 import { GridUploadBlock, type GridActions } from './GridUploadBlock';
 import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
 import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
+import { PreviewPickRow } from '../preview/PreviewPickRow';
+import {
+  createWithPieceFallback,
+  onceFiles,
+  type PickSelection,
+  type PreviewPiece,
+  type TargetDescription,
+} from '../preview/pick';
 
 /** 정본 §9 「그리는 서버에 연결 못 함」. 코드가 없을 때 쓰는 기본 문구. */
 const UNAVAILABLE = '지금 미리보기를 만들 수 없어요. 잠시 뒤 다시 시도해 주세요.';
@@ -98,6 +106,39 @@ export function PreviewPanel(props: {
   const pollGen = useRef(0);
   // 색 범위가 **조용히** 바뀌지 않게, 앞서 본 잠정 범위를 들고 있는다 (`§D.4`)
   const seenRange = useRef<{ stage: string; key: string } | null>(null);
+  // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영 · 판정 축자).
+  const [pieces, setPieces] = useState<PreviewPiece[]>([]);
+  const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
+  const [pick, setPick] = useState<PickSelection>({});
+  const [fallbackPiece, setFallbackPiece] = useState<PreviewPiece | undefined>(undefined);
+  // 고르개 후보와 413 폴백이 **같은 한 번의 조회**를 쓴다 (수용 기준 「files 조회 1회」).
+  const loadFiles = useMemo(
+    () => (source.files ? onceFiles(() => source.files!(uploadId ?? '')) : undefined),
+    [source, uploadId],
+  );
+
+  // 후보는 **서버가 준 값뿐이다.** 못 받으면 자리는 서고 잠긴다 — 지어내지 않는다.
+  useEffect(() => {
+    if (!uploadId) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const list = await loadFiles?.();
+        if (alive && list) setPieces(list);
+      } catch {
+        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 등록은 막지 않는다. */
+      }
+      try {
+        const desc = await source.describe?.(uploadId);
+        if (alive && desc) setDescription(desc);
+      } catch {
+        /* 변수·시각 후보가 없으면 그 둘이 잠긴다. 기본값은 서버가 고른다. */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [source, uploadId, loadFiles]);
 
   // 팔레트 값의 **유일한 출처는 서버**다. 화면이 목록을 지어내지 않는다.
   useEffect(() => {
@@ -130,20 +171,34 @@ export function PreviewPanel(props: {
     [],
   );
 
-  async function draw(withoutReferenceGrid: boolean) {
+  async function draw(withoutReferenceGrid: boolean, override?: PickSelection) {
     if (!uploadId || !palette) return;
+    // **한 번에 하나만 그린다.** 회차를 올리는 순간 앞선 요청·조회의 응답은 전부 버려진다
+    //  — 바꿔 그리기가 겹쳐 그리기가 되지 않는 자리다(`upload-preview-poll-20260903` 규약).
     const gen = ++pollGen.current;
     setError(null);
     setTileExpired(false);
     setUnreachable(false);
     setAccepted(false);
+    const sel: PickSelection = { ...pick, ...(override ?? {}) };
     try {
-      const started = await source.createRender({
-        target: { uploadId },
-        style: { palette, classCount },
-        withoutReferenceGrid,
+      // ⑴ 500MB 폴백 — 413 이면 조각 목록을 묻고 첫 renderable 로 다시 부른다.
+      const { job: started, piece } = await createWithPieceFallback({
+        create: (fileIds) =>
+          source.createRender({
+            target: {
+              uploadId,
+              ...(fileIds ? { fileIds } : sel.fileId ? { fileIds: [sel.fileId] } : {}),
+            },
+            style: { palette, classCount },
+            ...(sel.variable ? { variable: sel.variable } : {}),
+            ...(sel.instant ? { instant: sel.instant } : {}),
+            withoutReferenceGrid,
+          } as RenderRequest),
+        files: loadFiles,
       });
       if (pollGen.current !== gen) return;
+      if (piece) setFallbackPiece(piece);
       setJob(started);
       props.onRender?.({ renderId: started.renderId, withoutReferenceGrid });
       poll(started.renderId, gen);
@@ -363,6 +418,20 @@ export function PreviewPanel(props: {
       {/* ⬛ 자리 선점 틀 — **파일을 고른 순간 이미 서 있다**(축 ① · 4:3 · 네 상태 치수 불변).
           안쪽만 idle(`.vizph`) → drawing(3단계) → done(그림) | failed(`.vizerr` · salvage)로 갈린다. */}
       <PreviewSlot state={slotState} testId="up-preview-slot">
+      {/* ⑵ 고르개 셋 — 파일·변수·시각. **틀 안 컨트롤 줄이고 두 화면이 같은 컴포넌트를 쓴다.**
+          한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다. */}
+      <PreviewPickRow
+        idPrefix="up"
+        pieces={pieces}
+        description={description}
+        selection={pick}
+        disabled={drawing}
+        fallbackPiece={fallbackPiece}
+        onPick={(next) => {
+          setPick((prev) => ({ ...prev, ...next }));
+          if (uploadId) void draw(false, next);
+        }}
+      />
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">
