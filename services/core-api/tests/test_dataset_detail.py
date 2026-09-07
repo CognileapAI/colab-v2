@@ -88,9 +88,17 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 이 늘었다.** 화면의 칸 수는 **아홉
     # 그대로**다 — 관측 간격은 자기 칸을 얻지 않고 **기간 뒤 괄호**로 붙는다(PRD-35).
     # 열쇠가 는 것과 칸이 는 것은 다르다.
-    assert set(info) == {"variables", "crs", "period", "observationInterval", "grid",
+    # ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠가 늘었다** —
+    # `category`·`dataType`·`processingLevelUserSet`. **화면의 칸 수를 여기서 세지 않는다** —
+    # 상세에 3행을 그리는 것은 PRD-06 이고 `WU-B7` 이 연다. 이 시험이 재는 것은
+    # **계약 열쇠 집합**이고, 열쇠가 는 것과 칸이 는 것은 위 주석대로 다른 사건이다.
+    assert set(info) == {"category", "dataType", "processingLevelUserSet",
+                         "variables", "crs", "period", "observationInterval", "grid",
                          "format", "fileExtension", "files", "sourceLabel",
                          "owner", "uploader"}
+    # 시드 행은 마이그레이션 뒤 기존 행과 같은 상태다 — 셋 다 `None`(미결-3 ⓐ · backfill 0).
+    assert info["category"] is None and info["dataType"] is None
+    assert info["processingLevelUserSet"] is None
     assert info["variables"] == ["강우량"]
     assert info["crs"] == "EPSG:5179"
     assert info["format"] == "CSV"
