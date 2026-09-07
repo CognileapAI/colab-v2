@@ -154,18 +154,27 @@ def test_another_lab_sees_zero_variable_rows(session_factory, sql) -> None:
         assert leaked == 0
 
 
-# ═══════ M-10 이 아직 없다는 사실 자체를 붙잡는다 ═════════════════════════
+# ═══════ M-10 이 섰다 — 배열은 행 표의 **미러**다 ═════════════════════════
 def test_registration_does_not_write_autometa_variables(p2_client, sql) -> None:
     """**등록·수정 경로는 `autometa.variables` 를 직접 쓰지 않는다**(PRD-16 축자
-    「트리거만 쓴다」). 그 트리거(`M-10`)는 `R-B-2-server.md` · WU-B7 소속이라 아직 없다 —
-    그래서 지금은 그 배열이 **비어 있는 것이 정상**이고, 검색이 새 변수명을 못 잡는다.
+    「트리거만 쓴다」). 그 성질은 그대로이고 **기대값만 뒤집혔다.**
 
-    ⚠ 이 시험은 **잔여 위험을 문서가 아니라 코드로** 붙잡아 둔다. `M-10` 이 서면 이
-    시험이 먼저 red 를 내고, 그 자리에서 기대값을 미러로 바꾼다.
+    ⭑ **⟨개정 2026-09-07 · `M-10` · WU-B7⟩ 배열은 이제 행 표의 미러다.**
+    ／ 종전 ~~「그 배열이 비어 있는 것이 정상이고 검색이 새 변수명을 못 잡는다」~~ —
+    그 기대는 **트리거가 없던 동안**의 잔여 위험을 코드로 붙잡아 둔 것이었고(`0016` 모듈
+    산문), `0019` 가 트리거를 세우면서 닫혔다.
+
+    ⚠ **여전히 등록 경로가 그 배열을 직접 쓰지 않는다** — 쓰는 것은 **트리거**다.
+    그것을 이 시험이 잰다: 배열이 **행 표와 정확히 같고**(순서까지) 등록이 임의로 넣은
+    값이 아니다.
     """
     client = p2_client()
     dataset_id = _register_with(client, variables=THREE).json()["datasetId"]
-    rows = sql("SELECT variables FROM d3_dataset_autometa WHERE dataset_id = :d",
-               {"d": dataset_id})
-    assert list(rows[0]["variables"]) == [], \
-        "등록 경로가 autometa.variables 를 직접 썼다 — 미러의 방향이 둘이 된다(M-10 이 정본)."
+    mirrored = sql("SELECT variables FROM d3_dataset_autometa WHERE dataset_id = :d",
+                   {"d": dataset_id})[0]["variables"]
+    canon = [r["name"] for r in sql(
+        "SELECT name FROM d3_dataset_variable WHERE dataset_id = :d ORDER BY ordinal",
+        {"d": dataset_id})]
+    assert len(canon) > 0, "행 표가 비었다 — 이 시험의 대상이 없다(빈 집합 통과 금지)."
+    assert list(mirrored) == canon, \
+        "autometa.variables 가 행 표의 미러가 아니다 — M-10 트리거가 안 돈다(정본은 행 표다)."

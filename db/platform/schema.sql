@@ -474,16 +474,9 @@ CREATE TABLE d3_dataset_autometa (
   bundle_file_name  text,       -- 묶음 이름(조각에서 시각 부분을 뺀 파일명). 조각 이름이 아니다 (§4.3)
   updated_at        timestamptz NOT NULL DEFAULT now(),
   CHECK (period_start IS NULL OR period_end IS NULL OR period_start <= period_end),
-  -- 파일에서 자동으로 읽은 말 (`0005`). 변수명·포맷이 좌표계·격자·묶음 이름보다 앞선다.
-  -- 배열은 `d3_search_join` 을 지난다 — `array_to_tsvector` 는 대소문자를 그대로 둬서
-  -- `to_tsquery` 와 영영 안 만난다(실측). 있는데 절대 안 맞는 색인이 될 뻔했다.
-  search_vector tsvector GENERATED ALWAYS AS (
-    setweight(to_tsvector('simple',
-      coalesce(format, '') || ' ' || d3_search_join(variables)), 'B') ||
-    setweight(to_tsvector('simple',
-      coalesce(crs, '') || ' ' || coalesce(grid, '') || ' ' ||
-      coalesce(bundle_file_name, '')), 'C')
-  ) STORED,
+  -- ⚠ **`search_vector` 는 이 표의 맨 뒤에 있다** — `0019`(`M-10`)가 색인식을 바꾸려고
+  --   생성 컬럼을 **떨구고 다시 붙였고**, `ALTER TABLE ADD COLUMN` 은 열을 뒤에 붙인다.
+  --   선언 순서가 그것과 다르면 schema-diff 가 red 다(`0013` 이 배운 자리와 같은 규율).
   -- ── `0013` 가 더한 것. **여기 순서는 임의가 아니다** (`d3_dataset` 과 같은 규율) ──────
   -- `ALTER TABLE ADD COLUMN` 은 열을 **뒤에** 붙인다. 선언이 이 순서와 다르면 schema-diff 가 red 다.
   --
@@ -507,7 +500,32 @@ CREATE TABLE d3_dataset_autometa (
   period_granularity text,
   CONSTRAINT d3_dataset_autometa_period_granularity_check
     CHECK (period_granularity IS NULL
-           OR period_granularity IN ('년', '월', '일', '시', '분', '초'))
+           OR period_granularity IN ('년', '월', '일', '시', '분', '초')),
+  -- ── `0019` 가 더한 것 (`M-10` · PRD-05·21). **선언 순서는 맨 뒤**다 (같은 이유) ────────
+  --
+  -- 분류의 **미러**. 정본은 `d3_dataset_description.category`(사람이 고르는 값)이고 이 열은
+  -- 색인을 위한 사본이다. ⚠ **생성 컬럼은 같은 행의 열만 참조한다** — 그래서 다른 표의
+  -- `category` 를 `search_vector` 에 직접 넣을 수가 없고, 미러 한 칸이 그 자리를 받는다
+  -- (라운드 파일 ㈏ 경로). 유지는 트리거 두 개이고 **쓰기 정본은 여전히 `description` 하나**다.
+  -- ⛔ 이 열을 사람이나 응용이 직접 쓰지 않는다 — 쓰면 색인만 사실과 갈린다.
+  category_mirror text,
+  -- 검색 색인 (`0005` 신설 · `0019` 재정의). 변수명·포맷이 좌표계·격자·묶음 이름보다 앞선다.
+  -- 배열은 `d3_search_join` 을 지난다 — `array_to_tsvector` 는 대소문자를 그대로 둬서
+  -- `to_tsquery` 와 영영 안 만난다(실측). 있는데 절대 안 맞는 색인이 될 뻔했다.
+  --
+  -- ⭑ **⟨`M-10` · PRD-21⟩ B 가중치에 `file_extension` 과 `category_mirror` 가 들어왔다.**
+  -- ／ 종전 ~~`format` ＋ 변수명만~~ — 그래서 `netcdf` 는 잡히는데 **`nc` 는 안 잡혔다**.
+  -- `format` 은 그대로 문다(회귀) — 지운 것이 없고 더한 것만 있다.
+  -- ⚠ `variables` 배열은 이제 `d3_dataset_variable` 의 **미러**다(아래 트리거) — 새로 쓴
+  --   변수 행도 이 색인에 들어온다.
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple',
+      coalesce(format, '') || ' ' || d3_search_join(variables) || ' ' ||
+      coalesce(file_extension, '') || ' ' || coalesce(category_mirror, '')), 'B') ||
+    setweight(to_tsvector('simple',
+      coalesce(crs, '') || ' ' || coalesce(grid, '') || ' ' ||
+      coalesce(bundle_file_name, '')), 'C')
+  ) STORED
 );
 CREATE INDEX d3_dataset_autometa_lab_idx ON d3_dataset_autometa (lab_id);
 CREATE INDEX d3_dataset_autometa_search_idx
@@ -546,6 +564,75 @@ CREATE INDEX d3_dataset_variable_lab_idx ON d3_dataset_variable (lab_id);
 CREATE UNIQUE INDEX d3_dataset_variable_representative_idx
   ON d3_dataset_variable (dataset_id)
   WHERE is_representative;
+
+-- ── `M-10` 미러 (`0019`) — **색인이 다른 표의 사실을 물게 하는 유일한 경로** ──────────────
+--
+-- 생성 컬럼(`d3_dataset_autometa.search_vector`)은 **같은 행의 열만** 참조한다. 그래서
+-- 다른 표에 사는 두 사실을 색인에 넣으려면 같은 행에 사본이 있어야 한다 —
+--   ⑴ `d3_dataset_description.category`  → `d3_dataset_autometa.category_mirror`
+--   ⑵ `d3_dataset_variable`(행 표 · 정본) → `d3_dataset_autometa.variables`(배열)
+-- ⛔ **쓰기 정본은 원천 쪽 하나뿐이다.** 트리거는 사본을 따라 붙일 뿐 값을 만들지 않는다.
+-- ⚠ 트리거는 **호출자 권한**으로 돈다 — 경계(RLS)를 우회하지 않는다. 응용 세션은
+--   `app.current_lab` 을 이미 걸고 있어 같은 연구실 행만 갱신된다.
+CREATE FUNCTION d3_mirror_variables() RETURNS trigger
+  LANGUAGE plpgsql AS $$
+DECLARE target ulid;
+BEGIN
+  -- `DELETE` 에는 `NEW` 가 없다 — PL/pgSQL 에서 만지면 그 자리에서 오류다.
+  IF TG_OP = 'DELETE' THEN target := OLD.dataset_id; ELSE target := NEW.dataset_id; END IF;
+  UPDATE d3_dataset_autometa a
+     SET variables = coalesce(
+           (SELECT array_agg(v.name ORDER BY v.ordinal)
+              FROM d3_dataset_variable v WHERE v.dataset_id = target), '{}'::text[])
+   WHERE a.dataset_id = target;
+  -- 행이 데이터셋을 옮겨 가는 경로도 덮는다(지금은 없지만 생기면 조용히 어긋난다).
+  IF TG_OP = 'UPDATE' AND OLD.dataset_id <> NEW.dataset_id THEN
+    UPDATE d3_dataset_autometa a
+       SET variables = coalesce(
+             (SELECT array_agg(v.name ORDER BY v.ordinal)
+                FROM d3_dataset_variable v WHERE v.dataset_id = OLD.dataset_id), '{}'::text[])
+     WHERE a.dataset_id = OLD.dataset_id;
+  END IF;
+  RETURN NULL;
+END $$;
+
+CREATE TRIGGER d3_dataset_variable_mirror
+  AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_variable
+  FOR EACH ROW EXECUTE FUNCTION d3_mirror_variables();
+
+CREATE FUNCTION d3_mirror_category() RETURNS trigger
+  LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE d3_dataset_autometa a
+     SET category_mirror = NEW.category
+   WHERE a.dataset_id = NEW.dataset_id AND a.category_mirror IS DISTINCT FROM NEW.category;
+  RETURN NULL;
+END $$;
+
+CREATE TRIGGER d3_dataset_description_category_mirror
+  AFTER INSERT OR UPDATE OF category ON d3_dataset_description
+  FOR EACH ROW EXECUTE FUNCTION d3_mirror_category();
+
+-- 메타 행이 **뒤에** 생기는 경로(등록 전환은 설명·변수를 먼저 쓴다)를 덮는다.
+-- `BEFORE INSERT` 라서 갱신이 아니라 **그 행의 값을 채우는 것**이고, 생성 컬럼이 한 번에 선다.
+CREATE FUNCTION d3_pull_mirrors() RETURNS trigger
+  LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.category_mirror IS NULL THEN
+    SELECT dd.category INTO NEW.category_mirror
+      FROM d3_dataset_description dd WHERE dd.dataset_id = NEW.dataset_id;
+  END IF;
+  IF NEW.variables IS NULL OR cardinality(NEW.variables) = 0 THEN
+    NEW.variables := coalesce(
+      (SELECT array_agg(v.name ORDER BY v.ordinal)
+         FROM d3_dataset_variable v WHERE v.dataset_id = NEW.dataset_id), '{}'::text[]);
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER d3_dataset_autometa_pull_mirrors
+  BEFORE INSERT ON d3_dataset_autometa
+  FOR EACH ROW EXECUTE FUNCTION d3_pull_mirrors();
 
 -- 파일 — 데이터셋 1:N. 종류는 둘뿐이고 기준 격자 파일은 데이터셋당 **0~2건**
 -- (위도·경도 한 쌍이 실물이다 — `〈58〉`. 결합축 파일이면 1건으로 둘 다 선다 — `〈66〉`).
