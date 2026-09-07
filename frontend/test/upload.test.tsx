@@ -861,7 +861,8 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     const auto = screen.getByTestId('reg-auto');
     expect(auto).not.toHaveTextContent('변수');
     expect(auto).not.toHaveTextContent('좌표계');
-    for (const id of ['reg-variables', 'reg-crs', 'reg-period-start', 'reg-period-end']) {
+    // ⭑ ⟨WU-B2 · PRD-16⟩ 변수는 한 칸이 아니라 5열 표다 — 첫 행의 이름 칸으로 잰다.
+    for (const id of ['vt-name-0', 'reg-crs', 'reg-period-start', 'reg-period-end']) {
       expect(screen.getByTestId(id)).not.toHaveAttribute('readonly');
     }
   });
@@ -876,7 +877,13 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     const labels = Array.from(document.querySelectorAll('label[for="reg-crs"]'));
     expect(labels).toHaveLength(1);
     expect(labels[0]!.textContent).toBe('좌표계 (선택)');
-    expect(document.querySelector('label[for="reg-variables"]')!.textContent).toBe('변수 (선택)');
+    // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 라벨은 **입력 하나를 가리키지 않는다** — 표 전체의 이름이라
+    // `for` 가 없다. 보조 라벨 `(선택)` 규율은 그대로다.
+    const varLabels = Array.from(document.querySelectorAll('label')).filter(
+      (l) => l.textContent === '변수 (선택)',
+    );
+    expect(varLabels).toHaveLength(1);
+    expect(varLabels[0]!.hasAttribute('for')).toBe(false);
   });
 
   it('짧은 값 한 줄에서 **사람이 적는 칸**의 라벨이 전부 `(선택)` 으로 끝난다', async () => {
@@ -900,7 +907,11 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    await change(screen.getByTestId('reg-variables'), ' tp · t2m ');
+    // ⭑ ⟨WU-B2 · PRD-16⟩ 표에 두 행을 적는다 — `+ 변수 추가` 로 둘째 행을 만든다.
+    await change(screen.getByTestId('vt-name-0'), ' tp ');
+    await click(screen.getByTestId('vt-add'));
+    await change(screen.getByTestId('vt-name-1'), ' t2m ');
+    await change(screen.getByTestId('vt-unit-1'), 'K');
     await change(screen.getByTestId('reg-crs'), 'EPSG:5179');
     await change(screen.getByTestId('reg-period-start'), '2025-06-01');
     await change(screen.getByTestId('reg-period-end'), '2025-09-30');
@@ -908,7 +919,10 @@ describe('§8 ① 자동 메타데이터 확인', () => {
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.registered.length).toBe(1));
     const body = calls.registered[0] ?? {};
-    expect(body.variables).toEqual(['tp', 't2m']);
+    expect(body.variables).toEqual([
+      { name: 'tp', unit: null, valueRange: null, missingRate: null, representative: false },
+      { name: 't2m', unit: 'K', valueRange: null, missingRate: null, representative: false },
+    ]);
     expect(body.crs).toBe('EPSG:5179');
     // ⭑ **⟨19차 해제 · PRD-18⟩ `granularity` 가 기간과 한 값으로 실린다.** 단위를 안 골랐으니
     // `null`(미지정)이고, **시각값 두 칸은 종전 그대로**다 — 저장 모양이 바뀐 것이 아니다.

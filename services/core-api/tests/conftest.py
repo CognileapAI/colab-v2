@@ -114,6 +114,14 @@ TOKEN_B = "b1-prof-token"
 _SEED_DATASETS = ("'0000000000000000000000DSA1'", "'0000000000000000000000DSA2'",
                   "'0000000000000000000000DSB1'")
 _KEEP_DATASETS = f" AND dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
+#: ⭑ **⟨WU-B2 · PRD-16⟩ 변수 행에는 시각 열이 없다** — 아래 `_CLEANUP` 루프가 쓰는
+#: 「시각 이후 행만 지운다」를 쓸 수 없어 **문장 하나로 뺀다**. 데이터셋에 딸린 행이라
+#: 시드 데이터셋 것만 남기면 그것으로 충분하고, 시드 세 데이터셋의 행은 아래 `_RESTORE` 가
+#: 되돌린다. ⚠ **`d3_dataset` DELETE 보다 먼저 돌아야 한다**(FK).
+_CLEANUP_VARIABLES = (
+    f"DELETE FROM d3_dataset_variable WHERE dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
+)
+
 _CLEANUP: tuple[tuple[str, str, str], ...] = (
     # **WU-P6 가 더한 셋.** 승인 시험은 요청 행과 **그 요청이 만든 허용 줄**을 함께 남긴다 —
     # 허용 줄을 안 지우면 다음 회차에서 `DSA2` 가 이미 열린 채로 시작해 잠금 시험이 통째로
@@ -168,6 +176,19 @@ _RESTORE: tuple[str, ...] = (
          ('0000000000000000000000DSA2', current_lab_id(), 'NetCDF', '{강우량}', 'EPSG:5179', 0)
        ON CONFLICT (dataset_id) DO UPDATE
          SET crs = EXCLUDED.crs, grid = NULL, format = EXCLUDED.format""",
+    # ⭑ **⟨WU-B2 · PRD-16⟩ 시드 변수 행.** 수정 시험이 행 집합을 통째로 교체하므로
+    # (delete-then-insert) 되돌리지 않으면 「DSA1 은 단위가 셋 다른 3행」을 오라클로 삼는
+    # 시험이 순서에 따라 갈린다. 값은 `tests/fixtures/seed.sql` 그대로다.
+    # ⚠ **DSB1 은 여기 없다** — 이 세션의 스코프가 A 연구실이라 그 행에 닿지 못한다(경계 정책).
+    """DELETE FROM d3_dataset_variable
+        WHERE dataset_id IN ('0000000000000000000000DSA1', '0000000000000000000000DSA2')""",
+    """INSERT INTO d3_dataset_variable
+         (dataset_id, lab_id, ordinal, name, unit, value_range, missing_rate, is_representative)
+       VALUES
+         ('0000000000000000000000DSA1', current_lab_id(), 1, '강우량', 'mm',   '0~350',  '0.2%', true),
+         ('0000000000000000000000DSA1', current_lab_id(), 2, '기온',   '℃',   '-30~40', NULL,   false),
+         ('0000000000000000000000DSA1', current_lab_id(), 3, '유출량', 'm3/s', NULL,     NULL,   false),
+         ('0000000000000000000000DSA2', current_lab_id(), 1, '강우량', 'mm',   NULL,     NULL,   true)""",
     """UPDATE d3_dataset SET lineage_confirmed_at = NULL
         WHERE id = '0000000000000000000000DSA1'""",
     """UPDATE d3_dataset SET lineage_confirmed_at = '2026-02-03T00:00:00Z'
@@ -306,6 +327,7 @@ def _rollback_p2_rows(request, session_factory):
     try:
         session.begin()
         apply_scope(session, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
+        session.execute(text(_CLEANUP_VARIABLES))
         for table, column, keep in _CLEANUP:
             session.execute(text(f"DELETE FROM {table} WHERE {column} >= :t{keep}"),
                             {"t": started})

@@ -112,6 +112,31 @@ _HAS_GRID = text("""
      LIMIT 1
 """)
 
+# ── 변수 행 (`0016` · `M-5` · PRD-16) ────────────────────────────────────────
+#
+# **정본은 이 표다.** `d3_dataset_autometa.variables` 는 그 그림자이고, 그 그림자를
+# 최신으로 유지하는 트리거는 `M-10`(R-B-2 · WU-B7) 소속이라 아직 없다 — 그래서
+# **등록·수정 경로는 그 배열을 직접 쓰지 않는다**(PRD-16 축자 「트리거만 쓴다」).
+# 두 곳이 같은 칸을 쓰면 순서에 따라 값이 갈린다.
+_VARIABLES = text("""
+    SELECT ordinal, name, unit, value_range, missing_rate, is_representative
+      FROM d3_dataset_variable
+     WHERE dataset_id = :dataset_id
+     ORDER BY ordinal
+""")
+
+_DELETE_VARIABLES = text("DELETE FROM d3_dataset_variable WHERE dataset_id = :dataset_id")
+
+# `lab_id` 를 인자로 받지 않고 **데이터셋 행에서 읽는다** — 경계를 두 번 적으면 갈리고,
+# RLS 가 이미 그 SELECT 를 자기 연구실로 좁힌다(다른 연구실 데이터셋이면 0행이라 INSERT 가
+# 한 줄도 안 난다).
+_INSERT_VARIABLE = text("""
+    INSERT INTO d3_dataset_variable
+      (dataset_id, lab_id, ordinal, name, unit, value_range, missing_rate, is_representative)
+    SELECT d.id, d.lab_id, :ordinal, :name, :unit, :value_range, :missing_rate, :representative
+      FROM d3_dataset d WHERE d.id = :dataset_id
+""")
+
 
 @dataclasses.dataclass(frozen=True)
 class DatasetAutometa:
@@ -199,6 +224,52 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         category=r["category"], data_type=r["data_type"],
         processing_level_user_set=r["processing_level_user_set"],
     )
+
+
+@dataclasses.dataclass(frozen=True)
+class DatasetVariable:
+    """변수 한 줄 (계약 `DatasetVariable`). 이름 말고는 전부 「아직 안 적었다」가 정상이다."""
+
+    ordinal: int
+    name: str
+    unit: str | None
+    value_range: str | None
+    missing_rate: str | None
+    representative: bool
+
+
+def list_variables(session: Session, dataset_id: Ulid) -> list[DatasetVariable]:
+    """변수 행을 `ordinal` 순으로 낸다. **순서가 값이다** — 사람이 화면에서 세운 순서다."""
+    return [
+        DatasetVariable(
+            ordinal=int(r["ordinal"]), name=r["name"], unit=r["unit"],
+            value_range=r["value_range"], missing_rate=r["missing_rate"],
+            representative=bool(r["is_representative"]),
+        )
+        for r in session.execute(_VARIABLES, {"dataset_id": str(dataset_id)}).mappings()
+    ]
+
+
+def replace_variables(session: Session, dataset_id: Ulid, rows: list[dict]) -> None:
+    """행 집합을 **통째로 교체**한다 — delete-then-insert, **같은 트랜잭션**(PRD-16 축자).
+
+    부분 갱신을 만들지 않는 이유: 화면이 표를 통째로 보내고, 부분 갱신은 「지운 행」을
+    표현할 열쇠를 하나 더 요구한다. 그 열쇠가 없으면 지운 행이 DB 에 남는다.
+
+    **대표는 정확히 하나다.** 아무도 안 골랐으면 **첫 행**이 대표다(자동 보정) — 둘 이상은
+    라우트가 이미 400 으로 떨어뜨렸고, 뒷문은 부분 UNIQUE 색인이다.
+    ⚠ `ordinal` 은 **여기서 1부터 다시 매긴다** — 화면이 보낸 순서가 곧 값이고, 클라이언트가
+    번호를 지어 보내면 구멍·중복이 그대로 저장된다.
+    """
+    session.execute(_DELETE_VARIABLES, {"dataset_id": str(dataset_id)})
+    chosen = next((i for i, r in enumerate(rows) if r.get("representative")), 0)
+    for i, row in enumerate(rows):
+        session.execute(_INSERT_VARIABLE, {
+            "dataset_id": str(dataset_id), "ordinal": i + 1,
+            "name": str(row["name"]).strip(),
+            "unit": row.get("unit"), "value_range": row.get("valueRange"),
+            "missing_rate": row.get("missingRate"), "representative": i == chosen,
+        })
 
 
 def find_autometa(session: Session, dataset_id: Ulid) -> DatasetAutometa | None:
@@ -805,7 +876,9 @@ _UPDATABLE = {
     "summary": ("d3_dataset_description", "summary"),
     "sourceLabel": ("d3_dataset", "source_label"),
     "representativeFileId": ("d3_dataset", "representative_file_id"),
-    "variables": ("d3_dataset_autometa", "variables"),
+    # ⭑ **⟨20차 해제 · PRD-16⟩ `variables` 는 여기 없다** — 한 열이 아니라 **다른 표**
+    # (`d3_dataset_variable`)의 행 집합이고, `replace_variables` 가 통째로 교체한다.
+    # 남겨 두면 `_UPDATABLE[key]` 가 객체 배열을 `text[]` 열에 밀어 넣어 500 이 된다.
     "crs": ("d3_dataset_autometa", "crs"),
     # ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축.** 분류·유형은 **사람이 적는 값**이라
     # `d3_dataset_description` 이고(`autometa` 는 파일에서 자동으로 읽은 것만 담는다 ·
@@ -836,10 +909,16 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
         # ⭑ **2026-09-02 · `#62`** — 여기서 거르지 않으면 `_UPDATABLE[key]` 가 `KeyError`
         #   로 죽어 **기간 수정이 통째로 500** 이었다. 시험이 없어 아무도 몰랐다.
         #   `observationInterval` 은 그 실패를 두 번 배우지 않으려고 처음부터 여기 있다.
-        if key in ("period", "observationInterval"):
+        if key in ("period", "observationInterval", "variables"):
             continue
         table, column = _UPDATABLE[key]
         by_table.setdefault(table, {})[column] = value
+
+    # ⭑ **⟨20차 해제 · PRD-16⟩ 변수는 열이 아니라 다른 표의 행 집합이다.**
+    # 통째로 교체한다 — `by_table` 의 UPDATE 와 **같은 트랜잭션**이라 반쪽이 남지 않는다.
+    # ⛔ **`autometa.variables` 를 여기서 쓰지 않는다** — 그 배열의 미러 유지는 `M-10` 이다.
+    if "variables" in changes:
+        replace_variables(session, dataset_id, changes["variables"])
 
     # 기간은 두 열로 갈라진다 — 계약은 한 덩어리(`DataPeriod`)로 받는다.
     if "period" in changes:
@@ -872,7 +951,7 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     # **마지막 수정 시각은 언제나 움직인다.** 계보 상태 판정이 이 값을 본다
     # (`DATAMODEL-BASELINE §3-③` — 「마지막 수정 > 계보 확정일」이면 `확인 필요`).
     # 빈 요청이어도 갱신하지 않는다 — 아무것도 안 고쳤으면 고친 것이 아니다.
-    if by_table:
+    if by_table or "variables" in changes:
         touch_last_modified(session, dataset_id)
 
 

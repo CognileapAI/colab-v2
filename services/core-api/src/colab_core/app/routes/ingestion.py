@@ -417,6 +417,13 @@ def _human_metadata(body: dict) -> dict:
     picked: dict = {}
     for key in _HUMAN_METADATA_FIELDS:
         value = body.get(key)
+        # ⭑ **⟨20차 해제 · PRD-16⟩ 빈 `variables` 는 「안 적었다」가 아니라 400 이다.**
+        # 계약이 `minItems: 1` 로 못 박았고(「행이 0개인 데이터셋은 허용하지 않는다」),
+        # 여기서 조용히 버리면 마지막 행을 지운 사람이 **성공했다고 믿고 떠난다**.
+        # 열쇠를 아예 안 실은 경우는 종전 그대로 「안 적었다」다.
+        if key == "variables" and value == []:
+            picked[key] = value
+            continue
         if value is None or value == "" or value == []:
             continue
         # ⭑ **⟨19차 해제 · PRD-17⟩ 두 칸이 다 빈 관측 간격은 「안 적었다」다.**

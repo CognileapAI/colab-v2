@@ -506,6 +506,25 @@ def _account_ref(account_id: str | None, name: str | None) -> dict | None:
     return None if account_id is None or name is None else {"accountId": account_id, "name": name}
 
 
+def _variables_payload(db, dataset_id, meta) -> list[dict]:
+    """계약 `DatasetBasicInfo.variables` 를 조립한다 — **정본은 `d3_dataset_variable`** 이다.
+
+    행이 0개일 때만 `d3_dataset_autometa.variables`(파이프라인이 헤더에서 읽은 이름 배열)로
+    퇴행한다. 그 배열에는 단위·값 범위·결측률이 없으므로 셋은 `null` 이고 **첫 이름이 대표**다
+    — 이관 마이그레이션(`0016`)이 기존 행에 한 것과 같은 규칙이라 두 경로가 같은 그림을 낸다.
+    ⚠ 퇴행은 **읽기 투영**이다 — 쓰기 정본은 여전히 표 하나뿐이다.
+    """
+    rows = d3_catalog.list_variables(db, dataset_id)
+    if rows:
+        return [{"name": v.name, "unit": v.unit, "valueRange": v.value_range,
+                 "missingRate": v.missing_rate, "representative": v.representative}
+                for v in rows]
+    names = [] if meta is None else list(meta.variables)
+    return [{"name": n, "unit": None, "valueRange": None, "missingRate": None,
+             "representative": i == 0}
+            for i, n in enumerate(names)]
+
+
 def _observation_interval(core) -> dict | None:
     """관측 간격 두 칸 → 계약 `ObservationInterval` 하나 (PRD-17 · `M-6`).
 
@@ -650,6 +669,50 @@ def _is_datetime(value: str) -> bool:
     return True
 
 
+#: 계약 `DatasetVariable` 의 열쇠. **런타임에 `additionalProperties: false` 를 강제하는
+#: 것은 이 집합뿐이다** — 오타 열쇠를 조용히 버리면 사용자는 적었다고 믿고 떠난다.
+_VARIABLE_FIELDS = {"name", "unit", "valueRange", "missingRate", "representative"}
+
+#: ⭑ **⟨20차 해제 · PRD-16⟩ 행이 0개인 데이터셋을 허용하지 않는다.** 문면은 rev1 축자이고
+#: 화면(마지막 행 삭제 차단)과 **같은 문장**이다 — 두 벌로 적으면 한쪽만 고쳐진다.
+AT_LEAST_ONE_VARIABLE = "변수는 하나 이상 있어야 해요"
+
+
+def _validate_variables(variables: object) -> None:
+    """변수 행 배열의 **형상**을 본다 — 값의 뜻은 보지 않는다(`VAL-006` 계열 자유 입력).
+
+    형상이 어긋나면 아래 저장 코드가 타입 오류로 죽고 **사용자의 오타가 500** 이 된다.
+    ⚠ **대표 둘도 여기서 400 이다** — 안 막으면 부분 UNIQUE 색인이 IntegrityError 를 내고
+    그것은 500 으로 나간다(`CODE-REVIEW-20260903` #12 와 같은 자리).
+    """
+    if not isinstance(variables, list):
+        raise errors.bad_request("변수 목록은 객체 배열이다.")
+    # `null`·빈 배열은 **둘 다 0행**이다. 마지막 행 삭제를 화면이 막고 여기가 뒷문이다.
+    if not variables:
+        raise errors.bad_request(AT_LEAST_ONE_VARIABLE)
+    representatives = 0
+    for row in variables:
+        if not isinstance(row, dict):
+            raise errors.bad_request("변수 항목이 객체가 아니다.")
+        unknown = set(row) - _VARIABLE_FIELDS
+        if unknown:
+            raise errors.bad_request(f"계약에 없는 필드다: {sorted(unknown)}")
+        name = row.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise errors.bad_request("변수 이름은 빈 문자열이 아니다.")
+        for key in ("unit", "valueRange", "missingRate"):
+            if row.get(key) is not None and not isinstance(row[key], str):
+                raise errors.bad_request(f"{key} 는 문자열이거나 null 이다.")
+        flag = row.get("representative", False)
+        if not isinstance(flag, bool):
+            raise errors.bad_request("representative 는 참·거짓이다.")
+        representatives += 1 if flag else 0
+    if representatives > 1:
+        # 아무도 안 고른 경우는 400 이 아니다 — **첫 행이 대표**가 된다(자동 보정 ·
+        # `d3_catalog.replace_variables`). 대표 없는 저장이 성립하지 않게 하는 자리다.
+        raise errors.bad_request("대표 변수는 한 행만 고를 수 있다.")
+
+
 def validate_human_metadata(changes: dict) -> None:
     """`variables`·`crs`·`period` 의 **형상**을 본다 — **생성과 수정이 이 한 벌을 쓴다.**
 
@@ -661,11 +724,8 @@ def validate_human_metadata(changes: dict) -> None:
     ⭑ **2026-09-02 · `#62`** — `createDataset` 이 이 함수를 부른다. 검사기를 두 벌 두면
     한쪽만 고쳐지는 날이 오고, 그날 다른 한쪽은 조용히 틀린다.
     """
-    if changes.get("variables") is not None and "variables" in changes:
-        variables = changes["variables"]
-        if not isinstance(variables, list) or \
-                any(not isinstance(v, str) or not v.strip() for v in variables):
-            raise errors.bad_request("변수 목록은 빈 문자열 없는 문자열 배열이다.")
+    if "variables" in changes:
+        _validate_variables(changes["variables"])
 
     if changes.get("crs") is not None and "crs" in changes:
         if not isinstance(changes["crs"], str):
@@ -917,7 +977,12 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             "category": core.category,
             "dataType": core.data_type,
             "processingLevelUserSet": core.processing_level_user_set,
-            "variables": [] if meta is None else meta.variables,
+            # ⭑ **⟨20차 해제 · PRD-16⟩ 정본은 `d3_dataset_variable` 이다.**
+            # ⚠ 행이 0개면 **`autometa.variables` 로 퇴행한다** — 파이프라인이 헤더에서 읽어
+            #   채운 이름이 그 배열에만 있는 데이터셋이 있고(등록·수정 경로는 그 배열을 안
+            #   쓴다 · 미러 트리거 `M-10` 은 R-B-2), 퇴행이 없으면 그 상세의 구성 칸이
+            #   이유 없이 빈다. **쓰기 정본이 둘이 되는 것은 아니다** — 읽기 투영이다.
+            "variables": _variables_payload(db, dataset_id, meta),
             "crs": None if meta is None else meta.crs,
             "period": period,
             # ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 두 칸.** 사람이 적는 값이라 `meta` 가 아니라

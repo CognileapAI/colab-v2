@@ -3,6 +3,7 @@
 // 잠긴 데이터는 이 블록을 통째로 비운다(`basicInfo` null) — 부르는 쪽이 아예 그리지 않는다.
 import { useState } from 'react';
 import { PieceList } from './PieceList';
+import { VariableTable, toVariableRows } from '../common/VariableTable';
 import {
   EMPTY,
   INTERVAL_MISSING_NOTICE,
@@ -49,8 +50,12 @@ export function BasicInfoGrid(props: {
   // 간격이 비면 괄호를 그리지 않고, 대신 아래 「관측 간격 미기재」 한 줄이 선다 (PRD-17) —
   // ⛔ **빈 괄호 `()` 를 그리지 않는다**: 그것은 「없다」가 아니라 잡음이다.
   const intervalMissing = formatInterval(b.observationInterval) === null;
+  // ⭑ **⟨WU-B2 · PRD-16⟩ 구성 칸은 문자열이 아니라 5열 표다** — 등록 화면과 **같은
+  // 컴포넌트**를 읽기 전용으로 그린다(열 순서·라벨이 갈리지 않게 하는 자리).
+  // 행이 0개인 데이터셋은 이관 대상이 아니었던 기존 행이고, 그때는 종전대로 `EMPTY` 다.
+  const variableRows = toVariableRows(b.variables);
   const cells: [string, string][] = [
-    ['구성', b.variables.length > 0 ? b.variables.join(' · ') : EMPTY],
+    ['구성', variableRows.length > 0 ? '' : EMPTY],
     ['좌표계', orEmpty(b.crs)],
     ['기간', formatPeriodWithInterval(b.period, b.observationInterval)],
     ['격자', orEmpty(b.grid)],
@@ -70,7 +75,11 @@ export function BasicInfoGrid(props: {
               {k}
             </div>
             <div className="v">
-              {v}
+              {k === '구성' && variableRows.length > 0 ? (
+                <VariableTable rows={variableRows} />
+              ) : (
+                v
+              )}
               {/* PRD-17 — 안 적은 행은 **그 사실을 말한다.** 「모른다」를 빈 칸으로 두면
                   「간격이 없다」와 갈리지 않는다. ⛔ 재선택을 강제하지 않는다 — 안내 한 줄이다. */}
               {k === '기간' && intervalMissing ? (

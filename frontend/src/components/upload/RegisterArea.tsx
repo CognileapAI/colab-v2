@@ -12,6 +12,7 @@
 //    그 「아래」가 **오른쪽 칸 안의 아래**가 됐다. 요약 레일은 여전히 없다 — 오른쪽 칸은
 //    요약이 아니라 **사람이 적는 자리**다. 좁은 폭에서는 한 칸으로 접혀 종전 배치가 된다.
 //  - `데이터셋 만들기` 는 ③ 에서만. `등록 취소` 는 같은 줄 **왼쪽 끝**에 떨어뜨린다.
+import { VariableTable, type VariableRow } from '../common/VariableTable';
 import { useEffect, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
@@ -128,8 +129,9 @@ function StepOne(props: {
   onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
-  variables: string;
-  onVariables: (v: string) => void;
+  variables: VariableRow[];
+  onVariables: (v: VariableRow[]) => void;
+  onVariablesBlocked: (message: string) => void;
   periodStart: string;
   onPeriodStart: (v: string) => void;
   periodEnd: string;
@@ -273,16 +275,16 @@ function StepOne(props: {
         </div>
         {/* 변수·기간·좌표계 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
             형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
-            파이프라인이 채울 자리가 영영 막힌다 (`UploadModal.submit`). */}
+            파이프라인이 채울 자리가 영영 막힌다 (`UploadModal.submit`).
+            ⭑ **⟨WU-B2 · PRD-16⟩ 변수는 한 칸이 아니라 5열 표다** — 「변수 3개에 단위
+            1개면 어느 변수 것인지 알 수 없다」(rev1 축자). 표 자체는 `VariableTable`
+            하나이고 상세가 같은 것을 읽기 전용으로 그린다. */}
         <div className="form-row">
-          <label htmlFor="reg-variables">변수 (선택)</label>
-          <input
-            id="reg-variables"
-            className="inp"
-            data-testid="reg-variables"
-            placeholder="tp · t2m 처럼 가운뎃점으로 나열해요"
-            value={props.variables}
-            onChange={(e) => props.onVariables(e.target.value)}
+          <label>변수 (선택)</label>
+          <VariableTable
+            rows={props.variables}
+            onRows={props.onVariables}
+            onBlocked={props.onVariablesBlocked}
           />
         </div>
         {/* ⭑ **⟨PRD-28⟩ 짧은 값 세 개가 한 줄이다** — 기간 · 좌표계 · 격자.
@@ -699,8 +701,9 @@ export function RegisterArea(props: {
   onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
-  variables: string;
-  onVariables: (v: string) => void;
+  variables: VariableRow[];
+  onVariables: (v: VariableRow[]) => void;
+  onVariablesBlocked: (message: string) => void;
   periodStart: string;
   onPeriodStart: (v: string) => void;
   periodEnd: string;
@@ -775,6 +778,7 @@ export function RegisterArea(props: {
             onSummary={props.onSummary}
             variables={props.variables}
             onVariables={props.onVariables}
+            onVariablesBlocked={props.onVariablesBlocked}
             periodStart={props.periodStart}
             onPeriodStart={props.onPeriodStart}
             periodEnd={props.periodEnd}

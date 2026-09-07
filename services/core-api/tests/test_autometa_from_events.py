@@ -226,13 +226,23 @@ def test_human_values_sent_at_registration_survive_the_header_parsed_event(
     _hold_event(sql, receipt["uploadId"], "file.header-parsed", _header_parsed())
 
     r = _register(client, receipt,
-                  variables=["사람이 적은 변수"], crs="EPSG:5179",
+                  variables=[{"name": "사람이 적은 변수"}], crs="EPSG:5179",
                   period={"start": "1999-01-01T00:00:00Z", "end": "1999-12-31T00:00:00Z"})
     assert r.status_code == 201, r.text
     dataset_id = r.json()["datasetId"]
 
+    # ⭑ **⟨20차 해제 · PRD-16⟩ 사람이 적은 변수의 자리가 옮겨졌다** — 이제 행 표
+    # (`d3_dataset_variable`)이고, 등록 경로는 `autometa.variables` 를 **직접 쓰지 않는다**
+    # (미러 트리거 `M-10` = `R-B-2-server.md` · WU-B7). 그래서 사건이 나른 이름 배열이
+    # 그 배열에 그대로 들어가고, **사람 값은 행 표에서 그대로 산다** — 덮이지 않는다.
+    # ⚠ 그 배열이 검색 색인을 물고 있으므로 `M-10` 전까지 새 변수명은 색인에 안 들어간다
+    # (이 회차가 받아들인 잔여 위험 · `sessions/p3-variable-rows-20260907.md`).
+    variables = sql("SELECT name FROM d3_dataset_variable"
+                    "  WHERE dataset_id = :d ORDER BY ordinal", {"d": dataset_id})
+    assert [v["name"] for v in variables] == ["사람이 적은 변수"], \
+        "사건이 사람이 적은 변수를 덮었다."
+
     meta = _autometa(sql, dataset_id)
-    assert list(meta["variables"]) == ["사람이 적은 변수"], "사건이 사람이 적은 변수를 덮었다."
     assert meta["crs"] == "EPSG:5179", "사건이 사람이 적은 좌표계를 덮었다."
     assert meta["period_start"].year == 1999 and meta["period_end"].year == 1999, \
         "사건이 사람이 적은 기간을 덮었다."
@@ -251,9 +261,13 @@ def test_empty_form_defaults_are_not_stored_as_human_values(p2_client, sql) -> N
     receipt = _make_unregistered_upload(client)
     _hold_event(sql, receipt["uploadId"], "file.header-parsed", _header_parsed())
 
-    r = _register(client, receipt, variables=[], crs="", period=None)
+    # ⚠ **`variables` 는 열쇠를 아예 싣지 않는다** — ⭑ ⟨20차 해제 · PRD-16⟩ 빈 배열은
+    # 이제 「안 적었다」가 아니라 **400**(「변수는 하나 이상 있어야 해요」)이다. 「안 적었다」를
+    # 표현하는 것은 **열쇠의 부재**이고, 이 시험이 재는 것은 그 부재가 사건 반영을 막지
+    # 않는다는 사실이다(빈 문자열 `crs` 는 종전 그대로 「안 적었다」다).
+    r = _register(client, receipt, crs="", period=None)
     assert r.status_code == 201, r.text
     meta = _autometa(sql, r.json()["datasetId"])
-    assert list(meta["variables"]) == _VARIABLES, "빈 배열이 저장돼 사건 반영을 막았다."
+    assert list(meta["variables"]) == _VARIABLES, "열쇠 부재가 사건 반영을 막았다."
     assert meta["crs"] == _CRS, "빈 문자열이 저장돼 사건 반영을 막았다."
     assert meta["period_start"] is not None

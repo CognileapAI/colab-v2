@@ -99,7 +99,11 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # 시드 행은 마이그레이션 뒤 기존 행과 같은 상태다 — 셋 다 `None`(미결-3 ⓐ · backfill 0).
     assert info["category"] is None and info["dataType"] is None
     assert info["processingLevelUserSet"] is None
-    assert info["variables"] == ["강우량"]
+    # ⭑ **⟨20차 해제 · PRD-16⟩ `variables` 는 객체 배열이다** — 시드 DSA1 은 단위가
+    # 셋 다 다른 3행이고(`fixtures/seed.sql`), 그 세 행이 각자의 단위와 함께 내려온다.
+    assert [v["name"] for v in info["variables"]] == ["강우량", "기온", "유출량"]
+    assert [v["unit"] for v in info["variables"]] == ["mm", "℃", "m3/s"]
+    assert [v["representative"] for v in info["variables"]] == [True, False, False]
     assert info["crs"] == "EPSG:5179"
     assert info["format"] == "CSV"
     # 시드 행은 `d3_file` 이 없어 확장자를 못 뽑는다 — **그 자리는 NULL 이고 화면은 `format`

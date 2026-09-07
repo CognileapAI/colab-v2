@@ -106,7 +106,17 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     lastModifiedAt: '2026-08-11T00:00:00Z',
     lineageConfirmedAt: '2026-07-30T00:00:00Z',
     basicInfo: {
-      variables: ['시간별 격자 강수량 (tp, mm)'],
+      // ⭑ ⟨WU-B2 · PRD-16⟩ 객체 배열이다. 목업 원장은 이름 한 줄만 말하므로 단위·값
+      // 범위·결측률은 **`null`** 이고 그 한 행이 대표다 — 지어내지 않는다.
+      variables: [
+        {
+          name: '시간별 격자 강수량 (tp, mm)',
+          unit: null,
+          valueRange: null,
+          missingRate: null,
+          representative: true,
+        },
+      ],
       crs: 'EPSG:5179',
       // ⭑ ⟨19차 해제 · PRD-18⟩ 목업 원장은 최소 단위를 말하지 않는다 — **미지정(`null`)**이고
       // 그때 표기는 종전 그대로다. 지어내지 않는다.

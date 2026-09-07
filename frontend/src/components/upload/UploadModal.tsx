@@ -27,6 +27,11 @@ import { collectDrop } from './dropTree';
 import { FileDropCard } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { RegisterArea, type Step } from './RegisterArea';
+import {
+  emptyVariableRow,
+  variablesPayload,
+  type VariableRow,
+} from '../common/VariableTable';
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { previewNavigation } from '../preview/handoff';
 import { forgetPending, rememberPending } from './pendingStore';
@@ -131,7 +136,12 @@ export function UploadModal(props: {
   const [sourceLabel, setSourceLabel] = useState('');
   // 변수·기간·좌표계 — **사람이 적는 자유 입력** (정본 `VAL-006` · 스펙 18·19·20).
   // 화면은 문자열로 들고 있다가 제출 자리에서 계약 형상으로 바꾼다.
-  const [variables, setVariables] = useState('');
+  // ⭑ **⟨WU-B2 · PRD-16⟩ 변수는 문자열이 아니라 5열 행 집합이다.** 한 행으로 시작한다 —
+  // 「행이 0개인 데이터셋은 허용하지 않는다」와 「+ 변수 추가」가 같은 규율이고, 빈 첫 행은
+  // 제출 자리에서 걸러진다(`variablesPayload`)라 「안 적었다」가 그대로 표현된다.
+  const [variables, setVariables] = useState<VariableRow[]>([emptyVariableRow()]);
+  // 마지막 행 삭제 차단 고지. 공통 토스트를 탄다(PRD-43 과 같은 컴포넌트).
+  const [variableNotice, setVariableNotice] = useState<string | null>(null);
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [crs, setCrs] = useState('');
@@ -348,7 +358,7 @@ export function UploadModal(props: {
     (name.trim() !== '' && name !== nameDraft) ||
     topic.trim() !== '' ||
     summary.trim() !== '' ||
-    variables.trim() !== '' ||
+    variables.some((v) => v.name.trim() !== '') ||
     periodStart.trim() !== '' ||
     periodEnd.trim() !== '' ||
     crs.trim() !== '' ||
@@ -576,11 +586,11 @@ export function UploadModal(props: {
    */
   function humanMetadata(): Record<string, unknown> {
     const out: Record<string, unknown> = {};
-    const vars = variables
-      .split('·')
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0);
-    if (vars.length > 0) out.variables = vars;
+    // ⭑ **⟨WU-B2 · PRD-16⟩ 객체 배열이다.** 이름이 빈 행은 싣지 않고, 한 행도 안 적었으면
+    // **열쇠 자체를 안 싣는다** — 빈 배열은 이제 400(「변수는 하나 이상 있어야 해요」)이라
+    // 파일만 올린 사람이 그 문면에 막히면 안 된다.
+    const vars = variablesPayload(variables);
+    if (vars) out.variables = vars;
     if (crs.trim()) out.crs = crs.trim();
     // **끝은 조건부다** (계약 `DataPeriod.end`: `[string, "null"]` · 14차 해제).
     // 끝을 비우면 무기한이라는 뜻으로 `null` 을 **명시해서** 보낸다 — 열쇠를 빼지 않는
@@ -789,6 +799,15 @@ export function UploadModal(props: {
             </div>
           )}
 
+          {/* ⭑ ⟨WU-B2 · PRD-16⟩ 마지막 변수 행 삭제 차단 고지 — 같은 토스트 컴포넌트다. */}
+          {variableNotice && (
+            <Toast
+              message={variableNotice}
+              testId="up-variable-toast"
+              onDismiss={() => setVariableNotice(null)}
+            />
+          )}
+
           {/* ③ 파일 빼기 고지 — 공통 토스트를 탄다(PRD-43). 스스로 사라진다. */}
           {removedNotice && (
             <Toast
@@ -934,6 +953,7 @@ export function UploadModal(props: {
                 onSummary={setSummary}
                 variables={variables}
                 onVariables={setVariables}
+                onVariablesBlocked={setVariableNotice}
                 periodStart={periodStart}
                 onPeriodStart={setPeriodStart}
                 periodEnd={periodEnd}

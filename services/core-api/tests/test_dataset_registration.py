@@ -271,18 +271,24 @@ def test_the_three_free_input_fields_are_accepted_at_registration(p2_client, sql
     """
     client = p2_client()
     r = register(client, make_upload(client),
-                 variables=["tp", "t2m"], crs="EPSG:5179",
+                 variables=[{"name": "tp"}, {"name": "t2m"}], crs="EPSG:5179",
                  period={"start": "2025-06-01T00:00:00Z", "end": "2025-09-30T00:00:00Z"})
     assert r.status_code == 201, r.text
     basics = r.json()["basicInfo"]
-    assert basics["variables"] == ["tp", "t2m"]
+    assert [v["name"] for v in basics["variables"]] == ["tp", "t2m"]
     assert basics["crs"] == "EPSG:5179"
     assert basics["period"]["start"].startswith("2025-06-01")
 
-    rows = sql("SELECT variables, crs, period_start, period_end"
+    # ⭑ **⟨20차 해제 · PRD-16⟩ 변수는 이제 `d3_dataset_variable` 의 행이다** —
+    # 좌표계·기간은 종전대로 `d3_dataset_autometa` 의 열이라 저장 자리가 갈렸다.
+    variables = sql("SELECT ordinal, name FROM d3_dataset_variable"
+                    "  WHERE dataset_id = :d ORDER BY ordinal",
+                    {"d": r.json()["datasetId"]})
+    assert [v["name"] for v in variables] == ["tp", "t2m"]
+
+    rows = sql("SELECT crs, period_start, period_end"
                "  FROM d3_dataset_autometa WHERE dataset_id = :d",
                {"d": r.json()["datasetId"]})
-    assert list(rows[0]["variables"]) == ["tp", "t2m"]
     assert rows[0]["crs"] == "EPSG:5179"
     assert rows[0]["period_start"].month == 6
 
@@ -293,7 +299,7 @@ def test_the_registration_and_update_paths_share_one_validator(p2_client) -> Non
     두 벌을 두면 한쪽만 고쳐지는 날이 오고, 그날 생성 경로는 500 을 낸다.
     """
     client = p2_client()
-    bad = {"variables": ["", "tp"]}
+    bad = {"variables": [{"name": ""}, {"name": "tp"}]}
     created = register(client, make_upload(client), **bad)
     assert created.status_code == 400, created.text
 

@@ -2779,6 +2779,43 @@ components:
             만들지 않는다 (`NB-E`).
           type: [string, "null"]
 
+    DatasetVariable:
+      description: |
+        ⭑ **⟨신설 2026-09-07 · 20차 해제 · PRD-16⟩ 변수 한 줄.** 「변수 3개에 단위 1개면
+        어느 변수 것인지 알 수 없다」(rev1 축자) — 그래서 단위·값 범위·결측률이 **변수마다**
+        붙는다. 저장 자리는 새 표 `d3_dataset_variable` 이다(기존 표에 컬럼을 더하지 않는다).
+
+        **필수는 `name` 하나다.** 나머지 셋은 「아직 안 적었다」가 정상이라 `null` 을 받는다 —
+        반쪽 행을 막는 규율(`ObservationInterval`)과 다른 자리다: 여기서는 단위 없는 변수가
+        그 자체로 뜻이 있다.
+
+        ⚠ **`representative` 는 데이터셋당 정확히 하나다.** 아무도 안 고르면 **첫 행**이
+        대표가 된다(서버 자동 보정) — 대표 없는 저장이 성립하지 않는다. 둘 이상 고르면 400 이다.
+        뒷문은 부분 UNIQUE 색인(`d3_dataset_variable_representative_idx`)이다.
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          description: 변수 이름. **빈 문자열이 아니다** — DB CHECK 가 뒷문이다.
+          type: string
+          minLength: 1
+        unit:
+          description: 단위 — **자유 입력**이다 (`VAL-006` 계열). 형식 검사를 하지 않는다.
+          type: [string, "null"]
+        valueRange:
+          description: 값 범위 — 자유 입력. `0~350` 처럼 사람이 적은 그대로다.
+          type: [string, "null"]
+        missingRate:
+          description: 결측률 — 자유 입력. `0.2%` 처럼 사람이 적은 그대로다.
+          type: [string, "null"]
+        representative:
+          description: |
+            대표 변수인가. 안 실어 보내면 `false` 이고, 한 행도 `true` 가 아니면
+            **첫 행**이 대표가 된다(서버 자동 보정).
+          type: boolean
+          default: false
+
     ProjectPeriod:
       description: |
         프로젝트 기간. 시작·종료 각각 **연·월까지**이고, 진행 중이면 종료가 비어 있다
@@ -3496,10 +3533,16 @@ components:
           items: { $ref: "#/components/schemas/UploadLineageParent" }
         variables:
           description: |
-            구성(변수 목록) — **자유 입력**이다 (`VAL-006`). 형식 검사를 하지 않는다.
-            비우면 `null` 이고 그것이 정상이다 — 필수는 이름 하나다 (`VAL-001`).
-          type: [array, "null"]
-          items: { type: string, minLength: 1 }
+            구성(변수 목록) — ⭑ **⟨20차 해제 · PRD-16⟩ 문자열 배열에서 객체 배열로 바뀌었다**
+            (**파괴적 변경**). 변수마다 단위·값 범위·결측률·대표가 붙는다.
+
+            **열쇠를 안 실으면 「안 적었다」** 이고 그것이 정상이다 (필수는 이름 하나 · `VAL-001`).
+            ⚠ **실었다면 한 행 이상이다** — 빈 배열은 400 이고 문면은
+            「변수는 하나 이상 있어야 해요」다(PRD-16 축자 「행이 0개인 데이터셋은 허용하지 않는다」).
+            그래서 `null` 을 받지 않는다: 「비워라」가 표현할 수 있는 상태가 아니다.
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/DatasetVariable" }
         crs:
           description: 좌표계 — **자유 입력** (`VAL-006`). 검사하지 않는다.
           type: [string, "null"]
@@ -3599,9 +3642,14 @@ components:
             - $ref: "../schemas/common.json#/$defs/Ulid"
             - type: "null"
         variables:
-          description: 구성(변수 목록) — **자유 입력** (`VAL-006` · `〈138〉`).
-          type: [array, "null"]
-          items: { type: string, minLength: 1 }
+          description: |
+            구성(변수 목록) — ⭑ **⟨20차 해제 · PRD-16⟩ 객체 배열이다**(**파괴적 변경** ·
+            `DatasetCreate.variables` 와 같은 모양). **행 집합을 통째로 교체한다**
+            (delete-then-insert · 같은 트랜잭션) — 부분 갱신이 아니다.
+            ⚠ 빈 배열은 400 이다 — 마지막 행 삭제를 막는 자리가 여기다.
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/DatasetVariable" }
         crs:
           description: 좌표계 — **자유 입력** (`VAL-006` · `〈138〉`).
           type: [string, "null"]
@@ -3878,9 +3926,15 @@ components:
             (파생 정수)에 화면이 `자동` 표기를 붙인다 — 값이 바뀌는 행은 없다.
           type: [string, "null"]
         variables:
-          description: 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다.
+          description: |
+            구성(변수 목록) — ⭑ **⟨20차 해제 · PRD-16⟩ 객체 배열이다**(**파괴적 변경**).
+            상세가 이 배열을 **5열 표**(변수 · 단위 · 값 범위 · 결측률 · 대표)로 읽기 전용으로 그린다.
+
+            ⚠ **빈 배열이 정상인 자리다** — 변수 행이 한 줄도 없는 기존 데이터셋이 있고
+            (이관 대상이 아니었던 빈 `variables` 행), 그 상세가 계약 위반이 되면 안 된다.
+            `minItems` 를 여기 걸지 않는 이유가 그것이다(등록·수정 쪽에는 걸려 있다).
           type: array
-          items: { type: string, minLength: 1 }
+          items: { $ref: "#/components/schemas/DatasetVariable" }
         crs: { type: [string, "null"] }
         period:
           description: |
