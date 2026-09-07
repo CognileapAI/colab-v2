@@ -333,6 +333,11 @@ CREATE TABLE d3_dataset (
   -- 나온다 — 사람이 직접 정하지 못한다 … 예외 없음」이라 **사람이 고른 값을 담을 자리가
   -- 없다.** `⑳`(파생값은 저장하지 않는다)이 원래 자리로 돌아온 것이다.
   -- 삭제 시점 실측 = 전체 13행 · 비-NULL 0건 ⟹ 화면 값이 바뀌는 행 0.
+  -- ⭑ **⟨반전 2026-09-07 · `0015` · `WU-B1` · PRD-03 · 미결-2 ⓐ·미결-7 ⓐ⟩ 위 문단을 지우지
+  --    않고 덧붙인다** — `〈194〉`·`〈276〉` 의 「레벨은 언제나 계보에서 나온다 — 예외 없음」을
+  --    **되돌렸다.** 사람이 Lv 를 고르고, 파생값과 어긋나면 **경고만** 낸다(등록을 막지 않는다).
+  --    그래서 `processing_level_user_set` 이 **아래 맨 뒤에 다시 선다**(4값 · `Lv0`~`Lv3`).
+  --    ⚠ 파생 계산은 폐기되지 않는다 — 두 값이 병존하고 응답의 두 열쇠 분리는 `WU-B5` 다.
   -- 대표 조각 — 상세 진입 시 미리보기에 그려지는 조각 (결정 2-4).
   -- **`NULL` 이 「자동」이다** — 파일명 오름차순 자연 정렬의 첫 조각(결정 2-8)을 그때그때 고른다.
   -- 값이 있으면 사람이 지정한 것이라 **렌더 결과가 바뀌어도 따라 움직이지 않는다.**
@@ -344,7 +349,20 @@ CREATE TABLE d3_dataset (
   -- 원문이 남아야 나중에 정규화 규칙이 바뀌어도 복구된다.
   -- 근거: 원천은 **계보 그래프의 뿌리 노드**라 `ERA5`/`era5`/`ECMWF ERA5` 가 각각 노드가 되면
   -- 「ERA5 를 쓴 데이터셋 전부」에 답할 수 없고 그래프 상단이 통째로 갈라진다.
-  source_label_normalized text
+  source_label_normalized text,
+  -- ── `0015` 가 더한 것 (`M-3` · PRD-03 · 미결-2 ⓐ · 미결-7 ⓐ). **선언 순서는 맨 뒤**다 —
+  --    `ALTER TABLE ADD COLUMN` 이 열을 뒤에 붙이므로 순서가 다르면 schema-diff 가 red 다.
+  --
+  -- 사람이 고른 가공 단계. `0007` 이 세우고 `0011` 이 지운 그 열을 **재신설**한 것이고,
+  -- 위 `0011` 문단이 그 삭제 근거와 이 반전을 나란히 남긴다(`〈194〉`·`〈276〉` 반전).
+  -- ⛔ **전 행 NULL 이고 일괄 backfill 을 하지 않는다** — 파생값을 사람 값 자리에 복사하면
+  --    두 값의 구분이 영구히 사라진다. `NULL` = 「사람이 아직 고르지 않음」이고 화면은
+  --    파생값에 `자동` 표기를 붙인다(PRD-03 축자).
+  -- 값 4단이다 — 상한 `Lv3`(미결-7 ⓐ). 파생 계산의 상한(`LV_CAP`)과 **다른 축**이라
+  -- 여기서 파생 상한을 건드리지 않는다(그 자리는 PRD-07~10 · `WU-B5`).
+  processing_level_user_set text
+    CHECK (processing_level_user_set IS NULL
+           OR processing_level_user_set IN ('Lv0', 'Lv1', 'Lv2', 'Lv3'))
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
 CREATE INDEX d3_dataset_search_idx ON d3_dataset USING gin (search_vector);
@@ -392,7 +410,24 @@ CREATE TABLE d3_dataset_description (
   -- **둘 다 NULL 이거나 둘 다 값.** 반쪽 행은 화면이 무엇으로도 못 그린다 — `10` 인지
   -- `10분` 인지 DB 가 모른다. 서버의 400 이 앞문이고 이 CHECK 가 **뒷문**이다.
   CONSTRAINT d3_dataset_description_interval_pair_check
-    CHECK ((observation_interval_value IS NULL) = (observation_interval_unit IS NULL))
+    CHECK ((observation_interval_value IS NULL) = (observation_interval_unit IS NULL)),
+  -- ── `0015` 가 더한 것 (`M-1`·`M-2` · PRD-01·PRD-02). **선언 순서는 맨 뒤**다 (같은 이유).
+  --
+  -- 분류 축 — 국문 **5값**뿐이다(PRD-01 축자 「저장값은 국문 5값뿐이고, 화면은 국문 옆에
+  -- 영문을 병기한다」). 영문 병기는 **표시 전용**이라 CHECK·필터·색인에 넣지 않는다(미결-13 ⓐ).
+  -- ⛔ **`topic` 을 지우지 않는다** — 되돌림 경로이자 이관 대조 근거다. 자동 매핑도 없다
+  --    (미결-3 ⓐ · 전 행 NULL). 두 열은 당분간 나란히 산다.
+  category text
+    CHECK (category IS NULL
+           OR category IN ('수문 인자', '기상·기후 인자', '식생·탄소 인자',
+                           '사회·경제 인자', '환경 인자')),
+  -- 유형 축 — 국문 **6값**. ⚠ **컬럼명이 `type` 이 아니다**(PRD-02 축자) — SQL·TS 양쪽에서
+  -- 예약어·내장 이름과 겹친다. 사람이 적는 값이라 `autometa` 가 아니라 이 표에 있다.
+  -- ⛔ 유형↔가공 단계 조합 검증을 만들지 않는다(미결-14 ⓐ) — 세 축은 서로 독립이다.
+  data_type text
+    CHECK (data_type IS NULL
+           OR data_type IN ('지상관측자료', '위성자료', '재분석자료',
+                            '수치모형자료', '합성자료', '관측 기반 산출물'))
 );
 CREATE INDEX d3_dataset_description_lab_idx ON d3_dataset_description (lab_id);
 CREATE INDEX d3_dataset_description_search_idx

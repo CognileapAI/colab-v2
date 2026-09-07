@@ -159,7 +159,7 @@
     },
 
     "ProcessingLevel": {
-      "description": "가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④.",
+      "description": "가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. ⭑ ⟨증보 2026-09-07 · 20차 해제 · PRD-03 · 미결-2 ⓐ·미결-7 ⓐ⟩ **위 문면은 지우지 않는다 — 이 타입은 여전히 파생값이고 응답 전용이다.** 바뀐 것은 그 옆에 **사람이 고른 값 칸이 따로 생겼다**는 사실이다: `d3_dataset.processing_level_user_set`(4값 `Lv0`~`Lv3` · 마이그레이션 0015 가 0011 을 반전) ↔ 계약 `processingLevelUserSet`(`DatasetCreate`·`DatasetUpdate`·`DatasetBasicInfo` · 문자열). 「레벨은 언제나 계보에서 나온다 — 예외 없음」(PLAN-SoT §9 〈194〉·〈276〉)이 되돌려진 자리다. 두 값은 **병존**하고 어긋나면 경고만 낸다(등록을 막지 않는다). 두 값을 응답에서 갈라 싣는 열쇠(processingLevelDerived · processingLevelMismatch)는 PRD-10 · WU-B5 소유다.",
       "type": "integer",
       "minimum": 0,
       "readOnly": true

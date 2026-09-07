@@ -3432,6 +3432,41 @@ components:
           description: |
             주제. 값 집합은 DB CHECK 4값이 지킨다 (`〈55〉`) — 계약 층 enum 은 이 개정이
             임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
+
+            ⭑ **⟨20차 해제 · PRD-01⟩ `category` 가 옆에 섰다. 이 열쇠는 그대로 산다** —
+            되돌림 경로이자 이관 대조 근거다. 자동 매핑을 만들지 않았다(미결-3 ⓐ).
+          type: [string, "null"]
+        category:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 — 국문 5값.**
+
+            저장값은 **국문뿐**이다(미결-13 ⓐ). 화면이 `기상·기후 인자 (Meteorological &
+            Climatic Factors)` 로 병기하고, DB·필터·색인은 앞의 국문만 안다.
+            값 집합은 DB CHECK 가 지킨다 — 계약 층 enum 을 만들지 않는다(`〈55〉` 규약).
+            **선택 입력이다** — 열쇠가 없거나 `null` 이면 「아직 안 골랐다」이고
+            그것이 마이그레이션 뒤 기존 행의 상태다.
+          type: [string, "null"]
+        dataType:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 — 국문 6값.**
+
+            DB 컬럼명은 `data_type` 이다 — `type` 은 SQL·TS 양쪽에서 예약어·내장 이름과
+            겹친다(PRD-02 축자). 저장값·enum 규약은 `category` 와 같다.
+            ⛔ **유형↔가공 단계 조합 검증이 없다**(미결-14 ⓐ) — 세 축은 서로 독립이다.
+          type: [string, "null"]
+        processingLevelUserSet:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 — 4값(`Lv0`~`Lv3`).**
+
+            ⚠ **`processingLevel` 과 다른 칸이다.** `processingLevel` 은 계보에서 나온
+            **파생 정수**이고 응답 전용으로 그대로 남는다(`common.json#/$defs/ProcessingLevel`).
+            이 칸은 **사람이 고른 문자열**이고 `d3_dataset.processing_level_user_set` 에
+            저장된다 — `0011` 이 지운 열의 재신설이자 `〈194〉`·`〈276〉` 의 반전이다
+            (미결-2 ⓐ · 미결-7 ⓐ · Ted 2026-09-05).
+
+            **어긋나도 막지 않는다** — 사람 값과 파생값이 다르면 경고만 낸다.
+            그 불일치를 응답에 싣는 두 열쇠(`processingLevelDerived` ·
+            `processingLevelMismatch`)는 PRD-10 이고 **`WU-B5` 가 연다** — 여기 없다.
           type: [string, "null"]
         summary:
           description: |
@@ -3517,6 +3552,22 @@ components:
         name: { type: string, minLength: 1 }
         topic:
           description: "값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E)."
+          type: [string, "null"]
+        category:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 5값.** 값 집합은 DB CHECK 가 지킨다.
+            **기존 행이 여기서 채워진다** — 마이그레이션이 자동 매핑을 하지 않았으므로
+            사람이 상세 수정에서 고른다(미결-3 ⓐ). `null` 로 되돌릴 수 있다.
+          type: [string, "null"]
+        dataType:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 6값.** DB 컬럼명은 `data_type` 이다(`type` 회피).
+          type: [string, "null"]
+        processingLevelUserSet:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 4값(`Lv0`~`Lv3`).**
+            응답의 파생 `processingLevel`(정수)과 **다른 칸**이다. 어긋나도 400 이 아니다 —
+            불일치 표시 열쇠는 PRD-10 · `WU-B5` 몫이다.
           type: [string, "null"]
         summary:
           description: |
@@ -3800,11 +3851,32 @@ components:
 
         ⭑ **⟨19차 해제 · PRD-21⟩ 포맷 칸이 보이는 값은 `fileExtension` 이다.** `format` 은
         내부 판별값으로 남되 화면에 쓰지 않는다 — 칸 수는 아홉 그대로다.
+
+        ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠가 들어왔다** —
+        `category`·`dataType`·`processingLevelUserSet`. **셋 다 optional 이다** —
+        마이그레이션 뒤 기존 행이 전부 `null` 이라 `required` 에 올리면 그 행의 상세가
+        계약 위반이 된다(미결-3 ⓐ 「전 행 NULL · 자동 매핑 없음」). `required` 승격과
+        `DatasetRow`·`SearchHit` 확장은 **`WU-B7`** 몫이다.
       type: object
       required: [variables, crs, period, observationInterval, grid, format, fileExtension,
                  files, sourceLabel, owner, uploader]
       additionalProperties: false
       properties:
+        category:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 5값.** `null` 이면 화면이
+            「분류를 아직 안 골랐어요」를 보인다 — 화면이 안 깨지고 재선택을 강제하지 않는다.
+          type: [string, "null"]
+        dataType:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 6값.** `null` 이면 화면이 「유형 미지정」이다.
+          type: [string, "null"]
+        processingLevelUserSet:
+          description: |
+            ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 4값.**
+            `null` 이면 사람이 아직 고르지 않은 것이고, 그때 상세의 `processingLevel`
+            (파생 정수)에 화면이 `자동` 표기를 붙인다 — 값이 바뀌는 행은 없다.
+          type: [string, "null"]
         variables:
           description: 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다.
           type: array

@@ -2299,8 +2299,43 @@ export interface components {
             /**
              * @description 주제. 값 집합은 DB CHECK 4값이 지킨다 (`〈55〉`) — 계약 층 enum 은 이 개정이
              *     임의로 만들지 않는다 (`sessions/D2c.md §9 NB-E`).
+             *
+             *     ⭑ **⟨20차 해제 · PRD-01⟩ `category` 가 옆에 섰다. 이 열쇠는 그대로 산다** —
+             *     되돌림 경로이자 이관 대조 근거다. 자동 매핑을 만들지 않았다(미결-3 ⓐ).
              */
             topic?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 — 국문 5값.**
+             *
+             *     저장값은 **국문뿐**이다(미결-13 ⓐ). 화면이 `기상·기후 인자 (Meteorological &
+             *     Climatic Factors)` 로 병기하고, DB·필터·색인은 앞의 국문만 안다.
+             *     값 집합은 DB CHECK 가 지킨다 — 계약 층 enum 을 만들지 않는다(`〈55〉` 규약).
+             *     **선택 입력이다** — 열쇠가 없거나 `null` 이면 「아직 안 골랐다」이고
+             *     그것이 마이그레이션 뒤 기존 행의 상태다.
+             */
+            category?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 — 국문 6값.**
+             *
+             *     DB 컬럼명은 `data_type` 이다 — `type` 은 SQL·TS 양쪽에서 예약어·내장 이름과
+             *     겹친다(PRD-02 축자). 저장값·enum 규약은 `category` 와 같다.
+             *     ⛔ **유형↔가공 단계 조합 검증이 없다**(미결-14 ⓐ) — 세 축은 서로 독립이다.
+             */
+            dataType?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 — 4값(`Lv0`~`Lv3`).**
+             *
+             *     ⚠ **`processingLevel` 과 다른 칸이다.** `processingLevel` 은 계보에서 나온
+             *     **파생 정수**이고 응답 전용으로 그대로 남는다(`common.json#/$defs/ProcessingLevel`).
+             *     이 칸은 **사람이 고른 문자열**이고 `d3_dataset.processing_level_user_set` 에
+             *     저장된다 — `0011` 이 지운 열의 재신설이자 `〈194〉`·`〈276〉` 의 반전이다
+             *     (미결-2 ⓐ · 미결-7 ⓐ · Ted 2026-09-05).
+             *
+             *     **어긋나도 막지 않는다** — 사람 값과 파생값이 다르면 경고만 낸다.
+             *     그 불일치를 응답에 싣는 두 열쇠(`processingLevelDerived` ·
+             *     `processingLevelMismatch`)는 PRD-10 이고 **`WU-B5` 가 연다** — 여기 없다.
+             */
+            processingLevelUserSet?: string | null;
             /**
              * @description 설명 — **필수다** (⟨19차 해제 · PRD-15 · `R-07`·`R-17`⟩).
              *
@@ -2371,6 +2406,20 @@ export interface components {
             name?: string;
             /** @description 값 집합은 DB CHECK 4값 (`〈55〉`). 계약 층 enum 은 만들지 않는다 (NB-E). */
             topic?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 5값.** 값 집합은 DB CHECK 가 지킨다.
+             *     **기존 행이 여기서 채워진다** — 마이그레이션이 자동 매핑을 하지 않았으므로
+             *     사람이 상세 수정에서 고른다(미결-3 ⓐ). `null` 로 되돌릴 수 있다.
+             */
+            category?: string | null;
+            /** @description ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 6값.** DB 컬럼명은 `data_type` 이다(`type` 회피). */
+            dataType?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 4값(`Lv0`~`Lv3`).**
+             *     응답의 파생 `processingLevel`(정수)과 **다른 칸**이다. 어긋나도 400 이 아니다 —
+             *     불일치 표시 열쇠는 PRD-10 · `WU-B5` 몫이다.
+             */
+            processingLevelUserSet?: string | null;
             /**
              * @description 설명. ⭑ **⟨19차 해제 · PRD-15⟩ 열쇠가 오면 비울 수 없다** — `null` 도 공백도
              *     받지 않는다. 종전은 `[string, "null"]` 이라 「비우라」가 가능했다.
@@ -2577,8 +2626,27 @@ export interface components {
          *
          *     ⭑ **⟨19차 해제 · PRD-21⟩ 포맷 칸이 보이는 값은 `fileExtension` 이다.** `format` 은
          *     내부 판별값으로 남되 화면에 쓰지 않는다 — 칸 수는 아홉 그대로다.
+         *
+         *     ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠가 들어왔다** —
+         *     `category`·`dataType`·`processingLevelUserSet`. **셋 다 optional 이다** —
+         *     마이그레이션 뒤 기존 행이 전부 `null` 이라 `required` 에 올리면 그 행의 상세가
+         *     계약 위반이 된다(미결-3 ⓐ 「전 행 NULL · 자동 매핑 없음」). `required` 승격과
+         *     `DatasetRow`·`SearchHit` 확장은 **`WU-B7`** 몫이다.
          */
         DatasetBasicInfo: {
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-01⟩ 분류 축 5값.** `null` 이면 화면이
+             *     「분류를 아직 안 골랐어요」를 보인다 — 화면이 안 깨지고 재선택을 강제하지 않는다.
+             */
+            category?: string | null;
+            /** @description ⭑ **⟨20차 해제 · PRD-02⟩ 유형 축 6값.** `null` 이면 화면이 「유형 미지정」이다. */
+            dataType?: string | null;
+            /**
+             * @description ⭑ **⟨20차 해제 · PRD-03⟩ 사람이 고른 가공 단계 4값.**
+             *     `null` 이면 사람이 아직 고르지 않은 것이고, 그때 상세의 `processingLevel`
+             *     (파생 정수)에 화면이 `자동` 표기를 붙인다 — 값이 바뀌는 행은 없다.
+             */
+            processingLevelUserSet?: string | null;
             /** @description 구성(변수 목록). 파일에서 자동으로 읽는다 — 사람이 타이핑하지 않는다. */
             variables: string[];
             crs: string | null;
@@ -3158,7 +3226,7 @@ export interface components {
          * @enum {string}
          */
         LineageState: "확정" | "확인 필요" | "기록 없음" | "원천";
-        /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. */
+        /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. ⭑ ⟨증보 2026-09-07 · 20차 해제 · PRD-03 · 미결-2 ⓐ·미결-7 ⓐ⟩ **위 문면은 지우지 않는다 — 이 타입은 여전히 파생값이고 응답 전용이다.** 바뀐 것은 그 옆에 **사람이 고른 값 칸이 따로 생겼다**는 사실이다: `d3_dataset.processing_level_user_set`(4값 `Lv0`~`Lv3` · 마이그레이션 0015 가 0011 을 반전) ↔ 계약 `processingLevelUserSet`(`DatasetCreate`·`DatasetUpdate`·`DatasetBasicInfo` · 문자열). 「레벨은 언제나 계보에서 나온다 — 예외 없음」(PLAN-SoT §9 〈194〉·〈276〉)이 되돌려진 자리다. 두 값은 **병존**하고 어긋나면 경고만 낸다(등록을 막지 않는다). 두 값을 응답에서 갈라 싣는 열쇠(processingLevelDerived · processingLevelMismatch)는 PRD-10 · WU-B5 소유다. */
         ProcessingLevel: number;
         /**
          * @description 계보 관계가 만들어진 경로. 세 값의 뜻은 이렇다 — `ai` = **AI 가 제안하고 사람이 확인한 것**(「AI 가 만든 것」이 아니다: AI 는 계보를 쓰지 않는다), `manual` = 사람이 손으로 이은 것, `processed` = 가공으로 자동 생성된 것. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. ⚠ `processed` 를 만드는 생산 경로는 아직 없다(데이터 프로세스가 stage 2 다음이다) — 값만 열려 있다. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2 · PLAN-SoT §9 〈198〉·〈205〉.
