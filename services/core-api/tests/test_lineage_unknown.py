@@ -162,3 +162,89 @@ def test_lineage_unknown_is_in_the_server_accept_list(p2_client) -> None:
     r = _make(p2_client(), lineageUnknown=False)
     assert r.status_code == 201, r.text
     assert "계약에 없는 필드다" not in r.text
+
+
+# ═══ ⭑ ⟨21차 해제 · R-B §5 판정 42⟩ 사후 「기록 없음」 선언 (`declareLineageUnknown`) ═══
+#
+# **없어서 무엇이 막혀 있었나** — 이 표시를 세울 수 있는 자리가 **등록 순간 하나뿐**이었다
+# (`registerDataset.lineageUnknown`). 등록 뒤에 「알아보니 기록이 없더라」를 말할 방법이
+# 계약에 0건이라, 그런 데이터셋은 `확인 필요` 에 **영원히** 남았다 — 닫을 수 없는 할 일이다.
+_DECLARE = "/datasets/{}/lineage/unknown-declaration"
+
+
+def _declare(client, dataset_id: str, token: str = TOKEN_RES):
+    return client.post(API_PREFIX + _DECLARE.format(dataset_id), headers=auth(token))
+
+
+def test_declaring_afterwards_turns_the_state_into_no_record(p2_client) -> None:
+    """⑴ 부모 0 · 등록 때 체크 안 함 → `확인 필요` 였던 것이 선언으로 `기록 없음` 이 된다."""
+    client = p2_client()
+    made = _created(client, processingLevelUserSet="Lv1")
+    assert made["lineageState"] == "확인 필요"
+
+    r = _declare(client, made["datasetId"])
+    assert r.status_code == 200, r.text
+    assert r.json()["unknownParents"] is True
+    assert _read(client, made["datasetId"])["lineageState"] == "기록 없음"
+
+
+def test_declaring_with_a_confirmed_parent_is_400(p2_client) -> None:
+    """⑵ **확정 부모가 1건이라도 있으면 400 이다** — 등록 경로(⑹)와 **같은 규칙**이다.
+
+    「모른다」와 「이것이 부모다」를 같이 둘 수 없다. 화면도 확정 부모가 있으면 체크박스를
+    비활성으로 두지만 **서버 400 이 최종 방어선**이다.
+    """
+    client = p2_client()
+    parent = _created(client)["datasetId"]
+    child = _created(client)["datasetId"]
+    r = client.post(f"{API_PREFIX}/datasets/{child}/lineage/parents",
+                    json={"parentDatasetId": parent}, headers=auth(TOKEN_RES))
+    assert r.status_code == 201, r.text
+
+    r = _declare(client, child)
+    assert r.status_code == 400, r.text
+    assert _read(client, child)["lineageState"] != "기록 없음", "400 인데 표시가 붙었다."
+
+
+def test_attaching_a_parent_undoes_the_declaration(p2_client) -> None:
+    """⑶ **되돌림은 부모를 붙이는 것이다** — 표시는 관계가 붙으면 사라진다
+    (`DataModel §4.2`). 「선언 취소」 op 을 만들지 않은 이유가 이것이다."""
+    client = p2_client()
+    parent = _created(client)["datasetId"]
+    child = _created(client)["datasetId"]
+    assert _declare(client, child).json()["unknownParents"] is True
+
+    r = client.post(f"{API_PREFIX}/datasets/{child}/lineage/parents",
+                    json={"parentDatasetId": parent}, headers=auth(TOKEN_RES))
+    assert r.status_code == 201, r.text
+    assert r.json()["unknownParents"] is False
+
+
+def test_declaring_twice_is_the_same_fact(p2_client) -> None:
+    """⑷ **멱등이다** — 두 번 눌러도 사실은 하나이고 409 가 아니다."""
+    client = p2_client()
+    dataset_id = _created(client)["datasetId"]
+    assert _declare(client, dataset_id).status_code == 200
+    r = _declare(client, dataset_id)
+    assert r.status_code == 200 and r.json()["unknownParents"] is True
+
+
+def test_declaring_needs_the_edit_permission(p2_client, sql) -> None:
+    """⑸ 권한은 `addLineageParent` 와 **같다** — 화면에서 숨긴 것은 서버도 막는다
+    (`test_lineage_confirm.py::test_lineage_edits_need_the_upload_edit_switch` 와 같은 자리)."""
+    client = p2_client()
+    dataset_id = _created(client)["datasetId"]
+    sql("UPDATE d2_permission_switch SET enabled = false"
+        " WHERE account_id = :a AND switch = '업로드·편집'", {"a": "000000000000000000000000A1"},
+        account_id="00000000000000000000000AP1")
+    try:
+        assert _declare(client, dataset_id).status_code == 403
+    finally:
+        sql("UPDATE d2_permission_switch SET enabled = true"
+            " WHERE account_id = :a AND switch = '업로드·편집'",
+            {"a": "000000000000000000000000A1"}, account_id="00000000000000000000000AP1")
+
+
+def test_declaring_on_a_missing_dataset_is_404(p2_client) -> None:
+    """⑹ 경계 밖도 404 다 — 존재를 알리지 않는다."""
+    assert _declare(p2_client(), "00000000000000000000000000").status_code == 404

@@ -38,7 +38,7 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_66() -> None:
+def test_operation_count_is_69() -> None:
     """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → **66.**
 
     ⭑ **병합(창 8-a) 실측 = 66.** 두 줄기가 각자 더한 op 이 겹치지 않아 합이 그대로 는다 —
@@ -107,8 +107,12 @@ def test_operation_count_is_66() -> None:
     **53 → 62 는 8차 동결 해제**(`PLAN-SoT §9 〈338〉`) — 프리사인드 전송 9 op.
     **신설과 동시에 구현했다**(㉰-4) — 저장 모드 local 에서는 아홉 전부 정직한 501 을
     내고, FE 는 그 신호로 form-data 경로에 폴백한다. 501 표는 24 그대로다.
+    ⭑ **66 → 69 는 21차 동결 해제**(WU-C10 · Ted 승인 2026-09-08 · 첨가 6건) —
+    `describeTarget`(대상 기술 중계) · `declareLineageUnknown` · `updateLineageParentMethod`.
+    **신설과 동시에 구현했다**(㉰-4) — 501 표는 **4 그대로**이고, 그 사실을
+    `tests/test_not_implemented.py` 의 `C21_REAL` 이 뒤에서 붙든다.
     """
-    assert len(contract_operations()) == 66, "계약의 오퍼레이션이 66 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 69, "계약의 오퍼레이션이 69 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

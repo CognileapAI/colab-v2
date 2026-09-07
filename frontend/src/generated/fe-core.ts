@@ -1126,7 +1126,27 @@ export interface paths {
         delete: operations["removeLineageParent"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 가공 방식 문장 고치기 (계보 수정)
+         * @description **⟨동결 21회 해제 · 등급 ㉯ — Ted 승인 2026-09-08 · 첨가 6건 ⑷⟩**
+         *     근거 = `R-B-ROUND-20260908.md §5` 판정 42.
+         *
+         *     `LineageEdge.method` **한 칸만** 고친다 — 화살표 라벨이 되는 문장이다.
+         *     종전에는 오타 한 글자를 고치려면 관계를 **지웠다가 다시 붙여야** 했고, 그러면
+         *     `confirmedBy`·`confirmedAt`(누가 언제 확인했는가)이 지워지고 새로 찍혔다 —
+         *     **사람이 한 확인 기록이 오타 수정으로 사라졌다.**
+         *
+         *     ⛔ **`confirmedAt`·`confirmedBy` 를 바꾸지 않는다.** 이 op 은 확인이 아니다 —
+         *     다시 확인하는 자리는 `confirmLineage` 이고 그것만이 확정일을 민다
+         *     (`Policy_데이터셋_상세 §8` · 계보 3 op 의 규칙 ④).
+         *     `parentRole` 도 바꾸지 않는다 — 역할은 Lv 계산에 드는 값이라 고치는 것이 아니라
+         *     관계를 다시 세우는 일이다(`removeLineageParent` → `addLineageParent`).
+         *
+         *     **사람이 부른다** — 화면 → core 다. D10 → D4 쓰기 경로가 아니고
+         *     (`CLAUDE.md §3-2`) `ai-no-lineage-write` 게이트 대상이 늘지 않는다.
+         *     권한은 `addLineageParent` 와 **같다**(`업로드·편집`).
+         */
+        patch: operations["updateLineageParentMethod"];
         trace?: never;
     };
     "/datasets/{datasetId}/lineage/confirmation": {
@@ -1147,6 +1167,48 @@ export interface paths {
          *     계보 상태는 이 호출의 결과로 계산될 뿐 요청이 값을 싣지 않는다 (`PLAN-SoT §9-⑳`).
          */
         post: operations["confirmLineage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/datasets/{datasetId}/lineage/unknown-declaration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 사후 「기록 없음」 선언
+         * @description **⟨동결 21회 해제 · 등급 ㉯ — Ted 승인 2026-09-08 · 첨가 6건 ⑷⟩**
+         *     근거 = `R-B-ROUND-20260908.md §5` 판정 42.
+         *
+         *     `LineageGraph.unknownParents` 의 **쓰기 경로**다. 종전에는 이 표시를 세울 수
+         *     있는 자리가 **등록 순간 하나뿐**이었고(`registerDataset.lineageUnknown`),
+         *     등록 뒤에 「알아보니 기록이 없더라」를 말할 방법이 계약에 0건이었다.
+         *     그래서 그런 데이터셋은 `확인 필요` 에 영원히 남았다 — **닫을 수 없는 할 일**이다.
+         *
+         *     ⛔ **확정 부모가 1건이라도 있으면 400 이다** — 「모른다」와 「이것이 부모다」를
+         *     같이 둘 수 없다. 이것은 새 규칙이 아니라 등록 경로의 **같은 규칙**이고
+         *     (20차 PRD-27 · `registerDataset` 의 400), 화면도 확정 부모가 있으면 체크박스를
+         *     비활성으로 두지만 **서버 400 이 최종 방어선**이다. 부모를 먼저 끊는 것이 순서다
+         *     (`removeLineageParent`).
+         *
+         *     ⚠ **되돌림은 부모를 붙이는 것이다** — 표시는 관계가 붙으면 사라진다
+         *     (`DataModel §4.2` · `addLineageParent` 산문 축자). 「선언 취소」 op 을 만들지 않은
+         *     이유가 그것이다.
+         *     ⚠ **멱등이다** — 이미 선언된 데이터셋에 다시 불러도 200 이고 사실은 하나다.
+         *
+         *     **사람이 부른다** — D10 → D4 쓰기 경로가 아니다(`CLAUDE.md §3-2` ·
+         *     `ai-no-lineage-write` 무접촉). 권한은 `addLineageParent` 와 같다(`업로드·편집`).
+         */
+        post: operations["declareLineageUnknown"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1498,6 +1560,45 @@ export interface paths {
         get: operations["listPalettes"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/preview-target-descriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 대상 기술 — 그릴 수 있는 변수·시각 (중계)
+         * @description **⟨동결 21회 해제 · 등급 ㉯ — Ted 승인 2026-09-08 · 첨가 6건 ⑴⟩**
+         *
+         *     `core-viz.yaml#describeTarget` 을 그대로 중계한다. 화면의 변수 고르개·시각
+         *     고르개가 값을 얻는 **유일한 경로**다 — 종전에는 `RenderRequest.variable`·
+         *     `instant` 가 열려 있는데 그 값 집합의 출처가 FE 표면에 0건이었다
+         *     (`listPalettes` 부재와 같은 모양 · `sessions/S1-CONTRACT-GAP-SWEEP.md` `D-1`).
+         *
+         *     ⚠ **경로가 `core-viz.yaml` 의 `POST /target-descriptions` 와 일부러 다르다** —
+         *     같은 경로면 `contract-breaking`(oasdiff 합성 비교)이 두 seam 을 한 엔드포인트로
+         *     합쳐 비교 자체를 못 한다(`listPalettes` 산문 축자 · 실제로 red 를 보고 고쳤다).
+         *
+         *     **core-api 가 하는 판정은 경계 하나뿐이다** — 대상(`datasetId`·`uploadId`)이 이
+         *     연구실의 것인가. `createPreviewRender` 가 쓰는 `_require_target_access` 를 그대로
+         *     부른다: 경계 밖이면 404(존재를 알리지 않는다), 잠긴 본체면 403.
+         *     ⛔ **core 는 파일을 열지 않는다** (`CLAUDE.md §3-4`) — 변수 목록을 만드는 일은
+         *     전부 viz-render 안이고, 이 경로는 식별자만 넘긴다.
+         *
+         *     ⚠ **읽기 전용이다** — 렌더 작업을 만들지 않는다. `업로드·편집` 스위치를 보지
+         *     않는 것도 그래서다(보기만 하는 사람이 미리보기를 고를 수 있어야 한다).
+         *     스키마는 중계라 재선언하지 않고 `core-viz.yaml` 정의를 그대로 참조한다.
+         */
+        post: operations["describeTarget"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3081,7 +3182,26 @@ export interface components {
             /** @description `원천`은 데이터셋이 아니므로 null 이다. */
             datasetId: components["schemas"]["Ulid"] | null;
             name: string;
+            /**
+             * @description **계보에서 나온 파생 정수** — 이 칸의 뜻은 21차에서도 바뀌지 않았다.
+             *     사람이 고른 값은 옆의 `processingLevelUserSet` 이다.
+             */
             processingLevel: components["schemas"]["ProcessingLevel"] | null;
+            /**
+             * @description ⭑ **⟨21차 해제 · R-B §5 판정 27·41 — 사람 값 우선 통일⟩ optional 첨가.**
+             *
+             *     사람이 고른 가공 단계(`Lv0`~`Lv3`) — 안 골랐으면 `null` 이고, 열쇠 자체가
+             *     없을 수도 있다(optional). 값·저장 자리는 `DatasetDetail.processingLevelUserSet`
+             *     과 **같다**(`d3_dataset.processing_level_user_set`) — 같은 이름·같은 의미다.
+             *
+             *     ⛔ **`processingLevel` 의 의미는 한 글자도 바뀌지 않는다** — 그 칸은 계보에서
+             *     나온 **파생 정수**이고 required 로 그대로 남는다. 서버가 거기에 사람 값을
+             *     덮어 쓰면 기존 열쇠의 의미 변경 = 파괴이고, 그것을 **하지 않는 것이 이 첨가의
+             *     전제**다(`R-C.md ## 구현 결정` ⑵ · 21차 승인 요청 §1 ⭑).
+             *     **표시 규칙(사람 값 우선)은 FE 가 고른다** — 두 값이 다 있어야 고를 수 있고,
+             *     그것이 이 열쇠를 여기 세우는 이유의 전부다.
+             */
+            processingLevelUserSet?: string | null;
             verified: boolean;
             /** @description 눌러서 그 데이터셋 상세로 갈 수 있는가. 원천·묘비는 false 다. */
             navigable: boolean;
@@ -3138,6 +3258,23 @@ export interface components {
             method?: string | null;
         };
         /**
+         * @description ⭑ **⟨21차 해제 · `sessions/R-B-ROUND-20260908.md §5` 판정 42⟩
+         *     `updateLineageParentMethod` 의 몸통 — 한 칸뿐이다.**
+         *     가공 방식이 관계에 붙는 값이라는 것은 `DataModel §4.2` 이고, 어휘를 enum 으로
+         *     닫지 않는 것은 `PLAN-SoT §9-㉚` 이다 — 이 스키마가 그 둘을 그대로 잇는다.
+         *
+         *     `parentRole`·`origin`·`confirmedBy`·`confirmedAt` 이 여기 없는 것이 뜻이다 —
+         *     고칠 수 있는 것은 **문장 한 줄**이고, 확인 기록은 이 경로가 건드리지 않는다.
+         */
+        LineageParentMethodUpdate: {
+            /**
+             * @description 가공 방식 한 줄. 자유 문장이다 (`LineageEdge.method` 와 같은 형).
+             *     **`null` 은 「라벨을 지운다」**이지 「안 바꾼다」가 아니다 — 열쇠가 required 라
+             *     생략으로 무변을 말할 수 없고, 그래서 두 뜻이 섞이지 않는다.
+             */
+            method: string | null;
+        };
+        /**
          * @description 목록 카드·표가 같은 값을 쓴다 — 필터·정렬이 한 벌이라 두 보기가 같은 목록을 본다
          *     (`Policy_프로젝트 §5`). 표 열: 이름 · 유형 · 데이터셋 수 · 기간 · 기록 없음 수 · 승인 수.
          */
@@ -3168,7 +3305,26 @@ export interface components {
              *     2 이상이면 이름 뒤에 `조각 N` 칩 (E-02 와 같은 규칙).
              */
             fileCount: number;
+            /**
+             * @description **표시용 정수** — required 이고 뜻은 21차에서도 바뀌지 않았다
+             *     (`Policy_프로젝트 §5`). 사람이 고른 값은 옆의 `processingLevelUserSet` 이다.
+             */
             processingLevel: components["schemas"]["ProcessingLevel"];
+            /**
+             * @description ⭑ **⟨21차 해제 · R-B §5 판정 27·41 — 사람 값 우선 통일⟩ optional 첨가.**
+             *
+             *     사람이 고른 가공 단계(`Lv0`~`Lv3`) — 안 골랐으면 `null` 이고, 열쇠 자체가
+             *     없을 수도 있다(optional). 값·저장 자리는 `DatasetDetail.processingLevelUserSet`
+             *     과 **같다**(`d3_dataset.processing_level_user_set`) — 같은 이름·같은 의미다.
+             *
+             *     ⛔ **`processingLevel` 의 의미는 한 글자도 바뀌지 않는다** — 그 칸은 계보에서
+             *     나온 **파생 정수**이고 required 로 그대로 남는다. 서버가 거기에 사람 값을
+             *     덮어 쓰면 기존 열쇠의 의미 변경 = 파괴이고, 그것을 **하지 않는 것이 이 첨가의
+             *     전제**다(`R-C.md ## 구현 결정` ⑵ · 21차 승인 요청 §1 ⭑).
+             *     **표시 규칙(사람 값 우선)은 FE 가 고른다** — 두 값이 다 있어야 고를 수 있고,
+             *     그것이 이 열쇠를 여기 세우는 이유의 전부다.
+             */
+            processingLevelUserSet?: string | null;
             period: components["schemas"]["DataPeriod"] | null;
             lineageState: components["schemas"]["LineageState"];
             verified: boolean;
@@ -3241,7 +3397,29 @@ export interface components {
                 value: components["schemas"]["LineageState"];
                 count: number;
             }[];
+            /**
+             * @description 주제 축 — **바뀌지 않는다.** `category` 로 갈아 끼우지 않고 옆에 세운 이유는
+             *     되돌림 경로이자 이관 대조 근거이기 때문이다(20차 PRD-01 과 같은 자세).
+             *     ⚠ 이 축만 「값이 없는 행은 줄을 만들지 않는다」이다 — `minLength: 1` 이라
+             *     서버가 「미분류」 같은 이름을 지어낼 수 없다.
+             */
             byTopic: {
+                value: string;
+                count: number;
+            }[];
+            /**
+             * @description ⭑ **⟨21차 해제 · R-B §5 판정 33⟩ 분류 축 — optional 첨가.**
+             *
+             *     **국문 5값을 전부 담는다 — 0이어도 줄을 지우지 않는다**(`byLineageState` 와
+             *     **같은 규칙**). 0건인 분류를 지우면 화면은 「그런 분류는 없다」로 읽고,
+             *     채워야 할 칸이 있다는 사실 자체가 사라진다.
+             *     ⚠ **`byTopic` 과 규칙이 다른 것이 뜻이다** — 분류는 값 집합이 닫혀 있고
+             *     (`d3_dataset_description.category` CHECK 5값) 주제는 데이터에서 나온다.
+             *     값 집합은 DB CHECK 가 지킨다 — 계약 층 enum 을 만들지 않는다(`〈55〉` 규약).
+             *     ⚠ 분류가 NULL 인 데이터셋은 어느 줄에도 들지 않는다 — 그래서 이 축의 합이
+             *     `totalCount` 보다 작을 수 있고, **분모는 언제나 `totalCount`** 다.
+             */
+            byCategory?: {
                 value: string;
                 count: number;
             }[];
@@ -3395,6 +3573,8 @@ export interface components {
          * @enum {string}
          */
         ParentRole: "주입력" | "보조입력";
+        /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. ⭑ ⟨증보 2026-09-07 · 20차 해제 · PRD-03 · 미결-2 ⓐ·미결-7 ⓐ⟩ **위 문면은 지우지 않는다 — 이 타입은 여전히 파생값이고 응답 전용이다.** 바뀐 것은 그 옆에 **사람이 고른 값 칸이 따로 생겼다**는 사실이다: `d3_dataset.processing_level_user_set`(4값 `Lv0`~`Lv3` · 마이그레이션 0015 가 0011 을 반전) ↔ 계약 `processingLevelUserSet`(`DatasetCreate`·`DatasetUpdate`·`DatasetBasicInfo` · 문자열). 「레벨은 언제나 계보에서 나온다 — 예외 없음」(PLAN-SoT §9 〈194〉·〈276〉)이 되돌려진 자리다. 두 값은 **병존**하고 어긋나면 경고만 낸다(등록을 막지 않는다). 두 값을 응답에서 갈라 싣는 열쇠(processingLevelDerived · processingLevelMismatch)는 PRD-10 · WU-B5 소유다. */
+        ProcessingLevel: number;
         ParentCandidateSuggestion: components["schemas"]["AiSuggestionBase"] & {
             /** @constant */
             kind?: "가공 전 데이터";
@@ -3406,6 +3586,23 @@ export interface components {
              *     (`Policy_업로드와_계보_확정 §5 부모 역할`).
              */
             suggestedParentRole: components["schemas"]["ParentRole"];
+            /**
+             * @description ⭑ **⟨21차 해제 · R-B §5 판정 23 — 제안에 부모 Lv⟩ optional 첨가.**
+             *
+             *     후보 데이터셋의 **가공 단계** — 제안 카드에서 사람이 「이게 정말 내
+             *     가공 전 데이터인가」를 가늠하는 값이다. 이름만으로는 Lv3 데이터가
+             *     Lv1 의 부모로 제안되어도 화면에서 드러나지 않는다
+             *     (`부모 Lv ≤ 자기 Lv` 규칙은 서버가 400 으로 막지만, **막히기 전에
+             *     보이는 것**이 제안의 값어치다 · 20차 PRD-07).
+             *
+             *     ⚠ **모르면 열쇠를 만들지 않는다.** 배포에 따라 ai-service 가 카탈로그
+             *     (D3)에 닿지 못할 수 있고, 그때 `null` 이나 `0` 을 실으면 「Lv0 이다」로
+             *     읽힌다 — 미지와 Lv0 은 다른 사실이다(`to_dict` 의 「없는 값은 열쇠
+             *     자체를 만들지 않는다」와 같은 규율).
+             *     ⚠ **제안이지 판정이 아니다** — 정본값은 D3 에 있고 core 가 다시 붙인다
+             *     (`parentDatasetName` 과 같은 자리).
+             */
+            parentProcessingLevel?: components["schemas"]["ProcessingLevel"];
         } & {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -3463,8 +3660,6 @@ export interface components {
          * @enum {string}
          */
         LineageState: "확정" | "확인 필요" | "기록 없음" | "원천";
-        /** @description 가공 단계 Lv. 원자료 = 0, 부모가 있으면 (주입력 부모 중 최대 Lv) + 1. **파생값 — 저장 필드·편집 칸을 두지 않는다. 응답 타입 전용.** 근거: DataModel_공통_기반 §4.1(가공 단계) · PLAN-SoT §9-⑳ · DATAMODEL-BASELINE §3-④. ⭑ ⟨증보 2026-09-07 · 20차 해제 · PRD-03 · 미결-2 ⓐ·미결-7 ⓐ⟩ **위 문면은 지우지 않는다 — 이 타입은 여전히 파생값이고 응답 전용이다.** 바뀐 것은 그 옆에 **사람이 고른 값 칸이 따로 생겼다**는 사실이다: `d3_dataset.processing_level_user_set`(4값 `Lv0`~`Lv3` · 마이그레이션 0015 가 0011 을 반전) ↔ 계약 `processingLevelUserSet`(`DatasetCreate`·`DatasetUpdate`·`DatasetBasicInfo` · 문자열). 「레벨은 언제나 계보에서 나온다 — 예외 없음」(PLAN-SoT §9 〈194〉·〈276〉)이 되돌려진 자리다. 두 값은 **병존**하고 어긋나면 경고만 낸다(등록을 막지 않는다). 두 값을 응답에서 갈라 싣는 열쇠(processingLevelDerived · processingLevelMismatch)는 PRD-10 · WU-B5 소유다. */
-        ProcessingLevel: number;
         /**
          * @description 계보 관계가 만들어진 경로. 세 값의 뜻은 이렇다 — `ai` = **AI 가 제안하고 사람이 확인한 것**(「AI 가 만든 것」이 아니다: AI 는 계보를 쓰지 않는다), `manual` = 사람이 손으로 이은 것, `processed` = 가공으로 자동 생성된 것. 사람이 확인한 관계만 저장하므로 `제안` 상태가 이 집합에 없다 — D10→D4 쓰기 경로 부재의 값 집합 쪽 표현. ⚠ `processed` 를 만드는 생산 경로는 아직 없다(데이터 프로세스가 stage 2 다음이다) — 값만 열려 있다. 근거: DataModel_공통_기반 §4.2 · CLAUDE.md §3-2 · PLAN-SoT §9 〈198〉·〈205〉.
          * @enum {string}
@@ -3501,6 +3696,65 @@ export interface components {
              */
             fileIds?: components["schemas"]["Ulid"][];
         } & (unknown | unknown);
+        /**
+         * @description 시각을 **건수·처음·마지막**으로 말한다 (`Policy_데이터셋_상세 §8 층의 시각` ·
+         *     `common.json#/$defs/Timestamp`). 목록을 통째로 내리지 않는다 —
+         *     「내가 요청한 것이 이 파일의 범위 밖인가」는 이 셋이면 답한다
+         *     (`readers.py` `_time_index` 의 실패 사유가 이미 같은 셋으로 말한다).
+         */
+        InstantRange: {
+            count: number;
+            first: components["schemas"]["Timestamp"];
+            last: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description `variable`·`instant` 를 생략했을 때 서버가 고를 값 한 쌍. 그 생략 규약은
+         *     `RenderRequest.variable`·`instant` 산문이 이미 적었고(「생략하면 viz-render 가
+         *     기본값을 고른다」·「생략하면 첫 시각이다」 · `Policy_데이터셋_상세 §1.3-5·§8`),
+         *     이 스키마는 그 고름을 **화면이 미리 볼 수 있게** 할 뿐 새 규칙을 만들지 않는다.
+         */
+        TargetDefault: {
+            /**
+             * @description `variable` 을 생략했을 때 그려지는 이름. **`variables` 의 원소 중 하나**다.
+             *     품질 플래그(`DQF`·`QC`·`flag` …)는 값이 아니라 값에 대한 메타데이터라
+             *     뒤로 미뤄진다 — 플래그밖에 없으면 그것이 기본값이다(`_pick_default`).
+             */
+            variable: string;
+            /** @description 시각 축이 없으면 null 이다. 있으면 `instants.first` 와 같다. */
+            instant: components["schemas"]["Timestamp"] | null;
+        };
+        /**
+         * @description **⟨21차 해제 · `describeTarget`⟩ 이 대상에서 고를 수 있는 것 한 벌.**
+         *     근거 = `intent/2026-09-08-preview-slot.md` 판정(변수＋시각 목록 조회 1건 신설) ·
+         *     `Policy_데이터셋_상세 §8`(층마다 시각·값 하나를 고른다) ·
+         *     `CLAUDE.md §3-4`(변수 목록을 만드는 일은 viz-render 안이다).
+         *
+         *     세 값이 한 응답에 함께 서는 이유 — 화면이 변수 고르개와 시각 고르개를 세우고
+         *     **아무것도 안 골랐을 때 무엇이 그려지는지**를 같은 사실로 말해야 한다.
+         *     따로 물으면 서버가 고를 기본값과 화면이 미리 칠한 값이 갈린다.
+         */
+        TargetDescription: {
+            /**
+             * @description 그릴 수 있는 값의 이름들 — **viz-render 가 읽어 낸 순서 그대로**다.
+             *     NetCDF 는 파일의 변수 순서에서 좌표 변수·2차원 미만을 뺀 것이고
+             *     (`readers.py` `_read_netcdf` drawable 규칙), GeoTIFF 는 `band1`~`bandN` 이다.
+             *     ⛔ **core 가 이 목록을 만들지 않는다** (`CLAUDE.md §3-4`) — 그러려면 core 가
+             *     NetCDF 를 열어야 하고, 그 순간 geo 라이브러리가 core 에 들어온다.
+             *     ⚠ 비어 있지 않다 — 하나도 없으면 그건 415 이지 빈 목록이 아니다.
+             */
+            variables: string[];
+            /**
+             * @description 시각 축. **없으면 `null` 이다** — 빈 목록이 아니다. 「시각이 없는 데이터」와
+             *     「시각을 못 셌다」를 같은 값으로 접지 않는다.
+             */
+            instants: components["schemas"]["InstantRange"] | null;
+            /**
+             * @description **`variable`·`instant` 를 생략했을 때 서버가 고를 값.** 계약 산문이 이미
+             *     「생략하면 viz-render 가 기본값을 고른다」·「생략하면 첫 시각이다」라고
+             *     적었고, 그 고름을 화면이 **미리 볼 수 있게** 하는 자리다.
+             */
+            default: components["schemas"]["TargetDefault"];
+        };
         /** @description 색상과 간격. 정본이 준 컨트롤은 이 둘뿐이다. */
         RenderStyle: {
             /** @description `listPalettes` 가 돌려준 값. **ULID 가 아니라 viz-render 소유의 불투명 스타일 키다** — 그래서 `Id` 어휘를 쓰지 않는다. 이름을 계약에 박지 않는다. */
@@ -5465,6 +5719,38 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    updateLineageParentMethod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                parentDatasetId: components["schemas"]["Ulid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineageParentMethodUpdate"];
+            };
+        };
+        responses: {
+            /** @description 고친 후 계보 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineageGraph"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     confirmLineage: {
         parameters: {
             query?: never;
@@ -5483,6 +5769,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LineageGraph"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    declareLineageUnknown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 선언 후 계보 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineageGraph"];
+                };
+            };
+            /** @description 확정 부모가 1건 이상이다 — 이어 붙인 채로 「기록 없음」을 선언할 수 없다. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6031,6 +6352,71 @@ export interface operations {
              * @description **그리는 서버에 닿지 못했다** (`ErrorEnvelope.code = RENDER_UNAVAILABLE`).
              *     목록을 지어내지 않는다 — 화면은 팔레트를 못 고른다고 정직하게 말하고
              *     **등록은 그대로 진행한다.** `createPreviewRender` 의 503 과 같은 모양이다.
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    describeTarget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderTarget"];
+            };
+        };
+        responses: {
+            /** @description 이 대상에서 그릴 수 있는 것. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetDescription"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description 대상이 너무 크다 (`RENDER_TOO_LARGE`). 저쪽 상태·봉투를 **해석하지 않고**
+             *     그대로 올린다 — `createPreviewRender` 의 413 과 같은 규율이다.
+             */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /**
+             * @description 어느 조각도 그릴 수 없다 (`NOT_RENDERABLE`). 본문의
+             *     `details.renderableFormats` 가 사용자의 다음 수다 — 여기서 접지 않는다.
+             */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+            /**
+             * @description **그리는 서버에 닿지 못했다** (`RENDER_UNAVAILABLE`). 빈 목록을 내지 않는다 —
+             *     0건은 「고를 것이 없다」는 답이고 참인 것은 「물어보지 못했다」이다.
              */
             503: {
                 headers: {

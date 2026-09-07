@@ -105,7 +105,9 @@ def test_get_project_returns_the_detail_and_all_its_datasets(client) -> None:
     assert body["canManage"] is True, "연구원 A1 은 `프로젝트 생성` 이 켜져 있다 (seed.sql)."
     assert [d["datasetId"] for d in body["datasets"]] == [DS_A2]
     row = body["datasets"][0]
-    assert set(row) == {"datasetId", "name", "fileCount", "processingLevel", "period",
+    # ⭑ ⟨21차 해제 · R-B §5 판정 24·27·41⟩ `processingLevelUserSet` 이 옆에 섰다.
+    assert set(row) == {"datasetId", "name", "fileCount", "processingLevel",
+                        "processingLevelUserSet", "period",
                         "lineageState", "verified", "accessState", "bodyAccessible",
                         "usageNote"}
     assert row["usageNote"] == "격자 입력으로 썼다", "의미 문장은 연결마다 따로다 (§5)."
@@ -370,3 +372,30 @@ def test_delete_project_is_bounded_and_gated(client, sql) -> None:
         "WHERE account_id = :a AND switch = '프로젝트 생성'", {"a": ACC_A_RES})
     assert client.delete(f"{API_PREFIX}/projects/{project_id}",
                          headers=auth(TOKEN_RES)).status_code == 403
+
+
+# ── ⭑ ⟨21차 해제 · R-B §5 판정 24·27·41⟩ 표 행에 사람이 고른 Lv ─────────────
+def test_the_row_carries_the_human_level_without_touching_the_derived_one(client, sql) -> None:
+    """**두 값이 다른 자리**를 만들고 둘 다 나오는지 잰다.
+
+    `DSA2` 는 부모가 있어 파생 Lv 가 1 이다. 사람이 `Lv3` 을 골라 두면 두 값이 어긋나고,
+    그때 응답에 **둘 다** 있어야 화면이 「사람 값 우선」을 고를 수 있다.
+    ⛔ **서버가 `processingLevel` 에 사람 값을 덮어 쓰면 기존 열쇠의 의미 변경 = 파괴다**
+       (`R-C.md ## 구현 결정` ⑵) — 그것을 **하지 않는다**는 것이 이 단언의 요점이다.
+    """
+    sql("UPDATE d3_dataset SET processing_level_user_set = :v WHERE id = :d",
+        {"v": "Lv3", "d": DS_A2})
+    try:
+        body = client.get(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_RES)).json()
+    finally:
+        sql("UPDATE d3_dataset SET processing_level_user_set = NULL WHERE id = :d",
+            {"d": DS_A2})
+    row = next(d for d in body["datasets"] if d["datasetId"] == DS_A2)
+    assert row["processingLevelUserSet"] == "Lv3"
+    assert row["processingLevel"] == 1, "파생값이 사람 값으로 덮여 썼다 — 열쇠 의미가 바뀌었다."
+
+
+def test_the_human_level_is_null_when_nobody_chose_one(client) -> None:
+    """**안 골랐으면 `null` 이다** — 파생값을 여기에 베껴 넣지 않는다."""
+    body = client.get(f"{API_PREFIX}/projects/{PRJ_A}", headers=auth(TOKEN_RES)).json()
+    assert body["datasets"][0]["processingLevelUserSet"] is None

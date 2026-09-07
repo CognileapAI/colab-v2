@@ -118,3 +118,31 @@ def test_묶음_승인_열쇠가_제안에_없다() -> None:
     body = _parent().to_dict()
     for forbidden in ("approveAll", "approved", "batchStatus", "selected"):
         assert forbidden not in body
+
+
+# ── ⭑ ⟨21차 해제 · R-B §5 판정 23⟩ 제안에 부모 Lv ────────────────────────────
+def test_부모_가공_단계를_실으면_계약_열쇠로_나간다() -> None:
+    """`core-ai.yaml#ParentCandidateSuggestion.parentProcessingLevel`(optional 첨가).
+
+    이름만으로는 Lv3 데이터가 Lv1 의 부모로 제안되어도 화면에서 드러나지 않는다 —
+    서버가 400 으로 막기 **전에 보이는 것**이 제안의 값어치다 (20차 PRD-07).
+    """
+    assert _parent(parent_processing_level=2).to_dict()["parentProcessingLevel"] == 2
+
+
+def test_모르면_열쇠_자체를_만들지_않는다() -> None:
+    """**미지와 Lv0 은 다른 사실이다.** `null` 이나 `0` 을 실으면 「Lv0 이다」로 읽힌다."""
+    body = _parent().to_dict()
+    assert "parentProcessingLevel" not in body
+
+
+def test_부모_가공_단계는_0_이상_정수다() -> None:
+    """`common.json#/$defs/ProcessingLevel` — ⚠ `True` 는 `1` 이라 먼저 막는다."""
+    for bad in (-1, "Lv2", 1.5, True):
+        with pytest.raises(ValueError):
+            _parent(parent_processing_level=bad)
+
+
+def test_가공_방식_제안에는_부모_가공_단계가_실리지_않는다() -> None:
+    """`ParentCandidateSuggestion` 의 열쇠다 — 다른 갈래로 새면 계약 밖 열쇠가 된다."""
+    assert "parentProcessingLevel" not in _method().to_dict()

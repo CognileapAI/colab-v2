@@ -235,3 +235,47 @@ def test_a_dataset_without_a_source_label_gets_no_such_edge(live_client) -> None
     body = graph(live_client, DS_A2, TOKEN_RES).json()
     assert_counted([n for n in body["nodes"] if n["kind"] == "원천"], 0, f"{DS_A2} 의 원천 노드")
     assert_counted(source_edges(body), 0, f"{DS_A2} 의 원천 관계")
+
+
+# ── ⭑ ⟨21차 해제 · R-B §5 판정 27·41⟩ 노드에 사람이 고른 Lv ──────────────────
+def test_the_contract_declares_the_optional_human_level_on_the_node() -> None:
+    """`processingLevel` 은 **required 로 그대로 남는다** — 첨가이지 교체가 아니다."""
+    doc = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+    node = doc["components"]["schemas"]["LineageNode"]
+    assert "processingLevel" in node["required"], "기존 열쇠가 required 에서 내려왔다 — 파괴다."
+    assert "processingLevelUserSet" in node["properties"]
+    assert "processingLevelUserSet" not in node["required"], "optional 첨가여야 한다."
+
+
+def test_every_node_carries_the_human_level(live_client) -> None:
+    body = graph(live_client, DS_A2).json()
+    nodes = assert_nonempty(body["nodes"], "계보 노드")
+    for node in nodes:
+        assert "processingLevelUserSet" in node, f"노드에 사람 Lv 칸이 없다: {node['name']}"
+
+
+def test_the_human_level_stands_beside_the_derived_one_without_replacing_it(
+        live_client, sql) -> None:
+    """**두 값이 다른 자리**를 만든다 — `DSA2` 는 파생 Lv 1 이고 사람은 `Lv3` 을 골랐다.
+
+    ⛔ 서버가 `processingLevel` 에 사람 값을 덮어 쓰면 기존 열쇠의 의미 변경 = 파괴다
+       (`R-C.md ## 구현 결정` ⑵). **표시 규칙은 FE 가 고른다.**
+    """
+    sql("UPDATE d3_dataset SET processing_level_user_set = :v WHERE id = :d",
+        {"v": "Lv3", "d": DS_A2})
+    try:
+        body = graph(live_client, DS_A2).json()
+    finally:
+        sql("UPDATE d3_dataset SET processing_level_user_set = NULL WHERE id = :d",
+            {"d": DS_A2})
+    me = next(n for n in body["nodes"] if n["kind"] == "이 데이터")
+    assert me["processingLevelUserSet"] == "Lv3"
+    assert me["processingLevel"] == 1, "파생값이 사람 값으로 덮여 썼다 — 열쇠 의미가 바뀌었다."
+
+
+def test_an_origin_node_has_no_human_level(live_client) -> None:
+    """`원천` 은 데이터셋이 아니라 **표기**다 — 사람이 고른 Lv 도 없다(null)."""
+    body = graph(live_client, DS_A1).json()
+    origins = [n for n in body["nodes"] if n["kind"] == "원천"]
+    assert_nonempty(origins, "원천 노드")
+    assert all(n["processingLevelUserSet"] is None for n in origins)

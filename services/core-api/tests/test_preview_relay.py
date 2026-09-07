@@ -24,6 +24,14 @@ RENDER_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 #: viz-render 가 돌려줄 `RenderJob`. **core-api 는 이 모양을 재선언하지 않는다** —
 #: `core-viz.yaml#RenderJob` 이 정본이다.
 JOB_RUNNING = {"renderId": RENDER_ID, "status": "그리는 중", "stage": "파일 읽는 중"}
+#: ⭑ ⟨21차 해제 · 첨가 ⑴⟩ viz-render 가 돌려줄 `TargetDescription`.
+#: **core-api 는 이 모양을 재선언하지 않는다** — `core-viz.yaml#TargetDescription` 이 정본이고,
+#: 변수 목록을 core 가 만들려면 NetCDF 를 열어야 한다(`CLAUDE.md §3-4`).
+DESCRIPTION = {
+    "variables": ["DQF_LST", "LST"],
+    "instants": {"count": 3, "first": "2026-06-01T00:00:00Z", "last": "2026-06-02T00:00:00Z"},
+    "default": {"variable": "LST", "instant": "2026-06-01T00:00:00Z"},
+}
 JOB_DONE = {
     "renderId": RENDER_ID, "status": "완료",
     "result": {"tileUrlTemplate": "https://tiles.example/{z}/{x}/{y}.png",
@@ -49,6 +57,11 @@ class _FakeViz(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         _FakeViz.received.append({"path": self.path, "body": json.loads(body),
                                   "lab": self.headers.get("X-CoLAB-Lab")})
+        # ⭑ ⟨21차 해제 · 첨가 ⑴⟩ 대상 기술은 **200 이고 작업이 아니다** — 202/`renderId` 가
+        #   아닌 것이 이 op 이 읽기 전용이라는 사실의 표현이다.
+        if self.path.endswith("/target-descriptions"):
+            self._send(200, DESCRIPTION)
+            return
         self._send(202, JOB_RUNNING)
 
     def do_GET(self) -> None:                                     # noqa: N802
@@ -213,3 +226,64 @@ def test_no_geo_library_is_imported_anywhere_in_core_api() -> None:
                 if stripped.startswith((f"import {module}", f"from {module}")):
                     hits.append(f"{path.name}:{line_no}: {stripped}")
     assert hits == [], f"core-api 에 geo 라이브러리가 들어왔다:\n" + "\n".join(hits)
+
+
+# ═══════ ⭑ ⟨21차 해제 · 첨가 ⑴⟩ `describeTarget` 중계 ═══════
+_DESCRIBE = "/preview-target-descriptions"
+
+
+def test_describe_target_relays_request_and_response_untouched(p2_client, fake_viz) -> None:
+    """**중계는 해석하지 않는다** — 변수 목록도 순서도 저쪽 것이 그대로 올라온다."""
+    base, fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    target = {"datasetId": DS_A1, "fileIds": [DS_A1]}
+
+    r = client.post(f"{API_PREFIX}{_DESCRIBE}", json=target, headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert r.json() == DESCRIPTION, "중계가 응답을 가공했다 — TargetDescription 은 그대로 지나가야 한다."
+    assert fake.received[0]["body"] == target, "중계가 요청을 가공했다."
+    assert fake.received[0]["path"].endswith("/target-descriptions")
+    # **경계는 중계에도 실린다** — 저쪽에는 주체가 없다.
+    assert fake.received[0]["lab"] == "0000000000000000000000000A"
+
+
+def test_describe_target_is_read_only(p2_client, fake_viz) -> None:
+    """렌더 작업이 서지 않는다 — 200 이고 `renderId` 가 없다."""
+    base, _ = fake_viz
+    r = p2_client(viz_base_url=base).post(f"{API_PREFIX}{_DESCRIBE}",
+                                          json={"datasetId": DS_A1}, headers=auth(TOKEN_RES))
+    assert r.status_code == 200
+    assert "renderId" not in r.json()
+
+
+def test_describe_target_of_another_lab_is_404(p2_client, fake_viz) -> None:
+    """경계 확인 **전에** 중계가 나가면 남의 연구실 파일의 변수 이름을 알려 준다."""
+    base, fake = fake_viz
+    r = p2_client(viz_base_url=base).post(f"{API_PREFIX}{_DESCRIBE}",
+                                          json={"datasetId": DS_B1}, headers=auth(TOKEN_RES))
+    assert r.status_code == 404
+    assert fake.received == []
+
+
+def test_describe_target_must_be_exactly_one_of_the_two(p2_client, fake_viz) -> None:
+    base, _ = fake_viz
+    client = p2_client(viz_base_url=base)
+    for target in ({}, {"datasetId": DS_A1, "uploadId": DS_A1}):
+        r = client.post(f"{API_PREFIX}{_DESCRIBE}", json=target, headers=auth(TOKEN_RES))
+        assert r.status_code == 400
+
+
+def test_describe_target_when_render_server_is_unreachable_is_503(p2_client) -> None:
+    """**빈 목록을 내지 않는다** — 0건은 「고를 것이 없다」이고 참인 것은 「못 물어봤다」다."""
+    r = p2_client(viz_base_url=None).post(f"{API_PREFIX}{_DESCRIBE}",
+                                          json={"datasetId": DS_A1}, headers=auth(TOKEN_RES))
+    assert r.status_code == 503
+    assert r.json()["code"] == "RENDER_UNAVAILABLE"
+
+
+def test_core_does_not_build_the_variable_list(p2_client) -> None:
+    """⛔ **core 가 NetCDF 를 열어 변수 목록을 만들지 않는다** (`CLAUDE.md §3-4`)."""
+    src = pathlib.Path(__file__).resolve().parents[1] / "src" / "colab_core"
+    preview = (src / "app" / "routes" / "preview.py").read_text(encoding="utf-8")
+    for invented in ("netCDF4", "rasterio", "xarray", "band1", "drawable"):
+        assert invented not in preview, f"core-api 가 파일을 해석하고 있다: {invented}"

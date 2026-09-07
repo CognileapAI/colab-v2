@@ -99,7 +99,17 @@ C2_REAL = {
     "downloadDatasetFile":  "tests/test_download.py",
     "getDownloadBytes":     "tests/test_download.py",
 }
-P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL}
+#: **21차 동결 해제(WU-C10)가 신설과 동시에 구현한 셋.** 표는 **늘지 않는다** —
+#: `searchDatasets`·`listPalettes` 때 세운 규칙 그대로다: **여는 회차에 만든다**
+#: (`〈80〉-㉯ 5` · `〈74〉-㉱` · `X2-FREEZE-PROTOCOL §5-㉰-4` 「집행 없는 신설」 금지).
+#: 계약에 op 을 열어 두고 안 만들면 501 이 4 → 7 이 되고, 그 셋이 그대로 구멍으로 남는다.
+C21_REAL = {
+    "describeTarget":              "tests/test_preview_relay.py",
+    "declareLineageUnknown":       "tests/test_lineage_unknown.py",
+    "updateLineageParentMethod":   "tests/test_lineage_confirm.py",
+}
+P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL,
+           **C21_REAL}
 REAL = P1_REAL | set(P2_REAL)
 #: **비었다 — 그리고 그것이 사실이다.**
 #: ⭑ 승인 요청 여섯이 빠졌다 (`P6` · 마이그레이션 `0010` 이 저장처를 만들었다).

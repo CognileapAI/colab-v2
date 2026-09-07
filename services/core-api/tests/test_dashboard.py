@@ -75,7 +75,8 @@ def test_the_data_map_keeps_all_four_lineage_rows_even_at_zero(live_client):
     r = live_client.get(f"{PREFIX}/dashboard/data-map", headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     body = r.json()
-    assert set(body) == {"totalCount", "byLineageState", "byTopic"}
+    # ⭑ ⟨21차 해제 · 판정 33⟩ `byCategory` 가 옆에 섰다 — `byTopic` 은 그대로다.
+    assert set(body) == {"totalCount", "byLineageState", "byTopic", "byCategory"}
     assert [row["value"] for row in body["byLineageState"]] == list(STATES)
     by_state = {row["value"]: row["count"] for row in body["byLineageState"]}
     assert by_state == {"확정": 1, "원천": 1, "확인 필요": 0, "기록 없음": 0}
@@ -178,3 +179,51 @@ def test_the_dashboard_is_closed_without_a_subject(live_client):
     for path in ("/dashboard/summary", "/dashboard/data-map", "/dashboard/activities"):
         r = live_client.get(PREFIX + path)
         assert r.status_code == 401, f"{path} 가 무토큰으로 열렸다."
+
+
+# ── ⭑ ⟨21차 해제 · R-B §5 판정 33⟩ 데이터 맵 분류 축 ────────────────────────
+#: 분류 국문 5값. **값 집합은 DB CHECK 가 지킨다** — 시험도 카탈로그가 쓰는 상수를 읽는다.
+def _categories():
+    from colab_core.app.routes.catalog import _CATEGORIES
+    return list(_CATEGORIES)
+
+
+def test_the_data_map_keeps_all_five_category_rows_even_at_zero(live_client):
+    """**5값 전부 · 0이어도 줄을 지우지 않는다** (`byLineageState` 와 **같은 규칙**).
+
+    시드 A 의 두 데이터셋은 `category` 가 NULL 이다 — 그래서 다섯 줄이 **전부 0** 이고,
+    그 다섯 줄이 서 있는 것 자체가 이 규칙의 실물이다. 0건인 분류를 지우면 화면은
+    「그런 분류는 없다」로 읽고, 채워야 할 칸이 있다는 사실이 사라진다.
+    """
+    body = live_client.get(f"{PREFIX}/dashboard/data-map", headers=auth(TOKEN_RES)).json()
+    assert [row["value"] for row in body["byCategory"]] == _categories()
+    assert all(row["count"] == 0 for row in body["byCategory"]), body["byCategory"]
+    assert len(body["byCategory"]) == 5
+
+
+def test_the_topic_axis_is_unchanged_by_the_category_axis(live_client):
+    """`byTopic` 은 21차에서 **바뀌지 않는다** — 되돌림 경로이자 이관 대조 근거다."""
+    body = live_client.get(f"{PREFIX}/dashboard/data-map", headers=auth(TOKEN_RES)).json()
+    assert body["byTopic"] == [{"value": "강우·강수", "count": 2}]
+
+
+def test_the_category_axis_counts_what_is_stored(live_client, sql):
+    """등록된 분류가 실제로 세어진다 — **0만 확인하면 「언제나 0」도 green 이다.**
+
+    시드 행의 분류를 잠깐 세우고 **되돌린다** — 시드가 시험 순서에 따라 달라지면 그
+    오라클은 오라클이 아니다 (`conftest._rollback_p2_rows` 머리 주석과 같은 규율).
+    ⚠ 분류가 NULL 인 행은 **어느 줄에도 들지 않는다** — 그래서 이 축의 합이
+      `totalCount` 보다 작을 수 있고, **분모는 언제나 `totalCount`** 다.
+    """
+    sql("UPDATE d3_dataset_description SET category = :c WHERE dataset_id = :d",
+        {"c": "수문 인자", "d": DS_A1})
+    try:
+        body = live_client.get(f"{PREFIX}/dashboard/data-map", headers=auth(TOKEN_RES)).json()
+    finally:
+        sql("UPDATE d3_dataset_description SET category = NULL WHERE dataset_id = :d",
+            {"d": DS_A1})
+    counts = {row["value"]: row["count"] for row in body["byCategory"]}
+    assert list(counts) == _categories(), "줄 순서가 카탈로그 필터와 갈렸다."
+    assert counts["수문 인자"] == 1
+    # 나머지 넷은 0이고 **줄은 남아 있다.**
+    assert sum(counts.values()) == 1 < body["totalCount"]

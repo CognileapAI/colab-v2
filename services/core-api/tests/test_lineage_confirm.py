@@ -277,3 +277,89 @@ def test_the_professor_can_edit_lineage_without_a_stored_switch(p2_client) -> No
     client = p2_client()
     r = client.post(f"{API_PREFIX}/datasets/{DS_A2}/lineage/confirmation", headers=auth(TOKEN_PROF))
     assert r.status_code == 200
+
+
+# ═══ ⭑ ⟨21차 해제 · R-B §5 판정 42⟩ 가공 방식 수정 (`updateLineageParentMethod`) ═══
+#
+# **없어서 무엇이 깨졌나** — 오타 한 글자를 고치려면 관계를 **지웠다 다시 붙여야** 했고,
+# 그러면 `confirmedBy`·`confirmedAt`(누가 언제 확인했는가)이 지워지고 새로 찍혔다.
+# **사람이 한 확인 기록이 오타 수정으로 사라졌다.**
+def _edge(graph_body: dict, child: str, parent: str) -> dict:
+    return next(e for e in graph_body["edges"]
+                if e["childDatasetId"] == child and e["parentDatasetId"] == parent)
+
+
+def _patch_method(client, child: str, parent: str, method, token: str = TOKEN_RES):
+    return client.patch(f"{API_PREFIX}/datasets/{child}/lineage/parents/{parent}",
+                        json={"method": method}, headers=auth(token))
+
+
+def _pair(client):
+    parent = _new_dataset(client, "부모 원자료")
+    child = _new_dataset(client, "자식 가공물")
+    r = _add_parent(client, child, parent, method="일 단위로 합쳤다")
+    assert r.status_code == 201, r.text
+    return parent, child, r.json()
+
+
+def test_editing_the_method_does_not_move_the_confirmation_stamp(p2_client) -> None:
+    """⛔ **`confirmedAt`·`confirmedBy` 를 바꾸지 않는다.** 이 op 은 확인이 아니다 —
+    다시 확인하는 자리는 `confirmLineage` 뿐이다 (계보 규칙 ④)."""
+    client = p2_client()
+    parent, child, before = _pair(client)
+    was = _edge(before, child, parent)
+
+    r = _patch_method(client, child, parent, "월 단위로 합쳤다")
+    assert r.status_code == 200, r.text
+    now = _edge(r.json(), child, parent)
+
+    assert now["method"] == "월 단위로 합쳤다", "고쳐 달라는 값이 안 바뀌었다."
+    assert now["confirmedAt"] == was["confirmedAt"], "라벨 수정이 확인 시각을 밀었다."
+    assert now["confirmedBy"] == was["confirmedBy"], "라벨 수정이 확인자를 갈아 치웠다."
+    assert now["origin"] == was["origin"] and now["parentRole"] == was["parentRole"]
+
+
+def test_the_method_can_be_cleared_to_null(p2_client) -> None:
+    """`null` 은 「라벨을 지운다」이지 「안 바꾼다」가 아니다 — 계약이 required 로 적어
+    생략으로 무변을 말할 수 없게 했다. 화면은 `method` 없는 관계에 라벨을 안 그린다."""
+    client = p2_client()
+    parent, child, _ = _pair(client)
+    r = _patch_method(client, child, parent, None)
+    assert r.status_code == 200, r.text
+    assert _edge(r.json(), child, parent)["method"] is None
+
+
+def test_the_method_body_takes_nothing_else(p2_client) -> None:
+    """⛔ `parentRole` 을 받지 않는다 — 역할은 Lv 계산에 드는 값이라 고치는 것이 아니라
+    관계를 다시 세우는 일이다 (`removeLineageParent` → `addLineageParent`)."""
+    client = p2_client()
+    parent, child, _ = _pair(client)
+    r = client.patch(f"{API_PREFIX}/datasets/{child}/lineage/parents/{parent}",
+                     json={"method": "x", "parentRole": "보조입력"}, headers=auth(TOKEN_RES))
+    assert r.status_code == 400, r.text
+    # `method` 자체가 없는 것도 400 이다 — required 다.
+    assert client.patch(f"{API_PREFIX}/datasets/{child}/lineage/parents/{parent}",
+                        json={}, headers=auth(TOKEN_RES)).status_code == 400
+
+
+def test_editing_a_method_that_has_no_edge_is_404(p2_client) -> None:
+    """**없는 관계를 조용히 만들지 않는다** — PATCH 가 INSERT 가 되면 계보가 오염된다."""
+    client = p2_client()
+    a = _new_dataset(client, "관계 없는 A")
+    b = _new_dataset(client, "관계 없는 B")
+    assert _patch_method(client, a, b, "무엇이든").status_code == 404
+
+
+def test_editing_the_method_needs_the_edit_switch(p2_client, sql) -> None:
+    """권한은 `addLineageParent` 와 **같다**."""
+    client = p2_client()
+    parent, child, _ = _pair(client)
+    sql("UPDATE d2_permission_switch SET enabled = false"
+        " WHERE account_id = :a AND switch = '업로드·편집'", {"a": "000000000000000000000000A1"},
+        account_id="00000000000000000000000AP1")
+    try:
+        assert _patch_method(client, child, parent, "막혀야 한다").status_code == 403
+    finally:
+        sql("UPDATE d2_permission_switch SET enabled = true"
+            " WHERE account_id = :a AND switch = '업로드·편집'",
+            {"a": "000000000000000000000000A1"}, account_id="00000000000000000000000AP1")
