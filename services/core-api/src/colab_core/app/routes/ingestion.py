@@ -34,7 +34,7 @@ from ...kernel.ids import Ulid
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, is_blank_summary,
-                      validate_human_metadata)
+                      validate_human_metadata, warn_if_level_mismatch)
 
 router = APIRouter()
 
@@ -379,13 +379,21 @@ def list_upload_lineage_suggestions(
 #: ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 을 넣었다.** 계약이 `DatasetCreate` 에
 #: 그 열쇠를 여는 **같은 회차**에 서버가 받는다 — 계약만 열고 이 줄을 미루면 열쇠는 있는데
 #: 「계약에 없는 필드다」 400 이 돌아온다(§5-㉰-4 「집행 없는 신설」 금지).
+#: ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠를 넣었다.** 계약이 `DatasetCreate` 에
+#: 그 열쇠를 여는 **같은 회차**에 서버가 받는다 — 계약만 열고 이 줄을 미루면 열쇠는 있는데
+#: 「계약에 없는 필드다」 400 이 돌아온다(§5-㉰-4 「집행 없는 신설」 금지).
 _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           "lineageParents", "projectIds",
-                          "variables", "crs", "period", "observationInterval"}
+                          "variables", "crs", "period", "observationInterval",
+                          "category", "dataType", "processingLevelUserSet"}
 
 #: 등록 요청이 실어 오는 **사람이 적는 자유 입력 칸.** 저장은 `updateDataset` 이 쓰는
 #: 그 경로 하나를 그대로 쓴다 (`d3_catalog.update_dataset`).
-_HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval")
+#: ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축이 여기 있다.** 셋 다 **사람이 고르는 값**이고
+#: 저장 경로가 `update_dataset` 하나라는 규율을 그대로 탄다 — 등록 전용 쓰기 경로를
+#: 따로 만들면 등록과 수정이 다른 열에 쓰는 날이 온다.
+_HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval",
+                          "category", "dataType", "processingLevelUserSet")
 
 
 def _extension_of(file_name: str) -> str:
@@ -628,6 +636,10 @@ def create_dataset(request: Request, body: dict = None,
     d8_insight.record_activity(db, actor_id=subject.account_id,
                                action=d8_insight.ACTION_DATASET_ADDED,
                                target_kind="데이터셋", target_id=dataset_id)
+    # ⑦ ⭑ **⟨20차 해제 · PRD-03 · 미결-2 ⓐ⟩ 사람 Lv ↔ 파생 Lv 불일치는 경고만이다.**
+    #    **계보를 다 붙인 뒤**에 잰다 — ③ 앞에서 재면 파생값이 늘 `Lv0` 이라 거짓 불일치다.
+    #    ⛔ 여기서 400 을 내지 않는다(등록을 막지 않는다 · 확정 판정).
+    warn_if_level_mismatch(db, dataset_id, body.get("processingLevelUserSet"))
     return dataset_detail(db, subject, dataset_id)
 
 

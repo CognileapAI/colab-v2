@@ -76,6 +76,11 @@ _ONE = text("""
            -- 관측 간격 **두 칸** (PRD-17 · `M-6`). 사람이 적는 값이라 이 표에 있다.
            -- 상세만 읽는다 — 목록(`DatasetRow`)에는 이 칸이 계약에도 화면에도 없다.
            dd.observation_interval_value, dd.observation_interval_unit,
+           -- 분류 3축 (PRD-01·02·03 · `M-1`·`M-2`·`M-3`). **사람이 고르는 값**이다.
+           -- 상세만 읽는다 — 목록(`DatasetRow`)에는 이 칸이 아직 계약에도 없다(`WU-B7`).
+           -- ⛔ `dd.topic` 은 위에 그대로 있다 — 되돌림 경로이자 이관 대조 근거다.
+           dd.category, dd.data_type,
+           d.processing_level_user_set,
            u.name AS uploader_name,
            o.name AS owner_name
       FROM d3_dataset d
@@ -151,6 +156,14 @@ class DatasetCore:
     #: ⚠ **목록 질의는 안 읽는다** — `DatasetRow` 에 이 칸이 없다. 상세(`_ONE`)만 채운다.
     observation_interval_value: object = None
     observation_interval_unit: str | None = None
+    #: 분류 3축 (PRD-01·02·03). **셋 다 `None` 이 정상**이다 — 마이그레이션 `0015` 가
+    #: backfill 을 하지 않았고, 그것이 기존 행의 상태다(미결-3 ⓐ).
+    #: ⚠ **목록 질의는 안 읽는다** — `DatasetRow` 에 이 칸이 없다(`WU-B7`). 상세만 채운다.
+    #: ⚠ `processing_level_user_set` 은 **파생 `processing_level()` 과 다른 축**이다 —
+    #: 하나는 사람이 고른 문자열, 하나는 계보에서 나온 정수다.
+    category: str | None = None
+    data_type: str | None = None
+    processing_level_user_set: str | None = None
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -183,6 +196,8 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         lineage_confirmed_at=r["lineage_confirmed_at"],
         observation_interval_value=r["observation_interval_value"],
         observation_interval_unit=r["observation_interval_unit"],
+        category=r["category"], data_type=r["data_type"],
+        processing_level_user_set=r["processing_level_user_set"],
     )
 
 
@@ -792,6 +807,14 @@ _UPDATABLE = {
     "representativeFileId": ("d3_dataset", "representative_file_id"),
     "variables": ("d3_dataset_autometa", "variables"),
     "crs": ("d3_dataset_autometa", "crs"),
+    # ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축.** 분류·유형은 **사람이 적는 값**이라
+    # `d3_dataset_description` 이고(`autometa` 는 파일에서 자동으로 읽은 것만 담는다 ·
+    # 정본 §4.1), 사람이 고른 가공 단계는 `0007`·`0011` 이 두 번 오간 그 자리
+    # `d3_dataset.processing_level_user_set` 이다.
+    # ⚠ 열쇠 `dataType` ↔ 컬럼 `data_type` — `type` 을 피한 이름이다(PRD-02 축자).
+    "category": ("d3_dataset_description", "category"),
+    "dataType": ("d3_dataset_description", "data_type"),
+    "processingLevelUserSet": ("d3_dataset", "processing_level_user_set"),
 }
 
 

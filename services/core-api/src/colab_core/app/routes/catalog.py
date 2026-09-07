@@ -540,9 +540,12 @@ def _project_period(start, end) -> dict:
 #: ⭑ **⟨19차 해제 · PRD-17⟩ `observationInterval` 이 들어왔다.** 계약이 열쇠를 열고
 #: 서버가 그것을 받는 목록이 이 줄이다 — **한 회차에 함께 선다**(§5-㉰-4 「집행 없는
 #: 신설」 금지). 계약만 열고 이 줄을 다음 회차로 미루면 열쇠는 있는데 400 이 나온다.
+#: ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 세 열쇠가 들어왔다.** 등록만 열고 이 줄을
+#: 다음 회차로 미루면 「계약에 없는 필드다」 400 이 돌아온다 — 같은 §5-㉰-4 다.
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period",
-                  "observationInterval")
+                  "observationInterval",
+                  "category", "dataType", "processingLevelUserSet")
 
 #: 주제 어휘. **정본은 DB CHECK 다** (`db/platform/schema.sql` `d3_dataset_description.topic`) —
 #: 계약이 「값 집합은 DB CHECK 가 지킨다 · 계약 층 enum 은 만들지 않는다」로 그 자리를
@@ -553,6 +556,26 @@ _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
 _TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC",
            "가뭄", "파일 포맷 예제")
 
+#: 분류 축 5값 (PRD-01 · `M-1`). **정본은 DB CHECK 다** (`d3_dataset_description.category`) —
+#: `_TOPICS` 와 같은 자리이고 같은 이유로 여기 사본이 있다: 검사를 안 하면 사용자의 오타가
+#: IntegrityError → **500** 이 된다 (`CODE-REVIEW-20260903` #12).
+#: ⚠ **국문 단일이다** — 화면이 병기하는 영문(`Meteorological & Climatic Factors`)은 표시
+#: 전용이라 이 목록에 없다(미결-13 ⓐ). ⚠ 개수를 문장에 박지 않는다.
+_CATEGORIES = ("수문 인자", "기상·기후 인자", "식생·탄소 인자",
+               "사회·경제 인자", "환경 인자")
+
+#: 유형 축 6값 (PRD-02 · `M-2`). 정본은 `d3_dataset_description.data_type` CHECK 다.
+#: ⚠ 열쇠는 `dataType` 이고 컬럼은 `data_type` 이다 — `type` 을 피한 이름이다(PRD-02 축자).
+_DATA_TYPES = ("지상관측자료", "위성자료", "재분석자료",
+               "수치모형자료", "합성자료", "관측 기반 산출물")
+
+#: 사람이 고른 가공 단계 4값 (PRD-03 · `M-3`). 정본은
+#: `d3_dataset.processing_level_user_set` CHECK 다 — `0011` 이 지운 열의 재신설이다.
+#: ⚠ **`LV_CAP` 과 다른 축이다.** `LV_CAP` 은 **파생** Lv 의 상한이고 여기 넷은 **사람이
+#: 고르는 값**의 집합이다. 한 상수로 합치면 두 뜻이 붙어 버린다(`INTERVAL_UNITS` ↔
+#: `PERIOD_GRANULARITIES` 와 같은 계열의 실패).
+_PROCESSING_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+
 #: 관측 간격의 단위 6값 (PRD-17 · `M-6`). **정본은 DB CHECK 다**
 #: (`d3_dataset_description.observation_interval_unit`) — `_TOPICS` 와 같은 자리이고
 #: 같은 이유로 여기 사본이 있다: 검사를 안 하면 사용자의 오타가 IntegrityError → **500** 이 된다.
@@ -562,6 +585,34 @@ INTERVAL_UNITS = ("초", "분", "시", "일", "월", "년")
 #: CHECK 다. ⚠ 위 목록과 **값은 같고 뜻이 다르다** — 하나는 「얼마 간격으로 재는가」,
 #: 하나는 「기간을 어느 자리까지 말하는가」다. 한 상수로 합치면 두 뜻이 붙어 버린다.
 PERIOD_GRANULARITIES = ("년", "월", "일", "시", "분", "초")
+
+#: 사람 Lv ↔ 파생 Lv 불일치를 적는 자리 (PRD-03 · PRD-10 · 미결-2 ⓐ).
+_level_log = logging.getLogger("colab_core.processing_level")
+
+
+def warn_if_level_mismatch(db: Session, dataset_id: Ulid, user_set: object) -> None:
+    """사람이 고른 Lv 와 파생 Lv 가 어긋나면 **경고만** 남긴다. 저장을 막지 않는다.
+
+    미결-2 ⓐ 축자 = 「가공 단계를 사람이 고르고, 계보 계산값과 어긋나면 **경고만** 낸다
+    (등록을 막지 않는다)」. 그래서 이 함수는 **아무것도 raise 하지 않는다** — 400 을
+    내는 순간 확정 판정을 뒤집는 것이 된다.
+
+    ⚠ **경고의 자리가 로그인 것은 이번 회차의 범위 때문이다.** 응답에 싣는 두 열쇠
+    (`processingLevelDerived` · `processingLevelMismatch`)와 화면 안내 한 줄은 PRD-10 이고
+    **`WU-B5`** 가 연다 — 그 열쇠를 여기서 미리 만들지 않는다(계약 열쇠는 이번 회차에
+    셋뿐이다). 사람 값이 `NULL` 인 행은 **불일치가 정의되지 않는다**(PRD-10 축자).
+    """
+    if user_set is None:
+        return
+    summary = d4_lineage.LineageSummaryAdapter(db).summaries([str(dataset_id)]).get(str(dataset_id))
+    derived = d3_catalog.processing_level(summary)
+    # 사람 값은 `Lv2` 꼴 문자열이고 파생값은 정수다 — 앞 두 글자를 떼어 같은 축으로 읽는다.
+    # 값 집합 검사(`validate_human_metadata`)를 이미 지났으므로 `Lv` 접두는 보장된다.
+    if int(str(user_set)[2:]) != derived:
+        _level_log.warning(
+            "가공 단계 불일치 — dataset=%s 사람=%s 파생=Lv%s. 저장은 성공했다(경고만 · 미결-2 ⓐ).",
+            dataset_id, user_set, derived)
+
 
 #: 반쪽 관측 간격의 문구 — **한 자리에만 둔다.** 등록과 수정이 같은 문장을 낸다.
 HALF_INTERVAL_MESSAGE = "관측 간격은 숫자와 단위를 함께 적어 주세요."
@@ -625,6 +676,21 @@ def validate_human_metadata(changes: dict) -> None:
         # 그 값이 IntegrityError 로 떨어져 **사용자의 오타가 500** 이 된다.
         if changes["topic"] not in _TOPICS:
             raise errors.bad_request("주제는 정해진 값 중 하나다.", {"allowed": list(_TOPICS)})
+
+    # ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축 — 같은 규율이다.**
+    # 셋 다 **선택 입력**이라 `null`·열쇠 없음은 그냥 지나간다(그것이 기존 전 행의 상태다).
+    # 값이 왔는데 집합 밖이면 **400 ＋ `allowed`** 다 — 안 막으면 CHECK 위반이 **500** 으로
+    # 돌아가고 사용자의 오타가 서버 잘못이 된다 (`CODE-REVIEW-20260903` #12 와 같은 자리).
+    # ⛔ **조합 검증을 만들지 않는다**(미결-14 ⓐ) — 세 축을 각자 따로 본다.
+    for key, allowed, label in (
+        ("category", _CATEGORIES, "분류"),
+        ("dataType", _DATA_TYPES, "유형"),
+        ("processingLevelUserSet", _PROCESSING_LEVELS, "가공 단계"),
+    ):
+        if changes.get(key) is not None and key in changes:
+            if changes[key] not in allowed:
+                raise errors.bad_request(f"{label}는 정해진 값 중 하나다.",
+                                         {"allowed": list(allowed)})
 
     if changes.get("period") is not None and "period" in changes:
         period = changes["period"]
@@ -759,6 +825,9 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
 
     if changes:
         d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes)
+        # ⭑ **⟨20차 해제 · PRD-03 · 미결-2 ⓐ⟩ 수정도 같은 경고를 낸다.** 등록에만 두면
+        # 사람이 나중에 Lv 를 바꾼 순간의 불일치를 아무도 못 본다. **막지 않는다.**
+        warn_if_level_mismatch(db, dataset_id, changes.get("processingLevelUserSet"))
     return get_dataset(datasetId, subject=subject, db=db)
 
 
@@ -841,6 +910,13 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
                       # 말한다. `None` 이면 단위 미지정이고 화면은 종전 표기 그대로다.
                       "granularity": meta.period_granularity}
         basic_info = {
+            # ⭑ **⟨20차 해제 · PRD-01·02·03⟩ 분류 3축.** 셋 다 **사람이 고르는 값**이라
+            # `meta`(자동으로 읽은 정보)가 아니라 `core` 에서 온다. `None` 이면 아직 안
+            # 고른 것이고 화면이 「분류를 아직 안 골랐어요」·「유형 미지정」·`자동` 을 그린다
+            # (미결-3 ⓐ — 마이그레이션이 backfill 을 하지 않았다).
+            "category": core.category,
+            "dataType": core.data_type,
+            "processingLevelUserSet": core.processing_level_user_set,
             "variables": [] if meta is None else meta.variables,
             "crs": None if meta is None else meta.crs,
             "period": period,
