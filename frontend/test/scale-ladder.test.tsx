@@ -232,8 +232,10 @@ function uploadSource(): PreviewSource {
   } as unknown as PreviewSource;
 }
 
-function renderUpload() {
-  return render(<PreviewPanel uploadId="up-1" source={uploadSource()} hasReferenceGrid />);
+async function renderUpload() {
+  render(<PreviewPanel uploadId="up-1" source={uploadSource()} hasReferenceGrid />);
+  // 버튼은 팔레트 응답보다 먼저 나타난다. 선택값이 준비된 뒤 그리기를 누른다.
+  await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
 }
 
 describe('세 화면 공유 — 같은 `.pv-zoom` 버튼 세 개', () => {
@@ -246,7 +248,7 @@ describe('세 화면 공유 — 같은 `.pv-zoom` 버튼 세 개', () => {
   });
 
   it('업로드 — 같은 마크업의 버튼 세 개', async () => {
-    renderUpload();
+    await renderUpload();
     fireEvent.click(await screen.findByRole('button', { name: /미리보기 그리기/ }));
     const group = await screen.findByTestId('up-preview-zoom');
     expect(group.querySelectorAll('button')).toHaveLength(3);
@@ -254,7 +256,7 @@ describe('세 화면 공유 — 같은 `.pv-zoom` 버튼 세 개', () => {
   });
 
   it('확장보기 — 같은 마크업의 버튼 세 개 · 층 규칙(`data-esc-layer`)은 그대로다', async () => {
-    renderUpload();
+    await renderUpload();
     fireEvent.click(await screen.findByRole('button', { name: /미리보기 그리기/ }));
     await screen.findByTestId('up-preview-zoom');
     fireEvent.click(screen.getByTestId('pv-expand'));
