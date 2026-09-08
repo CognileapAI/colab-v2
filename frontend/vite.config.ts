@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
     // (`node:fs` 는 쓰지 않는다 — `e01-apply-points.test.ts:14` 의 배포 불가 사고.)
     css: {
       include: [
-        /catalog\.css$/,
+        /catalog\.css(\?raw)?$/,
         /project\.css(\?raw)?$/,
         /shell\.css(\?raw)?$/,
         /tokens\.css(\?raw)?$/,
