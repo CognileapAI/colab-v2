@@ -1,0 +1,12 @@
+  - id: WU-D6
+    name: 과제 20건 H01~H20 픽스처＋expect.sh ＋ 첫 실측(p95×2 상한 · 예산) (하네스 eval Q3·Q5·Q7·Q8)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D5 done"]
+    depends_on: ["WU-D5"]
+    completion_def: "eval/harness/H01~H20 각 task.md·fixture/(옛값 사본 · SOURCE.md 복원 명령)·expect.sh(정규식 · 음성 단언 포함) · 배분 3·10·5·2 = intent 로스터 축자 · 첫 실측 20건×2회 → summary.md 20행(초·USD) · p95×2 상한 · README [미측정] 0건 · 불안정·준비 과제는 무수정 보고 · 3회 연속 기록 시작"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-eval-tasks · 순서 6/7 · 제품 파일 무접촉(git diff --stat)"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]

@@ -1,0 +1,347 @@
+@import './tokens.css';
+
+/* 셸 레이아웃 · GNB — 규칙과 치수의 정본은 목업 `mockups/제품_260817.html` 의 `.gnb` 블록이다.
+   목업을 임의로 변형하지 않는다. 목업에 없는 요소를 여기서 발명하지 않는다. */
+
+* { box-sizing: border-box; }
+
+/* ===== 못 불러왔을 때의 한 자리 (`components/common/LoadFailure.tsx`) =====
+   화면마다 다른 CSS 파일을 쓰므로 **전역인 여기**에 둔다 — 카탈로그·상세·프로젝트가
+   같은 실패를 같은 모양으로 말해야 사람이 그것을 「없음」이 아니라 실패로 읽는다. */
+.loadfail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border, #dde1e6);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+}
+.loadfail-msg {
+  margin: 0;
+  font-size: var(--text-body);
+  color: var(--color-text-body, #21272a);
+}
+.loadfail-retry {
+  border: 1px solid var(--color-border, #dde1e6);
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text-body, #21272a);
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ===== 되돌아가기 줄 (`backrow`/`backlink`) — 경로(브레드크럼)가 아니다. 헤더 밖 제 줄에 하나 =====
+   BF-11 — 같은 마크업(`DatasetDetailPage.tsx`·`ProjectDetailPage.tsx` 의 `.backrow`)이
+   `detail.css` 와 `project.css` 에 **두 벌**로 적혀 있었고, 프로젝트 사본은 토큰까지 다른 이름을
+   써서 색이 미묘하게 갈렸다. `.loadfail` 과 같은 이유로 **전역인 여기** 한 벌로 모은다 —
+   화면마다 CSS 파일이 다르므로, 같은 줄이 같은 모양이려면 규칙도 한 자리에 있어야 한다.
+   ⚠ 선택자는 두 화면으로 **한정한다** — 맨 `.backlink` 로 열면 제 모양을 따로 가진
+   미등록 미리보기(`preview.css` 의 `.preview-page .backlink`)까지 끌려온다. */
+.detail-page .backrow,
+.project-detail .backrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.detail-page .backlink,
+.project-detail .backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(60vw, 460px);
+  padding: 3px 9px 3px 7px;
+  margin-left: -7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: border-color var(--ease), background var(--ease), color var(--ease);
+}
+.detail-page .backlink:hover,
+.project-detail .backlink:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.detail-page .backlink .bl-n,
+.project-detail .backlink .bl-n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-page .backlink .bl-a,
+.project-detail .backlink .bl-a {
+  flex: none;
+  font-size: 11px;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+}
+
+/* ===== 하나의 셸 · GNB (전원 공통, 항상 노출) ===== */
+.gnb {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-shell);
+  box-shadow: var(--shadow-sm);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.brand .logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--color-primary-600);
+}
+
+.labswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--ease), border-color var(--ease);
+}
+.labswitch:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* 주 내비 3개 — 남는 가로 여백은 여기서 먹는다.
+   우측 버튼(업로드·연구실 설정)은 권한에 따라 숨는 요소라 거기에 여백을 걸면 화면이 무너진다.
+   (Policy_공통_기반 v1.4 §1 · IA_사이트맵 §3) */
+.mainnav {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 8px;
+  margin-right: auto;
+  align-self: stretch;
+}
+.mainnav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--ease), background var(--ease);
+}
+.mainnav a:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+/* 활성 내비 = 흰 면 + 잉크 밑줄 */
+.mainnav a.is-active {
+  color: var(--color-text);
+  font-weight: 700;
+  background: var(--color-surface);
+}
+.mainnav a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -11px;
+  height: 3px;
+  background: var(--color-primary-600);
+  border-radius: 3px 3px 0 0;
+}
+
+/* GNB 에 검색을 두지 않는다 — 진입은 `연구실` 화면 히어로 한 곳뿐 */
+
+.gnb-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-body);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--ease), border-color var(--ease);
+}
+.gnb-settings:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+/* 업로드 = 셸 전역 1급 행동 · 유일한 상시 잉크 솔리드 */
+.gnb-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--ease);
+}
+.gnb-upload:hover { background: var(--color-primary-700); }
+
+.avatar-wrap { position: relative; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 9px 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  transition: background var(--ease), border-color var(--ease);
+}
+.avatar:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-border-strong);
+}
+.avatar .nm,
+.labswitch .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar .cv,
+.labswitch .cv { color: var(--color-gray-500); flex: none; font-size: var(--text-caption); }
+
+.appmain { display: block; }
+
+/* 로그아웃 — 아바타 옆 최소 자리 (`PLAN-SoT §9 〈90〉-㉳`) */
+.gnb-logout {
+  margin-left: 8px;
+  padding: 0 8px;
+  height: 28px;
+  font: inherit;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--ease), border-color var(--ease);
+}
+
+.gnb-logout:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-shell);
+}
+
+/* GNB 아이콘 — 라벨 옆에 붙는다. 데스크톱에서는 아이콘·라벨이 함께 보인다 */
+.gnb .ico { flex: none; }
+
+/* ===== GNB 반응형 사다리 — 목업 `데이터_찾기_260817.html:138~168` 이식 =====
+   ⭑ ⟨신설 2026-09-03 · `PLAN-SoT §9 〈296〉`-㉳ · 근거 QA 검수 #28⟩
+   종전에는 **640px 한 단계**뿐이었고 그 한 단계가 `.gnb .lbl` 을 통째로 감춰
+   **주 내비 라벨까지 같이 사라졌다.** 목업의 사다리는 반대를 말한다 — 축자
+   「좁아질수록 라벨부터 접고 아이콘만 남긴다. **마지막까지 지키는 건 주 내비와 업로드**다.」
+   그래서 주 내비 라벨은 어느 단에서도 감추지 않고, 560px 에서 **가로 스크롤**로 받는다.
+   ⚠ 이것은 「개선」이 아니라 **목업 미반영의 정정**이다. QA 가 「반응형은 정본 침묵」으로
+     분류했으나 침묵이 아니었다 — 사다리는 목업에 5단으로 서 있었다.
+   라벨을 감추는 컨트롤에는 전부 `aria-label` 이 붙어 있다 (`Gnb.tsx`) — 접근성은 그대로다 */
+
+@media (max-width: 1180px) {
+  .gnb { padding: 0 14px; gap: 8px; }
+  .labswitch { max-width: 180px; }
+}
+
+@media (max-width: 1000px) {
+  .labswitch { max-width: 132px; }
+  .avatar .nm { max-width: 56px; }
+}
+
+@media (max-width: 880px) {
+  .brand .bn { display: none; }
+  .gnb-settings { display: none; }   /* 교수 전용 · 아바타 메뉴에서 도달 가능 */
+  .avatar .nm { display: none; }
+  .mainnav a { padding: 0 9px; }
+}
+
+@media (max-width: 740px) {
+  /* 플라스크 아이콘만 남긴다. `.cv`(펼침 화살표)는 `〈296〉`-㉰ 로 마크업에서 걷혀
+     여기 규칙이 필요 없다 — 없는 요소를 가리키는 선택자를 남기지 않는다. */
+  .labswitch .ln { display: none; }
+  .labswitch { max-width: none; gap: 0; padding: 0 9px; }
+  .gnb-upload .lbl { display: none; }   /* 화살표 아이콘만 */
+  .gnb-upload { padding: 0 11px; gap: 0; }
+  .mainnav { margin-left: 2px; }
+}
+
+@media (max-width: 560px) {
+  .gnb { padding: 0 10px; gap: 4px; }
+  /* **주 내비 라벨은 여기서도 지킨다.** 넘치면 감추지 않고 가로로 굴린다 (목업 :163~168) */
+  .mainnav { overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .mainnav::-webkit-scrollbar { display: none; }
+  .mainnav a { padding: 0 7px; white-space: nowrap; }
+}
+
+/* ===== 좁은 화면 (아이폰 375px) — 기기 고유의 것만 남긴다 =====
+   ⚠ 종전의 `.gnb .lbl { display: none }` 은 **위 사다리가 대신한다** — 여기서 다시 감추면
+     주 내비 라벨이 또 사라진다. 이 블록에는 노치·확대 방지처럼 **폭이 아니라 기기**가
+     이유인 것만 남긴다. */
+@media (max-width: 640px) {
+  /* 노치·홈 인디케이터 안쪽 여백 (viewport-fit=cover) */
+  .gnb {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  .appmain { padding-bottom: env(safe-area-inset-bottom); }
+  /* iOS 가 포커스에서 자동 확대하지 않게 입력 글자를 16px 아래로 두지 않는다 */
+  input, select, textarea { font-size: 16px; }
+  .avatar { gap: 2px; padding: 0 6px; }
+  /* 로그아웃은 아이콘이 없다 — 감추면 모바일에서 나가는 길이 사라진다. 좁히기만 한다. */
+  .gnb-logout { margin-left: 4px; padding: 0 6px; }
+}

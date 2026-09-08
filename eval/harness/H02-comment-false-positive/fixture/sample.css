@@ -1,0 +1,10 @@
+/* 표본 CSS — 주석 안에 옛 값을 남겨 둔 파일.
+   ※ 아래 주석의 값은 코드가 아니다: font-size: 9px; color: #848c94; background: #ffffff; */
+
+.a { font-size: 11px; color: #697077; background: #ffffff; }
+
+/* 옛 값 보관 — 종전 .b 는 font-size: 10px 였다 */
+.b { font-size: 14px; color: #121619; background: #ffffff; }
+
+/* 대비 메모 — #848c94 on #ffffff → 3.41:1 (AA 미달이라 쓰지 않았다) */
+.c { font-size: 13px; color: #565c63; background: #ffffff; }

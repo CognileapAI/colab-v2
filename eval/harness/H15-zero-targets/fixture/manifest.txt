@@ -1,0 +1,4 @@
+services/core-api/app.py
+services/core-api/ports/blobs.py
+frontend/src/main.tsx
+gates/run.sh

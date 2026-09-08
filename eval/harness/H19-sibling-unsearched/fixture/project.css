@@ -1,0 +1,531 @@
+/* S-02 · S-02b — 색·간격의 정본은 공통 기반(E-00)이다. 여기서 새 색을 만들지 않는다.
+   이 에픽에는 AI 행동이 없으므로 **크림슨 요소를 두지 않는다** (§8 색). */
+
+/* BF-11 — 이 화면에만 쓰는 값. 셸 정본(`shell/tokens.css`)에 없는 이름만 여기 적는다
+   (`detail.css`·`catalog.css` 머리 `:root` 와 같은 관례). 값은 그 두 파일의 것을 그대로 옮겼다.
+   종전에는 이 자리가 없어 `--line`·`--fg-muted`·`--surface`·`--fg`·`--surface-2`·`--warn` 이
+   **어디에도 정의되지 않은 채** 폴백 리터럴로만 그려졌고(정본과 미묘하게 어긋난 색),
+   폴백이 없던 `--color-gray-100`·`--color-success-*`·`--radius-pill` 은 선언째 버려졌다. */
+:root {
+  --color-gray-100: #e8ecf2;
+  --color-surface-alt: #f4f7fb;
+  --color-success-50: #efffef;
+  /* 성공 계열 테두리 — 집 토큰에 없는 한 칸이다. 종전 폴백 값을 그대로 이름 붙였다 */
+  --color-success-100: #cde9d6;
+  --color-success-600: #067506;
+  --color-warning-600: #a85400;
+  --text-h2: 24px;
+  --radius-pill: 9999px;
+}
+
+/* 버그 1·9 — 화면 뿌리가 자기 여백을 직접 갖는 관례(`catalog.css:24`·`detail.css:27`)를
+   여기만 빠뜨렸었다. 카드·제목이 뷰포트 좌단에 붙고(bug01), 상세는 카드 면 없이
+   raw HTML 수준으로 보였다(bug09). 데이터셋 상세와 같은 값으로 맞춘다. */
+.project-page {
+  padding: 24px 20px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.project-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+.project-page .page-head h1 {
+  font-size: var(--text-h2);
+  margin: 0;
+  letter-spacing: -0.023em;
+}
+
+.project-detail .pd-head h1 {
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.project-page .page-head,
+.project-detail .pd-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.project-page .page-head .desc {
+  flex-basis: 100%;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.pj-new {
+  margin-left: auto;
+}
+
+/* ── 툴바 — 조건은 목록 위 한 줄에 모인다 (§8) ─────────────────────────────── */
+.pj-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.pj-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.pj-views button {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pj-views button.on {
+  background: var(--color-gray-100);
+  font-weight: 600;
+}
+
+.pj-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── 카드 — 모든 카드가 같은 높이다 (§5 카드 높이) ─────────────────────────── */
+.pj-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.pcard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 닫힘은 배경을 한 단계 낮춘다. **투명도로 흐리게 만들지 않는다** —
+   저시력·고대비 환경에서 안 읽히고 비활성인지 로딩인지도 구분되지 않는다 (§5) */
+.pcard[data-closed='true'] {
+  background: var(--color-surface-alt);
+}
+
+.pc-body {
+  flex: 1;
+  padding: 14px;
+}
+
+.pc-t {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+
+.pc-m {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.pc-d {
+  font-size: 13px;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pc-d.is-empty {
+  color: var(--color-gray-400);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+/* 지표 타일 — 1px 간격이 헤어라인 구분선이 된다 */
+.pc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-border);
+}
+
+.pc-s {
+  background: var(--color-gray-100);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.pc-s .n {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pc-s .k {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pc-s[data-zero='true'] .n {
+  color: var(--color-gray-400);
+}
+
+.pc-s[data-warn='true'] .n {
+  color: var(--color-warning-600);
+}
+
+/* 이동 안내 — 면을 따로 칠하지 않아 카드 배경을 그대로 물려받는다 (§5) */
+.pc-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── 표 ────────────────────────────────────────────────────────────────────── */
+.pj-table,
+.pj-ds {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pj-table th,
+.pj-table td,
+.pj-ds th,
+.pj-ds td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pj-table tbody tr,
+.pj-ds tbody tr {
+  cursor: pointer;
+}
+
+.pj-table td[data-warn='true'] {
+  color: var(--color-warning-600);
+  font-weight: 600;
+}
+
+.pj-ds .right {
+  text-align: right;
+}
+
+.pj-ds .lin-none {
+  color: var(--color-warning-600);
+}
+
+/* ── 상세 ──────────────────────────────────────────────────────────────────── */
+.project-detail .card {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.pd-sect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pd-sect h2 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.pd-sect .quiet {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  font-size: 13px;
+  margin: 10px 0 0;
+}
+
+.pd-desc.is-empty {
+  color: var(--color-gray-400);
+}
+
+.pd-linkurl {
+  word-break: break-all;
+  font-size: 13px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.pc-m .chip,
+.pd-m .chip {
+  margin-left: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   F-03 새 프로젝트 · F-04 정보 수정 · F-05 닫기 확인 (목업 `프로젝트_260817.html`)
+
+   **전체 화면 모달이 아니다** — 업로드(S-04)만 전체 화면이고(`Policy_업로드와_계보_확정 §7`),
+   이 셋은 폼 한 벌짜리 가운데 모달이다. 목업의 `.modal-back`/`.modal` 골격 그대로다.
+   ══════════════════════════════════════════════════════════════════════════ */
+.pj-modal-back {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(15 20 28 / 45%);
+  z-index: 40;
+}
+
+.pj-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.pj-modal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pj-modal-h h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.pj-x {
+  border: 0;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.pj-modal-b {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.pj-modal-f {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── 폼 칸 ─────────────────────────────────────────────────────────────── */
+.pj-row {
+  margin-bottom: 14px;
+}
+
+.pj-row label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pj-inp,
+.pj-tarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.pj-tarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.pj-readonly {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pj-seg {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pj-seg button {
+  padding: 6px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pj-seg button.on {
+  background: var(--color-gray-100);
+  font-weight: 600;
+}
+
+.pj-2col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pj-tilde {
+  color: var(--color-gray-400);
+}
+
+.pj-hint,
+.pj-muted {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: var(--color-gray-400);
+}
+
+/* 정의·범위 안내 — **새 프로젝트 모달에만** 있다 (§8) */
+.pj-defnote {
+  margin: -6px 0 14px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  background: var(--color-surface-alt);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* 연결 주소 묶음 — 설명·기간과 **다른 카드**다 (§1.2·§8) */
+.pj-fgroup {
+  margin: 4px 0 14px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.pj-fgroup-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pj-fgroup-h .t {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 대상 블록 — 무엇을 고치거나 닫는지가 폼 위에 먼저 온다 */
+.pj-target {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--color-surface-alt);
+}
+
+.pj-tn {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pj-tm {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--color-gray-400);
+}
+
+/* **잔존 안내가 먼저다** — 가장 큰 걱정을 누르기 전에 없앤다 (§8 닫기 확인 행) */
+.pj-keepbox {
+  padding: 11px 12px;
+  border: 1px solid var(--color-success-100);
+  border-radius: 6px;
+  background: var(--color-success-50);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pj-closebody {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.pj-err,
+.pd-notice {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--color-warning-600);
+}
+
+/* `자리`(span)였던 것이 실물 버튼이 됐다 — 브라우저 기본 테두리·배경을 걷어
+   **조용한 버튼**의 생김새를 그대로 유지한다 (§8 「조용한 버튼으로 둔다」). */
+.pj-new,
+.quiet {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* 소속 데이터셋 표의 Verified 칸 — **카탈로그와 같은 표기**다 (`〈282〉`-㉮ 규칙 확장 · 검수 #8).
+   ⚠ 규칙을 여기 다시 적는 것은 중복이 아니라 **경계**다. `catalog.css` 는 카탈로그 화면에서만
+   실리고(`routes/DatasetsPage.tsx`), 이 화면은 그것을 싣지 않는다. 전역 이름을 빌려 쓰다
+   폭이 새어 나간 것이 검수 #25 였다 — 선택자를 `.project-detail` 안으로 묶어 둔다. */
+.project-detail .verified {
+  display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill);
+  padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1;
+  background: var(--color-success-50); color: var(--color-success-600);
+}
+.project-detail .verified--pending {
+  background: var(--color-gray-100); color: var(--color-gray-500);
+  text-decoration: line-through; cursor: not-allowed;
+}
