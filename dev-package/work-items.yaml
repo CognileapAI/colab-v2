@@ -3099,13 +3099,13 @@ items:
 
   - id: WU-D5
     name: eval/harness/run.sh 러너 ＋ 과제 형식 {task.md,fixture/,expect.sh} ＋ README 행 (하네스 eval Q1·Q4·Q6~Q9·Q11)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["Ted intent 2건 커밋(승인)"]
     depends_on: []
     completion_def: "run.sh: 과제 전수 · 세 파일 부재 → 78 · 과제 0건 → 1 · 상한 변수(COLAB_EVAL_TIMEOUT·COLAB_EVAL_BUDGET) 미선언 → 78 · claude -p --allowedTools <read-only 표> --no-session-persistence --add-dir <fixture> --max-budget-usd · 2회 2/2 green · 1/2 불안정 red · timeout/예산 초과 78 · 요약줄 5칸 ＋ p50/p95/USD · results/<회차>/ · tests/run-selftest.sh 6케이스(claude 스텁 · 모델 호출 0) · eval/README.md 한 행 · eval/harness/README.md(allowed 표 · 상한 [미측정])"
-    evidence: "[미집행]"
+    evidence: "eval/harness/{run.sh,allowed.txt,README.md,_template/,tests/run-selftest.sh} · eval/README.md 1행 · selftest 7/7(스텁 · 모델 호출 0 · 오케스트레이터 재실행 green) · 게이트 exec-bit·planning-freshness·work-item-consistency green · advisor ② 조건부 수용 → 조건 2 반영(is_error/subtype≠success → red(준비) · 문면 --output-format json 정정) · 노트 dev-package/sessions/rd-eval-runner-20260908.md · 비용 필드·allowedTools 공백 처리 [미상] → D6 첫 실측에서 종결"
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-eval-runner · 순서 5/7 · D1 과 병렬 가능(기본 직렬) · --max-turns 부재(claude 2.1.263)"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
