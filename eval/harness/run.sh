@@ -13,6 +13,7 @@
 # 판정 (과제당 2회 · intent Q8):
 #   2/2 통과 → green · 1/2 → red(판정 · 「불안정 — 과제 설계 결함」) · 0/2 → red(판정 · 「실패」)
 #   시간·예산 상한 초과, 세 파일 부재, 러너가 답을 얻지 못함 → **red(준비 · 78)**. skip 이 아니다.
+#   `is_error:true` · `subtype != success` 도 red(준비) — rc 0 이고 본문이 기대와 맞아도 판정하지 않는다.
 #   과제 0건 → red(판정 · 1). 「대상이 없어 통과」를 만들지 않는다 (CLAUDE.md §4).
 #
 # exit — 0 green · 1 red(판정) · 78 red(준비).
@@ -70,7 +71,8 @@ if [ "$N_TASK" -eq 0 ]; then
   judg_red "과제 **0건**이다 (뿌리 $TASKS_DIR${COLAB_EVAL_ONLY:+ · COLAB_EVAL_ONLY=$COLAB_EVAL_ONLY}). 통과가 아니라 전수가 빗나간 것이다 — 과제 형식은 eval/harness/H??-<이름>/{task.md,fixture/,expect.sh} 다."
 fi
 
-RUN_ID="$(date +%Y%m%d-%H%M)"
+# 초 단위 — 같은 분에 두 번 돌려도 앞 회차를 덮지 않는다(advisor ② 권고).
+RUN_ID="$(date +%Y%m%d-%H%M%S)"
 OUT="$RESULTS_ROOT/$RUN_ID"
 mkdir -p "$OUT" || ready_red "$OUT" "결과 자리를 만들지 못했다."
 
@@ -137,14 +139,18 @@ for d in "${TASKS[@]}"; do
       break
     fi
 
-    # `--output-format json` 은 결과 한 벌을 낸다(`claude --help` 실측). 응답 본문과 비용을 거기서 꺼낸다.
+    # `--output-format json` 은 결과 한 벌을 낸다(`claude --help` 실측). 응답 본문·비용·오류 여부를 거기서 꺼낸다.
     # ⚠ 필드 이름(`result`·`total_cost_usd`)은 **첫 실측(D6) 전까지 미확정**이다 — 없으면 원문을 그대로
     #   쓰고 비용은 `[미상]` 으로 남긴다. 지어내지 않는다.
-    cost="$(python3 - "$raw" "$txt" <<'PY'
+    # ⭑ ⟨증보 2026-09-08 · advisor ②⟩ `result` 만 읽으면 **오류 결과가 green 이 된다** —
+    #   `{"is_error":true,"result":"<기대와 맞는 문장>"}` 에 rc 0 이면 `expect.sh` 가 통과했다.
+    #   `is_error`·`subtype` 을 함께 읽어 그 회차를 red(준비)로 돌린다(시험 ⓖ).
+    # 출력 = `<USD>\t<오류 subtype 또는 빈 칸>` 한 줄.
+    meta="$(python3 - "$raw" "$txt" <<'PY'
 import json, sys
 raw_path, txt_path = sys.argv[1], sys.argv[2]
 data = open(raw_path, encoding='utf-8', errors='replace').read()
-text, cost = data, ''
+text, cost, err = data, '', ''
 try:
     obj = json.loads(data)
 except Exception:
@@ -156,16 +162,29 @@ if isinstance(obj, dict):
         if isinstance(obj.get(k), (int, float)):
             cost = repr(float(obj[k]))
             break
+    # 오류 판별 두 갈래. 필드가 아예 없는 것은 오류가 아니다(정상 응답에 subtype 이 없을 수 있다).
+    if obj.get('is_error') is True:
+        err = str(obj.get('subtype', '[미상]'))
+    elif 'subtype' in obj and obj.get('subtype') != 'success':
+        err = str(obj.get('subtype'))
 open(txt_path, 'w', encoding='utf-8').write(text)
-print(cost)
+print('%s\t%s' % (cost, err.replace('\t', ' ').replace('\n', ' ')))
 PY
 )"
+    cost="${meta%%$'\t'*}"
+    errsub="${meta#*$'\t'}"
     if [ -n "$cost" ]; then
       printf '%s\n' "$cost" >> "$COST_FILE"
       task_cost="${task_cost:+$task_cost/}$cost"
     else
       COST_UNKNOWN=1
       task_cost="${task_cost:+$task_cost/}[미상]"
+    fi
+
+    # 오류 결과는 `expect.sh` 에 넘기지 않는다 — 본문이 기대와 맞아도 판정 재료가 아니다.
+    if [ -n "$errsub" ]; then
+      task_ready="claude 오류 결과(subtype=$errsub) — ${n}회차 · rc=0 이어도 판정하지 않는다"
+      break
     fi
 
     if bash "$d/expect.sh" < "$txt" > "$OUT/$id.expect.$n.txt" 2>&1; then
@@ -228,6 +247,8 @@ SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTA
 
 rm -f "$SECS_FILE" "$COST_FILE" "$ROWS_FILE"
 
+# 허용 도구 정본 경로를 요약과 함께 낸다 — 정본이 바꿔치기되면 출력에서 보인다(advisor ② 권고).
+echo "허용 도구 정본: $ALLOWED_FILE"
 echo "$SUMMARY"
 echo "근거: ${OUT#"$HARNESS_DIR/"} (summary.md · H??.out.{1,2}.txt)"
 

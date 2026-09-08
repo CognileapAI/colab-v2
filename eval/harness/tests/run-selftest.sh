@@ -4,15 +4,17 @@
 # ⚠ **실제 모델 호출 0회.** `claude` 를 임시 디렉터리의 스텁으로 갈아끼우고 `PATH` 앞에 둔다.
 #   러너가 절대경로로 `claude` 를 부르면 이 시험은 성립하지 않는다 — 그것도 이 시험이 잡는다.
 #
-# 케이스 6 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 7 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 과제 0건                                  → exit 1  (red(판정) · green-by-skip 금지)
 #   ⓑ `expect.sh` 부재                          → exit 78 (red(준비) · 판정 재료 부재)
 #   ⓒ 상한 변수 미선언                          → exit 78 (red(준비) · 관대한 기본값 금지)
 #   ⓓ 스텁 1회차 green · 2회차 red              → exit 1  ＋ 출력에 「불안정」
 #   ⓔ 2/2 green                                 → exit 0  ＋ 요약줄 5칸(과제·실행·green·불안정·준비)
 #   ⓕ 스텁 sleep > COLAB_EVAL_TIMEOUT           → exit 78 (red(준비) · 상한 초과는 skip 이 아니다)
+#   ⓖ `is_error:true` ＋ 본문은 기대와 일치     → exit 78 (red(준비) · 오류 페이로드 · rc 0)
 #
-# ⓐ·ⓑ·ⓒ·ⓕ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 넷이 존재 이유다.
+# ⓐ·ⓑ·ⓒ·ⓕ·ⓖ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 다섯이 존재 이유다.
+# ⓖ 는 advisor ② 가 재현한 구멍이다 — `rc 0` ＋ `result` 본문이 기대와 맞으면 오류 결과도 2/2 green 이 됐다.
 set -uo pipefail
 
 HARNESS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -38,6 +40,11 @@ cat >/dev/null
 case "${STUB_MODE:-green}" in
   slow)
     sleep "${STUB_SLEEP:-5}"
+    ;;
+  errpayload)
+    # advisor ② 재현 — rc 0 · 본문은 기대(OK-MARKER)와 일치하지만 결과 자체가 오류다.
+    printf '{"is_error":true,"subtype":"error_during_execution","result":"OK-MARKER — 판정 완료","total_cost_usd":0.01}\n'
+    exit 0
     ;;
   flaky)
     n=0
@@ -129,6 +136,23 @@ fi
 run_case "$T_OK" COLAB_EVAL_TIMEOUT=1 COLAB_EVAL_BUDGET=0.50 STUB_MODE=slow STUB_SLEEP=4
 check "ⓕ sleep 4s > COLAB_EVAL_TIMEOUT=1" 78 "$RC"
 
+# ── ⓖ 오류 페이로드(is_error:true · rc 0) → red(준비 · 78) ──────────────────
+# 본문은 expect.sh 의 정규식과 일치한다. 그래도 green 이 되면 안 된다 — 결과가 오류이기 때문이다.
+run_case "$T_OK" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 STUB_MODE=errpayload
+if check "ⓖ is_error=true ＋ 본문은 기대와 일치" 78 "$RC"; then
+  SUM_G="$(printf '%s\n' "$OUT" | grep -E '^과제 [0-9]+ · 실행 [0-9]+ · green [0-9]+ · 불안정 [0-9]+ · 준비 [0-9]+' | tail -1)"
+  if [ -z "$SUM_G" ]; then
+    red "ⓖ — 요약줄 5칸이 없다:
+$(printf '%s\n' "$OUT" | sed 's/^/     /')"
+  else
+    echo "     요약줄: $SUM_G"
+    printf '%s' "$SUM_G" | grep -q 'green 0 · 불안정 0 · 준비 1' \
+      || red "ⓖ — 오류 페이로드가 준비 칸으로 세어지지 않았다: $SUM_G"
+  fi
+  printf '%s' "$OUT" | grep -q 'claude 오류 결과(subtype=error_during_execution)' \
+    || red "ⓖ — exit 78 은 맞으나 사유에 subtype 이 없다(원인을 이름으로 내지 않았다)."
+fi
+
 # ── allowed.txt 정본 한 자리 — README 가 같은 표를 담고 있는가 ───────────────
 ALLOWED="$HARNESS_DIR/allowed.txt"
 README="$HARNESS_DIR/README.md"
@@ -146,7 +170,7 @@ else
 fi
 
 if [ "$FAILED" -ne 0 ]; then
-  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/6)."
+  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/7)."
   exit 1
 fi
-echo "run-selftest green — 검사 6건 전건 기대대로 (green 1 · red(판정) 2 · red(준비) 3 · 모델 호출 0회)."
+echo "run-selftest green — 검사 7건 전건 기대대로 (green 1 · red(판정) 2 · red(준비) 4 · 모델 호출 0회)."

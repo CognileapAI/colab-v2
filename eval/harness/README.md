@@ -30,7 +30,7 @@ COLAB_EVAL_TIMEOUT=180 COLAB_EVAL_BUDGET=0.50 COLAB_EVAL_ONLY=H01 bash eval/harn
 |---|---|---|
 | green | 0 | 모든 과제가 **2/2** 통과 |
 | red(판정) | 1 | 과제 0건 · 1/2 「불안정 — 과제 설계 결함」 · 0/2 「실패」 |
-| red(준비) | 78 | 상한 변수 미선언 · `task.md`/`fixture/`/`expect.sh` 부재 · 시간·예산 상한 초과 · `claude` 비정상 종료 |
+| red(준비) | 78 | 상한 변수 미선언 · `task.md`/`fixture/`/`expect.sh` 부재 · 시간·예산 상한 초과 · `claude` 비정상 종료 · **결과가 오류**(`is_error:true` · `subtype != success`) |
 
 - **2회 실행 · 2/2 만 통과**(intent Q8). 비결정을 허용하면 재는 것이 하네스가 아니라 운이 된다.
 - 요약줄 — `과제 N · 실행 M · green N · 불안정 N · 준비 N · 초 p50 X/p95 Y · USD 합 Z`.
@@ -100,10 +100,16 @@ eval/harness/H<번호>-<이름>/
 (`text` 출력에 비용이 없다). 응답 본문은 JSON 의 `result` 에서 꺼내 `expect.sh` 의 stdin 으로 넘기므로
 `expect.sh` 가 보는 것은 `text` 로 돌렸을 때와 같다.
 
+⭑ ⟨증보 2026-09-08 · advisor ②⟩ 러너는 `result` 만 읽지 않는다 — `is_error:true` 이거나 `subtype` 이 있고
+`success` 가 아니면 그 회차를 **red(준비)** 로 돌리고 `expect.sh` 에 넘기지 않는다. 사유는 `claude 오류 결과(subtype=<값>)`.
+그 검사가 없으면 `{"is_error":true,"result":"<기대와 맞는 문장>"}` ＋ rc 0 이 **2/2 green** 이 된다(시험 ⓖ).
+
 ## 결과
 
-`eval/harness/results/<YYYYMMDD-HHMM>/` — `summary.md`(과제별 판정·초·USD 표 ＋ 요약줄) ·
+`eval/harness/results/<YYYYMMDD-HHMMSS>/` — `summary.md`(과제별 판정·초·USD 표 ＋ 요약줄) ·
 `H??.out.{1,2}.txt`(응답 본문) · `H??.raw.{1,2}.json`(원문) · `H??.err.{1,2}.txt`.
+회차 이름은 **초 단위**다(⟨증보 2026-09-08⟩ 종전 ~~`<YYYYMMDD-HHMM>`~~ — 같은 분에 두 번 돌리면 앞 회차를 덮었다).
+러너는 요약 직전에 `허용 도구 정본: <경로>` 한 줄을 낸다 — 정본이 바꿔치기되면 출력에서 보인다.
 
 **이 폴더는 커밋한다**(`.gitignore` 에 넣지 않는다). 승격 조건이 **3회 연속 2/2 green**(intent Q10)이라
 회차 기록이 체크아웃을 넘어 남아야 하고, `eval/` 의 선례도 실측 산출을 추적한다
@@ -112,7 +118,7 @@ eval/harness/H<번호>-<이름>/
 ## 시험
 
 ```bash
-bash eval/harness/tests/run-selftest.sh    # 6/6 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
+bash eval/harness/tests/run-selftest.sh    # 7/7 · 실제 모델 호출 0회(claude 를 PATH 스텁으로 대체)
 ```
 
 ## 자리
