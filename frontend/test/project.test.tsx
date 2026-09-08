@@ -235,12 +235,14 @@ describe('§5 표 보기 — 견줄 때의 자리', () => {
   it('보기를 바꿔도 거른 결과와 정렬 순서는 그대로다 (§8 보기 전환)', async () => {
     renderList();
     await select(await screen.findByLabelText('정렬'), '데이터셋 많은 순');
-    // 다시 세운 목록이 자리를 잡을 때까지 기다린다 — 갈아타는 도중을 재면 오라클이 아니다
+    // p1은 기본 정렬에서도 첫째다. 전체 순서(12·8·5·3건)가 바뀐 뒤 비교한다.
     await waitFor(() =>
-      expect(screen.getAllByTestId(/^project-card-/)[0]).toHaveAttribute(
-        'data-testid',
+      expect(screen.getAllByTestId(/^project-card-/).map((c) => c.getAttribute('data-testid'))).toEqual([
         'project-card-p1',
-      ),
+        'project-card-p2',
+        'project-card-p3',
+        'project-card-p4',
+      ]),
     );
     const cardOrder = screen
       .getAllByTestId(/^project-card-/)
