@@ -92,6 +92,8 @@ export function PreviewPanel(props: {
   const [palette, setPalette] = useState('');
   const [classCount, setClassCount] = useState(DEFAULT_CLASS_COUNT);
   const [job, setJob] = useState<RenderJob | null>(null);
+  const [requesting, setRequesting] = useState(false);
+  const [loadedImage, setLoadedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tileExpired, setTileExpired] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
@@ -179,6 +181,9 @@ export function PreviewPanel(props: {
     // **한 번에 하나만 그린다.** 회차를 올리는 순간 앞선 요청·조회의 응답은 전부 버려진다
     //  — 바꿔 그리기가 겹쳐 그리기가 되지 않는 자리다(`upload-preview-poll-20260903` 규약).
     const gen = ++pollGen.current;
+    setRequesting(true);
+    setJob(null);
+    setLoadedImage(null);
     setError(null);
     setTileExpired(false);
     setUnreachable(false);
@@ -201,12 +206,14 @@ export function PreviewPanel(props: {
         files: loadFiles,
       });
       if (pollGen.current !== gen) return;
+      setRequesting(false);
       if (piece) setFallbackPiece(piece);
       setJob(started);
       props.onRender?.({ renderId: started.renderId, withoutReferenceGrid });
       poll(started.renderId, gen);
     } catch {
       if (pollGen.current !== gen) return;
+      setRequesting(false);
       // 그리는 서버에 닿지 못했다 — **등록은 그대로 진행된다**(`§E.2-⑩`)
       setUnreachable(true);
       setError(UNAVAILABLE);
@@ -230,7 +237,7 @@ export function PreviewPanel(props: {
   }
 
   // 조회 실패 뒤 서버의 마지막 진행 상태를 현재 진행으로 표시하지 않는다.
-  const drawing = job?.status === '그리는 중' && !error;
+  const drawing = (requesting || job?.status === '그리는 중') && !error;
   const done = job?.status === '완료';
   // **실패는 200 + `failure`** 다. HTTP 상태로 판정하지 않는다.
   const failure = job?.status === '실패' ? job.failure : undefined;
@@ -447,7 +454,7 @@ export function PreviewPanel(props: {
       {drawing && (
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">
           <span className="spin" aria-hidden="true" />
-          <span>{job?.stage ?? ''}…</span>
+          <span>{requesting ? '미리보기 요청 중' : job?.stage ?? '지도 그리는 중'}…</span>
         </div>
       )}
 
@@ -470,6 +477,11 @@ export function PreviewPanel(props: {
           여기서 오류 자리로 보내지 않는다. 배지가 좌표의 출처를 화면이 말하게 한다(`K-4`) */}
       {result && (
         <div className="mapcanvas" data-testid="up-preview-map">
+          {previewImageSrc(result) && loadedImage !== previewImageSrc(result) && !tileExpired && (
+            <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-image-loading">
+              <span className="spin" aria-hidden="true" />그림 불러오는 중…
+            </div>
+          )}
           <div className="pv-badges">
             {result.precisionBadge ? (
               <span className="chip" data-testid="up-preview-badge">
@@ -519,7 +531,10 @@ export function PreviewPanel(props: {
                   /* 계약이 `oneOf` 라 갈래마다 다른 자리다 — 단일 이미지(stage 1)와 타일(stage 2) */
                   data-testid={result.imageUrl ? 'up-preview-image' : 'up-preview-tile'}
                   src={previewImageSrc(result)}
-                  onLoad={zoom.onImageLoad}
+                  onLoad={(event) => {
+                    zoom.onImageLoad(event);
+                    setLoadedImage(previewImageSrc(result) ?? null);
+                  }}
                   onError={() => setTileExpired(true)}
                 />
               </div>
@@ -529,7 +544,7 @@ export function PreviewPanel(props: {
           <PreviewZoomControls zoom={zoom} testId="up-preview-zoom" />
           {tileExpired && (
             <div className="vizerr" role="alert" aria-live="assertive" data-testid="up-preview-expired">
-              타일 주소의 수명이 다했어요. 미리보기를 다시 그려 주세요.
+              그림을 불러오지 못했어요. 미리보기를 다시 그려 주세요.
             </div>
           )}
         </div>

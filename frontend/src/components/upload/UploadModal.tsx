@@ -292,6 +292,10 @@ export function UploadModal(props: {
       return;
     }
     let alive = true;
+    // 새 접수 동안 이전 파일의 ready·그림을 등록 근거로 쓰지 않는다.
+    setUploadId(null);
+    setStatus(null);
+    setRendered(null);
     setIntakeError(null);
     // ⚠ **실패로 무장한 재개는 파일이 바뀌면 버린다.** 안 버리면 파일을 바꿔 다시 하려는
     //    사람에게 「이어올리려면 같은 파일을 다시 골라야 해요」가 뜬다 — 그는 바꾸려던 것이다.
@@ -1054,6 +1058,7 @@ export function UploadModal(props: {
             <div className="up-split" data-testid="up-split">
               <div className="up-split-preview" data-testid="up-split-preview">
               <PreviewPanel
+                key={signature}
                 source={props.sources.preview}
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}

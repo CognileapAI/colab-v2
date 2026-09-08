@@ -29,6 +29,41 @@ function startUpload(status: UploadSources['upload']['status']) {
 }
 
 describe('진행 상태 조회 실패 복구', () => {
+  it('렌더 접수 응답을 기다리는 동안에도 진행 상태를 표시한다', async () => {
+    const source = {
+      palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
+      createRender: () => new Promise(() => {}),
+    } as unknown as PreviewSource;
+    render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
+    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    expect(screen.getByTestId('up-preview-stage')).toHaveTextContent('미리보기 요청 중');
+  });
+
+  it('서버 렌더 완료 후 실제 이미지 로드까지 진행 안내를 유지한다', async () => {
+    const source = {
+      palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
+      createRender: async () => ({ renderId: ID, status: '완료',
+        result: { imageUrl: '/preview.png' } }),
+      getRender: () => new Promise(() => {}),
+    } as unknown as PreviewSource;
+    render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
+    fireEvent.click(await screen.findByTestId('up-preview-draw'));
+    const img = await screen.findByTestId('up-preview-image');
+    expect(screen.getByTestId('up-preview-image-loading')).toBeInTheDocument();
+    fireEvent.load(img);
+    expect(screen.queryByTestId('up-preview-image-loading')).toBeNull();
+  });
+
+  it('파일 추가 전송 중 이전 분석 완료 상태를 사용하지 않는다', async () => {
+    const { create } = startUpload(vi.fn().mockResolvedValue(ready));
+    await waitFor(() => expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '3'));
+    create.mockImplementationOnce(() => new Promise(() => {}));
+    fireEvent.change(screen.getByTestId('up-drop-input'), {
+      target: { files: [new File(['next'], 'second.nc')] },
+    });
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '1');
+  });
   it('렌더 조회 실패를 알린 뒤 그리는 중 표시를 끝낸다', async () => {
     const source = {
       palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
