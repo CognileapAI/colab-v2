@@ -306,7 +306,7 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 ## 4. 블로커 (사람이 풀어야 할 것)
 
 ⭑ **⟨증보 2026-09-08 · R-D⟩ R-D 후속·인계 10건은 `dev-package/sessions/R-D-ROUND-20260908.md §7` 한 자리에 있다** — 차단 = **Ted 회부 3건**(하네스 eval 측정 대상 정의 · red 5건 재설계 승인 · `.verified--pending` 대비 4.23:1 검사 공백) ＋ **CI 시크릿 발급**(`secrets.ANTHROPIC_API_KEY`).
-⭑ **⟨증보 2026-09-08 · 창 10⟩ 열린 것 2건** — ⑴ 태그 `dev-20260908-1`(→ `ccf76ecf0bb5`) **원격 push 대기** (`git push origin dev-20260908-1` · Ted 가 15/15 를 본 뒤 오케스트레이터 집행 · 비가역) ⑵ CI `schema-gates` 배선 공백 (대장 `X-8` open · `required_status_checks` 아님이라 배포 비차단). 근거 = `dev-package/sessions/WINDOW-10-20260908.md §4`·`§7`.
+⭑ **⟨증보 2026-09-08 · 창 10⟩ 열린 것 2건** — ⑴ 태그 `dev-20260908-1`(→ `ccf76ecf0bb5`) **원격 push 완료**(2026-09-08 · Ted 판정 뒤 집행 · 원격 sha ccf76ec 대조 일치 · 열린 것 → 닫힘) ⑵ CI `schema-gates` 배선 공백 (대장 `X-8` open · `required_status_checks` 아님이라 배포 비차단). 근거 = `dev-package/sessions/WINDOW-10-20260908.md §4`·`§7`.
 
 
 > ⭑ **⟨2026-09-05 정리⟩ 이 표에는 열린 것만 남겼다.** 닫힌 블로커 `#1`~`#38`·`#43`·`#45`~`#68` 의 행은 **원문 그대로** `dev-package/archive/HANDOFF-HISTORY-2026-08.md`·`-2026-09.md` 에 있다 — 번호로 `grep`.
