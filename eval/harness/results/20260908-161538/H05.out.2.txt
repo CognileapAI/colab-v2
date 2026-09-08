@@ -1,0 +1,10 @@
+지적은 v2 코드에 해당하지 않는다. `.lin-picker` 계열 규칙은 두 개뿐이고, 그 안에 흐리게 만드는 선언이 없다.
+
+- `.lin-picker`(105~108행): `border-top`·`padding-top` 만 선언.
+- `.lin-picker ul`(109~117행): `list-style`·`margin`·`padding`·`display`·`flex-direction`·`gap`·`align-items` 만 선언.
+- 파일 전체에서 `opacity`·`filter`·`blur`·`disabled` 는 0건. `--muted` 는 13행·79행에 있으나 `.lin-picker` 밖의 다른 선택자에 붙은 텍스트 색 토큰이고, 후보 행 흐림 처리와 무관.
+- 목업 검수가 잰 2.33:1 대비는 이 CSS 사본에서 재현할 근거가 없다. 목업 쪽 스타일이 v2 `lineage.css` 와 다른 것으로 본다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `lineage.css:105~117` 을 `sed -n` 으로 읽고 `grep -nE "opacity|filter|blur|disabled"` 결과 0건 확인

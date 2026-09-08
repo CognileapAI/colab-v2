@@ -1,0 +1,27 @@
+**결과**
+
+⑴ 덮인 선언 — `.detail-page .lin-way` 규칙(28~35행) 안에 `display` 가 두 번 있다.
+- 29행 `display: inline-flex;`
+- 33행 `display: inline-block;` (같은 규칙의 뒤 선언이라 29행이 무효)
+
+⑵ 미정의 토큰 참조 — `var()` 참조 총 58건 중 11건이 두 `:root` 어디에도 없고 폴백도 없다.
+
+| 행 | 토큰 |
+|---|---|
+| 30 | `--color-accent-50` |
+| 30 | `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200` |
+| 57 | `--color-primary-800` |
+| 83 | `--color-accent-700` |
+| 83 | `--color-accent-50` |
+| 84 | `--color-ai` |
+
+토큰 종류는 7개. 정의된 이웃 값은 `gray-50/100/400/500/600/700` · `primary-50/100/600/700` 이고, `accent-*` 와 `color-ai` 계열은 두 파일 모두 정의 없음. 22행 주석의 `min-width: 820px` 은 주석 제거 후 계측하여 제외.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 `/* */` 주석을 제거한 뒤 `tokens.css`·`detail.css` 의 `:root` 블록에서 `--x:` 정의 71개를 수집하고, `lineageGraph.css` 의 `var(--x[, fallback])` 58건을 행 단위로 대조(폴백 유무 포함) · 후보 7종은 `grep -c -- "--x\s*:"` 로 두 파일 0건 재확인

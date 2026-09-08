@@ -1,0 +1,11 @@
+인계 문서 사본의 마지막 줄은 R-B 마감 시점(2026-09-08)의 「다음」이다. 내용은 ⑴ Ted 질의 판정(확정됨) ⑵ 배포 창(staging 예행 → dev · 마이그레이션 5건) ⑶ R-C intent ⑷ `w9-dev-deploy-rebased` 처리.
+
+저장소 이력은 그 뒤로 더 나아가 있다. 요약:
+
+- **R-C 는 이미 지나갔고 R-D 회차가 진행 중이다.** `origin/main` tip 커밋이 R-D 스펙과 라운드 파일, 대장 WU-D1~D7 등재다. 그 위로 R-D-1(WU-D4 partial, WU-D1 done)과 R-D-2(WU-D5 러너 done) 커밋이 쌓였다.
+- **현재 브랜치는 `lane/wu-d6`** 이고 최신 커밋은 하네스 R-D-2 과제 H01~H20 픽스처와 `expect.sh` 다. 대장에서 WU-D6 는 아직 `open`, WU-D7·D2·D3 도 `open` 이다.
+- 인계 문서가 말한 배포 창·R-C intent 는 이 이력 어디에도 「다음」으로 남아 있지 않다. 지침 발췌 §5-b 가 경고한 바로 그 패턴(낡은 HANDOFF 를 믿고 「다음 = R-C intent」로 오판)이다.
+
+- 판정: 낡음
+- 근거: `tail -n 5 03-HANDOFF-excerpt.md` · `git log --oneline -8` · `git branch --show-current` · `grep -nE 'id: WU-D' dev-package/work-items.yaml` · b8d728f
+- 다음 단계: R-D-2 WU-D6(하네스 과제 H01~H20 ＋ 픽스처) 레인을 `lane/wu-d6` 에서 마무리해 대장 `open → done` 갱신·통합 브랜치 반입 후 WU-D7 로 진행

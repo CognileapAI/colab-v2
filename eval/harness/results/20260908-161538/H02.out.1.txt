@@ -1,0 +1,21 @@
+계측기는 주석 안의 값을 코드로 세지 않는다.
+
+**눈으로 센 값 (`sample.css` 10행)**
+
+| 위치 | 값 | 코드/주석 |
+|---|---|---|
+| 4행 `.a` | font-size 11px | 코드 → 13px 미만 |
+| 7행 `.b` | font-size 14px | 코드 → 기준 이상 |
+| 10행 `.c` | font-size 13px | 코드 → 기준 이상(≥13) |
+| 2행 | font-size 9px · #848c94 · #ffffff | 주석 |
+| 6행 | font-size 10px | 주석 |
+| 9행 | #848c94 on #ffffff | 주석 |
+
+**계측기 출력** — `<13px` 칸 1, `Detail` 에 `sample.css:4 font-size 11.0px` 한 건. 주석 안의 9px·10px 는 목록에 없고, 주석 안 대비 값(#848c94, 3.41:1)도 `contrast <4.5` 칸에 0 으로 나온다. 눈으로 센 코드분 1건과 일치한다.
+
+**동작 근거** — `css_audit.py:76` 의 `strip_comments` 가 `/* … */` 를 공백으로 치환한 뒤(줄바꿈은 유지해 행 번호 보존) 측정한다. 파일 스캔(`:82`)과 토큰 정의 수집(`:60`) 둘 다 이 함수를 거친다. 우연 통과가 아니라 구조적으로 제외한다.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "…/eval/harness/H02-comment-false-positive/fixture/css_audit.py" --root "…/eval/harness/H02-comment-false-positive/fixture"`

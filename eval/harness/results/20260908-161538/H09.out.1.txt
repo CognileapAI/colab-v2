@@ -1,0 +1,9 @@
+컨테이너 선(59행)과 칸 구분선(62행) 모두 `var(--color-border)` 를 참조한다. 두 층이 같은 토큰이라 층이 갈리지 않는다.
+
+- `.detail-page .infogrid` 컨테이너: `detail.css:59` `border: 1px solid var(--color-border)`
+- `.detail-page .infogrid .ig` 칸 구분선: `detail.css:62` `border-right / border-bottom: 1px solid var(--color-border)`
+- 반응형 분기 `detail.css:69` 도 같은 토큰 `--color-border` 사용
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

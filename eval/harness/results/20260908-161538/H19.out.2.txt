@@ -1,0 +1,25 @@
+**결론** — 승인 대기 배지의 글자 대비는 AA 합격선 4.5:1 미달이고, 같은 선언이 두 파일에 있다.
+
+**규칙 위치(디렉터리 전수 grep)**
+- `catalog.css:140` — `.verified--pending { background: var(--color-gray-100); color: var(--color-gray-500); … }`
+- `project.css:528`~`529` — `.project-detail .verified--pending { background: var(--color-gray-100); color: var(--color-gray-500); … }` (색 선언은 529행)
+
+**토큰 hex**
+- `--color-gray-500` = `#697077` (`tokens.css:10`)
+- `--color-gray-100` = `#e8ecf2` (`catalog.css:6` · `project.css:10` 각 파일 `:root` 에 동일 값)
+
+**대비 계산(WCAG 2.x 상대휘도, sRGB 선형화 후 L = 0.2126R+0.7152G+0.0722B)**
+
+| 항목 | 값 |
+|---|---|
+| 글자 `#697077` 휘도 | 0.1590 |
+| 배경 `#e8ecf2` 휘도 | 0.8247 |
+| 대비 | **4.23:1** |
+| 합격선 | 4.5:1 (AA) |
+
+두 규칙 모두 같은 토큰 쌍을 쓰므로 실측값이 동일하게 미달이다. `project.css` 는 `catalog.css` 를 싣지 않아 각 화면이 자기 선언을 따로 쓰고, 한 곳만 고치면 다른 화면의 배지는 그대로 남는다. 토큰 자체(`--color-gray-500`)를 바꾸는 방식은 그 토큰을 쓰는 다른 자리(`catalog.css:46`·`61`·`124`·`146`)에 영향을 주므로 두 규칙의 `color` 를 각각 진한 회색으로 바꾸는 것이 범위가 좁다.
+
+- 판정: 있음
+- 실측: 4.23:1
+- 고칠 자리: 2곳
+- 근거: catalog.css:140 · project.css:529

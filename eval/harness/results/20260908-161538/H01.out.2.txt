@@ -1,0 +1,5 @@
+인계 문서 사본의 「다음 = …」 줄은 R-B 마감 시점(2026-09-08 R-B) 기준으로 「Ted 질의 판정 → 배포 창 → R-C intent → `w9-dev-deploy-rebased` 처리」를 적고 있다. 저장소 이력은 그 뒤로 R-C 3회차(`R-C-3-verify.md`)와 R-D-1(브랜칭 · WU-D1·D4 done), R-D-2(하네스 eval · WU-D5 done)까지 진행됐고, 현재 브랜치 `lane/wu-d6` 최신 커밋이 WU-D6 과제 H01~H20 ＋ 픽스처 ＋ expect.sh 등재다. 라운드 파일 `R-D-2-harness-eval.md` 기준 WU-D6 잔여 = 첫 실측(20행 실측 표 · README `[미측정]` 0)이고, 그 다음 WU-D7(`harness-eval` 게이트 스텁)이 WU-D6 에 의존한다. 미추적 `eval/harness/results/` 가 실측 진행 중임을 보인다.
+
+- 판정: 낡음
+- 근거: `tail -n 5 03-HANDOFF-excerpt.md` · `git log --oneline -8` · `ls dev-package/prd/rounds/` · b8d728f
+- 다음 단계: WU-D6 잔여분(과제 20건 첫 실측 → 실측 표 20행 · README 미측정 0 · 대장 done) 마감 후 `lane/wu-d6` 를 통합 브랜치로 복귀하고 WU-D7(`harness-eval` 게이트 스텁 ＋ selftest ＋ CI 필터) 착수

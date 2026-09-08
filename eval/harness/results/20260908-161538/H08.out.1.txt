@@ -1,0 +1,14 @@
+The lines are confirmed against the file contents. Categories mapped to selectors:
+
+- **파일명 표기** (file-name display): `detail.css:101` `.filelist .fl-x` 11px (file-list extension/meta beside the name) · `upload.css:106` `.filecard .fs` 12px (file size beside the card name) · `upload.css:168` `.regsteps .rs-f` 12px (current file label in the registration steps bar)
+- **빈 화면 안내** (empty-state guidance): `lineageGraph.css:95` `.lin-empty .muted` 11px
+- **목록 링크** (list links): `lineageGraph.css:76` `.lrow .ln-name` 12px (the text inside the `.ln-go` link) · `lineageGraph.css:81` `.lrow .ln-sub` 11px (sub-line under the link)
+- **오류 본문** (error body): `upload.css:92` `.up-toast` 12px
+
+Excluded on purpose: the other sub-13px declarations (chips, badges, `.stg`/`.fl-k` labels, `.hist`, `.autotag`, `.n-role`/`.n-name`, hints) are not in the four flagged types.
+
+Already 13px and therefore untouched: the error/warning box `.vizerr, .warn` declared at `upload.css:138` with its font-size on line 144.
+
+- 지목: 7곳
+- 목록: detail.css:101 · upload.css:106 · upload.css:168 · lineageGraph.css:95 · lineageGraph.css:76 · lineageGraph.css:81 · upload.css:92
+- 무접촉(이미 13px): .vizerr, .warn 13px

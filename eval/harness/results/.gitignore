@@ -1,0 +1,8 @@
+# 추적 대상은 README 「결과」 절이 정한 셋뿐이다 —
+#   summary.md · H??.out.{1,2}.txt · H??.expect.{1,2}.txt
+# 아래 둘은 추적하지 않는다(WU-D6 판정 · advisor ② 자리).
+#   raw  = 응답 원문 JSON. 본문이 out 과 중복이고 session_id·uuid 가 회차마다 바뀌어 diff 만 늘린다.
+#          비용·초는 summary.md 표에 이미 있다.
+#   err  = 성공 회차에서 빈 파일. 실패 회차의 내용은 summary.md 「사유」 칸에 인용된다.
+*.raw.*.json
+*.err.*.txt

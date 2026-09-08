@@ -1,0 +1,5 @@
+인계 문서 사본의 「다음 =」 줄은 R-B 마감 시점 값이다. 이력은 그 뒤로 R-C(1~3)와 R-D-1 브랜칭 라운드를 지나 R-D-2 하네스 평가 라운드에 있고, 최신 커밋은 WU-D6(과제 H01~H20 ＋ 픽스처)이다. 대장 기준 WU-D1·D5 done, WU-D4 partial, WU-D2·D3·D6·D7 open이며 현재 브랜치가 `lane/wu-d6` 이다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -8` ＋ `grep -n "다음 =" 03-HANDOFF-excerpt.md` ＋ `dev-package/work-items.yaml` WU-D 상태 grep · b8d728f
+- 다음 단계: R-D-2 하네스 평가 라운드 — WU-D6(과제 H01~H20) 게이트 green 확인 후 대장 done 처리 ＋ 통합 브랜치 ff 병합, 이어서 WU-D2·D3·D7 착수

@@ -1,0 +1,15 @@
+**결론 = v2 코드에는 해당하지 않음.** 네 규칙 전부 AA(4.5:1) 통과.
+
+| 규칙 | 글자색 | 배경색 | 대비 |
+|---|---|---|---|
+| `.lvl-0` (`detail.css:51`) | `--color-gray-600` #565c63 (`detail.css:7`) | `--color-gray-100` #e8ecf2 (`detail.css:6`) | 5.70:1 |
+| `.lvl-1` (`detail.css:52`) | `--color-primary-700` #0f62e0 (`tokens.css`) | `--color-primary-50` #edf4ff (`detail.css:11`) | 4.94:1 |
+| `.lvl-2`·`.lvl-3` (`detail.css:53`) | `--color-primary-700` #0f62e0 (`tokens.css`) | `--color-primary-100` #e2eeff (`detail.css:12`) | 4.66:1 |
+
+- 계산 = WCAG 2.x 상대휘도(sRGB 선형화 · 0.2126/0.7152/0.0722 가중), 스크립트 실행값.
+- 최저 = `.lvl-2`·`.lvl-3` 4.66:1. 목업의 3.71:1 은 이 코드의 토큰 조합에서 재현되지 않음(목업 쪽 글자색이 `primary-600` 등 다른 토큰이거나 목업 자체 값일 가능성 — 이 디렉터리 실물 밖이라 미판정).
+- 유의 = 여유폭이 작음(4.66 vs 4.5). `--color-primary-100` 배경을 더 밝히거나 글자색을 `primary-600` 으로 낮추면 미달로 전환됨.
+
+- 판정: 없음
+- 실측: 4.66:1
+- 근거: detail.css:53

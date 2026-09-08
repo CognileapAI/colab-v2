@@ -1,0 +1,24 @@
+세 파일의 13px 미만 선언 중 네 유형에 해당하는 것을 실물 대조로 확정했다.
+
+**파일명 표기** (3곳)
+- `detail.css:101` — `.filelist .fl-x` 11px (파일 목록의 확장자·크기 표기)
+- `upload.css:106` — `.filecard .fs` 12px (파일 카드의 크기 표기)
+- `upload.css:168` — `.regsteps .rs-f` 12px (등록 단계 헤더의 파일명 표기)
+
+**빈 화면 안내** (1곳)
+- `lineageGraph.css:95` — `.lin-empty .muted` 11px (계보 없음 안내 하단 문구)
+
+**목록 링크** (2곳)
+- `lineageGraph.css:76` — `.lrow .ln-name` 12px (계보 목록 행의 링크 이름, `.ln-go` 앵커 안)
+- `lineageGraph.css:81` — `.lrow .ln-sub` 11px (그 링크 아래 부제)
+
+**오류 본문** (1곳)
+- `upload.css:92` — `.filecard .ferr` 블록 12px (파일 카드 오류 본문)
+
+**무접촉** — `upload.css:138` `.vizerr, .warn` 는 이미 13px 이라 고칠 자리가 아니다.
+
+네 유형 밖의 13px 미만 선언(칩·레벨 배지·필드 라벨·자동태그·힌트·역할 표기 등)은 이번 지목에서 제외했다.
+
+- 지목: 7곳
+- 목록: detail.css:101 · upload.css:106 · upload.css:168 · lineageGraph.css:95 · lineageGraph.css:76 · lineageGraph.css:81 · upload.css:92
+- 무접촉(이미 13px): .vizerr, .warn 13px

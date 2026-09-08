@@ -1,0 +1,7 @@
+인계 발췌의 「다음 = …」 줄은 R-B 마감 시점 문단이다. 그 줄은 ⑵ 배포 창 ⑶ R-C intent ⑷ `w9-dev-deploy-rebased` 처리를 다음으로 적었다.
+
+이력은 그 뒤로 두 라운드가 더 진행됐다. 최근 8커밋이 전부 R-D-1(WU-D1 · WU-D4 · `docs/BRANCHING.md`)과 R-D-2(WU-D5 러너 · WU-D6 과제 H01~H20)다. 현재 브랜치는 `lane/wu-d6` 이고 최신 라운드 파일은 `dev-package/prd/rounds/R-D-2-harness-eval.md` 다. 그 라운드 파일은 WU-D6 뒤에 WU-D7(`harness-eval` 게이트 스텁 ＋ selftest ＋ CI 필터 · 의존 = WU-D6)을 두고, 라운드 종료 뒤 「배포 창 → 재검사 → R-E」로 적었다. 인계 발췌가 말한 R-C intent 는 이미 지나간 단계다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -8` ＋ `git ls-files dev-package/prd/rounds | tail -1` · b8d728f
+- 다음 단계: R-D-2 의 WU-D6(과제 20건 ＋ 첫 실측 p95·예산) 마감 → WU-D7(`harness-eval` 게이트 세 상태 스텁 ＋ selftest ＋ CI 필터) → 라운드 종료 검증 뒤 배포 창(ship.sh 게이트 첫 실전 · 태그 dev-<날짜>-1)

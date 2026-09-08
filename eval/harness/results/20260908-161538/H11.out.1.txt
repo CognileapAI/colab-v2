@@ -1,0 +1,21 @@
+**결과**
+
+⑴ **덮인 선언** — `.detail-page .lin-way` 규칙(`lineageGraph.css:28-35`) 안에 `display` 가 두 번 있다. 29행 `display: inline-flex` 가 앞, 33행 `display: inline-block` 이 뒤. 같은 규칙·같은 특이도이므로 뒤 선언이 이기고, 29행의 `inline-flex` 와 그에 딸린 `align-items: center` 는 효과가 없다(inline-block 에서는 align-items 가 무의미). 다른 규칙에는 `display` 중복 없음(전 18개 `display` 행 중 같은 규칙 안 중복은 이 한 쌍뿐).
+
+⑵ **미정의 토큰 참조** — `lineageGraph.css` 의 `var(--…)` 참조 전수 58건 중 두 `:root`(`tokens.css:6` 26개 · `detail.css:5` 45개) 어디에도 없는 토큰 참조 **11건**, 폴백 있는 것 0건.
+
+| 토큰 | 참조 행 | 건수 |
+|---|---|---|
+| `--color-accent-50` | 30 · 83 | 2 |
+| `--color-accent-700` | 31 · 83 | 2 |
+| `--color-gray-300` | 48 · 49 | 2 |
+| `--color-primary-800` | 51 · 57 | 2 |
+| `--color-accent-200` | 30 | 1 |
+| `--color-primary-200` | 57 | 1 |
+| `--color-ai` | 84 | 1 |
+
+7개 토큰 모두 `tokens.css`·`detail.css` 전체(`:root` 밖 포함)에도 정의가 없다. 코랄(accent) 계열과 `--color-ai` 가 통째로 빠져 있어 `.lin-way`·`.aiflag` 의 배경·테두리·글자색 선언이 전부 무효다.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 `/* … */` 주석을 제거한 뒤 python 정규식으로 `lineageGraph.css` 의 `var(--x[, fallback])` 58건을 추출해 두 `:root` 블록의 `--x:` 정의 집합(71개)과 대조하고, 미정의 7개 토큰은 `grep -- "--x\s*:"` 로 두 파일 전문에서 재확인했다

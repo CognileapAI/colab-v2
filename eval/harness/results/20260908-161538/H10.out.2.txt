@@ -1,0 +1,8 @@
+주석 제거 후 재계측 결과, 실제 음수 margin 선언은 두 건이다. 나머지 grep 결과(`var(--space-5)` 류)는 커스텀 프로퍼티 이름의 `-5`가 걸린 오탐이고, 주석 안에서 걸린 음수 값은 없다.
+
+- `detail.css:93` — `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` · 앞 요소(헤더 블록)에 위로 12px 붙이는 음수 상쇄
+- `shell.css:58` — `margin-left: -7px;` · 왼쪽 인접 요소 쪽으로 7px 당기는 음수 상쇄
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

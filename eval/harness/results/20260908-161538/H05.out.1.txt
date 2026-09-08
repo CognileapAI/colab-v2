@@ -1,0 +1,7 @@
+`.lin-picker` 규칙은 2개(`lineage.css:105` `.lin-picker`, `:109` `.lin-picker ul`)이고 내용은 border-top·padding·리스트 레이아웃뿐이다. 파일 전체에 `opacity`·`filter`·`blur`·`disabled` 선언 0건. `--muted` 색 사용(13행·79행)은 픽커 밖의 텍스트 색이며 후보 행 흐림 처리가 아니다.
+
+검수 지적은 목업 쪽에만 해당하고 v2 코드에는 해당하지 않는다. v2 는 연결 불가 후보 행을 흐리게 처리하는 규칙 자체가 없으므로 2.33:1 대비 문제는 발생하지 않는다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nE "opacity|filter|blur|disabled" lineage.css` 결과 0건 · `.lin-picker` 블록 `lineage.css:105~117` 육안 확인

@@ -1,0 +1,25 @@
+`lineageGraph.css` 사본에서 주석을 제거한 뒤 `font-size: <숫자>px` 선언을 전수 대조한 결과다. 주석 안에는 `font-size` 값이 없다(`min-width: 820px` 주석은 `font-size` 가 아니라 제외). px 선언 전체 14건 중 `15px`(`.lin-arw`) 1건만 합격선 이상이고, 변수(`var(--text-h2)` 등) 선언은 px 실값이 아니라 계수 대상 밖이다.
+
+13px 미만 13건(선택자 · 값):
+
+| # | 선택자 | 값 |
+|---|---|---|
+| 1 | `.dsec-h .hint` | 11px |
+| 2 | `.lin-stale .d` | 11px |
+| 3 | `.lin-way` | 10px |
+| 4 | `.ln .n-role` | 10.5px |
+| 5 | `.ln .n-name` | 12.5px |
+| 6 | `.lin-use` | 11px |
+| 7 | `.lrow .stg` | 10px |
+| 8 | `.lrow .ln-name` | 12px |
+| 9 | `.lrow .ln-sub` | 11px |
+| 10 | `.hist` | 10px |
+| 11 | `.aiflag` | 10px |
+| 12 | `.manflag` | 10px |
+| 13 | `.lin-empty .muted` | 11px |
+
+최소값 10px 은 `.lin-way`·`.lrow .stg`·`.hist`·`.aiflag`·`.manflag` 5곳.
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

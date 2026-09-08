@@ -1,0 +1,19 @@
+The `displayLevel` helper lives outside this fixture, so I take the question's premise (values 0·1·2·3) as given.
+
+**칩 클래스 생성 자리** — `CatalogTable.tsx:162`. 템플릿 `lvl lvl-${displayLevel(row)}` 로 단계마다 `lvl-0`~`lvl-3` 이 나온다.
+
+**`catalog.css` 대응 규칙** (주석 제거 후 계측)
+
+| 선택자 | 행 | 배경·글자색 |
+|---|---|---|
+| `.lvl` | 130 | 없음 (크기·radius·폰트만) |
+| `.lvl-0` | 131 | 있음 |
+| `.lvl-1` | 132 | 있음 |
+| `.lvl-2` | 133 | 있음 |
+| `.lvl-3` | 부재 | — |
+
+공통 `.lvl` 규칙에 `background`·`color` 가 없으므로 단계 3 칩은 색을 상속받는 곳이 없다.
+
+- 판정: 있음
+- 빠진 규칙: `.lvl-3`
+- 증상: 단계 3 데이터셋의 「Lv3」 칩이 배경 없이 본문 글자색 그대로 그려져 다른 단계 칩과 달리 알약 모양이 보이지 않는다.

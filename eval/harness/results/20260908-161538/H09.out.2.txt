@@ -1,0 +1,9 @@
+Both the container border and the cell dividers reference the same token, so the two layers collapse into one.
+
+- **Container line**: the grid wrapper at `detail.css:59` declares `border: 1px solid var(--color-border)`.
+- **Cell dividers**: each cell at `detail.css:62` declares `border-right` and `border-bottom` with `var(--color-border)` as well.
+- `tokens.css` does offer distinct tokens for a stronger outer line (`--color-border-strong` at line 21, `--color-border-shell` at line 23), but the infogrid uses none of them. The responsive override at `detail.css:69` repeats the same single token.
+
+- 판정: 없음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border

@@ -1,0 +1,16 @@
+목업 검수의 지적은 v2 코드에 해당하지 않는다. Lv 칩 4종 모두 AA(4.5:1)를 통과한다.
+
+**측정 (WCAG 2.x 상대휘도, 이 코드의 토큰 hex 기준)**
+
+| 규칙 | 글자색 | 배경색 | 대비 | AA |
+|---|---|---|---|---|
+| `.lvl-0` (detail.css:51) | `--color-gray-600` #565c63 | `--color-gray-100` #e8ecf2 | 5.70:1 | 통과 |
+| `.lvl-1` (detail.css:52) | `--color-primary-700` #0f62e0 | `--color-primary-50` #edf4ff | 4.94:1 | 통과 |
+| `.lvl-2`·`.lvl-3` (detail.css:53) | `--color-primary-700` #0f62e0 | `--color-primary-100` #e2eeff | 4.66:1 | 통과 |
+
+- 토큰 출처 = `--color-primary-700` 은 `tokens.css` `:root`, `--color-gray-100`·`--color-gray-600`·`--color-primary-50`·`--color-primary-100` 은 `detail.css` `:root`(6~12행).
+- 목업의 3.71:1 은 이 코드의 어느 조합에서도 재현되지 않음. 가장 낮은 값이 4.66:1 이라 AA 여유 0.16.
+
+- 판정: 없음
+- 실측: 4.66:1
+- 근거: detail.css:53

@@ -1,0 +1,9 @@
+카드 규칙에 그림자 선언이 있다. 고칠 자리는 `.catalog-page .card` 블록 안의 `box-shadow: var(--shadow-sm)` 선언 하나다.
+
+- **지목 대상** = `catalog.css:31`. `.catalog-page .card` 규칙(29~32행) 안에서 `box-shadow: var(--shadow-sm)` 선언. 정본 「카드에 그림자를 두지 않는다」 위반.
+- **예외 유지** = `catalog.css:80` 의 `.colmenu` 규칙 `box-shadow: var(--shadow-lg)`. 팝오버·메뉴이므로 대상 아님.
+- **비대상** = `catalog.css:52` 의 `.tbl tr.clk:hover td:first-child` inset 그림자. 표 행 hover 표시선이고 카드 규칙이 아님. 50행은 transition 목록에 `box-shadow` 라는 단어만 있고 선언이 아님.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

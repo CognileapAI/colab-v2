@@ -1,0 +1,9 @@
+카드 규칙에 `box-shadow` 선언이 있다.
+
+- 고칠 곳: `.catalog-page .card` 규칙, 31행의 `box-shadow: var(--shadow-sm);` 선언. 이 선언 하나를 제거하면 정본 「카드에 그림자 없음」에 맞는다.
+- 지목 제외: `.colmenu` 80행 `box-shadow: var(--shadow-lg);` 는 팝오버 예외이므로 유지한다.
+- 참고: 52행 `.tbl tr.clk:hover td:first-child` 의 `inset` box-shadow 는 행 hover 강조 선이고 카드 그림자가 아니므로 대상이 아니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

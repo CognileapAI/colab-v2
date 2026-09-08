@@ -1,0 +1,10 @@
+두 파일 전수 grep 결과, 주석 제거 후에도 동일. 음수 margin 선언 2건.
+
+- `detail.css:93` — `.detail-page .filelist { margin: -12px 0 var(--space-6); … }` 위 요소(헤더/툴바)에 붙이는 음수 상쇄
+- `shell.css:58` — `margin-left: -7px;` 광학 정렬용 음수 상쇄
+
+주석 안 음수 margin 값은 두 파일 모두 0건(주석 제거 전·후 결과 동일). `shell.css:188` 의 `bottom: -11px` 는 margin 이 아니라 position 오프셋이라 제외.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

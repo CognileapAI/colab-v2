@@ -1,0 +1,33 @@
+**결론 — 아무도 합격선을 선언하지 않으면 이 검사는 「`cases.txt` 에 `case ` 행이 1개 이상 있다」만 보장한다. 그것은 회귀 시험 최소 건수 검사가 아니라 파일 비어 있지 않음 검사다.**
+
+**줄별 판독** (`check-coverage.sh`)
+
+- `:5` `MIN_CASES="${COLAB_MIN_CASES:-1}"` — `:-` 는 미선언·빈 문자열 둘 다 우변으로 떨어진다. 미선언 환경에서 합격선 = **1**.
+- `:6` `TIMEOUT_S="${COLAB_CASE_TIMEOUT:-9999}"` — 같은 모양. 미선언이면 상한 9999초. 이 값은 `:15` 출력에만 쓰이고 아무것도 제한하지 않는다.
+- `:8` `grep -c ... || echo 0` — 파일 부재 시 0. 단 `grep -c` 는 일치 0건일 때 `0` 을 찍고도 exit 1 이라 `|| echo 0` 이 한 번 더 붙어 `N="0\n0"` 이 된다.
+- `:10` `[ "$N" -lt "$MIN_CASES" ]` — `N` 이 `0\n0` 이면 `integer expression expected` 오류, 조건식 거짓, **`exit 1` 을 타지 않고 `:16` 의 `exit 0` 으로 흘러 green**. `set -e` 부재(`:3`)라 오류가 종료로 이어지지 않는다.
+- `:15`~`:16` — 선언 여부와 무관하게 green 문구와 exit 0.
+
+**실측**
+
+| 환경 | 결과 |
+|---|---|
+| 변수 미선언 · cases 2건 | green · exit 0 · 「최소 1 · 상한 9999s」 |
+| 변수 미선언 · cases 0건 | `[: 0\n0: integer expression expected` 뒤 green · exit 0 |
+
+**규약 대조** — 「관대한 기본값을 두지 않는다」 위반. 합격선의 의미는 팀이 정한 수치인데 그 수치가 없으면 검사가 「1건 이상」으로 퇴화하고, 0건 상황에서도 부수 결함(`:8`) 때문에 통과한다. 미선언이 침묵 통과가 되는 구조 자체가 결함이다.
+
+**고칠 방향(세 상태)**
+
+1. **선언** — `COLAB_MIN_CASES` 가 정수로 있으면 그 값으로 `:10` 비교. 기본값 제거(`${COLAB_MIN_CASES:?...}` 대신 아래 분기로 명시 처리).
+2. **명시 면제** — 예: `COLAB_MIN_CASES=skip`(또는 `COLAB_COVERAGE_WAIVE=1`) 이면 건수 `N` 을 출력한 채 `check-coverage waived — 시험 N건 (합격선 미적용)` 로 exit 0. 면제 사실과 건수가 로그에 남아야 한다.
+3. **무언** — 미선언·빈 값이면 `::error::COLAB_MIN_CASES 미선언 — 합격선 없이 검사할 수 없음` 후 exit 1. `TIMEOUT_S` 도 같은 규약을 적용하거나, 실제로 쓰지 않는다면 삭제.
+4. **부수 수정** — `:8` 을 `N="$(grep -c '^case ' cases.txt 2>/dev/null)"; N="${N:-0}"` 로 바꿔 `0\n0` 이중 출력을 없애고, 정수 검증(`[[ "$N" =~ ^[0-9]+$ ]]`) 실패 시 red(준비)로 종료.
+
+---
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1 (부수 check-coverage.sh:6 · COLAB_CASE_TIMEOUT=9999)
+- 상태1 선언: `COLAB_MIN_CASES` 가 정수로 선언되면 그 값으로 `N -lt MIN` 을 검사해 미달 시 exit 1
+- 상태2 명시 면제: `COLAB_MIN_CASES=skip`(면제 토큰) 이면 시험 건수 N 을 「waived」 문구와 함께 출력하고 exit 0
+- 상태3 무언: 변수 미선언·빈 값이면 `::error::합격선 미선언` 을 찍고 exit 1 — 어떤 건수든 통과시키지 않는다

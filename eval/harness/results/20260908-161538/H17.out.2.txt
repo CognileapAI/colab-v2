@@ -1,0 +1,6 @@
+요약줄만 읽는 사람은 **빈 파일로 건너뛴 스키마가 몇 건인지 모른다.** 11행에서 `SKIPPED` 를 세지만, 27행 요약줄은 `OK` 만 찍고 「전건 통과」라 말한다. `schemas/*.json` 전부가 빈 파일이면 `OK=0`·`BAD=0` 이라 「검사 0건 전건 통과」로 green 종료(exit 0)한다. 못 돌은 것을 통과로 세는 형태다.
+
+- 판정: 결함 있음
+- 숨은 계수: SKIPPED
+- 근거: check-schemas.sh:27
+- 고친 요약줄: `echo "check-schemas green — 검사 ${OK}건 통과 · 건너뜀 ${SKIPPED}건 · 위반 ${BAD}건"`
