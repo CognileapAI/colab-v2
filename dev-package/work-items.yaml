@@ -3161,3 +3161,29 @@ items:
     deadline: null
     note: "2026-09-08 등재(창 10 기록 레인) — 원인 = .github/workflows/ci.yml schema-gates 잡에 적용 DB 준비 스텝이 없어 schema-diff 가 red(준비 · exit 78). 게이트 자신은 fail-closed 정상 동작. run 이력 45건(skipped 아닌 회차) 중 cancelled 1 을 뺀 전건 failure · 같은 패턴 2026-09-01 부터 관측. git diff --stat 18c0228..ccf76ec -- db contracts 빈 결과 = R-D 기인 아님. required_status_checks 미설정이라 main 병합·dev 배포 판정 비차단이나 CI 에서 스키마 드리프트를 검증한 적이 없다는 커버리지 공백. X-7(service-tests (core-api) 시험 1건)과 별개 항목"
     sources: ["dev-package/reports/R-D/ci-schema-gates-20260908.md"]
+
+  - id: X-9
+    name: 업로드 마법사 핫픽스 4건 — 기간 역전 클라이언트 검사(오류를 필드 옆에) · 서버 오류 단계 범위·이동 시 초기화 · 「데이터셋 이름」 필수 배지 · 등록 카드 간격 토큰 (Ted 2026-09-08 「핫픽스 4 ＋ R-E 2」)
+    status: open
+    stage: stage1
+    owner: "T-R"
+    entry_conditions: ["진단 보고 dev-package/reports/R-D/upload-step3-overlap-20260908.md 실재", "Ted 판정 「핫픽스 4 ＋ R-E 2」 2026-09-08"]
+    depends_on: []
+    completion_def: "vitest 신규 시험 RED→GREEN(기간 역전 · 오류 범위 · 필수 배지 · 카드 gap) · 전체 vitest 회귀 0 · tsc --noEmit 0 · frontend-* 게이트 green(frontend-visual 면제 노출) · 글자 크기·기간 표시 위치 무접촉(X-10) · 서버 검증·필수 강제 무변경 · 계약 0"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재(오케스트레이터) — 레인 hotfix-upload · 통합 integration/hotfix-upload(main tip ccf76ec 기점) · 차단 2건(③-(c) 서버 오류 잔존 · ②-(2) 기간 역전 무검사) ＋ 표시 2건(②-(3) 배지 · §1 카드 gap · 회귀 8db3deb WU-B11) · dev 83d3eb5 동일 결함"
+    sources: ["dev-package/reports/R-D/upload-step3-overlap-20260908.md"]
+
+  - id: X-10
+    name: 업로드 마법사 R-E 묶음 — 13px 미만 선언 29건(upload.css 20 · lineage.css 9) · 고른 기간 표시 위치(.regprev DOM 순서 → 기간 필드 아래) (Ted 2026-09-08 「핫픽스 4 ＋ R-E 2」)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-E 착수(design-review 재검사 · 디자인 판정 25건 집행)", "X-9 done"]
+    depends_on: ["X-9"]
+    completion_def: "13px 규칙(frontend-visual · p3-design-audit)에 따른 29건 처리 값 판정 뒤 집행 · 기간 표시를 기간 필드 아래로 · 디자인 fix 16 묶음과 한 라운드 · 계약 0"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재(오케스트레이터) — 대비는 전건 합격(7.4:1) · 미달은 크기만 · 값(px)은 R-E 디자인 판정 뒤"
+    sources: ["dev-package/reports/R-D/upload-step3-overlap-20260908.md"]
