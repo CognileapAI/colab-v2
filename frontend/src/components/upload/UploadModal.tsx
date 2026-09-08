@@ -43,7 +43,18 @@ import {
   variablesPayload,
   type VariableRow,
 } from '../common/VariableTable';
-import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
+import {
+  EMPTY_PARTS,
+  PERIOD_INVERTED_MESSAGE,
+  assemble,
+  isPeriodInverted,
+  type PeriodParts,
+} from './periodParts';
+import {
+  clearedOnStepChange,
+  messageForStep,
+  type RegisterErrorAt,
+} from './registerError';
 import { previewNavigation } from '../preview/handoff';
 import { forgetPending, rememberPending } from './pendingStore';
 import {
@@ -216,7 +227,27 @@ export function UploadModal(props: {
   //: ⭑ **⟨19차 해제 · PRD-15⟩ 설명도 이름과 같은 자리에 선다** — 필수 칸이 둘이 됐다.
   //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
   const [summaryError, setSummaryError] = useState(false);
-  const [registerError, setRegisterError] = useState<string | null>(null);
+  /**
+   * ⭑ ⟨X-9 핫픽스 · 진단 §2-(c)⟩ 등록 거절은 **문면과 그것을 낳은 단계**를 함께 든다.
+   * 종전에는 문자열 하나였고 렌더 자리가 단계 분기 바깥이라, ② 의 거절이 ③ 에서도 서 있었다.
+   * `step: null` = 단계에 매이지 않는 파일·접수 오류(판독법은 `registerError.ts` 산문).
+   */
+  const [registerErrorAt, setRegisterErrorAt] = useState<RegisterErrorAt>(null);
+  /** 단계 하나에 매인 거절. */
+  const failAt = (at: Step, message: string) => setRegisterErrorAt({ step: at, message });
+  /** 단계와 무관한 거절 — 어느 단계에서도 보이고 단계 이동으로 지워지지 않는다. */
+  const failAnywhere = (message: string) => setRegisterErrorAt({ step: null, message });
+  const clearRegisterError = () => setRegisterErrorAt(null);
+  /** 등록 카드 안에서 지금 낼 문면. 남의 단계 것이면 내지 않는다. */
+  const registerError = messageForStep(registerErrorAt, step);
+  /**
+   * 단계 이동은 **한 문**으로만 한다 — 이동할 때 남의 단계 거절을 걷는다.
+   * 걷지 않으면 사람이 ③ 에서 ② 의 칸을 고치라는 말을 읽는다(고칠 칸이 화면에 없다).
+   */
+  const goStep = useCallback((next: Step) => {
+    setStep(next);
+    setRegisterErrorAt((cur) => clearedOnStepChange(cur, next));
+  }, []);
   // 접수(create) 실패. **`registerError` 와 섞지 않는다** — 그 자리는 등록 카드 안이라
   // 접수 시점엔 닫혀 있고, `submit()` 이 그것을 null 로 지운다. 수명이 다른 두 사실이다.
   const [intakeError, setIntakeError] = useState<string | null>(null);
@@ -373,7 +404,7 @@ export function UploadModal(props: {
         if (!s.ready && !s.failure) statusTimer.current = window.setTimeout(tick, STATUS_POLL_MS);
       } catch (e) {
         if (!alive) return;
-        if (e instanceof UploadGone) setRegisterError('이 파일은 더 이상 없어요. 다시 올려 주세요.');
+        if (e instanceof UploadGone) failAnywhere('이 파일은 더 이상 없어요. 다시 올려 주세요.');
       }
     };
     void tick();
@@ -471,7 +502,7 @@ export function UploadModal(props: {
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
-  const onGoToClassify = useCallback(() => setStep(1), []);
+  const onGoToClassify = useCallback(() => goStep(1), [goStep]);
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
   // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
   const lineageStep: LineageStepRender =
@@ -545,8 +576,8 @@ export function UploadModal(props: {
     setName('');
     setNameDraft('');
     setRegisterOpen(false);
-    setStep(1);
-    setRegisterError(null);
+    goStep(1);
+    clearRegisterError();
     setIntakeError(null);
     setRendered(null);
     setGridSkipped(false);
@@ -668,13 +699,13 @@ export function UploadModal(props: {
   async function confirmAttach() {
     if (!uploadId || !attach) return;
     setAttaching(true);
-    setRegisterError(null);
+    clearRegisterError();
     try {
       await upload.attachGrid(attach.datasetId, uploadId);
       attach.onAttached?.();
       props.onClose();
     } catch (e) {
-      setRegisterError(
+      failAnywhere(
         e instanceof UploadGone
           ? '이 파일은 더 이상 없어요. 다시 올려 주세요.'
           : e instanceof GridAxisTaken
@@ -762,14 +793,14 @@ export function UploadModal(props: {
     if (!uploadId) {
       // 등록 게이트는 접수 성패와 무관하게 상시 서 있다. 접수가 실패했으면 여기서 **말없이
       // return** 했다 — 사람은 [등록]을 눌렀는데 아무 일도 안 일어났다. 두 번째 침묵을 닫는다.
-      setRegisterError(intakeError ?? '올리다가 끊겼어요. 다시 시도해 주세요.');
+      failAnywhere(intakeError ?? '올리다가 끊겼어요. 다시 시도해 주세요.');
       return;
     }
     if (!name.trim()) {
       // §9 이름 없이 데이터셋 만들기 — 이름 칸으로 초점을 옮긴다
       setNameError(true);
       // ⭑ ⟨WU-B3⟩ 이름 칸은 ② 메타데이터 입력에 있다 — 적을 칸으로 데려간다.
-      setStep(2);
+      goStep(2);
       window.setTimeout(() => document.getElementById('reg-name')?.focus(), 0);
       return;
     }
@@ -777,7 +808,7 @@ export function UploadModal(props: {
     if (!summary.trim()) {
       // PRD-15 — 설명이 필수다. 계약 `DatasetCreate.required` 와 같은 판정을 화면이 먼저 한다.
       setSummaryError(true);
-      setStep(2);
+      goStep(2);
       window.setTimeout(() => document.getElementById('reg-summary')?.focus(), 0);
       return;
     }
@@ -786,8 +817,8 @@ export function UploadModal(props: {
     //   막기만 하고 세워 두면 사람은 ③ 에서 ① 의 빈 칸을 못 본다. 이름·설명 경로와 같은
     //   규율로 **적을 칸이 있는 단계로 데려가고 그 칸에 초점을 준다.**
     if (!category || !dataType) {
-      setStep(1);
-      setRegisterError(MISSING_CATEGORY_MESSAGE);
+      goStep(1);
+      failAt(1, MISSING_CATEGORY_MESSAGE);
       window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
       return;
     }
@@ -800,13 +831,26 @@ export function UploadModal(props: {
       sourceDownloadedOn.trim() &&
       !isValidSourceDownloadedOnShape(sourceDownloadedOn.trim())
     ) {
-      setStep(3);
+      goStep(3);
       setSourceDownloadedOnError(SOURCE_DOWNLOADED_ON_INVALID);
       window.setTimeout(() => document.getElementById('reg-source-downloaded-on')?.focus(), 0);
       return;
     }
     setSourceDownloadedOnError(null);
-    setRegisterError(null);
+    // ⭑ ⟨X-9 핫픽스 · 진단 §3-(2)⟩ 기간 역전도 형상 오류와 **같은 규율**로 여기서 막는다.
+    //   종전에는 요청이 나갔고 서버 400 이 바닥 배너로 떠 ③ 에 남았다 — 고칠 칸(②의 기간)은
+    //   화면에 없었고 같은 값으로 다시 눌러도 다시 400 이라 사람이 갇혔다.
+    //   ⛔ 서버 검사를 걷지 않는다 — 화면이 먼저 알릴 뿐이다.
+    if (
+      granularity &&
+      isPeriodInverted(assemble(startParts, granularity), assemble(endParts, granularity))
+    ) {
+      goStep(2);
+      failAt(2, PERIOD_INVERTED_MESSAGE);
+      window.setTimeout(() => document.getElementById('reg-period-open')?.focus(), 0);
+      return;
+    }
+    clearRegisterError();
     try {
       const made = await upload.register({
         uploadId,
@@ -847,7 +891,10 @@ export function UploadModal(props: {
       // 다시 누른다(B3 유산). 문면은 **서버 것을 그대로** 올린다 — 화면이 다시 지으면
       // 서버와 두 얼굴이 된다. ⛔ 새 문면을 만들지 않는다.
       // ⚠ 400 **밖**은 종전 그대로다 — 500·끊김은 사람이 고칠 것이 없다.
-      setRegisterError(
+      // ⭑ ⟨X-9 핫픽스⟩ 거절은 **누른 단계**에 매인다 — `데이터셋 만들기` 는 ③ 에만 있으므로
+      //   여기 `step` 은 3 이고, 사람이 다른 단계로 옮기면 `goStep` 이 이 문면을 걷는다.
+      failAt(
+        step,
         e instanceof UploadGone
           ? '이 파일은 더 이상 없어요. 다시 올려 주세요.'
           : e instanceof RegisterRejected
@@ -1103,7 +1150,7 @@ export function UploadModal(props: {
                     data-testid="reg-open"
                     onClick={() => {
                       setRegisterOpen(true);
-                      setStep(1);
+                      goStep(1);
                     }}
                   >
                     연구실에 등록 →
@@ -1118,7 +1165,7 @@ export function UploadModal(props: {
             {!attach && registerOpen && (
               <RegisterArea
                 step={step}
-                onStep={setStep}
+                onStep={goStep}
                 fileName={bodyName}
                 lineage={lineage}
                 status={status}

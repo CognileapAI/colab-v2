@@ -12,7 +12,15 @@
 //    팝오버 하나만 닫는다 — 표식만 달고 Esc 를 안 받으면 Esc 가 무동작이 된다.
 import { useCallback, useState } from 'react';
 import { ESC_LAYER_ATTR, useEscLayer } from './escLayer';
-import { GRANULARITIES, PARTS, partsFor, type PeriodParts } from './periodParts';
+import {
+  GRANULARITIES,
+  PARTS,
+  PERIOD_INVERTED_MESSAGE,
+  assemble,
+  isPeriodInverted,
+  partsFor,
+  type PeriodParts,
+} from './periodParts';
 
 /** 그 달의 날 수 — 윤년 포함. 문자열 자리 계산이라 시간대가 끼지 않는다. */
 function daysIn(year: number, month: number): number {
@@ -92,6 +100,19 @@ export function PeriodCalendarPopover(props: {
 
   const open = partsFor(unit);
   const openKeys = new Set(open.map((p) => p.key));
+
+  /**
+   * 열리지 않은 자리는 값으로 남기지 않는다 — 단위를 좁힌 뒤의 잔값이 저장되면
+   * 화면이 안 보인 값을 몰래 싣는다. (`적용` 과 아래 역전 검사가 **같은 재료**를 쓴다.)
+   */
+  const trim = (p: PeriodParts): PeriodParts =>
+    Object.fromEntries(
+      PARTS.map((s) => [s.key, openKeys.has(s.key) ? p[s.key] : '']),
+    ) as PeriodParts;
+  /* ⭑ ⟨X-9 핫픽스 · 진단 §3-(2)⟩ 종전에는 순서 검사 없이 `onApply` 했다 — 역전은 서버 400
+     에만 걸렸고, 그 문면은 바닥 배너로 떠 ③ 까지 따라갔다. 여기서 먼저 막는다.
+     ⛔ 값을 몰래 뒤집지 않는다(clamp·swap 없음) — 사람이 고른 것을 시스템이 되돌리지 않는다. */
+  const inverted = isPeriodInverted(assemble(trim(start), unit), assemble(trim(end), unit));
   // 시각 칸은 **시·분·초 중 하나라도 열렸을 때만** 선다 (PRD-18 — 단위까지만 칸이 열린다).
   const withTime = openKeys.has('hour');
 
@@ -246,6 +267,14 @@ export function PeriodCalendarPopover(props: {
         </>
       )}
 
+      {/* ⭑ ⟨X-9 핫픽스⟩ 막았으면 **왜 막혔는지 그 자리에서** 말한다 — 눌리지 않는 버튼만
+          남기면 두 번째 침묵이 된다. 문면 정본은 서버다(`PERIOD_INVERTED_MESSAGE`). */}
+      {inverted && (
+        <p className="warn" role="alert" data-testid="reg-period-pop-error">
+          {PERIOD_INVERTED_MESSAGE}
+        </p>
+      )}
+
       <div className="dr-foot">
         <button
           type="button"
@@ -262,13 +291,9 @@ export function PeriodCalendarPopover(props: {
           type="button"
           className="btn btn-primary btn-sm"
           data-testid="reg-period-apply"
+          /* ⭑ ⟨X-9 핫픽스⟩ 역전된 값은 **여기서 나가지 못한다** — 서버 400 을 기다리지 않는다. */
+          disabled={inverted}
           onClick={() => {
-            // 열리지 않은 자리는 값으로 남기지 않는다 — 단위를 좁힌 뒤의 잔값이 저장되면
-            // 화면이 안 보인 값을 몰래 싣는다.
-            const trim = (p: PeriodParts): PeriodParts =>
-              Object.fromEntries(
-                PARTS.map((s) => [s.key, openKeys.has(s.key) ? p[s.key] : '']),
-              ) as PeriodParts;
             props.onApply({
               granularity: unit,
               startParts: trim(start),

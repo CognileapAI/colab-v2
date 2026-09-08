@@ -71,6 +71,35 @@ export function assemble(parts: PeriodParts, granularity: string): string | null
   return `${y}-${mo}-${d}T${h}:${mi}:${s}Z`;
 }
 
+/**
+ * 기간 역전의 **문면 정본은 서버**다 — `services/core-api/…/app/routes/catalog.py` 축자.
+ * 화면이 새 문장을 지으면 같은 거절이 두 얼굴이 된다(WU-A4 가 세운 규율 그대로).
+ */
+export const PERIOD_INVERTED_MESSAGE = '기간의 종료는 시작보다 앞설 수 없다.';
+
+/**
+ * `YYYY-MM-DD` 도 `YYYY-MM-DDTHH:MM:SSZ` 도 같은 자리로 편다.
+ * ⚠ **시간대 표기는 붙지 않는다** — 이 화면의 시각값은 `assemble` 이 만든 UTC(`Z`) 하나뿐이라
+ *   서버가 경계한 「표기가 다른 두 값의 문자열 비교」가 여기서는 성립하지 않는다.
+ */
+function flatten(value: string): string {
+  const bare = value.trim().replace(/Z$/, '');
+  return bare.length <= 10 ? `${bare}T00:00:00` : bare;
+}
+
+/**
+ * 종료가 시작보다 앞서는가 — 서버 400 과 **같은 판정**을 화면이 먼저 한다.
+ * 한쪽이 비면 다투지 않는다(종료는 비울 수 있다 · PRD-40 판정 ⓐ). 시작=끝은 역전이 아니다.
+ * ⛔ 서버 검사를 걷지 않는다 — 화면은 **먼저** 알릴 뿐이고 정본은 그대로 서버다.
+ */
+export function isPeriodInverted(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): boolean {
+  if (!start?.trim() || !end?.trim()) return false;
+  return flatten(end) < flatten(start);
+}
+
 /** `date-time` → 칸들. 되읽기(수정 화면)와 시험이 쓴다. */
 export function disassemble(iso: string | null | undefined): PeriodParts {
   if (!iso) return { ...EMPTY_PARTS };

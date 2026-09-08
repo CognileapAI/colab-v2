@@ -26,7 +26,13 @@ import { PermissionGate } from '../../permission/PermissionGate';
 import { QUICK_PROJECT_NOTE } from '../common/toastCopy';
 import { formatExtension, formatPeriodWithInterval } from '../detail/format';
 import { extensionOf } from './FileDropCard';
-import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
+import {
+  EMPTY_PARTS,
+  PERIOD_INVERTED_MESSAGE,
+  assemble,
+  isPeriodInverted,
+  type PeriodParts,
+} from './periodParts';
 import { PeriodCalendarPopover } from './PeriodCalendarPopover';
 import {
   CATEGORIES,
@@ -329,6 +335,9 @@ function StepMeta(props: {
   const previewPeriod = previewStart
     ? { start: previewStart, end: previewEnd || null, granularity: props.granularity || null }
     : null;
+  /* ⭑ ⟨X-9 핫픽스 · 진단 §3-(2)⟩ 기간 역전은 **고칠 칸 옆에서** 알린다 — 종전에는 서버 400 이
+     바닥 배너로만 떴고 그 배너가 ③ 까지 따라갔다. 판정은 `submit()` 과 같은 함수 하나다. */
+  const periodInverted = isPeriodInverted(previewStart, previewEnd);
 
   return (
     <div className="card is-on" data-testid="reg-s2">
@@ -371,7 +380,12 @@ function StepMeta(props: {
 
         <div className="fieldlbl">사람이 적어요</div>
         <div className="form-row">
-          <label htmlFor="reg-name">데이터셋 이름</label>
+          {/* ⭑ ⟨X-9 핫픽스 · 진단 §3-(3)⟩ 이름은 `UploadModal.submit()` 이 **이미 막는다** —
+              표기만 없었다. 배지는 `설명` 과 **같은 것**을 쓴다(두 벌을 만들지 않는다). */}
+          <label htmlFor="reg-name">
+            데이터셋 이름
+            <span className="reqtag">필수</span>
+          </label>
           <input
             id="reg-name"
             className="inp"
@@ -469,6 +483,12 @@ function StepMeta(props: {
                 }}
                 onClose={() => setPeriodPopOpen(false)}
               />
+            )}
+            {/* ⭑ ⟨X-9 핫픽스⟩ 고칠 칸 **옆**에 선다. 문면은 서버 축자 그대로다. */}
+            {periodInverted && (
+              <p className="warn" role="alert" data-testid="reg-period-error">
+                {PERIOD_INVERTED_MESSAGE}
+              </p>
             )}
           </div>
           <div className="form-row">
