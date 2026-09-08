@@ -1,4 +1,4 @@
-# Vendored 스킬 8종 — 출처·라이선스·개조 목록
+# Vendored 스킬 9종 — 출처·라이선스·개조 목록
 
 이행 = 하네스 재설계 **P-S**(스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` B-2·F·H 7행).
 원칙 = **개조 목록에 적힌 것 외에는 원문 그대로.** 저자가 시험한 문안을 보존한다.
@@ -10,6 +10,8 @@
 |---|---|---|---|---|
 | superpowers | `https://github.com/obra/superpowers` | MIT (Copyright (c) 2025 Jesse Vincent) | 플러그인 캐시 **6.3.0** (`~/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/`) | 2026-09-06 (설치본 파일 스탬프 2026-08-17) |
 | mattpocock/skills | `https://github.com/mattpocock/skills` | MIT (Copyright (c) 2026 Matt Pocock) | `main` tarball · `package.json` version **1.2.3** | **2026-09-06** (`refs/heads/main.tar.gz`) |
+
+| emilkowalski/skills | `https://github.com/emilkowalski/skills` | MIT (Copyright (c) 2025 Emil Kowalski) | `main` tarball · 커밋 **`d23d7f8`**(2026-08-21) | **2026-09-08** (`refs/heads/main.tar.gz`) |
 
 ⚠ mattpocock 은 커밋 SHA 가 아니라 **브랜치 tarball** 이다(`git clone` 미사용 · 지시 제약). 재현 기준은
 「1.2.3 + 2026-09-06」이고, 정확한 SHA 가 필요하면 그 날짜의 `main` 을 다시 받아 대조한다.
@@ -44,6 +46,11 @@ frontmatter `description` 은 8종 전부 **≤2문장**(후보 목록 경량 �
 | `executing-plans` | superpowers | 공통 3종만 |
 | `test-driven-development` | superpowers | 공통 3종만 (참조 파일 `writing-good-tests.md` 는 무수정) |
 | `receiving-code-review` | superpowers | 공통 3종만 |
+| `apple-design` | emilkowalski/skills | **원문 유지**(본문 무수정 · 2026-09-06 아카이브본과 본문 동일함을 diff 로 확인). 개조 = frontmatter `disable-model-invocation: true`(명시 호출 전용 · `/apple-design` 또는 `design-review` 가 경로로 읽는다) ＋ `license` 행 ＋ 출처 주석 1행(SHA·날짜) ＋ 공통 개조 3(대조 1행). `LICENSE.txt` 동봉. 공통 개조 1·2 해당 없음(사고 재현 지시·반복 나열 0건) |
+
+## 자작 스킬 (vendored 아님 · 참고)
+
+`design-review`(2026-09-08) — 이 레포 전용. `apple-design` 을 정본의 한 축으로 읽고 `researcher`·`advisor`·`lane-worker`·`gate-runner` 위에서 audit/fix 를 돈다. 정적 계측기 `design-review/scripts/css_audit.py` 동봉. 상류 없음 · 개조표 대상 아님.
 
 ## 미채택 (스펙 B-2)
 
