@@ -3044,3 +3044,94 @@ items:
     deadline: null
     note: "Ted 판정 ⓐ 2026-09-08 · 배포 창 중 발견. 리비전 id 는 0007_merge_vocab_and_category(29자) — varchar(32) 제약. 레인 rc-ai-merge"
     sources: ["dev-package/sessions/R-C-ROUND-20260908.md", "dev-package/sessions/WU-C13-ai-merge-20260908.md", "dev-package/prd/specs/R-C.md"]
+
+  - id: WU-D4
+    name: 브랜치 정리 — 실측 표(고유 11) · archive 태그 보존 · 조상분 즉시 삭제 · 창 9 계열·원격 5 는 Ted 한 줄 뒤 (규칙 3·4 · Q4·Q4a)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["Ted intent 2건 커밋(승인)"]
+    depends_on: []
+    completion_def: "브랜치별 표(로컬/원격 · main 조상 · 밖 커밋 수 · 동등물 유무 · 용도 · 권고) 공란 0 · 즉시 삭제분에 archive/<브랜치> 태그 선재(원격 포함) 뒤 삭제 · 창 9 계열 3 ＋ 원격 5 는 Ted 한 줄 전 무삭제 · plan/r-d-0908 은 R-D ff 뒤 삭제"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 실측 11(intent 「18」은 lane/wu-c*·integration/r-c 삭제 전 낡은 수). 레인 rd-branch-sweep · 순서 1/7"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
+
+  - id: WU-D1
+    name: docs/BRANCHING.md 신설 ＋ CLAUDE.md §10 (규칙 6 정본화)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D4 done (실측 표를 예시로 인용)"]
+    depends_on: ["WU-D4"]
+    completion_def: "docs/BRANCHING.md 규칙 6 문면이 intent 원한 결과 1~6 과 축자 일치(diff 0) · 브랜치 수명 표 · 「하지 말 것」 · CLAUDE.md ## 10. 존재 ＋ §9 원문 삭제 0 · RESTART.md·infra/dev/README.md 한 줄씩 덧붙임 · planning-freshness green"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-branching-doc · 순서 2/7"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
+
+  - id: WU-D2
+    name: ship.sh 조상 게이트(exit 65/78 · 우회 선언) ＋ MAIN_SHA 반입 ＋ staging 원장 브랜치 필드 ＋ tag-release.sh (규칙 1·2·6 · Q2·Q3)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D4 done"]
+    depends_on: ["WU-D4"]
+    completion_def: "infra/dev/ship.sh SHA 읽기 직후 origin/main 조상 검사(비조상 exit 65 · origin 조회 실패 exit 78 · COLAB_SHIP_ALLOW_NONMAIN=1 우회는 출력·MAIN_SHA ancestor=bypass 로 드러남) · /opt/colab-v2/MAIN_SHA 형식 main=<sha> candidate=<sha> ancestor=yes|no|bypass · deploy.sh 원장 행(:266·:71·:87) 끝 브랜치=<branch> · infra/dev/tag-release.sh dev|prod(dev-YYYYMMDD-N · CURRENT_SHA 대조) · infra/dev/tests/ship-gate.sh 5케이스(가짜 ssh/scp · 호출 횟수 단언) · README 4줄"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-ship-gate · 순서 3/7 · rollback.sh 무접촉"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
+
+  - id: WU-D3
+    name: deploy_doctor 15번째 항목 「실행 sha ∈ main」 (Q1 · MAIN_SHA 파일 대조)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D2 done (MAIN_SHA 형식 확정)"]
+    depends_on: ["WU-D2"]
+    completion_def: "deploy_doctor.py MARKS 15자 · check_main_ancestry: candidate==CURRENT_SHA ∧ ancestor==yes → ✓ · bypass/no → ✗ · 파일 부재·형식 불일치 → ✗(─ 아님) · 요약줄 항목 15 · 단위 시험 5 ＋ 기존 14항목 회귀 0 · docs/DEPLOY.md §6-1 행 1"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-doctor-15 · 순서 4/7 · service-tests-core-api"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
+
+  - id: WU-D5
+    name: eval/harness/run.sh 러너 ＋ 과제 형식 {task.md,fixture/,expect.sh} ＋ README 행 (하네스 eval Q1·Q4·Q6~Q9·Q11)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["Ted intent 2건 커밋(승인)"]
+    depends_on: []
+    completion_def: "run.sh: 과제 전수 · 세 파일 부재 → 78 · 과제 0건 → 1 · 상한 변수(COLAB_EVAL_TIMEOUT·COLAB_EVAL_BUDGET) 미선언 → 78 · claude -p --allowedTools <read-only 표> --no-session-persistence --add-dir <fixture> --max-budget-usd · 2회 2/2 green · 1/2 불안정 red · timeout/예산 초과 78 · 요약줄 5칸 ＋ p50/p95/USD · results/<회차>/ · tests/run-selftest.sh 6케이스(claude 스텁 · 모델 호출 0) · eval/README.md 한 행 · eval/harness/README.md(allowed 표 · 상한 [미측정])"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-eval-runner · 순서 5/7 · D1 과 병렬 가능(기본 직렬) · --max-turns 부재(claude 2.1.263)"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
+
+  - id: WU-D6
+    name: 과제 20건 H01~H20 픽스처＋expect.sh ＋ 첫 실측(p95×2 상한 · 예산) (하네스 eval Q3·Q5·Q7·Q8)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D5 done"]
+    depends_on: ["WU-D5"]
+    completion_def: "eval/harness/H01~H20 각 task.md·fixture/(옛값 사본 · SOURCE.md 복원 명령)·expect.sh(정규식 · 음성 단언 포함) · 배분 3·10·5·2 = intent 로스터 축자 · 첫 실측 20건×2회 → summary.md 20행(초·USD) · p95×2 상한 · README [미측정] 0건 · 불안정·준비 과제는 무수정 보고 · 3회 연속 기록 시작"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-eval-tasks · 순서 6/7 · 제품 파일 무접촉(git diff --stat)"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
+
+  - id: WU-D7
+    name: 승격 준비 — gates harness-eval 세 상태 스텁 ＋ selftest 3 ＋ CI paths-filter harness (하네스 eval Q2·Q10 · 시크릿은 Ted)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["WU-D6 done (과제 20건 실재)"]
+    depends_on: ["WU-D6"]
+    completion_def: "gates/tools/harness-eval.sh: COLAB_HARNESS_EVAL=1 실행 · COLAB_HARNESS_EVAL_EXEMPT=1 면제·과제 N건 노출(0 이면 red) · 둘 다 없음 78 · selftest 3(과제 0건 red · 면제 건수 노출 · 상한 초과 78) · ALL_GATES 2이름 · README 2행 · parallelism serial · ci.yml filters harness(CLAUDE.md·.claude/skills·hooks·agents) ＋ 잡 harness-eval(시크릿 참조만 · 부재 78 · skip 금지) · 실제 실행은 3회 연속 2/2 뒤 별건"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재 — 레인 rd-eval-gate · 순서 7/7 · CI 시크릿 발급 Ted 몫"
+    sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
