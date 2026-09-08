@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Core agent-browser usage guide. Read this before running any agent-browser commands. Covers the snapshot-and-ref workflow, navigating pages, interacting with elements (click, fill, type, select), extracting text and data, taking screenshots, managing tabs, handling forms and auth, waiting for content, running multiple browser sessions in parallel, and troubleshooting common failures. Use when the user asks to interact with a website, fill a form, click something, extract data, take a screenshot, log into a site, test a web app, or automate any browser task.
+description: agent-browser CLI 사용 지침 — snapshot 의 @ref 로 열기·클릭·입력·추출·스크린샷·대기·세션 병렬을 다룬다. 명시 호출 전용이며 design-review 의 실화면 계측(§2-5)이 이 파일을 경로로 읽는다.
 allowed-tools: Bash(agent-browser:*), Bash(npx agent-browser:*)
 disable-model-invocation: true
 license: Apache-2.0 — vercel-labs/agent-browser
