@@ -3060,15 +3060,15 @@ items:
 
   - id: WU-D1
     name: docs/BRANCHING.md 신설 ＋ CLAUDE.md §10 (규칙 6 정본화)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-D4 done (실측 표를 예시로 인용)"]
     depends_on: ["WU-D4"]
     completion_def: "docs/BRANCHING.md 규칙 6 문면이 intent 원한 결과 1~6 과 축자 일치(diff 0) · 브랜치 수명 표 · 「하지 말 것」 · CLAUDE.md ## 10. 존재 ＋ §9 원문 삭제 0 · RESTART.md·infra/dev/README.md 한 줄씩 덧붙임 · planning-freshness green"
-    evidence: "[미집행]"
+    evidence: "docs/BRANCHING.md(76행 · 규칙 6 축자 diff 0 · 수명 표 7행 · 하지 말 것 7행 · 창 9 문단) · CLAUDE.md §10(삭제 줄 0) · RESTART.md·infra/dev/README.md 1줄씩 · 노트 dev-package/sessions/rd-branching-doc-20260908.md · 게이트 planning-freshness·work-item-consistency·exec-bit green · advisor ② 조건부 수용 → 조건 3 반영(1b9660d)"
     deadline: null
-    note: "2026-09-08 등재 — 레인 rd-branching-doc · 순서 2/7"
+    note: "2026-09-08 등재 — 레인 rd-branching-doc · 순서 2/7 · 2026-09-08 완료 9c69a76→1b9660d(advisor ② 반영: 창 9 문면 실측 정정 · 검사 자리 Q2 한 줄 · §10 삭제 주체 한정어) · intent 대조 미달 3(D2·D2·D3 소관) · 초과 2"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
 
   - id: WU-D2
