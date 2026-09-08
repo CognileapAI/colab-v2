@@ -6,7 +6,7 @@
 
 ---
 
-## 1. 규칙 6 (intent 축자 — 고치려면 intent 를 먼저 고친다)
+## 1. 규칙 6 (intent 축자 — 병합 뒤 정본 = 이 파일 · 개정은 새 intent ＋ 이 파일 동시, 축자 대조는 그 intent 로 옮긴다)
 
 <!-- rule6:begin -->
 1. `main` 은 **유일한 배포 원천**. dev·prod 에 올라가는 sha 는 반드시 `origin/main` 의 조상. `ship.sh`·`up.sh`·staging `deploy.sh --target dev` 가 `git merge-base --is-ancestor` 로 검사하고 아니면 거절.
@@ -17,6 +17,7 @@
 6. 릴리스 = 태그. dev 실적용 때 `dev-YYYYMMDD-N`, prod 는 기존 `prod-YYYYMMDD`. 〈N〉 행이 태그를 가리킨다.
 <!-- rule6:end -->
 
+- 검사 자리는 설계트리 Q2 로 `ship.sh` 한 곳 ＋ `deploy_doctor` ⑮ 사후 대조로 확정 · `up.sh`·`deploy.sh` 이중 검사 없음(WU-D2·D3)
 - 위 6줄의 문면 대조 = 아래 한 줄(출력 0행 = 일치).
 
 ```bash
@@ -64,7 +65,7 @@ diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev
 
 ## 4. 창 9 사례 — 규칙 1 이 없던 자리에서 난 것
 
-2026-09-06 창 9 는 `main` 밖 레인 sha `20b3715`(`integration/w9-dev-deploy`)를 dev 에 반입했고, 그 브랜치의 ai 마이그레이션 `0006_topic_vocab_six` 가 **dev 에만 적용된 채** 남았다. R-C 배포 창에서 레포 체인의 형제 `0006_rc7_synonym_category` 와 부딪혀 `migrate-ai` 직전 STOP 이 났고, `WU-C13` 이 그 두 파일(`db/ai/versions/0006_topic_vocab_six.py` · `db/ai/seed/topic_synonym_six.sql`)을 파일 단위로 흡수하고 `0007_merge_vocab_and_category`(부모 둘 ＋ 두 적용 순서 drift 오라클)로 닫았다. **흡수되지 않고 `main` 에 동등물이 0 인 것**은 넷이다 — dev 트리거 스풀 배선(`infra/dev/compose.yml` 의 `COLAB_WORKER_EVENT_SPOOL`·`COLAB_VIZ_TRIGGER_SPOOL`·`viz-events` 볼륨 ＋ `infra/dev/README.md` 규약 8줄) · `infra/staging/manifest-refdata.json` 의 `sourceLabel` 4값 · 창 9 원장 6행 · `dev-package/reports/window-9/` 실행 로그 20파일. 반입 게이트가 있었으면 `20b3715` 는 dev 에 실리지 못했고, 이 넷은 `main` 을 통과하며 흡수 여부가 그때 갈렸을 것이다. 상세 = `PLAN-SoT §9 〈378〉 ⑧` · `dev-package/sessions/WU-D4-branches-20260908.md` §2.
+2026-09-06 창 9 는 `main` 밖 레인 sha `20b3715`(`integration/w9-dev-deploy`)를 dev 에 반입했고, 그 브랜치의 ai 마이그레이션 `0006_topic_vocab_six` 가 **dev 에만 적용된 채** 남았다. R-C 배포 창의 **dev 사전 실측에서 `alembic_version_ai` 스탬프 `0006_topic_vocab_six` 가 `main` 에 없는 리비전으로 발견**됐고(레포 체인에는 형제 `0006_rc7_synonym_category` 가 있었다 · STOP·중단 기록 0), Ted 판정 ⓐ 뒤 `WU-C13` 이 그 두 파일(`db/ai/versions/0006_topic_vocab_six.py` · `db/ai/seed/topic_synonym_six.sql`)을 파일 단위로 흡수하고 `0007_merge_vocab_and_category`(부모 둘 ＋ 두 적용 순서 drift 오라클)로 닫았다. **흡수되지 않고 `main` 에 동등물이 0 인 것**은 넷이다 — dev 트리거 스풀 배선(`infra/dev/compose.yml` 의 `COLAB_WORKER_EVENT_SPOOL`·`COLAB_VIZ_TRIGGER_SPOOL`·`viz-events` 볼륨 ＋ `infra/dev/README.md` 규약 8줄) · `infra/staging/manifest-refdata.json` 의 `sourceLabel` 4값 · 창 9 원장 6행 · `dev-package/reports/window-9/` 실행 로그 20파일. 반입 게이트가 있었으면 `20b3715` 는 dev 에 실리지 못했고, 이 넷은 `main` 을 통과하며 흡수 여부가 그때 갈렸을 것이다. 상세 = `PLAN-SoT §9 〈378〉 ⑧` · `dev-package/sessions/R-C-ROUND-20260908.md` §9 · `dev-package/sessions/WU-D4-branches-20260908.md` §2.
 
 ---
 

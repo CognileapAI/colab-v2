@@ -178,5 +178,5 @@ git log --oneline -10
 5. 마이그레이션은 **한 라운드 = 한 체인 구간** · 형제가 생기면 `00NN_merge` ＋ 두 순서 drift 오라클 의무.
 6. 릴리스 = 태그 — dev 실적용 `dev-YYYYMMDD-N` · prod `prod-YYYYMMDD` · 원장 〈N〉 행이 태그를 가리킨다.
 
-- 원격 브랜치 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지).
+- **정리 대상(WU-D4 류 · 병합 경로 밖 브랜치)** 의 원격 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지) — 병합된 `lane/*`·`integration/*` 는 즉시 삭제(`.claude/rules/colab-rules.md §2-1`).
 
