@@ -3125,13 +3125,13 @@ items:
 
   - id: WU-D7
     name: 승격 준비 — gates harness-eval 세 상태 스텁 ＋ selftest 3 ＋ CI paths-filter harness (하네스 eval Q2·Q10 · 시크릿은 Ted)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-D6 done (과제 20건 실재)"]
     depends_on: ["WU-D6"]
     completion_def: "gates/tools/harness-eval.sh: COLAB_HARNESS_EVAL=1 실행 · COLAB_HARNESS_EVAL_EXEMPT=1 면제·과제 N건 노출(0 이면 red) · 둘 다 없음 78 · selftest 3(과제 0건 red · 면제 건수 노출 · 상한 초과 78) · ALL_GATES 2이름 · README 2행 · parallelism serial · ci.yml filters harness(CLAUDE.md·.claude/skills·hooks·agents) ＋ 잡 harness-eval(시크릿 참조만 · 부재 78 · skip 금지) · 실제 실행은 3회 연속 2/2 뒤 별건"
-    evidence: "[미집행]"
+    evidence: "gates/tools/harness-eval.sh(세 상태: COLAB_HARNESS_EVAL=1 실행 전달 · COLAB_HARNESS_EVAL_EXEMPT=1 면제·과제 N건 노출(0건 red) · 미선언 78) · harness-eval-selftest.sh 4/4(RED 선실측 「판정 재료가 없다」→GREEN) · gates/run.sh ALL_GATES 56→58 · README 3행 · parallelism serial · .github/workflows/ci.yml filters harness ＋ 잡 harness-eval(시크릿 참조만 · 부재 78 · 승격 전 면제 모드) · ci-filter-check.py green · 게이트 exec-bit·work-item-consistency·planning-freshness green · advisor ② 수용(조건 0 · 후속 = count_tasks 가 expect.sh 없는 디렉터리 제외) · 노트 dev-package/sessions/rd-eval-gate-20260908.md · [미상] = dorny/paths-filter 실제 평가(act 부재) · 시크릿 실재(Ted 발급)"
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-eval-gate · 순서 7/7 · CI 시크릿 발급 Ted 몫"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
