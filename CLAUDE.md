@@ -167,3 +167,16 @@ git log --oneline -10
 - **배포** = `.claude/rules/deploy.md` (`infra/**`·`docs/DEPLOY*.md`·`services/core-api/ops/**`) — 깨뜨리면 안 되는 것 11 · `deploy_doctor` 14 항목 · 확장 자리. 운영 문서는 `docs/DEPLOY.md`.
 - ⛔ **데이터셋 행 삭제·`main` 배포 태그 같은 비가역 조작은 그 규칙 파일을 편 뒤에 한다** — 여기 요약만 보고 실행하지 않는다.
 
+## 10. 브랜치·배포 원천
+
+⭑ ⟨신설 2026-09-08 · `WU-D1`⟩ 정본은 **`docs/BRANCHING.md`**(규칙 6 축자 · 브랜치 수명 표 · 「하지 말 것」 · 창 9 사례). 여기는 요지뿐이다.
+
+1. `main` 이 **유일한 배포 원천** — dev·prod sha 는 `origin/main` 의 조상이어야 하고 아니면 반입이 거절된다.
+2. staging 은 예외 — `integration/*` HEAD 를 굽되 원장 행에 **브랜치 이름**을 같이 적는다.
+3. `integration/r-N` 은 `main` tip 기점 · `main` 으로는 **ff-only 한 줄** · 병합 뒤 삭제.
+4. `lane/wu-*` 는 `integration` 기점 · **rebase ＋ ff** 로 복귀 · 통합에 얹힌 즉시 삭제.
+5. 마이그레이션은 **한 라운드 = 한 체인 구간** · 형제가 생기면 `00NN_merge` ＋ 두 순서 drift 오라클 의무.
+6. 릴리스 = 태그 — dev 실적용 `dev-YYYYMMDD-N` · prod `prod-YYYYMMDD` · 원장 〈N〉 행이 태그를 가리킨다.
+
+- 원격 브랜치 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지).
+

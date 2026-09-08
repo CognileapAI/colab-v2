@@ -66,6 +66,7 @@ infra/staging/deploy.sh --target staging
 - **새 태그가 생긴다.** 되살리는 것이 아니라 **지금 커밋을 새 릴리스로 굽는 것**이다. 원장에 green `deploy` 행이 하나 더 붙고,
   그 다음부터는 위 `awk` 한 줄이 그 태그를 읽는다.
 - **`--allow-dirty`·`--skip-backup` 을 재기동 상황에서 쓰지 않는다.** 둘 다 「무엇을 굽는지/무엇을 지켰는지 모른다」를 원장에 남긴다.
+- **dev 는 다르다 — 반입 전 `main` 조상 검사가 선행이다**: `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `infra/dev/ship.sh`). staging 만 `integration/*` HEAD 를 굽는 예외이고(`docs/BRANCHING.md` 규칙 1·2), 게이트는 `WU-D2` 에서 `ship.sh` 에 들어간다 — 그 전까지는 손으로 재는 한 줄이다.
 - 되돌리기는 `rollback.sh` 이고 **이미지만 되돌린다 — 스키마는 되돌리지 않는다.**
   ⚠ 2026-08-29 현재 **스크립트 롤백 경로가 없다**(성공 릴리스 1건 · `03-HANDOFF §4 #43`).
 

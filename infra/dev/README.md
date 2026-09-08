@@ -65,6 +65,8 @@ COLAB_PG_MASTER_URL_FILE=/etc/colab/master.url COLAB_OWNER_PASSWORD=… COLAB_AP
 cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/deploy_web.py --dist ../../frontend/dist --bucket colab-platform-web-dev
 ```
 
+⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 지금은 손으로 재는 한 줄이고, 게이트는 `WU-D2` 에서 `ship.sh` 에 들어간다.
+
 `ship.sh` 는 `db-bootstrap.sh` 를 싣지 않는다 — 첫 배포 때 `scp infra/dev/db-bootstrap.sh infra/staging/db-bootstrap.sh services/core-api/ops/app-role.sql` 을 같은 상대 배치로 손으로 올린다(1회).
 
 ## 되돌리기
