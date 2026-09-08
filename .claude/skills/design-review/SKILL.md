@@ -15,6 +15,7 @@ description: 현재 프론트 디자인을 정본(토큰·패턴·apple-design �
 |---|---|---|
 | 토큰 | `frontend/src/shell/tokens.css` | v2 의 유일한 토큰 정본. `01 CoLAB-Plan/planning-base/design-tokens/tokens.md` 는 Figma 미동기화 빈 템플릿이라 정본이 아니다 |
 | 정적 합격선 | `dev-package/sessions/p3-design-audit-20260905.md` 판정 11항목 ＋ 접근성 = 대비 **4.5:1**(AA) · 글자 **13px 이상** · 미정의 토큰 0 · 음수 여백 0 · 카드 그림자 0(팝오버 허용) · 보더 2층 토큰 분리 · 여백은 컨테이너 소유 | 측정 방식은 그 문서와 동일(WCAG 상대휘도 · `path:line` · 실측값) |
+| 실화면 계측 도구 | `.claude/skills/agent-browser/SKILL.md` ＋ `scripts/live_audit.sh` | Playwright 대신 `agent-browser`(§2-5) |
 | 인터랙션·모션 | `.claude/skills/apple-design/SKILL.md` | 응답(pointer-down 피드백) · 1:1 추적 · 중단 가능 전환 · 스프링/속도 계승 · 재질·깊이 · 타이포(tracking·leading) · **reduced-motion** · 절제 |
 | 목업 참고 | `01 CoLAB-Plan/design/`(`component-library.html` · `patterns/*.md` · `styles/design-system.css`) | v1 목업의 `ds-` 어휘. **v2 정본이 아니다** — 의도를 읽는 참고자료로만 쓴다. 코랄 액센트 `--color-accent-*` 정본은 여기에 없다(0건 실측 2026-09-08) → `40 COLAB-기획/00_기획원본` 이 후보지 |
 | 이월·판정 대기 | 직전 audit/fix 산출물의 §「하지 않은 것」·§「후속」 ＋ 그것을 집행한 WU 의 커밋 메시지 | 실행 전에 **집행 WU 가 있었는지 `git log` 로 먼저 확인**한다. 선례 = `p3-design-fix-20260908.md` 의 이월 7건은 WU-C11(`2c4d335`)이 집행했으므로 재판정 기준은 「집행 후 잔존 여부」다. 「전에 열려 있었다」는 최근 값이 아니다 |
@@ -86,6 +87,17 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 - **advisor ②** 에 판정표를 보인다(approve / approve-with-changes / reject). 반영 내용은 표 아래 「advisor ② 반영」 절에 적는다.
 - 산출은 회수 즉시 커밋. `PLAN-SoT §9` 등재문 초안은 문서 끝에 두고 〈N〉 은 병합 직전 재실측한다.
 
+### 2-5. 실화면 계측 — `agent-browser` (Playwright 아님)
+
+`[미상 · 실화면 계측 필요]` 행과 스크린샷 판정은 **`agent-browser`**(vercel-labs · Rust 데몬 ＋ CLI · 스킬 `.claude/skills/agent-browser/SKILL.md`)로 잰다. Playwright·puppeteer 를 새로 들이지 않는다.
+
+- 설치 = `npm i -g agent-browser && agent-browser install` · 점검 = `agent-browser doctor`.
+- **대상 URL 은 로컬 스택 또는 Ted 가 지정한 주소**다. 프론트는 `/api` 를 `127.0.0.1:8000` 로 프록시하므로(`frontend/vite.config.ts`) 백엔드 없이 뜨지 않는다 — 픽스처 모드는 없다. staging 운영 데이터베이스에 쓰는 경로는 열지 않는다(읽기 화면만).
+- 실행 = `scripts/live_audit.sh <out_dir> <url>...` — 페이지마다 라이트·다크 스크린샷 ＋ `live_probe.js`(상속 배경 기준 대비 · computed 글자 크기 · 로드된 `:active`·reduced-motion 규칙 수 · 인터랙티브 요소 transition) JSON ＋ `index.md` 요약표. 로그인은 `agent-browser --session design auth login <name>` 으로 먼저 저장한다.
+- 손으로 재는 항목(누름 피드백 · 드래그 추적 · 경계 저항)은 `snapshot -i` → `click`/`hover`/`drag` → `screenshot` 순서로 찍고, 판정은 표의 「근거」에 스크린샷 경로를 적어 사람이 한다. 스크립트는 판정하지 않는다.
+- 산출 = `dev-package/reports/design-review/<YYYYMMDD>/live/` · 스크린샷은 커밋한다(근거).
+- `eval` 은 **읽기 전용 JS** 만 넣는다(`live_probe.js` 처럼 DOM 무변경). 클릭·입력은 CLI 명령으로 한다.
+
 ## 3. fix — 에이전트 구조
 
 - 입력 = 커밋된 판정표 ＋ 승인 범위(Ted 판정 결과 또는 「즉시 수정 후보」 명시 지목). **범위 밖은 건드리지 않는다.**
@@ -100,7 +112,7 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 - 정본 없는 값을 짓지 않는다 — 액센트 hex · Lv3 칩 색 · 새 토큰 이름은 Ted 판정 뒤에만 세운다.
 - 13px 미만 전수 일괄 승격처럼 **판정표에 지목되지 않은 자리**를 고치지 않는다.
 - 실화면이 필요한 판정을 정적 근거로 대신하지 않는다. `[미상]` 은 결함이 아니라 값이다.
-- staging·dev 환경에 접촉하지 않는다(실화면 계측은 별도 배포 창 뒤의 일이다).
+- staging·dev 환경에 **쓰지** 않는다. 실화면 계측(§2-5)은 로컬 스택 또는 Ted 지정 URL 을 읽기만 한다.
 
 ## 5. 완료 보고
 

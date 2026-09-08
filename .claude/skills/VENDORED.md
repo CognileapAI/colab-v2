@@ -1,4 +1,4 @@
-# Vendored 스킬 9종 — 출처·라이선스·개조 목록
+# Vendored 스킬 10종 — 출처·라이선스·개조 목록
 
 이행 = 하네스 재설계 **P-S**(스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` B-2·F·H 7행).
 원칙 = **개조 목록에 적힌 것 외에는 원문 그대로.** 저자가 시험한 문안을 보존한다.
@@ -11,6 +11,7 @@
 | superpowers | `https://github.com/obra/superpowers` | MIT (Copyright (c) 2025 Jesse Vincent) | 플러그인 캐시 **6.3.0** (`~/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/`) | 2026-09-06 (설치본 파일 스탬프 2026-08-17) |
 | mattpocock/skills | `https://github.com/mattpocock/skills` | MIT (Copyright (c) 2026 Matt Pocock) | `main` tarball · `package.json` version **1.2.3** | **2026-09-06** (`refs/heads/main.tar.gz`) |
 | emilkowalski/skills | `https://github.com/emilkowalski/skills` | MIT (Copyright (c) 2025 Emil Kowalski) | `main` tarball · 커밋 **`d23d7f8`**(2026-08-21) | **2026-09-08** (`refs/heads/main.tar.gz`) |
+| vercel-labs/agent-browser | `https://github.com/vercel-labs/agent-browser` | Apache-2.0 (Copyright 2025 Vercel Inc.) | CLI **0.27.0**(`npm i -g agent-browser`) 이 내는 `agent-browser skills get core` 출력 · Chrome for Testing 152 | **2026-09-08** |
 
 ⚠ mattpocock 은 커밋 SHA 가 아니라 **브랜치 tarball** 이다(`git clone` 미사용 · 지시 제약). 재현 기준은
 「1.2.3 + 2026-09-06」이고, 정확한 SHA 가 필요하면 그 날짜의 `main` 을 다시 받아 대조한다.
@@ -46,6 +47,8 @@ frontmatter `description` 은 8종 전부 **≤2문장**(후보 목록 경량 �
 | `test-driven-development` | superpowers | 공통 3종만 (참조 파일 `writing-good-tests.md` 는 무수정) |
 | `receiving-code-review` | superpowers | 공통 3종만 |
 | `apple-design` | emilkowalski/skills | **원문 유지**(본문 무수정 · 2026-09-06 아카이브본과 본문 동일함을 diff 로 확인). 개조 = frontmatter `disable-model-invocation: true`(명시 호출 전용 · `/apple-design` 또는 `design-review` 가 경로로 읽는다) ＋ `license` 행 ＋ 출처 주석 1행(SHA·날짜) ＋ 공통 개조 3(대조 1행). `LICENSE.txt` 동봉. 공통 개조 1·2 해당 없음(사고 재현 지시·반복 나열 0건) |
+
+| `agent-browser` | vercel-labs/agent-browser | 원문 = CLI 가 생성하는 `core` 스킬(본문 무수정). 개조 = `name: core` → `agent-browser` · `description` 2문장 한국어로 축약(원문 5문장 · 후보 목록 경량) · `disable-model-invocation: true` · `license` 행 · 출처 주석 1행(CLI 버전) · 공통 개조 3(대조 1행). 재회수 = `agent-browser skills get core`. 도구 실체는 전역 npm(레포 밖) — 설치 명령은 `design-review §2-5` |
 
 ## 자작 스킬 (vendored 아님 · 참고)
 
