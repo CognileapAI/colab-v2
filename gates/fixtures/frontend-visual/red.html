@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>frontend-visual fixture — red</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #ffffff; color: #111111; font-family: system-ui, sans-serif; }
+  .page { padding: 24px; }
+  h1 { font-size: 24px; color: #111111; }
+  .tiny { font-size: 11px; color: #222222; }   /* 11px — 13px 하한 위반 */
+  .faint { font-size: 16px; color: #7c7c7c; }  /* #7c7c7c on #fff = 4.2:1 — AA(4.5) 미달 */
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>결함 픽스처</h1>
+  <p class="tiny">11px 보조 문구 — 이 한 줄이 counts.small 을 1 이상으로 만든다.</p>
+  <p class="faint">대비 4.2:1 문구 — 이 한 줄이 counts.lowContrast 를 1 이상으로 만든다.</p>
+</div>
+</body>
+</html>

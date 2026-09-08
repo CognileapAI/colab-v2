@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>frontend-visual fixture — green</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #ffffff; color: #111111; font-family: system-ui, sans-serif; }
+  .page { padding: 24px; }
+  h1 { font-size: 24px; color: #111111; }
+  p  { font-size: 16px; color: #333333; }   /* #333 on #fff = 12.6:1 */
+  .meta { font-size: 13px; color: #454545; } /* 13px 하한 정확히 · 8.9:1 */
+  button { font-size: 15px; color: #ffffff; background: #1b4fd8; border: 0; padding: 8px 14px; }
+  button:active { background: #143a9e; }     /* 누름 피드백 규칙 — live_probe 의 activeRules */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>대조군 페이지</h1>
+  <p>이 픽스처는 전부 13px 이상이고 대비가 4.5:1 을 넘는다. 게이트가 green 을 내야 한다.</p>
+  <p class="meta">보조 문구 13px · 대비 8.9:1</p>
+  <button type="button">실행</button>
+</div>
+</body>
+</html>

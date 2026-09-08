@@ -155,7 +155,7 @@ ALL_GATES=(
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
-  frontend-typecheck frontend-test frontend-fixture-reach
+  frontend-typecheck frontend-test frontend-fixture-reach frontend-visual
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   backup-cron-streak exec-bit
   service-tests-core-api service-tests-ai-service
@@ -167,6 +167,7 @@ ALL_GATES=(
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
+  frontend-visual-selftest
   service-tests-selftest
 )
 
@@ -237,6 +238,20 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처 도달·도달 0건·별칭 선언·
     # 판정부·진입점 부재까지.
     exec "$REPO_ROOT/gates/tools/frontend-fixture-reach-selftest.sh"
+    ;;
+  frontend-visual)
+    # 실화면 시각 되먹임 — agent-browser 로 페이지를 열어 computed 글자 크기와 상속 배경 기준
+    # 대비를 재고 라이트·다크 스크린샷을 근거로 남긴다. jsdom(frontend-test)이 못 보는 자리다.
+    # 판정부는 design-review 스킬의 scripts/live_audit.sh + live_probe.js 를 그대로 돈다 —
+    # Playwright 를 새로 들이지 않는다(SKILL §2-5). 앱을 향해서는 읽기 전용.
+    # 입력 = COLAB_VISUAL_URLS(선언) 또는 COLAB_VISUAL_EXEMPT=1(명시 면제 · 건수 표시).
+    # 둘 다 없으면 red(준비 · 입력미선언 · 78) — 침묵은 통과가 아니다.
+    exec "$REPO_ROOT/gates/tools/frontend-visual.sh"
+    ;;
+  frontend-visual-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 11px ＋ 대비 4.2:1 red(판정) ·
+    # 미선언 red(준비) · 명시 면제 green(건수 표시)까지.
+    exec "$REPO_ROOT/gates/tools/frontend-visual-selftest.sh"
     ;;
   import-boundary)
     # 도메인 간 직접 참조 금지 (import-linter, 계약=gates/config/importlinter.ini).

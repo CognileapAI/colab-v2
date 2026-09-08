@@ -97,6 +97,8 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 - 손으로 재는 항목(누름 피드백 · 드래그 추적 · 경계 저항)은 `snapshot -i` → `click`/`hover`/`drag` → `screenshot` 순서로 찍고, 판정은 표의 「근거」에 스크린샷 경로를 적어 사람이 한다. 스크립트는 판정하지 않는다.
 - 산출 = `dev-package/reports/design-review/<YYYYMMDD>/live/` · 스크린샷은 커밋한다(근거).
 - `eval` 은 **읽기 전용 JS** 만 넣는다(`live_probe.js` 처럼 DOM 무변경). 클릭·입력은 CLI 명령으로 한다.
+- 이 계측을 게이트로 세는 자리 = **`frontend-visual`**(`gates/tools/frontend-visual.sh` — 위 `live_audit.sh` 를 그대로 돈다). 대상은 `COLAB_VISUAL_URLS`(공백 구분)로 선언하고, 이번 회차에 대상이 없으면 `COLAB_VISUAL_EXEMPT=1` 로 명시 면제한다 — 침묵은 red(준비 · 78)다. 예외는 `gates/fixtures/frontend-visual/allow.txt`(셀렉터 접두사)에 사유와 함께 적는다.
+- `fix` 레인은 `COLAB_FIX_LANE=1` 로 돈다 — 그 선언이 있으면 `test-file-guard` 훅이 `frontend/test/`·`services/*/tests/`·`gates/`·`contracts/` 편집을 막는다(해제 = `COLAB_ALLOW_TEST_EDIT=1`).
 
 ## 3. fix — 에이전트 구조
 
