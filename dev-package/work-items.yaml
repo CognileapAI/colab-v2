@@ -3164,13 +3164,13 @@ items:
 
   - id: X-9
     name: 업로드 마법사 핫픽스 4건 — 기간 역전 클라이언트 검사(오류를 필드 옆에) · 서버 오류 단계 범위·이동 시 초기화 · 「데이터셋 이름」 필수 배지 · 등록 카드 간격 토큰 (Ted 2026-09-08 「핫픽스 4 ＋ R-E 2」)
-    status: open
+    status: done
     stage: stage1
     owner: "T-R"
     entry_conditions: ["진단 보고 dev-package/reports/R-D/upload-step3-overlap-20260908.md 실재", "Ted 판정 「핫픽스 4 ＋ R-E 2」 2026-09-08"]
     depends_on: []
     completion_def: "vitest 신규 시험 RED→GREEN(기간 역전 · 오류 범위 · 필수 배지 · 카드 gap) · 전체 vitest 회귀 0 · tsc --noEmit 0 · frontend-* 게이트 green(frontend-visual 면제 노출) · 글자 크기·기간 표시 위치 무접촉(X-10) · 서버 검증·필수 강제 무변경 · 계약 0"
-    evidence: "[미집행]"
+    evidence: "frontend/src/components/upload/{periodParts.ts,registerError.ts(신설),PeriodCalendarPopover.tsx,RegisterArea.tsx,UploadModal.tsx,upload.css} · 시험 frontend/test/upload-hotfix-20260908.test.ts RED(모듈 부재 → 13 failed/17) → GREEN 17/17 · vitest 전체 1100/1100 · tsc --noEmit 0 · 게이트 frontend-typecheck·frontend-test·frontend-fixture-reach·frontend-visual(명시 면제)·exec-bit·work-item-consistency green 6/0/0 · staging 리허설 배포 8158e87(원장 브랜치=integration/hotfix-upload · 번들 index-C3QbRUis.js · 판정 아님) · advisor ② 조건부 수용(코드 변경 0 · 노트 미달 4 정정 · 대장 기입) · 노트 dev-package/sessions/hotfix-upload-20260908.md · 범위 밖 = 「다음」 정지 원인 status.ready(별건 조사) · 실화면 겹침 오라클 부재(후속 WU)"
     deadline: null
     note: "2026-09-08 등재(오케스트레이터) — 레인 hotfix-upload · 통합 integration/hotfix-upload(main tip ccf76ec 기점) · 차단 2건(③-(c) 서버 오류 잔존 · ②-(2) 기간 역전 무검사) ＋ 표시 2건(②-(3) 배지 · §1 카드 gap · 회귀 8db3deb WU-B11) · dev 83d3eb5 동일 결함"
     sources: ["dev-package/reports/R-D/upload-step3-overlap-20260908.md"]
