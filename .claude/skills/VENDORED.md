@@ -10,7 +10,6 @@
 |---|---|---|---|---|
 | superpowers | `https://github.com/obra/superpowers` | MIT (Copyright (c) 2025 Jesse Vincent) | 플러그인 캐시 **6.3.0** (`~/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/`) | 2026-09-06 (설치본 파일 스탬프 2026-08-17) |
 | mattpocock/skills | `https://github.com/mattpocock/skills` | MIT (Copyright (c) 2026 Matt Pocock) | `main` tarball · `package.json` version **1.2.3** | **2026-09-06** (`refs/heads/main.tar.gz`) |
-
 | emilkowalski/skills | `https://github.com/emilkowalski/skills` | MIT (Copyright (c) 2025 Emil Kowalski) | `main` tarball · 커밋 **`d23d7f8`**(2026-08-21) | **2026-09-08** (`refs/heads/main.tar.gz`) |
 
 ⚠ mattpocock 은 커밋 SHA 가 아니라 **브랜치 tarball** 이다(`git clone` 미사용 · 지시 제약). 재현 기준은
