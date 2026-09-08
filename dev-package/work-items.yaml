@@ -3146,5 +3146,18 @@ items:
     completion_def: "main CI 잡 service-tests (core-api) green 1회 · 원인(시험 결함 vs 제품 결함) 판정 기록 · 로컬 service-tests-core-api 게이트와 CI 의 차이(환경·시크릿·필터) 명시 · 제품 결함이면 별도 WU"
     evidence: "[미집행]"
     deadline: null
-    note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate)"
+    note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate) · 2026-09-08 ccf76ec 실행에서 service-tests (core-api) 통과 — 원인 판정 미기록이라 open 유지(근거 dev-package/sessions/WINDOW-10-20260908.md)"
     sources: ["dev-package/sessions/R-D-ROUND-20260908.md"]
+
+  - id: X-8
+    name: CI schema-gates 배선 — 일회용 postgres ＋ `alembic upgrade head` ＋ `COLAB_APPLIED_DB_URL_PLATFORM/_AI` export 스텝 추가(2026-09-01 이래 전건 failure · R-D 기인 아님)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["ccf76ec CI 실행 결과 확인(schema-gates failure 실재)"]
+    depends_on: []
+    completion_def: "CI 잡 schema-gates green 1회 · 로컬 schema-diff 와 같은 입력 · skip 금지"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재(창 10 기록 레인) — 원인 = .github/workflows/ci.yml schema-gates 잡에 적용 DB 준비 스텝이 없어 schema-diff 가 red(준비 · exit 78). 게이트 자신은 fail-closed 정상 동작. run 이력 45건(skipped 아닌 회차) 중 cancelled 1 을 뺀 전건 failure · 같은 패턴 2026-09-01 부터 관측. git diff --stat 18c0228..ccf76ec -- db contracts 빈 결과 = R-D 기인 아님. required_status_checks 미설정이라 main 병합·dev 배포 판정 비차단이나 CI 에서 스키마 드리프트를 검증한 적이 없다는 커버리지 공백. X-7(service-tests (core-api) 시험 1건)과 별개 항목"
+    sources: ["dev-package/reports/R-D/ci-schema-gates-20260908.md"]

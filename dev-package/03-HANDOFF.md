@@ -44,6 +44,7 @@
 브랜치 = 고유 11 → 원격 heads **12→4** · `archive/*` 태그 10(원격 10/10) · PR #4·#5·#6 종료 · `gh-pages` 존치 · `ship.sh` 조상 게이트(exit 65/78 · 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`) · `MAIN_SHA` · 원장 `브랜치=` · `tag-release.sh` · `deploy_doctor` **15항목**(완료 조건 14/14 → **15/15**).
 하네스 eval = `eval/harness/` **20건**(3·10·5·2) · 첫 실측 회차 1 green **15/20** · red 5(과제 설계 결함 · 무수정) · p95 46.4초 → 상한 93 · 예산 2.01 · 회당 약 32.45 USD · 게이트 `harness-eval` 세 상태(면제 노출) · CI 필터 `harness`(시크릿 미배선) · 승격 3회 연속 **0회**. 게이트 = 전수 `all -j 1` **전수 58: green 56 / 판정 1(migration-drift · 단독 재현 green) / 준비 1(frontend-visual · 면제 선언 후 green) — R-D-ROUND §2** · 계약 0 · 마이그레이션 0 · `frontend`·`contracts`·`db` diff 0(제품 코드 = `deploy_doctor.py` ＋ 그 시험 2파일뿐).
 근거 = `dev-package/sessions/R-D-ROUND-20260908.md`(WU 지도 · advisor ② 7건 · Ted 판정 §5 · 인계 §7) · intent `2026-09-08-r-d.md`·`2026-09-08-harness-evals.md` · spec `prd/specs/R-D.md`. 다음 = 배포 창(`ship.sh` 게이트·`tag-release.sh` 첫 실전 · `deploy_doctor` 15/15) → 재검사(`design-review`) → R-E · **Ted 회부 3건**(측정 대상 정의 · red 5건 재설계 · `.verified--pending` 4.23:1).
+⭑ **⟨증보 2026-09-08 · 창 10 배포 창 집행⟩ 최종 갱신 = 2026-09-08 — dev 실적용 `ccf76ecf0bb5` · `deploy_doctor` **항목 15 — ✓ 15 · ✗ 0 · ─ 0**(1회) · staging 리허설 GREEN(판정 아님) · 등재 `PLAN-SoT §9 〈381〉` · 현재 단계 = 태그 `dev-20260908-1` **push 대기(Ted 확인 뒤)**. 다음 = ⑴ 프론트 업로드 2·3단계 결함 판정 → ⑵ 재검사(`design-review`) → ⑶ R-E. 근거 = `dev-package/sessions/WINDOW-10-20260908.md`.**
 ⭑ **⟨증보 2026-09-08 · 디자인 검토 audit⟩** 스킬 `design-review`(자작)·`apple-design`(vendored · emilkowalski `d23d7f8`) 등재 · 프론트 CSS 16종 ＋ 인터랙션 8파일 전수 판정 = **있음 40 / 없음 51 / [미상] 8** · 코드 0 · 계약 0. 근거 = `dev-package/sessions/design-review-20260908.md`(레인 L1~L4 · 계측 `reports/design-review/20260908/css_audit.md`).
 다음 = ⑴ **Ted 판정 21건**(§6 · 접근성 4 · 토큰 어휘 5 · 그림자·보더·여백 4 · 인터랙션·모션 8 — 누름 피드백 `:active` 전무 · reduced-motion 전역 규칙 포함) ⑵ 판정 뒤 `design-review` fix 모드로 후보 WU 16(CSS 13 · TSX 3 · `upload.css`·`project.css` 파일 면 직렬 순서 §7) ⑶ 실화면 계측 6건은 다음 배포 창 뒤.
 ⭑ **⟨증보 2026-09-08 · SDLC 플레이북 대조 집행⟩** Design·Test 빈 자리 5건 메움 — spec 「디자인 제약 확인」 소절(`to-spec`·`specs/TEMPLATE.md`) · 게이트 **`frontend-visual`**(＋selftest 4건 green · `agent-browser` 오프라인 픽스처) · 훅 `test-file-guard`(PreToolUse · `COLAB_FIX_LANE=1` 일 때 시험·게이트·계약 편집 차단)·`css-edit-audit`(PostToolUse · CSS 편집 즉시 계측 1행) · CLAUDE.md **§5-b 반복 실수** ＋ §6 규칙 · `gates/tools/artifact-lead-time.sh`(intent→spec→round 리드타임 · 현재 4건 전부 0일). 하네스 eval 은 **intent 초안** `dev-package/intent/2026-09-08-harness-evals.md`(Ted 확인 대기 · 대장 미등재).
@@ -305,6 +306,8 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 ## 4. 블로커 (사람이 풀어야 할 것)
 
 ⭑ **⟨증보 2026-09-08 · R-D⟩ R-D 후속·인계 10건은 `dev-package/sessions/R-D-ROUND-20260908.md §7` 한 자리에 있다** — 차단 = **Ted 회부 3건**(하네스 eval 측정 대상 정의 · red 5건 재설계 승인 · `.verified--pending` 대비 4.23:1 검사 공백) ＋ **CI 시크릿 발급**(`secrets.ANTHROPIC_API_KEY`).
+⭑ **⟨증보 2026-09-08 · 창 10⟩ 열린 것 2건** — ⑴ 태그 `dev-20260908-1`(→ `ccf76ecf0bb5`) **원격 push 대기** (`git push origin dev-20260908-1` · Ted 가 15/15 를 본 뒤 오케스트레이터 집행 · 비가역) ⑵ CI `schema-gates` 배선 공백 (대장 `X-8` open · `required_status_checks` 아님이라 배포 비차단). 근거 = `dev-package/sessions/WINDOW-10-20260908.md §4`·`§7`.
+
 
 > ⭑ **⟨2026-09-05 정리⟩ 이 표에는 열린 것만 남겼다.** 닫힌 블로커 `#1`~`#38`·`#43`·`#45`~`#68` 의 행은 **원문 그대로** `dev-package/archive/HANDOFF-HISTORY-2026-08.md`·`-2026-09.md` 에 있다 — 번호로 `grep`.
 
