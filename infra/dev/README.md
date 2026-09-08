@@ -67,6 +67,11 @@ cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/
 
 ⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 지금은 손으로 재는 한 줄이고, 게이트는 `WU-D2` 에서 `ship.sh` 에 들어간다.
 
+- **게이트(`WU-D2` 반영 · `ship.sh` 안)** — `SHA` 를 읽은 직후 `origin/main` 을 fetch 해 조상 검사를 한다. 비조상이면 **exit 65**(거절 · ssh 0회) · `origin` 을 못 읽으면 **exit 78**(준비 실패 · 진행 금지). 손으로 재던 위 한 줄을 대신한다.
+- **우회는 선언한다** — 긴급 반입은 `COLAB_SHIP_ALLOW_NONMAIN=1 … infra/dev/ship.sh`. 거절 대신 통과하되 출력에 「비조상 반입 · 우회 선언」이 남는다. 기본값은 거절이다.
+- **`MAIN_SHA`** — 같은 ssh 가 `/opt/colab-v2/MAIN_SHA` 에 `main=<12자리> candidate=<12자리> ancestor=yes|no|bypass` 한 줄을 적는다. `CURRENT_SHA` 옆에 놓이고 `deploy_doctor` ⑮ 가 둘을 대조한다(EC2 에 git 이 없어 문자열 대조가 유일하다).
+- **태그** — `deploy_doctor` 전건 통과 뒤 사람이 `infra/dev/tag-release.sh dev` 를 부른다(`dev-YYYYMMDD-N` · N 은 같은 날 기존 태그 수＋1 · `prod` 는 `prod-YYYYMMDD`). 대상 sha 는 로컬 `dist/colab-v2-dev.sha` 이고 EC2 를 읽지 않는다. **push 는 하지 않고 명령만 출력**한다.
+
 `ship.sh` 는 `db-bootstrap.sh` 를 싣지 않는다 — 첫 배포 때 `scp infra/dev/db-bootstrap.sh infra/staging/db-bootstrap.sh services/core-api/ops/app-role.sql` 을 같은 상대 배치로 손으로 올린다(1회).
 
 ## 되돌리기

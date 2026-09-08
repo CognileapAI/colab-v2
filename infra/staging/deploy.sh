@@ -68,7 +68,7 @@ if [ "$DIRTY_N" -ne 0 ]; then
     log "이미지 태그가 커밋 SHA 인데 내용이 그 커밋이 아니면 **태그가 거짓말을 한다.**"
     log "정말 굽겠다면 --allow-dirty 로 **명시**하라. 그 건수는 원장에 남는다."
     mark_failed "커밋 확인" "워킹트리 변경 ${DIRTY_N}건 (--allow-dirty 미지정)"
-    ledger_append deploy "$SHA" "-" red "워킹트리 변경 ${DIRTY_N}건 — 착수 거부"
+    ledger_append deploy "$SHA" "-" red "워킹트리 변경 ${DIRTY_N}건 — 착수 거부 브랜치=$(git -C "$REPO" branch --show-current)"
     exit 65
   fi
   # ⭑ 명시 면제. **건수를 드러낸 채** 넘어간다 — 원장에도 그대로 남는다.
@@ -84,7 +84,7 @@ dc() { docker compose -f "$HERE/compose.i2.yml" --env-file "$ENV_FILE" "$@"; }
 
 abort() { # $1=단계 $2=사유
   mark_failed "$1" "$2"
-  ledger_append deploy "$SHA" "$TAG" red "$1 — $2"
+  ledger_append deploy "$SHA" "$TAG" red "$1 — $2 브랜치=$(git -C "$REPO" branch --show-current)"
   log "!!! 배포 중단 — 단계 [$1] · $2"
   log "자동 롤백은 기본 off 다. 되돌리려면 사람이 rollback.sh 를 부른다(〈168〉-㉳)."
   if [ "$AUTO_ROLLBACK" -eq 1 ]; then
@@ -263,7 +263,7 @@ digest_ledger_append "$TAG" i2 "${RELEASE_IMAGES[@]/#/colab-v2/}" \
 log "digest 이력: $(digest_ledger_path)"
 
 log "⑫-b 원장 · 표식"
-ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE digest이력=${#RELEASE_IMAGES[@]}종 $BACKUP_NOTE 워킹트리변경=${DIRTY_N}"
+ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE digest이력=${#RELEASE_IMAGES[@]}종 $BACKUP_NOTE 워킹트리변경=${DIRTY_N} 브랜치=$(git -C "$REPO" branch --show-current)"
 mark_success "$TAG"
 
 image_prune "$TAG"
