@@ -3047,13 +3047,13 @@ items:
 
   - id: WU-D4
     name: 브랜치 정리 — 실측 표(고유 11) · archive 태그 보존 · 조상분 즉시 삭제 · 창 9 계열·원격 5 는 Ted 한 줄 뒤 (규칙 3·4 · Q4·Q4a)
-    status: partial
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["Ted intent 2건 커밋(승인)"]
     depends_on: []
     completion_def: "브랜치별 표(로컬/원격 · main 조상 · 밖 커밋 수 · 동등물 유무 · 용도 · 권고) 공란 0 · 즉시 삭제분에 archive/<브랜치> 태그 선재(원격 포함) 뒤 삭제 · 창 9 계열 3 ＋ 원격 5 는 Ted 한 줄 전 무삭제 · plan/r-d-0908 은 R-D ff 뒤 삭제"
-    evidence: "표 dev-package/sessions/WU-D4-branches-20260908.md(11행 · 공란 0) · 노트 dev-package/sessions/rd-branch-sweep-20260908.md · archive/* 로컬 태그 10(원격 0) · 게이트 exec-bit·work-item-consistency·planning-freshness green · advisor ② 조건부 수용(PR #4·#5·#6 표기 ＋ 미달 3 정정 반영) — 잔여 = 삭제 집행(Ted 한 줄 → 게이트 ③ → 원격 태그 push·브랜치 삭제)"
+    evidence: "표 dev-package/sessions/WU-D4-branches-20260908.md(11행 · 공란 0) · 노트 dev-package/sessions/rd-branch-sweep-20260908.md · archive/* 로컬 태그 10(원격 0) · 게이트 exec-bit·work-item-consistency·planning-freshness green · advisor ② 조건부 수용(PR #4·#5·#6 표기 ＋ 미달 3 정정 반영) — 잔여 = 삭제 집행(Ted 한 줄 → 게이트 ③ → 원격 태그 push·브랜치 삭제) → 2026-09-08 집행 완료(Ted 「위임 — 권고대로 전부 집행」 · advisor ③ go): archive/* 원격 10/10 sha 대조 · PR #4·#5·#6 종료 댓글 · 원격 heads 12→4 · 로컬 4 삭제 · gh-pages 무접촉 · plan/r-d-0908 은 main ff 뒤 · 기록 = 같은 표 §11 · 보조 실측 dev-package/reports/R-D/d4-judgment-facts-20260908.md"
     deadline: null
     note: "2026-09-08 등재 — 실측 11(intent 「18」은 lane/wu-c*·integration/r-c 삭제 전 낡은 수). 레인 rd-branch-sweep · 순서 1/7 · 2026-09-08 레인 종료 b39578b: 권고 즉시 2 · Ted 뒤 7 · R-D 병합 뒤 1 · 보류 1(gh-pages = Pages 가동 중) · 원격 3건은 열린 PR #4·#5·#6 head(삭제 = close) · partial 사유 = 삭제·원격 push 는 게이트 ③ 뒤"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]

@@ -172,3 +172,14 @@ git worktree prune
 
 - `gh-pages` — 가동 중 Pages 원천(§7). 태그도 만들지 않았다.
 - `main` · `integration/r-d` · `lane/wu-d4` · `worktree-agent-a704543d0bb869e59` — 판정 밖.
+
+## 11. 집행 기록 (오케스트레이터 · 2026-09-08 · Ted 판정 「위임 — 권고대로 전부 집행」 · advisor ③ go(조건 2 충족))
+
+- 태그 push — `archive/*` 10건 명시 refspec(`refs/tags/archive/<n>:refs/tags/archive/<n>`) 개별 push · 원격 sha 대조 10/10 일치 · `--tags` 미사용.
+- PR 종료 — #4 · #5 · #6 (`rtf400`) `gh pr close --comment`(태그명 · 복원 명령 · 이 표 경로) 3/3 · `--delete-branch` 미사용 · 열린 PR 0.
+- 로컬 삭제 — `integration/r-a2`(-d) · `integration/r-b`(-d) · `w9-rebase`(워크트리 `.claude/worktrees/w9` 제거 뒤 -D · 원격 태그 검증 뒤) · `integration/w9-dev-deploy`(-D).
+- 원격 삭제 — `integration/r-a2` · `integration/r-b` · `integration/w9-dev-deploy` · `integration/w9-dev-deploy-rebased` · `feature/rtf400_deploy_prod` · `feature/rtf400_dev_scale_up` · `feature/rtf400_upload_reaper` · `urgent-upload-lineage-rev1` = 8 · `git fetch --prune`.
+- 계수 — `git ls-remote --heads origin` **12 → 4**(`main` · `integration/r-d` · `gh-pages` · `plan/r-d-0908`) · 원격 `archive/*` **0 → 10** · 로컬 브랜치 잔여 `main` · `integration/r-d` · `plan/r-d-0908`(＋ 진행 중 레인).
+- 무접촉 — `gh-pages`(Pages 가동 중 · facts §3) · `plan/r-d-0908`(㉰ · `main` ff 뒤) · `main` · `integration/r-d`.
+- 판정 보조 실측 — `dev-package/reports/R-D/d4-judgment-facts-20260908.md`(dev 실물 `t4g.medium` · 호스트 compose = `main` 동일 · PR 리뷰 요청 0 · U-2 정정 `main` 부재).
+- 후속 — ⑴ `docs/DEPLOY.md` 인스턴스 유형 정정은 별도 문서 커밋(출처 `archive/feature/rtf400_dev_scale_up` 809f311 · 나머지 22행은 미실측이라 미반입) ⑵ U-2 정정(원장 3파일 · 〈368〉 충돌 → 재번호) = `archive/feature/rtf400_upload_reaper` 5c1458e 출처로 후속 항목 · 이번 반입 0 ⑶ 창 9 잔여 4종 = 폐기(태그 `archive/w9-rebase` 보존).
