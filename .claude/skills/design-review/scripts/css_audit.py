@@ -57,7 +57,7 @@ def line_of(text, idx):
 def collect_defs(files):
     defs = {}
     for f in files:
-        for m in VAR_DEF_RE.finditer(f.read_text(encoding='utf-8', errors='replace')):
+        for m in VAR_DEF_RE.finditer(strip_comments(f.read_text(encoding='utf-8', errors='replace'))):
             defs.setdefault(m.group(1), m.group(2).strip())
     return defs
 
@@ -70,8 +70,16 @@ def resolve(value, defs, depth=0):
     return value
 
 
+COMMENT_RE = re.compile(r'/\*.*?\*/', re.S)
+
+
+def strip_comments(text):
+    """Blank out /* … */ comments but keep newlines so line numbers stay true."""
+    return COMMENT_RE.sub(lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text)
+
+
 def audit_file(path, defs, root):
-    text = path.read_text(encoding='utf-8', errors='replace')
+    text = strip_comments(path.read_text(encoding='utf-8', errors='replace'))
     rel = os.path.relpath(path, root)
     out = {'file': rel, 'small_font': [], 'neg_margin': [], 'undefined_token': [],
            'shadow': [], 'local_token_def': [], 'motion_lines': 0, 'reduced_motion': '@media (prefers-reduced-motion' in text or 'prefers-reduced-motion' in text,
@@ -109,6 +117,8 @@ def audit_file(path, defs, root):
             fg_hex = HEX_RE.search(color)
             bg_hex = HEX_RE.search(bg)
             if fg_hex and bg_hex:
+                if len(fg_hex.group(1)) in (4, 8) or len(bg_hex.group(1)) in (4, 8):
+                    continue  # alpha channel: contrast depends on what is underneath → not measurable statically
                 ratio = contrast(fg_hex.group(0), bg_hex.group(0))
                 if ratio is not None:
                     out['contrast'].append({'line': line_of(text, rm.start()), 'selector': ' '.join(sel.split())[:60],

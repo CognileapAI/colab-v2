@@ -198,14 +198,6 @@
     "aa": true
    },
    {
-    "line": 117,
-    "selector": ".fchips .fc",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
-   {
     "line": 127,
     "selector": ".chip--neutral",
     "fg": "#434950",
@@ -247,7 +239,7 @@
    },
    {
     "line": 133,
-    "selector": "/* ⟨WU-C11 · 판정 45⟩ 4단째 = Lv2 와 같은 계열 한 단 진하게(blue90). 글자는 목",
+    "selector": ".lvl-3",
     "fg": "#0b4eb6",
     "bg": "#bad7ff",
     "ratio": 5.13,
@@ -263,7 +255,7 @@
    },
    {
     "line": 138,
-    "selector": "/* 승인 처리 도착 전 — 꺼진 조작처럼 (Ted 판정 2026-09-02 · `CT-1` [미확인] ㈎·",
+    "selector": ".verified--pending",
     "fg": "#697077",
     "bg": "#e8ecf2",
     "ratio": 4.23,
@@ -286,16 +278,8 @@
     "aa": true
    },
    {
-    "line": 151,
-    "selector": ".tbl td.rowact .rab",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
-   {
     "line": 158,
-    "selector": "/* 두 길 상호 안내 — 카탈로그는 검색을 가리킨다 (`Policy_데이터_찾기 §1.3-8`) */ .c",
+    "selector": ".crosslink",
     "fg": "#565c63",
     "bg": "#ffffff",
     "ratio": 6.76,
@@ -552,16 +536,7 @@
     "px": 9.0
    }
   ],
-  "neg_margin": [
-   {
-    "line": 86,
-    "decl": "margin: -12px` 를 격자의 `margin-bottom` 으로 옮겼던 것을,\n   WU-C11 이 컨테이너 gap 한 자리로 모았다(격자·행동 줄·목록 모두 같은 16px). */\n.detail-page .infogrid .ig .k"
-   },
-   {
-    "line": 146,
-    "decl": "margin: -8px 0 var(--space-4)` — 격자의 아래 여백(24px)을 8px 되당겨\n   16px 를 만들던 음수 상쇄다. 여백은 부모 `.dt-split-r` 이 `gap` 으로 소유한다(같은 16px). */\n.detail-page .dt-gridact"
-   }
-  ],
+  "neg_margin": [],
   "undefined_token": [
    {
     "line": 123,
@@ -739,7 +714,7 @@
    },
    {
     "line": 68,
-    "selector": "/* ⟨WU-C11 · 판정 45⟩ Lv2 와 Lv3 을 한 규칙에 묶어 두어 4단째가 무색이었다 — 갈라 ",
+    "selector": ".detail-page .lvl-2",
     "fg": "#0f62e0",
     "bg": "#e2eeff",
     "ratio": 4.66,
@@ -755,7 +730,7 @@
    },
    {
     "line": 94,
-    "selector": "/* 잠긴 상세 — 다크 네이비 밴드 (E-06가 얹힐 자리 · E-00 공통 기반) */ .detail-p",
+    "selector": ".detail-page .locked-hero",
     "fg": "#ffffff",
     "bg": "#121619",
     "ratio": 18.19,
@@ -763,18 +738,10 @@
    },
    {
     "line": 105,
-    "selector": "/* ── 파일(조각) 목록 — `보기` 로 열린다 (`Policy_데이터셋_상세 §5` 122행) ────",
+    "selector": ".detail-page .infogrid .ig .v .ig-more",
     "fg": "#0f62e0",
     "bg": "#e2eeff",
     "ratio": 4.66,
-    "aa": true
-   },
-   {
-    "line": 188,
-    "selector": "/* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */ ",
-    "fg": "#fff",
-    "bg": "#21272ae0",
-    "ratio": 15.13,
     "aa": true
    },
    {
@@ -803,7 +770,7 @@
    },
    {
     "line": 240,
-    "selector": "/* ⭑ ⟨20차 해제 · PRD-10 · WU-B5⟩ 사람 값 ↔ 파생값 불일치 안내. **경고 한 줄이고",
+    "selector": ".detail-page .dh-lv-mismatch",
     "fg": "#a85400",
     "bg": "#fff6ed",
     "ratio": 5.0,
@@ -941,7 +908,7 @@
   "contrast": [
    {
     "line": 157,
-    "selector": "/* 연결 규칙 안내 한 줄 — 이 단계의 맨 위 */ .lin-scope-lv",
+    "selector": ".lin-scope-lv",
     "fg": "#5b6472",
     "bg": "#f7f8fa",
     "ratio": 5.63,
@@ -949,7 +916,7 @@
    },
    {
     "line": 180,
-    "selector": "/* 사후 충돌 안내 */ .lin-conflict",
+    "selector": ".lin-conflict",
     "fg": "#a85400",
     "bg": "#fff6ed",
     "ratio": 5.0,
@@ -977,7 +944,7 @@
   "contrast": [
    {
     "line": 32,
-    "selector": "/* 가공 방식 라벨 — 목업 `.w-box`/`.w-t` 축자(액센트 틴트 면 · 액센트 보더 · 액센트 ",
+    "selector": ".detail-page .lin-way",
     "fg": "#4821db",
     "bg": "#f1e8ff",
     "ratio": 7.05,
@@ -985,7 +952,7 @@
    },
    {
     "line": 57,
-    "selector": "/* 활용 배지 — 노드가 아니다. 개수만 알리고 활용 섹션으로 보낸다 */ .detail-page .lin",
+    "selector": ".detail-page .lin-use",
     "fg": "#0f62e0",
     "bg": "#edf4ff",
     "ratio": 4.94,
@@ -1305,7 +1272,7 @@
   "contrast": [
    {
     "line": 432,
-    "selector": "/* 정의·범위 안내 — **새 프로젝트 모달에만** 있다 (§8) */ .pj-defnote",
+    "selector": ".pj-defnote",
     "fg": "#565c63",
     "bg": "#f4f7fb",
     "ratio": 6.29,
@@ -1313,7 +1280,7 @@
    },
    {
     "line": 517,
-    "selector": "/* 소속 데이터셋 표의 Verified 칸 — **카탈로그와 같은 표기**다 (`〈282〉`-㉮ 규칙 확장",
+    "selector": ".project-detail .verified",
     "fg": "#067506",
     "bg": "#efffef",
     "ratio": 5.69,
@@ -1354,14 +1321,6 @@
     "fg": "#fff",
     "bg": "#1369e9",
     "ratio": 4.97,
-    "aa": true
-   },
-   {
-    "line": 49,
-    "selector": ".search-page .notice--empty .empty-acts .quiet",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
     "aa": true
    },
    {
@@ -1623,7 +1582,7 @@
    },
    {
     "line": 214,
-    "selector": "/* ⭑ ⟨19차 · PRD-15⟩ `필수` 배지. `자동` 과 같은 모양이되 **강조가 반대**다 — 자동",
+    "selector": ".reqtag",
     "fg": "#fff",
     "bg": "#121619",
     "ratio": 18.19,
@@ -1646,22 +1605,6 @@
     "aa": true
    },
    {
-    "line": 402,
-    "selector": ".dr-nav button",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
-   {
-    "line": 429,
-    "selector": ".dr-useg button",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
-   {
     "line": 434,
     "selector": ".dr-useg button.on",
     "fg": "#ffffff",
@@ -1679,12 +1622,7 @@
     "px": 11.0
    }
   ],
-  "neg_margin": [
-   {
-    "line": 57,
-    "decl": "margin-left: -7px` 는\n     자기 왼쪽 padding 을 되당기는 음수 상쇄였다. 글자 시작 위치는 그대로다 (판정 ⑩) */\n  padding: 3px 9px 3px 0"
-   }
-  ],
+  "neg_margin": [],
   "undefined_token": [],
   "shadow": [
    {
@@ -1696,14 +1634,6 @@
   "motion_lines": 7,
   "reduced_motion": false,
   "contrast": [
-   {
-    "line": 25,
-    "selector": ".loadfail-retry",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
    {
     "line": 66,
     "selector": ".detail-page .backlink:hover, .project-detail .backlink:hove",
@@ -1729,32 +1659,16 @@
     "aa": true
    },
    {
-    "line": 173,
-    "selector": ".mainnav a:hover",
-    "fg": "#121619",
-    "bg": "#69707714",
-    "ratio": 3.62,
-    "aa": false
-   },
-   {
     "line": 177,
-    "selector": "/* 활성 내비 = 흰 면 + 잉크 밑줄 */ .mainnav a.is-active",
+    "selector": ".mainnav a.is-active",
     "fg": "#121619",
     "bg": "#ffffff",
     "ratio": 18.19,
     "aa": true
    },
    {
-    "line": 193,
-    "selector": "/* GNB 에 검색을 두지 않는다 — 진입은 `연구실` 화면 히어로 한 곳뿐 */ .gnb-settings",
-    "fg": "#21272ae0",
-    "bg": "#ffffff",
-    "ratio": 15.13,
-    "aa": true
-   },
-   {
     "line": 215,
-    "selector": "/* 업로드 = 셸 전역 1급 행동 · 유일한 상시 잉크 솔리드 */ .gnb-upload",
+    "selector": ".gnb-upload",
     "fg": "#fff",
     "bg": "#1369e9",
     "ratio": 4.97,

@@ -9,7 +9,7 @@ files 16 · tokens defined 82 · thresholds: font ≥13px · contrast ≥4.5:1 (
 | `components/common/toast.css` | 1 | 0 | 0 | 3 | 0 | 0 | — | 0 |
 | `components/common/variableTable.css` | 0 | 0 | 2 | 0 | 0 | 0 | — | 0 |
 | `components/dashboard/dashboard.css` | 9 | 0 | 20 | 0 | 0 | 0 | — | 0 |
-| `components/detail/detail.css` | 9 | 2 | 3 | 30 | 0 | 0 | — | 1 |
+| `components/detail/detail.css` | 9 | 0 | 3 | 30 | 0 | 0 | — | 1 |
 | `components/lab/lab.css` | 0 | 0 | 1 | 0 | 1 | 0 | — | 0 |
 | `components/lineage/lineage.css` | 9 | 0 | 9 | 3 | 0 | 0 | — | 0 |
 | `components/lineage/lineageGraph.css` | 0 | 0 | 0 | 0 | 0 | 0 | — | 0 |
@@ -18,7 +18,7 @@ files 16 · tokens defined 82 · thresholds: font ≥13px · contrast ≥4.5:1 (
 | `components/project/project.css` | 14 | 1 | 0 | 8 | 1 | 0 | — | 1 |
 | `components/search/search.css` | 2 | 0 | 0 | 0 | 0 | 2 | NO | 0 |
 | `components/upload/upload.css` | 20 | 0 | 9 | 18 | 1 | 7 | yes | 0 |
-| `shell/shell.css` | 1 | 1 | 0 | 0 | 1 | 7 | NO | 1 |
+| `shell/shell.css` | 1 | 0 | 0 | 0 | 1 | 7 | NO | 0 |
 | `shell/tokens.css` | 0 | 0 | 0 | 0 | 0 | 0 | — | 0 |
 
 ## Detail (path:line · value)
@@ -61,7 +61,7 @@ files 16 · tokens defined 82 · thresholds: font ≥13px · contrast ≥4.5:1 (
 - `components/catalog/catalog.css:23` local token def `--radius-lg` (outside tokens.css)
 - `components/catalog/catalog.css:24` local token def `--radius-pill` (outside tokens.css)
 - `components/catalog/catalog.css:25` local token def `--shadow-lg` (outside tokens.css)
-- `components/catalog/catalog.css:138` `/* 승인 처리 도착 전 — 꺼진 조작처럼 (Ted 판정 2026-09-02 · `CT-1` [미확인] ㈎·` #697077 on #e8ecf2 → **4.23:1** (AA fail)
+- `components/catalog/catalog.css:138` `.verified--pending` #697077 on #e8ecf2 → **4.23:1** (AA fail)
 
 ### components/common/toast.css
 - `components/common/toast.css:17` font-size 12.0px
@@ -114,12 +114,6 @@ files 16 · tokens defined 82 · thresholds: font ≥13px · contrast ≥4.5:1 (
 - `components/detail/detail.css:167` font-size 10.0px
 - `components/detail/detail.css:188` font-size 10.0px
 - `components/detail/detail.css:190` font-size 9.0px
-- `components/detail/detail.css:86` `margin: -12px` 를 격자의 `margin-bottom` 으로 옮겼던 것을,
-   WU-C11 이 컨테이너 gap 한 자리로 모았다(격자·행동 줄·목록 모두 같은 16px). */
-.detail-page .infogrid .ig .k`
-- `components/detail/detail.css:146` `margin: -8px 0 var(--space-4)` — 격자의 아래 여백(24px)을 8px 되당겨
-   16px 를 만들던 음수 상쇄다. 여백은 부모 `.dt-split-r` 이 `gap` 으로 소유한다(같은 16px). */
-.detail-page .dt-gridact`
 - `components/detail/detail.css:123` undefined `--font-mono` (has fallback)
 - `components/detail/detail.css:126` undefined `--color-danger` (has fallback)
 - `components/detail/detail.css:142` undefined `--color-danger` (has fallback)
@@ -295,9 +289,5 @@ files 16 · tokens defined 82 · thresholds: font ≥13px · contrast ≥4.5:1 (
 
 ### shell/shell.css
 - `shell/shell.css:82` font-size 11.0px
-- `shell/shell.css:57` `margin-left: -7px` 는
-     자기 왼쪽 padding 을 되당기는 음수 상쇄였다. 글자 시작 위치는 그대로다 (판정 ⑩) */
-  padding: 3px 9px 3px 0`
 - `shell/shell.css:107` box-shadow `var(--shadow-sm)`
-- `shell/shell.css:173` `.mainnav a:hover` #121619 on #69707714 → **3.62:1** (AA fail)
 

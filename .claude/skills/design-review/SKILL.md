@@ -17,7 +17,7 @@ description: 현재 프론트 디자인을 정본(토큰·패턴·apple-design �
 | 정적 합격선 | `dev-package/sessions/p3-design-audit-20260905.md` 판정 11항목 ＋ 접근성 = 대비 **4.5:1**(AA) · 글자 **13px 이상** · 미정의 토큰 0 · 음수 여백 0 · 카드 그림자 0(팝오버 허용) · 보더 2층 토큰 분리 · 여백은 컨테이너 소유 | 측정 방식은 그 문서와 동일(WCAG 상대휘도 · `path:line` · 실측값) |
 | 인터랙션·모션 | `.claude/skills/apple-design/SKILL.md` | 응답(pointer-down 피드백) · 1:1 추적 · 중단 가능 전환 · 스프링/속도 계승 · 재질·깊이 · 타이포(tracking·leading) · **reduced-motion** · 절제 |
 | 목업 참고 | `01 CoLAB-Plan/design/`(`component-library.html` · `patterns/*.md` · `styles/design-system.css`) | v1 목업의 `ds-` 어휘. **v2 정본이 아니다** — 의도를 읽는 참고자료로만 쓴다. 코랄 액센트 `--color-accent-*` 정본은 여기에 없다(0건 실측 2026-09-08) → `40 COLAB-기획/00_기획원본` 이 후보지 |
-| 이월·판정 대기 | `dev-package/sessions/p3-design-fix-20260908.md` §「하지 않은 것」·§「후속」 | `.lvl-3` 색 부재 · `.lin--none` 3.41:1 · `.dt-gridact` 음수 여백 · `upload.css` 자식 `margin-top` 9곳 · `.dsec`/`LockedContent.tsx` · 코랄 액센트 복원 · 부수 간격 3건 |
+| 이월·판정 대기 | 직전 audit/fix 산출물의 §「하지 않은 것」·§「후속」 ＋ 그것을 집행한 WU 의 커밋 메시지 | 실행 전에 **집행 WU 가 있었는지 `git log` 로 먼저 확인**한다. 선례 = `p3-design-fix-20260908.md` 의 이월 7건은 WU-C11(`2c4d335`)이 집행했으므로 재판정 기준은 「집행 후 잔존 여부」다. 「전에 열려 있었다」는 최근 값이 아니다 |
 
 정본끼리 어긋나면 **멈추고 Ted 판정 항목으로 올린다.** 임의로 한쪽을 고르지 않는다.
 
@@ -58,10 +58,12 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 1. 대상 파일 목록(앵커 = 경로. 행 번호로 위치를 지정하지 않는다).
 2. 읽을 정본 = §0 표의 경로 그대로 ＋ `css_audit.md` 경로.
 3. 판정표 형식(§2-3) 과 세 값 = **있음 / 없음 / [미상]**. 근거는 `path:line` ＋ 실측값. 대비는 WCAG 상대휘도로 계산해 `n.nn:1` 로 적는다.
-4. apple-design 축은 **코드에서 확인 가능한 것만** 판정한다 — `:active` 피드백 유무 · `transition` 의 중단 가능성(`transition` vs `animation` 고정 길이) · `prefers-reduced-motion` 분기 · 고정 `letter-spacing` · `backdrop-filter` 사용처. 실화면이 필요한 항목(스프링 느낌·속도 계승)은 `[미상 · 실화면 계측 필요]` 로 적고 판단하지 않는다.
+4. apple-design 축은 **코드에서 확인 가능한 것만** 판정한다 — `:active` 피드백 유무 · `transition` 의 중단 가능성(`transition` vs `animation` 고정 길이) · `prefers-reduced-motion` 분기 · 고정 `letter-spacing` · `backdrop-filter` 사용처(열거만 · 「재질·깊이」의 정적 합격선은 없으므로 판정하지 않는다). 실화면이 필요한 항목(스프링 느낌·속도 계승)은 `[미상 · 실화면 계측 필요]` 로 적고 판단하지 않는다.
 5. **CSS·TSX 를 한 자도 고치지 않는다.** 쓰기는 `dev-package/sessions/design-review-<YYYYMMDD>-L<n>.md` 한 파일.
 6. 「지시가 실물과 어긋나면 멈추고 보고하라」. 정본끼리 충돌하면 「판정 대기」로 적는다.
-7. 끝나면 `git add <산출 경로>` 로 **직접 커밋**(훅 `uncommitted-artifacts.sh` 가 미추적을 막는다).
+7. 커밋은 **메인이 순차로** 한다(같은 워크트리에서 레인 n개가 동시에 커밋하면 `index.lock` 경합). 레인은 파일만 쓰고 경로를 돌려준다.
+8. 스크립트 값을 그대로 믿지 않는다 — 채택하는 행마다 실물 규칙을 열어 확인하고, 오탐은 산출 파일의 소절 「css_audit 오탐」에 적는다. 스크립트는 같은 규칙 안의 색쌍만 재므로 **상속 색쌍(부모 배경 위 자식 글자)은 사람이 계산**한다.
+9. 「파일 내 토큰 정의」 축은 둘로 가른다 — ⓐ 컴포넌트 전용 변수(접두사가 그 화면 고유 · `--pv-*`·`--toast-*` 류) = 없음 / ⓑ 전역 어휘(`--color-*`·`--radius-*`·`--space-*`)를 파일마다 복제 = Ted 판정(`tokens.css` 승격 여부). 이 구분 없이 판정하지 않는다.
 
 모델 = `researcher`(sonnet). L4 인터랙션 레인만 판단이 무거우면 `model: opus` 로 올린다.
 
