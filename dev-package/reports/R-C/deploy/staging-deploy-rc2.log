@@ -1,0 +1,1538 @@
+Script started on 2026-09-08 09:18:59+09:00 [COMMAND="infra/staging/deploy.sh --target staging" <not executed on terminal>]
+  PASS  CF_TUNNEL_TOKEN
+  PASS  COLAB_AI_APP_PASSWORD
+  PASS  COLAB_APP_PASSWORD
+<redacted>
+  PASS  COLAB_OWNER_PASSWORD
+  PASS  COLAB_PG_SUPER_PASSWORD
+  PASS  COLAB_STAGING_AI_DB_URL_FILE
+  PASS  COLAB_STAGING_AI_OWNER_DB_URL_FILE
+  PASS  COLAB_STAGING_CORE_DB_URL_FILE
+  PASS  COLAB_STAGING_CREDENTIALS_FILE
+  PASS  COLAB_STAGING_PGDATA_DIR
+  PASS  COLAB_STAGING_PIPELINE_DB_URL_FILE
+  PASS  COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE
+  PASS  COLAB_STAGING_PREVIEWS_DIR
+  PASS  COLAB_STAGING_SUBJECTS_FILE
+  PASS  COLAB_VIZ_SERVICE_TOKEN
+<redacted>
+필수 설정 프리플라이트: GREEN (통과 17건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-08T09:19:01 릴리스 태그 = 83d3eb52cb1f (커밋 83d3eb52cb1f · 워킹트리 변경 0건)
+2026-09-08T09:19:01 ② 호스트 게이트 — migration-single-head
+# db 루트 = db · 체인 = platform, ai
+# db/platform: 리비전 26건 · head 1개 (0022_rc7_variable_mirror_stmt)
+# db/ai: 리비전 8건 · head 1개 (0007_merge_vocab_and_category)
+migration-single-head green — 두 체인 모두 head 1개.
+2026-09-08T09:19:01 ③ 직전 이미지 보존 (:prev) — 빌드 전에 한다
+2026-09-08T09:19:01    보존 colab-v2/core-api:prev ← c9ff5f30ba85
+2026-09-08T09:19:01    보존 colab-v2/pipeline-worker:prev ← cd84649294b1
+2026-09-08T09:19:02    보존 colab-v2/viz-render:prev ← 46e40fd60adb
+2026-09-08T09:19:02    보존 colab-v2/ai-service:prev ← 316b89a8b302
+2026-09-08T09:19:02    보존 colab-v2/frontend:prev ← 360355908b25
+2026-09-08T09:19:02    보존 colab-v2/migrator:prev ← 196af7d035eb
+2026-09-08T09:19:02 ④ 이미지 빌드 — 태그 83d3eb52cb1f
+[1A[1B[0G[?25l[+] Building 0.0s (0/1)                                                         
+ => [internal] load local bake definitions                                 0.0s
+[?25h[1A[1A[0G[?25l[+] Building 0.2s (1/1)                                                         
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[?25h[1A[1A[1A[0G[?25l[+] Building 0.3s (1/1)                                                         
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[?25h[1A[1A[1A[0G[?25l[+] Building 0.5s (1/1)                                                         
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[?25h[1A[1A[1A[0G[?25l[+] Building 0.6s (1/1)                                                         
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[?25h[1A[1A[1A[0G[?25l[+] Building 0.7s (1/2)                                                         
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[?25h[1A[1A[1A[0G[?25l[+] Building 0.8s (10/15)                                                       
+ => [core-api internal] load .dockerignore                                 0.0s
+ => => transferring context: 33B                                           0.0s
+ => [viz-render internal] load .dockerignore                               0.0s
+ => => transferring context: 33B                                           0.0s
+ => [ai-service internal] load .dockerignore                               0.0s
+ => => transferring context: 33B                                           0.0s
+[34m => [migrate-ai internal] load .dockerignore                               0.0s
+[0m[34m => => transferring context: 2B                                            0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 0.9s (17/48)                                                       
+ => [viz-render internal] load build context                               0.0s
+ => => transferring context: 36B                                           0.0s
+ => [ai-service internal] load build context                               0.0s
+ => => transferring context: 36B                                           0.0s
+ => [migrate-ai] exporting to image                                        0.0s
+ => => exporting attestation manifest sha256:0f5a48c84efd06a97c36eab02c24  0.0s
+ => [migrate-platform] exporting to image                                  0.0s
+ => => exporting attestation manifest sha256:c57727ccc3fb166d17ae4bd11320  0.0s
+[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.0s (19/48)                                                       
+ => [pipeline-worker internal] load build context                          0.1s
+ => => transferring context: 999B                                          0.1s
+ => [core-api internal] load build context                                 0.1s
+ => => transferring context: 923B                                          0.1s
+ => [viz-render internal] load build context                               0.1s
+ => => transferring context: 882B                                          0.1s
+ => [ai-service internal] load build context                               0.1s
+ => => transferring context: 854B                                          0.1s
+[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.1s (27/51)                                                       
+ => => transferring context: 2.15kB                                        0.2s
+ => [core-api internal] load build context                                 0.2s
+ => => transferring context: 2.08kB                                        0.2s
+ => [viz-render internal] load build context                               0.2s
+ => => transferring context: 2.10kB                                        0.2s
+ => [ai-service] exporting to image                                        0.1s
+ => => exporting manifest list sha256:c69b270467d8d9e7afda6de0f5805a9605f  0.0s
+[34m => [migrate-platform] resolving provenance for metadata file              0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.2s (37/52)                                                       
+ => [core-api internal] load build context                                 0.3s
+ => => transferring context: 2.08kB                                        0.3s
+ => [viz-render internal] load build context                               0.3s
+ => => transferring context: 3.43kB                                        0.3s
+ => [pipeline-worker] exporting to image                                   0.1s
+[34m => => exporting manifest list sha256:d214d400eb89831166668d4a6cd87f51463  0.0s
+[0m[34m => => naming to docker.io/colab-v2/pipeline-worker:83d3eb52cb1f           0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/pipeline-worker:83d3eb52cb1f        0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.3s (52/55)                                                       
+ => [frontend internal] load metadata for docker.io/library/node:22-slim   0.6s
+ => [core-api] exporting to image                                          0.1s
+[34m => CACHED [viz-render stage-1 7/7] RUN useradd --system --create-home --  0.0s
+[0m => [viz-render] exporting to image                                        0.0s
+[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:af55beb96c0dcdcc1a9a6328a58edf289667316e  0.0s
+[0m[34m => => exporting config sha256:54441329fc33a828d686d63d5043d66c2a4f13a2ee  0.0s
+[0m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.5s (55/57)                                                       
+ => [frontend internal] load metadata for docker.io/library/node:22-slim   0.7s
+[34m => => exporting config sha256:54441329fc33a828d686d63d5043d66c2a4f13a2ee  0.0s
+[0m[34m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[0m[34m => => exporting manifest list sha256:f3eab6209621def592ca43caff7d2a775d4  0.0s
+[0m[34m => => naming to docker.io/colab-v2/viz-render:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/viz-render:83d3eb52cb1f             0.0s
+[0m[34m => [pipeline-worker] resolving provenance for metadata file               0.0s
+[0m => [core-api] resolving provenance for metadata file                      0.0s
+[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.6s (57/58)                                                       
+ => [frontend internal] load metadata for docker.io/library/node:22-slim   0.9s
+[34m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[0m[34m => => exporting manifest list sha256:f3eab6209621def592ca43caff7d2a775d4  0.0s
+[0m[34m => => naming to docker.io/colab-v2/viz-render:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/viz-render:83d3eb52cb1f             0.0s
+[0m[34m => [pipeline-worker] resolving provenance for metadata file               0.0s
+[0m[34m => [core-api] resolving provenance for metadata file                      0.0s
+[0m[34m => [viz-render] resolving provenance for metadata file                    0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.8s (57/58)                                                       
+ => [frontend internal] load metadata for docker.io/library/node:22-slim   1.0s
+[34m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[0m[34m => => exporting manifest list sha256:f3eab6209621def592ca43caff7d2a775d4  0.0s
+[0m[34m => => naming to docker.io/colab-v2/viz-render:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/viz-render:83d3eb52cb1f             0.0s
+[0m[34m => [pipeline-worker] resolving provenance for metadata file               0.0s
+[0m[34m => [core-api] resolving provenance for metadata file                      0.0s
+[0m[34m => [viz-render] resolving provenance for metadata file                    0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 1.8s (58/58)                                                       
+[34m => => exporting config sha256:54441329fc33a828d686d63d5043d66c2a4f13a2ee  0.0s
+[0m[34m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[0m[34m => => exporting manifest list sha256:f3eab6209621def592ca43caff7d2a775d4  0.0s
+[0m[34m => => naming to docker.io/colab-v2/viz-render:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/viz-render:83d3eb52cb1f             0.0s
+[0m[34m => [pipeline-worker] resolving provenance for metadata file               0.0s
+[0m[34m => [core-api] resolving provenance for metadata file                      0.0s
+[0m[34m => [viz-render] resolving provenance for metadata file                    0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.0s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.1s
+ => => transferring context: 1.74kB                                        0.1s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.1s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.2s
+ => => transferring context: 3.75kB                                        0.2s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.2s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.3s
+ => => transferring context: 5.27kB                                        0.3s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.3s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.4s
+ => => transferring context: 6.98kB                                        0.4s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.4s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.5s
+ => => transferring context: 8.63kB                                        0.5s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.5s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.6s
+ => => transferring context: 10.40kB                                       0.6s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.6s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.7s
+ => => transferring context: 12.60kB                                       0.7s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.7s (61/69)                                                       
+[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m => [frontend internal] load build context                                 0.8s
+ => => transferring context: 15.39kB                                       0.8s
+[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.8s (70/70)                                                       
+[34m => [frontend] exporting to image                                          0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:f999e571666c5b58dfc31017867e5cd1c0384e46  0.0s
+[0m[34m => => exporting config sha256:77b2ac9538eca53bfe4fbcb00f550a048a6511d6ae  0.0s
+[0m[34m => => exporting attestation manifest sha256:45ac1e408e7cdfe29a0a4f4a4059  0.0s
+[0m[34m => => exporting manifest list sha256:dcb220197271e0ce0cb69570372176f6e20  0.0s
+[0m[34m => => naming to docker.io/colab-v2/frontend:83d3eb52cb1f                  0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/frontend:83d3eb52cb1f               0.0s
+[0m[?25h[1A[1A[1A[1A[1A[1A[1A[1A[1A[0G[?25l[+] Building 2.9s (71/71) FINISHED                                              
+[34m => [internal] load local bake definitions                                 0.0s
+[0m[34m => => reading from stdin 4.05kB                                           0.0s
+[0m[34m => [pipeline-worker internal] load build definition from Dockerfile       0.0s
+[0m[34m => => transferring dockerfile: 4.71kB                                     0.0s
+[0m[34m => [ai-service internal] load build definition from Dockerfile            0.1s
+[0m[34m => => transferring dockerfile: 1.72kB                                     0.0s
+[0m[34m => [frontend internal] load build definition from Dockerfile              0.0s
+[0m[34m => => transferring dockerfile: 842B                                       0.0s
+[0m[34m => [core-api internal] load build definition from Dockerfile              0.1s
+[0m[34m => => transferring dockerfile: 892B                                       0.0s
+[0m[34m => [migrate-ai internal] load build definition from Dockerfile            0.0s
+[0m[34m => => transferring dockerfile: 875B                                       0.0s
+[0m[34m => [viz-render internal] load build definition from Dockerfile            0.1s
+[0m[34m => => transferring dockerfile: 4.72kB                                     0.1s
+[0m[34m => [ai-service internal] load metadata for docker.io/library/python:3.12  0.0s
+[0m[34m => [frontend internal] load metadata for docker.io/library/nginx:1.27-al  0.0s
+[0m[34m => [frontend internal] load metadata for docker.io/library/node:22-slim   1.1s
+[0m[34m => [pipeline-worker internal] load .dockerignore                          0.0s
+[0m[34m => => transferring context: 346B                                          0.0s
+[0m[34m => [core-api internal] load .dockerignore                                 0.1s
+[0m[34m => => transferring context: 346B                                          0.0s
+[0m[34m => [viz-render internal] load .dockerignore                               0.0s
+[0m[34m => => transferring context: 346B                                          0.0s
+[0m[34m => [ai-service internal] load .dockerignore                               0.0s
+[0m[34m => => transferring context: 346B                                          0.0s
+[0m[34m => [migrate-ai internal] load .dockerignore                               0.0s
+[0m[34m => => transferring context: 2B                                            0.0s
+[0m[34m => [core-api 1/3] FROM docker.io/library/python:3.12-slim@sha256:2c941e8  0.0s
+[0m[34m => => resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878  0.0s
+[0m[34m => [pipeline-worker internal] load build context                          0.3s
+[0m[34m => => transferring context: 2.43kB                                        0.2s
+[0m[34m => [core-api internal] load build context                                 0.4s
+[0m[34m => => transferring context: 3.69kB                                        0.4s
+[0m[34m => CACHED [migrate-platform 2/3] RUN pip install "alembic==1.16.5" "SQLA  0.0s
+[0m[34m => CACHED [migrate-ai 3/3] WORKDIR /chain                                 0.0s
+[0m[34m => [viz-render internal] load build context                               0.4s
+[0m[34m => => transferring context: 3.84kB                                        0.4s
+[0m[34m => [ai-service internal] load build context                               0.2s
+[0m[34m => => transferring context: 1.30kB                                        0.2s
+[0m[34m => [migrate-ai] exporting to image                                        0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:d693e8ed286c8ee176fd1d853eaf8706687968a5  0.0s
+[0m[34m => => exporting config sha256:ef9243f6f9990769939b0ba16a26394cbc0fb0967b  0.0s
+[0m[34m => => exporting attestation manifest sha256:0f5a48c84efd06a97c36eab02c24  0.0s
+[0m[34m => => exporting manifest list sha256:ae300af662a4180cca417575b648fd65364  0.0s
+[0m[34m => => naming to docker.io/colab-v2/migrator:83d3eb52cb1f                  0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/migrator:83d3eb52cb1f               0.0s
+[0m[34m => [migrate-platform] exporting to image                                  0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:c59edbe01c65611bc7b748fad50ad80024750414  0.0s
+[0m[34m => => exporting config sha256:b9c7386270f8be838e0bdc01bbc98d3b5ba64e4072  0.0s
+[0m[34m => => exporting attestation manifest sha256:c57727ccc3fb166d17ae4bd11320  0.0s
+[0m[34m => => exporting manifest list sha256:7f55eee5613d11fb97246303f01b9756c36  0.0s
+[0m[34m => => naming to docker.io/colab-v2/migrator:83d3eb52cb1f                  0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/migrator:83d3eb52cb1f               0.0s
+[0m[34m => CACHED [viz-render stage-1 2/7] WORKDIR /app                           0.0s
+[0m[34m => CACHED [ai-service 3/6] COPY requirements.txt /app/requirements.txt    0.0s
+[0m[34m => CACHED [ai-service 4/6] RUN pip install --no-cache-dir --disable-pip-  0.0s
+[0m[34m => CACHED [ai-service 5/6] COPY src/ /app/src/                            0.0s
+[0m[34m => CACHED [ai-service 6/6] RUN useradd --system --create-home --uid 1000  0.0s
+[0m[34m => [ai-service] exporting to image                                        0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:30ccf7005a2414816c33b351cd718f57766cc8b6  0.0s
+[0m[34m => => exporting config sha256:5732da3f81c33b98edeb573316415b4d3a82609a98  0.0s
+[0m[34m => => exporting attestation manifest sha256:fac246e5a58f9796dcb6778d1cba  0.0s
+[0m[34m => => exporting manifest list sha256:c69b270467d8d9e7afda6de0f5805a9605f  0.0s
+[0m[34m => => naming to docker.io/colab-v2/ai-service:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/ai-service:83d3eb52cb1f             0.0s
+[0m[34m => [migrate-ai] resolving provenance for metadata file                    0.0s
+[0m[34m => [migrate-platform] resolving provenance for metadata file              0.0s
+[0m[34m => CACHED [pipeline-worker stage-1 3/7] RUN apt-get update  && apt-get i  0.0s
+[0m[34m => CACHED [viz-render builder 2/4] RUN apt-get update  && apt-get instal  0.0s
+[0m[34m => CACHED [pipeline-worker builder 3/4] COPY requirements.txt /tmp/requi  0.0s
+[0m[34m => CACHED [pipeline-worker builder 4/4] RUN INCLUDE_DIRS=/usr/include/hd  0.0s
+[0m[34m => CACHED [pipeline-worker stage-1 4/7] COPY --from=builder /install /us  0.0s
+[0m[34m => CACHED [pipeline-worker stage-1 5/7] RUN python -c "import rasterio,   0.0s
+[0m[34m => CACHED [pipeline-worker stage-1 6/7] COPY src/ /app/src/               0.0s
+[0m[34m => CACHED [pipeline-worker stage-1 7/7] RUN useradd --system --create-ho  0.0s
+[0m[34m => [pipeline-worker] exporting to image                                   0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:0e88667a0670de0d388476d885d124928c32fe4a  0.0s
+[0m[34m => => exporting config sha256:06e9d4af784a5790bdb8026cc319f9c4069c8d142b  0.0s
+[0m[34m => => exporting attestation manifest sha256:3919cc9471c4c8a864f95b6f2930  0.0s
+[0m[34m => => exporting manifest list sha256:d214d400eb89831166668d4a6cd87f51463  0.0s
+[0m[34m => => naming to docker.io/colab-v2/pipeline-worker:83d3eb52cb1f           0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/pipeline-worker:83d3eb52cb1f        0.0s
+[0m[34m => [ai-service] resolving provenance for metadata file                    0.0s
+[0m[34m => CACHED [core-api 3/6] COPY requirements.txt /app/requirements.txt      0.0s
+[0m[34m => CACHED [core-api 4/6] RUN pip install --no-deps -r /app/requirements.  0.0s
+[0m[34m => CACHED [core-api 5/6] COPY src/ /app/src/                              0.0s
+[0m[34m => CACHED [core-api 6/6] RUN useradd --system --create-home --uid 10001   0.0s
+[0m[34m => [core-api] exporting to image                                          0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:b2ce3ec2a48b78a4021258c585d0c07402ee174b  0.0s
+[0m[34m => => exporting config sha256:fb09387232e535486f2d8ea483dcc43abd79616022  0.0s
+[0m[34m => => exporting attestation manifest sha256:10e0e44bc4ee7ecdc361dbd0b54a  0.0s
+[0m[34m => => exporting manifest list sha256:1413ddcdb4560f53ed83a5ddeeb9ffe23c5  0.0s
+[0m[34m => => naming to docker.io/colab-v2/core-api:83d3eb52cb1f                  0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/core-api:83d3eb52cb1f               0.0s
+[0m[34m => CACHED [viz-render stage-1 3/7] RUN apt-get update  && apt-get instal  0.0s
+[0m[34m => CACHED [viz-render builder 3/4] COPY requirements.txt /tmp/requiremen  0.0s
+[0m[34m => CACHED [viz-render builder 4/4] RUN INCLUDE_DIRS=/usr/include/hdf      0.0s
+[0m[34m => CACHED [viz-render stage-1 4/7] COPY --from=builder /install /usr/loc  0.0s
+[0m[34m => CACHED [viz-render stage-1 5/7] RUN python -c "import rasterio, raste  0.0s
+[0m[34m => CACHED [viz-render stage-1 6/7] COPY src/ /app/src/                    0.0s
+[0m[34m => CACHED [viz-render stage-1 7/7] RUN useradd --system --create-home --  0.0s
+[0m[34m => [viz-render] exporting to image                                        0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:af55beb96c0dcdcc1a9a6328a58edf289667316e  0.0s
+[0m[34m => => exporting config sha256:54441329fc33a828d686d63d5043d66c2a4f13a2ee  0.0s
+[0m[34m => => exporting attestation manifest sha256:6baae721d2d57db41e0e43170832  0.0s
+[0m[34m => => exporting manifest list sha256:f3eab6209621def592ca43caff7d2a775d4  0.0s
+[0m[34m => => naming to docker.io/colab-v2/viz-render:83d3eb52cb1f                0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/viz-render:83d3eb52cb1f             0.0s
+[0m[34m => [pipeline-worker] resolving provenance for metadata file               0.0s
+[0m[34m => [core-api] resolving provenance for metadata file                      0.0s
+[0m[34m => [viz-render] resolving provenance for metadata file                    0.0s
+[0m[34m => [frontend internal] load .dockerignore                                 0.0s
+[0m[34m => => transferring context: 63B                                           0.0s
+[0m[34m => [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f48  0.0s
+[0m[34m => => resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d1  0.0s
+[0m[34m => [frontend internal] load build context                                 0.8s
+[0m[34m => => transferring context: 15.57kB                                       0.8s
+[0m[34m => [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha25  0.0s
+[0m[34m => => resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661  0.0s
+[0m[34m => CACHED [frontend build 2/6] WORKDIR /app                               0.0s
+[0m[34m => CACHED [frontend build 3/6] COPY package.json package-lock.json ./     0.0s
+[0m[34m => CACHED [frontend build 4/6] RUN npm ci                       # exact   0.0s
+[0m[34m => CACHED [frontend build 5/6] COPY . .                                   0.0s
+[0m[34m => CACHED [frontend build 6/6] RUN npm run build                # tsc --  0.0s
+[0m[34m => CACHED [frontend stage-1 2/3] COPY --from=build /app/dist/ /usr/share  0.0s
+[0m[34m => CACHED [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/defau  0.0s
+[0m[34m => [frontend] exporting to image                                          0.1s
+[0m[34m => => exporting layers                                                    0.0s
+[0m[34m => => exporting manifest sha256:f999e571666c5b58dfc31017867e5cd1c0384e46  0.0s
+[0m[34m => => exporting config sha256:77b2ac9538eca53bfe4fbcb00f550a048a6511d6ae  0.0s
+[0m[34m => => exporting attestation manifest sha256:45ac1e408e7cdfe29a0a4f4a4059  0.0s
+[0m[34m => => exporting manifest list sha256:dcb220197271e0ce0cb69570372176f6e20  0.0s
+[0m[34m => => naming to docker.io/colab-v2/frontend:83d3eb52cb1f                  0.0s
+[0m[34m => => unpacking to docker.io/colab-v2/frontend:83d3eb52cb1f               0.0s
+[0m[34m => [frontend] resolving provenance for metadata file                      0.0s
+[0m[?25h[?25l[0G[+] build 6/6
+ [32m✔[0m Image colab-v2/ai-service:83d3eb52cb1f      [32mBuilt[0m                        [34m3.0s[0m
+ [32m✔[0m Image colab-v2/frontend:83d3eb52cb1f        [32mBuilt[0m                        [34m3.0s[0m
+ [32m✔[0m Image colab-v2/migrator:83d3eb52cb1f        [32mBuilt[0m                        [34m3.0s[0m
+ [32m✔[0m Image colab-v2/viz-render:83d3eb52cb1f      [32mBuilt[0m                        [34m3.0s[0m
+ [32m✔[0m Image colab-v2/pipeline-worker:83d3eb52cb1f [32mBuilt[0m                        [34m3.0s[0m
+ [32m✔[0m Image colab-v2/core-api:83d3eb52cb1f        [32mBuilt[0m                        [34m3.0s[0m
+[?25h2026-09-08T09:19:05    확인 core-api — 보존 c9ff5f30ba85 ≠ 신규 1413ddcdb456
+2026-09-08T09:19:05    확인 pipeline-worker — 보존 cd84649294b1 ≠ 신규 d214d400eb89
+2026-09-08T09:19:05    확인 viz-render — 보존 46e40fd60adb ≠ 신규 f3eab6209621
+2026-09-08T09:19:05    확인 ai-service — 보존 316b89a8b302 ≠ 신규 c69b270467d8
+2026-09-08T09:19:06    확인 frontend — 보존 360355908b25 ≠ 신규 dcb220197271
+2026-09-08T09:19:06    확인 migrator — 보존 196af7d035eb ≠ 신규 7f55eee5613d
+2026-09-08T09:19:06    이미지 ID 동일 0건 (동일해도 실패는 아니다 — 코드가 안 바뀌면 같은 것이 옳다)
+2026-09-08T09:19:06 ⑤ 배포 전 백업 — 두 프로파일 전부 GREEN 이어야 진행한다
+2026-09-08T09:19:06 [platform] 덤프 시작 (db=colab_platform) → 임시파일
+2026-09-08T09:19:06 [platform] 산출물 검사 (통과 전에는 최종 경로로 옮기지 않는다)
+검사 대상: .inflight-platform-20260908T091906.sql.gz  (합격선 — 테이블 20 · 행 190)
+  PASS  C0 합격선 선언 (테이블 20 · 행 190)
+  PASS  C1 파일 존재·크기 45703B
+  PASS  C2 gzip 무결성
+  PASS  C3 해제 후 285833B
+  PASS  C4 CREATE TABLE 28개 (>= 20)
+  PASS  C5 데이터 행 620건 (COPY 블록 28개)
+  PASS  C6 신선도 0분 (<= 1500)
+결과: GREEN (통과 7건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-08T09:19:06 [platform] 백업 성공: platform-20260908T091906.sql.gz (45703 B)
+2026-09-08T09:19:06 [ai] 덤프 시작 (db=colab_ai) → 임시파일
+2026-09-08T09:19:06 [ai] 산출물 검사 (통과 전에는 최종 경로로 옮기지 않는다)
+검사 대상: .inflight-ai-20260908T091906.sql.gz  (합격선 — 테이블 4 · 행 45)
+  PASS  C0 합격선 선언 (테이블 4 · 행 45)
+  PASS  C1 파일 존재·크기 5268B
+  PASS  C2 gzip 무결성
+  PASS  C3 해제 후 17100B
+  PASS  C4 CREATE TABLE 6개 (>= 4)
+  PASS  C5 데이터 행 91건 (COPY 블록 6개)
+  PASS  C6 신선도 0분 (<= 1500)
+결과: GREEN (통과 7건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-08T09:19:06 [ai] 백업 성공: ai-20260908T091906.sql.gz (5268 B)
+2026-09-08T09:19:06 백업 GREEN — 프로파일 2 개 전부 성공
+2026-09-08T09:19:06 ⑥ postgres 기동 대기
+[?25l[0G[+] up 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h[?25l[2A[0G[+] up 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h2026-09-08T09:19:06 ⑦ 롤 · 데이터베이스
+ALTER ROLE
+ALTER SCHEMA
+REVOKE
+ALTER SCHEMA
+REVOKE
+roles/databases: ok
+2026-09-08T09:19:07 ⑧ 마이그레이션 (platform)
+[?25l[0G[+] create 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h[?25l[2A[0G[+] start 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h[?25l[2A[0G[+]  1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25hContainer colab_v2_staging_pg [32mWaiting[0m 
+Container colab_v2_staging_pg [32mHealthy[0m 
+Container colab-v2-staging-migrate-platform-run-9048f27550b2 [32mCreating[0m 
+Container colab-v2-staging-migrate-platform-run-9048f27550b2 [32mCreated[0m 
+2026-09-08T09:19:09 ⑧ 마이그레이션 (ai)
+[?25l[0G[+] create 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h[?25l[2A[0G[+] start 1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25h[?25l[2A[0G[+]  1/1
+ [32m✔[0m Container colab_v2_staging_pg [32mRunning[0m                                    [34m0.0s[0m
+[?25hContainer colab_v2_staging_pg [32mWaiting[0m 
+Container colab_v2_staging_pg [32mHealthy[0m 
+Container colab-v2-staging-migrate-ai-run-89d4b603f09f [32mCreating[0m 
+Container colab-v2-staging-migrate-ai-run-89d4b603f09f [32mCreated[0m 
+2026-09-08T09:19:11 ⑨ 앱 롤 GRANT (NOBYPASSRLS · 비소유자 검사 포함)
+ALTER ROLE
+GRANT
+GRANT
+GRANT
+ALTER DEFAULT PRIVILEGES
+DO
+app role grants: ok (colab_app@platform · colab_ai_app@ai · SELECT only)
+2026-09-08T09:19:11 ⑩ 5개 배포 단위 + 엣지 교체 (엣지 설정 해시 56cc63f04dad443a)
+[?25l[0G[+] up 1/6
+ [33m⠋[0m Container colab_v2_staging_frontend        Recreate                      [34m0.1s[0m
+ [33m⠋[0m Container colab_v2_staging_viz_render      Recreate                      [34m0.1s[0m
+ [33m⠋[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.1s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠋[0m Container colab_v2_staging_core_api        Recreate                      [34m0.1s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.1s[0m
+[?25h[?25l[7A[0G[+] up 1/6
+ [33m⠙[0m Container colab_v2_staging_frontend        Recreate                      [34m0.2s[0m
+ [33m⠙[0m Container colab_v2_staging_viz_render      Recreate                      [34m0.2s[0m
+ [33m⠙[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.2s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠙[0m Container colab_v2_staging_core_api        Recreate                      [34m0.2s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.2s[0m
+[?25h[?25l[7A[0G[+] up 1/6
+ [33m⠹[0m Container colab_v2_staging_frontend        Recreate                      [34m0.3s[0m
+ [33m⠹[0m Container colab_v2_staging_viz_render      Recreate                      [34m0.3s[0m
+ [33m⠹[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠹[0m Container colab_v2_staging_core_api        Recreate                      [34m0.3s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.3s[0m
+[?25h[?25l[7A[0G[+] up 4/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [33m⠸[0m Container colab_v2_staging_viz_render      Recreate                      [34m0.4s[0m
+ [33m⠸[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.4s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠸[0m Container colab_v2_staging_core_api        Recreate                      [34m0.4s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 4/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [33m⠼[0m Container colab_v2_staging_viz_render      Recreate                      [34m0.5s[0m
+ [33m⠼[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.5s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠼[0m Container colab_v2_staging_core_api        Recreate                      [34m0.5s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 5/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [33m⠴[0m Container colab_v2_staging_ai_service      Recreate                      [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠴[0m Container colab_v2_staging_core_api        Recreate                      [34m0.6s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 6/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [33m⠦[0m Container colab_v2_staging_core_api        Recreate                      [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m0.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m1.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m2.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m3.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m4.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m5.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m6.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m7.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m8.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.5s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.6s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠦[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.7s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠧[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.8s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                     [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                     [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                     [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                     [34m0.7s[0m
+ [33m⠇[0m Container colab_v2_staging_pipeline_worker Recreate                      [34m9.9s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                       [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                       [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                    [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [33m⠏[0m Container colab_v2_staging_pipeline_worker Recreate                     [34m10.0s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                    [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [33m⠋[0m Container colab_v2_staging_pipeline_worker Recreate                     [34m10.1s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                    [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [33m⠙[0m Container colab_v2_staging_pipeline_worker Recreate                     [34m10.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                    [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [33m⠹[0m Container colab_v2_staging_pipeline_worker Recreate                     [34m10.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 7/8
+ [32m✔[0m Container colab_v2_staging_frontend        [32mRecreated[0m                    [34m0.3s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [33m⠸[0m Container colab_v2_staging_pipeline_worker Recreate                     [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+[?25h[?25l[9A[0G[+] up 6/9
+ [33m⠸[0m Container colab_v2_staging_frontend        Starting                     [34m10.5s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [33m⠦[0m Container colab_v2_staging_ai_service      Starting                     [34m10.5s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠋[0m Container colab_v2_staging_volume_init     Starting                     [34m0.1s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [33m⠼[0m Container colab_v2_staging_frontend        Starting                     [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠙[0m Container colab_v2_staging_volume_init     Starting                     [34m0.2s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [33m⠙[0m Container colab_v2_staging_pg              Waiting                      [34m10.7s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠹[0m Container colab_v2_staging_volume_init     Waiting                      [34m0.3s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [33m⠹[0m Container colab_v2_staging_pg              Waiting                      [34m10.8s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠸[0m Container colab_v2_staging_volume_init     Waiting                      [34m0.4s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [33m⠸[0m Container colab_v2_staging_pg              Waiting                      [34m10.9s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠼[0m Container colab_v2_staging_volume_init     Waiting                      [34m0.5s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [33m⠼[0m Container colab_v2_staging_pg              Waiting                      [34m11.0s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠴[0m Container colab_v2_staging_volume_init     Waiting                      [34m0.6s[0m
+[?25h[?25l[10A[0G[+] up 7/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mRecreated[0m                    [34m0.6s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [33m⠴[0m Container colab_v2_staging_pg              Waiting                      [34m11.1s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mRecreated[0m                    [34m0.7s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mRecreated[0m                    [34m10.4s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [33m⠦[0m Container colab_v2_staging_volume_init     Waiting                      [34m0.7s[0m
+[?25h[?25l[10A[0G[+] up 6/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [33m⠴[0m Container colab_v2_staging_viz_render      Starting                     [34m11.2s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mHealthy[0m                      [34m11.1s[0m
+ [33m⠧[0m Container colab_v2_staging_core_api        Starting                     [34m11.2s[0m
+ [33m⠼[0m Container colab_v2_staging_pipeline_worker Starting                     [34m11.2s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_volume_init     [32mExited[0m                       [34m0.7s[0m
+[?25h[?25l[10A[0G[+] up 8/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mStarted[0m                      [34m11.3s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mHealthy[0m                      [34m11.1s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mStarted[0m                      [34m11.3s[0m
+ [33m⠴[0m Container colab_v2_staging_pipeline_worker Starting                     [34m11.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_volume_init     [32mExited[0m                       [34m0.7s[0m
+[?25h[?25l[10A[0G[+] up 9/9
+ [32m✔[0m Container colab_v2_staging_frontend        [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_viz_render      [32mStarted[0m                      [34m11.3s[0m
+ [32m✔[0m Container colab_v2_staging_ai_service      [32mStarted[0m                      [34m10.6s[0m
+ [32m✔[0m Container colab_v2_staging_pg              [32mHealthy[0m                      [34m11.1s[0m
+ [32m✔[0m Container colab_v2_staging_core_api        [32mStarted[0m                      [34m11.3s[0m
+ [32m✔[0m Container colab_v2_staging_pipeline_worker [32mStarted[0m                      [34m11.3s[0m
+ [32m✔[0m Container colab_v2_staging_nginx           [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_cloudflared     [32mRunning[0m                      [34m0.0s[0m
+ [32m✔[0m Container colab_v2_staging_volume_init     [32mExited[0m                       [34m0.7s[0m
+[?25h2026-09-08T09:19:23 ⑩-b 엣지 설정 반영 판정 — 도는 컨테이너 안의 파일과 바이트 대조
+2026-09-08T09:19:23    확인 엣지 설정 — 레포 판과 도는 판이 같다(56cc63f04dad443a)
+2026-09-08T09:19:23 ⑪ 배포 판정 — 헬스 6종 + 본문 대조 (대기하며 재시도)
+  PASS  /healthz — 200 · 본문이 ^ok$ 를 만족한다
+  PASS  /healthz/core-api — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"core-api" 를 만족한다
+  PASS  /healthz/pipeline-worker — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"pipeline-worker" 를 만족한다
+  PASS  /healthz/viz-render — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"viz-render" 를 만족한다
+  PASS  /healthz/ai-service — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"ai-service" 를 만족한다
+  PASS  /healthz/frontend — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"frontend" 를 만족한다
+  PASS  colab_v2_staging_nginx — healthy
+  PASS  colab_v2_staging_cloudflared — healthy
+  PASS  colab_v2_staging_pg — healthy
+  PASS  colab_v2_staging_core_api — healthy
+  PASS  colab_v2_staging_frontend — healthy
+  PASS  colab_v2_staging_pipeline_worker — healthy
+  PASS  colab_v2_staging_viz_render — healthy
+  PASS  colab_v2_staging_ai_service — healthy
+  PASS  호스트 노출 — 0.0.0.0 0건
+배포 판정: GREEN (통과 15건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-08T09:19:41 ⑪-b 체인 판정 — 두 체인 head
+  PASS  [platform] head=0022_rc7_variable_mirror_stmt (db=colab_platform)
+  PASS  [ai] head=0007_merge_vocab_and_category (db=colab_ai)
+체인 판정: GREEN (통과 2건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-08T09:19:41 ⑫-a 별칭 :i2 재부착 — 붙인 뒤 이미지 ID 로 대조한다(「붙였다」 ≠ 「가리킨다」)
+2026-09-08T09:19:42   별칭 colab-v2/core-api:i2 ← 83d3eb52cb1f (1413ddcdb456)
+2026-09-08T09:19:42   별칭 colab-v2/pipeline-worker:i2 ← 83d3eb52cb1f (d214d400eb89)
+2026-09-08T09:19:42   별칭 colab-v2/viz-render:i2 ← 83d3eb52cb1f (f3eab6209621)
+2026-09-08T09:19:42   별칭 colab-v2/ai-service:i2 ← 83d3eb52cb1f (c69b270467d8)
+2026-09-08T09:19:43   별칭 colab-v2/frontend:i2 ← 83d3eb52cb1f (dcb220197271)
+2026-09-08T09:19:43   별칭 colab-v2/migrator:i2 ← 83d3eb52cb1f (7f55eee5613d)
+2026-09-08T09:19:43 별칭 재부착 GREEN — 6/6종의 :i2 가 83d3eb52cb1f 를 가리킨다(이미지 ID 대조 완료)
+2026-09-08T09:19:43 ⑫-a2 digest 이력 원장 append (6종)
+2026-09-08T09:19:43 digest 이력: /home/ttlhi10/colab-v2-releases/image-digest-ledger.tsv
+2026-09-08T09:19:43 ⑫-b 원장 · 표식
+2026-09-08T09:19:43 이미지 보존 대상 릴리스 3개 + 별칭 2개: 83d3eb52cb1f prev i2 bbb9e0fa6259 e37808cace69
+2026-09-08T09:19:44   삭제 colab-v2/core-api:dev
+2026-09-08T09:19:44   삭제 colab-v2/core-api:dev-83d3eb52cb1f
+2026-09-08T09:19:44   삭제 colab-v2/core-api:dev-bbb9e0fa6259
+2026-09-08T09:19:44   삭제 colab-v2/core-api:f465d83a2ef1
+2026-09-08T09:19:44   삭제 colab-v2/pipeline-worker:dev-bbb9e0fa6259
+2026-09-08T09:19:44   삭제 colab-v2/pipeline-worker:dev
+2026-09-08T09:19:44   삭제 colab-v2/pipeline-worker:dev-83d3eb52cb1f
+2026-09-08T09:19:44   삭제 colab-v2/pipeline-worker:f465d83a2ef1
+2026-09-08T09:19:44   삭제 colab-v2/viz-render:dev
+2026-09-08T09:19:44   삭제 colab-v2/viz-render:dev-83d3eb52cb1f
+2026-09-08T09:19:45   삭제 colab-v2/viz-render:dev-bbb9e0fa6259
+2026-09-08T09:19:45   삭제 colab-v2/viz-render:f465d83a2ef1
+2026-09-08T09:19:45   삭제 colab-v2/ai-service:dev
+2026-09-08T09:19:45   삭제 colab-v2/ai-service:dev-83d3eb52cb1f
+2026-09-08T09:19:45   삭제 colab-v2/ai-service:dev-bbb9e0fa6259
+2026-09-08T09:19:45   삭제 colab-v2/ai-service:f465d83a2ef1
+2026-09-08T09:19:45   삭제 colab-v2/frontend:f465d83a2ef1
+2026-09-08T09:19:45   삭제 colab-v2/migrator:dev
+2026-09-08T09:19:45   삭제 colab-v2/migrator:dev-83d3eb52cb1f
+2026-09-08T09:19:46   삭제 colab-v2/migrator:dev-bbb9e0fa6259
+2026-09-08T09:19:46   삭제 colab-v2/migrator:f465d83a2ef1
+
+배포 GREEN — 커밋 83d3eb52cb1f · 태그 83d3eb52cb1f
+원장: /home/ttlhi10/colab-v2-releases/release-ledger.tsv
+2026-09-08T09:19:43+0900	deploy	83d3eb52cb1f	83d3eb52cb1f	green	별칭재부착GREEN digest이력=6종 배포전백업GREEN 워킹트리변경=0
+
+Script done on 2026-09-08 09:19:46+09:00 [COMMAND_EXIT_CODE="0"]

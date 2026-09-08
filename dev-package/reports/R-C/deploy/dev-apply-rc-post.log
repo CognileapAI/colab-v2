@@ -1,0 +1,45 @@
+== heads
+platform=0022_rc7_variable_mirror_stmt
+ai=0007_merge_vocab_and_category
+== m1 variable count
+0
+== m2 mirror diff
+14
+== m3 d6_project unique constraints
+ERROR:  column "d6_project" does not exist
+LINE 1: select conname from pg_constraint where conrelid="d6_project...
+                                                         ^
+== m4 access state null
+0
+== m5 topic synonym
+18|{가뭄,"파일 포맷 예제",강우·강수,지형·DEM,토지피복·LULC,식생·NDVI}
+== m6 category col
+synonym
+topic
+source_note
+created_at
+category
+== docker ps
+colab_v2_dev_pipeline_worker colab-v2/pipeline-worker:dev Up 29 seconds (healthy)
+colab_v2_dev_viz_render colab-v2/viz-render:dev Up 29 seconds (healthy)
+colab_v2_dev_core_api colab-v2/core-api:dev Up 30 seconds (healthy)
+colab_v2_dev_ai_service colab-v2/ai-service:dev Up 30 seconds (healthy)
+== autometa variables shape
+14|0|14|0
+== mirror diff (coalesce, trigger semantics)
+0
+== d6_project unique constraints
+d6_project_lab_name_unique
+== triggers on d3_dataset_variable
+d3_dataset_variable_mirror_del
+d3_dataset_variable_mirror_ins
+d3_dataset_variable_mirror_upd
+colab_v2_dev_core_api running=sha256:5d3c5505c3bc4f495f87a6c0b73af128aafbbd5dd3b571fddcebdeb71be4e389
+colab_v2_dev_pipeline_worker running=sha256:fdf2871f91a34f6a5e51d259460b8f4f6094bc55f93e5ba7cedf261e65da4448
+colab_v2_dev_viz_render running=sha256:54c20c934f23a5937841f4901fc40d48b9c217b8216d716656494e46a3034c9d
+colab_v2_dev_ai_service running=sha256:626baae7099d2f9aa0fff940705d09e5d91cd65564160f36d7bc29e7ad7a198a
+---
+core-api sha-tag=sha256:5d3c5505c3bc4f495f87a6c0b73af128aafbbd5dd3b571fddcebdeb71be4e389
+pipeline-worker sha-tag=sha256:fdf2871f91a34f6a5e51d259460b8f4f6094bc55f93e5ba7cedf261e65da4448
+viz-render sha-tag=sha256:54c20c934f23a5937841f4901fc40d48b9c217b8216d716656494e46a3034c9d
+ai-service sha-tag=sha256:626baae7099d2f9aa0fff940705d09e5d91cd65564160f36d7bc29e7ad7a198a

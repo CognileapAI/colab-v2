@@ -1,0 +1,41 @@
+① 마이그레이션 — 소유자 롤로, 체인마다 따로
+② 기동
+ Container colab_v2_dev_core_api  Recreate
+ Container colab_v2_dev_ai_service  Recreate
+ Container colab_v2_dev_pipeline_worker  Stopping
+ Container colab_v2_dev_viz_render  Stopping
+ Container colab_v2_dev_viz_render  Stopped
+ Container colab_v2_dev_ai_service  Recreated
+ Container colab_v2_dev_core_api  Recreated
+ Container colab_v2_dev_pipeline_worker  Stopped
+ Container colab_v2_dev_volume_init  Recreate
+ Container colab_v2_dev_volume_init  Recreated
+ Container colab_v2_dev_viz_render  Recreate
+ Container colab_v2_dev_pipeline_worker  Recreate
+ Container colab_v2_dev_viz_render  Recreated
+ Container colab_v2_dev_pipeline_worker  Recreated
+ Container colab_v2_dev_ai_service  Starting
+ Container colab_v2_dev_volume_init  Starting
+ Container colab_v2_dev_core_api  Starting
+ Container colab_v2_dev_volume_init  Started
+ Container colab_v2_dev_volume_init  Waiting
+ Container colab_v2_dev_volume_init  Waiting
+ Container colab_v2_dev_core_api  Started
+ Container colab_v2_dev_ai_service  Started
+ Container colab_v2_dev_volume_init  Exited
+ Container colab_v2_dev_pipeline_worker  Starting
+ Container colab_v2_dev_volume_init  Exited
+ Container colab_v2_dev_viz_render  Starting
+ Container colab_v2_dev_viz_render  Started
+ Container colab_v2_dev_pipeline_worker  Started
+③ healthy 대기 (4 단위 · 최대 120 s)
+   colab_v2_dev_core_api              healthy
+   colab_v2_dev_pipeline_worker       healthy
+   colab_v2_dev_viz_render            healthy
+   colab_v2_dev_ai_service            healthy
+④ 헬스 본문 (모드가 s3 인지 — 조용한 local 을 여기서 잡는다)
+{"unit":"core-api","status":"alive","implemented":true}
+{"unit": "pipeline-worker", "status": "alive", "implemented": true, "storageMode": "s3"}
+{"unit":"viz-render","status":"alive","implemented":true,"sourceMode":"s3","previewSink":"s3","tileBranch":"꺼짐"}
+{"unit":"ai-service","status":"alive","implemented":true}
+up: ok (sha 83d3eb52cb1f)

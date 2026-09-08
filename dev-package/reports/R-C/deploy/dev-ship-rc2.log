@@ -1,0 +1,7 @@
+Loaded image: colab-v2/migrator:dev-83d3eb52cb1f
+Loaded image: colab-v2/core-api:dev-83d3eb52cb1f
+Loaded image: colab-v2/pipeline-worker:dev-83d3eb52cb1f
+Loaded image: colab-v2/viz-render:dev-83d3eb52cb1f
+Loaded image: colab-v2/ai-service:dev-83d3eb52cb1f
+loaded: dev-83d3eb52cb1f
+── 실었다: dev-83d3eb52cb1f. 다음 = EC2 에서 /opt/colab-v2/up.sh

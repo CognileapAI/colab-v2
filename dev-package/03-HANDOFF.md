@@ -28,14 +28,16 @@
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
 ⭑ **⟨증보 2026-09-08 · R-B 마감⟩ 최종 갱신 = 2026-09-08 — R-B 10 WU(B1~B8·B10·B11) 전건 done · `integration/r-b` `2f67649` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈373〉`(20차 집행)·`〈374〉`(〈194〉·〈276〉 반전).**
 게이트 = 전수 `all -j 1` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `2f67649` · `dev-package/reports/R-B/all/`).
-계약 동결 해제 **20차(㉯ · Ted 2026-09-07)** · 계약 파괴 B2 14·B3 2(승인분) · **마이그레이션 5 head 1(0015→0019) — 어느 환경에도 미적용** · 배포 0(다음 배포 창 = 5건 실적용 ＋ `deploy_doctor` ＋ 배포 전 실측 3건).
+계약 동결 해제 **20차(㉯ · Ted 2026-09-07)** · 계약 파괴 B2 14·B3 2(승인분) · **마이그레이션 5 head 1(0015→0019) — 어느 환경에도 미적용** → ⭑ 2026-09-08 dev 적용(〈378〉) · 배포 0(다음 배포 창 = 5건 실적용 ＋ `deploy_doctor` ＋ 배포 전 실측 3건).
 근거 = `dev-package/sessions/R-B-ROUND-20260908.md`(WU 지도 · advisor ② 10건 · **Ted 묶음 질의 49건 §5** · 후속 §6) · `planning-applied` rev2 = merged.
 다음 = ⑴ ~~Ted 질의 49건 판정~~ **2026-09-08 61건 전부 권고대로 확정**(`intent/2026-09-07-r-b.md ## 확인` A·C·D) ⑵ 배포 창(staging 예행 → dev · 마이그레이션 5건 · 배포 전 실측 3건) ⑶ R-C intent(grill-me · 게이트 승격 3종 ＋ 이월 항목 ＋ 21차 후보) ⑷ `w9-dev-deploy-rebased` 처리.
 ⭑ **⟨증보 2026-09-08 · R-C 마감⟩ 최종 갱신 = 2026-09-08 — R-C 12 WU(C1~C12) 전건 done · `integration/r-c` tip `0d206ae`(＋등재 커밋) → `main` ff 한 줄 **Ted 대기** · 등재 `PLAN-SoT §9 〈375〉`(POL-021 부분 반전)·`〈376〉`(21차 집행)·`〈377〉`(R-C 집행).**
 게이트 = 전수 `all -j 1` 한 번의 실행 **green 54 / red(판정) 0 / red(준비) 0**(트리 `9aebd67` · `dev-package/reports/R-C/all/all-j1.log`) · 검증 `dev-package/sessions/R-C-VERIFY-20260908.md`(미달 3 · 초과 2 · 존치 7).
-계약 동결 해제 **21차(㉯ · Ted 2026-09-08 「승인 — 21차 ㉯ 첨가 6건」)** · 파괴 0 · **마이그레이션 platform 0020→0022 ＋ ai 0006 · head 1 — 어느 환경에도 미적용(누계 9건)** · 배포 0.
+계약 동결 해제 **21차(㉯ · Ted 2026-09-08 「승인 — 21차 ㉯ 첨가 6건」)** · 파괴 0 · **마이그레이션 platform 0020→0022 ＋ ai 0006 · head 1 — 어느 환경에도 미적용(누계 9건)** → ⭑ 2026-09-08 dev 적용(〈378〉) · 배포 0 → **배포 창 집행 1(dev `83d3eb52cb1f`)**.
 근거 = `dev-package/sessions/R-C-ROUND-20260908.md`(WU 지도 · advisor ② 11건 · Ted 판정 §5 · 인계 §7) · intent `dev-package/intent/2026-09-08-r-c.md`·`2026-09-08-preview-slot.md` · spec `dev-package/prd/specs/R-C.md`.
 다음 = ⑴ Ted `git merge --ff-only integration/r-c` ⑵ 배포 창(staging 예행 → 실측 3건 → dev 실적용 0015→0022＋ai 0006 → `deploy_doctor` · 조건부 GO 원문 「조건부 GO — 단계 A GREEN ＋ 실측 3건 이상 0 ＋ deploy_doctor 전건」) ⑶ 후속 등재(`project.css:436` 음수 · `upload.css` margin-top 5곳 · 시각 목록 · ai 제안 생산자 · `granularity: null`).
+⭑ **⟨증보 2026-09-08 · 배포 창 집행⟩ dev `83d3eb52cb1f`(EC2 `i-0bf4fad1ead85071d`) · `deploy_doctor` **항목 14 — ✓ 14 · ✗ 0 · ─ 0** · 등재 `PLAN-SoT §9 〈378〉` · 마이그레이션 누계 9건 → **전부 적용(dev · head platform `0022` · ai `0007_merge_vocab_and_category`)** · staging 예행 2회 green · `WU-C13`(w9 `0006_topic_vocab_six` 흡수 ＋ `0007` merge · Ted ⓐ) · 로그 `dev-package/reports/R-C/deploy/`.**
+남은 것 = ⑴ Ted `main` ff(`integration/r-c` `83d3eb5` — dev 가 `main` 밖 sha 를 실행 중) ⑵ 후속 등재 4(`db/ai/alembic.ini` 로거 · `project.css:436` · `upload.css` 5곳 · ai 제안 생산자) ⑶ 사다리 단 실물 `bounds` 분포 `[미측정]`.
 ⭑ **⟨증보 2026-09-07 · R-A′ rev2 증분 마감⟩ 최종 갱신 = 2026-09-07 — R-A′ 5 WU(A13R·A12R·A7R·A9R·A3R＋A4R) 전건 done · `integration/r-a2` `596fefc` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈372〉`.**
 게이트 = 전수 `all -j 2` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `596fefc` · `dev-package/reports/R-A2/all/`).
 계약 0 · 스키마 0 · 마이그레이션 0 — 서버 변경 1건(프로젝트 이름 중복 400 · 계약 선언 집합 안) · 배포 0(dev 배포 창 별건 · 창 8-b 와 서로 막지 않는다).
