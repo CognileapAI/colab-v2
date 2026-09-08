@@ -114,13 +114,19 @@ else
 fi
 
 # ㈑ 선언 정본(schema.sql) ↔ 마이그레이션 결과 (schema-diff 가 보는 것과 같은 사실).
-mkdb decl_db; psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
-for db in head_db decl_db; do
+# ⭑ ⟨WU-C13 2026-09-08⟩ 견주는 상대는 **체인 head** 이지 이 회차의 `0006_rc7_synonym_category`
+#   가 아니다 — 이 회차는 이제 갈래 **한 쪽**이고(형제 = `0006_topic_vocab_six`), `schema.sql`
+#   은 두 갈래의 **합집합**이다(주제 6값 ＋ 맨 뒤 `category`). `0004-0005-drift.sh` 가 같은
+#   이유로 이미 head 를 견준다. ⛔ 위 ㈎㈏㈐ 는 그대로 이 회차만 본다 — 그것이 이 파일의 몫이다.
+render "upgrade head" "$TMP/chain_head.sql"
+mkdb chain_db; psql_f chain_db "$TMP/chain_head.sql" || red "체인 head 를 적용하지 못했다."
+mkdb decl_db;  psql_f decl_db "$CHAIN_DIR/schema.sql" || red "schema.sql 를 적용하지 못했다."
+for db in chain_db decl_db; do
   docker exec "$PGC" pg_dump -U postgres --schema-only --no-owner --no-privileges -d "$db" \
     | grep -vE '^\s*(--|SET |SELECT pg_catalog\.set_config|\\(un)?restrict |$)' \
     | grep -v 'alembic_version_ai' > "$TMP/$db.decl"
 done
-if diff -u "$TMP/decl_db.decl" "$TMP/head_db.decl" > "$TMP/decl.diff"; then
+if diff -u "$TMP/decl_db.decl" "$TMP/chain_db.decl" > "$TMP/decl.diff"; then
   echo "[0006-drift] 선언 정본 schema.sql = 마이그레이션 결과 → OK"
 else
   echo "[0006-drift] schema.sql 과 마이그레이션 결과가 갈렸다 ✗"
