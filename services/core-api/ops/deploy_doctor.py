@@ -112,7 +112,7 @@ class DeployReport(s3_doctor.Report):
         self._marks = []
         try:
             yield
-        except Exception as e:  # noqa: BLE001 — 항목 하나의 예외가 나머지 13 을 묻지 않는다
+        except Exception as e:  # noqa: BLE001 — 항목 하나의 예외가 나머지 14 를 묻지 않는다
             first = redact((str(e).splitlines() or [""])[0])[:160]
             self.line(BAD, "예외", f"{type(e).__name__}: {first}")
         status = BAD if BAD in self._marks else (OK if OK in self._marks else SKIP)

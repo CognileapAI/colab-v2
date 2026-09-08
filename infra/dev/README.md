@@ -65,7 +65,7 @@ COLAB_PG_MASTER_URL_FILE=/etc/colab/master.url COLAB_OWNER_PASSWORD=… COLAB_AP
 cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/deploy_web.py --dist ../../frontend/dist --bucket colab-platform-web-dev
 ```
 
-⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 지금은 손으로 재는 한 줄이고, 게이트는 `WU-D2` 에서 `ship.sh` 에 들어간다.
+⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 게이트는 `ship.sh` 에 있다(exit 65/78 · 우회 선언).
 
 - **게이트(`WU-D2` 반영 · `ship.sh` 안)** — `SHA` 를 읽은 직후 `origin/main` 을 fetch 해 조상 검사를 한다. 비조상이면 **exit 65**(거절 · ssh 0회) · `origin` 을 못 읽으면 **exit 78**(준비 실패 · 진행 금지). 손으로 재던 위 한 줄을 대신한다.
 - **우회는 선언한다** — 긴급 반입은 `COLAB_SHIP_ALLOW_NONMAIN=1 … infra/dev/ship.sh`. 거절 대신 통과하되 출력에 「비조상 반입 · 우회 선언」이 남는다. 기본값은 거절이다.
@@ -78,6 +78,8 @@ cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/
 
 `dev.env` 의 `COLAB_IMAGE_TAG=dev-<직전 sha>` 로 바꾸고 `up.sh`. 이미지는 `docker images colab-v2/*` 에 남아 있다(불변 태그).
 마이그레이션은 되돌리지 않는다 — `0009` 처럼 백필이 든 판은 downgrade 가 값을 잃는다(각 마이그레이션 머리말).
+
+⚠ **되돌린 뒤의 `deploy_doctor` ⑮** — 대조 대상은 마지막 `ship.sh` 반입 sha 다. `dev.env` 롤백(`COLAB_IMAGE_TAG` ＋ `up.sh`)은 `CURRENT_SHA`·`MAIN_SHA` 를 갱신하지 않으므로 롤백 뒤 ⑮ 는 직전 반입 판정을 유지한다.
 
 ## 확인 — 콘솔 눈이 아니라 `deploy_doctor`
 
@@ -106,6 +108,7 @@ cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev \
 **미지정 항목이 남으면 exit 1** — 콘솔 단계 사이의 부분 실행은 `--allow-skip` 을 적어야 통과다(면제 명시).
 항목 14 = 운영자 자격증명 · 데이터 버킷 7항목 · 웹 버킷 · DB ×2 · head ×2 · RLS 전수 · 앱 롤 · 4 단위 헬스(`storageMode`/`sourceMode`=s3) ·
 앱 자격증명 출처 `imds` · 환경 짝 · 진입/API 라우팅(`/api/v1/me` 401 JSON)/previews · 백업 24h.
+항목 15 = 실행 sha ∈ main(`MAIN_SHA` 대조).
 
 ## 진단표 — 실제로 겪은 것만 적는다
 

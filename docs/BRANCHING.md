@@ -25,7 +25,7 @@ diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev
      <(sed -n '/<!-- rule6:begin -->/,/<!-- rule6:end -->/p' docs/BRANCHING.md | grep -E '^[1-6]\. ')
 ```
 
-- 규칙 1 의 반입 검사는 **아직 코드에 없다** — 집행 자리는 `WU-D2`(§5).
+- 규칙 1 의 반입 검사는 **`infra/dev/ship.sh` 안에 있다**(WU-D2 반영) — 비조상 거절 exit 65 · `origin` 조회 실패 exit 78 · 선언 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`. 사후 대조는 `deploy_doctor` ⑮(§5).
 
 ---
 
@@ -38,7 +38,7 @@ diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev
 | `lane/wu-*` | 해당 `integration/r-N` | 통합으로 **rebase ＋ ff** | 통합에 얹힌 **즉시** | 생성 = `Agent(isolation:"worktree")` · 병합·삭제 = 오케스트레이터 | 레인의 끝 = 자기 브랜치 · 레인은 병합·원격 삭제 0 |
 | `plan/*` | `main` tip | 복귀 없음 — 산출(라운드 파일·spec)은 통합 브랜치 커밋으로 들어간다 | 해당 라운드가 `main` 에 ff 된 뒤 | 오케스트레이터 | 워크트리 제거 선행(`git worktree remove`) |
 | `archive/*` 태그 | 삭제 직전 브랜치 tip | 복귀 없음 — 보존 전용 | 없음(영구) | 로컬 생성 = 레인 · 원격 push = 오케스트레이터(게이트 ③ 뒤) | 배포 대상 아님 · `git push origin archive/<이름>` **개별** · `--tags` 금지 |
-| `dev-YYYYMMDD-N` 태그 | dev 실적용 sha(로컬 `dist/colab-v2-dev.sha`) | 복귀 없음 | 없음 | 사람 — `deploy_doctor` 전건 뒤 호출 | N = 같은 날 기존 태그 수 ＋1 · 도구는 `WU-D2` `infra/dev/tag-release.sh`(신설 예정) |
+| `dev-YYYYMMDD-N` 태그 | dev 실적용 sha(로컬 `dist/colab-v2-dev.sha`) | 복귀 없음 | 없음 | 사람 — `deploy_doctor` 전건 뒤 호출 | N = 같은 날 기존 태그 수 ＋1 · 도구 = `infra/dev/tag-release.sh`(push 없음 · 명령만 출력) |
 | `prod-YYYYMMDD` 태그 | dev 배포 창 N회를 green 으로 넘긴 `main` 커밋 | 복귀 없음 | 없음 | Ted | prod 는 `PLAN-SoT §9-㊻` 로 보류 · 그 태그에서만 배포 |
 
 - 표 밖 이름은 **정본이 없다.** 새 접두어가 필요하면 이 표에 행을 먼저 추가한다.
@@ -69,9 +69,9 @@ diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev
 
 ---
 
-## 5. staging 예외와 긴급 우회 — 집행은 `WU-D2`
+## 5. staging 예외와 긴급 우회 — 집행 자리 = `ship.sh` ＋ `deploy_doctor` ⑮
 
 - **staging 예외(규칙 2)** — staging 은 `integration/*` HEAD 를 굽는다. 리허설이므로 조상 검사의 대상이 아니고, 대신 **원장 행에 브랜치 이름**을 같이 적는다(`infra/staging/deploy.sh` 의 `ledger_append` 비고 끝 `브랜치=`). staging 에서 완료 판정을 하지 않는다(`CLAUDE.md §0` 완료 조건).
-- **긴급 우회(계획)** — 반입 게이트를 넘겨야 하는 날은 `COLAB_SHIP_ALLOW_NONMAIN=1` 을 선언한다. 거절 대신 통과하되 ⑴ 출력에 「비조상 반입 · 우회 선언」 한 줄 ⑵ EC2 `MAIN_SHA` 파일에 `ancestor=bypass` ⑶ `deploy_doctor` 15번째 항목이 그 값을 ✗ 로 판정 — 셋이 함께 남는다. 조용한 우회만 막고 선언된 우회는 허용한다.
-- ⚠ **현재 트리에는 반입 게이트도 우회 경로도 없다.** `infra/dev/ship.sh` 는 `dist/colab-v2-dev.sha` 를 읽고 곧바로 scp·`docker load` 로 간다 — `origin/main` 조상 검사 0 · `MAIN_SHA` 기록 0 · `COLAB_SHIP_ALLOW_NONMAIN` 참조 0. `deploy_doctor` 도 14항목이다. 위 두 문단은 `WU-D2`·`WU-D3` 의 **예정 동작**이고, 그 두 WU 가 병합되기 전에는 「검사가 있다」고 읽지 않는다.
-- 그때까지의 대체 = 반입 전에 손으로 한 줄 — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 반입).
+- **긴급 우회** — 반입 게이트를 넘겨야 하는 날은 `COLAB_SHIP_ALLOW_NONMAIN=1` 을 선언한다. 거절 대신 통과하되 ⑴ 출력에 「비조상 반입 · 우회 선언」 한 줄 ⑵ EC2 `MAIN_SHA` 파일에 `ancestor=bypass` ⑶ `deploy_doctor` 15번째 항목이 그 값을 ✗ 로 판정 — 셋이 함께 남는다. 조용한 우회만 막고 선언된 우회는 허용한다.
+- ⭑ **⟨개정 2026-09-08 · WU-D2·D3 병합⟩ 위 두 문단은 구현된 동작이다** ／ 종전 ~~「현재 트리에는 반입 게이트도 우회 경로도 없다 · `deploy_doctor` 도 14항목이다 · 예정 동작이다」~~ — `infra/dev/ship.sh` 가 `dist/colab-v2-dev.sha` 를 읽은 직후 `origin/main` 을 fetch 해 조상 검사를 하고, EC2 `/opt/colab-v2/MAIN_SHA` 에 `main=<12자리> candidate=<12자리> ancestor=yes|no|bypass` 한 줄을 적는다. `deploy_doctor` 는 **15항목**이고 ⑮ 가 `CURRENT_SHA`·`MAIN_SHA` 를 대조한다.
+- 손으로 재던 한 줄(`git merge-base --is-ancestor <sha> origin/main`)은 `ship.sh` 게이트가 대신한다 — 반입 전 확인용으로 남겨 두되 반입의 조건은 게이트 쪽이다. 태그는 `infra/dev/tag-release.sh`(`dev-YYYYMMDD-N` · `prod-YYYYMMDD`).

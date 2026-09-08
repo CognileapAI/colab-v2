@@ -50,7 +50,7 @@ paths:
 
 ## 고치기 전에 돌릴 것
 
-`cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev …` — 14 항목 중 어디가
+`cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev …` — 15 항목 중 어디가
 `✗` 인지가 원인의 절반이다. 인자는 `infra/dev/README.md`. **부분 실행 둘을 합쳐 green 이라 하지
 않는다** — `─ 0` 이 나온 한 번의 결과만 근거다. 증상별 진단은 `docs/DEPLOY.md §3`.
 
