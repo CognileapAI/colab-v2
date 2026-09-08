@@ -1,8 +1,9 @@
 """`deploy_doctor` — 배포 상태 검사기 (dev-package/S3.md §2 · PLAN-SoT §9 〈342〉-㉲).
 
 `s3_doctor` 가 「버킷 설정이 맞는가」 하나를 본다면, 이 스크립트는 **배포 한 벌이 서 있는가**를
-14 항목으로 본다 — 운영자 자격증명 · 버킷 둘 · DB 둘 · 스키마 head 둘 · RLS 전수 · 앱 롤 ·
-5 단위 헬스 · 앱 자격증명 출처 · 환경 짝 · 진입 라우팅 · 백업. 읽기만 한다 — 쓰지도 지우지도 않는다.
+15 항목으로 본다 — 운영자 자격증명 · 버킷 둘 · DB 둘 · 스키마 head 둘 · RLS 전수 · 앱 롤 ·
+5 단위 헬스 · 앱 자격증명 출처 · 환경 짝 · 진입 라우팅 · 백업 · 실행 sha ∈ main.
+읽기만 한다 — 쓰지도 지우지도 않는다.
 
     (services/core-api 에서)
     .venv/bin/python ops/deploy_doctor.py --env dev \\
@@ -59,7 +60,7 @@ from s3_doctor import BAD, OK, SKIP  # noqa: E402
 from colab_core.kernel.s3 import S3Client, S3Error  # noqa: E402
 from colab_core.kernel.sigv4 import Credentials  # noqa: E402
 
-MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭"
+MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"
 CHAINS = ("platform", "ai")
 #: 앱 롤·소유자 롤 이름 — `infra/staging/db-bootstrap.sh` · `ops/app-role.sql` 이 만드는 이름 그대로.
 APP_ROLE, OWNER_ROLE = "colab_app", "colab_owner"
@@ -67,6 +68,11 @@ LOCAL_ORIGIN = "http://localhost:5173"
 BACKUP_PREFIX = "_ops/backups/{env}/"
 BACKUP_MAX_AGE = timedelta(hours=24)
 HTTP_TIMEOUT = 10.0
+#: ⑮ 가 읽는 자리 — EC2 `/opt/colab-v2` 를 컨테이너에 읽기 전용으로 건 곳(docs/DEPLOY.md §6-1).
+STATE_DIR_DEFAULT = "/state"
+STATE_MOUNT_HINT = "-v /opt/colab-v2:/state:ro"
+#: `infra/dev/ship.sh` 가 반입할 때 적는 한 줄. 형식이 갈리면 이 정규식이 「형식 불일치」로 잡는다.
+MAIN_SHA_RE = re.compile(r"^main=(\S+) candidate=(\S+) ancestor=(yes|no|bypass)$")
 
 _CRED_IN_URL = re.compile(r"(://)[^/@\s]+@")
 _AMZ_SIGNED = re.compile(r"(X-Amz-(?:Signature|Credential|Security-Token)=)[^&\s]+")
@@ -151,6 +157,7 @@ class Ctx:
     web_bucket: str | None
     region: str
     allow_skip: bool = False
+    state_dir: str = STATE_DIR_DEFAULT
     creds: Credentials | None = None
     conns: dict[str, object] = field(default_factory=dict)
     db_hosts: dict[str, str | None] = field(default_factory=dict)
@@ -665,6 +672,53 @@ def check_backups(ctx: Ctx, rep: DeployReport) -> None:
              f"{hours:.1f}시간 전 · 객체 {count}건" + ("" if age <= BACKUP_MAX_AGE else " — 24h 를 넘겼다"))
 
 
+def check_main_ancestry(ctx: Ctx, rep: DeployReport) -> None:
+    """⑮ 실행 sha ∈ main — 반입 게이트를 거친 sha 인가 (WU-D3 · 설계트리 Q1).
+
+    EC2 에 git 이 없다. 그래서 대조는 **문자열**이다 — `infra/dev/ship.sh` 가 반입할 때
+    `/opt/colab-v2/MAIN_SHA` 에 적어 둔 `main=… candidate=… ancestor=…` 한 줄을
+    `CURRENT_SHA` 와 맞춰 본다. 창 9(2026-09-06)는 `main` 밖 sha 를 dev 에 실었고
+    그 마이그레이션이 dev 에만 남았다 — 이 항목이 그 사후를 잡는 자리다.
+
+    ⚠ **입력이 없어도 ─(준비)로 내려앉지 않는다.** 파일이 없다는 것은 게이트를 거치지 않았다는
+    뜻이라 그 자체가 판정 실패다(spec 우려 4 ⓐ — ─ 로 두면 옛 반입 방식이 영원히 통과한다).
+    """
+    state = pathlib.Path(ctx.state_dir)
+    if not state.is_dir():
+        rep.line(BAD, "마운트 없음", f"{ctx.state_dir} 가 없다 — `docker run` 에 `{STATE_MOUNT_HINT}` 를 준다 "
+                                     "(마운트가 없으면 무엇이 돌고 있는지 볼 수 없다)")
+        return
+    values: dict[str, str] = {}
+    for name in ("CURRENT_SHA", "MAIN_SHA"):
+        f = state / name
+        if not f.is_file():
+            rep.line(BAD, "파일 없음", f"{ctx.state_dir}/{name} 이 없다 — 반입 게이트를 거치지 않은 배포다 "
+                                       "(`infra/dev/ship.sh` 가 두 파일을 함께 적는다)")
+            return
+        values[name] = f.read_text(encoding="utf-8", errors="replace").strip()
+
+    m = MAIN_SHA_RE.match(values["MAIN_SHA"])
+    if not m:
+        rep.line(BAD, "형식 불일치", f"MAIN_SHA 를 읽을 수 없다: {values['MAIN_SHA'][:80]!r} — "
+                                     "형식은 `main=<sha> candidate=<sha> ancestor=yes|no|bypass` 다")
+        return
+    main_sha, candidate, ancestor = m.group(1), m.group(2), m.group(3)
+    current = values["CURRENT_SHA"]
+
+    if candidate != current:
+        rep.line(BAD, "후보 불일치", f"MAIN_SHA 의 candidate={candidate} 인데 CURRENT_SHA={current} 다 — "
+                                     "반입 뒤에 다른 이미지가 올라갔다")
+        return
+    if ancestor == "bypass":
+        rep.line(BAD, "우회 반입", f"{current} 는 COLAB_SHIP_ALLOW_NONMAIN 선언으로 실렸다 (main={main_sha}) — "
+                                   "선언된 우회도 통과가 아니다")
+        return
+    if ancestor != "yes":
+        rep.line(BAD, "조상 아님", f"{current} 는 origin/main({main_sha}) 의 조상이 아니라고 적혀 있다")
+        return
+    rep.line(OK, "일치", f"{current} ∈ main (origin/main={main_sha} · 반입 시 조상 확인됨)")
+
+
 # ── 진행 ────────────────────────────────────────────────────────────────────
 
 def run(ctx: Ctx) -> int:
@@ -698,6 +752,8 @@ def run(ctx: Ctx) -> int:
         check_routing(ctx, rep)
     with rep.item(14, "백업 24h"):
         check_backups(ctx, rep)
+    with rep.item(15, "실행 sha ∈ main"):
+        check_main_ancestry(ctx, rep)
     for conn in ctx.conns.values():
         with contextlib.suppress(Exception):
             conn.close()
@@ -712,7 +768,7 @@ def run(ctx: Ctx) -> int:
 
 def parse_args(argv: list[str] | None) -> Ctx:
     parser = argparse.ArgumentParser(
-        description="배포 상태 검사기 — 14 항목, 읽기 전용 (dev-package/S3.md §2). 값은 파일·URL·이름으로만 받는다.")
+        description="배포 상태 검사기 — 15 항목, 읽기 전용 (dev-package/S3.md §2). 값은 파일·URL·이름으로만 받는다.")
     parser.add_argument("--env", choices=("dev", "prod"), help="벌 이름 — 버킷 접미사·DB 호스트·백업 접두사의 짝")
     parser.add_argument("--endpoint", help="CloudFront 진입 URL (https://…)")
     parser.add_argument("--db-url-file", help="platform 접속 문자열이 든 0600 파일")
@@ -724,13 +780,17 @@ def parse_args(argv: list[str] | None) -> Ctx:
     parser.add_argument("--bucket", help="데이터 버킷 이름")
     parser.add_argument("--web-bucket", help="웹(정적 번들) 버킷 이름")
     parser.add_argument("--region", default="ap-northeast-2")
+    parser.add_argument("--state-dir", default=STATE_DIR_DEFAULT,
+                        help=f"EC2 /opt/colab-v2 를 건 자리 — ⑮ 가 CURRENT_SHA·MAIN_SHA 를 읽는다 "
+                             f"(`docker run` 에 `{STATE_MOUNT_HINT}`)")
     parser.add_argument("--allow-skip", action="store_true",
                         help="미지정 항목(─)이 남아도 통과로 친다 — 콘솔 단계 사이의 부분 실행에만. 요약줄에 면제가 적힌다")
     a = parser.parse_args(argv)
     return Ctx(env=a.env, endpoint=a.endpoint,
                db_url_files={"platform": a.db_url_file, "ai": a.ai_db_url_file},
                app_base=a.app_base, worker_base=a.worker_base, viz_base=a.viz_base, ai_base=a.ai_base,
-               bucket=a.bucket, web_bucket=a.web_bucket, region=a.region, allow_skip=a.allow_skip)
+               bucket=a.bucket, web_bucket=a.web_bucket, region=a.region, allow_skip=a.allow_skip,
+               state_dir=a.state_dir)
 
 
 def main(argv: list[str] | None = None) -> int:

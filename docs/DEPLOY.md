@@ -257,11 +257,12 @@ DB 부트스트랩: `prep` → `roles` → (마이그레이션) → `app-grants`
 
 ### 6-1. 확인 — `deploy_doctor`
 
-**EC2 위에서 한 번에 14 항목을 돌린다.** 시크릿은 **파일 단위** 마운트(디렉터리가 700 이라 컨테이너가 못 지난다), 운영자 키는 `--env-file` 로 잠깐 넘기고 **실행 직후 지운다**.
+**EC2 위에서 한 번에 15 항목을 돌린다.** 시크릿은 **파일 단위** 마운트(디렉터리가 700 이라 컨테이너가 못 지난다), 운영자 키는 `--env-file` 로 잠깐 넘기고 **실행 직후 지운다**.
 
 ```bash
 docker run --rm --network host --env-file /tmp/op.env \
   -v /opt/colab-repo:/repo:ro \
+  -v /opt/colab-v2:/state:ro \
   -v /etc/colab/core-database.url:/s/core.url:ro \
   -v /etc/colab/ai-db.url:/s/ai.url:ro \
   colab-v2/core-api:dev python /repo/services/core-api/ops/deploy_doctor.py --env dev \
@@ -271,6 +272,16 @@ docker run --rm --network host --env-file /tmp/op.env \
     --db-url-file /s/core.url --ai-db-url-file /s/ai.url \
     --bucket colab-platform-data-dev --web-bucket colab-platform-web-dev
 ```
+
+**항목표 — ⑮ 만 이 절에서 새로 설명한다**(①~⑭ 는 스크립트 머리말).
+
+| 항목 | 무엇을 보나 | ✗ 가 뜨는 자리 |
+|---|---|---|
+| ⑮ 실행 sha ∈ main | `/state/CURRENT_SHA` 와 `/state/MAIN_SHA`(`infra/dev/ship.sh` 가 반입 때 적는 `main=… candidate=… ancestor=…` 한 줄)를 대조한다. EC2 에 git 이 없어 **문자열 대조**가 유일하다 | 마운트 없음(`-v /opt/colab-v2:/state:ro` 누락) · 파일 없음(반입 게이트를 안 거친 배포) · 형식 불일치 · 후보 불일치(반입 뒤 다른 이미지) · `ancestor=bypass`(선언된 우회) · `ancestor=no` |
+
+> ⚠ **⑮ 의 「파일 없음」은 ─(준비 실패)가 아니라 ✗ 다.** 파일이 없다는 것은 그 배포가 반입 게이트를
+> 거치지 않았다는 뜻이다 — ─ 로 두면 옛 반입 방식이 영원히 통과한다(창 9 · `docs/BRANCHING.md` §4).
+> ⚠ **`-v /opt/colab-v2:/state:ro` 를 빼면 ⑮ 는 항상 ✗ 다.** 위 명령 그대로 돌린다.
 
 > ⚠ **맥에서 터널로 돌리면 ⑫ 가 red 다** — DB 호스트가 `127.0.0.1` 로 보여 「환경이 다르다」로 판정된다. **검사가 옳게 동작한 것이니 무르지 않는다.** 위 방식으로 돌린다.
 > ⚠ **부분 실행 둘을 합쳐서 green 이라 하지 않는다.** `─ 0` 이 나온 한 번의 결과만 근거다.

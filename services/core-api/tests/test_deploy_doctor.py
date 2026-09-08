@@ -33,7 +33,7 @@ from conftest import auth  # noqa: F401 — conftest 경로 확보
 CORE_API = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = CORE_API.parents[1]
 DOCTOR = CORE_API / "ops" / "deploy_doctor.py"
-MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭"
+MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"
 
 
 # ── 도구 ────────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ def summary_statuses(stdout: str) -> dict[str, str]:
             continue
         if not in_summary:
             continue
-        m = re.match(r"^\s*([①-⑭])\s.*?([✓✗─])\s*$", line)
+        m = re.match(r"^\s*([①-⑮])\s.*?([✓✗─])\s*$", line)
         if m:
             out[m.group(1)] = m.group(2)
     return out
@@ -66,7 +66,7 @@ def item_lines(stdout: str, mark: str) -> list[str]:
     start = next(i for i, ln in enumerate(lines) if ln.strip().startswith(mark + " "))
     body: list[str] = []
     for ln in lines[start + 1:]:
-        if re.match(r"^\s*[①-⑭] ", ln) or ("요약" in ln and "──" in ln):
+        if re.match(r"^\s*[①-⑮] ", ln) or ("요약" in ln and "──" in ln):
             break
         body.append(ln)
     return body
@@ -135,7 +135,7 @@ def test_인자_없이_돌리면_전_항목이_실패_또는_건너뜀이고_exi
     done = run_doctor()
     assert done.returncode == 1, done.stdout + done.stderr
     statuses = summary_statuses(done.stdout)
-    assert len(statuses) == 14, done.stdout
+    assert len(statuses) == 15, done.stdout
     assert set(statuses.values()) <= {"✗", "─"}, statuses
     assert "✓ 0 ·" in done.stdout, "요약줄이 ✓ 건수를 말해야 한다"
     assert "─ 14" in done.stdout, "요약줄이 ─ 건수를 숨기면 안 된다"
@@ -356,3 +356,101 @@ def test_healthz_storage_는_1초를_넘기지_않는다(p2_client, no_ambient_c
     assert time.monotonic() - t0 < 2.5
     body = res.json()
     assert body["credentialSource"] is None and body["error"]
+
+
+# ── ⑮ 실행 sha ∈ main — `MAIN_SHA` 대조 (WU-D3) ─────────────────────────────
+# EC2 에 git 이 없다. 그래서 판정은 **문자열 대조**다 — `ship.sh` 가 반입할 때 적어 둔
+# `MAIN_SHA` 한 줄과 `CURRENT_SHA` 를 맞춰 본다. 파일이 없다는 것은 반입 게이트를 거치지
+# 않았다는 뜻이라 ─(준비)가 아니라 **✗** 다(spec 우려 4 ⓐ — ─ 로 두면 옛 반입이 영원히 통과한다).
+
+SHIP_SH = REPO_ROOT / "infra" / "dev" / "ship.sh"
+ANC_A, ANC_B = "a1b2c3d4e5f6", "9f8e7d6c5b4a"
+
+
+def state_dir(tmp_path, current: str, main_line: str | None) -> str:
+    """`/opt/colab-v2` 마운트를 흉내낸다 — `CURRENT_SHA` ＋ `MAIN_SHA`."""
+    d = tmp_path / "state"
+    d.mkdir()
+    (d / "CURRENT_SHA").write_text(current + "\n", encoding="utf-8")
+    if main_line is not None:
+        (d / "MAIN_SHA").write_text(main_line + "\n", encoding="utf-8")
+    return str(d)
+
+
+def item15(*args: str) -> tuple[str, list[str]]:
+    done = run_doctor(*args)
+    return summary_statuses(done.stdout).get("⑮", ""), item_lines(done.stdout, "⑮")
+
+
+def test_반입_sha_가_main_조상이고_후보가_일치하면_15번째_항목이_통과다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=yes")
+    status, body = item15("--state-dir", d)
+    assert status == "✓", body
+
+
+def test_우회_반입은_실패이고_사유가_남는다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=bypass")
+    status, body = item15("--state-dir", d)
+    assert status == "✗", body
+    assert any("우회" in ln for ln in body), body
+
+
+def test_조상이_아니라고_적힌_반입은_실패다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=no")
+    status, body = item15("--state-dir", d)
+    assert status == "✗", body
+
+
+def test_MAIN_SHA_파일이_없으면_실패이고_사유는_파일_없음이다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, None)
+    status, body = item15("--state-dir", d)
+    assert status == "✗", body
+    assert any("파일 없음" in ln for ln in body), body
+    assert not any("마운트 없음" in ln for ln in body), "마운트 부재와 파일 부재는 사유가 달라야 한다"
+
+
+def test_state_디렉터리가_마운트되지_않으면_실패이고_사유는_마운트_없음이다(tmp_path) -> None:
+    status, body = item15("--state-dir", str(tmp_path / "없는자리"))
+    assert status == "✗", body
+    assert any("마운트 없음" in ln for ln in body), body
+    assert any("/opt/colab-v2:/state:ro" in ln for ln in body), "고치는 법이 사유에 있어야 한다"
+
+
+def test_MAIN_SHA_형식이_다르면_실패이고_사유는_형식_불일치다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, "nonmain:a1b2c3d4e5f6")   # 폐기된 옛 표기
+    status, body = item15("--state-dir", d)
+    assert status == "✗", body
+    assert any("형식" in ln for ln in body), body
+
+
+def test_후보가_실행_sha_와_다르면_실패다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_B} ancestor=yes")
+    status, body = item15("--state-dir", d)
+    assert status == "✗", body
+    assert any("불일치" in ln for ln in body), body
+
+
+def test_요약줄이_항목_15_를_말하고_MARKS_가_15_다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=yes")
+    done = run_doctor("--state-dir", d)
+    assert "항목 15" in done.stdout, done.stdout
+    assert len(load_doctor().MARKS) == 15
+
+
+def test_docker_run_명령이_state_를_읽기_전용으로_마운트한다() -> None:
+    """마운트가 없으면 ⑮ 는 영원히 ✗ 다 — 점검기와 운영 문서가 같은 자리를 말해야 한다."""
+    deploy_md = (REPO_ROOT / "docs" / "DEPLOY.md").read_text(encoding="utf-8")
+    assert "-v /opt/colab-v2:/state:ro" in deploy_md
+
+
+def test_ship_sh_가_적는_형식을_점검기가_그대로_읽는다(tmp_path) -> None:
+    """생산자·소비자 한 계약 — `ship.sh` 의 printf 형식이 바뀌면 여기서 red 가 난다."""
+    ship = SHIP_SH.read_text(encoding="utf-8")
+    m = re.search(r"printf '([^']*)'.*MAIN_SHA", ship)
+    assert m, "ship.sh 에서 MAIN_SHA 를 적는 printf 형식을 찾지 못했다"
+    fmt = m.group(1).replace("\\n", "")
+    assert fmt.count("%s") == 3, fmt
+    line = fmt.replace("%s", "{}", 3).format(ANC_B, ANC_A, "yes")
+    d = state_dir(tmp_path, ANC_A, line)
+    status, body = item15("--state-dir", d)
+    assert status == "✓", f"ship.sh 형식 「{line}」 을 점검기가 읽지 못한다 · {body}"
