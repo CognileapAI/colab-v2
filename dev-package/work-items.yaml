@@ -3135,3 +3135,16 @@ items:
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-eval-gate · 순서 7/7 · CI 시크릿 발급 Ted 몫"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
+
+  - id: X-7
+    name: main CI core-api 시험 red 1건 해소 — test_viz_service_credential.py:85 403≠202 (a31111f 이래 · R-D advisor ③ 발견)
+    status: open
+    stage: stage2
+    owner: "T-R"
+    entry_conditions: ["R-D main ff 뒤 · main CI service-tests (core-api) 최신 실행 결과 확인"]
+    depends_on: []
+    completion_def: "main CI 잡 service-tests (core-api) green 1회 · 원인(시험 결함 vs 제품 결함) 판정 기록 · 로컬 service-tests-core-api 게이트와 CI 의 차이(환경·시크릿·필터) 명시 · 제품 결함이면 별도 WU"
+    evidence: "[미집행]"
+    deadline: null
+    note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate)"
+    sources: ["dev-package/sessions/R-D-ROUND-20260908.md"]
