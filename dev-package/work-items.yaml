@@ -3073,26 +3073,26 @@ items:
 
   - id: WU-D2
     name: ship.sh 조상 게이트(exit 65/78 · 우회 선언) ＋ MAIN_SHA 반입 ＋ staging 원장 브랜치 필드 ＋ tag-release.sh (규칙 1·2·6 · Q2·Q3)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-D4 done"]
     depends_on: ["WU-D4"]
     completion_def: "infra/dev/ship.sh SHA 읽기 직후 origin/main 조상 검사(비조상 exit 65 · origin 조회 실패 exit 78 · COLAB_SHIP_ALLOW_NONMAIN=1 우회는 출력·MAIN_SHA ancestor=bypass 로 드러남) · /opt/colab-v2/MAIN_SHA 형식 main=<sha> candidate=<sha> ancestor=yes|no|bypass · deploy.sh 원장 행(:266·:71·:87) 끝 브랜치=<branch> · infra/dev/tag-release.sh dev|prod(dev-YYYYMMDD-N · CURRENT_SHA 대조) · infra/dev/tests/ship-gate.sh 5케이스(가짜 ssh/scp · 호출 횟수 단언) · README 4줄"
-    evidence: "[미집행]"
+    evidence: "infra/dev/ship.sh 조상 게이트(exit 65/78 · COLAB_SHIP_ALLOW_NONMAIN=1 우회 선언 · MAIN_SHA main=/candidate=/ancestor=yes|no|bypass) · infra/staging/deploy.sh ledger_append 3곳 브랜치= · infra/dev/tag-release.sh(dev-YYYYMMDD-N · prod-YYYYMMDD · 로컬 태그만) · infra/dev/README.md 반입 절 · 시험 infra/dev/tests/ship-gate.sh RED 7/26 → GREEN 26/26(6케이스 · 가짜 ssh/scp · 실배포 0) · 게이트 exec-bit·work-item-consistency·service-tests-core-api(980/0/0) green · advisor ② 조건부 수용 → 조건 3 반영(26b2a92) · 노트 dev-package/sessions/rd-ship-gate-20260908.md · 미실측 = 원장 브랜치= 실행 값(드라이런 부재 · 다음 staging 회차)"
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-ship-gate · 순서 3/7 · rollback.sh 무접촉 · advisor ① 2026-09-08: D3 와 한 레인 rd-ship-gate(MAIN_SHA 생산자·소비자) · 우회 표기 ancestor=bypass 통일 · tag-release 는 EC2 미접촉"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
 
   - id: WU-D3
     name: deploy_doctor 15번째 항목 「실행 sha ∈ main」 (Q1 · MAIN_SHA 파일 대조)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-D2 done (MAIN_SHA 형식 확정)"]
     depends_on: ["WU-D2"]
     completion_def: "deploy_doctor.py MARKS 15자 · check_main_ancestry: candidate==CURRENT_SHA ∧ ancestor==yes → ✓ · bypass/no → ✗ · 파일 부재·형식 불일치 → ✗(─ 아님) · 요약줄 항목 15 · 단위 시험 5 ＋ 기존 14항목 회귀 0 · docs/DEPLOY.md §6-1 행 1"
-    evidence: "[미집행]"
+    evidence: "services/core-api/ops/deploy_doctor.py MARKS 15 · check_main_ancestry · --state-dir(기본 /state) · 사유 6갈래 전부 ✗(마운트 없음/파일 없음/형식 불일치/후보 불일치/우회 반입/조상 아님 · ─ 경로 0) · docs/DEPLOY.md docker run -v /opt/colab-v2:/state:ro ＋ §6-1 ⑮ 행 ＋ 보장 범위 1줄 · 시험 test_deploy_doctor.py RED 11 failed → GREEN 28/28(신설 10 · 기존 14항목 회귀 0) · advisor ① 조건 ⓐⓑⓒ 충족(폐기 없음) · advisor ② 조건부 수용 → 반영(26b2a92) · 실 EC2 15/15 판정은 dev 배포 창에서만"
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-doctor-15 · 순서 4/7 · service-tests-core-api · advisor ① 2026-09-08: D2 와 한 레인 rd-ship-gate · 조건 ⓐ -v /opt/colab-v2:/state:ro ⓑ --state-dir ⓒ 마운트 없음/파일 없음 구분 — 미충족 시 폐기(--repo 인자 부재 · ctx 상수 실물 0건)"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-1-branching.md"]
