@@ -157,7 +157,7 @@ cd frontend && npm run build && cd ../services/core-api
 | CloudFront 함수 | `colab-platform-dev-spa-rewrite` | 기본 동작에 연결 |
 | S3 데이터 버킷 | `colab-platform-data-dev` | 버킷 정책이 배포 ARN 을 가리킨다 |
 | S3 웹 버킷 | `colab-platform-web-dev` | OAC |
-| EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (`t4g.small`, arm64) | 서브넷·SG·역할·EIP |
+| EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (`t4g.medium`, arm64 · ⭑ ⟨정정 2026-09-08 · WU-D4 실측⟩ 종전 ~~`t4g.small`~~ — IMDSv2 실물 조회 `dev-package/reports/R-D/d4-judgment-facts-20260908.md` §1 · 출처 `archive/feature/rtf400_dev_scale_up` 809f311 · 그 브랜치의 나머지 22행(`dev.env` 메모리 상한 · OOM · 이미지 수)은 미실측이라 미반입) | 서브넷·SG·역할·EIP |
 | 탄력적 IP | `54.116.191.208` | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | RDS | `colab-platform-dev-db` (PG16, `db.t4g.micro`) | 서브넷 그룹·SG · **삭제 방지 ON** |
 | DB 서브넷 그룹 | `colab-platform-dev-db-subnet-group` | 프라이빗 서브넷 2 |
