@@ -3112,13 +3112,13 @@ items:
 
   - id: WU-D6
     name: 과제 20건 H01~H20 픽스처＋expect.sh ＋ 첫 실측(p95×2 상한 · 예산) (하네스 eval Q3·Q5·Q7·Q8)
-    status: open
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["WU-D5 done"]
     depends_on: ["WU-D5"]
     completion_def: "eval/harness/H01~H20 각 task.md·fixture/(옛값 사본 · SOURCE.md 복원 명령)·expect.sh(정규식 · 음성 단언 포함) · 배분 3·10·5·2 = intent 로스터 축자 · 첫 실측 20건×2회 → summary.md 20행(초·USD) · p95×2 상한 · README [미측정] 0건 · 불안정·준비 과제는 무수정 보고 · 3회 연속 기록 시작"
-    evidence: "[미집행]"
+    evidence: "eval/harness/H01~H20(각 task.md·fixture/·fixture/SOURCE.md·expect.sh 100755 · 제품 파일 diff 0) · 첫 실측 회차 1 results/20260908-161538: 과제 20 · 실행 40 · green 15 · red 5(1/2 H09·H15 · 0/2 H14·H16·H18 — 과제 설계 결함 · 무수정 · 재설계는 Ted 판정 뒤) · p50 32.8 · p95 46.4 · USD 합 32.45 · 1회 최대 1.0067(H08) → README 상한 93초·예산 2.01 · 비용 필드 total_cost_usd · allowedTools 공백 항목 정상 · 모델 호출 43 · 예산 초안 0.50 은 1턴 0.713 으로 바닥 미달 → 3.00 으로 실측(advisor ② 정당 이탈 · 정정문 등재) · 게이트 exec-bit·work-item-consistency·planning-freshness green · advisor ② 조건부 수용 → 조건 반영 · 노트 dev-package/sessions/rd-eval-tasks-20260908.md · Ted 회부 = 측정 대상 정의(라이브 지침 적재 vs --setting-sources) · red 5 재설계 · .verified--pending 4.23:1"
     deadline: null
     note: "2026-09-08 등재 — 레인 rd-eval-tasks · 순서 6/7 · 제품 파일 무접촉(git diff --stat)"
     sources: ["dev-package/intent/2026-09-08-r-d.md", "dev-package/intent/2026-09-08-harness-evals.md", "dev-package/prd/specs/R-D.md", "dev-package/prd/rounds/R-D-2-harness-eval.md"]
