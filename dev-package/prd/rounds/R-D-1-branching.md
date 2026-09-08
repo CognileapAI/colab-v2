@@ -54,8 +54,8 @@ bash dev-package/prd/tools/max-decision.sh                     # 착수 시점 �
 
 - **의존**: 없음 — 맨 앞(D2 의 조상 검사가 죽은 브랜치에 흔들리지 않게).
 - **현재 코드(실측 `git branch -a` · 트리 52c10af)** — 로컬 5: `integration/r-a2` · `integration/r-b` · `integration/w9-dev-deploy` · `plan/r-d-0908` · `w9-rebase`. 원격 10: `feature/rtf400_deploy_prod` · `feature/rtf400_dev_scale_up` · `feature/rtf400_upload_reaper` · `gh-pages` · `integration/{r-a2,r-b,w9-dev-deploy,w9-dev-deploy-rebased}` · `plan/r-d-0908` · `urgent-upload-lineage-rev1`. 고유 이름 **11**(intent 「18」은 낡은 수 — `lane/wu-c*`·`integration/r-c` 는 이미 없다). 창 9 밖 커밋: `main..w9-rebase` = 3(`80aeb00`·`de1a5a2`·`97f1d99`) · `main..integration/w9-dev-deploy` = 2(`20b3715`·`13589fe`).
-- **할 일** — ⑴ 실측 표 `dev-package/sessions/WU-D4-branches-<YYYYMMDD>.md`: 브랜치 | 로컬/원격 | `main` 조상 여부(`git merge-base --is-ancestor`) | 밖 커밋 수 | 밖 파일 중 현 `main` 동등물 유무(`git diff main..<tip> --stat` · 창 9 는 ai 체인분이 WU-C13 흡수됐음을 명시) | 용도(`gh-pages` 는 사이트 배포 브랜치인지 `git log -3` 로) | 권고(삭제/보류) ⑵ 조상이고 병합 완료인 것(`integration/r-a2`·`r-b`·`plan/r-d-0908` 은 R-D 병합 뒤) 즉시 삭제 — 삭제 전 `git tag archive/<브랜치명> <tip>` ＋ `git push origin --tags` ⑶ 창 9 계열 3 ＋ 원격 5 는 표를 오케스트레이터에 넘기고 **Ted 한 줄** 뒤 삭제(같은 태그 보존) ⑷ `plan/r-d-0908` 은 이 라운드가 `main` 에 ff 된 뒤 삭제(자기 발판).
-- **수용 기준** — Given 표, Then 브랜치 11건 전행 · 조상/밖 커밋/동등물 열이 비지 않음(`[미상]` 허용 · 공란 금지) · Given 삭제, Then 각 대상에 `archive/*` 태그 선재 ＋ 원격 태그 존재 ＋ `git branch -a` 에서 0건 · Given Ted 한 줄 없음, Then 창 9 계열·원격 5 는 **남아 있다**(삭제 0).
+- **할 일** — ⑴ 실측 표 `dev-package/sessions/WU-D4-branches-<YYYYMMDD>.md`: 브랜치 | 로컬/원격 | `main` 조상 여부(`git merge-base --is-ancestor`) | 밖 커밋 수 | 밖 파일 중 현 `main` 동등물 유무(`git diff main..<tip> --stat` · 창 9 는 ai 체인분이 WU-C13 흡수됐음을 명시) | 용도(`gh-pages` 는 사이트 배포 브랜치인지 `git log -3` 로) | 권고(삭제/보류) ⑵ 조상이고 병합 완료인 것(`integration/r-a2`·`r-b`·`plan/r-d-0908` 은 R-D 병합 뒤) 즉시 삭제 — 삭제 전 `git tag archive/<브랜치명> <tip>` — ⭑ advisor ① — 원격 push 는 `git push origin archive/<이름>` **개별**(`--tags` 금지 · 잡태그 유출) · **레인은 표 ＋ 로컬 태그까지** · 원격 브랜치 삭제·태그 push 는 비가역 원격 행위라 **오케스트레이터가 게이트 ③ 뒤 집행** ⑶ 창 9 계열 3 ＋ 원격 5 는 표를 오케스트레이터에 넘기고 **Ted 한 줄** 뒤 삭제(같은 태그 보존 · 집행 주체 동일) ⑷ `plan/r-d-0908` 은 이 라운드가 `main` 에 ff 된 뒤 삭제(자기 발판).
+- **수용 기준** — Given 표, Then 브랜치 11건 전행 · 조상/밖 커밋/동등물 열이 비지 않음(`[미상]` 허용 · 공란 금지) · Given 삭제(오케스트레이터 집행), Then 각 대상에 `archive/*` 태그 선재 ＋ 원격 태그 존재(개별 push) ＋ `git branch -a` 에서 0건 · Given 레인 종료, Then 원격 삭제·push 0건(표·로컬 태그만) · Given Ted 한 줄 없음, Then 창 9 계열·원격 5 는 **남아 있다**(삭제 0).
 - **시험 seam** — 셸 검증 `git tag -l 'archive/*'` · `git ls-remote --heads origin` 건수 전/후(`WU-D4` 노트에 축자).
 - **좁은 게이트** — `exec-bit` · `work-item-consistency` · `planning-freshness`.
 
@@ -68,27 +68,32 @@ bash dev-package/prd/tools/max-decision.sh                     # 착수 시점 �
 - **시험 seam** — 문면 대조 스크립트 `dev-package/prd/tools/`(선례 `renumber-decisions.sh` 형태) 또는 `diff <(sed …)` 한 줄을 노트에 축자.
 - **좁은 게이트** — `planning-freshness` · `work-item-consistency` · `exec-bit`.
 
-### WU-D2 · 반입 게이트 ＋ `MAIN_SHA` ＋ 원장 브랜치 필드 ＋ 태그 (규칙 1·2·6 · Q2·Q3) — 계층 인프라 · 크기 M · 레인 `rd-ship-gate`
+### WU-D2 ＋ WU-D3 · 한 레인 `rd-ship-gate` (⭑ advisor ① — `MAIN_SHA` 생산자·소비자를 한 레인에)
+
+#### WU-D2 · 반입 게이트 ＋ `MAIN_SHA` ＋ 원장 브랜치 필드 ＋ 태그 (규칙 1·2·6 · Q2·Q3) — 계층 인프라 · 크기 M
 
 - **의존**: WU-D4(죽은 브랜치 제거 뒤 조상 검사).
 - **현재 코드** — `infra/dev/ship.sh:14` `SHA="$(cat "$DIST/colab-v2-dev.sha")"` · `:20` 첫 ssh(`mkdir`) · `:21-22` scp · `:23-26` `docker load`＋재태그＋`echo $SHA > /opt/colab-v2/CURRENT_SHA` — 조상 검사 0 · `infra/staging/deploy.sh:266` `ledger_append deploy "$SHA" "$TAG" green "$ALIAS_NOTE digest이력=… $BACKUP_NOTE 워킹트리변경=${DIRTY_N}"` · red 행 `:71`·`:87` · `rollback.sh:59,82,93` 은 무접촉 · 태그 스크립트 없음(`prod-YYYYMMDD` 규약만 `〈334〉`).
-- **할 일** — ⑴ `ship.sh:14` 직후: `git -C "$REPO" fetch -q origin main` 실패 → `exit 78`(준비 · 「origin 조회 실패 — 진행 금지」) · `git merge-base --is-ancestor "$SHA" origin/main` 실패 → `exit 65` ＋ 사유 · `COLAB_SHIP_ALLOW_NONMAIN=1` 선언 시 거절 대신 출력 「비조상 반입 · 우회 선언」 ＋ `ancestor=bypass` ⑵ `MAIN_SHA="$(git -C "$REPO" rev-parse --short=12 origin/main)"` · `:25` 같은 ssh 에 `printf 'main=%s candidate=%s ancestor=%s\n' … > /opt/colab-v2/MAIN_SHA` ⑶ `deploy.sh:266`(＋`:71`·`:87`) 비고 끝 `브랜치=$(git -C "$REPO" branch --show-current)` ⑷ `infra/dev/tag-release.sh` 신설 — 인자 `dev|prod` · `dev` = `dev-$(date +%Y%m%d)-N`(N = `git tag -l "dev-$(date +%Y%m%d)-*" | wc -l` ＋1) · `prod` = 기존 `prod-YYYYMMDD` · doctor 전건 뒤 사람이 호출 · 태그 대상 = `CURRENT_SHA` 와 같은 sha(로컬 `dist/colab-v2-dev.sha` 대조 · 불일치 → exit 65) ⑸ `infra/dev/README.md` 반입 절에 게이트·우회·`MAIN_SHA`·태그 4줄.
+- **할 일** — ⑴ `ship.sh:14` 직후: `git -C "$REPO" fetch -q origin main` 실패 → `exit 78`(준비 · 「origin 조회 실패 — 진행 금지」) · `git merge-base --is-ancestor "$SHA" origin/main` 실패 → `exit 65` ＋ 사유 · `COLAB_SHIP_ALLOW_NONMAIN=1` 선언 시 거절 대신 출력 「비조상 반입 · 우회 선언」 ＋ `ancestor=bypass` ⑵ `MAIN_SHA="$(git -C "$REPO" rev-parse --short=12 origin/main)"` · `:25` 같은 ssh 에 `printf 'main=%s candidate=%s ancestor=%s\n' … > /opt/colab-v2/MAIN_SHA` ⑶ `deploy.sh:266`(＋`:71`·`:87`) 비고 끝 `브랜치=$(git -C "$REPO" branch --show-current)` ⑷ `infra/dev/tag-release.sh` 신설 — 인자 `dev|prod` · `dev` = `dev-$(date +%Y%m%d)-N`(N = `git tag -l "dev-$(date +%Y%m%d)-*" | wc -l` ＋1) · `prod` = 기존 `prod-YYYYMMDD` · doctor 전건 뒤 사람이 호출 · 태그 대상 = 로컬 `dist/colab-v2-dev.sha` 의 sha(⭑ advisor ① — **EC2 미접촉 · 로컬 dist 대조만** · `CURRENT_SHA` 는 읽지 않는다 · 불일치 → exit 65) ⑸ `infra/dev/README.md` 반입 절에 게이트·우회·`MAIN_SHA`·태그 4줄.
 - **수용 기준** — 픽스처 저장소(임시 `git init` · `origin` 을 로컬 bare 로) ＋ `SSH=(echo)`·`SCP=(echo)` 스파이(`ship.sh` 는 env 로 명령 배열을 바꿀 수 없으므로 시험은 `bash -c 'source' ` 대신 **`PATH` 앞에 가짜 `ssh`·`scp`** 를 둔다): Given 비조상 sha, Then exit 65 · 가짜 ssh 호출 0 · Given 조상 sha, Then 통과 · 가짜 ssh 에 `MAIN_SHA` 기록 명령 ＋ `ancestor=yes` · Given `origin` 없음, Then exit 78 · Given 우회 선언, Then 통과 ＋ 출력 「우회 선언」 ＋ `ancestor=bypass` · Given `deploy.sh` 드라이런(선례 `WINDOW-…A5b.md` 방식), Then 원장 행 끝 `브랜치=integration/r-d` · Given 같은 날 `tag-release.sh dev` 2회, Then `-1`·`-2`.
 - **시험 seam** — `gates/tools/*-selftest.sh` 픽스처 방식(임시 dir · exit 78 규약) · 신설 `infra/dev/tests/ship-gate.sh`(셸 시험 · 케이스 5).
 - **좁은 게이트** — `exec-bit` · `work-item-consistency` · 신설 `infra/dev/tests/ship-gate.sh` 5/5.
 
-### WU-D3 · `deploy_doctor` 15번째 항목 「실행 sha ∈ main」 (Q1) — 계층 점검기 · 크기 S · 레인 `rd-doctor-15`
+#### WU-D3 · `deploy_doctor` 15번째 항목 「실행 sha ∈ main」 (Q1) — 계층 점검기 · 크기 S · 레인 = D2 와 같은 `rd-ship-gate` (⭑ advisor ① 조건 ⓐⓑⓒ 미충족 시 **폐기**)
 
 - **의존**: WU-D2(`MAIN_SHA` 형식).
 - **현재 코드** — `services/core-api/ops/deploy_doctor.py:62` `MARKS = "①…⑭"` · `:104` `mark = MARKS[no - 1]` · `check_*` 12 함수(`:200`~`:645`) · `:696-700` 호출 순서(`check_env_pair` → `check_routing` → `check_backups`) · EC2 에 git 없음(`infra/dev/README.md`).
-- **할 일** — ⑴ `MARKS` 에 `⑮` ⑵ `check_main_ancestry(ctx, rep)` 신설: `/opt/colab-v2/CURRENT_SHA`·`/opt/colab-v2/MAIN_SHA` 읽기 → `candidate == CURRENT_SHA ∧ ancestor == yes` → ✓ · `bypass` → ✗ 「우회 반입」 · `no` → ✗ · 파일 부재·형식 불일치 → **✗**(─ 아님 · spec 우려 4 ⓐ) ⑶ `:700` 뒤 호출 · 요약줄 `항목 15 — ✓ N · ✗ N · ─ N` ⑷ 경로는 `ctx` 의 기존 `/opt/colab-v2` 상수 재사용(하드코드 중복 금지) ⑸ `docs/DEPLOY.md §6-1` 항목표에 ⑮ 한 행.
-- **수용 기준** — 단위 시험(선례 `grep -rln "deploy_doctor" services/core-api/tests`): ⑴ 일치·`yes` → ✓ ⑵ `bypass` → ✗ ⑶ `MAIN_SHA` 부재 → ✗ ⑷ `candidate ≠ CURRENT_SHA` → ✗ ⑸ 요약줄 「항목 15」 · `len(MARKS) == 15` · 기존 14항목 시험 회귀 0.
+- **할 일** — ⑴ `MARKS` 에 `⑮` ⑵ `check_main_ancestry(ctx, rep)` 신설: `/opt/colab-v2/CURRENT_SHA`·`/opt/colab-v2/MAIN_SHA` 읽기 → `candidate == CURRENT_SHA ∧ ancestor == yes` → ✓ · `bypass` → ✗ 「우회 반입」 · `no` → ✗ · 파일 부재·형식 불일치 → **✗**(─ 아님 · spec 우려 4 ⓐ) ⑶ `:700` 뒤 호출 · 요약줄 `항목 15 — ✓ N · ✗ N · ─ N` ⑷ ⭑ advisor ① 정정 — `ctx` 에 `/opt/colab-v2` 상수는 **실물 0건**이고 `--repo` 인자도 **없다**(`deploy_doctor.py:714-731` 인자 12개 · 트리는 `:51-52` `REPO_ROOT = HERE.parents[2]` = `/repo` 마운트) · 점검기는 컨테이너 안이라 `/opt/colab-v2` 가 **마운트되지 않는다** → 조건 ⓐ `docs/DEPLOY.md:262` `docker run` 에 `-v /opt/colab-v2:/state:ro` 추가 ⓑ 경로를 인자 `--state-dir`(기본 `/state`)로 받기 ⓒ 「마운트 없음(디렉터리 부재)」과 「파일 없음」을 구분해 둘 다 ✗ 로 내되 사유를 달리 적기 — 셋 중 하나라도 빠지면 D3 는 **폐기**(영구 ✗ 점검기 금지) ⑸ `docs/DEPLOY.md §6-1` 항목표에 ⑮ 한 행.
+- **수용 기준** — 단위 시험(선례 `grep -rln "deploy_doctor" services/core-api/tests`): ⑴ 일치·`yes` → ✓ ⑵ `bypass` → ✗ ⑶ `MAIN_SHA` 부재 → ✗(사유 「파일 없음」) ⑶′ `--state-dir` 디렉터리 부재 → ✗(사유 「마운트 없음」 · ⑶ 과 문면 상이) ⑷ `candidate ≠ CURRENT_SHA` → ✗ ⑸ 요약줄 「항목 15」 ⑹ `docs/DEPLOY.md:262` 명령에 `-v /opt/colab-v2:/state:ro` 가 있다(grep) · `len(MARKS) == 15` · 기존 14항목 시험 회귀 0.
 - **시험 seam** — `services/core-api/tests/test_deploy_doctor*.py`(있으면 재사용 · 없으면 신설 1파일 · 파일 시스템은 `tmp_path`).
 - **좁은 게이트** — `service-tests-core-api` · `exec-bit` · `work-item-consistency`.
 
 ---
 
 ## 3. 지켜야 하는 규약 — 명령으로
+
+### advisor ① 반영 (2026-09-08)
+- 판정 = **조건부 승인** · 조건 5 = ⑴ D1 ‖ D5 병행 시 대장·sessions 갱신은 오케스트레이터 단독 ⑵ 원격 삭제·태그 push 는 게이트 ③ 뒤 오케스트레이터 · `--tags` 금지 ⑶ D3 조건 ⓐⓑⓒ(마운트·인자·사유 구분) 미충족 시 폐기 ⑷ `--allowedTools` 계측기 경로 fixture 고정(R-D-2) ⑸ 레인 7 → 5(D2＋D3 한 레인). spec 「advisor ① 반영」이 정본.
 
 ### ㉮ 워크트리 레인
 - WU 하나에 레인 하나 = `rd-branch-sweep`(D4) · `rd-branching-doc`(D1) · `rd-ship-gate`(D2) · `rd-doctor-15`(D3). `Agent(subagent_type:"lane-worker", isolation:"worktree")` 로만 만든다. 통합 `integration/r-d` 로 rebase＋**ff** · 얹은 즉시 레인 브랜치 삭제(규칙 4 를 이 라운드부터 지킨다).
