@@ -40,6 +40,12 @@ CANON_METHOD_LABELS = (
     "전처리", "보간 방식(선형/최근접)",
 )
 CANON_TOPICS = ("강우·강수", "식생·NDVI", "지형·DEM", "토지피복·LULC")
+# ⭑ ⟨WU-C13 · 2026-09-08⟩ **동의어 사전의 주제 어휘는 6값이다** — `0006_topic_vocab_six` 가
+#   `d9_topic_synonym_topic_check` 를 넓혔다(Ted 판정 2026-09-06 · 창 9 · `〈360〉` 해소).
+#   ⛔ **그래프 주제 노드는 여전히 4개다** — 그 리비전이 축자로 「개념 그래프는 만지지 않았다」
+#   라고 적었고 노드를 늘리려면 `k2b-graph-standard.tsv` 라는 별도 기준을 함께 고쳐야 한다.
+#   그래서 두 이름을 갈라 둔다: 노드 대조는 `CANON_TOPICS`(4) · 동의어 값 집합은 아래 6값.
+SYNONYM_TOPICS = CANON_TOPICS + ("가뭄", "파일 포맷 예제")
 
 # ── Ted 승인 목록 (2026-08-25, K1b-ONTOLOGY-CONTENT §F-A) ────────────────────
 # 등급 ⑥(도메인 상식)에 기댄 엣지는 **이 목록에 있는 것만** 시드에 들어올 수 있다.
@@ -195,8 +201,8 @@ def main() -> int:
     topic_labels = {v[1] for v in nodes.values() if v[0] == "주제"}
     if topic_labels != set(CANON_TOPICS):
         fail(f"[4 주제 불일치] d9_concept 주제 {sorted(topic_labels)} ≠ 정본 4값 {sorted(CANON_TOPICS)}")
-    if topics and not topics <= set(CANON_TOPICS):
-        fail(f"[4] d9_topic_synonym.topic 에 정본 4값 밖의 값이 있다: {sorted(topics - set(CANON_TOPICS))}")
+    if topics and not topics <= set(SYNONYM_TOPICS):
+        fail(f"[4] d9_topic_synonym.topic 에 정본 6값 밖의 값이 있다: {sorted(topics - set(SYNONYM_TOPICS))}")
 
     # ── 5. 부모 금지 목록 — expandable=false 가 '~의 한 가지다' 의 dst 가 될 수 없다 ──
     for (s, r, d) in sorted(edges):
