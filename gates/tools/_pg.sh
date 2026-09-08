@@ -75,7 +75,7 @@ pg_slot_acquire() { # $1=게이트 이름 → 0=획득 / 1=red
   local deadline=$(( $(date +%s) + wait_s ))
   while :; do
     for (( i = 0; i < max; i++ )); do
-      exec {PG_SLOT_FD}>"$PG_SLOT_DIR/slot-$i" 2>/dev/null || { PG_SLOT_FD=""; return 0; }
+      { exec {PG_SLOT_FD}>"$PG_SLOT_DIR/slot-$i"; } 2>/dev/null || { PG_SLOT_FD=""; return 0; }
       if flock -n "$PG_SLOT_FD"; then return 0; fi
       eval "exec ${PG_SLOT_FD}>&-"; PG_SLOT_FD=""
     done

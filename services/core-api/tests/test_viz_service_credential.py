@@ -16,7 +16,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
-from conftest import TOKEN_RES, auth
+from conftest import DS_A1, DS_A2, TOKEN_RES, auth
 
 from colab_core.app.main import API_PREFIX
 
@@ -74,15 +74,18 @@ def test_팔레트_중계가_서비스_자격_증명을_싣는다(p2_client, str
     assert r.json() == PALETTES
 
 
-def test_렌더_생성_중계도_같은_자격_증명을_싣는다(p2_client, strict_viz, sql) -> None:
-    """**표면마다 다르면 하나만 살아 있는 상태가 된다.**"""
+@pytest.mark.parametrize("dataset_id, expected_status", [(DS_A1, 202), (DS_A2, 403)])
+def test_렌더_생성_중계도_같은_자격_증명을_싣는다(p2_client, strict_viz, dataset_id, expected_status) -> None:
+    """열린 자료의 중계와 잠긴 자료의 거절을 고정 시드로 각각 확인한다.
+
+    LIMIT 1은 물리 순서에 따라 다른 접근 권한의 자료를 골라 CI 결과를 흔들었다(X-7).
+    """
     client = p2_client(viz_base_url=strict_viz, viz_service_token=SERVICE_TOKEN)
-    dataset_id = sql("SELECT id FROM d3_dataset LIMIT 1")[0]["id"]
     r = client.post(f"{API_PREFIX}/previews",
                     json={"target": {"datasetId": dataset_id},
                           "style": {"palette": "seq-blue"}},
                     headers=auth(TOKEN_RES))
-    assert r.status_code == 202, r.text
+    assert r.status_code == expected_status, r.text
 
 
 def test_자격_증명이_배선되지_않으면_503_이고_조용히_넘어가지_않는다(p2_client, strict_viz) -> None:

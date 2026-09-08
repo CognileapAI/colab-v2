@@ -14,7 +14,7 @@
   ㈑ 안 잡히는 것 — `frontend/src/a.tsx` · `services/core-api/x.py` (제품 경로가 하네스를 깨우지 않는다)
   ㈒ `changes` 잡 `outputs` 에 `harness` 항목이 있다(필터만 있고 출력이 없으면 소비처가 못 읽는다)
   ㈓ 잡 `harness-eval` 이 `needs.changes.outputs.harness == 'true'` 로 걸린다
-  ㈔ 그 잡에 `continue-on-error` 가 없고 시크릿은 **참조만** 있다(값 기입 0)
+  ㈔ 그 잡에 `continue-on-error` 가 없고 로컬 평가 방침대로 API 키 없이 명시 면제·회귀 검사를 한다
 
 ⚠ **이 대조는 근사다.** 여기서 재는 것은 glob 문법의 뜻이고, `dorny/paths-filter` 가 실제 PR 의
   변경 목록에 그것을 어떻게 적용하는지는 **`[미상]`** 이다(로컬 실행 불가 · `act` 부재).
@@ -95,7 +95,8 @@ def main() -> int:
     if not os.path.exists(CI_PATH):
         ready_red(CI_PATH, "워크플로 파일이 이 체크아웃에 없다.")
 
-    doc = yaml.safe_load(open(CI_PATH, encoding="utf-8"))
+    with open(CI_PATH, encoding="utf-8") as source:
+        doc = yaml.safe_load(source)
     jobs = (doc or {}).get("jobs") or {}
     changes = jobs.get("changes") or {}
 
@@ -152,8 +153,15 @@ def main() -> int:
         if "continue-on-error" in job:
             fails.append("㈔ 잡 `%s` 에 `continue-on-error` 가 있다 — red 를 통과로 접는 자리다." % JOB)
         blob = yaml.safe_dump(job, allow_unicode=True)
-        if "secrets.ANTHROPIC_API_KEY" not in blob:
-            fails.append("㈔ 잡 `%s` 가 `secrets.ANTHROPIC_API_KEY` 를 참조하지 않는다." % JOB)
+        if "ANTHROPIC_API_KEY" in blob:
+            fails.append("㈔ 잡 `%s` 는 모델 미실행 모드이므로 API 키에 의존하면 안 된다." % JOB)
+        steps = job.get("steps") or []
+        if not any(str((s.get("env") or {}).get("COLAB_HARNESS_EVAL_EXEMPT")) == "1"
+                   and "gates/run.sh harness-eval" in str(s.get("run", "")) for s in steps):
+            fails.append("㈔ 모델 미실행을 건수로 드러내는 명시 면제 게이트가 없다.")
+        for check in ("eval/harness/tests/run-selftest.sh", "gates/tools/harness-eval-selftest.sh"):
+            if not any(check in str(s.get("run", "")) for s in steps):
+                fails.append("㈔ 로컬 판정부 회귀 실행이 없다: " + check)
         for step in job.get("steps") or []:
             if str(step.get("continue-on-error", "")).lower() == "true":
                 fails.append("㈔ 잡 `%s` 의 스텝에 `continue-on-error: true` 가 있다." % JOB)
@@ -168,7 +176,7 @@ def main() -> int:
 
     print(
         "ci-filter-check green — 필터 `harness` 패턴 %d개 · 잡히는 경로 %d건 · 안 잡히는 경로 %d건 · "
-        "outputs.harness 있음 · 잡 `%s` 조건·시크릿 참조 확인 · continue-on-error 0."
+        "outputs.harness 있음 · 잡 `%s` 조건·명시 면제·회귀 확인 · API 키 의존 0 · continue-on-error 0."
         % (len(got), len(MUST_MATCH), len(MUST_NOT_MATCH), JOB)
     )
     print(

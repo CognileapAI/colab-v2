@@ -18,6 +18,9 @@ jobs:
   # 영향받은 것만 빌드·검증한다. contracts 변경은 전체를 깨울 수 있는 유일한 경로다.
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       contracts: ${{ steps.filter.outputs.contracts }}
       core-api: ${{ steps.filter.outputs.core-api }}
@@ -59,11 +62,19 @@ jobs:
               - 'infra/**'
             db:
               - 'db/**'
+              - 'gates/tools/ci-schema-diff.sh'
+              - 'gates/tools/schema-diff.sh'
+              - 'gates/tools/_pg.sh'
+              - 'gates/tools/_venv.sh'
+              - 'gates/requirements.txt'
+              - '.github/workflows/ci.yml'
             # 상태 대장과 그 반영본(산문). 게이트 자체가 바뀌어도 다시 판정한다 —
             # 판정기를 고치고 대상을 안 보는 것이 이 레포의 대표 실패형이다.
             dev-package:
               - 'dev-package/**'
               - 'gates/**'
+              - 'scripts/tests/test_planning_gate.py'
+              - '.github/workflows/ci.yml'
             # 하네스 자체(지침·스킬·훅·에이전트). 이 4경로가 바뀔 때만 실과제를 돈다 —
             # 실제 모델을 부르므로 비용·시간이 붙고, 제품 경로가 이 잡을 깨우면 안 된다
             # (intent `2026-09-08-harness-evals.md` Q2). 대조부 = gates/tools/ci-filter-check.py.
@@ -255,7 +266,7 @@ jobs:
       - name: 마이그레이션 single-head (platform / ai 각각)
         run: ./gates/run.sh migration-single-head
       - name: 선언 스키마 ↔ 적용 DB diff
-        run: ./gates/run.sh schema-diff
+        run: bash gates/tools/ci-schema-diff.sh
       - name: RLS 커버리지
         run: ./gates/run.sh rls-coverage
       - name: RLS 실효 (본체 음성 · 메타 양성 · cross-tenant)
@@ -392,8 +403,10 @@ jobs:
         run: python -c 'import yaml'
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
         run: ./gates/run.sh work-item-consistency
-      - name: 기획 패키지 임베드 최신성
-        run: ./gates/run.sh planning-freshness
+      - name: 기획 검사기 회귀 (합성 fixture · 실제 원본 검사는 로컬 필수)
+        run: |
+          python -m unittest discover -s scripts/tests -p test_planning_gate.py -v
+          echo "::notice::기획 원본 대조 미실행(CI에 원본 없음). 병합·배포 전 로컬 gates/run.sh planning-freshness 실행 결과가 별도로 필요하다."
 
   # ─────────────────────────────────────────────────────────────
   # `.sh` 실행비트 — **경로 필터를 걸지 않는다.**
@@ -423,28 +436,24 @@ jobs:
   #   ⭑ `COLAB_HARNESS_EVAL_EXEMPT=1` → `COLAB_HARNESS_EVAL=1` 로 바꾸는 것은 **별건 변경**이고
   #     Q10 충족(3회 연속 기록 = `eval/harness/results/`)이 그 근거다.
   #
-  # ⚠ 시크릿은 **참조만** 둔다 — 발급은 Ted 몫이고 값은 이 파일에 한 글자도 적지 않는다.
-  #   부재는 **skip 이 아니라 red(준비 · 78)** 다. `continue-on-error` 를 붙이지 않는다 —
-  #   붙이는 순간 「돌았는데 아무것도 안 막는 잡」이 되고, 그것이 이 레포의 대표 실패형이다.
+  # 모델 평가는 로컬 러너에서 실행한다(2026-09-08 사용자 요청).
+  # 이 잡은 명시 면제와 판정부 회귀만 검사하므로 모델 API 키가 필요 없다.
+  # 실제 모델 미실행은 게이트 출력에 과제 건수와 함께 드러난다.
   harness-eval:
     needs: changes
     if: needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
-      # 키가 없으면 **여기서 78 로 끊는다.** 「없어서 건너뛰었다」를 green 으로 적지 않는다.
-      # 78 = red(준비) — 판정하지 못했다는 뜻이고, 판정 red 와 갈라 읽힌다(gates/tools/_readiness.sh).
-      - name: 시크릿 존재 확인 (부재는 red(준비 · 78) · skip 아님)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: CI 필터 판독기 의존 설치 (공통 핀)
+        run: python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
+      - name: 로컬 러너와 판정부 회귀 (모델 호출 없음)
         run: |
-          set -uo pipefail
-          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "::gate-readiness-failure::gate=harness-eval|cause=입력미선언|missing=secrets.ANTHROPIC_API_KEY|detail=하네스 eval 은 실제 모델을 부른다. 시크릿 발급 전까지 이 잡은 판정하지 못한다 — 건너뛴 것이 아니다."
-            echo "::error::harness-eval red(준비) — secrets.ANTHROPIC_API_KEY 가 비어 있다. 발급은 Ted 몫이고, 부재를 통과로 세지 않는다."
-            exit 78
-          fi
-          echo "harness-eval — 시크릿 참조가 값을 얻었다(값은 찍지 않는다)."
+          bash eval/harness/tests/run-selftest.sh
+          bash gates/tools/harness-eval-selftest.sh
       # 승격 전이라 면제 모드다. 게이트가 과제 건수를 출력에 찍는다(조용한 건너뛰기 금지).
       - name: 하네스 eval 게이트 (승격 전 — 면제 모드 · 과제 건수 노출)
         env:

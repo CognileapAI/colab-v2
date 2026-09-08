@@ -2370,7 +2370,7 @@ items:
 
   - id: BF-13
     name: "화면 CSS 세 파일이 같은 `--color-*` 토큰을 각자 `:root` 에 다시 적는다 — 값 일치를 재는 것이 0건"
-    status: open
+    status: partial
     stage: stage1
     owner: "frontend (shell · 화면 CSS)"
     entry_conditions:
@@ -2382,7 +2382,7 @@ items:
       ⑵ 갈린 자리가 실측되면 **어느 값이 정본인지 사람이 판정한 뒤** 한 값으로 모은다 — 시험이 고르지 않는다
       ⑶ 세 파일에 공통인 이름은 `tokens.css` 로 올릴지 화면 로컬로 둘지 판정한다(「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 부딪히지 않게)
       ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx`·`catalog` 시험 green).
-    evidence: null
+    evidence: "2026-09-08 로컬 구현·음성 회귀: sessions/20260908-product-local-verification.md BF-13. 공통16개 값충돌0, 화면로컬 유지, 관련120개 및 최종토큰4개 통과. BF-11 선행 수용·최종통합 완료와 구분."
     deadline: null
     note: >-
       **신설 2026-09-05 · 등록만** — `PLAN-SoT §9 〈331〉`. 발견 = `BF-11` 수용 검토(`reports/bf-11/lane-report.md §2`·`§7`).
@@ -3138,13 +3138,13 @@ items:
 
   - id: X-7
     name: main CI core-api 시험 red 1건 해소 — test_viz_service_credential.py:85 403≠202 (a31111f 이래 · R-D advisor ③ 발견)
-    status: open
+    status: partial
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-D main ff 뒤 · main CI service-tests (core-api) 최신 실행 결과 확인"]
     depends_on: []
     completion_def: "main CI 잡 service-tests (core-api) green 1회 · 원인(시험 결함 vs 제품 결함) 판정 기록 · 로컬 service-tests-core-api 게이트와 CI 의 차이(환경·시크릿·필터) 명시 · 제품 결함이면 별도 WU"
-    evidence: "[미집행]"
+    evidence: "2026-09-08 LIMIT1 비결정성 RED→고정 fixture 수정, 관련10개 및 전체981개 통과. sessions/20260908-product-local-verification.md X-7. 수정 후 원격CI는 미실행."
     deadline: null
     note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate)"
     sources: ["dev-package/sessions/R-D-ROUND-20260908.md"]
