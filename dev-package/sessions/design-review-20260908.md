@@ -10,29 +10,29 @@
 | L1 | 셸·공통 — `shell/shell.css`·`shell/tokens.css`·`components/common/toast.css`·`components/common/variableTable.css`·`auth/login.css`·`components/dashboard/dashboard.css` | 19 | 4 | 13 | 2 |
 | L2 | 카탈로그·검색·상세·미리보기(정적) — `catalog.css`·`search.css`·`detail.css`·`preview.css` ＋ `datasetpreview/` 인라인 style | 19 | 9 | 10 | 0 |
 | L3 | 업로드·계보·프로젝트·랩·멤버·승인 — `upload.css`·`lineage.css`·`lineageGraph.css`·`project.css`·`lab.css`·`members.css` ＋ `approval/` | 30 | 16 | 12 | 2 |
-| L4 | 인터랙션·모션(apple-design 전용) — `login.css`·`catalog.css`·`members.css`·`search.css`·`upload.css`·`shell.css` ＋ 오버레이·팝오버·토스트·줌팬 `.tsx` | 31 | 16 | 11 | 4 |
-| 계 | — | 99 | 45 | 46 | 8 |
+| L4 | 인터랙션·모션(apple-design 전용) — `login.css`·`catalog.css`·`members.css`·`search.css`·`upload.css`·`shell.css` ＋ 오버레이·팝오버·토스트·줌팬 `.tsx` | 31 | 11 | 16 | 4 |
+| 계 | — | 99 | 40 | 51 | 8 |
 
-- L3 본문 소계는 「있음 15건」, L4 본문 소계는 「있음 15 · 없음 12」로 적혀 있으나 표 행 실측은 각각 16/12/2 · 16/11/4 다. 이 문서는 행 실측값을 쓴다.
-- L4 는 판정 의미가 뒤집힌 레인이다 — 항목 문구가 「장치 서술」인 행은 `없음` 이 결함이다. 따라서 §2 에는 L4 의 `없음` 행 가운데 처리가 `Ted 판정` 인 3행(L4 #13·#20·#21)도 실었다.
+- L3 본문 소계는 「있음 15건」, L4 본문 소계는 「있음 15 · 없음 12」로 적혀 있으나 표 행 실측은 각각 16/12/2 다. L1~L3 소계(4/13/2 · 9/10/0 · 16/12/2)는 레인 산출 그대로다.
+- **L4 판정 의미를 정본(`design-review/SKILL.md` §2-3)으로 통일했다** — `있음` = 결함 존재 · `없음` = 결함 없음(처리 `—`). L4 레인 산출이 「장치 존재 = 있음」으로 뒤집어 적은 11행을 되돌린 결과 L4 는 **있음 11 · 없음 16 · [미상] 4** 다. §2 에는 결함인 `있음` 전건 ＋ `[미상]` 전건 ＋ 장치 존재 확인 8행(#36·#37·#40·#41·#44·#45·#48·#49, 처리 `—`)을 실었다.
 
 ---
 
-## 2. 통합 판정표 (있음 · [미상] 전건 · L4 결함성 없음 3건 포함)
+## 2. 통합 판정표 (있음 40 · [미상] 8 전건 ＋ L4 장치 존재 확인 「없음」 8행 = 56행)
 
 | # | 레인 | 축 | 항목 | 판정 | 근거 path:line · 실측값 | 처리 |
 |---|---|---|---|---|---|---|
 | 1 | L1 | 정적 | 카드 그림자 0(팝오버 허용) | 있음 | `auth/login.css:20` `.login-card { box-shadow: var(--shadow-sm) }` — `login-card` 는 카드다(팝오버·메뉴·토스트 아님) | 즉시 수정 후보 |
-| 2 | L1 | 접근성 | 글자 13px 미만 | 있음 | `shell/shell.css:82` `.backlink .bl-a` 11.0px · `components/common/toast.css:17` `.toast` 12.0px · `components/dashboard/dashboard.css:140·185·190·228·268·288·326·337·352` 9건 12.0px. 합계 **11건** | 즉시 수정 후보 |
+| 2 | L1 | 접근성 | 글자 13px 미만 | 있음 | `shell/shell.css:82` `.backlink .bl-a` 11.0px · `components/common/toast.css:17` `.toast` 12.0px · `components/dashboard/dashboard.css:140·185·190·228·268·288·326·337·352` 9건 12.0px. 합계 **11건**. 뱃지·캡션류 문턱 문제와 같은 축이라 판정-3 소관 | Ted 판정 |
 | 3 | L1 | 정적 | 보더 2층 토큰 분리(컨테이너 vs 구분선) | 있음 | `components/dashboard/dashboard.css:64` `.dash-card` 컨테이너 보더 `var(--line, #e3e6ea)` · `:150` `.dash-device-note` 내부 구분선 `border-top: 1px solid var(--line, #e3e6ea)` · `:235` `.todo-grp + .todo-grp` 구분선도 동일 `var(--line, #e3e6ea)`. 컨테이너와 구분선이 같은 토큰(같은 폴백값)이라 층이 안 갈린다 | Ted 판정 |
 | 4 ▲쌍 | L1 | 정적 | 어휘 불일치(ⓐ/ⓑ 밖 · 정의 없이 폴백만 있는 이질 어휘) | 있음 | `components/dashboard/dashboard.css` 가 `tokens.css`(§0 정본) 의 `--color-*`·`--text-*` 어휘를 전혀 쓰지 않고 `--fg`·`--bg-card`·`--fg-muted`·`--bg-subtle`·`--accent-neutral`·`--fg-danger`·`--line` 7종(총 20 참조)을 쓴다. 이 7종은 `tokens.css` 에도 `dashboard.css` 안에도 **정의된 곳이 없다** — 전부 인라인 폴백(`#1b1f24`·`#fff`·`#667`·`#eef1f4`·`#5b7089`·`#a3222b`·`#e3e6ea`)만으로 버틴다. ⓐ(컴포넌트 전용)도 ⓑ(파일 내 전역 어휘 복제)도 아닌 제3의 형태 — SKILL.md §2-2-9 의 이분류에 없는 사례라 판정 보류 후 Ted 상정 | Ted 판정 |
 | 5 ▲쌍 | L2 | 정적 | preview.css 미정의 토큰 20건 | 있음 | 전부 폴백 있음 — `--line`(`:32`#e2e2e2·`:74`#eee·`:113`#e2e2e2·`:165`#d8d8d8·`:186`#e2e2e2·`:231`#e2e2e2·`:303`#e2e2e2, **파일 내부에서 3개 값 혼재**) · `--surface-2`(`:34`#f7f7f6·`:115`#f5f5f4·`:188`#f5f5f4·`:305`#f5f5f4, `:34`만 다름) · `--ink-1`(`:49`·`:51` #1f1f1f 일치) · `--ink-2`(`:20`#555·`:81`#666·`:101`#666·`:159`#666, `:20`만 다름) · `--ink-3`(`:172`#888) · `--accent`(`:206`#2f6feb) · `--surface-1`(`:233`#fff). 전부 `shell/tokens.css`·다른 컴포넌트 css 어디에도 정의되지 않은 순수 미정의 어휘 | Ted 판정 |
 | 6 ▲쌍 | L3 | 정적 · 미정의 토큰 | `upload.css` 9건(폴백 있음) | 있음 | `:291` `--line` · `:293` `--surface-2` · `:296` `--muted` · `:301` `--muted` · `:332` `--line` · `:333` `--surface` · `:336` `--accent` · `:338` `--line` · `:341` `--muted` — `.gridblock`·`.thumbrow` 블록. `:root`(상단 6개·하단 12개) 어디에도 정의 없음 | Ted 판정 |
 | 7 ▲쌍 | L3 | 정적 · 미정의 토큰 | `lineage.css` 9건(폴백 있음) | 있음 | `:13` `--muted` · `:20` `--line` · `:22` `--soft` · `:34` `--line` · `:57` `--line` · `:79` `--muted` · `:106` `--line` · `:163` `--line` · `:242` `--line` | Ted 판정 |
 | 8 | L3 | 정적 · 미정의 토큰 | `lab.css:11` `--color-danger`(폴백 `#b42318`) | 있음 | 1건. `tokens.css` 에 `--color-danger` 없음 | Ted 판정 |
-| 9 ●쌍 | L2 | 정적 | `.verified--pending` 대비 | 있음 | `catalog.css:140` `background: var(--color-gray-100)`(#e8ecf2) `color: var(--color-gray-500)`(#697077) → 직접 계산 **4.25:1**(스크립트 4.23:1) — AA 4.5 미달. WU-A11·B11·C11 어느 판정표에도 지목되지 않은 신규 발견 | Ted 판정 |
+| 9 ●쌍 | L2 | 정적 | `.verified--pending` 대비 | 있음 | `catalog.css:140` `background: var(--color-gray-100)`(#e8ecf2) `color: var(--color-gray-500)`(#697077) → 재계산 **4.232:1**(css_audit 4.23:1 과 일치 · #10 의 4.234 와 같은 값) — AA 4.5 미달. WU-A11·B11·C11 어느 판정표에도 지목되지 않은 신규 발견 | Ted 판정 |
 | 10 ●쌍 | L3 | 정적 · 대비(같은 규칙) | `project.css:528-530` `.verified--pending` `#697077 on #e8ecf2` | 있음 | 재계산 **4.234:1**(AA 4.5 미달) — css_audit 4.23:1 오탐 아님, 실측 일치. `catalog.css:138` 와 동일 조합(레인 밖 · 참고) | Ted 판정 |
-| 11 | L2 | 정적 | `.dsec-menu-i.is-active` 대비 | 있음 | `detail.css:230-233` `background: var(--color-primary-50)`(#edf4ff) `color: var(--color-primary-600)`(#1369e9) → 직접 계산 **4.51:1**(스크립트 4.49:1) — 경계값, AA 4.5 기준 스크립트는 미달·직접 계산은 근소 통과. 판정표 어디에도 지목되지 않은 신규 발견 | Ted 판정 |
+| 11 | L2 | 정적 | `.dsec-menu-i.is-active` 대비 | 있음 | `detail.css:230-233` `background: var(--color-primary-50)`(#edf4ff) `color: var(--color-primary-600)`(#1369e9) → 재계산 **4.494:1**(css_audit 4.49:1 과 일치) — AA 4.5 **미달 확정**(경계값이 아니라 미달). 판정표 어디에도 지목되지 않은 신규 발견 | Ted 판정 |
 | 12 | L2 | 정적 | 글자 13px 미만 — catalog.css | 있음 | 14건 — `:46` th 10px(라벨) · `:71` 정렬표식 9px(장식) · `:89` 열메뉴 섹션표제 10px(캡션) · `:92` 열메뉴 항목 12px(메뉴텍스트) · `:98` 체크박스 표식 9px(장식) · `:102` 열메뉴 카운트 11px(캡션) · `:107` 열메뉴 지우기 11px(캡션) · `:117` 필터라벨 11px(캡션) · `:121` 필터칩 11px(뱃지) · `:125` 전체지우기 11px(캡션) · `:127`·`:130`·`:137`·`:141` 칩류(`.chip`·`.lvl`·`.verified`·`.lin`) 11px(뱃지). 전부 뱃지·캡션류로 이전 승격 대상(`.fl-k`·`.fl-x`·`.up-note` 등) 계열과 다르다 — 지목 이력 없음 | Ted 판정 |
 | 13 | L2 | 정적 | 글자 13px 미만 — detail.css | 있음 | 9건 — `:63` `.chip` 11px(뱃지) · `:66` `.lvl` 11px(뱃지) · `:88` `.ig .k` 10px(테이블/격자 라벨, `:154`·`:167`·`:188`와 같은 셀렉터 계열) · `:112` `.ig-more` 11px(버튼) · `:141` `.use-dl-note` 12px(캡션, PRD-39 ⑩ 명시적으로 「버튼보다 작게」 의도) · `:154` `.dt-files-k` 10px(라벨, `:88`과 동일 패턴) · `:167` `.fl-gh` 10px(라벨, 동일 패턴) · `:188` `.de-k` 10px(폼 라벨, 동일 패턴) · `:190` `.de-req` 9px(뱃지). `.fl-k`(`:120`)·`.fl-x`(`:124`)는 WU-B11 이 13px 로 이미 승격되어 이번 9건에 없다 | Ted 판정 |
 | 14 | L2 | 정적 | 글자 13px 미만 — search.css | 있음 | 2건 — `:52` `.notice--empty .muted` 11px(캡션, 부가 안내) · `:124` `.verified` 11px(뱃지, catalog/detail 의 `.verified`·`.chip`·`.lvl`·`.lin` 11px 뱃지 계열과 동일 패턴) | Ted 판정 |
@@ -47,7 +47,7 @@
 | 23 | L3 | 신규 · 컨테이너 소유 여백 | `upload.css` 단일 요소 margin-top 5건 (이월 목록 밖) | 있음 | `:348` `.up-body .partrow` 6px · `:357` `.up-analyze` 8px · `:384` `.fieldnote` 5px · `:388` `.axis-def .ad-more` `var(--space-1)` · `:424` `.dr-foot` 12px — 모두 단일 자리(형제 간 값 불일치 사례 아님) | Ted 판정 |
 | 24 | L3 | 신규 · 컨테이너 소유 여백 | `lineageGraph.css` 단일 요소 margin-top 4건 | 있음 | `:87` `.lrow .ln-sub` 2px · `:101` `.lin-empty .muted` 10px · `:102` `.lin-empty button` 14px · `:103` `.lin-act` 12px — 단일 자리 | Ted 판정 |
 | 25 | L3 | 신규 · 컨테이너 소유 여백 | `lineage.css` 단일 요소 margin-top 3건 | 있음 | `:133` `.lin-ask` 12px · `:240` `.lin-unknown` 14px · `:279` `.lin-fix-pick` 12px — 단일 자리 | Ted 판정 |
-| 26 | L3 | 신규 · 음수 여백 | `project.css:436` `.pj-defnote { margin: -6px 0 14px }` | 있음 | 실측 확인(css_audit `neg margin` 1건과 일치). 부모 `.pj-modal-b`(:352)는 `padding` 만 갖고 gap 이 없다 — 형제 `.pj-row`(:365)는 `margin-bottom:14px` 소유. `.pj-defnote` 만 위쪽 음수로 앞 요소 간격을 깎는 자리 | Ted 판정 |
+| 26 | L3 | 신규 · 음수 여백 | `project.css:436` `.pj-defnote { margin: -6px 0 14px }` | 있음 | 실측 확인(css_audit `neg margin` 1건과 일치). 부모 `.pj-modal-b`(:352)는 `padding` 만 갖고 gap 이 없다 — 형제 `.pj-row`(:365)는 `margin-bottom:14px` 소유. `.pj-defnote` 만 위쪽 음수로 앞 요소 간격을 깎는 자리. 정본 합격선 「음수 여백 0」이 값을 닫는다 | 즉시 수정 후보(구조 변경 · D-8 규모) |
 | 27 | L3 | 정적 · 카드 그림자 | `project.css:245` `.project-detail .card { box-shadow: var(--shadow-sm) }` | 있음 | 카드류(팝오버 아님) | 즉시 수정 후보 |
 | 28 | L3 | 정적 · 카드 그림자 | `members.css:9` `.card { box-shadow: var(--shadow-sm) }` | 있음 | 카드류(팝오버 아님) | 즉시 수정 후보 |
 | 29 | L3 | 정적 · 카드 그림자(분류 대기) | `members.css:112` `.modal { box-shadow: var(--shadow-sm) }` · `lab.css:39` `.labinfo-modal { box-shadow: 0 18px 48px rgba(...) }` | 있음 | 모달(오버레이)류 그림자 — 「팝오버 허용」의 팝오버에 모달이 포함되는지 정본에 명문 없음 | Ted 판정 |
@@ -57,20 +57,20 @@
 | 33 | L3 | 죽은/덮인 선언 | 6종 전수 반복 셀렉터 상위 검사 | [미상 · 저신뢰] | 규칙 쌍별 전수 대조는 하지 않음(표본 검사만) — `.lin-way` 류 C11 이 이미 정리 | 실화면 계측 밖 · 후속 |
 | 34 | L4 | 응답 | `:active` 규칙(누름 순간 피드백)이 없음 | 있음 | `frontend/src` 전체 `.css`·`.tsx` 에 `:active` 선택자 0건(전수 grep) · apple-design §1 「Respond on pointer-down, not on release」 | Ted 판정 |
 | 35 | L4 | 응답 | 버튼·행·칩 피드백이 hover 전용 | 있음 | `catalog.css:56` `.tbl tr.clk td { transition: background var(--ease), box-shadow var(--ease); }` · `upload.css:418` `.dr-cal-d:hover{background:var(--color-primary-100);}` · `upload.css:406`·`434` 동형 · `shell.css:65`·`143`·`172`·`210`·`233`·`251`·`276` 전부 hover·포커스 색 전환 · apple-design §1 | Ted 판정 |
-| 36 | L4 | 응답 | 배경 클릭 닫기를 `onMouseDown` ＋ `onClick` 두 단으로 확인 | 있음 | `UploadModal.tsx:869` `onMouseDown` 에서 `downOnBackdrop.current = e.target === e.currentTarget` · `:873` `onClick` 에서 두 조건 동시 확인 · `PreviewExpandOverlay.tsx:32`·`:36` 동형 | — |
-| 37 | L4 | 중단 가능성 | 사용자 구동 상태 전환이 `transition`(중단 가능) | 있음 | `login.css:61`·`79` · `catalog.css:56`·`150` · `members.css:41` · `search.css:109`·`113` · `upload.css:405`·`417`·`432` · `shell.css:65`·`143`·`172`·`210`·`233`·`251`·`276` — 전부 `transition` · apple-design §3 | — |
+| 36 | L4 | 응답 | 배경 클릭 닫기를 `onMouseDown` ＋ `onClick` 두 단으로 확인 | 없음 | `UploadModal.tsx:869` `onMouseDown` 에서 `downOnBackdrop.current = e.target === e.currentTarget` · `:873` `onClick` 에서 두 조건 동시 확인 · `PreviewExpandOverlay.tsx:32`·`:36` 동형 | — |
+| 37 | L4 | 중단 가능성 | 사용자 구동 상태 전환이 `transition`(중단 가능) | 없음 | `login.css:61`·`79` · `catalog.css:56`·`150` · `members.css:41` · `search.css:109`·`113` · `upload.css:405`·`417`·`432` · `shell.css:65`·`143`·`172`·`210`·`233`·`251`·`276` — 전부 `transition` · apple-design §3 | — |
 | 38 | L4 | 중단 가능성 | 모달 열기가 고정 길이 `animation`/`@keyframes` | 있음 | `upload.css:31` `animation: up-rise 0.46s ease;` ＋ `:33` `@keyframes up-rise { from { transform: translateY(3%); opacity: 0.4; } to { transform: none; opacity: 1; } }` · apple-design §3 | Ted 판정 |
 | 39 | L4 | 중단 가능성 | 고정 시작값에서 출발(현재값 아님) | 있음 | `upload.css:34` `from { transform: translateY(3%); opacity: 0.4; }` — 화면의 현재값이 아니라 고정 `3%`·`0.4` 에서 시작 · apple-design §3 | Ted 판정 |
-| 40 | L4 | 중단 가능성 | 무한 반복 `animation`(제스처 대상 아님) | 있음 | `upload.css:165` `animation: up-spin 0.8s linear infinite;` ＋ `:167` `@keyframes up-spin { to { transform: rotate(360deg); } }` — 로딩 표시 | — |
-| 41 | L4 | reduced-motion | `upload.css` 분기 | 있음 | `upload.css:37` `@media (prefers-reduced-motion: reduce) { .modal.modal-takeover { animation: none; } }` · `:168` `@media (prefers-reduced-motion: reduce) { .vizload .spin { animation: none; } }` — 움직이는 속성 = `transform`(translateY · rotate) ＋ `opacity` · apple-design §14 | — |
-| 42 | L4 | reduced-motion | `search.css` 분기 | 없음(결함) | 모션 선언 2건 = `:109` `transition: background var(--ease);`(색) · `:113` `border-radius: 50%; background: #fff; transition: left var(--ease);` — **`left` 는 위치 이동**이라 색 전용이 아니다(토글 손잡이) · apple-design §14 | Ted 판정 |
+| 40 | L4 | 중단 가능성 | 무한 반복 `animation`(제스처 대상 아님) | 없음 | `upload.css:165` `animation: up-spin 0.8s linear infinite;` ＋ `:167` `@keyframes up-spin { to { transform: rotate(360deg); } }` — 로딩 표시 | — |
+| 41 | L4 | reduced-motion | `upload.css` 분기 | 없음 | `upload.css:37` `@media (prefers-reduced-motion: reduce) { .modal.modal-takeover { animation: none; } }` · `:168` `@media (prefers-reduced-motion: reduce) { .vizload .spin { animation: none; } }` — 움직이는 속성 = `transform`(translateY · rotate) ＋ `opacity` · apple-design §14 | — |
+| 42 | L4 | reduced-motion | `search.css` 분기 | 있음 | 모션 선언 2건 = `:109` `transition: background var(--ease);`(색) · `:113` `border-radius: 50%; background: #fff; transition: left var(--ease);` — **`left` 는 위치 이동**이라 색 전용이 아니다(토글 손잡이) · apple-design §14 | Ted 판정 |
 | 43 | L4 | 타이포 | 크기와 무관한 고정 `letter-spacing` | 있음 | `login.css:27` `letter-spacing: 0.01em;` · `catalog.css:46` `font-size: 10px … letter-spacing: 0.05em` · `catalog.css:59` `font-size: 13px … letter-spacing: -0.01em` · `catalog.css:89` `font-size: 10px … letter-spacing: 0.04em` · `shell.css:92` `letter-spacing: var(--tracking-body)` = `tokens.css:34` `--tracking-body: 0.0096em`(크기 무관 단일 값) · apple-design §15 | Ted 판정 |
-| 44 | L4 | 타이포 | 제목 tracking 이 음수(큰 글자를 조임) | 있음 | `catalog.css:30` `font-size: var(--text-h2, 24px) … letter-spacing: -0.023em` · `search.css:6` 동일 값 · `shell.css:116` `font-size: 17px; letter-spacing: -0.02em` · apple-design §15 부합 | — |
-| 45 | L4 | 타이포 | 본문 `line-height` 지정 | 있음 | `shell.css:91` `line-height: var(--leading-body)` = `tokens.css:33` `--leading-body: 1.467` · `login.css:39`·`:94` `1.5` · `search.css:19` `1.6` · `:34` `1.7` · `:74`·`:77` `1.6` · `members.css:118` `1.7` · `upload.css:226` `1.5` · apple-design §15 | — |
-| 46 | L4 | 공간 연속성 | 오버레이·팝오버가 호출한 자리에서 열림(`transform-origin` 앵커 ＋ 여는 전환) | 없음(결함) | `upload.css:397` `.dr-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:60; …}` — 위치는 트리거 아래에 붙으나 전환 0건 · `frontend/src` 전체 `transform-origin` 선언 0건(히트 2건은 `PreviewPanels.tsx:156`·`161` 주석) · `upload.css:450`·`452` `.pvx-back`/`.pvx` 도 전환 0건 = 즉시 표시 · apple-design §7 | Ted 판정 |
-| 47 | L4 | 공간 연속성 | 열기·닫기 경로 대칭 | 없음(결함) | `upload.css:31` 열기만 `up-rise`(위로 3% 상승) 정의 · 닫기 애니메이션 정의 0건 — 조건부 렌더 해제로 즉시 사라짐(`PreviewExpandOverlay.tsx:27` 이하 반환 트리) · apple-design §7 | Ted 판정 |
-| 48 | L4 | 오버레이 해제 | Escape 처리(`data-esc-layer` 표식 ＋ 층별 자기 닫기) | 있음 | `escLayer.ts:12` `ESC_LAYER_ATTR = 'data-esc-layer'` · `:15`–`:26` `useEscLayer` 가 `document` keydown 에서 `Escape` 만 받아 자기 닫기 호출 · `PreviewExpandOverlay.tsx:26`·`:31` · `PeriodCalendarPopover.tsx:14` · `UploadModal.tsx:643`–`:649` | — |
-| 49 | L4 | 오버레이 해제 | 배경 클릭 닫기 | 있음 | `UploadModal.tsx:869`–`:874` · `PreviewExpandOverlay.tsx:32`–`:38` — 둘 다 `e.target === e.currentTarget` ＋ 누른 자리 확인 | — |
+| 44 | L4 | 타이포 | 제목 tracking 이 음수(큰 글자를 조임) | 없음 | `catalog.css:30` `font-size: var(--text-h2, 24px) … letter-spacing: -0.023em` · `search.css:6` 동일 값 · `shell.css:116` `font-size: 17px; letter-spacing: -0.02em` · apple-design §15 부합 | — |
+| 45 | L4 | 타이포 | 본문 `line-height` 지정 | 없음 | `shell.css:91` `line-height: var(--leading-body)` = `tokens.css:33` `--leading-body: 1.467` · `login.css:39`·`:94` `1.5` · `search.css:19` `1.6` · `:34` `1.7` · `:74`·`:77` `1.6` · `members.css:118` `1.7` · `upload.css:226` `1.5` · apple-design §15 | — |
+| 46 | L4 | 공간 연속성 | 오버레이·팝오버가 호출한 자리에서 열림(`transform-origin` 앵커 ＋ 여는 전환) | 있음 | `upload.css:397` `.dr-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:60; …}` — 위치는 트리거 아래에 붙으나 전환 0건 · `frontend/src` 전체 `transform-origin` 선언 0건(히트 3건은 전부 주석 — `PreviewPanels.tsx:156`·`:161` · `useZoomPan.ts:140`) · `upload.css:450`·`452` `.pvx-back`/`.pvx` 도 전환 0건 = 즉시 표시 · apple-design §7 | Ted 판정 |
+| 47 | L4 | 공간 연속성 | 열기·닫기 경로 대칭 | 있음 | `upload.css:31` 열기만 `up-rise`(위로 3% 상승) 정의 · 닫기 애니메이션 정의 0건 — 조건부 렌더 해제로 즉시 사라짐(`PreviewExpandOverlay.tsx:27` 이하 반환 트리) · apple-design §7 | Ted 판정 |
+| 48 | L4 | 오버레이 해제 | Escape 처리(`data-esc-layer` 표식 ＋ 층별 자기 닫기) | 없음 | `escLayer.ts:12` `ESC_LAYER_ATTR = 'data-esc-layer'` · `:15`–`:26` `useEscLayer` 가 `document` keydown 에서 `Escape` 만 받아 자기 닫기 호출 · `PreviewExpandOverlay.tsx:26`·`:31` · `PeriodCalendarPopover.tsx:14` · `UploadModal.tsx:643`–`:649` | — |
+| 49 | L4 | 오버레이 해제 | 배경 클릭 닫기 | 없음 | `UploadModal.tsx:869`–`:874` · `PreviewExpandOverlay.tsx:32`–`:38` — 둘 다 `e.target === e.currentTarget` ＋ 누른 자리 확인 | — |
 | 50 | L4 | 직접 조작 | 드래그가 Pointer Events ＋ `setPointerCapture` 를 쓰지 않음 | 있음 | `useZoomPan.ts:228` `onMouseDown` · `:236`–`:250` `window` 의 `mousemove`/`mouseup` 로 추적 · `frontend/src` 전체 `onPointerDown`·`setPointerCapture` 0건 · apple-design §2 | Ted 판정 |
 | 51 | L4 | 직접 조작 | 드래그 히스테리시스(약 10px 임계) 없음 | 있음 | `useZoomPan.ts:229`–`:231` `if (e.button !== undefined && e.button !== 0) return; drag.current = { x: e.clientX, y: e.clientY };` — 첫 이동부터 즉시 추적, 임계 0 · apple-design §10 | Ted 판정 |
 | 52 | L4 | 직접 조작 | 파일 드롭 영역에 드래그 중 시각 피드백 없음 | 있음 | `FileDropCard.tsx:168`–`:171` `onDragOver` 가 `preventDefault`·`stopPropagation` 만 수행(상태 갱신 0) · `onDragEnter`/`onDragLeave` 0건 · `upload.css` 에 `.dropzone` 드래그 상태 규칙 0건 · apple-design §1 | Ted 판정 |
@@ -81,7 +81,7 @@
 
 **쌍 표식** — `●쌍` = 같은 결함(`.verified--pending` `#697077 on #e8ecf2` 4.23:1)이 두 파일에서 나온 쌍(#9 catalog.css · #10 project.css, 한 WU 로 동시 집행해야 재발 없음). `■쌍` = 전역 토큰 파일별 복제 묶음(#19 catalog·detail · #20 upload · #21 project, 같은 이름·같은 값이 4파일에 복제). `▲쌍` = 정의 없이 폴백만 있는 이질 어휘 묶음(#4 dashboard · #5 preview · #6 upload · #7 lineage).
 
-**없음 행 요약(표에 다시 싣지 않음)** — L1 13건 · L2 10건 · L3 12건 · L4 8건(L4 의 결함성 없음 3건은 위 #42·#46·#47 로 실었다) = 43건. 각 레인 파일의 판정표에 근거가 그대로 있다.
+**표에 싣지 않은 `없음` 행 요약** — L1 13건 · L2 10건 · L3 12건 · L4 8건 = **43건**. L4 의 `없음` 은 총 16건이고 그중 8건(#36·#37·#40·#41·#44·#45·#48·#49)은 장치 존재 확인으로 위 표에 실었으므로 표 밖은 8건이다. 각 레인 파일의 판정표에 근거가 그대로 있다.
 
 ---
 
@@ -94,18 +94,18 @@
 | L1 | 4 | 13 | 2 | 19 |
 | L2 | 9 | 10 | 0 | 19 |
 | L3 | 16 | 12 | 2 | 30 |
-| L4 | 16 | 11 | 4 | 31 |
-| **계** | **45** | **46** | **8** | **99** |
+| L4 | 11 | 16 | 4 | 31 |
+| **계** | **40** | **51** | **8** | **99** |
 
 ### 처리별 (§2 통합표 56행)
 
 | 처리 | 건 | 어디 |
 |---|---|---|
-| 즉시 수정 후보 | 4 | #1(login-card 그림자) · #2(셸·공통 13px 미만 11건) · #27(project `.card` 그림자) · #28(members `.card` 그림자) |
-| Ted 판정 | 37 | #3~#26 중 22건 · #29 · #30 · #34·#35·#38·#39·#42·#43·#46·#47·#50·#51·#52 |
+| 즉시 수정 후보 | 4 | #1(login-card 그림자) · #26(project 음수 여백) · #27(project `.card` 그림자) · #28(members `.card` 그림자) |
+| Ted 판정 | 37 | #2~#25 **전건 24** · #29 · #30 · #34·#35·#38·#39·#42·#43·#46·#47·#50·#51·#52 **11** = 24＋2＋11 |
 | 실화면 계측 | 6 | #31 · #32 · #53 · #54 · #55 · #56 |
 | 실화면 계측 밖 · 후속 | 1 | #33(죽은/덮인 선언 규칙 쌍 전수 대조) |
-| —(결함 아님 · 장치 존재 확인) | 8 | #36·#37·#40·#41·#44·#45·#48·#49 |
+| —(`없음` · 장치 존재 확인) | 8 | #36·#37·#40·#41·#44·#45·#48·#49 |
 
 ---
 
@@ -115,8 +115,8 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 
 | 이월 | 현재 판정 | 근거 |
 |---|---|---|
-| `.lvl-3` 4단째(Lv 칩) 부재 | 없음(해소) | `catalog.css:136` `.lvl-3 { background:#bad7ff; color:#0b4eb6 }` **4.83:1** · `detail.css:72` 동일 값 동일 통과 (L2 #1) |
-| `.lin--none` 대비 3.41:1 | 없음(해소) | `catalog.css:146` `color: var(--color-gray-500)`(#697077) on 흰 배경 **5.04:1** (L2 #2) |
+| `.lvl-3` 4단째(Lv 칩) 부재 | 없음(해소) | `catalog.css:136` `.lvl-3 { background:#bad7ff; color:#0b4eb6 }` **5.128:1**(WU-C11 커밋문 5.13 과 일치) · `detail.css:72` 동일 값 동일 통과 (L2 #1) |
+| `.lin--none` 대비 3.41:1 | 없음(해소) | `catalog.css:146` `color: var(--color-gray-500)`(#697077) on 흰 배경 **5.018:1** (L2 #2) |
 | `.dt-gridact` 음수 여백 | 없음(해소) | `detail.css:148` `margin` 선언 자체가 없다 — 여백은 `.dt-split-r` gap(`:283`·`:294`) 소유 (L2 #3) |
 | `lineageGraph.css:7` `.dsec` 자식 margin-top 34px | 없음(해소) | `detail.css` `.dt-secs` gap 34px 로 이관 · 대상 셀렉터 `margin-top` 잔존 0건 (L3 #5) |
 | `upload.css` 자식 margin-top 9곳 | 없음(해소) | `.up-card > .card-b { gap:12px }`(:125) · `.projpick` gap 8(:245) · `.qproj` gap 8(:246) 로 컨테이너 이관 · 9개 셀렉터 블록 `margin-top` 0건 (L3 #6) |
@@ -125,7 +125,7 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 
 ### 이월 목록 밖 신규 발견 (이번 회차 최초 지목)
 
-- 대비 — `.verified--pending` 4.23:1 두 파일(#9·#10) · `.dsec-menu-i.is-active` 4.51:1 경계(#11).
+- 대비 — `.verified--pending` **4.232:1** 두 파일(#9·#10) · `.dsec-menu-i.is-active` **4.494:1 미달**(#11).
 - 글자 13px 미만 — 신규 지목 계 **70건**(catalog 14 · detail 9 · search 2 · preview 2 · upload 20 · project 14 · lineage 9), 셸·공통 11건(#2)은 별건.
 - 정의 없이 폴백만 있는 이질 어휘 — **39건**(dashboard 20 참조 · preview 20 · upload 9 · lineage 9 · lab 1 중 중복 계상 제외한 파일별 실측치는 §2 각 행 참조).
 - 전역 토큰 파일별 복제 — catalog 18 · detail 30 · upload 18 · project 8.
@@ -152,28 +152,29 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 ### 접근성 — 대비·글자 크기
 
 **판정-1 · 인증 대기 뱃지의 글자·배경 대비가 기준에 못 미친다**
-- 문제 — 데이터 목록과 프로젝트 화면의 「인증 대기」 뱃지가 회색 글자에 회색 배경이라 4.23~4.25:1 로, 접근성 기준선 4.5:1 아래다. 같은 색 조합이 두 파일에 각각 적혀 있다.
-- ⓐ 글자색을 같은 회색 계열에서 한 단 진하게 내린다. ⓑ 배경을 한 단 연하게 올린다.
+- 문제 — 데이터 목록과 프로젝트 화면의 「인증 대기」 뱃지가 회색 글자(`#697077`)에 회색 배경(`#e8ecf2`)이라 **4.232:1** 로, 접근성 기준선 4.5:1 아래다. 같은 색 조합이 두 파일에 각각 적혀 있다.
+- ⓐ 글자색을 같은 회색 계열에서 한 단 진하게 내린다(`--color-gray-600` `#565c63` on `#e8ecf2` = **5.70:1** 통과 · 더 내리면 `--color-gray-700` `#434950` = **7.68:1**). ⓑ 배경을 한 단 연하게 올린다.
+- **의존** — `shell/tokens.css` 의 회색 램프는 `--color-gray-50`(`:8`)·`400`(`:9`)·`500`(`:10`) 셋뿐이고 `--color-gray-600` 은 **전역에 없다**(`catalog.css`·`detail.css` 의 파일 `:root` 에만 있다). ⓐ 를 고르면 판정-5(전역 어휘 12종 승격 · `--color-gray-600` 포함)가 먼저 서야 하거나, 같은 WU 에서 토큰 승격을 함께 해야 한다.
 - 권고 = ⓐ. 앞 회차가 「계보 없음」 표시를 같은 방식(회색 한 단 진하게)으로 통과시킨 선례가 있고, 배경을 건드리면 같은 배경을 쓰는 다른 뱃지까지 값이 갈린다. 두 파일을 한 번에 고쳐야 재발이 없다.
 - 걸린 행 — #9 · #10.
 
-**판정-2 · 상세 화면 구역 메뉴의 선택 상태 대비가 경계값이다**
-- 문제 — 데이터 상세 화면 왼쪽 구역 메뉴에서 지금 보고 있는 항목의 파란 글자·연파랑 배경이 4.51:1 이다. 계측 스크립트는 4.49:1 로 미달, 직접 계산은 4.51:1 로 근소 통과라 판정이 갈린다.
-- ⓐ 통과로 보고 손대지 않는다. ⓑ 파란 글자를 한 단 진하게 내려 여유를 만든다.
-- 권고 = ⓑ. 반올림 자리에서 결론이 뒤집히는 값이라, 브라우저 렌더 결과를 다시 재는 비용보다 한 단 내리는 편이 싸다. 실제 화면 캡처 재계측을 병행한다.
+**판정-2 · 상세 화면 구역 메뉴의 선택 상태 대비가 미달이다 — 어느 단으로 내릴지**
+- 문제 — 데이터 상세 화면 왼쪽 구역 메뉴에서 지금 보고 있는 항목의 파란 글자(`--color-primary-600` `#1369e9`)·연파랑 배경(`--color-primary-50` `#edf4ff`)이 **4.494:1** 로 기준선 4.5:1 아래다. **미달 확정**이고(css_audit 4.49 와 일치) 「통과로 보는」 선택지는 없다. 남은 판정은 어느 단까지 내리느냐다.
+- ⓐ `--color-primary-700` `#0f62e0` 로 한 단 내린다(**4.939:1**). ⓑ `--color-primary-800` `#0b4eb6` 로 두 단 내린다(**6.831:1**).
+- 권고 = ⓐ. 4.94 로 기준선을 넘기면서 선택 상태의 파랑 인상이 남고, ⓑ 는 이미 `.lvl-3` 칩(`#0b4eb6 on #bad7ff`)이 쓰는 톤이라 두 상태가 같은 색으로 붙는다. 다만 `--color-primary-700` 은 `shell/tokens.css`·화면 파일 어디에도 정의가 없어(램프에 50·100·200·600·800 만 있다) 값 신설이 함께 필요하다.
 - 걸린 행 — #11.
 
 **판정-3 · 뱃지·캡션류 글자가 11px 안팎으로 기준선 13px 아래에 있다**
 - 문제 — 등급 칩·인증 뱃지·필터 칩·표 머리글·설명 문구 등 짧은 라벨이 9~12px 이다. 기준선 13px 를 그대로 적용하면 목업이 처음부터 11px 로 설계한 뱃지 전체가 대상이 된다.
-- ⓐ 뱃지·캡션류를 기준선의 예외로 등재하고 값을 유지한다. ⓑ 뱃지류에 별도 문턱(예: 11px)을 세워 그 아래만 올린다.
-- 권고 = ⓑ. 목업의 뱃지 다수가 11px 로 일관돼 있어 별도 문턱이 실태에 맞고, 예외 등재는 「어디까지 뱃지인가」를 매번 다시 다투게 만든다. 10px 라벨(격자 라벨·파일 라벨·폼 라벨)과 9px 장식 표식(정렬 표식·체크 표식)은 별도 판단이 필요하다.
-- 걸린 행 — #12 · #13 · #14 · #15 · #16 · #17 · #18.
+- ⓐ 뱃지·캡션류를 기준선의 예외로 등재하고 값을 유지한다. ⓑ **정본의 기준선 13px 를 뱃지류에 대해 개정한다** — 개정 여부와 개정값은 Ted 몫이다(이 문서는 정본에 없는 문턱값을 짓지 않는다 · `design-review/SKILL.md` §4).
+- 권고 = ⓑ. 목업의 뱃지 다수가 11px 로 일관돼 있어 예외 등재는 「어디까지 뱃지인가」를 매번 다시 다투게 만드는 반면, 개정은 값 하나로 닫힌다. 10px 라벨(격자 라벨·파일 라벨·폼 라벨)과 9px 장식 표식(정렬 표식·체크 표식)은 별도 판단이 필요하다.
+- 걸린 행 — #2 · #12 · #13 · #14 · #15 · #16 · #17 · #18.
 
 **판정-4 · 글자 크기 승격을 한 회차에 몰아서 할지, 유형별로 쪼갤지**
 - 문제 — 판정-3 이 정해지면 대상이 최대 81건(화면별 70건 ＋ 셸·공통 11건)이다. 고정 높이를 가진 뱃지·표 머리글은 글자를 올리면 높이도 같이 올려야 해서 배치가 밀린다.
 - ⓐ 유형별(뱃지 · 캡션 · 폼 라벨 · 표 머리글)로 쪼개 순차 집행한다. ⓑ 이번 회차에 전량 승격한다.
 - 권고 = ⓐ. 고정 높이 요소가 여럿이라 전량 승격 시 배치 파급이 크고, 앞 두 회차가 이미 지목분 순차 승격 방식으로 돌아갔다.
-- 걸린 행 — #2 · #12 · #13 · #14 · #15 · #16 · #17 · #18.
+- 걸린 행 — #12 · #13 · #14 · #15 · #16 · #17 · #18(#2 는 판정-3 소관으로 옮겼다).
 
 ### 토큰 어휘 — 전역 승격 · 화면별 어휘계
 
@@ -209,90 +210,78 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 
 ### 그림자·보더·여백
 
-**판정-10 · 카드 그림자를 어디까지 지울지**
-- 문제 — 정본은 카드에 그림자 0(팝오버만 허용)을 요구하는데, 로그인 카드·프로젝트 상세 카드·멤버 카드 3자리에 그림자가 남아 있다.
-- ⓐ 세 자리 모두 제거하고 테두리로만 경계를 남긴다. ⓑ 로그인 카드는 화면에 단독으로 놓이는 예외로 인정해 유지한다.
-- 권고 = ⓐ. 정본 문구에 「단독 배치」 예외가 없고 세 자리 전부 클래스 이름부터 카드다. 제거 후 테두리만으로 경계가 보이는지 실물 확인이 필요하다.
-- 걸린 행 — #1 · #27 · #28.
-
-**판정-11 · 셸 상단바 그림자가 카드 그림자 규칙의 대상인지**
+**판정-10 · 셸 상단바 그림자가 카드 그림자 규칙의 대상인지**
 - 문제 — 화면 위쪽에 항상 고정된 상단바에 그림자가 있다. 상단바는 카드가 아니라 셸 고정 요소인데, 정본이 이 경우를 말하지 않는다.
 - ⓐ 카드 규칙을 상단바까지 넓혀 제거한다. ⓑ 카드가 아니므로 규칙 대상에서 빼고 유지한다.
 - 권고 = ⓑ. 정본이 카드류를 특정했고, 상단바는 목업에서부터 그림자를 가진 「항상 떠 있는 층」이라 팝오버·메뉴와 성격이 같다.
 - 걸린 행 — #30.
 
-**판정-12 · 모달 그림자가 「팝오버 허용」에 포함되는지**
+**판정-11 · 모달 그림자가 「팝오버 허용」에 포함되는지**
 - 문제 — 멤버 화면 모달과 랩 정보 모달에 그림자가 있다. 정본은 팝오버를 허용한다고만 적었고 모달을 포함하는지 명문이 없다.
 - ⓐ 모달·오버레이를 팝오버 허용 범주에 포함하도록 정본을 보완한다. ⓑ 모달을 별도 축으로 분리해 자체 합격선을 정한다.
 - 권고 = ⓐ. 이미 그림자를 가진 날짜 팝오버와 같은 「배경에서 떼어 놓기」 목적이라, 면 위에 얹히는 카드와 성격이 다르다.
 - 걸린 행 — #29.
 
-**판정-13 · 대시보드의 바깥 테두리와 안쪽 구분선이 같은 색이다**
+**판정-12 · 대시보드의 바깥 테두리와 안쪽 구분선이 같은 색이다**
 - 문제 — 대시보드 카드의 바깥 테두리와 카드 안 구분선이 같은 이름·같은 값을 쓴다. 정본은 이 둘을 두 층으로 갈라 쓰라고 정한다.
 - ⓐ 현행 단일 색을 유지한다(셸의 테두리 색과 이미 값이 달라 화면 고유 결이 있다고 볼 여지). ⓑ 공통 토큰 파일의 두 층 체계(일반 테두리 · 진한 테두리)로 갈아 끼워 셸과 통일한다.
 - 권고 = ⓑ. 정본이 두 층 분리를 명시 축으로 못박았고, 판정-7 의 어휘 치환과 함께 처리하면 같은 파일을 두 번 열지 않는다.
 - 걸린 행 — #3.
 
-**판정-14 · 자식 요소가 자기 위쪽 간격을 스스로 갖는 자리 12곳을 컨테이너로 옮길지**
+**판정-13 · 자식 요소가 자기 위쪽 간격을 스스로 갖는 자리 12곳을 컨테이너로 옮길지**
 - 문제 — 업로드 5곳·계보 그래프 4곳·계보 3곳에서 자식 요소가 위쪽 간격을 직접 갖는다. 정본 원칙은 간격을 컨테이너가 소유하라고 정하는데, 이 12곳은 형제가 조건부로 나타나는 자리가 아니라 단일 자리다.
 - ⓐ 원칙을 반복되는 조건부 형제에만 적용하고 단일 자리는 손대지 않는다. ⓑ 예외 없이 전량 컨테이너 간격으로 옮긴다.
 - 권고 = ⓐ. 단일 자리는 형제 간 값이 갈릴 위험이 없어, 원 판정이 겨눈 문제를 재현하지 않는다.
 - 걸린 행 — #23 · #24 · #25.
 
-**판정-15 · 프로젝트 모달의 음수 여백 1자리**
-- 문제 — 프로젝트 모달의 기본값 안내 문구가 위쪽 음수 여백으로 앞 요소와의 간격을 깎는다. 부모에 간격 소유가 없고 형제들은 각자 아래쪽 여백을 갖는 구조다.
-- ⓐ 부모가 간격을 소유하도록 바꾸고 음수를 없앤다(앞 회차가 상세 화면에서 쓴 방식). ⓑ 단일 자리이므로 시각 등가만 확인하고 둔다.
-- 권고 = ⓐ. 다만 형제 전체의 여백 소유 구조를 함께 바꿔야 해서 별도 작업 단위가 필요하다.
-- 걸린 행 — #26.
-
 ### 인터랙션·모션
 
-**판정-16 · 누르는 순간의 시각 피드백이 화면 전체에 하나도 없다**
+**판정-14 · 누르는 순간의 시각 피드백이 화면 전체에 하나도 없다**
 - 문제 — 버튼·표 행·칩 어디에도 「누르고 있는 동안」의 상태 규칙이 없고, 피드백이 전부 마우스를 올렸을 때에만 걸린다. 정본은 손을 뗄 때가 아니라 누르는 순간에 반응하라고 정한다.
 - ⓐ 버튼·행·칩에 누름 상태 규칙을 새로 세운다. ⓑ 현행 유지.
 - 권고 = ⓐ. 다만 어떤 선택자 묶음에 걸지, 값이 배경 한 단 어둡게인지 살짝 축소인지는 정본에 없어 값 판정이 함께 필요하다.
 - 걸린 행 — #31 · #34 · #35.
 
-**판정-17 · 모션 축소 설정 대응을 화면마다 달지, 셸에 한 벌 둘지**
+**판정-15 · 모션 축소 설정 대응을 화면마다 달지, 셸에 한 벌 둘지**
 - 문제 — 사용자가 운영체제에서 모션 축소를 켰을 때의 분기가 업로드 화면에만 있다. 다른 파일의 전환은 대부분 색 전환이라 정본이 유지하라고 한 종류지만, 검색 화면의 토글 손잡이 하나가 위치를 움직이는 전환이라 분기 대상이다.
 - ⓐ 셸에 전역 규칙 한 벌을 세워 이동·변형 전환을 일괄로 끈다. ⓑ 이동을 쓰는 파일마다 분기를 따로 단다.
 - 권고 = ⓑ. 대상이 토글 손잡이 한 건뿐이고, 전역 규칙은 유지해야 할 색 전환까지 함께 끈다. 이동·변형 전환이 늘어난 뒤 재검토한다.
 - 걸린 행 — #42.
 
-**판정-18 · 모달 열기 애니메이션이 중간에 멈출 수 없고 닫기 경로가 없다**
+**판정-16 · 모달 열기 애니메이션이 중간에 멈출 수 없고 닫기 경로가 없다**
 - 문제 — 업로드 모달이 0.46초 고정 길이 애니메이션으로 열리고, 화면의 현재 값이 아니라 고정 시작값에서 출발한다. 닫기 애니메이션은 정의가 없어 즉시 사라진다.
 - ⓐ 열기를 중단 가능한 전환으로 바꾸고 닫기 경로를 대칭으로 세운다. ⓑ 현행 고정 애니메이션을 유지한다.
-- 권고 = ⓑ 중 열기 부분만. 정본이 금지하는 대상은 손가락으로 잡히는 것이고 이 모달은 드래그로 잡히지 않는다. 다만 열기·닫기 대칭은 어긋나 있으므로 닫기 경로 추가는 별도로 판정한다.
+- 권고 = **보류(정본 내부 충돌)**. `apple-design/SKILL.md` §3 은 한 절 안에서 두 방향을 말한다 — `:66` 「**Avoid** CSS transitions and `@keyframes` for anything **gesture-driven**」은 제스처 대상만 겨누지만, `:62` 「**Every** animation must be interruptible and redirectable at any moment. … **A closing modal** the user grabs again should follow the finger」는 모달을 직접 지목한다. 「제스처로 잡히지 않으니 면제」라는 독법은 `:62` 와 정면으로 부딪친다. 어느 문장이 우선하는지를 Ted 가 먼저 정해야 ⓐ/ⓑ 가 갈린다. 열기·닫기 대칭 결여(#47)는 어느 쪽으로 정해도 남는 결함이다.
 - 걸린 행 — #38 · #39 · #47.
 
-**판정-19 · 팝오버·오버레이가 눌린 자리에서 열리지 않는다**
+**판정-17 · 팝오버·오버레이가 눌린 자리에서 열리지 않는다**
 - 문제 — 기간 선택 달력 팝오버와 확장보기 오버레이가 전환 없이 즉시 나타난다. 나오는 기준점을 지정하는 선언이 화면 전체에 하나도 없다.
 - ⓐ 두 곳에 기준점과 여는 전환을 세운다. ⓑ 현행 즉시 표시를 유지한다.
 - 권고 = ⓐ 중 달력 팝오버만. 팝오버는 이미 누르는 버튼 바로 아래에 붙어 기준점이 자명하지만, 전체화면 오버레이는 나오는 자리가 정본에 없다.
 - 걸린 행 — #46.
 
-**판정-20 · 확대·이동 드래그가 마우스 전용이고 시작 임계가 없다**
+**판정-18 · 확대·이동 드래그가 마우스 전용이고 시작 임계가 없다**
 - 문제 — 미리보기 확대·이동 드래그가 마우스 이벤트와 창 전역 감시로 구현돼 터치·펜 입력을 받지 않고, 손가락이 1px 만 움직여도 즉시 끌기가 시작된다.
 - ⓐ 포인터 이벤트와 포인터 캡처로 옮기고 약 10px 시작 임계를 둔다. ⓑ 현행을 유지한다.
 - 권고 = ⓐ. 현행 창 전역 감시가 「요소 밖으로 나가도 추적」 효과는 내지만 터치·펜을 못 받는다. 임계값은 정본에 「약 10px」로만 있어 확정값 판정이 필요하다.
 - 걸린 행 — #50 · #51.
 
-**판정-21 · 파일을 끌어 오는 동안 드롭 영역이 아무 반응을 하지 않는다**
+**판정-19 · 파일을 끌어 오는 동안 드롭 영역이 아무 반응을 하지 않는다**
 - 문제 — 파일 끌어 놓기 영역이 끌어 오는 동안 상태를 갱신하지 않고, 대응하는 시각 규칙도 없다. 사용자는 여기에 놓아도 되는지 알 수 없다.
 - ⓐ 끌어 들어옴·나감 상태와 대응 시각 규칙을 세운다. ⓑ 현행 유지.
 - 권고 = ⓐ. 정본은 상호작용 도중 피드백이 끊기지 않아야 한다고 정한다. 상태 색은 정본에 없어 값 선택이 함께 필요하다.
 - 걸린 행 — #52.
 
-**판정-22 · 글자 간격 값이 글자 크기와 무관하게 하나로 고정돼 있다**
+**판정-20 · 글자 간격 값이 글자 크기와 무관하게 하나로 고정돼 있다**
 - 문제 — 본문 글자 간격이 크기와 상관없이 단일 값이고, 10px 라벨과 13px 본문이 서로 다른 고정값을 각자 파일에 박고 있다. 정본은 글자 간격이 크기별이어야 한다고 정한다.
 - ⓐ 크기 구간별 값을 세워 공통 토큰 파일에 올린다. ⓑ 현행 파일별 고정값을 유지한다.
 - 권고 = ⓐ. 구간 경계와 각 값은 정본에 없어 판정이 필요하다.
 - 걸린 행 — #43.
 
-**판정-23 · 제스처가 끝난 뒤 속도를 이어받는 움직임을 도입할지**
+**판정-21 · 제스처가 끝난 뒤 속도를 이어받는 움직임을 도입할지**
 - 문제 — 모든 전환이 0.14초 고정 곡선 하나를 쓰고, 확대·이동 드래그는 속도를 기록하지 않아 손을 뗀 순간 즉시 멈춘다.
 - ⓐ 탄성 움직임 라이브러리를 들여 제스처 종료 시 속도를 넘긴다. ⓑ 현행 고정 곡선을 유지한다.
-- 권고 = ⓑ. 이 화면들의 모션은 대부분 색 전환이고 제스처가 끝나는 자리는 확대·이동 하나뿐이다. 의존성 추가 대비 적용 면이 좁다. 판정-20 처리 뒤 재검토한다.
+- 권고 = ⓑ. 이 화면들의 모션은 대부분 색 전환이고 제스처가 끝나는 자리는 확대·이동 하나뿐이다. 의존성 추가 대비 적용 면이 좁다. 판정-18 처리 뒤 재검토한다.
 - 걸린 행 — #53 · #54 · #55(측정 대상 부재의 근거).
 
 ---
@@ -307,28 +296,47 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 
 | 후보 | 범위(파일 · 선택자 family) | 걸린 판정 | 크기 | 시험 seam |
 |---|---|---|---|---|
-| D-1 | `auth/login.css`(`.login-card`) · `catalog.css`(`.verified--pending`) · `detail.css`(`.dsec-menu-i.is-active`) · `project.css`(`.project-detail .card`·`.verified--pending`) · `members.css`(`.card`) — 색값·`box-shadow` 선언만 | 판정-1 · 2 · 10 | S | `design-fix-<날짜>.test.ts` — 대비 3쌍 계산 단언 ＋ 카드 `box-shadow` 0건 grep |
+| D-1 | `auth/login.css`(`.login-card`) · `catalog.css`(`.verified--pending`) · `detail.css`(`.dsec-menu-i.is-active`) · `project.css`(`.project-detail .card`·`.verified--pending`) · `members.css`(`.card`) — 색값·`box-shadow` 선언만 | 판정-1 · 2 ＋ 즉시 수정 후보 #1·#27·#28 | S | `design-fix-<날짜>.test.ts` — 대비 3쌍 계산 단언 ＋ 카드 `box-shadow` 0건 grep |
 | D-2 | `shell/tokens.css` ＋ `catalog.css`·`detail.css`·`upload.css`·`project.css` 의 `:root{}` 블록만(선택자 규칙 무접촉) — 전역 어휘 12종 승격·중복 정의 제거 | 판정-5 | M | `css-residual-<라운드>.test.ts` — 화면 파일 `:root` 안 전역 이름 재정의 0건 ＋ 승격 후 값 동일성 |
 | D-3 | `preview/preview.css` 전 규칙 ＋ `search/search.css` 폴백 hex — 이질 어휘 치환·폴백 정정 | 판정-6 · 9 | M | `design-fix` — 미정의 이름 참조 0건 ＋ 폴백 hex ↔ tokens 값 일치 grep |
-| D-4 | `components/dashboard/dashboard.css` 전 규칙 — 어휘 7종 치환 ＋ 테두리 2층 분리 ＋ 12px 이하 9건 | 판정-7 · 13 · 4 | M | `design-fix` — 미정의 이름 0건 ＋ 컨테이너/구분선 서로 다른 이름 ＋ `font-size` 13px 미만 0건 |
+| D-4 | `components/dashboard/dashboard.css` 전 규칙 — 어휘 7종 치환 ＋ 테두리 2층 분리 ＋ 12px 이하 9건 | 판정-7 · 12 · 3 · 4 | M | `design-fix` — 미정의 이름 0건 ＋ 컨테이너/구분선 서로 다른 이름 ＋ `font-size` 13px 미만 0건 |
 | D-5 | `catalog.css`·`detail.css`·`search.css`(뱃지·캡션 family: `.chip`·`.lvl`·`.verified`·`.lin`·`.fl-*`) — 문턱 판정 결과에 따른 승격 | 판정-3 · 4 | M | `design-fix` — 확정 문턱 미만 선언 0건 ＋ 고정 높이 동반 조정 단언 |
-| D-6 | `upload.css`·`project.css`·`lineage.css` 글자 크기 43건 — 유형별 승격 | 판정-3 · 4 | M | `design-fix` — 파일별 미만 건수 before/after 단언 |
+| D-6 | `upload.css`·`project.css`·`lineage.css` 글자 크기 43건 — 유형별 승격(`project.css:440` `.pj-defnote` 는 D-8 과 같은 셀렉터 — 아래 겹침 표 참조) | 판정-3 · 4 | M | `design-fix` — 파일별 미만 건수 before/after 단언 |
 | D-7 | `upload.css`·`lineage.css`·`lab.css` 미정의 이름 19건 ＋ `shell/tokens.css` 승격분 | 판정-8 | S | `css-residual` — 미정의 이름 참조 0건 |
-| D-8 | `project.css`(`.pj-defnote`·`.pj-modal-b`·`.pj-row`) 음수 여백 제거·간격 소유 이전 | 판정-15 | S | `design-fix` — 음수 `margin` 0건 ＋ 형제 간격 시각 등가 값 단언 |
-| D-9 | `shell/shell.css`(`.backlink .bl-a`) · `components/common/toast.css`(`.toast`) 글자 크기 2건 | 판정-4 | S | `design-fix` — 두 선택자 `font-size` 단언 |
-| D-10 | 누름 상태 규칙 신설 — `shell/shell.css`·`catalog.css`·`upload.css` 의 버튼·행·칩 공통 선택자 묶음 | 판정-16 | M | `design-fix` — `:active` 규칙 건수 0 → n 단언 |
-| D-11 | `search/search.css` 토글 손잡이 모션 축소 분기 신설 | 판정-17 | S | `design-fix` — `prefers-reduced-motion` 블록 존재 ＋ `transition: left` 무력화 단언 |
-| D-12 | `upload.css`(`.dr-pop` 기준점·여는 전환 · 모달 닫기 경로) | 판정-18(닫기 대칭) · 19 | S | `design-fix` — `transform-origin` 선언 존재 ＋ 닫기 전환 규칙 존재 |
-| D-13 | `shell/tokens.css` 글자 간격 구간 토큰 신설 ＋ `login.css`·`catalog.css`·`shell.css` 고정값 치환 | 판정-22 | M | `design-fix` — 파일 안 고정 `letter-spacing` 리터럴 0건 |
+| D-8 | `project.css`(`.pj-defnote`·`.pj-modal-b`·`.pj-row`) 음수 여백 제거·간격 소유 이전 | 즉시 수정 후보 #26(정본 「음수 여백 0」이 값을 닫는다 · 판정 불요) | S | `design-fix` — 음수 `margin` 0건 ＋ 형제 간격 시각 등가 값 단언 |
+| D-9 | `shell/shell.css`(`.backlink .bl-a`) · `components/common/toast.css`(`.toast`) 글자 크기 2건 | 판정-3 · 4 | S | `design-fix` — 두 선택자 `font-size` 단언 |
+| D-10 | 누름 상태 규칙 신설 — `shell/shell.css`·`catalog.css`·`upload.css` 의 버튼·행·칩 공통 선택자 묶음 | 판정-14 | M | `design-fix` — `:active` 규칙 건수 0 → n 단언 |
+| D-11 | `search/search.css` 토글 손잡이 모션 축소 분기 신설 | 판정-15 | S | `design-fix` — `prefers-reduced-motion` 블록 존재 ＋ `transition: left` 무력화 단언 |
+| D-12 | `upload.css`(`.dr-pop` 기준점·여는 전환) — **CSS 전용**. 모달 닫기 경로는 D-16 으로 뺐다 | 판정-17 | S | `design-fix` — `.dr-pop` `transform-origin` 선언 존재 ＋ 여는 전환 규칙 존재 |
+| D-13 | `shell/tokens.css` 글자 간격 구간 토큰 신설 ＋ `login.css`·`catalog.css`·`shell.css` 고정값 치환 | 판정-20 | M | `design-fix` — 파일 안 고정 `letter-spacing` 리터럴 0건 |
 
 ### TSX 접촉 레인
 
 | 후보 | 범위(파일 · 선택자 family) | 걸린 판정 | 크기 | 시험 seam |
 |---|---|---|---|---|
-| D-14 | `components/preview/useZoomPan.ts` — 포인터 이벤트·포인터 캡처 전환 ＋ 시작 임계 | 판정-20 | M | `design-fix` — `onPointerDown`·`setPointerCapture` 존재 ＋ 임계 상수 단언(단위 시험) |
-| D-15 | `components/upload/FileDropCard.tsx` 상태 ＋ `upload.css` `.dropzone` 드래그 상태 규칙 | 판정-21 | S | `design-fix` — `onDragEnter`/`onDragLeave` 존재 ＋ 대응 CSS 규칙 존재 |
+| D-14 | `components/preview/useZoomPan.ts` — 포인터 이벤트·포인터 캡처 전환 ＋ 시작 임계 | 판정-18 | M | `design-fix` — `onPointerDown`·`setPointerCapture` 존재 ＋ 임계 상수 단언(단위 시험) |
+| D-15 | `components/upload/FileDropCard.tsx` 상태 ＋ `upload.css` `.dropzone` 드래그 상태 규칙 | 판정-19 | S | `design-fix` — `onDragEnter`/`onDragLeave` 존재 ＋ 대응 CSS 규칙 존재 |
+| D-16 | 모달 닫기 경로 — `UploadModal.tsx`·`PreviewExpandOverlay.tsx` 언마운트 지연(닫기 상태 ＋ 전환 종료 후 해제) ＋ `upload.css` 닫기 전환 규칙. **CSS 전용 불가** — #47 근거대로 지금은 조건부 렌더 해제라 CSS 만으로는 닫기 프레임이 존재하지 않는다 | 판정-16(닫기 대칭) | M | `design-fix` — 닫기 상태 플래그 존재 ＋ 언마운트 지연 단위 시험 ＋ 닫기 전환 규칙 존재 |
 
-- 파일 면 분리 — D-1(규칙 본문) 과 D-2(`:root` 블록) 는 같은 파일을 열지만 서로 다른 구역이다. **D-1 → D-2 순서 직렬**로 돌린다. 나머지 후보는 파일 면이 겹치지 않는다(D-15 의 `upload.css` `.dropzone` 규칙은 D-6·D-7 이 만지는 선택자와 별개).
+### 파일 면 겹침 · 집행 순서
+
+파일 면이 겹치지 않는 후보 묶음이 아니다 — 아래 파일은 여러 후보가 같이 연다. 파일 단위로 **직렬** 집행한다(같은 파일을 여는 후보는 동시 레인에 넣지 않는다).
+
+| 파일 | 여는 후보 | 직렬 순서 | 비고 |
+|---|---|---|---|
+| `upload.css` | D-2 · D-6 · D-7 · D-10 · D-12 · D-15 · D-16 | D-2 → D-7 → D-6 → D-10 → D-12 → D-16 → D-15 | 어휘(`:root`·미정의 이름)를 먼저 닫고 값·규칙 신설을 뒤에 둔다 |
+| `project.css` | D-1 · D-2 · D-6 · D-8 | D-1 → D-2 → D-8 → D-6 | **D-6 의 `:440` `.pj-defnote` 12px 와 D-8 의 `.pj-defnote` 음수 여백은 같은 셀렉터** — D-8 이 블록 구조를 먼저 바꾼 뒤 D-6 이 `font-size` 만 만진다 |
+| `catalog.css` | D-1 · D-2 · D-5 | D-1 → D-2 → D-5 | D-1=규칙 본문 색값 · D-2=`:root` · D-5=뱃지 크기 |
+| `detail.css` | D-1 · D-2 · D-5 | D-1 → D-2 → D-5 | 동일 |
+| `search.css` | D-3 · D-5 · D-11 | D-3 → D-5 → D-11 | D-3=폴백 hex 정정 · D-11=모션 축소 분기 신설 |
+| `shell/tokens.css` | D-2 · D-7 · D-13 | D-2 → D-7 → D-13 | 전역 승격이 셋 다 이 파일에 쓴다 — 병렬 금지 |
+| `shell/shell.css` | D-9 · D-10 · D-13 | D-9 → D-10 → D-13 | |
+| `lineage.css` | D-6 · D-7 | D-7 → D-6 | |
+| `login.css` | D-1 · D-13 | D-1 → D-13 | |
+| `members.css` | D-1 | — | 단독 |
+| `preview/preview.css` · `lab.css` · `dashboard.css` | D-3 / D-7 / D-4 | — | 각각 단독 |
+
+- D-1(규칙 본문) 과 D-2(`:root` 블록) 는 같은 파일의 서로 다른 구역이지만 그래도 **D-1 → D-2 직렬**로 돌린다.
 - D-5·D-6 은 판정-3(문턱) 확정 전에는 착수하지 않는다. D-10·D-12·D-13 은 값 판정(누름 상태 값 · 전환 곡선 · 구간 경계) 확정 전에는 착수하지 않는다.
 
 ---
@@ -359,11 +367,32 @@ WU-C11(`2c4d335`) 이 집행한 항목의 현재 값 — **7건 전부 잔존 �
 ## 9. PLAN-SoT §9 등재문 초안 (병합 직전 〈N〉 재실측 — `origin/main` 최대 ＋ 1)
 
 ```
-| 〈N〉 | **R-C 후속 실측 — 디자인 검수 4레인 99행 판정. 판정 없이 고치지 않는다** | **실측 (2026-09-08 · 워크트리 `design-skills` · 기준 트리 `cc05c44` · 병합 `<sha>` · 계약 0 · 마이그레이션 0 · staging 접촉 0).** ①회차 = **해당 없음**(계약 미개방) ②값 = 없음 ③근거 = `dev-package/sessions/design-review-20260908.md` · 레인 산출 `-L1`~`-L4` · 계측 `dev-package/reports/design-review/20260908/css_audit.md` ④가·파 판정 = 해당 없음 ⑤소비자 = 해당 없음 ⑥마이그레이션 = **0건** ⑦승인 = 불요 ⑧이번에 세지 않은 축 = 재질·깊이 품질 · 다중 감각 피드백 · 죽은 선언 규칙 쌍 전수 대조 · 실화면 계측 4건(배포 창 뒤) `[미집행]`. **판정 결과** — 있음 **45** · 없음 **46** · `[미상]` **8**(계 99행) · 처리 = 즉시 수정 후보 4 · Ted 판정 37 · 실화면 계측 6 · 후속 1 · Ted 판정 묶음 **23건**(접근성 4 · 토큰 어휘 5 · 그림자·보더·여백 6 · 인터랙션·모션 8) · 후보 WU **15건**(CSS 13 · TSX 2) · WU-C11 이월 7건 **전부 잔존 없음** |
+| 〈N〉 | **R-C 후속 실측 — 디자인 검수 4레인 99행 판정. 판정 없이 고치지 않는다** | **실측 (2026-09-08 · 워크트리 `design-skills` · 기준 트리 `cc05c44` · 병합 `<sha>` · 계약 0 · 마이그레이션 0 · staging 접촉 0).** ①회차 = **해당 없음**(계약 미개방) ②값 = 없음 ③근거 = `dev-package/sessions/design-review-20260908.md` · 레인 산출 `-L1`~`-L4` · 계측 `dev-package/reports/design-review/20260908/css_audit.md` ④가·파 판정 = 해당 없음 ⑤소비자 = 해당 없음 ⑥마이그레이션 = **0건** ⑦승인 = 불요 ⑧이번에 세지 않은 축 = 재질·깊이 품질 · 다중 감각 피드백 · 죽은 선언 규칙 쌍 전수 대조 · 실화면 계측 4건(배포 창 뒤) `[미집행]`. **판정 결과** — 있음 **40** · 없음 **51** · `[미상]` **8**(계 99행) · 처리 = 즉시 수정 후보 4 · Ted 판정 37 · 실화면 계측 6 · 후속 1 · `—` 8 · Ted 판정 묶음 **21건**(접근성 4 · 토큰 어휘 5 · 그림자·보더·여백 4 · 인터랙션·모션 8) · 후보 WU **16건**(CSS 13 · TSX 3) · WU-C11 이월 7건 **전부 잔존 없음** |
 ```
 
 ---
 
 ## 10. advisor ② 반영
 
-(오케스트레이터가 채운다)
+reject 로 받은 지적 16건 전건 반영. 대비값은 이 회차에 WCAG 상대휘도로 직접 재계산했다(sRGB → 선형화 → `0.2126R+0.7152G+0.0722B` → `(L1+0.05)/(L2+0.05)`).
+
+1. **#11 대비 오기** — 「직접 계산 4.51:1 근소 통과」를 삭제. 재계산 `#1369e9 on #edf4ff` = **4.494:1** = AA 미달 확정(css_audit 4.49 가 맞다). §2 #11 행과 §4 신규 발견 목록을 미달 표기로 고쳤다. 판정-2 는 제목·문제·선택지를 「미달 확정 · 어느 단으로 내릴지」로 재구성 — ⓐ `--color-primary-700` `#0f62e0` **4.939:1** · ⓑ `--color-primary-800` `#0b4eb6` **6.831:1**, 권고 ⓐ. 「통과로 보고 손대지 않는다」 선택지는 제거했다. `--color-primary-700` 이 어디에도 정의돼 있지 않다는 사실을 판정문에 덧붙였다.
+2. **#9 허구의 스크립트 차이** — 「직접 계산 4.25:1(스크립트 4.23)」을 삭제하고 재계산 **4.232:1**(css_audit 4.23 과 일치 · #10 의 4.234 와 같은 값)로 통일. 판정-1 문제문의 「4.23~4.25:1」도 4.232:1 단일값으로 고쳤다.
+3. **§4 이월 대비값** — `.lvl-3` `#0b4eb6 on #bad7ff` 4.83 → **5.128:1**(WU-C11 커밋문 5.13 과 일치, 근거 병기). `.lin--none` `#697077 on #fff` 5.04 → **5.018:1**.
+4. **#46 `transform-origin` 히트 수** — `grep -rn transform-origin frontend/src` 실행 결과 **3건 전부 주석**(`PreviewPanels.tsx:156`·`:161` · `useZoomPan.ts:140`). 「2건」을 3건으로 고쳤다. 선언 0건 = 결론 불변.
+5. **판정 의미 통일** — `design-review/SKILL.md` §2-3 정본(있음 = 결함 존재)에 맞춰 L4 11행을 뒤집었다. #36·#37·#40·#41·#44·#45·#48·#49 → **없음**(처리 `—` 유지), #42·#46·#47 → **있음**(처리 `Ted 판정` 유지). §1 의 「L4 는 판정 의미가 뒤집힌 레인」 주석도 정본 통일 서술로 교체했다.
+6. **총계 갱신** — L4 = 있음 **11** · 없음 **16** · [미상] 4. 총계 = 있음 **40** · 없음 **51** · [미상] **8**(계 99). §1 레인 표 · §3 레인별 표 · §9 등재문을 전부 갱신. L1~L3 소계(4/13/2 · 9/10/0 · 16/12/2)는 그대로 뒀다. 「없음 행 요약」은 **43건이 그대로**였다 — L4 없음이 8→16 으로 늘었지만 그중 8건이 §2 표에 실려 표 밖은 8건으로 동일하기 때문. 숫자는 유지하되 산식이 드러나도록 문장을 다시 썼다.
+7. **#1·#27·#28 모순** — 판정-10(카드 그림자를 어디까지 지울지)을 **삭제**. 정본 「카드 그림자 0(팝오버 허용)」이 값을 닫으므로 세 행은 즉시 수정 후보로 남는다. 이후 판정 번호를 전부 재부여(옛 11~23 → 10~22)하고 §7 「걸린 판정」 열·판정 상호 참조를 갱신했다. D-1 의 「판정-1·2·10」은 「판정-1·2 ＋ 즉시 수정 후보 #1·#27·#28」로 고쳤다.
+8. **#2 모순** — 지시대로 #2 를 **Ted 판정**으로 내리고 판정-3(뱃지·캡션 문턱) 걸린 행에 편입, 판정-4 걸린 행에서 뺐다. §2 #2 행의 처리 값과 근거문, §3 처리별 표를 갱신. D-9(셸·토스트 2건)와 D-4(대시보드 9건)의 걸린 판정에 판정-3 을 추가했다.
+9. **판정-2 재구성** — 항목 1 에 기술.
+10. **판정-1 ⓐ 의 토큰 의존** — `frontend/src/shell/tokens.css` 실측 결과 회색 램프는 `--color-gray-50`(`:8`)·`--color-gray-400`(`:9`)·`--color-gray-500`(`:10`) 셋뿐이고 `--color-gray-600` 은 없다(파일 `:root` 인 `catalog.css`·`detail.css` 에만 있다). ⓐ 값을 재계산해 `#565c63 on #e8ecf2` = **5.701:1**(advisor 의 5.70 과 일치), 한 단 더 내린 `--color-gray-700` `#434950` = **7.676:1** 을 병기하고, 판정-5(전역 어휘 승격) 선행 의존을 판정문에 명기했다.
+11. **판정-15(음수 여백) 강등** — 정본 합격선 「음수 여백 0」이 값을 닫으므로 Ted 판정 묶음에서 **삭제**하고 #26 을 **즉시 수정 후보(구조 변경 · D-8 규모)**로 올렸다. 이후 판정 번호 재부여(15~22 → 14~21). §3 처리별 표에서 즉시 수정 후보 = #1·#26·#27·#28, D-8 의 걸린 판정 칸도 「즉시 수정 후보 #26 · 판정 불요」로 고쳤다.
+12. **판정-3 ⓑ 의 창작값** — 「별도 문턱(예: 11px)」을 삭제. `design-review/SKILL.md` §4(정본 없는 값을 짓지 않는다)에 따라 ⓑ 를 「정본 기준선 13px 를 뱃지류에 대해 **개정할지**」로 고치고 개정값은 Ted 몫으로 남겼다.
+13. **판정-18(현 17→16, 모달) 권고 근거** — `apple-design/SKILL.md` §3 을 다시 읽어 `:62` 「Every animation must be interruptible … A closing modal the user grabs again should follow the finger」가 모달을 직접 겨누는 것을 확인했다. `:66` 의 gesture-driven 한정과 정면 충돌이므로 권고를 **보류(정본 내부 충돌)**로 바꾸고 두 줄을 인용해 충돌을 적었다. 어느 문장이 우선하는지가 Ted 선결 과제다.
+14. **「파일 면이 겹치지 않는다」 거짓** — 문장을 삭제하고 §7 에 **「파일 면 겹침 · 집행 순서」 표**를 신설했다. `upload.css` 7후보(D-2·D-6·D-7·D-10·D-12·D-15 ＋ 신설 D-16) · `project.css` 4후보(D-1·D-2·D-6·D-8, D-6 의 `:440` `.pj-defnote` 와 D-8 의 `.pj-defnote` 가 같은 셀렉터임을 명기) · `catalog.css`·`detail.css`·`search.css`·`shell/tokens.css`·`shell/shell.css`·`lineage.css`·`login.css` 까지 공유 파일 전부를 실어 파일 단위 직렬 순서를 못박았다. advisor 가 센 `upload.css` 6후보는 항목 15 로 D-16 이 생기기 전 기준이라 7로 적었다.
+15. **D-12 분할** — 「모달 닫기 경로」를 D-12 에서 떼어 **D-16(TSX 레인)**으로 옮겼다. 근거 = #47(조건부 렌더 해제라 닫기 프레임 자체가 없다) → 언마운트 지연이 TSX 에 필요하다. D-12 는 `.dr-pop` 기준점·여는 전환의 CSS 전용 후보로 남겼다. 후보 WU **15 → 16건**(CSS 13 · TSX **3**), §9 갱신.
+16. **「#3~#26 중 22건」 오기** — 실제 Ted 판정 = #2~#25 **전건 24** ＋ #29·#30 **2** ＋ L4 11 = **37**(#26 이 즉시 수정으로 빠지고 #2 가 들어와 24 유지). §3 처리별 표에 산식을 적었다. 최종 처리 4분류 = 즉시 수정 후보 **4** · Ted 판정 **37** · 실화면 계측 **6** · 후속 **1** ＋ `—` **8** = 56행. §3·§9·§1 이 이 값으로 일치한다.
+
+**계측 확인(편집 후)** — §2 표 56행 파싱: 판정 = 있음 40 · 없음 8(표 안) · [미상] 8 · 처리 = Ted 판정 37 · `—` 8 · 실화면 계측 6 · 즉시 수정 후보 4(3 ＋ 「즉시 수정 후보(구조 변경 · D-8 규모)」 1) · 후속 1.
+
+**이견 없음** — advisor ② 16건 가운데 사실이 틀린 지적은 없었다. 수치가 갈린 곳은 두 군데뿐이고 둘 다 advisor 쪽이 맞았다(#11 4.494 · `.lvl-3` 5.128). 다만 항목 6 의 「없음 행 요약 43건 갱신」은 **숫자가 43 그대로**여서 문장만 고쳤고, 항목 14 의 `upload.css` 후보 수는 항목 15 를 반영하면 6 이 아니라 **7**이다.
