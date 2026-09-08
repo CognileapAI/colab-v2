@@ -209,3 +209,13 @@
 #   `db/**` 에는 한 글자도 쓰지 않고 컨테이너를 하나도 띄우지 않는다(도구 확인용 stub 만 둔다).
 #   DB·도커·포트·pg 슬롯 0.
 "migration-drift-selftest"  = "parallel"
+
+# `harness-eval` — **`serial` 이다.** 실행 모드(`COLAB_HARNESS_EVAL=1`)에서 과제마다
+#   `claude -p` 를 2회씩 부르고 **시간과 달러를 상한으로 잰다**(`COLAB_EVAL_TIMEOUT` ·
+#   `COLAB_EVAL_BUDGET`). 다른 게이트와 CPU·네트워크를 나눠 쓰면 한 회차가 상한을 넘고,
+#   그 red 는 **검사 대상이 아니라 배선이 낸 red** 다 — `render-latency` 를 serial 로 둔 것과
+#   같은 사유(경합이 곧 판정을 흔드는 자리)이고, 그것을 통과로도 실패로도 셀 수 없다.
+#   상한을 늘려 green 을 만들지 않는다 — 상한의 근거는 첫 실측 p95×2 다(intent Q7).
+#   ⚠ 면제 모드(`COLAB_HARNESS_EVAL_EXEMPT=1`)는 디렉터리만 세므로 경합이 없다. 그런데도
+#     serial 인 것은 **선언이 모드마다 갈리면 안 되기 때문**이다 — 값 하나가 두 뜻을 갖지 않는다.
+"harness-eval"              = "serial"

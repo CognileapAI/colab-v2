@@ -28,6 +28,7 @@ jobs:
       infra: ${{ steps.filter.outputs.infra }}
       db: ${{ steps.filter.outputs.db }}
       dev-package: ${{ steps.filter.outputs.dev-package }}
+      harness: ${{ steps.filter.outputs.harness }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -63,6 +64,14 @@ jobs:
             dev-package:
               - 'dev-package/**'
               - 'gates/**'
+            # 하네스 자체(지침·스킬·훅·에이전트). 이 4경로가 바뀔 때만 실과제를 돈다 —
+            # 실제 모델을 부르므로 비용·시간이 붙고, 제품 경로가 이 잡을 깨우면 안 된다
+            # (intent `2026-09-08-harness-evals.md` Q2). 대조부 = gates/tools/ci-filter-check.py.
+            harness:
+              - 'CLAUDE.md'
+              - '.claude/skills/**'
+              - '.claude/hooks/**'
+              - '.claude/agents/**'
 
   # ─────────────────────────────────────────────────────────────
   # 게이트. WU-D3에서 실제 검사를 채운다.
@@ -403,6 +412,44 @@ jobs:
         run: ./gates/run.sh exec-bit-selftest
       - name: .sh 실행비트가 인덱스에 있는가
         run: ./gates/run.sh exec-bit
+
+  # ─────────────────────────────────────────────────────────────
+  # 하네스 eval — 지침·스킬·훅·에이전트가 바뀐 PR 에서만 깨어난다(필터 `harness`).
+  #
+  # ⚠ **지금은 면제 모드로 돈다.** 승격 조건 = 과제 20건이 로컬에서 **3회 연속 2/2 green**
+  #   (intent `2026-09-08-harness-evals.md` Q10). 그 전에 실행 모드로 두면 CI 가 아직
+  #   불안정한 과제로 red 를 내고, 그 red 는 대상이 아니라 과제 설계가 낸 것이다.
+  #   면제라도 **과제 건수가 출력에 찍힌다** — 잡이 조용히 아무것도 안 하는 상태를 만들지 않는다.
+  #   ⭑ `COLAB_HARNESS_EVAL_EXEMPT=1` → `COLAB_HARNESS_EVAL=1` 로 바꾸는 것은 **별건 변경**이고
+  #     Q10 충족(3회 연속 기록 = `eval/harness/results/`)이 그 근거다.
+  #
+  # ⚠ 시크릿은 **참조만** 둔다 — 발급은 Ted 몫이고 값은 이 파일에 한 글자도 적지 않는다.
+  #   부재는 **skip 이 아니라 red(준비 · 78)** 다. `continue-on-error` 를 붙이지 않는다 —
+  #   붙이는 순간 「돌았는데 아무것도 안 막는 잡」이 되고, 그것이 이 레포의 대표 실패형이다.
+  harness-eval:
+    needs: changes
+    if: needs.changes.outputs.harness == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      # 키가 없으면 **여기서 78 로 끊는다.** 「없어서 건너뛰었다」를 green 으로 적지 않는다.
+      # 78 = red(준비) — 판정하지 못했다는 뜻이고, 판정 red 와 갈라 읽힌다(gates/tools/_readiness.sh).
+      - name: 시크릿 존재 확인 (부재는 red(준비 · 78) · skip 아님)
+        run: |
+          set -uo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::gate-readiness-failure::gate=harness-eval|cause=입력미선언|missing=secrets.ANTHROPIC_API_KEY|detail=하네스 eval 은 실제 모델을 부른다. 시크릿 발급 전까지 이 잡은 판정하지 못한다 — 건너뛴 것이 아니다."
+            echo "::error::harness-eval red(준비) — secrets.ANTHROPIC_API_KEY 가 비어 있다. 발급은 Ted 몫이고, 부재를 통과로 세지 않는다."
+            exit 78
+          fi
+          echo "harness-eval — 시크릿 참조가 값을 얻었다(값은 찍지 않는다)."
+      # 승격 전이라 면제 모드다. 게이트가 과제 건수를 출력에 찍는다(조용한 건너뛰기 금지).
+      - name: 하네스 eval 게이트 (승격 전 — 면제 모드 · 과제 건수 노출)
+        env:
+          COLAB_HARNESS_EVAL_EXEMPT: '1'
+        run: ./gates/run.sh harness-eval
 
   # 게이트가 실제로 red를 낼 수 있는지 증명한다.
   # 이 잡이 없으면 "전부 green"이 "전부 무력"과 구분되지 않는다.
