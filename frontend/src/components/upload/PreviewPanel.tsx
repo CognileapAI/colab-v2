@@ -229,7 +229,8 @@ export function PreviewPanel(props: {
     }, POLL_MS);
   }
 
-  const drawing = job?.status === '그리는 중';
+  // 조회 실패 뒤 서버의 마지막 진행 상태를 현재 진행으로 표시하지 않는다.
+  const drawing = job?.status === '그리는 중' && !error;
   const done = job?.status === '완료';
   // **실패는 200 + `failure`** 다. HTTP 상태로 판정하지 않는다.
   const failure = job?.status === '실패' ? job.failure : undefined;

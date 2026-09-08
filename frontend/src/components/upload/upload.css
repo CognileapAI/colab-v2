@@ -455,3 +455,21 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .pvx-img{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
 /* 확장보기를 여는 단추 — 미리보기 머리 오른쪽 끝 */
 .pvx-open{flex:none;}
+
+/* 260905 rev2: 파일 선택은 가운데 모달, 입력은 좌측 미리보기와 우측 폼. */
+.mb-takeover.up-empty { align-items:center; padding:24px; }
+.up-empty .modal-takeover { width:720px; height:auto; max-height:90vh; border-radius:14px; overflow:hidden; }
+.up-empty .up-body { flex:initial; padding:24px; }
+.up-empty .up-card { border:0; padding:0; }
+.up-empty .dropzone { min-height:260px; justify-content:center; background:#f8f9fa; }
+.up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:#edf3ff; color:#1769ef; font-size:36px; margin-bottom:12px; }
+.up-file-choose { margin-top:14px; }
+.up-file-management { color:var(--up-muted); font-size:13px; }
+.up-file-management > summary { cursor:pointer; padding:4px 0; }
+.up-file-management[open] > summary { margin-bottom:12px; }
+.modal-takeover[data-scene="register"] .regarea { border:0; padding:0; }
+.modal-takeover[data-scene="register"] .regsteps { gap:0; border-bottom:1px solid var(--up-line); min-height:48px; }
+.modal-takeover[data-scene="register"] .regsteps button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--up-muted); padding:14px 12px; }
+.modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--up-ink); border-bottom-color:#1769ef; }
+.modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#e8ecf2; border-radius:8px; padding:6px 10px; }
+@media(max-width:600px) { .mb-takeover.up-empty { padding:12px; } .up-empty .up-body { padding:16px; } .up-empty .modal-h { flex-wrap:wrap; } }

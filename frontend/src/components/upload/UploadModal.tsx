@@ -134,6 +134,8 @@ export function UploadModal(props: {
   const [picked, setPicked] = useState<PickedFile[]>([]);
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [status, setStatus] = useState<UploadStatus | null>(null);
+  const [statusIssue, setStatusIssue] = useState<{ message: string; retrying: boolean; gone?: boolean } | null>(null);
+  const [statusRetry, setStatusRetry] = useState(0);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -363,17 +365,33 @@ export function UploadModal(props: {
 
   // 이벤트 ②~⑦ 의 결과를 읽는다 — 새 사실을 만들지 않는다.
   useEffect(() => {
+    setStatusIssue(null);
     if (!uploadId) return;
     let alive = true;
+    let failures = 0;
     const tick = async () => {
       try {
         const s = await upload.status(uploadId);
         if (!alive) return;
+        failures = 0;
+        setStatusIssue(null);
         setStatus(s);
         if (!s.ready && !s.failure) statusTimer.current = window.setTimeout(tick, STATUS_POLL_MS);
       } catch (e) {
         if (!alive) return;
-        if (e instanceof UploadGone) setRegisterError('이 파일은 더 이상 없어요. 다시 올려 주세요.');
+        if (e instanceof UploadGone) {
+          setStatusIssue({ message: '이 파일은 더 이상 없어요. 다시 올려 주세요.', retrying: false, gone: true });
+          return;
+        }
+        failures += 1;
+        const retrying = failures < 3;
+        setStatusIssue({
+          message: retrying
+            ? '분석 상태를 확인하지 못했어요. 연결을 다시 확인하고 있어요.'
+            : '분석 상태를 확인하지 못했어요. 다시 시도해 주세요.',
+          retrying,
+        });
+        if (retrying) statusTimer.current = window.setTimeout(tick, STATUS_POLL_MS * failures);
       }
     };
     void tick();
@@ -381,7 +399,7 @@ export function UploadModal(props: {
       alive = false;
       window.clearTimeout(statusTimer.current);
     };
-  }, [uploadId, upload]);
+  }, [uploadId, upload, statusRetry]);
 
   const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일');
   /**
@@ -859,7 +877,7 @@ export function UploadModal(props: {
 
   return (
     <div
-      className="modal-back mb-takeover"
+      className={`modal-back mb-takeover${picked.length === 0 && !attach ? ' up-empty' : ''}`}
       data-testid="upload-backdrop"
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
@@ -880,9 +898,10 @@ export function UploadModal(props: {
         aria-label={attach ? '기준 격자 추가' : '업로드'}
         data-testid="upload-modal"
         data-mode={attach ? 'grid-attach' : 'register'}
+        data-scene={registerOpen ? 'register' : picked.length ? 'preview' : 'pick'}
       >
         <div className="modal-h">
-          <h3>{attach ? '기준 격자 추가' : '업로드'}</h3>
+          <h3>{attach ? '기준 격자 추가' : picked.length === 0 ? '파일 올리기' : '업로드'}</h3>
           {/* 상단 메뉴가 가려져도 **어느 연구실에 올리는지**가 보인다 (§8) */}
           <span className="mh-lab" data-testid="upload-lab">
             <b>{account?.labName ?? ''}</b>에 올려요
@@ -940,7 +959,14 @@ export function UploadModal(props: {
             </aside>
           )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
-          <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
+          {registerOpen ? (
+            <details className="up-file-management">
+              <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
+              <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
+            </details>
+          ) : (
+            <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
+          )}
 
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.
               위쪽 이어올리기 배너와 섞지 않는다: 그쪽은 「재개 가능」, 이쪽은 「다시 시작」이라
@@ -959,7 +985,7 @@ export function UploadModal(props: {
 
           {/* ① 파일 분석 3단계 — 바이트 진행 바가 못 말하는 구간을 말한다 (rev1 `pbStatus`).
               단계는 **화면이 실제로 아는 사실**에서만 온다: 접수 전 / 접수됨·미준비 / 준비됨. */}
-          {picked.length > 0 && !status?.failure && !intakeError && (
+          {picked.length > 0 && !status?.failure && !intakeError && !statusIssue && (
             <div
               className="up-analyze"
               data-testid="up-analyze"
@@ -987,6 +1013,17 @@ export function UploadModal(props: {
           )}
 
           {/* ③ 파일 빼기 고지 — 공통 토스트를 탄다(PRD-43). 스스로 사라진다. */}
+          {statusIssue && (
+            <div className="warn" role={statusIssue.retrying ? 'status' : 'alert'} data-testid="up-status-error">
+              {statusIssue.message}
+              {!statusIssue.retrying && !statusIssue.gone && (
+                <button type="button" className="btn btn-secondary" data-testid="up-status-retry"
+                  onClick={() => setStatusRetry((n) => n + 1)}>
+                  다시 시도
+                </button>
+              )}
+            </div>
+          )}
           {removedNotice && (
             <Toast
               message={FILE_REMOVED_NOTICE}
@@ -1078,7 +1115,7 @@ export function UploadModal(props: {
               ) : null}
 
               {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
-              {!attach ? (
+              {!attach && !registerOpen ? (
               <div className="reggate" data-testid="reg-gate">
                 <div>
                   <div className="rg-t">이 파일을 연구실에 등록할까요?</div>

@@ -3148,3 +3148,16 @@ items:
     deadline: null
     note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate)"
     sources: ["dev-package/sessions/R-D-ROUND-20260908.md"]
+
+  - id: WU-UPV-20260909
+    name: HTML 기준 업로드·상세 화면 재구성과 포맷별 미리보기·진행 표시 완성
+    status: in_progress
+    stage: stage2
+    owner: "Codex"
+    entry_conditions: ["2026-09-09 upload-layout-preview intent 승인"]
+    depends_on: []
+    completion_def: "HTML 상태별 시각 대조·포맷별 실제 브라우저 미리보기·진행과 오류복구·저장/편집/계보/다운로드 검증을 마쳐 배포 가능한 상태. 별도 환경 사용, 배포는 조율."
+    evidence: "dev-package/reports/upload-layout-preview/verification.md"
+    deadline: null
+    note: "별도 사본 진행. 정책65개 추출·업로드 초기/분류 시각 차이 확인·렌더10건 통과·조회 오류2경로 보완·관련시험110건 통과. 전체 화면 재구성·GRIB 지원·독립 저장/조회 E2E 미완료."
+    sources: ["dev-package/intent/2026-09-09-upload-layout-preview.md", "dev-package/prd/specs/R-UPLOAD-PREVIEW.md", "dev-package/prd/rounds/R-UPLOAD-PREVIEW.md"]

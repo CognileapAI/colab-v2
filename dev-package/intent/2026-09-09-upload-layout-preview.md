@@ -65,6 +65,6 @@
 - 코드상 재현 후보: `frontend/src/components/upload/UploadModal.tsx` 상태 조회 catch, `frontend/src/components/upload/PreviewPanel.tsx` 렌더 조회 catch와 drawing 계산.
 - 포맷 근거: `services/viz-render/src/colab_viz/domains/d7_visualization/readers.py`의 등록/미리보기 지원 구분, `frontend/src/components/upload/FileDropCard.tsx` 확장자 안내.
 - 과거 검증: 기존 루트 `dev-package/sessions/20260909-product-dev-release.md` (로컬 배포 후 기록, 현재 작업 사본에 없을 수 있음).
-- spec: 미작성 — 초안 교정·커밋 이후 연결.
-- 라운드 파일: 미작성 — 초안 교정·커밋 이후 연결.
+- spec: `dev-package/prd/specs/R-UPLOAD-PREVIEW.md`.
+- 라운드 파일: `dev-package/prd/rounds/R-UPLOAD-PREVIEW.md`.
 - 결정: 〈N〉 (병합 시 기입, 현재 미예약).
