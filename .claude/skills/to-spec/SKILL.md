@@ -54,6 +54,16 @@ Check with the user that these seams match their expectations.
 - CLAUDE.md §5 「절대 하지 않는 것」 중 저촉 항목: 없음 / \<항목\>
 - 계약 동결 해제 필요: 예(Ted 서명) / 아니오
 
+### 디자인 제약 확인 (`frontend/` 를 건드리는 spec 은 필수)
+바꾸는 **화면마다** 아래를 적는다. 정본 = `frontend/src/shell/tokens.css`
+(판정 기준 `.claude/skills/design-review/SKILL.md §0` · 인터랙션 `.claude/skills/apple-design/SKILL.md`).
+- 토큰: `tokens.css` 의 토큰만 쓴다 (파일별 `:root` 전역 신설 없음)
+- 글자 **13px 이상** · 대비 **4.5:1 이상**
+- 카드 그림자 **0** (팝오버 허용) · 여백은 **컨테이너가 소유**
+- 인터랙션 하한: pointer-down 즉시 피드백 · 전환 중단 가능 · 움직임엔 `prefers-reduced-motion` 분기
+- 화면 없음(백엔드 전용)이면 「해당 없음」 한 줄로 끝낸다
+**적을 수 없는 항목은 아래 「우려 항목」에 올린다** — 판정 없이 구현으로 넘기지 않는다.
+
 ## 우려 항목 (판정 필요)
 | # | 항목 | ⓐ | ⓑ | 권고 |
 |---|---|---|---|---|
