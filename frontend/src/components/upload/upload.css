@@ -88,6 +88,7 @@
 
 /* ⑩ `.regarea` 안(표시기 줄 · 단계 본문 · 행동 줄)의 세로 여백은 컨테이너가 gap 으로 갖는다 */
 .regarea { display: flex; flex-direction: column; gap: 16px; }
+.mapstage[hidden], .regarea[hidden] { display: none; }
 .up-card, .mapstage, .reggate, .regarea {
   border: 1px solid var(--up-line);
   border-radius: var(--up-radius);

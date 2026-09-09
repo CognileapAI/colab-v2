@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { apiUploadSource } from '../src/components/upload/uploadSource';
+import uploadCss from '../src/components/upload/upload.css?raw';
 import {
   QUICK_PROJECT_NOTE,
   UPLOAD_CLOSE_CREATED,
@@ -2424,9 +2425,14 @@ it('등록 응답을 기다리는 동안 인스턴스는 유지하고 제출·�
   await click(screen.getByTestId('reg-done'));
   expect(screen.getByTestId('reg-area')).toHaveAttribute('hidden');
   expect(screen.getByTestId('reg-area')).toHaveAttribute('inert');
+  expect(getComputedStyle(screen.getByTestId('reg-area')).display).toBe('none');
+  expect(getComputedStyle(screen.getByTestId('up-preview')).display).toBe('none');
+  expect(uploadCss).toContain('.mapstage[hidden], .regarea[hidden] { display: none; }');
   expect(screen.getByTestId('reg-done')).toBeDisabled();
   expect(screen.queryByRole('button', { name: '저장 중…' })).not.toBeInTheDocument();
-  expect(screen.getByTestId('up-create-pending')).toHaveTextContent('데이터셋 만드는 중');
+  const pending = screen.getByTestId('up-create-pending');
+  expect(pending).toHaveTextContent('데이터셋 만드는 중');
+  expect(getComputedStyle(pending).display).not.toBe('none');
 });
 
 
