@@ -5,13 +5,17 @@ import { SessionProvider } from '../src/permission/session';
 import type { CurrentAccount } from '../src/api/client';
 import { UploadModal } from '../src/components/upload/UploadModal';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
-import type { PreviewSource, UploadSources } from '../src/components/upload/types';
+import type { PreviewSource, RenderResult, UploadSources } from '../src/components/upload/types';
 import { UploadGone } from '../src/components/upload/types';
 
 const ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const drawing = { renderId: ID, status: '그리는 중', stage: '지도 그리는 중' };
 const ready = { uploadId: ID, ready: true, renderable: true,
   metadataComplete: true, files: [], failure: null };
+const previewResult = {
+  imageUrl: '/preview.png',
+  legend: { palette: 'viridis', variable: 'temperature', classes: [] },
+} satisfies RenderResult;
 
 function startUpload(status: UploadSources['upload']['status']) {
   const create = vi.fn(async () => ({ uploadId: ID, files: [] }));
@@ -43,7 +47,7 @@ describe('진행 상태 조회 실패 복구', () => {
     const source = {
       palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
       createRender: async () => ({ renderId: ID, status: '완료',
-        result: { imageUrl: '/preview.png' } }),
+        result: previewResult }),
       getRender: () => new Promise(() => {}),
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
@@ -144,7 +148,8 @@ describe('진행 상태 조회 실패 복구', () => {
 it('등록 장면 진입 시 첫 미리보기를 자동으로 요청해 그림을 표시한다', async () => {
   const source = {
     palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
-    createRender: async () => ({ renderId: ID, status: '완료', result: { imageUrl: '/first-preview.png' } }),
+    createRender: async () => ({ renderId: ID, status: '완료',
+      result: { ...previewResult, imageUrl: '/first-preview.png' } satisfies RenderResult }),
     getRender: () => new Promise(() => {}),
   } as unknown as PreviewSource;
   render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid autoPreview />);

@@ -16,6 +16,7 @@ import tempfile
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "services/core-api/src"))
@@ -216,15 +217,25 @@ def main():
                         selected_value = command("get", "value", variable_selector).strip()
                         if selected_value != selected_target:
                             raise RuntimeError(f"preview variable selection did not stick: {selected_value!r} != {selected_target!r}")
-                        command("click", '[data-testid="up-preview-draw"]')
-                        rendered_selector = '[data-testid="up-preview-image"]'
-                        command("wait", "--fn", f'Array.from(document.querySelectorAll(\'{rendered_selector}\')).some(img => img.complete && img.naturalWidth > 0)')
-                        rendered_variable = command("get", "attr", '[data-testid="up-preview-image"]', "data-preview-variable").strip()
+                        command("focus", '[data-testid="up-preview-draw"]')
+                        focused = json.loads(command("eval", "document.activeElement?.dataset?.testid || ''").strip())
+                        if focused != "up-preview-draw":
+                            raise RuntimeError("Preview draw action did not receive keyboard focus")
+                        command("press", "Enter")
+                        rendered_selector = '[data-testid="up-preview-image"], [data-testid="up-preview-tile"]'
+                        selected_json = json.dumps(selected_target)
+                        command("wait", "--fn", f'Array.from(document.querySelectorAll(\'{rendered_selector}\')).some(img => img.dataset.previewVariable === {selected_json} && img.complete && img.naturalWidth > 0)')
+                        rendered = json.loads(command("eval", f'JSON.stringify(Array.from(document.querySelectorAll(\'{rendered_selector}\')).find(img => img.dataset.previewVariable === {selected_json})?.getAttribute("src") || "")').strip())
+                        rendered_variable = selected_target if rendered else ""
+                        rendered_path = urllib.parse.urlsplit(rendered).path
+                        if not rendered_path.endswith(".png"):
+                            raise RuntimeError("rendered preview is not a PNG: " + rendered_path)
                         if rendered_variable != selected_target:
                             raise RuntimeError(f"rendered variable does not match selected ID: {rendered_variable!r} != {selected_target!r}")
                         print("PASS: explicit second preview variable selected through agent-browser and rendered:",
                               json.dumps({"selectionId": selected_target, "label": selected_label,
-                                          "renderedVariable": rendered_variable}, ensure_ascii=False))
+                                          "renderedVariable": rendered_variable,
+                                          "imagePath": rendered_path}, ensure_ascii=False))
                         if args.preview_only:
                             print("PASS: upload, variable selection, and rendered preview image load completed")
                             return
