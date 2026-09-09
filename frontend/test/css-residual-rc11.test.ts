@@ -116,8 +116,8 @@ describe('WU-C11 ㈐ 47 `.dt-gridact` 음수 상쇄', () => {
   it('음수 margin 선언이 없다', () => {
     expect(block(DETAIL, '.detail-page .dt-gridact ')).not.toMatch(/margin[a-z-]*:[^;]*-\d/);
   });
-  it('여백은 부모 `.dt-split-r` 이 gap 으로 갖는다', () => {
-    expect(block(DETAIL, '.detail-page .dt-split-r {')).toMatch(/gap:/);
+  it('여백은 부모 `.dt-information` 이 gap 으로 갖는다', () => {
+    expect(block(DETAIL, '.detail-page .dt-information {')).toMatch(/gap:/);
   });
 });
 

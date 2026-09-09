@@ -121,10 +121,10 @@ describe('PRD-21 — 업로드 안내는 업로드 가능 / 미리보기 가능 
     render(<Harness />);
     drop(['a.nc']);
     expect(screen.getByTestId('up-previewable')).toHaveTextContent(
-      '지도 미리보기까지 되는 확장자: *.nc *.tif *.hdf *.bin',
+      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy · 파일 구조와 좌표에 따라 달라요',
     );
     expect(PREVIEWABLE_EXTENSIONS_NOTICE).toBe(
-      '지도 미리보기까지 되는 확장자: *.nc *.tif *.hdf *.bin',
+      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy · 파일 구조와 좌표에 따라 달라요',
     );
   });
 

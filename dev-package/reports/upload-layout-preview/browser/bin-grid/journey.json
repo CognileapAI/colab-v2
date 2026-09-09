@@ -1,0 +1,17 @@
+{
+  "session": "colab-login-610f560751-bin-grid",
+  "file": "RDR_CMP_HSR_PUB_202508131000.bin.gz",
+  "bytes": 1259571,
+  "sha256": "317500ebd261adbc3bbe4fe7a95bc69931d3f03ac96b84b97bc0b6fa05270456",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "actual reference grid uploaded and its position confirmed",
+    "upload render image decoded by browser",
+    "preview expanded and closed by Escape",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "actual map zoom, reset and cursor latitude/longitude work",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21TF0XBMG2ZTXX1J9N71CQ5"
+}

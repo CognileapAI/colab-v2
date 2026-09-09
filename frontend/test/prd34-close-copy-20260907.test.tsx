@@ -292,7 +292,7 @@ describe('PRD-14 증분 — 손댐 판정 2필드', () => {
       target: { files: [makeFile('thumb.png', 1024, 'image/png')] },
     });
     await act(async () => {});
-    await click(screen.getByRole('button', { name: /빼기$/ }));
+    await click(screen.getByRole('button', { name: '올린 파일 모두 빼기' }));
     fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [makeFile(FILE_NAME)] } });
     await act(async () => {});
     await screen.findByTestId('up-files');

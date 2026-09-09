@@ -26,11 +26,23 @@ export function apiLineageSource(): LineageSource {
 
     async candidates(level?: number | null): Promise<DatasetRow[]> {
       // 고르지 않았으면 조건 자체를 보내지 않는다 — 「전체」와 「Lv0」은 다른 질문이다.
-      const r = await api.GET('/datasets', {
-        params: { query: level === null || level === undefined ? {} : { processingLevel: [level] } },
-      });
-      if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
-      return r.data.items ?? [];
+      const rows: DatasetRow[] = [];
+      const seen = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const r = await api.GET('/datasets', {
+          params: { query: {
+            ...(level === null || level === undefined ? {} : { processingLevel: [level] }),
+            ...(cursor ? { cursor } : {}),
+          } },
+        });
+        if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
+        rows.push(...(r.data.items ?? []));
+        cursor = r.data.nextCursor ?? undefined;
+        if (cursor && seen.has(cursor)) throw new Error('연구실 데이터 목록을 끝까지 읽지 못했어요.');
+        if (cursor) seen.add(cursor);
+      } while (cursor);
+      return rows;
     },
   };
 }

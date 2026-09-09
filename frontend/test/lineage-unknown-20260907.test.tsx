@@ -207,6 +207,7 @@ describe('PRD-27 확정 부모가 있으면 비활성이고 칸은 사라지지 
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV0}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
 

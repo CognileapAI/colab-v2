@@ -1,0 +1,7 @@
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 1128건 · 실패 0건.
+    Test Files  85 passed (85)
+         Tests  1128 passed (1128)
+── 요약 ────────────────────────────────────────────────────
+  green  frontend-test
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+  요약 JSON  /home/ttlhi10/colab-ui-preview/dev-package/reports/upload-layout-preview/frontend-test-gate/gate-summary.json

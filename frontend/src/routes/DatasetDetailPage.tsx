@@ -144,8 +144,13 @@ export function DatasetDetailPage(
       .catch((e: unknown) => setDownloadError(describeFileError(e)));
   }
 
+  const inlineFields = (fields: readonly string[]) => edit.editing && edit.draft ? (
+    <DatasetEditForm fields={fields} draft={edit.draft} error={null}
+      fieldErrors={edit.fieldErrors} onField={edit.setField}
+      onOpenLineageFix={() => setLineageFixToken((n) => n + 1)} />
+  ) : null;
   return (
-    <div className="detail-page" data-screen="S-05">
+    <div className="detail-page" data-screen="S-05" data-testid={edit.editing && shown?.basicInfo ? 'detail-edit-form' : undefined}>
       {/* 되돌아가기는 헤더 **밖 제 줄**에 하나만 둔다 — 경로(브레드크럼)가 아니고,
           같은 목록의 다른 데이터셋으로 바로 옮기는 길도 두지 않는다 (`§8` · §12 v2.2) */}
       <div className="backrow" data-testid="backrow">
@@ -203,13 +208,16 @@ export function DatasetDetailPage(
             <>
               <DetailHeader
                 detail={shown}
+                summaryInBody={Boolean(shown.basicInfo)}
+                nameEditor={shown.basicInfo ? inlineFields(['name']) : null}
+                accessEditor={shown.basicInfo ? inlineFields(['accessState']) : null}
                 approvalSource={approvalSource}
                 onChanged={() => setReloadToken((n) => n + 1)}
                 editAction={<DatasetEditEntry onOpen={edit.open} disabled={edit.editing} />}
               />
               {/* 수정 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지 않는다
                   (`§1.3-1` 한 페이지 스크롤 · 미결-9 ⓑ). 다른 구역은 그대로 보인다. */}
-              {edit.editing && edit.draft ? (
+              {edit.editing && edit.draft && !shown.basicInfo ? (
                 <DatasetEditForm
                   draft={edit.draft}
                   error={edit.error}
@@ -235,40 +243,12 @@ export function DatasetDetailPage(
               미결-9 ⓑ). **탭이 아니다** — 누른다고 다른 구역이 숨겨지지 않고, 정본
               `Policy_데이터셋_상세 §1.3-1` 을 개정하지 않는다. */}
           <SectionMenu />
-          {/* ⭑ ⟨WU-C2 · 축 ①-② 판정⟩ **상세를 좌우로 가른다** — grid 컨테이너 한 겹만 덧댄다.
-              좌 = 미리보기(sticky) · 우 = 기본 정보＋파일. 계보·활용은 이 컨테이너 **밖**
-              아래에서 전폭으로 남는다. 960px 미만은 한 열이고 DOM 차례 그대로
-              **미리보기가 먼저** 온다(`order:` 뒤집기를 쓰지 않는다).
-              구역 메뉴(`SectionMenu`)의 이름표·차례와 앵커 id 3개는 건드리지 않는다. */}
-          <div className="dt-split" data-testid="detail-split">
-            <div className="dt-split-l">
-            {/* 미리보기 — **한 페이지 스크롤 안의 한 구역**이다 (`§1.3-1` 탭으로 숨기지 않는다).
-                **보기는 전원**이라 권한 관문을 두지 않는다 (`§1.3-5`·`§6` 「전 구성원 — 시각화 보기」).
-                잠긴 데이터는 위 `LockedContent` 가 이미 본문째 막는다. */}
-            {/* 앵커는 **감싸는 자리**에 둔다 — 미리보기 구성요소(`components/datasetpreview/`)를
-                건드리지 않고 구역 메뉴가 가리킬 id 하나만 세운다 (WU-A8). */}
-            <div id="sec-preview" data-testid="detail-preview-anchor">
-              <DatasetPreviewSection
-                datasetId={datasetId}
-                source={props.previewSource}
-                datasetName={shown.name}
-                fileName={shown.fileName}
-                gridResolution={shown.basicInfo?.grid}
-              />
-            </div>
-            </div>
-            <div className="dt-split-r" data-testid="detail-split-right">
+          <div className="dt-information" data-testid="detail-split-right">
             {/* 잠기면 `basicInfo` 가 null 이라 기본 정보가 통째로 사라진다 —
                 카탈로그 행이 `조각 N` 을 계속 띄우는 것과 달라 보이는 것은 의도다
                 (`§7` · `PLAN-SoT §9-㊼-④`) */}
             {shown.basicInfo ? (
               <>
-                <BasicInfoGrid
-                  basicInfo={shown.basicInfo}
-                  fileName={shown.fileName}
-                  datasetId={datasetId}
-                  filesSource={filesSource}
-                />
                 <div className="dt-gridact" data-testid="detail-grid-actions">
                   {/* ⭑ **⟨WU-A3R · PRD-22 각주 2 ⑴⟩ 편집 중에는 다운로드가 숨고 이 자리에
                       `취소`/`저장` 이 온다.** 편집을 끝내면 다운로드가 그대로 돌아온다 —
@@ -299,6 +279,22 @@ export function DatasetDetailPage(
                     sources={props.uploadSources}
                   />
                 </div>
+                <BasicInfoGrid
+                  basicInfo={shown.basicInfo}
+                  summary={shown.summary}
+                  fileName={shown.fileName}
+                  datasetId={datasetId}
+                  filesSource={filesSource}
+                  editors={edit.editing ? {
+                    '좌표계': inlineFields(['crs']),
+                    '기간': inlineFields(['period', ...(shown.basicInfo.period || !shown.basicInfo.observationInterval ? ['interval'] : [])]),
+                    '관측 간격': inlineFields(['interval']),
+                    '원천 표기': inlineFields(['sourceLabel', 'sourceUrl', 'sourceDownloadedOn']),
+                    '설명': inlineFields(['summary']),
+                  } : {}}
+                />
+                {edit.editing ? inlineFields(['lineage']) : null}
+                {edit.editing && edit.error ? <p className="de-err" role="alert" data-testid="detail-edit-error">{edit.error}</p> : null}
                 {downloadError ? (
                   <p className="dt-files-error" role="alert" data-testid="dt-download-error">
                     {downloadError}
@@ -314,7 +310,6 @@ export function DatasetDetailPage(
                 />
               </>
             ) : null}
-            </div>
           </div>
           {/* ⭑ ⟨WU-C11 · 판정 49⟩ 전폭 구역(계보·활용)을 감싸는 컨테이너 한 겹 — 구역 사이 여백을
               `.dsec` 자식이 `margin-top` 으로 지던 것을 이 컨테이너의 `gap` 이 갖는다(`detail.css`).
@@ -346,6 +341,15 @@ export function DatasetDetailPage(
               testId="lineage-error"
             />
           ) : null}
+            <div id="sec-preview" data-testid="detail-preview-anchor">
+              <DatasetPreviewSection
+                datasetId={datasetId}
+                source={props.previewSource}
+                datasetName={shown.name}
+                fileName={shown.fileName}
+                gridResolution={shown.basicInfo?.grid}
+              />
+            </div>
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}

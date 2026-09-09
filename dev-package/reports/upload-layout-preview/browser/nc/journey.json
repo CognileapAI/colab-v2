@@ -1,0 +1,15 @@
+{
+  "session": "colab-login-7f78d1ceee-nc",
+  "file": "gk2a_ami_le2_lst_ko_202005010000.nc",
+  "bytes": 397448,
+  "sha256": "1cb901626ea6ea5c73eec6cd06af6f87a2d7984a68cecd0aaf1846952ee9571b",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "upload render image decoded by browser",
+    "preview expanded and closed by Escape",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21T3WTEV2B3XVTYD48B6GE4"
+}

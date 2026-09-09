@@ -42,7 +42,6 @@ import {
   type LineageStepContext,
   type LineageStepRender,
   type PickedProject,
-  type ProjectRow,
   type ProjectSource,
   type ProjectType,
   type UploadStatus,
@@ -624,7 +623,7 @@ export function StepTwo(props: {
   picked: PickedProject[];
   onPicked: (v: PickedProject[]) => void;
 }) {
-  const [rows, setRows] = useState<ProjectRow[] | null>(null);
+  const [rows, setRows] = useState<PickedProject[] | null>(null);
   const [sel, setSel] = useState('');
   const [dup, setDup] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
@@ -658,14 +657,17 @@ export function StepTwo(props: {
   }
 
   async function quickCreate() {
-    if (!qName.trim()) return;
+    if (!qName.trim()) { setQError('이름을 적어 주세요. 나중에 찾을 때 쓰는 유일한 이름이에요.'); return; }
     // **거절을 삼키지 않는다** — 이름 중복(PRD-42)이 400 ＋ 축자 문면으로 온다. 문면은
     // 서버가 적어 보낸 것을 그대로 띄운다(`projectSource.create`).
     try {
       const made = await props.source.create({ type: qType, name: qName.trim() });
       setQError(null);
+      setRows((current) => [...(current ?? []), made]);
+      setSel(made.projectId);
       props.onPicked([...props.picked, made]);
       setQName('');
+      setQType('국가과제');
       setQuickOpen(false);
     } catch (e) {
       setQError(e instanceof Error ? e.message : '프로젝트를 만들지 못했어요.');
@@ -793,7 +795,7 @@ export function StepTwo(props: {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={() => setQuickOpen(false)}
+                  onClick={() => { setQuickOpen(false); setQName(''); setQType('국가과제'); setQError(null); }}
                 >
                   취소
                 </button>
@@ -926,6 +928,8 @@ export function RegisterArea(props: {
   step: Step;
   onStep: (s: Step) => void;
   fileName: string;
+  fileCount?: number;
+  onRemoveFiles?: () => void;
   lineage: { confirmed: number; total: number } | null;
   status: UploadStatus | null;
   projectSource: ProjectSource;
@@ -981,6 +985,7 @@ export function RegisterArea(props: {
   lineageConflicts?: number | undefined;
   onCancel: () => void;
   onSubmit: () => void;
+  submitting?: boolean;
 }) {
   const { step } = props;
   /**
@@ -1020,7 +1025,8 @@ export function RegisterArea(props: {
         ))}
         {/* 줄 끝에 등록할 파일 이름을 고정한다 (가로 720px 이하에서는 CSS 가 감춘다) */}
         <span className="rs-f" data-testid="reg-file">
-          {props.fileName}
+          <span className="rs-fn">{props.fileName}{(props.fileCount ?? 1) > 1 ? ` 외 ${(props.fileCount ?? 1) - 1}개` : ''}</span>
+          {props.onRemoveFiles ? <button type="button" className="rs-x" aria-label="올린 파일 모두 빼기" onClick={props.onRemoveFiles}>×</button> : null}
         </span>
       </div>
 
@@ -1138,10 +1144,10 @@ export function RegisterArea(props: {
                ⛔ **연결을 지우지 않는다** — 사람이 한 연결을 시스템이 되돌리지 않고,
                되돌리는 것은 사람이다(자기 Lv 를 올리거나 그 연결을 지운다). 그러면
                이 수가 0 이 되고 버튼이 다시 눌린다. 서버 400 이 그 뒤에 또 선다. */
-            disabled={(props.lineageConflicts ?? 0) > 0}
+            disabled={props.submitting || (props.lineageConflicts ?? 0) > 0}
             onClick={props.onSubmit}
           >
-            데이터셋 만들기 →
+            {props.submitting ? '저장 중…' : '데이터셋 만들기 →'}
           </button>
         )}
       </div>

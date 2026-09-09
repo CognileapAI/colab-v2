@@ -57,6 +57,7 @@ import {
 } from '../preview/pick';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
 import type { DatasetPreviewSource } from './types';
+import type { Salvage } from '../upload/previewResult';
 
 /** 정본 `§5` — 「3~9 단계. **기본 6**」. 화면이 다른 값을 고르지 않는다. */
 export const DEFAULT_CLASS_COUNT = 6;
@@ -408,7 +409,10 @@ function StartedPreview(props: {
       </>
     );
 
-  if (state.phase === '실패') return <RenderFailureNotice message={state.message} />;
+  if (state.phase === '실패') return <>
+    <RenderFailureNotice message={state.message} />
+    {state.salvage ? <SalvagedValuePreview key={state.salvage.valuePreviewUrl ?? state.salvage.thumbnailUrl} salvage={state.salvage} /> : null}
+  </>;
 
   if (state.phase === '그릴 수 없음')
     return (
@@ -420,4 +424,22 @@ function StartedPreview(props: {
   if (state.phase === '만료됨') return <UnavailableNotice message={UNAVAILABLE_MESSAGE} />;
 
   return null;
+}
+
+
+/** Already rendered values remain useful when only map coordinates are missing. */
+function SalvagedValuePreview({ salvage }: { salvage: Salvage }) {
+  const src = salvage.valuePreviewUrl ?? salvage.thumbnailUrl;
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
+  if (!src) return null;
+  return <div className="pv-mapcol" data-testid="dt-preview-salvage">
+    <p className="pv-muted">값 그림이에요. 지도 좌표 없이 배열의 값을 보여줘요.</p>
+    {salvage.precisionBadge ? <p className="pv-muted">{salvage.precisionBadge}</p> : null}
+    {imageState === 'loading' ? <p role="status">값 그림을 불러오는 중이에요…</p> : null}
+    {imageState === 'error' ? <div role="alert"><p>값 그림을 불러오지 못했어요.</p><button type="button" className="btn btn-secondary" onClick={() => { setImageState('loading'); setAttempt(value => value + 1); }}>그림 다시 불러오기</button></div> : null}
+    <img key={`${src}:${attempt}`} className="pv-tile" data-testid="dt-preview-salvage-image" src={src}
+      alt={salvage.valuePreviewUrl ? '데이터 값 미리보기' : '데이터 썸네일'}
+      onLoad={() => setImageState('loaded')} onError={() => setImageState('error')} />
+  </div>;
 }

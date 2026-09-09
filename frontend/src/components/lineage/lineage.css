@@ -291,3 +291,27 @@
 .lin-fix .lin-fix-pick .inp {
   width: 100%;
 }
+
+/* Direct search follows the composed dialog; result rows retain readable reasons. */
+.lin-find-back { z-index: 220; }
+.lin-find { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; box-shadow: none; }
+.lin-find .modal-b, .lin-fix .modal-b { overflow-y: auto; }
+.lin-find .modal-h, .lin-fix .modal-h { display: flex; justify-content: space-between; align-items: center; }
+.lin-find .modal-f, .lin-fix .modal-f { flex-shrink: 0; }
+.lin-findbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.lin-findbar > label { flex: 1 1 140px; display: grid; gap: 8px; }
+.lin-findbar > label:first-child { flex-grow: 2; }
+.lin-picker button[aria-pressed="true"] { background: var(--color-surface-hover); outline: 2px solid var(--color-primary); }
+.lin-candidate-info { margin: 0; font-size: var(--text-caption); color: var(--color-text-muted); }
+.lin-picker li { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.lin-picker li button { text-align: left; }
+
+.lin-relation-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.lin-relation-actions label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.lin-fix { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; box-shadow: none; }
+.lin-find .lin-over-why, .lin-fix .lin-over-why, .lin-findbar label, .lin-fix-method-l { font-size: var(--text-caption); }
+.lin-picker li button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+/* Live audit: the disabled state must not make the dataset identity unreadable. */
+.lin-picker .lin-lv { font-size: var(--text-caption); }
+.lin-picker li.is-over > button[disabled], .lin-picker li.is-over .lin-lv { color: var(--color-text-muted); opacity: 1; }

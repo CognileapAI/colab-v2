@@ -17,6 +17,7 @@ import {
   type RerenderInput,
 } from './types';
 import { tileUrl } from './tiles';
+import { salvageOf, type Salvage } from '../upload/previewResult';
 import { createWithPieceFallback, RenderTooLarge, type PreviewPiece } from './pick';
 
 /** 만료 문구는 정본 §8.1 수명 행·§9 마지막 행 그대로다. 여기서 새로 쓰지 않는다. */
@@ -26,7 +27,7 @@ export type PreviewState =
   | { phase: '이어받은 미리보기 없음' }
   | { phase: '그리는 중'; stage?: RenderStage }
   | { phase: '완료'; result: RenderResult; partialFailure?: PartialFailure }
-  | { phase: '실패'; code: string; message: string }
+  | { phase: '실패'; code: string; message: string; salvage: Salvage | null }
   | { phase: '그릴 수 없음'; message: string; renderableFormats: string[] }
   | { phase: '만료됨' }
   | { phase: '만들 수 없음'; message: string };
@@ -76,6 +77,7 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
             phase: '실패',
             code: job.failure?.code ?? '',
             message: job.failure?.message ?? '',
+            salvage: salvageOf(job.failure),
           });
           return;
         }

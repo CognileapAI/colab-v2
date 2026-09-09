@@ -23,7 +23,7 @@ import {
   FILE_REMOVED_NOTICE,
   RECEIVING_STAGE,
 } from '../src/components/upload/UploadModal';
-import { FOOT_HINTS, NEXT_BLOCKED_HINT } from '../src/components/upload/RegisterArea';
+import { FOOT_HINTS } from '../src/components/upload/RegisterArea';
 import { UsageSection } from '../src/components/detail/UsageSection';
 import { ACCESS_ORIGIN_NOTE } from '../src/components/detail/UsageSection';
 import {
@@ -187,13 +187,13 @@ describe('PRD-39 ① — 파일 분석 3단계 표시와 완료 전 `다음` 비
     expect(screen.queryByTestId('up-analyze')).toBeNull();
   });
 
-  it('분석이 안 끝났으면 `다음` 이 비활성이고, 끝나면 눌린다', async () => {
+  it('분석이 안 끝났으면 입력 진입의 다음이 비활성이다', async () => {
     await openModal(fakes({ ready: false }));
     await dropFiles([makeFile('a.nc')]);
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
     fireEvent.click(screen.getByTestId('reg-open'));
-    await screen.findByTestId('reg-steps');
-    expect(screen.getByTestId('reg-next')).toBeDisabled();
-    expect(screen.getByTestId('reg-foot-hint')).toHaveTextContent(NEXT_BLOCKED_HINT);
+    expect(screen.queryByTestId('reg-steps')).toBeNull();
+    expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '2');
   });
 
   it('분석이 끝나면 `다음` 이 활성이다', async () => {

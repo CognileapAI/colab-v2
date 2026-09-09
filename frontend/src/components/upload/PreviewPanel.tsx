@@ -67,6 +67,9 @@ export interface GridFlowProps extends GridActions {
 
 export function PreviewPanel(props: {
   source: PreviewSource;
+  autoPreview?: boolean;
+  /** 분석이 확인한 지도 지원 여부. 미확인 상태와 구분한다. */
+  renderable?: boolean | undefined;
   uploadId: string | null;
   /** 기준 격자 파일이 붙어 있는가. 없으면 정본 §9 안내 + `짝 파일 없이 그려 보기`. */
   hasReferenceGrid: boolean;
@@ -86,6 +89,7 @@ export function PreviewPanel(props: {
   onThumbPick?: (() => void) | undefined;
 }) {
   const { source, uploadId } = props;
+  const autoRequested = useRef<string | null>(null);
   /** ㈎ 확장보기가 열려 있나 (R-A′ 이관). 닫는 길은 `closeExpand` 하나다 — 갈래를 만들지 않는다. */
   const [expanded, setExpanded] = useState(false);
   const [palettes, setPalettes] = useState<PaletteOption[] | null>(null);
@@ -220,6 +224,14 @@ export function PreviewPanel(props: {
     }
   }
 
+  // 등록 첫 장면에서는 사용자가 별도 실행을 찾지 않아도 참고 그림을 준비한다.
+  // 같은 업로드의 재렌더는 명시적 버튼으로만 실행해 실패를 무한 반복하지 않는다.
+  useEffect(() => {
+    if (!props.autoPreview || !uploadId || !palette || autoRequested.current === uploadId) return;
+    autoRequested.current = uploadId;
+    void draw(false);
+  }, [props.autoPreview, uploadId, palette]);
+
   function poll(renderId: string, gen: number) {
     window.clearTimeout(polling.current);
     polling.current = window.setTimeout(async () => {
@@ -297,7 +309,7 @@ export function PreviewPanel(props: {
       ? 'failed'
       : result
         ? 'done'
-        : 'idle';
+        : props.renderable === false ? 'failed' : 'idle';
 
   /**
    * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
@@ -334,6 +346,8 @@ export function PreviewPanel(props: {
         </button>
       </div>
 
+      <details className="up-preview-options">
+        <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림(썸네일) — rev1 `thumbrow` · `WU-A10` · PRD-20.
           자동으로 만들어진 미리보기 축소본이 **기본**이고, 옆 줄이 바꿀 수 있다고 말한다.
           ⛔ **저장 경로는 이 WU 밖이다**(별건 `WU-C2`). 고른 그림은 화면에서만 바뀌고
@@ -414,6 +428,8 @@ export function PreviewPanel(props: {
           )}
         </div>
       </div>
+
+      </details>
 
       {/* 기준 격자 파일 없음 — 미리보기가 안 된다고 알리되 **등록은 막지 않는다** (§8·§9) */}
       {!props.hasReferenceGrid && (
@@ -582,8 +598,17 @@ export function PreviewPanel(props: {
 
       {!job && !error && (
         <div className="vizph">
-          <div className="pt">아직 그리지 않았어요</div>
-          <div className="pd">위에서 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
+          {props.renderable === false ? (
+            <div data-testid="up-preview-unsupported" role="status">
+              <div className="pt">지도로 그릴 수 없는 파일이에요</div>
+              <div className="pd">파일은 그대로 등록할 수 있어요. 미리보기 설정을 열어 직접 그리기를 시도할 수도 있어요.</div>
+            </div>
+          ) : (
+            <>
+              <div className="pt">아직 그리지 않았어요</div>
+              <div className="pd">미리보기 설정을 열어 팔레트와 구간 수를 고르고 미리보기 그리기를 눌러 주세요.</div>
+            </>
+          )}
         </div>
       )}
       </PreviewSlot>

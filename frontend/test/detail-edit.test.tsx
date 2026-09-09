@@ -226,7 +226,7 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
     }
     // 셀렉트는 **셋**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17) ·
     // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위.
-    expect(form.querySelectorAll('select')).toHaveLength(3);
+    expect(form.querySelectorAll('.de-inline select')).toHaveLength(3);
   });
 
   it('`주제` 는 상세에 **표시되지만** 편집 칸이 없다', async () => {
@@ -245,7 +245,10 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
     // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ `공개 범위` 도 빠졌다** — 이 회차가 세웠다.
     //   나머지 넷은 그대로 R-B 의 다른 WU 몫이다.
     for (const label of ['분류', '유형', '가공 단계', '변수']) {
-      expect(within(form).queryByText(label)).toBeNull();
+      for (const editor of form.querySelectorAll<HTMLElement>('.de-inline')) {
+        expect(within(editor).queryByRole('textbox', { name: label })).toBeNull();
+        expect(within(editor).queryByRole('combobox', { name: label })).toBeNull();
+      }
     }
   });
 });
@@ -418,4 +421,22 @@ describe('§2 WU-A3 — 골격은 필드 표 하나로 늘어난다', () => {
     expect(next.processingLevel).toBe(BASE.processingLevel);
     expect(next.basicInfo!.variables).toEqual(BASE.basicInfo!.variables);
   });
+});
+
+
+it('수정 중에도 정보 셀을 유지하고 지원 필드만 원래 자리에 입력한다', async () => {
+  await openForm();
+  const info = screen.getByTestId('basic-info');
+  expect(within(screen.getByTestId('detail-header')).getByTestId('edit-name')).toBeInTheDocument();
+  expect(within(screen.getByTestId('ig-좌표계')).getByTestId('edit-crs')).toBeInTheDocument();
+  expect(within(screen.getByTestId('ig-기간')).getByTestId('edit-period')).toBeInTheDocument();
+  expect(within(screen.getByTestId('ig-원천 표기')).getByTestId('edit-sourceLabel')).toBeInTheDocument();
+  expect(within(info).getByTestId('edit-summary')).toBeInTheDocument();
+  for (const label of ['분류', '유형', '가공 단계', '격자', '구성', '소유자', '올린 사람', '파일']) {
+    expect(within(info).getByTestId(`ig-${label}`)).toBeInTheDocument();
+  }
+  await type(screen.getByTestId('edit-crs') as HTMLInputElement, 'EPSG:9999');
+  await click(screen.getByTestId('detail-edit-cancel'));
+  expect(screen.getByTestId('ig-좌표계')).not.toHaveTextContent('EPSG:9999');
+  expect(screen.getByTestId('basic-info')).toBeInTheDocument();
 });

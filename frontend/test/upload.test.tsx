@@ -691,7 +691,7 @@ describe('§8 등록 결정 게이트 — 등록이 의무가 아님이 화면�
     await dropFiles([makeFile('a.nc')]);
     const gate = await screen.findByTestId('reg-gate');
     expect(within(gate).getByTestId('reg-viewonly')).toHaveTextContent('보기만 할게요');
-    expect(within(gate).getByTestId('reg-open')).toHaveTextContent('연구실에 등록');
+    expect(within(gate).getByTestId('reg-open')).toBeEnabled();
     expect(
       screen.getByTestId('up-preview').compareDocumentPosition(gate) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -853,8 +853,9 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
     const bar = screen.getByTestId('reg-actions');
     expect(bar.firstElementChild).toBe(screen.getByTestId('reg-cancel'));
     await click(screen.getByTestId('reg-cancel'));
-    expect(screen.queryByTestId('reg-area')).toBeNull();
-    expect(screen.getByTestId('up-preview')).toBeInTheDocument();
+    const confirm = await screen.findByTestId('upload-close-confirm');
+    await click(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_LEAVE }));
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 });
 
@@ -1282,19 +1283,14 @@ describe('§9 접수 실패 — 침묵하지 않는다', () => {
     expect(calls.createOpts[1]?.resumeUploadId).toBeUndefined();
   });
 
-  it('접수가 실패한 뒤 [등록]을 눌러도 **조용하지 않다**', async () => {
-    // 등록 게이트는 접수 성패와 무관하게 상시 서 있다. 접수가 실패했으면
-    // `submit()` 이 말없이 return 했다 — 사람은 눌렀는데 아무 일도 안 일어났다.
+  it('접수 실패는 분석 화면에서 안내하고 재시도 전 등록을 차단한다', async () => {
     const { sources, calls } = fakes({ createThrows: new Error('올리다가 끊겼어요. 다시 시도해 주세요.') });
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await screen.findByTestId('up-intake-error');
-    await openRegister();
-    await click(stepBtn('③'));
-    await click(await screen.findByTestId('reg-done'));
-    expect(await screen.findByTestId('reg-error')).toHaveTextContent(
-      '올리다가 끊겼어요. 다시 시도해 주세요.',
-    );
+    expect(await screen.findByTestId('up-intake-error')).toHaveTextContent('올리다가 끊겼어요. 다시 시도해 주세요.');
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+    expect(screen.getByTestId('up-intake-retry')).toBeEnabled();
+    expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
     expect(calls.register).toBe(0);
   });
 });
@@ -1548,6 +1544,7 @@ describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
     await click(within(card).getByTestId('lin-edit'));
     // 고른 대상을 바꾼다 — 그 순간 이 관계는 사람이 만든 것이다.
     await click(await within(card).findByTestId(`lin-pick-${DEM_ID}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(within(card).queryByTestId('lin-confidence')).toBeNull();
     // **확인이 풀렸다** — 확정 건수가 1 에서 0 으로 돌아간다. 다시 확인해야 실린다.
     await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
@@ -1622,6 +1619,7 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     await openLineage(sources);
     await click(await screen.findByTestId('lin-add'));
     await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     const card = await screen.findByTestId('lin-card');
     expect(within(card).queryByTestId('lin-confidence')).toBeNull();
     await click(within(card).getByTestId('lin-confirm'));
@@ -1655,6 +1653,7 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     await openLineage(sources);
     await click(await screen.findByTestId('lin-add'));
     await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     const card = await screen.findByTestId('lin-card');
     await change(within(card).getByTestId('lin-method'), 'IDW 로 250 m 다운스케일');
     await click(within(card).getByTestId('lin-confirm'));
@@ -1739,6 +1738,7 @@ describe('③ 계보 확정 — AI 제안은 사용자가 눌러 받는 보조�
     await openLineage(sources);
     await click(await screen.findByTestId('lin-add'));
     await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     const card = await screen.findByTestId('lin-card');
     await click(within(card).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
@@ -2026,4 +2026,164 @@ describe('PRD-21 — 자동 칸의 라벨은 `확장자` 이고 값은 `*.nc` �
     expect(field.value).toBe('*.nc');
     expect(field).toHaveAttribute('readonly');
   });
+});
+
+describe('rev2 파일 분석에서 등록 입력으로 이동', () => {
+  it('분석이 끝나기 전에는 등록 입력을 시작할 수 없다', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('reg-open'));
+    expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
+  });
+
+  it('분석 완료 후 다음을 직접 눌러야 입력 장면으로 이동한다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    expect(screen.getByTestId('upload-modal')).toHaveAttribute('data-scene', 'analyze');
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
+    await openRegister();
+    expect(screen.getByTestId('upload-modal')).toHaveAttribute('data-scene', 'register');
+  });
+});
+
+
+describe('rev2 파일 교체 시 입력 초기화', () => {
+  it('파일을 빼고 새 파일을 올리면 이전 설명과 주제는 남지 않는다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('old.nc')]);
+    await openRegister();
+    fireEvent.change(screen.getByTestId('reg-summary'), { target: { value: '이전 파일 설명' } });
+    await click(screen.getByRole('button', { name: 'old.nc 빼기' }));
+    await dropFiles([makeFile('new.nc')]);
+    await click(screen.getByTestId('reg-open'));
+    await click(stepBtn('②'));
+    expect(screen.getByTestId('reg-summary')).toHaveValue('');
+  });
+});
+
+
+it('등록 파일 배지에서 묶음을 빼면 파일 선택으로 돌아간다', async () => {
+  const { sources } = fakes();
+  await openModal(sources);
+  await dropFiles([makeFile('a.nc'), makeFile('b.nc')]);
+  await openRegister();
+  await click(within(screen.getByTestId('reg-file')).getByRole('button', { name: '올린 파일 모두 빼기' }));
+  expect(screen.getByTestId('upload-modal')).toHaveAttribute('data-scene', 'pick');
+  expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
+});
+it('단계를 바꾸면 새 입력 단계의 처음부터 읽을 수 있다', async () => {
+  const { sources } = fakes();
+  await openModal(sources);
+  await dropFiles([makeFile('a.nc')]);
+  await openRegister();
+  const body = screen.getByTestId('upload-modal').querySelector('.up-body')!;
+  body.scrollTop = 600;
+  await click(stepBtn('③'));
+  expect(body.scrollTop).toBe(0);
+});
+
+
+it('등록 응답을 기다리는 동안 중복 제출 버튼을 비활성화한다', async () => {
+  const { sources } = fakes();
+  sources.upload.register = () => new Promise(() => {});
+  await openModal(sources);
+  await dropFiles([makeFile('a.nc')]);
+  await openRegister();
+  await click(stepBtn('③'));
+  await click(screen.getByTestId('reg-done'));
+  expect(screen.getByTestId('reg-done')).toBeDisabled();
+  expect(screen.getByTestId('reg-done')).toHaveTextContent('저장 중');
+});
+
+
+describe('rev2 후속 오류와 복구', () => {
+  it('분석 실패 원인을 안내하고 같은 파일 재전송 후 복구할 수 있다', async () => {
+    const { sources } = fakes({ status: { ready: false, failure: { reason: '좌표계 변환 실패' } } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.bin.gz')]);
+    expect(await screen.findByTestId('up-analysis-failure')).toHaveTextContent('좌표계 변환 실패');
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+    sources.upload.status = async () => ({ uploadId: UPLOAD_ID, ready: true, renderable: false, metadataComplete: false, files: [], failure: null });
+    await click(screen.getByRole('button', { name: '다시 올려 분석' }));
+    await waitFor(() => expect(screen.getByTestId('reg-open')).toBeEnabled());
+    expect(screen.queryByTestId('up-analysis-failure')).toBeNull();
+  });
+  it('모달 본문에 혼합 파일을 떨어뜨려도 첫 확장자만 남고 제외 안내를 보인다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    fireEvent.drop(screen.getByTestId('upload-modal'), { dataTransfer: { files: [makeFile('first.nc'), makeFile('other.tif')], items: [] } });
+    await screen.findByTestId('up-files');
+    expect(screen.getByTestId('up-files')).toHaveTextContent('first.nc');
+    expect(screen.getByTestId('up-files')).not.toHaveTextContent('other.tif');
+    expect(screen.getByTestId('up-mixed-global')).toBeInTheDocument();
+  });
+  it('이미 고른 확장자와 다른 파일을 전역 드롭으로 추가할 수 없다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('first.nc')]);
+    fireEvent.drop(screen.getByTestId('upload-modal'), { dataTransfer: { files: [makeFile('other.tif')], items: [] } });
+    await act(async () => {});
+    expect(screen.getByTestId('up-files')).not.toHaveTextContent('other.tif');
+    expect(screen.getByTestId('up-mixed-global')).toBeInTheDocument();
+  });
+});
+
+async function quickProject() {
+  const { sources } = fakes();
+  await openModal(sources, { '업로드·편집': true, '프로젝트 생성': true });
+  await dropFiles([makeFile('a.nc')]);
+  await openRegister();
+  await click(stepBtn('③'));
+  await click(screen.getByTestId('reg-proj-quick-open'));
+  return screen.getByTestId('reg-proj-quick');
+}
+describe('rev2 빠른 프로젝트 생성', () => {
+  it('빈 이름을 제출하면 이름 입력 안내를 보인다', async () => {
+    const form = await quickProject();
+    await click(within(form).getByRole('button', { name: '만들고 담기' }));
+    expect(screen.getByTestId('reg-proj-quick-error')).toHaveTextContent('이름');
+  });
+  it('취소 후 다시 열면 이전 이름과 유형 초안을 지운다', async () => {
+    const form = await quickProject();
+    await change(within(form).getByLabelText('과제·논문 이름'), '버린 프로젝트');
+    await change(within(form).getByLabelText('유형'), '논문');
+    await click(within(form).getByRole('button', { name: '취소' }));
+    await click(screen.getByTestId('reg-proj-quick-open'));
+    expect(screen.getByLabelText('과제·논문 이름')).toHaveValue('');
+    expect(within(screen.getByTestId('reg-proj-quick')).getByLabelText('유형')).toHaveValue('국가과제');
+  });
+  it('만든 프로젝트는 해제 후 선택 목록에서 다시 담을 수 있다', async () => {
+    const form = await quickProject();
+    await change(within(form).getByLabelText('과제·논문 이름'), '새 검수 프로젝트');
+    await click(within(form).getByRole('button', { name: '만들고 담기' }));
+    await click(screen.getByRole('button', { name: '새 검수 프로젝트 해제' }));
+    const option = within(screen.getByTestId('reg-proj-select')).getByRole('option', { name: '새 검수 프로젝트' });
+    await change(screen.getByTestId('reg-proj-select'), (option as HTMLOptionElement).value);
+    await click(screen.getByRole('button', { name: '+ 추가' }));
+    expect(screen.getByRole('button', { name: '새 검수 프로젝트 해제' })).toBeInTheDocument();
+  });
+});
+
+it('등록 취소도 입력한 설명을 버리기 전에 확인한다', async () => {
+ const { sources } = fakes(); await openModal(sources); await dropFiles([makeFile('a.nc')]); await openRegister();
+ await change(screen.getByTestId('reg-summary'), '보존할 설명'); await click(screen.getByTestId('reg-cancel'));
+ expect(await screen.findByTestId('upload-close-confirm')).toHaveTextContent(UPLOAD_CLOSE_INPUT_ONLY);
+});
+it('변수 행을 추가하면 새 행의 이름 칸으로 초점을 옮긴다', async () => {
+ const { sources } = fakes(); await openModal(sources); await dropFiles([makeFile('a.nc')]); await openRegister();
+ const index = screen.getAllByTestId('vt-row').length; await click(screen.getByTestId('vt-add'));
+ expect(screen.getByTestId(`vt-name-${index}`)).toHaveFocus();
+});
+
+it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보이고 수동 그리기는 유지한다', async () => {
+ const { sources } = fakes({ status: { ready: true, renderable: false } });
+ await openModal(sources); await dropFiles([makeFile('a.grib')]); await click(screen.getByTestId('reg-open'));
+ expect(screen.getByTestId('up-preview-unsupported')).toHaveTextContent('지도로 그릴 수 없는');
+ expect(screen.getByTestId('up-preview-slot')).toHaveAttribute('data-preview-slot-state', 'failed');
+ expect(screen.queryByText('아직 그리지 않았어요')).toBeNull();
+ expect(screen.getByRole('button', { name: '미리보기 그리기' })).toBeInTheDocument();
 });

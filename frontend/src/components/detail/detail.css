@@ -74,18 +74,18 @@
 /* 격자선은 셀이 직접 긋는다. gap 으로 컨테이너 배경을 비쳐 만들면
    칸이 덜 찬 마지막 줄에서 그 배경이 선이 아니라 면으로 드러난다 */
 .detail-page .infogrid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   /* ⑨ 컨테이너는 `--color-border-strong`, 칸 구분선은 `--color-border` — 두 층을 가른다 (판정 ⑨) */
   border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden;
   background: var(--color-surface);
 }
 .detail-page .infogrid .ig { background: var(--color-surface); padding: 12px 14px; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-.detail-page .infogrid .ig:nth-child(3n) { border-right: none; }
+.detail-page .infogrid .ig:nth-child(4n) { border-right: none; }
 .detail-page .infogrid .ig:nth-last-child(-n + 3) { border-bottom: none; }
 /* ⑩ 격자와 파일 목록 사이 여백은 이제 **오른쪽 열 컨테이너**(`.dt-split-r` 의 gap)가 소유한다 —
    A11 판정 ⑩ 당시 목록의 `margin: -12px` 를 격자의 `margin-bottom` 으로 옮겼던 것을,
    WU-C11 이 컨테이너 gap 한 자리로 모았다(격자·행동 줄·목록 모두 같은 16px). */
-.detail-page .infogrid .ig .k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-page .infogrid .ig .k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
 .detail-page .infogrid .ig .v { font-size: var(--text-body); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 @media (max-width: 720px) {
   .detail-page .infogrid { grid-template-columns: 1fr 1fr; }
@@ -252,44 +252,71 @@
   line-height: 1.6;
 }
 
-/* ── WU-C2 · 상세 좌우 배치 (축 ①-② · Ted 판정 「좌 미리보기 sticky · 우 기본 정보＋파일」) ──
-   컨테이너는 **한 겹**이다. 계보·활용은 이 컨테이너 밖 아래에서 전폭으로 남고,
-   `.detail-page { max-width: 1200px }` 도 그대로다.
-   분기는 **둘뿐**이다 — ≥960px 두 열 · ≤959px 한 열(DOM 차례 그대로 미리보기 먼저).
-   왼쪽 열 폭은 4:3 틀(`--pv-frame-ratio`)이 결정한다 — 여기서 비율을 다시 쓰지 않는다. */
-.detail-page {
-  /* 구역 메뉴(`.dsec-menu` · sticky top:0)가 덮는 높이만큼 내려 붙인다 */
-  --dt-split-sticky-top: 56px;
-  --dt-split-gap: var(--space-6);
-  /* 오른쪽 열은 `.infogrid` 3열이 접히지 않을 만큼은 있어야 한다 */
-  --dt-split-right-min: 520px;
-  --dt-split-left-min: 380px;
+/* R-UPLOAD-PREVIEW rev2: 기본 정보→설명→변수→소유/파일→세부 구역의 문서 흐름. */
+.detail-page .dt-information { display:flex; flex-direction:column; gap:var(--space-4); }
+.detail-page .dt-description { grid-column:1 / -1; padding:16px 20px; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-gray-50); }
+.detail-page .ig-variables { grid-column:1 / -1; }
+.detail-page .dt-description .dh-sum { margin:0; }
+.detail-page .dt-description .dh-sum-empty { margin:0; }
+.detail-page .dt-header .dt-description { padding:0; border:0; background:none; }
+
+/* 실제 화면 계측: 작은 라벨과 미리보기 안내를 읽을 수 있는 크기·대비로 맞춘다. */
+.detail-page :is(.bl-a,.chip,.lvl,.ig-more,.dt-files-k,.muted,.pv-pick-row,.pv-muted) { font-size:13px; }
+.detail-page :is(.pv-muted,.arw) { color:var(--color-text-muted); }
+.detail-page .dsec-menu-i.is-active { color:var(--color-text); }
+
+.detail-page .pv-pick-f > span { font-size:13px; }
+.detail-page .dt-information .dt-edit { margin:0; }
+
+.detail-page .infogrid .ig .v .ig-more, .detail-page .use-sec .use-dl-note { font-size:13px; }
+.detail-page .ln .arw, .detail-page .lrow .ln-go .arw { color:var(--color-text-muted); opacity:1; }
+
+/* 표시 격자를 유지한 채 지원하는 입력만 같은 셀에서 교체한다. */
+.detail-page .ig-description { grid-column: 1 / -1; }
+.detail-page .de-inline { margin: 0; padding: 0; border: 0; background: transparent; }
+.detail-page .de-inline .de-grid { display: block; }
+.detail-page .de-inline .de-row { display: block; margin: 0 0 8px; }
+.detail-page .de-inline .de-k { display: block; margin-bottom: 4px; font-size: 13px; }
+.detail-page .ig .de-inline .de-row:first-child > .de-k { display: none; }
+.detail-page .de-inline .de-v { width: 100%; min-width: 0; box-sizing: border-box; }
+.detail-page .de-inline input.de-v, .detail-page .de-inline textarea.de-v { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 8px 10px; font: inherit; color: inherit; }
+.detail-page .de-inline .de-period { display: flex; flex-wrap: wrap; gap: 6px; }
+.detail-page .de-inline .de-period input, .detail-page .de-inline .de-period select { min-width: 0; max-width: 100%; flex: 1 1 90px; }
+.detail-page .dh-main > .de-inline { max-width: 100%; }
+.detail-page .dh-main > .de-inline input { font-size: 22px; font-weight: 650; }
+
+.detail-page .dh-edit-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.detail-page .de-inline .de-period input[type="date"] { flex-basis: 100%; }
+
+.detail-page .de-inline .de-req { font-size: 13px; color: var(--color-text); background: var(--color-bg); margin-left: 4px; }
+
+.detail-page .ig { min-width: 0; }
+@media (max-width: 640px) {
+  .detail-page .infogrid { grid-template-columns: minmax(0, 1fr); }
+  .detail-page .ig { border-right: 0; }
 }
-@media (min-width: 960px) {
-  .detail-page .dt-split {
-    display: grid;
-    grid-template-columns:
-      minmax(var(--dt-split-left-min), 1fr)
-      minmax(var(--dt-split-right-min), 1.15fr);
-    gap: var(--dt-split-gap);
-    align-items: start;
-  }
-  .detail-page .dt-split-l {
-    position: sticky;
-    top: var(--dt-split-sticky-top);
-    min-width: 0;
-  }
-  /* 오른쪽 열의 세로 여백은 컨테이너가 gap 으로 갖는다 — 자식이 저마다 margin 을 지지 않는다 (WU-C11) */
-  .detail-page .dt-split-r { min-width: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* 선택과 입력의 높이·테두리를 같은 입력 토큰으로 맞춘다. */
+.detail-page .dt-edit.de-inline input, .detail-page .dt-edit.de-inline select {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
 }
-@media (max-width: 959px) {
-  .detail-page .dt-split {
-    display: block;
-  }
-  .detail-page .dt-split-l {
-    position: static;
-    margin-bottom: var(--dt-split-gap);
-  }
-  /* 한 열에서도 오른쪽 열 안의 여백은 컨테이너가 갖는다 (WU-C11) */
-  .detail-page .dt-split-r { display: flex; flex-direction: column; gap: var(--space-4); }
+.detail-page .de-inline [data-testid="edit-access-state"] > .de-v {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
+
+.detail-page .dh-main > .de-inline input { font-size: 22px; font-weight: 650; }

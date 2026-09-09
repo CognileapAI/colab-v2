@@ -1,0 +1,18 @@
+{
+  "session": "colab-login-5924de3d40-partial",
+  "file": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+  "bytes": 24577705,
+  "sha256": "2e883a8f031f4028c089e86edada93c51abc48540143e78cb6047c54c3eed258",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "upload render image decoded by browser",
+    "partial render identifies one unreadable file while showing readable data",
+    "preview expanded and closed by Escape",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "actual map zoom, reset and cursor latitude/longitude work",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source",
+    "bundle has every original file with matching SHA256"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21TZ5MXMCRGKWG2WF9DMW6Z"
+}

@@ -3159,5 +3159,5 @@ items:
     completion_def: "HTML 상태별 시각 대조·포맷별 실제 브라우저 미리보기·진행과 오류복구·저장/편집/계보/다운로드 검증을 마쳐 배포 가능한 상태. 별도 환경 사용, 배포는 조율."
     evidence: "dev-package/reports/upload-layout-preview/verification.md"
     deadline: null
-    note: "별도 사본 진행. 정책65개 추출·업로드 초기/분류 시각 차이 확인·렌더10건 통과·조회 오류2경로 보완·관련시험110건 통과. 전체 화면 재구성·GRIB 지원·독립 저장/조회 E2E 미완료."
+    note: "별도 사본에서620px단계형업로드/셀별상세편집/계보CRUD 구현. 실파일7사례(TIF묶음/NC/HDF/BIN값/BIN격자/NPY/GRIB제외) 저장·재조회·편집·원본해시 통과. frontend1128/core989/worker267/viz380 검증. 일부손상파일 원본명안내·저장·다운로드 통과, 최종 core 경계 포함 전체 통과. 대표그림저장/계보검색필드/격자입력 API확장3범위 사용자판정대기. main·배포 무변경."
     sources: ["dev-package/intent/2026-09-09-upload-layout-preview.md", "dev-package/prd/specs/R-UPLOAD-PREVIEW.md", "dev-package/prd/rounds/R-UPLOAD-PREVIEW.md"]

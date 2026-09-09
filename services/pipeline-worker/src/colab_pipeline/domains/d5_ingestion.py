@@ -332,7 +332,12 @@ class IngestionService:
             if r.artifact is not None:
                 res.artifacts.append(r.artifact)
 
-        ok = {fid: r for fid, r in results.items() if r.status == "SUCCESS"}
+        converted = {fid: r for fid, r in results.items() if r.status == "SUCCESS"}
+        # A known file with parsed metadata and no coordinates is registrable.
+        # Keep run_file's FAILURE intact: a deferred map is not a successful COG.
+        deferred = {fid: r for fid, r in results.items()
+                    if r.coordinates_unavailable and r.metadata is not None}
+        ok = {fid: r for fid, r in results.items() if fid in converted or fid in deferred}
         if not ok:
             stage, reason, klass = _classify_failure(
                 [m for r in results.values() for m in r.failures])
@@ -357,22 +362,26 @@ class IngestionService:
             variables=variables, period=period, crs=crs, grid=grid_text,
             byte_size_total=int(total), unreadable_files=unreadable))
         metadata_complete = bool(variables) and period is not None and crs is not None \
-            and grid_text is not None and total > 0
+            and grid_text is not None and total > 0 and not deferred
 
-        # ④ 좌표계 정규화
-        self._emit(work, res, "file.crs-normalized", crs_normalized_payload(
-            source_crs=crs, target_crs=TARGET_CRS,
-            transformed=any(results[fid].cog_path for fid in ok), file_ids=sorted(ok)))
+        if converted:
+            normalized_meta = next(iter(converted.values())).metadata
+            source_crs = (None if normalized_meta is None or normalized_meta.crs == UNKNOWN
+                          else normalized_meta.crs)
+            # ④ 좌표계 정규화
+            self._emit(work, res, "file.crs-normalized", crs_normalized_payload(
+                source_crs=source_crs, target_crs=TARGET_CRS,
+                transformed=any(results[fid].cog_path for fid in converted), file_ids=sorted(converted)))
 
-        # ⑤ 미리보기용 COG. **이미 COG 인 입력은 우리 산출물이 아니다**(`DR-2`) —
-        #    변환하지 않았어도 미리보기 대상으로는 준비돼 있다.
-        overview_levels = 0
-        for fid in ok:
-            if results[fid].cog_path:
-                overview_levels = max(overview_levels, 1)
-        self._emit(work, res, "preview.cog-built", cog_built_payload(
-            file_ids=sorted(ok), overview_levels=overview_levels,
-            reference_grid_available=(grid_dir is not None) if grid_dir is not None else None))
+            # ⑤ 미리보기용 COG. **이미 COG 인 입력은 우리 산출물이 아니다**(`DR-2`) —
+            #    변환하지 않았어도 미리보기 대상으로는 준비돼 있다.
+            overview_levels = 0
+            for fid in converted:
+                if results[fid].cog_path:
+                    overview_levels = max(overview_levels, 1)
+            self._emit(work, res, "preview.cog-built", cog_built_payload(
+                file_ids=sorted(converted), overview_levels=overview_levels,
+                reference_grid_available=(grid_dir is not None) if grid_dir is not None else None))
         if was_ready:
             # **미리보기 뒷단(③④⑤)이 이미 준비를 마친 업로드에 다시 돌았다.**
             # 사실이 다 일어난 **뒤에** 알린다 — 도는 중에 알리면 D7 이 낡은 재료로 굽는다.
@@ -382,7 +391,8 @@ class IngestionService:
         upload = self._ledger.load_upload(work.upload_id) or {}
         expires = upload.get("expires_at")
         self._ledger.record_status(work.upload_id, ready=True, renderable=renderable,
-                                   metadata_complete=metadata_complete)
+                                   metadata_complete=metadata_complete, failed_at=None,
+                                   failure_class=None, failure_reason=None)
         self._emit(work, res, "upload.ready", upload_ready_payload(
             renderable=renderable, metadata_complete=metadata_complete,
             expires_at=_iso(expires), grid_resolution=grid_resolution))

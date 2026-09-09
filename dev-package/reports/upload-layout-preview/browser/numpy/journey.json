@@ -1,0 +1,17 @@
+{
+  "session": "colab-login-610f560751-numpy",
+  "file": "Prediction_20230501.npy",
+  "bytes": 6553728,
+  "sha256": "7a5f0480e4dacf0911d3783631e9760c5d2e4b4a19888824bb12cbbc397eb392",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "actual reference grid uploaded and its position confirmed",
+    "upload render image decoded by browser",
+    "preview expanded and closed by Escape",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "actual map zoom, reset and cursor latitude/longitude work",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21TFN36RA2SZS5RNQ5XE5D1"
+}

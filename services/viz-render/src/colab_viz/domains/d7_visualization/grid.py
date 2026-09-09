@@ -15,6 +15,7 @@ from typing import Final
 from pathlib import Path
 
 import numpy as np
+from .native_io import serialized_netcdf
 
 
 #: **계약의 사유 3값 그대로** (`../../../contracts/schemas/common.json#GridRejectionReason`).
@@ -89,6 +90,7 @@ def _check_pair(lat: np.ndarray, lon: np.ndarray, source: str) -> ReferenceGrid:
     return ReferenceGrid(lat=lat, lon=lon, source=source)
 
 
+@serialized_netcdf
 def _from_netcdf(path: Path) -> ReferenceGrid:
     """`rdr_500m_latlon.nc` 처럼 **한 파일에 lat·lon 을 다 담는** 격자 (`〈66〉`)."""
     from netCDF4 import Dataset

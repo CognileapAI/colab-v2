@@ -105,7 +105,7 @@
   cursor: pointer;
 }
 .dropzone .big { font-size: 16px; font-weight: 600; }
-.dropzone .muted, .muted { color: var(--up-muted); font-size: 12px; }
+.dropzone .muted, .muted { color: var(--up-muted); font-size:13px; }
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
 /* 확장자 혼합 안내의 규칙은 **여기 없다** (WU-A13R · PRD-43) — 공통 토스트 한 개로 옮겼다
@@ -134,8 +134,8 @@
 }
 .filecard .fmeta { flex: 1; min-width: 0; }
 .filecard .fn { font-weight: 600; word-break: break-all; }
-.filecard .fs { color: var(--up-muted); font-size: 12px; }
-.filecard .fkind { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.filecard .fs { color: var(--up-muted); font-size:13px; }
+.filecard .fkind { display: flex; align-items: center; gap: 6px; font-size:13px; }
 .slicebtn { align-self: flex-start; background: none; border: 0; color: var(--up-muted); cursor: pointer; }
 .slicelist { display: flex; flex-direction: column; gap: 6px; }
 
@@ -150,13 +150,13 @@
   border-radius: 10px;
   background: #fafbfc;
 }
-.companion .cl { font-weight: 600; font-size: 12px; }
-.companion .cw { color: var(--up-muted); font-size: 12px; }
+.companion .cl { font-weight: 600; font-size:13px; }
+.companion .cw { color: var(--up-muted); font-size:13px; }
 .companion .cline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
 
 /* 여백 소유 = 컨테이너: `.mapstage` 의 gap 12px 이 줄 간격을 갖는다 — 자식은 `margin-top` 을 지지 않는다 (WU-C11 · 판정 49) */
 .vizsetup { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.vizsetup .vs-f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.vizsetup .vs-f { display: flex; flex-direction: column; gap: 4px; font-size:13px; }
 .vizsetup .vs-act { margin-left: auto; }
 .vizload { display: flex; align-items: center; gap: 8px; }
 .vizload .spin {
@@ -193,8 +193,8 @@
   cursor: pointer;
 }
 .regsteps button.is-active { background: var(--up-ink); color: #fff; border-color: var(--up-ink); }
-.regsteps .cnt { margin-left: 6px; font-size: 12px; }
-.regsteps .rs-f { margin-left: auto; color: var(--up-muted); font-size: 12px; }
+.regsteps .cnt { margin-left: 6px; font-size:13px; }
+.regsteps .rs-f { margin-left: auto; color: var(--up-muted); font-size:13px; }
 @media (max-width: 720px) { .regsteps .rs-f { display: none; } }
 
 /* ⑩ 단계 본문 안 세로 여백도 컨테이너가 갖는다 — 위 여백은 `.regarea` 의 gap 16px */
@@ -210,12 +210,12 @@
 .form-3 .pair .inp { min-width: 0; flex: 1; }
 .form-3 .pair .tilde { color: var(--up-muted); flex: none; }
 .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.form-row label { font-size: 12px; color: var(--up-muted); display: flex; gap: 6px; align-items: center; }
-.autotag { font-size: 10px; border: 1px solid var(--up-line); border-radius: 9999px; padding: 1px 6px; }
+.form-row label { font-size:13px; color: var(--up-muted); display: flex; gap: 6px; align-items: center; }
+.autotag { font-size:13px; border: 1px solid var(--up-line); border-radius: 9999px; padding: 1px 6px; }
 /* ⭑ ⟨19차 · PRD-15⟩ `필수` 배지. `자동` 과 같은 모양이되 **강조가 반대**다 —
    자동은 「손대지 마세요」이고 필수는 「여기를 적어 주세요」다. */
 .reqtag {
-  font-size: 10px;
+  font-size:13px;
   border: 1px solid var(--up-ink);
   border-radius: 9999px;
   padding: 1px 6px;
@@ -225,10 +225,10 @@
 .inp, .sel { padding: 8px 10px; border: 1px solid var(--up-line); border-radius: 8px; font: inherit; }
 textarea.inp { resize: vertical; line-height: 1.5; }
 .inp[readonly] { background: #fafbfc; color: var(--up-muted); }
-.fieldlbl { font-size: 12px; color: var(--up-muted); margin: 12px 0 8px; }
+.fieldlbl { font-size:13px; color: var(--up-muted); margin: 12px 0 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 10px; background: #eef2f7; font-size: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 10px; background: #eef2f7; font-size:13px; }
 .chipx { border: 0; background: none; cursor: pointer; }
 /* ② 연관 프로젝트 — 국가과제 / 논문 두 패널 (WU-A7 · PRD-23).
    패널 안은 칩이 아니라 **행**이고 위에서 아래로 쌓인다. 0건 패널도 남는다. */
@@ -236,7 +236,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
    열은 `유형` · `이름` · `해제` 이고 변수 표와 같이 위에서 아래로 쌓인다. */
 .projtable { width: 100%; border-collapse: collapse; }
 .projtable th, .projtable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--up-line); }
-.projtable th { font-size: 11px; font-weight: 600; color: var(--up-muted); }
+.projtable th { font-size:13px; font-weight: 600; color: var(--up-muted); }
 .projtable td.pr-k { width: 1%; white-space: nowrap; }
 .projtable td.pr-n { font-size: 13px; word-break: break-all; }
 .projtable td.pr-x { width: 1%; white-space: nowrap; text-align: right; }
@@ -245,7 +245,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .projpick { display: flex; flex-wrap: wrap; gap: 8px; }
 .qproj { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--up-line); border-radius: 10px; }
 .qproj .qf { display: flex; flex-wrap: wrap; gap: 8px; }
-.qproj .qnote { color: var(--up-muted); font-size: 11px; }
+.qproj .qnote { color: var(--up-muted); font-size:13px; }
 
 /* ⑫ 행동 줄 **바닥 고정** (PRD-39 · rev1 `.up-foot`). 길게 스크롤해도 버튼이 따라온다 —
    고정하지 않으면 ① 의 긴 폼에서 `다음` 을 찾으려 매번 끝까지 내려야 한다.
@@ -256,7 +256,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   padding: 10px 0; background: var(--color-surface, #fff);
 }
 /* 「지금 할 일」 한 줄 — 좁은 폭에서는 버튼 자리를 뺏지 않게 감춘다 (rev1 720px 규칙) */
-.reg-actions .uf-hint { flex: 1; min-width: 0; font-size: 12px; color: #6b7280; }
+.reg-actions .uf-hint { flex: 1; min-width: 0; font-size:13px; color: #6b7280; }
 @media (max-width: 720px) { .reg-actions .uf-hint { display: none; } }
 .reg-actions .sp { flex: 1; }
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px 이 갖는다 */
@@ -318,11 +318,11 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   background: #fff;
   border-radius: 8px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size:13px;
   cursor: pointer;
 }
 .up-banner .ub-btn.is-armed { border-color: var(--up-warn); color: var(--up-warn); }
-.up-banner .ub-hint { margin: 0; font-size: 12px; color: var(--up-muted); }
+.up-banner .ub-hint { margin: 0; font-size:13px; color: var(--up-muted); }
 
 /* 대표 그림(썸네일) 넛지 — rev1 `thumbrow` (`WU-A10` · PRD-20).
    썸네일 한 칸과 안내 한 줄이 나란히 선다. 저장 경로는 여기 없다(`WU-C2`). */
@@ -338,7 +338,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .thumbrow .th-ph { width: 24px; height: 24px; border-radius: 4px; background: var(--line, #d1d5db); }
 .thumbrow .th-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .thumbrow .th-t { font-weight: 600; font-size: 13px; }
-.thumbrow .th-n { font-size: 12px; color: var(--muted, #6b7280); }
+.thumbrow .th-n { font-size:13px; color: var(--muted, #6b7280); }
 /* 파일 선택기는 **버튼 클릭으로만** 열린다 — 칸 자체는 화면에 두지 않는다 */
 .thumbrow .th-in { display: none; }
 
@@ -355,7 +355,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 /* ① 파일 분석 3단계 표시 (PRD-39 · rev1 `pbStatus`) — 진행 바 아래 한 줄 */
 .up-analyze { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.up-analyze .an-txt { font-size: 12px; color: #6b7280; }
+.up-analyze .an-txt { font-size:13px; color: #6b7280; }
 /* ③ 파일 빼기 — 파일 카드 오른쪽 끝 */
 .filecard .frm-x { margin-left: 4px; line-height: 1; }
 
@@ -457,12 +457,12 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .pvx-open{flex:none;}
 
 /* 260905 rev2: 파일 선택은 가운데 모달, 입력은 좌측 미리보기와 우측 폼. */
-.mb-takeover.up-empty { align-items:center; padding:24px; }
-.up-empty .modal-takeover { width:720px; height:auto; max-height:90vh; border-radius:14px; overflow:hidden; }
-.up-empty .up-body { flex:initial; padding:24px; }
+.mb-takeover.up-empty { align-items:center; padding:20px; }
+.up-empty .modal-takeover { width:min(620px,94vw); height:auto; max-height:90vh; border-radius:14px; overflow:hidden; }
+.up-empty .up-body { flex:initial; padding:20px 22px; }
 .up-empty .up-card { border:0; padding:0; }
-.up-empty .dropzone { min-height:260px; justify-content:center; background:#f8f9fa; }
-.up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:#edf3ff; color:#1769ef; font-size:36px; margin-bottom:12px; }
+.up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background:#f8f9fa; }
+.up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:#edf3ff; color:var(--color-text); font-size:36px; margin-bottom:12px; }
 .up-file-choose { margin-top:14px; }
 .up-file-management { color:var(--up-muted); font-size:13px; }
 .up-file-management > summary { cursor:pointer; padding:4px 0; }
@@ -473,3 +473,51 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--up-ink); border-bottom-color:#1769ef; }
 .modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#e8ecf2; border-radius:8px; padding:6px 10px; }
 @media(max-width:600px) { .mb-takeover.up-empty { padding:12px; } .up-empty .up-body { padding:16px; } .up-empty .modal-h { flex-wrap:wrap; } }
+
+/* rev2 장면 1은 분석 완료 뒤 사용자가 다음을 누를 때까지 작은 모달이다.
+   미리보기는 입력 장면에서 펼치며, 보기만 진입도 유지한다. */
+.up-empty .up-split { display:block; }
+.up-empty .up-split-preview { display:none; }
+.up-empty .reggate { border:0; border-top:1px solid var(--up-line); border-radius:0; padding:12px 0 0; flex-wrap:wrap; }
+.up-empty .reggate .rg-a { flex:1; justify-content:flex-end; }
+.up-empty .reggate .rg-s { display:none; }
+.modal-takeover[data-scene="register"] .up-body { max-width:1424px; padding:20px 32px 88px; }
+.modal-takeover[data-scene="register"] .reg-actions { position:fixed; bottom:0; left:0; right:0; border-top:1px solid var(--up-line); padding:12px max(22px, calc((100vw - 1360px) / 2)); }
+.modal-takeover .form-row label, .modal-takeover .fieldlbl, .modal-takeover .muted, .modal-takeover .an-txt { font-size:13px; }
+@media(max-width:720px) {
+  .modal-takeover[data-scene="register"] .up-body { padding:16px 16px 88px; }
+  .up-empty .reggate .rg-t { font-size:13px; }
+}
+
+/* 원본 카드 묶음: 제목 줄과 본문이 같은 경계 안에 있으며 표면은 흰색이다. */
+.modal-takeover .up-steps .card { background:var(--color-surface); border:1px solid var(--color-border-strong); border-radius:var(--up-radius); overflow:hidden; }
+.modal-takeover .up-steps .card-h { display:flex; align-items:center; gap:10px; padding:16px 22px; border-bottom:1px solid var(--up-line); }
+.modal-takeover .up-steps .card-h h3 { margin:0; font-size:16px; font-weight:600; }
+.modal-takeover .up-steps .card-h .sub { margin-left:auto; color:var(--up-muted); font-size:13px; }
+.modal-takeover .up-steps .card-b { display:flex; flex-direction:column; gap:12px; padding:20px 22px; }
+.modal-takeover .form-row { margin-bottom:0; gap:5px; }
+.modal-takeover .inp, .modal-takeover .sel { min-width:0; background:var(--color-surface); color:var(--color-text); border-color:var(--color-border-control); font-size:14px; }
+.modal-takeover .inp:focus-visible, .modal-takeover .sel:focus-visible, .modal-takeover button:focus-visible { outline:2px solid var(--color-primary-600); outline-offset:2px; }
+.modal-takeover .regarea [data-testid="reg-s3"] { display:flex; flex-direction:column; gap:16px; }
+.modal-takeover[data-scene="register"] .up-split-preview { position:sticky; top:0; }
+.modal-takeover[data-scene="register"] .up-analyze { display:none; }
+.modal-takeover[data-scene="analyze"] .up-drop-icon, .modal-takeover[data-scene="analyze"] .dropzone .big, .modal-takeover[data-scene="analyze"] .dropzone .muted { display:none; }
+.modal-takeover[data-scene="analyze"] .dropzone { padding:0; border:0; background:transparent; }
+.modal-takeover[data-scene="analyze"] .up-file-choose { margin:0; }
+@media(max-width:1023px) { .modal-takeover[data-scene="register"] .up-split-preview { position:static; } }
+
+.up-preview-options { order:2; border-top:1px solid var(--up-line); padding-top:12px; font-size:13px; }
+.up-preview-options > summary { cursor:pointer; color:var(--up-muted); }
+.up-preview-options[open] > summary { margin-bottom:12px; }
+.up-preview-options .vizsetup { margin-top:12px; }
+
+.modal-takeover[data-scene="register"] .regsteps .rs-f { display:inline-flex; align-items:center; gap:6px; }
+.regsteps .rs-fn { overflow:hidden; text-overflow:ellipsis; }
+.modal-takeover[data-scene="register"] .regsteps .rs-x { padding:0 4px; border:0; flex:none; color:var(--up-ink); font-size:18px; }
+@media(max-width:720px) { .modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:100%; margin:4px 0; } }
+
+.modal-takeover[data-scene="register"] .modal-h { min-height:71px; }
+.modal-takeover .reg-actions .btn { height:34px; padding:0 12px; }
+
+.modal-takeover :is(.pv-pick-f > span,.pv-muted,.fieldnote,.axis-note,.dr-useg button,.dr-units .du-l) { font-size:13px; }
+.modal-takeover .pv-muted { color:var(--up-muted); }

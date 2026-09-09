@@ -1,4 +1,4 @@
-// 상세 계보 **쓰기** 경로 — `addLineageParent` 하나다 (WU-B10 · PRD-31).
+// 상세 계보 쓰기 — 기존 추가·가공 방식 수정·관계 제거 계약을 재사용한다.
 //
 // ⛔ **새 op 을 만들지 않는다.** 계보 확정·수정 경로는 이미 서 있고(`routes/lineage.py` 의
 //    `addLineageParent`·`removeLineageParent`·`confirmLineage`), 상세에서 오는 수정도 그
@@ -34,10 +34,28 @@ export interface AddParentBody {
 export interface LineageEditSource {
   /** 200/201 응답 본문이 **갱신된 그래프**다 — 화면은 그것을 그대로 세운다. */
   addParent(datasetId: string, body: AddParentBody): Promise<LineageGraph>;
+  updateMethod?(datasetId: string, parentDatasetId: string, method: string): Promise<LineageGraph>;
+  removeParent?(datasetId: string, parentDatasetId: string): Promise<LineageGraph>;
 }
 
 export function apiLineageEditSource(): LineageEditSource {
   return {
+    async updateMethod(datasetId, parentDatasetId, method) {
+      const r = await api.PATCH('/datasets/{datasetId}/lineage/parents/{parentDatasetId}', {
+        params: { path: { datasetId, parentDatasetId } }, body: { method: method.trim() || null },
+      });
+      if (!r.data) throw new Error(messageOf(r.error, '가공 방식을 저장하지 못했어요.'));
+      return r.data;
+    },
+    async removeParent(datasetId, parentDatasetId) {
+      const r = await api.DELETE('/datasets/{datasetId}/lineage/parents/{parentDatasetId}', {
+        params: { path: { datasetId, parentDatasetId } },
+      });
+      if (!r.response.ok) throw new Error(messageOf(r.error, '연결을 제거하지 못했어요.'));
+      const next = await api.GET('/datasets/{datasetId}/lineage', { params: { path: { datasetId } } });
+      if (!next.data) throw new Error('연결을 제거했지만 계보를 다시 읽지 못했어요. 상세 화면을 새로고침해 주세요.');
+      return next.data;
+    },
     async addParent(datasetId, body) {
       const r = await api.POST('/datasets/{datasetId}/lineage/parents', {
         params: { path: { datasetId } },

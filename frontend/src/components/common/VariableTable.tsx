@@ -3,6 +3,7 @@
 // **한 컴포넌트가 두 자리를 그린다** — 등록 ①(편집)과 상세(읽기 전용). 두 벌로 적으면
 // 열 순서·라벨이 갈리는 날이 오고, PRD-16 이 못 박은 것이 바로 그 열 구성이다.
 // 값의 정본은 `d3_dataset_variable` 이고 이 표는 그 행 집합을 그대로 그린다.
+import { useEffect, useRef } from 'react';
 import { AT_LEAST_ONE_VARIABLE } from './toastCopy';
 import './variableTable.css';
 
@@ -69,6 +70,13 @@ export function VariableTable(props: {
 }) {
   const readOnly = props.onRows === undefined;
   const rows = props.rows;
+  const pendingFocus = useRef<number | null>(null);
+  const nameInputs = useRef<Array<HTMLInputElement | null>>([]);
+  useEffect(() => {
+    if (pendingFocus.current === null) return;
+    nameInputs.current[pendingFocus.current]?.focus();
+    pendingFocus.current = null;
+  }, [rows.length]);
 
   function change(index: number, patch: Partial<VariableRow>) {
     props.onRows?.(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -118,6 +126,7 @@ export function VariableTable(props: {
                     className="inp"
                     aria-label={`변수 ${i + 1}`}
                     data-testid={`vt-name-${i}`}
+                    ref={(node) => { nameInputs.current[i] = node; }}
                     value={row.name}
                     onChange={(e) => change(i, { name: e.target.value })}
                   />
@@ -170,7 +179,7 @@ export function VariableTable(props: {
           type="button"
           className="vt-add"
           data-testid="vt-add"
-          onClick={() => props.onRows?.([...rows, emptyVariableRow()])}
+          onClick={() => { pendingFocus.current = rows.length; props.onRows?.([...rows, emptyVariableRow()]); }}
         >
           + 변수 추가
         </button>

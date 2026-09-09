@@ -31,6 +31,11 @@ def main():
     parser.add_argument("--upload-file", type=Path)
     parser.add_argument("--pipeline-python", type=Path)
     parser.add_argument("--viz-python", type=Path)
+    parser.add_argument("--journey", type=Path, help="Explicit local browser scenario module")
+    parser.add_argument("--artifacts", type=Path, help="Persistent scenario evidence directory")
+    parser.add_argument("--extra-file", type=Path, action="append", default=[])
+    parser.add_argument("--grid-file", type=Path, action="append", default=[])
+    parser.add_argument("--connections", action="store_true", help="Verify project and lineage persistence")
     args = parser.parse_args()
     if args.upload and not args.pipeline_python:
         parser.error("--upload requires --pipeline-python")
@@ -174,6 +179,13 @@ def main():
             command("reload")
             command("wait", "--text", "로그아웃")
             logged_in = command("snapshot", "-i")
+            if args.journey:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("colab_journey", args.journey.resolve())
+                journey = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(journey)
+                journey.run(command, args, session)
+                logged_in = command("snapshot", "-i")
             if args.inspect:
                 print(logged_in)
             if args.inspect_upload or args.upload:

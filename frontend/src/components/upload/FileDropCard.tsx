@@ -39,11 +39,11 @@ export { MIXED_EXTENSION_NOTICE };
  */
 export const UPLOAD_ANY_FORMAT_NOTICE =
   '어떤 포맷이든 올려요 · 같은 확장자면 여러 개를 한 데이터셋으로 묶어요';
-export const PREVIEWABLE_EXTENSIONS_NOTICE = '지도 미리보기까지 되는 확장자: *.nc *.tif *.hdf *.bin';
+export const PREVIEWABLE_EXTENSIONS_NOTICE = '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy · 파일 구조와 좌표에 따라 달라요';
 export const NOT_PREVIEWABLE_NOTICE = '이 확장자는 지도로 못 그려요';
 
 /** 지도 미리보기가 되는 확장자 — 위 안내 문면과 **같은 목록**이다. 두 곳에 적지 않는다. */
-export const PREVIEWABLE_EXTENSIONS = ['nc', 'tif', 'hdf', 'bin'] as const;
+export const PREVIEWABLE_EXTENSIONS = ['nc', 'nc4', 'tif', 'tiff', 'hdf', 'h5', 'hdf5', 'bin', 'bin.gz', 'npy'] as const;
 
 /**
  * 미리보기 가능 안내의 판정. **업로드를 막지 않는다** — 말만 다르다.
@@ -60,6 +60,7 @@ export function previewabilityNotice(extension: string): string {
  * 점이 없는 이름은 빈 문자열로 접는다 — 「확장자 없음」끼리도 한 종류다.
  */
 export function extensionOf(fileName: string): string {
+  if (fileName.toLowerCase().endsWith('.bin.gz')) return 'bin.gz';
   const dot = fileName.lastIndexOf('.');
   return dot <= 0 ? '' : fileName.slice(dot + 1).toLowerCase();
 }

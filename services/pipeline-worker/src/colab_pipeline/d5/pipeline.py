@@ -45,6 +45,8 @@ class PipelineResult:
     input_path: Path
     status: str                      # "SUCCESS" | "FAILURE"
     metadata: AutoMetadata | None = None
+    # Map conversion still fails; registration may retain the parsed file (D.6-4).
+    coordinates_unavailable: bool = False
     input_cog_class: str | None = None   # 입력 tif 의 3부류 판정
     cog_path: str | None = None
     #: 지도 타일이 놓인 **내용 키**. 산출물이 미리보기 루트에 놓였을 때만 값이 있다.
@@ -217,6 +219,7 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
             grid = find_reference_grid(grid_dir, expect_shape=expect)
             meta.crs = "WGS84 (기준 격자 파일)"
         except GridUnavailableError as e:
+            res.coordinates_unavailable = True
             meta.crs = UNKNOWN
             return _fail(res, f"좌표/격자 없음 — 지어내지 않는다 (DR-9): {e}")
 

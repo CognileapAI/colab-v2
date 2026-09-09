@@ -1,7 +1,10 @@
 // 로컬 시각 검수 전용 진입점. 실제 네트워크·저장 API를 사용하지 않는다.
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SessionProvider } from './src/permission/session';
+import { DatasetDetailPage } from './src/routes/DatasetDetailPage';
+import { fixtureDetailSource } from './src/components/detail/fixture';
+import { fixtureLineageSource } from './src/components/lineage/graphFixture';
 import { UploadModal } from './src/components/upload/UploadModal';
 import type { CurrentAccount } from './src/api/client';
 import type { UploadSources } from './src/components/upload/types';
@@ -31,7 +34,7 @@ const sources = {
 const account = { accountId: id, labId: id, name: '검수', labName: '수자원순환연구실',
   permissions: { '업로드·편집': true } } as unknown as CurrentAccount;
 createRoot(document.getElementById('root')!).render(
-  <MemoryRouter><SessionProvider account={account}>
-    <UploadModal sources={sources} onClose={() => {}} />
+  <MemoryRouter initialEntries={['/datasets/01JYZ9K7WQ3N8V4M2X6C5B0AA1']}><SessionProvider account={account}>
+    {new URLSearchParams(location.search).get('scene') === 'detail' ? <Routes><Route path="/datasets/:datasetId" element={<DatasetDetailPage source={fixtureDetailSource()} lineageSource={fixtureLineageSource()} />} /></Routes> : <UploadModal sources={sources} onClose={() => {}} />}
   </SessionProvider></MemoryRouter>,
 );

@@ -18,6 +18,7 @@ import { ParentPicker } from './ParentPicker';
 import type { LineageGraph } from './graphTypes';
 import type { LineageEditSource } from './lineageEditSource';
 import type { DatasetRow, LineageSource } from './types';
+import { useParentCandidates } from './useParentCandidates';
 import './lineage.css';
 
 /** 후보를 주는 얼굴 — 등록 ③ 이 쓰는 `LineageSource` 의 그 메서드다. */
@@ -35,27 +36,17 @@ export function LineageFixModal(props: {
 }) {
   const { candidateSource, editSource, requestClose } = props;
   const downOnBackdrop = useRef(false);
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEscLayer(useCallback(() => requestClose(), [requestClose]));
 
-  const [candidates, setCandidates] = useState<DatasetRow[] | null>(null);
+  const { candidates, candidateError, loadCandidates: load } = useParentCandidates(candidateSource);
   /** 찾기의 가공 단계 셀렉트. `null` = 전체 (PRD-08) — 등록 ③ 과 같은 규칙이다. */
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [picked, setPicked] = useState<DatasetRow | null>(null);
   const [method, setMethod] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(
-    (level: number | null) => {
-      setCandidates(null);
-      candidateSource
-        .candidates(level)
-        .then((rows) => setCandidates(rows))
-        // 후보를 못 읽는 것과 후보가 0건인 것은 다르다 — 아래 문구가 그 자리를 말한다.
-        .catch(() => setCandidates([]));
-    },
-    [candidateSource],
-  );
 
   useEffect(() => {
     load(null);
@@ -77,14 +68,15 @@ export function LineageFixModal(props: {
         ...(method.trim() ? { method: method.trim() } : {}),
       })
       .then((graph) => {
+        if (!active.current) return;
         props.onSaved(graph);
         requestClose();
       })
       .catch((e: unknown) => {
         // 서버 문구를 그대로 올린다 — 화면이 자기 판정 문구를 만들지 않는다.
-        setError(e instanceof Error ? e.message : '계보를 고치지 못했어요.');
+        if (active.current) setError(e instanceof Error ? e.message : '계보를 고치지 못했어요.');
       })
-      .finally(() => setSaving(false));
+      .finally(() => { if (active.current) setSaving(false); });
   }
 
   return (
@@ -123,7 +115,9 @@ export function LineageFixModal(props: {
           {/* 등록 ③ 과 **같은 컴포넌트**다 — 규칙이 한 자리에 있다 (PRD-07·08·09). */}
           <ParentPicker
             selfLv={props.selfLv}
-            candidates={candidates}
+            candidates={candidates?.filter(row => row.datasetId !== props.datasetId) ?? null}
+            error={candidateError}
+            onRetry={() => load(levelFilter)}
             levelFilter={levelFilter}
             onLevelFilterChange={changeLevelFilter}
             onPick={(row) => setPicked(row)}

@@ -37,44 +37,15 @@ function summarySegments(summary: string): string[] {
     .filter((s) => s.length > 0);
 }
 
-export function DetailHeader(props: {
-  detail: DatasetDetail;
-  approvalSource: ApprovalSource;
-  onChanged?: (() => void) | undefined;
-  /**
-   * ⭑ **WU-A3 이 낸 자리** — 상세 수정 진입점(`DatasetEditEntry`). 권한이 꺼졌으면 그 컴포넌트가
-   * 스스로 `null` 이 되므로 여기는 조건을 알지 못한다 (P-12 · 판정은 한 곳에서만).
-   * 뒤 WU 가 진입점을 늘리더라도 헤더는 이 슬롯 하나만 안다.
-   */
-  editAction?: React.ReactNode;
-}) {
-  const d = props.detail;
-  const segments = d.summary ? summarySegments(d.summary) : [];
-  // ⭑ **⟨WU-C9 · 질의 27·41⟩ 상세가 그리는 Lv — 네 자리 공통 규칙 한 번 호출.**
-  // ⚠ 상세의 `processingLevel` 은 **서버가 이미 고른 표시값**이다(`d3_catalog.level_view` ·
-  //   「사람 값이 `null` 인 행만 파생값으로 대신」 · 계약 산문 축자). 그래서 여기서
-  //   `basicInfo.processingLevelUserSet` 을 **다시 얹지 않는다** — 두 번 고르면 저장 응답이
-  //   돌려준 값을 화면이 옛 사람 값으로 되돌린다. 규칙 함수는 네 자리가 같은 것을 쓴다.
-  const lvShown = displayLevel(d);
-  return (
-    <div className="dt-header" data-testid="detail-header">
-      <div className="dh-main">
-        <h1>{d.name}</h1>
-        {d.fileName ? (
-          <div className="dh-file" data-testid="dh-file">
-            {d.fileName}
-          </div>
-        ) : null}
-        {/* ⭑ **⟨19차 해제 · PRD-15 · 미결-5 ⓐ⟩ 설명이 빈 기존 행의 자리.**
-            설명은 이제 필수지만 **이미 있는 행은 그대로 둔다**(`NOT NULL` 금지 · 일괄
-            채우기 금지). 그래서 이 화면은 **비어 있어도 깨지지 않고**, 대신 어디서
-            채우는지를 한 줄로 알린다. ⛔ 지어낸 요약을 대신 그리지 않는다. */}
-        {!d.summary ? (
+export function DetailSummary({ summary }: { summary: string | null }) {
+  const segments = summary ? summarySegments(summary) : [];
+  return <section className="dt-description" aria-label="설명">
+        {!summary ? (
           <p className="dh-sum-empty" data-testid="dh-sum-empty">
             {EMPTY_SUMMARY_NOTICE}
           </p>
         ) : null}
-        {d.summary ? (
+        {summary ? (
           <div className="dh-sum" data-testid="dh-sum">
             {segments.length > 1 ? (
               <>
@@ -88,10 +59,50 @@ export function DetailHeader(props: {
                 </ul>
               </>
             ) : (
-              d.summary
+              summary
             )}
           </div>
         ) : null}
+  </section>;
+}
+
+export function DetailHeader(props: {
+  detail: DatasetDetail;
+  approvalSource: ApprovalSource;
+  onChanged?: (() => void) | undefined;
+  /**
+   * ⭑ **WU-A3 이 낸 자리** — 상세 수정 진입점(`DatasetEditEntry`). 권한이 꺼졌으면 그 컴포넌트가
+   * 스스로 `null` 이 되므로 여기는 조건을 알지 못한다 (P-12 · 판정은 한 곳에서만).
+   * 뒤 WU 가 진입점을 늘리더라도 헤더는 이 슬롯 하나만 안다.
+   */
+  editAction?: React.ReactNode;
+  summaryInBody?: boolean;
+  nameEditor?: React.ReactNode;
+  accessEditor?: React.ReactNode;
+}) {
+  const d = props.detail;
+
+  // ⭑ **⟨WU-C9 · 질의 27·41⟩ 상세가 그리는 Lv — 네 자리 공통 규칙 한 번 호출.**
+  // ⚠ 상세의 `processingLevel` 은 **서버가 이미 고른 표시값**이다(`d3_catalog.level_view` ·
+  //   「사람 값이 `null` 인 행만 파생값으로 대신」 · 계약 산문 축자). 그래서 여기서
+  //   `basicInfo.processingLevelUserSet` 을 **다시 얹지 않는다** — 두 번 고르면 저장 응답이
+  //   돌려준 값을 화면이 옛 사람 값으로 되돌린다. 규칙 함수는 네 자리가 같은 것을 쓴다.
+  const lvShown = displayLevel(d);
+  return (
+    <div className="dt-header" data-testid="detail-header">
+      <div className="dh-main">
+        <h1 className={props.nameEditor ? "dh-edit-heading" : undefined}>{d.name}</h1>
+        {props.nameEditor}
+        {d.fileName ? (
+          <div className="dh-file" data-testid="dh-file">
+            {d.fileName}
+          </div>
+        ) : null}
+        {/* ⭑ **⟨19차 해제 · PRD-15 · 미결-5 ⓐ⟩ 설명이 빈 기존 행의 자리.**
+            설명은 이제 필수지만 **이미 있는 행은 그대로 둔다**(`NOT NULL` 금지 · 일괄
+            채우기 금지). 그래서 이 화면은 **비어 있어도 깨지지 않고**, 대신 어디서
+            채우는지를 한 줄로 알린다. ⛔ 지어낸 요약을 대신 그리지 않는다. */}
+        {props.summaryInBody ? null : <DetailSummary summary={d.summary} />}
         <div className="dh-tags" data-testid="dh-tags">
           {d.topic ? <span className="chip chip--neutral">{d.topic}</span> : null}
           {/* ⭑ ⟨WU-C9 · 질의 27·41⟩ 네 자리가 같은 함수를 부른다 — 사람 값 우선.
@@ -107,11 +118,11 @@ export function DetailHeader(props: {
               접으면 소유자가 자기 데이터의 상태를 헤더에서 못 가린다.
               ⚠ `열림` 은 여전히 칩이 없다 — 기본 상태에 배지를 붙이면 모든 상세에 칩이 선다.
               표기는 `common/accessState.ts` 한 자리에서 온다(등록 셀렉트와 같은 표). */}
-          {d.accessState !== '열림' ? (
+          {props.accessEditor ?? (d.accessState !== '열림' ? (
             <span className="chip chip--warning" data-testid="dh-access-chip">
               {accessLabel(d.accessState)}
             </span>
-          ) : null}
+          ) : null)}
           {/* Verified 배지 — **표시 전용**이다 (`§8` · `Policy_승인_처리 §1.5`).
               ⭑ WU-P6 이 자리(`VerifiedBadgeSlot`)를 실물로 갈아 끼웠다. */}
           <VerifiedBadge verified={props.detail.verification.verified} />

@@ -1,0 +1,20 @@
+{
+  "session": "colab-login-b83805914d-hdf",
+  "file": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+  "bytes": 9731088,
+  "sha256": "ab7eda26634a5e2f13016acc7e1f8d0cd1daf3924bdbc58538b066b12c12e8a6",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "upload render image decoded by browser",
+    "preview expanded and closed by Escape",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "actual map zoom, reset and cursor latitude/longitude work",
+    "project, lineage method, source and observation interval persist",
+    "parent lineage node navigates to its actual dataset",
+    "lineage method edit, relation removal and re-add persisted after reload",
+    "quick-created project, variable row and exact observation dates persisted",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21TKHV67CNVM5Q76JFADX5J"
+}

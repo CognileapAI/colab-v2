@@ -1,0 +1,107 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_parallel_describe_render_and_reference_grid_keep_process_and_values ___
+
+tmp_path = PosixPath('/tmp/pytest-of-ttlhi10/pytest-0/test_parallel_describe_render_0')
+
+    def test_parallel_describe_render_and_reference_grid_keep_process_and_values(tmp_path):
+        code = textwrap.dedent('''
+            import resource, sys
+            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+            from pathlib import Path
+            from concurrent.futures import ThreadPoolExecutor
+            from threading import Barrier
+            import numpy as np
+            from netCDF4 import Dataset
+            from colab_viz.domains.d7_visualization.readers import read_field, describe_field, detect_format
+            from colab_viz.domains.d7_visualization.grid import _from_netcdf
+            path = Path(sys.argv[1]) / 'concurrent.nc'
+            with Dataset(path, 'w') as ds:
+                ds.createDimension('y', 16)
+                ds.createDimension('x', 16)
+                ds.createVariable('rain', 'f4', ('y', 'x'))[:] = np.full((16, 16), 7)
+                ds.createVariable('lat', 'f4', ('y', 'x'))[:] = np.full((16, 16), 37)
+                ds.createVariable('lon', 'f4', ('y', 'x'))[:] = np.full((16, 16), 127)
+            barrier = Barrier(4)
+            def read(kind):
+                barrier.wait()
+                for _ in range(20):
+                    if kind == 0:
+                        assert detect_format(path) == 'NetCDF'
+                    elif kind == 1:
+                        assert 'rain' in describe_field(path)[1]
+                    elif kind == 2:
+                        fmt, field = read_field(path)
+                        assert fmt == 'NetCDF' and np.all(field.values == 7)
+                    else:
+                        grid = _from_netcdf(path)
+                        assert np.all(grid.lat == 37) and np.all(grid.lon == 127)
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                list(pool.map(read, range(4)))
+            print('80 native reads verified')
+        ''')
+        result = subprocess.run([sys.executable, '-X', 'faulthandler', '-c', code, str(tmp_path)],
+                                text=True, capture_output=True, timeout=45)
+>       assert result.returncode == 0, result.stderr[-5000:]
+E       AssertionError: <string>:15: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+E         As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+E         <string>:16: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+E         As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+E         <string>:17: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+E         As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+E         Fatal Python error: Segmentation fault
+E
+E         Thread 0x000071dfaf7fe6c0 (most recent call first):
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/grid.py", line 96 in _from_netcdf
+E           File "<string>", line 30 in read
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58 in run
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 92 in _worker
+E           File "/usr/lib/python3.12/threading.py", line 1010 in run
+E           File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+E           File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+E
+E         Thread 0x000071dfaffff6c0 (most recent call first):
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py", line 155 in detect_format
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py", line 601 in read_field
+E           File "<string>", line 27 in read
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58 in run
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 92 in _worker
+E           File "/usr/lib/python3.12/threading.py", line 1010 in run
+E           File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+E           File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+E
+E         Thread 0x000071dfb48fb6c0 (most recent call first):
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py", line 155 in detect_format
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py", line 540 in describe_field
+E           File "<string>", line 25 in read
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58 in run
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 92 in _worker
+E           File "/usr/lib/python3.12/threading.py", line 1010 in run
+E           File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+E           File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+E
+E         Current thread 0x000071dfb50fc6c0 (most recent call first):
+E           File "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py", line 155 in detect_format
+E           File "<string>", line 23 in read
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58 in run
+E           File "/usr/lib/python3.12/concurrent/futures/thread.py", line 92 in _worker
+E           File "/usr/lib/python3.12/threading.py", line 1010 in run
+E           File "/usr/lib/python3.12/threading.py", line 1073 in _bootstrap_inner
+E           File "/usr/lib/python3.12/threading.py", line 1030 in _bootstrap
+E
+E         Thread 0x000071dfc35bf080 (most recent call first):
+E           File "/usr/lib/python3.12/threading.py", line 355 in wait
+E           File "/usr/lib/python3.12/concurrent/futures/_base.py", line 451 in result
+E           File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317 in _result_or_cancel
+E           File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619 in result_iterator
+E           File "<string>", line 33 in <module>
+E
+E         Extension modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, cftime._cftime, netCDF4._netCDF4 (total: 4)
+E
+E       assert -11 == 0
+E        +  where -11 = CompletedProcess(args=['services/viz-render/.venv/bin/python', '-X', 'faulthand...ion modules: numpy._core._multiarray_umath, numpy.linalg._umath_linalg, cftime._cftime, netCDF4._netCDF4 (total: 4)\n').returncode
+
+services/viz-render/tests/test_native_io_concurrency.py:50: AssertionError
+=========================== short test summary info ============================
+FAILED services/viz-render/tests/test_native_io_concurrency.py::test_parallel_describe_render_and_reference_grid_keep_process_and_values
+1 failed in 2.51s

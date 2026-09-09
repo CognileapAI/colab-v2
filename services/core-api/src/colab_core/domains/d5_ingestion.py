@@ -24,7 +24,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
@@ -165,6 +165,17 @@ class UploadLedgerAdapter:
         self._session = session
 
     # ── 읽기 ────────────────────────────────────────────────────────────────
+    def metadata_for_file_ids(self, file_ids: list[str]) -> list[dict]:
+        """Resolve ledger file identity; caller must still check upload ownership."""
+        if not file_ids:
+            return []
+        query = text("""
+            SELECT id, file_name, upload_id
+              FROM d5_upload_file WHERE id IN :ids
+        """).bindparams(bindparam("ids", expanding=True))
+        return [dict(row) for row in self._session.execute(
+            query, {"ids": file_ids}).mappings()]
+
     def find(self, upload_id: Ulid, now: dt.datetime | None = None) -> UploadRecord | None:
         row = self._session.execute(
             _FIND, {"id": str(upload_id), "now": now}).mappings().first()

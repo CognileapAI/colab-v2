@@ -30,6 +30,7 @@ import {
  * 두 자리가 각자 상태를 들면 편집 중 화면과 버튼이 갈린다.
  */
 export function DatasetEditForm(props: {
+  fields?: readonly string[];
   draft: DatasetEditDraft;
   error: string | null;
   /** ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸별 인라인 오류 — 그 칸 아래에 선다. */
@@ -45,11 +46,12 @@ export function DatasetEditForm(props: {
   const error = props.error;
   const fieldErrors = props.fieldErrors ?? {};
   const set = props.onField;
+  const visible = (key: string) => !props.fields || props.fields.includes(key);
 
   return (
-    <div className="dt-edit" data-testid="detail-edit-form">
+    <div className={`dt-edit${props.fields ? " de-inline" : ""}`} data-testid={props.fields ? undefined : "detail-edit-form"}>
       <div className="de-grid">
-        {TEXT_FIELDS.map((f) => (
+        {TEXT_FIELDS.filter((f) => visible(f.key)).map((f) => (
           <label className="de-row" key={f.key}>
             <span className="de-k">
               {f.label}
@@ -60,6 +62,7 @@ export function DatasetEditForm(props: {
               <textarea
                 className="de-v"
                 data-testid={`edit-${f.key}`}
+                aria-label={f.label}
                 value={draft[f.key]}
                 rows={3}
                 onChange={(e) => set(f.key, e.target.value)}
@@ -69,6 +72,7 @@ export function DatasetEditForm(props: {
                 className="de-v"
                 type="text"
                 data-testid={`edit-${f.key}`}
+                aria-label={f.label}
                 value={draft[f.key]}
                 onChange={(e) => set(f.key, e.target.value)}
               />
@@ -81,6 +85,7 @@ export function DatasetEditForm(props: {
           </label>
         ))}
         {/* 기간은 **두 칸이 한 값**이다 (`DataPeriod`). 끝을 비우면 무기한이다. */}
+        {visible('period') ? (
         <div className="de-row" data-testid="edit-period">
           <span className="de-k">{PERIOD_LABEL}</span>
           <span className="de-v de-period">
@@ -116,8 +121,10 @@ export function DatasetEditForm(props: {
             />
           </span>
         </div>
+        ) : null}
         {/* ⭑ ⟨19차 해제 · PRD-17⟩ 관측 간격도 **두 칸이 한 값**이다 — 기간과 같은 모양으로 선다.
             ⛔ 화면이 반쪽을 막지 않는다 — 400 의 문구는 서버 봉투 하나가 갖는다. */}
+        {visible('interval') ? (
         <div className="de-row" data-testid="edit-interval">
           <span className="de-k">{INTERVAL_LABEL}</span>
           <span className="de-v de-period">
@@ -144,10 +151,12 @@ export function DatasetEditForm(props: {
             </select>
           </span>
         </div>
+        ) : null}
         {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 셀렉트 한 칸.**
             `나만 보기` 로 내리는 것은 **되돌릴 수 없는 결과**(허용 줄 전부 만료)를 만들어
             `useDatasetEdit` 이 저장 전에 되묻는다. 이 폼은 값을 고르기만 한다 —
             되묻는 문면은 저장 자리(`취소`/`저장` 이 서는 행)에 선다. */}
+        {visible('accessState') ? (
         <div className="de-row" data-testid="edit-access-state">
           <span className="de-k">공개 범위</span>
           <span className="de-v">
@@ -166,9 +175,10 @@ export function DatasetEditForm(props: {
             <span className="de-note muted"> {ACCESS_NOTE[draft.accessState]}</span>
           </span>
         </div>
+        ) : null}
         {/* ⭑ **⟨WU-B10 · PRD-22 확장⟩ 편집 대상에 계보 부모 연결이 있다 — 다만 여기서
             **표를 그리지 않는다.** 규칙의 자리는 계보 구역의 모달 하나다(PRD-31). */}
-        {props.onOpenLineageFix ? (
+        {visible('lineage') && props.onOpenLineageFix ? (
           <div className="de-row" data-testid="edit-lineage">
             <span className="de-k">{LINEAGE_LINK_LABEL}</span>
             <span className="de-v">

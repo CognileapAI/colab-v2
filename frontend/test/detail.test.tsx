@@ -108,7 +108,7 @@ describe('§5 기본 정보 — 3축 3행 ＋ 아홉 칸', () => {
       .map((e) => e.textContent);
     expect(keys).toEqual([
       '분류', '유형', '가공 단계',
-      '구성', '좌표계', '기간', '격자', '포맷', '파일', '원천 표기', '소유자', '올린 사람',
+      '좌표계', '기간', '격자', '포맷', '원천 표기', '구성', '소유자', '올린 사람', '파일',
     ]);
   });
 
@@ -261,4 +261,13 @@ describe('활용 프로젝트는 이 WU 가 만들지 않는다 (P5)', () => {
     await settle('낙동강 유역 강우 (2025)');
     expect(screen.queryByText('활용·접근')).toBeNull();
   });
+});
+
+
+it('기간이 없어도 저장된 관측 간격을 상세에서 읽을 수 있다', async () => {
+  const base = FIXTURE_DETAILS[OPEN_ID]!;
+  const value = { ...base, basicInfo: { ...base.basicInfo!, period: null, observationInterval: { value: 10, unit: '분' } } } as DatasetDetail;
+  renderDetail(OPEN_ID, { get: async () => value } as DetailSource);
+  await settle(value.name);
+  expect(screen.getByTestId('ig-관측 간격')).toHaveTextContent('10분');
 });

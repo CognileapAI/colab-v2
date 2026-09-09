@@ -23,6 +23,7 @@ import numpy as np
 from . import coords, downsample
 from .failures import NotRenderableError
 from .hsr import decode_block, parse_hsr
+from .native_io import serialized_netcdf
 
 #: 이 단위가 **그릴 수 있는** 포맷 — `〈51〉`·`〈77〉`·`〈134〉`. **숫자가 아니라 목록이다.**
 #:
@@ -133,6 +134,7 @@ def _plausible_hsr(head: bytes) -> bool:
             and nx > 0 and ny > 0 and nz > 0 and dxy > 0)
 
 
+@serialized_netcdf
 def detect_format(path: Path) -> str:
     """지원 4종 중 하나를 돌려준다. 아니면 `NotRenderableError` — 415 의 근거다."""
     path = Path(path)
@@ -332,6 +334,7 @@ def _time_index(ds, var, instant: str | None, path: Path) -> tuple[int, int]:
         + (f"(처음 {labels[0]} · 마지막 {labels[-1]})" if labels else "(비어 있다)"))
 
 
+@serialized_netcdf
 def _read_netcdf(path: Path, variable: str | None, instant: str | None,
                  max_side: int) -> Field:
     from netCDF4 import Dataset
@@ -519,6 +522,7 @@ def _read_numpy(path: Path, max_side: int) -> Field:
                  unit=None, native_shape=native, steps=steps, fills=())
 
 
+@serialized_netcdf
 def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
     """`(포맷, 그릴 수 있는 이름들, 시각 표기들)` — **값을 읽지 않는다.**
 

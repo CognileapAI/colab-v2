@@ -1,0 +1,14 @@
+{
+  "session": "colab-login-610f560751-grib",
+  "file": "surface.grib",
+  "bytes": 149514336,
+  "sha256": "1b94e6d6756d90d239e3eb0ef763c9aa14f7395345bb49f4ffff87db90d39ba0",
+  "steps": [
+    "actual upload and worker analysis; registration classification opened",
+    "unsupported render has a terminal explanation; registration remains available",
+    "registered name, description and source filename persist after reload; unsupported format explanation visible",
+    "edited name and description persisted after reload",
+    "browser original file download SHA256 matches uploaded source"
+  ],
+  "url": "http://127.0.0.1:43173/datasets/01M21TG82D323VYAHSMC6X2A68"
+}

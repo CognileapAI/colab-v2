@@ -9,7 +9,7 @@
 //  - **파생은 읽기 전용**이다. 자식을 올릴 때 확정된 이력이라 여기서 고치지 않는다 (§3.2).
 //  - **편집 컨트롤은 `canEdit` 이 켜졌을 때만 화면에 존재한다** (§3.2·§6 · P-12).
 //  - 화면 글자는 정본·목업에서 그대로 온다. 없는 값을 지어내지 않는다.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toast } from '../common/Toast';
 import { PRE_LINEAGE_ADDED } from '../common/toastCopy';
@@ -168,8 +168,29 @@ function OriginFlag(props: { origin: LineageEdge['origin'] }) {
   return null;
 }
 
-function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; derived: boolean }) {
+function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; derived: boolean; datasetId?: string; editSource?: LineageEditSource | undefined; onSaved?: (graph: LineageGraph) => void }) {
   const { edge, node, derived } = props;
+  const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [method, setMethod] = useState(edge.method ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const editable = !derived && !!props.editSource && !!edge.parentDatasetId;
+  async function save(remove = false) {
+    if (busy || !props.datasetId || !edge.parentDatasetId || !props.editSource) return;
+    const action = remove ? props.editSource.removeParent : props.editSource.updateMethod;
+    if (!action) return;
+    setBusy(true); setError(null);
+    try {
+      const next = remove ? await props.editSource.removeParent!(props.datasetId, edge.parentDatasetId) : await props.editSource.updateMethod!(props.datasetId, edge.parentDatasetId, method);
+      if (!active.current) return;
+      props.onSaved?.(next); setEditing(false); setRemoving(false);
+    } catch (reason) {
+      if (active.current) setError(reason instanceof Error ? reason.message : '계보를 저장하지 못했어요.');
+    } finally { if (active.current) setBusy(false); }
+  }
   const kind = node?.kind ?? (derived ? '파생' : '가공 전');
   const name = node?.name ?? '—';
   const hist = `확인 ${edge.confirmedBy.name} · ${day(edge.confirmedAt)}${
@@ -198,6 +219,14 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
           {edge.method ? <span className="way">{`가공 방식: ${edge.method} · `}</span> : null}
           <span className="hist">{hist}</span>
         </div>
+        {editable && <div className="lin-relation-actions">
+          {editing ? <label>가공 방식<input className="inp" value={method} disabled={busy} onChange={event => setMethod(event.target.value)} /><button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => void save()}>가공 방식 저장</button><button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => { setEditing(false); setError(null); }}>취소</button></label>
+            : props.editSource?.updateMethod && <button type="button" className="btn btn-secondary btn-sm" disabled={busy || removing} onClick={() => { setMethod(edge.method ?? ''); setEditing(true); }}>가공 방식 수정</button>}
+          {removing ? <div><p>이 데이터와의 연결만 제거해요. 원본 데이터는 남아요.</p><button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => void save(true)}>이 연결 제거</button><button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => { setRemoving(false); setError(null); }}>취소</button></div>
+            : props.editSource?.removeParent && <button type="button" className="btn btn-ghost btn-sm" disabled={busy || editing} onClick={() => setRemoving(true)}>연결 제거</button>}
+          {busy && <p role="status">계보를 저장하는 중이에요…</p>}
+          {error && <p role="alert">{error}</p>}
+        </div>}
       </div>
       {node && displayLevel(node) !== null ? (
         <span className={`lvl lvl-${displayLevel(node)}`}>Lv{displayLevel(node)}</span>
@@ -237,7 +266,9 @@ export function LineageSection(props: {
   const [saved, setSaved] = useState<LineageGraph | null>(null);
   const [fixing, setFixing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const g = saved ?? props.graph;
+  const g = saved?.datasetId === props.graph.datasetId ? saved : props.graph;
+  useEffect(() => { setSaved(null); }, [props.graph]);
+  useEffect(() => { setFixing(false); }, [props.graph.datasetId]);
   const canEdit = g.canEdit;
   const openToken = props.openToken ?? 0;
   useEffect(() => {
@@ -425,6 +456,9 @@ export function LineageSection(props: {
                 edge={e}
                 node={byId.get(e.parentDatasetId!)}
                 derived={false}
+                datasetId={g.datasetId}
+                editSource={canEdit ? editSource : undefined}
+                onSaved={next => { setSaved(next); setNotice('계보를 수정했어요.'); }}
               />
             ))}
 

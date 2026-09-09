@@ -16,12 +16,13 @@ core-api 가 하는 판정은 **경계 하나뿐**이다 — 대상(`datasetId`�
 from __future__ import annotations
 
 import time
+from copy import deepcopy
 
 from fastapi import APIRouter, Body, Depends, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d5_ingestion
+from ...domains import d2_access, d3_catalog, d5_ingestion, preview_metadata
 from . import catalog
 from ...kernel import errors
 from ...kernel.auth import Subject
@@ -78,6 +79,42 @@ def _require_target_access(db: Session, subject: Subject, target: dict) -> None:
     record = d5_ingestion.UploadLedgerAdapter(db).find(Ulid(upload_ref))
     if record is None or str(record.uploader_account_id) != str(subject.account_id):
         raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
+
+
+def _with_original_file_names(db: Session, subject: Subject, job: dict) -> dict:
+    """Restore display metadata, never infer filenames from internal storage keys.
+
+    GET jobs contain file IDs but no target. Resolve their ledger targets first and
+    reuse the existing access check before adding any original name to the response.
+    Unknown/inaccessible IDs retain the upstream response without revealing metadata.
+    """
+    partial = job.get("partialFailure")
+    missing = partial.get("missingParts") if isinstance(partial, dict) else None
+    if not isinstance(missing, list):
+        return job
+    ids = list({part["fileId"] for part in missing if isinstance(part, dict)
+                and Ulid.is_valid(part.get("fileId"))})
+    names: dict[str, str] = {}
+    access: dict[tuple[str, str], bool] = {}
+    for row in preview_metadata.file_names(db, ids):
+        target = (row["target_kind"], str(row["target_id"]))
+        if target not in access:
+            try:
+                _require_target_access(db, subject, {target[0]: target[1]})
+                access[target] = True
+            except errors.ApiError as exc:
+                if exc.status_code not in (403, 404, 410):
+                    raise
+                access[target] = False
+        if access[target]:
+            names[str(row["id"])] = row["file_name"]
+    if not names:
+        return job
+    restored = deepcopy(job)
+    for part in restored["partialFailure"]["missingParts"]:
+        if isinstance(part, dict) and part.get("fileId") in names:
+            part["fileName"] = names[part["fileId"]]
+    return restored
 
 
 @router.get("/preview-palettes", name="listPalettes")
@@ -181,8 +218,9 @@ def create_preview_render(request: Request, response: Response, body: dict = Bod
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
-        return relay.create(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
-                            request=body)
+        job = relay.create(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
+                           request=body)
+        return _with_original_file_names(db, subject, job)
     except RelayRefused as e:
         # **그릴 수 없는 파일은 장애가 아니다** — 저쪽의 상태·봉투가 그대로 화면까지 간다.
         return _refused(e)
@@ -212,7 +250,7 @@ def get_preview_render(request: Request, renderId: str,
                               f"그리는 서버에 연결하지 못했다: {e}") from None
     if job is None:
         raise errors.not_found("그런 렌더 작업이 없다.")
-    return job
+    return _with_original_file_names(db, subject, job)
 
 
 @router.post("/preview-screenshots", name="createPreviewScreenshot")

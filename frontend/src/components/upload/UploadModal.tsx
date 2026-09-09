@@ -29,7 +29,7 @@ import {
 } from '../common/toastCopy';
 import { collectDrop } from './dropTree';
 import { ESC_LAYER_ATTR } from './escLayer';
-import { FileDropCard } from './FileDropCard';
+import { FileDropCard, keepOneExtension, MIXED_EXTENSION_NOTICE } from './FileDropCard';
 import { PreviewPanel } from './PreviewPanel';
 import { LV0, RegisterArea, type Step } from './RegisterArea';
 import {
@@ -214,6 +214,7 @@ export function UploadModal(props: {
   const [gridSkipped, setGridSkipped] = useState(false);
   /** ③ 파일을 뺐다는 고지. 토스트가 스스로 사라질 때 함께 내린다. */
   const [removedNotice, setRemovedNotice] = useState(false);
+  const [mixedGlobal, setMixedGlobal] = useState(false);
   const [nameError, setNameError] = useState(false);
   //: ⭑ **⟨19차 해제 · PRD-15⟩ 설명도 이름과 같은 자리에 선다** — 필수 칸이 둘이 됐다.
   //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
@@ -229,6 +230,8 @@ export function UploadModal(props: {
   // 접수가 끝나면 null 로 되돌린다 — 안 그러면 `격자 전송 중` 이 뒤 상태를 영구히 가린다.
   const [transfer, setTransfer] = useState<{ sentBytes: number; totalBytes: number } | null>(null);
   const [attaching, setAttaching] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
   // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
   const [rendered, setRendered] = useState<{
     renderId: string;
@@ -252,6 +255,8 @@ export function UploadModal(props: {
   const downOnBackdrop = useRef(false);
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [step, registerOpen]);
 
   /*
    * PRD-13 — **모달을 열 때마다 ① 로 되돌린다.** rev1 축자 = 「단계가 둘일 때는 안 드러났고
@@ -535,6 +540,10 @@ export function UploadModal(props: {
   }
 
   function pick(files: File[], paths?: ReadonlyMap<File, string>) {
+    const filtered = keepOneExtension(picked, files);
+    setMixedGlobal(filtered.dropped > 0);
+    if (!filtered.kept.length) return;
+    files = filtered.kept;
     // 파일 종류 기본값은 `본체` 다. 격자는 사람이 골라 바꾼다 (`P2.md §2-20`).
     // **후주입 모드에서는 기본값이 `기준 격자 파일` 이다** — 사람이 격자를 붙이러 왔다.
     // 폴더째 드롭이면 상대 경로가 함께 온다 (`dropTree.ts` · `〈337〉`).
@@ -560,12 +569,25 @@ export function UploadModal(props: {
    *
    * ⚠ 마지막 파일을 빼면 등록 단계도 걷는다 — 등록할 대상이 없는 등록 카드는 빈 폼이다.
    */
-  function removeFile(index: number) {
-    setPicked((cur) => cur.filter((_, i) => i !== index));
+  function removeFile(index: number | null) {
+    setPicked((cur) => index === null ? [] : cur.filter((_, i) => i !== index));
     setRemovedNotice(true);
     // 파일에서 온 것은 파일과 함께 내린다. 접수·상태는 `signature` effect 가 다시 세운다.
     setName('');
     setNameDraft('');
+    setTopic('');
+    setSummary('');
+    setSourceLabel('');
+    setVariables([emptyVariableRow()]);
+    setCrs('');
+    setGranularity('');
+    setIntervalValue('');
+    setIntervalUnit('');
+    setAccessState(null);
+    setLineageUnknown(false);
+    setNameError(false);
+    setSummaryError(false);
+    setVariableNotice(null);
     setRegisterOpen(false);
     setStep(1);
     setRegisterError(null);
@@ -624,7 +646,7 @@ export function UploadModal(props: {
       document.removeEventListener('drop', onDrop);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultKind]);
+  }, [defaultKind, picked]);
 
   /**
    * 「보기만 할게요」 — **등록하지 않겠다는 선택**이고, 정본 §7.2 전이표가 이 선택의 도착지를
@@ -781,6 +803,7 @@ export function UploadModal(props: {
   }
 
   async function submit() {
+    if (submitLock.current) return;
     if (!uploadId) {
       // 등록 게이트는 접수 성패와 무관하게 상시 서 있다. 접수가 실패했으면 여기서 **말없이
       // return** 했다 — 사람은 [등록]을 눌렀는데 아무 일도 안 일어났다. 두 번째 침묵을 닫는다.
@@ -829,6 +852,8 @@ export function UploadModal(props: {
     }
     setSourceDownloadedOnError(null);
     setRegisterError(null);
+    submitLock.current = true;
+    setSubmitting(true);
     try {
       const made = await upload.register({
         uploadId,
@@ -876,12 +901,15 @@ export function UploadModal(props: {
             ? e.message
             : '데이터셋을 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.',
       );
+    } finally {
+      submitLock.current = false;
+      setSubmitting(false);
     }
   }
 
   return (
     <div
-      className={`modal-back mb-takeover${picked.length === 0 && !attach ? ' up-empty' : ''}`}
+      className={`modal-back mb-takeover${!registerOpen && !attach ? ' up-empty' : ''}`}
       data-testid="upload-backdrop"
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
@@ -902,7 +930,7 @@ export function UploadModal(props: {
         aria-label={attach ? '기준 격자 추가' : '업로드'}
         data-testid="upload-modal"
         data-mode={attach ? 'grid-attach' : 'register'}
-        data-scene={registerOpen ? 'register' : picked.length ? 'preview' : 'pick'}
+        data-scene={registerOpen ? 'register' : picked.length ? 'analyze' : 'pick'}
       >
         <div className="modal-h">
           <h3>{attach ? '기준 격자 추가' : picked.length === 0 ? '파일 올리기' : '업로드'}</h3>
@@ -910,12 +938,12 @@ export function UploadModal(props: {
           <span className="mh-lab" data-testid="upload-lab">
             <b>{account?.labName ?? ''}</b>에 올려요
           </span>
-          <button type="button" className="x" data-testid="upload-close" onClick={requestClose}>
+          <button type="button" className="x" data-testid="upload-close" aria-label="업로드 닫기" onClick={requestClose}>
             ×
           </button>
         </div>
 
-        <div className="modal-b up-body">
+        <div className="modal-b up-body" ref={bodyRef}>
           {/* 올리다 만 전송 — 숨기지 않는다. 이어올리거나 지워야 사라진다 (〈338〉) */}
           {!attach && incomplete.length > 0 && (
             <aside className="up-banner" data-testid="up-incomplete" aria-live="polite">
@@ -963,14 +991,8 @@ export function UploadModal(props: {
             </aside>
           )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
-          {registerOpen ? (
-            <details className="up-file-management">
-              <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
-              <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
-            </details>
-          ) : (
-            <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
-          )}
+          {!registerOpen && <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />}
+
 
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.
               위쪽 이어올리기 배너와 섞지 않는다: 그쪽은 「재개 가능」, 이쪽은 「다시 시작」이라
@@ -1036,6 +1058,15 @@ export function UploadModal(props: {
             />
           )}
 
+          {mixedGlobal && <Toast message={MIXED_EXTENSION_NOTICE} testId="up-mixed-global" onDismiss={() => setMixedGlobal(false)} />}
+          {status?.failure && (
+            <div className="warn" role="alert" data-testid="up-analysis-failure">
+              <p>파일 분석을 마치지 못했어요 · {status.failure.reason}</p>
+              <p>파일과 기준 격자를 확인한 뒤 다시 시도해 주세요.</p>
+              <button type="button" className="btn btn-secondary" onClick={() => setRetryArm((n) => n + 1)}>다시 올려 분석</button>
+            </div>
+          )}
+
           {intakeError && (
             <p className="warn" role="alert" data-testid="up-intake-error">
               {intakeError}
@@ -1060,6 +1091,8 @@ export function UploadModal(props: {
               <PreviewPanel
                 key={signature}
                 source={props.sources.preview}
+                autoPreview={registerOpen && Boolean(status?.renderable)}
+                renderable={status?.ready ? status.renderable ?? undefined : undefined}
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}
                 onRender={setRendered}
@@ -1075,6 +1108,10 @@ export function UploadModal(props: {
                   ...(gridOnly && transfer ? { transfer } : {}),
                 }}
               />
+              {registerOpen ? <details className="up-file-management">
+                <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
+                <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
+              </details> : null}
               </div>
 
               {/* 오른쪽 칸 — 사람이 적는 자리. 등록 게이트도 여기 선다(요약 레일이 아니다). */}
@@ -1143,12 +1180,13 @@ export function UploadModal(props: {
                     type="button"
                     className="btn btn-strong"
                     data-testid="reg-open"
+                    disabled={!uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
                     onClick={() => {
                       setRegisterOpen(true);
                       setStep(1);
                     }}
                   >
-                    연구실에 등록 →
+                    다음 →
                   </button>
                 </div>
               </div>
@@ -1162,6 +1200,8 @@ export function UploadModal(props: {
                 step={step}
                 onStep={setStep}
                 fileName={bodyName}
+                fileCount={picked.length}
+                onRemoveFiles={() => removeFile(null)}
                 lineage={lineage}
                 status={status}
                 projectSource={props.sources.projects}
@@ -1212,7 +1252,8 @@ export function UploadModal(props: {
                 lineageStep={lineageStep}
                 lineageCtx={lineageCtx}
                 lineageConflicts={lineageConflicts}
-                onCancel={() => setRegisterOpen(false)}
+                onCancel={requestClose}
+                submitting={submitting}
                 onSubmit={() => void submit()}
               />
             )}

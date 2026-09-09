@@ -254,7 +254,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
     expect(screen.getByTestId('reg-proj-quick')).toBeInTheDocument();
   });
 
-  it('⚠ 빈 이름 문면은 이 회차가 건드리지 않는다 — 중복 문면이 그 자리에 오지 않는다', async () => {
+  it('빈 이름은 입력 안내를 보이고 중복 문면과 구분한다', async () => {
     render(<Harness source={refusingSource} />);
     await screen.findByTestId('reg-projects');
 
@@ -262,6 +262,7 @@ describe('WU-A7R — 연관 프로젝트·논문을 한 표에 유형 열로 쌓
     const form = await screen.findByTestId('reg-proj-quick');
     fireEvent.click(within(form).getByRole('button', { name: '만들고 담기' }));
 
-    expect(screen.queryByTestId('reg-proj-quick-error')).toBeNull();
+    expect(screen.getByTestId('reg-proj-quick-error')).toHaveTextContent('이름을 적어 주세요');
+    expect(screen.getByTestId('reg-proj-quick-error')).not.toHaveTextContent(DUPLICATE_NAME_MESSAGE);
   });
 });

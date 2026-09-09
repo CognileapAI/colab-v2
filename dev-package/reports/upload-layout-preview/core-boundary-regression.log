@@ -1,0 +1,6 @@
+# 일회용 postgres 준비 완료 — 스키마·앱 롤·시드 적용(접속 문자열은 출력하지 않는다)
+   .............                                                            [100%]
+   ----------- generated xml file: /tmp/service-tests-MAiHhe/junit.xml ------------
+   13 passed, 982 deselected in 7.88s
+service-tests-core-api — 선택자 «not e2e» · 수집 13 · 실행 13 · skipped 0 · deselected 982 · failed 0 · errors 0 · 소요 7.9초
+service-tests-core-api green — 실행 13건 전부 통과 (skipped 0 · deselected 982 은 요약줄에 드러나 있다).

@@ -187,7 +187,7 @@ describe('PRD-12 등록 3단계 재구성', () => {
   it('① 표시기 세 라벨이 `① 분류 · ② 메타데이터 입력 · ③ 연결` 이고 ① 이 열려 있다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
-    const steps = within(screen.getByTestId('reg-steps')).getAllByRole('button');
+    const steps = within(screen.getByTestId('reg-steps')).getAllByRole('button', { name: /^[①②③]/ });
     expect(steps).toHaveLength(3);
     expect(steps.map((b) => b.textContent)).toEqual([
       '① 분류',
@@ -518,9 +518,11 @@ describe('㈑ 모달 2장면', () => {
     expect(screen.getByTestId('up-split-preview')).toBeTruthy();
     expect(screen.getByTestId('reg-s1')).toBeTruthy();
     // 존치 — 2단 등록 게이트 · 기준 격자 첨부 자리(파일 종류를 `기준 격자 파일` 로 바꾸는 칸).
-    expect(screen.getByTestId('reg-gate')).toBeTruthy();
+    expect(screen.queryByTestId('reg-gate')).toBeNull();
     const kinds = within(screen.getByTestId('up-file-kind')).getAllByRole('option');
     expect(kinds.map((o) => (o as HTMLOptionElement).value)).toContain('기준 격자 파일');
+    await click(screen.getByTestId('reg-cancel'));
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
   });
 
   // ⭑ ⟨advisor ② · F6⟩ 라운드 ㈑ 문면 3종 중 미검증분 — 이어올리기 배너에서 장면2 도달.
@@ -557,7 +559,7 @@ describe('㈑ 모달 2장면', () => {
   it('파일 배지 `×` 를 누르면 장면1 로 돌아가고 초기화 고지가 뜬다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
-    await click(screen.getByRole('button', { name: /빼기$/ }));
+    await click(within(screen.getByTestId('reg-file')).getByRole('button', { name: '올린 파일 모두 빼기' }));
     expect(screen.queryByTestId('up-split')).toBeNull();
     expect(screen.getByTestId('up-removed-toast')).toBeTruthy();
   });

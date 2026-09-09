@@ -229,6 +229,7 @@ describe('PRD-09 사후 충돌은 지우지 않고 막는다', () => {
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV2}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
     expect(screen.queryByTestId('lin-need-check')).toBeNull();
     expect((screen.getByTestId('reg-done') as HTMLButtonElement).disabled).toBe(false);
@@ -259,6 +260,7 @@ describe('PRD-10 불일치는 경고만이다', () => {
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV0}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
     expect(screen.getByTestId('lin-lv-mismatch').textContent).toBe(
       '고른 가공 단계는 Lv3이고, 연결한 데이터로 계산하면 Lv1이에요. 그대로 두어도 등록돼요.');
@@ -293,6 +295,7 @@ describe('PRD-09 · 파일 제거는 연결 상태까지 내린다', () => {
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV2}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
     // 자기 Lv 를 내려 사후 충돌을 만든다 — 지우는 것이 아니라 칩이 선다.
     await click(screen.getByRole('button', { name: /^①/ }));
@@ -302,7 +305,7 @@ describe('PRD-09 · 파일 제거는 연결 상태까지 내린다', () => {
     expect(screen.getByTestId('lin-need-check')).toBeTruthy();
 
     // 파일을 빼고 같은 파일을 다시 올린다 — 고지 문면이 「입력하던 내용은 사라져요」다.
-    await click(screen.getByLabelText(/빼기$/));
+    await click(screen.getByRole('button', { name: '올린 파일 모두 빼기' }));
     fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [makeFile()] } });
     await act(async () => {});
     await screen.findByTestId('up-files');
@@ -325,6 +328,7 @@ describe('PRD-14 되묻기 — 확인 전 카드도 센다', () => {
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV2}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
     // 확인(`lin-confirm`)을 누르지 않는다 — 승격된 카드는 언마운트로 사라지지 않으므로 셀 수 있다.
     fireEvent.keyDown(document, { key: 'Escape' });

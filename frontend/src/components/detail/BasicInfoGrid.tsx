@@ -1,7 +1,8 @@
 // 기본 정보 — **아홉 칸**: 구성 · 좌표계 · 기간 · 격자 · 포맷 · 파일 · 원천 표기 · 소유자 · 올린 사람
 // (`Policy_데이터셋_상세 §5`). 공간 범위 칸은 두지 않는다 — 이름과 지도가 이미 말한다.
 // 잠긴 데이터는 이 블록을 통째로 비운다(`basicInfo` null) — 부르는 쪽이 아예 그리지 않는다.
-import { useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
+import { DetailSummary } from './DetailHeader';
 import { PieceList } from './PieceList';
 import { VariableTable, toVariableRows } from '../common/VariableTable';
 import {
@@ -20,7 +21,9 @@ import { AXIS_UNSET_NUDGE, UNSPECIFIED_CELL } from '../catalog/axisFilters';
 import { displayLevel } from '../common/processingLevel';
 
 export function BasicInfoGrid(props: {
+  editors?: Partial<Record<string, ReactNode>>;
   basicInfo: DatasetBasicInfo;
+  summary?: string | null;
   fileName: string | null;
   datasetId: string;
   filesSource: FilesSource;
@@ -87,34 +90,37 @@ export function BasicInfoGrid(props: {
   const unsetAxes = new Set(axisCells.filter(([, v]) => !v).map(([k]) => k));
   const cells: [string, string][] = [
     ...axisCells.map(([k, v]) => [k, v ?? UNSPECIFIED_CELL] as [string, string]),
-    ['구성', variableRows.length > 0 ? '' : EMPTY],
     ['좌표계', orEmpty(b.crs)],
     ['기간', formatPeriodWithInterval(b.period, b.observationInterval)],
+    ...(!b.period && !intervalMissing ? [['관측 간격', formatInterval(b.observationInterval)!] as [string, string]] : []),
     ['격자', orEmpty(b.grid)],
     // **판별 문자열이 아니라 확장자다** (PRD-21) — 못 뽑은 행만 `format` 으로 퇴행한다.
     ['포맷', formatExtension(b.fileExtension, b.format)],
-    ['파일', formatFiles(b.files, props.fileName)],
     ['원천 표기', orEmpty(b.sourceLabel)],
+    ['구성', variableRows.length > 0 ? '' : EMPTY],
     ['소유자', b.owner.name],
     ['올린 사람', b.uploader.name],
+    ['파일', formatFiles(b.files, props.fileName)],
   ];
   return (
     <>
       <div className="infogrid" data-testid="basic-info">
         {cells.map(([k, v]) => (
-          <div className="ig" key={k} data-testid={`ig-${k}`}>
+          <Fragment key={k}>
+          {k === '구성' && props.summary !== undefined ? (props.editors?.['설명'] ? <div className="ig ig-description"><div className="k">설명</div>{props.editors['설명']}</div> : <DetailSummary summary={props.summary} />) : null}
+          <div className={`ig${k === '구성' ? ' ig-variables' : ''}`} data-testid={`ig-${k}`}>
             <div className="k" data-testid="ig-k">
               {k}
             </div>
             <div className="v">
-              {k === '구성' && variableRows.length > 0 ? (
+              {props.editors?.[k] ?? (k === '구성' && variableRows.length > 0 ? (
                 <VariableTable rows={variableRows} />
               ) : (
                 v
-              )}
+              ))}
               {/* PRD-17 — 안 적은 행은 **그 사실을 말한다.** 「모른다」를 빈 칸으로 두면
                   「간격이 없다」와 갈리지 않는다. ⛔ 재선택을 강제하지 않는다 — 안내 한 줄이다. */}
-              {k === '기간' && intervalMissing ? (
+              {!props.editors?.[k] && k === '기간' && intervalMissing ? (
                 <span className="ig-note" data-testid="ig-interval-missing">
                   {INTERVAL_MISSING_NOTICE}
                 </span>
@@ -123,17 +129,17 @@ export function BasicInfoGrid(props: {
                   값이 있으면 그대로 보이고(Lv 로 가리지 않는다),
                   화면에 보이는 Lv(사람 값 우선 · WU-C8 · §5-28)가 Lv0 인데 둘 다 비면
                   안내 한 줄이 대신 선다. */}
-              {k === '원천 표기' && b.sourceUrl ? (
+              {!props.editors?.[k] && k === '원천 표기' && b.sourceUrl ? (
                 <span className="ig-note" data-testid="ig-source-url">
                   {b.sourceUrl}
                 </span>
               ) : null}
-              {k === '원천 표기' && b.sourceDownloadedOn ? (
+              {!props.editors?.[k] && k === '원천 표기' && b.sourceDownloadedOn ? (
                 <span className="ig-note" data-testid="ig-source-downloaded-on">
                   {b.sourceDownloadedOn}
                 </span>
               ) : null}
-              {k === '원천 표기' && lv0SourceMissing ? (
+              {!props.editors?.[k] && k === '원천 표기' && lv0SourceMissing ? (
                 <span className="ig-note" data-testid="ig-lv0-source-missing">
                   {LV0_SOURCE_MISSING_NOTICE}
                 </span>
@@ -151,6 +157,7 @@ export function BasicInfoGrid(props: {
               ) : null}
             </div>
           </div>
+          </Fragment>
         ))}
       </div>
       {/* 목록은 **격자 아래** 페이지 흐름에 그대로 붙는다 — 자체 스크롤 상자를 만들지 않는다 (§5 122행) */}

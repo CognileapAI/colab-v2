@@ -46,6 +46,7 @@ import {
 //   화면 안의 `picker()`·`overReason()` 이 유일본이었고, 모달이 사본을 뜨면 PRD-07·08·09 의
 //   규칙이 두 벌이 된다.
 import { ParentPicker, parentOverReason } from './ParentPicker';
+import { useParentCandidates } from './useParentCandidates';
 import './lineage.css';
 
 /** 안내 줄 축자 (PRD-07 rev1). `Lv0` 이면 범위 문면이 `Lv0` 하나다. */
@@ -119,7 +120,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const [resp, setResp] = useState<LineageSuggestionResponse | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [methods, setMethods] = useState<MethodCard[]>([]);
-  const [candidates, setCandidates] = useState<DatasetRow[] | null>(null);
+  const { candidates, candidateError, loadCandidates } = useParentCandidates(source);
   /** 찾기 모달의 가공 단계 셀렉트. `null` = 전체 (PRD-08). */
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
@@ -217,22 +218,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     onLineageProgress({ confirmed: parents.filter((p) => p.confirmed).length, total: parents.length });
   }, [parents, onLineageProgress]);
 
-  const loadCandidates = useCallback(
-    (level: number | null = levelFilter, force = false) => {
-      if (candidates && !force) return;
-      setCandidates(null);
-      void source
-        .candidates(level)
-        .then((rows) => setCandidates(rows))
-        .catch(() => setCandidates([]));
-    },
-    [candidates, source, levelFilter],
-  );
-
   /** 셀렉트가 바뀌면 **다시 묻는다** — 거르는 자리는 서버다(질의 파라미터 · PRD-08). */
   function changeLevelFilter(next: number | null) {
     setLevelFilter(next);
-    loadCandidates(next, true);
+    loadCandidates(next);
   }
 
   /**
@@ -313,9 +302,12 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       <ParentPicker
         selfLv={selfLv}
         candidates={candidates}
+        error={candidateError}
+        onRetry={() => loadCandidates(levelFilter)}
+        onClose={() => { setAdding(false); setParents(cur => cur.map(p => ({ ...p, picking: false }))); }}
         levelFilter={levelFilter}
         onLevelFilterChange={changeLevelFilter}
-        onPick={onPick}
+        onPick={(row) => { onPick(row); setAdding(false); }}
         testId={testid}
       />
     );
@@ -331,7 +323,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         className="btn btn-secondary btn-sm"
         data-testid="lin-add"
         onClick={() => {
-          loadCandidates(levelFilter, true);
+          loadCandidates(levelFilter);
           setAdding((v) => !v);
         }}
       >
@@ -476,7 +468,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
                 className="btn btn-secondary btn-sm"
                 data-testid="lin-edit"
                 onClick={() => {
-                  loadCandidates(levelFilter, true);
+                  loadCandidates(levelFilter);
                   patch(p.key, { picking: !p.picking });
                 }}
               >

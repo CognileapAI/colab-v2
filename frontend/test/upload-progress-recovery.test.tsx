@@ -139,3 +139,14 @@ describe('진행 상태 조회 실패 복구', () => {
     expect(status).toHaveBeenCalledTimes(1);
   });
 });
+
+
+it('등록 장면 진입 시 첫 미리보기를 자동으로 요청해 그림을 표시한다', async () => {
+  const source = {
+    palettes: async () => [{ palette: 'viridis', label: '비리디스' }],
+    createRender: async () => ({ renderId: ID, status: '완료', result: { imageUrl: '/first-preview.png' } }),
+    getRender: () => new Promise(() => {}),
+  } as unknown as PreviewSource;
+  render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid autoPreview />);
+  expect(await screen.findByTestId('up-preview-image')).toHaveAttribute('src', '/first-preview.png');
+});
