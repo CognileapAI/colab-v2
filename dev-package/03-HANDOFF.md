@@ -1,6 +1,9 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-09 별도 사본 진행: `WU-UPV-20260909` · HTML 화면 재구성/포맷 미리보기 작업은 진행 중. 진입 `prd/rounds/R-UPLOAD-PREVIEW.md`, 근거 `reports/upload-layout-preview/verification.md`. 조회 오류 2경로 보완·관련 시험110건·렌더10건. 다음: 전체 화면 대조/재구성, GRIB 지원 조사, 독립 전체 흐름 검증. 공유 환경·배포 무접촉.
+> 2026-09-09 `WU-UPV-20260909` 완료: 620px 업로드·포맷 미리보기·상세/계보와 대표 그림/후보 검색/격자 설명 확장 구현.
+> 통합 `codex/upload-preview-complete` `2eaf619`: agent-browser HDF 21단계와 기존 실파일7사례·부분실패 검증.
+> Astra: server `a50a861`·frontend `71e6592` 수용, frontend1158/core1018/generated10/migration18/contract-lint green.
+> 근거 `reports/upload-layout-preview/verification.md`; main 병합·push·운영 배포·운영 S3 smoke는 별도 조율.
 
 > **이 문서가 "지금 어디까지 왔는가"의 진실원.** 매 세션 끝에 갱신한다(규약 `CLAUDE.md §6`).
 > 새 세션은 여기부터 읽는다. 코드·인프라와 모순되면 실제 상태를 점검해 **이 문서를 먼저 바로잡는다.**
