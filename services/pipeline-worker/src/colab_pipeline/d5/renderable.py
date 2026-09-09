@@ -29,7 +29,7 @@ from .formats import SUPPORTED_FORMATS
 #: 지원은 하되 **그릴 수는 없는** 포맷. 정본이 미리보기 대상을 `bin·nc·tif·HDF` 로
 #: 못 박았으므로(결정 2-3) `GRIB` 이 여기 들어온다. **등록·다운로드·계보 확정은 막지
 #: 않는다** — 「그릴 수 없는 것과 등록할 수 없는 것은 다르다」.
-NOT_RENDERABLE_FORMATS: list[str] = ["GRIB"]
+NOT_RENDERABLE_FORMATS: list[str] = []
 
 #: 미리보기를 그릴 수 있는 포맷. **숫자가 아니라 목록이다**(`〈51〉`·`〈134〉`).
 RENDERABLE_FORMATS: list[str] = [

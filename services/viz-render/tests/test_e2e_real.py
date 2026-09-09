@@ -1,4 +1,4 @@
-"""완료 판정 — 지원 4종 각각 최소 1건이 **실제로 그려진다.**
+"""완료 판정 — 지원 7종 각각 최소 1건이 **실제로 그려진다.**
 
 `GeoTIFF 를 가장 먼저 돌린다` (`P2-EXEC §4 W2·P2-viz` 완료 판정 · `P2.md §6-2 양성 ④`) —
 PoC 선례가 가장 얇은 경로라 여기서 나올 실패가 예측 목록에 없다.
@@ -317,6 +317,37 @@ def test_e2e_9_numpy(client, put_target, source_root):
     job = _render(client, tid)
     _assert_drawn(client, job, "NumPy")
     assert job["result"]["precisionBadge"] == "동봉 격자 적용"
+
+
+@pytest.mark.e2e_format("GRIB")
+def test_e2e_grib_selects_distinct_messages(client, put_target):
+    from colab_viz.domains.d7_visualization.readers import describe_field, read_field
+
+    src = _first("*.grib", _fmtdir("file_format_1_grib") / "00.Data")
+    fmt, variables, _ = describe_field(src)
+    assert fmt == "GRIB" and len(variables) > 1 and len(set(variables)) == len(variables)
+    _, first = read_field(src, variable=variables[0], max_side=256)
+    _, last = read_field(src, variable=variables[-1], max_side=256)
+    assert float(np.nanmean(first.values)) != float(np.nanmean(last.values))
+    tid = put_target(copy_from=[src])
+    job = _render(client, tid, variable=variables[0])
+    _assert_drawn(client, job, "GRIB")
+
+
+@pytest.mark.e2e_format("HDF5")
+def test_e2e_general_hdf5_selects_slice_and_draws_image(client, put_target, tmp_path):
+    import h5py
+
+    src = tmp_path / "ordinary.h5"
+    with h5py.File(src, "w") as h5:
+        h5.create_dataset("science/value", data=np.arange(32, dtype="f4").reshape(2, 4, 4))
+    tid = put_target(copy_from=[src])
+    job = _render(client, tid, variable="hdf5:/science/value[1]")
+    assert job["status"] == "완료", job.get("failure")
+    assert job["result"]["legend"]["variable"] == "hdf5:/science/value[1]"
+    store = client.app.state.jobs.get(job["_renderId"]).artifacts
+    assert store.detail.path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "bounds" not in job["result"]
 
 
 def test_e2e_10_numpy_짝이_아닌_격자를_붙이면_지도형이_안_선다(client, put_target, source_root):

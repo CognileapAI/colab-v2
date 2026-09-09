@@ -39,6 +39,31 @@ export interface PreviewPickRowProps {
   fallbackPiece?: PreviewPiece | undefined;
 }
 
+export function variableLabel(id: string): string {
+  if (id.startsWith('hdf5:')) {
+    const encoded = id.slice('hdf5:'.length);
+    const slice = encoded.match(/^(.*?)(\[[0-9,]+\])$/);
+    try {
+      const path = decodeURIComponent(slice?.[1] ?? encoded);
+      return slice ? `${path} · 슬라이스 ${slice[2]!.slice(1, -1)}` : path;
+    } catch {
+      return encoded;
+    }
+  }
+  if (id.startsWith('grib:')) {
+    const [prefix, epoch, level, comment, grid] = id.split('|');
+    const [, message, ...elementParts] = (prefix ?? '').split(':');
+    const seconds = Number(epoch);
+    const time = Number.isFinite(seconds)
+      ? new Date(seconds * 1000).toISOString().replace('.000Z', 'Z')
+      : epoch;
+    return [`메시지 ${message}`, elementParts.join(':'), time, level, comment, grid]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  return id;
+}
+
 export function PreviewPickRow(props: PreviewPickRowProps) {
   const files = renderablePieces(props.pieces);
   const variables = props.description?.variables ?? [];
@@ -93,7 +118,7 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
         >
           {variables.map((v) => (
             <option key={v} value={v}>
-              {v}
+              {variableLabel(v)}
             </option>
           ))}
         </select>

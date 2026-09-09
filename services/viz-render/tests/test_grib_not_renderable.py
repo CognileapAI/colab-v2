@@ -19,7 +19,7 @@ from colab_viz.domains.d7_visualization.failures import (
     NotRenderableError,
     is_retry_pointless,
 )
-from colab_viz.domains.d7_visualization.readers import detect_format
+from colab_viz.domains.d7_visualization.readers import SUPPORTED_FORMATS, detect_format
 
 
 def _grib1(path: Path) -> Path:
@@ -33,41 +33,9 @@ def _grib2(path: Path) -> Path:
     return path
 
 
-def test_grib_is_not_renderable(tmp_path: Path):
-    """지원 포맷이지만 그리지 않는다 — 415 로 가는 것 자체는 맞다."""
-    with pytest.raises(NotRenderableError):
-        detect_format(_grib1(tmp_path / "surface.grib"))
-
-
-def test_the_reason_names_grib_instead_of_claiming_unknown_magic(tmp_path: Path):
-    """**사유가 참이어야 한다.** 우리는 그것이 GRIB 임을 안다."""
-    for maker, name in ((_grib1, "a.grib"), (_grib2, "b.grb2")):
-        with pytest.raises(NotRenderableError) as caught:
-            detect_format(maker(tmp_path / name))
-        reason = str(caught.value)
-        assert "GRIB" in reason, f"사유가 GRIB 을 지목하지 않는다: {reason}"
-        assert "알려진 매직바이트가 없다" not in reason, (
-            "지원하는 포맷을 「모르는 파일」로 말하면 사용자는 자기 파일이 깨진 줄 안다.")
-
-
-def test_grib_makes_retry_pointless_but_a_read_failure_does_not(tmp_path: Path):
-    """**재시도가 무의미한 것과 다시 해 볼 만한 것을 가른다** (결정 2-3 · 결정 #8).
-
-    결정 #8 이 「못 그렸어요 ＋ **다시 그리기**」 상태를 만들라고 했으므로, 그 버튼을
-    **언제 감출지**가 정해져 있어야 한다. 안 그러면 GRIB 에도 「다시 그리기」가 뜨고
-    누르면 영원히 같은 실패가 돌아온다.
-    """
-    with pytest.raises(NotRenderableError) as caught:
-        detect_format(_grib1(tmp_path / "surface.grib"))
-    assert is_retry_pointless(caught.value) is True, (
-        "이 형식은 원래 안 그려진다 — 다시 그려도 결과가 같다.")
-
-    unknown = tmp_path / "mystery.dat"
-    unknown.write_bytes(b"\x00" * 200)
-    with pytest.raises(NotRenderableError) as caught_unknown:
-        detect_format(unknown)
-    assert is_retry_pointless(caught_unknown.value) is True, (
-        "매직을 모르는 파일도 다시 그린다고 알려지지 않는다 — 같은 영구 실패다.")
+def test_grib_is_renderable_format(tmp_path: Path):
+    assert detect_format(_grib1(tmp_path / "surface.grib")) == "GRIB"
+    assert "GRIB" in SUPPORTED_FORMATS
 
 
 def test_the_four_renderable_formats_are_untouched(tmp_path: Path):

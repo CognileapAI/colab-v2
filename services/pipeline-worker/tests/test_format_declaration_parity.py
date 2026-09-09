@@ -46,12 +46,11 @@ def test_no_parser_for_an_undeclared_format():
     assert extra == [], f"선언에 없는데 파서가 있다: {extra}"
 
 
-def test_undeclared_format_still_says_out_of_list(tmp_path):
-    """**음성** — 진짜 목록 밖(순수 HDF5)에서는 그 문면이 여전히 옳다."""
+def test_broken_hdf5_is_reported_as_parse_failure(tmp_path):
     f = tmp_path / "x"
     f.write_bytes(b"\x00" * 8)
     det = DetectionResult("HDF5", None, None, False, "")
-    with pytest.raises(parse.ParseError, match="지원 목록 밖"):
+    with pytest.raises(parse.ParseError, match="HDF5를 열 수 없다"):
         parse.parse_metadata(f, det)
 
 
@@ -74,7 +73,8 @@ def test_a_declared_but_unhandled_format_is_never_called_out_of_list(tmp_path, m
 
 # ═════════ ② 그릴 것 ⊆ 구울 것 ═════════
 def test_every_renderable_format_has_a_cog_builder():
-    missing = [f for f in RENDERABLE_FORMATS if f not in pipeline.COG_BUILDERS]
+    value_only = {"HDF5"}
+    missing = [f for f in RENDERABLE_FORMATS if f not in pipeline.COG_BUILDERS and f not in value_only]
     assert missing == [], f"그릴 수 있다고 선언했는데 COG 경로가 없다: {missing}"
 
 

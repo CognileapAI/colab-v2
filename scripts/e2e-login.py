@@ -27,8 +27,10 @@ def main():
     parser.add_argument("--frontend-root", required=True, type=Path)
     parser.add_argument("--inspect", action="store_true")
     parser.add_argument("--inspect-upload", action="store_true")
-    parser.add_argument("--upload", action="store_true", help="Validate real GeoTIFF processing and registration")
+    parser.add_argument("--upload", action="store_true", help="Validate real supported-format processing and registration")
     parser.add_argument("--upload-file", type=Path)
+    parser.add_argument("--preview-only", action="store_true")
+    parser.add_argument("--require-variable-selection", action="store_true")
     parser.add_argument("--pipeline-python", type=Path)
     parser.add_argument("--viz-python", type=Path)
     parser.add_argument("--journey", type=Path, help="Explicit local browser scenario module")
@@ -196,17 +198,56 @@ def main():
                 if args.upload_file:
                     command("upload", '[data-testid="up-drop-input"]', str(args.upload_file.resolve()))
                     command("wait", "--text", args.upload_file.name)
+                    if args.viz_python and args.require_variable_selection:
+                        command(
+                            "wait",
+                            "--fn",
+                            "document.querySelectorAll('[data-testid=up-pick-variable] option').length >= 2",
+                        )
+                        variable_selector = '[data-testid="up-pick-variable"]'
+                        option_count = int(command("get", "count", variable_selector + " option").strip())
+                        if option_count < 2:
+                            raise RuntimeError("second preview variable is required")
+                        selected_target = json.loads(command("eval", "document.querySelector('[data-testid=up-pick-variable]').options[1].value").strip())
+                        selected_label = json.loads(command("eval", "document.querySelector('[data-testid=up-pick-variable]').options[1].textContent").strip())
+                        if not selected_target.startswith(("hdf5:", "grib:")):
+                            raise RuntimeError("second preview variable has no stable format selection ID: " + selected_target)
+                        command("select", variable_selector, selected_target)
+                        selected_value = command("get", "value", variable_selector).strip()
+                        if selected_value != selected_target:
+                            raise RuntimeError(f"preview variable selection did not stick: {selected_value!r} != {selected_target!r}")
+                        command("click", '[data-testid="up-preview-draw"]')
+                        rendered_selector = '[data-testid="up-preview-image"]'
+                        command("wait", "--fn", f'Array.from(document.querySelectorAll(\'{rendered_selector}\')).some(img => img.complete && img.naturalWidth > 0)')
+                        rendered_variable = command("get", "attr", '[data-testid="up-preview-image"]', "data-preview-variable").strip()
+                        if rendered_variable != selected_target:
+                            raise RuntimeError(f"rendered variable does not match selected ID: {rendered_variable!r} != {selected_target!r}")
+                        print("PASS: explicit second preview variable selected through agent-browser and rendered:",
+                              json.dumps({"selectionId": selected_target, "label": selected_label,
+                                          "renderedVariable": rendered_variable}, ensure_ascii=False))
+                        if args.preview_only:
+                            print("PASS: upload, variable selection, and rendered preview image load completed")
+                            return
+                        command("eval", "(() => { const b=document.querySelector('[data-testid=up-grid-skip]'); if(b){b.click(); return true;} return false; })()")
                     command("click", '[data-testid="reg-open"]')
                     if args.pipeline_python:
                         command("wait", '[data-testid="reg-next"]:not(:disabled)')
-                        command("click", '[data-testid="reg-next"]')
+                        registration = command("snapshot", "-i")
+                        next_button = re.search(r'button "다음 →" \[ref=(e\d+)\]', registration)
+                        if not next_button:
+                            raise RuntimeError("Enabled registration next action missing")
+                        command("focus", "@" + next_button[1])
+                        focused = json.loads(command("eval", "document.activeElement?.dataset?.testid || ''").strip())
+                        if focused != "reg-next":
+                            raise RuntimeError("Registration next action did not receive keyboard focus")
+                        command("press", "Enter")
                         command("wait", '[data-testid="reg-name"]')
-                        command("fill", '[data-testid="reg-name"]', "E2E GeoTIFF " + session)
+                        command("fill", '[data-testid="reg-name"]', "E2E " + args.upload_file.stem + " " + session)
                         command("click", '[data-testid="reg-next"]')
                         command("wait", '[data-testid="reg-done"]')
                         command("click", '[data-testid="reg-done"]')
                         command("wait", '[data-testid="reg-summary-error"]')
-                        command("fill", '[data-testid="reg-summary"]', "Synthetic GeoTIFF for isolated E2E")
+                        command("fill", '[data-testid="reg-summary"]', "Isolated supported-format E2E")
                         command("click", '[data-testid="reg-next"]')
                         command("wait", '[data-testid="reg-done"]')
                         command("click", '[data-testid="reg-done"]')
@@ -226,10 +267,14 @@ def main():
                     artifact.parent.mkdir(parents=True, exist_ok=True)
                     command("screenshot", str(artifact))
                 detail = command("snapshot")
-                for expected in ("E2E GeoTIFF " + session, "Synthetic GeoTIFF for isolated E2E",
-                                 "EPSG:4326", "300x300", args.upload_file.name):
+                for expected in ("E2E " + args.upload_file.stem + " " + session,
+                                 "Isolated supported-format E2E", args.upload_file.name):
                     if expected not in detail:
                         raise RuntimeError("Registered dataset did not retain expected metadata: " + expected)
+                if args.upload_file.name == "e2e-geotiff.tif":
+                    for expected in ("EPSG:4326", "300x300"):
+                        if expected not in detail:
+                            raise RuntimeError("GeoTIFF regression lost expected metadata: " + expected)
                 if any(p.poll() is not None for p in processes):
                     raise RuntimeError("An isolated service exited during upload verification")
                 logged_in = command("snapshot", "-i")
@@ -271,7 +316,7 @@ def main():
                 raise RuntimeError("E2E browser cleanup failed") from cleanup_error
     print("PASS: empty login disabled; invalid login rejected; real login; reload persists session; logout returns to login; app/browser/temp cleanup completed")
     if args.upload:
-        print("PASS: real GeoTIFF upload and worker processing; missing description rejected; registration and metadata persist after reload.")
+        print("PASS: real supported-format upload and worker processing; missing description rejected; registration and metadata persist after reload.")
         print("PASS: rendered preview image loads before and after reload" if args.viz_python else "Map rendering not tested.")
 
 

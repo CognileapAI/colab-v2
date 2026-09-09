@@ -31,10 +31,8 @@ def test_unsupported_formats_are_not_renderable():
     #   종전 = 「`〈51〉` 로 범위 밖」. 지금 = **지원 목록 안이지만 미리보기 대상이 아니다**
     #   (결정 2-3 — 「5종이어도 grib 은 미리보기 대상이 아니다」).
     #   같은 false 라도 근거가 다르면 주석이 거짓말을 한다.
-    assert is_renderable("GRIB") is False
-    # 지원 목록 밖인 순수 HDF5
-
-    assert is_renderable("HDF5") is False
+    assert is_renderable("GRIB") is True
+    assert is_renderable("HDF5") is True
     assert is_renderable("무엇인지 모를 것") is False
 
 
@@ -48,10 +46,10 @@ def test_renderable_list_is_not_a_number_and_lives_here():
 
     assert RENDERABLE_FORMATS == [
         f for f in SUPPORTED_FORMATS if f not in NOT_RENDERABLE_FORMATS]
-    assert RENDERABLE_FORMATS != SUPPORTED_FORMATS, "더는 같지 않다."
+    assert RENDERABLE_FORMATS == SUPPORTED_FORMATS
     # **뺄셈으로 적은 것이 요점이다** — 새 포맷은 기본이 「그릴 수 있음」이고
     # 못 그리는 것만 명시적으로 빠진다. 따로 나열하면 새 포맷이 조용히 누락된다.
-    assert NOT_RENDERABLE_FORMATS == ["GRIB"]
+    assert NOT_RENDERABLE_FORMATS == []
 
 
 def test_contract_does_not_pin_the_list(repo_root):

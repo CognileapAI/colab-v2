@@ -167,6 +167,25 @@ profile_db()         { local v; v="$(_pvar "COLAB_BACKUP_DB_$1")";         [ -n 
 profile_min_tables() { local v; v="$(_pvar "COLAB_BACKUP_MIN_TABLES_$1")"; [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }
 profile_min_rows()   { local v; v="$(_pvar "COLAB_BACKUP_MIN_ROWS_$1")";   [ -n "$v" ] && printf '%s' "$v" || printf '미선언'; }
 
+# 복원 리허설의 원본 기대치. pg_stat_user_tables.n_live_tup은 ANALYZE 시점에
+# 따른 추정치이므로 내용 대조에 쓰지 않고, 공개 테이블별 COUNT(*)를 읽는다.
+snapshot_exact_counts() { # $1=컨테이너 $2=사용자 $3=DB
+  local out
+  out="$(docker exec -i "$1" psql -v ON_ERROR_STOP=1 -U "$2" -d "$3" -At <<'SQL'
+SELECT format(
+  'SELECT %L || E''\t'' || count(*) FROM %I.%I;',
+  tablename, schemaname, tablename
+)
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename
+\gexec
+SQL
+  )" || return 1
+  [ -n "$out" ] || return 1
+  printf '%s\n' "$out"
+}
+
 # ── DB 이름 → 프로파일 (`〈286〉`) ────────────────────────────────────────────
 # `restore-db.sh` 는 `--db <DB이름>` 을 받는데 합격선은 **프로파일**에 달려 있다.
 # 종전에는 이 다리가 없어 전역 `COLAB_BACKUP_MIN_TABLES`(20 · platform 형상)를 그대로 넘겼고,

@@ -51,12 +51,12 @@
       "additionalProperties": false,
       "properties": {
         "format": {
-          "description": "감지한 포맷(`grib`·`nc`·`bin`·`tif`·`HDF5` 등). **enum 을 만들지 않는다** — 정본이 `등`으로 열어 뒀고(`Policy §5`), 값 집합을 여기서 닫으면 정본에 없는 어휘를 계약이 만든다. 감지 실패면 null 이고 그때 `renderable` 은 false 다.",
+          "description": "감지한 포맷(`NetCDF`·`Binary`·`HDF4`·`GeoTIFF`·`NumPy`·`GRIB`·`HDF5` 등). **enum 을 만들지 않는다** — 정본이 `등`으로 열어 뒀고(`Policy §5`), 값 집합을 여기서 닫으면 정본에 없는 어휘를 계약이 만든다. 감지 실패면 null 이고 그때 `renderable` 은 false 다.",
           "type": ["string", "null"],
           "minLength": 1
         },
         "renderable": {
-          "description": "지도로 그릴 수 있는 포맷인가. 정본이 지금 그릴 수 있다고 밝힌 것은 GRIB · NetCDF · BIN · GeoTIFF · HDF5 다(`Policy §9 그릴 수 없는 형식`). **목록 자체를 계약에 박지 않는다** — 그릴 수 있는 범위는 viz-render 가 자라면서 바뀌고, 정본도 `미리보기 지원 범위`를 §11 미결로 남겼다.",
+          "description": "값 미리보기를 그릴 수 있는 포맷인가. 현재 감지하는 NetCDF·Binary·HDF4·GeoTIFF·NumPy·GRIB·HDF5는 모두 true다. **목록 자체를 enum으로 박지 않는다** — 그릴 수 있는 범위는 viz-render가 자라면서 바뀐다. 좌표가 없는 값은 지도형만 보류하고 비지도 미리보기는 만든다.",
           "type": "boolean"
         },
         "uniform": {

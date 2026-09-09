@@ -52,7 +52,7 @@ COPY --from=builder /install /usr/local
 # 이 결손은 게이트·시험 어디에도 걸리지 않았다. 렌더 요청이 실제로 들어오기 전까지 무증상이고,
 # 헬스는 200 을 계속 냈다. 검사를 빌드 단계에 두면 **결손 이미지가 애초에 만들어지지 않는다** —
 # 배포 뒤에 알려 주는 것보다 앞이다. 목록은 requirements.in 의 직접 geo 의존과 같다.
-RUN python -c "import rasterio, rasterio._env, netCDF4, pyhdf.SD, PIL.Image; print('geo import OK', rasterio.__gdal_version__)"
+RUN python -c "import rasterio, rasterio._env, netCDF4, h5py, pyhdf.SD, PIL.Image; print('geo import OK', rasterio.__gdal_version__)"
 
 COPY src/ /app/src/
 ENV PYTHONPATH=/app/src

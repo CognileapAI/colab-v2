@@ -37,9 +37,15 @@ for P in $(backup_profiles); do
   echo "  산출물: $(basename "$ART") ($(wc -c < "$ART") B)"
 
   # ① 살아 있는 staging 에서 기대치를 뜬다 — 읽기 전용.
-  docker exec "$SRC_CT" psql -U "$U" -d "$DB" -At -F$'\t' \
-    -c "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY relname" > "$W/$P.expected.tsv"
   SRC_TABLES="$(docker exec "$SRC_CT" psql -U "$U" -d "$DB" -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+  if ! snapshot_exact_counts "$SRC_CT" "$U" "$DB" > "$W/$P.expected.tsv"; then
+    echo "  원본 정확 행 수를 읽지 못했다"; BAD=$((BAD+1)); continue
+  fi
+  EXPECTED_TABLES="$(wc -l < "$W/$P.expected.tsv")"
+  if ! [[ "$SRC_TABLES" =~ ^[0-9]+$ ]] || [ "$EXPECTED_TABLES" -ne "$SRC_TABLES" ]; then
+    echo "  원본 테이블 목록 $SRC_TABLES건과 정확 행 수 $EXPECTED_TABLES건이 다르다"
+    BAD=$((BAD+1)); continue
+  fi
   echo "  원본 테이블 $SRC_TABLES 개 · 행 합계 $(awk -F'\t' '{s+=$2} END{print s+0}' "$W/$P.expected.tsv")"
 
   # ② 일회용 인스턴스에 복원. 살아 있는 DB 에는 절대 쓰지 않는다.
@@ -76,10 +82,16 @@ for P in $(backup_profiles); do
   D_SRC="$(digest "$SRC_CT" "$U")"; D_DST="$(digest "$DST" postgres)"
   if [ "$D_SRC" = "$D_DST" ]; then echo "  PASS  내용 다이제스트 일치 $D_SRC"; else echo "  FAIL  내용 다이제스트 원본 $D_SRC ≠ 복원 $D_DST"; BAD=$((BAD+1)); fi
 
-  # ⑤ K2 시드 22 행은 이름으로 못 박아 따로 센다 (ai 프로파일).
+  # ⑤ K2 시드는 원본·복원 실값 동등성과 기존 최소 22행 정책을 함께 본다.
   if [ "$P" = "ai" ]; then
-    K2="$(docker exec "$DST" psql -U postgres -d "$DB" -At -c "SELECT (SELECT count(*) FROM d9_method_term)+(SELECT count(*) FROM d9_place_alias)+(SELECT count(*) FROM d9_topic_synonym)")"
-    if [ "$K2" = "22" ]; then echo "  PASS  K2 시드 22 행 복원됨"; else echo "  FAIL  K2 시드 $K2 행 (기대 22)"; BAD=$((BAD+1)); fi
+    K2_SQL="SELECT (SELECT count(*) FROM d9_method_term)+(SELECT count(*) FROM d9_place_alias)+(SELECT count(*) FROM d9_topic_synonym)"
+    K2_SRC="$(docker exec "$SRC_CT" psql -U "$U" -d "$DB" -At -c "$K2_SQL")"
+    K2_DST="$(docker exec "$DST" psql -U postgres -d "$DB" -At -c "$K2_SQL")"
+    if [ "$K2_SRC" = "$K2_DST" ] && [ "$K2_DST" -ge 22 ]; then
+      echo "  PASS  K2 시드 원본=복원 $K2_DST 행 (최소 22)"
+    else
+      echo "  FAIL  K2 시드 원본 $K2_SRC ≠ 복원 $K2_DST 또는 최소 22 미달"; BAD=$((BAD+1))
+    fi
   fi
   docker rm -f "$DST" >/dev/null; MADE="${MADE/ $DST/}"
 done

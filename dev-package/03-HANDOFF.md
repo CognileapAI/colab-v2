@@ -29,6 +29,10 @@
 
 ---
 
+⮑ **⟨증보 2026-09-10 · 7종 미리보기⟩** `WU-PREVIEW` = 🟧: GRIB1/2·일반 HDF5 구현·로컬 검증 완료, 배포 대기.
+근거 = 7종 coverage · pipeline 261 passed · HDF5/GRIB2 선택ID=렌더ID·PNG·등록/reload · GRIB1 decoder · x86_64 Docker 2종 green.
+미실측 = arm64 · 신규2종 latency · 149 MB GRIB 전체-band COG 비용 · 배포; 세부 `sessions/20260910-preview-all-formats.md`.
+
 **최종 갱신** 2026-09-06 (**★ 이 회차 = R-A 라운드 `main` 병합 2단계 — 계약 동결 해제 **19차** 묶음(A5·A4·A6). ⟹ **R-A 14/14 가 `main` 에 있다.** 등재 `PLAN-SoT §9 〈346〉`·`〈347〉` · 근거 `dev-package/sessions/R-A-ROUND-20260906.md`.**)
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
 ⭑ **⟨증보 2026-09-08 · R-B 마감⟩ 최종 갱신 = 2026-09-08 — R-B 10 WU(B1~B8·B10·B11) 전건 done · `integration/r-b` `2f67649` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈373〉`(20차 집행)·`〈374〉`(〈194〉·〈276〉 반전).**
@@ -88,6 +92,7 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 | R0 레포 결정 | ✅ | **`colab-v2` 신규 모노레포** (Ted, 2026-08-22). `colab-dev-package`는 v1 자산으로 archive |
 | R1 스캐폴드 + CI 골격 | ✅ | 원격 `CognileapAI/colab-v2`(public) push 완료 · `main` 보호(force-push·삭제 차단, 리뷰 필수 없음) · CI 1회 완주 — 게이트 잡(`contract-gates` 등) 전부 "미구현 — red"로 **설계대로** 실패. 가시성 결정 = `PLAN-SoT §9-⑯` |
 | R2 v1 레포 5종 archive | ⬜ | C4 후 (`colab-dev-package` 포함) |
+| WU-PREVIEW GRIB1/2·일반 HDF5 포함 7종 미리보기 | 🟧 | 구현·로컬 검증 완료, 배포 대기 · `sessions/20260910-preview-all-formats.md` |
 
 ### T-S stage 1 물결 — W4~W7 레인
 

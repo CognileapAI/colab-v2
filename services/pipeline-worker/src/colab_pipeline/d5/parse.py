@@ -224,11 +224,37 @@ def _parse_grib(path: Path, meta: AutoMetadata) -> None:
             f.seek(start + total)
     if edition is None:
         raise ParseError("GRIB 0절을 읽지 못했다 — 판(edition)이 1·2 가 아니다")
-    meta.notes.append(
-        f"GRIB 판 {edition} · 메시지 {messages}건 — **0절만 읽었다.** "
-        "변수·격자·기간은 디코더 없이 읽지 않는다([미상] · DR-9).")
-    meta.notes.append("미리보기 대상이 아니다 — 등록·다운로드·계보 확정은 막지 않는다.")
-    meta.crs_embedded = False
+    import rasterio
+    with rasterio.open(path) as src:
+        meta.variables = [
+            f"grib:{i}:" + (src.tags(i).get("GRIB_ELEMENT") or f"band{i}")
+            + "|" + src.tags(i).get("GRIB_VALID_TIME", "time?")
+            + "|" + src.tags(i).get("GRIB_COMMENT", "level?")
+            for i in range(1, src.count + 1)]
+        meta.grid = (src.height, src.width)
+        if src.crs is not None:
+            meta.crs = str(src.crs)
+            meta.crs_embedded = True
+    meta.notes.append(f"GRIB 판 {edition} · 메시지 {messages}건 · GDAL 디코딩 완료")
+
+
+def _parse_hdf5(path: Path, meta: AutoMetadata) -> None:
+    import h5py
+    variables: list[str] = []
+    try:
+        with h5py.File(path, "r") as h5:
+            def visit(name, obj):
+                if isinstance(obj, h5py.Dataset) and obj.ndim >= 2 and obj.dtype.kind in "biufc":
+                    variables.append("/" + name)
+                    if meta.grid == UNKNOWN:
+                        meta.grid = (int(obj.shape[-2]), int(obj.shape[-1]))
+            h5.visititems(visit)
+    except Exception as e:
+        raise ParseError(f"HDF5를 열 수 없다: {e}") from e
+    if not variables:
+        raise ParseError("수치형 2차원 이상 dataset을 찾지 못했다")
+    meta.variables = variables
+    meta.notes.append("일반 HDF5 dataset 전체 경로를 읽었다; 좌표가 없으면 지도형은 보류한다")
 
 
 #: **포맷 → 파서 분기표.** 목록이 아니라 표로 둔 것이 요점이다 —
@@ -241,6 +267,7 @@ PARSERS: dict[str, "object"] = {
     "Binary": _parse_binary,
     "NumPy": _parse_numpy,
     "GRIB": _parse_grib,
+    "HDF5": _parse_hdf5,
 }
 
 

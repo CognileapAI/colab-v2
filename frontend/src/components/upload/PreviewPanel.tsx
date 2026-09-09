@@ -590,6 +590,7 @@ export function PreviewPanel(props: {
                   alt="미리보기"
                   /* 계약이 `oneOf` 라 갈래마다 다른 자리다 — 단일 이미지(stage 1)와 타일(stage 2) */
                   data-testid={result.imageUrl ? 'up-preview-image' : 'up-preview-tile'}
+                  data-preview-variable={result.legend.variable ?? ''}
                   src={previewImageSrc(result)}
                   onLoad={(event) => {
                     zoom.onImageLoad(event);

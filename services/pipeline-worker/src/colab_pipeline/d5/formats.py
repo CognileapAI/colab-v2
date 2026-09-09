@@ -33,7 +33,7 @@ from __future__ import annotations
 
 #: **숫자가 아니라 목록이다.** 정본 5종(grib 포함) ∪ `〈77〉`(NumPy) = 6종.
 SUPPORTED_FORMATS: list[str] = [
-    "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB"]
+    "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
 
 #: 못 읽은 값의 표기 — 추정으로 채우지 않는다 (DR-9 · DATA-REFERENCE §0)
 UNKNOWN = "[미상]"

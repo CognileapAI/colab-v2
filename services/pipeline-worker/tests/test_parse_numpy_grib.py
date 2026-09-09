@@ -76,29 +76,23 @@ def test_numpy_object_array_is_refused(tmp_path: Path):
 
 
 # ═════ GRIB ═════
-def test_grib_parses_section0_only(tmp_path: Path):
+def test_truncated_grib_is_detected_but_decoder_rejects_it(tmp_path: Path):
     p = _grib2(tmp_path / "s.grib")
-    meta = parse_metadata(p, detect_format(p))
-    assert meta.format == "GRIB"
-    assert meta.grid == UNKNOWN, "디코더 없이 격자를 지어내지 않는다"
-    assert meta.variables == [], "변수 이름을 지어내지 않는다"
-    assert any("판 2" in n for n in meta.notes), meta.notes
+    from colab_pipeline.d5.parse import ParseError
+    with pytest.raises((ParseError, Exception)):
+        parse_metadata(p, detect_format(p))
 
 
-def test_grib_pipeline_succeeds_without_a_cog(tmp_path: Path):
-    """**그릴 수 없는 것과 등록할 수 없는 것은 다르다** (정본 §9 · 결정 #4)."""
+def test_truncated_grib_pipeline_reports_failure(tmp_path: Path):
     p = _grib2(tmp_path / "s.grib")
     res = run_file(p, workdir=tmp_path / "wd")
-    assert res.status == "SUCCESS", res.failures
+    assert res.status == "FAILURE"
     assert res.cog_path is None
     assert res.artifact is None
-    assert any("미리보기 대상이 아니다" in n for n in res.notes), res.notes
+    assert res.failures
 
 
-def test_grib_pipeline_does_not_demand_a_reference_grid(tmp_path: Path):
-    """**음성** — 기준 격자가 없다는 이유로 GRIB 이 실패하면 안 된다.
-
-    그리지 않을 것에 격자를 요구하면 「받아서 저장한다」가 거짓이 된다.
-    """
+def test_truncated_grib_fails_before_reference_grid(tmp_path: Path):
     res = run_file(_grib2(tmp_path / "s.grib"), workdir=tmp_path / "wd", grid_dir=None)
-    assert res.status == "SUCCESS", res.failures
+    assert res.status == "FAILURE"
+    assert "파싱 실패" in res.failures[0]

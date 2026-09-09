@@ -25,6 +25,7 @@ import {
   type PreviewPiece,
   type TargetDescription,
 } from '../src/components/preview/pick';
+import { variableLabel } from '../src/components/preview/PreviewPickRow';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const DATASET_ID = '01JYZ9K7WQ3N8V4M2X6C5B0DS1';
@@ -35,6 +36,18 @@ const PIECE_B = '01JYZ9K7WQ3N8V4M2X6C5B0F02';
 const GRID_FILE = '01JYZ9K7WQ3N8V4M2X6C5B0F03';
 
 const WAIT = { timeout: 5000 };
+
+describe('opaque preview variable labels', () => {
+  it('distinguishes a bracket in an HDF5 dataset path from a slice', () => {
+    expect(variableLabel('hdf5:%2Fa%5B0%5D')).toBe('/a[0]');
+    expect(variableLabel('hdf5:%2Fa[0]')).toBe('/a · 슬라이스 0');
+  });
+
+  it('keeps the GRIB message number and grid visible', () => {
+    expect(variableLabel('grib:4:TMP|1767247200|50000[Pa]|Temperature|regular_ll')).toContain('메시지 4');
+    expect(variableLabel('grib:4:TMP|1767247200|50000[Pa]|Temperature|regular_ll')).toContain('regular_ll');
+  });
+});
 
 /** 조각 픽스처 — 본체 둘 ＋ 기준 격자 파일 하나(그리는 대상이 아니다). */
 const PIECES: PreviewPiece[] = [

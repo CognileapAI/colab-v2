@@ -26,7 +26,7 @@ def test_supported_formats_is_the_list_not_a_number():
     #   구성이 달랐다** — 정본에 `NumPy` 가 없다. 합집합이라 6종이다.
     #   **여기서 실제로 한 번 틀렸다 — 그래서 이 시험이 숫자가 아니라 목록을 본다.**
     assert SUPPORTED_FORMATS == [
-        "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB"]
+        "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
 
 
 def test_npy_is_detected_by_magic_not_by_extension(tmp_path: Path):
@@ -59,6 +59,17 @@ def test_nc_that_is_hdf5_container(tmp_path: Path):
     p = make_netcdf(tmp_path / "gk2a.nc", fmt="NETCDF4")
     r = detect_format(p)
     assert r.format == "NetCDF"
+    assert r.container == "HDF5"
+
+
+def test_general_hdf5_is_detected_after_netcdf_try_open_fails(tmp_path: Path):
+    import h5py
+
+    p = tmp_path / "ordinary.h5"
+    with h5py.File(p, "w") as h5:
+        h5.create_dataset("science/value", data=[[1, 2], [3, 4]])
+    r = detect_format(p)
+    assert r.format == "HDF5"
     assert r.container == "HDF5"
 
 

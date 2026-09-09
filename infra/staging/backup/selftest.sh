@@ -129,6 +129,35 @@ if command -v docker >/dev/null 2>&1; then
   echo "  (참고: 복원 명령 자체는 exit 0 이었다)"
   expect_red "F8 복원 성공(exit 0) · 그러나 DB 가 비었다" \
     env COLAB_BACKUP_CONFIG="$W/none.env" "$HERE/verify-restore.sh" d1_pg_selftest colab postgres "$HERE/expected-counts.tsv"
+
+  # F8-b pg_stat_user_tables 추정치가 0이어도 정확 COUNT는 실제 3행을 보고한다.
+  docker exec d1_pg_selftest psql -q -v ON_ERROR_STOP=1 -U postgres -d colab -c \
+    "CREATE TABLE count_oracle (id int); INSERT INTO count_oracle VALUES (1),(2),(3);" >/dev/null
+  docker exec d1_pg_selftest psql -q -v ON_ERROR_STOP=1 -U postgres -d colab -c \
+    "SELECT pg_stat_reset_single_table_counters('public.count_oracle'::regclass);" >/dev/null
+  RAN=$((RAN+1)); echo "──────── F8-b 통계 추정치가 0이어도 원본 기대행수는 정확 COUNT를 쓴다"
+  STAT8B="$(docker exec d1_pg_selftest psql -U postgres -d colab -At -c "SELECT n_live_tup FROM pg_stat_user_tables WHERE relname='count_oracle'")"
+  EXACT8B="$(. "$HERE/lib.sh"; snapshot_exact_counts d1_pg_selftest postgres colab | awk -F'\t' '$1=="count_oracle" {print $2}')"
+  if [ "$STAT8B" = "0" ] && [ "$EXACT8B" = "3" ]; then
+    echo "  → 기대대로: pg_stat 0 · 정확 COUNT 3"
+  else
+    echo "  → ✗ 기대행수 oracle 오류: pg_stat=$STAT8B exact=$EXACT8B"; BAD=$((BAD+1))
+  fi
+
+  docker exec d1_pg_selftest createdb -U postgres empty_oracle
+  RAN=$((RAN+1)); echo "──────── F8-c 테이블 0건을 기대치 생성 성공으로 읽지 않는다"
+  if (. "$HERE/lib.sh"; snapshot_exact_counts d1_pg_selftest postgres empty_oracle >/dev/null); then
+    echo "  → ✗ 빈 목록이 성공했다"; BAD=$((BAD+1))
+  else
+    echo "  → 기대대로 RED"
+  fi
+
+  RAN=$((RAN+1)); echo "──────── F8-d SQL 실패를 빈 기대치로 숫겨 성공하지 않는다"
+  if (. "$HERE/lib.sh"; snapshot_exact_counts d1_pg_selftest postgres missing_oracle >/dev/null 2>&1); then
+    echo "  → ✗ SQL 실패가 성공했다"; BAD=$((BAD+1))
+  else
+    echo "  → 기대대로 RED"
+  fi
   docker rm -f d1_pg_selftest >/dev/null
 else
   echo "──────── F8 건너뜀 — docker 없음. 이 fixture 는 실행되지 않았다(증명 미완)"; BAD=$((BAD+1))

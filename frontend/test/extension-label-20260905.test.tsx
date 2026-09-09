@@ -121,10 +121,10 @@ describe('PRD-21 — 업로드 안내는 업로드 가능 / 미리보기 가능 
     render(<Harness />);
     drop(['a.nc']);
     expect(screen.getByTestId('up-previewable')).toHaveTextContent(
-      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy · 파일 구조와 좌표에 따라 달라요',
+      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy *.grib *.grib2 *.grb *.grb2 · 파일 구조와 좌표에 따라 달라요',
     );
     expect(PREVIEWABLE_EXTENSIONS_NOTICE).toBe(
-      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy · 파일 구조와 좌표에 따라 달라요',
+      '지도 미리보기 지원: *.nc *.nc4 *.tif *.tiff *.hdf *.h5 *.hdf5 *.bin *.bin.gz *.npy *.grib *.grib2 *.grb *.grb2 · 파일 구조와 좌표에 따라 달라요',
     );
   });
 
@@ -138,6 +138,8 @@ describe('PRD-21 — 업로드 안내는 업로드 가능 / 미리보기 가능 
   it('안내 판정은 순수 함수 하나다', () => {
     expect(previewabilityNotice('nc')).toBe(PREVIEWABLE_EXTENSIONS_NOTICE);
     expect(previewabilityNotice('bin')).toBe(PREVIEWABLE_EXTENSIONS_NOTICE);
+    expect(previewabilityNotice('h5')).toBe(PREVIEWABLE_EXTENSIONS_NOTICE);
+    expect(previewabilityNotice('grib2')).toBe(PREVIEWABLE_EXTENSIONS_NOTICE);
     expect(previewabilityNotice('csv')).toBe('이 확장자는 지도로 못 그려요');
     expect(previewabilityNotice('')).toBe('이 확장자는 지도로 못 그려요');
   });

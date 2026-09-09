@@ -45,17 +45,14 @@ def test_supported_formats_is_the_union_of_both_canons():
     수를 적으면 또 틀린다 — 정본과 `〈77〉` 이 **둘 다 5종인데 구성이 달랐다.**
     """
     assert SUPPORTED_FORMATS == [
-        "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB"]
+        "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
 
 
-def test_grib_is_supported_but_not_renderable():
-    """**두 목록이 여기서 처음 갈라진다.**"""
+def test_all_supported_formats_are_renderable():
     assert "GRIB" in SUPPORTED_FORMATS, "정본이 grib 을 지원 포맷으로 되돌렸다."
-    assert "GRIB" not in RENDERABLE_FORMATS, (
-        "결정 2-3 — 「5종이어도 grib 은 미리보기 대상이 아니다」.")
-    assert is_renderable("GRIB") is False
-    assert RENDERABLE_FORMATS != SUPPORTED_FORMATS, (
-        "지원 목록과 렌더 목록이 더는 같지 않다 — 파생 한 줄이 갈라진 것이다.")
+    assert RENDERABLE_FORMATS == SUPPORTED_FORMATS
+    assert is_renderable("GRIB") is True
+    assert is_renderable("HDF5") is True
 
 
 def test_the_other_four_are_still_renderable():

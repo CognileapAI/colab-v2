@@ -31,7 +31,8 @@ _EXT_CLAIMS = {
     ".nc": "NetCDF",
     ".bin": "Binary",
     ".hdf": "HDF4",
-    ".h5": "HDF4",   # 원천의 오표기 계열 — 어차피 힌트일 뿐이다
+    ".h5": "HDF5",
+    ".hdf5": "HDF5",
     ".tif": "GeoTIFF",
     ".tiff": "GeoTIFF",
     # GRIB 는 표기가 넷으로 흩어져 있다 — 어차피 힌트이고 판정은 매직이 한다.
@@ -114,13 +115,20 @@ def _sniff_bytes(head: bytes) -> tuple[str | None, str | None, str]:
 def _resolve_hdf5_container(path: Path) -> tuple[str | None, str]:
     """\\x89HDF 를 try-open 으로 가른다 — NetCDF4 인가, 순수 HDF5 인가."""
     try:
-        from netCDF4 import Dataset
-        ds = Dataset(path, "r")
-        ds.close()
-        return "NetCDF", "HDF5 컨테이너 — netCDF4 try-open 성공"
-    except Exception:
-        # 순수 HDF5 는 〈51〉 지원 목록 밖이다 — 미상으로 fail-closed
-        return None, "HDF5 컨테이너인데 NetCDF 로 열리지 않는다 — 지원 목록(〈51〉) 밖"
+        import h5py
+        with h5py.File(path, "r") as h5:
+            is_netcdf4 = "_NCProperties" in h5.attrs
+    except Exception as e:
+        return None, f"HDF5 컨테이너를 열 수 없다: {e}"
+    if is_netcdf4:
+        try:
+            from netCDF4 import Dataset
+            ds = Dataset(path, "r")
+            ds.close()
+            return "NetCDF", "HDF5 컨테이너 — NetCDF4 메타데이터와 try-open 성공"
+        except Exception as e:
+            return None, f"NetCDF4 메타데이터가 있으나 열 수 없다: {e}"
+    return "HDF5", "HDF5 컨테이너 — 일반 HDF5"
 
 
 def detect_format(path: Path) -> DetectionResult:

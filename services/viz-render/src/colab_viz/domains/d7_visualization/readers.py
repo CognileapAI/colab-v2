@@ -15,6 +15,9 @@ from __future__ import annotations
 
 import datetime as dt
 import gzip
+import itertools
+import re
+from urllib.parse import quote, unquote
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -41,7 +44,8 @@ from .native_io import serialized_netcdf
 #: **여기에 `GRIB` 을 넣지 마라.** 넣으면 못 그리는 포맷을 그릴 수 있다고 말하게 되고,
 #: `renders.py` 의 `renderableFormats` 가 곧바로 거짓이 된다. 맞춰야 할 상대는
 #: pipeline-worker 의 `SUPPORTED_FORMATS` 가 아니라 **`RENDERABLE_FORMATS`** 다.
-SUPPORTED_FORMATS: list[str] = ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy"]
+SUPPORTED_FORMATS: list[str] = [
+    "NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
 
 MAGIC_HDF4 = b"\x0e\x03\x13\x01"
 MAGIC_HDF5 = b"\x89HDF\r\n\x1a\n"
@@ -152,21 +156,21 @@ def detect_format(path: Path) -> str:
     if head.startswith(MAGIC_HDF5):
         if gz:
             raise NotRenderableError("gzip 안의 HDF5 컨테이너 — 지원 조합이 아니다")
-        try:                                   # try-open 이 필수다 — 매직만으로 못 가른다
-            from netCDF4 import Dataset
-            Dataset(str(path), "r").close()
-            return "NetCDF"
+        try:
+            import h5py
+            with h5py.File(path, "r") as h5:
+                is_netcdf4 = "_NCProperties" in h5.attrs
+            if is_netcdf4:
+                from netCDF4 import Dataset
+                Dataset(str(path), "r").close()
+                return "NetCDF"
+            return "HDF5"
         except Exception as e:
-            raise NotRenderableError(f"HDF5 컨테이너인데 NetCDF 로 열리지 않는다: {e}") from e
+            raise NotRenderableError(f"HDF5 컨테이너를 열 수 없다: {e}") from e
     if head.startswith(MAGIC_NPY):
         return "NumPy"
     if _is_grib(head):
-        # **아는데 안 그리는 것이다 — 모르는 것이 아니다** (`〈135〉`).
-        # 여기서 아래 「알려진 매직바이트가 없다」로 흘려보내면, 정상적으로 지원하는
-        # 파일을 올린 사람이 **자기 파일이 깨진 줄 안다.** 사유는 참이어야 한다.
-        raise NotRenderableError(
-            f"GRIB(판 {head[7]}) 은 지원 포맷이지만 미리보기 대상이 아니다 — "
-            "저장·다운로드는 그대로 된다")
+        return "GRIB"
     if _plausible_hsr(head):
         return "Binary"
     raise NotRenderableError("알려진 매직바이트가 없다")
@@ -235,6 +239,153 @@ def _read_geotiff(path: Path, variable: str | None, max_side: int) -> Field:
     return Field(values=dest, variable=name, unit=unit,
                  fills=() if nodata is None else (float(nodata),),
                  bounds=(float(west), float(south), float(east), float(north)))
+
+
+def _grib_band_id(src, index: int) -> str:
+    tags = src.tags(index)
+    pieces = [
+        tags.get("GRIB_ELEMENT") or tags.get("GRIB_SHORT_NAME") or f"band{index}",
+        tags.get("GRIB_VALID_TIME", "time?"),
+        tags.get("GRIB_SHORT_NAME", "level?"),
+        tags.get("GRIB_COMMENT", "level?"),
+        tags.get("GRIB_GRID_TYPE", src.tags().get("GRIB_GRID_TYPE", "grid?")),
+    ]
+    return f"grib:{index}:" + "|".join(str(p) for p in pieces)
+
+
+def _grib_variables(path: Path) -> list[str]:
+    import rasterio
+    with rasterio.open(path) as src:
+        return [_grib_band_id(src, i) for i in range(1, src.count + 1)]
+
+
+def _read_grib(path: Path, variable: str | None, max_side: int) -> Field:
+    import rasterio
+    from rasterio.warp import Resampling, calculate_default_transform, reproject
+
+    with rasterio.open(path) as src:
+        names = [_grib_band_id(src, i) for i in range(1, src.count + 1)]
+        if not names:
+            raise NotRenderableError(f"{path.name}: GRIB 메시지가 없다")
+        name = variable or _pick_default(names)
+        if name not in names:
+            raise FieldReadError(f"{path.name}: 그럴 값이 없다 — {name} ∉ {names}")
+        index = names.index(name) + 1
+        if src.crs is None:
+            raw = src.read(index, masked=True).filled(np.nan).astype("f8")
+            native = raw.shape
+            steps = _steps_for(native, max_side)
+            return Field(_decimate(raw, steps).astype("f4"), name,
+                         unit=src.tags(index).get("GRIB_UNIT"), native_shape=native, steps=steps)
+        transform, width, height = calculate_default_transform(
+            src.crs, "EPSG:4326", src.width, src.height, *src.bounds)
+        scale = max(1.0, max(width, height) / max_side)
+        width, height = max(1, int(width / scale)), max(1, int(height / scale))
+        transform, width, height = calculate_default_transform(
+            src.crs, "EPSG:4326", src.width, src.height, *src.bounds,
+            dst_width=width, dst_height=height)
+        values = np.full((height, width), np.nan, dtype="f4")
+        reproject(rasterio.band(src, index), values, src_transform=src.transform,
+                  src_crs=src.crs, dst_transform=transform, dst_crs="EPSG:4326",
+                  src_nodata=src.nodata, dst_nodata=np.nan, resampling=Resampling.average)
+        west, north = transform * (0, 0)
+        east, south = transform * (width, height)
+        return Field(values, name, unit=src.tags(index).get("GRIB_UNIT"),
+                     bounds=(max(-180.0, float(west)), max(-90.0, float(south)),
+                             min(180.0, float(east)), min(90.0, float(north))))
+
+
+_HDF5_SELECTION = re.compile(r"^hdf5:(?P<path>/[^\[]+?)(?:\[(?P<indices>\d+(?:,\d+)*)\])?$")
+_HDF5_MAX_SELECTIONS = 4096
+
+
+def _hdf5_variables(h5) -> list[str]:
+    import h5py
+    out: list[str] = []
+    def visit(name, obj):
+        if (not isinstance(obj, h5py.Dataset) or obj.ndim < 2
+                or obj.dtype.kind not in "biuf"
+                or name.lower().rsplit("/", 1)[-1] in _COORD_NAMES):
+            return
+        path = quote("/" + name, safe="/")
+        if obj.ndim == 2:
+            out.append("hdf5:" + path)
+        else:
+            count = int(np.prod(obj.shape[:-2], dtype="i8"))
+            if count > _HDF5_MAX_SELECTIONS:
+                raise NotRenderableError(
+                    f"{path}: slice {count}개는 목록 상한 {_HDF5_MAX_SELECTIONS}개를 넘는다 — "
+                    "선행 차원을 줄인 파일로 선택 범위를 명시해야 한다")
+            for idx in itertools.product(*(range(n) for n in obj.shape[:-2])):
+                out.append(f"hdf5:{path}[{','.join(map(str, idx))}]")
+    h5.visititems(visit)
+    return out
+
+
+def _read_hdf5(path: Path, variable: str | None, max_side: int) -> Field:
+    import h5py
+    with h5py.File(path, "r") as h5:
+        names = _hdf5_variables(h5)
+        if not names:
+            raise NotRenderableError(f"{path.name}: 수치형 2차원 이상 dataset이 없다")
+        name = variable or _pick_default(names)
+        if name not in names:
+            raise FieldReadError(f"{path.name}: 그럴 값이 없다 — {name} ∉ {names}")
+        match = _HDF5_SELECTION.fullmatch(name)
+        if match is None:
+            raise FieldReadError(f"{path.name}: HDF5 선택 표기가 잘못됐다 — {name}")
+        ds = h5[unquote(match.group("path"))]
+        indices = tuple(int(v) for v in match.group("indices").split(",")) \
+            if match.group("indices") else ()
+        raw = np.asarray(ds[indices + (slice(None), slice(None))], dtype="f8")
+        fills: list[float] = []
+        for attr in ("_FillValue", "missing_value"):
+            if attr in ds.attrs:
+                fills.extend(np.atleast_1d(ds.attrs[attr]).astype("f8").tolist())
+        values = _apply_fill_exact(raw, fills)
+        if "scale_factor" in ds.attrs:
+            values *= float(ds.attrs["scale_factor"])
+        if "add_offset" in ds.attrs:
+            values += float(ds.attrs["add_offset"])
+        if not np.isfinite(values).any():
+            raise NotRenderableError(f"{path.name}: {name}은 전부 결측이다")
+        unit_raw = ds.attrs.get("units")
+        unit = unit_raw.decode() if isinstance(unit_raw, bytes) else unit_raw
+        lat = lon = None
+        def decoded_values(coord):
+            raw_coord = np.asarray(coord, dtype="f8")
+            coord_fills: list[float] = []
+            for attr in ("_FillValue", "missing_value"):
+                if attr in coord.attrs:
+                    coord_fills.extend(np.atleast_1d(coord.attrs[attr]).astype("f8").tolist())
+            out = _apply_fill_exact(raw_coord, coord_fills)
+            if "scale_factor" in coord.attrs:
+                out *= float(coord.attrs["scale_factor"])
+            if "add_offset" in coord.attrs:
+                out += float(coord.attrs["add_offset"])
+            return out
+
+        parent = ds.parent
+        candidates = {k.lower(): k for k, obj in parent.items()
+                      if isinstance(obj, h5py.Dataset)}
+        coordinate_pairs = []
+        for lat_name in ("lat", "latitude"):
+            for lon_name in ("lon", "longitude"):
+                if lat_name in candidates and lon_name in candidates:
+                    la = decoded_values(parent[candidates[lat_name]])
+                    lo = decoded_values(parent[candidates[lon_name]])
+                    if la.shape == raw.shape and lo.shape == raw.shape:
+                        coordinate_pairs.append((la.astype("f8"), lo.astype("f8")))
+        if len(coordinate_pairs) == 1:
+            lat, lon = coordinate_pairs[0]
+        native = raw.shape
+        steps = _steps_for(native, max_side)
+        values = _decimate(values, steps).astype("f4")
+        if lat is not None:
+            lat = downsample.sample_centers(lat, steps)
+            lon = downsample.sample_centers(lon, steps)
+        return Field(values, name, unit=unit, lat=lat, lon=lon,
+                     native_shape=native, steps=steps, fills=tuple(fills))
 
 
 def _apply_fill_exact(values: np.ndarray, fills: list[float]) -> np.ndarray:
@@ -591,6 +742,15 @@ def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
         if fmt == "NumPy":
             # `_read_numpy` 와 같다 — 배열 하나뿐이고 이름은 파일 이름이다.
             return fmt, [path.stem], []
+        if fmt == "GRIB":
+            return fmt, _grib_variables(path), []
+        if fmt == "HDF5":
+            import h5py
+            with h5py.File(path, "r") as h5:
+                drawable = _hdf5_variables(h5)
+            if not drawable:
+                raise NotRenderableError(f"{path.name}: 수치형 2차원 이상 dataset이 없다")
+            return fmt, drawable, []
     except (NotRenderableError, FieldReadError):
         raise
     except Exception as e:                       # 포맷은 맞는데 이 파일이 깨졌다
@@ -614,6 +774,10 @@ def read_field(path: Path, *, variable: str | None = None, instant: str | None =
             return fmt, _read_binary(path, variable, max_side)
         if fmt == "NumPy":
             return fmt, _read_numpy(path, max_side)
+        if fmt == "GRIB":
+            return fmt, _read_grib(path, variable, max_side)
+        if fmt == "HDF5":
+            return fmt, _read_hdf5(path, variable, max_side)
     except (NotRenderableError, FieldReadError):
         raise
     except Exception as e:                       # 포맷은 맞는데 이 파일이 깨졌다

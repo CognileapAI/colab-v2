@@ -125,6 +125,12 @@ def _cog_geotiff(path, meta, grid, out_path, kind, res):
     convert_tif_to_cog(path, out_path, kind=kind)
 
 
+def _cog_grib(path, meta, grid, out_path, kind, res):
+    """GDAL이 해석한 GRIB 메시지들을 기존 COG 변환기에 전달한다."""
+    from .cog import _cog_translate
+    _cog_translate(path, out_path, kind)
+
+
 def _cog_binary(path, meta, grid, out_path, kind, res):
     hsr = parse_hsr(path)
     data = decode_block(hsr.blocks[0])
@@ -164,6 +170,7 @@ COG_BUILDERS = {
     "NetCDF": _cog_gridded,
     "HDF4": _cog_gridded,
     "NumPy": _cog_numpy,
+    "GRIB": _cog_grib,
 }
 assert set(COG_BUILDERS) <= set(RENDERABLE_FORMATS)
 
@@ -192,6 +199,11 @@ def run_file(path: Path, *, workdir: Path, grid_dir: Path | None = None,
     except (ParseError, Exception) as e:
         return _fail(res, f"파싱 실패({det.format}): {e}")
     meta = res.metadata
+
+    if det.format == "HDF5" or (det.format == "GRIB" and not meta.crs_embedded):
+        res.notes.append(f"{det.format}는 원본을 viz-render가 직접 읽는다 — COG 산출 없음")
+        res.status = "SUCCESS"
+        return res
 
     # 입력 tif 의 층 판정은 좌표 이전에 한다 — 판정 자체는 구조(IFD) 문제다 (DR-2)
     if det.format == "GeoTIFF":
