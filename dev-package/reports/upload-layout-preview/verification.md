@@ -1,32 +1,32 @@
 # 업로드·상세 개선 검증 — 전체 intent 완료 판정
 
-2026-09-09. `codex/upload-preview-complete`의 통합 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·계보 후보 검색·격자 설명 저장도 구현과 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 가능한 코드 상태이며 공유 main 병합·push·운영 배포·운영 S3 smoke는 실행하지 않았다.
+2026-09-09. `codex/upload-preview-finalfix`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 가능한 코드 상태이며 공유 main 병합·push·운영 배포·운영 S3 smoke는 실행하지 않았다.
 
 ## intent 1~10 대조
 
 | # | 원하는 결과 | 최종 판정과 근거 |
 |---|---|---|
-| 1 | 기획 HTML의 모달·열·여백·카드·단계·상세 순서 | 620px 초기 모달과 단계별 장면, 좌우 등록 구조, 상세 정보 순서를 실제 화면으로 확인. `policy-map.md`, `screens/continuation/`, `browser/contract-expansion/final/contract/` |
-| 2 | 파일 선택→전송·분석→등록 입력 장면 분리 | 빈 화면·분석 완료·분류·메타데이터·연결 장면을 같은 1440×1000 브라우저에서 확인. `browser/contract-expansion/final/contract/01-empty.png`~`07-connections.png` |
-| 3 | 저장 상세의 파일·분류·기간·좌표·간격·원천·설명·변수 | HDF 등록·reload·편집 뒤 이름, 설명, 파일, 프로젝트, 변수, 날짜, 관측 간격, 원천, 격자 설명을 재조회. `browser/contract-expansion/final/contract/journey.json` |
-| 4 | 실제 저장·프로젝트·계보·편집·다운로드 전체 흐름 | HDF 21단계에서 프로젝트 생성, 계보 이동/수정/제거/재연결, 편집 지속, 원본 SHA256 일치를 확인. 기존 파일 묶음·ZIP 검증도 유지. `browser/hdf/journey.json`, `browser/partial/journey.json` |
+| 1 | 기획 HTML의 모달·열·여백·카드·단계·상세 순서 | 620px 초기 모달과 단계별 장면, 좌우 등록 구조, 상세 정보 순서를 실제 화면으로 확인. `policy-map.md`, `screens/continuation/`, `browser/contract-expansion/finalfix-green3/contract/` |
+| 2 | 파일 선택→전송·분석→등록 입력 장면 분리 | 빈 화면·분석 완료·분류·메타데이터·연결 장면을 같은 1440×1000 브라우저에서 확인. `browser/contract-expansion/finalfix-green3/contract/01-empty.png`~`07-connections.png` |
+| 3 | 저장 상세의 파일·분류·기간·좌표·간격·원천·설명·변수 | HDF 등록·reload·편집 뒤 이름, 설명, 파일, 프로젝트, 변수, 날짜, 관측 간격, 원천, 격자 설명을 재조회. `browser/contract-expansion/finalfix-green3/contract/journey.json` |
+| 4 | 실제 저장·프로젝트·계보·편집·다운로드 전체 흐름 | HDF 25단계에서 프로젝트 생성, 기간 후보 포함/제외·cursor, 계보 이동/수정/제거/재연결, 편집 지속, 원본 SHA256 일치를 확인. 기존 파일 묶음·ZIP 검증도 유지. `browser/contract-expansion/finalfix-green3/contract/journey.json`, `browser/partial/journey.json` |
 | 5 | nc·tif·hdf·bin과 등록 포맷 실제 미리보기 | TIF 묶음·NC·HDF4·BIN 값·BIN 격자·NumPy·GRIB 제외 안내 7사례의 실제 결과를 구분해 기록. GRIB 제외를 미리보기 성공으로 계산하지 않음. `format-matrix.md`, `browser/index.md` |
-| 6 | 업로드·확장·상세 그림과 지도 조작·부분 표시 | HDF 그림 decode, 확장보기, 상세 reload, 지도 확대·초기화·커서 위경도를 확인. 실제 TIF 부분 실패는 정상 그림과 누락 파일명을 함께 확인. `browser/contract-expansion/final/contract/journey.json`, `browser/partial/journey.json` |
+| 6 | 업로드·확장·상세 그림과 지도 조작·부분 표시 | HDF 그림 decode, 확장보기, 상세 reload, 지도 확대·초기화·커서 위경도를 확인. 실제 TIF 부분 실패는 정상 그림과 누락 파일명을 함께 확인. `browser/contract-expansion/finalfix-green3/contract/journey.json`, `browser/partial/journey.json` |
 | 7 | 전송·분석·렌더·이미지 표시 진행 안내 | 단계별 상태와 조회 재시도, 렌더 대기와 image load를 분리했고 관련 회귀와 실제 장면을 확인. `progress-cases.md`, `frontend-continuation.md` |
-| 8 | 전송/분석/렌더/표시 상태별 행동 활성 조건 | 조기 등록 차단, 미리보기 실패와 등록 분리, 생성 중 입력 잠금, 이미지 PUT 실패 뒤 같은 데이터셋 재시도를 회귀와 실제 브라우저로 확인. `frontend-sol/verification.md`, `browser/contract-expansion/final/contract/07-recovery.png` |
-| 9 | 느림·통신/서버/이미지/부분 실패·취소·재시도·늦은 응답 | 오류 복구와 오래된 응답 차단 회귀, 손상 TIF 부분 실패, 잘못된 PNG 거절 뒤 같은 ID 재시도를 확인. `progress-cases.md`, `browser/partial/journey.json`, 확장 여정 `datasetCreateProof` |
+| 8 | 전송/분석/렌더/표시 상태별 행동 활성 조건 | 조기 등록 차단, 미리보기 실패와 등록 분리, 생성 중 입력 잠금, 415/413은 같은 그림 재시도를 막고 새 그림/자동 그림을 요구하며 일시 오류는 같은 ID 재시도를 유지함을 확인. `frontend-sol/verification.md`, `browser/contract-expansion/finalfix-green3/contract/07-recovery.png` |
+| 9 | 느림·통신/서버/이미지/부분 실패·취소·재시도·늦은 응답 | 오류 복구와 오래된 응답 차단 회귀, 손상 TIF 부분 실패, 잘못된 PNG의 서버 이유와 새 그림을 통한 같은 ID 복구를 확인. `progress-cases.md`, `browser/partial/journey.json`, 확장 여정 `representativeRecoveryProof`·`datasetCreateProof` |
 | 10 | 같은 장면 시각 대조와 정책65행 추적 | 1440×1000 장면별 캡처와 정책→rev2→구현→실행근거 대응표를 완성했고 정책23/27/37~38 확장까지 닫음. `policy-map.md`, `remaining-decisions.md` |
 
 ## 승인된 계약 확장
 
-- 대표 그림: 본체와 분리된 저장·권한·조회 계약을 구현했다. 잘못된 PNG로 이미지 PUT만 실패했을 때 데이터셋은 한 건(`01M22810FW2D4VSXMQD7PMW4VB`)이고 대표 그림은 0건이었다. 정상 PNG 재시도 후 같은 ID에서 1건이 됐으며 상세 reload·교체·삭제 뒤 자동 그림 decode까지 확인했다.
-- 계보 후보: 이름 OR 접근 가능한 본체 파일명 검색과 분류·주제·기간·가공단계 조건, 안정 cursor 페이지를 구현했다. 브라우저에서 `a1-body.csv`로 DSA1을 찾고 계보 CRUD와 reload 지속성을 확인했다.
+- 대표 그림: 본체와 분리된 저장·권한·조회 계약을 구현했다. 잘못된 PNG의 415 서버 이유를 표시하고 같은 파일 재시도를 막았다. 이때 데이터셋은 한 건(`01M22A1G6HJBSSN9SEKNS8XZTR`)이고 대표 그림은 0건이었다. 새 정상 PNG 선택 후 같은 ID에서 1건이 됐으며 상세 reload·교체·삭제 뒤 자동 그림 decode까지 확인했다.
+- 계보 후보: 이름 OR 접근 가능한 본체 파일명 검색과 분류·주제·기간·가공단계 조건, 안정 cursor 페이지를 구현했다. 날짜 입력은 UTC일 시작·마지막 microsecond로 바꾼다. 브라우저에서 `a1-body.csv`로 DSA1을 찾고 기간 포함/제외·조건 초기화·cursor 25→29건, 계보 CRUD와 reload 지속성을 확인했다.
 - 격자 설명: 사람 입력과 자동 분석값을 분리했다. 사람 설명을 우선·자동 `2400x2400`을 보조로 표시하고, 사람 입력 삭제 뒤 DB NULL과 자동값 복귀를 확인했다.
-- 서버 `a50a861`과 frontend `71e6592`는 각각 Astra 수용 검토에서 승인됐다. 통합 실제 브라우저 커밋은 `2eaf619`이다.
+- 서버 `a50a861`과 frontend `71e6592`는 각각 Astra 수용 검토에서 승인됐다. finalfix 구현·실제 브라우저 커밋은 `6d1107c`다.
 
 ## 실제 브라우저 근거
 
-agent-browser는 1440×1000, 일회용 PostgreSQL·로컬 원본/미리보기 저장소·worker·viz의 독립 환경에서 실행했다. HDF `MOD15A2H.A2019273.h27v05.061.2020313082826.hdf`는 9,731,088 B, SHA256 `ab7eda26634a5e2f13016acc7e1f8d0cd1daf3924bdbc58538b066b12c12e8a6`다. `browser/contract-expansion/final/contract/journey.json`의 21단계가 초기 620px, invalid PNG→데이터셋1/그림0→같은 ID retry/그림1, 파일명 계보, 사람→자동 격자, custom image decode/reload/replace/delete, 원본 다운로드 해시를 기록한다. 운영 데이터와 공유 서버는 사용하지 않았다.
+agent-browser는 1440×1000, 일회용 PostgreSQL·로컬 원본/미리보기 저장소·worker·viz의 독립 환경에서 실행했다. HDF `MOD15A2H.A2019273.h27v05.061.2020313082826.hdf`는 9,731,088 B, SHA256 `ab7eda26634a5e2f13016acc7e1f8d0cd1daf3924bdbc58538b066b12c12e8a6`다. `browser/contract-expansion/finalfix-green3/contract/journey.json`의 25단계가 초기 620px, 계보 cursor 25→29와 기간 경계·초기화, invalid PNG 415 이유/같은 파일 차단→데이터셋1/그림0→새 그림 선택/같은 ID 그림1, 사람→자동 격자, custom image decode/reload/replace/delete, 원본 다운로드 해시를 기록한다. 앞선 세 실행은 native date 입력, cursor 버튼 활성화, 재연결 후보 페이지 문제로 각각 실패했고 `finalfix*` 디렉터리에 따로 보존했으며 통과로 계산하지 않았다. 운영 데이터와 공유 서버는 사용하지 않았다.
 
 ## 최종 게이트
 

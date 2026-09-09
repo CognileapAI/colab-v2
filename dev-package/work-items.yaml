@@ -3159,5 +3159,5 @@ items:
     completion_def: "HTML 상태별 시각 대조·포맷별 실제 브라우저 미리보기·진행과 오류복구·저장/편집/계보/다운로드 검증을 마쳐 배포 가능한 상태. 별도 환경 사용, 배포는 조율."
     evidence: "dev-package/reports/upload-layout-preview/verification.md"
     deadline: null
-    note: "대표 그림 별도 저장·동일 데이터셋 재시도, 파일명/분류/기간 계보 후보, 사람/자동 격자 설명을 구현했다. agent-browser HDF 21단계와 기존 실파일7사례·부분실패, Astra frontend1158/core1018/generated10/migration18/contract-lint 검증으로 intent 미달0·초과0. 통합 브랜치만 완료했으며 main 병합·push·운영 배포·운영 S3 smoke는 미실행."
+    note: "대표 그림 별도 저장·동일 데이터셋 일시 오류 재시도와 413/415 영구 거절 복구, 파일명/분류/UTC일 기간 계보 후보·cursor, 사람/자동 격자 설명을 구현했다. agent-browser 실제 HDF 25단계에서 기간 포함/제외·초기화·cursor와 새 그림 회복을 확인했고 기존 실파일7사례·부분실패, Astra frontend1158/core1018/generated10/migration18/contract-lint 검증으로 intent 미달0·초과0. finalfix 구현은 6d1107c이며 main 병합·push·운영 배포·운영 S3 smoke는 미실행."
     sources: ["dev-package/intent/2026-09-09-upload-layout-preview.md", "dev-package/prd/specs/R-UPLOAD-PREVIEW.md", "dev-package/prd/rounds/R-UPLOAD-PREVIEW.md"]

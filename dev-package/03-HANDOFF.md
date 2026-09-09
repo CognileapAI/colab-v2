@@ -1,7 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-09 `WU-UPV-20260909` 완료: 620px 업로드·포맷 미리보기·상세/계보와 대표 그림/후보 검색/격자 설명 확장 구현.
-> 통합 `codex/upload-preview-complete` `2eaf619`: agent-browser HDF 21단계와 기존 실파일7사례·부분실패 검증.
+> 2026-09-09 `WU-UPV-20260909` 완료: finalfix `6d1107c`에서 계보 UTC일 기간·cursor와 대표 그림 영구 오류 회복까지 보완.
+> agent-browser 실제 HDF 25단계: 기간 끝 microsecond 포함/다음날 제외/초기화, cursor 25→29, 415→새 그림 복구 통과.
 > Astra: server `a50a861`·frontend `71e6592` 수용, frontend1158/core1018/generated10/migration18/contract-lint green.
 > 근거 `reports/upload-layout-preview/verification.md`; main 병합·push·운영 배포·운영 S3 smoke는 별도 조율.
 
