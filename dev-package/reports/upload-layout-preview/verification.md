@@ -1,6 +1,6 @@
 # 업로드·상세 개선 검증 — 전체 intent 완료 판정
 
-2026-09-09. 통합 `codex/upload-preview-complete`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 가능한 코드 상태이며 공유 main 병합·push·운영 배포·운영 S3 smoke는 실행하지 않았다.
+2026-09-09. 통합 `codex/upload-preview-complete`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. `origin/main`과 dev 배포는 모두 `2264bc54edc2018c9a11a997d646be4a6e65b86b`이며, 아래 배포·S3·CloudFront·라이브 화면 검증까지 완료했다.
 
 ## intent 1~10 대조
 
@@ -38,9 +38,17 @@ agent-browser는 1440×1000, 일회용 PostgreSQL·로컬 원본/미리보기 �
 - Astra `contract-lint`: seam **3건**, 룰 위반 0, green1/red(판정)0/red(준비)0, exit0. `astra-final/contract-lint/gate-summary.json`.
 - 기존 범위 전수 근거도 유지한다: frontend1128/core989/pipeline-worker267/viz-render380, 실제 포맷7사례·부분실패, frontend 도달성174/금지0, 시각2페이지·13px미만0·대비미달0.
 
-## 배포 상태와 한계
+## 배포 결과와 한계
 
-코드·계약·마이그레이션·브라우저 검증 기준으로 배포 가능한 상태다. 공유 main 병합, 원격 push, 운영 배포, 운영 S3에서의 실제 업로드/교체/삭제 smoke는 별도 조율 대상이며 미실행이다. GRIB은 기존 미지원 안내·등록·원본 다운로드 검증이며 새 지도 렌더러 지원을 뜻하지 않는다. 별칭과 모든 내부 구조를 무제한 지원한다고 주장하지 않는다.
+- 소스·빌드: `origin/main`과 배포 SHA는 `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 같다. [GitHub Actions 34321142654](https://github.com/CognileapAI/colab-v2/actions/runs/34321142654)는 success, ARM64 이미지 5/5와 280M tar를 만들었다. 원격 release tag `dev-20260909-2`도 같은 SHA다.
+- 데이터·서비스: 배포 전 DB 백업 두 체인이 GREEN이다. 배포 시점 `deploy_doctor`는 최신 백업 12.1h·29 objects, 보존한 재실행 raw는 12.3h·29 objects로 실행 시점이 다르며 둘 다 24h 이내다. EC2 platform·AI migration은 각각 head `0023_upv_image_grid`, `0007_merge_vocab_and_category`까지 성공했다. 서비스 4/4가 healthy이며 worker·viz는 S3 mode다. [deploy-doctor.log](deployment-live/deploy-doctor.log)
+- 웹·배포 판정: `deploy_web`은 96 files·6,306,373 bytes를 올리고 `index.html`을 마지막에 배치했다. 로컬 해시는 통합 작업 사본의 dist가 아니라 HEAD `2264bc5`의 detached clean release worktree `/home/ttlhi10/colab-ui-release-2264/frontend/dist/index.html`에서 계산했다. 이 값과 CloudFront `index.html` SHA256은 `6306a625ed0702d4fa48c816a84fe3bc2b4d56cf283afac924bb0f89449240b0`로 같다. 배포 후 `deploy_doctor` 단일 실행은 15/15, fail 0, skip 0이다.
+- 저장·라이브 화면: generic presigned/multipart/abort [S3 storage smoke](deployment-live/s3-smoke.log)는 ASCII·한글·멀티파트·abort가 모두 GREEN이고 cleanup 잔재 0이다. 1440×900 agent-browser [라이브 로그인](deployment-live/browser-open.log) 뒤 최초 업로드 모달은 [620×393.71875px](deployment-live/upload-modal-metrics.json), 내부 스크롤 없음, [console](deployment-live/console.log)/[page error](deployment-live/page-errors.log) 0이었다. 화면은 [캡처](deployment-live/upload-modal-1440x900.png)와 [홈](deployment-live/home-snapshot.txt)·[모달 snapshot](deployment-live/upload-modal-snapshot.txt)으로 보존했다.
+- 실패·준비 이력: 첫 doctor 명령은 자동 필터가 실행 전에 `rm -f`를 거절해 외부 변경 0이었다. 자격 파일의 설명문까지 읽은 로그인 두 번은 인증 실패했고 실제 토큰만 분리한 뒤 성공했다. 로그인 뒤 홈 `/`가 유지되어 `/datasets` URL wait가 timeout된 실행도 성공으로 세지 않았다.
+
+검증 범위는 분리한다. 격리 PostgreSQL·local storage의 25단계 브라우저 여정은 대표 그림 등록·415 복구·교체·삭제와 계보 기간/cursor의 제품 계약을 검증한다. 라이브 검증은 일반 S3 저장 경로와 로그인 후 최초 620px 업로드 모달 smoke이며, 새 대표 그림 API의 라이브 교체·삭제 전체 여정을 수행한 근거가 아니다.
+
+GRIB은 기존 미지원 안내·등록·원본 다운로드 검증이며 새 지도 렌더러 지원을 뜻하지 않는다. 별칭과 모든 내부 구조를 무제한 지원한다고 주장하지 않는다.
 
 ## 이전 실행 이력
 

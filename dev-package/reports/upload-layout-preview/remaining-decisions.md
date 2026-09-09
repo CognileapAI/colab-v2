@@ -8,4 +8,4 @@
 | 37~38 계보 찾기 | 전용 후보 API가 이름 OR 접근 가능한 본체 파일명, 분류·주제·기간·가공단계 AND 조건과 서버 cursor 페이지를 제공한다. `type=date` 값은 UTC일 시작과 마지막 microsecond의 aware datetime으로 바꾼다. 잠긴 파일명은 노출하지 않는다. | `a1-body.csv` DSA1 후보의 기간 끝 `2026-09-09T23:59:59.999999Z`가 9일 조건에는 포함되고 10일 시작에는 제외됨을 확인했다. 조건 초기화, cursor 25→29건, 연결·이동·수정·제거·재연결 reload까지 실제 API 브라우저 25단계에서 확인 |
 | 23 격자 입력 | nullable 사람 설명을 자동 분석 격자와 분리 저장한다. 상세는 사람 입력을 우선하고 자동값을 보조하며, 사람 설명 삭제 시 자동값으로 복귀한다. 좌표 계산에는 사용하지 않는다. | 사람 설명과 자동 `2400x2400`을 함께 확인한 뒤 편집에서 삭제, DB NULL·상세 자동값 복귀를 reload로 확인 |
 
-서버 `a50a861`과 frontend `71e6592`는 각각 Astra 수용 검토를 통과했다. finalfix 구현 커밋은 `6d1107c`, 최신 통합 브라우저 근거는 `browser/contract-expansion/finalfix-green3/contract/journey.json`이다. 운영 배포·main 병합·push·운영 S3 smoke는 이 승인 범위와 별개이며 실행하지 않았다.
+서버 `a50a861`과 frontend `71e6592`는 각각 Astra 수용 검토를 통과했다. finalfix 구현 커밋은 `6d1107c`, 최신 통합 브라우저 근거는 `browser/contract-expansion/finalfix-green3/contract/journey.json`이다. **이 구현 수용 시점에는** main 병합·push·dev 배포·S3 smoke를 실행하지 않았다. 이후 승인된 dev 배포의 현재 상태와 범위는 `verification.md`의 「배포 결과와 한계」를 따른다.

@@ -1,9 +1,9 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-09 `WU-UPV-20260909` 완료: finalfix `6d1107c`에서 계보 UTC일 기간·cursor와 대표 그림 영구 오류 회복까지 보완.
-> agent-browser 실제 HDF 25단계: 기간 끝 microsecond 포함/다음날 제외/초기화, cursor 25→29, 415→새 그림 복구 통과.
-> Astra finalfix: frontend 87파일·1162/1162(`astra-final/frontend-finalfix`)와 대장178·불일치0(`astra-final/work-item-finalfix`) green; 기존 core1018/generated10/migration18/contract-lint green.
-> 근거 `reports/upload-layout-preview/verification.md`; main 병합·push·운영 배포·운영 S3 smoke는 별도 조율.
+> 2026-09-09 `WU-UPV-20260909` 완료·dev 배포: `origin/main`·배포·tag `dev-20260909-2` = `2264bc54edc`; Actions 34321142654 success.
+> DB backup 두 체인 GREEN, migration platform `0023_upv_image_grid`·AI `0007_merge_vocab_and_category`, 서비스 4/4 healthy, worker/viz S3 mode.
+> deploy_doctor 15/15·S3 smoke 전건 GREEN(cleanup 0)·CloudFront index 해시 일치; 라이브 최초 업로드 모달 620×393.71875px·내부 스크롤/화면 오류 0.
+> Astra frontend 1162/1162·대장178/불일치0·실제 HDF 25단계 근거와 실패 이력은 `reports/upload-layout-preview/verification.md`.
 
 > **이 문서가 "지금 어디까지 왔는가"의 진실원.** 매 세션 끝에 갱신한다(규약 `CLAUDE.md §6`).
 > 새 세션은 여기부터 읽는다. 코드·인프라와 모순되면 실제 상태를 점검해 **이 문서를 먼저 바로잡는다.**

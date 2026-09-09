@@ -1,14 +1,14 @@
 # R-UPLOAD-PREVIEW — [상세 명세](../specs/R-UPLOAD-PREVIEW.md)
 
 입력 intent: `dev-package/intent/2026-09-09-upload-layout-preview.md` · 승인 2026-09-09.
-상태: 완료. 2026-09-09 사용자 승인으로 대표 그림 저장·계보 검색 확장·격자 설명 저장까지 구현·검증했다(remaining-decisions.md).
-재개 2026-09-09: 사용자 「완료될때까지 잡은계획대로 검증하면서 진행」. 기존 `8855102`를 보존한 `codex/upload-preview-complete`에서 전체 흐름 검증·통합, `codex/upload-preview-frontend`의 별도 사본에서 화면 구현. 공유 main·운영 환경은 무변경.
+상태: 완료·dev 배포. 2026-09-09 사용자 승인 범위를 구현·검증했고 `origin/main`·배포·release tag `dev-20260909-2`가 SHA `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 일치한다(remaining-decisions.md).
+배포 검증: Actions 34321142654 success, migration platform `0023_upv_image_grid`·AI `0007_merge_vocab_and_category`, 서비스 4/4 healthy, deploy_doctor 15/15, S3 smoke 전건 GREEN·cleanup 0, CloudFront index 해시 일치, 라이브 최초 모달 620px.
 실측 근거: `dev-package/reports/upload-layout-preview/verification.md`.
 기점: `47cce30`에서 분리된 작업 사본. 다른 세션 최신 변경은 병합 전 확인한다.
 
 ## 목표와 완료점
 - HTML 화면 구성, 실제 데이터 저장·조회·계보·다운로드, 포맷별 미리보기, 누락 없는 진행 표시를 함께 완성한다.
-- 완료 = 독립 환경에서 시각·실제 파일 검증을 마친 배포 가능한 상태. 배포는 별도 조율한다.
+- 최초 완료 정의 = 독립 환경에서 시각·실제 파일 검증을 마친 배포 가능한 상태. 별도 조율한 후속 dev 배포 결과는 위 상태와 `verification.md`에 기록했다.
 
 ## 실행 순서
 | 단계 | 작업 | 의존 | 완료 근거 | 상태 |
@@ -22,7 +22,7 @@
 | 6 | 적정 게이트·최종 시각 검수·다른 세션 변경 대조 | 5 | 미판정 항목 없는 검수표·검증 결과 | 완료 — 기존 frontend1128/core989/worker267/viz380·시각2페이지, 최신 Astra 게이트 추가 |
 | 7 | 대표 그림·계보 검색·격자 설명 계약과 저장 구조 확장 | 사용자 승인 | RED 계약/DB/권한 시험·단일 platform migration head | 완료 — 서버 `a50a861`, Astra 수용·core1018·migration18·contract-lint green |
 | 8 | 확정 계약을 등록·상세·계보 화면에 연결 | 7 | RED→GREEN 화면 회귀·실제 저장/재조회 | 완료 — frontend `71e6592`+finalfix `6d1107c`, Astra 수용·frontend 87파일/1162건·generated10 green (`astra-final/frontend-finalfix/gate-summary.json`) |
-| 9 | 수용 검토·실제 브라우저·최종 게이트 | 8 | Astra 어드바이저 수용·Astra 검증·intent 10항목 대조 | 완료 — 브라우저 finalfix 25단계, Astra 대장178·불일치0 (`astra-final/work-item-finalfix/gate-summary.json`), intent 미달0·초과0 |
+| 9 | 수용 검토·실제 브라우저·최종 게이트 | 8 | Astra 어드바이저 수용·Astra 검증·intent 10항목 대조 | 완료·dev 배포 — 브라우저 finalfix 25단계, Astra 대장178·불일치0, Actions success, deploy_doctor 15/15, S3·CloudFront·라이브 620px 확인 |
 
 ## 7~9. 승인된 계약 확장
 

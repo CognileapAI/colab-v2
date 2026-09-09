@@ -1,0 +1,18 @@
+{
+  "dialogOverflowY": "hidden",
+  "found": true,
+  "meaningfulScrollables": [],
+  "rect": {
+    "bottom": 646.859375,
+    "height": 393.71875,
+    "width": 620,
+    "x": 402.5,
+    "y": 253.140625
+  },
+  "text": "파일 올리기\n고려대학교 수문학연구실에 올려요\n×\n↑\n파일을 끌어다 놓으세요\n여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요\n파일 고르기\n\n어떤 포맷이든 올려요 · 같은 확장자면 여러 개를 한 데이터셋으로 묶어요",
+  "url": "https://d31zgpff2091oh.cloudfront.net/lab",
+  "viewport": {
+    "height": 900,
+    "width": 1440
+  }
+}

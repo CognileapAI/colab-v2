@@ -1,0 +1,11 @@
+  ✓ 프리사인드 PUT (ASCII 키) (0.10s)
+  ✓ HeadObject 크기 확인 (0.05s) 1024B
+  ✓ 프리사인드 PUT (한글·공백 키) (0.07s)
+  ✓ HeadObject (한글 키) (0.05s) 2048B
+  ✓ CreateMultipartUpload (0.07s) _ao6Uu3Ae.QO…
+  ✓ 파트 2개 프리사인드 PUT (0.61s) 5MiB + 1KiB
+  ✓ ListParts → Complete → Head (0.22s) 5243904B
+  ✓ Create → 파트 1 → Abort → 소멸 (0.21s) 소멸 확인
+  ✓ DeleteObjects 뒷정리 (남은 객체 0)
+
+  통과 — 멀티파트 전 과정이 실전에서 돈다
