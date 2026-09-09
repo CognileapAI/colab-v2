@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
+declare const process: { env: Record<string, string | undefined> };
+
 // 정적 배포다 (frontend/README). SSR·서버 런타임을 두지 않는다.
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
@@ -10,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   // 밖 파일을 **Denied ID** 로 거절한다 — E-01 적용 지점 시험이 초안 md 를 읽어야 하는데
   // 그 자리가 frontend/ 밖이라 거절됐다. 개발 서버(mode !== 'test')는 넓히지 않는다.
   server: {
-    proxy: { '/api': 'http://127.0.0.1:8000' },
+    proxy: { '/api': `http://127.0.0.1:${process.env.COLAB_E2E_CORE_PORT ?? '8000'}` },
     ...(mode === 'test' ? { fs: { allow: ['.', '../dev-package/sessions'] } } : {}),
   },
   build: { outDir: 'dist', sourcemap: true },

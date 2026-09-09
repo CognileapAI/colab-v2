@@ -34,12 +34,15 @@ def main():
     parser.add_argument("--require-variable-selection", action="store_true")
     parser.add_argument("--pipeline-python", type=Path)
     parser.add_argument("--viz-python", type=Path)
+    parser.add_argument("--core-port", type=int, default=8000)
     parser.add_argument("--journey", type=Path, help="Explicit local browser scenario module")
     parser.add_argument("--artifacts", type=Path, help="Persistent scenario evidence directory")
     parser.add_argument("--extra-file", type=Path, action="append", default=[])
     parser.add_argument("--grid-file", type=Path, action="append", default=[])
     parser.add_argument("--connections", action="store_true", help="Verify project and lineage persistence")
     args = parser.parse_args()
+    if not 1 <= args.core_port <= 65535:
+        parser.error("--core-port must be between 1 and 65535")
     if args.upload and not args.pipeline_python:
         parser.error("--upload requires --pipeline-python")
     frontend = args.frontend_root.resolve()
@@ -83,6 +86,7 @@ def main():
                "COLAB_CORE_CREDENTIALS_FILE": str(credential),
                "COLAB_CORE_SESSION_SECRET": secrets.token_urlsafe(48),
                "COLAB_CORE_UPLOAD_DIR": str(temp / "uploads"),
+               "COLAB_E2E_CORE_PORT": str(args.core_port),
                "COLAB_E2E_RUN": session}
         (temp / "uploads").mkdir()
         viz_token = secrets.token_urlsafe(32)
@@ -138,10 +142,12 @@ def main():
                 wait_url("http://127.0.0.1:8003/healthz", owned=True)
             processes.append(subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--serve"],
                 cwd=ROOT, env=env, stdout=log, stderr=log))
-            wait_url("http://127.0.0.1:8000/healthz", owned=True)
+            core_base = f"http://127.0.0.1:{args.core_port}"
+            wait_url(core_base + "/healthz", owned=True)
+            vite_env = {**base, "COLAB_E2E_CORE_PORT": str(args.core_port)}
             processes.append(subprocess.Popen(["node", "node_modules/vite/bin/vite.js",
                 "--host", "127.0.0.1", "--port", "43173", "--strictPort"],
-                cwd=frontend, env=base, stdout=log, stderr=log))
+                cwd=frontend, env=vite_env, stdout=log, stderr=log))
             wait_url("http://127.0.0.1:43173/")
             wait_url("http://127.0.0.1:43173/api/v1/me", owned=True, status=401)
             if args.pipeline_python:
@@ -217,15 +223,10 @@ def main():
                         selected_value = command("get", "value", variable_selector).strip()
                         if selected_value != selected_target:
                             raise RuntimeError(f"preview variable selection did not stick: {selected_value!r} != {selected_target!r}")
-                        command("focus", '[data-testid="up-preview-draw"]')
-                        focused = json.loads(command("eval", "document.activeElement?.dataset?.testid || ''").strip())
-                        if focused != "up-preview-draw":
-                            raise RuntimeError("Preview draw action did not receive keyboard focus")
-                        command("press", "Enter")
                         rendered_selector = '[data-testid="up-preview-image"], [data-testid="up-preview-tile"]'
                         selected_json = json.dumps(selected_target)
                         command("wait", "--fn", f'Array.from(document.querySelectorAll(\'{rendered_selector}\')).some(img => img.dataset.previewVariable === {selected_json} && img.complete && img.naturalWidth > 0)')
-                        rendered = json.loads(command("eval", f'JSON.stringify(Array.from(document.querySelectorAll(\'{rendered_selector}\')).find(img => img.dataset.previewVariable === {selected_json})?.getAttribute("src") || "")').strip())
+                        rendered = json.loads(command("eval", f'Array.from(document.querySelectorAll(\'{rendered_selector}\')).find(img => img.dataset.previewVariable === {selected_json})?.getAttribute("src") || ""').strip())
                         rendered_variable = selected_target if rendered else ""
                         rendered_path = urllib.parse.urlsplit(rendered).path
                         if not rendered_path.endswith(".png"):
@@ -239,8 +240,15 @@ def main():
                         if args.preview_only:
                             print("PASS: upload, variable selection, and rendered preview image load completed")
                             return
-                        command("eval", "(() => { const b=document.querySelector('[data-testid=up-grid-skip]'); if(b){b.click(); return true;} return false; })()")
-                    command("click", '[data-testid="reg-open"]')
+                        if int(command("get", "count", '[data-testid="up-grid-skip"]').strip()):
+                            command("focus", '[data-testid="up-grid-skip"]')
+                            command("press", "Enter")
+                    command("wait", '[data-testid="reg-open"]:not(:disabled)')
+                    command("focus", '[data-testid="reg-open"]')
+                    register_focused = json.loads(command("eval", "document.activeElement?.dataset?.testid || ''").strip())
+                    if register_focused != "reg-open":
+                        raise RuntimeError("Registration action did not receive keyboard focus")
+                    command("press", "Enter")
                     if args.pipeline_python:
                         command("wait", '[data-testid="reg-next"]:not(:disabled)')
                         registration = command("snapshot", "-i")
@@ -339,9 +347,9 @@ if __name__ == "__main__":
             port = 8003
         else:
             from colab_core.app.main import create_app
-            port = 8000
+            port = int(os.environ.get("COLAB_E2E_CORE_PORT", "8000"))
         app = create_app()
-        if port == 8003:
+        if sys.argv[1] == "--serve-viz":
             from fastapi.staticfiles import StaticFiles
             app.mount("/previews", StaticFiles(directory=os.environ["COLAB_VIZ_PREVIEW_DIR"]), name="e2e-previews")
 
