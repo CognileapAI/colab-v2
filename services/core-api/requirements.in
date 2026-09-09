@@ -1,4 +1,5 @@
 fastapi==0.121.2
+Pillow==11.3.0
 sqlalchemy==2.0.44
 psycopg[binary]==3.2.12
 # multipart/form-data — 동결 계약이 요구한다 (createUpload · addDatasetFile ·

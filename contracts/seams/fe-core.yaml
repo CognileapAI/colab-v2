@@ -921,6 +921,63 @@ paths:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /lineage-candidates:
+    get:
+      tags: [lineage]
+      operationId: listLineageCandidates
+      summary: 계보 편집용 가공 전 데이터 후보 페이지
+      description: |
+        이름 또는 **접근 가능한 본체 파일명**에 `q`가 포함된 후보를 찾는다(둘은 OR).
+        `category`·`topic`·표시용 `processingLevel`과 기간은 그 결과에 AND로 붙고
+        페이지 제한 전에 서버가 적용한다. 기간 조건은 **겹침**이고, 후보의
+        `end: null`은 무기한이다. 기간 미기재 후보는 기간 조건이 있을 때만 제외된다.
+        정렬은 `lastModifiedAt DESC, datasetId ASC`의 안정 keyset이며 잠긴 후보도 공개 메타는
+        남지만 `fileNames`·`fileExtensions`는 빈 배열이다. 응답의 Lv는 기존 사람값 우선
+        표시 규칙을 쓴다. 후보 페이지마다 D2·D3·D4를 묶어 읽으며 행별 조회를 하지 않는다.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - name: topic
+          in: query
+          required: false
+          schema: { type: string }
+        - name: processingLevel
+          in: query
+          required: false
+          schema: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }
+        - name: periodStart
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: periodEnd
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: excludeDatasetId
+          in: query
+          required: false
+          schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: 안정 keyset로 잘린 후보 페이지
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageCandidatePage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /datasets/{datasetId}:
     parameters:
       - $ref: "#/components/parameters/DatasetId"
@@ -946,6 +1003,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "410": { $ref: "#/components/responses/Gone" }
         "500": { $ref: "#/components/responses/ServerError" }
+
     patch:
       tags: [catalog]
       operationId: updateDataset
@@ -990,6 +1048,76 @@ paths:
       responses:
         "204":
           description: 묘비로 전환됨
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/representative-image:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    put:
+      tags: [catalog]
+      operationId: putDatasetRepresentativeImage
+      summary: 사용자 대표 그림 등록 또는 교체
+      description: |
+        `createDataset` 뒤 별도 호출한다. PNG·JPEG·WebP를 실제 디코딩해 검증하고 10 MiB를
+        넘으면 거절한다. 새 바이트를 놓고 D3 참조를 확정한 뒤 이전 바이트를 치우므로 교체
+        실패 때 기존 그림이 유지된다. 저장 키는 서버가 발급하며 응답에는 URL을 싣지 않는다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              additionalProperties: false
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        "200":
+          description: 저장된 사용자 대표 그림 메타데이터
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RepresentativeImageMetadata" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413":
+          description: 그림이 10 MiB를 넘는다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "415":
+          description: 실제로 디코딩되는 PNG·JPEG·WebP가 아니거나 선언 형식과 다르다.
+          content:
+            application/json:
+              schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    get:
+      tags: [catalog]
+      operationId: getDatasetRepresentativeImage
+      summary: 사용자 대표 그림 바이트 조회
+      description: Bearer 본체 접근 판정을 거친 바이트다. FE는 이 응답으로 object URL을 만든다.
+      responses:
+        "200":
+          description: 저장된 원본 그림 바이트
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [catalog]
+      operationId: deleteDatasetRepresentativeImage
+      summary: 사용자 대표 그림 삭제 — 자동 그림으로 복귀
+      description: 사용자 대표 그림 메타데이터와 바이트를 지우며 이후 상세은 자동 그림을 사용한다.
+      responses:
+        "204": { description: 사용자 그림이 없어져 자동 그림을 사용한다. }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -3648,6 +3776,72 @@ components:
                 type: integer
                 minimum: 1
 
+    RepresentativeImageMetadata:
+      description: |
+        사용자 대표 그림의 존재와 메타데이터. **URL은 없다** — 바이트 GET은 Bearer 판정을
+        거치고 FE가 object URL을 만든다. `custom: false`면 나머지 세 값은 null이고 자동
+        그림을 쓴다. 잠긴 상세도 존재 여부는 보존하되 바이트 메타는 null이다.
+      type: object
+      required: [custom, fileName, contentType, sizeBytes]
+      additionalProperties: false
+      properties:
+        custom: { type: boolean }
+        fileName: { type: [string, "null"], minLength: 1, maxLength: 255 }
+        contentType:
+          type: [string, "null"]
+          enum: [image/png, image/jpeg, image/webp, null]
+        sizeBytes: { type: [integer, "null"], minimum: 1, maximum: 10485760 }
+
+    LineageCandidate:
+      description: 계보 부모를 고르는 한 행. 잠기면 본체 이름·확장자 배열은 비어 있다.
+      type: object
+      required: [datasetId, name, fileNames, fileExtensions, category, period, source,
+                 processingLevel, topic, bodyAccessible]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        name: { type: string, minLength: 1 }
+        fileNames:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        fileExtensions:
+          description: 점 없는 소문자 확장자. 접근 가능한 본체 파일명에서만 계산한다.
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        category: { type: [string, "null"] }
+        period:
+          oneOf:
+            - type: object
+              required: [start, end]
+              additionalProperties: false
+              properties:
+                start: { type: string, format: date-time }
+                end: { type: [string, "null"], format: date-time }
+            - type: "null"
+        source:
+          type: object
+          required: [label, url, downloadedOn]
+          additionalProperties: false
+          properties:
+            label: { type: [string, "null"] }
+            url: { type: [string, "null"] }
+            downloadedOn: { type: [string, "null"], format: date }
+        processingLevel: { $ref: "../schemas/common.json#/$defs/ProcessingLevel" }
+        topic: { type: [string, "null"] }
+        bodyAccessible: { type: boolean }
+
+    LineageCandidatePage:
+      type: object
+      required: [items, nextCursor]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/LineageCandidate" }
+        nextCursor: { type: [string, "null"] }
+
     DatasetCreate:
       description: |
         등록 전환 요청 — 업로드 폼 한 화면이 한 번에 제출하는 값 (`Policy §5` 입력값 규칙 ·
@@ -3823,6 +4017,12 @@ components:
         crs:
           description: 좌표계 — **자유 입력** (`VAL-006`). 검사하지 않는다.
           type: [string, "null"]
+        gridDescription:
+          description: |
+            사람이 적은 격자 설명. 자동 분석값 `grid`와 다른 D3 값이고 좌표·자동 메타
+            계산에 쓰지 않는다. 선택 입력이며 공백 아닌 1000자 이하다.
+          type: [string, "null"]
+          maxLength: 1000
         period:
           description: 기간 — **자유 입력** (`VAL-006`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18).
           oneOf:
@@ -3969,6 +4169,12 @@ components:
         crs:
           description: 좌표계 — **자유 입력** (`VAL-006` · `〈138〉`).
           type: [string, "null"]
+        gridDescription:
+          description: |
+            사람이 적은 격자 설명. `null`은 사람 값을 지워 자동 설명으로 돌아가라는 뜻이고,
+            열쇠 생략은 그대로 둔다. 재분석은 이 값을 지우지 않는다.
+          type: [string, "null"]
+          maxLength: 1000
         period:
           description: 기간 — **자유 입력** (`VAL-006` · `〈138〉`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18).
           oneOf:
@@ -4291,7 +4497,8 @@ components:
       # 아니다. ⚠ `processingLevelUserSet` 은 required 로 올리지 않는다 — 상세 3행의
       # 「가공 단계」는 표시용 `processingLevel`(사람 값 우선)이 이미 required 로 있다.
       required: [category, dataType,
-                 variables, crs, period, observationInterval, grid, format, fileExtension,
+                 variables, crs, period, observationInterval, gridDescription,
+                 gridDescriptionAutomatic, grid, format, fileExtension,
                  files, sourceLabel, owner, uploader]
       additionalProperties: false
       properties:
@@ -4353,6 +4560,12 @@ components:
             - $ref: "#/components/schemas/ObservationInterval"
             - type: "null"
         grid: { type: [string, "null"] }
+        gridDescription:
+          description: 사람이 적은 격자 설명. 있으면 화면의 주 설명으로 쓴다.
+          type: [string, "null"]
+        gridDescriptionAutomatic:
+          description: 파일·격자 분석이 만든 자동 설명. 사람 값과 병존하며 삭제 시 퇴행값이다.
+          type: [string, "null"]
         format:
           description: |
             **내부 판별값 · 화면에 쓰지 않는다** (PRD-21 · `P-10`·`R-09`).
@@ -4436,7 +4649,8 @@ components:
       required:
         [datasetId, name, fileName, summary, topic, processingLevel, lineageState,
          verification, accessState, activeGrantCount, bodyAccessible, accessRequestPending,
-         uploadedAt, lastModifiedAt, lineageConfirmedAt, basicInfo, projects, actions]
+         uploadedAt, lastModifiedAt, lineageConfirmedAt, basicInfo, projects,
+         representativeImage, actions]
       additionalProperties: false
       properties:
         datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
@@ -4487,6 +4701,7 @@ components:
             - type: array
               items: { $ref: "#/components/schemas/DatasetProjectUse" }
             - type: "null"
+        representativeImage: { $ref: "#/components/schemas/RepresentativeImageMetadata" }
         actions:
           description: |
             **화면이 조건을 임의로 정하지 않는다** (P-7). 헤더 우측 한 자리가 상태 × 보는 사람에 따라

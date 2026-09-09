@@ -48,6 +48,10 @@ from pathlib import Path, PurePosixPath
 #: 접수분이 사는 한 층. 저장소 루트 바로 아래에 이 이름으로 모인다.
 UPLOADS_PREFIX = {uploads_prefix!r}
 
+#: 사용자가 고른 대표 그림은 접수 원본과 D7 캐시에 속하지 않는 D3 소유 바이트다.
+REPRESENTATIVE_IMAGES_PREFIX = {representative_images_prefix!r}
+REPRESENTATIVE_IMAGE_KEY_TEMPLATE = {representative_image_key!r}
+
 #: 기준 격자 파일이 사는 하위 디렉터리 이름.
 GRID_DIRNAME = {grid_dirname!r}
 
@@ -129,6 +133,17 @@ def preview_key(content_key: str, extension: str) -> str:
     if "/" in ext:
         raise ValueError(f"확장자에 경로 구분자를 넣지 않는다: {{extension!r}}")
     return KEY_TEMPLATES[PREVIEW_KIND].format(contentKey=key, extension=ext)
+
+
+def representative_image_key(dataset_id: str, image_id: str) -> str:
+    """서버가 발급한 두 ULID로 대표 그림의 저장 키를 만든다."""
+    for label, value in (("datasetId", dataset_id), ("imageId", image_id)):
+        part = str(value).strip()
+        if not part or "/" in part or "\\\\" in part or part in (".", ".."):
+            raise ValueError(f"대표 그림 {{label}} 로 쓸 수 없다: {{value!r}}")
+    return REPRESENTATIVE_IMAGE_KEY_TEMPLATE.format(
+        representativeImagesPrefix=REPRESENTATIVE_IMAGES_PREFIX,
+        datasetId=dataset_id, imageId=image_id)
 
 
 #: 지도 타일의 내용 키 접두사. **한 슬롯 안에서 두 규칙을 눈으로도 가른다** —
@@ -283,6 +298,8 @@ def render() -> str:
         grid_why=grid_why,
         preview_why="  " + spec["why"][preview_kind],
         uploads_prefix=spec["uploadsPrefix"],
+        representative_images_prefix=spec["representativeImagesPrefix"],
+        representative_image_key=spec["representativeImageKey"],
         grid_dirname=spec["gridDirname"],
         key_templates="{\n" + "".join(f"    {k!r}: {v!r},\n" for k, v in keys.items()) + "}",
         roots="{\n" + "".join(f"    {k!r}: {v!r},\n" for k, v in roots.items()) + "}",
@@ -312,6 +329,11 @@ def render() -> str:
     assert sample_preview == keys[preview_kind].format(contentKey=digest, extension=".png")
     assert not sample_preview.startswith(spec["uploadsPrefix"]), sample_preview
     assert sample_preview != sample_body
+    sample_representative = ns["representative_image_key"]("D1", "I1")
+    assert sample_representative == spec["representativeImageKey"].format(
+        representativeImagesPrefix=spec["representativeImagesPrefix"], datasetId="D1", imageId="I1")
+    assert not sample_representative.startswith(spec["uploadsPrefix"] + "/")
+    assert sample_representative != sample_preview
     try:
         ns["storage_key"]("T1", file_id="F1", kind=preview_kind)
     except ValueError:

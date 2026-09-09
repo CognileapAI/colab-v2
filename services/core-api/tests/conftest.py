@@ -148,6 +148,8 @@ _CLEANUP: tuple[tuple[str, str, str], ...] = (
     # 더하고, 그 행을 남기면 `d3_dataset.file_count`(메타 열)가 시험마다 1씩 늘어난다.
     # 지운 뒤 아래 `_RESTORE` 가 시드 두 행을 되돌리므로 셈이 제자리로 온다.
     ("d3_file", "created_at", ""),
+    ("d3_representative_image_cleanup", "created_at", ""),
+    ("d3_dataset_representative_image", "created_at", ""),
     ("d3_dataset_autometa", "updated_at", _KEEP_DATASETS),
     ("d3_dataset_description", "updated_at", _KEEP_DATASETS),
     ("d3_dataset", "uploaded_at", f" AND id NOT IN ({', '.join(_SEED_DATASETS)})"),
@@ -204,6 +206,23 @@ _RESTORE: tuple[str, ...] = (
         WHERE id = '0000000000000000000000DSA1'""",
     """UPDATE d3_dataset SET lineage_confirmed_at = '2026-02-03T00:00:00Z'
         WHERE id = '0000000000000000000000DSA2'""",
+    """UPDATE d3_dataset
+          SET source_url = NULL, source_downloaded_on = NULL,
+              processing_level_user_set = NULL,
+              last_modified_at = CASE id
+                WHEN '0000000000000000000000DSA1' THEN '2026-01-02T00:00:00Z'::timestamptz
+                WHEN '0000000000000000000000DSA2' THEN '2026-02-02T00:00:00Z'::timestamptz
+              END
+        WHERE id IN ('0000000000000000000000DSA1', '0000000000000000000000DSA2')""",
+    """UPDATE d3_dataset_description
+          SET category = NULL, data_type = NULL, human_grid_description = NULL,
+              topic = CASE dataset_id
+                        WHEN '0000000000000000000000DSA1' THEN '강우·강수'
+                        WHEN '0000000000000000000000DSA2' THEN '강우·강수'
+                      END
+        WHERE dataset_id IN ('0000000000000000000000DSA1', '0000000000000000000000DSA2')""",
+    """UPDATE d3_dataset_autometa SET period_start = NULL, period_end = NULL
+        WHERE dataset_id IN ('0000000000000000000000DSA1', '0000000000000000000000DSA2')""",
     # **UPDATE 가 아니라 INSERT ... ON CONFLICT 다** (WU-A1). 기본값 시험은 「행이 없는 계정」을
     # 만들려고 스위치 행을 **지운다** — UPDATE 로 되돌리면 0 행을 고치고 조용히 지나가서,
     # 다음 시험이 시드 대신 기본값을 오라클로 삼게 된다. 값은 `seed.sql:33-36` 그대로다.

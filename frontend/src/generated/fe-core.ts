@@ -661,6 +661,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lineage-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 계보 편집용 가공 전 데이터 후보 페이지
+         * @description 이름 또는 **접근 가능한 본체 파일명**에 `q`가 포함된 후보를 찾는다(둘은 OR).
+         *     `category`·`topic`·표시용 `processingLevel`과 기간은 그 결과에 AND로 붙고
+         *     페이지 제한 전에 서버가 적용한다. 기간 조건은 **겹침**이고, 후보의
+         *     `end: null`은 무기한이다. 기간 미기재 후보는 기간 조건이 있을 때만 제외된다.
+         *     정렬은 `lastModifiedAt DESC, datasetId ASC`의 안정 keyset이며 잠긴 후보도 공개 메타는
+         *     남지만 `fileNames`·`fileExtensions`는 빈 배열이다. 응답의 Lv는 기존 사람값 우선
+         *     표시 규칙을 쓴다. 후보 페이지마다 D2·D3·D4를 묶어 읽으며 행별 조회를 하지 않는다.
+         */
+        get: operations["listLineageCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/datasets/{datasetId}": {
         parameters: {
             query?: never;
@@ -708,6 +734,38 @@ export interface paths {
          *     `업로드·편집` 스위치가 판정한다 (`〈59〉-②` — 소유자를 별도 관문으로 만들지 않는다).
          */
         patch: operations["updateDataset"];
+        trace?: never;
+    };
+    "/datasets/{datasetId}/representative-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 사용자 대표 그림 바이트 조회
+         * @description Bearer 본체 접근 판정을 거친 바이트다. FE는 이 응답으로 object URL을 만든다.
+         */
+        get: operations["getDatasetRepresentativeImage"];
+        /**
+         * 사용자 대표 그림 등록 또는 교체
+         * @description `createDataset` 뒤 별도 호출한다. PNG·JPEG·WebP를 실제 디코딩해 검증하고 10 MiB를
+         *     넘으면 거절한다. 새 바이트를 놓고 D3 참조를 확정한 뒤 이전 바이트를 치우므로 교체
+         *     실패 때 기존 그림이 유지된다. 저장 키는 서버가 발급하며 응답에는 URL을 싣지 않는다.
+         */
+        put: operations["putDatasetRepresentativeImage"];
+        post?: never;
+        /**
+         * 사용자 대표 그림 삭제 — 자동 그림으로 복귀
+         * @description 사용자 대표 그림 메타데이터와 바이트를 지우며 이후 상세은 자동 그림을 사용한다.
+         */
+        delete: operations["deleteDatasetRepresentativeImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/dataset-field-suggestions": {
@@ -2410,6 +2468,46 @@ export interface components {
             }[];
         };
         /**
+         * @description 사용자 대표 그림의 존재와 메타데이터. **URL은 없다** — 바이트 GET은 Bearer 판정을
+         *     거치고 FE가 object URL을 만든다. `custom: false`면 나머지 세 값은 null이고 자동
+         *     그림을 쓴다. 잠긴 상세도 존재 여부는 보존하되 바이트 메타는 null이다.
+         */
+        RepresentativeImageMetadata: {
+            custom: boolean;
+            fileName: string | null;
+            /** @enum {string|null} */
+            contentType: "image/png" | "image/jpeg" | "image/webp" | null;
+            sizeBytes: number | null;
+        };
+        /** @description 계보 부모를 고르는 한 행. 잠기면 본체 이름·확장자 배열은 비어 있다. */
+        LineageCandidate: {
+            datasetId: components["schemas"]["Ulid"];
+            name: string;
+            fileNames: string[];
+            /** @description 점 없는 소문자 확장자. 접근 가능한 본체 파일명에서만 계산한다. */
+            fileExtensions: string[];
+            category: string | null;
+            period: {
+                /** Format: date-time */
+                start: string;
+                /** Format: date-time */
+                end: string | null;
+            } | null;
+            source: {
+                label: string | null;
+                url: string | null;
+                /** Format: date */
+                downloadedOn: string | null;
+            };
+            processingLevel: components["schemas"]["ProcessingLevel"];
+            topic: string | null;
+            bodyAccessible: boolean;
+        };
+        LineageCandidatePage: {
+            items: components["schemas"]["LineageCandidate"][];
+            nextCursor: string | null;
+        };
+        /**
          * @description 등록 전환 요청 — 업로드 폼 한 화면이 한 번에 제출하는 값 (`Policy §5` 입력값 규칙 ·
          *     `§7.2` 등록 중 → 등록됨).
          *
@@ -2562,6 +2660,11 @@ export interface components {
             variables?: components["schemas"]["DatasetVariable"][];
             /** @description 좌표계 — **자유 입력** (`VAL-006`). 검사하지 않는다. */
             crs?: string | null;
+            /**
+             * @description 사람이 적은 격자 설명. 자동 분석값 `grid`와 다른 D3 값이고 좌표·자동 메타
+             *     계산에 쓰지 않는다. 선택 입력이며 공백 아닌 1000자 이하다.
+             */
+            gridDescription?: string | null;
             /** @description 기간 — **자유 입력** (`VAL-006`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
             /**
@@ -2690,6 +2793,11 @@ export interface components {
             variables?: components["schemas"]["DatasetVariable"][];
             /** @description 좌표계 — **자유 입력** (`VAL-006` · `〈138〉`). */
             crs?: string | null;
+            /**
+             * @description 사람이 적은 격자 설명. `null`은 사람 값을 지워 자동 설명으로 돌아가라는 뜻이고,
+             *     열쇠 생략은 그대로 둔다. 재분석은 이 값을 지우지 않는다.
+             */
+            gridDescription?: string | null;
             /** @description 기간 — **자유 입력** (`VAL-006` · `〈138〉`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
             /**
@@ -2980,6 +3088,10 @@ export interface components {
              */
             observationInterval: components["schemas"]["ObservationInterval"] | null;
             grid: string | null;
+            /** @description 사람이 적은 격자 설명. 있으면 화면의 주 설명으로 쓴다. */
+            gridDescription: string | null;
+            /** @description 파일·격자 분석이 만든 자동 설명. 사람 값과 병존하며 삭제 시 퇴행값이다. */
+            gridDescriptionAutomatic: string | null;
             /**
              * @description **내부 판별값 · 화면에 쓰지 않는다** (PRD-21 · `P-10`·`R-09`).
              *     `.hdf` 하나가 서로 호환되지 않는 두 포맷을 가리켜 매직 넘버를 읽지 않는 한
@@ -3081,6 +3193,7 @@ export interface components {
              *     잠김이면 null.
              */
             projects: components["schemas"]["DatasetProjectUse"][] | null;
+            representativeImage: components["schemas"]["RepresentativeImageMetadata"];
             /**
              * @description **화면이 조건을 임의로 정하지 않는다** (P-7). 헤더 우측 한 자리가 상태 × 보는 사람에 따라
              *     갈리는 것(`✓ 승인 요청` / `승인` / `⋯ 승인 취소`)과 편집 컨트롤 노출을 서버가 판정해 내린다.
@@ -5203,6 +5316,43 @@ export interface operations {
             };
         };
     };
+    listLineageCandidates: {
+        parameters: {
+            query?: {
+                q?: string;
+                category?: string;
+                topic?: string;
+                processingLevel?: components["schemas"]["ProcessingLevel"];
+                periodStart?: string;
+                periodEnd?: string;
+                excludeDatasetId?: components["schemas"]["Ulid"];
+                limit?: number;
+                /**
+                 * @description 이어보기 토큰. 페이지 크기는 서버가 정한다 — 정본은 `+N건 더 보기`만 요구하고
+                 *     페이지 크기 값을 주지 않는다 (`sessions/D2.md §3-②`).
+                 */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 안정 keyset로 잘린 후보 페이지 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineageCandidatePage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getDataset: {
         parameters: {
             query?: never;
@@ -5278,6 +5428,110 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getDatasetRepresentativeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 저장된 원본 그림 바이트 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    putDatasetRepresentativeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    image: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 저장된 사용자 대표 그림 메타데이터 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepresentativeImageMetadata"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 그림이 10 MiB를 넘는다. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 실제로 디코딩되는 PNG·JPEG·WebP가 아니거나 선언 형식과 다르다. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteDatasetRepresentativeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 사용자 그림이 없어져 자동 그림을 사용한다. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

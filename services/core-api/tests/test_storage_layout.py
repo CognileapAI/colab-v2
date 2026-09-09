@@ -233,3 +233,11 @@ def test_storage_key_refuses_preview_kind(tmp_path):
     assert body != _PREVIEW_EXPECTED
     got = storage_layout.preview_path(tmp_path, _PREVIEW_CONTENT_KEY, ".png")
     assert got == tmp_path / _PREVIEW_EXPECTED
+
+
+def test_representative_image_has_a_server_owned_key_separate_from_uploads_and_preview():
+    """대표 그림을 본체 접수 키나 D7 내용주소 캐시에 섞는 회귀를 잡는다."""
+    key = storage_layout.representative_image_key("D1", "I1")
+    assert key == "representative-images/D1/I1"
+    assert not key.startswith(f"{storage_layout.UPLOADS_PREFIX}/")
+    assert key != storage_layout.preview_key(_PREVIEW_CONTENT_KEY, ".png")

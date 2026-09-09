@@ -38,8 +38,8 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_69() -> None:
-    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → **66.**
+def test_operation_count_is_73() -> None:
+    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → **73.**
 
     ⭑ **병합(창 8-a) 실측 = 66.** 두 줄기가 각자 더한 op 이 겹치지 않아 합이 그대로 는다 —
     PR #1 줄기 **65**(`〈337〉`~`〈342〉` · 저장 Port · 파일 관리 · 다운로드 셋) ＋ `main` 줄기가
@@ -112,7 +112,8 @@ def test_operation_count_is_69() -> None:
     **신설과 동시에 구현했다**(㉰-4) — 501 표는 **4 그대로**이고, 그 사실을
     `tests/test_not_implemented.py` 의 `C21_REAL` 이 뒤에서 붙든다.
     """
-    assert len(contract_operations()) == 69, "계약의 오퍼레이션이 69 개가 아니다 — 발췌가 잘렸다."
+    # 사용자 승인 UI 개선은 계보 후보 1개와 대표 그림 PUT/GET/DELETE 3개를 함께 열었다.
+    assert len(contract_operations()) == 73, "계약의 오퍼레이션이 73 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

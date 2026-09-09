@@ -446,7 +446,12 @@ CREATE TABLE d3_dataset_description (
   data_type text
     CHECK (data_type IS NULL
            OR data_type IN ('지상관측자료', '위성자료', '재분석자료',
-                            '수치모형자료', '합성자료', '관측 기반 산출물'))
+                            '수치모형자료', '합성자료', '관측 기반 산출물')),
+  -- 사람이 적은 격자 설명. 자동 분석값(`d3_dataset_autometa.grid`)과 섞지 않는다.
+  human_grid_description text
+    CONSTRAINT d3_dataset_description_human_grid_description_check
+    CHECK (human_grid_description IS NULL
+           OR length(btrim(human_grid_description)) BETWEEN 1 AND 1000)
 );
 CREATE INDEX d3_dataset_description_lab_idx ON d3_dataset_description (lab_id);
 CREATE INDEX d3_dataset_description_search_idx
@@ -457,6 +462,35 @@ CREATE INDEX d3_dataset_description_search_idx
 -- **순위는 여전히 `tsvector` 가 낸다** — 유사도는 세 번째 정렬 키다 (`〈89〉-㉮③`).
 CREATE INDEX d3_dataset_description_name_trgm_idx
   ON d3_dataset_description USING gin (name gin_trgm_ops);
+
+-- 사용자가 고른 대표 그림의 D3 원장. 바이트는 별도 저장 키에 있고 데이터셋당 한 장이다.
+CREATE TABLE d3_dataset_representative_image (
+  dataset_id  ulid        PRIMARY KEY REFERENCES d3_dataset(id) ON DELETE CASCADE,
+  lab_id      ulid        NOT NULL REFERENCES d1_lab(id),
+  image_id    ulid        NOT NULL UNIQUE,
+  file_name   text        NOT NULL CHECK (length(btrim(file_name)) BETWEEN 1 AND 255),
+  content_type text       NOT NULL CHECK (content_type IN ('image/png', 'image/jpeg', 'image/webp')),
+  size_bytes  bigint      NOT NULL CHECK (size_bytes BETWEEN 1 AND 10485760),
+  storage_key text        NOT NULL UNIQUE CHECK (length(btrim(storage_key)) BETWEEN 1 AND 1024),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX d3_dataset_representative_image_lab_idx
+  ON d3_dataset_representative_image (lab_id);
+
+-- 대표 그림 참조를 확정한 뒤 지워야 할 이전 바이트. 실제 저장소 삭제가 실패해도
+-- PUT/DELETE 결과를 되돌리지 않고 다음 mutation이 다시 시도할 수 있게 같은 transaction에 남긴다.
+-- dataset_id에는 일부러 FK를 걸지 않는다. 데이터셋 삭제와 함께 이 행까지 cascade되면
+-- 아직 지우지 못한 바이트의 마지막 추적 근거가 사라진다.
+CREATE TABLE d3_representative_image_cleanup (
+  cleanup_id  ulid        PRIMARY KEY,
+  lab_id      ulid        NOT NULL REFERENCES d1_lab(id),
+  dataset_id  ulid        NOT NULL,
+  storage_key text        NOT NULL UNIQUE CHECK (length(btrim(storage_key)) BETWEEN 1 AND 1024),
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX d3_representative_image_cleanup_lab_dataset_idx
+  ON d3_representative_image_cleanup (lab_id, dataset_id, created_at, cleanup_id);
 
 -- 자동으로 읽은 정보 (정본 §4.1). **파일에서 자동** — 사람이 타이핑하지 않는다.
 -- 본체가 여럿이면 §4.3 합치는 규칙의 **결과**를 담는다
@@ -1214,6 +1248,16 @@ CREATE POLICY lab_boundary ON d3_dataset FOR ALL
 ALTER TABLE d3_dataset_description  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d3_dataset_description  FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d3_dataset_description FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d3_dataset_representative_image ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_dataset_representative_image FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_dataset_representative_image FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d3_representative_image_cleanup ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_representative_image_cleanup FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_representative_image_cleanup FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 ALTER TABLE d3_dataset_autometa     ENABLE ROW LEVEL SECURITY;

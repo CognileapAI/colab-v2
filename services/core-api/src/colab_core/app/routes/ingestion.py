@@ -391,6 +391,7 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
                           #    `DatasetCreate` 에 두 열쇠를 여는 **같은 회차**에 서버가
                           #    받는다 — 미루면 열쇠는 있는데 400 이다(§5-㉰-4).
                           "sourceUrl", "sourceDownloadedOn",
+                          "gridDescription",
                           # ⭑ ⟨20차 해제 · PRD-27 · WU-B8⟩ 「가공 전 데이터를 못 찾았다」는
                           #    **사람의 선언**. `d4_lineage_unknown` 에 쓰는 값이라 D3 저장
                           #    경로(`_HUMAN_METADATA_FIELDS`)에는 넣지 않는다 — `accessState`
@@ -411,7 +412,7 @@ _ALLOWED_CREATE_FIELDS = {"uploadId", "name", "topic", "summary", "sourceLabel",
 #: ⛔ **Lv 로 거르지 않는다** — `processingLevelUserSet` 이 무엇이든 실려 온 값을 저장한다.
 _HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval",
                           "category", "dataType", "processingLevelUserSet",
-                          "sourceUrl", "sourceDownloadedOn")
+                          "sourceUrl", "sourceDownloadedOn", "gridDescription")
 
 
 def _extension_of(file_name: str) -> str:

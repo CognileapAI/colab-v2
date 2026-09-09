@@ -37,7 +37,8 @@ from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
 from .routes import (access, catalog, download, identity, ingestion, insight, lineage,
-                     members, not_implemented, preview, project, session, upload_transfers)
+                     members, not_implemented, preview, project, representative_image,
+                     session, upload_transfers)
 
 API_PREFIX = "/api/v1"
 
@@ -141,6 +142,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                    # · `/datasets/{id}/files/{id}/download` 는 세그먼트 수가 다르고 `/downloads/` 는
                    # 이 라우터뿐). 순서는 뜻이 없지만 카탈로그 옆에 둔다 — 같은 `catalog` 태그다.
                    download.router,
+                   representative_image.router,
                    project.router,
                    upload_transfers.router,  # /uploads/transfers 가 /uploads/{uploadId} 보다 먼저
                    ingestion.router, lineage.router, preview.router, access.router,

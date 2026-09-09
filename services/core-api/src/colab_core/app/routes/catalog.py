@@ -99,6 +99,40 @@ def _decode_cursor(cursor: str | None) -> int:
         raise errors.bad_request("cursor 를 해석하지 못했다.") from None
 
 
+def _lineage_cursor(last_modified: dt.datetime, dataset_id: str) -> str:
+    raw = f"lc:{_iso(last_modified)}|{dataset_id}"
+    return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+
+def _decode_lineage_cursor(cursor: str | None) -> tuple[dt.datetime, str] | None:
+    if cursor is None:
+        return None
+    try:
+        pad = "=" * (-len(cursor) % 4)
+        raw = base64.urlsafe_b64decode(cursor + pad).decode()
+        head, dataset_id = raw.split("|", 1)
+        if not head.startswith("lc:") or not Ulid.is_valid(dataset_id):
+            raise ValueError
+        stamp = dt.datetime.fromisoformat(head[3:])
+        if stamp.tzinfo is None:
+            raise ValueError
+        return stamp, dataset_id
+    except (ValueError, binascii.Error, UnicodeDecodeError):
+        raise errors.bad_request("cursor 를 해석하지 못했다.") from None
+
+
+def _query_datetime(value: str | None, label: str) -> dt.datetime | None:
+    if value is None:
+        return None
+    try:
+        parsed = dt.datetime.fromisoformat(value)
+    except ValueError:
+        raise errors.bad_request(f"{label} 는 날짜·시각(ISO 8601)이다.") from None
+    if parsed.tzinfo is None:
+        raise errors.bad_request(f"{label} 에 시간대가 있어야 한다.")
+    return parsed
+
+
 def _compose(db: Session) -> list[dict]:
     cores = d3_catalog.list_dataset_cores(db)
     ids = [Ulid(c.dataset_id) for c in cores]
@@ -714,7 +748,7 @@ def _project_period(start, end) -> dict:
 #: 다음 회차로 미루면 「계약에 없는 필드다」 400 이 돌아온다 — 같은 §5-㉰-4 다.
 _UPDATE_FIELDS = ("name", "topic", "summary", "sourceLabel",
                   "representativeFileId", "variables", "crs", "period",
-                  "observationInterval",
+                  "observationInterval", "gridDescription",
                   "category", "dataType", "processingLevelUserSet",
                   # ⭑ ⟨20차 해제 · PRD-19 · WU-B6⟩ Lv0 출처 두 칸. 등록만 열고 이 줄을
                   #    미루면 「수정에서 채워 주세요」 안내가 실행 불가능한 문장이 된다.
@@ -1018,6 +1052,12 @@ def validate_human_metadata(changes: dict) -> None:
         if not isinstance(changes["crs"], str):
             raise errors.bad_request("좌표계는 문자열이다.")
 
+    if "gridDescription" in changes and changes["gridDescription"] is not None:
+        description = changes["gridDescription"]
+        if not isinstance(description, str) or not description.strip() or len(description) > 1000:
+            raise errors.bad_request("격자 설명은 공백이 아닌 1000자 이하 문자열이다.")
+        changes["gridDescription"] = description.strip()
+
     if changes.get("topic") is not None and "topic" in changes:
         # **DB CHECK 어휘 밖은 400 이다** (`CODE-REVIEW-20260903` #12). 검사하지 않으면
         # 그 값이 IntegrityError 로 떨어져 **사용자의 오타가 500** 이 된다.
@@ -1216,6 +1256,126 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
     return get_dataset(datasetId, subject=subject, db=db)
 
 
+@router.get("/lineage-candidates", name="listLineageCandidates")
+def list_lineage_candidates(
+        q: str | None = Query(default=None),
+        category: str | None = Query(default=None),
+        topic: str | None = Query(default=None),
+        processingLevel: str | None = Query(default=None),
+        periodStart: str | None = Query(default=None),
+        periodEnd: str | None = Query(default=None),
+        excludeDatasetId: str | None = Query(default=None),
+        limit: int = Query(default=20, ge=1, le=100),
+        cursor: str | None = Query(default=None),
+        db: Session = Depends(scoped_db)) -> dict:
+    """계보 편집 전용 후보. D3·D4·D2 사실을 모두 페이지 행에 실어 한 번에 그리게 한다.
+
+    이름과 본체 파일명 질의는 OR이고, 분류·주제·표시 Lv·기간은 그 결과에 AND로 붙는다.
+    기간은 겹침이며 후보의 끝 `null`은 무기한, 기간 자체가 없는 후보는 기간 조건에서 제외된다.
+    파일명은 D3 본체 RLS가 허용하는 후보에만 있으므로 잠긴 후보의 공개 메타는 남아도
+    본체 이름과 확장자는 내려가지 않는다.
+    """
+    query_start = _query_datetime(periodStart, "periodStart")
+    query_end = _query_datetime(periodEnd, "periodEnd")
+    if query_start is not None and query_end is not None and query_end < query_start:
+        raise errors.bad_request("periodEnd 는 periodStart 보다 앞설 수 없다.")
+    after = _decode_lineage_cursor(cursor)
+    if excludeDatasetId is not None and not Ulid.is_valid(excludeDatasetId):
+        raise errors.bad_request("excludeDatasetId 가 정규 ID 가 아니다.")
+    level_filter = None
+    if processingLevel is not None:
+        parsed = _parse_levels([processingLevel])
+        if parsed == [UNSPECIFIED]:
+            raise errors.bad_request("계보 후보 processingLevel 은 정수여야 한다.")
+        _validate_filters(parsed, None)
+        level_filter = parsed[0]
+
+    common = {
+        "query": (q or "").strip() or None, "category": category,
+        "topic": (topic or "").strip() or None,
+        "period_start": query_start, "period_end": query_end,
+        "exclude_id": excludeDatasetId,
+    }
+    next_cursor = None
+    selected_levels: dict[str, int] = {}
+    if level_filter is None:
+        cores_plus = d3_catalog.list_lineage_candidate_cores(
+            db, **common, cursor_at=None if after is None else after[0],
+            cursor_id=None if after is None else after[1], limit=limit + 1)
+        has_more = len(cores_plus) > limit
+        cores = cores_plus[:limit]
+        if has_more and cores:
+            next_cursor = _lineage_cursor(cores[-1].last_modified_at, cores[-1].dataset_id)
+    else:
+        # D3가 q/category/topic/period/keyset chunk만 고르고 D4가 그 chunk의 표시 Lv를 판정한다.
+        # 전 연구실 ID를 물질화하지 않으며, 이미 검사한 부적합 행은 다음 cursor에서 되읽지 않는다.
+        cores = []
+        scan_after = after
+        chunk_size = max(20, min(100, limit * 2))
+        while len(cores) < limit:
+            batch_plus = d3_catalog.list_lineage_candidate_cores(
+                db, **common, cursor_at=None if scan_after is None else scan_after[0],
+                cursor_id=None if scan_after is None else scan_after[1], limit=chunk_size + 1)
+            has_more_underlying = len(batch_plus) > chunk_size
+            batch = batch_plus[:chunk_size]
+            if not batch:
+                break
+            batch_ids = [Ulid(core.dataset_id) for core in batch]
+            batch_summaries = d4_lineage.LineageSummaryAdapter(db).summaries(batch_ids)
+            inspected = 0
+            for inspected, core in enumerate(batch, start=1):
+                effective = d3_catalog.level_view(
+                    core, batch_summaries.get(core.dataset_id))["processingLevel"]
+                if effective == level_filter:
+                    cores.append(core)
+                    selected_levels[core.dataset_id] = effective
+                    if len(cores) == limit:
+                        break
+            last_inspected = batch[inspected - 1]
+            uninspected = inspected < len(batch) or has_more_underlying
+            if len(cores) == limit:
+                if uninspected:
+                    next_cursor = _lineage_cursor(
+                        last_inspected.last_modified_at, last_inspected.dataset_id)
+                break
+            if not has_more_underlying:
+                break
+            scan_after = (batch[-1].last_modified_at, batch[-1].dataset_id)
+
+    ids = [Ulid(c.dataset_id) for c in cores]
+    summaries = ({} if level_filter is not None
+                 else d4_lineage.LineageSummaryAdapter(db).summaries(ids))
+    accesses = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    periods = d3_catalog.periods_of(db, ids)
+    accessible_ids = [Ulid(c.dataset_id) for c in cores
+                      if accesses.get(c.dataset_id) and accesses[c.dataset_id].body_accessible]
+    files = d3_catalog.candidate_body_files(db, accessible_ids)
+    rows: list[tuple[Any, dict]] = []
+    for core in cores:
+        body_accessible = bool(accesses.get(core.dataset_id)
+                               and accesses[core.dataset_id].body_accessible)
+        names = files.get(core.dataset_id, []) if body_accessible else []
+        level = (selected_levels[core.dataset_id] if level_filter is not None
+                 else d3_catalog.level_view(core, summaries.get(core.dataset_id))["processingLevel"])
+        candidate_period = periods.get(core.dataset_id)
+        stamp = core.last_modified_at
+        extensions = sorted({name.rpartition(".")[2].lower() for name in names
+                             if "." in name and name.rpartition(".")[0]})
+        period = None if candidate_period is None else {
+            "start": _iso(candidate_period[0]),
+            "end": None if candidate_period[1] is None else _iso(candidate_period[1]),
+        }
+        rows.append((stamp, {
+            "datasetId": core.dataset_id, "name": core.name, "fileNames": names,
+            "fileExtensions": extensions, "category": core.category, "period": period,
+            "source": {"label": core.source_label, "url": core.source_url,
+                       "downloadedOn": _date_iso(core.source_downloaded_on)},
+            "processingLevel": level, "topic": core.topic,
+            "bodyAccessible": body_accessible,
+        }))
+    return {"items": [row for _, row in rows], "nextCursor": next_cursor}
+
+
 @router.get("/datasets/{datasetId}", name="getDataset")
 def get_dataset(datasetId: str,
                 subject: Subject = Depends(current_subject),
@@ -1283,6 +1443,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     verified = False if verification is None else verification.verified
 
     meta = d3_catalog.find_autometa(db, dataset_id)
+    representative = d3_catalog.find_representative_image(db, dataset_id)
     basic_info = None
     projects = None
     if body_accessible:
@@ -1321,6 +1482,9 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             # `core`(`d3_dataset_description`) 에서 온다. **둘 다 값이거나 둘 다 없다**
             # (pair CHECK) — 반쪽이 내려가는 경로가 없다. 표시 문자열은 화면이 조립한다.
             "observationInterval": _observation_interval(core),
+            # 사람 설명과 자동 분석값을 갈라 내려 수정·재분석이 서로를 덮지 않게 한다.
+            "gridDescription": core.human_grid_description,
+            "gridDescriptionAutomatic": None if meta is None else meta.grid,
             "grid": None if meta is None else meta.grid,
             # **화면이 쓰는 값은 이쪽이다** (PRD-21) — 조각의 확장자. 점 없는 소문자(`nc`)이고
             # 화면이 `*.nc` 로 조립한다. `None` 이면 파일명이 확장자를 말하지 않는 것이고
@@ -1404,6 +1568,16 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         "lineageConfirmedAt": _iso(core.lineage_confirmed_at),
         "basicInfo": basic_info,
         "projects": projects,
+        "representativeImage": {
+            "custom": representative is not None,
+            # 대표 그림 파일명도 바이트 쪽 메타라 잠긴 상세에서는 숨긴다.
+            "fileName": (representative.file_name
+                         if body_accessible and representative is not None else None),
+            "contentType": (representative.content_type
+                            if body_accessible and representative is not None else None),
+            "sizeBytes": (representative.size_bytes
+                          if body_accessible and representative is not None else None),
+        },
         # **화면이 조건을 임의로 정하지 않는다** (P-7). 헤더 우측 한 자리가 상태 × 보는 사람에
         # 따라 셋으로 갈리는 규칙은 `Policy_승인_처리 §8` 이 정본이다.
         "actions": {

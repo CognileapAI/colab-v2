@@ -67,7 +67,7 @@ def test_the_response_has_exactly_the_contract_keys(client: TestClient) -> None:
         # ⭑ ⟨WU-B4 · PRD-11⟩ `activeGrantCount` = 지금 볼 수 있는 사람 수(되묻는 문면의 N명).
         "lineageState", "verification", "accessState", "activeGrantCount", "bodyAccessible",
         "accessRequestPending", "uploadedAt", "lastModifiedAt", "lineageConfirmedAt",
-        "basicInfo", "projects", "actions",
+        "basicInfo", "projects", "representativeImage", "actions",
     }
 
 
@@ -102,7 +102,8 @@ def test_basic_info_is_the_nine_cells(client: TestClient) -> None:
     # 그쪽은 Lv 무관 상시 노출이고 두 열쇠가 그 칸을 대신하지 않는다(미결-11 ⓐ).
     assert set(info) == {"category", "dataType", "processingLevelUserSet",
                          "processingLevelDerived", "processingLevelMismatch",
-                         "variables", "crs", "period", "observationInterval", "grid",
+                         "variables", "crs", "period", "observationInterval",
+                         "gridDescription", "gridDescriptionAutomatic", "grid",
                          "format", "fileExtension", "files", "sourceLabel",
                          "sourceUrl", "sourceDownloadedOn",
                          "owner", "uploader"}

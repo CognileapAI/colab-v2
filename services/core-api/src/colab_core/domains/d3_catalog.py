@@ -18,6 +18,7 @@ from ..ports.lineage import LV_CAP, LineageSummary
 # (Policy_데이터셋_상세 §7). 계보 그래프에는 묘비 노드로 남는다(그건 D4 의 일이다).
 _ROWS = text("""
     SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
+           d.source_url, d.source_downloaded_on,
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            dd.name, dd.topic, dd.summary,
            -- ⭑ **⟨20차 해제 · PRD-10 · WU-B5⟩ 사람이 고른 가공 단계.** 목록도 상세와
@@ -47,6 +48,54 @@ _ROWS = text("""
       JOIN d3_dataset_description dd ON dd.dataset_id = d.id
       JOIN d1_account u ON u.id = d.uploader_account_id
      WHERE d.deleted_at IS NULL
+""")
+
+# 계보 후보의 서버 페이지. 파일명 EXISTS는 `d3_file`의 기존 restrictive body RLS를 그대로
+# 통과하므로 잠긴 파일명을 검색 신호로도 누설하지 않는다. 필터와 keyset를 DB에 내려
+# 연구실 전체를 Python 메모리에 올리지 않는다.
+_LINEAGE_CANDIDATE_PAGE = text("""
+    SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
+           d.source_url, d.source_downloaded_on,
+           d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
+           d.file_count, d.processing_level_user_set,
+           dd.name, dd.topic, dd.summary, dd.category, dd.data_type,
+           u.name AS uploader_name
+      FROM d3_dataset d
+      JOIN d3_dataset_description dd ON dd.dataset_id = d.id
+      LEFT JOIN d3_dataset_autometa am ON am.dataset_id = d.id
+      JOIN d1_account u ON u.id = d.uploader_account_id
+     WHERE d.deleted_at IS NULL
+       AND (CAST(:exclude_id AS text) IS NULL OR d.id <> CAST(:exclude_id AS ulid))
+       AND (CAST(:category AS text) IS NULL OR dd.category = CAST(:category AS text))
+       AND (CAST(:topic AS text) IS NULL OR dd.topic = CAST(:topic AS text))
+       AND (
+         CAST(:query AS text) IS NULL
+         OR lower(dd.name) LIKE CAST(:query AS text) ESCAPE '\\'
+         OR EXISTS (
+           SELECT 1 FROM d3_file f
+            WHERE f.dataset_id = d.id AND f.kind = '본체'
+              AND lower(f.file_name) LIKE CAST(:query AS text) ESCAPE '\\'
+         )
+       )
+       AND (
+         (CAST(:period_start AS timestamptz) IS NULL
+          AND CAST(:period_end AS timestamptz) IS NULL)
+         OR (
+           am.period_start IS NOT NULL
+           AND (CAST(:period_start AS timestamptz) IS NULL OR am.period_end IS NULL
+                OR am.period_end >= CAST(:period_start AS timestamptz))
+           AND (CAST(:period_end AS timestamptz) IS NULL
+                OR am.period_start <= CAST(:period_end AS timestamptz))
+         )
+       )
+       AND (
+         CAST(:cursor_at AS timestamptz) IS NULL
+         OR d.last_modified_at < CAST(:cursor_at AS timestamptz)
+         OR (d.last_modified_at = CAST(:cursor_at AS timestamptz)
+             AND d.id > CAST(:cursor_id AS ulid))
+       )
+     ORDER BY d.last_modified_at DESC, d.id ASC
+     LIMIT :limit
 """)
 
 #: `common.json#/$defs/FileKind` 의 둘 중 격자 쪽. **값 집합의 정본은 계약이다** —
@@ -81,7 +130,7 @@ _ONE = text("""
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
            d.file_count - _grid.n AS file_count,
-           dd.name, dd.topic, dd.summary,
+           dd.name, dd.topic, dd.summary, dd.human_grid_description,
            -- 관측 간격 **두 칸** (PRD-17 · `M-6`). 사람이 적는 값이라 이 표에 있다.
            -- 상세만 읽는다 — 목록(`DatasetRow`)에는 이 칸이 계약에도 화면에도 없다.
            dd.observation_interval_value, dd.observation_interval_unit,
@@ -228,6 +277,34 @@ class DatasetCore:
     #: ⚠ 저장·조회 어디에도 Lv 조건이 없다 — Lv 로 갈리는 것은 **화면 표시뿐**이다.
     source_url: str | None = None
     source_downloaded_on: object = None
+    #: 사람이 적은 격자 설명. 파일에서 읽은 `DatasetAutometa.grid` 와 다른 값이다.
+    human_grid_description: str | None = None
+
+
+def list_lineage_candidate_cores(
+        session: Session, *, query: str | None, category: str | None,
+        topic: str | None, period_start: object, period_end: object, exclude_id: str | None,
+        cursor_at: object, cursor_id: str | None, limit: int) -> list[DatasetCore]:
+    """필터와 안정 keyset가 적용된 후보를 호출자가 정한 bounded `limit`만큼 읽는다."""
+    escaped = None
+    if query:
+        escaped = "%" + query.casefold().replace("\\", "\\\\").replace("%", "\\%") \
+            .replace("_", "\\_") + "%"
+    rows = session.execute(_LINEAGE_CANDIDATE_PAGE, {
+        "query": escaped, "category": category, "topic": topic, "period_start": period_start,
+        "period_end": period_end, "exclude_id": exclude_id, "cursor_at": cursor_at,
+        "cursor_id": cursor_id, "limit": limit,
+    }).mappings()
+    return [DatasetCore(
+        dataset_id=r["id"], name=r["name"], topic=r["topic"], summary=r["summary"],
+        file_count=int(r["file_count"]), uploader_id=r["uploader_account_id"],
+        uploader_name=r["uploader_name"], owner_id=r["owner_account_id"],
+        source_label=r["source_label"], last_modified_at=r["last_modified_at"],
+        uploaded_at=r["uploaded_at"], lineage_confirmed_at=r["lineage_confirmed_at"],
+        category=r["category"], data_type=r["data_type"],
+        processing_level_user_set=r["processing_level_user_set"],
+        source_url=r["source_url"], source_downloaded_on=r["source_downloaded_on"],
+    ) for r in rows]
 
 
 def list_dataset_cores(session: Session) -> list[DatasetCore]:
@@ -243,6 +320,7 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
             lineage_confirmed_at=r["lineage_confirmed_at"],
             category=r["category"], data_type=r["data_type"],
             processing_level_user_set=r["processing_level_user_set"],
+            source_url=r["source_url"], source_downloaded_on=r["source_downloaded_on"],
         )
         for r in rows
     ]
@@ -265,7 +343,136 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         category=r["category"], data_type=r["data_type"],
         processing_level_user_set=r["processing_level_user_set"],
         source_url=r["source_url"], source_downloaded_on=r["source_downloaded_on"],
+        human_grid_description=r["human_grid_description"],
     )
+
+
+_CANDIDATE_BODY_FILES = text("""
+    SELECT dataset_id, file_name
+      FROM d3_file
+     WHERE dataset_id = ANY(CAST(:ids AS char(26)[])) AND kind = '본체'
+     ORDER BY dataset_id, file_name, id
+""")
+
+
+def candidate_body_files(session: Session, dataset_ids: list[Ulid]) -> dict[str, list[str]]:
+    """호출자가 본체 접근 가능하다고 판정한 후보들의 파일명을 한 문장으로 읽는다."""
+    out: dict[str, list[str]] = {}
+    seen: dict[str, set[str]] = {}
+    for row in session.execute(
+            _CANDIDATE_BODY_FILES, {"ids": [str(i) for i in dataset_ids]}).mappings():
+        dataset_id, file_name = row["dataset_id"], row["file_name"]
+        names_seen = seen.setdefault(dataset_id, set())
+        if file_name not in names_seen:
+            out.setdefault(dataset_id, []).append(file_name)
+            names_seen.add(file_name)
+    return out
+
+
+@dataclasses.dataclass(frozen=True)
+class RepresentativeImage:
+    dataset_id: str
+    image_id: str
+    file_name: str
+    content_type: str
+    size_bytes: int
+    storage_key: str
+
+
+@dataclasses.dataclass(frozen=True)
+class RepresentativeImageCleanup:
+    cleanup_id: str
+    storage_key: str
+
+
+_REPRESENTATIVE_IMAGE = text("""
+    SELECT dataset_id, image_id, file_name, content_type, size_bytes, storage_key
+      FROM d3_dataset_representative_image WHERE dataset_id = :dataset_id
+""")
+_UPSERT_REPRESENTATIVE_IMAGE = text("""
+    INSERT INTO d3_dataset_representative_image
+      (dataset_id, lab_id, image_id, file_name, content_type, size_bytes, storage_key)
+    SELECT d.id, d.lab_id, :image_id, :file_name, :content_type, :size_bytes, :storage_key
+      FROM d3_dataset d WHERE d.id = :dataset_id AND d.deleted_at IS NULL
+    ON CONFLICT (dataset_id) DO UPDATE
+       SET image_id = EXCLUDED.image_id, file_name = EXCLUDED.file_name,
+           content_type = EXCLUDED.content_type, size_bytes = EXCLUDED.size_bytes,
+           storage_key = EXCLUDED.storage_key, updated_at = now()
+""")
+_DELETE_REPRESENTATIVE_IMAGE = text("""
+    DELETE FROM d3_dataset_representative_image WHERE dataset_id = :dataset_id
+    RETURNING dataset_id, image_id, file_name, content_type, size_bytes, storage_key
+""")
+_QUEUE_REPRESENTATIVE_IMAGE_CLEANUP = text("""
+    INSERT INTO d3_representative_image_cleanup
+      (cleanup_id, lab_id, dataset_id, storage_key)
+    VALUES (:cleanup_id, current_lab_id(), :dataset_id, :storage_key)
+    ON CONFLICT (storage_key) DO NOTHING
+""")
+_REPRESENTATIVE_IMAGE_CLEANUPS = text("""
+    SELECT cleanup_id, storage_key
+      FROM d3_representative_image_cleanup
+     WHERE dataset_id = :dataset_id
+     ORDER BY created_at, cleanup_id
+""")
+_DELETE_REPRESENTATIVE_IMAGE_CLEANUP = text("""
+    DELETE FROM d3_representative_image_cleanup WHERE cleanup_id = :cleanup_id
+""")
+
+
+def _representative_image(row) -> RepresentativeImage | None:
+    if row is None:
+        return None
+    return RepresentativeImage(
+        dataset_id=row["dataset_id"], image_id=row["image_id"], file_name=row["file_name"],
+        content_type=row["content_type"], size_bytes=int(row["size_bytes"]),
+        storage_key=row["storage_key"])
+
+
+def find_representative_image(session: Session, dataset_id: Ulid) -> RepresentativeImage | None:
+    row = session.execute(
+        _REPRESENTATIVE_IMAGE, {"dataset_id": str(dataset_id)}).mappings().first()
+    return _representative_image(row)
+
+
+def lock_dataset_for_representative_image(session: Session, dataset_id: Ulid) -> None:
+    """동시 교체가 같은 이전 참조를 읽지 않도록 데이터셋 행 하나에 직렬화한다."""
+    session.execute(_LOCK_DATASET, {"dataset_id": str(dataset_id)}).one()
+
+
+def upsert_representative_image(session: Session, *, dataset_id: Ulid, image_id: Ulid,
+                                file_name: str, content_type: str, size_bytes: int,
+                                storage_key: str) -> None:
+    session.execute(_UPSERT_REPRESENTATIVE_IMAGE, {
+        "dataset_id": str(dataset_id), "image_id": str(image_id), "file_name": file_name,
+        "content_type": content_type, "size_bytes": size_bytes, "storage_key": storage_key,
+    })
+
+
+def delete_representative_image(session: Session, dataset_id: Ulid) -> RepresentativeImage | None:
+    row = session.execute(
+        _DELETE_REPRESENTATIVE_IMAGE, {"dataset_id": str(dataset_id)}).mappings().first()
+    return _representative_image(row)
+
+
+def queue_representative_image_cleanup(
+        session: Session, dataset_id: Ulid, storage_key: str) -> None:
+    """참조 변경과 같은 transaction에 이전 키를 남겨 저장소 실패 뒤에도 재시도한다."""
+    session.execute(_QUEUE_REPRESENTATIVE_IMAGE_CLEANUP, {
+        "cleanup_id": str(Ulid.generate()), "dataset_id": str(dataset_id),
+        "storage_key": storage_key,
+    })
+
+
+def representative_image_cleanups(
+        session: Session, dataset_id: Ulid) -> list[RepresentativeImageCleanup]:
+    return [RepresentativeImageCleanup(cleanup_id=row["cleanup_id"], storage_key=row["storage_key"])
+            for row in session.execute(
+                _REPRESENTATIVE_IMAGE_CLEANUPS, {"dataset_id": str(dataset_id)}).mappings()]
+
+
+def finish_representative_image_cleanup(session: Session, cleanup_id: str) -> None:
+    session.execute(_DELETE_REPRESENTATIVE_IMAGE_CLEANUP, {"cleanup_id": cleanup_id})
 
 
 @dataclasses.dataclass(frozen=True)
@@ -947,6 +1154,7 @@ _UPDATABLE = {
     #    화면 표시뿐이고, 종전 판정(「Lv1 이상 값 전송 시 400」)은 폐기됐다(PRD-19).
     "sourceUrl": ("d3_dataset", "source_url"),
     "sourceDownloadedOn": ("d3_dataset", "source_downloaded_on"),
+    "gridDescription": ("d3_dataset_description", "human_grid_description"),
 }
 
 
