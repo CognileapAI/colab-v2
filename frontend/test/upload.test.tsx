@@ -16,6 +16,8 @@ import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { apiUploadSource } from '../src/components/upload/uploadSource';
 import {
   QUICK_PROJECT_NOTE,
+  UPLOAD_CLOSE_CREATED,
+  UPLOAD_CLOSE_CREATING,
   UPLOAD_CLOSE_INPUT_ONLY,
   UPLOAD_CLOSE_KEEP,
   UPLOAD_CLOSE_LEAVE,
@@ -1295,7 +1297,8 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     fireEvent.click(removeAll);
     await act(async () => {});
     const pendingWasVisible = Boolean(screen.queryByTestId('up-create-pending'));
-    const registrationWasHidden = screen.queryByTestId('reg-area') === null;
+    const registrationWasHidden = (screen.getByTestId('reg-area') as HTMLElement).hidden
+      && screen.getByTestId('reg-area').hasAttribute('inert');
 
     created.resolve({ datasetId: DATASET_ID });
     await waitFor(() => expect(calls.representativeImages).toHaveLength(1));
@@ -1340,6 +1343,59 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     expect(calls.register).toBe(1);
   });
 
+  it('지연 등록 실패 뒤에도 미리보기와 등록 자식의 선택 상태를 그대로 보존한다', async () => {
+    const { sources, calls } = fakes();
+    const created = deferred<{ datasetId: string }>();
+    sources.upload.register = vi.fn(() => created.promise);
+    await openModal(sources);
+    await dropFiles([makeFile('original.nc')]);
+    await waitFor(() => expect(calls.palettes).toBeGreaterThan(0));
+    fireEvent.change(screen.getByTestId('up-style-palette'), { target: { value: 'blues' } });
+    fireEvent.change(screen.getByTestId('up-style-classcount'), { target: { value: '9' } });
+    const image = new File(['cover'], 'cover.webp', { type: 'image/webp' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [image] } });
+    await openRegister();
+    await click(stepBtn('③'));
+    const projectSelect = await screen.findByTestId('reg-proj-select');
+    fireEvent.change(projectSelect, { target: { value: PROJECT_ID } });
+    await click(screen.getByTestId('reg-done'));
+    expect(screen.getByTestId('up-create-pending')).toBeInTheDocument();
+
+    created.reject(new Error('offline'));
+    await screen.findByTestId('reg-error');
+    expect(screen.getByTestId('up-style-palette')).toHaveValue('blues');
+    expect(screen.getByTestId('up-style-classcount')).toHaveValue(9);
+    expect((screen.getByTestId('up-thumb-input') as HTMLInputElement).files?.[0]).toBe(image);
+    expect(screen.getByTestId('reg-proj-select')).toHaveValue(PROJECT_ID);
+  });
+
+  it('생성 요청 대기 중 닫아도 서버의 데이터셋 저장 결과가 남을 수 있음을 알린다', async () => {
+    const { sources, calls } = fakes();
+    const created = deferred<{ datasetId: string }>();
+    const persisted: string[] = [];
+    sources.upload.register = vi.fn(async () => {
+      calls.register += 1;
+      const made = await created.promise;
+      persisted.push(made.datasetId);
+      return made;
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('original.nc')]);
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    await waitFor(() => expect(calls.register).toBe(1));
+
+    await click(screen.getByTestId('upload-close'));
+    const confirm = await screen.findByTestId('upload-close-confirm');
+    expect(confirm).toHaveTextContent(UPLOAD_CLOSE_CREATING);
+    await click(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_LEAVE }));
+    created.resolve({ datasetId: DATASET_ID });
+    await waitFor(() => expect(persisted).toEqual([DATASET_ID]));
+    expect(screen.queryByTestId('upload-modal')).not.toBeInTheDocument();
+    expect(calls.register).toBe(1);
+  });
+
   it('대표 그림 PUT을 기다리다 사용자가 닫으면 늦은 성공이 상세로 이동하지 않는다', async () => {
     const { sources, calls } = fakes();
     const put = deferred<void>();
@@ -1358,13 +1414,36 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     await waitFor(() => expect(calls.representativeImages).toHaveLength(1));
 
     await click(screen.getByTestId('upload-close'));
-    await click(within(await screen.findByTestId('upload-close-confirm'))
+    const confirm = await screen.findByTestId('upload-close-confirm');
+    expect(confirm).toHaveTextContent(UPLOAD_CLOSE_CREATED);
+    await click(within(confirm)
       .getByRole('button', { name: UPLOAD_CLOSE_LEAVE }));
     expect(screen.getByTestId('loc')).toHaveAttribute('data-path', '/datasets');
     put.resolve();
     await act(async () => {});
     expect(screen.getByTestId('loc')).toHaveAttribute('data-path', '/datasets');
     expect(calls.register).toBe(1);
+  });
+
+  it('대표 그림 저장 실패 복구에서 닫아도 데이터셋과 요청 결과가 남아 있음을 알린다', async () => {
+    const { sources, calls } = fakes({ representativeThrowsUntil: 9 });
+    await openModal(sources);
+    await dropFiles([makeFile('original.nc')]);
+    fireEvent.change(screen.getByTestId('up-thumb-input'), {
+      target: { files: [new File(['cover'], 'cover.png', { type: 'image/png' })] },
+    });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    await screen.findByTestId('up-created-recovery');
+
+    await click(screen.getByTestId('upload-close'));
+    const confirm = await screen.findByTestId('upload-close-confirm');
+    expect(confirm).toHaveTextContent(UPLOAD_CLOSE_CREATED);
+    await click(within(confirm).getByRole('button', { name: UPLOAD_CLOSE_LEAVE }));
+    expect(screen.queryByTestId('upload-modal')).not.toBeInTheDocument();
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toHaveLength(1);
   });
 
   it('등록 요청 중 외부 unmount 뒤 늦은 생성 성공은 대표 그림 PUT으로 이어지지 않는다', async () => {
@@ -2335,7 +2414,7 @@ it('단계를 바꾸면 새 입력 단계의 처음부터 읽을 수 있다', as
 });
 
 
-it('등록 응답을 기다리는 동안 제출·입력 조작점을 숨기고 저장 중임을 알린다', async () => {
+it('등록 응답을 기다리는 동안 인스턴스는 유지하고 제출·입력 조작점을 숨긴다', async () => {
   const { sources } = fakes();
   sources.upload.register = () => new Promise(() => {});
   await openModal(sources);
@@ -2343,8 +2422,10 @@ it('등록 응답을 기다리는 동안 제출·입력 조작점을 숨기고 �
   await openRegister();
   await click(stepBtn('③'));
   await click(screen.getByTestId('reg-done'));
-  expect(screen.queryByTestId('reg-done')).not.toBeInTheDocument();
-  expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
+  expect(screen.getByTestId('reg-area')).toHaveAttribute('hidden');
+  expect(screen.getByTestId('reg-area')).toHaveAttribute('inert');
+  expect(screen.getByTestId('reg-done')).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '저장 중…' })).not.toBeInTheDocument();
   expect(screen.getByTestId('up-create-pending')).toHaveTextContent('데이터셋 만드는 중');
 });
 

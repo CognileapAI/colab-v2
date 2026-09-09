@@ -711,10 +711,10 @@ export function UploadModal(props: {
   }
 
   function requestClose() {
-    // 사람이 적거나 확인한 것이 있을 때만 묻는다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
-    // 종전에는 `registerOpen` 만 봤다 — 등록 단계를 열어만 보고 닫아도 되물어서,
-    // 잃을 것이 없는 사람에게 확인이 걸렸다. **문면은 그대로 두고 조건만 고친다.**
-    if (hasHumanInput) setConfirmClose(true);
+    // 생성 전에는 사람이 적거나 확인한 것이 있을 때만 묻는다(WU-A9 · PRD-14).
+    // 서버 요청을 보낸 뒤에는 화면을 닫아도 저장이 취소되지 않으므로 입력 유무와 관계없이
+    // 현재 저장 상태를 알린다. 본문 갈래와 문면은 `toastCopy.ts` 한 곳이 쥔다.
+    if (submitLock.current || committedDatasetIdRef.current || hasHumanInput) setConfirmClose(true);
     else props.onClose();
   }
 
@@ -1168,6 +1168,34 @@ export function UploadModal(props: {
           {picked.length > 0 && (
             <div className="up-split" data-testid="up-split">
               <div className="up-split-preview" data-testid="up-split-preview">
+              <PreviewPanel
+                key={signature}
+                source={props.sources.preview}
+                autoPreview={registerOpen && Boolean(status?.renderable)}
+                renderable={status?.ready ? status.renderable ?? undefined : undefined}
+                uploadId={uploadId}
+                hasReferenceGrid={hasReferenceGrid}
+                onRender={setRendered}
+                representativeFile={representativeFile}
+                representativeOnly={Boolean(createdDatasetId)}
+                representativeDisabled={submitting}
+                interactionHidden={submitting && !createdDatasetId}
+                onRepresentativeFileChange={(file) => {
+                  if (submitLock.current) return;
+                  setRepresentativeFile(file);
+                  if (createdDatasetId) setRegisterError(null);
+                }}
+                {...(!createdDatasetId ? { grid: {
+                  hasGrid: hasReferenceGrid,
+                  skipped: gridSkipped,
+                  verifying: gridVerifying,
+                  ...(gridRejection ? { gridRejection } : {}),
+                  onPickGrid: pickGrid,
+                  // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
+                  onSkipGrid: () => editRegistration(() => setGridSkipped(true)),
+                  ...(gridOnly && transfer ? { transfer } : {}),
+                } } : {})}
+              />
               {submitting && !createdDatasetId ? (
                 <section
                   className="mapstage"
@@ -1181,35 +1209,7 @@ export function UploadModal(props: {
                     등록 정보와 원본 파일을 저장하고 있어요.
                   </div>
                 </section>
-              ) : (
-              <PreviewPanel
-                key={signature}
-                source={props.sources.preview}
-                autoPreview={registerOpen && Boolean(status?.renderable)}
-                renderable={status?.ready ? status.renderable ?? undefined : undefined}
-                uploadId={uploadId}
-                hasReferenceGrid={hasReferenceGrid}
-                onRender={setRendered}
-                representativeFile={representativeFile}
-                representativeOnly={Boolean(createdDatasetId)}
-                representativeDisabled={submitting}
-                onRepresentativeFileChange={(file) => {
-                  if (submitLock.current) return;
-                  setRepresentativeFile(file);
-                  if (createdDatasetId) setRegisterError(null);
-                }}
-                {...(!createdDatasetId && !submitting ? { grid: {
-                  hasGrid: hasReferenceGrid,
-                  skipped: gridSkipped,
-                  verifying: gridVerifying,
-                  ...(gridRejection ? { gridRejection } : {}),
-                  onPickGrid: pickGrid,
-                  // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
-                  onSkipGrid: () => editRegistration(() => setGridSkipped(true)),
-                  ...(gridOnly && transfer ? { transfer } : {}),
-                } } : {})}
-              />
-              )}
+              ) : null}
               {registerOpen && !createdDatasetId && !submitting ? <details className="up-file-management">
                 <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
                 <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
@@ -1297,7 +1297,7 @@ export function UploadModal(props: {
             {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
                 옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치).
                   ⭑ ⟨PRD-28⟩ 그 「아래」가 **오른쪽 칸 안의 아래**가 됐다 — 순서는 그대로다. */}
-            {!attach && registerOpen && !createdDatasetId && !submitting && (
+            {!attach && registerOpen && !createdDatasetId && (
               <RegisterArea
                 step={step}
                 onStep={(value) => editRegistration(() => setStep(value))}
@@ -1360,6 +1360,7 @@ export function UploadModal(props: {
                 lineageConflicts={lineageConflicts}
                 onCancel={requestClose}
                 submitting={submitting}
+                interactionHidden={submitting}
                 submitLabel={createdDatasetId
                   ? representativeFile ? '대표 그림 다시 저장' : '자동 그림으로 완료'
                   : undefined}
@@ -1423,6 +1424,9 @@ export function UploadModal(props: {
                 {uploadCloseMessage({
                   hasHumanInput,
                   lineageCount: lineageParents.length,
+                  saveState: committedDatasetIdRef.current
+                    ? 'created'
+                    : submitLock.current ? 'creating' : 'pre-create',
                 })}
               </p>
             </div>

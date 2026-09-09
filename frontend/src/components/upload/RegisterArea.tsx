@@ -1004,6 +1004,8 @@ export function RegisterArea(props: {
   onSubmit: () => void;
   submitting?: boolean;
   submitLabel?: string | undefined;
+  /** 생성 요청 중 자식의 초안 상태는 보존하고 입력 표면만 감춘다. */
+  interactionHidden?: boolean | undefined;
 }) {
   const { step } = props;
   /**
@@ -1021,7 +1023,12 @@ export function RegisterArea(props: {
    */
   const classifyBlocked = step === 1 && (!props.category || !props.dataType);
   return (
-    <div className="regarea" data-testid="reg-area">
+    <div
+      className="regarea"
+      data-testid="reg-area"
+      hidden={props.interactionHidden}
+      inert={props.interactionHidden ? true : undefined}
+    >
       {/* 표시기 — 한 번에 한 단계만 보이고, 눌러서 아무 단계로나 간다 (§8) */}
       <div className="regsteps" data-testid="reg-steps">
         {([1, 2, 3] as Step[]).map((s) => (

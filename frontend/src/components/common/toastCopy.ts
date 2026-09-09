@@ -146,6 +146,11 @@ export const UPLOAD_CLOSE_KEEP = '계속하기';
 /** 오른쪽 버튼. rev2 축자 그대로 유지. */
 export const UPLOAD_CLOSE_LEAVE = '닫고 나가기';
 
+/** 데이터셋 생성 요청을 보낸 뒤 응답을 기다리는 동안. 서버 요청 자체는 닫기로 취소되지 않는다. */
+export const UPLOAD_CLOSE_CREATING = '저장 요청은 이미 서버로 갔어요. 지금 닫아도 요청을 취소할 수 없어 데이터셋과 입력한 내용이 남을 수 있어요.';
+/** 데이터셋 생성이 끝난 뒤 대표 그림 PUT을 기다리거나 그 실패를 복구하는 동안. */
+export const UPLOAD_CLOSE_CREATED = '데이터셋과 연결한 계보는 이미 저장됐어요. 지금 닫아도 대표 그림 저장 요청의 결과가 남을 수 있어요.';
+
 /** ⑴ 파일만 — 사람 입력 0 · 확정 계보 0. */
 export const UPLOAD_CLOSE_FILE_ONLY = '올린 파일이 취소돼요. 원본 파일은 그대로라 다시 올리면 돼요.';
 /** ⑵ 입력 있음 — 사람 입력 ≥1 · 확정 계보 0. */
@@ -165,7 +170,10 @@ export function uploadCloseWithLineage(lineageCount: number): string {
 export function uploadCloseMessage(state: {
   hasHumanInput: boolean;
   lineageCount: number;
+  saveState?: 'pre-create' | 'creating' | 'created';
 }): string {
+  if (state.saveState === 'creating') return UPLOAD_CLOSE_CREATING;
+  if (state.saveState === 'created') return UPLOAD_CLOSE_CREATED;
   if (!state.hasHumanInput) return UPLOAD_CLOSE_FILE_ONLY;
   return state.lineageCount > 0
     ? uploadCloseWithLineage(state.lineageCount)
@@ -235,5 +243,6 @@ export const FIXED_COPY: readonly string[] = [
   LINEAGE_GRAPH_HINT, EDIT_MODE_ON, EDIT_SAVED, EDIT_CANCELED,
   MIXED_EXTENSION_NOTICE, PRE_LINEAGE_ADDED, FILE_REMOVED_NOTICE,
   UPLOAD_CLOSE_TITLE, UPLOAD_CLOSE_KEEP, UPLOAD_CLOSE_LEAVE,
+  UPLOAD_CLOSE_CREATING, UPLOAD_CLOSE_CREATED,
   UPLOAD_CLOSE_FILE_ONLY, UPLOAD_CLOSE_INPUT_ONLY,
 ];

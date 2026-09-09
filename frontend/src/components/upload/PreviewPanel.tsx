@@ -88,6 +88,8 @@ export function PreviewPanel(props: {
   /** 데이터셋 생성 뒤에는 저장 복구에 필요한 대표 그림 고르개만 남긴다. */
   representativeOnly?: boolean | undefined;
   representativeDisabled?: boolean | undefined;
+  /** 생성 요청 중 인스턴스와 선택 상태는 보존하고 모든 조작점만 감춘다. */
+  interactionHidden?: boolean | undefined;
 }) {
   const { source, uploadId } = props;
   const autoRequested = useRef<string | null>(null);
@@ -383,7 +385,13 @@ export function PreviewPanel(props: {
 
   if (props.representativeOnly) {
     return (
-      <section className="mapstage" data-testid="up-preview" data-mode="representative-recovery">
+      <section
+        className="mapstage"
+        data-testid="up-preview"
+        data-mode="representative-recovery"
+        hidden={props.interactionHidden}
+        inert={props.interactionHidden ? true : undefined}
+      >
         <div className="mapbar">
           <span className="mt">대표 그림 저장 마무리</span>
         </div>
@@ -393,7 +401,12 @@ export function PreviewPanel(props: {
   }
 
   return (
-    <section className="mapstage" data-testid="up-preview">
+    <section
+      className="mapstage"
+      data-testid="up-preview"
+      hidden={props.interactionHidden}
+      inert={props.interactionHidden ? true : undefined}
+    >
       <div className="mapbar">
         <span className="mt">미리보기</span>
         {/* ㈎ 확장보기 (R-A′ 이관 · rev2 `openPvExpand()`) — 오버레이는 **업로드 모달 위**에
