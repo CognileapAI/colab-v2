@@ -113,7 +113,7 @@ class LocalFilesystemStorage:
             return
         try:
             (self._root / key).unlink()
-        except (FileNotFoundError, IsADirectoryError, PermissionError):
+        except FileNotFoundError:
             return
 
     def relocate(self, *, files: Sequence[Any],

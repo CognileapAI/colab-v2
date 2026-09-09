@@ -34,6 +34,21 @@ def test_local_put_discard_roundtrip(tmp_path) -> None:
     st.discard(key="uploads/U1/F1")  # 없는 것은 조용히 넘어간다
 
 
+@pytest.mark.parametrize("failure_type", [PermissionError, IsADirectoryError])
+def test_local_discard_propagates_real_unlink_failures(tmp_path, monkeypatch, failure_type) -> None:
+    """삭제 실패를 성공으로 삼아 durable cleanup 원장을 끝내는 회귀를 잡는다."""
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="uploads/U1/F1", payload=b"abc")
+    target_type = type(tmp_path / "uploads/U1/F1")
+
+    def fail_unlink(self, *args, **kwargs):
+        raise failure_type("injected unlink failure")
+
+    monkeypatch.setattr(target_type, "unlink", fail_unlink)
+    with pytest.raises(failure_type):
+        st.discard(key="uploads/U1/F1")
+
+
 def test_local_relocate_moves_and_prunes(tmp_path) -> None:
     st = LocalFilesystemStorage(tmp_path)
     st.put(key="uploads/U1/F1", payload=b"abc")

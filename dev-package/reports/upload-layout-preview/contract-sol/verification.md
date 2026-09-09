@@ -76,3 +76,10 @@ GREEN:
 - 실제 S3 live smoke는 실행하지 않았다. 저장 순서·실패·재시도는 LocalObjectStorage 외부 행위 시험으로 검증했다.
 - frontend 수기 구현과 브라우저 E2E는 이 레인의 소유 범위 밖이며 부모 frontend 레인에서 검증한다.
 - 전체 intent의 통합 화면·시각·배포 검증은 부모/Advisor 단계에 남는다. backend/contract 소비 준비 상태에는 알려진 gap이 없다.
+
+## Astra 재심사 보완
+
+- commit 후 drain 두 개를 강제로 교차해, 이전 mutation의 `keep` 키와 같은 cleanup 행을 backend no-op 뒤 finish하면 orphan과 추적 상실이 생기는 RED를 확인했다.
+- `_drain_cleanups`는 `pending.storage_key == keep`인 행에 삭제와 finish를 모두 수행하지 않는다. 뒤 mutation의 drain이 실제 삭제에 성공한 뒤 행을 끝낸다.
+- `LocalFilesystemStorage.discard`가 `PermissionError`와 `IsADirectoryError`를 성공으로 삼는 RED 2건을 확인했다. 이제 `FileNotFoundError`만 멱등 성공으로 처리하고 실제 삭제 실패는 호출자에게 전파한다.
+- 수정 직후 표적 시험 `3 passed`, 대표 그림·storage backend 관련 전체 `37 passed`를 확인했다. 최종 전체 서비스 시험과 lifecycle 8개 게이트는 후속 commit에서 다시 실행한다.

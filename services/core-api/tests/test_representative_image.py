@@ -331,6 +331,56 @@ def test_dataset_row_lock_serializes_competing_replacements(session_factory) -> 
         second.close()
 
 
+def test_older_post_commit_drain_preserves_cleanup_queued_by_newer_put(
+        p2_client, tmp_path, sql, monkeypatch) -> None:
+    """이전 PUT의 keep drain이 뒤 PUT이 남긴 같은 키 원장을 지워 orphan을 만드는 회귀를 잡는다."""
+    from colab_core.app.routes import representative_image
+
+    first_client, second_client = p2_client(), p2_client()
+    dataset_id = _registered(first_client)
+    real_drain = representative_image._drain_cleanups
+    first_drain_entered = threading.Event()
+    release_first_drain = threading.Event()
+    first_drain_finished = threading.Event()
+    call_lock = threading.Lock()
+    drain_calls = 0
+
+    def interleave_committed_drains(storage, db, subject, current_dataset_id, *, keep=None):
+        nonlocal drain_calls
+        with call_lock:
+            drain_calls += 1
+            ordinal = drain_calls
+        if ordinal == 1:
+            # 첫 PUT은 이미 commit하고 dataset lock을 놓았다. 두 번째 PUT이 그 키를
+            # cleanup 원장에 넣을 때까지 첫 drain을 멈춘다.
+            first_drain_entered.set()
+            assert release_first_drain.wait(3), "두 번째 PUT이 commit 뒤 drain에 닿지 않았다."
+            real_drain(storage, db, subject, current_dataset_id, keep=keep)
+            first_drain_finished.set()
+            return
+        release_first_drain.set()
+        assert first_drain_finished.wait(3), "첫 drain이 같은 keep 키 원장을 검사하지 못했다."
+        real_drain(storage, db, subject, current_dataset_id, keep=keep)
+
+    monkeypatch.setattr(representative_image, "_drain_cleanups", interleave_committed_drains)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(_put, first_client, dataset_id, PNG,
+                            name="교차1.png", content_type="image/png")
+        assert first_drain_entered.wait(3), "첫 PUT이 commit 뒤 drain에 닿지 않았다."
+        second = pool.submit(_put, second_client, dataset_id, JPEG,
+                             name="교차2.jpg", content_type="image/jpeg")
+        assert first.result(timeout=5).status_code == 200
+        assert second.result(timeout=5).status_code == 200
+
+    rows = sql("SELECT storage_key FROM d3_dataset_representative_image WHERE dataset_id = :d",
+               {"d": dataset_id})
+    assert len(rows) == 1
+    image_dir = tmp_path / "uploads" / "representative-images" / dataset_id
+    assert [path.name for path in image_dir.iterdir()] == [rows[0]["storage_key"].rsplit("/", 1)[1]]
+    assert sql("SELECT count(*) AS n FROM d3_representative_image_cleanup"
+               " WHERE dataset_id = :d", {"d": dataset_id})[0]["n"] == 0
+
+
 def test_two_real_puts_leave_one_reference_one_byte_key_and_no_pending_cleanup(
         p2_client, tmp_path, sql, monkeypatch) -> None:
     """동시 HTTP 교체가 최종 참조 밖의 바이트나 처리 대기 행을 남기는 회귀를 잡는다."""

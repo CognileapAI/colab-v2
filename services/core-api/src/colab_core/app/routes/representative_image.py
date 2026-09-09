@@ -90,8 +90,13 @@ def _drain_cleanups(storage, db: Session, subject: Subject, dataset_id: Ulid,
         if not db.in_transaction():
             apply_scope(db, subject)
         for pending in d3_catalog.representative_image_cleanups(db, dataset_id):
+            # 이 drain을 시작한 mutation이 보존해야 했던 키가 뒤 mutation에 의해 cleanup으로
+            # 등록될 수 있다. backend의 keep no-op 뒤 행까지 끝내면 바이트만 orphan으로 남는다.
+            # 더 최신 mutation의 drain이 실제 삭제와 finish를 함께 수행하도록 원장을 보존한다.
+            if pending.storage_key == keep:
+                continue
             try:
-                storage.discard(key=pending.storage_key, keep=keep)
+                storage.discard(key=pending.storage_key)
             except Exception:
                 continue
             d3_catalog.finish_representative_image_cleanup(db, pending.cleanup_id)
