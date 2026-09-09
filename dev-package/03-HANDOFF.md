@@ -2,7 +2,7 @@
 
 > 2026-09-09 `WU-UPV-20260909` 완료: finalfix `6d1107c`에서 계보 UTC일 기간·cursor와 대표 그림 영구 오류 회복까지 보완.
 > agent-browser 실제 HDF 25단계: 기간 끝 microsecond 포함/다음날 제외/초기화, cursor 25→29, 415→새 그림 복구 통과.
-> Astra: server `a50a861`·frontend `71e6592` 수용, frontend1158/core1018/generated10/migration18/contract-lint green.
+> Astra finalfix: frontend 87파일·1162/1162(`astra-final/frontend-finalfix`)와 대장178·불일치0(`astra-final/work-item-finalfix`) green; 기존 core1018/generated10/migration18/contract-lint green.
 > 근거 `reports/upload-layout-preview/verification.md`; main 병합·push·운영 배포·운영 S3 smoke는 별도 조율.
 
 > **이 문서가 "지금 어디까지 왔는가"의 진실원.** 매 세션 끝에 갱신한다(규약 `CLAUDE.md §6`).

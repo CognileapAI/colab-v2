@@ -1,6 +1,6 @@
 # 업로드·상세 개선 검증 — 전체 intent 완료 판정
 
-2026-09-09. `codex/upload-preview-finalfix`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 가능한 코드 상태이며 공유 main 병합·push·운영 배포·운영 S3 smoke는 실행하지 않았다.
+2026-09-09. 통합 `codex/upload-preview-complete`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 가능한 코드 상태이며 공유 main 병합·push·운영 배포·운영 S3 smoke는 실행하지 않았다.
 
 ## intent 1~10 대조
 
@@ -30,7 +30,8 @@ agent-browser는 1440×1000, 일회용 PostgreSQL·로컬 원본/미리보기 �
 
 ## 최종 게이트
 
-- Astra `frontend-test`: **1,158/1,158**, 실패 0, exit0. `astra-final/frontend-test/gate-summary.json`.
+- Astra finalfix `frontend-test`: **87/87 파일, 1,162/1,162 실행·통과**, 실패 0, skip 0, exit0, green1/red(판정)0/red(준비)0. `astra-final/frontend-finalfix/gate-summary.json`.
+- Astra finalfix `work-item-consistency`: 대장 **178건**, 불일치 0, exit0, green1/red(판정)0/red(준비)0. `astra-final/work-item-finalfix/gate-summary.json`.
 - Astra `generated-up-to-date`: 등기부 **10건 일치**, 위반 0, exit0. `astra-final/generated/gate-summary.json`.
 - Astra `service-tests-core-api`: **1,018/1,018**, 제외 6, 실패 0, exit0. 첫 실행은 이 사본의 venv 부재로 검사 0건·exit78이었고, 공유 기준의 고정 Python 경로로 다시 실행한 결과가 green이다. 두 보고서를 모두 보존했다.
 - Astra `migration-drift`: **18/18**(platform 15+AI 3), 실패 0, exit0. 첫 실행은 Alembic 경로 미선언으로 검사 0건·exit78이었고, 공유 기준의 고정 Alembic을 명시한 재실행이 green이다. 두 보고서를 모두 보존했다.

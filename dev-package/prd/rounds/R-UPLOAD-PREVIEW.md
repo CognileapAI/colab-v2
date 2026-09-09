@@ -21,8 +21,8 @@
 | 5 | 저장·편집·계보·다운로드 전체 연결 검증 및 수정 | 3,4 | 재접속 후 값·관계 유지, 원본 해시 | 완료 — 실파일7사례와 HDF 프로젝트·변수·기간·계보CRUD, 확장3범위 재조회 |
 | 6 | 적정 게이트·최종 시각 검수·다른 세션 변경 대조 | 5 | 미판정 항목 없는 검수표·검증 결과 | 완료 — 기존 frontend1128/core989/worker267/viz380·시각2페이지, 최신 Astra 게이트 추가 |
 | 7 | 대표 그림·계보 검색·격자 설명 계약과 저장 구조 확장 | 사용자 승인 | RED 계약/DB/권한 시험·단일 platform migration head | 완료 — 서버 `a50a861`, Astra 수용·core1018·migration18·contract-lint green |
-| 8 | 확정 계약을 등록·상세·계보 화면에 연결 | 7 | RED→GREEN 화면 회귀·실제 저장/재조회 | 완료 — frontend `71e6592`, Astra 수용·frontend1158·generated10 green |
-| 9 | 수용 검토·실제 브라우저·최종 게이트 | 8 | Astra 어드바이저 수용·Astra 검증·intent 10항목 대조 | 완료 — 브라우저 finalfix 25단계에서 기간 경계·초기화·cursor와 영구 이미지 오류 복구까지 검증, intent 미달0·초과0 |
+| 8 | 확정 계약을 등록·상세·계보 화면에 연결 | 7 | RED→GREEN 화면 회귀·실제 저장/재조회 | 완료 — frontend `71e6592`+finalfix `6d1107c`, Astra 수용·frontend 87파일/1162건·generated10 green (`astra-final/frontend-finalfix/gate-summary.json`) |
+| 9 | 수용 검토·실제 브라우저·최종 게이트 | 8 | Astra 어드바이저 수용·Astra 검증·intent 10항목 대조 | 완료 — 브라우저 finalfix 25단계, Astra 대장178·불일치0 (`astra-final/work-item-finalfix/gate-summary.json`), intent 미달0·초과0 |
 
 ## 7~9. 승인된 계약 확장
 
