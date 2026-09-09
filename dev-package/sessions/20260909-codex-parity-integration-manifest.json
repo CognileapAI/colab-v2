@@ -311,7 +311,7 @@
       "source": "source-repo:.claude/skills/agent-browser/templates/authenticated-session.sh",
       "source_sha256": "43c5bf3e8da0000cac8c1c4153d135ce21112c813a2e421a755b1ff50eb71614",
       "target_sha256": "1fa9926c36dbe71191120ce067e5e3babe732cd1cc605020f3bd04dc430aa58c",
-      "mode": "100644",
+      "mode": "100755",
       "classification": "shared-agent-source"
     },
     {
@@ -319,7 +319,7 @@
       "source": "source-repo:.claude/skills/agent-browser/templates/capture-workflow.sh",
       "source_sha256": "6d527f43204fbaaeb68cd0d9d004a11e2c4d92c02899d75780f3d11f93d7d916",
       "target_sha256": "bf3f3a2f8413773891d9fa400d2a2fddf6d73ffc7a9b2fa00f797f944171c3d5",
-      "mode": "100644",
+      "mode": "100755",
       "classification": "shared-agent-source"
     },
     {
@@ -327,7 +327,7 @@
       "source": "source-repo:.claude/skills/agent-browser/templates/form-automation.sh",
       "source_sha256": "df4cb56b2c04ab2f707ad003de311d6773b48e6ee6bbef5b36f15e04b8cae44e",
       "target_sha256": "b86836986d339f736b15ca78cf3d566e845a6293ae25a5b00aa520b837572650",
-      "mode": "100644",
+      "mode": "100755",
       "classification": "shared-agent-source"
     },
     {
