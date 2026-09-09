@@ -93,7 +93,7 @@ export function BasicInfoGrid(props: {
     ['좌표계', orEmpty(b.crs)],
     ['기간', formatPeriodWithInterval(b.period, b.observationInterval)],
     ...(!b.period && !intervalMissing ? [['관측 간격', formatInterval(b.observationInterval)!] as [string, string]] : []),
-    ['격자', orEmpty(b.grid)],
+    ['격자', orEmpty(b.gridDescription ?? b.gridDescriptionAutomatic ?? b.grid)],
     // **판별 문자열이 아니라 확장자다** (PRD-21) — 못 뽑은 행만 `format` 으로 퇴행한다.
     ['포맷', formatExtension(b.fileExtension, b.format)],
     ['원천 표기', orEmpty(b.sourceLabel)],
@@ -115,6 +115,17 @@ export function BasicInfoGrid(props: {
             <div className="v">
               {props.editors?.[k] ?? (k === '구성' && variableRows.length > 0 ? (
                 <VariableTable rows={variableRows} />
+              ) : k === '격자' ? (
+                <>
+                  <span data-testid="ig-grid-human">
+                    {orEmpty(b.gridDescription ?? b.gridDescriptionAutomatic ?? b.grid)}
+                  </span>
+                  {b.gridDescription && (b.gridDescriptionAutomatic ?? b.grid) ? (
+                    <span className="ig-note" data-testid="ig-grid-automatic">
+                      자동 판독: {b.gridDescriptionAutomatic ?? b.grid}
+                    </span>
+                  ) : null}
+                </>
               ) : (
                 v
               ))}

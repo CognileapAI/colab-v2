@@ -5,8 +5,7 @@
  *  · ② 단계 진입 → 썸네일과 **교체 안내 문구가 읽힌다**
  *  · 썸네일 클릭 → **파일 선택기가 열린다**
  *
- * ⛔ 저장 경로는 이 WU 밖이다(별건 `WU-C2`). 고른 그림은 화면에서만 보이고
- *    `representative_file_id` 로 나가지 않는다 — 그 사실도 여기서 지킨다.
+ * 대표 그림 저장 계약이 열린 뒤에도 이 시험은 파일 선택 진입과 로컬 미리보기 수명을 잰다.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -32,9 +31,15 @@ function source(): PreviewSource {
   } as unknown as PreviewSource;
 }
 
-async function mount() {
+async function mount(props: { file?: File | null; onFile?: (file: File | null) => void } = {}) {
   const view = render(
-    <PreviewPanel source={source()} uploadId={UPLOAD_ID} hasReferenceGrid={false} />,
+    <PreviewPanel
+      source={source()}
+      uploadId={UPLOAD_ID}
+      hasReferenceGrid={false}
+      representativeFile={props.file ?? null}
+      onRepresentativeFileChange={props.onFile}
+    />,
   );
   await screen.findByTestId('up-preview-draw');
   return view;
@@ -52,7 +57,7 @@ describe('WU-A10 대표 그림(썸네일) 넛지', () => {
     await mount();
     const input = screen.getByTestId('up-thumb-input') as HTMLInputElement;
     expect(input.type).toBe('file');
-    expect(input.accept).toBe('image/*');
+    expect(input.accept).toBe('image/png,image/jpeg,image/webp');
     const click = vi.spyOn(input, 'click');
 
     fireEvent.click(screen.getByTestId('up-thumb-pick'));
@@ -60,19 +65,37 @@ describe('WU-A10 대표 그림(썸네일) 넛지', () => {
     expect(click).toHaveBeenCalledTimes(1);
   });
 
-  it('고른 그림은 화면에서만 바뀐다 — 저장 경로를 만들지 않는다', async () => {
-    const url = vi.fn(() => 'blob:local/thumb');
-    vi.stubGlobal('URL', { ...URL, createObjectURL: url, revokeObjectURL: vi.fn() });
-    await mount();
+  it('고른 실제 File을 바깥으로 올리고 그 File의 미리보기 주소를 교체·해제한다', async () => {
+    const create = vi.fn((file: File) => `blob:local/${file.name}`);
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: revoke });
+    const onFile = vi.fn();
+    const view = await mount({ onFile });
     const input = screen.getByTestId('up-thumb-input') as HTMLInputElement;
 
     const file = new File([new Uint8Array([1, 2, 3])], 'cover.png', { type: 'image/png' });
     fireEvent.change(input, { target: { files: [file] } });
+    expect(onFile).toHaveBeenCalledWith(file);
+
+    view.rerender(
+      <PreviewPanel
+        source={source()}
+        uploadId={UPLOAD_ID}
+        hasReferenceGrid={false}
+        representativeFile={file}
+        onRepresentativeFileChange={onFile}
+      />,
+    );
 
     await waitFor(() =>
-      expect(screen.getByTestId('up-thumb-img').getAttribute('src')).toBe('blob:local/thumb'),
+      expect(screen.getByTestId('up-thumb-img').getAttribute('src')).toBe('blob:local/cover.png'),
     );
-    expect(url).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledWith(file);
+
+    fireEvent.click(screen.getByRole('button', { name: '자동 그림 사용' }));
+    expect(onFile).toHaveBeenLastCalledWith(null);
+    view.unmount();
+    expect(revoke).toHaveBeenCalledWith('blob:local/cover.png');
     vi.unstubAllGlobals();
   });
 });

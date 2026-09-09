@@ -25,6 +25,9 @@ import { useDatasetDetail } from '../components/detail/useDatasetDetail';
 import { useDatasetEdit } from '../components/detail/useDatasetEdit';
 import { DatasetEditEntry } from '../components/detail/DatasetEditEntry';
 import { DatasetEditActions, DatasetEditForm } from '../components/detail/DatasetEditForm';
+import { RepresentativeImageSection } from '../components/detail/RepresentativeImageSection';
+import { apiRepresentativeImageSource } from '../components/detail/representativeImageSource';
+import type { RepresentativeImageSource } from '../components/detail/representativeImageSource';
 import { defaultDatasetUpdateSource } from '../components/detail/updateSource';
 import type { DatasetUpdateSource } from '../components/detail/updateSource';
 import type { DetailSource, FileSource } from '../components/detail/types';
@@ -65,6 +68,7 @@ export function DatasetDetailPage(
     approvalSource?: ApprovalSource;
     /** 상세 수정 저장(WU-A3 · 계약 op `updateDataset`). 시험이 대역을 꽂는 자리다. */
     updateSource?: DatasetUpdateSource | undefined;
+    representativeImageSource?: RepresentativeImageSource | undefined;
   } = {},
 ) {
   const { datasetId = '' } = useParams();
@@ -103,6 +107,10 @@ export function DatasetDetailPage(
   const updateSource = useMemo(
     () => props.updateSource ?? defaultDatasetUpdateSource(),
     [props.updateSource],
+  );
+  const representativeImageSource = useMemo(
+    () => props.representativeImageSource ?? apiRepresentativeImageSource(),
+    [props.representativeImageSource],
   );
   const edit = useDatasetEdit(updateSource, detail.status === 'ready' ? detail.detail : null);
   // 저장 중에는 낙관값이, 저장 뒤에는 **서버가 돌려준 상세**가 여기 선다.
@@ -287,6 +295,7 @@ export function DatasetDetailPage(
                   filesSource={filesSource}
                   editors={edit.editing ? {
                     '좌표계': inlineFields(['crs']),
+                    '격자': inlineFields(['gridDescription']),
                     '기간': inlineFields(['period', ...(shown.basicInfo.period || !shown.basicInfo.observationInterval ? ['interval'] : [])]),
                     '관측 간격': inlineFields(['interval']),
                     '원천 표기': inlineFields(['sourceLabel', 'sourceUrl', 'sourceDownloadedOn']),
@@ -342,6 +351,12 @@ export function DatasetDetailPage(
             />
           ) : null}
             <div id="sec-preview" data-testid="detail-preview-anchor">
+              <RepresentativeImageSection
+                datasetId={datasetId}
+                metadata={shown.representativeImage}
+                source={representativeImageSource}
+                bodyAccessible={shown.bodyAccessible}
+              />
               <DatasetPreviewSection
                 datasetId={datasetId}
                 source={props.previewSource}

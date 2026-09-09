@@ -11,7 +11,7 @@
  * **빈 집합 위에서 통과하지 않는다** — 모든 단언이 대상 1건 이상을 먼저 재거나 「없음」을
  * 기대값으로 명시한다.
  */
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DatasetDetailPage } from '../src/routes/DatasetDetailPage';
@@ -156,7 +156,10 @@ function renderDetail(
 }
 
 async function openModal(): Promise<HTMLElement> {
-  fireEvent.click(await screen.findByTestId('lin-edit'));
+  const edit = await screen.findByTestId('lin-edit');
+  await act(async () => {
+    fireEvent.click(edit);
+  });
   return screen.findByTestId('lin-fix-modal');
 }
 

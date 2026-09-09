@@ -1,0 +1,53 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-test",
+      "status": "red_판정",
+      "state": "red_판정",
+      "exit": 1,
+      "readiness": null
+    },
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 2,
+    "red_판정": 1,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-test",
+      "frontend-typecheck",
+      "generated-up-to-date"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "a4b7235310ce49069cbd74cc848b5c1c",
+      "run_id": "9b8826c2eddb44cca486b8371873e4c3",
+      "checkout": "/home/ttlhi10/colab-ui-consumer",
+      "files": "b44d05c8a2fbe1e76c2e625abab4bb2cd631e44fcfdbe3f981890615c035d32d"
+    },
+    "after": {
+      "task_id": "a4b7235310ce49069cbd74cc848b5c1c",
+      "run_id": "9b8826c2eddb44cca486b8371873e4c3",
+      "checkout": "/home/ttlhi10/colab-ui-consumer",
+      "files": "b44d05c8a2fbe1e76c2e625abab4bb2cd631e44fcfdbe3f981890615c035d32d"
+    }
+  }
+}

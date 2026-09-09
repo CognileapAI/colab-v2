@@ -82,11 +82,9 @@ export function PreviewPanel(props: {
    * 짝 파일 없이 그렸는지도 **여기서만 아는 사실**이라 함께 넘긴다.
    */
   onRender?: ((info: { renderId: string; withoutReferenceGrid: boolean }) => void) | undefined;
-  /**
-   * 사람이 대표 그림을 **바꿨다는 사실**만 바깥(S-04 모달)에 알린다 (WU-A9R · PRD-14 증분).
-   * 고른 그림 자체는 여기 남는다 — 종료 확인이 세는 것은 교체 여부 하나다.
-   */
-  onThumbPick?: (() => void) | undefined;
+  /** 대표 그림 실제 파일은 등록 수명과 함께 모달이 쥔다. */
+  representativeFile?: File | null | undefined;
+  onRepresentativeFileChange?: ((file: File | null) => void) | undefined;
 }) {
   const { source, uploadId } = props;
   const autoRequested = useRef<string | null>(null);
@@ -102,7 +100,7 @@ export function PreviewPanel(props: {
   const [tileExpired, setTileExpired] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
   const [accepted, setAccepted] = useState(false);
-  /** 사람이 고른 대표 그림의 **화면 전용** 주소(`WU-A10`). 저장 경로는 `WU-C2` 다. */
+  /** 모달이 쥔 File을 화면에 보이기 위한 주소. File 자체가 저장 경로로 올라간다. */
   const [pickedThumb, setPickedThumb] = useState<string | null>(null);
   const thumbInput = useRef<HTMLInputElement | null>(null);
   const polling = useRef(0);
@@ -179,6 +177,17 @@ export function PreviewPanel(props: {
     },
     [],
   );
+
+  useEffect(() => {
+    const file = props.representativeFile;
+    if (!file) {
+      setPickedThumb(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPickedThumb(url);
+    return () => URL.revokeObjectURL(url);
+  }, [props.representativeFile]);
 
   async function draw(withoutReferenceGrid: boolean, override?: PickSelection) {
     if (!uploadId || !palette) return;
@@ -314,19 +323,14 @@ export function PreviewPanel(props: {
   /**
    * 대표 그림이 화면에 무엇을 보이는가 (`WU-A10`).
    * 사람이 고른 그림이 있으면 그것, 없으면 **자동 생성된 미리보기 축소본**이 기본이다.
-   * `pickedThumb` 는 `URL.createObjectURL` 로 만든 **이 화면만의 주소**다 — 서버로 가지 않는다.
+   * `pickedThumb` 는 모달이 보관한 File의 수명에 맞춰 만든 화면 주소다.
    */
   const autoThumb = layers?.thumbnailUrl ?? salvage?.thumbnailUrl ?? null;
   const thumbSrc = pickedThumb ?? autoThumb;
 
   function pickThumb(file: File | null): void {
     if (!file) return;
-    props.onThumbPick?.();
-    setPickedThumb((prev) => {
-      // 앞서 만든 주소는 놓아준다 — 화면 하나가 blob 을 쌓아 두지 않는다.
-      if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(file);
-    });
+    props.onRepresentativeFileChange?.(file);
   }
 
   return (
@@ -348,10 +352,7 @@ export function PreviewPanel(props: {
 
       <details className="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
-      {/* 대표 그림(썸네일) — rev1 `thumbrow` · `WU-A10` · PRD-20.
-          자동으로 만들어진 미리보기 축소본이 **기본**이고, 옆 줄이 바꿀 수 있다고 말한다.
-          ⛔ **저장 경로는 이 WU 밖이다**(별건 `WU-C2`). 고른 그림은 화면에서만 바뀌고
-             `representative_file_id` 는 건드리지 않는다 — 그 열은 조각 지정용이다. */}
+      {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       <div className="thumbrow" data-testid="up-thumb-block">
         <button
           type="button"
@@ -372,12 +373,20 @@ export function PreviewPanel(props: {
             눌러서 다른 그림으로 바꿀 수 있어요
           </span>
         </div>
-        {/* 클릭 진입만 만든다 — 고른 파일은 어디로도 보내지 않는다. */}
+        {props.representativeFile ? (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => props.onRepresentativeFileChange?.(null)}
+          >
+            자동 그림 사용
+          </button>
+        ) : null}
         <input
           ref={thumbInput}
           className="th-in"
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp"
           data-testid="up-thumb-input"
           onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
         />

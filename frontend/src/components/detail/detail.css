@@ -320,3 +320,8 @@
 }
 
 .detail-page .dh-main > .de-inline input { font-size: 22px; font-weight: 650; }
+.dt-representative { margin-bottom: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; }
+.dt-representative-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.dt-representative-head h2 { margin: 0; font-size: 16px; }
+.dt-representative-image { display: block; width: min(100%, 640px); aspect-ratio: 4 / 3; margin-top: 12px; object-fit: contain; background: var(--color-gray-50); border-radius: var(--radius-sm); }
+.dt-representative-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

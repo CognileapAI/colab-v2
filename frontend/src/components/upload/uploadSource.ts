@@ -85,6 +85,21 @@ export function apiUploadSource(): UploadSource {
       return { datasetId: r.data.datasetId };
     },
 
+    async putRepresentativeImage(datasetId, file) {
+      const form = new FormData();
+      form.append('image', file, file.name);
+      const r = await api.PUT('/datasets/{datasetId}/representative-image', {
+        params: { path: { datasetId } },
+        body: form as unknown as never,
+        bodySerializer: (body: unknown) => body as FormData,
+      });
+      if (!r.data) {
+        const message = (r.error as { message?: unknown } | undefined)?.message;
+        throw new Error(typeof message === 'string' && message ? message : '대표 그림을 저장하지 못했어요.');
+      }
+      return r.data;
+    },
+
     async attachGrid(datasetId: string, uploadId: string) {
       // **짝을 여기서 처음 잇는다** — 화면이 들고 있던 `uploadId` 를 `datasetId` 옆에 놓는다.
       const r = await api.POST('/datasets/{datasetId}/grid-files', {

@@ -31,7 +31,7 @@ import {
   displayLevel,
   PARENT_ROLES,
   type AiConfidence,
-  type DatasetRow,
+  type ParentCandidateRow,
   type LineageOrigin,
   type LineageSource,
   type LineageSuggestionResponse,
@@ -120,7 +120,16 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const [resp, setResp] = useState<LineageSuggestionResponse | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [methods, setMethods] = useState<MethodCard[]>([]);
-  const { candidates, candidateError, loadCandidates } = useParentCandidates(source);
+  const {
+    candidates,
+    candidateError,
+    nextCursor,
+    loadingMore,
+    loadMoreError,
+    loadCandidates,
+    loadMore,
+    retry,
+  } = useParentCandidates(source);
   /** 찾기 모달의 가공 단계 셀렉트. `null` = 전체 (PRD-08). */
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
@@ -218,10 +227,9 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     onLineageProgress({ confirmed: parents.filter((p) => p.confirmed).length, total: parents.length });
   }, [parents, onLineageProgress]);
 
-  /** 셀렉트가 바뀌면 **다시 묻는다** — 거르는 자리는 서버다(질의 파라미터 · PRD-08). */
+  /** 셀렉트 상태를 보존한다. 실제 조회는 `ParentPicker.onSearch`가 모든 조건을 함께 보낸다. */
   function changeLevelFilter(next: number | null) {
     setLevelFilter(next);
-    loadCandidates(next);
   }
 
   /**
@@ -255,7 +263,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   }
 
   /** `수정` — 이 순간부터 AI 행동이 아니다. 칩을 걷고 경로를 바꾸고 확인을 무른다. */
-  function editTo(key: string, row: DatasetRow) {
+  function editTo(key: string, row: ParentCandidateRow) {
     patch(key, {
       parentDatasetId: row.datasetId,
       parentDatasetName: row.name,
@@ -269,7 +277,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     });
   }
 
-  function addParent(row: DatasetRow) {
+  function addParent(row: ParentCandidateRow) {
     setAdding(false);
     setParents((cur) => [
       ...cur,
@@ -297,16 +305,21 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     setMethods((cur) => cur.map((x) => (x.key === m.key ? { ...x, confirmed: true } : x)));
   }
 
-  function picker(onPick: (row: DatasetRow) => void, testid: string) {
+  function picker(onPick: (row: ParentCandidateRow) => void, testid: string) {
     return (
       <ParentPicker
         selfLv={selfLv}
         candidates={candidates}
         error={candidateError}
-        onRetry={() => loadCandidates(levelFilter)}
+        onRetry={retry}
         onClose={() => { setAdding(false); setParents(cur => cur.map(p => ({ ...p, picking: false }))); }}
         levelFilter={levelFilter}
         onLevelFilterChange={changeLevelFilter}
+        onSearch={loadCandidates}
+        nextCursor={nextCursor}
+        loadingMore={loadingMore}
+        loadMoreError={loadMoreError}
+        onLoadMore={loadMore}
         onPick={(row) => { onPick(row); setAdding(false); }}
         testId={testid}
       />
@@ -323,7 +336,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         className="btn btn-secondary btn-sm"
         data-testid="lin-add"
         onClick={() => {
-          loadCandidates(levelFilter);
+          loadCandidates({
+            ...(levelFilter !== null ? { processingLevel: levelFilter } : {}),
+            limit: 25,
+          });
           setAdding((v) => !v);
         }}
       >
@@ -468,7 +484,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
                 className="btn btn-secondary btn-sm"
                 data-testid="lin-edit"
                 onClick={() => {
-                  loadCandidates(levelFilter);
+                  loadCandidates({
+                    ...(levelFilter !== null ? { processingLevel: levelFilter } : {}),
+                    limit: 25,
+                  });
                   patch(p.key, { picking: !p.picking });
                 }}
               >

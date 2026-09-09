@@ -272,6 +272,8 @@ function StepMeta(props: {
   onVariablesBlocked: (message: string) => void;
   crs: string;
   onCrs: (v: string) => void;
+  gridDescription: string;
+  onGridDescription: (v: string) => void;
   // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위와 그 단위가 여는 칸 — 값은 달력 팝오버가 받는다.**
   granularity: string;
   onGranularity: (v: string) => void;
@@ -481,7 +483,20 @@ function StepMeta(props: {
               onChange={(e) => props.onCrs(e.target.value)}
             />
           </div>
-          <AutoField label="격자" value="" />
+          <div className="form-row">
+            <label htmlFor="reg-grid-description">격자 설명 (선택)</label>
+            <textarea
+              id="reg-grid-description"
+              className="inp"
+              data-testid="reg-grid-description"
+              maxLength={1000}
+              rows={2}
+              value={props.gridDescription}
+              onChange={(e) => props.onGridDescription(e.target.value)}
+              placeholder="예: 250m 정방 격자"
+            />
+            <p className="fieldnote">자동 판독과 별도로 연구자가 설명을 남겨요.</p>
+          </div>
         </div>
 
         {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 부가 정보의 선택 입력.**
@@ -944,6 +959,8 @@ export function RegisterArea(props: {
   onVariablesBlocked: (message: string) => void;
   crs: string;
   onCrs: (v: string) => void;
+  gridDescription: string;
+  onGridDescription: (v: string) => void;
   // ⭑ ⟨19차 해제 · PRD-17·18 · WU-C8 §5-14⟩ 최소 단위·자리 칸·관측 간격 — StepMeta 로
   //    그대로 흘린다. 종전 날짜 두 칸(`periodStart`·`periodEnd`)은 인라인 칸과 함께 걷혔다.
   granularity: string;
@@ -986,6 +1003,7 @@ export function RegisterArea(props: {
   onCancel: () => void;
   onSubmit: () => void;
   submitting?: boolean;
+  submitLabel?: string | undefined;
 }) {
   const { step } = props;
   /**
@@ -1055,6 +1073,8 @@ export function RegisterArea(props: {
             onVariablesBlocked={props.onVariablesBlocked}
             crs={props.crs}
             onCrs={props.onCrs}
+            gridDescription={props.gridDescription}
+            onGridDescription={props.onGridDescription}
             granularity={props.granularity}
             onGranularity={props.onGranularity}
             startParts={props.startParts}
@@ -1147,7 +1167,7 @@ export function RegisterArea(props: {
             disabled={props.submitting || (props.lineageConflicts ?? 0) > 0}
             onClick={props.onSubmit}
           >
-            {props.submitting ? '저장 중…' : '데이터셋 만들기 →'}
+            {props.submitting ? '저장 중…' : props.submitLabel ?? '데이터셋 만들기 →'}
           </button>
         )}
       </div>

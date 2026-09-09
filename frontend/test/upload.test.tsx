@@ -101,6 +101,7 @@ function fakes(
     suggestions?: Partial<LineageSuggestionResponse>;
     suggestionsThrows?: unknown;
     candidates?: DatasetRow[];
+    representativeThrowsUntil?: number;
   } = {},
 ) {
   let release: () => void = () => {};
@@ -123,6 +124,7 @@ function fakes(
     suggestions: 0,
     suggestionsQuery: [] as Record<string, unknown>[],
     candidates: 0,
+    representativeImages: [] as { datasetId: string; file: File }[],
   };
   const status: Schemas['UploadStatus'] = {
     uploadId: UPLOAD_ID,
@@ -189,6 +191,12 @@ function fakes(
       calls.registered.push(body as unknown as Record<string, unknown>);
       if (over.registerThrows) throw over.registerThrows;
       return { datasetId: DATASET_ID };
+    },
+    async putRepresentativeImage(datasetId, file) {
+      calls.representativeImages.push({ datasetId, file });
+      if (calls.representativeImages.length <= (over.representativeThrowsUntil ?? 0)) {
+        throw new Error('image offline');
+      }
     },
     async attachGrid(datasetId, uploadId) {
       calls.attached.push({ datasetId, uploadId });
@@ -928,14 +936,13 @@ describe('§8 ② 메타데이터 입력', () => {
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
     const row = screen.getByTestId('reg-short-row');
-    // 사람이 적는 칸 = 라벨이 `for` 로 입력을 가리키는 칸. 자동 판독 칸(`격자`)은 선택 항목이
-    // 아니라 **읽기 전용**이고 `자동` 표기를 달므로 이 규율의 대상이 아니다.
+    // 사람이 적는 칸 = 라벨이 `for` 로 입력을 가리키는 칸. 격자는 승인 변경으로
+    // 사람 설명 칸이 되었고, 자동 판독은 상세에서 별도 보조 문구로 보인다.
     const texts = Array.from(row.querySelectorAll('label[for]')).map((l) => l.textContent ?? '');
-    expect(texts).toHaveLength(2);
+    expect(texts).toHaveLength(3);
     for (const t of texts) expect(t).toMatch(/\(선택\)$/);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));
-    expect(auto).toHaveLength(1);
-    expect(auto[0]!.textContent).toBe('격자자동');
+    expect(auto).toHaveLength(0);
   });
 
   it('적은 세 값이 등록 요청에 계약 형상으로 실린다 (`#62`)', async () => {
@@ -1166,6 +1173,77 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     expect(calls.register).toBe(0);
     await click(await screen.findByTestId('reg-done'));
     await waitFor(() => expect(calls.register).toBe(1));
+  });
+
+  it('대표 그림 저장 실패 뒤 같은 datasetId와 File로 PUT만 재시도하며 데이터셋은 한 번만 만든다', async () => {
+    const { sources, calls } = fakes({ representativeThrowsUntil: 1 });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const image = new File(['cover'], 'cover.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [image] } });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '데이터셋은 만들었지만 대표 그림을 저장하지 못했어요',
+    );
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toEqual([{ datasetId: DATASET_ID, file: image }]);
+
+    await click(screen.getByRole('button', { name: '대표 그림 다시 저장' }));
+    await waitFor(() => expect(screen.queryByTestId('upload-modal')).toBeNull());
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toEqual([
+      { datasetId: DATASET_ID, file: image },
+      { datasetId: DATASET_ID, file: image },
+    ]);
+  });
+
+  it('대표 그림 저장 실패 뒤 그림을 빼면 같은 데이터셋을 자동 그림으로 완료한다', async () => {
+    const { sources, calls } = fakes({ representativeThrowsUntil: 9 });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    fireEvent.change(screen.getByTestId('up-thumb-input'), {
+      target: { files: [new File(['cover'], 'cover.png', { type: 'image/png' })] },
+    });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+    await screen.findByRole('alert');
+
+    await click(screen.getByRole('button', { name: '자동 그림 사용' }));
+    await click(screen.getByRole('button', { name: '자동 그림으로 완료' }));
+    await waitFor(() => expect(screen.queryByTestId('upload-modal')).toBeNull());
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toHaveLength(1);
+  });
+
+  it('사람이 적은 격자 설명을 단계 이동 뒤에도 보존해 등록 요청에 싣는다', async () => {
+    const { sources, calls } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await openRegister();
+    fireEvent.change(screen.getByTestId('reg-grid-description'), { target: { value: '250m 정방 격자' } });
+    await click(stepBtn('③'));
+    await click(stepBtn('②'));
+    expect(screen.getByTestId('reg-grid-description')).toHaveValue('250m 정방 격자');
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    expect(calls.registered[0]?.gridDescription).toBe('250m 정방 격자');
+  });
+
+  it('파일을 모두 뺀 뒤 새 업로드를 시작하면 사람이 적은 격자 설명을 비운다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('old.nc')]);
+    await openRegister();
+    fireEvent.change(screen.getByTestId('reg-grid-description'), { target: { value: '250m 정방 격자' } });
+    await click(within(screen.getByTestId('reg-file')).getByRole('button', { name: '올린 파일 모두 빼기' }));
+
+    await dropFiles([makeFile('new.nc')]);
+    await openRegister();
+    expect(screen.getByTestId('reg-grid-description')).toHaveValue('');
   });
 
   it('등록 요청은 사람이 적는 값만 싣는다 — 자동으로 읽은 정보를 싣지 않는다', async () => {

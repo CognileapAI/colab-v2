@@ -92,7 +92,8 @@ function fakes() {
         suggestions: [],
       } as unknown as LineageSuggestionResponse;
     },
-    async candidates(level?: number | null) {
+    async candidates(input) {
+      const level = typeof input === 'number' ? input : input?.processingLevel;
       // **서버가 거른다** — 화면이 자기 Lv 로 자르지 않는다(PRD-08 축자).
       calls.levels.push(level);
       return level === null || level === undefined ? ALL : ALL.filter((r) => r.processingLevel === level);

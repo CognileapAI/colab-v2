@@ -16,6 +16,20 @@ export type ParentRole = Schemas['ParentRole'];
 export type LineageOrigin = Schemas['LineageOrigin'];
 export type AiConfidence = Schemas['AiConfidence'];
 export type DatasetRow = Schemas['DatasetRow'];
+export type LineageCandidate = Schemas['LineageCandidate'];
+export type LineageCandidatePage = Schemas['LineageCandidatePage'];
+export type ParentCandidateRow = LineageCandidate | DatasetRow;
+export type LineageCandidateQuery = {
+  q?: string;
+  category?: string;
+  topic?: string;
+  processingLevel?: number;
+  periodStart?: string;
+  periodEnd?: string;
+  excludeDatasetId?: string;
+  limit?: number;
+  cursor?: string;
+};
 export type UploadLineageParent = Schemas['UploadLineageParent'];
 
 /**
@@ -73,7 +87,9 @@ export interface LineageSource {
    * ⛔ **자기 Lv 로 자동으로 걸지 않는다** — 초과 후보도 내려와야 화면이 「보이되 못 고름」
    *   을 그릴 수 있다(축자 「숨기지는 않는다. 없는 것과 못 고르는 것은 다르다」).
    */
-  candidates(level?: number | null): Promise<DatasetRow[]>;
+  candidates(
+    query?: LineageCandidateQuery | number | null,
+  ): Promise<LineageCandidatePage | ParentCandidateRow[]>;
 }
 
 // ⭑ **⟨WU-C9 · 질의 27·41⟩ Lv 표시 규칙의 집은 `common/processingLevel.ts` 하나다.**

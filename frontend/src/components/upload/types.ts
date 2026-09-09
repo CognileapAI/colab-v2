@@ -12,6 +12,7 @@ export type UploadReceipt = Schemas['UploadReceipt'];
 export type UploadStatus = Schemas['UploadStatus'];
 export type UploadFileRef = Schemas['UploadFileRef'];
 export type DatasetCreate = Schemas['DatasetCreate'];
+export type RepresentativeImageMetadata = Schemas['RepresentativeImageMetadata'];
 export type UploadLineageParent = Schemas['UploadLineageParent'];
 export type ProjectRow = Schemas['ProjectRow'];
 export type ProjectCreate = Schemas['ProjectCreate'];
@@ -111,6 +112,11 @@ export interface UploadSource {
   status(uploadId: string): Promise<UploadStatus>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
   register(body: DatasetCreate): Promise<{ datasetId: string }>;
+  /** 등록된 데이터셋에 사용자 대표 그림을 별도 저장한다. 등록 재시도와 수명을 섞지 않는다. */
+  putRepresentativeImage?(
+    datasetId: string,
+    file: File,
+  ): Promise<RepresentativeImageMetadata | void>;
   /**
    * `attachUploadGridFiles` — **격자 후주입 확정.**
    * 짝(데이터셋 ↔ 업로드)은 어디에도 저장되지 않는다 — **화면이 들고 있다가 여기서 동봉한다.**

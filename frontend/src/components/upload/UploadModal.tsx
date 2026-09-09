@@ -139,11 +139,10 @@ export function UploadModal(props: {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
-  /**
-   * 대표 그림을 사람이 바꿨나 (WU-A9R · PRD-14 증분). 고른 그림 자체는 `PreviewPanel` 안에서만
-   * 살고 서버로 가지 않는다 — 종료 확인이 세는 것은 **바꿨다는 사실 하나**다.
-   */
-  const [thumbReplaced, setThumbReplaced] = useState(false);
+  /** 실제 그림은 데이터셋 등록 뒤 별도 PUT할 때까지 모달이 보존한다. */
+  const [representativeFile, setRepresentativeFile] = useState<File | null>(null);
+  /** 등록 성공 뒤 그림 PUT만 재시도하기 위한 불변 식별자. */
+  const [createdDatasetId, setCreatedDatasetId] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
@@ -182,6 +181,7 @@ export function UploadModal(props: {
   // 마지막 행 삭제 차단 고지. 공통 토스트를 탄다(PRD-43 과 같은 컴포넌트).
   const [variableNotice, setVariableNotice] = useState<string | null>(null);
   const [crs, setCrs] = useState('');
+  const [gridDescription, setGridDescription] = useState('');
   // ⭑ **⟨19차 해제 · PRD-18⟩ 기간의 최소 단위.** `''` = 미지정이고 그것이 기본이자 정상이다 —
   // 계약의 `granularity` 는 그때 `null` 로 나가고 기간 자체가 실리지 않는다.
   // ⭑ **⟨R-C · WU-C8 · §5-14⟩ 이 셋을 채우는 자리는 달력 팝오버 **하나**다** — 종전
@@ -466,7 +466,8 @@ export function UploadModal(props: {
     // ⭑ ⟨WU-A9R · PRD-14 증분⟩ 담은 프로젝트 건수와 **대표 그림 교체 여부**를 함께 센다.
     //   둘 다 사람이 고른 것이라 닫으면 사라진다. 자동 채움값(`Lv2`·`연구실 구성원 전체`·
     //   확장자·용량)은 여전히 세지 않는다.
-    thumbReplaced ||
+    representativeFile !== null ||
+    gridDescription.trim() !== '' ||
     // ⭑ ⟨advisor ② · F3⟩ 세 축도 **사람이 고르는 칸**이다. 기본값 그대로면 세지 않고
     //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
     category !== DEFAULT_CATEGORY ||
@@ -580,6 +581,7 @@ export function UploadModal(props: {
     setSourceLabel('');
     setVariables([emptyVariableRow()]);
     setCrs('');
+    setGridDescription('');
     setGranularity('');
     setIntervalValue('');
     setIntervalUnit('');
@@ -594,9 +596,8 @@ export function UploadModal(props: {
     setIntakeError(null);
     setRendered(null);
     setGridSkipped(false);
-    // ⭑ ⟨advisor ② · F1⟩ 대표 그림도 파일에서 왔다. 플래그만 남으면 다시 올린 사람이
-    //   아무것도 안 적고도 되묻힌다.
-    setThumbReplaced(false);
+    setRepresentativeFile(null);
+    setCreatedDatasetId(null);
     // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
     setCategory(DEFAULT_CATEGORY);
@@ -786,6 +787,7 @@ export function UploadModal(props: {
     // ⚠ `category`·`dataType` 은 여기서 싣지 않는다 — 계약 `required` 라 `register()`
     //    호출부가 **명시로** 싣는다(타입 검사가 그 자리를 본다).
     if (level) out.processingLevelUserSet = level;
+    if (gridDescription.trim()) out.gridDescription = gridDescription.trim();
     // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 두 칸은 「보이는 동안 적은 것」만 싣는다.**
     //
     // 화면이 숨긴 값을 몰래 보내면 사용자가 지운 적 없는 값이 저장되고, 상세에 그 값이
@@ -804,6 +806,25 @@ export function UploadModal(props: {
 
   async function submit() {
     if (submitLock.current) return;
+    if (createdDatasetId) {
+      submitLock.current = true;
+      setSubmitting(true);
+      setRegisterError(null);
+      try {
+        if (representativeFile) {
+          if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
+          await upload.putRepresentativeImage(createdDatasetId, representativeFile);
+        }
+        props.onClose();
+        navigate(`/datasets/${createdDatasetId}`);
+      } catch {
+        setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+      } finally {
+        submitLock.current = false;
+        setSubmitting(false);
+      }
+      return;
+    }
     if (!uploadId) {
       // 등록 게이트는 접수 성패와 무관하게 상시 서 있다. 접수가 실패했으면 여기서 **말없이
       // return** 했다 — 사람은 [등록]을 눌렀는데 아무 일도 안 일어났다. 두 번째 침묵을 닫는다.
@@ -882,9 +903,20 @@ export function UploadModal(props: {
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
         ...humanMetadata(),
       });
-      props.onClose();
-      // 등록까지 끝났다 — 「설정이 안 끝난 업로드」에서 지운다.
+      // 데이터셋은 이 시점에 이미 생겼다. 뒤의 그림 PUT이 실패해도 같은 ID를 재사용한다.
+      setCreatedDatasetId(made.datasetId);
+      // 등록까지 끝난 임시 업로드는 그림 저장 성공 여부와 무관하게 정리한다.
       if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+      if (representativeFile) {
+        try {
+          if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
+          await upload.putRepresentativeImage(made.datasetId, representativeFile);
+        } catch {
+          setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+          return;
+        }
+      }
+      props.onClose();
       navigate(`/datasets/${made.datasetId}`);
     } catch (e) {
       // ⭑ **⟨R-C · WU-C8 · R-B §5-31 판정⟩ 서버 400 을 일반 문구로 덮지 않는다.**
@@ -1096,7 +1128,11 @@ export function UploadModal(props: {
                 uploadId={uploadId}
                 hasReferenceGrid={hasReferenceGrid}
                 onRender={setRendered}
-                onThumbPick={() => setThumbReplaced(true)}
+                representativeFile={representativeFile}
+                onRepresentativeFileChange={(file) => {
+                  setRepresentativeFile(file);
+                  if (createdDatasetId) setRegisterError(null);
+                }}
                 grid={{
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
@@ -1216,6 +1252,8 @@ export function UploadModal(props: {
                 onVariablesBlocked={setVariableNotice}
                 crs={crs}
                 onCrs={setCrs}
+                gridDescription={gridDescription}
+                onGridDescription={setGridDescription}
                 granularity={granularity}
                 onGranularity={setGranularity}
                 startParts={startParts}
@@ -1254,6 +1292,9 @@ export function UploadModal(props: {
                 lineageConflicts={lineageConflicts}
                 onCancel={requestClose}
                 submitting={submitting}
+                submitLabel={createdDatasetId
+                  ? representativeFile ? '대표 그림 다시 저장' : '자동 그림으로 완료'
+                  : undefined}
                 onSubmit={() => void submit()}
               />
             )}

@@ -5,7 +5,12 @@
 // `addLineageParent`·`removeLineageParent`·`confirmLineage` 는 **이미 등록된 데이터셋**의
 // 상세 화면 op 이라 업로드 모달에는 부를 자리가 없다 — 여기서는 `datasetId` 자체가 아직 없다.
 import { api } from '../../api/client';
-import type { DatasetRow, LineageSource, LineageSuggestionResponse } from './types';
+import type {
+  LineageCandidatePage,
+  LineageCandidateQuery,
+  LineageSource,
+  LineageSuggestionResponse,
+} from './types';
 
 export function apiLineageSource(): LineageSource {
   return {
@@ -24,25 +29,13 @@ export function apiLineageSource(): LineageSource {
       return r.data;
     },
 
-    async candidates(level?: number | null): Promise<DatasetRow[]> {
-      // 고르지 않았으면 조건 자체를 보내지 않는다 — 「전체」와 「Lv0」은 다른 질문이다.
-      const rows: DatasetRow[] = [];
-      const seen = new Set<string>();
-      let cursor: string | undefined;
-      do {
-        const r = await api.GET('/datasets', {
-          params: { query: {
-            ...(level === null || level === undefined ? {} : { processingLevel: [level] }),
-            ...(cursor ? { cursor } : {}),
-          } },
-        });
-        if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
-        rows.push(...(r.data.items ?? []));
-        cursor = r.data.nextCursor ?? undefined;
-        if (cursor && seen.has(cursor)) throw new Error('연구실 데이터 목록을 끝까지 읽지 못했어요.');
-        if (cursor) seen.add(cursor);
-      } while (cursor);
-      return rows;
+    async candidates(input?: LineageCandidateQuery | number | null): Promise<LineageCandidatePage> {
+      const query: LineageCandidateQuery = typeof input === 'number'
+        ? { processingLevel: input }
+        : input ?? {};
+      const r = await api.GET('/lineage-candidates', { params: { query } });
+      if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
+      return r.data;
     },
   };
 }

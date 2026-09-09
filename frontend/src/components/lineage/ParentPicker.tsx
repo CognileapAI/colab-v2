@@ -11,7 +11,14 @@
 //  - **사유 문면은 이 파일 하나에 있다**(`parentOverReason`). 부르는 쪽이 다시 적지 않는다.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ESC_LAYER_ATTR, useEscLayer } from '../upload/escLayer';
-import { LV_VALUES, displayLevel, type DatasetRow } from './types';
+import { CATEGORIES } from '../upload/axisDict';
+import { TOPICS } from '../upload/types';
+import {
+  LV_VALUES,
+  displayLevel,
+  type LineageCandidateQuery,
+  type ParentCandidateRow,
+} from './types';
 
 /** 초과 후보의 사유 축자 (PRD-08 rev1). **두 화면이 이 한 함수를 쓴다.** */
 export function parentOverReason(selfLv: number): string {
@@ -25,22 +32,41 @@ export function ParentPicker(props: {
   onRetry?: () => void;
   onClose?: () => void;
   /** `null` = 읽는 중. 빈 배열은 **정직한 빈 상태**다. */
-  candidates: DatasetRow[] | null;
+  candidates: ParentCandidateRow[] | null;
   levelFilter: number | null;
   onLevelFilterChange: (next: number | null) => void;
-  onPick: (row: DatasetRow) => void;
+  onSearch?: (query: LineageCandidateQuery) => void;
+  nextCursor?: string | null;
+  loadingMore?: boolean;
+  loadMoreError?: string | null;
+  onLoadMore?: () => void;
+  onPick: (row: ParentCandidateRow) => void;
   /** 부르는 자리마다 다른 손잡이 — 등록 ③ 은 `lin-picker`, 상세 모달은 `lin-fix-picker`. */
   testId: string;
 }) {
   const { selfLv, candidates, levelFilter } = props;
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState('');
-  const [selected, setSelected] = useState<DatasetRow | null>(null);
+  const [category, setCategory] = useState('');
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [selected, setSelected] = useState<ParentCandidateRow | null>(null);
   const body = useRef<HTMLDivElement>(null);
   const downOnBackdrop = useRef(false);
-  const topics = [...new Set((candidates ?? []).map(row => row.topic).filter(Boolean))];
-  const filtered = (candidates ?? []).filter(row => row.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) && (!topic || row.topic === topic));
-  const valid = selected && filtered.some(row => row.datasetId === selected.datasetId) && (selfLv === null || displayLevel(selected) === null || displayLevel(selected)! <= selfLv);
+  const valid = selected && (candidates ?? []).some(row => row.datasetId === selected.datasetId) && (selfLv === null || displayLevel(selected) === null || displayLevel(selected)! <= selfLv);
+  function search(next: Partial<{ q: string; topic: string; category: string; periodStart: string; periodEnd: string; processingLevel: number | null }>) {
+    const values = { q: query, topic, category, periodStart, periodEnd, processingLevel: levelFilter, ...next };
+    setSelected(null);
+    props.onSearch?.({
+      ...(values.q.trim() ? { q: values.q.trim() } : {}),
+      ...(values.topic ? { topic: values.topic } : {}),
+      ...(values.category ? { category: values.category } : {}),
+      ...(values.periodStart ? { periodStart: values.periodStart } : {}),
+      ...(values.periodEnd ? { periodEnd: values.periodEnd } : {}),
+      ...(values.processingLevel !== null ? { processingLevel: values.processingLevel } : {}),
+      limit: 25,
+    });
+  }
   useEscLayer(useCallback(() => { props.onClose?.(); }, [props.onClose]));
   useEffect(() => {
     if (!props.onClose) return;
@@ -51,8 +77,9 @@ export function ParentPicker(props: {
   const content = (
     <div className="lin-picker" data-testid={props.testId}>
       <div className="lin-findbar">
-        <label><span>데이터셋 이름</span><input className="inp" type="search" aria-label="데이터셋 이름 검색" placeholder="데이터셋 이름으로 찾아요" value={query} onChange={event => setQuery(event.target.value)} /></label>
-        <label><span>주제</span><select className="sel" aria-label="주제" value={topic} onChange={event => setTopic(event.target.value)}><option value="">주제 전체</option>{topics.map(value => <option key={value!} value={value!}>{value}</option>)}</select></label>
+        <label><span>이름·파일명</span><input className="inp" type="search" aria-label="데이터셋 이름 또는 파일명 검색" placeholder="이름 또는 파일명으로 찾아요" value={query} onChange={event => { setQuery(event.target.value); search({ q: event.target.value }); }} /></label>
+        <label><span>분류</span><select className="sel" aria-label="분류" value={category} onChange={event => { setCategory(event.target.value); search({ category: event.target.value }); }}><option value="">분류 전체</option>{CATEGORIES.map(value => <option key={value.value} value={value.value}>{value.label}</option>)}</select></label>
+        <label><span>주제</span><select className="sel" aria-label="주제" value={topic} onChange={event => { setTopic(event.target.value); search({ topic: event.target.value }); }}><option value="">주제 전체</option>{TOPICS.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
       {/* ⭑ **⟨PRD-08⟩ 가공 단계 셀렉트.** 거르는 것은 **서버 질의 파라미터**이고,
           자기 Lv 로 자동으로 걸지 않는다 — 초과 후보도 내려와야 아래 `is-over` 가
           「보이되 못 고름」을 그릴 수 있다. */}
@@ -62,9 +89,11 @@ export function ParentPicker(props: {
           className="sel"
           data-testid="lin-lv-filter"
           value={levelFilter === null ? '' : String(levelFilter)}
-          onChange={(e) =>
-            props.onLevelFilterChange(e.target.value === '' ? null : Number(e.target.value))
-          }
+          onChange={(e) => {
+            const next = e.target.value === '' ? null : Number(e.target.value);
+            props.onLevelFilterChange(next);
+            search({ processingLevel: next });
+          }}
         >
           <option value="">전체</option>
           {LV_VALUES.map((v) => (
@@ -74,14 +103,18 @@ export function ParentPicker(props: {
           ))}
         </select>
       </label>
+      <label><span>기간 시작</span><input className="inp" type="date" aria-label="후보 기간 시작" value={periodStart} onChange={(event) => { setPeriodStart(event.target.value); search({ periodStart: event.target.value }); }} /></label>
+      <label><span>기간 끝</span><input className="inp" type="date" aria-label="후보 기간 끝" value={periodEnd} onChange={(event) => { setPeriodEnd(event.target.value); search({ periodEnd: event.target.value }); }} /></label>
       </div>
       {props.error ? <div role="alert"><p>{props.error}</p><button type="button" className="btn btn-secondary" onClick={props.onRetry}>다시 시도</button></div> : candidates === null ? (
         <p className="muted">연구실 데이터를 읽는 중이에요…</p>
-      ) : filtered.length === 0 ? (
-        <p className="muted">{query || topic ? '검색 조건에 맞는 데이터가 없어요. 조건을 바꿔 주세요.' : '고를 수 있는 연구실 데이터가 아직 없어요.'}</p>
+      ) : candidates.length === 0 ? (
+        <p className="muted">{query || topic || category || periodStart || periodEnd || levelFilter !== null
+          ? '검색 조건에 맞는 데이터가 없어요. 조건을 바꿔 주세요.'
+          : '고를 수 있는 연구실 데이터가 아직 없어요.'}</p>
       ) : (
         <ul>
-          {filtered.map((row) => {
+          {candidates.map((row) => {
             // **없는 것과 못 고르는 것은 다르다** — 초과 행도 목록에 남고 사유가 읽힌다.
             // ⭑ ⟨WU-C9⟩ 후보 줄도 같은 표시 규칙을 지난다.
             const lv = displayLevel(row);
@@ -98,7 +131,15 @@ export function ParentPicker(props: {
                 >
                   {row.name} {lv !== null && <span className="lin-lv">Lv{lv}</span>}
                 </button>
-                <p className="lin-candidate-info">{[row.topic, row.projects?.representative?.name, row.fileCount ? `파일 ${row.fileCount}개` : null, row.uploader?.name].filter(Boolean).join(' · ')}</p>
+                {'fileNames' in row && row.fileNames.length > 0 ? (
+                  <p className="lin-candidate-files">{row.fileNames.join(', ')}</p>
+                ) : null}
+                <p className="lin-candidate-info">{[
+                  'category' in row ? row.category : null,
+                  row.topic,
+                  'period' in row && row.period ? `${row.period.start.slice(0, 10)} ~ ${row.period.end?.slice(0, 10) ?? '계속'}` : null,
+                  'source' in row ? row.source.label : null,
+                ].filter(Boolean).join(' · ')}</p>
                 {over && (
                   // 사유는 **살린다** — 행 전체를 흐리게 만들면 유일한 설명이 무너진다(`R-21`).
                   <p className="lin-over-why" data-testid={`lin-over-${row.datasetId}`}>
@@ -110,6 +151,16 @@ export function ParentPicker(props: {
           })}
         </ul>
       )}
+      {props.loadMoreError ? (
+        <div data-testid="lin-load-more-error" role="alert">
+          <p>{props.loadMoreError}</p>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={props.onLoadMore}>다음 결과 다시 보기</button>
+        </div>
+      ) : props.nextCursor ? (
+        <button type="button" className="btn btn-secondary btn-sm" disabled={props.loadingMore} onClick={props.onLoadMore}>
+          {props.loadingMore ? '다음 결과를 읽는 중이에요…' : '다음 결과 보기'}
+        </button>
+      ) : null}
     </div>
   );
   if (!props.onClose) return content;

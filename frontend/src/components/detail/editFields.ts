@@ -36,6 +36,8 @@ export type DatasetEditDraft = {
   sourceUrl: string;
   sourceDownloadedOn: string;
   crs: string;
+  /** 사람이 적은 격자 설명. 자동 분석값과 별도다. */
+  gridDescription: string;
   /** 기간은 두 칸이 한 값이다 (`DataPeriod`). 날짜 칸이라 `YYYY-MM-DD` 다. */
   periodStart: string;
   periodEnd: string;
@@ -65,7 +67,7 @@ export const GRANULARITIES = ['년', '월', '일', '시', '분', '초'] as const
 
 /** 한 줄로 서는 자유 입력 칸. 라벨은 `Policy_데이터셋_상세 §5` 기본 정보 칸 이름 그대로다. */
 export type TextFieldSpec = {
-  key: 'name' | 'summary' | 'sourceLabel' | 'sourceUrl' | 'sourceDownloadedOn' | 'crs';
+  key: 'name' | 'summary' | 'sourceLabel' | 'sourceUrl' | 'sourceDownloadedOn' | 'crs' | 'gridDescription';
   label: string;
   /** 여러 줄 입력인가. 설명은 긴 글이라 `textarea` 다. */
   multiline?: boolean;
@@ -89,6 +91,7 @@ export const TEXT_FIELDS: readonly TextFieldSpec[] = [
   { key: 'sourceUrl', label: '출처 주소' },
   { key: 'sourceDownloadedOn', label: '내려받은 날' },
   { key: 'crs', label: '좌표계' },
+  { key: 'gridDescription', label: '격자 설명', multiline: true },
 ];
 
 /**
@@ -135,6 +138,7 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
     sourceUrl: orBlank(b?.sourceUrl),
     sourceDownloadedOn: orBlank(b?.sourceDownloadedOn),
     crs: orBlank(b?.crs),
+    gridDescription: orBlank(b?.gridDescription),
     periodStart: toDateInput(b?.period?.start),
     periodEnd: toDateInput(b?.period?.end),
     periodGranularity: b?.period?.granularity ?? '',
@@ -246,6 +250,7 @@ export function applyDraft(detail: DatasetDetail, draft: DatasetEditDraft): Data
           sourceUrl: blank(draft.sourceUrl),
           sourceDownloadedOn: blank(draft.sourceDownloadedOn),
           crs: blank(draft.crs),
+          gridDescription: blank(draft.gridDescription),
           period: periodOf(draft),
           observationInterval: intervalOf(draft),
         }

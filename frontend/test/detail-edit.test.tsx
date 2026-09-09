@@ -214,13 +214,14 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
   //   주세요」로 안내하므로 그 안내가 실행 가능하려면 두 칸이 이 폼에 있어야 한다.
   //   ⛔ 두 칸은 **Lv 로 가리지 않는다** — 서버가 Lv 를 안 보므로(PRD-19) 가리면 Lv1 이상
   //      행의 저장된 값을 고칠 길이 사라진다. 그래서 이 수가 장면마다 흔들리지 않는다.
-  it('폼의 입력 칸은 이름·설명·원천 표기·출처 주소·내려받은 날·좌표계·기간(시작·끝)·관측 간격 **아홉 개**다', async () => {
+  it('폼의 입력 칸은 이름·설명·원천 표기·출처 주소·내려받은 날·좌표계·격자 설명·기간(시작·끝)·관측 간격 **열 개**다', async () => {
     const form = await openForm();
     const inputs = within(form).getAllByRole('textbox');
     const dates = form.querySelectorAll('input[type="date"]');
-    expect(inputs.length + dates.length).toBe(9);
+    expect(inputs.length + dates.length).toBe(10);
     for (const id of ['edit-name', 'edit-summary', 'edit-sourceLabel',
                       'edit-sourceUrl', 'edit-sourceDownloadedOn', 'edit-crs',
+                      'edit-gridDescription',
                       'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }

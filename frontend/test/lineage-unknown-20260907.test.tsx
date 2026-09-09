@@ -113,7 +113,8 @@ function fakes() {
         suggestions: [],
       } as unknown as LineageSuggestionResponse;
     },
-    async candidates(level?: number | null) {
+    async candidates(input) {
+      const level = typeof input === 'number' ? input : input?.processingLevel;
       return level === null || level === undefined
         ? ALL : ALL.filter((r) => r.processingLevel === level);
     },

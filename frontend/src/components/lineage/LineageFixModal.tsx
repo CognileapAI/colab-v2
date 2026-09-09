@@ -17,7 +17,7 @@ import { ESC_LAYER_ATTR, useEscLayer } from '../upload/escLayer';
 import { ParentPicker } from './ParentPicker';
 import type { LineageGraph } from './graphTypes';
 import type { LineageEditSource } from './lineageEditSource';
-import type { DatasetRow, LineageSource } from './types';
+import type { LineageCandidateQuery, LineageSource, ParentCandidateRow } from './types';
 import { useParentCandidates } from './useParentCandidates';
 import './lineage.css';
 
@@ -40,21 +40,33 @@ export function LineageFixModal(props: {
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEscLayer(useCallback(() => requestClose(), [requestClose]));
 
-  const { candidates, candidateError, loadCandidates: load } = useParentCandidates(candidateSource);
+  const {
+    candidates,
+    candidateError,
+    nextCursor,
+    loadingMore,
+    loadMoreError,
+    loadCandidates: load,
+    loadMore,
+    retry,
+  } = useParentCandidates(candidateSource);
   /** 찾기의 가공 단계 셀렉트. `null` = 전체 (PRD-08) — 등록 ③ 과 같은 규칙이다. */
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
-  const [picked, setPicked] = useState<DatasetRow | null>(null);
+  const [picked, setPicked] = useState<ParentCandidateRow | null>(null);
   const [method, setMethod] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    load(null);
-  }, [load]);
+    load({ excludeDatasetId: props.datasetId, limit: 25 });
+  }, [load, props.datasetId]);
 
   function changeLevelFilter(next: number | null) {
     setLevelFilter(next);
-    load(next);
+  }
+
+  function search(query: LineageCandidateQuery) {
+    load({ ...query, excludeDatasetId: props.datasetId });
   }
 
   function save() {
@@ -115,11 +127,16 @@ export function LineageFixModal(props: {
           {/* 등록 ③ 과 **같은 컴포넌트**다 — 규칙이 한 자리에 있다 (PRD-07·08·09). */}
           <ParentPicker
             selfLv={props.selfLv}
-            candidates={candidates?.filter(row => row.datasetId !== props.datasetId) ?? null}
+            candidates={candidates}
             error={candidateError}
-            onRetry={() => load(levelFilter)}
+            onRetry={retry}
             levelFilter={levelFilter}
             onLevelFilterChange={changeLevelFilter}
+            onSearch={search}
+            nextCursor={nextCursor}
+            loadingMore={loadingMore}
+            loadMoreError={loadMoreError}
+            onLoadMore={loadMore}
             onPick={(row) => setPicked(row)}
             testId="lin-fix-picker"
           />

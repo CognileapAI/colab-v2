@@ -2,22 +2,27 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ParentPicker } from '../src/components/lineage/ParentPicker';
 import { LineageFixModal } from '../src/components/lineage/LineageFixModal';
-import type { DatasetRow } from '../src/components/lineage/types';
-const rows = [{ datasetId: 'rain', name: 'Rain.nc', processingLevel: 1, topic: '강우' }, { datasetId: 'soil', name: 'Soil.nc', processingLevel: 3, topic: '토양' }] as DatasetRow[];
-const props = { selfLv: 2, candidates: rows, levelFilter: null, onLevelFilterChange: vi.fn(), testId: 'picker' };
+import type { LineageCandidate, LineageCandidateQuery } from '../src/components/lineage/types';
+const rows = [
+  { datasetId: 'rain', name: 'Rain', fileNames: ['Rain.nc'], fileExtensions: ['nc'], category: '기상·기후 인자', period: { start: '2025-01-01T00:00:00Z', end: null }, source: { label: 'ERA5', url: null, downloadedOn: null }, processingLevel: 1, topic: '강우', bodyAccessible: true },
+  { datasetId: 'soil', name: 'Soil', fileNames: [], fileExtensions: [], category: '환경 인자', period: null, source: { label: null, url: null, downloadedOn: null }, processingLevel: 3, topic: '토양', bodyAccessible: false },
+] as LineageCandidate[];
+const props = { selfLv: 2, candidates: rows, levelFilter: null, onLevelFilterChange: vi.fn(), onSearch: vi.fn(), onLoadMore: vi.fn(), nextCursor: null, testId: 'picker' };
 describe('계보 직접 찾기 복구와 선택', () => {
   it('이름 검색으로 결과를 좁히고 확정 전에는 연결하지 않는다', () => {
     const onPick = vi.fn();
     render(<ParentPicker {...props} onPick={onPick} onClose={() => {}} />);
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'rain' } });
-    expect(screen.queryByText('Soil.nc')).not.toBeInTheDocument();
+    expect(props.onSearch).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'rain' }));
     fireEvent.click(screen.getByTestId('lin-pick-rain'));
     expect(onPick).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(onPick).toHaveBeenCalledWith(rows[0]);
+    expect(screen.getByText('Rain.nc')).toBeInTheDocument();
+    expect(screen.queryByText(/Soil\.nc/)).toBeNull();
   });
   it('후보 읽기 실패를 빈 결과와 구분하고 다시 시도한다', async () => {
-    const candidates = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(rows);
+    const candidates = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ items: rows, nextCursor: null });
     render(<LineageFixModal datasetId="self" selfLv={2} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
     expect(await screen.findByRole('alert')).toHaveTextContent('읽지 못');
     expect(screen.queryByText('고를 수 있는 연구실 데이터가 아직 없어요.')).not.toBeInTheDocument();
@@ -26,14 +31,52 @@ describe('계보 직접 찾기 복구와 선택', () => {
     expect(screen.getByTestId('lin-pick-soil')).toBeDisabled();
   });
   it('이전 단계 필터 응답이 늦어도 최신 결과를 덮지 않는다', async () => {
-    let resolveOld!: (r: DatasetRow[]) => void;
-    const candidates = vi.fn().mockImplementationOnce(() => new Promise<DatasetRow[]>(r => { resolveOld = r; })).mockResolvedValue([rows[1]]);
+    let resolveOld!: (r: { items: LineageCandidate[]; nextCursor: null }) => void;
+    const candidates = vi.fn()
+      .mockImplementationOnce(() => new Promise<{ items: LineageCandidate[]; nextCursor: null }>(r => { resolveOld = r; }))
+      .mockResolvedValue({ items: [rows[1]], nextCursor: null });
     render(<LineageFixModal datasetId="self" selfLv={3} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
-    fireEvent.change(screen.getByTestId('lin-lv-filter'), { target: { value: '3' } });
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'soil' } });
     await screen.findByTestId('lin-pick-soil');
-    await act(async () => resolveOld([rows[0]!]));
+    await act(async () => resolveOld({ items: [rows[0]!], nextCursor: null }));
     expect(screen.getByTestId('lin-pick-soil')).toBeInTheDocument();
     expect(screen.queryByTestId('lin-pick-rain')).not.toBeInTheDocument();
+  });
+
+  it('서버 cursor로 다음 페이지를 중복 없이 붙이고 추가 실패 때 기존 목록을 보존해 재시도한다', async () => {
+    let moreAttempts = 0;
+    const candidates = vi.fn(async (input: LineageCandidateQuery | number | null = {}) => {
+      const query = typeof input === 'number' ? { processingLevel: input } : input ?? {};
+      if (!query.cursor) return { items: [rows[0]!, rows[0]!], nextCursor: 'next' };
+      moreAttempts += 1;
+      if (moreAttempts === 1) throw new Error('offline');
+      return { items: [rows[0]!, rows[1]!], nextCursor: null };
+    });
+    render(<LineageFixModal datasetId="self" selfLv={3} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
+    expect(await screen.findAllByTestId('lin-pick-rain')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '다음 결과 보기' }));
+    expect(await screen.findByTestId('lin-load-more-error')).toHaveTextContent('더 읽지 못했어요');
+    expect(screen.getAllByTestId('lin-pick-rain')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '다음 결과 다시 보기' }));
+    expect(await screen.findByTestId('lin-pick-soil')).toBeInTheDocument();
+    expect(screen.getAllByTestId('lin-pick-rain')).toHaveLength(1);
+    expect(candidates.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ cursor: 'next' }));
+  });
+
+  it('다음 페이지를 읽는 중 새 필터를 고르면 옛 페이지를 무시하고 추가 로딩 상태를 초기화한다', async () => {
+    let finishMore!: (page: { items: LineageCandidate[]; nextCursor: null }) => void;
+    const candidates = vi.fn()
+      .mockResolvedValueOnce({ items: [rows[0]!], nextCursor: 'next' })
+      .mockImplementationOnce(() => new Promise(resolve => { finishMore = resolve; }))
+      .mockResolvedValueOnce({ items: [rows[1]!], nextCursor: null });
+    render(<LineageFixModal datasetId="self" selfLv={3} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
+    await screen.findByTestId('lin-pick-rain');
+    fireEvent.click(screen.getByRole('button', { name: '다음 결과 보기' }));
+    fireEvent.change(screen.getByLabelText('주제'), { target: { value: '토양' } });
+    expect(await screen.findByTestId('lin-pick-soil')).toBeInTheDocument();
+    await act(async () => finishMore({ items: [rows[0]!], nextCursor: null }));
+    expect(screen.queryByTestId('lin-pick-rain')).not.toBeInTheDocument();
+    expect(screen.queryByText('다음 결과를 읽는 중이에요…')).not.toBeInTheDocument();
   });
 });
 
@@ -89,24 +132,26 @@ it('실제 API 출처는 빈 가공법을 null로 저장하고 삭제 204 후 �
 });
 
 import { apiLineageSource } from '../src/components/lineage/lineageSource';
-it('직접 찾기는 첫 페이지 뒤의 후보도 포함하고 모든 페이지에 Lv 조건을 유지한다', async () => {
-  const calls: string[] = [];
+it('직접 찾기는 전용 endpoint에 모든 조건을 정확히 보내고 서버 페이지를 한 번만 읽는다', async () => {
+  const calls: Request[] = [];
   const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
-    const url = (input as Request).url; calls.push(url);
-    const next = calls.length === 1;
-    return new Response(JSON.stringify({ items: [rows[next ? 0 : 1]], totalCount: 2, nextCursor: next ? 'second' : null }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const request = input as Request; calls.push(request);
+    return new Response(JSON.stringify({ items: [rows[0]], nextCursor: 'second' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   });
   try {
-    expect(await apiLineageSource().candidates(1)).toHaveLength(2);
-    expect(calls[1]).toContain('cursor=second');
-    expect(calls.every(url => url.includes('processingLevel=1'))).toBe(true);
+    const page = await apiLineageSource().candidates({ q: 'rain.nc', category: '기상·기후 인자', topic: '강우', processingLevel: 1, periodStart: '2025-01-01', periodEnd: '2025-12-31', excludeDatasetId: 'self', cursor: 'cursor-1', limit: 25 });
+    expect(page).toEqual({ items: [rows[0]], nextCursor: 'second' });
+    expect(calls).toHaveLength(1);
+    const url = new URL(calls[0]!.url);
+    expect(url.pathname).toContain('/lineage-candidates');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'rain.nc', category: '기상·기후 인자', topic: '강우', processingLevel: '1', periodStart: '2025-01-01', periodEnd: '2025-12-31', excludeDatasetId: 'self', cursor: 'cursor-1', limit: '25' });
   } finally { fetcher.mockRestore(); }
 });
 it('닫힌 계보 추가 화면의 늦은 저장 응답은 다음 화면을 바꾸지 않는다', async () => {
   let finish!: (value: typeof graph) => void;
   const onSaved = vi.fn();
   const addParent = vi.fn(() => new Promise<typeof graph>(resolve => { finish = resolve; }));
-  const { unmount } = render(<LineageFixModal datasetId="self" selfLv={2} candidateSource={{ candidates: async () => rows }} editSource={{ addParent }} onSaved={onSaved} requestClose={vi.fn()} />);
+  const { unmount } = render(<LineageFixModal datasetId="self" selfLv={2} candidateSource={{ candidates: async () => ({ items: rows, nextCursor: null }) }} editSource={{ addParent }} onSaved={onSaved} requestClose={vi.fn()} />);
   fireEvent.click(await screen.findByTestId('lin-pick-rain'));
   fireEvent.click(screen.getByTestId('lin-fix-save'));
   unmount();
@@ -114,7 +159,7 @@ it('닫힌 계보 추가 화면의 늦은 저장 응답은 다음 화면을 바�
   expect(onSaved).not.toHaveBeenCalled();
 });
 it('같은 데이터셋 그래프가 새로 도착해도 열린 계보 추가 화면을 닫지 않는다', async () => {
-  const candidateSource = { candidates: async () => rows };
+  const candidateSource = { candidates: async () => ({ items: rows, nextCursor: null }) };
   const { rerender } = render(<MemoryRouter><LineageSection graph={graph} candidateSource={candidateSource} /></MemoryRouter>);
   fireEvent.click(screen.getByTestId('lin-edit'));
   await screen.findByTestId('lin-fix-modal');

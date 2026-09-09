@@ -39,6 +39,12 @@ const NO_ACTIONS = {
  * `canRequestAccess` 에서 이미 한 번 났던 어긋남과 같은 모양이다 (`PLAN-SoT §9 〈299〉`).
  */
 const OPEN_ACTIONS = { ...NO_ACTIONS, canDownload: true } satisfies DatasetDetail['actions'];
+const AUTO_REPRESENTATIVE = {
+  custom: false,
+  fileName: null,
+  contentType: null,
+  sizeBytes: null,
+} satisfies DatasetDetail['representativeImage'];
 
 /** 목업 카탈로그 행만 아는 데이터셋 — 상세 목업이 없어 기본 정보 대부분이 빈 값이다. */
 function fromCatalogRowOnly(row: {
@@ -70,6 +76,7 @@ function fromCatalogRowOnly(row: {
     uploadedAt: row.uploadedAt,
     lastModifiedAt: row.lastModifiedAt,
     lineageConfirmedAt: row.lineageConfirmedAt,
+    representativeImage: AUTO_REPRESENTATIVE,
     basicInfo: {
       // ⭑ ⟨WU-B7 · PRD-06⟩ 두 열쇠는 **required** 다 — 값이 NULL 이어도 열쇠는 있다.
       //    기존 행이 전 행 NULL 이라(미결-3 ⓐ) 픽스처의 기본도 `null` 이다.
@@ -80,6 +87,8 @@ function fromCatalogRowOnly(row: {
       period: null,
       // ⭑ ⟨19차 해제 · PRD-17⟩ **기존 행은 전부 `null`** 이고 화면은 「관측 간격 미기재」다.
       observationInterval: null,
+      gridDescription: null,
+      gridDescriptionAutomatic: null,
       grid: null,
       format: null,
       fileExtension: null,
@@ -111,6 +120,7 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     uploadedAt: '2026-07-30T00:00:00Z',
     lastModifiedAt: '2026-08-11T00:00:00Z',
     lineageConfirmedAt: '2026-07-30T00:00:00Z',
+    representativeImage: AUTO_REPRESENTATIVE,
     basicInfo: {
       // ⭑ ⟨WU-B7 · PRD-06⟩ 상세 3행이 읽는 값. 목업 원장이 말하지 않는 칸은 `null` 이고
       //    화면은 그 자리에서 「미지정」을 보인다 — 지어내지 않는다.
@@ -134,6 +144,8 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
       period: { start: '2025-06-01T00:00:00Z', end: '2025-09-30T00:00:00Z', granularity: null },
       // ⭑ ⟨19차 해제 · PRD-17⟩ 목업이 관측 간격을 담고 있지 않다 — 「미기재」가 정상이다.
       observationInterval: null,
+      gridDescription: null,
+      gridDescriptionAutomatic: '0.05° (~5km)',
       grid: '0.05° (~5km)',
       // 목업 원장이 담고 있던 `nc` 는 **판별값 자리가 아니라 확장자**였다 (PRD-21).
       // 판별 결과는 파이프라인이 채우는 값이라 목업에서는 모른다 — 지어내지 않고 null 이다.
@@ -169,6 +181,7 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
     uploadedAt: '2026-04-18T00:00:00Z',
     lastModifiedAt: '2026-04-18T00:00:00Z',
     lineageConfirmedAt: '2026-04-18T00:00:00Z',
+    representativeImage: AUTO_REPRESENTATIVE,
     basicInfo: null,
     projects: null,
     // ⭑ **잠긴 데이터는 요청할 수 있다.** 서버가 그렇게 내린다 —

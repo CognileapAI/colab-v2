@@ -267,8 +267,13 @@ export function LineageSection(props: {
   const [fixing, setFixing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const g = saved?.datasetId === props.graph.datasetId ? saved : props.graph;
+  const previousDatasetId = useRef(props.graph.datasetId);
   useEffect(() => { setSaved(null); }, [props.graph]);
-  useEffect(() => { setFixing(false); }, [props.graph.datasetId]);
+  useEffect(() => {
+    if (previousDatasetId.current === props.graph.datasetId) return;
+    previousDatasetId.current = props.graph.datasetId;
+    setFixing(false);
+  }, [props.graph.datasetId]);
   const canEdit = g.canEdit;
   const openToken = props.openToken ?? 0;
   useEffect(() => {
