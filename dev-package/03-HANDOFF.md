@@ -1,6 +1,6 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-09 `WU-UPV-20260909` 완료·dev 배포: `origin/main`·배포·tag `dev-20260909-2` = `2264bc54edc`; Actions 34321142654 success.
+> 2026-09-09 `WU-UPV-20260909` 완료·dev 배포: 실행 시점 main·배포·tag `dev-20260909-2` = `2264bc54edc`; 후속 docs-only main 전진, 제품 코드·계약 diff 0, 실행 환경/tag는 2264 유지.
 > DB backup 두 체인 GREEN, migration platform `0023_upv_image_grid`·AI `0007_merge_vocab_and_category`, 서비스 4/4 healthy, worker/viz S3 mode.
 > deploy_doctor 15/15·S3 smoke 전건 GREEN(cleanup 0)·CloudFront index 해시 일치; 라이브 최초 업로드 모달 620×393.71875px·내부 스크롤/화면 오류 0.
 > Astra frontend 1162/1162·대장178/불일치0·실제 HDF 25단계 근거와 실패 이력은 `reports/upload-layout-preview/verification.md`.

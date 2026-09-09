@@ -1,7 +1,7 @@
 # R-UPLOAD-PREVIEW — [상세 명세](../specs/R-UPLOAD-PREVIEW.md)
 
 입력 intent: `dev-package/intent/2026-09-09-upload-layout-preview.md` · 승인 2026-09-09.
-상태: 완료·dev 배포. 2026-09-09 사용자 승인 범위를 구현·검증했고 `origin/main`·배포·release tag `dev-20260909-2`가 SHA `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 일치한다(remaining-decisions.md).
+상태: 완료·dev 배포. 배포 실행 시점의 `origin/main`·dev 배포·release tag `dev-20260909-2`는 `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 일치했다. 후속 배포 기록 docs-only 커밋들이 main을 앞당겼고 제품 코드·계약 diff는 0이며, 실행 환경과 tag는 `2264bc5`를 유지한다(remaining-decisions.md).
 배포 검증: Actions 34321142654 success, migration platform `0023_upv_image_grid`·AI `0007_merge_vocab_and_category`, 서비스 4/4 healthy, deploy_doctor 15/15, S3 smoke 전건 GREEN·cleanup 0, CloudFront index 해시 일치, 라이브 최초 모달 620px.
 실측 근거: `dev-package/reports/upload-layout-preview/verification.md`.
 기점: `47cce30`에서 분리된 작업 사본. 다른 세션 최신 변경은 병합 전 확인한다.

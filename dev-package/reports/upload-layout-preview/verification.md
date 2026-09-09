@@ -1,6 +1,6 @@
 # 업로드·상세 개선 검증 — 전체 intent 완료 판정
 
-2026-09-09. 통합 `codex/upload-preview-complete`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. `origin/main`과 dev 배포는 모두 `2264bc54edc2018c9a11a997d646be4a6e65b86b`이며, 아래 배포·S3·CloudFront·라이브 화면 검증까지 완료했다.
+2026-09-09. 통합 `codex/upload-preview-complete`의 결과는 intent 10항목을 모두 충족한다. 승인된 대표 그림 저장·영구 오류 복구·계보 후보의 UTC일 기간/cursor·격자 설명 저장을 구현하고 실제 재조회까지 확인했다. **미달 0건, 초과 0건**이다. 배포 실행 시점의 `origin/main`·dev 배포·tag는 `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 일치했다. 후속 배포 기록 docs-only 커밋들이 main을 앞당겼고 제품 코드·계약 diff는 0이며, 실행 환경과 tag는 `2264bc5`를 유지한다.
 
 ## intent 1~10 대조
 
@@ -40,7 +40,7 @@ agent-browser는 1440×1000, 일회용 PostgreSQL·로컬 원본/미리보기 �
 
 ## 배포 결과와 한계
 
-- 소스·빌드: `origin/main`과 배포 SHA는 `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 같다. [GitHub Actions 34321142654](https://github.com/CognileapAI/colab-v2/actions/runs/34321142654)는 success, ARM64 이미지 5/5와 280M tar를 만들었다. 원격 release tag `dev-20260909-2`도 같은 SHA다.
+- 소스·빌드: 배포 실행 시점의 `origin/main`·dev 배포·원격 release tag `dev-20260909-2`는 `2264bc54edc2018c9a11a997d646be4a6e65b86b`로 같았다. [GitHub Actions 34321142654](https://github.com/CognileapAI/colab-v2/actions/runs/34321142654)는 success, ARM64 이미지 5/5와 280M tar를 만들었다. 이후 main에는 배포 기록 문서만 추가됐고 제품 코드·계약 diff는 0이다. 실행 환경과 tag는 계속 `2264bc5`를 가리킨다.
 - 데이터·서비스: 배포 전 DB 백업 두 체인이 GREEN이다. 배포 시점 `deploy_doctor`는 최신 백업 12.1h·29 objects, 보존한 재실행 raw는 12.3h·29 objects로 실행 시점이 다르며 둘 다 24h 이내다. EC2 platform·AI migration은 각각 head `0023_upv_image_grid`, `0007_merge_vocab_and_category`까지 성공했다. 서비스 4/4가 healthy이며 worker·viz는 S3 mode다. [deploy-doctor.log](deployment-live/deploy-doctor.log)
 - 웹·배포 판정: `deploy_web`은 96 files·6,306,373 bytes를 올리고 `index.html`을 마지막에 배치했다. 로컬 해시는 통합 작업 사본의 dist가 아니라 HEAD `2264bc5`의 detached clean release worktree `/home/ttlhi10/colab-ui-release-2264/frontend/dist/index.html`에서 계산했다. 이 값과 CloudFront `index.html` SHA256은 `6306a625ed0702d4fa48c816a84fe3bc2b4d56cf283afac924bb0f89449240b0`로 같다. 배포 후 `deploy_doctor` 단일 실행은 15/15, fail 0, skip 0이다.
 - 저장·라이브 화면: generic presigned/multipart/abort [S3 storage smoke](deployment-live/s3-smoke.log)는 ASCII·한글·멀티파트·abort가 모두 GREEN이고 cleanup 잔재 0이다. 1440×900 agent-browser [라이브 로그인](deployment-live/browser-open.log) 뒤 최초 업로드 모달은 [620×393.71875px](deployment-live/upload-modal-metrics.json), 내부 스크롤 없음, [console](deployment-live/console.log)/[page error](deployment-live/page-errors.log) 0이었다. 화면은 [캡처](deployment-live/upload-modal-1440x900.png)와 [홈](deployment-live/home-snapshot.txt)·[모달 snapshot](deployment-live/upload-modal-snapshot.txt)으로 보존했다.
