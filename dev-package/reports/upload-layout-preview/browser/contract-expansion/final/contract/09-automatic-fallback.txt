@@ -1,0 +1,219 @@
+- generic [ref=e1] clickable [onclick]
+  - banner
+    - link "Co-Lab" [ref=e2]
+      - StaticText "Co-Lab"
+    - button "연구실 전환 · A 연구실" [ref=e3]
+      - StaticText "A 연구실"
+    - navigation "주 내비" [ref=e4]
+      - link "연구실" [ref=e16]
+        - StaticText "연구실"
+      - link "프로젝트" [ref=e17]
+        - StaticText "프로젝트"
+      - link "데이터셋" [ref=e18]
+        - StaticText "데이터셋"
+    - button "업로드" [ref=e5]
+      - StaticText "업로드"
+    - generic
+      - button "내 계정 · A 연구원" [ref=e19]
+        - StaticText "A 연구원"
+      - button "로그아웃" [ref=e20]
+  - main
+    - link "← 데이터셋 목록" [ref=e6]
+      - StaticText "←"
+      - StaticText "데이터셋 목록"
+    - heading "UI journey colab-login-23f4f48850-contract edited" [level=1, ref=e7]
+    - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+    - StaticText "Lv"
+    - StaticText "2"
+    - paragraph
+      - StaticText "고른 가공 단계는 Lv2이고, 연결한 데이터로 계산하면 Lv1이에요. 그대로 두어도 등록돼요."
+    - button "수정" [ref=e8]
+    - button "✓ 승인 요청" [ref=e9]
+    - navigation "구역" [ref=e10]
+      - list
+        - listitem [level=1]
+          - link "계보" [ref=e43]
+        - listitem [level=1]
+          - link "미리보기" [ref=e44]
+        - listitem [level=1]
+          - link "활용/접근" [ref=e45]
+    - button "다운로드" [ref=e11]
+    - button "기준 격자 추가" [ref=e12]
+    - StaticText "분류"
+    - StaticText "기상·기후 인자"
+    - StaticText "유형"
+    - StaticText "재분석자료"
+    - StaticText "가공 단계"
+    - StaticText "Lv2"
+    - StaticText "좌표계"
+    - StaticText "EPSG:4326"
+    - StaticText "기간"
+    - StaticText "2019-09-30 ~ 2019-10-07 (10분)"
+    - StaticText "격자"
+    - StaticText "2400x2400"
+    - StaticText "포맷"
+    - StaticText "*.hdf"
+    - StaticText "원천 표기"
+    - StaticText "실파일 검수 원천"
+    - region "설명" [ref=e13]
+      - StaticText "Actual file browser journey: MOD15A2H.A2019273.h27v05.061.2020313082826.hdf edited"
+    - StaticText "구성"
+    - table
+      - rowgroup
+        - row
+          - columnheader "변수" [ref=e46]
+          - columnheader "단위" [ref=e47]
+          - columnheader "값 범위" [ref=e48]
+          - columnheader "결측률" [ref=e49]
+          - columnheader "대표" [ref=e50]
+      - row
+        - cell "Fpar_500m 검수" [ref=e35]
+        - cell "%" [ref=e36]
+        - cell "—" [ref=e37]
+        - cell "—" [ref=e38]
+        - cell "대표 1" [ref=e39]
+          - radio "대표 1" [checked=true, disabled, ref=e51]
+    - StaticText "소유자"
+    - StaticText "A 연구원"
+    - StaticText "올린 사람"
+    - StaticText "A 연구원"
+    - StaticText "파일"
+    - generic
+      - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf · 9 MB"
+      - button "보기" [ref=e21]
+    - StaticText "파일"
+    - button "파일 관리" [expanded=false, ref=e14]
+    - LabelText [ref=e15] clickable [cursor:pointer]
+      - StaticText "파일 추가"
+      - button "파일 추가" [ref=e22]: No file chosen
+    - generic
+      - heading "계보 · 족보" [level=2, ref=e23]
+      - StaticText "가공 방식은 화살표 라벨 · 데이터 상자를 누르면 그 상세로 가요"
+      - button "계보 수정 · 추가" [ref=e24]
+      - StaticText "이후 수정됨"
+      - StaticText "확정 "
+      - StaticText "2026-09-09"
+      - StaticText " · 수정 "
+      - StaticText "2026-09-09"
+      - generic
+        - StaticText "원천"
+        - StaticText "실파일 검수 원천"
+      - link "Lv0 가공 전 A 강우 원자료 ›" [ref=e25]
+        - StaticText "Lv"
+        - StaticText "0"
+        - StaticText "가공 전"
+        - StaticText "A 강우 원자료"
+        - StaticText "›"
+      - StaticText "실파일 재연결 확인"
+      - link "Lv2 이 데이터 UI journey colab-login-23f4f48850-contract edited ›" [ref=e26]
+        - StaticText "Lv"
+        - StaticText "2"
+        - StaticText "이 데이터"
+        - StaticText "UI journey colab-login-23f4f48850-contract edited"
+        - StaticText "›"
+      - link "활용 프로젝트 2건 ›" [ref=e27]
+        - StaticText "활용 프로젝트 2건 ›"
+      - StaticText "원천"
+      - StaticText "실파일 검수 원천"
+      - StaticText "연구실 밖 출처 표기라 열어 볼 상세 화면이 없어요"
+      - StaticText "가공 전"
+      - link "A 강우 원자료 ›" [ref=e28]
+        - StaticText "A 강우 원자료"
+        - StaticText "›"
+      - StaticText "직접 연결"
+      - generic
+        - StaticText "가공 방식: 실파일 재연결 확인 · 확인 A 연구원 · 2026-09-09"
+      - button "가공 방식 수정" [ref=e29]
+      - button "연결 제거" [ref=e30]
+      - StaticText "Lv"
+      - StaticText "0"
+      - StaticText "이 데이터"
+      - StaticText "UI journey colab-login-23f4f48850-contract edited"
+      - StaticText "Lv"
+      - StaticText "2"
+    - generic
+      - region "대표 그림" [ref=e31]
+        - heading "대표 그림" [level=2, ref=e40]
+        - StaticText "사용자 그림이 없으면 아래 자동 미리보기를 사용해요."
+        - LabelText [ref=e41] clickable [cursor:pointer]
+          - StaticText "그림 고르기"
+          - button "그림 고르기" [ref=e52]: No file chosen
+      - region "미리보기" [ref=e32]
+        - heading "미리보기 — UI journey colab-login-23f4f48850-contract edited" [level=2, ref=e42]
+          - StaticText "미리보기 — UI journey colab-login-23f4f48850-contract edited"
+        - paragraph
+          - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+        - paragraph
+          - StaticText "격자 2400x2400"
+        - generic
+          - generic "그릴 것 고르기"
+            - LabelText
+              - StaticText "파일"
+              - combobox "파일 1" [expanded=false, disabled, ref=e61]: MOD15A2H.A2019273.h27v05.061.2020313082826.hdf
+                - MenuListPopup
+                  - option "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf" [disabled, ref=e64]
+              - StaticText "1"
+            - LabelText
+              - StaticText "변수"
+              - combobox "변수" [expanded=false, ref=e62]: Fpar_500m
+                - MenuListPopup
+                  - option "Fpar_500m" [disabled, ref=e65]
+                  - option "Lai_500m" [disabled, ref=e66]
+                  - option "FparLai_QC" [disabled, ref=e67]
+                  - option "FparExtra_QC" [disabled, ref=e68]
+                  - option "FparStdDev_500m" [disabled, ref=e69]
+                  - option "LaiStdDev_500m" [disabled, ref=e70]
+            - LabelText
+              - StaticText "시각"
+              - combobox "시각" [expanded=false, disabled, ref=e63]
+                - MenuListPopup
+          - region "미리보기" [ref=e53]
+            - generic [ref=e56] clickable [onclick]
+            - paragraph
+              - StaticText "커서를 지도 위로"
+            - button "확대" [ref=e57]
+            - button "축소" [ref=e58]
+            - button "기본 배율로" [ref=e59]
+            - button "스크린샷" [ref=e60]
+            - paragraph
+              - StaticText "지도의 한 점을 누르면 그 자리의 값을 보여 줘요."
+            - DescriptionList "범례"
+              - term "변수"
+              - definition
+                - StaticText "Fpar_500m"
+              - term
+              - definition
+                - StaticText "0.04222 ~ 0.178 Percent"
+              - term
+              - definition
+                - StaticText "0.178 ~ 0.3137 Percent"
+              - term
+              - definition
+                - StaticText "0.3137 ~ 0.4494 Percent"
+              - term
+              - definition
+                - StaticText "0.4494 ~ 0.5852 Percent"
+              - term
+              - definition
+                - StaticText "0.5852 ~ 0.7209 Percent"
+              - term
+              - definition
+                - StaticText "0.7209 ~ 0.8567 Percent"
+    - generic
+      - heading "어떻게 쓰였나 · 가져가기" [level=2, ref=e33]
+      - paragraph
+        - StaticText "이 데이터를 쓴 과제·논문 2건"
+      - list
+        - listitem [level=1]
+          - link "A 논문" [ref=e54]
+          - StaticText "논문"
+          - StaticText "2026.03~"
+        - listitem [level=1]
+          - link "실파일 프로젝트 colab-login-23f4f48850-contract" [ref=e55]
+          - StaticText "국가과제"
+      - paragraph
+        - StaticText "공개 범위 · 연구실 구성원 전체 — 연구실 안 누구나 뷰·다운로드"
+      - button "다운로드 · 9 MB" [ref=e34]
+        - StaticText "다운로드 · 9 MB"
+      - paragraph
+        - StaticText "업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요."
