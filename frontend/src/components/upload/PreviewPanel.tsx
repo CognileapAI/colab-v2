@@ -85,6 +85,9 @@ export function PreviewPanel(props: {
   /** 대표 그림 실제 파일은 등록 수명과 함께 모달이 쥔다. */
   representativeFile?: File | null | undefined;
   onRepresentativeFileChange?: ((file: File | null) => void) | undefined;
+  /** 데이터셋 생성 뒤에는 저장 복구에 필요한 대표 그림 고르개만 남긴다. */
+  representativeOnly?: boolean | undefined;
+  representativeDisabled?: boolean | undefined;
 }) {
   const { source, uploadId } = props;
   const autoRequested = useRef<string | null>(null);
@@ -182,6 +185,7 @@ export function PreviewPanel(props: {
     const file = props.representativeFile;
     if (!file) {
       setPickedThumb(null);
+      if (thumbInput.current) thumbInput.current.value = '';
       return;
     }
     const url = URL.createObjectURL(file);
@@ -329,8 +333,63 @@ export function PreviewPanel(props: {
   const thumbSrc = pickedThumb ?? autoThumb;
 
   function pickThumb(file: File | null): void {
-    if (!file) return;
+    if (!file || props.representativeDisabled) return;
     props.onRepresentativeFileChange?.(file);
+  }
+
+  const representativePicker = (
+    <div className="thumbrow" data-testid="up-thumb-block">
+      <button
+        type="button"
+        className="th-slot"
+        data-testid="up-thumb-pick"
+        aria-label="대표 그림 바꾸기"
+        disabled={props.representativeDisabled}
+        onClick={() => thumbInput.current?.click()}
+      >
+        {thumbSrc ? (
+          <img className="th-img" alt="" data-testid="up-thumb-img" src={thumbSrc} />
+        ) : (
+          <span className="th-ph" data-testid="up-thumb-empty" aria-hidden="true" />
+        )}
+      </button>
+      <div className="th-txt">
+        <span className="th-t">대표 그림(썸네일)</span>
+        <span className="th-n" data-testid="up-thumb-nudge">
+          눌러서 다른 그림으로 바꿀 수 있어요
+        </span>
+      </div>
+      {props.representativeFile ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={props.representativeDisabled}
+          onClick={() => props.onRepresentativeFileChange?.(null)}
+        >
+          자동 그림 사용
+        </button>
+      ) : null}
+      <input
+        ref={thumbInput}
+        className="th-in"
+        type="file"
+        disabled={props.representativeDisabled}
+        accept="image/png,image/jpeg,image/webp"
+        data-testid="up-thumb-input"
+        onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
+      />
+    </div>
+  );
+
+  if (props.representativeOnly) {
+    return (
+      <section className="mapstage" data-testid="up-preview" data-mode="representative-recovery">
+        <div className="mapbar">
+          <span className="mt">대표 그림 저장 마무리</span>
+        </div>
+        {representativePicker}
+      </section>
+    );
   }
 
   return (
@@ -353,44 +412,7 @@ export function PreviewPanel(props: {
       <details className="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
-      <div className="thumbrow" data-testid="up-thumb-block">
-        <button
-          type="button"
-          className="th-slot"
-          data-testid="up-thumb-pick"
-          aria-label="대표 그림 바꾸기"
-          onClick={() => thumbInput.current?.click()}
-        >
-          {thumbSrc ? (
-            <img className="th-img" alt="" data-testid="up-thumb-img" src={thumbSrc} />
-          ) : (
-            <span className="th-ph" data-testid="up-thumb-empty" aria-hidden="true" />
-          )}
-        </button>
-        <div className="th-txt">
-          <span className="th-t">대표 그림(썸네일)</span>
-          <span className="th-n" data-testid="up-thumb-nudge">
-            눌러서 다른 그림으로 바꿀 수 있어요
-          </span>
-        </div>
-        {props.representativeFile ? (
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => props.onRepresentativeFileChange?.(null)}
-          >
-            자동 그림 사용
-          </button>
-        ) : null}
-        <input
-          ref={thumbInput}
-          className="th-in"
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          data-testid="up-thumb-input"
-          onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
-        />
-      </div>
+      {representativePicker}
 
       {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}
       <div className="vizsetup">

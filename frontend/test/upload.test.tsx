@@ -334,6 +334,12 @@ function makeFile(name: string, size = 148_000_000) {
   return f;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
 async function click(el: Element | null) {
   fireEvent.click(el as HTMLElement);
   await act(async () => {});
@@ -1218,6 +1224,88 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     expect(calls.representativeImages).toHaveLength(1);
   });
 
+  it('데이터셋 생성 뒤에는 등록 입력을 잠그고 다른 대표 그림 저장만 같은 ID로 마무리한다', async () => {
+    const { sources, calls } = fakes({ representativeThrowsUntil: 1 });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const first = new File(['first'], 'first.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [first] } });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+
+    const recovery = await screen.findByTestId('up-created-recovery');
+    expect(recovery).toHaveTextContent('데이터셋은 생성됨');
+    expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reg-name')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reg-grid-description')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reg-lineage-slot')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'a.nc 빼기' })).not.toBeInTheDocument();
+    const intakeCount = calls.create;
+    fireEvent.drop(screen.getByTestId('upload-modal'), {
+      dataTransfer: { files: [makeFile('must-not-reopen.nc')], items: [] },
+    });
+    await act(async () => {});
+    expect(calls.create).toBe(intakeCount);
+
+    const second = new File(['second'], 'second.webp', { type: 'image/webp' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [second] } });
+    await click(within(recovery).getByRole('button', { name: '대표 그림 다시 저장' }));
+    await waitFor(() => expect(screen.queryByTestId('upload-modal')).toBeNull());
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toEqual([
+      { datasetId: DATASET_ID, file: first },
+      { datasetId: DATASET_ID, file: second },
+    ]);
+  });
+
+  it('대표 그림 PUT을 기다리다 사용자가 닫으면 늦은 성공이 상세로 이동하지 않는다', async () => {
+    const { sources, calls } = fakes();
+    const put = deferred<void>();
+    sources.upload.putRepresentativeImage = async (datasetId, file) => {
+      calls.representativeImages.push({ datasetId, file });
+      return put.promise;
+    };
+    await openModalWithProbe(sources);
+    await dropFiles([makeFile('a.nc')]);
+    fireEvent.change(screen.getByTestId('up-thumb-input'), {
+      target: { files: [new File(['cover'], 'cover.png', { type: 'image/png' })] },
+    });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    await waitFor(() => expect(calls.representativeImages).toHaveLength(1));
+
+    await click(screen.getByTestId('upload-close'));
+    await click(within(await screen.findByTestId('upload-close-confirm'))
+      .getByRole('button', { name: UPLOAD_CLOSE_LEAVE }));
+    expect(screen.getByTestId('loc')).toHaveAttribute('data-path', '/datasets');
+    put.resolve();
+    await act(async () => {});
+    expect(screen.getByTestId('loc')).toHaveAttribute('data-path', '/datasets');
+    expect(calls.register).toBe(1);
+  });
+
+  it('등록 요청 중 외부 unmount 뒤 늦은 생성 성공은 대표 그림 PUT으로 이어지지 않는다', async () => {
+    const { sources, calls } = fakes();
+    const created = deferred<{ datasetId: string }>();
+    sources.upload.register = vi.fn(() => created.promise);
+    const view = await openModalWithProbe(sources);
+    await dropFiles([makeFile('a.nc')]);
+    fireEvent.change(screen.getByTestId('up-thumb-input'), {
+      target: { files: [new File(['cover'], 'cover.png', { type: 'image/png' })] },
+    });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('reg-done'));
+    await waitFor(() => expect(sources.upload.register).toHaveBeenCalledTimes(1));
+
+    view.unmount();
+    created.resolve({ datasetId: DATASET_ID });
+    await act(async () => {});
+    expect(calls.representativeImages).toHaveLength(0);
+  });
+
   it('사람이 적은 격자 설명을 단계 이동 뒤에도 보존해 등록 요청에 싣는다', async () => {
     const { sources, calls } = fakes();
     await openModal(sources);
@@ -1943,7 +2031,7 @@ function LocationProbe() {
 }
 
 async function openModalWithProbe(sources: UploadSources) {
-  render(
+  const view = render(
     <MemoryRouter initialEntries={['/datasets']}>
       <SessionProvider account={account({ '업로드·편집': true })}>
         <UploadEntry sources={sources} />
@@ -1953,6 +2041,7 @@ async function openModalWithProbe(sources: UploadSources) {
   );
   await click(screen.getByTestId('gnb-upload'));
   await screen.findByTestId('upload-modal');
+  return view;
 }
 
 describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => {

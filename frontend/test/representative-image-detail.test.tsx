@@ -49,6 +49,12 @@ function previewSource() {
   } as never;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
 function mount(
   representativeImageSource: unknown,
   detail: DatasetDetail = CUSTOM,
@@ -72,6 +78,11 @@ function mount(
   );
 }
 
+async function loadRepresentative() {
+  fireEvent.load(await screen.findByTestId('detail-representative-loading-image'));
+  return screen.findByRole('img', { name: '사용자 대표 그림' });
+}
+
 describe('상세 대표 그림', () => {
   it('Bearer 출처가 준 Blob을 object URL로 보이고 떠날 때 해제한다', async () => {
     const blob = new Blob(['cover'], { type: 'image/png' });
@@ -81,7 +92,7 @@ describe('상세 대표 그림', () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: revoke });
     const view = mount(source);
 
-    expect(await screen.findByRole('img', { name: '사용자 대표 그림' })).toHaveAttribute(
+    expect(await loadRepresentative()).toHaveAttribute(
       'src', 'blob:detail/cover',
     );
     expect(source.get).toHaveBeenCalledWith(ID);
@@ -116,7 +127,7 @@ describe('상세 대표 그림', () => {
     };
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:detail/old'), revokeObjectURL: vi.fn() });
     mount(source);
-    await screen.findByRole('img', { name: '사용자 대표 그림' });
+    await loadRepresentative();
     fireEvent.change(screen.getByTestId('detail-representative-input'), { target: { files: [file] } });
     fireEvent.click(screen.getByRole('button', { name: '대표 그림 저장' }));
     const section = await screen.findByTestId('detail-representative');
@@ -138,7 +149,7 @@ describe('상세 대표 그림', () => {
     };
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:detail/old'), revokeObjectURL: vi.fn() });
     mount(source);
-    await screen.findByRole('img', { name: '사용자 대표 그림' });
+    await loadRepresentative();
     fireEvent.click(screen.getByRole('button', { name: '자동 그림 사용' }));
     await act(async () => {});
     expect(source.remove).toHaveBeenCalledWith(ID);
@@ -161,13 +172,12 @@ describe('상세 대표 그림', () => {
     const revoke = vi.fn();
     vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: revoke });
     mount(source);
-    await screen.findByRole('img', { name: '사용자 대표 그림' });
+    await loadRepresentative();
     fireEvent.change(screen.getByTestId('detail-representative-input'), {
       target: { files: [new File(['new'], 'new.webp', { type: 'image/webp' })] },
     });
     fireEvent.click(screen.getByRole('button', { name: '대표 그림 저장' }));
-    await waitFor(() => expect(screen.getByRole('img', { name: '사용자 대표 그림' }))
-      .toHaveAttribute('src', 'blob:detail/new'));
+    expect(await loadRepresentative()).toHaveAttribute('src', 'blob:detail/new');
     expect(revoke).toHaveBeenCalledWith('blob:detail/old');
     vi.unstubAllGlobals();
   });
@@ -186,7 +196,7 @@ describe('상세 대표 그림', () => {
       .mockReturnValueOnce('blob:detail/new');
     vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: vi.fn() });
     mount(source);
-    await screen.findByRole('img', { name: '사용자 대표 그림' });
+    await loadRepresentative();
     fireEvent.change(screen.getByTestId('detail-representative-input'), {
       target: { files: [new File(['new'], 'new.webp', { type: 'image/webp' })] },
     });
@@ -196,8 +206,7 @@ describe('상세 대표 그림', () => {
     expect(screen.getByRole('img', { name: '사용자 대표 그림' })).toHaveAttribute('src', 'blob:detail/old');
 
     fireEvent.click(screen.getByRole('button', { name: '대표 그림 다시 불러오기' }));
-    await waitFor(() => expect(screen.getByRole('img', { name: '사용자 대표 그림' }))
-      .toHaveAttribute('src', 'blob:detail/new'));
+    expect(await loadRepresentative()).toHaveAttribute('src', 'blob:detail/new');
     expect(source.put).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });
@@ -217,7 +226,7 @@ describe('상세 대표 그림', () => {
       ...ACCOUNT,
       permissions: { ...ACCOUNT.permissions, '업로드·편집': false },
     });
-    expect(await screen.findByRole('img', { name: '사용자 대표 그림' }))
+    expect(await loadRepresentative())
       .toHaveAttribute('src', 'blob:detail/read-only');
     expect(source.get).toHaveBeenCalledWith(ID);
     expect(screen.queryByTestId('detail-representative-input')).not.toBeInTheDocument();
@@ -247,9 +256,137 @@ describe('상세 대표 그림', () => {
       .toHaveTextContent('그림 조회 실패');
     expect(screen.queryByTestId('detail-representative-input')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '대표 그림 다시 불러오기' }));
-    expect(await screen.findByRole('img', { name: '사용자 대표 그림' }))
+    expect(await loadRepresentative())
       .toHaveAttribute('src', 'blob:detail/read-retry');
     expect(source.get).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it('Blob GET 뒤 이미지 decode가 실패하면 후보 URL을 해제하고 다시 불러오기를 제공한다', async () => {
+    const source = {
+      get: vi.fn().mockResolvedValue(new Blob(['broken'], { type: 'image/png' })),
+      put: vi.fn(),
+      remove: vi.fn(),
+    };
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:detail/broken'),
+      revokeObjectURL: revoke,
+    });
+    mount(source);
+
+    const candidate = await screen.findByTestId('detail-representative-loading-image');
+    fireEvent.error(candidate);
+    const section = screen.getByTestId('detail-representative');
+    expect(await within(section).findByRole('alert')).toHaveTextContent('표시하지 못했어요');
+    expect(within(section).getByRole('button', { name: '대표 그림 다시 불러오기' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: '사용자 대표 그림' })).not.toBeInTheDocument();
+    expect(revoke).toHaveBeenCalledWith('blob:detail/broken');
+    vi.unstubAllGlobals();
+  });
+
+  it('교체 Blob decode 실패는 기존 그림을 보존하고 새 후보 URL만 해제한다', async () => {
+    const source = {
+      get: vi.fn()
+        .mockResolvedValueOnce(new Blob(['old'], { type: 'image/png' }))
+        .mockResolvedValueOnce(new Blob(['broken-new'], { type: 'image/webp' })),
+      put: vi.fn().mockResolvedValue({ custom: true }),
+      remove: vi.fn(),
+    };
+    const create = vi.fn()
+      .mockReturnValueOnce('blob:detail/old')
+      .mockReturnValueOnce('blob:detail/broken-new');
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: revoke });
+    mount(source);
+    fireEvent.load(await screen.findByTestId('detail-representative-loading-image'));
+    expect(await screen.findByRole('img', { name: '사용자 대표 그림' }))
+      .toHaveAttribute('src', 'blob:detail/old');
+
+    fireEvent.change(screen.getByTestId('detail-representative-input'), {
+      target: { files: [new File(['new'], 'new.webp', { type: 'image/webp' })] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '대표 그림 저장' }));
+    const candidate = await screen.findByTestId('detail-representative-loading-image');
+    expect(candidate).toHaveAttribute('src', 'blob:detail/broken-new');
+    fireEvent.error(candidate);
+
+    expect(await within(screen.getByTestId('detail-representative')).findByRole('alert'))
+      .toHaveTextContent('표시하지 못했어요');
+    expect(screen.getByRole('img', { name: '사용자 대표 그림' }))
+      .toHaveAttribute('src', 'blob:detail/old');
+    expect(revoke).toHaveBeenCalledWith('blob:detail/broken-new');
+    expect(revoke).not.toHaveBeenCalledWith('blob:detail/old');
+    vi.unstubAllGlobals();
+  });
+
+  it('PUT 중에는 선택을 바꾸지 못하고 성공 뒤 input을 비워 같은 파일을 다시 고를 수 있다', async () => {
+    const firstPut = deferred<{ custom: boolean }>();
+    const source = {
+      get: vi.fn()
+        .mockResolvedValueOnce(new Blob(['old'], { type: 'image/png' }))
+        .mockResolvedValue(new Blob(['new'], { type: 'image/webp' })),
+      put: vi.fn()
+        .mockImplementationOnce(() => firstPut.promise)
+        .mockResolvedValue({ custom: true }),
+      remove: vi.fn(),
+    };
+    const create = vi.fn()
+      .mockReturnValueOnce('blob:detail/old')
+      .mockReturnValueOnce('blob:detail/new-1')
+      .mockReturnValueOnce('blob:detail/new-2');
+    vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: vi.fn() });
+    mount(source);
+    fireEvent.load(await screen.findByTestId('detail-representative-loading-image'));
+    const input = screen.getByTestId('detail-representative-input') as HTMLInputElement;
+    const same = new File(['same'], 'same.webp', { type: 'image/webp' });
+    const ignored = new File(['ignored'], 'ignored.png', { type: 'image/png' });
+    fireEvent.change(input, { target: { files: [same] } });
+    fireEvent.click(screen.getByRole('button', { name: '대표 그림 저장' }));
+    await waitFor(() => expect(source.put).toHaveBeenCalledTimes(1));
+    expect(input).toBeDisabled();
+    fireEvent.change(input, { target: { files: [ignored] } });
+
+    firstPut.resolve({ custom: true });
+    fireEvent.load(await screen.findByTestId('detail-representative-loading-image'));
+    await waitFor(() => expect(input).not.toBeDisabled());
+    expect(input.value).toBe('');
+    expect(source.put).toHaveBeenLastCalledWith(ID, same);
+
+    fireEvent.change(input, { target: { files: [same] } });
+    fireEvent.click(screen.getByRole('button', { name: '대표 그림 저장' }));
+    await waitFor(() => expect(source.put).toHaveBeenCalledTimes(2));
+    expect(source.put).toHaveBeenLastCalledWith(ID, same);
+    vi.unstubAllGlobals();
+  });
+
+  it('DELETE 중에도 새 파일 선택을 막고 성공 뒤 input을 초기화한다', async () => {
+    const removed = deferred<void>();
+    const source = {
+      get: vi.fn().mockResolvedValue(new Blob(['old'], { type: 'image/png' })),
+      put: vi.fn(),
+      remove: vi.fn(() => removed.promise),
+    };
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:detail/old'),
+      revokeObjectURL: vi.fn(),
+    });
+    mount(source);
+    fireEvent.load(await screen.findByTestId('detail-representative-loading-image'));
+    const input = screen.getByTestId('detail-representative-input') as HTMLInputElement;
+    fireEvent.click(screen.getByRole('button', { name: '자동 그림 사용' }));
+    await waitFor(() => expect(source.remove).toHaveBeenCalledTimes(1));
+    expect(input).toBeDisabled();
+    fireEvent.change(input, {
+      target: { files: [new File(['ignored'], 'ignored.png', { type: 'image/png' })] },
+    });
+    removed.resolve();
+    await waitFor(() => expect(input).not.toBeDisabled());
+    expect(input.value).toBe('');
+    expect(screen.queryByRole('button', { name: '대표 그림 저장' })).not.toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 

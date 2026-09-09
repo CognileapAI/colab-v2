@@ -143,6 +143,8 @@ export function UploadModal(props: {
   const [representativeFile, setRepresentativeFile] = useState<File | null>(null);
   /** 등록 성공 뒤 그림 PUT만 재시도하기 위한 불변 식별자. */
   const [createdDatasetId, setCreatedDatasetId] = useState<string | null>(null);
+  /** 비동기 드롭 수집도 등록 완료 전 렌더의 상태를 다시 쓰지 못하게 하는 불변 표식. */
+  const committedDatasetIdRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
@@ -232,6 +234,14 @@ export function UploadModal(props: {
   const [attaching, setAttaching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submitLock = useRef(false);
+  /** 닫힌 모달의 register/대표 그림 응답은 화면 전이와 상태를 바꾸지 못한다. */
+  const mutationLifecycle = useRef(0);
+  useEffect(() => {
+    const current = ++mutationLifecycle.current;
+    return () => {
+      if (mutationLifecycle.current === current) mutationLifecycle.current += 1;
+    };
+  }, []);
   // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
   const [rendered, setRendered] = useState<{
     renderId: string;
@@ -532,7 +542,7 @@ export function UploadModal(props: {
    * 뒤에 선다(`〈79〉-㈎`). 화면은 축을 묻지도, 정하지도 않는다.
    */
   function pickGrid(files: File[]) {
-    if (files.length === 0) return;
+    if (files.length === 0 || createdDatasetId) return;
     setGridSkipped(false);
     setPicked((cur) => [
       ...cur,
@@ -541,6 +551,7 @@ export function UploadModal(props: {
   }
 
   function pick(files: File[], paths?: ReadonlyMap<File, string>) {
+    if (createdDatasetId) return;
     const filtered = keepOneExtension(picked, files);
     setMixedGlobal(filtered.dropped > 0);
     if (!filtered.kept.length) return;
@@ -558,6 +569,7 @@ export function UploadModal(props: {
   }
 
   function setKind(index: number, kind: FileKind) {
+    if (createdDatasetId) return;
     setPicked((cur) => cur.map((p, i) => (i === index ? { ...p, kind } : p)));
   }
 
@@ -571,6 +583,8 @@ export function UploadModal(props: {
    * ⚠ 마지막 파일을 빼면 등록 단계도 걷는다 — 등록할 대상이 없는 등록 카드는 빈 폼이다.
    */
   function removeFile(index: number | null) {
+    // 데이터셋이 생긴 뒤 원본 업로드를 지워 새 create 경로로 돌아갈 수 없다.
+    if (createdDatasetId) return;
     setPicked((cur) => index === null ? [] : cur.filter((_, i) => i !== index));
     setRemovedNotice(true);
     // 파일에서 온 것은 파일과 함께 내린다. 접수·상태는 `signature` effect 가 다시 세운다.
@@ -597,7 +611,6 @@ export function UploadModal(props: {
     setRendered(null);
     setGridSkipped(false);
     setRepresentativeFile(null);
-    setCreatedDatasetId(null);
     // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
     setCategory(DEFAULT_CATEGORY);
@@ -631,9 +644,9 @@ export function UploadModal(props: {
     const onDragOver = (e: DragEvent) => e.preventDefault();
     const onDrop = (e: DragEvent) => {
       e.preventDefault();
-      if (!e.dataTransfer) return;
+      if (committedDatasetIdRef.current || !e.dataTransfer) return;
       void collectDrop(e.dataTransfer).then((dropped) => {
-        if (dropped.length === 0) return;
+        if (committedDatasetIdRef.current || dropped.length === 0) return;
         const paths = new Map(
           dropped.flatMap((d) => (d.relativePath ? [[d.file, d.relativePath] as const] : [])),
         );
@@ -807,6 +820,7 @@ export function UploadModal(props: {
   async function submit() {
     if (submitLock.current) return;
     if (createdDatasetId) {
+      const lifecycle = mutationLifecycle.current;
       submitLock.current = true;
       setSubmitting(true);
       setRegisterError(null);
@@ -815,13 +829,16 @@ export function UploadModal(props: {
           if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
           await upload.putRepresentativeImage(createdDatasetId, representativeFile);
         }
+        if (lifecycle !== mutationLifecycle.current) return;
         props.onClose();
         navigate(`/datasets/${createdDatasetId}`);
       } catch {
-        setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+        if (lifecycle === mutationLifecycle.current) {
+          setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+        }
       } finally {
         submitLock.current = false;
-        setSubmitting(false);
+        if (lifecycle === mutationLifecycle.current) setSubmitting(false);
       }
       return;
     }
@@ -873,6 +890,7 @@ export function UploadModal(props: {
     }
     setSourceDownloadedOnError(null);
     setRegisterError(null);
+    const lifecycle = mutationLifecycle.current;
     submitLock.current = true;
     setSubmitting(true);
     try {
@@ -903,7 +921,9 @@ export function UploadModal(props: {
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
         ...humanMetadata(),
       });
+      if (lifecycle !== mutationLifecycle.current) return;
       // 데이터셋은 이 시점에 이미 생겼다. 뒤의 그림 PUT이 실패해도 같은 ID를 재사용한다.
+      committedDatasetIdRef.current = made.datasetId;
       setCreatedDatasetId(made.datasetId);
       // 등록까지 끝난 임시 업로드는 그림 저장 성공 여부와 무관하게 정리한다.
       if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
@@ -911,14 +931,18 @@ export function UploadModal(props: {
         try {
           if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
           await upload.putRepresentativeImage(made.datasetId, representativeFile);
+          if (lifecycle !== mutationLifecycle.current) return;
         } catch {
+          if (lifecycle !== mutationLifecycle.current) return;
           setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
           return;
         }
       }
+      if (lifecycle !== mutationLifecycle.current) return;
       props.onClose();
       navigate(`/datasets/${made.datasetId}`);
     } catch (e) {
+      if (lifecycle !== mutationLifecycle.current) return;
       // ⭑ **⟨R-C · WU-C8 · R-B §5-31 판정⟩ 서버 400 을 일반 문구로 덮지 않는다.**
       //
       // 400 = 서버가 **어느 칸이 왜 막혔는지** 적어 보낸 거절이다(기간 역전·변수 0건 …).
@@ -935,7 +959,7 @@ export function UploadModal(props: {
       );
     } finally {
       submitLock.current = false;
-      setSubmitting(false);
+      if (lifecycle === mutationLifecycle.current) setSubmitting(false);
     }
   }
 
@@ -1129,11 +1153,13 @@ export function UploadModal(props: {
                 hasReferenceGrid={hasReferenceGrid}
                 onRender={setRendered}
                 representativeFile={representativeFile}
+                representativeOnly={Boolean(createdDatasetId)}
+                representativeDisabled={submitting}
                 onRepresentativeFileChange={(file) => {
                   setRepresentativeFile(file);
                   if (createdDatasetId) setRegisterError(null);
                 }}
-                grid={{
+                {...(!createdDatasetId ? { grid: {
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
                   verifying: gridVerifying,
@@ -1142,9 +1168,9 @@ export function UploadModal(props: {
                   // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
                   onSkipGrid: () => setGridSkipped(true),
                   ...(gridOnly && transfer ? { transfer } : {}),
-                }}
+                } } : {})}
               />
-              {registerOpen ? <details className="up-file-management">
+              {registerOpen && !createdDatasetId ? <details className="up-file-management">
                 <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
                 <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
               </details> : null}
@@ -1231,7 +1257,7 @@ export function UploadModal(props: {
             {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
                 옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치).
                   ⭑ ⟨PRD-28⟩ 그 「아래」가 **오른쪽 칸 안의 아래**가 됐다 — 순서는 그대로다. */}
-            {!attach && registerOpen && (
+            {!attach && registerOpen && !createdDatasetId && (
               <RegisterArea
                 step={step}
                 onStep={setStep}
@@ -1298,6 +1324,31 @@ export function UploadModal(props: {
                 onSubmit={() => void submit()}
               />
             )}
+            {!attach && registerOpen && createdDatasetId ? (
+              <div className="card is-on" data-testid="up-created-recovery">
+                <div className="card-h">
+                  <h3>데이터셋은 생성됨</h3>
+                  <span className="sub">대표 그림 저장만 마무리해 주세요.</span>
+                </div>
+                <div className="card-b">
+                  {registerError ? <p className="warn" role="alert">{registerError}</p> : null}
+                  <p className="muted">등록 정보와 원본 파일은 이미 저장되어 더는 바꿀 수 없어요.</p>
+                  <div className="reg-actions">
+                    <span className="sp" />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={submitting}
+                      onClick={() => void submit()}
+                    >
+                      {submitting
+                        ? '저장 중…'
+                        : representativeFile ? '대표 그림 다시 저장' : '자동 그림으로 완료'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
               </div>
             </div>
           )}

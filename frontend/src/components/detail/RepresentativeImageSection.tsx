@@ -13,12 +13,15 @@ export function RepresentativeImageSection(props: {
 }) {
   const [custom, setCustom] = useState(props.metadata?.custom ?? false);
   const [url, setUrl] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ url: string; generation: number } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
   const lifecycle = useRef(0);
   const currentUrl = useRef<string | null>(null);
+  const pendingUrl = useRef<string | null>(null);
+  const input = useRef<HTMLInputElement | null>(null);
 
   function replaceUrl(next: string | null) {
     if (currentUrl.current && currentUrl.current !== next) URL.revokeObjectURL(currentUrl.current);
@@ -26,15 +29,32 @@ export function RepresentativeImageSection(props: {
     setUrl(next);
   }
 
-  async function load(): Promise<'loaded' | 'failed' | 'stale'> {
+  function clearPending() {
+    if (pendingUrl.current) URL.revokeObjectURL(pendingUrl.current);
+    pendingUrl.current = null;
+    setPending(null);
+  }
+
+  function resetInput() {
+    if (input.current) input.current.value = '';
+  }
+
+  async function load(): Promise<'pending' | 'failed' | 'stale'> {
     const gen = ++generation.current;
+    clearPending();
     setError(null);
     try {
       const blob = await props.source.get(props.datasetId);
       if (gen !== generation.current) return 'stale';
-      replaceUrl(URL.createObjectURL(blob));
+      const next = URL.createObjectURL(blob);
+      if (gen !== generation.current) {
+        URL.revokeObjectURL(next);
+        return 'stale';
+      }
+      pendingUrl.current = next;
+      setPending({ url: next, generation: gen });
       setCustom(true);
-      return 'loaded';
+      return 'pending';
     } catch (cause) {
       if (gen !== generation.current) return 'stale';
       setError(cause instanceof Error ? cause.message : '대표 그림을 불러오지 못했어요.');
@@ -45,15 +65,19 @@ export function RepresentativeImageSection(props: {
   useEffect(() => {
     lifecycle.current += 1;
     generation.current += 1;
+    clearPending();
     replaceUrl(null);
     setCustom(props.metadata?.custom ?? false);
     setFile(null);
     setBusy(false);
     setError(null);
+    resetInput();
     if (props.metadata?.custom && props.bodyAccessible) void load();
     return () => {
       lifecycle.current += 1;
       generation.current += 1;
+      if (pendingUrl.current) URL.revokeObjectURL(pendingUrl.current);
+      pendingUrl.current = null;
       if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
       currentUrl.current = null;
     };
@@ -69,6 +93,7 @@ export function RepresentativeImageSection(props: {
       if (life !== lifecycle.current) return;
       setCustom(metadata.custom);
       setFile(null);
+      resetInput();
       if ((await load()) === 'failed') {
         setError('대표 그림은 저장했지만 새 그림을 불러오지 못했어요. 다시 불러와 주세요.');
       }
@@ -90,9 +115,11 @@ export function RepresentativeImageSection(props: {
       await props.source.remove(props.datasetId);
       if (life !== lifecycle.current) return;
       generation.current += 1;
+      clearPending();
       replaceUrl(null);
       setCustom(false);
       setFile(null);
+      resetInput();
     } catch (cause) {
       if (life === lifecycle.current) {
         setError(cause instanceof Error ? cause.message : '대표 그림을 지우지 못했어요.');
@@ -109,6 +136,29 @@ export function RepresentativeImageSection(props: {
         <span className="muted">사용자 그림이 없으면 아래 자동 미리보기를 사용해요.</span>
       </div>
       {custom && url ? <img className="dt-representative-image" src={url} alt="사용자 대표 그림" /> : null}
+      {pending ? (
+        <img
+          hidden
+          alt=""
+          data-testid="detail-representative-loading-image"
+          src={pending.url}
+          onLoad={() => {
+            if (pending.generation !== generation.current || pendingUrl.current !== pending.url) return;
+            pendingUrl.current = null;
+            setPending(null);
+            replaceUrl(pending.url);
+            setCustom(true);
+            setError(null);
+          }}
+          onError={() => {
+            if (pending.generation !== generation.current || pendingUrl.current !== pending.url) return;
+            URL.revokeObjectURL(pending.url);
+            pendingUrl.current = null;
+            setPending(null);
+            setError('대표 그림 파일을 표시하지 못했어요. 다시 불러와 주세요.');
+          }}
+        />
+      ) : null}
       {custom && !url && !error ? <p role="status">대표 그림을 불러오는 중이에요…</p> : null}
       {error ? <p className="de-err" role="alert">{error}</p> : null}
       {custom && error && !file ? (
@@ -121,11 +171,14 @@ export function RepresentativeImageSection(props: {
             <label className="btn btn-secondary btn-sm">
               그림 고르기
               <input
+                ref={input}
                 className="th-in"
                 type="file"
+                disabled={busy}
                 accept="image/png,image/jpeg,image/webp"
                 data-testid="detail-representative-input"
                 onChange={(event) => {
+                  if (busy) return;
                   setFile(event.target.files?.[0] ?? null);
                   setError(null);
                 }}
