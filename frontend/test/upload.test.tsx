@@ -336,8 +336,12 @@ function makeFile(name: string, size = 148_000_000) {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }
 
 async function click(el: Element | null) {
@@ -1257,6 +1261,83 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
       { datasetId: DATASET_ID, file: first },
       { datasetId: DATASET_ID, file: second },
     ]);
+  });
+
+  it('지연 등록을 기다리는 동안 모든 등록 조작을 막고 성공 뒤 대표 그림 복구 상태를 보존한다', async () => {
+    const { sources, calls } = fakes({ representativeThrowsUntil: 9 });
+    const created = deferred<{ datasetId: string }>();
+    sources.upload.register = vi.fn((body) => {
+      calls.register += 1;
+      calls.registered.push(body as unknown as Record<string, unknown>);
+      return created.promise;
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('original.nc')]);
+    const first = new File(['first'], 'first.png', { type: 'image/png' });
+    const ignored = new File(['ignored'], 'ignored.webp', { type: 'image/webp' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [first] } });
+    await openRegister();
+    await click(stepBtn('③'));
+    fireEvent.change(screen.getByTestId('reg-source'), { target: { value: '원래 출처' } });
+
+    const sourceInput = screen.getByTestId('reg-source');
+    const representativeInput = screen.getByTestId('up-thumb-input');
+    const removeAll = within(screen.getByTestId('reg-file'))
+      .getByRole('button', { name: '올린 파일 모두 빼기' });
+    await click(screen.getByTestId('reg-done'));
+    await waitFor(() => expect(sources.upload.register).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(sourceInput, { target: { value: '바꾸면 안 되는 출처' } });
+    fireEvent.change(representativeInput, { target: { files: [ignored] } });
+    fireEvent.drop(screen.getByTestId('upload-modal'), {
+      dataTransfer: { files: [makeFile('must-not-upload.nc')], items: [] },
+    });
+    fireEvent.click(removeAll);
+    await act(async () => {});
+    const pendingWasVisible = Boolean(screen.queryByTestId('up-create-pending'));
+    const registrationWasHidden = screen.queryByTestId('reg-area') === null;
+
+    created.resolve({ datasetId: DATASET_ID });
+    await waitFor(() => expect(calls.representativeImages).toHaveLength(1));
+    expect(pendingWasVisible).toBe(true);
+    expect(registrationWasHidden).toBe(true);
+    expect(await screen.findByTestId('up-created-recovery')).toHaveTextContent('데이터셋은 생성됨');
+    expect(calls.create).toBe(1);
+    expect(calls.register).toBe(1);
+    expect(calls.registered[0]?.sourceLabel).toBe('원래 출처');
+    expect(calls.representativeImages).toEqual([{ datasetId: DATASET_ID, file: first }]);
+
+    await click(screen.getByRole('button', { name: '대표 그림 다시 저장' }));
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toEqual([
+      { datasetId: DATASET_ID, file: first },
+      { datasetId: DATASET_ID, file: first },
+    ]);
+  });
+
+  it('등록 생성이 실패한 뒤에만 보존된 입력을 다시 편집할 수 있다', async () => {
+    const { sources, calls } = fakes();
+    const created = deferred<{ datasetId: string }>();
+    sources.upload.register = vi.fn((body) => {
+      calls.register += 1;
+      calls.registered.push(body as unknown as Record<string, unknown>);
+      return created.promise;
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('original.nc')]);
+    await openRegister();
+    await click(stepBtn('③'));
+    fireEvent.change(screen.getByTestId('reg-source'), { target: { value: '보존할 출처' } });
+    await click(screen.getByTestId('reg-done'));
+    expect(screen.getByTestId('up-create-pending')).toHaveTextContent('데이터셋 만드는 중');
+
+    created.reject(new Error('등록 저장 실패'));
+    expect(await screen.findByTestId('reg-error')).toHaveTextContent('데이터셋을 만들지 못했어요');
+    const sourceInput = screen.getByTestId('reg-source');
+    expect(sourceInput).toHaveValue('보존할 출처');
+    fireEvent.change(sourceInput, { target: { value: '실패 뒤 수정' } });
+    expect(sourceInput).toHaveValue('실패 뒤 수정');
+    expect(calls.register).toBe(1);
   });
 
   it('대표 그림 PUT을 기다리다 사용자가 닫으면 늦은 성공이 상세로 이동하지 않는다', async () => {
@@ -2254,7 +2335,7 @@ it('단계를 바꾸면 새 입력 단계의 처음부터 읽을 수 있다', as
 });
 
 
-it('등록 응답을 기다리는 동안 중복 제출 버튼을 비활성화한다', async () => {
+it('등록 응답을 기다리는 동안 제출·입력 조작점을 숨기고 저장 중임을 알린다', async () => {
   const { sources } = fakes();
   sources.upload.register = () => new Promise(() => {});
   await openModal(sources);
@@ -2262,8 +2343,9 @@ it('등록 응답을 기다리는 동안 중복 제출 버튼을 비활성화한
   await openRegister();
   await click(stepBtn('③'));
   await click(screen.getByTestId('reg-done'));
-  expect(screen.getByTestId('reg-done')).toBeDisabled();
-  expect(screen.getByTestId('reg-done')).toHaveTextContent('저장 중');
+  expect(screen.queryByTestId('reg-done')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('reg-area')).not.toBeInTheDocument();
+  expect(screen.getByTestId('up-create-pending')).toHaveTextContent('데이터셋 만드는 중');
 });
 
 

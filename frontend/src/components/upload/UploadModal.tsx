@@ -9,7 +9,7 @@
 //  - **미리보기는 등록 내내 접히지 않는다** (§8 — 정본이 그렇게 못 박았다).
 //  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
 //  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
@@ -242,6 +242,11 @@ export function UploadModal(props: {
       if (mutationLifecycle.current === current) mutationLifecycle.current += 1;
     };
   }, []);
+
+  function editRegistration(action: () => void) {
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    action();
+  }
   // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
   const [rendered, setRendered] = useState<{
     renderId: string;
@@ -491,15 +496,31 @@ export function UploadModal(props: {
     lineageCards.length > 0;
 
   const onLineageProgress = useCallback(
-    (p: { confirmed: number; total: number }) => setLineage(p),
+    (p: { confirmed: number; total: number }) => {
+      if (submitLock.current || committedDatasetIdRef.current) return;
+      setLineage(p);
+    },
     [],
   );
   const onLineageParentsChange = useCallback(
-    (parents: UploadLineageParent[]) => setLineageParents(parents),
+    (parents: UploadLineageParent[]) => {
+      if (submitLock.current || committedDatasetIdRef.current) return;
+      setLineageParents(parents);
+    },
     [],
   );
-  const onLineageConflictChange = useCallback((count: number) => setLineageConflicts(count), []);
-  const onLineageUnknownChange = useCallback((next: boolean) => setLineageUnknown(next), []);
+  const onLineageConflictChange = useCallback((count: number) => {
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    setLineageConflicts(count);
+  }, []);
+  const onLineageUnknownChange = useCallback((next: boolean) => {
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    setLineageUnknown(next);
+  }, []);
+  const onLineageCardsChange = useCallback((cards: SetStateAction<ParentCard[]>) => {
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    setLineageCards(cards);
+  }, []);
   /**
    * ⭑ **⟨WU-B8 · PRD-27⟩ 실제로 실리는 값 — 화면과 요청이 한 식을 쓴다.**
    * 확정 부모가 1건이라도 있으면 **서버가 400** 이고(「모른다」와 「이것이 부모다」를 한
@@ -509,7 +530,10 @@ export function UploadModal(props: {
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
-  const onGoToClassify = useCallback(() => setStep(1), []);
+  const onGoToClassify = useCallback(() => {
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    setStep(1);
+  }, []);
   // ③ 의 슬롯은 그대로 두되, **아무도 얹지 않으면 빈 자리로 남기지 않는다** — 계보 확정은
   // 업로드의 일부이지 선택 부품이 아니다. 바깥에서 넘긴 것이 있으면 그것이 이긴다.
   const lineageStep: LineageStepRender =
@@ -527,12 +551,12 @@ export function UploadModal(props: {
       onLineageParentsChange,
       onLineageConflictChange,
       parents: lineageCards,
-      onParentsChange: setLineageCards,
+      onParentsChange: onLineageCardsChange,
       lineageUnknown,
       onLineageUnknownChange,
     }),
     [uploadId, name, topic, level, lineageCards, lineageUnknown, onGoToClassify,
-     onLineageProgress, onLineageParentsChange, onLineageConflictChange,
+     onLineageProgress, onLineageParentsChange, onLineageConflictChange, onLineageCardsChange,
      onLineageUnknownChange],
   );
 
@@ -542,7 +566,7 @@ export function UploadModal(props: {
    * 뒤에 선다(`〈79〉-㈎`). 화면은 축을 묻지도, 정하지도 않는다.
    */
   function pickGrid(files: File[]) {
-    if (files.length === 0 || createdDatasetId) return;
+    if (files.length === 0 || submitLock.current || committedDatasetIdRef.current) return;
     setGridSkipped(false);
     setPicked((cur) => [
       ...cur,
@@ -551,7 +575,7 @@ export function UploadModal(props: {
   }
 
   function pick(files: File[], paths?: ReadonlyMap<File, string>) {
-    if (createdDatasetId) return;
+    if (submitLock.current || committedDatasetIdRef.current) return;
     const filtered = keepOneExtension(picked, files);
     setMixedGlobal(filtered.dropped > 0);
     if (!filtered.kept.length) return;
@@ -569,7 +593,7 @@ export function UploadModal(props: {
   }
 
   function setKind(index: number, kind: FileKind) {
-    if (createdDatasetId) return;
+    if (submitLock.current || committedDatasetIdRef.current) return;
     setPicked((cur) => cur.map((p, i) => (i === index ? { ...p, kind } : p)));
   }
 
@@ -584,7 +608,7 @@ export function UploadModal(props: {
    */
   function removeFile(index: number | null) {
     // 데이터셋이 생긴 뒤 원본 업로드를 지워 새 create 경로로 돌아갈 수 없다.
-    if (createdDatasetId) return;
+    if (submitLock.current || committedDatasetIdRef.current) return;
     setPicked((cur) => index === null ? [] : cur.filter((_, i) => i !== index));
     setRemovedNotice(true);
     // 파일에서 온 것은 파일과 함께 내린다. 접수·상태는 `signature` effect 가 다시 세운다.
@@ -644,9 +668,9 @@ export function UploadModal(props: {
     const onDragOver = (e: DragEvent) => e.preventDefault();
     const onDrop = (e: DragEvent) => {
       e.preventDefault();
-      if (committedDatasetIdRef.current || !e.dataTransfer) return;
+      if (submitLock.current || committedDatasetIdRef.current || !e.dataTransfer) return;
       void collectDrop(e.dataTransfer).then((dropped) => {
-        if (committedDatasetIdRef.current || dropped.length === 0) return;
+        if (submitLock.current || committedDatasetIdRef.current || dropped.length === 0) return;
         const paths = new Map(
           dropped.flatMap((d) => (d.relativePath ? [[d.file, d.relativePath] as const] : [])),
         );
@@ -1144,6 +1168,20 @@ export function UploadModal(props: {
           {picked.length > 0 && (
             <div className="up-split" data-testid="up-split">
               <div className="up-split-preview" data-testid="up-split-preview">
+              {submitting && !createdDatasetId ? (
+                <section
+                  className="mapstage"
+                  data-testid="up-create-pending-preview"
+                  aria-busy="true"
+                >
+                  <div className="mapbar">
+                    <span className="mt">데이터셋 만드는 중…</span>
+                  </div>
+                  <div className="mapempty" role="status">
+                    등록 정보와 원본 파일을 저장하고 있어요.
+                  </div>
+                </section>
+              ) : (
               <PreviewPanel
                 key={signature}
                 source={props.sources.preview}
@@ -1156,21 +1194,23 @@ export function UploadModal(props: {
                 representativeOnly={Boolean(createdDatasetId)}
                 representativeDisabled={submitting}
                 onRepresentativeFileChange={(file) => {
+                  if (submitLock.current) return;
                   setRepresentativeFile(file);
                   if (createdDatasetId) setRegisterError(null);
                 }}
-                {...(!createdDatasetId ? { grid: {
+                {...(!createdDatasetId && !submitting ? { grid: {
                   hasGrid: hasReferenceGrid,
                   skipped: gridSkipped,
                   verifying: gridVerifying,
                   ...(gridRejection ? { gridRejection } : {}),
                   onPickGrid: pickGrid,
                   // **건너뛰기가 기본 경로다** — 잃는 것은 「지도 위 위치」 하나뿐이다 (`§E.1`)
-                  onSkipGrid: () => setGridSkipped(true),
+                  onSkipGrid: () => editRegistration(() => setGridSkipped(true)),
                   ...(gridOnly && transfer ? { transfer } : {}),
                 } } : {})}
               />
-              {registerOpen && !createdDatasetId ? <details className="up-file-management">
+              )}
+              {registerOpen && !createdDatasetId && !submitting ? <details className="up-file-management">
                 <summary>올린 파일 {picked.length}개 · 추가·변경</summary>
                 <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />
               </details> : null}
@@ -1257,10 +1297,10 @@ export function UploadModal(props: {
             {/* 등록 카드는 앞의 파일 놓기·미리보기 **아래로 그대로 이어 붙는다.**
                 옆에 요약 레일을 세우지 않는다 (§8 등록 단계 배치).
                   ⭑ ⟨PRD-28⟩ 그 「아래」가 **오른쪽 칸 안의 아래**가 됐다 — 순서는 그대로다. */}
-            {!attach && registerOpen && !createdDatasetId && (
+            {!attach && registerOpen && !createdDatasetId && !submitting && (
               <RegisterArea
                 step={step}
-                onStep={setStep}
+                onStep={(value) => editRegistration(() => setStep(value))}
                 fileName={bodyName}
                 fileCount={picked.length}
                 onRemoveFiles={() => removeFile(null)}
@@ -1268,48 +1308,50 @@ export function UploadModal(props: {
                 status={status}
                 projectSource={props.sources.projects}
                 name={name}
-                onName={setName}
+                onName={(value) => editRegistration(() => setName(value))}
                 topic={topic}
-                onTopic={setTopic}
+                onTopic={(value) => editRegistration(() => setTopic(value))}
                 summary={summary}
-                onSummary={setSummary}
+                onSummary={(value) => editRegistration(() => setSummary(value))}
                 variables={variables}
-                onVariables={setVariables}
-                onVariablesBlocked={setVariableNotice}
+                onVariables={(value) => editRegistration(() => setVariables(value))}
+                onVariablesBlocked={(value) => editRegistration(() => setVariableNotice(value))}
                 crs={crs}
-                onCrs={setCrs}
+                onCrs={(value) => editRegistration(() => setCrs(value))}
                 gridDescription={gridDescription}
-                onGridDescription={setGridDescription}
+                onGridDescription={(value) => editRegistration(() => setGridDescription(value))}
                 granularity={granularity}
-                onGranularity={setGranularity}
+                onGranularity={(value) => editRegistration(() => setGranularity(value))}
                 startParts={startParts}
-                onStartParts={setStartParts}
+                onStartParts={(value) => editRegistration(() => setStartParts(value))}
                 endParts={endParts}
-                onEndParts={setEndParts}
+                onEndParts={(value) => editRegistration(() => setEndParts(value))}
                 intervalValue={intervalValue}
-                onIntervalValue={setIntervalValue}
+                onIntervalValue={(value) => editRegistration(() => setIntervalValue(value))}
                 intervalUnit={intervalUnit}
-                onIntervalUnit={setIntervalUnit}
+                onIntervalUnit={(value) => editRegistration(() => setIntervalUnit(value))}
                 sourceLabel={sourceLabel}
-                onSourceLabel={setSourceLabel}
+                onSourceLabel={(value) => editRegistration(() => setSourceLabel(value))}
                 sourceUrl={sourceUrl}
-                onSourceUrl={setSourceUrl}
+                onSourceUrl={(value) => editRegistration(() => setSourceUrl(value))}
                 sourceDownloadedOn={sourceDownloadedOn}
                 onSourceDownloadedOn={(v) => {
-                  setSourceDownloadedOn(v);
-                  setSourceDownloadedOnError(null);
+                  editRegistration(() => {
+                    setSourceDownloadedOn(v);
+                    setSourceDownloadedOnError(null);
+                  });
                 }}
                 sourceDownloadedOnError={sourceDownloadedOnError}
                 projects={projects}
-                onProjects={setProjects}
+                onProjects={(value) => editRegistration(() => setProjects(value))}
                 category={category}
-                onCategory={setCategory}
+                onCategory={(value) => editRegistration(() => setCategory(value))}
                 dataType={dataType}
-                onDataType={setDataType}
+                onDataType={(value) => editRegistration(() => setDataType(value))}
                 level={level}
-                onLevel={setLevel}
+                onLevel={(value) => editRegistration(() => setLevel(value))}
                 accessState={accessState}
-                onAccessState={setAccessState}
+                onAccessState={(value) => editRegistration(() => setAccessState(value))}
                 nameError={nameError}
                 summaryError={summaryError}
                 registerError={registerError}
@@ -1324,6 +1366,17 @@ export function UploadModal(props: {
                 onSubmit={() => void submit()}
               />
             )}
+            {!attach && registerOpen && !createdDatasetId && submitting ? (
+              <div className="card is-on" data-testid="up-create-pending" aria-busy="true">
+                <div className="card-h">
+                  <h3>데이터셋 만드는 중…</h3>
+                  <span className="sub">입력한 내용을 그대로 저장하고 있어요.</span>
+                </div>
+                <div className="card-b" role="status">
+                  완료될 때까지 등록 정보와 원본 파일을 바꿀 수 없어요.
+                </div>
+              </div>
+            ) : null}
             {!attach && registerOpen && createdDatasetId ? (
               <div className="card is-on" data-testid="up-created-recovery">
                 <div className="card-h">
