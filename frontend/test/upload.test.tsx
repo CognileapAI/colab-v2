@@ -105,6 +105,7 @@ function fakes(
     suggestionsThrows?: unknown;
     candidates?: DatasetRow[];
     representativeThrowsUntil?: number;
+    representativeError?: unknown;
   } = {},
 ) {
   let release: () => void = () => {};
@@ -198,7 +199,7 @@ function fakes(
     async putRepresentativeImage(datasetId, file) {
       calls.representativeImages.push({ datasetId, file });
       if (calls.representativeImages.length <= (over.representativeThrowsUntil ?? 0)) {
-        throw new Error('image offline');
+        throw over.representativeError ?? new Error('image offline');
       }
     },
     async attachGrid(datasetId, uploadId) {
@@ -1209,6 +1210,41 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
     expect(calls.representativeImages).toEqual([
       { datasetId: DATASET_ID, file: image },
       { datasetId: DATASET_ID, file: image },
+    ]);
+  });
+
+  it('대표 그림 영구 거절은 서버 이유를 보이고 같은 파일 재시도 대신 새 그림이나 자동 그림을 요구한다', async () => {
+    const rejection = Object.assign(
+      new Error('선언한 형식과 실제로 해석되는 PNG·JPEG·WebP가 같아야 한다.'),
+      { status: 415, retryable: false },
+    );
+    const { sources, calls } = fakes({ representativeThrowsUntil: 1, representativeError: rejection });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const invalid = new File(['not an image'], 'fake.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [invalid] } });
+    await openRegister();
+    await click(stepBtn('③'));
+    await click(await screen.findByTestId('reg-done'));
+
+    const recovery = await screen.findByTestId('up-created-recovery');
+    expect(within(recovery).getByRole('alert')).toHaveTextContent(rejection.message);
+    expect(within(recovery).getByRole('alert')).toHaveTextContent('새 그림을 선택하거나 자동 그림을 사용해 주세요');
+    const blocked = within(recovery).getByRole('button', { name: '새 그림을 선택해 주세요' });
+    expect(blocked).toBeDisabled();
+    fireEvent.click(blocked);
+    expect(calls.representativeImages).toEqual([{ datasetId: DATASET_ID, file: invalid }]);
+
+    const replacement = new File(['valid image'], 'valid.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('up-thumb-input'), { target: { files: [replacement] } });
+    const retry = within(recovery).getByRole('button', { name: '대표 그림 다시 저장' });
+    expect(retry).toBeEnabled();
+    await click(retry);
+    await waitFor(() => expect(screen.queryByTestId('upload-modal')).toBeNull());
+    expect(calls.register).toBe(1);
+    expect(calls.representativeImages).toEqual([
+      { datasetId: DATASET_ID, file: invalid },
+      { datasetId: DATASET_ID, file: replacement },
     ]);
   });
 
@@ -2241,6 +2277,45 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
     // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
     expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
     expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+describe('대표 그림 API 오류 계약', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('영구 입력 거절은 서버 문구와 HTTP 상태·재시도 가능 여부를 함께 보존한다', async () => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+      message: '선언한 형식과 실제로 해석되는 PNG·JPEG·WebP가 같아야 한다.',
+    }), { status: 415, headers: { 'content-type': 'application/json' } }));
+
+    await expect(apiUploadSource().putRepresentativeImage!(
+      DATASET_ID,
+      new File(['not an image'], 'fake.png', { type: 'image/png' }),
+    )).rejects.toMatchObject({
+      message: '선언한 형식과 실제로 해석되는 PNG·JPEG·WebP가 같아야 한다.',
+      status: 415,
+      retryable: false,
+    });
+  });
+
+  it('용량 초과 413도 같은 파일로 해결되지 않는 영구 입력 거절로 보존한다', async () => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({
+      code: 'PAYLOAD_TOO_LARGE',
+      message: '대표 그림은 10 MiB 이하여야 한다.',
+    }), { status: 413, headers: { 'content-type': 'application/json' } }));
+
+    await expect(apiUploadSource().putRepresentativeImage!(
+      DATASET_ID,
+      new File(['large'], 'large.png', { type: 'image/png' }),
+    )).rejects.toMatchObject({
+      message: '대표 그림은 10 MiB 이하여야 한다.',
+      status: 413,
+      retryable: false,
+    });
   });
 });
 

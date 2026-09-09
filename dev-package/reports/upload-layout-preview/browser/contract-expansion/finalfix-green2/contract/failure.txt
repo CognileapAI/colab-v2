@@ -1,0 +1,358 @@
+- generic [ref=e1] clickable [onclick]
+  - banner
+    - link "Co-Lab" [ref=e2]
+      - StaticText "Co-Lab"
+    - button "연구실 전환 · A 연구실" [ref=e3]
+      - StaticText "A 연구실"
+    - navigation "주 내비" [ref=e4]
+      - link "연구실" [ref=e16]
+        - StaticText "연구실"
+      - link "프로젝트" [ref=e17]
+        - StaticText "프로젝트"
+      - link "데이터셋" [ref=e18]
+        - StaticText "데이터셋"
+    - button "업로드" [ref=e5]
+      - StaticText "업로드"
+    - generic
+      - button "내 계정 · A 연구원" [ref=e19]
+        - StaticText "A 연구원"
+      - button "로그아웃" [ref=e20]
+  - main
+    - link "← 데이터셋 목록" [ref=e6]
+      - StaticText "←"
+      - StaticText "데이터셋 목록"
+    - heading "UI journey colab-login-7d21cc4e98-contract" [level=1, ref=e7]
+    - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+    - StaticText "Lv"
+    - StaticText "2"
+    - paragraph
+      - StaticText "고른 가공 단계는 Lv2이고, 연결한 데이터로 계산하면 Lv0이에요. 그대로 두어도 등록돼요."
+    - button "수정" [ref=e8]
+    - button "✓ 승인 요청" [ref=e9]
+    - navigation "구역" [ref=e10]
+      - list
+        - listitem [level=1]
+          - link "계보" [ref=e41]
+        - listitem [level=1]
+          - link "미리보기" [ref=e42]
+        - listitem [level=1]
+          - link "활용/접근" [ref=e43]
+    - button "다운로드" [ref=e11]
+    - button "기준 격자 추가" [ref=e12]
+    - StaticText "분류"
+    - StaticText "기상·기후 인자"
+    - StaticText "유형"
+    - StaticText "재분석자료"
+    - StaticText "가공 단계"
+    - StaticText "Lv2"
+    - StaticText "좌표계"
+    - StaticText "EPSG:4326"
+    - StaticText "기간"
+    - StaticText "2019-09-30 ~ 2019-10-07 (10분)"
+    - StaticText "격자"
+    - StaticText "사람이 적은 HDF 격자 설명"
+    - StaticText "자동 판독: "
+    - StaticText "2400x2400"
+    - StaticText "포맷"
+    - StaticText "*.hdf"
+    - StaticText "원천 표기"
+    - StaticText "실파일 검수 원천"
+    - region "설명" [ref=e13]
+      - StaticText "Actual file browser journey: MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+    - StaticText "구성"
+    - table
+      - rowgroup
+        - row
+          - columnheader "변수" [ref=e44]
+          - columnheader "단위" [ref=e45]
+          - columnheader "값 범위" [ref=e46]
+          - columnheader "결측률" [ref=e47]
+          - columnheader "대표" [ref=e48]
+      - row
+        - cell "Fpar_500m 검수" [ref=e32]
+        - cell "%" [ref=e33]
+        - cell "—" [ref=e34]
+        - cell "—" [ref=e35]
+        - cell "대표 1" [ref=e36]
+          - radio "대표 1" [checked=true, disabled, ref=e49]
+    - StaticText "소유자"
+    - StaticText "A 연구원"
+    - StaticText "올린 사람"
+    - StaticText "A 연구원"
+    - StaticText "파일"
+    - generic
+      - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf · 9 MB"
+      - button "보기" [ref=e21]
+    - StaticText "파일"
+    - button "파일 관리" [expanded=false, ref=e14]
+    - LabelText [ref=e15] clickable [cursor:pointer]
+      - StaticText "파일 추가"
+      - button "파일 추가" [ref=e22]: No file chosen
+    - generic
+      - heading "계보 · 족보" [level=2, ref=e23]
+      - StaticText "가공 방식은 화살표 라벨 · 데이터 상자를 누르면 그 상세로 가요"
+      - button "계보 수정 · 추가" [ref=e24]
+      - generic
+        - StaticText "원천"
+        - StaticText "실파일 검수 원천"
+      - link "Lv2 이 데이터 UI journey colab-login-7d21cc4e98-contract ›" [ref=e25]
+        - StaticText "Lv"
+        - StaticText "2"
+        - StaticText "이 데이터"
+        - StaticText "UI journey colab-login-7d21cc4e98-contract"
+        - StaticText "›"
+      - link "활용 프로젝트 2건 ›" [ref=e26]
+        - StaticText "활용 프로젝트 2건 ›"
+      - StaticText "원천"
+      - StaticText "실파일 검수 원천"
+      - StaticText "연구실 밖 출처 표기라 열어 볼 상세 화면이 없어요"
+      - StaticText "이 데이터"
+      - StaticText "UI journey colab-login-7d21cc4e98-contract"
+      - StaticText "Lv"
+      - StaticText "2"
+      - generic [ref=e27] clickable [onclick]
+        - dialog "계보 수정 · 추가"
+          - heading "계보 수정 · 추가" [level=3, ref=e50]
+          - button "계보 수정 닫기" [ref=e51]
+            - StaticText "×"
+          - generic
+            - LabelText
+              - StaticText "이름·파일명"
+              - searchbox "데이터셋 이름 또는 파일명 검색" [ref=e61]
+            - LabelText
+              - StaticText "분류"
+              - combobox "분류" [expanded=false, ref=e62]: 분류 전체
+                - MenuListPopup
+                  - option "분류 전체" [selected, ref=e93]
+                  - option "수문 인자" [ref=e94]
+                  - option "기상·기후 인자" [ref=e95]
+                  - option "식생·탄소 인자" [ref=e96]
+                  - option "사회·경제 인자" [ref=e97]
+                  - option "환경 인자" [ref=e98]
+            - LabelText
+              - StaticText "주제"
+              - combobox "주제" [expanded=false, ref=e63]: 주제 전체
+                - MenuListPopup
+                  - option "주제 전체" [selected, ref=e99]
+                  - option "강우·강수" [ref=e100]
+                  - option "식생·NDVI" [ref=e101]
+                  - option "지형·DEM" [ref=e102]
+                  - option "토지피복·LULC" [ref=e103]
+                  - option "가뭄" [ref=e104]
+                  - option "파일 포맷 예제" [ref=e105]
+            - LabelText
+              - StaticText "가공 단계"
+              - combobox "가공 단계" [expanded=false, ref=e64]: 전체
+                - MenuListPopup
+                  - option "전체" [selected, ref=e106]
+                  - option "Lv0" [ref=e107]
+                  - option "Lv1" [ref=e108]
+                  - option "Lv2" [ref=e109]
+                  - option "Lv3" [ref=e110]
+            - LabelText
+              - StaticText "기간 시작"
+              - Date "후보 기간 시작"
+                - generic
+                  - spinbutton "Month Month" [ref=e111]: 0
+                    - StaticText "mm"
+                  - StaticText "/"
+                  - spinbutton "Day Day" [ref=e112]: 0
+                    - StaticText "dd"
+                  - StaticText "/"
+                  - spinbutton "Year Year" [ref=e113]: 0
+                    - StaticText "yyyy"
+                - button "Show date picker" [ref=e65]
+            - LabelText
+              - StaticText "기간 끝"
+              - Date "후보 기간 끝"
+                - generic
+                  - spinbutton "Month Month" [ref=e114]: 0
+                    - StaticText "mm"
+                  - StaticText "/"
+                  - spinbutton "Day Day" [ref=e115]: 0
+                    - StaticText "dd"
+                  - StaticText "/"
+                  - spinbutton "Year Year" [ref=e116]: 0
+                    - StaticText "yyyy"
+                - button "Show date picker" [ref=e66]
+            - list
+              - listitem [level=1]
+                - button "페이지 후보 27 Lv0" [ref=e67]
+                  - StaticText "페이지 후보 27 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 26 Lv0" [ref=e68]
+                  - StaticText "페이지 후보 26 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 25 Lv0" [ref=e69]
+                  - StaticText "페이지 후보 25 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 24 Lv0" [ref=e70]
+                  - StaticText "페이지 후보 24 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 23 Lv0" [ref=e71]
+                  - StaticText "페이지 후보 23 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 22 Lv0" [ref=e72]
+                  - StaticText "페이지 후보 22 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 21 Lv0" [ref=e73]
+                  - StaticText "페이지 후보 21 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 20 Lv0" [ref=e74]
+                  - StaticText "페이지 후보 20 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 19 Lv0" [ref=e75]
+                  - StaticText "페이지 후보 19 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 18 Lv0" [ref=e76]
+                  - StaticText "페이지 후보 18 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 17 Lv0" [ref=e77]
+                  - StaticText "페이지 후보 17 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 16 Lv0" [ref=e78]
+                  - StaticText "페이지 후보 16 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 15 Lv0" [ref=e79]
+                  - StaticText "페이지 후보 15 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 14 Lv0" [ref=e80]
+                  - StaticText "페이지 후보 14 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 13 Lv0" [ref=e81]
+                  - StaticText "페이지 후보 13 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 12 Lv0" [ref=e82]
+                  - StaticText "페이지 후보 12 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 11 Lv0" [ref=e83]
+                  - StaticText "페이지 후보 11 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 10 Lv0" [ref=e84]
+                  - StaticText "페이지 후보 10 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 09 Lv0" [ref=e85]
+                  - StaticText "페이지 후보 09 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 08 Lv0" [ref=e86]
+                  - StaticText "페이지 후보 08 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 07 Lv0" [ref=e87]
+                  - StaticText "페이지 후보 07 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 06 Lv0" [ref=e88]
+                  - StaticText "페이지 후보 06 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 05 Lv0" [ref=e89]
+                  - StaticText "페이지 후보 05 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 04 Lv0" [ref=e90]
+                  - StaticText "페이지 후보 04 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+              - listitem [level=1]
+                - button "페이지 후보 03 Lv0" [ref=e91]
+                  - StaticText "페이지 후보 03 Lv0"
+                - paragraph
+                  - StaticText "강우·강수"
+            - button "다음 결과 보기" [ref=e57]
+            - paragraph
+              - StaticText "이을 가공 전 데이터를 먼저 골라 주세요."
+          - button "취소" [ref=e52]
+          - button "연결 추가" [disabled, ref=e53]
+    - generic
+      - region "대표 그림" [ref=e28]
+        - heading "대표 그림" [level=2, ref=e37]
+        - StaticText "사용자 그림이 없으면 아래 자동 미리보기를 사용해요."
+        - image "사용자 대표 그림"
+        - LabelText [ref=e38] clickable [cursor:pointer]
+          - StaticText "그림 고르기"
+          - button "그림 고르기" [ref=e54]: No file chosen
+        - button "자동 그림 사용" [ref=e39]
+      - region "미리보기" [ref=e29]
+        - heading "미리보기 — UI journey colab-login-7d21cc4e98-contract" [level=2, ref=e40]
+          - StaticText "미리보기 — UI journey colab-login-7d21cc4e98-contract"
+        - paragraph
+          - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+        - paragraph
+          - StaticText "격자 2400x2400"
+        - generic "그릴 것 고르기"
+          - LabelText
+            - StaticText "파일"
+            - combobox "파일 1" [expanded=false, disabled, ref=e58]: MOD15A2H.A2019273.h27v05.061.2020313082826.hdf
+              - MenuListPopup
+                - option "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf" [disabled, ref=e92]
+            - StaticText "1"
+          - LabelText
+            - StaticText "변수"
+            - combobox "변수" [expanded=false, disabled, ref=e59]
+              - MenuListPopup
+          - LabelText
+            - StaticText "시각"
+            - combobox "시각" [expanded=false, disabled, ref=e60]
+              - MenuListPopup
+        - paragraph
+    - generic
+      - heading "어떻게 쓰였나 · 가져가기" [level=2, ref=e30]
+      - paragraph
+        - StaticText "이 데이터를 쓴 과제·논문 2건"
+      - list
+        - listitem [level=1]
+          - link "A 논문" [ref=e55]
+          - StaticText "논문"
+          - StaticText "2026.03~"
+        - listitem [level=1]
+          - link "실파일 프로젝트 colab-login-7d21cc4e98-contract" [ref=e56]
+          - StaticText "국가과제"
+      - paragraph
+        - StaticText "공개 범위 · 연구실 구성원 전체 — 연구실 안 누구나 뷰·다운로드"
+      - button "다운로드 · 9 MB" [ref=e31]
+        - StaticText "다운로드 · 9 MB"
+      - paragraph
+        - StaticText "업로드할 때 정한 값이에요 · 올린 사람과 연구실 설정 권한자가 바꿀 수 있어요."

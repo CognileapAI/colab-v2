@@ -12,6 +12,27 @@ import type {
   LineageSuggestionResponse,
 } from './types';
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** `type=date` 값을 서버가 요구하는 시간대 있는 UTC 구간 경계로 바꾼다. */
+export function lineagePeriodStart(value: string): string {
+  return DATE_ONLY.test(value) ? `${value}T00:00:00.000Z` : value;
+}
+
+export function lineagePeriodEnd(value: string): string {
+  // PostgreSQL timestamptz의 마이크로초 정밀도까지 해당 UTC일에 포함한다.
+  return DATE_ONLY.test(value) ? `${value}T23:59:59.999999Z` : value;
+}
+
+function candidateQuery(input: LineageCandidateQuery): LineageCandidateQuery {
+  const { periodStart, periodEnd, ...rest } = input;
+  return {
+    ...rest,
+    ...(periodStart ? { periodStart: lineagePeriodStart(periodStart) } : {}),
+    ...(periodEnd ? { periodEnd: lineagePeriodEnd(periodEnd) } : {}),
+  };
+}
+
 export function apiLineageSource(): LineageSource {
   return {
     async suggestions(uploadId, q): Promise<LineageSuggestionResponse> {
@@ -33,7 +54,7 @@ export function apiLineageSource(): LineageSource {
       const query: LineageCandidateQuery = typeof input === 'number'
         ? { processingLevel: input }
         : input ?? {};
-      const r = await api.GET('/lineage-candidates', { params: { query } });
+      const r = await api.GET('/lineage-candidates', { params: { query: candidateQuery(query) } });
       if (!r.data) throw new Error('연구실 데이터 목록을 읽지 못했어요.');
       return r.data;
     },

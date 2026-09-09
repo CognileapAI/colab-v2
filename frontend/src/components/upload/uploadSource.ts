@@ -20,6 +20,17 @@ import {
 /** 서버가 한 번 501 을 냈으면(저장 모드 local) 매번 다시 두드리지 않는다. */
 let transferUnavailable = false;
 
+/** 대표 그림 API가 답한 실패의 문구와 재시도 성격을 화면까지 보존한다. */
+export class RepresentativeImageUploadError extends Error {
+  readonly retryable: boolean;
+
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'RepresentativeImageUploadError';
+    this.retryable = ![400, 413, 415, 422].includes(status);
+  }
+}
+
 export function apiUploadSource(): UploadSource {
   return {
     async create(files: PickedFile[], opts?: UploadCreateOptions) {
@@ -95,7 +106,10 @@ export function apiUploadSource(): UploadSource {
       });
       if (!r.data) {
         const message = (r.error as { message?: unknown } | undefined)?.message;
-        throw new Error(typeof message === 'string' && message ? message : '대표 그림을 저장하지 못했어요.');
+        throw new RepresentativeImageUploadError(
+          typeof message === 'string' && message ? message : '대표 그림을 저장하지 못했어요.',
+          r.response.status,
+        );
       }
       return r.data;
     },

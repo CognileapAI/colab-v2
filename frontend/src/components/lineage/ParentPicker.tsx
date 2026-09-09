@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ESC_LAYER_ATTR, useEscLayer } from '../upload/escLayer';
 import { CATEGORIES } from '../upload/axisDict';
 import { TOPICS } from '../upload/types';
+import { lineagePeriodEnd, lineagePeriodStart } from './lineageSource';
 import {
   LV_VALUES,
   displayLevel,
@@ -61,8 +62,8 @@ export function ParentPicker(props: {
       ...(values.q.trim() ? { q: values.q.trim() } : {}),
       ...(values.topic ? { topic: values.topic } : {}),
       ...(values.category ? { category: values.category } : {}),
-      ...(values.periodStart ? { periodStart: values.periodStart } : {}),
-      ...(values.periodEnd ? { periodEnd: values.periodEnd } : {}),
+      ...(values.periodStart ? { periodStart: lineagePeriodStart(values.periodStart) } : {}),
+      ...(values.periodEnd ? { periodEnd: lineagePeriodEnd(values.periodEnd) } : {}),
       ...(values.processingLevel !== null ? { processingLevel: values.processingLevel } : {}),
       limit: 25,
     });

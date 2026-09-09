@@ -44,6 +44,19 @@ def run(command, args, session):
         command('screenshot', str(out / (name + '.png')))
     def drawn(selector):
         command('wait', '--fn', f'Array.from(document.querySelectorAll({json.dumps(selector)})).some(i=>i.complete && i.naturalWidth>0)')
+    def pick_native_date(index, *keys):
+        interactive = command('snapshot', '-i')
+        buttons = re.findall(r'button "Show date picker" \[ref=(e\d+)\]', interactive)
+        if len(buttons) <= index:
+            raise AssertionError('native date picker button is unavailable')
+        command('click', '@' + buttons[index])
+        for key in keys:
+            command('press', key)
+        command('press', 'Enter')
+    def clear_native_date(label):
+        command('focus', f'[aria-label="{label}"]')
+        command('press', 'Control+A')
+        command('press', 'Backspace')
     def scoped_dataset_rows(dataset_name):
         engine = create_engine(os.environ['E2E_DATABASE_URL'], pool_pre_ping=True, future=True)
         try:
@@ -65,8 +78,55 @@ def run(command, args, session):
                 return [dict(row) for row in rows]
         finally:
             engine.dispose()
+    def configure_lineage_candidates():
+        """UTC 기간 경계와 서버 cursor를 실제 API로 검증할 격리 시드만 준비한다."""
+        engine = create_engine(os.environ['E2E_DATABASE_URL'], pool_pre_ping=True, future=True)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text("SELECT set_config('app.current_lab', :value, true)"),
+                                   {'value': '0000000000000000000000000A'})
+                connection.execute(text("SELECT set_config('app.current_account', :value, true)"),
+                                   {'value': '000000000000000000000000A1'})
+                connection.execute(text("""
+                    UPDATE d3_dataset_autometa
+                       SET period_start = '2026-09-09T23:59:59.999999Z',
+                           period_end = '2026-09-09T23:59:59.999999Z'
+                     WHERE dataset_id = '0000000000000000000000DSA1'
+                """))
+                connection.execute(text("""
+                    INSERT INTO d3_dataset
+                           (id, lab_id, owner_account_id, uploader_account_id,
+                            uploaded_at, last_modified_at)
+                    SELECT '0000000000000000000000PG' || lpad(n::text, 2, '0'),
+                           '0000000000000000000000000A',
+                           '00000000000000000000000AP1',
+                           '000000000000000000000000A1',
+                           '2026-08-01T00:00:00Z'::timestamptz + n * interval '1 hour',
+                           '2026-08-01T00:00:00Z'::timestamptz + n * interval '1 hour'
+                      FROM generate_series(1, 27) AS n
+                    ON CONFLICT (id) DO NOTHING
+                """))
+                connection.execute(text("""
+                    INSERT INTO d3_dataset_description
+                           (dataset_id, lab_id, name, topic, summary)
+                    SELECT '0000000000000000000000PG' || lpad(n::text, 2, '0'),
+                           '0000000000000000000000000A',
+                           '페이지 후보 ' || lpad(n::text, 2, '0'),
+                           '강우·강수', 'cursor 실제 검증'
+                      FROM generate_series(1, 27) AS n
+                    ON CONFLICT (dataset_id) DO NOTHING
+                """))
+        finally:
+            engine.dispose()
     try:
         command('set', 'viewport', '1440', '1000')
+        if contract_expansion:
+            configure_lineage_candidates()
+            evidence['lineagePeriodBoundary'] = {
+                'candidate': '2026-09-09T23:59:59.999999Z',
+                'excludedByStart': '2026-09-10',
+                'includedUtcDay': '2026-09-09',
+            }
         command('find', 'role', 'button', 'click', '--name', '업로드', '--exact')
         snap('01-empty')
         if contract_expansion:
@@ -160,12 +220,51 @@ def run(command, args, session):
             command('wait', '--fn', '!document.querySelector(\'[data-testid="reg-proj-quick"]\')')
             click('lin-add')
             if contract_expansion:
+                command('wait', '--text', '다음 결과 보기')
+                first_page_count = int(command('eval', "document.querySelectorAll('[data-testid^=lin-pick-]').length").strip())
+                if first_page_count != 25 or '페이지 후보 01' in command('get', 'text', '[data-testid="lin-picker"]'):
+                    raise AssertionError('lineage cursor first page did not stay at the server limit')
+                click_named_button('다음 결과 보기')
+                command('wait', '--text', '페이지 후보 01')
+                second_page_count = int(command('eval', "document.querySelectorAll('[data-testid^=lin-pick-]').length").strip())
+                if second_page_count <= first_page_count:
+                    raise AssertionError('lineage cursor did not append the next server page')
+                evidence['lineageCursorPaging'] = {
+                    'firstPageCount': first_page_count,
+                    'afterNextPageCount': second_page_count,
+                    'lateCandidate': '페이지 후보 01',
+                }
+                record('lineage cursor appended the next server page beyond the first 25 candidates')
                 command('fill', '[aria-label="데이터셋 이름 또는 파일명 검색"]', 'a1-body.csv')
                 command('wait', '--text', 'a1-body.csv')
                 picker = command('get', 'text', '[data-testid="lin-picker"]')
                 if 'A 강우 원자료' not in picker or 'a1-body.csv' not in picker:
                     raise AssertionError('filename search did not show the accessible DSA1 candidate and filename')
                 record('lineage candidate searched by accessible body filename and displayed DSA1 filename')
+                pick_native_date(0, 'ArrowRight')
+                if command('get', 'value', '[aria-label="후보 기간 시작"]').strip() != '2026-09-10':
+                    raise AssertionError('native start-date selection did not reach 2026-09-10')
+                command('wait', '--text', '검색 조건에 맞는 데이터가 없어요')
+                record('lineage period start excluded a candidate ending before that UTC day')
+                pick_native_date(0, 'ArrowLeft')
+                if command('get', 'value', '[aria-label="후보 기간 시작"]').strip() != '2026-09-09':
+                    raise AssertionError('native start-date selection did not reach 2026-09-09')
+                command('wait', '--text', 'a1-body.csv')
+                pick_native_date(1)
+                if command('get', 'value', '[aria-label="후보 기간 끝"]').strip() != '2026-09-09':
+                    raise AssertionError('native end-date selection did not reach 2026-09-09')
+                command('wait', '--text', 'a1-body.csv')
+                picker = command('get', 'text', '[data-testid="lin-picker"]')
+                if 'A 강우 원자료' not in picker or '2026-09-09 ~ 2026-09-09' not in picker:
+                    raise AssertionError('UTC-day period filter did not include the candidate at the final microsecond')
+                record('lineage UTC-day start/end included the candidate at 23:59:59.999999Z')
+                clear_native_date('후보 기간 시작')
+                clear_native_date('후보 기간 끝')
+                if command('get', 'value', '[aria-label="후보 기간 시작"]').strip() or command('get', 'value', '[aria-label="후보 기간 끝"]').strip():
+                    raise AssertionError('lineage period filters did not clear')
+                command('wait', '--text', 'a1-body.csv')
+                evidence['lineagePeriodCleared'] = True
+                record('clearing both lineage period conditions restored the filename-only result')
             wait('lin-pick-0000000000000000000000DSA1')
             click('lin-pick-0000000000000000000000DSA1')
             if '이 데이터로 연결' in command('snapshot'):
@@ -179,6 +278,13 @@ def run(command, args, session):
             recovery = command('snapshot')
             if '데이터셋은 만들었지만 대표 그림을 저장하지 못했어요' not in recovery:
                 raise AssertionError('invalid image did not reach the representative-image recovery state')
+            for expected in ('선언한 형식과 실제로 해석되는 PNG·JPEG·WebP가 같아야 한다.',
+                             '새 그림을 선택하거나 자동 그림을 사용해 주세요.'):
+                if expected not in recovery:
+                    raise AssertionError('representative-image recovery lost the permanent rejection guidance: ' + expected)
+            retry_disabled = command('eval', "document.querySelector('[data-testid=up-created-recovery] button').disabled").strip()
+            if retry_disabled != 'true':
+                raise AssertionError('permanently rejected representative image still offered immediate same-file retry')
             if command('eval', "Boolean(document.querySelector('[data-testid=reg-name], .up-file-management'))").strip() != 'false':
                 raise AssertionError('registration metadata or original-file management remained editable after creation')
             rows = scoped_dataset_rows(name)
@@ -188,8 +294,13 @@ def run(command, args, session):
                 'afterInvalidImage': rows,
                 'invalidImageRejected': True,
             }
+            evidence['representativeRecoveryProof'] = {
+                'serverReasonVisible': True,
+                'newImageOrAutomaticGuidanceVisible': True,
+                'sameFileRetryDisabled': True,
+            }
             snap('07-recovery')
-            record('invalid image PUT was rejected; recovery keeps exactly one created dataset and locks saved inputs')
+            record('invalid image PUT showed the server reason, required a new/automatic image, and kept one locked dataset')
             command('upload', '[data-testid="up-thumb-input"]', str(out / '04-preview.png'))
             command('find', 'role', 'button', 'click', '--name', '대표 그림 다시 저장', '--exact')
         command('wait', '--fn', '!document.querySelector(\'[data-testid="upload-modal"]\')')
@@ -278,6 +389,9 @@ def run(command, args, session):
             if 'A 강우 원자료' in command('snapshot'):
                 raise AssertionError('lineage removal did not persist')
             click('lin-edit')
+            if contract_expansion:
+                command('fill', '[aria-label="데이터셋 이름 또는 파일명 검색"]', 'a1-body.csv')
+                wait('lin-pick-0000000000000000000000DSA1')
             click('lin-pick-0000000000000000000000DSA1')
             command('fill', '[data-testid="lin-fix-method"]', '실파일 재연결 확인')
             click('lin-fix-save')

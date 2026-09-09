@@ -21,6 +21,21 @@ describe('계보 직접 찾기 복구와 선택', () => {
     expect(screen.getByText('Rain.nc')).toBeInTheDocument();
     expect(screen.queryByText(/Soil\.nc/)).toBeNull();
   });
+  it('날짜 입력은 UTC 하루의 시작과 끝을 포함하는 시간대 있는 조건으로 보낸다', () => {
+    const onSearch = vi.fn();
+    render(<ParentPicker {...props} onSearch={onSearch} onPick={vi.fn()} onClose={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText('후보 기간 시작'), { target: { value: '2025-01-01' } });
+    expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({
+      periodStart: '2025-01-01T00:00:00.000Z',
+    }));
+
+    fireEvent.change(screen.getByLabelText('후보 기간 끝'), { target: { value: '2025-12-31' } });
+    expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({
+      periodStart: '2025-01-01T00:00:00.000Z',
+      periodEnd: '2025-12-31T23:59:59.999999Z',
+    }));
+  });
   it('후보 읽기 실패를 빈 결과와 구분하고 다시 시도한다', async () => {
     const candidates = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ items: rows, nextCursor: null });
     render(<LineageFixModal datasetId="self" selfLv={2} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
@@ -144,7 +159,7 @@ it('직접 찾기는 전용 endpoint에 모든 조건을 정확히 보내고 서
     expect(calls).toHaveLength(1);
     const url = new URL(calls[0]!.url);
     expect(url.pathname).toContain('/lineage-candidates');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'rain.nc', category: '기상·기후 인자', topic: '강우', processingLevel: '1', periodStart: '2025-01-01', periodEnd: '2025-12-31', excludeDatasetId: 'self', cursor: 'cursor-1', limit: '25' });
+    expect(Object.fromEntries(url.searchParams)).toEqual({ q: 'rain.nc', category: '기상·기후 인자', topic: '강우', processingLevel: '1', periodStart: '2025-01-01T00:00:00.000Z', periodEnd: '2025-12-31T23:59:59.999999Z', excludeDatasetId: 'self', cursor: 'cursor-1', limit: '25' });
   } finally { fetcher.mockRestore(); }
 });
 it('닫힌 계보 추가 화면의 늦은 저장 응답은 다음 화면을 바꾸지 않는다', async () => {

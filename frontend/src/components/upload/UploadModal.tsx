@@ -46,6 +46,7 @@ import {
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { previewNavigation } from '../preview/handoff';
 import { forgetPending, rememberPending } from './pendingStore';
+import { RepresentativeImageUploadError } from './uploadSource';
 import {
   GridAxisTaken,
   NoResolvedGrid,
@@ -99,6 +100,19 @@ export const ANALYZE_STAGES = [
  */
 export { FILE_REMOVED_NOTICE };
 
+function representativeFailure(error: unknown): { message: string; retryBlocked: boolean } {
+  const reason = error instanceof Error ? error.message : '대표 그림을 저장하지 못했어요.';
+  const retryBlocked = error instanceof RepresentativeImageUploadError
+    ? !error.retryable
+    : typeof error === 'object' && error !== null && 'retryable' in error && error.retryable === false;
+  return {
+    retryBlocked,
+    message: retryBlocked
+      ? `데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. ${reason} 새 그림을 선택하거나 자동 그림을 사용해 주세요.`
+      : `데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. ${reason} 고른 그림을 그대로 두고 다시 시도해 주세요.`,
+  };
+}
+
 /** 파일명에서 데이터셋 이름 초안을 만든다 (`Policy §5` — 기본값 = 파일명에서 생성). */
 function nameFromFile(fileName: string): string {
   const dot = fileName.lastIndexOf('.');
@@ -141,6 +155,8 @@ export function UploadModal(props: {
   const [confirmClose, setConfirmClose] = useState(false);
   /** 실제 그림은 데이터셋 등록 뒤 별도 PUT할 때까지 모달이 보존한다. */
   const [representativeFile, setRepresentativeFile] = useState<File | null>(null);
+  /** 4xx 입력 거절 뒤 같은 파일을 곧바로 다시 보내지 않게 한다. 새 선택/자동 전환이 해제한다. */
+  const [representativeRetryBlocked, setRepresentativeRetryBlocked] = useState(false);
   /** 등록 성공 뒤 그림 PUT만 재시도하기 위한 불변 식별자. */
   const [createdDatasetId, setCreatedDatasetId] = useState<string | null>(null);
   /** 비동기 드롭 수집도 등록 완료 전 렌더의 상태를 다시 쓰지 못하게 하는 불변 표식. */
@@ -635,6 +651,7 @@ export function UploadModal(props: {
     setRendered(null);
     setGridSkipped(false);
     setRepresentativeFile(null);
+    setRepresentativeRetryBlocked(false);
     // ⭑ 세 축도 파일과 함께 **기본 선택값으로** 되돌린다 — 고지 문면이 「입력하던 내용은
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
     setCategory(DEFAULT_CATEGORY);
@@ -856,9 +873,11 @@ export function UploadModal(props: {
         if (lifecycle !== mutationLifecycle.current) return;
         props.onClose();
         navigate(`/datasets/${createdDatasetId}`);
-      } catch {
+      } catch (e) {
         if (lifecycle === mutationLifecycle.current) {
-          setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+          const failure = representativeFailure(e);
+          setRepresentativeRetryBlocked(failure.retryBlocked);
+          setRegisterError(failure.message);
         }
       } finally {
         submitLock.current = false;
@@ -956,9 +975,11 @@ export function UploadModal(props: {
           if (!upload.putRepresentativeImage) throw new Error('representative image unavailable');
           await upload.putRepresentativeImage(made.datasetId, representativeFile);
           if (lifecycle !== mutationLifecycle.current) return;
-        } catch {
+        } catch (e) {
           if (lifecycle !== mutationLifecycle.current) return;
-          setRegisterError('데이터셋은 만들었지만 대표 그림을 저장하지 못했어요. 고른 그림을 그대로 두고 다시 시도해 주세요.');
+          const failure = representativeFailure(e);
+          setRepresentativeRetryBlocked(failure.retryBlocked);
+          setRegisterError(failure.message);
           return;
         }
       }
@@ -1183,7 +1204,10 @@ export function UploadModal(props: {
                 onRepresentativeFileChange={(file) => {
                   if (submitLock.current) return;
                   setRepresentativeFile(file);
-                  if (createdDatasetId) setRegisterError(null);
+                  if (createdDatasetId) {
+                    setRepresentativeRetryBlocked(false);
+                    setRegisterError(null);
+                  }
                 }}
                 {...(!createdDatasetId ? { grid: {
                   hasGrid: hasReferenceGrid,
@@ -1392,12 +1416,14 @@ export function UploadModal(props: {
                     <button
                       type="button"
                       className="btn btn-primary"
-                      disabled={submitting}
+                      disabled={submitting || representativeRetryBlocked}
                       onClick={() => void submit()}
                     >
                       {submitting
                         ? '저장 중…'
-                        : representativeFile ? '대표 그림 다시 저장' : '자동 그림으로 완료'}
+                        : representativeRetryBlocked
+                          ? '새 그림을 선택해 주세요'
+                          : representativeFile ? '대표 그림 다시 저장' : '자동 그림으로 완료'}
                     </button>
                   </div>
                 </div>

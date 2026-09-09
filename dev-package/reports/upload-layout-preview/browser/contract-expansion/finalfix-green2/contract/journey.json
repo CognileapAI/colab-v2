@@ -1,0 +1,66 @@
+{
+  "session": "colab-login-7d21cc4e98-contract",
+  "file": "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf",
+  "bytes": 9731088,
+  "sha256": "ab7eda26634a5e2f13016acc7e1f8d0cd1daf3924bdbc58538b066b12c12e8a6",
+  "steps": [
+    "1440x1000 initial upload modal is 620px wide",
+    "actual upload and worker analysis; registration classification opened",
+    "upload render image decoded by browser",
+    "preview expanded and closed by Escape",
+    "invalid PNG bytes selected before dataset creation",
+    "lineage cursor appended the next server page beyond the first 25 candidates",
+    "lineage candidate searched by accessible body filename and displayed DSA1 filename",
+    "lineage period start excluded a candidate ending before that UTC day",
+    "lineage UTC-day start/end included the candidate at 23:59:59.999999Z",
+    "clearing both lineage period conditions restored the filename-only result",
+    "invalid image PUT showed the server reason, required a new/automatic image, and kept one locked dataset",
+    "valid PNG retry stored on the same dataset and decoded as the custom image",
+    "custom representative image remains decoded after detail reload",
+    "registered name, description and source filename persist after reload; rendered image visible",
+    "human grid description is primary and automatic analysis remains supporting text",
+    "actual map zoom, reset and cursor latitude/longitude work",
+    "project, lineage method, source and observation interval persist",
+    "parent lineage node navigates to its actual dataset"
+  ],
+  "lineagePeriodBoundary": {
+    "candidate": "2026-09-09T23:59:59.999999Z",
+    "excludedByStart": "2026-09-10",
+    "includedUtcDay": "2026-09-09"
+  },
+  "initialModalWidthPx": 620,
+  "lineageCursorPaging": {
+    "firstPageCount": 25,
+    "afterNextPageCount": 29,
+    "lateCandidate": "페이지 후보 01"
+  },
+  "lineagePeriodCleared": true,
+  "datasetCreateProof": {
+    "afterInvalidImage": [
+      {
+        "id": "01M229Z0HX85N3AJF9NBNKA581",
+        "human_grid_description": "사람이 적은 HDF 격자 설명",
+        "representative_images": 0
+      }
+    ],
+    "invalidImageRejected": true,
+    "afterValidRetry": [
+      {
+        "id": "01M229Z0HX85N3AJF9NBNKA581",
+        "human_grid_description": "사람이 적은 HDF 격자 설명",
+        "representative_images": 1
+      }
+    ]
+  },
+  "representativeRecoveryProof": {
+    "serverReasonVisible": true,
+    "newImageOrAutomaticGuidanceVisible": true,
+    "sameFileRetryDisabled": true
+  },
+  "url": "http://127.0.0.1:43173/datasets/01M229Z0HX85N3AJF9NBNKA581",
+  "gridBeforeClear": {
+    "human": "사람이 적은 HDF 격자 설명",
+    "automatic": "자동 판독: 2400x2400"
+  },
+  "failure": "✗ Element not found. Verify the selector is correct and the element exists in the DOM.\n"
+}

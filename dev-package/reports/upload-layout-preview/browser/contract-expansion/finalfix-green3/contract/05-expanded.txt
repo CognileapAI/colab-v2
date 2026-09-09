@@ -1,0 +1,219 @@
+- generic [ref=e1] clickable [onclick]
+  - banner
+    - link "Co-Lab" [ref=e2]
+      - StaticText "Co-Lab"
+    - button "연구실 전환 · A 연구실" [ref=e3]
+      - StaticText "A 연구실"
+    - navigation "주 내비" [ref=e4]
+      - link "연구실" [ref=e8]
+        - StaticText "연구실"
+      - link "프로젝트" [ref=e9]
+        - StaticText "프로젝트"
+      - link "데이터셋" [ref=e10]
+        - StaticText "데이터셋"
+    - button "업로드" [ref=e5]
+      - StaticText "업로드"
+    - generic [ref=e6] clickable [onclick]
+      - dialog "업로드"
+        - heading "업로드" [level=3, ref=e19]
+        - StaticText "A 연구실"
+        - StaticText "에 올려요"
+        - button "업로드 닫기" [ref=e20]
+          - StaticText "×"
+        - generic
+          - generic
+            - generic
+              - StaticText "미리보기"
+              - button "미리보기 크게 보기" [ref=e61]
+                - StaticText "⤢"
+            - group
+              - DisclosureTriangle "미리보기 설정 · 대표 그림" [expanded=false]
+                - StaticText "미리보기 설정 · 대표 그림"
+            - StaticText "위경도를 담은 짝 파일이 없어요."
+            - StaticText "파일 안에 위경도가 들어 있으면 그려져요. 등록은 막지 않아요."
+            - button "짝 파일 없이 그려 보기" [ref=e42]
+            - generic
+              - generic "그릴 것 고르기"
+                - LabelText
+                  - StaticText "파일"
+                  - combobox "파일 1" [expanded=false, disabled, ref=e70]: MOD15A2H.A2019273.h27v05.061.2020313082826.hdf
+                    - MenuListPopup
+                      - option "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf" [disabled, ref=e73]
+                  - StaticText "1"
+                - LabelText
+                  - StaticText "변수"
+                  - combobox "변수" [expanded=false, ref=e71]: Fpar_500m
+                    - MenuListPopup
+                      - option "Fpar_500m" [selected, ref=e74]
+                      - option "Lai_500m" [ref=e75]
+                      - option "FparLai_QC" [ref=e76]
+                      - option "FparExtra_QC" [ref=e77]
+                      - option "FparStdDev_500m" [ref=e78]
+                      - option "LaiStdDev_500m" [ref=e79]
+                - LabelText
+                  - StaticText "시각"
+                  - combobox "시각" [expanded=false, disabled, ref=e72]
+                    - MenuListPopup
+              - StaticText "투영 계산 격자"
+              - StaticText "지도형 미리보기"
+              - image "미리보기"
+              - button "확대" [ref=e62]
+              - button "축소" [ref=e63]
+              - button "기본 배율로" [ref=e64]
+              - generic
+                - StaticText "잠정"
+                - StaticText "지금 색 범위는 잠정입니다 — 등록하면 색이 달라질 수 있습니다."
+            - generic [ref=e43] clickable [onclick]
+              - dialog "미리보기"
+                - heading "미리보기" [level=3, ref=e65]
+                - button "확장보기 닫기" [ref=e66]
+                  - StaticText "×"
+                - button "확대" [ref=e67]
+                - button "축소" [ref=e68]
+                - button "기본 배율로" [ref=e69]
+          - group
+            - DisclosureTriangle "올린 파일 1개 · 추가·변경" [expanded=false]
+              - StaticText "올린 파일 1개 · 추가·변경"
+        - button "① 분류" [ref=e21]
+        - button "② 메타데이터 입력" [ref=e22]
+        - button "③ 연결" [ref=e23]
+        - StaticText "MOD15A2H.A2019273.h27v05.061.2020313082826.hdf"
+        - button "올린 파일 모두 빼기" [ref=e24]
+          - StaticText "×"
+        - heading "① 분류" [level=3, ref=e25]
+        - StaticText "목록 필터가 이 세 축을 그대로 받아요"
+        - LabelText
+          - StaticText "분류"
+          - StaticText "필수"
+        - combobox "분류 필수" [expanded=false, ref=e26]: 기상·기후 인자 (Meteorological & Climatic Factors)
+          - MenuListPopup
+            - option "아직 고르지 않음" [ref=e44]
+            - option "수문 인자 (Hydrological Factors)" [ref=e45]
+            - option "기상·기후 인자 (Meteorological & Climatic Factors)" [selected, ref=e46]
+            - option "식생·탄소 인자 (Vegetation & Carbon Factors)" [ref=e47]
+            - option "사회·경제 인자 (Socio-Economic Factors)" [ref=e48]
+            - option "환경 인자 (Environmental Factors)" [ref=e49]
+        - paragraph
+          - StaticText "기상 조건 및 기후변동성과 관련 자료 · 예: 강수량, 기온"
+        - LabelText
+          - StaticText "유형"
+          - StaticText "필수"
+        - combobox "유형 필수" [expanded=false, ref=e27]: 재분석자료 (Reanalysis Data)
+          - MenuListPopup
+            - option "아직 고르지 않음" [ref=e50]
+            - option "지상관측자료 (In-situ Observation)" [ref=e51]
+            - option "위성자료 (Satellite-based Data)" [ref=e52]
+            - option "재분석자료 (Reanalysis Data)" [selected, ref=e53]
+            - option "수치모형자료 (Numerical Model Output)" [ref=e54]
+            - option "합성자료 (Fused / Blended Data)" [ref=e55]
+            - option "관측 기반 산출물 (Derived Observation Products)" [ref=e56]
+        - paragraph
+          - StaticText "관측자료 + 수치모형을 동화한 격자 기반 통계-물리 결합 자료 · 예: ERA5, NCEP/NCAR, KMA LDAPS, KLAPS"
+        - paragraph
+          - StaticText "참고 · 시계열 일관성 우수, 시간 지연(latency) 존재"
+        - LabelText
+          - StaticText "가공 단계"
+          - StaticText "필수"
+        - combobox "가공 단계 필수" [expanded=false, ref=e28]: Lv2 · 도출된 2차 산출물
+          - MenuListPopup
+            - option "Lv0 · 원시 데이터" [ref=e57]
+            - option "Lv1 · 기초 전처리 완료 자료" [ref=e58]
+            - option "Lv2 · 도출된 2차 산출물" [selected, ref=e59]
+            - option "Lv3 · 유형화 및 고차 분석 결과" [ref=e60]
+        - paragraph
+          - StaticText "도출된 2차 산출물 · 예: SPI, PDSI, NDVI 변형"
+          - LineBreak "\n"
+          - StaticText "산출 방법(논문/수식)"
+        - generic
+          - button "등록 취소" [ref=e34]
+          - StaticText "분류를 고르고 다음에서 데이터 정보를 입력하세요"
+          - button "다음 →" [ref=e35]
+    - generic
+      - button "내 계정 · A 연구원" [ref=e11]
+        - StaticText "A 연구원"
+      - button "로그아웃" [ref=e12]
+  - main
+    - generic
+      - heading "찾을 것이 정해져 있으면 물어보세요" [level=1, ref=e13]
+      - search
+        - textbox "검색 질문" [ref=e29]
+        - button "찾기" [ref=e30]
+      - paragraph
+        - StaticText "이 검색은 데이터에 적혀 있는 낱말 그대로 찾아요. 「강수량」으로는 「강수」가 적힌 데이터가 나오지 않으니, 적혀 있을 법한 말로 물어보세요."
+    - button "우리 연구실 " [ref=e7]
+    - generic
+      - heading "우리 연구실 데이터 맵" [level=2, ref=e14]
+      - button "전체 목록 보기 →" [ref=e15]
+      - list
+        - listitem [level=1]
+          - button "확정 1" [ref=e36]
+            - StaticText "확정"
+            - StaticText "1"
+        - listitem [level=1]
+          - button "원천 1" [ref=e37]
+            - StaticText "원천"
+            - StaticText "1"
+          - StaticText "기록 없음이 정상"
+        - listitem [level=1]
+          - button "확인 필요 0" [ref=e38]
+            - StaticText "확인 필요"
+            - StaticText "0"
+        - listitem [level=1]
+          - button "기록 없음 0" [ref=e39]
+            - StaticText "기록 없음"
+            - StaticText "0"
+      - paragraph
+        - StaticText "확정 1 + 원천 1 = 지표의 계보 확정 2"
+      - list
+        - listitem [level=1]
+          - button "강우·강수 2" [ref=e40]
+            - StaticText "강우·강수"
+            - StaticText "2"
+      - button "데이터셋 카탈로그 열기 →" [ref=e16]
+    - list
+      - listitem [level=1]
+        - StaticText "프로젝트"
+        - strong
+          - StaticText "1"
+      - listitem [level=1]
+        - StaticText "데이터셋"
+        - strong
+          - StaticText "2"
+      - listitem [level=1]
+        - button "계보 확정 → 2 미확정 0건" [ref=e31]
+          - StaticText "계보 확정 →"
+          - strong
+            - StaticText "2"
+          - StaticText "미확정 0건"
+      - listitem [level=1]
+        - StaticText "Verified"
+        - strong
+          - StaticText "1"
+    - generic
+      - heading "최근 활동" [level=2, ref=e17]
+      - StaticText "최근 "
+      - StaticText "3"
+      - StaticText "건"
+      - list
+        - listitem [level=1]
+          - button "A 강우 원자료 내가 데이터셋 등록 오늘" [ref=e41]
+            - StaticText "A 강우 원자료"
+            - StaticText "내가 데이터셋 등록"
+            - time
+              - StaticText "오늘"
+      - paragraph
+        - StaticText "내가 열어 본 기록은 이 기기에만 남아요. 다른 기기에서는 연구실 활동만 보여요."
+    - paragraph
+      - StaticText "내 일"
+    - generic
+      - heading "할 일 함" [level=2, ref=e18]
+      - StaticText "0"
+      - StaticText "건"
+      - generic
+        - heading "계보 확인 대기 0건" [level=3, ref=e32]
+          - StaticText "계보 확인"
+          - StaticText "대기 0건"
+        - paragraph
+          - StaticText "확인할 계보가 없어요."
+        - button "계보 확인이 필요한 데이터 0건 전부 보기 →" [ref=e33]
+          - StaticText "계보 확인이 필요한 데이터 0건 전부 보기 →"
