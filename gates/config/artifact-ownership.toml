@@ -10,8 +10,27 @@
 [exempt]
 # **고아 등급인데 회수하지 않고 두는 산출물**의 캐시 키. 이름으로 적는다.
 # 여기 없는 고아가 나오면 게이트는 red 다 — 판정을 미루는 자리를 열어 두지 않는다.
-keys = []
-reason = "고아 등급 면제 0건 — 선언은 있고 면제는 없다 (2026-09-02 · lane-a1b 개설분)"
+keys = [
+  "06d89f473dfa574a0158848c90ff8fd5aecf4e62dd085fe894c394789b6a2980",
+  "3f4981f1701bd03e24834d3434a8e146b3f6a56d31b1077bfabb02885b47a82c",
+  "4755cc8e475d74397c0d80c2ad25c89d2f1e6fda3c5f3e7d3b8cedbda7b0cf80",
+  "5803f23566e34ee9ed40d87f7cb872c635b276916948ae52aa8149f287d4e64b",
+  "6b325183605618e38af5f696a8c662147f88529b80a76fcbdcace3d2746cf6a5",
+  "777eda592cb96bbab73a32de0508bea0b0c777eeb06dbbb9077eecc4fdd45ff5",
+  "a8419aa32c5e997ce16f7074b72711c5801fd18a16eb0a252adbb104a08c005e",
+  "b19458cb98560eac1db2035690e216bd21dfe8f5ecd4c5ae8f882eda1b0c6981",
+  "e0c856826086d61f62728dd363c5d66f5e7c481beab3eb5eb33818b4778b73e8",
+]
+reason = """
+2026-09-10 미리보기 배포 전 기존 캐시 증거 보존: 2026-09-08 생성된 정확히 9키,
+19파일, 1,624,447 bytes. v2 source 기록은 원장 양쪽에 없으며 생성 주체는 미확인이다.
+원본 기록이 없는 상태에서 이미지 바이트를 잃지 않도록 현재 배포 오케스트레이터가 보존을 결정했다.
+08:49:25 KST 읽기 전용 스냅샷 SHA256:
+d7090fc72c0527833ed596fbdc8d6fbc531d3e53195447dd6fac3ee5139d6abf
+근거·책임·종료 조건: dev-package/sessions/20260910-preview-deploy-retention.md.
+원본 행 복원 또는 별도 회수 승인 시 해당 키를 재분류하고 보존 선언을 해제한다.
+이름이 없는 새 고아는 계속 red다. 파일·DB 삭제는 수행하지 않는다.
+"""
 
 [legacy]
 # **구판(판정 보류)** — `sidecarVersion`·`baked_for` 가 없는 사이드카.
