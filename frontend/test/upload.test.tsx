@@ -8,7 +8,7 @@
  *
  * fireEvent 를 쓴다 — user-event 를 새로 들이지 않는다(집 관례, `test/members.test.tsx`).
  */
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
@@ -101,6 +101,10 @@ function fakes(
     createThrowsUntil?: number;
     /** 접수 중 진행률을 한 번 흘리고 **전송을 붙잡는다** — `release()` 를 불러야 끝난다. */
     progress?: { sentBytes: number; totalBytes: number };
+    /** 진행 이벤트가 아직 없는 초기 구간을 재현한다. */
+    holdCreate?: boolean;
+    /** 진행 이벤트 뒤 실패하는 경로 — stale 표시 제거를 검증한다. */
+    createThrowsAfterProgress?: unknown;
     suggestions?: Partial<LineageSuggestionResponse>;
     suggestionsThrows?: unknown;
     candidates?: DatasetRow[];
@@ -109,6 +113,7 @@ function fakes(
   } = {},
 ) {
   let release: () => void = () => {};
+  let progressHandler: ((p: { sentBytes: number; totalBytes: number }) => void) | undefined;
   const calls = {
     create: 0,
     /** 모달이 `onProgress` 를 실제로 넘겼는가 — 배선의 유일한 증거다. */
@@ -167,6 +172,7 @@ function fakes(
     async create(files, opts) {
       calls.create += 1;
       calls.onProgressGiven = typeof opts?.onProgress === 'function';
+      progressHandler = opts?.onProgress;
       calls.createOpts.push(opts as unknown as Record<string, unknown> | undefined);
       if (over.createThrows !== undefined
           && (over.createThrowsUntil === undefined || calls.create <= over.createThrowsUntil)) {
@@ -174,8 +180,11 @@ function fakes(
       }
       if (over.progress) {
         opts?.onProgress?.(over.progress);
+      }
+      if (over.progress || over.holdCreate) {
         await new Promise<void>((r) => { release = r; });
       }
+      if (over.createThrowsAfterProgress !== undefined) throw over.createThrowsAfterProgress;
       return {
         uploadId: UPLOAD_ID,
         files: files.map((f, i) => ({
@@ -294,6 +303,8 @@ function fakes(
     calls,
     /** 붙잡아 둔 전송을 끝낸다(`progress` 를 준 경우). */
     release: () => release(),
+    /** XHR 경계가 보낸 실제 바이트 진행 이벤트를 흘린다. */
+    emitProgress: (progress: { sentBytes: number; totalBytes: number }) => progressHandler?.(progress),
   };
 }
 
@@ -1679,6 +1690,128 @@ describe('§D.7 ① 전송 진행률', () => {
     expect(bar).toHaveAttribute('value', '75');
     release();
     await act(async () => {});
+  });
+
+  it('첫 progress 이벤트 전에는 spinner와 기존 상태 문구만 보이고 가짜 퍼센트는 없다', async () => {
+    const { sources, release } = fakes({ holdCreate: true });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const status = screen.getByTestId('up-analyze');
+    expect(status).toHaveTextContent('파일 올리는 중…');
+    expect(status).not.toHaveAttribute('aria-busy');
+    expect(within(status).getByTestId('up-analyze-spinner')).toHaveClass('up-spinner');
+    expect(within(status).getByTestId('up-analyze-spinner')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.queryByText(/\d+%/)).toBeNull();
+    release();
+    await act(async () => {});
+  });
+
+  it.each([{ pct: 0 }, { pct: 75 }, { pct: 100 }])(
+    '실제 바이트 progress $pct%를 숫자·value·접근성 값으로 표시한다', async ({ pct }) => {
+      const { sources, calls, emitProgress, release } = fakes({ holdCreate: true });
+      await openModal(sources);
+      await dropFiles([makeFile('a.nc')]);
+      await waitFor(() => expect(calls.onProgressGiven).toBe(true));
+      act(() => emitProgress({ sentBytes: pct, totalBytes: 100 }));
+      const bar = screen.getByRole('progressbar', { name: '파일 바이트 전송 진행률' });
+      expect(bar).toHaveAttribute('max', '100');
+      expect(bar).toHaveAttribute('value', String(pct));
+      expect(bar).toHaveAttribute('aria-valuetext', `바이트 전송 ${pct}%`);
+      expect(screen.getByTestId('up-transfer-percent')).toHaveTextContent(`바이트 전송 ${pct}%`);
+      release();
+      await act(async () => {});
+    },
+  );
+
+  it('격자만 올리면 실제 바이트 진행률을 격자 블록만 말한다', async () => {
+    const { sources, calls, emitProgress } = fakes({ holdCreate: true });
+    await openModal(sources);
+    await dropFiles([makeFile('grid.nc')]);
+    await change(screen.getByTestId('up-file-kind'), '기준 격자 파일');
+    await waitFor(() => expect(calls.create).toBe(2));
+    act(() => emitProgress({ sentBytes: 1, totalBytes: 4 }));
+
+    expect(screen.queryByTestId('up-transfer-progress')).toBeNull();
+    const gridBar = screen.getByRole('progressbar', { name: '격자 파일 바이트 전송 진행률' });
+    expect(gridBar).toHaveAttribute('value', '25');
+    expect(screen.getByTestId('up-grid-block')).toHaveTextContent('격자 파일을 받는 중입니다.');
+  });
+
+  it('본체와 격자가 섞이면 합계 진행률을 격자 전용처럼 말하지 않는다', async () => {
+    const { sources, calls, emitProgress } = fakes({ holdCreate: true });
+    await openModal(sources);
+    await dropFiles([makeFile('body.nc'), makeFile('grid.nc')]);
+    await click(screen.getByRole('button', { name: '조각 2개 모두 보기' }));
+    await change(screen.getAllByTestId('up-file-kind')[1] ?? null, '기준 격자 파일');
+    await waitFor(() => expect(calls.create).toBe(2));
+    act(() => emitProgress({ sentBytes: 3, totalBytes: 4 }));
+
+    expect(screen.getByRole('progressbar', { name: '파일 바이트 전송 진행률' }))
+      .toHaveAttribute('value', '75');
+    expect(screen.queryByTestId('up-grid-progress')).toBeNull();
+    expect(screen.queryByText('격자 파일을 받는 중입니다.')).toBeNull();
+  });
+
+  it('100% 뒤 접수 응답을 기다리는 동안 분석 완료라고 말하지 않는다', async () => {
+    const { sources, calls, emitProgress, release } = fakes({ holdCreate: true });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await waitFor(() => expect(calls.onProgressGiven).toBe(true));
+    act(() => emitProgress({ sentBytes: 4, totalBytes: 4 }));
+    expect(screen.getByTestId('up-transfer-percent')).toHaveTextContent('바이트 전송 100%');
+    expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '1');
+    expect(screen.getByTestId('up-analyze')).toHaveTextContent('파일 올리는 중…');
+    expect(screen.getByTestId('up-analyze')).not.toHaveTextContent('분석 완료 · 확장자와 용량을 읽었어요');
+    release();
+    await act(async () => {});
+  });
+
+  it('분석 stage 2에는 spinner가 있고 stage 3에는 없다', async () => {
+    const pending = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(pending.sources);
+    await dropFiles([makeFile('pending.nc')]);
+    await waitFor(() => expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '2'));
+    expect(screen.getByTestId('up-analyze-spinner')).toHaveClass('up-spinner');
+
+    cleanup();
+    const done = fakes();
+    await openModal(done.sources);
+    await dropFiles([makeFile('done.nc')]);
+    await waitFor(() => expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '3'));
+    expect(screen.queryByTestId('up-analyze-spinner')).toBeNull();
+  });
+
+  it('progress 뒤 오류가 나면 spinner와 퍼센트가 모두 사라진다', async () => {
+    const { sources, release } = fakes({
+      progress: { sentBytes: 3, totalBytes: 4 },
+      createThrowsAfterProgress: new Error('올리다가 끊겼어요.'),
+    });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('up-transfer-progress');
+    release();
+    expect(await screen.findByTestId('up-intake-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('up-transfer-progress')).toBeNull();
+    expect(screen.queryByTestId('up-analyze-spinner')).toBeNull();
+  });
+
+  it('파일 제거와 재선택은 이전 퍼센트를 남기지 않는다', async () => {
+    const { sources, calls, emitProgress } = fakes({ holdCreate: true });
+    await openModal(sources);
+    await dropFiles([makeFile('old.nc')]);
+    await waitFor(() => expect(calls.onProgressGiven).toBe(true));
+    act(() => emitProgress({ sentBytes: 3, totalBytes: 4 }));
+    expect(screen.getByTestId('up-transfer-percent')).toHaveTextContent('75%');
+    await click(screen.getByRole('button', { name: 'old.nc 빼기' }));
+    expect(screen.queryByTestId('up-transfer-progress')).toBeNull();
+    expect(screen.queryByTestId('up-analyze-spinner')).toBeNull();
+
+    await dropFiles([makeFile('new.nc')]);
+    await waitFor(() => expect(calls.create).toBe(2));
+    expect(screen.queryByTestId('up-transfer-progress')).toBeNull();
+    expect(screen.queryByTestId('up-transfer-percent')).toBeNull();
+    expect(screen.getByTestId('up-analyze-spinner')).toBeInTheDocument();
   });
 
   it('음성 — 본체를 올리는 동안 「격자 파일을 받는 중」이라고 **말하지 않는다**', async () => {

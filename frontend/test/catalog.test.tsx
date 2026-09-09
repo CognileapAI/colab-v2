@@ -336,6 +336,17 @@ describe('§8 표 — 헤더 고정 · 스크롤 래퍼 한 곳', () => {
       expect(cs.top).toBe('0px');
     }
   });
+
+  it('열 이름 버튼은 디자인 최소 본문 크기인 14px보다 작지 않다', async () => {
+    renderCatalog();
+    await settle();
+    const head = within(screen.getAllByRole('rowgroup')[0]!);
+    const filters = head.getAllByRole('button');
+    expect(filters).toHaveLength(8);
+    for (const filter of filters) {
+      expect(Number.parseFloat(getComputedStyle(filter).fontSize)).toBeGreaterThanOrEqual(14);
+    }
+  });
 });
 
 describe('§9 조건 결과 0건', () => {

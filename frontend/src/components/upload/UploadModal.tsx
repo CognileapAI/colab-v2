@@ -450,6 +450,9 @@ export function UploadModal(props: {
   // 진행률은 본체+격자 **합계**다. 그래서 격자 블록에 그것을 넘기는 것은 **격자만 올릴 때뿐**이다
   // — 본체가 섞여 있으면 그 퍼센트는 격자의 진행이 아니고, 화면이 틀린 말을 하게 된다.
   const gridOnly = picked.length > 0 && picked.every((p) => p.kind === '기준 격자 파일');
+  const transferPct = transfer && transfer.totalBytes > 0
+    ? Math.min(100, Math.max(0, Math.round((transfer.sentBytes / transfer.totalBytes) * 100)))
+    : null;
   // 격자를 올린 뒤 워커가 축을 확정하거나 거절할 때까지 — `ready` 가 그 판정을 포함한다
   // (`〈79〉`·`§E.3b` — 「본체 감지가 끝났고 함께 올라온 격자의 축이 확정되거나 거절됐다」).
   const gridVerifying = hasReferenceGrid && status !== null && !status.ready && !status.failure;
@@ -1098,16 +1101,23 @@ export function UploadModal(props: {
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.
               위쪽 이어올리기 배너와 섞지 않는다: 그쪽은 「재개 가능」, 이쪽은 「다시 시작」이라
               사람이 할 일이 다르다. 클래스는 `RegisterArea` 의 오류와 같은 `.warn`. */}
-          {/* 전송 진행률 (`§D.7` ① — 실재·크기 비례). **문구를 붙이지 않는다** — `§E.2` 에
-              본체 전송 상태 행이 없고, 없는 문구를 지어내지 않는다(`S3.md §4`).
+          {/* 전송 진행률 (`§D.7` ① — 실재·크기 비례). 별도 상태 문구를 만들지 않고
+              값의 뜻만 `바이트 전송 N%`로 붙인다(`S3.md §4`).
               격자만 올릴 때는 격자 블록이 제 문구와 함께 그린다 — 여기서 두 번 그리지 않는다. */}
-          {transfer && !gridOnly && transfer.totalBytes > 0 && (
-            <progress
-              className="gridbar"
-              data-testid="up-transfer-progress"
-              max={100}
-              value={Math.min(100, Math.round((transfer.sentBytes / transfer.totalBytes) * 100))}
-            />
+          {transferPct !== null && !gridOnly && (
+            <div className="up-transfer-meter">
+              <progress
+                className="gridbar"
+                data-testid="up-transfer-progress"
+                aria-label="파일 바이트 전송 진행률"
+                aria-valuetext={`바이트 전송 ${transferPct}%`}
+                max={100}
+                value={transferPct}
+              />
+              <span className="up-transfer-percent" data-testid="up-transfer-percent">
+                바이트 전송 {transferPct}%
+              </span>
+            </div>
           )}
 
           {/* ① 파일 분석 3단계 — 바이트 진행 바가 못 말하는 구간을 말한다 (rev1 `pbStatus`).
@@ -1120,6 +1130,13 @@ export function UploadModal(props: {
               role="status"
               aria-live="polite"
             >
+              {analyzeStage < 3 ? (
+                <span
+                  className="up-spinner"
+                  data-testid="up-analyze-spinner"
+                  aria-hidden="true"
+                />
+              ) : null}
               <span
                 className={analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral'}
                 data-testid="up-analyze-chip"

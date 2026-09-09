@@ -27,13 +27,21 @@ function Progress(props: { transfer: { sentBytes: number; totalBytes: number } |
   const t = props.transfer;
   if (!t || t.totalBytes <= 0) {
     // **퍼센트를 지어내지 않는다** — 셀 수 없으면 세지 않는다 (`§D.7`)
-    return <span className="spin" aria-hidden="true" />;
+    return <span className="spin up-spinner" data-testid="up-grid-spinner" aria-hidden="true" />;
   }
-  const pct = Math.min(100, Math.round((t.sentBytes / t.totalBytes) * 100));
+  const pct = Math.min(100, Math.max(0, Math.round((t.sentBytes / t.totalBytes) * 100)));
   return (
-    <progress className="gridbar" data-testid="up-grid-progress" max={100} value={pct}>
-      {pct}%
-    </progress>
+    <div className="up-transfer-meter">
+      <progress
+        className="gridbar"
+        data-testid="up-grid-progress"
+        aria-label="격자 파일 바이트 전송 진행률"
+        aria-valuetext={`바이트 전송 ${pct}%`}
+        max={100}
+        value={pct}
+      />
+      <span className="up-transfer-percent">바이트 전송 {pct}%</span>
+    </div>
   );
 }
 
@@ -55,7 +63,6 @@ export function GridUploadBlock(props: {
       data-testid="up-grid-block"
       data-grid-state={state.name}
       aria-live={busy ? 'polite' : 'off'}
-      {...(busy ? { 'aria-busy': 'true' } : {})}
     >
       <p className="gb-t">{copy.title}</p>
       {body ? <p className="gb-b">{body}</p> : null}
@@ -67,7 +74,9 @@ export function GridUploadBlock(props: {
       ) : null}
 
       {copy.progress === '퍼센트' ? <Progress transfer={props.transfer ?? null} /> : null}
-      {copy.progress === '불확정' ? <span className="spin" aria-hidden="true" /> : null}
+      {copy.progress === '불확정' ? (
+        <span className="spin up-spinner" data-testid="up-grid-spinner" aria-hidden="true" />
+      ) : null}
 
       <div className="gb-a">
         {/* 격자를 청하는 자리 — 좌표 없음 · 거절 뒤 다시 올리기 */}

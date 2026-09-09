@@ -220,7 +220,10 @@ describe('§E.2 격자 흐름 — 상태와 문구는 정본이 소유한다', (
     );
     const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
     expect(block).toHaveTextContent('격자 파일을 받는 중입니다.');
-    expect(screen.getByTestId('up-grid-progress')).toHaveAttribute('value', '50');
+    const progress = screen.getByRole('progressbar', { name: '격자 파일 바이트 전송 진행률' });
+    expect(progress).toHaveAttribute('value', '50');
+    expect(progress).toHaveAttribute('aria-valuetext', '바이트 전송 50%');
+    expect(block).toHaveTextContent('바이트 전송 50%');
   });
 
   it('확인 중: 판정은 이분법이라 퍼센트를 쓰지 않는다', async () => {
@@ -229,7 +232,11 @@ describe('§E.2 격자 흐름 — 상태와 문구는 정본이 소유한다', (
     ]);
     const block = await screen.findByTestId('up-grid-block', undefined, { timeout: 4000 });
     expect(block).toHaveTextContent('격자가 이 파일의 것인지 확인하는 중입니다.');
+    expect(block).toHaveAttribute('aria-live', 'polite');
+    expect(block).not.toHaveAttribute('aria-busy');
     expect(screen.queryByTestId('up-grid-progress')).toBeNull();
+    expect(screen.getByTestId('up-grid-spinner')).toHaveClass('up-spinner');
+    expect(screen.getByTestId('up-grid-spinner')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('통과: 위치를 사람 눈으로 확인받는다', async () => {
