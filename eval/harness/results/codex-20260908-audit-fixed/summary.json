@@ -1,0 +1,76 @@
+{
+  "schema": "colab-codex-harness-eval/1",
+  "time": "2026-09-08T13:54:32.395316+00:00",
+  "codex": "<codex-cli>",
+  "cli_version": "codex-cli 0.153.4",
+  "head": "ccf76ecf0bb53fa100088a36bcc112ae953ce3b9",
+  "model": "unverified: inherited user configuration; not model-specific evidence",
+  "timeout": 120,
+  "usd_cap": "unsupported",
+  "runs": [
+    {
+      "task": "H14-silent-skip",
+      "repeat": 1,
+      "status": "green",
+      "task_sha256": "f0b8a2eaa4e8084d736efe3f0ecf59b44a1dd664d8ecc874e3ec3892bfd8d382",
+      "usage": {
+        "input_tokens": 130307,
+        "cached_input_tokens": 100480,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 937,
+        "reasoning_output_tokens": 0
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 55.1
+    },
+    {
+      "task": "H14-silent-skip",
+      "repeat": 2,
+      "status": "green",
+      "task_sha256": "f0b8a2eaa4e8084d736efe3f0ecf59b44a1dd664d8ecc874e3ec3892bfd8d382",
+      "usage": {
+        "input_tokens": 121845,
+        "cached_input_tokens": 101120,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 894,
+        "reasoning_output_tokens": 9
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 51.9
+    },
+    {
+      "task": "H18-three-states",
+      "repeat": 1,
+      "status": "green",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 141731,
+        "cached_input_tokens": 118144,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1049,
+        "reasoning_output_tokens": 15
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 68.46
+    },
+    {
+      "task": "H18-three-states",
+      "repeat": 2,
+      "status": "judgment-failure",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 90204,
+        "cached_input_tokens": 67840,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 937,
+        "reasoning_output_tokens": 65
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 상태3(무언)이 exit 78 로 끝나지 않는다.\n",
+      "seconds": 46.17
+    }
+  ]
+}

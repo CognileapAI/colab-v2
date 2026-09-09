@@ -1,0 +1,44 @@
+{
+  "schema": "colab-codex-harness-eval/1",
+  "time": "2026-09-08T13:58:01.013325+00:00",
+  "codex": "<codex-cli>",
+  "cli_version": "codex-cli 0.153.4",
+  "head": "ccf76ecf0bb53fa100088a36bcc112ae953ce3b9",
+  "model": "unverified: inherited user configuration; not model-specific evidence",
+  "timeout": 120,
+  "usd_cap": "unsupported",
+  "runs": [
+    {
+      "task": "H18-three-states",
+      "repeat": 1,
+      "status": "green",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 95570,
+        "cached_input_tokens": 75520,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 868,
+        "reasoning_output_tokens": 13
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 57.3
+    },
+    {
+      "task": "H18-three-states",
+      "repeat": 2,
+      "status": "green",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 88841,
+        "cached_input_tokens": 64768,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 786,
+        "reasoning_output_tokens": 10
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 47.66
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "description": "CoLAB Claude lifecycle judges with Codex payload/output translation. Review in /hooks before activation.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "lane-worker",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 580
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "researcher",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      },
+      {
+        "matcher": "lane-worker",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import pathlib,runpy,subprocess,sys\\ntry:\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception as e:\\n print(\\'CoLAB hook launch failed: \\'+str(e),file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 65
+          }
+        ]
+      }
+    ]
+  }
+}

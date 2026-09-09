@@ -14,6 +14,7 @@
 #   2/2 통과 → green · 1/2 → red(판정 · 「불안정 — 과제 설계 결함」) · 0/2 → red(판정 · 「실패」)
 #   시간·예산 상한 초과, 세 파일 부재, 러너가 답을 얻지 못함 → **red(준비 · 78)**. skip 이 아니다.
 #   `is_error:true` · `subtype != success` 도 red(준비) — rc 0 이고 본문이 기대와 맞아도 판정하지 않는다.
+#   판정기 exit 0은 green, 1은 판정 실패, 78 및 그 외 비정상 종료는 red(준비).
 #   과제 0건 → red(판정 · 1). 「대상이 없어 통과」를 만들지 않는다 (CLAUDE.md §4).
 #
 # exit — 0 green · 1 red(판정) · 78 red(준비).
@@ -77,7 +78,7 @@ OUT="$RESULTS_ROOT/$RUN_ID"
 mkdir -p "$OUT" || ready_red "$OUT" "결과 자리를 만들지 못했다."
 
 # ── ⑶ 실행 ──────────────────────────────────────────────────────────────────
-N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0
+N_RUN=0; N_GREEN=0; N_UNSTABLE=0; N_READY=0; N_JUDGMENT=0
 SECS_FILE="$OUT/.secs"; : > "$SECS_FILE"
 COST_FILE="$OUT/.usd"; : > "$COST_FILE"
 ROWS_FILE="$OUT/.rows"; : > "$ROWS_FILE"
@@ -111,7 +112,7 @@ for d in "${TASKS[@]}"; do
     continue
   fi
 
-  pass=0; task_ready=""; task_secs=""; task_cost=""
+  pass=0; task_ready=""; task_secs=""; task_cost=""; task_judgments=""
   for n in $(seq 1 "$RUNS_PER_TASK"); do
     raw="$OUT/$id.raw.$n.json"; txt="$OUT/$id.out.$n.txt"; err="$OUT/$id.err.$n.txt"
     t0="$(date +%s.%N)"
@@ -187,11 +188,34 @@ PY
       break
     fi
 
-    if bash "$d/expect.sh" < "$txt" > "$OUT/$id.expect.$n.txt" 2>&1; then
-      pass=$((pass + 1))
-    fi
+    # 판정 실패와 판정 불가를 구분한다. 원문 stderr와 실제 rc는 회차별로 보존한다.
+    judge_err="$OUT/$id.expect.$n.err.txt"
+    bash "$d/expect.sh" < "$txt" > "$OUT/$id.expect.$n.txt" 2> "$judge_err"
+    judge_rc=$?
+    printf '%s\n' "$judge_rc" > "$OUT/$id.expect.$n.rc"
+    case "$judge_rc" in
+      0) pass=$((pass + 1)) ;;
+      1)
+        task_judgments="${task_judgments:+$task_judgments, }${n}회차(rc=1)"
+        ;; # 후속 준비 실패가 앞선 판정 실패 관측을 지우지 않게 한다.
+      78)
+        task_ready="판정기 준비 실패(rc=$judge_rc · ${n}회차) — stderr: $judge_err"
+        break
+        ;;
+      *)
+        task_ready="판정기 비정상 종료(rc=$judge_rc · ${n}회차) — stderr: $judge_err"
+        break
+        ;;
+    esac
   done
 
+  # 과제 상태 분류와 별개로, 실제 판정 실패를 관측한 과제를 한 번만 센다.
+  if [ -n "$task_judgments" ]; then
+    N_JUDGMENT=$((N_JUDGMENT + 1))
+    if [ -n "$task_ready" ]; then
+      task_ready="$task_ready; 판정 실패 관측: $task_judgments"
+    fi
+  fi
   if [ -n "$task_ready" ]; then
     N_READY=$((N_READY + 1))
     printf '%s|준비|%s|%s|%s\n' "$name" "${task_secs:--}" "${task_cost:--}" "$task_ready" >> "$ROWS_FILE"
@@ -230,14 +254,14 @@ PY
 )"
 read -r P50 P95 USD <<< "$STATS"
 
-SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD"
+SUMMARY="과제 $N_TASK · 실행 $N_RUN · green $N_GREEN · 불안정 $N_UNSTABLE · 준비 $N_READY · 초 p50 $P50/p95 $P95 · USD 합 $USD · 판정실패 관측 과제 $N_JUDGMENT"
 
 {
   echo "# harness eval 실측 — $RUN_ID"
   echo
   echo "- 요약 — $SUMMARY"
   echo "- 상한 — \`COLAB_EVAL_TIMEOUT=$COLAB_EVAL_TIMEOUT\` · \`COLAB_EVAL_BUDGET=$COLAB_EVAL_BUDGET\` · 과제당 ${RUNS_PER_TASK}회"
-  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재 red(준비)"
+  echo "- 판정 — 2/2 green · 1/2 불안정(red 판정) · 0/2 실패(red 판정) · 상한 초과·세 파일 부재·판정기 준비 실패 및 비정상 종료 red(준비)"
   [ "$COST_UNKNOWN" -eq 1 ] && echo "- ⚠ USD \`[미상]\` — \`claude -p --output-format json\` 출력에서 비용 필드를 찾지 못한 회차가 있다. 지어내지 않는다."
   echo
   echo "| 과제 | 판정 | 초(1/2) | USD(1/2) | 사유 |"
@@ -252,8 +276,8 @@ echo "허용 도구 정본: $ALLOWED_FILE"
 echo "$SUMMARY"
 echo "근거: ${OUT#"$HARNESS_DIR/"} (summary.md · H??.out.{1,2}.txt)"
 
-if [ "$N_UNSTABLE" -ne 0 ]; then
-  echo "::error::harness-eval red(판정) — 2/2 가 아닌 과제가 ${N_UNSTABLE}건이다. 기대를 넓혀 green 을 만들지 않는다(판정 뒤에만 · 라운드 §3 ㉴)."
+if [ "$N_JUDGMENT" -ne 0 ]; then
+  echo "::error::harness-eval red(판정) — 판정 실패를 관측한 과제가 ${N_JUDGMENT}건이다. 기대를 넓혀 green 을 만들지 않는다(판정 뒤에만 · 라운드 §3 ㉴)."
   exit 1
 fi
 if [ "$N_READY" -ne 0 ]; then

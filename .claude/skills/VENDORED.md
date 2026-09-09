@@ -82,3 +82,7 @@ vendoring 은 **파일 5종만** 복사했으므로 `superpowers:<이름>` 형�
 원본은 이 레포에 두지 않는다. 대조가 필요하면 위 표의 경로·URL 에서 다시 받아
 `diff <원본>/SKILL.md .claude/skills/<name>/SKILL.md` 로 뜨고, 나오는 차이가 위 개조 목록과 일치하는지 본다.
 목록에 없는 차이가 나오면 그것이 결함이다.
+
+## agent-browser 중첩 리소스 복구 — 2026-09-09
+
+CLI 0.27.0의 `agent-browser skills get core --full`에서 references 8개와 templates 3개를 원문 그대로 회수했다. 기존 SKILL 본문은 유지하며 그 상대 링크를 원본 디렉터리에서 해소한다. 원 응답 SHA-256 및 파일별 hash는 실행 증거 `../.parity-20260909/resources/resource-manifest.json`, 원 응답은 `eval/harness/results/agent-browser-core-0.27.0.txt`에 보존한다. 템플릿의 입력·ref는 실제 화면 snapshot으로 갱신해서 사용하며 예시를 실행 결과로 인용하지 않는다.

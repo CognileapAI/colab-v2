@@ -1,0 +1,23 @@
+{
+  "schema": "colab-role-model-activation-probe/v1",
+  "time": "2026-09-09 KST",
+  "cli_version": "0.153.4",
+  "controller_thread_id": "01a08510-53d3-7862-82fa-53d5320736b5",
+  "process_exit": 0,
+  "requested_roles": [
+    {
+      "role": "researcher",
+      "model": "gpt-5.6-sol"
+    },
+    {
+      "role": "advisor",
+      "model": "gpt-6-astra"
+    }
+  ],
+  "spawned_roles": [],
+  "status": "unavailable",
+  "reason": "현재 CLI의 spawning tool에서 named custom agents researcher/advisor를 선택할 수 없었고 shell read도 policy에 차단되어 실제 역할을 호출하지 못했다.",
+  "repo_changed": false,
+  "generic_substitution": false,
+  "full40": false
+}

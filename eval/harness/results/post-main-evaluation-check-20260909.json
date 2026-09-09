@@ -1,0 +1,97 @@
+{
+  "schema": "colab-post-main-evaluation-check/v1",
+  "time": "2026-09-09T16:50:27+09:00",
+  "head": "c4fac589debde66fc8fbabd85ad4a024b46c00d3",
+  "base_main": "95c85bef7f2c65875812c88647f9dadf4f4c315d",
+  "external_evidence_root": "../.parity-20260909/evidence",
+  "frozen_full40": {
+    "source_head": "47cce303f0efb9d9bfa37d1f5a086030caea1ab6",
+    "runtime_model": "gpt-6-astra",
+    "snapshot_sha256": "3d0d6c9f301b69ab259d35edd849d70300235e8e84e2b844a5bf02f0684265b6",
+    "acceptance_path": "../.parity-20260909/evidence/codex-40-final-acceptance.json",
+    "acceptance_sha256": "c324cbd72eada75993b431cfff0b846fb7db38fa86ce5bd7450f0697cc3c32b2",
+    "freeze_manifest_path": "../.parity-20260909/evidence/evaluation-freeze-h15-h16-v2/manifest.json",
+    "freeze_manifest_sha256": "9916856685eb6779e1700d01240377950c52dc5ac049c22e1e2234b708a29df3",
+    "evaluation_behavior_scope": "eval/harness/** excluding results, plus scripts/codex-harness-eval.py",
+    "evaluation_behavior_files": 110,
+    "hash_mismatch": 0,
+    "task_fixture_judge_runner_content_changes": 0,
+    "full40_rerun": false,
+    "rerun_judgment": "not-required"
+  },
+  "parity_change_comparison": {
+    "path_set": "git diff --name-only origin/main..HEAD",
+    "path_count": 102,
+    "path_list_sha256": "3a1b4fe6ba534060ce8037aaf0989e127c5542beb7fdb0608336284df47b0e62",
+    "comparison_source": "parent-independent verification",
+    "exact": 46,
+    "whitespace_only": 28,
+    "content_changed": 12,
+    "new": 16
+  },
+  "h01_post_main": {
+    "task": "H01-stale-handoff",
+    "task_sha256": "84e23e01020f8d5e056c0849afa66bfdb26194dd677eb2865fa524af773f9dbe",
+    "expect_sha256": "4047944e460eb26f8ac71ab8af159f9fd7bf5bdb19a62474ae0dea380a4564fe",
+    "default_never": {
+      "evidence_path": "../.parity-20260909/evidence/codex-h01-post-main-95c85be/summary.json",
+      "evidence_sha256": "8ca96434154b9cfe8b1791cf32ebb5dee2dc5cdc2a99054668305447bc1e3f3f",
+      "runs": 2,
+      "green": 0,
+      "status": "policy-blocked"
+    },
+    "recover_native_env": {
+      "evidence_path": "../.parity-20260909/evidence/codex-h01-post-main-95c85be-env-restored/summary.json",
+      "evidence_sha256": "b2bfe8c33b0a2dfce4060f64e5d7318e240727364566a05d7d3e5f395b247c87",
+      "runs": 2,
+      "green": 0,
+      "status": "same-policy-blocked"
+    },
+    "supported_approval_path": {
+      "option": "--approve-for-me",
+      "runs": 2,
+      "green": 2,
+      "judge_input": "stdin",
+      "runs_detail": [
+        {
+          "probe": 2,
+          "runtime_model": "gpt-6-astra",
+          "thread_id": "01a0851e-e21e-7190-8dd8-7f9525f238ea",
+          "judge_rc": 0,
+          "answer_path": "../.parity-20260909/evidence/h01-approved-probe-2.answer.txt",
+          "answer_sha256": "9f6f9f5e63cdc71d00645742690cd51b9349341390e985c85dd9ce7ae652d00c",
+          "raw_jsonl_path": "../.parity-20260909/evidence/h01-approved-probe-2.jsonl",
+          "raw_jsonl_sha256": "6480d564d1ba1dae9443ebc0b36376f9aeb92990148f13c3e6014f5e644f4df1"
+        },
+        {
+          "probe": 3,
+          "runtime_model": "gpt-6-astra",
+          "thread_id": "01a08520-4c7d-7c30-8beb-d23ed19710ac",
+          "judge_rc": 0,
+          "answer_path": "../.parity-20260909/evidence/h01-approved-probe-3.answer.txt",
+          "answer_sha256": "29c9188fb15e204052093ef09e795db87903c684dd0a09a76c125171203394fb",
+          "raw_jsonl_path": "../.parity-20260909/evidence/h01-approved-probe-3.jsonl",
+          "raw_jsonl_sha256": "aec56f950b1c4ecb4734215d3ca8398c7926290a183f707ff2685bf33859660d"
+        }
+      ]
+    },
+    "repo_changed": false,
+    "raw_logs_committed": false
+  },
+  "named_custom_role_runtime": {
+    "evidence_path": "eval/harness/results/role-model-activation-probe-20260909.json",
+    "evidence_sha256": "883dc1e0b2b541dd59b36f73565252bc19ce01c4477cb9d96806379438204223",
+    "status": "unavailable",
+    "reason": "current spawn tool cannot select named custom roles",
+    "remaining_check": "desktop restart and named-role-capable runtime path"
+  },
+  "acceptance": {
+    "source_side_integration": "acceptable",
+    "overall_parity": "incomplete",
+    "remaining": [
+      "Claude new 40-run evaluation",
+      "Claude actual development E2E",
+      "desktop restart custom-role runtime verification"
+    ]
+  }
+}

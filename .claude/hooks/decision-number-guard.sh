@@ -25,10 +25,15 @@
 #   · `cwd` — "Current working directory when the hook is invoked"
 #   · exit 2 = "Blocks the tool call" · "The blocking message is … your stderr text otherwise."
 #   ⚠ exit 1 은 통과다. 판정을 못 하면 통과가 기본값이다.
+# Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
 payload=""
 if [ ! -t 0 ]; then payload="$(cat 2>/dev/null || true)"; fi
+# 2026-09-09 shared envelope contract: malformed applicable input fails closed.
+command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 missing' >&2; exit 2; }
+payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field file_path)" || exit 2
+
 [ -n "$payload" ] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
@@ -103,9 +108,7 @@ exp = ", ".join("〈%d〉" % n for n in want)
 sys.stderr.write(
     "⛔ 차단(H5 decision-number-guard) — 새 결정 번호 %s 은(는) 기대값 %s 과 다르다"
     " (기준 %s 최대 〈%d〉 + 1 · 번호는 예약하지 않고 병합 직전 재실측한다)"
-    " · 훅을 끄려면 세션 밖에서 `COLAB_HOOKS=0 claude` 로 열거나"
-    " .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다"
-    " — 명령 앞에 붙이는 형태는 벗겨져 듣지 않고, Edit·Write 훅에는 앞에 붙일 자리 자체가 없다.\n"
+    " · 승인된 번호 발급 절차로 돌아가며 훅을 비활성화하지 않는다.\n"
     % (got, exp, os.environ["BASE_SRC"], base))
 sys.exit(2)
 '

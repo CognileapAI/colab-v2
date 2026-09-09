@@ -1,0 +1,35 @@
+{
+  "schema": "colab-codex-activation-compact/1",
+  "source_head": "e2fbbd4100b8c240886e3109399e76fc735cce96",
+  "external_raw": {
+    "label": "external-raw:eval/harness/results/activation-gate.json",
+    "sha256": "1cbb91a030dbd8bbefe039204259ed36bec0146a3baa408a2f19b3a814e5705d",
+    "event_count": 31
+  },
+  "observed": {
+    "role": {
+      "name": "gate-runner",
+      "requested_count": 1,
+      "spawned_count": 1
+    },
+    "guard": {
+      "exit_code": 0,
+      "target_executed_by_guard": false
+    },
+    "gate": {
+      "name": "contract-lint",
+      "execution_count": 1,
+      "exit_code": 0,
+      "checked_seams": 3,
+      "violations": 0,
+      "status": "green"
+    }
+  },
+  "limitations": [
+    "The source HEAD was not embedded in this raw file; it is carried from the immediately following role capture in the same activation batch.",
+    "The runner emitted no aggregate count line.",
+    "The runner emitted no exempted count.",
+    "The runner emitted no log or report path.",
+    "This compact record is not a full40 model run."
+  ]
+}

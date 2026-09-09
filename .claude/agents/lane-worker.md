@@ -41,6 +41,12 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 - **원장 번호 〈N〉 을 하드코딩하지 않는다.** `PLAN-SoT.md §9` 에 직접 쓰지 않고, 등재문은 자기 회차 파일(`dev-package/sessions/<회차>/`)에 적어 둔다. 번호 발급·등재는 오케스트레이터가 직렬로 한다(`§4-1`).
 - 손으로 만든 형제 워크트리를 쓰지 않는다. 자기 워크트리 밖 경로를 편집하지 않는다.
 
+## 작업 증거 시작
+
+수정 전에 `docs/development/lifecycle-evidence.md`의 `begin --role lane-worker`를 실행해
+필수 `--gate`와 이 작업 전용 `--report`를 선언한다. 받은 task_id를 실제 게이트 명령의
+`COLAB_TASK_ID`로 전달한다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다.
+
 ## 순서 (`CLAUDE.md §4`)
 
 1. **진입조건 확인** — 지시문·`WORK-UNITS.md` 의 해당 행. 미충족이면 **구현하지 말고 보고**한다.
@@ -68,8 +74,8 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 ## 완료 조건과 보고
 
 - 완료 주장 전에 **원한 결과(proposed outcome) 대조** — 지시문·`dev-package/intent/` 의 항목 중 **미달·초과**를 열거한 뒤에만 완료라고 적는다. 초과분(요청되지 않은 추가 변경)도 적는다.
-- **종료 검사(H7 · 가동 중)** — `dev-package/reports/<회차>/<레인>/gate-summary.json` 이 존재하고 `counts.red_판정 == 0` 이어야 한다. `SubagentStop:lane-worker` 훅이 **부재**와 **red(판정) 1건 이상**을 exit 2 로 차단한다 — 게이트를 돌리지 않은 레인은 종료하지 못한다. red(준비)는 종료를 막지 않지만 **병합 진입 조건은 판정·준비 둘 다 0** 이므로 최종 메시지에 3계수를 그대로 적는다.
-- ⭑ **⟨증보 2026-09-06⟩ 마지막 커밋 뒤에 게이트를 한 번 돌리고 끝낸다.** H7 이 JSON 의 `commit`·`tree` 를 워크트리 HEAD 와 대조하고 **둘 다 어긋나면 부재와 같이 차단**하기 때문이다(옛 회차의 계수가 이번 회차의 근거로 읽히는 자리를 막는다). 그 JSON 은 **커밋하지 않는다** — `.gitignore` 에 있고, 커밋되면 다음 워크트리가 게이트 없이 통과한다(`rules §2-2` 의 「산출물 즉시 커밋」은 이 파일에 적용되지 않는다).
+- **종료 검사(H7)** — 선언한 작업의 보고서·필수 게이트·3계수·실행 전후와 현재 작업 파일 hash를 대조한다. 부재·깨짐·다른 작업·판정 실패·준비 실패·검사 중/후 파일 변경은 차단한다. mtime으로 다른 보고서를 선택하지 않는다.
+- 마지막 변경 후 게이트를 실행하고 `handoff --mode complete`가 만든 `COLAB_HANDOFF` 한 줄을 최종 메시지에 포함한다. 미커밋 파일도 실제 내용을 검증하므로 검사 때문에 임의 커밋하지 않는다. 보고서는 생성물이며 커밋하지 않는다.
 - 커밋 = 한 WU 의 한 논리적 단계. 계약과 그 소비자는 같은 커밋. 메시지는 한국어(첫 줄 무엇을, 본문 왜).
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋한다(NTFS · `core.filemode=false` · `§4-3`).
 - **최종 메시지** = ≤15행. 결론·값 → 근거 `파일:행` → 남은 위험 → 후속 항목 → `WORKTREE=… BRANCH=…`. 개조식 · 정성어 배제 · 기술 용어에 비유 금지. 산출물(커밋 메시지 · 문서 · 보고)은 한국어, 내부 추론·코드 주석은 영어 허용.

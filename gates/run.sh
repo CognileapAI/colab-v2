@@ -26,6 +26,22 @@ GATE="${1:-}"
 #                           실행기가 자기를 자식으로 부를 때 세운다. 자식은 JSON 을 내지 않는다 —
 #                           한 실행의 요약은 하나다(`all` 의 자식들이 같은 파일을 덮지 않게).
 GATE_SUMMARY_NAME="gate-summary.json"
+if [ "$GATE" = "task" ]; then
+  [ -n "${COLAB_TASK_ID:-}" ] || { echo '::gate-readiness-failure:: COLAB_TASK_ID required' >&2; exit 78; }
+  cd "$REPO_ROOT"
+  exec python3 .claude/hooks/lifecycle_contract.py run-gates --task "$COLAB_TASK_ID"
+fi
+
+# Bind evidence before the outer execution, including dirty sources and fixtures.
+# Child gate processes inherit this identity; they never overwrite the baseline.
+if [ -n "${COLAB_TASK_ID:-}" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}" ]; then
+  if ! COLAB_GATE_TASK_BEFORE="$(cd "$REPO_ROOT" && python3 .claude/hooks/lifecycle_contract.py gate-start --task "$COLAB_TASK_ID")"; then
+    echo '::gate-readiness-failure:: task evidence preparation failed' >&2
+    exit 78
+  fi
+  export COLAB_GATE_TASK_BEFORE
+fi
+
 
 summary_now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 

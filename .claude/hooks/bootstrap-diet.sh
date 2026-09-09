@@ -42,21 +42,44 @@ print(d.get("cwd","") if isinstance(d,dict) else "")' 2>/dev/null || true)"
 fi
 [ -n "$ROOT" ] || ROOT="$(printf '%s' "$payload" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 [ -n "$ROOT" ] || ROOT="$PWD"
+ROOT="$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$ROOT")"
 
 SPEC="docs/superpowers/specs/2026-09-06-harness-fable51-design.md"
 RDIR="$ROOT/dev-package/prd/rounds"
 
 # 최신 라운드 파일 = mtime 최신. 같은 mtime 이 여럿이면(체크아웃 직후 워크트리가 그렇다)
 # 이름 사전순 뒤엣것을 고른다 — 「아무거나」가 되지 않게 가르는 축을 하나 더 둔다.
+SELECTED="$(printf '%s' "$payload" | python3 -c '
+import json,os,sys
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print(d.get("round") or os.environ.get("COLAB_ROUND", ""))
+' 2>/dev/null || true)"
 ROUND=""
-if [ -d "$RDIR" ]; then
+if [ -n "$SELECTED" ]; then
+  ROUND="$(python3 - "$ROOT" "$SELECTED" <<'PYROUND'
+from pathlib import Path
+import sys
+root=Path(sys.argv[1]).resolve()
+p=(root/sys.argv[2]).resolve()
+if p.is_relative_to(root/'dev-package/prd/rounds') and p.is_file():
+    print(p)
+PYROUND
+)"
+elif [ -d "$RDIR" ]; then
   ROUND="$(find "$RDIR" -maxdepth 1 -name 'R-*.md' -type f -printf '%T@\t%p\n' 2>/dev/null \
             | sort -t"$(printf '\t')" -k1,1n -k2,2 | tail -1 | cut -f2-)"
 fi
 
 echo "── 세션 시작 안내 (bootstrap-diet · H1) ─────────────────────"
-if [ -n "$ROUND" ]; then
-  echo "  읽을 것은 **라운드 파일 하나다** : ${ROUND#"$ROOT"/}"
+if [ -n "$SELECTED" ]; then
+  if [ -n "$ROUND" ]; then
+    echo "  지정 라운드: ${ROUND#"$ROOT"/}"
+  else
+    echo "  지정 라운드를 확인할 수 없음: 다른 라운드로 대체하지 않는다."
+  fi
+elif [ -n "$ROUND" ]; then
+  echo "  추천 후보(mtime): ${ROUND#"$ROOT"/} — 선택 확정 아님. 사용자 지정, Git 이력과 work-items.yaml을 대조한다."
 else
   echo "  읽을 것은 **라운드 파일 하나다** : 없음 (dev-package/prd/rounds/R-*.md 가 아직 없다)"
 fi

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 [ "${COLAB_HOOKS:-1}" = "0" ] && exit 0
+# Effective 2026-09-09: malformed applicable tool payloads block (shared lifecycle_contract.py).
+# Historical design comments below do not override this envelope contract.
 # H3 — `PreToolUse` (matcher: Bash) · 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` C절.
 #
 # 무엇을 해소하나 (F8 「병합 권한 잠금」 · D10 인접): `main` 은 오케스트레이터 한 자리에서만
@@ -76,6 +78,10 @@ set -uo pipefail
 
 payload=""
 if [ ! -t 0 ]; then payload="$(cat 2>/dev/null || true)"; fi
+# 2026-09-09 shared envelope contract: malformed applicable input fails closed.
+command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 missing' >&2; exit 2; }
+payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field command)" || exit 2
+
 [ -n "$payload" ] || exit 0
 
 # ── 1. 입력 꺼내기 ────────────────────────────────────────────────────────────
@@ -136,7 +142,7 @@ is_main_ref() { # $1=refspec 토큰 — 목적지(dst)가 main/master 인가
 }
 
 deny() { # $1=사유 한 줄 — stderr 한 줄이 그대로 차단 사유가 된다
-  echo "⛔ 차단(H3 git-guard) — $1 · 이 자리는 오케스트레이터 몫이다(스펙 C H3). 훅을 끄려면 세션 밖에서 \`COLAB_HOOKS=0 claude\` 로 열거나 .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다 — 명령 앞에 붙이는 형태(\`COLAB_HOOKS=0 git …\`)는 벗겨져 듣지 않는다." >&2
+  echo "⛔ 차단(H3 git-guard) — $1 · 이 자리는 오케스트레이터의 승인된 실행 경로로 인계한다. 훅을 비활성화하지 않는다." >&2
   exit 2
 }
 

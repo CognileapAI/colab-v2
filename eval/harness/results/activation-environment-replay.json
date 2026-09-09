@@ -1,0 +1,6 @@
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SubagentStart",
+    "additionalContext": "── worktree-setup (H2) ──────────────────────────────────────\n  워크트리 : <repo-root>\n  에이전트 : lane-worker\n  파이썬   : /usr/bin/python3.12 (요구 3.12 · services/*/pyproject.toml)\n  재사용  frontend/node_modules        node_modules · .bin/tsc 실물 확인\n  신설    services/core-api/.venv      12초\n  재사용  services/ai-service/.venv    핀 동일 · pytest 실물 · py 3.12\n  재사용  services/viz-render/.venv    핀 동일 · pytest 실물 · py 3.12\n  재사용  services/pipeline-worker/.venv 핀 동일 · pytest 실물 · py 3.12\n  확보  gates/.venv                  gates/tools/_venv.sh 스탬프 기준\n  대장 병합 드라이버 : 설정됨 (merge.work-items — work-items.yaml 덧붙임 자동 병합)\n  ── 계 : 신설 1 · 재사용 5 · 실패 0 · 13초\n  테스트 env : ~/.colab-v2-test.env 있음 — gates/run.sh 가 스스로 source 한다(직접 set -a 불요)\n─────────────────────────────────────────────────────────────\nConfirm the assigned checkout, branch and HEAD before writing. This hook prepares dependencies; it does not create an isolated checkout."
+  }
+}

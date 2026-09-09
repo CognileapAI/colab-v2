@@ -1,0 +1,6 @@
+# Use the native Windows sandbox backend. This does not broaden filesystem or
+# network permissions and does not change the user's command approval policy.
+allow_login_shell = false
+
+[windows]
+sandbox = "unelevated"

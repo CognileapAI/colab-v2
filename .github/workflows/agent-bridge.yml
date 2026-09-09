@@ -1,0 +1,51 @@
+name: Agent bridge compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.agents/**'
+      - '.codex/**'
+      - '.claude/agents/**'
+      - '.claude/skills/**'
+      - '.claude/hooks/**'
+      - '.claude/rules/**'
+      - '.claude/settings.json'
+      - 'docs/development/**'
+      - 'scripts/agent-bridge.py'
+      - 'scripts/codex-harness-eval.py'
+      - 'scripts/dev.ps1'
+      - 'scripts/tests/**'
+      - 'eval/harness/H*/expect.sh'
+      - 'eval/harness/H*/judge.py'
+      - 'eval/harness/H*/task.md'
+      - 'eval/harness/H*/fixture/**'
+      - 'eval/harness/run.sh'
+      - 'eval/harness/tests/**'
+      - 'gates/run.sh'
+      - 'gates/requirements.txt'
+      - 'gates/tools/gate_summary_json.py'
+      - 'gates/tools/ci-filter-check.py'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/agent-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate adapters and shared source links
+        run: python scripts/agent-bridge.py check
+      - name: Install workflow parser from shared dependency pins
+        run: python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
+      - name: Check accepted and rejected evidence and guard calls
+        run: python -m unittest discover -s scripts/tests -v

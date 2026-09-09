@@ -1,0 +1,20 @@
+{
+  "schema": "colab-codex-harness-eval/1",
+  "time": "2026-09-09T01:59:25.517324+00:00",
+  "cli_version": "codex-cli 0.153.4",
+  "head": "47cce303f0efb9d9bfa37d1f5a086030caea1ab6",
+  "snapshot_sha256": "3d0d6c9f301b69ab259d35edd849d70300235e8e84e2b844a5bf02f0684265b6",
+  "snapshot_matches": true,
+  "models": [
+    "gpt-6-astra"
+  ],
+  "timeout": 180,
+  "total": 40,
+  "green": 40,
+  "judgment_failure": 0,
+  "readiness_failure": 0,
+  "unique_runtime_threads": 40,
+  "file_count": 2307,
+  "failures": [],
+  "old_38_of_40_preserved": true
+}

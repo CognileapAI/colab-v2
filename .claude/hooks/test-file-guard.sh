@@ -25,6 +25,7 @@
 #   · `tool_name`·`tool_input` 은 이벤트별이고, Edit·Write 의 대상은 `tool_input.file_path` 한 자리다.
 #   · exit 2 = "Blocks the tool call" · 차단 메시지는 stderr.
 #   ⚠ exit 1 은 통과다. 판정을 못 하면 통과가 기본값이다 — 훅이 깨져 작업이 멈추지 않게.
+# Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
 # 선언되지 않은 회차는 이 훅의 대상이 아니다. **python3 를 부르기 전에** 끝낸다.
@@ -33,6 +34,10 @@ set -uo pipefail
 
 payload=""
 if [ ! -t 0 ]; then payload="$(cat 2>/dev/null || true)"; fi
+# 2026-09-09 shared envelope contract: malformed applicable input fails closed.
+command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 missing' >&2; exit 2; }
+payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field file_path)" || exit 2
+
 [ -n "$payload" ] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
@@ -74,7 +79,5 @@ esac
 
 echo "⛔ 차단(test-file-guard) — 선언된 fix 회차(COLAB_FIX_LANE=1)에서는 $WHY 를 고칠 수 없다: \`$REL\`
    red 를 없애는 가장 싼 길은 시험·게이트를 고치는 것이고, 그러면 결함은 남고 그것을 말해 주던 자리만 사라진다.
-   고칠 곳은 구현이다. 시험·계약 쪽이 실제로 틀렸다고 **사람이 판단**했다면 그 사실을 선언하고 다시 부른다:
-     COLAB_ALLOW_TEST_EDIT=1 (세션 env 또는 .claude/settings.local.json 의 \"env\")
-   훅 전체를 끄려면 세션 밖에서 \`COLAB_HOOKS=0 claude\` — 명령 앞에 붙이는 형태는 Edit·Write 훅에 듣지 않는다." >&2
+   승인된 구현 범위를 고친다. 시험 자체 수정이 필요하면 승인된 시험 작성 단계로 돌아가 RED를 확인한 뒤 fix 구현 단계로 재진입한다. 훅을 비활성화하지 않는다." >&2
 exit 2

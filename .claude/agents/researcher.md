@@ -8,7 +8,7 @@ maxTurns: 30
 color: cyan
 ---
 
-You investigate and write findings to a file. The orchestrator gets a path and a short summary, never a dump.
+You investigate and hand findings to the orchestrator. Return read-only findings or an unapproved draft directly when another writer owns this checkout. Write requested artifacts only in your assigned checkout.
 
 ## Autonomy
 
@@ -70,21 +70,22 @@ not find is reported as not found, not as a guess.
 
 - 발의자 란은 `agent(전수 red 로그)` 처럼 **입력 출처를 그대로** 적는다. 승인 란은 `미승인`.
 - `## 원한 결과` 는 **검증 가능한 문장**으로 쓴다(「무엇이 green 이 되면 달성인가」). 이 절이 나중에 advisor 게이트 ②-③ 의 대조 대상이다.
-- 초안까지가 역할이다. **교정·커밋은 Ted 가 한다**(커밋이 곧 승인). 초안을 승인된 것처럼 인용하지 않는다.
+- 초안까지가 역할이다. **Ted의 명시 승인 전에는 미승인**이다. 에이전트 커밋은 승인을 대신하지 않으며, 커밋도 현재 대화의 승인 범위를 따른다. 초안을 승인된 것처럼 인용하지 않는다.
 - 승인된 intent 는 고치지 않는다. 잔여 결함은 **새 intent 를 낸다.**
 
-## 종료 전 — 산출물 커밋 (H6 · 가동 중)
+## 작업별 시작·종료 증거 (H6)
 
-`SubagentStop:researcher` 훅(`.claude/hooks/uncommitted-artifacts.sh`)이 `dev-package/sessions/` · `dev-package/reports/` · `dev-package/intent/` 아래 **미추적 파일**이 남아 있으면 exit 2 로 차단하고 경로를 열거한다. 종료 전에 직접 처리한다.
-
-- `git add <경로>` — **열거된 경로만.** `git add -A` 를 쓰지 않는다(오케스트레이터 체크아웃의 무관한 변경을 쓸어담는다).
-- 커밋 메시지는 한국어. **push 하지 않는다.** 병합·push 는 오케스트레이터 몫이다.
-- 미추적 산출물은 다음 워크트리에서 보이지 않는다 — 지시문이 근거로 지목할 파일이면 커밋이 선행조건이다(`.claude/rules/colab-rules.md` §2-2).
-- 차단 대상은 **미추적(`??`)뿐이다.** 추적 중인 수정분은 차단하지 않고 안내로만 나온다 — 커밋 여부는 판단해서 정한다.
+작업 시작 전에 `docs/development/lifecycle-evidence.md`의 `begin --role researcher`를 실행한다.
+파일 산출물은 `--artifact`로 미리 선언한다. 다른 writer가 있는 사본에서는 파일 대신 초안을 부모에게 반환한다.
+종료 시 `handoff`가 생성한 `COLAB_HANDOFF` 한 줄을 실제 결과와 함께 최종 메시지에 포함한다.
+읽기 전용은 `read-only`, 파일을 쓰지 않은 미승인 초안 반환은 `draft-return`, 파일 인계는 `artifacts` 모드다.
+H6는 시작 이후 변경된 이 작업 산출물과 선언된 파일의 현재 hash를 확인한다. 기존 무관한 미추적 파일은 차단 사유가 아니다.
+누락·인계 없는 새 산출물·범위 밖 변경은 차단한다. 사용자 승인 없는 커밋·push·훅 비활성화로 해결하지 않는다.
+미추적 파일을 다음 사본에 참조시킬 때는 부모가 승인된 전달 경로로 복사하고 hash를 대조한다.
 
 ## 출력
 
-- 산출물은 **파일에**, 오케스트레이터에는 **경로 + ≤15행**.
+- 파일 산출물은 **경로 + ≤15행**으로 인계한다. 읽기 전용 조사와 미승인 초안 반환은 내용을 부모에게 직접 반환하고 상태를 적는다.
 - 형식 = ① 결론·값 ② 근거 `파일:행` ③ 선택지와 비용 ④ 권고. 개조식 · 정성어 배제 · 부정 시작 금지 · 기술 용어에 비유 금지(`§5-1`·`§5-3`).
 - 계수를 낼 때는 **계수 기준을 함께** 적는다. 이전 값과 갈리면 승자를 고르지 말고 기준 차이를 적는다.
 - 문서·보고에 절대경로를 적지 않는다. 경로는 레포 루트 기준 상대경로 또는 `~/` 표기.

@@ -1,0 +1,838 @@
+{
+  "schema": "colab-codex-parity-integration-manifest/v3",
+  "date": "2026-09-09",
+  "checkout": "<repo-root>",
+  "branch": "codex-parity-integration",
+  "base": "95c85bef7f2c65875812c88647f9dadf4f4c315d",
+  "candidate_file": "candidate-list:codex-parity-candidate.txt",
+  "candidate_count": 98,
+  "entry_count": 102,
+  "excluded_source_status_path_count": 164,
+  "full40_model_run_performed": false,
+  "source_reference_note": "source-repo:<path> is relative to the read-only source repository; external-evidence:<path> is relative to the external evidence root; external-raw:<path> is relative to the pre-main raw preservation root.",
+  "hash_note": "source_sha256 hashes the referenced source bytes. For external-raw entries it preserves the unsanitized raw original; target_sha256 hashes the current portable or compact repository bytes.",
+  "generated_entry_source_sha_note": "generated-in-target 항목의 source_sha256은 생성 완료 직후 target 내용의 SHA-256이며 target_sha256과 같다.",
+  "mode_note": "각 entry의 mode는 target filesystem permission이 아니라 target Git index mode(100644 또는 100755)다.",
+  "manifest_entry_exclusion": {
+    "path": "dev-package/sessions/20260909-codex-parity-integration-manifest.json",
+    "reason": "자기 해시 순환을 피하기 위해 manifest 자체는 entries에서 제외한다."
+  },
+  "entries": [
+    {
+      "path": ".agents/skills/agent-browser/SKILL.md",
+      "source": "source-repo:.agents/skills/agent-browser/SKILL.md",
+      "source_sha256": "d5af5f4b3e0938c1d490e8336c0154dbf535ae740d3b33f0afcd4c41f53420ac",
+      "target_sha256": "d4127c7011a83c41c2a0ae8c2a651acdc6ac04e129eb148ad9636a2ae9b6baba",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/apple-design/SKILL.md",
+      "source": "source-repo:.agents/skills/apple-design/SKILL.md",
+      "source_sha256": "4fab1a8b95033761f14a7e85b0075685236b97d17c2fd1a872f26082e442c6aa",
+      "target_sha256": "f645e5a13d91d22f92ba16cf9b45cd8666c7f486222d7d8d95d9c84414032a05",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/colab-v2-work/SKILL.md",
+      "source": "source-repo:.agents/skills/colab-v2-work/SKILL.md",
+      "source_sha256": "fde59627765675da6ab0437aea6fb1753485d8d3d27fdc129f2e1b699df90e86",
+      "target_sha256": "689c61a57ff223fe88d5ada2e48f9414133efd6cfb4cf1bf5005c6e819ce5139",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/design-review/SKILL.md",
+      "source": "source-repo:.agents/skills/design-review/SKILL.md",
+      "source_sha256": "18dc2f8059d85c3b44969cb3ed3dfc0f75015ca53436b796fe935b76704ca161",
+      "target_sha256": "8e125459f3c79b238a23896779a87a67c1ff6e98797ef6da71145e77a42c9e86",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/executing-plans/SKILL.md",
+      "source": "source-repo:.agents/skills/executing-plans/SKILL.md",
+      "source_sha256": "5b429b319bcc169d9ec2765149cc2d2dd3cefe4b299ac804b15f033d5fe2054f",
+      "target_sha256": "afe1fb82a8b7829fdc6edf05049522ecdeed83f6204a286f8859ef109ec10381",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/grill-me/SKILL.md",
+      "source": "source-repo:.agents/skills/grill-me/SKILL.md",
+      "source_sha256": "dc91de8d3dfc4711aa8aff402842ad3d5a4bf16822d3d48ee762678fd6520b10",
+      "target_sha256": "02007b17da7cf8f5f3b1274935b292d5ddc38e5e601e103e2042b88e221096f2",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/grill-me/agents/openai.yaml",
+      "source": "source-repo:.agents/skills/grill-me/agents/openai.yaml",
+      "source_sha256": "c061e39c3e0f9d865fb1b97556d485704af2a8a58f4b8221a8917a5c2074a32b",
+      "target_sha256": "c061e39c3e0f9d865fb1b97556d485704af2a8a58f4b8221a8917a5c2074a32b",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/grilling/SKILL.md",
+      "source": "source-repo:.agents/skills/grilling/SKILL.md",
+      "source_sha256": "a0eeab5eba70498f146280beb3809f06937a0254f92aceddba1db398b1568480",
+      "target_sha256": "42acba358dcd82ddfe9da51d5545279e34bf033da7b6d814251ed65427a26978",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/grilling/agents/openai.yaml",
+      "source": "source-repo:.agents/skills/grilling/agents/openai.yaml",
+      "source_sha256": "1411d7df7d99b7e621a1ff8283c8133cc2464be63d064e52d8ce169c6800ee9b",
+      "target_sha256": "1411d7df7d99b7e621a1ff8283c8133cc2464be63d064e52d8ce169c6800ee9b",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/receiving-code-review/SKILL.md",
+      "source": "source-repo:.agents/skills/receiving-code-review/SKILL.md",
+      "source_sha256": "b22aa1121c752b16bfdaee03f2bcad2a8dc09f015d9ce3e0bfc9739ea7188336",
+      "target_sha256": "c0bde0b9780d4b96c87a338e5f9bdec8deb374d1c07ccfd32ac0dcd37a7faa8a",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/test-driven-development/SKILL.md",
+      "source": "source-repo:.agents/skills/test-driven-development/SKILL.md",
+      "source_sha256": "8611da9b857a09a09dcf64c8a40c40d12d9bb10d33d355d7f3cdda0a76d9a015",
+      "target_sha256": "09075f4d1029c3ae7660a5d6e65f824de721e926ae3458ffcbd7ea0d6ea81bea",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/to-spec/SKILL.md",
+      "source": "source-repo:.agents/skills/to-spec/SKILL.md",
+      "source_sha256": "ee4cc5063585ab544e68a1f9d869177ecd3c119994cd74d0be836e1bc9896b8a",
+      "target_sha256": "d73a25e07bf3cfab5a0ef2eb427b7f23798e499a99a248677bd69428ccd4e3af",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/to-spec/agents/openai.yaml",
+      "source": "source-repo:.agents/skills/to-spec/agents/openai.yaml",
+      "source_sha256": "1c5b4d1e3d8e52287ef19cc2742fdbbfae1914ac75d33af3e4c8174f08cc55bb",
+      "target_sha256": "1c5b4d1e3d8e52287ef19cc2742fdbbfae1914ac75d33af3e4c8174f08cc55bb",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/verification-before-completion/SKILL.md",
+      "source": "source-repo:.agents/skills/verification-before-completion/SKILL.md",
+      "source_sha256": "be4b7b3f0a6ac0d6257ef8527d71499fa5a4482dbffb806d6b36339c27c9ba95",
+      "target_sha256": "defec303fc594f6f9547752cd267c1dded5228acb58eabcea3185ac504517af8",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".agents/skills/writing-plans/SKILL.md",
+      "source": "source-repo:.agents/skills/writing-plans/SKILL.md",
+      "source_sha256": "7d68bcc421f42d6b6fdc8f919984e1fa8c528244171cba5e1dcb14a1ef862c29",
+      "target_sha256": "d523c145424f253dfc90b091013c3a8244957558cb3df7d2e4f69bc11604cf83",
+      "mode": "100644",
+      "classification": "codex-skill-adapter"
+    },
+    {
+      "path": ".claude/agents/gate-runner.md",
+      "source": "source-repo:.claude/agents/gate-runner.md",
+      "source_sha256": "0a4c1445e742f74c17e420891da82ce7ba185172acc42c8377b8f1802f0af8ce",
+      "target_sha256": "0a4c1445e742f74c17e420891da82ce7ba185172acc42c8377b8f1802f0af8ce",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/agents/lane-worker.md",
+      "source": "source-repo:.claude/agents/lane-worker.md",
+      "source_sha256": "980b4fd0f28164330f3440dded0490ce5e2b21f2d86ed8e0d45e2dfed4ddfddd",
+      "target_sha256": "980b4fd0f28164330f3440dded0490ce5e2b21f2d86ed8e0d45e2dfed4ddfddd",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/agents/researcher.md",
+      "source": "source-repo:.claude/agents/researcher.md",
+      "source_sha256": "5b8bb69baf030f17112f5f9fd7f33c1f43bac602351725f607078226db4c4114",
+      "target_sha256": "5b8bb69baf030f17112f5f9fd7f33c1f43bac602351725f607078226db4c4114",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/bootstrap-diet.sh",
+      "source": "source-repo:.claude/hooks/bootstrap-diet.sh",
+      "source_sha256": "2e5709dedd8bfa0c80635098a21949b00a3220c4e281dc3f1468fc841a85daab",
+      "target_sha256": "2e5709dedd8bfa0c80635098a21949b00a3220c4e281dc3f1468fc841a85daab",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/decision-number-guard.sh",
+      "source": "source-repo:.claude/hooks/decision-number-guard.sh",
+      "source_sha256": "21c9d5a4aa3952922136ffe9d0883b100b3132b600980aa37a7d8e2e19db98d3",
+      "target_sha256": "21c9d5a4aa3952922136ffe9d0883b100b3132b600980aa37a7d8e2e19db98d3",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/git-guard.sh",
+      "source": "source-repo:.claude/hooks/git-guard.sh",
+      "source_sha256": "28dd676fe96b0d95cc57f106c45559956a3a1648850dcb4fc36ef7b52ad7aeda",
+      "target_sha256": "28dd676fe96b0d95cc57f106c45559956a3a1648850dcb4fc36ef7b52ad7aeda",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/lane-gate-summary.sh",
+      "source": "source-repo:.claude/hooks/lane-gate-summary.sh",
+      "source_sha256": "0e53c0e9a92c8537ac16af17c9b94716bcff287e8629b82e3409cc3a351a26e0",
+      "target_sha256": "0e53c0e9a92c8537ac16af17c9b94716bcff287e8629b82e3409cc3a351a26e0",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/lifecycle_contract.py",
+      "source": "source-repo:.claude/hooks/lifecycle_contract.py",
+      "source_sha256": "a2c266cf36cd4202f95e6906f6bb5b0048459d72ba6faa32f6c1bf2670fb115a",
+      "target_sha256": "a2c266cf36cd4202f95e6906f6bb5b0048459d72ba6faa32f6c1bf2670fb115a",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/migration-guard.sh",
+      "source": "source-repo:.claude/hooks/migration-guard.sh",
+      "source_sha256": "3588e99a537d9dd755836c1a229358eae566e776e3482fbc489f25f419ece5d7",
+      "target_sha256": "3588e99a537d9dd755836c1a229358eae566e776e3482fbc489f25f419ece5d7",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/test-file-guard.sh",
+      "source": "source-repo:.claude/hooks/test-file-guard.sh",
+      "source_sha256": "8d02ce2da77aaebd4c9d479d4f4abaa7211d92cc4a0d08b6614417b5cb3bd668",
+      "target_sha256": "8d02ce2da77aaebd4c9d479d4f4abaa7211d92cc4a0d08b6614417b5cb3bd668",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/hooks/uncommitted-artifacts.sh",
+      "source": "source-repo:.claude/hooks/uncommitted-artifacts.sh",
+      "source_sha256": "391ef06d2fffb82619556fbcfdab21c21949e4957aa629f0379a03e9e69dd377",
+      "target_sha256": "391ef06d2fffb82619556fbcfdab21c21949e4957aa629f0379a03e9e69dd377",
+      "mode": "100755",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/rules/colab-rules.md",
+      "source": "source-repo:.claude/rules/colab-rules.md",
+      "source_sha256": "b95d1fd6ebffa2553d2c94b2635497072cf18a1f906ecb8030783d9477ee4f87",
+      "target_sha256": "b95d1fd6ebffa2553d2c94b2635497072cf18a1f906ecb8030783d9477ee4f87",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/VENDORED.md",
+      "source": "source-repo:.claude/skills/VENDORED.md",
+      "source_sha256": "f0d92258cbb06cb73df6d229d245e366d44b9f612da5adb5ceae95a770d5136e",
+      "target_sha256": "1979505bf1303bd7cd16f39526ba0418e80ec42a45a35a43d28b6861d820e932",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/authentication.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/authentication.md",
+      "source_sha256": "b380845c5403535d0b58561454ba43e0b3d41becae429dd3a70a52e2cb9d0bc4",
+      "target_sha256": "8ccc30f2613523630cf3771a07d71339676d93c63623631a4206521c6d78d2e5",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/commands.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/commands.md",
+      "source_sha256": "a3208ca3caa45b800f7a7d1c0c259dfcde56f5ca4ffc67ae53c3c50b1f8522d4",
+      "target_sha256": "31708c727edfd2e1a863be45f4c3354e929bcbe59aa89d9bad8cebd7442d56ee",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/profiling.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/profiling.md",
+      "source_sha256": "94e15dae8e2e41cd1220c3f171e7d33d42915e91098d1ff5742709dd1fe06aae",
+      "target_sha256": "15f1e6c7994d7471a274dc1476992d0ec178acd91f8b626e0d6f24a4dbef738f",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/proxy-support.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/proxy-support.md",
+      "source_sha256": "ae6c2c5da76ea8577374d991225ae01d01f3caddae58387c4f6b6979a8cfd63b",
+      "target_sha256": "4c44ba60d9397523109fdbdf1d972739691856c5bf6bf1587fc58793c71b4671",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/session-management.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/session-management.md",
+      "source_sha256": "ab3353100b63d09b4fd69eebbb342a016c8bf3b5a55bd1bd19079aec0f94f269",
+      "target_sha256": "2ce531bf105aaf827a907a4e255e00321eef5994ca0e21e41c28489c0a8efebb",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/snapshot-refs.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/snapshot-refs.md",
+      "source_sha256": "3a5741855f684bd7a17408ed28fa3bd982c562609c18b121fe0f37808d5863d9",
+      "target_sha256": "c2aa75f5a3c1b34a72d53c06b68cc97d8a3c295134257d48f315cdff1c06455d",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/trust-boundaries.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/trust-boundaries.md",
+      "source_sha256": "d1182fab963e4c7f3c7908be173970e10c240caea5960f6f58bea73a8a511d98",
+      "target_sha256": "a63309a74162a2b99bd0282553b7c98ea70f906f48a2b6642b4f69c9605c7619",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/references/video-recording.md",
+      "source": "source-repo:.claude/skills/agent-browser/references/video-recording.md",
+      "source_sha256": "56f9c26306128a3c2cd7ee1a84d8ac403e82aa350ea4a2ac10a97283a6bd10a3",
+      "target_sha256": "c2c12bd8c44e5d36fbb94cfc376180d47507d3c26a7ee8876b892fc700dcf332",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/templates/authenticated-session.sh",
+      "source": "source-repo:.claude/skills/agent-browser/templates/authenticated-session.sh",
+      "source_sha256": "43c5bf3e8da0000cac8c1c4153d135ce21112c813a2e421a755b1ff50eb71614",
+      "target_sha256": "1fa9926c36dbe71191120ce067e5e3babe732cd1cc605020f3bd04dc430aa58c",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/templates/capture-workflow.sh",
+      "source": "source-repo:.claude/skills/agent-browser/templates/capture-workflow.sh",
+      "source_sha256": "6d527f43204fbaaeb68cd0d9d004a11e2c4d92c02899d75780f3d11f93d7d916",
+      "target_sha256": "bf3f3a2f8413773891d9fa400d2a2fddf6d73ffc7a9b2fa00f797f944171c3d5",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/agent-browser/templates/form-automation.sh",
+      "source": "source-repo:.claude/skills/agent-browser/templates/form-automation.sh",
+      "source_sha256": "df4cb56b2c04ab2f707ad003de311d6773b48e6ee6bbef5b36f15e04b8cae44e",
+      "target_sha256": "b86836986d339f736b15ca78cf3d566e845a6293ae25a5b00aa520b837572650",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/colab-v2-work/SKILL.md",
+      "source": "source-repo:.claude/skills/colab-v2-work/SKILL.md",
+      "source_sha256": "32e041a1d8575b95354090fe85f27cfafbddaf13a5a41a4340588f819cd4acb5",
+      "target_sha256": "32e041a1d8575b95354090fe85f27cfafbddaf13a5a41a4340588f819cd4acb5",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/design-review/SKILL.md",
+      "source": "source-repo:.claude/skills/design-review/SKILL.md",
+      "source_sha256": "c68d59da70e0148504b793b023fae7a2976bb640a2838cc40e87a10b25f37718",
+      "target_sha256": "c68d59da70e0148504b793b023fae7a2976bb640a2838cc40e87a10b25f37718",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".claude/skills/grill-me/SKILL.md",
+      "source": "source-repo:.claude/skills/grill-me/SKILL.md",
+      "source_sha256": "c2c7d3c9cd0413b1149b29b02e6dd321a39b360432e0ba81030f6c6960beff9f",
+      "target_sha256": "c2c7d3c9cd0413b1149b29b02e6dd321a39b360432e0ba81030f6c6960beff9f",
+      "mode": "100644",
+      "classification": "shared-agent-source"
+    },
+    {
+      "path": ".codex/agents/advisor.toml",
+      "source": "source-repo:.codex/agents/advisor.toml",
+      "source_sha256": "8fd52226c87117dadaff5c7a55a0b22616ed342ef7c4bb294c67a8a80410f3ae",
+      "target_sha256": "8fd52226c87117dadaff5c7a55a0b22616ed342ef7c4bb294c67a8a80410f3ae",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".codex/agents/gate-runner.toml",
+      "source": "source-repo:.codex/agents/gate-runner.toml",
+      "source_sha256": "0169b339fe7d00672b518971eb214f4efaeca6779c5cf219b941962894bbc22c",
+      "target_sha256": "0169b339fe7d00672b518971eb214f4efaeca6779c5cf219b941962894bbc22c",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".codex/agents/lane-worker.toml",
+      "source": "source-repo:.codex/agents/lane-worker.toml",
+      "source_sha256": "9256114a178d7b4bea618efb9546603b4af9a85128824250501948040d5bfe8a",
+      "target_sha256": "9256114a178d7b4bea618efb9546603b4af9a85128824250501948040d5bfe8a",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".codex/agents/researcher.toml",
+      "source": "source-repo:.codex/agents/researcher.toml",
+      "source_sha256": "a02319546f26c93859b54048908c11808bf7da236b830d50acc9f78fad5106c1",
+      "target_sha256": "a02319546f26c93859b54048908c11808bf7da236b830d50acc9f78fad5106c1",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".codex/config.toml",
+      "source": "source-repo:.codex/config.toml",
+      "source_sha256": "847b5258e9a926e539c30e889025961d361bb7ed539f61188b274e738fdfb881",
+      "target_sha256": "847b5258e9a926e539c30e889025961d361bb7ed539f61188b274e738fdfb881",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "source": "source-repo:.codex/hooks.json",
+      "source_sha256": "1a7972f2380e1be51fc56cbc09cbfe524e9996c395ba09b7a3bba4d7e2a65d76",
+      "target_sha256": "f591c6439053b40b3dbba2fea24914cfcbe9b051ff1833b2f360bb0988857b79",
+      "mode": "100644",
+      "classification": "codex-runtime-config"
+    },
+    {
+      "path": ".github/workflows/agent-bridge.yml",
+      "source": "source-repo:.github/workflows/agent-bridge.yml",
+      "source_sha256": "f8dfb9c396ff3902e347c27bef586c7176f4cae0d68fe1d868aa81cdddadc713",
+      "target_sha256": "f8dfb9c396ff3902e347c27bef586c7176f4cae0d68fe1d868aa81cdddadc713",
+      "mode": "100644",
+      "classification": "ci-bridge-check"
+    },
+    {
+      "path": ".gitignore",
+      "source": "source-repo:.gitignore",
+      "source_sha256": "a122522180f86e0dc55bd7baa5fe29de0d405359da99e164fe678299b1e78d95",
+      "target_sha256": "8ae2673772d8d1909de4cce514d79a1883d96c5b9be928f8bd122e0852e01fde",
+      "mode": "100644",
+      "classification": "parity-integration"
+    },
+    {
+      "path": "AGENTS.md",
+      "source": "source-repo:AGENTS.md",
+      "source_sha256": "660b48c136f168f83da385dde5b09b143d2a0b45af8a6b00c32230d1bf63a30d",
+      "target_sha256": "660b48c136f168f83da385dde5b09b143d2a0b45af8a6b00c32230d1bf63a30d",
+      "mode": "100644",
+      "classification": "agent-entrypoint"
+    },
+    {
+      "path": "CLAUDE.md",
+      "source": "source-repo:CLAUDE.md",
+      "source_sha256": "90eef21d427775fdf0fe6874d545c811e27a72a2e8c895e7117564e1864bd1a2",
+      "target_sha256": "7f48696d11b95b2f22ca995b5343ed7b80b40c78eb4d340e99f35a184251a78d",
+      "mode": "100644",
+      "classification": "agent-entrypoint"
+    },
+    {
+      "path": "dev-package/intent/2026-09-08-dual-agent-development.md",
+      "source": "source-repo:dev-package/intent/2026-09-08-dual-agent-development.md",
+      "source_sha256": "d5fd4902226406aea2abcb98f351f14435816264c80297b05dbe4b98aea6ea37",
+      "target_sha256": "d5fd4902226406aea2abcb98f351f14435816264c80297b05dbe4b98aea6ea37",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/prd/rounds/R-CODEX-PARITY.md",
+      "source": "source-repo:dev-package/prd/rounds/R-CODEX-PARITY.md",
+      "source_sha256": "1c22a464527e1ef5687f6cd3b22da68cbc3ca0c18a8bbe256c6c315bb5711083",
+      "target_sha256": "3a2d9eb2c4463dafe21aa32e9027955733c2dc78b284073a3b0f7f248e4165a6",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/prd/rounds/R-DUAL-AGENT.md",
+      "source": "source-repo:dev-package/prd/rounds/R-DUAL-AGENT.md",
+      "source_sha256": "71919e89e91115a9f20b1cb9001bb0de402e0a0b0f9b784777a8edcae1665ecb",
+      "target_sha256": "c5dec9cf21bd32577c470be2b14223f16ce20e9629215e07c947880ad7daf158",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/prd/specs/dual-agent-development.md",
+      "source": "source-repo:dev-package/prd/specs/dual-agent-development.md",
+      "source_sha256": "3bb78fd6a3775ba0ae6bd14820e2b7892b68984f587cfc864697d2a4919665a6",
+      "target_sha256": "3bb78fd6a3775ba0ae6bd14820e2b7892b68984f587cfc864697d2a4919665a6",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260908-codex-bridge.md",
+      "source": "source-repo:dev-package/sessions/20260908-codex-bridge.md",
+      "source_sha256": "5d8463414cf2239afa49ba607f4a8d012c90fa2f888fe92920b69eaf7441e264",
+      "target_sha256": "5d8463414cf2239afa49ba607f4a8d012c90fa2f888fe92920b69eaf7441e264",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260908-harness-audit.md",
+      "source": "source-repo:dev-package/sessions/20260908-harness-audit.md",
+      "source_sha256": "0722f6ea10c5227bece213d136b2cce9ac0443af544ddc49c8db24112d8b4cc9",
+      "target_sha256": "fc96ea01fa2d2a2bd8791da4975a79bbb4bc74db94df96fda42d1c5e83c5159a",
+      "mode": "100644",
+      "classification": "sanitized-parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260909-codex-parity-acceptance.md",
+      "source": "source-repo:dev-package/sessions/20260909-codex-parity-acceptance.md",
+      "source_sha256": "b8b81aa05e3a080af2b8d5ef83b2edefe6ec725c2a92b95260f8b70f654a2f46",
+      "target_sha256": "36bf6036207b584caa704a0240c296d8c6a035daefd8fd3006dc3e51bfad05d6",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260909-codex-parity-e2e.md",
+      "source": "source-repo:dev-package/sessions/20260909-codex-parity-e2e.md",
+      "source_sha256": "2e6e91a4e526bd9dcae8e0ac2883d12943e42864a385398b4f4ca25c3604805f",
+      "target_sha256": "2e6e91a4e526bd9dcae8e0ac2883d12943e42864a385398b4f4ca25c3604805f",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260909-codex-parity-matrix.md",
+      "source": "source-repo:dev-package/sessions/20260909-codex-parity-matrix.md",
+      "source_sha256": "3577823978f464955f29f97aaa591346ea7603e1d7f8de67c22d3ced06276bba",
+      "target_sha256": "3577823978f464955f29f97aaa591346ea7603e1d7f8de67c22d3ced06276bba",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "dev-package/sessions/20260909-codex-runtime.md",
+      "source": "source-repo:dev-package/sessions/20260909-codex-runtime.md",
+      "source_sha256": "f7dbd76241a0b756b81f89dff2c563de5a2d1e68f151b459f9cd898b52e71609",
+      "target_sha256": "f7dbd76241a0b756b81f89dff2c563de5a2d1e68f151b459f9cd898b52e71609",
+      "mode": "100644",
+      "classification": "parity-documentation"
+    },
+    {
+      "path": "docs/development/dual-agent.md",
+      "source": "source-repo:docs/development/dual-agent.md",
+      "source_sha256": "43685d0ae784dafdc31e87b90acbad461ba049354e173ab0bd8113f9eea92a33",
+      "target_sha256": "43685d0ae784dafdc31e87b90acbad461ba049354e173ab0bd8113f9eea92a33",
+      "mode": "100644",
+      "classification": "developer-documentation"
+    },
+    {
+      "path": "docs/development/lifecycle-evidence.md",
+      "source": "source-repo:docs/development/lifecycle-evidence.md",
+      "source_sha256": "1228a91e4904fe6f2cfe775a4bebba30a6656b86ac437b9f19153a1a3868d7e8",
+      "target_sha256": "1228a91e4904fe6f2cfe775a4bebba30a6656b86ac437b9f19153a1a3868d7e8",
+      "mode": "100644",
+      "classification": "developer-documentation"
+    },
+    {
+      "path": "eval/harness/H03-md-table-blank-line/expect.sh",
+      "source": "source-repo:eval/harness/H03-md-table-blank-line/expect.sh",
+      "source_sha256": "bc0302f78ef078c77c80f32094b4f86e1d795d3676d0c677313694e181172e31",
+      "target_sha256": "bc0302f78ef078c77c80f32094b4f86e1d795d3676d0c677313694e181172e31",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H08-caption-seven/expect.sh",
+      "source": "source-repo:eval/harness/H08-caption-seven/expect.sh",
+      "source_sha256": "1b8a4489636941eff48cd82ef5a066d7420fde7789f3d9f4ee430de887fbf94f",
+      "target_sha256": "1b8a4489636941eff48cd82ef5a066d7420fde7789f3d9f4ee430de887fbf94f",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H08-caption-seven/fixture/SOURCE.md",
+      "source": "source-repo:eval/harness/H08-caption-seven/fixture/SOURCE.md",
+      "source_sha256": "924c60ebc01e42172a432d6a6ad00f46c040ae50cb1a9be9d462e6d80b146a79",
+      "target_sha256": "924c60ebc01e42172a432d6a6ad00f46c040ae50cb1a9be9d462e6d80b146a79",
+      "mode": "100644",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H08-caption-seven/judge.py",
+      "source": "source-repo:eval/harness/H08-caption-seven/judge.py",
+      "source_sha256": "ef3b027300f280b18f981049b5ddb841b83848ca49ddc7cb79feb3aa72706e9c",
+      "target_sha256": "ef3b027300f280b18f981049b5ddb841b83848ca49ddc7cb79feb3aa72706e9c",
+      "mode": "100644",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H08-caption-seven/task.md",
+      "source": "source-repo:eval/harness/H08-caption-seven/task.md",
+      "source_sha256": "c4cbfc820aff6cd8cc45c554441c09f1743725f845f850ebe89bf38e2d0203f1",
+      "target_sha256": "c4cbfc820aff6cd8cc45c554441c09f1743725f845f850ebe89bf38e2d0203f1",
+      "mode": "100644",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H09-border-two-layer/task.md",
+      "source": "source-repo:eval/harness/H09-border-two-layer/task.md",
+      "source_sha256": "5c59af3f162416f108e21efbf6c896a96525b223943204fadc00f2787cbab963",
+      "target_sha256": "5c59af3f162416f108e21efbf6c896a96525b223943204fadc00f2787cbab963",
+      "mode": "100644",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H12-lvl3-missing/expect.sh",
+      "source": "source-repo:eval/harness/H12-lvl3-missing/expect.sh",
+      "source_sha256": "fc0916f164b20758b603481e5ca9e5c290f9daad0fcc3abc6d08cb81c35afdb3",
+      "target_sha256": "fc0916f164b20758b603481e5ca9e5c290f9daad0fcc3abc6d08cb81c35afdb3",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H15-zero-targets/expect.sh",
+      "source": "source-repo:eval/harness/H15-zero-targets/expect.sh",
+      "source_sha256": "f8dd33dee92f878312a76b7392e34f259f7c211e584e47f3250fb6356716d0a6",
+      "target_sha256": "f8dd33dee92f878312a76b7392e34f259f7c211e584e47f3250fb6356716d0a6",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/H16-lenient-default/expect.sh",
+      "source": "source-repo:eval/harness/H16-lenient-default/expect.sh",
+      "source_sha256": "41cb51b9eb7fde46595a6cd9e76923b0d6644860a07f04d5e6c61e32a26cd7dd",
+      "target_sha256": "41cb51b9eb7fde46595a6cd9e76923b0d6644860a07f04d5e6c61e32a26cd7dd",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/results/activation-environment-replay.json",
+      "source": "external-raw:eval/harness/results/activation-environment-replay.json",
+      "source_sha256": "a3ab0d75aeb91dfdb59fa07aecd17a17346d1766028c14e35374fc4034515563",
+      "target_sha256": "3f754c4122b7a604307105082fb06048897ceacbfe2cf2349a9733764247b4b3",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/activation-gate.json",
+      "source": "external-raw:eval/harness/results/activation-gate.json",
+      "source_sha256": "1cbb91a030dbd8bbefe039204259ed36bec0146a3baa408a2f19b3a814e5705d",
+      "target_sha256": "e82dee796dab167b2a701c6df8caf1dcd8fa6b8effda13d25155f3571c7a74de",
+      "mode": "100644",
+      "classification": "compact-sanitized-activation-evidence"
+    },
+    {
+      "path": "eval/harness/results/activation-negative.json",
+      "source": "external-raw:eval/harness/results/activation-negative.json",
+      "source_sha256": "63996075d5789bd900f9aad560f86f4e200cf99ecf2d321bbb5aa078db897ced",
+      "target_sha256": "5743943dd473cd88168fcd1aabc36f8c521a370bd51033784a2a2e1b095aa1c9",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/activation-rejudged.json",
+      "source": "source-repo:eval/harness/results/activation-rejudged.json",
+      "source_sha256": "05b284b5ffc9debb72c5142bbe5b04b5ff8268106d3008cf398f32533a8bb087",
+      "target_sha256": "b3b18cf3c15e9971082c438c54f9f847f024c5673f9905ff051f36e0d71d42e1",
+      "mode": "100644",
+      "classification": "compact-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/activation-roles.json",
+      "source": "external-raw:eval/harness/results/activation-roles.json",
+      "source_sha256": "cefa989647efe6c72d9fffe782fe05a59dd851156f5be982a187e9fe691d5cf9",
+      "target_sha256": "aecd2515346b59fd59b6b772d8d75cab67422ce11c2f076a9e4daf0e0d38acd2",
+      "mode": "100644",
+      "classification": "compact-sanitized-activation-evidence"
+    },
+    {
+      "path": "eval/harness/results/agent-browser-core-0.27.0.txt",
+      "source": "source-repo:eval/harness/results/agent-browser-core-0.27.0.txt",
+      "source_sha256": "d5bbf95b731ab4ce9f10c433e7d30d970c9d66189244996ccdadc301bdef18e8",
+      "target_sha256": "d5bbf95b731ab4ce9f10c433e7d30d970c9d66189244996ccdadc301bdef18e8",
+      "mode": "100644",
+      "classification": "vendored-skill-source"
+    },
+    {
+      "path": "eval/harness/results/codex-20260908-audit-entry/summary.json",
+      "source": "external-raw:eval/harness/results/codex-20260908-audit-entry/summary.json",
+      "source_sha256": "bb1ecf036e0cbc7af93163d1905b3a2f9ce98dc0596c17f84152072f412dee0e",
+      "target_sha256": "3eaee0c25c3664bfaf9f6cbd04c47fe219599dcedab47f6348103b7f0f9d4921",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/codex-20260908-audit-fixed/summary.json",
+      "source": "external-raw:eval/harness/results/codex-20260908-audit-fixed/summary.json",
+      "source_sha256": "5919c5068d448f0aa662047d190029723603dca93c02b7d5a86f558129a0df79",
+      "target_sha256": "4e1994c9ec2e31d6fc8e9deedfd576b22b70e1b42ddc527898e82e95376db096",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/codex-20260908-audit/summary.json",
+      "source": "external-raw:eval/harness/results/codex-20260908-audit/summary.json",
+      "source_sha256": "9a636fc0f989c9d451926f48ad555502998723f48beb7be2fcd863ad17b737fd",
+      "target_sha256": "7062f91ca27b8dcc28c7d08bd00e77403565d7edce3193ef7a6f771fc35e0bbd",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/desktop-parity-final-source-20260909.json",
+      "source": "external-raw:eval/harness/results/desktop-parity-final-source-20260909.json",
+      "source_sha256": "d6b5dbaf077e505cbbd4363b6e79027be99759d2f4a20714bc74f6173cd009dc",
+      "target_sha256": "4fb9c5441f01bcd042a694b8628436d0b2c29459be13eceea3262d302ce2782d",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/desktop-parity-negative-20260909.json",
+      "source": "external-raw:eval/harness/results/desktop-parity-negative-20260909.json",
+      "source_sha256": "3f93321769f387fd9147bdb8db5e695a54c32b2813996e80c86d8c816cf0bf51",
+      "target_sha256": "5df2b6f58356ee3e0ab549cbf15f8f69c1bd105093a6d1ec4fd70a58e16ef935",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/results/parity-baseline-20260909.json",
+      "source": "external-raw:eval/harness/results/parity-baseline-20260909.json",
+      "source_sha256": "7932c5c70ed32fc4c3d3a4eea30ad17d717afeba3c56a650dd7333ac7f02afd0",
+      "target_sha256": "d32ab7bc8e8a94c65eb33579dde78f83bec0cd9e66f3147822fdf03b069694af",
+      "mode": "100644",
+      "classification": "sanitized-evaluation-evidence"
+    },
+    {
+      "path": "eval/harness/run.sh",
+      "source": "source-repo:eval/harness/run.sh",
+      "source_sha256": "070c846ac39bfe8a3c9558c489d886b1a3c30be833678a2d78c2fffbd434fce8",
+      "target_sha256": "070c846ac39bfe8a3c9558c489d886b1a3c30be833678a2d78c2fffbd434fce8",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "eval/harness/tests/run-selftest.sh",
+      "source": "source-repo:eval/harness/tests/run-selftest.sh",
+      "source_sha256": "9ecb96d8ca4d32bbf2743edcfbc1f20967f27a9c0d2237e019f054ab0abe40b3",
+      "target_sha256": "9ecb96d8ca4d32bbf2743edcfbc1f20967f27a9c0d2237e019f054ab0abe40b3",
+      "mode": "100755",
+      "classification": "evaluation-harness"
+    },
+    {
+      "path": "gates/run.sh",
+      "source": "source-repo:gates/run.sh",
+      "source_sha256": "b323196e550501d61c8586523729153ca36f6aba4c4e59e1b15abbd32ec29132",
+      "target_sha256": "b323196e550501d61c8586523729153ca36f6aba4c4e59e1b15abbd32ec29132",
+      "mode": "100755",
+      "classification": "gate-integration"
+    },
+    {
+      "path": "gates/tools/gate_summary_json.py",
+      "source": "source-repo:gates/tools/gate_summary_json.py",
+      "source_sha256": "298d94841247341b17e17954bdb5b139db1861e2210d3ef73a00f158f7b79cbd",
+      "target_sha256": "298d94841247341b17e17954bdb5b139db1861e2210d3ef73a00f158f7b79cbd",
+      "mode": "100644",
+      "classification": "gate-integration"
+    },
+    {
+      "path": "scripts/agent-bridge.py",
+      "source": "source-repo:scripts/agent-bridge.py",
+      "source_sha256": "94cdd1c0daef2fb0cadbba921dbdf3dd8dd932db939266292ff9a236631c2e4e",
+      "target_sha256": "94cdd1c0daef2fb0cadbba921dbdf3dd8dd932db939266292ff9a236631c2e4e",
+      "mode": "100644",
+      "classification": "bridge-or-evaluation-runner"
+    },
+    {
+      "path": "scripts/codex-harness-eval.py",
+      "source": "source-repo:scripts/codex-harness-eval.py",
+      "source_sha256": "ab3508dddae5bd77ca2187928ed12b84dc234a07cde9f5d5bb69b3e960de7e18",
+      "target_sha256": "ab3508dddae5bd77ca2187928ed12b84dc234a07cde9f5d5bb69b3e960de7e18",
+      "mode": "100644",
+      "classification": "bridge-or-evaluation-runner"
+    },
+    {
+      "path": "scripts/dev.ps1",
+      "source": "source-repo:scripts/dev.ps1",
+      "source_sha256": "010775a9de96c5a3b9987e5aedc529c58248d2b3378897ba90f1acb15dfcccd7",
+      "target_sha256": "b07ce43c0dafad958f2c52b2fde745c1636e56948a6286cb93589ad25ad05a48",
+      "mode": "100644",
+      "classification": "bridge-or-evaluation-runner"
+    },
+    {
+      "path": "scripts/tests/test_agent_bridge.py",
+      "source": "source-repo:scripts/tests/test_agent_bridge.py",
+      "source_sha256": "4cf07eb6647f8c1c2285193c0607ed1cf47c3cab28a05f265f81660e54f2a4a3",
+      "target_sha256": "db645552564dd64b8537f33725debf033ca257c5519360bc0620b8bd936439d0",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "scripts/tests/test_codex_harness_eval.py",
+      "source": "source-repo:scripts/tests/test_codex_harness_eval.py",
+      "source_sha256": "e7faa6aff8fdd402cc60d35539180fc5a810776553e1e1eaf781f6af86d6f803",
+      "target_sha256": "e7faa6aff8fdd402cc60d35539180fc5a810776553e1e1eaf781f6af86d6f803",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "scripts/tests/test_h08_font_audit.py",
+      "source": "source-repo:scripts/tests/test_h08_font_audit.py",
+      "source_sha256": "cdc3a41c67cea67ae47faa90b3d907ac5d1c9dfd456459558697ba7ad2449a96",
+      "target_sha256": "cdc3a41c67cea67ae47faa90b3d907ac5d1c9dfd456459558697ba7ad2449a96",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "scripts/tests/test_h15_h16_judge_compat.py",
+      "source": "source-repo:scripts/tests/test_h15_h16_judge_compat.py",
+      "source_sha256": "74135656c483e3eab400f6284a5841cc9d916f677aeb6312c46f30e1e61430ad",
+      "target_sha256": "74135656c483e3eab400f6284a5841cc9d916f677aeb6312c46f30e1e61430ad",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "scripts/tests/test_harness_judge_compat.py",
+      "source": "source-repo:scripts/tests/test_harness_judge_compat.py",
+      "source_sha256": "b6571f4020ee7046612810d8a91a433895a8c0f3edfe14717b54a2c76bd78eca",
+      "target_sha256": "b6571f4020ee7046612810d8a91a433895a8c0f3edfe14717b54a2c76bd78eca",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "scripts/tests/test_harness_lifecycle_contract.py",
+      "source": "source-repo:scripts/tests/test_harness_lifecycle_contract.py",
+      "source_sha256": "941857f68272ecaa0a75d6857bbc93b3ddc835213df43866ae52994d7745b2f2",
+      "target_sha256": "941857f68272ecaa0a75d6857bbc93b3ddc835213df43866ae52994d7745b2f2",
+      "mode": "100644",
+      "classification": "regression-test"
+    },
+    {
+      "path": "eval/harness/results/codex-40-final-acceptance-20260909.json",
+      "source": "external-evidence:codex-40-final-acceptance.json",
+      "source_sha256": "c324cbd72eada75993b431cfff0b846fb7db38fa86ce5bd7450f0697cc3c32b2",
+      "target_sha256": "c324cbd72eada75993b431cfff0b846fb7db38fa86ce5bd7450f0697cc3c32b2",
+      "mode": "100644",
+      "classification": "compact-final-acceptance"
+    },
+    {
+      "path": "eval/harness/results/role-model-activation-probe-20260909.json",
+      "source": "generated-in-target",
+      "source_sha256": "883dc1e0b2b541dd59b36f73565252bc19ce01c4477cb9d96806379438204223",
+      "target_sha256": "883dc1e0b2b541dd59b36f73565252bc19ce01c4477cb9d96806379438204223",
+      "mode": "100644",
+      "classification": "role-model-activation-probe"
+    },
+    {
+      "path": "eval/harness/results/post-main-evaluation-check-20260909.json",
+      "source": "generated-in-target",
+      "source_sha256": "780238f54641818db2f820568263c2f945a1b2ce0634b3acb8eb590f912889c2",
+      "target_sha256": "780238f54641818db2f820568263c2f945a1b2ce0634b3acb8eb590f912889c2",
+      "mode": "100644",
+      "classification": "post-main-evaluation-check"
+    },
+    {
+      "path": "dev-package/sessions/20260909-codex-parity-integration.md",
+      "source": "generated-in-target",
+      "source_sha256": "8aac00cef5bddd95a78dd92438cab6518923ac704c18b7514868cac920aec219",
+      "target_sha256": "8aac00cef5bddd95a78dd92438cab6518923ac704c18b7514868cac920aec219",
+      "mode": "100644",
+      "classification": "integration-session-record"
+    }
+  ]
+}

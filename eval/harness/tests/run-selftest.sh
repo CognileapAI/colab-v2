@@ -4,7 +4,7 @@
 # ⚠ **실제 모델 호출 0회.** `claude` 를 임시 디렉터리의 스텁으로 갈아끼우고 `PATH` 앞에 둔다.
 #   러너가 절대경로로 `claude` 를 부르면 이 시험은 성립하지 않는다 — 그것도 이 시험이 잡는다.
 #
-# 케이스 7 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 15 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 과제 0건                                  → exit 1  (red(판정) · green-by-skip 금지)
 #   ⓑ `expect.sh` 부재                          → exit 78 (red(준비) · 판정 재료 부재)
 #   ⓒ 상한 변수 미선언                          → exit 78 (red(준비) · 관대한 기본값 금지)
@@ -12,6 +12,10 @@
 #   ⓔ 2/2 green                                 → exit 0  ＋ 요약줄 5칸(과제·실행·green·불안정·준비)
 #   ⓕ 스텁 sleep > COLAB_EVAL_TIMEOUT           → exit 78 (red(준비) · 상한 초과는 skip 이 아니다)
 #   ⓖ `is_error:true` ＋ 본문은 기대와 일치     → exit 78 (red(준비) · 오류 페이로드 · rc 0)
+#   ⓗ 판정기 exit 78 / ⓘ 예상 밖 exit 42      → exit 78 ＋ 원문 stderr·종료코드 보존
+#   ⓙ 판정기 exit 1                            → exit 1 (판정 실패 유지)
+#   ⓚ 1회차 green · 2회차 판정기 exit 78      → exit 78 (불안정으로 오분류 금지)
+#   추가 4건: 같은 과제 1→78/42, 과제 간 1/78·78/1 혼재 → exit 1
 #
 # ⓐ·ⓑ·ⓒ·ⓕ·ⓖ 가 통과해 버리면 이 러너는 「아무것도 재지 않고 green」을 낼 수 있다 — 그 다섯이 존재 이유다.
 # ⓖ 는 advisor ② 가 재현한 구멍이다 — `rc 0` ＋ `result` 본문이 기대와 맞으면 오류 결과도 2/2 green 이 됐다.
@@ -75,12 +79,11 @@ make_task() { # $1=과제 뿌리 $2=과제 이름 $3=expect.sh 를 둘 것인가
 
 run_case() { # $1=과제 뿌리 $2..=환경 선언 → RC · OUT 을 채운다
   local tasks="$1"; shift
-  local results; results="$(mktemp -d -t harness-eval-results-XXXXXX)"
+  RESULTS="$(mktemp -d "$WORK/results-XXXXXX")"
   OUT="$(PATH="$STUB_BIN:$PATH" \
-         COLAB_EVAL_TASKS_DIR="$tasks" COLAB_EVAL_RESULTS_ROOT="$results" \
+         COLAB_EVAL_TASKS_DIR="$tasks" COLAB_EVAL_RESULTS_ROOT="$RESULTS" \
          env "$@" bash "$RUNNER" 2>&1)"
   RC=$?
-  rm -rf "$results"
 }
 
 check() { # $1=이름 $2=기대 exit $3=실측 exit
@@ -153,6 +156,99 @@ $(printf '%s\n' "$OUT" | sed 's/^/     /')"
     || red "ⓖ — exit 78 은 맞으나 사유에 subtype 이 없다(원인을 이름으로 내지 않았다)."
 fi
 
+# ── 판정기 종료 계약: 실제 스텁 실행 + 근거 파일을 바이트 단위로 확인 ────────
+T_JUDGE="$WORK/judge"; make_task "$T_JUDGE" "H01-stub" yes
+cat > "$T_JUDGE/H01-stub/expect.sh" <<'JUDGE'
+#!/usr/bin/env bash
+cat >/dev/null
+rc="$JUDGE_RC"
+if [ -n "${JUDGE_COUNTER:-}" ]; then
+  n=0
+  [ -f "$JUDGE_COUNTER" ] && n="$(cat "$JUDGE_COUNTER")"
+  n=$((n + 1))
+  printf '%s\n' "$n" > "$JUDGE_COUNTER"
+  [ "$n" -eq 1 ] && rc="${JUDGE_FIRST_RC:-0}"
+fi
+printf 'judge stdout rc=%s\n' "$rc"
+printf 'judge stderr rc=%s\r\nsecond line\n' "$rc" >&2
+exit "$rc"
+JUDGE
+
+check_judge_evidence() { # $1=회차 $2=판정기 원래 종료코드
+  local attempt="$1" want_rc="$2" dirs
+  dirs=("$RESULTS"/*)
+  [ "${#dirs[@]}" -eq 1 ] || { red "판정기 결과 디렉터리 수가 1이 아니다"; return; }
+  printf 'judge stderr rc=%s\r\nsecond line\n' "$want_rc" > "$WORK/want.stderr"
+  cmp -s "$WORK/want.stderr" "${dirs[0]}/H01.expect.$attempt.err.txt" \
+    || red "판정기 stderr 원문이 보존되지 않았다(rc=$want_rc · $attempt 회차)"
+  printf 'judge stdout rc=%s\n' "$want_rc" > "$WORK/want.stdout"
+  cmp -s "$WORK/want.stdout" "${dirs[0]}/H01.expect.$attempt.txt" \
+    || red "판정기 stdout이 stderr와 분리되어 보존되지 않았다"
+  printf '%s\n' "$want_rc" > "$WORK/want.rc"
+  cmp -s "$WORK/want.rc" "${dirs[0]}/H01.expect.$attempt.rc" \
+    || red "판정기 원래 종료코드 근거가 없다(rc=$want_rc)"
+}
+
+for judge_rc in 78 42 1; do
+  want_exit=78; runs=1; unstable=0; ready=1
+  if [ "$judge_rc" -eq 1 ]; then
+    want_exit=1; runs=2; unstable=1; ready=0
+  fi
+  run_case "$T_JUDGE" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 JUDGE_RC="$judge_rc"
+  check "판정기 exit $judge_rc 분류" "$want_exit" "$RC"
+  printf '%s' "$OUT" | grep -q "과제 1 · 실행 $runs · green 0 · 불안정 $unstable · 준비 $ready" \
+    || red "판정기 exit $judge_rc 요약 계수/실행 중단이 틀렸다"
+  if [ "$want_exit" -eq 78 ]; then
+    printf '%s' "$OUT" | grep -q "판정기.*rc=$judge_rc" \
+      || red "준비 실패 사유에 판정기 원래 종료코드가 없다"
+  fi
+  check_judge_evidence 1 "$judge_rc"
+  [ "$runs" -eq 1 ] || check_judge_evidence 2 "$judge_rc"
+done
+
+run_case "$T_JUDGE" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 \
+  JUDGE_RC=78 JUDGE_COUNTER="$WORK/judge.count"
+check "1회차 green 뒤 판정기 준비 실패" 78 "$RC"
+printf '%s' "$OUT" | grep -q '과제 1 · 실행 2 · green 0 · 불안정 0 · 준비 1' \
+  || red "green 뒤 준비 실패를 불안정/green으로 잘못 셌다"
+check_judge_evidence 1 0
+check_judge_evidence 2 78
+
+# 같은 과제의 앞선 오답을 후속 준비 실패가 지우면 안 된다.
+for later_rc in 78 42; do
+  run_case "$T_JUDGE" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50 \
+    JUDGE_FIRST_RC=1 JUDGE_RC="$later_rc" JUDGE_COUNTER="$WORK/mixed-$later_rc.count"
+  check "같은 과제 1→$later_rc 혼재" 1 "$RC"
+  printf '%s' "$OUT" | grep -q '과제 1 · 실행 2 · green 0 · 불안정 0 · 준비 1' \
+    || red "혼재 과제는 준비로 분류하며 한 번만 집계해야 한다"
+  printf '%s' "$OUT" | grep -q '판정실패 관측 과제 1' \
+    || red "요약에서 앞선 판정 실패가 사라졌다"
+  for summary in "$RESULTS"/*/summary.md; do
+    grep -q '| H01-stub | 준비 |' "$summary" || red "혼재 과제의 준비 분류가 없다"
+    grep -q '판정 실패 관측: 1회차(rc=1)' "$summary" || red "실제로 실패한 회차/코드가 없다"
+    grep -q "rc=$later_rc · 2회차" "$summary" || red "후속 준비 실패 회차/코드가 없다"
+  done
+  check_judge_evidence 1 1
+  check_judge_evidence 2 "$later_rc"
+done
+
+# 과제 간 혼재도 실행 순서와 관계없이 exit 1이다.
+for first_rc in 1 78; do
+  T_MIXED="$WORK/cross-$first_rc"
+  second_rc=1
+  [ "$first_rc" -ne 1 ] || second_rc=78
+  make_task "$T_MIXED" "H01-first" yes
+  make_task "$T_MIXED" "H02-second" yes
+  printf '#!/usr/bin/env bash\ncat >/dev/null\nexit %s\n' "$first_rc" > "$T_MIXED/H01-first/expect.sh"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\nexit %s\n' "$second_rc" > "$T_MIXED/H02-second/expect.sh"
+  run_case "$T_MIXED" COLAB_EVAL_TIMEOUT=10 COLAB_EVAL_BUDGET=0.50
+  check "과제 간 $first_rc/$second_rc 혼재" 1 "$RC"
+  printf '%s' "$OUT" | grep -q '과제 2 · 실행 3 · green 0 · 불안정 1 · 준비 1' \
+    || red "과제 간 판정/준비 집계가 틀렸다"
+  printf '%s' "$OUT" | grep -q '판정실패 관측 과제 1' \
+    || red "과제 간 판정 실패 관측 계수가 틀렸다"
+done
+
 # ── allowed.txt 정본 한 자리 — README 가 같은 표를 담고 있는가 ───────────────
 ALLOWED="$HARNESS_DIR/allowed.txt"
 README="$HARNESS_DIR/README.md"
@@ -170,7 +266,7 @@ else
 fi
 
 if [ "$FAILED" -ne 0 ]; then
-  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/7)."
+  echo "::error::run-selftest red — 위 케이스가 기대와 다르다 (통과 ${PASSED}/15)."
   exit 1
 fi
-echo "run-selftest green — 검사 7건 전건 기대대로 (green 1 · red(판정) 2 · red(준비) 4 · 모델 호출 0회)."
+echo "run-selftest green — 검사 15건 전건 기대대로 (green 1 · red(판정) 7 · red(준비) 7 · 모델 호출 0회)."

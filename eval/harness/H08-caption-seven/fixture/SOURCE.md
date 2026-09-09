@@ -7,8 +7,3 @@ git show 947bf1f:frontend/src/components/detail/detail.css > detail.css
 git show 947bf1f:frontend/src/components/upload/upload.css > upload.css
 git show 947bf1f:frontend/src/components/lineage/lineageGraph.css > lineageGraph.css
 ```
-
-- 결함이 **심긴 상태**다. 세 파일 합계 13px 미만 선언은 47건이고, 지적된 **네 유형은 7곳**이다 —
-  파일명 `detail.css:101`·`upload.css:106`·`upload.css:168` / 빈 화면 안내 `lineageGraph.css:95`
-  / 목록 링크 `lineageGraph.css:81`·`:76` / 오류 본문 `upload.css:92`.
-- 무접촉 = `upload.css:138` `.vizerr, .warn` — 이미 13px 이라 고칠 자리가 아니다.

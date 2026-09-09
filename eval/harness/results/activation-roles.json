@@ -1,0 +1,58 @@
+{
+  "schema": "colab-codex-activation-compact/1",
+  "source_head": "e2fbbd4100b8c240886e3109399e76fc735cce96",
+  "external_raw": {
+    "label": "external-raw:eval/harness/results/activation-roles.json",
+    "sha256": "cefa989647efe6c72d9fffe782fe05a59dd851156f5be982a187e9fe691d5cf9",
+    "event_count": 33
+  },
+  "observed": {
+    "roles": [
+      {
+        "name": "researcher",
+        "requested_count": 1,
+        "spawned_count": 1,
+        "registered_role_confirmed": true,
+        "root_agents_md_exists": true,
+        "read_only_check_exit": 0
+      },
+      {
+        "name": "lane-worker",
+        "requested_count": 1,
+        "spawned_count": 1,
+        "registered_role_confirmed": true,
+        "root_agents_md_exists": true,
+        "read_only_check_exit": 0
+      }
+    ],
+    "termination_guards": [
+      {
+        "role": "researcher",
+        "name": "H6 uncommitted-artifacts",
+        "blocked_count": 1,
+        "exit_code": 2,
+        "status": "blocked-as-designed",
+        "reason": "research output remained untracked",
+        "corrective_action_taken": false,
+        "final_answer_event_seen": true,
+        "normal_completion_verified": false
+      },
+      {
+        "role": "lane-worker",
+        "name": "H7 lane-gate-summary",
+        "blocked_count": 1,
+        "exit_code": 2,
+        "status": "blocked-as-designed",
+        "reason": "available gate evidence measured a different commit",
+        "corrective_action_taken": false
+      }
+    ],
+    "repository_write_requested": false
+  },
+  "limitations": [
+    "The researcher emitted a final-answer event, but H6 blocked SubagentStop; normal researcher completion is unverified.",
+    "This smoke confirms the registered role names and read-only checks; it does not identify their runtime models.",
+    "A later probe records current named custom roles as unavailable; this historical smoke does not resolve current runtime availability.",
+    "This compact record is not a full40 model run."
+  ]
+}

@@ -85,7 +85,7 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 - 레인 산출 n건을 `dev-package/sessions/design-review-<YYYYMMDD>.md` 로 합친다 — 표 하나 · 축별 소계 · **Ted 판정 묶음**(각 건에 ⓐ/ⓑ 선택지와 권고 1개 · 내부 약어 풀어서) · **R-C 후보 WU 목록**(즉시 수정 후보를 레인 단위로 묶은 것).
 - 이월 항목(§0 마지막 행)은 이번 표에 **다시 실어** 현재 값으로 재판정한다. 「전에 열려 있었다」는 최근 값이 아니다.
 - **advisor ②** 에 판정표를 보인다(approve / approve-with-changes / reject). 반영 내용은 표 아래 「advisor ② 반영」 절에 적는다.
-- 산출은 회수 즉시 커밋. `PLAN-SoT §9` 등재문 초안은 문서 끝에 두고 〈N〉 은 병합 직전 재실측한다.
+- 산출은 회수 즉시 경로·hash·승인 상태를 확인하고 커밋은 사용자 승인 범위만 수행한다. `PLAN-SoT §9` 등재문 초안은 문서 끝에 두고 〈N〉 은 병합 직전 재실측한다.
 
 ### 2-5. 실화면 계측 — `agent-browser` (Playwright 아님)
 
@@ -98,12 +98,12 @@ python3 .claude/skills/design-review/scripts/css_audit.py --root frontend/src --
 - 산출 = `dev-package/reports/design-review/<YYYYMMDD>/live/` · 스크린샷은 커밋한다(근거).
 - `eval` 은 **읽기 전용 JS** 만 넣는다(`live_probe.js` 처럼 DOM 무변경). 클릭·입력은 CLI 명령으로 한다.
 - 이 계측을 게이트로 세는 자리 = **`frontend-visual`**(`gates/tools/frontend-visual.sh` — 위 `live_audit.sh` 를 그대로 돈다). 대상은 `COLAB_VISUAL_URLS`(공백 구분)로 선언하고, 이번 회차에 대상이 없으면 `COLAB_VISUAL_EXEMPT=1` 로 명시 면제한다 — 침묵은 red(준비 · 78)다. 예외는 `gates/fixtures/frontend-visual/allow.txt`(셀렉터 접두사)에 사유와 함께 적는다.
-- `fix` 레인은 `COLAB_FIX_LANE=1` 로 돈다 — 그 선언이 있으면 `test-file-guard` 훅이 `frontend/test/`·`services/*/tests/`·`gates/`·`contracts/` 편집을 막는다(해제 = `COLAB_ALLOW_TEST_EDIT=1`).
+- `fix` 레인은 `COLAB_FIX_LANE=1` 로 돈다 — 그 선언이 있으면 `test-file-guard` 훅이 `frontend/test/`·`services/*/tests/`·`gates/`·`contracts/` 편집을 막는다보호된 fix 구현 단계에서 `COLAB_ALLOW_TEST_EDIT=1`로 우회하지 않는다.
 
 ## 3. fix — 에이전트 구조
 
 - 입력 = 커밋된 판정표 ＋ 승인 범위(Ted 판정 결과 또는 「즉시 수정 후보」 명시 지목). **범위 밖은 건드리지 않는다.**
-- 레인 = `lane-worker`(`isolation: worktree`) · 파일 면이 겹치지 않게 audit 과 같은 분할. 각 레인은 RED → GREEN 순서(`frontend/test/design-fix-<YYYYMMDD>.test.ts` 유형 · 선례 `frontend/test/design-fix-20260908.test.ts`) 로 시험을 먼저 세운다.
+- 레인 = `lane-worker`(`isolation: worktree`) · 파일 면이 겹치지 않게 audit 과 같은 분할. 각 레인은 승인된 시험 작성 단계에서 시험을 만들고 RED를 확인한 뒤, `COLAB_FIX_LANE=1`인 구현 단계에서 제품 코드만 고쳐 GREEN을 확인한다. 시험 수정이 필요하면 보호를 우회하지 말고 승인된 시험 작성 단계로 돌아간다(`frontend/test/design-fix-<YYYYMMDD>.test.ts` 유형).
 - 레인 완료 조건 = `gate-runner` 로 `frontend-typecheck`·`frontend-test`·`frontend-fixture-reach` green. 판정은 `-j 1` 로 재현한 값만 쓴다.
 - 레인 산출 = `dev-package/sessions/design-fix-<YYYYMMDD>-L<n>.md`(before → after 표 · 수용 기준 · 「하지 않은 것」 · 부수 간격 변화).
 - 병합 전 **advisor ③**(사용자 노출 변경 go/no-go). 병합·〈N〉 발급은 오케스트레이터만.

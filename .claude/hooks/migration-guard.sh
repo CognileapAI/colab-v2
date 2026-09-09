@@ -19,10 +19,15 @@
 #   · matcher — "`Edit\|Write` and `Edit, Write` each match either tool exactly"
 #   · exit 2 = "Blocks the tool call" · "The blocking message is … your stderr text otherwise."
 #   ⚠ exit 1 은 통과다. 판정을 못 하면 통과가 기본값이다.
+# Effective 2026-09-09: malformed applicable input blocks; historical fail-open comments are superseded.
 set -uo pipefail
 
 payload=""
 if [ ! -t 0 ]; then payload="$(cat 2>/dev/null || true)"; fi
+# 2026-09-09 shared envelope contract: malformed applicable input fails closed.
+command -v python3 >/dev/null 2>&1 || { echo 'hook readiness failure: python3 missing' >&2; exit 2; }
+payload="$(printf '%s' "$payload" | python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle_contract.py" validate-input --field file_path)" || exit 2
+
 [ -n "$payload" ] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
@@ -65,7 +70,7 @@ esac
 # ── 3. `origin/main` 에 이미 있는가 ──────────────────────────────────────────
 # 있으면 그 revision 은 이미 남의 DB 에서 돌았다 — 내용 수정은 선언과 적용을 갈라놓는다.
 if git -C "$CWD" cat-file -e "origin/main:$REL" 2>/dev/null; then
-  echo "⛔ 차단(H4 migration-guard) — 계약 파괴: origin/main 에 있는 마이그레이션은 수정 불가 — 새 revision 을 만든다 (\`$REL\`) · 훅을 끄려면 세션 밖에서 \`COLAB_HOOKS=0 claude\` 로 열거나 .claude/settings.local.json 에 \"env\": {\"COLAB_HOOKS\": \"0\"} 을 둔다 — 명령 앞에 붙이는 형태는 벗겨져 듣지 않고, Edit·Write 훅에는 앞에 붙일 자리 자체가 없다." >&2
+  echo "⛔ 차단(H4 migration-guard) — 계약 파괴: origin/main의 마이그레이션은 수정 불가 — 새 revision을 만든다 ($REL)." >&2
   exit 2
 fi
 exit 0

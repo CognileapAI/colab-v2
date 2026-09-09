@@ -20,6 +20,10 @@
 import json
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / ".claude/hooks"))
+from lifecycle_contract import gate_evidence, load_task, inside
 
 SCHEMA = "colab-gate-summary/1"
 STATES = ("green", "red_판정", "red_준비")
@@ -103,6 +107,18 @@ def main() -> int:
         "gates": gates,
         "targets": {"requested": meta.get("requested"), "selected": targets},
     }
+
+    if os.environ.get("COLAB_TASK_ID"):
+        root = Path(__file__).resolve().parents[2]
+        task_id = os.environ["COLAB_TASK_ID"]
+        task = load_task(root, task_id)
+        if inside(root, task["report"]) not in [Path(p).resolve() for p in outs]:
+            raise ValueError("gate output does not include declared task report")
+        before = json.loads(os.environ["COLAB_GATE_TASK_BEFORE"])
+        after = gate_evidence(root, task_id)
+        doc["task_evidence"] = {"before": before, "after": after}
+        # Preserve the gate's original outcome. A mismatched snapshot remains in
+        # evidence and is rejected by H7/verify-report; do not turn it into green.
 
     body = json.dumps(doc, ensure_ascii=False, indent=1) + "\n"
     written = []

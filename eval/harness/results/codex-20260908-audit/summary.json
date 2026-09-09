@@ -1,0 +1,105 @@
+{
+  "schema": "colab-codex-harness-eval/1",
+  "time": "2026-09-08T13:50:13.612499+00:00",
+  "codex": "<codex-cli>",
+  "timeout": 90,
+  "usd_cap": "unsupported",
+  "runs": [
+    {
+      "task": "H01-stale-handoff",
+      "repeat": 1,
+      "status": "green",
+      "task_sha256": "84e23e01020f8d5e056c0849afa66bfdb26194dd677eb2865fa524af773f9dbe",
+      "usage": {
+        "input_tokens": 295982,
+        "cached_input_tokens": 244480,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1366,
+        "reasoning_output_tokens": 90
+      },
+      "judge_exit": 0,
+      "evidence": "",
+      "seconds": 82.7
+    },
+    {
+      "task": "H01-stale-handoff",
+      "repeat": 2,
+      "status": "judgment-failure",
+      "task_sha256": "84e23e01020f8d5e056c0849afa66bfdb26194dd677eb2865fa524af773f9dbe",
+      "usage": {
+        "input_tokens": 183403,
+        "cached_input_tokens": 146176,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1038,
+        "reasoning_output_tokens": 53
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 이력을 직접 확인한 명령(git log)이 근거에 없다.\n",
+      "seconds": 63.14
+    },
+    {
+      "task": "H14-silent-skip",
+      "repeat": 1,
+      "status": "judgment-failure",
+      "task_sha256": "f0b8a2eaa4e8084d736efe3f0ecf59b44a1dd664d8ecc874e3ec3892bfd8d382",
+      "usage": {
+        "input_tokens": 141937,
+        "cached_input_tokens": 126336,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 825,
+        "reasoning_output_tokens": 21
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 옳은 종료 코드 78 이 없다.\n",
+      "seconds": 62.51
+    },
+    {
+      "task": "H14-silent-skip",
+      "repeat": 2,
+      "status": "judgment-failure",
+      "task_sha256": "f0b8a2eaa4e8084d736efe3f0ecf59b44a1dd664d8ecc874e3ec3892bfd8d382",
+      "usage": {
+        "input_tokens": 117020,
+        "cached_input_tokens": 100224,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1002,
+        "reasoning_output_tokens": 60
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 옳은 종료 코드 78 이 없다.\n",
+      "seconds": 53.49
+    },
+    {
+      "task": "H18-three-states",
+      "repeat": 1,
+      "status": "judgment-failure",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 118998,
+        "cached_input_tokens": 101760,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 883,
+        "reasoning_output_tokens": 19
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 상태3(무언)이 exit 78 로 끝나지 않는다.\n",
+      "seconds": 51.19
+    },
+    {
+      "task": "H18-three-states",
+      "repeat": 2,
+      "status": "judgment-failure",
+      "task_sha256": "c6ffd8d4554489e0356e85cf7aeb87608e73b4f9e2b252be660722bd3dfde645",
+      "usage": {
+        "input_tokens": 90921,
+        "cached_input_tokens": 73984,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 847,
+        "reasoning_output_tokens": 11
+      },
+      "judge_exit": 1,
+      "evidence": "expect red — 상태3(무언)이 exit 78 로 끝나지 않는다.\n",
+      "seconds": 45.36
+    }
+  ]
+}
