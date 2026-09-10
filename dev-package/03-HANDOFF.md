@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-10 변경 보존·main 동기화: `sessions/20260910-main-sync.md`. stage 1·2 다음 실행 계획은 `prd/rounds/R-STAGE1-STAGE2-CLOSEOUT.md`; 제품 항목 상태는 이번 문서 통합으로 변경하지 않는다.
+
 > 2026-09-09 `WU-UPV-20260909` 완료·dev 배포: 실행 시점 main·배포·tag `dev-20260909-2` = `2264bc54edc`; 후속 docs-only main 전진, 제품 코드·계약 diff 0, 실행 환경/tag는 2264 유지.
 > DB backup 두 체인 GREEN, migration platform `0023_upv_image_grid`·AI `0007_merge_vocab_and_category`, 서비스 4/4 healthy, worker/viz S3 mode.
 > deploy_doctor 15/15·S3 smoke 전건 GREEN(cleanup 0)·CloudFront index 해시 일치; 라이브 최초 업로드 모달 620×393.71875px·내부 스크롤/화면 오류 0.
