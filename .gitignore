@@ -58,3 +58,6 @@ eli5/
 #   위 glob 에 그대로 걸린다(무시 여부와 무관하다). 그래서 회차 기록으로 남길 한 벌은
 #   이름을 바꿔 둔다: `dev-package/reports/harness/2026-09-06/final/gate-summary.record.json`.
 dev-package/reports/**/gate-summary.json
+
+# 배포 당시 원시 로그 압축본은 로컬 보존; 공유 증거와 정규화 내역은 같은 폴더 README에 기록.
+dev-package/reports/20260910-preview-all/deployment-89a28d9/*.tar.gz

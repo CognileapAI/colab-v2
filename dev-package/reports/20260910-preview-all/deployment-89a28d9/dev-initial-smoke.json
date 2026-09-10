@@ -1,0 +1,23 @@
+{
+  "schema": "colab-deploy-format-smoke/1",
+  "sha": "89a28d9c0fd5",
+  "baseOrigin": "https://d31zgpff2091oh.cloudfront.net",
+  "runs": [
+    {
+      "format": "GRIB2",
+      "sourceLabel": "DEPLOY-E2E-89a28d9c0fd5-GRIB2",
+      "fixtureSha256": "7ee2d6ff2548d39434c89aca522dc7426d5b51fc45e60e9e3d4735ce91d38a05",
+      "uploadId": "01M249TG10TPPPDSQ5WXWFH1D8",
+      "fileId": "01M249TG105HVGPSCHX6T5DV6E",
+      "renderId": null,
+      "selectionId": null,
+      "pngSize": null,
+      "result": "started"
+    }
+  ],
+  "result": "fail",
+  "failure": {
+    "stage": "GRIB2-upload-ready",
+    "status": "timeout"
+  }
+}

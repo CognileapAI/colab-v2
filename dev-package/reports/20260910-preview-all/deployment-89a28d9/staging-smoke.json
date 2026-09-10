@@ -1,0 +1,38 @@
+{
+  "schema": "colab-deploy-format-smoke/1",
+  "sha": "89a28d9c0fd5",
+  "baseOrigin": "http://127.0.0.1:3000",
+  "runs": [
+    {
+      "format": "GRIB2",
+      "sourceLabel": "DEPLOY-E2E-89a28d9c0fd5-GRIB2",
+      "fixtureSha256": "7ee2d6ff2548d39434c89aca522dc7426d5b51fc45e60e9e3d4735ce91d38a05",
+      "uploadId": "01M249J3YCD64SPDWYNHZFWRAQ",
+      "fileId": "01M249J3YCXRZ4ZG95NQEGKHQG",
+      "renderId": "01M249JAAJQWJR6E0Y7MXDDV2F",
+      "selectionId": "grib:2:TMP|1767247200|85000-ISBL|Temperature [C]|grid?",
+      "pngSize": [
+        1024,
+        768
+      ],
+      "result": "pass",
+      "imageKind": "imageUrl"
+    },
+    {
+      "format": "HDF5",
+      "sourceLabel": "DEPLOY-E2E-89a28d9c0fd5-HDF5",
+      "fixtureSha256": "97ce9a3a5c958e3c71a922fd55dc890bdd1ea8388f51b2086fdba5d5296ec268",
+      "uploadId": "01M249JCD1GW4EVEWXTTC0BK0D",
+      "fileId": "01M249JCD1DYRVXKFBZ6V3DD1N",
+      "renderId": "01M249JEHFW7DG6FWDJW7VPCNG",
+      "selectionId": "hdf5:/science/value[0]",
+      "pngSize": [
+        4,
+        3
+      ],
+      "result": "pass",
+      "imageKind": "imageUrl"
+    }
+  ],
+  "result": "pass"
+}

@@ -1,5 +1,7 @@
 # 2026-09-10 모든 포맷 미리보기 구현 기록
 
+> 후속 배포 당시 기록은 `dev-package/sessions/20260910-preview-dev-stage-deployment.md`에 보존했다. 2026-09-10 main 동기화에서 복구한 과거 기록이며, 현재 실행 환경을 다시 검증했다는 의미가 아니다.
+
 - 요청 원문: `GRIB과 일반 HDF5까지 미리보기를 확장하는 작업. 미리보기 모두 지원하는 작업`
 - 기준: `47cce303f0efb9d9bfa37d1f5a086030caea1ab6`
 - 격리 브랜치: `codex/preview-all-formats`

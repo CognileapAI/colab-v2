@@ -1,0 +1,48 @@
+{
+  "schema": "colab-deploy-format-smoke/1",
+  "sha": "89a28d9c0fd5",
+  "baseOrigin": "https://d31zgpff2091oh.cloudfront.net",
+  "runs": [
+    {
+      "format": "GRIB2",
+      "sourceLabel": "DEPLOY-E2E-89a28d9c0fd5-GRIB2",
+      "fixtureSha256": "7ee2d6ff2548d39434c89aca522dc7426d5b51fc45e60e9e3d4735ce91d38a05",
+      "uploadId": "01M249TG10TPPPDSQ5WXWFH1D8",
+      "fileId": "01M249TG105HVGPSCHX6T5DV6E",
+      "renderId": "01M24A059K1NACYFAQSHM3KK39",
+      "selectionId": "grib:2:TMP|1767247200|85000-ISBL|Temperature [C]|grid?",
+      "pngSize": [
+        1024,
+        768
+      ],
+      "result": "pass",
+      "uploadReadiness": {
+        "ready": true,
+        "renderable": null,
+        "metadataComplete": null
+      },
+      "imageKind": "imageUrl"
+    },
+    {
+      "format": "HDF5",
+      "sourceLabel": "DEPLOY-E2E-89a28d9c0fd5-HDF5",
+      "fixtureSha256": "97ce9a3a5c958e3c71a922fd55dc890bdd1ea8388f51b2086fdba5d5296ec268",
+      "uploadId": "01M24A07JE7A8FS09X9SBPR7QW",
+      "fileId": "01M24A07JE9PDWR4WYY7H7229K",
+      "renderId": "01M24A0A34T963DWM7QTPNPB41",
+      "selectionId": "hdf5:/science/value[0]",
+      "pngSize": [
+        4,
+        3
+      ],
+      "result": "pass",
+      "uploadReadiness": {
+        "ready": true,
+        "renderable": null,
+        "metadataComplete": null
+      },
+      "imageKind": "imageUrl"
+    }
+  ],
+  "result": "pass"
+}

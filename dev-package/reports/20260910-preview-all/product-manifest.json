@@ -1,0 +1,204 @@
+{
+  "schema": "colab-preview-product-manifest/1",
+  "baseline_commit": "47cce303f0efb9d9bfa37d1f5a086030caea1ab6",
+  "files": [
+    {
+      "path": "contracts/events/core-pipeline.json",
+      "sha256": "a01110838eeb8f3282952c3199092a9ab86a699c124639449cc86245bcf67b1b",
+      "baseline_sha256": "6d9d07efc6f249419354cd733cfa9f315ca8d4355d5333e4e34d9846ca1d54c5",
+      "new": false
+    },
+    {
+      "path": "dev-package/03-HANDOFF.md",
+      "sha256": "4bb2cbbbf5b132e83f51a4b234d5e3031a57718be7820afa2152a35fee3f5358",
+      "baseline_sha256": "6860bc4dde7addc19d9e9e351235528c2325c87b02628118a454398669df488a",
+      "new": false
+    },
+    {
+      "path": "dev-package/work-items.yaml",
+      "sha256": "f52c605a3513ae9f3960ae93a0bcbba284b417a9f971bb23713f6a29f95eb8ce",
+      "baseline_sha256": "42027344648fec724595553ebb777456db8cc7700c0d43bdf7f10983d0e4fa61",
+      "new": false
+    },
+    {
+      "path": "frontend/src/components/preview/PreviewPickRow.tsx",
+      "sha256": "0436d9e6ebc352c7cb4de1ad42554b21263f4db185f22d06fe32e6cbf4642339",
+      "baseline_sha256": "e1116428eed35c673f362fcc4dcb60af8f4c8a1ace93ec929e633a38018edf02",
+      "new": false
+    },
+    {
+      "path": "frontend/src/components/upload/FileDropCard.tsx",
+      "sha256": "13fa824fad38806beada13ee9e8af19fc49b8aff224d22fce61002ef526d55c1",
+      "baseline_sha256": "a6608b58b538cd584a92409c2e32eb44eba34a1f9605f93c7c7cccd2e84d9db7",
+      "new": false
+    },
+    {
+      "path": "frontend/src/components/upload/PreviewPanel.tsx",
+      "sha256": "1cdc46072136501f10f79a4fd3b25e949dc80422f9ab748f823c2b09dd86712c",
+      "baseline_sha256": "de96f943d3d2ff1003c2e0aa086101d46c2e108709c941d76bbec1958c4aac83",
+      "new": false
+    },
+    {
+      "path": "frontend/test/extension-label-20260905.test.tsx",
+      "sha256": "0f8638718fb7c0929bc8c3902ed2d006f99f09fb7fc8b1ebd17abba4b42b7785",
+      "baseline_sha256": "3e22b6bdf18226bedc503d03375b641049057da1625dd3139cb8d2bf609ab533",
+      "new": false
+    },
+    {
+      "path": "frontend/test/preview-pick-and-fallback.test.tsx",
+      "sha256": "f93e2036e306c22f7728b898073895323d0f103d74dcb591f01d14e710ed6d85",
+      "baseline_sha256": "51ab7e34b47598b033af706792ce7a31171444421951b6a808e5568cf4ce3db4",
+      "new": false
+    },
+    {
+      "path": "gates/config/e2e-format-coverage.toml",
+      "sha256": "390f1c9bab2f8c71181d1d733cdb6202c07fc0a282a649f17a1597d7fc8e0ebd",
+      "baseline_sha256": "40b4f9b553597f88e266f96bd71e852956a1138dbc7a7531a2b1f5b6b6350623",
+      "new": false
+    },
+    {
+      "path": "scripts/e2e-login.py",
+      "sha256": "f2faa6fcb0e87eb6a43f2d6b34ab160d68d5520aa047e6307e31c05e9f4d145a",
+      "baseline_sha256": "85dae198c1eeb7c3612642d3e7369e8cb0f094200d9310397a8a0a1783b3124d",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/src/colab_pipeline/d5/detect.py",
+      "sha256": "c73a5479f539272f184750c744731e476a1cc6363033e713dd693f6550cae73d",
+      "baseline_sha256": "5a2847a02ffbea375fa28a5d46edcecb10a0bdc444b9b3f31ef09603565d0355",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/src/colab_pipeline/d5/formats.py",
+      "sha256": "eb3acf3a1dfe6fea899ed5fa27582d5da2681db86ad9f53ccd044bdf9dabba63",
+      "baseline_sha256": "771967fd05e6fa4992570d33e2a737a79db677e8203c4dee9497f12c10004bbd",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/src/colab_pipeline/d5/parse.py",
+      "sha256": "658fcca9ddcbd30f435ad56111033d00d9323dff7a6b423b6b106ceb3040a0a4",
+      "baseline_sha256": "aabc40d0a1a879c0b4c9191f522fb7f8bdcb9f78dc89d249b4ce3129df4b807a",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/src/colab_pipeline/d5/pipeline.py",
+      "sha256": "ffc7ba8768fd8bd608ef692a5564bca14f13769f901d122c76d1a5dde0cf6f2e",
+      "baseline_sha256": "342d94cf33b732a6f95b0f148bdd19cb9753b006ccb1421c0dbde63af512e3b5",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/src/colab_pipeline/d5/renderable.py",
+      "sha256": "4b77212ae1eda6ea563fde52b2f0347c6db19f436343a2da097a9f91401edc24",
+      "baseline_sha256": "34cea821a1ea42aac5baddff5622d78d9240103cfaf2d3c9cc5a2726a9d3bb02",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/tests/test_detect.py",
+      "sha256": "aeea67cf294ad32a375866d195b737dfe522548391855a2e1ab696395801f341",
+      "baseline_sha256": "cc8008834b365546959b47983150ac5774d3257741b632794d66e02cd3cbf779",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/tests/test_format_declaration_parity.py",
+      "sha256": "bcfab16955cfdbfc92924abf6501aba516baae809d8d669c4e1bfd36e0e63ff3",
+      "baseline_sha256": "1e410c90a248ad1bdc6f1ad86935da32d1a0486d129da0fcce0b49c3b8e83484",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/tests/test_grib_support.py",
+      "sha256": "c3543425f5269283189a46f30db963b702ada8da08cdce20507ff396ce5fde56",
+      "baseline_sha256": "14376ee854cb207b8790fd955e3b49265523414a6d79ac3283e9bbe0e7b6801d",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/tests/test_parse_numpy_grib.py",
+      "sha256": "68518ae7a1fce46d63d4a1c0f84d457466ff204a569b755d86d4189abe75a391",
+      "baseline_sha256": "78feeb528fd3d38ea30a8fe6f169a9cf016e76bfd02d60a38059fba200373355",
+      "new": false
+    },
+    {
+      "path": "services/pipeline-worker/tests/test_renderable.py",
+      "sha256": "4a479f6bb2009cf6f839502f8c58efab758f3e8a948e15626134484d5242eeb3",
+      "baseline_sha256": "db36cff55c1b614f9d432e5d3d78643a598b61db5fa7e36372a288044ee1f952",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/Dockerfile",
+      "sha256": "51c813821d067def3e372be1fbcf64908fe4d9d22fd1a3de5b201c0be4c619fc",
+      "baseline_sha256": "5495b9cdfab45c46200f37e16904271ec5c25f34144d3f1a45a0f970a87dce95",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/requirements.in",
+      "sha256": "5616ac40c1a6b6fd4448d26675958c8a2232d8a29c78d49d9ba757af8795ab61",
+      "baseline_sha256": "d1f05f797397c00d96a763b42870f0186ed2fab6a755f8c798cb0fdda7835331",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/requirements.txt",
+      "sha256": "5e47ecb6562d3038b4c7a7dca6807e17798ddb761179d645478fb6a22486b200",
+      "baseline_sha256": "caa621adea3ec18b20ffc03862f43fab76ba4aab4b99495f30f7ee4e9560565e",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/src/colab_viz/domains/d7_visualization/readers.py",
+      "sha256": "7e122ff3d83ff7dbdf46366ded273ba703ad8f46d9f42a06fd5017c59f4bac2e",
+      "baseline_sha256": "530fad36c5283eb2a126d610da4eed7aab8e65f5812e291069ab365f9c4ce838",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/tests/test_e2e_real.py",
+      "sha256": "94383d50136d2a860d860a9a192a77dae26fb4d303fba924c3cf96fe86c96ba5",
+      "baseline_sha256": "e335b6bb18c0b6b9a3551bb0ad9a5222b9b7105ffebc773c42f00115b58fa7aa",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/tests/test_errors.py",
+      "sha256": "c82d45e33fc541784d77b0fabd7e178a72dbfc226016bd3ee14f4da2b2c88b0b",
+      "baseline_sha256": "33c4794f262c606e45145605e3ac23cdd9d84091e727b3fee1ce398db66394eb",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/tests/test_grib_not_renderable.py",
+      "sha256": "52d94a87f01b7045a46707de90325247f83b2537e83a5c18f6e7112f20985bf4",
+      "baseline_sha256": "5d0d726a091a6fdf11830dc7afe76bd78e9d6c1844b468514e5cd0f46ae3f788",
+      "new": false
+    },
+    {
+      "path": "services/viz-render/tests/test_grib_editions.py",
+      "sha256": "de946b29395065818d2e4b5bf8d8f19b7794949424588b33548d0f11143bb0b2",
+      "baseline_sha256": null,
+      "new": true
+    },
+    {
+      "path": "services/viz-render/tests/test_hdf5_reader.py",
+      "sha256": "25f2120352c996457b544bcae888813cba771166e9ce212d59093ef692835131",
+      "baseline_sha256": null,
+      "new": true
+    },
+    {
+      "path": "dev-package/intent/2026-09-10-preview-all-formats.md",
+      "sha256": "0e591050eb3643239a18119b4d4eea424206667f714f2422179bdc9677099b3b",
+      "baseline_sha256": null,
+      "new": true
+    },
+    {
+      "path": "dev-package/prd/rounds/R-PREVIEW-ALL-FORMATS.md",
+      "sha256": "3d628d0120485e4492a2f50db6e853c6d3e4c1ce6ad7e3f60a550324a9ce63e3",
+      "baseline_sha256": null,
+      "new": true
+    },
+    {
+      "path": "dev-package/prd/specs/preview-all-formats.md",
+      "sha256": "4cbd30389d6986c648ff89b22fe1878635a41b165fcbcbb63f1f5f29eaa4e052",
+      "baseline_sha256": null,
+      "new": true
+    },
+    {
+      "path": "dev-package/sessions/20260910-preview-all-formats.md",
+      "sha256": "59fba439abee92ac222b7c6401595c703b09464353b30b906e22fd2e52ba753f",
+      "baseline_sha256": null,
+      "new": true
+    }
+  ]
+}
