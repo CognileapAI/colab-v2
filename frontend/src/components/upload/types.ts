@@ -79,7 +79,7 @@ export class GridAxisTaken extends Error {}
 /** 확정할 격자가 없다 — 판별에 실패했거나 형상이 어긋났다 (계약 400 · `〈66〉`). */
 export class NoResolvedGrid extends Error {}
 
-/** `create` 의 선택 인자 — 프리사인드 전송(〈338〉)에서만 의미를 갖는다. */
+/** `create` 의 선택 인자. sourceLabel·resumeUploadId는 프리사인드 전송 전용이고 진행률은 폴백도 쓴다. */
 export interface UploadCreateOptions {
   /** 배너·목록에 보일 묶음 이름. */
   sourceLabel?: string;

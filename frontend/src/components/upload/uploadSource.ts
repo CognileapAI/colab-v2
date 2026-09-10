@@ -20,6 +20,92 @@ import {
 /** 서버가 한 번 501 을 냈으면(저장 모드 local) 매번 다시 두드리지 않는다. */
 let transferUnavailable = false;
 
+function abortError(): DOMException {
+  return new DOMException('The operation was aborted.', 'AbortError');
+}
+
+/**
+ * `openapi-fetch`가 만든 Request를 XHR로 전송한다. 호출자는 이 함수를 `api.POST`의
+ * 요청별 fetch로만 넘겨 인증·401·응답 파싱 미들웨어를 그대로 사용한다.
+ */
+export function xhrMultipartFetch(
+  request: Request,
+  form: FormData,
+  onProgress?: UploadCreateOptions['onProgress'],
+): Promise<Response> {
+  if (request.signal.aborted) return Promise.reject(abortError());
+
+  return new Promise<Response>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    let settled = false;
+
+    const cleanup = () => {
+      xhr.upload.removeEventListener('progress', handleProgress);
+      xhr.removeEventListener('load', handleLoad);
+      xhr.removeEventListener('error', handleNetworkError);
+      xhr.removeEventListener('abort', handleXhrAbort);
+      request.signal.removeEventListener('abort', handleSignalAbort);
+    };
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      complete();
+    };
+    const handleProgress = (event: ProgressEvent) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      onProgress?.({ sentBytes: event.loaded, totalBytes: event.total });
+    };
+    const handleLoad = () => {
+      if (xhr.status === 0) {
+        finish(() => reject(new TypeError('Multipart upload network error')));
+        return;
+      }
+      try {
+        const headers = new Headers();
+        for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+          if (!line) continue;
+          const separator = line.indexOf(':');
+          if (separator < 0) continue;
+          headers.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
+        }
+        const response = new Response(xhr.status === 204 ? null : xhr.response, {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          headers,
+        });
+        finish(() => resolve(response));
+      } catch (error) {
+        finish(() => reject(error));
+      }
+    };
+    const handleNetworkError = () => {
+      finish(() => reject(new TypeError('Multipart upload network error')));
+    };
+    const handleXhrAbort = () => {
+      finish(() => reject(abortError()));
+    };
+    const handleSignalAbort = () => {
+      xhr.abort();
+      finish(() => reject(abortError()));
+    };
+
+    xhr.upload.addEventListener('progress', handleProgress);
+    xhr.addEventListener('load', handleLoad);
+    xhr.addEventListener('error', handleNetworkError);
+    xhr.addEventListener('abort', handleXhrAbort);
+    request.signal.addEventListener('abort', handleSignalAbort, { once: true });
+
+    xhr.open(request.method, request.url, true);
+    xhr.responseType = 'arraybuffer';
+    request.headers.forEach((value, name) => {
+      // FormData boundary는 XHR이 실제 body에 맞춰 생성해야 한다.
+      if (name.toLowerCase() !== 'content-type') xhr.setRequestHeader(name, value);
+    });
+    xhr.send(form);
+  });
+}
+
 /** 대표 그림 API가 답한 실패의 문구와 재시도 성격을 화면까지 보존한다. */
 export class RepresentativeImageUploadError extends Error {
   readonly retryable: boolean;
@@ -55,6 +141,7 @@ export function apiUploadSource(): UploadSource {
       const r = await api.POST('/uploads', {
         body: form as unknown as never,
         bodySerializer: (b: unknown) => b as FormData,
+        fetch: (request) => xhrMultipartFetch(request, form, opts?.onProgress),
       });
       if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('파일을 올리지 못했어요.');

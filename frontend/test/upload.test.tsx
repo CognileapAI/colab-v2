@@ -2460,11 +2460,7 @@ describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서�
     vi.unstubAllGlobals();
   });
 
-  /**
-   * 프리사인드(501) → form-data 로 떨어지는 fetch 라우터. 받은 multipart 를 그대로 기록한다.
-   * `append` 순서도 따로 적는다 — jsdom 의 File 을 undici `Request` 가 직렬화하면서 파일 **이름**을
-   * 잃는다(환경 한계 · 브라우저는 그렇지 않다). 이름·순서는 append 기록으로, 값은 multipart 로 본다.
-   */
+  /** 프리사인드 계획은 fetch로 501, form-data는 XHR로 201을 돌려주고 받은 body를 기록한다. */
   function installRouter() {
     const forms: FormData[] = [];
     const appends: [string, string][] = [];
@@ -2480,23 +2476,44 @@ describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서�
         }
       },
     );
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      class extends EventTarget {
+        readonly upload = new EventTarget();
+        response: string | null = null;
+        responseType: XMLHttpRequestResponseType = '';
+        status = 0;
+        statusText = '';
+
+        open() {}
+        setRequestHeader() {}
+        abort() { this.dispatchEvent(new Event('abort')); }
+        getAllResponseHeaders() { return 'content-type: application/json\r\n'; }
+        send(body?: Document | XMLHttpRequestBodyInit | null) {
+          const form = body as FormData;
+          forms.push(form);
+          const files = form.getAll('files') as File[];
+          this.status = 201;
+          this.statusText = 'Created';
+          this.response = JSON.stringify({
+            uploadId: UPLOAD_ID,
+            files: files.map((f, i) => ({
+              fileId: i === 0 ? FILE_ID : FILE_ID2,
+              fileName: f.name,
+              kind: '본체',
+              byteSize: f.size,
+            })),
+          });
+          queueMicrotask(() => this.dispatchEvent(new Event('load')));
+        }
+      },
+    );
     vi.stubGlobal('fetch', async (req: Request) => {
       const path = new URL(req.url).pathname.replace('/api/v1', '');
       const json = (body: unknown, status = 200) =>
         new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
       if (path === '/uploads/transfers' && req.method === 'POST') {
         return json({ code: 'NOT_IMPLEMENTED', message: '저장 모드 local' }, 501);
-      }
-      if (path === '/uploads' && req.method === 'POST') {
-        const form = await req.formData();
-        forms.push(form);
-        const files = form.getAll('files') as File[];
-        return json({
-          uploadId: UPLOAD_ID,
-          files: files.map((f, i) => ({
-            fileId: i === 0 ? FILE_ID : FILE_ID2, fileName: f.name, kind: '본체', byteSize: f.size,
-          })),
-        }, 201);
       }
       throw new Error(`라우터에 없는 호출: ${req.method} ${path}`);
     });
