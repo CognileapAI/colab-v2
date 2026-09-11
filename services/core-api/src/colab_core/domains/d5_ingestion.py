@@ -71,6 +71,9 @@ _FILES = text("""
      ORDER BY kind DESC, file_name, id
 """)
 
+_OWNERSHIP_SNAPSHOT_IDS = text("SELECT id::text FROM d5_upload_file ORDER BY id")
+_OWNERSHIP_SNAPSHOT_COUNT = text("SELECT count(*) FROM d5_upload_file")
+
 _GRID_PROFILE = text("""
     SELECT body_shape, grid_shape, grid_digest, grid_format_signature,
            west, south, east, north, map_state, grid_source
@@ -221,6 +224,12 @@ class UploadLedgerAdapter:
         self._session = session
 
     # ── 읽기 ────────────────────────────────────────────────────────────────
+    def all_file_ids_for_ownership_snapshot(self) -> tuple[list[str], int]:
+        """전수 권한 확인 뒤 같은 read-only transaction에서 읽는 ID와 독립 count."""
+        ids = list(self._session.execute(_OWNERSHIP_SNAPSHOT_IDS).scalars().all())
+        count = int(self._session.execute(_OWNERSHIP_SNAPSHOT_COUNT).scalar_one())
+        return ids, count
+
     def metadata_for_file_ids(self, file_ids: list[str]) -> list[dict]:
         """Resolve ledger file identity; caller must still check upload ownership."""
         if not file_ids:

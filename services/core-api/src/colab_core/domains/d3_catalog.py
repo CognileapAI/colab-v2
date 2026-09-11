@@ -119,6 +119,9 @@ _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at I
 # 저장 회수의 D3 소유권 증거. dataset 메타에는 lab RLS만, file에는 lab+body_access RLS가
 # 적용된다. app 계층이 D2 판정과 이 두 결과를 대조해야만 "전부 보였다"고 말할 수 있다.
 _RECLAIM_DATASETS = text("SELECT id, file_count FROM d3_dataset ORDER BY id")
+_OWNERSHIP_SNAPSHOT_IDS = text("SELECT id::text FROM d3_file ORDER BY id")
+_OWNERSHIP_SNAPSHOT_COUNT = text("SELECT count(*) FROM d3_file")
+
 _RECLAIM_FILES = text("""
     SELECT id, dataset_id, storage_key
       FROM d3_file
@@ -339,6 +342,13 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
 class ReclaimOwnershipSnapshot:
     dataset_file_counts: dict[str, int]
     files: tuple[tuple[str, str, str], ...]
+
+
+def all_file_ids_for_ownership_snapshot(session: Session) -> tuple[list[str], int]:
+    """전수 권한 확인 뒤 같은 read-only transaction에서 읽는 ID와 독립 count."""
+    ids = list(session.execute(_OWNERSHIP_SNAPSHOT_IDS).scalars().all())
+    count = int(session.execute(_OWNERSHIP_SNAPSHOT_COUNT).scalar_one())
+    return ids, count
 
 
 def reclaim_ownership_snapshot(session: Session) -> ReclaimOwnershipSnapshot:

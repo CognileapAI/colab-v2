@@ -28,10 +28,13 @@ services:
     image: alpine:3.20
     container_name: colab_v2_dev_volume_init
     user: "0:0"
-    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /var/lib/colab/events && chown -R 10001:10001 /var/lib/colab/work /var/lib/colab/events && chmod 0755 /var/lib/colab/work /var/lib/colab/events"]
+    environment:
+      OWNERSHIP_READER_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
+    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /var/lib/colab/events /srv/ownership-ledger && chown -R 10001:10001 /var/lib/colab/work /var/lib/colab/events && chmod 0755 /var/lib/colab/work /var/lib/colab/events && chown -R 0:$${OWNERSHIP_READER_GID} /srv/ownership-ledger && chmod 0550 /srv/ownership-ledger"]
     volumes:
       - work:/var/lib/colab/work
       - events:/var/lib/colab/events
+      - ownership-ledger:/srv/ownership-ledger
     restart: "no"
 
   core-api:
@@ -127,9 +130,14 @@ services:
       COLAB_VIZ_PREVIEW_URL_BASE: /previews
       # 트리거 drain과 BF-12 S3 관측 전용 회수는 같은 루프에서 돈다.
       COLAB_VIZ_TRIGGER_SPOOL: /var/lib/colab/events
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT: /srv/ownership-ledger/current.json
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS:-7200}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID:?실제 publisher uid가 필요하다}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
     volumes:
       - work:/var/lib/colab/work
       - events:/var/lib/colab/events
+      - ownership-ledger:/srv/ownership-ledger:ro
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -187,3 +195,4 @@ services:
 volumes:
   work: {}
   events: {}
+  ownership-ledger: {}

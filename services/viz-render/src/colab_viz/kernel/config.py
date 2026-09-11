@@ -178,6 +178,10 @@ class Settings:
     tile_reclaim_apply: bool = DEFAULT_TILE_RECLAIM_APPLY
     tile_reclaim_max_keys: int = DEFAULT_TILE_RECLAIM_MAX_KEYS
     tile_reclaim_interval_seconds: float = DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS
+    ownership_snapshot_path: Path | None = None
+    ownership_snapshot_max_age_seconds: float = 7200.0
+    ownership_snapshot_owner_uid: int | None = None
+    ownership_snapshot_group_gid: int | None = None
 
     #: 소스 모드 — `local`(디스크, `source_root`) | `s3`(버킷 → `workdir` 로 내려받기). `〈342〉-㉴`
     source_mode: str = "local"
@@ -254,6 +258,11 @@ def validate(settings: Settings) -> Settings:
         if settings.work_max_bytes is None:
             raise RuntimeError(
                 f"{ENV_SOURCE_MODE}=s3 인데 {ENV_WORK_MAX_BYTES} 가 없다 — 상한은 숫자 또는 `none`(명시 무제한)으로 적는다")
+    if not math.isfinite(settings.ownership_snapshot_max_age_seconds):
+        raise RuntimeError("ownership snapshot max-age는 유한 양수여야 한다")
+    if settings.ownership_snapshot_path is not None and (settings.ownership_snapshot_owner_uid is None
+            or settings.ownership_snapshot_group_gid is None):
+        raise RuntimeError("ownership snapshot 경로에는 실제 publisher uid 설정이 함께 필요하다")
     return settings
 
 
@@ -300,6 +309,14 @@ def load_settings() -> Settings:
         tile_reclaim_interval_seconds=_positive_float_from_env(
             os.environ.get("COLAB_VIZ_TILE_RECLAIM_INTERVAL_SECONDS"),
             DEFAULT_TILE_RECLAIM_INTERVAL_SECONDS),
+        ownership_snapshot_path=(Path(os.environ["COLAB_VIZ_OWNERSHIP_SNAPSHOT"])
+                                 if os.environ.get("COLAB_VIZ_OWNERSHIP_SNAPSHOT") else None),
+        ownership_snapshot_max_age_seconds=_positive_float_from_env(
+            os.environ.get("COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS"), 7200.0),
+        ownership_snapshot_owner_uid=(int(os.environ["COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID"])
+                                      if os.environ.get("COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID") else None),
+        ownership_snapshot_group_gid=(int(os.environ["COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID"])
+                                      if os.environ.get("COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID") else None),
         source_mode=_mode(os.environ.get(ENV_SOURCE_MODE), env_name=ENV_SOURCE_MODE, allowed=SOURCE_MODES),
         s3_bucket=os.environ.get(ENV_S3_BUCKET) or None,
         s3_region=os.environ.get(ENV_S3_REGION) or None,

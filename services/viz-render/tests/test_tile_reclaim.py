@@ -375,3 +375,43 @@ def test_트리거_집행이_터져도_회수는_돈다():
                                          interval_seconds=0.01, reclaim=job)
     assert loop.tick() == 0
     assert job.calls == 1, "집행이 터졌다고 회수까지 굶었다"
+
+
+def _ledger_snapshot(path, d3_id="01ARZ3NDEKTSV4RRFFQ69G5FAV"):
+    import hashlib, json, os
+    from datetime import datetime, timezone
+    payload={"schema":"colab-preview-ownership-snapshot/1","observed_at":datetime.now(timezone.utc).isoformat(),
+             "scope":"all-tenants","database_role":"backup",
+             "role_evidence":{"superuser":False,"bypassrls":True,"read_all_data":True},
+             "d3_file_ids":[d3_id],"d5_upload_file_ids":[],"counts":{"d3_file":1,"d5_upload_file":0}}
+    payload["content_sha256"]=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    path.write_text(json.dumps(payload)); os.chmod(path,0o440); os.chmod(path.parent,0o550)
+
+
+def test_local_due는_같은바퀴에_TL2를_세되_preview를_지우지_않는다(자리, tmp_path):
+    ledger=tmp_path/"ledger.json"; _ledger_snapshot(ledger)
+    legacy=자리["previews"]/"old-preview.png"; legacy.write_bytes(b"PNG")
+    job=tile_reclaim.ReclaimJob(previews_root=자리["previews"], storage_root=자리["storage"],
+                                apply=False, ledger_snapshot_path=ledger,
+                                ledger_snapshot_max_age_seconds=7200)
+    result=job.run_due(now=1)
+    assert result is not None and result.applied is False
+    assert job.last_legacy_result["legacy_groups"] == 1
+    assert job.last_legacy_result["deleted"] == 0
+    assert legacy.exists()
+
+
+def test_local_due는_stale_snapshot을_구판0으로_접지않고_다음주기에도_산다(자리, tmp_path):
+    ledger=tmp_path/"ledger.json"; _ledger_snapshot(ledger)
+    import json, os, hashlib
+    doc=json.loads(ledger.read_text()); doc["observed_at"]="2020-01-01T00:00:00+00:00"
+    base=dict(doc); base.pop("content_sha256")
+    doc["content_sha256"]=hashlib.sha256(json.dumps(base,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    os.chmod(ledger,0o600); ledger.write_text(json.dumps(doc)); os.chmod(ledger,0o440)
+    job=tile_reclaim.ReclaimJob(previews_root=자리["previews"], storage_root=자리["storage"],
+                                ledger_snapshot_path=ledger, ledger_snapshot_max_age_seconds=60,
+                                interval_seconds=1)
+    assert job.run_due(now=1) is not None
+    assert job.last_legacy_result is None
+    assert job.legacy_not_ready
+    assert job.run_due(now=2) is not None

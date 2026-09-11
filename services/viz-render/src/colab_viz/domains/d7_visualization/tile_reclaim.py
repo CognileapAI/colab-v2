@@ -35,7 +35,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import invalidation, tile_liveness
+from . import (invalidation, legacy_preview_observation, ownership, ownership_snapshot,
+               tile_liveness)
 from ...kernel.ids import is_ulid
 from ...kernel import storage_layout
 
@@ -147,6 +148,57 @@ def run_pass(*, previews_root, storage_root, apply: bool = False,
     return result
 
 
+def _legacy_local(previews_root: Path, ledger: ownership.Ledger) -> dict:
+    groups = ownership.scan(previews_root)
+    tally = ownership.tally(groups, ledger)
+    legacy = ownership.legacy_tally(groups, ledger)
+    unreachable = (legacy.counts[ownership.LEGACY_SIDECAR_ABSENT]
+                   + legacy.counts[ownership.LEGACY_SOURCE_LEDGER_ABSENT])
+    return {"preview_groups": len([g for g in groups if not g.is_map_tile()]),
+            "ownership_counts": tally.counts, "legacy_counts": legacy.counts,
+            "legacy_groups": sum(legacy.counts.values()),
+            "rebake_unreachable": unreachable, "deleted": 0}
+
+
+def _legacy_summary(result: dict) -> str:
+    own, legacy = result["ownership_counts"], result["legacy_counts"]
+    return ("TL-2 구판 관측 — preview {preview_groups}벌 · 소유 [살아 있다 {live} · "
+            "접수분에만 닿는다 {upload} · 고아 {orphan} · 판정 불가 {unknown}] · "
+            "구판 [사이드카 부재 {missing} · 원천 원장 부재 {absent} · 원천 원장 있음 "
+            "{present}] · 재굽기 불가 {unreachable} · 삭제 0건").format(
+                **result, live=own[ownership.GRADE_LIVE],
+                upload=own[ownership.GRADE_UPLOAD_ONLY], orphan=own[ownership.GRADE_ORPHAN],
+                unknown=own[ownership.GRADE_UNDECIDABLE],
+                missing=legacy[ownership.LEGACY_SIDECAR_ABSENT],
+                absent=legacy[ownership.LEGACY_SOURCE_LEDGER_ABSENT],
+                present=legacy[ownership.LEGACY_SOURCE_LEDGER_PRESENT],
+                unreachable=result["rebake_unreachable"])
+
+
+def _observe_legacy(job, *, s3: bool) -> None:
+    job.last_legacy_result = None
+    job.legacy_not_ready = None
+    if job.ledger_snapshot_path is None:
+        job.legacy_not_ready = "원장 snapshot 경로가 설정되지 않았다"
+        log.error("TL-2 구판 관측 red(준비) — %s", job.legacy_not_ready)
+        return
+    try:
+        ledger = ownership_snapshot.load(
+            job.ledger_snapshot_path, max_age_seconds=job.ledger_snapshot_max_age_seconds,
+            expected_owner_uid=job.ledger_snapshot_owner_uid,
+            expected_group_gid=job.ledger_snapshot_group_gid)
+        result = (legacy_preview_observation.observe(
+                    job.client, ledger, prefix=job.previews_prefix)
+                  if s3 else _legacy_local(job.previews_root, ledger))
+    except (ownership_snapshot.SnapshotNotReady, ownership.SidecarContractViolation,
+            ownership.LegacyObservationNotReady, legacy_preview_observation.ObservationNotReady) as exc:
+        job.legacy_not_ready = str(exc)
+        log.error("TL-2 구판 관측 red(준비) — %s", exc)
+        return
+    job.last_legacy_result = result
+    log.info("%s", _legacy_summary(result))
+
+
 @dataclass
 class ReclaimJob:
     """**배경 루프에 얹히는 한 조각** — 자기 주기를 자기가 안다.
@@ -160,7 +212,13 @@ class ReclaimJob:
     apply: bool = False
     max_keys: int = DEFAULT_MAX_KEYS_PER_PASS
     interval_seconds: float = DEFAULT_INTERVAL_SECONDS
+    ledger_snapshot_path: Path | None = None
+    ledger_snapshot_max_age_seconds: float = 7200.0
+    ledger_snapshot_owner_uid: int | None = None
+    ledger_snapshot_group_gid: int | None = None
     last_result: PassResult | None = field(default=None, init=False)
+    last_legacy_result: dict | None = field(default=None, init=False)
+    legacy_not_ready: str | None = field(default=None, init=False)
     _next_at: float | None = field(default=None, init=False)
 
     def run_due(self, now: float | None = None) -> PassResult | None:
@@ -172,6 +230,7 @@ class ReclaimJob:
         self.last_result = run_pass(previews_root=self.previews_root,
                                     storage_root=self.storage_root,
                                     apply=self.apply, max_keys=self.max_keys)
+        _observe_legacy(self, s3=False)
         return self.last_result
 
 
@@ -346,7 +405,13 @@ class S3ReclaimJob:
     apply_requested: bool = False
     max_keys: int = DEFAULT_MAX_KEYS_PER_PASS
     interval_seconds: float = DEFAULT_INTERVAL_SECONDS
+    ledger_snapshot_path: Path | None = None
+    ledger_snapshot_max_age_seconds: float = 7200.0
+    ledger_snapshot_owner_uid: int | None = None
+    ledger_snapshot_group_gid: int | None = None
     last_result: PassResult | None = field(default=None, init=False)
+    last_legacy_result: dict | None = field(default=None, init=False)
+    legacy_not_ready: str | None = field(default=None, init=False)
     _next_at: float | None = field(default=None, init=False)
 
     def run_due(self, now: float | None = None) -> PassResult | None:
@@ -358,6 +423,7 @@ class S3ReclaimJob:
             client=self.client, source=self.source,
             uploads_prefix=self.uploads_prefix, previews_prefix=self.previews_prefix,
             apply=self.apply_requested, max_keys=self.max_keys)
+        _observe_legacy(self, s3=True)
         return self.last_result
 
 

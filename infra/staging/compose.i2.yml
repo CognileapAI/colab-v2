@@ -146,11 +146,14 @@ services:
     image: alpine:3.20
     container_name: colab_v2_staging_volume_init
     user: "0:0"
-    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events && chmod 0755 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events"]
+    environment:
+      OWNERSHIP_READER_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
+    command: ["sh", "-c", "chown -R 10001:10001 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events && chmod 0755 /var/lib/colab/uploads /srv/viz-previews /srv/viz-events && chown -R 0:$${OWNERSHIP_READER_GID} /srv/ownership-ledger && chmod 0550 /srv/ownership-ledger"]
     volumes:
       - uploads:/var/lib/colab/uploads
       - previews:/srv/viz-previews
       - events:/srv/viz-events
+      - ownership-ledger:/srv/ownership-ledger
     restart: "no"
 
   # ── 실체가 있는 단위 — P0 골격(34 라우트 · 실질의 5 · 501 두 종).
@@ -344,12 +347,18 @@ services:
       COLAB_VIZ_TILE_RECLAIM_APPLY: ${COLAB_VIZ_TILE_RECLAIM_APPLY:-}
       COLAB_VIZ_TILE_RECLAIM_MAX_KEYS: ${COLAB_VIZ_TILE_RECLAIM_MAX_KEYS:-}
       COLAB_VIZ_TILE_RECLAIM_INTERVAL_SECONDS: ${COLAB_VIZ_TILE_RECLAIM_INTERVAL_SECONDS:-}
+      # core-api 소유자가 원자 발행한 전수 ID snapshot. D7은 이 파일만 읽고 DB에 붙지 않는다.
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT: /srv/ownership-ledger/current.json
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS:-7200}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID:?실제 publisher uid가 필요하다}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
     volumes:
       # **읽기 전용이다.** 렌더는 접수한 바이트를 열 뿐 고치지 않는다.
       - uploads:/var/lib/colab/uploads:ro
       - previews:/srv/viz-previews
       # 버스만 쓰기다 — 집행을 마친 **알림**을 걷는다(산출물이 아니다 · `〈247〉`).
       - events:/srv/viz-events
+      - ownership-ledger:/srv/ownership-ledger:ro
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -458,6 +467,8 @@ volumes:
   # (검사 대상은 산출물이지 알림이 아니다). 호스트 바인드를 만들 이유가 없으면 만들지 않는다.
   # ⚠ 담기는 것은 **수명이 짧은 알림**이다 — 집행되면 사라진다. 백업 대상이 아니다.
   events: {}
+  # TL-2 전수 ID snapshot 하나. publisher만 rw, viz-render는 ro로 붙는다.
+  ownership-ledger: {}
   # 미리보기 3층 산출물. **정적 자산이다** — 렌더 작업으로 매번 만드는 물건이 아니라
   # 한 번 그려 두고 목록 썸네일도 같은 자리에서 서빙된다(`〈80〉-㉯ 2`).
   #

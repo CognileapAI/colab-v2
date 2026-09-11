@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 
 from colab_viz.app import main
 from colab_viz.domains.d7_visualization import tile_liveness, tile_reclaim
@@ -323,3 +324,37 @@ def test_app_조립은_s3_s3에_관측_job을_붙인다(tmp_path):
 
     assert isinstance(job, tile_reclaim.S3ReclaimJob)
     assert job.apply_requested is True
+
+
+def test_app_조립은_TL2_snapshot_경로와_freshness를_due_job에_전달한다(tmp_path):
+    objects, _live = _objects(); client = StubS3(objects)
+    ledger = tmp_path / "ledger.json"
+    settings = Settings(source_root=tmp_path/"unused", service_token="token",
+        tile_signing_secret="secret", execution="inline", preview_dir=tmp_path/"preview",
+        source_mode="s3", s3_bucket="bucket", s3_region="ap-northeast-2",
+        workdir=tmp_path/"work", work_max_bytes=1024, preview_sink="s3",
+        trigger_spool=tmp_path/"events", ownership_snapshot_path=ledger,
+        ownership_snapshot_max_age_seconds=1800, ownership_snapshot_owner_uid=os.getuid(),
+        ownership_snapshot_group_gid=os.getgid())
+    source=S3SourcePort(client, workdir=settings.workdir, max_bytes=1024)
+    job=main._build_reclaim_job(settings=settings, client=client, source=source)
+    assert job.ledger_snapshot_path == ledger
+    assert job.ledger_snapshot_max_age_seconds == 1800
+
+
+def test_s3_due는_TL2_등급을_로그용으로_세고_삭제하지_않는다(tmp_path):
+    import json, os
+    from datetime import datetime, timezone
+    objects, _live = _objects(); objects["previews/old.png"] = b"PNG"
+    client=StubS3(objects); ledger=tmp_path/"ledger.json"
+    payload={"schema":"colab-preview-ownership-snapshot/1","observed_at":datetime.now(timezone.utc).isoformat(),
+      "scope":"all-tenants","database_role":"backup","role_evidence":{"superuser":False,"bypassrls":True,"read_all_data":True},
+      "d3_file_ids":[FID],"d5_upload_file_ids":[],"counts":{"d3_file":1,"d5_upload_file":0}}
+    payload["content_sha256"]=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    ledger.write_text(json.dumps(payload)); os.chmod(ledger,0o440); os.chmod(ledger.parent,0o550)
+    job=tile_reclaim.S3ReclaimJob(client=client,source=object(),ledger_snapshot_path=ledger)
+    result=job.run_due(now=1)
+    assert result is not None and result.applied is False
+    assert job.last_legacy_result["legacy_groups"] == 2  # render-only + old
+    assert job.last_legacy_result["deleted"] == 0
+    assert client.delete_calls == []

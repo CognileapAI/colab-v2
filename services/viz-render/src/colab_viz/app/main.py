@@ -45,14 +45,22 @@ def _build_reclaim_job(*, settings: Settings, client, source):
             previews_root=settings.preview_dir, storage_root=settings.source_root,
             apply=settings.tile_reclaim_apply,
             max_keys=settings.tile_reclaim_max_keys,
-            interval_seconds=settings.tile_reclaim_interval_seconds)
+            interval_seconds=settings.tile_reclaim_interval_seconds,
+            ledger_snapshot_path=settings.ownership_snapshot_path,
+            ledger_snapshot_max_age_seconds=settings.ownership_snapshot_max_age_seconds,
+            ledger_snapshot_owner_uid=settings.ownership_snapshot_owner_uid,
+            ledger_snapshot_group_gid=settings.ownership_snapshot_group_gid)
     if settings.source_mode == "s3" and settings.preview_sink == "s3":
         return tile_reclaim.S3ReclaimJob(
             client=client, source=source,
             uploads_prefix="uploads", previews_prefix=settings.preview_s3_prefix,
             apply_requested=settings.tile_reclaim_apply,
             max_keys=settings.tile_reclaim_max_keys,
-            interval_seconds=settings.tile_reclaim_interval_seconds)
+            interval_seconds=settings.tile_reclaim_interval_seconds,
+            ledger_snapshot_path=settings.ownership_snapshot_path,
+            ledger_snapshot_max_age_seconds=settings.ownership_snapshot_max_age_seconds,
+            ledger_snapshot_owner_uid=settings.ownership_snapshot_owner_uid,
+            ledger_snapshot_group_gid=settings.ownership_snapshot_group_gid)
     return tile_reclaim.NotReadyReclaimJob(
         reason=(f"source={settings.source_mode} · preview={settings.preview_sink} — "
                 "저장 모드가 갈려 회수 판정을 시작하지 않았다"),
