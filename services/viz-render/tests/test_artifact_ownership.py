@@ -143,6 +143,17 @@ def test_구판_사이드카에_원천식별자가_없으면_추측해_세지_�
         ownership.legacy_tally([malformed], LEDGER)
 
 
+@pytest.mark.parametrize("raw", ["not-json", "[]"])
+def test_물리sidecar가_깨졌거나_object가아니면_사이드카부재로_오판하지_않는다(tmp_path, raw):
+    (tmp_path / "broken.png").write_bytes(b"image")
+    (tmp_path / "broken.json").write_text(raw, encoding="utf-8")
+    group = ownership.scan(tmp_path)[0]
+
+    assert ownership.grade(group, LEDGER).grade == ownership.GRADE_UNDECIDABLE
+    with pytest.raises(ownership.LegacyObservationNotReady):
+        ownership.legacy_tally([group], LEDGER)
+
+
 # ── ⚠ 덫 ① — `baked_for` 는 판정 입력이 아니다 ──────────────────────────────
 def test_등록_전환된_대상이_불일치로_뜨지_않는다(tmp_path):
     """`baked_for` 는 **구울 때의** 대상(uploadId)이고 지금 소유는 datasetId 다.

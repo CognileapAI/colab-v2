@@ -83,6 +83,7 @@ class ArtifactGroup:
     cache_key: str
     paths: tuple[Path, ...]
     sidecar: dict | None = None
+    sidecar_error: str | None = None
 
     def is_map_tile(self) -> bool:
         return str(self.cache_key).startswith(MAP_TILE_PREFIX)
@@ -187,6 +188,9 @@ def legacy_tally(groups: Iterable[ArtifactGroup], ledger: Ledger) -> LegacyTally
     for group in groups:
         if group.is_map_tile() or not _is_legacy(group.sidecar):
             continue
+        if group.sidecar_error:
+            raise LegacyObservationNotReady(
+                f"물리 JSON sidecar를 판독하지 못했다: {group.cache_key} ({group.sidecar_error})")
         if group.sidecar is None:
             name = LEGACY_SIDECAR_ABSENT
             unreachable.append(group.cache_key)
@@ -247,13 +251,18 @@ def scan(previews_root: Path) -> list[ArtifactGroup]:
     groups: list[ArtifactGroup] = []
     for key, paths in sorted(buckets.items()):
         doc = None
+        sidecar_error = None
         for p in paths:
             if p.suffix == ".json":
                 try:
                     loaded = _json.loads(p.read_text(encoding="utf-8"))
-                except (ValueError, OSError):
+                except (ValueError, OSError) as exc:
                     loaded = None
-                # 사이드카가 못 읽히면 **보류**다 — 못 읽은 것을 「없다」로 세지 않는다.
+                    sidecar_error = type(exc).__name__
+                if loaded is not None and not isinstance(loaded, dict):
+                    sidecar_error = "JSON root is not an object"
+                # 기존 소유 등급은 보류를 유지하고, TL-2 세부분류는 error 표식으로 fail-closed한다.
                 doc = loaded if isinstance(loaded, dict) else None
-        groups.append(ArtifactGroup(cache_key=key, paths=tuple(paths), sidecar=doc))
+        groups.append(ArtifactGroup(cache_key=key, paths=tuple(paths), sidecar=doc,
+                                   sidecar_error=sidecar_error))
     return groups

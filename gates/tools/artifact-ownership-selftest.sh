@@ -231,6 +231,14 @@ expect red "ⓞ 규약 위반(판 2 인데 sources 가 비었다)" COLAB_ARTIFAC
 says "ⓞ" "사이드카 규약 위반"
 rm -f "$SLOT/brokenkey".* "$SLOT/legacykey".*
 
+# ── ⓥ 물리 JSON이 깨졌으면 「사이드카 부재」로 세지 않고 준비 red ────────────
+printf '\x89PNG-fixture' > "$SLOT/unreadable.png"
+printf 'not-json' > "$SLOT/unreadable.json"
+expect red "ⓥ 깨진 물리 sidecar" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+  COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
+says "ⓥ" "구판 관측 준비 실패"
+rm -f "$SLOT/unreadable".*
+
 # ── ⓠ ⭑ 음성 시험 — `tile-` 만 있는 자리는 **대상 0건** ─────────────────────
 TILESLOT="$TMP/tileslot"; mkdir -p "$TILESLOT"
 printf 'II*\x00fixture' > "$TILESLOT/tile-abc.tif"
@@ -372,5 +380,5 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict artifact-ownership-selftest
-echo "artifact-ownership-selftest green — 19 케이스(red 6 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 11 ＋ 무접촉 대조 3 전건 기대대로"
+echo "artifact-ownership-selftest green — 20 케이스(red 7 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 12 ＋ 무접촉 대조 3 전건 기대대로"
 exit 0

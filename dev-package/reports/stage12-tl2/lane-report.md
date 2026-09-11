@@ -18,6 +18,24 @@
 - A separate fixture proves 333 modern PNG/WebP bundles and a `tile-*.tif` bundle do not enter
   the legacy population.
 - A legacy sidecar without a source identifier fails closed instead of being guessed into a class.
+- A physical JSON parse error or non-object JSON remains `판정 불가` for the old ownership contract,
+  but TL-2 observation now preserves the parse-error state and stops readiness; it is never counted
+  as `사이드카 부재`.
+
+## Dev read-only command packet
+
+The deployed-code command is `python -m colab_viz.domains.d7_visualization.legacy_preview_observation`.
+Before it runs, an administrator read-only connection must dump the complete `d3_file.id` and
+`d5_upload_file.id` sets inside `BEGIN READ ONLY`; repeat the same counts under the boundary role and
+stop if the two scopes are equal or both administrator sets are empty. Pass only those two ID files,
+the exact bucket/region, `--prefix previews`, and a new snapshot path to the command. Record the
+container image/config ID and deployed build SHA first, then hash the resulting JSON snapshot.
+
+The command lists only exact `previews/`, rejects nested/out-of-prefix/unknown objects, downloads only
+JSON sidecars with List-size = HEAD-size and If-Match GET, closes every stream, and emits observation
+time, current object/group counts, all legacy/rebake-unreachable key sets, unsigned object size metadata,
+and `deleted: 0`. Duplicate pagination, missing/invalid metadata, malformed JSON, and empty ledgers are
+readiness failures rather than zero counts. It has no delete client call and no DB connection.
 
 ## Observation boundary
 
@@ -28,7 +46,8 @@
 - The parent-provided current dev S3 inventory says map-tile `.tif` is 0 and other PNG/WebP
   objects total 333. Those 333 are not asserted to be the historical legacy 19; the code requires
   legacy sidecar/source evidence before counting them.
-- A fresh deployed dev TL-2 count is pending deployment of this reviewed code. This lane does not
+- A fresh deployed dev TL-2 count is pending deployment of this reviewed code. The current 333-object
+  inventory is expected to change, so the snapshot timestamp and actual count are mandatory. This lane does not
   convert an undeployed classifier or the 333-format inventory into a production observation.
 
 ## Verification
