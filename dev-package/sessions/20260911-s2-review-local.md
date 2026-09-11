@@ -43,6 +43,13 @@ contract-breaking은 HEAD 대비 ERR 10/ WARN 0/ INFO 0, exit 1이다.
 커밋에는 관련 사양·계획·승인 증거와 생성 타입의 해당 설명 한 줄만 포함하고,
 다른 Stage 1·2 진행 중 변경은 작업 트리에 보존한다.
 
+⟨로컬 재동결 결과⟩ `eac2f0b`, 관련 9파일(계약·서버·시험·승인/설계 기록·생성 설명 1줄).
+커밋 직전 경계 27 passed와 계약 소비 6 passed를 다시 확인했다.
+새 HEAD 기준 contract-breaking exit 0, 판정 실패 0/준비 실패 0.
+보고: `dev-package/reports/stage12-account-required/refrozen-contract/gate-summary.json`.
+이전 ERR 10 근거는 위에 보존한다. 나머지 작업 트리 변경과 후속 검증 기록은 미커밋이며
+원격 push·배포·main 병합은 수행하지 않았다. Stage 1·2 전체 완료를 의미하지 않는다.
+
 ### 확인 전 이력
 
 승인 기록 `sessions/20260910-stage12-decisions.md Q4`와 원 초안

@@ -13,6 +13,19 @@
 # 두 읽기는 서로를 보지 않고 만들어졌고, 그 불일치가 여기 그대로 남아 있다.
 
 items:
+  - id: BO-1
+    name: "운영자 백오피스 — 이메일 식별 서비스 계정 직접 추가"
+    status: open
+    stage: after_stage2
+    owner: "D1 / core-api · frontend"
+    entry_conditions: ["stage 3 최우선 개발 — 2026-09-10 사용자 지정", "계정 발급·권한·소속·기존 계정 처리 상세 사양 확정 후 구현"]
+    depends_on: [PA]
+    completion_def: "완료 정의 미작성 — 운영자가 백오피스 화면에서 이메일 식별 서비스 계정을 직접 추가하는 방향만 승인. 메일함 생성 요구가 아니며 상세 발급 방식·검증 기준은 별도 설계에서 확정한다."
+    evidence: null
+    deadline: null
+    note: "stage 3 내 최우선. stage 1·2 완료 조건에 추가하지 않는다. Google 로그인 보류와 독립이며 기존 로그인 제거 승인 아님."
+    sources: ["sessions/20260910-stage12-decisions.md"]
+
   - id: R0
     name: 레포 결정
     status: done
@@ -363,7 +376,7 @@ items:
     entry_conditions: ["I3"]
     depends_on: [I3]
     completion_def: "복원 리허설 성공 (`§4`) · 정본 = `WORK-UNITS §10.2-b`. ⭑ ⟨증보 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈215〉`⟩ **`R-1`(복원 절차)과 분리 유지한다 — 이 항목은 `R-1` 의 리허설 **결과를 받아 쓰고**, 리허설을 **다시 돌리지 않는다.** 이 항목이 지는 것은 추적·알람이 붙은 **운영 리허설**이다.** 흡수하지 않는 이유 = `R-1` 은 `I3` 무의존인데 이 항목은 `I3` 선행이라, 흡수하면 재기동의 전제조건(`〈158〉`-㉯)이 `I3` 대기로 끌려 들어간다 ⭑ ⟨범위 조정 2026-08-31 · Ted RULING ㉚ · `PLAN-SoT §9 〈256〉`⟩ **「시점 복구 리허설 1회」는 이번 범위 밖이다** — ／ 이전 표기 ~~시점 복구 리허설 1회~~ → **이번 범위 = 「회차 단위(하루 1회 03:30) 복원 리허설 1회」**이고 `R-1` 의 결과를 받아 쓴다. **시점 복구(WAL)는 삭제하지 않고 `§9-㊻` 의 prod 개통 필수 관문 (다) 로 옮겼다.** 이번 범위의 남은 조건 = **분산 추적 · 로그 · 알람 · 데이터 레지던시 기록** 넷(실물 0건) ＋ 진입조건 `I3`"
-    evidence: null
+    evidence: "⭑ **⟨로컬 구현 2026-09-11 · sessions/20260911-s2-ops-local.md⟩ 상태 open 유지.** W3C traceparent 미들웨어와 core→viz/AI 전파, core/viz/ai 요청 JSON, pipeline pass JSON을 구현했고 공통 커널 생성물 4벌을 manifest 13/13으로 고정했다. 상태형 알람 runner와 5분 설정, AWS/CloudFront/OpenAI 레지던시 TOML, ops gate/selftest를 추가했다. core 1043, 좁은 ai/viz/pipeline 관측 시험, generated 13/13, import 8/0, boundary 37, ops selftest 10과 gate trace5/region3/external2/alarm3이 green이다. R-1 복원 결과를 소비하며 복원을 반복하지 않았다. **실제 webhook·cron·배포 0건**이고 선행 I3도 partial이므로 완료로 닫지 않는다."
     deadline: null
     note: "／ 이전 ~~⚠ R-1 과 복원 리허설 재료가 겹치는데 한쪽이 다른 쪽을 흡수하는지 두 문서 모두 미기재.~~ **`§9` 그래프의 `I4 ── P6` 은 `〈168〉-㉵` 로 WU 의존이 아님이 판정됐다**(이 문장은 그대로 유효하다). ⭑ **⟨실측 판정 2026-08-31 · Ted 판정 ㉑ · `PLAN-SoT §9 〈249〉` · 워크트리 `lane-ops`⟩ 두 리허설은 **다르다**. 합치지 않고, 무엇이 다른지를 여기 적는다** — `〈215〉`(분리 유지)를 뒤집지 않았고, 뒤집을 근거도 실측에서 나오지 않았다. **㉮ 겹치는 것은 넷 중 하나뿐이다.** 이 항목이 요구하는 것은 넷(**분산 추적 · 로그 · 알람 · 시점 복구 리허설 1회 · 데이터 레지던시 기록** · `WORK-UNITS §4:175`·`§10.2-b:449`)이고, `R-1` 과 겹치는 것은 **복원 리허설 한 자리**다. **나머지 셋의 실물은 레포에 0건** — `otel|opentelemetry|jaeger|trace_id|alertmanager|prometheus|residency|레지던시` 전수 grep(`services/**`·`infra/**`·`contracts/**`)의 히트는 **요구를 적은 산문 두 줄뿐**(`infra/README.md:33` 데이터 레지던시 · `:37` 분산 추적)이고 **구현·설정·시험 0건**이다. 즉 이 항목의 4분의 3 은 `R-1` 이 만든 적이 없다. **㉯ 겹치는 그 한 자리도 성질이 다르다 — 「시점 복구」가 실물로 못 선다.** `R-1` 의 리허설(`infra/staging/restore/rehearsal.sh`)이 되돌리는 재료는 **논리 덤프**(`pg_dump | gzip`)와 **볼륨 tar** 다 — `archive_mode`·WAL 보관·`recovery_target`·basebackup 의 실물이 `infra/staging/backup/**`·`restore/**` 에 **0건**(전수 grep). **복원 입도는 「하루 1회 03:30 회차」이지 임의 시점이 아니다.** 그래서 이 항목의 「**시점** 복구 리허설」은 `R-1` 의 「**제자리** 복원 리허설」로 충족되지 않는다 — **기구가 없어서 아직 못 재는 것**이고, `[미확인]` 이 아니라 **실측된 결손**이다. **㉰ 방향도 반대다.** `R-1` 의 리허설은 **살아 있는 staging 을 읽기만 하고 일회용(`r1_*`)에만 쓰는** 무해 리허설이라(`rehearsal.sh` 머리말 축자) 추적·알람이 붙을 자리가 없다. 이 항목이 지는 것은 `〈215〉` 축자대로 **추적·알람이 붙은 운영 리허설**이다. **㉱ 그래서 조치 = 합치지 않는다.** `R-1` 의 리허설 결과를 **받아 쓰고 다시 돌리지 않는다**는 `〈215〉` 문면을 그대로 두고, **이 항목이 따로 져야 하는 것 넷을 위 ㉮~㉯ 로 명시**했다 — 다음 사람이 「R-1 이 끝났으니 I4 도 끝났다」로 읽지 않게 하는 것이 이 기재의 목적이다. ⚠ **상태는 고치지 않았다**(`open` 유지) — 진입조건 `I3` 이 🟧 이고 완료 정의도 재지 않았다. ⭑ **⟨범위 조정 ＋ 판정 2026-08-31 · Ted RULING ㉚ · 등재 `PLAN-SoT §9 〈256〉` · 워크트리 `lane-checklist`⟩ 「시점 복구(WAL)」를 **이번 범위에서 뺀다. 삭제하지 않고 prod 개통 전 필수 관문으로 옮긴다.**** **㉮ 근거 = `[미확인]` 이 아니라 없는 것이 확인됐다.** `archive_mode`·WAL 보관·`recovery_target`·basebackup 의 실물이 `infra/staging/backup/**`·`infra/staging/restore/**` 에 **0건**(`〈249〉`-㉯ 전수 grep). 복원 입도는 **하루 1회 03:30 회차**이지 임의 시점이 아니다. **㉯ 이번 릴리스의 공식 복원 수준 = 「하루 1회 회차 단위」.** **잃을 수 있는 최대 구간 = 정상 운전에서 약 24시간**(직전 03:30 회차 이후 쌓인 것 전량 · 크론 `30 3 * * *`). ⚠ **백업이 조용히 멈추면 그보다 길어진다** — 자동 감시가 월요 04:10 주 1회뿐이라(`10 4 * * 1`) 발견까지 최대 약 7일이 더해져 **최악 약 8일**이다. 이 문면은 `infra/staging/restore/RUNBOOK.md §0.1` 에 같은 값으로 적었다. **숫자를 좋게 적지 않았다.** **㉰ 옮긴 자리 = `PLAN-SoT §9-㊻` 의 prod 개통 조건.** ㊻ ③ 이 정한 두 조건(가·나)에 **(다) 시점 복구(WAL) 관문**을 더한다 — prod 는 회차 단위 복원만으로 열지 않는다. `〈256〉` 이 그 개정을 적는다. **`I5`(prod 전환)의 대장 행은 이 회차가 건드리지 않았다**(이 레인의 territory 밖). **㉱ 그래서 이번 범위 기준으로 이 항목이 완주 가능한가 = 예. 단 남은 조건 셋이 있다.** 이 항목이 지는 넷 중 **「시점 복구 리허설 1회」가 「회차 단위 복원 리허설 1회」로 내려앉고**, 그것은 `R-1` 의 결과를 받아 쓴다(`〈215〉` 그대로 · 다시 돌리지 않는다). **남은 조건 = ⓐ 분산 추적 ⓑ 로그 ⓒ 알람 ⓓ 데이터 레지던시 기록** — 넷 다 레포 실물 **0건**(`〈249〉`-㉮ 전수 grep · 히트는 `infra/README.md:33`·`:37` 의 요구를 적은 산문 두 줄뿐)이고, **진입조건 `I3` 이 아직 🟧 다.** ⛔ **닫지 않는다** — `status: open` 유지. 남은 조건 넷과 WAL 관문은 `dev-package/PR-CHECKLIST.md` 에 올렸다. ⭑ **⟨증보 2026-09-04 · `PLAN-SoT §9 〈311〉`(`VL-1`) · 워크트리 `lane-vl1`⟩ 값 조회 지연의 귀속이 D7 밖으로 떨어졌다 — 같은 `POST` 가 nginx 직접 **17 ms** · 공개 엣지 **279 ms**(TCP 46 ＋ TLS 44 ＋ Cloudflare·터널 왕복 189)로 **262 ms 가 엣지·터널 구간**이다(근거 `sessions/VL-1-20260904.md` §1.2·§1.3 · 표본 원값 `sessions/VL-1-SAMPLES-20260904.tsv` 400건). **`VL-1` 은 D7 개선 0건으로 닫혔고 이 구간은 인프라 소관**이다 — 이 항목의 추적·알람이 엣지·터널 지연을 볼 수 있어야 한다. ⛔ 새 WU 는 세우지 않았다."
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
@@ -1057,7 +1070,7 @@ items:
 
   - id: J-1
     name: 편의 기능 묶음
-    status: open
+    status: partial
     stage: stage2
     owner: "혼합"
     entry_conditions: ["stage 2 마지막(`〈157〉-㉱`)"]
@@ -1119,7 +1132,15 @@ items:
       · `J-8`⑴ **표본 없으면 그리지 않는다**(음성 시험) · `J-9`⑶ **수치 없는 문면**(Ted 판정).
       **어느 자리에도 지어낸 수를 넣지 않았다.**
     completion_def: "⭑ ⟨**확정** 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉱ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ **위 `completion_def_draft` 의 9건 통과 조건을 확정본으로 올린다** — 초안의 `[미확인]` **5자리**가 이번에 전부 닫혔기 때문이다(넷은 실측 근거 · 하나는 Ted 판정). 닫은 값 = **`J-1`⑷ 연구실 밖 가져오기 불허**(RLS `lab_boundary` · `db/platform/schema.sql:775`·`:786` ＋ 다른 연구실 404 실측 `CT-1.evidence`) · **`J-2`⑷ 기본 격자 지정 = 교수**(역할 집합이 `('교수','연구원')` 둘뿐 · `schema.sql:131` CHECK) · **`J-3`⑶ 거리 = 고정값 없음**(쌍마다 경계 상자·화소 크기로 계산 · 못 구하면 「거리 `[미상]`」 · 612 m 는 HSR 한 쌍의 실측이지 상수가 아니다) · **`J-8`⑴ 예측 근거 = 「표본이 없으면 예측을 그리지 않는다」를 음성 시험으로**(표본이 있으면 단계별 **중앙값**) · **`J-9`⑶ 이득 합격선 = 수치 없는 문면**(「첫 장 도달이 전량 완료보다 앞서고, 수렴 알림 1회」 · **Ted 판정 2026-09-03** — 유일한 후보 수 tif 12:1 이 계산값이라 정본이 측정으로 인용하는 것을 금한다). ⚠ **마이그레이션 `0012` 가 `J-2` 몫으로 비어 있다**(체인 head `0011_lv1_drop_level_user_set` · `〈287〉` §4). ⟹ **`03-HANDOFF §4 #54` 에서 `J-1` 을 내린다 — 착수 가능이다.** ⛔ **`status` 는 `open` 그대로 — 열린 것과 착수한 것은 다르다.** ／ 종전 문면은 지우지 않는다 ↓ ⭑ ⟨**범위만** 기재 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈214〉`⟩ **범위 = 유효 9건**(`J-1`~`J-6`·`J-8`~`J-10` · 목록 정본 `sessions/S1-PLAN-REFOUND.md §J` · 계수 근거 `〈187〉`-㉰). **범위 밖으로 못 박은 것 둘** = ⑴ 자동 무효화 — `Y-1` 로 적출돼 나갔다 ⑵ 팔레트 선택의 **서버측 재렌더 경로** — `V-1` 소유이고 이 묶음이 지는 것은 **고르는 UI** 뿐이다. ⚠ **닫는 기준(9건 각각의 통과 조건)은 이번에 쓰지 않았다 = 그 부분은 여전히 `완료 정의 미작성`** — Ted 가 이번에 고친 것은 범위뿐이다. 푸는 법 = Stage 2 마지막 배치에 도달한 회차가 9건 각각의 통과 조건을 기재한다"
-    evidence: null
+    evidence: >-
+      2026-09-11 로컬 구현·검증 진행. prd/specs/s2-convenience.md,
+      prd/rounds/R-S2-CONVENIENCE.md, sessions/20260911-s2-convenience-local.md 참조.
+      격자 후보/복제/교수 기본값, 예상 영역·불일치·지도 상태, 팔레트·ETA,
+      첫 본체 임시 접수 구현과 0024 drift 검증을 수행했다.
+      전체 frontend 1204건과 직접 격자/재사용/등록/새로고침/DB/필터 브라우저 여정 통과.
+      최종 트리 전수와 실제 배포 검증이 남아 done이 아니다.
+      전체 구현 push·dev 배포·후속 통합검증 승인과 사전 검사/설정 보완은
+      sessions/20260911-stage12-deploy.md에서 추적한다. dev SSH 주소 확인 대기.
     deadline: null
     note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉰⟩ **유효 9건으로 맞췄고, 세는 기준을 함께 적었다.** 「10」도 「9」도 오기가 아니다 — **세는 기준이 달랐다**: 행 수 10(취소선 원문 보존 포함) 대 유효 항목 9(`J-1`~`J-6`·`J-8`~`J-10`). `J-7`(자동 무효화)이 `Y-1` 로 **적출돼 나갔고**(2026-08-27 · `〈167〉-㉳`) `WORK-UNITS §10.2` 표만 갱신에서 빠져 있었다. 세는 자리 = `sessions/S1-PLAN-REFOUND.md §J` · 시점 2026-08-29. ／ 이전 ~~어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다~~ ⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈251〉`⟩ 9건 각각의 닫는 기준 초안을 `completion_def_draft` 에 적었다 — `completion_def` 는 그대로 범위만 기재된 `〈214〉` 판이다.** 근거 없는 숫자를 짓지 않았고 `[미확인]` 5자리를 그대로 남겼다. **Ted 확정 전에는 착수 가능이 아니다.** ／ ⭑ **⟨증보 2026-09-01 · `PLAN-SoT §9 〈263〉`⟩ 선행에 `A-1`(산출물 소유 구조)이 붙었다** — 이 항목이 미리보기 자리의 산출물을 읽거나 지우므로 자리의 배치가 정해진 뒤에 선다. ⭑ **⟨확정 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉱ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ 초안 9건을 `completion_def` 로 승격했다 — `[미확인]` 5자리가 전부 닫혔다.** 넷은 실측 근거(RLS `lab_boundary` · 역할 CHECK `('교수','연구원')` · 쌍마다 계산 · 음성 시험)이고 하나는 **Ted 판정**(`J-9`⑶ 수치 없는 문면). **지어낸 수 0건.** ⟹ **`#54` 에서 `J-1` 을 내린다 — 착수 가능이다.** ⛔ **`status` 는 `open` 그대로.**"
     sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
@@ -1373,17 +1394,15 @@ items:
 
   - id: PA-G
     name: 구글 IdP 어댑터
-    status: open
+    status: deferred
     stage: stage2
     owner: "D1 / core-api ＋ frontend"
-    entry_conditions: ["⭑ ⟨**셈법 확정** 2026-08-31 · Ted RULING ㉜ · `PLAN-SoT §9 〈258〉`⟩ **개시 조건 = 대장에서 `stage1`·`stage2` 항목 중 미완이 0건이 되는 시점.** **세는 규칙 넷** — ① **미완 = `status` 가 `done` 이 아닌 것 전부**(`partial` 포함 · `CLAUDE.md §5` 「WU 는 부분 완료로 닫지 않는다」) ② **`deferred` 는 제외** ③ **`PA-G` 자기 자신은 반드시 제외**(자기를 기다리면 영영 열리지 않는다) ④ **`after_stage2`·`out_of_scope` 는 불산입**. **「기능만 센다」로 가르지 않는다** — 무엇이 기능인지 가르는 순간 다시 애매해지고, 이 회차가 본 사고 셋(「타일 서빙」·`CT-1` 의 `P6`·`preflight` 성질 문면)이 전부 그 무늬였다. **실측 2026-08-31** = `stage1` 미완 **3**(`SC-5` partial · `LV-1` open · `LV-2` open) ＋ `stage2` 미완 **15**(`deferred` 1건 `2단-격자전용-실패3건-처분` 제외 시 **14**) = **17**, 여기서 `PA-G` 자신을 빼면 **16**. **`partial` 은 4건**(`SC-5`·`IS4`·`I3`·`R-1`)이고 규칙 ① 로 **전부 미완에 든다**. **기계로 재지는가 = 예. 다만 자동으로 재는 것은 아직 없다** — 이 셈은 대장의 `status`·`stage` 두 필드만으로 뽑히지만(위 값이 그 결과다), `gates/run.sh` 에 이 계수를 재는 게이트는 **0건**이다. 자동이 되려면 `work-item-consistency` 에 계수 검사가 붙어야 한다. ／ 이전 ~~**v2 의 기존 기능이 전부 완성된 시점**~~ — 그 뒤·출시 결정 **전**에 연다. 기한 정본은 아래 `deadline.condition` 과 `WORK-UNITS §7` 의 PA-G 행. ／ 이전 ~~stage 1 완료 판정~~"]
+    entry_conditions: ["2026-09-10 사용자 결정으로 이번 개발 제외. 이슈 #12의 재착수 범위·일정 별도 승인 후 설계한다."]
     depends_on: [PA]
     completion_def: "2026-08-27 작성(`〈168〉-㉷`) — PA 의 7항은 자동 승계되지 않는다. ⓐ 어댑터가 `kernel/authn.py` 한 파일에만 ⓑ 비밀번호 발급 경로 제거(공존시키지 않는다) ⓒ `credentials.json`·`ops/set-password.py` 폐기 ⓓ admin 계정 처리 + 음성 시험 ⓔ PA ①②③⑤⑥ 재통과 ⓕ staging 배포 green"
     evidence: null
-    deadline:
-      condition: "⭑ ⟨개정 2026-08-29 · `PLAN-SoT §9 〈188〉`⟩ **v2 의 기존 기능이 전부 완성된 시점에 이 WU 를 연다 — 그 뒤·출시 결정 전에 구글 계정 전환을 집행한다. 날짜가 아니라 조건이다.** 그때까지 비밀번호 로그인은 「기한부 예외」로 유지하고, 비밀번호 어댑터는 이 WU 가 닫히는 시점에 제거한다(공존시키지 않는다). ／ 이전 ~~교체 기한 = stage 1 완료 판정과 동시에 이 WU 를 연다 (`§7` PA-G 행 · `〈122〉-㉯`)~~"
-      fired: false
-    note: "⭑ **⟨2026-08-31 · Ted RULING ㉜ · `PLAN-SoT §9 〈258〉`⟩ 셈법이 확정됐다 — `entry_conditions` 로 옮겼다. `03-HANDOFF §4 #52` 는 이것으로 닫힌다.** ⚠ **앞 회차 계수(`19` · `deferred` 제외 `18`)와 이번 실측(`17` · `PA-G` 제외 `16`)이 다르다** — 정의 차인지 시점 차인지 **이 회차가 재지 않았다**. 앞 값의 셈 근거가 남아 있지 않아 **`[미확인]` 으로 둔다.** 지어내지 않았다. **정본은 확정된 셈법으로 다시 뽑은 이번 값이다.** ／ 이전 ~~개시 조건을 무엇으로 세는가는 정하지 않았다 — 후보 다섯과 실측 계수를 `§4 #52` 에 정리했다. 결정 번호를 쓰지 않았다~~ ／ ⭑ ⟨2026-08-29⟩ **`fired` 를 `false` 로 확정했다**(`PLAN-SoT §9 〈188〉`) — 기한의 기준이 「stage 1 완료 판정」에서 **「v2 기존 기능 전부 완성」**으로 바뀌었고, 그 조건은 오늘 충족되지 않았다(미착수 WU 잔존). `unknown` 의 원인이던 「stage 1 완료 판정이 났는지 두 문서만으로 결정되지 않는다」는 기준이 바뀌어 사라졌다. ⚠ **지금 착수하는 항목이 아니다 — 조건이 충족되기 전에는 열리지 않는다.** 조건이 충족되는 회차에 `fired: true` 로 올리면 ㈒ 가 red 로 착수를 강제한다. ／ 이전 ~~fired 를 `unknown` 으로 둔 이유 = `§1.5` 2026-08-27 재판정이 stage 1 조건 대부분을 ✅ 로 적으면서도 잔여 둘(조건 3 D8 · 조건 7 계보 확정 완주)을 stage 2 로 남겨, 「stage 1 완료 판정」이 났는지 두 문서만으로 결정되지 않는다. 사람이 판정할 자리다.~~ — 사람이 판정했다. ⭑ **⟨재실측 2026-09-02 · `PLAN-SoT §9 〈275〉`-㉮⟩ 개시 조건은 아직 충족되지 않았다 — `stage 2` 를 다 닫아도 열리지 않는다.** 셈법은 `entry_conditions` 의 넷 그대로이고 값만 다시 뽑았다(대장의 `status`·`stage` 두 필드만으로). ⛔ **`stage1` 미완이 그대로 3 건 남아 있다 — `LV-1`(open) · `LV-2`(open) · `SC-5`(partial)**. 규칙 ① 로 `partial` 도 미완이다. **이 3 건은 `stage 2` 작업으로는 줄지 않는다** — 다른 단의 항목이다. ⟹ **「stage 2 를 다 닫으면 `PA-G` 가 열린다」는 틀렸다.** **`stage2` 미완 = 14 건**(`IS4`·`I3`·`I4`·`A-1`·`R-1`·`V-1`·`V-2`·`J-1`·`CT-1`·`P7`·`P8`·`PA-G`·`S3` ＋ `deferred` 1건 `2단-격자전용-실패3건-처분`), 규칙 ② 로 `deferred` 를 빼면 **13**, 규칙 ③ 으로 `PA-G` 자신을 빼면 **12**. ⟹ **총 미완 = 3 ＋ 12 = 15**(종전 2026-08-31 실측 16 → 15 · 이 회차에 `A-1`·`P7` 둘이 닫히고 계수 시점이 달라진 결과다). ⚠ **자동 계수는 여전히 없다 `[미확인]`** — `gates/run.sh` 에 이 계수를 재는 게이트는 **0건**이고, 붙이려면 `work-item-consistency` 에 계수 검사가 들어가야 한다(종전 기록 그대로)."
+    deadline: null
+    note: "2026-09-10 사용자 결정: Google 로그인 개발을 보류하고 stage 1·2 종료 필수 범위에서 제외한다. https://github.com/CognileapAI/colab-v2/issues/12 . 종전 자동 개시 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 이번 승인 범위가 아니다. 위 완료 정의는 과거 기록이며 재착수 시 새 사양으로 재검토한다. 결정 원문: sessions/20260910-stage12-decisions.md."
     sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "PLAN-SoT §9 〈188〉"]
 
   - id: S2
@@ -1937,7 +1956,7 @@ items:
 
   - id: CR-2
     name: "코드리뷰 회차 후속 — Ted 판정 5건 ＋ 배포 뒤 재굽기·소유 재실측 ＋ CI 인프라 red 둘"
-    status: open
+    status: partial
     stage: stage2
     owner: "Ted 판정 (계약 델타 · 배포 · CI 인프라)"
     entry_conditions:
@@ -1946,10 +1965,18 @@ items:
     depends_on: [CR-1]
     completion_def: >-
       2026-09-03 기재(`PLAN-SoT §9 〈307〉`-㉷ · 정본 목록 = `sessions/CODE-REVIEW-20260903-PLAN.md §5-5`).
+      ⟨2026-09-10 Q4·Q5 개정⟩ 아래 ⑴·⑵의 현재 판정: 실측 계약 3항(core-viz 경계 헤더 필수, 경계 부재 400, ScreenshotRequest.layers 최대 8) 가산 승인.
+      발생하지 않는 오류 응답의 일괄 추가는 승인 범위 밖. dev 로그인 제한은 현행 프로세스 메모리·자격/클라이언트 각각 5회/15분·성공 시 초기화 수용.
+      배포 후 실제 전달 IP·여섯 번째 실패 429는 재검증한다. 공유 limiter는 https://github.com/CognileapAI/colab-v2/issues/11 로 유예하며 다중 서버·prod 전 해결한다.
+      결정 승인으로 구현·검증 완료를 갈음하지 않는다. 결정 원문 sessions/20260910-stage12-decisions.md.
       **요구를 새로 만들지 않았다** — 코드로 결정하지 않고 남긴 것을 항목으로 세운 것이다.
       ⑴ **계약 델타 판정** — `fe-core.yaml` `createPreviewRender`·`listPalettes`·`lookupDatasetValue` 의 410/413/415/422 선언 ＋
       `core-viz.yaml` 경계 헤더 선언 ＋ `getRender` 400 ＋ `ScreenshotRequest.layers maxItems 8`.
-      **코드는 이미 그렇게 동작하므로 계약이 뒤따르는 자리**이고, 되돌릴 자리는 `relay.py:PASS_THROUGH_STATUSES` 다.
+      ⟨2026-09-11 실물 정정⟩ 아래 종전 전제는 계정 헤더에는 성립하지 않는다.
+      실제 tenant_scope는 연구실만 필수이며 계정 누락을 허용한다. Q4의 계정 필수 계약과
+      실제 동작의 차이는 sessions/20260911-s2-review-local.md에서 추적했다.
+      같은 날 사용자 “맞아”로 계정 누락 400까지 서버 동작 변경 승인; 계약·런타임을 맞춘다.
+      종전: **코드는 이미 그렇게 동작하므로 계약이 뒤따르는 자리**이고, 되돌릴 자리는 `relay.py:PASS_THROUGH_STATUSES` 다.
       동결 해제 회차로 묶을지 판정한다.
       ⑵ **로그인 제한 클라이언트 버킷** = `X-Forwarded-For` 마지막 홉으로 확정할지. nginx 앞에 LB 가 서면 단일 버킷(= 기준선 동작)이 된다.
       배포측 후속 = nginx 가 `X-Real-IP` 를 세운다.
@@ -1961,6 +1988,14 @@ items:
       **둘 다 main 사전존재이고 이 회차가 만든 것이 아니다.**
       ⟹ **닫는 기준 = 다섯이 각각 판정을 받고, 판정이 「집행」이면 그 집행이 실측으로 끝난 것.**
     evidence: >-
+      ⟨2026-09-11 로컬 부분 집행⟩ 연구실 필수 헤더 5op, getRender 400, layers 최대 8을 선언했다.
+      실제 OpenAPI 요청 시험 6 RED→6 GREEN, contract-lint와 seam-consistency 통과.
+      같은 날 후속 승인으로 계정 누락·빈값 400과 필수 계약도 구현, 경계 27건·계약 6건 통과.
+      변경 후 viz 413/core 1060 전체 통과. contract-breaking의 필수 헤더 10건 차이는
+      승인된 계약 변경이며 로컬 재동결 전 HEAD 대비 red를 그대로 기록한다.
+      사용자 로컬 커밋 승인 후 eac2f0b로 관련 9파일만 재동결했다. 새 HEAD 대비
+      contract-breaking green(exit 0), 원격 push·배포 없음. 나머지 기능 변경은 미커밋 보존.
+      최종 트리 전수와 실제 배포 검증은 남는다. sessions/20260911-s2-review-local.md 참조.
       ⭑ ⟨18차 해제 2026-09-05 · 워크트리 `lane-r18` · 브랜치 `lane-r18` · 초안 `notes/R18-LEDGER-PENDING.md` ·
       회차 행 `sessions/X2-FREEZE-PROTOCOL.md §1` 18차 · 등재 `PLAN-SoT §9 〈319〉`(계약 18차) · `〈320〉`(⑷ⓐ 영구 보존)⟩
       **⑴ 부분 집행 — 병합·배포 대기.** `fe-core.yaml#createPreviewRender` 에 `"413"`·`"415"` **2건** 선언.
@@ -2286,19 +2321,18 @@ items:
 
   - id: BF-10
     name: "바탕지도 대안 — 격자선·눈금 옵션 (POL-021 준수 · Ted 6 · 접수 B-2)"
-    status: open
+    status: deferred
     stage: stage1
     owner: "frontend (D7 화면) — 착수 시점은 Ted"
     entry_conditions:
-      - "**Ted 판정 Q4 (2026-09-03) = 바탕지도는 이번 회차 미착수 · 격자선 옵션을 다음 회차 후보로 등록** — 착수는 Ted 가 회차를 연다"
-      - "POL-021 「타일 서버도 바탕 지도도 쓰지 않는다」(`〈240〉`) 안에서만 — 외부 타일·베이스맵 API 호출 0 · 내장 해안선 오버레이는 회색지대라 **고르지 않는다**(`recon-D-scope.md §2`)"
-      - "⚠ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx:9-10`) — 화면 오버레이만 더하면 저장 PNG 에는 없다. 그 불일치를 받아들일지가 완료 정의에 앞선 판정이다"
+      - "2026-09-10 사용자 결정으로 stage 1·2 종료 범위에서 제외. 기존 해안선·국경 배경과 커서 좌표를 수용하고 화면+PNG 격자는 이슈 #10 재착수 승인 후 설계한다."
     depends_on: [P3]
     completion_def: >-
       ⑴ 위경도 자료(EPSG:4326)의 미리보기에 **경위도 격자선·눈금**(사이드카 bbox 4값에서 계산 · 외부 자원 0)을 켜고 끌 수 있다 ⑵ 기본값 off ⑶ 화면과 저장 PNG 의 불일치 판정을 먼저 받는다 ⑷ 시험 — bbox 픽스처에서 눈금 위치 계산값.
     evidence: null
     deadline: null
     note: >-
+      ⟨2026-09-10 개정⟩ 아래 종전 범위 유지 판단을 사용자 결정으로 대체한다. 격자선 자체는 미구현·deferred이며 done이 아니다. 후속 https://github.com/CognileapAI/colab-v2/issues/10 ; 결정 원문 sessions/20260910-stage12-decisions.md.
       ⭑ ⟨Ted 판정 2026-09-05 · 등재 `PLAN-SoT §9 〈315〉`-㉰⟩ **`after_stage2` 이관을 검토했고 보류했다 — `stage` 필드는 고치지 않는다(무변경).** 이관하면 `PA-G` 개시 계수가 13 → 12 로 줄고 버그개선 회차 레인이 하나 주는 것이 「가장 싼 선택지」였으나, Ted 는 이 회차의 버그개선 묶음이 그대로 닫는 쪽을 골랐다. **대장 변경 0** — 다음 회차는 이 선택지를 다시 열지 않는다.
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉮ Q4. 접수 B-2 의 「해결 가능 여부 검토」 결과 = 정책 위반이 아니라 **정책이 명하는 대로 동작 중**(`recon-D-scope.md §1`). 스크린샷 `reports/bug-20260903/bug06-*.png`.
       ⚠ 결함이 아니라 **선택 갈래**라 `stage1` 계수에 들어가는 것이 옳은지는 Ted 가 회차를 열 때 다시 본다(`〈310〉`-㉵). **⟹ 〈315〉-㉰ 로 닫혔다 — 다시 묻지 않는다.**
@@ -2355,6 +2389,7 @@ items:
       ⑶ **dev 배포 뒤 첫 바퀴 요약 1줄 실물** ⭑ **⟨개정 2026-09-05 · `〈336〉`-㉷ · PR #1 병합 커밋에서 집행⟩** ／ 종전 ~~「**staging** 배포 뒤」~~ — `〈335〉` 로 **staging 이 판정처에서 빠졌으므로**(리허설 · 판정 아님) 이 항목의 판정 자리는 **dev(AWS)** 다. 확인 자리 = 창 8-b 의 배포 뒤 확인 ⓐ(8/8 healthy 뒤 ≥60분 · 첫 바퀴 계수 ＋ 삭제 0).
       ⑷ **비밀값 미출력 확인**
     evidence: >-
+      ⭑ **⟨dev S3 관측 경로 로컬 구현 2026-09-11 · 근거 sessions/20260911-preview-retention-local.md⟩ status: open 유지.** dev compose의 실제 결손 둘(이벤트 스풀/공유 volume 0, S3 배포에 로컬 경로 회수기 결선)을 실패 시험 7건 RED로 고정하고, S3 관측 전용 job과 dev 공용 쓰기 스풀을 구현해 신규 8건 GREEN으로 만들었다. S3 목록은 uploads/·previews/로 제한하고 ETag가 아니라 materialize한 바이트로 타일 키를 재계산한다. workdir 총량 상한·목록/다운로드 실패는 준비 red이며 apply=true여도 DeleteObjects 호출 경로 0이다. 관련 67건, viz 395, pipeline 269, generated 13/13, import 8/0, DB boundary 370/0, compose config가 green이다. **실제 S3 삭제 0 · dev 배포 0 · main push 0.** 남은 완료 정의 ⑶은 승인된 dev 배포 뒤 첫 주기 실로그이며, 그 전에는 TL-2를 착수하지 않는다.
       ⭑ **⟨집행 2026-09-05 · 워크트리 `agent-ac6173ae`(기준 `main` `59b1c13`) · 등재 초안 `notes/BF12-LEDGER-PENDING.md`⟩ 완료 정의 ⑴⑵⑷ 충족 · ⑶ 미충족 ⟹ **닫지 않는다.** ⑴ **`colab_viz` 로거 하나에** stdout 처리기를 단다 — 신규 `kernel/logging_setup.configure_logging()` 을 `app/main.create_app()` 첫 줄이 부른다. 포맷은 **uvicorn 동일 계열**(`INFO:     …`) · `propagate=False` · 표식 하나로 **멱등**(시험이 앱을 수백 번 세운다). ⛔ **`basicConfig` 로 루트를 갈아엎지 않았다** — 그러면 uvicorn·써드파티 줄까지 우리 포맷이 되고 그것이 두 갈래로 갈리는 길이다. ⑵ **RED 선실측 4건 → GREEN 4건**(`tests/test_app_logging.py`). 축자 RED = `AssertionError: assert '관측 한 줄' in ''` 외 3건 · `4 failed in 3.96s` → `4 passed in 0.30s`. ⭑ **`caplog` 를 쓰지 않았다** — pytest 가 자기 처리기를 루트에 달아 두므로 caplog 로 재면 「설정 없어도 잡힌다」가 되고 **그것이 이 결함이 시험을 통과했던 이유**다. 루트를 미설정으로 되돌린 뒤 진짜 stdout 을 잡는다. ⭑ **형제 자리를 같이 잠갔다**(`〈324〉`-㉰) — 회수 요약과 「트리거 집행 N건」이 **둘 다** 난다는 것을 한 시험이 함께 단언한다. ⑷ **비밀 미출력** — 서비스 토큰·타일 서명 비밀 두 값이 로그에 없음을 단언한다. ⚠ 잰 것은 **회수 요약·기동 경로**이고 「어떤 줄에도 영영 안 실린다」는 `[미확인]`. ⛔ **⑶ staging 배포 뒤 첫 바퀴 요약 1줄 실물은 못 쟀다** — 이 회차 staging 접촉 0 · 배포 0. 해소 조건 = **다음 배포 창**에서 `docker logs colab_v2_staging_viz_render` 에 `지도 타일 회수 — …` 1줄. ⚠ **환경변수를 새로 만들지 않았다** — 수준 INFO 고정. `Settings` 에 수준 자리가 없었고, 내면 `infra/` 에 줄을 더해야 하는데 그 줄이 빠지면 「홈 env 에 무엇을 적어도 영영 꺼짐」이 된다(`#20`·`#49` 무늬) `[미확인]`. ⭑ **레포에 선례가 0건이다** — `services/` 전수에 `basicConfig`·`dictConfig`·`setLevel` 0건이라 core-api 에도 따라 쓸 무늬가 없었다. 다른 배포 단위의 같은 결손 여부는 이 회차가 재지 않았다 `[미확인]`. **게이트 실측 1회** — 선언 50 · **green 34 · red(판정) 1 · red(준비) 15**. `service-tests-viz-render` **green**(수집 330 · 실행 330 · skipped 0 · deselected 40 · failed 0 — 종전 326 ＋ 이번 4) · `service-tests-selftest` green. red(판정) 1 = `generated-up-to-date` 이고 **이 변경 때문이 아니다** — 축자 `frontend/node_modules/.bin/openapi-typescript: No such file or directory`(체크아웃에 의존 트리 부재) · 생성물 수정 0줄. **계약 개정 0 · 마이그레이션 0 · infra 0 · Dockerfile 0 · staging 접촉 0 · 배포 0.** ⭑ **⟨등재 2026-09-05 · `PLAN-SoT §9 〈325〉`⟩ 위 집행이 원장에 등재됐고 코드는 `main` 에 병합됐다**(`14db1a8` · 병합 트리 `ed8ceb3`). **게이트는 병합 트리 기준으로 다시 쟀다 — 두 실행에 걸쳐 선언 50 · green 50 · red(판정) 0 · red(준비) 0** (첫 실행 `all -j 1` = green 43 · red(판정) 1 · red(준비) 6 · 그 판정 red 1 은 `planning-freshness` 이고 원인은 기획 정본 폴더 이동이라 `370ed99` 로 닫혔다(`〈326〉`) · red(준비) 6 은 셸 입력 미선언이라 `source ~/.colab-v2-test.env` 뒤 재실행 10 종 전건 green). ⚠ **「한 번에 50 green」이 아니다.** ⛔ **`status` 는 `open` 무변** — 완료 정의 ⑶(staging 배포 뒤 첫 바퀴 요약 1줄 실물)이 여전히 미충족이고, 그 자리는 **다음 배포 창(창 6)** 이다(`03-HANDOFF §4.5`).
     deadline: null
     note: >-
@@ -2408,20 +2443,20 @@ items:
     completion_def: "저장 Port(로컬/S3 분기) · 프리사인드 전송 9 op · 전송 원장 `d5_upload_transfer*`(0008) · FE 전송 엔진 · 이어올리기. **완결이 곧 접수** — 전 파일이 S3 실측(ListParts·Head 크기 대조)으로 확인된 뒤에만 `d5_upload` 가 서고 `upload.accepted` 가 발행된다."
     evidence: "pytest · vitest · 게이트 전종 green · 신설 op **실호출**(실버킷 · 멀티파트 3파트 중 파트1 뒤 ListParts 실측으로 재개 확인). 등재 = `PLAN-SoT §9 〈337〉`(저장 Port)·`〈338〉`(8차 동결 해제)."
     deadline: null
-    note: "⚠ **`partial` 이다 — Ted 판정 대기(8차 해제 ㉯)가 남았다.** 병합 전 판정이 필수라고 PR 본문에 명시했다. ⭑ **개명 없음** — 이 id 는 다른 레인과 겹치지 않았다."
+    note: "2026-09-10 사용자 Q3 a: 현재 업로드 계약 승인. 종전 Ted 판정 대기는 해소. 최신 시험·dev 배포 증거를 재검증하기 전까지 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈337〉", "PLAN-SoT §9 〈338〉", "sessions/F2-PR.md"]
 
   - id: U-2
     name: "S3 고아 바이트 정리"
-    status: open
+    status: partial
     stage: stage1
-    owner: "D5 / pipeline-worker"
+    owner: "D5 / core app · pipeline-worker"
     entry_conditions: ["`I-D` dev 실측값(고아 3건 · 26,579,847 B · 2026-09-02)"]
     depends_on: [I-D]
     completion_def: "ⓐ 만료 스윕이 원장 행과 **S3 객체를 함께** 지운다 ⓑ **S3 삭제가 실패하면 행이 남는다**(다음 바퀴 재시도 — 조용히 성공으로 세지 않는다) ⓒ **등록된 업로드는 안 건드린다** ⓓ **버킷 루트를 스캔하지 않는다 — 원장이 아는 키만**(시드 lab_id 가 겹치는 버킷에서 남의 데이터를 지운다) ⓔ 판별식(`d3_dataset`·`d5_upload`·열린 전송 **셋 다 없어야 고아**)이 시험으로 고정된다."
-    evidence: "미착수. 실측 근거만 있다 — 워커 만료가 DB 행만 지운다(`d5_ingestion.py`). dev 실측 고아 3건을 **조건문이 아니라 목록으로 고정해** 손으로 지웠다(2026-09-02)."
+    evidence: "2026-09-11 로컬 구현·검증 완료 — core app이 D5 잠금·사건/키 검증·D3 소유/가시성·exact-key S3 삭제를 조립하고 pipeline/core의 선삭제 경로를 보존으로 전환했다. 좁은 실DB 21건, core-api 1040/6 deselect, pipeline 268/48 deselect, import/db 경계 green. 상세 `sessions/s1-storage.md`. dev 배포·apply 모드·실제 S3 대상 확인은 미집행."
     deadline: null
-    note: "⚠ **워커의 `UploadBlobPort` 는 읽기 Port 다** — 삭제를 얹으면 Port 의 정체가 바뀐다. Port 를 하나 더할지 먼저 판단한다. ⭑ **함께 닫을 것** — 완결된 전송 원장 행이 영영 안 지워진다(`complete()` 는 도장만 찍고 만료 스윕은 `completed_at IS NULL` 만 고른다). 바이트가 아니라 **행**의 누수라 돈·용량이 안 새고, 고치려면 「완결 뒤 얼마나 두는가」를 정해야 한다."
+    note: "Port 정체 변경을 피하려고 D2/D3 소유 판단이 가능한 core app 경계에 회수 조립을 두었다. 기본값은 observe이고 local 저장은 제외한다. 완료 transfer 메타는 completed_at 기준 7일 뒤에만 prune하며 원본 TTL이 아니다. 실제 삭제 대상·SHA와 dev 배포는 실행 직전 별도 승인; 그 전까지 partial이다. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈342〉"]
 
   - id: F-3
@@ -2434,7 +2469,7 @@ items:
     completion_def: "(가) 상세 파일 목록＋크기 (나) 폴더 구조를 등록 뒤에도 유지(`d3_file.relative_path` · 0009) (다) 다운로드 — **200 티켓 + 바이트 op**(`<a href>` 는 Bearer 를 못 싣는다) · 묶음은 ZIP_STORED 스트림 · s3 파일 단위는 프리사인드 GET (라) 본체 추가·교체·삭제(마지막 본체 409 · crs 무변경)."
     evidence: "pytest · vitest · tsc 0 · 게이트 전종 green · 실호출 증거 2건(`sessions/F2-evidence-9차-download.txt`). 등재 = `PLAN-SoT §9 〈339〉`·`〈341〉`."
     deadline: null
-    note: "⭑ **⟨개명 2026-09-02⟩ 원래 이름은 `F-2` 였다.** 병합에서 다른 레인의 `F-2`(카탈로그 키워드 입력 제거 · `〈182〉`·`〈245〉`)와 **같은 id 로 다른 WU** 가 돼서 이쪽을 옮겼다 — **상대 것은 한 글자도 안 건드렸다**(이미 `main` 에 있고 `done` 이다). 지시서 파일명 `sessions/F2.md`·`F2-PR.md` 는 그대로 둔다(경로를 바꾸면 인용이 또 갈린다). ⚠ **`partial`** — Ted 판정 대기(9차 해제 ㉯)."
+    note: "⭑ **⟨개명 2026-09-02⟩ 원래 이름은 `F-2` 였다.** 병합에서 다른 레인의 `F-2`(카탈로그 키워드 입력 제거 · `〈182〉`·`〈245〉`)와 **같은 id 로 다른 WU** 가 돼서 이쪽을 옮겼다 — **상대 것은 한 글자도 안 건드렸다**(이미 `main` 에 있고 `done` 이다). 지시서 파일명 `sessions/F2.md`·`F2-PR.md` 는 그대로 둔다(경로를 바꾸면 인용이 또 갈린다). ⟨2026-09-10 개정⟩ Q3 a로 현행 파일 관리 계약 승인. 최신 시험·dev 배포 재검증 전 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈339〉", "PLAN-SoT §9 〈341〉", "sessions/F2.md"]
 
   - id: I-D
@@ -2465,7 +2500,7 @@ items:
 
   - id: G10
     name: "단독 선언 게이트 8개 안의 시험 병렬화 — 전수 시간의 대부분이 그 여덟에 있다"
-    status: open
+    status: partial
     stage: stage1
     owner: "T-G / 게이트 · 서비스 시험"
     entry_conditions:
@@ -2477,7 +2512,7 @@ items:
       ⑵ **게이트 자가시험 green** — 각 게이트의 `*-selftest` 가 red fixture 로 여전히 fail-closed 임을 증명한다(수집 0건 red · 실행 0건 red · 실패 1건 red · venv 부재 red(준비 · 78))
       ⑶ **판정 동일** — 병렬화 전후로 수집·실행·skipped·deselected·failed 계수가 같다. 갈리면 red 이고, **계수가 줄어든 것을 빨라진 것으로 세지 않는다**
       ⑷ **전수 시간 실측** — 같은 트리에서 병렬화 전후를 각각 한 번의 실행으로 재고 값을 남긴다(`-j 4` 기준).
-    evidence: null
+    evidence: "2026-09-11 로컬 부분 구현 — 네 pytest 서비스 jobs=1/4 동일 계수(core 1040/6, pipeline 268/48, ai 137/26, viz 387/42), core 157.44→49.74초·viz 27.99→14.03초. render-latency 동일 25표본/5포맷 39.74→23.98초, 양쪽 p95 기준내; frontend 기존 Vitest worker 88파일/1186건 green, 626.92초. service selftest fail-closed, db-selftest 독립2절, preview selftest 독립5케이스 green. 전체 all -j4 전후 대조만 남음."
     deadline: null
     note: >-
       **신설 2026-09-06 · 등록만** — 착수 회차는 열지 않았다. 발견 = 창 8-a 전수 실측(`dev-package/reports/window-8a/lane-report.md §6`).
@@ -3138,13 +3173,13 @@ items:
 
   - id: X-7
     name: main CI core-api 시험 red 1건 해소 — test_viz_service_credential.py:85 403≠202 (a31111f 이래 · R-D advisor ③ 발견)
-    status: partial
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: ["R-D main ff 뒤 · main CI service-tests (core-api) 최신 실행 결과 확인"]
     depends_on: []
     completion_def: "main CI 잡 service-tests (core-api) green 1회 · 원인(시험 결함 vs 제품 결함) 판정 기록 · 로컬 service-tests-core-api 게이트와 CI 의 차이(환경·시크릿·필터) 명시 · 제품 결함이면 별도 WU"
-    evidence: "2026-09-08 LIMIT1 비결정성 RED→고정 fixture 수정, 관련10개 및 전체981개 통과. sessions/20260908-product-local-verification.md X-7. 수정 후 원격CI는 미실행."
+    evidence: "2026-09-10 재검증: main CI 34419117742의 실제 core-api 시험 step 성공, 현재 로컬 1018통과. LIMIT1 비결정 fixture 원인·로컬/CI 환경·선택자 차이 대조는 dev-package/sessions/s12-verify.md. 이전 2026-09-08 로컬981통과 당시 원격 미실행 기록은 해당 시점의 이력으로 보존한다."
     deadline: null
     note: "2026-09-08 등재(오케스트레이터 · advisor ③ 조건 ⑵) — main CI 는 ff 전부터 red: planning-gates(러너에 기획 폴더 부재 · 4bcf48c 이래) · service-tests (core-api) red 1(a31111f · 그 뒤 실행 0회) · ff 뒤 harness-eval 78(시크릿 미발급) 추가 · 셋 다 브랜치 보호 required checks 아님(main 미차단) · 로컬 service-tests-core-api 는 980/0/0 green(R-D rd-ship-gate)"
     sources: ["dev-package/sessions/R-D-ROUND-20260908.md"]

@@ -4,9 +4,9 @@
 
 > **For agentic workers:** 위임 원칙(글로벌 `CLAUDE.md`) ＋ `lane-worker` 에이전트로 태스크당 레인 1개(권고), 또는 `executing-plans`(로컬 vendored)로 이 세션에서 직접. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 대장과 실물을 먼저 일치시킨 뒤 stage 1·2의 실제 잔여 개발을 독립 라운드로 끝내고 Google 로그인까지 닫는다.
+**Goal:** 대장과 실물을 먼저 일치시킨 뒤 stage 1·2의 실제 잔여 개발을 독립 라운드로 끝낸다. Google 로그인과 격자선·눈금은 승인된 후속 이슈로 유예한다.
 
-**Architecture:** 첫 라운드는 기록 재검증만 수행해 실제 개발 범위를 줄인다. 이후 저장소, 시험 효율, 운영, 미리보기 회수, 코드리뷰 후속, 편의 기능, 인증을 파일 면과 완료 기준이 겹치지 않는 라운드로 순차 집행한다.
+**Architecture:** 첫 라운드는 기록 재검증만 수행해 실제 개발 범위를 줄인다. 이후 저장소, 시험 효율, 운영, 미리보기 회수, 코드리뷰 후속, 편의 기능을 파일 면과 완료 기준이 겹치지 않는 라운드로 순차 집행한다.
 
 **Tech Stack:** Git, GitHub Actions, CoLAB gates, Python 3.12, React, PostgreSQL, S3, Terraform, agent-browser
 
@@ -20,11 +20,15 @@
 - 제품 데이터·S3 객체·미리보기 캐시는 사용자 별도 승인 없이 삭제하지 않는다.
 - 관련 단독 게이트의 준비 실패를 성공으로 세지 않는다.
 - 각 구현 라운드는 실패 시험, 최소 구현, 단독 게이트, 수용 검토 순서를 지킨다.
-- prod와 `after_stage2`는 이 계획의 범위 밖이다.
+- prod와 `after_stage2` 구현은 이 계획의 범위 밖이다. Stage 3 최우선은 `BO-1` 운영자 계정 추가 백오피스이며 상세 발급 설계는 별도 확정한다.
+- 2026-09-10 사용자 결정 원문: `dev-package/sessions/20260910-stage12-decisions.md`. main push·staging/dev 배포·실제 삭제는 각각 실행 직전 승인; 로컬 구현·시험·문서는 연속 진행한다.
+- 이 파일은 전체 순서 계획이다. 각 구현 라운드의 구체적인 파일 경계·실패 시험·완료 증거는 자식 사양·계획에서 확정한다.
 
 ---
 
 ### Task 1: `R-S12-VERIFY` — 9건 재검증
+
+2026-09-10 조사 완료: `dev-package/sessions/s12-verify.md`. X-7 완료 수용, 다른 10건(승인 대조 2건 포함)은 명시된 dev 검증·결손 조건 유지. 최초 6게이트 5/1/0과 h5py 환경 보완 뒤 viz 단독 성공을 별도 기록했다. 개별 배포 검증 대기는 독립 로컬 구현의 착수를 막지 않는다.
 
 **Files:**
 - Create: `dev-package/prd/specs/s12-verify.md`
@@ -37,27 +41,27 @@
 - Consumes: 최신 `origin/main`, dev 실행 SHA, 기존 CI·배포 근거
 - Produces: 재검증 9건의 done 또는 정확한 미충족 조건
 
-- [ ] **Step 1: 깨끗한 기준선을 고정한다**
+- [x] **Step 1: 기준 SHA와 승인된 변경을 고정한다**
 
 Run: `git fetch origin main && git status --short --branch && git rev-list --left-right --count origin/main...HEAD`
 
-Expected: 변경 0, 앞뒤 수 `0 0`, HEAD와 `origin/main` SHA 동일.
+Expected: HEAD와 `origin/main` 동일, 앞뒤 수 `0 0`. 승인된 미커밋 문서는 폐기하지 않고 별도 diff/hash baseline으로 보존한다. dirty를 clean으로 보고하지 않는다.
 
-- [ ] **Step 2: 재검증 행렬을 작성한다**
+- [x] **Step 2: 재검증 행렬을 작성한다**
 
 Rows: `BF-7`, `BF-8`, `BF-9`, `BF-11`, `BF-13`, `I3`, `BF-12`, `X-7`, `WU-PREVIEW`.
 
 Columns: 완료 정의, main 포함 SHA, 관련 게이트, dev 확인, 미충족 조건, 판정.
 
-- [ ] **Step 3: 항목별 관련 게이트와 dev 실물을 확인한다**
+- [x] **Step 3: 항목별 관련 게이트와 dev 실물을 확인한다**
 
 Expected: 실제 실행한 게이트만 green으로 기록하고 CI skip은 미실행으로 기록한다. dev 확인은 같은 배포 SHA를 가리켜야 한다.
 
-- [ ] **Step 4: `U-1`과 `F-3` 승인 이력을 함께 대조한다**
+- [x] **Step 4: `U-1`과 `F-3` 승인 이력을 함께 대조한다**
 
-Expected: 기존 승인으로 완료 정의가 충족되면 마감 후보에 넣고, 새 결정이 필요하면 사용자 결정 묶음에 정확한 선택지만 넣는다.
+Expected: 2026-09-10 현행 계약 승인으로 제품 판정 대기를 해소한다. 최신 시험·dev 배포를 재검증한 뒤에만 마감 후보에 넣는다.
 
-- [ ] **Step 5: 대장을 먼저 갱신하고 반영본을 맞춘다**
+- [x] **Step 5: 대장을 먼저 갱신하고 반영본을 맞춘다**
 
 Expected: 확인된 항목만 `done`; 나머지는 상태 유지와 해제 조건 기재. `work-item-consistency` green.
 
@@ -66,30 +70,31 @@ Expected: 확인된 항목만 `done`; 나머지는 상태 유지와 해제 조�
 **Files:**
 - Create: `dev-package/prd/specs/s1-storage.md`
 - Create: `dev-package/prd/rounds/R-S1-STORAGE.md`
+- Create: `services/core-api/src/colab_core/app/storage_maintenance.py`
+- Modify: `services/core-api/src/colab_core/domains/d3_catalog.py`
+- Modify: `services/core-api/src/colab_core/domains/d5_ingestion.py`
+- Modify: `services/core-api/src/colab_core/app/routes/upload_transfers.py`
 - Modify: `services/pipeline-worker/src/colab_pipeline/domains/d5_ingestion.py`
-- Modify: `services/pipeline-worker/src/colab_pipeline/ports/blobs.py`
-- Modify: `services/pipeline-worker/src/colab_pipeline/app/worker.py`
-- Modify: `services/pipeline-worker/src/colab_pipeline/kernel/s3.py`
-- Test: `services/pipeline-worker/tests/test_reaper_skips_processing.py`
-- Test: `services/pipeline-worker/tests/test_worker_lab_scope.py`
+- Test: `services/core-api/tests/test_storage_maintenance.py`
+- Test: `services/pipeline-worker/tests/test_storage_reaper_dbint.py`
 
 **Interfaces:**
 - Consumes: `I-D`와 `U-1`의 저장소 계약
 - Produces: 원장이 아는 키만 대상으로 하는 실패 안전 회수 경로
 
-- [ ] **Step 1: 저장 Port와 만료 스윕의 현재 호출 경계를 조사해 사양에 고정한다**
+- [x] **Step 1: 저장 Port와 만료 스윕의 현재 호출 경계를 조사해 사양에 고정한다**
 
-Expected: 버킷 전체 스캔 0, 등록된 업로드 삭제 0, 완료 전송 원장 보존 기간을 명시한다.
+Expected: 버킷 전체 스캔 0, 등록된 업로드 삭제 0, 완료 전송 메타 원장은 completed_at 기준 7일 보관한다. 원본 파일 TTL과 구분하고 등록 업로드를 보존한다.
 
-- [ ] **Step 2: 실패 시험을 작성한다**
+- [x] **Step 2: 실패 시험을 작성한다**
 
 Cases: S3 삭제 실패 시 원장 행 유지, 등록 업로드 보존, 열린 전송 보존, 완료 전송 보존 기간, 대상 0건 판정.
 
-- [ ] **Step 3: 실패 시험의 RED를 확인하고 최소 구현을 수행한다**
+- [x] **Step 3: 실패 시험의 RED를 확인하고 최소 구현을 수행한다**
 
 Expected: 객체 삭제 성공 뒤에만 원장 행을 제거하며 재시도 가능성을 유지한다.
 
-- [ ] **Step 4: 단독 서비스 게이트와 S3 경계 시험을 실행한다**
+- [x] **Step 4: 단독 서비스 게이트와 S3 경계 시험을 실행한다**
 
 Expected: 판정 실패 0, 준비 실패 0. 실제 객체 삭제는 수행하지 않는다.
 
@@ -106,11 +111,11 @@ Expected: 판정 실패 0, 준비 실패 0. 실제 객체 삭제는 수행하지
 - Consumes: 기존 게이트 수집·실행 계수
 - Produces: 동일 판정 의미를 보존하는 더 빠른 게이트
 
-- [ ] **Step 1: 병렬화 전 기준 계수를 같은 트리에서 측정한다**
+- [x] **Step 1: 병렬화 전 기준 계수를 같은 트리에서 측정한다**
 
 Expected: 수집·실행·skip·deselect·실패 수와 전체 시간을 기록한다.
 
-- [ ] **Step 2: 게이트 내부 시험만 병렬화하고 실패 픽스처를 재실행한다**
+- [x] **Step 2: 게이트 내부 시험만 병렬화하고 실패 픽스처를 재실행한다**
 
 Expected: `gates/config/parallelism.toml`의 게이트 간 `serial` 의미는 유지하고, 판정 계수와 준비 실패 의미도 동일하다.
 
@@ -118,32 +123,11 @@ Expected: `gates/config/parallelism.toml`의 게이트 간 `serial` 의미는 �
 
 Expected: 실패·skip·deselect 수 불변, 준비 실패 0, 측정 가능한 시간 단축.
 
-### Task 4: `R-S1-GRID-OVERLAY` — 조건부 BF-10
+### Task 4: 격자선·눈금 범위 제외 확인
 
-**Files:**
-- Create: `dev-package/prd/specs/s1-grid-overlay.md`
-- Create: `dev-package/prd/rounds/R-S1-GRID-OVERLAY.md`
-- Discover in child spec: 화면과 저장 PNG가 공유할 렌더 경계
-
-**Interfaces:**
-- Consumes: BF-10 사용자 결정
-- Produces: 화면·저장 이미지에 일치하는 격자선·눈금, 또는 승인된 범위 종료
-
-- [ ] **Step 1: BF-10 결정을 사용자에게 한 번에 요청한다**
-
-Choice: 화면과 저장 PNG 모두 구현, 둘 다 미구현으로 범위 조정. 화면만 구현은 표현 불일치 때문에 권고하지 않는다.
-
-- [ ] **Step 2: 구현 선택 시 공통 렌더 경계를 조사해 자식 사양에 고정한다**
-
-Expected: 화면과 저장 PNG가 같은 좌표·눈금 규칙을 소비한다.
-
-- [ ] **Step 3: 승인된 갈래만 실패 시험부터 구현한다**
-
-Expected: 두 출력의 표현이 동일하거나 범위 조정 결정으로 항목이 명확히 닫힌다.
-
-- [ ] **Step 4: stage 1 종료 계수를 확인한다**
-
-Expected: stage 1의 `open`·`partial` 0.
+- [x] **2026-09-10 사용자 결정 반영**: 기존 배경과 커서 좌표 수용. `BF-10`은 미구현 `deferred`로 stage 1·2 필수 범위에서 제외한다.
+- [x] **후속 이슈 연결**: 화면과 저장 PNG 양쪽의 동일 격자선·눈금은 https://github.com/CognileapAI/colab-v2/issues/10 에서 추적한다. 별도 착수 승인 전 구현하지 않는다.
+- [ ] **stage 1 종료 계수 검증**: 비연기 미완 0과 연기 항목 건수·사유를 함께 기록한다.
 
 ### Task 5: `R-S2-OPS` — 복구·배포·운영 관측
 
@@ -168,9 +152,13 @@ Expected: 문서만 사용해 복구하고 `terraform plan`이 `No changes`를 �
 
 Expected: 이미 충족된 조건은 근거로 닫고 실제 미충족 조건만 구현 범위로 남긴다.
 
+I3의 cron 5분·실제 red/green 리허설 기준은 `dev-package/sessions/I3.md`의 기존 확정값을 사용한다. 재질문하지 않으며 실행 직전 Q7 승인 경계는 유지한다.
+
 - [ ] **Step 3: I4 관측 범위를 독립 실패 시험과 함께 구현한다**
 
 Required: 분산 추적, 구조화 로그, 알람, 데이터 레지던시 기록, 기존 복원 결과를 소비하는 운영 리허설.
+
+기존 복원 증거를 재사용한다. 새 결함·근거 없이 복원을 반복하거나 WAL 범위를 확대하지 않는다.
 
 - [ ] **Step 4: staging 리허설과 dev 완료 판정을 분리한다**
 
@@ -211,12 +199,12 @@ Expected: 재굽기로 닿지 않는 16벌이 설명 가능한 하위 집합으�
 - Create: `dev-package/prd/rounds/R-S2-REVIEW.md`
 
 **Interfaces:**
-- Consumes: CR-2 사용자 결정
+- Consumes: 2026-09-10 CR-2 계약·현행 dev 제한 수용 결정
 - Produces: 계약·제한·배포 실측·CI 후속 마감
 
-- [ ] **Step 1: CR-2의 세 결정을 한 묶음으로 확정한다**
+- [x] **Step 1: CR-2 계약·로그인 제한 결정 반영**
 
-Decisions: 계약 오류 응답 선언, 로그인 제한 클라이언트 기준, 배포 뒤 재굽기·소유 재실측 범위.
+Decisions: core-viz 경계 헤더 필수·부재 400·스크린샷 레이어 최대 8 가산 승인. 현행 dev 제한(자격/클라이언트 각각 5회/15분·성공 시 초기화·프로세스 메모리) 수용. 공유 limiter는 https://github.com/CognileapAI/colab-v2/issues/11 후속. 배포 후 실제 전달 IP·여섯 번째 실패 429 확인과 나머지 배포·CI 조건 검증은 남는다.
 
 - [ ] **Step 2: CR-2를 계약·배포 실측·CI 결과로 나눠 각각 검증한다**
 
@@ -237,6 +225,8 @@ Expected: 한 부분의 완료로 전체를 닫지 않는다.
 
 Expected: 각 기능에 화면 동작, 저장 결과, 권한, 실패 상태, 관련 게이트가 있다.
 
+수용표 9건은 유지한다. 신규·잔여 편의 구현 8건과 F-3의 폴더 구조 보존 증거 재사용 1건으로 나누어 중복 구현을 피한다(`PLAN-SoT` 〈78〉·〈339〉, `dev-package/sessions/20260908-j1-scope-map.md`).
+
 - [ ] **Step 2: 운영 안전성 P0 종료 뒤 실패 시험부터 구현한다**
 
 Expected: 기능별 단독 게이트와 사용자 여정 E2E가 green이다.
@@ -245,44 +235,36 @@ Expected: 기능별 단독 게이트와 사용자 여정 E2E가 green이다.
 
 Expected: 9개 완료 정의 전건 충족.
 
-### Task 9: `R-S2-GOOGLE-AUTH`과 전체 종료
+### Task 9: 인증 전환 없는 stage 1·2 전체 종료
 
-**Files:**
-- Create: `dev-package/prd/specs/s2-google-auth.md`
-- Create: `dev-package/prd/rounds/R-S2-GOOGLE-AUTH.md`
-- Modify: 인증 커널과 비밀번호 발급 경로
-- Test: Google 로그인·관리자·기존 세션 음성/양성 시험
+**Files:** `dev-package/work-items.yaml`, `dev-package/03-HANDOFF.md`, 각 라운드 검증 기록
 
 **Interfaces:**
-- Consumes: 다른 비연기 stage 1·2 미완 0
-- Produces: Google IdP 단일 인증 경로와 stage 2 종료
+- Consumes: Task 1~8 결과, 관련 단독 게이트와 전체 통합 증거
+- Produces: 비연기 미완 0의 stage 1·2 종료 판정 또는 정확한 잔여 조건
 
-- [ ] **Step 1: PA-G 진입조건을 대장에서 계산한다**
+- [x] **Step 1: Google 로그인 구현 제외**
 
-Expected: `PA-G` 자신과 연기 항목을 제외한 미완 0. 하나라도 남으면 착수하지 않는다.
+`PA-G`는 `deferred`; https://github.com/CognileapAI/colab-v2/issues/12 에서 추적한다. 종전 자동 전환 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 승인되지 않았다.
 
-- [ ] **Step 2: 별도 사양에서 인증 전환과 제거 경로를 고정한다**
+- [ ] **Step 2: 통합 검증과 구체적인 배포 검토 자료 준비**
 
-Required: 어댑터는 인증 커널 한 파일, 비밀번호 발급 경로 제거, 관리자 처리, PA 핵심 회귀.
+Expected: 각 라운드 수용 검토·관련 게이트·최종 전수 결과, 정확한 SHA와 변경 목록을 갖춘 뒤 main push·staging/dev 배포 실행 직전 승인을 받는다.
 
-- [ ] **Step 3: 실패 시험부터 구현하고 인증·경계 게이트를 실행한다**
+- [ ] **Step 3: 승인된 dev 배포와 기존 로그인 회귀 검증**
 
-Expected: Google 로그인 양성, 미허용 계정 음성, 기존 비밀번호 발급 경로 부재.
+Expected: 동일 main SHA에서 기존 로그인·세션 유지·로그아웃과 사용자 여정 성공, `deploy_doctor` 한 번의 실행 15/15, skip 0. 신규 Google 로그인 구현 없음.
 
-- [ ] **Step 4: dev 배포와 실제 로그인 여정을 검증한다**
-
-Expected: 같은 main SHA에서 로그인·세션 유지·로그아웃 성공, `deploy_doctor` 15/15.
-
-- [ ] **Step 5: stage 1·2 최종 상태를 닫는다**
+- [ ] **Step 4: 최종 대장 확인**
 
 Run: `bash gates/run.sh work-item-consistency`
 
-Expected: stage 1 비연기 미완 0, stage 2 비연기 미완 0, 대장 불일치 0, 준비 실패 0.
+Expected: stage 1·2 각각 비연기 미완 0, 연기 항목의 건수·사유 공개, 대장 불일치 0, 준비 실패 0. stage 3 `BO-1` 설계 미확정은 이 종료를 차단하지 않는다.
 
 ## Self-Review
 
 - 재검증 9건은 Task 1에서 구현 작업보다 먼저 판정한다.
 - stage 1의 나머지 `U-1`, `F-3`, `U-2`, `G10`, `BF-10`은 Task 1~4에 모두 배치했다.
 - stage 2의 `IS4`, `I3`, `I4`, `BF-12`, `TL-2`, `CR-2`, `J-1`, `X-7`, `WU-PREVIEW`, `PA-G`은 Task 1과 Task 5~9에 모두 배치했다.
-- 독립 하위 시스템은 별도 사양·라운드로 분리했다.
+- 독립 하위 시스템의 자식 사양·라운드 작성은 각 Task의 착수 단계에 배치했다. 모든 자식 계획의 완성·구현을 이번 문서 갱신으로 주장하지 않는다.
 - prod, after_stage2, 실제 데이터·캐시 삭제는 포함하지 않았다.
