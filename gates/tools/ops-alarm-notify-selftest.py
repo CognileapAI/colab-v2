@@ -24,9 +24,14 @@ with patch.object(m.urllib.request, 'urlopen', open_ok):
     m._notify('https://hooks.slack.com/services/T/B/X', event())
 assert set(sent[-1][1]) == {'text'}
 text=sent[-1][1]['text']
-for value in ('acceptance-deploy-verification','alarm.raised','3','2026-09-11T00:00:00Z','시험'):
+for value in ('시험 알림: 문제 발생','acceptance-deploy-verification','alarm.raised','3','2026-09-11T00:00:00Z'):
     assert value in text
 assert 'SECRET' not in text and 'secret.invalid' not in text
+for target, label in (('deploy-verification','배포 종합 점검'),('service-health','서비스 상태'),('backup-freshness','백업 최신성')):
+    value=event(); value['target']=target; value['event']='alarm.cleared'
+    sent.clear()
+    with patch.object(m.urllib.request, 'urlopen', open_ok): m._notify('https://hooks.slack.com/services/T/B/X', value)
+    assert f'CoLAB 정상 복구 · 점검={label} · 확인 ID={target}' in sent[-1][1]['text']
 
 sent.clear()
 with patch.object(m.urllib.request, 'urlopen', open_ok):

@@ -85,9 +85,17 @@ def _notify(url: str, event: dict[str, Any]) -> None:
     is_slack = urlparse(url).hostname == "hooks.slack.com"
     if is_slack:
         target = str(event.get("target", "-"))
-        test_note = " · 시험 대상" if target.startswith("acceptance-") else ""
+        event_code = str(event.get("event", "-"))
+        title = "정상 복구" if event_code == "alarm.cleared" else "문제 발생"
+        if target.startswith("acceptance-"):
+            title = f"시험 알림: {title}"
+        target_label = {
+            "deploy-verification": "배포 종합 점검",
+            "service-health": "서비스 상태",
+            "backup-freshness": "백업 최신성",
+        }.get(target, "알람 점검")
         payload = {"text": (
-            f"CoLAB 알람{test_note} · target={target} · event={event.get('event', '-')} · "
+            f"CoLAB {title} · 점검={target_label} · 확인 ID={target} · event={event_code} · "
             f"count={event.get('failure_count', 0)} · timestamp={event.get('timestamp', '-')}"
         )}
     else:
