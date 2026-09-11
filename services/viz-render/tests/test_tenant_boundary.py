@@ -16,6 +16,8 @@ services/viz-render/src` 가 **0건**이었다. core-api `relay._scope_headers` 
 """
 from __future__ import annotations
 
+import pytest
+
 from colab_viz.app import deps
 from colab_viz.kernel import errors
 
@@ -61,6 +63,35 @@ def test_빈_문자열_헤더는_없는_것과_같다(client, put_target, tiny_g
     r = _create(client, tid, auth_as("   "))
     assert r.status_code == 400
     assert r.json()["code"] == errors.TENANT_SCOPE_MISSING
+
+
+@pytest.mark.parametrize("account", [None, "", "   "])
+@pytest.mark.parametrize("operation", ["create", "get", "screenshot", "lookup", "describe"])
+def test_account_scope_is_required_on_internal_data_requests(
+        client, put_target, tiny_geotiff, account, operation):
+    """계정 누락/빈값도 400: 사용자 승인 2026-09-11, 연구실 권한 판정은 유지한다."""
+    tid = put_target(copy_from=[tiny_geotiff])
+    created = _create(client, tid)
+    assert created.status_code == 202
+    rid = created.json()["renderId"]
+    headers = {"Authorization": f"Bearer {TOKEN}", deps.LAB_HEADER: LAB}
+    if account is not None:
+        headers[deps.ACCOUNT_HEADER] = account
+    requests = {
+        "create": ("POST", "/renders", {"target": {"datasetId": tid}, "style": {"palette": "단색-파랑"}}),
+        "get": ("GET", f"/renders/{rid}", None),
+        "screenshot": ("POST", "/screenshots", {"layers": [{"renderId": rid}],
+            "viewport": {"width": 32, "height": 32,
+                         "bounds": {"west": 126, "south": 36, "east": 128, "north": 38}}}),
+        "lookup": ("POST", "/value-lookups", {"datasetId": tid,
+            "fileId": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "point": {"lat": 37, "lon": 127}}),
+        "describe": ("POST", "/target-descriptions", {"datasetId": tid}),
+    }
+    method, route, body = requests[operation]
+    response = client.request(method, "/viz/v1" + route, headers=headers, json=body)
+    assert response.status_code == 400, response.text
+    assert response.json()["code"] == errors.TENANT_SCOPE_MISSING
+    assert response.json()["details"]["header"] == deps.ACCOUNT_HEADER
 
 
 # ── ② 조회 — 남의 것은 「없다」 ───────────────────────────────────────────────

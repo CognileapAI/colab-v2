@@ -4143,6 +4143,7 @@ export interface components {
          *     그 고정 자체는 화면 규칙이라 이 계약이 강제하지 않는다.
          */
         ScreenshotRequest: {
+            /** @description 합성할 층 1~8건. `sessions/20260910-stage12-decisions.md Q4` [사용자 승인]. */
             layers: components["schemas"]["ScreenshotLayer"][];
             viewport: components["schemas"]["Viewport"];
         };

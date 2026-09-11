@@ -87,9 +87,8 @@ def tenant_scope(request: Request) -> tuple[str, str]:
     (`require_caller` 가 라우터 의존으로 먼저 선다), 빠진 것은 **요청이 말했어야 할
     경계**다. 401 로 내면 부르는 쪽이 토큰을 의심하며 배선이 빠진 것을 못 찾는다.
 
-    ⚠ **계정은 400 의 근거가 아니다** — 경계 판정에 쓰이는 것은 연구실 하나이고, 계정은
-    「누가 불렀나」의 출처 표시다. 판정에 안 쓰는 값으로 문을 닫으면 닫히는 것 없이
-    실패 경로만 하나 는다.
+    ⟨2026-09-11 사용자 승인⟩ 계정도 필수다. 누락·빈값은 같은 400으로 거절한다.
+    연구실 소유 판정은 그대로이고, 계정은 호출 출처를 빠짐없이 전달하기 위한 요구다.
     """
     lab = (request.headers.get(LAB_HEADER) or "").strip()
     if not lab:
@@ -97,7 +96,13 @@ def tenant_scope(request: Request) -> tuple[str, str]:
             400, errors.TENANT_SCOPE_MISSING,
             "경계를 말하지 않은 요청이다 — 어느 연구실의 것인지 없이 그리지 않는다.",
             {"header": LAB_HEADER})
-    return lab, (request.headers.get(ACCOUNT_HEADER) or "").strip()
+    account = (request.headers.get(ACCOUNT_HEADER) or "").strip()
+    if not account:
+        raise errors.ApiError(
+            400, errors.TENANT_SCOPE_MISSING,
+            "호출 계정을 말하지 않은 요청이다.",
+            {"header": ACCOUNT_HEADER})
+    return lab, account
 
 
 def same_lab_or_missing(job, lab: str):
