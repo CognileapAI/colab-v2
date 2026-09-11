@@ -1,6 +1,6 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-11 현재: `9e3ff19f6d27` main 반영·PR #13 병합·dev 배포 완료, 단일 doctor 15/0/0·핵심 합성 업로드/저장/미리보기/필터/인증 여정 확인. 첫 all은54/4/2, 입력 보정 뒤 단독6종은4/2/0(20과제 명시면제 포함); 캐시19벌·비활성 로그인 버튼 대비 실패가 남아 전체 통과 아님. BF-12는 약4.74GB > 상한1GiB로 관측 준비 실패, TL-2 선행 미충족. PR 신규8묶음 ELI5 HTML/PNG 포함. 근거·수용 미달·다음 순서: `sessions/20260911-stage12-deploy.md`. 아래는 이전 승인·배포 상태의 이력이다.
+> 2026-09-11 현재: PR #14 `16710a4` main 반영·dev 웹 배포, 로그인 대비5.02:1/실제시각검사통과·배포후doctor15/0/0. 캐시 검사는 시험10키보존명시로통과(고아19·보존19·판정불가19·삭제0); 구버전로컬staging재발원인조치는남음. 서버제품은9e3ff19, 원격CI성공·프론트1204통과. PR #13 ELI5갱신. 전체Stage는미완이며 S3관측용량/나머지dev여정·운영조건유지. 현재근거 `sessions/20260911-stage12-failure-fix.md`, 전체잔여 `sessions/20260911-stage12-deploy.md`. 아래는이전상태의이력이다.
 
 > 최종 갱신 2026-09-11: 승인된 내부 API 계약·서버·시험을 eac2f0b로 로컬 재동결(관련 9파일), 새 HEAD 대비 contract-breaking green. 경계 27건·계약 소비 6건 재검증 통과(`sessions/20260911-s2-review-local.md`); 다른 기능 변경은 미커밋 보존. 다음 = 전수·G10 전후 실측·배포 검토. 편의/운영/회수 근거는 `sessions/20260911-s2-convenience-local.md`, `sessions/20260911-s2-ops-local.md`, `sessions/20260911-preview-retention-local.md`. 원격 push·배포 없음; main push·배포·실제 삭제·원격 apply는 실행 직전 승인 경계를 유지한다.
 
