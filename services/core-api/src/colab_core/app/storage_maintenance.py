@@ -313,6 +313,21 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
     except Exception:
         complete, dataset_ids, d3_file_ids, d3_keys = False, set(), set(), set()
 
+    eligible_expired: list[tuple[str, list[Any]]] = []
+    for transfer_id, files in expired_open:
+        file_ids = {file.file_id for file in files}
+        keys = {file.storage_key for file in files}
+        if ledger.find(Ulid(transfer_id), now) is not None:
+            report.preserve("open-transfer-d5-handoff")
+            continue
+        if not complete:
+            report.preserve("open-transfer-ownership-unknown")
+            continue
+        if (transfer_id in dataset_ids or file_ids & d3_file_ids or keys & d3_keys):
+            report.preserve("open-transfer-owned")
+            continue
+        eligible_expired.append((transfer_id, files))
+
     eligible: list[tuple[dict, list[dict[str, Any]]]] = []
     for candidate in candidates:
         keys, invalid = _accepted_keys(candidate)
@@ -369,7 +384,7 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
                         ]
                     ],
                 }
-                for transfer_id, files in expired_open
+                for transfer_id, files in eligible_expired
             ],
             "completedTransferIds": sorted(completed),
         }
@@ -388,7 +403,7 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
                 continue
             ledger.delete_reclaimed(candidate["upload_id"])
             report.reclaimed_uploads += 1
-        for transfer_id, files in expired_open:
+        for transfer_id, files in eligible_expired:
             try:
                 for file in files:
                     if file.transfer_ref is not None and file.outcome != "올라감":

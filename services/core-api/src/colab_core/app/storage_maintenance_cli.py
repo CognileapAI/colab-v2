@@ -38,16 +38,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-bucket", required=True)
     parser.add_argument("--expected-region", required=True)
     parser.add_argument("--expected-code-sha", required=True)
-    parser.add_argument("--release-state", required=True)
+    parser.add_argument("--expected-image-config-id", required=True)
     args = parser.parse_args(argv)
     if not args.apply_approved:
         raise RuntimeError("--apply-approved 없이는 삭제를 실행하지 않는다")
     if (len(args.expected_code_sha) != 40
             or any(char not in "0123456789abcdef" for char in args.expected_code_sha)
-            or pathlib.Path(args.release_state).read_text(encoding="utf-8").strip()
-            != args.expected_code_sha[:12]
+            or os.environ.get("COLAB_RELEASE_SHA") != args.expected_code_sha[:12]
             or args.environment != "dev"):
         raise RuntimeError("실행 코드 SHA 또는 환경이 승인 패킷과 다르다")
+    if (not args.expected_image_config_id.startswith("sha256:")
+            or os.environ.get("COLAB_RUNNING_IMAGE_CONFIG_ID")
+            != args.expected_image_config_id):
+        raise RuntimeError("실행 core-api 이미지 config ID가 승인 빌드와 다르다")
 
     settings = load_settings()
     if (settings.storage_mode != "s3" or settings.s3_bucket != args.expected_bucket

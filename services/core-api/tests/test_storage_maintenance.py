@@ -498,6 +498,7 @@ def test_exact_plan_binds_expired_open_transfer_and_object_identity(db):
         VALUES (:f,current_lab_id(),:u,'본체','done.nc',7,:k,'올라감')"""), {
         "f": file_id, "u": transfer_id, "k": key,
     })
+    make_all_d3_visible(db)
     first_s3 = FakeS3(heads={key: (7, '"etag-a"')})
     observed = maintain_storage(
         db, s3=first_s3, mode="observe", now=NOW,
@@ -537,6 +538,7 @@ def test_exact_open_transfer_apply_preserves_on_abort_failure_then_retries(db):
         VALUES (:f,current_lab_id(),:u,'본체','pending.nc',9,:k,'대기',8,:ref)"""), {
         "f": file_id, "u": transfer_id, "k": key, "ref": "multipart-ref",
     })
+    make_all_d3_visible(db)
     observed = maintain_storage(
         db, s3=FakeS3(), mode="observe", now=NOW,
         include_open_transfers=True, lab_id=LAB_A)
@@ -567,3 +569,138 @@ def test_exact_open_transfer_apply_preserves_on_abort_failure_then_retries(db):
     assert not db.execute(text(
         "SELECT EXISTS(SELECT 1 FROM d5_upload_transfer WHERE id=:id)"),
         {"id": transfer_id}).scalar_one()
+
+
+def test_expired_open_transfer_is_preserved_on_d3_or_d5_handoff_collision(db):
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    key = f"uploads/{transfer_id}/{file_id}"
+    db.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'expired',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    db.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome)
+        VALUES (:f,current_lab_id(),:u,'본체','done.nc',7,:k,'올라감')"""), {
+        "f": file_id, "u": transfer_id, "k": key,
+    })
+    dataset_id = str(Ulid.generate())
+    db.execute(text("""INSERT INTO d3_dataset
+        (id,lab_id,owner_account_id,uploader_account_id)
+        VALUES (:d,current_lab_id(),current_account_id(),current_account_id())"""),
+        {"d": dataset_id})
+    db.execute(text("""INSERT INTO d3_file
+        (id,lab_id,dataset_id,kind,file_name,storage_key)
+        VALUES (:f,current_lab_id(),:d,'본체','owned.nc',:k)"""),
+        {"f": file_id, "d": dataset_id, "k": key})
+    make_all_d3_visible(db)
+
+    report = maintain_storage(
+        db, s3=FakeS3(heads={key: (7, '"etag"')}), mode="observe", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A)
+
+    assert report.approval_plan["expiredOpenTransfers"] == []
+    assert report.preserved["open-transfer-owned"] == 1
+
+
+def test_expired_open_transfer_is_preserved_when_d5_handoff_exists(db):
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    key = f"uploads/{transfer_id}/{file_id}"
+    db.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'expired',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    db.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome)
+        VALUES (:f,current_lab_id(),:u,'본체','done.nc',7,:k,'올라감')"""), {
+        "f": file_id, "u": transfer_id, "k": key,
+    })
+    db.execute(text("""INSERT INTO d5_upload
+        (id,lab_id,uploader_account_id,created_at,expires_at,registered_at,ready)
+        VALUES (:u,current_lab_id(),current_account_id(),:born,:expires,:registered,true)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1), "registered": NOW,
+    })
+    make_all_d3_visible(db)
+
+    report = maintain_storage(
+        db, s3=FakeS3(), mode="observe", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A)
+
+    assert report.approval_plan["expiredOpenTransfers"] == []
+    assert report.preserved["open-transfer-d5-handoff"] == 1
+
+
+def test_expired_open_reclaim_lock_serializes_with_complete(session_factory):
+    subject = Subject(
+        account_id=Ulid("00000000000000000000000BP1"),
+        lab_id=Ulid("0000000000000000000000000B"),
+    )
+    setup = session_factory()
+    setup.begin()
+    apply_scope(setup, subject)
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    key = f"uploads/{transfer_id}/{file_id}"
+    setup.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'expired',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    setup.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome,
+         part_size,transfer_ref)
+        VALUES (:f,current_lab_id(),:u,'본체','pending.nc',9,:k,'대기',8,:ref)"""), {
+        "f": file_id, "u": transfer_id, "k": key, "ref": "multipart-ref",
+    })
+    observed = maintain_storage(
+        setup, s3=FakeS3(), mode="observe", now=NOW,
+        include_open_transfers=True, lab_id=str(subject.lab_id))
+    approval = parse_storage_reclaim_approval(
+        json.dumps(observed.approval_plan), expected_lab_id=str(subject.lab_id),
+        expected_sha256=observed.plan_sha256)
+    setup.commit()
+    setup.close()
+
+    class BlockingAbort(FakeS3):
+        def __init__(self):
+            super().__init__()
+            self.entered = threading.Event()
+            self.release = threading.Event()
+
+        def abort_multipart_upload(self, key, transfer_ref):
+            self.entered.set()
+            assert self.release.wait(5)
+
+    s3 = BlockingAbort()
+    results = {}
+
+    def reclaim():
+        results["reclaim"] = run_storage_maintenance(
+            session_factory, subject, s3=s3, mode="apply", now=NOW,
+            approval=approval)
+
+    def complete():
+        from colab_core.domains.d5_ingestion import UploadTransferAdapter
+        session = session_factory()
+        session.begin()
+        apply_scope(session, subject)
+        results["complete"] = UploadTransferAdapter(session).complete(Ulid(transfer_id))
+        session.commit()
+        session.close()
+
+    rt = threading.Thread(target=reclaim)
+    rt.start()
+    assert s3.entered.wait(5)
+    ct = threading.Thread(target=complete)
+    ct.start()
+    ct.join(timeout=0.2)
+    assert ct.is_alive(), "완결이 회수기의 transfer 행 잠금을 건너뛰었다"
+    s3.release.set()
+    rt.join(timeout=5)
+    ct.join(timeout=5)
+    assert results["reclaim"].reaped_open_transfers == 1
+    assert results["complete"] is False

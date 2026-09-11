@@ -509,6 +509,8 @@ _T_INCOMPLETE = text("""
 _T_EXPIRED = text("""
     SELECT id FROM d5_upload_transfer
      WHERE completed_at IS NULL AND expires_at <= COALESCE(:now, now())
+     ORDER BY expires_at, id
+     FOR UPDATE SKIP LOCKED
 """)
 
 _T_DELETE = text("DELETE FROM d5_upload_transfer WHERE id = :id")
