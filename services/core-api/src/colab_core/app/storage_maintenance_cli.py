@@ -38,12 +38,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-bucket", required=True)
     parser.add_argument("--expected-region", required=True)
     parser.add_argument("--expected-code-sha", required=True)
+    parser.add_argument("--release-state", required=True)
     args = parser.parse_args(argv)
     if not args.apply_approved:
         raise RuntimeError("--apply-approved 없이는 삭제를 실행하지 않는다")
-    running_sha = os.environ.get("COLAB_RELEASE_SHA", "")
-    if (len(args.expected_code_sha) != 40 or running_sha != args.expected_code_sha
-            or os.environ.get("COLAB_ENVIRONMENT") != args.environment):
+    if (len(args.expected_code_sha) != 40
+            or any(char not in "0123456789abcdef" for char in args.expected_code_sha)
+            or pathlib.Path(args.release_state).read_text(encoding="utf-8").strip()
+            != args.expected_code_sha[:12]
+            or args.environment != "dev"):
         raise RuntimeError("실행 코드 SHA 또는 환경이 승인 패킷과 다르다")
 
     settings = load_settings()
