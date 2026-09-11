@@ -259,7 +259,7 @@ def scan(previews_root: Path) -> list[ArtifactGroup]:
                 except (ValueError, OSError) as exc:
                     loaded = None
                     sidecar_error = type(exc).__name__
-                if loaded is not None and not isinstance(loaded, dict):
+                if sidecar_error is None and not isinstance(loaded, dict):
                     sidecar_error = "JSON root is not an object"
                 # 기존 소유 등급은 보류를 유지하고, TL-2 세부분류는 error 표식으로 fail-closed한다.
                 doc = loaded if isinstance(loaded, dict) else None

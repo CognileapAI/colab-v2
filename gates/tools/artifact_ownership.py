@@ -66,7 +66,7 @@ def main(argv: list[str]) -> int:
         legacy = own.legacy_tally(subjects, ledger)
     except own.LegacyObservationNotReady as e:
         print(f"::구판관측준비실패::{e}")
-        return 0
+        return 78
 
     for name in own.GRADES:
         print(f"::계수::{name}\t{t.counts[name]}")

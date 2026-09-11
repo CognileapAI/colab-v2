@@ -234,9 +234,9 @@ rm -f "$SLOT/brokenkey".* "$SLOT/legacykey".*
 # ── ⓥ 물리 JSON이 깨졌으면 「사이드카 부재」로 세지 않고 준비 red ────────────
 printf '\x89PNG-fixture' > "$SLOT/unreadable.png"
 printf 'not-json' > "$SLOT/unreadable.json"
-expect red "ⓥ 깨진 물리 sidecar" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
+expect ready "ⓥ 깨진 물리 sidecar" COLAB_ARTIFACT_OWNER_EXEMPT="$DECL_NONE" \
   COLAB_ARTIFACT_OWNER_DIR="$SLOT" COLAB_ARTIFACT_OWNER_DB_URL="$URL"
-says "ⓥ" "구판 관측 준비 실패"
+says "ⓥ" "::구판관측준비실패::"
 rm -f "$SLOT/unreadable".*
 
 # ── ⓠ ⭑ 음성 시험 — `tile-` 만 있는 자리는 **대상 0건** ─────────────────────

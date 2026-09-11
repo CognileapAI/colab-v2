@@ -77,14 +77,14 @@ def test_s3_관측은_prefix이탈_중첩키_목록head크기불일치를_0으�
     with pytest.raises(obs.ObservationNotReady):
         obs.observe(FakeS3({"previews/nested/x.png": b"x"}), ledger)
 
-    client = FakeS3({"previews/x.json": _legacy("known")})
+    client = FakeS3({"previews/x.png": b"x", "previews/x.json": _legacy("known")})
     client.head_object = lambda _key: (999, "etag")
     with pytest.raises(obs.ObservationNotReady):
         obs.observe(client, ledger)
 
     duplicate_page = FakeS3({"previews/x.png": b"x"})
     duplicate_page.list_objects = lambda _prefix: iter([
-        ("previews/x.png", 1), ("previews/x.png", 1)])
+        ("previews/x.png", 1), ("previews/x.png", 2)])
     with pytest.raises(obs.ObservationNotReady):
         obs.observe(duplicate_page, ledger)
 
@@ -92,6 +92,27 @@ def test_s3_관측은_prefix이탈_중첩키_목록head크기불일치를_0으�
 def test_s3_관측은_빈원장과_깨진sidecar를_추측하지않는다():
     with pytest.raises(obs.ObservationNotReady):
         obs.observe(FakeS3({"previews/x.png": b"x"}), ownership.Ledger(frozenset(), frozenset()))
+    broken = FakeS3({"previews/x.png": b"x", "previews/x.json": b"not-json"})
     with pytest.raises(obs.ObservationNotReady):
-        obs.observe(FakeS3({"previews/x.json": b"not-json"}),
+        obs.observe(broken, ownership.Ledger(frozenset({"known"}), frozenset()))
+    assert broken.closed == 1
+
+    invalid_modern = {"sidecarVersion": 2, "baked_for": {}, "source": "", "sources": []}
+    with pytest.raises(obs.ObservationNotReady):
+        obs.observe(FakeS3({"previews/m.png": b"x",
+                            "previews/m.json": json.dumps(invalid_modern).encode()}),
                     ownership.Ledger(frozenset({"known"}), frozenset()))
+
+
+def test_cli_관측준비실패는_exit78이다(tmp_path, monkeypatch, capsys):
+    d3 = tmp_path / "d3.ids"; d3.write_text("known\n", encoding="utf-8")
+    d5 = tmp_path / "d5.ids"; d5.write_text("", encoding="utf-8")
+    client = FakeS3({"previews/x.png": b"x", "previews/x.json": b"null"})
+    monkeypatch.setattr("colab_viz.kernel.s3.S3Client", lambda **_kwargs: client)
+
+    rc = obs.main(["--bucket", "dev-bucket", "--region", "test-region",
+                   "--d3-ids", str(d3), "--d5-ids", str(d5),
+                   "--snapshot", str(tmp_path / "snapshot.json")])
+
+    assert rc == 78
+    assert "::관측준비실패::" in capsys.readouterr().out

@@ -66,10 +66,10 @@ def observe(client: Any, ledger: ownership.Ledger, *, prefix: str = "previews",
         listed, seen_objects = [], set()
         for item in client.list_objects(root):
             marker = (str(item[0]), int(item[1]))
-            if marker in seen_objects:
+            if marker[0] in seen_objects:
                 raise ObservationNotReady(
                     "S3 pagination이 같은 객체를 반복했다 — 다음 page를 받지 못했다")
-            seen_objects.add(marker)
+            seen_objects.add(marker[0])
             listed.append(marker)
     except Exception as exc:
         raise ObservationNotReady(f"S3 목록 실패 ({type(exc).__name__})") from None
@@ -105,7 +105,11 @@ def observe(client: Any, ledger: ownership.Ledger, *, prefix: str = "previews",
             snapshot.append({"cache_key": cache_key, "extension": Path(key).suffix,
                              "size_bytes": size})
 
-    legacy = ownership.legacy_tally(groups, ledger)
+    try:
+        ownership_tally = ownership.tally(groups, ledger)
+        legacy = ownership.legacy_tally(groups, ledger)
+    except (ownership.SidecarContractViolation, ownership.LegacyObservationNotReady) as exc:
+        raise ObservationNotReady(str(exc)) from None
     undecidable = sum(legacy.counts.values())
     unreachable = (legacy.counts[ownership.LEGACY_SIDECAR_ABSENT]
                    + legacy.counts[ownership.LEGACY_SOURCE_LEDGER_ABSENT])
@@ -117,6 +121,7 @@ def observe(client: Any, ledger: ownership.Ledger, *, prefix: str = "previews",
         "preview_groups": len(groups),
         "legacy_groups": undecidable,
         "modern_groups": len(groups) - undecidable,
+        "ownership_counts": ownership_tally.counts,
         "legacy_counts": legacy.counts,
         "rebake_unreachable": unreachable,
         "key_sets": {"legacy": sorted(legacy.verdicts),
@@ -142,7 +147,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     from ...kernel.s3 import S3Client
     ledger = ownership.Ledger(_ids(args.d3_ids), _ids(args.d5_ids))
-    result = observe(S3Client(bucket=args.bucket, region=args.region), ledger, prefix=args.prefix)
+    try:
+        result = observe(S3Client(bucket=args.bucket, region=args.region), ledger, prefix=args.prefix)
+    except ObservationNotReady as exc:
+        print(f"::관측준비실패::{exc}")
+        return 78
     out = Path(args.snapshot)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

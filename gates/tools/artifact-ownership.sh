@@ -266,8 +266,13 @@ if [ "$GOT3" -ne "$D3" ] || [ "$GOT5" -ne "$D5" ]; then
 fi
 
 # ── 4. 계수 — 판정 규칙은 **정본 한 자리**가 낸다 (ownership.py) ────────────────
-OUT="$(python3 "$GRADER" "$SLOT" "$TMP/d3.txt" "$TMP/d5.txt" "$SNAPSHOT" 2>&1)" \
-  || red "계수기가 돌지 못했다. 검사를 못 한 것은 통과가 아니다.
+OUT="$(python3 "$GRADER" "$SLOT" "$TMP/d3.txt" "$TMP/d5.txt" "$SNAPSHOT" 2>&1)"
+GRADER_RC=$?
+if [ "$GRADER_RC" -eq "$READINESS_EXIT" ]; then
+  printf '%s\n' "$OUT"
+  exit "$READINESS_EXIT"
+fi
+[ "$GRADER_RC" -eq 0 ] || red "계수기가 돌지 못했다. 검사를 못 한 것은 통과가 아니다.
    낸 말: $(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-600)"
 
 case "$OUT" in

@@ -35,7 +35,9 @@ The command lists only exact `previews/`, rejects nested/out-of-prefix/unknown o
 JSON sidecars with List-size = HEAD-size and If-Match GET, closes every stream, and emits observation
 time, current object/group counts, all legacy/rebake-unreachable key sets, unsigned object size metadata,
 and `deleted: 0`. Duplicate pagination, missing/invalid metadata, malformed JSON, and empty ledgers are
-readiness failures rather than zero counts. It has no delete client call and no DB connection.
+readiness failures with exit 78 rather than zero counts. Modern sidecars also pass through the existing
+four-grade `ownership.tally()` contract check, and those four counts are stored beside the TL-2 counts.
+It has no delete client call and no DB connection.
 
 ## Observation boundary
 

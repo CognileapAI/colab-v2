@@ -143,7 +143,7 @@ def test_구판_사이드카에_원천식별자가_없으면_추측해_세지_�
         ownership.legacy_tally([malformed], LEDGER)
 
 
-@pytest.mark.parametrize("raw", ["not-json", "[]"])
+@pytest.mark.parametrize("raw", ["not-json", "[]", "null"])
 def test_물리sidecar가_깨졌거나_object가아니면_사이드카부재로_오판하지_않는다(tmp_path, raw):
     (tmp_path / "broken.png").write_bytes(b"image")
     (tmp_path / "broken.json").write_text(raw, encoding="utf-8")
