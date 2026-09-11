@@ -242,6 +242,10 @@ P0 (도메인 뼈대)  →  I2 (빈 서비스 5종 AWS 배포)  →  이후 모�
 
 ## 9. 결정 로그
 
+### 2026-09-11 I4 Slack 실행
+
+서버 자체 IMDS15/0/0, Slack 시험 발생1·해제1 전송, 실제5분cron3종 정상. 채널 수신 확인 대기로 I4open 유지. 코드42cffb3·태그dev-20260911-2. 실제 결과·한계·복구 정본 `sessions/20260911-i4-slack-closeout.md`, 원문 계수 `reports/i4-slack-closeout/results.json`.
+
 ### 2026-09-11 Stage 보류 해소 승인
 
 결과: 실패 업로드3건 실제 삭제(upload3/file6/event9, 정상 파일6 보존), BF-10·PA-G 단계 미정 backlog/open 이관. Stage1 완료62/미완료0/보류0, Stage2 완료94/미완료1(I4)/보류0. 실제 증거 `reports/deferred-closeout/results.json`.

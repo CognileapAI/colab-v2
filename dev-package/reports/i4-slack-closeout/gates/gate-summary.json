@@ -1,0 +1,61 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "ops-observability",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "ops-observability-selftest",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "work-item-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "planning-freshness",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 4,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "ops-observability",
+      "ops-observability-selftest",
+      "work-item-consistency",
+      "planning-freshness"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "03a097989b8345dbb4225e6730cf5cf0",
+      "run_id": "ac2ccf1bc52047e995d3e331f5f25c5c",
+      "checkout": "/tmp/colab-i4-slack-closeout",
+      "files": "549dcad9e31b86de861fbfda8ee94bd217b21a70615ecb28b73b985213a91e1c"
+    },
+    "after": {
+      "task_id": "03a097989b8345dbb4225e6730cf5cf0",
+      "run_id": "ac2ccf1bc52047e995d3e331f5f25c5c",
+      "checkout": "/tmp/colab-i4-slack-closeout",
+      "files": "549dcad9e31b86de861fbfda8ee94bd217b21a70615ecb28b73b985213a91e1c"
+    }
+  }
+}

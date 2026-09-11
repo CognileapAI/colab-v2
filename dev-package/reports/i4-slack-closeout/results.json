@@ -1,0 +1,180 @@
+{
+  "status": "technical execution passed; channel receipt confirmation pending",
+  "imds_doctor": {
+    "sha": "42e44c8990a3",
+    "exit": 0,
+    "counts": [
+      15,
+      0,
+      0
+    ]
+  },
+  "iam": "user_console_created; policy_document_read_not_claimed",
+  "webhook": "local mode0600 valid Slack prefix; value excluded",
+  "receiver_confirmation": "pending",
+  "cron": "actual 2026-09-11T14:25Z first run passed for all 3 targets",
+  "code_sha": "42cffb328b1e5fbd9d20ca0c6fa34139467c3c47",
+  "code_pr": 21,
+  "postdeploy_imds": {
+    "exit": 0,
+    "counts": [
+      15,
+      0,
+      0
+    ],
+    "source": "instance profile, no operator keys passed"
+  },
+  "acceptance": {
+    "sha": "42cffb328b1e",
+    "target": "acceptance-deploy-verification-42cffb328b1e",
+    "raised": 1,
+    "repeated_notifications": 0,
+    "cleared": 1,
+    "live_services_unchanged": true,
+    "results": [
+      {
+        "step": 1,
+        "exit": 1,
+        "state": {
+          "active": false,
+          "failure_count": 1,
+          "observed_at": "2026-09-11T14:23:52Z"
+        },
+        "events": [
+          {
+            "event": "probe.observed",
+            "failure_count": 1,
+            "level": "ERROR",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:52Z"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "exit": 1,
+        "state": {
+          "active": true,
+          "failure_count": 2,
+          "observed_at": "2026-09-11T14:23:52Z"
+        },
+        "events": [
+          {
+            "event": "probe.observed",
+            "failure_count": 2,
+            "level": "ERROR",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:52Z"
+          },
+          {
+            "event": "alarm.raised",
+            "failure_count": 2,
+            "level": "ERROR",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:52Z"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "exit": 1,
+        "state": {
+          "active": true,
+          "failure_count": 3,
+          "observed_at": "2026-09-11T14:23:53Z"
+        },
+        "events": [
+          {
+            "event": "probe.observed",
+            "failure_count": 3,
+            "level": "ERROR",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:53Z"
+          }
+        ]
+      },
+      {
+        "step": 4,
+        "exit": 0,
+        "state": {
+          "active": false,
+          "failure_count": 0,
+          "observed_at": "2026-09-11T14:23:55Z"
+        },
+        "events": [
+          {
+            "event": "probe.observed",
+            "failure_count": 0,
+            "level": "INFO",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:55Z"
+          },
+          {
+            "event": "alarm.cleared",
+            "failure_count": 0,
+            "level": "INFO",
+            "schema": "colab.ops.v1",
+            "service": "ops-alarm",
+            "target": "acceptance-deploy-verification-42cffb328b1e",
+            "timestamp": "2026-09-11T14:23:55Z"
+          }
+        ]
+      }
+    ]
+  },
+  "cron_install": {
+    "installed_at": "2026-09-11T14:24:40.424771+00:00",
+    "dev_cron_sha256": "ffb1cb3252e62c339a90dda3761f1d913dcb402a80b717fa7cf85be2bece64a6",
+    "ops_cron_sha256": "a9d82ecb383b11dc751666efc246f27f821dd55372d81c81e487b7de655b008b",
+    "targets": [
+      "deploy-verification",
+      "service-health",
+      "backup-freshness"
+    ],
+    "prior_states_absent": true
+  },
+  "cron_first_run": {
+    "states": {
+      "deploy-verification": {
+        "active": false,
+        "failure_count": 0,
+        "observed_at": "2026-09-11T14:25:04Z"
+      },
+      "service-health": {
+        "active": false,
+        "failure_count": 0,
+        "observed_at": "2026-09-11T14:25:02Z"
+      },
+      "backup-freshness": {
+        "active": false,
+        "failure_count": 0,
+        "observed_at": "2026-09-11T14:25:03Z"
+      }
+    },
+    "cron_unchanged": true,
+    "journal": [
+      "Sep 11 14:25:01 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823979]: (root) CMD ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target backup-freshness --webhook-file '/etc/colab/ops-slack-webhook.url')",
+      "Sep 11 14:25:01 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823980]: (root) CMD ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target service-health --webhook-file '/etc/colab/ops-slack-webhook.url')",
+      "Sep 11 14:25:02 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823982]: (root) CMD ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target deploy-verification --webhook-file '/etc/colab/ops-slack-webhook.url')",
+      "Sep 11 14:25:02 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823978]: (root) CMDEND ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target service-health --webhook-file '/etc/colab/ops-slack-webhook.url')",
+      "Sep 11 14:25:03 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823977]: (root) CMDEND ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target backup-freshness --webhook-file '/etc/colab/ops-slack-webhook.url')",
+      "Sep 11 14:25:04 ip-10-0-8-44.ap-northeast-2.compute.internal CROND[3823981]: (root) CMDEND ('/opt/colab-ops/bin/dispatch-current.sh' --env dev --target deploy-verification --webhook-file '/etc/colab/ops-slack-webhook.url')"
+    ]
+  },
+  "staging": {
+    "sha": "42cffb328b1e",
+    "actual_cron_completed": "2026-09-11T23:25:52+0900",
+    "deploy": "green"
+  },
+  "release_tag": "dev-20260911-2"
+}
