@@ -180,9 +180,11 @@ Expected: dev `deploy_doctor` 한 번의 실행 15/15, skip 0.
 - Consumes: dev의 BF-12 첫 회수 주기 로그
 - Produces: 구판 미리보기의 관측 전용 분류와 소유 판정
 
-- [ ] **Step 1: BF-12 dev 로그를 한 주기 이상 관측한다**
+- [x] **Step 1: BF-12 dev 로그를 한 주기 이상 관측한다**
 
 Expected: 첫 바퀴 요약 1줄, 계수, 삭제 0, 비밀값 출력 0.
+
+2026-09-11 수용: dev f8, startup 06:30 UTC와 기본 주기 뒤 07:30 UTC 실제 요약 구분. 주체 612·map.tif 0·삭제 0, 재시작·수동 실행·주기 변경 0. 독립 검토 승인. `reports/stage12-final-verification/s3-first-cycle.log` 및 `sessions/20260911-stage12-final-verification.md`.
 
 - [ ] **Step 2: BF-12가 닫힌 경우에만 TL-2 실패 시험을 작성한다**
 
