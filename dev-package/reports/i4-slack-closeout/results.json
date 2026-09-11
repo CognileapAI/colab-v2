@@ -1,5 +1,5 @@
 {
-  "status": "technical execution passed; channel receipt confirmation pending",
+  "status": "accepted complete",
   "imds_doctor": {
     "sha": "42e44c8990a3",
     "exit": 0,
@@ -11,7 +11,12 @@
   },
   "iam": "user_console_created; policy_document_read_not_claimed",
   "webhook": "local mode0600 valid Slack prefix; value excluded",
-  "receiver_confirmation": "pending",
+  "receiver_confirmation": {
+    "status": "confirmed",
+    "date": "2026-09-11",
+    "user_words": "엉 왔음",
+    "destination": "user-designated; channel name not recorded"
+  },
   "cron": "actual 2026-09-11T14:25Z first run passed for all 3 targets",
   "code_sha": "42cffb328b1e5fbd9d20ca0c6fa34139467c3c47",
   "code_pr": 21,
@@ -176,5 +181,18 @@
     "actual_cron_completed": "2026-09-11T23:25:52+0900",
     "deploy": "green"
   },
-  "release_tag": "dev-20260911-2"
+  "release_tag": "dev-20260911-2",
+  "final_counts": {
+    "stage1": {
+      "done": 62,
+      "open": 0,
+      "deferred": 0
+    },
+    "stage2": {
+      "done": 95,
+      "open": 0,
+      "deferred": 0
+    },
+    "backlog": 2
+  }
 }

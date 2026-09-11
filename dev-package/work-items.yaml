@@ -370,7 +370,7 @@ items:
 
   - id: I4
     name: "운영 준비 (추적·알람·복구 리허설)"
-    status: open
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["I3"]

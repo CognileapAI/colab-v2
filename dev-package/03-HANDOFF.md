@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-11 I4 완료: 서버 자체 자동 점검15/0/0, Slack 시험 발생1/해제1, 실제5분 자동점검3종 정상에 더해 사용자가 지정 수신처에서 두 문구 수신을 확인했다. I4 done. Stage1 완료62/미완료0/보류0, Stage2 완료95/미완료0/보류0, 백로그2건. 아래 pending·권한 부재 기록은 당시 이력이다.
+
 > 2026-09-11 I4 최신: 서버 자체15/0/0·Slack 시험 발생1/해제1 전송·실제5분 자동점검3종 정상. 채널 수신 확인만 대기하며 I4open 유지. 근거 `sessions/20260911-i4-slack-closeout.md`. 아래 이전 날짜·실행의 권한/수신처 부재 기록은 당시 이력이다.
 
 > 2026-09-11 보류 해소: 실패 업로드3건 실제 삭제·정상 파일6개 보존. BF-10·PA-G는 단계 미정 backlog/open으로 이동(미구현, 자동 착수 없음). Stage1 완료62/미완료0/보류0, Stage2 완료94/미완료1(I4)/보류0, 백로그2건. 근거 `sessions/20260911-deferred-closeout.md`, `reports/deferred-closeout/results.json`. 아래 기존 날짜의 수치는 당시 이력이다.
@@ -162,7 +164,7 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 | I1 토폴로지 + IaC (`plan`까지) | ⏸ | I0 후 — **보류** (`㊻`) |
 | **I2 walking skeleton 배포** | ✅ | **2026-08-23 — 분수령 통과.** 5개 단위 전부 헬스 green(`/healthz/{core-api,frontend,pipeline-worker,viz-render,ai-service}`), 컨테이너 7/7 healthy, 호스트 노출 `127.0.0.1` 하나뿐 **`0.0.0.0` 0건**. **롤백 증명에서 방법을 고쳤다 — 상태 코드만으로는 판정할 수 없다**(자리표시가 모든 경로에 200 을 준다). 본문까지 대조했다: `<!doctype html>` ↔ `{"unit":"core-api"}` · `/api/v1/me` 200↔401. 배포→롤백→재배포 4구간 **530 없이 무중단**. postgres 2체인 분리 유지(`colab_platform` 20표 · `colab_ai` 시드 22행). 앱 롤 staging 실측 `rolsuper=f·rolbypassrls=f·소유 0` — P0 숫자와 동일. 터널 선언 무수정(`plan` = No changes). 산출 `sessions/I2.md` | **+ 2026-08-25 — 배선이 실제로 이어졌다**(`c5a2fbf`). I2 당시 green 이던 헬스 6종 뒤에 **제품이 잠겨 있었다** — viz env 0건 · relay 미구성 · `COLAB_AI_DB_URL` 부재 · 주체 표 공백 · named volume 소유권. 헬스 골격 판정으로서 ✅ 는 유지하고, 그 위의 배선은 `W7` 이 닫았다.
 || **I3** 배포 자동화 | ✅ | 실제5분 dirty 차단→동일후보 정상배포 수용. `sessions/20260911-stage12-execution.md` |
-| I4 운영 준비 (추적·알람·복구 리허설) | ⬜ | **stage 2 경로에 편입**(`§9 〈167〉-㉲` · 정본 = `WORK-UNITS §10.2-b`). 진입조건 = `I3` |
+| I4 운영 준비 (추적·알람·복구 리허설) | ✅ | **stage 2 경로에 편입**(`§9 〈167〉-㉲` · 정본 = `WORK-UNITS §10.2-b`). 진입조건 = `I3` |
 | I5 prod 전환 | ⏸ | I4 + P7 — **보류** (`㊻`). v2 개발의 종점은 여기가 아니라 **staging 전체 green** 이다 |
 
 ### T-G 게이트
