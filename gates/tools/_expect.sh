@@ -94,6 +94,12 @@ expect_intercept_readiness() {
 # $1 = 게이트 이름 $2 = (선택) 기다린 대상 설명
 expect_readiness_verdict() {
   local gate="$1" what="${2:-셀프테스트 케이스의 실행 환경}"
+  # 일부 소비자는 FAILED만 검사한다. 가로채기가 기록한 결함도 반드시 종료에 반영한다.
+  if [ "${#FAILURES[@]}" -gt 0 ]; then
+    echo "::error::$gate red(판정) — 기대와 다른 케이스 ${#FAILURES[@]}건" >&2
+    printf '  - %s\n' "${FAILURES[@]}" >&2
+    exit 1
+  fi
   [ "${#EXPECT_READINESS[@]}" -gt 0 ] || return 0
   printf '::gate-readiness-failure::gate=%s|waited_for=%s(케이스 %d건)|limit=케이스별 상한|elapsed=-|detail=%s\n' \
     "$gate" "$what" "${#EXPECT_READINESS[@]}" "${EXPECT_READINESS[*]}"

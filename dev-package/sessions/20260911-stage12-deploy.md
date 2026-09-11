@@ -45,3 +45,24 @@
 - 위 코드 기준에서 services/frontend/contracts/db/infra/gates와 격자 여정 스크립트의 잔여 tracked/untracked 변경 0을 확인했다. `.codex/artifacts`는 커밋 대상에서 제외하고 그대로 보존했다.
 - 최초 ARM64 빌드 실패: core-api의 RUN에서 `exec format error`, exit 1. buildx 지원은 amd64뿐이며 ARM QEMU 등록이 없다. `infra/dev/README.md` 진단표의 등록 절차를 별도 검토한다. 이 실패 실행을 이미지 5개 생성 성공으로 세지 않으며 기존 dist 산출물을 현재 빌드로 반입하지 않는다.
 - 프론트 산출물 SHA256: index `35cd00d9dc361cc95a3cf3b1282d17b4fb2de516a77f6ef862f9d41d2e55248c`, JS `74d99942b4540c836fd52b069586a6509ab3859a4141da6f1eaaf821d805c5f4`, CSS `50da61bf6fe3375d1714c97f96fdfb018e68063a42f3a89acf37cb307771a7bb`.
+
+## 원격 검토와 반입 준비
+
+- 문서 커밋 a4c257380d73f03c13c406988612ee1e59cdc9a1까지 feature/hsw0312_stage1_2 일반 push 완료. 원격 feature와 로컬 HEAD 일치. main은 변경하지 않았다.
+- advisor go/no-go를 거쳐 draft PR https://github.com/CognileapAI/colab-v2/pull/13 생성. 자동 병합·리뷰어 지정 없음.
+- CI https://github.com/CognileapAI/colab-v2/actions/runs/34549330140 실패(gate-selftest). 나머지 서비스 4종/프론트/계약/스키마/경계/계획 잡은 성공. 별도 compatibility https://github.com/CognileapAI/colab-v2/actions/runs/34549330209 성공. harness-eval의 성공 표시는 현행 명시 면제 모드이며 실제 Astra 행동 평가로 재사용하지 않는다.
+- 로컬 Docker endpoint unix socket 확인 후, 배포 문서에 명시된 arm64 한정 QEMU 등록 완료. 다른 아키텍처 일괄 등록·기존 등록 제거·호스트/socket 마운트는 하지 않았다.
+- a4c257380d73에서 build.sh 재실행 성공. core-api/pipeline-worker/viz-render/ai-service/migrator 5개 모두 arm64를 실제 inspect로 확인. `dist/colab-v2-dev-a4c257380d73.tar` 285M, sha 마커도 같은 값이다.
+- 판정기 전달용은 dirty tree 복사가 아니라 동일 커밋의 git archive: `dist/stage12-doctor-a4c257380d73.tar.gz`, SHA256 `70d92629d17866832bf3b355c2cfc491cf7c2241f0b8e0658061af1472badfda`.
+- 커밋 뒤 exec-bit 188개, generated 13개, contract-breaking 변경 0, work-item-consistency 불일치 0을 재확인했다.
+- 다음: SSH 주소 확인 → 현재 dev 단일 doctor·백업·DB 권한/대기 행·디스크·직전 이미지 확인 → CI 결과와 최종 go/no-go → main fast-forward/push → ship/up/frontend → 같은 SHA의 전체 통합검증. 실제 dev 반입과 전체 통합검증은 미실행이다.
+
+## CI 자가검사 결함 보완
+
+- render-latency: 병렬도 0이 venv 부재에 가려 준비 실패로 끝났다. 존재하지 않는 Python 경로를 강제한 회귀시험에서 red 재현 후 입력 검사를 환경 검사 앞으로 이동, 13건 통과.
+- ops-observability: 직접 실행하는 Python 2개의 Git 인덱스 모드가 100644였다. NTFS 로컬 실행과 CI가 달랐으며 ops_observability.py/alarm_runner.py를 100755로 기록한다.
+- frontend-visual: CI에 agent-browser가 없는데 `_expect.sh`의 FAILURES가 최종 종료에 반영되지 않아 검사 실패를 green으로 표시했다. 공통 최종 판정에 배열 결함을 반영하고 정상/위반 기대와 미선언/준비 실패 조합 4건 추가. 2건 실패를 먼저 재현한 뒤 backup-cron-streak-selftest 20건 통과(실제 cron 설치·실행 아님).
+- CI에는 검증된 agent-browser 0.27.0 및 Linux 브라우저 의존 설치를 추가했다. 정상/위반 HTML의 원격 실제 계측은 후속 CI에서 확인하며, 설치만으로 통과를 주장하지 않는다.
+- readonly advisor: 전체 selftest 성공을 조건으로 feature 커밋/push 승인. main/배포 승인은 제외; SSH·백업·최종 go/no-go 경계 유지.
+- 수정 후 단일 전체 selftest exit 0: 선언 25/실행 23/명시 면제 2, green 23/red 0. 면제는 별도 서비스 잡이 담당하는 stage2-markers-selftest와 service-tests-selftest이며 신규 면제는 없다. 로컬 Chromium 정상/위반 HTML의 실제 계측도 각각 green/red 기대대로 통과. 보고서 `reports/stage12-deploy-preflight/ci-selftest-fix/gate-summary.json`.
+- 자가검사 로그의 artifact-ownership SQL 주석 heredoc에서 식별자 2개가 셸 명령 치환되어 command-not-found 경고가 남았다. 주석 외 SQL과 해당 19케이스 판정은 성공했으며, 이 실행을 무경고로 보고하지 않는다.

@@ -1,6 +1,6 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-11 현재: Stage 1·2 전체 구현 push·dev 배포·후속 통합검증 승인. 사전 검사와 dev Stage 2 설정 보완 진행; 원격 변경은 아직 없음. 현재 SSH 주소 미확인으로 반입 대기. 근거/다음 순서: `sessions/20260911-stage12-deploy.md`. 아래 eac2f0b 단독 승인 경계는 이 전체 배포 승인 전의 이력이다.
+> 2026-09-11 현재: Stage 1·2 전체 구현 a4c257380d73까지 feature push·draft PR #13 생성, ARM64 이미지 5개와 프론트 빌드 완료. 원격 CI gate-selftest 실패를 재현·보완하고 재검증 중. 현재 dev SSH 주소 미확인으로 main 반영·실제 반입·전체 통합검증 대기. 근거/다음 순서: `sessions/20260911-stage12-deploy.md`. 아래 eac2f0b 단독 승인 경계는 전체 배포 승인 전의 이력이다.
 
 > 최종 갱신 2026-09-11: 승인된 내부 API 계약·서버·시험을 eac2f0b로 로컬 재동결(관련 9파일), 새 HEAD 대비 contract-breaking green. 경계 27건·계약 소비 6건 재검증 통과(`sessions/20260911-s2-review-local.md`); 다른 기능 변경은 미커밋 보존. 다음 = 전수·G10 전후 실측·배포 검토. 편의/운영/회수 근거는 `sessions/20260911-s2-convenience-local.md`, `sessions/20260911-s2-ops-local.md`, `sessions/20260911-preview-retention-local.md`. 원격 push·배포 없음; main push·배포·실제 삭제·원격 apply는 실행 직전 승인 경계를 유지한다.
 

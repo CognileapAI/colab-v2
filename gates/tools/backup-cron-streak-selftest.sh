@@ -161,10 +161,26 @@ else
   red "ⓟ 표식＋종료 0 이 준비 실패로 접혔다 — 검사기가 낸 종료 0 이 가려진다"
 fi
 
+# 단일 FAILED 플래그를 쓰는 소비자도 공통 FAILURES를 최종 종료에 반영해야 한다.
+for spec in 'green:undeclared:1' 'red:undeclared:1' '미선언:undeclared:0' 'green:ready:78'; do
+  IFS=: read -r want kind expected_rc <<< "$spec"
+  verdict_out="$(
+    FAILURES=(); EXPECT_READINESS=()
+    marker="$MARK"; [ "$kind" != undeclared ] || marker="$UNDECL"
+    expect_intercept_readiness 78 "$marker" "최종 판정 회귀" "$want"
+    expect_readiness_verdict fixture
+  )"; verdict_rc=$?
+  if [ "$verdict_rc" -ne "$expected_rc" ]; then
+    red "최종 판정 $want/$kind: exit $verdict_rc (기대 $expected_rc)"
+  else
+    echo "  ✓ 최종 판정 $want/$kind → exit $expected_rc"
+  fi
+done
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::backup-cron-streak-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict backup-cron-streak-selftest
-echo "backup-cron-streak-selftest green — 검사 16건 전건 기대대로 (게이트 8건: red 7 · green 1 ＋ 분류기 8건)"
+echo "backup-cron-streak-selftest green — 검사 20건 전건 기대대로 (게이트 8건 · 분류기 8건 · 최종 판정 4건)"

@@ -145,7 +145,7 @@ expect green "ⓛ 전건 눈금 안" "$OK_XML" "$OK_CFG" "p95"
 
 # 실행기 병렬도 입력 경계 — 실제 원천 렌더는 돌리지 않고 입력 단계에서 끊는다.
 RUNNER="$REPO_ROOT/gates/tools/render-latency.sh"
-RUNNER_OUT="$(COLAB_REFERENCE_DATA="$TMP" COLAB_RENDER_TEST_JOBS=0 "$RUNNER" 2>&1)"
+RUNNER_OUT="$(COLAB_REFERENCE_DATA="$TMP" COLAB_RENDER_LATENCY_PY="$TMP/missing-python" COLAB_RENDER_TEST_JOBS=0 "$RUNNER" 2>&1)"
 RUNNER_RC=$?
 if [ "$RUNNER_RC" -ne 1 ] || ! grep -q '1~32 정수' <<< "$RUNNER_OUT"; then
   red "ⓜ 병렬도 0이 입력 red가 아니다"

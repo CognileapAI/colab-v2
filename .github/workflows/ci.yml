@@ -528,5 +528,11 @@ jobs:
             "$(grep -iE '^PyYAML==' gates/requirements.txt)"
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
+      # frontend-visual-selftest는 실제 Chromium으로 HTML 대조군을 계측한다.
+      - name: 시각 자가검사 브라우저 설치 (검증된 CLI 버전 고정)
+        run: |
+          npm install --global agent-browser@0.27.0
+          agent-browser install --with-deps
+          agent-browser --version
       - name: 전 게이트 fail-closed 증명
         run: ./gates/run.sh selftest

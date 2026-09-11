@@ -23,6 +23,12 @@ JUDGE="$REPO_ROOT/gates/tools/render_latency.py"
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
 
+JOBS="${COLAB_RENDER_TEST_JOBS:-4}"
+if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || (( JOBS < 1 || JOBS > 32 )); then
+  echo "::error::render-latency red — COLAB_RENDER_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
+  exit 1
+fi
+
 REF="${COLAB_REFERENCE_DATA:-}"
 if [ -z "$REF" ] || [ ! -d "$REF" ]; then
   pg_readiness_report render-latency "원천 데이터 마운트(COLAB_REFERENCE_DATA)" "대기 없음" "0초" \
@@ -37,11 +43,6 @@ if [ ! -x "$PY" ]; then
   exit "$PG_READINESS_EXIT"
 fi
 
-JOBS="${COLAB_RENDER_TEST_JOBS:-4}"
-if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || (( JOBS < 1 || JOBS > 32 )); then
-  echo "::error::render-latency red — COLAB_RENDER_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
-  exit 1
-fi
 PARALLEL=()
 if (( JOBS > 1 )); then
   if ! "$PY" -c 'import xdist' >/dev/null 2>&1; then
