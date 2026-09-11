@@ -61,10 +61,16 @@ MISSING="$TMP/missing-webhook"
 expect red "ⓙ webhook 미선언 readiness" "$ALARM" --state "$TMP/fresh.json" --target health --threshold 2 --webhook-file "$MISSING" -- /bin/true
 [ "$LAST_RC" -eq 78 ] || red "webhook 미선언은 exit 78이어야 한다: $LAST_RC"
 
-if "$ROOT/gates/tools/ops-schedule-selftest.sh"; then
-  echo "  ✓ ⓚ dev 5분 schedule/probe 배선"
+if python3 "$ROOT/gates/tools/ops-alarm-notify-selftest.py"; then
+  echo "  ✓ ⓚ Slack/generic webhook 계약과 전송 실패 재시도"
 else
-  red "ⓚ dev 5분 schedule/probe 배선"
+  red "ⓚ Slack/generic webhook 계약과 전송 실패 재시도"
+fi
+
+if "$ROOT/gates/tools/ops-schedule-selftest.sh"; then
+  echo "  ✓ ⓛ dev 5분 schedule/probe 배선"
+else
+  red "ⓛ dev 5분 schedule/probe 배선"
 fi
 
 [ "$FAILED" -eq 0 ] || exit 1

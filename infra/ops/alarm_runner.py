@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -80,13 +81,26 @@ def _webhook(path: Path) -> str:
 
 
 def _notify(url: str, event: dict[str, Any]) -> None:
-    # event는 target/계수/시각뿐이다. probe stdout/stderr나 요청 값은 절대 보내지 않는다.
+    # Slack Incoming Webhook만 Slack의 `text` 계약을 쓴다. 다른 webhook의 기존 JSON 계약은 유지한다.
+    is_slack = urlparse(url).hostname == "hooks.slack.com"
+    if is_slack:
+        target = str(event.get("target", "-"))
+        test_note = " · 시험 대상" if target.startswith("acceptance-") else ""
+        payload = {"text": (
+            f"CoLAB 알람{test_note} · target={target} · event={event.get('event', '-')} · "
+            f"count={event.get('failure_count', 0)} · timestamp={event.get('timestamp', '-')}"
+        )}
+    else:
+        payload = event
     request = urllib.request.Request(
-        url, data=json.dumps(event, separators=(",", ":")).encode("utf-8"), method="POST",
+        url, data=json.dumps(payload, separators=(",", ":")).encode("utf-8"), method="POST",
         headers={"Content-Type": "application/json", "User-Agent": "colab-ops-alarm/1"})
     with urllib.request.urlopen(request, timeout=10) as response:
+        body = response.read() if is_slack else b""
         if not 200 <= response.status < 300:
             raise RuntimeError(f"webhook가 {response.status}로 답했다")
+        if is_slack and body.strip() != b"ok":
+            raise RuntimeError("Slack webhook 응답 본문이 ok가 아니다")
 
 
 def _parser() -> argparse.ArgumentParser:

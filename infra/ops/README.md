@@ -15,3 +15,5 @@ dev에서는 `install-schedule.sh`가 `/etc/cron.d/colab-ops` 전용 파일에 �
 `infra/dev/ship.sh`는 working tree가 아니라 배포 SHA의 `git archive`에서 probe·doctor·마이그레이션 head·RLS 판정기 묶음을 만든다. EC2는 archive hash를 확인한 뒤 일반 사용자가 바꿀 수 없는 `/opt/colab-ops/versions/<SHA>`에 root 소유로 풀고, 고정 경로 `/opt/colab-ops/bin/dispatch-current.sh`를 cron에 건다. dispatcher는 매 회차 `CURRENT_SHA`에 해당하는 bundle의 manifest·파일 hash·root 소유·상위 디렉터리 쓰기 권한·symlink 부재를 확인한 뒤 실행한다. 따라서 새 SHA 반입과 이전 SHA rollback 때 cron을 다시 쓰지 않는다. source 또는 manifest가 없거나, 옛 source이거나, 한 파일이라도 바뀌면 준비 실패 또는 RED다.
 
 데이터 레지던시의 정직한 한계: S3/RDS 원천은 서울 리전이지만 CloudFront는 글로벌 edge이고, OpenAI 모델 호출의 처리 위치는 공급자 관리이며 국내 고정으로 보장하지 않는다. AI로 보내는 범위는 검색 질의 텍스트와 계보 제안용 업로드 파일 메타다. 원본 파일 바이트나 자격증명을 보낸다고 선언하지 않는다.
+
+Slack Incoming Webhook(`hooks.slack.com` 정확한 호스트)는 `text` 형식으로 대상·이벤트·실패 계수·UTC 시각만 보낸다. `acceptance-` 시험 대상은 시험임을 표시한다. Slack은 HTTP 2xx와 본문 `ok`가 모두 맞아야 전달 성공이며, 실패하면 state를 저장하지 않아 다음 회차가 같은 전이를 다시 보낸다. 다른 HTTPS webhook은 기존 구조화 이벤트 JSON 형식을 유지한다.
