@@ -11,12 +11,12 @@
 ## 실행 계획
 
 - [x] 최신 origin/main 조회와 미커밋 변경 분류: origin/main 대비 HEAD 뒤 0/앞 1.
-- [ ] 마이그레이션·계약·생성물·서비스·프론트 사전 검사와 배포 안전성 독립 검토.
+- [x] 마이그레이션·계약·생성물·서비스·프론트 사전 검사와 배포 안전성 독립 검토.
 - [x] 관련 구현을 논리 단위로 커밋하고 코드 기준 SHA를 고정(아래 참조; 배포 이미지 생성은 별도).
-- [ ] 고정 소스의 arm64 이미지 5개와 프론트 빌드, 백업·롤백 대상 확인.
-- [ ] 최종 go/no-go 뒤 승인된 main 반영·push 및 dev 배포.
-- [ ] 동일 배포 SHA에서 deploy_doctor 전항목 단일 실행, 전체 게이트, 실제 사용자 여정 검증.
-- [ ] 원격 CI·잔여 조건 확인 후 대장과 인계 갱신.
+- [x] 고정 소스의 arm64 이미지 5개와 프론트 빌드, 백업·롤백 대상 확인.
+- [x] 최종 go/no-go 뒤 승인된 main 반영·push 및 dev 배포.
+- [x] 동일 배포 SHA에서 deploy_doctor 전항목 단일 실행, 전체 게이트, 핵심 실제 사용자 여정 검증 실행(전체 통과 아님; 아래 잔여 참조).
+- [x] 원격 CI·잔여 조건 확인 후 대장과 인계 갱신(미충족 항목 상태 유지).
 
 전체 통합검증은 사용자 요청대로 배포 뒤 수행한다. 사전 검사는 배포 실패·스키마 손상을 막는 관련 검사이며 전체 완료 판정이 아니다.
 배포 및 검증이 끝나기 전에는 Stage 1·2 완료를 선언하지 않는다.
@@ -79,3 +79,46 @@
 - 이전 배포의 compose/up.sh/dev.env/CURRENT_SHA/MAIN_SHA를 서버의 비공개 rollback 디렉터리에 보존했고, 이전 이미지 5개 불변 태그·arm64 존재를 확인했다. 새 0024를 모르는 옛 migrator로 up.sh를 실행하는 롤백은 피해야 하므로 앱만 되돌리는 절차와 호환성을 최종 검토한다.
 - 사용자 추가 요청: PR #13에 이번 신규 개발 기능 목록을 쉬운 HTML로 포함한다. `docs/reviews/stage12-pr13.html`에서 기존 기능과 신규 구현, 로컬 검증과 dev 완료를 구분한다. HTML 추가 후 최종 소스·이미지·판정기 기준을 고정한다.
 - HTML 검증: agent-browser로 Stage 1 2묶음/Stage 2 6묶음 표시, 모바일 키보드 Enter로 모두 보기 8묶음 복원, 390·1440px 가로 넘침 0, 외부 리소스 요청 0. 모바일에서 포인터 click이 상태를 바꾸지 않은 실행은 통과로 세지 않았고 키보드 경로를 확인했다. HTML·브라우저 캡처 PNG를 PR에 함께 연결한다. 제품 E2E 증거와 구분한다.
+
+## 최종 반입 전 판정
+
+- PR HTML·PNG·기능 목록 반영 커밋 `9e3ff19f6d27306e0e359e8ff2d829f8f4a7452f`. PR #13 본문에 링크·Stage별 목록 존재를 되읽어 확인했다. 최종 CI `34551919730` completed/success, compatibility `34551919760` 성공.
+- 같은 SHA 이미지 5개 arm64 확인, tar 285MB·SHA256 `8e84e69d4f15735583c7ce58805edf5a4c45003dcc00ef5bc8e89d4dfc0d38ee`. 동일 SHA git archive 판정기 SHA256 `34020e17f9431de52a769efd7425917adeaacadb0f9b8b44f1030f54d4761e87`.
+- 프론트 재빌드 성공, index SHA256 `35cd00d9dc361cc95a3cf3b1282d17b4fb2de516a77f6ef862f9d41d2e55248c`. 기존 웹 버킷 파일을 로컬 rollback 사본에 내려받았으며 이전 index SHA256 `0fcb3cbfeb413e1dca6203910bd530eb0564c39ef78433aa9b8bbee6b5a3311d`.
+- 이전 `09e2b9b2db1a`의 소스·시험을 git archive로 분리해 새 0024 선언 스키마의 일회용 DB에 연결했다. 업로드·등록·상세·연구실 경계·세션 시험 105 passed/실패 0/13.89초. 이는 이전 소스의 호환 시험이며 운영 DB 쓰기·운영 이미지 재기동 시험은 아니다. 임시 DB만 종료했다.
+- 새 제약: uploads/ 613객체·4,740,251,471바이트가 현재 작업 상한 1GiB를 넘는다. S3 관측은 다운로드 전 총량 검사에서 ready=false로 멈추므로 회수 관측 완료는 불가능하다. 원본 부재나 정상 0건으로 해석하지 않는다. 대장 BF-12 open 유지, TL-2 선행 미충족 유지.
+- 독립 최종 검토: CI 성공 뒤 dev 반입 가능, 회수 관측·Stage 전체 완료는 보류. 총량 초과 시 다운로드·삭제 없이 다음 재생성 주기를 계속하는 코드를 확인했다. 배포 뒤 실제 준비 실패 로그와 재생성 지속성을 검증한다. 상한 증가·원본 삭제·검사 제거·디스크 확장은 하지 않는다.
+- 롤백은 보존한 이전 compose와 `COLAB_IMAGE_TAG=dev-09e2b9b2db1a`를 명시해 앱 4종만 `up -d --no-deps`로 되돌린다. 옛 migrator/up.sh를 실행하거나 DB를 downgrade하지 않는다. 웹은 보존한 정적 파일을 정본 deploy_web 경로로 복원한다.
+- main fast-forward 전에 기존 CLAUDE.md의 끝줄 변경만 이름 붙인 stash로 잠시 보존했다. main을 같은 SHA로 fast-forward한 뒤 해당 stash만 복원한다. 다른 stash와 미추적 산출물은 보존한다.
+
+## dev 배포와 실제 사용자 여정
+
+- main을 `9e3ff19f6d27306e0e359e8ff2d829f8f4a7452f`로 fast-forward/push했다. PR #13은 같은 커밋으로 2026-09-11T01:51:45Z merged. 앞서 보존한 CLAUDE.md 변경은 해당 stash만 pop하여 복원했으며 기존 다른 stash는 유지했다.
+- 정본 ship.sh → 동일 SHA 판정기 archive 반입 → platform migration → up.sh → deploy_web.py 순서로 성공. 이미지·archive 해시 대조 성공, 새 platform 테이블 3개에 앱 CRUD 4종 권한 확인. 권한 확인 직후 진단 SQL의 테이블명을 잘못 써 별도 조회가 exit 1이었으며, 실제 스키마는 후속 doctor가 확인했다.
+- 웹 96파일/6,357,419바이트 게시, index는 마지막 업로드. 배포 후 단일 doctor exit 0, green 15/red 0/미검사 0. platform 0024·AI 0007, RLS 39테이블, 서비스 4개 healthy, main/배포 SHA 일치. 기존 배포의 사전 doctor와 구분한다.
+- 로그: `.codex/artifacts/stage12-{ship,up,web}-9e3ff19.log`, `.codex/artifacts/stage12-deployed-doctor.log`. 서버 작업 여유 3.2GB. S3 관측은 실제 준비 실패 로그를 남겼다. 로그의 일반 오류 문구 자체가 용량 원인을 표시하지는 않으며, 사전 실측 총량이 1GiB 상한을 초과한 사실을 함께 기록한다.
+- agent-browser로 dev에 로그인하고 실제 8×8 GeoTIFF(640바이트, EPSG:4326, 값 0~63) 업로드·분석·등록을 수행했다. 자료명 `TEST Stage12 20260911 9e3ff19 — 합성 8×8`, dataset `01M2732F9RE8XV9CSG46J240CX`. 실제 관측값이 아닌 검증용 합성 자료임을 설명에 표시했다. 자료는 삭제하지 않고 dev에 남겼다.
+- 등록 후 미리보기 이미지 naturalWidth 1024 확인. 팔레트 다색-무지개/색 구간 3개로 변경한 뒤 이미지 주소 변경 및 렌더 완료를 확인했다. 같은 URL을 다시 열어 제목·설명·파일·미리보기와 로그인 상태 유지 확인. 목록의 지도 있음은 합성 자료 1행, 지도 없음은 해당 자료 제외 확인. 로그아웃 뒤 로그인 입력 화면 복귀 확인.
+- 최초 ‘나만 보기’로 등록했을 때 만든 계정도 상세는 요약만 보이고 편집은 가능했다. 독립 코드 대조에서 이전 배포와 같은 접근 판정임을 확인했다: locked는 유효 grant가 필요하고 작성자 자동 grant가 없다. Stage 변경의 회귀로 단정하지 않으며, ‘나만 보기’ 문구와 기존 정책의 불일치 후보로 남긴다. 검증을 계속하기 위해 본 합성 자료만 ‘연구실 구성원 전체’로 편집·저장했다.
+- S3 관측 준비 실패 이후에도 위 신규 미리보기와 팔레트 재생성이 성공했다. 초기 임시 화면의 순간적인 표시 시간, 격자 재사용·기본값 권한 등 전체 9개 수용 여정은 이번 확인 범위가 아니다.
+- 브라우저의 offscreen click 무반응은 focus/Enter 뒤 실제 저장 결과로 확인했다. URL glob·존재하지 않는 화면 문구로 수행한 wait timeout 2건은 성공으로 세지 않았다. 초기 로그인 1회 실패는 자격 파일의 설명문을 계정값으로 읽은 시험 입력 오류이며 올바른 계정으로 재확인했다.
+- 여정 캡처·비밀정보 없는 요약: `.codex/artifacts/stage12-dev-journey/`. 배포 후 단일 전체 게이트 결과와 후속 입력 보정은 아래에 분리 기록한다.
+
+## 배포 후 전체 검사 — 첫 실행과 후속 확인
+
+- 배포 SHA `9e3ff19f6d27306e0e359e8ff2d829f8f4a7452f`, `all -j 1`, 2026-09-11T01:55:11Z~02:20:02Z. 최종 exit 1, **green 54 / red(판정) 4 / red(준비) 2**. report `reports/stage12-deployed-all/gate-summary.json`과 개별 `.out/.rc/.span` 보존. 병렬 안전성 미선언 3종도 단독 실행했으며 결과에 포함했다. 작업 중 변경은 설명·기록 파일뿐이며 제품 코드는 배포 SHA와 같다.
+- 서비스: core 1060·AI 138·viz 413·pipeline 275 passed, skipped/failed/errors 0, deselected 각각 6·26·42·50. frontend 94files/1204 passed/failed 0. pipeline 경고 22, viz 경고 1을 무경고로 표현하지 않는다. 대장 180건 불일치 0, 산문 파싱 대상 밖 9건은 안 본 자리로 유지한다.
+- 최초 판정 실패 4종(schema-diff·autometa-loss·preview-tile-slot·artifact-ownership)은 기록된 예전 로컬 DB 주소에 연결하지 못했다. 실제 원인은 입력 연결이지만 게이트가 낸 exit 1과 판정 실패 계수는 바꾸지 않았다. 준비 실패 2종(frontend-visual·harness-eval)은 대상/실행 선언 누락이며 exit 78을 보존했다.
+- 후속은 전체 재실행이 아닌 해당 6종의 단독 실행이다. `reports/stage12-deployed-supplement/`에 각각 기록했다. 홈 설정을 수정하지 않고 현재 로컬 staging DB의 주소만 실행 환경에서 보정했다(같은 DB·자격·읽기 전용 옵션·산출물 루트). 이 3종의 실물은 기존 `09e2b9b2db1a` 로컬 staging이며 새 AWS dev 데이터 검증으로 바꾸어 말하지 않는다.
+- schema-diff: 새 일회용 platform/AI DB에 각각 upgrade head 후 선언=적용, **1/0/0**. 임시 DB 종료, 기존 staging/dev DB migration 아님. autometa-loss: 발행 6/반영 6/면제 0, **1/0/0**. preview-tile-slot: 발행 업로드 2/타일 146/사용 가능 146/면제 0, **1/0/0**.
+- artifact-ownership: **0/1/0**. 로컬 staging 산출물 158벌 = 살아 있음 120/접수분만 0/고아 19/판정 불가 19. 대상 밖 지도 타일 146벌은 별도다. 고아 키의 미선언을 확인했으며 새 면제·보류 선언을 넣어 통과시키거나 산출물을 삭제하지 않았다. 전체 스냅숏은 로그가 가리키는 `/tmp/artifact-owner-Rabhx2/snapshot-20260911T022053Z.tsv`에 보존됐다.
+- frontend-visual: dev 로그인 페이지 1건·라이트/다크 캡처 2장, 작은 글자 0/대비 실패 1, **0/1/0**. `button.login-submit` 3.41:1. 실제 DOM에서 disabled=true, 글자 rgb(255,255,255)/배경 rgb(132,140,148)/opacity 1 확인. 해당 로그인 JSX/CSS는 09e2~9e3 사이 diff 0이며 이번 회귀로 단정하지 않는다. 비활성 컨트롤에 대한 현행 검사 기준의 적용을 검토할 잔여로 남기고 허용 목록은 바꾸지 않았다.
+- harness-eval: 현행 스크립트/CI의 승격 전 정책대로 명시 면제 **20과제 미실행**, **1/0/0**. 실제 Astra 행동 평가가 아니다. 이 면제를 포함한 후속 단독 6종은 **green 4 / 판정 실패 2 / 준비 실패 0**이며 최초 all의 54/4/2와 서로 다른 실행이다. 단일 전수 green이라고 합쳐 보고하지 않는다.
+
+## 수용 대조와 인계
+
+- 사용자 추가 산출물: PR #13에 신규 Stage 1 2묶음/Stage 2 6묶음 목록, 자체 실행 HTML, 다운로드 링크, 실제 HTML 캡처 PNG를 포함했다. 데스크톱·모바일 가로 넘침 0, Stage 필터·키보드 동작, 외부 리소스 0을 확인했다. 독립 문서 검토에서 필수 수정 없음. 처음 대기 문구는 실제 배포·검사 결과로 갱신한다.
+- 배포 요청의 실행은 main push·dev 반입·단일 doctor·전체 검사·핵심 사용자 여정까지 수행했다. **미달:** 검사 2종 잔여, BF-12 관측 준비 실패와 TL-2 선행, J-1 나머지 dev 수용 여정, 기존 운영/검토 라운드의 완료 조건. 전체 Stage 완료로 닫지 않는다. **초과:** 사용자 추가 요청으로 승인된 ELI5 HTML/PNG 외 제품 구현 확대 0.
+- 현재 대장 집계: stage1 done 53/비연기 미완 9/deferred 1, stage2 done 86/비연기 미완 8/deferred 2. 상태를 이번 배포만으로 done으로 올리지 않았다. 다음은 캐시 소유 판정·비활성 버튼 검사 적용 범위 확인, BF-12 제한 공간 내 전수 관측 보완, 나머지 J-1 dev 수용 및 운영 완료 조건이다. 원본 삭제·cron·외부 통지·prod·Terraform apply는 승인 범위 밖으로 유지한다.
+- 문서 후속 커밋이 main을 전진해도 실행 제품은 `9e3ff19f6d27`이다. 설명 문서 변경만으로 이미지·앱을 재배포하지 않으며 기존 CLAUDE.md 사용자 변경과 다른 stash를 보존한다.
+- 최종 기록 갱신 뒤 work-item-consistency 단독 exit 0/불일치 0을 확인했다(파싱 대상 밖 9건 유지). 독립 최종 검토는 문서 수용 approve이며 전체 검사 통과나 Stage 완료 승인이 아니다. PR 본문의 최초 전수와 후속 6종 결과·명시 면제·실패 2종을 그대로 유지한다.
