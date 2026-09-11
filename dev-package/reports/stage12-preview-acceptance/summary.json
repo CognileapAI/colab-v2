@@ -1,0 +1,274 @@
+{
+  "task": "stage12-preview-acceptance",
+  "testedBoundary": {
+    "serverSha": "9e3ff19",
+    "webSha": "16710a4",
+    "sourceHead": "f8ac7ee07ff6a532447ac73e3cf3735b6db9d3e5",
+    "pausedForDeployment": false,
+    "postDeploySourceHead": "f8ac7ee07ff6a532447ac73e3cf3735b6db9d3e5",
+    "postDeployDoctor": "12 pass / 0 warn / 0 fail (lane browser environment)"
+  },
+  "counts": {
+    "formatRows": 7,
+    "formatSuccess": 7,
+    "formatPartial": 0,
+    "formatNotRun": 0,
+    "j1Rows": 9,
+    "j1Success": 8,
+    "j1Partial": 0,
+    "j1ReadinessFailure": 1,
+    "j1Failure": 0
+  },
+  "formats": [
+    {
+      "format": "NetCDF",
+      "result": "success",
+      "fixture": {
+        "name": "gk2a_ami_le2_lst_ko_202005010940.nc",
+        "bytes": 286683
+      },
+      "journey": "actual upload -> LST variable selection -> render -> TEST registration -> dataset detail reload",
+      "datasetId": "01M27HVH4VG6B75RGQQQZGH87Q",
+      "observed": {
+        "grid": "900x900",
+        "crs": "LCC -> WGS84",
+        "legend": "285.2–303.2 K / 6 classes",
+        "imageNaturalSize": "1024x987"
+      },
+      "evidence": [
+        "screens/netcdf-registered.png",
+        "screens/netcdf-reread-f8ac7ee.png"
+      ],
+      "postDeployReread": "f8ac7ee reload preserved LST selection and preview controls"
+    },
+    {
+      "format": "GRIB1/2",
+      "result": "success",
+      "journey": "two independent real fixtures; each message 2 selection -> render -> TEST registration -> reload",
+      "datasets": {
+        "grib1": "01M27K5C02NJPSPZZKSXMY75Z6",
+        "grib2": "01M27K6SQQPQZJM81P3MM1JF1D"
+      },
+      "observed": {
+        "grib1": {
+          "bytes": 576,
+          "messageCount": 4,
+          "selected": "message 2 / T / 2026-01-01T06:00Z / 850-ISBL"
+        },
+        "grib2": {
+          "bytes": 860,
+          "messageCount": 4,
+          "selected": "message 2 / TMP / 2026-01-01T06:00Z / 85000-ISBL"
+        }
+      },
+      "evidence": [
+        "screens/grib1-registered-reload-f8ac7ee.png",
+        "screens/grib2-registered-reload-f8ac7ee.png"
+      ],
+      "limit": "Both reloads return to message 1; message selection persistence is not claimed."
+    },
+    {
+      "format": "Binary",
+      "result": "success",
+      "fixture": {
+        "body": "RDR_CMP_HSR_PUB_202508131015.bin.gz",
+        "bodyBytes": 1255778,
+        "grid": "rdr_500m_latlon.nc",
+        "gridBytes": 11471526
+      },
+      "journey": "actual body upload -> explicit grid-file upload -> rendered grid confirmation -> TEST registration -> reload",
+      "datasetId": "01M27K98TYS08G8VF8GYKEEXM7",
+      "observed": {
+        "selected": "에코",
+        "gridConfirmation": "맞습니다"
+      },
+      "evidence": "screens/binary-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "HDF4",
+      "result": "success",
+      "fixture": {
+        "name": "MOD15A2H.A2019297.h28v05.061.2020316041359.hdf",
+        "bytes": 4282486
+      },
+      "journey": "actual upload -> Fpar_500m selection -> unpaired render -> TEST registration -> dataset detail reload",
+      "datasetId": "01M27JPHB9T832QXQNCSBNC7EF",
+      "observed": {
+        "variableCandidates": 6,
+        "selected": "Fpar_500m"
+      },
+      "evidence": "screens/hdf4-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "GeoTIFF",
+      "result": "success",
+      "fixture": {
+        "name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+        "bytes": 24577705
+      },
+      "journey": "actual upload -> band1 selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JS8RY9GJQWF0E7C2GM4AY",
+      "evidence": "screens/geotiff-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "NumPy",
+      "result": "success",
+      "fixture": {
+        "name": "ERA5_str_202509010500.npy",
+        "bytes": 4153088
+      },
+      "journey": "actual upload -> array selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JV56A70BABDMQQDZYGDCT",
+      "evidence": "screens/numpy-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "HDF5",
+      "result": "success",
+      "fixture": {
+        "name": "ordinary.h5",
+        "bytes": 10624
+      },
+      "journey": "actual upload -> second slice selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JXV7C2QASRJPJ5VZCS5V9",
+      "observed": {
+        "candidateLabels": [
+          "/group/value · 슬라이스 0",
+          "/group/value · 슬라이스 1",
+          "/other/value"
+        ],
+        "selectedForRender": "/group/value · 슬라이스 1",
+        "afterReload": "default /group/value · 슬라이스 0"
+      },
+      "evidence": "screens/hdf5-registered-reload-f8ac7ee.png"
+    }
+  ],
+  "j1Acceptance": [
+    {
+      "row": "grid candidates and reuse",
+      "result": "success",
+      "observed": "Professor default candidate appeared with expected bbox. Keyboard activation issued grid-reuse 201, changed the UI to 맞습니다, and acceptance completed.",
+      "evidence": "screens/grid-default-reuse-success-f8ac7ee.png",
+      "toolBoundary": "agent-browser pointer click reported success without dispatching a request; focus+Enter was the actual successful user input. The earlier no-grid terminal preview is excluded."
+    },
+    {
+      "row": "professor default and researcher restriction",
+      "result": "success",
+      "observed": "Professor set TEST Binary as lab default and saw success status. Same-lab researcher hid the button and PUT returned 403.",
+      "limit": "Professor mutation was not executed because deployment pause started",
+      "evidence": "screens/professor-default-grid-f8ac7ee.png"
+    },
+    {
+      "row": "other-lab restriction",
+      "result": "readiness_failure",
+      "reason": "Read-only backup-role DB query confirmed lab B exists but has zero non-deleted datasets; there is no genuine other-lab dataset ID to test without preparing valid B TEST data."
+    },
+    {
+      "row": "grid mismatch and expected area",
+      "result": "success",
+      "observed": "Default candidate exposed server bbox 118.84577941894531,30.107118606567383,133.5606689453125,43.57255935668945. Supplying an incompatible NetCDF grid to the Binary body was rejected with axis determination failure and the exact reason: both candidate axes are within ±90.",
+      "evidence": "screens/grid-mismatch-axis-rejection-f8ac7ee.png"
+    },
+    {
+      "row": "dataset map-state filter",
+      "result": "success",
+      "observed": "지도 있음 changed count from 16 to 2 and listed both mapped TEST datasets",
+      "evidence": "screens/map-state-has-map.png"
+    },
+    {
+      "row": "palette and class count",
+      "result": "success",
+      "observed": "Actual selections changed palette to rainbow and class count to 9, rerendered, and remained visible.",
+      "limit": "class-count change was not completed, so it is not claimed",
+      "evidence": "screens/palette-class9-f8ac7ee.png"
+    },
+    {
+      "row": "ETA",
+      "result": "success",
+      "observed": "during rerender UI displayed 이 단계 약 1초 남음"
+    },
+    {
+      "row": "early preview and final transfer",
+      "result": "success",
+      "observed": "one upload yielded separate temporary and final IDs; no-renderId 보기만 할게요 route correctly showed no linked preview",
+      "limit": "the exact notice timing was not captured"
+    },
+    {
+      "row": "folder drop",
+      "result": "success",
+      "observed": "A synthetic browser FileSystemEntry directory tree passed through the deployed collectDrop recursion with two real 286,683-byte NetCDF files. Registration POST returned 201 for dataset 01M27MPFKZG68WB7MVD7N7B3DZ. After reload, the files API preserved TEST-stage12-tree/north/part-a.nc and TEST-stage12-tree/south/part-b.nc, and semantic keyboard expansion displayed the nested tree.",
+      "evidence": "screens/folder-tree-persist-reload-f8ac7ee.png",
+      "limit": "Synthetic FileSystemEntry browser drop into the real handler; OS file-manager drag was not performed."
+    }
+  ],
+  "nonDefects": [
+    {
+      "case": "No linked preview screen",
+      "route": "/datasets/preview/01M27HKMM9TKHFS881X3HJM8VN",
+      "classification": "expected branch",
+      "reason": "보기만 할게요 was clicked before a renderId existed; a later NetCDF flow rendered successfully"
+    }
+  ],
+  "security": {
+    "har": "raw/netcdf.har",
+    "sanitized": true,
+    "knownPasswordOccurrences": 0,
+    "bearerSecretOccurrences": 0,
+    "signedQueryValues": "REDACTED"
+  },
+  "dataPolicy": {
+    "createdTestDatasets": 10,
+    "originalDeletes": 0,
+    "existingDataDeletes": 0
+  },
+  "completion": {
+    "wuPreviewDoneCandidate": true,
+    "j1DoneCandidate": false,
+    "reason": "All seven format rows have deployed selection/render/registration/reload evidence. J1 has eight successful rows; only the genuine other-lab boundary awaits a valid lab-B TEST fixture."
+  },
+  "supplemental": {
+    "BF-7": {
+      "result": "success",
+      "activation": "semantic focus + Enter",
+      "request": "POST /api/v1/preview-screenshots -> 200",
+      "diskArtifact": "downloads/binary-preview-01M27G421ZYVBCTJV1FMH3P59Z.png",
+      "bytes": 5848,
+      "dimensions": "1024x911 RGBA",
+      "sha256": "cfc0a2494269a48553ca934d52bc6c2c873e99a6566d22e75395dd7c728566f3",
+      "toolBoundary": "agent-browser download pointer helper timed out; keyboard activation produced the actual browser disk file."
+    },
+    "BF-11": {
+      "result": "success",
+      "observedComputedCustomProperties": {
+        "--color-surface-alt": "#f4f7fb",
+        "--color-gray-100": "#e8ecf2",
+        "--color-warning-600": "#a85400",
+        "--color-success-50": "#efffef",
+        "--color-text-muted": "#565c63"
+      },
+      "evidence": "screens/bf11-project-colors-f8ac7ee.png"
+    },
+    "BF-13": {
+      "result": "success",
+      "observed": "Live projects CSSOM: 78 custom properties, 18 names defined more than once, 0 conflicting values. Counts reflect the deployed page bundle and are not substituted for the repository test oracle."
+    },
+    "F-3-tree-expander": {
+      "result": "success",
+      "datasetId": "01M27MPFKZG68WB7MVD7N7B3DZ",
+      "observed": "After a synthetic FileSystemEntry tree drop, POST /datasets returned 201. Reloaded files API preserved two full relative paths and semantic focus+Enter displayed TEST-stage12-tree/north and south folders.",
+      "evidence": "screens/folder-tree-persist-reload-f8ac7ee.png",
+      "limit": "Synthetic browser directory-entry drop; OS file-manager drag was not performed."
+    }
+  },
+  "otherLabFixturePlan": {
+    "status": "prepared_not_executed",
+    "reason": "Lab B exists but has zero non-deleted datasets and no known usable saved credential. Tenant-A admin cannot register a B dataset.",
+    "preferredPath": [
+      "Owner runs services/core-api/ops/provision-account.sql for one new TEST researcher in existing lab B: d1_account 1, d2_member_role 1, d2_permission_switch 4; existing accounts unchanged.",
+      "Add one new secret entry with ops/set-password.py; do not change any existing secret. Confirm whether issuer reloads credentials dynamically before attempting login; if it does not, plan a core-only restart without resetting S3/viz.",
+      "Use that B subject for the normal app journey with the existing 286,683-byte NetCDF TEST fixture: initiate, S3 PUT, complete, LST preview, POST /datasets.",
+      "Use the resulting genuine dataset ID to verify B subject gets 200 and A subject gets 404 for detail and files."
+    ],
+    "mutations": "Not executed. Planned: six DB rows, one new credential entry, one valid TEST dataset and one S3 object; no DDL, deletes, password changes, or original-data edits.",
+    "cleanup": "Retain the clearly named TEST fixture; any deletion requires separate authorization."
+  }
+}

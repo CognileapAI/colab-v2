@@ -2253,7 +2253,7 @@ items:
 
   - id: BF-8
     name: "`LabPage`(S-01) 뿌리 규칙 부재 — 화면 뿌리가 자기 여백을 갖는 관례의 결손"
-    status: open
+    status: done
     stage: stage1
     owner: "frontend (D8 화면)"
     entry_conditions:
@@ -2264,6 +2264,7 @@ items:
       ⑴ 실패 시험 red — S-01 뿌리의 계산값 `padding` > 0 · 최대폭(**`project.css`·`detail.css` 와 같은 값 — 1200px**) ⑵ `dashboard.css` 또는 뿌리 클래스에 여백·최대폭 ⑶ 히어로의 자기 여백과 이중이 되지 않는다 ⑷ `vite.config.ts` `test.css.include` 에 해당 CSS.
       ⛔ **⟨문구 정정 2026-09-05 · 등재 `PLAN-SoT §9 〈328〉`⟩ 종전 ~~「카탈로그·상세 화면과 같은 값」~~ 은 실물과 어긋난다** — 실측 = `catalog.css` `.catalog-page` 에 `max-width` 선언 **0건**(`padding: 24px 20px 40px` 뿐) ⟹ **S-03 카탈로그는 창 폭 − 40px 로 그려진다.** 최대폭을 실제로 선언한 화면은 `project.css`(`.project-page`·`.project-detail`)·`detail.css`(`.detail-page`) 뿐이고 셋 다 1200px 이다.
     evidence: >-
+      2026-09-11 dev f8ac7ee 실제 사용자 여정과 동일 제품 코드 CI 5aef8a3 검증 후 독립 수용. sessions/20260911-stage12-final-verification.md의 수용 갱신 참조. 이하 과거 이력:
       ⭑ **⟨집행 2026-09-05 · 레인 `bf-8/labpage-root-padding` · 기반 `main` `b0c1f34`⟩** 커밋 `89f0357`(코드·시험) · `6ee4ae5`(레인 보고) · `42638fc`(수용 검토 반영 — 히어로 최대폭 680px).
       4파일 — `routes/LabPage.tsx` ＋1/−1(뿌리에 `className="lab-page"`) · `dashboard.css` ＋18 · `test/dashboard.test.tsx` ＋27 · `vite.config.ts` ＋1/−1(`test.css.include` 에 `dashboard.css`·`search.css` 두 항목만).
       **진입조건 재실측 전건 참** — `LabPage.tsx` 뿌리 `<div data-screen="S-01">` 에 클래스 0 · `.dash-columns` 가로 여백 0 · 자기 여백을 가진 것은 `search.css` 히어로뿐(`padding: 40px 20px 28px; max-width: 720px`).
@@ -2287,7 +2288,7 @@ items:
 
   - id: BF-9
     name: "core-api 계보 그래프 — 원천 → 루트 edge 부재 (프론트는 라벨 없는 화살표로 수용)"
-    status: open
+    status: done
     stage: stage1
     owner: "core-api (D4)"
     entry_conditions:
@@ -2298,6 +2299,7 @@ items:
       ⑴ 원천 노드가 있을 때 원천 → 루트 edge 를 응답에 싣는다(가공 방식 라벨은 원천에 없으므로 `method` 는 null) ⑵ 프론트 `BF-1` 의 「라벨 없는 화살표」 수용 코드가 edge 유무와 무관하게 같은 그림을 낸다
       ⑶ 시험 — core-api 응답 edge 수 · 프론트 픽스처 「원천+루트+자식」 화살표 2 유지 ⑷ 계약 개정이 없으면 0, 있으면 동결 해제 행 1.
     evidence: >-
+      2026-09-11 dev f8ac7ee 실제 사용자 여정과 동일 제품 코드 CI 5aef8a3 검증 후 독립 수용. sessions/20260911-stage12-final-verification.md의 수용 갱신 참조. 이하 과거 이력:
       ⭑ **⟨집행 2026-09-05 · 레인 `bf-9/lineage-source-edge` · 기반 `main` `b0c1f34`⟩** 커밋 `026d4d8`(코드·시험) · `6df8816`(레인 보고) · `4ee0876`(보고 보강 — `[미확인]` 1건 추가).
       4파일 ＋176/−6 — `services/core-api/src/colab_core/app/routes/lineage.py` ＋26/−3 · `services/core-api/tests/test_lineage_graph_read.py` ＋59 · `frontend/src/components/lineage/LineageSection.tsx` ＋14/−3 · `frontend/test/lineage-graph.test.tsx` ＋83/−2.
       ⭑ **계약 개정 0 · 동결 해제 행 0**(완료 정의 ⑷ 충족 · `X2-FREEZE-PROTOCOL` 회차 불필요) — `LineageEdge.parentDatasetId` 가 **이미** `oneOf: [Ulid, {type: "null"}]` 이고 산문이 축자 「원천 표기가 부모 자리인 관계는 데이터셋이 아니므로 null 이다」로 이 자리를 지정한다. `method` 는 `type: [string, "null"]`. **결손은 계약이 아니라 구현이었다.** 이 판정을 시험이 잠갔다(`test_the_contract_already_allows_a_null_parent_endpoint`) — 계약이 뒤로 좁혀지면 red 가 나고 그때는 코드가 아니라 동결 해제가 먼저다.
@@ -3199,13 +3201,13 @@ items:
     sources: ["dev-package/intent/2026-09-09-upload-layout-preview.md", "dev-package/prd/specs/R-UPLOAD-PREVIEW.md", "dev-package/prd/rounds/R-UPLOAD-PREVIEW.md"]
   - id: WU-PREVIEW
     name: GRIB1/2·일반 HDF5 포함 7종 미리보기
-    status: partial
+    status: done
     stage: stage2
     owner: "T-R"
     entry_conditions: []
     depends_on: []
     completion_def: "7종 감지·변수 선택·렌더 회귀 그린, GRIB1/2·HDF5 실파일 디코드, 배포 후 E2E"
-    evidence: "2026-09-10 격리 사본: 7종 coverage, pipeline 261 passed, GRIB1/2·HDF5 실 fixture, browser HDF5·GRIB2 선택ID=렌더ID·PNG·등록/reload, x86_64 Docker 2종. 배포 0. sessions/20260910-preview-all-formats.md"
+    evidence: "2026-09-11 dev f8ac7ee 실제 사용자 여정과 동일 제품 코드 CI 5aef8a3 검증 후 독립 수용. sessions/20260911-stage12-final-verification.md의 수용 갱신 참조. 이하 과거 이력: 2026-09-10 격리 사본: 7종 coverage, pipeline 261 passed, GRIB1/2·HDF5 실 fixture, browser HDF5·GRIB2 선택ID=렌더ID·PNG·등록/reload, x86_64 Docker 2종. 배포 0. sessions/20260910-preview-all-formats.md"
     deadline: null
     note: "구현·로컬 검증 완료, 배포 대기. 미실측: arm64, 신규 2종 latency, 149 MB GRIB 전체-band COG 비용."
     sources: ["dev-package/intent/2026-09-10-preview-all-formats.md", "dev-package/prd/specs/preview-all-formats.md", "dev-package/prd/rounds/R-PREVIEW-ALL-FORMATS.md", "dev-package/sessions/20260910-preview-all-formats.md"]
