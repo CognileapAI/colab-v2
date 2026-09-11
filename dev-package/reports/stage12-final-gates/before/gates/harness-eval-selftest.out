@@ -1,0 +1,8 @@
+  ✓ ⓐ 면제 선언 ＋ 과제 0건 (red)
+  ✓ ⓑ 면제 선언 ＋ 과제 3건(건수 노출) (green)
+[selftest] ⓒ 실행 선언 ＋ 스텁 sleep 4s > 상한 1s → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+           ::gate-readiness-failure::gate=harness-eval|cause=입력미선언|missing=COLAB_HARNESS_EVAL|detail=과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다.
+[selftest] ⓓ COLAB_HARNESS_EVAL·_EXEMPT 둘 다 미선언 → red(준비·입력미선언) OK
+  ci-filter-check green — 필터 `harness` 패턴 4개 · 잡히는 경로 4건 · 안 잡히는 경로 3건 · outputs.harness 있음 · 잡 `harness-eval` 조건·명시 면제·회귀 확인 · API 키 의존 0 · continue-on-error 0.
+     ⚠ 근사다 — 여기서 잰 것은 glob 문법의 뜻이고, `dorny/paths-filter` 가 실제 PR 에서 이 필터를 어떻게 평가하는지는 **[미상]** 이다(로컬 실행 불가 · `act` 부재).
+harness-eval-selftest green — 검사 4건 전건 기대대로 (green 1 · red(판정) 1 · red(준비) 1 · red(준비·입력미선언) 1 · 모델 호출 0회) ＋ CI 필터 대조.

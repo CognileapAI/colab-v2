@@ -6,7 +6,7 @@
 - 빈 0700 bundle에서 import와 scratch refresh-only를 수행했다. 원격 resource apply는 0회다.
 - 최종 full plan 판정은 resource 정확히 1건, address `cloudflare_zero_trust_tunnel_cloudflared_config.staging`, action `update`, before와 after 값 동일, sensitivity metadata만 상이했다.
 - 승인 후보 plan SHA-256은 `6e752d0dda330d94293601e806c9f3b9b0d8c28ec35580f87d9a93e00d20e53c`다.
-- private bundle은 레포 밖에 보존했다. state·saved plan·full JSON·원문 로그는 모두 0600이고, 디렉터리는 0700이다. Git·보고서·채팅 첨부로 반입하지 않는다.
+- private bundle은 `/tmp/colab-is4-approval-stage12-recovery`에 보존했다. state·saved plan·full JSON·원문 로그는 모두 0600이고, 디렉터리는 0700이다. 최종 dev 배포 후에도 final.tfplan 4917B·위 SHA 불변을 재확인했다. 이는 원격 drift 재검사를 대신하지 않는다. Git·보고서·채팅 첨부로 반입하지 않는다.
 
 ## 승인 뒤 한 번의 실행
 
@@ -14,7 +14,7 @@
 
 ```bash
 bash infra/staging/tunnel/rehearse-state-recovery.sh \
-  --apply-approved <private-bundle> \
+  --apply-approved /tmp/colab-is4-approval-stage12-recovery \
   --plan-sha256 6e752d0dda330d94293601e806c9f3b9b0d8c28ec35580f87d9a93e00d20e53c
 ```
 

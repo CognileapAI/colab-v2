@@ -1,0 +1,23 @@
+ajv 미설치 — gates/tools/node/package-lock.json 기준으로 설치를 시도한다.
+# 스키마 2건 · valid 픽스처 8건 · invalid 픽스처 10건
+  compile OK — /tmp/colab-stage12-final-gates/contracts/events/core-pipeline.json
+  compile OK — /tmp/colab-stage12-final-gates/contracts/events/envelope.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/header-parsed-full.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/header-parsed-partial.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/preview-backend-rerun.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/preview-file-added.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/preview-grid-changed.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/upload-accepted.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/upload-failed-permanent.json
+  valid   OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/valid/upload-ready-redelivery.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/bad-ulid-labid.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/cross-domain-id.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/derived-value-in-payload.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/failure-reason-outside-enum.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/missing-delivery.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/nondeterministic-idempotency-key.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/preview-stale-carries-target-path.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/preview-trigger-outside-enum.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/type-payload-mismatch.json
+  invalid 거부 OK — /tmp/colab-stage12-final-gates/gates/fixtures/events/invalid/unknown-event-type.json
+event-lint green — 스키마 2건 컴파일 · valid 8건 통과 · invalid 10건 거부.

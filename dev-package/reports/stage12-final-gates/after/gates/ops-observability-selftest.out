@@ -1,0 +1,39 @@
+  ✓ ⓐ 정본 대조군 (green)
+  ✓ ⓑ home region drift (red)
+  ✓ ⓒ 외부 AI 국내 고정 거짓 선언 (red)
+  ✓ ⓓ 5분 주기 drift (red)
+  ✓ ⓔ 첫 실패는 아직 raise 전 (red)
+  ✓ ⓕ 둘째 실패가 raise (red)
+  ✓ ⓖ 반복 실패는 재통지 안 함 (red)
+  ✓ ⓗ 회복은 clear 1회 (green)
+  ✓ ⓘ 손상 state fail-closed (red)
+  ✓ ⓙ webhook 미선언 readiness (red)
+  ✓ 실행 파일 3종
+  ✓ 상대/%/개행 경로 거부
+  ✓ webhook HTTPS 한 줄 검증
+  ✓ 공백/apostrophe 경로 shell roundtrip
+  ✓ dev cron 보존 + 5분 ops cron 설치
+  ✓ 설치 뒤 verify
+  ✓ show가 webhook 내용을 출력하지 않음
+  ✓ 설치 전 snapshot
+  ✓ remove 후 전용 파일만 제거 + dev cron 보존
+  ✓ 오염 블록 fail-closed
+  ✓ webhook 부재 준비 실패 78
+  ✓ 3 probe allowlist + target별 state/log
+  ✓ 임의 target 거부
+  ✓ 중첩은 준비 상태 75, service 실패 state 불변
+  ✓ deploy_doctor.check_backups 결합 계약
+  ✓ 고정 commit archive/manifest 검증(working tree dirty 비유입)
+  ✓ source 누락/변경 탐지
+  ✓ manifest source_sha와 CURRENT_SHA 결합
+  ✓ 고정 dispatcher A→B→rollback A
+  ✓ 동일 SHA 재반입: incoming 동일성만 비교 + resident manifest 검증
+  ✓ 동일 SHA manifest 불일치 거부/덮어쓰기 0
+  ✓ group/world-writable trust parent 거부
+  ✓ symlink source/manifest 거부
+  ✓ trust root 위 조상 owner/mode 검사
+  ✓ docker timeout 강제정리
+  ✓ probe SIGKILL 뒤 바깥 wrapper 고유 container 정리
+ops-schedule-selftest green — 검사 26건 전건 기대대로
+  ✓ ⓚ dev 5분 schedule/probe 배선
+ops-observability-selftest green — 기존 검사 10건 + dev schedule/probe 배선 전건 기대대로

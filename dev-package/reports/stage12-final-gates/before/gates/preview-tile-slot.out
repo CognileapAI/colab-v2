@@ -1,0 +1,5 @@
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 28개
+지도 타일 자리 — 발행 업로드 2 · 자리의 타일 146 · 쓸 수 있음 146 · 면제 0 (선언 0 건) · 못 씀 0
+  세는 단위 = 자리에 놓인 지도 타일 파일 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 시점 = 2026-09-11T17:59:02+09:00
+# 경계 대조 — 관리자 롤 2 ↔ 경계 롤 'colab_app' 0 (갈렸다)
+preview-tile-slot green — 쓸 수 있음 146 / 자리의 타일 146 · 면제 0 · 발행 업로드 2

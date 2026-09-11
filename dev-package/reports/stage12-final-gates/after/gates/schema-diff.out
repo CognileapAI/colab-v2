@@ -1,0 +1,7 @@
+db/platform — 준비 단계: alembic upgrade head 완료(비교는 이 뒤에만 돈다).
+db/ai — 준비 단계: alembic upgrade head 완료(비교는 이 뒤에만 돈다).
+── db/platform ────────────────────────────────────────────
+db/platform green — 드리프트 없음.
+── db/ai ────────────────────────────────────────────
+db/ai green — 드리프트 없음.
+schema-diff green — 두 체인 각각 alembic upgrade head **뒤에** 선언 = 적용.

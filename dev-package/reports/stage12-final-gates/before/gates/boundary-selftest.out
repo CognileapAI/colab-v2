@@ -1,0 +1,42 @@
+── import-boundary ──────────────────────────────────────────────────
+── banned-import ────────────────────────────────────────────────────
+── ai-no-lineage-write ──────────────────────────────────────────────
+[selftest] import-boundary: 관례대로 놓인 빈 패키지 → green OK
+[selftest] import-boundary: D3 → D4 직접 참조 → red OK
+[selftest] import-boundary: ai-service → core-api 배포 단위 횡단 → red OK
+[selftest] import-boundary: Port 가 도메인을 참조(층 역전) → red OK
+[selftest] import-boundary: D1(shared kernel)이 위를 참조 → red OK
+[selftest] import-boundary: D10 → D9 직접 참조(Port 우회) → red OK
+[selftest] import-boundary: 대상 패키지 0건 → red OK
+[selftest] import-boundary: 도구 설치 실패(skip 아님) → red OK
+[selftest] banned-import: geo 없는 core-api → green OK
+[selftest] banned-import: core-api 가 rasterio → red OK
+[selftest] banned-import: core-api 가 from osgeo import → red OK
+[selftest] banned-import: 동적 import 우회 → red OK
+[selftest] banned-import: viz-render·pipeline-worker 는 geo 허용 → green OK
+[selftest] banned-import: .py 0건 → red OK
+[selftest] banned-import: 파싱 불가 파일(읽지 못함=red) → red OK
+[selftest] ai-no-lineage: 제안만 있는 기준 fixture → green OK
+[selftest] ai-no-lineage ①: 계보 경로의 PUT → red OK
+[selftest] ai-no-lineage ②: 확정 동사 operationId → red OK
+[selftest] ai-no-lineage ③: 계보 확정 스키마 → red OK
+[selftest] ai-no-lineage ④: core-ai seam 0건 → red OK
+[selftest] ai-no-lineage ⑤: 플랫폼 패키지 import → red OK
+[selftest] ai-no-lineage ⑥: D4 테이블 접두사 등장 → red OK
+[selftest] ai-no-lineage ⑦: 쓰기 SQL + D4 테이블 → red OK
+[selftest] ai-no-lineage ⑧: ai-service 코드 0건 → red OK
+[selftest] ai-no-lineage ⑨: db/ai 가 플랫폼 체인 참조(코드) → red OK
+[selftest] ai-no-lineage ⑨: 꼬리 주석이 붙은 줄의 코드 참조 → red OK
+[selftest] ai-no-lineage ⑨: 주석 블록 바로 다음 줄의 코드 참조 → red OK
+[selftest] ai-no-lineage ⑨: 문자열 리터럴로 만든 동적 import(독스트링 아님 = 검사한다) → red OK
+[selftest] ai-no-lineage ⑨: 독스트링·주석 안의 경고문(오탐이던 것) → green OK
+[selftest] ai-no-lineage ⑨: ini 주석 안의 경고문 → green OK
+[selftest] ai-no-lineage ⑨: ini 값(코드)의 체인 횡단 → red OK
+[selftest] ai-no-lineage ⑨: db/ai 에 D4 테이블 → red OK
+[selftest] ai-no-lineage ⑩: db/platform 이 ai 체인 참조(코드) → red OK
+[selftest] ai-no-lineage ⑩: db/platform 주석 안의 언급 → green OK
+[selftest] ai-no-lineage ⑪: 두 체인의 version_table 동일 → red OK
+[selftest] ai-no-lineage ⑪: version_table 미선언 → red OK
+[selftest] ai-no-lineage ⑫: 한쪽 체인 마이그레이션 0건 → red OK
+[selftest] 케이스 37 건 (동시 1)
+boundary-selftest green — 경계 게이트 3종 모두 틀린 것을 틀렸다고 말한다 (fail-closed 증명).

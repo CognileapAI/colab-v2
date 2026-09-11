@@ -1,0 +1,14 @@
+[selftest] G-e: 현행 계약 → green OK
+[selftest] G-b: 현행 계약 → green OK
+[selftest] ㉠: 현행 계약 (기준선 git HEAD) → green OK
+[selftest] ㉡: 현행 계약 + E-04 fixture → green OK
+[selftest] G-e: 개정 전 fe-core.yaml:13-16 원문 (DR-7 실물 — 「이벤트/업로드 seam」) → red OK
+[selftest] G-e: 실재하지 않는 op(createGhostUpload)·파일(upload-seam.yaml) 참조 → red OK
+[selftest] G-b: source const core-api 인데 촉발 op 0건 (I-01·I-05) → red OK
+[selftest] G-b: 촉발 op 이 집계 루트(uploadId)를 다루지 않음 → red OK
+[selftest] ㉠: 신설 op 의 근거 칸 공란 (description 없음, ㉠-1) → red OK
+[selftest] ㉠: 신설 op 에 인용도 [정본 무근거] 표기도 없음 (㉠-1) → red OK
+[selftest] ㉡: 한 단계의 op 이 호출 불가능 (㉡-1) → red OK
+[selftest] ㉡: 어느 단계도 생산하지 않은 식별자를 입력으로 요구 (㉡-2) → red OK
+[selftest] ㉡: fixture 부재는 skip 이 아니라 red → red OK
+seam-consistency-selftest green — 13 케이스 전부 기대대로 (green 4 · red 9).

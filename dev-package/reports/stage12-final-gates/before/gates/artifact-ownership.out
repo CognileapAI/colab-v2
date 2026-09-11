@@ -1,0 +1,12 @@
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 28개
+# 경계 대조 — 관리자 롤 (d3_file,d5_upload_file)=(133,133) ↔ 경계 롤 'colab_app' (0,0) (갈렸다)
+산출물 소유 — 대상 한 벌 158 · 살아 있다 120 · 접수분에만 닿는다 0 · 고아 19 · 판정 불가 19
+  구판 관측 — 사이드카 부재 14 · 원천 원장 부재 2 · 원천 원장 있음 3 · 재굽기 불가 16 · 삭제 0건
+  지도 타일 146 벌은 **대상이 아니다** — D5 가 구운 것이라 kept 로 산다 (완료 정의 ⑷)
+  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 원장 = d3_file 133 · d5_upload_file 133
+  회수 전 전수 스냅숏 498 줄 → /tmp/artifact-owner-LohJ7c/snapshot-20260911T085901Z.tsv (키·확장자·크기·사이드카 source·등급)
+  시점 = 2026-09-11T17:59:01+09:00
+::warning::artifact-ownership — 고아 19 벌이 **이름으로 선언된 채** 통과했다 (선언 19 건).
+::warning::artifact-ownership — 판정 불가(구판) 19 벌이 **건수를 드러낸 채** 통과했다.
+   구판 = sidecarVersion·baked_for 가 없는 사이드카. **고아가 아니라 보류다** (A-1 완료 정의 ⑴).
+artifact-ownership green — 대상 158 벌 (살아 있다 120 · 접수분 0 · 고아 19 · 판정 불가 19) · 구판(사이드카 부재 14 · 원천 원장 부재 2 · 원장 있음 3) · 지도 타일 146 · 스냅숏 498 줄 · 삭제 0건

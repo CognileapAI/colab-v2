@@ -376,7 +376,7 @@ items:
     entry_conditions: ["I3"]
     depends_on: [I3]
     completion_def: "복원 리허설 성공 (`§4`) · 정본 = `WORK-UNITS §10.2-b`. ⭑ ⟨증보 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈215〉`⟩ **`R-1`(복원 절차)과 분리 유지한다 — 이 항목은 `R-1` 의 리허설 **결과를 받아 쓰고**, 리허설을 **다시 돌리지 않는다.** 이 항목이 지는 것은 추적·알람이 붙은 **운영 리허설**이다.** 흡수하지 않는 이유 = `R-1` 은 `I3` 무의존인데 이 항목은 `I3` 선행이라, 흡수하면 재기동의 전제조건(`〈158〉`-㉯)이 `I3` 대기로 끌려 들어간다 ⭑ ⟨범위 조정 2026-08-31 · Ted RULING ㉚ · `PLAN-SoT §9 〈256〉`⟩ **「시점 복구 리허설 1회」는 이번 범위 밖이다** — ／ 이전 표기 ~~시점 복구 리허설 1회~~ → **이번 범위 = 「회차 단위(하루 1회 03:30) 복원 리허설 1회」**이고 `R-1` 의 결과를 받아 쓴다. **시점 복구(WAL)는 삭제하지 않고 `§9-㊻` 의 prod 개통 필수 관문 (다) 로 옮겼다.** 이번 범위의 남은 조건 = **분산 추적 · 로그 · 알람 · 데이터 레지던시 기록** 넷(실물 0건) ＋ 진입조건 `I3`"
-    evidence: "⭑ **⟨로컬 구현 2026-09-11 · sessions/20260911-s2-ops-local.md⟩ 상태 open 유지.** W3C traceparent 미들웨어와 core→viz/AI 전파, core/viz/ai 요청 JSON, pipeline pass JSON을 구현했고 공통 커널 생성물 4벌을 manifest 13/13으로 고정했다. 상태형 알람 runner와 5분 설정, AWS/CloudFront/OpenAI 레지던시 TOML, ops gate/selftest를 추가했다. core 1043, 좁은 ai/viz/pipeline 관측 시험, generated 13/13, import 8/0, boundary 37, ops selftest 10과 gate trace5/region3/external2/alarm3이 green이다. R-1 복원 결과를 소비하며 복원을 반복하지 않았다. **실제 webhook·cron·배포 0건**이고 선행 I3도 partial이므로 완료로 닫지 않는다."
+    evidence: "2026-09-11 main/dev30f5adf에 ops source/dispatcher 설치·manifest검사 완료. service-health/backup-freshness 각각green, 자동deploy probe는IMDS웹읽기권한403으로13/2/0. 별도일회용운영자doctor15/0/0과혼용하지않는다. 최소publicwebread2권한정책대안·정확실행/원복패킷준비, IAM운영자권한·수신처·실제cron/외부알림승인필요. 실제IAM/cron/webhook0. reports/stage12-release-acceptance/release.md 및 stage12-i4-minimal-iam 참조. 이하 이전 이력 — ⭑ **⟨로컬 구현 2026-09-11 · sessions/20260911-s2-ops-local.md⟩ 상태 open 유지.** W3C traceparent 미들웨어와 core→viz/AI 전파, core/viz/ai 요청 JSON, pipeline pass JSON을 구현했고 공통 커널 생성물 4벌을 manifest 13/13으로 고정했다. 상태형 알람 runner와 5분 설정, AWS/CloudFront/OpenAI 레지던시 TOML, ops gate/selftest를 추가했다. core 1043, 좁은 ai/viz/pipeline 관측 시험, generated 13/13, import 8/0, boundary 37, ops selftest 10과 gate trace5/region3/external2/alarm3이 green이다. R-1 복원 결과를 소비하며 복원을 반복하지 않았다. **실제 webhook·cron·배포 0건**이고 선행 I3도 partial이므로 완료로 닫지 않는다."
     deadline: null
     note: "／ 이전 ~~⚠ R-1 과 복원 리허설 재료가 겹치는데 한쪽이 다른 쪽을 흡수하는지 두 문서 모두 미기재.~~ **`§9` 그래프의 `I4 ── P6` 은 `〈168〉-㉵` 로 WU 의존이 아님이 판정됐다**(이 문장은 그대로 유효하다). ⭑ **⟨실측 판정 2026-08-31 · Ted 판정 ㉑ · `PLAN-SoT §9 〈249〉` · 워크트리 `lane-ops`⟩ 두 리허설은 **다르다**. 합치지 않고, 무엇이 다른지를 여기 적는다** — `〈215〉`(분리 유지)를 뒤집지 않았고, 뒤집을 근거도 실측에서 나오지 않았다. **㉮ 겹치는 것은 넷 중 하나뿐이다.** 이 항목이 요구하는 것은 넷(**분산 추적 · 로그 · 알람 · 시점 복구 리허설 1회 · 데이터 레지던시 기록** · `WORK-UNITS §4:175`·`§10.2-b:449`)이고, `R-1` 과 겹치는 것은 **복원 리허설 한 자리**다. **나머지 셋의 실물은 레포에 0건** — `otel|opentelemetry|jaeger|trace_id|alertmanager|prometheus|residency|레지던시` 전수 grep(`services/**`·`infra/**`·`contracts/**`)의 히트는 **요구를 적은 산문 두 줄뿐**(`infra/README.md:33` 데이터 레지던시 · `:37` 분산 추적)이고 **구현·설정·시험 0건**이다. 즉 이 항목의 4분의 3 은 `R-1` 이 만든 적이 없다. **㉯ 겹치는 그 한 자리도 성질이 다르다 — 「시점 복구」가 실물로 못 선다.** `R-1` 의 리허설(`infra/staging/restore/rehearsal.sh`)이 되돌리는 재료는 **논리 덤프**(`pg_dump | gzip`)와 **볼륨 tar** 다 — `archive_mode`·WAL 보관·`recovery_target`·basebackup 의 실물이 `infra/staging/backup/**`·`restore/**` 에 **0건**(전수 grep). **복원 입도는 「하루 1회 03:30 회차」이지 임의 시점이 아니다.** 그래서 이 항목의 「**시점** 복구 리허설」은 `R-1` 의 「**제자리** 복원 리허설」로 충족되지 않는다 — **기구가 없어서 아직 못 재는 것**이고, `[미확인]` 이 아니라 **실측된 결손**이다. **㉰ 방향도 반대다.** `R-1` 의 리허설은 **살아 있는 staging 을 읽기만 하고 일회용(`r1_*`)에만 쓰는** 무해 리허설이라(`rehearsal.sh` 머리말 축자) 추적·알람이 붙을 자리가 없다. 이 항목이 지는 것은 `〈215〉` 축자대로 **추적·알람이 붙은 운영 리허설**이다. **㉱ 그래서 조치 = 합치지 않는다.** `R-1` 의 리허설 결과를 **받아 쓰고 다시 돌리지 않는다**는 `〈215〉` 문면을 그대로 두고, **이 항목이 따로 져야 하는 것 넷을 위 ㉮~㉯ 로 명시**했다 — 다음 사람이 「R-1 이 끝났으니 I4 도 끝났다」로 읽지 않게 하는 것이 이 기재의 목적이다. ⚠ **상태는 고치지 않았다**(`open` 유지) — 진입조건 `I3` 이 🟧 이고 완료 정의도 재지 않았다. ⭑ **⟨범위 조정 ＋ 판정 2026-08-31 · Ted RULING ㉚ · 등재 `PLAN-SoT §9 〈256〉` · 워크트리 `lane-checklist`⟩ 「시점 복구(WAL)」를 **이번 범위에서 뺀다. 삭제하지 않고 prod 개통 전 필수 관문으로 옮긴다.**** **㉮ 근거 = `[미확인]` 이 아니라 없는 것이 확인됐다.** `archive_mode`·WAL 보관·`recovery_target`·basebackup 의 실물이 `infra/staging/backup/**`·`infra/staging/restore/**` 에 **0건**(`〈249〉`-㉯ 전수 grep). 복원 입도는 **하루 1회 03:30 회차**이지 임의 시점이 아니다. **㉯ 이번 릴리스의 공식 복원 수준 = 「하루 1회 회차 단위」.** **잃을 수 있는 최대 구간 = 정상 운전에서 약 24시간**(직전 03:30 회차 이후 쌓인 것 전량 · 크론 `30 3 * * *`). ⚠ **백업이 조용히 멈추면 그보다 길어진다** — 자동 감시가 월요 04:10 주 1회뿐이라(`10 4 * * 1`) 발견까지 최대 약 7일이 더해져 **최악 약 8일**이다. 이 문면은 `infra/staging/restore/RUNBOOK.md §0.1` 에 같은 값으로 적었다. **숫자를 좋게 적지 않았다.** **㉰ 옮긴 자리 = `PLAN-SoT §9-㊻` 의 prod 개통 조건.** ㊻ ③ 이 정한 두 조건(가·나)에 **(다) 시점 복구(WAL) 관문**을 더한다 — prod 는 회차 단위 복원만으로 열지 않는다. `〈256〉` 이 그 개정을 적는다. **`I5`(prod 전환)의 대장 행은 이 회차가 건드리지 않았다**(이 레인의 territory 밖). **㉱ 그래서 이번 범위 기준으로 이 항목이 완주 가능한가 = 예. 단 남은 조건 셋이 있다.** 이 항목이 지는 넷 중 **「시점 복구 리허설 1회」가 「회차 단위 복원 리허설 1회」로 내려앉고**, 그것은 `R-1` 의 결과를 받아 쓴다(`〈215〉` 그대로 · 다시 돌리지 않는다). **남은 조건 = ⓐ 분산 추적 ⓑ 로그 ⓒ 알람 ⓓ 데이터 레지던시 기록** — 넷 다 레포 실물 **0건**(`〈249〉`-㉮ 전수 grep · 히트는 `infra/README.md:33`·`:37` 의 요구를 적은 산문 두 줄뿐)이고, **진입조건 `I3` 이 아직 🟧 다.** ⛔ **닫지 않는다** — `status: open` 유지. 남은 조건 넷과 WAL 관문은 `dev-package/PR-CHECKLIST.md` 에 올렸다. ⭑ **⟨증보 2026-09-04 · `PLAN-SoT §9 〈311〉`(`VL-1`) · 워크트리 `lane-vl1`⟩ 값 조회 지연의 귀속이 D7 밖으로 떨어졌다 — 같은 `POST` 가 nginx 직접 **17 ms** · 공개 엣지 **279 ms**(TCP 46 ＋ TLS 44 ＋ Cloudflare·터널 왕복 189)로 **262 ms 가 엣지·터널 구간**이다(근거 `sessions/VL-1-20260904.md` §1.2·§1.3 · 표본 원값 `sessions/VL-1-SAMPLES-20260904.tsv` 400건). **`VL-1` 은 D7 개선 0건으로 닫혔고 이 구간은 인프라 소관**이다 — 이 항목의 추적·알람이 엣지·터널 지연을 볼 수 있어야 한다. ⛔ 새 WU 는 세우지 않았다."
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10.2-b", "WORK-UNITS §11"]
@@ -999,7 +999,7 @@ items:
 
   - id: TL-2
     name: "구판 미리보기 산출물 회수 — 지도 타일 회수 루프의 소유 판정에 등급을 더한다"
-    status: open
+    status: partial
     stage: stage2
     owner: "D7 / viz-render"
     entry_conditions:
@@ -1016,6 +1016,7 @@ items:
       ⑸ **staging 배포 green 뒤 관측 로그 1바퀴 실측**
       ⛔ **여기 적힌 것 밖의 수를 지어내지 않았다** — 등급별 예상 건수 · 루프 주기 변경 · 기한은 전부 `[미확인]`.
     evidence: >-
+      ⟨2026-09-11 부분 구현·실제 관측⟩ main/dev30f5adf에서 새 분류기와 단발 관측 CLI를 배포했다. dev394객체/174벌, 기존 소유4등급116/42/16/0, 구판3등급0/0/0, 삭제0. 과거 staging 실제 집합은 같은 분류기로19=14/2/3·재굽기 불가16을 재현했다. reports/stage12-tl2/dev-observation.md 및 봉인 JSON 참조. 서로 다른 두 환경의16을 같은 대상으로 보지 않는다. 독립 검토는 분류·실자료 대조를 수용했지만, 새 계수가 정기 tile_reclaim 루프에 연결되지 않아 ⑴·⑸ 전체는 미달이다. DB 자격증명 없는 D7 소비자와 별도 운영 publisher의 로컬 후속 구현을 진행하며 staging 배포 후 실제 주기는 아직 미실행이다. 아래는 이전 시점 이력이다.
       ⭑ **⟨2026-09-05 착수 보류 — 진입조건 미충족⟩ 진입조건 「`BF-12` 닫힘」이 서지 않아 착수하지 않았다**(`CLAUDE.md §4` 「진입조건 미충족이면 구현하지 말고 보고한다」).
       `BF-12` 는 코드가 `main` 에 병합됐으나(`14db1a8` · 등재 `PLAN-SoT §9 〈325〉`) **완료 정의 ⑶(staging 배포 뒤 첫 바퀴 요약 1줄 실물)이 미충족이라 `open` 이다.**
       ⟹ 이 항목의 완료 정의 ⑴⑸ 는 여전히 **잴 수 없다** — 관측 전용 계수가 로그로만 나오는데 그 로그가 아직 staging 에서 확인되지 않았다.
@@ -1070,7 +1071,7 @@ items:
 
   - id: J-1
     name: 편의 기능 묶음
-    status: partial
+    status: done
     stage: stage2
     owner: "혼합"
     entry_conditions: ["stage 2 마지막(`〈157〉-㉱`)"]
@@ -1133,6 +1134,7 @@ items:
       **어느 자리에도 지어낸 수를 넣지 않았다.**
     completion_def: "⭑ ⟨**확정** 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉱ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ **위 `completion_def_draft` 의 9건 통과 조건을 확정본으로 올린다** — 초안의 `[미확인]` **5자리**가 이번에 전부 닫혔기 때문이다(넷은 실측 근거 · 하나는 Ted 판정). 닫은 값 = **`J-1`⑷ 연구실 밖 가져오기 불허**(RLS `lab_boundary` · `db/platform/schema.sql:775`·`:786` ＋ 다른 연구실 404 실측 `CT-1.evidence`) · **`J-2`⑷ 기본 격자 지정 = 교수**(역할 집합이 `('교수','연구원')` 둘뿐 · `schema.sql:131` CHECK) · **`J-3`⑶ 거리 = 고정값 없음**(쌍마다 경계 상자·화소 크기로 계산 · 못 구하면 「거리 `[미상]`」 · 612 m 는 HSR 한 쌍의 실측이지 상수가 아니다) · **`J-8`⑴ 예측 근거 = 「표본이 없으면 예측을 그리지 않는다」를 음성 시험으로**(표본이 있으면 단계별 **중앙값**) · **`J-9`⑶ 이득 합격선 = 수치 없는 문면**(「첫 장 도달이 전량 완료보다 앞서고, 수렴 알림 1회」 · **Ted 판정 2026-09-03** — 유일한 후보 수 tif 12:1 이 계산값이라 정본이 측정으로 인용하는 것을 금한다). ⚠ **마이그레이션 `0012` 가 `J-2` 몫으로 비어 있다**(체인 head `0011_lv1_drop_level_user_set` · `〈287〉` §4). ⟹ **`03-HANDOFF §4 #54` 에서 `J-1` 을 내린다 — 착수 가능이다.** ⛔ **`status` 는 `open` 그대로 — 열린 것과 착수한 것은 다르다.** ／ 종전 문면은 지우지 않는다 ↓ ⭑ ⟨**범위만** 기재 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈214〉`⟩ **범위 = 유효 9건**(`J-1`~`J-6`·`J-8`~`J-10` · 목록 정본 `sessions/S1-PLAN-REFOUND.md §J` · 계수 근거 `〈187〉`-㉰). **범위 밖으로 못 박은 것 둘** = ⑴ 자동 무효화 — `Y-1` 로 적출돼 나갔다 ⑵ 팔레트 선택의 **서버측 재렌더 경로** — `V-1` 소유이고 이 묶음이 지는 것은 **고르는 UI** 뿐이다. ⚠ **닫는 기준(9건 각각의 통과 조건)은 이번에 쓰지 않았다 = 그 부분은 여전히 `완료 정의 미작성`** — Ted 가 이번에 고친 것은 범위뿐이다. 푸는 법 = Stage 2 마지막 배치에 도달한 회차가 9건 각각의 통과 조건을 기재한다"
     evidence: >-
+      2026-09-11 수용 완료: 유효9건 사용자 여정·저장·권한 검증, 실제 다른 연구실 후보 제외/직접재사용404, 유효한 격자 불일치 경고, 업로드 중 실제 미리보기와 최종수렴을 확인했다. main/dev30f5adf 및 전체 검사 두 실행 각61/0/0 연결. reports/stage12-release-acceptance/acceptance.md. 이하 이전 이력.
       2026-09-11 로컬 구현·검증 진행. prd/specs/s2-convenience.md,
       prd/rounds/R-S2-CONVENIENCE.md, sessions/20260911-s2-convenience-local.md 참조.
       격자 후보/복제/교수 기본값, 예상 영역·불일치·지도 상태, 팔레트·ETA,
@@ -1142,7 +1144,7 @@ items:
       전체 구현 push·dev 배포·후속 통합검증 승인과 사전 검사/설정 보완은
       sessions/20260911-stage12-deploy.md에서 추적한다. dev SSH 주소 확인 대기.
     deadline: null
-    note: "⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉰⟩ **유효 9건으로 맞췄고, 세는 기준을 함께 적었다.** 「10」도 「9」도 오기가 아니다 — **세는 기준이 달랐다**: 행 수 10(취소선 원문 보존 포함) 대 유효 항목 9(`J-1`~`J-6`·`J-8`~`J-10`). `J-7`(자동 무효화)이 `Y-1` 로 **적출돼 나갔고**(2026-08-27 · `〈167〉-㉳`) `WORK-UNITS §10.2` 표만 갱신에서 빠져 있었다. 세는 자리 = `sessions/S1-PLAN-REFOUND.md §J` · 시점 2026-08-29. ／ 이전 ~~어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다~~ ⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈251〉`⟩ 9건 각각의 닫는 기준 초안을 `completion_def_draft` 에 적었다 — `completion_def` 는 그대로 범위만 기재된 `〈214〉` 판이다.** 근거 없는 숫자를 짓지 않았고 `[미확인]` 5자리를 그대로 남겼다. **Ted 확정 전에는 착수 가능이 아니다.** ／ ⭑ **⟨증보 2026-09-01 · `PLAN-SoT §9 〈263〉`⟩ 선행에 `A-1`(산출물 소유 구조)이 붙었다** — 이 항목이 미리보기 자리의 산출물을 읽거나 지우므로 자리의 배치가 정해진 뒤에 선다. ⭑ **⟨확정 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉱ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ 초안 9건을 `completion_def` 로 승격했다 — `[미확인]` 5자리가 전부 닫혔다.** 넷은 실측 근거(RLS `lab_boundary` · 역할 CHECK `('교수','연구원')` · 쌍마다 계산 · 음성 시험)이고 하나는 **Ted 판정**(`J-9`⑶ 수치 없는 문면). **지어낸 수 0건.** ⟹ **`#54` 에서 `J-1` 을 내린다 — 착수 가능이다.** ⛔ **`status` 는 `open` 그대로.**"
+    note: "2026-09-11 위 최신 수용 근거로 done. 아래 종전 대기 문면은 당시 이력이다. ⭑ ⟨2026-08-29 해소 · `PLAN-SoT §9 〈187〉`-㉰⟩ **유효 9건으로 맞췄고, 세는 기준을 함께 적었다.** 「10」도 「9」도 오기가 아니다 — **세는 기준이 달랐다**: 행 수 10(취소선 원문 보존 포함) 대 유효 항목 9(`J-1`~`J-6`·`J-8`~`J-10`). `J-7`(자동 무효화)이 `Y-1` 로 **적출돼 나갔고**(2026-08-27 · `〈167〉-㉳`) `WORK-UNITS §10.2` 표만 갱신에서 빠져 있었다. 세는 자리 = `sessions/S1-PLAN-REFOUND.md §J` · 시점 2026-08-29. ／ 이전 ~~어느 계수를 고르지 않는다 — 사람이 `§J` 목록을 세어 판정할 자리다~~ ⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈251〉`⟩ 9건 각각의 닫는 기준 초안을 `completion_def_draft` 에 적었다 — `completion_def` 는 그대로 범위만 기재된 `〈214〉` 판이다.** 근거 없는 숫자를 짓지 않았고 `[미확인]` 5자리를 그대로 남겼다. **Ted 확정 전에는 착수 가능이 아니다.** ／ ⭑ **⟨증보 2026-09-01 · `PLAN-SoT §9 〈263〉`⟩ 선행에 `A-1`(산출물 소유 구조)이 붙었다** — 이 항목이 미리보기 자리의 산출물을 읽거나 지우므로 자리의 배치가 정해진 뒤에 선다. ⭑ **⟨확정 2026-09-03 · `PLAN-SoT §9 〈289〉`-㉱ · advisor 권고대로 집행 · Ted 사전 위임 2026-09-03⟩ 초안 9건을 `completion_def` 로 승격했다 — `[미확인]` 5자리가 전부 닫혔다.** 넷은 실측 근거(RLS `lab_boundary` · 역할 CHECK `('교수','연구원')` · 쌍마다 계산 · 음성 시험)이고 하나는 **Ted 판정**(`J-9`⑶ 수치 없는 문면). **지어낸 수 0건.** ⟹ **`#54` 에서 `J-1` 을 내린다 — 착수 가능이다.** ⛔ **`status` 는 `open` 그대로.**"
     sources: ["WORK-UNITS §10.2", "WORK-UNITS §10.3"]
 
   - id: Y-1
@@ -1956,7 +1958,7 @@ items:
 
   - id: CR-2
     name: "코드리뷰 회차 후속 — Ted 판정 5건 ＋ 배포 뒤 재굽기·소유 재실측 ＋ CI 인프라 red 둘"
-    status: partial
+    status: done
     stage: stage2
     owner: "Ted 판정 (계약 델타 · 배포 · CI 인프라)"
     entry_conditions:
@@ -1988,6 +1990,7 @@ items:
       **둘 다 main 사전존재이고 이 회차가 만든 것이 아니다.**
       ⟹ **닫는 기준 = 다섯이 각각 판정을 받고, 판정이 「집행」이면 그 집행이 실측으로 끝난 것.**
     evidence: >-
+      2026-09-11 수용 완료: 승인된 경계 계약/실제400·layers8, 로그인 성공초기화·6번째실패429와 두 실제 viewer IP 전달, 기존 staging 재굽기/소유재실측 및 CI34577478051을 대조했다. main/dev30f5adf·운영자doctor 단일15/0/0·전체검사 두 실행 각61/0/0. TL2 처분/자동 관측 및 I4 IMDS13/2/0은 별도 미완료로 유지. reports/stage12-release-acceptance/acceptance.md. 이하 이전 이력.
       ⟨2026-09-11 로컬 부분 집행⟩ 연구실 필수 헤더 5op, getRender 400, layers 최대 8을 선언했다.
       실제 OpenAPI 요청 시험 6 RED→6 GREEN, contract-lint와 seam-consistency 통과.
       같은 날 후속 승인으로 계정 누락·빈값 400과 필수 계약도 구현, 경계 27건·계약 6건 통과.
@@ -2032,6 +2035,7 @@ items:
       **⑴ 계약 델타 · ⑵ 로그인 제한 XFF · ⑷ tolerate 기한/`_FILE`/DLQ · ⑸ CI 인프라 red 둘 = 창 5b 회차 무접촉**(⑴⑷ 의 전진은 18차 레인 소관 · 위 항목).
     deadline: null
     note: >-
+      2026-09-11 위 최신 수용 근거로 done. 아래 등록·미확인 문면은 당시 이력이며 현재 미완료 판단이 아니다.
       **신설 2026-09-03** — `PLAN-SoT §9 〈307〉`-㉷. ⚠ **⑶ 은 배포와 순서가 묶여 있다** —
       재굽기 전에 배포하면 **틀린 시각의 캐시가 살아 있는 채로 나가는 것이 아니라**, 새 키로 전량 미스가 되어
       소유·타일 계수가 의미를 잃는다(병합 지도 §5.3 「완주 후」 항목 그대로).
@@ -2441,15 +2445,15 @@ items:
   # `work-item-consistency` ㈑ 가 그 갈라짐을 정확히 잡았다. 여기서 합류시킨다.
   - id: U-1
     name: "업로드 S3 직행 + 중단 재개"
-    status: partial
+    status: done
     stage: stage1
     owner: "D5 / core-api · frontend"
     entry_conditions: ["없음 — 소급 등재 (2026-08-29)"]
     depends_on: []
     completion_def: "저장 Port(로컬/S3 분기) · 프리사인드 전송 9 op · 전송 원장 `d5_upload_transfer*`(0008) · FE 전송 엔진 · 이어올리기. **완결이 곧 접수** — 전 파일이 S3 실측(ListParts·Head 크기 대조)으로 확인된 뒤에만 `d5_upload` 가 서고 `upload.accepted` 가 발행된다."
-    evidence: "pytest · vitest · 게이트 전종 green · 신설 op **실호출**(실버킷 · 멀티파트 3파트 중 파트1 뒤 ListParts 실측으로 재개 확인). 등재 = `PLAN-SoT §9 〈337〉`(저장 Port)·`〈338〉`(8차 동결 해제)."
+    evidence: "2026-09-11 수용 완료: 현행 계약 Q3 승인 + main/dev30f5adf + 전체 검사 BEFORE/AFTER 각61/0/0. 최신 실제 S3 20MiB/3파트에서 part1 뒤 ListParts 재개, 조기 완결409, 전부 올린 뒤 접수201·동일ID를 확인했다. reports/stage12-release-acceptance/acceptance.md 및 reports/stage12-preview-acceptance-30f5/u1-f3-smoke.json. 이하 이전 이력 — pytest · vitest · 게이트 전종 green · 신설 op **실호출**(실버킷 · 멀티파트 3파트 중 파트1 뒤 ListParts 실측으로 재개 확인). 등재 = `PLAN-SoT §9 〈337〉`(저장 Port)·`〈338〉`(8차 동결 해제)."
     deadline: null
-    note: "2026-09-10 사용자 Q3 a: 현재 업로드 계약 승인. 종전 Ted 판정 대기는 해소. 최신 시험·dev 배포 증거를 재검증하기 전까지 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
+    note: "2026-09-11 위 최신 수용 근거로 done. 아래 종전 대기 문면은 당시 이력이다. 2026-09-10 사용자 Q3 a: 현재 업로드 계약 승인. 종전 Ted 판정 대기는 해소. 최신 시험·dev 배포 증거를 재검증하기 전까지 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈337〉", "PLAN-SoT §9 〈338〉", "sessions/F2-PR.md"]
 
   - id: U-2
@@ -2460,22 +2464,22 @@ items:
     entry_conditions: ["`I-D` dev 실측값(고아 3건 · 26,579,847 B · 2026-09-02)"]
     depends_on: [I-D]
     completion_def: "ⓐ 만료 스윕이 원장 행과 **S3 객체를 함께** 지운다 ⓑ **S3 삭제가 실패하면 행이 남는다**(다음 바퀴 재시도 — 조용히 성공으로 세지 않는다) ⓒ **등록된 업로드는 안 건드린다** ⓓ **버킷 루트를 스캔하지 않는다 — 원장이 아는 키만**(시드 lab_id 가 겹치는 버킷에서 남의 데이터를 지운다) ⓔ 판별식(`d3_dataset`·`d5_upload`·열린 전송 **셋 다 없어야 고아**)이 시험으로 고정된다."
-    evidence: "2026-09-11 로컬 구현·검증 완료 — core app이 D5 잠금·사건/키 검증·D3 소유/가시성·exact-key S3 삭제를 조립하고 pipeline/core의 선삭제 경로를 보존으로 전환했다. 좁은 실DB 21건, core-api 1040/6 deselect, pipeline 268/48 deselect, import/db 경계 green. 상세 `sessions/s1-storage.md`. dev 배포·apply 모드·실제 S3 대상 확인은 미집행."
+    evidence: "2026-09-11 최종 main/dev30f5adf 배포와 운영자 doctor15/0/0 완료. 08:48 UTC 읽기 전용 재관측: exact 업로드1/객체12599296B·완료메타7·만료열린전송0, semantic plan3031054b 불변. A25 dataset/448file/등록upload40 및 B1dataset/2file/등록upload1 보존. 실제 apply0, 승인 패킷 reports/stage12-release-acceptance/u2-apply-packet.md. 이하 이전 로컬 이력 — core app이 D5 잠금·사건/키 검증·D3 소유/가시성·exact-key S3 삭제를 조립하고 pipeline/core의 선삭제 경로를 보존으로 전환했다. 좁은 실DB 21건, core-api 1040/6 deselect, pipeline 268/48 deselect, import/db 경계 green. 상세 `sessions/s1-storage.md`. dev 배포·apply 모드·실제 S3 대상 확인은 미집행."
     deadline: null
     note: "Port 정체 변경을 피하려고 D2/D3 소유 판단이 가능한 core app 경계에 회수 조립을 두었다. 기본값은 observe이고 local 저장은 제외한다. 완료 transfer 메타는 completed_at 기준 7일 뒤에만 prune하며 원본 TTL이 아니다. 실제 삭제 대상·SHA와 dev 배포는 실행 직전 별도 승인; 그 전까지 partial이다. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈342〉"]
 
   - id: F-3
     name: "파일 관리 — 목록·폴더 구조·다운로드·본체 변경"
-    status: partial
+    status: done
     stage: stage1
     owner: "D3·D8 / core-api · frontend"
     entry_conditions: ["회의 결정(2026-08-23) 등재 = `PLAN-SoT §9 〈339〉`"]
     depends_on: [U-1]
     completion_def: "(가) 상세 파일 목록＋크기 (나) 폴더 구조를 등록 뒤에도 유지(`d3_file.relative_path` · 0009) (다) 다운로드 — **200 티켓 + 바이트 op**(`<a href>` 는 Bearer 를 못 싣는다) · 묶음은 ZIP_STORED 스트림 · s3 파일 단위는 프리사인드 GET (라) 본체 추가·교체·삭제(마지막 본체 409 · crs 무변경)."
-    evidence: "pytest · vitest · tsc 0 · 게이트 전종 green · 실호출 증거 2건(`sessions/F2-evidence-9차-download.txt`). 등재 = `PLAN-SoT §9 〈339〉`·`〈341〉`."
+    evidence: "2026-09-11 수용 완료: Q3 승인 + main/dev30f5adf + 전체 검사 두 실행 각61/0/0. 실제 폴더 경로 등록·새로고침·트리 조작과 다운로드 원문 근거, 최신 TEST 본체 추가201/교체200/삭제204/마지막본체409를 대조했다. reports/stage12-release-acceptance/acceptance.md. 이하 이전 이력 — pytest · vitest · tsc 0 · 게이트 전종 green · 실호출 증거 2건(`sessions/F2-evidence-9차-download.txt`). 등재 = `PLAN-SoT §9 〈339〉`·`〈341〉`."
     deadline: null
-    note: "⭑ **⟨개명 2026-09-02⟩ 원래 이름은 `F-2` 였다.** 병합에서 다른 레인의 `F-2`(카탈로그 키워드 입력 제거 · `〈182〉`·`〈245〉`)와 **같은 id 로 다른 WU** 가 돼서 이쪽을 옮겼다 — **상대 것은 한 글자도 안 건드렸다**(이미 `main` 에 있고 `done` 이다). 지시서 파일명 `sessions/F2.md`·`F2-PR.md` 는 그대로 둔다(경로를 바꾸면 인용이 또 갈린다). ⟨2026-09-10 개정⟩ Q3 a로 현행 파일 관리 계약 승인. 최신 시험·dev 배포 재검증 전 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
+    note: "2026-09-11 위 최신 수용 근거로 done. 아래 종전 대기 문면은 당시 이력이다. ⭑ **⟨개명 2026-09-02⟩ 원래 이름은 `F-2` 였다.** 병합에서 다른 레인의 `F-2`(카탈로그 키워드 입력 제거 · `〈182〉`·`〈245〉`)와 **같은 id 로 다른 WU** 가 돼서 이쪽을 옮겼다 — **상대 것은 한 글자도 안 건드렸다**(이미 `main` 에 있고 `done` 이다). 지시서 파일명 `sessions/F2.md`·`F2-PR.md` 는 그대로 둔다(경로를 바꾸면 인용이 또 갈린다). ⟨2026-09-10 개정⟩ Q3 a로 현행 파일 관리 계약 승인. 최신 시험·dev 배포 재검증 전 partial 유지. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈339〉", "PLAN-SoT §9 〈341〉", "sessions/F2.md"]
 
   - id: I-D
@@ -2506,7 +2510,7 @@ items:
 
   - id: G10
     name: "단독 선언 게이트 8개 안의 시험 병렬화 — 전수 시간의 대부분이 그 여덟에 있다"
-    status: partial
+    status: done
     stage: stage1
     owner: "T-G / 게이트 · 서비스 시험"
     entry_conditions:
@@ -2518,9 +2522,10 @@ items:
       ⑵ **게이트 자가시험 green** — 각 게이트의 `*-selftest` 가 red fixture 로 여전히 fail-closed 임을 증명한다(수집 0건 red · 실행 0건 red · 실패 1건 red · venv 부재 red(준비 · 78))
       ⑶ **판정 동일** — 병렬화 전후로 수집·실행·skipped·deselected·failed 계수가 같다. 갈리면 red 이고, **계수가 줄어든 것을 빨라진 것으로 세지 않는다**
       ⑷ **전수 시간 실측** — 같은 트리에서 병렬화 전후를 각각 한 번의 실행으로 재고 값을 남긴다(`-j 4` 기준).
-    evidence: "2026-09-11 로컬 부분 구현 — 네 pytest 서비스 jobs=1/4 동일 계수(core 1040/6, pipeline 268/48, ai 137/26, viz 387/42), core 157.44→49.74초·viz 27.99→14.03초. render-latency 동일 25표본/5포맷 39.74→23.98초, 양쪽 p95 기준내; frontend 기존 Vitest worker 88파일/1186건 green, 626.92초. service selftest fail-closed, db-selftest 독립2절, preview selftest 독립5케이스 green. 전체 all -j4 전후 대조만 남음."
+    evidence: "2026-09-11 수용 완료: 같은30f5adf/tree3273813에서 all -j4 두 실행 각61/0/0, 내부jobs1→4. 네 서비스 수집/실행1071/138/431/275·skip0·deselect6/26/42/50·failed0 동일. 전수1352.57→1211.22초(141.35초/10.45% 감소 관측), 외부 작업 부하가 겹쳐 순수 인과효과로 단정하지 않는다. task-bound 증거 누락·이동 전 봉인 한계와 부모 직접 clean HEAD/tree 61게이트 검증을 reports/stage12-final-gates/verification.md에 기록. 이하 이전 이력 — 2026-09-11 로컬 부분 구현 — 네 pytest 서비스 jobs=1/4 동일 계수(core 1040/6, pipeline 268/48, ai 137/26, viz 387/42), core 157.44→49.74초·viz 27.99→14.03초. render-latency 동일 25표본/5포맷 39.74→23.98초, 양쪽 p95 기준내; frontend 기존 Vitest worker 88파일/1186건 green, 626.92초. service selftest fail-closed, db-selftest 독립2절, preview selftest 독립5케이스 green. 전체 all -j4 전후 대조만 남음."
     deadline: null
     note: >-
+      2026-09-11 위 최신 수용 근거로 done. 아래 등록·미확인 문면은 당시 이력이며 현재 미완료 판단이 아니다.
       **신설 2026-09-06 · 등록만** — 착수 회차는 열지 않았다. 발견 = 창 8-a 전수 실측(`dev-package/reports/window-8a/lane-report.md §6`).
       ⛔ **이것은 속도 항목이지 판정 항목이 아니다** — `gates/README.md` 축자 「**빨리 도는 것과 덜 보는 것은 다르다**」. 통과시키려 보는 범위를 줄이는 것은 수정이 아니다(`CLAUDE.md §3`).
       ⚠ **`serial` 선언을 푸는 쪽으로 새지 않는다** — `db-selftest` 를 병렬로 돌려 거짓 red 가 났던 자리가 실재한다(`gates/README.md` 「격리를 깨는 속도는 속도가 아니다」). 이 항목이 손대는 것은 **게이트 안**뿐이다.

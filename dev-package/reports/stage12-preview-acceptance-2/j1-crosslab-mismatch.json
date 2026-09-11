@@ -1,0 +1,28 @@
+{
+  "schema":"colab-stage12-j1-crosslab-mismatch/1",
+  "environment":{"url":"https://d31zgpff2091oh.cloudfront.net","sourceSha":"f8ac7ee07ff6","doctor":"15/0/0","existingAme":200,"newBlogin":201,"newBme":200},
+  "credentialBoundary":{"liveKeys":4,"oldObjectsUnchanged":3,"coreImage":"sha256:a02d4ab76ae97478ffe77fc5d35d8b7db769360f778419786d98dc389203bf04","passwordInputRemoved":true,"remoteStagingRemoved":true},
+  "crossLab":{
+    "bDataset":{"id":"01M27S31B82M6BG21HFK368R42","name":"TEST Stage12 LabB Binary Grid Candidate 20260911","registeredReloaded":true,"detail":200,"files":200},
+    "bBodyOnlyUploadId":"01M27S45BC9KQA43XYWBGTB9AK",
+    "bCandidateVisible":true,
+    "bReuse":{"activation":"semantic focus + Enter","status":201,"networkTimestamp":1407223.317},
+    "aBodyOnlyUploadId":"01M27S60JHGCRHN3RFZ60WGX01",
+    "aVisibleCandidates":["01M27K98TYS08G8VF8GYKEEXM7"],
+    "bDatasetExcludedFromA":true,
+    "aDirectBReuse":{"status":404,"code":"NOT_FOUND","message":"없거나 연구실 경계 밖이다.","networkTimestamp":1287915.761},
+    "aBDetailFiles":[404,404]
+  },
+  "validMismatch":{
+    "uploadId":"01M27SBF15C29HP682KE4QZ3RF",
+    "bodyShape":[2881,2305],"gridShape":[2881,2305],"formatSignature":"NetCDF",
+    "currentBounds":{"west":119.84577941894531,"south":31.107118606567383,"east":134.5606689453125,"north":44.57255935668945},
+    "defaultBounds":{"west":118.84577941894531,"south":30.107118606567383,"east":133.5606689453125,"north":43.57255935668945},
+    "mismatchWarning":{"formatDiffers":false,"hashDiffers":true,"distanceMeters":146707,"blocksRegistration":false},
+    "actualUiText":"연구실 기준 격자와 파일 내용이 달라요. 거리 146,707 m. 미리보기와 등록을 막지 않아요.",
+    "confirmedBy":"맞습니다","nextDisabledAfterConfirm":false
+  },
+  "fixtures":{"body":{"bytes":1255778,"sha256":"829a7df3ba3074006573050b46f0173ee7bc0577871c5db1884ea0f0985af1d5"},"bGrid":{"bytes":11471526,"sha256":"35f2418c496c9017029c9a1894bb7e8209dd0d6ac1b049c4b90ece8385df894c"},"mismatchGrid":{"bytes":15377212,"sha256":"63132d90365936bb6022d39d50eecb5387305a66308a57b4c33ece767f144c37"}},
+  "evidence":["testb-grid-dataset-headed.png","testb-candidate-visible-headed.png","testa-excludes-testb-candidate-headed.png","j1-valid-mismatch-warning-headed.png"],
+  "dataPolicy":{"dbFixtureRowsRetained":6,"newBDatasets":1,"originalDeletes":0,"s3Deletes":0,"ddl":0}
+}

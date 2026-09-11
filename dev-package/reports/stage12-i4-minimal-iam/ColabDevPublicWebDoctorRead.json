@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadPublishedIndexOnly",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::colab-platform-web-dev/index.html"
+    },
+    {
+      "Sid": "ListPublishedAssetsPrefixOnly",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::colab-platform-web-dev",
+      "Condition": {
+        "StringEquals": {
+          "s3:prefix": "assets/"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "task": "stage12-preview-acceptance",
+  "testedBoundary": {
+    "initialServerSha": "9e3ff19",
+    "initialWebSha": "16710a4",
+    "acceptedFunctionalServerSha": "f8ac7ee07ff6",
+    "sourceHead": "f8ac7ee07ff6a532447ac73e3cf3735b6db9d3e5",
+    "browserEnvironmentDoctor": "12 pass / 0 warn / 0 fail",
+    "deploymentDoctor": "15/0/0, separate deployed check"
+  },
+  "counts": {
+    "formatRows": 7,
+    "formatSuccess": 7,
+    "formatPartial": 0,
+    "formatNotRun": 0,
+    "j1Rows": 9,
+    "j1Success": 9,
+    "j1Partial": 0,
+    "j1ReadinessFailure": 0,
+    "j1Failure": 0
+  },
+  "formats": [
+    {
+      "format": "NetCDF",
+      "result": "success",
+      "fixture": {
+        "name": "gk2a_ami_le2_lst_ko_202005010940.nc",
+        "bytes": 286683
+      },
+      "journey": "actual upload -> LST variable selection -> render -> TEST registration -> dataset detail reload",
+      "datasetId": "01M27HVH4VG6B75RGQQQZGH87Q",
+      "observed": {
+        "grid": "900x900",
+        "crs": "LCC -> WGS84",
+        "legend": "285.2–303.2 K / 6 classes",
+        "imageNaturalSize": "1024x987"
+      },
+      "evidence": [
+        "screens/netcdf-registered.png",
+        "screens/netcdf-reread-f8ac7ee.png"
+      ],
+      "postDeployReread": "f8ac7ee reload preserved LST selection and preview controls"
+    },
+    {
+      "format": "GRIB1/2",
+      "result": "success",
+      "journey": "two independent real fixtures; each message 2 selection -> render -> TEST registration -> reload",
+      "datasets": {
+        "grib1": "01M27K5C02NJPSPZZKSXMY75Z6",
+        "grib2": "01M27K6SQQPQZJM81P3MM1JF1D"
+      },
+      "observed": {
+        "grib1": {
+          "bytes": 576,
+          "messageCount": 4,
+          "selected": "message 2 / T / 2026-01-01T06:00Z / 850-ISBL"
+        },
+        "grib2": {
+          "bytes": 860,
+          "messageCount": 4,
+          "selected": "message 2 / TMP / 2026-01-01T06:00Z / 85000-ISBL"
+        }
+      },
+      "evidence": [
+        "screens/grib1-registered-reload-f8ac7ee.png",
+        "screens/grib2-registered-reload-f8ac7ee.png"
+      ],
+      "limit": "Both reloads return to message 1; message selection persistence is not claimed."
+    },
+    {
+      "format": "Binary",
+      "result": "success",
+      "fixture": {
+        "body": "RDR_CMP_HSR_PUB_202508131015.bin.gz",
+        "bodyBytes": 1255778,
+        "grid": "rdr_500m_latlon.nc",
+        "gridBytes": 11471526
+      },
+      "journey": "actual body upload -> explicit grid-file upload -> rendered grid confirmation -> TEST registration -> reload",
+      "datasetId": "01M27K98TYS08G8VF8GYKEEXM7",
+      "observed": {
+        "selected": "에코",
+        "gridConfirmation": "맞습니다"
+      },
+      "evidence": "screens/binary-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "HDF4",
+      "result": "success",
+      "fixture": {
+        "name": "MOD15A2H.A2019297.h28v05.061.2020316041359.hdf",
+        "bytes": 4282486
+      },
+      "journey": "actual upload -> Fpar_500m selection -> unpaired render -> TEST registration -> dataset detail reload",
+      "datasetId": "01M27JPHB9T832QXQNCSBNC7EF",
+      "observed": {
+        "variableCandidates": 6,
+        "selected": "Fpar_500m"
+      },
+      "evidence": "screens/hdf4-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "GeoTIFF",
+      "result": "success",
+      "fixture": {
+        "name": "HLS.S30.T51SYB.2025359T023019.v2.0.B02.tif",
+        "bytes": 24577705
+      },
+      "journey": "actual upload -> band1 selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JS8RY9GJQWF0E7C2GM4AY",
+      "evidence": "screens/geotiff-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "NumPy",
+      "result": "success",
+      "fixture": {
+        "name": "ERA5_str_202509010500.npy",
+        "bytes": 4153088
+      },
+      "journey": "actual upload -> array selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JV56A70BABDMQQDZYGDCT",
+      "evidence": "screens/numpy-registered-reload-f8ac7ee.png"
+    },
+    {
+      "format": "HDF5",
+      "result": "success",
+      "fixture": {
+        "name": "ordinary.h5",
+        "bytes": 10624
+      },
+      "journey": "actual upload -> second slice selection -> render -> TEST registration -> reload",
+      "datasetId": "01M27JXV7C2QASRJPJ5VZCS5V9",
+      "observed": {
+        "candidateLabels": [
+          "/group/value · 슬라이스 0",
+          "/group/value · 슬라이스 1",
+          "/other/value"
+        ],
+        "selectedForRender": "/group/value · 슬라이스 1",
+        "afterReload": "default /group/value · 슬라이스 0"
+      },
+      "evidence": "screens/hdf5-registered-reload-f8ac7ee.png"
+    }
+  ],
+  "j1Acceptance": [
+    {
+      "row": "grid candidates and reuse",
+      "result": "success",
+      "observed": "Professor default candidate appeared with expected bbox. Keyboard activation issued grid-reuse 201, changed the UI to 맞습니다, and acceptance completed.",
+      "evidence": "screens/grid-default-reuse-success-f8ac7ee.png",
+      "toolBoundary": "agent-browser pointer click reported success without dispatching a request; focus+Enter was the actual successful user input. The earlier no-grid terminal preview is excluded."
+    },
+    {
+      "row": "professor default and researcher restriction",
+      "result": "success",
+      "observed": "Professor set TEST Binary as lab default and saw success status. Same-lab researcher hid the button and PUT returned 403.",
+      "evidence": "screens/professor-default-grid-f8ac7ee.png"
+    },
+    {
+      "row": "other-lab restriction",
+      "result": "success",
+      "observed": "A valid B TEST dataset was eligible and visible as a grid candidate to B. B same-shape body-only upload reused it with POST 201. A same-shape candidates excluded it; direct reuse returned 404. B detail/files were 200/200 and A detail/files 404/404.",
+      "evidence": "j1-crosslab-mismatch.json; testb-candidate-visible-headed.png; testa-excludes-testb-candidate-headed.png"
+    },
+    {
+      "row": "grid mismatch and expected area",
+      "result": "success",
+      "observed": "A valid identifiable NetCDF grid with the same 2881x2305 shape but shifted bounds produced hashDiffers=true, distanceMeters=146707, blocksRegistration=false. UI displayed both expected areas and the 146,707 m nonblocking warning; 맞습니다 enabled continuation.",
+      "evidence": "j1-crosslab-mismatch.json; j1-valid-mismatch-warning-headed.png"
+    },
+    {
+      "row": "dataset map-state filter",
+      "result": "success",
+      "observed": "지도 있음 changed count from 16 to 2 and listed both mapped TEST datasets",
+      "evidence": "screens/map-state-has-map.png"
+    },
+    {
+      "row": "palette and class count",
+      "result": "success",
+      "observed": "Actual selections changed palette to rainbow and class count to 9, rerendered, and remained visible.",
+      "evidence": "screens/palette-class9-f8ac7ee.png"
+    },
+    {
+      "row": "ETA",
+      "result": "success",
+      "observed": "during rerender UI displayed 이 단계 약 1초 남음"
+    },
+    {
+      "row": "early preview and final transfer",
+      "result": "success",
+      "observed": "Real S3 transfer 01M27PC1CVNDC5MJNQEYGZ6YQT used a 286,683-byte first NetCDF and a 28,668,300-byte real multipart second body. Early rendered PNG/WebP image loads at performance 149303.8/149351.8 preceded the first held real 8MiB multipart release at 163002.5. The large file finally completed at event 241 and transfer completed 201 at event 242; final render 01M27PE0M7NYST27F0TXD1EQK7 loaded, and exactly one convergence notice appeared.",
+      "evidence": "j9-final-convergence-headed.png"
+    },
+    {
+      "row": "folder drop",
+      "result": "success",
+      "observed": "A synthetic browser FileSystemEntry directory tree passed through the deployed collectDrop recursion with two real 286,683-byte NetCDF files. Registration POST returned 201 for dataset 01M27MPFKZG68WB7MVD7N7B3DZ. After reload, the files API preserved TEST-stage12-tree/north/part-a.nc and TEST-stage12-tree/south/part-b.nc, and semantic keyboard expansion displayed the nested tree.",
+      "evidence": "screens/folder-tree-persist-reload-f8ac7ee.png",
+      "limit": "Synthetic FileSystemEntry browser drop into the real handler; OS file-manager drag was not performed."
+    }
+  ],
+  "nonDefects": [
+    {
+      "case": "No linked preview screen",
+      "route": "/datasets/preview/01M27HKMM9TKHFS881X3HJM8VN",
+      "classification": "expected branch",
+      "reason": "보기만 할게요 was clicked before a renderId existed; a later NetCDF flow rendered successfully"
+    }
+  ],
+  "security": {
+    "har": "raw/netcdf.har",
+    "includedInParentArtifacts": false,
+    "sanitized": false,
+    "knownPasswordOccurrences": null,
+    "bearerSecretOccurrences": null,
+    "reason": "Parent found bearer material in the source HAR; earlier complete-sanitization claim was rejected. Raw HAR was not copied or shared."
+  },
+  "dataPolicy": {
+    "createdTestDatasets": 11,
+    "originalDeletes": 0,
+    "existingDataDeletes": 0,
+    "createdTestProjects": 1
+  },
+  "completion": {
+    "wuPreviewDoneCandidate": true,
+    "j1DoneCandidate": true,
+    "reason": "All seven format rows and all nine J1 acceptance rows passed on deployed dev source f8ac7ee07ff6."
+  },
+  "supplemental": {
+    "BF-7": {
+      "result": "success",
+      "environment": "separate headed Chrome; live launch argv had no --headless",
+      "datasetId": "01M27K98TYS08G8VF8GYKEEXM7",
+      "uiSelection": "rainbow / 7 classes",
+      "activation": "semantic focus + Enter",
+      "request": "POST /api/v1/preview-screenshots -> 200, agent-browser ts 1287915.626",
+      "responsePreviewId": "01M27R8N30279WVFSWCK6DX4G2",
+      "chromeDownload": "GUID 8957cc08-d8ed-44d6-b66b-a7f5b488dd9e; 64138/64138 bytes; state 1; interrupt 0",
+      "diskArtifact": "bf7-headed-fresh-rainbow7.png",
+      "bytes": 64138,
+      "dimensions": "779x1024 RGBA",
+      "sha256": "76597d49f4d4a280d26686b4b663f7780a120d3d42fb6a83b2b596920f5dfb4f",
+      "evidence": "bf7-headed-fresh-rainbow7.json"
+    },
+    "BF-11": {
+      "result": "success",
+      "environment": "headed Chrome legitimate dev UI",
+      "actualUsages": {
+        "gray-100": ".pj-views button.on/.pc-s rgb(232,236,242)",
+        "surface-alt": ".pcard[data-closed=true] rgb(244,247,251)",
+        "text-muted": ".pj-count rgb(86,92,99)",
+        "warning-600": ".dh-lv-mismatch/.chip--warning rgb(168,84,0)",
+        "success-50": ".pj-keepbox rgb(239,255,239)"
+      },
+      "evidence": "bf11-headed-usage.json and three headed screenshots"
+    },
+    "BF-13": {
+      "result": "success",
+      "observed": "Live projects CSSOM: 78 custom properties, 18 names defined more than once, 0 conflicting values. Counts reflect the deployed page bundle and are not substituted for the repository test oracle."
+    },
+    "F-3-tree-expander": {
+      "result": "success",
+      "datasetId": "01M27MPFKZG68WB7MVD7N7B3DZ",
+      "observed": "After a synthetic FileSystemEntry tree drop, POST /datasets returned 201. Reloaded files API preserved two full relative paths and semantic focus+Enter displayed TEST-stage12-tree/north and south folders.",
+      "evidence": "screens/folder-tree-persist-reload-f8ac7ee.png",
+      "limit": "Synthetic browser directory-entry drop; OS file-manager drag was not performed."
+    }
+  },
+  "otherLabFixturePlan": {
+    "status": "executed_success",
+    "dbFixture": "Existing B TEST account1 + researcher role1 + switches4 retained; no reinsertion on successful resume.",
+    "credential": "Four-key live credential installed with three old objects unchanged; new B login201 and /me200; runtime plaintext and remote staging removed.",
+    "dataset": "TEST Stage12 LabB Binary Grid Candidate 20260911 / 01M27S31B82M6BG21HFK368R42 registered and reloaded through normal product flow.",
+    "acceptance": "B candidate visible + reuse201; A candidate exclusion + direct reuse404; B200/A404 detail/files.",
+    "evidence": "j1-crosslab-mismatch.json"
+  },
+  "criterionTestLinks": {
+    "crossLabCandidateAndReuse": [
+      "services/core-api/tests/test_grid_convenience.py::test_candidates_are_same_lab_same_shape_and_default_is_suggestion_only",
+      "services/core-api/tests/test_grid_convenience.py::test_cross_lab_manual_source_id_is_404"
+    ],
+    "mismatchNonblockingPairDistance": [
+      "services/core-api/tests/test_grid_convenience.py::test_mismatch_warning_is_nonblocking_and_distance_is_pair_derived",
+      "services/core-api/tests/test_grid_distance.py::test_same_extent_with_different_pixel_size_has_nonzero_distance",
+      "services/core-api/tests/test_grid_distance.py::test_missing_pixel_shape_is_unknown",
+      "frontend/test/s2-grid-convenience.test.tsx (기본 후보·예상 영역·비차단 불일치 경고)"
+    ],
+    "earlyPreview": [
+      "services/core-api/tests/test_upload_transfers.py::test_early_preview_is_separate_idempotent_and_does_not_complete_transfer",
+      "frontend/test/upload-transfer.test.tsx (첫 본체 실측 완료 직후 임시 미리보기 한 번)",
+      "frontend/test/upload-transfer.test.tsx (최종 접수 전 임시 uploadId→최종 uploadId)"
+    ]
+  },
+  "parentAcceptanceNotes": {
+    "originalWorkerSummarySha256": "ac337e7c211b527d0109d35ea53327a84a0b1ceac9499744c2be1ace2b2ffaff",
+    "initialBoundaryOnly": {
+      "serverSha": "9e3ff19",
+      "webSha": "16710a4",
+      "sourceHead": "f8ac7ee07ff6a532447ac73e3cf3735b6db9d3e5",
+      "pausedForDeployment": false,
+      "postDeploySourceHead": "f8ac7ee07ff6a532447ac73e3cf3735b6db9d3e5",
+      "postDeployDoctor": "12 pass / 0 warn / 0 fail (lane browser environment)"
+    },
+    "acceptedFunctionalRelease": "f8ac7ee07ff6",
+    "finalReleaseEvidence": "dev-package/reports/stage12-release-acceptance/release.md",
+    "j1FunctionalAcceptance": "independent review approved; final all linkage pending",
+    "folderLimitation": "synthetic FileSystemEntry browser drop, not OS file-manager drag"
+  }
+}

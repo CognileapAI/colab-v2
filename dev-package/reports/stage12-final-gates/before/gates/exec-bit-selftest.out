@@ -1,0 +1,5 @@
+  ✓ ⓐ 뿌리의 100644 .sh — red
+  ✓ ⓑ 하위 폴더의 100644 .sh — red
+  ✓ ⓒ 검사 대상 0건 — red
+  ✓ ⓓ 전부 100755 — green
+exec-bit-selftest green — 100644 검출 2종 · 대상 0건 · 정상 green 넷 다 설계대로다 (fail-closed 증명).

@@ -1,0 +1,1521 @@
+── db/platform/tests/0004-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0004-drift] ㈎ 0004 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+[0004-drift] ㈏ 0004 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0004 오라클 실패 — d3_file 에 boolean carries_lat·carries_lon 이 없다 (0/2). 0004 가 적용되지 않았다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0004-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0004 오라클 실패 — d3_file 에 boolean carries_lat·carries_lon 이 없다 (0/2). 0004 가 적용되지 않았다
+[0004-drift] ㈐ downgrade 형태 복원(축 열 0 · 옛 인덱스 1 · d5 표 0) → OK
+[0004-drift] ㈐ downgrade 결과 = 0003 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+[0004-drift] ㈑ 기존 격자 1건 → apply red, PRECOUNT 가드 발동 OK
+           ↳ ERROR:  기존 기준 격자 파일이 1 행 있다 — 축(carries_lat·carries_lon)을 채울 근거가 없다. 사람이 각 행의 축을 실측으로 정한 뒤 다시 적용한다 (P2-EXEC 4 W1 1-1 · DATA-REFERENCE M-4)
+0004-drift green — ㈎ 적용 green · ㈏ 0004 없으면 red · ㈐ downgrade 실물 동작 + 0003 복원 · ㈑ 기존 격자 1건이면 apply 자체가 가드로 막힌다.
+[migration-drift] db/platform/tests/0004-drift.sh → green
+── db/platform/tests/0005-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0005-drift] ㈎ 0005 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0005-drift] ㈏ 0005 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0005 오라클 실패 — STORED 생성 tsvector 열 search_vector 이 0/3 개다 — 0005 가 적용되지 않았다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0005-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0005 오라클 실패 — STORED 생성 tsvector 열 search_vector 이 0/3 개다 — 0005 가 적용되지 않았다
+[0005-drift] ㈐ downgrade 결과 = 0004 상태 (pg_dump 동일) → OK
+0005-drift green — ㈎ 적용 green · ㈏ 0005 없으면 red · ㈐ downgrade 실물 동작 + 0004 복원.
+[migration-drift] db/platform/tests/0005-drift.sh → green
+── db/platform/tests/0006-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0006-drift] ㈎ 0006 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0006-drift] ㈏ 0006 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0006 오라클 실패 — pg_trgm 확장이 없다 — 0006 이 적용되지 않았다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0006-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0006 오라클 실패 — pg_trgm 확장이 없다 — 0006 이 적용되지 않았다
+[0006-drift] ㈐ downgrade 결과 = 0005 상태 (pg_dump 동일) → OK
+0006-drift green — ㈎ 적용 green · ㈏ 0006 없으면 red · ㈐ downgrade 실물 동작 + 0005 복원.
+[migration-drift] db/platform/tests/0006-drift.sh → green
+── db/platform/tests/0008-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0008-drift] ㈎ 0008 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0008-drift] ㈏ 0008 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  relation "d5_upload_transfer" does not exist
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0008-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  relation "d5_upload_transfer" does not exist
+[0008-drift] ㈐ downgrade 결과 = 0007 상태 (pg_dump 동일) → OK
+0008-drift green — ㈎ 적용 green · ㈏ 0008 없으면 red · ㈐ downgrade 실물 동작 + 0007 복원.
+[migration-drift] db/platform/tests/0008-drift.sh → green
+── db/platform/tests/0009-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+[0009-drift] ㈎ 0009 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+[0009-drift] ㈏ 0009 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "relative_path" of relation "d3_file" does not exist
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+[0009-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "relative_path" of relation "d3_file" does not exist
+[0009-drift] ㈐ downgrade 결과 = 0008 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+           ↳ NOTICE:  [0009 백필] d3_dataset_autometa 2 행 중 2 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+[0009-drift] ㈑ 백필 전 999·NULL → 후 100·0 (소유자 롤 · FORCE RLS 창 실물) → OK
+[0009-drift] ㈑ 낡은 합계 위 0009 적용 후 — 오라클(⑥ 비어 있지 않음) → green OK
+0009-drift green — ㈎ 적용 green · ㈏ 0009 없으면 red · ㈐ downgrade 실물 동작 + 0008 복원 · ㈑ 소유자 롤 백필 999→100·NULL→0.
+[migration-drift] db/platform/tests/0009-drift.sh → green
+── db/platform/tests/0013-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+[0013-drift] ㈎ 0013 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+[0013-drift] ㈏ 0013 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "file_extension" of relation "d3_dataset_autometa" does not exist
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+[0013-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "file_extension" of relation "d3_dataset_autometa" does not exist
+[0013-drift] ㈐ downgrade 결과 = 0012 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+[0013-drift] ㈑ 백필 후 — 파일명과 일치하는가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+[0013-drift] ㈑-b 열만 세우고 백필 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0013 백필 오라클 실패 — 0000000000000000000000DST1 의 확장자가 NULL 다 — 기대 'nc'
+0013-drift green — ㈎ 적용 green · ㈏ 0013 없으면 red · ㈐ downgrade 실물 동작 + 0012 복원 · ㈑ 백필 일치(대조군 red).
+[migration-drift] db/platform/tests/0013-drift.sh → green
+── db/platform/tests/0015-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0015-drift] ㈎ 0015 적용 후 — 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0015-drift] ㈏ 0015 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "category" of relation "d3_dataset_description" does not exist
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0015-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "category" of relation "d3_dataset_description" does not exist
+[0015-drift] ㈐ downgrade 결과 = 0014 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0015-drift] ㈑ 기존 행 — 전 행 NULL 이고 topic 이 그대로인가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0015-drift] ㈑-b 자동 매핑을 흉내 냄 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0015 기존 행 오라클 실패 — category 가 채워진 기존 행이 1 건이다 (예: '기상·기후 인자') — backfill 을 돌렸다
+0015-drift green — ㈎ 적용 green · ㈏ 0015 없으면 red · ㈐ downgrade 실물 동작 + 0014 복원 · ㈑ 기존 행 전 행 NULL(대조군 red).
+[migration-drift] db/platform/tests/0015-drift.sh → green
+── db/platform/tests/0016-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈎ 0016 적용 후 — 구조 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈏ 0016 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0016 오라클 실패 — 열 구성이 NULL 다 (기대 'dataset_id,is_representative,lab_id,missing_rate,name,ordinal,unit,value_range')
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0016 오라클 실패 — 열 구성이 NULL 다 (기대 'dataset_id,is_representative,lab_id,missing_rate,name,ordinal,unit,value_range')
+[0016-drift] ㈐ downgrade 결과 = 0015 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈑ 기존 행(소유자 롤 적용) — 3원소가 순서대로 3행이 되고 첫 행이 대표인가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈑-b 대표를 둘째 행으로 옮김 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0016 기존 행 오라클 실패 — DSV1 의 대표 행이 ordinal '2' 다 (기대 1 하나) — 첫 행 대표가 아니다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0016-drift] ㈑-c 수정 전 델타(소유자 롤) — 이관 0행으로 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0016 기존 행 오라클 실패 — DSV1 의 변수 행이 NULL 다 (기대 '1:precipitation,2:temperature,3:runoff') — 배열 순서가 ordinal 로 안 옮겨졌다
+0016-drift green — ㈎ 적용 green · ㈏ 0016 없으면 red · ㈐ downgrade 실물 동작 + 0015 복원 · ㈑ 소유자 롤 이관 green(대조군 ㈑-b 대표 이동 red · ㈑-c 수정 전 델타 0행 red).
+[migration-drift] db/platform/tests/0016-drift.sh → green
+── db/platform/tests/0017-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈎ 0017 적용 후 — 구조 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈏ 0017 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0017 오라클 실패 — d2_dataset_access.state 가 '지정 공개' 를 거부한다 — CHECK 가 아직 2값이다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0017 오라클 실패 — d2_dataset_access.state 가 '지정 공개' 를 거부한다 — CHECK 가 아직 2값이다
+[0017-drift] ㈐ downgrade 결과 = 0016 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈑ 기존 행(소유자 롤 적용) — 유효 grant 가 있는 잠김만 지정 공개가 되는가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈑-b 만료된 grant 를 유효로 바꿈 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0017 기존 행 오라클 실패 — 매핑 결과가 'DSC1A:지정 공개,DSC2A:지정 공개,DSC3A:열림' 다 (기대 'DSC1A:지정 공개,DSC2A:잠김,DSC3A:열림') — 잠김 ∧ 유효 grant ≥1 만 지정 공개로 간다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0017-drift] ㈑-c 수정 전 델타(소유자 롤) — 매핑 0행으로 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0017 기존 행 오라클 실패 — 매핑 결과가 'DSC1A:잠김,DSC2A:잠김,DSC3A:열림' 다 (기대 'DSC1A:지정 공개,DSC2A:잠김,DSC3A:열림') — 잠김 ∧ 유효 grant ≥1 만 지정 공개로 간다
+0017-drift green — ㈎ 적용 green · ㈏ 0017 없으면 red · ㈐ downgrade 실물 동작 + 0016 복원 · ㈑ 소유자 롤 매핑 green(대조군 ㈑-b 만료 grant 유효화 red · ㈑-c 수정 전 델타 0행 red).
+[migration-drift] db/platform/tests/0017-drift.sh → green
+── db/platform/tests/0018-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0018-drift] ㈎ 0018 적용 후 — 구조 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0018-drift] ㈏ 0018 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "source_url" of relation "d3_dataset" does not exist
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0018-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  column "source_url" of relation "d3_dataset" does not exist
+[0018-drift] ㈐ downgrade 결과 = 0017 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0018-drift] ㈑ 기존 행(소유자 롤 적용) — 두 칸 전 행 NULL 이고 source_label 이 그대로인가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0018-drift] ㈑-b 백필을 흉내 냄(원천 표기를 주소로 옮김) — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0018 기존 행 오라클 실패 — source_url 이 채워진 기존 행이 3 건이다 (예: 'ECMWF ERA5') — backfill 을 돌렸다
+0018-drift green — ㈎ 적용 green · ㈏ 0018 없으면 red · ㈐ downgrade 실물 동작 + 0017 복원 · ㈑ 소유자 롤 적용 뒤 두 칸 전 행 NULL(대조군 ㈑-b 백필 red).
+[migration-drift] db/platform/tests/0018-drift.sh → green
+── db/platform/tests/0019-drift.sh ──────────────────────────────────────────
+[0019-drift] ㈒ 생성 컬럼 재계산 1회 · GIN 재생성 1회 → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈎ 0019 적용 후 — 구조 오라클 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈏ 0019 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0019 오라클 실패 — d3_dataset_autometa.category_mirror 가 없다 — M-10 의 ㈏ 경로가 안 섰다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0019 오라클 실패 — d3_dataset_autometa.category_mirror 가 없다 — M-10 의 ㈏ 경로가 안 섰다
+[0019-drift] ㈐ downgrade 결과 = 0018 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈑ 기존 행(소유자 롤 적용) — nc 가 새로 잡히고 netcdf·변수명이 회귀 없이 잡히는가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈑-b 백필을 뺀 델타 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0019 기존 행 오라클 실패 — 행 표에만 있던 변수명이 안 잡힌다 — 배열 백필이 안 돌았다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0019-drift] ㈑-c 수정 전 델타(소유자 롤) — 백필 0행으로 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0019 기존 행 오라클 실패 — 행 표에만 있던 변수명이 안 잡힌다 — 배열 백필이 안 돌았다
+0019-drift green — ㈎ 적용 green · ㈏ 0019 없으면 red · ㈐ downgrade 실물 동작 + 0018 복원 · ㈑ 소유자 롤 백필 green(대조군 ㈑-b 백필 제거 red · ㈑-c 수정 전 델타 0행 red) · ㈒ 재계산·재생성 각 1회.
+[migration-drift] db/platform/tests/0019-drift.sh → green
+── db/platform/tests/0020-drift.sh ──────────────────────────────────────────
+[0020-drift] 델타에 d6_project 행 변경 문장 0개 → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0020-drift] ㈎ 0020 적용 후 — 제약이 실제로 거절하는가 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0020-drift] ㈏ 0020 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0020 오라클 실패 — d6_project_lab_name_unique UNIQUE 제약이 없다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0020-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0020 오라클 실패 — d6_project_lab_name_unique UNIQUE 제약이 없다
+[0020-drift] ㈐ downgrade 결과 = 0019 상태 (pg_dump 동일) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0020-drift] ㈑ 겹치는 행 → 멈춤 ＋ 건수 보고 → OK
+           ↳ ERROR:  0020 중단 — 같은 연구실 안에서 이름이 겹치는 (연구실, 이름) 짝이 1건(행 2건) 있다. 자동으로 지우거나 개명하지 않는다(라운드 ㉴). 화면에서 이름을 고친 뒤 다시 돌린다.
+[0020-drift] ㈑ 겹치던 행 3건이 **그대로 남았다**(지우지 않는다) → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+[0020-drift] ㈑-b NO FORCE 를 뺀 델타 → 건수 없이 실패(대조군) → OK
+0020-drift green — ㈎ 제약이 실제로 거절 · ㈏ 0020 없으면 red · ㈐ downgrade 실물 동작 + 0019 복원 · ㈑ 중복이면 멈추고 건수 보고(행 무변 · 대조군 ㈑-b red).
+[migration-drift] db/platform/tests/0020-drift.sh → green
+── db/platform/tests/0021-drift.sh ──────────────────────────────────────────
+[0021-drift] ㈒ 델타의 스키마 변경 문장 0개 → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0021-drift] ㈎ 픽스처 3종 — 첫 것만 지정 공개인가 → green OK
+[0021-drift] ㈎ 이동 행 수 1 이 출력에 보인다 → OK
+           ↳ NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 1행 이동
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0021-drift] ㈏ 보정을 뺀 델타 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0021 기존 행 오라클 실패 — ㈎ DS1 이 NULL 다 (기대 지정 공개) — 빈틈이 안 닫혔다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0021-drift] ㈐ downgrade 후 — 옮긴 행만 NULL 로 돌아왔는가(값 소실 0) → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+[0021-drift] ㈑ 수정 전 델타(소유자 롤) — 0행 이관으로 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0021 기존 행 오라클 실패 — ㈎ DS1 이 NULL 다 (기대 지정 공개) — 빈틈이 안 닫혔다
+0021-drift green — ㈎ 픽스처 3종 중 첫 것만 이동(1행 · 출력에 보임) · ㈏ 보정 빼면 red · ㈐ downgrade 가 옮긴 행만 NULL 로(값 소실 0) · ㈑ 수정 전 델타 0행 red · ㈒ 스키마 변경 0.
+[migration-drift] db/platform/tests/0021-drift.sh → green
+── db/platform/tests/0022-drift.sh ──────────────────────────────────────────
+[0022-drift] 델타에 DROP COLUMN 0개 → OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0022-drift] ㈎ 0022 적용 후 — 문장 단위 트리거와 미러 회귀 → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0022-drift] ㈏ 0022 없음(행 단위) — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0022 오라클 실패 — 변수 표의 트리거가 'd3_dataset_variable_mirror' 다 (기대 'd3_dataset_variable_mirror_del,d3_dataset_variable_mirror_ins,d3_dataset_variable_mirror_upd') — 행 단위 한 벌이 남았거나 이름이 갈렸다
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0022-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0022 오라클 실패 — 변수 표의 트리거가 'd3_dataset_variable_mirror' 다 (기대 'd3_dataset_variable_mirror_del,d3_dataset_variable_mirror_ins,d3_dataset_variable_mirror_upd') — 행 단위 한 벌이 남았거나 이름이 갈렸다
+[0022-drift] ㈐ downgrade 결과 = 0021 상태 (pg_dump 동일) → OK
+0022-drift green — ㈎ 문장 단위 트리거 3 + 미러 값 회귀 · ㈏ 되돌리면 red · ㈐ downgrade 실물 동작 + 0021 복원.
+[migration-drift] db/platform/tests/0022-drift.sh → green
+── db/platform/tests/0023-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0023-drift] head → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0023-drift] 0022 → red OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0023-drift] downgrade → red OK
+0023-drift green — head/previous/downgrade 3갈래와 0022 shape 복원.
+[migration-drift] db/platform/tests/0023-drift.sh → green
+── db/platform/tests/0024-drift.sh ──────────────────────────────────────────
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0024-drift] head → green OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0024-drift] 0023 → red OK
+   version_num    
+------------------
+ 0001_p0_platform
+(1 row)
+
+NOTICE:  [0004 선행 실측] d3_file WHERE kind=기준 격자 파일 → 0 행
+       version_num       
+-------------------------
+ 0008_s3_upload_transfer
+(1 row)
+
+NOTICE:  [0009 백필] d3_dataset_autometa 0 행 중 0 행의 total_size_bytes 가 d3_file 합계와 달랐다 → 합계로 맞춘다
+         version_num          
+------------------------------
+ 0011_lv1_drop_level_user_set
+(1 row)
+
+         version_num          
+------------------------------
+ 0013_ra1_ext_interval_period
+(1 row)
+
+NOTICE:  [0020] 프로젝트 이름 중복 점검 — 겹치는 (연구실, 이름) 짝 0 · 관련 행 0
+NOTICE:  [0021] 이관 빈틈 보정 — NULL ∧ 연구실 기본 잠김 ∧ 유효 grant ≥1 → 지정 공개 : 0행 이동
+[0024-drift] downgrade → red OK
+0024-drift green — head/previous/downgrade 3갈래와 0023 shape 복원.
+[migration-drift] db/platform/tests/0024-drift.sh → green
+── db/ai/tests/0004-0005-drift.sh ──────────────────────────────────────────
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+[0004-0005-drift] ㈎ 0004+0005 적용 후 — 오라클 → green OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+[0004-0005-drift] ㈏ K1b 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ::error::k2b-graph red — 컨테이너 k1bdb_drift_1563830_22928 의 DB prev_db 를 조회하지 못했다:
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+[0004-0005-drift] ㈐ K2b 시드만 되돌림 — 오라클이 red 를 내는가 → red OK
+           ↳ ::error::k2b-graph red — d9_concept 이 0행이다. K2b 가 적재되지 않았다.
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+[0004-0005-drift] ㈑ 전부 되돌림 — 오라클이 red 를 내는가 → red OK
+           ↳ ::error::k2b-graph red — 컨테이너 k1bdb_drift_1563830_22928 의 DB down_db 를 조회하지 못했다:
+[0004-0005-drift] ㈑ downgrade 결과 = 0003 상태 (pg_dump 동일) → OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 1행은 NULL 로 남긴다
+     version_num      
+----------------------
+ 0006_topic_vocab_six
+(1 row)
+
+[0004-0005-drift] 선언 정본 schema.sql = 마이그레이션 결과 → OK
+0004-0005-drift green — ㈎ green · ㈏㈐㈑ 되돌리면 red · downgrade 실물 동작 · 선언 = 적용.
+[migration-drift] db/ai/tests/0004-0005-drift.sh → green
+── db/ai/tests/0006-drift.sh ──────────────────────────────────────────
+[0006-drift] 델타가 topic 무접촉 · 지형·DEM 매핑 0 → OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 1행은 NULL 로 남긴다
+[0006-drift] ㈎ 0006 적용 후 — 5값 CHECK 가 실제로 거절하고 3쌍이 옮겨졌는가 → green OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+[0006-drift] ㈏ 0006 없음 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0006 오라클 실패 — d9_topic_synonym.category 가 없다
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 1행은 NULL 로 남긴다
+[0006-drift] ㈐ downgrade 후 — 오라클이 red 를 내는가 → red OK
+           ↳ ERROR:  0006 오라클 실패 — d9_topic_synonym.category 가 없다
+[0006-drift] ㈐ downgrade 결과 = 0005 상태 (pg_dump 동일) → OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 1행은 NULL 로 남긴다
+     version_num      
+----------------------
+ 0006_topic_vocab_six
+(1 row)
+
+[0006-drift] 선언 정본 schema.sql = 마이그레이션 결과 → OK
+0006-drift green — ㈎ 5값 CHECK 실거절 ＋ 이관 3쌍 ＋ [미상] NULL · ㈏㈐ 되돌리면 red · downgrade 실물 동작 · 선언 = 적용.
+[migration-drift] db/ai/tests/0006-drift.sh → green
+── db/ai/tests/0007-drift.sh ──────────────────────────────────────────
+[0007-drift] 머지 리비전 upgrade() 본문 0문장 · down_revision = 두 형제 튜플 → OK
+[0007-drift] dev 델타 = rc7 ＋ 머지 · staging 델타 = 어휘 6값 ＋ 머지 → OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 14행은 NULL 로 남긴다
+        version_num        
+---------------------------
+ 0006_rc7_synonym_category
+(1 row)
+
+[0007-drift] ㈎ dev 순서(어휘 6값 → 분류 → 머지) 적용 → OK
+ version_num 
+-------------
+ 0001_p0_ai
+(1 row)
+
+NOTICE:  [0006] d9_topic_synonym 분류 이관 — 옮긴 행 4 · 분류 [미상] 1행은 NULL 로 남긴다
+     version_num      
+----------------------
+ 0006_topic_vocab_six
+(1 row)
+
+[0007-drift] ㈏ staging 순서(분류 → 어휘 6값 → 머지) 적용 → OK
+[0007-drift] ㈐ 두 순서 수렴 (pg_dump 동일) → OK
+[0007-drift] ㈑ 선언 정본 schema.sql = dev_db → OK
+[0007-drift] ㈑ 선언 정본 schema.sql = stg_db → OK
+[0007-drift] ㈒ 행 수준 수렴 (d9_topic_synonym 18행 동일) → OK
+[0007-drift] ㈒ 창 9 새 13행 category = NULL ([미상] 그대로) → OK
+[0007-drift] ㈒ 6값 실통과 · 6값 밖 실거절 → 판정 완료
+0007-drift green — 머지 차분 0 · 두 순서(dev·staging) 스키마·행 수렴 · 선언 = 적용 · 6값 실통과/실거절.
+[migration-drift] db/ai/tests/0007-drift.sh → green
+[migration-drift] db/platform/tests — 오라클 16 · 실행 16 · 실패 0 (선언 최소 14)
+[migration-drift] db/ai/tests — 오라클 3 · 실행 3 · 실패 0 (선언 최소 3)
+migration-drift green — 오라클 19 · 실행 19 · 실패 0.

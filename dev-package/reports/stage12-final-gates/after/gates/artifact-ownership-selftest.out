@@ -1,0 +1,51 @@
+/tmp/colab-stage12-final-gates/gates/tools/artifact-ownership-selftest.sh: line 101: d5_upload_file.id: command not found
+/tmp/colab-stage12-final-gates/gates/tools/artifact-ownership-selftest.sh: line 101: d3_file.id: command not found
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DB_URL (대조 정본 = staging 실물 platform DB · 읽기 전용)|detail=대조 정본 없이 「누구 것인가」를 답할 수 없다. 검사를 못 한 것은 통과가 아니다 (CLAUDE.md §4).    → staging 실물 platform DB 의 **읽기 전용** 접속 URL 을 선언하고 다시 돌린다.      값이 사는 자리 = 홈의 0600 env 파일 하나 (dev-package/RESTART.md §2-④).    ⚠ COLAB_APPLIED_DB_URL_PLATFORM 은 선언돼 있지만 **이 게이트
+[selftest] ⓐ 대조 정본 미지정 → red(준비·입력미선언) OK
+[selftest] ⓐ 사유·건수 노출 → OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=면제·보류 선언 파일 (/tmp/artifact-owner-st-jeaxwI/없는파일.toml)|detail=이 파일은 면제를 **키 이름으로**, 구판 보류를 **참·거짓으로** 고정하는 유일한 정본이다.    → 빈 목록(keys = [])으로라도 선언한다. 「비어 있다」는 「면제 없음」이라는 **선언**이다.
+[selftest] ⓑ 선언 파일 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=선언의 [exempt] keys 항목 (/tmp/artifact-owner-st-jeaxwI/decl-nokeys.toml)|detail=항목이 없는 것을 「면제 0건」으로 세지 않는다 — 비어 있어도 **적혀 있어야** 한다.
+[selftest] ⓑ' keys 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=선언의 [legacy] tolerate 항목 (/tmp/artifact-owner-st-jeaxwI/decl-notol.toml)|detail=구판(판정 보류)을 넘길지 말지를 **선언**해야 한다. 선언 없이 넘기면 그것이 green-by-skip 이다.    ⚠ 구판은 「고아」가 아니다 — 없는 필드를 근거로 지우면 그것이 오삭제다.
+[selftest] ⓑ'' tolerate 항목 부재 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DIR (미리보기 산출물 루트)|detail=자리를 보지 않고 「자리의 산출물 전건」을 말할 수 없다. 규약은 루트가 둘이라는 사실만 못 박고    실제 경로는 배포가 준다 (contracts/storage/layout.json previewsRoot).    → 배포의 미리보기 볼륨 경로를 지정하고 다시 돌린다.
+[selftest] ⓒ 자리 경로 미선언 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_DIR 가 가리키는 디렉터리 (/tmp/artifact-owner-st-jeaxwI/없는자리)|detail=경로가 선언됐으나 그런 디렉터리가 없다. 없는 자리를 「비어 있다」로 읽지 않는다.
+[selftest] ⓓ 없는 디렉터리 → red(준비·입력미선언) OK
+           ::gate-readiness-failure::gate=artifact-ownership|cause=입력미선언|missing=COLAB_ARTIFACT_OWNER_BOUNDARY_ROLE (경계 롤 이름 · ㉯ 재조회에 쓴다)|detail=경계 롤을 모르면 「경계가 실제로 걸리는가」를 대조할 수 없다. 대조 없이 낸 원장 건수는    경계에 걸린 0 인지 진짜 0 인지 구별되지 않는다 (DATA-REFERENCE §0 M-9 · #57-ⓐ).    → 홈의 0600 env 파일에 롤 이름을 선언하고 다시 돌린다.
+[selftest] ⓝ 경계 롤 미선언 → red(준비·입력미선언) OK
+[selftest] ⓝ 사유·건수 노출 → OK
+[selftest] ⓗ·ⓟ 살아 있다 1벌 (baked_for 는 낡은 uploadId) → green OK
+[selftest] ⓟ 덫① 사유·건수 노출 → OK
+[selftest] ⓕ 고아 1벌 미선언 → red OK
+[selftest] ⓕ 사유·건수 노출 → OK
+[selftest] ⓖ 고아를 키로 면제 → green OK
+[selftest] ⓖ 사유·건수 노출 → OK
+[selftest] ⓘ 구판 1벌 ＋ tolerate=true → green OK
+[selftest] ⓘ 덫② 사유·건수 노출 → OK
+[selftest] ⓘ 덫②(고아 0) 사유·건수 노출 → OK
+[selftest] ⓙ 같은 상태 ＋ tolerate=false → red OK
+[selftest] ⓙ 사유·건수 노출 → OK
+[selftest] ⓞ 규약 위반(판 2 인데 sources 가 비었다) → red OK
+[selftest] ⓞ 사유·건수 노출 → OK
+[selftest] ⓥ 깨진 물리 sidecar → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+[selftest] ⓥ 사유·건수 노출 → OK
+[selftest] ⓠ 음성 — tile- 만 있는 자리 → red OK
+[selftest] ⓠ 사유·건수 노출 → OK
+[selftest] ⓔ 자리에 대상 0건 → red OK
+[selftest] ⓡ 음성 — 회차 뒤 무접촉 확인용 회차 → green OK
+[selftest] ⓡ 접수분 루트 무접촉(원본·기준 격자 그대로) → OK
+[selftest] ⓡ 자리 무접촉(게이트는 지우지 않는다) → OK
+[selftest] ⓚ 경계 롤 접속 → red OK
+[selftest] ⓚ 사유·건수 노출 → OK
+[selftest] ⓛ 경계 롤 = 관리자 롤 → red OK
+[selftest] ⓛ 사유·건수 노출 → OK
+[selftest] ⓜ 스키마 전용 DB (원장 0행) → red OK
+[selftest] ⓜ 사유·건수 노출 → OK
+[selftest] ⓢ 변이①(롤·원장 판정 제거) → **살아 있던 livekey 가 고아로 떠 회수 후보가 된다** — 음성 증명 OK
+           같은 상태에서 새 게이트는 red(ⓚ) · 검사를 떼면 경계가 낸 0 을 「없다」로 읽는다
+[selftest] ⓣ 변이②(구판 판정 제거) → 구판이 **고아로 떠 회수 후보가 된다** — 오삭제 재현 OK
+           정본 규칙: green(판정 불가 1 · 고아 0) · 변이: red(고아 legacykey)
+[selftest] ⓤ 변이③(탐침 제거) → green — 오라클 증명 OK
+artifact-ownership-selftest green — 20 케이스(red 7 · 미선언 7 · green 4 · 변이 3) ＋ 사유·건수 대조 12 ＋ 무접촉 대조 3 전건 기대대로

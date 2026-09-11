@@ -1,0 +1,37 @@
+{
+  "schema": "colab-final-gate-input-facts/1",
+  "expected_gate_count": 61,
+  "disposable_databases": [
+    "platform",
+    "ai"
+  ],
+  "host_ports_published": 0,
+  "pgdata": "tmpfs",
+  "readonly_urls": {
+    "COLAB_AUTOMETA_STAGING_DB_URL": {
+      "host_replaced": true,
+      "credentials_preserved": true,
+      "query_preserved": true,
+      "path_preserved": true
+    },
+    "COLAB_PREVIEW_TILE_DB_URL": {
+      "host_replaced": true,
+      "credentials_preserved": true,
+      "query_preserved": true,
+      "path_preserved": true
+    },
+    "COLAB_ARTIFACT_OWNER_DB_URL": {
+      "host_replaced": true,
+      "credentials_preserved": true,
+      "query_preserved": true,
+      "path_preserved": true
+    }
+  },
+  "visual_url_declared": true,
+  "visual_exempt": false,
+  "harness_eval": {
+    "executed": false,
+    "explicitly_exempted_tasks": 20
+  },
+  "source_env_sha256": "14dcae9577544549a126061ec48c6dc40b34d7adcec621f435459090c2b7d494"
+}

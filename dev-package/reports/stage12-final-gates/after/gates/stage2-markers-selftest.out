@@ -1,0 +1,4 @@
+  ✓ ⓐ 마커 0 건 — red
+  ✓ ⓑ skip — red
+  ✓ ⓒ fail — red
+stage2-markers-selftest green — 0건 · skip · fail 셋 다 red 다 (fail-closed 증명).

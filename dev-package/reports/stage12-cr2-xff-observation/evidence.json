@@ -1,0 +1,116 @@
+{
+  "schema": "colab-cr2-xff-evidence/1",
+  "observed_at": null,
+  "deployed_sha": "30f5adf67747",
+  "scope": "CloudFront marker request arrival at dev core port 8000 and authn.client_key last-hop selection",
+  "cloudfront_distribution_config": {
+    "direct_read": false,
+    "reason": "local colab-dev uploader lacks cloudfront:ListDistributions",
+    "permission_change": false
+  },
+  "preparation_failures": [
+    {
+      "attempt": 1,
+      "request_statuses": [
+        405,
+        405
+      ],
+      "marker_frames": [
+        0,
+        0
+      ],
+      "reason": "memory filter newline regex was double-escaped",
+      "accepted_as_evidence": false,
+      "limiter_touched": false
+    },
+    {
+      "attempt": 2,
+      "request_statuses_completed": [
+        405
+      ],
+      "reason": "remote filter produced no JSON; local orchestration ended with JSONDecodeError",
+      "accepted_as_evidence": false,
+      "limiter_touched": false
+    }
+  ],
+  "filter_readiness_before_final": {
+    "local_compile": true,
+    "fixture_marker_match": true,
+    "fixture_xff_count": 1,
+    "remote_empty_input_json": true,
+    "tcpdump_memory_pipe": true
+  },
+  "final_observation": {
+    "schema": "cr2-xff-observation/1",
+    "all_decidable": true,
+    "views": [
+      {
+        "viewer": "local-wsl",
+        "marker_frames": 3,
+        "duplicate_reason": "tcpdump any-interface copies",
+        "unique_last_hops": 1,
+        "hop_counts": [
+          1
+        ],
+        "viewer_hash_match": true,
+        "decidable": true,
+        "request_status": 405,
+        "request_exit": 0
+      },
+      {
+        "viewer": "ec2-egress",
+        "marker_frames": 3,
+        "duplicate_reason": "tcpdump any-interface copies",
+        "unique_last_hops": 1,
+        "hop_counts": [
+          1
+        ],
+        "viewer_hash_match": true,
+        "decidable": true,
+        "request_status": 405,
+        "request_exit": 0
+      }
+    ],
+    "both_viewers_ipv4": true,
+    "viewer_public_ips_different": true,
+    "same_salt_used_for_runtime_comparison": true,
+    "raw_ip_output": false,
+    "pcap_files": 0,
+    "credential_requests": 0,
+    "authorization_headers_captured_to_artifact": 0,
+    "limiter_changes": 0,
+    "service_restarts": 0,
+    "product_code_changes": 0
+  },
+  "client_key_code_fact": {
+    "file": "services/core-api/src/colab_core/kernel/authn.py",
+    "behavior": "selects the last comma-separated X-Forwarded-For hop after stripping; an empty final hop returns None",
+    "conclusion": "each observed one-hop XFF is the value client_key selects"
+  },
+  "prior_login_runtime": {
+    "source_artifact": "dev-package/reports/stage12-ops-runtime/cr2-result.json",
+    "target_sha": "f8ac7ee07ff6",
+    "clean_sequence": {
+      "pre_reset_statuses": [
+        401,
+        401,
+        401,
+        401
+      ],
+      "success_status": 201,
+      "post_reset_statuses": [
+        401,
+        401,
+        401,
+        401,
+        401,
+        429
+      ],
+      "request_count": 11,
+      "secret_values_logged": 0
+    },
+    "interpretation": "within one real viewer bucket, valid success resets failures and the sixth subsequent failure is 429"
+  },
+  "bounded_conclusion": "Two distinct IPv4 viewers each arrived through CloudFront with a one-hop XFF whose last hop matched that viewer. Combined with client_key last-hop selection and the prior real limiter sequence, CR2 viewer-key forwarding is observed without exposing an IP value. This does not claim direct CloudFront configuration read access.",
+  "exact_time_not_recorded": true
+}

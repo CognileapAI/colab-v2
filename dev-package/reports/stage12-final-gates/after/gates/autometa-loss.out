@@ -1,0 +1,5 @@
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 28개
+자동 정보 되쓰기 — 발행 6 · 반영 6 · 면제 0 (선언 0 건) · 미반영 0
+  세는 단위 = (업로드, 칸) 쌍 · 칸 = format·crs·grid · 시점 = 2026-09-11T18:19:17+09:00
+# 경계 대조 — 관리자 롤 6|6|0|0 ↔ 경계 롤 'colab_app' 0|0|0|0 (갈렸다)
+autometa-loss green — 반영 6 / 발행 6 · 면제 0

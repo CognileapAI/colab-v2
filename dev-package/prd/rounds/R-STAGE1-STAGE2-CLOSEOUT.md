@@ -12,6 +12,10 @@
 
 **Spec:** `dev-package/prd/specs/stage1-stage2-closeout.md`
 
+## 2026-09-11 최신 실행 상태
+
+main/dev30f5adf 배포 및 운영자 doctor 단일15/0/0, 같은 트리 전체검사 before/after 각각61/0/0을 확인했다. G10·U-1·F-3·J-1·CR-2를 수용했다. 전체 종료는 미완료: U-2 실제 회수, IS4 exact plan apply, I3 cron red/green, I4 IMDS 읽기 권한·cron·외부 알람, TL-2 자동 연결·staging 실제 주기가 남는다. TL-2 실제 자료 분류는 완료했으나 자동 연결 누락을 수정 중이므로 Task6 완료로 표시하지 않는다. 실행 패킷과 제한은 `reports/stage12-release-acceptance/acceptance.md`.
+
 ## Global Constraints
 
 - 실행은 깨끗한 최신 `origin/main` 작업 사본에서 시작한다.
@@ -119,7 +123,7 @@ Expected: 수집·실행·skip·deselect·실패 수와 전체 시간을 기록�
 
 Expected: `gates/config/parallelism.toml`의 게이트 간 `serial` 의미는 유지하고, 판정 계수와 준비 실패 의미도 동일하다.
 
-- [ ] **Step 3: 같은 트리에서 전후 시간과 판정 계수를 비교한다**
+- [x] **Step 3: 같은 트리에서 전후 시간과 판정 계수를 비교한다**
 
 Expected: 실패·skip·deselect 수 불변, 준비 실패 0, 측정 가능한 시간 단축.
 
@@ -208,7 +212,7 @@ Expected: 재굽기로 닿지 않는 16벌이 설명 가능한 하위 집합으�
 
 Decisions: core-viz 경계 헤더 필수·부재 400·스크린샷 레이어 최대 8 가산 승인. 현행 dev 제한(자격/클라이언트 각각 5회/15분·성공 시 초기화·프로세스 메모리) 수용. 공유 limiter는 https://github.com/CognileapAI/colab-v2/issues/11 후속. 배포 후 실제 전달 IP·여섯 번째 실패 429 확인과 나머지 배포·CI 조건 검증은 남는다.
 
-- [ ] **Step 2: CR-2를 계약·배포 실측·CI 결과로 나눠 각각 검증한다**
+- [x] **Step 2: CR-2를 계약·배포 실측·CI 결과로 나눠 각각 검증한다**
 
 Expected: 한 부분의 완료로 전체를 닫지 않는다.
 
@@ -223,17 +227,17 @@ Expected: 한 부분의 완료로 전체를 닫지 않는다.
 - Consumes: J-1의 확정 완료 정의 9건
 - Produces: 편의 기능 9건과 사용자 여정 검증
 
-- [ ] **Step 1: 9개 기능을 사용자 여정 단위로 쪼갠 실행 계획을 작성한다**
+- [x] **Step 1: 9개 기능을 사용자 여정 단위로 쪼갠 실행 계획을 작성한다**
 
 Expected: 각 기능에 화면 동작, 저장 결과, 권한, 실패 상태, 관련 게이트가 있다.
 
 수용표 9건은 유지한다. 신규·잔여 편의 구현 8건과 F-3의 폴더 구조 보존 증거 재사용 1건으로 나누어 중복 구현을 피한다(`PLAN-SoT` 〈78〉·〈339〉, `dev-package/sessions/20260908-j1-scope-map.md`).
 
-- [ ] **Step 2: 운영 안전성 P0 종료 뒤 실패 시험부터 구현한다**
+- [x] **Step 2: 운영 안전성 P0 종료 뒤 실패 시험부터 구현한다**
 
 Expected: 기능별 단독 게이트와 사용자 여정 E2E가 green이다.
 
-- [ ] **Step 3: J-1을 배포 검증한다**
+- [x] **Step 3: J-1을 배포 검증한다**
 
 Expected: 9개 완료 정의 전건 충족.
 
