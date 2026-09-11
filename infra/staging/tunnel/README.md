@@ -159,9 +159,15 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 
 ## 5-1. state 를 잃었을 때 — 복구 절차 (WU-IS4)
 
-2026-09-11부터 수동 명령의 집행기는 `rehearse-state-recovery.sh`다. 새 Terraform 1.9.8 컨테이너와 빈 0700 scratch에 선언 네 파일만 복사하고, 기존 state·`.terraform`·호스트 terraform은 재사용하지 않는다. import 직후 plan JSON은 `validate-recovery-plan.py`가 값 출력 없이 no-op 또는 sensitivity metadata-only인지 판정한다. 그 뒤 scratch state에만 `apply -refresh-only`를 수행하고 최종 plan의 종료 0(`No changes`)을 요구한다. **Cloudflare resource apply는 기본 0회**이며 scratch는 종료 시 삭제된다.
+2026-09-11부터 수동 명령의 집행기는 `rehearse-state-recovery.sh`다. 새 Terraform 1.9.8 컨테이너와 빈 0700 scratch에 선언 다섯 파일(`.terraform.lock.hcl` 포함)만 복사하고, 기존 state·`.terraform`·호스트 terraform은 재사용하지 않는다. image digest와 provider lock을 고정한다. import 직후 plan JSON은 `validate-recovery-plan.py`가 값 출력 없이 **정확한 tunnel resource 1건**인지 판정한다. 허용되는 차이는 값이 같은 sensitivity metadata update 하나뿐이다. unknown·추가 resource/output·replace·실제 값 변경은 전부 거부한다. 그 뒤 scratch state에만 `apply -refresh-only`를 수행하고 최종 plan의 종료 0(`No changes`)을 요구한다. **Cloudflare resource apply는 기본 0회**이며 기본 실행의 scratch는 종료 시 삭제된다.
 
-실행: `bash infra/staging/tunnel/rehearse-state-recovery.sh`. 자격증명 파일이 없으면 준비 실패 78이고 selftest green으로 대체하지 않는다. 이 runner의 `apply -refresh-only`는 원격 ingress를 바꾸는 `terraform apply`와 다르며 로컬 scratch state만 현재 읽기 결과로 갱신한다. 실측상 provider sensitivity 메타는 refresh-only로 정착하지 않는다. 최종 plan도 값 동일 metadata-only 1건이면 runner는 78로 중단한다. literal `No changes`를 위해 그 plan을 apply하는 것은 원격 호출이므로 별도 승인 뒤에만 수행한다.
+기본 읽기 전용 실행은 `bash infra/staging/tunnel/rehearse-state-recovery.sh`다. 자격증명 파일이 없거나 현재 사용자 소유 0600 일반 파일이 아니면 준비 실패 78이고 selftest green으로 대체하지 않는다. 이 runner의 `apply -refresh-only`는 원격 ingress를 바꾸는 일반 `terraform apply`와 다르며 로컬 scratch state만 현재 읽기 결과로 갱신한다. 실측상 provider sensitivity 메타는 refresh-only로 정착하지 않는다. 최종 plan도 값 동일 metadata-only 1건이면 runner는 78로 중단한다.
+
+승인 검토가 필요하면 새 레포 밖 경로를 정해 `bash infra/staging/tunnel/rehearse-state-recovery.sh --prepare <새-bundle-경로>`를 실행한다. 0700 bundle에 state·전체 plan JSON·saved plan·원문 로그를 0600으로 보존하고, 밖에는 resource 계수와 plan SHA-256만 낸다. 이 bundle에는 민감 값이 있으므로 Git, `dev-package/reports/`, 채팅 첨부에 넣지 않는다. manifest는 선언·state·plan hash, Terraform image digest와 버전을 고정한다.
+
+사용자가 그 **정확한 plan hash**를 승인한 뒤에만 `--apply-approved <bundle> --plan-sha256 <승인-hash>` 모드를 쓴다. 실행기는 적용 직전 독립 refresh-only plan으로 remote/state drift 0을 확인하고 saved plan을 다시 `show -json`으로 엄격 판정한 뒤, 새 plan으로 바꾸지 않고 `final.tfplan` 한 벌을 1회 소비한다. apply 시도 표식을 먼저 남기므로 성공 여부와 관계없이 같은 plan을 재사용하지 않는다. 이후 새 plan의 detailed exit 0이 실제 `No changes` 오라클이다. drift나 provider 실패가 있으면 새 bundle과 새 승인이 필요하다. 이 apply는 ingress 값 변경 0인 metadata 정착 호출 1회이며, 승인 전에는 절대 실행하지 않는다.
+
+rollback에 `terraform state push`를 쓰지 않는다. 보존 state는 자동 롤백 재료가 아니다. 현재 remote 값을 다시 읽어 별도의 복구 plan을 준비하고 같은 검토·hash 승인 절차를 거친다.
 
 `terraform.tfstate` 는 이 호스트 로컬에만 있고 레포엔 없다(§2 "알려진 한계"). 호스트가
 사라졌을 때 레포 클론 하나로 여기까지 돌아오는 절차:
