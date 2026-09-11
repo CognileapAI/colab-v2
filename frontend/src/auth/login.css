@@ -84,7 +84,7 @@
 }
 
 .login-submit:disabled {
-  background: var(--color-gray-400);
+  background: var(--color-gray-500);
   cursor: default;
 }
 
