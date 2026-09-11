@@ -11,6 +11,7 @@ import type {
   FacetSet,
   FacetValue,
   SortOrder,
+  MapState,
 } from './types';
 import { DEFAULT_SORT } from './types';
 
@@ -35,6 +36,7 @@ export type CatalogState = {
    * (`분류 전체`). 축은 한 값이라 토글이 아니라 **치환**이다.
    */
   setAxis: (axis: AxisName, value: string | null) => void;
+  setMapState: (value: MapState | null) => void;
   setSort: (column: CatalogColumn, order: SortOrder) => void;
   toggleValue: (column: CatalogColumn, value: FacetValue) => void;
   clearColumn: (column: CatalogColumn) => void;
@@ -69,8 +71,8 @@ export function useCatalog(
   const hasConditions = useMemo(
     () =>
       Object.values(query.filters).some((v) => v && v.length > 0) ||
-      Object.values(query.axes).some((v) => !!v),
-    [query.filters, query.axes],
+      Object.values(query.axes).some((v) => !!v) || Boolean(query.mapState),
+    [query.filters, query.axes, query.mapState],
   );
 
   useEffect(() => {
@@ -132,7 +134,10 @@ export function useCatalog(
     });
   }, []);
 
-  const clearAll = useCallback(() => setQuery((q) => ({ ...q, filters: {}, axes: {} })), []);
+  const setMapState = useCallback((value: MapState | null) => {
+    setQuery(({ mapState: _old, ...q }) => value ? { ...q, mapState: value } : q);
+  }, []);
+  const clearAll = useCallback(() => setQuery((q) => ({ sort: q.sort, filters: {}, axes: {} })), []);
 
   return {
     query,
@@ -143,6 +148,7 @@ export function useCatalog(
     hasConditions,
     reload,
     setAxis,
+    setMapState,
     setSort,
     toggleValue,
     clearColumn,

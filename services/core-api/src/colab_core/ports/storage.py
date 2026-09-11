@@ -5,8 +5,8 @@
 `contracts/storage/layout.json`(생성물 `kernel/storage_layout`)이고, 이 Port 는
 그 키가 가리키는 바이트를 **어디에 두는가**만 가른다 (`PLAN-SoT §9 〈337〉`).
 
-쓰기 네 동작 + 읽기 두 동작이 전부다 — 라우트(`routes/ingestion.py`·`routes/download.py`)가
-바이트를 만지는 자리가 이 여섯 호출로 봉인돼 있기 때문이다. `put`(바이트열)과
+쓰기 다섯 동작 + 읽기 두 동작이 전부다 — 라우트(`routes/ingestion.py`·`routes/download.py`)가
+바이트를 만지는 자리가 이 일곱 호출로 봉인돼 있기 때문이다. `put`(바이트열)과
 `put_stream`(파일 객체)은 같은 결과를 내고, 라우트는 **`put_stream` 을 쓴다** — 업로드 본문을
 통째로 메모리에 올리지 않기 위해서다 (`PLAN-SoT §9 〈339〉`). `put` 은 남겨 둔다(시험·소규모 쓰기).
 
@@ -52,6 +52,14 @@ class UploadStoragePort(Protocol):
         모든 판정이 끝난 뒤 마지막에 불린다. 원본이 이미 없으면 그 파일은
         건너뛴다(원장은 새 자리를 적는다 — 두 자리를 만들지 않는다).
         도중 실패하면 옮긴 것을 되돌리고 예외를 다시 던진다.
+        """
+        ...
+
+    def duplicate(self, *, pairs: Sequence[tuple[str, str]]) -> None:
+        """각 ``(원본 키, 새 키)``의 바이트를 정확히 복제한다.
+
+        원본은 남긴다. 원본 하나라도 없거나 복제 중 실패하면 이번 호출에서 만든
+        새 키를 모두 지우고 예외를 다시 던진다.
         """
         ...
 

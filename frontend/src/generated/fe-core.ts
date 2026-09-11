@@ -101,6 +101,29 @@ export interface paths {
         patch: operations["updateLab"];
         trace?: never;
     };
+    "/lab/default-grid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 연구실 기본 격자 지정 — 교수 전용
+         * @description [사용자 승인 2026-09-10] J-2.
+         *     J-2. 격자를 가진 같은 연구실 데이터셋 하나를 기본으로 가리킨다. 이후 업로드에는
+         *     **제시만** 하고 자동 적용하지 않는다. 역할 판정은 서버의 `교수` 값으로 하며
+         *     `연구실 설정` 스위치 위임으로 넓히지 않는다.
+         */
+        put: operations["setLabDefaultGrid"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab/members": {
         parameters: {
             query?: never;
@@ -403,6 +426,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/transfers/{uploadId}/early-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 첫 완료 본체로 별도 임시 미리보기 업로드 만들기
+         * @description [사용자 승인 2026-09-10] J-9.
+         *     J-9. 프리사인드 전송의 첫 본체가 S3 실측으로 `올라감`이 된 뒤에만 만들 수 있다.
+         *     전체 전송 uploadId와 다른 임시 D5 uploadId이며 등록용이 아니다. 같은 전송에
+         *     재호출하면 같은 임시 uploadId를 돌려준다. 전체 전송 완결은 이 호출과 독립적이다.
+         */
+        post: operations["createEarlyPreviewUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{uploadId}/files": {
         parameters: {
             query?: never;
@@ -510,6 +559,58 @@ export interface paths {
         get: operations["getUploadStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{uploadId}/grid-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 현재 업로드와 같은 형상의 연구실 격자 후보
+         * @description [사용자 승인 2026-09-10] J-1~J-4.
+         *     J-1~J-4. 파일을 읽은 pipeline-worker의 프로필만 사용한다. 같은 연구실·같은 형상
+         *     후보만 돌려주고 기본 격자는 `isDefault`로 **제시**한다. 현재 직접 격자가 연구실
+         *     기준과 형식/해시가 다르면 비차단 경고와 쌍별 거리 또는 null을 함께 돌려준다.
+         */
+        get: operations["getUploadGridOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{uploadId}/grid-reuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 등록된 데이터셋의 격자를 현재 업로드로 정확히 복제
+         * @description [사용자 승인 2026-09-10] J-1.
+         *     J-1. 같은 연구실·같은 형상의 후보만 받는다. sourceDatasetId가 연구실 밖이거나
+         *     없으면 동일한 404다. 새 fileId와 현재 uploadId 키로 바이트를 exact-copy하고
+         *     파이프라인을 다시 연다. 계보는 건드리지 않으며 등록 전환 뒤 D8 활동 한 줄이 선다.
+         */
+        post: operations["reuseDatasetGrid"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1952,6 +2053,60 @@ export interface components {
          */
         SortOrder: "오름" | "내림";
         /**
+         * @description [사용자 승인 2026-09-10] J-5. 파일을 실제로 읽은 파이프라인이 판정한 지도 상태.
+         *     기존 근거 부재는 아직 모름이다.
+         * @enum {string}
+         */
+        MapState: "지도 있음" | "지도 없음" | "아직 모름";
+        /**
+         * @description [사용자 승인 2026-09-10] J-4. 파이프라인이 실제 좌표 산출물에서 읽은 WGS84 경계.
+         *     네 값은 한 묶음이다.
+         */
+        GeoBounds: {
+            west: number;
+            south: number;
+            east: number;
+            north: number;
+        };
+        /** @description [사용자 승인 2026-09-10] J-1~J-5 격자 프로필 표시값. */
+        GridProfileView: {
+            gridShape: number[];
+            gridDigest: string;
+            formatSignature: string;
+            mapState: components["schemas"]["MapState"];
+            expectedBounds?: components["schemas"]["GeoBounds"];
+        };
+        /** @description [사용자 승인 2026-09-10] J-1~J-2 같은 형상의 연구실 격자 후보. */
+        GridCandidate: {
+            datasetId: components["schemas"]["Ulid"];
+            datasetName: string;
+            fileNames: string[];
+            isDefault: boolean;
+            gridShape: number[];
+            gridDigest: string;
+            formatSignature: string;
+            mapState: components["schemas"]["MapState"];
+            expectedBounds?: components["schemas"]["GeoBounds"];
+        };
+        /**
+         * @description [사용자 승인 2026-09-10] J-3. 형식/해시가 다른 연구실 격자와의 비차단 비교.
+         *     거리 재료가 없으면 null이다.
+         */
+        GridMismatchWarning: {
+            formatDiffers: boolean;
+            hashDiffers: boolean;
+            distanceMeters: number | null;
+            /** @constant */
+            blocksRegistration: false;
+        };
+        /** @description [사용자 승인 2026-09-10] J-1~J-4 업로드 격자 후보와 현재 비교 결과. */
+        GridOptions: {
+            bodyShape?: number[];
+            currentGrid?: components["schemas"]["GridProfileView"];
+            candidates: components["schemas"]["GridCandidate"][];
+            mismatchWarning?: components["schemas"]["GridMismatchWarning"];
+        };
+        /**
          * @description 프로젝트 목록 정렬. 네 값은 `Policy_프로젝트 §5` 목록 정렬 행의 표기 그대로다.
          *     기간 정렬의 기준은 시작일이다.
          * @default 최근 시작 순
@@ -2873,6 +3028,8 @@ export interface components {
              *     **빠른 작업을 두지 않는다.** 행 자체는 사라지지 않는다 (P-13·P-34).
              */
             bodyAccessible: boolean;
+            /** @description J-5. 상세와 같은 파이프라인 프로필 값. 프로필 부재는 `아직 모름`이다. */
+            mapState: components["schemas"]["MapState"];
             /**
              * @description **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 2(`K-2`)⟩**
              *     목록 썸네일(①, 128 px WEBP)의 URL. **사전 생성된 정적 자산이다** —
@@ -4400,6 +4557,12 @@ export interface components {
          *     (`Policy_데이터_찾기 §8`).
          */
         FilterVerified: boolean;
+        /**
+         * @description [사용자 승인 2026-09-10] J-5.
+         *     J-5 지도 상태 한 값. `아직 모름`은 프로필 행 부재도 포함한다. RLS가 먼저 적용된
+         *     연구실 목록 안에서만 거른다.
+         */
+        FilterMapState: components["schemas"]["MapState"];
     };
     requestBodies: never;
     headers: never;
@@ -4524,6 +4687,39 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    setLabDefaultGrid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    datasetId: components["schemas"]["Ulid"];
+                };
+            };
+        };
+        responses: {
+            /** @description 지정된 기본 격자 데이터셋. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        datasetId: components["schemas"]["Ulid"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
         };
     };
@@ -4906,6 +5102,33 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    createEarlyPreviewUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 첫 본체 한 파일의 임시 업로드 접수. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadReceipt"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     addUploadFile: {
         parameters: {
             query?: never;
@@ -5032,6 +5255,71 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    getUploadGridOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 후보와 현재 격자 비교. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GridOptions"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    reuseDatasetGrid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceDatasetId: components["schemas"]["Ulid"];
+                };
+            };
+        };
+        responses: {
+            /** @description 복제된 격자 파일과 원본과 같은 집합 digest. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        files: components["schemas"]["UploadFileRef"][];
+                        gridDigest: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     listUploadLineageSuggestions: {
         parameters: {
             query?: {
@@ -5129,6 +5417,12 @@ export interface operations {
                  *     (`Policy_데이터_찾기 §8`).
                  */
                 verified?: components["parameters"]["FilterVerified"];
+                /**
+                 * @description [사용자 승인 2026-09-10] J-5.
+                 *     J-5 지도 상태 한 값. `아직 모름`은 프로필 행 부재도 포함한다. RLS가 먼저 적용된
+                 *     연구실 목록 안에서만 거른다.
+                 */
+                mapState?: components["parameters"]["FilterMapState"];
             };
             header?: never;
             path?: never;

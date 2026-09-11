@@ -64,6 +64,7 @@ export class LastBodyFile extends Error {}
  * **픽스처 폴백이 없다** — 쓰기 경로라 실패는 실패로 보여야 한다 (`uploadSource.ts` 머리말과 같은 이유).
  */
 export interface FileSource {
+  setDefaultGrid?(datasetId: string): Promise<void>;
   /** 조각 목록. **사람이 `보기` 를 눌렀을 때만** 부른다 (`Policy_데이터셋_상세 §5`). */
   list(datasetId: string): Promise<DatasetFile[]>;
   /** `fileId` 가 있으면 파일 하나, 없으면 묶음(zip) 티켓. 이 응답 시점에 다운로드 이력이 쌓인다. */

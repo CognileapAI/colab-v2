@@ -15,8 +15,8 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d6_project,
-                        d8_insight)
+from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience,
+                        d4_lineage, d6_project, d8_insight)
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -142,6 +142,7 @@ def _compose(db: Session) -> list[dict]:
     unknown = d4_lineage.unknown_dataset_ids(db, ids)
     access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
     links = d6_project.ProjectLinkAdapter(db).projects_of(ids)
+    map_states = d3_grid_convenience.map_states(db, ids)
 
     rows: list[dict] = []
     for core in cores:
@@ -176,6 +177,8 @@ def _compose(db: Session) -> list[dict]:
             "verified": False if acc is None else acc.verified,
             "accessState": "열림" if acc is None else acc.access_state,
             "bodyAccessible": False if acc is None else acc.body_accessible,
+            # 프로필 행이 없는 기존 데이터는 근거 없이 채우지 않는다.
+            "mapState": map_states.get(core.dataset_id, "아직 모름"),
             "_lastModifiedAt": core.last_modified_at,
             # ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약은 밑줄 열쇠로 싣는다.** `DatasetRow` 는
             # `additionalProperties: false` 에 required 13칸이고 카탈로그 8열이 요약을 안 쓴다 —
@@ -214,7 +217,7 @@ def _axis_matches(row: dict, axis: str, picked) -> bool:
 
 def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, uploader=None,
                    lineageState=None, verified=None, category=None, dataType=None,
-                   skip: str | None = None) -> list[dict]:
+                   mapState=None, skip: str | None = None) -> list[dict]:
     """열 조건과 **분류 3축 조건**을 건다. `skip` 은 **자기 조건을 빼는 자리**다.
 
     값별 건수를 셀 때 자기 조건까지 걸면 고른 값만 남아 다른 값으로 갈아탈 수가 없다
@@ -252,6 +255,8 @@ def _apply_filters(rows: list[dict], *, topic=None, processingLevel=None, upload
         rows = [r for r in rows if r["lineageState"] in set(lineageState)]
     if verified is not None and skip != "Verified":
         rows = [r for r in rows if r["verified"] is verified]
+    if mapState:
+        rows = [r for r in rows if r["mapState"] == mapState]
     return rows
 
 
@@ -324,6 +329,7 @@ def list_datasets(
     uploader: list[str] | None = Query(default=None),
     lineageState: list[str] | None = Query(default=None),
     verified: bool | None = Query(default=None),
+    mapState: str | None = Query(default=None),
 ) -> dict:
     if sortColumn is not None and sortColumn not in _SORT_KEYS:
         raise errors.bad_request("sortColumn 이 계약의 열 이름이 아니다.")
@@ -333,9 +339,11 @@ def list_datasets(
     levels = _parse_levels(processingLevel)
     _validate_axes(category, dataType)
     _validate_filters(levels, lineageState)
+    if mapState is not None and mapState not in ("지도 있음", "지도 없음", "아직 모름"):
+        raise errors.bad_request("mapState가 지도 상태 세 값이 아니다.")
     rows = _apply_filters(_compose(db), topic=topic, processingLevel=levels,
                           uploader=uploader, lineageState=lineageState, verified=verified,
-                          category=category, dataType=dataType)
+                          category=category, dataType=dataType, mapState=mapState)
 
     # 기본 정렬은 수정일 최신순 (Policy_데이터_찾기 §5).
     column = sortColumn or "수정일"

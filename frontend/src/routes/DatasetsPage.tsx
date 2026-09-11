@@ -8,7 +8,7 @@ import { CatalogTable } from '../components/catalog/CatalogTable';
 import { defaultCatalogSource } from '../components/catalog/catalogSource';
 import { useCatalog } from '../components/catalog/useCatalog';
 import { LoadFailure } from '../components/common/LoadFailure';
-import type { AxisFilters, CatalogFilters, CatalogSource } from '../components/catalog/types';
+import type { AxisFilters, CatalogFilters, CatalogSource, MapState } from '../components/catalog/types';
 import { describeFileError } from '../components/detail/FileList';
 import { useStartDownload } from '../components/detail/download';
 import { apiFileSource } from '../components/detail/fileSource';
@@ -107,6 +107,16 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
           <>
             {/* 3축 필터 바 — 표 헤더의 열 조건과 **나란히** 선다 (PRD-05) */}
             <AxisFilterBar axes={state.query.axes} facets={state.facets} onPick={state.setAxis} />
+            <label className="axis-pick">
+              <span className="axis-k">지도 상태</span>
+              <select aria-label="지도 상태" value={state.query.mapState ?? ''}
+                onChange={(event) => state.setMapState((event.target.value || null) as MapState | null)}>
+                <option value="">전체</option>
+                <option value="지도 있음">지도 있음</option>
+                <option value="지도 없음">지도 없음</option>
+                <option value="아직 모름">아직 모름</option>
+              </select>
+            </label>
             <AppliedConditions
               filters={state.query.filters}
               uploaderNames={uploaderNames}

@@ -27,6 +27,10 @@ const asForm = (b: unknown) => b as FormData;
 
 export function apiFileSource(): FileSource {
   return {
+    async setDefaultGrid(datasetId) {
+      const r = await api.PUT('/lab/default-grid', { body: { datasetId } });
+      if (!r.data) throw new Error(serverMessage(r.error) ?? '기본 격자를 지정하지 못했어요.');
+    },
     async list(datasetId): Promise<DatasetFile[]> {
       const r = await api.GET('/datasets/{datasetId}/files', {
         params: { path: { datasetId } },

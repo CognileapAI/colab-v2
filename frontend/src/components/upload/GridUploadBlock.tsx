@@ -3,12 +3,13 @@
 // **새 화면을 만들지 않는다** — 이 블록은 `PreviewPanel` **안**에서 열린다(`§E.1-㈎`).
 // 상태와 문구는 `gridFlow.ts` 가 소유하고, 이 파일은 그것을 그리기만 한다.
 //
-// ⚠ **격자는 매번 직접 올린다**(`§E.5`) — 재사용·추천·연구실 기본 격자가 여기 없는 것은
-// 빠진 것이 아니라 **뺀 것**이다(편의 기능 후일 묶음 `§J`).
+// J-1~J-4: 같은 형상 후보와 비교 결과는 서버가 제공한다. 적용은 명시적 사용자 동작이다.
 import type { GridStateResult } from './gridFlow';
+import type { GridOptions } from './types';
 import { fillBody, GRID_COPY } from './gridFlow';
 
 export interface GridActions {
+  onReuseGrid?: (datasetId: string) => void;
   onPickGrid(files: File[]): void;
   onSkipGrid(): void;
   /** 전송 취소. 없으면 취소 버튼을 세우지 않는다 — 못 하는 것을 있는 척하지 않는다. */
@@ -46,11 +47,14 @@ function Progress(props: { transfer: { sentBytes: number; totalBytes: number } |
 }
 
 export function GridUploadBlock(props: {
-  state: GridStateResult;
+  state: GridStateResult | null;
   actions: GridActions;
   transfer: { sentBytes: number; totalBytes: number } | null;
+  options?: GridOptions;
+  reuseBusy?: boolean;
 }) {
-  const { state, actions } = props;
+  const { actions } = props;
+  const state = props.state ?? { name: '좌표 없음' as const };
   const copy = GRID_COPY[state.name];
   const body = fillBody(state.name, state.shapes);
   const busy = copy.progress !== undefined;
@@ -61,11 +65,44 @@ export function GridUploadBlock(props: {
     <div
       className="gridblock"
       data-testid="up-grid-block"
-      data-grid-state={state.name}
+      data-grid-state={props.state?.name}
       aria-live={busy ? 'polite' : 'off'}
     >
-      <p className="gb-t">{copy.title}</p>
-      {body ? <p className="gb-b">{body}</p> : null}
+      {props.state ? <p className="gb-t">{copy.title}</p> : null}
+      {props.state && body ? <p className="gb-b">{body}</p> : null}
+      {props.options?.currentGrid ? (
+        <p className="gb-b" data-testid="up-grid-expected-bounds">
+          예상 영역: {props.options.currentGrid.expectedBounds
+            ? [props.options.currentGrid.expectedBounds.west, props.options.currentGrid.expectedBounds.south,
+              props.options.currentGrid.expectedBounds.east, props.options.currentGrid.expectedBounds.north].join(' · ')
+            : '[미상]'}
+        </p>
+      ) : null}
+      {props.options?.mismatchWarning && (props.options.mismatchWarning.formatDiffers || props.options.mismatchWarning.hashDiffers) ? (
+        <p className="gb-b" data-testid="up-grid-mismatch" role="status">
+          연구실 기준 격자와 {[
+            props.options.mismatchWarning.formatDiffers ? '형식' : '',
+            props.options.mismatchWarning.hashDiffers ? '파일 내용' : '',
+          ].filter(Boolean).join('·')}이 달라요. 거리 {props.options.mismatchWarning.distanceMeters === null
+            ? '[미상]' : `${props.options.mismatchWarning.distanceMeters.toLocaleString()} m`}.
+          미리보기와 등록을 막지 않아요.
+        </p>
+      ) : null}
+      {actions.onReuseGrid && props.options?.candidates.map((candidate) => (
+        <div className="gb-b" key={candidate.datasetId}>
+          {candidate.isDefault ? <span className="chip chip--neutral">연구실 기본 격자</span> : null}
+          <p>{candidate.datasetName} · {candidate.fileNames.join(' · ')}</p>
+          <p>예상 영역: {candidate.expectedBounds
+            ? [candidate.expectedBounds.west, candidate.expectedBounds.south,
+              candidate.expectedBounds.east, candidate.expectedBounds.north].join(' · ')
+            : '[미상]'}</p>
+          <button type="button" className="btn btn-secondary btn-sm"
+            aria-label={`${candidate.datasetName} 가져오기`} disabled={props.reuseBusy}
+            onClick={() => actions.onReuseGrid?.(candidate.datasetId)}>
+            {props.reuseBusy ? '가져오는 중…' : '가져오기'}
+          </button>
+        </div>
+      ))}
       {/* 문장을 못 가른 거절은 **서버가 준 문장을 그대로** 보여 준다 — 지어내지 않는다 */}
       {!body && state.serverDetail ? (
         <p className="gb-b" data-testid="up-grid-detail">
@@ -78,7 +115,7 @@ export function GridUploadBlock(props: {
         <span className="spin up-spinner" data-testid="up-grid-spinner" aria-hidden="true" />
       ) : null}
 
-      <div className="gb-a">
+      {props.state ? <div className="gb-a">
         {/* 격자를 청하는 자리 — 좌표 없음 · 거절 뒤 다시 올리기 */}
         {(state.name === '좌표 없음' || rejected || state.name === '경계 위생 실패') && (
           <>
@@ -138,7 +175,7 @@ export function GridUploadBlock(props: {
             )}
           </>
         )}
-      </div>
+      </div> : null}
     </div>
   );
 }

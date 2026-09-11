@@ -18,6 +18,7 @@ class MemoryLedger:
         #: `d5_upload_file` 행. **접수는 격자 파일 행을 만들지 않는다**(`〈69〉-⑴`) —
         #: 그래서 `accept()` 는 이 사전을 비워 둔 채 시작한다.
         self.file_rows: dict[str, dict] = {}
+        self.grid_profiles: dict[str, dict] = {}
 
     # ── 접수(= core-api 몫). 시험에서 전건을 세우기 위해 대역이 대신 해 준다 ──
     def accept(self, *, upload_id: str, lab_id: str, actor_account_id: str,
@@ -95,6 +96,13 @@ class MemoryLedger:
         first_time = file_id not in self.formats
         self.formats[file_id] = fmt
         return first_time
+
+    def record_grid_profile(self, upload_id: str, **fields) -> None:
+        previous = self.grid_profiles.get(upload_id, {})
+        self.grid_profiles[upload_id] = {
+            **fields,
+            "grid_source": previous.get("grid_source", fields.get("grid_source", "직접 업로드")),
+        }
 
     def record_status(self, upload_id: str, **fields) -> None:
         self.uploads[upload_id].update(fields)

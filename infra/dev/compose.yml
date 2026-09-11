@@ -23,14 +23,15 @@ x-logging: &logging
   options: { max-size: "20m", max-file: "3" }
 
 services:
-  # 작업 디렉터리 주인 맞추기 — 컨테이너 유저(uid 10001)가 쓰는 자리. 없으면 워커·viz 가 EACCES 로 죽는다.
+  # 작업 디렉터리와 이벤트 버스 주인 맞추기 — 컨테이너 유저(uid 10001)가 쓰는 자리.
   volume-init:
     image: alpine:3.20
     container_name: colab_v2_dev_volume_init
     user: "0:0"
-    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews && chown -R 10001:10001 /var/lib/colab/work && chmod 0755 /var/lib/colab/work"]
+    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /var/lib/colab/events && chown -R 10001:10001 /var/lib/colab/work /var/lib/colab/events && chmod 0755 /var/lib/colab/work /var/lib/colab/events"]
     volumes:
       - work:/var/lib/colab/work
+      - events:/var/lib/colab/events
     restart: "no"
 
   core-api:
@@ -82,9 +83,15 @@ services:
       COLAB_WORKER_S3_BUCKET: colab-platform-data-dev
       COLAB_WORKER_S3_REGION: ap-northeast-2
       COLAB_WORKER_WORKDIR: /var/lib/colab/work/worker
+      # Stage 2 전체 배포: 파일 분석과 격자 프로필을 생성하고 viz와 같은 COG 자리를 쓴다.
+      COLAB_WORKER_STAGE2: "on"
+      COLAB_WORKER_PREVIEW_DIR: /var/lib/colab/work/viz-previews
+      # D5가 낸 미리보기 stale 이벤트를 viz와 공유한다. 양쪽 모두 publish/ack 때문에 쓰기다.
+      COLAB_WORKER_EVENT_SPOOL: /var/lib/colab/events
       # `COLAB_WORKER_LAB_ID` 를 걸지 않는다 — 연구실마다 제 스코프로 돈다(Ted 2026-08-26 ㈑).
     volumes:
       - work:/var/lib/colab/work
+      - events:/var/lib/colab/events
       - ${COLAB_DEV_SECRETS_DIR}/pipeline-db.url:/etc/colab/pipeline-db.url:ro
     depends_on:
       volume-init:
@@ -118,8 +125,11 @@ services:
       COLAB_VIZ_PREVIEW_S3_PREFIX: previews
       COLAB_VIZ_PREVIEW_DIR: /var/lib/colab/work/viz-previews
       COLAB_VIZ_PREVIEW_URL_BASE: /previews
+      # 트리거 drain과 BF-12 S3 관측 전용 회수는 같은 루프에서 돈다.
+      COLAB_VIZ_TRIGGER_SPOOL: /var/lib/colab/events
     volumes:
       - work:/var/lib/colab/work
+      - events:/var/lib/colab/events
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -176,3 +186,4 @@ services:
 # 워커는 처리 뒤 제 디렉터리를 지우고, viz 는 상한(LRU)으로 자른다. 인스턴스를 갈아도 잃을 것이 없다.
 volumes:
   work: {}
+  events: {}

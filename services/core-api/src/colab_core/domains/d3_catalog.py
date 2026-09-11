@@ -116,6 +116,15 @@ _FILES = text(f"""
 
 _EXISTS = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_at IS NULL")
 
+# 저장 회수의 D3 소유권 증거. dataset 메타에는 lab RLS만, file에는 lab+body_access RLS가
+# 적용된다. app 계층이 D2 판정과 이 두 결과를 대조해야만 "전부 보였다"고 말할 수 있다.
+_RECLAIM_DATASETS = text("SELECT id, file_count FROM d3_dataset ORDER BY id")
+_RECLAIM_FILES = text("""
+    SELECT id, dataset_id, storage_key
+      FROM d3_file
+     ORDER BY dataset_id, id
+""")
+
 # ⭑ ⟨17차 해제 · Ted 판정 ② 2026-09-03⟩ **자기 연구실의 묘비인가.**
 # `lab_id` 조건을 여기에 적지 않는 것이 핵심이다 — RLS `lab_boundary`(`schema.sql:838`
 # `USING (lab_id = current_lab_id())`)가 **남의 연구실 행을 이미 지워** 이 질의에서
@@ -324,6 +333,29 @@ def list_dataset_cores(session: Session) -> list[DatasetCore]:
         )
         for r in rows
     ]
+
+
+@dataclasses.dataclass(frozen=True)
+class ReclaimOwnershipSnapshot:
+    dataset_file_counts: dict[str, int]
+    files: tuple[tuple[str, str, str], ...]
+
+
+def reclaim_ownership_snapshot(session: Session) -> ReclaimOwnershipSnapshot:
+    """현재 연구실의 dataset 메타와 현재 주체에게 보이는 파일 식별자를 한 snapshot으로 읽는다.
+
+    이 함수만으로 완전성을 주장하지 않는다. app이 D2 `body_accessible` 전건과 dataset별
+    `file_count`를 대조해야 한다. 그 전까지는 언제나 unknown이다.
+    """
+    datasets = {
+        row["id"]: int(row["file_count"])
+        for row in session.execute(_RECLAIM_DATASETS).mappings()
+    }
+    files = tuple(
+        (row["id"], row["dataset_id"], row["storage_key"])
+        for row in session.execute(_RECLAIM_FILES).mappings()
+    )
+    return ReclaimOwnershipSnapshot(dataset_file_counts=datasets, files=files)
 
 
 def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:

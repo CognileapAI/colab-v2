@@ -7,6 +7,7 @@ type S = components['schemas'];
 export type CatalogColumn = S['CatalogColumn'];
 export type SortOrder = S['SortOrder'];
 export type DatasetRow = S['DatasetRow'];
+export type MapState = S['MapState'];
 export type FacetSet = S['FacetSet'];
 export type LineageState = S['LineageState'];
 
@@ -33,7 +34,7 @@ export type AxisFilters = Partial<Record<AxisName, string>>;
 
 export type CatalogSort = { column: CatalogColumn; order: SortOrder };
 
-export type CatalogQuery = { sort: CatalogSort; filters: CatalogFilters; axes: AxisFilters };
+export type CatalogQuery = { sort: CatalogSort; filters: CatalogFilters; axes: AxisFilters; mapState?: MapState };
 
 /** 기본 정렬은 **수정일 최신순** (`Policy_데이터_찾기 §5` 기본 정렬). */
 export const DEFAULT_SORT: CatalogSort = { column: '수정일', order: '내림' };

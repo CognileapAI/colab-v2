@@ -20,6 +20,7 @@ export type ScreenshotRequest = Schemas['ScreenshotRequest'];
 /** 팔레트 후보 한 건. 키는 viz-render 소유의 불투명 값이다 — 화면이 이름을 지어내지 않는다. */
 export interface PaletteOption {
   palette: string;
+  label?: string;
 }
 
 /**

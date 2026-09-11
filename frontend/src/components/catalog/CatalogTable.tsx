@@ -152,6 +152,7 @@ export function CatalogTable(props: {
                   </span>
                 )}
                 {row.name}{' '}
+                {row.mapState && row.mapState !== '지도 있음' ? <span className="chip chip--neutral">{row.mapState}</span> : null}
                 {/* 조각 묶음 — 잠긴 행에도 뜬다 (`PLAN-SoT §9-㊼`) */}
                 {row.fileCount >= 2 && <span className="chip chip--neutral">조각 {row.fileCount}</span>}
               </td>

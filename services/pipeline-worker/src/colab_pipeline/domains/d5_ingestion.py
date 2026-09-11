@@ -26,7 +26,7 @@ from ..d5.axis import (
 )
 from ..d5.cog import CogConversionError
 from ..d5.detect import detect_format
-from ..d5.grid import GridUnavailableError
+from ..d5.grid import GridUnavailableError, find_reference_grid
 from ..d5.hsr import HsrParseError
 from ..d5.parse import ParseError
 from ..d5.events import (
@@ -110,6 +110,53 @@ def _classify_failure(messages: list[str]) -> tuple[str, str, str]:
             if msg.startswith(prefix):
                 return stage, reason, klass
     return "upload.failed", "내부 오류", "영구"
+
+
+def _body_shape(results: dict[str, PipelineResult]) -> list[int] | None:
+    for result in results.values():
+        grid = None if result.metadata is None else result.metadata.grid
+        if isinstance(grid, tuple) and len(grid) == 2 and all(int(v) > 0 for v in grid):
+            return [int(grid[0]), int(grid[1])]
+    return None
+
+
+def _wgs84_bounds_from_grid(grid) -> tuple[float, float, float, float] | None:
+    try:
+        west, east = float(np.nanmin(grid.lon)), float(np.nanmax(grid.lon))
+        south, north = float(np.nanmin(grid.lat)), float(np.nanmax(grid.lat))
+    except (TypeError, ValueError):
+        return None
+    values = (west, south, east, north)
+    if not all(np.isfinite(value) for value in values):
+        return None
+    if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
+        return None
+    return values
+
+
+def _wgs84_bounds_from_raster(path: Path) -> tuple[float, float, float, float] | None:
+    """실제 래스터 CRS/transform이 있을 때만 읽는다. 없으면 값을 만들지 않는다."""
+    try:
+        import rasterio
+        from rasterio.warp import transform_bounds
+        with rasterio.open(path) as source:
+            if source.crs is None:
+                return None
+            values = transform_bounds(source.crs, "EPSG:4326", *source.bounds,
+                                      densify_pts=21)
+    except Exception:
+        return None
+    west, south, east, north = (float(value) for value in values)
+    if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
+        return None
+    return west, south, east, north
+
+
+def _grid_format_signature(grids: list["UploadFileWork"]) -> str | None:
+    formats = [detect_format(item.path).format for item in grids]
+    if not formats or any(value is None for value in formats):
+        return None
+    return "+".join(sorted(str(value) for value in formats))
 
 
 # ── 입력 ────────────────────────────────────────────────────────────────────
@@ -218,6 +265,58 @@ class IngestionService:
         return self._fail(work, res, stage="upload.failed", reason="내부 오류",
                           klass="영구", detail=f"{type(exc).__name__}: {exc}")
 
+    def _capture_grid_profile(self, work: UploadWork,
+                              results: dict[str, PipelineResult],
+                              grid_dir: Path | None,
+                              grids: list[UploadFileWork]) -> None:
+        body_shape = _body_shape(results)
+        grid_shape = None
+        digest = signature = None
+        bounds = None
+        reference_failed = False
+        if grid_dir is not None:
+            try:
+                reference = find_reference_grid(
+                    grid_dir,
+                    expect_shape=None if body_shape is None else tuple(body_shape))
+            except GridUnavailableError:
+                reference_failed = True
+            else:
+                grid_shape = list(reference.shape)
+                digest = storage_layout.map_tile_grid_digest(grid_dir, True)
+                signature = _grid_format_signature(grids)
+                bounds = _wgs84_bounds_from_grid(reference)
+
+        # 본체의 실재 좌표/COG가 있으면 렌더러도 그것을 먼저 쓴다.
+        # 함께 놓인 미사용 격자의 영역을 실제 지도 영역으로 보고하지 않는다.
+        for result in results.values():
+            candidate = Path(result.cog_path) if result.cog_path else result.input_path
+            rendered_bounds = _wgs84_bounds_from_raster(candidate)
+            if rendered_bounds is not None:
+                bounds = rendered_bounds
+                break
+
+        if bounds is not None:
+            map_state = "지도 있음"
+        elif reference_failed or (grids and grid_shape is None):
+            map_state = "아직 모름"
+        else:
+            if any(result.coordinates_unavailable for result in results.values()):
+                map_state = "지도 없음"
+            elif results and all(result.metadata is not None and
+                                 not is_renderable(result.metadata.format)
+                                 for result in results.values()):
+                map_state = "지도 없음"
+            else:
+                map_state = "아직 모름"
+
+        west, south, east, north = bounds if bounds is not None else (None, None, None, None)
+        self._ledger.record_grid_profile(
+            work.upload_id, body_shape=body_shape, grid_shape=grid_shape,
+            grid_digest=digest, grid_format_signature=signature,
+            west=west, south=south, east=east, north=north,
+            map_state=map_state, grid_source="직접 업로드")
+
     # ── 본 흐름 ─────────────────────────────────────────────────────────────
     def process_upload(self, work: UploadWork, *, stage1: bool = False) -> ProcessResult:
         """`stage1=True` 면 **감지 다음이 곧 `ready`** 다 (`〈73〉` · `S1-PLAN-REFOUND §D.6`).
@@ -259,6 +358,7 @@ class IngestionService:
             # `createDataset` 이 이미 400 으로 데이터셋 전환만 막는다(core-api `ingestion.py`).
             # ② 를 내지 않는 이유 — 계약이 `format: null` 을 「감지 실패」로 적었다.
             # 안 읽은 것을 읽어 보고 실패했다고 말하지 않는다.
+            self._capture_grid_profile(work, {}, grid_dir, grids)
             upload = self._ledger.load_upload(work.upload_id) or {}
             self._ledger.record_status(work.upload_id, ready=True,
                                        renderable=False, metadata_complete=False)
@@ -331,6 +431,8 @@ class IngestionService:
             out.input_cog_class = r.input_cog_class
             if r.artifact is not None:
                 res.artifacts.append(r.artifact)
+
+        self._capture_grid_profile(work, results, grid_dir, grids)
 
         converted = {fid: r for fid, r in results.items() if r.status == "SUCCESS"}
         # A known file with parsed metadata and no coordinates is registrable.
@@ -602,12 +704,13 @@ class SqlLedger:
         return [dict(r) for r in rows]
 
     def accepted_files(self, upload_id: str) -> list[dict]:
-        """접수된 파일 **전건** — `upload.accepted` 페이로드에서 읽는다.
+        """접수된 파일 **전건** — accepted 원본과 뒤에 추가된 D5 행의 합집합.
 
         ⚠ **`d5_upload_file` 을 보면 안 된다.** `〈79〉-㈎ⓑ` 대로 접수는 **본체 행만** 만들고
         격자는 저장만 한다(축을 모르는 채로는 CHECK 를 통과하지 못한다). 그래서 원장 행을
         세면 **격자가 통째로 안 보이고**, 축 판별을 돌릴 대상이 사라진다.
-        접수 이벤트의 `files` 는 `FileRef` 전건이라 격자가 거기 있다.
+        접수 이벤트의 `files` 는 `FileRef` 전건이라 최초 격자가 거기 있다. 다만 J-1의
+        격자 가져오기는 접수 뒤 새 D5 행을 세우므로 그 행도 합쳐야 재처리에서 보인다.
         """
         from sqlalchemy import text
         r = self._s.execute(text("""
@@ -615,11 +718,24 @@ class SqlLedger:
              WHERE upload_id = :uid AND event_type = 'upload.accepted'
              ORDER BY occurred_at LIMIT 1
         """), {"uid": upload_id}).mappings().first()
-        if r is None:
-            return []
-        payload = r["payload"] or {}
+        payload = {} if r is None else (r["payload"] or {})
         files = payload.get("files") if isinstance(payload, dict) else None
-        return list(files) if isinstance(files, list) else []
+        out = list(files) if isinstance(files, list) else []
+        seen = {row.get("fileId") for row in out if isinstance(row, dict)}
+        rows = self._s.execute(text("""
+            SELECT id, file_name, kind, byte_size, relative_path
+              FROM d5_upload_file WHERE upload_id = :uid
+             ORDER BY kind DESC, file_name, id
+        """), {"uid": upload_id}).mappings().all()
+        for row in rows:
+            if row["id"] in seen:
+                continue
+            item = {"fileId": row["id"], "fileName": row["file_name"],
+                    "kind": row["kind"], "byteSize": row["byte_size"] or 0}
+            if row["relative_path"]:
+                item["relativePath"] = row["relative_path"]
+            out.append(item)
+        return out
 
     def record_file_axes_row(self, *, file_id: str, lab_id: str, upload_id: str,
                              file_name: str, storage_key: str,
@@ -658,6 +774,33 @@ class SqlLedger:
             {"id": file_id, "f": fmt})
         return first_time
 
+    def record_grid_profile(self, upload_id: str, **fields) -> None:
+        """읽은 값만 적는다. 가져온 격자의 source 표시는 재처리해도 보존한다."""
+        from sqlalchemy import text
+        allowed = {"body_shape", "grid_shape", "grid_digest", "grid_format_signature",
+                   "west", "south", "east", "north", "map_state", "grid_source"}
+        bad = set(fields) - allowed
+        if bad or not {"map_state", "grid_source"} <= set(fields):
+            raise ValueError(f"격자 프로필 열이 맞지 않는다: {sorted(bad)}")
+        self._s.execute(text("""
+            INSERT INTO d5_upload_grid_profile
+              (upload_id, lab_id, body_shape, grid_shape, grid_digest,
+               grid_format_signature, west, south, east, north, map_state, grid_source)
+            SELECT u.id, u.lab_id, :body_shape, :grid_shape, :grid_digest,
+                   :grid_format_signature, :west, :south, :east, :north,
+                   :map_state, :grid_source
+              FROM d5_upload u WHERE u.id = :upload_id
+            ON CONFLICT (upload_id) DO UPDATE SET
+              body_shape = EXCLUDED.body_shape, grid_shape = EXCLUDED.grid_shape,
+              grid_digest = EXCLUDED.grid_digest,
+              grid_format_signature = EXCLUDED.grid_format_signature,
+              west = EXCLUDED.west, south = EXCLUDED.south,
+              east = EXCLUDED.east, north = EXCLUDED.north,
+              map_state = EXCLUDED.map_state,
+              grid_source = d5_upload_grid_profile.grid_source,
+              updated_at = now()
+        """), {"upload_id": upload_id, **fields})
+
     def record_status(self, upload_id: str, **fields) -> None:
         from sqlalchemy import text
         allowed = {"ready", "renderable", "metadata_complete", "failed_at",
@@ -670,26 +813,8 @@ class SqlLedger:
                         {"id": upload_id, **fields})
 
     def expire(self, now=None) -> list[str]:
-        """만료 스윕. **처리 중인 업로드는 건드리지 않는다**(`〈67〉` 이행 제약 ㉠).
-
-        「시계가 처리를 앞지르지 않는다」가 정본 규칙이다. `expires_at` 만 보고 지우면
-        **처리 중인 업로드가 사라져 정상 동작이 404 로 답한다** — 그러면 음성 시험
-        ㉳(만료된 업로드는 전환되지 않는다)가 그 실패 위에서 green 을 보고한다.
-
-        「처리 중」의 정의는 `core-api` 쪽(`colab_core…d5_ingestion._PROCESSING`)과
-        **같은 문장**이다 — 한쪽만 갈라지면 두 스윕이 다른 행을 지운다.
-        `upload.accepted` 를 진행의 증거에서 빼는 이유는 그것이 접수 순간 반드시
-        있어서, 세면 만료가 통째로 죽기 때문이다.
-        """
-        from sqlalchemy import text
-        rows = self._s.execute(text(f"""
-            DELETE FROM d5_upload u
-             WHERE u.registered_at IS NULL
-               AND u.expires_at <= COALESCE(:now, now())
-               AND NOT {_PROCESSING}
-            RETURNING u.id
-        """), {"now": now}).all()
-        return [r[0] for r in rows]
+        """호환 표면. worker는 D2/D3/S3 소유권을 조립할 수 없어 원본을 보존한다."""
+        return []
 
 
 # ── 릴레이 · reaper ────────────────────────────────────────────────────────
@@ -719,5 +844,5 @@ def relay_unpublished(ledger, *, publish: Callable[[dict], None], limit: int = 1
 
 
 def reap_expired_uploads(ledger, *, now=None) -> list[str]:
-    """만료된 미등록 업로드를 지운다 (`〈64〉-ⓒ`). 등록된 것은 건드리지 않는다."""
-    return ledger.expire(now)
+    """worker의 관측 전용 호환 표면 — 실제 회수는 core app 조립 경계가 맡는다."""
+    return []

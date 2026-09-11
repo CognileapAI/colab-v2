@@ -81,12 +81,8 @@ def test_only_one_module_in_core_api_touches_the_d5_tables() -> None:
     assert offenders == [], f"`d5_*` 를 직접 만지는 곳이 더 있다:\n" + "\n".join(offenders)
 
 
-def test_the_reaper_deletes_expired_rows_and_their_children(p2_client, sql) -> None:
-    """`〈64〉-ⓒ` 의 나머지 절반 — **만료되면 reaper 가 지운다.**
-
-    파일 행·이벤트 행까지 함께 사라져야 한다. 업로드만 지우고 자식이 남으면
-    「아무도 지우자고 말하지 않는 행」이 원장에 눌러앉는다.
-    """
+def test_the_legacy_reaper_preserves_expired_rows_and_their_children(p2_client, sql) -> None:
+    """D5만 아는 옛 표면은 S3/D3 소유권을 증명할 수 없으므로 전부 보존한다."""
     from colab_core.domains.d5_ingestion import UploadLedgerAdapter
     from colab_core.kernel.auth import Subject
     from colab_core.kernel.ids import Ulid
@@ -106,12 +102,12 @@ def test_the_reaper_deletes_expired_rows_and_their_children(p2_client, sql) -> N
     with scoped_session(client.app.state.session_factory, subject) as session:
         reaped = UploadLedgerAdapter(session).reap_expired()
 
-    assert upload_id in reaped
-    assert sql("SELECT count(*) AS n FROM d5_upload WHERE id = :u", {"u": upload_id})[0]["n"] == 0
+    assert reaped == []
+    assert sql("SELECT count(*) AS n FROM d5_upload WHERE id = :u", {"u": upload_id})[0]["n"] == 1
     assert sql("SELECT count(*) AS n FROM d5_upload_file WHERE upload_id = :u",
-               {"u": upload_id})[0]["n"] == 0
+               {"u": upload_id})[0]["n"] == 1
     assert sql("SELECT count(*) AS n FROM d5_pipeline_event WHERE upload_id = :u",
-               {"u": upload_id})[0]["n"] == 0
+               {"u": upload_id})[0]["n"] == 1
 
 
 def test_the_reaper_does_not_reach_across_the_lab_boundary(p2_client, sql) -> None:

@@ -48,29 +48,29 @@ def test_an_upload_still_being_processed_survives_its_expiry_time():
     assert _UPL in ledger.uploads
 
 
-def test_an_idle_expired_upload_is_still_reaped():
-    """처리 제외가 만료를 통째로 죽이면 안 된다 — 접수만 된 것은 제때 사라진다."""
+def test_an_idle_expired_upload_is_preserved_for_the_core_coordinator():
     ledger = MemoryLedger()
     ledger.accept(upload_id=_UPL, lab_id=_LAB, actor_account_id=_ACC, ttl_hours=1)
     later = datetime.now(timezone.utc) + timedelta(hours=2)
-    assert _UPL in reap_expired_uploads(ledger, now=later)
-    assert _UPL not in ledger.uploads
+    assert reap_expired_uploads(ledger, now=later) == []
+    assert _UPL in ledger.uploads
 
 
-def test_a_failed_upload_is_not_processing_and_is_reaped():
+def test_a_failed_upload_is_preserved_for_the_core_coordinator():
     ledger = MemoryLedger()
     ledger.accept(upload_id=_UPL, lab_id=_LAB, actor_account_id=_ACC, ttl_hours=1)
     later = datetime.now(timezone.utc) + timedelta(hours=2)
     _event(ledger, "upload.failed", at=later - timedelta(minutes=5))
     ledger.record_status(_UPL, failed_at=later - timedelta(minutes=5))
-    assert _UPL in reap_expired_uploads(ledger, now=later)
+    assert reap_expired_uploads(ledger, now=later) == []
+    assert _UPL in ledger.uploads
 
 
-def test_a_ready_upload_is_not_processing_and_is_reaped():
-    """`ready` 는 처리가 끝난 것이다 — 등록하지 않은 채 만료되면 지운다(`〈64〉-ⓒ`)."""
+def test_a_ready_upload_is_preserved_for_the_core_coordinator():
     ledger = MemoryLedger()
     ledger.accept(upload_id=_UPL, lab_id=_LAB, actor_account_id=_ACC, ttl_hours=1)
     later = datetime.now(timezone.utc) + timedelta(hours=2)
     _event(ledger, "upload.ready", at=later - timedelta(minutes=5))
     ledger.record_status(_UPL, ready=True)
-    assert _UPL in reap_expired_uploads(ledger, now=later)
+    assert reap_expired_uploads(ledger, now=later) == []
+    assert _UPL in ledger.uploads

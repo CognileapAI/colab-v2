@@ -183,6 +183,23 @@ export function apiUploadSource(): UploadSource {
       return { datasetId: r.data.datasetId };
     },
 
+    async gridOptions(uploadId) {
+      const r = await api.GET('/uploads/{uploadId}/grid-options', { params: { path: { uploadId } } });
+      if (!r.data) throw new Error('격자 후보를 불러오지 못했어요. 다시 시도해 주세요.');
+      return r.data;
+    },
+
+    async reuseGrid(uploadId, sourceDatasetId) {
+      const r = await api.POST('/uploads/{uploadId}/grid-reuse', {
+        params: { path: { uploadId } }, body: { sourceDatasetId },
+      });
+      if (!r.data) {
+        const message = (r.error as { message?: string } | undefined)?.message;
+        throw new Error(message || '격자를 가져오지 못했어요. 다시 시도해 주세요.');
+      }
+      return r.data.files;
+    },
+
     async putRepresentativeImage(datasetId, file) {
       const form = new FormData();
       form.append('image', file, file.name);

@@ -13,6 +13,7 @@
 //
 // 이 파일의 새 문구는 정본에 없다 — 신설마다 `[정본 무근거 · 〈339〉]` 를 남긴다.
 import { useState } from 'react';
+import { DefaultGridButton } from './DefaultGridButton';
 import { ActionGate, PermissionGate } from '../../permission/PermissionGate';
 import { useStartDownload } from './download';
 import { buildTree, type FileTreeNode } from './fileTree';
@@ -212,6 +213,9 @@ export function FileList(props: {
           <div data-testid="dt-files-body">{nodes(tree.body)}</div>
           {/* 기준 격자 파일은 본체와 **따로** 세우고, 없으면 없다고 적는다 — 목업 문구 `기준 격자 파일 없음` */}
           <div className="fl-grid" data-testid="dt-files-grid">
+            {tree.grid.length > 0 && source.setDefaultGrid ? (
+              <DefaultGridButton datasetId={datasetId} save={(id) => source.setDefaultGrid!(id)} />
+            ) : null}
             {tree.grid.length === 0 ? (
               <span className="fl-gh muted">기준 격자 파일 없음</span>
             ) : (

@@ -29,11 +29,14 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from . import invalidation, tile_liveness
+from ...kernel.ids import is_ulid
 
 log = logging.getLogger("colab_viz.tile_reclaim")
 
@@ -168,4 +171,176 @@ class ReclaimJob:
         self.last_result = run_pass(previews_root=self.previews_root,
                                     storage_root=self.storage_root,
                                     apply=self.apply, max_keys=self.max_keys)
+        return self.last_result
+
+
+# ── S3 dev 관측 ────────────────────────────────────────────────────────────────
+def _prefix(value: str, *, expected: str) -> str:
+    """버킷 루트 목록을 만들 수 없는 한 층 prefix만 받는다."""
+    clean = str(value).strip("/")
+    if not clean or "/" in clean or clean != expected:
+        raise ValueError(f"S3 회수 prefix는 {expected}/ 하나여야 한다")
+    return clean + "/"
+
+
+def _s3_not_ready(reason: str, *, max_keys: int) -> PassResult:
+    log.error("지도 타일 회수 red(준비) — %s", reason)
+    return PassResult(ready=False, reason=reason, subjects=0, tiles=0,
+                      reachable=0, unreachable=0, capped=False,
+                      max_keys=max_keys, applied=False)
+
+
+def run_s3_observation(*, client: Any, source: Any,
+                       uploads_prefix: str = "uploads",
+                       previews_prefix: str = "previews",
+                       apply: bool = False,
+                       max_keys: int = DEFAULT_MAX_KEYS_PER_PASS) -> PassResult:
+    """S3의 지도 타일을 읽기만 하는 한 바퀴.
+
+    S3에서는 삭제 문을 아예 연결하지 않는다. dev의 첫 관측이 안전하다는 증거를 얻기 전
+    로컬 볼륨용 자동 삭제를 객체 저장소까지 넓히면 삭제 범위가 새로 생긴다. 따라서
+    apply=True도 요청 사실만 경고하고 결과는 언제나 applied=False다.
+
+    주체 키는 ETag가 아니라 materialize한 실제 바이트로 계산한다. 대상 하나를 받은 즉시
+    후보 키로 접으므로 SourcePort의 LRU가 다음 대상을 위해 앞 대상 파일을 치워도 안전하다.
+    """
+    try:
+        upload_root = _prefix(uploads_prefix, expected="uploads")
+        preview_root = _prefix(previews_prefix, expected="previews")
+
+        bodies: dict[str, set[str]] = {}
+        storage_bytes = 0
+        for key, size in client.list_objects(upload_root):
+            if not key.startswith(upload_root):
+                raise ValueError("S3가 요청 prefix 밖의 객체를 돌려줬다")
+            storage_bytes += int(size)
+            rest = key[len(upload_root):]
+            parts = rest.split("/")
+            if len(parts) == 2 and is_ulid(parts[0]) and is_ulid(parts[1]):
+                bodies.setdefault(parts[0], set()).add(parts[1])
+            elif len(parts) >= 2 and is_ulid(parts[0]) and parts[1] == "grid":
+                continue
+            elif rest:
+                raise ValueError("uploads/ 아래 객체 키가 저장 규약과 다르다")
+        work_limit = getattr(source, "max_bytes", None)
+        if (isinstance(work_limit, (int, float)) and not isinstance(work_limit, bool)
+                and math.isfinite(work_limit) and storage_bytes > work_limit):
+            raise ValueError("S3 관측 입력 총량이 작업 디렉터리 상한을 넘는다")
+
+        storage_keys: dict[str, list[str]] = {}
+        bad: list[tile_liveness.Uncomputable] = []
+        seen = sum(len(names) for names in bodies.values())
+        for target_id, expected_names in sorted(bodies.items()):
+            try:
+                resolved = source.resolve(dataset_id=target_id, upload_id=None, file_ids=None)
+                materialized = source.materialize(resolved)
+            except Exception as exc:  # noqa: BLE001 — 한 주체라도 못 읽으면 판정 전체를 멈춘다
+                bad.extend(tile_liveness.Uncomputable(name, type(exc).__name__)
+                           for name in sorted(expected_names))
+                continue
+
+            actual_names = {part.file_name for part in materialized.parts}
+            for missing in sorted(expected_names - actual_names):
+                bad.append(tile_liveness.Uncomputable(missing, "목록 재대조에서 본체가 사라졌다"))
+            for part in materialized.parts:
+                try:
+                    candidates = tile_liveness.candidate_tile_keys(
+                        part.path, grid_dir=materialized.grid_dir)
+                except (OSError, ValueError) as exc:
+                    bad.append(tile_liveness.Uncomputable(part.file_id, type(exc).__name__))
+                    continue
+                for cache_key, _used_grid in candidates:
+                    storage_keys.setdefault(cache_key, []).append(part.file_id)
+
+        reached = tile_liveness.Reach(
+            dataset_keys={}, upload_keys={},
+            uncomputable=tuple(bad), subjects_seen=seen,
+            storage_keys={key: tuple(ids) for key, ids in storage_keys.items()},
+        )
+
+        tile_sizes: dict[str, int] = {}
+        for key, size in client.list_objects(preview_root):
+            if not key.startswith(preview_root):
+                raise ValueError("S3가 요청 prefix 밖의 객체를 돌려줬다")
+            rest = key[len(preview_root):]
+            path = Path(rest)
+            if (rest and len(path.parts) == 1 and path.suffix == ".tif"
+                    and path.stem.startswith(tile_liveness.MAP_TILE_PREFIX)):
+                tile_sizes[path.stem] = int(size)
+    except Exception as exc:  # noqa: BLE001 — 자격/목록/바이트 실패를 고아 0으로 접지 않는다
+        return _s3_not_ready(
+            f"{type(exc).__name__}: S3 관측 입력을 읽지 못했다", max_keys=max_keys)
+
+    if not reached.is_decidable():
+        reason = (f"주체 {reached.subjects_seen}건 · 계산 불가 "
+                  f"{len(reached.uncomputable)}건 — 판정을 시작하지 않았다")
+        result = _s3_not_ready(reason, max_keys=max_keys)
+        return PassResult(**{**result.__dict__, "subjects": reached.subjects_seen,
+                             "tiles": len(tile_sizes)})
+
+    rows: list[dict] = []
+    reachable = 0
+    for cache_key, size in sorted(tile_sizes.items()):
+        verdict = tile_liveness.grade(cache_key, reached)
+        if verdict.grade == tile_liveness.GRADE_ORPHAN:
+            rows.append({"cache_key": cache_key, "grade": verdict.grade,
+                         "size_bytes": size, "files": 1, "age_days": None})
+        else:
+            reachable += 1
+    unreachable = len(rows)
+    capped = unreachable > max_keys
+    if apply:
+        log.warning("S3 지도 타일 회수 apply 요청을 무시했다 — 관측 전용이며 삭제 문이 없다")
+    for row in rows:
+        log.info("못 닿는 S3 타일: %s · 등급 %s · %d바이트",
+                 row["cache_key"], row["grade"], row["size_bytes"])
+    reason = ("S3 관측 전용 — 세고 적기만 한다 (삭제 문 없음)"
+              if not capped else
+              f"못 닿는 벌 {unreachable} > 상한 {max_keys} — S3 관측 전용, 삭제 0")
+    return PassResult(
+        ready=True, reason=reason, subjects=reached.subjects_seen,
+        tiles=len(tile_sizes), reachable=reachable, unreachable=unreachable,
+        capped=capped, max_keys=max_keys, applied=False, rows=tuple(rows))
+
+
+@dataclass
+class S3ReclaimJob:
+    """dev S3 배포에 붙는 주기 job. 삭제 포트는 받지 않는다."""
+    client: Any
+    source: Any
+    uploads_prefix: str = "uploads"
+    previews_prefix: str = "previews"
+    apply_requested: bool = False
+    max_keys: int = DEFAULT_MAX_KEYS_PER_PASS
+    interval_seconds: float = DEFAULT_INTERVAL_SECONDS
+    last_result: PassResult | None = field(default=None, init=False)
+    _next_at: float | None = field(default=None, init=False)
+
+    def run_due(self, now: float | None = None) -> PassResult | None:
+        at = time.monotonic() if now is None else now
+        if self._next_at is not None and at < self._next_at:
+            return None
+        self._next_at = at + max(0.0, float(self.interval_seconds))
+        self.last_result = run_s3_observation(
+            client=self.client, source=self.source,
+            uploads_prefix=self.uploads_prefix, previews_prefix=self.previews_prefix,
+            apply=self.apply_requested, max_keys=self.max_keys)
+        return self.last_result
+
+
+@dataclass
+class NotReadyReclaimJob:
+    """source와 preview 저장 모드가 갈린 배포를 고아 0으로 숨기지 않는다."""
+    reason: str
+    max_keys: int = DEFAULT_MAX_KEYS_PER_PASS
+    interval_seconds: float = DEFAULT_INTERVAL_SECONDS
+    last_result: PassResult | None = field(default=None, init=False)
+    _next_at: float | None = field(default=None, init=False)
+
+    def run_due(self, now: float | None = None) -> PassResult | None:
+        at = time.monotonic() if now is None else now
+        if self._next_at is not None and at < self._next_at:
+            return None
+        self._next_at = at + max(0.0, float(self.interval_seconds))
+        self.last_result = _s3_not_ready(self.reason, max_keys=self.max_keys)
         return self.last_result

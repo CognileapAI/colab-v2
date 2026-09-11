@@ -11,8 +11,8 @@
 //  · `§5`  시각화 구간 수 — 3~9 단계. **기본 6.**
 //
 // **이 구역이 짓지 않는 것** (범위를 늘리지 않는다 — `CLAUDE.md §5`)
-//  · 팔레트·구간 수 컨트롤과 그에 따른 재렌더 = `V-1`(서버측) · `J-6`(선택 UI). 이 구역은
-//    기본값으로 **한 번 그린다.** 보기 전용 화면에는 정본이 그 컨트롤을 애초에 두지 않는다(`§3.2`).
+//  · 팔레트·구간 수 선택 UI는 Stage 2 편의 기능으로 이 구역에 추가했다.
+//    보기 전용 화면에는 컨트롤을 두지 않는다(`§3.2`).
 //  · 겹쳐 보기 = 정본 근거·완료 정의가 아직 없거나 다른 항목 소유.
 //    ⭑ ⟨개정 2026-09-03 · `PLAN-SoT §9 〈294〉` · 15차 해제⟩ **값 조회는 이제 이 구역이 짓는다** —
 //    정본 §8 이 조회 자리를 **등록된 데이터셋 · 좌표 있는 자료 · 본체를 볼 수 있는 사람**에만
@@ -27,6 +27,8 @@
 //  · **스크린샷** — 중계 op `createPreviewScreenshot`(11차 동결 해제 `〈231〉`)에 닿는다.
 //    정본 `§6` 이 **편집 권한자 컨트롤**로 두므로 보기 전용에는 자리째 없다(`§3.2`).
 import { useEffect, useMemo, useState } from 'react';
+import { PermissionGate } from '../../permission/PermissionGate';
+import { CLASS_COUNTS } from '../preview/PreviewControls';
 import {
   NotRenderableNotice,
   PartialFailureNotice,
@@ -43,6 +45,7 @@ import {
 } from '../preview/types';
 import { usePreviewRender } from '../preview/usePreviewRender';
 import { useZoomPan } from '../preview/useZoomPan';
+import { useStageRemaining } from '../preview/useStageRemaining';
 import { ScreenshotButton } from './ScreenshotButton';
 import { ValueLookupPanel, useValueLookup } from './ValueLookupPanel';
 import '../preview/preview.css';
@@ -56,7 +59,7 @@ import {
   type TargetDescription,
 } from '../preview/pick';
 import { UNAVAILABLE_MESSAGE, apiDatasetPreviewSource } from './datasetPreviewSource';
-import type { DatasetPreviewSource } from './types';
+import type { DatasetPreviewSource, PaletteOption } from './types';
 import type { Salvage } from '../upload/previewResult';
 
 /** 정본 `§5` — 「3~9 단계. **기본 6**」. 화면이 다른 값을 고르지 않는다. */
@@ -93,6 +96,9 @@ export function DatasetPreviewSection(props: {
     [props.source, props.datasetId],
   );
   const [start, setStart] = useState<StartState>({ phase: '시작하는 중' });
+  const [palettes, setPalettes] = useState<PaletteOption[]>([]);
+  const [chosenPalette, setChosenPalette] = useState('');
+  const [classCount, setClassCount] = useState<number>(DEFAULT_CLASS_COUNT);
   // WU-C1 — 틀 안쪽 상태(렌더가 시작된 뒤). **바깥 상자는 이 값과 무관하게 같다.**
   const [startedSlot, setStartedSlot] = useState<PreviewSlotState>('drawing');
   // 렌더가 완료된 뒤 사이드카가 알려주는 원본 배열 크기. 그때까지 · 못 읽으면 `undefined` —
@@ -141,7 +147,8 @@ export function DatasetPreviewSection(props: {
       try {
         const list = await source.palettes();
         if (!alive) return;
-        const palette = list[0]?.palette;
+        setPalettes(list);
+        const palette = list.find((item) => item.palette === chosenPalette)?.palette ?? list[0]?.palette;
         // **빈 목록으로 렌더를 부르지 않는다** — 팔레트 키를 화면이 지어내면 그 순간
         // `RenderStyle.palette` 의 정본이 viz-render 에서 화면으로 옮겨 앉는다.
         if (!palette) {
@@ -155,7 +162,7 @@ export function DatasetPreviewSection(props: {
             source.create({
               datasetId: props.datasetId,
               palette,
-              classCount: DEFAULT_CLASS_COUNT,
+              classCount,
               ...(fileIds ? { fileIds } : pick.fileId ? { fileIds: [pick.fileId] } : {}),
               ...(pick.variable ? { variable: pick.variable } : {}),
               ...(pick.instant ? { instant: pick.instant } : {}),
@@ -187,7 +194,7 @@ export function DatasetPreviewSection(props: {
     };
     // ⚠ `pick` 이 바뀌면 이 효과가 **다시 돈다** — 그것이 바꿔 그리기다. 앞 회차의 응답은
     //   `alive` 가 끊어 버린다(겹쳐 그리기 0 · 한 번에 하나).
-  }, [source, props.datasetId, pick, loadFiles]);
+  }, [source, props.datasetId, pick, loadFiles, chosenPalette, classCount]);
 
   // 렌더 경로 소비 규약(실패는 200+`failure` · 단계 · 부분 실패 · 만료)은 **한 자리에만 둔다** —
   // S-08 과 두 벌로 두면 두 화면의 판정이 갈린다.
@@ -234,6 +241,24 @@ export function DatasetPreviewSection(props: {
           {formatSourceGrid(props.gridResolution, nativeSize)}
         </p>
       ) : null}
+
+      <PermissionGate requires="업로드·편집">
+        {palettes.length > 0 ? <div className="pv-controls" aria-label="미리보기 표현">
+          <label className="pv-control">팔레트
+            <select aria-label="팔레트" value={chosenPalette || palettes[0]?.palette || ''}
+              onChange={(event) => setChosenPalette(event.target.value)}>
+              {palettes.map((item) => <option key={item.palette} value={item.palette}>{item.label ?? item.palette}</option>)}
+            </select>
+          </label>
+          <label className="pv-control">구간 수
+            <select aria-label="구간 수" value={classCount}
+              onChange={(event) => setClassCount(Number(event.target.value))}>
+              {CLASS_COUNTS.map((count) => <option key={count} value={count}>{count}</option>)}
+            </select>
+          </label>
+          {palettes.length !== 3 ? <p className="pv-failure" role="alert">팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.</p> : null}
+        </div> : null}
+      </PermissionGate>
 
       {/* ⬛ 자리 선점 틀 — **상세를 여는 즉시 선다**(`시작하는 중` 포함 · 축 ① · 4:3).
           안쪽만 갈리고 바깥 치수는 네 상태에서 바뀌지 않는다 (WU-C1). */}
@@ -332,6 +357,7 @@ function StartedPreview(props: {
     pollMs: props.pollMs,
   });
   const slot = slotStateOfRender(state.phase);
+  const remaining = useStageRemaining(props.renderId, state.phase === '그리는 중' ? state.stage : undefined, state.phase);
   const { onSlotState } = props;
   useEffect(() => {
     onSlotState?.(slot);
@@ -384,7 +410,8 @@ function StartedPreview(props: {
   }, [datasetSource, sidecarUrl, tiled, onNativeWidth, onNativeSize]);
 
   if (state.phase === '그리는 중')
-    return state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />;
+    return <>{state.stage ? <RenderStageNotice stage={state.stage} /> : <RenderStageNotice />}
+      {remaining !== null ? <p role="status">이 단계 약 {Math.ceil(remaining / 1000)}초 남음</p> : null}</>;
 
   if (state.phase === '완료')
     return (

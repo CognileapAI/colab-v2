@@ -40,6 +40,7 @@ export function queryParams(q: CatalogQuery) {
   return {
     sortColumn: q.sort.column,
     sortOrder: q.sort.order,
+    ...(q.mapState ? { mapState: q.mapState } : {}),
     ...(f['주제']?.length ? { topic: f['주제'].map(String) } : {}),
     ...(q.axes['분류'] ? { category: [q.axes['분류']] } : {}),
     ...(q.axes['유형'] ? { dataType: [q.axes['유형']] } : {}),

@@ -115,6 +115,51 @@ def test_worker_writes_all_stage_events_into_the_w1_ledger(session, tmp_path):
     assert status[0] is True and status[1] is True
 
 
+def test_accepted_files_unions_post_acceptance_reused_grid_rows(session) -> None:
+    """J-1: 접수 뒤 복제된 격자도 다음 worker 바퀴의 입력에 들어간다."""
+    from sqlalchemy import text
+    import json
+
+    upload_id = _ulid("J101")
+    body_id, grid_id = _ulid("JB01"), _ulid("JG01")
+    _accept(session, upload_id)
+    payload = {"files": [{"fileId": body_id, "fileName": "body.npy",
+                           "kind": "본체", "byteSize": 4}]}
+    session.execute(text("""
+        UPDATE d5_pipeline_event SET payload=CAST(:payload AS jsonb)
+         WHERE upload_id=:u AND event_type='upload.accepted'
+    """), {"u": upload_id, "payload": json.dumps(payload)})
+    session.execute(text("""
+        INSERT INTO d5_upload_file
+          (id, lab_id, upload_id, kind, file_name, byte_size, storage_key,
+           carries_lat, carries_lon)
+        VALUES (:id, :lab, :u, '기준 격자 파일', 'grid.nc', 9, 'uploads/u/grid/g', true, true)
+    """), {"id": grid_id, "lab": _LAB, "u": upload_id})
+
+    files = SqlLedger(session).accepted_files(upload_id)
+    assert [row["fileId"] for row in files] == [body_id, grid_id]
+
+
+def test_grid_profile_upsert_preserves_reused_source_marker(session) -> None:
+    from sqlalchemy import text
+
+    upload_id = _ulid("J102")
+    _accept(session, upload_id)
+    ledger = SqlLedger(session)
+    base = dict(body_shape=[2, 2], grid_shape=[2, 2], grid_digest="a" * 64,
+                grid_format_signature="HDF5", west=120.0, south=30.0,
+                east=130.0, north=40.0, map_state="지도 있음",
+                grid_source="직접 업로드")
+    ledger.record_grid_profile(upload_id, **base)
+    session.execute(text("UPDATE d5_upload_grid_profile SET grid_source='가져오기' WHERE upload_id=:u"),
+                    {"u": upload_id})
+    ledger.record_grid_profile(upload_id, **{**base, "grid_digest": "b" * 64})
+    row = session.execute(text("""
+        SELECT grid_digest, grid_source FROM d5_upload_grid_profile WHERE upload_id=:u
+    """), {"u": upload_id}).one()
+    assert row[0] == "b" * 64 and row[1] == "가져오기"
+
+
 def test_redelivery_does_not_duplicate_rows(session, tmp_path):
     from sqlalchemy import text
     upload_id = _ulid("V002")
@@ -173,7 +218,7 @@ def test_relay_marks_published_and_is_the_only_thing_that_does(session, tmp_path
     assert relay_unpublished(SqlLedger(session), publish=delivered.append) == 0
 
 
-def test_reaper_deletes_expired_unregistered_uploads(session):
+def test_worker_reaper_preserves_expired_unregistered_uploads(session):
     from sqlalchemy import text
     upload_id = _ulid("V004")
     # `CHECK (expires_at > created_at)` 때문에 만료된 행을 직접 넣을 수 없다 —
@@ -183,12 +228,12 @@ def test_reaper_deletes_expired_unregistered_uploads(session):
                            {"u": upload_id}).scalar_one() == 1
     later = datetime.now(timezone.utc) + timedelta(hours=2)
     gone = reap_expired_uploads(SqlLedger(session), now=later)
-    assert upload_id in gone
+    assert upload_id not in gone
     assert session.execute(text("SELECT count(*) FROM d5_upload WHERE id=:u"),
-                           {"u": upload_id}).scalar_one() == 0
-    # 이벤트도 함께 사라진다 (ON DELETE CASCADE) — 원장은 남지 않는다 (`〈64〉-ⓒ`)
+                           {"u": upload_id}).scalar_one() == 1
+    # worker는 D2/D3/S3 소유권을 조립할 수 없으므로 사건도 함께 보존한다.
     assert session.execute(text("SELECT count(*) FROM d5_pipeline_event WHERE upload_id=:u"),
-                           {"u": upload_id}).scalar_one() == 0
+                           {"u": upload_id}).scalar_one() == 1
 
 
 def test_reaper_leaves_registered_uploads_alone(session):

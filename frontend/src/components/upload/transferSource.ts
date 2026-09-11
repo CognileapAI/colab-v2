@@ -22,6 +22,8 @@ export interface TransferOptions {
   /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
   resumeUploadId?: string;
   onProgress?: (p: TransferProgress) => void;
+  /** 첫 본체 검증 직후 서버가 만든 별도 임시 업로드. 최종 전송 실패 여부와 독립적이다. */
+  onEarlyReceipt?: (receipt: UploadReceipt) => void;
 }
 
 interface PlanFile {
@@ -90,6 +92,7 @@ async function resumePlan(uploadId: string, picked: PickedFile[]) {
   if (!r.data) throw new Error('전송 상태를 읽지 못했어요.');
   // 같은 파일인지 이름(경로)·크기로 대조한다 — 다른 파일을 이어 붙이면 조각이 섞인다.
   const byIdentity = new Map(picked.map((p) => [identity(p.file.name, p.relativePath), p]));
+
   for (const f of r.data.files as PlanFile[]) {
     const p = byIdentity.get(identity(f.fileName, f.relativePath));
     if (!p || p.file.size !== f.byteSize) {
@@ -139,6 +142,20 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
   const files = plan.files as PlanFile[];
   const byIdentity = new Map(picked.map((p) => [identity(p.file.name, p.relativePath), p]));
 
+  // J-9 — 파일 전송은 병렬이어도 임시 업로드는 전송당 정확히 한 번만 요청한다.
+  // 이 편의 경로의 실패가 원본 전송을 깨면 "최종 전송과 독립"이라는 서버 경계가
+  // 화면에서 다시 합쳐지므로 실패는 삼키고 최종 완결을 계속한다.
+  let earlyPreview: Promise<void> | null = null;
+  const ensureEarlyPreview = (): Promise<void> => {
+    if (earlyPreview) return earlyPreview;
+    earlyPreview = api.POST('/uploads/transfers/{uploadId}/early-preview', {
+      params: { path: { uploadId } },
+    }).then((r) => {
+      if (r.data) opts.onEarlyReceipt?.(r.data);
+    }).catch(() => undefined);
+    return earlyPreview;
+  };
+
   const totalBytes = files.reduce((s, f) => s + f.byteSize, 0);
   let doneBytes = files.filter((f) => f.outcome === '올라감').reduce((s, f) => s + f.byteSize, 0);
   const inflight = new Map<string, number>();
@@ -173,6 +190,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
     doneBytes += f.byteSize;
     report();
     await completeFile(f);
+    if (f.kind === '본체') await ensureEarlyPreview();
   };
 
   const sendMultipart = async (f: PlanFile) => {
@@ -218,9 +236,13 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
       }
     }
     await completeFile(f);
+    if (f.kind === '본체') await ensureEarlyPreview();
   };
 
   const sched = new Scheduler();
+  // 재개 시점에 이미 검증된 본체가 있으면 서버의 멱등 endpoint로 같은 임시 업로드를 잇는다.
+  const completedBody = files.some((f) => f.kind === '본체' && f.outcome === '올라감');
+  if (completedBody) await ensureEarlyPreview();
   await Promise.all(files
     .filter((f) => f.outcome !== '올라감')
     .map((f) => sched.run(

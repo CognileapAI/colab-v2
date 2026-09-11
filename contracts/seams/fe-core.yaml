@@ -171,6 +171,7 @@ paths:
               schema: { $ref: "#/components/schemas/Lab" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
+
     patch:
       tags: [identity]
       operationId: updateLab
@@ -192,6 +193,43 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lab/default-grid:
+    put:
+      tags: [catalog]
+      operationId: setLabDefaultGrid
+      summary: 연구실 기본 격자 지정 — 교수 전용
+      description: |
+        [사용자 승인 2026-09-10] J-2.
+        J-2. 격자를 가진 같은 연구실 데이터셋 하나를 기본으로 가리킨다. 이후 업로드에는
+        **제시만** 하고 자동 적용하지 않는다. 역할 판정은 서버의 `교수` 값으로 하며
+        `연구실 설정` 스위치 위임으로 넓히지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [datasetId]
+              additionalProperties: false
+              properties:
+                datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+      responses:
+        "200":
+          description: 지정된 기본 격자 데이터셋.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [datasetId]
+                additionalProperties: false
+                properties:
+                  datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /lab/members:
@@ -571,6 +609,29 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /uploads/transfers/{uploadId}/early-preview:
+    parameters:
+      - $ref: "#/components/parameters/UploadId"
+    post:
+      tags: [ingestion]
+      operationId: createEarlyPreviewUpload
+      summary: 첫 완료 본체로 별도 임시 미리보기 업로드 만들기
+      description: |
+        [사용자 승인 2026-09-10] J-9.
+        J-9. 프리사인드 전송의 첫 본체가 S3 실측으로 `올라감`이 된 뒤에만 만들 수 있다.
+        전체 전송 uploadId와 다른 임시 D5 uploadId이며 등록용이 아니다. 같은 전송에
+        재호출하면 같은 임시 uploadId를 돌려준다. 전체 전송 완결은 이 호출과 독립적이다.
+      responses:
+        "201":
+          description: 첫 본체 한 파일의 임시 업로드 접수.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadReceipt" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /uploads/{uploadId}/files:
     parameters:
       - $ref: "#/components/parameters/UploadId"
@@ -708,6 +769,74 @@ paths:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /uploads/{uploadId}/grid-options:
+    parameters:
+      - $ref: "#/components/parameters/UploadId"
+    get:
+      tags: [ingestion]
+      operationId: getUploadGridOptions
+      summary: 현재 업로드와 같은 형상의 연구실 격자 후보
+      description: |
+        [사용자 승인 2026-09-10] J-1~J-4.
+        J-1~J-4. 파일을 읽은 pipeline-worker의 프로필만 사용한다. 같은 연구실·같은 형상
+        후보만 돌려주고 기본 격자는 `isDefault`로 **제시**한다. 현재 직접 격자가 연구실
+        기준과 형식/해시가 다르면 비차단 경고와 쌍별 거리 또는 null을 함께 돌려준다.
+      responses:
+        "200":
+          description: 후보와 현재 격자 비교.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GridOptions" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /uploads/{uploadId}/grid-reuse:
+    parameters:
+      - $ref: "#/components/parameters/UploadId"
+    post:
+      tags: [ingestion]
+      operationId: reuseDatasetGrid
+      summary: 등록된 데이터셋의 격자를 현재 업로드로 정확히 복제
+      description: |
+        [사용자 승인 2026-09-10] J-1.
+        J-1. 같은 연구실·같은 형상의 후보만 받는다. sourceDatasetId가 연구실 밖이거나
+        없으면 동일한 404다. 새 fileId와 현재 uploadId 키로 바이트를 exact-copy하고
+        파이프라인을 다시 연다. 계보는 건드리지 않으며 등록 전환 뒤 D8 활동 한 줄이 선다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceDatasetId]
+              additionalProperties: false
+              properties:
+                sourceDatasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+      responses:
+        "201":
+          description: 복제된 격자 파일과 원본과 같은 집합 digest.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [files, gridDigest]
+                additionalProperties: false
+                properties:
+                  files:
+                    type: array
+                    minItems: 1
+                    maxItems: 2
+                    items: { $ref: "#/components/schemas/UploadFileRef" }
+                  gridDigest: { type: string, pattern: "^[0-9a-f]{64}$" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /uploads/{uploadId}/lineage-suggestions:
     parameters:
       - $ref: "#/components/parameters/UploadId"
@@ -768,6 +897,7 @@ paths:
         - $ref: "#/components/parameters/FilterUploader"
         - $ref: "#/components/parameters/FilterLineageState"
         - $ref: "#/components/parameters/FilterVerified"
+        - $ref: "#/components/parameters/FilterMapState"
       responses:
         "200":
           description: |
@@ -2844,6 +2974,16 @@ components:
         (`Policy_데이터_찾기 §8`).
       schema: { type: boolean }
 
+    FilterMapState:
+      name: mapState
+      in: query
+      required: false
+      description: |
+        [사용자 승인 2026-09-10] J-5.
+        J-5 지도 상태 한 값. `아직 모름`은 프로필 행 부재도 포함한다. RLS가 먼저 적용된
+        연구실 목록 안에서만 거른다.
+      schema: { $ref: "#/components/schemas/MapState" }
+
   responses:
 
     BadRequest:
@@ -3013,6 +3153,97 @@ components:
       description: "열 메뉴의 정렬 방향. 정본 표기는 `오름`·`내림` 이다."
       type: string
       enum: ["오름", "내림"]
+
+    MapState:
+      description: |
+        [사용자 승인 2026-09-10] J-5. 파일을 실제로 읽은 파이프라인이 판정한 지도 상태.
+        기존 근거 부재는 아직 모름이다.
+      type: string
+      enum: ["지도 있음", "지도 없음", "아직 모름"]
+
+    GeoBounds:
+      description: |
+        [사용자 승인 2026-09-10] J-4. 파이프라인이 실제 좌표 산출물에서 읽은 WGS84 경계.
+        네 값은 한 묶음이다.
+      type: object
+      required: [west, south, east, north]
+      additionalProperties: false
+      properties:
+        west: { type: number, minimum: -180, maximum: 180 }
+        south: { type: number, minimum: -90, maximum: 90 }
+        east: { type: number, minimum: -180, maximum: 180 }
+        north: { type: number, minimum: -90, maximum: 90 }
+
+    GridProfileView:
+      description: "[사용자 승인 2026-09-10] J-1~J-5 격자 프로필 표시값."
+      type: object
+      required: [gridShape, gridDigest, formatSignature, mapState]
+      additionalProperties: false
+      properties:
+        gridShape:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: integer, minimum: 1 }
+        gridDigest: { type: string, pattern: "^[0-9a-f]{64}$" }
+        formatSignature: { type: string, minLength: 1 }
+        mapState: { $ref: "#/components/schemas/MapState" }
+        expectedBounds: { $ref: "#/components/schemas/GeoBounds" }
+
+    GridCandidate:
+      description: "[사용자 승인 2026-09-10] J-1~J-2 같은 형상의 연구실 격자 후보."
+      type: object
+      required: [datasetId, datasetName, fileNames, isDefault,
+                 gridShape, gridDigest, formatSignature, mapState]
+      additionalProperties: false
+      properties:
+        datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        datasetName: { type: string, minLength: 1 }
+        fileNames:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items: { type: string, minLength: 1, maxLength: 255 }
+        isDefault: { type: boolean }
+        gridShape:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: integer, minimum: 1 }
+        gridDigest: { type: string, pattern: "^[0-9a-f]{64}$" }
+        formatSignature: { type: string, minLength: 1 }
+        mapState: { $ref: "#/components/schemas/MapState" }
+        expectedBounds: { $ref: "#/components/schemas/GeoBounds" }
+
+    GridMismatchWarning:
+      description: |
+        [사용자 승인 2026-09-10] J-3. 형식/해시가 다른 연구실 격자와의 비차단 비교.
+        거리 재료가 없으면 null이다.
+      type: object
+      required: [formatDiffers, hashDiffers, distanceMeters, blocksRegistration]
+      additionalProperties: false
+      properties:
+        formatDiffers: { type: boolean }
+        hashDiffers: { type: boolean }
+        distanceMeters: { type: [integer, "null"], minimum: 0 }
+        blocksRegistration: { type: boolean, const: false }
+
+    GridOptions:
+      description: "[사용자 승인 2026-09-10] J-1~J-4 업로드 격자 후보와 현재 비교 결과."
+      type: object
+      required: [candidates]
+      additionalProperties: false
+      properties:
+        bodyShape:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: integer, minimum: 1 }
+        currentGrid: { $ref: "#/components/schemas/GridProfileView" }
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/GridCandidate" }
+        mismatchWarning: { $ref: "#/components/schemas/GridMismatchWarning" }
 
     ProjectSort:
       description: |
@@ -4208,7 +4439,7 @@ components:
       type: object
       required:
         [datasetId, name, fileCount, topic, processingLevel, projects, uploader,
-         lastModifiedAt, lineageState, lineageConfirmedAt, verified, accessState, bodyAccessible]
+         lastModifiedAt, lineageState, lineageConfirmedAt, verified, accessState, bodyAccessible, mapState]
       additionalProperties: false
       properties:
         datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
@@ -4275,6 +4506,9 @@ components:
             본체(다운로드·미리보기)에 닿을 수 있는가. `false` 면 화면이 자물쇠와 `잠김` 칩을 붙이고
             **빠른 작업을 두지 않는다.** 행 자체는 사라지지 않는다 (P-13·P-34).
           type: boolean
+        mapState:
+          allOf: [{ $ref: "#/components/schemas/MapState" }]
+          description: J-5. 상세와 같은 파이프라인 프로필 값. 프로필 부재는 `아직 모름`이다.
         thumbnailUrl:
           description: |
             **⟨동결 1회 해제 · `PLAN-SoT §9-〈80〉-㉯` 묶음 2(`K-2`)⟩**

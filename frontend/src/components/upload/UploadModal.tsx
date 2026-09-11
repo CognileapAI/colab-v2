@@ -45,6 +45,7 @@ import {
 } from '../common/VariableTable';
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
 import { previewNavigation } from '../preview/handoff';
+import { durationMedian, recordDuration } from '../preview/durationSamples';
 import { forgetPending, rememberPending } from './pendingStore';
 import { RepresentativeImageUploadError } from './uploadSource';
 import {
@@ -54,6 +55,8 @@ import {
   TransferInterrupted,
   UploadGone,
   type FileKind,
+  type GridOptions,
+  type RenderResult,
   type LineageStepContext,
   type LineageStepRender,
   type IncompleteTransferItem,
@@ -147,9 +150,22 @@ export function UploadModal(props: {
 
   const [picked, setPicked] = useState<PickedFile[]>([]);
   const [uploadId, setUploadId] = useState<string | null>(null);
+  /** J-9: 최종 전송과 분리된 첫 본체 임시 업로드. 등록 식별자로는 절대 쓰지 않는다. */
+  const [earlyUploadId, setEarlyUploadId] = useState<string | null>(null);
+  const [previewFinalNotice, setPreviewFinalNotice] = useState(false);
+  const [convergenceMessage, setConvergenceMessage] = useState<string | null>(null);
+  // null은 아직 결과를 받지 않음, undefined는 실제 비지도형 결과다.
+  const earlyBounds = useRef<RenderResult['bounds'] | null>(null);
+  const convergenceReported = useRef(false);
   const [status, setStatus] = useState<UploadStatus | null>(null);
   const [statusIssue, setStatusIssue] = useState<{ message: string; retrying: boolean; gone?: boolean } | null>(null);
   const [statusRetry, setStatusRetry] = useState(0);
+  const [gridOptions, setGridOptions] = useState<GridOptions | undefined>();
+  const [gridOptionsError, setGridOptionsError] = useState<string | null>(null);
+  const [gridReuseBusy, setGridReuseBusy] = useState(false);
+  const gridReuseLock = useRef(false);
+  const gridReuseGeneration = useRef(0);
+  const [gridRevision, setGridRevision] = useState(0);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -247,6 +263,7 @@ export function UploadModal(props: {
   // 전송 진행률 (`§D.7` ① — 실재·크기 비례라 **여기만 퍼센트가 정직하다**).
   // 접수가 끝나면 null 로 되돌린다 — 안 그러면 `격자 전송 중` 이 뒤 상태를 영구히 가린다.
   const [transfer, setTransfer] = useState<{ sentBytes: number; totalBytes: number } | null>(null);
+  const [transferRemaining, setTransferRemaining] = useState<number | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submitLock = useRef(false);
@@ -322,14 +339,24 @@ export function UploadModal(props: {
     .map((p) => `${p.relativePath ?? p.file.name}:${p.file.size}:${p.kind}`)
     .join('|');
   useEffect(() => {
+    gridReuseGeneration.current += 1;
+    gridReuseLock.current = false;
+    setGridReuseBusy(false);
     if (picked.length === 0) {
       setUploadId(null);
+      setEarlyUploadId(null);
+      setPreviewFinalNotice(false);
       setStatus(null);
       return;
     }
     let alive = true;
     // 새 접수 동안 이전 파일의 ready·그림을 등록 근거로 쓰지 않는다.
     setUploadId(null);
+    setEarlyUploadId(null);
+    setPreviewFinalNotice(false);
+    setConvergenceMessage(null);
+    earlyBounds.current = null;
+    convergenceReported.current = false;
     setStatus(null);
     setRendered(null);
     setIntakeError(null);
@@ -344,23 +371,38 @@ export function UploadModal(props: {
       ? (picked[0].relativePath ?? picked[0].file.name)
       : `파일 ${picked.length}건`;
     const resume = resumeRef.current;
+    const transferStarted = performance.now();
+    const transferMedian = durationMedian('전송');
+    setTransferRemaining(null);
     setTransfer(null);
     // 정수 퍼센트가 바뀔 때만 상태를 옮긴다 — `xhr.upload.onprogress` 는 초당 수십 번 온다.
     let lastPct = -1;
+    let earlySeen = false;
     void upload
       .create(picked, { sourceLabel: label,
                         ...(resume ? { resumeUploadId: resume } : {}),
+                        onEarlyReceipt: (receipt) => {
+                          if (!alive) return;
+                          earlySeen = true;
+                          setStatus(null);
+                          setEarlyUploadId(receipt.uploadId);
+                        },
                         onProgress: (p) => {
                           if (!alive || p.totalBytes <= 0) return;
                           const pct = Math.round((p.sentBytes / p.totalBytes) * 100);
                           if (pct === lastPct) return;
                           lastPct = pct;
                           setTransfer(p);
+                          if (transferMedian !== null) setTransferRemaining(transferMedian * (1 - Math.min(1, Math.max(0, p.sentBytes / p.totalBytes))));
                         } })
       .then((receipt) => {
         if (!alive) return;
         setTransfer(null);
+        setTransferRemaining(null);
+        if (!resume) recordDuration('전송', performance.now() - transferStarted);
+        setStatus(null);
         setUploadId(receipt.uploadId);
+        if (earlySeen) setPreviewFinalNotice(true);
         // **접수는 됐고 등록은 안 됐다** — 새로고침해도 이 업로드로 돌아올 수 있게 적어 둔다.
         if (account?.labId) rememberPending(account.labId, receipt.uploadId);
         if (resume) {                      // 이어올리기가 접수까지 갔다 — 배너 항목이 사라진다
@@ -380,6 +422,7 @@ export function UploadModal(props: {
         if (!alive) return;
         setTransfer(null);
         setUploadId(null);
+        setEarlyUploadId(null);
         // **엔진이 만든 문장을 그대로 올린다** — `transferSource`·`uploadSource` 의 문장은 이미
         // 사람 말이고 무엇이 잘못됐는지 말한다(거부된 파일 이름·사유·재개 안내). 여기서 뭉개면
         // 사람은 「눌렀는데 아무 일도 안 일어난다」만 본다.
@@ -403,15 +446,34 @@ export function UploadModal(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, upload, resumeArm, retryArm]);
 
-  // 이벤트 ②~⑦ 의 결과를 읽는다 — 새 사실을 만들지 않는다.
+  const previewUploadId = uploadId ?? earlyUploadId;
+  const showingEarlyPreview = Boolean(earlyUploadId && !uploadId);
+  const onPreviewResult = useCallback((result: RenderResult) => {
+    if (showingEarlyPreview) {
+      earlyBounds.current = result.bounds;
+      return;
+    }
+    if (!previewFinalNotice || convergenceReported.current) return;
+    convergenceReported.current = true;
+    const before = earlyBounds.current;
+    const after = result.bounds;
+    const changed = before !== null && (Boolean(before) !== Boolean(after)
+      || (before && after && (before.west !== after.west || before.south !== after.south
+        || before.east !== after.east || before.north !== after.north)));
+    setConvergenceMessage(changed ? '전체 파일 기준으로 확인했어요. 먼저 본 미리보기와 영역이 바뀌었어요.'
+      : '전체 파일 기준 미리보기 확인을 마쳤어요.');
+  }, [showingEarlyPreview, previewFinalNotice]);
+
+  // 이벤트 ②~⑦ 의 결과를 읽는다 — 새 사실을 만들지 않는다. 임시 업로드도 같은 D5 상태
+  // 기계를 타지만 최종 uploadId 자리를 차지하지 않으므로 등록 게이트에는 닿지 않는다.
   useEffect(() => {
     setStatusIssue(null);
-    if (!uploadId) return;
+    if (!previewUploadId) return;
     let alive = true;
     let failures = 0;
     const tick = async () => {
       try {
-        const s = await upload.status(uploadId);
+        const s = await upload.status(previewUploadId);
         if (!alive) return;
         failures = 0;
         setStatusIssue(null);
@@ -439,9 +501,50 @@ export function UploadModal(props: {
       alive = false;
       window.clearTimeout(statusTimer.current);
     };
-  }, [uploadId, upload, statusRetry]);
+  }, [previewUploadId, upload, statusRetry]);
 
-  const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일');
+  useEffect(() => {
+    setGridOptions(undefined);
+    setGridOptionsError(null);
+    if (!uploadId || !status?.ready || !upload.gridOptions) return;
+    let alive = true;
+    upload.gridOptions(uploadId).then((options) => {
+      if (alive) setGridOptions(options);
+    }).catch((error: unknown) => {
+      if (alive) setGridOptionsError(error instanceof Error ? error.message : '격자 후보를 불러오지 못했어요.');
+    });
+    return () => { alive = false; };
+  }, [uploadId, status?.ready, upload, statusRetry]);
+
+  async function reuseGrid(sourceDatasetId: string) {
+    if (!uploadId || !upload.reuseGrid || gridReuseLock.current || submitLock.current) return;
+    gridReuseLock.current = true;
+    setGridReuseBusy(true);
+    setGridOptionsError(null);
+    const lifecycle = mutationLifecycle.current;
+    const generation = gridReuseGeneration.current;
+    const isCurrent = () => lifecycle === mutationLifecycle.current
+      && generation === gridReuseGeneration.current;
+    try {
+      await upload.reuseGrid(uploadId, sourceDatasetId);
+      if (!isCurrent()) return;
+      setGridSkipped(false);
+      setStatus(null);
+      setGridRevision((n) => n + 1);
+      setStatusRetry((n) => n + 1);
+    } catch (error) {
+      if (isCurrent())
+        setGridOptionsError(error instanceof Error ? error.message : '격자를 가져오지 못했어요.');
+    } finally {
+      if (isCurrent()) {
+        gridReuseLock.current = false;
+        setGridReuseBusy(false);
+      }
+    }
+  }
+
+  const hasReferenceGrid = picked.some((p) => p.kind === '기준 격자 파일')
+    || Boolean(status?.files.some((file) => file.kind === '기준 격자 파일'));
   /**
    * ① 분석 단계 1·2·3. **모르면 앞 단계에 둔다** — 끝났다고 말한 뒤 아니었던 것이
    * 이 화면에서 제일 나쁜 실패다(사람이 [다음]을 눌러 빈 칸을 본다).
@@ -862,7 +965,7 @@ export function UploadModal(props: {
   }
 
   async function submit() {
-    if (submitLock.current) return;
+    if (submitLock.current || gridReuseLock.current) return;
     if (createdDatasetId) {
       const lifecycle = mutationLifecycle.current;
       submitLock.current = true;
@@ -1013,7 +1116,7 @@ export function UploadModal(props: {
 
   return (
     <div
-      className={`modal-back mb-takeover${!registerOpen && !attach ? ' up-empty' : ''}`}
+      className={`modal-back mb-takeover${!registerOpen && !attach && !showingEarlyPreview && !previewFinalNotice ? ' up-empty' : ''}`}
       data-testid="upload-backdrop"
       // ⭑ ⟨WU-A9R · PRD-44⟩ 어두운 배경을 누르면 닫힌다. **닫기 확인을 그대로 탄다** —
       //   `requestClose()` 하나만 부르므로 × 버튼·Esc 와 판정식이 갈릴 자리가 없다.
@@ -1117,6 +1220,7 @@ export function UploadModal(props: {
               <span className="up-transfer-percent" data-testid="up-transfer-percent">
                 바이트 전송 {transferPct}%
               </span>
+              {transferRemaining !== null ? <span data-testid="up-transfer-eta">전송 약 {Math.ceil(transferRemaining / 1000)}초 남음</span> : null}
             </div>
           )}
 
@@ -1206,14 +1310,28 @@ export function UploadModal(props: {
           {picked.length > 0 && (
             <div className="up-split" data-testid="up-split">
               <div className="up-split-preview" data-testid="up-split-preview">
+              {gridOptionsError ? <p className="warn" role="alert">{gridOptionsError}
+                <button type="button" className="btn btn-secondary" onClick={() => setStatusRetry((n) => n + 1)}>격자 후보 다시 불러오기</button>
+              </p> : null}
+              {showingEarlyPreview ? (
+                <p className="up-banner" data-testid="up-early-preview" role="status">
+                  <b>먼저 도착한 파일 기준</b> 미리보기예요. 전체 파일이 도착하면 바뀔 수 있어요.
+                </p>
+              ) : null}
+              {previewFinalNotice && uploadId ? (
+                <p className="up-banner" data-testid="up-preview-final" role="status">
+                  {convergenceMessage ?? '전체 파일 기준으로 미리보기를 다시 확인해요.'}
+                </p>
+              ) : null}
               <PreviewPanel
-                key={signature}
+                key={`${signature}:${previewUploadId ?? ''}:${gridRevision}`}
                 source={props.sources.preview}
-                autoPreview={registerOpen && Boolean(status?.renderable)}
+                autoPreview={(registerOpen || showingEarlyPreview || previewFinalNotice) && Boolean(status?.renderable)}
                 renderable={status?.ready ? status.renderable ?? undefined : undefined}
-                uploadId={uploadId}
+                uploadId={previewUploadId}
                 hasReferenceGrid={hasReferenceGrid}
                 onRender={setRendered}
+                onResult={onPreviewResult}
                 representativeFile={representativeFile}
                 representativeOnly={Boolean(createdDatasetId)}
                 representativeDisabled={submitting}
@@ -1228,6 +1346,9 @@ export function UploadModal(props: {
                 }}
                 {...(!createdDatasetId ? { grid: {
                   hasGrid: hasReferenceGrid,
+                  ...(gridOptions ? { options: gridOptions } : {}),
+                  reuseBusy: gridReuseBusy,
+                  ...(uploadId && upload.reuseGrid ? { onReuseGrid: (id: string) => { void reuseGrid(id); } } : {}),
                   skipped: gridSkipped,
                   verifying: gridVerifying,
                   ...(gridRejection ? { gridRejection } : {}),
@@ -1323,7 +1444,7 @@ export function UploadModal(props: {
                     type="button"
                     className="btn btn-strong"
                     data-testid="reg-open"
-                    disabled={!uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
+                    disabled={gridReuseBusy || !uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
                     onClick={() => {
                       setRegisterOpen(true);
                       setStep(1);

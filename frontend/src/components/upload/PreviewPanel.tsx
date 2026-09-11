@@ -13,7 +13,7 @@
 //   ⑸ 만료된 렌더의 타일은 **401** 로 온다 — 권한 문제가 아니라 만료로 다룬다.
 import { PreviewExpandOverlay } from './PreviewExpandOverlay';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PaletteOption, PreviewSource, RenderJob, RenderRequest, RenderResult } from './types';
+import type { GridOptions, PaletteOption, PreviewSource, RenderJob, RenderRequest, RenderResult } from './types';
 import { GridUploadBlock, type GridActions } from './GridUploadBlock';
 import { gridState, type GridRejectionInput } from './gridFlow';
 import { colorRangeNotice, layerOf, layersOf, previewImageSrc, rangeKey, salvageOf } from './previewResult';
@@ -21,6 +21,7 @@ import { PreviewSlot, type PreviewSlotState } from '../preview/PreviewSlot';
 import { BoundsOutline, PreviewZoomControls } from '../preview/PreviewZoomControls';
 import { BasemapLayer } from '../preview/BasemapLayer';
 import { useZoomPan } from '../preview/useZoomPan';
+import { useStageRemaining } from '../preview/useStageRemaining';
 import { PreviewPickRow } from '../preview/PreviewPickRow';
 import {
   createWithPieceFallback,
@@ -49,6 +50,8 @@ export function classCountOf(raw: string): number {
 
 /** 격자 흐름이 바깥(모달)에서 받는 사실 + 바깥으로 돌려주는 행동 (`§E.1-㈎`). */
 export interface GridFlowProps extends GridActions {
+  options?: GridOptions;
+  reuseBusy?: boolean;
   /** 사람이 「건너뛰기」를 골랐다 (`§E.2-⑨`). **기본 경로다.** */
   skipped?: boolean;
   /** 격자 파일이 실제로 붙어 있는가. */
@@ -82,6 +85,7 @@ export function PreviewPanel(props: {
    * 짝 파일 없이 그렸는지도 **여기서만 아는 사실**이라 함께 넘긴다.
    */
   onRender?: ((info: { renderId: string; withoutReferenceGrid: boolean }) => void) | undefined;
+  onResult?: ((result: RenderResult) => void) | undefined;
   /** 대표 그림 실제 파일은 등록 수명과 함께 모달이 쥔다. */
   representativeFile?: File | null | undefined;
   onRepresentativeFileChange?: ((file: File | null) => void) | undefined;
@@ -99,6 +103,7 @@ export function PreviewPanel(props: {
   const [palette, setPalette] = useState('');
   const [classCount, setClassCount] = useState(DEFAULT_CLASS_COUNT);
   const [job, setJob] = useState<RenderJob | null>(null);
+  const remaining = useStageRemaining(job?.renderId, job?.stage, job?.status);
   const [requesting, setRequesting] = useState(false);
   const [loadedImage, setLoadedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -270,6 +275,9 @@ export function PreviewPanel(props: {
   const failure = job?.status === '실패' ? job.failure : undefined;
   const partial = job?.partialFailure;
   const result: RenderResult | undefined = done ? job?.result : undefined;
+  useEffect(() => {
+    if (result) props.onResult?.(result);
+  }, [result, props.onResult]);
   // 실패해도 이미 구운 값 미리보기·썸네일이 있으면 **감추지 않는다**
   const salvage = salvageOf(failure);
   // **성공 경로의 ①②** (`〈88〉` 묶음 3). 이전에는 성공하면 오히려 사라지던 자리다.
@@ -422,6 +430,11 @@ export function PreviewPanel(props: {
         </button>
       </div>
 
+      {palettes !== null && palettes.length !== 3 ? (
+        <p className="pv-failure" role="alert" data-testid="up-palette-issue">
+          팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
+        </p>
+      ) : null}
       <details className="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
@@ -515,6 +528,7 @@ export function PreviewPanel(props: {
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">
           <span className="spin" aria-hidden="true" />
           <span>{requesting ? '미리보기 요청 중' : job?.stage ?? '지도 그리는 중'}…</span>
+          {remaining !== null ? <span data-testid="up-preview-eta">이 단계 약 {Math.ceil(remaining / 1000)}초 남음</span> : null}
         </div>
       )}
 
@@ -659,13 +673,16 @@ export function PreviewPanel(props: {
       </PreviewSlot>
 
       {/* 「미리보기를 보려면 격자를 올리세요」 — 문구와 상태는 `gridFlow.ts` 가 소유한다 */}
-      {grid && gridBlock ? (
+      {grid && (gridBlock || grid.options) ? (
         <GridUploadBlock
           state={gridBlock}
           transfer={grid.transfer ?? null}
+          {...(grid.options ? { options: grid.options } : {})}
+          reuseBusy={grid.reuseBusy ?? false}
           actions={{
             onPickGrid: grid.onPickGrid,
             onSkipGrid: grid.onSkipGrid,
+            ...(grid.onReuseGrid ? { onReuseGrid: grid.onReuseGrid } : {}),
             ...(grid.onCancel ? { onCancel: grid.onCancel } : {}),
             onAccept: () => {
               setAccepted(true);

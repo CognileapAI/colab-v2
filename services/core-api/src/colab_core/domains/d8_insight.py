@@ -21,6 +21,7 @@ from ..kernel.ids import Ulid
 #: **정본 §6.1 이 값 집합을 안 닫았다**는 뜻이다. 레인마다 다른 문자열을 쓰면 활동 화면이
 #: 뒤죽박죽이 되므로 여기서 하나로 고정한다.
 ACTION_GRID_CHANGED = "좌표계·격자 변경"
+ACTION_GRID_REUSED = "격자 가져오기"
 
 _INSERT = text("""
     INSERT INTO d8_activity (id, lab_id, actor_account_id, action, target_kind, target_id)

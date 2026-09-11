@@ -111,6 +111,9 @@ ENV_STORAGE_MODE = "COLAB_CORE_STORAGE_MODE"
 ENV_S3_BUCKET = "COLAB_CORE_S3_BUCKET"
 ENV_S3_REGION = "COLAB_CORE_S3_REGION"
 STORAGE_MODES = ("local", "s3")
+#: 미등록 S3 원본 회수 안전 스위치. 배포에서 명시하지 않으면 관측만 한다.
+ENV_STORAGE_RECLAIM_MODE = "COLAB_CORE_STORAGE_RECLAIM_MODE"
+STORAGE_RECLAIM_MODES = ("observe", "apply")
 
 #: 중계 대상 두 곳. 없으면 중계를 시도하지 않고 **정직하게** 답한다
 #: (미리보기는 503 성격의 봉투, AI 제안은 `degraded: true` + 0건).
@@ -142,6 +145,7 @@ class Settings:
     storage_mode: str = "local"
     s3_bucket: str | None = None
     s3_region: str | None = None
+    storage_reclaim_mode: str = "observe"
     viz_base_url: str | None = None
     viz_service_token: str | None = None
     ai_base_url: str | None = None
@@ -181,6 +185,15 @@ def _storage_settings() -> tuple[str, str | None, str | None]:
     return mode, bucket, region
 
 
+def _storage_reclaim_mode() -> str:
+    mode = (os.environ.get(ENV_STORAGE_RECLAIM_MODE) or "observe").strip().lower()
+    if mode not in STORAGE_RECLAIM_MODES:
+        raise RuntimeError(
+            f"{ENV_STORAGE_RECLAIM_MODE} 가 모르는 값이다: {mode!r} — "
+            f"{'|'.join(STORAGE_RECLAIM_MODES)} 중 하나")
+    return mode
+
+
 def load_settings() -> Settings:
     url = resolve_env_or_file(os.environ, ENV_DATABASE_URL)
     if not url:
@@ -215,6 +228,7 @@ def load_settings() -> Settings:
         storage_mode=storage_mode,
         s3_bucket=s3_bucket,
         s3_region=s3_region,
+        storage_reclaim_mode=_storage_reclaim_mode(),
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
         viz_service_token=resolve_env_or_file(os.environ, ENV_VIZ_SERVICE_TOKEN),
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,

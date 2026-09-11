@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import math
 import pathlib
 import tempfile
 from typing import Any
@@ -22,8 +23,8 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, Response, UploadFile
 from sqlalchemy.orm import Session
 
-from ...domains import (d1_identity, d2_access, d3_catalog, d4_lineage, d5_ingestion,
-                        d6_project, d8_insight)
+from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience,
+                        d4_lineage, d5_ingestion, d6_project, d8_insight)
 from ...kernel import errors, storage_layout
 from ...kernel.auth import Subject
 from ...kernel.objectpath import normalize_relative_path
@@ -301,6 +302,195 @@ def get_upload_status(uploadId: str,
     }
 
 
+# ═══════════════════════ J-1~J-4 격자 편의 ═════════════════════════════════
+def _bounds(row: dict) -> dict | None:
+    values = [row.get(key) for key in ("west", "south", "east", "north")]
+    if any(value is None for value in values):
+        return None
+    return dict(zip(("west", "south", "east", "north"), values))
+
+
+def _grid_view(row: dict) -> dict | None:
+    required = (row.get("grid_shape"), row.get("grid_digest"),
+                row.get("grid_format_signature"), row.get("map_state"))
+    if any(value is None for value in required):
+        return None
+    view = {
+        "gridShape": list(row["grid_shape"]),
+        "gridDigest": row["grid_digest"],
+        "formatSignature": row["grid_format_signature"],
+        "mapState": row["map_state"],
+    }
+    bounds = _bounds(row)
+    if bounds is not None:
+        view["expectedBounds"] = bounds
+    return view
+
+
+def _corner_distance_meters(left: dict, right: dict) -> int | None:
+    a, b = _bounds(left), _bounds(right)
+    if a is None or b is None:
+        return None
+    shapes = (left.get("grid_shape"), right.get("grid_shape"))
+    if any(not shape or len(shape) != 2 or any(v <= 0 for v in shape) for shape in shapes):
+        return None
+
+    def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        phi1, phi2 = math.radians(lat1), math.radians(lat2)
+        dphi, dlambda = phi2 - phi1, math.radians(lon2 - lon1)
+        h = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+        return 2 * 6_371_008.8 * math.asin(math.sqrt(max(0.0, min(1.0, h))))
+
+    pairs = [
+        (a["south"], a["west"], b["south"], b["west"]),
+        (a["south"], a["east"], b["south"], b["east"]),
+        (a["north"], a["west"], b["north"], b["west"]),
+        (a["north"], a["east"], b["north"], b["east"]),
+    ]
+    distances = [haversine(*pair) for pair in pairs]
+    # 네 꼭짓점에서 각 격자의 한 화소 폭·높이를 미터로 읽고 그 차이를 포함한다.
+    # 경계가 같고 형상이 다른 격자를 거리 0으로 표시하지 않는다.
+    for north in (False, True):
+        for east in (False, True):
+            cell_sizes = []
+            for bounds, shape in zip((a, b), shapes):
+                lat = bounds["north" if north else "south"]
+                lon = bounds["east" if east else "west"]
+                dx = (bounds["east"] - bounds["west"]) / shape[1]
+                dy = (bounds["north"] - bounds["south"]) / shape[0]
+                cell_sizes.append((
+                    haversine(lat, lon, lat, lon + (-dx if east else dx)),
+                    haversine(lat, lon, lat + (-dy if north else dy), lon),
+                ))
+            distances.extend(abs(x - y) for x, y in zip(*cell_sizes))
+    return round(max(distances))
+
+
+@router.get("/uploads/{uploadId}/grid-options", name="getUploadGridOptions")
+def get_upload_grid_options(uploadId: str,
+                            subject: Subject = Depends(current_subject),
+                            db: Session = Depends(scoped_db)) -> dict:
+    if not Ulid.is_valid(uploadId):
+        raise errors.bad_request("uploadId 가 정규 ID 가 아니다.")
+    upload_id = Ulid(uploadId)
+    if _live_upload(db, upload_id) is None:
+        raise errors.not_found("없거나 수명이 다한 업로드다.")
+    current = _ledger(db).grid_profile(upload_id)
+    result: dict[str, Any] = {"candidates": []}
+    if current is None:
+        return result
+    body_shape = current.get("body_shape")
+    if body_shape:
+        result["bodyShape"] = list(body_shape)
+        for row in d3_grid_convenience.candidates(db, body_shape):
+            view = _grid_view(row)
+            if view is None:
+                continue
+            result["candidates"].append({
+                **view,
+                "datasetId": row["dataset_id"],
+                "datasetName": row["dataset_name"],
+                "fileNames": list(row["file_names"]),
+                "isDefault": bool(row["is_default"]),
+            })
+    current_view = _grid_view(current)
+    if current_view is not None:
+        result["currentGrid"] = current_view
+        reference = d3_grid_convenience.default_profile(db)
+        reference_view = None if reference is None else _grid_view(reference)
+        if reference_view is not None:
+            result["mismatchWarning"] = {
+                "formatDiffers": (current["grid_format_signature"] !=
+                                  reference["grid_format_signature"]),
+                "hashDiffers": current["grid_digest"] != reference["grid_digest"],
+                "distanceMeters": _corner_distance_meters(current, reference),
+                "blocksRegistration": False,
+            }
+    return result
+
+
+@router.post("/uploads/{uploadId}/grid-reuse", name="reuseDatasetGrid", status_code=201)
+def reuse_dataset_grid(request: Request, uploadId: str, body: dict = None,
+                       subject: Subject = Depends(current_subject),
+                       db: Session = Depends(scoped_db)) -> dict:
+    _require_upload_edit(db, subject)
+    if not Ulid.is_valid(uploadId):
+        raise errors.bad_request("uploadId 가 정규 ID 가 아니다.")
+    if not isinstance(body, dict) or set(body) != {"sourceDatasetId"}:
+        raise errors.bad_request("sourceDatasetId 하나만 보낸다.")
+    source_ref = body.get("sourceDatasetId")
+    if not Ulid.is_valid(source_ref):
+        raise errors.bad_request("sourceDatasetId 가 정규 ID 가 아니다.")
+    upload_id, source_id = Ulid(uploadId), Ulid(source_ref)
+    record = _live_upload(db, upload_id)
+    if record is None:
+        raise errors.not_found("없거나 수명이 다한 업로드다.")
+    if record.registered_at is not None:
+        raise errors.conflict("이미 등록 전환된 업로드다.")
+    ledger = _ledger(db)
+    target = ledger.grid_profile(upload_id)
+    if target is None or not target.get("body_shape"):
+        raise errors.bad_request("본체 형상을 읽은 뒤에 격자를 가져올 수 있다.")
+    if any(file.kind == GRID for file in ledger.files(upload_id)):
+        raise errors.conflict("이미 기준 격자 파일이 있다.")
+
+    source = d3_grid_convenience.profile(db, source_id)
+    if source is None:
+        raise errors.not_found()
+    source_files = d3_grid_convenience.grid_files(db, source_id)
+    if not source_files:
+        raise errors.not_found()
+    if list(source.get("grid_shape") or []) != list(target["body_shape"]):
+        raise errors.bad_request("본체와 기준 격자의 형상이 다르다.")
+    if not source.get("grid_digest"):
+        raise errors.bad_request("복제할 격자의 digest가 아직 없다.")
+
+    rows: list[dict] = []
+    pairs: list[tuple[str, str]] = []
+    for source_file in source_files:
+        file_id = str(Ulid.generate())
+        key = storage_layout.storage_key(
+            str(upload_id), file_id=file_id, kind=GRID, file_name=source_file["file_name"])
+        rows.append({
+            "id": file_id, "file_name": source_file["file_name"],
+            "byte_size": source_file["size_bytes"], "storage_key": key,
+            "carries_lat": source_file["carries_lat"],
+            "carries_lon": source_file["carries_lon"],
+            "relative_path": source_file["relative_path"],
+        })
+        pairs.append((source_file["storage_key"], key))
+
+    # DB 행을 먼저 검증한다. 저장 실패는 요청 트랜잭션을 롤백하고 duplicate가 새 키도 되돌린다.
+    ledger.insert_reused_grid_files(upload_id=upload_id, files=rows)
+    ledger.adopt_grid_profile(upload_id=upload_id, source=source)
+    _storage(request).duplicate(pairs=pairs)
+    ledger.reopen_after_grid_reuse(upload_id)
+    copied = [file for file in ledger.files(upload_id) if file.kind == GRID]
+    return {"files": _file_records(copied), "gridDigest": source["grid_digest"]}
+
+
+@router.put("/lab/default-grid", name="setLabDefaultGrid")
+def set_lab_default_grid(body: dict = None,
+                         subject: Subject = Depends(current_subject),
+                         db: Session = Depends(scoped_db)) -> dict:
+    if d2_access.role_of(db, subject.account_id) != "교수":
+        raise errors.forbidden("연구실 기본 격자는 교수만 지정한다.")
+    if not isinstance(body, dict) or set(body) != {"datasetId"}:
+        raise errors.bad_request("datasetId 하나만 보낸다.")
+    dataset_ref = body.get("datasetId")
+    if not Ulid.is_valid(dataset_ref):
+        raise errors.bad_request("datasetId 가 정규 ID 가 아니다.")
+    dataset_id = Ulid(dataset_ref)
+    if d3_grid_convenience.profile(db, dataset_id) is None:
+        raise errors.not_found()
+    if not d3_grid_convenience.grid_files(db, dataset_id):
+        raise errors.bad_request("기준 격자 파일이 있는 데이터셋만 기본값으로 지정한다.")
+    if not d3_grid_convenience.set_default(
+            db, dataset_id=dataset_id, actor_id=subject.account_id):
+        raise errors.not_found()
+    return {"datasetId": str(dataset_id)}
+
+
 # ─────────────────────────── AI 제안에 넘길 파일 메타 ────────────────────────
 def _uploaded_file_meta(ledger, upload_id: Ulid) -> dict[str, Any]:
     """계약 `core-ai.yaml#UploadedFileMeta` 를 **원장에서 읽은 값으로만** 조립한다.
@@ -571,6 +761,8 @@ def create_dataset(request: Request, body: dict = None,
     record = _live_upload(db, upload_id)
     if record is None:
         raise errors.not_found("없거나 수명이 다한 업로드다.")
+    if ledger.is_early_preview(upload_id):
+        raise errors.conflict("첫 파일 임시 미리보기는 등록용 업로드가 아니다.")
     if record.registered_at is not None:
         raise errors.conflict("이미 등록 전환된 업로드다 — 같은 업로드로 데이터셋을 두 번 만들지 않는다.")
     files = ledger.files(upload_id)
@@ -662,6 +854,13 @@ def create_dataset(request: Request, body: dict = None,
             carries_lat=f.carries_lat, carries_lon=f.carries_lon,
             relative_path=f.relative_path)
 
+    # J-1~J-5 — 파일을 읽은 worker의 프로필을 등록 세계로 그대로 승계한다.
+    # 행이 없으면 기존 데이터처럼 「아직 모름」이며 값을 지어내 backfill하지 않는다.
+    grid_profile = ledger.grid_profile(upload_id)
+    if grid_profile is not None:
+        d3_grid_convenience.upsert_profile(
+            db, dataset_id=dataset_id, values=grid_profile)
+
     # ③ 계보 — **사람이 확인한 것만** 온다. 비어 있으면 **`확인 필요`** 이고 등록은 막지 않는다.
     # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 「모른다」는 사람이 선언한다.**
     #    ⛔ **「모른다」와 「이것이 부모다」를 한 요청에 담을 수 없다** — 400 이다. 화면도 확정
@@ -721,6 +920,10 @@ def create_dataset(request: Request, body: dict = None,
     d8_insight.record_activity(db, actor_id=subject.account_id,
                                action=d8_insight.ACTION_DATASET_ADDED,
                                target_kind="데이터셋", target_id=dataset_id)
+    if grid_profile is not None and grid_profile.get("grid_source") == "가져오기":
+        d8_insight.record_activity(db, actor_id=subject.account_id,
+                                   action=d8_insight.ACTION_GRID_REUSED,
+                                   target_kind="데이터셋", target_id=dataset_id)
     # ⑦ ⭑ **⟨20차 해제 · PRD-03 · 미결-2 ⓐ⟩ 사람 Lv ↔ 파생 Lv 불일치는 경고만이다.**
     #    **계보를 다 붙인 뒤**에 잰다 — ③ 앞에서 재면 파생값이 늘 `Lv0` 이라 거짓 불일치다.
     #    ⛔ 여기서 400 을 내지 않는다(등록을 막지 않는다 · 확정 판정).

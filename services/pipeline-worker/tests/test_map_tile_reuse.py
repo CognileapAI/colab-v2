@@ -84,6 +84,29 @@ def test_a_changed_source_does_not_reuse_the_other_tile(tmp_path: Path):
     assert second.reused is False
 
 
+def test_exact_copy_at_new_upload_location_reuses_direct_upload_content_key(tmp_path: Path):
+    """격자 가져오기의 새 업로드 경로는 같은 바이트의 지도 키를 바꾸지 않는다."""
+    import shutil
+
+    source, grid = _source(tmp_path)
+    previews = tmp_path / "previews"
+    direct = _run(source, grid, previews, tmp_path / "direct-work")
+    assert direct.status == "SUCCESS", direct.failures
+    copied = tmp_path / "new-upload"
+    copied_grid = copied / "grid"
+    copied_grid.mkdir(parents=True)
+    copied_body = copied / source.name
+    shutil.copyfile(source, copied_body)
+    for file in grid.iterdir():
+        shutil.copyfile(file, copied_grid / file.name)
+    reused = _run(copied_body, copied_grid, previews, tmp_path / "reused-work")
+    assert reused.status == "SUCCESS", reused.failures
+    assert reused.tile_content_key == direct.tile_content_key
+    assert reused.cog_path == direct.cog_path
+    assert reused.reused is True
+    assert reused.artifact is None
+
+
 # ── ⓑ 자리에 파일이 있으나 타일이 아니다 → 다시 굽고 드러낸다 ──────────────
 @pytest.mark.parametrize("junk", [b"", b"not a tiff at all"])
 def test_an_unusable_file_at_the_key_is_never_reused(tmp_path: Path, junk: bytes):

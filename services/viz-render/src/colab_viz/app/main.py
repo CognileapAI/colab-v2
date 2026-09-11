@@ -38,6 +38,28 @@ def _s3_client(settings: Settings):
     return S3Client(bucket=settings.s3_bucket, region=settings.s3_region)
 
 
+def _build_reclaim_job(*, settings: Settings, client, source):
+    """배포 저장 모드와 같은 판독기를 붙인다. 갈린 모드는 준비 red로 드러낸다."""
+    if settings.source_mode == "local" and settings.preview_sink == "local":
+        return tile_reclaim.ReclaimJob(
+            previews_root=settings.preview_dir, storage_root=settings.source_root,
+            apply=settings.tile_reclaim_apply,
+            max_keys=settings.tile_reclaim_max_keys,
+            interval_seconds=settings.tile_reclaim_interval_seconds)
+    if settings.source_mode == "s3" and settings.preview_sink == "s3":
+        return tile_reclaim.S3ReclaimJob(
+            client=client, source=source,
+            uploads_prefix="uploads", previews_prefix=settings.preview_s3_prefix,
+            apply_requested=settings.tile_reclaim_apply,
+            max_keys=settings.tile_reclaim_max_keys,
+            interval_seconds=settings.tile_reclaim_interval_seconds)
+    return tile_reclaim.NotReadyReclaimJob(
+        reason=(f"source={settings.source_mode} · preview={settings.preview_sink} — "
+                "저장 모드가 갈려 회수 판정을 시작하지 않았다"),
+        max_keys=settings.tile_reclaim_max_keys,
+        interval_seconds=settings.tile_reclaim_interval_seconds)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     # **관측이 되게 하는 한 줄**(`BF-12` · `〈324〉`). 앱을 세우는 자리에서 한 번 설정한다 —
     # 로거를 쓰는 쪽(`trigger_loop` 등)이 각자 설정하면 갈리고, 안 하면 버려진다.
@@ -60,11 +82,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             #   주체를 새로 세우지 않는다 — 스레드 하나가 트리거와 회수를 함께 진다.
             #   ⚠ **기본은 관측 전용**(`settings.tile_reclaim_apply` 기본 `False`)이라
             #     배포가 명시로 켜기 전에는 세고 적기만 한다.
-            reclaim = tile_reclaim.ReclaimJob(
-                previews_root=settings.preview_dir, storage_root=settings.source_root,
-                apply=settings.tile_reclaim_apply,
-                max_keys=settings.tile_reclaim_max_keys,
-                interval_seconds=settings.tile_reclaim_interval_seconds)
+            reclaim = _build_reclaim_job(
+                settings=settings, client=client, source=app.state.source)
             loop = TriggerDrainLoop(app.state.triggers, jobs=app.state.jobs,
                                     source=app.state.source,
                                     interval_seconds=settings.trigger_poll_seconds,

@@ -7,6 +7,7 @@ import type { CatalogSource, DatasetRow } from './types';
 export const FIXTURE_ROWS: DatasetRow[] = [
   {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA1',
+    mapState: '아직 모름',
     name: 'nakdong_precip_2025_Lv2.nc',
     fileCount: 4,
     topic: '강우·강수',
@@ -26,6 +27,7 @@ export const FIXTURE_ROWS: DatasetRow[] = [
   },
   {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA2',
+    mapState: '아직 모름',
     name: 'GK2A_rain_202506_Lv0.HDF5',
     fileCount: 72,
     topic: '강우·강수',
@@ -45,6 +47,7 @@ export const FIXTURE_ROWS: DatasetRow[] = [
   },
   {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA3',
+    mapState: '아직 모름',
     name: 'nakdong_DEM_10m.tif',
     fileCount: 1,
     topic: '지형·DEM',
@@ -64,6 +67,7 @@ export const FIXTURE_ROWS: DatasetRow[] = [
   },
   {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA4',
+    mapState: '아직 모름',
     name: 'GK2A_NDVI_2025_Lv2.tif',
     fileCount: 1,
     topic: '식생·NDVI',
@@ -84,6 +88,7 @@ export const FIXTURE_ROWS: DatasetRow[] = [
   {
     // 잠긴 행 — 표에서 사라지지 않는다. 조각 칩은 잠긴 행에도 뜬다 (`PLAN-SoT §9-㊼`)
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA5',
+    mapState: '아직 모름',
     name: 'nakdong_runoff_2025_Lv2.nc',
     fileCount: 3,
     // 주제 = NULL. 4값(`〈55〉` · `㊸-④-2`)에 유출을 담을 값이 없다 —
@@ -105,6 +110,7 @@ export const FIXTURE_ROWS: DatasetRow[] = [
   },
   {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA6',
+    mapState: '아직 모름',
     name: 'ERA5_precip_2025_Lv1.grib',
     fileCount: 1,
     topic: '강우·강수',

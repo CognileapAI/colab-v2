@@ -54,6 +54,10 @@ class UploadLedgerPort(Protocol):
         """
         ...
 
+    def record_grid_profile(self, upload_id: str, **fields) -> None:
+        """실제 파일/좌표에서 읽은 격자·지도 프로필을 D5에 upsert한다."""
+        ...
+
     def record_status(self, upload_id: str, **fields) -> None: ...
 
     def expire(self, now=None) -> list[str]:

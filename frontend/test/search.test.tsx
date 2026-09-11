@@ -19,6 +19,7 @@ const LAB_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AHU';
 
 function hit(over: Partial<SearchResultRow> = {}): SearchResultRow {
   return {
+    mapState: '아직 모름',
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0A01',
     name: '한강 유역 강수 관측',
     fileCount: 1,

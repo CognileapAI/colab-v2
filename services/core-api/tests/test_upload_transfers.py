@@ -1,4 +1,4 @@
-"""오라클 — 프리사인드 전송 9 op (`routes/upload_transfers.py` · 동결 해제 8차 `〈338〉`).
+"""오라클 — 프리사인드 전송 10 op (`routes/upload_transfers.py` · 동결 해제 8차 `〈338〉`).
 
 S3 는 가짜 클라이언트를 앱 상태에 꽂아 검증한다 — 실전 S3 왕복은 `ops/s3_smoke.py` 와
 동결 해제 증거의 실호출이 한다. 핵심 오라클 다섯:
@@ -90,6 +90,19 @@ class FakeStorage:
             self.s3.objects[new_key] = size
             self.relocated.append((f.storage_key, new_key))
 
+    def duplicate(self, *, pairs) -> None:
+        made = []
+        try:
+            for source, destination in pairs:
+                if source not in self.s3.objects:
+                    raise FileNotFoundError(source)
+                self.s3.objects[destination] = self.s3.objects[source]
+                made.append(destination)
+        except Exception:
+            for destination in made:
+                self.s3.objects.pop(destination, None)
+            raise
+
 
 def s3_client(p2_client_factory, fake: FakeS3):
     client = p2_client_factory()
@@ -116,7 +129,7 @@ BIG = {"fileName": "큰.nc", "byteSize": 20 * 1024 * 1024}
 
 # ═══════════════════════════ local 모드 = 501 ═══════════════════════════════
 def test_local_mode_answers_501_everywhere(p2_client) -> None:
-    """저장 모드 local 에서 아홉 전부 501 — FE 가 form-data 경로로 폴백하는 신호다."""
+    """저장 모드 local 에서 열 전부 501 — FE 가 form-data 경로로 폴백하는 신호다."""
     client = p2_client()
     u = "01JXXXXXXXXXXXXXXXXXXXXXX0"
     calls = [
@@ -128,6 +141,7 @@ def test_local_mode_answers_501_everywhere(p2_client) -> None:
         ("post", f"/uploads/transfers/{u}/files/{u}/multipart", {}),
         ("post", f"/uploads/transfers/{u}/files/{u}/part-urls", {"json": {"partNumbers": [1]}}),
         ("post", f"/uploads/transfers/{u}/files/{u}/complete", {}),
+        ("post", f"/uploads/transfers/{u}/early-preview", {}),
         ("post", f"/uploads/transfers/{u}/complete", {}),
     ]
     for method, path, kw in calls:
@@ -234,6 +248,38 @@ def test_complete_verifies_size_and_then_accepts_with_same_ulid(p2_client, sql) 
     assert r.status_code == 409
 
 
+def test_early_preview_is_separate_idempotent_and_does_not_complete_transfer(
+        p2_client, sql) -> None:
+    fake = FakeS3()
+    client = s3_client(p2_client, fake)
+    plan = _initiate(client, [SMALL]).json()
+    transfer_id, source = plan["uploadId"], plan["files"][0]
+    endpoint = f"{API_PREFIX}/uploads/transfers/{transfer_id}/early-preview"
+
+    before = client.post(endpoint, headers=auth(TOKEN_RES))
+    assert before.status_code == 409
+    _finish_single(client, fake, transfer_id, source)
+
+    first = client.post(endpoint, headers=auth(TOKEN_RES))
+    assert first.status_code == 201, first.text
+    preview_id = first.json()["uploadId"]
+    preview_file = first.json()["files"][0]
+    assert preview_id != transfer_id and preview_file["fileId"] != source["fileId"]
+    source_key = _storage_key_of(client, transfer_id, source)
+    preview_key = _storage_key_of(client, preview_id, preview_file)
+    assert source_key in fake.objects and preview_key in fake.objects
+
+    repeated = client.post(endpoint, headers=auth(TOKEN_RES))
+    assert repeated.status_code == 201 and repeated.json()["uploadId"] == preview_id
+    assert sql("SELECT count(*) AS n FROM d5_upload WHERE id=:u", {"u": preview_id})[0]["n"] == 1
+    assert sql("SELECT completed_at FROM d5_upload_transfer WHERE id=:u",
+               {"u": transfer_id})[0]["completed_at"] is None
+
+    final = client.post(f"{API_PREFIX}/uploads/transfers/{transfer_id}/complete",
+                        headers=auth(TOKEN_RES))
+    assert final.status_code == 201 and final.json()["uploadId"] == transfer_id
+
+
 def test_multipart_resume_reads_parts_from_s3(p2_client) -> None:
     """uploadedParts 는 S3 실측이다 — DB 를 믿으면 이미 올린 파트를 다시 올린다."""
     fake = FakeS3()
@@ -277,6 +323,29 @@ def test_incomplete_list_and_abort_cleans_s3(p2_client) -> None:
     assert _storage_key_of(client, upload_id, small) in fake.deleted  # 올라간 객체 삭제
     r = client.get(f"{API_PREFIX}/uploads/transfers/incomplete", headers=auth(TOKEN_RES))
     assert [i for i in r.json()["items"] if i["uploadId"] == upload_id] == []
+
+
+def test_housekeeping_commits_even_when_the_following_request_is_400(p2_client, sql) -> None:
+    """요청 검증 rollback이 이미 끝난 S3 정리의 원장을 되살리지 않는다."""
+    fake = FakeS3()
+    client = s3_client(p2_client, fake)
+    plan = _initiate(client, [SMALL, BIG]).json()
+    upload_id = plan["uploadId"]
+    small, big = plan["files"]
+    client.post(f"{API_PREFIX}/uploads/transfers/{upload_id}/files/{big['fileId']}/multipart",
+                headers=auth(TOKEN_RES))
+    _finish_single(client, fake, upload_id, small)
+    sql("UPDATE d5_upload_transfer "
+        "SET created_at=created_at-interval '4 days', expires_at=expires_at-interval '4 days' "
+        "WHERE id=:u", {"u": upload_id})
+
+    # 유지보수 뒤 본문 검증이 실패한다. 정리는 독립 트랜잭션이라 그대로 남아야 한다.
+    response = _initiate(client, [])
+    assert response.status_code == 400
+    assert sql("SELECT count(*) AS n FROM d5_upload_transfer WHERE id=:u",
+               {"u": upload_id})[0]["n"] == 0
+    assert len(fake.aborted) == 1
+    assert _storage_key_of(client, upload_id, small) in fake.deleted
 
 
 def test_permission_gate_blocks_initiate(p2_client) -> None:

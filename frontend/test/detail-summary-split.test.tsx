@@ -83,6 +83,7 @@ describe('버그 15 · 상세 헤더 — `／` 는 표시 단계에서 줄로 �
 
 describe('버그 15 · 목록·검색 카드는 한 줄 그대로다', () => {
   const row: SearchResultRow = {
+    mapState: '아직 모름',
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0A01',
     name: '충청권 NDVI 다운스케일 (Nearest)',
     fileCount: 1,

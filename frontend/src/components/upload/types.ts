@@ -10,6 +10,7 @@ import type { PreviewPiece, TargetDescription } from '../preview/pick';
 export type FileKind = Schemas['FileKind'];
 export type UploadReceipt = Schemas['UploadReceipt'];
 export type UploadStatus = Schemas['UploadStatus'];
+export type GridOptions = Schemas['GridOptions'];
 export type UploadFileRef = Schemas['UploadFileRef'];
 export type DatasetCreate = Schemas['DatasetCreate'];
 export type RepresentativeImageMetadata = Schemas['RepresentativeImageMetadata'];
@@ -86,6 +87,8 @@ export interface UploadCreateOptions {
   /** 미완결 전송을 이어올릴 때 — 같은 파일을 다시 고른 뒤 이 id 로 재개한다. */
   resumeUploadId?: string;
   onProgress?: (p: { sentBytes: number; totalBytes: number }) => void;
+  /** S3 직행에서 첫 본체가 검증된 뒤 만들어진, 등록 불가 임시 미리보기 업로드. */
+  onEarlyReceipt?: (receipt: UploadReceipt) => void;
 }
 
 /** 미완결 전송 한 건 (`listIncompleteUploadTransfers` · 〈338〉). */
@@ -110,6 +113,8 @@ export interface UploadSource {
   abortTransfer?(uploadId: string): Promise<void>;
   /** `getUploadStatus` — 이벤트 ②~⑦ 의 결과만 읽는다. 만료면 `UploadGone`. */
   status(uploadId: string): Promise<UploadStatus>;
+  gridOptions?(uploadId: string): Promise<GridOptions>;
+  reuseGrid?(uploadId: string, sourceDatasetId: string): Promise<UploadFileRef[]>;
   /** `createDataset` — **등록 전환**. 이것을 부르기 전에는 D3 에 행이 없다 (`〈64〉`). */
   register(body: DatasetCreate): Promise<{ datasetId: string }>;
   /** 등록된 데이터셋에 사용자 대표 그림을 별도 저장한다. 등록 재시도와 수명을 섞지 않는다. */

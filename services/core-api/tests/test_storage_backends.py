@@ -10,7 +10,14 @@ import dataclasses
 
 import pytest
 
-from colab_core.kernel.config import ENV_S3_BUCKET, ENV_S3_REGION, ENV_STORAGE_MODE, _storage_settings
+from colab_core.kernel.config import (
+    ENV_S3_BUCKET,
+    ENV_S3_REGION,
+    ENV_STORAGE_MODE,
+    ENV_STORAGE_RECLAIM_MODE,
+    _storage_reclaim_mode,
+    _storage_settings,
+)
 from colab_core.kernel.s3 import S3Client
 from colab_core.kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
 
@@ -61,6 +68,41 @@ def test_local_relocate_skips_missing_source(tmp_path) -> None:
     st = LocalFilesystemStorage(tmp_path)
     st.relocate(files=[_Row("F1", "uploads/U1/F1")], new_keys={"F1": "uploads/D1/F1"})
     assert not (tmp_path / "uploads/D1/F1").exists()
+
+
+def test_local_duplicate_preserves_source_and_exact_bytes(tmp_path) -> None:
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="datasets/D1/grid/F1.nc", payload=b"\x00grid\xff")
+    st.duplicate(pairs=[("datasets/D1/grid/F1.nc", "uploads/U1/grid/F2.nc")])
+    assert (tmp_path / "datasets/D1/grid/F1.nc").read_bytes() == b"\x00grid\xff"
+    assert (tmp_path / "uploads/U1/grid/F2.nc").read_bytes() == b"\x00grid\xff"
+
+
+def test_local_duplicate_missing_source_rolls_back_prior_copy(tmp_path) -> None:
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="datasets/D1/grid/F1.nc", payload=b"grid")
+    with pytest.raises(FileNotFoundError):
+        st.duplicate(pairs=[
+            ("datasets/D1/grid/F1.nc", "uploads/U1/grid/F2.nc"),
+            ("datasets/D1/grid/missing.nc", "uploads/U1/grid/F3.nc"),
+        ])
+    assert not (tmp_path / "uploads/U1/grid/F2.nc").exists()
+
+
+def test_local_duplicate_partial_write_failure_removes_incomplete_destination(tmp_path, monkeypatch) -> None:
+    """디스크 쓰기 도중 실패해도 새 격자 키에 반쪽 바이트를 남기지 않는다."""
+    st = LocalFilesystemStorage(tmp_path)
+    st.put(key="datasets/D1/grid/F1.nc", payload=b"complete-grid")
+
+    def partial_copy(source, destination):
+        destination.write_bytes(b"partial")
+        raise OSError("injected disk write failure")
+
+    monkeypatch.setattr("colab_core.kernel.storage_backends.shutil.copyfile", partial_copy)
+    with pytest.raises(OSError, match="injected disk write failure"):
+        st.duplicate(pairs=[("datasets/D1/grid/F1.nc", "uploads/U1/grid/F2.nc")])
+    assert (tmp_path / "datasets/D1/grid/F1.nc").read_bytes() == b"complete-grid"
+    assert not (tmp_path / "uploads/U1/grid/F2.nc").exists()
 
 
 # ── S3 (가짜 전송) ──────────────────────────────────────────────────────────
@@ -126,6 +168,25 @@ def test_s3_relocate_rolls_back_copies_on_failure() -> None:
     assert calls[-1][0] == "POST" and b"uploads/D1/F1" in calls[-1][3]  # 되돌림 삭제
 
 
+def test_s3_duplicate_only_copies_and_keeps_source() -> None:
+    calls, client = _client([_COPY_OK])
+    S3UploadStorage(client).duplicate(
+        pairs=[("datasets/D1/grid/F1.nc", "uploads/U1/grid/F2.nc")])
+    assert [c[0] for c in calls] == ["PUT"]
+    assert calls[0][2].get("x-amz-copy-source") == "/b/datasets/D1/grid/F1.nc"
+
+
+def test_s3_duplicate_missing_source_rolls_back_prior_copy() -> None:
+    missing = (404, {}, b"<Error><Code>NoSuchKey</Code><Message>x</Message></Error>")
+    calls, client = _client([_COPY_OK, missing, _DELETE_OK])
+    with pytest.raises(FileNotFoundError):
+        S3UploadStorage(client).duplicate(pairs=[
+            ("datasets/D1/grid/F1.nc", "uploads/U1/grid/F2.nc"),
+            ("datasets/D1/grid/missing.nc", "uploads/U1/grid/F3.nc"),
+        ])
+    assert calls[-1][0] == "POST" and b"uploads/U1/grid/F2.nc" in calls[-1][3]
+
+
 # ── 설정 스위치 ─────────────────────────────────────────────────────────────
 
 def test_storage_mode_unknown_value_dies(monkeypatch) -> None:
@@ -146,6 +207,17 @@ def test_storage_mode_defaults_to_local(monkeypatch) -> None:
     monkeypatch.delenv(ENV_STORAGE_MODE, raising=False)
     mode, _bucket, _region = _storage_settings()
     assert mode == "local"
+
+
+def test_storage_reclaim_mode_defaults_to_observe(monkeypatch) -> None:
+    monkeypatch.delenv(ENV_STORAGE_RECLAIM_MODE, raising=False)
+    assert _storage_reclaim_mode() == "observe"
+
+
+def test_storage_reclaim_mode_rejects_unknown_values(monkeypatch) -> None:
+    monkeypatch.setenv(ENV_STORAGE_RECLAIM_MODE, "yes-really-delete")
+    with pytest.raises(RuntimeError, match="모르는 값"):
+        _storage_reclaim_mode()
 
 
 # ── put_stream (`〈339〉` — 업로드 본문을 통째로 메모리에 올리지 않는다) ──────

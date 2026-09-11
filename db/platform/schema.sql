@@ -381,7 +381,10 @@ CREATE TABLE d3_dataset (
   -- ⚠ **원천 표기(`source_label`)는 이 두 칸과 다른 축이다** — 그 열과 정규화 열·자동완성
   --    색인은 그대로이고 Lv 무관 상시 노출이다(미결-11 ⓐ).
   source_url           text,
-  source_downloaded_on date
+  source_downloaded_on date,
+  -- 0024: 연구실 기본 격자가 다른 연구실 데이터셋을 가리키지 못하게 하는 복합 FK의 표적.
+  -- id 단독 PK는 그대로이고, 이 제약은 테넌트 식별자까지 한 묶음으로 참조할 때만 쓴다.
+  CONSTRAINT d3_dataset_lab_id_id_unique UNIQUE (lab_id, id)
 );
 CREATE INDEX d3_dataset_lab_idx ON d3_dataset (lab_id);
 CREATE INDEX d3_dataset_search_idx ON d3_dataset USING gin (search_vector);
@@ -738,6 +741,53 @@ CREATE UNIQUE INDEX d3_file_one_lat_grid_per_dataset
 CREATE UNIQUE INDEX d3_file_one_lon_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lon;
 
+-- J-1~J-5 — 파일을 실제로 읽은 파이프라인이 남긴 격자/지도 사실.
+-- 기존 데이터셋은 근거 없이 backfill하지 않는다. 행 부재 = 「아직 모름」이다.
+CREATE TABLE d3_dataset_grid_profile (
+  dataset_id            ulid        PRIMARY KEY,
+  lab_id                ulid        NOT NULL REFERENCES d1_lab(id),
+  body_shape            integer[],
+  grid_shape            integer[],
+  grid_digest           text,
+  grid_format_signature text,
+  west                  double precision,
+  south                 double precision,
+  east                  double precision,
+  north                 double precision,
+  map_state             text        NOT NULL CHECK (map_state IN ('지도 있음', '지도 없음', '아직 모름')),
+  grid_source           text        NOT NULL CHECK (grid_source IN ('직접 업로드', '가져오기')),
+  created_at            timestamptz NOT NULL DEFAULT now(),
+  updated_at            timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d3_dataset_grid_profile_dataset_fk
+    FOREIGN KEY (lab_id, dataset_id) REFERENCES d3_dataset(lab_id, id) ON DELETE CASCADE,
+  CONSTRAINT d3_dataset_grid_profile_body_shape_2d
+    CHECK (body_shape IS NULL OR (cardinality(body_shape) = 2 AND 0 < ALL(body_shape))),
+  CONSTRAINT d3_dataset_grid_profile_grid_shape_2d
+    CHECK (grid_shape IS NULL OR (cardinality(grid_shape) = 2 AND 0 < ALL(grid_shape))),
+  CONSTRAINT d3_dataset_grid_profile_digest_sha256
+    CHECK (grid_digest IS NULL OR grid_digest ~ '^[0-9a-f]{64}$'),
+  CONSTRAINT d3_dataset_grid_profile_bounds_whole
+    CHECK ((west IS NULL AND south IS NULL AND east IS NULL AND north IS NULL)
+           OR (west IS NOT NULL AND south IS NOT NULL AND east IS NOT NULL AND north IS NOT NULL
+               AND west BETWEEN -180 AND 180 AND east BETWEEN -180 AND 180
+               AND south BETWEEN -90 AND 90 AND north BETWEEN -90 AND 90
+               AND west < east AND south < north))
+);
+CREATE INDEX d3_dataset_grid_profile_lab_shape_idx
+  ON d3_dataset_grid_profile (lab_id, grid_shape);
+CREATE INDEX d3_dataset_grid_profile_lab_state_idx
+  ON d3_dataset_grid_profile (lab_id, map_state);
+
+-- 연구실당 기본 격자 하나. D3가 데이터셋과 함께 소유해 D1→D3 역참조를 만들지 않는다.
+CREATE TABLE d3_lab_default_grid (
+  lab_id      ulid        PRIMARY KEY REFERENCES d1_lab(id),
+  dataset_id  ulid        NOT NULL UNIQUE,
+  set_by      ulid        NOT NULL REFERENCES d1_account(id),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d3_lab_default_grid_dataset_fk
+    FOREIGN KEY (lab_id, dataset_id) REFERENCES d3_dataset(lab_id, id) ON DELETE CASCADE
+);
+
 -- 대표 조각의 FK (`0007` · 결정 2-4). `d3_dataset` 선언 시점에는 이 표가 없어 여기서 붙인다.
 --   · `ON DELETE SET NULL` — 대표로 지정한 조각이 사라지면 **자동으로 되돌아간다.**
 --     그 자리를 비워 두면 상세가 없는 조각을 그리려 하고, 막으면 조각을 못 지운다.
@@ -1006,6 +1056,37 @@ CREATE UNIQUE INDEX d5_upload_file_one_lat_grid_per_upload
 CREATE UNIQUE INDEX d5_upload_file_one_lon_grid_per_upload
   ON d5_upload_file (upload_id) WHERE kind = '기준 격자 파일' AND carries_lon;
 
+-- 등록 전 프로필. D3 식별자를 담지 않는다 — 가져오기 여부만 등록 전환 때 활동으로 승계한다.
+CREATE TABLE d5_upload_grid_profile (
+  upload_id             ulid        PRIMARY KEY REFERENCES d5_upload(id) ON DELETE CASCADE,
+  lab_id                ulid        NOT NULL REFERENCES d1_lab(id),
+  body_shape            integer[],
+  grid_shape            integer[],
+  grid_digest           text,
+  grid_format_signature text,
+  west                  double precision,
+  south                 double precision,
+  east                  double precision,
+  north                 double precision,
+  map_state             text        NOT NULL CHECK (map_state IN ('지도 있음', '지도 없음', '아직 모름')),
+  grid_source           text        NOT NULL CHECK (grid_source IN ('직접 업로드', '가져오기')),
+  created_at            timestamptz NOT NULL DEFAULT now(),
+  updated_at            timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d5_upload_grid_profile_body_shape_2d
+    CHECK (body_shape IS NULL OR (cardinality(body_shape) = 2 AND 0 < ALL(body_shape))),
+  CONSTRAINT d5_upload_grid_profile_grid_shape_2d
+    CHECK (grid_shape IS NULL OR (cardinality(grid_shape) = 2 AND 0 < ALL(grid_shape))),
+  CONSTRAINT d5_upload_grid_profile_digest_sha256
+    CHECK (grid_digest IS NULL OR grid_digest ~ '^[0-9a-f]{64}$'),
+  CONSTRAINT d5_upload_grid_profile_bounds_whole
+    CHECK ((west IS NULL AND south IS NULL AND east IS NULL AND north IS NULL)
+           OR (west IS NOT NULL AND south IS NOT NULL AND east IS NOT NULL AND north IS NOT NULL
+               AND west BETWEEN -180 AND 180 AND east BETWEEN -180 AND 180
+               AND south BETWEEN -90 AND 90 AND north BETWEEN -90 AND 90
+               AND west < east AND south < north))
+);
+CREATE INDEX d5_upload_grid_profile_lab_idx ON d5_upload_grid_profile (lab_id);
+
 -- 프리사인드 전송 원장 (0008 · 〈338〉 동결 해제 8차) — 저장 모드 s3 에서만 쓰인다.
 -- **전송이 완결되기 전의 상태**만 담는다: 완결(complete)되는 순간 같은 ULID 로
 -- `d5_upload` 가 서고(upload.accepted 발행), 이후는 기존 원장의 세계다.
@@ -1020,6 +1101,8 @@ CREATE TABLE d5_upload_transfer (
   created_at           timestamptz NOT NULL DEFAULT now(),
   expires_at           timestamptz NOT NULL,             -- 이어올리기 창 — 수명 밖은 정리 대상
   completed_at         timestamptz,                      -- 완결 = d5_upload 로 승계된 시각
+  -- 첫 본체 임시 미리보기의 별도 D5 upload. 삭제되면 다시 만들 수 있게 NULL로 돌아간다.
+  early_preview_upload_id ulid REFERENCES d5_upload(id) ON DELETE SET NULL,
   CONSTRAINT d5_upload_transfer_expiry_after_birth CHECK (expires_at > created_at)
 );
 CREATE INDEX d5_upload_transfer_lab_idx ON d5_upload_transfer (lab_id);
@@ -1274,6 +1357,16 @@ ALTER TABLE d3_dataset_variable     FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d3_dataset_variable FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
+ALTER TABLE d3_dataset_grid_profile ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_dataset_grid_profile FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_dataset_grid_profile FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d3_lab_default_grid ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_lab_default_grid FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_lab_default_grid FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
 -- 파일 **본체** — 두 층이 여기서 겹친다.
 ALTER TABLE d3_file                 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d3_file                 FORCE  ROW LEVEL SECURITY;
@@ -1319,6 +1412,11 @@ CREATE POLICY lab_boundary ON d5_upload FOR ALL
 ALTER TABLE d5_upload_file          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE d5_upload_file          FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d5_upload_file FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+ALTER TABLE d5_upload_grid_profile  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d5_upload_grid_profile  FORCE  ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d5_upload_grid_profile FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
 ALTER TABLE d5_pipeline_event       ENABLE ROW LEVEL SECURITY;

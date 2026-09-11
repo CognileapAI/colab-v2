@@ -71,6 +71,37 @@ _FILES = text("""
      ORDER BY kind DESC, file_name, id
 """)
 
+_GRID_PROFILE = text("""
+    SELECT body_shape, grid_shape, grid_digest, grid_format_signature,
+           west, south, east, north, map_state, grid_source
+      FROM d5_upload_grid_profile
+     WHERE upload_id = :id
+""")
+
+_INSERT_REUSED_GRID_FILE = text("""
+    INSERT INTO d5_upload_file
+      (id, lab_id, upload_id, kind, file_name, byte_size, storage_key,
+       carries_lat, carries_lon, relative_path)
+    SELECT :id, u.lab_id, u.id, '기준 격자 파일', :file_name, :byte_size, :storage_key,
+           :carries_lat, :carries_lon, :relative_path
+      FROM d5_upload u WHERE u.id = :upload_id AND u.registered_at IS NULL
+""")
+
+_ADOPT_GRID_PROFILE = text("""
+    UPDATE d5_upload_grid_profile SET
+      grid_shape = :grid_shape, grid_digest = :grid_digest,
+      grid_format_signature = :grid_format_signature,
+      west = :west, south = :south, east = :east, north = :north,
+      map_state = :map_state, grid_source = '가져오기', updated_at = now()
+     WHERE upload_id = :upload_id
+""")
+
+_REOPEN_AFTER_GRID_REUSE = text("""
+    UPDATE d5_upload SET ready = false, renderable = NULL, metadata_complete = NULL,
+                         failed_at = NULL, failure_class = NULL, failure_reason = NULL
+     WHERE id = :id AND registered_at IS NULL
+""")
+
 #: ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 7⟩ 워커의 ⑥ `upload.ready` 가 실은 격자 판정.
 #: **core-api 는 판정하지 않는다** — 이벤트가 말한 것을 읽어 seam 형태로 옮길 뿐이다.
 _READY_PAYLOAD = text("""
@@ -128,13 +159,38 @@ _MARK_REGISTERED = text("""
      RETURNING id
 """)
 
-# reaper — 만료분을 지운다(`〈64〉-ⓒ`). **처리 중인 것은 건너뛴다**(`NB-2` 규칙 ②).
-# 등록 전환된 업로드도 지운다: D3 로 옮겨 갔으므로 임시 원장에 남을 이유가 없다.
-_REAP = text(f"""
-    DELETE FROM d5_upload u
-     WHERE u.expires_at <= COALESCE(:now, now())
+# 회수 후보를 먼저 잠근다. 이 모듈은 D5 사실만 돌려주며, D2/D3 소유권과 S3 삭제의
+# 조립은 app 계층이 한다. 원장을 먼저 DELETE 하던 옛 reaper는 의도적으로 제거했다.
+_RECLAIM_CANDIDATES = text(f"""
+    SELECT u.id
+      FROM d5_upload u
+     WHERE u.registered_at IS NULL
+       AND u.expires_at <= COALESCE(:now, now())
        AND NOT {_PROCESSING}
-    RETURNING u.id
+     ORDER BY u.expires_at, u.id
+     LIMIT :limit
+     FOR UPDATE OF u SKIP LOCKED
+""")
+
+_RECLAIM_ACCEPTED = text("""
+    SELECT payload
+      FROM d5_pipeline_event
+     WHERE upload_id = :id AND event_type = 'upload.accepted'
+     ORDER BY occurred_at DESC, id DESC
+     LIMIT 1
+""")
+
+_RECLAIM_OPEN_TRANSFER = text("""
+    SELECT EXISTS(
+        SELECT 1 FROM d5_upload_transfer
+         WHERE id = :id AND completed_at IS NULL
+    )
+""")
+
+_DELETE_RECLAIMED_UPLOAD = text("DELETE FROM d5_upload WHERE id = :id")
+
+_IS_EARLY_PREVIEW = text("""
+    SELECT 1 FROM d5_upload_transfer WHERE early_preview_upload_id = :id LIMIT 1
 """)
 
 
@@ -196,6 +252,15 @@ class UploadLedgerAdapter:
             )
             for r in rows
         ]
+
+    def grid_profile(self, upload_id: Ulid) -> dict | None:
+        row = self._session.execute(
+            _GRID_PROFILE, {"id": str(upload_id)}).mappings().first()
+        return None if row is None else dict(row)
+
+    def is_early_preview(self, upload_id: Ulid) -> bool:
+        return self._session.execute(
+            _IS_EARLY_PREVIEW, {"id": str(upload_id)}).first() is not None
 
     def held_auto_metadata(self, upload_id: Ulid) -> HeldAutoMetadata:
         """등록 전에 난 사건이 나른 값을 **읽기만** 한다. **판정하지 않는다.**
@@ -322,8 +387,56 @@ class UploadLedgerAdapter:
         return self._session.execute(
             _MARK_REGISTERED, {"id": str(upload_id)}).first() is not None
 
+    def insert_reused_grid_files(self, *, upload_id: Ulid, files: list[dict]) -> None:
+        for row in files:
+            self._session.execute(_INSERT_REUSED_GRID_FILE, {
+                "upload_id": str(upload_id), **row,
+            })
+
+    def adopt_grid_profile(self, *, upload_id: Ulid, source: dict) -> None:
+        result = self._session.execute(_ADOPT_GRID_PROFILE, {
+            "upload_id": str(upload_id),
+            "grid_shape": source["grid_shape"],
+            "grid_digest": source["grid_digest"],
+            "grid_format_signature": source["grid_format_signature"],
+            "west": source["west"], "south": source["south"],
+            "east": source["east"], "north": source["north"],
+            "map_state": source["map_state"],
+        })
+        if result.rowcount != 1:
+            raise ValueError("본체 형상 프로필이 없는 업로드에는 격자를 가져올 수 없다.")
+
+    def reopen_after_grid_reuse(self, upload_id: Ulid) -> None:
+        self._session.execute(_REOPEN_AFTER_GRID_REUSE, {"id": str(upload_id)})
+
     def reap_expired(self, now: dt.datetime | None = None) -> list[str]:
-        return [r[0] for r in self._session.execute(_REAP, {"now": now}).all()]
+        """호환 표면. D5만 아는 호출자는 원본 소유권을 증명할 수 없어 보존한다."""
+        return []
+
+    def reclaim_candidates(self, now: dt.datetime | None = None,
+                           *, limit: int = 50) -> list[dict]:
+        """만료·미등록·비처리 후보를 잠그고 D5 증거를 한 묶음으로 돌려준다."""
+        rows = self._session.execute(
+            _RECLAIM_CANDIDATES, {"now": now, "limit": limit}).all()
+        candidates: list[dict] = []
+        for (upload_id,) in rows:
+            accepted = self._session.execute(
+                _RECLAIM_ACCEPTED, {"id": upload_id}).scalar_one_or_none()
+            if isinstance(accepted, str):
+                accepted = json.loads(accepted)
+            candidates.append({
+                "upload_id": upload_id,
+                "accepted": accepted,
+                "files": [dict(r) for r in self._session.execute(
+                    _FILES, {"id": upload_id}).mappings().all()],
+                "open_transfer": bool(self._session.execute(
+                    _RECLAIM_OPEN_TRANSFER, {"id": upload_id}).scalar_one()),
+            })
+        return candidates
+
+    def delete_reclaimed(self, upload_id: str) -> None:
+        """S3 exact-key 삭제가 성공한 뒤, 잠긴 후보의 D5 원장만 지운다."""
+        self._session.execute(_DELETE_RECLAIMED_UPLOAD, {"id": upload_id})
 
 
 # ═══════════════════════ 프리사인드 전송 원장 (〈338〉) ═══════════════════════
@@ -367,6 +480,16 @@ _T_COMPLETE = text("""
      RETURNING id
 """)
 
+_T_EARLY_PREVIEW = text("""
+    SELECT early_preview_upload_id FROM d5_upload_transfer
+     WHERE id = :id FOR UPDATE
+""")
+
+_T_SET_EARLY_PREVIEW = text("""
+    UPDATE d5_upload_transfer SET early_preview_upload_id = :preview_id
+     WHERE id = :id AND early_preview_upload_id IS NULL
+""")
+
 # 본인 것만 — 배너는 남의 미완료를 보여 줄 이유가 없다 (연구실 경계는 RLS 가 먼저 긋는다).
 _T_INCOMPLETE = text("""
     SELECT t.*,
@@ -389,6 +512,15 @@ _T_EXPIRED = text("""
 """)
 
 _T_DELETE = text("DELETE FROM d5_upload_transfer WHERE id = :id")
+
+_T_COMPLETED_FOR_PRUNE = text("""
+    SELECT id FROM d5_upload_transfer
+     WHERE completed_at IS NOT NULL
+       AND completed_at <= COALESCE(:now, now()) - CAST(:retention AS interval)
+     ORDER BY completed_at, id
+     LIMIT :limit
+     FOR UPDATE SKIP LOCKED
+""")
 
 
 def _transfer(row) -> TransferRecord:
@@ -454,6 +586,16 @@ class UploadTransferAdapter:
         return self._session.execute(
             _T_COMPLETE, {"id": str(transfer_id)}).first() is not None
 
+    def early_preview_id(self, transfer_id: Ulid) -> str | None:
+        row = self._session.execute(
+            _T_EARLY_PREVIEW, {"id": str(transfer_id)}).first()
+        return None if row is None else row[0]
+
+    def set_early_preview(self, *, transfer_id: Ulid, preview_id: Ulid) -> None:
+        self._session.execute(_T_SET_EARLY_PREVIEW, {
+            "id": str(transfer_id), "preview_id": str(preview_id),
+        })
+
     def incomplete_for(self, uploader_account_id: Ulid,
                        now: dt.datetime | None = None) -> list[dict]:
         rows = self._session.execute(
@@ -473,3 +615,10 @@ class UploadTransferAdapter:
 
     def delete(self, transfer_id: str) -> None:
         self._session.execute(_T_DELETE, {"id": transfer_id})
+
+    def completed_for_prune(self, now: dt.datetime | None = None, *, days: int = 7,
+                            limit: int = 100) -> list[str]:
+        """완료 뒤 보관 창을 지난 전송 메타 후보. 객체 키는 반환하지 않는다."""
+        return [r[0] for r in self._session.execute(_T_COMPLETED_FOR_PRUNE, {
+            "now": now, "retention": f"{days} days", "limit": limit,
+        }).all()]

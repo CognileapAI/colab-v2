@@ -24,8 +24,10 @@ from ...kernel.ids import Ulid
 from ...kernel.objectpath import normalize_relative_path
 from ...kernel.s3 import Part, S3Client, S3Error
 from ...ports.ingestion import TransferFileRecord, UploadFileRecord
+from ..storage_maintenance import run_storage_maintenance
 from ..deps import current_subject, scoped_db
-from .ingestion import MAX_UPLOAD_FILES, _file_records, _require_upload_edit, _ttl
+from .ingestion import (MAX_UPLOAD_FILES, _file_records, _require_upload_edit,
+                        _storage, _ttl)
 
 router = APIRouter()
 
@@ -99,28 +101,24 @@ def _open_transfer(ledger: d5_ingestion.UploadTransferAdapter, transfer_id: str,
     return record
 
 
-def _reap_expired(s3: S3Client, ledger: d5_ingestion.UploadTransferAdapter) -> None:
-    """만료된 미완결 전송의 지연 정리 — **원장이 아는 것만** 지운다 (버킷 루트 스캔 금지).
+def _maintain(request: Request, subject: Subject, s3: S3Client) -> None:
+    """사용자 요청과 분리된 트랜잭션에서 지연 정리를 끝낸다.
 
-    S3 정리가 실패하면 행을 지우지 않는다 — 다음 기회에 다시 시도한다. 최후 백스톱은
-    버킷 라이프사이클(abort-incomplete-multipart-7d)이다.
+    요청 본문이 뒤에서 400을 내도 S3 삭제와 원장 삭제가 함께 commit돼 반쪽 정리가 남지 않는다.
     """
-    for transfer_id in ledger.expired_open():
-        files = ledger.files(transfer_id)
-        try:
-            for f in files:
-                if f.transfer_ref is not None and f.outcome != "올라감":
-                    try:
-                        s3.abort_multipart_upload(f.storage_key, f.transfer_ref)
-                    except S3Error as e:
-                        if e.code != "NoSuchUpload":  # 이미 소멸한 것은 성공과 같다
-                            raise
-            uploaded = [f.storage_key for f in files if f.outcome == "올라감"]
-            if uploaded:
-                s3.delete_objects(uploaded)
-        except S3Error:
-            continue
-        ledger.delete(transfer_id)
+    settings = request.app.state.settings
+    report = run_storage_maintenance(
+        request.app.state.session_factory, subject, s3=s3,
+        mode=getattr(settings, "storage_reclaim_mode", "observe"))
+    print(
+        "storage-maintenance "
+        f"mode={report.mode} candidates={report.candidates} "
+        f"reclaimed={report.reclaimed_uploads} "
+        f"completedEligible={report.eligible_completed_transfers} "
+        f"completedPruned={report.pruned_completed_transfers} "
+        f"openReaped={report.reaped_open_transfers} preserved={report.preserved}",
+        flush=True,
+    )
 
 
 def _file_of(ledger: d5_ingestion.UploadTransferAdapter, transfer_id: str,
@@ -139,7 +137,7 @@ def initiate_upload_transfer(request: Request, body: dict = Body(...),
     s3 = _s3(request)
     _require_upload_edit(db, subject)
     ledger = _ledger(db)
-    _reap_expired(s3, ledger)  # 지연 정리 — 별도 크론 없이 여기서 치운다
+    _maintain(request, subject, s3)  # 별도 크론 없이, 요청과 독립된 트랜잭션에서 치운다
 
     unknown = set(body) - {"sourceLabel", "files"}
     if unknown:
@@ -244,7 +242,7 @@ def list_incomplete_upload_transfers(request: Request,
                                      db: Session = Depends(scoped_db)) -> dict:
     s3 = _s3(request)
     ledger = _ledger(db)
-    _reap_expired(s3, ledger)
+    _maintain(request, subject, s3)
     rows = ledger.incomplete_for(subject.account_id)
     return {"items": [{
         "uploadId": r["record"].transfer_id,
@@ -401,6 +399,54 @@ def complete_upload_file(request: Request,
         return fail(f"크기 불일치 — 신고 {f.byte_size}B, 실제 {size}B. 다시 올릴 것.")
     ledger.set_outcome(file_id, "올라감")
     return {"fileId": file_id, "outcome": "올라감", "detail": None}
+
+
+# ═════════════════════ 첫 본체 임시 미리보기 ════════════════════════════════
+@router.post("/uploads/transfers/{uploadId}/early-preview",
+             name="createEarlyPreviewUpload", status_code=201)
+def create_early_preview_upload(request: Request,
+                                upload_id: str = Path(alias="uploadId"),
+                                subject: Subject = Depends(current_subject),
+                                db: Session = Depends(scoped_db)) -> dict:
+    """첫 완료 본체를 별도 D5 upload로 복제한다. 최종 전송과 등록 가능 상태는 건드리지 않는다."""
+    _s3(request)
+    transfer = _ledger(db)
+    record = _open_transfer(transfer, upload_id)
+    if str(record.uploader_account_id) != str(subject.account_id):
+        raise errors.not_found("없는 전송이거나 이어올리기 창(72시간)이 지났다.")
+
+    transfer_id = Ulid(upload_id)
+    existing = transfer.early_preview_id(transfer_id)
+    accept = _accept_ledger(db)
+    if existing is not None:
+        files = accept.files(Ulid(existing))
+        return {"uploadId": existing, "files": _file_records(files)}
+
+    first_body = next((f for f in transfer.files(upload_id)
+                       if f.kind == "본체" and f.outcome == "올라감"), None)
+    if first_body is None:
+        raise errors.ApiError(
+            409, "EARLY_PREVIEW_NOT_READY", "실측 완료된 본체 파일이 아직 없다.")
+
+    preview_id = Ulid.generate()
+    preview_file_id = str(Ulid.generate())
+    preview_key = storage_layout.storage_key(
+        str(preview_id), file_id=preview_file_id, kind="본체",
+        file_name=first_body.file_name)
+    preview_file = UploadFileRecord(
+        file_id=preview_file_id, file_name=first_body.file_name, kind="본체",
+        byte_size=first_body.byte_size, storage_key=preview_key,
+        carries_lat=False, carries_lon=False, detected_format=None,
+        relative_path=first_body.relative_path)
+
+    # 원본 전송 객체는 최종 완결에 필요하므로 남기고, 임시 upload 키로 server-side copy한다.
+    accept.accept(upload_id=preview_id, uploader_account_id=subject.account_id,
+                  expires_at=_now() + _ttl(request), files=[preview_file])
+    _storage(request).duplicate(pairs=[(first_body.storage_key, preview_key)])
+    accept.publish_accepted(upload_id=preview_id,
+                            actor_account_id=subject.account_id, files=[preview_file])
+    transfer.set_early_preview(transfer_id=transfer_id, preview_id=preview_id)
+    return {"uploadId": str(preview_id), "files": _file_records([preview_file])}
 
 
 # ═══════════════════════════ 완결 = 접수 승계 ═══════════════════════════════

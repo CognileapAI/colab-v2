@@ -19,10 +19,13 @@ import type {
   PickedFile,
   UploadCreateOptions,
   UploadSources,
+  RenderJob,
 } from '../src/components/upload/types';
 import type { CurrentAccount } from '../src/api/client';
+import uploadCss from '../src/components/upload/upload.css?raw';
 
 const T1 = '01JYZ9K7WQ3N8V4M2X6C5B0TR1';
+const EARLY = '01JYZ9K7WQ3N8V4M2X6C5B0EP1';
 const F_SMALL = '01JYZ9K7WQ3N8V4M2X6C5B0F01';
 const F_BIG = '01JYZ9K7WQ3N8V4M2X6C5B0F02';
 
@@ -87,6 +90,11 @@ function installRouter(opts: { resume?: boolean } = {}) {
       const fileId = path.split('/').at(-2);
       return json({ fileId, outcome: '올라감', detail: null });
     }
+    if (path === `/uploads/transfers/${T1}/early-preview`) {
+      return json({ uploadId: EARLY, files: [
+        { fileId: F_SMALL, fileName: '작은.nc', kind: '본체', byteSize: 4 },
+      ] }, 201);
+    }
     if (path === `/uploads/transfers/${T1}/complete`) {
       return json({ uploadId: T1, files: [
         { fileId: F_SMALL, fileName: '작은.nc', kind: '본체', byteSize: 4 },
@@ -108,6 +116,7 @@ function pickedTwo(): PickedFile[] {
 afterEach(() => {
   vi.unstubAllGlobals();
   putLog.length = 0;
+  document.querySelector('style[data-s2-upload-visibility]')?.remove();
 });
 
 describe('presignedCreate', () => {
@@ -135,6 +144,22 @@ describe('presignedCreate', () => {
     const wrong: PickedFile[] = [{ file: new File(['abcd'], '작은.nc'), kind: '본체' }];
     await expect(presignedCreate(wrong, { resumeUploadId: T1 }))
       .rejects.toThrow(/같은 파일을 다시 골라야/);
+  });
+
+  it('첫 본체 실측 완료 직후 임시 미리보기를 한 번 전달하고, 그 뒤 최종 전송을 완결한다', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    const calls = installRouter();
+    const seen: string[] = [];
+
+    const receipt = await presignedCreate(pickedTwo(), {
+      onEarlyReceipt: (early) => seen.push(early.uploadId),
+    });
+
+    expect(seen).toEqual([EARLY]);
+    expect(receipt.uploadId).toBe(T1);
+    expect(calls.filter((call) => call.endsWith('/early-preview'))).toHaveLength(1);
+    expect(calls.indexOf(`POST /uploads/transfers/${T1}/early-preview`))
+      .toBeLessThan(calls.indexOf(`POST /uploads/transfers/${T1}/complete`));
   });
 });
 
@@ -220,6 +245,155 @@ describe('미완결 전송 배너', () => {
     expect(seen[0]?.resumeUploadId).toBe(T1);
     // 접수까지 갔으면 배너 항목이 사라진다
     await waitFor(() => expect(screen.queryByTestId('up-incomplete')).toBeNull());
+  });
+});
+
+describe('첫 파일 임시 미리보기', () => {
+  it.each([true, false])('임시 지도 유무 %s에서 최종 영역 변경을 한 번 알리고 재렌더로 알림을 바꾸지 않는다', async (earlyHasBounds) => {
+    let finish: ((receipt: Awaited<ReturnType<UploadSources['upload']['create']>>) => void) | undefined;
+    const sources = bannerSources({ items: [] });
+    sources.upload.create = async (_files, options) => {
+      options?.onEarlyReceipt?.({ uploadId: EARLY, files: [] });
+      return new Promise((resolve) => { finish = resolve; });
+    };
+    sources.upload.status = async (uploadId) => ({ uploadId, files: [], ready: true,
+      renderable: true, metadataComplete: true, failure: null, expiresAt: 'x' });
+    sources.preview.palettes = async () => [{ palette: 'p', label: 'P' }];
+    const result = (early: boolean): RenderJob => ({ renderId: early ? 'R-early' : 'R-final', status: '완료',
+      result: { imageUrl: early ? '/early.png' : '/final.png',
+        legend: { palette: 'p', classes: [{ color: '#123456', min: 0, max: 1 }] },
+        ...(!early || earlyHasBounds ? { bounds: { west: early ? 124 : 125, south: 31, east: 128, north: 34 } } : {}),
+      },
+    } as RenderJob);
+    sources.preview.createRender = async (request) => result(request.target.uploadId === EARLY);
+    sources.preview.getRender = async (id) => result(id === 'R-early');
+    await openModal(sources);
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '작은.nc')] } });
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toHaveAttribute('src', '/early.png'));
+    await act(async () => { finish?.({ uploadId: T1, files: [] }); });
+    await waitFor(() => expect(screen.getByTestId('up-preview-final')).toHaveTextContent('영역이 바뀌었어요'));
+    const notice = screen.getByTestId('up-preview-final').textContent;
+    fireEvent.click(screen.getByTestId('up-preview-draw'));
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toHaveAttribute('src', '/final.png'));
+    expect(screen.getAllByTestId('up-preview-final')).toHaveLength(1);
+    expect(screen.getByTestId('up-preview-final').textContent).toBe(notice);
+  });
+
+  it('업로드 팔레트 목록이 3종이 아니면 받은 선택지를 유지하면서 오류를 알린다', async () => {
+    const sources = bannerSources({ items: [] });
+    sources.preview.palettes = async () => [
+      { palette: 'one', label: '첫째' }, { palette: 'two', label: '둘째' },
+    ];
+    await openModal(sources);
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '작은.nc')] } });
+    await waitFor(() => expect((screen.getByTestId('up-style-palette') as HTMLSelectElement).options).toHaveLength(2));
+    expect(await screen.findByTestId('up-palette-issue')).toHaveTextContent('3종');
+  });
+
+  it('격자 후보를 가져와도 본체를 다시 전송하지 않고 같은 업로드 상태를 새로 읽는다', async () => {
+    let reused = false;
+    let finishReuse: (() => void) | undefined;
+    const created = vi.fn();
+    const sources = bannerSources({ items: [], onCreate: created });
+    sources.upload.gridOptions = async () => ({ bodyShape: [2, 2], candidates: [{
+      datasetId: 'D1', datasetName: '표준 격자', fileNames: ['grid.nc'], isDefault: true,
+      gridShape: [2, 2], gridDigest: 'digest', formatSignature: 'NC', mapState: '지도 있음',
+    }] });
+    sources.upload.reuseGrid = vi.fn(async (uploadId, sourceDatasetId) => {
+      expect(uploadId).toBe(T1);
+      expect(sourceDatasetId).toBe('D1');
+      await new Promise<void>((resolve) => { finishReuse = resolve; });
+      reused = true;
+      return [{ fileId: 'G1', fileName: 'grid.nc', kind: '기준 격자 파일' as const, byteSize: 8 }];
+    });
+    sources.upload.status = vi.fn(async () => ({ uploadId: T1, ready: true, renderable: true,
+      metadataComplete: true, expiresAt: 'x', failure: null,
+      files: reused ? [{ fileId: 'G1', fileName: 'grid.nc', kind: '기준 격자 파일' as const, byteSize: 8 }] : [],
+    }));
+    await openModal(sources);
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '작은.nc')] } });
+    fireEvent.click(await screen.findByRole('button', { name: '표준 격자 가져오기' }));
+    await waitFor(() => expect(sources.upload.reuseGrid).toHaveBeenCalledOnce());
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+    await act(async () => { finishReuse?.(); });
+    await waitFor(() => expect(screen.queryByTestId('up-nogrid')).toBeNull());
+    await waitFor(() => expect(screen.getByTestId('reg-open')).not.toBeDisabled());
+    expect(created).toHaveBeenCalledOnce();
+  });
+
+  it('파일 선택을 바꾸면 이전 격자 복사 응답이 새 업로드에 오류를 표시하지 않는다', async () => {
+    let failReuse: (() => void) | undefined;
+    const created = vi.fn();
+    const sources = bannerSources({ items: [], onCreate: created });
+    sources.upload.gridOptions = async () => ({ bodyShape: [2, 2], candidates: [{
+      datasetId: 'D1', datasetName: '표준 격자', fileNames: ['grid.nc'], isDefault: true,
+      gridShape: [2, 2], gridDigest: 'digest', formatSignature: 'NC', mapState: '지도 있음',
+    }] });
+    sources.upload.reuseGrid = async () => new Promise((_, reject) => {
+      failReuse = () => reject(new Error('이전 격자 복사 실패'));
+    });
+    await openModal(sources);
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['abcd'], '첫째.nc')] } });
+    fireEvent.click(await screen.findByRole('button', { name: '표준 격자 가져오기' }));
+    fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [new File(['efgh'], '둘째.nc')] } });
+    await waitFor(() => expect(created).toHaveBeenCalledTimes(2));
+    await screen.findByRole('button', { name: '표준 격자 가져오기' });
+    await act(async () => { failReuse?.(); });
+    expect(screen.queryByText('이전 격자 복사 실패')).toBeNull();
+  });
+
+  it('최종 접수 전에는 임시 uploadId로 먼저 그리고 등록을 잠근 뒤, 최종 uploadId로 갈아탄다', async () => {
+    const style = document.createElement('style');
+    style.setAttribute('data-s2-upload-visibility', '');
+    style.textContent = uploadCss;
+    document.head.append(style);
+    let finish: ((receipt: Awaited<ReturnType<UploadSources['upload']['create']>>) => void) | undefined;
+    const targets: string[] = [];
+    const sources = bannerSources({ items: [] });
+    sources.upload.create = async (files, opts) => {
+      opts?.onEarlyReceipt?.({
+        uploadId: EARLY,
+        files: [{ fileId: F_SMALL, fileName: files[0]!.file.name, kind: '본체', byteSize: 4 }],
+      });
+      return await new Promise((resolve) => { finish = resolve; });
+    };
+    sources.upload.status = async (uploadId) => ({
+      uploadId,
+      files: [{ fileId: F_SMALL, fileName: '작은.nc', kind: '본체', byteSize: 4 }],
+      ready: true,
+      renderable: true,
+      metadataComplete: null,
+      expiresAt: 'x',
+      failure: null,
+    });
+    sources.preview.palettes = async () => [{ palette: 'p', label: 'P' }];
+    sources.preview.createRender = async (request) => {
+      targets.push(request.target.uploadId ?? '');
+      return { renderId: `R-${targets.length}`, status: '그리는 중', stage: '파일 읽는 중' } as never;
+    };
+
+    await openModal(sources);
+    fireEvent.change(screen.getByTestId('up-drop-input'), {
+      target: { files: [new File(['abcd'], '작은.nc')] },
+    });
+
+    expect(await screen.findByTestId('up-early-preview')).toHaveTextContent('먼저 도착한 파일 기준');
+    expect(screen.getByTestId('up-early-preview')).toBeVisible();
+    await waitFor(() => expect(targets).toContain(EARLY));
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+
+    await act(async () => {
+      finish?.({
+        uploadId: T1,
+        files: [{ fileId: F_SMALL, fileName: '작은.nc', kind: '본체', byteSize: 4 }],
+      });
+    });
+
+    expect(await screen.findByTestId('up-preview-final')).toHaveTextContent('전체 파일 기준');
+    expect(screen.getByTestId('up-preview-final')).toBeVisible();
+    await waitFor(() => expect(targets).toContain(T1));
+    await waitFor(() => expect(screen.getByTestId('reg-open')).not.toBeDisabled());
+    style.remove();
   });
 });
 

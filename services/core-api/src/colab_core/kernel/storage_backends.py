@@ -139,6 +139,26 @@ class LocalFilesystemStorage:
             raise
         self._prune_upload_dirs([f.storage_key for f in files])
 
+    def duplicate(self, *, pairs: Sequence[tuple[str, str]]) -> None:
+        created: list[pathlib.Path] = []
+        try:
+            for source_key, destination_key in pairs:
+                source = self._root / source_key
+                destination = self._root / destination_key
+                if not source.is_file():
+                    raise FileNotFoundError(source_key)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                # 호출자가 발급한 새 키다. copyfile은 실패할 때도 부분 파일을 남길 수 있다.
+                created.append(destination)
+                shutil.copyfile(source, destination)
+        except OSError:
+            for destination in reversed(created):
+                try:
+                    destination.unlink()
+                except FileNotFoundError:
+                    pass
+            raise
+
     def open(self, *, key: str) -> Iterator[bytes]:
         """파일을 **여기서** 연다 — 없으면 `FileNotFoundError` 가 호출 시점에 난다."""
         fh = (self._root / key).open("rb")
@@ -228,6 +248,22 @@ class S3UploadStorage:
             raise
         if moved_src:
             self._client.delete_objects(moved_src)
+
+    def duplicate(self, *, pairs: Sequence[tuple[str, str]]) -> None:
+        copied: list[str] = []
+        try:
+            for source_key, destination_key in pairs:
+                try:
+                    self._client.copy_object(source_key, destination_key)
+                except S3Error as e:
+                    if e.status == 404 or e.code == "NoSuchKey":
+                        raise FileNotFoundError(source_key) from e
+                    raise
+                copied.append(destination_key)
+        except (S3Error, FileNotFoundError):
+            if copied:
+                self._client.delete_objects(copied)
+            raise
 
     def open(self, *, key: str) -> Iterator[bytes]:
         """S3 GET 스트림 — 묶음(zip)만 여기를 지난다 (「컨트롤 플레인만」의 예외 · `〈339〉-(다)`).

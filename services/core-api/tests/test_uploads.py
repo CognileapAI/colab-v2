@@ -213,7 +213,7 @@ def test_the_reaper_skips_uploads_that_are_still_processing(p2_client, sql) -> N
     with scoped_session(factory, subject) as session:
         reaped = UploadLedgerAdapter(session).reap_expired()
 
-    assert idle in reaped, "만료됐고 아무도 처리하지 않는 업로드가 안 지워졌다."
+    assert idle not in reaped, "D5-only reaper가 원본 소유권 확인 없이 업로드를 지웠다."
     assert busy not in reaped, "처리 중인 업로드를 reaper 가 지웠다 — 시계가 처리를 앞질렀다."
 
 
