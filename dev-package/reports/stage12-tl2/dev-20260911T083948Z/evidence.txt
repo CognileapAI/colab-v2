@@ -1,0 +1,22 @@
+run_id=20260911T083948Z
+current_sha=30f5adf67747
+image_id=sha256:af13ab7dc206155acff92076716fa725c09fae6bcc2b52ddbc3dc0e1973168ff
+ownership_module_sha256=4644b4435ff464fe564d93234cf793bb1d3dd23d6dc7df86de242c8b30b58e9d
+observation_module_sha256=f893e99ad2d9cdc004bfbcf6804f289d45d5b4ae31caac3d5985f955197b94b3
+db_url_file_owner_mode=root:root 600
+db_role=colab_backup super=false bypass=true read_all=t force_rls_tables=31
+d3_count=450 d3_sha256=a86cb8ace8a3773d212a37d961fe31c648dc2b3a59fcbef434aa7b33a50209df
+d5_count=595 d5_sha256=4791bb0d02c777d636b345a62d20b514c08dc5aa45c965ead3e58d5755ef0f7a
+observation_sha256=2527344b3217b61bdae3af2cd5a2b04683c6ed04ce8a521764ece7b7f20cff80
+observed_at=2026-09-11T08:40:49.538900+00:00
+objects=394
+preview_groups=174
+legacy_groups=0
+modern_groups=174
+rebake_unreachable=0
+deleted=0
+ownership_counts={"고아": 16, "살아 있다": 116, "접수분에만 닿는다": 42, "판정 불가": 0}
+legacy_counts={"사이드카 부재": 0, "원천 원장 부재": 0, "원천 원장 있음": 0}
+legacy_keys=0
+unreachable_keys=0
+TL-2 관측 — 객체 394 · preview 174벌 · 구판 0벌 (사이드카 부재 0 · 원천 원장 부재 0 · 원장 있음 0) · 재굽기 불가 0 · 삭제 0건
