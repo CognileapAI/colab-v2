@@ -1,0 +1,12 @@
+{
+  "schema": "colab-stage12-bf7-headed-fresh/1",
+  "sourceSha": "f8ac7ee07ff6",
+  "browser": {"pid":1287808,"headedProof":"live launch argv has no --headless","session":"testb-a-precheck-headed"},
+  "dataset": {"id":"01M27K98TYS08G8VF8GYKEEXM7","name":"TEST Stage12 Preview Binary 20260911"},
+  "uiSelection": {"palette":"다색 · 무지개 (넓은 범위를 잘게 가르는 값)","classes":7,"activation":"semantic focus + Enter"},
+  "request": {"agentBrowserTimestamp":1287915.626,"method":"POST","path":"/api/v1/preview-screenshots","status":200},
+  "responsePreviewIdFromDownloadFilename":"01M27R8N30279WVFSWCK6DX4G2",
+  "chromeHistory": {"id":3,"guid":"8957cc08-d8ed-44d6-b66b-a7f5b488dd9e","sourceBlob":"blob:https://d31zgpff2091oh.cloudfront.net/f3ded149-b737-43de-96b6-72068c5ee13f","receivedBytes":64138,"totalBytes":64138,"state":1,"dangerType":4,"interruptReason":0,"tabUrl":"https://d31zgpff2091oh.cloudfront.net/datasets/01M27K98TYS08G8VF8GYKEEXM7"},
+  "diskFile": {"originalPath":"~/Downloads/preview-01M27R8N30279WVFSWCK6DX4G2.png","mtimeUtc":"2026-09-11T08:10:28.844646459Z","bytes":64138,"width":779,"height":1024,"mime":"image/png","sha256":"76597d49f4d4a280d26686b4b663f7780a120d3d42fb6a83b2b596920f5dfb4f"},
+  "artifactCopy":"dev-package/reports/stage12-preview-acceptance-2/bf7-headed-fresh-rainbow7.png"
+}

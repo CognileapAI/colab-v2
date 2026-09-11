@@ -2217,7 +2217,7 @@ items:
 
   - id: BF-7
     name: "스크린샷 버튼 — 객체 URL 같은 tick 회수·앵커 미부착 경합 (하드닝 · 크롬 취소 증상 미재현)"
-    status: open
+    status: done
     stage: stage1
     owner: "frontend (D7 화면)"
     entry_conditions:
@@ -2228,6 +2228,7 @@ items:
       ⑴ 실패 시험 red — 다운로드 앵커가 클릭된 뒤 revoke 가 같은 tick 에 일어나지 않음을 단언 ⑵ 회수를 `setTimeout`/`load` 뒤로 미루고 앵커를 문서에 붙였다 뗀다
       ⑶ **완주 실측(증상 미재현 기록)** ⑷ 스크린샷은 서버가 그린다(`ScreenshotButton.tsx` 파일 머리 주석 「그리는 일은 한 줄도 하지 않는다」) — 서버 경로 무접촉.
     evidence: >-
+      ⟨2026-09-11 최종 수용⟩ headed Chrome의 실제 제품 버튼 POST 200→preview ID 01M27R8N30279WVFSWCK6DX4G2→새 다운로드 GUID 8957cc08-d8ed-44d6-b66b-a7f5b488dd9e 완료(state1, interrupt0)→Downloads PNG를 독립 대조했다. 64,138B·779×1024, SHA256 76597d49f4d4a280d26686b4b663f7780a120d3d42fb6a83b2b596920f5dfb4f. 근거 reports/stage12-preview-acceptance-2/bf7-headed-fresh-rainbow7.json/png. 기존 지연 revoke·앵커 부착 시험과 연결해 완주 실측으로 수용한다. 취소 증상 미재현을 유지하며 모든 브라우저 경합 해소로 확대하지 않는다. 이하 open·병합 대기는 과거 이력이다.
       ⭑ **⟨집행 2026-09-05 · 레인 `bf-7/screenshot-revoke-timing` · 기반 `main` `b0c1f34`⟩** 커밋 `932b3f0`(고침 ＋ 시험) · `29e1f2f`(레인 보고) · `3a6cff2`(수용 검토 반영 — 지연 상수화·시험 조임) · `7531d7b`(보고서 커밋 해시 정정).
       2파일 — `ScreenshotButton.tsx` ＋11/−1 뒤 ＋18/−7 · `test/dataset-preview-screenshot.test.tsx` ＋52 뒤 ＋46/−17.
       `take()` 의 내려받기 앵커를 `display:none` 으로 `document.body` 에 붙여 누르고, 앵커 제거와 `URL.revokeObjectURL` 을 이름 붙인 상수 `OBJECT_URL_RETENTION_MS`(**4000 ms**) 뒤로 미룬다 —
@@ -2342,7 +2343,7 @@ items:
 
   - id: BF-11
     name: "`project.css` 미정의 토큰(`--line`·`--fg-muted`·`--surface`·`--fg`) → `tokens.css` 정본 치환 ＋ backlink 공용화"
-    status: open
+    status: done
     stage: stage1
     owner: "frontend (shell · D6 화면)"
     entry_conditions:
@@ -2354,6 +2355,7 @@ items:
       ⑶ backrow/backlink 규칙을 `detail.css`·`project.css` 두 벌에서 공용 한 벌로 ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx` green).
       ⛔ **⟨문구 정정 2026-09-05 · 등재 `PLAN-SoT §9 〈327〉`⟩ 종전 ⑴ ~~「`tokens.css` 에 없는 `--*` 이름을 참조하면 실패」~~ 를 그대로 쓰면 `detail.css`·`catalog.css` 가 이미 따르는 집 관례(화면 CSS 의 `:root` 로컬 토큰)가 통째로 위반이 되고 `--text-h2`·`--radius-pill` 같은 화면 전용 값을 셸 정본에 밀어 넣게 된다** — 「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 정면으로 부딪힌다. 좁힌 오라클의 구멍(폐기 별칭을 로컬에 되살리기)은 판정 둘로 막았다 — 아래 evidence ⓐⓑ.
     evidence: >-
+      ⟨2026-09-11 최종 수용⟩ 정적·음성·회귀 시험과 동일 frontend의 dev f8 배포를 대조하고, headed Chrome 실제 사용 5곳의 계산 스타일·사진을 독립 검토했다. gray100 232/236/242, surface-alt 244/247/251, muted 86/92/99, warning600 168/84/0, success50 239/255/239. 근거 reports/stage12-preview-acceptance-2/bf11-headed-usage.json SHA256 b3cefa66c0679b7cde28a17ec630925ac42274ca4a6bb42aa58201e73d086c1b. TEST 프로젝트 1개 생성 외 기존 자료 변경 0. success-100 이름의 목업 대조와 preview backlink 디자인 조사 note는 해결 주장 없이 후속으로 유지한다. 이하 open 표기는 과거 이력이다.
       ⭑ **⟨집행 2026-09-05 · 레인 `bf-11/project-css-tokens` · 기반 `main` `b0c1f34`⟩** 커밋 `d999d60`(치환·공용화·시험) · `41602de`(레인 보고) · `ec0714a`(수용 검토 반영 — 로컬 `:root` 의 폐기 별칭·계열 밖 이름 금지).
       6파일 — `project.css` ＋62/−84 · `shell.css` ＋48 · `detail.css` −12 · `vite.config.ts` ＋13/−1 · 신규 `test/project-css-tokens.test.ts` ＋79 · `test/project.test.tsx` ＋3/−1.
       **재실측**(`b0c1f34` · `BF-5` 병합 뒤) `var(--line` **16** · `var(--fg-muted` **15** · `var(--surface` **3** · `var(--surface-2` **6** · `var(--warn` **4** · `var(--fg` **1** — 원장 진입조건(`56eac76`)보다 넷이 늘었고 `--fg` 는 원장 note 가 예고한 대로 `BF-5` 가 더한 자리다. `tokens.css` 에 이 이름들 **0건**.
@@ -2409,7 +2411,7 @@ items:
 
   - id: BF-13
     name: "화면 CSS 세 파일이 같은 `--color-*` 토큰을 각자 `:root` 에 다시 적는다 — 값 일치를 재는 것이 0건"
-    status: partial
+    status: done
     stage: stage1
     owner: "frontend (shell · 화면 CSS)"
     entry_conditions:
@@ -2421,7 +2423,7 @@ items:
       ⑵ 갈린 자리가 실측되면 **어느 값이 정본인지 사람이 판정한 뒤** 한 값으로 모은다 — 시험이 고르지 않는다
       ⑶ 세 파일에 공통인 이름은 `tokens.css` 로 올릴지 화면 로컬로 둘지 판정한다(「셸이 실제로 쓰는 토큰만 옮긴다」는 `tokens.css` 머리말과 부딪히지 않게)
       ⑷ 화면 회귀 0(기존 `project.test.tsx`·`detail.test.tsx`·`catalog` 시험 green).
-    evidence: "2026-09-08 로컬 구현·음성 회귀: sessions/20260908-product-local-verification.md BF-13. 공통16개 값충돌0, 화면로컬 유지, 관련120개 및 최종토큰4개 통과. BF-11 선행 수용·최종통합 완료와 구분."
+    evidence: "2026-09-11 독립 수용: BF-11 실제 5곳 확인으로 선행 의존 해제. 공통16개 값충돌0·화면로컬 유지·변이 음성4개 및 화면 회귀를 dev f8과 동일 frontend인 main620 CI1204건에 연결했다. 실제 CSSOM 78개·중복 이름18개 충돌0. sessions/20260911-stage12-final-verification.md. 과거: 2026-09-08 로컬 구현·음성 회귀는 sessions/20260908-product-local-verification.md BF-13."
     deadline: null
     note: >-
       **신설 2026-09-05 · 등록만** — `PLAN-SoT §9 〈331〉`. 발견 = `BF-11` 수용 검토(`reports/bf-11/lane-report.md §2`·`§7`).

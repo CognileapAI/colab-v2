@@ -1,0 +1,22 @@
+{
+  "schema": "colab-stage12-bf11-headed/1",
+  "environment": {
+    "url": "https://d31zgpff2091oh.cloudfront.net",
+    "sourceSha": "f8ac7ee07ff6",
+    "browser": "headed Chrome via X11",
+    "session": "testb-a-precheck-headed"
+  },
+  "actualUsages": [
+    {"token":"gray-100","selector":".pj-views button.on, .pc-s","text":"카드 / 0 데이터셋","computedBackground":"rgb(232, 236, 242)"},
+    {"token":"surface-alt","selector":".pcard[data-closed=true]","text":"테스트 국가과제 · 닫힘","computedBackground":"rgb(244, 247, 251)"},
+    {"token":"text-muted","selector":".pj-count","text":"2건","computedColor":"rgb(86, 92, 99)"},
+    {"token":"warning-600","selector":".dh-lv-mismatch, .chip--warning","text":"고른 가공 단계는 Lv2이고, 연결한 데이터로 계산하면 Lv0이에요. / 기록 없음","computedColor":"rgb(168, 84, 0)"},
+    {"token":"success-50","selector":".pj-keepbox","text":"데이터는 사라지지 않아요. 소속 데이터셋 0개는 카탈로그에 그대로 남아요.","computedBackground":"rgb(239, 255, 239)"}
+  ],
+  "evidence": [
+    "dev-package/reports/stage12-preview-acceptance-2/bf11-projects-headed.png",
+    "dev-package/reports/stage12-preview-acceptance-2/bf11-warning-headed.png",
+    "dev-package/reports/stage12-preview-acceptance-2/bf11-success50-headed.png"
+  ],
+  "writes": {"newTestProject":"TEST Stage12 Palette Usage 20260911","existingDatasetMutation":0,"existingProjectMutation":0}
+}

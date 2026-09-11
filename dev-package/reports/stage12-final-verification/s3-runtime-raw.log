@@ -1,0 +1,5 @@
+source=read-only SSH `sudo docker inspect` and bounded `sudo docker logs --timestamps`
+captured_at=2026-09-11T07:47:40Z
+container=/colab_v2_dev_viz_render started=2026-09-11T06:28:25.733838727Z restarts=0 image=colab-v2/viz-render:dev-f8ac7ee07ff6 image_id=sha256:2daa71a42f1631587b36eee7fc920eb10c24a09b1a2d3e2b1177ef745437146d
+2026-09-11T06:30:22.718199032Z INFO:    지도 타일 회수 — 주체 576 · 자리의 타일 0벌 · 닿는다 0 · 못 닿는다 0 · 상한 20 · 관측 전용(0건 지웠다) 0파일
+2026-09-11T07:30:25.669638839Z INFO:    지도 타일 회수 — 주체 612 · 자리의 타일 0벌 · 닿는다 0 · 못 닿는다 0 · 상한 20 · 관측 전용(0건 지웠다) 0파일
