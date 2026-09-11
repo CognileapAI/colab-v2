@@ -1,0 +1,90 @@
+{
+  "observedAt": "2026-09-11T10:03:25.217262+00:00",
+  "sourceSha": "d56428d6945d677cae013d6bff25cb61727f3166",
+  "databaseReadOnly": true,
+  "databaseWrites": 0,
+  "s3Deletes": 0,
+  "s3HeadCalls": 1,
+  "bucketListingCalls": 0,
+  "nonlockingObservationOnly": true,
+  "labs": [
+    {
+      "labId": "0000000000000000000000000A",
+      "report": {
+        "mode": "observe",
+        "candidates": 1,
+        "reclaimed_uploads": 0,
+        "eligible_completed_transfers": 7,
+        "pruned_completed_transfers": 0,
+        "reaped_open_transfers": 0,
+        "expired_open_transfers": 0,
+        "preserved": {
+          "observe": 1
+        },
+        "approval_plan": {
+          "schema": "colab-storage-reclaim-plan/1",
+          "scope": {
+            "labId": "0000000000000000000000000A"
+          },
+          "uploads": [
+            {
+              "uploadId": "01M24KWBG3M37A0WYBX22VJ94P",
+              "objects": [
+                {
+                  "key": "uploads/01M24KWBG3M37A0WYBX22VJ94P/01M24KWBG3MZGEBFGBGTST9BZJ",
+                  "exists": true,
+                  "sizeBytes": 12599296,
+                  "etag": "\"11285dc69fb39fcfe92aac6b935998f8\""
+                }
+              ]
+            }
+          ],
+          "expiredOpenTransfers": [],
+          "completedTransferIds": [
+            "01M1BXC86M3RKY37G6D17JZBRK",
+            "01M1BXJ5975SPV2B9P9SPX8THT",
+            "01M1C0EJV06P0R79NDZ8DAM2ZJ",
+            "01M1FSEQ0P3ZZGR64K25WS02YG",
+            "01M1GR9A7MXZBHN5A93KEZP0V9",
+            "01M1H2DFAFVJDXRAMFHKMPBZN0",
+            "01M1H4VR2X80TYG394ERG6RAYS"
+          ]
+        },
+        "plan_sha256": "3031054b040d75fd8e0f7192e94712010e9e50ce0cbeaec1b957d79931fc340c"
+      },
+      "retainedCounts": {
+        "datasets": 25,
+        "files": 448,
+        "registeredUploads": 40
+      }
+    },
+    {
+      "labId": "0000000000000000000000000B",
+      "report": {
+        "mode": "observe",
+        "candidates": 0,
+        "reclaimed_uploads": 0,
+        "eligible_completed_transfers": 0,
+        "pruned_completed_transfers": 0,
+        "reaped_open_transfers": 0,
+        "expired_open_transfers": 0,
+        "preserved": {},
+        "approval_plan": {
+          "schema": "colab-storage-reclaim-plan/1",
+          "scope": {
+            "labId": "0000000000000000000000000B"
+          },
+          "uploads": [],
+          "expiredOpenTransfers": [],
+          "completedTransferIds": []
+        },
+        "plan_sha256": "1d96d3fcad8c2487956edf499fded145e25ba414c55acc29675677a2ff5f3912"
+      },
+      "retainedCounts": {
+        "datasets": 1,
+        "files": 2,
+        "registeredUploads": 1
+      }
+    }
+  ]
+}

@@ -2,7 +2,9 @@
 
 > 2026-09-11 현재: PR #14 `16710a4` main 반영·dev 웹 배포, 로그인 대비5.02:1/실제시각검사통과·배포후doctor15/0/0. 캐시 검사는 시험10키보존명시로통과(고아19·보존19·판정불가19·삭제0); 구버전로컬staging재발원인조치는남음. 서버제품은9e3ff19, 원격CI성공·프론트1204통과. PR #13 ELI5갱신. 전체Stage는미완이며 S3관측용량/나머지dev여정·운영조건유지. 현재근거 `sessions/20260911-stage12-failure-fix.md`, 전체잔여 `sessions/20260911-stage12-deploy.md`. 아래는이전상태의이력이다.
 
-> 최종 갱신 2026-09-11: main/dev `30f5adf` 배포, 단일 운영자 doctor15/0/0, 같은 트리 전체검사 두 실행 각61/0/0. U-1·F-3·G10·J-1·CR-2 수용 완료. 잔여 Stage1 1건(U-2), Stage2 4건(IS4·I3·I4·TL-2), 유예 각각1/2건. TL-2 자동 연결 보완 중, I4 자동 계정 probe13/2/0은 유지. 상세 `reports/stage12-release-acceptance/acceptance.md`.
+> 최종 갱신 2026-09-11: 제품 d56428d main/dev 배포, 전체61/0/0·운영자doctor15/0/0. TL-2 전수장부 발행·실제 자동174벌 분류 성공. 매시간 publisher·staging 한 주기 미실행으로 partial 유지. Stage1 done61/잔여1/유예1, Stage2 done90/잔여4/유예2. 잔여 실행 패킷과 실제 IMDS13/2/0은 `reports/stage12-tl2-deploy/release.md`.
+
+> 30f5 수용 이력 2026-09-11: main/dev `30f5adf` 배포, 단일 운영자 doctor15/0/0, 같은 트리 전체검사 두 실행 각61/0/0. U-1·F-3·G10·J-1·CR-2 수용 완료. 잔여 Stage1 1건(U-2), Stage2 4건(IS4·I3·I4·TL-2), 유예 각각1/2건. TL-2 자동 연결 보완 중, I4 자동 계정 probe13/2/0은 유지. 상세 `reports/stage12-release-acceptance/acceptance.md`.
 
 > 이전 갱신 이력 2026-09-11: 승인된 내부 API 계약·서버·시험을 eac2f0b로 로컬 재동결(관련 9파일), 새 HEAD 대비 contract-breaking green. 경계 27건·계약 소비 6건 재검증 통과(`sessions/20260911-s2-review-local.md`); 다른 기능 변경은 미커밋 보존. 다음 = 전수·G10 전후 실측·배포 검토. 편의/운영/회수 근거는 `sessions/20260911-s2-convenience-local.md`, `sessions/20260911-s2-ops-local.md`, `sessions/20260911-preview-retention-local.md`. 원격 push·배포 없음; main push·배포·실제 삭제·원격 apply는 실행 직전 승인 경계를 유지한다.
 

@@ -1,0 +1,523 @@
+{
+ "schema": "colab-gate-summary/1",
+ "tree": "2dec4313a6bcb083ca5158d2b5c2f279be8f1303",
+ "commit": "d56428d6945d677cae013d6bff25cb61727f3166",
+ "started": "2026-09-11T09:36:00Z",
+ "finished": "2026-09-11T09:56:14Z",
+ "parallelism": 4,
+ "counts": {
+  "green": 61,
+  "red_판정": 0,
+  "red_준비": 0,
+  "red_준비_입력미선언": 0
+ },
+ "gates": [
+  {
+   "name": "planning-freshness",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-lint",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-breaking",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-lint",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-breaking",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "seam-consistency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "generated-up-to-date",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "import-boundary",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "banned-import",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ai-no-lineage-write",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-boundary",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "migration-single-head",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "schema-diff",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "migration-drift",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-coverage",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-effect",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "work-item-consistency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "stage2-markers",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "autometa-loss",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-typecheck",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-test",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-fixture-reach",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-visual",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "preview-tile-slot",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "artifact-ownership",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "e2e-format-coverage",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "render-latency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "backup-cron-streak",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ops-observability",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "exec-bit",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "harness-eval",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-core-api",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-ai-service",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-viz-render",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-pipeline-worker",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "boundary-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-boundary-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-effect-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "seam-consistency-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "generated-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "work-item-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "stage2-markers-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "autometa-loss-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "preview-tile-slot-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "artifact-ownership-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "e2e-format-coverage-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "render-latency-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "backup-cron-streak-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ops-observability-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "is4-recovery-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "exec-bit-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "migration-drift-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-typecheck-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-test-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-fixture-reach-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-visual-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "harness-eval-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  }
+ ],
+ "targets": {
+  "requested": "all",
+  "selected": [
+   "planning-freshness",
+   "contract-lint",
+   "contract-breaking",
+   "event-lint",
+   "event-breaking",
+   "seam-consistency",
+   "generated-up-to-date",
+   "import-boundary",
+   "banned-import",
+   "ai-no-lineage-write",
+   "db-boundary",
+   "migration-single-head",
+   "schema-diff",
+   "migration-drift",
+   "rls-coverage",
+   "rls-effect",
+   "work-item-consistency",
+   "stage2-markers",
+   "autometa-loss",
+   "frontend-typecheck",
+   "frontend-test",
+   "frontend-fixture-reach",
+   "frontend-visual",
+   "preview-tile-slot",
+   "artifact-ownership",
+   "e2e-format-coverage",
+   "render-latency",
+   "backup-cron-streak",
+   "ops-observability",
+   "exec-bit",
+   "harness-eval",
+   "service-tests-core-api",
+   "service-tests-ai-service",
+   "service-tests-viz-render",
+   "service-tests-pipeline-worker",
+   "contract-selftest",
+   "event-selftest",
+   "boundary-selftest",
+   "db-boundary-selftest",
+   "db-selftest",
+   "rls-effect-selftest",
+   "seam-consistency-selftest",
+   "generated-selftest",
+   "work-item-selftest",
+   "stage2-markers-selftest",
+   "autometa-loss-selftest",
+   "preview-tile-slot-selftest",
+   "artifact-ownership-selftest",
+   "e2e-format-coverage-selftest",
+   "render-latency-selftest",
+   "backup-cron-streak-selftest",
+   "ops-observability-selftest",
+   "is4-recovery-selftest",
+   "exec-bit-selftest",
+   "migration-drift-selftest",
+   "frontend-typecheck-selftest",
+   "frontend-test-selftest",
+   "frontend-fixture-reach-selftest",
+   "frontend-visual-selftest",
+   "harness-eval-selftest",
+   "service-tests-selftest"
+  ]
+ },
+ "task_evidence": {
+  "before": {
+   "task_id": "fdd8c5c8bf2e48099ef1b73eb5358468",
+   "run_id": "6dfe1445544e4ab587b10240350c03cb",
+   "checkout": "/tmp/colab-stage12-tl2-final-gates",
+   "files": "c32496a2a5aa055d947cecbddce464dbd071ff89d94bb98dd31fd04083efda7d"
+  },
+  "after": {
+   "task_id": "fdd8c5c8bf2e48099ef1b73eb5358468",
+   "run_id": "6dfe1445544e4ab587b10240350c03cb",
+   "checkout": "/tmp/colab-stage12-tl2-final-gates",
+   "files": "c32496a2a5aa055d947cecbddce464dbd071ff89d94bb98dd31fd04083efda7d"
+  }
+ }
+}

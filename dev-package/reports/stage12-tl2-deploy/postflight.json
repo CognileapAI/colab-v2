@@ -1,0 +1,67 @@
+{
+  "observedAt": "2026-09-11T10:02:29.804620+00:00",
+  "currentSha": "d56428d6945d",
+  "mainSha": "main=d56428d6945d candidate=d56428d6945d ancestor=yes",
+  "units": [
+    {
+      "name": "colab_v2_dev_core_api",
+      "image": "colab-v2/core-api:dev-d56428d6945d",
+      "configId": "sha256:d14a7121b96fe2f95d7d0da284a77a7830d213a187592474875fa9a8db630003",
+      "health": "healthy",
+      "startedAt": "2026-09-11T10:00:11.862605902Z",
+      "restarts": 0
+    },
+    {
+      "name": "colab_v2_dev_pipeline_worker",
+      "image": "colab-v2/pipeline-worker:dev-d56428d6945d",
+      "configId": "sha256:4b44b93383619688af47ad09593ad5b45daa7ac53de3bb45479a8dd9fac3d33e",
+      "health": "healthy",
+      "startedAt": "2026-09-11T10:00:12.53540279Z",
+      "restarts": 0
+    },
+    {
+      "name": "colab_v2_dev_viz_render",
+      "image": "colab-v2/viz-render:dev-d56428d6945d",
+      "configId": "sha256:e4baad23d9243262c8ee47abb0905b733361982d69832a2b7f8b719dbb9d1640",
+      "health": "healthy",
+      "startedAt": "2026-09-11T10:00:12.642433447Z",
+      "restarts": 0
+    },
+    {
+      "name": "colab_v2_dev_ai_service",
+      "image": "colab-v2/ai-service:dev-d56428d6945d",
+      "configId": "sha256:4a68bbd3bdbb0e3d3b875d6294067e479f312de46dab46a3d84afbc71b62c62a",
+      "health": "healthy",
+      "startedAt": "2026-09-11T10:00:11.885500301Z",
+      "restarts": 0
+    }
+  ],
+  "tl2AutomaticLogLines": [
+    "INFO:    TL-2 구판 관측 — preview 174벌 · 소유 [살아 있다 116 · 접수분에만 닿는다 42 · 고아 16 · 판정 불가 0] · 구판 [사이드카 부재 0 · 원천 원장 부재 0 · 원천 원장 있음 0] · 재굽기 불가 0 · 삭제 0건"
+  ],
+  "snapshot": {
+    "schema": "colab-preview-ownership-snapshot/1",
+    "observed_at": "2026-09-11T09:59:55.288599+00:00",
+    "counts": {
+      "d3_file": 450,
+      "d5_upload_file": 596
+    },
+    "content_sha256": "97daa5e994047f71ed64ac05f825cca190c8f3a69045067398e41f6c99c961d3"
+  },
+  "existingCronSha256": "ffb1cb3252e62c339a90dda3761f1d913dcb402a80b717fa7cf85be2bece64a6",
+  "opsCronExists": false,
+  "publisherCronExists": false,
+  "driverUrlMetadata": {
+    "backup-platform-db.url": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0o600"
+    },
+    "ownership-platform-db.url": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0o600"
+    }
+  },
+  "driverOnlyConversion": true
+}

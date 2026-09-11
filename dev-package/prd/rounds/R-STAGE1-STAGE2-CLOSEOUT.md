@@ -14,6 +14,8 @@
 
 ## 2026-09-11 최신 실행 상태
 
+후속 제품 d56428d: 전체61/0/0·main CI success·dev배포·운영자doctor15/0/0. TL-2 전수장부450/596개 발행과 실제 자동174벌 분류(삭제0)를 확인했다. TL-2는 매시간 publisher 설치와 staging 정기주기 미실측으로 partial 유지. 전체 잔여5·유예3은 불변. 최신 근거 `reports/stage12-tl2-deploy/release.md`. 아래30f5는 직전 수용 이력이다.
+
 main/dev30f5adf 배포 및 운영자 doctor 단일15/0/0, 같은 트리 전체검사 before/after 각각61/0/0을 확인했다. G10·U-1·F-3·J-1·CR-2를 수용했다. 전체 종료는 미완료: U-2 실제 회수, IS4 exact plan apply, I3 cron red/green, I4 IMDS 읽기 권한·cron·외부 알람, TL-2 자동 연결·staging 실제 주기가 남는다. TL-2 실제 자료 분류는 완료했으나 자동 연결 누락을 수정 중이므로 Task6 완료로 표시하지 않는다. 실행 패킷과 제한은 `reports/stage12-release-acceptance/acceptance.md`.
 
 ## Global Constraints
@@ -190,13 +192,17 @@ Expected: 첫 바퀴 요약 1줄, 계수, 삭제 0, 비밀값 출력 0.
 
 2026-09-11 수용: dev f8, startup 06:30 UTC와 기본 주기 뒤 07:30 UTC 실제 요약 구분. 주체 612·map.tif 0·삭제 0, 재시작·수동 실행·주기 변경 0. 독립 검토 승인. `reports/stage12-final-verification/s3-first-cycle.log` 및 `sessions/20260911-stage12-final-verification.md`.
 
-- [ ] **Step 2: BF-12가 닫힌 경우에만 TL-2 실패 시험을 작성한다**
+- [x] **Step 2: BF-12가 닫힌 경우에만 TL-2 실패 시험을 작성한다**
 
 Expected: 원천 원장 부재와 사이드카 부재가 별도 등급으로 관측되고 자동 삭제되지 않는다.
 
-- [ ] **Step 3: 관측 전용 분류를 구현하고 기존 19벌 기준 집합과 대조한다**
+- [x] **Step 3: 관측 전용 분류를 구현하고 기존 19벌 기준 집합과 대조한다**
 
 Expected: 재굽기로 닿지 않는 16벌이 설명 가능한 하위 집합으로 나타난다. 실제 삭제 0.
+
+- [ ] **Step 4: publisher 정기 실행과 staging 실제 한 주기를 확인한다**
+
+기존 TL-2 완료 정의의 자동 순회·staging 확인 조건을 추적한다. d564 dev 최초 발행·기동 자동순회 성공을 매시간 갱신이나 staging 한 주기 성공으로 대신하지 않는다. 실제 cron 설치는 승인 경계를 따른다.
 
 ### Task 7: `R-S2-REVIEW` — CR-2 후속 마감
 
@@ -253,13 +259,13 @@ Expected: 9개 완료 정의 전건 충족.
 
 `PA-G`는 `deferred`; https://github.com/CognileapAI/colab-v2/issues/12 에서 추적한다. 종전 자동 전환 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 승인되지 않았다.
 
-- [ ] **Step 2: 통합 검증과 구체적인 배포 검토 자료 준비**
+- [x] **Step 2: 통합 검증과 구체적인 배포 검토 자료 준비**
 
 Expected: 각 라운드 수용 검토·관련 게이트·최종 전수 결과, 정확한 SHA와 변경 목록을 갖춘 뒤 main push·staging/dev 배포 실행 직전 승인을 받는다.
 
-- [ ] **Step 3: 승인된 dev 배포와 기존 로그인 회귀 검증**
+- [x] **Step 3: 승인된 dev 배포와 기존 로그인 회귀 검증**
 
-Expected: 동일 main SHA에서 기존 로그인·세션 유지·로그아웃과 사용자 여정 성공, `deploy_doctor` 한 번의 실행 15/15, skip 0. 신규 Google 로그인 구현 없음.
+Expected: 동일 main SHA에서 기존 로그인·세션 유지·로그아웃과 사용자 여정 성공, `deploy_doctor` 한 번의 실행 15/15, skip 0. 신규 Google 로그인 구현 없음. d564 실제 인증 회귀는 `dev-package/sessions/20260911-stage12-auth-regression-d564.md` 참조.
 
 - [ ] **Step 4: 최종 대장 확인**
 

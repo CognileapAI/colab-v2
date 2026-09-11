@@ -1,0 +1,47 @@
+{
+  "schema": "colab-final-gate-run/1",
+  "label": "final",
+  "sha": "d56428d6945d677cae013d6bff25cb61727f3166",
+  "outer_jobs": 4,
+  "inner_jobs": 4,
+  "started_epoch": 1789119359,
+  "finished_epoch": 1789120575,
+  "wall_seconds": 1215.46,
+  "gate_counts": {
+    "green": 61,
+    "red_판정": 0,
+    "red_준비": 0,
+    "red_준비_입력미선언": 0
+  },
+  "selected_gate_count": 61,
+  "service_count_rows": [
+    {
+      "collected": 1074,
+      "executed": 1074,
+      "skipped": 0,
+      "deselected": 6,
+      "failed": 0
+    },
+    {
+      "collected": 138,
+      "executed": 138,
+      "skipped": 0,
+      "deselected": 26,
+      "failed": 0
+    },
+    {
+      "collected": 444,
+      "executed": 444,
+      "skipped": 0,
+      "deselected": 42,
+      "failed": 0
+    },
+    {
+      "collected": 275,
+      "executed": 275,
+      "skipped": 0,
+      "deselected": 50,
+      "failed": 0
+    }
+  ]
+}

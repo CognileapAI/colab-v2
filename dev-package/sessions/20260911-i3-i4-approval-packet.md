@@ -1,6 +1,6 @@
 # I3·I4 실제 실행 승인 패킷
 
-작성 기준: 구현·origin/main·dev `30f5adf6774771c9ca34e2c3a0b92a0648b9cc76`, CI `34577478051` success. dev ship/up과 운영자 진단15/0/0 완료. **아래 I4 자동 probe는 별도 권한 문제로13/2/0이며 실행 준비 완료가 아니다.** SHA가 바뀌면 승인 대상을 다시 봉인한다.
+작성 기준: 제품 구현·배포 수용 시 main·dev `d56428d6945d677cae013d6bff25cb61727f3166`, CI `34586815017` success. dev ship/up과 운영자 진단15/0/0 완료. **아래 I4 자동 probe는 별도 권한 문제로13/2/0이며 실행 준비 완료가 아니다.** 문서 후속 main SHA는 실행 후보 파일에서 별도 봉인하며, dev 제품 실행 SHA는 d564로 유지한다. 원문 `reports/stage12-tl2-deploy/release.md`.
 
 ## 현재 읽기 전용 실측
 
@@ -10,14 +10,16 @@
 - staging env: `~/.colab-v2-staging.env` 0600.
 - 사용자 crontab: SHA-256 `d554b72cb92947d038b9495577fe5fcdfe0adbf90026f2b724cdb9f7da25dbd4`, 비공백 36줄, backup 표식 2개, deploy 표식 0개.
 - staging 상태: 실패 표식 없음, LAST-SUCCESS 존재, 마지막 green `09e2b9b2db1a`.
-- 자동 배포 전용 `/home/ttlhi10/colab-v2-staging-deploy`, branch `staging/auto-deploy`를 준비했다. 시작 HEAD는 final main의 직접 부모 `e90e5c2553a7795176cfcc218d8957b74da5869e`, clean. 최소 cron PATH 도구15종과 원격 fetch 확인. 근거 `reports/stage12-i3-readiness-final/readiness.md`.
-- dev I4: `/opt/colab-ops/versions/30f5adf67747`와 dispatcher 설치 완료. `/etc/cron.d/colab-ops` 미설치. 기존 `/etc/cron.d/colab-dev` SHA-256은 `ffb1cb3252e62c339a90dda3761f1d913dcb402a80b717fa7cf85be2bece64a6`.
+- 자동 배포 전용 `/home/ttlhi10/colab-v2-staging-deploy`, branch `staging/auto-deploy`를 준비했다. 현재 준비 HEAD는 제품 릴리스 `d56428d6945d677cae013d6bff25cb61727f3166`, clean. 문서 후속 main이 다음 실제 배포 후보이며 아래 별도 봉인 파일의 부모 SHA와 대조한다. 최소 cron PATH 도구15종과 원격 fetch 확인. 근거 `reports/stage12-i3-readiness-final/readiness.md`.
+- dev I4: `/opt/colab-ops/versions/d56428d6945d`와 dispatcher 설치 완료. `/etc/cron.d/colab-ops` 미설치. 기존 `/etc/cron.d/colab-dev` SHA-256은 `ffb1cb3252e62c339a90dda3761f1d913dcb402a80b717fa7cf85be2bece64a6`.
 
 ## I3 — 실제 5분 cron RED → 같은 SHA GREEN
 
+TL-2 선행 준비: 새 compose 필수 publisher UID/viz GID/max-age, 전용 SQLAlchemy URL 파일, 후보 이미지와 새 ownership volume, 최초 읽기 전용 장부 발행·실제 viz 사용자 읽기가 준비되어야 한다. staging의 기존 서비스는 이 준비 중 유지한다. publisher 주기 설치는 별도 승인 범위이며 dev 최초 발행 성공을 staging 준비 성공으로 대신하지 않는다.
+
 ### 승인 대상
 
-1. 이미 준비된 전용 clean worktree `/home/ttlhi10/colab-v2-staging-deploy`의 HEAD `e90e5c2553a7795176cfcc218d8957b74da5869e`와 원격 `30f5adf6774771c9ca34e2c3a0b92a0648b9cc76`를 재확인한다.
+1. `.codex/artifacts/stage12-tl2-deploy/i3-final-candidate.json`에 문서 main 최종 전체 SHA, 부모 SHA, 실행 사본 `/home/ttlhi10/colab-v2-staging-deploy`, 원격 fetch 값, 직전 green `09e2b9b2db1a`를 기록한다. 이 파일은 문서 커밋 후 생성하여 자기 SHA를 소급하지 않는다. 사용자에게 제시한 후보와 실행 직전 원격이 다르면 다시 봉인한다. 별도 후보 파일 없는 이 문서만으로 실제 cron을 실행하지 않는다.
 2. 전용 worktree 안에 빈 `TEST-I3-DIRTY-RED` 파일 하나를 둔다. 이 파일은 red 뒤 정확히 한 번 제거한다.
 3. 그 worktree의 `infra/staging/pipeline/install-schedule.sh install`로 5분 deploy 블록을 설치한다.
 4. 최종 후보의 main push는 이 승인과 독립해 먼저 끝낼 수 있다. 전용 worktree는 최종 main의 부모 SHA에서 시작하므로, 원격 main이 이미 최종 후보여도 첫 cron은 `LOCAL != REMOTE`와 dirty 1건을 만나 fast-forward 전에 exit 65, `DEPLOY-FAILED.txt`를 만든다. 빌드·DB·서비스에는 닿지 않는 실질 dirty-tree 안전장치 RED다.
@@ -36,7 +38,7 @@
 - 다음 실제 cron 회차가 red 때의 REMOTE와 정확히 같은 SHA를 배포한다.
 - pipeline 자체 판정은 backup 두 체인 green, migration single head, `verify-deploy.sh`와 `verify-chains.sh` green이다. pipeline이 전체 gate나 `deploy_doctor`를 자동 실행한다고 세지 않는다.
 - staging 배포 판정은 실제 `infra/staging/verify/verify-deploy.sh`와 `infra/staging/verify/verify-chains.sh`의 성공 종료·원문 및 앱/DB 8 컨테이너 healthy·노출 위반 0을 대조한다. `deploy_doctor`는 dev/prod 전용이므로 staging에서 실행하거나 dev로 위장하지 않는다. doctor 15/15는 아래 I4 dev 검증에만 적용한다.
-- 코드 전체 검증은 최종 SHA의 `stage12-final-gates/after/gate-summary.json`을 별도 증거로 연결한다. 실행 SHA·필수 게이트·실제 입력·계수와 명시 면제를 확인하고, 이를 staging 런타임 검증으로 바꾸지 않는다. 같은 코드의 전체 검사를 이유 없이 반복하지 않는다. 해당 보고서가 아직 없거나 final SHA와 다르면 이 코드 검증 조건은 미충족이다.
+- 코드 검증은 d564 제품 전체61/0/0(`reports/stage12-tl2-deploy/all-summary.json`), 후속 문서 게이트, d564→실제 후보의 변경 파일이 문서뿐이라는 제품 내용 동일성 대조를 분리해 연결한다. 문서 후보 SHA에서 전체61개를 직접 실행했다고 하지 않는다. 제품·배포 스크립트 변경이 하나라도 있으면 이 동일성 경로는 사용할 수 없다. 실제 staging 런타임 검증은 아래 배포 자체 결과로 별도 확인한다.
 - public health는 RED 전후와 GREEN 뒤 200이어야 한다.
 - `DEPLOY-FAILED.txt` 제거, LAST-SUCCESS·release ledger·실제 서빙 tag가 같은 SHA다.
 - 설치 후 crontab은 기존 36줄과 backup 표식 2개를 보존하고 deploy 표식 2개(시작/끝), 실행 줄 1개만 추가한다. 설치 전 snapshot 경로와 hash를 기록한다.
@@ -51,9 +53,9 @@
 
 ### 현재 후보 bundle
 
-- source SHA `30f5adf6774771c9ca34e2c3a0b92a0648b9cc76`
-- archive SHA-256 `ce56cbd88b9b0d1275ef9975758f6a983757d2cb3c09fb93c39834ebd6b48fe4`
-- manifest SHA-256 `1333f19aa3da961aafacd8e55e69fb6ec40607637534600d6ddab934e6cdd7c9`
+- source SHA `d56428d6945d677cae013d6bff25cb61727f3166`
+- archive SHA-256 `4b651621f3553f374f946f75010ddd44f5e4ee12c71c6bdb4b1280380daf7c31`
+- manifest SHA-256 `072abe72b5070dc5403a780f4806d3d02b3eab8a85a4e0b120f360e5044328aa`
 - manifest 파일 136개.
 - 실제 main 조상 검사와 manifest 전건 검사 통과 후 dev에 설치했다.
 
@@ -70,7 +72,7 @@
 2. `COLAB_DEV_SSH`와 `COLAB_DEV_KEY_FILE`을 레포 밖 값으로 설정하고 `infra/dev/ship.sh <dist>`를 실행한다.
 3. ship은 archive hash 확인 → root 소유 `/opt/colab-ops/versions/<SHA>` → manifest 136파일·source SHA·owner/mode/symlink 검사 → root 고정 dispatcher 설치 → 이미지 load → `/opt/colab-v2/CURRENT_SHA` 갱신까지 수행한다. 서비스 `up.sh`는 아직 수행하지 않는다.
 4. 기존 `/etc/cron.d/colab-ops`가 이미 있는 재배포라면 CURRENT_SHA 갱신 순간부터 다음 cron 회차가 새 dispatcher/source와 새 SHA 이미지를 대상으로 실행될 수 있다. ship 전에 정확한 ops cron 파일을 snapshot·hash 보존 후 cron 디렉터리 밖으로 일시 분리하고, 이미 실행 중인 해당 세 target 회차가 모두 종료했는지 프로세스·잠금으로 확인한다. 종료 확인 전에는 ship하지 않는다. 새 서비스 `up.sh`와 doctor가 green인 뒤 같은 owner/mode/hash의 원래 cron을 복원하고 verify한다. 잠금이 잠깐 풀린 것만으로 다음 cron을 막았다고 주장하지 않는다. 이번 최초 설치는 ops cron이 없어 이 간격 영향이 없다.
-5. 명시적 `COLAB_IMAGE_TAG=dev-<SHA>`로 `/opt/colab-v2/up.sh`를 실행하고 migration·4서비스 health·web index·doctor 15/15를 확인한다.
+5. d564 배포는 이미 완료했다. 최초 발행 전에 backup URL의 선두만 SQLAlchemy psycopg 드라이버 형식으로 바꾼 root:root0600 `/etc/colab/ownership-platform-db.url`을 원자 준비했고 원본은 보존했다. UID0/GID999/max-age7200, volume-init→최초 발행→실제 viz 읽기→기존 up 순서를 실측했다. 주기 runner도 전용 URL 파일을 사용하며 자격증명 회전 시 함께 갱신한다.
 6. `/opt/colab-ops/bin/dispatch-current.sh --check`가 `CURRENT_SHA=<SHA>`와 resident manifest 전건 일치를 내야 한다.
 
 ### webhook 없이 먼저 실행할 read-only probe 3종
@@ -137,9 +139,10 @@ sudo env COLAB_DEV_STATE=/opt/colab-v2/ops-alerts/acceptance-<RUN>/probe-input \
 - dev의 root-owned ops source 설치.
 - 외부 전송과 cron 상태 변경이 없는 read-only probe 3종.
 
-마지막 추가 승인이 필요한 범위는 다음 두 가지뿐이다.
+이 문서가 다루는 I3/I4 추가 승인 범위는 다음과 같다. U2·IS4·TL2 주기 설치는 각각 별도 패킷을 따른다.
 
 1. **I3 cron·실패 drill 승인**: 전용 clean worktree 생성, crontab deploy 블록 설치, TEST marker 1개를 이용한 fast-forward 전 RED, marker 제거, 같은 최종 main SHA의 다음 5분 GREEN staging 배포.
-2. **I4 외부 알림 승인**: 수신처 파일 경로가 준비된 뒤 webhook cron 설치와 실제 raise 1건·clear 1건 전송.
+2. **I4 최소 IAM 변경 승인**: 실제 권한이 있는 운영자가 새 inline policy `ColabDevPublicWebDoctorRead` 2문을 적용하고 자동 probe를 검증한다. 기존 정책을 덮어쓰지 않는다.
+3. **I4 외부 알림 승인**: 수신처 파일 경로가 준비된 뒤 webhook cron 설치와 실제 raise 1건·clear 1건 전송.
 
-I3 승인 전에도 최종 main push와 이미 승인된 I4 dev 배포·source 설치·read-only probe를 독립 진행한다. 실행 직전 최종 SHA, 직전 green, crontab/dev-cron hash, bundle/archive/manifest hash가 이 문서와 달라지면 해당 패킷을 다시 봉인한다. 현재 bundle 값은 통합 후보 `205de119433119212212766cce9233644cdc786c` 기준의 임시 값이므로 최종 main SHA가 달라지는 즉시 무효다.
+I3 승인 전에도 최종 main push와 이미 승인된 I4 dev 배포·source 설치·read-only probe를 독립 진행한다. 실행 직전 최종 SHA, 직전 green, crontab/dev-cron hash, bundle/archive/manifest hash가 이 문서와 달라지면 해당 패킷을 다시 봉인한다. 위 bundle은 실제 dev 제품 d564의 설치된 값이다. 문서만 바뀐 main을 I3 후보로 선택하면 후보/부모 SHA는 별도 파일에서 새로 봉인한다. 예전205de·30f5 패킷은 현재 실행 승인 대상이 아니다.
