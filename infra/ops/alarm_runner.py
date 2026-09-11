@@ -91,10 +91,11 @@ def _notify(url: str, event: dict[str, Any]) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--state", type=Path, required=True)
-    parser.add_argument("--target", required=True)
-    parser.add_argument("--threshold", type=int, required=True)
+    parser.add_argument("--state", type=Path)
+    parser.add_argument("--target")
+    parser.add_argument("--threshold", type=int)
     parser.add_argument("--webhook-file", type=Path)
+    parser.add_argument("--check-webhook", type=Path)
     parser.add_argument("--observe-only", action="store_true")
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("command", nargs=argparse.REMAINDER)
@@ -103,10 +104,17 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.check_webhook is not None:
+        try:
+            _webhook(args.check_webhook)
+        except (OSError, ValueError):
+            print("::gate-readiness-failure::gate=ops-alarm|missing=valid-https-webhook-file", file=sys.stderr)
+            return READINESS_EXIT
+        return 0
     command = list(args.command)
     if command and command[0] == "--":
         command.pop(0)
-    if not command or not 1 <= args.threshold <= 100 or args.timeout <= 0:
+    if args.state is None or args.target is None or args.threshold is None or not command or not 1 <= args.threshold <= 100 or args.timeout <= 0:
         print("alarm-runner red — command, threshold(1~100), timeout(>0)을 확인한다", file=sys.stderr)
         return 1
     webhook = None
