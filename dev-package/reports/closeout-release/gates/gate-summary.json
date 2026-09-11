@@ -1,0 +1,61 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "work-item-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "planning-freshness",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "work-item-selftest",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 4,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "work-item-consistency",
+      "planning-freshness",
+      "work-item-selftest"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "a30ac71807b54daea96695ac4f8109bf",
+      "run_id": "f7b4162f1bf947828dbc71888ffad146",
+      "checkout": "/tmp/colab-stage12-execution-prep",
+      "files": "b05ff60fa3cdc672322f41bdd0325e4087c572c4dcc1c4d09358ebd0bba18a54"
+    },
+    "after": {
+      "task_id": "a30ac71807b54daea96695ac4f8109bf",
+      "run_id": "f7b4162f1bf947828dbc71888ffad146",
+      "checkout": "/tmp/colab-stage12-execution-prep",
+      "files": "b05ff60fa3cdc672322f41bdd0325e4087c572c4dcc1c4d09358ebd0bba18a54"
+    }
+  }
+}

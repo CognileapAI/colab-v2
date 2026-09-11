@@ -1,0 +1,62 @@
+{
+  "schema": "colab-i3-final-candidate/1",
+  "observed_at": "2026-09-11T10:57:18.375684+00:00",
+  "candidate_sha": "c329c32d2f6d469deb12d64f6cb89e60994b1d3d",
+  "parent_sha": "d56428d6945d677cae013d6bff25cb61727f3166",
+  "remote_main": "c329c32d2f6d469deb12d64f6cb89e60994b1d3d",
+  "prepared_checkout": "/home/ttlhi10/colab-v2-staging-deploy",
+  "prepared_head": "d56428d6945d677cae013d6bff25cb61727f3166",
+  "prepared_clean": true,
+  "candidate_changes": [
+    "dev-package/03-HANDOFF.md",
+    "dev-package/prd/rounds/R-STAGE1-STAGE2-CLOSEOUT.md",
+    "dev-package/reports/stage12-auth-regression-d564/auth-smoke.json",
+    "dev-package/reports/stage12-tl2-deploy/all-facts.json",
+    "dev-package/reports/stage12-tl2-deploy/all-summary.json",
+    "dev-package/reports/stage12-tl2-deploy/automatic-doctor-d564.txt",
+    "dev-package/reports/stage12-tl2-deploy/dev-doctor-d564.txt",
+    "dev-package/reports/stage12-tl2-deploy/gates-d564-manifest.json",
+    "dev-package/reports/stage12-tl2-deploy/postflight.json",
+    "dev-package/reports/stage12-tl2-deploy/release.md",
+    "dev-package/reports/stage12-tl2-deploy/u2-apply-packet.md",
+    "dev-package/reports/stage12-tl2-deploy/u2-observation.json",
+    "dev-package/reports/stage12-tl2-staging-packet/staging-execution-packet.md",
+    "dev-package/sessions/20260911-i3-i4-approval-packet.md",
+    "dev-package/sessions/20260911-stage12-auth-regression-d564.md",
+    "dev-package/work-items.yaml"
+  ],
+  "product_content_equal_to_d564": true,
+  "direct_product_all_sha": "d56428d6945d677cae013d6bff25cb61727f3166",
+  "product_all_counts": [
+    61,
+    0,
+    0
+  ],
+  "docs_counts": [
+    1,
+    0,
+    0
+  ],
+  "public_health": "200",
+  "staging_previous_green": "09e2b9b2db1a",
+  "crontab_sha256": "d554b72cb92947d038b9495577fe5fcdfe0adbf90026f2b724cdb9f7da25dbd4",
+  "actual_cron_installations": 0,
+  "actual_staging_deployments": 0,
+  "execution_requires_approval": true,
+  "candidate_images_built": true,
+  "tl2_staging_initial_snapshot_published": false,
+  "previous_candidate_file_sha256": "99c67a48a9513c7c1bce16581228818139ab73be254ceb16f18dc75baedc6c92",
+  "build_checkout": "/tmp/colab-i3-tl2-build.omrci2",
+  "build_head": "c329c32d2f6d469deb12d64f6cb89e60994b1d3d",
+  "build_clean": true,
+  "candidate_images": {
+    "core-api": "sha256:bfccbfbbf4547bc96e1f4f8775b27c81a10792981d17879cb2d0fbaa7b8427ab",
+    "ai-service": "sha256:5f7ae049840be588c0e9c31a22c67fbb0360c60b0ba74f0e167e51e6d3f92e44",
+    "pipeline-worker": "sha256:6fe466185331d4227afe82b7b99aefdbad6b8042e930e768b2356cf4a3762b12",
+    "viz-render": "sha256:f60ca6d4564b9c955929256feb75543da5a134dfcb1c66e42fad44452c37ebfd",
+    "frontend": "sha256:9264d8ccd2b2430a7ef24fa4bca8ea1570005a48fccd06fc14c743e9ac716481",
+    "migrator": "sha256:c847b8429a1afa441e57de4fe182317a86d97a3435946e028f4c8afdb60529b8"
+  },
+  "staging_previous_observation_source": "prior candidate file; refreshed health and units in fresh-observations.json",
+  "docs_counts_source": "prior c329 documentation gate, not this preparation gate"
+}

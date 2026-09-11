@@ -29,7 +29,7 @@ items:
   - id: P3
     name: 시각화
     status: open
-    stage: stage2
+    stage: backlog
     owner: D7 / viz-render
     entry_conditions: ["P2 완료"]
     depends_on: [P9]   # ← 실재하지 않는 id

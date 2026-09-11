@@ -62,8 +62,7 @@ aws --profile "$COLAB_AWS_OPERATOR_PROFILE" iam get-role-policy \
 ```bash
 ssh -i "$COLAB_DEV_KEY_FILE" -o BatchMode=yes -o IdentitiesOnly=yes \
   -o StrictHostKeyChecking=yes "$COLAB_DEV_SSH" \
-  'sudo env COLAB_DEV_REPO=/opt/colab-repo \
-   /opt/colab-ops/versions/30f5adf67747/infra/ops/probes/deploy-verification.sh'
+  'sudo -n /opt/colab-ops/versions/d56428d6945d/infra/ops/probes/deploy-verification.sh'
 ```
 
 완료 판정은 같은 단일 실행의 exit 0과 `15/0/0`이다. 특히 web `index.html`과 `assets/` 두 줄이 green이고 credential source가 IMDS인지 확인한다. service-health/backup 결과와 합산하지 않는다. 13/2/0, readiness 78, 또는 다른 red면 cron 설치와 webhook 연결을 시작하지 않는다.

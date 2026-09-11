@@ -117,7 +117,10 @@ GLYPH_TO_STATUS = {
 GLYPHS = "".join(GLYPH_TO_STATUS)
 
 STATUSES = set(GLYPH_TO_STATUS.values()) | {"conflict"}
-STAGES = {"stage1", "stage2", "after_stage2", "out_of_scope", "unknown"}
+# backlog는 Stage 1·2·3에 아직 배정하지 않은 열린 항목이다. Stage 3의 정본 값은
+# after_stage2 하나이므로 backlog를 그 표지 집합에 섞지 않는다.
+# 기존 대장의 미분류 값 `unknown`도 호환한다.
+STAGES = {"stage1", "stage2", "after_stage2", "backlog", "out_of_scope", "unknown"}
 
 REQUIRED_FIELDS = ("id", "name", "status", "stage", "owner", "completion_def", "evidence")
 
@@ -625,12 +628,22 @@ def main() -> int:
     n_conflicts = check_conflicts(by_id)
     n_decisions = check_decision_numbers()
     n_stage3 = check_claude_md(by_id)
+    stage_counts = {
+        stage: sum(1 for item in by_id.values() if item.get("stage") == stage)
+        for stage in STAGES
+    }
 
     print(
         f"work-item-consistency: 대장 {len(by_id)}건 · "
         f"㈐ 진실원 대조 {n_handoff}행 · ㈏ 체크리스트 대조 {n_checklist}건 · "
         f"㈑ 착수 후보 {n_candidates}행 · ㈒ 기한 {n_deadlines}건 · ㈓ conflict {n_conflicts}건 · "
         f"㈔ 결정 번호 {n_decisions}개 · ㈕ CLAUDE.md stage 3 대조 {n_stage3}건"
+    )
+    print(
+        "  ── 단계 집계: "
+        f"stage 1 {stage_counts['stage1']}건 · stage 2 {stage_counts['stage2']}건 · "
+        f"stage 3 {stage_counts['after_stage2']}건 · backlog {stage_counts['backlog']}건 · "
+        f"미분류 {stage_counts['unknown']}건 · 범위 밖 {stage_counts['out_of_scope']}건 · 전체 {len(by_id)}건"
     )
 
     if observations:

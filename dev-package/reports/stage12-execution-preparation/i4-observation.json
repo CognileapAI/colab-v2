@@ -1,0 +1,50 @@
+{
+  "environment": "dev",
+  "running_sha12": "d56428d6945d",
+  "credential_source": "imds",
+  "dispatcher_manifest_check_exit": 0,
+  "probes": [
+    {
+      "probe": "service-health",
+      "exit": 0,
+      "observed_at": "2026-09-11T10:55:12.979938+00:00",
+      "sha256": "f0b672753210031a98d4cc0944dcfc9ec512b40405847734f24f0990888c10aa"
+    },
+    {
+      "probe": "deploy-verification",
+      "exit": 1,
+      "observed_at": "2026-09-11T10:55:15.266801+00:00",
+      "sha256": "6efc9e2de8fefd654f2870b3083a87f677fbbcbd6591ca7c18b2c3bdafaab76a"
+    },
+    {
+      "probe": "backup-freshness",
+      "exit": 0,
+      "observed_at": "2026-09-11T10:55:16.604991+00:00",
+      "sha256": "36ad12da5a2da11f84b0fef3f406ccb731f50ff2b2a51d4910a593f2c7636a8a"
+    }
+  ],
+  "automatic_doctor_counts": {
+    "green": 13,
+    "red": 2,
+    "skip": 0
+  },
+  "automatic_failures": [
+    "web index.html HeadObject403 and assets/ ListObjects403",
+    "frontend health depends on failed web check"
+  ],
+  "old_operator_doctor_counts": [
+    15,
+    0,
+    0
+  ],
+  "old_operator_result_reexecuted": false,
+  "ops_cron_exists": false,
+  "existing_dev_cron_sha256": "ffb1cb3252e62c339a90dda3761f1d913dcb402a80b717fa7cf85be2bece64a6",
+  "db_url_files_numeric_owner": "10001:10001",
+  "db_url_files_mode": "0600",
+  "operator_profile_input": "pending",
+  "alarm_input": "pending",
+  "iam_mutations": 0,
+  "cron_installations": 0,
+  "external_alarm_messages": 0
+}

@@ -1,0 +1,53 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "work-item-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "planning-freshness",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 3,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "work-item-consistency",
+      "planning-freshness"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "eb022189138c4f15b3d06f47b12102d5",
+      "run_id": "3d71ba32371e4cf39702549b1bab946e",
+      "checkout": "/tmp/colab-stage12-execution-prep",
+      "files": "f1268151fec035107cea0a97a7ae20e6af8d62259e6c9631b5b25e4a447692da"
+    },
+    "after": {
+      "task_id": "eb022189138c4f15b3d06f47b12102d5",
+      "run_id": "3d71ba32371e4cf39702549b1bab946e",
+      "checkout": "/tmp/colab-stage12-execution-prep",
+      "files": "f1268151fec035107cea0a97a7ae20e6af8d62259e6c9631b5b25e4a447692da"
+    }
+  }
+}

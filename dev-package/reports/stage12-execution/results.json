@@ -1,0 +1,342 @@
+{
+  "approval": "user explicitly approved all prepared execution in current conversation",
+  "is4": {
+    "status": "verified",
+    "approved_plan_sha256": "05eec879b7458524cbeef795ed6a57dcccce2907841e53130b8cef5aa419f8b4",
+    "apply_exit": 0,
+    "post_plan_exit": 0,
+    "post_health": 200,
+    "metadata_only_update": 1,
+    "remote_config_value_changes": 0,
+    "initial_argument_format_rejection": {
+      "exit": 78,
+      "apply_attempt": false
+    },
+    "private_logs": {
+      "approval-drift.log": "b9349a69ec9b69b36eb523eaa12ccc66e07cb50d82864d26be5dc7c3a92fa79b",
+      "post-apply.log": "7965b9ebbcf625d3d3a387af6e3ab1c2bbb7f43aad78a476645ed6135621f8ab",
+      "apply-attempted": "2b5f64f7679af3f25dbd02bed5c1e34247c1b0bcef3179019669c2000dffb92f",
+      "apply.log": "773cc30b93aa6ff8f918f3ffe94f5a7e8b2f1e87e03d0258d0b7c3650f51d5cf"
+    }
+  },
+  "dev_hourly": {
+    "installed_at_utc": "2026-09-11T11:37:31Z",
+    "wrapper_sha256": "649eae7f8430fee12f6aff9fbeb4445c101cc5b5d397b311c1ac3ba5fb4b1fed",
+    "cron_sha256": "675d332bce39707fc394562abbb9018414a88b8715cd87fc4e607dbe8384efad",
+    "existing_cron_unchanged": true,
+    "schedule": "17 * * * *",
+    "manual_initial_publish": {
+      "observed_at": "2026-09-11T11:37:56.616691+00:00",
+      "d3_file": 450,
+      "d5_upload_file": 596,
+      "content_sha256": "10f820f92290f1be64b32c65da814457fd7d92985a92e5468bf4c7478f0b9191",
+      "exit": 0,
+      "viz_read_uid": 10001,
+      "viz_read_gid": 999,
+      "viz_read_exit": 0
+    },
+    "actual_scheduled_publish_verified": true,
+    "actual_scheduled_publish": {
+      "actual_scheduled_publish_verified": true,
+      "publisher": {
+        "content_sha256": "658e493d370ad521f9262cd7a289acff2b7ea7de8daddd65c8d94fed073497cb",
+        "counts": {
+          "d3_file": 450,
+          "d5_upload_file": 595
+        },
+        "observed_at": "2026-09-11T12:17:04.090313+00:00",
+        "schema": "colab-preview-ownership-snapshot/1"
+      },
+      "viz": {
+        "uid": 10001,
+        "gid": 999,
+        "observed_at": "2026-09-11T12:17:04.090313+00:00",
+        "counts": {
+          "d3_file": 450,
+          "d5_upload_file": 595
+        },
+        "content_sha256": "658e493d370ad521f9262cd7a289acff2b7ea7de8daddd65c8d94fed073497cb",
+        "loader": "success"
+      },
+      "cron_hashes_unchanged": true,
+      "raw_log_sha256": "dc45ea6ef7e6b16026ebffdeca7f9f865d2d77074c45acbbe921d3e8cb48f9e2",
+      "collected_at": "2026-09-11T12:17:23.125355+00:00"
+    },
+    "private_scheduled_evidence": "/home/ttlhi10/colab-v2-releases/stage12-execution-20260911/dev-scheduled-observation.json"
+  },
+  "u2": {
+    "status": "verified",
+    "apply_exit": 0,
+    "reclaimedUploads": 1,
+    "prunedCompletedTransfers": 7,
+    "reapedOpenTransfers": 0,
+    "semantic_sha256": "3031054b040d75fd8e0f7192e94712010e9e50ce0cbeaec1b957d79931fc340c",
+    "post_observed_at": "2026-09-11T11:57:27.449886+00:00",
+    "post_observation_sha256": "2ffe80e0f02ec2de3ef004f1a904e581800185cde7035ef8fa66a3612a8aa1e2",
+    "post_candidates": 0,
+    "post_completed_candidates": 0,
+    "post_exact_key_head": 404,
+    "preserved_A": {
+      "datasets": 25,
+      "files": 448,
+      "registeredUploads": 40
+    },
+    "preserved_B": {
+      "datasets": 1,
+      "files": 2,
+      "registeredUploads": 1
+    },
+    "current_object_backup": {
+      "bytes": 12599296,
+      "sha256": "62343291f2d8e21e3c194c5b86d0e513ea16661fdee7b957c304c6a990a8f0eb",
+      "mode": "0600"
+    },
+    "conditional_permission_probe": "PreconditionFailed412, current version unchanged",
+    "recovery": "PutObject same bytes as new current version, If-None-Match star; not DeleteObjectVersion",
+    "db_backup": {
+      "colab_platform": {
+        "key": "_ops/backups/dev/2026-09-11T115350Z-colab_platform.sql.gz",
+        "bytes": 111278,
+        "sha256": "7e9436257128a75ccefb693efc41457b9719c80457b1fbc00b1aa3781e57c761",
+        "head_match": true,
+        "exact_target_rows_present": 8
+      },
+      "colab_ai": {
+        "key": "_ops/backups/dev/2026-09-11T115350Z-colab_ai.sql.gz",
+        "bytes": 5521,
+        "sha256": "67c6ba12b956a4140260ba2ec46bd19eddf8748a604997481fe3b42290bcdd14",
+        "head_match": true
+      },
+      "current_image": "sha256:d14a7121b96fe2f95d7d0da284a77a7830d213a187592474875fa9a8db630003",
+      "observed_at": "2026-09-11T11:55:20.602422+00:00",
+      "semantic_same": true
+    },
+    "private_evidence": {
+      "directory": "/tmp/colab-stage12-execution-prep/.codex/artifacts/stage12-execution",
+      "files": {
+        "u2-original.bin": "62343291f2d8e21e3c194c5b86d0e513ea16661fdee7b957c304c6a990a8f0eb",
+        "colab_platform.sql.gz": "7e9436257128a75ccefb693efc41457b9719c80457b1fbc00b1aa3781e57c761",
+        "colab_ai.sql.gz": "67c6ba12b956a4140260ba2ec46bd19eddf8748a604997481fe3b42290bcdd14",
+        "u2-backup-proof.json": "ecbfbcb7932e3293265c12de7aaa6e2367bc75e7c6cfe92e6151cce9f3d094c4",
+        "u2-apply.stdout": "d7b75cc46233aad0639aeedf4bf15fff4c91b77a7f2d67c275c1b842b240cb04",
+        "u2-apply.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "u2-immediate-observation.json": "39912ed5fc3b31dc6240c38b24ecfc96a8decfddfb322f57afbad584b1fabbc6",
+        "u2-post-observation.json": "2ffe80e0f02ec2de3ef004f1a904e581800185cde7035ef8fa66a3612a8aa1e2",
+        "u2-post-head.error": "2e1b4221c8395523f5f05c4c704acadeccc3d27aebbb2166cd0262fb5adbb99e",
+        "u2-preapply-backup.log": "e549c328b72cee483dfdc7397b195e242bca311a2a3a8ccbf453e671c6ece821"
+      },
+      "conditional_probe_raw_retention": "PreconditionFailed and unchanged HEAD observed in parent tool output; no separate raw probe file retained",
+      "durable_copy_directory": "/home/ttlhi10/colab-v2-releases/stage12-execution-20260911",
+      "durable_manifest_sha256": "49582149a44ea4eb5217505c3c7b15f54eff555230da8e9ce6018a02f890532c"
+    }
+  },
+  "i4": {
+    "status": "blocked_current_global_identity_lacks_iam_and_alarm_configuration_unverified",
+    "iam_changes": 0,
+    "alarms": 0,
+    "last_operator_precheck_utc": "2026-09-11T12:02:11.437340+00:00",
+    "profile": "colab-dev",
+    "get_role_policy_exit": 254,
+    "get_role_policy_status": "AccessDenied",
+    "global_configuration_found": true,
+    "global_diagnosis": {
+      "operator_config": "/home/ttlhi10/.config/colab-platform/dev-operator.env",
+      "resolved_identity": "arn:aws:iam::606175197146:user/colab-platform-s3-uploader-dev",
+      "role": "colab-platform-app-dev-role",
+      "planned_inline_policy": "ColabDevPublicWebDoctorRead",
+      "policy_sha256": "b5e04c4a09fa6a1329d54aa652f83d90ac41bdf729239e6812baba62ea183157",
+      "blocked_operation": "iam:GetRolePolicy",
+      "mutation_attempted": false,
+      "alarm_config": "No actual protected receiving file identified; documents contain placeholders",
+      "independent_reference_search_task": "cb090caf241c469193f77380ad75dd13",
+      "automatic_doctor_prior_result": {
+        "pass": 13,
+        "fail": 2,
+        "unready": 0
+      },
+      "manual_operator_doctor_prior_result": {
+        "pass": 15,
+        "fail": 0,
+        "unready": 0
+      },
+      "results_combined": false
+    }
+  },
+  "i3": {
+    "candidate_sha": "c329c32d2f6d469deb12d64f6cb89e60994b1d3d",
+    "starting_sha": "d56428d6945d677cae013d6bff25cb61727f3166",
+    "actual_red_at": "2026-09-11T20:40:06+09:00",
+    "red_exit": 65,
+    "dirty_count": 1,
+    "before_after_equal": [
+      "remote",
+      "images",
+      "containers",
+      "db-heads",
+      "state-hashes",
+      "health"
+    ],
+    "public_health": 200,
+    "parent_verified": true,
+    "green": "verified actual cron",
+    "green_at": "2026-09-11T20:45:51+09:00",
+    "runtime_units": [
+      {
+        "name": "nginx",
+        "image": "nginx:1.27-alpine",
+        "image_id": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:31.92328504Z"
+      },
+      {
+        "name": "pipeline_worker",
+        "image": "colab-v2/pipeline-worker:c329c32d2f6d",
+        "image_id": "sha256:6fd588b1d142500f28a5c94ae69278e26eaabd20b7b196b4060fb795304ebae4",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:32.44151234Z"
+      },
+      {
+        "name": "core_api",
+        "image": "colab-v2/core-api:c329c32d2f6d",
+        "image_id": "sha256:f4b9c002c37129f1a759350e14d8e9fb5389c66e94fc79638755090c3da14d3d",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:32.438620306Z"
+      },
+      {
+        "name": "viz_render",
+        "image": "colab-v2/viz-render:c329c32d2f6d",
+        "image_id": "sha256:b3dd4b26c54f4a058c6d6608f3b39f42b899361d12befc1b4e5fdc7eda788820",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:32.440781605Z"
+      },
+      {
+        "name": "ai_service",
+        "image": "colab-v2/ai-service:c329c32d2f6d",
+        "image_id": "sha256:4f2e41faac12ff8f36334b049fb3597e3ed20bfea0db8404d74ef300fa210461",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:31.784129683Z"
+      },
+      {
+        "name": "frontend",
+        "image": "colab-v2/frontend:c329c32d2f6d",
+        "image_id": "sha256:eeed0e01624c4b91b8c1f1caa4c1244dd4d1b5f8c53eaa204ec96143fdaed0a7",
+        "health": "healthy",
+        "started": "2026-09-11T11:45:31.800906113Z"
+      },
+      {
+        "name": "cloudflared",
+        "image": "cloudflare/cloudflared:latest",
+        "image_id": "sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0",
+        "health": "healthy",
+        "started": "2026-09-10T18:06:39.021375378Z"
+      },
+      {
+        "name": "pg",
+        "image": "postgres:16-alpine",
+        "image_id": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+        "health": "healthy",
+        "started": "2026-09-10T18:06:39.031508126Z"
+      }
+    ],
+    "failed_marker_exists": false,
+    "same_candidate_deployed": true,
+    "pipeline_retention": {
+      "local_expired_backup_log_entries": 16,
+      "local_image_tag_cleanup_log_entries": 41,
+      "staging_db_data_deletion": 0,
+      "staging_s3_deletion": 0,
+      "staging_preview_cache_deletion": 0
+    }
+  },
+  "staging_initial_snapshot": {
+    "d3_file": 133,
+    "d5_upload_file": 133,
+    "actual_viz_read_uid": 10001,
+    "actual_viz_read_gid": 999,
+    "parent_independent_read_exit": 0
+  },
+  "independent_acceptance": {
+    "reviewer": "/root/execution_go",
+    "IS4": "accepted from original apply/no-change logs",
+    "I3": "accepted actual cron red/green original evidence",
+    "U-2": "accepted original evidence hashes/backup/apply/post; 412 raw-file retention limitation disclosed",
+    "TL-2": "accepted actual scheduled publisher and periodic classifier evidence, clock discrepancy disclosed",
+    "I4": "not accepted"
+  },
+  "staging_hourly": {
+    "actual_scheduled_publish_verified": true,
+    "publisher": {
+      "content_sha256": "9f4c5a9d9e5e9ee5861c978f699598cdb9c6e20f5a17adb73a4325995d354394",
+      "counts": {
+        "d3_file": 133,
+        "d5_upload_file": 133
+      },
+      "observed_at": "2026-09-11T12:17:05.398182+00:00",
+      "schema": "colab-preview-ownership-snapshot/1"
+    },
+    "actual_viz_uid": 10001,
+    "actual_viz_gid": 999,
+    "actual_viz_loader": "success",
+    "root_crontab_sha256": "6957ae580c5954481f3df2d356e753cd75acc9ca4fcf26bcf677beae24fee6cf",
+    "parent_evidence_checked": true,
+    "private_directory": "/home/ttlhi10/colab-v2-releases/i3-tl2-red-20260911T2100KST"
+  },
+  "tl2": {
+    "status": "verified",
+    "parent_observation": {
+      "identity": "0a190df80dc422328918afcf50e4124f005cc39b4244bc03aea99bf52b1967cf sha256:b3dd4b26c54f4a058c6d6608f3b39f42b899361d12befc1b4e5fdc7eda788820 2026-09-11T11:45:32.440781605Z 0 healthy",
+      "cycle_lines": [
+        "2026-09-11T11:45:35.136057526Z INFO:    TL-2 구판 관측 — preview 158벌 · 소유 [살아 있다 120 · 접수분에만 닿는다 0 · 고아 19 · 판정 불가 19] · 구판 [사이드카 부재 14 · 원천 원장 부재 2 · 원천 원장 있음 3] · 재굽기 불가 16 · 삭제 0건",
+        "2026-09-11T11:45:35.136066801Z INFO:    지도 타일 회수 — 주체 758 · 자리의 타일 146벌 · 닿는다 146 · 못 닿는다 0 · 상한 20 · 관측 전용(0건 지웠다) 0파일",
+        "2026-09-11T12:50:29.273382177Z INFO:    TL-2 구판 관측 — preview 158벌 · 소유 [살아 있다 120 · 접수분에만 닿는다 0 · 고아 19 · 판정 불가 19] · 구판 [사이드카 부재 14 · 원천 원장 부재 2 · 원천 원장 있음 3] · 재굽기 불가 16 · 삭제 0건",
+        "2026-09-11T12:50:29.273432170Z INFO:    지도 타일 회수 — 주체 758 · 자리의 타일 146벌 · 닿는다 146 · 못 닿는다 0 · 상한 20 · 관측 전용(0건 지웠다) 0파일"
+      ],
+      "log_sha256": "01d6b8c3d74b60379d82c98e2c8b84637e69b45a09e3268855fd5bfa9fc26999",
+      "period_seconds": 3600,
+      "manual_trigger": false,
+      "restart_count": 0,
+      "clock_observation": {
+        "utc": "2026-09-11T12:49:48.506069+00:00",
+        "monotonic": 64409.712424032,
+        "process_start_ticks_seconds": 60843.41,
+        "elapsed_monotonic_seconds": 3566.302424346999,
+        "container_started_at": "2026-09-11T11:45:32.440781605Z",
+        "wall_elapsed_seconds": 3856.065288,
+        "wall_minus_monotonic_elapsed_seconds": 289.76286365300075,
+        "cause": "Clock discrepancy observed; suspend or clock correction not established"
+      }
+    },
+    "preview_sets": 158,
+    "ownership": [
+      120,
+      0,
+      19,
+      19
+    ],
+    "legacy": [
+      14,
+      2,
+      3
+    ],
+    "unrebuildable": 16,
+    "tile_subjects": 758,
+    "tile_sets": 146,
+    "unreachable": 0,
+    "deleted": 0,
+    "private_evidence_directory": "/home/ttlhi10/colab-v2-releases/stage12-execution-20260911"
+  },
+  "final_stage_counts": {
+    "stage1": {
+      "done": 62,
+      "remaining": 0,
+      "deferred": 1
+    },
+    "stage2": {
+      "done": 93,
+      "remaining": 1,
+      "deferred": 2
+    }
+  },
+  "final_remote_main": "c329c32d2f6d469deb12d64f6cb89e60994b1d3d",
+  "final_dev_current_sha": "d56428d6945d"
+}

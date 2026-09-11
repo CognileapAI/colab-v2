@@ -49,6 +49,12 @@ expect() { # $1=기대(green|red) $2=기호(red 일 때만 · green 이면 -) $3
       FAILURES+=("$label(green-with-error)")
       return
     fi
+    if [ "$mark" != "-" ] && ! echo "$out" | grep -Fq -- "$mark"; then
+      echo "[selftest] $label → green 이지만 기대 요약이 없다: $mark ✗"
+      echo "$out" | sed 's/^/           /'
+      FAILURES+=("$label(missing-summary)")
+      return
+    fi
   elif [ "$mark" != "-" ]; then
     # 「검사 대상 밖」 목록이 아니라 **위반 목록**에 그 기호가 있어야 한다
     if ! echo "$out" | sed -n '/::error::/,$p' | grep -q -- "$mark"; then
@@ -127,10 +133,11 @@ echo "══ work-item-selftest ════════════════
 # 대조군 — 이것이 red 면 게이트가 고장난 것이다 (정밀도 손상)
 # 대조군은 ㈔ 의 **정밀도**도 함께 증명한다 — 동그라미 번호가 이관 표에서 재인쇄되고
 # 본문이 `〈51〉` 을 두 번 인용해도 green 이다. 선언 자리(표 첫 칸)만 세기 때문이다.
-expect green - "대조군: 대장 ↔ 산문 일치 (T-P 3열 표 · 소문자 접미 식별자 포함 · 동그라미 재인쇄·본문 인용 있음)" run green
+expect green "단계 집계: stage 1 3건 · stage 2 2건 · stage 3 1건 · backlog 1건 · 미분류 0건 · 범위 밖 1건 · 전체 8건" \
+  "대조군 — backlog는 전체에 남고 Stage 1·2·3과 따로 집계된다" run green
 
 # 검사 여섯의 fail-closed 증명 — **그 검사가 낸 red 인지 기호로 대조한다**
-expect red "㈎" "㈎ 스키마: depends_on 이 실재하지 않는 id 를 가리킨다"        run red-a-schema
+expect red "depends_on 이 실재하지 않는 id" "㈎ backlog도 depends_on 실재 참조를 검사한다" run red-a-schema
 expect red "㈏" "㈏ 완주 체크리스트가 대장보다 앞서 완료로 적혀 있다"          run red-b-checklist
 expect red "㈐" "㈐ 진실원 표(T-P · 상태 3열째)가 대장과 갈린다"               run red-c-handoff
 expect red "㈑" "㈑ ⏸(하지 않기로 한 것)가 착수 후보 표에 재등장한다"          run red-d-deferred
@@ -147,6 +154,7 @@ expect red "㈔" "㈔ §9 는 있는데 결정 번호 행이 0건 → red (검�
 # ㈕ — CLAUDE.md 가 대장의 stage 3 집합과 갈린 모양 (2026-08-30 이후 레포 실물에서 실제로 일어났다 · `〈268〉`)
 expect red "㈕" "㈕ CLAUDE.md 표지가 대장의 stage 3 집합과 갈린다 (빠진 것 ＋ 없는 것 양방향)" run red-j-stage3mirror
 expect red "㈕" "㈕ CLAUDE.md 의 stage 3 표지가 지워졌다 → red (표지를 지워 검사를 없애지 못한다)"  run red-k-nostage3marker
+expect red "stage \`not_a_stage\` 는 허용값이 아니다" "㈎ backlog 추가 뒤에도 미지원 stage는 red" run red-l-invalid-stage
 
 # 환경 결손 — green-by-skip 방지 (기호가 아니라 die() 경로라 기호 대조는 하지 않는다)
 expect red - "대장 부재 → red (검사 불가는 통과가 아니다)"                  run_missing_ledger

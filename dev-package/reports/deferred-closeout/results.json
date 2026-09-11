@@ -1,0 +1,134 @@
+{
+  "approval": "user explicitly approved deleting exact failed uploads3 and moving two features to unassigned backlog",
+  "target_upload_ids": [
+    "01M0Y1XND62XV5EKYZHFGNVJGS",
+    "01M0YTT4VJKMGV2FXZZE12SEA4",
+    "01M0YTT941XPYHH10RT3S2V9YY"
+  ],
+  "deletion_status": "done",
+  "backlog_status": "done; unassigned stage, not implemented",
+  "i4": "remains open",
+  "backlog_gate_source": {
+    "task": "f4c7bea3380d4b50ba88dff243e2db6e",
+    "files": {
+      "gates/README.md": "f41b74f4ee0cc695c6af2f2ce75a4c4898ff7d8308a1836ead51a7a4259c3ef0",
+      "gates/fixtures/work-items/green/work-items.yaml": "9d9a89d41e588976debe5add0ec0b118a8ba80662588e8b153d6b68abccef178",
+      "gates/fixtures/work-items/red-a-schema/work-items.yaml": "65cc5c2ba0ce3eebc91aa4d8c95986d615d30c5ce11c4a9dce09e3e238fbbc19",
+      "gates/tools/work-item-selftest.sh": "f9f1cb749557300a11bce49906e98a26a81765f9430303789dfff7afba2615c1",
+      "gates/tools/work_item_consistency.py": "674b666c0c6c5f9992912fd909cef662549b249687d099812fd15c772e46cac7",
+      "gates/fixtures/work-items/red-l-invalid-stage/03-HANDOFF.md": "110bde0d9bb0a2a9ee5236a47a427f1e43e91e0ae477e79a8b11e3a1dba42b02",
+      "gates/fixtures/work-items/red-l-invalid-stage/WORK-UNITS.md": "ca3ab1782eba7302bf3b8915b2ef194d3349fb9a4832fc05c4bf60be77f4a63e",
+      "gates/fixtures/work-items/red-l-invalid-stage/work-items.yaml": "7a1e0ce568b504429f4018559febd6a4762156990c21311a03284d3ed0d7750b"
+    },
+    "parent_comment_cleanup": true,
+    "source_gates": "2/0/0, selftest18/18, verify-report0"
+  },
+  "github_backlog": {
+    "issues": [
+      10,
+      12
+    ],
+    "state": "OPEN",
+    "label": "backlog",
+    "projectItems": 0,
+    "existing_body_preserved": true
+  },
+  "predelete_backup": {
+    "exit": 0,
+    "files": [
+      {
+        "file": "/home/ttlhi10/colab-v2-releases/deferred-closeout-20260911/db-backup/platform-20260911T220718.sql.gz",
+        "bytes": 34704,
+        "sha256": "1a578b1b28cbed038cb9b3db506cf4b746eb9ce084f6fe7635d5790cc37013ec",
+        "gzip_read": true
+      },
+      {
+        "file": "/home/ttlhi10/colab-v2-releases/deferred-closeout-20260911/db-backup/ai-20260911T220718.sql.gz",
+        "bytes": 5570,
+        "sha256": "3ccdc9a1c2b3afe7692983f031368b648a2be7f19e024ca42ac3065ef8fc3827",
+        "gzip_read": true
+      }
+    ]
+  },
+  "rehearsal": {
+    "isolated_container": "colab-deferred-rehearsal-20260911",
+    "network": "none",
+    "changed_state_rejected": true,
+    "rejection_preserved_uploads": 3,
+    "delete": {
+      "cascaded_events": 9,
+      "deleted_uploads": 3,
+      "objects_deleted": 0,
+      "preserved_tables": 14,
+      "cascaded_upload_files": 6
+    },
+    "repeat_rejected": true,
+    "restore": {
+      "restored_events": 9,
+      "preserved_tables": 14,
+      "restored_uploads": 3,
+      "restored_upload_files": 6
+    },
+    "restore_exact_json_equality_checked_in_transaction": true,
+    "live_database_mutations": 0,
+    "cases_passed": 4,
+    "cases_failed": 0,
+    "initial_fixture_setup_failure": "failure_reason non-enum rejected by existing CHECK; switched to valid failed_at change in disposable DB only"
+  },
+  "exact_rows_export_sha256": "ebe5dea3b728b18d36e6afa7b6d88f90114797908b1f7e151c3b9dc0501f037f",
+  "sql_sha256": {
+    "delete-failed3.sql": "d230551e43e37a3d3cc5b781c50f74c1256663185553fa05c282cdf34ddecb87",
+    "restore-failed3.sql": "a0e1af1685e38cad1267b9f34b515efad841875d5db0cccd9acad07231e32092"
+  },
+  "private_evidence_directory": "/home/ttlhi10/colab-v2-releases/deferred-closeout-20260911",
+  "apply": {
+    "exit_code": 0,
+    "committed": true,
+    "counts": [
+      {
+        "cascaded_events": 9,
+        "deleted_uploads": 3,
+        "objects_deleted": 0,
+        "preserved_tables": 14,
+        "cascaded_upload_files": 6
+      }
+    ]
+  },
+  "postcheck": {
+    "target_rows_zero": true,
+    "active_files_6_unchanged": true,
+    "query": [
+      "BEGIN",
+      "d5_upload|0",
+      "d5_upload_file|0",
+      "d5_pipeline_event|0",
+      "COMMIT"
+    ]
+  },
+  "final_backup": [
+    {
+      "file": "/home/ttlhi10/colab-v2-releases/deferred-closeout-20260911/db-backup-final/ai-20260911T222017.sql.gz",
+      "sha256": "3b548cdcd713ec7ed7b4f030c1f9e2af78a1526936672c865b4e7bf4eed28bcf"
+    },
+    {
+      "file": "/home/ttlhi10/colab-v2-releases/deferred-closeout-20260911/db-backup-final/platform-20260911T222017.sql.gz",
+      "sha256": "537bd50b8c3145a8deaed913c39efdcbd7ac52249f572697a72adefda5dff97c"
+    }
+  ],
+  "stage_counts": {
+    "stage1": {
+      "done": 62,
+      "open": 0,
+      "deferred": 0
+    },
+    "stage2": {
+      "done": 94,
+      "open": 1,
+      "deferred": 0
+    },
+    "backlog": {
+      "open": 2
+    }
+  },
+  "preflight_issue": "Naive whole-dump ID substring counts rejected before apply; verified COPY exact ID column row counts 3/6/9 instead."
+}

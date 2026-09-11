@@ -1,5 +1,7 @@
 > spec: dev-package/prd/specs/stage1-stage2-closeout.md
 
+> 2026-09-11 보류 해소: 실패 업로드3건 실제 삭제·정상 파일6개 보존. BF-10·PA-G는 단계 미정 backlog/open으로 이동(미구현, 자동 착수 없음). Stage1 완료62/미완료0/보류0, Stage2 완료94/미완료1(I4)/보류0, 백로그2건. 근거 `sessions/20260911-deferred-closeout.md`, `reports/deferred-closeout/results.json`. 아래 기존 날짜의 수치는 당시 이력이다.
+
 # stage 1·2 종료 Implementation Plan
 
 > **For agentic workers:** 위임 원칙(글로벌 `CLAUDE.md`) ＋ `lane-worker` 에이전트로 태스크당 레인 1개(권고), 또는 `executing-plans`(로컬 vendored)로 이 세션에서 직접. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -13,6 +15,10 @@
 **Spec:** `dev-package/prd/specs/stage1-stage2-closeout.md`
 
 ## 2026-09-11 최신 실행 상태
+
+전체 실행 승인 후 U-2 실제 회수·IS4 복구·I3 실제 cron RED→동일 후보 GREEN·TL-2 실제 정기 분류를 완료 수용했다. Stage 1 완료62/미완료0/보류1, Stage 2 완료93/미완료1/보류2. TL-2는 실제 예약 발행·staging 정기분류 수용, I4는 현재 글로벌 계정 권한 부족·알람 수신 설정 미확인이다. 나머지 실행·입력 상태는 `sessions/20260911-stage12-execution.md`에서 추적한다. 아래 준비·배포 수치는 당시 이력이다.
+
+미완료5건의 실행 준비와 입력·승인 경계는 `sessions/20260911-stage12-execution-preparation.md`에서 추적한다. 대장 상태는 유지하며 현재 준비 후보는 c329, 시험 시작은 d564다.
 
 후속 제품 d56428d: 전체61/0/0·main CI success·dev배포·운영자doctor15/0/0. TL-2 전수장부450/596개 발행과 실제 자동174벌 분류(삭제0)를 확인했다. TL-2는 매시간 publisher 설치와 staging 정기주기 미실측으로 partial 유지. 전체 잔여5·유예3은 불변. 최신 근거 `reports/stage12-tl2-deploy/release.md`. 아래30f5는 직전 수용 이력이다.
 
@@ -131,9 +137,9 @@ Expected: 실패·skip·deselect 수 불변, 준비 실패 0, 측정 가능한 �
 
 ### Task 4: 격자선·눈금 범위 제외 확인
 
-- [x] **2026-09-10 사용자 결정 반영**: 기존 배경과 커서 좌표 수용. `BF-10`은 미구현 `deferred`로 stage 1·2 필수 범위에서 제외한다.
+- [x] **2026-09-10 사용자 결정 반영**: 기존 배경과 커서 좌표 수용. `BF-10`은 미구현 단계 미정 `backlog/open`으로 stage 1·2 필수 범위에서 제외한다.
 - [x] **후속 이슈 연결**: 화면과 저장 PNG 양쪽의 동일 격자선·눈금은 https://github.com/CognileapAI/colab-v2/issues/10 에서 추적한다. 별도 착수 승인 전 구현하지 않는다.
-- [ ] **stage 1 종료 계수 검증**: 비연기 미완 0과 연기 항목 건수·사유를 함께 기록한다.
+- [x] **stage 1 종료 계수 검증**: 완료62·미완료0·보류1. 격자선·눈금은 기존 사용자 결정에 따른 보류 그대로이며 구현하지 않았다. 근거 `sessions/20260911-stage12-execution.md`.
 
 ### Task 5: `R-S2-OPS` — 복구·배포·운영 관측
 
@@ -150,13 +156,17 @@ Expected: 실패·skip·deselect 수 불변, 준비 실패 0, 측정 가능한 �
 - Consumes: `IS4`, `I3`, 기존 `R-1` 복원 결과
 - Produces: 맨몸 state 복구, 배포 자동화 완주, 추적·로그·알람·레지던시 근거
 
-- [ ] **Step 1: IS4 맨몸 state 복구를 격리 환경에서 재현한다**
+- [x] **Step 1: IS4 맨몸 state 복구를 격리 환경에서 재현한다**
 
-Expected: 문서만 사용해 복구하고 `terraform plan`이 `No changes`를 출력한다. 실제 apply는 수행하지 않는다.
+Expected: 문서만 사용해 복구하고 `terraform plan`이 `No changes`를 출력한다. 준비 당시에는 실제 apply를 수행하지 않는다.
 
-- [ ] **Step 2: I3의 15개 완료 조건을 최신 배포 이력으로 다시 센다**
+후속 전체 실행 승인으로 고정 hash 계획을 1회 적용하고 후속 No changes·health200을 확인했다. 근거 `sessions/20260911-stage12-execution.md`.
+
+- [x] **Step 2: I3의 15개 완료 조건을 최신 배포 이력으로 다시 센다**
 
 Expected: 이미 충족된 조건은 근거로 닫고 실제 미충족 조건만 구현 범위로 남긴다.
+
+기존 유효한 조건 증거와 실제5분 cron RED→같은 후보 GREEN을 대조해 I3를 완료 수용했다. staging 배포 검증15/0/0은 dev 자동 doctor 판정과 별개다. 근거 `sessions/20260911-stage12-execution.md`.
 
 I3의 cron 5분·실제 red/green 리허설 기준은 `dev-package/sessions/I3.md`의 기존 확정값을 사용한다. 재질문하지 않으며 실행 직전 Q7 승인 경계는 유지한다.
 
@@ -200,7 +210,7 @@ Expected: 원천 원장 부재와 사이드카 부재가 별도 등급으로 관
 
 Expected: 재굽기로 닿지 않는 16벌이 설명 가능한 하위 집합으로 나타난다. 실제 삭제 0.
 
-- [ ] **Step 4: publisher 정기 실행과 staging 실제 한 주기를 확인한다**
+- [x] **Step 4: publisher 정기 실행과 staging 실제 한 주기를 확인한다**
 
 기존 TL-2 완료 정의의 자동 순회·staging 확인 조건을 추적한다. d564 dev 최초 발행·기동 자동순회 성공을 매시간 갱신이나 staging 한 주기 성공으로 대신하지 않는다. 실제 cron 설치는 승인 경계를 따른다.
 
@@ -257,7 +267,7 @@ Expected: 9개 완료 정의 전건 충족.
 
 - [x] **Step 1: Google 로그인 구현 제외**
 
-`PA-G`는 `deferred`; https://github.com/CognileapAI/colab-v2/issues/12 에서 추적한다. 종전 자동 전환 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 승인되지 않았다.
+`PA-G`는 단계 미정 `backlog/open`; https://github.com/CognileapAI/colab-v2/issues/12 에서 추적한다. 종전 자동 전환 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 승인되지 않았다.
 
 - [x] **Step 2: 통합 검증과 구체적인 배포 검토 자료 준비**
 

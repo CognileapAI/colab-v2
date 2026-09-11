@@ -316,13 +316,13 @@ items:
 
   - id: IS4
     name: terraform state 보관
-    status: partial
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["IS2 · (원격 백엔드면 I0)"]
     depends_on: [IS2]
     completion_def: "state 를 잃은 상태에서 문서만 보고 복구 성공 (`§4` T-I 표)"
-    evidence: "2026-08-23 — 절차는 섰고 리허설도 돌렸다. 원본 state md5 동일 · 실디렉터리 `plan` = `No changes.` · staging 내내 200. 산출 `sessions/IS4.md` · `infra/staging/tunnel/README §5-1`. ⭑ **⟨재측정 2026-09-03 · 단독 창 2 · 등재 `PLAN-SoT §9 〈301〉` · 근거 `sessions/WINDOW-20260903-F2.md §6`⟩ 실디렉터리 `terraform plan` 을 오늘 다시 돌렸고 축자로 `No changes. Your infrastructure matches the configuration.` 다** — `apply` **0회**(읽기 전용). `terraform` 은 **호스트에 설치돼 있다(`v1.9.8`)** — 런북 `notes/STAGING-WINDOW-RUNBOOK.md §11 ⛔6`(「미설치 · `[미확인]`」)은 이 실측으로 낡았다. 레포·터널 무변경(`git status --porcelain` 0건 · state 는 `.gitignore` 대상)."
+    evidence: "2026-09-11 사용자 전체 실행 승인 후 새 private bundle의 exact plan 05eec879 적용1회 exit0, 후속 detailed plan0·public health200. 새 state/provider 컨테이너 복구와 metadata-only1건 수용. 근거 sessions/20260911-stage12-execution.md 및 reports/stage12-execution/results.json. / 2026-08-23 — 절차는 섰고 리허설도 돌렸다. 원본 state md5 동일 · 실디렉터리 `plan` = `No changes.` · staging 내내 200. 산출 `sessions/IS4.md` · `infra/staging/tunnel/README §5-1`. ⭑ **⟨재측정 2026-09-03 · 단독 창 2 · 등재 `PLAN-SoT §9 〈301〉` · 근거 `sessions/WINDOW-20260903-F2.md §6`⟩ 실디렉터리 `terraform plan` 을 오늘 다시 돌렸고 축자로 `No changes. Your infrastructure matches the configuration.` 다** — `apply` **0회**(읽기 전용). `terraform` 은 **호스트에 설치돼 있다(`v1.9.8`)** — 런북 `notes/STAGING-WINDOW-RUNBOOK.md §11 ⛔6`(「미설치 · `[미확인]`」)은 이 실측으로 낡았다. 레포·터널 무변경(`git status --porcelain` 0건 · state 는 `.gitignore` 대상)."
     deadline: null
     note: "⭑ ⟨단계 배정 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈212〉`⟩ `unknown` → `stage2`. 근거 = **맨몸 리허설의 재료가 `R-1`(복원 절차)과 겹친다** — 같은 단에 두면 실측을 한 번만 하면 된다. ／ 이전 ~~미달 2건 = ① 마지막 `apply` 미실행(실 터널을 건드린다) ② 맨몸 호스트 조건 미실험.~~ ⭑ **⟨정정 2026-09-03 · Ted 판정 · 등재 `PLAN-SoT §9 〈301〉`⟩ ① 은 이 행의 `evidence` 와 `infra/staging/tunnel/README §0` 과 **자기모순**이었다 — 둘 다 `apply` 가 **2026-08-23 에 실행됐고** 그 뒤 `plan` = `No changes.` 라고 적는다.** **Ted 판정 = `terraform plan` 의 `No changes.` 를 ① 의 오라클로 받는다.** 2026-09-03 재측정도 `No changes.`(위 `evidence`). ⟹ **① 은 미달이 아니다.** **미달은 ② 맨몸 호스트 조건 미실험 하나다.** 맨몸 리허설은 R-1 과 재료가 겹쳐 R-1 뒤가 싸다. 원격 백엔드는 I0 대기. ⭑ **⟨실측 1건 2026-08-31 · `〈249〉` 회차⟩ 이 항목의 「맨몸 호스트 조건」은 `I4` 의 「시점 복구」와 다르다** — 여기서 잃는 것은 **terraform state** 이고 되찾는 수단은 **문서**(`infra/staging/tunnel/README §5-1`)다. `R-1` 의 백업 산출물(원장 덤프·볼륨 tar)에 state 가 들어 있지 않다(보관처 산출물 규약 = `platform-*`·`ai-*`·`vol-*` · `preflight` P10 이 규약 밖 파일 0건으로 통과). **즉 `R-1` 이 닫혀도 이 항목의 미달 ~~2건~~ **①은 해소되고 ②만** 그대로 남는다**(2026-09-03 정정 반영). 상태값은 고치지 않았다(`partial` 유지) — **② 맨몸 호스트 조건이 미실험**이기 때문이고, 그것은 `R-1` 산출물 밖의 재료를 요구한다."
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §4", "WORK-UNITS §10", "WORK-UNITS §11"]
@@ -357,13 +357,13 @@ items:
 
   - id: I3
     name: 배포 자동화
-    status: partial
+    status: done
     stage: stage2
     owner: "인프라"
     entry_conditions: ["I2(✅)"]
     depends_on: [I2]
     completion_def: "파이프라인 1회 완주 (`WORK-UNITS §4`) · 15행 정본 = `sessions/I3.md §6` · 상태 정본 = `PLAN-SoT §9 〈185〉`"
-    evidence: "**staging 첫 실배포 2026-08-29 — 완료 정의 15행 중 닫힘 9 · 열림/부분 6.** 값과 근거 전건 = `PLAN-SoT §9 〈185〉` · 산출 `sessions/I3-BUILD.md`(빌드·수정) · `sessions/I3-POSTDEPLOY.md`(배포 후 실측). ⑴ 원장 3행 = approve 1 · red 1(`0a3ea797dbb1` 롤 부트스트랩) · **green 1**(`2026-08-29T10:08:36 · 30b3e0a7b3f3 · 배포전백업GREEN 워킹트리변경=0`). ⑵ **2차 배포 GREEN** — 판정 15건 · SKIP 0 · 컨테이너 8/8 healthy · 공개 헬스 6종 200 · 노출 `0.0.0.0` 0건 · 서빙 태그 6종 전부 `:30b3e0a7b3f3`(세는 기준 = `verify-deploy.sh` 요약줄 · 시점 2026-08-29 10:16 KST). ⑶ **1차 red 는 설계대로 동작한 것** — 마이그레이션 직전 중단(스키마 무접촉) · 자동 롤백 없이 표식. 진짜 원인은 값 부재가 아니라 **배선**(env 파일이 `--env-file` 로만 넘어가 호스트의 `db-bootstrap.sh` 가 빈 환경으로 돌았다) → 프리플라이트를 ⓪-b 로 앞당기고 요구 목록 정본을 `db-bootstrap.sh required-env` 하나에 뒀다. **변이 시험으로 증명**(그 검사를 빼면 green). ⑷ 기준선 무변경 — 데이터셋 12 · 파일 본체 123(저장 전체 129) · 계보 6 · K2 시드 22(기준 = `colab_platform` 표 행 수 · 시점 = 2026-08-29 01:14/01:29 UTC 동일). ⑸ 게이트 27종 = green 26 · red 1(`work-item-consistency`) · 못 돈 것 0건. **`schema-diff` green — 살아 있는 두 체인 드리프트 0**. ⑹ cloudflared 헬스체크 실물 확정(`healthy`). ⭑ **⟨증보 2026-09-03 · 단독 창 2 단계 F 집행 · 등재 `PLAN-SoT §9 〈301〉` · 근거 `sessions/WINDOW-20260903-F2.md`⟩ 완료 정의 ⑷·⑸ 가 실행으로 닫혔다 — 롤백 왕복을 실제로 돌렸다(전례 0회였다).** **㉮ ⑷ 롤백 왕복** = `72408173be50`(서빙) → `rollback.sh --to-last-green` → **`77813d391f94`** → `deploy.sh --target staging` → **`d9e89a3a074b`**. 각 국면이 **본문으로** 판정됐다 — 롤백 후 `배포 판정: GREEN (통과 15건 · SKIP 0)`(헬스 6종 200 ＋ 본문 단위명 대조 ＋ 컨테이너 8 healthy ＋ `0.0.0.0` 0건), 되돌아온 뒤 같은 판정 GREEN(통과 15 · SKIP 0). 체인은 두 국면 모두 무변경(platform `0011_lv1_drop_level_user_set` · ai `0005_k2b_concept_graph_seed`). **㉯ ⑸ 직전 릴리스 확인** = **헬스가 아니라 서빙 이미지 태그로** 판정했다 — 축자 `서빙 태그 대조 GREEN — 서빙 중인 이미지가 실제로 77813d391f94 다`(`rollback.sh` 「헬스는 태그를 묻지 않는다」). **자리표시가 아니다** — `--to-placeholder` 를 넘기지 않았고 넘긴 플래그는 `--to-last-green` 하나다. 원장 축자 `rollback\t-\t77813d391f94\tgreen\t직전 green 릴리스로 되돌림 (직전 배포=72408173be50) 별칭재부착GREEN digest이력=6종`, 되돌아온 배포 축자 `deploy\td9e89a3a074b\td9e89a3a074b\tgreen`. 별칭 `:i2` 재부착은 **양 국면 모두** 6/6 이미지 ID 대조 GREEN(`X-6` 형제① 실물 검증 — 종전 껍데기 픽스처로만 쟀던 것이 실회차로 갈렸다). **㉰ 데이터 무접촉을 본문으로 쟀다** — 단계 E 가 새 릴리스에서 적재한 데이터셋 `01M1JM3JTQSSTKR9A2QQ67QN81` 상세가 **옛 릴리스 아래에서도 200 · 같은 본문**이다. **㉱ 이 창에는 마이그레이션이 0건이라 롤백이 남긴 격차가 없다**(`77813d391f94..d9e89a3` 의 `*/versions/*` diff = 0줄). 스키마 forward-only(`〈168〉-㉲`)의 위험은 **이번 창에서는 발현할 자리가 없었고, 그 사실이 이 증거의 범위다.** **㉲ 중단 구간** = 롤백 약 12초 · 되돌아오는 배포 약 44초(스크립트 로그 착수~판정 GREEN). ⚠ **실제 5xx 지속 시간은 `[미확인]`** — 외부 관측기를 붙이지 않았다. **㉳ 보존 정리로 `e935db203b07` 6종이 삭제됐다**(설계 동작 · 릴리스 3 ＋ 별칭 2). 남은 롤백 세대 = `72408173be50` · `77813d391f94`."
+    evidence: "2026-09-11 실제5분 cron20:40 dirty1 exit65로 배포전차단·전후불변,20:45 동일후보c329 GREEN·8healthy·health200·verify-deploy15/0/0·chains2/0/0·LASTSUCCESS/원장/실태그일치. 근거 sessions/20260911-stage12-execution.md. / **staging 첫 실배포 2026-08-29 — 완료 정의 15행 중 닫힘 9 · 열림/부분 6.** 값과 근거 전건 = `PLAN-SoT §9 〈185〉` · 산출 `sessions/I3-BUILD.md`(빌드·수정) · `sessions/I3-POSTDEPLOY.md`(배포 후 실측). ⑴ 원장 3행 = approve 1 · red 1(`0a3ea797dbb1` 롤 부트스트랩) · **green 1**(`2026-08-29T10:08:36 · 30b3e0a7b3f3 · 배포전백업GREEN 워킹트리변경=0`). ⑵ **2차 배포 GREEN** — 판정 15건 · SKIP 0 · 컨테이너 8/8 healthy · 공개 헬스 6종 200 · 노출 `0.0.0.0` 0건 · 서빙 태그 6종 전부 `:30b3e0a7b3f3`(세는 기준 = `verify-deploy.sh` 요약줄 · 시점 2026-08-29 10:16 KST). ⑶ **1차 red 는 설계대로 동작한 것** — 마이그레이션 직전 중단(스키마 무접촉) · 자동 롤백 없이 표식. 진짜 원인은 값 부재가 아니라 **배선**(env 파일이 `--env-file` 로만 넘어가 호스트의 `db-bootstrap.sh` 가 빈 환경으로 돌았다) → 프리플라이트를 ⓪-b 로 앞당기고 요구 목록 정본을 `db-bootstrap.sh required-env` 하나에 뒀다. **변이 시험으로 증명**(그 검사를 빼면 green). ⑷ 기준선 무변경 — 데이터셋 12 · 파일 본체 123(저장 전체 129) · 계보 6 · K2 시드 22(기준 = `colab_platform` 표 행 수 · 시점 = 2026-08-29 01:14/01:29 UTC 동일). ⑸ 게이트 27종 = green 26 · red 1(`work-item-consistency`) · 못 돈 것 0건. **`schema-diff` green — 살아 있는 두 체인 드리프트 0**. ⑹ cloudflared 헬스체크 실물 확정(`healthy`). ⭑ **⟨증보 2026-09-03 · 단독 창 2 단계 F 집행 · 등재 `PLAN-SoT §9 〈301〉` · 근거 `sessions/WINDOW-20260903-F2.md`⟩ 완료 정의 ⑷·⑸ 가 실행으로 닫혔다 — 롤백 왕복을 실제로 돌렸다(전례 0회였다).** **㉮ ⑷ 롤백 왕복** = `72408173be50`(서빙) → `rollback.sh --to-last-green` → **`77813d391f94`** → `deploy.sh --target staging` → **`d9e89a3a074b`**. 각 국면이 **본문으로** 판정됐다 — 롤백 후 `배포 판정: GREEN (통과 15건 · SKIP 0)`(헬스 6종 200 ＋ 본문 단위명 대조 ＋ 컨테이너 8 healthy ＋ `0.0.0.0` 0건), 되돌아온 뒤 같은 판정 GREEN(통과 15 · SKIP 0). 체인은 두 국면 모두 무변경(platform `0011_lv1_drop_level_user_set` · ai `0005_k2b_concept_graph_seed`). **㉯ ⑸ 직전 릴리스 확인** = **헬스가 아니라 서빙 이미지 태그로** 판정했다 — 축자 `서빙 태그 대조 GREEN — 서빙 중인 이미지가 실제로 77813d391f94 다`(`rollback.sh` 「헬스는 태그를 묻지 않는다」). **자리표시가 아니다** — `--to-placeholder` 를 넘기지 않았고 넘긴 플래그는 `--to-last-green` 하나다. 원장 축자 `rollback\t-\t77813d391f94\tgreen\t직전 green 릴리스로 되돌림 (직전 배포=72408173be50) 별칭재부착GREEN digest이력=6종`, 되돌아온 배포 축자 `deploy\td9e89a3a074b\td9e89a3a074b\tgreen`. 별칭 `:i2` 재부착은 **양 국면 모두** 6/6 이미지 ID 대조 GREEN(`X-6` 형제① 실물 검증 — 종전 껍데기 픽스처로만 쟀던 것이 실회차로 갈렸다). **㉰ 데이터 무접촉을 본문으로 쟀다** — 단계 E 가 새 릴리스에서 적재한 데이터셋 `01M1JM3JTQSSTKR9A2QQ67QN81` 상세가 **옛 릴리스 아래에서도 200 · 같은 본문**이다. **㉱ 이 창에는 마이그레이션이 0건이라 롤백이 남긴 격차가 없다**(`77813d391f94..d9e89a3` 의 `*/versions/*` diff = 0줄). 스키마 forward-only(`〈168〉-㉲`)의 위험은 **이번 창에서는 발현할 자리가 없었고, 그 사실이 이 증거의 범위다.** **㉲ 중단 구간** = 롤백 약 12초 · 되돌아오는 배포 약 44초(스크립트 로그 착수~판정 GREEN). ⚠ **실제 5xx 지속 시간은 `[미확인]`** — 외부 관측기를 붙이지 않았다. **㉳ 보존 정리로 `e935db203b07` 6종이 삭제됐다**(설계 동작 · 릴리스 3 ＋ 별칭 2). 남은 롤백 세대 = `72408173be50` · `77813d391f94`."
     deadline: null
     note: "⭑ **2026-08-29 — `conflict` 를 풀고 `partial` 로 세웠다.** 종전 갈라짐(`03-HANDOFF §1 T-I` ⬜ ↔ `WORK-UNITS §10` ⛔ ↔ `§10.2-b` ✅ ↔ `§11` ⬜)의 원인이던 **선행 판정 7건은 이미 전건 종결**이고(`PLAN-SoT §9 〈168〉-㉮~㉴`), 그 위에 **실배포까지 섰다**(`〈185〉`). 산문 넷을 같은 회차에 `partial` 로 맞췄다. ／ 이전 ~~`status: conflict` — 한 문서 세 절이 서로 다르다. 사람이 `sessions/TED-DECISIONS-OPEN.md §A` 를 열어 7건의 실물을 세고 판정할 자리다~~ (**낡았다 — 7건은 2026-08-27 에 전건 판정됐다**). ／ **닫지 않는 이유 = 열림/부분 6행.** 열림 ⑴ 자동 트리거 완주(크론 미설치 — `install-schedule.sh` 미실행) ⑷ 롤백 왕복 ⑸ 직전 릴리스 확인. 부분 2-b(실배포 red 로그 없음 — 원장 red 행은 **헬스 판정 미도달** 단계다) ⑽ 게이트(red 1) ⑾ 전후 200→200(**배포 직전 값 미측정** → `[미확인]`). ／ 이전 ~~⚠ **지금 스크립트 롤백 경로가 없다** — `ledger_rollback_target()` 대상 0건(green `deploy` 행이 1건뿐) · `:prev` 는 원장에 없는 수동 빌드본이다(`〈185〉-㉷`-⑵ · 블로커 `§4 #43`). **다음 배포가 한 번 더 성공해야 ⑷⑸ 를 잴 수 있다.**~~ (**낡았다 — 2026-09-03 에 왕복을 실제로 돌렸다.** 원문을 지우지 않는다.) ⭑ **⟨재계수 2026-09-03 · 단계 F 집행 · `〈301〉`⟩ 완료 정의 15행 = 닫힘 11 · 열림 1 · 부분 3.** **닫힘으로 옮긴 둘 = ⑷ 롤백 왕복 · ⑸ 직전 릴리스 확인**(위 `evidence` ㉮㉯). **여전히 열림 1 = ⑴ 자동 트리거 완주** — 사람이 `deploy.sh` 를 불러야 한다. 이 회차의 배포도 손으로 불렀다. 단계 C 가 설치한 크론 셋째 줄은 **백업 연속성 검사**이지 배포 트리거가 아니다. **부분 3** — **2-b** 실배포 red 로그(원장 red 행 `5a71779510f8` 은 **이미지 빌드 단계**에서 죽은 것이라 여전히 **헬스 판정 미도달**이다 · 판정 red 의 실회차 로그는 아직 0건) · **⑽** 게이트 — 이 회차 실측 = `all -j 1` **green 42 · red(판정) 0 · red(준비) 1**(`rls-effect-selftest`) ＋ **그 1건 단독 재실행 green** ⟹ **계수 기준을 밝히면 43 green · red(판정) 0**. ⚠ **한 번의 `all` 실행에서 43/43 이 나온 것은 아니다** — 잔여 red(준비)의 원인은 판정부가 아니라 **일회용 postgres 준비 시간**(`〈CLAUDE.md §1-b-⑸〉` · 선례 `WINDOW-20260903-B2 §3`). 그 구분을 지우고 닫지 않는다 · **⑾** 전후 `/healthz` 200→200(이 회차는 롤백 **직전** `/healthz` 를 안 찍었다 — 찍은 것은 인증 상세 200 이다. 배포 후 `/healthz` 200 은 실측). ⛔ **그래서 닫지 않는다 — `status: partial` 유지.** 「부분 완료로 닫지 않는다」(`sessions/I3.md §6` 말미)."
     sources: ["03-HANDOFF §1 T-I", "WORK-UNITS §10", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "WORK-UNITS §11"]
@@ -999,7 +999,7 @@ items:
 
   - id: TL-2
     name: "구판 미리보기 산출물 회수 — 지도 타일 회수 루프의 소유 판정에 등급을 더한다"
-    status: partial
+    status: done
     stage: stage2
     owner: "D7 / viz-render"
     entry_conditions:
@@ -1397,15 +1397,15 @@ items:
 
   - id: PA-G
     name: 구글 IdP 어댑터
-    status: deferred
-    stage: stage2
+    status: open
+    stage: backlog
     owner: "D1 / core-api ＋ frontend"
-    entry_conditions: ["2026-09-10 사용자 결정으로 이번 개발 제외. 이슈 #12의 재착수 범위·일정 별도 승인 후 설계한다."]
+    entry_conditions: ["2026-09-11 사용자 결정: Stage1·2·3 미배정 백로그. 단계·착수 범위·시점을 정하기 전 자동 착수하지 않는다.", "2026-09-10 사용자 결정으로 이번 개발 제외. 이슈 #12의 재착수 범위·일정 별도 승인 후 설계한다."]
     depends_on: [PA]
     completion_def: "2026-08-27 작성(`〈168〉-㉷`) — PA 의 7항은 자동 승계되지 않는다. ⓐ 어댑터가 `kernel/authn.py` 한 파일에만 ⓑ 비밀번호 발급 경로 제거(공존시키지 않는다) ⓒ `credentials.json`·`ops/set-password.py` 폐기 ⓓ admin 계정 처리 + 음성 시험 ⓔ PA ①②③⑤⑥ 재통과 ⓕ staging 배포 green"
     evidence: null
     deadline: null
-    note: "2026-09-10 사용자 결정: Google 로그인 개발을 보류하고 stage 1·2 종료 필수 범위에서 제외한다. https://github.com/CognileapAI/colab-v2/issues/12 . 종전 자동 개시 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 이번 승인 범위가 아니다. 위 완료 정의는 과거 기록이며 재착수 시 새 사양으로 재검토한다. 결정 원문: sessions/20260910-stage12-decisions.md."
+    note: "2026-09-11 사용자 결정으로 backlog/open 이관. 미구현 요구로 보존하되 Stage 보류·완료·착수 계수에서 제외한다. BACKLOG.md는 이 대장의 반영본이다. 실행 근거 sessions/20260911-deferred-closeout.md. 아래 보류·단계 유지 판단은 이전 이력이다. 2026-09-10 사용자 결정: Google 로그인 개발을 보류하고 stage 1·2 종료 필수 범위에서 제외한다. https://github.com/CognileapAI/colab-v2/issues/12 . 종전 자동 개시 기한은 해제. 기존 로그인·비밀번호 발급 경로 제거는 이번 승인 범위가 아니다. 위 완료 정의는 과거 기록이며 재착수 시 새 사양으로 재검토한다. 결정 원문: sessions/20260910-stage12-decisions.md."
     sources: ["03-HANDOFF §1 T-S 초기 데이터", "WORK-UNITS §7", "WORK-UNITS §10.2-b", "WORK-UNITS §10.3", "PLAN-SoT §9 〈188〉"]
 
   - id: S2
@@ -1490,7 +1490,7 @@ items:
   # ⟨개정 2026-08-29 · `PLAN-SoT §9 〈201〉`⟩ 아래 종전 한 행을 세 항목으로 갈랐다.
   #   `2단-BC120`(conflict) → `2단-계보간선-원자료→월평균`(done)
   #                          ＋ `2단-격자전용-워커제외`(done)
-  #                          ＋ `2단-격자전용-실패3건-처분`(deferred)
+  #                          ＋ `2단-격자전용-실패3건-처분`(done, 2026-09-11 승인 삭제)
   # 원문은 지우지 않고 아래에 개정 표시로 남긴다 — 무엇이 무엇으로 갈렸는지를 잃지 않기 위해서다.
   # 종전 행(2026-08-28 판) 축자:
 #   - id: 2단-BC120
@@ -1538,16 +1538,16 @@ items:
 
   - id: 2단-격자전용-실패3건-처분
     name: "실패로 굳은 격자 전용 업로드 3건의 처분 (`〈120〉` 3건)"
-    status: deferred
+    status: done
     stage: stage2
     owner: null
     entry_conditions: []
     depends_on: []
     completion_def: >-
-      집행 대상 없음 — 「그대로 둔다」가 판정이므로 완료 조건이 아니라 **닫힘 사유**가 정본이다
-    evidence: "`PLAN-SoT §9 〈145〉`-㉳ — Ted 2026-08-27 판정 「그대로 둬」로 ⓒ 채택. 축자 = 「`〈120〉` 은 여기서 닫힌다 — 미실행이 아니라 「하지 않기로 한 것」이다」. 대상 3건 실측(`-㉰`) = `01M0Y1XND62XV5EKYZHFGNVJGS` · `01M0YTT4VJKMGV2FXZZE12SEA4` · `01M0YTT941XPYHH10RT3S2V9YY`. 복원 조사 = `sessions/BC120-RECONSTRUCT.md §2-⑶`"
+      사용자 지정 실패 업로드 3건과 종속 기록을 백업 후 삭제하고, 정상 D3 데이터와 파일6개가 그대로임을 확인한다.
+    evidence: "2026-09-11 실제 staging 삭제 upload3/file6/event9, COMMIT·사후 잔여0, 정상 파일6개 SHA256 동일, 14개 테이블 보존. reports/deferred-closeout/results.json 및 sessions/20260911-deferred-closeout.md. 이하 이전 결정 이력: `PLAN-SoT §9 〈145〉`-㉳ — Ted 2026-08-27 판정 「그대로 둬」로 ⓒ 채택. 축자 = 「`〈120〉` 은 여기서 닫힌다 — 미실행이 아니라 「하지 않기로 한 것」이다」. 대상 3건 실측(`-㉰`) = `01M0Y1XND62XV5EKYZHFGNVJGS` · `01M0YTT4VJKMGV2FXZZE12SEA4` · `01M0YTT941XPYHH10RT3S2V9YY`. 복원 조사 = `sessions/BC120-RECONSTRUCT.md §2-⑶`"
     deadline: null
-    note: "⭑ 2026-08-29 `2단-BC120` 에서 갈려 나온 항목이다(`〈201〉`). ⏸(하지 않기로 한 것)이지 ⬜(착수 후보)가 아니다 — 착수 후보 표에 올리지 않는다. ⚠ 딸린 사실 = 그 3건은 **기다려도 사라지지 않는다.** 회수 질의가 `registered_at IS NULL` 을 요구하는데 3건 다 `registered_at` 이 있다(`〈145〉`-㉯㉰ · `d5_ingestion.py:549`). 즉 `d5_upload` 3행의 「형식 인식 실패」 기록이 staging 에 **영구히 남는다 — 그것이 의도된 결과다.** 사용자 화면에 나타나지 않고 `〈114〉` 로 재발이 막혀 늘지 않는다. ⚠ 실제 사고 — 이 자리를 「미이행」으로 적었더니 2026-08-27 에 다시 착수 후보로 올라왔다(`〈160〉`-㉲ · `03-HANDOFF §3`)."
+    note: "2026-09-11 사용자 삭제 승인으로 이전 보존 결정을 대체하고 실제 집행 완료. 물리 파일 삭제0. 이하 역사적 보류 사유: ⭑ 2026-08-29 `2단-BC120` 에서 갈려 나온 항목이다(`〈201〉`). ⏸(하지 않기로 한 것)이지 ⬜(착수 후보)가 아니다 — 착수 후보 표에 올리지 않는다. ⚠ 딸린 사실 = 그 3건은 **기다려도 사라지지 않는다.** 회수 질의가 `registered_at IS NULL` 을 요구하는데 3건 다 `registered_at` 이 있다(`〈145〉`-㉯㉰ · `d5_ingestion.py:549`). 즉 `d5_upload` 3행의 「형식 인식 실패」 기록이 staging 에 **영구히 남는다 — 그것이 의도된 결과다.** 사용자 화면에 나타나지 않고 `〈114〉` 로 재발이 막혀 늘지 않는다. ⚠ 실제 사고 — 이 자리를 「미이행」으로 적었더니 2026-08-27 에 다시 착수 후보로 올라왔다(`〈160〉`-㉲ · `03-HANDOFF §3`)."
     sources: ["WORK-UNITS §10.3", "PLAN-SoT §9 〈120〉", "PLAN-SoT §9 〈145〉"]
 
   - id: W-1
@@ -2329,10 +2329,11 @@ items:
 
   - id: BF-10
     name: "바탕지도 대안 — 격자선·눈금 옵션 (POL-021 준수 · Ted 6 · 접수 B-2)"
-    status: deferred
-    stage: stage1
+    status: open
+    stage: backlog
     owner: "frontend (D7 화면) — 착수 시점은 Ted"
     entry_conditions:
+      - "2026-09-11 사용자 결정: Stage1·2·3 미배정 백로그. 단계·착수 범위·시점을 정하기 전 자동 착수하지 않는다."
       - "2026-09-10 사용자 결정으로 stage 1·2 종료 범위에서 제외. 기존 해안선·국경 배경과 커서 좌표를 수용하고 화면+PNG 격자는 이슈 #10 재착수 승인 후 설계한다."
     depends_on: [P3]
     completion_def: >-
@@ -2340,6 +2341,7 @@ items:
     evidence: null
     deadline: null
     note: >-
+      2026-09-11 사용자 결정으로 backlog/open 이관. 미구현 요구로 보존하되 Stage 보류·완료·착수 계수에서 제외한다. BACKLOG.md는 이 대장의 반영본이다. 실행 근거 sessions/20260911-deferred-closeout.md. 아래 보류·단계 유지 판단은 이전 이력이다.
       ⟨2026-09-10 개정⟩ 아래 종전 범위 유지 판단을 사용자 결정으로 대체한다. 격자선 자체는 미구현·deferred이며 done이 아니다. 후속 https://github.com/CognileapAI/colab-v2/issues/10 ; 결정 원문 sessions/20260910-stage12-decisions.md.
       ⭑ ⟨Ted 판정 2026-09-05 · 등재 `PLAN-SoT §9 〈315〉`-㉰⟩ **`after_stage2` 이관을 검토했고 보류했다 — `stage` 필드는 고치지 않는다(무변경).** 이관하면 `PA-G` 개시 계수가 13 → 12 로 줄고 버그개선 회차 레인이 하나 주는 것이 「가장 싼 선택지」였으나, Ted 는 이 회차의 버그개선 묶음이 그대로 닫는 쪽을 골랐다. **대장 변경 0** — 다음 회차는 이 선택지를 다시 열지 않는다.
       **신설 2026-09-03 · 등록만** — `PLAN-SoT §9 〈310〉`-㉮ Q4. 접수 B-2 의 「해결 가능 여부 검토」 결과 = 정책 위반이 아니라 **정책이 명하는 대로 동작 중**(`recon-D-scope.md §1`). 스크린샷 `reports/bug-20260903/bug06-*.png`.
@@ -2459,13 +2461,13 @@ items:
 
   - id: U-2
     name: "S3 고아 바이트 정리"
-    status: partial
+    status: done
     stage: stage1
     owner: "D5 / core app · pipeline-worker"
     entry_conditions: ["`I-D` dev 실측값(고아 3건 · 26,579,847 B · 2026-09-02)"]
     depends_on: [I-D]
     completion_def: "ⓐ 만료 스윕이 원장 행과 **S3 객체를 함께** 지운다 ⓑ **S3 삭제가 실패하면 행이 남는다**(다음 바퀴 재시도 — 조용히 성공으로 세지 않는다) ⓒ **등록된 업로드는 안 건드린다** ⓓ **버킷 루트를 스캔하지 않는다 — 원장이 아는 키만**(시드 lab_id 가 겹치는 버킷에서 남의 데이터를 지운다) ⓔ 판별식(`d3_dataset`·`d5_upload`·열린 전송 **셋 다 없어야 고아**)이 시험으로 고정된다."
-    evidence: "2026-09-11 후속 main/devd56428d 배포·운영자doctor15/0/0 후 읽기전용 재관측: semantic3031054b·업로드1/객체12599296B·완료메타7·B대상0 불변. 실제apply0. 새 실행패킷 reports/stage12-tl2-deploy/u2-apply-packet.md. 이하 이전 이력 — 2026-09-11 최종 main/dev30f5adf 배포와 운영자 doctor15/0/0 완료. 08:48 UTC 읽기 전용 재관측: exact 업로드1/객체12599296B·완료메타7·만료열린전송0, semantic plan3031054b 불변. A25 dataset/448file/등록upload40 및 B1dataset/2file/등록upload1 보존. 실제 apply0, 승인 패킷 reports/stage12-release-acceptance/u2-apply-packet.md. 이하 이전 로컬 이력 — core app이 D5 잠금·사건/키 검증·D3 소유/가시성·exact-key S3 삭제를 조립하고 pipeline/core의 선삭제 경로를 보존으로 전환했다. 좁은 실DB 21건, core-api 1040/6 deselect, pipeline 268/48 deselect, import/db 경계 green. 상세 `sessions/s1-storage.md`. dev 배포·apply 모드·실제 S3 대상 확인은 미집행."
+    evidence: "2026-09-11 전체 실행 승인 후 exact plan3031054b로 reclaim1/pruneCompleted7/open0, post대상0·exact HEAD404·A/B보존계수동일. 직전DB백업2개와 원본바이트백업 보관. 근거 sessions/20260911-stage12-execution.md 및 reports/stage12-execution/results.json. / 2026-09-11 후속 main/devd56428d 배포·운영자doctor15/0/0 후 읽기전용 재관측: semantic3031054b·업로드1/객체12599296B·완료메타7·B대상0 불변. 실제apply0. 새 실행패킷 reports/stage12-tl2-deploy/u2-apply-packet.md. 이하 이전 이력 — 2026-09-11 최종 main/dev30f5adf 배포와 운영자 doctor15/0/0 완료. 08:48 UTC 읽기 전용 재관측: exact 업로드1/객체12599296B·완료메타7·만료열린전송0, semantic plan3031054b 불변. A25 dataset/448file/등록upload40 및 B1dataset/2file/등록upload1 보존. 실제 apply0, 승인 패킷 reports/stage12-release-acceptance/u2-apply-packet.md. 이하 이전 로컬 이력 — core app이 D5 잠금·사건/키 검증·D3 소유/가시성·exact-key S3 삭제를 조립하고 pipeline/core의 선삭제 경로를 보존으로 전환했다. 좁은 실DB 21건, core-api 1040/6 deselect, pipeline 268/48 deselect, import/db 경계 green. 상세 `sessions/s1-storage.md`. dev 배포·apply 모드·실제 S3 대상 확인은 미집행."
     deadline: null
     note: "Port 정체 변경을 피하려고 D2/D3 소유 판단이 가능한 core app 경계에 회수 조립을 두었다. 기본값은 observe이고 local 저장은 제외한다. 완료 transfer 메타는 completed_at 기준 7일 뒤에만 prune하며 원본 TTL이 아니다. 실제 삭제 대상·SHA와 dev 배포는 실행 직전 별도 승인; 그 전까지 partial이다. 결정 원문 sessions/20260910-stage12-decisions.md."
     sources: ["PLAN-SoT §9 〈342〉"]
