@@ -28,8 +28,8 @@
 """
 from __future__ import annotations
 
+import hashlib
 import logging
-import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +37,7 @@ from typing import Any
 
 from . import invalidation, tile_liveness
 from ...kernel.ids import is_ulid
+from ...kernel import storage_layout
 
 log = logging.getLogger("colab_viz.tile_reclaim")
 
@@ -190,6 +191,35 @@ def _s3_not_ready(reason: str, *, max_keys: int) -> PassResult:
                       max_keys=max_keys, applied=False)
 
 
+_S3_OBSERVATION_CHUNK_BYTES = 1 << 20
+
+
+def _s3_object_digest(client: Any, key: str, listed_size: int) -> tuple[str, int]:
+    """같은 S3 객체 버전을 디스크에 쓰지 않고 끝까지 읽어 sha256을 계산한다."""
+    head_size, etag = client.head_object(key)
+    if int(head_size) != int(listed_size):
+        raise ValueError(f"{key}: 목록 크기 {listed_size} ≠ HeadObject 크기 {head_size}")
+    if not str(etag).strip():
+        raise ValueError(f"{key}: 같은 버전 GET을 고정할 ETag가 없다")
+    stream = client.get_object_stream(
+        key, chunk_size=_S3_OBSERVATION_CHUNK_BYTES, expected_etag=etag)
+    digest = hashlib.sha256()
+    received = 0
+    try:
+        for chunk in stream:
+            received += len(chunk)
+            if received > head_size:
+                raise ValueError(f"{key}: HeadObject 크기 {head_size}보다 많은 바이트를 받았다")
+            digest.update(chunk)
+    finally:
+        close = getattr(stream, "close", None)
+        if callable(close):
+            close()
+    if received != head_size:
+        raise ValueError(f"{key}: HeadObject 크기 {head_size} ≠ 받은 바이트 {received}")
+    return digest.hexdigest(), received
+
+
 def run_s3_observation(*, client: Any, source: Any,
                        uploads_prefix: str = "uploads",
                        previews_prefix: str = "previews",
@@ -201,56 +231,59 @@ def run_s3_observation(*, client: Any, source: Any,
     로컬 볼륨용 자동 삭제를 객체 저장소까지 넓히면 삭제 범위가 새로 생긴다. 따라서
     apply=True도 요청 사실만 경고하고 결과는 언제나 applied=False다.
 
-    주체 키는 ETag가 아니라 materialize한 실제 바이트로 계산한다. 대상 하나를 받은 즉시
-    후보 키로 접으므로 SourcePort의 LRU가 다음 대상을 위해 앞 대상 파일을 치워도 안전하다.
+    주체 키는 ETag가 아니라 streaming으로 끝까지 읽은 실제 바이트로 계산한다. ETag는
+    HeadObject와 GetObject가 같은 객체 버전인지 If-Match로 고정하는 데만 쓴다. 로컬 렌더
+    cache와 작업 디렉터리는 읽거나 쓰지 않는다.
     """
     try:
         upload_root = _prefix(uploads_prefix, expected="uploads")
         preview_root = _prefix(previews_prefix, expected="previews")
 
         bodies: dict[str, set[str]] = {}
-        storage_bytes = 0
+        body_objects: dict[tuple[str, str], tuple[str, int]] = {}
+        grid_objects: dict[str, dict[str, tuple[str, int]]] = {}
         for key, size in client.list_objects(upload_root):
             if not key.startswith(upload_root):
                 raise ValueError("S3가 요청 prefix 밖의 객체를 돌려줬다")
-            storage_bytes += int(size)
             rest = key[len(upload_root):]
             parts = rest.split("/")
             if len(parts) == 2 and is_ulid(parts[0]) and is_ulid(parts[1]):
                 bodies.setdefault(parts[0], set()).add(parts[1])
-            elif len(parts) >= 2 and is_ulid(parts[0]) and parts[1] == "grid":
-                continue
+                body_objects[(parts[0], parts[1])] = (key, int(size))
+            elif (len(parts) == 3 and is_ulid(parts[0])
+                  and parts[1] == storage_layout.GRID_DIRNAME):
+                name = storage_layout.safe_file_name(parts[2])
+                grid_objects.setdefault(parts[0], {})[name] = (key, int(size))
             elif rest:
                 raise ValueError("uploads/ 아래 객체 키가 저장 규약과 다르다")
-        work_limit = getattr(source, "max_bytes", None)
-        if (isinstance(work_limit, (int, float)) and not isinstance(work_limit, bool)
-                and math.isfinite(work_limit) and storage_bytes > work_limit):
-            raise ValueError("S3 관측 입력 총량이 작업 디렉터리 상한을 넘는다")
 
         storage_keys: dict[str, list[str]] = {}
         bad: list[tile_liveness.Uncomputable] = []
         seen = sum(len(names) for names in bodies.values())
         for target_id, expected_names in sorted(bodies.items()):
             try:
-                resolved = source.resolve(dataset_id=target_id, upload_id=None, file_ids=None)
-                materialized = source.materialize(resolved)
+                grid_entries = []
+                for name, (key, size) in sorted(grid_objects.get(target_id, {}).items()):
+                    digest, _received = _s3_object_digest(client, key, size)
+                    grid_entries.append((name, digest))
+                grid_digest = (storage_layout.map_tile_grid_digest_entries(grid_entries)
+                               if grid_entries else None)
             except Exception as exc:  # noqa: BLE001 — 한 주체라도 못 읽으면 판정 전체를 멈춘다
                 bad.extend(tile_liveness.Uncomputable(name, type(exc).__name__)
                            for name in sorted(expected_names))
                 continue
-
-            actual_names = {part.file_name for part in materialized.parts}
-            for missing in sorted(expected_names - actual_names):
-                bad.append(tile_liveness.Uncomputable(missing, "목록 재대조에서 본체가 사라졌다"))
-            for part in materialized.parts:
+            for name in sorted(expected_names):
                 try:
-                    candidates = tile_liveness.candidate_tile_keys(
-                        part.path, grid_dir=materialized.grid_dir)
-                except (OSError, ValueError) as exc:
-                    bad.append(tile_liveness.Uncomputable(part.file_id, type(exc).__name__))
+                    key, size = body_objects[(target_id, name)]
+                    digest, received = _s3_object_digest(client, key, size)
+                    candidates = tile_liveness.candidate_tile_keys_from_digests(
+                        source_digest=digest, source_byte_size=received,
+                        grid_digest=grid_digest)
+                except Exception as exc:  # noqa: BLE001 — 일부 실패도 전체 판정을 막는다
+                    bad.append(tile_liveness.Uncomputable(name, type(exc).__name__))
                     continue
                 for cache_key, _used_grid in candidates:
-                    storage_keys.setdefault(cache_key, []).append(part.file_id)
+                    storage_keys.setdefault(cache_key, []).append(name)
 
         reached = tile_liveness.Reach(
             dataset_keys={}, upload_keys={},

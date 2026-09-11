@@ -174,6 +174,21 @@ MAP_TILE_OVERVIEW_RESAMPLING = {tile_overview_resampling}
 MAP_TILE_COMPRESSION = {tile_compression!r}
 
 
+def map_tile_grid_digest_entries(entries) -> str:
+    """격자 `(파일명, sha256)` 묶음을 경로와 무관한 정본 다이제스트로 접는다."""
+    import hashlib as _hashlib
+
+    h = _hashlib.sha256()
+    for name, digest in sorted(entries):
+        safe = safe_file_name(name)
+        value = str(digest).strip().lower()
+        if len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
+            raise ValueError(f"격자 sha256 이 올바르지 않다: {{name!r}}")
+        h.update(safe.encode("utf-8"))
+        h.update(value.encode("ascii"))
+    return h.hexdigest()
+
+
 def map_tile_grid_digest(grid_dir, used_reference_grid: bool) -> str:
     """`gridDigest` 재료 하나 — **좌표를 준 것의 다이제스트.**
 
@@ -188,17 +203,16 @@ def map_tile_grid_digest(grid_dir, used_reference_grid: bool) -> str:
 
     if not used_reference_grid or grid_dir is None:
         return GRID_DIGEST_EMBEDDED
-    h = _hashlib.sha256()
+    entries = []
     for f in sorted(Path(grid_dir).iterdir()):
         if not f.is_file():
             continue
-        h.update(f.name.encode("utf-8"))
         fh_digest = _hashlib.sha256()
         with open(f, "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
                 fh_digest.update(chunk)
-        h.update(fh_digest.hexdigest().encode("ascii"))
-    return h.hexdigest()
+        entries.append((f.name, fh_digest.hexdigest()))
+    return map_tile_grid_digest_entries(entries)
 
 
 def map_tile_content_key(**fields) -> str:

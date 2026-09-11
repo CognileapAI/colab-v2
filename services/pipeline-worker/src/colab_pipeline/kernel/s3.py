@@ -178,6 +178,7 @@ class S3Client:
         return f"https://{self.host}/{uri_encode(key, keep_slash=True)}" + (f"?{qs}" if qs else "")
 
     def _stream(self, *, key: str, query: dict[str, str] | None = None,
+                extra_headers: dict[str, str] | None = None,
                 timeout: float = 30.0) -> tuple[dict[str, str], Any]:
         """`_call` 의 스트림 변형 — 본문 없는 GET 만. 서명은 같은 경로(`sign_headers`)다.
 
@@ -190,7 +191,7 @@ class S3Client:
         for attempt in range(_ATTEMPTS):
             headers = sign_headers(method="GET", host=self.host, key=key, region=self.region,
                                    creds=self._credentials(), query=query, payload=b"",
-                                   now=datetime.now(timezone.utc))
+                                   now=datetime.now(timezone.utc), headers=extra_headers)
             try:
                 status, resp_headers, body = self._stream_transport("GET", url, headers, timeout)
             except (urllib.error.URLError, TimeoutError, OSError) as e:
@@ -287,10 +288,21 @@ class S3Client:
                        creds=self._credentials(), query=query or {},
                        expires=expires, now=now)
 
-    def get_object_stream(self, key: str, *, chunk_size: int = STREAM_CHUNK) -> Iterator[bytes]:
+    def get_object_stream(self, key: str, *, chunk_size: int = STREAM_CHUNK,
+                          expected_etag: str | None = None) -> Iterator[bytes]:
         """GetObject 를 청크로. **없는 키·4xx 는 호출 시점에 `S3Error`** 다 — 제너레이터의 첫
-        `next()` 에서 터지게 두면 라우트는 이미 200 헤더를 보낸 뒤라 404 를 낼 수 없다."""
-        _headers, body = self._stream(key=key)
+        `next()` 에서 터지게 두면 라우트는 이미 200 헤더를 보낸 뒤라 404 를 낼 수 없다.
+
+        `expected_etag` 는 내용 다이제스트가 아니라 HeadObject와 같은 버전을 읽기 위한
+        If-Match 조건이다. 응답 ETag도 다시 대조해 전송층이 조건을 잃어도 통과시키지 않는다.
+        """
+        extra = {"if-match": expected_etag} if expected_etag is not None else None
+        response_headers, body = self._stream(key=key, extra_headers=extra)
+        if expected_etag is not None:
+            lowered = {name.lower(): value for name, value in response_headers.items()}
+            if lowered.get("etag") != expected_etag:
+                body.close()
+                raise S3Error(412, "PreconditionFailed", "GetObject 응답 ETag가 HeadObject와 다르다")
 
         def chunks() -> Iterator[bytes]:
             try:

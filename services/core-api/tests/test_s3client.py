@@ -230,6 +230,26 @@ def test_get_object_stream_yields_chunks_and_closes_the_response():
     assert not any(h.lower() == "content-type" for h in headers)     # 본문이 없으니 함정도 없다
 
 
+def test_get_object_stream_if_match는_같은_ETag_응답만_흘린다():
+    c, t = stream_client((200, {"ETag": '"v1"'}, b"same-version"))
+
+    assert b"".join(c.get_object_stream("k", expected_etag='"v1"')) == b"same-version"
+
+    headers = {name.lower(): value for name, value in t.calls[0][2].items()}
+    assert headers["if-match"] == '"v1"'
+    assert "if-match" in headers["authorization"].split("SignedHeaders=")[1].split(",")[0]
+
+
+def test_get_object_stream_if_match는_응답_ETag가_갈리면_본문을_거부하고_닫는다():
+    c, t = stream_client((200, {"ETag": '"v2"'}, b"changed"))
+
+    with pytest.raises(S3Error) as exc:
+        c.get_object_stream("k", expected_etag='"v1"')
+
+    assert exc.value.status == 412
+    assert t.closed == 1
+
+
 def test_get_object_stream_404_raises_when_called_not_on_first_chunk():
     """호출 시점에 예외다 — 제너레이터를 돌려주고 첫 `next()` 에서 터지면 라우트는 이미 200 을 보낸 뒤다."""
     c, _t = stream_client((404, {}, b"<Error><Code>NoSuchKey</Code><Message>x</Message></Error>"))

@@ -52,7 +52,8 @@ from .ownership import (GRADE_LIVE, GRADE_ORPHAN, GRADE_UNDECIDABLE, GRADE_UPLOA
 __all__ = ["GRADES", "ORIGIN_DATASET", "ORIGIN_UPLOAD", "ORIGIN_STORAGE",
            "ReaderNotReady", "Subject",
            "Uncomputable", "Reach", "Verdict", "TileArtifact", "Tally",
-           "file_digest", "candidate_tile_keys", "reach", "grade", "scan_tiles",
+           "file_digest", "candidate_tile_keys", "candidate_tile_keys_from_digests",
+           "reach", "grade", "scan_tiles",
            "subjects_from_storage", "tally", "unreachable_keys", "unreachable_rows"]
 
 #: 주체의 두 갈래. **등급의 이름이 아니라 주체의 출신이다** — 등급은 `ownership.GRADES` 다.
@@ -164,19 +165,27 @@ def candidate_tile_keys(source, *, grid_dir) -> list[tuple[str, bool]]:
     """
     digest = file_digest(source)
     size = Path(source).stat().st_size
+    grid_digest = None
+    if grid_dir is not None and Path(grid_dir).is_dir():
+        grid_digest = storage_layout.map_tile_grid_digest(grid_dir, True)
+    return candidate_tile_keys_from_digests(
+        source_digest=digest, source_byte_size=size, grid_digest=grid_digest)
+
+
+def candidate_tile_keys_from_digests(*, source_digest: str, source_byte_size: int,
+                                     grid_digest: str | None) -> list[tuple[str, bool]]:
+    """로컬 경로와 S3 streaming이 공유하는 지도 타일 후보 키 계산."""
     kind = storage_layout.MAP_TILE_CONVERSION_KIND
     common = {
-        "sourceDigest": digest,
-        "sourceByteSize": size,
+        "sourceDigest": source_digest,
+        "sourceByteSize": source_byte_size,
         "conversionKind": kind,
         "overviewResampling": storage_layout.MAP_TILE_OVERVIEW_RESAMPLING[kind],
         "compression": storage_layout.MAP_TILE_COMPRESSION,
     }
     grid_digests = [(storage_layout.map_tile_grid_digest(None, False), False)]
-    if grid_dir is not None and Path(grid_dir).is_dir():
-        with_grid = storage_layout.map_tile_grid_digest(grid_dir, True)
-        if with_grid not in [g for g, _ in grid_digests]:
-            grid_digests.append((with_grid, True))
+    if grid_digest is not None and grid_digest not in [g for g, _ in grid_digests]:
+        grid_digests.append((grid_digest, True))
     return [(storage_layout.map_tile_content_key(gridDigest=g, **common), used)
             for g, used in grid_digests]
 

@@ -8,6 +8,7 @@ Files: modify `tile_reclaim.py`, `app/main.py`, dev compose; add viz tests and d
 
 - [x] S3 목록 접두사, 바이트 다이제스트, 실패 시 준비 red, apply 강제 무효, dev 스풀 부재를 실패 시험으로 고정하고 RED를 확인한다.
 - [x] S3SourcePort를 사용해 대상별로 materialize 즉시 후보 키를 계산하는 관측 전용 job을 구현한다.
+- [x] 전체 4.74 GB가 1 GiB 작업 상한을 넘는 dev 결손을, 공용 cache 무접촉 streaming SHA-256과 동일 버전 조건부 GET으로 보완한다.
 - [x] app 조립이 local/local에는 기존 job, s3/s3에는 S3 관측 job을 붙이도록 한다.
 - [x] dev compose에 pipeline-worker/viz-render 공용 쓰기 가능 event volume을 선언한다.
 - [x] 좁은 시험, viz/pipeline 서비스 게이트, 생성물·import·배포 선언 경계를 green으로 만든다.
@@ -15,7 +16,7 @@ Files: modify `tile_reclaim.py`, `app/main.py`, dev compose; add viz tests and d
 ## Task 2: BF-12 dev 실측
 
 - [ ] 정확한 변경 SHA, 이미지, 영향, 롤백을 정리하고 dev 배포 직전 승인을 받는다.
-- [ ] 승인 후 동일 SHA를 배포하고 8/8 healthy를 확인한다.
+- [ ] 승인 후 동일 SHA를 배포하고 장기 서비스 4개 healthy와 init·migration 일회성 작업 성공을 확인한다.
 - [ ] 한 주기 이상 기다린 뒤 첫 회수 요약의 주체/타일/닿음/못 닿음/삭제 0과 비밀 0을 보존한다.
 - [ ] 이 증거가 모두 선 경우에만 BF-12를 done으로 갱신한다.
 

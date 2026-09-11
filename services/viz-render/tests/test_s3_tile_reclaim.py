@@ -9,13 +9,15 @@ from __future__ import annotations
 import hashlib
 
 from colab_viz.app import main
-from colab_viz.domains.d7_visualization import tile_reclaim
+from colab_viz.domains.d7_visualization import tile_liveness, tile_reclaim
 from colab_viz.kernel import storage_layout
 from colab_viz.kernel.config import Settings
 from colab_viz.ports.source import S3SourcePort
 
 TID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 FID = "01BX5ZZKBKACTAV9WEVGEMMVRZ"
+TID2 = "01ARZ3NDEKTSV4RRFFQ69G5FBV"
+FID2 = "01BX5ZZKBKACTAV9WEVGEMMWRZ"
 
 
 def _tile_key(payload: bytes) -> str:
@@ -30,12 +32,35 @@ def _tile_key(payload: bytes) -> str:
     )
 
 
+class _ClosingChunks:
+    def __init__(self, chunks: list[bytes]):
+        self._chunks = iter(chunks)
+        self.closed = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._chunks)
+
+    def close(self):
+        self.closed = True
+
+
 class StubS3:
-    def __init__(self, objects: dict[str, bytes], *, fail_prefix: str | None = None):
+    def __init__(self, objects: dict[str, bytes], *, fail_prefix: str | None = None,
+                 mutate_on_get: str | None = None, extra_on_get: str | None = None,
+                 truncate_on_get: str | None = None):
         self.objects = dict(objects)
         self.fail_prefix = fail_prefix
+        self.mutate_on_get = mutate_on_get
+        self.extra_on_get = extra_on_get
+        self.truncate_on_get = truncate_on_get
         self.list_calls: list[str] = []
         self.head_calls: list[str] = []
+        self.stream_chunk_sizes: list[int] = []
+        self.expected_etags: list[tuple[str, str | None]] = []
+        self.streams: list[_ClosingChunks] = []
         self.delete_calls: list[list[str]] = []
 
     def list_objects(self, prefix: str):
@@ -49,12 +74,29 @@ class StubS3:
                 yield key, len(self.objects[key])
 
     def head_object(self, key: str):
-        # ETag는 의도적으로 내용과 무관하다. 생존 키 재료로 쓰면 시험이 red다.
         self.head_calls.append(key)
-        return len(self.objects[key]), '"not-a-content-digest"'
+        payload = self.objects[key]
+        return len(payload), f'"version-{hashlib.md5(payload).hexdigest()}"'
 
-    def get_object_stream(self, key: str, *, chunk_size: int = 1 << 20):
-        return iter((self.objects[key],))
+    def get_object_stream(self, key: str, *, chunk_size: int = 1 << 20,
+                          expected_etag: str | None = None):
+        self.stream_chunk_sizes.append(chunk_size)
+        if key == self.mutate_on_get:
+            self.objects[key] = bytes(reversed(self.objects[key]))
+        current_etag = self.head_object(key)[1]
+        self.expected_etags.append((key, expected_etag))
+        if expected_etag is not None and expected_etag != current_etag:
+            raise OSError("If-Match 불일치")
+        payload = self.objects[key]
+        if key == self.truncate_on_get:
+            payload = payload[:-1]
+        chunks = [payload[offset:offset + chunk_size]
+                  for offset in range(0, len(payload), chunk_size)]
+        if key == self.extra_on_get:
+            chunks.append(b"too-many-bytes")
+        stream = _ClosingChunks(chunks)
+        self.streams.append(stream)
+        return stream
 
     def delete_objects(self, keys: list[str]):
         self.delete_calls.append(list(keys))
@@ -83,7 +125,7 @@ def test_s3_관측은_정확한_prefix와_객체_바이트로_생존을_판정�
 
     assert result.ready is True, result.reason
     assert (result.subjects, result.tiles, result.reachable, result.unreachable) == (1, 2, 1, 1)
-    assert client.list_calls == ["uploads/", f"uploads/{TID}/", "previews/"]
+    assert client.list_calls == ["uploads/", "previews/"]
     assert client.delete_calls == []
     assert result.applied is False and result.removed == ()
 
@@ -132,7 +174,7 @@ def test_s3_빈_prefix는_목록을_부르기_전에_거부한다(tmp_path):
     assert client.delete_calls == []
 
 
-def test_s3_관측_총량이_workdir_상한을_넘으면_다운로드_전에_준비_red다(tmp_path):
+def test_s3_관측_streaming은_단일객체가_workdir_상한보다_커도_판정한다(tmp_path):
     objects, _live = _objects()
     client = StubS3(objects)
     source = S3SourcePort(client, workdir=tmp_path / "work", max_bytes=4)
@@ -141,9 +183,125 @@ def test_s3_관측_총량이_workdir_상한을_넘으면_다운로드_전에_준
         client=client, source=source, uploads_prefix="uploads",
         previews_prefix="previews", apply=False)
 
+    assert result.ready is True, result.reason
+    assert result.subjects == 1
+    assert client.list_calls == ["uploads/", "previews/"]
+    assert client.head_calls
+    assert client.delete_calls == []
+
+
+def test_s3_관측은_전체합계가_상한보다_커도_cache를_건드리지_않고_전수_판정한다(tmp_path):
+    first = b"first-subject-bytes"
+    second = b"second-subject-bytes"
+    first_live = _tile_key(first)
+    second_live = _tile_key(second)
+    dead = "tile-" + "f" * 64
+    objects = {
+        f"uploads/{TID}/{FID}": first,
+        f"uploads/{TID2}/{FID2}": second,
+        f"previews/{first_live}.tif": b"FIRST",
+        f"previews/{second_live}.tif": b"SECOND",
+        f"previews/{dead}.tif": b"OLD",
+    }
+    workdir = tmp_path / "work"
+    sentinel = workdir / "uploads" / "render-in-progress" / "source.bin"
+    sentinel.parent.mkdir(parents=True)
+    sentinel.write_bytes(b"render-cache-must-survive")
+    client = StubS3(objects)
+    source = S3SourcePort(client, workdir=workdir, max_bytes=32)
+
+    result = tile_reclaim.run_s3_observation(
+        client=client, source=source, uploads_prefix="uploads",
+        previews_prefix="previews", apply=True)
+
+    assert result.ready is True, result.reason
+    assert (result.subjects, result.tiles, result.reachable, result.unreachable) == (2, 3, 2, 1)
+    assert client.stream_chunk_sizes and max(client.stream_chunk_sizes) <= 1 << 20
+    assert list(workdir.rglob("*")) == [
+        workdir / "uploads", workdir / "uploads" / "render-in-progress", sentinel]
+    assert sentinel.read_bytes() == b"render-cache-must-survive"
+    assert client.delete_calls == []
+    assert result.applied is False and result.removed == ()
+
+
+def test_s3_관측은_head뒤_같은크기_객체교체를_준비_red로_막는다(tmp_path):
+    objects, _live = _objects()
+    second = b"second-subject-bytes"
+    objects[f"uploads/{TID2}/{FID2}"] = second
+    objects[f"previews/{_tile_key(second)}.tif"] = b"SECOND"
+    body_key = f"uploads/{TID2}/{FID2}"
+    client = StubS3(objects, mutate_on_get=body_key)
+    source = S3SourcePort(client, workdir=tmp_path / "work", max_bytes=1024)
+
+    result = tile_reclaim.run_s3_observation(
+        client=client, source=source, uploads_prefix="uploads",
+        previews_prefix="previews", apply=False)
+
     assert result.ready is False
-    assert client.list_calls == ["uploads/"]
-    assert client.head_calls == []
+    assert result.rows == () and result.unreachable == 0
+    assert "주체 2건" in result.reason and "계산 불가 1건" in result.reason
+    assert all(etag for _key, etag in client.expected_etags)
+    assert client.delete_calls == []
+
+
+def test_s3_관측은_초과수신을_즉시_준비_red로_막고_stream을_닫는다(tmp_path):
+    objects, _live = _objects()
+    body_key = f"uploads/{TID}/{FID}"
+    client = StubS3(objects, extra_on_get=body_key)
+    source = S3SourcePort(client, workdir=tmp_path / "work", max_bytes=1024)
+
+    result = tile_reclaim.run_s3_observation(
+        client=client, source=source, uploads_prefix="uploads",
+        previews_prefix="previews", apply=False)
+
+    assert result.ready is False
+    assert result.rows == () and result.unreachable == 0
+    assert client.streams[0].closed is True
+    assert client.delete_calls == []
+
+
+def test_s3_관측은_부족수신도_준비_red로_막고_stream을_닫는다(tmp_path):
+    objects, _live = _objects()
+    body_key = f"uploads/{TID}/{FID}"
+    client = StubS3(objects, truncate_on_get=body_key)
+    source = S3SourcePort(client, workdir=tmp_path / "work", max_bytes=1024)
+
+    result = tile_reclaim.run_s3_observation(
+        client=client, source=source, uploads_prefix="uploads",
+        previews_prefix="previews", apply=False)
+
+    assert result.ready is False
+    assert result.rows == () and result.unreachable == 0
+    assert client.streams[0].closed is True
+    assert client.delete_calls == []
+
+
+def test_s3_streaming_후보키는_기존_materialize_후보키와_같다(tmp_path):
+    objects, _live = _objects()
+    objects[f"uploads/{TID}/grid/Lat.npy"] = b"latitude-grid"
+    objects[f"uploads/{TID}/grid/Lon.npy"] = b"longitude-grid"
+    local_client = StubS3(objects)
+    local_source = S3SourcePort(
+        local_client, workdir=tmp_path / "materialized", max_bytes=1024)
+    materialized = local_source.materialize(local_source.resolve(
+        dataset_id=TID, upload_id=None, file_ids=None))
+    expected = {key for key, _used in tile_liveness.candidate_tile_keys(
+        materialized.parts[0].path, grid_dir=materialized.grid_dir)}
+    preview_objects = {
+        **objects,
+        **{f"previews/{key}.tif": b"TILE" for key in expected},
+    }
+    client = StubS3(preview_objects)
+    source = S3SourcePort(client, workdir=tmp_path / "untouched", max_bytes=1)
+
+    result = tile_reclaim.run_s3_observation(
+        client=client, source=source, uploads_prefix="uploads",
+        previews_prefix="previews", apply=False)
+
+    assert result.ready is True, result.reason
+    assert result.reachable == len(expected)
+    assert result.unreachable == result.tiles - len(expected)
+    assert not source.workdir.exists()
     assert client.delete_calls == []
 
 
