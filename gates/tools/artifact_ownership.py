@@ -62,8 +62,18 @@ def main(argv: list[str]) -> int:
         print(f"::규약위반::{e}")
         return 0
 
+    try:
+        legacy = own.legacy_tally(subjects, ledger)
+    except own.LegacyObservationNotReady as e:
+        print(f"::구판관측준비실패::{e}")
+        return 0
+
     for name in own.GRADES:
         print(f"::계수::{name}\t{t.counts[name]}")
+    for name in own.LEGACY_GRADES:
+        print(f"::구판계수::{name}\t{legacy.counts[name]}")
+    for key in legacy.unreachable_keys:
+        print(f"::구판재굽기불가::{key}")
     print(f"::대상::{len(subjects)}")
     print(f"::지도타일::{len(tiles)}")     # **대상이 아니다** — `kept` 로 산다 (완료 정의 ⑷)
     for key in own.orphan_keys(subjects, ledger):

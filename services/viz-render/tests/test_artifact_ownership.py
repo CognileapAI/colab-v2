@@ -79,6 +79,70 @@ def test_구판은_고아로_세지_않는다(tmp_path, doc):
     assert r.grade != ownership.GRADE_ORPHAN
 
 
+def test_구판_19벌을_사이드카부재14_원천원장부재2_원천있음3으로_가른다(tmp_path):
+    """TL-2의 창 5b 기준 집합. 세 하위 집합을 합치면 정확히 구판 19벌이다."""
+    no_sidecar = [
+        _group(tmp_path, f"legacy-image-{i}", None, suffixes=((".png",) if i < 7 else (".webp",)))
+        for i in range(14)
+    ]
+    missing_source = [
+        _group(tmp_path, f"legacy-missing-{i}", {"source": f"01M0GONE{i:018d}"},
+               suffixes=(".png", ".pgw", ".json"))
+        for i in range(2)
+    ]
+    known_source = [
+        _group(tmp_path, f"legacy-known-{i}", {"source": _FID_REG},
+               suffixes=(".png", ".pgw", ".json"))
+        for i in range(3)
+    ]
+
+    result = ownership.legacy_tally(no_sidecar + missing_source + known_source, LEDGER)
+
+    assert result.counts == {
+        ownership.LEGACY_SIDECAR_ABSENT: 14,
+        ownership.LEGACY_SOURCE_LEDGER_ABSENT: 2,
+        ownership.LEGACY_SOURCE_LEDGER_PRESENT: 3,
+    }
+    assert sum(result.counts.values()) == 19
+    assert result.unreachable_keys == tuple(
+        [f"legacy-image-{i}" for i in range(14)]
+        + [f"legacy-missing-{i}" for i in range(2)]
+    )
+
+
+def test_구판_세부분류는_현대판과_지도타일을_모집단에_섞지_않는다(tmp_path):
+    """다른 PNG/WebP와 map tile은 TL-2의 구판 19벌이 아니다."""
+    legacy = _group(tmp_path, "legacy-only", None, suffixes=(".webp",))
+    modern = [_group(tmp_path, f"modern-{i}", _doc()) for i in range(333)]
+    tile = _group(tmp_path, "tile-not-a-preview", None, suffixes=(".tif",))
+
+    result = ownership.legacy_tally([legacy, *modern, tile], LEDGER)
+
+    assert sum(result.counts.values()) == 1
+    assert result.counts[ownership.LEGACY_SIDECAR_ABSENT] == 1
+
+
+def test_구판_하위등급은_관측값일뿐_회수후보가_아니다(tmp_path):
+    missing = _group(tmp_path, "legacy-missing", {"source": _FID_GONE})
+    absent = _group(tmp_path, "legacy-absent", None, suffixes=(".png",))
+
+    observed = ownership.legacy_tally([missing, absent], LEDGER)
+    plan = invalidation.reclaim_plan([missing, absent], LEDGER, previews_root=tmp_path)
+
+    assert sum(observed.counts.values()) == 2
+    assert plan.stale == ()
+    assert {p.name for p in plan.kept} == {
+        "legacy-missing.png", "legacy-missing.json", "legacy-absent.png"
+    }
+
+
+def test_구판_사이드카에_원천식별자가_없으면_추측해_세지_않는다(tmp_path):
+    malformed = _group(tmp_path, "legacy-unknown-source", {"name": "old.png"})
+
+    with pytest.raises(ownership.LegacyObservationNotReady):
+        ownership.legacy_tally([malformed], LEDGER)
+
+
 # ── ⚠ 덫 ① — `baked_for` 는 판정 입력이 아니다 ──────────────────────────────
 def test_등록_전환된_대상이_불일치로_뜨지_않는다(tmp_path):
     """`baked_for` 는 **구울 때의** 대상(uploadId)이고 지금 소유는 datasetId 다.

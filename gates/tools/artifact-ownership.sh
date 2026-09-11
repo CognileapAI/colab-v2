@@ -279,6 +279,11 @@ case "$OUT" in
    $(printf '%s\n' "$OUT" | sed -n 's/^::규약위반:://p')
    ⚠ 규약 위반을 「판정 불가」로 접지 않는다 — 접으면 보류에 섞여 영원히 안 보인다." ;;
 esac
+case "$OUT" in
+  *'::구판관측준비실패::'*)
+    red "**구판 관측 준비 실패** — 사이드카는 있으나 원천 식별자가 없어 하위 등급을 추측할 수 없다.
+   $(printf '%s\n' "$OUT" | sed -n 's/^::구판관측준비실패:://p')" ;;
+esac
 
 g() { printf '%s\n' "$OUT" | sed -n "s/^::계수::$1\t//p"; }
 LIVE="$(g '살아 있다')"; UPONLY="$(g '접수분에만 닿는다')"
@@ -287,12 +292,21 @@ SUBJECTS="$(printf '%s\n' "$OUT" | sed -n 's/^::대상:://p')"
 TILES="$(printf '%s\n' "$OUT" | sed -n 's/^::지도타일:://p')"
 SNAPROWS="$(printf '%s\n' "$OUT" | sed -n 's/^::스냅숏:://p')"
 ORPHAN_KEYS="$(printf '%s\n' "$OUT" | sed -n 's/^::고아:://p')"
-for v in "$LIVE" "$UPONLY" "$ORPHAN" "$PENDING" "$SUBJECTS" "$TILES" "$SNAPROWS"; do
+lg() { printf '%s\n' "$OUT" | sed -n "s/^::구판계수::$1\t//p"; }
+LEGACY_NO_SIDECAR="$(lg '사이드카 부재')"
+LEGACY_NO_LEDGER="$(lg '원천 원장 부재')"
+LEGACY_HAS_LEDGER="$(lg '원천 원장 있음')"
+for v in "$LIVE" "$UPONLY" "$ORPHAN" "$PENDING" "$SUBJECTS" "$TILES" "$SNAPROWS" \
+         "$LEGACY_NO_SIDECAR" "$LEGACY_NO_LEDGER" "$LEGACY_HAS_LEDGER"; do
   case "$v" in ''|*[!0-9]*) red "계수기 출력이 온전하지 않다 — 무엇을 셌는지 모르는 채로 통과시키지 않는다.
    낸 말: $(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-600)" ;; esac
 done
 
+LEGACY_TOTAL=$((LEGACY_NO_SIDECAR + LEGACY_NO_LEDGER + LEGACY_HAS_LEDGER))
+[ "$LEGACY_TOTAL" -eq "$PENDING" ] || red "구판 하위 등급의 합($LEGACY_TOTAL)이 판정 불가($PENDING)와 다르다."
+
 echo "산출물 소유 — 대상 한 벌 $SUBJECTS · 살아 있다 $LIVE · 접수분에만 닿는다 $UPONLY · 고아 $ORPHAN · 판정 불가 $PENDING"
+echo "  구판 관측 — 사이드카 부재 $LEGACY_NO_SIDECAR · 원천 원장 부재 $LEGACY_NO_LEDGER · 원천 원장 있음 $LEGACY_HAS_LEDGER · 재굽기 불가 $((LEGACY_NO_SIDECAR + LEGACY_NO_LEDGER)) · 삭제 0건"
 echo "  지도 타일 $TILES 벌은 **대상이 아니다** — D5 가 구운 것이라 kept 로 산다 (완료 정의 ⑷)"
 echo "  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = $SLOT · 원장 = d3_file $D3 · d5_upload_file $D5"
 echo "  회수 전 전수 스냅숏 $SNAPROWS 줄 → $SNAPSHOT (키·확장자·크기·사이드카 source·등급)"
@@ -342,5 +356,5 @@ if [ "$PENDING" -gt 0 ]; then
    구판 = sidecarVersion·baked_for 가 없는 사이드카. **고아가 아니라 보류다** (A-1 완료 정의 ⑴)."
 fi
 
-echo "artifact-ownership green — 대상 $SUBJECTS 벌 (살아 있다 $LIVE · 접수분 $UPONLY · 고아 $ORPHAN · 판정 불가 $PENDING) · 지도 타일 $TILES · 스냅숏 $SNAPROWS 줄 · 삭제 0건"
+echo "artifact-ownership green — 대상 $SUBJECTS 벌 (살아 있다 $LIVE · 접수분 $UPONLY · 고아 $ORPHAN · 판정 불가 $PENDING) · 구판(사이드카 부재 $LEGACY_NO_SIDECAR · 원천 원장 부재 $LEGACY_NO_LEDGER · 원장 있음 $LEGACY_HAS_LEDGER) · 지도 타일 $TILES · 스냅숏 $SNAPROWS 줄 · 삭제 0건"
 exit 0

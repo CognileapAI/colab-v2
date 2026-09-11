@@ -58,6 +58,10 @@ class SidecarContractViolation(ValueError):
     """
 
 
+class LegacyObservationNotReady(ValueError):
+    """구판 사이드카는 있으나 원천 식별자가 없어 TL-2 하위 등급을 낼 수 없다."""
+
+
 @dataclass(frozen=True)
 class Ledger:
     """원장 두 표의 `id` 집합. **게이트가 채우고 이 모듈은 읽기만 한다.**"""
@@ -95,6 +99,24 @@ class Verdict:
 class Tally:
     counts: dict[str, int]
     verdicts: dict[str, Verdict] = field(default_factory=dict)
+
+
+LEGACY_SIDECAR_ABSENT = "사이드카 부재"
+LEGACY_SOURCE_LEDGER_ABSENT = "원천 원장 부재"
+LEGACY_SOURCE_LEDGER_PRESENT = "원천 원장 있음"
+LEGACY_GRADES: tuple[str, ...] = (
+    LEGACY_SIDECAR_ABSENT,
+    LEGACY_SOURCE_LEDGER_ABSENT,
+    LEGACY_SOURCE_LEDGER_PRESENT,
+)
+
+
+@dataclass(frozen=True)
+class LegacyTally:
+    """구판 `판정 불가`만 더 잘게 센 관측값. 회수 등급은 바꾸지 않는다."""
+    counts: dict[str, int]
+    verdicts: dict[str, str] = field(default_factory=dict)
+    unreachable_keys: tuple[str, ...] = ()
 
 
 def source_file_ids(doc: dict) -> tuple[str, ...]:
@@ -150,6 +172,39 @@ def tally(groups: Iterable[ArtifactGroup], ledger: Ledger) -> Tally:
         counts[v.grade] += 1
         verdicts[group.cache_key] = v
     return Tally(counts=counts, verdicts=verdicts)
+
+
+def legacy_tally(groups: Iterable[ArtifactGroup], ledger: Ledger) -> LegacyTally:
+    """TL-2 관측 분류.
+
+    기존 `grade()`의 `판정 불가` 안전 경계는 그대로 둔다. 사이드카가 없는 벌과,
+    구판 사이드카의 원천이 원장 양쪽에 없는 벌만 별도로 세며 어느 것도 고아나
+    자동 회수 대상으로 승격하지 않는다. 현대판과 지도 타일은 모집단에서 제외한다.
+    """
+    counts = {name: 0 for name in LEGACY_GRADES}
+    verdicts: dict[str, str] = {}
+    unreachable: list[str] = []
+    for group in groups:
+        if group.is_map_tile() or not _is_legacy(group.sidecar):
+            continue
+        if group.sidecar is None:
+            name = LEGACY_SIDECAR_ABSENT
+            unreachable.append(group.cache_key)
+        else:
+            fids = source_file_ids(group.sidecar)
+            if not fids:
+                raise LegacyObservationNotReady(
+                    f"구판 사이드카에 원천 식별자가 없다: {group.cache_key}")
+            present = any(fid in ledger.dataset_files or fid in ledger.upload_files for fid in fids)
+            if present:
+                name = LEGACY_SOURCE_LEDGER_PRESENT
+            else:
+                name = LEGACY_SOURCE_LEDGER_ABSENT
+                unreachable.append(group.cache_key)
+        counts[name] += 1
+        verdicts[group.cache_key] = name
+    return LegacyTally(counts=counts, verdicts=verdicts,
+                       unreachable_keys=tuple(unreachable))
 
 
 def snapshot_rows(groups: Iterable[ArtifactGroup], ledger: Ledger) -> list[dict]:
