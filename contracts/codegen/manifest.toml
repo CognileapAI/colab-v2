@@ -47,6 +47,25 @@ source = "contracts/storage/layout.json"
 output = "services/viz-render/src/colab_viz/kernel/storage_layout.py"
 command = "python3 contracts/codegen/gen_storage_layout.py {OUT}"
 
+# ── 운영 관측 커널 복제 등기 — W3C traceparent와 구조화 JSON의 바이트 정본.
+[[output]]
+id = "observability-kernel-ai"
+source = "services/core-api/src/colab_core/kernel/observability.py"
+output = "services/ai-service/src/colab_ai/kernel/observability.py"
+command = "cp services/core-api/src/colab_core/kernel/observability.py {OUT}"
+
+[[output]]
+id = "observability-kernel-pipeline"
+source = "services/core-api/src/colab_core/kernel/observability.py"
+output = "services/pipeline-worker/src/colab_pipeline/kernel/observability.py"
+command = "cp services/core-api/src/colab_core/kernel/observability.py {OUT}"
+
+[[output]]
+id = "observability-kernel-viz"
+source = "services/core-api/src/colab_core/kernel/observability.py"
+output = "services/viz-render/src/colab_viz/kernel/observability.py"
+command = "cp services/core-api/src/colab_core/kernel/observability.py {OUT}"
+
 # ── S3 커널 복제 등기 — source 가 계약이 아니라 core-api 커널이다.
 #
 # `kernel/{sigv4,aws_credentials,s3}.py`(SigV4 자작 서명기 · 자격증명 사슬 · S3 컨트롤 플레인

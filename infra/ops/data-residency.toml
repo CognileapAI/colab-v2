@@ -1,0 +1,35 @@
+version = 1
+home_region = "ap-northeast-2"
+
+[[systems]]
+id = "s3-data"
+kind = "storage"
+processing_location = "ap-northeast-2"
+korea_guaranteed = true
+data_sent = ["uploaded_file_bytes", "preview_artifacts", "backup_objects"]
+data_excluded = ["database_credentials", "session_signing_secrets"]
+
+[[systems]]
+id = "rds-platform"
+kind = "database"
+processing_location = "ap-northeast-2"
+korea_guaranteed = true
+data_sent = ["platform_metadata", "account_membership", "lineage"]
+data_excluded = ["source_file_bytes", "session_signing_secrets"]
+
+[[systems]]
+id = "cloudfront"
+kind = "delivery"
+processing_location = "global-edge"
+origin_region = "ap-northeast-2"
+korea_guaranteed = false
+data_sent = ["web_assets", "preview_artifacts", "api_requests"]
+data_excluded = ["database_credentials", "aws_credentials"]
+
+[[systems]]
+id = "openai"
+kind = "external_ai"
+processing_location = "provider-managed"
+korea_guaranteed = false
+data_sent = ["search_query_text", "uploaded_file_metadata_for_lineage_suggestion"]
+data_excluded = ["source_file_bytes", "database_credentials", "aws_credentials", "session_tokens"]

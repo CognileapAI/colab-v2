@@ -1,0 +1,5 @@
+version = 1
+interval_seconds = 300
+failure_threshold = 2
+notification = "https_webhook_file"
+targets = ["deploy-verification", "service-health", "backup-freshness"]

@@ -33,6 +33,7 @@ from ..kernel.throttle import AttemptLimiter
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
 from ..kernel.download_ticket import DownloadTicketSigner
+from ..kernel.observability import TraceMiddleware
 from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
@@ -64,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=None,
         redoc_url=None,
     )
+    app.add_middleware(TraceMiddleware, service_name="core-api")
     engine = make_engine(settings.database_url)
     app.state.engine = engine
     app.state.settings = settings

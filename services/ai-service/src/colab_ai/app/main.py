@@ -35,6 +35,7 @@ from colab_ai.domains.d10_suggestion import SuggestionEnvelope
 from colab_ai.kernel.config import Settings
 from colab_ai.kernel.db import make_engine
 from colab_ai.kernel.ids import is_valid_ulid
+from colab_ai.kernel.observability import TraceMiddleware
 
 #: `Policy_데이터_찾기 §5 검색 질문 — 1~200자`. 계약(`SearchRequest.query`)과 같은 값이다.
 MAX_QUERY = 200
@@ -75,6 +76,7 @@ async def _raw_body(request: Request) -> bytes:
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     app = FastAPI(title="CoLAB v2 ai-service", version="0.1.0")
+    app.add_middleware(TraceMiddleware, service_name="ai-service")
 
     dictionaries = (SqlDictionaries(make_engine(settings.dict_db_url))
                     if settings.dict_db_url else _UnavailableDictionaries())

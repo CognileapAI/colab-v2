@@ -51,6 +51,7 @@ from ..kernel.blob_backends import ENV_UPLOAD_DIR as _ENV_UPLOAD_DIR
 from ..kernel.blob_backends import ENV_WORKDIR as _ENV_WORKDIR
 from ..kernel.blob_backends import LocalUploadBlobs, blob_settings, build_blobs
 from ..kernel.env_file import FILE_SUFFIX, resolve_env_or_file
+from ..kernel.observability import local_span, structured_event
 from ..ports.blobs import UploadBlobPort
 from ..kernel.db import (
     apply_scope,
@@ -99,6 +100,15 @@ ENV_EVENT_SPOOL = "COLAB_WORKER_EVENT_SPOOL"
 
 #: 한 바퀴에 처리할 업로드 수의 상한. **없으면 한 바퀴가 얼마나 걸릴지 아무도 모른다.**
 BATCH = 20
+
+
+def structured_worker_summary(*, processed: list[str], sent: int,
+                              reaped: list[str]) -> None:
+    """한 바퀴의 **계수만** 남긴다. ID·원장 URL·사건 본문은 로그에 싣지 않는다."""
+    with local_span():
+        structured_event(
+            service="pipeline-worker", event="worker.pass.completed",
+            processed_count=len(processed), sent_count=sent, reaped_count=len(reaped))
 
 
 def stdout_publish(envelope: dict) -> None:
@@ -416,6 +426,7 @@ def run_once(*, publish=None) -> tuple[list[str], int, list[str]]:
             reaped += r
     finally:
         engine.dispose()
+    structured_worker_summary(processed=processed, sent=sent, reaped=reaped)
     return processed, sent, reaped
 
 

@@ -22,6 +22,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from ..kernel.observability import current_traceparent
+
 #: 중계 대기 시간(초). 저쪽이 안 답할 때 이쪽 요청 스레드를 무한히 잡아 두지 않는다.
 RELAY_TIMEOUT_SECONDS = 10
 
@@ -157,6 +159,9 @@ def _scope_headers(lab_id: str, account_id: str,
     """
     headers = {"X-CoLAB-Lab": lab_id, "X-CoLAB-Account": account_id,
                "Accept": "application/json"}
+    traceparent = current_traceparent()
+    if traceparent is not None:
+        headers["traceparent"] = traceparent
     if service_token:
         headers["Authorization"] = f"Bearer {service_token}"
     return headers

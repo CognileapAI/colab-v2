@@ -20,6 +20,7 @@ from ..kernel import errors
 from ..kernel.config import Settings, load_settings, validate
 from ..kernel.health import healthz_body
 from ..kernel.logging_setup import configure_logging
+from ..kernel.observability import TraceMiddleware
 from ..kernel.preview_sinks import LocalPreviewSink, S3PreviewSink
 from ..ports.source import FilesystemSourcePort, S3SourcePort
 from .trigger_bus import SpoolTriggerPort
@@ -84,6 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # 계약 정본은 contracts/seams/core-viz.yaml 이다. 앱이 계약을 만들지 않는다.
         openapi_url=None, docs_url=None, redoc_url=None,
     )
+    app.add_middleware(TraceMiddleware, service_name="viz-render")
     app.state.settings = settings
     client = _s3_client(settings) if "s3" in (settings.source_mode, settings.preview_sink) else None
     if settings.source_mode == "s3":

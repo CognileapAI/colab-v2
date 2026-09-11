@@ -173,7 +173,7 @@ ALL_GATES=(
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
   frontend-typecheck frontend-test frontend-fixture-reach frontend-visual
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
-  backup-cron-streak exec-bit harness-eval
+  backup-cron-streak ops-observability exec-bit harness-eval
   service-tests-core-api service-tests-ai-service
   service-tests-viz-render service-tests-pipeline-worker
   contract-selftest event-selftest boundary-selftest db-boundary-selftest
@@ -181,6 +181,7 @@ ALL_GATES=(
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
+  ops-observability-selftest
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   frontend-visual-selftest harness-eval-selftest
@@ -387,6 +388,14 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 로그 파일이다.
     # 실제 백업도 크론도 돌리지 않고 `~/colab-v2-backups` 에 한 글자도 쓰지 않는다.
     exec "$REPO_ROOT/gates/tools/backup-cron-streak-selftest.sh"
+    ;;
+  ops-observability)
+    # I4 — W3C trace 배선·구조화 로그·알람 정책·데이터 레지던시 정본 대조.
+    exec "$REPO_ROOT/gates/tools/ops-observability.sh"
+    ;;
+  ops-observability-selftest)
+    # I4 게이트와 알람 상태기가 drift·손상·미선언을 fail-closed로 거부하는지 증명한다.
+    exec "$REPO_ROOT/gates/tools/ops-observability-selftest.sh"
     ;;
   e2e-format-coverage-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.

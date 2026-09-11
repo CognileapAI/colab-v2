@@ -159,6 +159,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 
 ## 5-1. state 를 잃었을 때 — 복구 절차 (WU-IS4)
 
+2026-09-11부터 수동 명령의 집행기는 `rehearse-state-recovery.sh`다. 새 Terraform 1.9.8 컨테이너와 빈 0700 scratch에 선언 네 파일만 복사하고, 기존 state·`.terraform`·호스트 terraform은 재사용하지 않는다. import 직후 plan JSON은 `validate-recovery-plan.py`가 값 출력 없이 no-op 또는 sensitivity metadata-only인지 판정한다. 그 뒤 scratch state에만 `apply -refresh-only`를 수행하고 최종 plan의 종료 0(`No changes`)을 요구한다. **Cloudflare resource apply는 기본 0회**이며 scratch는 종료 시 삭제된다.
+
+실행: `bash infra/staging/tunnel/rehearse-state-recovery.sh`. 자격증명 파일이 없으면 준비 실패 78이고 selftest green으로 대체하지 않는다. 이 runner의 `apply -refresh-only`는 원격 ingress를 바꾸는 `terraform apply`와 다르며 로컬 scratch state만 현재 읽기 결과로 갱신한다. 실측상 provider sensitivity 메타는 refresh-only로 정착하지 않는다. 최종 plan도 값 동일 metadata-only 1건이면 runner는 78로 중단한다. literal `No changes`를 위해 그 plan을 apply하는 것은 원격 호출이므로 별도 승인 뒤에만 수행한다.
+
 `terraform.tfstate` 는 이 호스트 로컬에만 있고 레포엔 없다(§2 "알려진 한계"). 호스트가
 사라졌을 때 레포 클론 하나로 여기까지 돌아오는 절차:
 
