@@ -94,10 +94,21 @@ expect_case red       "ⓗ 단위 자리 부재"                       fixture "
 expect_case red       "ⓘ 병렬도 0은 입력 red"                  fixture "not e2e" "$(mk_tree pass)" yes 0
 expect_case red       "ⓘ 병렬도 문자는 입력 red"               fixture "not e2e" "$(mk_tree pass)" yes fast
 
+d_inner_serial="$(mk_tree pass)"
+OUT_INNER_SERIAL="$(env COLAB_SERVICE_TESTS_DIR="$d_inner_serial" COLAB_SERVICE_TESTS_PY="$PY" \
+  COLAB_GATE_INNER_JOBS=1 "$GATE" fixture "not e2e" 2>&1)"; EC_INNER_SERIAL=$?
+if [ "$EC_INNER_SERIAL" -ne 0 ] || ! grep -q '내부 worker 1 · serial' <<< "$OUT_INNER_SERIAL"; then
+  echo "::error::service-tests-selftest red — 공통 안쪽 병렬도 1이 service-tests 직렬 실행으로 이어지지 않았다."
+  printf '%s\n' "$OUT_INNER_SERIAL" | tail -30 | sed 's/^/     /'
+  rc=1
+else
+  echo "  ✓ ⓙ 공통 안쪽 병렬도 1 → service-tests 직렬 실행"
+fi
+
 # ⓙ jobs=4가 실제 xdist worker를 썼다는 표식과 기존 계수를 함께 낸다.
 d_parallel="$(mk_tree pass)"
 OUT_PARALLEL="$(env COLAB_SERVICE_TESTS_DIR="$d_parallel" COLAB_SERVICE_TESTS_PY="$PY" \
-  COLAB_SERVICE_TEST_JOBS=4 "$GATE" fixture "not e2e" 2>&1)"; EC_PARALLEL=$?
+  COLAB_GATE_INNER_JOBS=1 COLAB_SERVICE_TEST_JOBS=4 "$GATE" fixture "not e2e" 2>&1)"; EC_PARALLEL=$?
 if [ "$EC_PARALLEL" -ne 0 ] || ! grep -q '내부 worker 4' <<< "$OUT_PARALLEL" \
    || ! grep -q '수집 1 · 실행 1 · skipped 0' <<< "$OUT_PARALLEL"; then
   echo "::error::service-tests-selftest red — jobs=4가 실제 병렬 표식과 동일 계수를 내지 않았다."

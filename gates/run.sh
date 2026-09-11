@@ -602,6 +602,17 @@ case "$GATE" in
     [ "$jobs_n" -ge 1 ] 2>/dev/null || jobs_n=1
     # 안쪽 selftest 풀의 몫을 나눠 준다 — 바깥 병렬과 곱해져 코어를 넘기지 않게.
     inner=$(( ncpu / jobs_n )); [ "$inner" -ge 1 ] || inner=1
+    (( inner <= 32 )) || inner=32
+    solo_inner="$ncpu"; (( solo_inner <= 32 )) || solo_inner=32
+    if [ -n "${COLAB_GATE_INNER_JOBS:-}" ]; then
+      if ! [[ "$COLAB_GATE_INNER_JOBS" =~ ^[0-9]+$ ]] \
+         || (( COLAB_GATE_INNER_JOBS < 1 || COLAB_GATE_INNER_JOBS > 32 )); then
+        echo "::error::all red — COLAB_GATE_INNER_JOBS 는 1~32 정수다: ${COLAB_GATE_INNER_JOBS@Q}"
+        exit 1
+      fi
+      inner="$COLAB_GATE_INNER_JOBS"
+      solo_inner="$inner"
+    fi
     outdir="${COLAB_GATE_OUTDIR:-$(mktemp -d -p "${TMPDIR:-/tmp}" gates-all-XXXXXX)}"
     mkdir -p "$outdir"
     all_started="$(summary_now)"
@@ -639,6 +650,7 @@ case "$GATE" in
 
     echo "── 실행 계획 (병렬도 -j $jobs_n) ──────────────────────────────────────"
     echo "  선언 정본 = ${manifest#$REPO_ROOT/}"
+    echo "  안쪽 worker = $inner${COLAB_GATE_INNER_JOBS:+ (COLAB_GATE_INNER_JOBS 명시)}"
     echo "  단독 ${#solo_gates[@]}건 · 병렬 ${#pool_gates[@]}건 · 미선언 ${#undeclared_gates[@]}건"
     for g in "${solo_gates[@]}"; do
       if [ -n "${GATE_MODE[$g]:-}" ]; then echo "  단독  $g  (선언: serial)"
@@ -652,14 +664,14 @@ case "$GATE" in
     run_one() { # $1=게이트 $2=안쪽 병렬도
       local g="$1" ij="$2" st
       st="$(date +%s.%N)"
-      if COLAB_GATE_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
+      if COLAB_GATE_JOBS="$ij" COLAB_GATE_INNER_JOBS="$ij" COLAB_GATE_SUMMARY_CHILD=1 "$REPO_ROOT/gates/run.sh" "$g" >"$outdir/$g.out" 2>&1
       then echo 0 > "$outdir/$g.rc"; else echo $? > "$outdir/$g.rc"; fi
       printf '%s\t%s\t%s\n' "$g" "$st" "$(date +%s.%N)" > "$outdir/$g.span"
     }
 
     # ① 단독 게이트 — 하나씩. **이 구간에는 다른 게이트가 하나도 돌지 않는다.**
     #    바깥이 비어 있으므로 안쪽 풀에는 코어를 그대로 준다 (곱해질 것이 없다).
-    for g in ${solo_gates[@]+"${solo_gates[@]}"}; do run_one "$g" "$ncpu"; done
+    for g in ${solo_gates[@]+"${solo_gates[@]}"}; do run_one "$g" "$solo_inner"; done
 
     # ② 병렬 게이트 — 풀에서 동시에.
     for g in ${pool_gates[@]+"${pool_gates[@]}"}; do

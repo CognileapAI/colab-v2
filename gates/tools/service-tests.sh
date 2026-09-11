@@ -66,7 +66,7 @@ PY="${COLAB_SERVICE_TESTS_PY:-$SVC/.venv/bin/python}"
 [ -x "$PY" ] || ready_red "$SERVICE 파이썬 실행 파일(${PY#"$REPO_ROOT"/})" "대기 없음" "0초" \
   "venv 가 이 체크아웃에 없다. services/$SERVICE 에서 'python3 -m venv .venv && .venv/bin/pip install -r requirements.txt [-r requirements-dev.txt] && .venv/bin/pip install -e .' 를 돌린 뒤 재실행한다."
 
-JOBS="${COLAB_SERVICE_TEST_JOBS:-4}"
+JOBS="${COLAB_SERVICE_TEST_JOBS:-${COLAB_GATE_INNER_JOBS:-4}}"
 [[ "$JOBS" =~ ^[0-9]+$ ]] || red "COLAB_SERVICE_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
 (( JOBS >= 1 && JOBS <= 32 )) || red "COLAB_SERVICE_TEST_JOBS 는 1~32 범위다: $JOBS"
 if (( JOBS > 1 )) && ! "$PY" -c 'import xdist' >/dev/null 2>&1; then

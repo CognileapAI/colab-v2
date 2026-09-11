@@ -1,4 +1,5 @@
 import copy
+import errno
 import importlib.util
 import io
 import sys
@@ -167,6 +168,46 @@ class LifecycleRedTests(unittest.TestCase):
         # Even restoring the old JSON cannot satisfy the new run identity.
         self.put(task['report'], json.dumps(report))
         self.assert_routes('lane-worker', self.marker(task, 'complete'), 2)
+
+    def test_gate_start_archives_report_across_filesystems(self):
+        task, report = self.lane()
+        report_path = self.root/task['report']
+        original = report_path.read_bytes()
+        real_replace = os.replace
+        calls = []
+
+        def cross_device_once(source, destination):
+            calls.append((Path(source), Path(destination)))
+            if len(calls) == 1:
+                raise OSError(errno.EXDEV, 'cross-device link')
+            return real_replace(source, destination)
+
+        with patch.object(contract.os, 'replace', side_effect=cross_device_once):
+            contract.gate_start(self.root, task['task_id'])
+        archive = contract.task_path(self.root, task['task_id']).parent/'history'/task['task_id']/(task['run_id']+'.json')
+        self.assertEqual(archive.read_bytes(), original)
+        self.assertFalse(report_path.exists())
+        self.assertGreaterEqual(len(calls), 2)
+
+    def test_cross_filesystem_archive_copy_failure_preserves_source(self):
+        source = self.put('dev-package/reports/current/lane/gate-summary.json', 'current evidence')
+        destination = self.root/'private/history/evidence.json'
+        with patch.object(contract.os, 'replace', side_effect=OSError(errno.EXDEV, 'cross-device link')), \
+             patch.object(contract.shutil, 'copy2', side_effect=OSError('copy failed')):
+            with self.assertRaisesRegex(OSError, 'copy failed'):
+                contract.archive_report(source, destination)
+        self.assertEqual(source.read_text(), 'current evidence')
+        self.assertFalse(destination.exists())
+        self.assertEqual(list(destination.parent.glob('.evidence.json.*.tmp')), [])
+
+    def test_archive_propagates_non_cross_filesystem_replace_error(self):
+        source = self.put('dev-package/reports/current/lane/gate-summary.json', 'current evidence')
+        destination = self.root/'private/history/evidence.json'
+        with patch.object(contract.os, 'replace', side_effect=OSError(errno.EACCES, 'denied')):
+            with self.assertRaisesRegex(OSError, 'denied'):
+                contract.archive_report(source, destination)
+        self.assertTrue(source.exists())
+        self.assertFalse(destination.exists())
 
     def test_raw_guard_malformed_input_blocks_but_irrelevant_tool_is_allowed(self):
         for name in ('git-guard.sh', 'migration-guard.sh', 'decision-number-guard.sh', 'test-file-guard.sh'):

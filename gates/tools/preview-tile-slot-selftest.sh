@@ -31,6 +31,7 @@ DB="previewtileslot"
 SCHEMA_ONLY_DB="previewtileslot_schemaonly"
 BROLE="colab_app"      # 경계 롤 = FORCE RLS 에 걸리는 롤. app-role.sql 이 그 성질을 보증한다
 FAILURES=()
+INNER_JOBS="${COLAB_GATE_INNER_JOBS:-5}"
 # 판정 갈래(green·red·ready·미선언)의 정본 = `_expect.sh` 하나.
 # 종전에는 이 파일의 expect() 가 종료코드 78(준비 실패)을 그냥 red 로 접어
 # **「기대한 red」로 셌다** — 그 케이스는 판정된 적이 없는데 출력은 OK 라고 말했다
@@ -39,6 +40,9 @@ FAILURES=()
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 red() { echo "::error::preview-tile-slot-selftest red — $*"; exit 1; }
+if ! [[ "$INNER_JOBS" =~ ^[0-9]+$ ]] || (( INNER_JOBS < 1 || INNER_JOBS > 32 )); then
+  red "COLAB_GATE_INNER_JOBS 는 1~32 정수다: ${INNER_JOBS@Q}"
+fi
 
 for f in "$GATE" "$READINESS" "$SCHEMA" "$SEED" "$APPROLE"; do
   [ -f "$f" ] || red "판정 재료가 없다: ${f#"$REPO_ROOT"/}. 대상 0건은 통과가 아니다."
@@ -152,12 +156,21 @@ B="COLAB_PREVIEW_TILE_EXEMPT=$EXEMPT_NONE"
 printf '[exempt]\nreason = "항목 자체가 없다"\n' > "$TMP/exempt-empty.toml"
 capture_case() { # $1=id, $2..=환경변수
   local id="$1"; shift
+  if (( INNER_JOBS == 1 )); then
+    run_gate "$@" >"$TMP/$id.out" 2>&1
+    printf '%s' "$?" >"$TMP/$id.rc"
+    CAPTURE_PID=0
+    return
+  fi
+  while (( INNER_JOBS > 1 )) && [ "$(jobs -rp | wc -l)" -ge "$INNER_JOBS" ]; do
+    wait -n 2>/dev/null || true
+  done
   ( run_gate "$@" >"$TMP/$id.out" 2>&1; printf '%s' "$?" >"$TMP/$id.rc" ) &
   CAPTURE_PID=$!
 }
 finish_case() { # $1=id $2=기대 $3=라벨
   local id="$1" want="$2" label="$3" out rc got
-  wait "${CAPTURE_PIDS[$id]}"
+  if [ "${CAPTURE_PIDS[$id]}" -ne 0 ]; then wait "${CAPTURE_PIDS[$id]}"; fi
   out="$(<"$TMP/$id.out")"; rc="$(<"$TMP/$id.rc")"; LAST_OUT="$out"
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   got="green"; [ "$rc" -eq 0 ] || got="red"
@@ -203,7 +216,11 @@ finish_case c 미선언 "ⓒ 자리 경로 미선언"
 
 # ⓓ 자리 경로가 없는 디렉터리
 finish_case d 미선언 "ⓓ 없는 디렉터리"
-echo "[selftest] 입력 경계 5개 내부 병렬 실행 → OK"
+if (( INNER_JOBS == 1 )); then
+  echo "[selftest] 입력 경계 5개 직렬 실행 → OK"
+else
+  echo "[selftest] 입력 경계 5개 worker $INNER_JOBS 이내 병렬 실행 → OK"
+fi
 
 # ⓘ 쓸 수 있는 타일 1건 → green
 expect green "ⓘ 쓸 수 있는 타일 1건" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
@@ -353,5 +370,7 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict preview-tile-slot-selftest
-echo "preview-tile-slot-selftest green — 입력 경계 5개 내부 병렬 · 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
+if (( INNER_JOBS == 1 )); then input_execution="직렬"
+else input_execution="worker $INNER_JOBS 이내 병렬"; fi
+echo "preview-tile-slot-selftest green — 입력 경계 5개 $input_execution · 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
 exit 0

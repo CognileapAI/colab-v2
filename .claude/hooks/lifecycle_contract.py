@@ -7,14 +7,17 @@ from __future__ import annotations
 import argparse
 import collections
 from concurrent.futures import ThreadPoolExecutor
+import errno
 import stat
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 
 WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/')
@@ -84,6 +87,32 @@ def load_task(root, task_id):
     if task.get('schema') != 'colab-task/1' or task.get('task_id') != task_id or task.get('checkout') != str(root):
         raise ValueError('task identity or assigned checkout differs')
     return task
+
+
+def archive_report(source, destination):
+    """Move evidence atomically, retaining the source until an EXDEV copy is durable."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.replace(source, destination)
+        return
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+                dir=destination.parent, prefix='.' + destination.name + '.', suffix='.tmp',
+                delete=False) as handle:
+            temporary = Path(handle.name)
+        shutil.copy2(source, temporary)
+        with temporary.open('rb') as handle:
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+        temporary = None
+        source.unlink()
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None):
@@ -220,8 +249,7 @@ def gate_start(root, task_id):
     previous = task.get('run_id') or 'unbound'
     if report.exists():
         archive = path.parent / 'history' / task_id / (previous + '.json')
-        archive.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(report, archive)
+        archive_report(report, archive)
     task['run_id'] = uuid.uuid4().hex
     path.write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding='utf-8')
     return gate_evidence(root, task_id)

@@ -153,10 +153,19 @@ else
   echo "  ✓ ⓜ 병렬도 0은 입력 red"
 fi
 
+RUNNER_OUT="$(COLAB_REFERENCE_DATA="$TMP" COLAB_RENDER_LATENCY_PY="$TMP/missing-python" \
+  COLAB_GATE_INNER_JOBS=0 "$RUNNER" 2>&1)"
+RUNNER_RC=$?
+if [ "$RUNNER_RC" -ne 1 ] || ! grep -q '1~32 정수' <<< "$RUNNER_OUT"; then
+  red "공통 안쪽 병렬도 0이 입력 red가 아니다"
+else
+  echo "  ✓ ⓝ 공통 안쪽 병렬도 0은 입력 red"
+fi
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::render-latency-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict render-latency-selftest
-echo "render-latency-selftest green — 검사 13건 전건 기대대로 (판정부 red 11 · green 1 · 병렬도 입력 red 1)"
+echo "render-latency-selftest green — 검사 14건 전건 기대대로 (판정부 red 11 · green 1 · 병렬도 입력 red 2)"
