@@ -60,8 +60,9 @@ def exists(db, uid):
 
 
 class FakeS3:
-    def __init__(self, *, fail=False):
+    def __init__(self, *, fail=False, heads=None):
         self.fail = fail
+        self.heads = heads or {}
         self.deleted: list[str] = []
         self.aborted: list[tuple[str, str]] = []
 
@@ -73,6 +74,9 @@ class FakeS3:
 
     def abort_multipart_upload(self, key, transfer_ref):
         self.aborted.append((key, transfer_ref))
+
+    def head_object(self, key):
+        return self.heads.get(key, (1, '"test-etag"'))
 
 
 def maintain(db, s3, *, mode="apply"):
@@ -442,7 +446,10 @@ def test_plan_is_stable_and_apply_rejects_wrong_scope_or_changed_targets(db):
     assert first.approval_plan == {
         "schema": "colab-storage-reclaim-plan/1",
         "scope": {"labId": LAB_A},
-        "uploads": [{"uploadId": uid, "keys": [key]}],
+        "uploads": [{"uploadId": uid, "objects": [
+            {"key": key, "exists": True, "sizeBytes": 1, "etag": '"test-etag"'},
+        ]}],
+        "expiredOpenTransfers": [],
         "completedTransferIds": [],
     }
 
@@ -460,7 +467,7 @@ def test_plan_is_stable_and_apply_rejects_wrong_scope_or_changed_targets(db):
             json.dumps(first.approval_plan), expected_lab_id=LAB_A,
             expected_sha256="0" * 64)
     wrong_key = json.loads(json.dumps(first.approval_plan))
-    wrong_key["uploads"][0]["keys"] = ["uploads/another-scope/file"]
+    wrong_key["uploads"][0]["objects"][0]["key"] = "uploads/another-scope/file"
     with pytest.raises(ValueError, match="upload scope"):
         module.parse_storage_reclaim_approval(
             json.dumps(wrong_key), expected_lab_id=LAB_A,
@@ -475,3 +482,88 @@ def test_plan_is_stable_and_apply_rejects_wrong_scope_or_changed_targets(db):
             db, s3=FakeS3(), mode="apply", now=NOW, lab_id=LAB_A,
             approval=approval)
     assert exists(db, uid) and exists(db, other_uid)
+
+
+def test_exact_plan_binds_expired_open_transfer_and_object_identity(db):
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    key = f"uploads/{transfer_id}/{file_id}"
+    db.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'expired',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    db.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome)
+        VALUES (:f,current_lab_id(),:u,'본체','done.nc',7,:k,'올라감')"""), {
+        "f": file_id, "u": transfer_id, "k": key,
+    })
+    first_s3 = FakeS3(heads={key: (7, '"etag-a"')})
+    observed = maintain_storage(
+        db, s3=first_s3, mode="observe", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A)
+    assert observed.approval_plan["expiredOpenTransfers"] == [{
+        "transferId": transfer_id,
+        "files": [{"key": key, "outcome": "올라감", "transferRef": None,
+                   "byteSize": 7, "exists": True, "sizeBytes": 7,
+                   "etag": '"etag-a"'}],
+    }]
+    approval = parse_storage_reclaim_approval(
+        json.dumps(observed.approval_plan), expected_lab_id=LAB_A,
+        expected_sha256=observed.plan_sha256)
+    changed_s3 = FakeS3(heads={key: (8, '"etag-b"')})
+    with pytest.raises(ValueError, match="현재 대상"):
+        maintain_storage(
+            db, s3=changed_s3, mode="apply", now=NOW,
+            include_open_transfers=True, lab_id=LAB_A, approval=approval)
+    assert changed_s3.deleted == [] and changed_s3.aborted == []
+    assert db.execute(text(
+        "SELECT EXISTS(SELECT 1 FROM d5_upload_transfer WHERE id=:id)"),
+        {"id": transfer_id}).scalar_one()
+
+
+def test_exact_open_transfer_apply_preserves_on_abort_failure_then_retries(db):
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    key = f"uploads/{transfer_id}/{file_id}"
+    db.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'expired',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    db.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome,
+         part_size,transfer_ref)
+        VALUES (:f,current_lab_id(),:u,'본체','pending.nc',9,:k,'대기',8,:ref)"""), {
+        "f": file_id, "u": transfer_id, "k": key, "ref": "multipart-ref",
+    })
+    observed = maintain_storage(
+        db, s3=FakeS3(), mode="observe", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A)
+    approval = parse_storage_reclaim_approval(
+        json.dumps(observed.approval_plan), expected_lab_id=LAB_A,
+        expected_sha256=observed.plan_sha256)
+
+    class AbortFails(FakeS3):
+        def abort_multipart_upload(self, key, transfer_ref):
+            from colab_core.kernel.s3 import S3Error
+            raise S3Error(500, "InternalError", "test")
+
+    failed = maintain_storage(
+        db, s3=AbortFails(), mode="apply", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A, approval=approval)
+    assert failed.reaped_open_transfers == 0
+    assert failed.preserved["open-transfer-s3-failed"] == 1
+    assert db.execute(text(
+        "SELECT EXISTS(SELECT 1 FROM d5_upload_transfer WHERE id=:id)"),
+        {"id": transfer_id}).scalar_one()
+
+    retry_s3 = FakeS3()
+    retried = maintain_storage(
+        db, s3=retry_s3, mode="apply", now=NOW,
+        include_open_transfers=True, lab_id=LAB_A, approval=approval)
+    assert retried.reaped_open_transfers == 1
+    assert retry_s3.aborted == [(key, "multipart-ref")]
+    assert not db.execute(text(
+        "SELECT EXISTS(SELECT 1 FROM d5_upload_transfer WHERE id=:id)"),
+        {"id": transfer_id}).scalar_one()

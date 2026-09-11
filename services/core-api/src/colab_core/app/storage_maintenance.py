@@ -39,6 +39,16 @@ def _plan_sha256(plan: dict[str, Any]) -> str:
     return hashlib.sha256(_canonical_plan(plan)).hexdigest()
 
 
+def _head_identity(s3, key: str) -> dict[str, Any]:
+    try:
+        size, etag = s3.head_object(key)
+        return {"key": key, "exists": True, "sizeBytes": size, "etag": etag}
+    except S3Error as exc:
+        if exc.status == 404 or exc.code in ("NoSuchKey", "NotFound"):
+            return {"key": key, "exists": False, "sizeBytes": None, "etag": None}
+        raise
+
+
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -57,7 +67,8 @@ def parse_storage_reclaim_approval(
     except json.JSONDecodeError as exc:
         raise ValueError("승인 계획 JSON이 올바르지 않다") from exc
     if not isinstance(plan, dict) or set(plan) != {
-            "schema", "scope", "uploads", "completedTransferIds"}:
+            "schema", "scope", "uploads", "expiredOpenTransfers",
+            "completedTransferIds"}:
         raise ValueError("승인 계획 최상위 필드가 정확하지 않다")
     if plan["schema"] != RECLAIM_PLAN_SCHEMA:
         raise ValueError("승인 계획 schema가 맞지 않다")
@@ -77,14 +88,27 @@ def parse_storage_reclaim_approval(
     previous_upload = ""
     normalized_uploads: list[dict[str, Any]] = []
     for target in uploads:
-        if not isinstance(target, dict) or set(target) != {"uploadId", "keys"}:
+        if not isinstance(target, dict) or set(target) != {"uploadId", "objects"}:
             raise ValueError("승인 계획 upload 대상 필드가 정확하지 않다")
-        upload_id, keys = target["uploadId"], target["keys"]
+        upload_id, objects = target["uploadId"], target["objects"]
         if (not isinstance(upload_id, str) or not Ulid.is_valid(upload_id)
                 or upload_id in seen_uploads or upload_id <= previous_upload):
             raise ValueError("승인 계획 uploadId가 중복·비정렬·비정규다")
-        if (not isinstance(keys, list) or not keys
-                or any(not isinstance(key, str) or not key for key in keys)
+        if (not isinstance(objects, list) or not objects
+                or any(not isinstance(obj, dict)
+                       or set(obj) != {"key", "exists", "sizeBytes", "etag"}
+                       or not isinstance(obj["key"], str)
+                       for obj in objects)):
+            raise ValueError("승인 계획 object 필드가 정확하지 않다")
+        for obj in objects:
+            if obj["exists"] is True:
+                if (not isinstance(obj["sizeBytes"], int) or obj["sizeBytes"] < 0
+                        or not isinstance(obj["etag"], str) or not obj["etag"]):
+                    raise ValueError("존재하는 객체의 HEAD 증거가 없다")
+            elif obj["exists"] is not False or obj["sizeBytes"] is not None or obj["etag"] is not None:
+                raise ValueError("없는 객체의 HEAD 증거가 정확하지 않다")
+        keys = [obj["key"] for obj in objects]
+        if (any(not key for key in keys)
                 or keys != sorted(keys) or len(keys) != len(set(keys))
                 or seen_keys.intersection(keys)):
             raise ValueError("승인 계획 key가 비었거나 중복·비정렬이다")
@@ -93,7 +117,51 @@ def parse_storage_reclaim_approval(
         seen_uploads.add(upload_id)
         seen_keys.update(keys)
         previous_upload = upload_id
-        normalized_uploads.append({"uploadId": upload_id, "keys": keys})
+        normalized_uploads.append({"uploadId": upload_id, "objects": objects})
+
+    expired = plan["expiredOpenTransfers"]
+    if not isinstance(expired, list):
+        raise ValueError("승인 계획 expiredOpenTransfers는 목록이어야 한다")
+    normalized_expired: list[dict[str, Any]] = []
+    previous_transfer = ""
+    for target in expired:
+        if not isinstance(target, dict) or set(target) != {"transferId", "files"}:
+            raise ValueError("승인 계획 열린 전송 필드가 정확하지 않다")
+        transfer_id, files = target["transferId"], target["files"]
+        if (not isinstance(transfer_id, str) or not Ulid.is_valid(transfer_id)
+                or transfer_id <= previous_transfer or not isinstance(files, list) or not files):
+            raise ValueError("승인 계획 열린 전송 ID·파일이 중복·비정렬·비정규다")
+        previous_transfer = transfer_id
+        file_keys: list[str] = []
+        for file in files:
+            if (not isinstance(file, dict) or set(file) != {
+                    "key", "outcome", "transferRef", "byteSize", "exists",
+                    "sizeBytes", "etag"}):
+                raise ValueError("승인 계획 열린 전송 파일 필드가 정확하지 않다")
+            key = file["key"]
+            if (not isinstance(key, str) or not key.startswith(f"uploads/{transfer_id}/")
+                    or file["outcome"] not in ("대기", "올라감", "실패")
+                    or (file["transferRef"] is not None
+                        and not isinstance(file["transferRef"], str))
+                    or not isinstance(file["byteSize"], int) or file["byteSize"] < 0):
+                raise ValueError("승인 계획 열린 전송 파일 값이 정확하지 않다")
+            if file["outcome"] == "올라감":
+                if file["exists"] is True and (
+                        not isinstance(file["sizeBytes"], int) or file["sizeBytes"] < 0
+                        or not isinstance(file["etag"], str) or not file["etag"]):
+                    raise ValueError("올라간 객체의 HEAD 증거가 없다")
+                if file["exists"] is False and (
+                        file["sizeBytes"] is not None or file["etag"] is not None):
+                    raise ValueError("없는 객체의 HEAD 증거가 정확하지 않다")
+                if not isinstance(file["exists"], bool):
+                    raise ValueError("올라간 객체의 존재 판정이 없다")
+            elif (file["exists"] is not None or file["sizeBytes"] is not None
+                  or file["etag"] is not None):
+                raise ValueError("올라가지 않은 파일에 객체 HEAD 증거가 있다")
+            file_keys.append(key)
+        if file_keys != sorted(file_keys) or len(file_keys) != len(set(file_keys)):
+            raise ValueError("승인 계획 열린 전송 key가 중복·비정렬이다")
+        normalized_expired.append({"transferId": transfer_id, "files": files})
 
     completed = plan["completedTransferIds"]
     if (not isinstance(completed, list)
@@ -104,6 +172,7 @@ def parse_storage_reclaim_approval(
         "schema": RECLAIM_PLAN_SCHEMA,
         "scope": {"labId": expected_lab_id},
         "uploads": normalized_uploads,
+        "expiredOpenTransfers": normalized_expired,
         "completedTransferIds": completed,
     }
     actual_sha256 = _plan_sha256(normalized)
@@ -227,8 +296,13 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
 
     ledger = d5_ingestion.UploadLedgerAdapter(session)
     transfers = d5_ingestion.UploadTransferAdapter(session)
+    expired_open: list[tuple[str, list[Any]]] = []
     if include_open_transfers:
-        report.expired_open_transfers = len(transfers.expired_open(now))
+        expired_open = [
+            (transfer_id, transfers.files(Ulid(transfer_id)))
+            for transfer_id in sorted(transfers.expired_open(now))
+        ]
+        report.expired_open_transfers = len(expired_open)
         if report.expired_open_transfers:
             report.preserved["open-transfer"] = report.expired_open_transfers
     candidates = ledger.reclaim_candidates(now, limit=limit)
@@ -239,7 +313,7 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
     except Exception:
         complete, dataset_ids, d3_file_ids, d3_keys = False, set(), set(), set()
 
-    eligible: list[tuple[dict, list[str]]] = []
+    eligible: list[tuple[dict, list[dict[str, Any]]]] = []
     for candidate in candidates:
         keys, invalid = _accepted_keys(candidate)
         if invalid is not None:
@@ -257,7 +331,10 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
                 or accepted_ids & d3_file_ids or set(keys) & d3_keys):
             report.preserve("d3-owned")
             continue
-        eligible.append((candidate, sorted(keys)))
+        objects = []
+        for key in sorted(keys):
+            objects.append(_head_identity(s3, key))
+        eligible.append((candidate, objects))
         if mode == "observe":
             report.preserve("observe")
 
@@ -269,8 +346,30 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
             "schema": RECLAIM_PLAN_SCHEMA,
             "scope": {"labId": lab_id},
             "uploads": [
-                {"uploadId": candidate["upload_id"], "keys": keys}
-                for candidate, keys in sorted(eligible, key=lambda item: item[0]["upload_id"])
+                {"uploadId": candidate["upload_id"], "objects": objects}
+                for candidate, objects in sorted(eligible, key=lambda item: item[0]["upload_id"])
+            ],
+            "expiredOpenTransfers": [
+                {
+                    "transferId": transfer_id,
+                    "files": [
+                        {
+                            "key": file.storage_key,
+                            "outcome": file.outcome,
+                            "transferRef": file.transfer_ref,
+                            "byteSize": file.byte_size,
+                            "exists": (head["exists"] if head is not None else None),
+                            "sizeBytes": (head["sizeBytes"] if head is not None else None),
+                            "etag": (head["etag"] if head is not None else None),
+                        }
+                        for file, head in [
+                            (file, _head_identity(s3, file.storage_key)
+                             if file.outcome == "올라감" else None)
+                            for file in sorted(files, key=lambda item: item.storage_key)
+                        ]
+                    ],
+                }
+                for transfer_id, files in expired_open
             ],
             "completedTransferIds": sorted(completed),
         }
@@ -281,14 +380,31 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
         assert approval is not None
         if approval.sha256 != report.plan_sha256 or approval.plan != report.approval_plan:
             raise ValueError("승인 계획과 현재 대상이 다르다 — 새 관측과 승인이 필요하다")
-        for candidate, keys in eligible:
+        for candidate, objects in eligible:
             try:
-                s3.delete_objects(keys)
+                s3.delete_objects([obj["key"] for obj in objects])
             except S3Error:
                 report.preserve("s3-delete-failed")
                 continue
             ledger.delete_reclaimed(candidate["upload_id"])
             report.reclaimed_uploads += 1
+        for transfer_id, files in expired_open:
+            try:
+                for file in files:
+                    if file.transfer_ref is not None and file.outcome != "올라감":
+                        try:
+                            s3.abort_multipart_upload(file.storage_key, file.transfer_ref)
+                        except S3Error as exc:
+                            if exc.code != "NoSuchUpload":
+                                raise
+                uploaded = [file.storage_key for file in files if file.outcome == "올라감"]
+                if uploaded:
+                    s3.delete_objects(uploaded)
+            except S3Error:
+                report.preserve("open-transfer-s3-failed")
+                continue
+            transfers.delete(transfer_id)
+            report.reaped_open_transfers += 1
         for transfer_id in completed:
             transfers.delete(transfer_id)
         report.pruned_completed_transfers = len(completed)

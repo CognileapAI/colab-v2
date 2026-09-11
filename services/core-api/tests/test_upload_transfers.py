@@ -349,6 +349,21 @@ def test_observe_housekeeping_preserves_expired_transfer_when_request_is_400(
     assert fake.deleted == []
 
 
+def test_request_housekeeping_stays_observe_when_global_apply_is_configured(p2_client) -> None:
+    """HTTP 요청은 exact 승인 파일을 받을 자리가 아니므로 apply 스위치를 소비하지 않는다."""
+    fake = FakeS3()
+    client = s3_client(p2_client, fake)
+    settings = client.app.state.settings
+    client.app.state.settings = Settings(**{
+        **settings.__dict__, "storage_reclaim_mode": "apply",
+    })
+
+    response = _initiate(client, [SMALL])
+
+    assert response.status_code == 201
+    assert fake.deleted == [] and fake.aborted == []
+
+
 def test_permission_gate_blocks_initiate(p2_client) -> None:
     from conftest import TOKEN_PROF  # 업로드·편집 스위치가 꺼진 역할이 아닐 수 있어 확인용
     client = s3_client(p2_client, FakeS3())

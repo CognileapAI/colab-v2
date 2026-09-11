@@ -106,10 +106,11 @@ def _maintain(request: Request, subject: Subject, s3: S3Client) -> None:
 
     요청 본문이 뒤에서 400을 내도 S3 삭제와 원장 삭제가 함께 commit돼 반쪽 정리가 남지 않는다.
     """
-    settings = request.app.state.settings
     report = run_storage_maintenance(
         request.app.state.session_factory, subject, s3=s3,
-        mode=getattr(settings, "storage_reclaim_mode", "observe"))
+        # 요청에는 검토된 exact-target 계획과 SHA를 전달할 표면이 없다. 전역 apply 설정이
+        # 켜져도 사용자 요청은 관측만 하고, 삭제는 별도 CLI에서만 실행한다.
+        mode="observe")
     print(
         "storage-maintenance "
         f"mode={report.mode} candidates={report.candidates} "
