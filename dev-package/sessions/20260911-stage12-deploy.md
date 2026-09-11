@@ -66,3 +66,16 @@
 - readonly advisor: 전체 selftest 성공을 조건으로 feature 커밋/push 승인. main/배포 승인은 제외; SSH·백업·최종 go/no-go 경계 유지.
 - 수정 후 단일 전체 selftest exit 0: 선언 25/실행 23/명시 면제 2, green 23/red 0. 면제는 별도 서비스 잡이 담당하는 stage2-markers-selftest와 service-tests-selftest이며 신규 면제는 없다. 로컬 Chromium 정상/위반 HTML의 실제 계측도 각각 green/red 기대대로 통과. 보고서 `reports/stage12-deploy-preflight/ci-selftest-fix/gate-summary.json`.
 - 자가검사 로그의 artifact-ownership SQL 주석 heredoc에서 식별자 2개가 셸 명령 치환되어 command-not-found 경고가 남았다. 주석 외 SQL과 해당 19케이스 판정은 성공했으며, 이 실행을 무경고로 보고하지 않는다.
+- 보완 커밋 `ab9491c7040bb919594e818393b5180e17cf0d3e` feature push 완료, 로컬/원격 SHA 일치. 후속 CI https://github.com/CognileapAI/colab-v2/actions/runs/34550271176 진행 중(성공 미확정). 커밋 뒤 대장 180건 불일치 0 재확인. ARM64 이미지 기준은 여전히 a4c257380d73이며 이번 변경은 CI/자가검사/운영 Python 실행 모드/문서다. 반입 전 최종 소스·doctor archive·이미지 기준을 다시 맞춘다.
+
+## 세션 재개 — 접근과 PR 설명
+
+- 지정 세션 `01a08b38-cbc1-7233-beba-35108150ccab` 기록과 현재 브랜치를 대조했다. 위 CI는 재조회 결과 completed/success이며 PR #13의 표시된 check 전부 pass다. harness-eval의 명시 면제는 실제 Astra 평가 성공이 아니다.
+- 사용자의 재접속 요청 뒤 로컬 운영자 설정의 SSH 주소로 실제 접속 성공(aarch64). EC2 DescribeInstances는 여전히 UnauthorizedOperation이지만 SSH는 가능하다. 주소 재질문은 불필요했다.
+- 현재 dev는 `09e2b9b2db1a`, 서비스 4개 healthy. 같은 기존 배포의 이미지·판정기 트리·state로 단일 deploy_doctor exit 0, 항목 15/실패 0/미검사 0을 확인했다. 새 Stage 1·2 배포 검증으로 세지 않는다.
+- 디스크 여유 3.8GB, inode 사용 2%, 메모리 available 2895MB. 신규 Stage 2 처리 대상은 colab_backup 읽기 전용 조회에서 대기 업로드 0/파일 참조 0/대상 0바이트. 배포 직전에 다시 센다.
+- 소유자 읽기 전용 조회: colab_owner의 public 신규 테이블에 colab_app SELECT/INSERT/UPDATE/DELETE 기본 권한 4종 존재. 마이그레이션 직후 새 테이블 실권한 확인은 별도다.
+- 정본 backup.sh 성공: `2026-09-11T013622Z` platform 77894B/AI 5520B, S3 업로드 뒤 크기 대조 성공. 이번 실행으로 복원 시험까지 했다고 주장하지 않는다.
+- 이전 배포의 compose/up.sh/dev.env/CURRENT_SHA/MAIN_SHA를 서버의 비공개 rollback 디렉터리에 보존했고, 이전 이미지 5개 불변 태그·arm64 존재를 확인했다. 새 0024를 모르는 옛 migrator로 up.sh를 실행하는 롤백은 피해야 하므로 앱만 되돌리는 절차와 호환성을 최종 검토한다.
+- 사용자 추가 요청: PR #13에 이번 신규 개발 기능 목록을 쉬운 HTML로 포함한다. `docs/reviews/stage12-pr13.html`에서 기존 기능과 신규 구현, 로컬 검증과 dev 완료를 구분한다. HTML 추가 후 최종 소스·이미지·판정기 기준을 고정한다.
+- HTML 검증: agent-browser로 Stage 1 2묶음/Stage 2 6묶음 표시, 모바일 키보드 Enter로 모두 보기 8묶음 복원, 390·1440px 가로 넘침 0, 외부 리소스 요청 0. 모바일에서 포인터 click이 상태를 바꾸지 않은 실행은 통과로 세지 않았고 키보드 경로를 확인했다. HTML·브라우저 캡처 PNG를 PR에 함께 연결한다. 제품 E2E 증거와 구분한다.
