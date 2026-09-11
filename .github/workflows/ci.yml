@@ -528,6 +528,15 @@ jobs:
             "$(grep -iE '^PyYAML==' gates/requirements.txt)"
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
+      # 백업 probe 자가검사는 실제 deploy_doctor를 import한다. 서비스 잡의 venv는
+      # 이 잡과 공유되지 않으므로 동일한 핀으로 여기에서도 준비한다.
+      - name: 백업 probe 의존 설치 및 실제 import 확인
+        run: |
+          set -euo pipefail
+          python -m venv services/core-api/.venv
+          services/core-api/.venv/bin/python -m pip install -q --disable-pip-version-check \
+            -r services/core-api/requirements.txt -r services/core-api/requirements-dev.txt
+          services/core-api/.venv/bin/python infra/ops/probes/backup-freshness.py --self-check --repo "$PWD"
       # frontend-visual-selftest는 실제 Chromium으로 HTML 대조군을 계측한다.
       - name: 시각 자가검사 브라우저 설치 (검증된 CLI 버전 고정)
         run: |
