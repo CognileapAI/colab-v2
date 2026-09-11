@@ -605,8 +605,7 @@ case "$GATE" in
     (( inner <= 32 )) || inner=32
     solo_inner="$ncpu"; (( solo_inner <= 32 )) || solo_inner=32
     if [ -n "${COLAB_GATE_INNER_JOBS:-}" ]; then
-      if ! [[ "$COLAB_GATE_INNER_JOBS" =~ ^[0-9]+$ ]] \
-         || (( COLAB_GATE_INNER_JOBS < 1 || COLAB_GATE_INNER_JOBS > 32 )); then
+      if ! [[ "$COLAB_GATE_INNER_JOBS" =~ ^([1-9]|[12][0-9]|3[0-2])$ ]]; then
         echo "::error::all red — COLAB_GATE_INNER_JOBS 는 1~32 정수다: ${COLAB_GATE_INNER_JOBS@Q}"
         exit 1
       fi

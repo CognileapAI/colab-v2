@@ -67,8 +67,8 @@ PY="${COLAB_SERVICE_TESTS_PY:-$SVC/.venv/bin/python}"
   "venv 가 이 체크아웃에 없다. services/$SERVICE 에서 'python3 -m venv .venv && .venv/bin/pip install -r requirements.txt [-r requirements-dev.txt] && .venv/bin/pip install -e .' 를 돌린 뒤 재실행한다."
 
 JOBS="${COLAB_SERVICE_TEST_JOBS:-${COLAB_GATE_INNER_JOBS:-4}}"
-[[ "$JOBS" =~ ^[0-9]+$ ]] || red "COLAB_SERVICE_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
-(( JOBS >= 1 && JOBS <= 32 )) || red "COLAB_SERVICE_TEST_JOBS 는 1~32 범위다: $JOBS"
+[[ "$JOBS" =~ ^([1-9]|[12][0-9]|3[0-2])$ ]] \
+  || red "COLAB_SERVICE_TEST_JOBS 는 1~32 canonical 정수다: ${JOBS@Q}"
 if (( JOBS > 1 )) && ! "$PY" -c 'import xdist' >/dev/null 2>&1; then
   ready_red "pytest-xdist (내부 worker $JOBS)" "대기 없음" "0초" \
     "서비스 시험 환경에 pytest-xdist가 없다. requirements-dev.txt 또는 pipeline requirements.txt의 핀을 설치한다."

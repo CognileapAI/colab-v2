@@ -21,8 +21,8 @@ ONLY="${COLAB_DB_SELFTEST_ONLY:-all}"
 # db 절은 자기 일회용 Postgres만 사용한다. 게이트 사이 serial 선언은 그대로다.
 if [ "$ONLY" = "all" ]; then
   INNER_JOBS="${COLAB_GATE_INNER_JOBS:-2}"
-  if ! [[ "$INNER_JOBS" =~ ^[0-9]+$ ]] || (( INNER_JOBS < 1 || INNER_JOBS > 32 )); then
-    echo "::error::db-selftest red — COLAB_GATE_INNER_JOBS 는 1~32 정수다: ${INNER_JOBS@Q}"
+  if ! [[ "$INNER_JOBS" =~ ^([1-9]|[12][0-9]|3[0-2])$ ]]; then
+    echo "::error::db-selftest red — COLAB_GATE_INNER_JOBS 는 1~32 canonical 정수다: ${INNER_JOBS@Q}"
     exit 1
   fi
   WRAP_TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" db-selftest-wrap-XXXXXX)"

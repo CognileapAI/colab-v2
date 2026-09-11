@@ -247,11 +247,13 @@ def gate_start(root, task_id):
     path = task_path(root, task_id)
     report = inside(root, task['report'])
     previous = task.get('run_id') or 'unbound'
+    # Bind a fresh identity before touching the old report. If archival fails,
+    # the retained JSON still cannot be accepted as evidence for this run.
+    task['run_id'] = uuid.uuid4().hex
+    path.write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding='utf-8')
     if report.exists():
         archive = path.parent / 'history' / task_id / (previous + '.json')
         archive_report(report, archive)
-    task['run_id'] = uuid.uuid4().hex
-    path.write_text(json.dumps(task, ensure_ascii=False, indent=2), encoding='utf-8')
     return gate_evidence(root, task_id)
 
 

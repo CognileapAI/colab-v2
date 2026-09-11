@@ -24,8 +24,8 @@ JUDGE="$REPO_ROOT/gates/tools/render_latency.py"
 . "$(dirname "${BASH_SOURCE[0]}")/_pg.sh"
 
 JOBS="${COLAB_RENDER_TEST_JOBS:-${COLAB_GATE_INNER_JOBS:-4}}"
-if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || (( JOBS < 1 || JOBS > 32 )); then
-  echo "::error::render-latency red — COLAB_RENDER_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
+if ! [[ "$JOBS" =~ ^([1-9]|[12][0-9]|3[0-2])$ ]]; then
+  echo "::error::render-latency red — COLAB_RENDER_TEST_JOBS 는 1~32 canonical 정수다: ${JOBS@Q}"
   exit 1
 fi
 

@@ -40,8 +40,8 @@ INNER_JOBS="${COLAB_GATE_INNER_JOBS:-5}"
 . "$(dirname "${BASH_SOURCE[0]}")/_expect.sh"
 
 red() { echo "::error::preview-tile-slot-selftest red — $*"; exit 1; }
-if ! [[ "$INNER_JOBS" =~ ^[0-9]+$ ]] || (( INNER_JOBS < 1 || INNER_JOBS > 32 )); then
-  red "COLAB_GATE_INNER_JOBS 는 1~32 정수다: ${INNER_JOBS@Q}"
+if ! [[ "$INNER_JOBS" =~ ^([1-9]|[12][0-9]|3[0-2])$ ]]; then
+  red "COLAB_GATE_INNER_JOBS 는 1~32 canonical 정수다: ${INNER_JOBS@Q}"
 fi
 
 for f in "$GATE" "$READINESS" "$SCHEMA" "$SEED" "$APPROLE"; do

@@ -200,6 +200,20 @@ class LifecycleRedTests(unittest.TestCase):
         self.assertFalse(destination.exists())
         self.assertEqual(list(destination.parent.glob('.evidence.json.*.tmp')), [])
 
+    def test_gate_start_archive_failure_invalidates_retained_old_report(self):
+        task, report = self.lane()
+        report_path = self.root/task['report']
+        old_run_id = task['run_id']
+        with patch.object(contract.os, 'replace', side_effect=OSError(errno.EXDEV, 'cross-device link')), \
+             patch.object(contract.shutil, 'copy2', side_effect=OSError('copy failed')):
+            with self.assertRaisesRegex(OSError, 'copy failed'):
+                contract.gate_start(self.root, task['task_id'])
+        current = contract.load_task(self.root, task['task_id'])
+        self.assertNotEqual(current['run_id'], old_run_id)
+        self.assertTrue(report_path.exists())
+        with self.assertRaisesRegex(ValueError, 'stale'):
+            contract.verify_task_report(self.root, current)
+
     def test_archive_propagates_non_cross_filesystem_replace_error(self):
         source = self.put('dev-package/reports/current/lane/gate-summary.json', 'current evidence')
         destination = self.root/'private/history/evidence.json'
