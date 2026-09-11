@@ -325,8 +325,9 @@ def test_incomplete_list_and_abort_cleans_s3(p2_client) -> None:
     assert [i for i in r.json()["items"] if i["uploadId"] == upload_id] == []
 
 
-def test_housekeeping_commits_even_when_the_following_request_is_400(p2_client, sql) -> None:
-    """요청 검증 rollback이 이미 끝난 S3 정리의 원장을 되살리지 않는다."""
+def test_observe_housekeeping_preserves_expired_transfer_when_request_is_400(
+        p2_client, sql) -> None:
+    """관측 모드는 뒤 요청의 성공 여부와 무관하게 S3/원장을 바꾸지 않는다."""
     fake = FakeS3()
     client = s3_client(p2_client, fake)
     plan = _initiate(client, [SMALL, BIG]).json()
@@ -339,13 +340,13 @@ def test_housekeeping_commits_even_when_the_following_request_is_400(p2_client, 
         "SET created_at=created_at-interval '4 days', expires_at=expires_at-interval '4 days' "
         "WHERE id=:u", {"u": upload_id})
 
-    # 유지보수 뒤 본문 검증이 실패한다. 정리는 독립 트랜잭션이라 그대로 남아야 한다.
+    # 유지보수 뒤 본문 검증도 실패하지만 observe는 그 전에 어떤 삭제도 하지 않는다.
     response = _initiate(client, [])
     assert response.status_code == 400
     assert sql("SELECT count(*) AS n FROM d5_upload_transfer WHERE id=:u",
-               {"u": upload_id})[0]["n"] == 0
-    assert len(fake.aborted) == 1
-    assert _storage_key_of(client, upload_id, small) in fake.deleted
+               {"u": upload_id})[0]["n"] == 1
+    assert fake.aborted == []
+    assert fake.deleted == []
 
 
 def test_permission_gate_blocks_initiate(p2_client) -> None:

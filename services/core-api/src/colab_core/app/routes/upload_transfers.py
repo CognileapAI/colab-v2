@@ -116,7 +116,9 @@ def _maintain(request: Request, subject: Subject, s3: S3Client) -> None:
         f"reclaimed={report.reclaimed_uploads} "
         f"completedEligible={report.eligible_completed_transfers} "
         f"completedPruned={report.pruned_completed_transfers} "
+        f"openEligible={report.expired_open_transfers} "
         f"openReaped={report.reaped_open_transfers} preserved={report.preserved}",
+        f"planSha256={report.plan_sha256}",
         flush=True,
     )
 

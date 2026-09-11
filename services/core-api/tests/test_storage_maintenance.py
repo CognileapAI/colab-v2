@@ -9,7 +9,11 @@ import pytest
 from sqlalchemy import text
 
 from conftest import ACC_A_RES, LAB_A
-from colab_core.app.storage_maintenance import maintain_storage, run_storage_maintenance
+from colab_core.app.storage_maintenance import (
+    maintain_storage,
+    parse_storage_reclaim_approval,
+    run_storage_maintenance,
+)
 from colab_core.kernel.auth import Subject
 from colab_core.kernel.ids import Ulid
 from colab_core.kernel.scope import apply_scope
@@ -59,6 +63,7 @@ class FakeS3:
     def __init__(self, *, fail=False):
         self.fail = fail
         self.deleted: list[str] = []
+        self.aborted: list[tuple[str, str]] = []
 
     def delete_objects(self, keys):
         self.deleted.extend(keys)
@@ -66,9 +71,20 @@ class FakeS3:
             from colab_core.kernel.s3 import S3Error
             raise S3Error(500, "InternalError", "partial")
 
+    def abort_multipart_upload(self, key, transfer_ref):
+        self.aborted.append((key, transfer_ref))
+
 
 def maintain(db, s3, *, mode="apply"):
-    return maintain_storage(db, s3=s3, mode=mode, now=NOW)
+    if mode == "observe":
+        return maintain_storage(db, s3=s3, mode=mode, now=NOW, lab_id=LAB_A)
+    observed = maintain_storage(
+        db, s3=FakeS3(), mode="observe", now=NOW, lab_id=LAB_A)
+    approval = parse_storage_reclaim_approval(
+        json.dumps(observed.approval_plan), expected_lab_id=LAB_A,
+        expected_sha256=observed.plan_sha256)
+    return maintain_storage(
+        db, s3=s3, mode=mode, now=NOW, lab_id=LAB_A, approval=approval)
 
 
 def make_all_d3_visible(db):
@@ -261,7 +277,7 @@ def test_missing_scope_observes_no_candidate(session_factory):
     session = session_factory()
     try:
         session.begin()
-        report = maintain_storage(session, s3=FakeS3(), mode="apply", now=NOW)
+        report = maintain_storage(session, s3=FakeS3(), mode="observe", now=NOW)
         assert report.candidates == 0
         assert report.reclaimed_uploads == 0
     finally:
@@ -280,6 +296,12 @@ def test_reclaim_lock_wins_registration_race_and_registration_fails_closed(sessi
         setup.begin()
         apply_scope(setup, subject_b)
         uid, _, key = expired_upload(setup)
+        observed = maintain_storage(
+            setup, s3=FakeS3(), mode="observe", now=NOW,
+            lab_id=str(subject_b.lab_id))
+        approval = parse_storage_reclaim_approval(
+            json.dumps(observed.approval_plan), expected_lab_id=str(subject_b.lab_id),
+            expected_sha256=observed.plan_sha256)
         setup.commit()
     finally:
         setup.close()
@@ -301,8 +323,9 @@ def test_reclaim_lock_wins_registration_race_and_registration_fails_closed(sessi
 
     def reclaim():
         try:
-            reclaim_result["report"] = run_storage_maintenance(
-                session_factory, subject_b, s3=s3, mode="apply", now=NOW)
+                reclaim_result["report"] = run_storage_maintenance(
+                    session_factory, subject_b, s3=s3, mode="apply", now=NOW,
+                    approval=approval)
         except BaseException as exc:  # 스레드 예외를 본 시험으로 가져온다.
             reclaim_result["error"] = exc
 
@@ -364,3 +387,91 @@ def test_completed_transfer_metadata_is_pruned_only_after_seven_days_in_apply(db
     assert applied.pruned_completed_transfers == 2
     remaining = set(db.execute(text("SELECT id FROM d5_upload_transfer")).scalars())
     assert old not in remaining and edge not in remaining and fresh in remaining
+
+
+def test_observe_never_reaps_an_expired_open_transfer(db):
+    """Regression: observe used to abort multipart state and delete its ledger row."""
+    transfer_id, file_id = str(Ulid.generate()), str(Ulid.generate())
+    db.execute(text("""INSERT INTO d5_upload_transfer
+        (id,lab_id,uploader_account_id,source_label,created_at,expires_at)
+        VALUES (:u,current_lab_id(),current_account_id(),'paused',:born,:expires)"""), {
+        "u": transfer_id, "born": NOW-dt.timedelta(days=4),
+        "expires": NOW-dt.timedelta(days=1),
+    })
+    db.execute(text("""INSERT INTO d5_upload_transfer_file
+        (id,lab_id,transfer_id,kind,file_name,byte_size,storage_key,outcome,
+         part_size,transfer_ref)
+        VALUES (:f,current_lab_id(),:u,'본체','paused.nc',99,:k,'대기',8,:ref)"""), {
+        "f": file_id, "u": transfer_id,
+        "k": f"uploads/{transfer_id}/{file_id}", "ref": "multipart-ref",
+    })
+    s3 = FakeS3()
+
+    report = maintain_storage(
+        db, s3=s3, mode="observe", now=NOW, include_open_transfers=True)
+
+    assert report.reaped_open_transfers == 0
+    assert report.expired_open_transfers == 1
+    assert s3.aborted == [] and s3.deleted == []
+    assert db.execute(text(
+        "SELECT EXISTS(SELECT 1 FROM d5_upload_transfer WHERE id=:id)"),
+        {"id": transfer_id}).scalar_one()
+
+
+def test_apply_requires_the_exact_scoped_plan_before_any_delete(db):
+    """Regression: setting mode=apply alone used to authorize every current candidate."""
+    uid, _, _ = expired_upload(db)
+    make_all_d3_visible(db)
+    s3 = FakeS3()
+
+    with pytest.raises(ValueError, match="승인 계획"):
+        maintain_storage(db, s3=s3, mode="apply", now=NOW, lab_id=LAB_A)
+
+    assert s3.deleted == [] and exists(db, uid)
+
+
+def test_plan_is_stable_and_apply_rejects_wrong_scope_or_changed_targets(db):
+    """The approved semantic list, not a timestamp or mode flag, binds deletion."""
+    module = __import__("colab_core.app.storage_maintenance", fromlist=["x"])
+    uid, _, key = expired_upload(db)
+    make_all_d3_visible(db)
+    first = maintain_storage(db, s3=FakeS3(), mode="observe", now=NOW, lab_id=LAB_A)
+    second = maintain_storage(
+        db, s3=FakeS3(), mode="observe", now=NOW+dt.timedelta(minutes=1), lab_id=LAB_A)
+    assert first.plan_sha256 == second.plan_sha256
+    assert first.approval_plan == {
+        "schema": "colab-storage-reclaim-plan/1",
+        "scope": {"labId": LAB_A},
+        "uploads": [{"uploadId": uid, "keys": [key]}],
+        "completedTransferIds": [],
+    }
+
+    wrong_scope = json.dumps({**first.approval_plan, "scope": {"labId": "0000000000000000000000000B"}})
+    with pytest.raises(ValueError, match="연구실"):
+        module.parse_storage_reclaim_approval(
+            wrong_scope, expected_lab_id=LAB_A, expected_sha256=first.plan_sha256)
+    duplicate = json.dumps(first.approval_plan)[:-1] + ',"uploads":[]}'
+    with pytest.raises(ValueError, match="중복"):
+        module.parse_storage_reclaim_approval(
+            duplicate, expected_lab_id=LAB_A, expected_sha256=first.plan_sha256)
+
+    with pytest.raises(ValueError, match="SHA-256"):
+        module.parse_storage_reclaim_approval(
+            json.dumps(first.approval_plan), expected_lab_id=LAB_A,
+            expected_sha256="0" * 64)
+    wrong_key = json.loads(json.dumps(first.approval_plan))
+    wrong_key["uploads"][0]["keys"] = ["uploads/another-scope/file"]
+    with pytest.raises(ValueError, match="upload scope"):
+        module.parse_storage_reclaim_approval(
+            json.dumps(wrong_key), expected_lab_id=LAB_A,
+            expected_sha256=first.plan_sha256)
+
+    approval = module.parse_storage_reclaim_approval(
+        json.dumps(first.approval_plan), expected_lab_id=LAB_A,
+        expected_sha256=first.plan_sha256)
+    other_uid, _, _ = expired_upload(db)
+    with pytest.raises(ValueError, match="현재 대상"):
+        maintain_storage(
+            db, s3=FakeS3(), mode="apply", now=NOW, lab_id=LAB_A,
+            approval=approval)
+    assert exists(db, uid) and exists(db, other_uid)

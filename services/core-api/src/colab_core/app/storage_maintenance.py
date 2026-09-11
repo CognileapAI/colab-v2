@@ -4,6 +4,9 @@ from __future__ import annotations
 import collections
 import dataclasses
 import datetime as dt
+import hashlib
+import json
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
@@ -17,6 +20,98 @@ from ..kernel.scope import apply_scope
 
 RECLAIM_MODES = ("observe", "apply")
 COMPLETED_TRANSFER_RETENTION_DAYS = 7
+RECLAIM_PLAN_SCHEMA = "colab-storage-reclaim-plan/1"
+
+
+@dataclasses.dataclass(frozen=True)
+class StorageReclaimApproval:
+    plan: dict[str, Any]
+    sha256: str
+
+
+def _canonical_plan(plan: dict[str, Any]) -> bytes:
+    return json.dumps(
+        plan, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def _plan_sha256(plan: dict[str, Any]) -> str:
+    return hashlib.sha256(_canonical_plan(plan)).hexdigest()
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"승인 계획 JSON에 중복 필드가 있다: {key}")
+        result[key] = value
+    return result
+
+
+def parse_storage_reclaim_approval(
+        raw: str, *, expected_lab_id: str,
+        expected_sha256: str) -> StorageReclaimApproval:
+    """엄격한 exact-target 승인 계획을 읽는다. 이 함수 호출 자체는 승인이 아니다."""
+    try:
+        plan = json.loads(raw, object_pairs_hook=_unique_object)
+    except json.JSONDecodeError as exc:
+        raise ValueError("승인 계획 JSON이 올바르지 않다") from exc
+    if not isinstance(plan, dict) or set(plan) != {
+            "schema", "scope", "uploads", "completedTransferIds"}:
+        raise ValueError("승인 계획 최상위 필드가 정확하지 않다")
+    if plan["schema"] != RECLAIM_PLAN_SCHEMA:
+        raise ValueError("승인 계획 schema가 맞지 않다")
+    scope = plan["scope"]
+    if not isinstance(scope, dict) or set(scope) != {"labId"}:
+        raise ValueError("승인 계획 연구실 scope가 정확하지 않다")
+    if scope["labId"] != expected_lab_id:
+        raise ValueError("승인 계획 연구실이 현재 주체와 다르다")
+    if not Ulid.is_valid(expected_lab_id):
+        raise ValueError("승인 계획 연구실 ID가 올바르지 않다")
+
+    uploads = plan["uploads"]
+    if not isinstance(uploads, list):
+        raise ValueError("승인 계획 uploads는 목록이어야 한다")
+    seen_uploads: set[str] = set()
+    seen_keys: set[str] = set()
+    previous_upload = ""
+    normalized_uploads: list[dict[str, Any]] = []
+    for target in uploads:
+        if not isinstance(target, dict) or set(target) != {"uploadId", "keys"}:
+            raise ValueError("승인 계획 upload 대상 필드가 정확하지 않다")
+        upload_id, keys = target["uploadId"], target["keys"]
+        if (not isinstance(upload_id, str) or not Ulid.is_valid(upload_id)
+                or upload_id in seen_uploads or upload_id <= previous_upload):
+            raise ValueError("승인 계획 uploadId가 중복·비정렬·비정규다")
+        if (not isinstance(keys, list) or not keys
+                or any(not isinstance(key, str) or not key for key in keys)
+                or keys != sorted(keys) or len(keys) != len(set(keys))
+                or seen_keys.intersection(keys)):
+            raise ValueError("승인 계획 key가 비었거나 중복·비정렬이다")
+        if any(not key.startswith(f"uploads/{upload_id}/") for key in keys):
+            raise ValueError("승인 계획 key가 upload scope 밖을 가리킨다")
+        seen_uploads.add(upload_id)
+        seen_keys.update(keys)
+        previous_upload = upload_id
+        normalized_uploads.append({"uploadId": upload_id, "keys": keys})
+
+    completed = plan["completedTransferIds"]
+    if (not isinstance(completed, list)
+            or any(not isinstance(item, str) or not Ulid.is_valid(item) for item in completed)
+            or completed != sorted(completed) or len(completed) != len(set(completed))):
+        raise ValueError("승인 계획 completedTransferIds가 중복·비정렬·비정규다")
+    normalized = {
+        "schema": RECLAIM_PLAN_SCHEMA,
+        "scope": {"labId": expected_lab_id},
+        "uploads": normalized_uploads,
+        "completedTransferIds": completed,
+    }
+    actual_sha256 = _plan_sha256(normalized)
+    if (len(expected_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in expected_sha256)
+            or expected_sha256 != actual_sha256):
+        raise ValueError("승인 계획 SHA-256이 정확한 대상 목록과 다르다")
+    return StorageReclaimApproval(plan=normalized, sha256=actual_sha256)
 
 
 @dataclasses.dataclass
@@ -27,7 +122,10 @@ class StorageMaintenanceReport:
     eligible_completed_transfers: int = 0
     pruned_completed_transfers: int = 0
     reaped_open_transfers: int = 0
+    expired_open_transfers: int = 0
     preserved: dict[str, int] = dataclasses.field(default_factory=dict)
+    approval_plan: dict[str, Any] | None = None
+    plan_sha256: str | None = None
 
     def preserve(self, reason: str) -> None:
         self.preserved[reason] = self.preserved.get(reason, 0) + 1
@@ -108,32 +206,12 @@ def _d3_ownership(session: Session) -> tuple[bool, set[str], set[str], set[str]]
     )
 
 
-def _reap_expired_open_transfers(session: Session, s3, report: StorageMaintenanceReport,
-                                 *, now: dt.datetime | None) -> None:
-    ledger = d5_ingestion.UploadTransferAdapter(session)
-    for transfer_id in ledger.expired_open(now):
-        files = ledger.files(Ulid(transfer_id))
-        try:
-            for file in files:
-                if file.transfer_ref is not None and file.outcome != "올라감":
-                    try:
-                        s3.abort_multipart_upload(file.storage_key, file.transfer_ref)
-                    except S3Error as exc:
-                        if exc.code != "NoSuchUpload":
-                            raise
-            keys = [file.storage_key for file in files if file.outcome == "올라감"]
-            if keys:
-                s3.delete_objects(keys)
-        except S3Error:
-            report.preserve("open-transfer-s3-failed")
-            continue
-        ledger.delete(transfer_id)
-        report.reaped_open_transfers += 1
-
-
 def maintain_storage(session: Session, *, s3, mode: str = "observe",
                      now: dt.datetime | None = None, limit: int = 50,
-                     include_open_transfers: bool = False) -> StorageMaintenanceReport:
+                     include_open_transfers: bool = False,
+                     lab_id: str | None = None,
+                     approval: StorageReclaimApproval | None = None,
+                     ) -> StorageMaintenanceReport:
     """열린 트랜잭션 안에서 저장소 유지보수를 수행한다.
 
     호출자는 REPEATABLE READ와 연구실 scope를 먼저 세워야 한다. 테스트는 동일한 실DB
@@ -142,11 +220,17 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
     if mode not in RECLAIM_MODES:
         raise ValueError(f"모르는 저장 회수 모드다: {mode!r}")
     report = StorageMaintenanceReport(mode=mode)
-    if include_open_transfers:
-        _reap_expired_open_transfers(session, s3, report, now=now)
+    if mode == "apply" and (approval is None or lab_id is None):
+        raise ValueError("apply에는 현재 연구실의 exact-target 승인 계획이 필요하다")
+    if approval is not None and (lab_id is None or approval.plan["scope"]["labId"] != lab_id):
+        raise ValueError("승인 계획 연구실이 현재 scope와 다르다")
 
     ledger = d5_ingestion.UploadLedgerAdapter(session)
     transfers = d5_ingestion.UploadTransferAdapter(session)
+    if include_open_transfers:
+        report.expired_open_transfers = len(transfers.expired_open(now))
+        if report.expired_open_transfers:
+            report.preserved["open-transfer"] = report.expired_open_transfers
     candidates = ledger.reclaim_candidates(now, limit=limit)
     report.candidates = len(candidates)
 
@@ -155,6 +239,7 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
     except Exception:
         complete, dataset_ids, d3_file_ids, d3_keys = False, set(), set(), set()
 
+    eligible: list[tuple[dict, list[str]]] = []
     for candidate in candidates:
         keys, invalid = _accepted_keys(candidate)
         if invalid is not None:
@@ -172,21 +257,38 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
                 or accepted_ids & d3_file_ids or set(keys) & d3_keys):
             report.preserve("d3-owned")
             continue
+        eligible.append((candidate, sorted(keys)))
         if mode == "observe":
             report.preserve("observe")
-            continue
-        try:
-            s3.delete_objects(keys)
-        except S3Error:
-            report.preserve("s3-delete-failed")
-            continue
-        ledger.delete_reclaimed(candidate["upload_id"])
-        report.reclaimed_uploads += 1
 
     completed = transfers.completed_for_prune(
         now, days=COMPLETED_TRANSFER_RETENTION_DAYS, limit=limit)
     report.eligible_completed_transfers = len(completed)
+    if lab_id is not None:
+        plan = {
+            "schema": RECLAIM_PLAN_SCHEMA,
+            "scope": {"labId": lab_id},
+            "uploads": [
+                {"uploadId": candidate["upload_id"], "keys": keys}
+                for candidate, keys in sorted(eligible, key=lambda item: item[0]["upload_id"])
+            ],
+            "completedTransferIds": sorted(completed),
+        }
+        report.approval_plan = plan
+        report.plan_sha256 = _plan_sha256(plan)
+
     if mode == "apply":
+        assert approval is not None
+        if approval.sha256 != report.plan_sha256 or approval.plan != report.approval_plan:
+            raise ValueError("승인 계획과 현재 대상이 다르다 — 새 관측과 승인이 필요하다")
+        for candidate, keys in eligible:
+            try:
+                s3.delete_objects(keys)
+            except S3Error:
+                report.preserve("s3-delete-failed")
+                continue
+            ledger.delete_reclaimed(candidate["upload_id"])
+            report.reclaimed_uploads += 1
         for transfer_id in completed:
             transfers.delete(transfer_id)
         report.pruned_completed_transfers = len(completed)
@@ -194,7 +296,8 @@ def maintain_storage(session: Session, *, s3, mode: str = "observe",
 
 
 def run_storage_maintenance(factory: sessionmaker[Session], subject: Subject, *, s3,
-                            mode: str = "observe", now: dt.datetime | None = None
+                            mode: str = "observe", now: dt.datetime | None = None,
+                            approval: StorageReclaimApproval | None = None,
                             ) -> StorageMaintenanceReport:
     """요청과 독립된 REPEATABLE READ 트랜잭션에서 유지보수를 commit한다."""
     session = factory()
@@ -203,7 +306,8 @@ def run_storage_maintenance(factory: sessionmaker[Session], subject: Subject, *,
         session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         apply_scope(session, subject)
         report = maintain_storage(
-            session, s3=s3, mode=mode, now=now, include_open_transfers=True)
+            session, s3=s3, mode=mode, now=now, include_open_transfers=True,
+            lab_id=str(subject.lab_id), approval=approval)
         session.commit()
         return report
     except BaseException:
