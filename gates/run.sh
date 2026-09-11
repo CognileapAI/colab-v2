@@ -181,7 +181,7 @@ ALL_GATES=(
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
-  ops-observability-selftest
+  ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
   frontend-visual-selftest harness-eval-selftest
@@ -396,6 +396,10 @@ case "$GATE" in
   ops-observability-selftest)
     # I4 게이트와 알람 상태기가 drift·손상·미선언을 fail-closed로 거부하는지 증명한다.
     exec "$REPO_ROOT/gates/tools/ops-observability-selftest.sh"
+    ;;
+  is4-recovery-selftest)
+    # IS4 승인 plan의 값 불변 판정·변조 거부·배타적 1회 소비를 원격 접촉 없이 증명한다.
+    exec "$REPO_ROOT/infra/staging/tunnel/rehearse-state-recovery-selftest.sh"
     ;;
   e2e-format-coverage-selftest)
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 픽스처는 junit XML 과 선언 파일이다.

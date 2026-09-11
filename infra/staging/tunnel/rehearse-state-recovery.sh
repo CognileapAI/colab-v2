@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # IS4 맨몸 리허설 — 기존 state/plugin/terraform을 재사용하지 않고 원격 변경 0으로 복구한다.
 set -euo pipefail
+umask 077
 
 ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
 SOURCE="$ROOT/infra/staging/tunnel"
@@ -35,6 +36,10 @@ command -v docker >/dev/null 2>&1 || ready_red "docker가 없다 — 새 Terrafo
 
 if [ "$MODE" = apply ]; then
   SCRATCH="$BUNDLE"
+  mkdir "$BUNDLE/.apply-lock" 2>/dev/null \
+    || { echo "is4-recovery red — 다른 승인 apply가 실행 중이거나 lock이 남아 있다" >&2; exit 1; }
+  chmod 0700 "$BUNDLE/.apply-lock"
+  trap 'rmdir "$BUNDLE/.apply-lock" 2>/dev/null || true' EXIT INT TERM
 else
   if [ "$MODE" = prepare ]; then
     [ ! -e "$BUNDLE" ] && [ ! -L "$BUNDLE" ] || ready_red "prepare bundle 경로가 이미 존재한다"
@@ -80,7 +85,16 @@ tf() {
     -v "$SCRATCH:/work" -w /work "$RESOLVED_IMAGE" "$@"
 }
 
+staging_health_200() {
+  local code
+  code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 \
+    https://www.colab-hydro.com/healthz)" || return 1
+  [ "$code" = 200 ]
+}
+
 if [ "$MODE" = apply ]; then
+  staging_health_200 \
+    || { echo "is4-recovery red — apply 전 staging health 확인 실패, apply 0" >&2; exit 1; }
   tf init -input=false -no-color -lockfile=readonly >"$SCRATCH/preapply-init.log" 2>&1 \
     || { echo "is4-recovery red — provider lock 재검증 실패" >&2; exit 1; }
   chmod 0600 "$SCRATCH/preapply-init.log"
@@ -95,8 +109,11 @@ if [ "$MODE" = apply ]; then
   chmod 0600 "$SCRATCH"/preapply-*.json "$SCRATCH"/preapply-*.log 2>/dev/null || true
   python3 "$JUDGE" "$SCRATCH/preapply-plan.json" \
     || { echo "is4-recovery red — saved plan 재판정 실패" >&2; exit 1; }
-  install -m 0600 /dev/null "$SCRATCH/apply-attempted"
-  printf '%s\n' "$APPROVED_SHA" >"$SCRATCH/apply-attempted"
+  if ! (set -o noclobber; printf '%s\n' "$APPROVED_SHA" >"$SCRATCH/apply-attempted") 2>/dev/null; then
+    echo "is4-recovery red — 승인 plan 소비 표식이 이미 존재한다" >&2
+    exit 1
+  fi
+  chmod 0600 "$SCRATCH/apply-attempted"
   if ! tf apply -input=false -no-color final.tfplan >"$SCRATCH/apply.log" 2>&1; then
     echo "is4-recovery red — 승인 plan 적용 시도 실패(같은 plan 재사용 금지)" >&2
     exit 1
@@ -107,6 +124,8 @@ if [ "$MODE" = apply ]; then
   set -e
   chmod 0600 "$SCRATCH"/apply-attempted "$SCRATCH"/apply.log "$SCRATCH"/post-apply.log "$SCRATCH"/post-apply.tfplan 2>/dev/null || true
   [ "$POST_RC" -eq 0 ] || { echo "is4-recovery red — 적용 후 plan이 literal No changes가 아니다" >&2; exit 1; }
+  staging_health_200 \
+    || { echo "is4-recovery red — apply 후 staging health 확인 실패, 즉시 중단" >&2; exit 1; }
   echo "is4-recovery green — 승인된 exact plan 1회 소비 · 후속 detailed-exitcode 0"
   exit 0
 fi

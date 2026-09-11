@@ -165,7 +165,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -I https://www.colab-hydro.com/healthz
 
 승인 검토가 필요하면 새 레포 밖 경로를 정해 `bash infra/staging/tunnel/rehearse-state-recovery.sh --prepare <새-bundle-경로>`를 실행한다. 0700 bundle에 state·전체 plan JSON·saved plan·원문 로그를 0600으로 보존하고, 밖에는 resource 계수와 plan SHA-256만 낸다. 이 bundle에는 민감 값이 있으므로 Git, `dev-package/reports/`, 채팅 첨부에 넣지 않는다. manifest는 선언·state·plan hash, Terraform image digest와 버전을 고정한다.
 
-사용자가 그 **정확한 plan hash**를 승인한 뒤에만 `--apply-approved <bundle> --plan-sha256 <승인-hash>` 모드를 쓴다. 실행기는 적용 직전 독립 refresh-only plan으로 remote/state drift 0을 확인하고 saved plan을 다시 `show -json`으로 엄격 판정한 뒤, 새 plan으로 바꾸지 않고 `final.tfplan` 한 벌을 1회 소비한다. apply 시도 표식을 먼저 남기므로 성공 여부와 관계없이 같은 plan을 재사용하지 않는다. 이후 새 plan의 detailed exit 0이 실제 `No changes` 오라클이다. drift나 provider 실패가 있으면 새 bundle과 새 승인이 필요하다. 이 apply는 ingress 값 변경 0인 metadata 정착 호출 1회이며, 승인 전에는 절대 실행하지 않는다.
+사용자가 그 **정확한 plan hash**를 승인한 뒤에만 `--apply-approved <bundle> --plan-sha256 <승인-hash>` 모드를 쓴다. 실행기는 bundle 단위 배타 잠금을 잡아 동시 호출을 하나로 제한한다. 적용 직전 공개 staging health와 독립 refresh-only plan의 remote/state drift 0을 확인하고 saved plan을 다시 `show -json`으로 엄격 판정한 뒤, 새 plan으로 바꾸지 않고 `final.tfplan` 한 벌을 1회 소비한다. apply 시도 표식은 원자적으로 먼저 남기므로 성공 여부와 관계없이 같은 plan을 재사용하지 않는다. 이후 새 plan의 detailed exit 0과 공개 staging health가 실제 완료 오라클이다. health·drift·provider 검사가 실패하면 즉시 중단하며, drift가 있으면 새 bundle과 새 승인이 필요하다. 이 apply는 ingress 값 변경 0인 metadata 정착 호출 1회이며, 승인 전에는 절대 실행하지 않는다.
 
 rollback에 `terraform state push`를 쓰지 않는다. 보존 state는 자동 롤백 재료가 아니다. 현재 remote 값을 다시 읽어 별도의 복구 plan을 준비하고 같은 검토·hash 승인 절차를 거친다.
 

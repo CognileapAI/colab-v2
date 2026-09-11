@@ -141,15 +141,39 @@ for ((i=1; i<=$#; i++)); do
   if [ "${!i}" = -v ]; then j=$((i+1)); work="${!j%%:/work}"; fi
 done
 case " $* " in
-  *' init -input=false -no-color -lockfile=readonly '*) printf '%s\n' "$*" >"$COLAB_IS4_MOCK_INIT" ;;
-  *' show -json final.tfplan '*) cat "$COLAB_IS4_MOCK_PLAN" ;;
-  *' plan -refresh-only '*) : >"$work/approval-drift.tfplan" ;;
-  *' plan -detailed-exitcode '*) : >"$work/post-apply.tfplan" ;;
-  *' apply -input=false -no-color final.tfplan '*) printf '%s\n' "$*" >>"$COLAB_IS4_MOCK_LOG" ;;
+  *' init -input=false -no-color -lockfile=readonly '*)
+    printf '%s\n' "$*" >"$COLAB_IS4_MOCK_INIT"
+    stat -c '%a' "$work/preapply-init.log" >>"${COLAB_IS4_MOCK_MODES:-/dev/null}"
+    ;;
+  *' show -json final.tfplan '*)
+    stat -c '%a' "$work/preapply-plan.json" "$work/preapply-show.log" >>"${COLAB_IS4_MOCK_MODES:-/dev/null}"
+    cat "$COLAB_IS4_MOCK_PLAN"
+    ;;
+  *' plan -refresh-only '*)
+    stat -c '%a' "$work/approval-drift.log" >>"${COLAB_IS4_MOCK_MODES:-/dev/null}"
+    : >"$work/approval-drift.tfplan"; exit "${COLAB_IS4_MOCK_DRIFT_RC:-0}"
+    ;;
+  *' plan -detailed-exitcode '*)
+    stat -c '%a' "$work/post-apply.log" >>"${COLAB_IS4_MOCK_MODES:-/dev/null}"
+    : >"$work/post-apply.tfplan"
+    ;;
+  *' apply -input=false -no-color final.tfplan '*)
+    stat -c '%a' "$work/apply.log" >>"${COLAB_IS4_MOCK_MODES:-/dev/null}"
+    printf '%s\n' "$*" >>"$COLAB_IS4_MOCK_LOG"
+    sleep "${COLAB_IS4_MOCK_APPLY_SLEEP:-0}"
+    exit "${COLAB_IS4_MOCK_APPLY_RC:-0}"
+    ;;
   *) exit 1 ;;
 esac
 SH
 chmod 0755 "$TMP/bin/docker"
+cat >"$TMP/bin/curl" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' health >>"$COLAB_IS4_MOCK_HEALTH_LOG"
+printf '%s' "${COLAB_IS4_MOCK_HEALTH_CODE:-200}"
+exit "${COLAB_IS4_MOCK_HEALTH_RC:-0}"
+SH
+chmod 0755 "$TMP/bin/curl"
 make_bundle "$TMP/bundle-apply"
 cat >"$TMP/apply.env" <<'EOF'
 CF_API_TOKEN=test-token
@@ -161,6 +185,7 @@ APPLY_SHA="$(sha256sum "$TMP/bundle-apply/final.tfplan" | cut -d' ' -f1)"
 OUT="$(PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" \
   COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" COLAB_IS4_MOCK_LOG="$TMP/mock.log" \
   COLAB_IS4_MOCK_INIT="$TMP/mock-init.log" \
+  COLAB_IS4_MOCK_MODES="$TMP/mock-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/mock-health.log" \
   "$RUNNER" --apply-approved "$TMP/bundle-apply" --plan-sha256 "$APPLY_SHA" 2>&1)"; RC=$?
 [ "$RC" -eq 0 ] || red "ⓝ exact saved plan mock apply — $OUT"
 [ "$(wc -l <"$TMP/mock.log" 2>/dev/null || echo 0)" -eq 1 ] || red "ⓝ apply는 정확히 1회여야 한다"
@@ -169,12 +194,83 @@ grep -Fq 'apply -input=false -no-color final.tfplan' "$TMP/mock.log" \
 grep -Fq 'init -input=false -no-color -lockfile=readonly' "$TMP/mock-init.log" 2>/dev/null \
   || red "ⓝ apply 전 provider lock 검증을 하지 않았다"
 echo "  ✓ ⓝ exact saved plan 1회 소비와 후속 No changes (green)"
+[ "$(wc -l <"$TMP/mock-health.log" 2>/dev/null || echo 0)" -eq 2 ] || red "ⓝ apply 전후 health 확인은 2회여야 한다"
+[ "$(sort -u "$TMP/mock-modes.log" 2>/dev/null)" = 600 ] || red "ⓝ 로그가 생성 순간부터 0600이 아니다"
 OUT="$(PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" \
   COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" COLAB_IS4_MOCK_LOG="$TMP/mock.log" \
   COLAB_IS4_MOCK_INIT="$TMP/mock-init.log" \
+  COLAB_IS4_MOCK_MODES="$TMP/mock-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/mock-health.log" \
   "$RUNNER" --apply-approved "$TMP/bundle-apply" --plan-sha256 "$APPLY_SHA" 2>&1)"; RC=$?
 [ "$RC" -ne 0 ] || red "ⓞ 소비한 plan 재사용은 red여야 한다"
 echo "  ✓ ⓞ 소비한 plan 재사용 거부 (red)"
 
+for drift_rc in 2 1; do
+  make_bundle "$TMP/bundle-drift-$drift_rc"
+  sha="$(sha256sum "$TMP/bundle-drift-$drift_rc/final.tfplan" | cut -d' ' -f1)"
+  : >"$TMP/drift-$drift_rc.log"
+  PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" \
+    COLAB_IS4_MOCK_LOG="$TMP/drift-$drift_rc.log" COLAB_IS4_MOCK_INIT="$TMP/drift-init.log" \
+    COLAB_IS4_MOCK_MODES="$TMP/drift-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/drift-health.log" \
+    COLAB_IS4_MOCK_DRIFT_RC="$drift_rc" "$RUNNER" --apply-approved "$TMP/bundle-drift-$drift_rc" \
+    --plan-sha256 "$sha" >/dev/null 2>&1; rc=$?
+  [ "$rc" -ne 0 ] || red "ⓟ drift exit $drift_rc 는 red여야 한다"
+  [ ! -s "$TMP/drift-$drift_rc.log" ] || red "ⓟ drift exit $drift_rc 뒤 apply가 실행됐다"
+done
+echo "  ✓ ⓟ drift exit 2/1 모두 apply 0 (red)"
+
+make_bundle "$TMP/bundle-health-red"
+HEALTH_SHA="$(sha256sum "$TMP/bundle-health-red/final.tfplan" | cut -d' ' -f1)"
+: >"$TMP/health-red-apply.log"
+PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" \
+  COLAB_IS4_MOCK_LOG="$TMP/health-red-apply.log" COLAB_IS4_MOCK_INIT="$TMP/health-red-init.log" \
+  COLAB_IS4_MOCK_MODES="$TMP/health-red-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/health-red.log" \
+  COLAB_IS4_MOCK_HEALTH_RC=1 "$RUNNER" --apply-approved "$TMP/bundle-health-red" \
+  --plan-sha256 "$HEALTH_SHA" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || red "ⓟ-1 apply 전 health red는 중단해야 한다"
+[ ! -s "$TMP/health-red-apply.log" ] || red "ⓟ-1 apply 전 health red 뒤 apply가 실행됐다"
+echo "  ✓ ⓟ-1 apply 전 health red 즉시 중단 · apply 0 (red)"
+
+make_bundle "$TMP/bundle-health-503"
+HEALTH_503_SHA="$(sha256sum "$TMP/bundle-health-503/final.tfplan" | cut -d' ' -f1)"
+: >"$TMP/health-503-apply.log"
+PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" \
+  COLAB_IS4_MOCK_LOG="$TMP/health-503-apply.log" COLAB_IS4_MOCK_INIT="$TMP/health-503-init.log" \
+  COLAB_IS4_MOCK_MODES="$TMP/health-503-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/health-503.log" \
+  COLAB_IS4_MOCK_HEALTH_CODE=503 "$RUNNER" --apply-approved "$TMP/bundle-health-503" \
+  --plan-sha256 "$HEALTH_503_SHA" >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || red "ⓟ-2 apply 전 health 503은 중단해야 한다"
+[ ! -s "$TMP/health-503-apply.log" ] || red "ⓟ-2 apply 전 health 503 뒤 apply가 실행됐다"
+echo "  ✓ ⓟ-2 apply 전 health 503 즉시 중단 · apply 0 (red)"
+
+make_bundle "$TMP/bundle-failed-apply"
+FAIL_SHA="$(sha256sum "$TMP/bundle-failed-apply/final.tfplan" | cut -d' ' -f1)"
+: >"$TMP/failed-apply.log"
+for apply_rc in 1 0; do
+  PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" \
+    COLAB_IS4_MOCK_LOG="$TMP/failed-apply.log" COLAB_IS4_MOCK_INIT="$TMP/fail-init.log" \
+    COLAB_IS4_MOCK_MODES="$TMP/fail-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/fail-health.log" \
+    COLAB_IS4_MOCK_APPLY_RC="$apply_rc" "$RUNNER" --apply-approved "$TMP/bundle-failed-apply" \
+    --plan-sha256 "$FAIL_SHA" >/dev/null 2>&1; rc=$?
+  [ "$rc" -ne 0 ] || red "ⓠ 실패 apply bundle 재사용은 red여야 한다"
+done
+[ "$(wc -l <"$TMP/failed-apply.log")" -eq 1 ] || red "ⓠ 실패 apply 뒤 같은 plan이 다시 적용됐다"
+echo "  ✓ ⓠ apply 실패 뒤 plan 재사용 거부 (red)"
+
+make_bundle "$TMP/bundle-concurrent"
+CONCURRENT_SHA="$(sha256sum "$TMP/bundle-concurrent/final.tfplan" | cut -d' ' -f1)"
+: >"$TMP/concurrent.log"
+run_concurrent() {
+  PATH="$TMP/bin:$PATH" COLAB_IS4_ENV_FILE="$TMP/apply.env" COLAB_IS4_MOCK_PLAN="$TMP/sensitivity.json" \
+    COLAB_IS4_MOCK_LOG="$TMP/concurrent.log" COLAB_IS4_MOCK_INIT="$TMP/concurrent-init.log" \
+    COLAB_IS4_MOCK_MODES="$TMP/concurrent-modes.log" COLAB_IS4_MOCK_HEALTH_LOG="$TMP/concurrent-health.log" \
+    COLAB_IS4_MOCK_APPLY_SLEEP=0.2 "$RUNNER" --apply-approved "$TMP/bundle-concurrent" \
+    --plan-sha256 "$CONCURRENT_SHA" >/dev/null 2>&1
+}
+run_concurrent & p1=$!; run_concurrent & p2=$!
+set +e; wait "$p1"; c1=$?; wait "$p2"; c2=$?; set -e
+[ "$(( (c1 == 0) + (c2 == 0) ))" -eq 1 ] || red "ⓡ 동시 호출 중 정확히 하나만 성공해야 한다: $c1/$c2"
+[ "$(wc -l <"$TMP/concurrent.log")" -eq 1 ] || red "ⓡ 동시 호출이 apply를 둘 이상 실행했다"
+echo "  ✓ ⓡ 동시 호출 2개 중 apply 1회 (green/red)"
+
 [ "$FAILED" -eq 0 ] || exit 1
-echo "is4-recovery-selftest green — 검사 19건 전건 기대대로"
+echo "is4-recovery-selftest green — 검사 25건 전건 기대대로"
