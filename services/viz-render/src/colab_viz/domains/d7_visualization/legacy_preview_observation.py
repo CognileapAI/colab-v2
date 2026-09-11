@@ -146,15 +146,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--prefix", default="previews")
     args = parser.parse_args(argv)
     from ...kernel.s3 import S3Client
-    ledger = ownership.Ledger(_ids(args.d3_ids), _ids(args.d5_ids))
+    try:
+        ledger = ownership.Ledger(_ids(args.d3_ids), _ids(args.d5_ids))
+    except (OSError, UnicodeError) as exc:
+        print(f"::관측입력준비실패::ID 입력 파일을 읽지 못했다 ({type(exc).__name__})")
+        return 78
     try:
         result = observe(S3Client(bucket=args.bucket, region=args.region), ledger, prefix=args.prefix)
     except ObservationNotReady as exc:
         print(f"::관측준비실패::{exc}")
         return 78
     out = Path(args.snapshot)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        print(f"::snapshot준비실패::관측 snapshot을 쓰지 못했다 ({type(exc).__name__})")
+        return 78
     counts = result["legacy_counts"]
     print("TL-2 관측 — 객체 {objects} · preview {preview_groups}벌 · 구판 {legacy_groups}벌 "
           "(사이드카 부재 {sidecar} · 원천 원장 부재 {ledger} · 원장 있음 {present}) · "

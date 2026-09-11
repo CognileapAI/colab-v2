@@ -116,3 +116,32 @@ def test_cli_관측준비실패는_exit78이다(tmp_path, monkeypatch, capsys):
 
     assert rc == 78
     assert "::관측준비실패::" in capsys.readouterr().out
+
+
+def test_cli_ID입력파일이_없으면_exit78이고_snapshot을_만들지않는다(tmp_path, capsys):
+    snapshot = tmp_path / "snapshot.json"
+
+    rc = obs.main(["--bucket", "dev-bucket", "--region", "test-region",
+                   "--d3-ids", str(tmp_path / "missing-d3.ids"),
+                   "--d5-ids", str(tmp_path / "missing-d5.ids"),
+                   "--snapshot", str(snapshot)])
+
+    assert rc == 78
+    assert "::관측입력준비실패::" in capsys.readouterr().out
+    assert not snapshot.exists()
+
+
+def test_cli_snapshot을_쓸수없으면_exit78이다(tmp_path, monkeypatch, capsys):
+    d3 = tmp_path / "d3.ids"; d3.write_text("known\n", encoding="utf-8")
+    d5 = tmp_path / "d5.ids"; d5.write_text("", encoding="utf-8")
+    doc = {"sidecarVersion": 2, "baked_for": {}, "source": "known", "sources": ["known"]}
+    client = FakeS3({"previews/x.png": b"x", "previews/x.json": json.dumps(doc).encode()})
+    monkeypatch.setattr("colab_viz.kernel.s3.S3Client", lambda **_kwargs: client)
+    blocked = tmp_path / "not-a-directory"; blocked.write_text("x", encoding="utf-8")
+
+    rc = obs.main(["--bucket", "dev-bucket", "--region", "test-region",
+                   "--d3-ids", str(d3), "--d5-ids", str(d5),
+                   "--snapshot", str(blocked / "snapshot.json")])
+
+    assert rc == 78
+    assert "::snapshot준비실패::" in capsys.readouterr().out
