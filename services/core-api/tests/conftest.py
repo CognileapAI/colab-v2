@@ -142,6 +142,7 @@ _CLEANUP: tuple[tuple[str, str, str], ...] = (
     ("d4_lineage_edge", "confirmed_at", ""),
     ("d4_lineage_unknown", "marked_at", ""),
     ("d5_pipeline_event", "occurred_at", ""),
+    ("d5_upload_grid_profile", "created_at", ""),
     ("d5_upload_file", "created_at", ""),
     ("d5_upload", "created_at", ""),
     # **`d3_file` 만은 시드 데이터셋의 행도 지운다** — 후주입 시험이 시드 데이터셋에 조각을
@@ -150,6 +151,8 @@ _CLEANUP: tuple[tuple[str, str, str], ...] = (
     ("d3_file", "created_at", ""),
     ("d3_representative_image_cleanup", "created_at", ""),
     ("d3_dataset_representative_image", "created_at", ""),
+    ("d3_lab_default_grid", "updated_at", ""),
+    ("d3_dataset_grid_profile", "created_at", _KEEP_DATASETS),
     ("d3_dataset_autometa", "updated_at", _KEEP_DATASETS),
     ("d3_dataset_description", "updated_at", _KEEP_DATASETS),
     ("d3_dataset", "uploaded_at", f" AND id NOT IN ({', '.join(_SEED_DATASETS)})"),

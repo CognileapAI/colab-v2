@@ -33,6 +33,7 @@
 # 환경변수 (전부 selftest 전용 주입구다 — 실운전에서는 쓰지 않는다)
 #   COLAB_SERVICE_TESTS_DIR   단위 자리를 갈아끼운다(픽스처 트리)
 #   COLAB_SERVICE_TESTS_PY    파이썬 실행 파일을 갈아끼운다
+#   COLAB_SERVICE_TEST_JOBS   내부 pytest worker 수(기본 4, 비교용 1)
 #   COLAB_PG_FORCE_UNAVAILABLE=1  일회용 postgres 부재 주입 (`_pg.sh`)
 set -uo pipefail
 
@@ -65,9 +66,18 @@ PY="${COLAB_SERVICE_TESTS_PY:-$SVC/.venv/bin/python}"
 [ -x "$PY" ] || ready_red "$SERVICE 파이썬 실행 파일(${PY#"$REPO_ROOT"/})" "대기 없음" "0초" \
   "venv 가 이 체크아웃에 없다. services/$SERVICE 에서 'python3 -m venv .venv && .venv/bin/pip install -r requirements.txt [-r requirements-dev.txt] && .venv/bin/pip install -e .' 를 돌린 뒤 재실행한다."
 
+JOBS="${COLAB_SERVICE_TEST_JOBS:-4}"
+[[ "$JOBS" =~ ^[0-9]+$ ]] || red "COLAB_SERVICE_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
+(( JOBS >= 1 && JOBS <= 32 )) || red "COLAB_SERVICE_TEST_JOBS 는 1~32 범위다: $JOBS"
+if (( JOBS > 1 )) && ! "$PY" -c 'import xdist' >/dev/null 2>&1; then
+  ready_red "pytest-xdist (내부 worker $JOBS)" "대기 없음" "0초" \
+    "서비스 시험 환경에 pytest-xdist가 없다. requirements-dev.txt 또는 pipeline requirements.txt의 핀을 설치한다."
+fi
+
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" service-tests-XXXXXX)"
 XML="$TMP/junit.xml"
 OUT="$TMP/pytest.out"
+COLLECT="$TMP/collect.out"
 SVC_CLEAN() { rm -rf "$TMP"; pg_cleanup; }
 trap SVC_CLEAN EXIT INT TERM
 
@@ -77,6 +87,11 @@ trap SVC_CLEAN EXIT INT TERM
 # 이름은 staging 접두와 겹치지 않고 · **포트를 하나도 publish 하지 않으며** · PGDATA 는 tmpfs ·
 # `--rm` ＋ trap 으로 반드시 지운다. ⚠ 접속 문자열은 **어디에도 출력하지 않는다.**
 PYENV=()
+PYTEST_PARALLEL=()
+PYTEST_PLUGIN=()
+if (( JOBS > 1 )); then
+  PYTEST_PARALLEL=(-n "$JOBS" --dist loadfile)
+fi
 case "$SERVICE" in
   core-api)
     SETUP="$SVC/tests/fixtures/setup-db.sh"
@@ -101,8 +116,35 @@ case "$SERVICE" in
       "COLAB_CORE_TEST_DATABASE_URL=$DB_URL"
       "COLAB_CORE_TEST_SUBJECTS_FILE=$SVC/tests/fixtures/subjects.json"
     )
+    if (( JOBS > 1 )); then
+      WORKER_DB_DIR="$TMP/core-worker-db"
+      mkdir -p "$WORKER_DB_DIR"
+      for ((worker=0; worker<JOBS; worker++)); do
+        worker_db="colab_platform_gw${worker}"
+        if ! docker exec "$PGC" createdb -U postgres "$worker_db" >"$TMP/db.err" 2>&1; then
+          ready_red "core-api xdist worker DB 생성($worker_db)" "대기 없음" "0초" \
+            "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
+        fi
+        worker_url="$(CONTAINER="$PGC" DB="$worker_db" bash "$SETUP" 2>"$TMP/db.err")"
+        if [ -z "$worker_url" ]; then
+          ready_red "core-api xdist worker DB 구성($worker_db)" "대기 없음" "0초" \
+            "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
+        fi
+        printf '%s' "$worker_url" > "$WORKER_DB_DIR/gw${worker}"
+      done
+      PYENV+=("COLAB_CORE_XDIST_DB_DIR=$WORKER_DB_DIR"
+             "PYTHONPATH=$REPO_ROOT/gates/tools${PYTHONPATH:+:$PYTHONPATH}")
+      PYTEST_PLUGIN=(-p xdist_core_db)
+      echo "# core-api xdist 격리 DB $JOBS개 준비 완료(URL·비밀번호 미출력)"
+    fi
     ;;
 esac
+
+if (( JOBS == 1 )); then
+  echo "# $GATE 내부 worker 1 · serial"
+else
+  echo "# $GATE 내부 worker $JOBS · xdist loadfile"
+fi
 
 # ── ⑷ 판정 — 서비스가 선언한 설정 그대로 ─────────────────────────────────────
 # `--strict-markers` — 등록되지 않은 표식은 red 다. 표식이 오타나면 선택자가 조용히 빗나가고,
@@ -110,17 +152,30 @@ esac
 # `-p no:cacheprovider` — 레포에 `.pytest_cache` 를 떨어뜨리지 않는다(스캔 게이트의 대상이 된다).
 # `junit_family=xunit1` — 이 레포의 다른 junit 게이트(`render-latency`·`e2e-format-coverage`)와
 #   같은 판이다. xunit2 는 `record_property` 를 버리고 그때마다 케이스당 경고를 찍는다.
+# xdist는 실행 요약에서 deselected를 생략한다. 같은 선택자를 직렬 collect-only로 먼저 읽어
+# 선택된 수와 제외 수를 고정한다. 못 읽은 제외 수를 0이나 "미상"으로 통과시키지 않는다.
+( cd "$SVC" && env "${PYENV[@]+"${PYENV[@]}"}" "$PY" -m pytest --collect-only -q \
+    --strict-markers -p no:cacheprovider -m "$SELECT" ) >"$COLLECT" 2>&1
+collect_rc=$?
+if [ "$collect_rc" -ne 0 ]; then
+  tail -c 4000 "$COLLECT" | sed 's/^/   /'
+  red "직렬 collect-only가 종료 코드 $collect_rc를 냈다. 병렬 실행 전에 대상 집합을 고정하지 못했다."
+fi
 ( cd "$SVC" && env "${PYENV[@]+"${PYENV[@]}"}" "$PY" -m pytest -q --strict-markers \
-    -p no:cacheprovider -m "$SELECT" -o junit_family=xunit1 --junitxml="$XML" ) >"$OUT" 2>&1
+    -p no:cacheprovider "${PYTEST_PLUGIN[@]+"${PYTEST_PLUGIN[@]}"}" \
+    "${PYTEST_PARALLEL[@]+"${PYTEST_PARALLEL[@]}"}" \
+    -m "$SELECT" -o junit_family=xunit1 --junitxml="$XML" ) >"$OUT" 2>&1
 rc=$?
 tail -c 4000 "$OUT" | sed 's/^/   /'
 
-python3 - "$XML" "$rc" "$OUT" "$GATE" "$SELECT" <<'PY'
+python3 - "$XML" "$rc" "$OUT" "$GATE" "$SELECT" "$COLLECT" <<'PY'
 import re
 import sys
 import xml.etree.ElementTree as ET
 
-xml, rc, out_path, gate, select = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5]
+xml, rc, out_path, gate, select, collect_path = (
+    sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+)
 
 try:
     raw = open(out_path, encoding="utf-8", errors="replace").read()
@@ -142,9 +197,19 @@ err = sum(int(s.get("errors", 0)) for s in suites)
 secs = sum(float(s.get("time", 0) or 0) for s in suites)
 ran = tot - skip
 
-# deselected 는 junit 에 없다 — pytest 요약줄에서 읽는다. **못 읽으면 「0」이라고 말하지 않는다.**
-m = re.search(r"(\d+)\s+deselected", raw)
-desel = m.group(1) if m else "미상"
+try:
+    collected_raw = open(collect_path, encoding="utf-8", errors="replace").read()
+except OSError:
+    collected_raw = ""
+fraction = re.search(r"(\d+)/(\d+) tests collected \((\d+) deselected\)", collected_raw)
+plain = re.search(r"(\d+) tests? collected", collected_raw)
+if fraction:
+    selected, _all_collected, desel = map(int, fraction.groups())
+elif plain:
+    selected, desel = int(plain.group(1)), 0
+else:
+    print(f"::error::{gate} red — collect-only 요약에서 선택·deselected 계수를 읽지 못했다.")
+    sys.exit(1)
 
 print(f"{gate} — 선택자 «{select}» · 수집 {tot} · 실행 {ran} · skipped {skip} · "
       f"deselected {desel} · failed {fail} · errors {err} · 소요 {secs:.1f}초")
@@ -154,6 +219,9 @@ if tot == 0:
     print(f"::error::{gate} red — **수집된 시험이 0건이다.** 통과 0·실패 0 은 「전부 통과」가 아니라\n"
           "   「아무것도 검사하지 않았다」다 (CLAUDE.md §4 green-by-skip). 선택자가 빗나갔거나\n"
           "   시험 자리가 비었다.")
+    bad = True
+elif tot != selected:
+    print(f"::error::{gate} red — collect-only 선택 {selected}건과 실행 리포트 수집 {tot}건이 다르다.")
     bad = True
 elif ran == 0:
     print(f"::error::{gate} red — 수집 {tot}건이 **전부 skip 됐다(실행 0건).** 수집만 하고 돌지 않은 것은\n"

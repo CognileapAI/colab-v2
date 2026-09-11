@@ -16,6 +16,23 @@ SD="$REPO_ROOT/gates/tools/schema-diff.sh"
 RC_SH="$REPO_ROOT/gates/tools/rls-coverage.sh"
 RC_PY="$REPO_ROOT/gates/tools/rls_coverage.py"
 ONLY="${COLAB_DB_SELFTEST_ONLY:-all}"
+
+# 전체 실행은 서로 상태를 공유하지 않는 두 절을 겹친다. migration 절은 합성 파일만,
+# db 절은 자기 일회용 Postgres만 사용한다. 게이트 사이 serial 선언은 그대로다.
+if [ "$ONLY" = "all" ]; then
+  WRAP_TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" db-selftest-wrap-XXXXXX)"
+  trap 'rm -rf "$WRAP_TMP"' EXIT INT TERM
+  COLAB_DB_SELFTEST_ONLY=migration "$0" >"$WRAP_TMP/migration.out" 2>&1 & migration_pid=$!
+  COLAB_DB_SELFTEST_ONLY=db "$0" >"$WRAP_TMP/db.out" 2>&1 & db_pid=$!
+  wait "$migration_pid"; migration_rc=$?
+  wait "$db_pid"; db_rc=$?
+  sed 's/^/[migration] /' "$WRAP_TMP/migration.out"
+  sed 's/^/[db] /' "$WRAP_TMP/db.out"
+  if [ "$migration_rc" -eq 78 ] || [ "$db_rc" -eq 78 ]; then exit 78; fi
+  if [ "$migration_rc" -ne 0 ] || [ "$db_rc" -ne 0 ]; then exit 1; fi
+  echo "db-selftest green — 독립 절 2개 내부 병렬 실행 · 판정/준비 상태 합산."
+  exit 0
+fi
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" db-selftest-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 FAILURES=()

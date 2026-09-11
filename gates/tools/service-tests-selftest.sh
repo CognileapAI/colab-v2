@@ -55,12 +55,14 @@ mk_tree() { # $1 = 픽스처 이름 → stdout: 사본 자리
   printf '%s' "$d"
 }
 
-expect_case() { # $1=기대(green|red|red-ready) $2=이름 $3=단위이름 $4=선택자 [$5=트리(있으면 DIR 주입) $6=py주입여부]
+expect_case() { # $1=기대 $2=이름 $3=단위 $4=선택자 [$5=트리 $6=py주입 $7=jobs]
   local want="$1" name="$2" svc="$3" select="$4" dir="${5:-}" withpy="${6:-yes}"
+  local jobs="${7:-}"
   local out ec
   local envs=()
   [ -n "$dir" ] && envs+=("COLAB_SERVICE_TESTS_DIR=$dir")
   [ "$withpy" = "yes" ] && envs+=("COLAB_SERVICE_TESTS_PY=$PY")
+  [ -n "$jobs" ] && envs+=("COLAB_SERVICE_TEST_JOBS=$jobs")
   out="$(env "${envs[@]+"${envs[@]}"}" "$GATE" "$svc" "$select" 2>&1)"; ec=$?
   case "$want" in
     green)     [ "$ec" -eq 0 ]  && { echo "  ✓ $name — green"; return; } ;;
@@ -88,7 +90,44 @@ expect_case red       "ⓖ 단위 이름 인자 없음"                  "" "not
 # ⓗ 단위 자리 부재 → red (대상 0건은 통과가 아니다)
 expect_case red       "ⓗ 단위 자리 부재"                       fixture "not e2e" "$TMP/없는자리"
 
-# ⓘ 선택자가 실제로 **걸러 낸다**는 것 — 정밀도를 올린 것이지 범위를 줄인 것이 아님의 증명.
+# ⓘ 병렬도 입력은 조용히 무시하거나 직렬로 낮추지 않는다.
+expect_case red       "ⓘ 병렬도 0은 입력 red"                  fixture "not e2e" "$(mk_tree pass)" yes 0
+expect_case red       "ⓘ 병렬도 문자는 입력 red"               fixture "not e2e" "$(mk_tree pass)" yes fast
+
+# ⓙ jobs=4가 실제 xdist worker를 썼다는 표식과 기존 계수를 함께 낸다.
+d_parallel="$(mk_tree pass)"
+OUT_PARALLEL="$(env COLAB_SERVICE_TESTS_DIR="$d_parallel" COLAB_SERVICE_TESTS_PY="$PY" \
+  COLAB_SERVICE_TEST_JOBS=4 "$GATE" fixture "not e2e" 2>&1)"; EC_PARALLEL=$?
+if [ "$EC_PARALLEL" -ne 0 ] || ! grep -q '내부 worker 4' <<< "$OUT_PARALLEL" \
+   || ! grep -q '수집 1 · 실행 1 · skipped 0' <<< "$OUT_PARALLEL"; then
+  echo "::error::service-tests-selftest red — jobs=4가 실제 병렬 표식과 동일 계수를 내지 않았다."
+  printf '%s\n' "$OUT_PARALLEL" | tail -30 | sed 's/^/     /'
+  rc=1
+else
+  echo "  ✓ ⓙ jobs=4 xdist 실행 · 계수 보존"
+fi
+
+# ⓚ xdist가 없는 환경은 조용히 jobs=1로 낮추지 않고 준비 실패 78이다.
+NO_XDIST_PY="$TMP/no-xdist-python"
+cat > "$NO_XDIST_PY" <<EOF
+#!/usr/bin/env bash
+if [ "\${1:-}" = "-c" ] && [ "\${2:-}" = "import xdist" ]; then exit 1; fi
+exec "$PY" "\$@"
+EOF
+chmod +x "$NO_XDIST_PY"
+d_no_xdist="$(mk_tree pass)"
+OUT_NO_XDIST="$(env COLAB_SERVICE_TESTS_DIR="$d_no_xdist" \
+  COLAB_SERVICE_TESTS_PY="$NO_XDIST_PY" COLAB_SERVICE_TEST_JOBS=4 \
+  "$GATE" fixture "not e2e" 2>&1)"; EC_NO_XDIST=$?
+if [ "$EC_NO_XDIST" -ne 78 ] || ! grep -q 'pytest-xdist' <<< "$OUT_NO_XDIST"; then
+  echo "::error::service-tests-selftest red — xdist 부재가 red(준비 · 78)가 아니다."
+  printf '%s\n' "$OUT_NO_XDIST" | tail -30 | sed 's/^/     /'
+  rc=1
+else
+  echo "  ✓ ⓚ xdist 부재는 red(준비 · 78)"
+fi
+
+# ⓛ 선택자가 실제로 **걸러 낸다**는 것 — 정밀도를 올린 것이지 범위를 줄인 것이 아님의 증명.
 #    같은 트리를 `not e2e`(수집 2 · 실패 1 → red)와 「실패 케이스만 뺀 선택자」로 각각 돌린다.
 d="$(mk_tree fail)"
 OUT_ALL="$(env COLAB_SERVICE_TESTS_DIR="$d" COLAB_SERVICE_TESTS_PY="$PY" "$GATE" fixture "not e2e" 2>&1)"
@@ -97,7 +136,7 @@ if ! printf '%s' "$OUT_ALL" | grep -q '수집 2 · 실행 2 · skipped 0'; then
   printf '%s\n' "$OUT_ALL" | tail -20 | sed 's/^/     /'
   rc=1
 else
-  echo "  ✓ ⓘ 요약줄이 수집·실행·skipped·deselected·failed 를 계수로 낸다"
+  echo "  ✓ ⓛ 요약줄이 수집·실행·skipped·deselected·failed 를 계수로 낸다"
 fi
 
 exit $rc

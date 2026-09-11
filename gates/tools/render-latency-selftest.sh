@@ -143,10 +143,20 @@ expect red "ⓚ 표본·포맷 부족" "$TMP/few.xml" "$OK_CFG" "최소"
 # ⓛ 전건 눈금 안 → green
 expect green "ⓛ 전건 눈금 안" "$OK_XML" "$OK_CFG" "p95"
 
+# 실행기 병렬도 입력 경계 — 실제 원천 렌더는 돌리지 않고 입력 단계에서 끊는다.
+RUNNER="$REPO_ROOT/gates/tools/render-latency.sh"
+RUNNER_OUT="$(COLAB_REFERENCE_DATA="$TMP" COLAB_RENDER_TEST_JOBS=0 "$RUNNER" 2>&1)"
+RUNNER_RC=$?
+if [ "$RUNNER_RC" -ne 1 ] || ! grep -q '1~32 정수' <<< "$RUNNER_OUT"; then
+  red "ⓜ 병렬도 0이 입력 red가 아니다"
+else
+  echo "  ✓ ⓜ 병렬도 0은 입력 red"
+fi
+
 if [ "$FAILED" -ne 0 ]; then
   echo "::error::render-latency-selftest red — 위 케이스가 기대와 다르다."
   exit 1
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict render-latency-selftest
-echo "render-latency-selftest green — 검사 12건 전건 기대대로 (red 11 · green 1)"
+echo "render-latency-selftest green — 검사 13건 전건 기대대로 (판정부 red 11 · green 1 · 병렬도 입력 red 1)"

@@ -147,30 +147,63 @@ expect() { # $1=green|red $2=라벨 $3..=환경변수
 
 B="COLAB_PREVIEW_TILE_EXEMPT=$EXEMPT_NONE"
 
-# ⓐ 적용 DB 미지정 — red 이되 **원인을 참말로 말해야 한다**
-expect 미선언 "ⓐ 대조 정본 미지정" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+# 입력 경계 다섯은 파일/DB 상태를 바꾸지 않아 같은 fixture에서 안전하게 겹친다.
+# 각 결과를 파일로 격리한 뒤 기존 expect 판정과 똑같이 순서대로 합산한다.
+printf '[exempt]\nreason = "항목 자체가 없다"\n' > "$TMP/exempt-empty.toml"
+capture_case() { # $1=id, $2..=환경변수
+  local id="$1"; shift
+  ( run_gate "$@" >"$TMP/$id.out" 2>&1; printf '%s' "$?" >"$TMP/$id.rc" ) &
+  CAPTURE_PID=$!
+}
+finish_case() { # $1=id $2=기대 $3=라벨
+  local id="$1" want="$2" label="$3" out rc got
+  wait "${CAPTURE_PIDS[$id]}"
+  out="$(<"$TMP/$id.out")"; rc="$(<"$TMP/$id.rc")"; LAST_OUT="$out"
+  if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
+  got="green"; [ "$rc" -eq 0 ] || got="red"
+  if [ "$got" = "$want" ]; then echo "[selftest] $label → $got OK"
+  else
+    echo "[selftest] $label → $got (기대 $want) ✗"
+    echo "$out" | sed 's/^/           /'
+    FAILURES+=("$label")
+  fi
+}
+declare -A CAPTURE_PIDS
+capture_case a COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
   COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL=
+CAPTURE_PIDS[a]=$CAPTURE_PID
+capture_case b COLAB_PREVIEW_TILE_EXEMPT="$TMP/없는파일.toml" \
+  COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
+CAPTURE_PIDS[b]=$CAPTURE_PID
+capture_case bp COLAB_PREVIEW_TILE_EXEMPT="$TMP/exempt-empty.toml" \
+  COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
+CAPTURE_PIDS[bp]=$CAPTURE_PID
+capture_case c COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+  COLAB_PREVIEW_TILE_DIR= COLAB_PREVIEW_TILE_DB_URL="$URL"
+CAPTURE_PIDS[c]=$CAPTURE_PID
+capture_case d COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
+  COLAB_PREVIEW_TILE_DIR="$TMP/없는자리" COLAB_PREVIEW_TILE_DB_URL="$URL"
+CAPTURE_PIDS[d]=$CAPTURE_PID
+
+# ⓐ 적용 DB 미지정 — red 이되 **원인을 참말로 말해야 한다**
+finish_case a 미선언 "ⓐ 대조 정본 미지정"
 case "$LAST_OUT" in
   *cause=입력미선언*missing=*) echo "[selftest] ⓐ 원인 표식(입력미선언) → OK" ;;
   *) echo "[selftest] ⓐ cause=입력미선언 표식이 없다 ✗"; FAILURES+=("ⓐ 원인 표식") ;;
 esac
 
 # ⓑ 면제 선언 파일 부재
-expect 미선언 "ⓑ 면제 선언 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/없는파일.toml" \
-  COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
+finish_case b 미선언 "ⓑ 면제 선언 부재"
 
 # ⓑ' 파일은 있는데 항목이 없다
-printf '[exempt]\nreason = "항목 자체가 없다"\n' > "$TMP/exempt-empty.toml"
-expect 미선언 "ⓑ' 면제 항목 부재" COLAB_PREVIEW_TILE_EXEMPT="$TMP/exempt-empty.toml" \
-  COLAB_PREVIEW_TILE_DIR="$SLOT" COLAB_PREVIEW_TILE_DB_URL="$URL"
+finish_case bp 미선언 "ⓑ' 면제 항목 부재"
 
 # ⓒ 자리 경로 미선언
-expect 미선언 "ⓒ 자리 경로 미선언" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
-  COLAB_PREVIEW_TILE_DIR= COLAB_PREVIEW_TILE_DB_URL="$URL"
+finish_case c 미선언 "ⓒ 자리 경로 미선언"
 
 # ⓓ 자리 경로가 없는 디렉터리
-expect 미선언 "ⓓ 없는 디렉터리" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
-  COLAB_PREVIEW_TILE_DIR="$TMP/없는자리" COLAB_PREVIEW_TILE_DB_URL="$URL"
+finish_case d 미선언 "ⓓ 없는 디렉터리"
+echo "[selftest] 입력 경계 5개 내부 병렬 실행 → OK"
 
 # ⓘ 쓸 수 있는 타일 1건 → green
 expect green "ⓘ 쓸 수 있는 타일 1건" COLAB_PREVIEW_TILE_EXEMPT="$EXEMPT_NONE" \
@@ -320,5 +353,5 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict preview-tile-slot-selftest
-echo "preview-tile-slot-selftest green — 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
+echo "preview-tile-slot-selftest green — 입력 경계 5개 내부 병렬 · 14 케이스(red 7 · 미선언 5 · green 2 · 변이 3) ＋ 사유 대조 4 ＋ 면제 건수 노출 1 ＋ 원인 표식 1 = 검사 20건 전건 기대대로"
 exit 0

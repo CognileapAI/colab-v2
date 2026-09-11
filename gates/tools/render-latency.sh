@@ -37,6 +37,22 @@ if [ ! -x "$PY" ]; then
   exit "$PG_READINESS_EXIT"
 fi
 
+JOBS="${COLAB_RENDER_TEST_JOBS:-4}"
+if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || (( JOBS < 1 || JOBS > 32 )); then
+  echo "::error::render-latency red — COLAB_RENDER_TEST_JOBS 는 1~32 정수다: ${JOBS@Q}"
+  exit 1
+fi
+PARALLEL=()
+if (( JOBS > 1 )); then
+  if ! "$PY" -c 'import xdist' >/dev/null 2>&1; then
+    pg_readiness_report render-latency "pytest-xdist (내부 worker $JOBS)" "대기 없음" "0초" \
+      "viz-render 시험 환경에 requirements-dev.txt의 pytest-xdist 핀을 설치한다."
+    exit "$PG_READINESS_EXIT"
+  fi
+  PARALLEL=(-n "$JOBS" --dist load)
+fi
+echo "render-latency — 내부 worker $JOBS"
+
 XML="$(mktemp -t render-latency-XXXXXX.xml)"
 trap 'rm -f "$XML"' EXIT
 
@@ -44,7 +60,8 @@ trap 'rm -f "$XML"' EXIT
 # `junit_family=xunit1` — xunit2 는 `record_property` 를 버린다(초가 리포트에 안 남는다).
 # `-p no:randomly` 같은 순서 개입은 걸지 않는다 — 시간은 순서에 의존하지 않아야 한다.
 (cd "$SVC" && "$PY" -m pytest -q --strict-markers -p no:cacheprovider \
-   -m perf -o junit_family=xunit1 --junitxml="$XML")
+   "${PARALLEL[@]+"${PARALLEL[@]}"}" -m perf \
+   -o junit_family=xunit1 --junitxml="$XML")
 rc=$?
 [ "$rc" -ne 0 ] && echo "render-latency — pytest 종료 코드 $rc (실패 케이스는 아래 목록에 이름으로 나온다)"
 
