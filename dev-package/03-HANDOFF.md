@@ -68,7 +68,7 @@
 게이트 = 레인 4벌 `frontend-test` green(1256·1257·1270·1283 · 각 2회 · typecheck 0 · `gate-summary.json` 미보존) · 통합 전수 1회 **green 53 / red(판정) 6 / red(준비) 2**(환경 6·정정 2) — **최종 재실행 대기**이고 그 결과를 병합 결정 `§9 〈383〉` 에 적는다.
 문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」)이라 PRD-34 문면표·PRD-43 자리표를 같은 회차에 개정했다(`§9 〈386〉`).
 **현재 단계** = 최종 전수 게이트 재실행 → `main` ff → dev 배포 green ＋ `deploy_doctor` **15/15 를 한 번의 실행으로**(재시도해 모은 15 는 15 가 아니다). ⚠ `origin/main` 이 `6fcc065f` 로 앞서 있어 ff 전에 통합 브랜치 재기점이 필요하다.
-**다음 WU** → 배포 뒤 ⑴ PRD-43 21행 표 채번 확정(신설 2행 `COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY` 등재 · 21 → 23) ⑵ `LV-5` 착수 판정 ⑶ 후속 = `#33`㉡ 등록 장면 복원 설계 · `#31` 배치 규약의 정책 문서 기재 · 분류 필터 0행 원인(`[미측정]`) ⑷ GitHub 이슈 12건 댓글 게시(전수 green 뒤 · 닫기는 Ted).
+**다음 WU** → 배포 뒤 ⑴ PRD-43 21행 표 채번 확정(신설 2행 `COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY` 등재 · 21 → 23) ⑵ `LV-5` 착수 판정 ⑶ 후속 = `#33`㉡ 등록 장면 복원 설계 · `#31` 배치 규약의 정책 문서 기재 · 분류 필터 0행 원인(`[미측정]`) ⑷ GitHub 이슈 12건 댓글 게시(전수 green 뒤 · 닫기는 Ted) · `HE-1`(하네스 평가 과제 4건 수리)은 별도 세션(별도 체크아웃 `31 CoLAB-v2` · 등재 `§9 〈389〉`).
 ⭑ **⟨증보 2026-09-06 · 하네스 재설계 마감⟩ 최종 갱신 = 2026-09-06 · 현재 단계 = 하네스 재설계 브랜치 `worktree-harness-fable51-spec` 완성(전수 대기 · `main` 미병합) · 다음 세션 = `colab-v2-plan-0907-4` 를 **레포 루트 `30 CoLAB-v2`** 에서 `--add-dir "../40 COLAB-기획"` 로 연다.** 값·근거는 `PLAN-SoT §9 〈368〉`~`〈371〉` 과 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md` `§0`·`H` 에 있고 여기에는 링크만 둔다(`§0` 규칙 6). 진입조건은 `§4.5` 맨 위.
 ⭑ **⟨증보 2026-09-08 · R-B 마감⟩ 최종 갱신 = 2026-09-08 — R-B 10 WU(B1~B8·B10·B11) 전건 done · `integration/r-b` `2f67649` → `main` ff 한 줄 · 등재 `PLAN-SoT §9 〈373〉`(20차 집행)·`〈374〉`(〈194〉·〈276〉 반전).**
 게이트 = 전수 `all -j 1` 한 번의 실행 **green 52 / red(판정) 0 / red(준비) 0**(트리 `2f67649` · `dev-package/reports/R-B/all/`).
@@ -296,6 +296,7 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 | **BF-17** 미리보기 조작 줄 3화면 ＋ 확장보기 고르개 (#25⑵·#27·#28) | ✅ | 2026-09-12 R-BUGFIX-260912 L3b · 커밋 `ccaf27f6`·`a841d7a1`·`67e25399`·`bf02a0c8`·`f98d09de` · Ted 판정 ⑥ 재확인(지정 예외)·⑦ ⓐ·⑧ · 게이트 `frontend-test green 1283건 · 2회 ＋ typecheck 0` · `R-C-2` 규약 개정 등재 `§9 〈385〉` |
 | **PA-T** 다중 서버 로그인 실패 제한 공유 ＋ 신뢰 프록시 판정 | ⬜ | 2026-09-12 등재만 · 미착수(Ted 판정 ⑪ ⓐ) · 출처 이슈 `#11` · `stage: after_stage2` · `CLAUDE.md §0` 괄호 17 → 18 · 등재 `§9 〈383〉` |
 | **LV-5** 계보 부모 찾기 창을 목록 화면 형태로 재구성 (제안 · #30 후속) | ⬜ | 2026-09-12 등재만 · 미착수 · `stage: backlog`(완료 집계 제외) · 근거 `dev-package/reports/issues/2026-09-12-measure-L4.md` §4-2 「사용법」 · 착수 판정은 Ted(판정 ⑨ ⓐ 「신규 항목 후보」) |
+| **HE-1** 하네스 평가 과제 4건 설계 수리 (H14·H15·H16·H18) | ⬜ | 2026-09-12 등재만 · 미착수 · `stage: backlog`(완료 집계 제외) · Ted 판정 ⓐ「red 를 안고 병합·배포 · 수리는 별도 세션」 · 등재 `§9 〈389〉` · 세션 프롬프트 `dev-package/sessions/HE-1-session-prompt.md` · 실행처 = 별도 체크아웃 `31 CoLAB-v2` |
 | **G10** 단독 선언 게이트 8개 안의 시험 병렬화 | ✅ | **2026-09-11 수용 완료** — `reports/stage12-release-acceptance/acceptance.md`. 이전 이력: **2026-09-11 로컬 부분 구현.** 네 pytest 서비스 jobs=1/4 계수 동일(core 1040/6, pipeline 268/48, ai 137/26, viz 387/42), core 157.44→49.74초·viz 27.99→14.03초. worker별 core DB, xdist/입력 준비 실패 78, selftest fail-closed green. db-selftest 독립 2절·preview selftest 독립 5케이스 병렬화. **남음** = frontend/실 render-latency 실측과 같은 트리 `all -j4` 전후 판정·시간 대조. 게이트 사이 `serial`은 유지한다. |
 
 ## 2. 현재 상태 스냅샷

@@ -3357,4 +3357,40 @@ items:
     deadline: null
     note: "사용자 알림은 범위 밖. 자동배포 HOLD 유지. 수집 시작 2026-09-12 15:55 KST. 첫날은 부분 기간 보고이며 실제 08시 수신 확인 전 완료로 닫지 않는다."
     sources: ["dev-package/intent/2026-09-12-operator-slack-notifications.md", "dev-package/prd/specs/S-OPERATOR-SLACK-NOTIFICATIONS-20260912.md"]
+  - id: HE-1
+    name: "하네스 평가 과제 4건 설계 수리 — H14 · H15 · H16 · H18 (09-08·09-12 두 실측에서 동일 실패)"
+    status: open
+    stage: backlog
+    owner: "harness (dev tooling)"
+    entry_conditions:
+      - "이 회차가 `main` 에 병합돼 `eval/harness/results/20260912-211809/` 가 `main` 에 있다"
+      - "별도 체크아웃 `31 CoLAB-v2` 에서 `origin/main` 기점 브랜치 `fix/harness-eval-tasks` 로 작업한다(이 레포 체크아웃과 분리)"
+      - "실행 경로는 구독(`claude -p`)이다 — API 키·예산 승인 질의 없음"
+    depends_on: [WU-D6, WU-D7]
+    completion_def: >-
+      ⑴ `COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval`
+      한 번의 실행에서 20/20 green(과제 20 · 실행 40 · 2/2 green)
+      ⑵ 승격 조건 계수 시작 — 3회 연속 2/2 green(`dev-package/intent/2026-09-08-harness-evals.md` Q10)
+      ⑶ 과제별로 「기대(expect) 오류」와 「지시문 미준수」를 가른 근거를 남긴다 — 기대를 넓혀 green 으로 만드는 것은
+      판정 뒤에만 허용된다(`dev-package/prd/rounds/R-D-2-harness-eval.md` §3 ㉴ 금지).
+    evidence: null
+    deadline: null
+    note: |
+      2026-09-12 Ted 판정 ⓐ — 하네스 평가 red(판정) 4건을 안고 이번 회차를 병합·배포하고, 과제 수리는 별도 항목·별도 세션으로 낸다.
+      원문 「a로 하고 이건 다른 곳에서 할게」. 등재 `PLAN-SoT §9 〈389〉`.
+      실측 2회에서 같은 4건이 실패했다 — `20260908-161538`(0/2 H14·H16·H18 · 1/2 H15) · `20260912-211809`(과제 20 · 실행 40 · green 16 · 실패 4).
 
+      착수 세션 프롬프트(축자 · 사본 `dev-package/sessions/HE-1-session-prompt.md`):
+
+      ```
+      31 CoLAB-v2 에서 하네스 평가 과제 4건(H14-silent-skip · H15-zero-targets · H16-lenient-default · H18-three-states)의 설계 결함을 고친다.
+      - 근거: eval/harness/results/20260912-211809/summary.md (green 16 / 실패 4) 와 20260908-161538 (같은 과제 실패) · R-D 라운드 결정 ㉴(방치) · PLAN-SoT 〈389〉(이번에 ⓐ 로 넘김)
+      - 과제 정의: eval/harness/H14* H15* H16* H18* · 러너 eval/harness/run.sh · README 의 선언값(TIMEOUT 93 · BUDGET 2.01)
+      - 실행은 구독(로그인 claude -p) 경로다. API 키·예산 승인을 묻지 않는다.
+      - 순서: 과제별로 「기대(expect)가 잘못됐는가 / 지시문이 실제로 안 지켜지는가」를 먼저 가르고, 기대 오류면 과제를 고치고, 지시문 미준수면 CLAUDE.md·스킬 문안을 고친다. 고친 뒤 COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval 로 재실행.
+      - 완료 = 20/20 green 1회 ＋ 승격 조건(3회 연속 2/2 green · intent 2026-09-08-harness-evals Q10) 계수 시작. 대장 항목 HE-1 을 done 으로.
+      - 라운드 파일·03-HANDOFF 통독 금지(grep 한 줄만).
+      ```
+
+      범위 밖 = 러너·게이트 재설계(`WU-D5`·`WU-D7` 산출물 무변) · CI 잡 승격(3회 연속 green 뒤 별건) · `stage` 승급(`backlog` 유지 · `CLAUDE.md §0` `after_stage2` 괄호 미접촉).
+    sources: ["eval/harness/results/20260912-211809/summary.md", "eval/harness/results/20260908-161538/summary.md", "dev-package/reports/bugfix-260912/harness-eval-run.md", "dev-package/sessions/HE-1-session-prompt.md", "dev-package/prd/rounds/R-D-2-harness-eval.md", "dev-package/intent/2026-09-08-harness-evals.md"]
