@@ -40,6 +40,13 @@ UPDATE account_admin.login_session
  WHERE account_id = :account_id AND revoked_at IS NULL
 """
 
+#: 운영자 여부의 **유일한 원본**. 발급할 때 한 번, 그리고 **매 요청 다시** 이 한 줄을 본다 —
+#: 토큰의 주장을 권한으로 쓰지 않는다. 지정·해제는 같은 트랜잭션에서 위 revoke 를 돌리므로
+#: 어긋난 주장을 들고 오는 세션은 이미 닫혀 있어야 한다.
+_IS_OPERATOR = """
+SELECT EXISTS (SELECT 1 FROM account_admin.service_operator WHERE account_id = :account_id)
+"""
+
 
 @dataclasses.dataclass(frozen=True)
 class IssuedBrowserSession:
@@ -86,6 +93,8 @@ class LoginSessionStore:
         capability = secrets.token_urlsafe(32)
         try:
             with self._factory.begin() as db:
+                operator = bool(db.execute(
+                    text(_IS_OPERATOR), {"account_id": str(subject.account_id)}).scalar_one())
                 db.execute(text("""
                     INSERT INTO account_admin.login_session
                       (id,account_id,lab_id,issued_at,expires_at,generation,
@@ -103,6 +112,7 @@ class LoginSessionStore:
             subject, session_id=session_id, generation=1,
             credential_kind=credential_kind, purpose=purpose,
             credential_version=credential_version, expires_at=expires_at,
+            operator=operator,
         )
         return IssuedBrowserSession(
             issued.token, issued.expires_at, session_id, capability
@@ -138,6 +148,8 @@ class LoginSessionStore:
                 if row["status"] != "active":
                     raise AccountInactive
                 subject = Subject(Ulid(row["account_id"]), Ulid(row["lab_id"]))
+                operator = bool(db.execute(
+                    text(_IS_OPERATOR), {"account_id": row["account_id"]}).scalar_one())
                 purpose = "password-change" if row["must_change_password"] else "normal"
                 db.execute(text("""
                     INSERT INTO account_admin.login_session
@@ -156,6 +168,7 @@ class LoginSessionStore:
             subject, session_id=session_id, generation=1,
             credential_kind="database", purpose=purpose,
             credential_version=row["session_version"], expires_at=expires_at,
+            operator=operator,
         )
         return IssuedBrowserSession(issued.token, expires_at, session_id, capability)
 
@@ -171,7 +184,9 @@ class LoginSessionStore:
                 row = db.execute(text("""
                     SELECT s.account_id,s.lab_id,s.expires_at,s.revoked_at,s.generation,
                            s.credential_kind,s.purpose,s.credential_version,
-                           c.session_version,c.must_change_password,a.lab_id AS current_lab_id
+                           c.session_version,c.must_change_password,a.lab_id AS current_lab_id,
+                           EXISTS (SELECT 1 FROM account_admin.service_operator o
+                                    WHERE o.account_id=s.account_id) AS is_operator
                       FROM account_admin.login_session s
                       JOIN d1_account a ON a.id=s.account_id
                       LEFT JOIN account_admin.login_credential c
@@ -198,10 +213,17 @@ class LoginSessionStore:
             if (row["session_version"] != claims.credential_version
                     or row["must_change_password"] != must_change):
                 return None
+        # 운영자 여부는 **표에서 다시 읽는다.** 토큰의 주장과 어긋나면 그 세션은 지정·해제를
+        # 거친 뒤에도 살아남은 것이므로 거절한다 — 낡은 승격을 그대로 들여보내지 않고,
+        # 강등된 계정이 옛 토큰으로 남의 연구실을 계속 읽는 자리도 만들지 않는다.
+        operator = bool(row["is_operator"])
+        if operator != claims.operator:
+            return None
         return Subject(
             claims.subject.account_id, claims.subject.lab_id,
             must_change_password=must_change,
             credential_version=claims.credential_version,
+            operator=operator,
         )
 
     def revoke(self, session_id: Ulid, *, now: dt.datetime | None = None) -> None:
@@ -304,5 +326,8 @@ class LoginSessionStore:
             generation=rotated["generation"], credential_kind="database",
             purpose="normal", credential_version=changed["session_version"],
             expires_at=rotated["expires_at"],
+            # 첫 비밀번호 변경은 같은 세션을 이어 쓴다 — 여기서 표시를 떨어뜨리면
+            # 그 다음 요청에서 claim 과 표가 어긋나 로그인이 통째로 끊긴다.
+            operator=claims.operator,
         )
         return RotatedBrowserSession(issued.token, issued.expires_at, claims.session_id)

@@ -491,7 +491,8 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
         fetch_offset = 0 if verified_only else offset
         # **읽기 전용 트랜잭션**에서 돈다 — 검색이 한 줄도 쓰지 않는다는 것을
         # 문서가 아니라 Postgres 의 거절이 지킨다.
-        with read_only_scope(request.app.state.session_factory, subject) as ro:
+        with read_only_scope(request.app.state.session_factory, subject,
+                         operator_read=subject.operator) as ro:
             matches, total = d3_catalog.search_datasets(
                 ro, terms=answer["terms"], topic=answer["topic"],
                 limit=fetch_limit, offset=fetch_offset)

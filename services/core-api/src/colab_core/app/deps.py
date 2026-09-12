@@ -53,12 +53,27 @@ def current_session_subject(request: Request,
     return subject
 
 
+#: 운영자 읽기 스코프를 켜는 **유일한 조건** — 읽기 메서드다. 목록에 없는 메서드는 쓰기로 본다.
+_READ_METHODS = frozenset(("GET", "HEAD"))
+
+
+def _operator_read(request: Request, subject: Subject) -> bool:
+    """운영자의 **읽기 요청에만** 전 연구실 스코프를 연다 (승인 intent 2026-09-12).
+
+    ⚠ 쓰기 요청에서는 켜지 않는다. 켜면 「남의 연구실 행을 읽어서 자기 연구실에 적어 넣는」
+    경로가 열린다 — 예를 들어 남의 데이터셋을 자기 프로젝트에 붙이는 것은 `lab_boundary` 의
+    WITH CHECK 을 통과해 버린다(적히는 행의 `lab_id` 는 자기 연구실이므로). RLS 가 막아 주는
+    것은 **남의 연구실에 쓰는 것**이지 남의 것을 보고 자기 자리에 쓰는 것이 아니다.
+    """
+    return subject.operator and request.method.upper() in _READ_METHODS
+
+
 def session_scoped_db(request: Request) -> Iterator[Session]:
     subject = current_session_subject(request, request.headers.get("authorization"))
     session: Session = request.app.state.session_factory()
     try:
         session.begin()
-        apply_scope(session, subject)
+        apply_scope(session, subject, operator_read=_operator_read(request, subject))
         yield session
         session.commit()
     except BaseException:
@@ -74,7 +89,7 @@ def scoped_db(request: Request) -> Iterator[Session]:
     session: Session = request.app.state.session_factory()
     try:
         session.begin()
-        apply_scope(session, subject)
+        apply_scope(session, subject, operator_read=_operator_read(request, subject))
         yield session
         session.commit()
     except BaseException:
