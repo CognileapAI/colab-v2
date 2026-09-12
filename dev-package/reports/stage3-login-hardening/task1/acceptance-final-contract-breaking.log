@@ -1,0 +1,6 @@
+1 changes: 1 error, 0 warning, 0 info
+error	[request-body-wrapped-in-one-of] at /w/rev/contracts/seams/fe-core.yaml
+	in API POST /sessions
+		the request body was restructured into a oneOf, so a payload that was previously valid may no longer be accepted
+::error::contract-breaking red — 기준(HEAD) 대비 파괴적 변경이 있다 (oasdiff exit 1).
+   계약을 깨야 한다면 우회하지 말고 멈추고 보고한다 (CLAUDE.md §4 '경계를 넘어야 할 때').

@@ -1,0 +1,117 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-breaking",
+      "status": "red_판정",
+      "state": "red_판정",
+      "exit": 1,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "seam-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "service-tests-core-api",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-single-head",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-drift",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "schema-diff",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-coverage",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-effect",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "db-boundary",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 10,
+    "red_판정": 1,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "contract-breaking",
+      "generated-up-to-date",
+      "seam-consistency",
+      "service-tests-core-api",
+      "migration-single-head",
+      "migration-drift",
+      "schema-diff",
+      "rls-coverage",
+      "rls-effect",
+      "db-boundary"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "3b9a6bac36cf4498a0a67035d746b9eb",
+      "run_id": "cdbcaf013e9f4ecfb684aa2311422004",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "6a98067af19b60e9b8f6cd25dd306f39965a4f94bba8a13d66ec130ecc2bf94b"
+    },
+    "after": {
+      "task_id": "3b9a6bac36cf4498a0a67035d746b9eb",
+      "run_id": "cdbcaf013e9f4ecfb684aa2311422004",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "6a98067af19b60e9b8f6cd25dd306f39965a4f94bba8a13d66ec130ecc2bf94b"
+    }
+  }
+}

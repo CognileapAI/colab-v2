@@ -1,0 +1,45 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 2,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-test",
+      "frontend-typecheck"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "19662095e79346feb753167bcdc13204",
+      "run_id": "d3e76c9463774632b62c92d7c9e3da57",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "7654a688bcfdc496a7594c6c3d796dc6c4744205ea51d088c130d5c712555b80"
+    },
+    "after": {
+      "task_id": "19662095e79346feb753167bcdc13204",
+      "run_id": "d3e76c9463774632b62c92d7c9e3da57",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "7654a688bcfdc496a7594c6c3d796dc6c4744205ea51d088c130d5c712555b80"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-breaking",
+      "status": "red_판정",
+      "state": "red_판정",
+      "exit": 1,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "service-tests-core-api",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 3,
+    "red_판정": 1,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "contract-breaking",
+      "generated-up-to-date",
+      "service-tests-core-api"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "8d4e3a9cf7ac404f9de9510f2c2507a2",
+      "run_id": "92d5a31b09634f0492e92d9f0aa33c74",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "539be05a36ce1a66c979c3e74323972f9aa6c58b9630657885cbca975d20160f"
+    },
+    "after": {
+      "task_id": "8d4e3a9cf7ac404f9de9510f2c2507a2",
+      "run_id": "92d5a31b09634f0492e92d9f0aa33c74",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "539be05a36ce1a66c979c3e74323972f9aa6c58b9630657885cbca975d20160f"
+    }
+  }
+}

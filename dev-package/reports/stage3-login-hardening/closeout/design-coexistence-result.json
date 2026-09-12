@@ -1,0 +1,11 @@
+{
+  "asset": "https://www.colab-hydro.com/assets/index-YdOxNYzp.js",
+  "revoked": 401,
+  "separate": 200,
+  "sha256": "8d65f49f470b20f6f27e2291bdc095e19c3c3040eab9c94d104d8cce1c0d7938",
+  "unauthenticated": 401,
+  "image": "colab-v2/frontend:design-st-r5-20260912-c329c32d-dirty",
+  "imageId": "sha256:1c38053acba420ee8c0446f008fb78c2b1a5cd1ba32b2f2f8ebae0a2df836fe1",
+  "twoTabsLogout": true,
+  "separateBrowserReload": true
+}

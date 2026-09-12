@@ -1,0 +1,6 @@
+{
+  "frontend/src/auth/LoginPage.tsx": "85efc8a90410dd648807b015c2f32602d8b0b43ba38faf84fdb1b1d5c8727062",
+  "frontend/src/auth/PasswordChangePage.tsx": "3a309526554ced243f64d76c9f71662394666cf35826eed24fcaddeabbedd4d3",
+  "frontend/src/auth/store.ts": "6e5c333132448a21af6bd6812f5ed4c71582413b3f7e7da31ec15cd1af450035",
+  "frontend/src/api/client.ts": "111b88db1b5f6869714f3447befeae5b6518b30cb2c897aee060fbfc1fdb61a9"
+}

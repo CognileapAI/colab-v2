@@ -1,0 +1,72 @@
+{
+  "containers": {
+    "colab_v2_staging_frontend": {
+      "id": "9e5c36450720d876c07465aaa9654df9eaf2d439b67bdeaeacec8a5c95d2a216",
+      "image": "sha256:a0fb81a945526c5a89b463467e8e4c725583cf6372e57fffada5432c69e330e6",
+      "health": "healthy"
+    },
+    "colab_v2_staging_core_api": {
+      "id": "270c44f94c78cd8fc64d92b9e28abd1cbb94b71ff431994765d4568a10f07da4",
+      "image": "sha256:c719ef133c0d2b7f58bf7c85b4e4e084daa6af3ea98370ada100bb698f601fc9",
+      "health": "healthy"
+    },
+    "colab_v2_staging_nginx": {
+      "id": "bbda5483331e0a947e8d69bfebfe902d06333769b8bfc41af4e09f787d09833e",
+      "image": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "health": "healthy"
+    },
+    "colab_v2_staging_pipeline_worker": {
+      "id": "f6ea828bcd6147a46982210d0093c8277d0f09d92343478132cda177ce8c306d",
+      "image": "sha256:b3f98600aa2d2372b9b02d403edccc7dc7df733957fa06c30ff17322f0025f32",
+      "health": "healthy"
+    },
+    "colab_v2_staging_viz_render": {
+      "id": "56024adbe01e60add5058db4f4ac9b667df0ae84037595ded8b42d485383049a",
+      "image": "sha256:59dacc23fde3c3cdd729a526af56ca578bafc3fd475f32bc7f85ddb8e24edb62",
+      "health": "healthy"
+    },
+    "colab_v2_staging_ai_service": {
+      "id": "cf6ea3ba4907ea933edff0576e86fc63e0c6459b8197c7979d33724ae16df1ad",
+      "image": "sha256:8a9fc0a6455816ac1bb4a9afa6ac30566259800cea7b2e4224e846d497c26f23",
+      "health": "healthy"
+    },
+    "colab_v2_staging_cloudflared": {
+      "id": "0064ff21cfc8f0df3a1d76c76e8f4cb0040d8cb8542e34df0ca83b70aedf7c49",
+      "image": "sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0",
+      "health": "healthy"
+    },
+    "colab_v2_staging_pg": {
+      "id": "01dac5bfd1352662bbb282b9faa93fc2872a7120a4cb9fc7f235663cc89a8055",
+      "image": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+      "health": "healthy"
+    }
+  },
+  "unrelatedContainersUnchanged": [
+    "colab_v2_staging_nginx",
+    "colab_v2_staging_pipeline_worker",
+    "colab_v2_staging_viz_render",
+    "colab_v2_staging_ai_service",
+    "colab_v2_staging_cloudflared",
+    "colab_v2_staging_pg"
+  ],
+  "protectedRows": {
+    "account_admin.login_credential": {
+      "originalRows": 1,
+      "originalRowsByteUnchanged": true,
+      "addedTestRows": 1
+    },
+    "account_admin.service_operator": {
+      "originalRows": 1,
+      "originalRowsByteUnchanged": true,
+      "addedTestRows": 0
+    },
+    "public.d1_account": {
+      "originalRows": 7,
+      "originalRowsByteUnchanged": true,
+      "addedTestRows": 1
+    }
+  },
+  "migration": "0026_login_sessions",
+  "appCannotReadSessionTable": true,
+  "authRoleSelectInsertUpdateNoDelete": true
+}
