@@ -15,16 +15,29 @@
 items:
   - id: BO-1
     name: "운영자 백오피스 — 이메일 식별 서비스 계정 직접 추가"
-    status: open
+    status: done
     stage: after_stage2
     owner: "D1 / core-api · frontend"
     entry_conditions: ["stage 3 최우선 개발 — 2026-09-10 사용자 지정", "계정 발급·권한·소속·기존 계정 처리 상세 사양 확정 후 구현"]
     depends_on: [PA]
-    completion_def: "완료 정의 미작성 — 운영자가 백오피스 화면에서 이메일 식별 서비스 계정을 직접 추가하는 방향만 승인. 메일함 생성 요구가 아니며 상세 발급 방식·검증 기준은 별도 설계에서 확정한다."
+    completion_def: "운영자가 백오피스 화면에서 이메일·역할·연구실을 등록하고 초기 비밀번호를 직접 입력해 계정을 발급한다. 당사자는 첫 로그인에서 비밀번호 변경을 강제받고 변경 전에는 다른 기능을 쓰지 못한다. 메일 발송은 요구가 아니다 — 초기 비밀번호는 운영자가 당사자에게 직접 전달한다(2026-09-12 Ted 판정 Q4). 목록·재설정·비활성화는 이 항목이 아니라 BO-2 다."
+    evidence: "계정 추가 화면 `frontend/src/routes/AccountAdminPage.tsx` · 발급 엔드포인트 `POST /admin/accounts`(`services/core-api/src/colab_core/app/routes/accounts.py` `createServiceAccount`) · 계약 `contracts/seams/fe-core.yaml` `/admin/accounts`. 완료 판정 = 2026-09-12 Ted 판정 Q7 「현재 계정 추가 화면으로 완료 처리, 확장은 새 항목」."
+    deadline: null
+    note: "stage 3 내 최우선. stage 1·2 완료 조건에 추가하지 않는다. Google 로그인 보류와 독립이며 기존 로그인 제거 승인 아님. 확장분(목록·재설정·비활성화)은 BO-2 로 분리했다."
+    sources: ["sessions/20260910-stage12-decisions.md", "dev-package/intent/2026-09-12-login-backoffice-closeout.md"]
+
+  - id: BO-2
+    name: "운영자 백오피스 — 계정 목록·비밀번호 재설정·비활성화"
+    status: open
+    stage: after_stage2
+    owner: "D1 / core-api · frontend"
+    entry_conditions: ["BO-1 완료(계정 추가 화면) — 2026-09-12 판정", "승인 intent 2026-09-12 의 범위로 한정 — 메일 발송·역할/연구실 변경 UI·운영자 지정 UI 는 범위 밖"]
+    depends_on: [BO-1]
+    completion_def: "셋을 모두 만족한다. ⑴ 운영자 백오피스에 계정 목록이 있다 — 전 연구실 한 목록 · 열 6개(이메일·이름·역할·연구실·상태·최근 로그인) · 열 필터. ⑵ 운영자가 특정 계정의 비밀번호를 재설정할 수 있다 — 새 초기 비밀번호를 직접 입력하면 첫 로그인 변경이 다시 강제되고 그 계정의 기존 로그인(모든 기기)이 즉시 종료된다. 비밀번호 원문은 응답·로그에 남지 않는다. ⑶ 운영자가 계정을 비활성화/재활성화할 수 있다 — 비활성화 즉시 로그인 거절 ＋ 기존 로그인 전부 종료. 데이터·소유권은 유지된다."
     evidence: null
     deadline: null
-    note: "stage 3 내 최우선. stage 1·2 완료 조건에 추가하지 않는다. Google 로그인 보류와 독립이며 기존 로그인 제거 승인 아님."
-    sources: ["sessions/20260910-stage12-decisions.md"]
+    note: "전 기기 종료는 기존 `session_version` 대조를 재사용한다(새 세션 저장 방식 도입 없음). 범위 밖 = 메일 발송 전반 · 역할·연구실 변경 UI · 운영자 지정 UI · 모든 기기 로그아웃 버튼."
+    sources: ["dev-package/intent/2026-09-12-login-backoffice-closeout.md", "dev-package/prd/specs/login-backoffice-closeout.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
 
   - id: R0
     name: 레포 결정

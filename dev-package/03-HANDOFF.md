@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-12 로그인·백오피스 회차: intent/spec/라운드 `6e99a157` 병합. 계약 동결 해제 서명(로그인 혼합 입력 400)을 `PLAN-SoT §9 〈381〉`(임시 번호 · 병합 직전 재실측)에 등재하고 CI 단계 「파괴적 변경 탐지 (emit vs frozen seam)」 기준을 `origin/main` 으로 승격했다. 대장 `BO-1` done · `BO-2`(계정 목록·재설정·비활성화) open 신설. **다음 = 작업 1 의 dev 반영**(마이그레이션 `0025`·`0026` 적용 ＋ `deploy_doctor` 15/15 한 번의 실행) — 서명이 등재됐으므로 진입조건 충족. 근거 `dev-package/intent/2026-09-12-login-backoffice-closeout.md` · `dev-package/prd/specs/login-backoffice-closeout.md` · `dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md`.
+
 > 2026-09-11 I4 완료: 서버 자체 자동 점검15/0/0, Slack 시험 발생1/해제1, 실제5분 자동점검3종 정상에 더해 사용자가 지정 수신처에서 두 문구 수신을 확인했다. I4 done. Stage1 완료62/미완료0/보류0, Stage2 완료95/미완료0/보류0, 백로그2건. 아래 pending·권한 부재 기록은 당시 이력이다.
 
 > 2026-09-11 I4 최신: 서버 자체15/0/0·Slack 시험 발생1/해제1 전송·실제5분 자동점검3종 정상. 채널 수신 확인만 대기하며 I4open 유지. 근거 `sessions/20260911-i4-slack-closeout.md`. 아래 이전 날짜·실행의 권한/수신처 부재 기록은 당시 이력이다.

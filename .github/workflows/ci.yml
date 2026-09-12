@@ -140,7 +140,21 @@ jobs:
           test -x frontend/node_modules/.bin/openapi-typescript
       - name: seam 스펙 린트
         run: ./gates/run.sh contract-lint
+      # `contract-breaking` 의 기준(frozen seam)은 파일이 아니라 **ref** 다.
+      # 기본값 `HEAD` 를 CI 에서 그대로 두면 PR 이 자기 자신과 비교돼 차분이 0 이다 —
+      # 조용히 green 이 되는 게이트라 판정을 못 한다. 기준을 `origin/main` 으로 옮긴다.
+      #   push(main) — `origin/main` 이 그 push 의 커밋이다.
+      #   pull_request — checkout 이 merge ref 를 받고, 그 merge 커밋의 부모가 `origin/main` 이다.
+      #                  즉 `origin/main` 이 곧 merge-base 이며 PR 의 실제 차분이 비교된다.
+      # ⚠ checkout 은 `fetch-depth` 무지정(＝1)이고 **요청한 ref 하나만** 받는다.
+      #   pull_request 문맥에는 `origin/main` 이 아예 없어 게이트가 「기준 ref 를 찾을 수 없다」로
+      #   red 를 낸다. 그래서 비교 직전에 그 ref 하나를 명시적으로 받아 둔다.
+      #   게이트는 `git archive <ref> contracts` 로 트리만 꺼내므로 depth 1 로 충분하다.
+      - name: 비교 기준 ref 확보 (origin/main — contract-breaking 용)
+        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
+        env:
+          COLAB_BREAKING_BASE_REF: origin/main
         run: ./gates/run.sh contract-breaking
       - name: 이벤트 계약 린트 (ajv — 스키마 + 인스턴스 픽스처)
         run: ./gates/run.sh event-lint
