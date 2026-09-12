@@ -343,3 +343,33 @@ def test_the_read_scope_never_opens_a_write(session_factory) -> None:
     finally:
         session.rollback()
         session.close()
+
+
+def test_lab_info_stays_whole_for_an_operator(p2_client) -> None:
+    """`GET /lab` 은 **자기 연구실 한 벌**이어야 한다 — 이름과 구성원이 갈리면 안 된다.
+
+    ⚠ `d1_lab` 은 테넌트 루트라 RLS 정책이 없고, 그래서 연구실 행은 질의가 직접
+    `current_lab_id()` 로 고른다(`domains/d1_identity.py` 주석). 구성원 수·구성원 목록은
+    RLS 에만 기대고 있었는데, 운영자 읽기 스코프가 열리면 그 둘만 전 연구실로 넓어진다 —
+    화면에는 **내 연구실 이름 아래 남의 연구실 사람들**이 서게 된다. 읽기를 넓히는 것과
+    한 화면의 두 값이 서로 다른 범위를 말하는 것은 다른 일이다.
+    """
+    client = p2_client(session_secret=SECRET)
+    token = _operator_token(client)
+
+    lab = client.get("/api/v1/lab", headers=auth(token))
+    assert lab.status_code == 200, lab.text
+    assert lab.json()["labId"] == LAB_C, "운영자의 연구실 정보가 자기 연구실이 아니다."
+
+    grid = client.get("/api/v1/lab/members", headers=auth(token))
+    assert grid.status_code == 200, grid.text
+    assert lab.json()["memberCount"] == grid.json()["totalCount"], \
+        "연구실 정보의 구성원 수와 구성원 격자의 길이가 갈린다 — 두 값의 범위가 다르다."
+
+    # 정답은 **그 연구실의 계정 수**다. 운영자 목록을 연구실로 좁혀 세어 대조한다.
+    listed = client.get("/api/v1/admin/accounts", headers=auth(TOKEN_PROF),
+                        params={"labId": LAB_C})
+    assert listed.status_code == 200, listed.text
+    in_lab_c = len(listed.json()["accounts"])
+    assert grid.json()["totalCount"] == in_lab_c, \
+        f"구성원 격자가 자기 연구실({in_lab_c}명) 밖까지 담았다: {grid.json()['totalCount']}명"

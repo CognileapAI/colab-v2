@@ -137,6 +137,7 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [x] 양성 — 관리자가 두 연구실의 카탈로그·데이터셋 상세를 읽는다.
 - [x] `gates/config/rls-allowlist.toml` 은 고치지 않았다 — 게이트가 요구하지 않았다(「그 밖의 정책이 더 걸려 있는 것은 red 가 아니다」). 대신 `gates/tools/rls-effect.sh` 의 정책 목록 오라클을 **넓히지 않고 늘렸다**: 기대 목록에 `operator_read` 를 더하면서 ⑴ RESTRICTIVE 는 `d3_file.body_access` 하나뿐 ⑵ `operator_read` 는 모든 표에서 SELECT 전용 두 검사를 새로 붙였다.
 - [x] 프런트 — 행별 관리자 토글(확인 대화상자 · 자기 자신 비활성) · 발급 폼 체크박스 · GNB 「전체 연구실」 표기.
+- [x] **이 회차가 스스로 만든 결함 1건을 닫았다** — `GET /lab` 의 연구실 행은 `current_lab_id()` 로 고정인데 구성원 수·구성원 격자는 RLS 에만 기대고 있었다. 읽기 스코프가 열리자 **내 연구실 이름 아래 남의 연구실 사람들**이 섰다(RED 실측 — 자기 연구실 98명 · 격자 101명). 두 질의를 연구실에 못 박아 한 화면의 두 값이 같은 범위를 말하게 했다.
 - [x] `db/platform/tests/0028-drift.sh` 실행비트를 인덱스에 기록한다(`git update-index --chmod=+x` · 100755 실측).
 - [x] 대장에 `BO-3` 을 등재한다(open · after_stage2 · depends_on `BO-2`).
 - [ ] `work-item-consistency` green. — **red(판정) 1건**: ㈕ `BO-3` 이 `CLAUDE.md` 의 `after_stage2` 괄호 목록에 없다. 지시에 따라 `CLAUDE.md` 를 고치지 않고 보고한다 — 필요한 편집은 그 괄호의 `` `BO-2` `` 뒤에 `` ·`BO-3` `` 한 토막뿐이다.
