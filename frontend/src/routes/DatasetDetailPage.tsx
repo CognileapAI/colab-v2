@@ -41,7 +41,8 @@ import type { LineageEditSource } from '../components/lineage/lineageEditSource'
 import { GridAttachEntry } from '../components/upload/GridAttachEntry';
 import type { UploadSources } from '../components/upload/types';
 import { LockedContent } from '../permission/LockedContent';
-import { ActionGate } from '../permission/PermissionGate';
+import { ActionGate, ReadOnlyScopeProvider } from '../permission/PermissionGate';
+import { useAccount } from '../permission/session';
 import { recordVisit } from '../components/dashboard/visits';
 import '../components/detail/detail.css';
 
@@ -118,6 +119,21 @@ export function DatasetDetailPage(
   //    `detail.detail.actions` 를 봤고, 저장 응답이 `actions` 를 바꿔도 화면이 옛 판정으로
   //    남았다(새로고침해야 맞았다). 헤더 칩·공개 범위 설명과 같은 상세에서 와야 한다.
   const shown = edit.detail;
+  // ⭑ **⟨신설 2026-09-13 · 승인 intent `2026-09-12-operator-designation.md`⟩ 남의 연구실 = 읽기 전용.**
+  //
+  // 관리자(운영자)는 **모든 연구실을 읽고** 쓰기는 소속 연구실 그대로다(같은 intent 「원한 결과」).
+  // 종전에는 화면이 그 둘을 가르지 않아 남의 연구실 상세에도 `수정`·`기준 격자 추가`·`파일 추가`·
+  // `계보 수정 · 추가`·`계보 채우기` 가 **전부 보이고 활성**이었다 — 실측은
+  // `dev-package/reports/r-login-backoffice/task8-realuse/results.md §1-7`.
+  // 서버는 그 전부를 403·404 로 거절한다(`test_operator_designation.py` ㈒) — 화면만 어긋나 있었다.
+  //
+  // ⚠ **자기 연구실은 한 칸도 바뀌지 않는다** — 운영자가 아니거나 `labId` 가 같으면 거짓이다.
+  const account = useAccount();
+  const readOnlyForeignLab = Boolean(
+    account?.canManageServiceAccounts === true &&
+    shown?.labId !== undefined &&
+    shown.labId !== account.labId,
+  );
   /** 편집 중 행동 두 개 — 다운로드가 서 있던 자리를 받는다 (PRD-22 각주 2 ⑴). */
   const editActions = (
     <DatasetEditActions
@@ -210,10 +226,18 @@ export function DatasetDetailPage(
       ) : null}
 
       {detail.status === 'ready' && shown ? (
+        <ReadOnlyScopeProvider readOnly={readOnlyForeignLab}>
         <LockedContent
           bodyAccessible={shown.bodyAccessible}
           header={
             <>
+              {/* 제목 바로 위 한 줄 — **왜 고칠 수 없는지**를 먼저 말한다. 버튼만 사라지면
+                  사람은 권한이 꺼진 줄 알고 관리자에게 문의한다(이 사람이 관리자다). */}
+              {readOnlyForeignLab ? (
+                <p className="dt-foreign" data-testid="detail-foreign-readonly">
+                  다른 연구실 데이터 — 읽기 전용
+                </p>
+              ) : null}
               <DetailHeader
                 detail={shown}
                 summaryInBody={Boolean(shown.basicInfo)}
@@ -371,6 +395,7 @@ export function DatasetDetailPage(
           <UsageSection detail={shown} downloadHidden={edit.editing} />
           </div>
         </LockedContent>
+        </ReadOnlyScopeProvider>
       ) : null}
     </div>
   );

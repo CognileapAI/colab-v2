@@ -171,6 +171,17 @@
 1. **타 연구실 데이터셋 상세의 편집 진입점** — 운영자 전 연구실 열람에서 `수정`·`파일 관리`·`파일 추가`·
    `기준 격자 추가`·`계보 수정 · 추가`·`계보 채우기` 가 활성이다. 표기(「읽기 전용」)와 화면이 어긋난다.
    **어느 게이트에도, `deploy_doctor` 에도 걸리지 않는다** — 검사가 없는 것 자체가 항목이다.
+   - ⭑ **후속 ⑴ 해소 (2026-09-13).** 상세에 `DatasetDetail.labId` 가 실리고(계약 추가 1건 ·
+     파괴 아님), 화면이 `me.canManageServiceAccounts ∧ labId ≠ me.labId` 로 **읽기 전용 구역**을
+     세워 `수정`·`기준 격자 추가`·`파일 추가`·`대표 그림`·`계보 수정 · 추가`·`계보 채우기`·
+     `다운로드` 를 **DOM 에서 없앤다**(비활성이 아니다). 제목 위에 「다른 연구실 데이터 — 읽기
+     전용」 한 줄이 서고, GNB 의 「(읽기 전용)」이 `aria-label` 밖 **보이는 글자**가 됐다.
+     프로젝트는 서버 `ProjectDetail.canManage` 가 소속 연구실을 함께 본다.
+     **검사가 생겼다** — `services/core-api/tests/test_operator_designation.py` ㈒(쓰기 7종 거절 ·
+     비회원과 같은 코드 · 행 무변) ＋ `frontend/test/operator-foreign-lab-readonly.test.tsx` ·
+     `frontend/test/shell.test.tsx`. 남은 것 = 서버 `DatasetDetail.actions`·`LineageGraph.canEdit`
+     이 아직 연구실 경계를 말하지 않는다(화면이 가린다) · 「파일 관리」 토글은 목록을 펴는
+     **읽기** 조작이라 그대로 둔다.
 2. **「마지막 운영자 해제」 가드의 시험 경로가 없다** — 자기 해제가 먼저 400 이라, 운영자 2명 중 하나로는
    도달할 수 없다. 시험하려면 운영자 3명 또는 서비스 시험(`test_account_backoffice.py`) 쪽 오라클이 필요하다.
 3. **계정 목록의 상태 열이 「첫 로그인 대기」를 표현하지 않는다** — `must_change_password` 가 목록 응답에 없다.

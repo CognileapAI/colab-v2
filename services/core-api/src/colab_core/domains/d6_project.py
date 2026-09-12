@@ -196,7 +196,7 @@ _LIST = text("""
 """)
 
 _FIND = text("""
-    SELECT p.id, p.type, p.name, p.description, p.status,
+    SELECT p.id, p.lab_id, p.type, p.name, p.description, p.status,
            p.period_start, p.period_end, p.link_url
       FROM d6_project p
      WHERE p.id = :project_id
@@ -241,13 +241,17 @@ class ProjectRecord:
     period_start: object
     period_end: object
     link_url: str | None
+    #: 이 프로젝트를 가진 연구실. **경계 조건이 아니다** — 경계는 RLS 가 건다.
+    #: 운영자 읽기 스코프가 열린 요청에서만 `subject.lab_id` 와 갈릴 수 있고, 그때
+    #: `canManage` 를 끄는 데 쓴다(승인 intent 2026-09-12 — 읽기는 전 연구실 · 쓰기는 소속).
+    lab_id: str | None = None
 
 
 def _record(r) -> ProjectRecord:
     return ProjectRecord(
         project_id=r["id"], type=r["type"], name=r["name"], description=r["description"],
         status=r["status"], period_start=r["period_start"], period_end=r["period_end"],
-        link_url=r["link_url"],
+        link_url=r["link_url"], lab_id=r["lab_id"] if "lab_id" in r.keys() else None,
     )
 
 

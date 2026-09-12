@@ -371,7 +371,12 @@ def get_project(projectId: str, subject: Subject = Depends(current_subject),
         # 연결 주소는 설명·기간과 **다른 묶음**이다 (§1.2). 값을 고쳐 보여주지 않는다 (§8).
         "link": record.link_url,
         "datasets": datasets,
-        "canManage": _can_manage(db, subject),
+        # ⭑ **⟨증보 2026-09-13 · 승인 intent 2026-09-12 운영자 지정⟩ 스위치 ∧ 소속 연구실.**
+        # 운영자의 읽기는 전 연구실이고 쓰기는 소속 연구실 그대로다. 스위치만 보고 참을
+        # 내리면 화면이 남의 연구실 프로젝트에 `수정`·`상태 바꾸기`·`데이터셋 연결` 을
+        # 세우고, 누르면 서버가 거절한다 — 「읽기 전용」이라 적고 고치는 길을 여는 것이다.
+        "canManage": _can_manage(db, subject)
+                     and record.lab_id == str(subject.lab_id),
     }
 
 

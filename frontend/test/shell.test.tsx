@@ -83,6 +83,25 @@ describe('관리자 전 연구실 보기 — 승인 intent 2026-09-12 운영자 
     expect(button.getAttribute('aria-label')).toContain('읽기 전용');
   });
 
+  /**
+   * 회귀 — 종전에는 「(읽기 전용)」이 `aria-label` 안에만 있어 **화면에는 `전체 연구실` 만**
+   * 보였다(`dev-package/reports/r-login-backoffice/task8-realuse/results.md §1-7` 실측
+   * 「(읽기 전용)」은 눈에 보이지 않는다). 범위 표기는 보조기술 전용 사실이 아니다.
+   */
+  it('「읽기 전용」이 **보이는 글자**로도 선다 — aria-label 안에만 있지 않다', () => {
+    renderAt('/lab', { ...account(), canManageServiceAccounts: true });
+    const label = screen.getByTestId('lab-switcher').querySelector('.ln-ro');
+    expect(label).not.toBeNull();
+    expect(label).toHaveTextContent('읽기 전용');
+    // `aria-hidden` 으로 가려 두지 않는다 — 보이는 글자이자 읽히는 글자다.
+    expect(label?.getAttribute('aria-hidden')).toBeNull();
+  });
+
+  it('관리자가 아니면 그 글자가 아예 없다', () => {
+    renderAt('/lab', account());
+    expect(screen.getByTestId('lab-switcher').querySelector('.ln-ro')).toBeNull();
+  });
+
   it('관리자가 아니면 종전처럼 소속 연구실 이름만 선다', () => {
     renderAt('/lab', account());
     const button = screen.getByTestId('lab-switcher');

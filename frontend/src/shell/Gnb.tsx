@@ -76,7 +76,12 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
                 ? '연구실 전환 · 전체 연구실 (읽기 전용)'
                 : `연구실 전환 · ${account?.labName ?? ''}`}>
         <Icon><path d="M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 12h6v9h-6" /></Icon>
+        {/* ⭑ **⟨개정 2026-09-13⟩ 「(읽기 전용)」을 눈에 보이는 글자로 적는다.**
+            종전에는 그 다섯 글자가 `aria-label` 안에만 있어 **화면에는 `전체 연구실` 만** 보였다
+            (`task8-realuse/results.md §1-7` 실측 「(읽기 전용)」은 눈에 보이지 않는다). 읽기 전용은
+            보조기술 전용 사실이 아니라 **모든 사람이 알아야 하는 범위 표기**다. */}
         <span className="ln">{operator ? '전체 연구실' : (account?.labName ?? '')}</span>
+        {operator ? <span className="ln-ro">(읽기 전용)</span> : null}
       </button>
 
       {/* 주 내비 3개 — 전원 공통. 남는 가로 여백은 여기서 먹는다 (Policy §1) */}

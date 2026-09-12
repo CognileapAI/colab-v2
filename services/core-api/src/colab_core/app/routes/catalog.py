@@ -1573,6 +1573,10 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
 
     return {
         "datasetId": core.dataset_id,
+        # ⭑ **⟨증보 2026-09-13 · 승인 intent 2026-09-12 운영자 지정⟩ 어느 연구실 것인가.**
+        # 운영자의 읽기는 전 연구실이고 쓰기는 소속 연구실 그대로다 — 화면이 그 둘을 갈라
+        # 그리려면 이 값이 있어야 한다. **경계 판정에 쓰지 않는다**(경계는 RLS 가 건다).
+        "labId": core.lab_id,
         # 파일명(묶음 이름)은 본체 쪽 사실이라 잠기면 내리지 않는다 — 잠긴 상세의 노출 범위는
         # `이름 · 요약 · 헤더 태그` 까지다 (Policy_승인_처리 §8 적용 지점 표).
         "fileName": (None if not body_accessible or meta is None else meta.bundle_file_name),

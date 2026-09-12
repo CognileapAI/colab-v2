@@ -19,6 +19,7 @@ import type { LineageEdge, LineageGraph, LineageNode } from './graphTypes';
 import { LineageFixModal, type ParentCandidateSource } from './LineageFixModal';
 import { apiLineageEditSource, type LineageEditSource } from './lineageEditSource';
 import { apiLineageSource } from './lineageSource';
+import { useReadOnlyScope } from '../../permission/PermissionGate';
 import './lineageGraph.css';
 
 /** 목업 `linHint` 두 문장. 기록 없음은 별도 화면이 아니라 이 구역의 상태 변형이다. */
@@ -282,7 +283,13 @@ export function LineageSection(props: {
     previousDatasetId.current = props.graph.datasetId;
     setFixing(false);
   }, [props.graph.datasetId]);
-  const canEdit = g.canEdit;
+  // ⭑ **⟨증보 2026-09-13 · 승인 intent 2026-09-12 운영자 지정⟩ 읽기 전용 구역이면 끈다.**
+  // 서버 `canEdit` 은 아직 `업로드·편집` 스위치만 본다(`routes/lineage.py`) — 관리자가 남의
+  // 연구실 계보를 열면 참으로 내려온다. 그 화면의 `계보 수정 · 추가`·`계보 채우기` 는 서버가
+  // 403·404 로 거절하는 길이라(`test_operator_designation.py` ㈒) **그리지 않는다**.
+  // ⚠ 훅은 **조건 없이** 부른다 — `&&` 뒤에 두면 렌더마다 호출 수가 갈린다.
+  const readOnlyScope = useReadOnlyScope();
+  const canEdit = g.canEdit && !readOnlyScope;
   const openToken = props.openToken ?? 0;
   useEffect(() => {
     // 최초 렌더(0)로는 열지 않는다 — 편집 화면이 눌렀을 때만 오른다.

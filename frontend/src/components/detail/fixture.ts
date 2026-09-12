@@ -8,6 +8,10 @@
 // 서버가 붙으면 `apiDetailSource` 가 그대로 들어오고 이 파일은 시험에서만 쓰인다.
 import { DatasetGone, type DatasetDetail, type DetailSource } from './types';
 
+/** 픽스처가 사는 연구실 하나. 목업에는 연구실 표기가 없어 **한 값으로 고정**한다 —
+ *  화면의 「다른 연구실 데이터」 판정(`DatasetDetail.labId`)이 픽스처에서 흔들리지 않게 한다. */
+export const FIXTURE_LAB_ID = '01JYZ9K7WQ3N8V4M2X6C5B0L01';
+
 const 호랑이 = { accountId: '01JYZ9K7WQ3N8V4M2X6C5B0U01', name: '호랑이' };
 const 표범 = { accountId: '01JYZ9K7WQ3N8V4M2X6C5B0U02', name: '표범' };
 const 강아지 = { accountId: '01JYZ9K7WQ3N8V4M2X6C5B0U03', name: '강아지' };
@@ -62,6 +66,7 @@ function fromCatalogRowOnly(row: {
 }): DatasetDetail {
   return {
     datasetId: row.datasetId,
+    labId: FIXTURE_LAB_ID,
     name: row.name,
     fileName: row.name,
     summary: null,
@@ -106,6 +111,7 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
   // ── 상세 목업 기본 장면 ──────────────────────────────────────────────────────
   '01JYZ9K7WQ3N8V4M2X6C5B0AA1': {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA1',
+    labId: FIXTURE_LAB_ID,
     name: '낙동강 유역 강우 (2025)',
     fileName: 'nakdong_precip_2025_Lv2.nc',
     summary: '유역 평균 강수량',
@@ -165,6 +171,7 @@ export const FIXTURE_DETAILS: Record<string, DatasetDetail> = {
   // 잠기면 `basicInfo` 가 null 이다 — 기본 정보를 통째로 비운다 (`§7` · `PLAN-SoT §9-㊼-④`).
   '01JYZ9K7WQ3N8V4M2X6C5B0AA5': {
     datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0AA5',
+    labId: FIXTURE_LAB_ID,
     name: '낙동강 유역 유출량 (2025)',
     fileName: 'nakdong_runoff_2025_Lv2.nc',
     summary: '강우와 짝이 되는 유출 결과',

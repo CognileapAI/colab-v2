@@ -139,7 +139,7 @@ _TOMBSTONE = text("SELECT 1 FROM d3_dataset WHERE id = :dataset_id AND deleted_a
 # 상세 한 건. 목록 질의와 같은 형태를 쓰되 소유자 이름까지 함께 읽는다 —
 # 상세의 `기본 정보` 는 소유자와 올린 사람을 **둘 다** 적는다 (Policy_데이터셋_상세 §5 · P-30).
 _ONE = text("""
-    SELECT d.id, d.uploader_account_id, d.owner_account_id, d.source_label,
+    SELECT d.id, d.lab_id, d.uploader_account_id, d.owner_account_id, d.source_label,
            d.last_modified_at, d.uploaded_at, d.lineage_confirmed_at,
            -- 목록 질의와 **같은 식**이다 — 두 화면이 다른 수를 그리면 안 된다 (위 주석).
            d.file_count - _grid.n AS file_count,
@@ -292,6 +292,11 @@ class DatasetCore:
     source_downloaded_on: object = None
     #: 사람이 적은 격자 설명. 파일에서 읽은 `DatasetAutometa.grid` 와 다른 값이다.
     human_grid_description: str | None = None
+    #: 이 데이터셋을 가진 연구실 (`DatasetDetail.labId`). **상세(`_ONE`)만 채운다** —
+    #: 목록 질의는 안 읽고 `DatasetRow` 에도 칸이 없다.
+    #: ⚠ 경계 조건으로 쓰지 않는다 — 경계는 RLS 가 건다(위 `_ROWS` 머리말과 같은 규율).
+    #: 화면이 「내 연구실 것인가」를 묻는 **표시용 값**이다(운영자 읽기 전용 표기).
+    lab_id: str | None = None
 
 
 def list_lineage_candidate_cores(
@@ -387,6 +392,7 @@ def find_dataset_core(session: Session, dataset_id: Ulid) -> DatasetCore | None:
         processing_level_user_set=r["processing_level_user_set"],
         source_url=r["source_url"], source_downloaded_on=r["source_downloaded_on"],
         human_grid_description=r["human_grid_description"],
+        lab_id=r["lab_id"],
     )
 
 

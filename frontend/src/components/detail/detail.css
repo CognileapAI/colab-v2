@@ -328,3 +328,11 @@
 
 .dt-representative-actions label { position: relative; }
 .dt-representative-actions label:focus-within { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }
+
+/* 「다른 연구실 데이터 — 읽기 전용」 — 제목 바로 위 한 줄 (승인 intent 2026-09-12 운영자 지정).
+   경고가 아니라 **범위 표기**다 — 빨강을 쓰지 않고, 사라진 편집 진입점의 사유를 말한다. */
+.detail-page .dt-foreign {
+  margin: 0 0 8px;
+  color: var(--color-gray-600);
+  font-size: var(--text-caption);
+}
