@@ -1,0 +1,22 @@
+FF
+======================================================================
+FAIL: test_release_ids_cannot_overwrite_another_release_state (scripts.tests.test_deploy_release.ReleaseTests.test_release_ids_cannot_overwrite_another_release_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/scripts/tests/test_deploy_release.py", line 62, in test_release_ids_cannot_overwrite_another_release_state
+    self.plan['id']='foo';self.run_plan();self.assertEqual(first.read_bytes(),before)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: b'{\n[14 chars]olab-deploy/1",\n  "id": "foo",\n  "summary": [561 chars]]\n}' != b'{\n[14 chars]olab-release-state/1",\n  "id": "foo.plan",\n [1427 chars]"\n}'
+
+======================================================================
+FAIL: test_lock_lives_until_deployment_child_exits_after_parent_kill (scripts.tests.test_deploy_release.ReleaseTests.test_lock_lives_until_deployment_child_exits_after_parent_kill)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/scripts/tests/test_deploy_release.py", line 73, in test_lock_lives_until_deployment_child_exits_after_parent_kill
+    with self.assertRaises(d.ReleaseBusy):
+AssertionError: ReleaseBusy not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.415s
+
+FAILED (failures=2)

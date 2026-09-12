@@ -1,0 +1,8 @@
+::error::frontend-visual red(판정) — 페이지 1건 · 13px 미만 0건 · 대비<4.5 1건 · 스크린샷 2장 (허용 접두사 0개 적용 후).
+     - d31zgpff2091oh.cloudfront.net · 대비<4.5 · button.login-submit · 3.41:1 · "들어가기"
+   근거(스크린샷 2장 · index.md): /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/dev-package/reports/stage12-deployed-supplement/frontend-visual/frontend-visual
+   허용 목록으로 접으려면 gates/fixtures/frontend-visual/allow.txt 에 셀렉터 접두사를 적는다 — **판정은 사람이 한다.**
+── 요약 ────────────────────────────────────────────────────
+  red(판정)  frontend-visual (exit 1) — 검사 대상이 규율을 어겼다
+  ── 계 : green 0 / red(판정) 1 / red(준비) 0
+  요약 JSON  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/dev-package/reports/stage12-deployed-supplement/frontend-visual/gate-summary.json

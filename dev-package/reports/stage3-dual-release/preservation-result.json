@@ -1,0 +1,55 @@
+{
+  "checks": {
+    "platform": {
+      "public.d1_account": true,
+      "public.d1_lab": true,
+      "public.d1_lab_profile": true,
+      "public.d2_dataset_access": true,
+      "public.d2_dataset_access_grant": true,
+      "public.d2_dataset_access_request": true,
+      "public.d2_member_role": true,
+      "public.d2_permission_change": true,
+      "public.d2_permission_switch": true,
+      "public.d2_verification_request": true,
+      "public.d2_verified": true,
+      "public.d3_dataset": true,
+      "public.d3_dataset_autometa": true,
+      "public.d3_dataset_description": true,
+      "public.d3_dataset_grid_profile": true,
+      "public.d3_dataset_representative_image": true,
+      "public.d3_dataset_variable": true,
+      "public.d3_file": true,
+      "public.d3_lab_default_grid": true,
+      "public.d3_representative_image_cleanup": true,
+      "public.d4_lineage_edge": true,
+      "public.d4_lineage_unknown": true,
+      "public.d5_pipeline_event": true,
+      "public.d5_upload": true,
+      "public.d5_upload_file": true,
+      "public.d5_upload_grid_profile": true,
+      "public.d5_upload_transfer": true,
+      "public.d5_upload_transfer_file": true,
+      "public.d6_project": true,
+      "public.d6_project_dataset": true,
+      "public.d8_activity": true,
+      "public.d8_download": true
+    },
+    "ai": {
+      "public.alembic_version_ai": true,
+      "public.d9_concept": true,
+      "public.d9_concept_edge": true,
+      "public.d9_method_term": true,
+      "public.d9_place_alias": true,
+      "public.d9_topic_synonym": true
+    }
+  },
+  "auth": {
+    "credentials": 0,
+    "operators": 0,
+    "appSessionSelect": false,
+    "authSessionDelete": false,
+    "authSessionSelect": true,
+    "authSessionInsert": true,
+    "authSessionUpdate": true
+  }
+}

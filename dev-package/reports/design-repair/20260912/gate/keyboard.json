@@ -1,0 +1,45 @@
+{
+  "time": "2026-09-11T18:10:53.588138+00:00",
+  "checks": [
+    {
+      "scene": "lab",
+      "initial": true,
+      "Tab": 14,
+      "ShiftTab": true,
+      "Escape": true
+    },
+    {
+      "scene": "project-dialog",
+      "initial": true,
+      "Tab": 14,
+      "ShiftTab": true,
+      "Escape": true
+    },
+    {
+      "scene": "project-close",
+      "initial": true,
+      "Tab": 14,
+      "ShiftTab": true,
+      "Escape": true
+    },
+    {
+      "check": "locked row keyboard detail navigation",
+      "passed": true
+    },
+    {
+      "check": "hidden file control remains keyboard accessible",
+      "metrics": {
+        "height": 1,
+        "opacity": "0",
+        "width": 1
+      }
+    },
+    {
+      "check": "reduced motion",
+      "metrics": {
+        "animated": 0,
+        "reduced": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+════ backup-cron-streak — 크론 04:40 회차의 판정 줄을 읽는다 (재실행하지 않는다)
+  판독 대상: /home/ttlhi10/colab-v2-backups/staging-backup.log  ·  허용 나이 36시간
+  요약줄: 크론 연속 GREEN: GREEN (통과 11건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+  시각  : 2026-09-11T04:40:02 (6시간 전)
+  근사   : 무인 판별은 예정 0330 ±30분 창이다 — 그 시각에 손으로 돌린 회차는 무인으로 세어진다
+backup-cron-streak green — 04:40 회차 판정 GREEN · 6시간 전(허용 36시간) · 재실행 0건

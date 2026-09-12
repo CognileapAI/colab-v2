@@ -1,0 +1,4 @@
+  ✓ ⓐ 깨끗한 트리(통과 시험 1건) — green
+  ✓ ⓑ 시험 1건 실패 — red
+  ✓ ⓒ 수집된 시험 0건 (green-by-skip 금지) — red
+  ✓ ⓓ node_modules/.bin/vitest 부재 — red(준비 · 78)

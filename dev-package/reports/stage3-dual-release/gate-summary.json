@@ -1,0 +1,77 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "db-boundary",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-breaking",
+      "status": "red_판정",
+      "state": "red_판정",
+      "exit": 1,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 5,
+    "red_판정": 1,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-test",
+      "frontend-typecheck",
+      "db-boundary",
+      "generated-up-to-date",
+      "contract-lint",
+      "contract-breaking"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "429bfbd3128d46bfa112545ef757172f",
+      "run_id": "d5a5f3dd687b495db2153b64f3f38f72",
+      "checkout": "/home/ttlhi10/colab-stage3-dual-release",
+      "files": "ef1f47bb06f71d04cf0b0377a082733af954f249baf89f000d016dbdfd4a0306"
+    },
+    "after": {
+      "task_id": "429bfbd3128d46bfa112545ef757172f",
+      "run_id": "d5a5f3dd687b495db2153b64f3f38f72",
+      "checkout": "/home/ttlhi10/colab-stage3-dual-release",
+      "files": "ef1f47bb06f71d04cf0b0377a082733af954f249baf89f000d016dbdfd4a0306"
+    }
+  }
+}

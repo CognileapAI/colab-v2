@@ -1,0 +1,10 @@
+  ✓ ⓐ 대조군(오라클 2벌 전부 green) — green
+  ✓ ⓖ 요약줄이 계수를 낸다 (오라클 2 · 실행 2 · 실패 0)
+  ✓ ⓑ 되돌린 델타(오라클 1벌 red) — red
+  ✓ ⓒ 대상 0건 — red
+           ::gate-readiness-failure::gate=migration-drift|cause=입력미선언|missing=alembic 실행 파일 (COLAB_ALEMBIC)|detail=찾은 자리가 없다: COLAB_ALEMBIC · services/core-api/.venv/bin/alembic · gates/.venv/bin/alembic · PATH.    오라클은 전부 alembic 으로 마이그레이션을 렌더한다 — 없으면 **한 벌도 판정되지 않았다**.    핀은 services/core-api/requirements-dev.txt · gates/requirements.txt 에 있다(WU-C6).
+[selftest] ⓓ alembic 부재 → red(준비·입력미선언) OK
+  ✓ ⓔ 실측 2벌 < 선언 최소 3벌 — red
+           ::gate-readiness-failure::gate=migration-drift|cause=입력미선언|missing=docker (오라클이 일회용 postgres 를 세운다 · COLAB_MIGRATION_DRIFT_DOCKER)|detail=오라클은 s1db_ 접두사의 일회용 컨테이너를 스스로 띄운다(호스트 포트 0 · staging 무접촉).    docker 가 없으면 판정이 아니라 **실행이 안 된 것**이다 — skip 이 아니라 red(준비).
+[selftest] ⓕ docker 부재 → red(준비·입력미선언) OK
+migration-drift-selftest green — 케이스 7종(ⓐ 대조군 green · ⓑ 되돌린 델타 red · ⓒ 대상 0건 red · ⓓ alembic 부재 red(준비) · ⓔ 건수 미달 red · ⓕ docker 부재 red(준비) · ⓖ 요약줄 계수).

@@ -1,0 +1,1 @@
+{"allRowsEqual": true, "tables": {"platform": 32, "ai": 6}, "comparison": "Python Unicode sort; DB locale sort differs", "platformVersion": "restored0024 then trial migrated0026; version row excluded from data comparison"}

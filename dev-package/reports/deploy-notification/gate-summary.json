@@ -1,0 +1,37 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "agent-bridge",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 1,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "agent-bridge"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "92e9345b992c4cd19171d94ec6ce7da8",
+      "run_id": "1336b10a119e48c6bab06bada0236705",
+      "checkout": "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2",
+      "files": "7d147b446cb8190540b2395c76c64efa57fde0faa8a110dc23aa83946c161a1e"
+    },
+    "after": {
+      "task_id": "92e9345b992c4cd19171d94ec6ce7da8",
+      "run_id": "1336b10a119e48c6bab06bada0236705",
+      "checkout": "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2",
+      "files": "7d147b446cb8190540b2395c76c64efa57fde0faa8a110dc23aa83946c161a1e"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"architecture": "arm64", "database": "isolated restored dev clone", "accountCreate": 201, "initialLogin": 201, "mustChangePassword": true, "passwordChange": 200, "sameSessionIdAndExpiry": true, "oldToken": 401, "revocation": 204, "revoked": 401, "separate": 200, "testSessionsRevoked": true}

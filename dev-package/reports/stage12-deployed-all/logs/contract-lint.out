@@ -1,0 +1,5 @@
+# 대상 3건 — contracts/seams/core-ai.yaml contracts/seams/core-viz.yaml contracts/seams/fe-core.yaml 
+(node:677758) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+No results with a severity of 'warn' or higher found!
+contract-lint green — seam 3건, 룰 위반 0.

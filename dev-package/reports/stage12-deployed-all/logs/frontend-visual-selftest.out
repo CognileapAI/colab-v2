@@ -1,0 +1,6 @@
+  ✓ ⓐ 13px 이상 · 대비 ≥4.5 · :active · reduced-motion (green)
+  ✓ ⓑ 11px 글자 ＋ 대비 4.2:1 (red)
+           ::gate-readiness-failure::gate=frontend-visual|cause=입력미선언|missing=COLAB_VISUAL_URLS|detail=실화면 계측 대상 URL 이 선언되지 않았다. 선언하는 법 = COLAB_VISUAL_URLS='http://127.0.0.1:5173/ http://127.0.0.1:5173/projects' bash gates/run.sh frontend-visual · 이번 회차에 대상이 없다면 COLAB_VISUAL_EXEMPT=1 로 **명시 면제**를 선언한다(건수가 출력에 찍힌다).
+[selftest] ⓒ COLAB_VISUAL_URLS 미선언 → red(준비·입력미선언) OK
+  ✓ ⓓ COLAB_VISUAL_EXEMPT=1 명시 면제 (green)
+frontend-visual-selftest green — 검사 4건 전건 기대대로 (green 2 · red(판정) 1 · red(준비·입력미선언) 1).

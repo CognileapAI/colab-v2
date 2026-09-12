@@ -1,0 +1,7 @@
+{
+  "originalSqlSha256": "94370d0c3db7e4db53c621cfa19b3cfc7cd19726b7dda33493263f6a24f4286a",
+  "executedTemplateSha256": "b44f8c8e6fb453e32421a436239b18811da64f1073246519e4b1669b4c60c482",
+  "change": "Only ALTER ROLE NOSUPERUSER removed; CREATE NOSUPERUSER and final role attribute assertions retained in same transaction. Runtime password and transaction wrapper excluded from both hashes.",
+  "reason": "RDS non-superuser may create NOSUPERUSER role but cannot ALTER SUPERUSER attribute.",
+  "advisor": "session_integration_review approved"
+}

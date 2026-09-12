@@ -1,0 +1,30 @@
+# 계약 gates/config/importlinter.ini · 대상 PYTHONPATH=services/ai-service/src:services/viz-render/src:services/pipeline-worker/src:services/core-api/src:
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 163 files, 377 dependencies.
+-------------------------------------
+
+배포 단위 4개는 서로를 import 하지 않는다 KEPT
+core-api 층 — app > domains > ports > kernel KEPT
+D2·D3·D4·D6·D8 은 서로 직접 참조하지 않는다 (Port 경유) KEPT
+D1(shared kernel)은 다른 도메인을 import 하지 않는다 KEPT
+ai-service 층 — app > d10 > ports > d9 KEPT
+pipeline-worker 층 — app > domains > ports > kernel KEPT
+viz-render 층 — app > domains > ports > kernel KEPT
+D10 은 D9 를 Port 로만 읽는다 (직접 import 금지) KEPT
+
+Contracts: 8 kept, 0 broken.
+import-boundary green — 계약 전부 통과.

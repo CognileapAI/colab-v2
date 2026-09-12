@@ -1,0 +1,16 @@
+{
+  "stage": {
+    "uiPasswordLogin": true,
+    "reloadRetainsSession": true,
+    "secondTabSharesSession": true,
+    "logoutClearsBothTabs": true,
+    "revokedTokenStatus": 401
+  },
+  "dev": {
+    "uiPasswordLogin": true,
+    "reloadRetainsSession": true,
+    "secondTabSharesSession": true,
+    "logoutClearsBothTabs": true,
+    "revokedTokenStatus": 401
+  }
+}

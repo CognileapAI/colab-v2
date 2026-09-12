@@ -1,0 +1,27 @@
+  ✓ ⓐ 로그 파일 부재 (red)
+  ✓ ⓑ 요약줄 0건 (red)
+  ✓ ⓒ 시각 줄 부재 (red)
+  ✓ ⓓ 36시간 초과 (red)
+  ✓ ⓔ 요약줄 RED (red)
+  ✓ ⓕ 검사 0건 GREEN (red)
+  ✓ ⓖ 낯선 요약줄 모양 (red)
+  ✓ ⓗ GREEN · 신선 (green)
+  ✓ ⓘ 표식 ＋ 종료 0 → green (가짜 검사기 실물) (green)
+  ✓ ⓙ 표식(cause=입력미선언) ＋ 종료 0 → green (green)
+  ✓ ⓚ 종료 78 → ready (ready)
+  ✓ ⓛ 종료 78 ＋ cause=입력미선언 → 미선언 (미선언)
+  ✓ ⓜ 표식 ＋ 종료 1 → ready (ready)
+  ✓ ⓝ 표식 없음 ＋ 종료 1 → red (red)
+  ✓ ⓞ 표식 없음 ＋ 종료 0 → green (green)
+  ✓ ⓟ 표식＋종료 0 은 「판정 못 함」 면제를 못 받는다 (ready 기대 케이스가 red 로 간다)
+::error::fixture red(판정) — 기대와 다른 케이스 1건
+  - 최종 판정 회귀: 미선언으로 분류됨(기대 green)
+  ✓ 최종 판정 green/undeclared → exit 1
+::error::fixture red(판정) — 기대와 다른 케이스 1건
+  - 최종 판정 회귀: 미선언으로 분류됨(기대 red)
+  ✓ 최종 판정 red/undeclared → exit 1
+  ✓ 최종 판정 미선언/undeclared → exit 0
+::error::fixture red(준비) — 아래 케이스를 **판정하지 못했다**(검사기가 못 돌았다). 통과로 세지 않는다:
+  - 최종 판정 회귀 (기대 green · 판정 못 함)
+  ✓ 최종 판정 green/ready → exit 78
+backup-cron-streak-selftest green — 검사 20건 전건 기대대로 (게이트 8건 · 분류기 8건 · 최종 판정 4건)

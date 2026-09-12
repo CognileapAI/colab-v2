@@ -1,0 +1,41 @@
+::error::schema-diff red — db/platform 적용 DB 를 alembic upgrade head 로 올리지 못했다.
+     Traceback (most recent call last):
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 143, in __init__
+         self._dbapi_connection = engine.raw_connection()
+                                  ^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3301, in raw_connection
+         return self.pool.connect()
+                ^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 447, in connect
+         return _ConnectionFairy._checkout(self)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1264, in _checkout
+         fairy = _ConnectionRecord.checkout(pool)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 711, in checkout
+         rec = pool._do_get()
+               ^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 306, in _do_get
+         return self._create_connection()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 388, in _create_connection
+         return _ConnectionRecord(self)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 673, in __init__
+         self.__connect()
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 899, in __connect
+         with util.safe_reraise():
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+         raise exc_value.with_traceback(exc_tb)
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 895, in __connect
+         self.dbapi_connection = connection = pool._invoke_creator(self)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 661, in connect
+         return dialect.connect(*cargs, **cparams)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 629, in connect
+         return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       File "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/core-api/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 120, in connect
+         raise last_ex.with_traceback(None)
+     psycopg.OperationalError: connection failed: connection to server at "172.17.0.3", port 5432 failed: server closed the connection unexpectedly
