@@ -342,6 +342,16 @@ export function PreviewPanel(props: {
   const autoThumb = layers?.thumbnailUrl ?? salvage?.thumbnailUrl ?? null;
   const thumbSrc = pickedThumb ?? autoThumb;
 
+  /**
+   * 바꿔 그리기 — **인라인과 확장보기가 같은 한 함수를 쓴다**(spec v2 §6 ㉯).
+   * 두 자리에 인라인 화살표를 두 벌로 두면 한쪽만 고쳐지는 날이 온다.
+   * 동작은 무변 — `setPick` ＋ `draw(false, next)`. 한 번에 값 하나만 실려 온다.
+   */
+  const onPick = (next: PickSelection): void => {
+    setPick((prev) => ({ ...prev, ...next }));
+    if (uploadId) void draw(false, next);
+  };
+
   function pickThumb(file: File | null): void {
     if (!file || props.representativeDisabled) return;
     props.onRepresentativeFileChange?.(file);
@@ -529,10 +539,7 @@ export function PreviewPanel(props: {
           selection={pick}
           disabled={drawing}
           fallbackPiece={fallbackPiece}
-          onPick={(next) => {
-            setPick((prev) => ({ ...prev, ...next }));
-            if (uploadId) void draw(false, next);
-          }}
+          onPick={onPick}
         />}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
@@ -701,7 +708,34 @@ export function PreviewPanel(props: {
              … → 업로드」라 위 층이 먼저 닫힌다. 위 층이 아래 층을 닫으면 그 순서가 뒤집힌다. */}
       {expanded && (
         <PreviewExpandOverlay title="미리보기" requestClose={() => setExpanded(false)}>
-          {result?.imageUrl ? (
+          {/* ⭑ ⟨R-BUGFIX-260912 · Ted 판정 ⑥⟩ 크게 본 채로 파일·변수·시각을 바꾼다.
+              **새 상태·컨텍스트·스토어를 만들지 않는다** — 이 오버레이는 `PreviewPanel` 의
+              반환 JSX 안에 있어 `pieces`·`description`·`pick`·`onPick` 이 이미 같은 스코프다.
+              `idPrefix` 만 갈라 한 문서에 두 줄이 서도 label-id 가 엉키지 않게 한다. */}
+          <PreviewPickRow
+            idPrefix="pvx"
+            pieces={pieces}
+            description={description}
+            selection={pick}
+            disabled={drawing}
+            fallbackPiece={fallbackPiece}
+            onPick={onPick}
+          />
+          {/* ⭑ ⟨R-BUGFIX-260912 · Ted 판정 ⑧⟩ 크게 본 화면도 「동작 중」을 말한다.
+              오버레이 고르개로 값을 바꾸면 `draw()` 첫 줄의 `setJob(null)` 로 `result` 가
+              사라져 「아직 그리지 않았어요」로 뒤집히던 자리다. 문면·spinner·남은 시간은
+              인라인이 쓰는 **같은 값**이고 새 문장을 만들지 않는다.
+              ⚠ 오류 갈래는 신설하지 않는다 — `drawing` 정의가 `&& !error` 라 오류에서는
+                 기존 축자 「아직 그리지 않았어요」가 서고, 오류 표시는 인라인이 갖는다. */}
+          {drawing ? (
+            <div className="vizload" role="status" aria-live="polite" data-testid="pv-expand-stage">
+              <span className="spin" aria-hidden="true" />
+              <span>{requesting ? '미리보기 요청 중' : job?.stage ?? '지도 그리는 중'}…</span>
+              {remaining !== null ? (
+                <span data-testid="pv-expand-eta">이 단계 약 {Math.ceil(remaining / 1000)}초 남음</span>
+              ) : null}
+            </div>
+          ) : result?.imageUrl ? (
             <>
               <div
                 className="pv-viewport"

@@ -171,6 +171,91 @@ describe('㈀ 고르개 줄은 4:3 틀 밖 · 틀보다 앞선 형제다 — 데
   });
 });
 
+/** 확장보기를 실제로 연다 — 닫힌 상태의 `queryBy…` 가 null 인 것을 통과로 세지 않는다(§8-6 ⑷). */
+async function openExpand(): Promise<HTMLElement> {
+  fireEvent.click(screen.getByTestId('pv-expand'));
+  return screen.findByTestId('pv-expand-body');
+}
+
+describe('㈁ 확장보기 — 고르개 신설과 선택 상태 공유 (단계 ③)', () => {
+  it('5 확장보기 본문이 고르개 줄 하나를 포함한다', async () => {
+    await drawUpload(doneJob());
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
+    const body = await openExpand();
+    expect(body.contains(screen.getByTestId('pvx-pick-row'))).toBe(true);
+    expect(screen.getAllByTestId('pvx-pick-row').length).toBe(1);
+  });
+
+  it('6 오버레이 고르개의 DOM id 가 인라인의 것과 겹치지 않는다', async () => {
+    await drawUpload(doneJob());
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
+    await openExpand();
+    for (const axis of ['file', 'variable', 'instant']) {
+      const inline = screen.getByTestId(`up-pick-${axis}`);
+      const overlay = screen.getByTestId(`pvx-pick-${axis}`);
+      expect(inline.id).toBe(`up-pick-${axis}`);
+      expect(overlay.id).toBe(`pvx-pick-${axis}`);
+      expect(overlay.id).not.toBe(inline.id);
+    }
+  });
+
+  it('7 오버레이에서 변수를 바꾸면 인라인 고르개의 표시값도 같이 바뀐다', async () => {
+    await drawUpload(doneJob());
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
+    await openExpand();
+    const inline = screen.getByTestId('up-pick-variable') as HTMLSelectElement;
+    expect(inline.value).toBe('rainfall');
+    fireEvent.change(screen.getByTestId('pvx-pick-variable'), { target: { value: 'temperature' } });
+    await waitFor(() => expect(inline.value).toBe('temperature'), WAIT);
+  });
+
+  it('8 오버레이 고르개를 바꾸면 바꿔 그리기가 한 번 더 돈다', async () => {
+    const source = await drawUpload(doneJob());
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
+    await openExpand();
+    expect(source.createRender).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByTestId('pvx-pick-variable'), { target: { value: 'temperature' } });
+    await waitFor(() => expect(source.createRender).toHaveBeenCalledTimes(2), WAIT);
+    expect(source.createRender.mock.calls[1]?.[0]).toMatchObject({ variable: 'temperature' });
+  });
+});
+
+describe('㈃ 진행 표시 — 세 화면이 「동작 중」을 말한다 (단계 ③)', () => {
+  it('10 인라인 진행 표시가 서는 동안 지도 자리·구제 자리·오류 자리가 없다 (회귀)', async () => {
+    await drawUpload(DRAWING_JOB);
+    await screen.findByTestId('up-preview-stage');
+    expect(screen.queryByTestId('up-preview-map')).toBeNull();
+    expect(screen.queryByTestId('up-preview-salvage')).toBeNull();
+    expect(screen.queryByTestId('up-preview-error')).toBeNull();
+  });
+
+  it('11 그리는 중에 확장보기를 열면 진행 표시가 있다', async () => {
+    await drawUpload(DRAWING_JOB);
+    await screen.findByTestId('up-preview-stage');
+    const body = await openExpand();
+    const stage = screen.getByTestId('pv-expand-stage');
+    expect(body.contains(stage)).toBe(true);
+    // 문면은 인라인과 **같은 값**이다 — 새 문장을 만들지 않는다.
+    expect(stage.textContent).toContain('지도 그리는 중');
+    expect(screen.queryByTestId('pv-expand-empty')).toBeNull();
+  });
+
+  it('12 오버레이 고르개를 바꾼 직후에도 「아직 그리지 않았어요」가 아니라 진행 표시를 낸다', async () => {
+    await drawUpload(doneJob());
+    await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
+    await openExpand();
+    fireEvent.change(screen.getByTestId('pvx-pick-variable'), { target: { value: 'temperature' } });
+    // `draw()` 첫 줄의 `setJob(null)` 로 `result` 가 사라지는 그 순간을 겨눈다.
+    expect(screen.getByTestId('pv-expand-stage')).toBeTruthy();
+    expect(screen.queryByTestId('pv-expand-empty')).toBeNull();
+  });
+
+  it('13 상세 그리는 중 상태에서 진행 문면이 있다 (회귀)', async () => {
+    render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(DRAWING_JOB)} pollMs={100000} />);
+    expect((await screen.findAllByTestId('render-stage')).length).toBeGreaterThan(0);
+  });
+});
+
 describe('㈅ CSS 원문 계측 — 틀 위 줄 컨테이너 (단계 ①)', () => {
   it('22 틀 위 줄 컨테이너 규칙이 있고 간격을 갖는다', () => {
     const slot = block(PREVIEW_CSS, '.pv-frame-wrap {');
