@@ -111,13 +111,23 @@ def test_no_restrictive_policy_leaked_onto_the_metadata_tables(session_factory) 
     for r in rows:
         by_table.setdefault(r["tablename"], []).append((r["policyname"], r["permissive"]))
 
+    # ⭑ `operator_read`(0028)가 더 붙었다. **PERMISSIVE ＋ SELECT 전용**이라 이 시험이 지키는
+    #   성질(잠긴 데이터가 목록에서 사라지지 않는다)을 깨지 않는다 — RESTRICTIVE 가 하나라도
+    #   섞이면 AND 로 합쳐져 그 순간 행이 사라진다. 그래서 이름만 늘리지 않고 **종류까지** 본다.
     for table in ("d3_dataset", "d3_dataset_description", "d3_dataset_autometa"):
-        assert by_table[table] == [("lab_boundary", "PERMISSIVE")], \
-            f"{table} 에 정책이 더 붙었다 — 잠긴 데이터가 목록에서 사라진다 (P-13·P-34)."
+        assert sorted(by_table[table]) == [("lab_boundary", "PERMISSIVE"),
+                                           ("operator_read", "PERMISSIVE")], \
+            f"{table} 에 뜻밖의 정책이 붙었다 — 잠긴 데이터가 목록에서 사라진다 (P-13·P-34)."
     # 본체 테이블만 두 층이다. 그리고 두 번째 층은 반드시 RESTRICTIVE 여야 한다 —
     # PERMISSIVE 면 OR 로 합쳐져 두 층이 한 층으로 무너진다 (P0-schema §4 설계판단 2).
+    # ⚠ `operator_read` 는 `body_access` 를 **뚫지 못한다** — RESTRICTIVE 는 AND 라서
+    #   운영자라도 잠긴 본체는 그대로 잠겨 있다.
     assert sorted(by_table["d3_file"]) == [("body_access", "RESTRICTIVE"),
-                                           ("lab_boundary", "PERMISSIVE")]
+                                           ("lab_boundary", "PERMISSIVE"),
+                                           ("operator_read", "PERMISSIVE")]
+    assert all(kind == "PERMISSIVE" for policies in by_table.values()
+               for name, kind in policies if name == "operator_read"), \
+        "운영자 읽기 정책이 RESTRICTIVE 로 걸리면 그 표의 모든 읽기가 막힌다."
 
 
 def test_locked_dataset_still_appears_in_the_catalog(live_client) -> None:

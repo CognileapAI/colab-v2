@@ -57,6 +57,9 @@ class TrackedSessionClaims:
     credential_kind: str
     purpose: str
     credential_version: int | None
+    #: 발급 시점의 운영자 여부. **판정 입력이 아니라 기록**이다 — 매 요청의 판정은
+    #: `service_operator` 재조회가 하고, 여기 값과 어긋나면 그 세션을 거절한다.
+    operator: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -129,6 +132,7 @@ class SessionSigner:
         purpose: str,
         credential_version: int | None,
         expires_at: dt.datetime,
+        operator: bool = False,
     ) -> IssuedSession:
         if credential_kind not in _KINDS or purpose not in _PURPOSES:
             raise ValueError("unknown tracked session kind or purpose")
@@ -149,6 +153,10 @@ class SessionSigner:
         }
         if credential_version is not None:
             body["credential_version"] = credential_version
+        # 거짓일 때는 칸 자체를 두지 않는다 — 「없음」과 「거짓」을 갈라 둘 이유가 없고,
+        # 칸을 비워 두면 옛 토큰과 같은 모양이라 판정이 한 갈래로 모인다.
+        if operator:
+            body["operator"] = True
         payload = _b64(json.dumps(body, separators=(",", ":"), sort_keys=True).encode("utf-8"))
         mac = _b64(hmac.new(
             self._secret, f"{TRACKED_PREFIX}.{payload}".encode("ascii"), hashlib.sha256
@@ -177,7 +185,10 @@ class SessionSigner:
             kind, purpose = raw["credential_kind"], raw["purpose"]
             version = raw.get("credential_version")
             version = int(version) if version is not None else None
+            operator = raw.get("operator", False)
         except Exception:
+            return None
+        if operator is not True and operator is not False:
             return None
         if (exp <= int(now.timestamp()) or generation < 1 or kind not in _KINDS
                 or purpose not in _PURPOSES):
@@ -196,6 +207,7 @@ class SessionSigner:
             credential_kind=kind,
             purpose=purpose,
             credential_version=version,
+            operator=operator,
         )
 
 
