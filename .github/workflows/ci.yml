@@ -65,6 +65,7 @@ jobs:
               - 'db/**'
               - 'gates/tools/ci-schema-diff.sh'
               - 'gates/tools/schema-diff.sh'
+              - 'gates/tools/rls-*'
               - 'gates/tools/_pg.sh'
               - 'gates/tools/_venv.sh'
               - 'gates/requirements.txt'

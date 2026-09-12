@@ -5,7 +5,7 @@
 # 조건이 `USING (true)` 인 정책도 걸려 있기는 하다. 이 게이트는 한 걸음 더 가서
 # **행이 실제로 안 보이는지**를 본다. WORK-UNITS D3b 의 오라클 셋이 그대로 판정이다.
 #
-#   ① 본체 음성  — 허용자 아님 · 만료됨 두 경우, 잠긴 데이터셋의 파일 본체가 **DB 층에서 0행**
+#   ① 본체 음성  — 허용자 아님 · 만료됨 두 경우, 잠긴 데이터셋의 파일과 검색 근거가 **DB 층에서 0행**
 #   ② 메타 양성  — 잠긴 데이터셋의 **메타는 반드시 조회된다** (P-13 회귀 방지)
 #   ③ cross-tenant — 남의 연구실 행은 어떤 테이블에서도 0행 · GUC 없는 접속도 0행
 #
@@ -120,6 +120,21 @@ su_psql -q < "$SEED" >"$TMP/err" 2>&1 \
   || red "시드를 넣지 못했다:
 $(sed 's/^/     /' "$TMP/err")"
 
+# 공통 core-api 시드는 첫 검색 근거 저장(expectedRevision=0) 시험도 공유한다. 그 정본을
+# 바꾸지 않고, 이 게이트의 일회용 DB에만 열린 A·잠긴 A·열린 B 근거를 추가한다.
+su_psql -q >"$TMP/err" 2>&1 <<'SQL' || red "검색 근거 RLS 판정 행을 넣지 못했다:
+$(sed 's/^/     /' "$TMP/err")"
+INSERT INTO d3_search_evidence
+  (file_id, lab_id, dataset_id, file_revision, revision, status, facts,
+   source_label, source_locator, source_text, source_sha256) VALUES
+  ('00000000000000000000000FA1', '0000000000000000000000000A', '0000000000000000000000DSA1', 1, 1, 'draft',
+   '{"roles":["model_input"]}', 'A 열린 근거', 'rls-effect:a-open', 'open evidence', repeat('a', 64)),
+  ('00000000000000000000000FA3', '0000000000000000000000000A', '0000000000000000000000DSA2', 1, 1, 'draft',
+   '{"roles":["validation"]}', 'A 잠긴 근거', 'rls-effect:a-locked', 'locked evidence', repeat('b', 64)),
+  ('00000000000000000000000FB1', '0000000000000000000000000B', '0000000000000000000000DSB1', 1, 1, 'draft',
+   '{"roles":["model_input"]}', 'B 근거', 'rls-effect:b-open', 'other lab evidence', repeat('c', 64));
+SQL
+
 # ── red fixture 훼손 (selftest 전용) — 일회용 DB 안에서만 일어난다 ──────────
 # superuser 로 적용한다. 훼손은 「누가 그럴 수 있는가」를 묻는 자리가 아니라 **보호 장치를 뗀 상태**를
 # 만드는 자리다. 롤 속성 훼손(BYPASSRLS·소유자 이전)은 소유자 롤 권한으로는 아예 만들 수 없다.
@@ -174,9 +189,13 @@ BEGIN
   -- ⓐ 허용자 목록에 없는 사람 → 잠긴 데이터셋(DSA2)의 본체 0행.
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 0 THEN RAISE EXCEPTION '[①-ⓐ] 허용자가 아닌데 잠긴 데이터셋 본체가 %행 보인다.', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓐ] 허용자가 아닌데 잠긴 파일의 검색 근거가 %행 보인다.', n; END IF;
   -- 대조 — 열린 데이터셋은 그대로 보인다. 그래야 위의 0 이 «원래 0» 이 아님이 증명된다.
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA1';
   IF n <> 2 THEN RAISE EXCEPTION '[①-대조] 열린 데이터셋 본체가 %행 (2 여야 한다) — 정책이 과하게 닫혔다.', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA1';
+  IF n <> 1 THEN RAISE EXCEPTION '[①-대조] 열린 파일의 검색 근거가 %행 (1 이어야 한다) — 정책이 과하게 닫혔다.', n; END IF;
 END $$;
 ROLLBACK;
 
@@ -195,6 +214,8 @@ BEGIN
           '2025-01-01T00:00:00Z', '2025-07-01T00:00:00Z');
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 만료된 허용 줄이 본체를 열었다 (%행).', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 만료된 허용 줄이 검색 근거를 열었다 (%행).', n; END IF;
 
   -- 대조 — 유효한 줄을 하나 더 넣으면 1행. 이 대조가 없으면 위의 0 은 아무 말도 하지 않는다.
   INSERT INTO d2_dataset_access_grant
@@ -204,11 +225,15 @@ BEGIN
           '2026-08-01T00:00:00Z', '2027-02-01T00:00:00Z');
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 1 THEN RAISE EXCEPTION '[①-대조] 유효한 허용 줄인데 본체가 %행 (1 이어야 한다).', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 1 THEN RAISE EXCEPTION '[①-대조] 유효한 허용 줄인데 검색 근거가 %행 (1 이어야 한다).', n; END IF;
 
   -- 허용은 **사람마다** 다르다 — 같은 트랜잭션에서 주체만 바꾸면 다시 0.
   PERFORM set_config('app.current_account', '00000000000000000000000AP1', true);
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 본체를 봤다 (%행).', n; END IF;
+  SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
+  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 검색 근거를 봤다 (%행).', n; END IF;
 END $$;
 ROLLBACK;
 \echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)'
@@ -238,10 +263,10 @@ ROLLBACK;
 
 -- 행 개수만 보는 판정은 시드가 마침 열려 있으면 통과해 버린다. 정책 목록 자체를 오라클로 삼는다 —
 -- 메타 3표에는 lab_boundary(PERMISSIVE) ＋ operator_read(PERMISSIVE · SELECT 전용),
--- 본체 표만 여기에 RESTRICTIVE 한 층이 더 있다.
+-- 파일 본체와 파일에 묶인 검색 근거 표에는 RESTRICTIVE 한 층이 더 있다.
 --
 -- ⭑ ⟨증보 0028⟩ `operator_read` 가 목록에 더해졌다. **검사를 줄이지 않는다** — 목록이 길어진
---   만큼 성질 검사를 더한다: RESTRICTIVE 는 `d3_file.body_access` **하나뿐**이어야 하고
+--   만큼 성질 검사를 더한다: RESTRICTIVE 는 파일 본체 표 2개의 `body_access`여야 하고
 --   `operator_read` 는 모든 표에서 **SELECT 전용 ＋ PERMISSIVE** 여야 한다. 둘 중 하나라도
 --   어긋나면 ⑴ 메타가 목록에서 사라지거나 ⑵ 운영자에게 쓰기가 열린다.
 DO $$
@@ -262,9 +287,15 @@ BEGIN
 
   SELECT string_agg(tablename || '.' || policyname, ',' ORDER BY tablename) INTO bad
     FROM pg_policies WHERE schemaname='public' AND permissive = 'RESTRICTIVE'
-      AND NOT (tablename = 'd3_file' AND policyname = 'body_access');
+      AND NOT (tablename IN ('d3_file', 'd3_search_evidence') AND policyname = 'body_access');
   IF bad IS NOT NULL THEN
     RAISE EXCEPTION '[②-구조] RESTRICTIVE 정책이 본체 밖에 붙었다(%) — AND 로 합쳐져 그 표의 읽기가 통째로 막힌다.', bad;
+  END IF;
+
+  SELECT string_agg(policyname || ':' || permissive, ',' ORDER BY policyname) INTO got
+    FROM pg_policies WHERE schemaname='public' AND tablename = 'd3_search_evidence';
+  IF got IS DISTINCT FROM 'body_access:RESTRICTIVE,lab_boundary:PERMISSIVE' THEN
+    RAISE EXCEPTION '[②-구조] d3_search_evidence 의 파일 본체 경계가 무너졌다(%).', got;
   END IF;
 
   SELECT string_agg(tablename || ':' || cmd, ',' ORDER BY tablename) INTO bad
@@ -336,7 +367,7 @@ SQL
 
 if app_psql -q < "$TMP/oracle.sql" >"$TMP/out" 2>&1; then
   grep -E '^(#|NOTICE)' "$TMP/out" | sed 's/^NOTICE:  //'
-  echo "rls-effect green — 본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다. 판정 롤은 우회 불가."
+  echo "rls-effect green — 파일·검색 근거 본체 음성/양성 · 메타 양성(P-13) · cross-tenant를 엔진이 막는다. 판정 롤은 우회 불가."
   exit 0
 fi
 red "경계가 실제로는 막지 못한다:

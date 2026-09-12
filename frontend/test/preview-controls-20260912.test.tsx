@@ -91,7 +91,9 @@ async function drawUpload(job: RenderJob, representativeFile: File | null = null
       representativeFile={representativeFile}
     />,
   );
-  fireEvent.click(await screen.findByTestId('up-preview-draw'));
+  // 버튼은 팔레트 조회 전에도 존재한다. 화면의 선택값이 준비된 뒤 그린다.
+  await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'), WAIT);
+  fireEvent.click(screen.getByTestId('up-preview-draw'));
   await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
 }
 

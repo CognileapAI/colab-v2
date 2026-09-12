@@ -1,0 +1,85 @@
+{
+  "first_ci": "https://github.com/CognileapAI/colab-v2/actions/runs/34707969284",
+  "first_stage_commit": "fe4bb48a57e5",
+  "first_stage_release": "st-a34e54e404a341f9b3232c8a5e6ba35b",
+  "stage_health_checks": 15,
+  "stage_chain_checks": 2,
+  "stage_backup_profiles": 2,
+  "public_js_sha256": "dd862dde478201b5648ff41c034aa7507b64708fa28864e902c412cf121a2bca",
+  "first_ci_failures": [
+    "RLS gate did not classify new body table",
+    "preview-controls test clicked before asynchronous palette initialization"
+  ],
+  "corrections": [
+    "RLS evidence rows in disposable gate DB only; shared API seed unchanged",
+    "Evidence access positive, locked, expired, different subject and cross-lab checks",
+    "Evidence body policy removal negative fixture",
+    "Wait for displayed palette before clicking in preview test",
+    "CI schema filter includes RLS gate edits"
+  ],
+  "frontend_recheck": {
+    "passed": 1316,
+    "failed": 0
+  },
+  "rls_effect": {
+    "schema": "colab-gate-summary/1",
+    "tree": "f8c745e8ebe8d0a8c3f30350a7fd9881b5cc56be",
+    "commit": "fe4bb48a57e5ccd5439d7ed00b297cea50e7b096",
+    "started": "2026-09-12T17:28:03Z",
+    "finished": "2026-09-12T17:28:08Z",
+    "parallelism": 1,
+    "counts": {
+      "green": 1,
+      "red_판정": 0,
+      "red_준비": 0,
+      "red_준비_입력미선언": 0
+    },
+    "gates": [
+      {
+        "name": "rls-effect",
+        "status": "green",
+        "state": "green",
+        "exit": 0,
+        "readiness": null
+      }
+    ],
+    "targets": {
+      "requested": "rls-effect",
+      "selected": [
+        "rls-effect"
+      ]
+    }
+  },
+  "rls_effect_selftest": {
+    "schema": "colab-gate-summary/1",
+    "tree": "f8c745e8ebe8d0a8c3f30350a7fd9881b5cc56be",
+    "commit": "fe4bb48a57e5ccd5439d7ed00b297cea50e7b096",
+    "started": "2026-09-12T17:28:08Z",
+    "finished": "2026-09-12T17:28:37Z",
+    "parallelism": 1,
+    "counts": {
+      "green": 1,
+      "red_판정": 0,
+      "red_준비": 0,
+      "red_준비_입력미선언": 0
+    },
+    "gates": [
+      {
+        "name": "rls-effect-selftest",
+        "status": "green",
+        "state": "green",
+        "exit": 0,
+        "readiness": null
+      }
+    ],
+    "targets": {
+      "requested": "rls-effect-selftest",
+      "selected": [
+        "rls-effect-selftest"
+      ]
+    }
+  },
+  "rls_effect_selftest_cases": 20,
+  "product_code_changes_in_followup": 0,
+  "live_model_calls": 0
+}

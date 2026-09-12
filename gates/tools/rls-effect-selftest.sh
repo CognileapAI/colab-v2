@@ -45,6 +45,9 @@ expect red "rls-effect ③: 미스코프 기본 거부를 기본 연구실로 �
 expect red "rls-effect ①: 본체 둘째 층 제거(DROP POLICY body_access)" \
   mut "DROP POLICY body_access ON d3_file;"
 
+expect red "rls-effect ①: 검색 근거 본체 층 제거(DROP POLICY body_access)" \
+  mut "DROP POLICY body_access ON d3_search_evidence;"
+
 expect red "rls-effect ①: 만료 검사만 제거(목록 검사로는 안 잡힌다)" \
   mut "ALTER POLICY body_access ON d3_file USING (
          COALESCE((SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),
