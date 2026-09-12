@@ -211,6 +211,10 @@
 .pv-layers .pv-tile {
   display: block;
   width: 100%;
+  /* ⭑ ⟨R-BUGFIX-260912 `#28`⟩ 폭 상한 — 4:3 틀 밖(확장보기)에는 상한을 줄 규칙이 없어
+     그림이 본문 폭을 밀어내고 확대 줄이 오른쪽 열로 눌렸다. `.pvx-img` 의 상한은
+     이 선택자가 특이도로 이기므로 여기에 적어야 선다. */
+  max-width: 100%;
   border: 0;
   border-radius: 0;
   /* 확대는 「촘촘함을 바꿔 끼우는」 것이지 흐리게 늘리는 것이 아니다 (§8 확대·이동) */
@@ -223,6 +227,12 @@
   gap: 8px;
   align-items: center;
   font-size: 13px;
+  /* ⭑ ⟨R-BUGFIX-260912 `#27`·`#28`⟩ 확대 줄은 **줄지 않고 접히지 않는다.**
+     세로 흐름에서는 그림 자리가 줄어들고 이 줄이 남아야 스크롤 없이 보인다(`#27`).
+     좁은 열에 눌리면 버튼 글자가 「확/대」·「기/본/배/율/로」로 세로로 접혔다(`#28`).
+     배치 소유는 옮기지 않는다 — 고정·절대 배치를 신설하지 않는다(판정 ⑦ ⓐ). */
+  flex: none;
+  white-space: nowrap;
 }
 
 .pv-zoom button,
@@ -339,6 +349,17 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* ⭑ ⟨R-BUGFIX-260912 `#27`⟩ 틀 안 지도 자리의 세로 배분 — 그림 자리는 줄어들 수 있고
+   확대 줄은 줄지 않는다(`.pv-zoom { flex: none }`). 이 선언이 없으면 지도 자리가 블록으로
+   서서 내용 높이를 그대로 쌓고, 뒤 자식인 확대 줄이 틀 밖으로 밀려 스크롤해야 보였다. */
+.pv-frame .mapcanvas {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* 확대/이동 자리도 같은 틀 안에서 비율을 지킨다(`useZoomPan` 동작 무변). */

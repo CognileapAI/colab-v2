@@ -514,7 +514,10 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background: var(--color-surface);
   border-radius:var(--up-radius);display:flex;flex-direction:column;overflow:hidden;}
-.modal-b.pvx-b{height:min(70vh,640px);overflow:auto;display:flex;align-items:center;justify-content:center;}
+/* ⭑ ⟨R-BUGFIX-260912 `#28`⟩ 방향 미선언이라 기본 `row` 가 걸렸고, 고르개 줄·진행 표시·
+   그림·확대 줄이 가로로 늘어서며 확대 줄 버튼 글자가 세로로 접혔다. 세로로 쌓는다.
+   본문 높이(`min(70vh,640px)`)는 그대로 둔다 — 늘어난 줄만큼 그림 자리가 줄어든다(우려 1 ⓐ). */
+.modal-b.pvx-b{height:min(70vh,640px);overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
 .pvx-img{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
 /* 확장보기를 여는 단추 — 미리보기 머리 오른쪽 끝 */
 .pvx-open{flex:none;}

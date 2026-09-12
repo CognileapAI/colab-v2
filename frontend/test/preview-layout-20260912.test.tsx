@@ -35,6 +35,7 @@ const read = (rel: string): string =>
   String(readFileSync(resolve(process.cwd(), rel), 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
 
 const PREVIEW_CSS = read('src/components/preview/preview.css');
+const UPLOAD_CSS = read('src/components/upload/upload.css');
 
 /** 선택자 하나의 선언 블록(`{ … }`)을 원문에서 잘라낸다. 부재면 그 자리에서 실패한다. */
 function block(css: string, selector: string): string {
@@ -261,5 +262,29 @@ describe('㈅ CSS 원문 계측 — 틀 위 줄 컨테이너 (단계 ①)', () =
     const slot = block(PREVIEW_CSS, '.pv-frame-wrap {');
     expect(slot).toContain('flex-direction: column');
     expect(slot).toMatch(/gap:\s*\d/);
+  });
+});
+
+describe('㈅ CSS 원문 계측 — 확대 줄의 접힘·가림 (단계 ④)', () => {
+  it('18 틀 안 지도 자리에 세로 배분 선언이 있다 — 그림은 줄고 확대 줄은 줄지 않는다', () => {
+    const canvas = block(PREVIEW_CSS, '.pv-frame .mapcanvas {');
+    expect(canvas).toContain('flex-direction: column');
+    expect(canvas).toContain('min-height: 0');
+    // 그림 자리만 줄어든다.
+    expect(block(PREVIEW_CSS, '.pv-frame .pv-viewport {')).toContain('flex: 1 1 auto');
+  });
+
+  it('19 확대 줄에 줄바꿈 금지와 「줄지 않음」 선언이 있다', () => {
+    const zoom = block(PREVIEW_CSS, '.pv-zoom {');
+    expect(zoom).toContain('white-space: nowrap');
+    expect(zoom).toContain('flex: none');
+  });
+
+  it('20 확장보기 본문에 세로 방향 선언이 있다', () => {
+    expect(block(UPLOAD_CSS, '.modal-b.pvx-b{')).toContain('flex-direction:column');
+  });
+
+  it('21 확장보기 그림에 폭 상한 선언이 있다', () => {
+    expect(block(PREVIEW_CSS, '.pv-layers .pv-tile {')).toContain('max-width: 100%');
   });
 });
