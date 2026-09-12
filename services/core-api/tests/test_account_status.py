@@ -111,3 +111,69 @@ def test_status_column_rejects_unknown_values(p2_client, admin_db_url: str) -> N
     account_id = _create(client, _email())
     with pytest.raises(IntegrityError):
         _status(admin_db_url, account_id, "삭제됨")
+
+
+# ── 다른 로그인 수단으로 도는 자리 ────────────────────────────────────────────
+#
+# ⚠ **비활성은 DB 자격 경로에만 걸려 있었다.** `login_sessions.issue_database` 하나가
+# `status` 를 보고, 파일 자격(`TrackedPasswordIssuer`)·접속 코드(`TrackedPlantedCodeIssuer`)
+# 는 그 열을 아예 열지 않는다. 같은 사람이 두 경로를 다 가지고 있으면 「비활성화했다」가
+# 참이 아니게 된다 — 비활성화는 **계정**에 거는 것이지 자격 한 벌에 거는 것이 아니다.
+
+def _plant_file(tmp_path, name: str, account_id: str, lab_id: str) -> str:
+    """파일 자격 한 벌. **DB 자격과 이름이 다르고 계정은 같다** — 겹치는 실제 모양이다."""
+    import json
+
+    from colab_core.kernel.password import hash_password
+
+    entry = {"accountId": account_id, "labId": lab_id}
+    entry.update(hash_password(INITIAL, n=1024).as_dict())
+    path = tmp_path / "legacy-credentials.json"
+    path.write_text(json.dumps({name: entry}, ensure_ascii=False), encoding="utf-8")
+    return str(path)
+
+
+def test_inactive_account_cannot_log_in_through_the_legacy_file_credential(
+    p2_client, admin_db_url: str, tmp_path,
+) -> None:
+    client = p2_client(session_secret=SECRET)
+    account_id = _create(client, _email())
+    legacy_name = "구자격-" + account_id[-6:]
+    file_client = p2_client(
+        session_secret=SECRET,
+        credentials_file=_plant_file(tmp_path, legacy_name, account_id, LAB_C))
+
+    assert file_client.post("/api/v1/sessions", json={
+        "accountName": legacy_name, "password": INITIAL}).status_code == 201
+
+    assert _status(admin_db_url, account_id, "inactive") == "inactive"
+    denied = file_client.post("/api/v1/sessions", json={
+        "accountName": legacy_name, "password": INITIAL})
+    unknown = file_client.post("/api/v1/sessions", json={
+        "accountName": _email(), "password": INITIAL})
+    assert denied.status_code == 401, denied.text
+    assert denied.json() == unknown.json(), "파일 자격의 비활성 거절이 미등록 응답과 갈린다."
+
+
+def test_inactive_account_cannot_log_in_through_a_planted_access_code(
+    p2_client, admin_db_url: str, tmp_path,
+) -> None:
+    import json
+
+    client = p2_client(session_secret=SECRET)
+    account_id = _create(client, _email())
+    code = "planted-" + account_id[-8:]
+    planted = tmp_path / "planted-subjects.json"
+    planted.write_text(json.dumps(
+        {code: {"accountId": account_id, "labId": LAB_C}}), encoding="utf-8")
+    code_client = p2_client(session_secret=SECRET,
+                            subjects_file_override=str(planted))
+
+    assert code_client.post(
+        "/api/v1/sessions", json={"accessCode": code}).status_code == 201
+
+    assert _status(admin_db_url, account_id, "inactive") == "inactive"
+    denied = code_client.post("/api/v1/sessions", json={"accessCode": code})
+    unknown = code_client.post("/api/v1/sessions", json={"accessCode": "없는-코드"})
+    assert denied.status_code == 401, denied.text
+    assert denied.json() == unknown.json(), "접속 코드의 비활성 거절이 미등록 응답과 갈린다."

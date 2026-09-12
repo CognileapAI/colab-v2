@@ -73,6 +73,21 @@ class DatabaseCredentialStore:
     def dummy_verify(self, password: str) -> None:
         verify_password(password, self._dummy)
 
+    def status_for_account(self, account_id: str) -> str | None:
+        """계정에 **DB 자격 행이 있으면** 그 상태, 없으면 `None`.
+
+        `None` 은 「활성」이 아니라 **의견 없음**이다 — 이 저장소가 모르는 계정(심어 둔 주체
+        표에만 있는 도구 계정 등)까지 비활성으로 접는 순간, 백오피스가 한 번도 만진 적 없는
+        자격이 조용히 끊긴다. 비활성화는 **계정에 거는 것**이고, 그 사실이 기록된 자리는
+        여기 한 곳이다.
+        """
+        with self._factory() as db:
+            row = db.execute(text("""
+                SELECT status FROM account_admin.login_credential
+                 WHERE account_id = :account_id
+            """), {"account_id": str(account_id)}).first()
+        return row[0] if row is not None else None
+
     def token_is_current(self, account_id: Ulid, lab_id: Ulid, version: int) -> DatabaseCredential | None:
         with self._factory() as db:
             row = db.execute(text("""
