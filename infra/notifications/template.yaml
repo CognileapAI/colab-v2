@@ -159,7 +159,7 @@ Resources:
       Handler: notifications.handlers.retry
       Role: !GetAtt RetryRole.Arn
       Events:
-        EveryMinute: {Type: Schedule, Properties: {Schedule: rate(1 minute), Enabled: !If [NotificationsActive, true, false]}}
+        EveryMinute: {Type: Schedule, Properties: {Schedule: rate(1 minute), State: !If [NotificationsActive, ENABLED, DISABLED]}}
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:

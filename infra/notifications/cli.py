@@ -58,7 +58,7 @@ def main(argv=None):
     parser=argparse.ArgumentParser(); sub=parser.add_subparsers(dest='command',required=True)
     v=sub.add_parser('validate');v.add_argument('--manifest',required=True);v.add_argument('--profile',choices=('local','connected'),required=True)
     for command in ('ingest','status','resolve','publish-pending','daily','drain-spool','heartbeat','probe'):
-        p=sub.add_parser(command);p.add_argument('--store');p.add_argument('--profile',choices=('local','connected'),default='local')
+        p=sub.add_parser(command);p.add_argument('--store');p.add_argument('--profile',choices=('local','connected','relay') if command=='probe' else ('local','connected'),default='local')
         if command in {'daily','publish-pending','probe'}:p.add_argument('--manifest',required=True)
         if command=='probe':p.add_argument('--target',required=True);p.add_argument('--state',required=True);p.add_argument('--spool',required=True)
         if command=='daily':p.add_argument('--archive')

@@ -23,6 +23,14 @@ def event():
     )
 
 
+def dev_release(kind='deploy.succeeded', source='release', channel='development'):
+    return make_event(
+        source=source, environment='dev', severity='info', channel=channel,
+        occurred_at=NOW, event_id='dev-release-event-' + kind.replace('.', '-'),
+        payload={'kind': kind, 'release_id': 'release-20260912'},
+    )
+
+
 class RelayTests(unittest.TestCase):
     def stub(self, root):
         path = Path(root) / 'ssh-stub'
@@ -82,6 +90,29 @@ class RelayTests(unittest.TestCase):
         invalid = event(); invalid['environment'] = 'dev'
         with self.assertRaises(ValueError):
             relay.receive({'kind': 'event', 'record': invalid}, store)
+
+    def test_receiver_accepts_only_dev_release_terminal_events(self):
+        from infra.notifications import relay
+        store = handlers.DynamoStore(DynamoSDK(), 'table')
+        for kind in ('deploy.succeeded', 'deploy.failed', 'deploy.verification_failed'):
+            record = dev_release(kind)
+            receipt = relay.receive({'kind': 'event', 'record': record}, store)
+            self.assertEqual(receipt['receipt_hash'], relay.receipt_hash(record))
+        rejected = [
+            dev_release('deploy.succeeded', source='arbitrary'),
+            make_event(source='release', environment='dev', severity='error', channel='development',
+                       occurred_at=NOW, event_id='dev-release-probe',
+                       payload={'kind': 'probe.failed', 'target': 'service-health'}),
+            make_event(source='release', environment='dev', severity='info', channel='activity',
+                       occurred_at=NOW, event_id='dev-release-activity',
+                       payload={'kind': 'activity.digest', 'text': 'not allowed'}),
+        ]
+        for record in rejected:
+            with self.assertRaises(ValueError):
+                relay.receive({'kind': 'event', 'record': record}, store)
+        with self.assertRaises(ValueError):
+            relay.receive({'kind': 'heartbeat', 'environment': 'dev',
+                           'target': 'service-health', 'observed_at': NOW.isoformat()}, store)
 
     def test_late_heartbeat_does_not_replace_newer_observation(self):
         from infra.notifications import relay

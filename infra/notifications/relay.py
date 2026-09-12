@@ -17,6 +17,7 @@ from .events import canonical, validate
 MAX_INPUT_BYTES = 350_000
 MAX_RECEIPT_BYTES = 4_096
 TARGETS = {'service-health', 'backup-freshness', 'deploy-verification'}
+DEV_RELEASE_KINDS = {'deploy.succeeded', 'deploy.failed', 'deploy.verification_failed'}
 
 
 def receipt_hash(value):
@@ -28,8 +29,11 @@ def _checked_envelope(envelope):
         raise ValueError('relay envelope required')
     if envelope.get('kind') == 'event':
         record = validate(envelope.get('record'))
-        if record['environment'] != 'staging':
-            raise ValueError('relay accepts staging events only')
+        dev_release = (record['environment'] == 'dev' and record['source'] == 'release' and
+                       record['channel'] == 'development' and
+                       record['payload']['kind'] in DEV_RELEASE_KINDS)
+        if record['environment'] != 'staging' and not dev_release:
+            raise ValueError('relay accepts staging events or dev release terminal events only')
         return {'kind': 'event', 'record': record}
     if envelope.get('kind') == 'heartbeat':
         if envelope.get('environment') != 'staging' or envelope.get('target') not in TARGETS:
