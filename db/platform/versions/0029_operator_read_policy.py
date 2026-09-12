@@ -1,12 +1,12 @@
 """운영자의 전 연구실 **읽기** 스코프를 RLS 에 더한다.
 
-Revision ID: 0028_operator_read_policy
-Revises: 0027_account_status
+Revision ID: 0029_operator_read_policy
+Revises: 0028_account_status
 """
 from alembic import op
 
-revision = "0028_operator_read_policy"
-down_revision = "0027_account_status"
+revision = "0029_operator_read_policy"
+down_revision = "0028_account_status"
 branch_labels = None
 depends_on = None
 

@@ -1,11 +1,11 @@
 """서비스 계정의 활성 상태 열을 더한다.
 
-Revision ID: 0027_account_status
+Revision ID: 0028_account_status
 Revises: 0026_login_sessions
 """
 from alembic import op
 
-revision = "0027_account_status"
+revision = "0028_account_status"
 down_revision = "0026_login_sessions"
 branch_labels = None
 depends_on = None

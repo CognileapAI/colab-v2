@@ -27,7 +27,7 @@ from .ids import Ulid
 
 GUC_LAB = "app.current_lab"
 GUC_ACCOUNT = "app.current_account"
-#: 운영자의 전 연구실 **읽기** 스위치 (`db/platform/versions/0028_operator_read_policy.py`).
+#: 운영자의 전 연구실 **읽기** 스위치 (`db/platform/versions/0029_operator_read_policy.py`).
 #: 켜지면 `operator_read` 정책(FOR SELECT · PERMISSIVE)이 열리고 **읽기만** 넓어진다 —
 #: INSERT·UPDATE·DELETE 는 `lab_boundary` 를 그대로 통과해야 한다.
 GUC_OPERATOR_READ = "app.operator_read"

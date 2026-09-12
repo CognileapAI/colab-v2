@@ -54,7 +54,7 @@
 
 ### Task 2: 계정 상태 열과 롤 권한
 
-**Files:** Create `db/platform/versions/0027_account_status.py`, `db/platform/tests/0027-assertions.sql`, `db/platform/tests/0027-drift.sh`, `services/core-api/tests/test_account_status.py`; Modify `db/platform/schema.sql`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/kernel/db_credentials.py`.
+**Files:** Create `db/platform/versions/0028_account_status.py`, `db/platform/tests/0028-assertions.sql`, `db/platform/tests/0028-drift.sh`, `services/core-api/tests/test_account_status.py`; Modify `db/platform/schema.sql`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/kernel/db_credentials.py`.
 **Interfaces:** `login_credential.status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive'))`. `DatabaseCredential` 에 `status` 를 더한다.
 - [x] 최신 migration head 가 `0026_login_sessions.py` 임을 확인한다(실측값). 번호 충돌 시 세 파일을 함께 조정한다.
 - [x] 비활성 계정의 로그인이 현재는 200 인 RED 를 확인한다.
@@ -118,7 +118,7 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 
 ### Task 6: 관리자 지정·해제와 관리자 전 연구실 읽기
 
-**Files:** Create `db/platform/versions/0028_operator_read_policy.py`, `db/platform/tests/0028-assertions.sql`, `db/platform/tests/0028-drift.sh`, `services/core-api/tests/test_operator_designation.py`, `dev-package/reports/r-login-backoffice/task6/overlap.md`; Modify `contracts/seams/fe-core.yaml`, `frontend/src/generated/fe-core.ts`, `frontend/src/routes/AccountAdminPage.tsx`, `frontend/src/shell/Gnb.tsx`, `frontend/test/account-admin.test.tsx`, `frontend/test/shell.test.tsx`, `db/platform/schema.sql`, `gates/tools/rls-effect.sh`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/app/{deps.py,routes/accounts.py,routes/catalog.py}`, `services/core-api/src/colab_core/kernel/{auth.py,authn.py,db_credentials.py,login_sessions.py,scope.py,session_token.py}`, `services/core-api/tests/{conftest.py,test_account_status.py,test_account_backoffice.py,test_body_access.py,test_route_table.py}`, `dev-package/work-items.yaml`.
+**Files:** Create `db/platform/versions/0029_operator_read_policy.py`, `db/platform/tests/0029-assertions.sql`, `db/platform/tests/0029-drift.sh`, `services/core-api/tests/test_operator_designation.py`, `dev-package/reports/r-login-backoffice/task6/overlap.md`; Modify `contracts/seams/fe-core.yaml`, `frontend/src/generated/fe-core.ts`, `frontend/src/routes/AccountAdminPage.tsx`, `frontend/src/shell/Gnb.tsx`, `frontend/test/account-admin.test.tsx`, `frontend/test/shell.test.tsx`, `db/platform/schema.sql`, `gates/tools/rls-effect.sh`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/app/{deps.py,routes/accounts.py,routes/catalog.py}`, `services/core-api/src/colab_core/kernel/{auth.py,authn.py,db_credentials.py,login_sessions.py,scope.py,session_token.py}`, `services/core-api/tests/{conftest.py,test_account_status.py,test_account_backoffice.py,test_body_access.py,test_route_table.py}`, `dev-package/work-items.yaml`.
 **Interfaces:** `POST /admin/accounts/{accountId}/operator`(요청 `{operator}` · 응답 `{accountId, operator}`) · `POST /admin/accounts` 에 선택 칸 `operator` · `ServiceAccountSummary.operator` · GUC `app.operator_read` ＋ SQL 함수 `is_operator_read()` · `apply_scope(session, subject, operator_read=…)`.
 정본 = 승인 intent [`2026-09-12-operator-designation.md`](../../intent/2026-09-12-operator-designation.md).
 
@@ -131,17 +131,25 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [x] 지정·해제가 그 계정의 자격 버전을 올리고 열린 세션을 닫는다. 남의 세션은 불변이다.
 - [x] `POST /admin/accounts` 에 `operator` 선택 칸을 더한다. 생략하면 아니다.
 - [x] 스코프 커널에 **명시적 읽기 스코프**를 더한다 — `apply_scope(..., operator_read=True)` 는 운영자가 아닌 주체에 심지 않고, 요청은 이 값을 보낼 통로가 없다.
-- [x] 마이그레이션 `0028_operator_read_policy` — 테넌트 표 31개에 `operator_read`(FOR SELECT · PERMISSIVE). **쓰기 정책에는 걸지 않는다.** `schema.sql` 반영 · `0028-assertions.sql`·`0028-drift.sh`(+x) 신설.
+- [x] 마이그레이션 `0029_operator_read_policy` — 테넌트 표 31개에 `operator_read`(FOR SELECT · PERMISSIVE). **쓰기 정책에는 걸지 않는다.** `schema.sql` 반영 · `0029-assertions.sql`·`0029-drift.sh`(+x) 신설.
 - [x] 세션 서명에 관리자 여부를 싣고 **매 요청 `service_operator` 에서 다시 도출**한다. 주장과 어긋나면 거절한다.
 - [x] cross-tenant 음성 시험이 비관리자에 그대로 통과한다. 관리자 **쓰기**도 남의 연구실에서 403/404 다.
 - [x] 양성 — 관리자가 두 연구실의 카탈로그·데이터셋 상세를 읽는다.
 - [x] `gates/config/rls-allowlist.toml` 은 고치지 않았다 — 게이트가 요구하지 않았다(「그 밖의 정책이 더 걸려 있는 것은 red 가 아니다」). 대신 `gates/tools/rls-effect.sh` 의 정책 목록 오라클을 **넓히지 않고 늘렸다**: 기대 목록에 `operator_read` 를 더하면서 ⑴ RESTRICTIVE 는 `d3_file.body_access` 하나뿐 ⑵ `operator_read` 는 모든 표에서 SELECT 전용 두 검사를 새로 붙였다.
 - [x] 프런트 — 행별 관리자 토글(확인 대화상자 · 자기 자신 비활성) · 발급 폼 체크박스 · GNB 「전체 연구실」 표기.
 - [x] **이 회차가 스스로 만든 결함 1건을 닫았다** — `GET /lab` 의 연구실 행은 `current_lab_id()` 로 고정인데 구성원 수·구성원 격자는 RLS 에만 기대고 있었다. 읽기 스코프가 열리자 **내 연구실 이름 아래 남의 연구실 사람들**이 섰다(RED 실측 — 자기 연구실 98명 · 격자 101명). 두 질의를 연구실에 못 박아 한 화면의 두 값이 같은 범위를 말하게 했다.
-- [x] `db/platform/tests/0028-drift.sh` 실행비트를 인덱스에 기록한다(`git update-index --chmod=+x` · 100755 실측).
+- [x] `db/platform/tests/0029-drift.sh` 실행비트를 인덱스에 기록한다(`git update-index --chmod=+x` · 100755 실측).
 - [x] 대장에 `BO-3` 을 등재한다(open · after_stage2 · depends_on `BO-2`).
-- [ ] `work-item-consistency` green. — **red(판정) 1건**: ㈕ `BO-3` 이 `CLAUDE.md` 의 `after_stage2` 괄호 목록에 없다. 지시에 따라 `CLAUDE.md` 를 고치지 않고 보고한다 — 필요한 편집은 그 괄호의 `` `BO-2` `` 뒤에 `` ·`BO-3` `` 한 토막뿐이다.
+- [x] `work-item-consistency` green. — 종전 red(판정) 1건(㈕ `BO-3` 이 `CLAUDE.md` 의 `after_stage2` 괄호 목록에 없음)을 이 회차의 `origin/main` 재기준 단계에서 닫았다: 괄호에 `` `BO-3` `` 을 더하고 항목 수를 18 → 19 로 고쳤다.
 - [ ] **특정 연구실 하나로 좁히는 전환 동작** — 미구현. 읽기 op 들이 연구실 인자를 받아야 하는데, 그것은 「경계는 요청에서 오지 않는다」(`CLAUDE.md §3-5`)를 건드리는 계약 판정이다. 지금 선 것은 intent 문면의 「전체 보기 **표시**」까지다.
+
+### 작업 6-b — `origin/main` 재기준과 alembic 형제 해소
+
+- [x] `git rebase origin/main`(`a8a16530`). 충돌 1건 = `db/platform/schema.sql` 뿐이고 **양쪽이 파일 끝에 각자 덧붙인 것**이라 두 블록을 그대로 이어 붙였다. `work-items.yaml` 은 병합 드라이버가 처리했다(항목 183건 · 상대 신규 1건). **코드 충돌 0건.**
+- [x] alembic 형제 해소 — `main` 의 `0027_operator_audit` 과 레인의 `0027_account_status` 이 둘 다 `0026_login_sessions` 위에 얹혔다. **이미 `main` 에 있는 id 는 그대로 두고 레인 쪽만** 옮겼다: `0027_account_status` → `0028_account_status`, `0028_operator_read_policy` → `0029_operator_read_policy`(오라클 파일 4개 동반 개명 · `0028-drift.sh`·`0029-drift.sh` 100755 유지).
+- [x] 머지 리비전 `db/platform/versions/0030_merge_operator_audit_and_backoffice.py` 신설 — `revision = "0030_merge_audit_and_backoffice"`(31자 · `varchar(32)` 한도) · `down_revision = ("0027_operator_audit", "0029_operator_read_policy")` · `upgrade()` 빈 본문. `alembic heads` = 1.
+- [x] 두 순서 드리프트 오라클 `db/platform/tests/0030-drift.sh`(+x) 신설 — 순서 A(감사 → 백오피스 → 머지)와 순서 B(백오피스 → 감사 → 머지)를 일회용 postgres 두 벌에 적용하고 `pg_dump` 를 정규화해 diff 한다. 판정 = **차이 0줄** ＋ 선언 정본 `schema.sql` 이 두 순서와 모두 일치 ＋ 머지 `upgrade()` 본문 0문장·두 형제 튜플(ast 정적 판정).
+- [x] `0029_operator_read_policy` 의 표 목록이 **정적 열거**라 `main` 갈래가 새로 만든 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다 — 두 순서가 수렴하는 이유다. 그 8표는 `lab_boundary` 만으로 닫혀 있고, 운영자 읽기를 그쪽까지 넓히는 것은 이 머지가 정하지 않는다(후속 항목).
 
 ## 계획 자체 점검
 
