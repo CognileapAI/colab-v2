@@ -3235,3 +3235,113 @@ items:
     deadline: null
     note: "구현·로컬 검증 완료, 배포 대기. 미실측: arm64, 신규 2종 latency, 149 MB GRIB 전체-band COG 비용."
     sources: ["dev-package/intent/2026-09-10-preview-all-formats.md", "dev-package/prd/specs/preview-all-formats.md", "dev-package/prd/rounds/R-PREVIEW-ALL-FORMATS.md", "dev-package/sessions/20260910-preview-all-formats.md"]
+
+  - id: BF-14
+    name: "등록 카드 기간 칸의 안내 문단이 컨트롤 앞에 있어 카드 안 배치가 둘로 갈린다 (#31)"
+    status: done
+    stage: stage1
+    owner: "frontend (D3 등록 카드)"
+    entry_conditions:
+      - "없음 — 실측: 카드 안 안내 문단 4건 중 3건이 이미 컨트롤 뒤이고, 기간 칸 하나만 앞이다. PRD-40 은 앞/뒤를 지정하지 않는다"
+      - "Ted 판정 정본 `dev-package/reports/issues/2026-09-12-ted-decisions.md` — 「#31 문면 삭제」는 판정 카드 ①~⑪ 에 없다(문면 유지 · 위치만 통일)"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend/src/components/upload/RegisterArea.tsx` 의 기간 칸이 「라벨 → 컨트롤 → 설명문」 순서다
+      ⑵ 문면 상수 · `data-testid` · 클래스명 무변(문면 삭제는 범위 밖)
+      ⑶ `upload.css` 접촉 0
+      ⑷ `frontend/test/register-steps-20260907.test.tsx` 에 순서 단언이 서고 red 선실측 뒤 green
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green.
+    evidence: "2026-09-12 커밋 `bb3e77d8`. 게이트 = 레인 보고 축자 `frontend-test green 1256건 · 연속 2회`(L2 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/31"
+    deadline: null
+    note: "라운드 R-BUGFIX-260912 L2 레인. 배치 규약을 정책 문서에 적는 것은 후속 항목(이 회차 범위 밖)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/intent/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-15
+    name: "미리보기 64×64 축소본이 지도 자리 위에 겹쳐 그려진다 — 접히는 자리로 이동 ＋ 중복 방지 (#26)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 미리보기)"
+    entry_conditions:
+      - "Ted 판정 ⑤ ⓑ(2026-09-12) — 지도 자리에서 빼고 접히는 자리(대표 그림 고르개 옆)로 옮긴다. 결정 `〈88〉`-3 의 표시 목적은 유지한다"
+      - "Ted 추가 확인(2026-09-12 · 미리보기 spec v2 「모두 권고대로」) — 축소본 중복 방지 규칙을 같은 묶음에 넣는다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 축소본이 `.mapcanvas` 위에 그려지지 않는다 — 자리는 `up-preview-options` details 안 `up-thumb-img` 옆이다
+      ⑵ 대표 그림을 고른 경우에만 자동 축소본을 그 옆에 대조용으로 세우고, 고른 그림이 없으면 기존대로 한 장이다
+      ⑶ 판정 수단 두 가지 — DOM 조상·형제 관계 ＋ 주석을 제거한 CSS 원문 계측(jsdom 은 레이아웃을 계산하지 않는다)
+      ⑷ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: "2026-09-12 커밋 `6afa776a`(자리 이동) · `c9e95eb2`(중복 방지). 게이트 = 레인 보고 축자 `frontend-test green 1257건 · 2회 ＋ frontend-typecheck 0`(L3 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/26"
+    deadline: null
+    note: "결정 `〈88〉`-3 의 재판정 기록 대상 — 등재 `PLAN-SoT §9 〈384〉`. 라운드 R-BUGFIX-260912 L3 레인."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-16
+    name: "업로드 모달 4건 — 배너 재개 배선 ＋ 닫기 세 번째 선택지 ＋ 배너 행 폐기 ＋ 분석 중 사유·동작 표시 (#33㉠ · #34 · #32 · #24㉯)"
+    status: done
+    stage: stage1
+    owner: "frontend (D5 업로드 모달)"
+    entry_conditions:
+      - "Ted 판정 ①(#32 포함 · 공통 헬퍼 `discardUpload` 추출) · ②(세 번째 선택지 신설 · 뜻 = 이 브라우저에서 감춤 · 서버 행은 24h 만료 스윕) · ③(사유 한 줄 고지 · 비활성 유지) · ④(#33 을 ㉠ 배선 / ㉡ 등록 장면 복원 으로 분리 · ㉡ 은 범위 밖) · ⑧(소요 수용 ＋ 「동작 중」 표시 보강) — 2026-09-12"
+      - "L4 실측 회수 완료 — `dev-package/reports/issues/2026-09-12-measure-L4.md`"
+    depends_on: []
+    completion_def: >-
+      ⑴ `#33`㉠ — 배너 재개 요청의 재개 식별자를 업로드 진입 컴포넌트가 모달 props 로 전달하고 모달이 무장한 채 열린다. 기존 경로(`resumeRef`·`resumeFromRef='banner'`·`resumeArm`·`seq` 재무장) 재사용 · 신규 개념 0
+      ⑵ `#34` — 닫기 확인의 세 번째 선택지가 서고, 뜻이 「이 브라우저의 미완결 기억 삭제」(`forgetPending` 1회 · 서버 호출 0)이며 문면이 24시간 만료를 그대로 말한다. 지울 기억이 있을 때만 낸다
+      ⑶ `#32` — 메인 배너의 접수 완료 행에 폐기 버튼이 서고 같은 공통 헬퍼를 부른다. 폐기 후 배너가 비면 카드가 사라진다. 등록을 마친 데이터셋에는 닿지 않는다
+      ⑷ `#24`㉯ ＋ 판정 ⑧ — `다음 →`(`reg-open`)은 비활성을 유지하고 사유 한 줄이 `title`·`aria-describedby` 로 연결된다. 분석 중 칩에 활동 표시(CSS · `prefers-reduced-motion` 존중)와 클라이언트 경과 시간(`N초 경과`)이 붙는다. 진행 수치가 응답에 없으므로 조각 진행률은 표시하지 않는다(계약 변경 0)
+      ⑸ `upload.css` 는 파일 끝 구획 블록(`/* == R-BUGFIX-260912 L1 == */`) 안에만 덧붙는다
+      ⑹ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green · vitest 수집 건수가 착수 전 대비 6건 이상 증가.
+    evidence: "2026-09-12 커밋 `b8b4e7e2`(#33㉠) · `aa26db94`(#34) · `cef275a0`(#32) · `1a381310`(#24㉯＋⑧). 게이트 = 레인 보고 축자 `frontend-test green 1270건 · 2회 ＋ typecheck 0`(L1 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/33 · /34 · /32 · /24"
+    deadline: null
+    note: "문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」) — `UPLOAD_CLOSE_FORGET`·`UPLOAD_CLOSE_FORGET_NOTE`(PRD-34 문면표 개정) · `REG_OPEN_ANALYZING_REASON`·`analyzeElapsed`(PRD-43 자리표 2행 신설) · 등재 `PLAN-SoT §9 〈386〉`. PRD-43 21행 표(`COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY`) 등재는 행 채번 확정 뒤 별도 회차. 범위 밖 = `#33`㉡ 접수 완료분 등록 장면 복원 · 서버 즉시 삭제 창구(계약 개정)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-upload-resume-discard.md", "dev-package/prd/specs/2026-09-12-issue-upload-analysis-notice.md", "dev-package/intent/2026-09-12-issue-upload-resume-discard.md", "dev-package/intent/2026-09-12-issue-upload-analysis-notice.md", "dev-package/reports/issues/2026-09-12-measure-L4.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-17
+    name: "미리보기 조작 줄 3화면 — 고르개를 틀 위 고정 줄로 ＋ 확장보기 고르개 신설 ＋ 확대 줄 접힘·가림 해소 (#25⑵ · #27 · #28)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 미리보기 · 업로드 인라인 · 상세 · 확장보기)"
+    entry_conditions:
+      - "Ted 판정 ⑥ ⓐ(2026-09-12) ＋ 같은 날 재확인 — 인라인·상세 2화면 이동에 더해 확장보기에도 고르개 줄을 신설한다(원문 「니 권곧로 확장보기에서도 추가하다」). 기능 추가분은 Ted 지정 예외(편의 기능 유예 규칙 `.claude/rules/colab-rules.md §6-2` 의 예외)"
+      - "Ted 판정 ⑦ ⓐ(2026-09-12) — 접힘·가림 해소까지만. 고정 배치 재설계는 범위 밖"
+      - "Ted 판정 ⑧(2026-09-12) — 그리는 동안 「동작 중」임을 화면이 보여 준다"
+    depends_on: [BF-15]
+    completion_def: >-
+      ⑴ `#25`⑵ — 파일·변수·시각 고르개 줄이 `.pv-frame` 바깥 고정 줄로 서고, 같은 공용 줄을 세 화면이 쓴다(업로드 인라인 `PreviewPanel.tsx` · 상세 `datasetpreview/DatasetPreviewSection.tsx` · 확장 오버레이 `PreviewExpandOverlay.tsx`)
+      ⑵ 확장보기의 선택 상태는 인라인 미리보기와 공유한다 — 새 상태 저장소 신설 0
+      ⑶ 오버레이에 「그리는 중」 진행 표시가 선다(판정 ⑧)
+      ⑷ `#27`＋`#28` — 인라인에서 확대 줄이 스크롤 없이 보이고, `.modal-b.pvx-b` 의 flex 방향과 `.pv-layers .pv-tile` 폭 상한으로 가림이 사라진다. 버튼 글자 줄바꿈 금지
+      ⑸ 규약 문면 개정이 같은 커밋에 든다 — 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 해당 축자
+      ⑹ `upload.css` 는 기존 규칙만 고치고 파일 끝에 덧붙이지 않는다
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green. `frontend-visual` 은 세 화면 주소를 `COLAB_VISUAL_URLS` 로 선언할 수 있을 때만 1회.
+    evidence: "2026-09-12 커밋 `ccaf27f6`·`a841d7a1`(#25⑵ 2화면) · `67e25399`(확장보기 고르개 ＋ 그리는 중) · `bf02a0c8`(#27·#28) · `f98d09de`(R-C-2 문면 개정). 게이트 = 레인 보고 축자 `frontend-test green 1283건 · 2회 ＋ typecheck 0`(L3b · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/25 · /27 · /28"
+    deadline: null
+    note: "규약 `R-C-2` 「틀 안 컨트롤 줄」 → 「틀 위 고정 줄」 개정 등재 = `PLAN-SoT §9 〈385〉`. 범위 밖 = 미리보기 고정 배치 재설계 · 「이미지에서 고르기」 설계."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/prd/rounds/R-C-2-frontend.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: PA-T
+    name: "다중 서버 로그인 실패 제한 공유 ＋ 신뢰 프록시 판정"
+    status: open
+    stage: after_stage2
+    owner: "D2 / core-api"
+    entry_conditions: ["Ted 판정 ⑪ ⓐ(2026-09-12) — 대장 항목 등재만 · 미착수. 착수 시점·범위는 별도 판정", "인스턴스 2대 이상 운용이 결정된 뒤 — 1대 운용에서는 현행 프로세스 메모리로 닫혀 있다"]
+    depends_on: []
+    completion_def: "둘을 모두 만족한다. ⑴ 로그인 실패 제한이 인스턴스 사이에서 공유된다 — 서버 대수가 늘어도 자격·클라이언트 각각의 계수 창(5회/15분 · 성공 시 초기화)이 한 벌로 동작한다. 현행 수용 축자는 `CR-2` completion_def 의 「dev 로그인 제한은 현행 프로세스 메모리·자격/클라이언트 각각 5회/15분·성공 시 초기화 수용」이고, 이 항목은 그 수용의 전제(단일 프로세스)가 깨지는 시점을 대상으로 한다. ⑵ 클라이언트 식별의 신뢰 프록시 판정이 기록된다 — 어느 홉까지 신뢰하고 어느 헤더를 읽는지, 위조 헤더로 다른 클라이언트의 계수를 소모시키지 못하는지 음성 시험 1건."
+    evidence: null
+    deadline: null
+    note: "출처 = GitHub 이슈 https://github.com/CognileapAI/colab-v2/issues/11 . Ted 판정 ⑪ ⓐ 는 「대장 항목 등재만 · 미착수」이고 근거는 「열린 항목이 없어 남은 일로 집계되지 않는다」. 등재와 동시에 `CLAUDE.md §0` 세 번째 단 괄호 목록을 갱신한다(게이트 `work-item-consistency` ㈕ 대조)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md", "dev-package/reports/issues/2026-09-12-github-open-issues.md"]
+  - id: LV-5
+    name: "계보 부모 찾기 창을 목록 화면 형태로 재구성 (제안 · #30 후속)"
+    status: open
+    stage: backlog
+    owner: "frontend (D4 계보 화면) — 착수 시점은 Ted"
+    entry_conditions:
+      - "Ted 판정 ⑨ ⓐ(2026-09-12) — 이번 회차는 0행 재현 확인까지이고 화면 형태 재구성은 신규 항목 후보다. 착수 판정은 별도"
+      - "L4 재현 결과가 조회 결함이 아니라 사용법으로 닫혔다(`dev-package/reports/issues/2026-09-12-measure-L4.md` §4-2) — 즉 이 항목은 결함 수정이 아니라 화면 형태 개선이다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 부모 찾기 창이 데이터셋 목록 화면과 같은 형태(열 구성·필터·건수 표시)로 후보를 보여 준다
+      ⑵ 결과가 0행일 때 왜 0행인지를 화면이 가른다 — 후보 부재 / 필터가 결과를 비움 / 연구실 경계. 현행 두 갈래 문면(`ParentPicker.tsx` 축자 「검색 조건에 맞는 데이터가 없어요. 조건을 바꿔 주세요.」 · 「고를 수 있는 연구실 데이터가 아직 없어요.」)보다 넓다
+      ⑶ 필터가 어떤 값으로 걸려 있는지 화면에 보이고 한 번에 지울 수 있다
+      ⑷ 연구실 경계(RLS) 동작은 바꾸지 않는다.
+    evidence: null
+    deadline: null
+    note: "L4 부수 관측(보고만) = `category` 를 한 값이라도 고르면 0행이다 — staging 표본 14행 전부 응답 `category` 가 null. 이것이 화면 결함인지 표본 결함인지는 `[미측정]`. 이 항목과 별개로 다뤄야 한다."
+    sources: ["dev-package/reports/issues/2026-09-12-measure-L4.md", "dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
