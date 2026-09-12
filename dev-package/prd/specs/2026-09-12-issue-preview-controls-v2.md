@@ -1,4 +1,6 @@
-# Spec (초안 v2): 2026-09-12 bugfix 회차 — 미리보기 조작 줄과 진행 표시
+# Spec (v2 · 승인 2026-09-12): 2026-09-12 bugfix 회차 — 미리보기 조작 줄과 진행 표시
+
+- **승인** = Ted 2026-09-12 · 원문 「모두 권고대로」 — 6단계 계획 ＋ 우려 항목 6건 권고 전부 채택(축소본 중복 방지 규칙 ⓒ 포함). 실행 레인 = L3b(`lane/bugfix-preview-controls` 이어서).
 
 - 출처 intent: `dev-package/intent/2026-09-12-issue-preview-controls.md` (승인 2026-09-12 · Ted 확인 문장 "좋아 전부권고안으로")
 - 종전 판 = `dev-package/prd/specs/2026-09-12-issue-preview-controls.md`(v1). **이 문서가 v1 을 대체한다.**
