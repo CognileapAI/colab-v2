@@ -3251,7 +3251,7 @@ items:
       ⑶ `upload.css` 접촉 0
       ⑷ `frontend/test/register-steps-20260907.test.tsx` 에 순서 단언이 서고 red 선실측 뒤 green
       ⑸ 단독 게이트 `frontend-test` 연속 2회 green.
-    evidence: "2026-09-12 커밋 `bb3e77d8`. 게이트 = 레인 보고 축자 `frontend-test green 1256건 · 연속 2회`(L2 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/31"
+    evidence: "2026-09-12 커밋 `bb3e77d8`. 게이트 = 레인 보고 축자 `frontend-test green 1256건 · 연속 2회`(L2 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/31"
     deadline: null
     note: "라운드 R-BUGFIX-260912 L2 레인. 배치 규약을 정책 문서에 적는 것은 후속 항목(이 회차 범위 밖)."
     sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/intent/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
@@ -3269,9 +3269,9 @@ items:
       ⑵ 대표 그림을 고른 경우에만 자동 축소본을 그 옆에 대조용으로 세우고, 고른 그림이 없으면 기존대로 한 장이다
       ⑶ 판정 수단 두 가지 — DOM 조상·형제 관계 ＋ 주석을 제거한 CSS 원문 계측(jsdom 은 레이아웃을 계산하지 않는다)
       ⑷ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
-    evidence: "2026-09-12 커밋 `6afa776a`(자리 이동) · `c9e95eb2`(중복 방지). 게이트 = 레인 보고 축자 `frontend-test green 1257건 · 2회 ＋ frontend-typecheck 0`(L3 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/26"
+    evidence: "2026-09-12 커밋 `6afa776a`(자리 이동) · `c9e95eb2`(중복 방지). 게이트 = 레인 보고 축자 `frontend-test green 1257건 · 2회 ＋ frontend-typecheck 0`(L3 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/26"
     deadline: null
-    note: "결정 `〈88〉`-3 의 재판정 기록 대상 — 등재 `PLAN-SoT §9 〈384〉`. 라운드 R-BUGFIX-260912 L3 레인."
+    note: "결정 `〈88〉`-3 의 재판정 기록 대상 — 등재 `PLAN-SoT §9 〈386〉`. 라운드 R-BUGFIX-260912 L3 레인."
     sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
   - id: BF-16
     name: "업로드 모달 4건 — 배너 재개 배선 ＋ 닫기 세 번째 선택지 ＋ 배너 행 폐기 ＋ 분석 중 사유·동작 표시 (#33㉠ · #34 · #32 · #24㉯)"
@@ -3289,9 +3289,9 @@ items:
       ⑷ `#24`㉯ ＋ 판정 ⑧ — `다음 →`(`reg-open`)은 비활성을 유지하고 사유 한 줄이 `title`·`aria-describedby` 로 연결된다. 분석 중 칩에 활동 표시(CSS · `prefers-reduced-motion` 존중)와 클라이언트 경과 시간(`N초 경과`)이 붙는다. 진행 수치가 응답에 없으므로 조각 진행률은 표시하지 않는다(계약 변경 0)
       ⑸ `upload.css` 는 파일 끝 구획 블록(`/* == R-BUGFIX-260912 L1 == */`) 안에만 덧붙는다
       ⑹ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green · vitest 수집 건수가 착수 전 대비 6건 이상 증가.
-    evidence: "2026-09-12 커밋 `b8b4e7e2`(#33㉠) · `aa26db94`(#34) · `cef275a0`(#32) · `1a381310`(#24㉯＋⑧). 게이트 = 레인 보고 축자 `frontend-test green 1270건 · 2회 ＋ typecheck 0`(L1 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/33 · /34 · /32 · /24"
+    evidence: "2026-09-12 커밋 `b8b4e7e2`(#33㉠) · `aa26db94`(#34) · `cef275a0`(#32) · `1a381310`(#24㉯＋⑧). 게이트 = 레인 보고 축자 `frontend-test green 1270건 · 2회 ＋ typecheck 0`(L1 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/33 · /34 · /32 · /24"
     deadline: null
-    note: "문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」) — `UPLOAD_CLOSE_FORGET`·`UPLOAD_CLOSE_FORGET_NOTE`(PRD-34 문면표 개정) · `REG_OPEN_ANALYZING_REASON`·`analyzeElapsed`(PRD-43 자리표 2행 신설) · 등재 `PLAN-SoT §9 〈386〉`. PRD-43 21행 표(`COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY`) 등재는 행 채번 확정 뒤 별도 회차. 범위 밖 = `#33`㉡ 접수 완료분 등록 장면 복원 · 서버 즉시 삭제 창구(계약 개정)."
+    note: "문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」) — `UPLOAD_CLOSE_FORGET`·`UPLOAD_CLOSE_FORGET_NOTE`(PRD-34 문면표 개정) · `REG_OPEN_ANALYZING_REASON`·`analyzeElapsed`(PRD-43 자리표 2행 신설) · 등재 `PLAN-SoT §9 〈388〉`. PRD-43 21행 표(`COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY`) 등재는 행 채번 확정 뒤 별도 회차. 범위 밖 = `#33`㉡ 접수 완료분 등록 장면 복원 · 서버 즉시 삭제 창구(계약 개정)."
     sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-upload-resume-discard.md", "dev-package/prd/specs/2026-09-12-issue-upload-analysis-notice.md", "dev-package/intent/2026-09-12-issue-upload-resume-discard.md", "dev-package/intent/2026-09-12-issue-upload-analysis-notice.md", "dev-package/reports/issues/2026-09-12-measure-L4.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
   - id: BF-17
     name: "미리보기 조작 줄 3화면 — 고르개를 틀 위 고정 줄로 ＋ 확장보기 고르개 신설 ＋ 확대 줄 접힘·가림 해소 (#25⑵ · #27 · #28)"
@@ -3311,9 +3311,9 @@ items:
       ⑸ 규약 문면 개정이 같은 커밋에 든다 — 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 해당 축자
       ⑹ `upload.css` 는 기존 규칙만 고치고 파일 끝에 덧붙이지 않는다
       ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green. `frontend-visual` 은 세 화면 주소를 `COLAB_VISUAL_URLS` 로 선언할 수 있을 때만 1회.
-    evidence: "2026-09-12 커밋 `ccaf27f6`·`a841d7a1`(#25⑵ 2화면) · `67e25399`(확장보기 고르개 ＋ 그리는 중) · `bf02a0c8`(#27·#28) · `f98d09de`(R-C-2 문면 개정). 게이트 = 레인 보고 축자 `frontend-test green 1283건 · 2회 ＋ typecheck 0`(L3b · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈383〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/25 · /27 · /28"
+    evidence: "2026-09-12 커밋 `ccaf27f6`·`a841d7a1`(#25⑵ 2화면) · `67e25399`(확장보기 고르개 ＋ 그리는 중) · `bf02a0c8`(#27·#28) · `f98d09de`(R-C-2 문면 개정). 게이트 = 레인 보고 축자 `frontend-test green 1283건 · 2회 ＋ typecheck 0`(L3b · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/25 · /27 · /28"
     deadline: null
-    note: "규약 `R-C-2` 「틀 안 컨트롤 줄」 → 「틀 위 고정 줄」 개정 등재 = `PLAN-SoT §9 〈385〉`. 범위 밖 = 미리보기 고정 배치 재설계 · 「이미지에서 고르기」 설계."
+    note: "규약 `R-C-2` 「틀 안 컨트롤 줄」 → 「틀 위 고정 줄」 개정 등재 = `PLAN-SoT §9 〈387〉`. 범위 밖 = 미리보기 고정 배치 재설계 · 「이미지에서 고르기」 설계."
     sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/prd/rounds/R-C-2-frontend.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
   - id: PA-T
     name: "다중 서버 로그인 실패 제한 공유 ＋ 신뢰 프록시 판정"
@@ -3377,14 +3377,14 @@ items:
     deadline: null
     note: |
       2026-09-12 Ted 판정 ⓐ — 하네스 평가 red(판정) 4건을 안고 이번 회차를 병합·배포하고, 과제 수리는 별도 항목·별도 세션으로 낸다.
-      원문 「a로 하고 이건 다른 곳에서 할게」. 등재 `PLAN-SoT §9 〈389〉`.
+      원문 「a로 하고 이건 다른 곳에서 할게」. 등재 `PLAN-SoT §9 〈391〉`.
       실측 2회에서 같은 4건이 실패했다 — `20260908-161538`(0/2 H14·H16·H18 · 1/2 H15) · `20260912-211809`(과제 20 · 실행 40 · green 16 · 실패 4).
 
       착수 세션 프롬프트(축자 · 사본 `dev-package/sessions/HE-1-session-prompt.md`):
 
       ```
       31 CoLAB-v2 에서 하네스 평가 과제 4건(H14-silent-skip · H15-zero-targets · H16-lenient-default · H18-three-states)의 설계 결함을 고친다.
-      - 근거: eval/harness/results/20260912-211809/summary.md (green 16 / 실패 4) 와 20260908-161538 (같은 과제 실패) · R-D 라운드 결정 ㉴(방치) · PLAN-SoT 〈389〉(이번에 ⓐ 로 넘김)
+      - 근거: eval/harness/results/20260912-211809/summary.md (green 16 / 실패 4) 와 20260908-161538 (같은 과제 실패) · R-D 라운드 결정 ㉴(방치) · PLAN-SoT 〈391〉(이번에 ⓐ 로 넘김)
       - 과제 정의: eval/harness/H14* H15* H16* H18* · 러너 eval/harness/run.sh · README 의 선언값(TIMEOUT 93 · BUDGET 2.01)
       - 실행은 구독(로그인 claude -p) 경로다. API 키·예산 승인을 묻지 않는다.
       - 순서: 과제별로 「기대(expect)가 잘못됐는가 / 지시문이 실제로 안 지켜지는가」를 먼저 가르고, 기대 오류면 과제를 고치고, 지시문 미준수면 CLAUDE.md·스킬 문안을 고친다. 고친 뒤 COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval 로 재실행.
