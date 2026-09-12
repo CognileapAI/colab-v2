@@ -137,3 +137,11 @@ CloudFront 공개 진입으로 3회 호출. 본문은 파싱만 하고 토큰·�
   `length >= 10`). DB·로그인 경로에는 길이 하한이 없어 심기·로그인 모두 성립했고 실측으로 확인했다.
   다만 **같은 비밀번호를 `POST /admin/accounts` 로는 발급할 수 없다.** 첫 변경은 10자 이상을
   요구하므로 변경 뒤에는 해소된다. 이 레인은 비밀번호를 지어내지 않았다.
+
+## 8. 초기 비밀번호 재설정 1회 — 2026-09-12 (작업 id `459b54f8f61644988cb3e7ed38049211`)
+
+- 재설정 일시 = **2026-09-12 05:56:31Z**(`login_credential.updated_at`). 대상 `01M29ZX6RRC7H3G159Y86XK2DZ` **한 행 UPDATE 1건** — DDL 0 · 다른 행 0.
+- 해시 = 제품 경로 `colab_core.kernel.password.hash_password`(`scrypt` · `n=16384 r=8 p=1`), 컨테이너 `colab_v2_dev_core_api` 안에서 실행. 비밀번호는 **표준입력 한 줄**로만 넘겼고 argv·서버 파일·레포 어디에도 적지 않았다.
+- `must_change_password` **false → true** · `session_version` **2 → 3** — 종전 발급분은 `token_is_current` 의 버전 대조에서 탈락한다.
+- 확인(상태 코드만) = `POST /api/v1/sessions` **201** · `GET /api/v1/me` **200** `mustChangePassword=true`. 첫 시도는 **429** 였다 — 05:49 의 401 5건이 시도 제한(창 900초 · 한도 5)을 걸었고, 창 경과 뒤 재시도한 값이 위 둘이다.
+- 새 비밀번호는 15자라 `PUT /me/password` 의 하한 10자를 만족한다 — §7 의 「초기 비밀번호 9자」 [미확인]은 해소됐다. 확인용 세션 1건이 남고 토큰은 보관하지 않았다(첫 변경이 `session_version` 을 +1 하면 무효).
