@@ -38,8 +38,14 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_73() -> None:
-    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → **73.**
+def test_operation_count_is_84() -> None:
+    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → 73 → 81 → **84.**
+
+    ⭑ **81 → 84 는 운영자 백오피스 3 op** (`dev-package/intent/2026-09-12-login-backoffice-closeout.md`
+    · spec `dev-package/prd/specs/login-backoffice-closeout.md §3`) — `listServiceAccounts` ·
+    `resetServiceAccountPassword` · `setServiceAccountStatus`. **순수 추가**이고 기존 op 의
+    요청·응답·`security` 는 한 글자도 바뀌지 않았다(`createServiceAccount` 의 `initialPassword`
+    포함). **신설과 동시에 구현했다**(`routes/accounts.py`) — 그래서 501 표는 그대로다.
 
     ⭑ **병합(창 8-a) 실측 = 66.** 두 줄기가 각자 더한 op 이 겹치지 않아 합이 그대로 는다 —
     PR #1 줄기 **65**(`〈337〉`~`〈342〉` · 저장 Port · 파일 관리 · 다운로드 셋) ＋ `main` 줄기가
@@ -114,7 +120,7 @@ def test_operation_count_is_73() -> None:
     """
     # 사용자 승인 UI 개선은 계보 후보 1개와 대표 그림 PUT/GET/DELETE 3개를 함께 열었다.
     # J-1~J-9는 기본 격자·후보·복제·조기 미리보기 4개를 더했다.
-    assert len(contract_operations()) == 81, "계약의 오퍼레이션이 81 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 84, "계약의 오퍼레이션이 84 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

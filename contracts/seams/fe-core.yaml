@@ -239,6 +239,104 @@ paths:
         "503": { $ref: "#/components/responses/ServerError" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+    get:
+      tags: [identity]
+      operationId: listServiceAccounts
+      summary: 서비스 계정 목록
+      description: |
+        [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 백오피스의
+        계정 목록이다. **전 연구실 한 벌**이며 이 경로에만 연구실 경계를 걸지 않는다(운영자 전용).
+        최근 로그인은 로그인 세션 원장의 집계이고 새 열을 만들지 않는다. 필터 네 가지는 서버가 건다.
+      parameters:
+        - name: labId
+          in: query
+          required: false
+          description: 연구실로 좁힌다. 생략하면 전 연구실이다.
+          schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/ServiceAccountStatus" }
+        - name: role
+          in: query
+          required: false
+          schema: { $ref: "../schemas/common.json#/$defs/Role" }
+        - name: email
+          in: query
+          required: false
+          description: 이메일 부분 일치. 대소문자를 가리지 않는다.
+          schema: { type: string, minLength: 1, maxLength: 320 }
+      responses:
+        "200":
+          description: 계정 목록. **0건도 여기로 온다** — 정직한 빈 상태.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /admin/accounts/{accountId}/password-reset:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    post:
+      tags: [identity]
+      operationId: resetServiceAccountPassword
+      summary: 운영자가 초기 비밀번호를 다시 심는다
+      description: |
+        [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자가 **새 초기
+        비밀번호를 직접 입력**하고 당사자에게 직접 전달한다(메일 발송 없음). 저장은 기존 해시 경로이고,
+        첫 로그인 변경이 다시 강제되며 그 계정의 기존 로그인이 모든 기기에서 끝난다.
+        **응답에 비밀번호 필드를 두지 않는다** — 되돌려 주는 순간 화면·로그·프록시에 남는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ServiceAccountPasswordReset" }
+      responses:
+        "200":
+          description: 재설정 결과. 비밀번호 원문은 실리지 않는다.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountPasswordResetResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /admin/accounts/{accountId}/status:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    post:
+      tags: [identity]
+      operationId: setServiceAccountStatus
+      summary: 계정 비활성화·재활성화
+      description: |
+        [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비활성화는 즉시
+        로그인 거절이고 기존 로그인이 모든 기기에서 끝난다. **행을 지우지 않는다** — 데이터와
+        소유권은 그대로 남는다. 자기 계정 비활성화는 400 이다(되살릴 사람이 없어진다).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ServiceAccountStatusChange" }
+      responses:
+        "200":
+          description: 바뀐 상태
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountStatusResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /lab:
     get:
       tags: [identity]
@@ -2888,6 +2986,12 @@ components:
       required: true
       schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
 
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
     ProjectId:
       name: projectId
       in: path
@@ -3285,6 +3389,78 @@ components:
         name: { type: string }
         labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         role: { $ref: "../schemas/common.json#/$defs/Role" }
+
+    ServiceAccountStatus:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 계정 상태는 둘뿐이다. 비활성은 삭제가 아니라 로그인 거절이며 데이터·소유권은 남는다."
+      type: string
+      enum: [active, inactive]
+
+    ServiceAccountSummary:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 계정 목록의 한 행(여섯 열)."
+      type: object
+      additionalProperties: false
+      required: [accountId, email, name, labId, labName, role, status, lastLoginAt]
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        email: { type: string }
+        name: { type: string }
+        labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        labName: { type: string }
+        # 역할 행이 없는 계정이 실재할 수 있다 — 없는 것을 지어내지 않고 null 로 낸다.
+        role:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Role"
+            - type: "null"
+        status: { $ref: "#/components/schemas/ServiceAccountStatus" }
+        # 한 번도 로그인하지 않은 계정은 null 이다. 발급 시각으로 대신 채우지 않는다.
+        lastLoginAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+
+    ServiceAccountList:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 전 연구실 한 벌."
+      type: object
+      additionalProperties: false
+      required: [accounts]
+      properties:
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/ServiceAccountSummary" }
+
+    ServiceAccountPasswordReset:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자가 직접 입력하는 새 초기 비밀번호. 길이 규칙은 발급 때와 같다."
+      type: object
+      additionalProperties: false
+      required: [newPassword]
+      properties:
+        newPassword: { type: string, minLength: 10, maxLength: 512 }
+
+    ServiceAccountPasswordResetResult:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비밀번호 원문을 담지 않는다."
+      type: object
+      additionalProperties: false
+      required: [accountId, mustChangePassword]
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        mustChangePassword: { type: boolean }
+
+    ServiceAccountStatusChange:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비활성화·재활성화 요청."
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/ServiceAccountStatus" }
+
+    ServiceAccountStatusResult:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 바뀐 뒤의 상태."
+      type: object
+      additionalProperties: false
+      required: [accountId, status]
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        status: { $ref: "#/components/schemas/ServiceAccountStatus" }
 
     AccountOptions:
       description: "[사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책."
