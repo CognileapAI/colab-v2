@@ -684,3 +684,61 @@ describe('WU-B4 · PRD-11 공개 범위 3값', () => {
     expect(calls.registered[0]!.accessState).toBe('잠김');
   });
 });
+
+// ═══ ⭑ ⟨R-BUGFIX-260912 · L2 · CognileapAI/colab-v2#31⟩ 카드 안 안내 문단 배치 ═════
+// 규약 = **라벨 → 입력 컨트롤 → 설명문.** 안내 문단은 자기 칸의 컨트롤 **뒤**에 온다.
+// 판정 수단은 DOM 선후 하나뿐 — 클래스명·스타일 값을 단언하지 않는다(spec 「시험 결정」).
+// green-by-skip 방지 = 쌍의 두 노드를 먼저 조회하므로 문단이 사라지면 조회에서 실패하고,
+// 쌍의 개수를 단언하므로 대상 0건이 통과하지 못한다.
+describe('#31 등록 카드 안내 문단은 컨트롤 뒤에 온다', () => {
+  /** `control` 이 `note` 보다 문서 순서상 앞이면 참. */
+  const noteFollowsControl = (control: Element, note: Element) =>
+    (control.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+  it('① 유형 칸 — 참고 줄이 셀렉트 뒤다', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await change(screen.getByTestId('reg-datatype'), '위성자료');
+    const control = screen.getByTestId('reg-datatype');
+    const note = screen.getByTestId('reg-datatype-note');
+    expect(note.textContent?.trim()).not.toBe('');
+    expect(['유형', noteFollowsControl(control, note)]).toEqual(['유형', true]);
+  });
+
+  it('② 기간·격자 설명·공개 범위 — 안내 문단 3건이 각자 컨트롤 뒤다', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    const pairs: [string, Element, Element][] = [
+      [
+        '기간',
+        screen.getByTestId('reg-period-open'),
+        screen.getByTestId('reg-period-single-hint'),
+      ],
+      [
+        '격자 설명',
+        screen.getByTestId('reg-grid-description'),
+        screen.getByText('자동 판독과 별도로 연구자가 설명을 남겨요.'),
+      ],
+      [
+        '공개 범위',
+        screen.getByTestId('reg-visibility'),
+        screen.getByTestId('reg-visibility-note'),
+      ],
+    ];
+    expect(pairs).toHaveLength(3);
+    for (const [name, control, note] of pairs) {
+      expect(note.textContent?.trim()).not.toBe('');
+      expect([name, noteFollowsControl(control, note)]).toEqual([name, true]);
+    }
+  });
+
+  it('기간 안내 문면이 종전 그대로다 (문면 삭제 아님)', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    expect(screen.getByTestId('reg-period-single-hint').textContent).toBe(
+      PERIOD_SINGLE_POINT_HINT,
+    );
+  });
+});

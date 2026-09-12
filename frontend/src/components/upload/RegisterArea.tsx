@@ -435,12 +435,6 @@ function StepMeta(props: {
             {/* ⭑ ⟨WU-C8 · §5-14⟩ 값 칸이 없다 — 누르면 달력 팝오버가 뜨고 거기서만 받는다.
                 `htmlFor` 는 그 버튼을 가리킨다(라벨이 가리킬 칸이 여기 남아 있지 않다). */}
             <label htmlFor="reg-period-open">{periodLabel} (선택)</label>
-            {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다.** 필수 표시를 걷고 안내 한 줄을 둔다 —
-                저장은 `period_end = period_start` 로 채워지고(`UploadModal.humanMetadata`)
-                표시는 시작=끝이면 한 값으로 그린다(PRD-35 괄호 병기 그대로). */}
-            <p className="fieldnote" data-testid="reg-period-single-hint">
-              {PERIOD_SINGLE_POINT_HINT}
-            </p>
             {/* ㈏ 달력 팝오버 (R-A′ 이관 · PRD-18 · WU-C8 §5-14) — 기간을 받는 **유일한 길**.
                 버튼 문면은 §5-15 판정이 채택한 것을 그대로 둔다. */}
             <button
@@ -454,6 +448,14 @@ function StepMeta(props: {
             >
               달력에서 고르기
             </button>
+            {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다.** 필수 표시를 걷고 안내 한 줄을 둔다 —
+                저장은 `period_end = period_start` 로 채워지고(`UploadModal.humanMetadata`)
+                표시는 시작=끝이면 한 값으로 그린다(PRD-35 괄호 병기 그대로).
+                ⭑ ⟨R-BUGFIX-260912 · #31⟩ 자리는 **컨트롤 뒤**다 — 카드 안 안내 문단 4건을
+                라벨 → 입력 컨트롤 → 설명문 한 순서로 통일한다. 문면·`data-testid`·클래스 무변. */}
+            <p className="fieldnote" data-testid="reg-period-single-hint">
+              {PERIOD_SINGLE_POINT_HINT}
+            </p>
             {periodPopOpen && (
               <PeriodCalendarPopover
                 granularity={props.granularity}
