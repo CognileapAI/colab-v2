@@ -4014,7 +4014,13 @@ items:
       파급 조회 실패 시 삭제 비활성 — vitest
       ⑻ dev 배포 뒤 **검증이 올린 일회용 데이터셋 1건** 실삭제 — 410 첫 실측 ·
       사전 스냅샷 키의 S3 부재(원장 키 목록 기준 · 접두 스캔 아님) · 계보 상대의 묘비 노드 ·
-      승인함 대기 0 ＋ `deploy_doctor` 14/14 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
+      승인함 대기 0 ＋ `deploy_doctor` 15/15 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
+      ／ 종전 표기 ~~14/14~~ — R-D `WU-D3` 가 ⑮(실행 sha ∈ main · `MAIN_SHA` 대조)를 더했다
+      ⑼ **운영자 감사 스냅샷** — 삭제 뒤 `d3_operator_audit` 에 그 데이터셋 행 **1건**
+      (`action='dataset.deleted'` · `before.name` 있음 · `after_snapshot IS NULL`).
+      `0027_operator_audit` 가 데이터셋 쓰기에 건 규약이고 `d3_catalog.update_dataset` 이 선례다 —
+      활동 한 줄(`d8_activity`)은 이름·요약을 안 들어 그 자리를 대신하지 못한다.
+      시험 `tests/test_dataset_deletion.py::test_deleting_appends_one_operator_audit_snapshot`
     evidence: >-
       2026-09-06 레인 `lane-dl1-dataset-delete` C0~C3(`36fc8c2`·`60b3e00`·`a9b571b`·`a4a48e1`) ·
       게이트 3계수 = green 13 / red(판정) 1(`service-tests-core-api` · 원인 = 호스트 도달성 ·
@@ -4027,7 +4033,17 @@ items:
       `open_access_for_deletion` 이 WU-B4 `set_access_state("열림")` 재사용 ＋ `지정 공개`
       원복 시험 1(red 1 → green) · 재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1
       (`schema-diff`) · pytest 948/0(신설 파일 22) · vitest 1013/0 · `service-tests` 게이트 미실행
-      (이 맥 무판정 매달림 · 직접 pytest 로 갈음) — `lane-report.md §9`
+      (이 맥 무판정 매달림 · 직접 pytest 로 갈음) — `lane-report.md §9` ·
+      **재리베이스 `origin/main` `a8a1653`(2026-09-12 · 192 커밋 · platform 0020~0027 ·
+      ai 0006 형제 둘 ＋ 0007 merge)** — 브랜치 `lane/wu-dl-1`(`docs/BRANCHING.md` 규칙 4) ·
+      커밋 C0~C4(`088c59d`·`7a7e56e`·`555bda8`·`6d3f297`·`8bd7023`) ＋ C6(`17b0b95` · 옛 C5) ＋
+      C7(`5527408`) ＋ C8 · 충돌 5파일 7사건 해소(대장 3 · `main.py` · `test_not_implemented.py` ·
+      `DatasetDetailPage.tsx` · `03-HANDOFF.md` 블로커 행 71 선점 → 72·73 재번호) ·
+      **C7 = `0027` 운영자 감사 스냅샷 정합**(완료 정의 ⑼ · red 먼저 `assert 0 == 1` → green) ·
+      재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1(`schema-diff`) ·
+      pytest 1145 passed / 1 failed(`test_ownership_snapshot_publisher` — 호스트 `postgres` 암호
+      전제 미선언 · 레인 기여분 0 · `lane-report.md §10-5 ⓒ`) · `tests/test_dataset_deletion.py` 23 ·
+      vitest 1270/0 · 계약 개정 0 · 마이그레이션 0 유지 — `lane-report.md §10`
     deadline: null
     note: >-
       **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
