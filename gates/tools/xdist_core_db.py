@@ -25,3 +25,16 @@ def pytest_configure(config: pytest.Config) -> None:
     if not url:
         raise pytest.UsageError(f"core-api xdist worker DB URL이 비었다: {worker_id}")
     os.environ["COLAB_CORE_TEST_DATABASE_URL"] = url
+    admin_dir = os.environ.get("COLAB_CORE_XDIST_ADMIN_DB_DIR")
+    if not admin_dir:
+        raise pytest.UsageError("core-api xdist worker admin DB 배선이 없다")
+    admin_path = pathlib.Path(admin_dir) / worker_id
+    try:
+        admin_url = admin_path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise pytest.UsageError(
+            f"core-api xdist worker admin DB 파일을 읽지 못했다: {worker_id} ({type(exc).__name__})"
+        ) from None
+    if not admin_url:
+        raise pytest.UsageError(f"core-api xdist worker admin DB URL이 비었다: {worker_id}")
+    os.environ["COLAB_CORE_TEST_ADMIN_DATABASE_URL"] = admin_url

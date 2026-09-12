@@ -18,7 +18,7 @@ export function LabSettingsPage(props: { port?: MembersPort; labSource?: LabSour
   const port = props.port ?? livePort;
 
   return (
-    <div data-screen="S-07">
+    <div className="settings-page" data-screen="S-07">
       <div className="settabs" role="tablist" aria-label="연구실 설정 탭">
         <button
           type="button"

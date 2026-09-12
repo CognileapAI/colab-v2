@@ -172,6 +172,7 @@ services:
       #   ⚠ 접미사는 **정확히 `_FILE`** 이다. `kernel/config.py` 가 이 이름을 읽는다 —
       #     한 글자만 어긋나도 배선은 있는데 아무도 안 읽는 상태가 되고 에러가 안 난다.
       COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+      COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE: /etc/colab/account-admin-database.url
       # 접수한 바이트를 두는 자리. **없으면 접수를 거절한다**(kernel/config.py) —
       # 바이트를 버리고 201 을 내리는 것은 거짓말이다. worker 와 **같은 볼륨**이어야 한다.
       COLAB_CORE_UPLOAD_DIR: /var/lib/colab/uploads
@@ -221,6 +222,7 @@ services:
       # ⚠ 회전은 **제자리 덮어쓰기** 후 컨테이너 재기동이다. 바인드 마운트는 inode 에 붙어서
       #   새 파일을 `mv` 하면 컨테이너가 옛 파일을 계속 읽는다(자격 파일과 같은 성질).
       - ${COLAB_STAGING_CORE_DB_URL_FILE:?COLAB_STAGING_CORE_DB_URL_FILE 이 필요하다}:/etc/colab/core-database.url:ro
+      - ${COLAB_STAGING_ACCOUNT_ADMIN_DB_URL_FILE:?COLAB_STAGING_ACCOUNT_ADMIN_DB_URL_FILE 이 필요하다}:/etc/colab/account-admin-database.url:ro
     depends_on:
       # 볼륨 주인이 맞춰진 **뒤에** 뜬다 — 순서가 아니라 조건이다.
       volume-init:

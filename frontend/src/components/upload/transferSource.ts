@@ -11,6 +11,7 @@ import { Scheduler } from './scheduler';
 import { xhrPut } from './xhrPut';
 import { NotImplemented, TransferInterrupted, type PickedFile, type UploadReceipt } from './types';
 import { normalizeName } from './normalizeName';
+import { getSession, getToken, subscribe } from '../../auth/store';
 
 export interface TransferProgress {
   sentBytes: number;
@@ -24,6 +25,20 @@ export interface TransferOptions {
   onProgress?: (p: TransferProgress) => void;
   /** 첫 본체 검증 직후 서버가 만든 별도 임시 업로드. 최종 전송 실패 여부와 독립적이다. */
   onEarlyReceipt?: (receipt: UploadReceipt) => void;
+  /** 내부 세션 경계. 호출 화면은 설정하지 않는다. */
+  signal?: AbortSignal;
+  owner?: { sessionId: string; token: string };
+}
+
+function assertOwner(opts: TransferOptions): void {
+  if (!opts.owner) return;
+  const current = getSession();
+  if (
+    !current ||
+    current.sessionId !== opts.owner.sessionId ||
+    getToken() !== opts.owner.token ||
+    opts.signal?.aborted
+  ) throw new Error('로그인 상태가 바뀌어 업로드를 중단했어요.');
 }
 
 interface PlanFile {
@@ -103,11 +118,16 @@ async function resumePlan(uploadId: string, picked: PickedFile[]) {
 }
 
 async function putWithRetry(getUrl: () => Promise<string>, body: Blob,
-                            onProgress: (loaded: number) => void): Promise<void> {
+                            onProgress: (loaded: number) => void,
+                            opts: TransferOptions): Promise<void> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    assertOwner(opts);
     try {
       // URL 은 수명이 짧다 — 매 시도마다 다시 발급받는다 (403 재발급을 겸한다)
-      const status = await xhrPut(await getUrl(), body, { onProgress });
+      const status = await xhrPut(await getUrl(), body, {
+        onProgress,
+        ...(opts.signal ? { signal: opts.signal } : {}),
+      });
       if (status >= 200 && status < 300) return;
     } catch {
       // 네트워크/스톨 — 아래 백오프로
@@ -119,18 +139,35 @@ async function putWithRetry(getUrl: () => Promise<string>, body: Blob,
 
 export async function presignedCreate(picked: PickedFile[],
                                       opts: TransferOptions = {}): Promise<UploadReceipt> {
-  const plan = opts.resumeUploadId
-    ? await resumePlan(opts.resumeUploadId, picked)
-    : await initiate(picked, opts.sourceLabel);
-  const uploadId = plan.uploadId as string;
+  const current = getSession();
+  const token = getToken();
+  if (!current || !token) throw new Error('로그인 상태를 다시 확인해 주세요.');
+  const controller = new AbortController();
+  const ownedOpts: TransferOptions = {
+    ...opts,
+    signal: controller.signal,
+    owner: { sessionId: current.sessionId, token },
+  };
+  const unsubscribe = subscribe(() => {
+    const next = getSession();
+    if (!next || next.sessionId !== current.sessionId || getToken() !== token) controller.abort();
+  });
   try {
-    return await runTransfer(plan, picked, opts);
+    assertOwner(ownedOpts);
+    const plan = opts.resumeUploadId
+      ? await resumePlan(opts.resumeUploadId, picked)
+      : await initiate(picked, opts.sourceLabel);
+    const uploadId = plan.uploadId as string;
+    try {
+      return await runTransfer(plan, picked, ownedOpts);
+    } catch (e) {
+      if (opts.resumeUploadId || e instanceof TransferInterrupted) throw e;
+      throw new TransferInterrupted(e instanceof Error ? e.message : '전송이 끊겼어요.', uploadId);
+    }
   } catch (e) {
-    // **원장이 이미 섰다.** 그 전송은 살아 있고 재개할 수 있다 — 화면이 그 사실을 알아야
-    // 재시도를 「새로 시작」이 아니라 「이어서」로 보낼 수 있다.
-    // 재개(`resumeUploadId`) 중의 실패는 새로 만든 것이 없으므로 감싸지 않는다.
-    if (opts.resumeUploadId || e instanceof TransferInterrupted) throw e;
-    throw new TransferInterrupted(e instanceof Error ? e.message : '전송이 끊겼어요.', uploadId);
+    throw e;
+  } finally {
+    unsubscribe();
   }
 }
 
@@ -139,6 +176,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
                            picked: PickedFile[],
                            opts: TransferOptions): Promise<UploadReceipt> {
   const uploadId = plan.uploadId as string;
+  assertOwner(opts);
   const files = plan.files as PlanFile[];
   const byIdentity = new Map(picked.map((p) => [identity(p.file.name, p.relativePath), p]));
 
@@ -166,6 +204,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
   };
 
   const completeFile = async (f: PlanFile) => {
+    assertOwner(opts);
     const r = await api.POST('/uploads/transfers/{uploadId}/files/{fileId}/complete', {
       params: { path: { uploadId, fileId: f.fileId } },
     });
@@ -176,16 +215,18 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
   };
 
   const sendSingle = async (f: PlanFile) => {
+    assertOwner(opts);
     const p = byIdentity.get(identity(f.fileName, f.relativePath));
     if (!p) throw new Error(`계획에 있는 파일이 선택에 없어요 — 「${f.fileName}」`);
     await putWithRetry(async () => {
+      assertOwner(opts);
       const r = await api.POST('/uploads/transfers/{uploadId}/put-urls', {
         params: { path: { uploadId } }, body: { fileIds: [f.fileId] },
       });
       const url = r.data?.urls[0]?.url;
       if (!url) throw new Error('전송 URL 을 받지 못했어요.');
       return url;
-    }, p.file, (loaded) => { inflight.set(f.fileId, loaded); report(); });
+    }, p.file, (loaded) => { inflight.set(f.fileId, loaded); report(); }, opts);
     inflight.delete(f.fileId);
     doneBytes += f.byteSize;
     report();
@@ -194,6 +235,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
   };
 
   const sendMultipart = async (f: PlanFile) => {
+    assertOwner(opts);
     const p = byIdentity.get(identity(f.fileName, f.relativePath));
     if (!p) throw new Error(`계획에 있는 파일이 선택에 없어요 — 「${f.fileName}」`);
     const init = await api.POST('/uploads/transfers/{uploadId}/files/{fileId}/multipart', {
@@ -221,6 +263,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
         const slice = p.file.slice(partSize * (n - 1), Math.min(partSize * n, f.byteSize));
         const key = `${f.fileId}:${n}`;
         await putWithRetry(async () => {
+          assertOwner(opts);
           const url = byNumber.get(n);
           if (url) { byNumber.delete(n); return url; }  // 첫 시도는 배치 URL, 재시도는 재발급
           const r = await api.POST('/uploads/transfers/{uploadId}/files/{fileId}/part-urls', {
@@ -229,7 +272,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
           const fresh = r.data?.urls[0]?.url;
           if (!fresh) throw new Error('파트 URL 을 받지 못했어요.');
           return fresh;
-        }, slice, (loaded) => { inflight.set(key, loaded); report(); });
+        }, slice, (loaded) => { inflight.set(key, loaded); report(); }, opts);
         inflight.delete(key);
         doneBytes += slice.size;
         report();
@@ -250,6 +293,7 @@ async function runTransfer(plan: { uploadId: string; files: unknown[] },
       { multipart: f.strategy === '멀티파트' },
     )));
 
+  assertOwner(opts);
   const done = await api.POST('/uploads/transfers/{uploadId}/complete', {
     params: { path: { uploadId } },
   });

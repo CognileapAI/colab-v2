@@ -73,7 +73,9 @@ export function CatalogTable(props: {
   const rows = state.list?.items ?? [];
 
   return (
-    <div className="tblwrap" data-scroll="both">
+    <>
+    <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
+    <div className="tblwrap" data-scroll="both" role="region" aria-label="데이터셋 표 스크롤" tabIndex={0}>
       <table className="tbl catalog" aria-label="데이터셋 목록">
         <thead>
           <tr>
@@ -151,7 +153,9 @@ export function CatalogTable(props: {
                     🔒
                   </span>
                 )}
-                {row.name}{' '}
+                <button type="button" className="catalog-open" onClick={(event) => {
+                  event.stopPropagation(); props.onOpen(row.datasetId);
+                }}>{row.name}</button>{' '}
                 {row.mapState && row.mapState !== '지도 있음' ? <span className="chip chip--neutral">{row.mapState}</span> : null}
                 {/* 조각 묶음 — 잠긴 행에도 뜬다 (`PLAN-SoT §9-㊼`) */}
                 {row.fileCount >= 2 && <span className="chip chip--neutral">조각 {row.fileCount}</span>}
@@ -236,5 +240,6 @@ export function CatalogTable(props: {
         </tbody>
       </table>
     </div>
+    </>
   );
 }

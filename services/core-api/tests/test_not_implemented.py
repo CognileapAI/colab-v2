@@ -108,8 +108,13 @@ C21_REAL = {
     "declareLineageUnknown":       "tests/test_lineage_unknown.py",
     "updateLineageParentMethod":   "tests/test_lineage_confirm.py",
 }
+C22_REAL = {
+    "getAccountOptions": "tests/test_admin_account_flow.py",
+    "createServiceAccount": "tests/test_admin_account_flow.py",
+    "changeOwnPassword": "tests/test_admin_account_flow.py",
+}
 P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL,
-           **C21_REAL}
+           **C21_REAL, **C22_REAL}
 REAL = P1_REAL | set(P2_REAL)
 #: **비었다 — 그리고 그것이 사실이다.**
 #: ⭑ 승인 요청 여섯이 빠졌다 (`P6` · 마이그레이션 `0010` 이 저장처를 만들었다).
@@ -127,7 +132,7 @@ def client() -> TestClient:
     tmp = pathlib.Path(tempfile.mkdtemp()) / "subjects.json"
     tmp.write_text(json.dumps({TOKEN: {"accountId": ACCOUNT, "labId": LAB}}), encoding="utf-8")
     app = create_app(Settings(database_url="postgresql+psycopg://unused/unused",
-                              subjects_file=str(tmp)))
+                              subjects_file=str(tmp)), test_static_subjects=True)
     return TestClient(app, raise_server_exceptions=False)
 
 

@@ -13,6 +13,7 @@
 //  - **서버 400 이 최종 방어선**이다. 이 화면은 그 앞에서 초과 후보를 못 고르게 할 뿐이고,
 //    거절 문구는 서버 봉투를 그대로 올린다 — 판정을 흉내 내지 않는다.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import { ESC_LAYER_ATTR, useEscLayer } from '../upload/escLayer';
 import { ParentPicker } from './ParentPicker';
 import type { LineageGraph } from './graphTypes';
@@ -56,6 +57,11 @@ export function LineageFixModal(props: {
   const [method, setMethod] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useWorkProtection(`lineage-fix:${props.datasetId}`, {
+    dirty: picked !== null || method !== '',
+    inFlight: saving,
+    discard: requestClose,
+  });
 
   useEffect(() => {
     load({ excludeDatasetId: props.datasetId, limit: 25 });

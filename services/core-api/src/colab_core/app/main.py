@@ -18,6 +18,7 @@ S1 이 `searchDatasets`·`listPalettes`·`listDatasetFieldSuggestions` 를 **신
 from __future__ import annotations
 
 import logging
+import json
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 
@@ -29,6 +30,8 @@ from ..kernel import aws_credentials, errors
 from ..kernel import authn
 from ..kernel.auth import SubjectRegistry
 from ..kernel.credentials import CredentialStore
+from ..kernel.db_credentials import DatabaseCredentialStore
+from ..kernel.login_sessions import FIXED_BROWSER_SESSION_TTL_MINUTES, LoginSessionStore
 from ..kernel.throttle import AttemptLimiter
 from ..kernel.config import Settings, load_settings
 from ..kernel.db import make_engine, make_session_factory
@@ -37,7 +40,7 @@ from ..kernel.observability import TraceMiddleware
 from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
-from .routes import (access, catalog, download, identity, ingestion, insight, lineage,
+from .routes import (access, accounts, catalog, download, identity, ingestion, insight, lineage,
                      members, not_implemented, preview, project, representative_image,
                      session, upload_transfers)
 
@@ -56,7 +59,7 @@ SQLSTATE_UNIQUE_VIOLATION = "23505"
 SQLSTATE_CHECK_VIOLATION = "23514"
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, test_static_subjects: bool = False) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(
         title="CoLAB v2 — core-api",
@@ -66,10 +69,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.add_middleware(TraceMiddleware, service_name="core-api")
+    @app.middleware("http")
+    async def _no_store_auth(request: Request, call_next):
+        response = await call_next(request)
+        if (request.url.path.startswith(f"{API_PREFIX}/sessions")
+                or request.url.path == f"{API_PREFIX}/me/password"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     engine = make_engine(settings.database_url)
     app.state.engine = engine
     app.state.settings = settings
     app.state.session_factory = make_session_factory(engine)
+    app.state.account_admin_factory = None
+    app.state.database_credentials = None
+    app.state.login_sessions = None
+    if settings.account_admin_database_url:
+        admin_engine = make_engine(settings.account_admin_database_url)
+        app.state.account_admin_factory = make_session_factory(admin_engine)
+        app.state.database_credentials = DatabaseCredentialStore(app.state.account_admin_factory)
     app.state.subjects = SubjectRegistry.from_file(settings.subjects_file)
     # 인증 수단의 **교체 지점은 `kernel/authn.py::build` 하나**다 (`PLAN-SoT §9 〈90〉-㉮`).
     # 여기서는 설정을 넘기기만 한다 — 앱은 수단이 몇 개인지도 알 필요가 없다.
@@ -79,9 +96,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _signer = (SessionSigner(settings.session_secret,
                              ttl_minutes=settings.session_ttl_minutes)
                if settings.session_secret else None)
+    if app.state.account_admin_factory is not None and _signer is not None:
+        app.state.login_sessions = LoginSessionStore(
+            app.state.account_admin_factory, _signer,
+            ttl_minutes=FIXED_BROWSER_SESSION_TTL_MINUTES,
+        )
+    app.state.tracked_session_signer = _signer
+    app.state.legacy_credentials = CredentialStore.from_file(settings.credentials_file)
     app.state.authenticators, app.state.session_issuer = authn.build(
         registry=app.state.subjects, signer=_signer,
-        credentials=CredentialStore.from_file(settings.credentials_file))
+        credentials=app.state.legacy_credentials,
+        database_credentials=app.state.database_credentials,
+        login_sessions=app.state.login_sessions,
+        database_signer=(authn.DatabaseSessionSigner(
+            settings.session_secret, ttl_minutes=settings.session_ttl_minutes)
+            if settings.session_secret and app.state.database_credentials else None))
+    if test_static_subjects:
+        usable = tuple(
+            adapter for adapter in app.state.authenticators.adapters
+            if not isinstance(adapter, authn.UnavailableSessionAuthenticator)
+        )
+        app.state.authenticators = authn.AuthenticatorChain((
+            authn.StaticTokenAuthenticator(app.state.subjects),
+            *usable,
+        ))
     # 다운로드 티켓 서명기 — **같은 비밀값**으로 선다 (`〈339〉-(다)`). 비밀값이 없으면 세우지
     # 않고 다운로드 op 셋이 503 을 낸다(`routes/download.py`). 조용한 기본 키는 없다.
     app.state.download_tickets = (DownloadTicketSigner(settings.session_secret)
@@ -139,7 +177,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             pool.shutdown(wait=False)
         return out
 
-    for router in (session.router, identity.router, members.router, catalog.router,
+    for router in (session.router, accounts.router, identity.router, members.router, catalog.router,
                    # 다운로드 셋 — 경로가 다른 라우터의 글자 경로와 겹치지 않는다(`/datasets/{id}/download`
                    # · `/datasets/{id}/files/{id}/download` 는 세그먼트 수가 다르고 `/downloads/` 는
                    # 이 라우터뿐). 순서는 뜻이 없지만 카탈로그 옆에 둔다 — 같은 `catalog` 태그다.
@@ -158,8 +196,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_request, exc: RequestValidationError):
+        # Pydantic 오류의 ``input``/``ctx``/``loc``/``msg``에는 요청 원문이 들어갈 수 있다.
+        # 클라이언트가 분기하는 데 필요한 안정된 오류 종류만 응답에 남긴다.
+        safe_errors = json.dumps(
+            [{"type": error["type"]} for error in exc.errors()],
+            ensure_ascii=False,
+        )
         return errors.error_response(
-            errors.bad_request("요청 값이 규칙에 맞지 않는다.", {"errors": str(exc.errors())})
+            errors.bad_request("요청 값이 규칙에 맞지 않는다.", {"errors": safe_errors})
         )
 
     # ── 입력 오류 · 저장 규칙 위반 (`CODE-REVIEW-20260903` #12) ──────────────

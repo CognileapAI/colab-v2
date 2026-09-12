@@ -5,19 +5,20 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
+  grid-template-columns: minmax(0, 1fr);
   background: var(--color-bg);
   padding: 24px;
 }
 
 .login-card {
   width: 100%;
+  min-width: 0;
   max-width: 360px;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
   padding: 32px 28px;
 }
 
@@ -51,11 +52,13 @@
 }
 
 .login-input {
+  min-width: 0;
+  width: 100%;
   height: 40px;
   padding: 0 12px;
   font: inherit;
   color: var(--color-text);
-  background: var(--color-white);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   transition: border-color var(--ease);
@@ -71,7 +74,7 @@
   height: 40px;
   font: inherit;
   font-weight: 600;
-  color: var(--color-white);
+  color: var(--color-on-primary);
   background: var(--color-primary);
   border: 0;
   border-radius: var(--radius-sm);
@@ -92,5 +95,15 @@
   margin: 14px 0 0;
   font-size: var(--text-body-sm);
   line-height: 1.5;
-  color: #c62828;
+  color: var(--fg-danger);
 }
+
+.account-card { max-width: 520px; }
+.account-form { display: grid; gap: 14px; }
+.account-form .login-label { display: grid; gap: 6px; margin: 0; }
+.account-form .login-submit { margin-top: 4px; }
+.account-status { margin: 16px 0 0; color: var(--color-text-body); }
+
+.auth-preserved-tree { pointer-events: none; user-select: none; }
+.auth-expiry-overlay { position: fixed; inset: 0; z-index: 10000; overflow: auto; background: color-mix(in srgb, var(--color-bg) 96%, transparent); }
+@media (prefers-reduced-transparency: reduce) { .auth-expiry-overlay { background: var(--color-bg); } }

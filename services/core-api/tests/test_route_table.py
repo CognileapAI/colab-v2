@@ -114,7 +114,7 @@ def test_operation_count_is_73() -> None:
     """
     # 사용자 승인 UI 개선은 계보 후보 1개와 대표 그림 PUT/GET/DELETE 3개를 함께 열었다.
     # J-1~J-9는 기본 격자·후보·복제·조기 미리보기 4개를 더했다.
-    assert len(contract_operations()) == 77, "계약의 오퍼레이션이 77 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 81, "계약의 오퍼레이션이 81 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

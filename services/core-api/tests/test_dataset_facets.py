@@ -25,7 +25,8 @@ def client() -> TestClient:
     subjects = os.environ.get("COLAB_CORE_TEST_SUBJECTS_FILE")
     if not url or not subjects:
         pytest.fail("COLAB_CORE_TEST_DATABASE_URL · COLAB_CORE_TEST_SUBJECTS_FILE 가 없다.")
-    return TestClient(create_app(Settings(database_url=url, subjects_file=subjects)))
+    return TestClient(create_app(Settings(database_url=url, subjects_file=subjects),
+                                 test_static_subjects=True))
 
 
 def facets(client: TestClient, token: str = "a1-prof-token", query: str = "") -> dict:

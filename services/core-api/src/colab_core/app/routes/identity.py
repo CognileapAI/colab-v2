@@ -1,20 +1,22 @@
 """D1 · D2 를 조립해 내리는 두 오퍼레이션 — `getCurrentAccount` · `getLab`."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Request
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ...domains import d1_identity, d2_access
 from ...kernel import errors
 from ...kernel.auth import Subject
-from ..deps import current_subject, scoped_db
+from ..deps import current_session_subject, current_subject, scoped_db, session_scoped_db
 
 router = APIRouter()
 
 
 @router.get("/me", name="getCurrentAccount")
-def get_current_account(subject: Subject = Depends(current_subject),
-                        db: Session = Depends(scoped_db)) -> dict:
+def get_current_account(request: Request,
+                        subject: Subject = Depends(current_session_subject),
+                        db: Session = Depends(session_scoped_db)) -> dict:
     account = d1_identity.find_account(db, subject.account_id)
     if account is None:
         # 주체가 가리키는 계정이 이 연구실에 없다 — RLS 가 이미 지운 뒤다.
@@ -30,7 +32,19 @@ def get_current_account(subject: Subject = Depends(current_subject),
         "permissions": d2_access.permissions_of(db, subject.account_id, role),
         "labId": account["lab_id"],
         "labName": account["lab_name"],
+        "mustChangePassword": subject.must_change_password,
+        "canManageServiceAccounts": _is_operator(request, subject.account_id),
     }
+
+
+def _is_operator(request: Request, account_id) -> bool:
+    factory = request.app.state.account_admin_factory
+    if factory is None:
+        return False
+    with factory() as db:
+        return db.execute(
+            text("SELECT 1 FROM account_admin.service_operator WHERE account_id=:id"),
+            {"id": str(account_id)}).first() is not None
 
 
 #: `LabUpdate` 가 받는 열쇠. **계약이 정본이고** 런타임에 그것을 강제하는 것은 이 줄이다.

@@ -60,10 +60,10 @@
 .detail-page .dh-act { margin-left: auto; display: flex; gap: 8px; flex: none; align-items: center; }
 @media (max-width: 860px) { .detail-page .dt-header { flex-wrap: wrap; } .detail-page .dh-act { width: 100%; } }
 
-.detail-page .chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.detail-page .chip { display: inline-flex; align-items: center; gap: 5px; height: 21px; border-radius: var(--radius-pill); padding: 0 9px; font-size: 13px; font-weight: 600; line-height: 1; white-space: nowrap; }
 .detail-page .chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
 .detail-page .chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
-.detail-page .lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 11px; font-weight: 600; line-height: 1; }
+.detail-page .lvl { display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill); padding: 0 8px; font-family: var(--font-data); font-size: 13px; font-weight: 600; line-height: 1; }
 .detail-page .lvl-0 { background: var(--color-gray-100); color: var(--color-gray-600); }
 .detail-page .lvl-1 { background: var(--color-primary-50); color: var(--color-primary-700); }
 /* ⟨WU-C11 · 판정 45⟩ Lv2 와 Lv3 을 한 규칙에 묶어 두어 4단째가 무색이었다 — 갈라 세운다.
@@ -109,7 +109,7 @@
    페이지 흐름을 그대로 쓴다 — 한 페이지 스크롤 화면 안에 스크롤 상자를 또 두면
    휠이 어느 쪽에서 도는지가 커서 위치로 갈린다 (§12 v1.9). */
 .detail-page .infogrid .ig .v .ig-more {
-  margin-left: 8px; padding: 1px 7px; font-size: 11px; font-weight: 700;
+  margin-left: 8px; padding: 1px 7px; font-size: 13px; font-weight: 700;
   color: var(--color-primary-700); background: var(--color-primary-100);
   border: none; border-radius: var(--radius-sm); cursor: pointer;
 }
@@ -138,7 +138,7 @@
 .detail-page .use-sec .use-dl { margin-top: 4px; }
 .detail-page .use-sec .use-dl-s { font-weight: 500; opacity: 0.85; }
 /* 접근 값의 출처 한 줄 (PRD-39 ⑩) — 버튼보다 작게, 읽기는 되게 */
-.detail-page .use-sec .use-dl-note { margin: 6px 0 0; font-size: 12px; }
+.detail-page .use-sec .use-dl-note { margin: 6px 0 0; font-size: 13px; }
 .detail-page .use-sec .dlerr { margin-top: 8px; font-size: var(--text-body-sm); color: var(--color-danger, #b42318); }
 
 /* 파일 목록 + 파일 관리 (`PLAN-SoT §9 〈175〉`) — 목업이 없는 신설 구역이다. 기본 정보 격자 아래,
@@ -151,7 +151,7 @@
 .detail-page .dt-secs { display: flex; flex-direction: column; gap: 34px; margin-top: 34px; }
 .detail-page .dt-files { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .detail-page .dt-files-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; }
-.detail-page .dt-files-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-right: auto; }
+.detail-page .dt-files-k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-right: auto; }
 .detail-page .dt-files-error { margin: 0 14px 10px; font-size: var(--text-body-sm); color: var(--color-warning-600); }
 .detail-page .dt-files-body-wrap { border-top: 1px solid var(--color-border); padding: 8px 14px 12px; }
 .detail-page .fl-list { list-style: none; margin: 0; padding: 0; }
@@ -164,7 +164,7 @@
 .detail-page .fl-size, .detail-page .fl-date { font-size: var(--text-caption); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .detail-page .fl-act { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
 .detail-page .fl-grid { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--color-border); }
-.detail-page .fl-gh { display: block; font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-page .fl-gh { display: block; font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; margin-bottom: 4px; }
 .detail-page .fl-gh.muted { font-weight: 600; margin-bottom: 0; }
 .detail-page .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .detail-page label.btn { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
@@ -185,9 +185,9 @@
 }
 .detail-page .dt-edit .de-grid { display: grid; gap: 12px; }
 .detail-page .dt-edit .de-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
-.detail-page .dt-edit .de-k { font-size: 10px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
+.detail-page .dt-edit .de-k { font-size: 13px; font-weight: 700; color: var(--color-gray-500); letter-spacing: 0.05em; padding-top: 8px; display: flex; gap: 4px; align-items: center; }
 /* ⭑ ⟨19차 · PRD-15⟩ 비울 수 없는 칸의 배지. 등록 화면의 `필수` 와 같은 뜻이다. */
-.detail-page .dt-edit .de-req { font-size: 9px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
+.detail-page .dt-edit .de-req { font-size: 13px; font-weight: 700; letter-spacing: 0; border-radius: 9999px; padding: 1px 5px; background: var(--color-text-body); color: #fff; }
 .detail-page .dt-edit .de-v {
   width: 100%;
   font: inherit;
@@ -321,7 +321,10 @@
 
 .detail-page .dh-main > .de-inline input { font-size: 22px; font-weight: 650; }
 .dt-representative { margin-bottom: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; }
-.dt-representative-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.dt-representative-head h2 { margin: 0; font-size: 16px; }
+.dt-representative-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: baseline; }
+.dt-representative-head h2 { flex-shrink: 0; margin: 0; font-size: 16px; }
 .dt-representative-image { display: block; width: min(100%, 640px); aspect-ratio: 4 / 3; margin-top: 12px; object-fit: contain; background: var(--color-gray-50); border-radius: var(--radius-sm); }
 .dt-representative-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.dt-representative-actions label { position: relative; }
+.dt-representative-actions label:focus-within { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }

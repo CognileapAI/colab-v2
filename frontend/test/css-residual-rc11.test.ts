@@ -55,9 +55,12 @@ function luminance(hex: string): number {
 }
 
 /** 토큰 이름 → hex 값(정의처 여럿을 훑는다 · `var()` 별칭 한 겹까지 푼다). */
-function tokenHex(name: string): string {
-  for (const css of [TOKENS, CATALOG, DETAIL]) {
-    const m = css.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`));
+function tokenHex(name: string, sources: string[] = [TOKENS, CATALOG, DETAIL]): string {
+  for (const css of sources) {
+    // This oracle checks the default palette. A scoped preview theme is not :root.
+    const root = [...css.matchAll(/(?:^|[}\s]):root\s*\{([^{}]*)\}/g)]
+      .map((match) => match[1]).join('\n');
+    const m = root.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`));
     if (m?.[1]) return m[1];
   }
   throw new Error(`토큰 값 부재: ${name}`);
@@ -75,6 +78,15 @@ function refOf(decls: string, prop: 'background' | 'color'): string {
   if (!m?.[1]) throw new Error(`${prop} 토큰 참조 부재`);
   return m[1];
 }
+
+describe('기본 팔레트 검사 범위', () => {
+  it('테마의 같은 이름 토큰을 기본 :root 값으로 읽지 않는다', () => {
+    const css = 'body[data-theme="dark"] { --sample: #ffffff; } :root { --sample: #123456; }';
+    expect(tokenHex('--sample', [css])).toBe('#123456');
+    expect(() => tokenHex('--sample', ['body[data-theme="dark"] { --sample: #ffffff; }']))
+      .toThrow('토큰 값 부재');
+  });
+});
 
 describe('WU-C11 ㈎ 45 `.lvl-3` 4단째', () => {
   for (const [file, css] of [

@@ -101,8 +101,10 @@ case "$SERVICE" in
       ready_red "일회용 postgres 안의 DB 생성(createdb colab_platform)" "대기 없음" "0초" \
         "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
     fi
-    DB_URL="$(CONTAINER="$PGC" DB=colab_platform bash "$SETUP" 2>"$TMP/db.err")"
-    if [ -z "$DB_URL" ]; then
+    DB_URL_PAIR="$(CONTAINER="$PGC" DB=colab_platform bash "$SETUP" 2>"$TMP/db.err")"
+    DB_URL="${DB_URL_PAIR%%$'\t'*}"
+    ADMIN_DB_URL="${DB_URL_PAIR#*$'\t'}"
+    if [ -z "$DB_URL" ] || [ "$ADMIN_DB_URL" = "$DB_URL_PAIR" ]; then
       DB_ERR="$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-400)"
       if pg_is_readiness_error "$DB_ERR"; then
         ready_red "일회용 postgres 에 스키마·롤·시드 적용(tests/fixtures/setup-db.sh)" \
@@ -114,25 +116,32 @@ case "$SERVICE" in
     echo "# 일회용 postgres 준비 완료 — 스키마·앱 롤·시드 적용(접속 문자열은 출력하지 않는다)"
     PYENV=(
       "COLAB_CORE_TEST_DATABASE_URL=$DB_URL"
+      "COLAB_CORE_TEST_ADMIN_DATABASE_URL=$ADMIN_DB_URL"
       "COLAB_CORE_TEST_SUBJECTS_FILE=$SVC/tests/fixtures/subjects.json"
     )
     if (( JOBS > 1 )); then
       WORKER_DB_DIR="$TMP/core-worker-db"
+      WORKER_ADMIN_DB_DIR="$TMP/core-worker-admin-db"
       mkdir -p "$WORKER_DB_DIR"
+      mkdir -p "$WORKER_ADMIN_DB_DIR"
       for ((worker=0; worker<JOBS; worker++)); do
         worker_db="colab_platform_gw${worker}"
         if ! docker exec "$PGC" createdb -U postgres "$worker_db" >"$TMP/db.err" 2>&1; then
           ready_red "core-api xdist worker DB 생성($worker_db)" "대기 없음" "0초" \
             "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
         fi
-        worker_url="$(CONTAINER="$PGC" DB="$worker_db" bash "$SETUP" 2>"$TMP/db.err")"
-        if [ -z "$worker_url" ]; then
+        worker_pair="$(CONTAINER="$PGC" DB="$worker_db" bash "$SETUP" 2>"$TMP/db.err")"
+        worker_url="${worker_pair%%$'\t'*}"
+        worker_admin_url="${worker_pair#*$'\t'}"
+        if [ -z "$worker_url" ] || [ "$worker_admin_url" = "$worker_pair" ]; then
           ready_red "core-api xdist worker DB 구성($worker_db)" "대기 없음" "0초" \
             "$(tr '\n' ' ' < "$TMP/db.err" | cut -c1-300)"
         fi
         printf '%s' "$worker_url" > "$WORKER_DB_DIR/gw${worker}"
+        printf '%s' "$worker_admin_url" > "$WORKER_ADMIN_DB_DIR/gw${worker}"
       done
       PYENV+=("COLAB_CORE_XDIST_DB_DIR=$WORKER_DB_DIR"
+             "COLAB_CORE_XDIST_ADMIN_DB_DIR=$WORKER_ADMIN_DB_DIR"
              "PYTHONPATH=$REPO_ROOT/gates/tools${PYTHONPATH:+:$PYTHONPATH}")
       PYTEST_PLUGIN=(-p xdist_core_db)
       echo "# core-api xdist 격리 DB $JOBS개 준비 완료(URL·비밀번호 미출력)"

@@ -21,6 +21,8 @@ from .ids import Ulid
 class Subject:
     account_id: Ulid
     lab_id: Ulid
+    must_change_password: bool = False
+    credential_version: int | None = None
 
 
 class SubjectRegistry:

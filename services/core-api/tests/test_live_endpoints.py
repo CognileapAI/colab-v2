@@ -28,7 +28,7 @@ def client() -> TestClient:
     if not url or not subjects:
         pytest.fail("COLAB_CORE_TEST_DATABASE_URL · COLAB_CORE_TEST_SUBJECTS_FILE 가 없다. "
                     "DB 를 못 붙인 것은 통과가 아니다 (CLAUDE.md §4).")
-    app = create_app(Settings(database_url=url, subjects_file=subjects))
+    app = create_app(Settings(database_url=url, subjects_file=subjects), test_static_subjects=True)
     return TestClient(app)
 
 

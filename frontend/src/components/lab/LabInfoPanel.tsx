@@ -10,7 +10,9 @@
 //
 // 읽기 표시는 홈 읽기 모달과 **같은 컴포넌트**(`LabInfoGrid`)이고 배선도 한 곳(`labSource`)이다.
 import { useEffect, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import './lab.css';
+import { useDialogFocus } from '../common/useDialogFocus';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { LabInfoGrid } from './LabInfoGrid';
 import { apiLabSource, type Lab, type LabSource, type LabUpdate } from './labSource';
@@ -68,6 +70,15 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const discard = () => { setDraft(null); setError(null); };
+  useWorkProtection('lab-info', {
+    dirty: Boolean(lab && draft && JSON.stringify(draft) !== JSON.stringify(draftOf(lab))),
+    inFlight: saving,
+    discard,
+  });
+  const close = () => { if (!saving) { setDraft(null); setError(null); } };
+  const dialogRef = useDialogFocus(close, saving, draft !== null);
 
   useEffect(() => {
     let alive = true;
@@ -88,12 +99,13 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
   }
 
   async function save() {
-    if (draft === null) return;
+    if (draft === null || saving) return;
     // 서버가 같은 자리를 400 으로 막는다 — 문안을 새로 짓지 않고 서버 것을 쓴다.
     if (draft.name.trim() === '') {
       setError('연구실 이름을 적어 주세요.');
       return;
     }
+    setSaving(true);
     try {
       const saved = await source.update(bodyOf(draft));
       setLab(saved);
@@ -103,6 +115,8 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
     } catch (e: unknown) {
       // 저장에 실패하면 **편집 모달을 유지한다** — 적은 값을 잃지 않는다(구성원·권한과 같은 규칙).
       setError(e instanceof Error ? e.message : '연구실 정보를 저장하지 못했어요.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -144,8 +158,8 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
       </div>
 
       {draft !== null && (
-        <div className="labinfo-modal-back" role="dialog" aria-modal="true" aria-label="연구실 정보 편집">
-          <div className="labinfo-modal">
+        <div className="labinfo-modal-back">
+          <div ref={dialogRef} tabIndex={-1} className="labinfo-modal" role="dialog" aria-modal="true" aria-label="연구실 정보 편집">
             <h3>연구실 정보</h3>
             <div className="form-row">
               <label htmlFor="lab-name">연구실 이름</label>
@@ -230,19 +244,8 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
               </p>
             )}
             <div className="labinfo-modal-foot">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setDraft(null);
-                  setError(null);
-                }}
-              >
-                취소
-              </button>
-              <button type="button" className="btn btn-primary" onClick={save}>
-                저장
-              </button>
+              <button type="button" className="btn btn-secondary" disabled={saving} onClick={close}>취소</button>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={save}>저장</button>
             </div>
           </div>
         </div>

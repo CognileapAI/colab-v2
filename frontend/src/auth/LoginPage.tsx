@@ -7,10 +7,24 @@
 // 감추지 않고 `〈108〉-㉮` 에 Ted 판정 사안으로 등재해 두었다.
 import { useState } from 'react';
 import { api } from '../api/client';
-import { setToken } from './store';
+import { transitionTo } from './sessionCoordinator';
+import { enqueueRevocation, flushLogoutQueue } from './logoutQueue';
+import type { BrowserSession } from './store';
+import { discardAccountWorkAcrossTabs, getCurrentAccountId, hasAccountWork } from './workGuard';
+import {
+  getLogoutQueueStatus,
+  subscribeLogoutQueueStatus,
+} from './logoutQueue';
+import { useSyncExternalStore } from 'react';
 import './login.css';
+import { ThemeSwitcher } from '../shell/ThemeSwitcher';
 
 export function LoginPage() {
+  const logoutStatus = useSyncExternalStore(
+    subscribeLogoutQueueStatus,
+    getLogoutQueueStatus,
+    getLogoutQueueStatus,
+  );
   const [accountName, setAccountName] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -21,40 +35,83 @@ export function LoginPage() {
     if (!accountName.trim() || !password || busy) return;
     setBusy(true);
     setMessage(null);
+    let candidate: BrowserSession | null = null;
+    const retireCandidate = () => {
+      if (!candidate) return;
+      enqueueRevocation(candidate);
+      candidate = null;
+      void flushLogoutQueue();
+    };
     // **가짜 진행을 만들지 않는다.** 실패는 실패로 보이고, 화면은 로그인 자리에 남는다
     // (정본 ERR-001 의 처리와 같은 모양 — `Validation_계정과_연구실_소속`).
-    const { data, error, response } = await api.POST('/sessions', {
-      body: { accountName: accountName.trim(), password },
-    });
-    setBusy(false);
-    if (data) {
-      setToken(data.token);
-      return;
+    try {
+      const { data, error, response } = await api.POST('/sessions', {
+        body: { accountName: accountName.trim(), password },
+      });
+      if (data) {
+        candidate = data;
+        const verified = await api.GET('/me', {
+          headers: { Authorization: 'Bearer ' + data.token },
+        });
+        if (!verified.data) {
+          retireCandidate();
+          setMessage('로그인 정보를 확인하지 못했어요. 잠시 뒤에 다시 시도해 주세요.');
+          return;
+        }
+        const previousAccount = getCurrentAccountId();
+        if (previousAccount && previousAccount !== verified.data.accountId && hasAccountWork(previousAccount)) {
+          const discard = window.confirm(
+            '다른 계정으로 로그인하면 작성 중인 작업을 버려야 해요. 작업을 버리고 로그인할까요?',
+          );
+          if (!discard) {
+            retireCandidate();
+            setMessage('작성 중인 작업을 유지했어요.');
+            return;
+          }
+          const discarded = await discardAccountWorkAcrossTabs(previousAccount, false);
+          if (!discarded) {
+            retireCandidate();
+            setMessage('다른 탭의 작업을 폐기하지 못했어요. 해당 탭을 확인한 뒤 다시 시도해 주세요.');
+            return;
+          }
+        }
+        const accepted = await transitionTo(data, verified.data.accountId);
+        candidate = null;
+        if (!accepted) {
+          setMessage('다른 탭의 작업을 확인하지 못했어요. 해당 탭에서 작업을 끝내거나 취소한 뒤 다시 시도해 주세요.');
+        }
+        return;
+      }
+      if (response?.status === 401) {
+        setMessage('계정 또는 비밀번호가 맞지 않아요. 비밀번호 변경 중 연결이 끊겼다면 기존 초기 비밀번호도 직접 시도해 보세요.');
+        setPassword('');
+        return;
+      }
+      if (response?.status === 429) {
+        setMessage('로그인 시도가 너무 잦아요. 잠시 뒤에 다시 시도해 주세요.');
+        return;
+      }
+      setMessage(error?.message ?? '로그인하지 못했어요. 잠시 뒤에 다시 시도해 주세요.');
+    } catch {
+      retireCandidate();
+      setMessage('서버에 연결하지 못했어요. 잠시 뒤에 직접 다시 시도해 주세요.');
+    } finally {
+      setBusy(false);
     }
-    // **어느 칸이 틀렸는지 말하지 않는다** — 계정의 존재 여부가 화면으로 새지 않게 (`〈108〉-㉮`).
-    if (response?.status === 401) {
-      setMessage('계정 또는 비밀번호가 맞지 않아요.');
-      setPassword('');
-      return;
-    }
-    if (response?.status === 429) {
-      setMessage('로그인 시도가 너무 잦아요. 잠시 뒤에 다시 시도해 주세요.');
-      return;
-    }
-    setMessage(error?.message ?? '로그인하지 못했어요. 잠시 뒤에 다시 시도해 주세요.');
   }
 
   return (
     <main className="login">
+      <div className="login-theme"><ThemeSwitcher /></div>
       <form className="login-card" onSubmit={submit}>
         <span className="login-brand">Co-Lab</span>
         <h1 className="login-title">로그인</h1>
         <p className="login-lead">
-          계정은 개발자가 만들어 드려요. 받으신 계정과 비밀번호를 넣어 주세요.
+          운영자에게 받은 이메일과 초기 비밀번호를 넣어 주세요.
         </p>
 
         <label className="login-label" htmlFor="accountName">
-          계정
+          이메일
         </label>
         <input
           id="accountName"
@@ -92,6 +149,15 @@ export function LoginPage() {
           <p className="login-error" role="alert" data-testid="login-error">
             {message}
           </p>
+        ) : null}
+        {logoutStatus === 'server-unconfirmed' ? (
+          <p className="login-error" role="status">이 브라우저에서는 로그아웃됐지만 서버 종료는 아직 확인 중이에요.</p>
+        ) : null}
+        {logoutStatus === 'storage-unavailable' ? (
+          <p className="login-error" role="status">이 브라우저에서는 로그아웃됐습니다. 앱을 닫으면 서버 종료 재시도를 이어갈 수 없어요.</p>
+        ) : null}
+        {logoutStatus === 'manual-check' ? (
+          <p className="login-error" role="status">서버 종료 요청을 확인하지 못했어요. 원래 로그인 시각부터 12시간 뒤에는 만료됩니다.</p>
         ) : null}
       </form>
     </main>

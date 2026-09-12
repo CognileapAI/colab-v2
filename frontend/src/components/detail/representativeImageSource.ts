@@ -1,5 +1,6 @@
 import { api } from '../../api/client';
 import type { Schemas } from '../../api/client';
+import { sessionBoundFetch } from '../../auth/sessionFetch';
 
 export type RepresentativeImageMetadata = Schemas['RepresentativeImageMetadata'];
 
@@ -31,6 +32,7 @@ export function apiRepresentativeImageSource(): RepresentativeImageSource {
         params: { path: { datasetId } },
         body: form as unknown as never,
         bodySerializer: (body: unknown) => body as FormData,
+        fetch: sessionBoundFetch,
       });
       if (!r.data) throw new Error(messageOf(r.error, '대표 그림을 저장하지 못했어요.'));
       return r.data;

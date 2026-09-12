@@ -1,6 +1,6 @@
 /* ③ 계보 확정. 업로드 모달 안에 얹히므로 `upload.css` 의 토큰·버튼을 그대로 쓴다. */
 
-.lin {
+section.lin {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -10,16 +10,16 @@
 .lin-scope {
   margin: 0;
   font-size: 13px;
-  color: var(--muted, #5b6472);
+  color: var(--color-text-muted);
 }
 
 .lin-note,
 .lin-empty {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--line, #e3e6ec);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--soft, #f7f8fa);
+  background: var(--color-surface-alt);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -31,7 +31,7 @@
 }
 
 .lin-card {
-  border: 1px solid var(--line, #e3e6ec);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 12px;
   display: flex;
@@ -51,24 +51,24 @@
 
 /* 확신도 칩 — 3값뿐이다. 숫자·막대·게이지를 붙이지 않는다 */
 .conf {
-  font-size: 12px;
+  font-size: 13px;
   padding: 1px 8px;
   border-radius: 999px;
-  border: 1px solid var(--line, #e3e6ec);
+  border: 1px solid var(--color-border);
 }
 .conf-확실 {
-  background: #eaf6ee;
+  background: var(--color-success-50);
 }
 .conf-애매 {
-  background: #fdf4e3;
+  background: var(--color-warning-50);
 }
 .conf-모름 {
-  background: #f1f2f5;
+  background: var(--color-surface-alt);
 }
 
 .lin-ok {
-  font-size: 12px;
-  color: #2f7a46;
+  font-size: 13px;
+  color: var(--color-success-600);
 }
 
 /* 근거 — **한 줄**이다 */
@@ -76,7 +76,7 @@
 .lin-mparent {
   margin: 0;
   font-size: 13px;
-  color: var(--muted, #5b6472);
+  color: var(--color-text-muted);
 }
 
 .lin-f {
@@ -89,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .lin-method-done {
@@ -103,7 +103,7 @@
 }
 
 .lin-picker {
-  border-top: 1px dashed var(--line, #e3e6ec);
+  border-top: 1px dashed var(--color-border);
   padding-top: 8px;
 }
 .lin-picker ul {
@@ -151,19 +151,19 @@
    ⚠ **불투명도로 흐리지 않는다** — `opacity` 를 걸면 사유 문구까지 함께 내려가
    위 `R-21` 이 고친 자리가 그대로 되돌아온다. */
 :root {
-  --lin-over-bg: #fff6ed;
-  --lin-over-ink: #a85400;
-  --lin-over-name: #8a93a0;
+  --lin-over-bg: var(--color-warning-50);
+  --lin-over-ink: var(--color-warning-600);
+  --lin-over-name: var(--color-text-muted);
 }
 
 /* 연결 규칙 안내 한 줄 — 이 단계의 맨 위 */
 .lin-scope-lv {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--line, #e3e6ec);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #f7f8fa;
-  color: #5b6472;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -174,7 +174,7 @@
   background: none;
   padding: 0;
   font: inherit;
-  color: #1f5fa8;
+  color: var(--color-primary-700);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -191,13 +191,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 8px;
 }
 
 .lin-lv {
-  font-size: 12px;
-  color: #5b6472;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 /* 초과 후보 — **보이되 못 고른다.** 지우거나 숨기지 않는다 */
@@ -215,14 +215,14 @@
 }
 .lin-over-why {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--lin-over-ink);
 }
 
 /* `확인 필요` 칩 — 카탈로그·상세와 같은 두 값을 쓴다 */
 .lin .chip {
-  font-size: 12px;
+  font-size: 13px;
   padding: 1px 8px;
   border-radius: 999px;
 }
@@ -239,7 +239,7 @@
 .lin-unknown {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--line, #e3e6ec);
+  border-top: 1px solid var(--color-border);
 }
 
 .lin-unknown label {
@@ -262,7 +262,7 @@
 
 .lin-unknown-why {
   margin: 4px 0 0 24px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--lin-over-ink, #5b6472);
 }
@@ -284,7 +284,7 @@
 .lin-fix-method-l {
   display: block;
   margin: 8px 0 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--lin-over-ink, #5b6472);
 }
 

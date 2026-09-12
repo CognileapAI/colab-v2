@@ -10,7 +10,7 @@
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { presignedCreate } from '../src/components/upload/transferSource';
@@ -23,6 +23,7 @@ import type {
 } from '../src/components/upload/types';
 import type { CurrentAccount } from '../src/api/client';
 import uploadCss from '../src/components/upload/upload.css?raw';
+import { clearSession, setSession } from '../src/auth/store';
 
 const T1 = '01JYZ9K7WQ3N8V4M2X6C5B0TR1';
 const EARLY = '01JYZ9K7WQ3N8V4M2X6C5B0EP1';
@@ -113,7 +114,17 @@ function pickedTwo(): PickedFile[] {
   ];
 }
 
+beforeEach(() => {
+  setSession({
+    token: 'upload-transfer-token',
+    sessionId: '01JYZ9K7WQ3N8V4M2X6C5B0SS1',
+    expiresAt: '2099-01-01T00:00:00Z',
+    revocationToken: 'upload-transfer-revocation',
+  });
+});
+
 afterEach(() => {
+  clearSession();
   vi.unstubAllGlobals();
   putLog.length = 0;
   document.querySelector('style[data-s2-upload-visibility]')?.remove();

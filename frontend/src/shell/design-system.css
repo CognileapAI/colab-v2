@@ -1,0 +1,217 @@
+/* Shared approved design. Tokens live in tokens.css; preview and app consume this same file. */
+:is(.colab-ui, .design-preview) { font-size: var(--text-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); }
+:is(.colab-ui, .design-preview) :is(button, a, input, select, textarea) { -webkit-tap-highlight-color: transparent; }
+:is(.colab-ui, .design-preview) :is(input, textarea)::placeholder { color: var(--color-text-muted); opacity: 1; }
+:is(.colab-ui, .design-preview) :is(.catalog-page, .lab-page, .project-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
+:is(.colab-ui, .design-preview) :is(.page-head h1, .search-hero h1) { font-size: var(--text-h2); line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; }
+:is(.colab-ui, .design-preview) .catalog-page .page-head { gap: 8px 12px; margin-bottom: var(--space-section); }
+:is(.colab-ui, .design-preview) .catalog-page .desc { flex-basis: 100%; font-size: var(--text-body-sm); line-height: 1.6; }
+:is(.colab-ui, .design-preview) .catalog-page .hcnt { padding: 2px 9px; border-radius: var(--radius-pill); background: var(--color-gray-100); color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) :is(.card, .dash-card, .dash-tile, .pj-modal) { box-shadow: none; background: var(--color-surface); border-color: var(--color-border-strong); border-radius: var(--radius-lg); }
+:is(.colab-ui, .design-preview) .catalog-filters { padding: var(--space-card); gap: 20px; }
+:is(.colab-ui, .design-preview) .catalog-filters .axis-pick { gap: 8px; }
+:is(.colab-ui, .design-preview) .axis-k { font-size: var(--text-caption); color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) .catalog-filters select { height: var(--control-height); padding-inline: 12px; border-color: var(--color-border-control); }
+:is(.colab-ui, .design-preview) .tblwrap { max-height: none; }
+:is(.colab-ui, .design-preview) .tbl { font-size: var(--text-body-sm); line-height: 1.5; }
+:is(.colab-ui, .design-preview) .tbl th { color: var(--color-text-muted); font-weight: 600; letter-spacing: 0; }
+:is(.colab-ui, .design-preview) .tbl th .thf { min-height: 44px; padding-inline: 16px; }
+:is(.colab-ui, .design-preview) .tbl td { padding: 10px 12px; }
+:is(.colab-ui, .design-preview) .tbl .fname { min-width: 260px; max-width: 320px; white-space: normal; font-size: var(--text-body-sm); letter-spacing: 0; }
+:is(.colab-ui, .design-preview) .fname .catalog-open { display: block; max-width: 100%; overflow-wrap: anywhere; margin-bottom: 4px; }
+:is(.colab-ui, .design-preview) .fname .chip { margin-right: 4px; }
+:is(.colab-ui, .design-preview) .tbl td:nth-child(4) { white-space: normal; min-width: 128px; max-width: 180px; }
+:is(.colab-ui, .design-preview) .tbl .catalog-open { line-height: 1.5; }
+:is(.colab-ui, .design-preview) .tbl .rowact .ra { opacity: 1; }
+:is(.colab-ui, .design-preview) .tbl .rowact .rab { width: 36px; height: 36px; }
+:is(.colab-ui, .design-preview) .fchips { padding: 12px var(--space-card); gap: 8px; }
+:is(.colab-ui, .design-preview) .fchips .fc { height: 32px; }
+:is(.colab-ui, .design-preview) .fchips .fc button { width: 24px; height: 28px; }
+:is(.colab-ui, .design-preview) .colmenu button { min-height: 36px; }
+:is(.colab-ui, .design-preview) .crosslink { padding: 16px 20px; line-height: 1.6; }
+:is(.colab-ui, .design-preview) .lab-page .search-hero { max-width: 720px; padding-top: 24px; padding-bottom: 40px; }
+:is(.colab-ui, .design-preview) .search-hero h1 { margin-bottom: 24px; }
+:is(.colab-ui, .design-preview) .search-hero input { min-height: 52px; border-color: var(--color-border-control); padding: 14px 16px; }
+:is(.colab-ui, .design-preview) .search-hero button { color: var(--color-on-primary); }
+:is(.colab-ui, .design-preview) .search-hero .hero-note { margin-top: 16px; font-size: var(--text-body-sm); }
+:is(.colab-ui, .design-preview) .dash-columns { margin-top: 8px; gap: var(--space-section); grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+:is(.colab-ui, .design-preview) .dash-col { gap: 20px; }
+:is(.colab-ui, .design-preview) .dash-section-label { font-size: var(--text-section); line-height: 1.5; font-weight: 600; min-height: 32px; }
+:is(.colab-ui, .design-preview) .dash-card { padding: var(--space-card); }
+:is(.colab-ui, .design-preview) .dash-card-head { align-items: center; gap: 8px 16px; margin-bottom: 20px; }
+:is(.colab-ui, .design-preview) .dash-card-head h2 { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+:is(.colab-ui, .design-preview) .dash-bar { font-size: var(--text-body-sm); min-height: 40px; padding-block: 8px; grid-template-columns: 100px minmax(0, 1fr) 40px; color: var(--color-text-body); }
+:is(.colab-ui, .design-preview) .dash-bar-track { height: 6px; }
+:is(.colab-ui, .design-preview) .dash-bar-fill { background: var(--accent-neutral); }
+:is(.colab-ui, .design-preview) :is(.dash-note, .dash-calc, .dash-zero, .dash-lead) { line-height: 1.7; }
+:is(.colab-ui, .design-preview) .dash-calc { margin: 8px 0 20px; }
+:is(.colab-ui, .design-preview) .dash-tiles { gap: 12px; }
+:is(.colab-ui, .design-preview) .dash-tile { padding: 16px; }
+:is(.colab-ui, .design-preview) .dash-tile strong { margin-block: 8px 2px; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+:is(.colab-ui, .design-preview) .dash-quiet { min-height: 32px; text-underline-offset: 4px; }
+:is(.colab-ui, .design-preview) .dash-open-catalog { min-height: var(--control-height); font-size: var(--text-body-sm); margin-top: 20px; padding-inline: 16px; }
+:is(.colab-ui, .design-preview) .dash-recent button { font-size: var(--text-body-sm); line-height: 1.6; padding-block: 12px; }
+:is(.colab-ui, .design-preview) .todo-grp h3 { font-size: var(--text-body-sm); margin-bottom: 12px; }
+:is(.colab-ui, .design-preview) .titem { font-size: var(--text-body-sm); padding: 14px 0; border-bottom: 1px solid var(--color-border); gap: 6px 16px; }
+:is(.colab-ui, .design-preview) .titem:last-child { border-bottom: none; }
+:is(.colab-ui, .design-preview) .titem button { min-height: 36px; padding-inline: 8px; border-radius: var(--radius-sm); color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) :is(.todo-more, .todo-all) { min-height: 36px; margin-top: 8px; }
+:is(.colab-ui, .design-preview) .dash-steps { gap: 12px 20px; margin-top: 20px; }
+:is(.colab-ui, .design-preview) .dash-step-no { width: 28px; height: 28px; line-height: 28px; }
+:is(.colab-ui, .design-preview) .pj-modal-back { padding: 24px; background: var(--color-overlay); }
+:is(.colab-ui, .design-preview) .pj-modal { width: min(600px, 100%); max-height: calc(100dvh - 48px); }
+:is(.colab-ui, .design-preview) .pj-modal-h { padding: 20px var(--space-card); }
+:is(.colab-ui, .design-preview) .pj-modal-h h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+:is(.colab-ui, .design-preview) .pj-x { width: var(--control-height); height: var(--control-height); border-radius: var(--radius-sm); font-size: 24px; flex-shrink: 0; }
+:is(.colab-ui, .design-preview) .pj-modal-b { padding: var(--space-card); }
+:is(.colab-ui, .design-preview) .pj-modal-f { padding: 16px var(--space-card); }
+:is(.colab-ui, .design-preview) .pj-row { margin-bottom: 24px; }
+:is(.colab-ui, .design-preview) .pj-row label { font-size: var(--text-body-sm); font-weight: 600; margin-bottom: 8px; color: var(--color-text); }
+:is(.colab-ui, .design-preview) :is(.pj-inp, .pj-tarea) { min-height: var(--control-height); padding: 10px 12px; font-size: var(--text-body); line-height: 1.5; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); }
+:is(.colab-ui, .design-preview) .pj-tarea { min-height: 96px; }
+:is(.colab-ui, .design-preview) .pj-seg { border-color: var(--color-border-strong); border-radius: var(--radius-sm); padding: 4px; gap: 4px; background: var(--color-surface-alt); }
+:is(.colab-ui, .design-preview) .pj-seg button { min-height: 36px; font-size: var(--text-body-sm); padding-inline: 20px; border-radius: var(--radius-sm); }
+:is(.colab-ui, .design-preview) .pj-seg button.on { background: var(--color-surface); color: var(--color-text); outline: 1px solid var(--color-border-strong); }
+:is(.colab-ui, .design-preview) :is(.pj-defnote, .pj-hint) { color: var(--color-text-muted); font-size: var(--text-caption); line-height: 1.7; }
+:is(.colab-ui, .design-preview) .pj-fgroup { padding: 20px; margin-top: 24px; background: var(--color-surface-alt); border-color: var(--color-border-strong); }
+:is(.colab-ui, .design-preview) .pj-fgroup .pj-row { margin-bottom: 0; }
+:is(.colab-ui, .design-preview) .pj-fgroup-h { margin-bottom: 16px; }
+:is(.colab-ui, .design-preview) .chip--lineage { background: var(--color-gray-100); color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) .pj-err { color: var(--fg-danger); background: var(--bg-danger); }
+:is(.colab-ui, .design-preview) .btn { min-height: var(--control-height); padding: 10px 18px; font-size: var(--text-body-sm); border-radius: var(--radius-sm); }
+:is(.colab-ui, .design-preview) .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--color-primary-600); }
+:is(.colab-ui, .design-preview) .btn-secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-control); }
+:is(.colab-ui, .design-preview) .btn-primary:active, :is(.colab-ui, .design-preview) .search-hero button:active { background: var(--color-primary-700); }
+@media (max-width: 900px) {
+  :is(.colab-ui, .design-preview) .dash-columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  :is(.colab-ui, .design-preview) .catalog-filters { gap: 16px 12px; }
+  :is(.colab-ui, .design-preview) .lab-page .search-hero { padding-top: 16px; padding-bottom: 32px; }
+  :is(.colab-ui, .design-preview) .search-hero h1 { font-size: 24px; }
+  :is(.colab-ui, .design-preview) .dash-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :is(.colab-ui, .design-preview) .dash-tile { padding: 16px; }
+  :is(.colab-ui, .design-preview) .dash-bar { min-height: 44px; grid-template-columns: 96px minmax(0, 1fr) 36px; }
+  :is(.colab-ui, .design-preview) .dash-steps { flex-direction: column; gap: 12px; }
+  :is(.colab-ui, .design-preview) .pj-modal-back { padding: 12px; }
+  :is(.colab-ui, .design-preview) .pj-modal { max-height: calc(100dvh - 24px); }
+  :is(.colab-ui, .design-preview) .pj-modal-h { padding: 16px var(--space-card); }
+  :is(.colab-ui, .design-preview) .pj-fgroup { padding: 16px; }
+  :is(.colab-ui, .design-preview) .pj-seg button { min-height: 44px; }
+  :is(.colab-ui, .design-preview) .colmenu button { min-height: 44px; }
+  :is(.colab-ui, .design-preview) .tbl .rowact .rab { width: 44px; height: 44px; }
+}
+
+:is(.colab-ui, .design-preview) .fname .lock { float: left; margin-right: 6px; margin-top: 2px; }
+body:is(.colab-ui, .design-preview):has(.pj-modal-back) { overflow: hidden; }
+
+@media (max-width: 640px) {
+  :is(.colab-ui, .design-preview) .tbl .colmenu { position: fixed; inset: auto 16px 16px; width: auto; max-width: none; max-height: 60dvh; overflow-y: auto; z-index: 140; padding: 12px; }
+}
+
+:is(.colab-ui, .design-preview) .colmenu .cm-box { width: 16px; height: 16px; font-size: var(--text-caption); color: var(--color-on-primary); }
+
+/* Shared controls retain each action's semantic color and disabled behavior. */
+.theme-switcher { min-height: 36px; max-width: 104px; padding: 6px 8px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-caption); cursor: pointer; }
+.login-theme { position: absolute; top: 20px; right: 20px; }
+:is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select) { min-height: var(--control-height); padding: 10px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+:is(.colab-ui, .design-preview) :is(.lin, .pv-zoom, .pv-shot, .modal-h) button:where(:not(.btn)) { color: var(--color-text); }
+:is(.colab-ui, .design-preview) input:is([type="checkbox"], [type="radio"]) { accent-color: var(--color-primary-600); }
+:is(.colab-ui, .design-preview) :is(.detail-page, .project-detail, .preview-page, .settings-page) { width: 100%; max-width: 1280px; margin-inline: auto; padding: var(--space-page); padding-bottom: 48px; }
+:is(.colab-ui, .design-preview) .search-page { width: 100%; max-width: 920px; padding: var(--space-page); }
+:is(.colab-ui, .design-preview) :is(.dt-header, .dt-card, .pj-card, .up-card, .mapstage, .reggate, .regarea) { border-radius: var(--radius-lg); box-shadow: none; }
+:is(.colab-ui, .design-preview) :is(.card-h, .card-b) { padding: 20px var(--space-card); }
+:is(.colab-ui, .design-preview) :is(.card-h h3, .pv-h2, .dt-card h3) { font-size: var(--text-section); line-height: 1.5; font-weight: 600; }
+:is(.colab-ui, .design-preview) .card-h { gap: 12px; flex-wrap: wrap; }
+:is(.colab-ui, .design-preview) .search-page .hit { padding: var(--space-card); }
+:is(.colab-ui, .design-preview) .search-page .hits { gap: 16px; }
+:is(.colab-ui, .design-preview) :is(.form-row, .pv-control) { gap: 8px; }
+:is(.colab-ui, .design-preview) :is(.labinfo-modal, .approval-dialog, .modal--dialog) { border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); box-shadow: none; padding: var(--space-card); }
+:is(.colab-ui, .design-preview) .modal--dialog:has(.modal-h) { padding: 0; }
+:is(.colab-ui, .design-preview) .labinfo-modal h3 { font-size: 20px; margin-bottom: 20px; }
+:is(.colab-ui, .design-preview) .labinfo-modal .form-row { margin-bottom: 20px; }
+:is(.colab-ui, .design-preview) .modal-takeover .up-steps .card-b { gap: 20px; padding: var(--space-card); }
+:is(.colab-ui, .design-preview) .modal-takeover .form-row { gap: 8px; }
+:is(.colab-ui, .design-preview) .modal-takeover .reg-actions .btn { height: auto; min-height: var(--control-height); }
+:is(.colab-ui, .design-preview) .pv-register { min-height: var(--control-height); }
+:is(.colab-ui, .design-preview) .gnb { gap: 12px; }
+:is(.colab-ui, .design-preview) .gnb-settings { display: inline-flex; }
+:is(.colab-ui, .design-preview) .gnb-upload { color: var(--color-on-primary); }
+:is(.colab-ui, .design-preview) .login-submit { min-height: var(--control-height); }
+:is(.colab-ui, .design-preview) :is(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 3px; }
+@media (max-width: 900px) {
+  .colab-ui .gnb { height: auto; min-height: 64px; flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
+  .colab-ui .gnb .mainnav { order: 10; flex-basis: 100%; margin: 0; justify-content: space-between; }
+  .colab-ui .gnb .mainnav a { flex: 1; justify-content: center; min-height: 44px; }
+  .colab-ui .gnb .labswitch { margin-right: auto; }
+  .colab-ui .gnb .avatar-wrap { margin-left: 0; }
+  .colab-ui .gnb-settings .lbl { display: none; }
+}
+@media (max-width: 640px) {
+  :is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select) { font-size: 16px; }
+  .theme-switcher { min-height: 44px; max-width: 92px; }
+  .colab-ui .gnb { gap: 6px; padding-inline: 12px; }
+  .colab-ui .gnb :is(.labswitch, .gnb-settings, .gnb-upload, .avatar) { min-height: 44px; min-width: 36px; padding-inline: 6px; }
+  .colab-ui .gnb .avatar { display: none; }
+  .colab-ui .gnb .gnb-logout { min-height: 44px; }
+  :is(.colab-ui, .design-preview) .pv-basic-grid { grid-template-columns: minmax(0, 1fr); }
+  :is(.colab-ui, .design-preview) .pv-basic-row dd { min-width: 0; overflow-wrap: anywhere; }
+  :is(.colab-ui, .design-preview) .dr-pop { position: fixed; inset: auto 12px 12px; width: auto; max-width: none; max-height: 80dvh; overflow-y: auto; }
+  :is(.colab-ui, .design-preview) .dr-cal-d { height: 44px; }
+  :is(.colab-ui, .design-preview) :is(.pv-zoom, .pv-shot, .lin) button { min-height: 44px; }
+}
+
+:is(.colab-ui, .design-preview) .chip--neutral { background: var(--color-gray-100); color: var(--color-gray-700); }
+:is(.colab-ui, .design-preview) .chip--warning { background: var(--color-warning-50); color: var(--color-warning-600); }
+:is(.colab-ui, .design-preview) .detail-page .dt-header h1 { font-size: var(--text-h2); line-height: 1.3; overflow-wrap: anywhere; }
+:is(.colab-ui, .design-preview) .detail-page .dsec-h h2 { font-size: 20px; }
+
+:is(.colab-ui, .design-preview) .chip:where(:not([class*="chip--"])) { background: var(--color-surface-alt); color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) .pj-ds-scroll { overflow-x: auto; max-width: 100%; }
+:is(.colab-ui, .design-preview) .pj-ds { min-width: 680px; }
+:is(.colab-ui, .design-preview) .detail-page :is(.ln, .ln-go) .arw { color: var(--color-text-muted); opacity: 1; }
+:is(.colab-ui, .design-preview) .up-empty .up-card > .card-b { padding: 0; }
+:is(.colab-ui, .design-preview) .up-body { min-height: 0; }
+:is(.colab-ui, .design-preview) .up-body > * { flex-shrink: 0; }
+:is(.colab-ui, .design-preview) .reggate { flex-shrink: 0; }
+@media (max-width: 640px) {
+  :is(.colab-ui, .design-preview) .filecard { flex-wrap: wrap; }
+  :is(.colab-ui, .design-preview) .filecard .fmeta { flex-basis: 100%; }
+  :is(.colab-ui, .design-preview) .filecard .fkind { flex: 1; }
+  :is(.colab-ui, .design-preview) .filecard .sel { width: auto; }
+  :is(.colab-ui, .design-preview) .reggate { align-items: start; gap: 12px; }
+  :is(.colab-ui, .design-preview) .reggate .rg-a { flex-basis: 100%; flex-wrap: wrap; }
+}
+:is(.colab-ui, .design-preview) .lin-findbar > label { min-width: 0; }
+:is(.colab-ui, .design-preview) .lin-findbar :is(input, select) { width: 100%; min-width: 0; max-width: 100%; }
+:is(.colab-ui, .design-preview) .lin-picker li > button { border: 0; border-radius: var(--radius-sm); padding: 8px; background: transparent; color: var(--color-text); }
+:is(.colab-ui, .design-preview) .lin-picker li > button[aria-pressed="true"] { background: var(--color-surface-hover); }
+:is(.colab-ui, .design-preview) :is(.lin-find, .lin-fix, .modal-takeover) .modal-h .x { width: var(--control-height); height: var(--control-height); flex: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font-size: 24px; cursor: pointer; }
+
+:is(.colab-ui, .design-preview) .pj-toolbar { padding: var(--space-card); gap: 16px; background: var(--color-surface); border-color: var(--color-border-strong); border-radius: var(--radius-lg); margin-bottom: var(--space-section); }
+:is(.colab-ui, .design-preview) .pj-ctl { display: grid; gap: 8px; color: var(--color-text-muted); }
+:is(.colab-ui, .design-preview) .pj-ctl select { min-height: var(--control-height); padding: 8px 12px; border: 1px solid var(--color-border-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-body-sm); }
+:is(.colab-ui, .design-preview) .pj-views { display: flex; align-self: end; }
+:is(.colab-ui, .design-preview) .pj-views button { min-height: var(--control-height); color: var(--color-text); font: inherit; font-size: var(--text-body-sm); }
+:is(.colab-ui, .design-preview) .pj-views button:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+:is(.colab-ui, .design-preview) .pj-views button:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+:is(.colab-ui, .design-preview) .pj-new { min-height: var(--control-height); padding: 8px 14px; border: 1px solid var(--color-primary-600); border-radius: var(--radius-sm); background: var(--color-primary-600); color: var(--color-on-primary); font: inherit; font-size: var(--text-body-sm); cursor: pointer; }
+:is(.colab-ui, .design-preview) .pd-linkurl, :is(.colab-ui, .design-preview) .pd-linkurl:visited { color: var(--color-primary-700); text-underline-offset: 3px; }
+.table-scroll-hint { display: none; }
+:is(.colab-ui, .design-preview) .pj-table { min-width: 680px; }
+@media (max-width: 1100px) {
+  .table-scroll-hint { display: block; margin: 0; padding: 12px 16px; font-size: var(--text-caption); color: var(--color-text-muted); }
+}
+@media (max-width: 640px) {
+  .colab-ui .gnb { gap: 4px; }
+  .colab-ui .theme-switcher { max-width: 88px; padding-inline: 6px; }
+  :is(.colab-ui, .design-preview) .pj-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  :is(.colab-ui, .design-preview) .pj-ctl { min-width: 0; }
+  :is(.colab-ui, .design-preview) .pj-ctl select { width: 100%; font-size: 16px; }
+  :is(.colab-ui, .design-preview) .pj-count { grid-column: 1 / -1; margin-left: 0; }
+}
+
+:is(.colab-ui, .design-preview) :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)),
+:is(.colab-ui, .design-preview) :is(.search-page .notice, .notfound) a:where(:not(.strong, .quiet)):visited { color: var(--color-primary-700); text-underline-offset: 3px; }
+:is(.colab-ui, .design-preview) .search-page :is(.vfilter, .empty-acts .quiet, .empty-acts .strong) { min-height: var(--control-height); height: auto; }
+:is(.colab-ui, .design-preview) .search-page .empty-acts { flex-wrap: wrap; }

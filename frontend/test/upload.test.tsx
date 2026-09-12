@@ -10,10 +10,11 @@
  */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { apiUploadSource } from '../src/components/upload/uploadSource';
+import { clearSession, setSession } from '../src/auth/store';
 import uploadCss from '../src/components/upload/upload.css?raw';
 import {
   QUICK_PROJECT_NOTE,
@@ -2415,7 +2416,12 @@ describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => 
 
 // ───────────────────────────────────────────────────────────────────────────
 describe('대표 그림 API 오류 계약', () => {
+  beforeEach(() => setSession({
+    token: 'image-test-token', sessionId: '01JYZ9K7WQ3N8V4M2X6C5B0SS1',
+    expiresAt: '2099-01-01T00:00:00Z', revocationToken: 'image-test-revocation',
+  }));
   afterEach(() => {
+    clearSession();
     vi.unstubAllGlobals();
   });
 
@@ -2456,7 +2462,12 @@ describe('대표 그림 API 오류 계약', () => {
 // form-data 폴백 (`createUpload`) — 프리사인드가 501 이면 이 경로다 (〈338〉 · 〈339〉-(나)).
 // 계약: `relativePaths` 는 `files` 와 **같은 순서·같은 개수**이고, 빈 문자열 = 경로 없음.
 describe('createUpload 폴백 — `relativePaths` 를 `files` 와 같은 순서로 싣는다', () => {
+  beforeEach(() => setSession({
+    token: 'upload-test-token', sessionId: '01JYZ9K7WQ3N8V4M2X6C5B0SS1',
+    expiresAt: '2099-01-01T00:00:00Z', revocationToken: 'upload-test-revocation',
+  }));
   afterEach(() => {
+    clearSession();
     vi.unstubAllGlobals();
   });
 

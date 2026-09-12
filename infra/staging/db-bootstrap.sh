@@ -20,7 +20,7 @@ STEP="${1:-}"
 # 베껴 두면 언젠가 어긋나고, 어긋난 순간 프리플라이트는 「검사했다」면서 아무것도
 # 지키지 않는다. 그래서 **필요로 하는 쪽이 자기 목록을 말한다.**
 # 값은 절대 출력하지 않는다 — 나가는 것은 이름뿐이다.
-DB_BOOTSTRAP_REQUIRED_ENV=(COLAB_OWNER_PASSWORD COLAB_APP_PASSWORD COLAB_AI_APP_PASSWORD)
+DB_BOOTSTRAP_REQUIRED_ENV=(COLAB_OWNER_PASSWORD COLAB_APP_PASSWORD COLAB_AI_APP_PASSWORD COLAB_ACCOUNT_ADMIN_PASSWORD)
 if [ "$STEP" = required-env ]; then
   printf '%s\n' "${DB_BOOTSTRAP_REQUIRED_ENV[@]}"; exit 0
 fi
@@ -45,9 +45,9 @@ su_psql() {
   if [ -n "$MASTER_URL_FILE" ]; then
     [ "${1:-}" = "-d" ] || { echo "su_psql: 원격 갈래는 -d <db> 로 시작해야 한다" >&2; return 2; }
     local db="$2"; shift 2
-    docker run --rm -i postgres:16-alpine psql -v ON_ERROR_STOP=1 "$(_url_for_db "$db")" "$@"
+    docker run --rm -i -e PGOPTIONS='-c log_statement=none' postgres:16-alpine psql -v ON_ERROR_STOP=1 "$(_url_for_db "$db")" "$@"
   else
-    docker exec -i -e PGPASSWORD_UNUSED=1 "$PG" psql -v ON_ERROR_STOP=1 -U postgres "$@"
+    docker exec -i -e PGPASSWORD_UNUSED=1 -e PGOPTIONS='-c log_statement=none' "$PG" psql -v ON_ERROR_STOP=1 -U postgres "$@"
   fi
 }
 
@@ -104,6 +104,17 @@ END $$;
 SQL
   echo "app role grants: ok (colab_app@platform · colab_ai_app@ai · SELECT only)"
   ;;
+account-admin)
+  : "${COLAB_ACCOUNT_ADMIN_PASSWORD:?COLAB_ACCOUNT_ADMIN_PASSWORD 가 필요하다}"
+  case "$COLAB_ACCOUNT_ADMIN_PASSWORD" in
+    (*[!A-Za-z0-9_-]*) echo "COLAB_ACCOUNT_ADMIN_PASSWORD 는 base64url 문자만 허용한다" >&2; exit 1 ;;
+  esac
+  {
+    printf '\\set admin_password %s\n' "$COLAB_ACCOUNT_ADMIN_PASSWORD"
+    cat "$REPO/services/core-api/ops/account-admin-role.sql"
+  } | su_psql -d colab_platform -v admin=colab_account_admin >/dev/null
+  echo "account admin role: ok (운영자 등기 자동 변경 없음)"
+  ;;
 verify)
   # 경계가 staging 에서도 살아 있는지 — 값으로 확인한다.
   echo "== 앱 롤 속성 (rolsuper·rolbypassrls 는 f 여야 한다)"
@@ -120,5 +131,5 @@ verify)
   su_psql -d colab_ai       -c "SELECT 'ai' AS chain, version_num FROM alembic_version_ai;"
   ;;
 *)
-  echo "사용: db-bootstrap.sh {roles|app-grants|verify|required-env}" >&2; exit 2 ;;
+  echo "사용: db-bootstrap.sh {roles|app-grants|account-admin|verify|required-env}" >&2; exit 2 ;;
 esac

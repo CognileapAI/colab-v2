@@ -20,6 +20,9 @@ export function ProjectDatasetTable(props: {
   onUnlink(datasetId: string): Promise<void>;
 }) {
   return (
+    <>
+    <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
+    <div className="pj-ds-scroll" role="region" aria-label="소속 데이터셋 표" tabIndex={0}>
     <table className="pj-ds" data-testid="project-datasets">
       <thead>
         <tr>
@@ -96,5 +99,7 @@ export function ProjectDatasetTable(props: {
         ))}
       </tbody>
     </table>
+    </div>
+    </>
   );
 }

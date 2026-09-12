@@ -20,12 +20,12 @@
 .labinfo-modal-back {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-overlay);
 }
 
 .labinfo-modal {
@@ -36,7 +36,7 @@
   padding: 18px;
   border-radius: 12px;
   background: var(--color-surface, #fff);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24);
+  box-shadow: none;
 }
 
 .labinfo-modal h3 { margin: 0 0 12px; font-size: var(--text-body); }
@@ -74,3 +74,5 @@
   justify-content: flex-end;
   margin-top: 16px;
 }
+
+@media (max-width: 640px) { .labinfo-modal .inp, .labinfo-modal .sel { font-size: 16px; min-width: 0; } }

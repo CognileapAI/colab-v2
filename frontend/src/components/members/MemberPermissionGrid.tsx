@@ -5,6 +5,7 @@
 // 목업에 없는 요소를 발명하지 않는다. `+ 구성원 초대` 는 **P1(계정과 연구실 소속) 범위 밖**이라 뺐다
 // — 계약에도 그 op 이 없다.
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import type { MembersPort, PortResult } from './port';
 import {
   MEMBER_COLUMNS,
@@ -26,6 +27,7 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const apply = useCallback((result: PortResult) => {
     if (!result.ok) {
@@ -49,6 +51,14 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
   }, [port, apply]);
 
   const changes = useMemo(() => (members ? diffOf(members, draft) : []), [members, draft]);
+  useWorkProtection('member-permissions', {
+    dirty: changes.length > 0,
+    inFlight: saving,
+    discard: () => {
+      if (members) setDraft(draftOf(members));
+      setEditing(false); setConfirming(false); setError(null);
+    },
+  });
 
   if (members === null) return <div className="memgrid" data-testid="members-loading" />;
 
@@ -96,7 +106,8 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
 
   async function save() {
     const count = changes.length;
-    const result = await port.save({ items: changes });
+    setSaving(true);
+    const result = await port.save({ items: changes }).finally(() => setSaving(false));
     setConfirming(false);
     if (!apply(result)) return; // 403 등 — 편집 모드를 유지한 채 서버 문안을 보인다 (P-11)
     setEditing(false);
@@ -206,7 +217,7 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
               <button type="button" className="btn btn-secondary" onClick={closeConfirm}>
                 취소
               </button>
-              <button type="button" className="btn btn-primary" onClick={() => void save()}>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void save()}>
                 저장
               </button>
             </div>

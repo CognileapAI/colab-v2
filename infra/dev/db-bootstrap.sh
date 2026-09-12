@@ -38,7 +38,7 @@ SQL
   master_psql postgres -c "GRANT colab_owner TO \"$master\";"
   echo "prep: ok (마스터 ∈ colab_owner)"
   ;;
-roles|app-grants|verify)
+roles|app-grants|account-admin|verify)
   exec bash "$STAGING" "$STEP"
   ;;
 backup-role)
@@ -77,7 +77,7 @@ extensions)
   echo "extensions: ok"
   ;;
 *)
-  echo "사용: db-bootstrap.sh {prep|roles|extensions|app-grants|backup-role|verify}" >&2
+  echo "사용: db-bootstrap.sh {prep|roles|extensions|app-grants|account-admin|backup-role|verify}" >&2
   echo "  순서: prep → roles → [extensions] → 마이그레이션 → app-grants → backup-role → verify" >&2
   exit 2 ;;
 esac

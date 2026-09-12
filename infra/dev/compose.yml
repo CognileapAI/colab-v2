@@ -49,6 +49,7 @@ services:
       - "0.0.0.0:8000:8000"
     environment:
       COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+      COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE: /etc/colab/account-admin-database.url
       COLAB_CORE_SUBJECTS_FILE: /etc/colab/subjects.json
       COLAB_CORE_CREDENTIALS_FILE: /etc/colab/credentials.json
       COLAB_CORE_SESSION_SECRET: ${COLAB_CORE_SESSION_SECRET:?COLAB_CORE_SESSION_SECRET 이 필요하다 — 없으면 로그인과 다운로드가 서지 않는다}
@@ -64,6 +65,7 @@ services:
       - ${COLAB_DEV_SECRETS_DIR:?COLAB_DEV_SECRETS_DIR 이 필요하다 — EC2 의 시크릿 디렉터리(0600·uid 10001)}/core-database.url:/etc/colab/core-database.url:ro
       - ${COLAB_DEV_SECRETS_DIR}/subjects.json:/etc/colab/subjects.json:ro
       - ${COLAB_DEV_SECRETS_DIR}/credentials.json:/etc/colab/credentials.json:ro
+      - ${COLAB_DEV_SECRETS_DIR}/account-admin-database.url:/etc/colab/account-admin-database.url:ro
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s

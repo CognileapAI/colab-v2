@@ -7,6 +7,9 @@ import type { ProjectRow } from './types';
 
 export function ProjectTable(props: { rows: ProjectRow[]; onOpen(projectId: string): void }) {
   return (
+    <>
+    <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목을 볼 수 있어요.</p>
+    <div className="pj-ds-scroll" role="region" aria-label="프로젝트 표 스크롤" tabIndex={0}>
     <table className="pj-table">
       <thead>
         <tr>
@@ -45,5 +48,7 @@ export function ProjectTable(props: { rows: ProjectRow[]; onOpen(projectId: stri
         ))}
       </tbody>
     </table>
+    </div>
+    </>
   );
 }

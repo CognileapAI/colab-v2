@@ -8,6 +8,8 @@
 // 그 상태는 화면이 기억하지 않고 서버의 `accessRequestPending` 이 말한다 — 새로고침해도
 // 같은 것을 보여야 하고, 화면이 기억하면 새로고침에 사라진다.
 import { useState } from 'react';
+import { useDialogFocus } from '../common/useDialogFocus';
+import './approval.css';
 import type { ApprovalSource } from './types';
 
 export function AccessRequestPanel(props: {
@@ -22,6 +24,7 @@ export function AccessRequestPanel(props: {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useDialogFocus(() => setOpen(false), busy, open);
 
   // 이미 보낸 요청이 있으면 그 상태만 말한다. 다시 보낼 자리를 두지 않는다 —
   // 서버가 409 를 낼 것을 화면이 먼저 알고 있으면서 버튼을 두면 그건 함정이다.
@@ -58,7 +61,7 @@ export function AccessRequestPanel(props: {
       </button>
       {open ? (
         <div className="modal-back">
-          <div className="modal modal--dialog" role="dialog" aria-modal="true" aria-label="접근 요청 보내기">
+          <div ref={dialogRef} tabIndex={-1} className="modal modal--dialog approval-dialog" role="dialog" aria-modal="true" aria-label="접근 요청 보내기">
             <h3>이 데이터에 접근을 요청할까요?</h3>
             <p>교수 또는 승인을 맡은 연구원이 검토해요.</p>
             <label className="ar-reason">
@@ -72,7 +75,7 @@ export function AccessRequestPanel(props: {
             </label>
             {error ? <p className="ar-error">{error}</p> : null}
             <div className="modal-act">
-              <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setOpen(false)}>
                 그만두기
               </button>
               <button type="button" className="btn btn-primary" disabled={busy} onClick={send}>

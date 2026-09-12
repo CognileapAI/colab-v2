@@ -39,6 +39,14 @@ body_tables = [
 allow_no_rls = [
   "alembic_version_platform",  # 마이그레이션 체인 상태. 연구실 데이터가 아니다
   "d1_lab",                    # 테넌트 루트 그 자체 — 자기가 경계다 (DATAMODEL-BASELINE §1 D1)
+  # 계정 자격과 서비스 운영자 등기부는 연구실별 제품 데이터가 아니라 전역 인증 경계다.
+  # PUBLIC·일반 앱 롤 접근은 schema/table REVOKE로 막고, 별도 BYPASSRLS 계정관리 롤에는
+  # 필요한 SELECT/INSERT/UPDATE만 준다(services/core-api/ops/account-admin-role.sql).
+  "login_credential",
+  "service_operator",
+  # 브라우저별 세션 원장도 전역 인증 경계다. lab_id는 토큰 주장과 현재 계정 소속을
+  # 인증 시 대조하는 불변식이며 제품 조회 범위가 아니다. PUBLIC·일반 앱 롤은 접근할 수 없다.
+  "login_session",
 ]
 
 [ai]

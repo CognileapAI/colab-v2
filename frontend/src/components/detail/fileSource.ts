@@ -15,6 +15,7 @@ import {
   type DownloadTicket,
   type FileSource,
 } from './types';
+import { sessionBoundFetch } from '../../auth/sessionFetch';
 
 /** 오류 봉투(`ErrorEnvelope.message`)의 문장. 없으면 `undefined` — 지어내지 않는다. */
 function serverMessage(error: unknown): string | undefined {
@@ -69,6 +70,7 @@ export function apiFileSource(): FileSource {
         params: { path: { datasetId } },
         body: form as unknown as never,
         bodySerializer: asForm,
+        fetch: sessionBoundFetch,
       });
       if (r.response.status === 404) throw new FileGone();
       if (r.response.status === 501) throw new NotImplemented();
@@ -84,6 +86,7 @@ export function apiFileSource(): FileSource {
         params: { path: { datasetId, fileId } },
         body: form as unknown as never,
         bodySerializer: asForm,
+        fetch: sessionBoundFetch,
       });
       if (r.response.status === 404) throw new FileGone();
       if (r.response.status === 501) throw new NotImplemented();

@@ -9,7 +9,9 @@
 //  - **미리보기는 등록 내내 접히지 않는다** (§8 — 정본이 그렇게 못 박았다).
 //  - **등록 결정 게이트 전에는 D3 에 아무것도 만들지 않는다** (`〈64〉` — `createDataset` 호출 자체가 없다).
 //  - 임시 업로드 원장(`d5_*`)은 그 진술의 대상이 아니다 — 접수는 파일을 처리하기 위한 상태다.
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SetStateAction } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
+import { getSessionEpoch, subscribe } from '../../auth/store';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
@@ -304,6 +306,15 @@ export function UploadModal(props: {
   const [resumeArm, setResumeArm] = useState(0);
   const statusTimer = useRef(0);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const sessionEpoch = useSyncExternalStore(subscribe, getSessionEpoch, getSessionEpoch);
+  const hasDraft = picked.length > 0 || Boolean(name || topic || summary || sourceLabel ||
+    sourceUrl || sourceDownloadedOn || crs || gridDescription || intervalValue ||
+    intervalUnit || projects.length || lineageCards.length || representativeFile);
+  useWorkProtection('upload-modal', {
+    dirty: hasDraft,
+    inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
+    discard: props.onClose,
+  });
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [step, registerOpen]);
 
   /*
@@ -501,7 +512,7 @@ export function UploadModal(props: {
       alive = false;
       window.clearTimeout(statusTimer.current);
     };
-  }, [previewUploadId, upload, statusRetry]);
+  }, [previewUploadId, upload, statusRetry, sessionEpoch]);
 
   useEffect(() => {
     setGridOptions(undefined);
@@ -514,7 +525,7 @@ export function UploadModal(props: {
       if (alive) setGridOptionsError(error instanceof Error ? error.message : '격자 후보를 불러오지 못했어요.');
     });
     return () => { alive = false; };
-  }, [uploadId, status?.ready, upload, statusRetry]);
+  }, [uploadId, status?.ready, upload, statusRetry, sessionEpoch]);
 
   async function reuseGrid(sourceDatasetId: string) {
     if (!uploadId || !upload.reuseGrid || gridReuseLock.current || submitLock.current) return;

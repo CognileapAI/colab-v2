@@ -17,7 +17,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatasetsPage } from '../src/routes/DatasetsPage';
 import { fixtureCatalogSource } from '../src/components/catalog/fixture';
 import { fileNameFrom } from '../src/api/download';
-import { setToken, clearToken } from '../src/auth/store';
+import { clearToken } from '../src/auth/store';
+import { setToken } from './sessionFixture';
 
 const realFetch = globalThis.fetch;
 

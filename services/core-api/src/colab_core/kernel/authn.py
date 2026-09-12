@@ -33,8 +33,10 @@ from typing import Protocol, runtime_checkable
 
 from .auth import Subject, SubjectRegistry
 from .credentials import CredentialStore
+from .db_credentials import DatabaseCredentialStore, normalize_login_name
 from .password import verify_password
-from .session_token import IssuedSession, SessionSigner
+from .login_sessions import IssuedBrowserSession, LoginSessionStore
+from .session_token import DatabaseSessionSigner, IssuedSession, SessionSigner
 
 
 @dataclasses.dataclass(frozen=True)
@@ -129,7 +131,7 @@ class CredentialIssuer(Protocol):
 
     name: str
 
-    def issue(self, attempt: LoginAttempt) -> IssuedSession | None: ...
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | IssuedBrowserSession | None: ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -141,6 +143,15 @@ class StaticTokenAuthenticator:
 
     def authenticate(self, token: str) -> Subject | None:
         return self.registry.resolve(token)
+
+
+@dataclasses.dataclass(frozen=True)
+class UnavailableSessionAuthenticator:
+    name: str = "unavailable-session"
+
+    def authenticate(self, _token: str) -> Subject | None:
+        from .login_sessions import SessionStoreUnavailable
+        raise SessionStoreUnavailable
 
 
 @dataclasses.dataclass(frozen=True)
@@ -200,6 +211,118 @@ class PasswordIssuer:
         return self.signer.issue(record.subject)
 
 
+@dataclasses.dataclass(frozen=True)
+class DatabasePasswordIssuer:
+    store: DatabaseCredentialStore
+    signer: DatabaseSessionSigner
+    name: str = "database-password"
+
+    def owns(self, attempt: LoginAttempt) -> bool:
+        return bool(attempt.account_name and self.store.find(normalize_login_name(attempt.account_name)))
+
+    def rate_limit_key(self, attempt: LoginAttempt) -> str:
+        return f"name:{normalize_login_name(attempt.account_name or '')}"
+
+    def issue(self, attempt: LoginAttempt) -> IssuedSession | None:
+        if not attempt.account_name or not attempt.password:
+            return None
+        record = self.store.find(normalize_login_name(attempt.account_name))
+        if record is None:
+            self.store.dummy_verify(attempt.password)
+            return None
+        if not verify_password(attempt.password, record.password):
+            return None
+        return self.signer.issue(record)
+
+
+@dataclasses.dataclass(frozen=True)
+class DatabaseSessionAuthenticator:
+    store: DatabaseCredentialStore
+    signer: DatabaseSessionSigner
+    name: str = "database-session"
+
+    def authenticate(self, token: str) -> Subject | None:
+        claims = self.signer.verify(token)
+        if claims is None:
+            return None
+        current = self.store.token_is_current(
+            claims.subject.account_id, claims.subject.lab_id, claims.session_version)
+        if current is None or current.must_change_password != claims.must_change_password:
+            return None
+        return dataclasses.replace(
+            claims.subject,
+            must_change_password=claims.must_change_password,
+            credential_version=claims.session_version)
+
+
+@dataclasses.dataclass(frozen=True)
+class TrackedSessionAuthenticator:
+    store: LoginSessionStore
+    name: str = "tracked-session"
+
+    def authenticate(self, token: str) -> Subject | None:
+        return self.store.authenticate(token)
+
+
+@dataclasses.dataclass(frozen=True)
+class TrackedPlantedCodeIssuer:
+    registry: SubjectRegistry
+    sessions: LoginSessionStore
+    name: str = "tracked-planted-access-code"
+
+    def issue(self, attempt: LoginAttempt) -> IssuedBrowserSession | None:
+        if not attempt.access_code:
+            return None
+        subject = self.registry.resolve(attempt.access_code)
+        if subject is None:
+            return None
+        return self.sessions.issue(
+            subject, credential_kind="planted-code",
+            credential_version=None, purpose="normal",
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TrackedPasswordIssuer:
+    store: CredentialStore
+    sessions: LoginSessionStore
+    name: str = "tracked-legacy-file-password"
+
+    def issue(self, attempt: LoginAttempt) -> IssuedBrowserSession | None:
+        if not attempt.account_name or not attempt.password:
+            return None
+        record = self.store.find(attempt.account_name)
+        if record is None:
+            self.store.dummy_verify(attempt.password)
+            return None
+        if not verify_password(attempt.password, record.password):
+            return None
+        return self.sessions.issue(
+            record.subject, credential_kind="legacy-file",
+            credential_version=None, purpose="normal",
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class TrackedDatabasePasswordIssuer:
+    store: DatabaseCredentialStore
+    sessions: LoginSessionStore
+    name: str = "tracked-database-password"
+
+    def owns(self, attempt: LoginAttempt) -> bool:
+        return bool(attempt.account_name and self.store.find(normalize_login_name(attempt.account_name)))
+
+    def rate_limit_key(self, attempt: LoginAttempt) -> str:
+        return f"name:{normalize_login_name(attempt.account_name or '')}"
+
+    def issue(self, attempt: LoginAttempt) -> IssuedBrowserSession | None:
+        if not attempt.account_name or not attempt.password:
+            return None
+        return self.sessions.issue_database(
+            normalize_login_name(attempt.account_name), attempt.password
+        )
+
+
 class IssuerChain:
     """발급 어댑터를 순서대로 훑는다. **다음 수단은 여기 한 줄로 들어온다.**"""
 
@@ -216,7 +339,18 @@ class IssuerChain:
             issued = issuer.issue(attempt)
             if issued is not None:
                 return issued
+            owns = getattr(issuer, "owns", None)
+            if owns is not None and owns(attempt):
+                return None
         return None
+
+    def rate_limit_key(self, attempt: LoginAttempt) -> str:
+        for issuer in self._issuers:
+            owns = getattr(issuer, "owns", None)
+            if owns is not None and owns(attempt):
+                key = getattr(issuer, "rate_limit_key", None)
+                return key(attempt) if key is not None else attempt.key
+        return attempt.key
 
 
 class AuthenticatorChain:
@@ -243,6 +377,9 @@ class AuthenticatorChain:
 
 def build(*, registry: SubjectRegistry, signer: SessionSigner | None,
           credentials: CredentialStore | None = None,
+          database_credentials: DatabaseCredentialStore | None = None,
+          database_signer: DatabaseSessionSigner | None = None,
+          login_sessions: LoginSessionStore | None = None,
           ) -> tuple[AuthenticatorChain, CredentialIssuer | None]:
     """⭑ **다음 수단을 더할 때 만지는 함수가 이것 하나다.**
 
@@ -251,11 +388,24 @@ def build(*, registry: SubjectRegistry, signer: SessionSigner | None,
 
     발급 순서 = **비밀번호 → 접속 코드**. 사람이 쓰는 수단이 앞이다.
     """
-    adapters: list[Authenticator] = [StaticTokenAuthenticator(registry)]
-    if signer is None:
-        return AuthenticatorChain(tuple(adapters)), None
+    adapters: list[Authenticator] = []
+    if signer is None or login_sessions is None:
+        return AuthenticatorChain((UnavailableSessionAuthenticator(),)), None
+    if login_sessions is not None:
+        # 브라우저 로그인은 항상 서버 원장 ss1로 교환한다. v1/db1은 발급·판정하지 않는다.
+        adapters = [TrackedSessionAuthenticator(login_sessions)]
+        issuers: list[CredentialIssuer] = []
+        if database_credentials is not None:
+            issuers.append(TrackedDatabasePasswordIssuer(database_credentials, login_sessions))
+        if credentials is not None and not credentials.empty:
+            issuers.append(TrackedPasswordIssuer(credentials, login_sessions))
+        issuers.append(TrackedPlantedCodeIssuer(registry, login_sessions))
+        return AuthenticatorChain(tuple(adapters)), IssuerChain(tuple(issuers))
     adapters.append(SignedSessionAuthenticator(signer))
     issuers: list[CredentialIssuer] = []
+    if database_credentials is not None and database_signer is not None:
+        adapters.insert(1, DatabaseSessionAuthenticator(database_credentials, database_signer))
+        issuers.append(DatabasePasswordIssuer(database_credentials, database_signer))
     if credentials is not None and not credentials.empty:
         issuers.append(PasswordIssuer(credentials, signer))
     issuers.append(PlantedCodeIssuer(registry, signer))

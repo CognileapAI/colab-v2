@@ -13,6 +13,7 @@
 //
 // 이 파일의 새 문구는 정본에 없다 — 신설마다 `[정본 무근거 · 〈339〉]` 를 남긴다.
 import { useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import { DefaultGridButton } from './DefaultGridButton';
 import { ActionGate, PermissionGate } from '../../permission/PermissionGate';
 import { useStartDownload } from './download';
@@ -62,6 +63,14 @@ export function FileList(props: {
   const [files, setFiles] = useState<DatasetFile[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<{
+    file: File; operation: 'add' | 'replace'; fileId?: string;
+  } | null>(null);
+  useWorkProtection('dataset-files:' + datasetId, {
+    dirty: pending !== null,
+    inFlight: busy,
+    discard: () => setPending(null),
+  });
 
   async function run(work: () => Promise<void>) {
     setBusy(true);
@@ -81,12 +90,25 @@ export function FileList(props: {
   }
 
   /** 쓰기 하나 — 성공하면 목록을 다시 묻고 상세에도 알린다. 실패면 아무것도 다시 묻지 않는다. */
-  function mutate(work: () => Promise<unknown>) {
+  function mutate(work: () => Promise<unknown>, clearPending = false) {
     void run(async () => {
       await work();
       await reload();
+      if (clearPending) setPending(null);
       props.onChanged?.();
     });
+  }
+
+  function runPending(item: NonNullable<typeof pending>) {
+    const work = item.operation === 'add'
+      ? () => source.add(datasetId, item.file, '본체')
+      : () => source.replace(datasetId, item.fileId!, item.file);
+    mutate(work, true);
+  }
+
+  function preserveAndRun(item: NonNullable<typeof pending>) {
+    setPending(item);
+    runPending(item);
   }
 
   function toggle() {
@@ -130,7 +152,7 @@ export function FileList(props: {
                 disabled={busy}
                 onChange={(e) => {
                   const picked = pickOne(e);
-                  if (picked) mutate(() => source.replace(datasetId, f.fileId, picked));
+                  if (picked) preserveAndRun({ file: picked, operation: 'replace', fileId: f.fileId });
                 }}
               />
             </label>
@@ -195,7 +217,7 @@ export function FileList(props: {
               disabled={busy}
               onChange={(e) => {
                 const picked = pickOne(e);
-                if (picked) mutate(() => source.add(datasetId, picked, '본체'));
+                if (picked) preserveAndRun({ file: picked, operation: 'add' });
               }}
             />
           </label>
@@ -206,6 +228,14 @@ export function FileList(props: {
         <p className="dt-files-error" role="alert" data-testid="dt-files-error">
           {error}
         </p>
+      ) : null}
+      {pending && !busy ? (
+        <div className="dt-files-error" data-testid="dt-file-pending">
+          <p>서버 접수 여부를 먼저 목록에서 확인해 주세요. 선택한 {pending.file.name} 파일은 보존했습니다.</p>
+          <button type="button" className="btn btn-sm" onClick={() => void run(reload)}>목록 다시 확인</button>
+          <button type="button" className="btn btn-sm" onClick={() => runPending(pending)}>직접 다시 시도</button>
+          <button type="button" className="btn btn-sm" onClick={() => setPending(null)}>선택 파일 버리기</button>
+        </div>
       ) : null}
 
       {tree ? (

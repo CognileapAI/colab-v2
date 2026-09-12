@@ -21,8 +21,8 @@ export interface paths {
          *     **연구실 경계는 여기서도 요청에 실리지 않는다** — 응답 토큰이 주체를 담고, 경계는
          *     서버가 그 주체에서 뽑는다 (`CLAUDE.md §3-5` · P-9·P-10).
          *
-         *     인증 수단은 `PLAN-SoT §9 〈90〉-㉮` 의 교체 가능한 경계 뒤에 있다. 세션 수명·갱신·
-         *     조기 회수는 **[정본 무근거]** 이며 `〈90〉-㉲` 가 운영 설정으로 둔 값이다.
+         *     인증 수단은 교체 가능한 경계 뒤에 있다. 발급된 브라우저 세션은 서버 원장에 등록되고
+         *     로그인 시점부터 12시간 뒤 만료하며 이 시각은 갱신되지 않는다.
          */
         post: operations["createSession"];
         delete?: never;
@@ -43,12 +43,31 @@ export interface paths {
         post?: never;
         /**
          * 로그아웃 — 지금 세션을 버린다
-         * @description 화면이 토큰을 버리는 것이 로그아웃의 실체다. 서버는 **무상태 서명 세션**이라 만료 전
-         *     조기 회수를 하지 않는다 — 회수하려면 세션 표가 필요하고, 그 스키마는 이 회차가 만들지
-         *     않았다 (`PLAN-SoT §9 〈90〉-㉳`, **[정본 무근거]**). 이 op 은 그 사실을 감추지 않고
-         *     **204** 만 낸다.
+         * @description 현재 브라우저 세션 하나를 서버 원장에서 회수한다.
          */
         delete: operations["endSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 종료 자격으로 이전 브라우저 세션을 회수한다
+         * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 접근 토큰을 저장하지
+         *     않는 오프라인 종료 큐가 이 전용 자격만 보낸다. 알 수 없거나 이미 종료됐거나 만료된
+         *     자격도 204이며 다른 브라우저 세션은 바꾸지 않는다.
+         */
+        post: operations["revokeSession"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -69,6 +88,66 @@ export interface paths {
         get: operations["getCurrentAccount"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 첫 로그인 비밀번호 변경
+         * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 최초 변경 제한 세션에서 새 비밀번호만 제출하고 일반 세션을 받는다. 현재 비밀번호 재입력은 요구하지 않는다.
+         */
+        put: operations["changeOwnPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/account-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 서비스 계정 발급 선택지
+         * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 서비스 운영자에게만 기존 연구실과 기존 역할을 제공한다.
+         */
+        get: operations["getAccountOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 서비스 운영자가 계정 발급
+         * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 기존 이메일을 덮어쓰지 않고 계정·역할·해시 자격을 한 트랜잭션에 만든다.
+         */
+        post: operations["createServiceAccount"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2020,15 +2099,18 @@ export interface components {
          */
         SessionCredentials: {
             /** @description 심어 둔 계정 이름. `password` 와 짝으로만 쓴다. */
-            accountName?: string;
+            accountName: string;
             /** @description 비밀번호. **응답·로그 어디에도 되비치지 않는다** (`〈108〉-㉯`). */
-            password?: string;
+            password: string;
+            accessCode?: null;
+        } | {
             /** @description 심어 둔 접속 코드. 값의 출처는 배포 설정이며 계약이 형식을 규정하지 않는다. */
-            accessCode?: string;
+            accessCode: string;
+            accountName?: null;
+            password?: null;
         };
         /**
-         * @description 발급된 세션. **무상태 서명 토큰**이라 서버에 세션 표가 없다
-         *     (`PLAN-SoT §9 〈90〉-㉯` — 마이그레이션 0 으로 성립시킨 결정).
+         * @description 발급된 서버 등록 브라우저 세션. 종료 자격은 접근 bearer와 분리한다.
          *     `token` 은 이후 모든 op 의 `sessionSubject` bearer 값이다.
          */
         Session: {
@@ -2036,9 +2118,53 @@ export interface components {
             token: string;
             /**
              * Format: date-time
-             * @description 만료 시각. 수명은 **[정본 무근거]** 이며 운영 설정이다 (`〈90〉-㉲`).
+             * @description 로그인 발급 시점부터 고정 12시간인 만료 시각.
              */
             expiresAt: string;
+            sessionId: components["schemas"]["Ulid"];
+            /** @description 이 브라우저 세션 하나만 종료하는 비밀 자격. bearer로 사용하지 않는다. */
+            revocationToken: string;
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 최초 비밀번호 변경 뒤 같은 브라우저 세션의 갱신된 bearer. */
+        RotatedSession: {
+            token: string;
+            /** Format: date-time */
+            expiresAt: string;
+            sessionId: components["schemas"]["Ulid"];
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 현재 브라우저 하나만 회수하는 종료 전용 자격. */
+        SessionRevocation: {
+            revocationToken: string;
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
+        PasswordChange: {
+            newPassword: string;
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
+        ServiceAccountCreate: {
+            /** Format: email */
+            email: string;
+            name: string;
+            labId: components["schemas"]["Ulid"];
+            role: components["schemas"]["Role"];
+            initialPassword: string;
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
+        ServiceAccount: {
+            accountId: components["schemas"]["Ulid"];
+            /** Format: email */
+            email: string;
+            name: string;
+            labId: components["schemas"]["Ulid"];
+            role: components["schemas"]["Role"];
+        };
+        /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
+        AccountOptions: {
+            labs: {
+                labId: components["schemas"]["Ulid"];
+                name: string;
+            }[];
+            roles: components["schemas"]["Role"][];
         };
         /**
          * @description 카탈로그 표의 열. 값은 `Policy_데이터_찾기 §5` 의 열 구성 표기를 그대로 쓴다
@@ -2234,6 +2360,8 @@ export interface components {
             /** @description 서버가 정한 현재 연구실. 요청으로 바꿀 수 없다 (P-9·P-10). */
             labId: components["schemas"]["Ulid"];
             labName: string;
+            mustChangePassword?: boolean;
+            canManageServiceAccounts?: boolean;
         };
         /** @description 연구실 정보 — 연구실을 정의하는 유일한 자리 (`DataModel §2`). */
         Lab: {
@@ -3716,14 +3844,14 @@ export interface components {
             };
             occurredAt: components["schemas"]["Timestamp"];
         };
+        /** @description 정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26). 근거: CLAUDE.md §3-6 · DATAMODEL-BASELINE.md §4. */
+        Ulid: string;
         /** @description 모든 4xx/5xx 응답의 공통 형태. 근거: contracts/README.md(계약 권위체) — seam 전체가 한 형태를 쓴다. */
         ErrorEnvelope: {
             code: string;
             message: string;
             details?: Record<string, never>;
         };
-        /** @description 정규 ID 타입. 전 도메인 공통. DB에서는 CHAR(26). 근거: CLAUDE.md §3-6 · DATAMODEL-BASELINE.md §4. */
-        Ulid: string;
         /**
          * @description 역할. 2층뿐이며 계정 등급을 두지 않는다. 근거: DataModel_공통_기반 §3(계정) · PERMISSION-PRINCIPLES P-2.
          * @enum {string}
@@ -4596,6 +4724,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             429: components["responses"]["TooManyAttempts"];
             500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
         };
     };
     endSession: {
@@ -4616,6 +4745,32 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    revokeSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionRevocation"];
+            };
+        };
+        responses: {
+            /** @description 해당 브라우저 세션 종료를 접수했다 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
         };
     };
     getCurrentAccount: {
@@ -4638,6 +4793,90 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["ServerError"];
+        };
+    };
+    changeOwnPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description 변경 뒤 새 일반 세션 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotatedSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    getAccountOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 기존 연구실과 기존 역할 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOptions"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    createServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description 발급된 계정. 초기 비밀번호는 되돌리지 않는다. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
         };
     };
     getLab: {

@@ -106,6 +106,7 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
         ) : (
           <>
             {/* 3축 필터 바 — 표 헤더의 열 조건과 **나란히** 선다 (PRD-05) */}
+            <div className="catalog-filters">
             <AxisFilterBar axes={state.query.axes} facets={state.facets} onPick={state.setAxis} />
             <label className="axis-pick">
               <span className="axis-k">지도 상태</span>
@@ -117,6 +118,7 @@ export function DatasetsPage(props: { source?: CatalogSource; fileSource?: FileS
                 <option value="아직 모름">아직 모름</option>
               </select>
             </label>
+            </div>
             <AppliedConditions
               filters={state.query.filters}
               uploaderNames={uploaderNames}

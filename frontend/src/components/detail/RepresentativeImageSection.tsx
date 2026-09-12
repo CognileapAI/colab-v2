@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PermissionGate } from '../../permission/PermissionGate';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import type {
   RepresentativeImageMetadata,
   RepresentativeImageSource,
@@ -22,6 +23,11 @@ export function RepresentativeImageSection(props: {
   const currentUrl = useRef<string | null>(null);
   const pendingUrl = useRef<string | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+  useWorkProtection('representative-image:' + props.datasetId, {
+    dirty: file !== null,
+    inFlight: busy,
+    discard: () => { setFile(null); resetInput(); },
+  });
 
   function replaceUrl(next: string | null) {
     if (currentUrl.current && currentUrl.current !== next) URL.revokeObjectURL(currentUrl.current);
@@ -172,7 +178,7 @@ export function RepresentativeImageSection(props: {
               그림 고르기
               <input
                 ref={input}
-                className="th-in"
+                className="hidden-input"
                 type="file"
                 disabled={busy}
                 accept="image/png,image/jpeg,image/webp"

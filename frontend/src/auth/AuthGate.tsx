@@ -16,7 +16,17 @@ import { api, type CurrentAccount } from '../api/client';
 import { LoadFailure } from '../components/common/LoadFailure';
 import { SessionProvider } from '../permission/session';
 import { LoginPage } from './LoginPage';
-import { clearToken, getToken, subscribe } from './store';
+import { PasswordChangePage } from './PasswordChangePage';
+import { getSession, getSessionEpoch, getToken, requiresReauthentication, subscribe } from './store';
+import { logoutCurrent } from './sessionCoordinator';
+import { startLogoutQueue } from './logoutQueue';
+import {
+  discardAccountWorkAcrossTabs,
+  getCurrentAccountId,
+  hasAccountWork,
+  canTransitionAcrossTabs,
+  setCurrentAccountId,
+} from './workGuard';
 
 export function useToken(): string | null {
   return useSyncExternalStore(subscribe, getToken, getToken);
@@ -25,22 +35,56 @@ export function useToken(): string | null {
 /** 로그아웃 — 서버 op 을 부르고, 결과와 무관하게 토큰을 버린다 (`〈90〉-㉳`). */
 export function useLogout(): () => void {
   return useCallback(() => {
-    void api.DELETE('/sessions/current').finally(() => clearToken());
+    void (async () => {
+      const target = getSession();
+      const epoch = getSessionEpoch();
+      if (!target) return;
+      const unchanged = () => getSession()?.token === target.token && getSessionEpoch() === epoch;
+      const accountId = getCurrentAccountId();
+      const allTabsClean = await canTransitionAcrossTabs();
+      if (!unchanged()) { await logoutCurrent(target, epoch); return; }
+      if (!allTabsClean || (accountId && hasAccountWork(accountId))) {
+        const discard = window.confirm(
+          '작성 중이거나 확인되지 않은 다른 탭이 있어요. 취소하면 돌아가고, 확인하면 작업을 버리고 로그아웃합니다.',
+        );
+        if (!discard) return;
+        if (accountId) await discardAccountWorkAcrossTabs(accountId, true);
+      }
+      await logoutCurrent(target, epoch);
+    })();
   }, []);
 }
 
 export function AuthGate(props: { children: React.ReactNode }) {
   const token = useToken();
+  const session = useSyncExternalStore(subscribe, getSession, getSession);
+  const [clock, setClock] = useState(0);
   const [account, setAccount] = useState<CurrentAccount | null>(null);
+  const [accountToken, setAccountToken] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
+  useEffect(() => startLogoutQueue(), []);
+
   useEffect(() => {
-    if (!token) {
+    if (!session) return;
+    const remaining = Math.min(
+      2_147_483_640,
+      Math.max(0, Date.parse(session.expiresAt) - Date.now()),
+    );
+    const timer = window.setTimeout(() => setClock((value) => value + 1), remaining + 5);
+    return () => window.clearTimeout(timer);
+  }, [session, clock]);
+
+  useEffect(() => {
+    if (!session) {
       setAccount(null);
+      setAccountToken(null);
+      setCurrentAccountId(null);
       setUnreachable(false);
       return;
     }
+    if (!token) return;
     let alive = true;
     setUnreachable(false);
     void api
@@ -49,11 +93,12 @@ export function AuthGate(props: { children: React.ReactNode }) {
         if (!alive) return;
         if (data) {
           setAccount(data);
+          setAccountToken(token);
+          setCurrentAccountId(data.accountId);
           return;
         }
         // 만료·위조·심어 둔 계정이 사라진 경우 — 전부 「다시 로그인」이다.
         if (response?.status === 401) {
-          clearToken();
           return;
         }
         // 401 이 아닌 실패(5xx 등)는 **로그인 문제가 아니다.** 토큰을 버리면 멀쩡한 세션이
@@ -67,21 +112,39 @@ export function AuthGate(props: { children: React.ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [token, attempt]);
+  }, [token, session, attempt]);
 
-  if (!token) return <LoginPage />;
-  if (unreachable) {
-    return (
-      <LoadFailure
-        message="로그인 상태를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요."
-        onRetry={() => setAttempt((n) => n + 1)}
-        testId="auth-unreachable"
-        retryLabel="다시 시도"
-        retryTestId="auth-retry"
-      />
-    );
+  if (!session) return <LoginPage />;
+  const verified = Boolean(token && account && accountToken === token && !requiresReauthentication());
+  const failure = unreachable ? (
+    <LoadFailure
+      message="로그인 상태를 확인하지 못했어요. 잠시 뒤 다시 시도해 주세요."
+      onRetry={() => setAttempt((n) => n + 1)}
+      testId="auth-unreachable"
+      retryLabel="다시 시도"
+      retryTestId="auth-retry"
+    />
+  ) : null;
+  if (!account) {
+    if (failure) return failure;
+    if (!token) return <LoginPage />;
+    return <div data-testid="auth-pending" />;
   }
-  if (!account) return <div data-testid="auth-pending" />;
+  if (verified && account.mustChangePassword) return <PasswordChangePage />;
 
-  return <SessionProvider account={account}>{props.children}</SessionProvider>;
+  return <>
+    <div
+      data-session-work-root
+      aria-hidden={!verified}
+      {...(!verified ? { inert: true } : {})}
+      className={!verified ? 'auth-preserved-tree' : undefined}
+    >
+      <SessionProvider key={account.accountId} account={account}>{props.children}</SessionProvider>
+    </div>
+    {!verified ? (
+      <div className="auth-expiry-overlay" role="dialog" aria-modal="true" aria-label="로그인 필요">
+        {failure ?? <LoginPage />}
+      </div>
+    ) : null}
+  </>;
 }

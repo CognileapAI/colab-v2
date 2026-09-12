@@ -48,6 +48,10 @@ def app_db_url() -> str:
     """앱 롤(NOBYPASSRLS·비소유자)로 접속하는 URL."""
     return _require("COLAB_CORE_TEST_DATABASE_URL")
 
+@pytest.fixture(scope="session")
+def admin_db_url() -> str:
+    return _require("COLAB_CORE_TEST_ADMIN_DATABASE_URL")
+
 
 @pytest.fixture(scope="session")
 def subjects_file() -> str:
@@ -89,7 +93,10 @@ def live_client(app_db_url: str, subjects_file: str):
     from colab_core.app.main import create_app
     from colab_core.kernel.config import Settings
 
-    return TestClient(create_app(Settings(database_url=app_db_url, subjects_file=subjects_file)))
+    return TestClient(create_app(
+        Settings(database_url=app_db_url, subjects_file=subjects_file),
+        test_static_subjects=True,
+    ))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -266,7 +273,7 @@ def auth(token: str) -> dict:
 
 
 @pytest.fixture()
-def p2_client(app_db_url: str, subjects_file: str, tmp_path):
+def p2_client(app_db_url: str, admin_db_url: str, subjects_file: str, tmp_path):
     """P2 op 을 부르는 클라이언트를 만드는 **팩토리**.
 
     수명(`upload_ttl_hours`)은 **운영 설정**이라 시험이 설정으로 바꾼다 —
@@ -281,17 +288,23 @@ def p2_client(app_db_url: str, subjects_file: str, tmp_path):
               ai_base_url: str | None = None,
               session_secret: str | None = None,
               credentials_file: str | None = None,
+              account_admin_database_url: str | None = None,
               login_max_failures: int = 5,
-              viz_service_token: str | None = "test-viz-service-token") -> TestClient:
+              viz_service_token: str | None = "test-viz-service-token",
+              allow_test_static_subjects: bool = True) -> TestClient:
         settings = Settings(database_url=app_db_url, subjects_file=subjects_file,
                             session_secret=session_secret,
                             credentials_file=credentials_file,
+                            account_admin_database_url=(
+                                admin_db_url if account_admin_database_url is None
+                                else account_admin_database_url),
                             login_max_failures=login_max_failures,
                             upload_ttl_hours=ttl_hours,
                             upload_storage_dir=str(tmp_path / "uploads"),
                             viz_base_url=viz_base_url, ai_base_url=ai_base_url,
                             viz_service_token=viz_service_token)
-        return TestClient(create_app(settings), raise_server_exceptions=False)
+        app = create_app(settings, test_static_subjects=allow_test_static_subjects)
+        return TestClient(app, raise_server_exceptions=False)
 
     return build
 

@@ -10,6 +10,7 @@
 //  - **편집 컨트롤은 `canEdit` 이 켜졌을 때만 화면에 존재한다** (§3.2·§6 · P-12).
 //  - 화면 글자는 정본·목업에서 그대로 온다. 없는 값을 지어내지 않는다.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import { Link } from 'react-router-dom';
 import { Toast } from '../common/Toast';
 import { PRE_LINEAGE_ADDED } from '../common/toastCopy';
@@ -175,6 +176,13 @@ function DetailRow(props: { edge: LineageEdge; node: LineageNode | undefined; de
   const [method, setMethod] = useState(edge.method ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useWorkProtection(`lineage-edge:${props.datasetId ?? 'none'}:${edge.parentDatasetId ?? 'none'}`, {
+    dirty: (editing && method !== (edge.method ?? '')) || removing,
+    inFlight: busy,
+    discard: () => {
+      setMethod(edge.method ?? ''); setEditing(false); setRemoving(false); setError(null);
+    },
+  });
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const editable = !derived && !!props.editSource && !!edge.parentDatasetId;

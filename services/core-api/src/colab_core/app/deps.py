@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..kernel import errors
 from ..kernel.auth import Subject, bearer_token
 from ..kernel.scope import apply_scope
+from ..kernel.login_sessions import SessionStoreUnavailable
 
 
 def current_subject(request: Request, authorization: str | None = Header(default=None)) -> Subject:
@@ -22,10 +23,49 @@ def current_subject(request: Request, authorization: str | None = Header(default
     token = bearer_token(authorization)
     if token is None:
         raise errors.unauthorized("Authorization: Bearer <토큰> 이 없다.")
-    subject = request.app.state.authenticators.resolve(token)
+    try:
+        subject = request.app.state.authenticators.resolve(token)
+    except SessionStoreUnavailable:
+        raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
+                              "세션 저장소에 연결할 수 없다.") from None
     if subject is None:
         raise errors.unauthorized("알 수 없는 주체다. 계정은 개발자가 심는다 (P-17).")
+    if subject.must_change_password:
+        raise errors.ApiError(403, "PASSWORD_CHANGE_REQUIRED",
+                              "비밀번호를 변경해야 서비스를 사용할 수 있다.")
     return subject
+
+
+def current_session_subject(request: Request,
+                            authorization: str | None = Header(default=None)) -> Subject:
+    token = bearer_token(authorization)
+    if token is None:
+        raise errors.unauthorized("Authorization: Bearer <토큰> 이 없다.")
+    try:
+        subject = request.app.state.authenticators.resolve(token)
+    except SessionStoreUnavailable:
+        raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
+                              "세션 저장소에 연결할 수 없다.") from None
+    if subject is None:
+        raise errors.unauthorized("알 수 없는 주체다.")
+    signer = getattr(request.app.state, "tracked_session_signer", None)
+    request.state.session_claims = signer.verify_tracked(token) if signer else None
+    return subject
+
+
+def session_scoped_db(request: Request) -> Iterator[Session]:
+    subject = current_session_subject(request, request.headers.get("authorization"))
+    session: Session = request.app.state.session_factory()
+    try:
+        session.begin()
+        apply_scope(session, subject)
+        yield session
+        session.commit()
+    except BaseException:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def scoped_db(request: Request) -> Iterator[Session]:

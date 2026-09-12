@@ -12,6 +12,7 @@ import { LabSettingsPage } from '../routes/LabSettingsPage';
 import { NotFoundPage } from '../routes/NotFoundPage';
 import { UnregisteredPreviewPage } from '../routes/UnregisteredPreviewPage';
 import { PREVIEW_ROUTE_PATH } from '../components/preview/handoff';
+import { AccountAdminPage } from '../routes/AccountAdminPage';
 
 export function AppRoutes() {
   return (
@@ -34,6 +35,7 @@ export function AppRoutes() {
             (정본 `Policy_업로드와_계보_확정 §7.2` 전이표 · Ted 2026-08-28 완료 정의 ①). */}
         <Route path={PREVIEW_ROUTE_PATH} element={<UnregisteredPreviewPage />} />
         <Route path="/lab-settings" element={<LabSettingsPage />} />
+        <Route path="/account-admin" element={<AccountAdminPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

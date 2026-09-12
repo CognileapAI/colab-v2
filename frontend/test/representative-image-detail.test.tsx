@@ -8,7 +8,8 @@ import { SessionProvider } from '../src/permission/session';
 import type { CurrentAccount } from '../src/api/client';
 import type { DatasetDetail } from '../src/components/detail/types';
 import { apiRepresentativeImageSource } from '../src/components/detail/representativeImageSource';
-import { clearToken, setToken } from '../src/auth/store';
+import { clearToken } from '../src/auth/store';
+import { setToken } from './sessionFixture';
 
 const ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1';
 const CUSTOM: DatasetDetail = {

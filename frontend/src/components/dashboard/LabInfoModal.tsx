@@ -6,6 +6,7 @@
 // **값을 여기서 고치지 않는다** (§1.2 · §5.2 — 값의 주인은 E-01 연구실 설정이다).
 // 편집 버튼은 그 화면으로 보내기만 한다.
 import { useEffect, useState } from 'react';
+import { useDialogFocus } from '../common/useDialogFocus';
 import { useNavigate } from 'react-router-dom';
 import { PermissionGate } from '../../permission/PermissionGate';
 // 읽기 표시는 `연구실 설정 > 연구실 정보` 탭과 **같은 컴포넌트**를 쓴다 — 두 벌로 두지 않는다.
@@ -14,6 +15,7 @@ import type { DashboardSource, Lab } from './types';
 
 export function LabInfoModal(props: { source: DashboardSource; onClose: () => void }) {
   const navigate = useNavigate();
+  const dialogRef = useDialogFocus(props.onClose);
   const [lab, setLab] = useState<Lab | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,19 +33,19 @@ export function LabInfoModal(props: { source: DashboardSource; onClose: () => vo
   }, [props.source]);
 
   return (
-    <div className="modal-back" role="dialog" aria-modal="true" aria-label="연구실 정보">
-      <div className="modal modal--dialog lab-info">
+    <div className="modal-back">
+      <div ref={dialogRef} tabIndex={-1} className="modal modal--dialog lab-info" role="dialog" aria-modal="true" aria-label="연구실 정보">
         <h2>연구실 정보</h2>
         {error ? <p className="dash-error">{error}</p> : null}
         {lab ? <LabInfoGrid lab={lab} /> : null}
         <div className="modal-foot">
           {/* 편집 버튼만 권한자에게 (§6). 읽기는 열고 **버튼만 숨긴다.** */}
           <PermissionGate requires="연구실 설정">
-            <button type="button" onClick={() => navigate('/lab-settings')}>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/lab-settings')}>
               연구실 정보 편집
             </button>
           </PermissionGate>
-          <button type="button" onClick={props.onClose}>
+          <button type="button" className="btn btn-secondary" onClick={props.onClose}>
             닫기
           </button>
         </div>

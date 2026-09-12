@@ -1,4 +1,4 @@
-"""무상태 서명 세션 토큰 — **세션 표를 만들지 않는다** (`PLAN-SoT §9 〈90〉-㉯`).
+"""서버 원장에 묶인 브라우저 세션과 과도기 무상태 토큰 서명.
 
 왜 무상태인가
   세션 표를 두면 P0 스키마에 마이그레이션이 하나 붙고, 그 순간 이 회차는 「스키마 변경 필요」로
@@ -28,6 +28,10 @@ from .auth import Subject
 from .ids import Ulid
 
 PREFIX = "v1"
+DATABASE_PREFIX = "db1"
+TRACKED_PREFIX = "ss1"
+_KINDS = frozenset(("database", "planted-code", "legacy-file"))
+_PURPOSES = frozenset(("normal", "password-change"))
 
 
 def _b64(raw: bytes) -> str:
@@ -42,6 +46,24 @@ def _unb64(text: str) -> bytes:
 class IssuedSession:
     token: str
     expires_at: dt.datetime
+
+
+@dataclasses.dataclass(frozen=True)
+class TrackedSessionClaims:
+    subject: Subject
+    session_id: Ulid
+    expires_at: dt.datetime
+    generation: int
+    credential_kind: str
+    purpose: str
+    credential_version: int | None
+
+
+@dataclasses.dataclass(frozen=True)
+class DatabaseSessionClaims:
+    subject: Subject
+    must_change_password: bool
+    session_version: int
 
 
 class SessionSigner:
@@ -96,3 +118,129 @@ class SessionSigner:
         if not Ulid.is_valid(account_id) or not Ulid.is_valid(lab_id):
             return None
         return Subject(account_id=Ulid(account_id), lab_id=Ulid(lab_id))
+
+    def issue_tracked(
+        self,
+        subject: Subject,
+        *,
+        session_id: Ulid,
+        generation: int,
+        credential_kind: str,
+        purpose: str,
+        credential_version: int | None,
+        expires_at: dt.datetime,
+    ) -> IssuedSession:
+        if credential_kind not in _KINDS or purpose not in _PURPOSES:
+            raise ValueError("unknown tracked session kind or purpose")
+        if generation < 1:
+            raise ValueError("session generation must be positive")
+        if credential_kind == "database" and credential_version is None:
+            raise ValueError("database session requires credential version")
+        if credential_kind != "database" and credential_version is not None:
+            raise ValueError("non-database session cannot carry credential version")
+        body = {
+            "sid": str(session_id),
+            "sub": str(subject.account_id),
+            "lab": str(subject.lab_id),
+            "exp": int(expires_at.timestamp()),
+            "generation": generation,
+            "credential_kind": credential_kind,
+            "purpose": purpose,
+        }
+        if credential_version is not None:
+            body["credential_version"] = credential_version
+        payload = _b64(json.dumps(body, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+        mac = _b64(hmac.new(
+            self._secret, f"{TRACKED_PREFIX}.{payload}".encode("ascii"), hashlib.sha256
+        ).digest())
+        return IssuedSession(f"{TRACKED_PREFIX}.{payload}.{mac}", expires_at)
+
+    def verify_tracked(
+        self, token: str, *, now: dt.datetime | None = None
+    ) -> TrackedSessionClaims | None:
+        now = now or dt.datetime.now(dt.timezone.utc)
+        if not token.isascii():
+            return None
+        parts = token.split(".")
+        if len(parts) != 3 or parts[0] != TRACKED_PREFIX:
+            return None
+        _, payload, mac = parts
+        expected = _b64(hmac.new(
+            self._secret, f"{TRACKED_PREFIX}.{payload}".encode("ascii"), hashlib.sha256
+        ).digest())
+        if not hmac.compare_digest(mac, expected):
+            return None
+        try:
+            raw = json.loads(_unb64(payload).decode("utf-8"))
+            account_id, lab_id, sid = raw["sub"], raw["lab"], raw["sid"]
+            exp, generation = int(raw["exp"]), int(raw["generation"])
+            kind, purpose = raw["credential_kind"], raw["purpose"]
+            version = raw.get("credential_version")
+            version = int(version) if version is not None else None
+        except Exception:
+            return None
+        if (exp <= int(now.timestamp()) or generation < 1 or kind not in _KINDS
+                or purpose not in _PURPOSES):
+            return None
+        if (kind == "database") != (version is not None):
+            return None
+        if version is not None and version < 1:
+            return None
+        if not all(Ulid.is_valid(value) for value in (account_id, lab_id, sid)):
+            return None
+        return TrackedSessionClaims(
+            subject=Subject(Ulid(account_id), Ulid(lab_id)),
+            session_id=Ulid(sid),
+            expires_at=dt.datetime.fromtimestamp(exp, tz=dt.timezone.utc),
+            generation=generation,
+            credential_kind=kind,
+            purpose=purpose,
+            credential_version=version,
+        )
+
+
+class DatabaseSessionSigner(SessionSigner):
+    """DB 자격 전용 토큰. 기존 v1 검증기가 추가 claim을 무시해도 prefix가 갈린다."""
+
+    def issue(self, credential, *, now: dt.datetime | None = None) -> IssuedSession:
+        now = now or dt.datetime.now(dt.timezone.utc)
+        expires_at = (now + self._ttl).replace(microsecond=0)
+        body = json.dumps({
+            "sub": str(credential.subject.account_id),
+            "lab": str(credential.subject.lab_id),
+            "exp": int(expires_at.timestamp()),
+            "purpose": "password-change" if credential.must_change_password else "session",
+            "version": credential.session_version,
+        }, separators=(",", ":"), sort_keys=True)
+        payload = _b64(body.encode("utf-8"))
+        return IssuedSession(f"{DATABASE_PREFIX}.{payload}.{self._database_mac(payload)}", expires_at)
+
+    def verify(self, token: str, *, now: dt.datetime | None = None) -> DatabaseSessionClaims | None:
+        now = now or dt.datetime.now(dt.timezone.utc)
+        if not token.isascii():
+            return None
+        parts = token.split(".")
+        if len(parts) != 3 or parts[0] != DATABASE_PREFIX:
+            return None
+        _, payload, mac = parts
+        if not hmac.compare_digest(mac, self._database_mac(payload)):
+            return None
+        try:
+            claims = json.loads(_unb64(payload).decode("utf-8"))
+            account_id, lab_id = claims["sub"], claims["lab"]
+            exp, version = int(claims["exp"]), int(claims["version"])
+            purpose = claims["purpose"]
+        except Exception:
+            return None
+        if exp <= int(now.timestamp()) or version < 1:
+            return None
+        if purpose not in ("session", "password-change"):
+            return None
+        if not Ulid.is_valid(account_id) or not Ulid.is_valid(lab_id):
+            return None
+        return DatabaseSessionClaims(
+            Subject(Ulid(account_id), Ulid(lab_id)),
+            purpose == "password-change", version)
+    def _database_mac(self, payload: str) -> str:
+        return _b64(hmac.new(self._secret, f"{DATABASE_PREFIX}.{payload}".encode("ascii"),
+                             hashlib.sha256).digest())

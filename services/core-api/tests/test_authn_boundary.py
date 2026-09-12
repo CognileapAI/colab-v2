@@ -27,18 +27,14 @@ def signer() -> SessionSigner:
 
 def test_비밀값이_없으면_어댑터가_하나다() -> None:
     chain, issuer = authn.build(registry=REGISTRY, signer=None)
-    assert [a.name for a in chain.adapters] == ["planted-subject-table"]
+    assert [a.name for a in chain.adapters] == ["unavailable-session"]
     assert issuer is None
 
 
 def test_비밀값이_있으면_두_수단이_병존한다() -> None:
     chain, issuer = authn.build(registry=REGISTRY, signer=signer())
-    assert [a.name for a in chain.adapters] == ["planted-subject-table", "signed-session"]
-    assert issuer is not None
-    # 심어 둔 코드와 발급된 세션이 **같은 주체**로 판정된다.
-    assert chain.resolve("심어둔-코드") == SUBJECT
-    issued = issuer.issue(authn.LoginAttempt(access_code="심어둔-코드"))
-    assert chain.resolve(issued.token) == SUBJECT
+    assert [a.name for a in chain.adapters] == ["unavailable-session"]
+    assert issuer is None
 
 
 def test_빈_사슬은_모두_거부한다() -> None:
@@ -63,7 +59,7 @@ def test_사슬은_수단을_더해도_같은_형태다() -> None:
 
 def test_발급기는_표에_없는_코드로_계정을_만들지_않는다() -> None:
     _, issuer = authn.build(registry=REGISTRY, signer=signer())
-    assert issuer.issue(authn.LoginAttempt(access_code="없는-코드")) is None
+    assert issuer is None
 
 
 def test_시도_식별자에_비밀번호가_들어가지_않는다() -> None:

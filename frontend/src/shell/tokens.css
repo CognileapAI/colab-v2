@@ -29,6 +29,7 @@
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Segoe UI", "Malgun Gothic", "Noto Sans KR", sans-serif;
 
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   --text-body: 15px;
   --leading-body: 1.467;
   --tracking-body: 0.0096em;
@@ -40,4 +41,82 @@
 
   --shadow-sm: 0px 1px 2px -1px #1717171a;
   --ease: 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 승인 intent 2026-09-12: 대표 화면에서 확인한 공통 디자인 기준. */
+:root[data-design="calm"], body.design-preview {
+  --text-h2: 28px;
+  --text-section: 16px;
+  --leading-body: 1.6;
+  --tracking-body: 0;
+  --space-page: 32px;
+  --space-card: 24px;
+  --space-section: 24px;
+  --control-height: 40px;
+  --color-overlay: rgb(15 20 28 / 45%);
+  --color-on-primary: #ffffff;
+  --accent-neutral: #5b7089;
+  --color-surface-alt: #f5f7fa;
+  --color-border-control: #a9b3bf;
+  --color-danger: #a3222b;
+  --color-danger-solid: #a3222b;
+  --color-on-danger: #ffffff;
+  --color-text-on-primary: var(--color-on-primary);
+  --color-text-subtle: var(--color-text-muted);
+  --color-danger-600: var(--fg-danger);
+  --fg-danger: #a3222b;
+  --bg-danger: #fff0f1;
+  color-scheme: light;
+}
+:root[data-theme="dark"], body.design-preview[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #11161d;
+  --color-surface: #1a222c;
+  --color-surface-alt: #202b37;
+  --color-surface-hover: #2b3745;
+  --color-border: #344251;
+  --color-border-strong: #45566a;
+  --color-border-shell: #45566a;
+  --color-border-control: #718397;
+  --color-text: #edf2f7;
+  --color-text-body: #dce4ed;
+  --color-text-muted: #b2bfce;
+  --color-gray-50: #202b37;
+  --color-gray-100: #2b3745;
+  --color-gray-200: #45566a;
+  --color-gray-400: #a3b2c3;
+  --color-gray-500: #b2bfce;
+  --color-gray-600: #c4d0df;
+  --color-gray-700: #dce4ed;
+  --color-primary-50: #203954;
+  --color-primary-100: #284769;
+  --color-primary-200: #315779;
+  --color-primary-600: #92c2ff;
+  --color-primary-700: #add2ff;
+  --color-primary-800: #d4e7ff;
+  --color-on-primary: #10233c;
+  --color-success-50: #163b2b;
+  --color-success-100: #244c37;
+  --color-accent-50: #302445;
+  --color-accent-200: #69518b;
+  --color-accent-500: #c6afff;
+  --color-accent-700: #d8c7ff;
+  --color-success-600: #90dcb2;
+  --color-warning-50: #45321c;
+  --color-warning-600: #f4c37e;
+  --color-danger: #ffadb6;
+  --color-danger-solid: #ffadb6;
+  --color-on-danger: #361016;
+  --fg-danger: #ffadb6;
+  --bg-danger: #452832;
+  --accent-neutral: #91a8c2;
+  --color-overlay: rgb(3 7 12 / 65%);
+}
+@media (max-width: 640px) {
+  :root[data-design="calm"], body.design-preview {
+    --space-page: 16px;
+    --space-card: 20px;
+    --space-section: 20px;
+    --control-height: 44px;
+  }
 }

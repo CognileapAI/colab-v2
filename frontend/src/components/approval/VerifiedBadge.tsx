@@ -10,6 +10,8 @@
 //
 // ⚠ **미승인에 회색 배지를 두지 않는다.** 배지는 1종이고(§4 용어 정의) 없으면 없는 것이다 —
 // 「미승인 배지」를 만들면 배지가 2종이 된다.
+import './approval.css';
+
 export function VerifiedBadge(props: { verified: boolean }) {
   if (!props.verified) return null;
   return (

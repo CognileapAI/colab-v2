@@ -11,7 +11,8 @@ BEGIN;
 
 INSERT INTO d1_lab (id, name, opened_at) VALUES
   ('0000000000000000000000000A', 'A 연구실', '2020-03-01T00:00:00Z'),
-  ('0000000000000000000000000B', 'B 연구실', '2021-03-01T00:00:00Z');
+  ('0000000000000000000000000B', 'B 연구실', '2021-03-01T00:00:00Z'),
+  ('0000000000000000000000000C', '계정 발급 시험 연구실', '2022-03-01T00:00:00Z');
 
 INSERT INTO d1_lab_profile (lab_id, university, department, principal_investigator,
                             research_field, introduction, default_visibility) VALUES
@@ -126,3 +127,6 @@ INSERT INTO d8_download (id, lab_id, account_id, dataset_id) VALUES
   ('00000000000000000000000BD1', '0000000000000000000000000B', '00000000000000000000000BP1', '0000000000000000000000DSB1');
 
 COMMIT;
+-- 서비스 운영자 부트스트랩은 연구실 교수 권한과 별개다.
+INSERT INTO account_admin.service_operator(account_id)
+VALUES ('00000000000000000000000AP1');

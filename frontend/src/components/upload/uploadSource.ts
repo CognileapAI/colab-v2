@@ -5,6 +5,7 @@
 // 접수된 것처럼 그리면 사람이 등록을 누른다 — 실패는 실패로 보여야 한다 (`P2.md` 머리말).
 import { api } from '../../api/client';
 import { presignedCreate } from './transferSource';
+import { sessionBoundFetch } from '../../auth/sessionFetch';
 import {
   GridAxisTaken,
   NoResolvedGrid,
@@ -141,7 +142,10 @@ export function apiUploadSource(): UploadSource {
       const r = await api.POST('/uploads', {
         body: form as unknown as never,
         bodySerializer: (b: unknown) => b as FormData,
-        fetch: (request) => xhrMultipartFetch(request, form, opts?.onProgress),
+        fetch: (request) => sessionBoundFetch(
+          request,
+          (bound) => xhrMultipartFetch(bound, form, opts?.onProgress),
+        ),
       });
       if (r.response.status === 501) throw new NotImplemented();
       if (!r.data) throw new Error('파일을 올리지 못했어요.');
@@ -207,6 +211,7 @@ export function apiUploadSource(): UploadSource {
         params: { path: { datasetId } },
         body: form as unknown as never,
         bodySerializer: (body: unknown) => body as FormData,
+        fetch: sessionBoundFetch,
       });
       if (!r.data) {
         const message = (r.error as { message?: unknown } | undefined)?.message;

@@ -2,7 +2,8 @@
 // 근거: frontend/README.md(생성된 타입·클라이언트만 쓴다) · CLAUDE.md §3-7
 import createClient from 'openapi-fetch';
 import type { paths, components } from '../generated/fe-core';
-import { clearToken, getToken } from '../auth/store';
+import { clearIfCurrent, getSession, getToken, isSessionExpired } from '../auth/store';
+import { mutationsAllowed, trackMutation } from '../auth/workGuard';
 
 // seam 의 servers[0].url. 계약이 정한 값이라 화면이 고르지 않는다.
 export const API_BASE_URL = '/api/v1';
@@ -27,16 +28,26 @@ export const api = createClient<paths>({
 //
 // 로그인 op(`POST /sessions`)만 예외다. 계약이 그 op 에만 `security: []` 를 적었고,
 // 아직 토큰이 없는 자리라 붙일 것도 없다.
-/** 로그인 op 만 예외다 — 계약이 그 op 에만 `security: []` 를 적었다. */
-function isLoginOp(url: string): boolean {
-  return new URL(url).pathname.endsWith('/sessions');
+function isPublicSessionOp(url: string): boolean {
+  const path = new URL(url).pathname;
+  return path.endsWith('/sessions') || path.endsWith('/sessions/revoke');
 }
+const requestTokens = new WeakMap<Request, string | null>();
+const mutationReleases = new WeakMap<Request, () => void>();
 
 api.use({
   onRequest({ request }) {
-    if (isLoginOp(request.url)) return request;
+    if (isPublicSessionOp(request.url)) { requestTokens.set(request, null); return request; }
+    const session = getSession();
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      if ((session && isSessionExpired(session)) || !mutationsAllowed()) {
+        throw new Error('로그인 상태를 다시 확인한 뒤 저장해 주세요.');
+      }
+      mutationReleases.set(request, trackMutation(crypto.randomUUID()));
+    }
     const token = getToken();
-    if (token) request.headers.set('Authorization', `Bearer ${token}`);
+    if (token && !request.headers.has('Authorization')) request.headers.set('Authorization', `Bearer ${token}`);
+    requestTokens.set(request, request.headers.get('Authorization')?.replace(/^Bearer /, '') ?? null);
     return request;
   },
 
@@ -47,9 +58,18 @@ api.use({
   //
   // 토큰을 버리면 `subscribe` 가 울고 `AuthGate` 가 로그인 화면을 세운다. **여기 한 자리**다.
   onResponse({ request, response }) {
+    mutationReleases.get(request)?.();
+    mutationReleases.delete(request);
     // 로그인 op 의 401 은 「비밀번호가 다르다」이지 만료가 아니다 — 건드리지 않는다.
-    if (response.status === 401 && !isLoginOp(request.url)) clearToken();
+    if (response.status === 401 && !isPublicSessionOp(request.url)) {
+      const token = requestTokens.get(request);
+      if (token) clearIfCurrent(token);
+    }
     return response;
+  },
+  onError({ request }) {
+    mutationReleases.get(request)?.();
+    mutationReleases.delete(request);
   },
 });
 
@@ -63,14 +83,6 @@ api.use({
 //
 // 로그인 op(`POST /sessions`)은 제외한다 — 거기서의 401 은 「자격이 틀렸다」이지 만료가
 // 아니고, 버릴 토큰도 없다. 그 문구는 `LoginPage` 가 자기 자리에서 말한다.
-api.use({
-  onResponse({ request, response }) {
-    if (response.status !== 401) return;
-    if (new URL(request.url).pathname.endsWith('/sessions')) return;
-    clearToken();
-  },
-});
-
 export type Schemas = components['schemas'];
 export type CurrentAccount = Schemas['CurrentAccount'];
 export type PermissionSwitch = Schemas['PermissionSwitch'];

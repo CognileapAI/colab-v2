@@ -12,6 +12,9 @@
 // 반복되는 상태 표시라, 한 곳에서 눌리기 시작하면 나머지도 눌릴 것처럼 보이고 오조작이 생긴다.
 // 그래서 진입점은 **`⋯` 더보기 하나뿐**이다 (§1.3-4 · §7.1).
 import { useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
+import { useDialogFocus } from '../common/useDialogFocus';
+import './approval.css';
 import type { DatasetDetail } from '../detail/types';
 import type { ApprovalSource } from './types';
 
@@ -26,6 +29,14 @@ export function VerificationAction(props: {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useWorkProtection(`verification-cancel:${datasetId}`, {
+    dirty: confirming && reason !== '',
+    inFlight: busy,
+    discard: () => {
+      setMenuOpen(false); setConfirming(false); setReason(''); setError(null);
+    },
+  });
+  const dialogRef = useDialogFocus(() => setConfirming(false), busy, confirming);
 
   async function run(fn: () => Promise<void>, fallback: string) {
     setBusy(true);
@@ -108,7 +119,7 @@ export function VerificationAction(props: {
           **파생 데이터에는 표시하지 않는다**(§7.1) — 건수만 말하고 끝이다. */}
       {confirming ? (
         <div className="modal-back">
-          <div className="modal modal--dialog" role="dialog" aria-modal="true" aria-label="승인을 취소할까요?">
+          <div ref={dialogRef} tabIndex={-1} className="modal modal--dialog approval-dialog" role="dialog" aria-modal="true" aria-label="승인을 취소할까요?">
             <h3>이 데이터의 승인을 취소할까요?</h3>
             <ul className="vc-impact">
               <li>검색·카탈로그에서 우선 정렬이 사라져요.</li>
@@ -126,7 +137,7 @@ export function VerificationAction(props: {
             </label>
             {error ? <p className="ar-error">{error}</p> : null}
             <div className="modal-act">
-              <button type="button" className="btn btn-ghost" onClick={() => setConfirming(false)}>
+              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setConfirming(false)}>
                 그만두기
               </button>
               <button

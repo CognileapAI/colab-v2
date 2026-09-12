@@ -182,6 +182,8 @@ dc run --rm migrate-ai       upgrade head || abort "마이그레이션" "ai 체�
 # 빈 집합에 걸려 **조용히 아무것도 안 준다**(`I2 §2`). 값을 치르고 알아낸 순서다.
 log "⑨ 앱 롤 GRANT (NOBYPASSRLS · 비소유자 검사 포함)"
 "$HERE/db-bootstrap.sh" app-grants || abort "GRANT" "db-bootstrap.sh app-grants 실패"
+log "⑨ 계정 관리자 롤 (운영자 자동 등록 없음)"
+"$HERE/db-bootstrap.sh" account-admin || abort "GRANT" "계정 관리자 롤 부트스트랩 실패"
 
 # ── ⑩ 교체 ─────────────────────────────────────────────────────────────────
 # ⭑ **⟨2026-08-31 · `PLAN-SoT §9 〈240〉`⟩ 엣지 설정 해시를 실어 보낸다.**

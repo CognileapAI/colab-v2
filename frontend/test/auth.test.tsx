@@ -10,7 +10,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/app/App';
-import { clearToken, getToken, setToken } from '../src/auth/store';
+import { clearIfCurrent, clearToken, getToken } from '../src/auth/store';
+import { setToken } from './sessionFixture';
 import { api } from '../src/api/client';
 import { account } from './factories';
 
@@ -120,6 +121,17 @@ describe('요청 첨부 — 화면이 헤더를 손으로 붙이지 않는다', 
 // 그래서 화면을 띄운 채로 12시간(세션 수명)이 지나면, 사람은 로그인된 것처럼 보이는
 // 화면에서 **모든 동작이 조용히 실패하는 상태**에 갇힌다 (2026-09-02 dev 에서 실제로 그랬다).
 describe('세션 만료 — 화면이 갇히지 않는다', () => {
+  it('재인증 중에도 기존 앱 트리를 유지한 채 입력만 막는다', async () => {
+    setToken(TOKEN);
+    stubFetch((url) => url.endsWith('/me') ? json(200, account()) : json(200, {}));
+    renderApp();
+    expect(await screen.findByTestId('gnb-avatar')).toBeInTheDocument();
+    clearIfCurrent(TOKEN);
+    expect(await screen.findByTestId('login-account-name')).toBeInTheDocument();
+    expect(screen.getByTestId('gnb-avatar')).toBeInTheDocument();
+    expect(screen.getByTestId('gnb-avatar').closest('[inert]')).not.toBeNull();
+  });
+
   it('어느 요청이든 401 이면 토큰을 버린다 — 다음 렌더가 로그인 화면이다', async () => {
     setToken(TOKEN);
     stubFetch(() => json(401, { code: 'UNAUTHORIZED', message: '알 수 없는 주체다.' }));
@@ -143,10 +155,25 @@ describe('세션 만료 — 화면이 갇히지 않는다', () => {
 });
 
 describe('로그인 화면', () => {
+  it('네트워크 예외 뒤 진행 상태를 풀어 다시 제출할 수 있다', async () => {
+    vi.stubGlobal('fetch', () => Promise.reject(new TypeError('offline')));
+    renderApp();
+    fireEvent.change(screen.getByTestId('login-account-name'), { target: { value: 'colab' } });
+    fireEvent.change(screen.getByTestId('login-password'), { target: { value: '시험-비밀번호' } });
+    fireEvent.click(screen.getByTestId('login-submit'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('연결하지 못했어요');
+    expect(screen.getByTestId('login-submit')).toBeEnabled();
+  });
+
   it('성공하면 토큰을 보관하고 앱으로 넘어간다', async () => {
     stubFetch((url) => {
       if (url.endsWith('/sessions')) {
-        return json(201, { token: TOKEN, expiresAt: '2026-08-27T00:00:00Z' });
+        return json(201, {
+          token: TOKEN,
+          expiresAt: '2099-01-01T00:00:00Z',
+          sessionId: '01JYZ9K7WQ3N8V4M2X6C5B0SS1',
+          revocationToken: 'test-revocation-capability',
+        });
       }
       return json(200, account());
     });
@@ -210,16 +237,49 @@ describe('로그인 화면', () => {
 
 describe('로그아웃', () => {
   it('endSession 을 부르고 토큰을 버린다', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     setToken(TOKEN);
     stubFetch((url) =>
-      url.endsWith('/sessions/current') ? new Response(null, { status: 204 }) : json(200, account()),
+      url.endsWith('/sessions/current') || url.endsWith('/sessions/revoke')
+        ? new Response(null, { status: 204 })
+        : json(200, account()),
     );
     renderApp();
     fireEvent.click(await screen.findByTestId('gnb-logout'));
     await waitFor(() => expect(getToken()).toBeNull());
-    expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/sessions/current'))).toBe(
-      true,
-    );
+    await waitFor(() => expect(
+      calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/sessions/current')),
+    ).toBe(true));
+    expect(await screen.findByTestId('login-account-name')).toBeInTheDocument();
+  });
+});
+
+describe('첫 비밀번호 변경 복구', () => {
+  it('응답이 끊기면 자동 재전송하지 않고 다시 로그인할 수 있다', async () => {
+    localStorage.removeItem('colab.logout-epoch.v1');
+    setToken(TOKEN);
+    let passwordCalls = 0;
+    vi.stubGlobal('fetch', (input: Request | string) => {
+      const request = typeof input === 'string' ? new Request(input) : input;
+      const path = new URL(request.url).pathname;
+      if (path.endsWith('/me/password')) {
+        passwordCalls += 1;
+        return Promise.reject(new TypeError('network lost'));
+      }
+      if (path.endsWith('/me')) {
+        return Promise.resolve(json(200, { ...account(), mustChangePassword: true }));
+      }
+      return Promise.resolve(new Response(null, { status: 204 }));
+    });
+    renderApp();
+    fireEvent.change(await screen.findByTestId('new-password'), { target: { value: '새로운 비밀번호 열두자' } });
+    fireEvent.change(screen.getByTestId('confirm-password'), { target: { value: '새로운 비밀번호 열두자' } });
+    fireEvent.click(screen.getByTestId('change-password'));
+    expect(await screen.findByTestId('password-relogin')).toBeInTheDocument();
+    expect(passwordCalls).toBe(1);
+    await new Promise((resolve) => window.setTimeout(resolve, 20));
+    expect(passwordCalls).toBe(1);
+    fireEvent.click(screen.getByTestId('password-relogin'));
     expect(await screen.findByTestId('login-account-name')).toBeInTheDocument();
   });
 });

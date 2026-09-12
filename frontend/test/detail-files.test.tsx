@@ -393,6 +393,22 @@ describe('추가 · 교체 · 삭제 — 성공하면 목록을 서버에게 다
     expect(await screen.findByTestId(`dt-file-${NEW}`)).toHaveTextContent('nakdong_0801.nc');
   });
 
+  it('접수 결과가 불명확하면 선택 File을 보존하고 자동 재전송하지 않는다', async () => {
+    const { source, calls } = fakeFiles({ addThrows: new Error('응답이 끊겼어요.') });
+    mount({ files: source });
+    await settle();
+    await openList();
+    await pick(screen.getByTestId('dt-file-add'), 'kept.nc');
+    const pending = await screen.findByTestId('dt-file-pending');
+    expect(pending).toHaveTextContent('kept.nc');
+    expect(pending).toHaveTextContent('서버 접수 여부를 먼저 목록에서 확인');
+    expect(calls.added).toHaveLength(1);
+    await act(async () => {});
+    expect(calls.added).toHaveLength(1);
+    await click(screen.getByRole('button', { name: '선택 파일 버리기' }));
+    expect(screen.queryByTestId('dt-file-pending')).toBeNull();
+  });
+
   it('교체는 `replace(datasetId, fileId, file)` 이고 그 뒤 다시 읽는다', async () => {
     const { source, calls } = fakeFiles();
     mount({ files: source });

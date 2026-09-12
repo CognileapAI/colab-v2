@@ -153,10 +153,32 @@ function contrast(a: string, b: string): number {
 declare const process: { cwd(): string };
 const read = (rel: string): string => readFileSync(resolve(process.cwd(), rel), 'utf8');
 const CSS: string = read('src/components/lineage/lineage.css');
-const token = (name: string) => {
-  const m = CSS.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`));
-  if (!m) throw new Error(`토큰이 없다: ${name}`);
-  return m[1] as string;
+// Resolve the same semantic aliases used by the shared theme, in both palettes.
+const themeTokens = (dark: boolean) => {
+  const values = new Map<string, string>();
+  const paths = ['src/components/catalog/catalog.css', 'src/components/detail/detail.css',
+    'src/components/project/project.css', 'src/components/lineage/lineage.css', 'src/shell/tokens.css'];
+  for (const path of paths) {
+    const raw = read(path).replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const block of raw.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (!block[1]!.includes(':root')) continue;
+      if (block[1]!.includes('data-theme="dark"') && !dark) continue;
+      for (const pair of block[2]!.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+        values.set(pair[1]!, pair[2]!.trim());
+      }
+    }
+  }
+  const resolveToken = (name: string, seen = new Set<string>()): string => {
+    if (seen.has(name)) throw new Error(`순환 토큰: ${name}`);
+    seen.add(name);
+    const value = values.get(name);
+    if (!value) throw new Error(`토큰이 없다: ${name}`);
+    const alias = value.match(/^var\((--[\w-]+)\)$/);
+    if (alias) return resolveToken(alias[1]!, seen);
+    if (!/^#[0-9a-fA-F]{6}$/.test(value)) throw new Error(`색 토큰이 아니다: ${name}`);
+    return value;
+  };
+  return resolveToken;
 };
 
 // ═══ ㈎ 자기 Lv=Lv0 — 안내 범위가 `Lv0` 하나다 ═══
@@ -212,7 +234,8 @@ describe('PRD-08 초과 후보는 흐리게 ＋ 사유', () => {
   });
 
   // ═══ ㈐ 대비 계측 ═══
-  it('사유 문구와 `확인 필요` 칩의 대비가 4.5:1 이상이다', () => {
+  it.each([false, true])('사유 문구와 `확인 필요` 칩의 대비가 4.5:1 이상이다 (dark=%s)', (dark) => {
+    const token = themeTokens(dark);
     const ratio = contrast(token('--lin-over-ink'), token('--lin-over-bg'));
     expect(ratio).toBeGreaterThanOrEqual(4.5);
     // 흐려지는 것은 **이름 버튼 하나**다 — 사유가 그것과 같은 색이면 `R-21` 이 고친 자리가 되돌아온다.

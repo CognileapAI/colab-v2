@@ -86,7 +86,8 @@ def test_no_bleed_across_http_requests_on_one_connection(app_db_url: str, subjec
     from colab_core.app.main import API_PREFIX, create_app
     from colab_core.kernel.config import Settings
 
-    app = create_app(Settings(database_url=app_db_url, subjects_file=subjects_file))
+    app = create_app(Settings(database_url=app_db_url, subjects_file=subjects_file),
+                     test_static_subjects=True)
     factory, engine = _single_connection_factory(app_db_url)
     app.state.session_factory = factory
     try:

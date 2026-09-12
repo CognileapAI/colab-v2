@@ -6,6 +6,7 @@
 //
 // **다시 열기에는 이 모달을 세우지 않는다** — 확인이 필요한 것은 잃을까 걱정되는 쪽뿐이다.
 import { useId, useState } from 'react';
+import { useDialogFocus } from '../common/useDialogFocus';
 import { projectPeriod } from './format';
 import type { ProjectDetail } from './types';
 
@@ -18,6 +19,7 @@ export function ProjectCloseModal(props: {
   const titleId = useId();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const dialogRef = useDialogFocus(props.onClose, busy);
 
   async function confirm() {
     setBusy(true);
@@ -37,10 +39,10 @@ export function ProjectCloseModal(props: {
 
   return (
     <div className="pj-modal-back" data-testid="project-close-modal">
-      <div className="pj-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div ref={dialogRef} tabIndex={-1} className="pj-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="pj-modal-h">
           <h3 id={titleId}>이 프로젝트를 닫을까요?</h3>
-          <button type="button" className="pj-x" onClick={props.onClose} aria-label="창 닫기">
+          <button type="button" className="pj-x" disabled={busy} onClick={props.onClose} aria-label="창 닫기">
             ×
           </button>
         </div>
@@ -70,7 +72,7 @@ export function ProjectCloseModal(props: {
 
         <div className="pj-modal-f">
           {/* 취소 쪽 글자도 목업 그대로다 — 「그대로 두기」가 무엇을 고르는지 더 잘 말한다 */}
-          <button type="button" className="btn btn-secondary" onClick={props.onClose}>
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={props.onClose}>
             그대로 두기
           </button>
           <button type="button" className="btn btn-strong" disabled={busy} onClick={() => void confirm()}>

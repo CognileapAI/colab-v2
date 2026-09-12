@@ -3,11 +3,11 @@
    ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 화면이 처음 쓰는 토큰만
      여기서 잇는다 (집 관례 — `components/detail/detail.css` 머리말). */
 :root {
-  --up-line: #e8ecf2;
-  --up-muted: #565c63;
-  --up-ink: #121619;
-  --up-warn: #a85400;
-  --up-warn-bg: #fff6ed;
+  --up-line: var(--color-border);
+  --up-muted: var(--color-text-muted);
+  --up-ink: var(--color-text);
+  --up-warn: var(--color-warning-600);
+  --up-warn-bg: var(--color-warning-50);
   --up-radius: 12px;
 }
 
@@ -17,7 +17,7 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(18, 22, 25, 0.5);
+  background: var(--color-overlay);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -25,7 +25,7 @@
 .modal.modal-takeover {
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: var(--color-surface);
   display: flex;
   flex-direction: column;
   animation: up-rise 0.46s ease;
@@ -149,7 +149,7 @@
   padding: 10px 12px;
   border: 1px solid var(--up-line);
   border-radius: 10px;
-  background: #fafbfc;
+  background: var(--color-surface-alt);
 }
 .companion .cl { font-weight: 600; font-size:13px; }
 .companion .cw { color: var(--up-muted); font-size:13px; }
@@ -205,7 +205,7 @@
   padding: 6px 12px;
   cursor: pointer;
 }
-.regsteps button.is-active { background: var(--up-ink); color: #fff; border-color: var(--up-ink); }
+.regsteps button.is-active { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
 .regsteps .cnt { margin-left: 6px; font-size:13px; }
 .regsteps .rs-f { margin-left: auto; color: var(--up-muted); font-size:13px; }
 @media (max-width: 720px) { .regsteps .rs-f { display: none; } }
@@ -217,7 +217,9 @@
 /* ⭑ ⟨19차 · PRD-28⟩ **짧은 값 세 개가 한 줄**이다 — 기간·좌표계·격자.
    rev1 축자 = 「2+1 로 갈리면 마지막 줄이 반쯤 빈다」. 그래서 2칸 격자에 셋을 넣지 않는다. */
 .form-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 900px) { .form-3 { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .form-3 { grid-template-columns: minmax(0, 1fr); } }
+.form-3 > .form-row { min-width: 0; }
+.form-3 :is(input, textarea, select) { width: 100%; max-width: 100%; }
 /* 기간은 두 칸이 한 값이라(`DataPeriod`) 한 셀 안에서 붙는다 — 셀을 둘로 세지 않는다. */
 .form-3 .pair { display: flex; align-items: center; gap: 6px; }
 .form-3 .pair .inp { min-width: 0; flex: 1; }
@@ -232,12 +234,12 @@
   border: 1px solid var(--up-ink);
   border-radius: 9999px;
   padding: 1px 6px;
-  background: var(--up-ink);
-  color: #fff;
+  background: var(--color-surface-alt);
+  color: var(--color-text);
 }
 .inp, .sel { padding: 8px 10px; border: 1px solid var(--up-line); border-radius: 8px; font: inherit; }
 textarea.inp { resize: vertical; line-height: 1.5; }
-.inp[readonly] { background: #fafbfc; color: var(--up-muted); }
+.inp[readonly] { background: var(--color-surface-alt); color: var(--up-muted); }
 .fieldlbl { font-size:13px; color: var(--up-muted); margin: 12px 0 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -269,7 +271,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   padding: 10px 0; background: var(--color-surface, #fff);
 }
 /* 「지금 할 일」 한 줄 — 좁은 폭에서는 버튼 자리를 뺏지 않게 감춘다 (rev1 720px 규칙) */
-.reg-actions .uf-hint { flex: 1; min-width: 0; font-size:13px; color: #6b7280; }
+.reg-actions .uf-hint { flex: 1; min-width: 0; font-size:13px; color: var(--color-text-muted); }
 @media (max-width: 720px) { .reg-actions .uf-hint { display: none; } }
 .reg-actions .sp { flex: 1; }
 /* ⑩ 위 여백은 `.card-b` 의 gap 12px 이 갖는다 */
@@ -279,18 +281,18 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   position: fixed;
   inset: 0;
   z-index: 230;
-  background: rgba(18, 22, 25, 0.5);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.confirm-back .modal { background: #fff; border-radius: var(--up-radius); max-width: 420px; width: 90%; }
+.confirm-back .modal { background: var(--color-surface); border-radius: var(--up-radius); max-width: 420px; width: 90%; }
 .confirm-back .modal-h, .confirm-back .modal-b, .confirm-back .modal-f { padding: 16px 20px; }
 .confirm-back .modal-f { display: flex; justify-content: flex-end; gap: 8px; }
 
-.btn { border: 1px solid var(--up-line); background: #fff; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--up-line); background: var(--color-surface); border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
 .btn-sm { padding: 6px 10px; font-size: 13px; }
-.btn-strong, .btn-primary { background: var(--up-ink); color: #fff; border-color: var(--up-ink); }
+.btn-strong, .btn-primary { background: var(--color-primary-600); color: var(--color-on-primary); border-color: var(--up-ink); }
 .btn-ghost { border-color: transparent; }
 
 
@@ -301,12 +303,12 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   flex-direction: column;
   gap: 6px;
   padding: 12px 14px;
-  border: 1px solid var(--line, #e5e7eb);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--surface-2, #f9fafb);
+  background: var(--color-surface-alt);
 }
 .gridblock .gb-t { margin: 0; font-weight: 600; }
-.gridblock .gb-b { margin: 0; color: var(--muted, #6b7280); font-size: 13px; }
+.gridblock .gb-b { margin: 0; color: var(--color-text-muted); font-size: 13px; }
 .gridblock .gb-a { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .up-transfer-meter {
   display: grid;
@@ -355,7 +357,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 }
 /* 배지 — 좌표의 출처와 색 범위 단계를 화면이 **말한다** (`K-4`) */
 .pv-badges { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-.vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted, #6b7280); }
+.vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--color-text-muted); }
 .mapcanvas .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
 
 /* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
@@ -372,7 +374,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .up-banner .ub-txt { flex: 1; font-size: 13px; color: var(--up-ink); }
 .up-banner .ub-btn {
   border: 1px solid var(--up-line);
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 8px;
   padding: 4px 10px;
   font-size:13px;
@@ -386,16 +388,16 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .thumbrow { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
 .thumbrow .th-slot {
   width: 64px; height: 64px; flex: none; padding: 0; cursor: pointer;
-  border: 1px dashed var(--line, #d1d5db); border-radius: 8px;
-  background: var(--surface, #f9fafb); overflow: hidden;
+  border: 1px dashed var(--color-border); border-radius: 8px;
+  background: var(--color-surface); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.thumbrow .th-slot:hover { border-color: var(--accent, #2563eb); }
+.thumbrow .th-slot:hover { border-color: var(--color-primary-600); }
 .thumbrow .th-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-.thumbrow .th-ph { width: 24px; height: 24px; border-radius: 4px; background: var(--line, #d1d5db); }
+.thumbrow .th-ph { width: 24px; height: 24px; border-radius: 4px; background: var(--color-border); }
 .thumbrow .th-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .thumbrow .th-t { font-weight: 600; font-size: 13px; }
-.thumbrow .th-n { font-size:13px; color: var(--muted, #6b7280); }
+.thumbrow .th-n { font-size:13px; color: var(--color-text-muted); }
 /* 파일 선택기는 **버튼 클릭으로만** 열린다 — 칸 자체는 화면에 두지 않는다 */
 .thumbrow .th-in { display: none; }
 
@@ -412,7 +414,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 /* ① 파일 분석 3단계 표시 (PRD-39 · rev1 `pbStatus`) — 진행 바 아래 한 줄 */
 .up-analyze { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.up-analyze .an-txt { font-size:13px; color: #6b7280; }
+.up-analyze .an-txt { font-size:13px; color: var(--color-text-muted); }
 /* ③ 파일 빼기 — 파일 카드 오른쪽 끝 */
 .filecard .frm-x { margin-left: 4px; line-height: 1; }
 
@@ -504,9 +506,9 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 /* ── ㈎ 미리보기 확장보기 오버레이 ──────────────────────────────────────
    각색 — rev2 는 `#pvExpandBack` 에 인라인 `style` 로만 치수를 줬다(`z-index:250` ·
    `max-width:min(96vw,1100px)` · `height:min(70vh,640px)`). 그 인라인 값을 클래스로 옮긴다. */
-.modal-back.pvx-back{position:fixed;inset:0;z-index:250;background:rgba(18,22,25,0.5);
+.modal-back.pvx-back{position:fixed;inset:0;z-index:250;background:var(--color-overlay);
   display:flex;align-items:center;justify-content:center;padding:16px;}
-.modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background:#fff;
+.modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background: var(--color-surface);
   border-radius:var(--up-radius);display:flex;flex-direction:column;overflow:hidden;}
 .modal-b.pvx-b{height:min(70vh,640px);overflow:auto;display:flex;align-items:center;justify-content:center;}
 .pvx-img{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
@@ -518,8 +520,8 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .up-empty .modal-takeover { width:min(620px,94vw); height:auto; max-height:90vh; border-radius:14px; overflow:hidden; }
 .up-empty .up-body { flex:initial; padding:20px 22px; }
 .up-empty .up-card { border:0; padding:0; }
-.up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background:#f8f9fa; }
-.up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:#edf3ff; color:var(--color-text); font-size:36px; margin-bottom:12px; }
+.up-empty .dropzone { padding:34px 24px; min-height:0; justify-content:center; background: var(--color-surface-alt); }
+.up-drop-icon { display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:var(--color-primary-50); color:var(--color-text); font-size:36px; margin-bottom:12px; }
 .up-file-choose { margin-top:14px; }
 .up-file-management { color:var(--up-muted); font-size:13px; }
 .up-file-management > summary { cursor:pointer; padding:4px 0; }
@@ -527,8 +529,8 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .modal-takeover[data-scene="register"] .regarea { border:0; padding:0; }
 .modal-takeover[data-scene="register"] .regsteps { gap:0; border-bottom:1px solid var(--up-line); min-height:48px; }
 .modal-takeover[data-scene="register"] .regsteps button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--up-muted); padding:14px 12px; }
-.modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--up-ink); border-bottom-color:#1769ef; }
-.modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:#e8ecf2; border-radius:8px; padding:6px 10px; }
+.modal-takeover[data-scene="register"] .regsteps button.is-active { color:var(--up-ink); border-bottom-color:var(--color-primary-600); }
+.modal-takeover[data-scene="register"] .regsteps .rs-f { max-width:40%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background: var(--color-surface-alt); border-radius:8px; padding:6px 10px; }
 @media(max-width:600px) { .mb-takeover.up-empty { padding:12px; } .up-empty .up-body { padding:16px; } .up-empty .modal-h { flex-wrap:wrap; } }
 
 /* rev2 장면 1은 분석 완료 뒤 사용자가 다음을 누를 때까지 작은 모달이다.
@@ -578,3 +580,9 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 .modal-takeover :is(.pv-pick-f > span,.pv-muted,.fieldnote,.axis-note,.dr-useg button,.dr-units .du-l) { font-size:13px; }
 .modal-takeover .pv-muted { color:var(--up-muted); }
+
+.modal-takeover .mapbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
+.modal-takeover .mapbar .mt { font-size: 14px; font-weight: 600; }
+.modal-takeover .vizph .pt { margin-bottom: 8px; font-size: 15px; font-weight: 600; color: var(--color-text); }
+.modal-takeover .vizph .pd { max-width: 48ch; font-size: 13px; line-height: 1.7; color: var(--color-text-muted); }
+.modal-takeover .mapempty { padding: 32px 20px; font-size: 14px; line-height: 1.7; color: var(--color-text-muted); text-align: center; }

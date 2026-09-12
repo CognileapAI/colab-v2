@@ -89,6 +89,17 @@ def _disposition(name: str) -> str:
     return "attachment; filename*=UTF-8''" + urllib.parse.quote(name, safe="")
 
 
+def test_revoked_browser_session_cannot_issue_a_new_download_ticket(p2_client) -> None:
+    client = _client(p2_client)
+    login = client.post(f"{API_PREFIX}/sessions", json={"accessCode": TOKEN_RES})
+    assert login.status_code == 201
+    session = login.json()
+    assert client.post(f"{API_PREFIX}/sessions/revoke", json={
+        "revocationToken": session["revocationToken"],
+    }).status_code == 204
+    assert _ticket(client, DS_A1, token=session["token"]).status_code == 401
+
+
 # ═══════════════════════ 발급 = 이력 (`d8_download`) ═══════════════════════
 def test_downloadDatasetFile_records_a_download_row_with_the_file_id(p2_client, sql) -> None:
     """① 파일 단위 티켓 → `d8_download` 한 행, `file_id` 가 그 조각. 주체·데이터셋도 그대로."""

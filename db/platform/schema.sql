@@ -119,6 +119,49 @@ CREATE TABLE d1_account (
 );
 CREATE INDEX d1_account_lab_idx ON d1_account (lab_id);
 
+-- Stage 3 관리자 자격은 일반 앱 롤이 접근할 수 없는 별도 스키마에 둔다.
+CREATE SCHEMA account_admin;
+REVOKE ALL ON SCHEMA account_admin FROM PUBLIC;
+
+CREATE TABLE account_admin.login_credential (
+  account_id            ulid        PRIMARY KEY REFERENCES d1_account(id) ON DELETE CASCADE,
+  login_name            text        NOT NULL UNIQUE CHECK (login_name = lower(btrim(login_name))),
+  kdf                   text        NOT NULL,
+  salt                  text        NOT NULL,
+  password_hash         text        NOT NULL,
+  n                     integer     NOT NULL CHECK (n > 0),
+  r                     integer     NOT NULL CHECK (r > 0),
+  p                     integer     NOT NULL CHECK (p > 0),
+  must_change_password  boolean     NOT NULL DEFAULT true,
+  session_version       integer     NOT NULL DEFAULT 1 CHECK (session_version > 0),
+  created_at            timestamptz NOT NULL DEFAULT now(),
+  updated_at            timestamptz NOT NULL DEFAULT now()
+);
+
+-- 서비스 전체 권한은 연구실 역할과 별개다. 앱 일반 롤에는 이 표의 권한을 주지 않는다.
+CREATE TABLE account_admin.service_operator (
+  account_id  ulid        PRIMARY KEY REFERENCES d1_account(id) ON DELETE CASCADE,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE account_admin.login_session (
+  id ulid PRIMARY KEY,
+  account_id ulid NOT NULL REFERENCES d1_account(id) ON DELETE CASCADE,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id) ON DELETE CASCADE,
+  issued_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL CHECK (expires_at > issued_at),
+  revoked_at timestamptz,
+  generation integer NOT NULL DEFAULT 1 CHECK (generation > 0),
+  credential_kind text NOT NULL CHECK (credential_kind IN ('database','planted-code','legacy-file')),
+  purpose text NOT NULL CHECK (purpose IN ('normal','password-change')),
+  credential_version integer CHECK (credential_version > 0),
+  revoke_digest text NOT NULL UNIQUE CHECK (length(revoke_digest) = 64),
+  CHECK ((credential_kind='database' AND credential_version IS NOT NULL)
+      OR (credential_kind<>'database' AND credential_version IS NULL))
+);
+CREATE INDEX login_session_account_expiry_idx
+  ON account_admin.login_session(account_id, expires_at);
+REVOKE ALL ON account_admin.login_session FROM PUBLIC;
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 2. D2 Access & Policy (정본 §3 §4.1 · PERMISSION-PRINCIPLES · ㉖ ㉗ ㉘)
 --    규칙 본체(누가 무엇을 할 수 있는가)는 P6 다. 여기는 **저장 자리**뿐이다.

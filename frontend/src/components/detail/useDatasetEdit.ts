@@ -7,6 +7,7 @@
 // 다시 묻는 왕복을 한 번 더 도는 대신 그 응답으로 갈아탄다 — 화면이 값을 지어내는 것이 아니라
 // **서버가 준 값**으로 서는 것이라 두 규칙이 어긋나지 않는다.
 import { useEffect, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import { loweringConfirmCopy } from '../common/accessState';
 import {
   isValidSourceDownloadedOnShape,
@@ -78,6 +79,18 @@ export function useDatasetEdit(
   }, [base]);
 
   const detail = patched ?? base;
+  const cancelEdit = () => {
+    setEditing(false);
+    setDraft(null);
+    setError(null);
+    setFieldErrors({});
+    setConfirm(null);
+  };
+  useWorkProtection(`dataset-edit:${detail?.datasetId ?? 'none'}`, {
+    dirty: Boolean(editing && detail && draft && JSON.stringify(draft) !== JSON.stringify(toDraft(detail))),
+    inFlight: saving,
+    discard: cancelEdit,
+  });
 
   return {
     detail,
@@ -96,13 +109,7 @@ export function useDatasetEdit(
       setConfirm(null);
       setEditing(true);
     },
-    cancel: () => {
-      setEditing(false);
-      setDraft(null);
-      setError(null);
-      setFieldErrors({});
-      setConfirm(null);
-    },
+    cancel: cancelEdit,
     setField: (key, value) => {
       setDraft((d) => (d ? { ...d, [key]: value } : d));
       // 고치는 순간 그 칸의 인라인 오류를 지운다 — 서버 문구처럼 값을 고쳐도 남지 않는다.

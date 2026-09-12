@@ -3,8 +3,8 @@
    ※ 공유 파일인 `shell/tokens.css` 를 건드리지 않으려고, 이 컴포넌트가 처음 쓰는 토큰만
      여기서 잇는다 (집 관례 — `components/upload/upload.css` 머리말). */
 :root {
-  --toast-fg: #a85400;
-  --toast-bg: #fff6ed;
+  --toast-fg: var(--color-warning-600);
+  --toast-bg: var(--color-warning-50);
   --toast-radius: 12px;
 }
 
@@ -14,5 +14,5 @@
   border-radius: var(--toast-radius);
   background: var(--toast-bg);
   color: var(--toast-fg);
-  font-size: 12px;
+  font-size: 13px;
 }

@@ -35,7 +35,7 @@ def test_로그인_성공은_201_과_토큰이다(client) -> None:
     res = _login(client, TOKEN_RES)
     assert res.status_code == 201, res.text
     body = res.json()
-    assert set(body) == {"token", "expiresAt"}
+    assert set(body) == {"token", "expiresAt", "sessionId", "revocationToken"}
     assert body["token"]
     # 만료 시각은 미래다 — 발급하자마자 죽은 세션을 내리지 않는다.
     assert dt.datetime.fromisoformat(body["expiresAt"]) > dt.datetime.now(dt.timezone.utc)
@@ -68,8 +68,12 @@ def test_발급한_세션으로_me_가_열린다(client) -> None:
 
 
 def test_기존_주체_표_토큰도_그대로_통한다(client) -> None:
-    """병존 (`〈90〉-㉱`). 로그인을 세우면서 도구·시험의 경로를 끊지 않는다."""
-    assert client.get("/api/v1/me", headers=auth(TOKEN_RES)).status_code == 200
+    """제품 배선은 심은 값을 직접 bearer로 받지 않고 로그인 교환만 허용한다."""
+    from colab_core.kernel.authn import AuthenticatorChain, TrackedSessionAuthenticator
+    client.app.state.authenticators = AuthenticatorChain((
+        TrackedSessionAuthenticator(client.app.state.login_sessions),
+    ))
+    assert client.get("/api/v1/me", headers=auth(TOKEN_RES)).status_code == 401
 
 
 def test_미인증은_401_이다(client) -> None:
@@ -119,10 +123,10 @@ def test_로그아웃도_주체를_요구한다(client) -> None:
 
 
 def test_토큰을_버린_뒤에는_401_이다(client) -> None:
-    """로그아웃의 실체 = 화면이 토큰을 버리는 것. 버린 뒤 요청은 미인증과 같다 (`〈90〉-㉳`)."""
+    """서버 회수 뒤 같은 bearer는 다시 주체가 되지 않는다."""
     token = _login(client, TOKEN_RES).json()["token"]
     client.delete("/api/v1/sessions/current", headers=auth(token))
-    assert client.get("/api/v1/me").status_code == 401
+    assert client.get("/api/v1/me", headers=auth(token)).status_code == 401
 
 
 # ── 설정이 없을 때 ──────────────────────────────────────────────────────────────
@@ -135,5 +139,43 @@ def test_비밀값이_없으면_로그인이_정직하게_실패한다(p2_client
 
 
 def test_비밀값이_없어도_기존_주체_표는_돈다(p2_client) -> None:
+    """명시적 test-only authenticator는 오래된 도메인 시험에만 쓴다."""
     client = p2_client(session_secret=None)
     assert client.get("/api/v1/me", headers=auth(TOKEN_RES)).status_code == 200
+
+
+def test_product_wiring_without_session_store_fails_closed(p2_client) -> None:
+    client = p2_client(
+        session_secret=None, account_admin_database_url="",
+        allow_test_static_subjects=False,
+    )
+    assert client.get("/api/v1/me", headers=auth(TOKEN_RES)).status_code == 503
+
+
+def test_session_store_down_is_503_for_issue_authenticate_and_revoke(p2_client) -> None:
+    client = p2_client(
+        session_secret=SECRET,
+        account_admin_database_url="postgresql+psycopg://x:x@127.0.0.1:1/unreachable",
+    )
+    issue = _login(client, TOKEN_RES)
+    assert issue.status_code == 503
+    assert issue.headers["cache-control"] == "no-store"
+    password_issue = client.post("/api/v1/sessions", json={
+        "accountName": "person@example.com", "password": "wrong-password",
+    })
+    assert password_issue.status_code == 503
+    assert password_issue.headers["cache-control"] == "no-store"
+    revoked = client.post("/api/v1/sessions/revoke", json={
+        "revocationToken": "x" * 43,
+    })
+    assert revoked.status_code == 503
+    assert revoked.headers["cache-control"] == "no-store"
+    signer = SessionSigner(SECRET, ttl_minutes=720)
+    token = signer.issue_tracked(
+        Subject(Ulid(ACC_A_RES), Ulid(LAB_A)),
+        session_id=Ulid("0000000000000000000000SES4"),
+        generation=1, credential_kind="planted-code", purpose="normal",
+        credential_version=None,
+        expires_at=dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=12),
+    ).token
+    assert client.get("/api/v1/me", headers=auth(token)).status_code == 503

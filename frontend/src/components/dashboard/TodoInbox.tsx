@@ -10,6 +10,7 @@
 // 마크업은 E-06 목업의 `.todo-grp` / `.titem` 구조를 그대로 쓴다 (§8 축자) — 같은 카드가
 // 화면마다 다르게 생기지 않게 한다.
 import { useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
 import { useNavigate } from 'react-router-dom';
 import { LINEAGE_TODO_PATH } from './SummaryTiles';
 import { relativeTime } from './visits';
@@ -143,6 +144,11 @@ function AccessItem(props: { row: AccessRequest; source: DashboardSource; onDone
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const row = props.row;
+  useWorkProtection(`access-reject:${row.requestId}`, {
+    dirty: rejecting && reason !== '',
+    inFlight: busy,
+    discard: () => { setRejecting(false); setReason(''); setError(null); },
+  });
 
   async function run(action: () => Promise<void>) {
     setBusy(true);

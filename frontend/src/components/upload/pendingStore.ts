@@ -18,11 +18,13 @@
 // 저장 위치는 `auth/store.ts` 와 같은 태도다 — 접근 자체가 던지는 환경(시크릿창 등)에서는
 // **없는 것으로 본다**(fail-closed). 조용히 통과시키지 않는다.
 
+import { getCurrentAccountId } from '../../auth/workGuard';
+
 const KEY = 'colab.upload.pending';
 
 /** 연구실이 바뀌면 남의 연구실 것을 보여주지 않는다 — 키에 연구실을 넣는다. */
 function keyOf(labId: string): string {
-  return `${KEY}.${labId}`;
+  return `${KEY}.${getCurrentAccountId() ?? 'unbound'}.${labId}`;
 }
 
 function read(labId: string): string[] {

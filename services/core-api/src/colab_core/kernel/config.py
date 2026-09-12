@@ -77,6 +77,7 @@ DEFAULT_SESSION_TTL_MINUTES = 720
 #: 주체 표와 갈라 둔다: 파일 권한(`0600`)과 배포 경로를 따로 쥐기 위해서다.
 #: 값이 없으면 비밀번호 어댑터가 서지 않는다 — 접속 코드 경로는 그대로 돈다.
 ENV_CREDENTIALS_FILE = "COLAB_CORE_CREDENTIALS_FILE"
+ENV_ACCOUNT_ADMIN_DATABASE_URL = "COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL"
 
 #: 로그인 시도 제한 (`〈108〉-㉰`). **[정본 무근거]** — 정본은 비밀번호도 시도 제한도 다루지 않는다.
 ENV_LOGIN_MAX_FAILURES = "COLAB_CORE_LOGIN_MAX_FAILURES"
@@ -138,6 +139,7 @@ class Settings:
     session_secret: str | None = None
     session_ttl_minutes: int = DEFAULT_SESSION_TTL_MINUTES
     credentials_file: str | None = None
+    account_admin_database_url: str | None = None
     login_max_failures: int = DEFAULT_LOGIN_MAX_FAILURES
     login_window_seconds: int = DEFAULT_LOGIN_WINDOW_SECONDS
     upload_ttl_hours: int = DEFAULT_UPLOAD_TTL_HOURS
@@ -215,6 +217,8 @@ def load_settings() -> Settings:
             ENV_SESSION_TTL_MINUTES, os.environ.get(ENV_SESSION_TTL_MINUTES),
             DEFAULT_SESSION_TTL_MINUTES),
         credentials_file=os.environ.get(ENV_CREDENTIALS_FILE) or None,
+        account_admin_database_url=resolve_env_or_file(
+            os.environ, ENV_ACCOUNT_ADMIN_DATABASE_URL),
         login_max_failures=_positive_int(
             ENV_LOGIN_MAX_FAILURES, os.environ.get(ENV_LOGIN_MAX_FAILURES),
             DEFAULT_LOGIN_MAX_FAILURES),

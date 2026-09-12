@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
@@ -141,6 +141,16 @@ async function nextXhr() {
   return FakeXhr.instances[0]!;
 }
 
+beforeEach(async () => {
+  const auth = await import('../src/auth/store');
+  auth.setSession({
+    token: 'upload-test-token',
+    sessionId: '01JYZ9K7WQ3N8V4M2X6C5B0SS1',
+    expiresAt: '2099-01-01T00:00:00Z',
+    revocationToken: 'upload-test-revocation',
+  });
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
   window.localStorage.clear();
@@ -181,9 +191,10 @@ describe('local multipart 업로드 진행률 배선', () => {
   it('파일명·배열 순서와 auth는 보존하고 Request의 Content-Type은 복사하지 않는다', async () => {
     installXhr();
     installControlPlane();
-    const { setToken } = await import('../src/auth/store');
+    const { setSession } = await import('../src/auth/store');
+    const { sessionFixture } = await import('./sessionFixture');
     const { apiUploadSource } = await import('../src/components/upload/uploadSource');
-    setToken('staging-token');
+    setSession(sessionFixture('staging-token'));
 
     const created = apiUploadSource().create([
       { file: new File(['a'], 'a.nc'), kind: '본체', relativePath: '2025/a.nc' },
@@ -240,8 +251,9 @@ describe('local multipart 업로드 진행률 배선', () => {
     installXhr();
     installControlPlane();
     const auth = await import('../src/auth/store');
+    const { sessionFixture } = await import('./sessionFixture');
     const { apiUploadSource } = await import('../src/components/upload/uploadSource');
-    auth.setToken('expired-token');
+    auth.setSession(sessionFixture('expired-token'));
 
     const created = apiUploadSource().create([{ file: new File(['abc'], 'a.nc'), kind: '본체' }]);
     const xhr = await nextXhr();

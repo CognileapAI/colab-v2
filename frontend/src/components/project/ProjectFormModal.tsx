@@ -13,6 +13,8 @@
 //  · **연결 주소는 설명·기간과 다른 묶음**이다 (`§1.2`·`§8`). `계보` 표시를 붙인 카드로 뗀다.
 //  · 주소 모양이 아니어도 **막지 않는다** (`§9`) — 논문 고유 번호처럼 주소가 아닌 값도 받는다.
 import { useId, useState } from 'react';
+import { useWorkProtection } from '../../auth/useWorkProtection';
+import { useDialogFocus } from '../common/useDialogFocus';
 import type { ProjectCreate, ProjectDetail, ProjectType, ProjectUpdate } from './types';
 
 const TYPES: ProjectType[] = ['국가과제', '논문'];
@@ -49,6 +51,19 @@ export function ProjectFormModal(props: {
   const [link, setLink] = useState(editing?.link ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const initial = {
+    type: editing?.type ?? '국가과제', name: editing?.name ?? '',
+    description: editing?.description ?? '', start: editing?.period?.start ?? '',
+    end: editing?.period?.end ?? '', link: editing?.link ?? '',
+  };
+  const dirty = type !== initial.type || name !== initial.name || description !== initial.description ||
+    period.start !== initial.start || period.end !== initial.end || link !== initial.link;
+  useWorkProtection(`project:${editing?.projectId ?? 'new'}:${titleId}`, {
+    dirty,
+    inFlight: busy,
+    discard: props.onClose,
+  });
+  const dialogRef = useDialogFocus(props.onClose, busy);
 
   async function submit() {
     // 오류 문구는 `Policy_프로젝트 §9` 의 것을 **그대로** 쓴다. 새 한국어를 만들지 않는다.
@@ -82,10 +97,10 @@ export function ProjectFormModal(props: {
 
   return (
     <div className="pj-modal-back" data-testid="project-form-modal">
-      <div className="pj-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div ref={dialogRef} tabIndex={-1} className="pj-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="pj-modal-h">
           <h3 id={titleId}>{props.mode.kind === '새 프로젝트' ? '새 프로젝트' : '프로젝트 정보 수정'}</h3>
-          <button type="button" className="pj-x" onClick={props.onClose} aria-label="창 닫기">
+          <button type="button" className="pj-x" disabled={busy} onClick={props.onClose} aria-label="창 닫기">
             ×
           </button>
         </div>
@@ -214,7 +229,7 @@ export function ProjectFormModal(props: {
         </div>
 
         <div className="pj-modal-f">
-          <button type="button" className="btn btn-secondary" onClick={props.onClose}>
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={props.onClose}>
             취소
           </button>
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void submit()}>

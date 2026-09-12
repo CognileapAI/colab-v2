@@ -99,7 +99,7 @@
 
 .pj-count {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -139,7 +139,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-muted);
   margin-bottom: 8px;
 }
@@ -154,7 +154,7 @@
 }
 
 .pc-d.is-empty {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
   border: 1px dashed var(--color-border-strong);
   border-radius: 6px;
   padding: 6px 8px;
@@ -182,12 +182,12 @@
 
 .pc-s .k {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
 .pc-s[data-zero='true'] .n {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
 }
 
 .pc-s[data-warn='true'] .n {
@@ -200,7 +200,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  font-size: 12px;
+  font-size: 13px;
   border-top: 1px solid var(--color-border);
 }
 
@@ -241,8 +241,8 @@
 
 /* ── 상세 ──────────────────────────────────────────────────────────────────── */
 .project-detail .card {
+  box-shadow: none;
   background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 14px;
@@ -263,7 +263,7 @@
 
 .pd-sect .quiet {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -276,7 +276,7 @@
 }
 
 .pd-desc.is-empty {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
 }
 
 .pd-linkurl {
@@ -289,7 +289,7 @@
   padding: 1px 7px;
   border-radius: 999px;
   border: 1px solid var(--color-border);
-  font-size: 11px;
+  font-size: 13px;
   margin-left: 6px;
 }
 
@@ -311,7 +311,7 @@
   place-items: center;
   padding: 24px;
   background: rgb(15 20 28 / 45%);
-  z-index: 40;
+  z-index: 200;
 }
 
 .pj-modal {
@@ -369,7 +369,7 @@
 .pj-row label {
   display: block;
   margin-bottom: 5px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -421,23 +421,23 @@
 }
 
 .pj-tilde {
-  color: var(--color-gray-400);
+  color: var(--color-text-muted);
 }
 
 .pj-hint,
 .pj-muted {
   margin: 5px 0 0;
-  font-size: 11px;
-  color: var(--color-gray-400);
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 /* 정의·범위 안내 — **새 프로젝트 모달에만** 있다 (§8) */
 .pj-defnote {
-  margin: -6px 0 14px;
+  margin: 0 0 14px;
   padding: 9px 11px;
   border-radius: 6px;
   background: var(--color-surface-alt);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--color-text-muted);
 }
@@ -458,7 +458,7 @@
 }
 
 .pj-fgroup-h .t {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -477,8 +477,8 @@
 
 .pj-tm {
   margin-top: 3px;
-  font-size: 11px;
-  color: var(--color-gray-400);
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 /* **잔존 안내가 먼저다** — 가장 큰 걱정을 누르기 전에 없앤다 (§8 닫기 확인 행) */
@@ -487,7 +487,7 @@
   border: 1px solid var(--color-success-100);
   border-radius: 6px;
   background: var(--color-success-50);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -500,7 +500,7 @@
 .pj-err,
 .pd-notice {
   margin: 12px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-warning-600);
 }
 
@@ -522,10 +522,21 @@
    폭이 새어 나간 것이 검수 #25 였다 — 선택자를 `.project-detail` 안으로 묶어 둔다. */
 .project-detail .verified {
   display: inline-flex; align-items: center; height: 21px; border-radius: var(--radius-pill);
-  padding: 0 9px; font-size: 11px; font-weight: 600; line-height: 1;
+  padding: 0 9px; font-size: 13px; font-weight: 600; line-height: 1;
   background: var(--color-success-50); color: var(--color-success-600);
 }
 .project-detail .verified--pending {
-  background: var(--color-gray-100); color: var(--color-gray-500);
+  background: var(--color-gray-100); color: var(--color-text-muted);
   text-decoration: line-through; cursor: not-allowed;
+}
+
+.pj-2col .pj-inp { flex: 1 1 0; min-width: 0; }
+.pj-empty { padding: 32px 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-muted); text-align: center; }
+.pj-modal-h, .pj-modal-f { flex-shrink: 0; }
+.pj-x { min-width: 32px; min-height: 32px; }
+@media (max-width: 640px) {
+  .pj-modal-back { padding: 16px; }
+  .pj-modal { max-height: calc(100dvh - 32px); }
+  .pj-inp, .pj-tarea { font-size: 16px; }
+  .pj-cards { grid-template-columns: minmax(0, 1fr); }
 }

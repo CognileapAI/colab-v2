@@ -13,6 +13,8 @@ DB="${DB:-colab_platform}"
 OWNER="${OWNER:-colab_owner}"
 APP="${APP:-colab_app}"
 APP_PASSWORD="${APP_PASSWORD:-a2app}"
+ADMIN="${ADMIN:-colab_account_admin}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-a2admin}"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CORE_API="$(cd "$HERE/../.." && pwd)"
@@ -32,9 +34,13 @@ docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U "$OWNER" -d "$DB" < "$REP
 # ② 앱 롤
 docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" \
   -v owner="$OWNER" -v app="$APP" -v app_password="$APP_PASSWORD" < "$CORE_API/ops/app-role.sql" >/dev/null
+docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" \
+  -v admin="$ADMIN" -v admin_password="$ADMIN_PASSWORD" < "$CORE_API/ops/account-admin-role.sql" >/dev/null
 
 # ③ 시드
 psql_su < "$HERE/seed.sql" >/dev/null
 
 IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER")"
-echo "postgresql+psycopg://${APP}:${APP_PASSWORD}@${IP}:5432/${DB}"
+printf '%s\t%s\n' \
+  "postgresql+psycopg://${APP}:${APP_PASSWORD}@${IP}:5432/${DB}" \
+  "postgresql+psycopg://${ADMIN}:${ADMIN_PASSWORD}@${IP}:5432/${DB}"

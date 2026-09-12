@@ -75,6 +75,10 @@ class CredentialStore:
     def find(self, account_name: str) -> CredentialRecord | None:
         return self._table.get(account_name)
 
+    def contains_normalized(self, account_name: str) -> bool:
+        wanted = account_name.strip().lower()
+        return any(name.strip().lower() == wanted for name in self._table)
+
     def dummy_verify(self, password: str) -> None:
         """없는 계정에도 같은 계산을 태운다 — 응답 시간으로 존재 여부가 새지 않게."""
         verify_password(password, _DUMMY)

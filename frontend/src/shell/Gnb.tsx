@@ -8,6 +8,7 @@ import { useAccount } from '../permission/session';
 import { PermissionGate } from '../permission/PermissionGate';
 import { UploadEntry } from '../components/upload/UploadEntry';
 import { useLogout } from '../auth/AuthGate';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 // 좁은 화면에서는 라벨을 감추고 이 아이콘만 남긴다 (shell.css `@media (max-width: 640px)`).
 // 인라인 SVG 만 쓴다 — 아이콘 라이브러리를 들이지 않는다. 모양은 카탈로그 표의 인라인 SVG 와 같은 결이다.
@@ -91,6 +92,9 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
       <PermissionGate requires="업로드·편집">
         <UploadEntry openRequest={props.openRequest} />
       </PermissionGate>
+      {account?.canManageServiceAccounts ? (
+        <Link className="gnb-settings" to="/account-admin" data-testid="gnb-account-admin" aria-label="계정 관리"><Icon><circle cx="12" cy="8" r="3" /><path d="M5 21v-3a7 7 0 0 1 14 0v3" /></Icon><span className="lbl">계정 관리</span></Link>
+      ) : null}
 
       {/* 연구실 설정 — `연구실 설정` 스위치가 켜진 사람에게만 보인다 (P-12) */}
       <PermissionGate requires="연구실 설정">
@@ -108,6 +112,7 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
         </Link>
       </PermissionGate>
 
+      <ThemeSwitcher />
       {/* 아바타 — 현재 사용자·역할·계정. 드롭다운 내용은 P0 범위 밖 */}
       <div className="avatar-wrap">
         <button type="button" className="avatar" data-testid="gnb-avatar" aria-label={`내 계정 · ${account?.name ?? ''}`}>
