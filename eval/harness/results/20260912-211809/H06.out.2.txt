@@ -1,0 +1,5 @@
+카드 규칙에 그림자 선언이 있다. 고칠 자리는 `.catalog-page .card` 블록의 `box-shadow: var(--shadow-sm)` 선언(31행)이다. 그 외 `box-shadow` 는 테이블 행 hover 의 inset 선(52행)과 팝오버 `.colmenu` 의 `var(--shadow-lg)`(80행)뿐이고, 후자는 정본 예외다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

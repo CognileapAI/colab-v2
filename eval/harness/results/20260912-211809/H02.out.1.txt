@@ -1,0 +1,12 @@
+계측기는 주석 안의 값을 코드로 세지 않는다.
+
+**실측 대조**
+- 계측기 `<13px` 칸: 1건. Detail: `sample.css:4` font-size 11px.
+- 표본 실물의 코드 선언은 3건(11px · 14px · 13px). 13px 미만은 line 4 의 11px 하나뿐이고 계측기와 일치.
+- 주석 안의 13px 미만 값은 2건(line 2 의 9px · line 6 의 10px). 둘 다 Detail 에 미등장.
+- 주석 안의 색 값(line 2 `#848c94`, line 9 의 3.41:1 메모)도 contrast 칸 0 으로 미계상.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 ./css_audit.py --root .` (실행 위치 `eval/harness/H02-comment-false-positive/fixture`)

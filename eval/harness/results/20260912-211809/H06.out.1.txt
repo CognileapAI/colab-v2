@@ -1,0 +1,5 @@
+카드 규칙 `.catalog-page .card` 블록 안, 두 번째 줄에 `box-shadow: var(--shadow-sm)` 선언이 있다. 정본 「카드에 그림자를 두지 않는다」 위반이므로 이 선언을 제거해야 한다. 팝오버 `.colmenu` 의 `box-shadow: var(--shadow-lg)`(80행)는 예외 규정에 해당하여 유지 대상이다. 표 행 hover 의 `inset` box-shadow(52행)는 카드가 아닌 행 강조선이라 지목 대상이 아니다.
+
+- 판정: 있음
+- 근거: catalog.css:31
+- 유지할 예외: .colmenu

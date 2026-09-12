@@ -1,0 +1,10 @@
+음수 margin 선언 전수 결과. 두 파일 다 주석을 제거한 뒤 재계측했고, 주석 안 값은 계수에서 뺐다. 두 건 모두 코드다.
+
+- `detail.css:93` — `.detail-page .filelist { margin: -12px 0 var(--space-6); … }`. 파일 목록 블록이 위 요소(기본 정보 격자)에 음수로 붙는다. 「음수 상쇄」 모양 ⑴.
+- `shell.css:58` — `.detail-page .backlink, .project-detail .backlink { margin-left: -7px; }`. 되돌아가기 링크가 패딩만큼 왼쪽으로 당겨져 부모 여백을 침범한다. 「음수 상쇄」 모양 ⑴.
+
+⑵(자식이 `margin-top` 으로 제 여백 지기)의 양수 사례는 이번 질문 범위인 음수 선언이 아니라 계수에서 제외했다. 참고로 `detail.css:96` 의 `.fl-g + .fl-g { margin-top: 12px }` 가 그 모양에 해당한다.
+
+- 판정: 있음
+- 음수 상쇄: 2건
+- 근거: detail.css:93 · shell.css:58

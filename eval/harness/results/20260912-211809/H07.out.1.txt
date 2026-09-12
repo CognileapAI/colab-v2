@@ -1,0 +1,23 @@
+`lineageGraph.css` 안의 `font-size` 선언은 14건이고, 주석 제거 뒤 계측한 결과 13px 미만이 13건이다. 유일한 합격 값은 15px 한 건이다. 주석 안의 `font-size` 는 0건이라 제외 대상은 없었다.
+
+13px 미만 선언 (주석 제거 후 행 번호 기준):
+
+| 행 | 선택자 | 값 |
+|---|---|---|
+| 6 | `.dsec-h .hint` | 11px |
+| 10 | `.lin-stale .d` | 11px |
+| 27 | (계보 배지) | 10px |
+| 40 | `.ln .n-role` | 10.5px |
+| 41 | `.ln .n-name` | 12.5px |
+| 54 | (링크 배지) | 11px |
+| 68 | `.lrow .stg` | 10px |
+| 72 | `.lrow .ln-name` | 12px |
+| 77 | `.lrow .ln-sub` | 11px |
+| 78 | `.hist` | 10px |
+| 79 | `.aiflag` | 10px |
+| 81 | `.manflag` | 10px |
+| 91 | `.lin-empty .muted` | 11px |
+
+- 판정: 있음
+- 건수: 13
+- 최소: 10px

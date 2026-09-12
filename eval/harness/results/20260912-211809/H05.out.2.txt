@@ -1,0 +1,9 @@
+판정 — 지적은 v2 코드에 해당하지 않음.
+
+- `.lin-picker` 계열 규칙 = 2건(`lineage.css:105` `.lin-picker` · `lineage.css:109` `.lin-picker ul`). 선언 내용 = border-top · padding-top · 목록 레이아웃(flex·gap·align)뿐.
+- 흐림 선언 검색(파일 전체) = `opacity`·`filter`·`blur`·`--color-*-disabled`·`:disabled`·`[disabled]`·`aria-disabled`·`pointer-events`·`cursor: not-allowed` 전부 0건. `muted` 는 `--muted` 색 변수(13행·79행)와 `.lin-ask .muted` margin 규칙(136행)이며 후보 행 흐림과 무관.
+- 「연결 불가 후보 행을 흐리게 처리」하는 규칙 자체가 사본에 없으므로 2.33:1 대비 수치는 이 CSS 에서 산출 불가. 목업 측 스타일에 대한 지적으로 판단.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nEi "opacity|filter|blur|--color-[a-z-]*disabled|:disabled|\[disabled\]|aria-disabled" lineage.css` → no matches · `.lin-picker` 블록 lineage.css:105~117 직접 확인

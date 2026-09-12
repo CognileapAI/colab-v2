@@ -1,0 +1,20 @@
+`.verified--pending` 규칙은 두 파일에 하나씩, 같은 모양으로 있다.
+
+**규칙 위치**
+- `catalog.css:140` — `background: var(--color-gray-100); color: var(--color-gray-500)`
+- `project.css:528`~529 — 동일 선언 (`.project-detail .verified--pending`)
+
+**토큰 hex**
+- `--color-gray-100` = `#e8ecf2` (`catalog.css:6` · `project.css:10`, 값 동일)
+- `--color-gray-500` = `#697077` (`tokens.css:10`)
+
+**대비 계산** (WCAG 2.x 상대휘도)
+- 상대휘도 `#e8ecf2` ≈ 0.836 · `#697077` ≈ 0.159
+- (0.836+0.05)/(0.159+0.05) = **4.23:1** → AA 4.5:1 미달
+
+주의점 — 두 선언 모두 `var()` 참조라 `css_audit.py` 의 리터럴 hex 기반 대비 계산에서 빠진다. 계측기가 green 을 보고해도 이 자리는 재지 않은 것이다. 고칠 자리는 색 선언이 있는 두 곳이며, 토큰 자체(`--color-gray-500`)를 바꾸면 `.lin--none` 등 다른 사용처까지 영향을 받으므로 규칙 쪽 수정을 권한다.
+
+- 판정: 있음
+- 실측: 4.23:1
+- 고칠 자리: 2곳
+- 근거: catalog.css:140 · project.css:529

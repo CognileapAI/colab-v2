@@ -1,0 +1,25 @@
+**결론 — 합격선 변수가 없으면 이 검사는 「cases.txt 에 `case ` 행이 1개 이상 있다」만 보장한다.** 최소 건수 검사로서는 무의미하고, 결과는 green 이다.
+
+**근거**
+
+- `check-coverage.sh:5` — `MIN_CASES="${COLAB_MIN_CASES:-1}"`. `:-` 는 미선언·빈 문자열 둘 다 `1` 로 떨어진다. `set -u` 가 있어도 `:-` 확장은 unbound 에러를 내지 않는다.
+- `check-coverage.sh:8` — `N` 은 `grep -c '^case '` 결과. 파일이 없으면 `0`. 현재 `cases.txt` 는 2건.
+- `check-coverage.sh:10` — 판정은 `N < MIN_CASES` 일 때만 실패. 기본값 1 이라 `N ≥ 1` 이면 통과. 시험을 2건에서 1건으로 줄여도 green 이고, 0건일 때만 red 다.
+- `check-coverage.sh:6` — `TIMEOUT_S` 도 같은 형태로 `9999` 로 떨어지지만 이 스크립트 안에서는 출력에만 쓰이고 판정에 관여하지 않는다. 결함 대상은 `MIN_CASES` 하나다.
+- `check-coverage.sh:15` — green 문구가 「최소 1」을 찍으므로 로그만 보면 합격선이 있는 것처럼 보인다. 규약이 말하는 「검사가 무의미한데 통과가 나오는」 형태다.
+
+**현재 상태 모형** = 두 상태뿐이다. 선언되면 검사, 미선언이면 기본값 1 로 검사. 「명시 면제」 상태가 없어서 예외를 두려면 변수에 작은 값을 넣는 수밖에 없고, 그것은 면제와 검사가 구분되지 않는다.
+
+**고칠 방향 (세 상태)**
+
+- 선언(`COLAB_MIN_CASES=<양의 정수>`) — 지금과 같이 `N < MIN` 이면 exit 1. 정수 형식 검증을 추가한다.
+- 명시 면제(`COLAB_MIN_CASES=skip` 또는 별도 `COLAB_MIN_CASES_WAIVED=1`) — `N` 을 로그에 찍고 「면제됨」 표식과 함께 exit 0. 요약줄에 green 이 아니라 waived 로 표기한다.
+- 무언(변수 미선언·빈 값) — `::error::COLAB_MIN_CASES 미선언` 을 찍고 exit 1. 대입은 `${COLAB_MIN_CASES:-}` 뒤 빈 값 분기, 또는 `${COLAB_MIN_CASES:?}` 로 처리한다.
+
+같은 패턴이 게이트 전반에 있는지는 이번 범위 밖이라 보지 않았다. 확인이 필요하면 `gates/` 에서 `:-[0-9]` 를 grep 하면 된다.
+
+- 판정: 결함 있음
+- 관대한 기본값: check-coverage.sh:5 · COLAB_MIN_CASES=1
+- 상태1 선언: 양의 정수로 검증한 뒤 `N < MIN` 이면 exit 1, 아니면 green
+- 상태2 명시 면제: 면제 값(`skip`)일 때 시험 건수 N 을 요약줄에 찍고 「waived」 표식으로 exit 0
+- 상태3 무언: 미선언·빈 값이면 `::error::COLAB_MIN_CASES 미선언` 출력 후 exit 1

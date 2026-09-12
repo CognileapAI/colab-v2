@@ -1,0 +1,9 @@
+상세 화면 정보 격자의 컨테이너 선과 칸 구분선이 같은 토큰 `--color-border` 를 참조한다. 두 층이 갈리지 않아 정본 요구를 위반한다.
+
+- 컨테이너 선: `detail.css:59` 에서 `.detail-page .infogrid` 의 `border: 1px solid var(--color-border)`
+- 칸 구분선: `detail.css:62` 에서 `.detail-page .infogrid .ig` 의 `border-right`·`border-bottom` 둘 다 `var(--color-border)`
+- tokens.css 에는 층 분리에 쓸 수 있는 별도 토큰 `--color-border-strong`(21행)·`--color-border-shell`(23행)이 정의돼 있으나 infogrid 는 참조하지 않는다.
+
+- 판정: 있음
+- 근거: detail.css:59 · detail.css:62
+- 토큰: --color-border / --color-border
