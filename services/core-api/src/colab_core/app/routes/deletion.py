@@ -28,7 +28,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d4_lineage, d8_insight
+from ...domains import d2_access, d3_audit, d3_catalog, d4_lineage, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -41,6 +41,11 @@ router = APIRouter(tags=["catalog"])
 #: 동작만 적었고 문장을 주지 않았다 (Ted 판정 ⓕ). 상태 집합에 「닫힘」이 없어
 #: `거절됨` 으로 닫으므로, 요청자에게는 이 문장이 **왜 닫혔는지**를 말하는 유일한 자리다.
 ACCESS_REQUEST_CLOSED_REASON = "데이터가 지워져서 요청이 닫혔어요."
+
+#: 운영자 감사 행위 문자열. **레포에 이미 있는 값을 다시 쓴다** —
+#: `d3_audit.append_deletion_snapshots`(purge 경로)가 같은 표 `d3_operator_audit` 에
+#: 같은 이름으로 적는다. 두 삭제 경로가 다른 문자열을 쓰면 감사 질의가 한쪽을 놓친다.
+AUDIT_ACTION_DELETED = "dataset.deleted"
 
 #: 권한 거절 문구 — 정본 조항을 괄호에 달아 「어느 규칙이 막았는가」를 사람이 되짚게 한다.
 FORBIDDEN_MESSAGE = "데이터셋 삭제는 소유자 또는 교수만 할 수 있다 (Policy_데이터셋_상세 §6)."
@@ -116,6 +121,8 @@ def delete_dataset(request: Request, datasetId: str,
     ⑦ `restore_access` — ⭑ **「열림」 창은 이 트랜잭션 안에서만 존재한다.** 빠뜨리면 잠긴
        데이터가 열린 채로 커밋된다.
     ⑧ 활동 한 줄 — 지운 일도 활동이다 (계약 `listActivities` 산문).
+    ⑧-b 운영자 감사 스냅샷 — 데이터셋 쓰기는 `d3_operator_audit` 에 남는다 (`0027` ·
+       선례 `d3_catalog.update_dataset`·`routes/project.py::delete_project`).
     ⑨ 바이트 — **커밋 전**이다. 저장소가 터지면 예외가 그대로 올라가 **전체가 롤백**되고
        500 이 나간다(선례 `ingestion.delete_dataset_grid_file` · `U-2` ⓑ 와 같은 성질).
        `discard` 는 없는 키에 조용하므로 **재호출이 멱등**이다.
@@ -130,7 +137,7 @@ def delete_dataset(request: Request, datasetId: str,
     「참조 있음」으로 읽어 실패한 바이트를 영영 못 줍는다. `representative_file_id` 는
     FK `ON DELETE SET NULL` 이 되돌린다.
     """
-    _deletable(db, subject, datasetId)
+    core = _deletable(db, subject, datasetId)
     dataset_id = Ulid(datasetId)
 
     if not d3_catalog.lock_dataset(db, dataset_id):
@@ -152,6 +159,17 @@ def delete_dataset(request: Request, datasetId: str,
     d8_insight.record_activity(db, actor_id=subject.account_id,
                                action=d8_insight.ACTION_DATASET_DELETED,
                                target_kind="데이터셋", target_id=dataset_id)
+    # ⑧-b **운영자 감사 스냅샷** (`0027` · 선례 `routes/project.py::delete_project` 와
+    #      `d3_catalog.update_dataset`). 데이터셋 쓰기는 예외 없이 이 표에 남는다 —
+    #      활동 한 줄(`d8_activity`)은 **이름·요약을 들지 않아** 「무엇이 지워졌는가」를
+    #      말하지 못한다. 묘비 뒤에는 남는 상태가 없으므로 `after` 는 `None` 이다
+    #      (같은 표에 적는 purge 경로 `d3_audit.append_deletion_snapshots` 와 같은 모양).
+    #      ⚠ **트랜잭션 안이다** — 실패하면 예외가 그대로 올라가 전체가 롤백되고 500 이
+    #      나간다(⑨ 와 같은 성질). 감사 없이 커밋되는 삭제를 만들지 않는다.
+    d3_audit.append_snapshot(db, actor_id=subject.account_id, target_id=dataset_id,
+                             action=AUDIT_ACTION_DELETED,
+                             before={"name": core.name, "summary": core.summary},
+                             after=None)
 
     storage = _storage(request)
     for key in keys:

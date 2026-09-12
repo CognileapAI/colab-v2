@@ -40,6 +40,8 @@ PREFIX = "/api/v1"
 CLOSED_REASON = "데이터가 지워져서 요청이 닫혔어요."
 #: 활동 문자열. 선례 = `ACTION_PROJECT_DELETED = "프로젝트 지움"`.
 ACTION_DELETED = "데이터셋 지움"
+#: 운영자 감사 행위 문자열. 선례 = `d3_audit.append_deletion_snapshots`(purge)가 쓰는 값.
+AUDIT_ACTION_DELETED = "dataset.deleted"
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -713,6 +715,35 @@ def test_deleting_records_one_activity_row(p2_client, planted, sql):
     assert len(after) == 1, f"「{ACTION_DELETED}」 활동이 1행이 아니다 (직전 계수 {before})."
     assert after[0]["actor_account_id"] == ACC_A_PROF
     assert after[0]["target_kind"] == "데이터셋"
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ⑯ 운영자 감사 스냅샷 (`0027` 규약)
+# ════════════════════════════════════════════════════════════════════════════
+
+def test_deleting_appends_one_operator_audit_snapshot(p2_client, planted, sql):
+    """데이터셋 쓰기는 `d3_operator_audit` 에 스냅샷을 남긴다 (`0027` · 선례
+    `d3_catalog.update_dataset` 의 `dataset.updated`). 삭제도 데이터셋 쓰기다 —
+    남기지 않으면 **무엇이 지워졌는지가 감사 기록에 0건**이고, 활동 한 줄(`d8_activity`)은
+    이름·요약을 들지 않아 그 자리를 대신하지 못한다.
+
+    `d3_operator_audit` 는 append-only 트리거가 걸려 정리가 안 된다 — `d8_activity` 와 같은
+    규칙으로 **자기가 심은 `target_id` 로만** 센다.
+    """
+    client = p2_client()
+    dataset_id, _ = planted(owner=ACC_A_PROF, files=1, name="감사 대상")
+
+    assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                         headers=auth(TOKEN_PROF)).status_code == 204
+
+    rows = sql("""SELECT actor_id, action, before_snapshot, after_snapshot
+                    FROM d3_operator_audit WHERE target_id = :id""",
+               {"id": dataset_id})
+    assert len(rows) == 1, "삭제가 운영자 감사 스냅샷을 1행 남기지 않았다."
+    assert rows[0]["actor_id"] == ACC_A_PROF
+    assert rows[0]["action"] == AUDIT_ACTION_DELETED
+    assert rows[0]["before_snapshot"]["name"] == "감사 대상"
+    assert rows[0]["after_snapshot"] is None, "묘비 뒤에는 남는 상태가 없다 — `after` 는 null 이다."
 
 
 # ════════════════════════════════════════════════════════════════════════════
