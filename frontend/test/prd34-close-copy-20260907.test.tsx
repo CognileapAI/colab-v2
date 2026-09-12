@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
+import { listPending } from '../src/components/upload/pendingStore';
 import * as copy from '../src/components/common/toastCopy';
 import type {
   LineageStepContext,
@@ -384,5 +385,83 @@ describe('PRD-39 ⑭ — Esc 우선순위', () => {
     expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
     expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
     layer.remove();
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// `#34` — 닫기 확인의 **세 번째 선택지**.
+//
+// 지금까지 선택지는 둘(`UPLOAD_CLOSE_KEEP`·`UPLOAD_CLOSE_LEAVE`)뿐이라, 올리다 만 것을
+// 정리하려면 창을 닫고 메인 배너로 돌아가야 했다. 세 번째의 뜻은 **이 브라우저의
+// 미완결 기억 삭제**이고 서버 접수 행은 24시간 만료 스윕이 정리한다 — 문면이 그 사실을
+// 그대로 말한다. 그래서 이 선택지는 **서버를 부르지 않는다**(호출 0회를 시험이 잰다).
+
+const LAB_ID = '01JYZ9K7WQ3N8V4M2X6C5B0LB1';
+
+/** 출처의 함수 호출을 전부 적는다 — 「서버 호출 0회」를 선언이 아니라 실측으로 잰다. */
+function countingUpload(src: UploadSource, log: string[]): UploadSource {
+  const wrapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(src as unknown as Record<string, unknown>)) {
+    wrapped[key] = typeof value === 'function'
+      ? (...args: unknown[]) => {
+          log.push(key);
+          return (value as (...a: unknown[]) => unknown)(...args);
+        }
+      : value;
+  }
+  return wrapped as unknown as UploadSource;
+}
+
+async function openConfirmWithPending(log: string[]) {
+  const sources = fakes();
+  render(
+    <MemoryRouter initialEntries={['/datasets']}>
+      <SessionProvider account={account()}>
+        <UploadEntry sources={{ ...sources, upload: countingUpload(sources.upload, log) }} />
+      </SessionProvider>
+    </MemoryRouter>,
+  );
+  await click(screen.getByTestId('gnb-upload'));
+  await screen.findByTestId('upload-modal');
+  fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [makeFile(FILE_NAME)] } });
+  await act(async () => {});
+  await screen.findByTestId('up-files');
+  await click(await screen.findByTestId('reg-open'));
+  await screen.findByTestId('reg-steps');
+  await click(screen.getByRole('button', { name: /^② / }));
+  await change(screen.getByTestId('reg-summary'), '가');
+  await click(screen.getByTestId('upload-close'));
+  return screen.findByTestId('upload-close-confirm');
+}
+
+describe('#34 — 닫기 확인의 세 번째 선택지는 이 브라우저의 기억을 지운다', () => {
+  it('버튼이 셋이다 — 계속하기 · 이 브라우저에서 감추기 · 닫고 나가기', async () => {
+    const confirm = await openConfirmWithPending([]);
+    expect(within(confirm).getByRole('button', { name: copy.UPLOAD_CLOSE_KEEP })).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: copy.UPLOAD_CLOSE_FORGET })).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: copy.UPLOAD_CLOSE_LEAVE })).toBeInTheDocument();
+    expect(within(confirm).getAllByRole('button')).toHaveLength(3);
+  });
+
+  it('세 번째를 누르면 미완결 기억에서 사라지고 모달이 닫힌다 — 서버 호출 0회', async () => {
+    const log: string[] = [];
+    const confirm = await openConfirmWithPending(log);
+    expect(listPending(LAB_ID)).toContain(UPLOAD_ID);
+
+    log.length = 0;                                   // 여기부터가 이 버튼의 몫이다
+    await click(within(confirm).getByRole('button', { name: copy.UPLOAD_CLOSE_FORGET }));
+
+    expect(log).toEqual([]);                          // 서버 창구를 하나도 부르지 않는다
+    expect(listPending(LAB_ID)).not.toContain(UPLOAD_ID);
+    expect(screen.queryByTestId('upload-close-confirm')).toBeNull();
+    expect(screen.queryByTestId('upload-modal')).toBeNull();
+  });
+
+  it('문면이 서버 즉시 삭제를 뜻하지 않는다 — 24시간 만료를 그대로 말한다', async () => {
+    const confirm = await openConfirmWithPending([]);
+    expect(confirm).toHaveTextContent(copy.UPLOAD_CLOSE_FORGET_NOTE);
+    expect(copy.UPLOAD_CLOSE_FORGET_NOTE).toContain('24시간');
+    expect(copy.UPLOAD_CLOSE_FORGET_NOTE).toContain('이 브라우저');
+    expect(copy.UPLOAD_CLOSE_FORGET_NOTE).not.toContain('서버에서 바로');
   });
 });

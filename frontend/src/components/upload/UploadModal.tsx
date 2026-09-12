@@ -24,6 +24,8 @@ import {
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
   SOURCE_DOWNLOADED_ON_INVALID,
+  UPLOAD_CLOSE_FORGET,
+  UPLOAD_CLOSE_FORGET_NOTE,
   UPLOAD_CLOSE_KEEP,
   UPLOAD_CLOSE_LEAVE,
   UPLOAD_CLOSE_TITLE,
@@ -315,6 +317,9 @@ export function UploadModal(props: {
   const hasDraft = picked.length > 0 || Boolean(name || topic || summary || sourceLabel ||
     sourceUrl || sourceDownloadedOn || crs || gridDescription || intervalValue ||
     intervalUnit || projects.length || lineageCards.length || representativeFile);
+  // ⭑ ⟨#34⟩ 지울 「이 브라우저의 기억」이 실제로 있을 때만 세 번째 선택지를 낸다 —
+  //   접수 전에는 기억할 것이 없어 그 버튼이 아무것도 하지 않는 빈 선택지가 된다.
+  const canForgetPending = Boolean(uploadId && account?.labId);
   useWorkProtection('upload-modal', {
     dirty: hasDraft,
     inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
@@ -1622,6 +1627,11 @@ export function UploadModal(props: {
                     : submitLock.current ? 'creating' : 'pre-create',
                 })}
               </p>
+              {/* ⭑ ⟨#34⟩ 세 번째 선택지가 무엇을 지우는지 **먼저** 말한다 — 사람이
+                  「서버에서 즉시 사라진다」로 오해하지 않게 24시간 만료를 함께 적는다. */}
+              {canForgetPending ? (
+                <p data-testid="upload-close-forget-note">{UPLOAD_CLOSE_FORGET_NOTE}</p>
+              ) : null}
             </div>
             <div className="modal-f">
               <button
@@ -1631,6 +1641,22 @@ export function UploadModal(props: {
               >
                 {UPLOAD_CLOSE_KEEP}
               </button>
+              {/* ⭑ ⟨#34⟩ 이 브라우저의 미완결 기억만 지운다 — **서버 호출 0회**다.
+                  서버 접수 행의 몫은 24시간 만료 스윕이 진다(`U-2`). 즉시 삭제 창구를
+                  만들지 않는다 — 그것은 계약 개정이고 이 회차 범위 밖이다. */}
+              {canForgetPending ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  data-testid="upload-close-forget"
+                  onClick={() => {
+                    if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+                    props.onClose();
+                  }}
+                >
+                  {UPLOAD_CLOSE_FORGET}
+                </button>
+              ) : null}
               <button type="button" className="btn btn-strong" onClick={props.onClose}>
                 {UPLOAD_CLOSE_LEAVE}
               </button>
