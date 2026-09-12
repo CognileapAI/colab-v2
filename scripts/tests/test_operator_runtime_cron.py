@@ -1,4 +1,5 @@
 import os
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -18,18 +19,21 @@ class RuntimeCronTests(unittest.TestCase):
         manifest = root / 'manifest.json'; manifest.write_text('{}')
         key = root / 'relay-key'; key.write_text('not-a-real-key'); key.chmod(0o600)
         config = root / 'runtime.env'
+        # 이 파일은 run-runtime-job.sh 가 `set -a; . "$CONFIG"` 로 소싱한다.
+        # 체크아웃 경로에 공백이 있으면 인용하지 않은 값이 낱말 분리로 깨지므로 shlex.quote 로 적는다.
+        q = shlex.quote
         config.write_text(
-            f"COLAB_NOTIFICATION_ENVIRONMENT={environment}\n"
-            f"COLAB_NOTIFICATION_ROOT={ROOT}\n"
-            f"COLAB_NOTIFICATION_PYTHON={fake}\n"
-            f"COLAB_OPERATOR_MANIFEST={manifest}\n"
-            f"COLAB_OPERATOR_SPOOL={root / 'spool'}\n"
-            f"COLAB_OPERATOR_STATE={root / 'state'}\n"
-            f"COLAB_TEST_CALLS={root / 'calls'}\n"
+            f"COLAB_NOTIFICATION_ENVIRONMENT={q(environment)}\n"
+            f"COLAB_NOTIFICATION_ROOT={q(str(ROOT))}\n"
+            f"COLAB_NOTIFICATION_PYTHON={q(str(fake))}\n"
+            f"COLAB_OPERATOR_MANIFEST={q(str(manifest))}\n"
+            f"COLAB_OPERATOR_SPOOL={q(str(root / 'spool'))}\n"
+            f"COLAB_OPERATOR_STATE={q(str(root / 'state'))}\n"
+            f"COLAB_TEST_CALLS={q(str(root / 'calls'))}\n"
             "COLAB_TEST_SECRET=must-not-be-printed\n"
             "COLAB_STAGE_SSH_TARGET=dev-host\n"
-            f"COLAB_STAGE_SSH_KEY={key}\n"
-            f"COLAB_STAGE_REMOTE_WRAPPER={RUNNER}\n"
+            f"COLAB_STAGE_SSH_KEY={q(str(key))}\n"
+            f"COLAB_STAGE_REMOTE_WRAPPER={q(str(RUNNER))}\n"
             "COLAB_STAGE_REMOTE_CONFIG=/etc/colab/operator-runtime.env\n"
         )
         config.chmod(0o600)
