@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import threading
 import uuid
 
@@ -21,6 +22,8 @@ from sqlalchemy.exc import ProgrammingError
 
 SECRET = "test-operator-designation-secret"
 LAB_C = "0000000000000000000000000C"
+#: `LAB_C` 에는 시드 데이터셋이 없다 — 아래 `_own_lab_dataset` 이 만들고 지운다.
+DS_C1 = "0000000000000000000000DSC1"
 INITIAL = "시험용-운영자-초기암호-123"
 NEW = "시험용-운영자-정상암호-456"
 
@@ -260,11 +263,16 @@ def test_the_account_list_carries_the_operator_flag(p2_client) -> None:
 
 # ═══════════════════════ ㈐ 전 연구실 읽기 ═══════════════════════
 
-def _operator_token(client) -> str:
+def _operator_identity(client) -> tuple[str, str]:
+    """운영자 계정 하나 — `(accountId, 정상 세션 토큰)`. 반출 시험은 계정 ID 도 쓴다."""
     email = _email("reader")
     account_id = _create(client, email)
     assert _set_operator(client, TOKEN_PROF, account_id, True).status_code == 200
-    return _normal_token(client, email)
+    return account_id, _normal_token(client, email)
+
+
+def _operator_token(client) -> str:
+    return _operator_identity(client)[1]
 
 
 def test_an_operator_reads_datasets_of_every_lab(p2_client) -> None:
@@ -373,3 +381,89 @@ def test_lab_info_stays_whole_for_an_operator(p2_client) -> None:
     in_lab_c = len(listed.json()["accounts"])
     assert grid.json()["totalCount"] == in_lab_c, \
         f"구성원 격자가 자기 연구실({in_lab_c}명) 밖까지 담았다: {grid.json()['totalCount']}명"
+
+
+# ═══════════════════════ ㈑ 읽기는 넓어도 **반출은 자기 연구실** ═══════════════════════
+
+def _download_rows(session_factory) -> int:
+    """`d8_download` 를 **전 연구실로** 센다 — `0029` 가 이 표에도 읽기 정책을 걸었다.
+
+    자기 연구실만 세면 「남의 연구실 데이터셋을 받았는데 이력은 내 연구실에 적힌다」를
+    못 가른다. `record_download` 의 `lab_id` 는 `current_lab_id()` 라 실제로 그렇게 적힌다.
+    """
+    from colab_core.kernel.auth import Subject
+    from colab_core.kernel.ids import Ulid
+    from colab_core.kernel.scope import apply_scope
+
+    session = session_factory()
+    try:
+        session.begin()
+        apply_scope(session, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A),
+                                     operator=True), operator_read=True)
+        return int(session.execute(text("SELECT count(*) FROM d8_download")).scalar_one())
+    finally:
+        session.rollback()
+        session.close()
+
+
+@contextlib.contextmanager
+def _own_lab_dataset(session_factory, account_id: str):
+    """운영자 자기 연구실(`LAB_C`)의 데이터셋 한 행 — 시드에 없어서 시험이 만들고 지운다.
+
+    묶음 티켓은 조각을 읽지 않으므로(`routes/download.py::_issue` · `row=None`) `d3_file`
+    없이 `d3_dataset` ＋ `d3_dataset_description` 두 행이면 200 이 선다.
+    """
+    from colab_core.kernel.auth import Subject
+    from colab_core.kernel.ids import Ulid
+    from colab_core.kernel.scope import apply_scope
+
+    def run(*statements: str) -> None:
+        session = session_factory()
+        try:
+            session.begin()
+            apply_scope(session, Subject(account_id=Ulid(account_id), lab_id=Ulid(LAB_C)))
+            for statement in statements:
+                session.execute(text(statement), {"id": DS_C1, "account": account_id})
+            session.commit()
+        except BaseException:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    run("""INSERT INTO d3_dataset (id, lab_id, owner_account_id, uploader_account_id)
+             VALUES (:id, current_lab_id(), :account, :account)""",
+        """INSERT INTO d3_dataset_description (dataset_id, lab_id, name)
+             VALUES (:id, current_lab_id(), \'운영자 자기 연구실 데이터셋\')""")
+    try:
+        yield DS_C1
+    finally:
+        run("DELETE FROM d3_dataset_description WHERE dataset_id = :id",
+            "DELETE FROM d3_dataset WHERE id = :id")
+
+
+def test_an_operator_cannot_download_another_labs_dataset(p2_client, session_factory) -> None:
+    """전 연구실 **읽기**가 반출까지 열지 않는다 — 바이트는 자기 연구실 것만이다.
+
+    두 발급 op(`downloadDataset`·`downloadDatasetFile`)이 남의 연구실 데이터셋에 대해
+    **없는 것과 같은 봉투**(404 · `NOT_FOUND`)를 내고, `d8_download` 에 한 줄도 안 적는다.
+    이력이 적히면 「반출을 거절했다」와 「반출했다」가 원장에서 갈리지 않는다.
+    """
+    client = p2_client(session_secret=SECRET)
+    account_id, token = _operator_identity(client)
+
+    with _own_lab_dataset(session_factory, account_id) as mine:
+        before = _download_rows(session_factory)
+        for path in (f"/api/v1/datasets/{DS_B1}/download",
+                     f"/api/v1/datasets/{DS_B1}/files/{FILE_B1}/download"):
+            refused = client.get(path, headers=auth(token))
+            assert refused.status_code == 404, f"{path} → {refused.status_code}: {refused.text}"
+            assert refused.json()["code"] == "NOT_FOUND", refused.text
+        assert _download_rows(session_factory) == before, \
+            "거절된 반출이 다운로드 이력에 남았다."
+
+        # 자기 연구실은 그대로 열린다 — 좁힌 것은 경계 밖뿐이다.
+        ok = client.get(f"/api/v1/datasets/{mine}/download", headers=auth(token))
+        assert ok.status_code == 200, ok.text
+        assert _download_rows(session_factory) == before + 1, \
+            "자기 연구실 반출이 이력에 안 남았다."

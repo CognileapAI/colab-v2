@@ -56,6 +56,15 @@ def current_session_subject(request: Request,
 #: 운영자 읽기 스코프를 켜는 **유일한 조건** — 읽기 메서드다. 목록에 없는 메서드는 쓰기로 본다.
 _READ_METHODS = frozenset(("GET", "HEAD"))
 
+#: 읽기 메서드인데도 스코프를 **열지 않는** 자리 — 경로의 마지막 칸이 이것이면 반출이다
+#: (`routes/download.py` 의 `downloadDataset`·`downloadDatasetFile`). 두 op 은 GET 이지만
+#: 하는 일은 「바이트를 가져갈 자격(티켓)을 발급하고 `d8_download` 에 한 줄 적는 것」이다.
+#: **열람과 반출은 다른 일이다** — 승인 intent 가 연 것은 「모든 연구실을 **읽는다**」이고,
+#: 남의 연구실 자료를 통째로 내려받는 것은 거기에 없다. 켜면 거절할 자리가 아예 사라진다 —
+#: RLS 가 행을 보여 주므로 `_accessible_dataset` 의 404 가 서지 않고, 이력의 `lab_id` 는
+#: `current_lab_id()`(＝운영자 자기 연구실)라 **자료 주인의 원장에는 아무 흔적도 안 남는다.**
+_EXPORT_TAIL = "download"
+
 
 def _operator_read(request: Request, subject: Subject) -> bool:
     """운영자의 **읽기 요청에만** 전 연구실 스코프를 연다 (승인 intent 2026-09-12).
@@ -64,8 +73,13 @@ def _operator_read(request: Request, subject: Subject) -> bool:
     경로가 열린다 — 예를 들어 남의 데이터셋을 자기 프로젝트에 붙이는 것은 `lab_boundary` 의
     WITH CHECK 을 통과해 버린다(적히는 행의 `lab_id` 는 자기 연구실이므로). RLS 가 막아 주는
     것은 **남의 연구실에 쓰는 것**이지 남의 것을 보고 자기 자리에 쓰는 것이 아니다.
+
+    ⚠ **반출 경로에서도 켜지 않는다** — 위 `_EXPORT_TAIL` 주석이 이유다. 판정을 여기 한 자리에
+    두는 이유: 라우트마다 「내 연구실인가」를 다시 적으면 새 반출 op 이 생길 때 그 줄이 빠진다.
     """
-    return subject.operator and request.method.upper() in _READ_METHODS
+    if not (subject.operator and request.method.upper() in _READ_METHODS):
+        return False
+    return request.url.path.rstrip("/").rsplit("/", 1)[-1] != _EXPORT_TAIL
 
 
 def session_scoped_db(request: Request) -> Iterator[Session]:
