@@ -91,3 +91,17 @@ services/ai-service/.venv/bin/python eval/k4-search/golden_baseline.py --mode lo
 ## 설명서 원문 수집·변경 검사
 
 `reference_evidence.py --reference-root <레퍼런스 루트> --output <새 JSON>`은 DOCX 문단과 내용 hash 및 snapshot 파일 ID 바인딩을 저장한다. 같은 이름 문서가 복수이면 임의 선택하지 않는다. `--verify <기존 JSON>`은 원문 변경·삭제를 검사한다. 자동 의미 추출이나 제품 저장이 아니며 대상 데이터 파일의 내용 버전까지 검사하지 않는다.
+
+## 검색 변경 시 자동 골든 회귀
+
+PR과 main push에서 core-api·ai-service·frontend·계약·DB·이 평가 폴더·고정 입력·실행 도구의 관련 경로가 바뀌면 CI의 `search-golden` 잡이 실행된다. 경로 정본은 `.github/workflows/ci.yml`의 같은 이름 필터다.
+
+로컬에서도 같은 진입점을 쓴다(core-api 개발 의존과 Docker 필요):
+
+```bash
+services/core-api/.venv/bin/python eval/k4-search/run_regression.py
+```
+
+현재 helper 43건과 실제 core-api 공개 API를 통한 골든 12문항을 검사한다. DB는 일회용이며, 질문 해석은 고정 응답을 사용한다. Sonnet 호출·모델 품질 평가·배포 환경 데이터 변경은 하지 않는다.
+
+문항 보강은 `golden-cases.json`에서 질문·필수 결과·빈 결과 기대를 수정하고, 대응하는 고정 해석을 `dev-package/reports/stage3-ai-search-plan/expanded-normalized-02.json`의 `expansion.responses`에 같은 ID와 순서로 반영한다. 사례 수는 늘릴 수 있다. 빈 입력, ID/순서 불일치, 시험 실패는 실패로 처리한다.
