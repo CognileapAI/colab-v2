@@ -373,6 +373,16 @@ export function PreviewPanel(props: {
           <span className="th-ph" data-testid="up-thumb-empty" aria-hidden="true" />
         )}
       </button>
+      {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3 · 표시 목적 유지). 없으면 자리째 없다.
+          ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 자리를 지도 자리(`.mapcanvas`)에서 여기로 옮겼다 —
+             지도 위에 그림 두 장이 겹쳐 무엇을 그렸는지 갈리던 자리다.
+          ⭑ ⟨R-BUGFIX-260912 spec v2 §6 ㉱⟩ **고른 그림이 있을 때만** 옆에 선다. 고른 그림이
+             없으면 바로 왼쪽 `th-img` 가 이미 `autoThumb` 를 싣고 있어 같은 그림 두 장이 된다
+             (`const thumbSrc = pickedThumb ?? autoThumb`). 있을 때 나란히 서는 것이 요점이다 —
+             「자동으로 잡힌 그림」과 「내가 고른 그림」이 한 자리에서 갈린다. */}
+      {pickedThumb && autoThumb ? (
+        <img className="thumb" alt="" data-testid="up-preview-thumb" src={autoThumb} />
+      ) : null}
       <div className="th-txt">
         <span className="th-t">대표 그림(썸네일)</span>
         <span className="th-n" data-testid="up-thumb-nudge">
@@ -449,13 +459,6 @@ export function PreviewPanel(props: {
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
-
-      {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3 · 표시 목적 유지). 없으면 자리째 없다.
-          ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 자리를 지도 자리(`.mapcanvas`)에서 **여기로 옮겼다** —
-             지도 위에 그림 두 장이 겹쳐 무엇을 그렸는지 갈리던 자리다. 표시는 그대로 남는다. */}
-      {layers?.thumbnailUrl ? (
-        <img className="thumb" alt="" data-testid="up-preview-thumb" src={layers.thumbnailUrl} />
-      ) : null}
 
       {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}
       <div className="vizsetup">

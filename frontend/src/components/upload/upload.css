@@ -362,7 +362,7 @@ textarea.inp { resize: vertical; line-height: 1.5; }
    치수 64×64 · contain · pixelated 를 그대로 승계한다. `.mapcanvas .thumb` 는
    **구제(salvage) 경로가 계속 쓰므로 남긴다**(그 경로는 이번 회차 범위 밖이다). */
 .mapcanvas .thumb,
-.up-preview-options .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.up-preview-options .thumb { width: 64px; height: 64px; flex: none; object-fit: contain; image-rendering: pixelated; }
 
 /* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
 .up-banner {

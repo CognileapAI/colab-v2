@@ -82,8 +82,15 @@ function uploadSource(job: RenderJob): PreviewSource {
 }
 
 /** 그리기까지 밟아 `완료` 화면을 세운다. */
-async function drawUpload(job: RenderJob) {
-  render(<PreviewPanel source={uploadSource(job)} uploadId={UPLOAD_ID} hasReferenceGrid />);
+async function drawUpload(job: RenderJob, representativeFile: File | null = null) {
+  render(
+    <PreviewPanel
+      source={uploadSource(job)}
+      uploadId={UPLOAD_ID}
+      hasReferenceGrid
+      representativeFile={representativeFile}
+    />,
+  );
   fireEvent.click(await screen.findByTestId('up-preview-draw'));
   await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
 }
@@ -96,12 +103,45 @@ describe('#26 — 64×64 축소본은 지도 자리에서 빠지고 접히는 �
     expect(map.querySelector('[data-testid="up-preview-thumb"]')).toBeNull();
   });
 
+  /* ⭑ ⟨개정 2026-09-12 · R-BUGFIX-260912 L3b · spec v2 §6 ㉱ · Ted 승인 「모두 권고대로」⟩
+     중복 방지 규칙이 붙었다 — 고른 그림이 없으면 자동 축소본을 따로 두지 않는다.
+     표시 목적(`〈88〉` 묶음 3)은 그대로다: 그 경우 대표 그림 고르개(`up-thumb-img`)가
+     같은 블록에서 같은 주소를 싣는다. ／ 종전 단언 ~~고른 그림 없이도 `up-preview-thumb`
+     가 접히는 블록 안에 있다~~ — 그러면 같은 그림 두 장이 나란히 선다. */
   it('축소본은 접히는 설정 블록 안, 대표 그림 고르개와 같은 자리에 있다', async () => {
-    await drawUpload(doneJob({ thumbnailUrl: 'https://viz.example/p/thumb.png' }));
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:local/cover.png',
+      revokeObjectURL: () => undefined,
+    });
+    const picked = new File([new Uint8Array([1])], 'cover.png', { type: 'image/png' });
+    await drawUpload(doneJob({ thumbnailUrl: 'https://viz.example/p/thumb.png' }), picked);
     const options = screen.getByTestId('up-preview-options');
     const thumb = screen.getByTestId('up-preview-thumb');
     expect(options.contains(thumb)).toBe(true);
+    expect(screen.getByTestId('up-thumb-block').contains(thumb)).toBe(true);
     expect(options.contains(screen.getByTestId('up-thumb-block'))).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('고른 그림이 없으면 대표 그림 고르개가 같은 블록에서 자동 축소본을 싣는다', async () => {
+    await drawUpload(doneJob({ thumbnailUrl: 'https://viz.example/p/thumb.png' }));
+    const options = screen.getByTestId('up-preview-options');
+    const img = screen.getByTestId('up-thumb-img');
+    expect(options.contains(img)).toBe(true);
+    expect(img.getAttribute('src')).toBe('https://viz.example/p/thumb.png');
+  });
+
+  /* 23 — 옮긴 뒤 죽은 규칙 방지. `.mapcanvas .thumb` 는 **구제(salvage) 경로가 계속 쓴다**
+     (그 경로는 이번 회차 범위 밖이다 · spec v2 §6 ㉱ 「범위 밖」). 규칙과 그 규칙을 쓰는
+     DOM 이 둘 다 실재해야 죽은 규칙이 아니다. */
+  it('지도 자리 축소본 규칙은 구제 경로가 쓰므로 죽은 규칙이 아니다', () => {
+    expect(UPLOAD_CSS.indexOf('.mapcanvas .thumb')).toBeGreaterThan(-1);
+    const src = String(
+      readFileSync(resolve(process.cwd(), 'src/components/upload/PreviewPanel.tsx'), 'utf8'),
+    );
+    const salvage = src.slice(src.indexOf('data-testid="up-preview-salvage"'));
+    expect(salvage.indexOf('className="thumb"')).toBeGreaterThan(-1);
   });
 
   it('축소본 주소가 없는 응답에서는 자리째 없다 (대조군 · 대상 0건 방지)', async () => {

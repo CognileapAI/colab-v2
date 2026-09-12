@@ -99,3 +99,81 @@ describe('WU-A10 대표 그림(썸네일) 넛지', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/**
+ * ⭑ ⟨R-BUGFIX-260912 L3b · spec v2 §6 ㉱ · Ted 승인 「모두 권고대로」⟩ 축소본 중복 방지.
+ *
+ * `#26` 이 자동 축소본을 지도 자리에서 접히는 설정 블록으로 옮겼다. 그 자리에는
+ * 대표 그림 고르개(`up-thumb-img`)가 이미 서 있고, **고른 그림이 없으면 그 고르개가
+ * `autoThumb` 를 그대로 싣는다**(`const thumbSrc = pickedThumb ?? autoThumb`).
+ * 그래서 자동 축소본을 무조건 옆에 두면 같은 주소의 그림이 두 장 선다.
+ *
+ * 규칙 = **고른 그림이 있을 때만** 자동 축소본을 옆에 대조용으로 세운다
+ * (사용자 스토리 3 — 「자동으로 잡힌 그림」과 「내가 고른 그림」이 한 자리에서 갈린다).
+ */
+const AUTO_THUMB = 'https://viz.example/p/thumb.png';
+
+function drawnSource(): PreviewSource {
+  const job = {
+    renderId: '01JYZ9K7WQ3N8V4M2X6C5B0RE1',
+    status: '완료',
+    result: {
+      imageUrl: 'https://viz.example/p/map.png',
+      thumbnailUrl: AUTO_THUMB,
+      legend: { palette: 'viridis', classes: [{ color: '#440154', min: 0, max: 5 }] },
+    },
+  };
+  return {
+    async palettes() {
+      return [{ palette: 'viridis', label: '비리디스' }];
+    },
+    async createRender() {
+      return job as never;
+    },
+    async getRender() {
+      return job as never;
+    },
+  } as unknown as PreviewSource;
+}
+
+/** 그리기까지 밟아 자동 축소본이 실린 완료 화면을 세운다. */
+async function drawn(file: File | null) {
+  render(
+    <PreviewPanel
+      source={drawnSource()}
+      uploadId={UPLOAD_ID}
+      hasReferenceGrid
+      representativeFile={file}
+    />,
+  );
+  fireEvent.click(await screen.findByTestId('up-preview-draw'));
+  await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), {
+    timeout: 5000,
+  });
+}
+
+describe('㈄ 축소본 — 접히는 설정 자리 ＋ 중복 방지 규칙', () => {
+  it('17 고른 그림이 없으면 대표 그림 블록 안 그림은 한 장뿐이다 (대조군)', async () => {
+    await drawn(null);
+    const bl = screen.getByTestId('up-thumb-block');
+    expect(bl.querySelectorAll('img').length).toBe(1);
+    expect(screen.getByTestId('up-thumb-img').getAttribute('src')).toBe(AUTO_THUMB);
+  });
+
+  it('고른 그림이 있으면 자동 축소본이 그 옆에 대조용으로 선다', async () => {
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:local/cover.png',
+      revokeObjectURL: () => undefined,
+    });
+    const file = new File([new Uint8Array([1])], 'cover.png', { type: 'image/png' });
+    await drawn(file);
+    const bl = screen.getByTestId('up-thumb-block');
+    expect(bl.querySelectorAll('img').length).toBe(2);
+    expect(screen.getByTestId('up-thumb-img').getAttribute('src')).toBe('blob:local/cover.png');
+    const auto = screen.getByTestId('up-preview-thumb');
+    expect(bl.contains(auto)).toBe(true);
+    expect(auto.getAttribute('src')).toBe(AUTO_THUMB);
+    vi.unstubAllGlobals();
+  });
+});
