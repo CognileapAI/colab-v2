@@ -7,14 +7,15 @@
  *
  * ⚠ 이 카드는 P7(할 일 함)의 자리가 아니다 — `TodoInboxSlot` 을 침범하지 않는다.
  */
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UnfinishedUploads } from '../src/components/upload/UnfinishedUploads';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { OpenUploadContext } from '../src/components/upload/openUpload';
 import { listPending, rememberPending } from '../src/components/upload/pendingStore';
+import { UPLOAD_CLOSE_FORGET } from '../src/components/common/toastCopy';
 import type { CurrentAccount } from '../src/api/client';
 import type { LineageSource, LineageSuggestionResponse } from '../src/components/lineage/types';
 import type {
@@ -29,6 +30,8 @@ const LAB = '01JYZ9K7WQ3N8V4M2X6C5B0LB1';
 const T1 = '01JYZ9K7WQ3N8V4M2X6C5B0TR1';
 const U2 = '01JYZ9K7WQ3N8V4M2X6C5B0UP2';
 const U3 = '01JYZ9K7WQ3N8V4M2X6C5B0UP3';
+const U4 = '01JYZ9K7WQ3N8V4M2X6C5B0UP4';
+const U5 = '01JYZ9K7WQ3N8V4M2X6C5B0UP5';
 
 function account(): CurrentAccount {
   return { accountId: 'A1', name: '호랑이', email: 't@e.ac.kr', role: '연구원',
@@ -158,5 +161,53 @@ describe('#33 ㉠ — 배너 재개 요청이 모달의 재개 무장까지 간�
     // 무장 표시는 신설하지 않는다 — 모달이 이미 가진 `is-armed` 와 재개 안내가 오라클이다.
     await waitFor(() => expect(screen.getByTestId(`up-resume-${T1}`)).toHaveClass('is-armed'));
     expect(screen.getByTestId('up-resume-hint')).toBeInTheDocument();
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// `#32` — 메인 배너 행에서 **바로 버린다**.
+//
+// 폐기 버튼은 **접수 완료 행에만** 둔다(Ted 판정 ② 「이 브라우저에서 감춤」). 전송 미완
+// 행의 목록은 서버가 주므로 브라우저 기억만 지워도 새로 고치면 다시 나타난다 — 그 행은
+// 업로드 창 안 기존 버튼(서버 전송 취소까지 부른다)을 계속 쓴다.
+
+describe('#32 — 접수 완료 행을 배너에서 바로 버린다', () => {
+  // 앞 묶음이 남긴 기억이 이 묶음의 행 수를 바꾼다 — 「카드가 사라진다」는 행 수 판정이다.
+  beforeEach(() => { window.localStorage.clear(); });
+
+  function pendingSource(uploadId: string, transfers: IncompleteTransferItem[]): UploadSource {
+    return source({
+      incomplete: async () => transfers,
+      status: async () => ({
+        uploadId,
+        files: [{ fileId: 'F', fileName: '비.nc', kind: '본체', byteSize: 1 }],
+        ready: true, renderable: null, metadataComplete: null, expiresAt: 'z', failure: null,
+      }),
+    });
+  }
+
+  it('접수 완료 행에서 바로 버린다 — 전송 미완 행에는 그 버튼이 없다', async () => {
+    rememberPending(LAB, U4);
+    draw(pendingSource(U4, [ITEM]));
+    const card = await screen.findByTestId('unfinished-uploads');
+    const discard = await screen.findByTestId(`unfinished-discard-${U4}`);
+    expect(discard).toHaveTextContent(UPLOAD_CLOSE_FORGET);
+    // 전송 미완 행은 모달 안 기존 버튼을 계속 쓴다 — 여기에 같은 버튼을 두지 않는다.
+    expect(screen.queryByTestId(`unfinished-discard-${T1}`)).toBeNull();
+
+    fireEvent.click(discard);
+    await waitFor(() => expect(screen.queryByTestId(`unfinished-discard-${U4}`)).toBeNull());
+    expect(listPending(LAB)).not.toContain(U4);
+    expect(card).not.toHaveTextContent('등록만 남았어요');
+    expect(card).toHaveTextContent('기상 폴더');      // 전송 행은 그대로 남는다
+  });
+
+  it('마지막 행을 버리면 **카드 자체가 사라진다** — 빈 카드를 두지 않는다', async () => {
+    rememberPending(LAB, U5);
+    draw(pendingSource(U5, []));
+    await screen.findByTestId('unfinished-uploads');
+    fireEvent.click(await screen.findByTestId(`unfinished-discard-${U5}`));
+    await waitFor(() => expect(screen.queryByTestId('unfinished-uploads')).toBeNull());
+    expect(listPending(LAB)).not.toContain(U5);
   });
 });
