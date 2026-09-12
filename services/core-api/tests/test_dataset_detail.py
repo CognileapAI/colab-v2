@@ -64,7 +64,11 @@ def test_header_says_one_thing_per_line(client: TestClient) -> None:
 def test_the_response_has_exactly_the_contract_keys(client: TestClient) -> None:
     b = get(client, DS_A1, "a1-prof-token").json()
     assert set(b) == {
-        "datasetId", "name", "fileName", "summary", "topic", "processingLevel",
+        "datasetId",
+        # ⭑ ⟨증보 2026-09-13 · 승인 intent 2026-09-12 운영자 지정⟩ 어느 연구실 것인가.
+        # 화면이 「내 연구실 것인가」를 물어 남의 연구실 상세를 읽기 전용으로 그린다.
+        "labId",
+        "name", "fileName", "summary", "topic", "processingLevel",
         # ⭑ ⟨WU-B4 · PRD-11⟩ `activeGrantCount` = 지금 볼 수 있는 사람 수(되묻는 문면의 N명).
         "lineageState", "verification", "accessState", "activeGrantCount", "bodyAccessible",
         "accessRequestPending", "uploadedAt", "lastModifiedAt", "lineageConfirmedAt",
