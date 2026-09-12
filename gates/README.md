@@ -5,6 +5,9 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 | 게이트 | 무엇을 막나 |
 |---|---|
 | `contract-lint` | seam 스펙 오류 |
+| `agent-bridge` | Codex/Claude 연결, 완료 훅 및 배포 자동 알림의 진입점·상태·중복 방지 |
+| `operator-notifications` | 운영자 사건 20개 선언과 영속 전달·일일 보고·AWS 정규화·두 loopback Slack 수신처 검증 |
+| `operator-notifications-selftest` | 필수 사건 manifest 누락을 판정 실패로 거부하는 음성 검사 |
 | `contract-breaking` | emit된 스펙이 frozen seam과 충돌 |
 | `event-lint` | 이벤트 계약(`contracts/events/**`)의 스키마 오류 · `$ref` 미해석 · 인스턴스 계약 위반 |
 | `event-breaking` | 이벤트 계약의 `$defs` 단위 파괴적 변경 (규칙표 = `dev-package/sessions/D2b.md §2`) |

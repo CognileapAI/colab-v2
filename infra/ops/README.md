@@ -17,3 +17,5 @@ dev에서는 `install-schedule.sh`가 `/etc/cron.d/colab-ops` 전용 파일에 �
 데이터 레지던시의 정직한 한계: S3/RDS 원천은 서울 리전이지만 CloudFront는 글로벌 edge이고, OpenAI 모델 호출의 처리 위치는 공급자 관리이며 국내 고정으로 보장하지 않는다. AI로 보내는 범위는 검색 질의 텍스트와 계보 제안용 업로드 파일 메타다. 원본 파일 바이트나 자격증명을 보낸다고 선언하지 않는다.
 
 Slack Incoming Webhook(`hooks.slack.com` 정확한 호스트)는 `text` 형식으로 쉬운 한국어 사건명과 점검명, 확인용 target·event 코드, 실패 계수·UTC 시각만 보낸다. `acceptance-` 시험 대상은 `시험 알림`임을 표시한다. Slack은 HTTP 2xx와 본문 `ok`가 모두 맞아야 전달 성공이며, 실패하면 state를 저장하지 않아 다음 회차가 같은 전이를 다시 보낸다. 다른 HTTPS webhook은 기존 구조화 이벤트 JSON 형식을 유지한다.
+
+운영자 알림 연결 후 probe 전이는 infra.notifications.producers.observe로 영속 development 사건을 만들며 직접 webhook을 호출하지 않는다. dev와 staging target은 manifest에 각각 선언한다.

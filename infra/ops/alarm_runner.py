@@ -113,6 +113,8 @@ def _notify(url: str, event: dict[str, Any]) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--operator-spool", type=Path)
+    parser.add_argument("--environment", choices=("dev","staging"))
     parser.add_argument("--state", type=Path)
     parser.add_argument("--target")
     parser.add_argument("--threshold", type=int)
@@ -140,7 +142,9 @@ def main(argv: list[str] | None = None) -> int:
         print("alarm-runner red — command, threshold(1~100), timeout(>0)을 확인한다", file=sys.stderr)
         return 1
     webhook = None
-    if not args.observe_only:
+    if args.operator_spool and (not args.environment or args.threshold != 2 or args.webhook_file):
+        return READINESS_EXIT
+    if not args.observe_only and not args.operator_spool:
         if args.webhook_file is None:
             print("::gate-readiness-failure::gate=ops-alarm|missing=COLAB_OPS_ALERT_WEBHOOK_FILE",
                   file=sys.stderr)
@@ -156,6 +160,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"alarm-runner red — {exc}", file=sys.stderr)
         return 1
 
+    if args.operator_spool:
+        sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+        from infra.notifications.spool import append
+        from infra.notifications.producers import observe
+        # Replay the immutable outbox before observing again after a crash.
+        for record in state.get("pending_operator_events",[]):append(args.operator_spool,record)
+        state["pending_operator_events"]=[]
+
     try:
         result = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, timeout=args.timeout, check=False)
@@ -168,6 +180,14 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(before, dict):
         print("alarm-runner red — 대상 state가 객체가 아니다", file=sys.stderr)
         return 1
+    if args.operator_spool:
+        after,events=observe(before,passed,args.environment,args.target,datetime.now(timezone.utc))
+        targets[args.target]=after;state["pending_operator_events"]=events
+        _save(args.state,state)
+        for record in events:append(args.operator_spool,record)
+        state["pending_operator_events"]=[];_save(args.state,state)
+        _emit("probe.observed",target=args.target,failure_count=after["failure_count"],level="INFO" if passed else "ERROR")
+        return 0 if passed else 1
     failures = 0 if passed else int(before.get("failure_count", 0)) + 1
     active = bool(before.get("active", False))
     transition = None

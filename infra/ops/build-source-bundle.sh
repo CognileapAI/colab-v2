@@ -6,7 +6,7 @@ while [ $# -gt 0 ]; do case "$1" in
   --repo) REPO="${2:-}"; shift 2;; --sha) SHA="${2:-}"; shift 2;; --output) OUT="${2:-}"; shift 2;; *) exit 2;; esac; done
 [ -n "$REPO" ] && [ -n "$SHA" ] && [ -n "$OUT" ] || exit 2
 FULL="$(git -C "$REPO" rev-parse "$SHA^{commit}")"; [[ "$FULL" == "$SHA"* ]] || exit 1
-PATHS=(infra/ops services/core-api/ops db/platform db/ai gates/tools/rls_coverage.py gates/config/rls-allowlist.toml)
+PATHS=(infra/__init__.py infra/ops infra/notifications services/core-api/ops services/core-api/src services/core-api/pyproject.toml services/core-api/requirements.in services/core-api/requirements.txt db/platform db/ai gates/tools/rls_coverage.py gates/config/rls-allowlist.toml)
 for path in "${PATHS[@]}"; do git -C "$REPO" cat-file -e "$FULL:$path" || { echo "bundle red — commit에 $path 부재" >&2; exit 1; }; done
 mkdir -p "$OUT"; TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 ARCHIVE="$OUT/colab-ops-source-$SHA.tar.gz"; MANIFEST="$OUT/colab-ops-source-$SHA.manifest"

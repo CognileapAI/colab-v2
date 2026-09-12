@@ -822,7 +822,8 @@ def create_dataset(request: Request, body: dict = None,
     # 사람 값이 **먼저** 들어가 있으면 헤더 파싱 사건이 그것을 덮지 못한다. 뒤집으면
     # 사용자의 입력이 화면에 아무 말도 남기지 않고 사라진다.
     if human_metadata:
-        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=human_metadata)
+        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=human_metadata,
+                                  actor_id=subject.account_id)
 
     # ①-b **보류된 사건을 반영한다** (`〈190〉` 사건 경유 되쓰기 · 반영 시점 = 여기).
     #
@@ -919,7 +920,8 @@ def create_dataset(request: Request, body: dict = None,
     #    활동도 없다(활동만 남으면 목록이 없는 데이터셋을 가리킨다).
     d8_insight.record_activity(db, actor_id=subject.account_id,
                                action=d8_insight.ACTION_DATASET_ADDED,
-                               target_kind="데이터셋", target_id=dataset_id)
+                               target_kind="데이터셋", target_id=dataset_id,
+                               upload_id=upload_id)
     if grid_profile is not None and grid_profile.get("grid_source") == "가져오기":
         d8_insight.record_activity(db, actor_id=subject.account_id,
                                    action=d8_insight.ACTION_GRID_REUSED,

@@ -17,6 +17,12 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
+# Every public entry runs through durable release verification and notification.
+# The runner sets this only on its deployment subprocess to avoid recursive wrapping.
+if [ "${COLAB_DEPLOY_MANAGED:-}" != "1" ]; then
+  cd "$REPO" || exit 78
+  exec python3 "$REPO/scripts/deploy_release.py" staging -- "$@"
+fi
 . "$HERE/pipeline/lib.sh"
 
 ENV_FILE="${COLAB_STAGING_ENV:-$HOME/.colab-v2-staging.env}"   # 홈의 0600 파일. 레포에 두지 않는다.

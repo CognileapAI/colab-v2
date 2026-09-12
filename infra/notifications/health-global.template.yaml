@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy in us-east-1 to forward global Health events to the CoLAB region.
+Parameters:
+  DestinationEventBusArn: {Type: String}
+  MonitoredServices: {Type: CommaDelimitedList}
+  PermissionsBoundaryArn:
+    Type: String
+    Default: arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary
+Resources:
+  ForwardRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: colab-notify-20260912-health-forward
+      PermissionsBoundary: !Ref PermissionsBoundaryArn
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: events.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SendOnlyToCoLABEventBus
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Ref DestinationEventBusArn
+  GlobalHealthForward:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        account: [!Ref AWS::AccountId]
+        source: [aws.health]
+        detail-type: [AWS Health Event]
+        detail:
+          service: !Ref MonitoredServices
+          eventTypeCategory: [issue, scheduledChange]
+          statusCode: [open, upcoming, closed]
+      Targets:
+        - Arn: !Ref DestinationEventBusArn
+          Id: CoLABRegionalBus
+          RoleArn: !GetAtt ForwardRole.Arn

@@ -19,7 +19,7 @@
 
 [[chain]]
 dir = "db/platform/tests"
-min = 14
+min = 15
 
 [[chain]]
 dir = "db/ai/tests"

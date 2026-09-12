@@ -36,6 +36,16 @@ docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" \
   -v owner="$OWNER" -v app="$APP" -v app_password="$APP_PASSWORD" < "$CORE_API/ops/app-role.sql" >/dev/null
 docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" \
   -v admin="$ADMIN" -v admin_password="$ADMIN_PASSWORD" < "$CORE_API/ops/account-admin-role.sql" >/dev/null
+docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" \
+  < "$CORE_API/ops/operator-roles.sql" >/dev/null
+
+# Dedicated disposable-test login; the application role never inherits export privileges.
+psql_su -v operator_password="$APP_PASSWORD" <<'SQL' >/dev/null
+SELECT 'CREATE ROLE colab_operator_test_exporter LOGIN NOSUPERUSER NOBYPASSRLS'
+ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname='colab_operator_test_exporter') \gexec
+SELECT format('ALTER ROLE colab_operator_test_exporter PASSWORD %L', :'operator_password') \gexec
+GRANT colab_operator_exporter TO colab_operator_test_exporter;
+SQL
 
 # ③ 시드
 psql_su < "$HERE/seed.sql" >/dev/null

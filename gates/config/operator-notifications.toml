@@ -1,0 +1,31 @@
+schema = "colab.operator-cases/1"
+required_count = 20
+cases = [
+ "release-results","probe-transitions","aws-events","heartbeat-unobservable",
+ "slack-responses","worker-restart","audit-success-rollback","approval-snapshot",
+ "upload-registration","deletion-snapshot","lab-test-exclusions","reporter-role",
+ "kst-window-pagination","completeness-states","message-splitting","part-resume-catchup",
+ "late-commit","operator-resolution","secret-channel-injection","coverage-first-day"
+]
+
+[evidence]
+release-results = ["test_failure_is_terminal_before_spool_failure_and_retry_keeps_failure", "test_partial_success_spool_restart_replays_identical_events_without_commands", "test_retry_does_not_deploy_again"]
+probe-transitions = ["test_probe_requires_two_failures_and_recovers_once"]
+aws-events = ["test_cloud_event_survives_application_shutdown", "test_split_delivery_and_cross_region_duplicates_have_stable_identity"]
+heartbeat-unobservable = ["test_daily_missing_after_grace_and_recovers_once", "test_remote_retry_detects_absence_without_producer_running"]
+slack-responses = ["test_retry_after_and_server_error_are_persisted", "test_rejection_is_held"]
+worker-restart = ["test_restart_keeps_important_uncertain_and_channel", "test_success_is_idempotent_across_restart"]
+audit-success-rollback = ["test_committed_snapshot_exports_but_rollback_does_not", "test_two_labs_api_export_daily_reaches_only_activity"]
+approval-snapshot = ["test_upload_metadata_download_and_approval_snapshots", "test_permission_snapshot_uses_effective_default", "test_rejection_audit_is_committed_only_after_valid_decision"]
+upload-registration = ["test_upload_metadata_download_and_approval_snapshots", "test_upload_registration_deduplicated_by_upload_id"]
+deletion-snapshot = ["test_dataset_purge_requires_actor_and_retains_snapshot"]
+lab-test-exclusions = ["test_test_actor_exclusion_applies_to_actual_exported_activity", "test_zero_partial_and_exclusions_remain_distinct", "test_two_labs_api_export_daily_reaches_only_activity"]
+reporter-role = ["test_reporter_cannot_write_or_read_email_or_business_data", "test_export_rejects_application_role", "test_export_requires_explicit_lab_scope"]
+kst-window-pagination = ["test_kst_half_open_day", "test_export_drains_multiple_pages_without_timestamp_watermark"]
+completeness-states = ["test_post_midnight_collection_corrects_already_sent_incomplete_report", "test_continuous_partial_export_warns_then_recovers_without_audit_payload", "test_collection_missing_failed_and_no_targets_are_distinct", "test_source_failure_is_incomplete_and_retains_unacked_rows"]
+message-splitting = ["test_long_audit_detail_is_not_truncated"]
+part-resume-catchup = ["test_partial_store_failure_replays_without_replacing_first_part", "test_catchup_includes_empty_missing_dates"]
+late-commit = ["test_late_commit_over_two_days_corrects_original_report"]
+operator-resolution = ["test_general_uncertain_requires_operator_resolution"]
+secret-channel-injection = ["test_channel_and_body_contract_are_enforced", "test_two_channels_reach_distinct_loopback_receivers"]
+coverage-first-day = ["test_first_partial_day_is_labeled"]

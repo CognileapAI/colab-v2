@@ -1257,7 +1257,8 @@ def update_dataset(datasetId: str, body: dict | None = Body(default=None),
                                    state=changes.pop("accessState"))
 
     if changes:
-        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes)
+        d3_catalog.update_dataset(db, dataset_id=dataset_id, changes=changes,
+                                  actor_id=subject.account_id)
         # ⭑ **⟨20차 해제 · PRD-03 · 미결-2 ⓐ⟩ 수정도 같은 경고를 낸다.** 등록에만 두면
         # 사람이 나중에 Lv 를 바꾼 순간의 불일치를 아무도 못 본다. **막지 않는다.**
         warn_if_level_mismatch(db, dataset_id, changes.get("processingLevelUserSet"))

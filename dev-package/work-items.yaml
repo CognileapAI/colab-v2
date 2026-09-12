@@ -13,6 +13,19 @@
 # 두 읽기는 서로를 보지 않고 만들어졌고, 그 불일치가 여기 그대로 남아 있다.
 
 items:
+  - id: OP-NOTIFY-1
+    name: "운영자 Slack 개발 상태 알림과 08시 활동·감사 보고"
+    status: open
+    stage: after_stage2
+    owner: "운영 알림 / core-api · infra"
+    entry_conditions: ["2026-09-12 intent·spec·로컬 시험 경계 승인"]
+    depends_on: []
+    completion_def: "로컬 업무·배포 진입점부터 두 loopback 수신처까지 외부 행위 검증 후, 별도 승인된 AWS·두 Slack 채널 연결과 실제 08시 보고 확인"
+    evidence: "로컬 구현 반영. 검증 정본: dev-package/reports/operator-slack-notifications/implementation/gate-summary.json, 결과 설명: implementation/result.md. 실제 AWS·Slack 연결 전까지 open 유지."
+    deadline: null
+    note: "사용자 알림은 범위 밖. 자동배포 HOLD 유지. 실제 연결 전 connection-readiness.md의 대상·원복 고정 필요."
+    sources: ["dev-package/intent/2026-09-12-operator-slack-notifications.md", "dev-package/prd/specs/S-OPERATOR-SLACK-NOTIFICATIONS-20260912.md"]
+
   - id: BO-1
     name: "운영자 백오피스 — 이메일 식별 서비스 계정 직접 추가"
     status: done

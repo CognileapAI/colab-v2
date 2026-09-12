@@ -95,7 +95,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="지울 데이터셋 id. 여러 번 준다. ⛔ 조건문이 아니라 목록이다.")
     ap.add_argument("--yes-delete", action="store_true",
                     help="이것이 없으면 dry-run 이다 — 세기만 하고 지우지 않는다.")
+    ap.add_argument("--actor-id", help="실집행한 연구실 구성원 ID — 감사 기록 필수")
     a = ap.parse_args(argv)
+    if a.yes_delete and (not a.actor_id or not ULID.fullmatch(a.actor_id)):
+        print("실집행에는 정규 --actor-id 가 필요하다.", file=sys.stderr)
+        return 2
 
     for value, what in [(a.lab, "--lab")] + [(i, "--id") for i in a.ids]:
         if not ULID.match(value):
@@ -147,6 +151,10 @@ def main(argv: list[str] | None = None) -> int:
                 conn.rollback()
                 return 0
 
+            from colab_core.domains.d1_identity import require_operator_actor
+            from colab_core.domains.d3_audit import append_deletion_snapshots
+            require_operator_actor(cur, a.actor_id)
+            append_deletion_snapshots(cur, ids=ids, actor_id=a.actor_id)
             print("\n── 삭제 (단일 트랜잭션)")
             actual: dict[str, int] = {}
             for table, where, _desc in DELETE_PLAN:

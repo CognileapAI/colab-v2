@@ -11,6 +11,7 @@ P0 은 저장 자리만 만들었고 **WU-P7 이 집계 3종을 열었다** —
 """
 from __future__ import annotations
 
+import json
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -28,19 +29,33 @@ _INSERT = text("""
     VALUES (:id, current_lab_id(), :actor, :action, :target_kind, :target_id)
     RETURNING id
 """)
+_EXPORT = text("""
+    INSERT INTO d8_operator_export (id, source_id, lab_id, occurred_at, payload)
+    VALUES (:id, :source_id, current_lab_id(), now(), CAST(:payload AS jsonb))
+    ON CONFLICT (source_id) DO NOTHING
+""")
+
+def _append_export(session: Session, source_id: str, payload: dict) -> None:
+    session.execute(_EXPORT, {"id": str(Ulid.generate()), "source_id": source_id,
+                              "payload": json.dumps(payload, ensure_ascii=False)})
 
 
 def record_activity(session: Session, *, actor_id: Ulid, action: str,
-                    target_kind: str, target_id: Ulid) -> str:
+                    target_kind: str, target_id: Ulid, upload_id: Ulid | None = None) -> str:
     """활동 한 줄. **append-only 트리거가 걸린 표라 고치거나 지울 수 없다** — 그래서
     누가 언제 바꿨는지가 지워지지 않는 기록으로 남는다 (`〈60〉`). 스키마 변경 없음.
     """
     if target_kind not in ("데이터셋", "프로젝트"):
         raise ValueError(f"활동 대상 종류가 둘 중 하나가 아니다: {target_kind!r}")
-    return session.execute(_INSERT, {
+    source_id = session.execute(_INSERT, {
         "id": str(Ulid.generate()), "actor": str(actor_id), "action": action,
         "target_kind": target_kind, "target_id": str(target_id),
     }).scalar_one()
+    _append_export(session, source_id, {"source_id": source_id, "actor_id": str(actor_id),
+                                        "target_id": str(target_id), "action": action,
+                                        "target_kind": target_kind,
+                                        **({"upload_id": str(upload_id)} if upload_id else {})})
+    return source_id
 
 
 #: 활동 문자열 — **정본이 값 집합을 안 닫았으므로 여기서 하나로 고정한다**
@@ -92,7 +107,11 @@ def record_download(session: Session, *, account_id: Ulid, dataset_id: Ulid,
     고치거나 지울 수 없다. **바이트 시점에는 쓰지 않는다** — 티켓을 받고 안 받는 것은 그 사람의
     선택이고, 「받으려 했다」가 기록의 뜻이다(계약 산문). 받은 횟수는 어느 화면에도 내리지 않는다.
     """
-    return session.execute(_INSERT_DOWNLOAD, {
+    source_id = session.execute(_INSERT_DOWNLOAD, {
         "id": str(Ulid.generate()), "account_id": str(account_id),
         "dataset_id": str(dataset_id), "file_id": None if file_id is None else str(file_id),
     }).scalar_one()
+    _append_export(session, source_id, {"source_id": source_id, "actor_id": str(account_id),
+                                        "target_id": str(dataset_id), "action": "download.ticket_issued",
+                                        "file_id": None if file_id is None else str(file_id)})
+    return source_id

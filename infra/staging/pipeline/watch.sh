@@ -21,7 +21,10 @@ LOG="$(pipeline_state_dir)/pipeline.log"
 RC=$?
 TS="$(date +%Y-%m-%dT%H:%M:%S%z)"
 case "$RC" in
+  20) echo "$TS 배포·검증 성공 / 알림 실패 또는 결과 불명확" > "$(pipeline_state_dir)/NOTIFICATION-FAILED.txt"
+      echo "$TS run-pipeline 배포 성공, 알림 확인 필요 (exit 20)" >> "$LOG" ;;
   0)  echo "$TS run-pipeline OK" >> "$(success_path)"
+      rm -f "$(pipeline_state_dir)/NOTIFICATION-FAILED.txt"
       rm -f "$(failmark_path)"
       echo "$TS run-pipeline OK" >> "$LOG" ;;
   # 75 = EX_TEMPFAIL. 겹쳐 돌지 않으려 양보한 것 · fetch 실패. **고장이 아니다** —

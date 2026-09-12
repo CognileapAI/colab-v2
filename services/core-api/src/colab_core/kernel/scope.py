@@ -80,3 +80,20 @@ def scoped_session(factory: sessionmaker[Session], subject: Subject) -> Iterator
         raise
     finally:
         session.close()
+
+
+def require_lab_scope(session: Session) -> str:
+    """Operator collection must distinguish missing scope from an empty lab."""
+    lab = session.execute(text("SELECT current_lab_id()")).scalar_one()
+    if not lab:
+        raise ValueError("operator lab scope is required")
+    return str(lab).strip()
+
+
+def require_operator_role(session: Session) -> None:
+    role = session.execute(text("""SELECT r.rolsuper,r.rolbypassrls,
+        pg_has_role(current_user,'colab_operator_exporter','member') AS exporter,
+        pg_has_role(current_user,'colab_app','member') AS app
+        FROM pg_roles r WHERE r.rolname=current_user""")).mappings().one()
+    if role['rolsuper'] or role['rolbypassrls'] or not role['exporter'] or role['app']:
+        raise ValueError("dedicated NOBYPASSRLS operator exporter role required")

@@ -1,0 +1,373 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Discovery",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:ListStacks",
+        "cloudformation:ValidateTemplate",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeTags",
+        "cloudwatch:DescribeAlarms",
+        "secretsmanager:ListSecrets"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": [
+            "ap-northeast-2",
+            "us-east-1"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "NotificationStacks",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:UpdateStack",
+        "cloudformation:DeleteStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResources",
+        "cloudformation:ListStackResources",
+        "cloudformation:GetTemplate",
+        "cloudformation:GetTemplateSummary",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DeleteChangeSet",
+        "cloudformation:ListChangeSets"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:ap-northeast-2:606175197146:stack/colab-notify-*/*",
+        "arn:aws:cloudformation:us-east-1:606175197146:stack/colab-notify-*/*"
+      ]
+    },
+    {
+      "Sid": "ServerlessTransform",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:ap-northeast-2:aws:transform/Serverless-2016-10-31",
+        "arn:aws:cloudformation:us-east-1:aws:transform/Serverless-2016-10-31"
+      ]
+    },
+    {
+      "Sid": "NotificationFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:DeleteFunction",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetPolicy",
+        "lambda:TagResource",
+        "lambda:UntagResource",
+        "lambda:ListTags",
+        "lambda:InvokeFunction",
+        "lambda:ListVersionsByFunction",
+        "lambda:GetRuntimeManagementConfig"
+      ],
+      "Resource": [
+        "arn:aws:lambda:ap-northeast-2:606175197146:function:colab-notify-*",
+        "arn:aws:lambda:us-east-1:606175197146:function:colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "QueueMappings",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:UpdateEventSourceMapping",
+        "lambda:DeleteEventSourceMapping",
+        "lambda:GetEventSourceMapping"
+      ],
+      "Resource": [
+        "arn:aws:lambda:ap-northeast-2:606175197146:event-source-mapping:*",
+        "arn:aws:lambda:us-east-1:606175197146:event-source-mapping:*"
+      ],
+      "Condition": {
+        "ArnLike": {
+          "lambda:FunctionArn": [
+            "arn:aws:lambda:ap-northeast-2:606175197146:function:colab-notify-*",
+            "arn:aws:lambda:us-east-1:606175197146:function:colab-notify-*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "NotificationTables",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:UpdateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:TagResource",
+        "dynamodb:UntagResource",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:ap-northeast-2:606175197146:table/colab-notify-*",
+        "arn:aws:dynamodb:us-east-1:606175197146:table/colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "NotificationQueues",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:CreateQueue",
+        "sqs:DeleteQueue",
+        "sqs:GetQueueUrl",
+        "sqs:GetQueueAttributes",
+        "sqs:SetQueueAttributes",
+        "sqs:TagQueue",
+        "sqs:UntagQueue",
+        "sqs:ListQueueTags",
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage"
+      ],
+      "Resource": [
+        "arn:aws:sqs:ap-northeast-2:606175197146:colab-notify-*",
+        "arn:aws:sqs:us-east-1:606175197146:colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "NotificationRules",
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:DescribeRule",
+        "events:DeleteRule",
+        "events:PutTargets",
+        "events:RemoveTargets",
+        "events:ListTargetsByRule",
+        "events:EnableRule",
+        "events:DisableRule",
+        "events:TagResource",
+        "events:UntagResource",
+        "events:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:events:ap-northeast-2:606175197146:rule/colab-notify-*",
+        "arn:aws:events:us-east-1:606175197146:rule/colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "DevStatusAlarms",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:DescribeAlarmHistory",
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource",
+        "cloudwatch:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:cloudwatch:ap-northeast-2:606175197146:alarm:colab-dev-instance-status",
+        "arn:aws:cloudwatch:ap-northeast-2:606175197146:alarm:colab-dev-system-status"
+      ]
+    },
+    {
+      "Sid": "WebhookSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:TagResource",
+        "secretsmanager:UntagResource"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:ap-northeast-2:606175197146:secret:colab/notifications/development-*",
+        "arn:aws:secretsmanager:ap-northeast-2:606175197146:secret:colab/notifications/activity-*"
+      ]
+    },
+    {
+      "Sid": "CreateBoundedRuntimeRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-consumer",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-retry",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-ingest",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-health-forward"
+      ],
+      "Condition": {
+        "ArnEquals": {
+          "iam:PermissionsBoundary": "arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary"
+        }
+      }
+    },
+    {
+      "Sid": "ManageRuntimeRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:DeleteRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:ListRoleTags",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies"
+      ],
+      "Resource": [
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-consumer",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-retry",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-ingest",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-health-forward"
+      ]
+    },
+    {
+      "Sid": "BasicLambdaLoggingPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-consumer",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-retry",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-ingest",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-health-forward"
+      ],
+      "Condition": {
+        "ArnEquals": {
+          "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          "iam:PermissionsBoundary": "arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary"
+        }
+      }
+    },
+    {
+      "Sid": "PassRuntimeRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-consumer",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-retry",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-ingest",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-health-forward"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": [
+            "lambda.amazonaws.com",
+            "events.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadRuntimeBoundary",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion"
+      ],
+      "Resource": "arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary"
+    },
+    {
+      "Sid": "ArtifactBucketInfo",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev"
+    },
+    {
+      "Sid": "ArtifactPrefixListing",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "_ops/notifications",
+            "_ops/notifications/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "NotificationArtifacts",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": "arn:aws:s3:::colab-platform-data-dev/_ops/notifications/*"
+    },
+    {
+      "Sid": "ReadNotificationLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:ap-northeast-2:606175197146:log-group:/aws/lambda/colab-notify-*",
+        "arn:aws:logs:us-east-1:606175197146:log-group:/aws/lambda/colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "CreateQueueMappings",
+      "Effect": "Allow",
+      "Action": "lambda:CreateEventSourceMapping",
+      "Resource": "*",
+      "Condition": {
+        "ArnLike": {
+          "lambda:FunctionArn": [
+            "arn:aws:lambda:ap-northeast-2:606175197146:function:colab-notify-*",
+            "arn:aws:lambda:us-east-1:606175197146:function:colab-notify-*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "BoundedInlinePolicies",
+      "Effect": "Allow",
+      "Action": "iam:PutRolePolicy",
+      "Resource": [
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-consumer",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-retry",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-ingest",
+        "arn:aws:iam::606175197146:role/colab-notify-20260912-health-forward"
+      ],
+      "Condition": {
+        "ArnEquals": {
+          "iam:PermissionsBoundary": "arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary"
+        }
+      }
+    }
+  ]
+}

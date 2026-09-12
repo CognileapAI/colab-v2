@@ -1,0 +1,64 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "NotificationState",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:ap-northeast-2:606175197146:table/colab-notify-*",
+        "arn:aws:dynamodb:us-east-1:606175197146:table/colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "NotificationQueues",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:SendMessage",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ],
+      "Resource": [
+        "arn:aws:sqs:ap-northeast-2:606175197146:colab-notify-*",
+        "arn:aws:sqs:us-east-1:606175197146:colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "TwoWebhooks",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:ap-northeast-2:606175197146:secret:colab/notifications/development-*",
+        "arn:aws:secretsmanager:ap-northeast-2:606175197146:secret:colab/notifications/activity-*"
+      ]
+    },
+    {
+      "Sid": "FunctionLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:ap-northeast-2:606175197146:log-group:/aws/lambda/colab-notify-*",
+        "arn:aws:logs:us-east-1:606175197146:log-group:/aws/lambda/colab-notify-*"
+      ]
+    },
+    {
+      "Sid": "ForwardHealth",
+      "Effect": "Allow",
+      "Action": [
+        "events:PutEvents"
+      ],
+      "Resource": "arn:aws:events:ap-northeast-2:606175197146:event-bus/default"
+    }
+  ]
+}

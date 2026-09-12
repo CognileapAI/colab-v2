@@ -1507,6 +1507,43 @@ ALTER TABLE d8_download             FORCE  ROW LEVEL SECURITY;
 CREATE POLICY lab_boundary ON d8_download FOR ALL
   USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
 
+-- 운영자 감사 snapshot과 도메인별 내보내기 대기.
+CREATE TABLE d2_operator_audit (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),actor_id ulid NOT NULL,target_id ulid NOT NULL,action text NOT NULL,before_snapshot jsonb,after_snapshot jsonb,occurred_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE d3_operator_audit (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),actor_id ulid NOT NULL,target_id ulid NOT NULL,action text NOT NULL,before_snapshot jsonb,after_snapshot jsonb,occurred_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE d6_operator_audit (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),actor_id ulid NOT NULL,target_id ulid NOT NULL,action text NOT NULL,before_snapshot jsonb,after_snapshot jsonb,occurred_at timestamptz NOT NULL DEFAULT now());
+CREATE TRIGGER d2_operator_audit_append_only BEFORE UPDATE OR DELETE ON d2_operator_audit FOR EACH ROW EXECUTE FUNCTION deny_update_delete();
+CREATE TRIGGER d3_operator_audit_append_only BEFORE UPDATE OR DELETE ON d3_operator_audit FOR EACH ROW EXECUTE FUNCTION deny_update_delete();
+CREATE TRIGGER d6_operator_audit_append_only BEFORE UPDATE OR DELETE ON d6_operator_audit FOR EACH ROW EXECUTE FUNCTION deny_update_delete();
+CREATE INDEX d2_operator_audit_pending_idx ON d2_operator_audit(lab_id,occurred_at,source_id);
+CREATE INDEX d3_operator_audit_pending_idx ON d3_operator_audit(lab_id,occurred_at,source_id);
+CREATE INDEX d6_operator_audit_pending_idx ON d6_operator_audit(lab_id,occurred_at,source_id);
+CREATE TABLE d2_operator_export (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),occurred_at timestamptz NOT NULL,payload jsonb NOT NULL,receipt_hash text CHECK(receipt_hash IS NULL OR receipt_hash ~ '^[0-9a-f]{64}$'),received_at timestamptz,CHECK((receipt_hash IS NULL)=(received_at IS NULL)));
+CREATE TABLE d3_operator_export (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),occurred_at timestamptz NOT NULL,payload jsonb NOT NULL,receipt_hash text CHECK(receipt_hash IS NULL OR receipt_hash ~ '^[0-9a-f]{64}$'),received_at timestamptz,CHECK((receipt_hash IS NULL)=(received_at IS NULL)));
+CREATE TABLE d5_operator_export (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),occurred_at timestamptz NOT NULL,payload jsonb NOT NULL,receipt_hash text CHECK(receipt_hash IS NULL OR receipt_hash ~ '^[0-9a-f]{64}$'),received_at timestamptz,CHECK((receipt_hash IS NULL)=(received_at IS NULL)));
+CREATE TABLE d6_operator_export (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),occurred_at timestamptz NOT NULL,payload jsonb NOT NULL,receipt_hash text CHECK(receipt_hash IS NULL OR receipt_hash ~ '^[0-9a-f]{64}$'),received_at timestamptz,CHECK((receipt_hash IS NULL)=(received_at IS NULL)));
+CREATE TABLE d8_operator_export (id ulid PRIMARY KEY,source_id ulid NOT NULL UNIQUE,lab_id ulid NOT NULL REFERENCES d1_lab(id),occurred_at timestamptz NOT NULL,payload jsonb NOT NULL,receipt_hash text CHECK(receipt_hash IS NULL OR receipt_hash ~ '^[0-9a-f]{64}$'),received_at timestamptz,CHECK((receipt_hash IS NULL)=(received_at IS NULL)));
+CREATE INDEX d2_operator_export_pending_idx ON d2_operator_export(lab_id,occurred_at,source_id) WHERE receipt_hash IS NULL;
+CREATE INDEX d3_operator_export_pending_idx ON d3_operator_export(lab_id,occurred_at,source_id) WHERE receipt_hash IS NULL;
+CREATE INDEX d5_operator_export_pending_idx ON d5_operator_export(lab_id,occurred_at,source_id) WHERE receipt_hash IS NULL;
+CREATE INDEX d6_operator_export_pending_idx ON d6_operator_export(lab_id,occurred_at,source_id) WHERE receipt_hash IS NULL;
+CREATE INDEX d8_operator_export_pending_idx ON d8_operator_export(lab_id,occurred_at,source_id) WHERE receipt_hash IS NULL;
+ALTER TABLE d2_operator_audit ENABLE ROW LEVEL SECURITY; ALTER TABLE d2_operator_audit FORCE ROW LEVEL SECURITY;
+ALTER TABLE d3_operator_audit ENABLE ROW LEVEL SECURITY; ALTER TABLE d3_operator_audit FORCE ROW LEVEL SECURITY;
+ALTER TABLE d6_operator_audit ENABLE ROW LEVEL SECURITY; ALTER TABLE d6_operator_audit FORCE ROW LEVEL SECURITY;
+ALTER TABLE d2_operator_export ENABLE ROW LEVEL SECURITY; ALTER TABLE d2_operator_export FORCE ROW LEVEL SECURITY;
+ALTER TABLE d3_operator_export ENABLE ROW LEVEL SECURITY; ALTER TABLE d3_operator_export FORCE ROW LEVEL SECURITY;
+ALTER TABLE d5_operator_export ENABLE ROW LEVEL SECURITY; ALTER TABLE d5_operator_export FORCE ROW LEVEL SECURITY;
+ALTER TABLE d6_operator_export ENABLE ROW LEVEL SECURITY; ALTER TABLE d6_operator_export FORCE ROW LEVEL SECURITY;
+ALTER TABLE d8_operator_export ENABLE ROW LEVEL SECURITY; ALTER TABLE d8_operator_export FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d2_operator_audit FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d3_operator_audit FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d6_operator_audit FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d2_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d3_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d5_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d6_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+CREATE POLICY lab_boundary ON d8_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 8. 마이그레이션 체인 상태 테이블
 --    alembic 이 만드는 것과 **같은 형태**를 여기 선언해 둔다 — 그래야 선언 = 적용이 성립한다.
