@@ -1,0 +1,53 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-fixture-reach",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 3,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-typecheck",
+      "frontend-test",
+      "frontend-fixture-reach"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "414a4d45a9fe4e618f765d4c2802f05e",
+      "run_id": "7f0d2e120ab4434f8428ed31d17173ec",
+      "checkout": "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.codex/worktrees/cleanup-audit-20260912",
+      "files": "5322725e1cd9484a21f8f9ac4cc6cb97b5590fc0feab0be07094280d37b00161"
+    },
+    "after": {
+      "task_id": "414a4d45a9fe4e618f765d4c2802f05e",
+      "run_id": "7f0d2e120ab4434f8428ed31d17173ec",
+      "checkout": "/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/.codex/worktrees/cleanup-audit-20260912",
+      "files": "5322725e1cd9484a21f8f9ac4cc6cb97b5590fc0feab0be07094280d37b00161"
+    }
+  }
+}

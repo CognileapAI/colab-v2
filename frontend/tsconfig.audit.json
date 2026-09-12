@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src", "test", "audit-upload.tsx", "audit-design.tsx", "audit.vite.config.ts"]
+}

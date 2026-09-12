@@ -1,0 +1,6 @@
+frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src·test) 오류 0건.
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 1253건 · 실패 0건.
+    Test Files  104 passed (104)
+         Tests  1253 passed (1253)
+frontend-fixture-reach green — 진입점 src/main.tsx 에서 도달 193개(진입점 제외 192개), 금지 모듈(fixture.ts·graphFixture.ts·localEngine.ts) 0건.
+── 계 : green 3 / red(판정) 0 / red(준비) 0
