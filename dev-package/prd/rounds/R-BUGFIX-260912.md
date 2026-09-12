@@ -26,7 +26,7 @@
 | 단계 | 작업 | 주체 | 의존 | 완료 근거 |
 |---|---|---|---|---|
 | 0 | 라운드 파일 작성 · 레인 절단 고정 | 오케스트레이터 | intent 4건 승인 | 이 파일 |
-| 1 | L1·L2·L3·L4 동시 착수 | 레인 4 | 0 | 각 레인 최종 메시지 |
+| 1 | L2 ∥ L4 착수 → L2 green 뒤 L3 ∥ L1 착수(advisor ① 조건 · 가용 메모리 4 GB 실측 · 훅이 워크트리마다 `npm ci` ＋ venv 4 를 만든다) | 레인 4 | 0 | 각 레인 최종 메시지 |
 | 2 | 단독 게이트 green 회수 | 레인 3 | 1 | `gate-summary.json` 3계수 |
 | 3 | 병합 L2 → L3 → L1 (rebase ＋ ff) | 오케스트레이터 | 2 | 통합 브랜치 로그 |
 | 4 | 전수 게이트 1회 | 오케스트레이터 또는 `gate-runner` | 3 ＋ 실행 레인 0건 | 전수 요약줄 |
@@ -39,15 +39,16 @@
 |---|---|---|---|---|---|
 | L1 업로드 모달 | `lane-worker` | `lane/bugfix-upload-modal` | spec I-1 전건(`#33`㉠ → `#34` → `#32`) ＋ spec I-2 의 `#24`㉯ 고지 | `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 | `frontend/src/components/upload/{UploadEntry,UploadModal,UnfinishedUploads}.tsx` · `pendingStore.ts` · `frontend/src/components/common/toastCopy.ts` · `upload.css`(끝 덧붙임 블록만) |
 | L2 등록 카드 | `lane-worker` | `lane/bugfix-register-hints` | spec I-4 의 `#31` 한 건(설명문 순서 통일) | `frontend-test` 연속 2회 green | `frontend/src/components/upload/RegisterArea.tsx` |
-| L3 미리보기 | `lane-worker` | `lane/bugfix-preview-controls` | spec I-3 전건(`#26` → `#25`⑵ → `#27`＋`#28`) | `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 ＋ `frontend-visual`(조건부) | `frontend/src/components/upload/{PreviewPanel,PreviewExpandOverlay}.tsx` · `frontend/src/components/preview/{PreviewPickRow,PreviewZoomControls}.tsx` · `frontend/src/components/datasetpreview/DatasetPreviewSection.tsx` · `upload.css`(기존 규칙) · `preview.css` |
+| L3 미리보기 | `lane-worker` | `lane/bugfix-preview-controls` | spec I-3 전건(`#26` → `#25`⑵ → `#27`＋`#28`) | `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 ＋ `frontend-visual`(조건부) | `frontend/src/components/upload/{PreviewPanel,PreviewExpandOverlay}.tsx` · `frontend/src/components/preview/{PreviewPickRow,PreviewZoomControls}.tsx` · `frontend/src/components/datasetpreview/DatasetPreviewSection.tsx` · `upload.css`(기존 규칙) · `preview.css` · `frontend/src/components/preview/PreviewSlot.tsx`(4:3 틀 프로퍼티 증설) |
 | L4 실측·재현 | `researcher` | `lane/bugfix-measure` | spec I-2 측정(`#24`㉮ ＋ `#25`⑴) ＋ 재현 `#29`⑴ · `#30`㈎ | 게이트 실행 0 | `dev-package/reports/issues/2026-09-12-measure-L4.md` 만 |
 
-- 병렬 = L1 ∥ L2 ∥ L3 ∥ L4 동시 4 레인. 근거 = 수정 파일 집합이 교차하지 않는다. 유일한 교차 `upload.css` 는 L1 의 덧붙임 규칙으로 분리한다.
+- 병렬 = 파일 집합은 교차하지 않아 4 레인 병렬이 가능하나, 호스트 부하(`free -g` 가용 4 GB · 훅 `worktree-setup.sh` 가 워크트리마다 `npm ci` ＋ 서비스 venv 4 개 생성)로 **코드 레인은 동시 2 개까지** — L2 ∥ L4 먼저, L2 green 뒤 L3 ∥ L1. 유일한 교차 `upload.css` 는 L1 의 덧붙임 규칙으로 분리한다.
 - `upload.css` 규칙 = L1 은 파일 **끝에 구획 주석으로 감싼 블록 하나만** 덧붙인다(`/* == R-BUGFIX-260912 L1 == */` 시작 · `/* == /R-BUGFIX-260912 L1 == */` 끝). 기존 규칙 줄은 한 글자도 고치지 않는다. L3 은 기존 규칙만 고치고 파일 끝에 덧붙이지 않는다.
 - 부하 = 4 레인 동시 실행 중 전수 게이트를 돌리지 않는다. 동시 실행 상태의 게이트는 `-j 2`(`.claude/rules/colab-rules.md §9`).
 
 ## 레인 공통 지시
 
+- **우선순위 = 이 라운드 파일 > Ted 판정 정본(`dev-package/reports/issues/2026-09-12-ted-decisions.md`) > spec.** spec 의 우려 항목 권고·산출 계획이 이 파일과 갈리면 이 파일을 따르고 갈린 자리를 최종 메시지에 열거한다. spec 의 레인 이름(L5 등)은 무시한다.
 - **첫 줄** = `git checkout -B lane/<이름> origin/integration/r-bugfix-260912`. 이어서 `git rev-parse --short HEAD` 로 스폰 지시문의 기대 HEAD 를 대조하고, 어긋나면 구현하지 말고 정지·보고한다(`.claude/rules/colab-rules.md §2-3` — 워크트리 기본 기준이 `origin/main` 이라 이 한 줄이 없으면 통합 선행분 위에 서지 않는다).
 - 스폰 방식 = `isolation: "worktree"`. 손으로 만든 형제 워크트리를 쓰지 않는다.
 - 순서 = 항목마다 ① red 시험 먼저(실패 로그 한 줄 인용) → ② 최소 구현 → ③ 단독 게이트. green 으로 시작한 시험은 오라클이 아니다.
@@ -65,6 +66,7 @@
   1. `#33`㉠ 재개 배선 — 배너 재개 요청의 재개 식별자를 업로드 진입 컴포넌트가 모달 props 로 전달하고 모달이 무장한다. 기존 경로(`resumeRef` · `resumeFromRef='banner'` · `resumeArm` · `seq` 재무장 규약) 재사용 · 신규 개념 0. red seam = `frontend/test/unfinished-uploads.test.tsx` 에 실물 렌더 시험 1건(컨텍스트 스텁 금지 · 하네스 선례 = `frontend/test/prd34-close-copy-20260907.test.tsx` 의 `UploadEntry` ＋ `SessionProvider` ＋ `MemoryRouter`).
   2. `#34` 닫기 확인의 세 번째 선택지 — 기존 두 버튼(`UPLOAD_CLOSE_KEEP` · `UPLOAD_CLOSE_LEAVE`) 옆에 1개 증설. 뜻 = **이 브라우저의 미완결 기억 삭제**이고 서버 접수 행은 24시간 만료 스윕이 정리한다. 문면이 그 사실을 그대로 말한다. 같은 단계에서 폐기 공통 헬퍼(`discardUpload`)를 추출해 세 자리가 같은 것을 부르게 한다. red seam = `prd34-close-copy-20260907.test.tsx` 에 3건(존재 · 동작 · 문면).
   3. `#32` 메인 배너 행 폐기 버튼 — 위 헬퍼 재사용. 폐기 후 배너가 비면 카드 자체가 사라진다. 등록을 마친 데이터셋에는 닿지 않는다. red seam = `unfinished-uploads.test.tsx` 에 2건(폐기 · 빈 카드).
+     - 폐기 버튼은 **접수 완료 행에만** 둔다. 전송 미완 행은 모달 안 기존 버튼을 계속 쓴다(spec 우려 1 = ⓐ 채택 · Ted 판정 ② 「이 브라우저에서 감춤」 근거). 착수 전 기존 `up-discard-*` 의 서버 호출 유무를 실측하고, 서버를 부르면 헬퍼 추출을 멈추고 보고한다.
   4. `#24`㉯ 분석 중 고지 — `다음 →`(대상은 `reg-open` · `reg-next` 아님) 은 **비활성 유지**하고 사유 한 줄과 `title`·`aria-describedby` 연결을 추가한다. 정책 6(분석 완료 전 비활성)과 기존 회귀 기준을 바꾸지 않는다. red seam = `frontend/test/upload.test.tsx` 5건(구현 전 실행에서 실패 5건 로그 보존 · 수집 0건이 아님).
 - 문면 취급 = 세 번째 버튼 라벨·본문은 `toastCopy.ts` 에 **초안 상수**로 두고 바로 위에 `// PRD-34 문면표 개정 · Ted 확정 대기` 주석을 붙인다. 개발 세션이 문면을 확정하지 않는다(PRD-34 규칙). 개정 필요 항목 3건(버튼 라벨 줄 · 세 번째 선택지 본문 1행 · 수용 기준 1행)은 레인 최종 메시지에 열거만 하고 `dev-package/prd/PRD-260905-적용전기획.md` 를 고치지 않는다.
 - `upload.css` = 배너 폐기 버튼 스타일이 필요하면 **파일 끝 덧붙임 블록** 안에만 쓴다(위 공통 규칙). `.up-banner` 기존 규칙을 고치지 않는다.
@@ -87,6 +89,7 @@
 - 착수 순서 3단(직렬 · 같은 파일군) —
   1. `#26` 64×64 축소본 이동 — 지도 자리(`.mapcanvas`)에서 빼고 접히는 자리(`up-preview-options` details 안 · `up-thumb-img` 옆)로 옮긴다. 결정 `〈88〉`-3 의 표시 목적을 유지하고 지도 위 중복만 제거한다(Ted 판정 ⑤ ⓑ · 재판정 기록 대상).
   2. `#25`⑵ 고르개 줄을 틀 밖으로 — 파일·변수·시각 고르개 줄을 `.pv-frame` 바깥 고정 줄로 옮긴다. 대상은 그 줄을 소유한 **두 화면**뿐 — 업로드 인라인(`PreviewPanel.tsx`) · 상세(`datasetpreview/DatasetPreviewSection.tsx`). **확장 오버레이에는 고르개 줄을 만들지 않는다.** 규약 `R-C-2` 개정 기록 대상(Ted 판정 ⑥).
+     - 확장 오버레이 미신설은 spec 우려 1 권고 ⓑ 채택값이며 Ted 판정 ⑥ 문면 「세 화면」과 갈린다 — 오케스트레이터가 Ted 재확인 1줄을 회수해 지시문으로 전달한다. **회수 전이면 1단(`#26`)만 진행하고 대기한다.** 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 의 해당 축자 개정은 L3 가 같은 커밋에 넣는다.
   3. `#27`＋`#28` 확대 줄 접힘·가림 해소(한 단계) — 인라인에서 확대 줄이 스크롤 없이 보이게 하고, `.modal-b.pvx-b` 의 flex 방향과 `.pv-layers .pv-tile` 폭 상한으로 가림을 없앤다. **고정 배치 재설계는 범위 밖**(Ted 판정 ⑦ ⓐ 「접힘·가림 해소까지만」).
 - 배치 판정 방법 = jsdom 이 레이아웃을 계산하지 않으므로 ㈎ DOM 조상·형제 관계 ㈏ CSS 원문 계측 두 가지로 세운다. 계측기는 주석을 제거한 뒤 잰다. 선례 = `frontend/test/design-fix-20260908.test.ts` · `frontend/test/css-residual-rc11.test.ts` · `frontend/test/preview-slot-4x3.test.tsx` 머리 주석.
 - 재사용 시험 파일 = `frontend/test/{preview-slot-4x3,preview-pick-and-fallback,scale-ladder,dataset-preview-zoom,upload,grid-preview,thumb-nudge-20260905}.test.tsx`. Playwright 를 새로 들이지 않는다.
@@ -112,8 +115,8 @@
   - `#30`㈎ 부모 찾기 창 결과 0행 — 절차 = 로그인 → 업로드 등록 ③ 계보 단계 → 「가공 전 데이터 직접 찾기」 모달 → 필터 전부 비운 상태 1회 · 분류·주제 각 1값 1회 · 가공 단계 필터 1회. 선행조건 = 같은 연구실에 등록 완료 데이터셋 2건 이상(1건 이상은 등록 중인 자신이 아닐 것) — 데이터셋 목록 화면 건수로 먼저 확인. 기록 = 요청 질의 파라미터 전부 · 응답 본문(행 수 · 다음 커서) · 빈 상태 문면 두 갈래 중 어느 쪽 · 요청 주체의 연구실 식별자와 같은 주체의 목록 건수 · 자기 제외 파라미터 전달 여부와 값 · 등록 중 데이터셋의 가공 단계 기준값.
   - `#30` 판정 규칙 = 후보가 실재하는데 0행이면 조회 결함 ⟹ 신규 `BF-` 항목 등재 대상으로 **보고만** 한다. 후보 부재 · 필터가 결과를 비운 것 · 자기 제외로만 0행이면 사용법으로 닫고 등재하지 않는다. 연구실 경계(RLS) 동작은 관찰만 하고 바꾸지 않는다.
 - 환경 선택 규칙 —
-  - 우선 = **dev**. 조건 = 읽기 위주로 접근 가능할 것. 업로드 1건은 24시간 만료되는 접수 행을 만들고 **데이터셋으로 등록하지 않는다**. 시험용 연구실을 쓴다.
-  - 대안 = 로컬 `docker compose`. 절차는 `docs/DEPLOY.md` · `dev-package/RESTART.md` 를 따른다.
+  - 고정 = **staging(로컬 `docker compose -f infra/staging/compose.i2.yml`)**. 근거 = dev 의 시험용 연구실 식별자와 24시간 만료 스윕 실물이 스폰 시점에 미확인(advisor ① 조건 7). staging 은 리허설 자리라 판정·배포 창 기록·사용자 확인이 없다(`CLAUDE.md §0`). 절차 = `dev-package/RESTART.md`(`-f compose.i2.yml` 필수).
+  - dev 측정은 Ted 가 시험용 연구실을 지정하고 만료 스윕 앵커가 확인된 뒤에만 추가 회차로 한다. 이번 회차의 값은 staging 값이고 보고서가 그 사실을 첫 절에 적는다.
   - 고른 환경과 그 이유를 보고서 첫 절에 적는다. 두 환경의 값을 섞지 않는다.
 - 합격선은 이 레인이 정하지 않는다 — 값 회수 뒤 Ted 지정. `PLAN-SoT §9 〈241〉` 의 p95(대상 NDVI · 분포 통계)와 `gates/config/render-latency.toml` 눈금(서비스 시험 표본)을 합격선으로 유도하지 않는다.
 - 배출물 = `dev-package/reports/issues/2026-09-12-measure-L4.md` 1건. 재지 않은 것은 `[미확인]` 로 적는다.
@@ -165,7 +168,7 @@ WORKTREE=<경로> BRANCH=<브랜치>
   - `dev-package/work-items.yaml` = 기존 관행대로 **`BF-<n>` 개별 항목**을 쓴다(실측 = 현재 `BF-1` ~ `BF-13` 존재 · 번호는 병합 직전 재실측). 블록 모양은 기존 `BF-` 항목의 키 순서(`id` · `name` · `status` · `stage` · `owner` · `entry_conditions` · `depends_on` · `completion_def` · `evidence` · `deadline` · `note` · `sources`)를 그대로 따른다.
   - `dev-package/03-HANDOFF.md §1` = 해당 항목 상태 갱신 ＋ 상단 최종 갱신·현재 단계·다음 WU.
   - `dev-package/PLAN-SoT.md §9` = 결정 행 발급(번호는 `dev-package/prd/tools/max-decision.sh` 로 병합 직전 재실측 · 예약 금지). 기재 대상 4 = ⑤ 축소본 지도 자리 밖 이동(재판정) · ⑥ `R-C-2` 고르개 자리 규약 개정 · PRD-34 문면표 개정 · Ted 판정 11건 기록.
-  - `CLAUDE.md §0` 세 번째 단 괄호 목록은 **새 `after_stage2` 항목이 실제로 생길 때만** 갱신한다(`#11` 등재 시 · 대장 id 제안 `PA-T` — 조사 D). 게이트 `work-item-consistency` ㈕ 가 대조한다.
+  - `#11` 등재는 **마감 필수**(Ted 판정 ⑪ ⓐ) — 대장에 `PA-T` 블록(`after_stage2` · 다중 서버 로그인 실패 제한 공유 ＋ 신뢰 프록시 판정 · 미착수) 추가 · `CLAUDE.md §0` 세 번째 단 괄호 목록 갱신 · 게이트 `work-item-consistency` 1회. 게이트 ㈕ 가 괄호와 대장을 대조한다.
   - 상태 변경은 대장을 먼저 고치고 산문을 그 반영본으로 갱신한다.
 - 마감 조건(이 회차 레인 밖) = `main` ff → dev 배포 green ＋ `deploy_doctor` 15/15 를 **한 번의 실행으로**. 재시도해 모은 15 는 15 가 아니다.
 - 후속 항목으로 남을 수 있는 것 = `#24`㉮·`#25`⑴ 수정(합격선 Ted 지정 뒤) · `#33`㉡ 설계 · `#30` 화면 형태 재구성 · `#31` 배치 규약의 정책 문서 기재 · L4 가 조회 결함으로 판정한 신규 `BF-` 항목.
