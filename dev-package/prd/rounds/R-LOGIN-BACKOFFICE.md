@@ -37,16 +37,20 @@
 
 **Files:** Modify `dev-package/PLAN-SoT.md`(§9 배포 행 ＋ 동결 해제 서명 행), `.github/workflows/ci.yml`(단계 「파괴적 변경 탐지 (emit vs frozen seam)」); 읽기 `gates/tools/contract-breaking.sh`, `db/platform/versions/0025_stage3_accounts.py`, `db/platform/versions/0026_login_sessions.py`, `services/core-api/ops/deploy_doctor.py`, `docs/DEPLOY.md`.
 **Interfaces:** `contract-breaking` 기준은 파일이 아니라 ref 다 — `COLAB_BREAKING_BASE_REF`(기본 `HEAD`) · `COLAB_CONTRACTS_BASE` · `COLAB_CONTRACTS_REV`. 배포 sha 는 `origin/main` 의 조상이어야 한다.
-- [ ] **기본 기준으로 `contract-breaking` 을 먼저 1회** 실행한다. ERR 0 이면 「red 부재 · 서명은 사후 등재」로 기록하고, ERR 가 남으면 항목을 그대로 적어 진행을 멈춘다.
-- [ ] 기준 ref 를 `fc45a9aa^` 로 둔 1회로 ERR 가 실제로 잡히는지 확인한다(검사기 생존 증명 · 판정 계수 합산 제외).
-- [ ] `PLAN-SoT §9` 에 로그인 혼합 입력 400 의 동결 해제 서명 행을 적는다. 서명 축자(수령 2026-09-12): "로그인 혼합 입력 400 계약 변경을 승인한다." — 등재 전에는 dev 배포로 넘어가지 않는다.
-- [ ] `.github/workflows/ci.yml` 의 해당 단계에 `COLAB_BREAKING_BASE_REF: origin/main` 을 더한다(게이트 승격). 단계 이름으로 앵커하고 행 번호를 쓰지 않는다. 단계 존재는 실측으로 확인됐다.
-- [ ] 마이그레이션 적용 전 dev 에서 `deploy_doctor` 1회 — ⑥(스키마 head platform) BAD 를 관찰한다.
-- [ ] dev platform 체인에 `0025`·`0026` 을 적용한다. 백업 확인 뒤 적용하고 적용 전후 alembic head 를 기록한다.
-- [ ] `fc45a9aa` 이후 `main` 커밋으로 dev 이미지를 교체하고 `/opt/colab-v2` 의 `CURRENT_SHA`·`MAIN_SHA` 를 갱신한다.
-- [ ] `deploy_doctor --env dev` 를 **한 번** 실행해 15 항목 요약줄을 받는다. SKIP·BAD 0 이 아니면 항목별 원인을 적고 멈춘다.
-- [ ] dev 태그 `dev-YYYYMMDD-N` 을 찍고 `PLAN-SoT §9` 배포 행에 코드 sha·태그를 적는다. 태그의 원격 반영은 오케스트레이터가 한다.
-- [ ] `contract-lint`, `contract-breaking`, `generated-up-to-date`, `migration-single-head`, `migration-drift`, `schema-diff` 의 종료코드를 보고서에 기록한다.
+- [x] **기본 기준으로 `contract-breaking` 을 먼저 1회** 실행한다. ERR 0 이면 「red 부재 · 서명은 사후 등재」로 기록하고, ERR 가 남으면 항목을 그대로 적어 진행을 멈춘다. — 결과는 `PLAN-SoT §9` 서명 행 ⑤ⓐ 에 등재됐다(exit 0 · 「기준 HEAD (3건) 대비 파괴적 변경 없음」).
+- [x] 기준 ref 를 `fc45a9aa^` 로 둔 1회로 ERR 가 실제로 잡히는지 확인한다(검사기 생존 증명 · 판정 계수 합산 제외). — 같은 행 ⑤ⓒ · ERR 1 `[request-body-wrapped-in-one-of] at POST /sessions`.
+- [x] `PLAN-SoT §9` 에 로그인 혼합 입력 400 의 동결 해제 서명 행을 적는다. 서명 축자(수령 2026-09-12): "로그인 혼합 입력 400 계약 변경을 승인한다." — 등재 전에는 dev 배포로 넘어가지 않는다.
+- [x] `.github/workflows/ci.yml` 의 해당 단계에 `COLAB_BREAKING_BASE_REF: origin/main` 을 더한다(게이트 승격). 단계 이름으로 앵커하고 행 번호를 쓰지 않는다. 단계 존재는 실측으로 확인됐다.
+- [ ] 마이그레이션 적용 전 dev 에서 `deploy_doctor` 1회 — ⑥(스키마 head platform) BAD 를 관찰한다. — **미실행.** 마이그레이션은 배포 레인 도착 전(2026-09-12 01:28~01:52 KST)에 적용돼 있었고 적용 전 상태를 되돌려 재관찰하지 않았다.
+- [x] dev platform 체인에 `0025`·`0026` 을 적용한다. 백업 확인 뒤 적용하고 적용 전후 alembic head 를 기록한다. — 적용 전 `0024_s2_grid_convenience`(마이그레이션 직전 덤프 `stage3-dual-20260912/platform-before.sql.gz` · 2026-09-12 01:28 KST) · 적용 후 `0026_login_sessions`(살아 있는 DB 조회).
+- [x] `fc45a9aa` 이후 `main` 커밋으로 dev 이미지를 교체하고 `/opt/colab-v2` 의 `CURRENT_SHA`·`MAIN_SHA` 를 갱신한다. — 실적용 sha 는 `fc45a9aa7c64` 자체다(`origin/main` `c71eed916432` 와 코드 경로 diff **0파일** · 차이는 문서·CI 10파일). `CURRENT_SHA`·`MAIN_SHA`(`ancestor=yes`)는 2026-09-12 01:52·02:06 KST 에 기록됐다.
+- [x] 마이그레이션 → 롤 → 시크릿 → 기동 순서를 지킨다 ① 마이그레이션 `0025`·`0026` 을 **먼저** 적용한다(`account-admin-role.sql` 이 `account_admin` 스키마를 전제한다).
+- [x] ② `db-bootstrap.sh account-admin` 으로 `colab_account_admin` 롤을 만든다(`COLAB_ACCOUNT_ADMIN_PASSWORD` · base64url 문자만 · 출력하지 않는다).
+- [x] ③ 시크릿 파일 `${COLAB_DEV_SECRETS_DIR}/account-admin-database.url`(0600 · uid 10001)을 **이미지 교체 전에** 둔다 — `compose.yml` 이 그 파일을 바인드 마운트하므로 없으면 core-api 가 기동에 실패한다. 실측 = 롤·파일 01:52 → 컨테이너 교체 01:52(같은 분에 선행) · `ls -l` 로 권한·소유 확인.
+- [x] ④ 수동 인증 DB 확인(`deploy_doctor` 가 덮지 않는다) — `colab_account_admin` 으로 `SELECT count(*) FROM account_admin.login_credential` 성공(0행) · `service_operator` 0행 · `login_session` 7행. `PUT /me/password` 는 401 JSON 으로 도달한다. **서비스 운영자 등록과 실제 로그인 1회는 대상 계정이 정본·원장·docs 어디에도 없어 멈췄다 — `[Ted 입력 대기]`.**
+- [x] `deploy_doctor --env dev` 를 **한 번** 실행해 15 항목 요약줄을 받는다. SKIP·BAD 0 이 아니면 항목별 원인을 적고 멈춘다. — 2026-09-12 13:16 KST · `항목 15 — ✓ 15 · ✗ 0 · ─ 0` · exit 0 · 재시도 0회. 선행으로 EC2 배포 레포 트리를 배포 sha 로 밀었다(밀기 전 트리 head 0024 / DB 0026).
+- [x] dev 태그 `dev-YYYYMMDD-N` 을 찍고 `PLAN-SoT §9` 배포 행에 코드 sha·태그를 적는다. 태그의 원격 반영은 오케스트레이터가 한다. — 로컬 태그 `dev-20260912-1` → `fc45a9aa7c64`(`docs/BRANCHING.md §2` 「dev 실적용 sha」 규약). 원장 행 문안은 `dev-package/reports/r-login-backoffice/task1-deploy/release.md §5`.
+- [ ] `contract-lint`, `contract-breaking`, `generated-up-to-date`, `migration-single-head`, `migration-drift`, `schema-diff` 의 종료코드를 보고서에 기록한다. — **배포 레인 미실행.** 같은 시각 다른 사본이 전수 게이트를 돌고 있어 일회용 postgres 를 공유하는 게이트를 겹쳐 띄우지 않았다(`.claude/rules/colab-rules.md §3-4`). 전수 레인의 결과로 채운다.
 
 ### Task 2: 계정 상태 열과 롤 권한
 

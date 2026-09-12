@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-12 작업 1 dev 반영 완료: 실적용 sha `fc45a9aa7c64`(`origin/main` `c71eed916432` 와 코드 diff 0파일) · platform 체인 `0024` → `0026_login_sessions` · `colab_account_admin` 롤·시크릿 배치 · 프런트 번들 `index.html` md5 일치 · `deploy_doctor --env dev` **15/15 한 번의 실행**(exit 0 · 13:16 KST) · 로컬 태그 `dev-20260912-1`(미push). **다음 = 작업 2** — 다만 `account_admin.service_operator` 0행이라 백오피스 경로가 전량 403 이고, 운영자로 세울 계정이 정본·docs 어디에도 없다(`[Ted 입력 대기]`). 근거 `dev-package/reports/r-login-backoffice/task1-deploy/release.md`.
+
 > 2026-09-12 로그인·백오피스 회차: intent/spec/라운드 `6e99a157` 병합. 계약 동결 해제 서명(로그인 혼합 입력 400)을 `PLAN-SoT §9 〈381〉`(임시 번호 · 병합 직전 재실측)에 등재하고 CI 단계 「파괴적 변경 탐지 (emit vs frozen seam)」 기준을 `origin/main` 으로 승격했다. 대장 `BO-1` done · `BO-2`(계정 목록·재설정·비활성화) open 신설. **다음 = 작업 1 의 dev 반영**(마이그레이션 `0025`·`0026` 적용 ＋ `deploy_doctor` 15/15 한 번의 실행) — 서명이 등재됐으므로 진입조건 충족. 근거 `dev-package/intent/2026-09-12-login-backoffice-closeout.md` · `dev-package/prd/specs/login-backoffice-closeout.md` · `dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md`.
 
 > 2026-09-11 I4 완료: 서버 자체 자동 점검15/0/0, Slack 시험 발생1/해제1, 실제5분 자동점검3종 정상에 더해 사용자가 지정 수신처에서 두 문구 수신을 확인했다. I4 done. Stage1 완료62/미완료0/보류0, Stage2 완료95/미완료0/보류0, 백로그2건. 아래 pending·권한 부재 기록은 당시 이력이다.
