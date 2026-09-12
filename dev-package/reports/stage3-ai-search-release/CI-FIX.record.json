@@ -81,5 +81,13 @@
   },
   "rls_effect_selftest_cases": 20,
   "product_code_changes_in_followup": 0,
-  "live_model_calls": 0
+  "live_model_calls": 0,
+  "second_ci": "https://github.com/CognileapAI/colab-v2/actions/runs/34708440182",
+  "second_ci_failure": "Existing account-admin test read rows before the list response rendered",
+  "second_correction": "Wait for visible account rows in all eleven occurrences; assertions unchanged",
+  "async_test_recheck": {
+    "files": 2,
+    "passed": 19,
+    "failed": 0
+  }
 }

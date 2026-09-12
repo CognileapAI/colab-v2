@@ -103,12 +103,13 @@ test('운영자가 전 연구실 계정 목록을 일곱 열로 본다',async()=
  const headers=within(table).getAllByRole('columnheader').map(cell=>cell.textContent);
  // 「관리자」 열은 행 토글의 현재 상태다 (승인 intent 2026-09-12 운영자 지정).
  expect(headers).toEqual(['이메일','이름','역할','연구실','상태','관리자','최근 로그인','']);
- const first=within(table).getByRole('row',{name:/one@example.com/});
+ // 표 틀은 목록 응답보다 먼저 나타난다. 실제 계정 행이 도착한 뒤 검증한다.
+ const first=await within(table).findByRole('row',{name:/one@example.com/});
  expect(first).toHaveTextContent('한 사람');
  expect(first).toHaveTextContent('연구원');
  expect(first).toHaveTextContent('A 연구실');
  expect(first).toHaveTextContent('2026-09-11');
- const second=within(table).getByRole('row',{name:/two@example.com/});
+ const second=await within(table).findByRole('row',{name:/two@example.com/});
  expect(second).toHaveTextContent('B 연구실');
  expect(second).toHaveTextContent('기록 없음');
  expect(within(second).getByRole('button',{name:'재활성화'})).toBeInTheDocument();
@@ -134,7 +135,7 @@ test('비밀번호 재설정은 값·확인이 같아야 보내고 원문을 화
  const fetch=routedFetch();
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
- fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비밀번호 재설정'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비밀번호 재설정'}));
  const dialog=await screen.findByRole('dialog',{name:'비밀번호 재설정'});
  fireEvent.change(within(dialog).getByLabelText('새 초기 비밀번호'),{target:{value:'재설정-비밀번호-123'}});
  fireEvent.change(within(dialog).getByLabelText('새 초기 비밀번호 확인'),{target:{value:'다른-비밀번호-123'}});
@@ -156,12 +157,12 @@ test('비활성화는 확인 대화상자를 거쳐야 보낸다',async()=>{
  const fetch=routedFetch();
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
- fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비활성화'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비활성화'}));
  const dialog=await screen.findByRole('dialog',{name:'계정 비활성화'});
  fireEvent.click(within(dialog).getByRole('button',{name:'그대로 두기'}));
  await waitFor(()=>expect(screen.queryByRole('dialog',{name:'계정 비활성화'})).toBeNull());
  expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/status'))).toHaveLength(0);
- fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비활성화'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/one@example.com/})).getByRole('button',{name:'비활성화'}));
  fireEvent.click(within(await screen.findByRole('dialog',{name:'계정 비활성화'})).getByRole('button',{name:'비활성화'}));
  await waitFor(()=>expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/status'))).toHaveLength(1));
  const sent=fetch.mock.calls.map(call=>call[0] as Request).find(request=>request.url.endsWith('/status'))!;
@@ -199,11 +200,11 @@ test('행마다 관리자 토글이 있고 자기 자신은 누를 수 없다',a
  operatorFetch();
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
- const plain=within(table).getByRole('row',{name:/one@example.com/});
+ const plain=await within(table).findByRole('row',{name:/one@example.com/});
  expect(within(plain).getByRole('button',{name:'관리자 지정'})).toBeEnabled();
- const boss=within(table).getByRole('row',{name:/two@example.com/});
+ const boss=await within(table).findByRole('row',{name:/two@example.com/});
  expect(within(boss).getByRole('button',{name:'관리자 해제'})).toBeEnabled();
- const self=within(table).getByRole('row',{name:/op@example.com/});
+ const self=await within(table).findByRole('row',{name:/op@example.com/});
  expect(within(self).getByRole('button',{name:'관리자 해제'})).toBeDisabled();
 });
 
@@ -211,13 +212,13 @@ test('관리자 지정은 확인 대화상자를 거쳐야 보낸다',async()=>{
  const fetch=operatorFetch();
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
- fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
  const dialog=await screen.findByRole('dialog',{name:'관리자 지정'});
  fireEvent.click(within(dialog).getByRole('button',{name:'그대로 두기'}));
  await waitFor(()=>expect(screen.queryByRole('dialog',{name:'관리자 지정'})).toBeNull());
  expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/operator'))).toHaveLength(0);
 
- fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
  fireEvent.click(within(await screen.findByRole('dialog',{name:'관리자 지정'})).getByRole('button',{name:'관리자 지정'}));
  await waitFor(()=>expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/operator'))).toHaveLength(1));
  const sent=fetch.mock.calls.map(call=>call[0] as Request).find(request=>request.url.endsWith('/operator'))!;
@@ -229,7 +230,7 @@ test('마지막 관리자 해제 거절은 서버 문구 그대로 보인다',as
  operatorFetch(()=>json({code:'BAD_REQUEST',message:'마지막 관리자는 해제할 수 없다. 먼저 다른 관리자를 지정한다.'},400));
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
- fireEvent.click(within(within(table).getByRole('row',{name:/two@example.com/})).getByRole('button',{name:'관리자 해제'}));
+ fireEvent.click(within(await within(table).findByRole('row',{name:/two@example.com/})).getByRole('button',{name:'관리자 해제'}));
  fireEvent.click(within(await screen.findByRole('dialog',{name:'관리자 해제'})).getByRole('button',{name:'관리자 해제'}));
  expect(await screen.findByText('마지막 관리자는 해제할 수 없다. 먼저 다른 관리자를 지정한다.')).toBeInTheDocument();
 });
