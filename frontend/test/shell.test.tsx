@@ -74,3 +74,19 @@ describe('버그 2 — 연구실 설정 버튼 아이콘 간격', () => {
     expect(gap).toBeGreaterThanOrEqual(6);
   });
 });
+
+describe('관리자 전 연구실 보기 — 승인 intent 2026-09-12 운영자 지정', () => {
+  it('관리자에게는 연구실 자리에 「전체 연구실」과 읽기 전용 표시가 선다', () => {
+    renderAt('/lab', { ...account(), canManageServiceAccounts: true });
+    const button = screen.getByTestId('lab-switcher');
+    expect(button).toHaveTextContent('전체 연구실');
+    expect(button.getAttribute('aria-label')).toContain('읽기 전용');
+  });
+
+  it('관리자가 아니면 종전처럼 소속 연구실 이름만 선다', () => {
+    renderAt('/lab', account());
+    const button = screen.getByTestId('lab-switcher');
+    expect(button).toHaveTextContent('수자원순환연구실');
+    expect(button).not.toHaveTextContent('전체 연구실');
+  });
+});

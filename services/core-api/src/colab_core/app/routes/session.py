@@ -16,7 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from ...kernel import errors
 from ...kernel.auth import Subject, bearer_token
 from ...kernel.authn import LoginAttempt, client_key
-from ...kernel.login_sessions import SessionStoreUnavailable
+from ...kernel.login_sessions import AccountInactive, SessionStoreUnavailable
 from ..deps import current_session_subject
 
 router = APIRouter()
@@ -95,6 +95,13 @@ def create_session(body: SessionCredentials, request: Request) -> dict:
             "로그인 시도가 너무 잦다. 잠시 뒤에 다시 시도한다.")
     try:
         issued = issuer.issue(attempt)
+    except AccountInactive:
+        # 자격은 맞는데 계정이 비활성이다. **응답은 「자격이 틀렸다」와 한 글자도 다르지 않다** —
+        # 다르면 그 자리가 상태 열거 통로가 된다. 다만 실패 버킷은 세지 않는다: 옳은 비밀번호로
+        # 막힌 시도는 추측이 아니고, 세면 본인이 자기 계정을 15분 잠그게 된다. 틀린 비밀번호는
+        # 비활성이어도 아래 경로로 그대로 세어진다.
+        raise errors.unauthorized(
+            "심어 둔 계정이 아니다. 계정은 개발자가 심는다 (P-17).") from None
     except (SessionStoreUnavailable, SQLAlchemyError):
         raise errors.ApiError(503, "SESSION_STORE_UNAVAILABLE",
                               "세션 저장소에 연결할 수 없다.") from None

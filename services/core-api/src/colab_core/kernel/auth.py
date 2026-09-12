@@ -23,6 +23,11 @@ class Subject:
     lab_id: Ulid
     must_change_password: bool = False
     credential_version: int | None = None
+    #: 서비스 운영자인가. **권한이 아니라 사실 하나**다 — 이 값이 하는 일은 전 연구실
+    #: **읽기** 스코프를 여는 것뿐이고(`kernel/scope.py`), 쓰기 경계는 `lab_id` 가 그대로 쥔다.
+    #: 원본은 `account_admin.service_operator` 행이며 **매 요청 다시 도출된다**
+    #: (`kernel/login_sessions.py::authenticate`) — 토큰의 주장을 그대로 믿지 않는다.
+    operator: bool = False
 
 
 class SubjectRegistry:

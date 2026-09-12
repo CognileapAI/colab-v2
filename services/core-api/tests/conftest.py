@@ -288,11 +288,13 @@ def p2_client(app_db_url: str, admin_db_url: str, subjects_file: str, tmp_path):
               ai_base_url: str | None = None,
               session_secret: str | None = None,
               credentials_file: str | None = None,
+              subjects_file_override: str | None = None,
               account_admin_database_url: str | None = None,
               login_max_failures: int = 5,
               viz_service_token: str | None = "test-viz-service-token",
               allow_test_static_subjects: bool = True) -> TestClient:
-        settings = Settings(database_url=app_db_url, subjects_file=subjects_file,
+        settings = Settings(database_url=app_db_url,
+                            subjects_file=subjects_file_override or subjects_file,
                             session_secret=session_secret,
                             credentials_file=credentials_file,
                             account_admin_database_url=(

@@ -28,13 +28,20 @@ _LAB = text("""
      WHERE l.id = current_lab_id()
 """)
 
-_MEMBER_COUNT = text("SELECT count(*) FROM d1_account")
+# ⭑ ⟨0028⟩ 경계를 **여기에도 직접 적는다.** 위 `_LAB` 과 같은 이유가 아니다 —
+#   `d1_account` 에는 RLS 가 있다. 다만 운영자 읽기 스코프(`operator_read`)가 열리면
+#   그 정책이 전 연구실을 통과시키고, 그러면 **연구실 행은 `current_lab_id()` 로 고정인데
+#   구성원만 전 연구실**이 된다: 내 연구실 이름 아래 남의 연구실 사람들이 서는 화면이다.
+#   한 화면의 두 값이 서로 다른 범위를 말하지 않게 이 두 질의는 연구실에 못 박는다.
+#   (운영자가 남의 연구실 구성원을 보는 길은 이 화면이 아니라 백오피스 계정 목록이다.)
+_MEMBER_COUNT = text("SELECT count(*) FROM d1_account WHERE lab_id = current_lab_id()")
 
 # 구성원·권한 격자의 행 순서. 이름순으로 세운다 — 정본이 순서를 주지 않으므로
 # 화면이 매번 다른 순서를 보지 않게 하는 최소 규칙만 둔다.
 _MEMBERS = text("""
     SELECT a.id, a.name, a.email
       FROM d1_account a
+     WHERE a.lab_id = current_lab_id()
      ORDER BY a.name, a.id
 """)
 
@@ -97,7 +104,7 @@ def update_lab(session: Session, changes: dict) -> None:
 
 
 def list_members(session: Session) -> list[dict]:
-    """연구실 구성원 전원. 경계는 RLS 가 이미 걸었다 — lab_id 조건을 다시 적지 않는다."""
+    """연구실 구성원 전원. 질의가 연구실을 직접 고른다(위 `_MEMBERS` 주석 — 0028)."""
     return [dict(r) for r in session.execute(_MEMBERS).mappings().all()]
 
 
@@ -110,7 +117,7 @@ def member_exists(session: Session, account_id: Ulid) -> bool:
 
 
 def member_count(session: Session) -> int:
-    """RLS 가 이미 경계를 걸어 둔 위에서 센다 — 여기에 lab_id 조건을 다시 적지 않는다."""
+    """연구실 구성원 수. 질의가 연구실을 직접 고른다(위 `_MEMBER_COUNT` 주석 — 0028)."""
     return int(session.execute(_MEMBER_COUNT).scalar_one())
 
 

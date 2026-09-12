@@ -141,13 +141,93 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * 서비스 계정 목록
+         * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 백오피스의
+         *     계정 목록이다. **전 연구실 한 벌**이며 이 경로에만 연구실 경계를 걸지 않는다(운영자 전용).
+         *     최근 로그인은 로그인 세션 원장의 집계이고 새 열을 만들지 않는다. 필터 네 가지는 서버가 건다.
+         */
+        get: operations["listServiceAccounts"];
         put?: never;
         /**
          * 서비스 운영자가 계정 발급
          * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 기존 이메일을 덮어쓰지 않고 계정·역할·해시 자격을 한 트랜잭션에 만든다.
          */
         post: operations["createServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{accountId}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 운영자가 초기 비밀번호를 다시 심는다
+         * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자가 **새 초기
+         *     비밀번호를 직접 입력**하고 당사자에게 직접 전달한다(메일 발송 없음). 저장은 기존 해시 경로이고,
+         *     첫 로그인 변경이 다시 강제되며 그 계정의 기존 로그인이 모든 기기에서 끝난다.
+         *     **응답에 비밀번호 필드를 두지 않는다** — 되돌려 주는 순간 화면·로그·프록시에 남는다.
+         */
+        post: operations["resetServiceAccountPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{accountId}/operator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 관리자 지정·해제
+         * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 기존 관리자
+         *     **누구나** 다른 계정을 관리자로 지정하거나 해제한다. 거절은 둘뿐이다: **자기 자신 해제**와
+         *     **마지막 한 명 해제**(항상 1명 이상). 둘 다 400 이고 사유를 그대로 말한다.
+         *     지정·해제는 권한 변경이므로 그 계정의 기존 로그인이 모든 기기에서 끝난다.
+         */
+        post: operations["setServiceAccountOperator"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{accountId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 계정 비활성화·재활성화
+         * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비활성화는 즉시
+         *     로그인 거절이고 기존 로그인이 모든 기기에서 끝난다. **행을 지우지 않는다** — 데이터와
+         *     소유권은 그대로 남는다. 자기 계정 비활성화는 400 이다(되살릴 사람이 없어진다).
+         */
+        post: operations["setServiceAccountStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2148,6 +2228,14 @@ export interface components {
             labId: components["schemas"]["Ulid"];
             role: components["schemas"]["Role"];
             initialPassword: string;
+            /**
+             * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 발급과 동시에
+             *     관리자로 등록한다. **생략하면 아니다** — 기본값이 관대한 쪽으로 떨어지지 않게 한다.
+             *     ⚠ 스키마에 `default` 를 적지 않는다: 생성기가 `default` 붙은 칸을 **필수**로 내보내
+             *     기존 호출자의 타입이 깨진다(실측 — `frontend-typecheck` TS2322). 기본값의 자리는
+             *     서버(`AccountCreate.operator = False`)이고, 계약은 이 칸이 **선택**임을 말한다.
+             */
+            operator?: boolean;
         };
         /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
         ServiceAccount: {
@@ -2157,6 +2245,58 @@ export interface components {
             name: string;
             labId: components["schemas"]["Ulid"];
             role: components["schemas"]["Role"];
+        };
+        /**
+         * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 계정 상태는 둘뿐이다. 비활성은 삭제가 아니라 로그인 거절이며 데이터·소유권은 남는다.
+         * @enum {string}
+         */
+        ServiceAccountStatus: "active" | "inactive";
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 계정 목록의 한 행(여섯 열). */
+        ServiceAccountSummary: {
+            accountId: components["schemas"]["Ulid"];
+            email: string;
+            name: string;
+            labId: components["schemas"]["Ulid"];
+            labName: string;
+            role: components["schemas"]["Role"] | null;
+            status: components["schemas"]["ServiceAccountStatus"];
+            lastLoginAt: components["schemas"]["Timestamp"] | null;
+            /**
+             * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 이 계정이
+             *     관리자인가. 화면의 행 토글이 이 값을 현재 상태로 쓴다.
+             */
+            operator: boolean;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 전 연구실 한 벌. */
+        ServiceAccountList: {
+            accounts: components["schemas"]["ServiceAccountSummary"][];
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자가 직접 입력하는 새 초기 비밀번호. 길이 규칙은 발급 때와 같다. */
+        ServiceAccountPasswordReset: {
+            newPassword: string;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비밀번호 원문을 담지 않는다. */
+        ServiceAccountPasswordResetResult: {
+            accountId: components["schemas"]["Ulid"];
+            mustChangePassword: boolean;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비활성화·재활성화 요청. */
+        ServiceAccountStatusChange: {
+            status: components["schemas"]["ServiceAccountStatus"];
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 관리자 지정·해제 요청. 켜고 끄는 것 하나뿐이라 값도 하나다. */
+        ServiceAccountOperatorChange: {
+            operator: boolean;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 바뀐 뒤의 관리자 여부. */
+        ServiceAccountOperatorResult: {
+            accountId: components["schemas"]["Ulid"];
+            operator: boolean;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 바뀐 뒤의 상태. */
+        ServiceAccountStatusResult: {
+            accountId: components["schemas"]["Ulid"];
+            status: components["schemas"]["ServiceAccountStatus"];
         };
         /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
         AccountOptions: {
@@ -3875,16 +4015,16 @@ export interface components {
             [key: string]: boolean;
         };
         /**
+         * Format: date-time
+         * @description UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다. 근거: DataModel_공통_기반 §4.1(레코드 시점).
+         */
+        Timestamp: string;
+        /**
          * @description 데이터셋 접근 상태. 2값이고 새 데이터셋의 기본값은 `열림`. 근거: DataModel_공통_기반 §4.1(접근 상태) · PLAN-SoT §9-㉗ · PERMISSION-PRINCIPLES P-24·P-32. ⭑ 2026-09-07 개정(20차 해제 · 등급 ㉯ · PRD-11 · WU-B4) — **3값이다.** `열림`(화면 표기 `연구실 구성원 전체`) · `잠김`(`나만 보기` — 허용 목록이 비어 있다) · `지정 공개`(`지정한 사람만` — d2_dataset_access_grant 에 오른 사람만, 만료 = 승인일 + 6개월). 기준축은 **연구실 내부**이고 연구실 밖 열람 상태를 만들지 않는다 — RLS 경계는 그대로다(PRD-37 은 범위 밖). 불변식 「`잠김` 이면 허용 목록이 비어 있다」는 서버가 지킨다(두 표에 걸친 조건이라 행 단위 CHECK 의 사정거리 밖이다).
          * @default 열림
          * @enum {string}
          */
         AccessState: "열림" | "잠김" | "지정 공개";
-        /**
-         * Format: date-time
-         * @description UTC ISO-8601. 레코드 시점 3종(올린 날·마지막 수정·계보 확정일)이 이 타입을 쓴다. 근거: DataModel_공통_기반 §4.1(레코드 시점).
-         */
-        Timestamp: string;
         /** @description 목록 이어보기 토큰. 불투명 문자열이며 클라이언트가 해석하지 않는다. 근거: 정본은 `+N건 더 보기`(할 일 함 그룹당 5건, 에픽_목록 2026-08-07)만 요구하고 페이지 번호 UI 를 두지 않는다 — 이어보기 방식은 그 화면 요구를 만족시키는 레포 결정이다. */
         Cursor: string;
         /** @description 목록 응답 공통 형태. `totalCount` 는 화면이 반드시 표시하는 값이라 선택 항목이 아니다(결과 헤드 `4건을 찾았어요`, 조건을 걸 때마다 건수 갱신). `nextCursor` 가 null 이면 더 없음. 근거: Policy_데이터_찾기 §결과 헤드·§화면 동작(건수 갱신) · Cursor 참조. */
@@ -4605,6 +4745,7 @@ export interface components {
     };
     parameters: {
         DatasetId: components["schemas"]["Ulid"];
+        AccountId: components["schemas"]["Ulid"];
         ProjectId: components["schemas"]["Ulid"];
         RequestId: components["schemas"]["Ulid"];
         /** @description 등록 전 임시 업로드. 이벤트 seam 의 집계 루트와 같은 값이다 (`../events/envelope.json` uploadId). */
@@ -4848,6 +4989,38 @@ export interface operations {
             503: components["responses"]["ServerError"];
         };
     };
+    listServiceAccounts: {
+        parameters: {
+            query?: {
+                /** @description 연구실로 좁힌다. 생략하면 전 연구실이다. */
+                labId?: components["schemas"]["Ulid"];
+                status?: components["schemas"]["ServiceAccountStatus"];
+                role?: components["schemas"]["Role"];
+                /** @description 이메일 부분 일치. 대소문자를 가리지 않는다. */
+                email?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 계정 목록. **0건도 여기로 온다** — 정직한 빈 상태. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
     createServiceAccount: {
         parameters: {
             query?: never;
@@ -4875,6 +5048,102 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    resetServiceAccountPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountPasswordReset"];
+            };
+        };
+        responses: {
+            /** @description 재설정 결과. 비밀번호 원문은 실리지 않는다. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountPasswordResetResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    setServiceAccountOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountOperatorChange"];
+            };
+        };
+        responses: {
+            /** @description 바뀐 뒤의 관리자 여부 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountOperatorResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    setServiceAccountStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountStatusChange"];
+            };
+        };
+        responses: {
+            /** @description 바뀐 상태 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountStatusResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
             503: components["responses"]["ServerError"];
         };
