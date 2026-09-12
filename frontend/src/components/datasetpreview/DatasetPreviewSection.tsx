@@ -262,17 +262,23 @@ export function DatasetPreviewSection(props: {
 
       {/* ⬛ 자리 선점 틀 — **상세를 여는 즉시 선다**(`시작하는 중` 포함 · 축 ① · 4:3).
           안쪽만 갈리고 바깥 치수는 네 상태에서 바뀌지 않는다 (WU-C1). */}
-      <PreviewSlot state={slotState} testId="dt-preview-slot">
-      {/* ⑵ 고르개 셋 — 업로드 화면과 **같은 컴포넌트**다. 한 번에 값 하나 · 컴포넌트 상태. */}
-      <PreviewPickRow
-        idPrefix="dt"
-        pieces={pieces}
-        description={description}
-        selection={pick}
-        disabled={start.phase === '시작하는 중'}
-        fallbackPiece={fallbackPiece}
-        onPick={(next) => setPick((prev) => ({ ...prev, ...next }))}
-      />
+      <PreviewSlot
+        state={slotState}
+        testId="dt-preview-slot"
+        /* ⑵ 고르개 셋 — 업로드 화면과 **같은 컴포넌트**다. 한 번에 값 하나 · 컴포넌트 상태.
+           ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 업로드 화면과 **같은 이음매**(`PreviewSlot` 의 `controls`)로
+              올렸다. `.dt-preview` 에는 CSS 규칙이 없어 이 화면의 줄 간격을 줄 주체가 없으므로,
+              여백은 이음매가 만드는 컨테이너가 gap 으로 갖는다(spec v2 §5-2). */
+        controls={<PreviewPickRow
+          idPrefix="dt"
+          pieces={pieces}
+          description={description}
+          selection={pick}
+          disabled={start.phase === '시작하는 중'}
+          fallbackPiece={fallbackPiece}
+          onPick={(next) => setPick((prev) => ({ ...prev, ...next }))}
+        />}
+      >
       {start.phase === '시작하는 중' ? <RenderStageNotice /> : null}
 
       {start.phase === '그릴 수 없음' ? (

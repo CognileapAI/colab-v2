@@ -17,11 +17,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
+import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
+import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 import type { PreviewPiece, TargetDescription } from '../src/components/preview/pick';
 
 declare const process: { cwd(): string };
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
+const DATASET_ID = '01JYZ9K7WQ3N8V4M2X6C5B0DS1';
 const RENDER_ID = '01JYZ9K7WQ3N8V4M2X6C5B0RE1';
 const PIECE_A = '01JYZ9K7WQ3N8V4M2X6C5B0F01';
 const PIECE_B = '01JYZ9K7WQ3N8V4M2X6C5B0F02';
@@ -82,6 +85,27 @@ function uploadSource(job: RenderJob) {
   };
 }
 
+const DRAWING_JOB = {
+  renderId: RENDER_ID,
+  status: '그리는 중',
+  stage: '지도 그리는 중',
+} as unknown as RenderJob;
+
+/** 상세(S-05) 출처 — 같은 사실을 상세 포트 모양으로 준다. */
+function detailSource(job: RenderJob) {
+  return {
+    palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    create: vi.fn(async () => job),
+    get: vi.fn(async () => job),
+    probeTile: vi.fn(async () => 'ok' as const),
+    mapGeometry: vi.fn(async () => undefined),
+    screenshot: vi.fn(async () => new Blob()),
+    lookupValue: vi.fn(async () => ({}) as never),
+    files: vi.fn(async () => PIECES),
+    describe: vi.fn(async () => DESCRIBE),
+  } as unknown as DatasetPreviewSource;
+}
+
 /** 업로드 화면을 세우고 「미리보기 그리기」까지 밟는다. */
 async function drawUpload(job: RenderJob) {
   const source = uploadSource(job);
@@ -118,6 +142,32 @@ describe('㈀ 고르개 줄은 4:3 틀 밖 · 틀보다 앞선 형제다 — 업
     const before = (await screen.findByTestId('up-pick-row')).parentElement;
     await waitFor(() => expect(screen.getByTestId('up-preview-image')).toBeTruthy(), WAIT);
     expect(screen.getByTestId('up-pick-row').parentElement).toBe(before);
+  });
+});
+
+describe('㈀ 고르개 줄은 4:3 틀 밖 · 틀보다 앞선 형제다 — 데이터셋 상세 (단계 ②)', () => {
+  it('③ 상세 고르개 줄이 4:3 틀의 자손이 아니고 앞선 형제다', async () => {
+    render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(DRAWING_JOB)} pollMs={100000} />);
+    const pick = await screen.findByTestId('dt-pick-row');
+    const slot = screen.getByTestId('dt-preview-slot');
+    expect(slot.contains(pick)).toBe(false);
+    expect(precedes(pick, slot)).toBe(true);
+  });
+
+  it('④ 상세도 렌더 전·후로 고르개 줄의 부모가 같다', async () => {
+    render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(doneJob())} pollMs={100000} />);
+    const before = (await screen.findByTestId('dt-pick-row')).parentElement;
+    await waitFor(() => expect(screen.getByTestId('preview-viewport')).toBeTruthy(), WAIT);
+    expect(screen.getByTestId('dt-pick-row').parentElement).toBe(before);
+  });
+
+  it('두 화면의 고르개 줄이 같은 이음매(틀 위 줄 컨테이너)에 선다', async () => {
+    render(<PreviewPanel source={uploadSource(doneJob())} uploadId={UPLOAD_ID} hasReferenceGrid />);
+    const upParent = (await screen.findByTestId('up-pick-row')).parentElement;
+    render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(DRAWING_JOB)} pollMs={100000} />);
+    const dtParent = (await screen.findByTestId('dt-pick-row')).parentElement;
+    expect(upParent?.className).toBe('pv-frame-wrap');
+    expect(dtParent?.className).toBe('pv-frame-wrap');
   });
 });
 
