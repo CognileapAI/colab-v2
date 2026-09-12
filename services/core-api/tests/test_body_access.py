@@ -111,7 +111,7 @@ def test_no_restrictive_policy_leaked_onto_the_metadata_tables(session_factory) 
     for r in rows:
         by_table.setdefault(r["tablename"], []).append((r["policyname"], r["permissive"]))
 
-    # ⭑ `operator_read`(0028)가 더 붙었다. **PERMISSIVE ＋ SELECT 전용**이라 이 시험이 지키는
+    # ⭑ `operator_read`(`0029_operator_read_policy`)가 더 붙었다. **PERMISSIVE ＋ SELECT 전용**이라 이 시험이 지키는
     #   성질(잠긴 데이터가 목록에서 사라지지 않는다)을 깨지 않는다 — RESTRICTIVE 가 하나라도
     #   섞이면 AND 로 합쳐져 그 순간 행이 사라진다. 그래서 이름만 늘리지 않고 **종류까지** 본다.
     for table in ("d3_dataset", "d3_dataset_description", "d3_dataset_autometa"):
