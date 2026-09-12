@@ -40,10 +40,12 @@ git_q() { git -c user.email=t@t -c user.name=t -c commit.gpgsign=false -C "$1" "
 
 new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸림, 표준출력 = 저장소 경로
   local root="$TMP/$1" work="$TMP/$1/repo"
-  mkdir -p "$work/infra/dev" "$work/dist"
+  mkdir -p "$work/infra/dev" "$work/infra/_lib" "$work/dist"
   # `ship.sh` 는 `REPO="$HERE/../.."` 로 저장소를 잡는다(`infra/dev/ship.sh:10`) —
-  # 같은 상대 배치로 복사해야 픽스처 저장소가 `$REPO` 가 된다.
+  # 같은 상대 배치로 복사해야 픽스처 저장소가 `$REPO` 가 되고, 게이트 본문
+  # `infra/_lib/ship-gate.sh`(dev·prod 공용)가 그 밑에서 읽힌다.
   cp "$REPO/infra/dev/ship.sh" "$work/infra/dev/ship.sh"
+  cp "$REPO/infra/_lib/ship-gate.sh" "$work/infra/_lib/ship-gate.sh"
   cp "$REPO/infra/dev/tag-release.sh" "$work/infra/dev/tag-release.sh" 2>/dev/null || true
   cp "$REPO/infra/dev/compose.yml" "$REPO/infra/dev/up.sh" "$work/infra/dev/"
   chmod +x "$work/infra/dev/"*.sh

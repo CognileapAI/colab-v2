@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# prod 완료 판정 — `deploy_doctor` 14 항목을 **한 번의 실행으로** 돌린다. prod EC2 위에서.
+# prod 완료 판정 — `deploy_doctor` 15 항목을 **한 번의 실행으로** 돌린다. prod EC2 위에서.
 #
 # 왜 스크립트인가 — 이 실행에는 **혼자서는 못 맞히는 조건 넷**이 있고, 넷 다 2026-09-06 에
 # 하나씩 red 를 내며 드러났다. 재현이 안 되면 판정이 아니므로 그대로 굳혀 둔다.
@@ -14,6 +14,10 @@
 #   ⓷ **`/etc/colab` 을 디렉터리째 마운트하지 않는다.** 그 디렉터리는 `700 root` 라
 #      uid 10001(컨테이너 유저)이 **지나갈 수 없다** → ④⑤ 가 `PermissionError` 로 죽는다.
 #      compose 가 파일을 개별 마운트하는 이유가 같다. 여기서도 **파일 단위**로 건넨다.
+#   ⓹ **`/opt/colab-v2` 를 `/state` 로 읽기 전용 마운트한다.** ⭑ ⟨2026-09-12⟩ 15번째 항목
+#      「실행 sha ∈ main」이 `/state/CURRENT_SHA` 와 `/state/MAIN_SHA` 를 대조한다. 마운트가
+#      없으면 그 항목은 **영원히 ✗**(「마운트 없음」)이고, 그걸 ─ 로 접으면 반입 게이트를
+#      거치지 않은 배포가 통과한다. `MAIN_SHA` 는 `infra/prod/ship.sh` 가 반입 때 적는다.
 #   ⓸ **운영자 키로 돈다. IMDS 로 돌면 안 된다.** 항목 ①의 이름이 「**운영자** 자격증명」이다.
 #      prod 앱 역할은 `DiagnosticsDevOnly` 를 **일부러 뺐으므로**(`〈372〉`) IMDS 로 돌면
 #      ③ 웹 버킷이 `HeadObject 403` 을 낸다 — 권한 설계가 옳은데 판정이 red 가 되는 자리다.
@@ -39,8 +43,10 @@ TAG=$(sed -n 's/^COLAB_IMAGE_TAG=//p' /opt/colab-v2/prod.env | tail -1)
 # ⚠ 레포를 **통째로** 마운트한다 — ⑥⑦ 은 db/*/alembic.ini 를, ⑧ 은 gates/tools/rls_coverage.py 를 읽는다.
 # ⚠ /etc/colab 은 700 root 라 디렉터리째 마운트하면 uid 10001 이 못 지난다 → 파일 단위로.
 # ⚠ 자격은 **운영자 키**다. IMDS(앱 역할)로 돌면 ③ 웹 버킷이 403 이다 — prod 앱 역할은 진단 권한을 일부러 뺐다.
+# ⚠ /opt/colab-v2 를 /state 로 건다 — ⑮ 가 CURRENT_SHA·MAIN_SHA 를 읽는다. 빼면 ⑮ 는 항상 ✗ 다.
 docker run --rm --network host --env-file /root/colab-boot/ops.env \
   -v /opt/colab-repo:/repo:ro \
+  -v /opt/colab-v2:/state:ro \
   -v /etc/colab/platform-owner-db.url:/secrets/platform-owner-db.url:ro \
   -v /etc/colab/ai-owner-db.url:/secrets/ai-owner-db.url:ro \
   "colab-v2/core-api:$TAG" \
