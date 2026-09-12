@@ -30,6 +30,25 @@ def _subject(account_id: str, lab_id: str) -> Subject:
     return Subject(account_id=Ulid(account_id), lab_id=Ulid(lab_id))
 
 
+def test_evidence_candidate_is_added_before_pagination_without_cross_lab_leak(session_factory):
+    with read_only_scope(session_factory, _subject(ACC_A_RES, LAB_A)) as session:
+        rows,total=d3_catalog.search_datasets(session,terms=('없는검색어xyz',),topic=None,
+            limit=1,offset=0,evidence_ids=(DS_A1,DS_B1))
+        assert [r.dataset_id for r in rows]==[DS_A1] and total==1
+        assert rows[0].where==('확인한 파일 근거',)
+        assert rows[0].rank==0
+        next_rows,_=d3_catalog.search_datasets(session,terms=('없는검색어xyz',),topic=None,
+            limit=1,offset=1,evidence_ids=(DS_A1,DS_B1))
+        assert next_rows==[]
+
+
+def test_excluding_all_literal_candidates_does_not_activate_trigram(session_factory):
+    with read_only_scope(session_factory, _subject(ACC_A_RES, LAB_A)) as session:
+        rows,total=d3_catalog.search_datasets(session,terms=('강우',),topic=None,
+            limit=10,offset=0,excluded_ids=(DS_A1,DS_A2))
+        assert rows==[] and total==0
+
+
 def _match(session_factory, *, lab_id, account_id, terms, topic=None, limit=20):
     with read_only_scope(session_factory, _subject(account_id, lab_id)) as session:
         rows, total = d3_catalog.search_datasets(

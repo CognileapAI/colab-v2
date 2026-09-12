@@ -139,7 +139,7 @@ def psql(container: str, db: str, role: str, sql: str) -> list[list[str]]:
     return [line.split("\x1f") for line in out.splitlines() if line != ""]
 
 
-def load_targets(pg: str, db: str, role: str) -> dict[str, str]:
+def load_targets(pg: str, db: str, role: str, *, allow_extra: bool = False) -> dict[str, str]:
     """이름 → D 코드. **정본은 적재 매니페스트다** — 실행기가 이름을 다시 적지 않는다."""
     if not MANIFEST.is_file():
         raise Unmeasurable(f"적재 매니페스트가 없다: {MANIFEST}")
@@ -157,12 +157,14 @@ def load_targets(pg: str, db: str, role: str) -> dict[str, str]:
         key = by_name.get(name)
         if key is None:
             unknown.append(name)
+            if allow_extra:
+                ids[dataset_id] = f"EXTRA:{dataset_id}"
         else:
             ids[dataset_id] = key
     missing = sorted(set(by_name.values()) - set(ids.values()))
     if missing:
         raise Unmeasurable(f"매니페스트가 적은 데이터셋이 실물에 없다: {missing} — 이 상태의 값은 평가셋 값이 아니다")
-    if unknown:
+    if unknown and not allow_extra:
         raise Unmeasurable(f"매니페스트에 없는 데이터셋이 실물에 있다: {unknown} — 대상 집합이 바뀌었다")
     return ids
 
@@ -361,14 +363,18 @@ def main() -> int:
     ap.add_argument("--json", metavar="PATH", help="원자료를 이 경로에 쓴다")
     ap.add_argument("--write-baseline", action="store_true")
     ap.add_argument("--baseline-note", default="")
+    ap.add_argument("--allow-extra-datasets", action="store_true",
+                    help="Measure current enlarged corpus; retain every extra hit as EXTRA:id, never silently exclude it")
     cfg = ap.parse_args()
+    if cfg.allow_extra_datasets and cfg.write_baseline:
+        ap.error('Enlarged-corpus measurements cannot overwrite the original baseline')
 
     try:
         evalset = json.loads(EVALSET.read_text(encoding="utf-8"))
         if len(evalset["items"]) != 16:
             raise Unmeasurable(f"A층은 16건이다 — 평가셋에 {len(evalset['items'])}건이 있다")
         sqls = load_product_sql()
-        ids = load_targets(cfg.pg, cfg.db, cfg.role)
+        ids = load_targets(cfg.pg, cfg.db, cfg.role, allow_extra=cfg.allow_extra_datasets)
         cfg.n_targets = len(ids)
         rounds = [run_round(cfg, evalset, ids, sqls) for _ in range(max(1, cfg.repeat))]
     except Unmeasurable as e:
@@ -384,6 +390,8 @@ def main() -> int:
     payload = {
         "시점": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "세는_기준": {
+            "추가자료_포함": cfg.allow_extra_datasets,
+            "추가자료_식별자": [id for id, key in ids.items() if key.startswith('EXTRA:')],
             "대상_데이터셋": cfg.n_targets, "고정_검색어": "S2b-SEARCH-EVALSET §2.9.1 무수정",
             "1단": f"{cfg.ai} 컨테이너 SqlDictionaries.expand 실호출",
             "2단": f"{CATALOG_PY.name} _SEARCH/_SEARCH_TRGM 원문 · topic=NULL · LIMIT {SQL_LIMIT}",

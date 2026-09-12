@@ -1,0 +1,8 @@
+[
+  {"id":"P1","query":"2023년 오월 경기남부와 충청 일대의 식물 녹색도를 한 달 평균으로 본 위성자료가 필요해.","required":["LD-VEG-LV1"],"mode":"retrieval"},
+  {"id":"P2","query":"레이더 신호로 비를 추정한 결과와, 비교에 쓴 지상 15분 누적강수 표본을 같이 보여줘.","required":["LD-PRCP-LV2","LD-PRCP-LV1"],"mode":"retrieval"},
+  {"id":"P3","query":"2000~2025년 우리나라 시군구별 SPI와 SPEI 4주 지수를 매주 비교하고 싶어.","required":["LD-DRGH-LV1"],"mode":"retrieval"},
+  {"id":"N1","query":"2023년 4월 경기 남부·충청권 월평균 천리안 NDVI 찾아줘.","required":[],"mode":"empty"},
+  {"id":"N2","query":"2024년 제주도에서 매일 관측한 U-Net SPEI 1km 자료 찾아줘.","required":[],"mode":"empty"},
+  {"id":"N3","query":"Prediction_20230517.npy의 바로 앞 입력 데이터셋과 모델 보조자료를 각각 찾아줘.","required":["LD-VEG-LV1","LD-VEG-LV1-MODELIN"],"mode":"retrieval"}
+]

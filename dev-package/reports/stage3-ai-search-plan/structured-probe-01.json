@@ -1,0 +1,268 @@
+{
+  "model_calls": 0,
+  "kind": "offline candidate experiment; not production quality",
+  "hashes": {
+    "eval/k4-search/structured_probe.py": "a20cb318e478bfa65420e08609c45d59b56dc412a8c9ca3f3f6883c59bee865e",
+    "eval/k4-search/golden-cases.json": "0e61e384f59fc67050f36849824bac10e3f52d151a80153c259cf2c557da7fd6",
+    "eval/k4-search/structured-extra-cases.json": "d039026f517c2f22da8bef438f556cdaa955ed0bc8a3b016b6ce50e7e7945876",
+    "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json": "1b9b9afd50b3a827d555cfd6b1982bcf531de0c8af11db2de0d49ce5b5875bbe"
+  },
+  "results": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+      "ids": [
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "unverified": [
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+      "ids": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR"
+      ],
+      "relation": [
+        {
+          "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "parent_role": "주입력",
+          "method": "DQF 품질필터 → LCC→WGS84 → ROI 추출 → SG 평활·선형보간 → 100 m 균등분할 → 월평균"
+        }
+      ],
+      "unverified": [],
+      "strategy": "exact-file/direct-parent",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+      "ids": [
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+      ],
+      "unverified": [],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCJTXHXT37CZD22TKMJ13P"
+      ],
+      "unverified": [],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8"
+      ],
+      "unverified": [
+        "temporal_granularity"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "temporal_granularity",
+        "file_exclusion"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+      "ids": [],
+      "unverified": [],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+      "ids": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "unverified": [
+        "quality",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "inclusion": null,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "native_resolution"
+      ],
+      "strategy": "facets",
+      "inclusion": null,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P1",
+      "query": "2023년 오월 경기남부와 충청 일대의 식물 녹색도를 한 달 평균으로 본 위성자료가 필요해.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "period"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P2",
+      "query": "레이더 신호로 비를 추정한 결과와, 비교에 쓴 지상 15분 누적강수 표본을 같이 보여줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCJTXHXT37CZD22TKMJ13P"
+      ],
+      "unverified": [
+        "temporal_granularity"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P3",
+      "query": "2000~2025년 우리나라 시군구별 SPI와 SPEI 4주 지수를 매주 비교하고 싶어.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N1",
+      "query": "2023년 4월 경기 남부·충청권 월평균 천리안 NDVI 찾아줘.",
+      "ids": [],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N2",
+      "query": "2024년 제주도에서 매일 관측한 U-Net SPEI 1km 자료 찾아줘.",
+      "ids": [],
+      "unverified": [
+        "native_resolution",
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N3",
+      "query": "Prediction_20230517.npy의 바로 앞 입력 데이터셋과 모델 보조자료를 각각 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+      ],
+      "relation": [
+        {
+          "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "parent_role": "주입력",
+          "method": "U-Net based Model"
+        },
+        {
+          "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "parent_role": "보조입력",
+          "method": "U-Net based Model"
+        }
+      ],
+      "unverified": [],
+      "strategy": "exact-file/direct-parent",
+      "inclusion": true,
+      "semantic": "unassessed"
+    }
+  ]
+}

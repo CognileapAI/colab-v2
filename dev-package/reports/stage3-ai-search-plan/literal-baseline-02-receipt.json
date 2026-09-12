@@ -1,0 +1,9 @@
+{
+  "note": "Post-run receipt before runner hash fields were added; no remote rerun",
+  "sha256": {
+    "eval/k4-search/golden_baseline.py": "12503585a67b0943c9b2a5eee13ec838b9400224ad6e6a58386f9f8192435117",
+    "eval/k4-search/golden-set.md": "35bb672dce4b49cf38843d4d1cb57aa64059c7ae5cd552827cd9c5a3bbb18239",
+    "eval/k4-search/golden-cases.json": "0e61e384f59fc67050f36849824bac10e3f52d151a80153c259cf2c557da7fd6",
+    "dev-package/reports/stage3-ai-search-plan/literal-baseline-02.json": "1e2bf1040a72b4544745e99e97617f52bea5d0c8d548fa950f3605e119c9b030"
+  }
+}

@@ -1516,6 +1516,59 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /datasets/{datasetId}/search-evidence:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      tags: [catalog]
+      operationId: listDatasetSearchEvidence
+      summary: 접근 가능한 파일별 검색 근거와 현재 검토 상태
+      description: |
+        [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE.
+        파일 본문 접근 권한이 있는 사람에게만 파일명과 근거 원문 스냅샷을 돌려준다.
+        저장된 파일 내용 버전이 현재 버전과 다르면 상태는 `stale`로 계산한다.
+      responses:
+        "200":
+          description: 파일별 근거. 저장 전 파일은 evidence가 null이다.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchEvidenceList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /datasets/{datasetId}/files/{fileId}/search-evidence:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+      - $ref: "#/components/parameters/FileId"
+    put:
+      tags: [catalog]
+      operationId: saveDatasetFileSearchEvidence
+      summary: 파일에 출처가 있는 검색 사실을 초안 또는 검토 완료로 저장
+      description: |
+        [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE.
+        기존 `업로드·편집` 권한과 파일 본문 접근 권한을 함께 사용한다. 근거 revision과
+        파일 내용 revision이 모두 기대값과 같을 때만 저장하며, 출처 hash와 검토 주체·시각은
+        서버가 정한다. 출처 text는 붙여 넣은 불변 스냅샷이며 외부 문서를 자동 추적하지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SearchEvidenceWrite" }
+      responses:
+        "200":
+          description: 저장된 근거. 출처 hash와 검토자는 서버가 정한다.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchEvidence" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /datasets/{datasetId}/grid-files:
     parameters:
       - $ref: "#/components/parameters/DatasetId"
@@ -5165,6 +5218,112 @@ components:
             **화면이 뒤집기 버튼을 그리려면 지금 배정이 무엇인지 알아야 한다** —
             그 값이 이것이다 (`PREVIEW-IMPLEMENTATION §10-16` — 사용자에게 「위도냐 경도냐」를
             묻지 않는다. **서버가 판별하고 보여주고 뒤집기 버튼을 준다**).
+
+    SearchEvidenceFacts:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE."
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum: [model_input, auxiliary_input, validation, prediction, index, documentation, analysis_code]
+        period:
+          type: object
+          required: [start, end]
+          additionalProperties: false
+          properties:
+            start: { type: string, format: date }
+            end: { type: string, format: date }
+        region: { type: string, minLength: 1, maxLength: 500 }
+        cadence:
+          type: string
+          enum: [daily, weekly, monthly, 15min]
+        model: { type: string, minLength: 1, maxLength: 500 }
+        variable: { type: string, minLength: 1, maxLength: 500 }
+        directObservation: { type: boolean }
+        nativeResolutionM: { type: number, exclusiveMinimum: 0 }
+        interpolated: { type: boolean }
+
+    SearchEvidenceSourceWrite:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. 붙여 넣은 원문 스냅샷. 외부 문서의 자동 갱신 연결이 아니다."
+      type: object
+      required: [label, locator, text]
+      additionalProperties: false
+      properties:
+        label: { type: string, minLength: 1, maxLength: 200 }
+        locator: { type: string, minLength: 1, maxLength: 300 }
+        text: { type: string, minLength: 1, maxLength: 20000 }
+
+    SearchEvidenceSource:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. 서버가 원문 스냅샷에서 sha256을 계산해 더한 출처."
+      type: object
+      required: [label, locator, text, sha256]
+      additionalProperties: false
+      properties:
+        label: { type: string, minLength: 1, maxLength: 200 }
+        locator: { type: string, minLength: 1, maxLength: 300 }
+        text: { type: string, minLength: 1, maxLength: 20000 }
+        sha256: { type: string, pattern: "^[0-9a-f]{64}$" }
+
+    SearchEvidenceWrite:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE."
+      type: object
+      required: [expectedRevision, expectedFileRevision, facts, source, status]
+      additionalProperties: false
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        expectedFileRevision: { type: integer, minimum: 1 }
+        facts: { $ref: "#/components/schemas/SearchEvidenceFacts" }
+        source: { $ref: "#/components/schemas/SearchEvidenceSourceWrite" }
+        status: { type: string, enum: [draft, reviewed] }
+
+    SearchEvidence:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE."
+      type: object
+      required: [revision, status, facts, source, reviewedBy, reviewedAt]
+      additionalProperties: false
+      properties:
+        revision: { type: integer, minimum: 1 }
+        status: { type: string, enum: [draft, reviewed, stale] }
+        facts: { $ref: "#/components/schemas/SearchEvidenceFacts" }
+        source: { $ref: "#/components/schemas/SearchEvidenceSource" }
+        reviewedBy:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        reviewedAt:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Timestamp"
+            - type: "null"
+
+    SearchEvidenceItem:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE."
+      type: object
+      required: [fileId, fileName, fileRevision, evidence]
+      additionalProperties: false
+      properties:
+        fileId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        fileName: { type: string, minLength: 1 }
+        fileRevision: { type: integer, minimum: 1 }
+        evidence:
+          oneOf:
+            - $ref: "#/components/schemas/SearchEvidence"
+            - type: "null"
+
+    SearchEvidenceList:
+      description: "[사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE."
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SearchEvidenceItem" }
 
     DownloadTicket:
       description: |

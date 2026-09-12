@@ -1,0 +1,225 @@
+{
+  "kind": "3 file-retrieval checks + 3 condition-component checks; not end-to-end answers",
+  "results": [
+    {
+      "id": "N19",
+      "passed": true,
+      "result": {
+        "ids": [
+          "01M1SCKW76AZQCHT5HAMZH9KH0"
+        ],
+        "unverified": [
+          "continuous_temporal_coverage"
+        ],
+        "strategy": "facets",
+        "file_evidence": {
+          "01M1SCKW76AZQCHT5HAMZH9KH0": [
+            {
+              "file": "Prediction_20230523.npy",
+              "role": "prediction",
+              "source_document": "registered summary and filename",
+              "scope": "prediction filename; no performance guarantee"
+            }
+          ]
+        }
+      },
+      "elapsed_ms": 1.692
+    },
+    {
+      "id": "N20",
+      "passed": true,
+      "result": {
+        "ids": [
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+        ],
+        "unverified": [
+          "continuous_temporal_coverage"
+        ],
+        "strategy": "facets",
+        "file_evidence": {
+          "01M1SCH2SAEFRXCZ2N6RSNR3GB": [
+            {
+              "dataset_key": "LD-VEG-LV1-MODELIN",
+              "file": "HLS_S30_NDVI_mean_202305.tif",
+              "role": "validation",
+              "source_document": "#processing_description_NDVI.docx",
+              "scope": "monthly HLS validation; not a child of GK-2A monthly dataset"
+            }
+          ]
+        }
+      },
+      "elapsed_ms": 0.682
+    },
+    {
+      "id": "N21",
+      "passed": true,
+      "result": {
+        "ids": [
+          "01M1SCJTXHXT37CZD22TKMJ13P"
+        ],
+        "unverified": [],
+        "strategy": "facets",
+        "file_evidence": {
+          "01M1SCJTXHXT37CZD22TKMJ13P": [
+            {
+              "dataset_key": "LD-PRCP-LV2",
+              "file": "pred_sample.npy",
+              "role": "prediction",
+              "source_document": "#processing_description_Precipitation.docx",
+              "scope": "U-Net rainfall estimate; not direct observation"
+            }
+          ]
+        }
+      },
+      "elapsed_ms": 0.316
+    },
+    {
+      "id": "N22",
+      "passed": true,
+      "result": {
+        "ids": [],
+        "unverified": [
+          "temporal_granularity",
+          "continuous_temporal_coverage"
+        ],
+        "strategy": "facets",
+        "file_evidence": {},
+        "related_assessment": {
+          "region": {
+            "status": "supported",
+            "evidence": "대한민국시군구",
+            "source": "drought"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "weekly",
+            "source": "drought"
+          },
+          "period": {
+            "status": "contradicted",
+            "evidence": [
+              "2000-01-01",
+              "2025-12-20"
+            ],
+            "source": "drought"
+          }
+        }
+      },
+      "elapsed_ms": 0.779
+    },
+    {
+      "id": "N23",
+      "passed": true,
+      "result": {
+        "ids": [
+          "01M1SCGX4PFD796VX8093WQMS7"
+        ],
+        "unverified": [
+          "quality",
+          "geographic_coverage",
+          "continuous_temporal_coverage"
+        ],
+        "strategy": "facets",
+        "file_evidence": {
+          "01M1SCGX4PFD796VX8093WQMS7": [
+            {
+              "dataset_key": "LD-VEG-LV1",
+              "file": "GK2A_NDVI_mean_202305.tif",
+              "role": "model_input",
+              "source_document": "#processing_description_NDVI.docx",
+              "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+            }
+          ]
+        },
+        "related_assessment": {
+          "quality": {
+            "status": "unknown",
+            "evidence": "결측률 검증 보고서 없음",
+            "source": "vegetation"
+          },
+          "interpolation": {
+            "status": "contradicted",
+            "evidence": "2km to 100m uniform division, not native 100m observation",
+            "source": "vegetation"
+          },
+          "region": {
+            "status": "supported",
+            "evidence": "경기남부충청",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "elapsed_ms": 0.888
+    },
+    {
+      "id": "N24",
+      "passed": true,
+      "result": {
+        "ids": [],
+        "unverified": [
+          "native_resolution",
+          "geographic_coverage",
+          "continuous_temporal_coverage"
+        ],
+        "strategy": "facets",
+        "file_evidence": {},
+        "related_assessment": {
+          "direct_observation": {
+            "status": "contradicted",
+            "evidence": "2km to 100m uniform division, not native 100m observation",
+            "source": "vegetation"
+          },
+          "region": {
+            "status": "supported",
+            "evidence": "경기남부충청",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "elapsed_ms": 0.195
+    }
+  ],
+  "model_calls": 0,
+  "hashes": {
+    "eval/k4-search/condition_assessment.py": "9f430c08491e12acf9f76d2ec07f1908d936ffd9a768020d86e405c128561079",
+    "eval/k4-search/golden_baseline.py": "c74bd7375b4f56d388ed39464477fc265317a755d1bab9db020b31df22eeecb7",
+    "eval/k4-search/heldout_eval.py": "5c9361bcd3cd955b67adc95823c78ddaaa32aa0d28fdc744ac720a5958898f1f",
+    "eval/k4-search/measure.py": "1c7cc08fc02394b8f8f19b78851c61efb977e7eaa6e29c1437e443e93153dea1",
+    "eval/k4-search/structured_probe.py": "0c54e691c95d2d7709774b10f036ca010ad7571266baf1944df484cd65e0e45c",
+    "eval/k4-search/test_condition_assessment.py": "4c8aeecd0ff0cdf449c7aa31676cae4a8cf42b10100758b5293cb11ba2d53969",
+    "eval/k4-search/test_golden_baseline.py": "d7aef7688dac7abfc67091bf72d10d5da994eeaf30f74f71c94339cd37f14f32",
+    "eval/k4-search/test_structured_probe.py": "05e563069f7568add96d711aaccc64d1da4f30c14ef8a039450cce1b908e4281",
+    "eval/k4-search/condition-evidence.json": "0ccaf716c92230b863254f5f3959f431af024d86ea96e1f68f898824bc646a50",
+    "eval/k4-search/file-role-evidence.json": "10aadffe46e1d84121dd0ca28d66f53782229918f19da20dfebe72d7df3cccb7",
+    "eval/k4-search/golden-cases.json": "0e61e384f59fc67050f36849824bac10e3f52d151a80153c259cf2c557da7fd6",
+    "eval/k4-search/heldout-cases.json": "a4f3f6a1dcc98cbd7783eedbe5db23c97e495420226393d16118ddd11ddcb736",
+    "eval/k4-search/structured-extra-cases.json": "d039026f517c2f22da8bef438f556cdaa955ed0bc8a3b016b6ce50e7e7945876",
+    "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json": "1b9b9afd50b3a827d555cfd6b1982bcf531de0c8af11db2de0d49ce5b5875bbe"
+  }
+}

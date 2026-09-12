@@ -765,6 +765,7 @@ CREATE TABLE d3_file (
   -- 열을 뒤에 붙이고 선언 순서가 다르면 schema-diff 가 red 를 낸다 (d3_dataset 의 0007 주석).
   relative_path text        CHECK (relative_path IS NULL
                                    OR length(relative_path) BETWEEN 1 AND 1024),
+  content_revision integer  NOT NULL DEFAULT 1 CHECK (content_revision > 0),
   -- **양쪽 반쪽을 다 건다.** 축 없는 격자 파일도, 축 붙은 본체도 만들지 않는다 —
   -- 한쪽만 걸면 「열을 뒀는데 안 채우면 그만」이 된다 (DATA-REFERENCE §1).
   CONSTRAINT d3_file_grid_carries_an_axis
@@ -783,6 +784,42 @@ CREATE UNIQUE INDEX d3_file_one_lat_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lat;
 CREATE UNIQUE INDEX d3_file_one_lon_grid_per_dataset
   ON d3_file (dataset_id) WHERE kind = '기준 격자 파일' AND carries_lon;
+
+ALTER TABLE d3_file
+  ADD CONSTRAINT d3_file_lab_dataset_id_unique UNIQUE (lab_id, dataset_id, id);
+CREATE FUNCTION increment_d3_file_content_revision() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      NEW.content_revision := OLD.content_revision + 1;
+      RETURN NEW;
+    END $$;
+CREATE TRIGGER d3_file_content_revision
+  BEFORE UPDATE OF storage_key, size_bytes ON d3_file
+  FOR EACH ROW EXECUTE FUNCTION increment_d3_file_content_revision();
+
+-- 붙여 넣은 원문 스냅샷과 파일별 검색 사실 (0028). 외부 설명서를 자동 추적하지 않는다.
+CREATE TABLE d3_search_evidence (
+  file_id ulid PRIMARY KEY,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  file_revision integer NOT NULL CHECK (file_revision > 0),
+  revision integer NOT NULL CHECK (revision > 0),
+  status text NOT NULL CHECK (status IN ('draft', 'reviewed')),
+  facts jsonb NOT NULL CHECK (jsonb_typeof(facts) = 'object' AND facts <> '{}'::jsonb),
+  source_label text NOT NULL CHECK (length(btrim(source_label)) BETWEEN 1 AND 200),
+  source_locator text NOT NULL CHECK (length(btrim(source_locator)) BETWEEN 1 AND 300),
+  source_text text NOT NULL CHECK (length(source_text) BETWEEN 1 AND 20000),
+  source_sha256 text NOT NULL CHECK (source_sha256 ~ '^[0-9a-f]{64}$'),
+  reviewed_by ulid REFERENCES d1_account(id),
+  reviewed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT d3_search_evidence_file_fk FOREIGN KEY (lab_id, dataset_id, file_id)
+    REFERENCES d3_file(lab_id, dataset_id, id) ON DELETE CASCADE,
+  CONSTRAINT d3_search_evidence_review_pair CHECK (
+    (status = 'reviewed' AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL)
+    OR (status = 'draft' AND reviewed_by IS NULL AND reviewed_at IS NULL))
+);
+CREATE INDEX d3_search_evidence_dataset_idx ON d3_search_evidence(dataset_id, file_id);
 
 -- J-1~J-5 — 파일을 실제로 읽은 파이프라인이 남긴 격자/지도 사실.
 -- 기존 데이터셋은 근거 없이 backfill하지 않는다. 행 부재 = 「아직 모름」이다.
@@ -1442,6 +1479,24 @@ CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
         AND g.expires_at > now()
     )
   );
+
+ALTER TABLE d3_search_evidence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_evidence FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_evidence FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+CREATE POLICY body_access ON d3_search_evidence AS RESTRICTIVE FOR ALL
+  USING (EXISTS (
+    SELECT 1 FROM d3_file f
+    WHERE f.id = d3_search_evidence.file_id
+      AND f.dataset_id = d3_search_evidence.dataset_id
+      AND f.lab_id = d3_search_evidence.lab_id
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM d3_file f
+    WHERE f.id = d3_search_evidence.file_id
+      AND f.dataset_id = d3_search_evidence.dataset_id
+      AND f.lab_id = d3_search_evidence.lab_id
+  ));
 
 -- D5 임시 원장 3종 — **경계 정책만.** `body_access` 는 걸 수 없다(걸 대상이 없다):
 -- 그 정책은 `d2_dataset_access`·`d1_lab_profile` 을 `dataset_id` 로 조회하는데, 등록 전

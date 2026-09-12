@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "environment": "disposable fixture DB, real local core + frontend",
+  "interpreter": "HTTP test double; no LLM or live AI service evaluation",
+  "checks": [
+    "login",
+    "search input",
+    "rationale",
+    "lab boundary",
+    "detail navigation",
+    "reload"
+  ]
+}

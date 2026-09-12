@@ -42,7 +42,7 @@ from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
 from .routes import (access, accounts, catalog, download, identity, ingestion, insight, lineage,
                      members, not_implemented, preview, project, representative_image,
-                     session, upload_transfers)
+                     search_evidence, session, upload_transfers)
 
 API_PREFIX = "/api/v1"
 
@@ -182,6 +182,7 @@ def create_app(settings: Settings | None = None, *, test_static_subjects: bool =
                    # · `/datasets/{id}/files/{id}/download` 는 세그먼트 수가 다르고 `/downloads/` 는
                    # 이 라우터뿐). 순서는 뜻이 없지만 카탈로그 옆에 둔다 — 같은 `catalog` 태그다.
                    download.router,
+                   search_evidence.router,
                    representative_image.router,
                    project.router,
                    upload_transfers.router,  # /uploads/transfers 가 /uploads/{uploadId} 보다 먼저

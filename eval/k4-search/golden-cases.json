@@ -1,0 +1,224 @@
+{
+  "snapshot": "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json",
+  "oracle": "golden-set.md",
+  "cases": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+      "scope": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCGM0K7FACRYTCWVMDDBY8"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "mode": "retrieval"
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [],
+      "mode": "empty"
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [],
+      "mode": "manual"
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+      "scope": [
+        "01M1SCC27AN4NZD3K978YFDCVD",
+        "01M1SCC8BZZJSCEW4MRPE4W9M8",
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCH9DF18DXH793JTP01W61",
+        "01M1SCJTXHXT37CZD22TKMJ13P",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "required": [],
+      "mode": "manual"
+    }
+  ]
+}

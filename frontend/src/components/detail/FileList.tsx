@@ -19,6 +19,8 @@ import { ActionGate, PermissionGate } from '../../permission/PermissionGate';
 import { useStartDownload } from './download';
 import { buildTree, type FileTreeNode } from './fileTree';
 import { formatFileSize } from './format';
+import { SearchEvidenceEditor } from './SearchEvidenceEditor';
+import { defaultSearchEvidenceSource, type SearchEvidenceSource } from './searchEvidenceSource';
 import {
   FileGone,
   LastBodyFile,
@@ -56,6 +58,8 @@ export function FileList(props: {
   actions: DatasetDetail['actions'];
   /** 추가·교체·삭제가 끝난 뒤 — 상세(`파일` 칸의 조각 수·합계)를 다시 읽는 자리. */
   onChanged?: (() => void) | undefined;
+  /** 시험에서는 격리 출처를 주입하고, 제품에서는 인증이 붙는 기본 API를 사용한다. */
+  evidenceSource?: SearchEvidenceSource | undefined;
 }) {
   const { datasetId, source } = props;
   const download = useStartDownload();
@@ -66,6 +70,8 @@ export function FileList(props: {
   const [pending, setPending] = useState<{
     file: File; operation: 'add' | 'replace'; fileId?: string;
   } | null>(null);
+  const [evidenceFile, setEvidenceFile] = useState<DatasetFile | null>(null);
+  const [evidenceDirty, setEvidenceDirty] = useState(false);
   useWorkProtection('dataset-files:' + datasetId, {
     dirty: pending !== null,
     inFlight: busy,
@@ -90,9 +96,10 @@ export function FileList(props: {
   }
 
   /** 쓰기 하나 — 성공하면 목록을 다시 묻고 상세에도 알린다. 실패면 아무것도 다시 묻지 않는다. */
-  function mutate(work: () => Promise<unknown>, clearPending = false) {
+  function mutate(work: () => Promise<unknown>, clearPending = false, onSuccess?: () => void) {
     void run(async () => {
       await work();
+      onSuccess?.();
       await reload();
       if (clearPending) setPending(null);
       props.onChanged?.();
@@ -103,7 +110,7 @@ export function FileList(props: {
     const work = item.operation === 'add'
       ? () => source.add(datasetId, item.file, '본체')
       : () => source.replace(datasetId, item.fileId!, item.file);
-    mutate(work, true);
+    mutate(work, true, item.operation === 'replace' ? () => setEvidenceFile(null) : undefined);
   }
 
   function preserveAndRun(item: NonNullable<typeof pending>) {
@@ -141,6 +148,18 @@ export function FileList(props: {
               다운로드
             </button>
           </ActionGate>
+          <button
+            type="button"
+            className="btn btn-sm"
+            aria-expanded={evidenceFile?.fileId === f.fileId}
+            aria-label={`${f.fileName} 검색 근거`}
+            disabled={busy || (evidenceDirty && evidenceFile?.fileId !== f.fileId)}
+            onClick={() => {
+              if (evidenceFile?.fileId !== f.fileId) setEvidenceFile(f);
+            }}
+          >
+            검색 근거
+          </button>
           <PermissionGate requires="업로드·편집">
             {/* 교체 = 파일을 하나 고르는 일이다 — 라벨이 곧 버튼이고 입력은 숨긴다 (`FileDropCard` 와 같은 모양) */}
             <label className="btn btn-sm">
@@ -262,6 +281,16 @@ export function FileList(props: {
             )}
           </div>
         </div>
+      ) : null}
+      {open && evidenceFile ? (
+        <SearchEvidenceEditor
+          datasetId={datasetId}
+          fileId={evidenceFile.fileId}
+          fileName={evidenceFile.fileName}
+          source={props.evidenceSource ?? defaultSearchEvidenceSource}
+          onDirtyChange={setEvidenceDirty}
+          onClose={() => { setEvidenceDirty(false); setEvidenceFile(null); }}
+        />
       ) : null}
     </div>
   );

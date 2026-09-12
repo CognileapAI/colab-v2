@@ -1,0 +1,1039 @@
+{
+  "kind": "source text collection; not product ingestion or semantic verification",
+  "automatically_verified": false,
+  "sources": [
+    {
+      "path": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
+      "sha256": "78042c273746876a61b491fadad7e09d75d8c153f74e493b3c6cd806b6c87fae",
+      "paragraphs": [
+        {
+          "paragraph": 1,
+          "text": "[1] 기본 설명"
+        },
+        {
+          "paragraph": 3,
+          "text": "구분"
+        },
+        {
+          "paragraph": 4,
+          "text": "상세설명"
+        },
+        {
+          "paragraph": 5,
+          "text": "인자명"
+        },
+        {
+          "paragraph": 6,
+          "text": "반사도, 지상강우량"
+        },
+        {
+          "paragraph": 7,
+          "text": "정의"
+        },
+        {
+          "paragraph": 8,
+          "text": "반사도: 대기 중에 존재하는 강수 입자(예: 빗방울, 눈, 우박 등)가 레이더 전파를 얼마나 강하게 산란(scattering)하여 되돌려 보내는지를 나타내는 물리량"
+        },
+        {
+          "paragraph": 9,
+          "text": "참고링크: https://www.noaa.gov/jetstream/reflectivity"
+        },
+        {
+          "paragraph": 10,
+          "text": "계산식"
+        },
+        {
+          "paragraph": 12,
+          "text": "값 범위"
+        },
+        {
+          "paragraph": 14,
+          "text": "해석 방법"
+        },
+        {
+          "paragraph": 18,
+          "text": "[2] 메인 처리 프로세스"
+        },
+        {
+          "paragraph": 19,
+          "text": "(자료 전달 기간: test dataset 중 일부 샘플"
+        },
+        {
+          "paragraph": 20,
+          "text": "'201907281430', '202005151115', '202007221045', '202106031430',"
+        },
+        {
+          "paragraph": 21,
+          "text": "'202107031745', '202207110415', '202208100500', '202307140830',"
+        },
+        {
+          "paragraph": 22,
+          "text": "'202405151930', '202407091315')"
+        },
+        {
+          "paragraph": 24,
+          "text": "구분"
+        },
+        {
+          "paragraph": 25,
+          "text": "상세설명"
+        },
+        {
+          "paragraph": 26,
+          "text": "Lv.0"
+        },
+        {
+          "paragraph": 27,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 28,
+          "text": "RDR_CMP_HSR_PUB_201907281430.bin.gz"
+        },
+        {
+          "paragraph": 30,
+          "text": "자료 제공처"
+        },
+        {
+          "paragraph": 31,
+          "text": "기상청 API허브"
+        },
+        {
+          "paragraph": 33,
+          "text": "자료 설명"
+        },
+        {
+          "paragraph": 34,
+          "text": "자료 형식"
+        },
+        {
+          "paragraph": 35,
+          "text": "bin "
+        },
+        {
+          "paragraph": 36,
+          "text": "기본 정보"
+        },
+        {
+          "paragraph": 37,
+          "text": "시/공간해상도: 5분 / 0.5 km"
+        },
+        {
+          "paragraph": 38,
+          "text": "자료 구성"
+        },
+        {
+          "paragraph": 39,
+          "text": "변량: 반사도"
+        },
+        {
+          "paragraph": 40,
+          "text": "이진 파일 형태"
+        },
+        {
+          "paragraph": 41,
+          "text": "정해진 규칙에 맞추어 원자료(반사도)를 꺼내오는 형식"
+        },
+        {
+          "paragraph": 43,
+          "text": "비고 사항"
+        },
+        {
+          "paragraph": 45,
+          "text": "Lv.0"
+        },
+        {
+          "paragraph": 46,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 47,
+          "text": "sfc_grid_rn_15m_201907281430.nc"
+        },
+        {
+          "paragraph": 49,
+          "text": "자료 제공처"
+        },
+        {
+          "paragraph": 50,
+          "text": "기상청 API허브"
+        },
+        {
+          "paragraph": 52,
+          "text": "자료 설명"
+        },
+        {
+          "paragraph": 53,
+          "text": "자료 형식"
+        },
+        {
+          "paragraph": 54,
+          "text": "NetCDF4"
+        },
+        {
+          "paragraph": 55,
+          "text": "기본 정보"
+        },
+        {
+          "paragraph": 56,
+          "text": "시/공간해상도: 5분 / 0.5 km"
+        },
+        {
+          "paragraph": 57,
+          "text": "자료 구성"
+        },
+        {
+          "paragraph": 58,
+          "text": "변량: 15분 누적 강수량"
+        },
+        {
+          "paragraph": 59,
+          "text": "기상청 및 공공기관(산림청, 농진청 등) 관측자료(AWS, 해양기상부이, 등표)에 지형효과를 반영한 3차원 객관분석 기법을 적용하여 생산한 분석자료."
+        },
+        {
+          "paragraph": 60,
+          "text": "15분 누적 강수를 활용함"
+        },
+        {
+          "paragraph": 62,
+          "text": "비고 사항"
+        },
+        {
+          "paragraph": 64,
+          "text": "Lv.1"
+        },
+        {
+          "paragraph": 65,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 66,
+          "text": "hsr_sample.npy"
+        },
+        {
+          "paragraph": 67,
+          "text": "rn15_sample.npy"
+        },
+        {
+          "paragraph": 69,
+          "text": "처리 과정"
+        },
+        {
+          "paragraph": 70,
+          "text": "(처리 순서대로 나열)"
+        },
+        {
+          "paragraph": 71,
+          "text": "기상청에서 제공하는 각각의 lat, lon 파일에 맞추어 WGS84로 좌표계 변환"
+        },
+        {
+          "paragraph": 72,
+          "text": "특정 연구대상지를 중심으로 crop 을 진행함"
+        },
+        {
+          "paragraph": 73,
+          "text": "lat, lon 정보 첨부해두었음"
+        },
+        {
+          "paragraph": 75,
+          "text": "비고 사항"
+        },
+        {
+          "paragraph": 76,
+          "text": "형태"
+        },
+        {
+          "paragraph": 77,
+          "text": "(10, 128, 128)"
+        },
+        {
+          "paragraph": 78,
+          "text": "Lv.2"
+        },
+        {
+          "paragraph": 79,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 80,
+          "text": "pred_sample.npy"
+        },
+        {
+          "paragraph": 82,
+          "text": "처리 방법"
+        },
+        {
+          "paragraph": 83,
+          "text": "딥러닝 모델 (U-Net based Model)"
+        },
+        {
+          "paragraph": 85,
+          "text": "모델"
+        },
+        {
+          "paragraph": 86,
+          "text": "학습 시활용 자료"
+        },
+        {
+          "paragraph": 87,
+          "text": "입력자료"
+        },
+        {
+          "paragraph": 88,
+          "text": "hsr_sample.npy"
+        },
+        {
+          "paragraph": 90,
+          "text": "검증자료"
+        },
+        {
+          "paragraph": 91,
+          "text": "rn15_sample.npy"
+        },
+        {
+          "paragraph": 93,
+          "text": "모델"
+        },
+        {
+          "paragraph": 94,
+          "text": "학습 자료"
+        },
+        {
+          "paragraph": 95,
+          "text": "상세 설명"
+        },
+        {
+          "paragraph": 96,
+          "text": "형태"
+        },
+        {
+          "paragraph": 97,
+          "text": "(10, 128, 128)"
+        },
+        {
+          "paragraph": 99,
+          "text": "모델 학습과정 설명"
+        },
+        {
+          "paragraph": 100,
+          "text": "작업 배경"
+        },
+        {
+          "paragraph": 101,
+          "text": "레이더는 강우량을 직접 측정하는 장비가 아니라, 대기 중 hydrometeor에 의해 산란되어 돌아오는 전자기파의 세기를 기반으로 레이더 반사도를 관측한다. 실제로 우리가 알고 싶은 값은 강우 강도 이기 때문에, 전통적으로는 반사도와 강우량 사이의 경험적 관계식인 Z–R 관계식을 이용하여 강우량을 추정한다. "
+        },
+        {
+          "paragraph": 102,
+          "text": "일반적으로 이 관계는 Z=aRb 형태로 표현되며, 대표적인 예로 Marshall–Palmer 관계식이 널리 사용되어 왔다. 그러나 이러한 관계식은 일정한 빗방울 크기 분포(drop size distribution)를 가정하고 있으며, 강수 유형이나 공간적 조건이 변하지 않는다는 단순한 가정을 기반으로 한다. 실제 대기에서는 대류성 강수, 층운성 강수, 지형 효과, 미세물리적 변화 등 다양한 요인이 작용하기 때문에 하나의 고정된 Z–R 관계식만으로 강우량을 정확하게 추정하는 데에는 한계가 존재한다."
+        },
+        {
+          "paragraph": 103,
+          "text": "현대의 기상 레이더 자료는 일반적으로 격자 형태로 제공된다. 즉, 특정 지역을 일정한 공간 해상도의 격자로 나누고 각 격자 셀마다 반사도 값이 저장된다. 예를 들어 512×512 와 같은 2차원 격자 구조에서 각 픽셀은 특정 위치의 레이더 반사도를 의미한다. 전통적인 방법에서는 이 격자의 각 픽셀에 대해 Z–R 관계식을 독립적으로 적용하여 강우량을 계산한다. 즉, 하나의 픽셀에서 관측된 반사도 값만을 이용하여 그 픽셀의 강우량을 추정하는 방식이다. 이러한 방법은 계산이 단순하다는 장점이 있지만, 강수 시스템이 가지는 공간적 구조를 전혀 고려하지 못한다는 한계가 있다. 실제 강수는 대류 셀, 비구름대, 혹은 중규모 강수 시스템과 같이 공간적으로 조직화된 패턴을 가지기 때문에, 단일 픽셀 정보만으로는 강수의 실제 분포를 충분히 설명하기 어렵다."
+        },
+        {
+          "paragraph": 104,
+          "text": "이러한 한계를 보완하기 위해 최근에는 딥러닝 기반 접근법, 특히 U-Net과 같은 합성곱 신경망을 이용한 강우 추정 방법이 활용되고 있다. 이 접근에서는 문제를 단순한 픽셀 변환 문제가 아니라 image-to-image 변환 문제로 정의한다. "
+        },
+        {
+          "paragraph": 105,
+          "text": "즉, 레이더 반사도 격자 전체를 하나의 이미지로 간주하고, 이를 입력으로 받아 동일한 공간 격자에서의 강우 분포 이미지를 출력하도록 모델을 학습한다. 예를 들어 128×128 또는 512×512 크기의 레이더 반사도 필드를 입력으로 사용하면, U-Net은 동일한 크기의 강우 강도 필드를 출력하게 된다. 이 과정에서 모델은 입력 반사도 영상과 지상에서 관측된 강우 자료 사이의 관계를 학습하게 된다."
+        },
+        {
+          "paragraph": 106,
+          "text": "학습 과정"
+        },
+        {
+          "paragraph": 107,
+          "text": "레이더 반사도 격자와 이에 대응하는 실제 강우 관측 자료를 쌍으로 사용하였다. 모델은 이러한 데이터 쌍을 반복적으로 학습하면서 예측된 강우장과 실제 강우장 사이의 차이를 최소화하도록 파라미터를 조정한다. 이 과정에서 U-Net을 활용하여 단순히 하나의 Z–R 계수를 학습하는 것이 아니라, 반사도와 강우량 사이의 복잡한 비선형 관계와 공간적 패턴을 동시에 학습하는 것을 목표로 하였다."
+        }
+      ]
+    },
+    {
+      "path": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "sha256": "9262dbc5997a86f3960bde14429745e1096c2ddf5760febb78e0d9c405cd48b8",
+      "paragraphs": [
+        {
+          "paragraph": 1,
+          "text": "[1] 기본 설명"
+        },
+        {
+          "paragraph": 3,
+          "text": "구분"
+        },
+        {
+          "paragraph": 4,
+          "text": "상세설명"
+        },
+        {
+          "paragraph": 5,
+          "text": "인자명"
+        },
+        {
+          "paragraph": 6,
+          "text": "정규식생지수 / Normalized Difference Vegetation Index (NDVI)"
+        },
+        {
+          "paragraph": 7,
+          "text": "정의"
+        },
+        {
+          "paragraph": 8,
+          "text": "NDVI는 인공위성으로부터 관측된 근적외선(Near-Infrared, NIR)과 적색(Red) 반사율의 차이를 이용해 식생의 활력 상태를 추정하는 지수이다."
+        },
+        {
+          "paragraph": 10,
+          "text": "광합성이 활발한 건강한 식물은 근적외선을 강하게 반사하고 적색광을 많이 흡수하지만, 가뭄이나 병해 등의 스트레스를 받은 식물은 이 비율이 변화하여 근적외선 반사율이 낮고 적색 반사율이 높아진다."
+        },
+        {
+          "paragraph": 11,
+          "text": "계산식"
+        },
+        {
+          "paragraph": 12,
+          "text": "NDVI = (NIR - Red) / (NIR + Red)"
+        },
+        {
+          "paragraph": 13,
+          "text": "값 범위"
+        },
+        {
+          "paragraph": 14,
+          "text": "-1 to 1"
+        },
+        {
+          "paragraph": 15,
+          "text": "해석 방법"
+        },
+        {
+          "paragraph": 16,
+          "text": "값이 높을수록 식생이 건강하고 녹색도가 높은 지역이며, 값이 낮을수록 식생이 희박하거나 없는 지역(예: 사막, 눈 덮인 지면, 수역 등)을 의미한다."
+        },
+        {
+          "paragraph": 19,
+          "text": "[2] 메인 처리 프로세스 - NDVI"
+        },
+        {
+          "paragraph": 20,
+          "text": "(자료 전달 기간: 2023. 05. 01. ~ 2023. 05. 31.)"
+        },
+        {
+          "paragraph": 22,
+          "text": "구분"
+        },
+        {
+          "paragraph": 23,
+          "text": "상세설명"
+        },
+        {
+          "paragraph": 24,
+          "text": "Lv.0"
+        },
+        {
+          "paragraph": 25,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 26,
+          "text": "gk2a_ami_le2_vgt_ko_yyyymmddHHMM.nc"
+        },
+        {
+          "paragraph": 28,
+          "text": "자료 제공처"
+        },
+        {
+          "paragraph": 29,
+          "text": "국가기상위성센터 (NMSC)"
+        },
+        {
+          "paragraph": 30,
+          "text": "(https://nmsc.kma.go.kr/homepage/html/base/cmm/selectPage.do?page=static.satllite.introGk2a)"
+        },
+        {
+          "paragraph": 32,
+          "text": "자료 설명"
+        },
+        {
+          "paragraph": 33,
+          "text": "자료 형식"
+        },
+        {
+          "paragraph": 34,
+          "text": "NetCDF4 형식"
+        },
+        {
+          "paragraph": 36,
+          "text": "기본 정보"
+        },
+        {
+          "paragraph": 37,
+          "text": "좌표계: Lambert Conformal Conic (LCC)"
+        },
+        {
+          "paragraph": 38,
+          "text": "시/공간해상도: 1일 / 2 km"
+        },
+        {
+          "paragraph": 40,
+          "text": "자료 구성"
+        },
+        {
+          "paragraph": 41,
+          "text": "DQF: Data Quality Flag (픽셀의 품질을 나타내는 자료로, Lv.0 → Lv.1 전환 시 품질이 저하된 픽셀의 값을 제거하는 과정에서 활용됨)"
+        },
+        {
+          "paragraph": 42,
+          "text": "EVI: 향상된 식생지수 (Enhanced Vegetation Index)"
+        },
+        {
+          "paragraph": 43,
+          "text": "FVC: 식생율 (Fractional Vegetation Cover)"
+        },
+        {
+          "paragraph": 44,
+          "text": "gk2a_imager_projection: 좌표계 정의 관련 자료"
+        },
+        {
+          "paragraph": 45,
+          "text": "NDVI: 정규식생지수 (Normalized Difference Vegetation Index)"
+        },
+        {
+          "paragraph": 47,
+          "text": "비고 사항"
+        },
+        {
+          "paragraph": 48,
+          "text": "GK-2A는 대한민국에서 발사한 위성으로 천리안 2A호라고도 불림."
+        },
+        {
+          "paragraph": 50,
+          "text": "생산하는 자료는 le1, le2 등 자료 수준에 따른 분류체계에 따라 제공됨."
+        },
+        {
+          "paragraph": 52,
+          "text": "대상지는 전구(full disk), 동아시아, 한반도 등이 있으며, 이번에 제공된 자료는 한반도 지역을 대상으로 함."
+        },
+        {
+          "paragraph": 54,
+          "text": "GK2A 자료는 기본적으로 각 인자의 분류별로 NetCDF4 파일로 제공되며, 일자별로 구분된 개별 파일 내에 하위 인자가 포함되어 있음."
+        },
+        {
+          "paragraph": 56,
+          "text": "이번에 제공된 자료는 GK-2A le2 식생자료로, GK-2A에서 제공되는 식생인자인 NDVI, EVI, FVC 3개와 좌표계 정의와 관련된 자료인 gk2a_imager_projection 1개, 픽셀별 품질 정보를 나타내는 DQF 자료 1개로 총 5개 자료로 구성됨."
+        },
+        {
+          "paragraph": 58,
+          "text": "해당 프로세스에서는 NDVI 자료만 활용되었으므로, 이후 Lv.1 자료부터는 NDVI 자료만 제공함."
+        },
+        {
+          "paragraph": 59,
+          "text": "Lv.1"
+        },
+        {
+          "paragraph": 60,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 61,
+          "text": "GK2A_NDVI_mean_yyyymm.tif"
+        },
+        {
+          "paragraph": 63,
+          "text": "처리 과정"
+        },
+        {
+          "paragraph": 64,
+          "text": "(처리 순서대로 나열)"
+        },
+        {
+          "paragraph": 65,
+          "text": "DQF 자료를 활용하여 품질이 저하되는 픽셀의 값을 NaN으로 변경하였음."
+        },
+        {
+          "paragraph": 67,
+          "text": "NDVI의 유효 값 범주인 -1 ~ 1을 고려하여, 해당 범주를 벗어나는 값을 NaN으로 변경하였음."
+        },
+        {
+          "paragraph": 69,
+          "text": "원자료 좌표계인 LCC를 WGS84로 변환하였음."
+        },
+        {
+          "paragraph": 71,
+          "text": "복수의 인자가 dictionary 형태로 저장되어 있는 NetCDF4 형식의 파일에서, NDVI 레이어를 추출하여 별개의 TIF 파일로 저장하였음."
+        },
+        {
+          "paragraph": 73,
+          "text": "연구 대상지역인 경기도 남부 ~ 충청권 일대에 맞추어 영역을 추출하였음."
+        },
+        {
+          "paragraph": 75,
+          "text": "시계열 자료의 이상치 평활화 기법(Savitzky-Golay)와 선형 보간 기법을 활용하여 결측치를 보간하였음."
+        },
+        {
+          "paragraph": 77,
+          "text": "본래 공간해상도 2 km의 자료를 균등 분할하여 100 m로 변환하였음(Uniform Distribution 기법 적용)."
+        },
+        {
+          "paragraph": 79,
+          "text": "일 단위 자료를 월 단위 평균 자료로 변환하였음."
+        },
+        {
+          "paragraph": 81,
+          "text": "비고 사항"
+        },
+        {
+          "paragraph": 82,
+          "text": "Lv.0에서 Lv.1-B로 자료가 변환되는 과정에서 대상 지역(ROI)가 변경되므로, 이에 따른 좌표 파일을 각각 #metadata 폴더 내에 포함하였음."
+        },
+        {
+          "paragraph": 83,
+          "text": "Lv.0: LAT.npy, LON.npy"
+        },
+        {
+          "paragraph": 84,
+          "text": "Lv.1, Lv.2: LAT_crop.npy, LON_crop.npy"
+        },
+        {
+          "paragraph": 86,
+          "text": "Lv.1에서 일 단위 자료를 월 단위로 변환한 것은, 이후 Lv.2 단계의 자료를 제작하기 위한 딥러닝 모델 훈련 자료로 활용하기 위함임."
+        },
+        {
+          "paragraph": 87,
+          "text": "Lv.2"
+        },
+        {
+          "paragraph": 88,
+          "text": "자료명"
+        },
+        {
+          "paragraph": 89,
+          "text": "Prediction_yyyymmdd.npy"
+        },
+        {
+          "paragraph": 91,
+          "text": "처리 방법"
+        },
+        {
+          "paragraph": 92,
+          "text": "딥러닝 모델 (U-Net based Model)"
+        },
+        {
+          "paragraph": 94,
+          "text": "모델"
+        },
+        {
+          "paragraph": 95,
+          "text": "학습 시활용 자료"
+        },
+        {
+          "paragraph": 96,
+          "text": "입력자료"
+        },
+        {
+          "paragraph": 97,
+          "text": "월 단위 GK-2A NDVI (2 km)"
+        },
+        {
+          "paragraph": 98,
+          "text": "수치표고모형 (100 m)"
+        },
+        {
+          "paragraph": 99,
+          "text": "경사향 (100 m)"
+        },
+        {
+          "paragraph": 100,
+          "text": "연 단위 토지피복지도 (100 m)"
+        },
+        {
+          "paragraph": 102,
+          "text": "검증자료"
+        },
+        {
+          "paragraph": 103,
+          "text": "월 단위 HLS NDVI (100 m)"
+        },
+        {
+          "paragraph": 105,
+          "text": "모델"
+        },
+        {
+          "paragraph": 106,
+          "text": "학습 자료"
+        },
+        {
+          "paragraph": 107,
+          "text": "상세 설명"
+        },
+        {
+          "paragraph": 108,
+          "text": "월 단위 GK-2A NDVI (2 km)"
+        },
+        {
+          "paragraph": 109,
+          "text": "상기 서술한 Lv.0 → Lv.1 과정을 거쳐 전처리된 월 단위 NDVI 자료"
+        },
+        {
+          "paragraph": 110,
+          "text": "2 km 해상도의 자료를 Nearest 기법으로 균등 분할(Uniform Distribution)하여, 값의 변화 없이 단순 픽셀 분할만 수행되었음."
+        },
+        {
+          "paragraph": 112,
+          "text": "수치표고모형 (100 m)"
+        },
+        {
+          "paragraph": 113,
+          "text": "Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환"
+        },
+        {
+          "paragraph": 114,
+          "text": "시간해상도 X"
+        },
+        {
+          "paragraph": 115,
+          "text": "(Lv.0 자료 보유 X, Lv.1 자료만 전달하였음)"
+        },
+        {
+          "paragraph": 117,
+          "text": "경사향 (100 m)"
+        },
+        {
+          "paragraph": 118,
+          "text": "Copernicus GLO-30 DEM 자료를 100 m 해상도로 변환한 뒤, GIS 프로그램을 이용해 경사향 추출"
+        },
+        {
+          "paragraph": 119,
+          "text": "시간해상도 X"
+        },
+        {
+          "paragraph": 120,
+          "text": "(Lv.0 자료 보유 X, Lv.1 자료만 전달하였음)"
+        },
+        {
+          "paragraph": 122,
+          "text": "연 단위 토지피복지도 (100 m)"
+        },
+        {
+          "paragraph": 123,
+          "text": "Landsat-8 위성의 밴드(Blue, Green, Red, Near-Infrared, Shortwave-Infrared, Surface Temperature)를 이용하여, Google Earth Engine의 smileGradientTreeBoost Module 모델을 기반으로 군집 분석하여 생산"
+        },
+        {
+          "paragraph": 124,
+          "text": "(Lv.0 자료 보유 X, Lv.1 자료만 전달하였음)"
+        },
+        {
+          "paragraph": 126,
+          "text": "월 단위 HLS NDVI (100 m)"
+        },
+        {
+          "paragraph": 127,
+          "text": "HLS S30 자료의 Red, NIR 밴드를 기반으로 NDVI를 계산하고, 3 ~ 7일 공간해상도의 자료를 월 평균으로 변환"
+        },
+        {
+          "paragraph": 128,
+          "text": "(Lv.0 자료, Lv.1 자료 전달)"
+        },
+        {
+          "paragraph": 130,
+          "text": "※ 메인 자료인 GK-2A 외 모델 학습에 활용된 자료    (수치표고모형, 경사향, 연 단위 토지피복지도, 월 단위 HLS      NDVI)는 “Lv.1_(Model_Input_Data)” 폴더에 별도로      업로드하였습니다."
+        },
+        {
+          "paragraph": 132,
+          "text": "모델 학습과정 설명"
+        },
+        {
+          "paragraph": 133,
+          "text": "본 Lv.2의 자료는, Lv.1 단계 산출물인 월 단위 GK-2A NDVI 자료 (100 m 균등분할) 자료와, 고해상도 HLS 위성 기반 NDVI 자료 (30 m 관측, 100 m 평균으로 변환), 그 외 지형공간정보 (수치표고모델, 토지피복지도, 경사향 등)을 활용하여 U-Net 모델을 기반으로 훈련시킨 공간상세화 모델의 산출물임."
+        },
+        {
+          "paragraph": 135,
+          "text": "Lv.1와의 차이점은 다음과 같음."
+        },
+        {
+          "paragraph": 136,
+          "text": "Lv.1는 월 단위 평균으로 변환되었으나 이는 앞서 설명한 것과 같이 단순히 U-Net 모델을 훈련시키기 위하여 변환한 것이었기에, 다시 Lv.0와 같은 일 단위 시간해상도를 가짐."
+        },
+        {
+          "paragraph": 137,
+          "text": "Lv.1는 2 km의 자료를 단순히 균등 분할하였기에, 100 m로 변환되어도 각 픽셀의 값이 변하지 않음.(e.g., 2 km 해상도의 픽셀 하나가 0.3의 값을 가지고 있으면, 균등분할 후에는 100 m 해상도의 픽셀 400개가 동일한 0.3의 값을 가지고 있음.)"
+        },
+        {
+          "paragraph": 138,
+          "text": "그러나 Lv.2는 다양한 지형공간자료와의 훈련을 통해 구축된 U-Net 기반 공간상세화 모델의 산출물로, 지형 변화에 따른 NDVI의 변화가 세밀하게 드러나게 됨.(e.g., 2 km 해상도의 픽셀 하나가 0.3의 값을 가지고 있으면, 균등분할 후에는 100 m 해상도의 픽셀 400개가 지형공간적 특성에 따라 전부 다른 값을 가지게 됨)"
+        }
+      ]
+    },
+    {
+      "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPI-4weeks.docx",
+      "sha256": "2c0f4757e790257a6c904aa54218de38562f86a74d89eb996d3ed5494d124c60",
+      "paragraphs": [
+        {
+          "paragraph": 1,
+          "text": "Data Name: 대한민국 시군구 단위 내 주간 단위 SPI-4weeks 데이터"
+        },
+        {
+          "paragraph": 2,
+          "text": "생산자 이름: 차호영"
+        },
+        {
+          "paragraph": 3,
+          "text": "생산자 소속: 고려대학교"
+        },
+        {
+          "paragraph": 4,
+          "text": "Upload Date: 2026-05-17"
+        },
+        {
+          "paragraph": 5,
+          "text": "Access Type: Public"
+        },
+        {
+          "paragraph": 6,
+          "text": "Data Level: L1 Calibrated"
+        },
+        {
+          "paragraph": 7,
+          "text": "Category: Drought"
+        },
+        {
+          "paragraph": 8,
+          "text": "Type: Observed"
+        },
+        {
+          "paragraph": 9,
+          "text": "Coordinate System: WGS84"
+        },
+        {
+          "paragraph": 10,
+          "text": "Region: South Korea"
+        },
+        {
+          "paragraph": 11,
+          "text": "Spatial Resolution: 1 km"
+        },
+        {
+          "paragraph": 12,
+          "text": "Measurement Period: 2000-01-01 ~ 2025-12-31"
+        },
+        {
+          "paragraph": 13,
+          "text": "Measurement Interval: 1 week"
+        },
+        {
+          "paragraph": 14,
+          "text": "Dataset Description: 대한민국 내 기상관측소의 강우 관측자료를 활용하여 SPI-4weeks를 산정하고, 각 관측소의 주소지를 기준으로 해당 관측자료가 소재 시군구를 대표하는 것으로 가정하여 데이터를 구축하였다."
+        }
+      ]
+    },
+    {
+      "path": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPEI-4weeks.docx",
+      "sha256": "b6f87414d0a78ac318bc0e86b28c216acddad0636bfe9b5f29a72f0e06e63a49",
+      "paragraphs": [
+        {
+          "paragraph": 1,
+          "text": "Data Name: 대한민국 시군구 주 단위 SPEI-4weeks 데이터"
+        },
+        {
+          "paragraph": 2,
+          "text": "생산자 이름: 차호영"
+        },
+        {
+          "paragraph": 3,
+          "text": "생산자 소속: 고려대학교"
+        },
+        {
+          "paragraph": 4,
+          "text": "Upload Date: 2026-05-17"
+        },
+        {
+          "paragraph": 5,
+          "text": "Access Type: Public"
+        },
+        {
+          "paragraph": 6,
+          "text": "Data Level: L1 Calibrated"
+        },
+        {
+          "paragraph": 7,
+          "text": "Category: Drought"
+        },
+        {
+          "paragraph": 8,
+          "text": "Type: Observed"
+        },
+        {
+          "paragraph": 9,
+          "text": "Coordinate System: WGS84"
+        },
+        {
+          "paragraph": 10,
+          "text": "Region: South Korea"
+        },
+        {
+          "paragraph": 11,
+          "text": "Spatial Resolution: 1 km"
+        },
+        {
+          "paragraph": 12,
+          "text": "Measurement Period: 2000-01-01 ~ 2025-12-31"
+        },
+        {
+          "paragraph": 13,
+          "text": "Measurement Interval: 1 week"
+        },
+        {
+          "paragraph": 14,
+          "text": "Dataset Description: 대한민국 내 기상관측소의 강우 관측자료를 활용하여 SPEI-4weeks를 산정하고, 각 관측소의 주소지를 기준으로 해당 관측자료가 소재 시군구를 대표하는 것으로 가정하여 데이터를 구축하였다."
+        }
+      ]
+    }
+  ],
+  "bindings": [
+    {
+      "dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+      "file_id": "01M1SCGKNNM2HE1EFY86J3F2HK",
+      "file_name": "hsr_sample.npy",
+      "source": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
+      "annotation": {
+        "dataset_key": "LD-PRCP-LV1",
+        "file": "hsr_sample.npy",
+        "role": "model_input",
+        "source_document": "#processing_description_Precipitation.docx",
+        "scope": "HSR input described in processing document; not precipitation amount itself"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+      "file_id": "01M1SCGKRFMYKGXH237ZTRHKN5",
+      "file_name": "rn15_sample.npy",
+      "source": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
+      "annotation": {
+        "dataset_key": "LD-PRCP-LV1",
+        "file": "rn15_sample.npy",
+        "role": "validation",
+        "source_document": "#processing_description_Precipitation.docx",
+        "scope": "RN15 validation described in processing document; no accuracy guarantee"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCJTXHXT37CZD22TKMJ13P",
+      "file_id": "01M1SCJTSXP6WCKXA61W0Q7NDC",
+      "file_name": "pred_sample.npy",
+      "source": "01.level-data/01.precipitation/01.precipitation/#readme/#processing_description_Precipitation.docx",
+      "annotation": {
+        "dataset_key": "LD-PRCP-LV2",
+        "file": "pred_sample.npy",
+        "role": "prediction",
+        "source_document": "#processing_description_Precipitation.docx",
+        "scope": "U-Net rainfall estimate; not direct observation"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+      "file_id": "01M1SCGWEW4824ETY9VHSPN5Y5",
+      "file_name": "GK2A_NDVI_mean_202305.tif",
+      "source": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "annotation": {
+        "dataset_key": "LD-VEG-LV1",
+        "file": "GK2A_NDVI_mean_202305.tif",
+        "role": "model_input",
+        "source_document": "#processing_description_NDVI.docx",
+        "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+      "file_id": "01M1SCH25CNKZ15W5XSVBQHQ1R",
+      "file_name": "DEM.tif",
+      "source": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "annotation": {
+        "dataset_key": "LD-VEG-LV1-MODELIN",
+        "file": "DEM.tif",
+        "role": "auxiliary_input",
+        "source_document": "#processing_description_NDVI.docx",
+        "scope": "terrain elevation input"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+      "file_id": "01M1SCH1ZMAY64GZ699HVKHBBA",
+      "file_name": "Aspect.tif",
+      "source": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "annotation": {
+        "dataset_key": "LD-VEG-LV1-MODELIN",
+        "file": "Aspect.tif",
+        "role": "auxiliary_input",
+        "source_document": "#processing_description_NDVI.docx",
+        "scope": "terrain aspect input"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+      "file_id": "01M1SCH2JD273M9NEA024FABKJ",
+      "file_name": "LULC_2023.tif",
+      "source": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "annotation": {
+        "dataset_key": "LD-VEG-LV1-MODELIN",
+        "file": "LULC_2023.tif",
+        "role": "auxiliary_input",
+        "source_document": "#processing_description_NDVI.docx",
+        "scope": "land-cover input"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+      "file_id": "01M1SCH2C969XSS5X9DAY7VZXE",
+      "file_name": "HLS_S30_NDVI_mean_202305.tif",
+      "source": "01.level-data/02.vegetation/02.vegetation/#readme/#processing_description_NDVI.docx",
+      "annotation": {
+        "dataset_key": "LD-VEG-LV1-MODELIN",
+        "file": "HLS_S30_NDVI_mean_202305.tif",
+        "role": "validation",
+        "source_document": "#processing_description_NDVI.docx",
+        "scope": "monthly HLS validation; not a child of GK-2A monthly dataset"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH9DF18DXH793JTP01W61",
+      "file_id": "01M1SCH92N349H8G0B3WFFP3JZ",
+      "file_name": "SPI_4weeks_sig_wide.gpkg",
+      "source": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPI-4weeks.docx",
+      "annotation": {
+        "dataset_key": "LD-DRGH-LV1",
+        "file": "SPI_4weeks_sig_wide.gpkg",
+        "role": "index",
+        "variable": "SPI",
+        "source_document": "[Data Info]SPI-4weeks.docx",
+        "scope": "weekly municipality four-week index; final actual date column 20251220"
+      },
+      "status": "previously-reviewed-research-annotation"
+    },
+    {
+      "dataset_id": "01M1SCH9DF18DXH793JTP01W61",
+      "file_id": "01M1SCH8S0S2SVQNAHW570R100",
+      "file_name": "SPEI_4weeks_sig_wide.gpkg",
+      "source": "01.level-data/03.drought-20260518T233626Z-3-001/03.drought/#readme/[Data Info]SPEI-4weeks.docx",
+      "annotation": {
+        "dataset_key": "LD-DRGH-LV1",
+        "file": "SPEI_4weeks_sig_wide.gpkg",
+        "role": "index",
+        "variable": "SPEI",
+        "source_document": "[Data Info]SPEI-4weeks.docx",
+        "scope": "weekly municipality four-week index; final actual date column 20251220"
+      },
+      "status": "previously-reviewed-research-annotation"
+    }
+  ],
+  "input_hashes": {
+    "eval/k4-search/file-role-evidence.json": "10aadffe46e1d84121dd0ca28d66f53782229918f19da20dfebe72d7df3cccb7",
+    "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json": "1b9b9afd50b3a827d555cfd6b1982bcf531de0c8af11db2de0d49ce5b5875bbe",
+    "eval/k4-search/reference_evidence.py": "93ce62b6767517072ec9e555e7d05d477955d20b8c2e500bf57643a97e5ebcb4"
+  }
+}

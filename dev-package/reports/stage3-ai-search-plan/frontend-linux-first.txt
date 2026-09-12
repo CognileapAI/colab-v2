@@ -1,0 +1,2458 @@
+::error::frontend-test red — vitest run 이 실패로 종료했다(코드 1).
+     
+      RUN  v4.1.11 /tmp/colab-search-final-verification/frontend
+     
+      ✓ test/upload-progress-recovery.test.tsx (9 tests) 8036ms
+          ✓ 업로드 분석 조회가 한번 끊겨도 전송을 반복하지 않고 준비 상태를 다시 확인한다  1036ms
+          ✓ 반복 실패는 멈추고 수동 재시도로 분석 조회만 복구한다  4152ms
+          ✓ 삭제된 업로드는 재조회하지 않고 다시 올리도록 안내한다  1141ms
+          ✓ 화면을 떠난 뒤 도착한 조회 실패는 재시도를 예약하지 않는다  1152ms
+      ✓ test/grid-preview.test.tsx (18 tests) 4301ms
+          ✓ ②비지도형: 이미지 한 장을 그리고 배지를 말한다. 오류 자리를 쓰지 않는다  439ms
+          ✓ 확정으로 바뀌면 그 사실을 한 번 말한다  558ms
+     stderr | test/project.test.tsx > §8 필터 바 — 툴바 한 줄에 모은다 > 상태를 `전체` 로 바꾸면 닫힌 것이 다시 보이고 숨은 건수 안내가 사라진다
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > §5 카드 — 지표 타일 세 칸과 이동 안내 한 줄 > 닫힌 프로젝트는 `닫힘` 칩으로 밝힌다 — 투명도로 흐리게 만들지 않는다 (§5)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > §5 표 보기 — 견줄 때의 자리 > 보기를 바꿔도 거른 결과와 정렬 순서는 그대로다 (§8 보기 전환)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > §5 표 보기 — 견줄 때의 자리 > 보기를 바꿔도 거른 결과와 정렬 순서는 그대로다 (§8 보기 전환)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 정의·범위 안내는 목록이 아니라 이 모달 안에 있다 — 만들기 직전이 그 순간이다 (§8)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 정의·범위 안내는 목록이 아니라 이 모달 안에 있다 — 만들기 직전이 그 순간이다 (§8)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 연결 주소는 설명·기간과 다른 묶음이고 `계보` 표시가 붙는다 (§1.2·§8)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 연결 주소는 설명·기간과 다른 묶음이고 `계보` 표시가 붙는다 (§1.2·§8)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 이름이 비면 정본 문구로 막고 서버를 부르지 않는다 (§9)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 이름이 비면 정본 문구로 막고 서버를 부르지 않는다 (§9)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 종료가 시작보다 앞서면 정본 문구로 막는다 (§9)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 종료가 시작보다 앞서면 정본 문구로 막는다 (§9)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 유형·이름만으로 만들어지고 만든 것의 상세로 간다 — 필수는 둘뿐이다 (§5)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 유형·이름만으로 만들어지고 만든 것의 상세로 간다 — 필수는 둘뿐이다 (§5)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 유형·이름만으로 만들어지고 만든 것의 상세로 간다 — 필수는 둘뿐이다 (§5)
+     An update to MemoryRouter inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-03 새 프로젝트 모달 > 유형·이름만으로 만들어지고 만든 것의 상세로 간다 — 필수는 둘뿐이다 (§5)
+     An update to ProjectsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectFormModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-04 정보 수정 모달 > 저장 본문에 `type` 을 싣지 않는다 — 계약에 없는 필드는 400 이다
+     An update to Ready inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-04 정보 수정 모달 > 저장 본문에 `type` 을 싣지 않는다 — 계약에 없는 필드는 400 이다
+     An update to Ready inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectFormModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-05 닫기 확인 모달 > 확인해야 닫힌다 — 버튼만 눌러서는 서버를 부르지 않는다
+     An update to Ready inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > F-05 닫기 확인 모달 > 확인해야 닫힌다 — 버튼만 눌러서는 서버를 부르지 않는다
+     An update to Ready inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to ProjectCloseModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/project.test.tsx > 다시 열기 · 소속 해제 · 삭제 > 다시 열기에는 확인 모달이 없다 — 잃을 것이 없는 전이다 (§7)
+     An update to Ready inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/project.test.tsx (49 tests) 2631ms
+      ✓ test/upload.test.tsx (143 tests) 20397ms
+          ✓ 사람이 적은 값이 있으면 확인을 받는다 — 입력 있음 갈래 상수  360ms
+          ✓ 세 문구가 차례로 흐른다. 한 덩어리 `로딩 중`이 없다  1070ms
+          ✓ 진행 안내는 `aria-live=polite`, 오류는 `assertive`  539ms
+          ✓ `stage` 는 `그리는 중` 일 때만 읽는다 — 완료 뒤에는 단계 줄이 사라진다  1048ms
+          ✓ 타일 주소는 `tileUrlTemplate` 을 그대로 쓴다 — `{z}·{x}·{y}` 만 치환한다  1052ms
+          ✓ 만료된 렌더의 타일은 `401` 로 온다 — 권한 문제가 아니라 **만료**로 다룬다  1059ms
+          ✓ `데이터셋 만들기` 를 누르기 전까지 `createDataset` 이 한 번도 불리지 않는다  1199ms
+          ✓ **수정하면 AI 행동이 아니다** — 확신도 칩이 걷히고 경로가 `직접` 이 되며 확인을 다시 받는다  309ms
+          ✓ 만든 프로젝트는 해제 후 선택 목록에서 다시 담을 수 있다  436ms
+      ✓ test/catalog.test.tsx (34 tests) 4514ms
+          ✓ 열 이름은 정본 표기 그대로 여덟이다  437ms
+          ✓ 값을 고르는 동안 메뉴는 열려 있고, 여러 개를 고를 수 있다  448ms
+          ✓ 0건인 값이 목록에 남아 있고 흐리게 표시된다  324ms
+          ✓ 정본 문구를 그대로 안내하고 전체 해제로 복구한다  371ms
+      ✓ test/lv0-source-20260907.test.tsx (13 tests) 2301ms
+          ✓ ㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 `선택` 표기가 붙는다 (`필수` 배지 없음)  506ms
+          ✓ ㈎-b ① 에서 Lv 를 바꾸면 ③ 의 블록이 **즉시** 열리고 닫힌다  334ms
+          ✓ ㈒ 채운 뒤 ① 에서 Lv2 로 바꾸면 ③ 에서 숨고 **두 값이 전송되지 않는다**  329ms
+      ✓ test/lv-rules-20260907.test.tsx (11 tests) 2452ms
+          ✓ 자기 Lv=Lv0 이면 안내가 `Lv0` 하나이고 후보를 Lv0 으로 좁힐 수 있다  451ms
+          ✓ Lv2 로 Lv2 를 연결한 뒤 자기 Lv 를 Lv1 로 내리면 연결이 남고 `확인 필요` ＋ 버튼이 막힌다  461ms
+          ✓ 자기 Lv3 · 부모 Lv0 이면 안내가 뜨고 등록은 그대로 성공한다  386ms
+          ✓ 연결·충돌이 있는 상태에서 파일을 빼고 다시 올리면 카드 0 · 충돌 칩 0 이다  503ms
+      ✓ test/lineage-unknown-20260907.test.tsx (9 tests) 1887ms
+          ✓ 라벨이 축자이고, 체크하면 등록 요청에 `lineageUnknown: true` 가 실린다  653ms
+          ✓ 체크하지 않으면 열쇠 자체를 싣지 않는다 — 그 상태는 `기록 없음` 이 아니라 `확인 필요` 다  317ms
+          ✓ 부모 1건을 확정하면 체크박스가 비활성이고 사유가 읽히며 연결도 그대로 남는다  365ms
+          ✓ Lv1 에서 체크한 뒤 Lv0 으로 바꾸면 그 선언이 요청에 실리지 않는다  312ms
+      ✓ test/dataset-preview.test.tsx (18 tests) 1278ms
+      ✓ test/register-steps-20260907.test.tsx (33 tests) 4556ms
+          ✓ ① 표시기 세 라벨이 `① 분류 · ② 메타데이터 입력 · ③ 연결` 이고 ① 이 열려 있다  333ms
+          ✓ ⑤ 이름·설명이 빈 채여도 표시기 ③ 은 조건 없이 간다 (rev1 UI-003)  440ms
+      ✓ test/prd34-close-copy-20260907.test.tsx (19 tests) 3115ms
+          ✓ 입력 있음 · 계보 0 → 「적은 내용이 사라지고 …」 · 버튼은 계속하기 · 닫고 나가기  610ms
+          ✓ 입력 있음 · 계보 3건 → 문면에 `3` 이 보간된다  330ms
+     stdout | test/dataset-preview-tiles.test.tsx > §8 확대 조건 ⑺ — 타일 표면에서도 반응이 100 ms 안이다 > 확대·축소 한 번의 처리 시간이 상한 안이다
+     [타일 확대 반응] 표본 20 · p95 6.559 ms · 최대 9.088 ms
+     
+     stdout | test/dataset-preview-tiles.test.tsx > §8 확대 조건 ⑺ — 타일 표면에서도 반응이 100 ms 안이다 > 끌어 옮기기 한 걸음의 처리 시간이 상한 안이다
+     [타일 확대 반응] 표본 20 · p95 6.931 ms · 최대 17.743 ms
+     
+      ✓ test/dataset-preview-tiles.test.tsx (15 tests) 2762ms
+          ✓ 확대·축소가 배율을 올리고 되돌린다 — 기본 배율 아래로는 내려가지 않는다  325ms
+      ✓ test/interval-period-20260906.test.tsx (25 tests) 2797ms
+          ✓ ② 에 인라인 기간 칸이 없고 값은 팝오버 안에서만 받는다  570ms
+          ✓ 단위 `분` 이면 **다섯 칸**이 Start/End 각각 열린다 (docx `D-2-1` 축자)  303ms
+          ✓ 사람이 적은 값이 상세와 **같은 문면**으로 미리 보인다  304ms
+      ✓ test/dataset-preview-zoom-latency.test.tsx (3 tests) 1418ms
+          ✓ 확대·축소 한 번의 처리 시간이 상한 안이다  608ms
+          ✓ 그 시간 안에 렌더 재요청이 0건이다 — 반응이 빠른 이유가 여기 있다  626ms
+      ✓ test/lineage-graph.test.tsx (41 tests) 2607ms
+          ✓ 화살표 개수는 언제나 렌더된 칸 수 − 1 이다  350ms
+      ✓ test/prd22-detail-edit2-20260907.test.tsx (7 tests) 996ms
+          ✓ 편집 전에는 다운로드 진입점 2곳이 서 있다 (기준선 실측)  309ms
+      ✓ test/close-guard-20260905.test.tsx (10 tests) 2108ms
+          ✓ 파일만 올리고 아무것도 안 적으면 되묻지 않고 닫힌다  462ms
+      ✓ test/visibility-three-20260907.test.tsx (12 tests) 1357ms
+          ✓ 3값을 각각 저장하면 헤더 칩과 설명이 **같은 값**으로 다시 그려진다  373ms
+      ✓ test/lineage-fix-20260907.test.tsx (12 tests) 944ms
+      ✓ test/detail-files.test.tsx (22 tests) 1796ms
+      ✓ test/dataset-preview-zoom.test.tsx (17 tests) 2376ms
+          ✓ 확대 버튼이 배율을 올린다  444ms
+      ✓ test/preview-slot-4x3.test.tsx (8 tests) 1413ms
+          ✓ 네 상태를 밟는 동안 틀의 상자가 바뀌지 않는다  557ms
+          ✓ 세 문구가 순서대로 `up-preview-stage` 안에 뜬다  772ms
+      ✓ test/upload-preview-poll-20260903.test.tsx (2 tests) 1399ms
+          ✓ 다시 그리면 옛 렌더의 늦은 응답을 버린다  725ms
+          ✓ 화면이 사라진 뒤 도착한 응답은 폴링을 다시 예약하지 않는다  671ms
+      ✓ test/detail-edit.test.tsx (19 tests) 1888ms
+      ❯ test/search-evidence.test.tsx (8 tests | 1 failed) 1151ms
+          ✓ 파일 목록과 근거는 각각 사람이 열기 전까지 조회하지 않는다 232ms
+          ✓ 출처와 선택적 사실을 초안으로 저장한 뒤 서버 값을 다시 조회한다  367ms
+          × 검토 완료 저장은 별도 버튼이며 stale 근거는 재확인 필요를 표시한다 56ms
+          ✓ 409이면 작성 중인 원문을 보존하고 서버 값 재조회 동작을 제공한다 144ms
+          ✓ 기간 한쪽만 입력하면 작성값을 보존하고 저장을 막는다 108ms
+          ✓ 작성 중 닫기는 확인을 거치고 계속 작성을 선택하면 입력을 보존한다 111ms
+          ✓ 파일 교체 뒤 열려 있던 근거 편집기를 닫아 이전 파일 내용 근거를 무효화한다 77ms
+          ✓ 업로드·편집 권한이 없어도 근거를 읽지만 입력 폼과 저장 동작은 그리지 않는다 48ms
+     stderr | test/members.test.tsx > 스위치는 정확히 네 개다 (P-3) > 열 이름이 정본 문자열 그대로이고 다섯 번째 열이 없다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 교수 행은 켜진 채로 고정돼 끌 수 없다 (§3 · P-5) > 편집 모드에서도 교수 행 네 칸은 켜짐 + 편집 불가다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/qd-catalog-topic-fixed4.test.tsx (3 tests) 898ms
+          ✓ 네 값이 **전부** 서고 정본 차례를 지킨다 (표에 없는 값도 사라지지 않는다)  531ms
+     stderr | test/members.test.tsx > 재위임 금지는 서버가 말한다 — 화면은 editablePermissions 를 따른다 (P-31) > 위임자에게 두 열은 값은 보이되 편집 불가다 — 숨기지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 재위임 금지는 서버가 말한다 — 화면은 editablePermissions 를 따른다 (P-31) > 화면이 규칙을 스스로 계산하지 않는다 — 서버가 네 열을 주면 네 열이 열린다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 확인 모달의 저장을 누르기 전에는 요청이 한 번도 나가지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 확인 모달의 저장을 누르기 전에는 요청이 한 번도 나가지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 확인 모달의 저장을 누르기 전에는 요청이 한 번도 나가지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 한 요청에 바뀐 칸만 모아 싣는다 — 손대지 않은 스위치는 키가 없다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 한 요청에 바뀐 칸만 모아 싣는다 — 손대지 않은 스위치는 키가 없다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 한 요청에 바뀐 칸만 모아 싣는다 — 손대지 않은 스위치는 키가 없다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 켰다가 되돌린 칸은 변경이 아니다 — 요청에 실리지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 확인 모달의 취소는 편집 모드를 유지한다 — 저장만 물린 것이다 (P-20)
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 편집 취소는 원래 값으로 되돌린다 (§3)
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 편집 중에는 바뀐 칸에 표식만 남는다 — 토스트를 띄우지 않는다 (P-20)
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 저장 응답이 곧 새 화면이다 — 서버가 돌려준 목록으로 다시 그린다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 실시간 저장이 아니다 — 편집 → 저장 → 확인 모달 (§3 · P-19) > 저장 응답이 곧 새 화면이다 — 서버가 돌려준 목록으로 다시 그린다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 역할 표기는 받은 위임을 함께 적는다 (§6 · P-23) > 두 위임을 다 받은 연구원은 `연구원 · 승인·설정 위임`
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 막힌 것은 서버가 말한다 (P-11) > 403 이면 서버 문안을 그대로 보이고 화면이 스스로 문장을 만들지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/members.test.tsx > 막힌 것은 서버가 말한다 (P-11) > 403 이면 서버 문안을 그대로 보이고 화면이 스스로 문장을 만들지 않는다
+     An update to MemberPermissionGrid inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/members.test.tsx (13 tests) 1428ms
+      ✓ test/s2-preview-style.test.tsx (2 tests) 1300ms
+        ✓ 편집자는 서버 팔레트 3종과 3~9 구간의 모든 21조합으로 다시 그릴 수 있다  1283ms
+      ✓ test/qd-detail-section3.test.tsx (20 tests) 1327ms
+      ✓ test/detail.test.tsx (23 tests) 1229ms
+      ✓ test/representative-image-detail.test.tsx (13 tests) 1709ms
+          ✓ Bearer 출처가 준 Blob을 object URL로 보이고 떠날 때 해제한다  381ms
+     stderr | test/dashboard.test.tsx > §6 — 할 일 함의 권한 훅은 그룹 각각에 걸린다 > 받은 접근 요청은 **그 자리에서** 처리한다 — 승인은 P6 op 을 그대로 부른다 (§8)
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AccessItem inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/dashboard.test.tsx > §6 — 할 일 함의 권한 훅은 그룹 각각에 걸린다 > 거절은 **사유가 있어야** 보내진다 — 1~300자 필수 (`Policy_승인_처리 §5` · P-26)
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AccessItem inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/dashboard.test.tsx > §6 — 연구실 정보는 읽기만 전 구성원에게 연다 > `우리 연구실` 라벨을 누르면 읽기 모달이 열린다
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabInfoModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/dashboard.test.tsx > §6 — 연구실 정보는 읽기만 전 구성원에게 연다 > **편집 버튼만 권한자에게** 보인다 — 스위치가 꺼진 사람에게는 없다 (§6 · P-12)
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabInfoModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/dashboard.test.tsx > §6 — 연구실 정보는 읽기만 전 구성원에게 연다 > `연구실 설정` 스위치가 켜지면 편집 버튼이 늘어난다
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabInfoModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to LabPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/dashboard.test.tsx (25 tests) 944ms
+     stderr | test/upload-transfer.test.tsx > 미완결 전송 배너 > 미완결이 있으면 배너가 보이고, 지우기는 abortTransfer 를 부른다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 미완결 전송 배너 > 미완결이 있으면 배너가 보이고, 지우기는 abortTransfer 를 부른다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 미완결 전송 배너 > [이어서 올리기] 뒤 같은 파일을 놓으면 create 가 resumeUploadId 를 싣는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 미완결 전송 배너 > [이어서 올리기] 뒤 같은 파일을 놓으면 create 가 resumeUploadId 를 싣는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 임시 지도 유무 true에서 최종 영역 변경을 한 번 알리고 재렌더로 알림을 바꾸지 않는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 임시 지도 유무 true에서 최종 영역 변경을 한 번 알리고 재렌더로 알림을 바꾸지 않는다
+     An update to PreviewPanel inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to PreviewPanel inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 임시 지도 유무 false에서 최종 영역 변경을 한 번 알리고 재렌더로 알림을 바꾸지 않는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 임시 지도 유무 false에서 최종 영역 변경을 한 번 알리고 재렌더로 알림을 바꾸지 않는다
+     An update to PreviewPanel inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to PreviewPanel inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 업로드 팔레트 목록이 3종이 아니면 받은 선택지를 유지하면서 오류를 알린다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 업로드 팔레트 목록이 3종이 아니면 받은 선택지를 유지하면서 오류를 알린다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 격자 후보를 가져와도 본체를 다시 전송하지 않고 같은 업로드 상태를 새로 읽는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 격자 후보를 가져와도 본체를 다시 전송하지 않고 같은 업로드 상태를 새로 읽는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 파일 선택을 바꾸면 이전 격자 복사 응답이 새 업로드에 오류를 표시하지 않는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 파일 선택을 바꾸면 이전 격자 복사 응답이 새 업로드에 오류를 표시하지 않는다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 최종 접수 전에는 임시 uploadId로 먼저 그리고 등록을 잠근 뒤, 최종 uploadId로 갈아탄다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/upload-transfer.test.tsx > 첫 파일 임시 미리보기 > 최종 접수 전에는 임시 uploadId로 먼저 그리고 등록을 잠근 뒤, 최종 uploadId로 갈아탄다
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to UploadModal inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     Not implemented: navigation to another Document
+      ✓ test/upload-transfer.test.tsx (16 tests) 1691ms
+          ✓ 격자 후보를 가져와도 본체를 다시 전송하지 않고 같은 업로드 상태를 새로 읽는다  427ms
+     Not implemented: navigation to another Document
+     Not implemented: navigation to another Document
+      ✓ test/dataset-preview-screenshot.test.tsx (9 tests) 1506ms
+          ✓ `업로드·편집` 이 켜져 있으면 버튼이 선다  509ms
+      ✓ test/scale-ladder.test.tsx (16 tests) 1381ms
+      ✓ test/summary-required-20260905.test.tsx (11 tests) 1679ms
+          ✓ 설명 라벨에 `필수` 배지가 서고 `(선택)` 이 사라진다  387ms
+      ✓ test/prd39-rev2-build-20260906.test.tsx (25 tests) 1339ms
+          ✓ 파일을 빼면 고른 프로젝트도 함께 내린다 — 고지가 말한 그대로다  333ms
+      ✓ test/fe-small-rc8.test.tsx (10 tests) 1208ms
+      ✓ test/advisor2-b6-20260907.test.tsx (2 tests) 807ms
+          ✓ 오타 입력 (`2026.08.20`) → `createDataset`(`register`) 미호출 ∧ 서버 문구가 칸 아래에 뜬다  578ms
+      ✓ test/approval.test.tsx (12 tests) 889ms
+      ✓ test/prd23-project-table-20260907.test.tsx (13 tests) 476ms
+      ✓ test/rev1-keep-regression.test.tsx (12 tests) 996ms
+      ✓ test/preview.test.tsx (26 tests) 733ms
+      ✓ test/detail-section-menu.test.tsx (7 tests) 1041ms
+          ✓ 계보 · 미리보기 · 활용/접근 세 칸이 앵커로 서 있다  363ms
+      ✓ test/detail-split-layout.test.tsx (4 tests) 902ms
+          ✓ 기본 정보 뒤 설명, 변수 표, 소유/파일 정보가 이어진다  403ms
+      ✓ test/lineage-continuation.test.tsx (12 tests) 820ms
+      ✓ test/search.test.tsx (19 tests) 573ms
+      ✓ test/multipart-upload-progress.test.ts (11 tests) 458ms
+      ✓ test/lv-display-unify-20260908.test.tsx (4 tests) 713ms
+          ✓ 제안이 부모 Lv 를 실어 오고 자기 Lv 를 넘으면 `확인 필요` ＋ 충돌 안내가 뜬다  419ms
+      ✓ test/thumb-nudge-20260905.test.tsx (3 tests) 291ms
+      ✓ test/shell.test.tsx (6 tests) 303ms
+      ✓ test/lab-settings-info.test.tsx (7 tests) 600ms
+      ✓ test/grid-attach.test.tsx (12 tests) 670ms
+      ✓ test/variable-rows-20260907.test.tsx (8 tests) 521ms
+      ✓ test/account-admin.test.tsx (4 tests) 454ms
+     stderr | test/permission.test.tsx > 축 A — 권한 없음은 숨긴다 (P-12) > GNB 우측 버튼은 스위치로 갈린다 — 꺼진 사람에겐 아예 없다
+     An update to UnfinishedUploads inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/permission.test.tsx (9 tests) 287ms
+     stderr | test/preview-pick-and-fallback.test.tsx > WU-C3 · '상세(S-05)' > 413 이면 조각 목록을 한 번 묻고 첫 renderable 조각으로 다시 그린다
+     An update to DatasetPreviewSection inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/preview-pick-and-fallback.test.tsx > WU-C3 · '상세(S-05)' > 고르개는 파일·변수·시각 셋이고 기본값은 describe 가 준 값이다
+     An update to DatasetPreviewSection inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/preview-pick-and-fallback.test.tsx > WU-C3 · '상세(S-05)' > 변수를 바꾸면 `variable` 을 실어 다시 그린다
+     An update to DatasetPreviewSection inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/preview-pick-and-fallback.test.tsx > WU-C3 · '상세(S-05)' > 시각을 바꾸면 `instant` 를 실어 다시 그린다
+     An update to DatasetPreviewSection inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/preview-pick-and-fallback.test.tsx > WU-C3 · '상세(S-05)' > 파일을 바꾸면 `fileIds` 하나를 실어 다시 그린다
+     An update to DatasetPreviewSection inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/preview-pick-and-fallback.test.tsx (14 tests) 542ms
+      ✓ test/dataset-preview-source-grid.test.tsx (5 tests) 801ms
+          ✓ 격자 해상도와 원본 배열 크기를 함께 캡션으로 낸다  395ms
+      ✓ test/dataset-value-lookup.test.tsx (9 tests) 367ms
+      ✓ test/design-repair-dialog.test.tsx (6 tests) 552ms
+      ✓ test/catalog-download.test.tsx (3 tests) 466ms
+          ✓ 다운로드를 누르면 인증된 요청이 나가고 파일이 저장된다  346ms
+      ✓ test/basemap-layer.test.tsx (9 tests) 564ms
+     stderr | test/recs-20260903.test.tsx > 엿보기 — 미리보기가 없는 데이터셋에서도 숨기지 않는다 > 잠긴 행에는 두지 않는다 — 이 규칙만 행을 가른다 (`§8` 행 빠른 작업)
+     An update to DatasetsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to DatasetsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to DatasetsPage inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/recs-20260903.test.tsx (8 tests) 377ms
+      ✓ test/part-count-20260905.test.tsx (3 tests) 439ms
+      ✓ test/qa-20260903.test.tsx (9 tests) 326ms
+      ✓ test/axis-filters-20260907.test.tsx (9 tests) 432ms
+      ✓ test/s2-default-grid.test.tsx (2 tests) 160ms
+      ✓ test/dataset-preview-salvage.test.tsx (3 tests) 270ms
+      ✓ test/search-contract-16.test.tsx (10 tests) 237ms
+      ✓ test/s2-map-state.test.tsx (1 test) 488ms
+        ✓ 지도 상태를 이름 옆에 표시하고 선택한 상태를 서버 필터로 전달한다  486ms
+      ✓ test/ext-mixed-20260905.test.tsx (4 tests) 446ms
+          ✓ `.nc` 3개와 `.tif` 1개를 놓으면 `.nc` 3개만 남고 토스트 축자가 뜬다  307ms
+      ✓ test/theme.test.tsx (5 tests) 183ms
+     stderr | test/honest-source-20260903.test.tsx > 화면은 못 읽은 것을 없는 것으로 말하지 않는다 > 세션이 만료되면 카탈로그가 아니라 로그인 화면이 선다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/honest-source-20260903.test.tsx > 화면은 못 읽은 것을 없는 것으로 말하지 않는다 > 세션이 만료되면 카탈로그가 아니라 로그인 화면이 선다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/honest-source-20260903.test.tsx > AuthGate — 확인하지 못한 것과 통하지 않는 것을 가른다 > 서버에 닿지 못하면 빈 화면이 아니라 오류와 다시 시도다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/honest-source-20260903.test.tsx > AuthGate — 확인하지 못한 것과 통하지 않는 것을 가른다 > 다시 시도를 누르면 `/me` 를 다시 부르고 성공하면 앱이 선다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/honest-source-20260903.test.tsx > AuthGate — 확인하지 못한 것과 통하지 않는 것을 가른다 > 다시 시도를 누르면 `/me` 를 다시 부르고 성공하면 앱이 선다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/honest-source-20260903.test.tsx > AuthGate — 확인하지 못한 것과 통하지 않는 것을 가른다 > 5xx 도 로그인 문제가 아니다 — 토큰을 버리지 않는다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/honest-source-20260903.test.tsx (33 tests) 364ms
+      ✓ test/search-verified-20260903.test.tsx (9 tests) 185ms
+     stderr | test/auth.test.tsx > 문지기 — 인증 세부는 한 곳에만 있다 > 토큰이 있으면 /me 응답으로 앱을 그린다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 문지기 — 인증 세부는 한 곳에만 있다 > /me 가 401 이면 토큰을 버리고 로그인 화면으로 돌아간다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 문지기 — 인증 세부는 한 곳에만 있다 > /me 가 401 이면 토큰을 버리고 로그인 화면으로 돌아간다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 세션 만료 — 화면이 갇히지 않는다 > 재인증 중에도 기존 앱 트리를 유지한 채 입력만 막는다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 세션 만료 — 화면이 갇히지 않는다 > 재인증 중에도 기존 앱 트리를 유지한 채 입력만 막는다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 세션 만료 — 화면이 갇히지 않는다 > 재인증 중에도 기존 앱 트리를 유지한 채 입력만 막는다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+     stderr | test/auth.test.tsx > 로그인 화면 > 성공하면 토큰을 보관하고 앱으로 넘어간다
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     An update to AuthGate inside a test was not wrapped in act(...).
+     
+     When testing, code that causes React state updates should be wrapped into act(...):
+     
+     act(() => {
+       /* fire events that update state */
+     });
+     /* assert on the output */
+     
+     This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     
+      ✓ test/auth.test.tsx (20 tests) 469ms
+      ✓ test/detail-summary-split.test.tsx (5 tests) 285ms
+      ✓ test/form-work-protection.test.tsx (1 test) 327ms
+          ✓ 프로젝트 폼은 실제 변경만 전환을 막고 명시 폐기하면 React 상태를 닫는다  324ms
+      ✓ test/s2-grid-convenience.test.tsx (2 tests) 212ms
+      ✓ test/extension-label-20260905.test.tsx (11 tests) 290ms
+      ✓ test/upload-droptree.test.tsx (5 tests) 122ms
+      ✓ test/toast-copy-20260906.test.tsx (15 tests) 160ms
+      ✓ test/r17-tombstone.test.tsx (7 tests) 122ms
+      ✓ test/session-races.test.tsx (7 tests) 127ms
+      ✓ test/file-preview-aliases.test.tsx (6 tests) 76ms
+      ✓ test/ext-mixed-toast-20260906.test.tsx (3 tests) 62ms
+      ✓ test/unfinished-uploads.test.tsx (4 tests) 66ms
+      ✓ test/grid-description.test.tsx (3 tests) 56ms
+      ✓ test/s2-stage-remaining.test.tsx (2 tests) 22ms
+      ✓ test/session-coordinator.test.ts (5 tests) 12ms
+      ✓ test/design-fix-20260908.test.ts (17 tests) 16ms
+      ✓ test/logout-queue.test.ts (5 tests) 11ms
+      ✓ test/file-tree.test.ts (9 tests) 14ms
+      ✓ test/shared-css-tokens.test.ts (4 tests) 20ms
+      ✓ test/css-residual-rc11.test.ts (22 tests) 14ms
+      ✓ test/work-guard.test.tsx (3 tests) 16ms
+      ✓ test/e01-apply-points.test.ts (2 tests) 6ms
+      ✓ test/session-fetch.test.ts (1 test) 10ms
+      ✓ test/topics-drift.test.ts (3 tests) 6ms
+      ✓ test/project-css-tokens.test.ts (7 tests) 6ms
+      ✓ test/grid-rejection.test.ts (11 tests) 7ms
+      ✓ test/screen-guards-20260903.test.ts (6 tests) 4ms
+      ✓ test/normalize-name.test.ts (7 tests) 6ms
+      ✓ test/s2-duration-samples.test.ts (2 tests) 7ms
+      ✓ test/password-rules.test.ts (6 tests) 5ms
+      ✓ test/period-open-ended.test.ts (4 tests) 6ms
+     
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+     
+      FAIL  test/search-evidence.test.tsx > 파일별 검색 근거 > 검토 완료 저장은 별도 버튼이며 stale 근거는 재확인 필요를 표시한다
+     Error: expect(element).toHaveTextContent()
+     
+     Expected element to have text content:
+       파일 또는 원문이 바뀌어 재확인이 필요합니다.
+     Received:
+       상태: 재확인 필요 — 파일 내용이 바뀌어 재확인이 필요합니다.
+      ❯ test/search-evidence.test.tsx:157:46
+         155|     mount(evidence.source);
+         156|     const form = await openEvidence();
+         157|     expect(within(form).getByRole('status')).toHaveTextContent('파일 또는 …
+            |                                              ^
+         158|     expect(within(form).queryByText('Verified')).toBeNull();
+         159|     fireEvent.click(within(form).getByRole('button', { name: '확인하고 저장'…
+     
+     ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+     
+     
+      Test Files  1 failed | 104 passed (105)
+           Tests  1 failed | 1260 passed (1261)
+        Start at  01:42:25
+        Duration  134.67s (transform 4.58s, setup 12.37s, import 21.43s, tests 119.42s, environment 95.91s)

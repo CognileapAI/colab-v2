@@ -14,10 +14,12 @@ from __future__ import annotations
 import json
 import logging
 
+from colab_ai.app.interpret import LiteralInterpreter
 from colab_ai.domains.d10_ai_services import (
     DEGRADED_LOGGER,
     DICTIONARY_UNAVAILABLE_REASON,
     SearchService,
+    _query_for_dictionary,
 )
 from colab_ai.domains.d9_ontology import Dictionaries, expand
 from colab_ai.ports import Interpretation
@@ -126,6 +128,32 @@ def test_사전이_주제를_정한다() -> None:
     body = _search(_service(interpretation=interp))
     assert body["interpretation"]["topic"] == "강우·강수"
     assert "강우·강수" in body["interpretation"]["terms"]
+
+
+def test_파일명_확장자는_포맷_주제를_강제하지_않는다() -> None:
+    dicts = Dictionaries(method_terms=(),
+                         topic_synonyms=(("tif", "파일 포맷 예제"),),
+                         place_aliases=())
+
+    class FormatDictionaries:
+        def expand(self, terms, query):
+            return expand(terms, query=query, dictionaries=dicts)
+
+    service = SearchService(
+        interpreter=LiteralInterpreter(LiteralInterpreter.BY_DESIGN_REASON),
+        dictionaries=FormatDictionaries())
+    named = _search(service, query="GK2A_NDVI_mean_202305.tif를 찾아줘")
+    standalone = _search(service, query="tif 자료")
+    mixed = _search(service, query="foo.tif와 별도로 tif 예제")
+
+    assert named["interpretation"]["topic"] is None
+    assert "tif" in named["interpretation"]["terms"], "원 검색어는 응답에서 보존한다"
+    assert standalone["interpretation"]["topic"] == "파일 포맷 예제"
+    assert mixed["interpretation"]["topic"] == "파일 포맷 예제"
+
+
+def test_확장자_접두만_같은_파일부분은_가리지_않는다() -> None:
+    assert _query_for_dictionary("scene.tiffany 자료") == "scene.tiffany 자료"
 
 
 def test_검색어_수에_상한이_있다() -> None:

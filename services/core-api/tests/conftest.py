@@ -152,6 +152,7 @@ _CLEANUP: tuple[tuple[str, str, str], ...] = (
     ("d5_upload_grid_profile", "created_at", ""),
     ("d5_upload_file", "created_at", ""),
     ("d5_upload", "created_at", ""),
+    ("d3_search_evidence", "updated_at", ""),
     # **`d3_file` 만은 시드 데이터셋의 행도 지운다** — 후주입 시험이 시드 데이터셋에 조각을
     # 더하고, 그 행을 남기면 `d3_dataset.file_count`(메타 열)가 시험마다 1씩 늘어난다.
     # 지운 뒤 아래 `_RESTORE` 가 시드 두 행을 되돌리므로 셈이 제자리로 온다.

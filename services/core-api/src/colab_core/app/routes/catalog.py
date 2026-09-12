@@ -15,14 +15,14 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience,
+from ...domains import (d1_identity, d2_access, d3_catalog, d3_grid_convenience, d3_search_evidence,
                         d4_lineage, d6_project, d8_insight)
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
 from ...kernel.scope import read_only_scope
 from ...ports.lineage import LV_CAP
-from .. import dataset_search
+from .. import dataset_search, search_conditions, search_evidence_conditions
 from ..deps import current_subject, scoped_db
 
 router = APIRouter()
@@ -492,11 +492,36 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
         # **읽기 전용 트랜잭션**에서 돈다 — 검색이 한 줄도 쓰지 않는다는 것을
         # 문서가 아니라 Postgres 의 거절이 지킨다.
         with read_only_scope(request.app.state.session_factory, subject) as ro:
+            criteria = search_evidence_conditions.parse(query)
+            reviewed = d3_search_evidence.read_reviewed(ro, include_source_text=False)
+            evidence_by_dataset: dict[str, list[dict]] = {}
+            for evidence in reviewed:
+                evidence_by_dataset.setdefault(evidence['dataset_id'], []).append(evidence)
+            search_topic = answer['topic']
+            include_ids, exclude_ids = [], []
+            source_notes: dict[str, list[str]] = {}
+            if reviewed and criteria['topic'] and not criteria['unsupported']:
+                topics = {core.dataset_id: core.topic for core in d3_catalog.list_dataset_cores(ro)}
+                relevant = [r for r in reviewed if topics.get(r['dataset_id']) == criteria['topic']]
+                if relevant:
+                    body_ids = d3_catalog.body_file_ids(ro, list({r['dataset_id'] for r in relevant}))
+                    include_ids, exclude_ids = search_evidence_conditions.candidates(criteria, relevant, body_ids)
+                    if re.search(r'원자료|바로\s*앞|입력\s*데이터셋', query):
+                        owners = [r for r in relevant if r['file_name'].casefold() in query.casefold()]
+                        for owner in owners:
+                            for edge in d4_lineage.edges_of(ro, Ulid(owner['dataset_id'])):
+                                parent = str(edge['parent_dataset_id'])
+                                if str(edge['child_dataset_id']) == owner['dataset_id'] and topics.get(parent) == criteria['topic']:
+                                    source_notes.setdefault(parent, []).append(owner['file_name'])
+                        if source_notes:
+                            include_ids = list(source_notes)
+                            exclude_ids = [i for i in exclude_ids if i not in source_notes]
             matches, total = d3_catalog.search_datasets(
-                ro, terms=answer["terms"], topic=answer["topic"],
-                limit=fetch_limit, offset=fetch_offset)
+                ro, terms=answer["terms"], topic=search_topic,
+                limit=fetch_limit, offset=fetch_offset,
+                evidence_ids=tuple(include_ids), excluded_ids=tuple(exclude_ids))
         hits, next_cursor = dataset_search.compose(
-            matches, lab_name=lab_name, searched=searched_count, topic=answer["topic"],
+            matches, lab_name=lab_name, searched=searched_count, topic=search_topic,
             # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
             interpretation_degraded=answer["source"] != "llm",
             # 그래프가 데려온 말이면 근거 한 줄이 그 엣지를 이름으로 적는다 (`〈90〉-㉱`).
@@ -512,7 +537,17 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             enriched = {k: v for k, v in row.items() if not k.startswith("_")}
             # **잠김 표시는 여기서 붙는다** — `accessState`·`bodyAccessible` 은 D2 의 값이다.
             enriched["relevanceBar"] = hit["relevanceBar"]
-            enriched["rationale"] = hit["rationale"]
+            enriched["rationale"] = search_conditions.explain_unverified_conditions(
+                hit["rationale"], query)
+            if evidence_by_dataset.get(hit['datasetId']):
+                base = hit['rationale'].replace(
+                    '기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요',
+                    '기록되지 않은 조건과 자료 품질은 보장하지 않아요')
+                enriched['rationale'] = search_evidence_conditions.explain(
+                    base, criteria, evidence_by_dataset[hit['datasetId']])
+            if source_notes.get(hit['datasetId']):
+                names = ', '.join(dict.fromkeys(source_notes[hit['datasetId']]))
+                enriched['rationale'] += re.sub(r'\s+', ' ', f' {names}가 속한 자료의 직접 부모 관계로 확인했어요.')
             # ⭑ **⟨16차 해제 · `〈298〉`⟩ 요약** — 상세와 **같은 열**에서 온 값을 옮긴다.
             enriched["summary"] = row["_summary"]
             items.append(enriched)

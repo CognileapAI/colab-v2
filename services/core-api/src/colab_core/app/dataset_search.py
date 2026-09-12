@@ -81,6 +81,8 @@ def rationale(match: SearchMatch, *, lab_name: str, searched: int, topic: str | 
     matched = ", ".join(heads) or "‘질문의 낱말’"
     where = "·".join(match.where) if match.where else "카탈로그"
     head = f"{lab_name} 안 {searched}건에서 {matched}가 {where}에 맞았어요"
+    if match.where == ("확인한 파일 근거",):
+        head = f"{lab_name} 안 {searched}건에서 확인한 파일 근거가 질문 조건에 맞았어요"
     if topic:
         head += f" (주제 {topic}로 좁혀 뒤졌어요)"
     tail = "기간·지역·품질은 이 검색이 확인하지 못했으니 카드의 값으로 직접 봐 주세요"

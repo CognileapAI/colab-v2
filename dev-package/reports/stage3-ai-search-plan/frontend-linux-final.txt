@@ -1,0 +1,3 @@
+frontend-test green — vitest run(frontend/vite.config.ts · jsdom) 통과 1261건 · 실패 0건.
+    Test Files  105 passed (105)
+         Tests  1261 passed (1261)

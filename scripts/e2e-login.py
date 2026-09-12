@@ -36,6 +36,7 @@ def main():
     parser.add_argument("--viz-python", type=Path)
     parser.add_argument("--core-port", type=int, default=8000)
     parser.add_argument("--journey", type=Path, help="Explicit local browser scenario module")
+    parser.add_argument("--ai-base-url", help="Explicit loopback interpretation service for a search journey")
     parser.add_argument("--artifacts", type=Path, help="Persistent scenario evidence directory")
     parser.add_argument("--extra-file", type=Path, action="append", default=[])
     parser.add_argument("--grid-file", type=Path, action="append", default=[])
@@ -43,6 +44,10 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.core_port <= 65535:
         parser.error("--core-port must be between 1 and 65535")
+    if args.ai_base_url:
+        parsed_ai = urllib.parse.urlparse(args.ai_base_url)
+        if parsed_ai.scheme != 'http' or parsed_ai.hostname != '127.0.0.1' or parsed_ai.username or parsed_ai.password:
+            parser.error('--ai-base-url must be an explicit HTTP loopback service')
     if args.upload and not args.pipeline_python:
         parser.error("--upload requires --pipeline-python")
     frontend = args.frontend_root.resolve()
@@ -58,7 +63,10 @@ def main():
     browser = Path.home() / ".npm-global/bin/agent-browser"
     if not browser.is_file():
         raise RuntimeError("agent-browser is unavailable")
-    db = os.environ["E2E_DATABASE_URL"]
+    database_pair = os.environ["E2E_DATABASE_URL"].split('\t')
+    if len(database_pair) != 2 or not all(database_pair):
+        raise RuntimeError('Disposable fixture setup must provide application and account-admin URLs')
+    db, account_admin_db = database_pair
     session = "colab-login-" + secrets.token_hex(5)
     password = secrets.token_urlsafe(24)
     base = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "LANG", "TMPDIR")}
@@ -82,6 +90,7 @@ def main():
         credential.chmod(0o600)
         env = {**base, "PYTHONPATH": str(ROOT / "services/core-api/src"),
                "COLAB_CORE_DATABASE_URL": db,
+               "COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL": account_admin_db,
                "COLAB_CORE_SUBJECTS_FILE": str(ROOT / "services/core-api/tests/fixtures/subjects.json"),
                "COLAB_CORE_CREDENTIALS_FILE": str(credential),
                "COLAB_CORE_SESSION_SECRET": secrets.token_urlsafe(48),
@@ -89,6 +98,8 @@ def main():
                "COLAB_E2E_CORE_PORT": str(args.core_port),
                "COLAB_E2E_RUN": session}
         (temp / "uploads").mkdir()
+        if args.ai_base_url:
+            env['COLAB_CORE_AI_BASE_URL'] = args.ai_base_url
         viz_token = secrets.token_urlsafe(32)
         if args.viz_python:
             env.update(COLAB_CORE_VIZ_BASE_URL="http://127.0.0.1:8003/viz/v1",
@@ -164,15 +175,13 @@ def main():
                     cwd=ROOT, env=worker_env, stdout=log, stderr=log))
             browser_started = True
             command("open", "http://127.0.0.1:43173/")
+            command("wait", '[data-testid="login-submit"]:disabled')
             first = command("snapshot", "-i")
             if 'button "들어가기" [disabled' not in first:
                 raise RuntimeError("Empty login submission is not disabled")
-            account = re.search(r'textbox "계정" \[ref=(e\d+)\]', first)
-            secret = re.search(r'textbox "비밀번호" \[ref=(e\d+)\]', first)
-            if not account or not secret:
-                raise RuntimeError("Login inputs missing")
-            command("fill", "@" + account[1], "e2e-researcher")
-            command("fill", "@" + secret[1], "invalid-e2e-password", private=True)
+            command("wait", '[data-testid="login-account-name"]')
+            command("fill", '[data-testid="login-account-name"]', "e2e-researcher")
+            command("fill", '[data-testid="login-password"]', "invalid-e2e-password", private=True)
             command("click", '[data-testid="login-submit"]')
             command("wait", "--text", "계정 또는 비밀번호가 맞지 않아요.")
             rejected = command("snapshot", "-i")
@@ -301,7 +310,7 @@ def main():
             if not logout:
                 raise RuntimeError("Authenticated session did not survive reload")
             command("click", "@" + logout[1])
-            command("wait", "--text", "계정은 개발자가 만들어 드려요.")
+            command("wait", '[data-testid="login-password"]')
             if 'textbox "비밀번호"' not in command("snapshot", "-i"):
                 raise RuntimeError("Logout did not return to login")
         except Exception:

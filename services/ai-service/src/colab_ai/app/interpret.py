@@ -76,11 +76,22 @@ _STANDALONE_PARTICLES = frozenset({
     "라", "이라", "한", "및",
 })
 
+# 영문 기술명에 공백 없이 붙은 조사만 떼어 낸다. 일반 한국어 형태소를 해석하는 규칙은 아니다.
+_LATIN_WITH_PARTICLE = re.compile(
+    r"^([A-Za-z][A-Za-z0-9]*(?:[-_.][A-Za-z0-9]+)*)"
+    r"(?:으로|에서|에게|부터|까지|처럼|이라|이|가|은|는|을|를|의|에|와|과|로|도|만)$")
+
+
+def _literal_token(raw: str) -> str:
+    token = raw.strip()
+    matched = _LATIN_WITH_PARTICLE.fullmatch(token)
+    return matched.group(1) if matched else token
+
 
 def _tokens(query: str) -> tuple[str, ...]:
     seen: dict[str, None] = {}
     for raw in _SPLIT.split(query or ""):
-        token = raw.strip()
+        token = _literal_token(raw)
         if token:
             seen.setdefault(token, None)
     tokens = tuple(seen)

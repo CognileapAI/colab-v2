@@ -38,8 +38,8 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_73() -> None:
-    """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → **73.**
+def test_operation_count_is_83() -> None:
+    """파일별 검색 근거 GET·PUT이 더해진 현재 계약은 **83**개다.
 
     ⭑ **병합(창 8-a) 실측 = 66.** 두 줄기가 각자 더한 op 이 겹치지 않아 합이 그대로 는다 —
     PR #1 줄기 **65**(`〈337〉`~`〈342〉` · 저장 Port · 파일 관리 · 다운로드 셋) ＋ `main` 줄기가
@@ -114,7 +114,7 @@ def test_operation_count_is_73() -> None:
     """
     # 사용자 승인 UI 개선은 계보 후보 1개와 대표 그림 PUT/GET/DELETE 3개를 함께 열었다.
     # J-1~J-9는 기본 격자·후보·복제·조기 미리보기 4개를 더했다.
-    assert len(contract_operations()) == 81, "계약의 오퍼레이션이 81 개가 아니다 — 발췌가 잘렸다."
+    assert len(contract_operations()) == 83, "계약의 오퍼레이션이 83 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

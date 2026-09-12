@@ -1,0 +1,8 @@
+[
+ {"id":"N19","query":"2023년 5월 23일 U-Net 식생지수 예측 파일을 찾아줘.","required":["LD-VEG-LV2"],"files":["Prediction_20230523.npy"]},
+ {"id":"N20","query":"2023년 5월 식생 모델의 검증용 위성자료만 찾아줘. DEM·경사향·토지피복은 빼줘.","required":["LD-VEG-LV1-MODELIN"],"files":["HLS_S30_NDVI_mean_202305.tif"]},
+ {"id":"N21","query":"강우 자료 중 관측 원자료와 전처리 표본은 제외하고 U-Net 예측 결과만 찾아줘.","required":["LD-PRCP-LV2"],"files":["pred_sample.npy"]},
+ {"id":"N22","query":"2025년 12월 27일 값까지 들어 있는 시군구 주간 SPI·SPEI 자료 찾아줘.","required":[],"condition":"period","expected":"contradicted","related":"LD-DRGH-LV1"},
+ {"id":"N23","query":"결측 보간을 하지 않은 2023년 5월 경기남부·충청 월평균 GK-2A NDVI를 찾아줘.","required":[],"condition":"interpolation","expected":"contradicted","related":"LD-VEG-LV1"},
+ {"id":"N24","query":"2023년 5월 17일 경기남부·충청권을 100m로 직접 관측한 천리안 NDVI 파일과 그 월평균을 함께 찾아줘.","required":[],"condition":"direct_observation","expected":"contradicted","related":"LD-VEG-LV1"}
+]

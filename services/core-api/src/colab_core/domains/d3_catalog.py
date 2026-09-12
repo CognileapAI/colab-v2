@@ -412,6 +412,19 @@ def candidate_body_files(session: Session, dataset_ids: list[Ulid]) -> dict[str,
     return out
 
 
+def body_file_ids(session: Session, dataset_ids: list[str]) -> dict[str, set[str]]:
+    """Visible body identities, without deduplicating equal file names."""
+    result: dict[str, set[str]] = {}
+    if not dataset_ids:
+        return result
+    rows = session.execute(text("""SELECT dataset_id,id FROM d3_file
+        WHERE dataset_id = ANY(CAST(:ids AS char(26)[])) AND kind='본체'"""),
+        {"ids": dataset_ids}).mappings()
+    for row in rows:
+        result.setdefault(str(row['dataset_id']), set()).add(str(row['id']))
+    return result
+
+
 @dataclasses.dataclass(frozen=True)
 class RepresentativeImage:
     dataset_id: str
@@ -718,6 +731,7 @@ SELECT d.id AS dataset_id,
        (dd.search_vector @@ q.tq) AS hit_description,
        (am.search_vector @@ q.tq) AS hit_autometa,
        (d.search_vector  @@ q.tq) AS hit_source,
+       (d.id = ANY(CAST(:evidence_ids AS char(26)[]))) AS hit_evidence,
        m.matched AS matched_terms,
        count(*) OVER () AS total_count
   FROM d3_dataset d
@@ -733,10 +747,12 @@ SELECT d.id AS dataset_id,
            @@ (nullif(phraseto_tsquery('simple', u.t)::text, '') || ':*')::tsquery
   ) m ON true
  WHERE d.deleted_at IS NULL
-   AND (dd.search_vector @@ q.tq
+   AND (((dd.search_vector @@ q.tq
      OR am.search_vector @@ q.tq
      OR d.search_vector  @@ q.tq)
-   AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text))
+     AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text)))
+     OR d.id = ANY(CAST(:evidence_ids AS char(26)[])))
+   AND NOT (d.id = ANY(CAST(:excluded_ids AS char(26)[])))
  ORDER BY rank DESC, d.id ASC
  LIMIT :limit OFFSET :offset
 """)
@@ -745,7 +761,8 @@ SELECT d.id AS dataset_id,
 #: 열 이름이 아니라 **사람이 화면에서 읽는 말**이다.
 _WHERE_LABELS = (("hit_description", "이름·주제·요약"),
                  ("hit_autometa", "포맷·변수"),
-                 ("hit_source", "원천 표기"))
+                 ("hit_source", "원천 표기"),
+                 ("hit_evidence", "확인한 파일 근거"))
 
 #: 유사도 문턱 (`〈89〉-㉮②`). `pg_trgm` 의 기본값 0.3 을 **코드에 명시**한다 —
 #: `SET pg_trgm.similarity_threshold` 는 세션 설정이라 접속마다 달라질 수 있고,
@@ -766,7 +783,8 @@ _TRGM_WHERE = ("이름(비슷한 말)",)
 #: 순서를 낸다 (`〈89〉-㉮③` — 이 팔이 도는 동안 `tsvector` 순위는 존재하지 않는다).
 _SEARCH_TRGM = text("""
 SELECT d.id AS dataset_id,
-       s.sim AS rank,
+       CASE WHEN s.sim >= :threshold THEN s.sim ELSE 0 END AS rank,
+       (d.id = ANY(CAST(:evidence_ids AS char(26)[]))) AS hit_evidence,
        m.matched AS matched_terms,
        count(*) OVER () AS total_count
   FROM d3_dataset d
@@ -781,9 +799,11 @@ SELECT d.id AS dataset_id,
      WHERE similarity(dd.name, u.t) >= :threshold
   ) m ON true
  WHERE d.deleted_at IS NULL
-   AND s.sim >= :threshold
-   AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text))
- ORDER BY s.sim DESC, d.id ASC
+   AND ((s.sim >= :threshold
+         AND (cast(:topic AS text) IS NULL OR dd.topic = cast(:topic AS text)))
+        OR d.id = ANY(CAST(:evidence_ids AS char(26)[])))
+   AND NOT (d.id = ANY(CAST(:excluded_ids AS char(26)[])))
+ ORDER BY rank DESC, d.id ASC
  LIMIT :limit OFFSET :offset
 """)
 
@@ -812,7 +832,8 @@ def _websearch(terms: tuple[str, ...]) -> bool:
 
 
 def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | None,
-                    limit: int, offset: int) -> tuple[list[SearchMatch], int]:
+                    limit: int, offset: int, evidence_ids: tuple[str, ...] = (),
+                    excluded_ids: tuple[str, ...] = ()) -> tuple[list[SearchMatch], int]:
     """`tsvector` 로 후보를 뽑고 **순위를 낸다** (`〈72〉-㉮` · `〈81〉`).
 
     **D3 는 core-api 의 자기 도메인이다** — 이 질의는 도메인 경계를 넘지 않는다.
@@ -833,7 +854,22 @@ def search_datasets(session: Session, *, terms: tuple[str, ...], topic: str | No
     """
     if not _websearch(terms):
         return [], 0
-    params = {"terms": list(terms), "topic": topic, "limit": limit, "offset": offset}
+    params = {"terms": list(terms), "topic": topic, "limit": limit, "offset": offset,
+              "evidence_ids": list(evidence_ids), "excluded_ids": list(excluded_ids)}
+    if evidence_ids or excluded_ids:
+        # Freeze the fallback decision before evidence adds/removes candidates.
+        # A later page or an all-excluded result must not switch search strategy.
+        original = session.execute(_SEARCH, {**params, "limit": 1, "offset": 0,
+                                             "evidence_ids": [], "excluded_ids": []}).first()
+        statement = _SEARCH if original else _SEARCH_TRGM
+        rows = session.execute(statement, {**params, "threshold": TRGM_THRESHOLD}).mappings().all()
+        matches = [SearchMatch(
+            dataset_id=str(r["dataset_id"]), rank=float(r["rank"]),
+            matched_terms=tuple(r["matched_terms"] or ()),
+            where=(tuple(lb for key, lb in _WHERE_LABELS if r[key]) if original else
+                   ((_TRGM_WHERE if r["matched_terms"] else ()) +
+                    (("확인한 파일 근거",) if r["hit_evidence"] else ())))) for r in rows]
+        return matches, int(rows[0]["total_count"]) if rows else 0
     rows = session.execute(_SEARCH, params).mappings().all()
     if rows:
         return ([SearchMatch(dataset_id=str(r["dataset_id"]),

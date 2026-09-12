@@ -1,0 +1,163 @@
+{
+  "kind": "local verification receipt; not overall K4 completion",
+  "head": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+  "files": {
+    "dev-package/03-HANDOFF.md": "8ee5d6b99cd6c2c5f80d7181702d0d8f7a3e711ac282785f68130502ef8f2183",
+    "dev-package/intent/2026-09-12-ai-search.md": "50a7f01f69bd5fb97c17d15ade4073c87d86f71498b952e39e37b97b81a7ba55",
+    "dev-package/prd/rounds/R-STAGE3-AI-SEARCH-EVIDENCE.md": "e46621678dad452858e249cff90e4c23bd6951e3917fb52703ebf851bcc209c3",
+    "dev-package/prd/rounds/R-STAGE3-AI-SEARCH.md": "e4b6db8483d181d8057271bf612f7b9ee0b61e9c35ccbcc3342e58cfca6a15e2",
+    "dev-package/prd/specs/STAGE3-AI-SEARCH-EVIDENCE-STORAGE.md": "6928346bf58e3ab49a609cc782f0a3de9e11399bc28619e55b2ba080dde33689",
+    "dev-package/prd/specs/STAGE3-AI-SEARCH-EVIDENCE.md": "a9725ad8aaf58b20a101124dbb88670ed1885edf4fa836853f780039825e7a9c",
+    "dev-package/sessions/20260912-ai-search-condition-audit.md": "1682807383a28880ee6f030ba9ce8024584c80dcf0e4c315f3e098c931282443",
+    "dev-package/sessions/20260912-ai-search-data-readiness.md": "e03ce3687c2fd27a6442dd7a40d1d5940c76e872003bf5d509e7bd555fc4b705",
+    "dev-package/sessions/20260912-ai-search-expansion-comparison.md": "9fa19a0e3726793f0156147195234fc5ff9bbb6f3227982e0d7e39171dabdfe1",
+    "dev-package/sessions/20260912-ai-search-literal-baseline.md": "7603bf2d2e5076899dec589d2b3f78ee60069435e4e4d985b032ec611ed8a663",
+    "dev-package/sessions/20260912-ai-search-reference-proposal.md": "e18448404696afe2fed881af0ab9a89753d4bd4609f340d86b80a3b6eda1233f",
+    "dev-package/sessions/20260912-ai-search-structured-probe.md": "3c5a045371d62297c700ec681c3f9aee917a39709fdb630db63b6cd0059d0300",
+    "dev-package/sessions/20260913-ai-search-execution.md": "30e0174d160853f3853a565f9e2e477f458fb02970f6b6c2b165b8ae6f7868a0",
+    "dev-package/work-items.yaml": "e9877f0edf4111a53cdd5bb6c6f337b5279c1115f8c5808e23a26bedd4797fc7",
+    "eval/k4-search/README.md": "0c5eb8c4fc8039f2fac71f7c83fe5f6ed91909816d201335d49097324cccccd3",
+    "eval/k4-search/condition-evidence.json": "7392b0085658dad44e3c442c0c4cc7f1806c0d8ace1d86d2d8ee99c5bd8a9fb0",
+    "eval/k4-search/condition_assessment.py": "437d02c1eba5f72e372e64c1e2fb8eda075a62abb01d7be5606196fd12ba6e74",
+    "eval/k4-search/file-role-evidence.json": "10aadffe46e1d84121dd0ca28d66f53782229918f19da20dfebe72d7df3cccb7",
+    "eval/k4-search/golden-cases.json": "0e61e384f59fc67050f36849824bac10e3f52d151a80153c259cf2c557da7fd6",
+    "eval/k4-search/golden-set.md": "35bb672dce4b49cf38843d4d1cb57aa64059c7ae5cd552827cd9c5a3bbb18239",
+    "eval/k4-search/golden_baseline.py": "ed948467cf13a1563f2d85da50a5ff41f4bc845da75ca74ddee305c34536472a",
+    "eval/k4-search/heldout-cases.json": "a4f3f6a1dcc98cbd7783eedbe5db23c97e495420226393d16118ddd11ddcb736",
+    "eval/k4-search/heldout_eval.py": "6a49be20a67eb530f46d204fe148ec05236399634132f6203e076e302e52bfd5",
+    "eval/k4-search/reference_evidence.py": "93ce62b6767517072ec9e555e7d05d477955d20b8c2e500bf57643a97e5ebcb4",
+    "eval/k4-search/search_journey.py": "70d7bd7414892a1945495d04a2a5c8757124bf6473213b3621c1e1de0fef2a0d",
+    "eval/k4-search/structured-extra-cases.json": "d039026f517c2f22da8bef438f556cdaa955ed0bc8a3b016b6ce50e7e7945876",
+    "eval/k4-search/structured_probe.py": "8176b8b10087588d022f09b4f440cd37065d6c133294ae61f2046e3d152f00cd",
+    "eval/k4-search/test_condition_assessment.py": "d34182a1487d2eb24f255ea4ba4b84cf564557bdcc2822a87a80063861651346",
+    "eval/k4-search/test_golden_baseline.py": "d7aef7688dac7abfc67091bf72d10d5da994eeaf30f74f71c94339cd37f14f32",
+    "eval/k4-search/test_heldout_eval.py": "b73fda169e21d2750911b80d1923291a6e9261ff00c3328d1842faab3faaac6b",
+    "eval/k4-search/test_reference_evidence.py": "1881f41f9ff5d93560219258bbea61adabfada7787b64fe3c4a1ec5335c13233",
+    "eval/k4-search/test_structured_probe.py": "13b2035f5f7e3eaf1ef134f64902bdd0f45b260105e26d8dbb2948af12b155c6",
+    "eval/s2b-alayer/README.md": "238e29b599937d22f04420eccf99dcd86f77f1621c26f30f9e3e63cd66d0f988",
+    "eval/s2b-alayer/run.py": "9932d475c7b8d95198b000a1e0f109f826fad8e81b6f14f8e137870535a58180",
+    "eval/s2b-alayer/test_target_scope.py": "3b48eb05be9d914bfa88bb5f1b44fa894cc3a35caa0d12153ae43d42a639ed99",
+    "scripts/e2e-login.py": "4025fe7a53e025597fb757113d58eb3d4da72ef1eff415e97b3f3de41d9e88dd",
+    "services/ai-service/src/colab_ai/app/interpret.py": "e9c14476dfc9a724c9b5f9e16ded99869fac313e71cb95e3b24fafb082507358",
+    "services/ai-service/src/colab_ai/domains/d10_ai_services.py": "960fc7dbbd9ac253d3393076d23bf3e100f574e2531a257d57818674badeaee6",
+    "services/ai-service/tests/test_literal_particles.py": "34fe48bdf10fef9e79bd8e72b4f18433b5ae0b53bc49eaab5ee75bf56b70463b",
+    "services/ai-service/tests/test_search_service.py": "2e7238b69ffd0e56e516ba5ad319146fae5f04ce520ecf22d75fd4557eaecc17",
+    "services/core-api/src/colab_core/app/routes/catalog.py": "807813212419fa1c8999307670e8e0662ed79afa9621f0d575931274d744f18a",
+    "services/core-api/src/colab_core/app/search_conditions.py": "9c23cea452977f867628f1d7e5e6ddddc40d72d2c799c21d587618d66571cc0c",
+    "services/core-api/tests/test_search_condition_rationale.py": "31ce6471087efcab8f87b0c8b604575ed7efdc6f56c0658047af333dee180ddd"
+  },
+  "gates": {
+    "core-final": {
+      "path": "dev-package/reports/stage3-ai-search-plan/core-final/gate-summary.json",
+      "sha256": "ad685068fcb4e7414c23e30305775cbae5fff0a563d8e21e444a60b3c07e4e9f",
+      "summary": [
+        {
+          "name": "service-tests-core-api",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ]
+    },
+    "ai-final-02": {
+      "path": "dev-package/reports/stage3-ai-search-plan/ai-final-02/gate-summary.json",
+      "sha256": "1ca864e0d0a9e387329c27c9c4aeb6a16f12a824edf429d13956605e6e9e5360",
+      "summary": [
+        {
+          "name": "service-tests-ai-service",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ]
+    },
+    "frontend-final": {
+      "path": "dev-package/reports/stage3-ai-search-plan/frontend-final/gate-summary.json",
+      "sha256": "8dcf5e70944f26521ddd5689f663aed28059ec7f672c5f8418dc34140ada94bc",
+      "summary": [
+        {
+          "name": "frontend-test",
+          "status": "red_판정",
+          "state": "red_판정",
+          "exit": 1,
+          "readiness": null
+        }
+      ]
+    },
+    "contract-final": {
+      "path": "dev-package/reports/stage3-ai-search-plan/contract-final/gate-summary.json",
+      "sha256": "e57f61309ab8024a0e8329da93777aea4d186fa5286578f6a8375970ce64a436",
+      "summary": [
+        {
+          "name": "contract-lint",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ]
+    },
+    "seam-final": {
+      "path": "dev-package/reports/stage3-ai-search-plan/seam-final/gate-summary.json",
+      "sha256": "6d81cc47b0e5eaa2b9be85061a212c133faf7b2286f1570b08bf26184ea92a3c",
+      "summary": [
+        {
+          "name": "seam-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ]
+    },
+    "ledger-final": {
+      "path": "dev-package/reports/stage3-ai-search-plan/ledger-final/gate-summary.json",
+      "sha256": "60cd02092f9749b71b07638efd4557af5769d8ceb705b6fd0ea4d95260ae496c",
+      "summary": [
+        {
+          "name": "work-item-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ]
+    }
+  },
+  "direct_checks": {
+    "eval_tools": {
+      "passed": 37
+    },
+    "alayer_runner_unit": {
+      "passed": 3
+    },
+    "frontend_search": {
+      "passed": 38,
+      "files": 3
+    },
+    "frontend_typecheck": {
+      "exit": 0
+    },
+    "core_condition_and_assembly": {
+      "passed": 25
+    },
+    "browser_journey": {
+      "exit": 0,
+      "ai": "HTTP test double"
+    },
+    "source_collection": {
+      "sources": 4,
+      "bindings": 10,
+      "changed": []
+    }
+  },
+  "limitations": [
+    "K4 open; full semantic quality not passed",
+    "frontend full gate failed with 5 worker startup errors",
+    "LLM evaluation deferred",
+    "evidence storage/filter product integration not implemented",
+    "no commit/push/deployment/product DB mutation"
+  ]
+}

@@ -61,3 +61,14 @@ def test_meaningful_words_survive() -> None:
     terms2 = _terms("한강 유역 강수 자료")
     for word in ("한강", "유역", "강수"):
         assert word in terms2, f"{word} 가 사라졌다"
+
+
+def test_korean_particles_attached_to_latin_technical_names_are_removed() -> None:
+    terms = _terms("U-Net으로 만든 NDVI를 찾아줘")
+
+    assert "U-Net" in terms and "NDVI" in terms
+    assert "U-Net으로" not in terms and "NDVI를" not in terms
+
+
+def test_attached_particles_on_korean_words_are_untouched() -> None:
+    assert "강수로" in _terms("강수로 만든 자료")

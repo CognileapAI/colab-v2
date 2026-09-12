@@ -1,0 +1,16 @@
+{
+  "status": "research annotation; not product metadata; not yet consumed by search",
+  "provenance": "dev-package/sessions/20260912-ai-search-reference-proposal.md",
+  "evidence": [
+    {"dataset_key":"LD-PRCP-LV1","file":"hsr_sample.npy","role":"model_input","source_document":"#processing_description_Precipitation.docx","scope":"HSR input described in processing document; not precipitation amount itself"},
+    {"dataset_key":"LD-PRCP-LV1","file":"rn15_sample.npy","role":"validation","source_document":"#processing_description_Precipitation.docx","scope":"RN15 validation described in processing document; no accuracy guarantee"},
+    {"dataset_key":"LD-PRCP-LV2","file":"pred_sample.npy","role":"prediction","source_document":"#processing_description_Precipitation.docx","scope":"U-Net rainfall estimate; not direct observation"},
+    {"dataset_key":"LD-VEG-LV1","file":"GK2A_NDVI_mean_202305.tif","role":"model_input","source_document":"#processing_description_NDVI.docx","scope":"monthly GK-2A NDVI primary input; 2km to 100m uniform division"},
+    {"dataset_key":"LD-VEG-LV1-MODELIN","file":"DEM.tif","role":"auxiliary_input","source_document":"#processing_description_NDVI.docx","scope":"terrain elevation input"},
+    {"dataset_key":"LD-VEG-LV1-MODELIN","file":"Aspect.tif","role":"auxiliary_input","source_document":"#processing_description_NDVI.docx","scope":"terrain aspect input"},
+    {"dataset_key":"LD-VEG-LV1-MODELIN","file":"LULC_2023.tif","role":"auxiliary_input","source_document":"#processing_description_NDVI.docx","scope":"land-cover input"},
+    {"dataset_key":"LD-VEG-LV1-MODELIN","file":"HLS_S30_NDVI_mean_202305.tif","role":"validation","source_document":"#processing_description_NDVI.docx","scope":"monthly HLS validation; not a child of GK-2A monthly dataset"},
+    {"dataset_key":"LD-DRGH-LV1","file":"SPI_4weeks_sig_wide.gpkg","role":"index","variable":"SPI","source_document":"[Data Info]SPI-4weeks.docx","scope":"weekly municipality four-week index; final actual date column 20251220"},
+    {"dataset_key":"LD-DRGH-LV1","file":"SPEI_4weeks_sig_wide.gpkg","role":"index","variable":"SPEI","source_document":"[Data Info]SPEI-4weeks.docx","scope":"weekly municipality four-week index; final actual date column 20251220"}
+  ]
+}

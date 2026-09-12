@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "environment": "disposable fixture DB, real core/frontend; HTTP interpreter double",
+  "checks": [
+    "draft save",
+    "explicit review",
+    "reload persistence",
+    "search evidence",
+    "locked file non-disclosure",
+    "detail navigation"
+  ]
+}

@@ -1,0 +1,1045 @@
+{
+  "environment": "dev",
+  "captured_at": "2026-09-12T12:59:31.171024+00:00",
+  "subject": {
+    "accountId": "000000000000000000000000A1",
+    "labId": "0000000000000000000000000A"
+  },
+  "datasets": [
+    {
+      "id": "01M1SCC27AN4NZD3K978YFDCVD",
+      "name": "강수 — HSR 레이더 합성 반사도 (Lv.0)",
+      "topic": "강우·강수",
+      "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = RDR_CMP_HSR_PUB_*.bin.gz (bin, 변량 = 반사도). ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "source_label": "기상청 API허브",
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-PRCP-LV0-HSR",
+      "files": [
+        {
+          "id": "01M1SCG0HW6R9G2MAKAC0HJGMY",
+          "file_name": "LAT_HSR.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCG0W8VMN2VDPV58V75DE7",
+          "file_name": "LON_HSR.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0EDV4DX078JA1NQ3QJ7",
+          "file_name": "자료설명.pptx",
+          "kind": "본체",
+          "size_bytes": 250054,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0C394HCZ8NS60DD5K71",
+          "file_name": "#processing_description_Precipitation.docx",
+          "kind": "본체",
+          "size_bytes": 12263,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0GK203R4DBYHPBJNVW0",
+          "file_name": "RDR_CMP_HSR_PUB_201907281430.bin.gz",
+          "kind": "본체",
+          "size_bytes": 931156,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0KGKB0PK5WKT1F421BH",
+          "file_name": "RDR_CMP_HSR_PUB_202005151115.bin.gz",
+          "kind": "본체",
+          "size_bytes": 2653550,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0QZDFSHBFBY2AG391NF",
+          "file_name": "RDR_CMP_HSR_PUB_202007221045.bin.gz",
+          "kind": "본체",
+          "size_bytes": 1312031,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0TDJR94H8RMR8QGYD7K",
+          "file_name": "RDR_CMP_HSR_PUB_202106031430.bin.gz",
+          "kind": "본체",
+          "size_bytes": 2585075,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC0XM6XVGQV9NMEYBCNJN",
+          "file_name": "RDR_CMP_HSR_PUB_202107031745.bin.gz",
+          "kind": "본체",
+          "size_bytes": 3160934,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC10YY9KR5ZHH6F76P0G5",
+          "file_name": "RDR_CMP_HSR_PUB_202207110415.bin.gz",
+          "kind": "본체",
+          "size_bytes": 1542160,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC1464GMWBNXP8BX58HA3",
+          "file_name": "RDR_CMP_HSR_PUB_202208100500.bin.gz",
+          "kind": "본체",
+          "size_bytes": 916972,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC173M7J6FHEKC4R0DCJ3",
+          "file_name": "RDR_CMP_HSR_PUB_202307140830.bin.gz",
+          "kind": "본체",
+          "size_bytes": 1727847,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC19R05NW7XBE6JHFW6GV",
+          "file_name": "RDR_CMP_HSR_PUB_202405151930.bin.gz",
+          "kind": "본체",
+          "size_bytes": 987675,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC1CX5JW5MFBG1QZ7525P",
+          "file_name": "RDR_CMP_HSR_PUB_202407091315.bin.gz",
+          "kind": "본체",
+          "size_bytes": 1181252,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "docx",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "자료설명.pptx"
+      },
+      "variable_rows": [],
+      "parents": []
+    },
+    {
+      "id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+      "name": "강수 — RN15 지상 15분 누적 강수 (Lv.0)",
+      "topic": "강우·강수",
+      "summary": "기상 레이더 합성 반사도(HSR)와 지상 15분 누적 강수(RN15). 반사도는 대기 중 강수 입자가 레이더 전파를 산란해 되돌린 세기이고, RN15 는 기상청·공공기관 관측자료에 지형효과를 반영한 3차원 객관분석 산출이다. 출처 = 기상청 API허브. 시·공간해상도 5분 / 0.5 km. Lv.0 원자료 = sfc_grid_rn_15m_*.nc (NetCDF4, 변량 = 15분 누적 강수량).",
+      "source_label": "기상청 API허브",
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-PRCP-LV0-RN15",
+      "files": [
+        {
+          "id": "01M1SCGBVQK7HTYNBB25YNH7J4",
+          "file_name": "LAT_RN15.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCGC2YQAEQBXRR3BR5185Z",
+          "file_name": "LON_RN15.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC73XDYS0Y87VD2VSR6JD",
+          "file_name": "sfc_grid_rn_15m_201907281430.nc",
+          "kind": "본체",
+          "size_bytes": 101072,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC768Y5C21CYX5TSEQJT2",
+          "file_name": "sfc_grid_rn_15m_202005151115.nc",
+          "kind": "본체",
+          "size_bytes": 144418,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC78WREPZQSAXZCQSN9B2",
+          "file_name": "sfc_grid_rn_15m_202007221045.nc",
+          "kind": "본체",
+          "size_bytes": 104498,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7C5PBR1NZSPQ92DER09",
+          "file_name": "sfc_grid_rn_15m_202106031430.nc",
+          "kind": "본체",
+          "size_bytes": 127387,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7EQPCPQ8DG9NKY1CTJ8",
+          "file_name": "sfc_grid_rn_15m_202107031745.nc",
+          "kind": "본체",
+          "size_bytes": 163176,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7GZ3VKT2C85JW6EBT0E",
+          "file_name": "sfc_grid_rn_15m_202207110415.nc",
+          "kind": "본체",
+          "size_bytes": 119820,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7JXSC2XDDNVFXH7G69F",
+          "file_name": "sfc_grid_rn_15m_202208100500.nc",
+          "kind": "본체",
+          "size_bytes": 118776,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7NT0AA4EKPGN1KNZ5YY",
+          "file_name": "sfc_grid_rn_15m_202307140830.nc",
+          "kind": "본체",
+          "size_bytes": 146471,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7QTAA4KBCM1XNRNJVGP",
+          "file_name": "sfc_grid_rn_15m_202405151930.nc",
+          "kind": "본체",
+          "size_bytes": 118287,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCC7T1DC034SBZG57P7BXS",
+          "file_name": "sfc_grid_rn_15m_202407091315.nc",
+          "kind": "본체",
+          "size_bytes": 103676,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "nc",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "sfc_grid_rn_15m_201907281430.nc"
+      },
+      "variable_rows": [],
+      "parents": []
+    },
+    {
+      "id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+      "name": "식생 — GK-2A/AMI Lv.2 식생산출물 원자료 (Lv.0)",
+      "topic": "식생·NDVI",
+      "summary": "GK-2A/AMI 정규식생지수(NDVI). 식 : NDVI = (NIR − Red) / (NIR + Red), 범위 −1~1. 값이 높을수록 식생이 건강하다. 출처 = 국가기상위성센터(NMSC). 원자료 LCC 좌표계 · 1일 / 2 km. 대상 기간 2023-05-01 ~ 2023-05-31 · 대상지 경기 남부~충청권. 자료 구성 = NDVI · EVI · FVC · DQF · gk2a_imager_projection. ＊이 데이터셋에 주제 공통 설명 문서(#readme)를 함께 싣는다.",
+      "source_label": "국가기상위성센터(NMSC)",
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-VEG-LV0",
+      "files": [
+        {
+          "id": "01M1SCCGKV7EW688HM0EFBKRC2",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305010000.nc",
+          "kind": "본체",
+          "size_bytes": 1845461,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCGPZQA2F9GC4JR2N44V6",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305020000.nc",
+          "kind": "본체",
+          "size_bytes": 1843693,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCGT07E8Y6GBV8MSEEFHQ",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305030000.nc",
+          "kind": "본체",
+          "size_bytes": 1832987,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCGX2M97CMVXKGKD09C0M",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305040000.nc",
+          "kind": "본체",
+          "size_bytes": 1833286,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCGZY55NFW34R6ZB5G2Q9",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305050000.nc",
+          "kind": "본체",
+          "size_bytes": 1834360,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCH2RMP90W7SF9VV4KVXN",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305060000.nc",
+          "kind": "본체",
+          "size_bytes": 1840966,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCH5JSSG8BPX51C3GZ9XW",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305070000.nc",
+          "kind": "본체",
+          "size_bytes": 1850642,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCH843MA3GKJE667H80G9",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305080000.nc",
+          "kind": "본체",
+          "size_bytes": 1858213,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHBJZ6QZXK6S6EB1G8ES",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305090000.nc",
+          "kind": "본체",
+          "size_bytes": 1846592,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHEYVWZ8053VBCAJCRM9",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305100000.nc",
+          "kind": "본체",
+          "size_bytes": 1844709,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHJ3HZ7VS0Z6ARY9SX50",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305110000.nc",
+          "kind": "본체",
+          "size_bytes": 1849235,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHN31JPW71RTTPSDC0YB",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305120000.nc",
+          "kind": "본체",
+          "size_bytes": 1852591,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHR0VVVEFWX3F30406W5",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305130000.nc",
+          "kind": "본체",
+          "size_bytes": 1855608,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHV0QE5EQD6RZ1Q32JHN",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305140000.nc",
+          "kind": "본체",
+          "size_bytes": 1863843,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCHYF55VA3BZHSDN1FMXW",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305150000.nc",
+          "kind": "본체",
+          "size_bytes": 1868604,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJ18WRPQS30YP4V5QD46",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305160000.nc",
+          "kind": "본체",
+          "size_bytes": 1868817,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJ52D2J917VG52ZF5VJM",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305170000.nc",
+          "kind": "본체",
+          "size_bytes": 1868867,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJ81A99ZX3Y6W79ES153",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305180000.nc",
+          "kind": "본체",
+          "size_bytes": 1870950,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJB01SVW0DCV6VABNKSF",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305190000.nc",
+          "kind": "본체",
+          "size_bytes": 1872846,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJDSH2JJVZ64SVFANK5D",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305200000.nc",
+          "kind": "본체",
+          "size_bytes": 1871911,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJGMYYZR50NFGHEJK7MY",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305210000.nc",
+          "kind": "본체",
+          "size_bytes": 1875853,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJKRMF1YWSJ70QJ3X6SS",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305220000.nc",
+          "kind": "본체",
+          "size_bytes": 1876501,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJR3WM1FPWTPXKK2NTX7",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305230000.nc",
+          "kind": "본체",
+          "size_bytes": 1875738,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJTSM746JD5BRAVYM2CZ",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305240000.nc",
+          "kind": "본체",
+          "size_bytes": 1885428,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCJYRFMKWRV6QE69V5BR1",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305250000.nc",
+          "kind": "본체",
+          "size_bytes": 1890885,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCK1N24D2B82Z67BMGZ8C",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305260000.nc",
+          "kind": "본체",
+          "size_bytes": 1895280,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCK5DAGT364DMA1C2DB8V",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305270000.nc",
+          "kind": "본체",
+          "size_bytes": 1897360,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCK8CE278A0DB4PKQZYAK",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305280000.nc",
+          "kind": "본체",
+          "size_bytes": 1903503,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCKB76DQ72G4CVM52FBX9",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305290000.nc",
+          "kind": "본체",
+          "size_bytes": 1910333,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCKE89NB2G6B6ABW38CSX",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305300000.nc",
+          "kind": "본체",
+          "size_bytes": 1907258,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCKHX67YNKM80QWSQCFSA",
+          "file_name": "gk2a_ami_le2_vgt_ko_202305310000.nc",
+          "kind": "본체",
+          "size_bytes": 1908549,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCGNWBTGMM0QR6GVB3JW6Y",
+          "file_name": "LAT.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCGP1NTP84CG7AY3TMG9AC",
+          "file_name": "LON.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCCGHKGFE1A3YVTDVXA21S",
+          "file_name": "#processing_description_NDVI.docx",
+          "kind": "본체",
+          "size_bytes": 13069,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "docx",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "gk2a_ami_le2_vgt_ko_202305010000.nc"
+      },
+      "variable_rows": [],
+      "parents": []
+    },
+    {
+      "id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+      "name": "강수 — WGS84 변환·연구대상지 crop 표본 (Lv.1)",
+      "topic": "강우·강수",
+      "summary": "Lv.0 두 원자료를 기상청 제공 lat·lon 파일에 맞춰 WGS84 로 좌표변환하고 연구대상지 중심으로 crop 한 표본. 형상 (10, 128, 128).",
+      "source_label": null,
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-PRCP-LV1",
+      "files": [
+        {
+          "id": "01M1SCGKNNM2HE1EFY86J3F2HK",
+          "file_name": "hsr_sample.npy",
+          "kind": "본체",
+          "size_bytes": 655488,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCJR0TTAHE65C7H7ZYPTRJ",
+          "file_name": "LAT_crop.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCJR38STXRG1NM81GV1FRT",
+          "file_name": "LON_crop.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCGKRFMYKGXH237ZTRHKN5",
+          "file_name": "rn15_sample.npy",
+          "kind": "본체",
+          "size_bytes": 655488,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "npy",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "hsr_sample.npy"
+      },
+      "variable_rows": [],
+      "parents": [
+        {
+          "parent_dataset_id": "01M1SCC27AN4NZD3K978YFDCVD",
+          "parent_role": "주입력",
+          "method": "WGS84 좌표변환 ＋ 연구대상지 crop"
+        },
+        {
+          "parent_dataset_id": "01M1SCC8BZZJSCEW4MRPE4W9M8",
+          "parent_role": "보조입력",
+          "method": "WGS84 좌표변환 ＋ 연구대상지 crop"
+        }
+      ]
+    },
+    {
+      "id": "01M1SCGX4PFD796VX8093WQMS7",
+      "name": "식생 — GK-2A NDVI 100 m 월평균 (Lv.1)",
+      "topic": "식생·NDVI",
+      "summary": "DQF 로 저품질 픽셀을 NaN 처리하고 유효범위 −1~1 밖을 NaN 으로 바꾼 뒤, LCC→WGS84 변환 · NDVI 레이어 추출 · 경기 남부~충청권 영역 추출 · Savitzky-Golay 평활화와 선형보간 · 2 km→100 m 균등분할(Uniform Distribution) · 일→월 평균을 거친 자료.",
+      "source_label": null,
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-VEG-LV1",
+      "files": [
+        {
+          "id": "01M1SCGWEW4824ETY9VHSPN5Y5",
+          "file_name": "GK2A_NDVI_mean_202305.tif",
+          "kind": "본체",
+          "size_bytes": 13047326,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCJXF0YGT3X916T6YM0ZPT",
+          "file_name": "LAT_crop.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCJXNGY1J46TWJ3EJ6NPVN",
+          "file_name": "LON_crop.npy",
+          "kind": "기준 격자 파일",
+          "size_bytes": null,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "tif",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "GK2A_NDVI_mean_202305.tif"
+      },
+      "variable_rows": [],
+      "parents": [
+        {
+          "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "parent_role": "주입력",
+          "method": "DQF 품질필터 → LCC→WGS84 → ROI 추출 → SG 평활·선형보간 → 100 m 균등분할 → 월평균"
+        }
+      ]
+    },
+    {
+      "id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+      "name": "식생 — Lv.2 모델 보조입력·검증자료 (Lv.1 형제)",
+      "topic": "식생·NDVI",
+      "summary": "Lv.2 딥러닝 모델의 보조입력(수치표고모형 DEM 100 m · 경사향 Aspect 100 m · 연 단위 토지피복지도 LULC 100 m)과 검증자료(월 단위 HLS S30 NDVI 100 m). ＊이 묶음은 Lv.1 에서 파생되지 않는다 — 별개 원천에서 온 자료라 Lv.1 의 자식이 아니라 형제이고, Lv.2 에 대해서만 보조입력 부모가 된다(#readme 「[2] 메인 처리 프로세스 — NDVI · Lv.2 · 학습 시 활용 자료」).",
+      "source_label": null,
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-VEG-LV1-MODELIN",
+      "files": [
+        {
+          "id": "01M1SCH1ZMAY64GZ699HVKHBBA",
+          "file_name": "Aspect.tif",
+          "kind": "본체",
+          "size_bytes": 12679486,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH25CNKZ15W5XSVBQHQ1R",
+          "file_name": "DEM.tif",
+          "kind": "본체",
+          "size_bytes": 12635960,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH2C969XSS5X9DAY7VZXE",
+          "file_name": "HLS_S30_NDVI_mean_202305.tif",
+          "kind": "본체",
+          "size_bytes": 13172104,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH2JD273M9NEA024FABKJ",
+          "file_name": "LULC_2023.tif",
+          "kind": "본체",
+          "size_bytes": 7851096,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "tif",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "Aspect.tif"
+      },
+      "variable_rows": [],
+      "parents": []
+    },
+    {
+      "id": "01M1SCH9DF18DXH793JTP01W61",
+      "name": "가뭄 — 시군구 주간 SPI/SPEI-4weeks (Lv.1)",
+      "topic": "가뭄",
+      "summary": "대한민국 시군구 단위 주간 SPI-4weeks · SPEI-4weeks 가뭄지수. 기상관측소 강우 관측자료로 지수를 산정하고 관측소 주소지 시군구를 대표값으로 가정해 구축했다. 생산 = 차호영(고려대학교) · WGS84 · 1 km · 2000-01-01~2025-12-31 · 주 단위. Data Level = L1 Calibrated. ＊이 주제에는 Lv.0·Lv.2 폴더가 없다 — 계보 간선 0건. 설명 문서(#readme, 여는 코드 ipynb 포함)를 함께 싣는다.",
+      "source_label": "차호영(고려대학교)",
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-DRGH-LV1",
+      "files": [
+        {
+          "id": "01M1SCH8HAG8EN07BJ9P6KPP5S",
+          "file_name": "01.가뭄 데이터 여는 코드.ipynb",
+          "kind": "본체",
+          "size_bytes": 383565,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH8KW0DBQJKDK9E2J8K7Q",
+          "file_name": "[Data Info]SPEI-4weeks.docx",
+          "kind": "본체",
+          "size_bytes": 284678,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH8PMNCVFHC30AG916TS3",
+          "file_name": "[Data Info]SPI-4weeks.docx",
+          "kind": "본체",
+          "size_bytes": 308195,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH8S0S2SVQNAHW570R100",
+          "file_name": "SPEI_4weeks_sig_wide.gpkg",
+          "kind": "본체",
+          "size_bytes": 24797184,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCH92N349H8G0B3WFFP3JZ",
+          "file_name": "SPI_4weeks_sig_wide.gpkg",
+          "kind": "본체",
+          "size_bytes": 24797184,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "docx",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "01.가뭄 데이터 여는 코드.ipynb"
+      },
+      "variable_rows": [],
+      "parents": []
+    },
+    {
+      "id": "01M1SCJTXHXT37CZD22TKMJ13P",
+      "name": "강수 — U-Net 강우 추정 예측장 (Lv.2)",
+      "topic": "강우·강수",
+      "summary": "Lv.1 표본을 입력·검증자료로 학습한 U-Net 계열 딥러닝 모델의 예측 강우장. Z–R 관계식의 단일 픽셀 가정을 image-to-image 변환으로 대체한 산출. 형상 (10, 128, 128).",
+      "source_label": null,
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-PRCP-LV2",
+      "files": [
+        {
+          "id": "01M1SCJTSXP6WCKXA61W0Q7NDC",
+          "file_name": "pred_sample.npy",
+          "kind": "본체",
+          "size_bytes": 655488,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "npy",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "pred_sample.npy"
+      },
+      "variable_rows": [],
+      "parents": [
+        {
+          "parent_dataset_id": "01M1SCGM0K7FACRYTCWVMDDBY8",
+          "parent_role": "주입력",
+          "method": "U-Net based Model"
+        }
+      ]
+    },
+    {
+      "id": "01M1SCKW76AZQCHT5HAMZH9KH0",
+      "name": "식생 — U-Net NDVI 예측장 (Lv.2)",
+      "topic": "식생·NDVI",
+      "summary": "월 단위 GK-2A NDVI(Lv.1)를 주입력으로, DEM·경사향·토지피복을 보조입력으로, 월 단위 HLS NDVI 를 검증자료로 학습한 U-Net 계열 모델의 일별 예측 NDVI(Prediction_yyyymmdd.npy).",
+      "source_label": null,
+      "category": null,
+      "data_type": null,
+      "observation_interval_value": null,
+      "observation_interval_unit": null,
+      "manifest_key": "LD-VEG-LV2",
+      "files": [
+        {
+          "id": "01M1SCKQSKNQBY05XZCZFH7B16",
+          "file_name": "Prediction_20230501.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKQY1WVKQWA6HZKE00WT2",
+          "file_name": "Prediction_20230502.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKR2KXFHEXQ4925FYRCN7",
+          "file_name": "Prediction_20230503.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKR6Q4D3TMNAT4YWZDGXD",
+          "file_name": "Prediction_20230504.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKRAZ235KBNVBHFGEKJBH",
+          "file_name": "Prediction_20230505.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKRETP6DHD3R5XWNF1RVV",
+          "file_name": "Prediction_20230506.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKRKD0S6A9XK3FSJKTVTG",
+          "file_name": "Prediction_20230507.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKRQVP9YQ0XEPTG7T1W6W",
+          "file_name": "Prediction_20230508.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKRW8MW6B4A9Z01SXZT1R",
+          "file_name": "Prediction_20230509.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKS13W00ZKXG1FFSAP5WV",
+          "file_name": "Prediction_20230510.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKS4R2M42TKSDEAG7M5TB",
+          "file_name": "Prediction_20230511.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKS96EJD8Y1C0K82SWAWG",
+          "file_name": "Prediction_20230512.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKSDVGJXVCF5BPEZ4NFJ3",
+          "file_name": "Prediction_20230513.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKSJ7NQM39VNZTRHA1SNB",
+          "file_name": "Prediction_20230514.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKSPQTAKB6QJCY1G2NSGB",
+          "file_name": "Prediction_20230515.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKSV6P2KZ7NYNNNSCMPG1",
+          "file_name": "Prediction_20230516.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKSZNVZB1P5QJDTNP5SKC",
+          "file_name": "Prediction_20230517.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKT4B0SS96X1ZDH0210WB",
+          "file_name": "Prediction_20230518.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKT9AQMKP235PQ4RPRRJK",
+          "file_name": "Prediction_20230519.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKTDPA8Y6QWS07M2SGT81",
+          "file_name": "Prediction_20230520.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKTHZEARSYBKPBAY34B61",
+          "file_name": "Prediction_20230521.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKTP26VDX74Y6PA294EB3",
+          "file_name": "Prediction_20230522.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKTTGD1J8DY4GTVN8FYNP",
+          "file_name": "Prediction_20230523.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKTZ3DJM0DFQRT839P43W",
+          "file_name": "Prediction_20230524.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKV3CYH9NN0KFD0VQWXCX",
+          "file_name": "Prediction_20230525.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKV7XWF4CTR5Q8VQBMV00",
+          "file_name": "Prediction_20230526.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKVCBNQQEEJXTHQAV79WS",
+          "file_name": "Prediction_20230527.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKVHVDP921HMN492J77SX",
+          "file_name": "Prediction_20230528.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKVP75S7K3VV3Y0NE1JP2",
+          "file_name": "Prediction_20230529.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKVTXQG0575NKCZHMJT3P",
+          "file_name": "Prediction_20230530.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        },
+        {
+          "id": "01M1SCKVZF7E7W4CEE2TMQ7EWZ",
+          "file_name": "Prediction_20230531.npy",
+          "kind": "본체",
+          "size_bytes": 6553728,
+          "relative_path": null
+        }
+      ],
+      "autometa": {
+        "format": null,
+        "variables": [],
+        "period_start": null,
+        "period_end": null,
+        "period_granularity": null,
+        "file_extension": "npy",
+        "crs": null,
+        "grid": null,
+        "bundle_file_name": "Prediction_20230501.npy"
+      },
+      "variable_rows": [],
+      "parents": [
+        {
+          "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "parent_role": "주입력",
+          "method": "U-Net based Model"
+        },
+        {
+          "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "parent_role": "보조입력",
+          "method": "U-Net based Model"
+        }
+      ]
+    }
+  ],
+  "read_only": "on",
+  "visible_datasets": 25
+}

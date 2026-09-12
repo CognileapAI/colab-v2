@@ -1,0 +1,814 @@
+{
+  "model_calls": 0,
+  "kind": "offline candidate experiment; not production quality",
+  "hashes": {
+    "eval/k4-search/structured_probe.py": "f705b44cc0e3e4300147fae9cb2bb57bccc34202e3855e6db67fada27c933270",
+    "eval/k4-search/test_structured_probe.py": "59d92ff3c7054ee69fcbcbc911daa15076df8a0a43e007c7a39376d84ac0b98e",
+    "eval/k4-search/golden-cases.json": "0e61e384f59fc67050f36849824bac10e3f52d151a80153c259cf2c557da7fd6",
+    "eval/k4-search/structured-extra-cases.json": "d039026f517c2f22da8bef438f556cdaa955ed0bc8a3b016b6ce50e7e7945876",
+    "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json": "1b9b9afd50b3a827d555cfd6b1982bcf531de0c8af11db2de0d49ce5b5875bbe",
+    "eval/k4-search/file-role-evidence.json": "10aadffe46e1d84121dd0ca28d66f53782229918f19da20dfebe72d7df3cccb7",
+    "eval/k4-search/condition-evidence.json": "2e2fcb58cf5e4c8f452e3d4fe040dc636d95ac7e73aed263a982aeb758ba9806",
+    "eval/k4-search/condition_assessment.py": "3465e7984416c2a0d8f3b6f56a6f86a00b68bac2eab990b32954aa2dcff51deb",
+    "eval/k4-search/test_condition_assessment.py": "6af20cc926e982697912e5042a88e1b641254024fb4f18c9a6e1a15131f6b38c"
+  },
+  "results": [
+    {
+      "id": "SEARCH-GOLD-001",
+      "query": "2023년 5월 경기 남부와 충청권의 식생 상태를 살펴볼 수 있는 월평균 위성 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGX4PFD796VX8093WQMS7": [
+          {
+            "dataset_key": "LD-VEG-LV1",
+            "file": "GK2A_NDVI_mean_202305.tif",
+            "role": "model_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "region": {
+            "status": "supported",
+            "evidence": "경기남부충청",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCGX4PFD796VX8093WQMS7": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-002",
+      "query": "2023년 5월 경기 남부와 충청권에서 식물이 얼마나 푸른지 월평균으로 볼 수 있는 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGX4PFD796VX8093WQMS7": [
+          {
+            "dataset_key": "LD-VEG-LV1",
+            "file": "GK2A_NDVI_mean_202305.tif",
+            "role": "model_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "region": {
+            "status": "supported",
+            "evidence": "경기남부충청",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCGX4PFD796VX8093WQMS7": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-003",
+      "query": "2023년 5월 1일의 식생지수를 U-Net으로 예측한 자료 찾아줘.",
+      "ids": [
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "unverified": [
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {},
+      "conditions": {
+        "01M1SCKW76AZQCHT5HAMZH9KH0": {
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCKW76AZQCHT5HAMZH9KH0": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-004",
+      "query": "GK2A_NDVI_mean_202305.tif를 만드는 데 쓴 천리안 원자료 찾아줘.",
+      "ids": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR"
+      ],
+      "relation": [
+        {
+          "parent_dataset_id": "01M1SCCM2Q4ST81GZK3YM0PFZR",
+          "parent_role": "주입력",
+          "method": "DQF 품질필터 → LCC→WGS84 → ROI 추출 → SG 평활·선형보간 → 100 m 균등분할 → 월평균"
+        }
+      ],
+      "unverified": [],
+      "strategy": "exact-file/direct-parent",
+      "conditions": {
+        "01M1SCCM2Q4ST81GZK3YM0PFZR": {
+          "period": {
+            "status": "unknown",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCCM2Q4ST81GZK3YM0PFZR": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-005",
+      "query": "U-Net 식생지수 모델에 쓴 지형·토지피복 보조자료와 검증용 식생자료 찾아줘.",
+      "ids": [
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+      ],
+      "unverified": [],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": [
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "DEM.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "terrain elevation input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "Aspect.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "terrain aspect input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "LULC_2023.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "land-cover input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "HLS_S30_NDVI_mean_202305.tif",
+            "role": "validation",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly HLS validation; not a child of GK-2A monthly dataset"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": {}
+      },
+      "candidate_status": {
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-006",
+      "query": "레이더 반사도로 만든 강우 추정 결과와 검증에 쓴 강수 자료 찾아줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCJTXHXT37CZD22TKMJ13P"
+      ],
+      "unverified": [],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": [
+          {
+            "dataset_key": "LD-PRCP-LV1",
+            "file": "rn15_sample.npy",
+            "role": "validation",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "RN15 validation described in processing document; no accuracy guarantee"
+          }
+        ],
+        "01M1SCJTXHXT37CZD22TKMJ13P": [
+          {
+            "dataset_key": "LD-PRCP-LV2",
+            "file": "pred_sample.npy",
+            "role": "prediction",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "U-Net rainfall estimate; not direct observation"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": {},
+        "01M1SCJTXHXT37CZD22TKMJ13P": {}
+      },
+      "candidate_status": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": "candidate_conditions_incomplete",
+        "01M1SCJTXHXT37CZD22TKMJ13P": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-007",
+      "query": "WGS84로 바꾸고 연구대상지에 맞춰 잘라 둔 15분 누적 강수 표본 찾아줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8"
+      ],
+      "unverified": [
+        "temporal_granularity"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": [
+          {
+            "dataset_key": "LD-PRCP-LV1",
+            "file": "hsr_sample.npy",
+            "role": "model_input",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "HSR input described in processing document; not precipitation amount itself"
+          },
+          {
+            "dataset_key": "LD-PRCP-LV1",
+            "file": "rn15_sample.npy",
+            "role": "validation",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "RN15 validation described in processing document; no accuracy guarantee"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": {}
+      },
+      "candidate_status": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-008",
+      "query": "2000년부터 2025년까지 대한민국 시군구의 4주 가뭄지수를 주간으로 비교할 자료 찾아줘.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCH9DF18DXH793JTP01W61": [
+          {
+            "dataset_key": "LD-DRGH-LV1",
+            "file": "SPI_4weeks_sig_wide.gpkg",
+            "role": "index",
+            "variable": "SPI",
+            "source_document": "[Data Info]SPI-4weeks.docx",
+            "scope": "weekly municipality four-week index; final actual date column 20251220"
+          },
+          {
+            "dataset_key": "LD-DRGH-LV1",
+            "file": "SPEI_4weeks_sig_wide.gpkg",
+            "role": "index",
+            "variable": "SPEI",
+            "source_document": "[Data Info]SPEI-4weeks.docx",
+            "scope": "weekly municipality four-week index; final actual date column 20251220"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCH9DF18DXH793JTP01W61": {
+          "region": {
+            "status": "supported",
+            "evidence": "대한민국시군구",
+            "source": "drought"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "weekly",
+            "source": "drought"
+          },
+          "period": {
+            "status": "unknown",
+            "evidence": [
+              "2000-01-01",
+              "2025-12-20"
+            ],
+            "source": "drought"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCH9DF18DXH793JTP01W61": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-009",
+      "query": "시군구별 주간 SPI-4weeks 자료 찾아줘. SPEI 말고 SPI가 필요해.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "temporal_granularity"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCH9DF18DXH793JTP01W61": [
+          {
+            "dataset_key": "LD-DRGH-LV1",
+            "file": "SPI_4weeks_sig_wide.gpkg",
+            "role": "index",
+            "variable": "SPI",
+            "source_document": "[Data Info]SPI-4weeks.docx",
+            "scope": "weekly municipality four-week index; final actual date column 20251220"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCH9DF18DXH793JTP01W61": {
+          "region": {
+            "status": "supported",
+            "evidence": "대한민국시군구",
+            "source": "drought"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "weekly",
+            "source": "drought"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCH9DF18DXH793JTP01W61": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-010",
+      "query": "이 검색 대상 자료 중 U-Net으로 예측한 가뭄지수 자료 찾아줘.",
+      "ids": [],
+      "unverified": [],
+      "strategy": "facets",
+      "file_evidence": {},
+      "conditions": {},
+      "candidate_status": {},
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-011",
+      "query": "결측률이 0%로 검증된 2023년 5월 식생 자료 찾아줘.",
+      "ids": [
+        "01M1SCCM2Q4ST81GZK3YM0PFZR",
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+        "01M1SCKW76AZQCHT5HAMZH9KH0"
+      ],
+      "unverified": [
+        "quality",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGX4PFD796VX8093WQMS7": [
+          {
+            "dataset_key": "LD-VEG-LV1",
+            "file": "GK2A_NDVI_mean_202305.tif",
+            "role": "model_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+          }
+        ],
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": [
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "DEM.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "terrain elevation input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "Aspect.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "terrain aspect input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "LULC_2023.tif",
+            "role": "auxiliary_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "land-cover input"
+          },
+          {
+            "dataset_key": "LD-VEG-LV1-MODELIN",
+            "file": "HLS_S30_NDVI_mean_202305.tif",
+            "role": "validation",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly HLS validation; not a child of GK-2A monthly dataset"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCCM2Q4ST81GZK3YM0PFZR": {
+          "quality": {
+            "status": "unknown",
+            "evidence": "결측률 검증 보고서 없음",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        },
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "quality": {
+            "status": "unknown",
+            "evidence": "결측률 검증 보고서 없음",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        },
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": {
+          "quality": {
+            "status": "unknown",
+            "evidence": "결측률 검증 보고서 없음",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "unknown",
+            "evidence": "연속 기간 근거 없음",
+            "source": "vegetation"
+          }
+        },
+        "01M1SCKW76AZQCHT5HAMZH9KH0": {
+          "quality": {
+            "status": "unknown",
+            "evidence": "결측률 검증 보고서 없음",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCCM2Q4ST81GZK3YM0PFZR": "candidate_conditions_incomplete",
+        "01M1SCGX4PFD796VX8093WQMS7": "candidate_conditions_incomplete",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": "candidate_conditions_incomplete",
+        "01M1SCKW76AZQCHT5HAMZH9KH0": "candidate_conditions_incomplete"
+      },
+      "inclusion": null,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "SEARCH-GOLD-012",
+      "query": "100m로 직접 관측한 천리안 월평균 NDVI 자료 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "native_resolution"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGX4PFD796VX8093WQMS7": [
+          {
+            "dataset_key": "LD-VEG-LV1",
+            "file": "GK2A_NDVI_mean_202305.tif",
+            "role": "model_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "direct_observation": {
+            "status": "contradicted",
+            "evidence": "2km to 100m uniform division, not native 100m observation",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCGX4PFD796VX8093WQMS7": "related_condition_mismatch"
+      },
+      "inclusion": null,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P1",
+      "query": "2023년 오월 경기남부와 충청 일대의 식물 녹색도를 한 달 평균으로 본 위성자료가 필요해.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGX4PFD796VX8093WQMS7": [
+          {
+            "dataset_key": "LD-VEG-LV1",
+            "file": "GK2A_NDVI_mean_202305.tif",
+            "role": "model_input",
+            "source_document": "#processing_description_NDVI.docx",
+            "scope": "monthly GK-2A NDVI primary input; 2km to 100m uniform division"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "region": {
+            "status": "supported",
+            "evidence": "경기남부충청",
+            "source": "vegetation"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "monthly",
+            "source": "vegetation"
+          },
+          "period": {
+            "status": "supported",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCGX4PFD796VX8093WQMS7": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P2",
+      "query": "레이더 신호로 비를 추정한 결과와, 비교에 쓴 지상 15분 누적강수 표본을 같이 보여줘.",
+      "ids": [
+        "01M1SCGM0K7FACRYTCWVMDDBY8",
+        "01M1SCJTXHXT37CZD22TKMJ13P"
+      ],
+      "unverified": [
+        "temporal_granularity"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": [
+          {
+            "dataset_key": "LD-PRCP-LV1",
+            "file": "rn15_sample.npy",
+            "role": "validation",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "RN15 validation described in processing document; no accuracy guarantee"
+          }
+        ],
+        "01M1SCJTXHXT37CZD22TKMJ13P": [
+          {
+            "dataset_key": "LD-PRCP-LV2",
+            "file": "pred_sample.npy",
+            "role": "prediction",
+            "source_document": "#processing_description_Precipitation.docx",
+            "scope": "U-Net rainfall estimate; not direct observation"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": {},
+        "01M1SCJTXHXT37CZD22TKMJ13P": {}
+      },
+      "candidate_status": {
+        "01M1SCGM0K7FACRYTCWVMDDBY8": "candidate_conditions_incomplete",
+        "01M1SCJTXHXT37CZD22TKMJ13P": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "P3",
+      "query": "2000~2025년 우리나라 시군구별 SPI와 SPEI 4주 지수를 매주 비교하고 싶어.",
+      "ids": [
+        "01M1SCH9DF18DXH793JTP01W61"
+      ],
+      "unverified": [
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "file_evidence": {
+        "01M1SCH9DF18DXH793JTP01W61": [
+          {
+            "dataset_key": "LD-DRGH-LV1",
+            "file": "SPI_4weeks_sig_wide.gpkg",
+            "role": "index",
+            "variable": "SPI",
+            "source_document": "[Data Info]SPI-4weeks.docx",
+            "scope": "weekly municipality four-week index; final actual date column 20251220"
+          },
+          {
+            "dataset_key": "LD-DRGH-LV1",
+            "file": "SPEI_4weeks_sig_wide.gpkg",
+            "role": "index",
+            "variable": "SPEI",
+            "source_document": "[Data Info]SPEI-4weeks.docx",
+            "scope": "weekly municipality four-week index; final actual date column 20251220"
+          }
+        ]
+      },
+      "conditions": {
+        "01M1SCH9DF18DXH793JTP01W61": {
+          "region": {
+            "status": "supported",
+            "evidence": "대한민국시군구",
+            "source": "drought"
+          },
+          "cadence": {
+            "status": "supported",
+            "evidence": "weekly",
+            "source": "drought"
+          },
+          "period": {
+            "status": "unknown",
+            "evidence": [
+              "2000-01-01",
+              "2025-12-20"
+            ],
+            "source": "drought"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCH9DF18DXH793JTP01W61": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N1",
+      "query": "2023년 4월 경기 남부·충청권 월평균 천리안 NDVI 찾아줘.",
+      "ids": [],
+      "unverified": [
+        "geographic_coverage",
+        "continuous_temporal_coverage"
+      ],
+      "strategy": "facets",
+      "file_evidence": {},
+      "conditions": {},
+      "candidate_status": {},
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N2",
+      "query": "2024년 제주도에서 매일 관측한 U-Net SPEI 1km 자료 찾아줘.",
+      "ids": [],
+      "unverified": [
+        "native_resolution",
+        "geographic_coverage",
+        "temporal_granularity",
+        "period"
+      ],
+      "strategy": "facets",
+      "file_evidence": {},
+      "conditions": {},
+      "candidate_status": {},
+      "inclusion": true,
+      "semantic": "unassessed"
+    },
+    {
+      "id": "N3",
+      "query": "Prediction_20230517.npy의 바로 앞 입력 데이터셋과 모델 보조자료를 각각 찾아줘.",
+      "ids": [
+        "01M1SCGX4PFD796VX8093WQMS7",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB"
+      ],
+      "relation": [
+        {
+          "parent_dataset_id": "01M1SCGX4PFD796VX8093WQMS7",
+          "parent_role": "주입력",
+          "method": "U-Net based Model"
+        },
+        {
+          "parent_dataset_id": "01M1SCH2SAEFRXCZ2N6RSNR3GB",
+          "parent_role": "보조입력",
+          "method": "U-Net based Model"
+        }
+      ],
+      "unverified": [],
+      "strategy": "exact-file/direct-parent",
+      "conditions": {
+        "01M1SCGX4PFD796VX8093WQMS7": {
+          "period": {
+            "status": "unknown",
+            "evidence": [
+              "2023-05-01",
+              "2023-05-31"
+            ],
+            "source": "vegetation"
+          }
+        },
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": {
+          "period": {
+            "status": "unknown",
+            "evidence": "기간 근거 없음",
+            "source": "vegetation"
+          }
+        }
+      },
+      "candidate_status": {
+        "01M1SCGX4PFD796VX8093WQMS7": "candidate_conditions_incomplete",
+        "01M1SCH2SAEFRXCZ2N6RSNR3GB": "candidate_conditions_incomplete"
+      },
+      "inclusion": true,
+      "semantic": "unassessed"
+    }
+  ]
+}

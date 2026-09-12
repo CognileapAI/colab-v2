@@ -1067,6 +1067,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datasets/{datasetId}/search-evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 접근 가능한 파일별 검색 근거와 현재 검토 상태
+         * @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE.
+         *     파일 본문 접근 권한이 있는 사람에게만 파일명과 근거 원문 스냅샷을 돌려준다.
+         *     저장된 파일 내용 버전이 현재 버전과 다르면 상태는 `stale`로 계산한다.
+         */
+        get: operations["listDatasetSearchEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/datasets/{datasetId}/files/{fileId}/search-evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 파일에 출처가 있는 검색 사실을 초안 또는 검토 완료로 저장
+         * @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE.
+         *     기존 `업로드·편집` 권한과 파일 본문 접근 권한을 함께 사용한다. 근거 revision과
+         *     파일 내용 revision이 모두 기대값과 같을 때만 저장하며, 출처 hash와 검토 주체·시각은
+         *     서버가 정한다. 출처 text는 붙여 넣은 불변 스냅샷이며 외부 문서를 자동 추적하지 않는다.
+         */
+        put: operations["saveDatasetFileSearchEvidence"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/datasets/{datasetId}/grid-files": {
         parameters: {
             query?: never;
@@ -3528,6 +3582,67 @@ export interface components {
              *     묻지 않는다. **서버가 판별하고 보여주고 뒤집기 버튼을 준다**).
              */
             gridAxis?: components["schemas"]["GridAxisAssignment"];
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
+        SearchEvidenceFacts: {
+            roles?: ("model_input" | "auxiliary_input" | "validation" | "prediction" | "index" | "documentation" | "analysis_code")[];
+            period?: {
+                /** Format: date */
+                start: string;
+                /** Format: date */
+                end: string;
+            };
+            region?: string;
+            /** @enum {string} */
+            cadence?: "daily" | "weekly" | "monthly" | "15min";
+            model?: string;
+            variable?: string;
+            directObservation?: boolean;
+            nativeResolutionM?: number;
+            interpolated?: boolean;
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. 붙여 넣은 원문 스냅샷. 외부 문서의 자동 갱신 연결이 아니다. */
+        SearchEvidenceSourceWrite: {
+            label: string;
+            locator: string;
+            text: string;
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. 서버가 원문 스냅샷에서 sha256을 계산해 더한 출처. */
+        SearchEvidenceSource: {
+            label: string;
+            locator: string;
+            text: string;
+            sha256: string;
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
+        SearchEvidenceWrite: {
+            expectedRevision: number;
+            expectedFileRevision: number;
+            facts: components["schemas"]["SearchEvidenceFacts"];
+            source: components["schemas"]["SearchEvidenceSourceWrite"];
+            /** @enum {string} */
+            status: "draft" | "reviewed";
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
+        SearchEvidence: {
+            revision: number;
+            /** @enum {string} */
+            status: "draft" | "reviewed" | "stale";
+            facts: components["schemas"]["SearchEvidenceFacts"];
+            source: components["schemas"]["SearchEvidenceSource"];
+            reviewedBy: components["schemas"]["Ulid"] | null;
+            reviewedAt: components["schemas"]["Timestamp"] | null;
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
+        SearchEvidenceItem: {
+            fileId: components["schemas"]["Ulid"];
+            fileName: string;
+            fileRevision: number;
+            evidence: components["schemas"]["SearchEvidence"] | null;
+        };
+        /** @description [사용자 승인] 2026-09-13 WSL stage 테스트 직전 개발 지시 · STAGE3-AI-SEARCH-EVIDENCE-STORAGE. */
+        SearchEvidenceList: {
+            items: components["schemas"]["SearchEvidenceItem"][];
         };
         /**
          * @description [사용자 승인 2026-08-29] 다운로드 티켓 (`PLAN-SoT §9 〈339〉-(다)`). `downloadDataset`(묶음)·
@@ -6206,6 +6321,69 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    listDatasetSearchEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 파일별 근거. 저장 전 파일은 evidence가 null이다. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvidenceList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    saveDatasetFileSearchEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                datasetId: components["parameters"]["DatasetId"];
+                /**
+                 * @description 파일(조각) 하나. 업로드 시 발급된 ULID 가 등록 후에도 그대로다 — `fileId` 동일성
+                 *     (`sessions/D2c.md §2-10` — `[정본 무근거]` · 사용자 승인 2026-08-23).
+                 */
+                fileId: components["parameters"]["FileId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchEvidenceWrite"];
+            };
+        };
+        responses: {
+            /** @description 저장된 근거. 출처 hash와 검토자는 서버가 정한다. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchEvidence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
         };
     };

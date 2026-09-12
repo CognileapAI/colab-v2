@@ -1,0 +1,384 @@
+{
+  "scope": "local stage preparation, no dev/stage mutation, no model call",
+  "checks": {
+    "core_full": {
+      "passed": 1152,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 6,
+      "report": "core-integrated-03/gate-summary.json"
+    },
+    "final_period_unit": {
+      "passed": 11,
+      "failed": 0,
+      "scope": "pure module; --noconftest; initial DB-less autouse invocation failed preparation"
+    },
+    "final_reference_api": {
+      "passed": 1,
+      "queries": 12,
+      "reviewed_file_inputs": 97,
+      "log": "reference-api-final.txt",
+      "interpretation": "frozen HTTP double"
+    },
+    "eval_helpers": {
+      "passed": 43
+    },
+    "browser": {
+      "exit": 0,
+      "report": "browser-evidence-06/result.json",
+      "interaction": "real keyboard focus/Enter/Space and fill; source/detail click"
+    },
+    "build": {
+      "exit": 0,
+      "modules": 214
+    },
+    "frontend_full": {
+      "status": "passed",
+      "prior_exit": 143,
+      "source_equality": "frontend-linux-source-match.json; 316 files",
+      "passed": 1261,
+      "failed": 0,
+      "test_files": 105,
+      "exit": 0,
+      "log": "frontend-linux-final.txt",
+      "workers": 2
+    }
+  },
+  "review": {
+    "verdict": "approve",
+    "code_spec_blockers": 0
+  },
+  "limits": [
+    "Actual stage test not executed",
+    "Actual Sonnet/model evaluation deferred",
+    "K4 original quality acceptance remains open",
+    "Source is current pasted snapshot, external document change is not auto detected"
+  ],
+  "gates": {
+    "core-integrated-03": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:32:42Z",
+      "finished": "2026-09-12T16:35:32Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "service-tests-core-api",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "service-tests-core-api",
+        "selected": [
+          "service-tests-core-api"
+        ]
+      }
+    },
+    "typecheck-integrated-01": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:23:39Z",
+      "finished": "2026-09-12T16:24:24Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "frontend-typecheck",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "frontend-typecheck",
+        "selected": [
+          "frontend-typecheck"
+        ]
+      }
+    },
+    "schema-integrated-01": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:19:41Z",
+      "finished": "2026-09-12T16:19:53Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "schema-diff",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "schema-diff",
+        "selected": [
+          "schema-diff"
+        ]
+      }
+    },
+    "contract-lint-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:40:12Z",
+      "finished": "2026-09-12T16:41:17Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "contract-lint",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "contract-lint",
+        "selected": [
+          "contract-lint"
+        ]
+      }
+    },
+    "seam-consistency-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:32:55Z",
+      "finished": "2026-09-12T16:33:09Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "seam-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "seam-consistency",
+        "selected": [
+          "seam-consistency"
+        ]
+      }
+    },
+    "migration-single-head-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:33:10Z",
+      "finished": "2026-09-12T16:33:10Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "migration-single-head",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "migration-single-head",
+        "selected": [
+          "migration-single-head"
+        ]
+      }
+    },
+    "rls-coverage-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:33:10Z",
+      "finished": "2026-09-12T16:33:15Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "rls-coverage",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "rls-coverage",
+        "selected": [
+          "rls-coverage"
+        ]
+      }
+    },
+    "import-boundary-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:33:15Z",
+      "finished": "2026-09-12T16:33:22Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "import-boundary",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "import-boundary",
+        "selected": [
+          "import-boundary"
+        ]
+      }
+    },
+    "generated-up-to-date-integrated-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:33:22Z",
+      "finished": "2026-09-12T16:36:21Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "generated-up-to-date",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "generated-up-to-date",
+        "selected": [
+          "generated-up-to-date"
+        ]
+      }
+    },
+    "ledger-integrated-01": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T16:39:12Z",
+      "finished": "2026-09-12T16:39:12Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "work-item-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "work-item-consistency",
+        "selected": [
+          "work-item-consistency"
+        ]
+      }
+    },
+    "ai-final-02": {
+      "schema": "colab-gate-summary/1",
+      "tree": "ed0db4c6a11b86972a8661e204de8238ba3ddebe",
+      "commit": "6fcc065fc9ca92b0a3ce7152f0bbaa263fccb028",
+      "started": "2026-09-12T15:32:52Z",
+      "finished": "2026-09-12T15:33:12Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "service-tests-ai-service",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "service-tests-ai-service",
+        "selected": [
+          "service-tests-ai-service"
+        ]
+      }
+    }
+  },
+  "schema_source_match": [
+    "db/platform/schema.sql",
+    "db/platform/versions/0028_search_evidence.py"
+  ],
+  "status": "complete for user-authorized local stage preparation",
+  "cleanup": "owned browser/core/fixture DBs and HTTP interpretation stub stopped; no dev/stage mutation"
+}

@@ -23,6 +23,7 @@ import 가 아니라 **DB 커넥션**이라 `import-boundary` 가 못 잡았다)
 from __future__ import annotations
 
 import logging
+import re
 
 from colab_ai.ports import DictionaryPort, Interpretation, QueryInterpreterPort
 
@@ -61,6 +62,35 @@ MAX_TERMS = 24
 #: (`D-09` = GK2A/AMI NDVI 원자료 (Lv.0) 의 이름이 그 말이다).
 #: 실측상 0건인 말(`전체`·`찾아줘`)은 **넣지 않았다** — 해를 재지 못한 낱말을 빼지 않는다.
 FUNCTION_WORDS = ("자료", "데이터")
+
+# 파일명 안의 확장자는 파일 자체를 찾는 단서이지, 포맷 예제 주제를 요구한 말이 아니다.
+# 사전에 넘기는 질의 사본에서만 가리고 원 검색어는 그대로 보존한다.
+_FILE_NAME_EXTENSION = re.compile(
+    r"(?i)\b([\w-]+)\.(?P<extension>grib|netcdf|nc|bin|tif|tiff|geotiff|hdf5|hdf|npy)"
+    r"(?=(?:(?:으로|에서|에게|부터|까지|처럼|이라|이|가|은|는|을|를|의|에|와|과|로|도|만))?"
+    r"(?:$|[\s,.;:!?]))")
+
+
+def _query_for_dictionary(query: str) -> str:
+    return _FILE_NAME_EXTENSION.sub(r"\1", query or "")
+
+
+def _terms_for_dictionary(terms: tuple[str, ...], query: str) -> tuple[str, ...]:
+    """파일명에서 잘려 나온 확장자만 사전 판정에서 뺀다. 응답 검색어는 건드리지 않는다."""
+    extensions = {m.group("extension").casefold()
+                  for m in _FILE_NAME_EXTENSION.finditer(query or "")}
+    if not extensions:
+        return terms
+    masked = _query_for_dictionary(query)
+    particles = (
+        r"(?:으로|에서|에게|부터|까지|처럼|이라|이|가|은|는|을|를|의|에|와|과|로|도|만)?")
+    explicit = {
+        ext for ext in extensions
+        if re.search(
+            rf"(?i)(?<![\w.-]){re.escape(ext)}(?={particles}(?:$|[\s,.;:!?]))",
+            masked)
+    }
+    return tuple(term for term in terms if term.casefold() not in extensions - explicit)
 
 
 def strip_function_words(terms) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -158,8 +188,10 @@ class SearchService:
         terms, topic = kept, interpretation.topic
         hops: tuple = ()
         try:
-            expansion = self._dictionaries.expand(kept, query)
-            terms = expansion.terms
+            expansion = self._dictionaries.expand(
+                _terms_for_dictionary(kept, query), _query_for_dictionary(query))
+            # 사전 판정에서만 뺀 파일 확장자도 실제 검색어 응답에는 그대로 남긴다.
+            terms = tuple(dict.fromkeys((*kept, *expansion.terms)))
             topic = interpretation.topic or expansion.topic
             hops = getattr(expansion, "graph_hops", ())
         except Exception as e:                                   # noqa: BLE001
