@@ -4,7 +4,17 @@
 >
 > **기계적 절차의 정본은 `infra/dev/README.md`**(스크립트와 같은 자리에 있어 함께 낡는다). 이 문서는 **왜·무엇이·어디가 고장 나면 어디를 보는가**를 맡는다. 값과 근거는 `dev-package/PLAN-SoT.md §9`.
 
-**지금 서 있는 것** — dev 환경 하나. 주소 `https://d31zgpff2091oh.cloudfront.net`. **prod 는 아직 없다**(정본 `㊻` 가 ⏸, Ted 판정 선행).
+**지금 서 있는 것** — ⭑ **⟨개정 2026-09-12⟩ dev ＋ prod 두 벌.**
+／ 종전 ~~dev 환경 하나 · **prod 는 아직 없다**(정본 `㊻` 가 ⏸, Ted 판정 선행)~~ — `㊻` 보류는 `〈372〉` 로 해제됐고 prod 는 §5 대로 실재한다.
+
+| 벌 | 주소 | 상태 |
+|---|---|---|
+| dev | `https://d31zgpff2091oh.cloudfront.net` | 배포 창 집행 중 · 태그 `dev-YYYYMMDD-N` |
+| prod | `https://d1aje00ns2hjsl.cloudfront.net` | 개통 완료(§5 P1~P8) · 실행 이미지 `prod-3922d01750d0` · **다음 배포부터 `prod-YYYYMMDD` 태그에서만**(§5-9) |
+
+⚠ **prod 는 규칙 6 이 생기기 전에 개통됐다.** 지금 돌고 있는 `prod-3922d01750d0` 은
+`prod-*` 태그에서 나온 것이 아니고 `/opt/colab-v2/MAIN_SHA` 도 없다 — ⟹ **`deploy_doctor` ⑮ 는
+지금 ✗ 다**(「파일 없음」). 다음 prod 배포는 `main` 재빌드 ＋ 태그가 선행이다(§5-9).
 
 ---
 
@@ -232,6 +242,12 @@ CloudFront 로는 401 JSON). ⛔ `0.0.0.0/0` 으로 두면 CloudFront 를 건너
 항목 14 — ✓ 14 · ✗ 0 · ─ 0     전 항목 통과 · exit 0 · 한 번의 실행으로
 ```
 
+⭑ **⟨개정 2026-09-12⟩ 위 줄은 2026-09-06 의 실측이고 그때 점검기는 14 항목이었다.**
+`deploy_doctor` 는 이제 **15 항목**이다(⑮ 실행 sha ∈ main · `〈379〉`). `infra/prod/deploy-doctor.sh`
+가 `-v /opt/colab-v2:/state:ro` 를 넘기도록 고쳤으므로 다음 실행부터 ⑮ 가 판정된다.
+⚠ **지금 다시 돌리면 ⑮ 는 ✗ 다** — `/opt/colab-v2/MAIN_SHA` 가 없다(규칙 6 이전에 실린 이미지).
+⟹ **prod 의 「15/15 한 번의 실행」은 아직 성립하지 않았다.** 성립 경로는 §5-9 다.
+
 실행은 `infra/prod/deploy-doctor.sh` 다. **혼자서는 못 맞히는 조건이 넷** 있고 넷 다 red 를
 하나씩 내며 드러났다 — 컨테이너 안에서 돌 것 · **레포를 통째로** 마운트할 것(⑥⑦ 은
 `alembic.ini`, ⑧ 은 `rls_coverage.py` 를 읽는다) · `/etc/colab` 을 **파일 단위로** 줄 것
@@ -282,6 +298,9 @@ dev 는 20 GiB 에 65% 이고 불변 태그라 배포마다 이미지가 쌓인�
 - `ops/s3_doctor.py` **9/10** — 유일한 ✗ 가 **CORS** 이고 **그것이 지금 옳은 상태다**:
   AllowedOrigins 에 넣을 **배포 주소가 아직 없다**(CloudFront 는 P7). dev 때도 같은 순서였다.
   ⛔ **통과시키려고 임시값을 넣지 않는다** — 배포가 생기면 그 주소로 채운다.
+  ⭑ **⟨해소 2026-09-06 · P7⟩** CloudFront 가 선 뒤 `infra/prod/iam/cors-data.json` 의
+  `AllowedOrigins` 에 `https://d1aje00ns2hjsl.cloudfront.net` 한 값을 넣었다(와일드카드·localhost 0).
+  `deploy_doctor` 는 `--env dev` 면 `localhost:5173` 을, 그 밖의 벌이면 `--endpoint` 의 오리진을 찾는다.
 - `ops/s3_smoke.py` **전 항목 통과** — 프리사인드 PUT(ASCII·**한글·공백 키**) · CreateMultipartUpload ·
   파트 2개(5MiB+1KiB) · ListParts→Complete→Head · Abort→소멸 · DeleteObjects 뒷정리(남은 객체 0).
   ⟹ **자작 SigV4 가 prod 에서도 옳게 서명한다**(에뮬레이터가 아니라 진짜 S3 로 쟀다).
@@ -370,6 +389,48 @@ DB 부트스트랩: `prep` → `roles` → (마이그레이션) → `app-grants`
 ### 5-7. 백업·정리 (G10)
 
 `backup.sh` + `install-cron.sh`. **복원 실습까지 해야 끝이다** — 6) 절.
+
+### 5-9. prod 배포는 `prod-YYYYMMDD` 태그에서만 (규칙 6 · 2026-09-12)
+
+정본 = `docs/BRANCHING.md` §1 규칙 6 ＋ §2 수명 표. 요지 셋 —
+
+1. **태그를 찍는 주체는 Ted 다.** 대상 = dev 배포 창 N회를 green 으로 넘긴 `main` 커밋.
+   도구는 `infra/dev/tag-release.sh prod`(태그 생성 ＋ push 명령 **출력만** · push 는 사람).
+2. **`infra/prod/ship.sh` 가 두 검사를 한다** — ⑴ 후보 sha ∈ `origin/main`(비조상 exit 65 ·
+   `origin` 조회 실패 exit 78 · 선언 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`) ⑵ 후보 sha 에
+   `prod-*` 태그(없으면 exit 65 · ⛔ **우회 변수 없음**). 게이트 본문은 dev 와 **같은 한 벌**
+   (`infra/_lib/ship-gate.sh`)이고, prod 만 ⑵ 를 더 부른다.
+3. **`MAIN_SHA` 를 적는다** — `/opt/colab-v2/MAIN_SHA` 에 `main=… candidate=… ancestor=…`
+   한 줄. `deploy_doctor` ⑮ 가 `CURRENT_SHA` 와 대조한다(§6-1). `infra/prod/deploy-doctor.sh`
+   가 `-v /opt/colab-v2:/state:ro` 를 넘겨야 읽힌다 — 빼면 ⑮ 는 항상 ✗ 다.
+
+⚠ **지금 prod 에서 돌고 있는 `prod-3922d01750d0` 은 이 규칙 이전 판이다.**
+`prod-*` 태그 0건 · `/opt/colab-v2/MAIN_SHA` 없음 ⟹ 현재 `deploy_doctor` 는 **⑮ 가 ✗** 다.
+⛔ 그 자리를 ─ 로 접거나 파일을 손으로 만들어 채우지 않는다 — **`main` 재빌드 ＋ 태그 ＋
+`ship.sh` 반입**으로만 지운다. 손으로 채운 `MAIN_SHA` 는 반입 게이트를 거쳤다는 거짓 증거다.
+
+### 5-10. prod 마이그레이션 격차 — 배포 전 선행 조건 (2026-09-12 실측)
+
+| 체인 | prod 현재 | `main` head | 적용 대기 |
+|---|---|---|---|
+| platform | `0012_merge_lv1_and_transfer` | `0027_operator_audit` | **15** (`0013`~`0027`) |
+| ai | `0005_k2b_concept_graph_seed` | `0007_merge_topic_vocab_and_rc7_category` | **3** (`0006_rc7_synonym_category` · `0006_topic_vocab_six` · `0007_merge…`) |
+
+⚠ **ai 는 형제 둘 ＋ merge 다**(`0006` 이 두 개). 적용 순서가 갈릴 수 있는 자리이므로
+두 순서 drift 오라클이 붙어 있다(`docs/BRANCHING.md` 규칙 5 · 선례 `〈378〉` ⑧).
+
+배포 전 선행 조건 넷 —
+
+1. **백업이 먼저다.** `backup.sh` 한 번 ＋ `_ops/backups/prod/` 에 객체가 생긴 것을 확인한다.
+   RDS 는 보존 7일이라 시점 복구도 가능하지만, **되감기는 15건을 되돌리는 값싼 수단이 아니다.**
+2. **롤 둘을 prod 에 만든다** — `0025_stage3_accounts`·`0027_operator_audit` 계열이 요구하는
+   `account-admin`·`operator`. prod RDS 는 P6-c 시점의 롤 4 벌이라 그 뒤 신설분이 없다.
+3. **시크릿을 prod 자리에 배치한다** — 신설 설정값이 있으면 `/etc/colab` 에 **파일 단위**로
+   넣는다(디렉터리째 마운트 금지 — `700 root` 라 컨테이너 uid 가 못 지난다).
+4. **마이그레이터 이미지를 먼저 올린다** — `infra/prod/migrator/Dockerfile` · `up.sh` 가 부른다.
+
+⛔ **이 넷 중 하나라도 못 하면 배포를 시작하지 않는다.** 마이그레이션 15건을 반쯤 적용한
+prod 는 되돌릴 자리가 없다.
 
 ---
 
@@ -601,7 +662,7 @@ ssh -i <키> ec2-user@<IP> '
 | **S3 고아 바이트** | ⛔ 치우는 주체 없음 — **실측 3건 · 25.3 MB**(2026-09-02) | 워커 만료가 DB 행만 지운다. 워커의 `UploadBlobPort` 는 **읽기 Port** 라 삭제를 얹으면 정체가 바뀐다(로컬 모드는 소유 경계도 넘는다) → **별도 WU**. 판별식 = `d3_dataset`·`d5_upload`·열린 전송 **셋 다** 없어야 고아 |
 | **본체 전송 진행률 「문구」** | 🟧 **막대는 섰다**(`§D.7 ①` 근거 · 문구 없음). `§E.2` 의 상태 문구 행은 정본 개정 대기 | Ted 판정 뒤 문구를 붙인다 |
 | **미리보기(previews) 실검증** | ⛔ **한 번도 안 돌았다.** `previews/` 객체 0건 | 배선은 다 서 있다(CloudFront 동작 · 버킷 정책 · viz `previewSink=s3` · 역할 `PreviewsPut` · 프로브 왕복 200 — **사람이 놓은 객체로만** 확인). 미리보기 개발이 끝난 뒤 ⑴ 업로드→렌더→객체 생성 ⑵ 화면 표시 ⑶ **큰 래스터 렌더 메모리 실측**(남은 유일한 사이징 미지수) |
-| **prod** | ⏸ 정본 `㊻` — **Ted 판정 선행** | 5) 절만 보고 세운다. 그것이 이 문서의 인수 시험이다 |
+| **prod 배포 회차** | 🟧 개통은 끝(§5) · **정기 배포 경로는 아직 한 번도 안 밟았다** ／ 종전 ~~⏸ 정본 `㊻` — Ted 판정 선행~~ | ⑴ Ted 가 `main` 커밋에 `prod-YYYYMMDD` 태그 ⑵ `infra/prod/build.sh` → `ship.sh`(조상＋태그 게이트) ⑶ 마이그레이션 격차 15건 적용(§5-10) ⑷ `deploy-doctor.sh` **15/15 한 번의 실행** |
 | **동료(hsw) SSH 규칙** | 없음 | 보안그룹 22번에 규칙 추가 · 설명에 `hsw` |
 | **가격 분류** | 전체 엣지 | `PriceClass_200` 으로 낮출 수 있다 |
 | **소스맵** | dev 는 올린다 | **prod 는 빼는 쪽이 기본** — Ted 판정 |

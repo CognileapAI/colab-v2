@@ -414,7 +414,7 @@ items:
     entry_conditions: ["I4 + P7 + 출시 결정(`㊻`)"]
     depends_on: [I4, P7]
     completion_def: "prod 헬스 green + 롤백 경로 증명 (`§4`)"
-    evidence: null
+    evidence: "⭑ ⟨2026-09-12 · `feature/rtf400_deploy_prod` 리베이스 회차⟩ prod 스택은 서 있고(§5 P1~P8 · CloudFront `d1aje00ns2hjsl` · 실행 이미지 `prod-3922d01750d0`), **정기 배포 경로는 아직 한 번도 안 밟았다.** 이 회차가 넣은 것 셋 = ⑴ `infra/prod/ship.sh` 반입 게이트(`origin/main` 조상 비조상 exit 65 · `origin` 조회 실패 exit 78 · 선언 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`) ＋ **`prod-*` 태그 검사**(없으면 exit 65 · 우회 변수 없음 · 규칙 6) — 본문은 dev 와 같은 한 벌 `infra/_lib/ship-gate.sh` ⑵ `infra/prod/deploy-doctor.sh` 에 `-v /opt/colab-v2:/state:ro` ＋ 머리말 15 항목 ⑶ `MAIN_SHA` 기록(`main=… candidate=… ancestor=…`). 시험 = `infra/prod/tests/ship-gate.sh` **21/0**(red 선행 실측 통과 2·실패 19) · `services/core-api/tests/test_deploy_doctor.py` **34 passed**(prod 6건 신규 · red 선행 5건). ⚠ **닫히지 않은 것 넷** = ㉮ `prod-*` 태그 0건이라 `deploy_doctor` ⑮ 가 ✗(`MAIN_SHA` 부재) ㉯ 마이그레이션 격차 platform `0012`→`0027` **15건** · ai `0005`→`0007` **3건** 미적용 ㉰ `account-admin`·`operator` 롤 prod 미생성 ㉱ WAF 감시→차단 전환 미판정. 근거 = `dev-package/reports/prod/rebase-20260912/REPORT.md` · `docs/DEPLOY.md §5-9`·`§5-10`."
     deadline:
       condition: "출시 결정(`㊻`) — 출시 결정 시 연다"
       fired: false

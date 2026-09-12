@@ -43,6 +43,17 @@
   - **prod** = dev 가 배포 창 N회를 green 으로 넘긴 `main` 커밋에 `prod-YYYYMMDD` 태그 → **그 태그에서만**
   - **핫픽스** = 태그에서 브랜치 → 수정 → `main` 에 되돌려 넣는다
 
+⭑ **⟨증보 2026-09-12⟩ 위 규율은 이제 산문이 아니라 `ship.sh` 안의 검사다**(규칙 6 · `docs/BRANCHING.md` §1·§5).
+`infra/prod/ship.sh` 가 `infra/_lib/ship-gate.sh`(dev 와 **같은 한 벌**)를 불러 둘을 잰다 —
+
+| 검사 | 거절 | 우회 |
+|---|---|---|
+| 후보 sha ∈ `origin/main` | exit **65** (`origin` 조회 실패는 exit **78**) | `COLAB_SHIP_ALLOW_NONMAIN=1` **선언**(출력 ＋ `MAIN_SHA` 의 `ancestor=bypass` ＋ `deploy_doctor` ⑮ 의 ✗ 셋에 남는다) |
+| 후보 sha 에 `prod-*` 태그 | exit **65** | ⛔ **없다** — 태그를 먼저 찍는다 |
+
+통과하면 같은 ssh 가 `/opt/colab-v2/MAIN_SHA` 에 `main=… candidate=… ancestor=…` 한 줄을 적고,
+`deploy_doctor` ⑮ 가 `CURRENT_SHA` 와 대조한다. 셸 시험 = `infra/prod/tests/ship-gate.sh`(6 케이스).
+
 ## 5. 백업이 dev 로 새지 않게 하는 장치
 
 `infra/dev/backup.sh` 는 2026-09-06 까지 `COLAB_BACKUP_BUCKET` 기본값이 **dev 버킷**이었다.
@@ -64,5 +75,9 @@ sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod /opt/colab-v2/i
 ops/deploy_doctor.py --env prod --endpoint https://<prod>.cloudfront.net …
 ```
 ⛔ **부분 실행 둘을 합쳐 green 이라 하지 않는다** — `─ 0` 이 나온 한 번의 결과만 근거다.
+⭑ **⟨증보 2026-09-12⟩ 항목 수는 15 다**(⑮ 실행 sha ∈ main). `infra/prod/deploy-doctor.sh` 가
+`-v /opt/colab-v2:/state:ro` 를 넘긴다 — 빼면 ⑮ 는 「마운트 없음」으로 **항상 ✗** 다.
+⚠ 지금 돌고 있는 `prod-3922d01750d0` 은 규칙 6 이전 판이라 `MAIN_SHA` 가 없다 ⟹ **⑮ 는 ✗**.
+`main` 재빌드 ＋ `prod-YYYYMMDD` 태그 ＋ `ship.sh` 반입으로만 지운다(`docs/DEPLOY.md §5-9`).
 ＋ **브라우저 실물** — 로그인 → 업로드 한 바퀴 → 파일 목록 → 다운로드 → 미리보기.
 ＋ **시점 복구를 되감아 본다**(`〈372〉`-㉯) — 「설정했다」는 관문이 아니다.
