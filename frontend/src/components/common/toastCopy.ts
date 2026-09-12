@@ -15,6 +15,22 @@
 export const ANALYZING_CHIP = '분석 중';
 export const ANALYZED_CHIP = '분석 완료';
 
+/* ── `#24` ㉯ · Ted 판정 ⑧ — 같은 장면(업로드 장면1)의 두 문면. **초안이다.** ──────
+   PRD-43 표 21행에는 대응 행이 없어 `COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY` 에
+   등재하지 않는다 — 등재하면 확정되지 않은 문면이 그 표에 든다. 자리표 등재는
+   문면표 개정 뒤다. 문면의 자리가 이 모듈 하나인 규약은 그대로 지킨다. */
+// PRD-43 자리표 등재 · Ted 확정 대기
+/** `다음 →`(`reg-open`)이 비활성인 이유. 분석 미완 갈래에서만 선다. */
+export const REG_OPEN_ANALYZING_REASON = '분석이 끝나면 다음으로 갈 수 있어요.';
+// PRD-43 자리표 등재 · Ted 확정 대기
+/**
+ * 분석 중 경과 시간. **클라이언트 벽시계**다 — 상태 응답에 진행 수치가 없어
+ * 조각 수 진행률을 적지 않는다(없는 것을 퍼센트로 지어내지 않는다).
+ */
+export function analyzeElapsed(seconds: number): string {
+  return `${seconds}초 경과`;
+}
+
 /* ── U-17 · 업로드 장면1 ────────────────────────────────────────────── */
 export const UPLOAD_DONE = '파일을 올렸어요. 등록을 시작할 수 있어요';
 

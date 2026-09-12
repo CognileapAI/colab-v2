@@ -21,6 +21,8 @@ import { type AccessState } from '../common/accessState';
 import {
   ANALYZED_CHIP,
   ANALYZING_CHIP,
+  REG_OPEN_ANALYZING_REASON,
+  analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
   SOURCE_DOWNLOADED_ON_INVALID,
@@ -94,6 +96,9 @@ const STATUS_POLL_MS = 1000;
  *    접수됨·미준비 / 준비됨」 셋이고, 넷째 단계를 세울 근거가 없다. 없는 상태를 지어내
  *    문면만 늘리면 화면이 거짓을 말한다.
  */
+/** `#24` ㉯ — 사유 줄의 id. 버튼의 `aria-describedby` 가 이 값을 가리킨다. */
+export const REG_OPEN_WHY_ID = 'reg-open-why';
+
 export const RECEIVING_STAGE = '파일 올리는 중…';
 export const ANALYZE_STAGES = [
   RECEIVING_STAGE,
@@ -584,6 +589,30 @@ export function UploadModal(props: {
    * 이 화면에서 제일 나쁜 실패다(사람이 [다음]을 눌러 빈 칸을 본다).
    */
   const analyzeStage: 1 | 2 | 3 = !uploadId ? 1 : status?.ready ? 3 : 2;
+  /**
+   * ⭑ ⟨`#24` ㉯⟩ **`다음 →` 이 지금 비활성인 이유가 「분석 미완」인가.**
+   * 비활성 식 자체는 무변이다 — 항을 더하지도 빼지도 않는다. 오류 갈래(`failure` ·
+   * `intakeError` · `statusIssue`)에서는 기존 오류 표시가 이미 자리를 가지므로 사유 줄을
+   * 겹쳐 띄우지 않는다.
+   */
+  const analyzeBlocksNext = picked.length > 0
+    && !status?.ready && !status?.failure && !intakeError && !statusIssue;
+  /**
+   * ⭑ ⟨Ted 판정 ⑧ ㉢⟩ 분석 중 **클라이언트 경과 시간**. 상태 응답에 진행 수치가 없어
+   * 조각 진행률을 쓰지 않는다(계약 변경 0). 분석이 끝나거나 파일이 빠지면 0 으로 내린다.
+   */
+  const analyzeRunning = picked.length > 0 && analyzeStage < 3;
+  const [analyzeSeconds, setAnalyzeSeconds] = useState(0);
+  useEffect(() => {
+    setAnalyzeSeconds(0);
+    if (!analyzeRunning) return;
+    const startedAt = Date.now();
+    const timer = window.setInterval(
+      () => setAnalyzeSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [analyzeRunning]);
   // 진행률은 본체+격자 **합계**다. 그래서 격자 블록에 그것을 넘기는 것은 **격자만 올릴 때뿐**이다
   // — 본체가 섞여 있으면 그 퍼센트는 격자의 진행이 아니고, 화면이 틀린 말을 하게 된다.
   const gridOnly = picked.length > 0 && picked.every((p) => p.kind === '기준 격자 파일');
@@ -1275,13 +1304,23 @@ export function UploadModal(props: {
                   aria-hidden="true"
                 />
               ) : null}
+              {/* ⭑ ⟨Ted 판정 ⑧ ㉠⟩ 칩이 스스로 「동작 중」을 말한다. 움직임은 CSS 가 쥐고,
+                  감속을 선호하는 사람에게는 그 규칙이 꺼진다(`prefers-reduced-motion`). */}
               <span
-                className={analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral'}
+                className={
+                  analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral is-analyzing'
+                }
                 data-testid="up-analyze-chip"
               >
                 {analyzeStage === 3 ? ANALYZED_CHIP : ANALYZING_CHIP}
               </span>
               <span className="an-txt">{ANALYZE_STAGES[analyzeStage - 1]}</span>
+              {/* ⭑ ⟨Ted 판정 ⑧ ㉢⟩ 얼마나 기다렸는지만 말한다 — 얼마나 남았는지는 모른다. */}
+              {analyzeStage < 3 ? (
+                <span className="an-elapsed" data-testid="up-analyze-elapsed">
+                  {analyzeElapsed(analyzeSeconds)}
+                </span>
+              ) : null}
             </div>
           )}
 
@@ -1460,6 +1499,13 @@ export function UploadModal(props: {
                 <div>
                   <div className="rg-t">이 파일을 연구실에 등록할까요?</div>
                   <div className="rg-s">등록하면 계보가 쌓이고 검색·공유가 돼요.</div>
+                  {/* ⭑ ⟨`#24` ㉯⟩ 왜 지금 못 누르는지. `.rg-s` 를 쓰지 않는다 —
+                      `.up-empty .reggate .rg-s` 가 바로 이 장면에서 그 줄을 감춘다. */}
+                  {analyzeBlocksNext ? (
+                    <div className="rg-why" id={REG_OPEN_WHY_ID} data-testid="reg-open-why">
+                      {REG_OPEN_ANALYZING_REASON}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="rg-a">
                   <button
@@ -1479,6 +1525,8 @@ export function UploadModal(props: {
                     className="btn btn-strong"
                     data-testid="reg-open"
                     disabled={gridReuseBusy || !uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
+                    title={analyzeBlocksNext ? REG_OPEN_ANALYZING_REASON : undefined}
+                    aria-describedby={analyzeBlocksNext ? REG_OPEN_WHY_ID : undefined}
                     onClick={() => {
                       setRegisterOpen(true);
                       setStep(1);

@@ -590,3 +590,23 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .modal-takeover .vizph .pt { margin-bottom: 8px; font-size: 15px; font-weight: 600; color: var(--color-text); }
 .modal-takeover .vizph .pd { max-width: 48ch; font-size: 13px; line-height: 1.7; color: var(--color-text-muted); }
 .modal-takeover .mapempty { padding: 32px 20px; font-size: 14px; line-height: 1.7; color: var(--color-text-muted); text-align: center; }
+
+/* == R-BUGFIX-260912 L1 == */
+/* 이 블록은 **파일 끝에만** 덧붙인다(회차 규칙 — 위 기존 규칙과 다른 레인이 갈린다). */
+
+/* `#24` ㉯ — `다음 →` 비활성 사유 한 줄.
+   `.rg-s` 를 재사용하지 않는 이유 = `.up-empty .reggate .rg-s { display:none; }` 이
+   분석 중 장면(등록 카드가 아직 안 열린 장면)에서 그 줄을 그대로 감춘다. */
+.reggate .rg-why { margin-top: 4px; font-size: 13px; color: var(--up-muted); }
+
+/* Ted 판정 ⑧ ㉠ — 분석 중 「동작 중」 표시. 칩이 스스로 옅어졌다 진해진다.
+   감속을 선호하면 끈다 — 표시는 남고 움직임만 사라진다. */
+@keyframes up-analyze-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.up-analyze .chip.is-analyzing { animation: up-analyze-pulse 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .up-analyze .chip.is-analyzing { animation: none; }
+}
+
+/* Ted 판정 ⑧ ㉢ — 경과 시간. 자릿수가 늘어도 옆 글자가 밀리지 않게 고정폭 숫자를 쓴다. */
+.up-analyze .an-elapsed { font-size: 13px; color: var(--up-muted); font-variant-numeric: tabular-nums; }
+/* == /R-BUGFIX-260912 L1 == */

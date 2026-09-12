@@ -17,12 +17,15 @@ import { apiUploadSource } from '../src/components/upload/uploadSource';
 import { clearSession, setSession } from '../src/auth/store';
 import uploadCss from '../src/components/upload/upload.css?raw';
 import {
+  ANALYZING_CHIP,
   QUICK_PROJECT_NOTE,
+  REG_OPEN_ANALYZING_REASON,
   UPLOAD_CLOSE_CREATED,
   UPLOAD_CLOSE_CREATING,
   UPLOAD_CLOSE_INPUT_ONLY,
   UPLOAD_CLOSE_KEEP,
   UPLOAD_CLOSE_LEAVE,
+  analyzeElapsed,
 } from '../src/components/common/toastCopy';
 import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
 import type { PreviewHandoff } from '../src/components/preview/types';
@@ -2758,4 +2761,96 @@ it('지도 미지원 분석 결과는 빈 대기 대신 지원 안내를 보이�
  expect(screen.getByTestId('up-preview-slot')).toHaveAttribute('data-preview-slot-state', 'failed');
  expect(screen.queryByText('아직 그리지 않았어요')).toBeNull();
  expect(screen.getByRole('button', { name: '미리보기 그리기' })).toBeInTheDocument();
+});
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// `#24` ㉯ — 분석 중 `다음 →` 비활성 **사유 고지** ＋ Ted 판정 ⑧ 「동작 중」 표시.
+//
+// 비활성 조건 자체는 무변이다(정책 6 「분석이 끝나야 다음 버튼이 켜진다」). 더해지는 것은
+// ㉠ 사유 한 줄과 그 줄에 대한 `title`·`aria-describedby` 연결 ㉡ 분석 중 칩의 활동 표시
+// ㉢ 클라이언트 경과 시간뿐이다. 상태 응답에 진행 수치가 없어 조각 진행률은 적지 않는다.
+// ⛔ 대상은 `reg-open`(등록 결정 게이트의 `다음 →`)이지 `reg-next` 가 아니다.
+
+describe('#24 ㉯ — 분석 중에는 왜 다음으로 못 가는지 말한다', () => {
+  it('분석 진행 중이면 사유 줄이 서고 버튼이 그것을 가리킨다 — `aria-describedby`', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const why = await screen.findByTestId('reg-open-why');
+    expect(why).toHaveTextContent(REG_OPEN_ANALYZING_REASON);
+    const next = screen.getByTestId('reg-open');
+    expect(next).toHaveAttribute('aria-describedby', why.id);
+    expect(why.id.length).toBeGreaterThan(0);
+  });
+
+  it('같은 상태에서 버튼 `title` 이 같은 문면 상수다 — 화면이 문장을 짓지 않는다', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('reg-open-why');
+    expect(screen.getByTestId('reg-open')).toHaveAttribute('title', REG_OPEN_ANALYZING_REASON);
+  });
+
+  it('사유를 붙여도 비활성 조건은 그대로다 — 정책 6 회귀 기준', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('reg-open-why');
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+  });
+
+  it('분석이 끝나면 사유 줄과 두 연결이 함께 사라지고 버튼이 켜진다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await waitFor(() => expect(screen.getByTestId('reg-open')).toBeEnabled());
+    expect(screen.queryByTestId('reg-open-why')).toBeNull();
+    expect(screen.getByTestId('reg-open')).not.toHaveAttribute('aria-describedby');
+    expect(screen.getByTestId('reg-open')).not.toHaveAttribute('title');
+  });
+
+  it('접수 실패 갈래에서는 사유 줄을 겹쳐 띄우지 않는다 — 기존 오류 표시가 그 자리를 가진다', async () => {
+    const { sources } = fakes({ createThrows: new Error('올리다가 끊겼어요.') });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await screen.findByTestId('up-intake-error');
+    expect(screen.queryByTestId('reg-open-why')).toBeNull();
+    expect(screen.getByTestId('reg-open')).toBeDisabled();
+  });
+
+  // Ted 판정 ⑧ — 소요는 수용하고 「동작 중」 표시를 보강한다.
+  it('분석 중 칩이 **동작 중**임을 스스로 말한다 — 활동 표시와 감속 선호 분기', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await waitFor(() => expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '2'));
+    const chip = screen.getByTestId('up-analyze-chip');
+    expect(chip).toHaveTextContent(ANALYZING_CHIP);
+    expect(chip).toHaveClass('is-analyzing');
+    // jsdom 은 배치를 계산하지 않는다 — 애니메이션과 그 감속 분기는 CSS 원문으로 잰다.
+    const css = uploadCss.replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).toMatch(/\.up-analyze \.chip\.is-analyzing\s*\{[^}]*animation:/);
+    expect(css).toMatch(/prefers-reduced-motion:\s*reduce[\s\S]*\.up-analyze \.chip\.is-analyzing\s*\{[^}]*animation:\s*none/);
+  });
+
+  it('분석 중 경과 시간이 초 단위로 선다 — 조각 진행률은 적지 않는다', async () => {
+    const { sources } = fakes({ status: { ready: false, metadataComplete: false } });
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    const elapsed = await screen.findByTestId('up-analyze-elapsed');
+    expect(elapsed).toHaveTextContent(analyzeElapsed(0));
+    // 상태 응답에 진행 수치가 없다 — 없는 것을 퍼센트로 지어내지 않는다.
+    expect(screen.getByTestId('up-analyze')).not.toHaveTextContent('%');
+    expect(analyzeElapsed(12)).toBe('12초 경과');
+  });
+
+  it('분석이 끝나면 경과 시간과 활동 표시가 함께 내려간다', async () => {
+    const { sources } = fakes();
+    await openModal(sources);
+    await dropFiles([makeFile('a.nc')]);
+    await waitFor(() => expect(screen.getByTestId('up-analyze')).toHaveAttribute('data-stage', '3'));
+    expect(screen.queryByTestId('up-analyze-elapsed')).toBeNull();
+    expect(screen.getByTestId('up-analyze-chip')).not.toHaveClass('is-analyzing');
+  });
 });
