@@ -358,7 +358,11 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 /* 배지 — 좌표의 출처와 색 범위 단계를 화면이 **말한다** (`K-4`) */
 .pv-badges { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--color-text-muted); }
-.mapcanvas .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+/* ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 성공 경로의 축소본이 접히는 설정 자리로 옮겨 왔다 —
+   치수 64×64 · contain · pixelated 를 그대로 승계한다. `.mapcanvas .thumb` 는
+   **구제(salvage) 경로가 계속 쓰므로 남긴다**(그 경로는 이번 회차 범위 밖이다). */
+.mapcanvas .thumb,
+.up-preview-options .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
 
 /* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
 .up-banner {

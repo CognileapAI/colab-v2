@@ -435,10 +435,17 @@ export function PreviewPanel(props: {
           팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
         </p>
       ) : null}
-      <details className="up-preview-options">
+      <details className="up-preview-options" data-testid="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
+
+      {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3 · 표시 목적 유지). 없으면 자리째 없다.
+          ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 자리를 지도 자리(`.mapcanvas`)에서 **여기로 옮겼다** —
+             지도 위에 그림 두 장이 겹쳐 무엇을 그렸는지 갈리던 자리다. 표시는 그대로 남는다. */}
+      {layers?.thumbnailUrl ? (
+        <img className="thumb" alt="" data-testid="up-preview-thumb" src={layers.thumbnailUrl} />
+      ) : null}
 
       {/* 컨트롤은 팔레트와 구간 수 **둘뿐**이다 — 표현 종류는 사람이 고르지 않는다(계약). */}
       <div className="vizsetup">
@@ -566,15 +573,6 @@ export function PreviewPanel(props: {
               {layerOf(result)}
             </span>
           </div>
-          {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3). 없으면 자리째 없다 */}
-          {layers?.thumbnailUrl ? (
-            <img
-              className="thumb"
-              alt=""
-              data-testid="up-preview-thumb"
-              src={layers.thumbnailUrl}
-            />
-          ) : null}
           {previewImageSrc(result) ? (
             <div
               className="pv-viewport"
