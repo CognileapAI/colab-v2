@@ -1,0 +1,58 @@
+[
+  {
+    "name": "/colab_v2_staging_core_api",
+    "image": "colab-v2/core-api:b63c9e8a0d40",
+    "image_id": "sha256:c4f215d68b38c01da55df22ccbf58f3772902ebbc4435bd642217308d5f903cc",
+    "container_id": "950eea726bbba6fc00d6ab5106d17905e9f68aa9d8ea1aee2ef3fa504969178c",
+    "config_hash": "e2299c5953a01a9336a8e46435034b58cf91158c124fe78f628299191971a685"
+  },
+  {
+    "name": "/colab_v2_staging_frontend",
+    "image": "colab-v2/frontend:b63c9e8a0d40",
+    "image_id": "sha256:219dae5e3ed0039c1899b53deca875ac68339b11af832d667b9ba436a3d482ae",
+    "container_id": "5d2592937ccc8bdb0c27e343ff7335ba54dac96c0d33b8661a951ad79ee23691",
+    "config_hash": "3374ca178750b98c98b6370e9dedfce4cd7173a3651a78ad0a175c53aea934cf"
+  },
+  {
+    "name": "/colab_v2_staging_pipeline_worker",
+    "image": "colab-v2/pipeline-worker:b63c9e8a0d40",
+    "image_id": "sha256:b347e6866cb321644f7de43f0b91304e98521b9eff8a8456a6950fe8b2e9813a",
+    "container_id": "bf00e5e125fc3ce2d54f8056b628c72deee9586851905fd327e41adfa9cfcec4",
+    "config_hash": "7c1c37ab048fab541a70e75ec182d3d5eb847917dd8bebdfd1f3be592c01ca1c"
+  },
+  {
+    "name": "/colab_v2_staging_viz_render",
+    "image": "colab-v2/viz-render:b63c9e8a0d40",
+    "image_id": "sha256:46184af64859449980f332feb5be8f1a1353b26575da016f71f5392d285e66be",
+    "container_id": "d6d247af59251e04ceeb88b0ca01c38c356afba924976731cf95e1d3bc230535",
+    "config_hash": "620da2773fd91263b991547501b40899347577c4e361fc668dd6cf616f22ec61"
+  },
+  {
+    "name": "/colab_v2_staging_ai_service",
+    "image": "colab-v2/ai-service:b63c9e8a0d40",
+    "image_id": "sha256:067adcee3291885afeb1c0ba4603c489b41e9690a6da8d9398eacbfdc65b1831",
+    "container_id": "543216da8a2ff9e07895e3fc66b7bb55c8117eb51fa78d939cc214a97f1c4799",
+    "config_hash": "cc1b28889a141ae5f2a5f14705f19fccfa81d9411823c15c96cb9a9a92891c62"
+  },
+  {
+    "name": "/colab_v2_staging_pg",
+    "image": "postgres:16-alpine",
+    "image_id": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+    "container_id": "01dac5bfd1352662bbb282b9faa93fc2872a7120a4cb9fc7f235663cc89a8055",
+    "config_hash": "43ecad45b5ad276138359b86e058cd4bf24e5f6466c94d7f32b6fe7d8fc07e94"
+  },
+  {
+    "name": "/colab_v2_staging_nginx",
+    "image": "nginx:1.27-alpine",
+    "image_id": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+    "container_id": "9d8bd1d25a7aa5195d0320ac68ef760ac5cba9a9d47683072e7d8fa1edd26f61",
+    "config_hash": "876908734017bfbfab8684612b8df0eef2e64c0b25a3acfd5c8cc35ec7334520"
+  },
+  {
+    "name": "/colab_v2_staging_cloudflared",
+    "image": "cloudflare/cloudflared:latest",
+    "image_id": "sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0",
+    "container_id": "0064ff21cfc8f0df3a1d76c76e8f4cb0040d8cb8542e34df0ca83b70aedf7c49",
+    "config_hash": "b87e75bd676e62a90fab5fbb0a002f1ee6f19d4c9b48401e8b3ce406c790820c"
+  }
+]

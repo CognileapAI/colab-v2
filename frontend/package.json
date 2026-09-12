@@ -5,6 +5,8 @@
     "generate": "openapi-typescript ../contracts/seams/fe-core.yaml -o src/generated/fe-core.ts",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "audit:build": "tsc --noEmit -p tsconfig.audit.json && vite build --config audit.vite.config.ts",
+    "audit:preview": "vite preview --config audit.vite.config.ts --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run"

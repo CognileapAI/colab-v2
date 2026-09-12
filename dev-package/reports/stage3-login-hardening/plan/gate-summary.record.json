@@ -1,0 +1,29 @@
+{
+ "schema": "colab-gate-summary/1",
+ "tree": "bf9938b3130952b75afc42784a3164cd7d103e96",
+ "commit": "b63c9e8a0d40563a12f815f407756d5d4e85b17e",
+ "started": "2026-09-11T18:02:01Z",
+ "finished": "2026-09-11T18:02:02Z",
+ "parallelism": 1,
+ "counts": {
+  "green": 1,
+  "red_판정": 0,
+  "red_준비": 0,
+  "red_준비_입력미선언": 0
+ },
+ "gates": [
+  {
+   "name": "work-item-consistency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  }
+ ],
+ "targets": {
+  "requested": "work-item-consistency",
+  "selected": [
+   "work-item-consistency"
+  ]
+ }
+}

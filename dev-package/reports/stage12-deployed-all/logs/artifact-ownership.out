@@ -1,0 +1,3 @@
+::error::artifact-ownership red — 읽기 전용 접속임을 증명하지 못했다. 검사를 못 한 것은 통과가 아니다.
+   (접속 실패도 여기로 온다 — 못 붙은 것을 skip 으로 세지 않는다.)
+   psql 이 낸 말: psql: error: connection to server at "172.18.0.2", port 5432 failed: Connection refused 	Is the server running on that host and accepting TCP/IP connections?

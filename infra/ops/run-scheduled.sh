@@ -3,16 +3,17 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENVNAME=""; TARGET=""; WEBHOOK=""
+ENVNAME=""; TARGET=""; WEBHOOK=""; OPERATOR_SPOOL=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --env) ENVNAME="${2:-}"; shift 2 ;;
     --target) TARGET="${2:-}"; shift 2 ;;
+    --operator-spool) OPERATOR_SPOOL="${2:-}"; shift 2 ;;
     --webhook-file) WEBHOOK="${2:-}"; shift 2 ;;
     *) echo "ops schedule red — 알 수 없는 인자" >&2; exit 2 ;;
   esac
 done
-[ "$ENVNAME" = dev ] && [ -n "$WEBHOOK" ] || { echo "ops schedule red — --env dev와 webhook 파일 경로가 필요하다" >&2; exit 2; }
+[ "$ENVNAME" = dev ] && [[ -n "$WEBHOOK" || -n "$OPERATOR_SPOOL" ]] || { echo "ops schedule red — --env dev와 webhook 파일 경로가 필요하다" >&2; exit 2; }
 case "$TARGET" in
   deploy-verification|service-health|backup-freshness) ;;
   *) echo "ops schedule red — target allowlist 위반" >&2; exit 2 ;;
@@ -39,9 +40,14 @@ case "$TARGET" in
 esac
 LOG="$STATE_DIR/$TARGET.log"
 STATE="$STATE_DIR/$TARGET.state.json"
+NOTIFY_ARGS=(--webhook-file "$WEBHOOK")
+[ -z "$OPERATOR_SPOOL" ] || NOTIFY_ARGS=(--operator-spool "$OPERATOR_SPOOL" --environment "$ENVNAME")
 "$HERE/alarm_runner.py" --state "$STATE" --target "$TARGET" --threshold 2 \
-  --webhook-file "$WEBHOOK" --timeout 120 -- "${PROBE[@]}" >> "$LOG" 2>&1
+  "${NOTIFY_ARGS[@]}" --timeout 120 -- "${PROBE[@]}" >> "$LOG" 2>&1
 RC=$?
+if [ -n "$OPERATOR_SPOOL" ]; then
+  (cd "$HERE/../.." && python3 -m infra.notifications.cli heartbeat --profile connected --environment "$ENVNAME" --target "$TARGET") >> "$LOG" 2>&1 || RC=78
+fi
 [ -z "$CONTAINER_NAME" ] || docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 chmod 0600 "$LOG" "$STATE" 2>/dev/null || true
 exit "$RC"

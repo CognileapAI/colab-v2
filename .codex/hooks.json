@@ -27,6 +27,18 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"exec('import io,pathlib,runpy,subprocess,sys\\ntry:\\n raw=sys.stdin.read()\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n if not (r/\\'scripts/slack_completion.py\\').is_file(): print(\\'{}\\'); sys.exit(0)\\n sys.stdin=io.StringIO(raw)\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception:\\n print(\\'CoLAB hook launch failed\\',file=sys.stderr)\\n sys.exit(2)')\"; rc=$?; if [ \"$rc\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "python -X utf8 -c \"exec('import io,pathlib,runpy,subprocess,sys\\ntry:\\n raw=sys.stdin.read()\\n r=pathlib.Path(subprocess.check_output([\\'git\\',\\'rev-parse\\',\\'--show-toplevel\\'],text=True).strip())\\n if not (r/\\'scripts/slack_completion.py\\').is_file(): print(\\'{}\\'); sys.exit(0)\\n sys.stdin=io.StringIO(raw)\\n sys.argv=[str(r/\\'scripts/agent-bridge.py\\'),\\'codex-event\\']\\n runpy.run_path(sys.argv[0],run_name=\\'__main__\\')\\nexcept Exception:\\n print(\\'CoLAB hook launch failed\\',file=sys.stderr)\\n sys.exit(2)')\"; if (-not $?) { exit 2 }; exit $LASTEXITCODE",
+            "timeout": 25
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "matcher": "researcher",

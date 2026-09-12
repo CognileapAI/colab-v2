@@ -1,0 +1,11 @@
+  ✓ ⓐ 정본 대조군 (green)
+  ✓ ⓑ home region drift (red)
+  ✓ ⓒ 외부 AI 국내 고정 거짓 선언 (red)
+  ✓ ⓓ 5분 주기 drift (red)
+  ✓ ⓔ 첫 실패는 아직 raise 전 (red)
+  ✓ ⓕ 둘째 실패가 raise (red)
+  ✓ ⓖ 반복 실패는 재통지 안 함 (red)
+  ✓ ⓗ 회복은 clear 1회 (green)
+  ✓ ⓘ 손상 state fail-closed (red)
+  ✓ ⓙ webhook 미선언 readiness (red)
+ops-observability-selftest green — 검사 10건 전건 기대대로

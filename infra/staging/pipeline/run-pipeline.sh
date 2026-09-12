@@ -73,6 +73,10 @@ fi
 log "③ 배포 (타깃 $TARGET)"
 "$STAGING/deploy.sh" --target "$TARGET"
 RC=$?
+if [ "$RC" -eq 20 ]; then
+  log "배포·검증 성공 / 완료 알림 실패 또는 결과 불명확 — 배포 성공 표식 유지"
+  exit 20
+fi
 if [ "$RC" -ne 0 ]; then
   log "!!! 파이프라인 RED (deploy.sh exit $RC) — 표식 파일을 보라: $(failmark_path)"
   exit "$RC"

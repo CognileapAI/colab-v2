@@ -1,0 +1,44 @@
+── F1 죽은 단위 하나 → red 여야 한다
+  PASS  [F1] red
+── F2 자리표시 본문(전 경로 200 «ok») → red 여야 한다
+     200 만 보는 판정기는 여기서 green 을 낸다. 그것이 이 픽스처가 잡는 결함이다.
+  PASS  [F2] red
+── F3 양성 대조군(6종 전부 옳은 본문) → green 이어야 한다
+  PASS  [F3] green
+  PASS  [F3] 면제가 있을 때 「SKIP 0」이라 말하지 않는다
+── F4 명시 면제는 통과하되 **건수를 드러낸다**
+  PASS  [F4] green
+  PASS  [F4] 요약줄에 「승인된 SKIP 1건」
+── F5 검사 대상 0건 → red 여야 한다 (없는 프로젝트 이름으로 컨테이너 검사)
+  PASS  [F5] red
+── F6 타깃 미지정 → 거부여야 한다 (기본값으로 떨어지지 않는다)
+  PASS  [F6] red
+── F7 prod 타깃 → 거부여야 한다 (조용한 no-op 금지)
+  PASS  [F7] red
+── F8 staging 타깃 → 통과여야 한다 (양성 대조군)
+  PASS  [F8] green
+── F9 승인 기록: 「무엇을 눈으로 봤는가」가 비면 거부
+  PASS  [F9] red
+── F10 승인 기록: 승인자가 비면 거부
+  PASS  [F10] red
+── F11 승인 기록: 이름 한 낱말 + 본 것 → 통과 (양성 대조군)
+  PASS  [F11] green
+── F12 체인 판정: 한쪽 체인 미적용(빈 version 표) → red 여야 한다
+  PASS  [F12] red
+── F13 체인 판정: 양쪽 다 head 있음 → green (양성 대조군)
+  PASS  [F13] green
+── F14 프리플라이트: 설정 파일 자체가 없으면 red
+  PASS  [F14] red
+── F15 프리플라이트: **COLAB_OWNER_PASSWORD 만** 빠져도 red
+     compose 의 :? 는 이 키를 모른다. 그래서 종전에는 ⑦ 까지 가서야 드러났다.
+  PASS  [F15] red
+  PASS  [F15] 요약줄에 「COLAB_OWNER_PASSWORD」
+── F16 프리플라이트: 경로 키가 가리키는 실물이 없으면 red (경로만 있고 파일이 없는 상태)
+  PASS  [F16] red
+── F17 프리플라이트: 전 키 충족 → green (양성 대조군). 대상 0건이면 green 이 아니다
+  PASS  [F17] green
+  PASS  [F17] 요약줄에 「SKIP 0」
+── F18 프리플라이트가 **값을 출력하지 않는다** (키 이름과 건수만)
+  PASS  [F18] 출력에 값이 없다
+
+verify selftest: GREEN (22건 전부 기대대로 · red fixture 가 실제로 red 를 냈다)

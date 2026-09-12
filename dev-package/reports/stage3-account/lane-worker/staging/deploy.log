@@ -1,0 +1,487 @@
+  PASS  CF_TUNNEL_TOKEN
+  PASS  COLAB_ACCOUNT_ADMIN_PASSWORD
+  PASS  COLAB_AI_APP_PASSWORD
+  PASS  COLAB_APP_PASSWORD
+  PASS  COLAB_CORE_SESSION_SECRET
+  PASS  COLAB_OWNER_PASSWORD
+  PASS  COLAB_PG_SUPER_PASSWORD
+  PASS  COLAB_STAGING_ACCOUNT_ADMIN_DB_URL_FILE
+  PASS  COLAB_STAGING_AI_DB_URL_FILE
+  PASS  COLAB_STAGING_AI_OWNER_DB_URL_FILE
+  PASS  COLAB_STAGING_CORE_DB_URL_FILE
+  PASS  COLAB_STAGING_CREDENTIALS_FILE
+  PASS  COLAB_STAGING_PGDATA_DIR
+  PASS  COLAB_STAGING_PIPELINE_DB_URL_FILE
+  PASS  COLAB_STAGING_PLATFORM_OWNER_DB_URL_FILE
+  PASS  COLAB_STAGING_PREVIEWS_DIR
+  PASS  COLAB_STAGING_SUBJECTS_FILE
+  PASS  COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID
+  PASS  COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID
+  PASS  COLAB_VIZ_SERVICE_TOKEN
+  PASS  COLAB_VIZ_TILE_SIGNING_SECRET
+필수 설정 프리플라이트: GREEN (통과 21건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-12T00:24:54 SKIP 승인됨: 워킹트리 변경 41건 — 태그를 'b63c9e8a0d40-dirty' 로 짓는다(깨끗한 커밋이 아님을 이름에 박는다)
+2026-09-12T00:24:54 릴리스 태그 = b63c9e8a0d40-dirty (커밋 b63c9e8a0d40 · 워킹트리 변경 41건)
+2026-09-12T00:24:54 ② 호스트 게이트 — migration-single-head
+# db 루트 = db · 체인 = platform, ai
+# db/platform: 리비전 29건 · head 1개 (0025_stage3_accounts)
+# db/ai: 리비전 8건 · head 1개 (0007_merge_vocab_and_category)
+migration-single-head green — 두 체인 모두 head 1개.
+2026-09-12T00:24:54 ③ 직전 이미지 보존 (:prev) — 빌드 전에 한다
+2026-09-12T00:24:54    보존 colab-v2/core-api:prev ← c4f215d68b38
+2026-09-12T00:24:54    보존 colab-v2/pipeline-worker:prev ← b347e6866cb3
+2026-09-12T00:24:54    보존 colab-v2/viz-render:prev ← 46184af64859
+2026-09-12T00:24:54    보존 colab-v2/ai-service:prev ← 067adcee3291
+2026-09-12T00:24:54    보존 colab-v2/frontend:prev ← 219dae5e3ed0
+2026-09-12T00:24:54    보존 colab-v2/migrator:prev ← 18c9ba085747
+2026-09-12T00:24:54 ④ 이미지 빌드 — 태그 b63c9e8a0d40-dirty
+ Image colab-v2/viz-render:b63c9e8a0d40-dirty Building 
+ Image colab-v2/migrator:b63c9e8a0d40-dirty Building 
+ Image colab-v2/core-api:b63c9e8a0d40-dirty Building 
+ Image colab-v2/ai-service:b63c9e8a0d40-dirty Building 
+ Image colab-v2/pipeline-worker:b63c9e8a0d40-dirty Building 
+ Image colab-v2/migrator:b63c9e8a0d40-dirty Building 
+ Image colab-v2/frontend:b63c9e8a0d40-dirty Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.83kB done
+#1 DONE 0.0s
+
+#2 [ai-service internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.72kB done
+#2 DONE 0.0s
+
+#3 [migrate-platform internal] load build definition from Dockerfile
+#3 transferring dockerfile: 875B done
+#3 DONE 0.0s
+
+#4 [core-api internal] load build definition from Dockerfile
+#4 transferring dockerfile: 892B done
+#4 DONE 0.0s
+
+#5 [frontend internal] load build definition from Dockerfile
+#5 transferring dockerfile: 842B done
+#5 DONE 0.0s
+
+#6 [pipeline-worker internal] load build definition from Dockerfile
+#6 transferring dockerfile: 4.71kB done
+#6 DONE 0.0s
+
+#7 [viz-render internal] load build definition from Dockerfile
+#7 transferring dockerfile: 4.72kB done
+#7 DONE 0.0s
+
+#8 [core-api internal] load .dockerignore
+#8 transferring context: 346B done
+#8 DONE 0.0s
+
+#9 [ai-service internal] load .dockerignore
+#9 transferring context: 346B done
+#9 DONE 0.0s
+
+#10 [frontend internal] load metadata for docker.io/library/nginx:1.27-alpine
+#10 DONE 0.0s
+
+#11 [pipeline-worker internal] load metadata for docker.io/library/python:3.12-slim
+#11 DONE 0.0s
+
+#12 [migrate-ai internal] load .dockerignore
+#12 transferring context: 2B done
+#12 DONE 0.0s
+
+#13 [viz-render internal] load .dockerignore
+#13 transferring context: 346B done
+#13 DONE 0.0s
+
+#14 [pipeline-worker internal] load .dockerignore
+#14 transferring context: 346B done
+#14 DONE 0.0s
+
+#15 [pipeline-worker 1/6] FROM docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a
+#15 resolve docker.io/library/python:3.12-slim@sha256:2c941e860699f878900b0edc2403613c234d4b32eda3cc9fa7036991a2a63c4a 0.0s done
+#15 DONE 0.0s
+
+#16 [migrate-ai 2/3] RUN pip install "alembic==1.16.5" "SQLAlchemy==2.0.44" "psycopg[binary]==3.2.12"
+#16 CACHED
+
+#17 [migrate-ai 3/3] WORKDIR /chain
+#17 CACHED
+
+#18 [migrate-ai] exporting to image
+#18 exporting layers
+#18 ...
+
+#19 [pipeline-worker internal] load build context
+#19 transferring context: 259.29kB done
+#19 DONE 0.0s
+
+#20 [ai-service internal] load build context
+#20 transferring context: 83.14kB done
+#20 DONE 0.0s
+
+#21 [core-api internal] load build context
+#21 transferring context: 3.91kB done
+#21 DONE 0.0s
+
+#22 [viz-render internal] load build context
+#22 transferring context: 461.51kB done
+#22 DONE 0.1s
+
+#23 [pipeline-worker builder 3/4] COPY requirements.txt /tmp/requirements.txt
+#23 CACHED
+
+#24 [pipeline-worker stage-1 3/7] RUN apt-get update  && apt-get install -y --no-install-recommends libexpat1 libhdf4-0-alt libjpeg62-turbo  && rm -rf /var/lib/apt/lists/*
+#24 CACHED
+
+#25 [pipeline-worker builder 4/4] RUN INCLUDE_DIRS=/usr/include/hdf     LIBRARY_DIRS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)     LIBRARIES=mfhdfalt,dfalt,jpeg,z     pip install --no-deps --prefix=/install -r /tmp/requirements.txt
+#25 CACHED
+
+#26 [pipeline-worker stage-1 6/7] COPY src/ /app/src/
+#26 CACHED
+
+#27 [pipeline-worker stage-1 4/7] COPY --from=builder /install /usr/local
+#27 CACHED
+
+#28 [pipeline-worker stage-1 5/7] RUN python -c "import rasterio, rasterio._env, netCDF4, h5py, pyproj, pyhdf.SD; print('geo import OK', rasterio.__gdal_version__)"
+#28 CACHED
+
+#29 [pipeline-worker stage-1 7/7] RUN useradd --system --create-home --uid 10001 colab
+#29 CACHED
+
+#30 [core-api 3/6] COPY requirements.txt /app/requirements.txt
+#30 CACHED
+
+#31 [core-api 4/6] RUN pip install --no-deps -r /app/requirements.txt
+#31 CACHED
+
+#32 [core-api 5/6] COPY src/ /app/src/
+#32 CACHED
+
+#33 [ai-service 4/6] RUN pip install --no-cache-dir --disable-pip-version-check -r /app/requirements.txt
+#33 CACHED
+
+#34 [ai-service 3/6] COPY requirements.txt /app/requirements.txt
+#34 CACHED
+
+#35 [ai-service 5/6] COPY src/ /app/src/
+#35 CACHED
+
+#36 [core-api 6/6] RUN useradd --system --create-home --uid 10001 colab
+#36 CACHED
+
+#37 [viz-render builder 4/4] RUN INCLUDE_DIRS=/usr/include/hdf     LIBRARY_DIRS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)     LIBRARIES=mfhdfalt,dfalt,jpeg,z     pip install --disable-pip-version-check --prefix=/install -r /tmp/requirements.txt
+#37 CACHED
+
+#38 [viz-render 2/6] WORKDIR /app
+#38 CACHED
+
+#39 [viz-render builder 3/4] COPY requirements.txt /tmp/requirements.txt
+#39 CACHED
+
+#40 [viz-render builder 2/4] RUN apt-get update  && apt-get install -y --no-install-recommends build-essential libhdf4-alt-dev zlib1g-dev libjpeg-dev  && rm -rf /var/lib/apt/lists/*
+#40 CACHED
+
+#41 [viz-render stage-1 3/7] RUN apt-get update  && apt-get install -y --no-install-recommends libexpat1 libhdf4-0-alt libjpeg62-turbo  && rm -rf /var/lib/apt/lists/*
+#41 CACHED
+
+#42 [viz-render stage-1 5/7] RUN python -c "import rasterio, rasterio._env, netCDF4, h5py, pyhdf.SD, PIL.Image; print('geo import OK', rasterio.__gdal_version__)"
+#42 CACHED
+
+#43 [viz-render stage-1 4/7] COPY --from=builder /install /usr/local
+#43 CACHED
+
+#44 [viz-render stage-1 6/7] COPY src/ /app/src/
+#44 CACHED
+
+#45 [ai-service 6/6] RUN useradd --system --create-home --uid 10001 colab
+#45 CACHED
+
+#46 [viz-render stage-1 7/7] RUN useradd --system --create-home --uid 10001 colab  && mkdir -p /srv/viz-sources && chown colab /srv/viz-sources
+#46 CACHED
+
+#18 [migrate-ai] exporting to image
+#18 exporting layers done
+#18 exporting manifest sha256:d693e8ed286c8ee176fd1d853eaf8706687968a5bf6f0b305e027268e48c1e51 done
+#18 exporting config sha256:ef9243f6f9990769939b0ba16a26394cbc0fb0967b2bfbda585accfa7809d358 done
+#18 exporting attestation manifest sha256:33a136b441dc5cdb8b4018aa0b40fb51e3bd03063dcbed9932984bf491d52d0d 0.0s done
+#18 exporting manifest list sha256:161841d59c1e2959065cf137576c986cbdd17ebed69811b695075449dcc8259d 0.0s done
+#18 naming to docker.io/colab-v2/migrator:b63c9e8a0d40-dirty done
+#18 unpacking to docker.io/colab-v2/migrator:b63c9e8a0d40-dirty
+#18 unpacking to docker.io/colab-v2/migrator:b63c9e8a0d40-dirty 0.0s done
+#18 DONE 0.1s
+
+#47 [migrate-platform] exporting to image
+#47 exporting layers done
+#47 exporting manifest sha256:c59edbe01c65611bc7b748fad50ad800247504144dfbe9d87bea25eb68be4dbe done
+#47 exporting config sha256:b9c7386270f8be838e0bdc01bbc98d3b5ba64e4072302aba8c9608c60678d142 done
+#47 exporting attestation manifest sha256:f863054bf51398a2f2f357b3d9814f49b3f7b85f6c20737cc4592c8bc2291b1a 0.0s done
+#47 exporting manifest list sha256:3eef8792416cfbec015df3a495413e6faab64719ee14e9087fecf39c9a49b904 0.0s done
+#47 naming to docker.io/colab-v2/migrator:b63c9e8a0d40-dirty done
+#47 unpacking to docker.io/colab-v2/migrator:b63c9e8a0d40-dirty 0.0s done
+#47 DONE 0.1s
+
+#48 [pipeline-worker] exporting to image
+#48 exporting layers done
+#48 exporting manifest sha256:fb3b6ad7a57b3ce318f6be076cb502b230c2f520e411a0e4993233f4d701b42a done
+#48 exporting config sha256:ae8789dafbd1509672a7b37097e4cb693d01fd8fe4a3b6600ee4ee2935e2c043 done
+#48 exporting attestation manifest sha256:c07f42b7f5ca121bd26ce853a067fd0904c9f18250f9107915b6ca1c5c7bcc1c 0.1s done
+#48 exporting manifest list sha256:b3f98600aa2d2372b9b02d403edccc7dc7df733957fa06c30ff17322f0025f32 0.0s done
+#48 naming to docker.io/colab-v2/pipeline-worker:b63c9e8a0d40-dirty
+#48 naming to docker.io/colab-v2/pipeline-worker:b63c9e8a0d40-dirty 0.0s done
+#48 unpacking to docker.io/colab-v2/pipeline-worker:b63c9e8a0d40-dirty 0.0s done
+#48 DONE 0.2s
+
+#49 [ai-service] exporting to image
+#49 exporting layers done
+#49 exporting manifest sha256:24f47d88007ded87164b0356476f401f23d7672b8c69b9cac2424f270ba21fa1 done
+#49 exporting config sha256:24744dfe288d9bbe5785238ec07656e0b2ca90e15983edfd76b75b90cda71a0a done
+#49 exporting attestation manifest sha256:e80cc80cd19cf0be3a6ea7cda794827cf3d0846d3f5587150e7ca850fb67ffc1 0.1s done
+#49 exporting manifest list sha256:8a9fc0a6455816ac1bb4a9afa6ac30566259800cea7b2e4224e846d497c26f23 0.0s done
+#49 naming to docker.io/colab-v2/ai-service:b63c9e8a0d40-dirty 0.0s done
+#49 unpacking to docker.io/colab-v2/ai-service:b63c9e8a0d40-dirty done
+#49 DONE 0.2s
+
+#50 [viz-render] exporting to image
+#50 exporting layers done
+#50 exporting manifest sha256:b26c3cbf6a7c231d2c99c15ebc5fb994709512c9087b2418a9e096ba3d3cdd34 done
+#50 exporting config sha256:8aebfa4eb3243526e8a77b1bf90130394ca2108e0f891fe3db834b275c68c2d6 done
+#50 exporting attestation manifest sha256:3e7d90805a598f8ebb2f203639c35698f949f51bc692a707abeaf7ef75ba1308 0.1s done
+#50 exporting manifest list sha256:59dacc23fde3c3cdd729a526af56ca578bafc3fd475f32bc7f85ddb8e24edb62 0.0s done
+#50 naming to docker.io/colab-v2/viz-render:b63c9e8a0d40-dirty done
+#50 unpacking to docker.io/colab-v2/viz-render:b63c9e8a0d40-dirty 0.0s done
+#50 DONE 0.2s
+
+#51 [core-api] exporting to image
+#51 exporting layers done
+#51 exporting manifest sha256:96b2ae74d368ad4a050b95da32d10acfdbf7323c0a373da7b92273ea02336ad8 0.0s done
+#51 exporting config sha256:4e11811021f82b256d7ec3c9d1705922adb193e9ab759dc45b5bf7f544d8e918 0.0s done
+#51 exporting attestation manifest sha256:1059b097a1cf79f365e43dfc12d4a70ac4a0f57ee8aad37417c518e902bce6e0 0.1s done
+#51 exporting manifest list sha256:e5fa06ed71b0c9732615740d62cbbc5281f5d9fb50883328bf046ed99174aa20 0.0s done
+#51 naming to docker.io/colab-v2/core-api:b63c9e8a0d40-dirty done
+#51 unpacking to docker.io/colab-v2/core-api:b63c9e8a0d40-dirty 0.0s done
+#51 DONE 0.2s
+
+#52 [migrate-platform] resolving provenance for metadata file
+#52 DONE 0.0s
+
+#53 [migrate-ai] resolving provenance for metadata file
+#53 DONE 0.0s
+
+#54 [ai-service] resolving provenance for metadata file
+#54 DONE 0.0s
+
+#55 [core-api] resolving provenance for metadata file
+#55 DONE 0.0s
+
+#56 [pipeline-worker] resolving provenance for metadata file
+#56 DONE 0.0s
+
+#57 [viz-render] resolving provenance for metadata file
+#57 DONE 0.0s
+
+#58 [frontend internal] load metadata for docker.io/library/node:22-slim
+#58 DONE 0.8s
+
+#59 [frontend internal] load .dockerignore
+#59 transferring context: 63B done
+#59 DONE 0.0s
+
+#60 [frontend internal] load build context
+#60 transferring context: 16.97kB done
+#60 DONE 0.0s
+
+#61 [frontend stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#61 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.0s done
+#61 DONE 0.0s
+
+#62 [frontend build 1/6] FROM docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5
+#62 resolve docker.io/library/node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 0.0s done
+#62 DONE 0.0s
+
+#63 [frontend build 2/6] WORKDIR /app
+#63 CACHED
+
+#64 [frontend build 3/6] COPY package.json package-lock.json ./
+#64 CACHED
+
+#65 [frontend build 4/6] RUN npm ci                       # exact 핀 — 같은 입력이면 같은 트리
+#65 CACHED
+
+#66 [frontend build 5/6] COPY . .
+#66 CACHED
+
+#67 [frontend stage-1 2/3] COPY --from=build /app/dist/ /usr/share/nginx/html/
+#67 CACHED
+
+#68 [frontend build 6/6] RUN npm run build                # tsc --noEmit && vite build → dist/
+#68 CACHED
+
+#69 [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#69 CACHED
+
+#70 [frontend] exporting to image
+#70 exporting layers done
+#70 exporting manifest sha256:7a1000c232d107b4f4efff07dffaa8f541995773c2433bece76a4eb41ced9700 done
+#70 exporting config sha256:5d7311856382fdda86a265ec6d72499e74e652520e013cb26a72b82e686ffaa1 done
+#70 exporting attestation manifest sha256:fa503c15b788f32c3bb3d594dcb788f0b7aa6bc73e2c23d48a3eef0f8385234b 0.0s done
+#70 exporting manifest list sha256:c4c495023033a64b9b47b9cc6ea84a71cfda41d16fd2b4542e9f8bcad7bd7e38 done
+#70 naming to docker.io/colab-v2/frontend:b63c9e8a0d40-dirty done
+#70 unpacking to docker.io/colab-v2/frontend:b63c9e8a0d40-dirty done
+#70 DONE 0.1s
+
+#71 [frontend] resolving provenance for metadata file
+#71 DONE 0.0s
+ Image colab-v2/migrator:b63c9e8a0d40-dirty Built 
+ Image colab-v2/ai-service:b63c9e8a0d40-dirty Built 
+ Image colab-v2/frontend:b63c9e8a0d40-dirty Built 
+ Image colab-v2/migrator:b63c9e8a0d40-dirty Built 
+ Image colab-v2/core-api:b63c9e8a0d40-dirty Built 
+ Image colab-v2/pipeline-worker:b63c9e8a0d40-dirty Built 
+ Image colab-v2/viz-render:b63c9e8a0d40-dirty Built 
+2026-09-12T00:24:57    확인 core-api — 보존 c4f215d68b38 ≠ 신규 e5fa06ed71b0
+2026-09-12T00:24:57    확인 pipeline-worker — 보존 b347e6866cb3 ≠ 신규 b3f98600aa2d
+2026-09-12T00:24:57    확인 viz-render — 보존 46184af64859 ≠ 신규 59dacc23fde3
+2026-09-12T00:24:57    확인 ai-service — 보존 067adcee3291 ≠ 신규 8a9fc0a64558
+2026-09-12T00:24:57    확인 frontend — 보존 219dae5e3ed0 ≠ 신규 c4c495023033
+2026-09-12T00:24:57    확인 migrator — 보존 18c9ba085747 ≠ 신규 3eef8792416c
+2026-09-12T00:24:57    이미지 ID 동일 0건 (동일해도 실패는 아니다 — 코드가 안 바뀌면 같은 것이 옳다)
+2026-09-12T00:24:57 ⑤ 배포 전 백업 — 두 프로파일 전부 GREEN 이어야 진행한다
+2026-09-12T00:24:57 [platform] 덤프 시작 (db=colab_platform) → 임시파일
+2026-09-12T00:24:57 [platform] 산출물 검사 (통과 전에는 최종 경로로 옮기지 않는다)
+검사 대상: .inflight-platform-20260912T002457.sql.gz  (합격선 — 테이블 20 · 행 190)
+  PASS  C0 합격선 선언 (테이블 20 · 행 190)
+  PASS  C1 파일 존재·크기 32928B
+  PASS  C2 gzip 무결성
+  PASS  C3 해제 후 213729B
+  PASS  C4 CREATE TABLE 33개 (>= 20)
+  PASS  C5 데이터 행 424건 (COPY 블록 33개)
+  PASS  C6 신선도 0분 (<= 1500)
+결과: GREEN (통과 7건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-12T00:24:57 [platform] 백업 성공: platform-20260912T002457.sql.gz (32928 B)
+2026-09-12T00:24:57 [ai] 덤프 시작 (db=colab_ai) → 임시파일
+2026-09-12T00:24:57 [ai] 산출물 검사 (통과 전에는 최종 경로로 옮기지 않는다)
+검사 대상: .inflight-ai-20260912T002457.sql.gz  (합격선 — 테이블 4 · 행 45)
+  PASS  C0 합격선 선언 (테이블 4 · 행 45)
+  PASS  C1 파일 존재·크기 5566B
+  PASS  C2 gzip 무결성
+  PASS  C3 해제 후 18296B
+  PASS  C4 CREATE TABLE 6개 (>= 4)
+  PASS  C5 데이터 행 104건 (COPY 블록 6개)
+  PASS  C6 신선도 0분 (<= 1500)
+결과: GREEN (통과 7건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-12T00:24:58 [ai] 백업 성공: ai-20260912T002457.sql.gz (5566 B)
+2026-09-12T00:24:58 백업 GREEN — 프로파일 2 개 전부 성공
+2026-09-12T00:24:58 ⑥ postgres 기동 대기
+ Container colab_v2_staging_pg Running 
+2026-09-12T00:24:58 ⑦ 롤 · 데이터베이스
+ALTER ROLE
+ALTER SCHEMA
+REVOKE
+ALTER SCHEMA
+REVOKE
+roles/databases: ok
+2026-09-12T00:24:58 ⑧ 마이그레이션 (platform)
+ Container colab_v2_staging_pg Running 
+ Container colab_v2_staging_pg Waiting 
+ Container colab_v2_staging_pg Healthy 
+ Container colab-v2-staging-migrate-platform-run-f213e2b6f0b7 Creating 
+ Container colab-v2-staging-migrate-platform-run-f213e2b6f0b7 Created 
+2026-09-12T00:25:00 ⑧ 마이그레이션 (ai)
+ Container colab_v2_staging_pg Running 
+ Container colab_v2_staging_pg Waiting 
+ Container colab_v2_staging_pg Healthy 
+ Container colab-v2-staging-migrate-ai-run-1deb43a2998e Creating 
+ Container colab-v2-staging-migrate-ai-run-1deb43a2998e Created 
+2026-09-12T00:25:01 ⑨ 앱 롤 GRANT (NOBYPASSRLS · 비소유자 검사 포함)
+ALTER ROLE
+GRANT
+GRANT
+GRANT
+ALTER DEFAULT PRIVILEGES
+DO
+app role grants: ok (colab_app@platform · colab_ai_app@ai · SELECT only)
+2026-09-12T00:25:01 ⑨ 계정 관리자 롤 (운영자 자동 등록 없음)
+account admin role: ok (운영자 등기 자동 변경 없음)
+2026-09-12T00:25:01 ⑩ 5개 배포 단위 + 엣지 교체 (엣지 설정 해시 56cc63f04dad443a)
+ Container colab_v2_staging_pg Running 
+ Container colab_v2_staging_ai_service Recreate 
+ Container colab_v2_staging_frontend Recreate 
+ Container colab_v2_staging_viz_render Recreate 
+ Container colab_v2_staging_core_api Recreate 
+ Container colab_v2_staging_pipeline_worker Recreate 
+ Container colab_v2_staging_frontend Recreated 
+ Container colab_v2_staging_nginx Recreate 
+ Container colab_v2_staging_viz_render Recreated 
+ Container colab_v2_staging_ai_service Recreated 
+ Container colab_v2_staging_core_api Recreated 
+ Container colab_v2_staging_nginx Recreated 
+ Container colab_v2_staging_cloudflared Running 
+ Container colab_v2_staging_pipeline_worker Recreated 
+ Container colab_v2_staging_volume_init Starting 
+ Container colab_v2_staging_ai_service Starting 
+ Container colab_v2_staging_frontend Starting 
+ Container colab_v2_staging_frontend Started 
+ Container colab_v2_staging_nginx Starting 
+ Container colab_v2_staging_volume_init Started 
+ Container colab_v2_staging_pg Waiting 
+ Container colab_v2_staging_volume_init Waiting 
+ Container colab_v2_staging_volume_init Waiting 
+ Container colab_v2_staging_pg Waiting 
+ Container colab_v2_staging_volume_init Waiting 
+ Container colab_v2_staging_ai_service Started 
+ Container colab_v2_staging_nginx Started 
+ Container colab_v2_staging_volume_init Exited 
+ Container colab_v2_staging_pg Healthy 
+ Container colab_v2_staging_core_api Starting 
+ Container colab_v2_staging_volume_init Exited 
+ Container colab_v2_staging_pg Healthy 
+ Container colab_v2_staging_pipeline_worker Starting 
+ Container colab_v2_staging_volume_init Exited 
+ Container colab_v2_staging_viz_render Starting 
+ Container colab_v2_staging_core_api Started 
+ Container colab_v2_staging_pipeline_worker Started 
+ Container colab_v2_staging_viz_render Started 
+2026-09-12T00:25:15 ⑩-b 엣지 설정 반영 판정 — 도는 컨테이너 안의 파일과 바이트 대조
+2026-09-12T00:25:15    확인 엣지 설정 — 레포 판과 도는 판이 같다(56cc63f04dad443a)
+2026-09-12T00:25:15 ⑪ 배포 판정 — 헬스 6종 + 본문 대조 (대기하며 재시도)
+  PASS  /healthz — 200 · 본문이 ^ok$ 를 만족한다
+  PASS  /healthz/core-api — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"core-api" 를 만족한다
+  PASS  /healthz/pipeline-worker — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"pipeline-worker" 를 만족한다
+  PASS  /healthz/viz-render — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"viz-render" 를 만족한다
+  PASS  /healthz/ai-service — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"ai-service" 를 만족한다
+  PASS  /healthz/frontend — 200 · 본문이 "unit"[[:space:]]*:[[:space:]]*"frontend" 를 만족한다
+  PASS  colab_v2_staging_nginx — healthy
+  PASS  colab_v2_staging_cloudflared — healthy
+  PASS  colab_v2_staging_pg — healthy
+  PASS  colab_v2_staging_core_api — healthy
+  PASS  colab_v2_staging_frontend — healthy
+  PASS  colab_v2_staging_pipeline_worker — healthy
+  PASS  colab_v2_staging_viz_render — healthy
+  PASS  colab_v2_staging_ai_service — healthy
+  PASS  호스트 노출 — 0.0.0.0 0건
+배포 판정: GREEN (통과 15건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-12T00:25:27 ⑪-b 체인 판정 — 두 체인 head
+  PASS  [platform] head=0025_stage3_accounts (db=colab_platform)
+  PASS  [ai] head=0007_merge_vocab_and_category (db=colab_ai)
+체인 판정: GREEN (통과 2건 · SKIP 0 — 모든 항목이 실제로 돌았다)
+2026-09-12T00:25:27 ⑫-a 별칭 :i2 재부착 — 붙인 뒤 이미지 ID 로 대조한다(「붙였다」 ≠ 「가리킨다」)
+2026-09-12T00:25:27   별칭 colab-v2/core-api:i2 ← b63c9e8a0d40-dirty (e5fa06ed71b0)
+2026-09-12T00:25:27   별칭 colab-v2/pipeline-worker:i2 ← b63c9e8a0d40-dirty (b3f98600aa2d)
+2026-09-12T00:25:27   별칭 colab-v2/viz-render:i2 ← b63c9e8a0d40-dirty (59dacc23fde3)
+2026-09-12T00:25:27   별칭 colab-v2/ai-service:i2 ← b63c9e8a0d40-dirty (8a9fc0a64558)
+2026-09-12T00:25:27   별칭 colab-v2/frontend:i2 ← b63c9e8a0d40-dirty (c4c495023033)
+2026-09-12T00:25:27   별칭 colab-v2/migrator:i2 ← b63c9e8a0d40-dirty (3eef8792416c)
+2026-09-12T00:25:27 별칭 재부착 GREEN — 6/6종의 :i2 가 b63c9e8a0d40-dirty 를 가리킨다(이미지 ID 대조 완료)
+2026-09-12T00:25:27 ⑫-a2 digest 이력 원장 append (6종)
+2026-09-12T00:25:28 digest 이력: /home/ttlhi10/colab-v2-releases/image-digest-ledger.tsv
+2026-09-12T00:25:28 ⑫-b 원장 · 표식
+2026-09-12T00:25:28 이미지 보존 대상 릴리스 3개 + 별칭 2개: b63c9e8a0d40-dirty prev i2 b63c9e8a0d40 6b53c9f68826
+2026-09-12T00:25:28   삭제 colab-v2/core-api:42cffb328b1e
+2026-09-12T00:25:28   삭제 colab-v2/pipeline-worker:42cffb328b1e
+2026-09-12T00:25:28   삭제 colab-v2/viz-render:42cffb328b1e
+2026-09-12T00:25:28   삭제 colab-v2/ai-service:42cffb328b1e
+2026-09-12T00:25:28   삭제 colab-v2/frontend:42cffb328b1e
+2026-09-12T00:25:28   삭제 colab-v2/migrator:42cffb328b1e
+
+배포 GREEN — 커밋 b63c9e8a0d40 · 태그 b63c9e8a0d40-dirty
+원장: /home/ttlhi10/colab-v2-releases/release-ledger.tsv
+2026-09-12T00:25:28+0900	deploy	b63c9e8a0d40	b63c9e8a0d40-dirty	green	별칭재부착GREEN digest이력=6종 배포전백업GREEN 워킹트리변경=41 브랜치=codex/stage3-staging-deploy

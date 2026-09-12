@@ -7,7 +7,7 @@
 [units.core-api]
 dir     = "core-api"
 package = "colab_core"
-domains = ["d1_identity", "d2_access", "d3_catalog", "d4_lineage", "d6_project", "d8_insight"]
+domains = ["d1_identity", "d2_access", "d2_audit", "d3_catalog", "d3_audit", "d4_lineage", "d6_project", "d6_audit", "d8_insight"]
 # CLAUDE.md §3-4 — core-api 에 geo 라이브러리를 import 하지 않는다.
 # v1 PoC 에서 타일 API 가 core 안에서 rasterio 를 직접 열어 프로파일이 오염됐다.
 banned = [

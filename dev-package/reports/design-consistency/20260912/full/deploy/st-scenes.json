@@ -1,0 +1,622 @@
+[
+  {
+    "name": "st-login-light-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 4,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 6
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 1,
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=login&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "light",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-login-light-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 4,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 6
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 1,
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=login&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "light",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-login-dark-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 4,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 6
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 1,
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=login&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "dark",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-login-dark-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 4,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 6
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 1,
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=login&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "dark",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-password-light-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 3,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 7
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=password&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "light",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-password-light-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 3,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 7
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=password&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "light",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-password-dark-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 3,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 7
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=password&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "dark",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-password-dark-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 3,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 7
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "background 0.14s": 1,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=password&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "dark",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-admin-light-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 14,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 14
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 2,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 5,
+        "color, background 0.14s, 0.14s": 3,
+        "color, border-color 0.14s, 0.14s": 1
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=admin&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 360,
+      "theme": "light",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-admin-light-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 19
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 2,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 3,
+        "border-color 0.14s": 5,
+        "color, background 0.14s, 0.14s": 3,
+        "color, border-color 0.14s, 0.14s": 1
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=admin&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1425,
+      "theme": "light",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-admin-dark-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 14,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 14
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 2,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 5,
+        "color, background 0.14s, 0.14s": 3,
+        "color, border-color 0.14s, 0.14s": 1
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=admin&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 360,
+      "theme": "dark",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-admin-dark-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 19
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 2,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 3,
+        "border-color 0.14s": 5,
+        "color, background 0.14s, 0.14s": 3,
+        "color, border-color 0.14s, 0.14s": 1
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=admin&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1425,
+      "theme": "dark",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-expiry-light-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 24
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 10,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=expiry&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "light",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-expiry-light-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 24
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 10,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=expiry&theme=light",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "light",
+      "width": 1440
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-expiry-dark-375",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 24
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 10,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=expiry&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 375
+      }
+    },
+    "layout": {
+      "scroll": 375,
+      "theme": "dark",
+      "width": 375
+    },
+    "errors": ""
+  },
+  {
+    "name": "st-expiry-dark-1440",
+    "visual": {
+      "counts": {
+        "activeRules": 1,
+        "blockedSheets": 0,
+        "interactive": 15,
+        "keyframes": 2,
+        "lowContrast": 0,
+        "reducedMotionBlocks": 4,
+        "sheets": 1,
+        "small": 0,
+        "textElements": 24
+      },
+      "lowContrast": [],
+      "media": {
+        "dark": false,
+        "reducedMotion": false
+      },
+      "small": [],
+      "transitions": {
+        "all 0s": 10,
+        "background 0.14s": 1,
+        "background, border-color 0.14s, 0.14s": 2,
+        "border-color 0.14s": 2
+      },
+      "url": "http://127.0.0.1:5183/st-deploy-audit.html?scene=expiry&theme=dark",
+      "viewport": {
+        "h": 900,
+        "w": 1440
+      }
+    },
+    "layout": {
+      "scroll": 1440,
+      "theme": "dark",
+      "width": 1440
+    },
+    "errors": ""
+  }
+]

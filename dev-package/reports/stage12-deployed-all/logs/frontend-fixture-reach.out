@@ -1,0 +1,1 @@
+frontend-fixture-reach green — 진입점 src/main.tsx 에서 도달 179개(진입점 제외 178개), 금지 모듈(fixture.ts·graphFixture.ts·localEngine.ts) 0건.

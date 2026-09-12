@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from ...domains import d2_access, d3_catalog, d4_lineage, d6_project, d8_insight
+from ...domains import d2_access, d3_catalog, d4_lineage, d6_audit, d6_project, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
@@ -160,6 +160,11 @@ def create_project(response: Response, body: dict = Body(...),
     row = d6_project.create_project(
         db, type_=type_, name=name, description=body.get("description"),
         period_start=start, period_end=end, link_url=body.get("link"),
+    )
+    d6_audit.append_snapshot(
+        db, actor_id=subject.account_id, target_id=Ulid(row["id"]), action="project.created",
+        before=None, after={"name": row["name"], "type": row["type"],
+                            "status": row["status"]},
     )
     # **바꾼 일이 최근 활동을 만든다** (`Policy_홈_대시보드 §7` 전이표 · WU-P7).
     # 여기서 안 적으면 대시보드의 최근 활동은 영원히 비어 있고, 그 빈 목록은
@@ -454,6 +459,7 @@ def set_project_status(projectId: str, body: dict = Body(...),
     절차가 같지 않아서다」. 화면에서도 닫기는 **확인 모달**(F-05)을 한 겹 더 지난다.
     """
     project_id = _managed_project(projectId, subject, db)
+    before = d6_project.find_project(db, project_id)
     unknown = sorted(set(body) - {"status"})
     if unknown:
         raise errors.bad_request(f"계약에 없는 필드다: {unknown}")
@@ -499,6 +505,7 @@ def delete_project(projectId: str, subject: Subject = Depends(current_subject),
     오타 정정의 우선 경로는 `updateProject` 다 (결정 2-7).
     """
     project_id = _managed_project(projectId, subject, db)
+    before = d6_project.find_project(db, project_id)
     linked = d6_project.linked_count(db, project_id)
     if linked:
         raise errors.conflict("소속 데이터셋이 있어 지울 수 없어요. 닫기를 쓰세요.",
@@ -510,5 +517,11 @@ def delete_project(projectId: str, subject: Subject = Depends(current_subject),
     d8_insight.record_activity(db, actor_id=subject.account_id,
                                action=d8_insight.ACTION_PROJECT_DELETED,
                                target_kind="프로젝트", target_id=project_id)
+    d6_audit.append_snapshot(
+        db, actor_id=subject.account_id, target_id=project_id, action="project.deleted",
+        before=None if before is None else {"name": before.name, "type": before.type,
+                                            "status": before.status},
+        after=None,
+    )
     d6_project.delete_project(db, project_id)
     return Response(status_code=204)

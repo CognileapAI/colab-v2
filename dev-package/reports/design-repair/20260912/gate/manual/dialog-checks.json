@@ -1,0 +1,38 @@
+[
+  {
+    "scene": "access",
+    "dialogWidths": [
+      375,
+      768,
+      1440
+    ],
+    "Tab": 14,
+    "ShiftTab": true,
+    "Escape": true,
+    "restored": "접근 요청"
+  },
+  {
+    "scene": "approval",
+    "dialogWidths": [
+      375,
+      768,
+      1440
+    ],
+    "Tab": 14,
+    "ShiftTab": true,
+    "Escape": true,
+    "restored": "승인된 데이터셋⋯\n"
+  },
+  {
+    "scene": "settings",
+    "dialogWidths": [
+      375,
+      768,
+      1440
+    ],
+    "Tab": 14,
+    "ShiftTab": true,
+    "Escape": true,
+    "restored": "정보 편집"
+  }
+]

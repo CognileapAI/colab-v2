@@ -1,0 +1,53 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "service-tests-core-api",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 3,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "frontend-typecheck",
+      "frontend-test",
+      "service-tests-core-api"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "fd200c4e08a54d8f93e4fa3876943324",
+      "run_id": "83489bb4230b4a1782985ed014621953",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "23e844774f19a1ae1eb3d45c83b8c8b913d4dfbe96ebafda00849530dde8c32e"
+    },
+    "after": {
+      "task_id": "fd200c4e08a54d8f93e4fa3876943324",
+      "run_id": "83489bb4230b4a1782985ed014621953",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "23e844774f19a1ae1eb3d45c83b8c8b913d4dfbe96ebafda00849530dde8c32e"
+    }
+  }
+}

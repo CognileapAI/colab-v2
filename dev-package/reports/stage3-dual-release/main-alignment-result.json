@@ -1,0 +1,12 @@
+{
+  "stageCoreMainFiles": 66,
+  "stage": {
+    "bundle": "/assets/index-YdOxNYzp.js",
+    "sha256": "8d65f49f470b20f6f27e2291bdc095e19c3c3040eab9c94d104d8cce1c0d7938"
+  },
+  "dev": {
+    "bundle": "/assets/index-YdOxNYzp.js",
+    "sha256": "8d65f49f470b20f6f27e2291bdc095e19c3c3040eab9c94d104d8cce1c0d7938"
+  },
+  "remoteMain": "fc45a9aa7c649062ff4641a05322f026b5e8bf1c"
+}

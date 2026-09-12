@@ -1,0 +1,110 @@
+{
+  "name": "lineage-picker-dark-768",
+  "visual": {
+    "counts": {
+      "activeRules": 1,
+      "blockedSheets": 0,
+      "interactive": 25,
+      "keyframes": 2,
+      "lowContrast": 0,
+      "reducedMotionBlocks": 4,
+      "sheets": 1,
+      "small": 0,
+      "textElements": 34
+    },
+    "lowContrast": [],
+    "media": {
+      "dark": false,
+      "reducedMotion": false
+    },
+    "small": [],
+    "transitions": {
+      "all 0s": 9,
+      "background 0.14s": 1,
+      "background, border-color 0.14s, 0.14s": 11,
+      "color, background 0.14s, 0.14s": 3,
+      "color, border-color 0.14s, 0.14s": 1
+    },
+    "url": "http://127.0.0.1:5180/audit-design.html?theme=dark&scene=lineage-picker&design=full",
+    "viewport": {
+      "h": 900,
+      "w": 768
+    }
+  },
+  "layout": {
+    "bg": "rgb(17, 22, 29)",
+    "dialog": {
+      "bottom": 883.1875,
+      "left": 104,
+      "right": 664,
+      "scroll": 560,
+      "width": 560
+    },
+    "font": "\"Pretendard Variable\", Pretendard, -apple-system, BlinkMacSystemFont, \"Apple SD Gothic Neo\", \"Segoe UI\", \"Malgun Gothic\", \"Noto Sans KR\", sans-serif",
+    "fonts": [
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable"
+    ],
+    "inputs": [
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      },
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      }
+    ],
+    "scrollWidth": 768,
+    "theme": "dark",
+    "width": 768
+  },
+  "errors": "",
+  "screenshot": "screens/lineage-picker-dark-768.png"
+}

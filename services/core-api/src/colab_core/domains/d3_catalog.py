@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
 from ..ports.lineage import LV_CAP, LineageSummary
+from .d3_audit import append_snapshot as append_operator_snapshot
 
 # 묘비(삭제된 데이터셋)는 카탈로그 목록에 서지 않는다 — 상세 화면도 없다
 # (Policy_데이터셋_상세 §7). 계보 그래프에는 묘비 노드로 남는다(그건 D4 의 일이다).
@@ -1200,7 +1201,8 @@ _UPDATABLE = {
 }
 
 
-def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None:
+def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict,
+                   actor_id: Ulid | None = None) -> None:
     """**부분 수정.** `changes` 에 있는 열쇠만 건드린다 (`〈127〉`·`〈138〉`·`〈140〉`).
 
     `UNSET` 이 아닌 값만 온다고 가정한다 — 라우트가 이미 걸러 냈다.
@@ -1211,6 +1213,12 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     때문이고(`정본 §4.1`), `〈138〉` 로 그 경계가 옮겨졌어도 **표는 그대로 둔다** —
     표를 옮기는 것은 마이그레이션이고 얻는 것이 없다.
     """
+    before = session.execute(text("""
+        SELECT jsonb_build_object('name',dd.name,'summary',dd.summary,
+                                  'processingLevelUserSet',d.processing_level_user_set)
+          FROM d3_dataset d LEFT JOIN d3_dataset_description dd ON dd.dataset_id=d.id
+         WHERE d.id=:id
+    """), {"id": str(dataset_id)}).scalar_one_or_none()
     by_table: dict[str, dict[str, object]] = {}
     for key, value in changes.items():
         # `period`·`observationInterval` 은 한 열이 아니라 **여러 열**로 갈라진다 —
@@ -1262,6 +1270,15 @@ def update_dataset(session: Session, *, dataset_id: Ulid, changes: dict) -> None
     # 빈 요청이어도 갱신하지 않는다 — 아무것도 안 고쳤으면 고친 것이 아니다.
     if by_table or "variables" in changes:
         touch_last_modified(session, dataset_id)
+        if actor_id is not None:
+            after = session.execute(text("""
+                SELECT jsonb_build_object('name',dd.name,'summary',dd.summary,
+                                          'processingLevelUserSet',d.processing_level_user_set)
+                  FROM d3_dataset d LEFT JOIN d3_dataset_description dd ON dd.dataset_id=d.id
+                 WHERE d.id=:id
+            """), {"id": str(dataset_id)}).scalar_one_or_none()
+            append_operator_snapshot(session, actor_id=actor_id, target_id=dataset_id,
+                                     action="dataset.updated", before=before, after=after)
 
 
 def touch_last_modified(session: Session, dataset_id: Ulid) -> None:

@@ -1,0 +1,74 @@
+{
+  "name": "catalog-light-768",
+  "visual": {
+    "counts": {
+      "activeRules": 2,
+      "blockedSheets": 0,
+      "interactive": 28,
+      "keyframes": 2,
+      "lowContrast": 0,
+      "reducedMotionBlocks": 4,
+      "sheets": 18,
+      "small": 0,
+      "textElements": 74
+    },
+    "lowContrast": [],
+    "media": {
+      "dark": false,
+      "reducedMotion": false
+    },
+    "small": [],
+    "transitions": {
+      "all 0s": 28
+    },
+    "url": "http://127.0.0.1:5178/audit-design.html?theme=light&scene=catalog&design=calm",
+    "viewport": {
+      "h": 900,
+      "w": 768
+    }
+  },
+  "layout": {
+    "bg": "rgb(249, 250, 251)",
+    "dialog": null,
+    "font": "\"Pretendard Variable\", Pretendard, -apple-system, BlinkMacSystemFont, \"Apple SD Gothic Neo\", \"Segoe UI\", \"Malgun Gothic\", \"Noto Sans KR\", sans-serif",
+    "fonts": [
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable"
+    ],
+    "inputs": [
+      {
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(18, 22, 25)",
+        "size": "14px"
+      },
+      {
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(18, 22, 25)",
+        "size": "14px"
+      },
+      {
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(18, 22, 25)",
+        "size": "14px"
+      },
+      {
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(18, 22, 25)",
+        "size": "14px"
+      }
+    ],
+    "scrollWidth": 768,
+    "theme": "light",
+    "width": 768
+  },
+  "errors": "",
+  "screenshot": "screens/catalog-light-768.png"
+}

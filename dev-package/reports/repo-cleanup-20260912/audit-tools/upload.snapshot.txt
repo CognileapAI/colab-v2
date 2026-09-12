@@ -1,0 +1,5 @@
+- generic "파일 올리기수자원순환연구실에 올려요×↑파일을 끌어다 놓으세요여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요파일 고르기어떤 포맷이든 올려요 · 같은 확장자면 여러 개를 한 데이터셋으" [ref=e1] clickable [onclick]
+  - heading "파일 올리기" [level=3, ref=e2]
+  - button "업로드 닫기" [ref=e3]
+  - LabelText "↑파일을 끌어다 놓으세요여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요파일 고르기" [ref=e4] clickable [cursor:pointer]
+    - button "파일을 끌어다 놓으세요 여러 개를 한 번에, 폴더째 끌어다 놓아도 돼요 파일 고르기" [ref=e5]: No file chosen

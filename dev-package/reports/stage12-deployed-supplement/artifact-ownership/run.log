@@ -1,0 +1,17 @@
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 28개
+# 경계 대조 — 관리자 롤 (d3_file,d5_upload_file)=(133,133) ↔ 경계 롤 'colab_app' (0,0) (갈렸다)
+산출물 소유 — 대상 한 벌 158 · 살아 있다 120 · 접수분에만 닿는다 0 · 고아 19 · 판정 불가 19
+  지도 타일 146 벌은 **대상이 아니다** — D5 가 구운 것이라 kept 로 산다 (완료 정의 ⑷)
+  세는 단위 = 한 캐시 키 아래 선 산출물 한 벌 · 자리 = /home/ttlhi10/.colab-v2-staging/previews · 원장 = d3_file 133 · d5_upload_file 133
+  회수 전 전수 스냅숏 498 줄 → /tmp/artifact-owner-Rabhx2/snapshot-20260911T022053Z.tsv (키·확장자·크기·사이드카 source·등급)
+  시점 = 2026-09-11T11:20:53+09:00
+::error::artifact-ownership red — **고아 등급 19 벌 중 선언되지 않은 것**: 14cf9821b17f4179fc47b4b9f8035fc28a18411d3590478f2f84b706a78f1d0a 1604c3efbc99ea69e58529c88d188ef9811caf605d98f487f5175a942381b451 411eb1ab2499cc42a742e073b7bb525df0e9f83bf8a27d6ca63fa7ef8f377812 80e892d689caf15c7af7d46aba292af9e4d40cdb9871991d7972718827db19e0 94380b7de5cfe52f45cdfa963aa85abab61ce254a93abb01c371f5a2ad9087f3 ad597b3977fa75f526bf2024cb65863643c55d9f8cb757651855c4e75908d048 b3e6b3d13c79871128d47a0aed33d569abae5fde41365a5a2c2021eedbbe1228 b58af4931c4cecc456d345414e61fb56099ec99c7655afddf6b343bb3612cfbf b6fb1d038e0e632d9369d6ee410ab550c8d646417cb56a5e4152c42c037073ec d6596a57a90e14f282e10050ad23f1d5af389cea829f02674d835a7eec26979b
+   조각 fileId 가 d3_file 에도 d5_upload_file 에도 없다 = 원본이 사라졌다.
+   → 회수하려면 `invalidation.reclaim_plan()` → `invalidation.apply()` **한 자리**로 집행한다
+     (완료 정의 ⑶ · 지우는 문을 게이트로 늘리지 않는다).
+   → 남겨야 하면 **키 이름으로** 선언에 적는다: gates/config/artifact-ownership.toml
+   ⚠ 이 게이트는 아무것도 지우지 않았다. 스냅숏은 남았다: /tmp/artifact-owner-Rabhx2/snapshot-20260911T022053Z.tsv
+── 요약 ────────────────────────────────────────────────────
+  red(판정)  artifact-ownership (exit 1) — 검사 대상이 규율을 어겼다
+  ── 계 : green 0 / red(판정) 1 / red(준비) 0
+  요약 JSON  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/dev-package/reports/stage12-deployed-supplement/artifact-ownership/gate-summary.json

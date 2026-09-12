@@ -1,0 +1,7 @@
+............................ssssssssss....................................
+----------------------------------------------------------------------
+Ran 74 tests in 4.273s
+
+OK (skipped=10)
+green: 4 role mappings, 12 skill adapters, 9 hook mappings / 6 events
+── 계 : green 1 / red(판정) 0 / red(준비) 0

@@ -1,0 +1,306 @@
+{
+  "scenes": 42,
+  "widths": [
+    375,
+    768,
+    1440
+  ],
+  "failed": 0,
+  "finalMobileRechecks": 14,
+  "rows": [
+    {
+      "name": "access-dialog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "access-dialog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "access-dialog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "approval-dialog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "approval-dialog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "approval-dialog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "catalog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "catalog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "catalog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "detail-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "detail-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "detail-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "empty-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "empty-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "empty-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-dialog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-dialog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "lab-dialog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "login-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "login-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "login-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "pending-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "pending-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "pending-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-close-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-close-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-close-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-dialog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-dialog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "project-dialog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "projects-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "projects-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "projects-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-dialog-1440",
+      "width": 1440,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-dialog-375",
+      "width": 375,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    },
+    {
+      "name": "settings-dialog-768",
+      "width": 768,
+      "overflow": 0,
+      "small": 0,
+      "lowContrast": 0
+    }
+  ]
+}

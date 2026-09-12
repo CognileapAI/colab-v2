@@ -1,0 +1,141 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-breaking",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-single-head",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-drift",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "schema-diff",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-coverage",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-effect",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "import-boundary",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "db-boundary",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "service-tests-core-api",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "work-item-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 14,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "contract-breaking",
+      "generated-up-to-date",
+      "migration-single-head",
+      "migration-drift",
+      "schema-diff",
+      "rls-coverage",
+      "rls-effect",
+      "import-boundary",
+      "db-boundary",
+      "service-tests-core-api",
+      "frontend-typecheck",
+      "frontend-test",
+      "work-item-consistency"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "4281a06eea0d4696a57ea80fcd2e33cd",
+      "run_id": "8e1520935e3749d18b09920c43aa8b66",
+      "checkout": "/home/ttlhi10/colab-stage3-plan",
+      "files": "78ada015a03483712e23c4ea07c4a4c21db3a44e07489325d9ca1535c5ee370d"
+    },
+    "after": {
+      "task_id": "4281a06eea0d4696a57ea80fcd2e33cd",
+      "run_id": "8e1520935e3749d18b09920c43aa8b66",
+      "checkout": "/home/ttlhi10/colab-stage3-plan",
+      "files": "78ada015a03483712e23c4ea07c4a4c21db3a44e07489325d9ca1535c5ee370d"
+    }
+  }
+}

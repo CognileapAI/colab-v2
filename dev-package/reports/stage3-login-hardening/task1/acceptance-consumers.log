@@ -1,0 +1,6 @@
+command: ['rg', '-n', '\'/sessions\'|"/sessions"|/api/v1/sessions', 'frontend/src', 'services/core-api/src', 'services/ai-service/src', 'services/viz-render/src', 'services/pipeline-worker/src']
+frontend/src/auth/LoginPage.tsx:26:    const { data, error, response } = await api.POST('/sessions', {
+services/core-api/src/colab_core/app/routes/session.py:59:@router.post("/sessions", name="createSession", status_code=201)
+frontend/src/api/client.ts:32:  return new URL(url).pathname.endsWith('/sessions');
+frontend/src/api/client.ts:69:    if (new URL(request.url).pathname.endsWith('/sessions')) return;
+frontend/src/generated/fe-core.ts:7:    "/sessions": {

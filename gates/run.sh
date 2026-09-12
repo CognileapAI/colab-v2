@@ -167,7 +167,7 @@ fi
 
 # 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
 ALL_GATES=(
-  planning-freshness contract-lint contract-breaking event-lint event-breaking
+  planning-freshness agent-bridge operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
@@ -189,6 +189,16 @@ ALL_GATES=(
 )
 
 case "$GATE" in
+  agent-bridge)
+    # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py
+    ;;
+  operator-notifications)
+    exec "$REPO_ROOT/gates/tools/operator-notifications.sh"
+    ;;
+  operator-notifications-selftest)
+    exec "$REPO_ROOT/gates/tools/operator-notifications-selftest.sh"
+    ;;
   planning-freshness)
     # 기획 정본 패키지 HTML의 임베드 md ↔ 원본 md 일치 검사.
     # 정본이 마운트되지 않으면 skip이 아니라 red다 (CLAUDE.md §4 green-by-skip 금지).

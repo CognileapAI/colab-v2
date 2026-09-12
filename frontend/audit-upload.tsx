@@ -1,4 +1,5 @@
 // 로컬 시각 검수 전용 진입점. 실제 네트워크·저장 API를 사용하지 않는다.
+import './src/shell/styles';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SessionProvider } from './src/permission/session';
@@ -8,9 +9,10 @@ import { fixtureLineageSource } from './src/components/lineage/graphFixture';
 import { UploadModal } from './src/components/upload/UploadModal';
 import type { CurrentAccount } from './src/api/client';
 import type { UploadSources } from './src/components/upload/types';
-import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
-import './src/shell/shell.css';
-import './src/components/upload/upload.css';
+const previewParams = new URLSearchParams(location.search);
+document.body.classList.add('colab-ui');
+document.documentElement.dataset.design = 'calm';
+document.documentElement.dataset.theme = previewParams.get('theme') === 'dark' ? 'dark' : 'light';
 const id = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 let files: unknown[] = [];
 const sources = {

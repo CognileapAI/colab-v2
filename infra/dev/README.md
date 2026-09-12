@@ -52,6 +52,11 @@ AWS 액세스 키는 **어디에도 없다** — EC2 인스턴스 프로파일(`
 
 ## 올리기 (첫 배포 · 재배포 같다)
 
+완료 배포는 [공통 실행기](../releases/README.md)의 release 계획으로 실행한다.
+아래 반입·기동 명령은 계획의 자식 단계 또는 최초 부트스트랩 절차다. 각각의 성공을 전체 배포 완료로 세지 않는다.
+`deploy_web.py` 실제 업로드도 실행기 안에서만 허용하며, 확인은 `--dry-run`으로 한다.
+
+
 ```bash
 # 개발 기계
 infra/dev/build.sh                # 5 이미지 buildx linux/arm64 → 아키텍처 실측 → dist/colab-v2-dev-<sha>.tar
@@ -62,7 +67,8 @@ COLAB_PG_MASTER_URL_FILE=/etc/colab/master.url COLAB_OWNER_PASSWORD=… COLAB_AP
 /opt/colab-v2/up.sh                # migrate-platform → migrate-ai → up -d → 4 단위 healthy 대기(fail-closed) → 헬스 본문
 … db-bootstrap.sh app-grants && … verify
 # 프론트 (개발 기계, 운영자 키)
-cd frontend && npm run build && cd ../services/core-api && .venv/bin/python ops/deploy_web.py --dist ../../frontend/dist --bucket colab-platform-web-dev
+# 검토한 release 계획에 build/ship/up/web와 doctor·공개 hash 검증을 선언한다.
+python3 scripts/deploy_release.py run --plan /absolute/reviewed/release.json
 ```
 
 ⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 게이트는 `ship.sh` 에 있다(exit 65/78 · 우회 선언).

@@ -1,0 +1,68 @@
+[
+  {
+    "filter": {
+      "count": "3건 / 전체 6건",
+      "menu": {
+        "bottom": 884,
+        "height": 503,
+        "left": 16,
+        "right": 359,
+        "top": 381,
+        "width": 343,
+        "x": 16,
+        "y": 381
+      },
+      "rows": 3,
+      "viewport": 375
+    }
+  },
+  {
+    "lastInputAndFooter": {
+      "body": {
+        "bottom": 810,
+        "height": 720,
+        "left": 13,
+        "right": 362,
+        "top": 90,
+        "width": 349,
+        "x": 13,
+        "y": 90
+      },
+      "footer": {
+        "bottom": 887,
+        "height": 77,
+        "left": 13,
+        "right": 362,
+        "top": 810,
+        "width": 349,
+        "x": 13,
+        "y": 810
+      },
+      "rect": {
+        "bottom": 810.234375,
+        "height": 46,
+        "left": 50,
+        "right": 310,
+        "top": 764.234375,
+        "width": 260,
+        "x": 50,
+        "y": 764.234375
+      },
+      "value": "검토용 논문 번호",
+      "viewport": 900
+    }
+  },
+  {
+    "keyboard": "Tab/Shift+Tab cycle; type selection; Escape restore passed",
+    "restored": {
+      "active": "+ 새 프로젝트",
+      "dialogs": 0
+    }
+  },
+  {
+    "reviewControls": {
+      "src": "/audit-design.html?scene=empty&design=calm&theme=dark",
+      "width": "375px"
+    }
+  }
+]

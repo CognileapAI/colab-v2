@@ -1,0 +1,259 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CoLAB operator notifications; local package only until explicitly deployed.
+Parameters:
+  NotificationsEnabled:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+  Environment: {Type: String, AllowedValues: [dev, staging]}
+  InstanceId: {Type: AWS::EC2::Instance::Id}
+  NotificationManifestJson: {Type: String, NoEcho: false}
+  DevelopmentWebhookSecretArn: {Type: String}
+  ActivityWebhookSecretArn: {Type: String}
+  MonitoredServices: {Type: CommaDelimitedList}
+  MonitoredAlarmNames: {Type: CommaDelimitedList}
+  PermissionsBoundaryArn:
+    Type: String
+    Default: arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    Environment:
+      Variables:
+        INSTANCE_STATUS_ALARM_NAME: !Ref InstanceStatusAlarm
+        SYSTEM_STATUS_ALARM_NAME: !Ref SystemStatusAlarm
+        COLAB_OPERATOR_TABLE: !Ref NotificationTable
+        COLAB_OPERATOR_MANIFEST_JSON: !Ref NotificationManifestJson
+        DEVELOPMENT_QUEUE_URL: !Ref DevelopmentQueue
+        ACTIVITY_QUEUE_URL: !Ref ActivityQueue
+        DEVELOPMENT_QUEUE_ARN: !GetAtt DevelopmentQueue.Arn
+        ACTIVITY_QUEUE_ARN: !GetAtt ActivityQueue.Arn
+        DEVELOPMENT_WEBHOOK_SECRET_ARN: !Ref DevelopmentWebhookSecretArn
+        ACTIVITY_WEBHOOK_SECRET_ARN: !Ref ActivityWebhookSecretArn
+Conditions:
+  NotificationsActive: !Equals [!Ref NotificationsEnabled, "true"]
+Resources:
+  NotificationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{AttributeName: pk, AttributeType: S}]
+      KeySchema: [{AttributeName: pk, KeyType: HASH}]
+      PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
+  DevelopmentDLQ: {Type: AWS::SQS::Queue}
+  ActivityDLQ: {Type: AWS::SQS::Queue}
+  DevelopmentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 180
+      RedrivePolicy: {deadLetterTargetArn: !GetAtt DevelopmentDLQ.Arn, maxReceiveCount: 5}
+  ActivityQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 180
+      RedrivePolicy: {deadLetterTargetArn: !GetAtt ActivityDLQ.Arn, maxReceiveCount: 5}
+  ConsumerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: colab-notify-20260912-consumer
+      PermissionsBoundary: !Ref PermissionsBoundaryArn
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CoLABNotificationConsumer
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Scan]
+                Resource: !GetAtt NotificationTable.Arn
+              - Effect: Allow
+                Action: [secretsmanager:GetSecretValue]
+                Resource: [!Ref DevelopmentWebhookSecretArn, !Ref ActivityWebhookSecretArn]
+              - Effect: Allow
+                Action: [sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
+                Resource: [!GetAtt DevelopmentQueue.Arn, !GetAtt ActivityQueue.Arn]
+              - Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/colab-notify-*
+  RetryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: colab-notify-20260912-retry
+      PermissionsBoundary: !Ref PermissionsBoundaryArn
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CoLABNotificationRetry
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Scan]
+                Resource: !GetAtt NotificationTable.Arn
+              - Effect: Allow
+                Action: [sqs:SendMessage]
+                Resource: [!GetAtt DevelopmentQueue.Arn, !GetAtt ActivityQueue.Arn]
+              - Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/colab-notify-*
+  IngestRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: colab-notify-20260912-ingest
+      PermissionsBoundary: !Ref PermissionsBoundaryArn
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CoLABNotificationIngest
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Scan]
+                Resource: !GetAtt NotificationTable.Arn
+              - Effect: Allow
+                Action: [sqs:SendMessage]
+                Resource: [!GetAtt DevelopmentQueue.Arn, !GetAtt ActivityQueue.Arn]
+              - Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/colab-notify-*
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/operator-notifications.zip
+      Handler: notifications.handlers.consume
+      Role: !GetAtt ConsumerRole.Arn
+      Events:
+        Development:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DevelopmentQueue.Arn
+            BatchSize: 1
+            Enabled: !If [NotificationsActive, true, false]
+            FunctionResponseTypes: [ReportBatchItemFailures]
+        Activity:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ActivityQueue.Arn
+            BatchSize: 1
+            Enabled: !If [NotificationsActive, true, false]
+            FunctionResponseTypes: [ReportBatchItemFailures]
+  RetryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/operator-notifications.zip
+      Handler: notifications.handlers.retry
+      Role: !GetAtt RetryRole.Arn
+      Events:
+        EveryMinute: {Type: Schedule, Properties: {Schedule: rate(1 minute), State: !If [NotificationsActive, ENABLED, DISABLED]}}
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/operator-notifications.zip
+      Handler: notifications.handlers.ingest
+      Role: !GetAtt IngestRole.Arn
+  HealthRule:
+    Type: AWS::Events::Rule
+    Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
+      EventPattern:
+        account: [!Ref AWS::AccountId]
+        source: [aws.health]
+        detail-type: [AWS Health Event]
+        detail:
+          service: !Ref MonitoredServices
+          eventTypeCategory: [issue, scheduledChange]
+          statusCode: [open, upcoming, closed]
+      Targets: [{Arn: !GetAtt DevelopmentQueue.Arn, Id: HealthToDevelopment}]
+  AlarmRule:
+    Type: AWS::Events::Rule
+    Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
+      EventPattern:
+        account: [!Ref AWS::AccountId]
+        source: [aws.cloudwatch]
+        detail-type: [CloudWatch Alarm State Change]
+        detail:
+          alarmName: !Ref MonitoredAlarmNames
+          state: {value: [ALARM, OK, INSUFFICIENT_DATA]}
+      Targets: [{Arn: !GetAtt DevelopmentQueue.Arn, Id: AlarmToDevelopment}]
+  InstanceStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub colab-${Environment}-instance-status
+      AlarmDescription: CoLAB EC2 instance status check failure
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_Instance
+      Dimensions: [{Name: InstanceId, Value: !Ref InstanceId}]
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: missing
+  SystemStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub colab-${Environment}-system-status
+      AlarmDescription: CoLAB EC2 underlying system status check failure
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Dimensions: [{Name: InstanceId, Value: !Ref InstanceId}]
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: missing
+  InstanceAlarmRule:
+    Type: AWS::Events::Rule
+    Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
+      EventPattern:
+        account: [!Ref AWS::AccountId]
+        source: [aws.cloudwatch]
+        detail-type: [CloudWatch Alarm State Change]
+        detail:
+          alarmName: [!Ref InstanceStatusAlarm, !Ref SystemStatusAlarm]
+          state: {value: [ALARM, OK, INSUFFICIENT_DATA]}
+      Targets: [{Arn: !GetAtt DevelopmentQueue.Arn, Id: InstanceAlarmToDevelopment}]
+  EventQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref DevelopmentQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: events.amazonaws.com}
+            Action: sqs:SendMessage
+            Resource: !GetAtt DevelopmentQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: [!GetAtt HealthRule.Arn, !GetAtt AlarmRule.Arn, !GetAtt InstanceAlarmRule.Arn]
+Outputs:
+  InstanceStatusAlarmName: {Value: !Ref InstanceStatusAlarm}
+  SystemStatusAlarmName: {Value: !Ref SystemStatusAlarm}
+  TableName: {Value: !Ref NotificationTable}
+  DevelopmentQueueUrl: {Value: !Ref DevelopmentQueue}
+  ActivityQueueUrl: {Value: !Ref ActivityQueue}
+  IngestFunctionName: {Value: !Ref IngestFunction}
+  GlobalHealthForwardDestination:
+    Value: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default

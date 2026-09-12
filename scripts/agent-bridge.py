@@ -99,8 +99,15 @@ def check() -> None:
         registered_hooks(tool)
     settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
     codex = json.loads((ROOT / ".codex/hooks.json").read_text(encoding="utf-8"))
-    if set(settings["hooks"]) != set(codex["hooks"]):
+    if set(settings["hooks"]) != {name for name in codex["hooks"] if name != "Stop"}:
         raise ValueError("hook event coverage differs")
+    stop = codex["hooks"].get("Stop")
+    if not isinstance(stop, list) or len(stop) != 1 or "matcher" in stop[0]:
+        raise ValueError("Stop hook must be one matcher-free command definition")
+    stop_hooks = stop[0].get("hooks")
+    if not isinstance(stop_hooks, list) or len(stop_hooks) != 1 or stop_hooks[0].get("type") != "command" \
+       or not all(stop_hooks[0].get(key) for key in ("command", "commandWindows")):
+        raise ValueError("invalid Stop command hook")
     count = 0
     for event, entries in settings["hooks"].items():
         expected = ["apply_patch" if e["matcher"] == "Edit|Write" else e["matcher"] for e in entries]
@@ -255,7 +262,7 @@ def codex_event() -> int:
                                     input=raw, text=True, encoding="utf-8", timeout=570)
             return 0 if result.returncode == 0 else 2
         output = dispatch_event(data)
-        if output:
+        if output or data.get("hook_event_name") == "Stop":
             print(json.dumps(output, ensure_ascii=False))
         return 0
     except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError) as exc:
@@ -275,6 +282,13 @@ def dispatch_event(data: dict) -> dict:
     if event in ("PreToolUse", "PostToolUse"):
         payloads = codex_payloads(data)
         pairs = [(p, registered_hooks(p["tool_name"], event)) for p in payloads]
+    elif event == "Stop":
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/slack_completion.py"), "hook"],
+                                input=json.dumps(dict(data, cwd=str(cwd))), text=True,
+                                capture_output=True, cwd=cwd, timeout=20)
+        if result.returncode:
+            raise ValueError("Slack completion hook failed")
+        return json.loads(result.stdout or "{}")
     elif event in ("SessionStart", "SubagentStart", "SubagentStop"):
         selector = data.get("source") if event == "SessionStart" else data.get("agent_type")
         if not isinstance(selector, str) or not selector:

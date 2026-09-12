@@ -1,0 +1,8 @@
+{
+  "wslCloneRemoved": true,
+  "ec2NativeTestContainerRemoved": true,
+  "reverseTunnelPortClosed": true,
+  "browserSessionsClosed": true,
+  "temporaryCredentialsRemoved": true,
+  "durableBackupDirectory": "/home/ttlhi10/colab-v2-releases/stage3-dual-20260912"
+}

@@ -148,6 +148,11 @@ fi
 FIXREPO="$TMP/git source"; mkdir -p "$FIXREPO/infra/ops" "$FIXREPO/services/core-api/ops" \
   "$FIXREPO/db/platform/versions" "$FIXREPO/db/ai/versions" "$FIXREPO/gates/tools" "$FIXREPO/gates/config"
 printf '#!/usr/bin/env bash\necho A >> "$COLAB_TEST_DISPATCH_MARK"\n' > "$FIXREPO/infra/ops/run-scheduled.sh"; chmod +x "$FIXREPO/infra/ops/run-scheduled.sh"
+mkdir -p "$FIXREPO/infra/notifications" "$FIXREPO/services/core-api/src/colab_core"
+printf '# fixture package\n' > "$FIXREPO/infra/__init__.py"
+printf '# fixture notifications\n' > "$FIXREPO/infra/notifications/__init__.py"
+printf '# fixture core\n' > "$FIXREPO/services/core-api/src/colab_core/__init__.py"
+for input in pyproject.toml requirements.in requirements.txt; do printf '# fixture install input\n' > "$FIXREPO/services/core-api/$input"; done
 printf 'doctor\n' > "$FIXREPO/services/core-api/ops/deploy_doctor.py"
 printf 's3\n' > "$FIXREPO/services/core-api/ops/s3_doctor.py"
 printf 'revision="p"\n' > "$FIXREPO/db/platform/versions/0001.py"; printf '[alembic]\nversion_table=x\n' > "$FIXREPO/db/platform/alembic.ini"
@@ -172,12 +177,12 @@ if "$VERIFY_SOURCE" --source "$VSOURCE" --manifest "$VSOURCE/OPS_SOURCE_MANIFEST
 else pass "manifest source_sha와 CURRENT_SHA 결합"; fi
 
 # 고정 dispatcher는 cron을 바꾸지 않고 A→B→A trusted bundle을 선택한다.
-TRUST="$TMP/trust"; mkdir -p "$TRUST/bin" "$TRUST/versions/$FIXSHA"; chmod 0755 "$TRUST" "$TRUST/bin" "$TRUST/versions"
+TRUST="$TMP/trust"; mkdir -p "$TRUST/bin" "$TRUST/versions/$FIXSHA"; chmod 0755 "$TRUST" "$TRUST/bin" "$TRUST/versions" "$TRUST/versions/$FIXSHA"
 tar xzf "$OUTDIR/colab-ops-source-$FIXSHA.tar.gz" -C "$TRUST/versions/$FIXSHA"; cp "$OUTDIR/colab-ops-source-$FIXSHA.manifest" "$TRUST/versions/$FIXSHA/OPS_SOURCE_MANIFEST"
 printf '#!/usr/bin/env bash\necho B >> "$COLAB_TEST_DISPATCH_MARK"\n' > "$FIXREPO/infra/ops/run-scheduled.sh"; chmod +x "$FIXREPO/infra/ops/run-scheduled.sh"
 git -C "$FIXREPO" add .; git -C "$FIXREPO" -c user.name=test -c user.email=test@example.invalid commit -qm B
 BSHA="$(git -C "$FIXREPO" rev-parse HEAD)"; BOUT="$TMP/bundle-b"
-"$BUNDLE" --repo "$FIXREPO" --sha "$BSHA" --output "$BOUT" >/dev/null; mkdir -p "$TRUST/versions/$BSHA"
+"$BUNDLE" --repo "$FIXREPO" --sha "$BSHA" --output "$BOUT" >/dev/null; mkdir -p "$TRUST/versions/$BSHA"; chmod 0755 "$TRUST/versions/$BSHA"
 tar xzf "$BOUT/colab-ops-source-$BSHA.tar.gz" -C "$TRUST/versions/$BSHA"; cp "$BOUT/colab-ops-source-$BSHA.manifest" "$TRUST/versions/$BSHA/OPS_SOURCE_MANIFEST"
 cp "$DISPATCH" "$TRUST/bin/dispatch-current.sh" 2>/dev/null || true; cp "$VERIFY_SOURCE" "$TRUST/bin/verify-source.sh" 2>/dev/null || true
 chmod +x "$TRUST/bin/dispatch-current.sh" "$TRUST/bin/verify-source.sh" 2>/dev/null || true

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
 from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions
+from .d2_audit import append_snapshot as append_operator_snapshot
 
 #: 권한 스위치는 정확히 넷이고 다섯 번째를 만들지 않는다 (common.json#/$defs/PermissionSwitch).
 SWITCHES = ("업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정")
@@ -198,6 +199,12 @@ def apply_switch(session: Session, *, actor_id: Ulid, target_id: Ulid,
     두 쓰기를 한 트랜잭션에 묶는 이유 — 값만 바뀌고 이력이 없는 상태가 생기면
     감사 기록이 「대체로 맞는 기록」이 된다. 그건 기록이 아니다.
     """
+    previous = session.execute(
+        text("SELECT enabled FROM d2_permission_switch WHERE account_id=:account_id AND switch=:switch"),
+        {"account_id": str(target_id), "switch": switch},
+    ).scalar_one_or_none()
+    if previous is None:
+        previous = DEFAULT_SWITCHES[switch]
     session.execute(_UPSERT_SWITCH, {
         "account_id": str(target_id), "switch": switch, "enabled": enabled,
     })
@@ -205,6 +212,11 @@ def apply_switch(session: Session, *, actor_id: Ulid, target_id: Ulid,
         "id": str(Ulid.generate()), "actor": str(actor_id), "target": str(target_id),
         "switch": switch, "direction": "켬" if enabled else "끔",
     })
+    append_operator_snapshot(
+        session, actor_id=actor_id, target_id=target_id, action="permission.changed",
+        before={"switch": switch, "enabled": previous},
+        after={"switch": switch, "enabled": enabled},
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -426,6 +438,10 @@ def create_access_request(session: Session, *, dataset_id: Ulid, requester_id: U
         "id": str(Ulid.generate()), "dataset_id": str(dataset_id),
         "requester": str(requester_id), "reason": reason,
     }).mappings().one()
+    append_operator_snapshot(
+        session, actor_id=requester_id, target_id=dataset_id, action="access.requested",
+        before=None, after={"request_id": row["id"], "state": "검토 대기"},
+    )
     return row
 
 
@@ -508,6 +524,11 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
     if decided is None:
         return None
     if not approve:
+        append_operator_snapshot(
+            session, actor_id=decider_id, target_id=Ulid(decided["dataset_id"].strip()),
+            action="access.rejected", before={"state": "검토 대기"},
+            after={"state": "거절됨", "request_id": request_id},
+        )
         return {"dataset_id": decided["dataset_id"], "grantee": decided["requester_account_id"]}
     grant = session.execute(_INSERT_GRANT, {
         "id": str(Ulid.generate()), "dataset_id": decided["dataset_id"],
@@ -532,11 +553,20 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
         session.execute(_UPSERT_ACCESS_STATE,
                         {"dataset_id": str(dataset_id), "state": DESIGNATED})
         state = DESIGNATED
-    return {
+    result = {
         "dataset_id": decided["dataset_id"], "grantee": decided["requester_account_id"],
         "approved_at": grant["approved_at"], "expires_at": grant["expires_at"],
         "access_state": state,
     }
+    append_operator_snapshot(
+        session, actor_id=decider_id, target_id=dataset_id, action="access.approved",
+        before={"state": "검토 대기"},
+        after={"state": "승인됨", "request_id": request_id,
+               "grantee": decided["requester_account_id"],
+               "approved_at": grant["approved_at"].isoformat(),
+               "expires_at": grant["expires_at"].isoformat(), "access_state": state},
+    )
+    return result
 
 
 def verified_state(session: Session, dataset_id: Ulid) -> bool | None:

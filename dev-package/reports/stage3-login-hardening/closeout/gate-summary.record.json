@@ -1,0 +1,37 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "work-item-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 1,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "work-item-consistency"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "b9833aa334c84f13966b45a60158465a",
+      "run_id": "a33a27469abb441d897c33d983ae4648",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "340df041c94f4ca9970b4c5c99c16f2c6b1155120688fac1962ced9a81a5bb75"
+    },
+    "after": {
+      "task_id": "b9833aa334c84f13966b45a60158465a",
+      "run_id": "a33a27469abb441d897c33d983ae4648",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "340df041c94f4ca9970b4c5c99c16f2c6b1155120688fac1962ced9a81a5bb75"
+    }
+  }
+}

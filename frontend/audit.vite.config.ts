@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { fileURLToPath } from 'node:url';
 export default defineConfig({
   plugins: [react()],
   build: {
     outDir: '../.codex/upload-preview-audit',
     emptyOutDir: false,
-    rollupOptions: { input: fileURLToPath(new URL('./audit-upload.html', import.meta.url)) },
+    assetsInlineLimit: 0,
+    rollupOptions: {
+      input: {
+        upload: 'audit-upload.html',
+        design: 'audit-design.html',
+        preview: 'design-preview.html',
+      },
+    },
   },
 });

@@ -1,0 +1,7 @@
+- generic "승인된 데이터셋⋯이 데이터의 승인을 취소할까요?검색·카탈로그에서 우선 정렬이 사라져요.활용 프로젝트 0건에 취소가 표시돼요.데이터와 계보는 그대로 남고 배지만 사라져요.취소 사유" [ref=e1] clickable [onclick]
+  - heading "승인된 데이터셋" [level=1, ref=e2]
+  - button "더보기" [expanded=false, ref=e3]
+  - heading "이 데이터의 승인을 취소할까요?" [level=3, ref=e4]
+  - textbox "취소 사유 (선택)" [ref=e7]
+  - button "그만두기" [ref=e5]
+  - button "승인 취소" [ref=e6]

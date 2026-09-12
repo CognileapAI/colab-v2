@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "svg_http": 200,
+  "svg_mime": "image/svg+xml",
+  "svg_natural_width": 200,
+  "map_resources_local_only": true,
+  "gallery_width": 375,
+  "gallery_theme": "dark",
+  "fixture_rows": 6,
+  "pages_http": {
+    "audit-design.html": 200,
+    "audit-upload.html": 200,
+    "design-preview.html": 200
+  },
+  "scope": "local fixture smoke; no persistence E2E"
+}

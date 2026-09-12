@@ -1,0 +1,6 @@
+::gate-readiness-failure::gate=harness-eval|cause=입력미선언|missing=COLAB_HARNESS_EVAL|detail=과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다.
+::error::harness-eval red(준비) — **검사에 필요한 입력이 선언되지 않았다.** 판정 red 가 아니다.
+   검사 대상은 한 건도 보지 못했다 — 「대상이 규율을 어겼다」가 아니라 「아무도 값을 말하지 않았다」다.
+   선언되지 않은 것: COLAB_HARNESS_EVAL
+   과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다.
+   ⚠ 미선언도 **red 다.** 기본값·건너뛰기로 green 을 만들지 않는다 (CLAUDE.md §4).

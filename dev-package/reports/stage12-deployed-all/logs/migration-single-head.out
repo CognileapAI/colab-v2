@@ -1,0 +1,4 @@
+# db 루트 = db · 체인 = platform, ai
+# db/platform: 리비전 28건 · head 1개 (0024_s2_grid_convenience)
+# db/ai: 리비전 8건 · head 1개 (0007_merge_vocab_and_category)
+migration-single-head green — 두 체인 모두 head 1개.

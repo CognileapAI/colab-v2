@@ -1,0 +1,10 @@
+# service-tests-ai-service 내부 worker 4 · xdist loadfile
+   bringing up nodes...
+   bringing up nodes...
+   
+   ........................................................................ [ 52%]
+   ..................................................................       [100%]
+   ----------- generated xml file: /tmp/service-tests-rVaJO2/junit.xml ------------
+   138 passed in 4.42s
+service-tests-ai-service — 선택자 «not dictdb» · 수집 138 · 실행 138 · skipped 0 · deselected 26 · failed 0 · errors 0 · 소요 4.4초
+service-tests-ai-service green — 실행 138건 전부 통과 (skipped 0 · deselected 26 은 요약줄에 드러나 있다).

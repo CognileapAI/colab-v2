@@ -59,6 +59,10 @@ dir = "frontend"
 compose_service = "frontend"
 chains = []                    # 브라우저 번들에 DB 는 없다
 
+[units.operator-notifications]
+dir = "infra/notifications"
+chains = []                    # AWS 영속 상태만 사용하며 platform/ai DB에 접속하지 않는다
+
 # ── 일회성 러너 (배포 단위는 아니지만 compose 에서 DB 를 잡는다) ────────────
 [units.migrate-platform]
 compose_service = "migrate-platform"

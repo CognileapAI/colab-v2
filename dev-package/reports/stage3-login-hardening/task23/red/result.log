@@ -1,0 +1,6 @@
+{"baseline": "b63c9e8a0d40", "login": 201, "before": 200, "logout": 204, "after": 200, "expected_after": 401}
+Traceback (most recent call last):
+  File "/tmp/colab-session-before-klwbpcf7/reproduce.py", line 26, in <module>
+    assert after==401,"logged-out token still accepted"
+           ^^^^^^^^^^
+AssertionError: logged-out token still accepted

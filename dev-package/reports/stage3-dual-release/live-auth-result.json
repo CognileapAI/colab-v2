@@ -1,0 +1,18 @@
+{
+  "dev": {
+    "login": 201,
+    "me": 200,
+    "nonOperator": 403,
+    "logout": 204,
+    "revoked": 401,
+    "separateSession": 200
+  },
+  "stage": {
+    "login": 201,
+    "me": 200,
+    "nonOperator": 403,
+    "logout": 204,
+    "revoked": 401,
+    "separateSession": 200
+  }
+}

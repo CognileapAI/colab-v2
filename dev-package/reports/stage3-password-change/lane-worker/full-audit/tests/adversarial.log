@@ -1,0 +1,10 @@
+Both esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ jsx: 'automatic' }`
+
+ RUN  v4.1.11 /home/ttlhi10/colab-stage3-staging-deploy/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  02:54:17
+   Duration  1.01s (transform 72ms, setup 83ms, import 104ms, tests 112ms, environment 602ms)
+

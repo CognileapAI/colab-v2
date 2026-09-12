@@ -1,0 +1,141 @@
+{
+  "schema": "colab-gate-summary/1",
+  "gates": [
+    {
+      "name": "contract-lint",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "contract-breaking",
+      "status": "red_판정",
+      "state": "red_판정",
+      "exit": 1,
+      "readiness": null
+    },
+    {
+      "name": "generated-up-to-date",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "seam-consistency",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-test",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-typecheck",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "frontend-visual",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "service-tests-core-api",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-single-head",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "migration-drift",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "schema-diff",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-coverage",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "rls-effect",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    },
+    {
+      "name": "db-boundary",
+      "status": "green",
+      "state": "green",
+      "exit": 0,
+      "readiness": null
+    }
+  ],
+  "counts": {
+    "green": 13,
+    "red_판정": 1,
+    "red_준비": 0
+  },
+  "targets": {
+    "requested": "task",
+    "selected": [
+      "contract-lint",
+      "contract-breaking",
+      "generated-up-to-date",
+      "seam-consistency",
+      "frontend-test",
+      "frontend-typecheck",
+      "frontend-visual",
+      "service-tests-core-api",
+      "migration-single-head",
+      "migration-drift",
+      "schema-diff",
+      "rls-coverage",
+      "rls-effect",
+      "db-boundary"
+    ]
+  },
+  "task_evidence": {
+    "before": {
+      "task_id": "05f352d720a94bcdbabdcff225a40f07",
+      "run_id": "136492b48ccc447997c207ab90748b93",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "795722150d7634fefd1fffe44a3a9a2c0afc6f03e23efb357820cf26bdb3a1dd"
+    },
+    "after": {
+      "task_id": "05f352d720a94bcdbabdcff225a40f07",
+      "run_id": "136492b48ccc447997c207ab90748b93",
+      "checkout": "/home/ttlhi10/colab-stage3-staging-deploy",
+      "files": "795722150d7634fefd1fffe44a3a9a2c0afc6f03e23efb357820cf26bdb3a1dd"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+# service-tests-viz-render 내부 worker 4 · xdist loadfile
+   bringing up nodes...
+   bringing up nodes...
+   
+   ........................................................................ [ 17%]
+   ........................................................................ [ 34%]
+   ........................................................................ [ 52%]
+   ........................................................................ [ 69%]
+   ........................................................................ [ 87%]
+   .....................................................                    [100%]
+   =============================== warnings summary ===============================
+   tests/test_trigger_intake.py::test_배선을_지나도_원본과_기준_격자는_한_바이트도_안_바뀐다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/viz-render/.venv/lib/python3.12/site-packages/rasterio/warp.py:390: NotGeoreferencedWarning: Dataset has no geotransform, gcps, or rpcs. The identity matrix will be returned.
+       dest = _reproject(
+   
+   -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+   413 passed, 1 warning in 15.44s
+service-tests-viz-render — 선택자 «not e2e and not perf» · 수집 413 · 실행 413 · skipped 0 · deselected 42 · failed 0 · errors 0 · 소요 15.4초
+service-tests-viz-render green — 실행 413건 전부 통과 (skipped 0 · deselected 42 은 요약줄에 드러나 있다).

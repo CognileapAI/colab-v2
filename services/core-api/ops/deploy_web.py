@@ -17,6 +17,7 @@ AWS CLI 를 쓰지 않는다 — `kernel/s3.py`(자작 SigV4) 가 이미 있고 
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import sys
 from dataclasses import dataclass
@@ -88,6 +89,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--region", default="ap-northeast-2")
     ap.add_argument("--dry-run", action="store_true", help="계획만 출력")
     a = ap.parse_args(argv)
+    if not a.dry_run and os.environ.get("COLAB_DEPLOY_MANAGED") != "1":
+        print("배포·검증·알림을 함께 실행하세요: python3 scripts/deploy_release.py run --plan <release.json>", file=sys.stderr)
+        return 78
     items = plan(pathlib.Path(a.dist))
     for u in items:
         print(f"  {u.key:<60} {u.content_type:<32} {u.cache_control}")

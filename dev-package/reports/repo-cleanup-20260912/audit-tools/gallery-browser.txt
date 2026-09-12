@@ -1,0 +1,1 @@
+"{\"url\":\"http://127.0.0.1:4187/design-preview.html?scene=catalog&design=calm&theme=dark&width=375\",\"frame\":\"http://127.0.0.1:4187/audit-design.html?scene=catalog&design=calm&theme=dark\",\"width\":375,\"theme\":\"dark\",\"rows\":6}"

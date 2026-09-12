@@ -1,0 +1,23 @@
+{
+  "unauthenticated": {
+    "cacheControl": null,
+    "status": 401
+  },
+  "revokedBrowser": {
+    "cacheControl": null,
+    "status": 401
+  },
+  "separateBrowser": {
+    "cacheControl": null,
+    "status": 200
+  },
+  "nonoperator": {
+    "cacheControl": null,
+    "status": 403
+  },
+  "sameSidAndExpiryAtFirstChange": true,
+  "twoTabsLogout": true,
+  "otherBrowserReloadStillLoggedIn": true,
+  "shellHttpAttempt": "403 for all; not auth evidence",
+  "asset": "https://www.colab-hydro.com/assets/index-BA9RpWX4.js"
+}

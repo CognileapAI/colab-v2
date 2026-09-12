@@ -112,3 +112,25 @@ def member_exists(session: Session, account_id: Ulid) -> bool:
 def member_count(session: Session) -> int:
     """RLS 가 이미 경계를 걸어 둔 위에서 센다 — 여기에 lab_id 조건을 다시 적지 않는다."""
     return int(session.execute(_MEMBER_COUNT).scalar_one())
+
+
+def list_operator_labs(session: Session) -> list[dict]:
+    """Reporter role에서 일일 보고 대상 연구실 전체를 반환한다."""
+    return [dict(row) for row in session.execute(
+        text("SELECT id, name FROM d1_lab ORDER BY id")
+    ).mappings()]
+
+
+def list_operator_accounts(session: Session) -> list[dict]:
+    """Only display names in the explicitly scoped lab; never account email."""
+    from ..kernel.scope import require_lab_scope
+    require_lab_scope(session)
+    return [dict(row) for row in session.execute(
+        text("SELECT id,lab_id,name FROM d1_account ORDER BY id")
+    ).mappings()]
+
+
+def require_operator_actor(cursor, actor_id: str) -> None:
+    cursor.execute("SELECT id FROM d1_account WHERE id=%s AND lab_id=current_lab_id()", (actor_id,))
+    if cursor.fetchone() is None:
+        raise ValueError("operator actor must belong to the scoped lab")

@@ -1,0 +1,5 @@
+- generic "Co-Lab로그인계정은 개발자가 만들어 드려요. 받으신 계정과 비밀번호를 넣어 주세요.계정비밀번호들어가기" [ref=e1] clickable [onclick]
+  - heading "로그인" [level=1, ref=e2]
+  - textbox "계정" [ref=e3]
+  - textbox "비밀번호" [ref=e4]
+  - button "들어가기" [disabled, ref=e5]

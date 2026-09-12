@@ -1,0 +1,9 @@
+  ✓ ⓐ 깨끗한 진입점 (green)
+  ✓ ⓑ 진입점이 fixture.ts 에 닿는다 (red)
+  ✓ ⓒ 진입점 말고 도달 0건 (red)
+  ✓ ⓓ tsconfig paths·baseUrl 선언 (red)
+           ::gate-readiness-failure::gate=frontend-fixture-reach|waited_for=/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/gates/fixtures/frontend-fixture-reach/no-script/scripts/reachable-from-entry.mjs|limit=대기 없음|elapsed=0초|detail=판정부 스크립트가 없다. 레인 E 가 만든 도달성 워커가 이 체크아웃에 없으면 검사 대상을 한 건도 보지 못한다.
+[selftest] ⓔ 판정부 스크립트 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+           ::gate-readiness-failure::gate=frontend-fixture-reach|waited_for=/mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/gates/fixtures/frontend-fixture-reach/no-entry/src/main.tsx|limit=대기 없음|elapsed=0초|detail=운영 진입점이 없다.
+[selftest] ⓕ 운영 진입점 부재 → red(준비) OK (이 케이스가 재는 것이 준비 실패다)
+frontend-fixture-reach-selftest green — 검사 6건 전건 기대대로 (red 3 · red(준비) 2 · green 1).

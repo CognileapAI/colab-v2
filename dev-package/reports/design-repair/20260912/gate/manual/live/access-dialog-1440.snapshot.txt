@@ -1,0 +1,7 @@
+- generic "잠긴 데이터셋접근 요청이 데이터에 접근을 요청할까요?교수 또는 승인을 맡은 연구원이 검토해요.왜 필요한지 적어 주세요 (선택)그만두기요청 보내기" [ref=e1] clickable [onclick]
+  - heading "잠긴 데이터셋" [level=1, ref=e2]
+  - button "접근 요청" [ref=e3]
+  - heading "이 데이터에 접근을 요청할까요?" [level=3, ref=e4]
+  - textbox "왜 필요한지 적어 주세요 (선택)" [ref=e7]
+  - button "그만두기" [ref=e5]
+  - button "요청 보내기" [ref=e6]

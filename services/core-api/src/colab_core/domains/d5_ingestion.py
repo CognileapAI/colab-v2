@@ -28,6 +28,18 @@ from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
+
+_OPERATOR_EXPORT = text("""
+    INSERT INTO d5_operator_export (id, source_id, lab_id, occurred_at, payload)
+    VALUES (:id, :source_id, current_lab_id(), now(), CAST(:payload AS jsonb))
+    ON CONFLICT (source_id) DO NOTHING
+""")
+
+def _append_operator_export(session: Session, payload: dict) -> str:
+    source_id = str(Ulid.generate())
+    session.execute(_OPERATOR_EXPORT, {"id": str(Ulid.generate()), "source_id": source_id,
+                                       "payload": json.dumps({"source_id": source_id, **payload}, ensure_ascii=False)})
+    return source_id
 from ..ports.ingestion import (HeldAutoMetadata, TransferFileRecord, TransferRecord,
                                UploadFileRecord, UploadRecord)
 
@@ -368,6 +380,10 @@ class UploadLedgerAdapter:
                 "carries_lat": f.carries_lat, "carries_lon": f.carries_lon,
                 "relative_path": f.relative_path,
             })
+        _append_operator_export(self._session, {"actor_id": str(uploader_account_id),
+                                                "target_id": str(upload_id),
+                                                "action": "upload.accepted",
+                                                "file_count": len(files)})
 
     def publish_accepted(self, *, upload_id: Ulid, actor_account_id: Ulid,
                          files: list[UploadFileRecord]) -> bool:
@@ -393,8 +409,15 @@ class UploadLedgerAdapter:
 
     def mark_registered(self, upload_id: Ulid) -> bool:
         """등록 전환 도장. **이미 찍혀 있으면 False** — 호출자가 409 를 낸다."""
-        return self._session.execute(
-            _MARK_REGISTERED, {"id": str(upload_id)}).first() is not None
+        changed = self._session.execute(_MARK_REGISTERED, {"id": str(upload_id)}).first() is not None
+        if changed:
+            actor = self._session.execute(
+                text("SELECT uploader_account_id FROM d5_upload WHERE id=:id"),
+                {"id": str(upload_id)}).scalar_one()
+            _append_operator_export(self._session, {"actor_id": actor.strip(),
+                                                    "target_id": str(upload_id),
+                                                    "action": "upload.registered"})
+        return changed
 
     def insert_reused_grid_files(self, *, upload_id: Ulid, files: list[dict]) -> None:
         for row in files:

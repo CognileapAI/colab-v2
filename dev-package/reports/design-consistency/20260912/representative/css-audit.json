@@ -1,0 +1,86 @@
+[
+ {
+  "file": "../design-preview.css",
+  "small_font": [],
+  "neg_margin": [],
+  "undefined_token": [],
+  "shadow": [
+   {
+    "line": 12,
+    "value": "none"
+   }
+  ],
+  "local_token_def": [],
+  "motion_lines": 0,
+  "reduced_motion": false,
+  "contrast": [
+   {
+    "line": 10,
+    "selector": ".design-preview .catalog-page .hcnt",
+    "fg": "#565c63",
+    "bg": "#e8ecf2",
+    "ratio": 5.7,
+    "aa": true
+   },
+   {
+    "line": 71,
+    "selector": ".design-preview :is(.pj-inp, .pj-tarea)",
+    "fg": "#121619",
+    "bg": "#ffffff",
+    "ratio": 18.19,
+    "aa": true
+   },
+   {
+    "line": 75,
+    "selector": ".design-preview .pj-seg button.on",
+    "fg": "#121619",
+    "bg": "#ffffff",
+    "ratio": 18.19,
+    "aa": true
+   },
+   {
+    "line": 80,
+    "selector": ".design-preview .chip--lineage",
+    "fg": "#565c63",
+    "bg": "#e8ecf2",
+    "ratio": 5.7,
+    "aa": true
+   },
+   {
+    "line": 81,
+    "selector": ".design-preview .pj-err",
+    "fg": "#a3222b",
+    "bg": "#fff0f1",
+    "ratio": 6.73,
+    "aa": true
+   },
+   {
+    "line": 83,
+    "selector": ".design-preview .btn-primary",
+    "fg": "#ffffff",
+    "bg": "#1369e9",
+    "ratio": 4.97,
+    "aa": true
+   },
+   {
+    "line": 84,
+    "selector": ".design-preview .btn-secondary",
+    "fg": "#121619",
+    "bg": "#ffffff",
+    "ratio": 18.19,
+    "aa": true
+   }
+  ]
+ },
+ {
+  "file": "shell/tokens.css",
+  "small_font": [],
+  "neg_margin": [],
+  "undefined_token": [],
+  "shadow": [],
+  "local_token_def": [],
+  "motion_lines": 0,
+  "reduced_motion": false,
+  "contrast": []
+ }
+]

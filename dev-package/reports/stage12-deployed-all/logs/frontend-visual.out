@@ -1,0 +1,6 @@
+::gate-readiness-failure::gate=frontend-visual|cause=입력미선언|missing=COLAB_VISUAL_URLS|detail=실화면 계측 대상 URL 이 선언되지 않았다. 선언하는 법 = COLAB_VISUAL_URLS='http://127.0.0.1:5173/ http://127.0.0.1:5173/projects' bash gates/run.sh frontend-visual · 이번 회차에 대상이 없다면 COLAB_VISUAL_EXEMPT=1 로 **명시 면제**를 선언한다(건수가 출력에 찍힌다).
+::error::frontend-visual red(준비) — **검사에 필요한 입력이 선언되지 않았다.** 판정 red 가 아니다.
+   검사 대상은 한 건도 보지 못했다 — 「대상이 규율을 어겼다」가 아니라 「아무도 값을 말하지 않았다」다.
+   선언되지 않은 것: COLAB_VISUAL_URLS
+   실화면 계측 대상 URL 이 선언되지 않았다. 선언하는 법 = COLAB_VISUAL_URLS='http://127.0.0.1:5173/ http://127.0.0.1:5173/projects' bash gates/run.sh frontend-visual · 이번 회차에 대상이 없다면 COLAB_VISUAL_EXEMPT=1 로 **명시 면제**를 선언한다(건수가 출력에 찍힌다).
+   ⚠ 미선언도 **red 다.** 기본값·건너뛰기로 green 을 만들지 않는다 (CLAUDE.md §4).

@@ -1,0 +1,26 @@
+{
+  "schema": "colab-slack-activation-smoke/1",
+  "source_checkout": ".",
+  "hook_event": "Stop",
+  "hook_state": {
+    "installed": 1,
+    "active": 1,
+    "trusted_by_normal_review": true
+  },
+  "runtime": {
+    "environment": "WSL",
+    "codex_cli": "0.154",
+    "shared_app_server": "0.153.4"
+  },
+  "session_id": "01a090e5-9aec-7710-a6f0-1dcfb7a9bfac",
+  "completion_id": "31c21d20ed3b896a73495f03",
+  "delivery": {
+    "automatic_stop": true,
+    "pending": false,
+    "sending": false,
+    "sent": true,
+    "uncertain": false,
+    "receipt_sha256": "3cbe500b31e6417c21cd8316457257bddb850ec55ad5cd0017b667c04ad13098"
+  },
+  "manual_hook_or_sender_invoked": false
+}

@@ -1,0 +1,51 @@
+# service-tests-pipeline-worker 내부 worker 4 · xdist loadfile
+   t.py::test_nc_that_is_hdf5_container
+   tests/test_detect.py::test_classic_netcdf
+   tests/test_worker_events.py::test_mixed_formats_fail_permanently
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/tests/fixture_builders.py:158: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lon[:] = np.linspace(124, 130, 20).reshape(4, 5)
+   
+   tests/test_cog_nan_coords.py::test_좌표_셀이_NaN_이어도_터지지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/src/colab_pipeline/d5/cog.py:89: RuntimeWarning: invalid value encountered in cast
+       rows = np.clip(np.rint((lat_max - la) / lat_step), 0, ny - 1).astype("i8")
+   
+   tests/test_cog_nan_coords.py::test_좌표가_NaN_인_셀의_값은_버린다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/src/colab_pipeline/d5/cog.py:90: RuntimeWarning: invalid value encountered in cast
+       cols = np.clip(np.rint((lo - lon_min) / lon_step), 0, nx - 1).astype("i8")
+   
+   tests/test_cog_nan_coords.py::test_좌표가_전부_결측이면_거절한다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/src/colab_pipeline/d5/cog.py:72: RuntimeWarning: All-NaN slice encountered
+       lat_min, lat_max = float(np.nanmin(lat)), float(np.nanmax(lat))
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:37: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:40: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lat[:] = np.linspace(33, 39, _ROWS * _COLS).reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_경도_차원을_먼저_선언해도_격자는_행_열_이다
+   tests/test_parse_netcdf_grid_axes.py::test_격자_문구도_전치되지_않는다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:41: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       lon[:] = np.linspace(124, 130, _ROWS * _COLS).reshape(_ROWS, _COLS)
+   
+   tests/test_parse_netcdf_grid_axes.py::test_위도_차원을_먼저_선언한_파일은_그대로다
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/tests/test_parse_netcdf_grid_axes.py:70: DeprecationWarning: Setting the shape on a NumPy array has been deprecated in NumPy 2.5.
+     As an alternative, you can create a new view using np.reshape (with copy=False if needed).
+       v[:] = np.arange(_ROWS * _COLS, dtype="f4").reshape(_ROWS, _COLS)
+   
+   tests/test_pipeline.py::test_human_uploaded_cog_is_never_our_artifact
+     /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/services/pipeline-worker/.venv/lib/python3.12/site-packages/rasterio/__init__.py:367: NotGeoreferencedWarning: Dataset has no geotransform, gcps, or rpcs. The identity matrix will be returned.
+       dataset = DatasetReader(path, driver=driver, sharing=sharing, thread_safe=thread_safe, **kwargs)
+   
+   -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+   275 passed, 22 warnings in 7.19s
+service-tests-pipeline-worker — 선택자 «not e2e and not dbint» · 수집 275 · 실행 275 · skipped 0 · deselected 50 · failed 0 · errors 0 · 소요 7.1초
+service-tests-pipeline-worker green — 실행 275건 전부 통과 (skipped 0 · deselected 50 은 요약줄에 드러나 있다).

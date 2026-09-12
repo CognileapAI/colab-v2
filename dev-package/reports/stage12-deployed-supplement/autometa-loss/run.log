@@ -1,0 +1,9 @@
+# 계수 롤 postgres — rolsuper=true · rolbypassrls=true (경계 밖) · FORCE RLS 표 28개
+자동 정보 되쓰기 — 발행 6 · 반영 6 · 면제 0 (선언 0 건) · 미반영 0
+  세는 단위 = (업로드, 칸) 쌍 · 칸 = format·crs·grid · 시점 = 2026-09-11T11:20:36+09:00
+# 경계 대조 — 관리자 롤 6|6|0|0 ↔ 경계 롤 'colab_app' 0|0|0|0 (갈렸다)
+autometa-loss green — 반영 6 / 발행 6 · 면제 0
+── 요약 ────────────────────────────────────────────────────
+  green  autometa-loss
+  ── 계 : green 1 / red(판정) 0 / red(준비) 0
+  요약 JSON  /mnt/f/00_Project/00 CoLAB/30 CoLAB-v2/dev-package/reports/stage12-deployed-supplement/autometa-loss/gate-summary.json

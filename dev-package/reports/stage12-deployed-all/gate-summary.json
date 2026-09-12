@@ -1,0 +1,501 @@
+{
+ "schema": "colab-gate-summary/1",
+ "tree": "0eb58cec48e3028b4c412390bb665335c47ce54e",
+ "commit": "9e3ff19f6d27306e0e359e8ff2d829f8f4a7452f",
+ "started": "2026-09-11T01:55:11Z",
+ "finished": "2026-09-11T02:20:02Z",
+ "parallelism": 1,
+ "counts": {
+  "green": 54,
+  "red_판정": 4,
+  "red_준비": 2,
+  "red_준비_입력미선언": 2
+ },
+ "gates": [
+  {
+   "name": "planning-freshness",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-lint",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-breaking",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-lint",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-breaking",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "seam-consistency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "generated-up-to-date",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "import-boundary",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "banned-import",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ai-no-lineage-write",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-boundary",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "migration-single-head",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "schema-diff",
+   "status": "red_판정",
+   "state": "red_판정",
+   "exit": 1,
+   "readiness": null
+  },
+  {
+   "name": "migration-drift",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-coverage",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-effect",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "work-item-consistency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "stage2-markers",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "autometa-loss",
+   "status": "red_판정",
+   "state": "red_판정",
+   "exit": 1,
+   "readiness": null
+  },
+  {
+   "name": "frontend-typecheck",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-test",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-fixture-reach",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-visual",
+   "status": "red_준비",
+   "state": "red_준비",
+   "exit": 78,
+   "readiness": "::gate-readiness-failure::gate=frontend-visual|cause=입력미선언|missing=COLAB_VISUAL_URLS|detail=실화면 계측 대상 URL 이 선언되지 않았다. 선언하는 법 = COLAB_VISUAL_URLS='http://127.0.0.1:5173/ http://127.0.0.1:5173/projects' bash gates/run.sh frontend-visual · 이번 회차에 대상이 없다면 COLAB_VISUAL_EXEMPT=1 로 **명시 면제**를 선언한다(건수가 출력에 찍힌다)."
+  },
+  {
+   "name": "preview-tile-slot",
+   "status": "red_판정",
+   "state": "red_판정",
+   "exit": 1,
+   "readiness": null
+  },
+  {
+   "name": "artifact-ownership",
+   "status": "red_판정",
+   "state": "red_판정",
+   "exit": 1,
+   "readiness": null
+  },
+  {
+   "name": "e2e-format-coverage",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "render-latency",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "backup-cron-streak",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ops-observability",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "exec-bit",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "harness-eval",
+   "status": "red_준비",
+   "state": "red_준비",
+   "exit": 78,
+   "readiness": "::gate-readiness-failure::gate=harness-eval|cause=입력미선언|missing=COLAB_HARNESS_EVAL|detail=과제를 돌릴지 말지가 선언되지 않았다. 선언하는 법 = COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=<초> COLAB_EVAL_BUDGET=<USD> bash gates/run.sh harness-eval (실제 모델을 부른다) · 이번 회차에 돌리지 않는다면 COLAB_HARNESS_EVAL_EXEMPT=1 로 **명시 면제**를 선언한다(과제 건수가 출력에 찍힌다). 값 대조는 =1 하나뿐이다."
+  },
+  {
+   "name": "service-tests-core-api",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-ai-service",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-viz-render",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-pipeline-worker",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "contract-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "event-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "boundary-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-boundary-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "db-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "rls-effect-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "seam-consistency-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "generated-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "work-item-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "stage2-markers-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "autometa-loss-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "preview-tile-slot-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "artifact-ownership-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "e2e-format-coverage-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "render-latency-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "backup-cron-streak-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "ops-observability-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "exec-bit-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "migration-drift-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-typecheck-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-test-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-fixture-reach-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "frontend-visual-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "harness-eval-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  },
+  {
+   "name": "service-tests-selftest",
+   "status": "green",
+   "state": "green",
+   "exit": 0,
+   "readiness": null
+  }
+ ],
+ "targets": {
+  "requested": "all",
+  "selected": [
+   "planning-freshness",
+   "contract-lint",
+   "contract-breaking",
+   "event-lint",
+   "event-breaking",
+   "seam-consistency",
+   "generated-up-to-date",
+   "import-boundary",
+   "banned-import",
+   "ai-no-lineage-write",
+   "db-boundary",
+   "migration-single-head",
+   "schema-diff",
+   "migration-drift",
+   "rls-coverage",
+   "rls-effect",
+   "work-item-consistency",
+   "stage2-markers",
+   "autometa-loss",
+   "frontend-typecheck",
+   "frontend-test",
+   "frontend-fixture-reach",
+   "frontend-visual",
+   "preview-tile-slot",
+   "artifact-ownership",
+   "e2e-format-coverage",
+   "render-latency",
+   "backup-cron-streak",
+   "ops-observability",
+   "exec-bit",
+   "harness-eval",
+   "service-tests-core-api",
+   "service-tests-ai-service",
+   "service-tests-viz-render",
+   "service-tests-pipeline-worker",
+   "contract-selftest",
+   "event-selftest",
+   "boundary-selftest",
+   "db-boundary-selftest",
+   "db-selftest",
+   "rls-effect-selftest",
+   "seam-consistency-selftest",
+   "generated-selftest",
+   "work-item-selftest",
+   "stage2-markers-selftest",
+   "autometa-loss-selftest",
+   "preview-tile-slot-selftest",
+   "artifact-ownership-selftest",
+   "e2e-format-coverage-selftest",
+   "render-latency-selftest",
+   "backup-cron-streak-selftest",
+   "ops-observability-selftest",
+   "exec-bit-selftest",
+   "migration-drift-selftest",
+   "frontend-typecheck-selftest",
+   "frontend-test-selftest",
+   "frontend-fixture-reach-selftest",
+   "frontend-visual-selftest",
+   "harness-eval-selftest",
+   "service-tests-selftest"
+  ]
+ }
+}

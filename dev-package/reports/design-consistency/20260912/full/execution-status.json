@@ -1,0 +1,55 @@
+{
+  "task_id": "85c6ae99b5194e428930652f3839c0f3",
+  "updated_at": "2026-09-11T20:52:00.335469+00:00",
+  "implementation": "complete",
+  "manual_visual_review": "accepted",
+  "independent_source_review": "approve",
+  "scene_variants": 180,
+  "scene_states": 30,
+  "viewports": [
+    375,
+    768,
+    1440
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "small_text_findings": 0,
+  "contrast_findings": 0,
+  "root_overflow_findings": 0,
+  "console_errors": 0,
+  "theme_browser_steps": 11,
+  "interaction_checks": 8,
+  "residual_layout_checks": 6,
+  "frontend_tests_passed": 1216,
+  "required_gates": {
+    "green": 4,
+    "red_판정": 0,
+    "red_준비": 0
+  },
+  "run_id": "898147becdeb435c802691ef671b5d21",
+  "source_digest": "905a6303bb2a5b9c2ca090e0e7f3e8350944c06b4f6cb6362faf4240dcd0508f",
+  "production_build": "passed",
+  "audit_build": "passed",
+  "fixture_types": "passed",
+  "diff_check": "passed",
+  "remaining_required_work": [],
+  "limitations": [
+    "Local fixture backend; no production business-data writes or backend persistence E2E.",
+    "Chromium viewport emulation; physical iOS/Safari not tested.",
+    "30 declared states, not every possible data and permission combination."
+  ],
+  "plan_verification_rows": {
+    "all_scenes_and_theme_keyboard": "passed",
+    "independent_review_four_gates_build_hash": "passed",
+    "theme_green_and_real_browser": "passed",
+    "route_and_state_inventory": "passed",
+    "viewport_theme_font_contrast_overflow": "passed",
+    "representative_interactions": "passed",
+    "regression_and_build": "passed",
+    "intent_outcome_comparison": "accepted",
+    "human_visual_review": "accepted",
+    "production_shell_fixture_style_parity": "passed"
+  }
+}

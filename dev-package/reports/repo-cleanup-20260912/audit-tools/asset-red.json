@@ -1,0 +1,5 @@
+{
+  "case": "built audit preview includes local tile SVG",
+  "passed": false,
+  "actual_svg_files": 0
+}
