@@ -96,8 +96,9 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [x] 행별 「비밀번호 재설정」(값·확인 2칸)·「비활성화/재활성화」를 붙인다. 비활성 행의 버튼 라벨이 「재활성화」로 바뀌는지 검사한다.
 - [x] 계정 추가 폼과 초기 비밀번호 칸은 그대로 둔다. 로그인·첫 변경 화면은 고치지 않는다.
 - [x] 재설정 입력값이 DOM 잔존·`draftVault`·로그 어디에도 남지 않음을 검사한다.
-- [ ] 기존 작업 보호(`useWorkProtection`) 연결을 유지한다. `frontend-typecheck`, `frontend-test` 를 통과한다. CSS 변경 시 `frontend-visual` 을 더한다.
-  - 미이행 = `frontend-visual` 뿐이다(실화면 URL 미선언 · red(준비)). `useWorkProtection` 연결·`frontend-typecheck`·`frontend-test` 는 green.
+- [x] 기존 작업 보호(`useWorkProtection`) 연결을 유지한다. `frontend-typecheck`, `frontend-test` 를 통과한다. CSS 변경 시 `frontend-visual` 을 더한다.
+  - 종전 미이행분 `frontend-visual` 해소(작업 6 검토 조건 ②) — **green**. 로컬 dev 서버(`npm run dev`)의 두 화면을 `COLAB_VISUAL_URLS` 로 선언해 1회 실행: 「페이지 2건 · 13px 미만 0건 · 대비<4.5 0건 · 스크린샷 4장 (허용 접두사 0개)」. 근거 = `dev-package/reports/r-login-backoffice/task6/frontend-visual/`.
+  - ⚠ 대상은 로그인 화면과 `/account-admin` 경로 두 개다. 로그인하지 않은 상태라 계정 목록 표 자체는 이 계측에 들어가지 않았다 — 그 자리는 `[미확인]` 이다.
 
 ### Task 5: dev 배포 전수와 대장·인계
 
@@ -114,6 +115,32 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [x] 별도 작업 사본의 보고서 2개 디렉터리(`reports/stage3-login-hardening/` · `reports/stage3-password-change/`) 를 승인된 전달 경로로 레포에 복사하고 hash 를 대조한 뒤 커밋한다. 커밋 확인 후 사본을 삭제한다(intent Q6). — 46파일 반입 · 커밋 후 `cmp` 전건 대조 46/46 일치 · 사본 `colab-stage3-staging-deploy` 와 로컬 브랜치 `codex/stage3-staging-deploy` 삭제. `gate-summary.json` 10건은 `.gitignore` 지정 보존명 `gate-summary.record.json` 으로, 게이트 로그 12건은 명시 반입.
 - [x] `work-item-consistency` 를 실행하고 종료코드를 기록한다. — **exit 1 · green 0 / red(판정) 1 / red(준비) 0.** 불일치 = `㈕ OP-NOTIFY-1` 이 대장 `stage: after_stage2` 인데 `CLAUDE.md` 괄호 목록에 없다. **이 레인이 만든 것이 아니다** — `work-items.yaml`·`CLAUDE.md` 둘 다 이 레인 무수정이고, `948cd2a5`(운영 알림 레인 · `origin/main` 병합분)가 항목만 넣고 괄호를 갱신하지 않았다. **`origin/main` 자체가 이 게이트에 red 였다.** → **해소** — `CLAUDE.md` 기계 표식 안의 괄호에 그 항목을 더해 닫았다(별도 커밋 `b2b1df5b` · 규칙 문안 0글자 · 항목 수 17→18). 검사 대상을 줄이지 않고 지적된 불일치 자체를 없앴다. **재실행 = exit 0 · green 1 / red(판정) 0 / red(준비) 0.** 다른 레인의 누락을 대신 닫은 것이라 커밋을 분리했다 — 오케스트레이터 검토 대상.
 - [ ] 실제 종료코드·3계수·미실행·잔여 제한을 보고한다. 전체 체크 완료 시에만 구현 완료로 표시한다.
+
+### Task 6: 관리자 지정·해제와 관리자 전 연구실 읽기
+
+**Files:** Create `db/platform/versions/0028_operator_read_policy.py`, `db/platform/tests/0028-assertions.sql`, `db/platform/tests/0028-drift.sh`, `services/core-api/tests/test_operator_designation.py`, `dev-package/reports/r-login-backoffice/task6/overlap.md`; Modify `contracts/seams/fe-core.yaml`, `frontend/src/generated/fe-core.ts`, `frontend/src/routes/AccountAdminPage.tsx`, `frontend/src/shell/Gnb.tsx`, `frontend/test/account-admin.test.tsx`, `frontend/test/shell.test.tsx`, `db/platform/schema.sql`, `gates/tools/rls-effect.sh`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/app/{deps.py,routes/accounts.py,routes/catalog.py}`, `services/core-api/src/colab_core/kernel/{auth.py,authn.py,db_credentials.py,login_sessions.py,scope.py,session_token.py}`, `services/core-api/tests/{conftest.py,test_account_status.py,test_account_backoffice.py,test_body_access.py,test_route_table.py}`, `dev-package/work-items.yaml`.
+**Interfaces:** `POST /admin/accounts/{accountId}/operator`(요청 `{operator}` · 응답 `{accountId, operator}`) · `POST /admin/accounts` 에 선택 칸 `operator` · `ServiceAccountSummary.operator` · GUC `app.operator_read` ＋ SQL 함수 `is_operator_read()` · `apply_scope(session, subject, operator_read=…)`.
+정본 = 승인 intent [`2026-09-12-operator-designation.md`](../../intent/2026-09-12-operator-designation.md).
+
+- [x] **검토 조건 ①** — 비활성 계정이 파일 자격(`TrackedPasswordIssuer`)·접속 코드(`TrackedPlantedCodeIssuer`) 로도 로그인하지 못한다. RED 2건 실측(둘 다 201) → `AccountInactive` 로 401, 봉투·실패 제한 셈은 DB 경로와 동일. dev 실물 겹침 건수는 문서에서 닿지 않아 `[미확인]` ＋ 재는 명령을 `reports/r-login-backoffice/task6/overlap.md` 에 남겼다.
+- [x] **검토 조건 ②** — `frontend-visual` 1회 실행 green (위 작업 4 마지막 항목에 계수 기재).
+- [x] 관리자 지정·해제 경로가 없는 RED 를 확인한다(14 failed / 1 passed).
+- [x] 지정·해제 엔드포인트를 계약에 **추가만**으로 더하고 생성 클라이언트를 재생성한다. `contract-breaking` 기준 `origin/main` green.
+- [x] 관리자 누구나 지정·해제한다. 자기 자신 해제 400 · 마지막 한 명 해제 400.
+- [x] 마지막 한 명 셈을 **자문 잠금 아래**에서 한다. 동시 해제 2건에 통과는 1건뿐이고 관리자 1명이 남는다(진 쪽 코드는 400 또는 403 — 이긴 트랜잭션이 진 쪽의 운영자 행을 먼저 지우면 자격 확인에서 걸린다).
+- [x] 지정·해제가 그 계정의 자격 버전을 올리고 열린 세션을 닫는다. 남의 세션은 불변이다.
+- [x] `POST /admin/accounts` 에 `operator` 선택 칸을 더한다. 생략하면 아니다.
+- [x] 스코프 커널에 **명시적 읽기 스코프**를 더한다 — `apply_scope(..., operator_read=True)` 는 운영자가 아닌 주체에 심지 않고, 요청은 이 값을 보낼 통로가 없다.
+- [x] 마이그레이션 `0028_operator_read_policy` — 테넌트 표 31개에 `operator_read`(FOR SELECT · PERMISSIVE). **쓰기 정책에는 걸지 않는다.** `schema.sql` 반영 · `0028-assertions.sql`·`0028-drift.sh`(+x) 신설.
+- [x] 세션 서명에 관리자 여부를 싣고 **매 요청 `service_operator` 에서 다시 도출**한다. 주장과 어긋나면 거절한다.
+- [x] cross-tenant 음성 시험이 비관리자에 그대로 통과한다. 관리자 **쓰기**도 남의 연구실에서 403/404 다.
+- [x] 양성 — 관리자가 두 연구실의 카탈로그·데이터셋 상세를 읽는다.
+- [x] `gates/config/rls-allowlist.toml` 은 고치지 않았다 — 게이트가 요구하지 않았다(「그 밖의 정책이 더 걸려 있는 것은 red 가 아니다」). 대신 `gates/tools/rls-effect.sh` 의 정책 목록 오라클을 **넓히지 않고 늘렸다**: 기대 목록에 `operator_read` 를 더하면서 ⑴ RESTRICTIVE 는 `d3_file.body_access` 하나뿐 ⑵ `operator_read` 는 모든 표에서 SELECT 전용 두 검사를 새로 붙였다.
+- [x] 프런트 — 행별 관리자 토글(확인 대화상자 · 자기 자신 비활성) · 발급 폼 체크박스 · GNB 「전체 연구실」 표기.
+- [x] `db/platform/tests/0028-drift.sh` 실행비트를 인덱스에 기록한다(`git update-index --chmod=+x` · 100755 실측).
+- [x] 대장에 `BO-3` 을 등재한다(open · after_stage2 · depends_on `BO-2`).
+- [ ] `work-item-consistency` green. — **red(판정) 1건**: ㈕ `BO-3` 이 `CLAUDE.md` 의 `after_stage2` 괄호 목록에 없다. 지시에 따라 `CLAUDE.md` 를 고치지 않고 보고한다 — 필요한 편집은 그 괄호의 `` `BO-2` `` 뒤에 `` ·`BO-3` `` 한 토막뿐이다.
+- [ ] **특정 연구실 하나로 좁히는 전환 동작** — 미구현. 읽기 op 들이 연구실 인자를 받아야 하는데, 그것은 「경계는 요청에서 오지 않는다」(`CLAUDE.md §3-5`)를 건드리는 계약 판정이다. 지금 선 것은 intent 문면의 「전체 보기 **표시**」까지다.
 
 ## 계획 자체 점검
 

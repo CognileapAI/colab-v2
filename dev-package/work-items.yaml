@@ -3248,3 +3248,16 @@ items:
     deadline: null
     note: "구현·로컬 검증 완료, 배포 대기. 미실측: arm64, 신규 2종 latency, 149 MB GRIB 전체-band COG 비용."
     sources: ["dev-package/intent/2026-09-10-preview-all-formats.md", "dev-package/prd/specs/preview-all-formats.md", "dev-package/prd/rounds/R-PREVIEW-ALL-FORMATS.md", "dev-package/sessions/20260910-preview-all-formats.md"]
+  - id: BO-3
+    name: "운영자 백오피스 — 관리자 지정·해제와 관리자 전 연구실 읽기"
+    status: open
+    stage: after_stage2
+    owner: "D1 / core-api · frontend"
+    entry_conditions: ["BO-2 의 계정 목록 화면이 있다 — 토글이 그 행에 붙는다", "승인 intent 2026-09-12 운영자 지정의 범위로 한정 — 관리자의 타 연구실 쓰기·역할/연구실 변경 UI·메일 발송은 범위 밖"]
+    depends_on: [BO-2]
+    completion_def: "넷을 모두 만족한다. ⑴ 계정 목록의 각 행에 관리자 지정·해제 토글이 있고 발급 폼에 관리자 체크박스가 있다. ⑵ 기존 관리자 누구나 지정·해제하고, 자기 자신 해제와 마지막 관리자 해제는 400 으로 거절된다(마지막 한 명 셈은 잠금 아래 · 동시 해제에도 관리자 1명 이상이 남는다). ⑶ 지정·해제 즉시 그 계정의 기존 로그인이 모든 기기에서 끝난다(자격 버전 +1 ＋ 원장 revoke). ⑷ 관리자가 모든 연구실의 데이터를 읽기 전용으로 열람한다 — 쓰기(수정·삭제·업로드)는 소속 연구실 범위 그대로이고, 비관리자와 관리자 쓰기의 cross-tenant 음성 시험이 둘 다 통과한다."
+    evidence: null
+    deadline: null
+    note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0028_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다)."
+    sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
+
