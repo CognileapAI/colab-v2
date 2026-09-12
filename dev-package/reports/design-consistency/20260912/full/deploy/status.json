@@ -1,0 +1,24 @@
+{
+  "completedAt": "2026-09-11T21:28:24.146083+00:00",
+  "dv": {
+    "url": "https://d31zgpff2091oh.cloudfront.net/",
+    "publicFilesMatched": 96,
+    "doctorBefore": 15,
+    "doctorAfter": 15,
+    "testsPassed": 1216
+  },
+  "st": {
+    "url": "https://www.colab-hydro.com/",
+    "image": "colab-v2/frontend:design-st-r5-20260912-c329c32d-dirty",
+    "imageId": "sha256:1c38053acba420ee8c0446f008fb78c2b1a5cd1ba32b2f2f8ebae0a2df836fe1",
+    "publicFilesMatched": 96,
+    "healthBefore": 15,
+    "healthAfter": 15,
+    "testsPassed": 1253,
+    "additionalSceneVariants": 16,
+    "otherContainersUnchanged": 7,
+    "preservedRelease": "login-hardening-final-r5-20260912"
+  },
+  "publicBrowserChecks": 8,
+  "remaining": []
+}

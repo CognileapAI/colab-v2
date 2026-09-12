@@ -1,0 +1,11 @@
+{
+  "frontend/audit-design.tsx": "9960a499ad98f5490365fd95765990cb6d8d18d2c178b9ebaa3270ae27a5f6ed",
+  "frontend/design-preview.html": "2c19d7b9ab8ea43a7d3d0f03c6949f7d9921c7ddc28b5429527f7ba787e614b3",
+  "frontend/design-preview.js": "2ae4039840d486ac8d71514430ca9061c41add547b7a1a93ffa6fa98017d5bce",
+  "frontend/design-preview.css": "28c1eecefbe205a431a7ab86c67dc49cfd880108ef1180660e1a47b323fcc5b2",
+  "frontend/src/shell/tokens.css": "5a7aeebd3961ac04eab9e40341a59dc63e5ffa13952fcaf37645acd229f2236d",
+  "dev-package/intent/2026-09-12-design-consistency.md": "b2c724e89b011b05fafbf2bd4a1f21f78feb46fab69aee0997d2b69d608a3850",
+  "dev-package/prd/specs/S-DESIGN-CONSISTENCY-20260912.md": "052e66e7366a27efb3ca8bf888b3ebbbc36eeee7826567bf4a5240c16a7655c0",
+  "dev-package/prd/rounds/R-DESIGN-CONSISTENCY-20260912.md": "a42b787a267eef76b4948ccc98dbeaa20f7704b3fcdf97e4c82f1c63ea53d0df",
+  "frontend/test/css-residual-rc11.test.ts": "aa3d618ea018e1bca78bba08ff712c5c724fe01cde414b6884413c4f98725f35"
+}

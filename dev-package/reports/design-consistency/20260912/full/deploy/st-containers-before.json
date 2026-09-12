@@ -1,0 +1,50 @@
+[
+  {
+    "name": "/colab_v2_staging_core_api",
+    "id": "6dc89b8ebfeafd3eab12fa527058f5d40af5685f0ee2b74f51182be7aa655d25",
+    "image": "sha256:67f6f442b6cbdf2747ce8869c2b9dc8d32be3b35549abd7210c0522114696177",
+    "tag": "colab-v2/core-api:stage3-password-confirm-20260912"
+  },
+  {
+    "name": "/colab_v2_staging_frontend",
+    "id": "060d1965a071ea2ad83c0be70908faf800afcb0ef18d7e706a51ea0f845deca6",
+    "image": "sha256:ce295173a564c6de4ba77747ea573c11fa1ba9122ef40cbc564132f6a6f381e8",
+    "tag": "colab-v2/frontend:stage3-password-confirm-20260912"
+  },
+  {
+    "name": "/colab_v2_staging_nginx",
+    "id": "bbda5483331e0a947e8d69bfebfe902d06333769b8bfc41af4e09f787d09833e",
+    "image": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+    "tag": "nginx:1.27-alpine"
+  },
+  {
+    "name": "/colab_v2_staging_pipeline_worker",
+    "id": "f6ea828bcd6147a46982210d0093c8277d0f09d92343478132cda177ce8c306d",
+    "image": "sha256:b3f98600aa2d2372b9b02d403edccc7dc7df733957fa06c30ff17322f0025f32",
+    "tag": "colab-v2/pipeline-worker:b63c9e8a0d40-dirty"
+  },
+  {
+    "name": "/colab_v2_staging_viz_render",
+    "id": "56024adbe01e60add5058db4f4ac9b667df0ae84037595ded8b42d485383049a",
+    "image": "sha256:59dacc23fde3c3cdd729a526af56ca578bafc3fd475f32bc7f85ddb8e24edb62",
+    "tag": "colab-v2/viz-render:b63c9e8a0d40-dirty"
+  },
+  {
+    "name": "/colab_v2_staging_ai_service",
+    "id": "cf6ea3ba4907ea933edff0576e86fc63e0c6459b8197c7979d33724ae16df1ad",
+    "image": "sha256:8a9fc0a6455816ac1bb4a9afa6ac30566259800cea7b2e4224e846d497c26f23",
+    "tag": "colab-v2/ai-service:b63c9e8a0d40-dirty"
+  },
+  {
+    "name": "/colab_v2_staging_cloudflared",
+    "id": "0064ff21cfc8f0df3a1d76c76e8f4cb0040d8cb8542e34df0ca83b70aedf7c49",
+    "image": "sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0",
+    "tag": "cloudflare/cloudflared:latest"
+  },
+  {
+    "name": "/colab_v2_staging_pg",
+    "id": "01dac5bfd1352662bbb282b9faa93fc2872a7120a4cb9fc7f235663cc89a8055",
+    "image": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+    "tag": "postgres:16-alpine"
+  }
+]

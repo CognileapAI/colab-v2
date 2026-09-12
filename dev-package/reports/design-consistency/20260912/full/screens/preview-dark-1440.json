@@ -1,0 +1,73 @@
+{
+  "name": "preview-dark-1440",
+  "visual": {
+    "counts": {
+      "activeRules": 1,
+      "blockedSheets": 0,
+      "interactive": 12,
+      "keyframes": 2,
+      "lowContrast": 0,
+      "reducedMotionBlocks": 4,
+      "sheets": 1,
+      "small": 0,
+      "textElements": 26
+    },
+    "lowContrast": [],
+    "media": {
+      "dark": false,
+      "reducedMotion": false
+    },
+    "small": [],
+    "transitions": {
+      "all 0s": 4,
+      "background 0.14s": 1,
+      "background, border-color 0.14s, 0.14s": 3,
+      "color, background 0.14s, 0.14s": 3,
+      "color, border-color 0.14s, 0.14s": 1
+    },
+    "url": "http://127.0.0.1:5180/audit-design.html?theme=dark&scene=preview&design=full",
+    "viewport": {
+      "h": 900,
+      "w": 1440
+    }
+  },
+  "layout": {
+    "bg": "rgb(17, 22, 29)",
+    "dialog": null,
+    "font": "\"Pretendard Variable\", Pretendard, -apple-system, BlinkMacSystemFont, \"Apple SD Gothic Neo\", \"Segoe UI\", \"Malgun Gothic\", \"Noto Sans KR\", sans-serif",
+    "fonts": [
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable",
+      "Pretendard Variable"
+    ],
+    "inputs": [
+      {
+        "bg": "rgb(26, 34, 44)",
+        "color": "rgb(237, 242, 247)",
+        "size": "13px"
+      }
+    ],
+    "scrollWidth": 1440,
+    "theme": "dark",
+    "width": 1440
+  },
+  "errors": "",
+  "screenshot": "screens/preview-dark-1440.png"
+}

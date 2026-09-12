@@ -1,0 +1,168 @@
+[
+  {
+    "metadata": {
+      "card": {
+        "bottom": 1180.625,
+        "height": 1583.859375,
+        "left": 17,
+        "right": 343,
+        "top": -403.234375,
+        "width": 326,
+        "x": 17,
+        "y": -403.234375
+      },
+      "fields": [
+        {
+          "id": "reg-period-open",
+          "rect": {
+            "bottom": 423.40625,
+            "height": 44,
+            "left": 37,
+            "right": 323,
+            "top": 379.40625,
+            "width": 286,
+            "x": 37,
+            "y": 379.40625
+          }
+        },
+        {
+          "id": "reg-crs",
+          "rect": {
+            "bottom": 511.796875,
+            "height": 47.59375,
+            "left": 37,
+            "right": 323,
+            "top": 464.203125,
+            "width": 286,
+            "x": 37,
+            "y": 464.203125
+          }
+        },
+        {
+          "id": "reg-grid-description",
+          "rect": {
+            "bottom": 625.78125,
+            "height": 73.1875,
+            "left": 37,
+            "right": 323,
+            "top": 552.59375,
+            "width": 286,
+            "x": 37,
+            "y": 552.59375
+          }
+        }
+      ],
+      "theme": "light"
+    }
+  },
+  {
+    "lineage": {
+      "display": "flex",
+      "footer": {
+        "bottom": 900,
+        "height": 69,
+        "left": 0,
+        "right": 375,
+        "top": 831,
+        "width": 375,
+        "x": 0,
+        "y": 831
+      },
+      "height": 357,
+      "scrollWidth": 286,
+      "whiteSpace": "normal",
+      "width": 286
+    }
+  },
+  {
+    "previewControl": {
+      "bg": "rgb(255, 255, 255)",
+      "color": "rgb(18, 22, 25)",
+      "font": "16px",
+      "height": 44
+    }
+  },
+  {
+    "metadata": {
+      "card": {
+        "bottom": 1180.625,
+        "height": 1583.859375,
+        "left": 17,
+        "right": 343,
+        "top": -403.234375,
+        "width": 326,
+        "x": 17,
+        "y": -403.234375
+      },
+      "fields": [
+        {
+          "id": "reg-period-open",
+          "rect": {
+            "bottom": 423.40625,
+            "height": 44,
+            "left": 37,
+            "right": 323,
+            "top": 379.40625,
+            "width": 286,
+            "x": 37,
+            "y": 379.40625
+          }
+        },
+        {
+          "id": "reg-crs",
+          "rect": {
+            "bottom": 511.796875,
+            "height": 47.59375,
+            "left": 37,
+            "right": 323,
+            "top": 464.203125,
+            "width": 286,
+            "x": 37,
+            "y": 464.203125
+          }
+        },
+        {
+          "id": "reg-grid-description",
+          "rect": {
+            "bottom": 625.78125,
+            "height": 73.1875,
+            "left": 37,
+            "right": 323,
+            "top": 552.59375,
+            "width": 286,
+            "x": 37,
+            "y": 552.59375
+          }
+        }
+      ],
+      "theme": "dark"
+    }
+  },
+  {
+    "lineage": {
+      "display": "flex",
+      "footer": {
+        "bottom": 900,
+        "height": 69,
+        "left": 0,
+        "right": 375,
+        "top": 831,
+        "width": 375,
+        "x": 0,
+        "y": 831
+      },
+      "height": 357,
+      "scrollWidth": 286,
+      "whiteSpace": "normal",
+      "width": 286
+    }
+  },
+  {
+    "previewControl": {
+      "bg": "rgb(26, 34, 44)",
+      "color": "rgb(237, 242, 247)",
+      "font": "16px",
+      "height": 44
+    }
+  }
+]

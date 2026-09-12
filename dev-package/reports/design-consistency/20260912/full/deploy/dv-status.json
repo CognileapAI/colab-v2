@@ -1,0 +1,21 @@
+{
+  "deployed": true,
+  "filesMatched": 96,
+  "doctorBefore": {
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0
+  },
+  "doctorAfter": {
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "darkReloadPersisted": true,
+    "fontLoaded": true,
+    "mobileWidth": 375,
+    "documentWidth": 375,
+    "errors": 0
+  }
+}

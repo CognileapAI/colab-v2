@@ -1,0 +1,10 @@
+{
+  "scene": "catalog",
+  "theme": "dark",
+  "focus": "분류",
+  "outline": "rgb(146, 194, 255) solid 2px",
+  "background": "rgb(26, 34, 44)",
+  "reducedMotion": true,
+  "controlsWithNonzeroTransitionDuration": 0,
+  "source": "agent-browser CLI focus + readonly computed style, 2026-09-12"
+}
