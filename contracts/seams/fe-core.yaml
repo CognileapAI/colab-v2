@@ -308,6 +308,36 @@ paths:
         "503": { $ref: "#/components/responses/ServerError" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /admin/accounts/{accountId}/operator:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    post:
+      tags: [identity]
+      operationId: setServiceAccountOperator
+      summary: 관리자 지정·해제
+      description: |
+        [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 기존 관리자
+        **누구나** 다른 계정을 관리자로 지정하거나 해제한다. 거절은 둘뿐이다: **자기 자신 해제**와
+        **마지막 한 명 해제**(항상 1명 이상). 둘 다 400 이고 사유를 그대로 말한다.
+        지정·해제는 권한 변경이므로 그 계정의 기존 로그인이 모든 기기에서 끝난다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ServiceAccountOperatorChange" }
+      responses:
+        "200":
+          description: 바뀐 뒤의 관리자 여부
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceAccountOperatorResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /admin/accounts/{accountId}/status:
     parameters:
       - $ref: "#/components/parameters/AccountId"
@@ -3377,6 +3407,14 @@ components:
         labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         role: { $ref: "../schemas/common.json#/$defs/Role" }
         initialPassword: { type: string, minLength: 10, maxLength: 512 }
+        operator:
+          description: |
+            [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 발급과 동시에
+            관리자로 등록한다. **생략하면 아니다** — 기본값이 관대한 쪽으로 떨어지지 않게 한다.
+            ⚠ 스키마에 `default` 를 적지 않는다: 생성기가 `default` 붙은 칸을 **필수**로 내보내
+            기존 호출자의 타입이 깨진다(실측 — `frontend-typecheck` TS2322). 기본값의 자리는
+            서버(`AccountCreate.operator = False`)이고, 계약은 이 칸이 **선택**임을 말한다.
+          type: boolean
 
     ServiceAccount:
       description: "[사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책."
@@ -3399,7 +3437,7 @@ components:
       description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 계정 목록의 한 행(여섯 열)."
       type: object
       additionalProperties: false
-      required: [accountId, email, name, labId, labName, role, status, lastLoginAt]
+      required: [accountId, email, name, labId, labName, role, status, lastLoginAt, operator]
       properties:
         accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         email: { type: string }
@@ -3417,6 +3455,11 @@ components:
           oneOf:
             - $ref: "../schemas/common.json#/$defs/Timestamp"
             - type: "null"
+        operator:
+          description: |
+            [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 이 계정이
+            관리자인가. 화면의 행 토글이 이 값을 현재 상태로 쓴다.
+          type: boolean
 
     ServiceAccountList:
       description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 전 연구실 한 벌."
@@ -3452,6 +3495,23 @@ components:
       required: [status]
       properties:
         status: { $ref: "#/components/schemas/ServiceAccountStatus" }
+
+    ServiceAccountOperatorChange:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 관리자 지정·해제 요청. 켜고 끄는 것 하나뿐이라 값도 하나다."
+      type: object
+      additionalProperties: false
+      required: [operator]
+      properties:
+        operator: { type: boolean }
+
+    ServiceAccountOperatorResult:
+      description: "[사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 바뀐 뒤의 관리자 여부."
+      type: object
+      additionalProperties: false
+      required: [accountId, operator]
+      properties:
+        accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        operator: { type: boolean }
 
     ServiceAccountStatusResult:
       description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 바뀐 뒤의 상태."

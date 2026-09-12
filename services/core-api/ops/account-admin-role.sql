@@ -35,7 +35,8 @@ GRANT SELECT ON d1_lab, d1_account TO :"admin";
 GRANT SELECT ON d2_member_role TO :"admin";
 GRANT INSERT ON d1_account, d2_member_role TO :"admin";
 GRANT SELECT, INSERT, UPDATE ON account_admin.login_credential TO :"admin";
-GRANT SELECT ON account_admin.service_operator TO :"admin";
+-- 운영자 지정·해제(백오피스)가 이 표에 쓴다. UPDATE 는 주지 않는다 — 행은 있거나 없거나다.
+GRANT SELECT, INSERT, DELETE ON account_admin.service_operator TO :"admin";
 GRANT SELECT, INSERT, UPDATE ON account_admin.login_session TO :"admin";
 
 SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''계정 관리자 롤이 superuser다''; END $check$'

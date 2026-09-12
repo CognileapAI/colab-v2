@@ -38,7 +38,7 @@ def app_operations() -> dict[str, tuple[str, str]]:
     return out
 
 
-def test_operation_count_is_84() -> None:
+def test_operation_count_is_85() -> None:
     """45 → 46 → 49 → 50 → 52 → 53 → 54 → 63 → 65 → 66 → 69 → 73 → 81 → **84.**
 
     ⭑ **81 → 84 는 운영자 백오피스 3 op** (`dev-package/intent/2026-09-12-login-backoffice-closeout.md`
@@ -120,7 +120,10 @@ def test_operation_count_is_84() -> None:
     """
     # 사용자 승인 UI 개선은 계보 후보 1개와 대표 그림 PUT/GET/DELETE 3개를 함께 열었다.
     # J-1~J-9는 기본 격자·후보·복제·조기 미리보기 4개를 더했다.
-    assert len(contract_operations()) == 84, "계약의 오퍼레이션이 84 개가 아니다 — 발췌가 잘렸다."
+    # ⭑ **84 → 85 는 관리자 지정·해제 1 op** (`setServiceAccountOperator` · 승인 intent
+    #   `dev-package/intent/2026-09-12-operator-designation.md`). **신설과 동시에 구현했다** —
+    #   501 표는 그대로이고, 계약 파괴는 0 이다(추가만 · `contract-breaking` 기준 origin/main green).
+    assert len(contract_operations()) == 85, "계약의 오퍼레이션이 85 개가 아니다 — 발췌가 잘렸다."
 
 
 def test_app_route_table_equals_contract() -> None:

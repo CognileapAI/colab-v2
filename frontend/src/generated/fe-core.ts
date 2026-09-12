@@ -185,6 +185,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/accounts/{accountId}/operator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 관리자 지정·해제
+         * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 기존 관리자
+         *     **누구나** 다른 계정을 관리자로 지정하거나 해제한다. 거절은 둘뿐이다: **자기 자신 해제**와
+         *     **마지막 한 명 해제**(항상 1명 이상). 둘 다 400 이고 사유를 그대로 말한다.
+         *     지정·해제는 권한 변경이므로 그 계정의 기존 로그인이 모든 기기에서 끝난다.
+         */
+        post: operations["setServiceAccountOperator"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/accounts/{accountId}/status": {
         parameters: {
             query?: never;
@@ -2203,6 +2228,14 @@ export interface components {
             labId: components["schemas"]["Ulid"];
             role: components["schemas"]["Role"];
             initialPassword: string;
+            /**
+             * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 발급과 동시에
+             *     관리자로 등록한다. **생략하면 아니다** — 기본값이 관대한 쪽으로 떨어지지 않게 한다.
+             *     ⚠ 스키마에 `default` 를 적지 않는다: 생성기가 `default` 붙은 칸을 **필수**로 내보내
+             *     기존 호출자의 타입이 깨진다(실측 — `frontend-typecheck` TS2322). 기본값의 자리는
+             *     서버(`AccountCreate.operator = False`)이고, 계약은 이 칸이 **선택**임을 말한다.
+             */
+            operator?: boolean;
         };
         /** @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책. */
         ServiceAccount: {
@@ -2228,6 +2261,11 @@ export interface components {
             role: components["schemas"]["Role"] | null;
             status: components["schemas"]["ServiceAccountStatus"];
             lastLoginAt: components["schemas"]["Timestamp"] | null;
+            /**
+             * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 이 계정이
+             *     관리자인가. 화면의 행 토글이 이 값을 현재 상태로 쓴다.
+             */
+            operator: boolean;
         };
         /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 전 연구실 한 벌. */
         ServiceAccountList: {
@@ -2245,6 +2283,15 @@ export interface components {
         /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 비활성화·재활성화 요청. */
         ServiceAccountStatusChange: {
             status: components["schemas"]["ServiceAccountStatus"];
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 관리자 지정·해제 요청. 켜고 끄는 것 하나뿐이라 값도 하나다. */
+        ServiceAccountOperatorChange: {
+            operator: boolean;
+        };
+        /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 바뀐 뒤의 관리자 여부. */
+        ServiceAccountOperatorResult: {
+            accountId: components["schemas"]["Ulid"];
+            operator: boolean;
         };
         /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 바뀐 뒤의 상태. */
         ServiceAccountStatusResult: {
@@ -5027,6 +5074,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceAccountPasswordResetResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    setServiceAccountOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountOperatorChange"];
+            };
+        };
+        responses: {
+            /** @description 바뀐 뒤의 관리자 여부 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountOperatorResult"];
                 };
             };
             400: components["responses"]["BadRequest"];

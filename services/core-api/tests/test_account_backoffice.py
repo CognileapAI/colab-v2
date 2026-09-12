@@ -82,6 +82,8 @@ def test_listServiceAccounts_is_not_scoped_to_the_operator_lab(p2_client) -> Non
     assert signed_in in rows and never in rows, "목록이 운영자 연구실로 좁혀졌다."
     assert set(rows[signed_in]) == {
         "accountId", "email", "name", "labId", "labName", "role", "status", "lastLoginAt",
+        # 관리자 표시 — 목록 행이 토글의 현재 상태를 들고 온다 (intent 2026-09-12 운영자 지정).
+        "operator",
     }
     assert rows[signed_in]["role"] == "연구원" and rows[never]["role"] == "교수"
     assert rows[signed_in]["labId"] == LAB_C

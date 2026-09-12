@@ -11,7 +11,8 @@ from sqlalchemy.exc import IntegrityError
 
 from ...kernel import errors
 from ...kernel.auth import Subject
-from ...kernel.db_credentials import ServiceAccountRow, normalize_login_name
+from ...kernel.db_credentials import (
+    OperatorChangeRefused, ServiceAccountRow, normalize_login_name)
 from ...kernel.ids import Ulid
 from ...kernel.password import hash_password
 from ...kernel.login_sessions import SessionStoreUnavailable
@@ -25,6 +26,9 @@ class AccountCreate(BaseModel):
     labId: str
     role: str
     initialPassword: str = Field(min_length=10, max_length=512)
+    #: 발급과 동시에 관리자로 등록할지. **생략하면 아니다** — 기본값이 관대한 쪽으로
+    #: 떨어지지 않게 한다. 기존 호출자는 이 칸을 몰라도 그대로 돈다(추가만).
+    operator: bool = False
 
 class PasswordChange(BaseModel):
     newPassword: str = Field(min_length=10, max_length=512)
@@ -38,6 +42,11 @@ class AccountStatusChange(BaseModel):
     """두 값뿐이다 — 세 번째 상태를 계약으로도 코드로도 열지 않는다."""
     model_config = ConfigDict(extra="forbid")
     status: Literal["active", "inactive"]
+
+class OperatorChange(BaseModel):
+    """관리자 지정·해제. 켜고 끄는 것 하나뿐이라 값도 하나다."""
+    model_config = ConfigDict(extra="forbid")
+    operator: bool
 
 def _admin(request: Request):
     factory = request.app.state.account_admin_factory
@@ -70,7 +79,7 @@ def _as_json(row: ServiceAccountRow) -> dict:
         last = last.astimezone(dt.timezone.utc).isoformat().replace("+00:00", "Z")
     return {"accountId": row.account_id, "email": row.email, "name": row.name,
             "labId": row.lab_id, "labName": row.lab_name, "role": row.role,
-            "status": row.status, "lastLoginAt": last}
+            "status": row.status, "lastLoginAt": last, "operator": row.operator}
 
 @router.get("/admin/account-options", name="getAccountOptions")
 def account_options(request: Request, subject: Subject = Depends(current_subject)) -> dict:
@@ -114,6 +123,11 @@ def create_account(body: AccountCreate, request: Request,
                   (account_id,login_name,kdf,salt,password_hash,n,r,p)
                 VALUES (:id,:email,:kdf,:salt,:hash,:n,:r,:p)
             """), {"id": str(account_id), "email": email, **made.as_dict()})
+            if body.operator:
+                # 발급과 같은 트랜잭션이다 — 계정만 서고 등기부가 비는 중간 상태를 두지 않는다.
+                db.execute(text(
+                    "INSERT INTO account_admin.service_operator(account_id) VALUES (:id)"),
+                    {"id": str(account_id)})
     except IntegrityError:
         raise errors.conflict("이미 사용하는 이메일이다.") from None
     return {"accountId": str(account_id), "email": email, "name": body.name.strip(),
@@ -169,6 +183,29 @@ def set_account_status(accountId: str, body: AccountStatusChange, request: Reque
     if status is None:
         raise errors.not_found("서비스 계정 자격을 찾지 못했다.")
     return {"accountId": accountId, "status": status}
+
+
+@router.post("/admin/accounts/{accountId}/operator", name="setServiceAccountOperator")
+def set_account_operator(accountId: str, body: OperatorChange, request: Request,
+                         subject: Subject = Depends(current_subject)) -> dict:
+    """관리자 지정·해제. 관리자 **누구나** 할 수 있고, 거절은 두 자리뿐이다.
+
+    ⑴ 자기 자신 해제 ⑵ 마지막 한 명 해제 — 둘 다 400 이고, 사유를 그대로 말한다.
+    거절 사유를 숨기면 화면이 「왜 안 되는지」를 지어내게 된다.
+
+    지정·해제는 권한 변경이므로 **그 계정의 기존 로그인이 모든 기기에서 끝난다**
+    (자격 버전 +1 ＋ 원장 revoke). 다음 로그인부터 새 범위가 적용된다.
+    """
+    _require_operator(request, subject)
+    account_id = _account_id(accountId)
+    try:
+        changed = _credentials(request).set_operator(
+            account_id, body.operator, actor_account_id=str(subject.account_id))
+    except OperatorChangeRefused as refused:
+        raise errors.bad_request(str(refused)) from None
+    if changed is None:
+        raise errors.not_found("계정을 찾지 못했다.")
+    return {"accountId": accountId, "operator": changed}
 
 
 @router.put("/me/password", name="changeOwnPassword")
