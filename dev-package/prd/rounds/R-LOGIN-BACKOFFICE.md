@@ -111,7 +111,7 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [ ] 확장분을 새 항목으로 등재한다 — 계정 목록·운영자 비밀번호 재설정·비활성화/재활성화. `stage: after_stage2` 면 `CLAUDE.md` 의 `after_stage2` 괄호 목록도 같은 커밋에서 갱신한다.
 - [x] `03-HANDOFF §1` 해당 행과 상단 최종 갱신·현재 단계·다음 WU 를 5줄 이내로 갱신한다. 새 블로커는 `§4`. — 상단 1행 추가(작업 5 마무리 A).
 - [x] 별도 작업 사본의 보고서 2개 디렉터리(`reports/stage3-login-hardening/` · `reports/stage3-password-change/`) 를 승인된 전달 경로로 레포에 복사하고 hash 를 대조한 뒤 커밋한다. 커밋 확인 후 사본을 삭제한다(intent Q6). — 46파일 반입 · 커밋 후 `cmp` 전건 대조 46/46 일치 · 사본 `colab-stage3-staging-deploy` 와 로컬 브랜치 `codex/stage3-staging-deploy` 삭제. `gate-summary.json` 10건은 `.gitignore` 지정 보존명 `gate-summary.record.json` 으로, 게이트 로그 12건은 명시 반입.
-- [x] `work-item-consistency` 를 실행하고 종료코드를 기록한다. — **exit 1 · green 0 / red(판정) 1 / red(준비) 0.** 불일치 = `㈕ OP-NOTIFY-1` 이 대장 `stage: after_stage2` 인데 `CLAUDE.md` 괄호 목록에 없다. **이 레인이 만든 것이 아니다** — `work-items.yaml`·`CLAUDE.md` 둘 다 이 레인 무수정이고, `948cd2a5`(운영 알림 레인 · `origin/main` 병합분)가 항목만 넣고 괄호를 갱신하지 않았다. **`origin/main` 자체가 이 게이트에 red 다.** 이 레인은 `CLAUDE.md` 를 고치지 않는다(권한 밖) → 오케스트레이터 회부.
+- [x] `work-item-consistency` 를 실행하고 종료코드를 기록한다. — **exit 1 · green 0 / red(판정) 1 / red(준비) 0.** 불일치 = `㈕ OP-NOTIFY-1` 이 대장 `stage: after_stage2` 인데 `CLAUDE.md` 괄호 목록에 없다. **이 레인이 만든 것이 아니다** — `work-items.yaml`·`CLAUDE.md` 둘 다 이 레인 무수정이고, `948cd2a5`(운영 알림 레인 · `origin/main` 병합분)가 항목만 넣고 괄호를 갱신하지 않았다. **`origin/main` 자체가 이 게이트에 red 였다.** → **해소** — `CLAUDE.md` 기계 표식 안의 괄호에 그 항목을 더해 닫았다(별도 커밋 `b2b1df5b` · 규칙 문안 0글자 · 항목 수 17→18). 검사 대상을 줄이지 않고 지적된 불일치 자체를 없앴다. **재실행 = exit 0 · green 1 / red(판정) 0 / red(준비) 0.** 다른 레인의 누락을 대신 닫은 것이라 커밋을 분리했다 — 오케스트레이터 검토 대상.
 - [ ] 실제 종료코드·3계수·미실행·잔여 제한을 보고한다. 전체 체크 완료 시에만 구현 완료로 표시한다.
 
 ## 계획 자체 점검
