@@ -23,7 +23,9 @@ test('첫 로그인 사용자가 새 비밀번호를 제출하면 새 토큰을 
  expect(JSON.parse(await passwordRequest.clone().text())).toEqual({newPassword:'new-password-123'});
  expect(getSession()?.token).toBe('new-db-token');
  expect(getSession()?.revocationToken).toBe('revoke-cap');
- expect(screen.getByTestId('location')).toHaveTextContent('/lab');
+ // 이동은 제출 응답 **뒤의** 상태 갱신에서 일어난다. fetch 가 불린 시점에 바로 재면
+ // 아직 `/account-admin` 이라 간헐적으로 red 가 난다(실측 — 3회 중 1회).
+ await waitFor(()=>expect(screen.getByTestId('location')).toHaveTextContent('/lab'));
 });
 test('새 비밀번호 확인이 다르면 제출하지 않는다',()=>{
  const fetch=vi.spyOn(globalThis,'fetch');
