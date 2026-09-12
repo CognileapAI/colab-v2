@@ -1,11 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Deploy in us-east-1 to forward global Health events to the CoLAB region.
 Parameters:
+  NotificationsEnabled:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
   DestinationEventBusArn: {Type: String}
   MonitoredServices: {Type: CommaDelimitedList}
   PermissionsBoundaryArn:
     Type: String
     Default: arn:aws:iam::606175197146:policy/colab-notifications-runtime-boundary
+Conditions:
+  NotificationsActive: !Equals [!Ref NotificationsEnabled, "true"]
 Resources:
   ForwardRole:
     Type: AWS::IAM::Role
@@ -29,6 +35,7 @@ Resources:
   GlobalHealthForward:
     Type: AWS::Events::Rule
     Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
       EventPattern:
         account: [!Ref AWS::AccountId]
         source: [aws.health]

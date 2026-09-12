@@ -156,19 +156,24 @@ def record_heartbeat(store,environment,target,at):
 def _heartbeats(store,config,now):
     from .producers import heartbeat
     manifest=config["manifest"]
-    for declared in manifest.get("probes",[]):
-        target=declared["target"] if isinstance(declared,dict) else declared
-        key=manifest["environment"]+":"+target
-        observed,_=store._read("heartbeat#"+key)
-        at=dt.datetime.fromisoformat(observed["observed_at"] if observed else manifest["coverage_started_at"])
-        old,version=store._read("heartbeat-state#"+key)
-        old=old or {}
-        # Persist immutable notification records before publishing them.
-        for record in old.get("pending",[]):store.put(record)
-        state,events=heartbeat(old,at,now,manifest["environment"],target)
-        state["pending"]=events
-        store._save("heartbeat-state#"+key,state,version)
-        for record in events:store.put(record)
+    environments=manifest.get("monitored_environments",[manifest["environment"]])
+    if (not isinstance(environments,list) or not environments or len(set(environments))!=len(environments)
+            or any(environment not in {"dev","staging"} for environment in environments)):
+        raise ValueError("monitored heartbeat environments")
+    for environment in environments:
+        for declared in manifest.get("probes",[]):
+            target=declared["target"] if isinstance(declared,dict) else declared
+            key=environment+":"+target
+            observed,_=store._read("heartbeat#"+key)
+            at=dt.datetime.fromisoformat(observed["observed_at"] if observed else manifest["coverage_started_at"])
+            old,version=store._read("heartbeat-state#"+key)
+            old=old or {}
+            # Persist immutable notification records before publishing them.
+            for record in old.get("pending",[]):store.put(record)
+            state,events=heartbeat(old,at,now,environment,target)
+            state["pending"]=events
+            store._save("heartbeat-state#"+key,state,version)
+            for record in events:store.put(record)
 
 
 def _flow_transition(store,target,bad,since,now):

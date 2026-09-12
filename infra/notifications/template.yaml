@@ -2,6 +2,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: CoLAB operator notifications; local package only until explicitly deployed.
 Parameters:
+  NotificationsEnabled:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
   Environment: {Type: String, AllowedValues: [dev, staging]}
   InstanceId: {Type: AWS::EC2::Instance::Id}
   NotificationManifestJson: {Type: String, NoEcho: false}
@@ -29,6 +33,8 @@ Globals:
         ACTIVITY_QUEUE_ARN: !GetAtt ActivityQueue.Arn
         DEVELOPMENT_WEBHOOK_SECRET_ARN: !Ref DevelopmentWebhookSecretArn
         ACTIVITY_WEBHOOK_SECRET_ARN: !Ref ActivityWebhookSecretArn
+Conditions:
+  NotificationsActive: !Equals [!Ref NotificationsEnabled, "true"]
 Resources:
   NotificationTable:
     Type: AWS::DynamoDB::Table
@@ -138,12 +144,14 @@ Resources:
           Properties:
             Queue: !GetAtt DevelopmentQueue.Arn
             BatchSize: 1
+            Enabled: !If [NotificationsActive, true, false]
             FunctionResponseTypes: [ReportBatchItemFailures]
         Activity:
           Type: SQS
           Properties:
             Queue: !GetAtt ActivityQueue.Arn
             BatchSize: 1
+            Enabled: !If [NotificationsActive, true, false]
             FunctionResponseTypes: [ReportBatchItemFailures]
   RetryFunction:
     Type: AWS::Serverless::Function
@@ -151,7 +159,7 @@ Resources:
       Handler: notifications.handlers.retry
       Role: !GetAtt RetryRole.Arn
       Events:
-        EveryMinute: {Type: Schedule, Properties: {Schedule: rate(1 minute)}}
+        EveryMinute: {Type: Schedule, Properties: {Schedule: rate(1 minute), Enabled: !If [NotificationsActive, true, false]}}
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -160,6 +168,7 @@ Resources:
   HealthRule:
     Type: AWS::Events::Rule
     Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
       EventPattern:
         account: [!Ref AWS::AccountId]
         source: [aws.health]
@@ -172,6 +181,7 @@ Resources:
   AlarmRule:
     Type: AWS::Events::Rule
     Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
       EventPattern:
         account: [!Ref AWS::AccountId]
         source: [aws.cloudwatch]
@@ -213,6 +223,7 @@ Resources:
   InstanceAlarmRule:
     Type: AWS::Events::Rule
     Properties:
+      State: !If [NotificationsActive, ENABLED, DISABLED]
       EventPattern:
         account: [!Ref AWS::AccountId]
         source: [aws.cloudwatch]
