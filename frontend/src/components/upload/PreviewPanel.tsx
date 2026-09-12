@@ -515,21 +515,26 @@ export function PreviewPanel(props: {
 
       {/* ⬛ 자리 선점 틀 — **파일을 고른 순간 이미 서 있다**(축 ① · 4:3 · 네 상태 치수 불변).
           안쪽만 idle(`.vizph`) → drawing(3단계) → done(그림) | failed(`.vizerr` · salvage)로 갈린다. */}
-      <PreviewSlot state={slotState} testId="up-preview-slot">
-      {/* ⑵ 고르개 셋 — 파일·변수·시각. **틀 안 컨트롤 줄이고 두 화면이 같은 컴포넌트를 쓴다.**
-          한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다. */}
-      <PreviewPickRow
-        idPrefix="up"
-        pieces={pieces}
-        description={description}
-        selection={pick}
-        disabled={drawing}
-        fallbackPiece={fallbackPiece}
-        onPick={(next) => {
-          setPick((prev) => ({ ...prev, ...next }));
-          if (uploadId) void draw(false, next);
-        }}
-      />
+      <PreviewSlot
+        state={slotState}
+        testId="up-preview-slot"
+        /* ⑵ 고르개 셋 — 파일·변수·시각. **틀 밖·틀보다 앞 고정 줄이고 세 화면이 같은 컴포넌트를 쓴다.**
+           한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다.
+           ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 틀 안에 있던 자리를 틀 밖으로 올렸다 — 그림이 그려지면
+              틀 안 스크롤 위로 밀려 화면에서 빠지던 자리다. */
+        controls={<PreviewPickRow
+          idPrefix="up"
+          pieces={pieces}
+          description={description}
+          selection={pick}
+          disabled={drawing}
+          fallbackPiece={fallbackPiece}
+          onPick={(next) => {
+            setPick((prev) => ({ ...prev, ...next }));
+            if (uploadId) void draw(false, next);
+          }}
+        />}
+      >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">

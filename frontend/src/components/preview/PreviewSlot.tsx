@@ -28,6 +28,8 @@ export interface PreviewSlotProps {
   state: PreviewSlotState;
   /** 화면마다 다른 표식(업로드·상세). 기본값은 공용 이름 하나다. */
   testId?: string;
+  /** 틀 **밖·틀보다 앞** 고정 줄. 틀 안 스크롤에 실리지 않는다. */
+  controls?: ReactNode;
   children: ReactNode;
 }
 
@@ -38,13 +40,16 @@ export interface PreviewSlotProps {
  */
 export function PreviewSlot(props: PreviewSlotProps) {
   return (
-    <div
-      className="pv-frame"
-      data-testid={props.testId ?? 'preview-slot'}
-      data-preview-slot="4x3"
-      data-preview-slot-state={props.state}
-    >
-      <div className="pv-frame-in">{props.children}</div>
+    <div className="pv-frame-wrap">
+      {props.controls}
+      <div
+        className="pv-frame"
+        data-testid={props.testId ?? 'preview-slot'}
+        data-preview-slot="4x3"
+        data-preview-slot-state={props.state}
+      >
+        <div className="pv-frame-in">{props.children}</div>
+      </div>
     </div>
   );
 }
