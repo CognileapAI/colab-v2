@@ -40,7 +40,7 @@ diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev
 | `plan/*` | `main` tip | 복귀 없음 — 산출(라운드 파일·spec)은 통합 브랜치 커밋으로 들어간다 | 해당 라운드가 `main` 에 ff 된 뒤 | 오케스트레이터 | 워크트리 제거 선행(`git worktree remove`) |
 | `archive/*` 태그 | 삭제 직전 브랜치 tip | 복귀 없음 — 보존 전용 | 없음(영구) | 로컬 생성 = 레인 · 원격 push = 오케스트레이터(게이트 ③ 뒤) | 배포 대상 아님 · `git push origin archive/<이름>` **개별** · `--tags` 금지 |
 | `dev-YYYYMMDD-N` 태그 | dev 실적용 sha(로컬 `dist/colab-v2-dev.sha`) | 복귀 없음 | 없음 | 사람 — `deploy_doctor` 전건 뒤 호출 | N = 같은 날 기존 태그 수 ＋1 · 도구 = `infra/dev/tag-release.sh`(push 없음 · 명령만 출력) |
-| `prod-YYYYMMDD` 태그 | dev 배포 창 N회를 green 으로 넘긴 `main` 커밋 | 복귀 없음 | 없음 | Ted | ⭑ ⟨개정 2026-09-12⟩ prod 는 **실재**하고(`〈372〉` 가 `㊻` 보류를 해제했다) **그 태그에서만 배포**한다 — 집행 자리 = `infra/prod/ship.sh` 의 태그 검사(없으면 exit 65 · **우회 변수 없음**) ／ 종전 ~~prod 는 `PLAN-SoT §9-㊻` 로 보류 · 그 태그에서만 배포~~ |
+| `prod-YYYYMMDD` 태그 | dev 배포 창 N회를 green 으로 넘긴 `main` 커밋 | 복귀 없음 | 없음 | Ted | ⭑ ⟨개정 2026-09-12⟩ prod 는 **실재**하고(`〈383〉` 가 `㊻` 보류를 해제했다) **그 태그에서만 배포**한다 — 집행 자리 = `infra/prod/ship.sh` 의 태그 검사(없으면 exit 65 · **우회 변수 없음**) ／ 종전 ~~prod 는 `PLAN-SoT §9-㊻` 로 보류 · 그 태그에서만 배포~~ |
 
 - 표 밖 이름은 **정본이 없다.** 새 접두어가 필요하면 이 표에 행을 먼저 추가한다.
 - 하네스가 만드는 `worktree-agent-*` 는 레인 워크트리의 기술 브랜치이고 위 수명 규칙의 대상이 아니다.
