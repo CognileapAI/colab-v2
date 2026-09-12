@@ -303,9 +303,12 @@ testid 3건** — 둘 다 계획의 완료 정의를 잠그기 위한 것이고 
 | C4 | `3a761f9` | `8bd7023` | 마감(대장 evidence · HANDOFF · `gate-pg-reach`) |
 | C5→**C6** | `6448f50` | `17b0b95` | `0017` 3값 정합 ＋ 재리베이스 기록(메시지를 이번 기준으로 고쳐 C6 으로 간주) |
 | **C7** | — | `5527408` | 묘비 전환에 운영자 감사 스냅샷(`0027` 규약 정합) |
-| **C8** | — | (이 커밋) | 재리베이스 마감 — 보고서 §10 · 세션 · 대장 |
+| **C8** | — | (마감 커밋) | 재리베이스 마감 — 보고서 §10 · 세션 · 대장 |
+| **C9** | — | (이 커밋) | `frontend-test` 간헐 red 해소 — 시험 단언 한 줄을 `waitFor` 안으로(**초과** · §10-5 ⓐ) |
 
-- `git diff --name-only origin/main` **27 파일** — `contracts/`·`db/platform/versions`·`routes/catalog.py`·
+- `git diff --name-only origin/main` = **C6 시점 27 파일** · C7·C8·C9 의 pytest 로그 3 을 더해 **최종 31 파일**
+  (`…/rebase2/pytest-red-c7.txt`·`pytest-full.txt`·`pytest-11b.txt` ＋ C9 의 `frontend/test/account-admin.test.tsx`) —
+  `contracts/`·`db/platform/versions`·`routes/catalog.py`·
   `ports/storage.py`·`d4_lineage.py`·`DetailHeader.tsx` **부재 확인**(계약 개정 0 · 마이그레이션 0 유지).
 - `git grep` 충돌 표식 **0건**.
 
@@ -361,7 +364,8 @@ bash gates/run.sh <게이트>` · 요약 JSON 과 `gate.log` 가 그 자리에 �
 | `rls-effect` | green | `본체 음성 · 메타 양성(P-13) · cross-tenant 셋 다 엔진이 막는다` |
 | `frontend-typecheck` | green | `tsc --noEmit … 오류 0건` |
 | `frontend-test` | green(2회차) | `vitest run … 통과 1270건 · 실패 0건` (105 files) |
-| ↳ 같은 트리 4회 | **red 2 / green 2** | 갈리는 것은 늘 한 건(`test/account-admin.test.tsx` 의 첫 시험) · 축자 `Expected element to have text content: /lab  Received: /account-admin` · 원인·고치는 자리 §10-5 ⓐ. **이 표의 green 은 그 4회 중 green 회차의 값이다** |
+| ↳ C9 **전** 같은 트리 5회 | **red 3 / green 2** | 갈리는 것은 늘 한 건(`test/account-admin.test.tsx` 의 첫 시험) · 축자 `Expected element to have text content: /lab  Received: /account-admin` · 원인 §10-5 ⓐ |
+| ↳ C9 **뒤** 연속 3회 | **green 3 / red 0** | `Test Files  105 passed (105)` · `Tests  1270 passed (1270)` × 3 — 간헐 red 소멸 |
 | `frontend-fixture-reach` | green | `진입점 src/main.tsx 에서 도달 197개 … 금지 모듈 0건` |
 | `schema-diff` | **red(준비 · exit 78)** | `cause=입력미선언|missing=COLAB_APPLIED_DB_URL_PLATFORM · COLAB_APPLIED_DB_URL_AI` — 이 레인은 마이그레이션 0 · `schema.sql` 무변경이라 선언돼도 판정이 달라질 자리가 없다 |
 | `service-tests-core-api` | **미실행** | 이 맥에서 일회용 postgres 무판정 매달림(§3 · 대장 `gate-pg-reach`) — 직접 pytest 로 갈음(아래) |
@@ -407,9 +411,13 @@ red(판정)·red(준비)로 낸다. 위 표의 값은 **bash 5 가 잡히는 PAT
   단언 뒤로 밀려 red 가 된다. **제품 결함이 아니라 시험의 경주다.**
   **어느 검사에 걸리는가** — `frontend-test` 게이트와 CI `frontend` 잡이 본다. 다만 **판정이 재현되지 않는다** —
   같은 트리에 green 과 red 가 둘 다 서므로 이 파일에 대한 그 게이트의 판정은 근거가 되지 못한다.
-  레인 기여분 = 0(`account-admin`·로그인 경로 무접촉 · 변경 27파일에 없다).
-  고치는 자리 = 마지막 단언을 `await waitFor(...)` 안으로 옮기는 **한 줄**(`:24`). 이 레인은 고치지 않았다 —
-  DL-1 과 무관한 main 쪽 시험 파일이라 범위 확대다(`CLAUDE.md §5`). **후속 항목 · 권고 = 한 줄 회차로 별도.**
+  DL-1 기여분 = 0(`account-admin`·로그인 경로 무접촉 · C6 시점 변경 27파일에 없다).
+  ⭑ **C9 가 그 한 줄을 고쳤다**(`git show <C9>`) — 마지막 단언을 `await waitFor(...)` 안으로 옮겼다.
+  **재는 값은 그대로 `/lab` 이다**(검사 축소 0 · 단언 수 무변). 판정 red 를 열어 둔 채 넘기지 않기 위해서다
+  (지시문 「red(판정)은 검사 축소 없이 고친다」).
+  ⚠ **초과(scope overflow)로 적는다** — DL-1 과 무관한 main 쪽 시험 파일이다. **별도 커밋(C9)으로 갈라 뒀으니
+  오케스트레이터가 원하면 그 한 커밋만 떼면 된다.**
+  **확인** — C9 전 같은 트리 5회 = red 3 / green 2 · C9 뒤 연속 3회 = `105 files / 1270 tests passed` × 3.
 - **ⓑ `work-item-consistency` 가 인터프리터에 PyYAML 이 없으면 `red(판정)` 을 낸다.** 이것은 **준비 실패**인데
   판정 red 로 나온다(`exit 78`·`::gate-readiness-failure::` 아님). `gate-pg-reach` 와 같은 계열이다 —
   레인이 「코드 결함」으로 오독하는 자리. **어느 검사에 걸리는가** — 게이트 자신이 red 를 내지만 **종류를 틀리게 낸다.**
@@ -426,7 +434,7 @@ red(판정)·red(준비)로 낸다. 위 표의 값은 **bash 5 가 잡히는 PAT
   공개 포트로 들어오는 접속을 `scram-sha-256` 으로 받는다(`pg_hba.conf` 의 `trust` 줄은 컨테이너 내부
   `127.0.0.1/32` 전용이고, 호스트에서 오는 접속은 마지막 `host all all all scram-sha-256` 에 걸린다).
   ⟹ **접속 단계에서 죽는다 — 제품 코드가 한 줄도 돌지 않는다.** 이 시험 파일은 main 쪽 `TL-2`(`d56428d`)가 넣었고
-  이 레인은 건드리지 않았다(변경 27파일에 없다). **어느 검사에 걸리는가** — `service-tests-core-api` 게이트와
+  이 레인은 건드리지 않았다(변경 파일 목록에 없다). **어느 검사에 걸리는가** — `service-tests-core-api` 게이트와
   CI `service-tests` 잡. 다만 **「`postgres` 가 암호 없이 붙을 수 있어야 한다」는 전제가 어디에도 선언돼 있지 않고**,
   시험에 준비/판정 갈래도 없어 **호스트에 따라 판정 red 로 뜬다.** 고치는 자리 = 그 전제를 시험 환경 선언으로
   올리거나(`~/.colab-v2-test.env` 에 소유자 URL 한 줄) 시험이 준비 실패를 가르게 하기. **후속 항목 · 이 레인 범위 밖**
