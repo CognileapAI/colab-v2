@@ -1,5 +1,7 @@
 # 운영자 Slack 알림 개발·운영 절차
 
+2026-09-12: Dev·Stage 배포와 AWS·두 Slack 채널 실제 전달을 확인했다. 첫 9/13 08:00 KST 예약 보고는 실행 확인 전이다. [배포 결과](../../dev-package/reports/operator-slack-notifications/deployment-result.md), [쉬운 그림 설명](operator-notifications-eli5.html).
+
 사건 계약은 contracts/operator-notifications/event.schema.json, 환경 계약은 infra/notifications/manifest.schema.json이다. 개발 사건은 development, 일일 활동·감사 보고는 activity 채널로만 전달한다.
 
 배포 계획에 operator_notifications.spool_directory가 있으면 배포 성공·실패·검증 실패를 먼저 0600 spool에 기록한다. 실패 알림 재전송은 배포를 다시 실행하지 않는다. 운영 probe는 첫 실패를 보류하고 연속 두 번째 실패, 활성 상태의 첫 성공 복구, 재발을 새 incident로 기록한다.

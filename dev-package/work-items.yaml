@@ -21,9 +21,9 @@ items:
     entry_conditions: ["2026-09-12 intent·spec·로컬 시험 경계 승인"]
     depends_on: []
     completion_def: "로컬 업무·배포 진입점부터 두 loopback 수신처까지 외부 행위 검증 후, 별도 승인된 AWS·두 Slack 채널 연결과 실제 08시 보고 확인"
-    evidence: "로컬 구현 반영. 검증 정본: dev-package/reports/operator-slack-notifications/implementation/gate-summary.json, 결과 설명: implementation/result.md. 실제 AWS·Slack 연결 전까지 open 유지."
+    evidence: "2026-09-12 main 반영·Dev/Stage 실배포·AWS 두 채널 전송 완료. 6개 사건 sent, 자동 점검 6개와 활동 수집 확인. 근거: dev-package/reports/operator-slack-notifications/deployment-result.md. 첫 2026-09-13 08:00 KST 예약 보고 실측만 남아 open 유지."
     deadline: null
-    note: "사용자 알림은 범위 밖. 자동배포 HOLD 유지. 실제 연결 전 connection-readiness.md의 대상·원복 고정 필요."
+    note: "사용자 알림은 범위 밖. 자동배포 HOLD 유지. 수집 시작 2026-09-12 15:55 KST. 첫날은 부분 기간 보고이며 실제 08시 수신 확인 전 완료로 닫지 않는다."
     sources: ["dev-package/intent/2026-09-12-operator-slack-notifications.md", "dev-package/prd/specs/S-OPERATOR-SLACK-NOTIFICATIONS-20260912.md"]
 
   - id: BO-1

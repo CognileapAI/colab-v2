@@ -2,7 +2,7 @@
 
 > 2026-09-12 dev 서비스 운영자 1명 등재: `account_admin.service_operator` 0행 → 1행(`01M29ZX6RRC7H3G159Y86XK2DZ` · `ttlhi10@gmail.com` · 연구실 `0000000000000000000000000A` · 역할 `연구원`) · `login_credential` 0행 → 1행(`scrypt` · `must_change_password=true` · `session_version=1`) · `POST /sessions` **201** · `GET /me` `mustChangePassword=true` · 제약 세션의 `POST /admin/accounts` **403 `PASSWORD_CHANGE_REQUIRED`**(의도된 동작). 운영자 판정 통과는 **Ted 의 첫 비밀번호 변경 뒤** 관측된다(`[미확인]`). 근거 `dev-package/reports/r-login-backoffice/task1-deploy/operator.md`.
 
-> 2026-09-12: 운영자 Slack 알림 로컬 구현 반영. 개발/활동 두 채널, 감사 내보내기, 08시 KST 보고, AWS 전달 구성. 최종 검증 정본 reports/operator-slack-notifications/implementation/gate-summary.json. 실제 AWS·Slack·배포·운영 DB 접촉 0. 상태 정본 work-items.yaml의 OP-NOTIFY-1은 실제 연결 전까지 open. 근거 reports/operator-slack-notifications/.
+> 2026-09-12: 운영자 Slack main 반영·Dev/Stage 배포·AWS 두 채널 실제 전송 완료. 자동 점검 6개와 활동 수집 확인. OP-NOTIFY-1은 첫 9/13 08:00 KST 예약 보고 실측만 남아 open. 자동배포 HOLD 유지. 근거 reports/operator-slack-notifications/deployment-result.md, 쉬운 설명 docs/development/operator-notifications-eli5.html.
 
 > 2026-09-12 작업 1 dev 반영 완료: 실적용 sha `fc45a9aa7c64`(`origin/main` `c71eed916432` 와 코드 diff 0파일) · platform 체인 `0024` → `0026_login_sessions` · `colab_account_admin` 롤·시크릿 배치 · 프런트 번들 `index.html` md5 일치 · `deploy_doctor --env dev` **15/15 한 번의 실행**(exit 0 · 13:16 KST) · 로컬 태그 `dev-20260912-1`(미push). **다음 = 작업 2** — 다만 `account_admin.service_operator` 0행이라 백오피스 경로가 전량 403 이고, 운영자로 세울 계정이 정본·docs 어디에도 없다(`[Ted 입력 대기]`). 근거 `dev-package/reports/r-login-backoffice/task1-deploy/release.md`.
 
