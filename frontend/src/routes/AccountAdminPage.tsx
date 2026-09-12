@@ -81,6 +81,33 @@ function StatusDialog(props: { row: Row; next: 'active' | 'inactive'; busy: bool
   );
 }
 
+/** 관리자 지정·해제 확인. 무엇이 달라지는지를 확인 문구보다 먼저 말한다. */
+function OperatorDialog(props: { row: Row; next: boolean; busy: boolean; onClose(): void; onConfirm(): void }) {
+  const titleId = useId();
+  const dialogRef = useDialogFocus(props.onClose, props.busy);
+  const title = props.next ? '관리자 지정' : '관리자 해제';
+  return (
+    <div className="account-modal-back">
+      <div ref={dialogRef} tabIndex={-1} className="account-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <h3 id={titleId}>{title}</h3>
+        <p className="account-modal-lead">
+          <b>{props.row.email}</b> 을(를) {props.next ? '관리자로 지정해요.' : '관리자에서 해제해요.'}
+        </p>
+        <p className="account-modal-help">
+          {props.next
+            ? '관리자는 계정을 추가·재설정·비활성화할 수 있고, 모든 연구실의 자료를 읽기 전용으로 볼 수 있어요. 고치거나 지우는 건 자기 연구실에서만 할 수 있어요.'
+            : '해제하면 계정 관리 화면과 다른 연구실 자료를 더는 볼 수 없어요. 자기 연구실 권한은 그대로예요.'}
+        </p>
+        <p className="account-modal-help">이 사람의 열려 있던 로그인은 모든 기기에서 끝나요.</p>
+        <div className="account-modal-actions">
+          <button type="button" className="btn btn-secondary" disabled={props.busy} onClick={props.onClose}>그대로 두기</button>
+          <button type="button" className="btn btn-strong" disabled={props.busy} onClick={props.onConfirm}>{title}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AccountAdminPage() {
   const account = useAccount();
   const operator = account?.canManageServiceAccounts === true;
@@ -96,6 +123,7 @@ export function AccountAdminPage() {
   const [rowBusy, setRowBusy] = useState(false);
   const [resetRow, setResetRow] = useState<Row | null>(null);
   const [statusRow, setStatusRow] = useState<Row | null>(null);
+  const [operatorRow, setOperatorRow] = useState<Row | null>(null);
 
   useWorkProtection('account-admin', {
     dirty, inFlight: busy || rowBusy,
@@ -126,8 +154,9 @@ export function AccountAdminPage() {
   const pick = (key: keyof Filters) => (e: { target: { value: string } }) =>
     setFilters(current => ({ ...current, [key]: e.target.value }));
 
-  async function send(path: '/admin/accounts/{accountId}/password-reset' | '/admin/accounts/{accountId}/status',
-                     accountId: string, body: Record<string, string>, done: string) {
+  async function send(path: '/admin/accounts/{accountId}/password-reset' | '/admin/accounts/{accountId}/status'
+                            | '/admin/accounts/{accountId}/operator',
+                     accountId: string, body: Record<string, string | boolean>, done: string) {
     setRowBusy(true);
     setMessage(null);
     try {
@@ -163,6 +192,8 @@ export function AccountAdminPage() {
               email: String(f.get('email')), name: String(f.get('name')),
               labId: String(f.get('labId')), role: String(f.get('role')) as '교수' | '연구원',
               initialPassword,
+              // 체크하지 않으면 아예 보내지 않는다 — 서버 기본값(아니다)을 화면이 덮어쓰지 않는다.
+              ...(f.get('operator') ? { operator: true } : {}),
             } });
             setMessage(data ? data.email + ' 계정을 추가했어요.' : (error?.message ?? '계정을 추가하지 못했어요.'));
             if (data) { form.reset(); setDirty(false); void load(); }
@@ -174,6 +205,10 @@ export function AccountAdminPage() {
           <label className="login-label">연구실<select className="login-input" name="labId" required>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
           <label className="login-label">역할<select className="login-input" name="role" required>{options?.roles.map(r => <option key={r}>{r}</option>)}</select></label>
           <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" required /></label>
+          <label className="login-label account-operator-check">
+            <input type="checkbox" name="operator" /> 관리자로 등록
+          </label>
+          <p className="login-label">관리자는 계정을 관리하고 모든 연구실 자료를 읽기 전용으로 볼 수 있어요.</p>
           <p id="initial-password-help" className="login-label">10~512자로 입력하세요. 영문·숫자·특수문자 조합은 필수가 아니에요. 사용자는 첫 로그인 때 비밀번호를 변경해야 해요.</p>
           <button className="login-submit" type="submit" disabled={busy}>{busy ? '추가하는 중…' : '계정 추가'}</button>
         </form>
@@ -214,7 +249,8 @@ export function AccountAdminPage() {
             <thead>
               <tr>
                 <th scope="col">이메일</th><th scope="col">이름</th><th scope="col">역할</th>
-                <th scope="col">연구실</th><th scope="col">상태</th><th scope="col">최근 로그인</th>
+                <th scope="col">연구실</th><th scope="col">상태</th><th scope="col">관리자</th>
+                <th scope="col">최근 로그인</th>
                 <th scope="col" aria-label="행 동작" />
               </tr>
             </thead>
@@ -226,8 +262,18 @@ export function AccountAdminPage() {
                   <td>{row.role ?? '없음'}</td>
                   <td>{row.labName}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
+                  <td>{row.operator ? '관리자' : '아니요'}</td>
                   <td>{day(row.lastLoginAt)}</td>
                   <td className="account-row-actions">
+                    {/* 자기 자신 해제는 화면에서 막는다 — 되살릴 사람이 없어지는 자리라
+                        서버도 400 을 내지만, 누를 수 있게 두면 그 거절이 사고처럼 보인다.
+                        「마지막 한 명」은 화면이 셀 수 없다(목록이 필터로 좁혀져 있을 수 있다) —
+                        그 판정은 서버가 하고 화면은 그 문구를 그대로 보여 준다. */}
+                    <button type="button" className="btn btn-secondary"
+                            disabled={rowBusy || row.accountId === account?.accountId}
+                            onClick={() => setOperatorRow(row)}>
+                      {row.operator ? '관리자 해제' : '관리자 지정'}
+                    </button>
                     <button type="button" className="btn btn-secondary" disabled={rowBusy}
                             onClick={() => setResetRow(row)}>비밀번호 재설정</button>
                     <button type="button" className="btn btn-secondary" disabled={rowBusy}
@@ -250,6 +296,17 @@ export function AccountAdminPage() {
             void send('/admin/accounts/{accountId}/password-reset', target.accountId,
                       { newPassword: pw }, `${target.email} 의 비밀번호를 재설정했어요.`)
               .then(ok => { if (ok) setResetRow(null); });
+          }} />
+      ) : null}
+      {operatorRow ? (
+        <OperatorDialog row={operatorRow} next={!operatorRow.operator} busy={rowBusy}
+          onClose={() => setOperatorRow(null)}
+          onConfirm={() => {
+            const target = operatorRow;
+            const next = !target.operator;
+            void send('/admin/accounts/{accountId}/operator', target.accountId, { operator: next } as never,
+                      next ? `${target.email} 을 관리자로 지정했어요.` : `${target.email} 의 관리자 권한을 해제했어요.`)
+              .then(ok => { if (ok) setOperatorRow(null); });
           }} />
       ) : null}
       {statusRow ? (

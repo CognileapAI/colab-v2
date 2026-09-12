@@ -94,12 +94,13 @@ const listUrls=(fetch:ReturnType<typeof routedFetch>)=>fetch.mock.calls
  .map(call=>new URL((call[0] as Request).url))
  .filter(url=>url.pathname.endsWith('/admin/accounts')&&!url.pathname.includes('password'));
 
-test('운영자가 전 연구실 계정 목록을 여섯 열로 본다',async()=>{
+test('운영자가 전 연구실 계정 목록을 일곱 열로 본다',async()=>{
  routedFetch();
  renderAdmin();
  const table=await screen.findByRole('table',{name:'계정 목록'});
  const headers=within(table).getAllByRole('columnheader').map(cell=>cell.textContent);
- expect(headers).toEqual(['이메일','이름','역할','연구실','상태','최근 로그인','']);
+ // 「관리자」 열은 행 토글의 현재 상태다 (승인 intent 2026-09-12 운영자 지정).
+ expect(headers).toEqual(['이메일','이름','역할','연구실','상태','관리자','최근 로그인','']);
  const first=within(table).getByRole('row',{name:/one@example.com/});
  expect(first).toHaveTextContent('한 사람');
  expect(first).toHaveTextContent('연구원');
@@ -172,4 +173,76 @@ test('비운영자에게는 목록도 서버 질의도 없다',async()=>{
  expect(await screen.findByText('서비스 운영자만 사용할 수 있어요.')).toBeInTheDocument();
  expect(screen.queryByRole('table',{name:'계정 목록'})).toBeNull();
  expect(fetch).not.toHaveBeenCalled();
+});
+
+// ═══════════════ 관리자 지정·해제 ＋ 전 연구실 보기 ═══════════════
+// 승인 intent = dev-package/intent/2026-09-12-operator-designation.md
+const ACCOUNTS_WITH_OPERATOR=[
+ {accountId:ACC_1,email:'one@example.com',name:'한 사람',labId:LAB,labName:'A 연구실',role:'연구원',status:'active',lastLoginAt:'2026-09-11T02:03:04Z',operator:false},
+ {accountId:ACC_2,email:'two@example.com',name:'두 사람',labId:LAB_B,labName:'B 연구실',role:'교수',status:'inactive',lastLoginAt:null,operator:true},
+ {accountId:OPERATOR.accountId,email:'op@example.com',name:'운영자',labId:LAB,labName:'A 연구실',role:'교수',status:'active',lastLoginAt:null,operator:true},
+];
+function operatorFetch(onOperator?:(request:Request)=>Response){
+ return vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
+  const request=input as Request; const url=new URL(request.url);
+  if(url.pathname.endsWith('/admin/account-options'))return json(OPTIONS);
+  if(url.pathname.endsWith('/operator'))return onOperator?onOperator(request):json({accountId:ACC_1,operator:true});
+  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:ACCOUNTS_WITH_OPERATOR});
+  if(url.pathname.endsWith('/admin/accounts')&&request.method==='POST')return json({accountId:ACC_1,email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
+  return json({message:'모의하지 않은 경로'},500);
+ });
+}
+
+test('행마다 관리자 토글이 있고 자기 자신은 누를 수 없다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ const plain=within(table).getByRole('row',{name:/one@example.com/});
+ expect(within(plain).getByRole('button',{name:'관리자 지정'})).toBeEnabled();
+ const boss=within(table).getByRole('row',{name:/two@example.com/});
+ expect(within(boss).getByRole('button',{name:'관리자 해제'})).toBeEnabled();
+ const self=within(table).getByRole('row',{name:/op@example.com/});
+ expect(within(self).getByRole('button',{name:'관리자 해제'})).toBeDisabled();
+});
+
+test('관리자 지정은 확인 대화상자를 거쳐야 보낸다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
+ const dialog=await screen.findByRole('dialog',{name:'관리자 지정'});
+ fireEvent.click(within(dialog).getByRole('button',{name:'그대로 두기'}));
+ await waitFor(()=>expect(screen.queryByRole('dialog',{name:'관리자 지정'})).toBeNull());
+ expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/operator'))).toHaveLength(0);
+
+ fireEvent.click(within(within(table).getByRole('row',{name:/one@example.com/})).getByRole('button',{name:'관리자 지정'}));
+ fireEvent.click(within(await screen.findByRole('dialog',{name:'관리자 지정'})).getByRole('button',{name:'관리자 지정'}));
+ await waitFor(()=>expect(fetch.mock.calls.filter(call=>(call[0] as Request).url.endsWith('/operator'))).toHaveLength(1));
+ const sent=fetch.mock.calls.map(call=>call[0] as Request).find(request=>request.url.endsWith('/operator'))!;
+ expect(sent.url).toContain(`/admin/accounts/${ACC_1}/operator`);
+ expect(JSON.parse(await sent.clone().text())).toEqual({operator:true});
+});
+
+test('마지막 관리자 해제 거절은 서버 문구 그대로 보인다',async()=>{
+ operatorFetch(()=>json({code:'BAD_REQUEST',message:'마지막 관리자는 해제할 수 없다. 먼저 다른 관리자를 지정한다.'},400));
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ fireEvent.click(within(within(table).getByRole('row',{name:/two@example.com/})).getByRole('button',{name:'관리자 해제'}));
+ fireEvent.click(within(await screen.findByRole('dialog',{name:'관리자 해제'})).getByRole('button',{name:'관리자 해제'}));
+ expect(await screen.findByText('마지막 관리자는 해제할 수 없다. 먼저 다른 관리자를 지정한다.')).toBeInTheDocument();
+});
+
+test('계정 추가 폼의 관리자 체크박스가 요청에 실린다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ const form=within(await screen.findByTestId('account-create'));
+ await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
+ fireEvent.change(form.getByLabelText('이름'),{target:{value:'새 사용자'}});
+ fireEvent.change(form.getByLabelText('이메일'),{target:{value:'new@example.com'}});
+ fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
+ fireEvent.click(form.getByLabelText('관리자로 등록'));
+ fireEvent.click(form.getByRole('button',{name:'계정 추가'}));
+ await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
+ const request=fetch.mock.calls.map(call=>call[0] as Request).find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts'))!;
+ expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',operator:true});
 });
