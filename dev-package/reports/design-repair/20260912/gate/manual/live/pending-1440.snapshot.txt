@@ -1,0 +1,2 @@
+- generic "잠긴 데이터셋검토 대기교수 또는 승인을 맡은 연구원이 보고 있어요." [ref=e1] clickable [onclick]
+  - heading "잠긴 데이터셋" [level=1, ref=e2]

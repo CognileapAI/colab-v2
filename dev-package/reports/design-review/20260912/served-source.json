@@ -1,0 +1,653 @@
+{
+  "time": "2026-09-11T15:53:45.367283+00:00",
+  "url": "https://d31zgpff2091oh.cloudfront.net",
+  "assets": [
+    {
+      "url": "https://d31zgpff2091oh.cloudfront.net/assets/index-B1MJ4QbM.js",
+      "sha256": "f245a36531105aae1c10b429252d95f1a28663bc3b3ee98022e2dd9349227248",
+      "bytes": 702265
+    },
+    {
+      "url": "https://d31zgpff2091oh.cloudfront.net/assets/index-C77HYNgp.css",
+      "sha256": "c6589ed781cd1b7c5416b942af94dba3ec1cbab8733ae80bbb6c14c6b099f251",
+      "bytes": 135831
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "frontend/src/auth/store.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/api/client.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/LoadFailure.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/permission/session.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/auth/LoginPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/auth/AuthGate.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/shell/nav.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/permission/PermissionGate.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/processingLevel.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/escLayer.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/axisDict.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/lineageSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/ParentPicker.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/useParentCandidates.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/LineageStep.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/Toast.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/accessState.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/toastCopy.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/dropTree.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/FileDropCard.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/PreviewExpandOverlay.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/gridFlow.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/GridUploadBlock.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/previewResult.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/PreviewSlot.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/PreviewZoomControls.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/projection.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/BasemapLayer.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/scaleLadder.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/useZoomPan.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/durationSamples.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/useStageRemaining.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/pick.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/PreviewPickRow.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/PreviewPanel.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/common/VariableTable.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/format.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/periodParts.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/PeriodCalendarPopover.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/RegisterArea.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/handoff.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/pendingStore.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/backoff.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/scheduler.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/xhrPut.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/normalizeName.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/transferSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/uploadSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/UploadModal.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/previewSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/projectSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/UploadEntry.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/shell/Gnb.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/openUpload.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/shell/AppLayout.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/search/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/search/SearchHero.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/DataMapCard.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/EmptyLabOnboarding.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lab/LabInfoGrid.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/LabInfoModal.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/visits.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/RecentActivity.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/SummaryTiles.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/TodoInbox.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lab/labSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/dashboardSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/dashboard/useDashboard.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/UnfinishedUploads.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/LabPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/format.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectCards.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectFormModal.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectTable.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectToolbar.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/projectSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/useProjects.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/ProjectsPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectCloseModal.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/placeholders/LockIndicatorSlot.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/project/ProjectDatasetTable.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/ProjectDetailPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/columns.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/AppliedConditions.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/axisFilters.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/AxisFilterBar.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/ColumnMenu.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/CatalogTable.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/catalogSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/catalog/useCatalog.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/DefaultGridButton.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/download.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/fileTree.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/FileList.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/fileSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/placeholders/VerifiedBadgeSlot.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/DatasetsPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/search/SearchHitCard.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/search/searchSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/search/useSearch.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/SearchResultsPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/PreviewControls.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/format.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/tiles.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/tileGrid.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/PreviewPanels.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/types.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/usePreviewRender.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/datasetpreview/datasetPreviewSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/datasetpreview/ScreenshotButton.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/datasetpreview/ValueLookupPanel.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/datasetpreview/DatasetPreviewSection.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/approval/approvalSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/approval/VerifiedBadge.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/approval/VerificationAction.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/DetailHeader.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/PieceList.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/BasicInfoGrid.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/approval/AccessRequestPanel.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/LockedNotice.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/SectionMenu.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/api/download.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/UsageSection.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/filesSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/detailSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/useDatasetDetail.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/editFields.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/useDatasetEdit.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/DatasetEditEntry.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/DatasetEditForm.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/RepresentativeImageSection.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/representativeImageSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/detail/updateSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/LineageFixModal.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/lineageEditSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/LineageSection.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/graphSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lineage/useDatasetLineage.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/upload/GridAttachEntry.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/permission/LockedContent.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/DatasetDetailPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/lab/LabInfoPanel.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/members/permissions.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/members/MemberPermissionGrid.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/members/port.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/LabSettingsPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/NotFoundPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/components/preview/previewSource.ts",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/routes/UnregisteredPreviewPage.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/app/routes.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/app/App.tsx",
+      "sameAsWorkspace": true
+    },
+    {
+      "file": "frontend/src/main.tsx",
+      "sameAsWorkspace": true
+    }
+  ],
+  "same": 158,
+  "different": [],
+  "limitation": "Source maps compare included TS/TSX contents, not a verified deployment Git SHA or CSS identity."
+}

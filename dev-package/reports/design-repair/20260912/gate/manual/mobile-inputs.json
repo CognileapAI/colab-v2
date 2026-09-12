@@ -1,0 +1,222 @@
+[
+  {
+    "name": "access-dialog-375",
+    "inputs": [
+      {
+        "selector": "textarea",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "approval-dialog-375",
+    "inputs": [
+      {
+        "selector": "textarea",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "catalog-375",
+    "inputs": [
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "detail-375",
+    "inputs": [
+      {
+        "selector": "input",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.hidden-input",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.hidden-input",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select.sel",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select.sel",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select.sel",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "empty-375",
+    "inputs": [
+      {
+        "selector": "input",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "lab-375",
+    "inputs": [
+      {
+        "selector": "input",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "lab-dialog-375",
+    "inputs": [
+      {
+        "selector": "input",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "login-375",
+    "inputs": [
+      {
+        "selector": "input.login-input",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.login-input",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "pending-375",
+    "inputs": []
+  },
+  {
+    "name": "project-close-375",
+    "inputs": [
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "project-dialog-375",
+    "inputs": [
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.pj-inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "textarea.pj-tarea",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.pj-inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.pj-inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.pj-inp",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "projects-375",
+    "inputs": [
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select",
+        "fontSize": "16px"
+      }
+    ]
+  },
+  {
+    "name": "settings-375",
+    "inputs": []
+  },
+  {
+    "name": "settings-dialog-375",
+    "inputs": [
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "input.inp",
+        "fontSize": "16px"
+      },
+      {
+        "selector": "select.sel",
+        "fontSize": "16px"
+      }
+    ]
+  }
+]

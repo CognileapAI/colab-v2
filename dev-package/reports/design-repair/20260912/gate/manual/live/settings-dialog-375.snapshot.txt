@@ -1,0 +1,18 @@
+- generic "연구실 정보구성원 · 권한연구실 정보정보 편집연구실 이름수자원순환연구실소속 대학A 대학교학부/학과토목공학과책임교수사자 교수연구 분야수문학구성원 수7명데이터 공개 범위열림한 줄 소개" [ref=e1] clickable [onclick]
+  - tab "연구실 정보" [selected, ref=e4]
+  - tab "구성원 · 권한" [ref=e5]
+  - heading "연구실 정보" [level=3, ref=e2]
+  - button "정보 편집" [ref=e3]
+  - heading "연구실 정보" [level=3, ref=e6]
+  - textbox "연구실 이름" [ref=e7]: 수자원순환연구실
+  - textbox "소속 대학" [ref=e8]: A 대학교
+  - textbox "학부 · 학과" [ref=e9]: 토목공학과
+  - textbox "책임교수" [ref=e10]: 사자 교수
+  - textbox "연구 분야" [ref=e11]: 수문학
+  - textbox "한 줄 소개" [ref=e12]: 수문 자료를 다룬다
+  - combobox "데이터 공개 범위" [expanded=false, ref=e13]: 연구실 구성원 전체
+    - option "연구실 구성원 전체" [selected, ref=e16]
+    - option "나만 보기" [ref=e17]
+    - option "지정한 사람만" [ref=e18]
+  - button "취소" [ref=e14]
+  - button "저장" [ref=e15]

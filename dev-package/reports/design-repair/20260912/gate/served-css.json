@@ -1,0 +1,98 @@
+[
+  {
+    "path": "components/upload/upload.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "b814b7461790f75ca3093fd533910ca1dcd6a53ec668a140a959947b5d5db6a6"
+  },
+  {
+    "path": "components/search/search.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "addcd63ad2fc11eaf10f855eca24b178fa2895fc7f1adc90001cc4ef6d3fe679"
+  },
+  {
+    "path": "components/dashboard/dashboard.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "d2ff2f601994c9664bb28f5d5750a75ca11e28527f8a684402314cba0a5d96ca"
+  },
+  {
+    "path": "components/catalog/catalog.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "b2b2cfbf417385d17c31a049b4ede01fde82257232c019d9bec9fcd68ad3bbee"
+  },
+  {
+    "path": "components/project/project.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "bcd3814390c884cd0d3a925fb26cc1e06c4a35a249be8f5f3a9b6f4411a22553"
+  },
+  {
+    "path": "components/lab/lab.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "1ac280129b051fd69b720c932464adee72c292d3f644eb422c3a19207d152b87"
+  },
+  {
+    "path": "components/members/members.css",
+    "match": true,
+    "comparison": "import expanded, whitespace normalized",
+    "sourceSha256": "2a9f35d7de44d256cbd480cb4028c96a74b924eb61e1ecaf8757fc56bed9e3bf"
+  },
+  {
+    "path": "auth/login.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "e38171d676cd5048443f6b0a9edac9209f1a8a5ca5f871c27592f90a246555f0"
+  },
+  {
+    "path": "components/preview/preview.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "86b2c9e3de5b4f60fa5dfbaefd8d246699289245626ed932253186c18ea80906"
+  },
+  {
+    "path": "components/approval/approval.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "52e425fdb9400684d5d8abf5b548a30b83d238a9ce8a37c3434c41abad8f04d9"
+  },
+  {
+    "path": "components/common/variableTable.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "e3f41f92dbf20dd663c970edf9cdf4360b5ad146b3b3d61e4f2d86832e6c8d4a"
+  },
+  {
+    "path": "components/common/toast.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "b4f30d60fc9409becc3d7f15045b96bb6eee9e1de19e8dcdbad8379e43289746"
+  },
+  {
+    "path": "components/lineage/lineage.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "51169704b32c1eb4b448dd9f91cca2f909334cea0a0292ec43b1f2bc93a5d3d6"
+  },
+  {
+    "path": "components/lineage/lineageGraph.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "a46c79f6a2fa530aebab0e51ed36e6fdaa0550ce8fd268c117c62f3dcd85e7ad"
+  },
+  {
+    "path": "components/detail/detail.css",
+    "match": true,
+    "comparison": "exact",
+    "sourceSha256": "2ccad2bc49c9f00ca6668f98087f56d8b043e0f3e9fa7170e7b1d718110140e5"
+  },
+  {
+    "path": "shell/shell.css",
+    "match": true,
+    "comparison": "import expanded, whitespace normalized",
+    "sourceSha256": "55942306fe57fd8ffd0876ec1a4e0dacb263f28f63c5b8d34a5a779a37d5d69b"
+  }
+]

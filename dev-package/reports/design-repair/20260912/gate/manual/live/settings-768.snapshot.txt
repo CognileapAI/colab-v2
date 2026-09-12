@@ -1,0 +1,5 @@
+- generic "연구실 정보구성원 · 권한연구실 정보정보 편집연구실 이름수자원순환연구실소속 대학A 대학교학부/학과토목공학과책임교수사자 교수연구 분야수문학구성원 수7명데이터 공개 범위열림한 줄 소개" [ref=e1] clickable [onclick]
+  - tab "연구실 정보" [selected, ref=e4]
+  - tab "구성원 · 권한" [ref=e5]
+  - heading "연구실 정보" [level=3, ref=e2]
+  - button "정보 편집" [ref=e3]
