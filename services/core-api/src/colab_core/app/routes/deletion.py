@@ -42,10 +42,16 @@ router = APIRouter(tags=["catalog"])
 #: `거절됨` 으로 닫으므로, 요청자에게는 이 문장이 **왜 닫혔는지**를 말하는 유일한 자리다.
 ACCESS_REQUEST_CLOSED_REASON = "데이터가 지워져서 요청이 닫혔어요."
 
-#: 운영자 감사 행위 문자열. **레포에 이미 있는 값을 다시 쓴다** —
-#: `d3_audit.append_deletion_snapshots`(purge 경로)가 같은 표 `d3_operator_audit` 에
-#: 같은 이름으로 적는다. 두 삭제 경로가 다른 문자열을 쓰면 감사 질의가 한쪽을 놓친다.
-AUDIT_ACTION_DELETED = "dataset.deleted"
+#: 운영자 감사 행위 문자열. **물리 삭제와 다른 값이다.**
+#: `ops/purge_datasets.py`(→ `d3_audit.append_deletion_snapshots`)가 같은 표 `d3_operator_audit` 에
+#: `dataset.deleted` 로 적는데, 한 데이터셋은 **묘비가 된 뒤 나중에 물리 삭제될 수 있다** —
+#: 두 경로가 같은 문자열을 쓰면 같은 `target_id` 에 같은 이름이 2행 쌓이고,
+#: 「대상당 1행」을 전제하는 질의(`tests/test_operator_notifications_e2e.py:136`)가 깨진다.
+#: 되돌릴 수 있는 정도도 다르다 — 묘비는 행이 남고, 물리 삭제는 행이 사라진다.
+#: ⚠ 이 값을 늘리면 **일일 보고의 이름표도 함께 늘려야 한다** — `infra/notifications/digest.py`
+#: 가 `LABELS[action]` 을 직접 첨자로 읽어서(`:195`·`:200`) 빠지면 그날 보고가 `KeyError` 로 죽는다.
+#: (오케스트레이터 결정 2026-09-12 · Ted 개정 가능)
+AUDIT_ACTION_TOMBSTONED = "dataset.tombstoned"
 
 #: 권한 거절 문구 — 정본 조항을 괄호에 달아 「어느 규칙이 막았는가」를 사람이 되짚게 한다.
 FORBIDDEN_MESSAGE = "데이터셋 삭제는 소유자 또는 교수만 할 수 있다 (Policy_데이터셋_상세 §6)."
@@ -167,7 +173,7 @@ def delete_dataset(request: Request, datasetId: str,
     #      ⚠ **트랜잭션 안이다** — 실패하면 예외가 그대로 올라가 전체가 롤백되고 500 이
     #      나간다(⑨ 와 같은 성질). 감사 없이 커밋되는 삭제를 만들지 않는다.
     d3_audit.append_snapshot(db, actor_id=subject.account_id, target_id=dataset_id,
-                             action=AUDIT_ACTION_DELETED,
+                             action=AUDIT_ACTION_TOMBSTONED,
                              before={"name": core.name, "summary": core.summary},
                              after=None)
 

@@ -4017,7 +4017,8 @@ items:
       승인함 대기 0 ＋ `deploy_doctor` 15/15 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
       ／ 종전 표기 ~~14/14~~ — R-D `WU-D3` 가 ⑮(실행 sha ∈ main · `MAIN_SHA` 대조)를 더했다
       ⑼ **운영자 감사 스냅샷** — 삭제 뒤 `d3_operator_audit` 에 그 데이터셋 행 **1건**
-      (`action='dataset.deleted'` · `before.name` 있음 · `after_snapshot IS NULL`).
+      (`action='dataset.tombstoned'` · `before.name` 있음 · `after_snapshot IS NULL`)
+      ＋ 일일 운영자 보고에 그 이름이 뜬다(`infra/notifications/digest.py` `LABELS`).
       `0027_operator_audit` 가 데이터셋 쓰기에 건 규약이고 `d3_catalog.update_dataset` 이 선례다 —
       활동 한 줄(`d8_activity`)은 이름·요약을 안 들어 그 자리를 대신하지 못한다.
       시험 `tests/test_dataset_deletion.py::test_deleting_appends_one_operator_audit_snapshot`
@@ -4043,9 +4044,19 @@ items:
       재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1(`schema-diff`) ·
       pytest 1145 passed / 1 failed(`test_ownership_snapshot_publisher` — 호스트 `postgres` 암호
       전제 미선언 · 레인 기여분 0 · `lane-report.md §10-5 ⓒ`) · `tests/test_dataset_deletion.py` 23 ·
-      vitest 1270/0 · 계약 개정 0 · 마이그레이션 0 유지 — `lane-report.md §10`
+      vitest 1270/0 · 계약 개정 0 · 마이그레이션 0 유지 — `lane-report.md §10` ·
+      **C9**(`301183c`) `frontend-test` 간헐 red 해소(초과 · 별도 커밋) ·
+      **C10** 어드바이저 ② 정정 5건 — 삭제 버튼 다크 토큰 · 감사 action 분리 · 계수 실행별 표기 ·
+      purge 머리말 · 후속 WU 3 등재 — `lane-report.md §10-7`
     deadline: null
     note: >-
+      ⭑ **⟨결정 2026-09-12 · 오케스트레이터 · Ted 개정 가능⟩ 묘비 전환의 감사 행위 문자열은
+      `dataset.tombstoned` 다 — 물리 삭제(`ops/purge_datasets.py` → `d3_audit.append_deletion_snapshots`)의
+      `dataset.deleted` 와 **분리한다.** 근거 = 한 데이터셋이 묘비가 된 뒤 물리 삭제될 수 있어 같은
+      `target_id` 에 같은 이름이 2행 쌓이고, 「대상당 1행」을 전제하는 질의
+      (`tests/test_operator_notifications_e2e.py:136`)가 깨진다. 되돌릴 수 있는 정도도 다르다.
+      ⚠ 값을 늘리면 `infra/notifications/digest.py` 의 `LABELS`·`DETAIL_ACTIONS` 도 함께 늘린다 —
+      `LABELS[action]` 이 직접 첨자라 빠지면 그날 보고가 `KeyError` 로 죽는다(`:195`·`:200`).
       **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
       있고 라우트만 501)에서 왔다. **계약 개정 0**(선례 `〈229〉`-㉰) · **마이그레이션 0**.
       ⚠ **미리보기는 지우지 않는다** — 계약 산문 「파일·미리보기만 지우고」와의 차이이고
@@ -4116,3 +4127,81 @@ items:
       `gates/tools/_pg.sh`(도달성 확인) 또는 `service-tests.sh`(`PGCONNECT_TIMEOUT`).
       정밀도를 올리는 수정이지 범위 축소가 아니다 — red fixture 로 증명한다(⑶).
     sources: ["dev-package/reports/dl-1/lane-report.md", "dev-package/reports/dl-1/lane-report.md#3"]
+
+  - id: fe-test-order-dependence
+    name: "`frontend-test` 가 같은 트리에서 red/green 으로 갈리는 자리 — 시험이 비동기 결과를 기다리지 않고 재는 곳을 없앤다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend-test` 를 연속 3회 돌려 같은 판정이 나온다
+      ⑵ 단언이 비동기 결과(라우터 이동·재렌더)를 보는 자리는 전부 `waitFor`/`findBy` 안에 있다
+      ⑶ 재는 값·단언 수는 그대로다(검사 축소 0)
+    evidence: >-
+      2026-09-12 `DL-1` 레인 실측 — 같은 커밋·같은 node 5회에 red 3 / green 2 ·
+      갈린 것은 늘 `frontend/test/account-admin.test.tsx` 의 첫 시험 ·
+      축자 `Expected element to have text content: /lab  Received: /account-admin` ·
+      그 한 건은 `lane/wu-dl-1` C9 가 고쳤고(C9 뒤 연속 3회 `105 files / 1270 tests` green)
+      **같은 무늬가 남아 있는지는 전수로 재지 않았다** — 이 항목이 그 전수다
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `DL-1` 레인의 어드바이저 ② 정정에서 분리. 원인은 제품이 아니라 시험의 경주다:
+      `await waitFor(()=>expect(fetch).toHaveBeenCalled())` 는 「fetch 가 불렸다」까지만 기다리는데
+      제품은 응답이 온 **뒤에** `setSession` ＋ `navigate` 를 한다. 「fetch 가 불렸다」는 「이동이 끝났다」보다
+      항상 이르므로 라우터 재렌더가 단언 뒤로 밀리면 red 가 된다. **판정이 재현되지 않는 게이트는
+      그 파일에 대해 근거가 되지 못한다**(`rules §3-3` 계열). 같은 무늬를 `frontend/test/` 전수로 훑는 것이 이 항목이다.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]
+
+  - id: gate-work-item-pyyaml
+    name: "`work-item-consistency` 가 PyYAML 없는 인터프리터에서 준비 실패를 `red(판정)` 으로 낸다 — 갈래를 바로잡는다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 도구 의존(PyYAML)이 없으면 `::gate-readiness-failure::` ＋ exit 78 로 선다(판정 red 아님)
+      ⑵ 또는 게이트가 `gates/tools/_venv.sh` 의 `GATE_PY`(핀 `gates/requirements.txt` `PyYAML==6.0.2`)를 쓴다
+      ⑶ 셀프테스트 red fixture(의존 부재)로 그 갈래를 증명
+    evidence: >-
+      2026-09-12 맥 호스트 실측 — `bash gates/run.sh work-item-consistency` 축자
+      `::error::work-item-consistency — pyyaml 이 없다 (검사 불가는 통과가 아니다)` · `red(판정) · exit 1` ·
+      이 호스트의 `python3` 셋(3.12 프레임워크 · 3.10 · `/usr/local`) 어디에도 PyYAML 이 없다 ·
+      `PATH` 앞에 `gates/.venv/bin` 을 세우면 같은 스크립트가 green
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `gate-pg-reach` 와 같은 계열이다(준비 실패를 판정 red 로 낸다). 부르는 자리 =
+      `gates/run.sh` 의 `exec python3 gates/tools/work_item_consistency.py`. 같은 무늬가 다른 게이트에도
+      있는지 함께 훑는다 — 실측된 것 둘 더: `contract-lint`(`gates/tools/contract-lint.sh:51` 의 `mapfile` 은
+      bash 4+ 내장이라 macOS 기본 `bash` 3.2 에서 `SPECS[@]: unbound variable`) · `_pg.sh:181`
+      (`netarg[@]: unbound variable`). 셋 다 **검사 내용과 무관한 실행 환경 의존**이고 게이트가 원인을 말하지 않는다.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]
+
+  - id: ownership-snapshot-test-precondition
+    name: "`test_ownership_snapshot_publisher` 가 게이트 밖에서 `postgres` 무암호 접속을 전제한다 — 준비/판정을 가른다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 소유자 접속을 못 만들면 시험이 **준비 실패로 갈라져 선다**(판정 red 아님) 또는 접속값이 시험 환경 선언에서 온다
+      ⑵ 게이트·CI 의 판정은 지금과 같다(일회용 postgres 에서 전건 통과)
+      ⑶ 상시 로컬 컨테이너(공개 포트 · `scram-sha-256`)에서 손 실행해도 판정 red 가 아니다
+    evidence: >-
+      2026-09-12 맥 호스트 실측 — `pytest -m "not e2e"` 에서 1건 실패 · 축자
+      `psycopg.OperationalError ... password authentication failed for user "postgres"` ·
+      시험은 `services/core-api/tests/test_ownership_snapshot_publisher.py:66` 에서
+      `make_url(app_db_url).set(username="postgres",password=None)` 로 붙는다 ·
+      **게이트·CI 안에서는 전제가 선언돼 있다** — `gates/tools/_pg.sh:180` 이
+      `POSTGRES_HOST_AUTH_METHOD=trust` 컨테이너를 세우고 `setup-db.sh` 가 그 URL 을 주입한다
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `DL-1` 레인이 `service-tests-core-api` 를 이 맥에서 못 돌려(`gate-pg-reach`)
+      직접 pytest 로 갈음하다 발견. 결함은 「전제가 없다」가 아니라 **「게이트 밖에서는 그 전제가 서지 않는데
+      시험이 그것을 준비 실패로 가르지 않는다」**이다. 상시 컨테이너는 공개 포트로 들어오는 접속을
+      `scram-sha-256` 으로 받는다(`pg_hba` 의 `trust` 줄은 컨테이너 내부 `127.0.0.1/32` 전용).
+      제품 코드는 한 줄도 돌지 않고 접속 단계에서 죽는다 — `DL-1` 기여분 0.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]

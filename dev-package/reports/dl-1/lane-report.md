@@ -304,7 +304,8 @@ testid 3건** — 둘 다 계획의 완료 정의를 잠그기 위한 것이고 
 | C5→**C6** | `6448f50` | `17b0b95` | `0017` 3값 정합 ＋ 재리베이스 기록(메시지를 이번 기준으로 고쳐 C6 으로 간주) |
 | **C7** | — | `5527408` | 묘비 전환에 운영자 감사 스냅샷(`0027` 규약 정합) |
 | **C8** | — | (마감 커밋) | 재리베이스 마감 — 보고서 §10 · 세션 · 대장 |
-| **C9** | — | (이 커밋) | `frontend-test` 간헐 red 해소 — 시험 단언 한 줄을 `waitFor` 안으로(**초과** · §10-5 ⓐ) |
+| **C9** | — | `301183c` | `frontend-test` 간헐 red 해소 — 시험 단언 한 줄을 `waitFor` 안으로(**초과** · §10-5 ⓐ) |
+| **C10** | — | (이 커밋) | 어드바이저 ② 정정 5건 — §10-7 |
 
 - `git diff --name-only origin/main` = **C6 시점 27 파일** · C7·C8·C9 의 pytest 로그 3 을 더해 **최종 31 파일**
   (`…/rebase2/pytest-red-c7.txt`·`pytest-full.txt`·`pytest-11b.txt` ＋ C9 의 `frontend/test/account-admin.test.tsx`) —
@@ -333,16 +334,39 @@ testid 3건** — 둘 다 계획의 완료 정의를 잠그기 위한 것이고 
 - 자리 = `routes/deletion.py::delete_dataset` 트랜잭션 안 **⑧-b**(활동 한 줄 직후 · 바이트 회수 전).
   `restore_access` **뒤**다 — `d3_operator_audit` 의 RLS 는 `lab_id = current_lab_id()` 하나뿐이라
   「열림」 창과 무관하고, 선례(`routes/project.py::delete_project`)도 활동 다음에 감사를 적는다.
-- 인자 축자 = `action="dataset.deleted"` · `before={"name","summary"}` · `after=None`.
-  **레포에 이미 있는 값을 재사용**했다 — purge 경로 `d3_audit.append_deletion_snapshots` 가 같은 표에
-  같은 이름·같은 모양으로 적는다. 두 삭제 경로가 다른 문자열을 쓰면 감사 질의가 한쪽을 놓친다.
+- 인자 축자 = `action="dataset.tombstoned"` · `before={"name","summary"}` · `after=None`.
+  ⭑ **⟨개정 2026-09-12 · C10 · 오케스트레이터 결정 · Ted 개정 가능⟩ 행위 문자열을 물리 삭제와 분리했다**
+  ／ 종전 ~~`dataset.deleted` 재사용~~ — purge 경로(`ops/purge_datasets.py` → `d3_audit.append_deletion_snapshots`)가
+  같은 표에 `dataset.deleted` 로 적는데, **한 데이터셋은 묘비가 된 뒤 나중에 물리 삭제될 수 있다.**
+  같은 문자열이면 같은 `target_id` 에 같은 이름이 2행 쌓이고, 「대상당 1행」을 전제하는 질의
+  (`tests/test_operator_notifications_e2e.py:136` 의 `assert len(rows)==1`)가 깨진다.
+  되돌릴 수 있는 정도도 다르다 — 묘비는 행이 남고, 물리 삭제는 행이 사라진다.
+- **소비처도 같이 고쳤다** — `infra/notifications/digest.py` 는 `LABELS[action]` 을 **직접 첨자**로 읽어서
+  (`:195`·`:200`) 이름이 없으면 그 줄만 비는 것이 아니라 **그날 운영자 보고 전체가 `KeyError` 로 죽는다.**
+  `LABELS` 에 `dataset.tombstoned: 데이터 지움(묘비)` ＋ `DETAIL_ACTIONS` 에 추가.
+  시험 2건 신설(`scripts/tests/test_operator_digest.py::DigestActionVocabularyTests`) — **red 먼저**
+  (`AssertionError: 'dataset.tombstoned' not found in {...}` · 로그 `…/rebase2/c10/unittest-red-digest.txt`).
 - 실패 시 예외 전파 → 전체 롤백 · 500(§5-4 의미론 그대로). 감사 없이 커밋되는 삭제를 만들지 않는다.
 - 시험 1건 신설 `test_deleting_appends_one_operator_audit_snapshot` —
   **red 먼저**(구현 전) 축자 `AssertionError: 삭제가 운영자 감사 스냅샷을 1행 남기지 않았다. assert 0 == 1` ·
   로그 `dev-package/reports/dl-1/rebase2/pytest-red-c7.txt` → 구현 뒤 green.
   `tests/test_dataset_deletion.py` **22 → 23**.
 
-### 10-4. 재검증 3계수 — **green 13 / red(판정) 0 / red(준비) 1**(14 게이트 실행 · `service-tests` 미실행)
+### 10-4. 재검증 3계수 — **실행별로 적는다(합성값 금지)**
+
+| 실행 | 대상 | green | red(판정) | red(준비) | 배출처 |
+|---|---|---|---|---|---|
+| ⑴ 게이트별 단독 1회씩 | 14 | **12** | **1** — `frontend-test` 1회차 | **1** — `schema-diff` | `…/rebase2/gates/<게이트>/` |
+| ⑵ ⑴ 의 `frontend-test` 단독 재실행 | 1 | **1** | 0 | 0 | `…/rebase2/gates/frontend-test/` |
+| ⑶ 작업 증거 1회(C9 **뒤** · `schema-diff` 제외 13 선언) | 13 | **13** | **0** | **0** | `…/rebase2/h7/gate-summary.json` |
+
+- ⑴ 의 red(판정) 1 은 `frontend-test` 이고 **원인은 §10-5 ⓐ 의 시험 경주**다. ⑵ 는 그 단독 재실행,
+  ⑶ 은 C9 가 원인을 고친 뒤의 판정이다. **세 값을 합쳐 하나로 적지 않는다.**
+- `schema-diff` 는 ⑶ 의 선언 집합에서 뺐다 — red(준비)는 작업 증거가 받지 않는다. 그 판정은 ⑴ 에 남는다.
+- ⛔ **`service-tests-core-api` 는 실행하지 않았다** — 이 맥에서 무판정 매달림(§3 · 대장 `gate-pg-reach`).
+  직접 pytest 로 갈음했고(아래) **그것은 보조 근거다.** 병합 조건인 **CI `service-tests` 1회 green 은 그대로 대기 중**이다.
+
+／ 게이트별 축자는 아래 표.
 
 ／ 실행 둘 — ⑴ 게이트별 단독(`COLAB_GATE_REPORT_DIR=dev-package/reports/dl-1/rebase2/gates/<게이트>
 bash gates/run.sh <게이트>` · 요약 JSON 과 `gate.log` 가 그 자리에 선다 · 스키마 `colab-gate-summary/1`) ·
@@ -418,27 +442,34 @@ red(판정)·red(준비)로 낸다. 위 표의 값은 **bash 5 가 잡히는 PAT
   ⚠ **초과(scope overflow)로 적는다** — DL-1 과 무관한 main 쪽 시험 파일이다. **별도 커밋(C9)으로 갈라 뒀으니
   오케스트레이터가 원하면 그 한 커밋만 떼면 된다.**
   **확인** — C9 전 같은 트리 5회 = red 3 / green 2 · C9 뒤 연속 3회 = `105 files / 1270 tests passed` × 3.
+  ⟹ **그 한 건은 해소**. 같은 무늬가 `frontend/test/` 에 더 있는지 전수로 훑는 일은 대장 WU
+  **`fe-test-order-dependence`** 로 등재(status `open`).
 - **ⓑ `work-item-consistency` 가 인터프리터에 PyYAML 이 없으면 `red(판정)` 을 낸다.** 이것은 **준비 실패**인데
   판정 red 로 나온다(`exit 78`·`::gate-readiness-failure::` 아님). `gate-pg-reach` 와 같은 계열이다 —
   레인이 「코드 결함」으로 오독하는 자리. **어느 검사에 걸리는가** — 게이트 자신이 red 를 내지만 **종류를 틀리게 낸다.**
   고치는 자리 = `gates/run.sh` 의 그 줄이 `gates/tools/_venv.sh` 의 `GATE_PY` 를 쓰게 하거나, 없을 때 exit 78 로 가르기.
-  **후속 항목.**
+  ⟹ 대장 WU **`gate-work-item-pyyaml`** 로 등재(status `open` · 아래 ⓓ 의 셸 두 건도 그 항목 `note` 에 함께 실었다).
 - **ⓓ 게이트 둘이 bash 4+ 내장을 쓰면서 셸 버전을 검사하지 않는다.** `contract-lint`(`mapfile` ·
   `gates/tools/contract-lint.sh:51`)와 `_pg.sh`(`${netarg[@]}` · `:181`)는 macOS 기본 `bash` 3.2 에서
   `unbound variable` 로 죽는다. `#!/usr/bin/env bash` 라 **PATH 가 무엇을 주느냐에 따라 판정이 갈린다.**
   **어느 검사에 걸리는가** — 게이트 자신이 red 를 내지만 **원인을 셸 버전이라고 말하지 않는다**(ⓑ 와 같은 계열).
   고치는 자리 = 두 스크립트 머리에 `BASH_VERSINFO` 확인 ＋ 미달 시 exit 78, 또는 `mapfile`/배열 기본값
-  회피. **후속 항목.**
+  회피. ⟹ 대장 WU **`gate-work-item-pyyaml`** 의 `note` 에 함께 실었다(같은 계열 · 검사 내용과 무관한 실행 환경 의존).
 - **ⓒ `test_ownership_snapshot_publisher.py` 가 `postgres` 슈퍼유저에 `password=None` 으로 접속한다**
   (`:66` 축자 `owner_url=make_url(app_db_url).set(username="postgres",password=None)`). 이 맥의 로컬 컨테이너는
   공개 포트로 들어오는 접속을 `scram-sha-256` 으로 받는다(`pg_hba.conf` 의 `trust` 줄은 컨테이너 내부
   `127.0.0.1/32` 전용이고, 호스트에서 오는 접속은 마지막 `host all all all scram-sha-256` 에 걸린다).
   ⟹ **접속 단계에서 죽는다 — 제품 코드가 한 줄도 돌지 않는다.** 이 시험 파일은 main 쪽 `TL-2`(`d56428d`)가 넣었고
   이 레인은 건드리지 않았다(변경 파일 목록에 없다). **어느 검사에 걸리는가** — `service-tests-core-api` 게이트와
-  CI `service-tests` 잡. 다만 **「`postgres` 가 암호 없이 붙을 수 있어야 한다」는 전제가 어디에도 선언돼 있지 않고**,
-  시험에 준비/판정 갈래도 없어 **호스트에 따라 판정 red 로 뜬다.** 고치는 자리 = 그 전제를 시험 환경 선언으로
-  올리거나(`~/.colab-v2-test.env` 에 소유자 URL 한 줄) 시험이 준비 실패를 가르게 하기. **후속 항목 · 이 레인 범위 밖**
-  (지시문 「시험 DB 권한 오류는 원인 적고 정지」).
+  CI `service-tests` 잡.
+  ⭑ **⟨정정 2026-09-12 · 어드바이저 ②⟩ 종전 표기 ~~「`postgres` 무암호 전제가 어디에도 선언돼 있지 않다」~~ 는
+  부정확했다 — 게이트·CI 안에서는 선언돼 있다.** `gates/tools/_pg.sh:180` 이
+  `-e POSTGRES_HOST_AUTH_METHOD=trust` 로 일회용 postgres 를 세우고 `tests/fixtures/setup-db.sh` 가
+  그 URL 을 `COLAB_CORE_TEST_DATABASE_URL` 로 주입한다. ⟹ **실패 원인 = 게이트 밖 손 실행 ＋
+  상시 로컬 컨테이너의 `scram-sha-256`** 이지 전제 부재가 아니다.
+  남는 결함은 **시험이 그 갈래를 준비 실패로 가르지 않는다**는 것이다 — 게이트 밖에서는 판정 red 로 뜬다.
+  고치는 자리 = 소유자 접속값을 시험 환경 선언으로 올리거나(`~/.colab-v2-test.env` 에 한 줄) 시험이
+  준비 실패를 가르게 하기. ⟹ 대장 WU **`ownership-snapshot-test-precondition`** 로 등재(status `open`).
 
 ### 10-6. 열린 것 (§8·§9-7 에서 달라진 것만)
 
@@ -446,3 +477,31 @@ red(판정)·red(준비)로 낸다. 위 표의 값은 **bash 5 가 잡히는 PAT
   dev 배포 · 완료 정의 ⑻ — **그대로 열려 있다.**
 - 완료 정의 ⑻ 의 `deploy_doctor` 항목 수는 **15** 다(`CLAUDE.md §0` · R-D `WU-D3` 가 ⑮ 를 더했다) ／ 종전 표기 14.
 - 감사 스냅샷(C7)이 완료 정의에 한 줄 는다 — dev 실삭제 때 `d3_operator_audit` 에 그 데이터셋 행 1건.
+
+### 10-7. 어드바이저 ② 정정 (C10 · 2026-09-12)
+
+판정 = `approve-with-changes`. 다섯 건을 한 커밋으로 집행했다.
+
+| # | 무엇 | 근거·확인 |
+|---|---|---|
+| ⑴ | **삭제 버튼이 다크에서 안 읽힌다** — `frontend/src/components/detail/deletion.css` 가 `color:#fff` 를 고정 | 다크에서 `--color-danger-solid` = `#ffadb6`(밝은 분홍 · `src/shell/tokens.css:108`)이라 흰 글자가 묻힌다. main 규약(`components/approval/approval.css:14`) 축자로 `background: var(--color-danger-solid); border-color: var(--fg-danger); color: var(--color-on-danger);` — 글자색은 테마마다 뒤집힌다(라이트 `#ffffff` `:63` · 다크 `#361016` `:109`). 「`.btn-danger` 정의 0건」 낡은 주석 삭제(실물은 `approval.css:14` 에 있다) |
+| ⑵ | **감사 행위 문자열 분리** — `dataset.deleted` → `dataset.tombstoned` | §10-3 · 소비처 `digest.py` 동반 · red 먼저 |
+| ⑶ | **§10-4 계수를 실행별로** ＋ §10-5 ⓒ 문구 정정 | 합성값 금지 · `_pg.sh:180` `POSTGRES_HOST_AUTH_METHOD=trust` 실측 |
+| ⑷ | **`ops/purge_datasets.py` 머리말** 의 「`deleteDataset` 은 `NOT_IMPLEMENTED_P1`」 갱신 | 제품 op 은 `DL-1` 이 연다(병합 시 `〈N〉`) · **코드 무변** · 두 경로가 다른 일을 한다는 것을 같은 자리에 적었다(묘비 ↔ 행 삭제) |
+| ⑸ | **후속 항목 3건을 대장 WU 로 등재** | `fe-test-order-dependence` · `gate-work-item-pyyaml` · `ownership-snapshot-test-precondition` — 전부 status `open` · 완료 정의 3줄 · `gate-pg-reach` 선례 형식. 대장 185 → **188** |
+
+**C10 재검증** (로그 `dev-package/reports/dl-1/rebase2/c10/`)
+
+| 검사 | 값 |
+|---|---|
+| `frontend-test` | green — `Test Files 105 passed (105)` · `Tests 1270 passed (1270)` |
+| `frontend-typecheck` | green — `tsc --noEmit` 오류 0 |
+| `work-item-consistency` | green — 대장 188건 · 불일치 0 |
+| pytest `tests/test_dataset_deletion.py` | **23 passed** |
+| pytest 두 파일 함께(`test_dataset_deletion.py` ＋ `test_operator_notifications_e2e.py`) | **36 passed** · 로그 `…/c10/pytest.txt` |
+| unittest `scripts/tests/test_operator_digest.py` | **Ran 5 tests … OK**(신설 2 포함) · 로그 `…/c10/unittest-digest.txt` |
+
+**3계수(C10 · 게이트 3종 각각 단독 1회)** = **green 3 / red(판정) 0 / red(준비) 0**.
+배출처 `dev-package/reports/dl-1/rebase2/c10/<게이트>/gate-summary.json`.
+⛔ `service-tests-core-api` 는 이번에도 실행하지 않았다(`gate-pg-reach`) — **CI `service-tests` 1회 green 대기 그대로**.
+

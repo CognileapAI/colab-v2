@@ -40,8 +40,9 @@ PREFIX = "/api/v1"
 CLOSED_REASON = "데이터가 지워져서 요청이 닫혔어요."
 #: 활동 문자열. 선례 = `ACTION_PROJECT_DELETED = "프로젝트 지움"`.
 ACTION_DELETED = "데이터셋 지움"
-#: 운영자 감사 행위 문자열. 선례 = `d3_audit.append_deletion_snapshots`(purge)가 쓰는 값.
-AUDIT_ACTION_DELETED = "dataset.deleted"
+#: 운영자 감사 행위 문자열. **물리 삭제(`ops/purge_datasets.py` 의 `dataset.deleted`)와 다른 값**이다 —
+#: 한 데이터셋이 묘비가 된 뒤 물리 삭제되면 같은 대상에 두 행이 쌓이고, 그 둘은 구별돼야 한다.
+AUDIT_ACTION_TOMBSTONED = "dataset.tombstoned"
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -741,7 +742,7 @@ def test_deleting_appends_one_operator_audit_snapshot(p2_client, planted, sql):
                {"id": dataset_id})
     assert len(rows) == 1, "삭제가 운영자 감사 스냅샷을 1행 남기지 않았다."
     assert rows[0]["actor_id"] == ACC_A_PROF
-    assert rows[0]["action"] == AUDIT_ACTION_DELETED
+    assert rows[0]["action"] == AUDIT_ACTION_TOMBSTONED
     assert rows[0]["before_snapshot"]["name"] == "감사 대상"
     assert rows[0]["after_snapshot"] is None, "묘비 뒤에는 남는 상태가 없다 — `after` 는 null 이다."
 

@@ -10,9 +10,11 @@ from zoneinfo import ZoneInfo
 from .events import canonical, escape
 
 KST = ZoneInfo('Asia/Seoul')
-DETAIL_ACTIONS = {'dataset.deleted', 'project.deleted', 'permission.changed', 'access.approved', 'access.rejected'}
+DETAIL_ACTIONS = {'dataset.tombstoned', 'dataset.deleted', 'project.deleted', 'permission.changed',
+                  'access.approved', 'access.rejected'}
 LABELS = {'upload.accepted': '업로드 접수', 'upload.registered': '등록', 'dataset.registered': '등록',
-          'dataset.updated': '데이터 변경', 'dataset.deleted': '데이터 삭제', 'project.created': '프로젝트 생성',
+          'dataset.updated': '데이터 변경', 'dataset.tombstoned': '데이터 지움(묘비)',
+          'dataset.deleted': '데이터 삭제', 'project.created': '프로젝트 생성',
           'project.deleted': '프로젝트 삭제', 'download.ticket_issued': '다운로드 요청/티켓 발급',
           'access.requested': '접근 요청', 'access.approved': '접근 승인', 'access.rejected': '접근 거절',
           'permission.changed': '권한 변경'}
