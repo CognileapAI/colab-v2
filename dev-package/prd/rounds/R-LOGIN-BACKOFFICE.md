@@ -56,47 +56,48 @@
 
 **Files:** Create `db/platform/versions/0027_account_status.py`, `db/platform/tests/0027-assertions.sql`, `db/platform/tests/0027-drift.sh`, `services/core-api/tests/test_account_status.py`; Modify `db/platform/schema.sql`, `services/core-api/ops/account-admin-role.sql`, `services/core-api/src/colab_core/kernel/db_credentials.py`.
 **Interfaces:** `login_credential.status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive'))`. `DatabaseCredential` 에 `status` 를 더한다.
-- [ ] 최신 migration head 가 `0026_login_sessions.py` 임을 확인한다(실측값). 번호 충돌 시 세 파일을 함께 조정한다.
-- [ ] 비활성 계정의 로그인이 현재는 200 인 RED 를 확인한다.
+- [x] 최신 migration head 가 `0026_login_sessions.py` 임을 확인한다(실측값). 번호 충돌 시 세 파일을 함께 조정한다.
+- [x] 비활성 계정의 로그인이 현재는 200 인 RED 를 확인한다.
 ```python
 assert login(inactive_account).status_code == 401
 ```
-- [ ] 열을 추가하고 `DatabaseCredentialStore.find` 조회에 포함한다. 기존 행은 `status='active'` 로 남는다.
-- [ ] 비활성 거절이 계정 존재 여부를 구분하지 않고 실패 제한 버킷도 오염시키지 않음을 검사한다.
-- [ ] `account-admin-role.sql` 에 `GRANT SELECT ON d2_member_role` 를 더한다(현재 `INSERT` 만 — 실측). 부여 전 목록 조회가 권한 오류인 것을 먼저 관찰한다.
-- [ ] `gates/config/rls-allowlist.toml` 은 고치지 않는다 — `login_credential` 이 이미 등재됨(실측).
-- [ ] `migration-single-head`, `migration-drift`, `schema-diff`, `rls-coverage`, `rls-effect`, `db-boundary`, `service-tests-core-api` 를 실행하고 종료코드를 기록한다.
+- [x] 열을 추가하고 `DatabaseCredentialStore.find` 조회에 포함한다. 기존 행은 `status='active'` 로 남는다.
+- [x] 비활성 거절이 계정 존재 여부를 구분하지 않고 실패 제한 버킷도 오염시키지 않음을 검사한다.
+- [x] `account-admin-role.sql` 에 `GRANT SELECT ON d2_member_role` 를 더한다(현재 `INSERT` 만 — 실측). 부여 전 목록 조회가 권한 오류인 것을 먼저 관찰한다.
+- [x] `gates/config/rls-allowlist.toml` 은 고치지 않는다 — `login_credential` 이 이미 등재됨(실측).
+- [x] `migration-single-head`, `migration-drift`, `schema-diff`, `rls-coverage`, `rls-effect`, `db-boundary`, `service-tests-core-api` 를 실행하고 종료코드를 기록한다.
 
 ### Task 3: 계정 목록·재설정·비활성화 API
 
 **Files:** Modify `services/core-api/src/colab_core/app/routes/accounts.py`, `services/core-api/src/colab_core/kernel/db_credentials.py`, `services/core-api/src/colab_core/kernel/login_sessions.py`, `contracts/seams/fe-core.yaml`, `frontend/src/generated/fe-core.ts`; Create `services/core-api/tests/test_account_backoffice.py`.
 **Interfaces:** `GET /admin/accounts` · `POST /admin/accounts/{accountId}/password-reset`(요청 `{newPassword}`) · `POST /admin/accounts/{accountId}/status`(요청 `{status}`). `POST /admin/accounts` 는 무변경이다.
-- [ ] 목록·재설정·비활성화 경로가 없는 RED 를 확인한다.
+- [x] 목록·재설정·비활성화 경로가 없는 RED 를 확인한다.
 ```python
 assert client.get("/admin/accounts").status_code == 404
 assert new_pw not in response.text and new_pw not in caplog.text
 ```
-- [ ] 재설정이 새 비밀번호를 기존 scrypt 경로로 저장하고 `must_change_password=true` 로 둔다. 응답 본문에 비밀번호 필드가 없다.
-- [ ] 재설정·비활성화가 `session_version` 을 +1 하고 같은 트랜잭션에서 그 계정의 `login_session.revoked_at` 을 채운다. 다른 계정 세션은 불변이다.
-- [ ] 재설정 전 발급한 두 토큰이 뒤에 둘 다 401, 다른 계정 토큰은 200 인지 검사한다. 증가폭이 정확히 1 인지도 검사한다.
-- [ ] 목록은 전 연구실 한 벌이며 열 6개와 필터 4종을 낸다. 최근 로그인은 `login_session` 의 `MAX(issued_at)` 집계다.
-- [ ] 비운영자 토큰의 세 경로 403, 자기 자신 비활성화 400 을 검사한다.
-- [ ] 계약 3건을 `fe-core.yaml` 에 추가하고 클라이언트를 재생성한다. 생성물을 손으로 고치지 않는다.
-- [ ] `contract-lint`, `contract-breaking`, `generated-up-to-date`, `service-tests-core-api` 를 실행한다. 이 회차는 추가만 하므로 신규 ERR 0 이 기대값이며 ERR 가 나오면 멈추고 보고한다.
+- [x] 재설정이 새 비밀번호를 기존 scrypt 경로로 저장하고 `must_change_password=true` 로 둔다. 응답 본문에 비밀번호 필드가 없다.
+- [x] 재설정·비활성화가 `session_version` 을 +1 하고 같은 트랜잭션에서 그 계정의 `login_session.revoked_at` 을 채운다. 다른 계정 세션은 불변이다.
+- [x] 재설정 전 발급한 두 토큰이 뒤에 둘 다 401, 다른 계정 토큰은 200 인지 검사한다. 증가폭이 정확히 1 인지도 검사한다.
+- [x] 목록은 전 연구실 한 벌이며 열 6개와 필터 4종을 낸다. 최근 로그인은 `login_session` 의 `MAX(issued_at)` 집계다.
+- [x] 비운영자 토큰의 세 경로 403, 자기 자신 비활성화 400 을 검사한다.
+- [x] 계약 3건을 `fe-core.yaml` 에 추가하고 클라이언트를 재생성한다. 생성물을 손으로 고치지 않는다.
+- [x] `contract-lint`, `contract-breaking`, `generated-up-to-date`, `service-tests-core-api` 를 실행한다. 이 회차는 추가만 하므로 신규 ERR 0 이 기대값이며 ERR 가 나오면 멈추고 보고한다.
 
 ### Task 4: 프런트 — 계정 목록·재설정·비활성화
 
 **Files:** Modify `frontend/src/routes/AccountAdminPage.tsx`, `frontend/test/account-admin.test.tsx`; 필요 시 `frontend/src/routes/account-admin.css`.
 **Interfaces:** 목록·재설정·비활성화는 `frontend/src/generated/fe-core.ts` 의 생성 클라이언트만 쓴다. 비밀번호 판정은 기존 `frontend/src/auth/passwordRules.ts` 를 재사용한다.
-- [ ] 계정 목록 표와 행별 동작이 없는 RED 를 확인한다.
+- [x] 계정 목록 표와 행별 동작이 없는 RED 를 확인한다.
 ```typescript
 expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 ```
-- [ ] 계정 목록 표(이메일·이름·역할·연구실·상태·최근 로그인)와 네 필터를 붙인다.
-- [ ] 행별 「비밀번호 재설정」(값·확인 2칸)·「비활성화/재활성화」를 붙인다. 비활성 행의 버튼 라벨이 「재활성화」로 바뀌는지 검사한다.
-- [ ] 계정 추가 폼과 초기 비밀번호 칸은 그대로 둔다. 로그인·첫 변경 화면은 고치지 않는다.
-- [ ] 재설정 입력값이 DOM 잔존·`draftVault`·로그 어디에도 남지 않음을 검사한다.
+- [x] 계정 목록 표(이메일·이름·역할·연구실·상태·최근 로그인)와 네 필터를 붙인다.
+- [x] 행별 「비밀번호 재설정」(값·확인 2칸)·「비활성화/재활성화」를 붙인다. 비활성 행의 버튼 라벨이 「재활성화」로 바뀌는지 검사한다.
+- [x] 계정 추가 폼과 초기 비밀번호 칸은 그대로 둔다. 로그인·첫 변경 화면은 고치지 않는다.
+- [x] 재설정 입력값이 DOM 잔존·`draftVault`·로그 어디에도 남지 않음을 검사한다.
 - [ ] 기존 작업 보호(`useWorkProtection`) 연결을 유지한다. `frontend-typecheck`, `frontend-test` 를 통과한다. CSS 변경 시 `frontend-visual` 을 더한다.
+  - 미이행 = `frontend-visual` 뿐이다(실화면 URL 미선언 · red(준비)). `useWorkProtection` 연결·`frontend-typecheck`·`frontend-test` 는 green.
 
 ### Task 5: dev 배포 전수와 대장·인계
 
