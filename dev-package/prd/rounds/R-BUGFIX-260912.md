@@ -1,7 +1,7 @@
 # R-BUGFIX-260912 — GitHub 이슈 10건 버그·개선 묶음
 
 - 회차 성격 = frontend 결함 수정 3 레인 ＋ 읽기 전용 실측 1 레인. 계약 변경 0 · 마이그레이션 0 · 서버 코드 변경 0.
-- 통합 브랜치 = `integration/r-bugfix-260912` · 기점 HEAD `3476567`.
+- 통합 브랜치 = `integration/r-bugfix-260912` · 기점 HEAD = 스폰 지시문에 기재된 값(이 파일을 담은 커밋 이후의 통합 브랜치 tip).
 - 입력 intent 4건(승인 2026-09-12 · 커밋 `567b830`) = `dev-package/intent/2026-09-12-issue-{upload-resume-discard,upload-analysis-notice,preview-controls,register-hints-parent-picker}.md`.
 - 상세 명세 4건(레인별 1개씩) = `dev-package/prd/specs/2026-09-12-issue-{upload-resume-discard,upload-analysis-notice,preview-controls,register-hints-parent-picker}.md`.
 - 판정 정본 = `dev-package/reports/issues/2026-09-12-ted-decisions.md` 11건(Ted · 2026-09-12 · 확인 문장 「좋아 전부권고안으로」).
@@ -48,7 +48,7 @@
 
 ## 레인 공통 지시
 
-- **첫 줄** = `git checkout -B lane/<이름> origin/integration/r-bugfix-260912`. 이어서 `git rev-parse --short HEAD` 로 `3476567` 을 대조하고, 어긋나면 구현하지 말고 정지·보고한다(`.claude/rules/colab-rules.md §2-3` — 워크트리 기본 기준이 `origin/main` 이라 이 한 줄이 없으면 통합 선행분 위에 서지 않는다).
+- **첫 줄** = `git checkout -B lane/<이름> origin/integration/r-bugfix-260912`. 이어서 `git rev-parse --short HEAD` 로 스폰 지시문의 기대 HEAD 를 대조하고, 어긋나면 구현하지 말고 정지·보고한다(`.claude/rules/colab-rules.md §2-3` — 워크트리 기본 기준이 `origin/main` 이라 이 한 줄이 없으면 통합 선행분 위에 서지 않는다).
 - 스폰 방식 = `isolation: "worktree"`. 손으로 만든 형제 워크트리를 쓰지 않는다.
 - 순서 = 항목마다 ① red 시험 먼저(실패 로그 한 줄 인용) → ② 최소 구현 → ③ 단독 게이트. green 으로 시작한 시험은 오라클이 아니다.
 - 게이트 실행 = `COLAB_GATE_REPORT_DIR=dev-package/reports/bugfix-260912/<레인> bash gates/run.sh <게이트>`. 배출처를 빠뜨리면 `gate-summary.json` 이 서지 않는다.
