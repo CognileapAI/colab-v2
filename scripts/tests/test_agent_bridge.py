@@ -375,6 +375,37 @@ class WindowsLauncherTests(unittest.TestCase):
 
 @unittest.skipIf(os.name == "nt", "hook integration runs in the existing WSL environment")
 class HookIntegrationTests(unittest.TestCase):
+    def run_stop_hook(self, cwd, payload):
+        config = json.loads((bridge.ROOT/'.codex/hooks.json').read_text(encoding='utf-8'))
+        command = config['hooks']['Stop'][0]['hooks'][0]['command']
+        return subprocess.run(['bash', '-c', command], cwd=cwd, input=json.dumps(payload),
+                              text=True, capture_output=True, timeout=60)
+
+    def test_stop_launcher_is_noop_when_completion_module_is_absent(self):
+        with tempfile.TemporaryDirectory(prefix='colab stop absent ') as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            result = self.run_stop_hook(root, {'hook_event_name':'Stop', 'cwd':str(root),
+                                               'session_id':'missing-module'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {})
+
+    def test_registered_stop_launcher_runs_installed_completion_module(self):
+        result = self.run_stop_hook(bridge.ROOT/'scripts',
+                                    {'hook_event_name':'Stop', 'cwd':str(bridge.ROOT/'scripts'),
+                                     'session_id':'ordinary-stop'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {})
+
+    def test_stop_launchers_guard_missing_completion_module_after_reading_stdin(self):
+        config = json.loads((bridge.ROOT/'.codex/hooks.json').read_text(encoding='utf-8'))
+        hook = config['hooks']['Stop'][0]['hooks'][0]
+        for key in ('command', 'commandWindows'):
+            with self.subTest(key=key):
+                self.assertIn('raw=sys.stdin.read()', hook[key])
+                self.assertIn("scripts/slack_completion.py", hook[key])
+                self.assertIn("print(\\'{}\\')", hook[key])
+
     def test_registered_linux_launcher_from_subdirectory(self):
         config = json.loads((bridge.ROOT/'.codex/hooks.json').read_text(encoding='utf-8'))
         command = config['hooks']['PreToolUse'][0]['hooks'][0]['command']
