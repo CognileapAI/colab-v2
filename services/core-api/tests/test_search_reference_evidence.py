@@ -3,10 +3,15 @@ import copy
 import json
 from pathlib import Path
 
+import pytest
+
 from conftest import ACC_A_RES, DS_A2, LAB_A, TOKEN_RES, auth
 from test_search_relay import fake_ai  # noqa: F401 — reuse the real HTTP test transport
 from colab_core.app.main import API_PREFIX
 from colab_core.kernel.ids import Ulid
+
+
+pytestmark = pytest.mark.search_golden
 
 
 ROOT=Path(__file__).resolve().parents[3]

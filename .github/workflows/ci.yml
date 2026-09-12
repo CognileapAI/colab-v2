@@ -32,6 +32,7 @@ jobs:
       db: ${{ steps.filter.outputs.db }}
       dev-package: ${{ steps.filter.outputs.dev-package }}
       harness: ${{ steps.filter.outputs.harness }}
+      search-golden: ${{ steps.filter.outputs.search-golden }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -83,6 +84,45 @@ jobs:
               - '.claude/skills/**'
               - '.claude/hooks/**'
               - '.claude/agents/**'
+            search-golden:
+              - 'services/core-api/**'
+              - 'services/ai-service/**'
+              - 'frontend/**'
+              - 'contracts/**'
+              - 'db/platform/**'
+              - 'db/ai/**'
+              - 'eval/k4-search/**'
+              - 'dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json'
+              - 'dev-package/reports/stage3-ai-search-plan/stage-evidence-packet-02.json'
+              - 'dev-package/reports/stage3-ai-search-plan/expanded-normalized-02.json'
+              - 'gates/tools/service-tests.sh'
+              - 'gates/tools/_pg.sh'
+              - '.github/workflows/ci.yml'
+
+  search-golden:
+    needs: changes
+    if: needs.changes.outputs['search-golden'] == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            services/core-api/requirements.txt
+            services/core-api/requirements-dev.txt
+      - name: core-api 검색 회귀 의존 설치
+        working-directory: services/core-api
+        run: |
+          set -euo pipefail
+          python -m venv .venv
+          ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
+          ./.venv/bin/pip install -q --disable-pip-version-check -e .
+      - name: 검색 회귀 러너의 0건·실패 전파 확인
+        run: services/core-api/.venv/bin/python -m pytest -q eval/k4-search/test_run_regression.py
+      - name: 검색 helper + public API 골든 회귀
+        run: services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 
   # ─────────────────────────────────────────────────────────────
   # 게이트. WU-D3에서 실제 검사를 채운다.

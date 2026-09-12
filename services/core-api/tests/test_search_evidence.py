@@ -170,3 +170,26 @@ def test_invalid_shapes_and_client_hash_are_rejected(p2_client) -> None:
                           content=raw,
                           headers={**auth(TOKEN_RES), "Content-Type": "application/json"})
     assert response.status_code == 400, response.text
+
+
+def test_operator_read_does_not_expand_evidence_lab_or_locked_body_access(p2_client, session_factory, sql):
+    from conftest import ACC_B_PROF, LAB_B
+    from colab_core.kernel.auth import Subject
+    from colab_core.kernel.ids import Ulid
+    from colab_core.kernel.scope import read_only_scope
+    from sqlalchemy import text
+
+    client = p2_client()
+    assert _save(client, _payload(file_revision=_file_revision(client), status='reviewed')).status_code == 200
+    other_operator = Subject(account_id=Ulid(ACC_B_PROF), lab_id=Ulid(LAB_B), operator=True)
+    with read_only_scope(session_factory, other_operator, operator_read=True) as db:
+        # Main's operator metadata/file visibility is active; evidence keeps its own lab boundary.
+        assert db.execute(text('SELECT count(*) FROM d3_file WHERE id=:id'), {'id': FILE_A1}).scalar_one() == 1
+        assert d3_search_evidence.read_reviewed(db) == []
+    sql("INSERT INTO d2_dataset_access(dataset_id,lab_id,state) VALUES(:id,:lab,'잠김') ON CONFLICT(dataset_id) DO UPDATE SET state='잠김'", {'id': DS_A1, 'lab': LAB_A})
+    own_operator = Subject(account_id=Ulid(ACC_A_RES), lab_id=Ulid(LAB_A), operator=True)
+    try:
+        with read_only_scope(session_factory, own_operator, operator_read=True) as db:
+            assert d3_search_evidence.read_reviewed(db) == []
+    finally:
+        sql("DELETE FROM d2_dataset_access WHERE dataset_id=:id", {'id': DS_A1})

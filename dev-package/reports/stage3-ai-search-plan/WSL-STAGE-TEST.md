@@ -6,7 +6,7 @@
 
 - 저장소 `codex/stage3-next`의 검증한 변경 전체가 대상이다. 현재 HEAD만 배포하면 미커밋 변경이 빠진다. 배포 직전 커밋/작업트리 승인 및 최신 검증 receipt와 실제 내용 일치를 확인한다.
 - WSL의 기존 stage 설정 파일과 로그인 가능한 해당 연구실의 편집 계정이 필요하다. 토큰은 저장소 밖 0600 파일로 전달한다.
-- platform migration은 `0027_operator_audit` 다음 `0028_search_evidence`다. stage의 실제 체인이 이 분기와 호환되는지 배포 전 확인한다. 다른 분기의 후속 revision이 있으면 적용하지 말고 체인을 먼저 통합한다.
+- main 통합 후 platform migration은 `0030_merge_audit_and_backoffice` 다음 `0031_search_evidence`다. 이전 미배포 초안 `0028_search_evidence`는 최신 체인 뒤로 이동했다. stage의 실제 체인이 이 분기와 호환되는지 배포 전 확인한다. 다른 분기의 후속 revision이 있으면 적용하지 말고 체인을 먼저 통합한다.
 - 기존 stage 14개 자료와 레퍼런스 9개 자료는 같은 구성이 아니다. 이름만 비슷한 자료를 임의 연결하거나 dev ID를 복사하지 않는다.
 
 ## 실행 순서

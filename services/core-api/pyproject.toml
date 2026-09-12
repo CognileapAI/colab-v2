@@ -25,4 +25,5 @@ markers = [
   # 표식을 등록해 두는 이유는 하나 — **마운트 없이 돌릴 때 명시적으로 빼기 위해서**다
   # (`-m "not e2e"`). 표식이 없으면 뺄 방법이 없어 조용히 skip 하고 싶어진다.
   "e2e: 실데이터 E2E — 원천 마운트(COLAB_REFERENCE_DATA)가 필요하다",
+  "search_golden: 모델 호출 없는 검색 public API 골든 회귀",
 ]

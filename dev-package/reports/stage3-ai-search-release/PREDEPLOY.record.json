@@ -1,0 +1,313 @@
+{
+  "recorded_at": "2026-09-12T17:20:06.954747+00:00",
+  "product_commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+  "main_base": "b0ebd4c6c2c3fd9783cb94aa6f88a5cd1e7e28fc",
+  "tests": {
+    "core_full": 1186,
+    "operator_evidence_suite": 9,
+    "frontend": 1316,
+    "frontend_build": "passed",
+    "frontend_mirror_tracked_paths_identical": 335,
+    "golden_questions": 12,
+    "golden_api_tests": 1,
+    "helpers": 43,
+    "runner_self_tests": 3
+  },
+  "model_calls": 0,
+  "deployment_target": "staging",
+  "dev_deployment": false,
+  "migration_head": "0031_search_evidence",
+  "migration_parent": "0030_merge_audit_and_backoffice",
+  "gates": {
+    "contract": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:11:40Z",
+      "finished": "2026-09-12T17:12:41Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "contract-lint",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "contract-lint",
+        "selected": [
+          "contract-lint"
+        ]
+      }
+    },
+    "contract-breaking": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:19:26Z",
+      "finished": "2026-09-12T17:19:27Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "contract-breaking",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "contract-breaking",
+        "selected": [
+          "contract-breaking"
+        ]
+      }
+    },
+    "core-merged": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:10:04Z",
+      "finished": "2026-09-12T17:12:52Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "service-tests-core-api",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "service-tests-core-api",
+        "selected": [
+          "service-tests-core-api"
+        ]
+      }
+    },
+    "generated-up-to-date": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:13:11Z",
+      "finished": "2026-09-12T17:15:10Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "generated-up-to-date",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "generated-up-to-date",
+        "selected": [
+          "generated-up-to-date"
+        ]
+      }
+    },
+    "import-boundary": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:15:10Z",
+      "finished": "2026-09-12T17:15:13Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "import-boundary",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "import-boundary",
+        "selected": [
+          "import-boundary"
+        ]
+      }
+    },
+    "migration-single-head": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:15:13Z",
+      "finished": "2026-09-12T17:15:13Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "migration-single-head",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "migration-single-head",
+        "selected": [
+          "migration-single-head"
+        ]
+      }
+    },
+    "rls-coverage": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:15:13Z",
+      "finished": "2026-09-12T17:15:17Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "rls-coverage",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "rls-coverage",
+        "selected": [
+          "rls-coverage"
+        ]
+      }
+    },
+    "schema-merged": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:10:29Z",
+      "finished": "2026-09-12T17:10:45Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "schema-diff",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "schema-diff",
+        "selected": [
+          "schema-diff"
+        ]
+      }
+    },
+    "seam-consistency": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:12:51Z",
+      "finished": "2026-09-12T17:13:11Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "seam-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "seam-consistency",
+        "selected": [
+          "seam-consistency"
+        ]
+      }
+    },
+    "work-item-consistency": {
+      "schema": "colab-gate-summary/1",
+      "tree": "47c79cf28c0d0bc0803af9477a5e132390cbca61",
+      "commit": "77b7c606f0fc315d5c6a5efbfe220b841a33f1ed",
+      "started": "2026-09-12T17:15:18Z",
+      "finished": "2026-09-12T17:15:19Z",
+      "parallelism": 1,
+      "counts": {
+        "green": 1,
+        "red_판정": 0,
+        "red_준비": 0,
+        "red_준비_입력미선언": 0
+      },
+      "gates": [
+        {
+          "name": "work-item-consistency",
+          "status": "green",
+          "state": "green",
+          "exit": 0,
+          "readiness": null
+        }
+      ],
+      "targets": {
+        "requested": "work-item-consistency",
+        "selected": [
+          "work-item-consistency"
+        ]
+      }
+    }
+  }
+}
