@@ -10,34 +10,20 @@
 
 ## 1) 5분 요약 — 지금 배포하려면
 
-개발 기계에서 셋, EC2 에서 하나.
+배포·검증·완료 알림은 공통 실행기로 한 번에 수행한다. [배포 계획 작성과 실패 처리](../infra/releases/README.md)가 실행 진입점이다.
 
 ```bash
-# ① 이미지 5개를 arm64 로 빌드 → 아키텍처 실측 → tar 로 묶는다
-infra/dev/build.sh
-#    (안에서 도는 것: docker buildx build --platform linux/arm64 --load
-#                     → docker image inspect --format '{{.Architecture}}' 로 arm64 확인
-#                     → docker save -o dist/colab-v2-dev-<sha>.tar)
-
-# ② EC2 로 실어 docker load
-COLAB_DEV_SSH=ec2-user@<탄력적 IP> \
-COLAB_DEV_KEY_FILE=~/.config/colab-platform/colab-platform-dev-key.pem \
-  infra/dev/ship.sh
-
-# ③ 프론트 번들 → 웹 버킷
-cd frontend && npm run build && cd ../services/core-api
-.venv/bin/python ops/deploy_web.py --dist ../../frontend/dist --bucket colab-platform-web-dev
+python3 scripts/deploy_release.py run --plan /absolute/reviewed/release.json --check
+python3 scripts/deploy_release.py run --plan /absolute/reviewed/release.json
 ```
 
-```bash
-# ④ EC2 위에서 — 마이그레이션 2체인 → 기동 → healthy 대기(fail-closed) → 헬스 본문
-/opt/colab-v2/up.sh
-```
+DV/ST를 함께 요청한 경우 한 계획의 `targets`에 둘 다 선언한다. 모든 배포와 현재 환경 검증이 끝난 뒤 Slack을 한 번 전송한다. 종료 훅이나 별도 완료 보고서 등록은 필요 없다.
 
-**끝나면 반드시 `deploy_doctor`** — 6) 절.
+DV 전체 배포의 계획 안에는 `infra/dev/build.sh` → `infra/dev/ship.sh` → 원격 `/opt/colab-v2/up.sh` → `services/core-api/ops/deploy_web.py`를 넣는다. 기존 arm64 확인·비밀 파일/역할 사용·캐시 정책은 유지한다. 검증 명령에는 현재 배포 파일 hash 대조와 **`deploy_doctor` 전 항목 검사**를 넣는다. frontend만 변경했다면 백엔드 이미지·기동·마이그레이션 단계를 추가하지 않는다.
 
-> ⚠ **아키텍처 확인을 건너뛰지 않는다.** `build.sh` 가 자동으로 하지만, 손으로 빌드했다면 `docker image inspect` 로 `arm64` 인지 본다. x86 이미지는 EC2(t4g)에서 **아예 안 뜬다**.
-> ⚠ **백엔드 코드를 고쳤으면 ①②④ 까지가 배포다.** Vite 는 자동 반영되지만 컨테이너는 아니다.
+ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경유한다. DV의 `deploy_web.py` 단독 실제 업로드는 쓰기 전에 거부되며, 계획 점검용 `--dry-run`은 유지한다.
+
+**exit 20은 배포·검증 성공 / 알림 실패 또는 결과 불명확**이다. 배포를 다시 실행하지 말고 기록에 따라 알림만 재시도하거나 Slack 접수를 확인한다. 자세한 명령은 배포 진입점 문서를 따른다.
 
 ---
 
