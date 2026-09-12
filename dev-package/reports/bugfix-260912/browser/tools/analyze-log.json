@@ -1,0 +1,48 @@
+[
+ {
+  "dt": 0.15,
+  "chipAnimation": "up-analyze-pulse 1.4s",
+  "chipClass": "chip chip--neutral is-analyzing",
+  "chipText": "분석 중",
+  "elapsedText": "0초 경과",
+  "nextDescribedBy": "reg-open-why",
+  "nextDisabled": true,
+  "nextTitle": "분석이 끝나면 다음으로 갈 수 있어요.",
+  "stage": "2",
+  "t": "2026-09-12T14:22:03.823Z",
+  "whyId": "reg-open-why",
+  "whySameGate": true,
+  "whyText": "분석이 끝나면 다음으로 갈 수 있어요."
+ },
+ {
+  "dt": 1.24,
+  "chipAnimation": "none 0s",
+  "chipClass": "chip chip--success",
+  "chipText": "분석 완료",
+  "elapsedText": null,
+  "nextDescribedBy": null,
+  "nextDisabled": false,
+  "nextTitle": null,
+  "stage": "3",
+  "t": "2026-09-12T14:22:04.907Z",
+  "whyId": null,
+  "whySameGate": false,
+  "whyText": null
+ },
+ {
+  "dt": 1.74,
+  "after_ready": true,
+  "chipAnimation": "none 0s",
+  "chipClass": "chip chip--success",
+  "chipText": "분석 완료",
+  "elapsedText": null,
+  "nextDescribedBy": null,
+  "nextDisabled": false,
+  "nextTitle": null,
+  "stage": "3",
+  "t": "2026-09-12T14:22:05.560Z",
+  "whyId": null,
+  "whySameGate": false,
+  "whyText": null
+ }
+]
