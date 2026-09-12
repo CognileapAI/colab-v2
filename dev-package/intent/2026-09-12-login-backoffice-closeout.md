@@ -60,4 +60,4 @@
 - 정찰: `dev-package/reports/stage3-login-hardening/recon-closeout-20260912.md` · `recon-email-20260912.md`(메일 역량 0건 실측 — 미룸 근거)
 - spec: `dev-package/prd/specs/login-backoffice-closeout.md`
 - 라운드 파일: `dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md`
-- 결정: 〈N〉 (병합 시 기입)
+- 결정: `PLAN-SoT §9` 〈381〉(계약 동결 해제 서명 ＋ CI 기준 ref 승격) · 〈382〉(dev 배포 1차 · 태그 `dev-20260912-1`) · 〈384〉(백오피스 회차 출하 · 태그 `dev-20260912-2`) — 임시 번호이며 병합 직전 `dev-package/prd/tools/max-decision.sh` 로 재실측한다

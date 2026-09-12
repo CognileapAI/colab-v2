@@ -41,4 +41,4 @@
 - 선행 intent: `dev-package/intent/2026-09-12-login-backoffice-closeout.md`(승인분 무수정 · 이 문서가 「운영자 지정 UI 후일 묶음」을 대체)
 - spec: `dev-package/prd/specs/login-backoffice-closeout.md` §5 증보(별도 절 추가 예정)
 - 라운드 파일: `dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md` 작업 6 신설 예정
-- 결정: 〈N〉 (병합 시 기입)
+- 결정: `PLAN-SoT §9` 〈383〉(이 intent 승인 · Q19·Q20·Q21 ＋ 반출 제외) · 〈384〉(백오피스 회차 출하) — 임시 번호이며 병합 직전 `dev-package/prd/tools/max-decision.sh` 로 재실측한다
