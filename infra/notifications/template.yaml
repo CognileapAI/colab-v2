@@ -19,7 +19,6 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.12
-    CodeUri: build/operator-notifications.zip
     Timeout: 30
     Environment:
       Variables:
@@ -136,6 +135,7 @@ Resources:
   ConsumerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: build/operator-notifications.zip
       Handler: notifications.handlers.consume
       Role: !GetAtt ConsumerRole.Arn
       Events:
@@ -156,6 +156,7 @@ Resources:
   RetryFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: build/operator-notifications.zip
       Handler: notifications.handlers.retry
       Role: !GetAtt RetryRole.Arn
       Events:
@@ -163,6 +164,7 @@ Resources:
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: build/operator-notifications.zip
       Handler: notifications.handlers.ingest
       Role: !GetAtt IngestRole.Arn
   HealthRule:
