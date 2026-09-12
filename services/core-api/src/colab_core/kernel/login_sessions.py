@@ -21,7 +21,24 @@ class SessionStoreUnavailable(RuntimeError):
     pass
 
 
+class AccountInactive(RuntimeError):
+    """자격은 맞는데 계정이 비활성이다.
+
+    **응답에서는 「비밀번호가 틀렸다」와 갈리지 않는다** — 갈리면 그 자리가 상태 열거 통로다.
+    이 예외가 따로 있는 이유는 하나뿐이다: 옳은 비밀번호로 막힌 시도를 실패 제한 버킷에
+    세지 않기 위해서다(추측이 아니므로). 틀린 비밀번호는 비활성이어도 그대로 센다.
+    """
+
+
 FIXED_BROWSER_SESSION_TTL_MINUTES = 12 * 60
+
+#: 한 계정의 살아 있는 브라우저 세션을 전부 닫는다. `session_version` 을 올리는 트랜잭션과
+#: **같은 자리**에서 돈다 — 버전만 올리면 서명은 죽지만 원장에는 열린 세션 행이 남는다.
+REVOKE_ACCOUNT_SESSIONS = """
+UPDATE account_admin.login_session
+   SET revoked_at = COALESCE(revoked_at, now())
+ WHERE account_id = :account_id AND revoked_at IS NULL
+"""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -102,7 +119,7 @@ class LoginSessionStore:
             with self._factory.begin() as db:
                 row = db.execute(text("""
                     SELECT c.account_id,a.lab_id,c.kdf,c.salt,c.password_hash,c.n,c.r,c.p,
-                           c.must_change_password,c.session_version
+                           c.must_change_password,c.session_version,c.status
                       FROM account_admin.login_credential c
                       JOIN d1_account a ON a.id=c.account_id
                      WHERE c.login_name=:login_name FOR UPDATE OF c
@@ -116,6 +133,10 @@ class LoginSessionStore:
                 )
                 if not verify_password(password, stored):
                     return None
+                # **비밀번호 대조 뒤에** 본다. 앞에 두면 비활성 계정만 즉답이 되어
+                # 응답 시간이 상태를 말한다.
+                if row["status"] != "active":
+                    raise AccountInactive
                 subject = Subject(Ulid(row["account_id"]), Ulid(row["lab_id"]))
                 purpose = "password-change" if row["must_change_password"] else "normal"
                 db.execute(text("""
