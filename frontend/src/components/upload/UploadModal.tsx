@@ -144,6 +144,11 @@ export function UploadModal(props: {
   sources: UploadSources;
   lineageStep?: LineageStepRender | undefined;
   attach?: GridAttachTarget | undefined;
+  /**
+   * ⭑ ⟨#33 ㉠⟩ 바깥(메인 배너)에서 온 **재개 요청**. 값이 있으면 그 전송으로 무장한 채 뜬다.
+   * `seq` 는 진입 컴포넌트의 기존 규약 그대로다 — 그 값이 바뀔 때만 다시 무장한다.
+   */
+  resumeRequest?: { seq: number; uploadId: string } | undefined;
   onClose: () => void;
 }) {
   const account = useAccount();
@@ -342,6 +347,19 @@ export function UploadModal(props: {
   useEffect(() => {
     refreshIncomplete();
   }, [refreshIncomplete]);
+
+  // ⭑ ⟨#33 ㉠⟩ 바깥에서 온 재개 요청 — **배너 버튼이 하는 것과 같은 무장**이다.
+  //   새 재개 상태를 만들지 않는다: `resumeRef`·`resumeFromRef='banner'`·`resumeArm` 셋 그대로다.
+  //   `from='banner'` 라 파일 선택이 바뀌어도 무장이 유지된다(실패 무장과 다른 점).
+  const resumeRequestSeq = props.resumeRequest?.seq ?? 0;
+  const resumeRequestId = props.resumeRequest?.uploadId ?? '';
+  useEffect(() => {
+    if (resumeRequestSeq <= 0 || !resumeRequestId) return;
+    resumeRef.current = resumeRequestId;
+    resumeFromRef.current = 'banner';
+    setResumeId(resumeRequestId);
+    setResumeArm((n) => n + 1);
+  }, [resumeRequestSeq, resumeRequestId]);
 
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.

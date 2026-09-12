@@ -12,10 +12,18 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../src/permission/session';
 import { UnfinishedUploads } from '../src/components/upload/UnfinishedUploads';
+import { UploadEntry } from '../src/components/upload/UploadEntry';
 import { OpenUploadContext } from '../src/components/upload/openUpload';
 import { listPending, rememberPending } from '../src/components/upload/pendingStore';
 import type { CurrentAccount } from '../src/api/client';
-import type { IncompleteTransferItem, UploadSource } from '../src/components/upload/types';
+import type { LineageSource, LineageSuggestionResponse } from '../src/components/lineage/types';
+import type {
+  IncompleteTransferItem,
+  PreviewSource,
+  ProjectSource,
+  UploadSource,
+  UploadSources,
+} from '../src/components/upload/types';
 
 const LAB = '01JYZ9K7WQ3N8V4M2X6C5B0LB1';
 const T1 = '01JYZ9K7WQ3N8V4M2X6C5B0TR1';
@@ -97,5 +105,58 @@ describe('메인 — 올리다 만 것', () => {
     const onOpen = draw(source({ incomplete: async () => [ITEM] }));
     (await screen.findByTestId(`unfinished-resume-${T1}`)).click();
     expect(onOpen).toHaveBeenCalledWith({ resumeUploadId: T1 });
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// `#33` ㉠ — 배너의 재개 요청이 **모달까지** 간다.
+//
+// 결함 = 메인 배너가 `openUpload({ resumeUploadId })` 로 값을 올려도 `UploadEntry` 가
+// 그 값을 `UploadModal` 로 넘기지 않아 재개 무장(`resumeRef`·`resumeFromRef='banner'`)이
+// 서지 않았다. 컨텍스트 스텁만 보는 시험은 이 결함을 통과시킨다 — 그래서 여기서는
+// **진입 컴포넌트 실물**을 렌더하고 모달 안 배너의 무장 표시를 잰다.
+
+/** 모달이 요구하는 나머지 세 출처 — 이 시험이 재는 것은 재개 무장뿐이라 최소만 답한다. */
+function modalSources(upload: UploadSource): UploadSources {
+  const preview: PreviewSource = {
+    async palettes() { return [{ palette: 'viridis', label: '비리디스' }]; },
+    async createRender() { return { renderId: 'R1', status: '그리는 중', stage: '파일 읽는 중' } as never; },
+    async getRender() { return { renderId: 'R1', status: '그리는 중', stage: '파일 읽는 중' } as never; },
+  };
+  const projects: ProjectSource = {
+    async list() { return []; },
+    async create(body) { return { projectId: 'P9', name: body.name, type: body.type }; },
+  };
+  const lineage: LineageSource = {
+    async suggestions() {
+      return {
+        degraded: false,
+        scope: { labId: LAB, labName: '수자원순환연구실', searchedCount: 0 },
+        rawDataLikely: false,
+        suggestions: [],
+      } as LineageSuggestionResponse;
+    },
+    async candidates() { return []; },
+  };
+  return { upload, preview, projects, lineage };
+}
+
+function drawEntry(upload: UploadSource, openRequest?: { seq: number; resumeUploadId?: string }) {
+  return render(
+    <MemoryRouter initialEntries={['/datasets']}>
+      <SessionProvider account={account()}>
+        <UploadEntry sources={modalSources(upload)} openRequest={openRequest} />
+      </SessionProvider>
+    </MemoryRouter>,
+  );
+}
+
+describe('#33 ㉠ — 배너 재개 요청이 모달의 재개 무장까지 간다', () => {
+  it('배너에서 「이어서 올리기」로 연 모달이 **그 전송으로 무장한 채** 뜬다', async () => {
+    drawEntry(source({ incomplete: async () => [ITEM] }), { seq: 1, resumeUploadId: T1 });
+    await screen.findByTestId('upload-modal');
+    // 무장 표시는 신설하지 않는다 — 모달이 이미 가진 `is-armed` 와 재개 안내가 오라클이다.
+    await waitFor(() => expect(screen.getByTestId(`up-resume-${T1}`)).toHaveClass('is-armed'));
+    expect(screen.getByTestId('up-resume-hint')).toBeInTheDocument();
   });
 });
