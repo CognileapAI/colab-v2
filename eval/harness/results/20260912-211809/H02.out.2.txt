@@ -1,0 +1,12 @@
+Manual count of `sample.css` against the auditor output:
+
+- **Code declarations**: line 4 `.a` 11px (under 13), line 7 `.b` 14px, line 10 `.c` 13px. Only one code value is under 13px.
+- **Comment-only values**: line 2 `font-size: 9px` and line 6 `font-size: 10px` are both under 13px but inside comments. Comment color pair `#848c94` on `#ffffff` (3.41:1) is on lines 2 and 9, also comment-only.
+- **Auditor output**: `<13px` column shows 1, Detail lists only `sample.css:4 font-size 11.0px`, contrast column 0. Neither 9px nor 10px nor the low-contrast comment pair appears.
+
+The auditor strips comments before measuring. The comment-only values did not leak into the count.
+
+- 판정: 주석분 0건
+- 실측: 13px 미만 1건
+- 주석 안에 있어 세지 않은 값: 2건
+- 근거: `python3 "<이 디렉터리>/css_audit.py" --root "<이 디렉터리>"` (exit code 1 is the auditor's non-zero-findings signal, not a crash)

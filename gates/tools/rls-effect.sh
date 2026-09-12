@@ -237,21 +237,40 @@ END $$;
 ROLLBACK;
 
 -- 행 개수만 보는 판정은 시드가 마침 열려 있으면 통과해 버린다. 정책 목록 자체를 오라클로 삼는다 —
--- 메타 3표에는 lab_boundary(PERMISSIVE) **하나뿐**, 본체 표만 두 층이고 둘째 층은 RESTRICTIVE.
+-- 메타 3표에는 lab_boundary(PERMISSIVE) ＋ operator_read(PERMISSIVE · SELECT 전용),
+-- 본체 표만 여기에 RESTRICTIVE 한 층이 더 있다.
+--
+-- ⭑ ⟨증보 0028⟩ `operator_read` 가 목록에 더해졌다. **검사를 줄이지 않는다** — 목록이 길어진
+--   만큼 성질 검사를 더한다: RESTRICTIVE 는 `d3_file.body_access` **하나뿐**이어야 하고
+--   `operator_read` 는 모든 표에서 **SELECT 전용 ＋ PERMISSIVE** 여야 한다. 둘 중 하나라도
+--   어긋나면 ⑴ 메타가 목록에서 사라지거나 ⑵ 운영자에게 쓰기가 열린다.
 DO $$
-DECLARE t text; got text;
+DECLARE t text; got text; bad text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['d3_dataset','d3_dataset_description','d3_dataset_autometa'] LOOP
     SELECT string_agg(policyname || ':' || permissive, ',' ORDER BY policyname) INTO got
       FROM pg_policies WHERE schemaname='public' AND tablename = t;
-    IF got IS DISTINCT FROM 'lab_boundary:PERMISSIVE' THEN
-      RAISE EXCEPTION '[②-구조] % 에 정책이 더 붙었다(%) — 잠긴 데이터가 목록에서 사라진다 (P-13·P-34).', t, got;
+    IF got IS DISTINCT FROM 'lab_boundary:PERMISSIVE,operator_read:PERMISSIVE' THEN
+      RAISE EXCEPTION '[②-구조] % 에 뜻밖의 정책이 붙었다(%) — 잠긴 데이터가 목록에서 사라진다 (P-13·P-34).', t, got;
     END IF;
   END LOOP;
   SELECT string_agg(policyname || ':' || permissive, ',' ORDER BY policyname) INTO got
     FROM pg_policies WHERE schemaname='public' AND tablename = 'd3_file';
-  IF got IS DISTINCT FROM 'body_access:RESTRICTIVE,lab_boundary:PERMISSIVE' THEN
-    RAISE EXCEPTION '[②-구조] d3_file 의 두 층이 무너졌다(%). PERMISSIVE 로 바뀌면 OR 로 합쳐져 한 층이 된다.', got;
+  IF got IS DISTINCT FROM 'body_access:RESTRICTIVE,lab_boundary:PERMISSIVE,operator_read:PERMISSIVE' THEN
+    RAISE EXCEPTION '[②-구조] d3_file 의 층이 무너졌다(%). PERMISSIVE 로 바뀌면 OR 로 합쳐져 한 층이 된다.', got;
+  END IF;
+
+  SELECT string_agg(tablename || '.' || policyname, ',' ORDER BY tablename) INTO bad
+    FROM pg_policies WHERE schemaname='public' AND permissive = 'RESTRICTIVE'
+      AND NOT (tablename = 'd3_file' AND policyname = 'body_access');
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION '[②-구조] RESTRICTIVE 정책이 본체 밖에 붙었다(%) — AND 로 합쳐져 그 표의 읽기가 통째로 막힌다.', bad;
+  END IF;
+
+  SELECT string_agg(tablename || ':' || cmd, ',' ORDER BY tablename) INTO bad
+    FROM pg_policies WHERE schemaname='public' AND policyname = 'operator_read' AND cmd <> 'SELECT';
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION '[②-구조] 운영자 읽기 정책이 SELECT 밖의 명령에 걸렸다(%) — 운영자에게 쓰기가 열린다.', bad;
   END IF;
 END $$;
 \echo '# ② 메타 양성 — 잠긴 데이터셋의 이름·주제·자동메타·접근상태·Verified·계보 전부 조회됨'

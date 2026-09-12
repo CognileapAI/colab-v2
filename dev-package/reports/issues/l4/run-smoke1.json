@@ -1,0 +1,90 @@
+{
+  "label": "smoke1",
+  "pieceCount": 1,
+  "byteSum": 397448,
+  "intake": {
+    "requestSentAt": "2026-09-12T07:50:37.718Z",
+    "acceptedAt": "2026-09-12T07:50:38.677Z",
+    "status": 201,
+    "bodyBytes": 397668,
+    "transferSeconds": 0.959
+  },
+  "uploadId": "01M2A9HMQVF67YJTHQ9D8GBBMA",
+  "analysis": {
+    "startEvent": "접수 수락(201 수신)",
+    "startAt": "2026-09-12T07:50:38.677Z",
+    "endEvent": "분석 완료(ready 참)",
+    "endAt": "2026-09-12T07:50:44.399Z",
+    "wallSeconds": 5.723,
+    "statusPolls": 5,
+    "statusPollErrors": 0,
+    "pollIntervalSeconds": 1.0,
+    "log": [
+      [
+        "2026-09-12T07:50:38.970Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:50:40.244Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:50:41.632Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:50:42.999Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:50:44.399Z",
+        200,
+        null,
+        true,
+        null
+      ]
+    ]
+  },
+  "render": {
+    "startEvent": "렌더 요청 송신",
+    "startAt": "2026-09-12T07:50:44.399Z",
+    "acceptedAt": "2026-09-12T07:50:45.046Z",
+    "acceptStatus": 202,
+    "renderId": "01M2A9HTZ1SEH31FGAM1JKW7EF",
+    "doneAt": "2026-09-12T07:50:46.519Z",
+    "doneStatus": "완료",
+    "wallSecondsToDone": 2.12,
+    "imageFetchedAt": "2026-09-12T07:50:47.155Z",
+    "imageBytes": 520964,
+    "wallSecondsToImage": 2.756,
+    "renderPolls": 2,
+    "renderPollErrors": 0,
+    "pollIntervalSeconds": 0.25,
+    "createRenderCalls": 1,
+    "resultKeys": [
+      "bounds",
+      "colorRangeStage",
+      "imageUrl",
+      "legend",
+      "precisionBadge",
+      "sidecarUrl",
+      "thumbnailUrl",
+      "valuePreviewUrl",
+      "worldFileUrl"
+    ],
+    "failure": null,
+    "partialFailure": null
+  }
+}

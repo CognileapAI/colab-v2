@@ -1,0 +1,5 @@
+인계 문서 사본의 「다음 = …」 줄은 R-B 마감 항목(Ted 질의 판정 · 배포 창 · R-C intent 작성 · `w9-dev-deploy-rebased` 처리)을 가리킨다. 저장소 이력은 그 뒤로 R-C-2 회차와 2026-09-12 버그픽스 회차가 진행되어 있고, 현재 브랜치 `integration/r-bugfix-260912` 가 `main` 보다 29 커밋 앞서 있으며 최신 커밋이 Ted 확정 3건 기록이다. 인계 문서의 「R-C intent 작성」은 이미 지난 단계다.
+
+- 판정: 낡음
+- 근거: `git log --oneline -8` · `git log --oneline main..HEAD | wc -l`(29) · 38fbc7a
+- 다음 단계: 버그픽스 회차(2026-09-12) 마감 — Ted 확정 3건 반영분 위에서 `integration/r-bugfix-260912` 를 게이트 green 확인 뒤 `main` 으로 ff 병합하고 대장·HANDOFF 갱신

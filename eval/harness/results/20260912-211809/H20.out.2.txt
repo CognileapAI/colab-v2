@@ -1,0 +1,16 @@
+**결론 — 대장 `work-items-excerpt.yaml` 을 먼저 고친다.**
+
+**판정 근거**
+- `CLAUDE-6.md:3~4` 별표 문단 — 「상태 변경은 대장을 먼저 고친다. 항목 상태의 유일한 원본은 `work-items.yaml`, `03-HANDOFF §1` 은 그 반영본. 순서를 뒤집으면 산문이 다시 갈라진다.」 이것이 **순서 규칙**이다.
+- `CLAUDE-6.md:9~14` 번호 목록 — HANDOFF 갱신을 1번에 두지만, 이는 「끝내기 전에 반드시」 할 **체크리스트**(누락 방지)이지 실행 순서 규정이 아니다. 대장 갱신은 목록 앞의 별표 전제로 이미 선행한다.
+- 둘이 갈리면 별표 문단이 규칙이다. 「예외 없음」 절 제목 아래 명시된 원본·반영본 관계이고, 목록 항목 어디에도 「HANDOFF 를 먼저」라는 문언이 없다.
+- 보강 — `03-HANDOFF-excerpt.md §1` 자체도 「상태의 원본은 `work-items.yaml`」이라 적고 있다. 판정은 게이트 `work-item-consistency` 가 대장 기준으로 수행한다(`CLAUDE-6.md:5`).
+
+**적용 절차**
+1. `work-items-excerpt.yaml` 해당 항목 `status: open → done`, `evidence` 를 실측값으로.
+2. `03-HANDOFF-excerpt.md §1` 해당 WU 행 ✅ 로 갱신 (반영).
+
+- 먼저 고치는 파일: work-items-excerpt.yaml
+- 두 번째: 03-HANDOFF-excerpt.md
+- 원본/반영본: work-items-excerpt.yaml / 03-HANDOFF-excerpt.md
+- 근거: CLAUDE-6.md:3

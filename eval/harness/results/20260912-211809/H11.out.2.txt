@@ -1,0 +1,22 @@
+Confirmed: the accent, gray-300, primary-800/200, and color-ai tokens do not appear as definitions in either `:root`, and every definition in the two token files sits inside their single `:root` block.
+
+**Overridden declaration**: the `.detail-page .lin-way` rule sets `display: inline-flex` at line 29, then `display: inline-block` at line 33. The later one wins, so the inline-flex and its `align-items: center` are dead.
+
+**Undefined token references** in `lineageGraph.css` (comments stripped before counting, none have a fallback):
+
+| line | token |
+|---|---|
+| 30 | `--color-accent-50`, `--color-accent-200` |
+| 31 | `--color-accent-700` |
+| 48 | `--color-gray-300` |
+| 49 | `--color-gray-300` |
+| 51 | `--color-primary-800` |
+| 57 | `--color-primary-200`, `--color-primary-800` |
+| 83 | `--color-accent-700`, `--color-accent-50` |
+| 84 | `--color-ai` |
+
+Six distinct tokens, eleven references.
+
+- 덮인 선언: lineageGraph.css:33 이 lineageGraph.css:29 을 덮는다
+- 미정의 토큰 참조: 11건
+- 근거: 세 파일에서 `/* */` 주석을 제거한 뒤 `tokens.css`·`detail.css` 의 `--x:` 정의 집합을 만들고, `lineageGraph.css` 의 `var(--x)` 참조를 행 단위로 대조·계수(폴백 유무 포함); `display` 중복은 grep 으로 규칙별 대조

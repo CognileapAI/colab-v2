@@ -1,0 +1,17 @@
+정적 리터럴 검사 결과 (주석 제거 후 원본 행 번호 기준 · `px` 리터럴만 판독 · `var(...)` 등은 미판정).
+
+**대상(13px 미만 리터럴)**
+
+- detail.css: 47(11px) · 50(11px) · 65(10px) · 89(11px) · 97(10px) · 101(11px) · 136(10px)
+- upload.css: 82(12px) · 92(12px) · 106 · 107 · 123 · 124 · 128 · 167 · 168 · 175(12px) · 176(10px) · 179 · 182(12px) · 187(11px)
+- lineageGraph.css: 10 · 14(11px) · 31(10px) · 44(10.5px) · 45(12.5px) · 58(11px) · 72(10px) · 76(12px) · 81(11px) · 82 · 83 · 85(10px) · 95(11px)
+
+**미판정(리터럴 아님)**: `var(--text-body-sm)` · `var(--text-body)` · `var(--text-h2)` · `var(--text-h3)` 선언 전부(detail.css 36·37·66·78·79·82·100·102·103·106·107·113·114·117·140·150 · lineageGraph.css 9·92·93). 오류 본문 규칙 중 `.fl-err`·`.dlerr`·`.de-err`(detail.css)도 `var(--text-body-sm)` 이라 이 검사로는 합불 미추정.
+
+**13px 이상 리터럴(통과)**: detail.css 33(31px) · upload.css 48·49·50·81·144·146·154·207·224·229 · lineageGraph.css 26(15px).
+
+파일 수정 없음. 계산 스타일·배포 화면 접근성 인증 아님.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

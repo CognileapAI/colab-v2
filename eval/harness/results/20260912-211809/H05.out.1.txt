@@ -1,0 +1,9 @@
+**판정 결과: 검수 지적은 v2 코드에 해당하지 않는다.**
+
+- `.lin-picker` 계열 규칙은 파일에 2개뿐이다. `lineage.css:105` 컨테이너(border-top · padding-top)와 `lineage.css:109` 목록(list-style · flex 배치)이며, 두 규칙 모두 색·투명도 선언이 없다.
+- 파일 전체(138행)에 `opacity`·`filter`·`blur`·`disabled` 선언은 0건이다. `--muted` 색 변수 사용 3건(13·79·136행)은 `.lin-picker` 밖의 텍스트 색 지정이고 후보 행을 흐리게 하는 규칙이 아니다.
+- 따라서 「연결 불가 후보 행 흐림 처리 2.33:1」은 이 CSS 사본에서 재현되지 않는다. 지적이 성립하려면 목업 쪽 별도 스타일이거나, TSX 인라인 스타일에 있어야 하며 이 파일 범위에서는 근거가 없다.
+
+- 판정: 없음
+- 흐림 선언: 0건
+- 근거: `grep -nE "opacity|filter:|blur|disabled" lineage.css` → 0건 · `.lin-picker` 규칙은 lineage.css:105·109 두 곳뿐

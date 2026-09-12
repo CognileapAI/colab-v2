@@ -1,0 +1,12 @@
+gh issue comment 11 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/11.md
+gh issue comment 24 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/24.md
+gh issue comment 25 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/25.md
+gh issue comment 26 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/26.md
+gh issue comment 27 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/27.md
+gh issue comment 28 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/28.md
+gh issue comment 29 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/29.md
+gh issue comment 30 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/30.md
+gh issue comment 31 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/31.md
+gh issue comment 32 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/32.md
+gh issue comment 33 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/33.md
+gh issue comment 34 -R CognileapAI/colab-v2 --body-file dev-package/reports/bugfix-260912/issue-comments-img/34.md

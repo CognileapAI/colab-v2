@@ -1,0 +1,6 @@
+표는 9행(헤더)·10행(구분선)·11~12행(본문 2행)까지가 표이고, 13행이 빈 줄이라 거기서 표가 끝난다. 14행(emilkowalski/skills)·15행(vercel-labs/agent-browser)은 표 밖 본문 문단으로 떨어진다.
+
+- 판정: 있음
+- 빈 줄: 13
+- 표 밖으로 떨어진 행: 2건
+- 확인 명령: `sed -n '9,15p' VENDORED-excerpt.md | grep -c '^|'` (7 이면 붙어 있음) 또는 `sed -n '9,15p' VENDORED-excerpt.md | grep -n '^$'` (출력 없음이면 정상)

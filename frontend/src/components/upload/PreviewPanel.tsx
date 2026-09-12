@@ -342,6 +342,16 @@ export function PreviewPanel(props: {
   const autoThumb = layers?.thumbnailUrl ?? salvage?.thumbnailUrl ?? null;
   const thumbSrc = pickedThumb ?? autoThumb;
 
+  /**
+   * 바꿔 그리기 — **인라인과 확장보기가 같은 한 함수를 쓴다**(spec v2 §6 ㉯).
+   * 두 자리에 인라인 화살표를 두 벌로 두면 한쪽만 고쳐지는 날이 온다.
+   * 동작은 무변 — `setPick` ＋ `draw(false, next)`. 한 번에 값 하나만 실려 온다.
+   */
+  const onPick = (next: PickSelection): void => {
+    setPick((prev) => ({ ...prev, ...next }));
+    if (uploadId) void draw(false, next);
+  };
+
   function pickThumb(file: File | null): void {
     if (!file || props.representativeDisabled) return;
     props.onRepresentativeFileChange?.(file);
@@ -363,6 +373,16 @@ export function PreviewPanel(props: {
           <span className="th-ph" data-testid="up-thumb-empty" aria-hidden="true" />
         )}
       </button>
+      {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3 · 표시 목적 유지). 없으면 자리째 없다.
+          ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 자리를 지도 자리(`.mapcanvas`)에서 여기로 옮겼다 —
+             지도 위에 그림 두 장이 겹쳐 무엇을 그렸는지 갈리던 자리다.
+          ⭑ ⟨R-BUGFIX-260912 spec v2 §6 ㉱⟩ **고른 그림이 있을 때만** 옆에 선다. 고른 그림이
+             없으면 바로 왼쪽 `th-img` 가 이미 `autoThumb` 를 싣고 있어 같은 그림 두 장이 된다
+             (`const thumbSrc = pickedThumb ?? autoThumb`). 있을 때 나란히 서는 것이 요점이다 —
+             「자동으로 잡힌 그림」과 「내가 고른 그림」이 한 자리에서 갈린다. */}
+      {pickedThumb && autoThumb ? (
+        <img className="thumb" alt="" data-testid="up-preview-thumb" src={autoThumb} />
+      ) : null}
       <div className="th-txt">
         <span className="th-t">대표 그림(썸네일)</span>
         <span className="th-n" data-testid="up-thumb-nudge">
@@ -435,7 +455,7 @@ export function PreviewPanel(props: {
           팔레트 목록이 예상한 3종과 달라요. 받은 목록을 표시하고 있어요.
         </p>
       ) : null}
-      <details className="up-preview-options">
+      <details className="up-preview-options" data-testid="up-preview-options">
         <summary>미리보기 설정 · 대표 그림</summary>
       {/* 대표 그림은 자동 축소본이 기본이고, 고르면 등록 뒤 사용자 그림으로 별도 저장한다. */}
       {representativePicker}
@@ -508,21 +528,23 @@ export function PreviewPanel(props: {
 
       {/* ⬛ 자리 선점 틀 — **파일을 고른 순간 이미 서 있다**(축 ① · 4:3 · 네 상태 치수 불변).
           안쪽만 idle(`.vizph`) → drawing(3단계) → done(그림) | failed(`.vizerr` · salvage)로 갈린다. */}
-      <PreviewSlot state={slotState} testId="up-preview-slot">
-      {/* ⑵ 고르개 셋 — 파일·변수·시각. **틀 안 컨트롤 줄이고 두 화면이 같은 컴포넌트를 쓴다.**
-          한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다. */}
-      <PreviewPickRow
-        idPrefix="up"
-        pieces={pieces}
-        description={description}
-        selection={pick}
-        disabled={drawing}
-        fallbackPiece={fallbackPiece}
-        onPick={(next) => {
-          setPick((prev) => ({ ...prev, ...next }));
-          if (uploadId) void draw(false, next);
-        }}
-      />
+      <PreviewSlot
+        state={slotState}
+        testId="up-preview-slot"
+        /* ⑵ 고르개 셋 — 파일·변수·시각. **틀 밖·틀보다 앞 고정 줄이고 세 화면이 같은 컴포넌트를 쓴다.**
+           한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다.
+           ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 틀 안에 있던 자리를 틀 밖으로 올렸다 — 그림이 그려지면
+              틀 안 스크롤 위로 밀려 화면에서 빠지던 자리다. */
+        controls={<PreviewPickRow
+          idPrefix="up"
+          pieces={pieces}
+          description={description}
+          selection={pick}
+          disabled={drawing}
+          fallbackPiece={fallbackPiece}
+          onPick={onPick}
+        />}
+      >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (
         <div className="vizload" role="status" aria-live="polite" data-testid="up-preview-stage">
@@ -566,15 +588,6 @@ export function PreviewPanel(props: {
               {layerOf(result)}
             </span>
           </div>
-          {/* ①썸네일 — **성공 응답에도 실린다**(`〈88〉` 묶음 3). 없으면 자리째 없다 */}
-          {layers?.thumbnailUrl ? (
-            <img
-              className="thumb"
-              alt=""
-              data-testid="up-preview-thumb"
-              src={layers.thumbnailUrl}
-            />
-          ) : null}
           {previewImageSrc(result) ? (
             <div
               className="pv-viewport"
@@ -698,7 +711,34 @@ export function PreviewPanel(props: {
              … → 업로드」라 위 층이 먼저 닫힌다. 위 층이 아래 층을 닫으면 그 순서가 뒤집힌다. */}
       {expanded && (
         <PreviewExpandOverlay title="미리보기" requestClose={() => setExpanded(false)}>
-          {result?.imageUrl ? (
+          {/* ⭑ ⟨R-BUGFIX-260912 · Ted 판정 ⑥⟩ 크게 본 채로 파일·변수·시각을 바꾼다.
+              **새 상태·컨텍스트·스토어를 만들지 않는다** — 이 오버레이는 `PreviewPanel` 의
+              반환 JSX 안에 있어 `pieces`·`description`·`pick`·`onPick` 이 이미 같은 스코프다.
+              `idPrefix` 만 갈라 한 문서에 두 줄이 서도 label-id 가 엉키지 않게 한다. */}
+          <PreviewPickRow
+            idPrefix="pvx"
+            pieces={pieces}
+            description={description}
+            selection={pick}
+            disabled={drawing}
+            fallbackPiece={fallbackPiece}
+            onPick={onPick}
+          />
+          {/* ⭑ ⟨R-BUGFIX-260912 · Ted 판정 ⑧⟩ 크게 본 화면도 「동작 중」을 말한다.
+              오버레이 고르개로 값을 바꾸면 `draw()` 첫 줄의 `setJob(null)` 로 `result` 가
+              사라져 「아직 그리지 않았어요」로 뒤집히던 자리다. 문면·spinner·남은 시간은
+              인라인이 쓰는 **같은 값**이고 새 문장을 만들지 않는다.
+              ⚠ 오류 갈래는 신설하지 않는다 — `drawing` 정의가 `&& !error` 라 오류에서는
+                 기존 축자 「아직 그리지 않았어요」가 서고, 오류 표시는 인라인이 갖는다. */}
+          {drawing ? (
+            <div className="vizload" role="status" aria-live="polite" data-testid="pv-expand-stage">
+              <span className="spin" aria-hidden="true" />
+              <span>{requesting ? '미리보기 요청 중' : job?.stage ?? '지도 그리는 중'}…</span>
+              {remaining !== null ? (
+                <span data-testid="pv-expand-eta">이 단계 약 {Math.ceil(remaining / 1000)}초 남음</span>
+              ) : null}
+            </div>
+          ) : result?.imageUrl ? (
             <>
               <div
                 className="pv-viewport"

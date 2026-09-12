@@ -1,0 +1,11 @@
+**결과** — 승인 대기 배지는 AA 미달이고, 같은 규칙이 두 파일에 있다.
+
+- 규칙 위치: `catalog.css:140` 의 `.verified--pending` · `project.css:528` 의 `.project-detail .verified--pending`. 둘 다 배경 `--color-gray-100` · 글자 `--color-gray-500`.
+- 토큰 hex: `--color-gray-100` = `#e8ecf2` (`catalog.css:6` · `project.css:10` 의 `:root`), `--color-gray-500` = `#697077` (`tokens.css:10`).
+- 대비(WCAG 2.x 상대휘도): `#697077` 위 `#e8ecf2` = **4.23:1** → 4.5:1 미달.
+- 고칠 자리: 두 규칙 모두 글자색을 더 진한 토큰(예 `--color-text-muted` `#565c63` 은 같은 배경에서 5.7:1 상당)으로 바꾼다. 한쪽만 고치면 프로젝트 상세 화면의 배지가 그대로 남는다.
+
+- 판정: 있음
+- 실측: 4.23:1
+- 고칠 자리: 2곳
+- 근거: catalog.css:140 · project.css:528

@@ -1,4 +1,5 @@
 import os
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -10,6 +11,16 @@ RUNNER = ROOT / 'infra/notifications/run-runtime-job.sh'
 INSTALLER = ROOT / 'infra/notifications/install-runtime-cron.sh'
 
 
+def q(value):
+    """Quote a config value the way the runner's `. "$CONFIG"` needs it.
+
+    run-runtime-job.sh sources the config, so an unquoted value containing a
+    space is split by the shell. Writing the fixture unquoted made the verdict
+    depend on where the checkout lives, not on the code under test.
+    """
+    return shlex.quote(str(value))
+
+
 class RuntimeCronTests(unittest.TestCase):
     def config(self, root, environment):
         fake = root / 'python'
@@ -19,17 +30,17 @@ class RuntimeCronTests(unittest.TestCase):
         key = root / 'relay-key'; key.write_text('not-a-real-key'); key.chmod(0o600)
         config = root / 'runtime.env'
         config.write_text(
-            f"COLAB_NOTIFICATION_ENVIRONMENT={environment}\n"
-            f"COLAB_NOTIFICATION_ROOT={ROOT}\n"
-            f"COLAB_NOTIFICATION_PYTHON={fake}\n"
-            f"COLAB_OPERATOR_MANIFEST={manifest}\n"
-            f"COLAB_OPERATOR_SPOOL={root / 'spool'}\n"
-            f"COLAB_OPERATOR_STATE={root / 'state'}\n"
-            f"COLAB_TEST_CALLS={root / 'calls'}\n"
+            f"COLAB_NOTIFICATION_ENVIRONMENT={q(environment)}\n"
+            f"COLAB_NOTIFICATION_ROOT={q(ROOT)}\n"
+            f"COLAB_NOTIFICATION_PYTHON={q(fake)}\n"
+            f"COLAB_OPERATOR_MANIFEST={q(manifest)}\n"
+            f"COLAB_OPERATOR_SPOOL={q(root / 'spool')}\n"
+            f"COLAB_OPERATOR_STATE={q(root / 'state')}\n"
+            f"COLAB_TEST_CALLS={q(root / 'calls')}\n"
             "COLAB_TEST_SECRET=must-not-be-printed\n"
             "COLAB_STAGE_SSH_TARGET=dev-host\n"
-            f"COLAB_STAGE_SSH_KEY={key}\n"
-            f"COLAB_STAGE_REMOTE_WRAPPER={RUNNER}\n"
+            f"COLAB_STAGE_SSH_KEY={q(key)}\n"
+            f"COLAB_STAGE_REMOTE_WRAPPER={q(RUNNER)}\n"
             "COLAB_STAGE_REMOTE_CONFIG=/etc/colab/operator-runtime.env\n"
         )
         config.chmod(0o600)

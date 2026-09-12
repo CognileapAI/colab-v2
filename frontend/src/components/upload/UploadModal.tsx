@@ -21,9 +21,13 @@ import { type AccessState } from '../common/accessState';
 import {
   ANALYZED_CHIP,
   ANALYZING_CHIP,
+  REG_OPEN_ANALYZING_REASON,
+  analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
   SOURCE_DOWNLOADED_ON_INVALID,
+  UPLOAD_CLOSE_FORGET,
+  UPLOAD_CLOSE_FORGET_NOTE,
   UPLOAD_CLOSE_KEEP,
   UPLOAD_CLOSE_LEAVE,
   UPLOAD_CLOSE_TITLE,
@@ -92,6 +96,9 @@ const STATUS_POLL_MS = 1000;
  *    접수됨·미준비 / 준비됨」 셋이고, 넷째 단계를 세울 근거가 없다. 없는 상태를 지어내
  *    문면만 늘리면 화면이 거짓을 말한다.
  */
+/** `#24` ㉯ — 사유 줄의 id. 버튼의 `aria-describedby` 가 이 값을 가리킨다. */
+export const REG_OPEN_WHY_ID = 'reg-open-why';
+
 export const RECEIVING_STAGE = '파일 올리는 중…';
 export const ANALYZE_STAGES = [
   RECEIVING_STAGE,
@@ -144,6 +151,11 @@ export function UploadModal(props: {
   sources: UploadSources;
   lineageStep?: LineageStepRender | undefined;
   attach?: GridAttachTarget | undefined;
+  /**
+   * ⭑ ⟨#33 ㉠⟩ 바깥(메인 배너)에서 온 **재개 요청**. 값이 있으면 그 전송으로 무장한 채 뜬다.
+   * `seq` 는 진입 컴포넌트의 기존 규약 그대로다 — 그 값이 바뀔 때만 다시 무장한다.
+   */
+  resumeRequest?: { seq: number; uploadId: string } | undefined;
   onClose: () => void;
 }) {
   const account = useAccount();
@@ -310,6 +322,9 @@ export function UploadModal(props: {
   const hasDraft = picked.length > 0 || Boolean(name || topic || summary || sourceLabel ||
     sourceUrl || sourceDownloadedOn || crs || gridDescription || intervalValue ||
     intervalUnit || projects.length || lineageCards.length || representativeFile);
+  // ⭑ ⟨#34⟩ 지울 「이 브라우저의 기억」이 실제로 있을 때만 세 번째 선택지를 낸다 —
+  //   접수 전에는 기억할 것이 없어 그 버튼이 아무것도 하지 않는 빈 선택지가 된다.
+  const canForgetPending = Boolean(uploadId && account?.labId);
   useWorkProtection('upload-modal', {
     dirty: hasDraft,
     inFlight: Boolean(transfer) || attaching || submitting || gridReuseBusy,
@@ -342,6 +357,19 @@ export function UploadModal(props: {
   useEffect(() => {
     refreshIncomplete();
   }, [refreshIncomplete]);
+
+  // ⭑ ⟨#33 ㉠⟩ 바깥에서 온 재개 요청 — **배너 버튼이 하는 것과 같은 무장**이다.
+  //   새 재개 상태를 만들지 않는다: `resumeRef`·`resumeFromRef='banner'`·`resumeArm` 셋 그대로다.
+  //   `from='banner'` 라 파일 선택이 바뀌어도 무장이 유지된다(실패 무장과 다른 점).
+  const resumeRequestSeq = props.resumeRequest?.seq ?? 0;
+  const resumeRequestId = props.resumeRequest?.uploadId ?? '';
+  useEffect(() => {
+    if (resumeRequestSeq <= 0 || !resumeRequestId) return;
+    resumeRef.current = resumeRequestId;
+    resumeFromRef.current = 'banner';
+    setResumeId(resumeRequestId);
+    setResumeArm((n) => n + 1);
+  }, [resumeRequestSeq, resumeRequestId]);
 
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
@@ -561,6 +589,30 @@ export function UploadModal(props: {
    * 이 화면에서 제일 나쁜 실패다(사람이 [다음]을 눌러 빈 칸을 본다).
    */
   const analyzeStage: 1 | 2 | 3 = !uploadId ? 1 : status?.ready ? 3 : 2;
+  /**
+   * ⭑ ⟨`#24` ㉯⟩ **`다음 →` 이 지금 비활성인 이유가 「분석 미완」인가.**
+   * 비활성 식 자체는 무변이다 — 항을 더하지도 빼지도 않는다. 오류 갈래(`failure` ·
+   * `intakeError` · `statusIssue`)에서는 기존 오류 표시가 이미 자리를 가지므로 사유 줄을
+   * 겹쳐 띄우지 않는다.
+   */
+  const analyzeBlocksNext = picked.length > 0
+    && !status?.ready && !status?.failure && !intakeError && !statusIssue;
+  /**
+   * ⭑ ⟨Ted 판정 ⑧ ㉢⟩ 분석 중 **클라이언트 경과 시간**. 상태 응답에 진행 수치가 없어
+   * 조각 진행률을 쓰지 않는다(계약 변경 0). 분석이 끝나거나 파일이 빠지면 0 으로 내린다.
+   */
+  const analyzeRunning = picked.length > 0 && analyzeStage < 3;
+  const [analyzeSeconds, setAnalyzeSeconds] = useState(0);
+  useEffect(() => {
+    setAnalyzeSeconds(0);
+    if (!analyzeRunning) return;
+    const startedAt = Date.now();
+    const timer = window.setInterval(
+      () => setAnalyzeSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [analyzeRunning]);
   // 진행률은 본체+격자 **합계**다. 그래서 격자 블록에 그것을 넘기는 것은 **격자만 올릴 때뿐**이다
   // — 본체가 섞여 있으면 그 퍼센트는 격자의 진행이 아니고, 화면이 틀린 말을 하게 된다.
   const gridOnly = picked.length > 0 && picked.every((p) => p.kind === '기준 격자 파일');
@@ -1252,13 +1304,23 @@ export function UploadModal(props: {
                   aria-hidden="true"
                 />
               ) : null}
+              {/* ⭑ ⟨Ted 판정 ⑧ ㉠⟩ 칩이 스스로 「동작 중」을 말한다. 움직임은 CSS 가 쥐고,
+                  감속을 선호하는 사람에게는 그 규칙이 꺼진다(`prefers-reduced-motion`). */}
               <span
-                className={analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral'}
+                className={
+                  analyzeStage === 3 ? 'chip chip--success' : 'chip chip--neutral is-analyzing'
+                }
                 data-testid="up-analyze-chip"
               >
                 {analyzeStage === 3 ? ANALYZED_CHIP : ANALYZING_CHIP}
               </span>
               <span className="an-txt">{ANALYZE_STAGES[analyzeStage - 1]}</span>
+              {/* ⭑ ⟨Ted 판정 ⑧ ㉢⟩ 얼마나 기다렸는지만 말한다 — 얼마나 남았는지는 모른다. */}
+              {analyzeStage < 3 ? (
+                <span className="an-elapsed" data-testid="up-analyze-elapsed">
+                  {analyzeElapsed(analyzeSeconds)}
+                </span>
+              ) : null}
             </div>
           )}
 
@@ -1437,6 +1499,13 @@ export function UploadModal(props: {
                 <div>
                   <div className="rg-t">이 파일을 연구실에 등록할까요?</div>
                   <div className="rg-s">등록하면 계보가 쌓이고 검색·공유가 돼요.</div>
+                  {/* ⭑ ⟨`#24` ㉯⟩ 왜 지금 못 누르는지. `.rg-s` 를 쓰지 않는다 —
+                      `.up-empty .reggate .rg-s` 가 바로 이 장면에서 그 줄을 감춘다. */}
+                  {analyzeBlocksNext ? (
+                    <div className="rg-why" id={REG_OPEN_WHY_ID} data-testid="reg-open-why">
+                      {REG_OPEN_ANALYZING_REASON}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="rg-a">
                   <button
@@ -1456,6 +1525,8 @@ export function UploadModal(props: {
                     className="btn btn-strong"
                     data-testid="reg-open"
                     disabled={gridReuseBusy || !uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
+                    title={analyzeBlocksNext ? REG_OPEN_ANALYZING_REASON : undefined}
+                    aria-describedby={analyzeBlocksNext ? REG_OPEN_WHY_ID : undefined}
                     onClick={() => {
                       setRegisterOpen(true);
                       setStep(1);
@@ -1604,6 +1675,11 @@ export function UploadModal(props: {
                     : submitLock.current ? 'creating' : 'pre-create',
                 })}
               </p>
+              {/* ⭑ ⟨#34⟩ 세 번째 선택지가 무엇을 지우는지 **먼저** 말한다 — 사람이
+                  「서버에서 즉시 사라진다」로 오해하지 않게 24시간 만료를 함께 적는다. */}
+              {canForgetPending ? (
+                <p data-testid="upload-close-forget-note">{UPLOAD_CLOSE_FORGET_NOTE}</p>
+              ) : null}
             </div>
             <div className="modal-f">
               <button
@@ -1613,6 +1689,22 @@ export function UploadModal(props: {
               >
                 {UPLOAD_CLOSE_KEEP}
               </button>
+              {/* ⭑ ⟨#34⟩ 이 브라우저의 미완결 기억만 지운다 — **서버 호출 0회**다.
+                  서버 접수 행의 몫은 24시간 만료 스윕이 진다(`U-2`). 즉시 삭제 창구를
+                  만들지 않는다 — 그것은 계약 개정이고 이 회차 범위 밖이다. */}
+              {canForgetPending ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  data-testid="upload-close-forget"
+                  onClick={() => {
+                    if (uploadId && account?.labId) forgetPending(account.labId, uploadId);
+                    props.onClose();
+                  }}
+                >
+                  {UPLOAD_CLOSE_FORGET}
+                </button>
+              ) : null}
               <button type="button" className="btn btn-strong" onClick={props.onClose}>
                 {UPLOAD_CLOSE_LEAVE}
               </button>

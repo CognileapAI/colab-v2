@@ -31,9 +31,12 @@ SELECT format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), :'admin'
 GRANT USAGE ON SCHEMA public, account_admin TO :"admin";
 REVOKE CREATE ON SCHEMA public, account_admin FROM :"admin";
 GRANT SELECT ON d1_lab, d1_account TO :"admin";
+-- 계정 목록의 **역할 열**이 `d2_member_role` 를 읽는다. 발급만 하던 시절에는 INSERT 뿐이었다.
+GRANT SELECT ON d2_member_role TO :"admin";
 GRANT INSERT ON d1_account, d2_member_role TO :"admin";
 GRANT SELECT, INSERT, UPDATE ON account_admin.login_credential TO :"admin";
-GRANT SELECT ON account_admin.service_operator TO :"admin";
+-- 운영자 지정·해제(백오피스)가 이 표에 쓴다. UPDATE 는 주지 않는다 — 행은 있거나 없거나다.
+GRANT SELECT, INSERT, DELETE ON account_admin.service_operator TO :"admin";
 GRANT SELECT, INSERT, UPDATE ON account_admin.login_session TO :"admin";
 
 SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''계정 관리자 롤이 superuser다''; END $check$'

@@ -12,6 +12,7 @@
 // ⚠ 데이터는 **`/uploads/*` 계열에서만** 온다. 대시보드 op 에 uploadId 를 실으면
 //    「원장은 어느 읽기에도 비치지 않는다」 시험이 정당하게 red 를 낸다.
 import { useEffect, useState } from 'react';
+import { UPLOAD_CLOSE_FORGET } from '../common/toastCopy';
 import { useAccount } from '../../permission/session';
 import { useOpenUpload } from './openUpload';
 import { forgetPending, listPending } from './pendingStore';
@@ -101,6 +102,22 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
             onClick={() => openUpload({ resumeUploadId: p.uploadId })}
           >
             이어서 하기
+          </button>
+          {/* ⭑ ⟨#32⟩ **접수 완료 행에만** 둔다. 이 버튼의 뜻은 「이 브라우저의 기억 삭제」
+              한 가지이고 서버 호출이 0회다 — 서버 접수 행은 24시간 만료 스윕이 정리한다.
+              ⛔ 전송 미완(㉠) 행에는 두지 않는다: 그 목록은 서버가 주므로 브라우저 기억만
+                 지워도 새로 고치면 다시 나타난다. 그 행은 모달 안 기존 버튼(`up-discard-*`)이
+                 서버 전송 취소까지 부르는 자리다. 두 동작을 한 이름으로 묶지 않는다. */}
+          <button
+            type="button"
+            className="ub-btn"
+            data-testid={`unfinished-discard-${p.uploadId}`}
+            onClick={() => {
+              forgetPending(labId, p.uploadId);
+              setPending((rows) => rows.filter((r) => r.uploadId !== p.uploadId));
+            }}
+          >
+            {UPLOAD_CLOSE_FORGET}
           </button>
         </div>
       ))}

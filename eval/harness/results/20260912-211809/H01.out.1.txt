@@ -1,0 +1,5 @@
+인계 문서 「다음 = …」 줄 = R-B 마감 뒤 항목(배포 창 · R-C intent 작성 · `w9-dev-deploy-rebased` 처리). 이력 = R-C 는 이미 진행·마감됐고(`f98d09de` R-C-2 문면 개정), 현재 브랜치 `integration/r-bugfix-260912` 에서 버그픽스 회차가 진행 중이며 최신 커밋은 Ted 확정 3건 기록(하네스 평가 구독 실행 · 이슈는 댓글만). 두 쪽이 어긋나므로 이력이 사실이고 인계 문서는 낡았다.
+
+- 판정: 낡음
+- 근거: `grep -n "다음 = " 03-HANDOFF-excerpt.md` · `git log --oneline -8` · 38fbc7a
+- 다음 단계: `integration/r-bugfix-260912` 버그픽스 회차 마무리 — Ted 확정 3건(문면 4건 · 하네스 평가 구독 실행 · 이슈 댓글) 반영 뒤 게이트 green 확인 후 `main` ff 병합

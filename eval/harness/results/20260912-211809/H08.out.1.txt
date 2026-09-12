@@ -1,0 +1,15 @@
+**결과** — 세 파일의 `font-size` 선언 66곳 중 `px` 리터럴 50곳을 판독, 13px 미만 33곳 확인. 주석은 제거 후 계측(주석 안 `font-size` 없음). `var(...)` 16곳은 판정 제외. 파일 무수정.
+
+**파일별 지목**
+
+- `detail.css` 6곳: 47(11px) · 50(11px) · 65(10px) · 89(11px) · 97(10px) · 101(11px) · 136(10px) → 7곳
+- `upload.css` 16곳: 82 · 92 · 106 · 107 · 123 · 124 · 128 · 167 · 168 · 175 · 179 · 182(12px) · 176(10px) · 187(11px) — 위 14곳
+- `lineageGraph.css` 12곳: 10 · 14 · 58 · 81 · 95(11px) · 31 · 72 · 82 · 83 · 85(10px) · 44(10.5px) · 76(12px)
+
+합계 7 + 14 + 12 = 33곳. 그 외 12.5px(`lineageGraph.css:45`)도 13px 미만이라 포함 → 12곳은 45 포함 13곳. 최종 34곳.
+
+**무접촉** — `upload.css` 138~145행 `.vizerr, .warn` 규칙은 이미 13px(공유 선택자 2개). 오류 본문 규칙 중 유일한 공유 규칙이며 수정 대상 아님.
+
+- 지목: 34곳
+- 목록: detail.css:47 · detail.css:50 · detail.css:65 · detail.css:89 · detail.css:97 · detail.css:101 · detail.css:136 · upload.css:82 · upload.css:92 · upload.css:106 · upload.css:107 · upload.css:123 · upload.css:124 · upload.css:128 · upload.css:167 · upload.css:168 · upload.css:175 · upload.css:176 · upload.css:179 · upload.css:182 · upload.css:187 · lineageGraph.css:10 · lineageGraph.css:14 · lineageGraph.css:31 · lineageGraph.css:44 · lineageGraph.css:45 · lineageGraph.css:58 · lineageGraph.css:72 · lineageGraph.css:76 · lineageGraph.css:81 · lineageGraph.css:82 · lineageGraph.css:83 · lineageGraph.css:85 · lineageGraph.css:95
+- 무접촉(이미 13px): .vizerr, .warn 13px

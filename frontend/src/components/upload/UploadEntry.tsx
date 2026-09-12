@@ -37,8 +37,16 @@ export function UploadEntry(props: {
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
   // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
   const seq = props.openRequest?.seq ?? 0;
+  // ⭑ ⟨#33 ㉠⟩ **재개 식별자를 모달까지 옮긴다.** 여기서 끊겨 있어서 배너의 [이어서]가
+  //   빈 모달만 열었다. `seq` 를 함께 실어 **같은 항목을 다시 눌러도 다시 무장**하게 한다 —
+  //   식별자만 넘기면 값이 안 바뀌어 이미 열린 모달이 재무장하지 않는다.
+  const [resumeRequest, setResumeRequest] = useState<{ seq: number; uploadId: string } | null>(null);
   useEffect(() => {
-    if (seq > 0) setOpen(true);
+    if (seq <= 0) return;
+    const resumeUploadId = props.openRequest?.resumeUploadId;
+    setResumeRequest(resumeUploadId ? { seq, uploadId: resumeUploadId } : null);
+    setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seq]);
 
   return (
@@ -72,6 +80,7 @@ export function UploadEntry(props: {
         <UploadModal
           sources={sources}
           lineageStep={props.lineageStep}
+          resumeRequest={resumeRequest ?? undefined}
           onClose={() => setOpen(false)}
         />
       )}

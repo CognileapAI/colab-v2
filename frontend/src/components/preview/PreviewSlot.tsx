@@ -11,6 +11,11 @@
  * ⚠ **문면을 만들지 않는다** — 이 파일에 한국어 화면 글자는 없다. 안내·오류 문구는 전부
  *   호출부가 이미 갖고 있는 정본 문면(`UNAVAILABLE`·`UnavailableNotice`·진행 3단계)이다.
  * ⚠ 확장보기(㈎)·격자 업로드 블록은 이 틀 **밖·같은 컨테이너 안**에 그대로 남는다(존치 규칙).
+ * ⚠ ⭑ ⟨증보 2026-09-12 · R-BUGFIX-260912 `#25`⑵ · spec v2 §6 ㉮⟩ 존치 규칙에 **「틀 위 줄」**이
+ *   더해진다 — `controls` 로 받은 줄(파일·변수·시각 고르개)은 이 틀 **밖·틀보다 앞선 형제**로
+ *   서고, 틀 안 스크롤(`.pv-frame-in` · `overflow:auto`)에 실리지 않는다. 배치 규약이 이
+ *   부품 한 곳에 모이므로 호출부 세 곳에 같은 JSX 순서를 복제하지 않는다. 줄과 틀 사이
+ *   여백은 컨테이너(`.pv-frame-wrap`)의 gap 하나가 갖는다 — 자식은 margin 을 지지 않는다.
  */
 import type { ReactNode } from 'react';
 import './preview.css';
@@ -28,6 +33,8 @@ export interface PreviewSlotProps {
   state: PreviewSlotState;
   /** 화면마다 다른 표식(업로드·상세). 기본값은 공용 이름 하나다. */
   testId?: string;
+  /** 틀 **밖·틀보다 앞** 고정 줄. 틀 안 스크롤에 실리지 않는다. */
+  controls?: ReactNode;
   children: ReactNode;
 }
 
@@ -38,13 +45,16 @@ export interface PreviewSlotProps {
  */
 export function PreviewSlot(props: PreviewSlotProps) {
   return (
-    <div
-      className="pv-frame"
-      data-testid={props.testId ?? 'preview-slot'}
-      data-preview-slot="4x3"
-      data-preview-slot-state={props.state}
-    >
-      <div className="pv-frame-in">{props.children}</div>
+    <div className="pv-frame-wrap">
+      {props.controls}
+      <div
+        className="pv-frame"
+        data-testid={props.testId ?? 'preview-slot'}
+        data-preview-slot="4x3"
+        data-preview-slot-state={props.state}
+      >
+        <div className="pv-frame-in">{props.children}</div>
+      </div>
     </div>
   );
 }

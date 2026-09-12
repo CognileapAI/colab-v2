@@ -1,12 +1,12 @@
 """File content revisions and source-backed search evidence.
 
-Revision ID: 0028_search_evidence
+Revision ID: 0031_search_evidence
 Revises: 0027_operator_audit
 """
 from alembic import op
 
-revision = "0028_search_evidence"
-down_revision = "0027_operator_audit"
+revision = "0031_search_evidence"
+down_revision = "0030_merge_audit_and_backoffice"
 branch_labels = None
 depends_on = None
 

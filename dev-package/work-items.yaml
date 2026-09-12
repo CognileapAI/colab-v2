@@ -25,7 +25,6 @@ items:
     deadline: null
     note: "사용자 알림은 범위 밖. 자동배포 HOLD 유지. 수집 시작 2026-09-12 15:55 KST. 첫날은 부분 기간 보고이며 실제 08시 수신 확인 전 완료로 닫지 않는다."
     sources: ["dev-package/intent/2026-09-12-operator-slack-notifications.md", "dev-package/prd/specs/S-OPERATOR-SLACK-NOTIFICATIONS-20260912.md"]
-
   - id: BO-1
     name: "운영자 백오피스 — 이메일 식별 서비스 계정 직접 추가"
     status: done
@@ -41,15 +40,15 @@ items:
 
   - id: BO-2
     name: "운영자 백오피스 — 계정 목록·비밀번호 재설정·비활성화"
-    status: open
+    status: done
     stage: after_stage2
     owner: "D1 / core-api · frontend"
     entry_conditions: ["BO-1 완료(계정 추가 화면) — 2026-09-12 판정", "승인 intent 2026-09-12 의 범위로 한정 — 메일 발송·역할/연구실 변경 UI·운영자 지정 UI 는 범위 밖"]
     depends_on: [BO-1]
     completion_def: "셋을 모두 만족한다. ⑴ 운영자 백오피스에 계정 목록이 있다 — 전 연구실 한 목록 · 열 6개(이메일·이름·역할·연구실·상태·최근 로그인) · 열 필터. ⑵ 운영자가 특정 계정의 비밀번호를 재설정할 수 있다 — 새 초기 비밀번호를 직접 입력하면 첫 로그인 변경이 다시 강제되고 그 계정의 기존 로그인(모든 기기)이 즉시 종료된다. 비밀번호 원문은 응답·로그에 남지 않는다. ⑶ 운영자가 계정을 비활성화/재활성화할 수 있다 — 비활성화 즉시 로그인 거절 ＋ 기존 로그인 전부 종료. 데이터·소유권은 유지된다."
-    evidence: null
+    evidence: "⑴ 목록 = `GET /admin/accounts`(`services/core-api/src/colab_core/app/routes/accounts.py` `listServiceAccounts`) ＋ 화면 `frontend/src/routes/AccountAdminPage.tsx`(열 6개·필터 4종 · 최근 로그인은 `login_session` 의 `MAX(issued_at)` 집계). ⑵ 재설정 = `POST /admin/accounts/{accountId}/password-reset` — 기존 scrypt 경로 저장 ＋ `must_change_password=true` ＋ `session_version` +1 ＋ 같은 트랜잭션에서 그 계정 `login_session.revoked_at`(다른 계정 세션 불변 · 증가폭 정확히 1 · 응답·로그에 비밀번호 0). ⑶ 비활성화/재활성화 = 열 `login_credential.status`(`db/platform/versions/0028_account_status.py` · 기본 `active`) ＋ `POST /admin/accounts/{accountId}/status` — 비활성 로그인 401 이 계정 존재 여부를 구분하지 않고 실패 제한 버킷도 오염시키지 않는다. 시험 = `services/core-api/tests/test_account_backoffice.py` · `test_account_status.py` · `frontend/test/account-admin.test.tsx`. 파일 자격(`TrackedPasswordIssuer`)·접속 코드(`TrackedPlantedCodeIssuer`) 경로의 비활성 거절은 커밋 `47fe20bb`(RED 2건 실측 → 401). dev 반영 = `71ee15757737` · 태그 `dev-20260912-2` · `deploy_doctor` 15/15 한 번의 실행(2026-09-12 14:25:03Z) · 근거 `dev-package/reports/r-login-backoffice/task5/deploy-2.md` · 원장 `PLAN-SoT §9 〈384〉`."
     deadline: null
-    note: "전 기기 종료는 기존 `session_version` 대조를 재사용한다(새 세션 저장 방식 도입 없음). 범위 밖 = 메일 발송 전반 · 역할·연구실 변경 UI · 운영자 지정 UI · 모든 기기 로그아웃 버튼."
+    note: "전 기기 종료는 기존 `session_version` 대조를 재사용한다(새 세션 저장 방식 도입 없음). 범위 밖 = 메일 발송 전반 · 역할·연구실 변경 UI · 운영자 지정 UI · 모든 기기 로그아웃 버튼. ⚠ `[미확인]` = **로그인한 상태의 제품 동작**(목록 표가 실제로 그려지는가 · 재설정·비활성화가 200 을 내는가). Ted 의 비밀번호가 없어 배포 레인에서 닫히지 않았고 닿은 자리는 무자격 라우트 표(401/405 · 대조군 404)와 롤 권한까지다 — Ted 실사용 확인이 남았다. ⚠ 목록·지정 경로는 `services/core-api/ops/account-admin-role.sql` 의 GRANT(`d2_member_role` SELECT)에 의존하는데 그 파일이 RDS 에서 통째로 실패하는 결함은 어느 게이트·`deploy_doctor` 항목에도 걸리지 않는다(`〈384〉`-⑨ⓐ)."
     sources: ["dev-package/intent/2026-09-12-login-backoffice-closeout.md", "dev-package/prd/specs/login-backoffice-closeout.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
 
   - id: R0
@@ -3248,3 +3247,163 @@ items:
     deadline: null
     note: "구현·로컬 검증 완료, 배포 대기. 미실측: arm64, 신규 2종 latency, 149 MB GRIB 전체-band COG 비용."
     sources: ["dev-package/intent/2026-09-10-preview-all-formats.md", "dev-package/prd/specs/preview-all-formats.md", "dev-package/prd/rounds/R-PREVIEW-ALL-FORMATS.md", "dev-package/sessions/20260910-preview-all-formats.md"]
+
+  - id: BF-14
+    name: "등록 카드 기간 칸의 안내 문단이 컨트롤 앞에 있어 카드 안 배치가 둘로 갈린다 (#31)"
+    status: done
+    stage: stage1
+    owner: "frontend (D3 등록 카드)"
+    entry_conditions:
+      - "없음 — 실측: 카드 안 안내 문단 4건 중 3건이 이미 컨트롤 뒤이고, 기간 칸 하나만 앞이다. PRD-40 은 앞/뒤를 지정하지 않는다"
+      - "Ted 판정 정본 `dev-package/reports/issues/2026-09-12-ted-decisions.md` — 「#31 문면 삭제」는 판정 카드 ①~⑪ 에 없다(문면 유지 · 위치만 통일)"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend/src/components/upload/RegisterArea.tsx` 의 기간 칸이 「라벨 → 컨트롤 → 설명문」 순서다
+      ⑵ 문면 상수 · `data-testid` · 클래스명 무변(문면 삭제는 범위 밖)
+      ⑶ `upload.css` 접촉 0
+      ⑷ `frontend/test/register-steps-20260907.test.tsx` 에 순서 단언이 서고 red 선실측 뒤 green
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green.
+    evidence: "2026-09-12 커밋 `bb3e77d8`. 게이트 = 레인 보고 축자 `frontend-test green 1256건 · 연속 2회`(L2 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/31"
+    deadline: null
+    note: "라운드 R-BUGFIX-260912 L2 레인. 배치 규약을 정책 문서에 적는 것은 후속 항목(이 회차 범위 밖)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/intent/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-15
+    name: "미리보기 64×64 축소본이 지도 자리 위에 겹쳐 그려진다 — 접히는 자리로 이동 ＋ 중복 방지 (#26)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 미리보기)"
+    entry_conditions:
+      - "Ted 판정 ⑤ ⓑ(2026-09-12) — 지도 자리에서 빼고 접히는 자리(대표 그림 고르개 옆)로 옮긴다. 결정 `〈88〉`-3 의 표시 목적은 유지한다"
+      - "Ted 추가 확인(2026-09-12 · 미리보기 spec v2 「모두 권고대로」) — 축소본 중복 방지 규칙을 같은 묶음에 넣는다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 축소본이 `.mapcanvas` 위에 그려지지 않는다 — 자리는 `up-preview-options` details 안 `up-thumb-img` 옆이다
+      ⑵ 대표 그림을 고른 경우에만 자동 축소본을 그 옆에 대조용으로 세우고, 고른 그림이 없으면 기존대로 한 장이다
+      ⑶ 판정 수단 두 가지 — DOM 조상·형제 관계 ＋ 주석을 제거한 CSS 원문 계측(jsdom 은 레이아웃을 계산하지 않는다)
+      ⑷ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: "2026-09-12 커밋 `6afa776a`(자리 이동) · `c9e95eb2`(중복 방지). 게이트 = 레인 보고 축자 `frontend-test green 1257건 · 2회 ＋ frontend-typecheck 0`(L3 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/26"
+    deadline: null
+    note: "결정 `〈88〉`-3 의 재판정 기록 대상 — 등재 `PLAN-SoT §9 〈386〉`. 라운드 R-BUGFIX-260912 L3 레인."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-16
+    name: "업로드 모달 4건 — 배너 재개 배선 ＋ 닫기 세 번째 선택지 ＋ 배너 행 폐기 ＋ 분석 중 사유·동작 표시 (#33㉠ · #34 · #32 · #24㉯)"
+    status: done
+    stage: stage1
+    owner: "frontend (D5 업로드 모달)"
+    entry_conditions:
+      - "Ted 판정 ①(#32 포함 · 공통 헬퍼 `discardUpload` 추출) · ②(세 번째 선택지 신설 · 뜻 = 이 브라우저에서 감춤 · 서버 행은 24h 만료 스윕) · ③(사유 한 줄 고지 · 비활성 유지) · ④(#33 을 ㉠ 배선 / ㉡ 등록 장면 복원 으로 분리 · ㉡ 은 범위 밖) · ⑧(소요 수용 ＋ 「동작 중」 표시 보강) — 2026-09-12"
+      - "L4 실측 회수 완료 — `dev-package/reports/issues/2026-09-12-measure-L4.md`"
+    depends_on: []
+    completion_def: >-
+      ⑴ `#33`㉠ — 배너 재개 요청의 재개 식별자를 업로드 진입 컴포넌트가 모달 props 로 전달하고 모달이 무장한 채 열린다. 기존 경로(`resumeRef`·`resumeFromRef='banner'`·`resumeArm`·`seq` 재무장) 재사용 · 신규 개념 0
+      ⑵ `#34` — 닫기 확인의 세 번째 선택지가 서고, 뜻이 「이 브라우저의 미완결 기억 삭제」(`forgetPending` 1회 · 서버 호출 0)이며 문면이 24시간 만료를 그대로 말한다. 지울 기억이 있을 때만 낸다
+      ⑶ `#32` — 메인 배너의 접수 완료 행에 폐기 버튼이 서고 같은 공통 헬퍼를 부른다. 폐기 후 배너가 비면 카드가 사라진다. 등록을 마친 데이터셋에는 닿지 않는다
+      ⑷ `#24`㉯ ＋ 판정 ⑧ — `다음 →`(`reg-open`)은 비활성을 유지하고 사유 한 줄이 `title`·`aria-describedby` 로 연결된다. 분석 중 칩에 활동 표시(CSS · `prefers-reduced-motion` 존중)와 클라이언트 경과 시간(`N초 경과`)이 붙는다. 진행 수치가 응답에 없으므로 조각 진행률은 표시하지 않는다(계약 변경 0)
+      ⑸ `upload.css` 는 파일 끝 구획 블록(`/* == R-BUGFIX-260912 L1 == */`) 안에만 덧붙는다
+      ⑹ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green · vitest 수집 건수가 착수 전 대비 6건 이상 증가.
+    evidence: "2026-09-12 커밋 `b8b4e7e2`(#33㉠) · `aa26db94`(#34) · `cef275a0`(#32) · `1a381310`(#24㉯＋⑧). 게이트 = 레인 보고 축자 `frontend-test green 1270건 · 2회 ＋ typecheck 0`(L1 · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/33 · /34 · /32 · /24"
+    deadline: null
+    note: "문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」) — `UPLOAD_CLOSE_FORGET`·`UPLOAD_CLOSE_FORGET_NOTE`(PRD-34 문면표 개정) · `REG_OPEN_ANALYZING_REASON`·`analyzeElapsed`(PRD-43 자리표 2행 신설) · 등재 `PLAN-SoT §9 〈388〉`. PRD-43 21행 표(`COPY_ROW_IDS`·`COPY_ROWS`·`FIXED_COPY`) 등재는 행 채번 확정 뒤 별도 회차. 범위 밖 = `#33`㉡ 접수 완료분 등록 장면 복원 · 서버 즉시 삭제 창구(계약 개정)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-upload-resume-discard.md", "dev-package/prd/specs/2026-09-12-issue-upload-analysis-notice.md", "dev-package/intent/2026-09-12-issue-upload-resume-discard.md", "dev-package/intent/2026-09-12-issue-upload-analysis-notice.md", "dev-package/reports/issues/2026-09-12-measure-L4.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: BF-17
+    name: "미리보기 조작 줄 3화면 — 고르개를 틀 위 고정 줄로 ＋ 확장보기 고르개 신설 ＋ 확대 줄 접힘·가림 해소 (#25⑵ · #27 · #28)"
+    status: done
+    stage: stage1
+    owner: "frontend (D7 미리보기 · 업로드 인라인 · 상세 · 확장보기)"
+    entry_conditions:
+      - "Ted 판정 ⑥ ⓐ(2026-09-12) ＋ 같은 날 재확인 — 인라인·상세 2화면 이동에 더해 확장보기에도 고르개 줄을 신설한다(원문 「니 권곧로 확장보기에서도 추가하다」). 기능 추가분은 Ted 지정 예외(편의 기능 유예 규칙 `.claude/rules/colab-rules.md §6-2` 의 예외)"
+      - "Ted 판정 ⑦ ⓐ(2026-09-12) — 접힘·가림 해소까지만. 고정 배치 재설계는 범위 밖"
+      - "Ted 판정 ⑧(2026-09-12) — 그리는 동안 「동작 중」임을 화면이 보여 준다"
+    depends_on: [BF-15]
+    completion_def: >-
+      ⑴ `#25`⑵ — 파일·변수·시각 고르개 줄이 `.pv-frame` 바깥 고정 줄로 서고, 같은 공용 줄을 세 화면이 쓴다(업로드 인라인 `PreviewPanel.tsx` · 상세 `datasetpreview/DatasetPreviewSection.tsx` · 확장 오버레이 `PreviewExpandOverlay.tsx`)
+      ⑵ 확장보기의 선택 상태는 인라인 미리보기와 공유한다 — 새 상태 저장소 신설 0
+      ⑶ 오버레이에 「그리는 중」 진행 표시가 선다(판정 ⑧)
+      ⑷ `#27`＋`#28` — 인라인에서 확대 줄이 스크롤 없이 보이고, `.modal-b.pvx-b` 의 flex 방향과 `.pv-layers .pv-tile` 폭 상한으로 가림이 사라진다. 버튼 글자 줄바꿈 금지
+      ⑸ 규약 문면 개정이 같은 커밋에 든다 — 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 해당 축자
+      ⑹ `upload.css` 는 기존 규칙만 고치고 파일 끝에 덧붙이지 않는다
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green. `frontend-visual` 은 세 화면 주소를 `COLAB_VISUAL_URLS` 로 선언할 수 있을 때만 1회.
+    evidence: "2026-09-12 커밋 `ccaf27f6`·`a841d7a1`(#25⑵ 2화면) · `67e25399`(확장보기 고르개 ＋ 그리는 중) · `bf02a0c8`(#27·#28) · `f98d09de`(R-C-2 문면 개정). 게이트 = 레인 보고 축자 `frontend-test green 1283건 · 2회 ＋ typecheck 0`(L3b · `gate-summary.json` 미보존 · 3계수 파일 없음). 통합 전수 1회 green 53 / red(판정) 6 / red(준비) 2 — 환경 6·정정 2. 최종 재실행 결과는 병합 결정 `PLAN-SoT §9 〈385〉` 에 기재한다. 이슈 https://github.com/CognileapAI/colab-v2/issues/25 · /27 · /28"
+    deadline: null
+    note: "규약 `R-C-2` 「틀 안 컨트롤 줄」 → 「틀 위 고정 줄」 개정 등재 = `PLAN-SoT §9 〈387〉`. 범위 밖 = 미리보기 고정 배치 재설계 · 「이미지에서 고르기」 설계."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls.md", "dev-package/prd/specs/2026-09-12-issue-preview-controls-v2.md", "dev-package/intent/2026-09-12-issue-preview-controls.md", "dev-package/prd/rounds/R-C-2-frontend.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: PA-T
+    name: "다중 서버 로그인 실패 제한 공유 ＋ 신뢰 프록시 판정"
+    status: open
+    stage: after_stage2
+    owner: "D2 / core-api"
+    entry_conditions: ["Ted 판정 ⑪ ⓐ(2026-09-12) — 대장 항목 등재만 · 미착수. 착수 시점·범위는 별도 판정", "인스턴스 2대 이상 운용이 결정된 뒤 — 1대 운용에서는 현행 프로세스 메모리로 닫혀 있다"]
+    depends_on: []
+    completion_def: "둘을 모두 만족한다. ⑴ 로그인 실패 제한이 인스턴스 사이에서 공유된다 — 서버 대수가 늘어도 자격·클라이언트 각각의 계수 창(5회/15분 · 성공 시 초기화)이 한 벌로 동작한다. 현행 수용 축자는 `CR-2` completion_def 의 「dev 로그인 제한은 현행 프로세스 메모리·자격/클라이언트 각각 5회/15분·성공 시 초기화 수용」이고, 이 항목은 그 수용의 전제(단일 프로세스)가 깨지는 시점을 대상으로 한다. ⑵ 클라이언트 식별의 신뢰 프록시 판정이 기록된다 — 어느 홉까지 신뢰하고 어느 헤더를 읽는지, 위조 헤더로 다른 클라이언트의 계수를 소모시키지 못하는지 음성 시험 1건."
+    evidence: null
+    deadline: null
+    note: "출처 = GitHub 이슈 https://github.com/CognileapAI/colab-v2/issues/11 . Ted 판정 ⑪ ⓐ 는 「대장 항목 등재만 · 미착수」이고 근거는 「열린 항목이 없어 남은 일로 집계되지 않는다」. 등재와 동시에 `CLAUDE.md §0` 세 번째 단 괄호 목록을 갱신한다(게이트 `work-item-consistency` ㈕ 대조)."
+    sources: ["dev-package/prd/rounds/R-BUGFIX-260912.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md", "dev-package/reports/issues/2026-09-12-github-open-issues.md"]
+  - id: LV-5
+    name: "계보 부모 찾기 창을 목록 화면 형태로 재구성 (제안 · #30 후속)"
+    status: open
+    stage: backlog
+    owner: "frontend (D4 계보 화면) — 착수 시점은 Ted"
+    entry_conditions:
+      - "Ted 판정 ⑨ ⓐ(2026-09-12) — 이번 회차는 0행 재현 확인까지이고 화면 형태 재구성은 신규 항목 후보다. 착수 판정은 별도"
+      - "L4 재현 결과가 조회 결함이 아니라 사용법으로 닫혔다(`dev-package/reports/issues/2026-09-12-measure-L4.md` §4-2) — 즉 이 항목은 결함 수정이 아니라 화면 형태 개선이다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 부모 찾기 창이 데이터셋 목록 화면과 같은 형태(열 구성·필터·건수 표시)로 후보를 보여 준다
+      ⑵ 결과가 0행일 때 왜 0행인지를 화면이 가른다 — 후보 부재 / 필터가 결과를 비움 / 연구실 경계. 현행 두 갈래 문면(`ParentPicker.tsx` 축자 「검색 조건에 맞는 데이터가 없어요. 조건을 바꿔 주세요.」 · 「고를 수 있는 연구실 데이터가 아직 없어요.」)보다 넓다
+      ⑶ 필터가 어떤 값으로 걸려 있는지 화면에 보이고 한 번에 지울 수 있다
+      ⑷ 연구실 경계(RLS) 동작은 바꾸지 않는다.
+    evidence: null
+    deadline: null
+    note: "L4 부수 관측(보고만) = `category` 를 한 값이라도 고르면 0행이다 — staging 표본 14행 전부 응답 `category` 가 null. 이것이 화면 결함인지 표본 결함인지는 `[미측정]`. 이 항목과 별개로 다뤄야 한다."
+    sources: ["dev-package/reports/issues/2026-09-12-measure-L4.md", "dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md", "dev-package/reports/issues/2026-09-12-ted-decisions.md"]
+  - id: HE-1
+    name: "하네스 평가 과제 4건 설계 수리 — H14 · H15 · H16 · H18 (09-08·09-12 두 실측에서 동일 실패)"
+    status: open
+    stage: backlog
+    owner: "harness (dev tooling)"
+    entry_conditions:
+      - "이 회차가 `main` 에 병합돼 `eval/harness/results/20260912-211809/` 가 `main` 에 있다"
+      - "별도 체크아웃 `31 CoLAB-v2` 에서 `origin/main` 기점 브랜치 `fix/harness-eval-tasks` 로 작업한다(이 레포 체크아웃과 분리)"
+      - "실행 경로는 구독(`claude -p`)이다 — API 키·예산 승인 질의 없음"
+    depends_on: [WU-D6, WU-D7]
+    completion_def: >-
+      ⑴ `COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval`
+      한 번의 실행에서 20/20 green(과제 20 · 실행 40 · 2/2 green)
+      ⑵ 승격 조건 계수 시작 — 3회 연속 2/2 green(`dev-package/intent/2026-09-08-harness-evals.md` Q10)
+      ⑶ 과제별로 「기대(expect) 오류」와 「지시문 미준수」를 가른 근거를 남긴다 — 기대를 넓혀 green 으로 만드는 것은
+      판정 뒤에만 허용된다(`dev-package/prd/rounds/R-D-2-harness-eval.md` §3 ㉴ 금지).
+    evidence: null
+    deadline: null
+    note: |
+      2026-09-12 Ted 판정 ⓐ — 하네스 평가 red(판정) 4건을 안고 이번 회차를 병합·배포하고, 과제 수리는 별도 항목·별도 세션으로 낸다.
+      원문 「a로 하고 이건 다른 곳에서 할게」. 등재 `PLAN-SoT §9 〈391〉`.
+      실측 2회에서 같은 4건이 실패했다 — `20260908-161538`(0/2 H14·H16·H18 · 1/2 H15) · `20260912-211809`(과제 20 · 실행 40 · green 16 · 실패 4).
+
+      착수 세션 프롬프트(축자 · 사본 `dev-package/sessions/HE-1-session-prompt.md`):
+
+      ```
+      31 CoLAB-v2 에서 하네스 평가 과제 4건(H14-silent-skip · H15-zero-targets · H16-lenient-default · H18-three-states)의 설계 결함을 고친다.
+      - 근거: eval/harness/results/20260912-211809/summary.md (green 16 / 실패 4) 와 20260908-161538 (같은 과제 실패) · R-D 라운드 결정 ㉴(방치) · PLAN-SoT 〈391〉(이번에 ⓐ 로 넘김)
+      - 과제 정의: eval/harness/H14* H15* H16* H18* · 러너 eval/harness/run.sh · README 의 선언값(TIMEOUT 93 · BUDGET 2.01)
+      - 실행은 구독(로그인 claude -p) 경로다. API 키·예산 승인을 묻지 않는다.
+      - 순서: 과제별로 「기대(expect)가 잘못됐는가 / 지시문이 실제로 안 지켜지는가」를 먼저 가르고, 기대 오류면 과제를 고치고, 지시문 미준수면 CLAUDE.md·스킬 문안을 고친다. 고친 뒤 COLAB_HARNESS_EVAL=1 COLAB_EVAL_TIMEOUT=93 COLAB_EVAL_BUDGET=2.01 bash gates/run.sh harness-eval 로 재실행.
+      - 완료 = 20/20 green 1회 ＋ 승격 조건(3회 연속 2/2 green · intent 2026-09-08-harness-evals Q10) 계수 시작. 대장 항목 HE-1 을 done 으로.
+      - 라운드 파일·03-HANDOFF 통독 금지(grep 한 줄만).
+      ```
+
+      범위 밖 = 러너·게이트 재설계(`WU-D5`·`WU-D7` 산출물 무변) · CI 잡 승격(3회 연속 green 뒤 별건) · `stage` 승급(`backlog` 유지 · `CLAUDE.md §0` `after_stage2` 괄호 미접촉).
+    sources: ["eval/harness/results/20260912-211809/summary.md", "eval/harness/results/20260908-161538/summary.md", "dev-package/reports/bugfix-260912/harness-eval-run.md", "dev-package/sessions/HE-1-session-prompt.md", "dev-package/prd/rounds/R-D-2-harness-eval.md", "dev-package/intent/2026-09-08-harness-evals.md"]
+  - id: BO-3
+    name: "운영자 백오피스 — 관리자 지정·해제와 관리자 전 연구실 읽기"
+    status: done
+    stage: after_stage2
+    owner: "D1 / core-api · frontend"
+    entry_conditions: ["BO-2 의 계정 목록 화면이 있다 — 토글이 그 행에 붙는다", "승인 intent 2026-09-12 운영자 지정의 범위로 한정 — 관리자의 타 연구실 쓰기·역할/연구실 변경 UI·메일 발송은 범위 밖"]
+    depends_on: [BO-2]
+    completion_def: "넷을 모두 만족한다. ⑴ 계정 목록의 각 행에 관리자 지정·해제 토글이 있고 발급 폼에 관리자 체크박스가 있다. ⑵ 기존 관리자 누구나 지정·해제하고, 자기 자신 해제와 마지막 관리자 해제는 400 으로 거절된다(마지막 한 명 셈은 잠금 아래 · 동시 해제에도 관리자 1명 이상이 남는다). ⑶ 지정·해제 즉시 그 계정의 기존 로그인이 모든 기기에서 끝난다(자격 버전 +1 ＋ 원장 revoke). ⑷ 관리자가 모든 연구실의 데이터를 읽기 전용으로 열람한다 — 쓰기(수정·삭제·업로드)는 소속 연구실 범위 그대로이고, 비관리자와 관리자 쓰기의 cross-tenant 음성 시험이 둘 다 통과한다."
+    evidence: "⑴ 토글·체크박스 = `frontend/src/routes/AccountAdminPage.tsx`(행별 관리자 토글 ＋ 확인 대화상자 ＋ 자기 자신 비활성 · 발급 폼 체크박스) ＋ GNB 「전체 연구실」 표기 `frontend/src/shell/Gnb.tsx` · 시험 `frontend/test/account-admin.test.tsx` · `frontend/test/shell.test.tsx`. ⑵ `POST /admin/accounts/{accountId}/operator`(`setServiceAccountOperator` · 요청 `{operator}`) — 자기 자신 해제 400 · 마지막 한 명 해제 400 이고 그 셈은 자문 잠금 아래에서 한다(동시 해제 2건에 통과 1건 · 관리자 1명 잔존). ⑶ 지정·해제가 `session_version` +1 ＋ `login_session.revoked_at`(남의 세션 불변). ⑷ 읽기 스코프 = `db/platform/versions/0029_operator_read_policy.py`(테넌트 표 31개 · `operator_read` FOR SELECT · PERMISSIVE) ＋ GUC `app.operator_read` ＋ `apply_scope(..., operator_read=True)` · 관리자 여부는 매 요청 `account_admin.service_operator` 에서 재도출 · 관리자 쓰기와 비관리자 cross-tenant 음성 시험 둘 다 통과 · 양성 = 관리자가 두 연구실의 카탈로그·데이터셋 상세를 읽는다. 시험 = `services/core-api/tests/test_operator_designation.py`(반출 제외 `test_an_operator_cannot_download_another_labs_dataset` 포함 · 커밋 `8dd2c362`) · 오라클 `db/platform/tests/0029-assertions.sql`·`0029-drift.sh` · 정책 목록 오라클 확장 `gates/tools/rls-effect.sh`. 형제 해소·머지 = `0030_merge_operator_audit_and_backoffice` ＋ 두 순서 드리프트 오라클 `db/platform/tests/0030-drift.sh`. dev 반영 = `71ee15757737` · 태그 `dev-20260912-2` · `deploy_doctor` 15/15 한 번의 실행 · 원장 `PLAN-SoT §9 〈383〉`·`〈384〉`."
+    deadline: null
+    note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0029_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다) · 관리자의 타 연구실 **반출** — intent 문면이 연 것은 읽기뿐이라 `app/deps.py::_operator_read` 가 경로 마지막 칸이 `download` 인 op 을 스코프에서 제외한다. ⚠ `[미확인]` = 로그인한 상태의 관리자 토글·전 연구실 열람 실동작(Ted 실사용 확인 대기) · 운영자 판정(`_require_operator`) 통과 자체. ⚠ `0029` 의 표 목록은 정적 열거라 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다(그 8표는 `lab_boundary` 만으로 닫혀 있다 · 후속)."
+    sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
+

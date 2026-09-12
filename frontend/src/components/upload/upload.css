@@ -358,7 +358,11 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 /* 배지 — 좌표의 출처와 색 범위 단계를 화면이 **말한다** (`K-4`) */
 .pv-badges { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .vizstage { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--color-text-muted); }
-.mapcanvas .thumb { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+/* ⭑ ⟨R-BUGFIX-260912 `#26`⟩ 성공 경로의 축소본이 접히는 설정 자리로 옮겨 왔다 —
+   치수 64×64 · contain · pixelated 를 그대로 승계한다. `.mapcanvas .thumb` 는
+   **구제(salvage) 경로가 계속 쓰므로 남긴다**(그 경로는 이번 회차 범위 밖이다). */
+.mapcanvas .thumb,
+.up-preview-options .thumb { width: 64px; height: 64px; flex: none; object-fit: contain; image-rendering: pixelated; }
 
 /* ── 미완결 전송 배너 (〈174〉) — 숨기지 않는다. 이어올리거나 지워야 사라진다 ── */
 .up-banner {
@@ -510,7 +514,10 @@ textarea.inp { resize: vertical; line-height: 1.5; }
   display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal.pvx{width:100%;max-width:min(96vw,1100px);max-height:92vh;background: var(--color-surface);
   border-radius:var(--up-radius);display:flex;flex-direction:column;overflow:hidden;}
-.modal-b.pvx-b{height:min(70vh,640px);overflow:auto;display:flex;align-items:center;justify-content:center;}
+/* ⭑ ⟨R-BUGFIX-260912 `#28`⟩ 방향 미선언이라 기본 `row` 가 걸렸고, 고르개 줄·진행 표시·
+   그림·확대 줄이 가로로 늘어서며 확대 줄 버튼 글자가 세로로 접혔다. 세로로 쌓는다.
+   본문 높이(`min(70vh,640px)`)는 그대로 둔다 — 늘어난 줄만큼 그림 자리가 줄어든다(우려 1 ⓐ). */
+.modal-b.pvx-b{height:min(70vh,640px);overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
 .pvx-img{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
 /* 확장보기를 여는 단추 — 미리보기 머리 오른쪽 끝 */
 .pvx-open{flex:none;}
@@ -586,3 +593,23 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 .modal-takeover .vizph .pt { margin-bottom: 8px; font-size: 15px; font-weight: 600; color: var(--color-text); }
 .modal-takeover .vizph .pd { max-width: 48ch; font-size: 13px; line-height: 1.7; color: var(--color-text-muted); }
 .modal-takeover .mapempty { padding: 32px 20px; font-size: 14px; line-height: 1.7; color: var(--color-text-muted); text-align: center; }
+
+/* == R-BUGFIX-260912 L1 == */
+/* 이 블록은 **파일 끝에만** 덧붙인다(회차 규칙 — 위 기존 규칙과 다른 레인이 갈린다). */
+
+/* `#24` ㉯ — `다음 →` 비활성 사유 한 줄.
+   `.rg-s` 를 재사용하지 않는 이유 = `.up-empty .reggate .rg-s { display:none; }` 이
+   분석 중 장면(등록 카드가 아직 안 열린 장면)에서 그 줄을 그대로 감춘다. */
+.reggate .rg-why { margin-top: 4px; font-size: 13px; color: var(--up-muted); }
+
+/* Ted 판정 ⑧ ㉠ — 분석 중 「동작 중」 표시. 칩이 스스로 옅어졌다 진해진다.
+   감속을 선호하면 끈다 — 표시는 남고 움직임만 사라진다. */
+@keyframes up-analyze-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.up-analyze .chip.is-analyzing { animation: up-analyze-pulse 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .up-analyze .chip.is-analyzing { animation: none; }
+}
+
+/* Ted 판정 ⑧ ㉢ — 경과 시간. 자릿수가 늘어도 옆 글자가 밀리지 않게 고정폭 숫자를 쓴다. */
+.up-analyze .an-elapsed { font-size: 13px; color: var(--up-muted); font-variant-numeric: tabular-nums; }
+/* == /R-BUGFIX-260912 L1 == */

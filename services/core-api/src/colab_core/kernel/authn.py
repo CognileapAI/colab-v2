@@ -35,7 +35,7 @@ from .auth import Subject, SubjectRegistry
 from .credentials import CredentialStore
 from .db_credentials import DatabaseCredentialStore, normalize_login_name
 from .password import verify_password
-from .login_sessions import IssuedBrowserSession, LoginSessionStore
+from .login_sessions import AccountInactive, IssuedBrowserSession, LoginSessionStore
 from .session_token import DatabaseSessionSigner, IssuedSession, SessionSigner
 
 
@@ -264,10 +264,30 @@ class TrackedSessionAuthenticator:
         return self.store.authenticate(token)
 
 
+def _refuse_if_inactive(accounts: DatabaseCredentialStore | None,
+                        subject: Subject) -> None:
+    """비활성화는 **계정**에 걸린다 — 자격 한 벌이 아니다.
+
+    ⚠ 종전에는 `status` 를 `login_sessions.issue_database` **하나만** 봤다. 같은 사람이
+    파일 자격이나 접속 코드를 함께 가지고 있으면 백오피스의 「비활성화」가 그 경로에는
+    닿지 않아, 끊은 줄 알았던 계정이 그대로 로그인했다.
+
+    **자격 대조가 끝난 뒤에 부른다** — 앞에 두면 비활성 계정만 즉답이 되어 응답 시간이
+    상태를 말한다 (`issue_database` 의 같은 주석).
+
+    DB 자격 행이 없는 계정은 이 저장소의 **관할이 아니다**(`status_for_account` 가 `None`).
+    """
+    if accounts is None:
+        return
+    if accounts.status_for_account(str(subject.account_id)) not in (None, "active"):
+        raise AccountInactive
+
+
 @dataclasses.dataclass(frozen=True)
 class TrackedPlantedCodeIssuer:
     registry: SubjectRegistry
     sessions: LoginSessionStore
+    accounts: DatabaseCredentialStore | None = None
     name: str = "tracked-planted-access-code"
 
     def issue(self, attempt: LoginAttempt) -> IssuedBrowserSession | None:
@@ -276,6 +296,7 @@ class TrackedPlantedCodeIssuer:
         subject = self.registry.resolve(attempt.access_code)
         if subject is None:
             return None
+        _refuse_if_inactive(self.accounts, subject)
         return self.sessions.issue(
             subject, credential_kind="planted-code",
             credential_version=None, purpose="normal",
@@ -286,6 +307,7 @@ class TrackedPlantedCodeIssuer:
 class TrackedPasswordIssuer:
     store: CredentialStore
     sessions: LoginSessionStore
+    accounts: DatabaseCredentialStore | None = None
     name: str = "tracked-legacy-file-password"
 
     def issue(self, attempt: LoginAttempt) -> IssuedBrowserSession | None:
@@ -297,6 +319,7 @@ class TrackedPasswordIssuer:
             return None
         if not verify_password(attempt.password, record.password):
             return None
+        _refuse_if_inactive(self.accounts, record.subject)
         return self.sessions.issue(
             record.subject, credential_kind="legacy-file",
             credential_version=None, purpose="normal",
@@ -398,8 +421,10 @@ def build(*, registry: SubjectRegistry, signer: SessionSigner | None,
         if database_credentials is not None:
             issuers.append(TrackedDatabasePasswordIssuer(database_credentials, login_sessions))
         if credentials is not None and not credentials.empty:
-            issuers.append(TrackedPasswordIssuer(credentials, login_sessions))
-        issuers.append(TrackedPlantedCodeIssuer(registry, login_sessions))
+            issuers.append(TrackedPasswordIssuer(
+                credentials, login_sessions, database_credentials))
+        issuers.append(TrackedPlantedCodeIssuer(
+            registry, login_sessions, database_credentials))
         return AuthenticatorChain(tuple(adapters)), IssuerChain(tuple(issuers))
     adapters.append(SignedSessionAuthenticator(signer))
     issuers: list[CredentialIssuer] = []

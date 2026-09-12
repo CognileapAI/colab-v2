@@ -58,6 +58,14 @@ CREATE FUNCTION current_account_id() RETURNS char(26)
     END::char(26)
   $$;
 
+-- 운영자 전 연구실 **읽기** 스위치. 값이 없으면 false 다 — 없는 것을 참으로 읽지 않는다.
+-- 켜는 자리는 커널 한 곳(`kernel/scope.py`)이고, 켜지는 요청도 **읽기 하나**다(`app/deps.py`).
+CREATE FUNCTION is_operator_read() RETURNS boolean
+  LANGUAGE sql STABLE
+  AS $$
+    SELECT COALESCE(current_setting('app.operator_read', true), '') = 'on'
+  $$;
+
 -- 불변 기록용 트리거 2종. "고칠 수 있는 감사 기록은 감사 기록이 아니다" (㉘).
 CREATE FUNCTION deny_update_delete() RETURNS trigger
   LANGUAGE plpgsql
@@ -135,7 +143,12 @@ CREATE TABLE account_admin.login_credential (
   must_change_password  boolean     NOT NULL DEFAULT true,
   session_version       integer     NOT NULL DEFAULT 1 CHECK (session_version > 0),
   created_at            timestamptz NOT NULL DEFAULT now(),
-  updated_at            timestamptz NOT NULL DEFAULT now()
+  updated_at            timestamptz NOT NULL DEFAULT now(),
+  -- ⚠ `status` 는 **마지막 열이어야 한다.** `0028` 이 ALTER TABLE ADD COLUMN 으로 붙이므로
+  -- 적용 DB 에서 이 열의 attnum 이 제일 크고, `schema-diff` 는 pg_dump 의 열 순서를 그대로 본다.
+  -- 뜻으로는 `must_change_password`·`session_version` 옆자리지만 자리는 순서가 정한다.
+  status                text        NOT NULL DEFAULT 'active'
+                        CHECK (status IN ('active', 'inactive'))
 );
 
 -- 서비스 전체 권한은 연구실 역할과 별개다. 앱 일반 롤에는 이 표의 권한을 주지 않는다.
@@ -1598,6 +1611,47 @@ CREATE POLICY lab_boundary ON d3_operator_export FOR ALL USING(lab_id=current_la
 CREATE POLICY lab_boundary ON d5_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
 CREATE POLICY lab_boundary ON d6_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
 CREATE POLICY lab_boundary ON d8_operator_export FOR ALL USING(lab_id=current_lab_id()) WITH CHECK(lab_id=current_lab_id());
+--   ④ 운영자 전 연구실 읽기 → 모든 테넌트 테이블에 `operator_read` 를 **FOR SELECT 로만**
+--
+--   왜 SELECT 하나인가: PERMISSIVE 정책은 **OR** 로 합쳐진다. 읽기에만 걸면 읽기만 넓어지고
+--   INSERT·UPDATE·DELETE 는 `lab_boundary` 의 USING·WITH CHECK 을 그대로 통과해야 한다.
+--   UPDATE·DELETE 가 행을 고를 때 SELECT 정책도 함께 적용되지만, **고른 뒤의 쓰기 판정은
+--   여전히 `lab_boundary`** 다 — 그래서 남의 연구실 행은 보이되 고쳐지지 않는다.
+--   `d3_file` 의 RESTRICTIVE `body_access` 는 그대로 남는다: 운영자라도 잠긴 본체는 못 연다.
+--
+--   스위치(`app.operator_read`)는 커널이 **운영자의 읽기 요청에만** 켠다. 요청이 그것을
+--   보내는 경로는 없다 — 경계는 여전히 주체에서만 나온다 (CLAUDE.md §3-5 · P-9·P-10).
+CREATE POLICY operator_read ON d1_lab_profile                  FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d1_account                      FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_member_role                  FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_permission_switch            FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_permission_change            FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_dataset_access               FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_dataset_access_grant         FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_dataset_access_request       FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_verification_request         FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d2_verified                     FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset                      FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset_description          FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset_representative_image FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_representative_image_cleanup FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset_autometa             FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset_variable             FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_dataset_grid_profile         FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_lab_default_grid             FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d3_file                         FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_upload                       FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_upload_file                  FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_upload_grid_profile          FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_pipeline_event               FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_upload_transfer              FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d5_upload_transfer_file         FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d4_lineage_edge                 FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d4_lineage_unknown              FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d6_project                      FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d6_project_dataset              FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d8_activity                     FOR SELECT USING (is_operator_read());
+CREATE POLICY operator_read ON d8_download                     FOR SELECT USING (is_operator_read());
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 8. 마이그레이션 체인 상태 테이블
