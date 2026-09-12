@@ -1,9 +1,10 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> **최종 갱신 2026-09-12 · 현재 단계 = 로그인·백오피스 회차 완료.** dev 실적용 `71ee15757737` · 태그 `dev-20260912-2`(로컬·미push) · `deploy_doctor --env dev` **15/15 한 번의 실행**(exit 0 · 14:25:03Z) · platform 체인 `0027_operator_audit` → `0030_merge_audit_and_backoffice`(형제 해소 ＋ 두 순서 드리프트 오라클 `0030-drift.sh`). 대장 **`BO-1`·`BO-2`·`BO-3` 전건 `done`** · 원장 `PLAN-SoT §9 〈383〉`(관리자 지정·전 연구실 읽기 intent 승인 · 반출 제외)·`〈384〉`(회차 출하) — 임시 번호, 병합 직전 재실측.
-> **다음 = ⑴ Ted 실사용 확인**(백오피스 계정 목록 · 비밀번호 재설정 · 비활성화/재활성화 · 관리자 지정·해제 토글 · 관리자의 전 연구실 열람) **⑵ 후속 7건**(`〈384〉`-⑨ — 롤 SQL 이 RDS 에서 통째 실패 · `deploy_doctor` 가 인증 DB·롤 권한 미검사 · `ship.sh` ops 번들에 `infra/dev`·`infra/staging` 부재 · 배포 레포 트리 드리프트 검사 부재 · `dev.env` `COLAB_IMAGE_TAG` 갱신 절차 부재 · `0029` 정적 표 열거가 감사·내보내기 8표 미포함 · 대장↔`CLAUDE.md` 괄호 동시 갱신을 사전에 막는 자리 0).
-> **진입조건** = Ted 가 dev 에서 **첫 비밀번호 변경**을 마쳐야 운영자 판정(`_require_operator`) 통과와 백오피스 화면 전부가 관측된다(그 전까지 `[미확인]`). 태그 `dev-20260912-1`·`dev-20260912-2` 는 **미push** — 원격 반영은 오케스트레이터 몫이다.
-> ⛔ **블로커 `§4` `71` 은 상태 그대로다** — staging 자동배포 파이프라인이 매 회차 `exit 78`(배포·검증은 green · 원인은 운영자 알림 스풀 부재). **전수 게이트 3계수는 `[미확인]`** — 마무리 레인이 돌리지 않았고 지목 보고서(`reports/r-login-backoffice/task7-full/run2/gate-summary.md`)가 트리에 없다. 근거 `dev-package/reports/r-login-backoffice/task5/deploy-2.md` · `task6/rebase-merge.md`.
+> **최종 갱신 2026-09-13 · 현재 단계 = 버그개선 회차 `main` 반영 완료(`535dc59b`) · dev 배포 대기.** 대장 `BF-14`~`BF-17` 전건 `done` · 등재만 3건(`PA-T`·`LV-5`·`HE-1`) · 이슈 댓글 12건 게시(**닫기는 Ted**) · 최종 전수 **green 63 / red(판정) 0 / red(준비) 1**(트리 `a07b7ae6`) ＋ 병합 후 접점 단독 게이트 **8/8 green**(`cbaceec0`) · 등재 `PLAN-SoT §9 〈385〉`~`〈393〉`.
+> **다음 = ⑴ dev 배포** — 순서는 `dev-package/reports/bugfix-260912/deploy-checklist.md §2` 그대로: staging 리허설 → `sed` 로 `__MAIN_SHA__` 3자리 치환 → `deploy_release.py run --check` → `run`(**`deploy_doctor` 15/15 를 한 번의 실행으로**) → `tag-release.sh dev`(태그 `dev-YYYYMMDD-N`) → 원장 배포 행 등재. **⑵ `HE-1`**(하네스 평가 과제 4건 수리)는 **별도 세션 · 별도 작업 사본 `31 CoLAB-v2`** · 프롬프트 `dev-package/sessions/HE-1-session-prompt.md`. **⑶ 이슈 닫기 = Ted.**
+> **진입조건** = `main` tip ≥ `535dc59b` · 배포 계획 `~/colab-deploy/r-bugfix-260912/release.json` 존재 · 자격 3종 `~/.config/colab-platform/{dev-key.pem,dev.env,dev-operator.env}` 존재 — 축자는 `§4.5` 맨 위 블록. ⚠ **현재 dev 는 백오피스 회차 sha 를 돌고 있어 이번 회차 프런트 수정이 dev 에 없다.**
+> **로그인·백오피스 회차 잔여는 그대로다** — Ted 실사용 확인(첫 비밀번호 변경 뒤 백오피스 화면 전부) · 후속 7건(`〈384〉`-⑨) · 태그 `dev-20260912-1`·`dev-20260912-2` **미push**(원격 반영은 오케스트레이터 몫).
+> ⛔ **블로커 `§4` `71` 은 상태 그대로다** — staging 자동배포 파이프라인이 매 회차 `exit 78`(배포·검증은 green · 원인은 운영자 알림 스풀 부재). ⭑ **⟨개정 2026-09-13⟩ 전수 게이트 3계수 = green 63 / red(판정) 0 / red(준비) 1** ／ 종전 ~~`[미확인]`~~ — `〈392〉` 의 red(판정) 2 는 커밋 `41617a43`·`c4802aa2` 로 정정됐고, red(준비) 1 = `harness-eval` 미선언(판정은 `〈391〉` 단독 실측). 근거 `dev-package/reports/bugfix-260912/`.
 
 
 > 2026-09-12 작업 5 dev 배포 2차: `origin/main` **`71ee15757737`** 을 dev 에 실적용 — platform 체인 `0027_operator_audit` → **`0030_merge_audit_and_backoffice`**(경로 `0028`·`0029`·`0030` 머지 · ai `0007` 무변) · 적용 전 백업 `_ops/backups/dev/2026-09-12T141450Z-*` · 4 단위 `:dev-71ee15757737` healthy · `CURRENT_SHA`/`MAIN_SHA` `ancestor=yes` · 프런트 96파일 재업로드(CloudFront `index.html` md5 로컬 일치) · **`deploy_doctor --env dev` `항목 15 — ✓ 15 · ✗ 0 · ─ 0` · exit 0 · 한 번의 실행**(14:25:03Z) · 로컬 태그 **`dev-20260912-2` → `71ee15757737`**(미push). `account-admin-role.sql` 재적용으로 `service_operator` INSERT·DELETE 와 `d2_member_role` SELECT 가 `f`→`t`. ⛔ **그 파일의 `ALTER ROLE … NOSUPERUSER …` 는 RDS 에서 성립하지 않아**(마스터 `rolsuper=f`) 문서 경로 그대로는 exit 3 이고 뒤의 GRANT 가 한 줄도 안 돈다 — **어느 게이트·doctor 항목에도 걸리지 않는 결함**이라 한 문장을 뺀 채 적용했다(후속). 집행은 공통 실행기(`scripts/deploy_release.py`) 경유 · 기록 id `dv-20260912-2b-71ee15757737`. 근거 `dev-package/reports/r-login-backoffice/task5/deploy-2.md`.
@@ -73,6 +74,8 @@
 
 **최종 갱신** 2026-09-06 (**★ 이 회차 = R-A 라운드 `main` 병합 2단계 — 계약 동결 해제 **19차** 묶음(A5·A4·A6). ⟹ **R-A 14/14 가 `main` 에 있다.** 등재 `PLAN-SoT §9 〈346〉`·`〈347〉` · 근거 `dev-package/sessions/R-A-ROUND-20260906.md`.**)
 ⭑ **⟨증보 2026-09-12 · 버그개선 회차 마감⟩ 최종 갱신 = 2026-09-12 — R-BUGFIX-260912 신규 4 항목(`BF-14`~`BF-17`) 전건 done · 통합 `integration/r-bugfix-260912` tip `f98d09de`(＋등재 커밋) → `main` ff 한 줄 **대기** · 대장 등재만 2건(`PA-T` 이슈 `#11` 판정 ⑪ ⓐ · `LV-5` 제안 `backlog`) · 등재 `PLAN-SoT §9 〈385〉`~`〈390〉`.**
+
+⭑ **⟨증보 2026-09-13 · 버그개선 회차 종료⟩ 2026-09-13 종료 — 이슈 댓글 12건 게시 · 배포 미실행(Ted 종료 지시).** 위 「`main` ff 한 줄 **대기**」는 해소 — `main` = `535dc59b`(이번 회차 ＋ 로그인·백오피스 회차) · 등재 `PLAN-SoT §9 〈393〉` · 대장 등재만 3건(`PA-T`·`LV-5`·`HE-1`).
 게이트 = 레인 4벌 `frontend-test` green(1256·1257·1270·1283 · 각 2회 · typecheck 0 · `gate-summary.json` 미보존) · 통합 전수 1회 **green 53 / red(판정) 6 / red(준비) 2**(환경 6·정정 2) — **최종 재실행 대기**이고 그 결과를 병합 결정 `§9 〈385〉` 에 적는다.
 문면 4건은 2026-09-12 Ted 확정(원문 「1. 권고대로 하자 좋아.」)이라 PRD-34 문면표·PRD-43 자리표를 같은 회차에 개정했다(`§9 〈388〉`).
 **현재 단계** = 최종 전수 게이트 재실행 → `main` ff → dev 배포 green ＋ `deploy_doctor` **15/15 를 한 번의 실행으로**(재시도해 모은 15 는 15 가 아니다). ⚠ `origin/main` 이 `6fcc065f` 로 앞서 있어 ff 전에 통합 브랜치 재기점이 필요하다.
@@ -403,6 +406,9 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 
 > ⭑ **⟨2026-09-05 정리⟩ 여기 남긴 것은 맨 위 블록(가장 최근 회차)과 확인 표뿐이다.** 지난 회차 진입조건 블록은 **원문 그대로** `dev-package/archive/HANDOFF-HISTORY-2026-08.md`·`-2026-09.md` 에 있다.
 
+
+> ⭑ **⟨신설 2026-09-13 · 버그개선 회차 종료 · 등재 `§9 〈393〉`⟩ 다음 세션 = dev 배포 — 이 블록이 그 작업지시의 진입조건이다.**
+> **진입조건 넷** = ⑴ `main` tip ≥ `535dc59b` ⑵ 배포 계획 `~/colab-deploy/r-bugfix-260912/release.json` 존재(`deploy_release.py --check` 통과 · `__MAIN_SHA__` 토큰 **3자리 미치환**) ⑶ 자격 3종 `~/.config/colab-platform/{dev-key.pem,dev.env,dev-operator.env}` 존재 ⑷ EC2 `/tmp/op.env` 절차는 `dev-package/reports/r-login-backoffice/task1-deploy/release.md` 참조. **순서 축자 = `dev-package/reports/bugfix-260912/deploy-checklist.md §2` · 준비도 = 같은 폴더 `deploy-readiness.md`.** ⚠ **현재 dev 는 백오피스 회차 sha 를 돌고 있다** — 이번 회차 프런트 수정은 dev 에 없다.
 > ⭑ **⟨신설 2026-09-06 · 하네스 재설계 브랜치 `worktree-harness-fable51-spec` · 등재 `§9 〈368〉`~`〈371〉` · 스펙 `docs/superpowers/specs/2026-09-06-harness-fable51-design.md`⟩ 이 브랜치는 아직 `main` 에 없다 — 다음 세션의 첫 다섯 걸음이 그 인수 절차다.**
 > **진입조건 다섯** = ⑴ `main` 에서 `git merge --ff-only origin/worktree-harness-fable51-spec`(이 마감 커밋이 올라온 뒤) → ⑵ 세션을 **레포 루트 `30 CoLAB-v2`** 에서 열고 `--add-dir "../40 COLAB-기획"` 을 붙인다(기획 정본이 레포 밖이라 이것 없이는 `planning-freshness` 가 red · `§4` `#70`) → ⑶ `/context` 에 `.claude/rules/colab-rules.md` ＋ 에이전트 4종(`advisor`·`lane-worker`·`researcher`·`gate-runner`)이 뜨는지 확인 → ⑷ **탐침 3문**(`dev-package/reports/harness/2026-09-06/08-memory-migration.md §4`) 통과 **뒤에** 비로소 `P-C` 의 옛 메모리 삭제·`MEMORY.md` 3줄화 → ⑸ 첫 `grill-me` 를 돌려 R-A′ 의 `dev-package/intent/` 발의 1건을 낸다.
 
