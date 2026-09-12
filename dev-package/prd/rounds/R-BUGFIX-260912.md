@@ -88,8 +88,8 @@
 - spec = `dev-package/prd/specs/2026-09-12-issue-preview-controls.md`.
 - 착수 순서 3단(직렬 · 같은 파일군) —
   1. `#26` 64×64 축소본 이동 — 지도 자리(`.mapcanvas`)에서 빼고 접히는 자리(`up-preview-options` details 안 · `up-thumb-img` 옆)로 옮긴다. 결정 `〈88〉`-3 의 표시 목적을 유지하고 지도 위 중복만 제거한다(Ted 판정 ⑤ ⓑ · 재판정 기록 대상).
-  2. `#25`⑵ 고르개 줄을 틀 밖으로 — 파일·변수·시각 고르개 줄을 `.pv-frame` 바깥 고정 줄로 옮긴다. 대상은 그 줄을 소유한 **두 화면**뿐 — 업로드 인라인(`PreviewPanel.tsx`) · 상세(`datasetpreview/DatasetPreviewSection.tsx`). **확장 오버레이에는 고르개 줄을 만들지 않는다.** 규약 `R-C-2` 개정 기록 대상(Ted 판정 ⑥).
-     - 확장 오버레이 미신설은 spec 우려 1 권고 ⓑ 채택값이며 Ted 판정 ⑥ 문면 「세 화면」과 갈린다 — 오케스트레이터가 Ted 재확인 1줄을 회수해 지시문으로 전달한다. **회수 전이면 1단(`#26`)만 진행하고 대기한다.** 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 의 해당 축자 개정은 L3 가 같은 커밋에 넣는다.
+  2. `#25`⑵ 고르개 줄을 틀 밖으로 — 파일·변수·시각 고르개 줄을 `.pv-frame` 바깥 고정 줄로 옮긴다. 대상은 그 줄을 소유한 **두 화면** ＋ 확장보기 신설(아래 Ted 재확인) — 업로드 인라인(`PreviewPanel.tsx`) · 상세(`datasetpreview/DatasetPreviewSection.tsx`). **확장 오버레이에는 고르개 줄을 만들지 않는다.** 규약 `R-C-2` 개정 기록 대상(Ted 판정 ⑥).
+     - **Ted 재확인(2026-09-12) = 확장보기에도 고르개 줄을 신설한다(3화면).** 원문 「니 권곧로 확장보기에서도 추가하다」. 순서 = ㉠ 인라인·상세 2화면의 기존 줄을 틀 밖 공용 줄로 옮긴다 ㉡ 같은 공용 줄을 `PreviewExpandOverlay.tsx` 뷰포트 위에 마운트한다(선택 상태는 인라인 미리보기와 공유 · 새 상태 저장소 신설 금지). 기능 추가분(㉡)은 Ted 지정 예외라 편의 기능 유예 규칙의 예외로 기록한다. 부품 머리 주석(`PreviewPickRow.tsx` 「틀 안의 컨트롤 줄」)과 `dev-package/prd/rounds/R-C-2-frontend.md` 의 해당 축자 개정은 L3 가 같은 커밋에 넣는다.
   3. `#27`＋`#28` 확대 줄 접힘·가림 해소(한 단계) — 인라인에서 확대 줄이 스크롤 없이 보이게 하고, `.modal-b.pvx-b` 의 flex 방향과 `.pv-layers .pv-tile` 폭 상한으로 가림을 없앤다. **고정 배치 재설계는 범위 밖**(Ted 판정 ⑦ ⓐ 「접힘·가림 해소까지만」).
 - 배치 판정 방법 = jsdom 이 레이아웃을 계산하지 않으므로 ㈎ DOM 조상·형제 관계 ㈏ CSS 원문 계측 두 가지로 세운다. 계측기는 주석을 제거한 뒤 잰다. 선례 = `frontend/test/design-fix-20260908.test.ts` · `frontend/test/css-residual-rc11.test.ts` · `frontend/test/preview-slot-4x3.test.tsx` 머리 주석.
 - 재사용 시험 파일 = `frontend/test/{preview-slot-4x3,preview-pick-and-fallback,scale-ladder,dataset-preview-zoom,upload,grid-preview,thumb-nudge-20260905}.test.tsx`. Playwright 를 새로 들이지 않는다.
