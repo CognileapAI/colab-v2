@@ -42,7 +42,7 @@
 
 관찰 가능한 결과
 
-- `db/platform/versions/0027_account_status.py` 1건. 다음 번호 근거 = 현재 head `0026_login_sessions.py`(실측).
+- `db/platform/versions/0028_account_status.py` 1건. 부모 = `0026_login_sessions.py`(실측). 번호는 `0027` 로 시작했으나 형제 레인의 `0027_operator_audit` 이 그 자리를 먼저 써 `0028` 로 다시 붙였다.
 - `account_admin.login_credential` 에 열 1개가 는다 — `status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive'))`. 자리 근거 = `db/platform/schema.sql` 의 같은 표(`must_change_password`·`session_version` 과 한 행). 기존 행은 `active` 로 남는다.
 - `gates/config/rls-allowlist.toml` 을 고치지 않는다 — `login_credential` 이 이미 등재돼 있다(실측 확인).
 - 목록의 역할 열을 위해 `services/core-api/ops/account-admin-role.sql` 에 `GRANT SELECT ON d2_member_role` 를 더한다. 현재는 같은 표에 `INSERT` 만 있다(실측 — `GRANT INSERT ON d1_account, d2_member_role`).
@@ -54,7 +54,7 @@
 - 권한 부여 전 목록 조회가 역할 열에서 권한 오류인 것을 먼저 관찰한다.
 - `status='inactive'` 계정의 로그인이 401 이며 응답으로 존재 여부가 갈리지 않는다.
 - 비활성 거절이 실패 제한 버킷을 오염시키지 않는다.
-- 재적용 판정·스키마 일치·드리프트 오라클을 `0027` 짝 파일로 고정한다.
+- 재적용 판정·스키마 일치·드리프트 오라클을 `0028` 짝 파일(`db/platform/tests/0028-*`)로 고정한다.
 
 ## 3. 운영자 백오피스 API
 

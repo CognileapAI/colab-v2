@@ -107,6 +107,7 @@ expect(screen.queryByRole('table', {name: '계정 목록'})).toBeNull();
 - [ ] 전수 전에 홈의 `.colab-v2-test.env` 를 export 로 선언한다. 워크트리는 `node_modules`·`.venv` 와 core-api 의 편집 가능 설치를 먼저 구성한다.
 - [ ] 전수 게이트를 `-j 4` 로 백그라운드 1회 실행하고 green / red(판정) / red(준비) 3계수를 나눠 기록한다.
 - [ ] dev 에 `0027` 을 적용하고 core/frontend 이미지를 교체한 뒤 `deploy_doctor --env dev` 를 **한 번** 실행해 15/15 를 받는다. 재시도로 모은 계수를 15 라 적지 않는다.
+- [ ] dev 반영 시 `services/core-api/ops/account-admin-role.sql` 재적용(신규 GRANT: `d2_member_role SELECT` · `service_operator INSERT/DELETE`) — 미적용 시 목록·지정 500.
 - [x] 새 dev 태그를 찍고 `PLAN-SoT §9` 배포 행에 코드 sha·태그를 적는다. — 원장 행 `〈382〉` 등재(임시 번호 · 측정값 381＋1). 태그 `dev-20260912-1` → `fc45a9aa7c64` 는 작업 1 레인이 로컬 생성했고 **미push** 다(원격 반영은 오케스트레이터 몫).
 - [x] dev green 확인 뒤 staging 자동배포 watcher 를 재개한다. 재개는 intent Q5 로 확정된 결정이며 재판정 대상이 아니다 — 실행 결과와 시각만 기록한다. — 2026-09-12 16:22 KST 재개. cron 활성 행 7 → 8 · 총 55행 무변 · 바뀐 줄 1개(`# HOLD …: ` 접두 제거). 선행 확인 = 컨테이너 8/8 healthy · 헬스 6종 200 · `origin/main` 에 `0025`·`0026` 존재 · `infra/staging/deploy.sh:192` account-admin 롤 단계 존재 · `COLAB_STAGING_ACCOUNT_ADMIN_DB_URL_FILE` 가리키는 파일 `0600`·uid `10001` 존재 · 보류 사유 `ss1` 비호환 해소(`session_token.py:32` `TRACKED_PREFIX = "ss1"`). **재개 후 첫 회차(16:25) 관측 — watcher 정상 동작(fetch → ff `cbb9ff1406c5` → 배포) · 배포·검증 GREEN(헬스 6종 200 · 컨테이너 8/8 · platform head `0027_operator_audit`) · 그러나 파이프라인 종료코드는 `78` 이고 `DEPLOY-FAILED.txt` 가 섰다** — 원인은 배포가 아니라 운영자 알림 스풀 부재(`"notification": "pending"`)이고 **알림 배선 전까지 매 회차 반복된다**. 블로커 `03-HANDOFF §4 #71` 신설.
 - [ ] 대장 `BO-1` 을 `done` 으로 갱신한다(intent Q7). `completion_def`·`evidence` 를 채운다.

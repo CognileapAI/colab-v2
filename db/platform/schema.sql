@@ -144,7 +144,7 @@ CREATE TABLE account_admin.login_credential (
   session_version       integer     NOT NULL DEFAULT 1 CHECK (session_version > 0),
   created_at            timestamptz NOT NULL DEFAULT now(),
   updated_at            timestamptz NOT NULL DEFAULT now(),
-  -- ⚠ `status` 는 **마지막 열이어야 한다.** `0027` 이 ALTER TABLE ADD COLUMN 으로 붙이므로
+  -- ⚠ `status` 는 **마지막 열이어야 한다.** `0028` 이 ALTER TABLE ADD COLUMN 으로 붙이므로
   -- 적용 DB 에서 이 열의 attnum 이 제일 크고, `schema-diff` 는 pg_dump 의 열 순서를 그대로 본다.
   -- 뜻으로는 `must_change_password`·`session_version` 옆자리지만 자리는 순서가 정한다.
   status                text        NOT NULL DEFAULT 'active'
