@@ -1,0 +1,97 @@
+{
+  "label": "p141-1",
+  "pieceCount": 141,
+  "byteSum": 49997946,
+  "intake": {
+    "requestSentAt": "2026-09-12T07:50:59.281Z",
+    "acceptedAt": "2026-09-12T07:51:18.356Z",
+    "status": 201,
+    "bodyBytes": 50022806,
+    "transferSeconds": 19.075
+  },
+  "uploadId": "01M2A9JVDM77WG5KQBKKD0C7J8",
+  "analysis": {
+    "startEvent": "접수 수락(201 수신)",
+    "startAt": "2026-09-12T07:51:18.356Z",
+    "endEvent": "분석 완료(ready 참)",
+    "endAt": "2026-09-12T07:51:58.116Z",
+    "wallSeconds": 39.761,
+    "statusPolls": 29,
+    "statusPollErrors": 0,
+    "pollIntervalSeconds": 1.0,
+    "log": [
+      [
+        "2026-09-12T07:51:52.134Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:51:53.322Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:51:54.627Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:51:55.786Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:51:56.958Z",
+        200,
+        null,
+        false,
+        null
+      ],
+      [
+        "2026-09-12T07:51:58.116Z",
+        200,
+        null,
+        true,
+        null
+      ]
+    ]
+  },
+  "render": {
+    "startEvent": "렌더 요청 송신",
+    "startAt": "2026-09-12T07:51:58.116Z",
+    "acceptedAt": "2026-09-12T07:51:58.404Z",
+    "acceptStatus": 202,
+    "renderId": "01M2A9M2MY5M91GY2SJRAEH4MN",
+    "doneAt": "2026-09-12T07:53:07.358Z",
+    "doneStatus": "완료",
+    "wallSecondsToDone": 69.242,
+    "imageFetchedAt": "2026-09-12T07:53:07.898Z",
+    "imageBytes": 612563,
+    "wallSecondsToImage": 69.782,
+    "renderPolls": 96,
+    "renderPollErrors": 0,
+    "pollIntervalSeconds": 0.25,
+    "createRenderCalls": 1,
+    "resultKeys": [
+      "bounds",
+      "colorRangeStage",
+      "imageUrl",
+      "legend",
+      "precisionBadge",
+      "sidecarUrl",
+      "thumbnailUrl",
+      "valuePreviewUrl",
+      "worldFileUrl"
+    ],
+    "failure": null,
+    "partialFailure": null
+  }
+}
