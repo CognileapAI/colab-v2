@@ -3406,4 +3406,136 @@ items:
     deadline: null
     note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0029_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다) · 관리자의 타 연구실 **반출** — intent 문면이 연 것은 읽기뿐이라 `app/deps.py::_operator_read` 가 경로 마지막 칸이 `download` 인 op 을 스코프에서 제외한다. ⚠ `[미확인]` = 로그인한 상태의 관리자 토글·전 연구실 열람 실동작(Ted 실사용 확인 대기) · 운영자 판정(`_require_operator`) 통과 자체. ⚠ `0029` 의 표 목록은 정적 열거라 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다(그 8표는 `lab_boundary` 만으로 닫혀 있다 · 후속)."
     sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
+  - id: BF-18
+    name: "상단 셸 3건 — 연구실 표기 칩화 ＋ 사용자 이름 `▾` 제거 ＋ 휴대전화 상단 「더보기」 목록 (D-1 · D-5 · I-9)"
+    status: open
+    stage: stage1
+    owner: "frontend (상단 셸)"
+    entry_conditions:
+      - "Ted 판정 카드 ① ⓐ · ② ⓐ · ③ ⓒ(2026-09-13 · `dev-package/reports/issues/2026-09-13-ted-decisions.md`) — 동작이 없는 자리는 누를 수 없는 상태 표시로만 둔다"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-shell-header.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 6"
+      - "계약·서버 변경 0 — `frontend/src/shell/**` ＋ `frontend/src/components/upload/UploadEntry.tsx` 한정"
+    depends_on: []
+    completion_def: >-
+      ⑴ 「전체 연구실 (읽기 전용)」이 `button` 이 아니고 `▾` 가 없으며 키보드 초점을 받지 않는다(`frontend/src/shell/Gnb.tsx` 앵커 `data-testid="lab-switcher"`)
+      ⑵ 사용자 이름 자리에 `▾` 가 없다(앵커 `data-testid="gnb-avatar"` 하위 `.cv` 0건)
+      ⑶ 390px 에서 업로드·계정 관리·연구실 설정의 이름이 글자로 확인된다(「더보기」 목록 · 권한 없는 항목은 목록에 서지 않는다)
+      ⑷ `frontend/test/shell-lth-20260913.test.tsx` 신설 3건이 red 선실측 뒤 green ＋ `shell.test.tsx`·`recs-20260903.test.tsx`·`auth.test.tsx` 정정분 green
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green · 수집 건수 감소 0.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 6. 범위 밖 = 연구실 전환(특정 연구실 하나로 좁히는 읽기) 구현 전체 · 관리자의 타 연구실 반출 · 상단 셸 레이아웃 재설계와 주 내비 3탭 구성 변경 · 휴대전화에서 아바타를 다시 보이게 하는 변경 · 상단 사용자 메뉴 부품(카드 ② ⓑ · 후속). ⚠ 실제 초점 링·390px 실화면은 jsdom 으로 재지 않는다 — `[미확인]` 유지(`frontend-visual` 은 로그인 필요 화면을 잴 수 없다)."
+    sources: ["dev-package/intent/2026-09-13-lth-shell-header.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-19
+    name: "계정 관리 4건 ＋ 구성원 권한 표의 비활성 계정 — 본문 중첩 · 표 좌우 이동 안내 · 초기 비밀번호 자동완성 · 자기 줄 가드 · 상태 칩 ＋ 행 잠금 (D-3 · I-4 · I-8 · I-5 · D-4)"
+    status: open
+    stage: stage1
+    owner: "frontend (계정 관리 · 구성원) · D1 / core-api (상태 투영)"
+    entry_conditions:
+      - "판정 불필요 3건(SUMMARY §3 · `D-3`·`I-4`·`I-8`) ＋ Ted 판정 카드 ⑤ ⓐ(화면 가드 최소안) ＋ 카드 ④ ⓐ ＋ 경계 처리 권고 ⓐ-1(상태를 D1 로 투영) · 2026-09-13"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-account-members.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 1(계정 관리) ＋ Task 7(구성원)"
+      - "서버 가드 실재 — `services/core-api/src/colab_core/app/routes/accounts.py` 앵커 `def set_account_status(` 가 자기 계정 비활성화를 400 으로 거절한다(화면 가드만 더한다)"
+      - "⚠ 구성원 절 착수 전 대조 필수 — 상태 투영에 롤 권한 한 칸이 필요한지 `[미확인]`. 해소 = `services/core-api/src/colab_core/kernel/db_credentials.py` 현 조회가 쓰는 롤과 `GET /lab/members` 의 `scoped_db` 롤 대조 ＋ `ops/account-admin-role.sql` 적용 상태 확인(선례 실패 `PLAN-SoT §9 〈384〉` ⑨ⓐ). 롤 신설이 필요하면 구현을 멈추고 보고한다"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend/src/routes/AccountAdminPage.tsx` 의 `<main>` 0건(조기 반환 자리 포함)
+      ⑵ 1100px 이하에서 계정 표 위에 좌우 이동 안내가 보이고 표 래퍼가 키보드 초점을 받는다(공용 패턴 `table-scroll-hint` ＋ `tblwrap` ＋ `role="region"` ＋ `tabIndex={0}` 경유)
+      ⑶ 초기 비밀번호 입력(앵커 `name="initialPassword"`)에 `autoComplete="new-password"` 가 있다
+      ⑷ 자기 줄의 「비활성화」가 처음부터 눌리지 않고 그 이유가 화면에 적혀 있다 — 남의 줄은 눌린다(대조군)
+      ⑸ 계정 관리에서 「비활성」인 사람이 구성원 권한 표에서도 「비활성」 상태 칩으로 보이고 그 줄 권한 스위치가 전부 잠기며 잠긴 이유 한 줄이 보인다 — 활성 행은 편집 가능(대조군)
+      ⑹ 화면 단독 판정을 두지 않는다 — 서버가 비활성 행의 `editablePermissions` 를 빈 배열로 내리고(`services/core-api/src/colab_core/app/routes/members.py` 앵커 `def _grid(`·`def _editable_permissions(`) 저장 경로(앵커 `def save_lab_member_permissions(`)가 상태 검사로 거절한다
+      ⑺ 계약은 additive 1건 — `contracts/seams/fe-core.yaml` 앵커 `LabMember:` 에 선택 열쇠 `accountStatus` 추가(`required` 무변) ＋ 생성물 재생성(손수정 0) · 마이그레이션 0건(`d1_account` 에 상태 열 신설 0 · 조회 시점 투영)
+      ⑻ `frontend/test/account-admin.test.tsx` 확장 4건 ＋ `frontend/test/members-inactive-20260913.test.tsx` 신설 ＋ `services/core-api/tests/test_lab_members.py` 확장(저장 요청 400)이 red 선실측 뒤 green
+      ⑼ 단독 게이트 — 계정 관리 절 `frontend-test` 연속 2회 ＋ `frontend-typecheck` 1회 green · 구성원 절 `frontend-test` · `frontend-typecheck` · `contract-lint` · `contract-breaking` · `generated-up-to-date` · `seam-consistency` · `service-tests-core-api` 각 green.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 1 ＋ Task 7(구성원 절). 범위 밖 = 계정 표 이메일 열 고정과 모바일용 카드 목록 · 역할·연구실 변경 UI와 메일 발송 전반과 모든 기기 로그아웃 버튼(`BO-2` `note:` 가 범위 밖으로 명시) · 계정 관리 화면을 `frontend/src/auth/login.css` 계열에서 공용 디자인 시스템으로 옮기는 재구성(후속) · `accounts.py` 「운영자 지정은 아직 SQL 수동이다」 주석 정정(후속) · 본인 비활성화 확장(계정명 재입력 ＋ 활성 관리자 셈 · 카드 ⑤ ⓑ · 후속) · 앱 롤이 `account_admin` 스키마를 직접 읽는 경로 · 접근성 검사 게이트 신설. ⚠ 「활성 관리자 0명 불가」는 보장된 성질로 인용하지 않는다 — `set_status` 의 잠금은 대상 행 `FOR UPDATE` 하나다 `[미확인]`."
+    sources: ["dev-package/intent/2026-09-13-lth-account-members.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-20
+    name: "접근성·빈 상태 3건 — 프로젝트 카드 링크화 ＋ 빈 소속 데이터셋 표 문면 ＋ 대표 제목 규약(`/lab-settings` 집행) (D-2 · I-6 · D-6)"
+    status: open
+    stage: stage1
+    owner: "frontend (프로젝트 · 연구실 설정)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑥ ⓐ(카드 한 자리만) ＋ 카드 ⑦(ⓑ 규약 확정 ＋ 이번 회차 ⓐ 범위 집행) · 2026-09-13"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-a11y-empty-states.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 4 ＋ Task 7(제목 절)"
+      - "판정 정본 `[불일치]` 해소 = 카드 ⓐ 를 따른다(표 3자리는 후속) — 기재 자리 = 라운드 파일 「판정 정본의 `[불일치]` 2건 처리」"
+    depends_on: []
+    completion_def: >-
+      ⑴ 프로젝트 카드가 Tab 초점을 받고 Enter 로 상세가 열리며 초점 표시가 보인다(`frontend/src/components/project/ProjectCards.tsx` 링크 역할 ＋ `project.css` 에 `.pcard:focus-visible` 규칙)
+      ⑵ 카드 안에 두 번째 클릭 대상을 세우지 않는다(같은 파일 앵커 `data-testid="card-cta"` 주석 규칙 유지)
+      ⑶ 소속 데이터셋 0건이면 표 대신 안내 문면과 연결 방법이 보이고 0행에 좌우 이동 안내가 출력되지 않는다 — 1건 대조군에서는 안내가 출력된다
+      ⑷ `/lab-settings` 제목 단계가 1단계에서 시작하고 탭 본체 제목이 2단계다 · 단계 변경이 글자 크기를 바꾸지 않는다(주석 제거 후 CSS 원문 계측)
+      ⑸ 대표 제목 규약(화면당 `h1` 1개 · 탭 본체 `h2` · 그 아래 `h3` · 대화상자는 별도 계수)이 `frontend/README.md` `## 규칙` 절에 한 줄로 적힌다
+      ⑹ `frontend/test/project-cards-a11y-20260913.test.tsx` · `project-detail-empty-20260913.test.tsx` · `lab-settings-headings-20260913.test.tsx` 신설분이 red 선실측 뒤 green
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 4 ＋ Task 7(제목 절). 범위 밖 = 행 전체를 누르는 패턴 표 3자리(`ProjectTable`·`CatalogTable`·`ProjectDatasetTable` · 카드 ⑥ ⓑ · 후속) · 전 화면 대표 제목 규약 적용 잔여분(`/lab` 등 10+ · 카드 ⑦ ⓑ · 후속) · 접근성 검사 게이트 신설(카드 ⑦ ⓒ · 후보 등재만) · 「할 일 함」 표기 변경(정본 용어 유지 · 기획자 회신 · 작업 0) · 로그인 실패 후 이메일 보존(코드가 이미 권고대로 · 관측 1건 대기 · 작업 0). ⚠ `[미확인]` = S-07 목업이 `h3` 를 지정했는지(해소 = `40 COLAB-기획/10_적용전/` 읽기 전용 확인) · 연결 방법 문장의 실제 경로 축자(구현 레인이 확인)."
+    sources: ["dev-package/intent/2026-09-13-lth-a11y-empty-states.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-21
+    name: "검색 범위 줄이 실제 조회 스코프와 다른 연구실·건수를 말한다 — 분모를 같은 스코프에서 계산 (I-2)"
+    status: open
+    stage: stage1
+    owner: "D3 / core-api · frontend (검색)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑧ ⓐ(2026-09-13) — 머리줄 정합을 선행 집행하고 범위 고르개는 카드 ① 과 한 자리에서 결정한다"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-search-scope.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 2"
+      - "계약 무변경 확인 — `contracts/schemas/common.json` 앵커 `AiSearchScope` 의 `labName` 은 `minLength: 1` 문자열이고 `labId` 는 필수 `Ulid` 다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 관리자 검색 응답의 범위 줄 연구실 표기가 그 검색이 실제로 조회한 스코프와 같다(운영자 = 「전체 연구실 (읽기 전용)」 · 일반 구성원 = 소속 연구실 이름)
+      ⑵ 범위 줄 건수가 같은 스코프의 데이터셋 목록 건수와 같다 — `searched_count` 를 `services/core-api/src/colab_core/app/routes/catalog.py` 앵커 `with read_only_scope(` 블록 안(또는 뒤)에서 계산하고 `isDataQuery` 가 거짓인 갈래에서도 값이 채워진다
+      ⑶ `services/core-api/tests/test_search_scope.py` 신설이 연구실 2개 ＋ 양쪽 데이터셋으로 두 스코프 갈림을 재현하고 red 선실측 뒤 green
+      ⑷ `frontend/test/search-scope-line-20260913.test.tsx` 신설이 범위 줄 문자열·건수 일치를 고정하고 0건에도 범위 줄이 먼저 선다
+      ⑸ 계약 무변경 — `labId` 는 필수 `Ulid` 로 남고 스코프 종류 열쇠를 신설하지 않는다
+      ⑹ 단독 게이트 `service-tests-core-api` green ＋ `frontend-test` green.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 2. 범위 밖 = 범위 고르개(전체 / 우리 연구실) 구현과 읽기 창구의 연구실 인자 추가(카드 ⑧ ⓑ · 카드 ① ⓑ 와 한 자리 · 후속) · 검색 품질·순위·평가셋 · 상단 연구실 전환 버튼의 동작 변경 · 범위 객체에 스코프 종류 칸을 더하는 계약 개정 · 검색창 옆 범위 미리 표기. ⚠ 의미 불일치 존속 = 운영자 응답에도 소속 연구실 `labId` 가 실리고 `labName` 만 집합을 말한다(스펙 명시). ⚠ `[미확인]` = 실데이터 25 대 26 의 내역(해소 = dev DB `SELECT lab_id, count(*) FROM d3_dataset WHERE deleted_at IS NULL GROUP BY 1`) · 이 불일치를 자연어 검색 항목의 완료 정의에 포함하는지."
+    sources: ["dev-package/intent/2026-09-13-lth-search-scope.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-22
+    name: "승인 대기 칸 표기를 한국어 상태말로 통일한다 — 취소선·회색·열 제목 유지 (I-3)"
+    status: open
+    stage: stage1
+    owner: "frontend (카탈로그 표)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑨ ⓐ(2026-09-13) — 한국어 상태말로 표기 3종을 하나로 모으고 열 제목은 무변경"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-verified-chip.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 5"
+      - "선행 = 같은 파일군(`ProjectDatasetTable.tsx`·`project.css`)을 만지는 `BF-20` 의 카드·빈 표 절이 통합에 얹힌 뒤 착수(직렬 고정)"
+      - "개정 표시 대상 = `dev-package/PLAN-SoT.md` 앵커 `〈282〉-㉮`(칸 글자 문안만 · 취소선·회색·열 제목 유지) — 원장 기재의 `〈N〉` 은 병합 직전 재실측"
+    depends_on: [BF-20]
+    completion_def: >-
+      ⑴ 승인 대기 행의 칸 글자가 한 표기로 고정된다(제안값 「승인 전」 · 선례 1자리 `frontend/src/components/catalog/columns.ts` 앵커 `if (column === 'Verified')` · Ted 가 문면을 바꾸면 문면만 교체)
+      ⑵ 칸을 비우지 않는다는 기존 이유가 유지된다 — `verified--pending` 의 취소선·회색·꺼진 모양과 `data-testid`·`aria-disabled`·`title` 무변
+      ⑶ 같은 상태의 두 자리가 같은 값을 말한다(`CatalogTable.tsx` ＋ `ProjectDatasetTable.tsx` 앵커 `data-testid="dataset-verified"`)
+      ⑷ 현 표기를 고정한 시험 4건(`frontend/test/catalog.test.tsx` 2건 · `qa-20260903.test.tsx` · `search-verified-20260903.test.tsx`)이 고른 표기에 맞춰 green 이고 검색 카드 칩 부재 회귀가 유지된다
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 5(앞절). 범위 밖 = 열 제목 `Verified` 변경(계약 파괴) · 검색 결과 카드·상세 헤더의 배지 규칙 변경(`approval/VerifiedBadge.tsx`·`search/SearchHitCard.tsx` 의 반대 규칙은 의도된 것) · 승인 요청·취소 흐름 자체의 동작 변경 · 상세 응답 승인 한 벌의 구조 변경 · 승인 상태 3값(승인됨 / 검토 대기 / 요청 없음 · 카드 ⑨ ⓑ · 목록 계약 열쇠 ＋ 묶음 질의 · 후속). ⚠ 문면은 Ted 확정 대기 — 레인은 제안값으로 구현하고 상수 위에 대기 주석을 붙인다."
+    sources: ["dev-package/intent/2026-09-13-lth-verified-chip.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-23
+    name: "가공 단계 4건 — 기본값 계산값 추종 ＋ 사유 한 줄 ＋ 목록 불일치 표식 ＋ 상세 편집 칸 (I-1)"
+    status: open
+    stage: stage1
+    owner: "frontend (등록 · 데이터셋 상세 · 카탈로그 표)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑩ ⓐ(2026-09-13) — 기본값만 이번 회차이고 사유 입력 절차는 다음 회차 판정"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-processing-level-mismatch.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 3 ＋ Task 5(목록 표식)"
+      - "계약 무변 확인 — `contracts/seams/fe-core.yaml` 앵커 `DatasetUpdate:` 의 `processingLevelUserSet` 실재 · 목록 응답에 세 값이 이미 실린다(`routes/catalog.py` 앵커 `**d3_catalog.level_view(core, summary),`)"
+      - "개정 표시 대상 = `dev-package/prd/PRD-260905-적용전기획.md` 앵커 `미결-2 ⓐ`(기본 선택값만) ＋ 원장 반전 기재 자리 `PLAN-SoT §9 〈194〉` — `〈N〉` 은 병합 직전 재실측"
+    depends_on: []
+    completion_def: >-
+      ⑴ 확인된 부모가 1건 이상이고 부모 Lv 를 모두 알면 등록 가공 단계 기본 선택값이 계산값(주입력 부모 최대 Lv ＋ 1)으로 선다 — 부모 0건 또는 부모 Lv 미지 시 `Lv2` 유지 ＋ Lv0 경고 0건 · 사람이 한 번 고른 값은 덮어쓰지 않는다
+      ⑵ 불일치 안내 한 줄이 두 값 ＋ 각 값의 근거를 말하고 상세와 등록 두 자리가 같은 문장을 쓴다(공용 함수 1개 · `frontend/src/components/common/processingLevel.ts`)
+      ⑶ 데이터셋 목록의 가공 단계 칸이 불일치 행에 표식 ＋ 보조기기용 이름을 그린다 — 서버 무변 · `false` 행은 0건(대조군)
+      ⑷ 상세 편집에 가공 단계 칸이 있고(`frontend/src/components/detail/editFields.ts` · 값 집합 `Lv0`~`Lv3`) 저장 후 상세 표시값이 바뀌며 불일치 줄이 재평가된다
+      ⑸ 차단 0건 · 사유 입력 요구 0건 — 불일치 상태에서 등록·저장이 계속 성공한다(기존 판정 유지 회귀 단언)
+      ⑹ `frontend/test/processing-level-default-20260913.test.tsx` · `lv-mismatch-reason-20260913.test.tsx` · `catalog-level-mismatch-20260913.test.tsx` 신설 ＋ `detail-edit.test.tsx` 확장이 red 선실측 뒤 green
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: null
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 3 ＋ Task 5(목록 표식). 범위 밖 = 불일치 상태에서 등록·저장을 차단하는 동작(판정이 금지) · 사유 입력 ＋ 한 번 더 확인 절차와 사유 저장 칸 ＋ 마이그레이션 1건(카드 ⑩ ⓑ · 다음 회차 판정 · 후속) · 파생값·불일치 결과를 테이블에 저장하는 구조 변경 · 분류 3축 편집 칸 신설 · 검색 결과 카드의 불일치 표기 · 프로젝트 상세 표·계보 노드의 `level_pair` → `level_view` 확장 · 「CoLAB에서 가공됨」 표식과 계보 삭제 시 부모 이름 보존(`stage: after_stage2` 별 항목). ⚠ 사유 한 줄 문면은 Ted 확정 대기 — 레인은 제안 축자로 구현한다. ⚠ `[미확인]` = 사례 데이터셋 `TEST Stage12 Preview HDF5 20260911` 의 실제 저장값(dev DB 조회로 닫는다)."
+    sources: ["dev-package/intent/2026-09-13-lth-processing-level-mismatch.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
 
