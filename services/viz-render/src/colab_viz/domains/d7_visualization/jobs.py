@@ -613,7 +613,15 @@ def _run(job: RenderJob) -> None:
         # 그림은 서빙 중인데 되찾을 길이 없는 반쪽 상태를 만들지 않는다.
         spec.preview_sink.index(job.artifacts.index_pairs())
         # 산출물이 디스크에 다 놓인 뒤 서빙 자리로 — 실패는 렌더 실패다(반쪽 미리보기를 「완료」로 내지 않는다).
-        spec.preview_sink.publish(job.artifacts.all())
+        try:
+            spec.preview_sink.publish(job.artifacts.all())
+        except FileNotFoundError as e:
+            # ⭑ ⟨2026-09-13 · prod 임시 검증 실측 · D9⟩ **방금 구운 산출물이 사라졌다.**
+            #   같은 데이터셋의 삭제 회수가 `invalidation.apply()` 로 unlink 한 직후 이
+            #   `read_bytes()` 가 그것을 읽으면 이 예외다. 아래 포괄 처리기가 받으면
+            #   `RENDER_UNKNOWN_ERROR` 로 접히는데, 그것은 **원인도 복구도 분명한 실패**를
+            #   「알 수 없다」로 바꾼다 — 화면의 「다시 그리기」가 정확히 맞는 자리다.
+            raise RenderError(RenderFailure.ARTIFACT_MISSING, str(e)) from None
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),

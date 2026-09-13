@@ -230,3 +230,55 @@ failed 217 의 오류형이 `ProgrammingError` 31 · `InsufficientPrivilege` 27 
   시험 DB 는 재구성하지 않았다).
 - 잔여 마커 **0**(`03-HANDOFF.md` 산문 속 `'<<<<<<<'` 인용 2곳은 마커가 아니다).
 
+---
+
+## 12. prod 임시 검증에서 잡힌 것 3건 — D9 (2026-09-13 21:35)
+
+### 12-1. 실측
+
+등록 직후 **자동 렌더**(`renderId 01M2DC86…`)가 같은 데이터셋의 **삭제**(회수 200)와 겹쳤다.
+
+| # | 증상 | 원인 |
+|---|---|---|
+| ⑴ | 표식 **10개가 고아**로 남았다 — `preview-index/by-file/<fileId>/<contentKey>` 는 있는데 산출물은 로컬·S3 어디에도 없다 | 렌더가 `sink.index` 를 **`publish` 보다 먼저** 부르고(ⓓ7 규약) 그 사이에 죽었다. 사이드카가 없어 회수 판정은 영원히 `kept` ⟹ **자정되지 않는다** |
+| ⑵ | 렌더가 `RENDER_UNKNOWN_ERROR` ＋ `FileNotFoundError: …/viz-previews/<contentKey>.webp` 로 실패 | 회수의 `invalidation.apply()` 가 방금 구운 파일을 unlink 한 직후 `S3PreviewSink.publish` 의 `path.read_bytes()` 가 그것을 읽었다. `_run` 의 포괄 처리기가 「알 수 없는 오류」로 접었다 |
+| ⑶ | **회수 응답 계수가 컨테이너 로그에 한 줄도 없다** | `_deletion_log`(`colab_core.deletion`)는 표준 로거인데 core-api 는 `colab_core.*` 에 처리기를 **0개** 단다 — 그 줄은 루트에서 버려진다. 배포가 실제로 읽는 자리는 `observability.structured_event` 의 stdout JSON 이다(요청 줄이 그 경로) |
+
+### 12-2. 고친 것
+
+- ⑴ `reclaim_on_delete.run` — 후보 중 **사이드카가 로컬·S3 어디에도 없고 산출물 객체도
+  4확장자 전부 없는** 벌은 `kept(사이드카 부재)` 그대로 두되 **그 표식만** 걷는다
+  (`sink.remove([], index_pairs=…)`). 계수 `orphan_index` 신설 · 계약
+  `PreviewReclaimResult.orphanIndex` 첨가(required 6칸).
+  ⛔ **산출물 삭제 판정은 무변** · 지우는 표식은 **이번에 지워진 `fileIds` 의 것만**
+  (`_index_pairs` 가 `D` 의 접두만 훑으므로 구조적으로 그렇다).
+  ⚠ **못 물어본 것을 「없다」로 접지 않는다** — 원격 조회가 권한·장애로 실패하면 `True`(있다)로
+  읽는다. 살아 있는 산출물의 표식을 지우면 그 산출물은 그 순간부터 되찾을 길이 없다.
+- ⑵ `jobs.py::_run` — `publish` 의 `FileNotFoundError` 를
+  `RenderError(RENDER_ARTIFACT_MISSING, …)` 로 올린다. 문구 = 「미리보기 산출물이 사라져 다시
+  그려야 해요.」 **다시 렌더하지 않는다** — 이 경합에서 사라진 이유는 **그 데이터셋이
+  지워졌기 때문**이고, 다시 그리면 묘비의 산출물을 되살린다. 화면의 「다시 그리기」가
+  사람의 판단으로 남는 자리다(`is_retry_pointless` 무변 ⟹ 버튼은 뜬다).
+- ⑶ `routes/deletion.py` — 표준 로거 호출을 **그대로 두고**(caplog 시험 유지)
+  `structured_event(service="core-api", …)` 를 같은 이름(`event`·`code`)으로 함께 낸다.
+  계수도 넓혔다(`stale`·`kept`·`unindexed`·`orphanIndex`·`removed`).
+
+### 12-3. 검증
+
+- 시험 = viz DL-2 6파일 **64 passed / 0 failed**(신설 4 — 고아 3 ＋ 경합 1) ·
+  core `test_dataset_deletion.py` ＋ `test_preview_relay.py` **45 passed / 0 failed**.
+  red 선확인 = `AttributeError: 'ReclaimResult' object has no attribute 'orphan_index'` ·
+  `AttributeError: type object 'RenderFailure' has no attribute 'ARTIFACT_MISSING'` ·
+  ⑶ 은 **변이 증명**(`_emit` 을 `pass` 로 바꾸면 1 failed).
+- 게이트 = `contract-lint`·`contract-breaking`(`origin/main` 기준 · **첨가**)·
+  `generated-up-to-date`·`seam-consistency`·`work-item-consistency` 전건 green.
+
+### 12-4. 후속
+
+- **`colab_core.*` 로거 전부가 컨테이너 로그에 안 나온다** — `colab_core.search`·
+  `colab_core.download`·`colab_core.integrity`·`colab_core.processing_level`·
+  `colab_core.suggest` 다섯이 같은 구멍 위에 있다. 이 회차는 삭제 라우트 하나만 고쳤다.
+  근본 해소 = viz 의 `kernel/logging_setup.configure_logging` 같은 자리를 core-api 에 세우는 것.
+- **고아 표식은 삭제를 한 번 더 눌러야 걷힌다** — 이 문의 방아쇠는 사람의 삭제 하나뿐이라,
+  이미 지워진 데이터셋의 고아 표식(실측 10개)은 백필·수동 정리가 따로 필요하다.
+

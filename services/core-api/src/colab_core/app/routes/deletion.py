@@ -35,6 +35,7 @@ from ...domains import d2_access, d3_audit, d3_catalog, d4_lineage, d8_insight
 from ...kernel import errors
 from ...kernel.auth import Subject
 from ...kernel.ids import Ulid
+from ...kernel.observability import structured_event
 from ..deps import current_subject, scoped_db
 from ..relay import RelayRefused, RelayUnavailable
 from .ingestion import _storage
@@ -89,6 +90,26 @@ PREVIEWS_UNCONFIGURED = "PREVIEWS_UNCONFIGURED"
 PREVIEWS_RECLAIMED = "dataset.previews_reclaimed"
 
 _deletion_log = logging.getLogger(DELETION_LOGGER)
+
+#: 이 서비스의 이름 — `TraceMiddleware(service_name="core-api")` 와 **같은 값**이다.
+#: 갈리면 같은 프로세스의 줄이 두 이름으로 나뉘어 집계가 깨진다.
+SERVICE_NAME = "core-api"
+
+
+def _emit(event: str, *, level: str = "INFO", **fields) -> None:
+    """회수 계수를 **두 자리에** 낸다 — 표준 로거와 운영 JSON(stdout).
+
+    ⚠ **표준 로거만으로는 컨테이너 로그에 안 나온다.** core-api 는 `colab_core.*` 로거에
+    처리기를 달지 않아(설정 0건) 그 줄이 루트에서 버려진다 — 2026-09-13 prod 임시 검증에서
+    회수 응답 계수가 로그에 **한 줄도 없었던** 원인이 이것이다. 배포가 실제로 읽는 자리는
+    `observability.structured_event` 의 stdout JSON 이고(요청 줄이 그 경로다), 그래서 그쪽에도
+    같은 값을 싣는다.
+    ⚠ 표준 로거 호출은 **그대로 둔다** — `caplog` 시험이 그 자리를 잡고 있고, 두 자리가
+    같은 이름(`event`·`code`)을 쓰므로 갈리지 않는다.
+    ⛔ **다른 `colab_core.*` 로거(검색·다운로드·정합성)도 같은 이유로 안 보인다** — 이
+    회차는 이 라우트만 고쳤다(후속).
+    """
+    structured_event(service=SERVICE_NAME, event=event, level=level, **fields)
 
 
 def _deletable(db: Session, subject: Subject, datasetId: str) -> d3_catalog.DatasetCore:
@@ -237,6 +258,8 @@ def delete_dataset(request: Request, datasetId: str,
             str(dataset_id),
             extra={"event": PREVIEWS_SKIPPED, "code": PREVIEWS_UNCONFIGURED,
                    "datasetId": str(dataset_id)})
+        _emit(PREVIEWS_SKIPPED, level="WARNING", code=PREVIEWS_UNCONFIGURED,
+              datasetId=str(dataset_id))
     else:
         try:
             result = previews.reclaim_previews(lab_id=str(subject.lab_id),
@@ -257,12 +280,15 @@ def delete_dataset(request: Request, datasetId: str,
                                   PREVIEW_RECLAIM_UNAVAILABLE_MESSAGE,
                                   {"reason": str(e)}) from None
         # 계수는 남긴다 — 「지웠다」와 「지울 것이 없었다」를 나중에 가를 유일한 자리다.
+        counts = {"stale": result.get("stale"), "kept": result.get("kept"),
+                  "unindexed": result.get("unindexed"),
+                  "orphanIndex": result.get("orphanIndex"),
+                  "removed": len(result.get("removed") or [])}
         _deletion_log.info(
             "event=%s datasetId=%s stale=%s removed=%s", PREVIEWS_RECLAIMED,
-            str(dataset_id), result.get("stale"), len(result.get("removed") or []),
-            extra={"event": PREVIEWS_RECLAIMED, "datasetId": str(dataset_id),
-                   "stale": result.get("stale"),
-                   "removed": len(result.get("removed") or [])})
+            str(dataset_id), counts["stale"], counts["removed"],
+            extra={"event": PREVIEWS_RECLAIMED, "datasetId": str(dataset_id), **counts})
+        _emit(PREVIEWS_RECLAIMED, datasetId=str(dataset_id), **counts)
 
     storage = _storage(request)
     for key in keys:

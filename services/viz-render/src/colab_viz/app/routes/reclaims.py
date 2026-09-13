@@ -61,4 +61,5 @@ def reclaim_previews(body: PreviewReclaimRequest, request: Request) -> dict:
         file_ids=body.fileIds,
         previews_prefix=settings.preview_s3_prefix)
     return {"targetId": body.targetId, "stale": result.stale, "kept": result.kept,
-            "unindexed": result.unindexed, "removed": list(result.removed)}
+            "unindexed": result.unindexed, "orphanIndex": result.orphan_index,
+            "removed": list(result.removed)}

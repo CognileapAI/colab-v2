@@ -259,3 +259,75 @@ def test_자동_회수_루프의_문면이_범위를_말한다():
                 tile_reclaim.S3ReclaimJob.__doc__):
         assert "자동 회수 루프" in doc, doc[:80]
         assert "reclaim_on_delete" in doc, doc[:80]
+
+
+# ── 고아 표식 — 렌더-삭제 경합이 남긴 자리 (prod 임시 검증 2026-09-13 21:35) ──────
+
+class OrphanClient(StubClient):
+    """표식은 돌려주되 **원격 객체는 하나도 없다.** `head_object` 가 전건 없음을 낸다."""
+
+    def __init__(self, index=None, present=()) -> None:
+        super().__init__(index)
+        self.present = set(present)
+        self.headed: list[str] = []
+
+    def head_object(self, key: str):
+        self.headed.append(key)
+        if key in self.present:
+            return 4, '"etag"'
+        raise FileNotFoundError(key)
+
+
+def test_객체도_사이드카도_없는_표식은_표식만_걷는다(tmp_path):
+    """**렌더가 표식을 먼저 쓰고 죽으면 그 표식이 고아로 남는다.**
+
+    실측(2026-09-13 21:35 · prod 임시 검증) — 등록 직후 자동 렌더가 삭제와 겹쳐
+    `RENDER_UNKNOWN_ERROR` 로 죽었고, 그 렌더가 `sink.index` 로 **먼저** 써 둔 표식 10개가
+    산출물 없이 남았다. 표식만 남으면 다음 회수가 매번 같은 후보를 되짚고, 그 후보는
+    「사이드카 부재」로 영원히 `kept` 다 — **자정되지 않는다.**
+
+    ⛔ **산출물 삭제 판정은 한 글자도 바뀌지 않는다** — 지우는 것은 표식뿐이고, 그것도
+    **지워진 파일(`D`)의 표식만**이다. 사이드카가 있으면 기존 규칙 그대로다.
+    """
+    key = _key("o")
+    client = OrphanClient({_F1: [key]})          # 표식은 있다
+    sink = StubSink()                            # 로컬에는 아무것도 놓지 않는다
+
+    result = _run(tmp_path, client, sink, [_F1])
+
+    assert result.orphan_index == 1, result
+    # 산출물 판정은 무변 — 사이드카가 없으므로 `kept` 다.
+    assert result.stale == 0 and result.kept == 1
+    assert result.kept_reasons[invalidation.DELETION_KEEP_NO_SIDECAR] == 1
+    assert result.removed == (), "고아 정리는 산출물을 지우지 않는다"
+    names, pairs = sink.removes[0]
+    assert names == [], f"산출물 삭제가 섞였다: {names}"
+    assert pairs == [(_F1, key)], pairs
+
+
+def test_객체가_남아_있으면_표식을_걷지_않는다(tmp_path):
+    """**고아는 「아무것도 없다」일 때만이다.** 한 확장자라도 서 있으면 손대지 않는다 —
+    사이드카를 아직 못 읽었을 뿐인 벌의 표식을 지우면 그 산출물은 영영 못 찾는다."""
+    key = _key("p")
+    client = OrphanClient({_F1: [key]}, present=[f"previews/{key}.webp"])
+    sink = StubSink()
+
+    result = _run(tmp_path, client, sink, [_F1])
+
+    assert result.orphan_index == 0, result
+    assert result.kept == 1
+    assert sink.removes == [], "지울 것이 없으면 삭제 문을 부르지 않는다"
+
+
+def test_사이드카가_있으면_고아로_세지_않는다(tmp_path):
+    """기존 규칙 그대로 — 원천이 전부 지워졌으면 산출물째 회수하고 `orphan_index` 는 0 이다."""
+    key = _key("q")
+    _lay(tmp_path, key, sidecar=_sidecar([_F1]))
+    client = OrphanClient({_F1: [key]})
+    sink = StubSink()
+
+    result = _run(tmp_path, client, sink, [_F1])
+
+    assert result.orphan_index == 0, result
+    assert result.stale == 1 and result.kept == 0
+

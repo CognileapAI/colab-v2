@@ -866,7 +866,8 @@ def test_a_refused_reclaim_is_a_500_that_does_not_tell_the_user_to_retry(p2_clie
 
 
 def test_without_a_viz_relay_the_delete_still_succeeds_and_logs_one_line(p2_client, planted,
-                                                                        tmp_path, caplog):
+                                                                        tmp_path, caplog,
+                                                                        capsys):
     """ⓒ viz 가 배선되지 않은 배포(로컬 개발·시험)는 **건너뛰고 한 줄 남긴다.**
 
     500 으로 내면 싱크가 없는 곳에서 삭제 자체가 불가능해진다 — 그런 배포에는 지울
@@ -886,6 +887,19 @@ def test_without_a_viz_relay_the_delete_still_succeeds_and_logs_one_line(p2_clie
                if "PREVIEWS_UNCONFIGURED" in rec.getMessage()]
     assert len(skipped) == 1, [rec.getMessage() for rec in caplog.records]
     assert dataset_id in skipped[0].getMessage()
+
+    # ⭑ ⟨2026-09-13 · D9⟩ **표준 로거만으로는 컨테이너 로그에 안 나온다.** core-api 는
+    #   `colab_core.*` 로거에 처리기를 달지 않아 그 줄이 루트에서 버려진다 — prod 임시 검증에서
+    #   회수 계수가 로그에 한 줄도 없었던 원인이다. 배포가 읽는 자리는 stdout JSON 이다.
+    import json as _json
+
+    lines = [_json.loads(ln) for ln in capsys.readouterr().out.splitlines()
+             if ln.startswith("{")]
+    emitted = [ln for ln in lines if ln.get("event") == "dataset.previews_skipped"]
+    assert len(emitted) == 1, [ln.get("event") for ln in lines]
+    assert emitted[0]["code"] == "PREVIEWS_UNCONFIGURED"
+    assert emitted[0]["datasetId"] == dataset_id
+    assert emitted[0]["service"] == "core-api"
 
 
 # ════════════════════════════════════════════════════════════════════════════

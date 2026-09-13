@@ -121,7 +121,8 @@ def test_a_stale_artifact_is_reclaimed_and_the_body_has_five_fields(reclaim_clie
     r = client.post(_PATH, json={"targetId": TARGET, "fileIds": [F1]}, headers=AUTH)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert set(body) == {"targetId", "stale", "kept", "unindexed", "removed"}, body
+    assert set(body) == {"targetId", "stale", "kept", "unindexed", "orphanIndex",
+                         "removed"}, body
     assert body["targetId"] == TARGET
     assert body["stale"] == 1
     assert body["kept"] == 0
@@ -141,7 +142,7 @@ def test_the_second_call_is_stale_zero(reclaim_client) -> None:
     second = client.post(_PATH, json={"targetId": TARGET, "fileIds": [F1]}, headers=AUTH)
     assert second.status_code == 200, second.text
     assert second.json() == {"targetId": TARGET, "stale": 0, "kept": 0,
-                             "unindexed": 0, "removed": []}
+                             "unindexed": 0, "orphanIndex": 0, "removed": []}
 
 
 def test_an_artifact_whose_sources_are_not_all_deleted_is_kept(reclaim_client) -> None:

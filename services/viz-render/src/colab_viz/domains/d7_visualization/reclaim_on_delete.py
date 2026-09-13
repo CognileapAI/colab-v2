@@ -48,11 +48,17 @@ class ReclaimResult:
     unindexed: int
     removed: tuple[str, ...]
     kept_reasons: dict[str, int] = field(default_factory=dict)
+    #: **고아 표식** — 가리키는 산출물도 사이드카도 없어 걷어낸 표식 수 (`DL-2` D9).
+    orphan_index: int = 0
 
 
-def _index_content_keys(client: Any, file_ids: Iterable[str]) -> set[str]:
-    """지워진 파일마다 표식 접두 목록 **1회**. 클라이언트가 없으면 빈 집합이다."""
-    found: set[str] = set()
+def _index_pairs(client: Any, file_ids: Iterable[str]) -> list[tuple[str, str]]:
+    """지워진 파일마다 표식 접두 목록 **1회**. `(fileId, contentKey)` 로 돌려준다.
+
+    ⚠ **어느 파일의 표식이었는지를 버리지 않는다** — 고아 표식을 걷을 때 지울 자리가
+    그 쌍이고, `D` 전체를 곱하면 있지도 않은 자리를 지우라고 보내게 된다.
+    """
+    found: list[tuple[str, str]] = []
     if client is None:
         return found
     for file_id in file_ids:
@@ -60,8 +66,36 @@ def _index_content_keys(client: Any, file_ids: Iterable[str]) -> set[str]:
         for key, _size in client.list_objects(prefix):
             tail = str(key)[len(prefix):].strip("/")
             if tail and "/" not in tail:
-                found.add(tail)
+                found.append((file_id, tail))
     return found
+
+
+def _has_any_object(client: Any, previews_root: Path, previews_prefix: str,
+                    content_key: str) -> bool:
+    """이 벌의 산출물이 **한 조각이라도** 실재하는가 — 로컬 먼저, 없으면 원격.
+
+    ⚠ **「없다」로 단정하는 자리라 관대하게 읽지 않는다.** 원격 조회가 실패(권한·장애)하면
+    `True` 로 읽는다 — 못 물어본 것을 「없다」로 접으면 살아 있는 산출물의 표식을 지우고,
+    그 산출물은 그 순간부터 **되찾을 길이 없다.**
+    """
+    root = Path(previews_root)
+    for ext in PREVIEW_SUFFIXES:
+        if (root / f"{content_key}{ext}").exists():
+            return True
+    if client is None:
+        return False
+    head = getattr(client, "head_object", None)
+    if head is None:
+        return True                 # 물어볼 길이 없으면 「있다」로 읽는다
+    for ext in PREVIEW_SUFFIXES:
+        try:
+            head(f"{previews_prefix}/{content_key}{ext}")
+            return True
+        except FileNotFoundError:
+            continue
+        except Exception:           # noqa: BLE001 — 못 물어본 것은 「없다」가 아니다
+            return True
+    return False
 
 
 def _local_sidecar(previews_root: Path, content_key: str) -> dict | None:
@@ -103,7 +137,8 @@ def run(*, client: Any, sink: Any, previews_root: Path, target_id: str,
     deleted = [str(f).strip() for f in file_ids if str(f).strip()]
     root = Path(previews_root)
 
-    indexed = _index_content_keys(client, deleted)
+    index_pairs = _index_pairs(client, deleted)
+    indexed = {key for _fid, key in index_pairs}
     # 로컬 자리에서 **규칙을 충족하는 벌만** 보탠다 — 전건을 끌어오지 않는다.
     local_groups = {g.cache_key: g for g in ownership.scan(root)}
     local_hits = {key for key, g in local_groups.items()
@@ -142,11 +177,26 @@ def run(*, client: Any, sink: Any, previews_root: Path, target_id: str,
     pairs = [(file_id, g.cache_key)
              for g in stale_groups
              for file_id in ownership.source_file_ids(g.sidecar or {})]
+
+    # ⭑ ⟨2026-09-13 · prod 임시 검증 실측 · D9⟩ **고아 표식을 걷는다.** 렌더는 표식을
+    #   `publish` 보다 **먼저** 쓰므로(ⓓ7), 그 사이에 렌더가 죽으면 가리키는 산출물이 없는
+    #   표식만 남는다 — 실측 10개. 그 표식은 사이드카가 없어 판정이 영원히 `kept` 이고,
+    #   다음 회수가 매번 같은 후보를 되짚는다. **자정되지 않는 자리**라 여기서 끊는다.
+    # ⛔ 지우는 것은 **표식뿐**이다(`names` 에 한 글자도 더하지 않는다) · 그것도 **`D` 의
+    #   표식만**이다(`_index_pairs` 가 `D` 의 접두만 훑는다).
+    kept_keys = {g.cache_key for g in groups} - {g.cache_key for g in stale_groups}
+    sidecarless = {g.cache_key for g in groups if g.sidecar is None}
+    orphan_pairs = [(fid, key) for fid, key in index_pairs
+                    if key in kept_keys and key in sidecarless
+                    and not _has_any_object(client, root, previews_prefix, key)]
+    pairs = pairs + orphan_pairs
+
     if names or pairs:
         sink.remove(names, index_pairs=pairs)
 
     return ReclaimResult(stale=len(stale_groups), kept=len(groups) - len(stale_groups),
-                         unindexed=unindexed, removed=tuple(names), kept_reasons=reasons)
+                         unindexed=unindexed, removed=tuple(names), kept_reasons=reasons,
+                         orphan_index=len(orphan_pairs))
 
 
 __all__ = ["PREVIEW_SUFFIXES", "ReclaimResult", "run"]
