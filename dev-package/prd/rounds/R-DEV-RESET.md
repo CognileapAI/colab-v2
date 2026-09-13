@@ -284,3 +284,26 @@ Ted 판정
 - ⑹ ⭑ **체인별 버전 표는 `alembic_version_platform`·`alembic_version_ai` 다.** `alembic_version` 을 보면 **적용된 것을 미적용으로 오판한다** — 이 회차에 `migrate-platform` 을 멱등 1회 더 낸 원인이 그것이다(상태 변화 0 · 파괴적 단계 재시도 아님). 런북의 검증 질의를 체인별 표 이름으로 고친다.
 
 - 등재 = `PLAN-SoT §9 〈396〉`-㉺ · 실행 기록 `dev-package/sessions/DR-2-run-2026-09-13.md`.
+
+### 11-2. 화면 투입 실측 후속 5건 (⟨증보 2026-09-14 · `DR-3` 실행 실측⟩ · **전건 대장 등재만 · 이 회차에서 고치지 않았다**)
+
+- ⓐ **제품이 GeoPackage(`.gpkg`)를 받지 않는다** — `SPI-4weeks`·`SPEI-4weeks`(합 49,594,368 B · `drought` 프로젝트)가 분석 단계에서 멈춘다. 화면 축자 2종 = 「이 확장자는 지도로 못 그려요」·「파일 분석을 마치지 못했어요 · 형식 인식 실패」 · `up-analysis-failure` ＋ **등록 단추 비활성**. 실측 = `gpkg` 문자열이 `services/`·`contracts/`·`frontend/src/`·`gates/` 어디에도 **0건**이다 — 받지 않겠다는 선언도, 받는 구현도 없다. 두 문면이 서로 다른 것(렌더 불가 ↔ 등록 불가)을 말하는 것이 판정의 핵심이다. 대장 `FMT-GPKG`.
+- ⓑ **이미 등록된 데이터셋을 프로젝트에 붙이는 화면이 없다** — 순번 1 `HSR 레이더 반사도 원자료`가 프로젝트 미연결로 남았다. 재업로드는 중복 데이터셋을 만들고 삭제 화면도 없다(`deleteDataset` 501). 대장 `DS-ATTACH` ＋ 블로커 `03-HANDOFF §4` `74`(dev 1행 정정 허용 여부는 Ted 판정).
+- ⓒ **미리보기 요청 경로의 뒷단 한계** — 중계 타임아웃 10초 고정 ↔ viz-render 실소요 20,037~38,391 ms ⟹ **503** · OOM kill 2회 · 413 4회(사유 `[미확인]`) · 렌더 작업 상태가 DB 에 없다. 대장 `PV-2` · 진단 `dev-package/reports/r-dev-reset/preview-diagnosis.md`.
+- ⓓ **계정 목록에 「초기 비밀번호 변경 필요」 열이 없다** — 계약 `contracts/seams/fe-core.yaml` `ServiceAccountSummary` 에 `mustChangePassword` 필드 0건(`additionalProperties: false`). 대장 `BO-2` note 증보(상태 `done` 무변 — 완료 정의의 열 6개는 서 있다).
+- ⓔ **`services/pipeline-worker` `d5/renderable.py` 의 `NOT_RENDERABLE_FORMATS = []` 와 바로 위 주석(「정본이 미리보기 대상을 `bin·nc·tif·HDF` 로 못 박았으므로 `GRIB` 이 여기 들어온다」)이 갈려 있다** — 주석은 `GRIB` 을 미렌더로 적고 목록은 비어 있다. 어느 쪽이 정본인지의 판정은 `PV-2` 안에 있다.
+
+- 등재 = `PLAN-SoT §9 〈396〉`-㉽ · 실행 기록 `dev-package/sessions/DR-3-run-2026-09-13.md`.
+
+## 12. 회차 마감 (2026-09-14)
+
+**결과 계수** — 프로젝트 **4/4** · 데이터셋 **26/28**(파일 541건 · 5,126,827,697 B ＝ 4.77 GB) · 계보 간선 **18/18**(`edges_missing` 0건) · 미리보기 5종 **3패스 기록 완료 · 렌더 성립 2/5**(`grib`·`nc` / 미렌더 `bin`·`tif`·`hdf4`) · 실행 창 2026-09-13 22:32 → 2026-09-14 00:35 KST(2시간 03분).
+
+- **완료 판정** = `DR-1a`·`DR-1b`·`DR-1c`·`DR-2`·`DR-2h` ✅ · **`DR-3` ✅(26/28)**. 미달 2 는 러너 결함이 아니라 **제품이 `.gpkg` 를 받지 않아 화면에서 성립하지 않는 것**이고, 차단 해제는 별도 항목이 진다(`CLAUDE.md §5` 축자 「차단이면 차단 해제를 WU 로 만든다」). **「28건 달성」으로 읽지 않는다.**
+- **신설 4건(전건 열림 · 등재만 · 미착수)** = `DR-4`(dev 초기화→재셋팅 워크플로우) · `FMT-GPKG` · `DS-ATTACH` · `PV-2`. `CLAUDE.md` stage 3 표지 = **30항목**(종전 26).
+- **화면단 원칙 유지 실적** = 백엔드 시딩·DB 삽입·API 직접 호출·`load-seed.py` **0건** · 차단 2건 우회 투입 **0건** · staging·prod 접촉 0 · AWS 쓰기 0 · dev DB 직접 쓰기 0.
+- **러너 정본** = `dev-package/tools/dev-seed/`(실행 중 정정 7건 반영 완료). 갈무리·로그·초기 비밀번호는 세션 스크래치에 두고 레포에 싣지 않았다.
+- **별건** = 운영자 계정 `ttlhi10@gmail.com` 을 **계정 관리 화면**으로 생성(교수 · 관리자 지정 · 첫 로그인 비밀번호 변경 강제 · 2026-09-14). 그 자리에서 §11-2 ⓓ 가 나왔다.
+- **다음 = `DR-4` 새 세션.** 진입조건 = intent `dev-package/intent/2026-09-14-dev-reseed-workflow.md` 의 **판정 5건 선행**(승인 형태 · 화면단 원칙 유지 범위 · 실패 시 재개 지점 · 러너 산출물 보존 자리 · 차단 포맷 처리). ⚠ 「api처럼」을 HTTP API 신설로 읽지 않는다.
+- **열린 블로커 2건** = `03-HANDOFF §4` `73`(호스트 진단 중 대화 기록에 노출된 토큰 2건의 회전 판정 — 레포 파일·커밋 0건) · `74`(순번 1 데이터셋의 프로젝트 미연결 — 화면 수단 없음).
+- 등재 = `PLAN-SoT §9 〈396〉`-㉼~㉿ · 대장 `dev-package/work-items.yaml` · 기록 `dev-package/sessions/DR-3-run-2026-09-13.md`.
