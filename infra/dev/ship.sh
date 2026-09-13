@@ -19,19 +19,22 @@ SHA="$(cat "$DIST/colab-v2-dev.sha")"
 # ⭑ 본문은 `infra/_lib/ship-gate.sh` 한 벌이다 — prod 가 같은 것을 부른다(복사본은 갈린다).
 # shellcheck source=../_lib/ship-gate.sh
 . "$REPO/infra/_lib/ship-gate.sh"
+# ⭑ 운영 소스 번들 사슬도 한 벌이다 — prod 가 같은 함수를 부른다(`infra/_lib/ops-bundle.sh`).
+# shellcheck source=../_lib/ops-bundle.sh
+. "$REPO/infra/_lib/ops-bundle.sh"
 ship_gate_main_ancestor "$REPO" "$SHA"
 MAIN_SHA="$SHIP_GATE_MAIN_SHA"
 ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-dev-$SHA.tar"
 [ -f "$TAR" ] || { echo "tar 가 없다: $TAR — build.sh 먼저" >&2; exit 2; }
-"$REPO/infra/ops/build-source-bundle.sh" --repo "$REPO" --sha "$SHA" --output "$DIST"
-OPS_TAR="$DIST/colab-ops-source-$SHA.tar.gz"
-OPS_MANIFEST="$DIST/colab-ops-source-$SHA.manifest"
+ops_bundle_build "$REPO" "$SHA" "$DIST"
+OPS_TAR="$OPS_BUNDLE_TAR"
+OPS_MANIFEST="$OPS_BUNDLE_MANIFEST"
 SSH=(ssh -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes "$COLAB_DEV_SSH")
 SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
 
-"${SSH[@]}" 'sudo mkdir -p /opt/colab-v2/images /opt/colab-ops/bin /opt/colab-ops/versions && sudo chown $(id -u):$(id -g) /opt/colab-v2 /opt/colab-v2/images && sudo chown -R root:root /opt/colab-ops && sudo chmod 0755 /opt/colab-ops /opt/colab-ops/bin /opt/colab-ops/versions'
+"${SSH[@]}" "$(ops_bundle_prepare_cmd)"
 "${SCP[@]}" "$TAR" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$OPS_TAR" "$OPS_MANIFEST" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
 # ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈383〉`-㉳-⑶).
@@ -43,24 +46,7 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
   "$COLAB_DEV_SSH:/opt/colab-v2/"
 "${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
-  test \"\$(sha256sum /opt/colab-v2/images/$(basename "$OPS_TAR") | cut -d' ' -f1)\" = \
-       \"\$(sed -n 's/^# archive_sha256=//p' /opt/colab-v2/images/$(basename "$OPS_MANIFEST"))\" && \
-  if sudo test -e /opt/colab-ops/versions/$SHA; then \
-    sudo /opt/colab-ops/versions/$SHA/infra/ops/verify-reimport.sh \
-      --source /opt/colab-ops/versions/$SHA \
-      --incoming-manifest /opt/colab-v2/images/$(basename "$OPS_MANIFEST") --current-sha $SHA; \
-  else \
-    sudo mkdir /opt/colab-ops/versions/$SHA && \
-    sudo tar xzf /opt/colab-v2/images/$(basename "$OPS_TAR") -C /opt/colab-ops/versions/$SHA && \
-    sudo cp /opt/colab-v2/images/$(basename "$OPS_MANIFEST") /opt/colab-ops/versions/$SHA/OPS_SOURCE_MANIFEST && \
-    sudo chown -R root:root /opt/colab-ops/versions/$SHA && \
-    sudo chmod 0600 /opt/colab-ops/versions/$SHA/OPS_SOURCE_MANIFEST && \
-    sudo /opt/colab-ops/versions/$SHA/infra/ops/verify-source.sh \
-      --source /opt/colab-ops/versions/$SHA \
-      --manifest /opt/colab-ops/versions/$SHA/OPS_SOURCE_MANIFEST --current-sha $SHA; \
-  fi && \
-  sudo install -o root -g root -m 0755 /opt/colab-ops/versions/$SHA/infra/ops/dispatch-current.sh /opt/colab-ops/bin/dispatch-current.sh && \
-  sudo install -o root -g root -m 0755 /opt/colab-ops/versions/$SHA/infra/ops/verify-source.sh /opt/colab-ops/bin/verify-source.sh && \
+  $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:dev-$SHA colab-v2/\$u:dev; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
   printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
