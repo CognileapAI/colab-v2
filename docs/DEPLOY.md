@@ -166,7 +166,7 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | S3 데이터 버킷 | `colab-platform-data-dev` | 버킷 정책이 배포 ARN 을 가리킨다 |
 | S3 웹 버킷 | `colab-platform-web-dev` | OAC |
 | EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (`t4g.medium`, arm64 · ⭑ ⟨정정 2026-09-08 · WU-D4 실측⟩ 종전 ~~`t4g.small`~~ — IMDSv2 실물 조회 `dev-package/reports/R-D/d4-judgment-facts-20260908.md` §1 · 출처 `archive/feature/rtf400_dev_scale_up` 809f311 · 그 브랜치의 나머지 22행(`dev.env` 메모리 상한 · OOM · 이미지 수)은 미실측이라 미반입) | 서브넷·SG·역할·EIP |
-| 탄력적 IP | `54.116.191.208` | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
+| 탄력적 IP | (값은 레포 밖 — 콘솔 EC2 → 탄력적 IP · 로컬 `~/.config/colab-platform/prod-ssh.env`) | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | RDS | `colab-platform-dev-db` (PG16, `db.t4g.micro`) | 서브넷 그룹·SG · **삭제 방지 ON** |
 | DB 서브넷 그룹 | `colab-platform-dev-db-subnet-group` | 프라이빗 서브넷 2 |
 | VPC | `colab-platform-dev-vpc` · `vpc-010f7840e476df2ae` (`10.0.0.0/16`) | 서브넷 4 · IGW · 라우트 테이블 · S3 게이트웨이 엔드포인트 |
@@ -211,7 +211,7 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | 보안그룹 | `colab-platform-app-prod-sg` · `colab-platform-db-prod-sg` | ✅ P4 · db 가 app 을 **이름으로** 참조 |
 | RDS | `colab-platform-prod-db` (PG16, `db.t4g.small`) | ✅ P5 · **보존 7일** ⭐ · 퍼블릭 액세스 **아니오** · 스토리지 자동 조정 최대 100 GiB · 암호화 · 삭제 방지 ON · 단일 AZ. 엔드포인트는 **레포에 안 적는다**(dev 도 그렇다) — `~/.config/colab-platform/prod.env`(0600) |
 | EC2 | `colab-platform-app-prod` · `i-07e7b2b740bb79619` (`t4g.medium`, arm64) | ✅ P6 · RAM 3.7 GiB · 루트 30 GiB gp3 · 스왑 4 GB(fstab) · IMDSv2 홉 **2** 실측 확인 · 태그 인스턴스＋**볼륨** |
-| 탄력적 IP | `54.116.55.178` | ✅ P6 · ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
+| 탄력적 IP | (값은 레포 밖 — 콘솔 EC2 → 탄력적 IP · 로컬 `~/.config/colab-platform/prod-ssh.env`) | ✅ P6 · ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | 키 페어 | `colab-platform-prod-key` | ✅ P6 · ⚠ 내려받은 직후 권한이 `0644` 였다(macOS 기본) — `600` 이 아니면 ssh 가 거부한다 |
 | RDS 안의 것 | 롤 4 · DB 2 · 연구실 1 · 계정 2 | ✅ P6 · 아래 §4-1b |
 | CloudFront 배포 | `colab-platform-prod` · `E1HUNU140VL6BK` · `d1aje00ns2hjsl.cloudfront.net` | ✅ P7 · 오리진 3 · 동작 3 · **무료 플랜** · WAF **감시 모드** |
