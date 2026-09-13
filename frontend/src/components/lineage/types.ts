@@ -44,7 +44,6 @@ export interface ParentCard {
   key: string;
   parentDatasetId: string;
   parentDatasetName: string;
-  role: ParentRole;
   /** 제안에서 온 확신도. **사람이 수정하면 `null` 이 된다** — AI 행동이 아니게 되므로. */
   confidence: AiConfidence | null;
   rationale: string | null;
@@ -78,8 +77,15 @@ export interface ParentCard {
   parentLevel: number | null;
 }
 
-/** 부모 역할 2값 (`common.json#ParentRole`). 화면이 목록을 지어내지 않는다. */
-export const PARENT_ROLES: ParentRole[] = ['주입력', '보조입력'];
+/**
+ * ⭑ **⟨신설 2026-09-14 · 레인 A6 · 사용자 결정⟩ 계약 기본값 하나.**
+ * ／ 종전 ~~`PARENT_ROLES` 2값 배열 — 카드의 셀렉트가 목록으로 그렸다~~ —
+ * 목업 `.li-f` 에 그 셀렉트가 없다. **업로드 화면은 부모 역할을 묻지 않고** 이 값을
+ * 고정해 싣는다(`common.json#ParentRole` 의 `default` 축자).
+ * ⛔ **enum 2값 자체는 계약에 그대로 있다** — 고르는 자리가 **상세의 계보 수정**
+ * (`LineageFixModal`)로만 남은 것이고, 계약·DB 는 무변이다.
+ */
+export const DEFAULT_PARENT_ROLE: ParentRole = '주입력';
 
 export interface LineageSource {
   /**

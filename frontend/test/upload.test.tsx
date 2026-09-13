@@ -1936,26 +1936,29 @@ describe('③ 계보 확정 — 연결과 지우기', () => {
   });
 });
 
-describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 방식', () => {
-  it('부모 역할은 `주입력`·`보조입력` 둘뿐이고 기본값이 `주입력` 이다', async () => {
-    // ⭑ ⟨개정 2026-09-14⟩ ／ 종전 ~~「제안값이 기본으로 선다」(둘째 카드 `보조입력`)~~ —
-    //   역할을 실어 오던 것은 제안뿐이다. **사람이 세운 카드는 `주입력` 에서 시작하고
-    //   셀렉트로 바꾼다** — 두 값이 요청에 그대로 실리는지가 이 시험의 판정이다.
+describe('③ 계보 확정 — 부모 역할 무노출 · 직접 추가 · 가공 방식', () => {
+  it('카드에 부모 역할 셀렉트가 없고 요청의 `parentRole` 은 항상 계약 기본값 `주입력` 이다', async () => {
+    // ⭑ ⟨개정 2026-09-14 · 레인 A6 · 사용자 결정⟩ ／ 종전 ~~카드의 셀렉트로 두 값을 고르고
+    //   그 값이 요청에 실리는지를 쟀다~~ — 목업 `.li-f` 에 그 셀렉트가 없다. 화면은 역할을
+    //   묻지 않고, 고치는 자리는 **상세의 계보 수정**(`LineageFixModal`)이다.
+    // ⛔ **필드를 빼지 않는다** — `UploadLineageParent.parentRole` 은 계약에 그대로 있고
+    //   (`contracts/seams/fe-core.yaml` · `common.json#ParentRole` 기본 `주입력`),
+    //   화면이 그 기본값을 고정해 싣는다. 계약·DB 는 무변이다.
     const { sources, calls } = fakes();
     await openLineage(sources);
     await addParentByPicker(NDVI_ID);
     await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
-    const roles = within(cards[0]!).getByTestId('lin-role') as HTMLSelectElement;
-    expect([...roles.options].map((o) => o.value)).toEqual(['주입력', '보조입력']);
-    expect(roles.value).toBe('주입력');
-    expect((within(cards[1]!).getByTestId('lin-role') as HTMLSelectElement).value).toBe('주입력');
-    await change(within(cards[1]!).getByTestId('lin-role'), '보조입력');
+    expect(cards).toHaveLength(2);
+    for (const card of cards) {
+      expect(within(card).queryByTestId('lin-role')).toBeNull();
+      expect(card.textContent).not.toContain('부모 역할');
+    }
 
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents).toHaveLength(2);
-    expect(parents.map((p) => p.parentRole)).toEqual(['주입력', '보조입력']);
+    expect(parents.map((p) => p.parentRole)).toEqual(['주입력', '주입력']);
   });
 
   it('안내가 **정할 수 없는 값**을 설명하지 않는다 — 화면은 부모 역할을 묻지 않는다', async () => {

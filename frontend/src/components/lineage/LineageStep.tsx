@@ -30,11 +30,10 @@ import {
   displayLevel,
   derivedLevelFromParents,
   levelMismatchNotice,
-  PARENT_ROLES,
+  DEFAULT_PARENT_ROLE,
   type ParentCandidateRow,
   type LineageSource,
   type ParentCard,
-  type ParentRole,
   type UploadLineageParent,
 } from './types';
 // ⭑ **⟨WU-B10 · PRD-31⟩ 찾기·연결 UI 와 초과 사유 문면은 `ParentPicker` 한 벌뿐이다** —
@@ -117,7 +116,11 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       .filter((p) => p.confirmed)
       .map((p) => ({
         parentDatasetId: p.parentDatasetId,
-        parentRole: p.role,
+        // ⭑ **⟨개정 2026-09-14 · 레인 A6⟩ 계약 기본값을 고정해 싣는다.**
+        //   ／ 종전 ~~카드의 셀렉트가 고른 `p.role`~~ — 그 셀렉트가 없어졌다(목업 `.li-f`).
+        //   ⛔ **필드를 빼지 않는다** — 계약에 그대로 있는 값이고, 서버 기본값에 기대면
+        //   요청만 보고는 무엇이 실렸는지 읽히지 않는다.
+        parentRole: DEFAULT_PARENT_ROLE,
         origin: p.origin,
         // 제안을 확인한 문장과 직접 적은 문장은 **같은 자리로 접힌다** — 둘 다 실으면 400 이다.
         ...(p.confirmedMethodText
@@ -184,7 +187,6 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         key: `직접:${row.datasetId}:${cur.length}`,
         parentDatasetId: row.datasetId,
         parentDatasetName: row.name,
-        role: '주입력',
         confidence: null,
         rationale: null,
         origin: 'manual',
@@ -322,23 +324,12 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
                 걷었다 — **둘 다 제안만 채우던 칸**이고, 사람이 직접 고른 연결에는 값이 없다.
                 `ParentCard.confidence`·`rationale` 은 계약 타입이라 그대로 두고 `null` 이다. */}
 
+            {/* ⭑ **⟨개정 2026-09-14 · 레인 A6 · 사용자 결정⟩ 부모 역할 셀렉트(`lin-role`)를 걷었다.**
+                목업 `.li-f` 에 그 칸이 없다. 업로드 화면은 역할을 묻지 않고 요청에는
+                계약 기본값 `주입력` 이 고정으로 실린다(`DEFAULT_PARENT_ROLE`).
+                ⛔ **고치는 길은 남아 있다** — 상세의 계보 수정(`LineageFixModal`)이 그 자리다.
+                ⚠ 계약(`UploadLineageParent.parentRole`)·DB 는 무변이다. */}
             <div className="lin-f">
-              <label>
-                <span>부모 역할</span>
-                <select
-                  className="sel"
-                  data-testid="lin-role"
-                  value={p.role}
-                  onChange={(e) => patch(p.key, { role: e.target.value as ParentRole })}
-                >
-                  {PARENT_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
               {/* ⭑ ⟨개정 2026-09-14⟩ 가공 방식은 **사람이 적는 칸 하나**다.
                   ／ 종전 ~~제안을 확인한 문장이 있으면 `lin-method-done` 으로 대신 그렸다~~ —
                   `confirmedMethodText` 를 채우던 것은 가공 방식 제안 카드뿐이고 그것이

@@ -358,7 +358,6 @@ describe('rev2 등록 폼 — 원천 블록', () => {
       key: 'k1',
       parentDatasetId: '01JYZ9K7WQ3N8V4M2X6C5B0PA1',
       parentDatasetName: '부모 데이터셋',
-      role: '주입력',
       confidence: null,
       rationale: null,
       origin: 'manual',
