@@ -8,7 +8,7 @@
 #   ㈏ 순서 B  0026 → 0028_account_status → 0029_operator_read_policy
 #                   → (0027_operator_audit ＋ 머지)                  → pg_dump
 #   ㈐ ㈎ = ㈏  (두 순서 수렴 — 머지 리비전의 성립 조건)
-#   ㈑ 선언 정본(`db/platform/schema.sql`) = ㈎ = ㈏ (schema-diff 가 보는 것과 같은 사실)
+#   ㈑ 선언 정본(`db/platform/schema.sql`) = **체인 head** (schema-diff 가 보는 것과 같은 사실)
 #   ㈒ 머지 리비전의 `upgrade()` 본문이 비었고 `down_revision` 이 두 형제 튜플이다
 #
 # ⚠ **어느 갈래도 아직 dev 에 적용되지 않았다.** 그래서 이 오라클이 재는 것은
@@ -131,22 +131,29 @@ else
 fi
 
 # ㈑ 선언 정본 ↔ 적용 결과 (schema-diff 가 보는 것과 같은 사실).
+# ⭑ ⟨DR-1c 2026-09-13⟩ 견주는 상대는 **체인 head** 이지 이 회차의 머지 지점이 아니다 —
+#   `schema.sql` 은 **체인 전체의 선언 정본**이라, 뒤 회차(`0031_search_evidence`)가 서면
+#   머지 지점과는 반드시 갈린다. `db/ai/tests/0004-0005-drift.sh`(WU-C7)·`0006-drift.sh`
+#   (WU-C13) 가 같은 이유로 이미 head 를 견준다. 종전 문면은 이 회차가 체인의 마지막이던
+#   동안에만 맞았다. ⛔ 위 ㈎㈏㈐ 는 그대로 이 회차의 두 순서만 본다 — 그것이 이 파일의 몫이다.
+render "upgrade head" "$TMP/chain_head.sql"
+mkdb chain_db
+apply chain_db "$TMP/chain_head.sql" || red "체인 head 를 적용하지 못했다."
+norm chain_db
 mkdb decl_db
 apply decl_db "$CHAIN/schema.sql" || red "schema.sql 를 적용하지 못했다."
 norm decl_db
-for db in order_a order_b; do
-  if diff -u "$TMP/decl_db.norm" "$TMP/$db.norm" > "$TMP/decl-$db.diff"; then
-    echo "[0030-drift] ㈑ 선언 정본 schema.sql = $db → OK"
-  else
-    echo "[0030-drift] ㈑ schema.sql 과 $db 가 갈렸다 ✗"
-    sed 's/^/           /' "$TMP/decl-$db.diff" | head -60
-    FAILURES+=("㈑ schema.sql ↔ $db")
-  fi
-done
+if diff -u "$TMP/decl_db.norm" "$TMP/chain_db.norm" > "$TMP/decl-head.diff"; then
+  echo "[0030-drift] ㈑ 선언 정본 schema.sql = 체인 head → OK"
+else
+  echo "[0030-drift] ㈑ schema.sql 과 체인 head 가 갈렸다 ✗"
+  sed 's/^/           /' "$TMP/decl-head.diff" | head -60
+  FAILURES+=("㈑ schema.sql ↔ 체인 head")
+fi
 
 if [ "${#FAILURES[@]}" -gt 0 ]; then
   printf '::error::0030-drift red — 실패 %d건:\n' "${#FAILURES[@]}"
   printf '     - %s\n' "${FAILURES[@]}"
   exit 1
 fi
-echo "0030-drift green — 머지 차분 0 · 두 순서 스키마 수렴(차이 0줄) · 선언 = 적용."
+echo "0030-drift green — 머지 차분 0 · 두 순서 스키마 수렴(차이 0줄) · 선언 = 체인 head."

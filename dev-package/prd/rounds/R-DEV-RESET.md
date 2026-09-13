@@ -69,6 +69,7 @@ Ted 판정
 |---|---|---|---|
 | WU-R1a | dev 전용 초기화 도구 ＋ 가드 시험 ＋ 로컬 증명 | 레인 1개(`lane-worker`) | 없음 |
 | WU-R1b | 규칙 예외·원장·대장 등재 ＋ 첫 자격 삽입 절차 실측 | 레인 1개(`lane-worker`) · 직렬 | WU-R1a |
+| WU-R1c | `0031_search_evidence` 드리프트 오라클 신설 (hotfix · 대장 `DR-1c`) | 레인 1개(`lane-worker`) · 직렬 | WU-R1b |
 | WU-R2 | dev 초기화 실행 | 오케스트레이터 ＋ Ted · 레인 작업 아님 | WU-R1a·R1b 병합·dev 배포 ＋ Ted 명시 GO |
 | WU-R3 | 화면 투입 시나리오 ＋ 실투입 | 문서 레인 1개 ＋ 사람 실행 | WU-R2 |
 
@@ -263,4 +264,6 @@ Ted 판정
 - `DROP SCHEMA` 권한(`colab_owner` 는 RDS 에서 진짜 슈퍼유저가 아니다) — **해소 경로 확정**(WU-R1a 「권한 근거」 = 부트스트랩이 스키마 소유를 `colab_owner` 로 옮긴다) · **로컬 증명으로 닫는다**. dev 실측 1회가 최종 확인이다.
 - ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`work-item-consistency` ㈐ 가 `DR-1a`·`DR-1b` 의 상태를 실제로 대조하지 못한다.** 게이트는 **green** 인데 그 둘은 「검사 대상 밖 11건」에 들어간다(축자 `㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖`). 원인 = 식별자 정규식 `gates/tools/work_item_consistency.py` `ID_RE`(`[A-Z]{1,3}(?:-[A-Z0-9]+|\d+[a-z]?)`)가 **「글자-숫자소문자」 모양을 못 읽는다** — `DR-1` 까지 맞고 뒤의 `a` 에서 `\b` 가 깨진다. ⚠ **새 결함이 아니라 드러난 사각지대다** — `OP-NOTIFY-1`·`C3·C4`·`WU-UPV-20260909` 등 기존 항목 9건이 이미 같은 자리에 있다. ⚠ **`㈕ CLAUDE.md` 대조는 대장 id 를 직접 쓰므로 네 항목 모두 정상 대조된다**(24건) — 못 보는 것은 `03-HANDOFF §1` 표 한 자리다. 고칠 자리 = 그 정규식 하나. 이 레인은 도구 코드를 고치지 않았다(범위 밖).
 - ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`origin/local-stage` 는 병합 경로 밖 브랜치라 정리 대상이다**(`§10` 규약 · 집행은 **오케스트레이터**). 근거 = 그 브랜치에만 사는 `0032_private_owner_access`(커밋 `75cd069b`)가 호스트 공용 적용 DB 에 찍혀 **`main` 을 포함한 모든 브랜치에서 `schema-diff` 가 준비 red** 다(`dev-package/reports/r-dev-reset/host-applied-db-diagnosis.md` · `03-HANDOFF §4` 블로커 `72`). 선택은 둘 — ⑴ `local-stage` 를 `main` 으로 병합 ⑵ 병합 경로 밖 브랜치로 처분(원격 삭제는 게이트 뒤 오케스트레이터 · 레인은 하지 않는다). ⛔ 공용 적용 DB 를 다운그레이드해 되돌리지 않는다 — 다른 세션이 쓰는 상태다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ **드리프트 오라클 일부가 일회용 postgres 기동 실패를 red(준비)가 아니라 red(판정)으로 낸다.** 실측 = `migration-drift` 3회 실행 중 2회에서 **서로 다른 오라클 1벌**이 기동 때문에 죽었다(3회차는 `green — 오라클 26 · 실행 26 · 실패 0` · 1회차 `0025-drift` 축자 `createdb: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory` · 2회차 `0008-drift` 축자 `::error::0008-drift red — postgres 가 60초 안에 뜨지 않았다.`). 원인 둘 — ⑴ `db/platform/tests/0008-drift.sh` 는 60초 대기 뒤 `red`(exit 1)를 부른다(`ready` 함수 자체가 없다) ⑵ `db/platform/tests/0025-drift.sh` 는 대기 뒤 확인이 아예 없어 `createdb` 로 그냥 넘어간다. **어느 검사에 걸리는가** = `gates/run.sh migration-drift` 가 그것을 red(판정) 로 센다 — 그래서 3계수의 「판정/준비」 구분이 이 자리에서 무너진다(`.claude/rules/colab-rules.md §3-4`). 고칠 자리 = 두 파일의 기동 확인 한 줄씩(`0029-drift.sh` 도 같은 모양). 이 레인은 0031 오라클 하나가 범위라 고치지 않았다. ⚠ 호스트 동시 부하(다른 세션의 `service-tests-core-api`)가 있는 동안 재발한다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ `db/platform/tests/0027-operator-audit-drift.sh` 의 출력 이름표가 `[0025-drift]` 다(축자 `[0025-drift] 감사 3표·내보내기 5표·RLS·pending index 확인 → OK`). 판정에는 영향이 없고 로그 판독만 어긋난다 — 어느 검사도 이름표를 대조하지 않는다.
 - `[미확인]` 비운 상태에서 `deploy_doctor` 15/15 가 서는지의 실증 — 데이터 행을 보는 항목이 없다는 것까지는 코드 실측이고, 실제 15/15 는 WU-R2 에서 처음 확인된다.

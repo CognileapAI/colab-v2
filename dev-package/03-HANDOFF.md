@@ -327,6 +327,7 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 |---|---|---|
 | **DR-1a** dev 전용 초기화 도구 ＋ 가드 시험 ＋ 로컬 증명 | ✅ | 2026-09-13 · `ops/reset_dev_environment.py` · 가드 시험 25건(구현 전 RED 로그) · 로컬 증명 `sessions/DR-1a-local-proof.md`(일회용 postgres · dev 무접촉) |
 | **DR-1b** 규칙 예외·원장·대장 등재 ＋ 첫 자격 삽입 절차 축자 | ✅ | 2026-09-13 · `.claude/rules/deploy.md` 11번 뒤 증보(11번 문면 무수정) · `infra/staging/provision-lab.sql` `SET LOCAL app.current_lab` 1줄 ＋ 증명 `sessions/DR-1b-provision-lab-proof.md` |
+| **DR-1c** `0031_search_evidence` 드리프트 오라클 신설 (hotfix) | ✅ | 2026-09-13 · `main` 선재 red 를 닫는다 — `db/platform/tests/0031-drift.sh` ＋ `0031-assertions.sql` 신설 · `0030-drift.sh` ㈑ 의 대조 상대를 체인 head 로(선례 `db/ai/tests/0004-0005-drift.sh` WU-C7 · `0006-drift.sh` WU-C13) · `migration-drift green — 오라클 26 · 실행 26 · 실패 0`(한 번의 실행) · ⚠ 앞선 2회는 **일회용 postgres 기동 실패**로 각 1벌 red 였고 그것을 exit 1 로 내는 오라클 쪽 결함이다(라운드 §11) |
 | **DR-2** dev 초기화 1회 실행 | ⬜ | **Ted 명시 GO 수령**(축자 `§9 〈396〉`-㉲ · 승인 1회 소진) · **선행이 남았다** — `DR-1a`·`DR-1b` 의 `main` 병합 ＋ dev 배포 뒤 오케스트레이터가 실행 |
 | **DR-3** 화면 투입 시나리오 ＋ 실투입 | ⬜ | `DR-2` 뒤 사람 실행 · 문서 초안 `scenarios/dev-minimal-data-setup.md` · 목표 계수 프로젝트 4 · 데이터셋 28 · 계보 간선 18 |
 
