@@ -161,6 +161,16 @@ async function openLineage(sources: UploadSources, selfLevel: string) {
 async function submit() {
   await click(screen.getByRole('button', { name: /^②/ }));
   await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+  // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격이
+  //   등록 게이트가 됐다 — 이 파일이 재는 것은 그 둘이 아니라 계보 쪽이라 채워 둔다.
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
   await click(screen.getByRole('button', { name: /^③/ }));
   await click(screen.getByTestId('reg-done'));
 }
@@ -249,6 +259,10 @@ describe('PRD-27 Lv0 이면 체크박스가 보이지 않는다', () => {
     await change(screen.getByTestId('reg-level'), 'Lv0');
     await click(screen.getByRole('button', { name: /^③/ }));
     expect(screen.queryByTestId('lin-unknown')).toBeNull();
+    // ⭑ ⟨개정 2026-09-14⟩ Lv0 은 출처 주소·내려받은 날이 등록 게이트다 — 여기서 재는 것은
+    //   `lineageUnknown` 이라 두 칸을 채워 둔다.
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2026-08-20');
     await submit();
     expect(calls.registered).toHaveLength(1);
     expect('lineageUnknown' in calls.registered[0]!).toBe(false);

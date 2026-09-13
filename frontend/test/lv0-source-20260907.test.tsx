@@ -13,8 +13,13 @@
  * ＋ 상세 두 건 — 파생 Lv 가 Lv0 이고 두 칸이 비면 **안내로만** 뜬다 · 수정 폼이 그 안내를
  *    실행 가능하게 만드는 두 칸을 갖는다(「수정에서 채워 주세요」).
  *
- * ⛔ **폐기된 판정을 재지 않는다** — 「Lv0 이면 필수」·「Lv1 이상이면 400」은 폐기됐다(PRD-19).
- *    `필수` 배지의 **부재**를 단언하는 것이 그 폐기의 화면 쪽 회귀 시험이다.
+ * ⛔ ~~**폐기된 판정을 재지 않는다** — 「Lv0 이면 필수」·「Lv1 이상이면 400」은 폐기됐다(PRD-19).
+ *    `필수` 배지의 **부재**를 단언하는 것이 그 폐기의 화면 쪽 회귀 시험이다.~~
+ * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 「Lv0 이면 필수」가
+ *    되살아났다.** 화면이 Lv0 에서 두 칸을 막고 `필수` 배지를 세운다. ⚠ **「Lv1 이상이면
+ *    400」은 여전히 폐기된 채다** — 서버는 값이 오면 저장한다(PRD-19). 여기 판정은 화면 쪽이다.
+ * ⭑ **⟨개정 2026-09-14⟩ 원천 세 칸은 한 블록이고 `Lv0` **또는** 연결 0건일 때만 선다.**
+ *    ／ 종전 ~~`원천 표기` 한 칸은 Lv 무관 상시(미결-11 ⓐ)~~.
  *
  * 모든 단언은 **대상 건수를 먼저 잰다** — 빈 집합 통과(green-by-skip)를 막는다.
  */
@@ -204,56 +209,71 @@ async function pickLevel(value: string) {
 async function submitRegister() {
   await goStep('②');
   await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+  // ⭑ ⟨개정 2026-09-14⟩ 기간·관측 간격도 등록 게이트다 — 이 파일이 재는 것은 출처 두 칸이다.
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
   await goStep('③');
   await click(screen.getByTestId('reg-done'));
 }
 
 // ═══════════ 수용 기준 ㈎㈏ — 표시·숨김과 `선택` 표기 ═══════════
 describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
-  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 `선택` 표기가 붙는다 (`필수` 배지 없음)', async () => {
+  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`필수` 배지**가 붙는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await goStep('③');
 
-    const slot = screen.getByTestId('reg-source-lv0-slot');
-    const block = within(slot).getByTestId('reg-source-lv0');
-    // **두 칸이다.** 건수를 먼저 재 빈 집합 통과를 막는다.
-    const inputs = within(block).getAllByRole('textbox');
-    expect(inputs).toHaveLength(2);
-
-    const url = within(block).getByTestId('reg-source-url') as HTMLInputElement;
-    const day = within(block).getByTestId('reg-source-downloaded-on') as HTMLInputElement;
+    const source = screen.getByTestId('reg-source-block');
+    // **두 칸이다.** 건수를 먼저 재 빈 집합 통과를 막는다(`출처 이름` 은 세 번째 칸이다).
+    const url = within(source).getByTestId('reg-source-url') as HTMLInputElement;
+    const day = within(source).getByTestId('reg-source-downloaded-on') as HTMLInputElement;
+    expect(within(source).getAllByRole('textbox')).toHaveLength(3);
     expect(url.placeholder).toBe(LV0_SOURCE_URL_PLACEHOLDER);
     expect(day.placeholder).toBe(LV0_SOURCE_DATE_PLACEHOLDER);
     expect(LV0_SOURCE_URL_PLACEHOLDER).toBe('예: https://cds.climate.copernicus.eu/...');
     expect(LV0_SOURCE_DATE_PLACEHOLDER).toBe('예: 2026-08-20');
 
-    // 라벨은 `(선택)` 표기다 — 등록 폼의 선택 입력 규약 그대로.
-    expect(block.textContent).toContain('출처 주소 (선택)');
-    expect(block.textContent).toContain('내려받은 날 (선택)');
-    // ⛔ **`필수` 배지를 붙이지 않는다** — 목업 배지를 채택하지 않은 것의 회귀 시험이다.
-    expect(within(block).queryByText('필수')).toBeNull();
-    expect(block.querySelectorAll('.reqtag')).toHaveLength(0);
+    // ⭑ ⟨개정 2026-09-14⟩ 두 칸에 `필수` 배지가 선다 — 목업 배지를 채택한 것의 회귀 시험이다.
+    expect(source.querySelectorAll('.reqtag')).toHaveLength(2);
+    for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
+      const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
+      expect(label).toBeTruthy();
+      expect(within(label!).getByText('필수')).toBeInTheDocument();
+    }
+    // ⛔ 괄호 문구는 남지 않는다 — 표시는 배지 하나다.
+    expect(source.textContent).not.toContain('(선택)');
 
     // 안내 문면은 rev1 축자다.
+    const block = within(source).getByTestId('reg-source-lv0');
     expect(within(block).getByTestId('reg-source-lv0-notice').textContent).toBe(LV0_SOURCE_NOTICE);
     expect(LV0_SOURCE_NOTICE).toBe('원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.');
   });
 
-  it('㈏ Lv1 이면 두 칸이 안 보이고 **원천 표기는 그대로 보인다** (미결-11 ⓐ)', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈏ Lv1 이면 두 칸이 안 보이고 **원천 표기는 그대로
+  //    보인다**(미결-11 ⓐ)」~~ — `출처 주소` 는 연결 0건이면 Lv1 에서도 선다. Lv 로 갈리는
+  //    것은 `내려받은 날` 과 `필수` 배지뿐이다(기획서 `srcLv0`·`srcUrlReq` 축자).
+  it('㈏ Lv1 · 연결 0건이면 `내려받은 날` 만 사라지고 `필수` 배지도 서지 않는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await pickLevel('Lv1');
     await goStep('③');
 
+    const source = screen.getByTestId('reg-source-block');
     expect(screen.queryByTestId('reg-source-lv0')).toBeNull();
-    expect(screen.queryByTestId('reg-source-url')).toBeNull();
     expect(screen.queryByTestId('reg-source-downloaded-on')).toBeNull();
     // 슬롯은 남아 있고 **안이 비었다** — 「블록이 없다」와 「Lv0 이 아니다」를 가른다.
     expect(screen.getByTestId('reg-source-lv0-slot').children).toHaveLength(0);
-    // 원천 표기는 Lv 와 무관하게 그대로다.
-    expect(screen.getByTestId('reg-source')).toBeTruthy();
+    // 출처 이름·출처 주소는 연구실 밖 출처를 묻는 칸이라 연결 0건 동안 그대로 선다.
+    expect(within(source).getByTestId('reg-source')).toBeTruthy();
+    expect(within(source).getByTestId('reg-source-url')).toBeTruthy();
+    expect(source.querySelectorAll('.reqtag')).toHaveLength(0);
   });
 
   it('㈎-b ① 에서 Lv 를 바꾸면 ③ 의 블록이 **즉시** 열리고 닫힌다', async () => {
@@ -273,23 +293,26 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     await pickLevel('Lv3');
     await goStep('③');
     expect(screen.queryByTestId('reg-source-lv0')).toBeNull();
+    // 블록 자체는 연결 0건이라 남는다 — 갈리는 것은 `내려받은 날` 칸이다.
+    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
   });
 });
 
 // ═══════════ 수용 기준 ㈐㈑㈒ — 무엇이 전송되는가 ═══════════
 describe('WU-B6 · PRD-19 전송 규율', () => {
-  it('㈐ Lv0 이고 출처 주소가 비어도 등록이 **성공**한다 (선택 입력)', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈐ Lv0 이고 출처 주소가 비어도 등록이 **성공**한다
+  //    (선택 입력)」~~ — 필수가 되면서 막힌다. 「안 적은 것은 싣지 않는다」는 조립 규칙은
+  //    `humanMetadata` 에 그대로 있고, 그 상태로는 요청이 나가지 않을 뿐이다.
+  it('㈐ Lv0 이고 두 칸이 비면 등록이 **막히고** ③ 으로 데려간다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await submitRegister();
 
-    expect(calls.registered).toHaveLength(1);
-    const body = calls.registered[0] as Record<string, unknown>;
-    expect(body.processingLevelUserSet).toBe(LV0);
-    // 안 적은 것은 **싣지 않는다** — 「안 적었다」와 「비우라」는 다르다.
-    expect('sourceUrl' in body).toBe(false);
-    expect('sourceDownloadedOn' in body).toBe(false);
+    expect(calls.registered).toHaveLength(0);
+    expect(screen.getByTestId('up-register-toast'))
+      .toHaveTextContent('출처 주소와 내려받은 날을 적어 주세요');
+    expect(screen.getByTestId('reg-s3')).toBeTruthy();
   });
 
   it('㈐-b Lv0 에서 두 칸을 채우면 그 값이 그대로 실린다', async () => {
@@ -307,7 +330,10 @@ describe('WU-B6 · PRD-19 전송 규율', () => {
     expect(body.sourceDownloadedOn).toBe('2026-08-20');
   });
 
-  it('㈒ 채운 뒤 ① 에서 Lv2 로 바꾸면 ③ 에서 숨고 **두 값이 전송되지 않는다**', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩ 숨는 것은 `내려받은 날` 하나다** ／ 종전 ~~「두 값이 전송되지
+  //    않는다」~~ — `출처 주소` 는 연결 0건 동안 Lv2 에서도 화면에 서 있으므로 전송된다.
+  //    **규율은 무변**이다 — 「보이는 동안 적은 것만 싣는다」이고, 무엇이 보이는가가 바뀌었다.
+  it('㈒ 채운 뒤 ① 에서 Lv2 로 바꾸면 `내려받은 날` 만 숨고 그 값이 전송되지 않는다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
@@ -325,22 +351,28 @@ describe('WU-B6 · PRD-19 전송 규율', () => {
     expect(body.processingLevelUserSet).toBe('Lv2');
     // **숨은 값은 전송되지 않는다** — 사용자가 지운 적 없는 값이 저장되면 상세에
     // 「내가 적은 적 없는 출처」가 뜬다.
-    expect('sourceUrl' in body).toBe(false);
     expect('sourceDownloadedOn' in body).toBe(false);
+    // 보이는 칸의 값은 그대로 나간다 — 숨김과 전송이 같은 식이라는 사실의 뒷면이다.
+    expect(body.sourceUrl).toBe('https://example.org/era5');
   });
 
-  it('㈑ 화면은 Lv1 에서 두 값을 싣지 않는다 (서버는 오면 저장한다 — 그쪽은 서버 시험 몫)', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈑ 화면은 Lv1 에서 두 값을 싣지 않는다」~~ —
+  //    Lv1 에서 갈리는 것은 `내려받은 날` 뿐이다. 연결이 붙으면 그때 블록 전체가 사라진다
+  //    (그쪽 판정은 `test/upload-form-rev2-20260914.test.tsx`).
+  it('㈑ 화면은 Lv1 에서 `내려받은 날` 을 싣지 않는다 (서버는 오면 저장한다 — 서버 시험 몫)', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await goStep('③');
     await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2026-08-20');
     await pickLevel('Lv1');
     await submitRegister();
 
     const body = calls.registered[0] as Record<string, unknown>;
     expect(body.processingLevelUserSet).toBe('Lv1');
-    expect('sourceUrl' in body).toBe(false);
+    expect('sourceDownloadedOn' in body).toBe(false);
+    expect(body.sourceUrl).toBe('https://example.org/era5');
   });
 });
 

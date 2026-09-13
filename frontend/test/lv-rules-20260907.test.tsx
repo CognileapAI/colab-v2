@@ -295,6 +295,16 @@ describe('PRD-10 불일치는 경고만이다', () => {
     await click(screen.getByRole('button', { name: /^②/ }));
     await change(screen.getByTestId('reg-name'), '불일치 시험');
     await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+    // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격이
+    //   등록 게이트가 됐다 — 이 파일이 재는 것은 그 둘이 아니라 계보 쪽이라 채워 둔다.
+    await click(screen.getByTestId('reg-period-open'));
+    await click(screen.getByTestId('reg-period-unit-일'));
+    await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+    await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+    await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+    await click(screen.getByTestId('reg-period-apply'));
+    await change(screen.getByTestId('reg-interval-value'), '1');
+    await change(screen.getByTestId('reg-interval-unit'), '시');
     // `데이터셋 만들기` 는 ③ 의 버튼이다 — 적을 칸에 적고 다시 돌아온다.
     await click(screen.getByRole('button', { name: /^③/ }));
     await click(screen.getByTestId('reg-done'));

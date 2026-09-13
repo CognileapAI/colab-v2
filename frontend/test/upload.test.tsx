@@ -411,6 +411,13 @@ async function openRegister() {
   // 등록을 여는 준비 단계에서 필수 칸을 채워 둔다. 설명 자체의 판정은
   // `test/summary-required-20260905.test.tsx` 가 따로 잰다.
   await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+  // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격도
+  //   등록 게이트가 됐다.** 설명과 같은 사유로 준비 단계에서 채워 둔다 — 이 파일이 재는
+  //   것은 그 둘이 아니라 **그 뒤의 것들**이다. 두 칸 자체의 판정은
+  //   `test/upload-form-rev2-20260914.test.tsx` 가 따로 잰다.
+  await setPeriod({ unit: '일', start: '2025-06-01' });
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
 }
 
 const stepBtn = (n: '①' | '②' | '③') => screen.getByRole('button', { name: new RegExp(`^${n}`) });
@@ -908,6 +915,10 @@ describe('§8 등록 단계 배치 — 미리보기는 등록 내내 접히지 �
  */
 async function setPeriod(opts: { unit?: string; start?: string; end?: string }) {
   const unit = opts.unit ?? '일';
+  // ⭑ ⟨2026-09-14⟩ **먼저 지운다** — 기간이 등록 게이트가 되면서 `openRegister()` 가
+  //   기본값을 채우므로, 이 도우미가 「덧쓰기」면 앞서 채운 끝 시점이 남는다.
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-clear'));
   await click(screen.getByTestId('reg-period-open'));
   await click(screen.getByTestId(`reg-period-unit-${unit}`));
   for (const side of ['start', 'end'] as const) {
@@ -942,24 +953,28 @@ describe('§8 ② 메타데이터 입력', () => {
 
   // ⭑ **⟨WU-A4R · PRD-28 수용 기준 2026-09-06 · 결정서 III-B ⓐ⟩ 좌표계 칸 보조 라벨.**
   //    선택 항목인데 보조 라벨이 없는 칸이 짧은 값 한 줄에 남아 있지 않다.
-  it('좌표계 칸 라벨이 `좌표계 (선택)` 이다 (`변수 (선택)` 과 같은 패턴)', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 보조 라벨의 모양이
+  //    괄호 문구에서 **배지**로 바뀌었다** ／ 종전 ~~`좌표계 (선택)` 문자열~~ — 요구는
+  //    그대로다(선택 항목에 표시가 있다). 재는 대상만 `.opttag` 로 옮긴다.
+  it('좌표계 칸에 `선택` 배지가 붙는다 (변수 표와 같은 패턴)', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
     const labels = Array.from(document.querySelectorAll('label[for="reg-crs"]'));
     expect(labels).toHaveLength(1);
-    expect(labels[0]!.textContent).toBe('좌표계 (선택)');
+    expect(labels[0]!.textContent).toBe('좌표계선택');
+    expect(labels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
     // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 라벨은 **입력 하나를 가리키지 않는다** — 표 전체의 이름이라
-    // `for` 가 없다. 보조 라벨 `(선택)` 규율은 그대로다.
+    // `for` 가 없다. 선택 표시 규율은 그대로다.
     const varLabels = Array.from(document.querySelectorAll('label')).filter(
-      (l) => l.textContent === '변수 (선택)',
+      (l) => l.textContent === '변수선택' && !l.hasAttribute('for'),
     );
     expect(varLabels).toHaveLength(1);
-    expect(varLabels[0]!.hasAttribute('for')).toBe(false);
+    expect(varLabels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
   });
 
-  it('짧은 값 한 줄에서 **사람이 적는 칸**의 라벨이 전부 `(선택)` 으로 끝난다', async () => {
+  it('짧은 값 한 줄에서 **사람이 적는 칸**의 라벨이 전부 배지를 단다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -967,9 +982,15 @@ describe('§8 ② 메타데이터 입력', () => {
     const row = screen.getByTestId('reg-short-row');
     // 사람이 적는 칸 = 라벨이 `for` 로 입력을 가리키는 칸. 격자는 승인 변경으로
     // 사람 설명 칸이 되었고, 자동 판독은 상세에서 별도 보조 문구로 보인다.
-    const texts = Array.from(row.querySelectorAll('label[for]')).map((l) => l.textContent ?? '');
-    expect(texts).toHaveLength(3);
-    for (const t of texts) expect(t).toMatch(/\(선택\)$/);
+    const labels = Array.from(row.querySelectorAll('label[for]'));
+    expect(labels).toHaveLength(3);
+    for (const l of labels) {
+      expect(l.querySelectorAll('.reqtag, .opttag')).toHaveLength(1);
+      expect(l.textContent ?? '').not.toContain('(선택)');
+    }
+    // ⭑ ⟨개정 2026-09-14⟩ 기간은 이 줄에서 **필수**다 — 좌표계·격자 둘만 선택이다.
+    expect(row.querySelectorAll('.reqtag')).toHaveLength(1);
+    expect(row.querySelectorAll('.opttag')).toHaveLength(2);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));
     expect(auto).toHaveLength(0);
   });
@@ -1019,7 +1040,12 @@ describe('§8 ② 메타데이터 입력', () => {
       .toEqual({ start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: '일' });
   });
 
-  it('시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 시작이 비면 **막힌다**.**
+  //    ／ 종전 ~~「시작 칸이 비면 기간을 아예 싣지 않는다 — 시작은 조건부가 아니다」~~ —
+  //    기간이 등록 게이트가 되면서 「시작 없이 등록」 자체가 성립하지 않는다. 「시작이
+  //    없으면 기간을 싣지 않는다」는 조립 규칙은 **그대로**이고(`humanMetadata`), 그
+  //    상태로는 요청이 나가지 않을 뿐이다.
+  it('시작 칸이 비면 `데이터셋 만들기` 가 막히고 기간 칸으로 데려간다', async () => {
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -1027,8 +1053,9 @@ describe('§8 ② 메타데이터 입력', () => {
     await setPeriod({ unit: '일', end: '2025-09-30' });
     await click(stepBtn('③'));
     await click(await screen.findByTestId('reg-done'));
-    await waitFor(() => expect(calls.registered.length).toBe(1));
-    expect((calls.registered[0] ?? {}).period).toBeUndefined();
+    expect(calls.registered.length).toBe(0);
+    expect(screen.getByTestId('up-register-toast')).toHaveTextContent('기간의 시작할 날을 골라 주세요');
+    expect(stepBtn('②')).toHaveAttribute('aria-current', 'step');
   });
 
   it('자동으로 읽은 칸은 읽기 전용 + `자동` 표시다', async () => {
@@ -1075,24 +1102,21 @@ describe('§8 ② 메타데이터 입력', () => {
     expect(lv.value).toBe('Lv0');
   });
 
-  it('주제는 고정 목록이고 **미정 상태를 표현할 수 있다** (〈359〉 로 4값 → 6값)', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ `주제` 칸이 없다.**
+  //    ／ 종전 ~~「주제는 고정 목록이고 미정 상태를 표현할 수 있다(〈359〉 로 4값 → 6값)」~~
+  //    — 기획서 rev2 우측 폼에 그 칸이 없고 분류 축(`category`)이 같은 일을 한다.
+  //    ⛔ 읽기 쪽(목록 열·상세 칩·필터)과 계약 `topic` 은 **무변**이다 — `TOPICS` 상수도
+  //       그대로 남아 계보 후보 찾기(`ParentPicker`)가 쓴다. 등록 폼만 값을 만들지 않는다.
+  it('등록 폼에 `주제` 칸이 없다 — 분류 축이 그 자리를 맡는다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     await openRegister();
-    const topic = screen.getByTestId('reg-topic') as HTMLSelectElement;
-    expect(Array.from(topic.options).map((o) => o.value)).toEqual([
-      '',
-      '강우·강수',
-      '식생·NDVI',
-      '지형·DEM',
-      '토지피복·LULC',
-      // ⭑ ⟨2026-09-06 · `〈359〉`⟩ Ted 판정으로 넓힌 둘. dev 초기 적재의 가뭄 1건 ·
-      //   파일 포맷 예제 5건이 4값에 없어 `NULL` 로 접히던 자리를 없앴다(`〈357〉`).
-      '가뭄',
-      '파일 포맷 예제',
-    ]);
-    expect(topic.value).toBe('');
+    expect(screen.getByTestId('reg-s2')).toBeTruthy();
+    expect(screen.queryByTestId('reg-topic')).toBeNull();
+    // 대신 ① 분류가 서 있다 — 빈 집합 통과를 막는 대조군이다.
+    await click(stepBtn('①'));
+    expect(screen.getByTestId('reg-category')).toBeTruthy();
   });
 
   it('데이터셋 이름 기본값은 파일명에서 만든다', async () => {
@@ -1564,11 +1588,13 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
       //   건드리지 않으면 열쇠가 **없고**, 서버는 그것을 「연구실 기본값을 따른다」로 읽는다
       //   (NULL = 연구실 기본값 · 「현행 의미 유지」). 기본값을 복사해 실으면 연구실 기본값을
       //   바꿔도 옛 값으로 굳고, 기본값이 `잠김` 인 연구실에서 `열림` 으로 저장된다.
-      ['category', 'dataType', 'processingLevelUserSet', 'lineageParents', 'name', 'projectIds',
-       'sourceLabel', 'summary', 'topic', 'uploadId'].sort(),
+      // ⭑ **⟨개정 2026-09-14⟩ `topic` 이 빠지고 `period`·`observationInterval` 이 들어왔다** —
+      //   `주제` 칸은 폼에서 사라졌고, 기간·관측 간격은 등록 게이트라 늘 실린다.
+      ['category', 'dataType', 'observationInterval', 'period', 'processingLevelUserSet',
+       'lineageParents', 'name', 'projectIds', 'sourceLabel', 'summary', 'uploadId'].sort(),
     );
     expect('accessState' in body).toBe(false);
-    expect(body.topic).toBeNull();
+    expect('topic' in body).toBe(false);
   });
 
   it('이름이 비면 정본 문구로 막고 등록하지 않는다', async () => {

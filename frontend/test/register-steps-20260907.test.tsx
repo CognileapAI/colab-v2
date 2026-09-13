@@ -181,6 +181,22 @@ async function openRegister(sources: UploadSources) {
 const stepBtn = (n: '①' | '②' | '③') =>
   screen.getByRole('button', { name: new RegExp(`^${n}`) });
 
+/**
+ * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격이
+ * 등록 게이트가 됐다.** 이 파일이 재는 것은 그 둘이 아니므로 **② 에 머문 채** 채워 둔다.
+ * 두 칸 자체의 판정은 `test/upload-form-rev2-20260914.test.tsx` 가 잰다.
+ */
+async function fillRegisterGates() {
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
+}
+
 // ═══ 요구 본체 ①~⑥ — 단계 구성과 이동 규칙 (PRD-12 · rev1 UI-003 · PRD-13) ═══
 describe('PRD-12 등록 3단계 재구성', () => {
   it('① 표시기 세 라벨이 `① 분류 · ② 메타데이터 입력 · ③ 연결` 이고 ① 이 열려 있다', async () => {
@@ -374,6 +390,7 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     await openRegister(sources);
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    await fillRegisterGates();
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
@@ -588,6 +605,9 @@ describe('㈒ PRD-40 종료 비움', () => {
     await change(screen.getByTestId('reg-period-pop-start-month'), '06');
     await change(screen.getByTestId('reg-period-pop-start-day'), '01');
     await click(screen.getByTestId('reg-period-apply'));
+    // ⭑ ⟨개정 2026-09-14⟩ 관측 간격도 등록 게이트다 — 여기서 재는 것은 기간뿐이라 채워 둔다.
+    await change(screen.getByTestId('reg-interval-value'), '1');
+    await change(screen.getByTestId('reg-interval-unit'), '시');
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
@@ -666,6 +686,7 @@ describe('WU-B4 · PRD-11 공개 범위 3값', () => {
     await openRegister(sources);
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    await fillRegisterGates();
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
@@ -678,6 +699,7 @@ describe('WU-B4 · PRD-11 공개 범위 3값', () => {
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await change(screen.getByTestId('reg-visibility'), '잠김');
+    await fillRegisterGates();
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
