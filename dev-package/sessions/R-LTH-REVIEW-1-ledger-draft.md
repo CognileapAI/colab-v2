@@ -85,3 +85,12 @@
 | `BF-21` | 검색 범위 줄 정합 | Task 2 | `ad2e40f8` | `test_search_scope.py` red 선실측 〈TBD〉 · `service-tests-core-api` 〈TBD〉 · `frontend-test` 〈TBD〉 · 계약 무변(`contracts/` diff 0) 〈TBD〉 | `done` |
 | `BF-22` | 승인 대기 칸 한국어 표기 | Task 5 | `0427ac91` | 문면 확정 〈TBD〉 · 시험 정정 3건(catalog · qa-20260903 · project) ＋ search-verified-20260903 무수정 통과(대장 `BF-22` ⑷ 개정 2026-09-14) · `frontend-test` 2회 ＋ `frontend-typecheck` 〈TBD〉 | `done` |
 | `BF-23` | 가공 단계 4건 | Task 3(⑴⑵⑷⑸⑹) ＋ Task 5(⑶ 목록 표식) | Task 5 분 = `0427ac91`(`catalog-level-mismatch-20260913.test.tsx`) · Task 3 = `origin/lane/lth-processing-level` `8a87e19d` 통합 미반영 | Task 3 sha 〈TBD〉 · 부모 0건 규칙 = 카드 ⑩ ⓐ 축자로 정정·재구현(대장 `BF-23` ⑴ 개정 2026-09-14) · 신설 시험 2 ＋ `detail-edit.test.tsx` 확장 red 선실측 〈TBD〉 · 차단 0 회귀 〈TBD〉 · 게이트 〈TBD〉 | `done` |
+
+## 증거 — 합친 트리 `7224d68c` 검사 (2026-09-14)
+
+- 포함 = Task 1 계정 관리 · Task 2 검색 범위 · Task 4 카드＋빈 표 · Task 5 승인 칸＋표식 · Task 7 연구실 설정＋구성원 · 시험 청소 수정 · 문서 정정. 미포함 = Task 3(보정 중) · Task 6(진행 중).
+- `frontend-typecheck` green · 오류 0건.
+- `contract-lint` green · seam 3건 · 룰 위반 0.
+- `service-tests-core-api` green · 수집 1232 · 실행 1232 · skipped 0 · failed 0 · errors 0 · 시험 DB `_31` 격리.
+- `frontend-test` red(판정) · **판정으로 쓰지 않음** — 실행 80파일 · 950건 중 통과 949 · 실패 1 = `lineage-unknown-20260907.test.tsx` 「폐기된 종전 라벨이 `src`·`test` 전체에서 0건이다」 5000ms 예산 초과(6942ms · 단언 실패 아님) · 나머지 파일 = vitest worker 기동 시간초과로 미실행(동시 실행 중이던 Task 3b 레인 vitest · load 17~24). 최종 트리에서 호스트 유휴 상태로 1회 재측정 예정.
+- 보고서 = `dev-package/reports/lth-review-260913/combined-7224d68c/`.
