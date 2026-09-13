@@ -60,3 +60,10 @@
 ---
 
 근거 경로 = SUMMARY `dev-package/reports/issues/2026-09-13-lth-review-1-SUMMARY.md` · 피드백 원문 `-lth-review-1-raw.md` · 조사 3건 `-lth-survey-A.md`·`-B.md`·`-C.md` · 선례 형식 `dev-package/reports/issues/2026-09-12-ted-decisions.md`.
+
+## 추가 확인 (2026-09-14 · 회차 실행 중)
+
+- **폴더별 시험 DB 격리** — 원문 「B 해라 이 폴더는 다르기 때문에 이 폴더에서하는건 구분해도 됨 ( colab 폴더가 30, 31, 32 있는데 전부다르게할게)」. 집행 = 30·31·32 각각 `~/.colab-v2-test-<N>.env` · 컨테이너 `a2_pg_<N>`·`ai_pg_<N>` · `.claude/settings.local.json` 바인딩 · `schema-diff` green 3폴더(2026-09-14). 절차 = `dev-package/RESTART.md §2-④-㉳`.
+- **배포 보류** — 원문 「배포는 하지말고 이건 허락받고」. dev 배포·`deploy_doctor` 는 전수 green ＋ `main` ff 뒤 Ted 허락을 받아 실행.
+- **동시 실행 상한 해제** — 원문 「가능한형태로 진행해 상한묶지말고」. 레인 5개 동시 실행 → load 20~27 · vitest worker 타임아웃 발생(판정 red 아님 · 재실행으로 처리).
+- **레포 ext4 이전** — 원문 「이번회차 끝나면 전부 옮길게 알았어」. 근거 실측(2026-09-14 · 파일 2,400개) = drvfs `/mnt/f` 읽기 22.9s · stat 7.6s vs ext4 0.05s · 0.02s(≈450배 · 캐시 무효). 시점 = 이 회차 마감(전수 green · `main` ff · 배포 판정) **뒤** · 대상 = 30·31·32 전부 · 이전 후 env 파일 픽스처 경로·설정 바인딩 재점검. 회차 중에는 옮기지 않는다(실행 중 워크트리 경로 파손).
