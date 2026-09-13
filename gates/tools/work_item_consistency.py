@@ -124,8 +124,10 @@ STAGES = {"stage1", "stage2", "after_stage2", "backlog", "out_of_scope", "unknow
 
 REQUIRED_FIELDS = ("id", "name", "status", "stage", "owner", "completion_def", "evidence")
 
-# 식별자 — P2 · D2b · G1b · IS4 · R-1 · X-5 · PA-G · T-1 …
-ID_RE = re.compile(r"[A-Z]{1,3}(?:-[A-Z0-9]+|\d+[a-z]?)")
+# 식별자 — P2 · D2b · G1b · IS4 · R-1 · X-5 · PA-G · T-1 · DR-1a …
+# 하이픈 뒤에도 소문자 접미가 온다(`DR-1a`). 그 한 글자를 빼면 그 행은 red 가 아니라
+# 「대조 대상 밖」으로 조용히 빠진다 — 안 본 것을 통과로 세는 자리다.
+ID_RE = re.compile(r"[A-Z]{1,3}(?:-[A-Z0-9]+[a-z]?|\d+[a-z]?)")
 ID_AT_START = re.compile(r"^(" + ID_RE.pattern + r")\b")
 
 problems: list[str] = []        # 위반 — red 사유
