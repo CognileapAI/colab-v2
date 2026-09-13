@@ -3534,6 +3534,7 @@ items:
       ⑸ 차단 0건 · 사유 입력 요구 0건 — 불일치 상태에서 등록·저장이 계속 성공한다(기존 판정 유지 회귀 단언)
       ⑹ `frontend/test/processing-level-default-20260913.test.tsx` · `lv-mismatch-reason-20260913.test.tsx` · `catalog-level-mismatch-20260913.test.tsx` 신설 ＋ `detail-edit.test.tsx` 확장이 red 선실측 뒤 green
       ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+      ⟨증보 2026-09-14⟩ 계산값 추종 중에는 부모 선택 상한 미적용 · 사람이 단계를 고른 뒤에만 적용(카드 ⑩ ⓐ 「차단은 늘지 않는다」)
     evidence: null
     deadline: null
     note: "라운드 R-LTH-REVIEW-1 Task 3 ＋ Task 5(목록 표식). 범위 밖 = 불일치 상태에서 등록·저장을 차단하는 동작(판정이 금지) · 사유 입력 ＋ 한 번 더 확인 절차와 사유 저장 칸 ＋ 마이그레이션 1건(카드 ⑩ ⓑ · 다음 회차 판정 · 후속) · 파생값·불일치 결과를 테이블에 저장하는 구조 변경 · 분류 3축 편집 칸 신설 · 검색 결과 카드의 불일치 표기 · 프로젝트 상세 표·계보 노드의 `level_pair` → `level_view` 확장 · 「CoLAB에서 가공됨」 표식과 계보 삭제 시 부모 이름 보존(`stage: after_stage2` 별 항목). ⚠ 사유 한 줄 문면은 Ted 확정 대기 — 레인은 제안 축자로 구현한다. ⚠ `[미확인]` = 사례 데이터셋 `TEST Stage12 Preview HDF5 20260911` 의 실제 저장값(dev DB 조회로 닫는다)."
