@@ -49,11 +49,18 @@ case "$COLAB_OWNERSHIP_VIZ_GID" in ''|*[!0-9]*) echo 'COLAB_OWNERSHIP_VIZ_GID �
 [ -x "$OWNERSHIP_SH" ] || { echo "$OWNERSHIP_SH 가 없다 — ship.sh 가 싣는다" >&2; exit 2; }
 [ -r "$OWNERSHIP_URL_FILE" ] || { echo "$OWNERSHIP_URL_FILE 이 없다 — colab_backup 롤 접속 문자열(root 0600)" >&2; exit 2; }
 
+# ④ 는 세 상태다(`CLAUDE.md` 게이트 규율과 같은 모양) — 선언되면 건다 · `COLAB_NOTIFICATION_SKIP=1` 로 **명시**
+#    면제하면 건수를 드러낸 채 넘어간다 · 아무 말도 없으면 exit 2. 면제가 필요한 실물 = 알림 런타임이 기대는
+#    AWS 자원(SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람)이 아직 dev 에만 있는 벌(2026-09-13 prod).
+NOTIFY_SKIP="${COLAB_NOTIFICATION_SKIP:-0}"
+case "$NOTIFY_SKIP" in 0|1) ;; *) echo 'COLAB_NOTIFICATION_SKIP 은 0 또는 1 이다' >&2; exit 2 ;; esac
 NOTIFY_CONFIG="${COLAB_NOTIFICATION_CONFIG:-/etc/colab/operator-runtime.env}"
-: "${COLAB_NOTIFICATION_ROOT:?COLAB_NOTIFICATION_ROOT 가 필요하다 — 검증된 ops 소스 번들 루트 /opt/colab-ops/versions/<sha>}"
-NOTIFY_INSTALLER="$COLAB_NOTIFICATION_ROOT/infra/notifications/install-runtime-cron.sh"
-[ -r "$NOTIFY_CONFIG" ] || { echo "$NOTIFY_CONFIG 가 없다 — 운영자 런타임 설정(root 0600 · README §4-c)" >&2; exit 2; }
-[ -r "$NOTIFY_INSTALLER" ] || { echo "$NOTIFY_INSTALLER 가 없다 — ops 소스 번들이 반입되지 않았다" >&2; exit 2; }
+if [ "$NOTIFY_SKIP" = 0 ]; then
+  : "${COLAB_NOTIFICATION_ROOT:?COLAB_NOTIFICATION_ROOT 가 필요하다 — 검증된 ops 소스 번들 루트 /opt/colab-ops/versions/<sha> (면제는 COLAB_NOTIFICATION_SKIP=1 로만)}"
+  NOTIFY_INSTALLER="$COLAB_NOTIFICATION_ROOT/infra/notifications/install-runtime-cron.sh"
+  [ -r "$NOTIFY_CONFIG" ] || { echo "$NOTIFY_CONFIG 가 없다 — 운영자 런타임 설정(root 0600 · README §4-c)" >&2; exit 2; }
+  [ -r "$NOTIFY_INSTALLER" ] || { echo "$NOTIFY_INSTALLER 가 없다 — ops 소스 번들이 반입되지 않았다" >&2; exit 2; }
+fi
 
 # ⚠ **Amazon Linux 2023 은 cron 을 기본으로 깔지 않는다** — `/etc/cron.d` 도 `crond` 도 없다
 #    (2026-08-31 실측: 스크립트가 「No such file or directory」로 죽었다).
@@ -98,7 +105,11 @@ chmod 0644 "$OWNERSHIP_CRON"
 # ── ④ 운영자 알림 런타임 — 설치기 자신이 멱등이고 드리프트를 거절한다 ──────────────
 # ⛔ 여기서 cron 줄을 손으로 쓰지 않는다. 일정 정본은 `install-runtime-cron.sh` 안의 `expected()` 이고,
 #    그것이 `verify` 로 자기 출력과 설치본을 대조한다 — 두 벌을 두면 대조가 무의미해진다.
-bash "$NOTIFY_INSTALLER" --environment "$ENVNAME" --config "$NOTIFY_CONFIG" install
+if [ "$NOTIFY_SKIP" = 0 ]; then
+  bash "$NOTIFY_INSTALLER" --environment "$ENVNAME" --config "$NOTIFY_CONFIG" install
+else
+  echo "④ 운영자 알림 cron: 명시 면제(COLAB_NOTIFICATION_SKIP=1) — 걸지 않은 잡 1종(export·spool·retry·probe). 면제 근거를 배포 기록에 적는다"
+fi
 
 echo "등록했다: $CRON"
 sed 's/^/   /' "$CRON"
@@ -106,4 +117,4 @@ echo "등록했다: $OWNERSHIP_CRON"
 sed 's/^/   /' "$OWNERSHIP_CRON"
 echo
 echo "로그: $LOG · $OWNERSHIP_LOG   (cron 은 UTC — 한국 시각은 +9)"
-echo "운영자 알림 cron: /etc/cron.d/colab-operator-notifications (install-runtime-cron.sh 가 관리)"
+[ "$NOTIFY_SKIP" = 1 ] || echo "운영자 알림 cron: /etc/cron.d/colab-operator-notifications (install-runtime-cron.sh 가 관리)"

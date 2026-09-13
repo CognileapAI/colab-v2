@@ -171,6 +171,7 @@ sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod \
   **조용히 옛 스냅샷이 남지 않는다**(viz 가 나이 상한으로 거절한다).
   ⚠ `COLAB_OWNERSHIP_COMPOSE_PROJECT` 는 **컨테이너 이름과 다를 수 있다**(`colab_v2_prod_*` 는
   compose 가 고정한 이름이다). `docker volume ls | grep ownership-ledger` 로 실측해 적는다.
+- **④ 는 세 상태다** — 선언(`COLAB_NOTIFICATION_ROOT`＋설정 파일)되면 건다 · `COLAB_NOTIFICATION_SKIP=1` 로 **명시** 면제하면 건수를 드러낸 채 넘어간다(알림 런타임이 기대는 SQS 큐 2·Secrets Manager 웹훅 ARN 2·CloudWatch 알람이 그 벌에 아직 없을 때 — 2026-09-13 prod 첫 재배포가 이 갈래) · 아무 말도 없으면 exit 2.
 - **④ 는 `install-runtime-cron.sh` 가 관리한다.** 일정 정본이 그 스크립트의 `expected()` 하나이고
   `verify` 가 자기 출력과 설치본을 대조한다 — 여기서 cron 줄을 베껴 쓰면 그 대조가 무의미해진다.
   ⭑ **⟨2026-09-13⟩ 그 설치기가 `prod` 를 받는다** ／ 종전 ~~`dev|staging` 만~~ — 갈래는 둘이고
