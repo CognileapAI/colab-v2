@@ -4,7 +4,7 @@
 
 - 실행자 = 스킬 `executing-plans`. 이 파일이 실행 계획의 정본이고 레인은 이 파일 ＋ spec 해당 절만 읽는다.
 - 쓰기 주체 = **한 사본당 하나**. 레인은 자기 워크트리만 편집한다.
-- 통합 브랜치 = `integration/r-lth-review-260913`(기점 = `main` tip) · 레인 브랜치 = `lane/lth-*`.
+- 통합 브랜치 = `integration/r-lth-1`(기점 = `main` tip) · 레인 브랜치 = `lane/lth-*`.
 - 판정 정본 = `dev-package/reports/issues/2026-09-13-ted-decisions.md` 10건(Ted · 2026-09-13 · 확인 문장 「전부 권고대로 하자. 이걸로 스펙이랑 계획잡아보자」).
 - 입력 intent 6건(승인 2026-09-13) = `dev-package/intent/2026-09-13-lth-{shell-header,account-members,a11y-empty-states,search-scope,verified-chip,processing-level-mismatch}.md`.
 - 조사 정본 = `dev-package/reports/issues/2026-09-13-lth-review-1-SUMMARY.md` §3(즉시 착수 11) · §4(판정 카드 10) · §5(기획자 회신 2).
@@ -43,7 +43,7 @@
 ## 공통 제약
 
 - 스폰 = `Agent(isolation: "worktree")` · 에이전트 `lane-worker`. 손으로 만든 형제 워크트리를 쓰지 않는다(`colab-rules §2-3`).
-- 첫 줄 = `git checkout -B lane/lth-<이름> origin/integration/r-lth-review-260913`. 이어서 `git rev-parse --short HEAD` 로 스폰 지시문의 기대 HEAD 를 대조하고, 어긋나면 구현하지 말고 정지·보고한다.
+- 첫 줄 = `git checkout -B lane/lth-<이름> origin/integration/r-lth-1`. 이어서 `git rev-parse --short HEAD` 로 스폰 지시문의 기대 HEAD 를 대조하고, 어긋나면 구현하지 말고 정지·보고한다.
 - 복귀 = 레인 브랜치를 통합 브랜치 위로 **rebase ＋ ff** 한 줄. 통합 → `main` 도 ff-only 한 줄(`docs/BRANCHING.md` 규칙 3·4). 병합은 오케스트레이터만 한다.
 - **한 레인 = 작업 하나.** 리베이스 ＋ 조건 수정 ＋ 구현 ＋ 전수를 한 지시문에 싣지 않는다(`CLAUDE.md §5-b` — 200턴 한도 2회 초과 사례).
 - 순서 = 항목마다 ① red 시험 먼저(실패 로그 한 줄 인용) → ② 최소 구현 → ③ 단독 게이트. green 으로 시작한 시험은 오라클이 아니다.
@@ -170,7 +170,7 @@
 
 ### Task 8: 통합 · 전수 · dev 배포 (오케스트레이터)
 
-- 통합 = 각 레인 브랜치를 `integration/r-lth-review-260913` 위로 rebase 한 뒤 **ff** 한 줄. 순서 = Task 1 → 2 → 3 → 4 → 5 → 6 → 7.
+- 통합 = 각 레인 브랜치를 `integration/r-lth-1` 위로 rebase 한 뒤 **ff** 한 줄. 순서 = Task 1 → 2 → 3 → 4 → 5 → 6 → 7.
 - 전수 = 통합 트리에서 **1회** `bash gates/run.sh all -j 4`(실행 레인 0건 확인 후 · 환경 source 선행). 3계수를 갈라 기록한다. 트리 해시가 같으면 `main` 에서 재실행하지 않는다(`colab-rules §3-2`).
 - 원장 `dev-package/PLAN-SoT.md §9` 기재 — **`〈N〉` 은 병합 직전 재실측**(`dev-package/prd/tools/max-decision.sh` · 예약 금지 · `colab-rules §4-1`). 기재 대상 = ⑴ Ted 판정 10건 기록(등재문 = `dev-package/reports/issues/2026-09-13-ted-decisions.md`) ⑵ **개정 표시 2건** — 카드 ⑨ 가 개정하는 `PLAN-SoT` 앵커 `〈282〉-㉮`(승인 칸 글자 문안만 · 취소선·회색·열 제목 유지) · 카드 ⑩ 이 개정하는 `dev-package/prd/PRD-260905-적용전기획.md` 앵커 `미결-2 ⓐ`(기본 선택값만 · 「막지 않고 경고만」 유지) ＋ 반전 기재 자리 `PLAN-SoT §9 〈194〉`. 집행 방식 = 원문 유지 ＋ `⭑ ⟨개정 2026-09-13 · 〈N〉⟩` ／ 종전 표기 병기.
 - 대장 `dev-package/work-items.yaml` = 이 회차 6항목을 `done` 으로 갱신(등재는 계획 확정 시점에 `open` 으로 선행) · **상태 변경은 대장을 먼저** 고치고 산문을 반영본으로 갱신.
