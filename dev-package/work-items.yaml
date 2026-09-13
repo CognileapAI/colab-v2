@@ -1666,6 +1666,16 @@ items:
     evidence: "⭑ **⟨집행·닫힘 2026-09-03 · `PLAN-SoT §9 〈288〉` · 워크트리 `lane-loop-a`⟩ 완료 정의 ⓐ~ⓔ 전건 충족.** **계약 개정 0건 · 마이그레이션 0건 · 중계(`relay.py`) 무접촉** — 바뀐 것은 프런트 두 파일(`frontend/src/components/lineage/LineageStep.tsx` · `lineage.css`)과 시험 하나(`frontend/test/upload.test.tsx`)다. **ⓐ** 마운트 시 자동 조회(`useEffect(…, [uploadId, source])`)를 걷고 `askSuggestions` 콜백으로 옮겼다 — 부르는 자리는 `data-testid=\"lin-ask\"` 버튼 하나다. **ⓑ** `asked` 상태로 순서를 가른다 — 누르기 전에는 직접 연결(`lin-add`)이 AI 버튼 **위**에 서고 결과 영역은 렌더되지 않는다(`resp` 가 `null` 이라 `lin-scope`·`lin-empty` 자체가 없다). 누른 뒤에는 결과 아래로 내려간다. **ⓒ** 「제안 0건」과 「못 받았다」가 갈린다 — 성공 응답은 `lin-empty[data-kind]` 세 값(`nothing-to-search`·`searched-none`·`not-asked`), 실패는 `lin-unavailable`. 두 자리가 동시에 서지 않음을 시험이 단언한다. **ⓓ** 「정직한 빈 상태」·「AI 없이도 등록이 끝까지 간다」 유지 — 누르지 않고 직접 추가만으로 등록이 완주하고 그때 조회 호출 **0건**임을 시험이 단언한다. **ⓔ** 호출 횟수 = **누른 횟수** — 마운트 직후 0 · 1회 누른 뒤 1 · 2회 누른 뒤 2. **시험 = `frontend/test/upload.test.tsx` 에 `LV-2` describe 6건 신설 ＋ 기존 계보 시험 21건을 버튼 경로로 재배선**(자동 조회를 전제하던 자리라 재배선 없이는 실물과 어긋난다). **TDD 순서 실측** — 구현 전 `24 failed / 64 passed`, 구현 후 `88 passed / 0 failed`. **재측정(2026-09-03 · `-j 1`)** — 게이트 39종 green 39 / red 0 · 시험 core-api 538 · frontend 444 · viz-render 232 · pipeline-worker 238 · ai-service 145. ⚠ **버튼을 눌러 실제 제안이 오는 것은 `K3`(stage 3) 이후다** — 완료 정의에 없고 이 항목이 `K3` 순서를 당기지 않는다(`〈197〉`-㉳). ⚠ **배포 필요** — 프런트 변경이라 staging 에 반영되려면 배포 1회가 든다(이 회차 범위 밖)."
     deadline: null
     note: >-
+      ⭑ **⟨개정 2026-09-14 · 기획자 9/13 피드백 「반쪽 AI 제거」 · Ted 재판정 대기 · 판정문 ㉮⟩
+      이 항목이 만든 버튼을 프런트에서 걷는 작업이 레인 C1 로 구현됐다 — `status` 는 `done`
+      그대로다.** 판정이 서기 전에는 `main` 에 오르지 않으므로 **완료 판정을 무르지 않는다**
+      (`.claude/rules/colab-rules.md §8` 판정 재개봉 금지). 구현 자리 =
+      `frontend/src/components/lineage/LineageStep.tsx`(`lin-ask` 버튼·`askSuggestions`·
+      제안 상태 넷 제거) · `lineage.css`(`.lin-ask`) · `frontend/test/upload.test.tsx` ·
+      `frontend/test/lv-display-unify-20260908.test.tsx`. ⚠ **계약·서비스 무접촉** —
+      `listUploadLineageSuggestions` 와 `LineageSource.suggestions` 중계는 그대로이고
+      **부르는 자리만 0건**이다. ⛔ **Ted 가 기각하면 이 커밋 하나를 되돌리면 된다** —
+      완료 정의 ⓐ~ⓔ 의 근거(`evidence`)는 아래에 그대로 둔다.
       ⭑ **⟨개정 2026-08-29 · Ted 판정 `PLAN-SoT §9 〈203〉`⟩ stage 를 `stage1` 로 확정했다 —
       「자동 호출 제거」와 「버튼 신설」은 **한 작업**이다(가르지 않는다).**
       stage 판정 근거 셋 — ⑴ 걷어낼 자동 호출이 **stage 1 에서 이미 배포된 화면 안에** 있다

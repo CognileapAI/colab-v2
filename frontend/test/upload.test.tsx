@@ -1878,16 +1878,14 @@ async function openLineage(sources: UploadSources, perm?: Perm) {
 }
 
 /**
- * `LV-2` — **AI 제안은 사용자가 눌러야 온다.** 마운트만으로는 조회가 0건이다
- * (`PLAN-SoT §9 〈197〉`-㉯ · 완료 정의 ⓐ). 누른 뒤의 화면을 보는 시험은 이 문을 거친다.
+ * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 「반쪽 AI 제거」 · Ted 재판정 대기 · 판정문 ㉮⟩
+ *   카드를 세우는 길은 **후보 모달에서 직접 고르는 것 하나**다.**
+ * ／ 종전 ~~`askAi()`(`lin-ask` 클릭) ＋ `openLineageWithAi()` — 제안이 카드를 세웠다~~.
  */
-async function askAi() {
-  await click(screen.getByTestId('lin-ask'));
-}
-
-async function openLineageWithAi(sources: UploadSources, perm?: Perm) {
-  await openLineage(sources, perm);
-  await askAi();
+async function addParentByPicker(datasetId: string) {
+  await click(await screen.findByTestId('lin-add'));
+  await click(await screen.findByTestId(`lin-pick-${datasetId}`));
+  await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
 }
 
 /** 마지막 `createDataset` 요청에 실린 계보 관계들. */
@@ -1896,167 +1894,30 @@ function sentParents(calls: { registered: Record<string, unknown>[] }) {
   return (last.lineageParents ?? []) as Record<string, unknown>[];
 }
 
-describe('③ 계보 확정 — 뒤진 범위를 먼저 밝힌다', () => {
-  it('제안보다 **앞에** 뒤진 범위(연구실·개수)가 선다', async () => {
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
-    const scope = await screen.findByTestId('lin-scope');
-    expect(scope).toHaveTextContent('수자원순환연구실');
-    expect(scope).toHaveTextContent('12');
-    const cards = screen.getByTestId('lin-cards');
-    expect(
-      scope.compareDocumentPosition(cards) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it('이름 초안과 주제를 해석 단서로 넘긴다 — 주제를 안 골랐으면 안 넘긴다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
-    const q = calls.suggestionsQuery[0]!;
-    expect(q.uploadId).toBe(UPLOAD_ID);
-    expect(q.datasetNameDraft).toBe('nakdong_ndvi_250m');
-    expect(q.subject).toBeUndefined();
-  });
-});
-
-describe('③ 계보 확정 — 정직한 빈 상태 (AI 없이도 완결된다)', () => {
-  it('제안 0건이면 억지 카드를 만들지 않고 빈 상태를 말한다', async () => {
-    const { sources } = fakes();
-    await openLineageWithAi(sources);
-    expect(await screen.findByTestId('lin-empty')).toBeInTheDocument();
-    expect(screen.queryByTestId('lin-card')).toBeNull();
-    // 빈 상태여도 범위는 그대로 밝힌다 — 「무엇을 근거로 못 찾았는가」가 빈 상태의 내용이다.
-    expect(screen.getByTestId('lin-scope')).toHaveTextContent('수자원순환연구실');
-  });
-
-  // ── **0건의 뜻 셋을 가른다** (`PLAN-SoT §9 〈211〉`-㉮-⑵) ────────────────────
-  // 제안 기능은 데이터가 없으면 무엇이든 0건이라, **음성 판정이 공짜로 통과한다.**
-  // 그래서 「제안이 가능했는데 안 했다」와 「애초에 가능하지 않았다」를 화면에서 가른다.
-  it('㈏ 뒤질 대상이 있었고 서비스가 답했는데 0건 — **가능했으나 제안하지 않았다**', async () => {
-    const { sources } = fakes({
-      suggestions: {
-        degraded: false,
-        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 12 },
-        suggestions: [],
-      },
-    });
-    await openLineageWithAi(sources);
-    const empty = await screen.findByTestId('lin-empty');
-    expect(empty).toHaveAttribute('data-kind', 'searched-none');
-    expect(empty).toHaveTextContent('12건을 살펴봤지만');
-    expect(empty).toHaveTextContent('찾지 못했어요');
-    // 「살펴볼 것이 없었다」로 말하면 거짓이다 — 살펴볼 것은 12건 있었다.
-    expect(empty).not.toHaveTextContent('살펴볼 것이 없었어요');
-    expect(screen.queryByTestId('lin-degraded')).toBeNull();
-  });
-
-  it('㈎ 뒤질 대상이 0건 — **제안이 가능했던 적이 없다**. 「찾지 못했다」로 말하지 않는다', async () => {
-    const { sources } = fakes({
-      suggestions: {
-        degraded: false,
-        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 0 },
-        suggestions: [],
-      },
-    });
-    await openLineageWithAi(sources);
-    const empty = await screen.findByTestId('lin-empty');
-    expect(empty).toHaveAttribute('data-kind', 'nothing-to-search');
-    expect(empty).toHaveTextContent('살펴볼 것이 없었어요');
-    expect(empty).not.toHaveTextContent('찾지 못했어요');
-    // 범위 줄도 「0건을 살펴봤다」로 거짓말하지 않는다.
-    expect(screen.getByTestId('lin-scope')).toHaveTextContent('살펴볼 데이터가 없어요');
-  });
-
-  it('㈐ 물어보지 못했다 — 「없다」가 아니라 **모른다**로 적는다', async () => {
-    const { sources } = fakes({
-      suggestions: {
-        degraded: true,
-        degradedReason: '계보 제안 서비스에 닿지 못했다',
-        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 12 },
-        suggestions: [],
-      },
-    });
-    await openLineageWithAi(sources);
-    const empty = await screen.findByTestId('lin-empty');
-    expect(empty).toHaveAttribute('data-kind', 'not-asked');
-    expect(empty).toHaveTextContent('확인하지 못했어요');
-    expect(empty).not.toHaveTextContent('찾지 못했어요');
-  });
-
-  it('제안 0건이어도 등록이 끝까지 간다 — `기록 없음` 으로 등록된다', async () => {
+// ⭑ **⟨개정 2026-09-14 · 기획자 9/13 · 판정 대기⟩ 카드를 세우는 길이 직접 연결 하나다.**
+// ／ 종전 ~~제안이 카드를 세우고 그 위에서 확인·수정·거절을 쟀다~~ — 확인·수정·거절 **셋은
+//   그대로 남고**, 카드의 **출처만** 사람으로 바뀌었다.
+describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
+  it('확인한 것만 등록 요청에 실린다 — 경로는 `manual` 하나다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
-    await click(screen.getByTestId('reg-done'));
-    expect(calls.register).toBe(1);
-    expect(sentParents(calls)).toHaveLength(0);
-  });
-
-  it('제안 조회가 실패해도 등록을 막지 않는다 — 못 그리는 것과 못 등록하는 것은 다르다', async () => {
-    const { sources, calls } = fakes({ suggestionsThrows: new Error('down') });
-    await openLineageWithAi(sources);
-    expect(await screen.findByTestId('lin-unavailable')).toBeInTheDocument();
-    await click(screen.getByTestId('reg-done'));
-    expect(calls.register).toBe(1);
-  });
-
-  it('`degraded` 면 그 사실을 알리고 등록 경로는 그대로 둔다', async () => {
-    const { sources } = fakes({
-      suggestions: { degraded: true, degradedReason: 'ai timeout', suggestions: [] },
-    });
-    await openLineageWithAi(sources);
-    expect(await screen.findByTestId('lin-degraded')).toBeInTheDocument();
-    // core 가 정할 문구를 화면이 그대로 옮기지 않는다 (`core-ai.yaml Degradable`).
-    expect(screen.getByTestId('lin-step').textContent).not.toContain('ai timeout');
-    expect(screen.getByTestId('lin-add')).toBeEnabled();
-  });
-
-  it('`rawDataLikely` 면 원천 표기만 적고 등록하도록 안내한다', async () => {
-    const { sources } = fakes({ suggestions: { rawDataLikely: true, suggestions: [] } });
-    await openLineageWithAi(sources);
-    expect(await screen.findByTestId('lin-raw')).toBeInTheDocument();
-  });
-});
-
-describe('③ 계보 확정 — AI 응답 규격 (`CLAUDE.md §3`)', () => {
-  it('**[모두 승인] 이 없다** — 확인은 항목마다 받는다', async () => {
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
-    await screen.findByTestId('lin-cards');
-    expect(screen.queryByText(/모두 승인|전체 승인|일괄/)).toBeNull();
-    expect(screen.getAllByTestId('lin-confirm')).toHaveLength(3);
-  });
-
-  it('확신도는 3값 enum 이고 **퍼센트·점수가 없다**. 근거는 한 줄로 반드시 붙는다', async () => {
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
-    const chips = await screen.findAllByTestId('lin-confidence');
-    expect(chips.map((c) => c.textContent)).toEqual(['확실', '애매', '모름']);
-    expect(screen.getByTestId('lin-step').textContent).not.toMatch(/\d+\s*%/);
-    const reasons = screen.getAllByTestId('lin-rationale');
-    expect(reasons).toHaveLength(3);
-    for (const r of reasons) {
-      expect(r.textContent?.trim().length).toBeGreaterThan(0);
-      expect(r.textContent).not.toContain('\n');
-    }
-  });
-});
-
-describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
-  it('확인한 것만 등록 요청에 실리고, 경로는 `ai` 이다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+    await addParentByPicker(NDVI_ID);
+    await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
+    expect(cards).toHaveLength(2);
     await click(within(cards[0]!).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents).toHaveLength(1);
     expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
-    expect(parents[0]!.origin).toBe('ai');
+    expect(parents[0]!.origin).toBe('manual');
   });
 
   it('거절한 것은 카드에서 빠지고 아무것도 실리지 않는다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await addParentByPicker(NDVI_ID);
+    await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
     await click(within(cards[0]!).getByTestId('lin-reject'));
     expect(screen.queryAllByTestId('lin-card')).toHaveLength(1);
@@ -2064,18 +1925,18 @@ describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
     expect(sentParents(calls)).toHaveLength(0);
   });
 
-  it('**수정하면 AI 행동이 아니다** — 확신도 칩이 걷히고 경로가 `직접` 이 되며 확인을 다시 받는다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+  it('**수정하면 대상이 바뀌고 확인이 풀린다** — 다시 확인해야 실린다', async () => {
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await addParentByPicker(NDVI_ID);
+    await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
     const card = cards[0]!;
-    expect(within(card).getByTestId('lin-confidence')).toBeInTheDocument();
     await click(within(card).getByTestId('lin-confirm'));
     await click(within(card).getByTestId('lin-edit'));
-    // 고른 대상을 바꾼다 — 그 순간 이 관계는 사람이 만든 것이다.
+    // 고른 대상을 바꾼다 — 확인은 그 순간 무효가 된다.
     await click(await within(card).findByTestId(`lin-pick-${DEM_ID}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    expect(within(card).queryByTestId('lin-confidence')).toBeNull();
     // **확인이 풀렸다** — 확정 건수가 1 에서 0 으로 돌아간다. 다시 확인해야 실린다.
     await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
     expect(within(card).queryByText('확인함')).toBeNull();
@@ -2090,14 +1951,20 @@ describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
 });
 
 describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 방식', () => {
-  it('부모 역할은 `주입력`·`보조입력` 둘뿐이고 제안값이 기본으로 선다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+  it('부모 역할은 `주입력`·`보조입력` 둘뿐이고 기본값이 `주입력` 이다', async () => {
+    // ⭑ ⟨개정 2026-09-14⟩ ／ 종전 ~~「제안값이 기본으로 선다」(둘째 카드 `보조입력`)~~ —
+    //   역할을 실어 오던 것은 제안뿐이다. **사람이 세운 카드는 `주입력` 에서 시작하고
+    //   셀렉트로 바꾼다** — 두 값이 요청에 그대로 실리는지가 이 시험의 판정이다.
+    const { sources, calls } = fakes();
+    await openLineage(sources);
+    await addParentByPicker(NDVI_ID);
+    await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
     const roles = within(cards[0]!).getByTestId('lin-role') as HTMLSelectElement;
     expect([...roles.options].map((o) => o.value)).toEqual(['주입력', '보조입력']);
     expect(roles.value).toBe('주입력');
-    expect((within(cards[1]!).getByTestId('lin-role') as HTMLSelectElement).value).toBe('보조입력');
+    expect((within(cards[1]!).getByTestId('lin-role') as HTMLSelectElement).value).toBe('주입력');
+    await change(within(cards[1]!).getByTestId('lin-role'), '보조입력');
 
     await click(within(cards[0]!).getByTestId('lin-confirm'));
     await click(within(cards[1]!).getByTestId('lin-confirm'));
@@ -2117,8 +1984,8 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     //   `lin-lv-scope` 로 옮겼다.** 종전 문단은 자동 보정 안내라 이번 반전이 걷었고
     //   (`LineageStep.tsx` 의 철거 주석), 그 자리를 PRD-07 축자 안내가 잇는다.
     //   **재는 사실은 그대로다** — 안내가 화면에 없는 컨트롤을 설명하지 않는가.
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+    const { sources } = fakes();
+    await openLineage(sources);
     // ⭑ ⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ⟩ 가공 단계가 계산값을 따라가는 동안에는 상한이 없어 이 안내 줄이
     //   서지 않는다 — 안내 문면을 재려면 먼저 사람이 가공 단계를 고른다.
     await click(stepBtn('①'));
@@ -2140,8 +2007,8 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     // ⭑ **⟨개정 2026-09-07 · `WU-B5` · `〈194〉` 반전⟩ 두 문면이 **둘 다** 없어졌다.**
     //   앞의 것은 `〈296〉`-㉲ 가, 뒤의 것은 이번 반전이 걷었다(사람이 고르는 값이 됐다).
     //   **재는 사실은 그대로다** — 없는 컨트롤을 설명하는 문장이 화면에 0건인가.
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+    const { sources } = fakes();
+    await openLineage(sources);
     const step = await screen.findByTestId('lin-step');
     expect(screen.queryByTestId('lin-lv-note')).toBeNull();
     for (const gone of ['자동으로 정해져요', '바꾼 값', '그대로 남아요', '바꿀 수 있고',
@@ -2150,14 +2017,11 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     }
   });
 
-  it('제안이 0건이어도 **직접 추가**로 계보를 세운다 — 경로는 `manual`', async () => {
+  it('**직접 추가**로 계보를 세운다 — 경로는 `manual`', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
-    await click(await screen.findByTestId('lin-add'));
-    await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
+    await addParentByPicker(NDVI_ID);
     const card = await screen.findByTestId('lin-card');
-    expect(within(card).queryByTestId('lin-confidence')).toBeNull();
     await click(within(card).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
@@ -2166,30 +2030,15 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
   });
 
-  it('가공 방식은 **관계에 붙는다** — 확인하면 그 부모의 `confirmedMethodText` 로 실린다', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
-    const cards = await screen.findAllByTestId('lin-card');
-    await click(within(cards[0]!).getByTestId('lin-confirm'));
-    const method = screen.getByTestId('lin-method-card');
-    expect(within(method).getByTestId('lin-method-parent')).toHaveTextContent(
-      'KWRA NDVI 2 km 일별',
-    );
-    await click(within(method).getByTestId('lin-confirm'));
-    await click(screen.getByTestId('reg-done'));
-    const parents = sentParents(calls);
-    expect(parents).toHaveLength(1);
-    expect(parents[0]!.confirmedMethodText).toBe('Co-Kriging 으로 250 m 다운스케일');
-    // `method` 와 `confirmedMethodText` 가 둘 다 오면 400 이다 — 한 자리로 접힌다.
-    expect(parents[0]!.method ?? null).toBeNull();
-  });
-
-  it('직접 적은 가공 방식은 `method` 로 실린다 — 제안 확인 자리와 섞이지 않는다', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 · 판정 대기⟩ 가공 방식은 `method` 한 자리다.**
+  // ／ 종전 ~~「가공 방식은 관계에 붙는다 — 확인하면 그 부모의 `confirmedMethodText` 로
+  //   실린다」(제안 카드 `lin-method-card` 를 확인하는 시험)~~ — `confirmedMethodText` 를
+  //   채우던 것은 가공 방식 **제안**뿐이고 그것이 사라졌다. ⛔ **계약은 그대로다** —
+  //   `UploadLineageParent.confirmedMethodText` 는 남아 있고 **화면이 싣지 않을 뿐**이다.
+  it('가공 방식은 `method` 로 실린다 — `confirmedMethodText` 는 싣지 않는다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
-    await click(await screen.findByTestId('lin-add'));
-    await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
+    await addParentByPicker(NDVI_ID);
     const card = await screen.findByTestId('lin-card');
     await change(within(card).getByTestId('lin-method'), 'IDW 로 250 m 다운스케일');
     await click(within(card).getByTestId('lin-confirm'));
@@ -2200,8 +2049,10 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
   });
 
   it('확정 건수가 ③ 표시기로 간다 — 0건이면 건수를 붙이지 않는다', async () => {
-    const { sources } = fakes({ suggestions: kwraSuggestions() });
-    await openLineageWithAi(sources);
+    const { sources } = fakes();
+    await openLineage(sources);
+    await addParentByPicker(NDVI_ID);
+    await addParentByPicker(DEM_ID);
     await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
     const cards = screen.getAllByTestId('lin-card');
     await click(within(cards[0]!).getByTestId('lin-confirm'));
@@ -2209,67 +2060,39 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
-// `LV-2` — **AI 계보 추천을 버튼으로 되살린다** (`PLAN-SoT §9 〈197〉`·`〈203〉` · 완료 정의 ⓐ~ⓔ).
-//
-// 종전 화면은 ③ 에 들어서기만 하면 업로드 1건당 1회 **자동으로** 제안을 불렀다.
-// 사용자가 시작하지 않은 조회라 「고장」과 「원래 0건」이 같은 무게로 지나갔다(`〈197〉`-㉰).
-// 여기서 못 박는 것 — **부르는 주체가 사용자이고, 호출 횟수는 누른 횟수와 같다.**
-describe('③ 계보 확정 — AI 제안은 사용자가 눌러 받는 보조다 (`LV-2`)', () => {
-  it('ⓐ 마운트만으로는 조회하지 않는다 — 자동 호출 0건', async () => {
-    const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
-    await openLineage(sources);
-    expect(calls.suggestions).toBe(0);
-    expect(screen.queryByTestId('lin-scope')).toBeNull();
-    expect(screen.queryByTestId('lin-card')).toBeNull();
-    // 빈 상태 문구도 아직 나오지 않는다 — 묻지 않았으므로 「없다」고 말할 자격이 없다.
-    expect(screen.queryByTestId('lin-empty')).toBeNull();
-    expect(screen.getByTestId('lin-ask')).toBeEnabled();
-  });
 
-  it('ⓑ 누르기 전에는 **직접 연결이 기본 자리**다 — AI 영역이 화면을 선점하지 않는다', async () => {
+// ───────────────────────────────────────────────────────────────────────────
+// ⭑ **⟨개정 2026-09-14 · 기획자 9/13 피드백 「반쪽 AI 제거」 · Ted 재판정 대기 · 판정문 ㉮⟩
+//   ③ 에 AI 제안 버튼과 그 호출 경로가 **없다**.**
+// ／ 종전 ~~`LV-2` — 「AI 계보 추천을 **버튼으로** 되살린다」(`PLAN-SoT §9 〈197〉`·`〈203〉` ·
+//   완료 정의 ⓐ~ⓔ)~~ — 그 회차는 **자동 조회**를 버튼으로 바꿨고, 이번 개정은 그 버튼까지 걷는다.
+//
+// 재는 것 — 계보 중계 스텁이 제안을 **풍성하게** 내주는데도 화면이 그것을 **한 번도 부르지 않고**,
+// 제안 산출물(범위 줄 · 빈 상태 · 확신도 칩 · 가공 방식 카드 · 실패 안내)이 화면에 0건이며,
+// **등록은 끝까지 간다.**
+// ⛔ 스텁을 0건으로 두고 통과시키지 않는다 — 그것은 빈 집합 위의 통과다.
+describe('③ 계보 확정 — AI 제안 버튼과 호출 경로가 없다 (기획자 9/13 · 판정 대기)', () => {
+  it('제안 버튼과 안내문이 화면에 없다', async () => {
     const { sources } = fakes({ suggestions: kwraSuggestions() });
     await openLineage(sources);
-    const add = screen.getByTestId('lin-add');
-    const ask = screen.getByTestId('lin-ask');
-    expect(add.compareDocumentPosition(ask) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId('lin-ask')).toBeNull();
+    expect(screen.queryByTestId('lin-ask-note')).toBeNull();
+    expect(screen.getByTestId('lin-step').textContent).not.toContain('AI 제안');
   });
 
-  it('ⓔ 호출 횟수가 **누른 횟수**와 같다 — 업로드 1건당 1회가 아니다', async () => {
+  it('스텁이 제안 3건을 내주어도 조회 0건이고 제안 산출물이 화면에 없다', async () => {
     const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
     await openLineage(sources);
+    const step = screen.getByTestId('lin-step');
     expect(calls.suggestions).toBe(0);
-    await askAi();
-    await screen.findByTestId('lin-cards');
-    expect(calls.suggestions).toBe(1);
-    await askAi();
-    await waitFor(() => expect(calls.suggestions).toBe(2));
+    expect(calls.suggestionsQuery).toHaveLength(0);
+    for (const gone of ['lin-scope', 'lin-empty', 'lin-confidence', 'lin-rationale',
+                        'lin-method-card', 'lin-unavailable', 'lin-degraded', 'lin-raw']) {
+      expect(within(step).queryByTestId(gone)).toBeNull();
+    }
   });
 
-  it('ⓒ 누른 뒤의 **빈 결과가 드러난다** — 「0건」과 「못 받았다」가 갈린다', async () => {
-    const { sources } = fakes({
-      suggestions: {
-        degraded: false,
-        scope: { labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1', labName: '수자원순환연구실', searchedCount: 12 },
-        suggestions: [],
-      },
-    });
-    await openLineage(sources);
-    await askAi();
-    const empty = await screen.findByTestId('lin-empty');
-    expect(empty).toHaveAttribute('data-kind', 'searched-none');
-    expect(screen.queryByTestId('lin-unavailable')).toBeNull();
-  });
-
-  it('ⓒ 조회가 실패하면 **못 받았다**로 드러난다 — 「0건」 문구로 접히지 않는다', async () => {
-    const { sources } = fakes({ suggestionsThrows: new Error('down') });
-    await openLineage(sources);
-    await askAi();
-    expect(await screen.findByTestId('lin-unavailable')).toBeInTheDocument();
-    expect(screen.queryByTestId('lin-empty')).toBeNull();
-  });
-
-  it('ⓓ 누르지 않아도 등록이 끝까지 간다 — AI 없이도 완결된 제품이다', async () => {
+  it('AI 없이 등록이 끝까지 간다 — 사람이 이은 관계만 실린다', async () => {
     const { sources, calls } = fakes({ suggestions: kwraSuggestions() });
     await openLineage(sources);
     await click(await screen.findByTestId('lin-add'));
@@ -2280,6 +2103,7 @@ describe('③ 계보 확정 — AI 제안은 사용자가 눌러 받는 보조�
     await click(screen.getByTestId('reg-done'));
     expect(calls.suggestions).toBe(0);
     expect(calls.register).toBe(1);
+    expect(sentParents(calls)).toHaveLength(1);
     expect(sentParents(calls)[0]!.origin).toBe('manual');
   });
 });

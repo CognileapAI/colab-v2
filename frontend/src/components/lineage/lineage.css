@@ -123,19 +123,9 @@ section.lin {
   align-items: flex-start;
 }
 
-/* `LV-2` — AI 제안을 부르는 자리. 직접 연결과 같은 무게로 세우고,
-   부르기 전에는 이 블록이 직접 연결 **아래**에 온다 (`LineageStep.tsx` 완료 정의 ⓑ). */
-.lin-ask {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  margin-top: 12px;
-}
-
-.lin-ask .muted {
-  margin: 0;
-}
+/* ⭑ ⟨개정 2026-09-14 · 기획자 9/13 「반쪽 AI 제거」 · Ted 재판정 대기 · 판정문 ㉮⟩
+   ／ 종전 ~~`.lin-ask` · `.lin-ask .muted` — `LV-2` 의 「AI 제안을 부르는 자리」~~ —
+   그 블록을 걷었다. 버튼이 `LineageStep.tsx` 에서 사라져 **거는 대상이 0건**이다. */
 
 /* ═══ WU-B5 · Lv 연결 규칙 (PRD-07·08·09·10) ═══════════════════════════════
    ⭑ **대비는 계측값이다** (PRD-08 수용 기준 「4.5:1 이상」 · rev1 디자인 검수 `R-21`).
