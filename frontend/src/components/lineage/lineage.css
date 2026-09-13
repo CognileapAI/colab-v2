@@ -66,9 +66,33 @@ section.lin {
   background: var(--color-surface-alt);
 }
 
-.lin-ok {
-  font-size: 13px;
-  color: var(--color-success-600);
+/* ⭑ ⟨개정 2026-09-14 · 기획서 rev2 목업 `.li-act`⟩
+   ／ 종전 ~~`.lin-ok` — `확인함` 표시~~ — `확인` 버튼이 사라져 거는 대상이 0건이다. */
+
+/* 카드 머리 — 목업 `.li-kind`·`.manflag`. 이름 앞뒤로 「무엇인지」와 「누가 이었는지」 */
+.lin-kind {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.lin-manual {
+  margin-left: auto;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* 카드 한 줄 요약 — 목업 `.li-sub`(분류 · 기간) */
+.lin-card-info {
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 /* 근거 — **한 줄**이다 */
@@ -97,9 +121,11 @@ section.lin {
   font-size: 13px;
 }
 
+/* 목업 `.li-act .li-del{margin-left:auto}` — 지우기는 오른쪽 끝이다 */
 .lin-a {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .lin-picker {
@@ -306,7 +332,8 @@ section.lin {
 .lin-cand-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .lin-cand .lin-name { font-weight: 600; overflow-wrap: anywhere; }
 
-/* 하단 고정 영역 — 고른 후보 요약 · 가공 방식 · 취소／연결이 한 묶음으로 바닥에 남는다 */
+/* 하단 고정 영역 — 고른 후보 요약 ＋ 취소／연결이 한 묶음으로 바닥에 남는다.
+   ⭑ ⟨개정 2026-09-14⟩ ／ 종전 ~~요약 · 가공 방식 · 취소／연결~~ — 가공 방식은 카드로 옮겼다. */
 .lin-find-f { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
 .lin-find-sum {
   margin: 0;
@@ -315,8 +342,6 @@ section.lin {
   color: var(--color-text);
   overflow-wrap: anywhere;
 }
-.lin-find-method { display: grid; gap: 6px; font-size: var(--text-caption); }
-.lin-find-method .inp { width: 100%; box-sizing: border-box; }
 .lin-find-btns { display: flex; justify-content: flex-end; gap: 8px; }
 
 .lin-relation-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }

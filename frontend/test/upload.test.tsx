@@ -1866,8 +1866,8 @@ describe('§D.7 ① 전송 진행률', () => {
 // ───────────────────────────────────────────────────────────────────────────
 // ③ 계보 확정 (`P2-EXEC §4` `P2-fe-lineage` · `CLAUDE.md §3` AI 응답 규격)
 //
-// 이 화면은 **아무것도 저장하지 않는다.** 확인·수정·거절은 클라이언트 상태이고,
-// 사람이 확인한 것만 `createDataset` 의 `lineageParents` 에 실린다.
+// 이 화면은 **아무것도 저장하지 않는다.** 연결·지우기는 클라이언트 상태이고,
+// 사람이 고른 것만 `createDataset` 의 `lineageParents` 에 실린다.
 
 async function openLineage(sources: UploadSources, perm?: Perm) {
   await openModal(sources, perm);
@@ -1894,59 +1894,45 @@ function sentParents(calls: { registered: Record<string, unknown>[] }) {
   return (last.lineageParents ?? []) as Record<string, unknown>[];
 }
 
-// ⭑ **⟨개정 2026-09-14 · 기획자 9/13 · 판정 대기⟩ 카드를 세우는 길이 직접 연결 하나다.**
-// ／ 종전 ~~제안이 카드를 세우고 그 위에서 확인·수정·거절을 쟀다~~ — 확인·수정·거절 **셋은
-//   그대로 남고**, 카드의 **출처만** 사람으로 바뀌었다.
-describe('③ 계보 확정 — 확인 / 수정 / 거절', () => {
-  it('확인한 것만 등록 요청에 실린다 — 경로는 `manual` 하나다', async () => {
+// ⭑ **⟨개정 2026-09-14 · 기획서 rev2 목업 `.lin-item`⟩ 카드의 버튼은 `지우기` 하나다.**
+// ／ 종전 ~~확인 / 수정 / 거절 셋 ＋ `확인함` 표시~~ — 목업 `.li-act` 는 가공 방식 칸과
+//   `지우기` 만 들고 있다. **연결이 곧 확정**이라 확인 단계가 따로 없고, 대상을 바꾸는 길은
+//   지우고 다시 고르는 것이다.
+describe('③ 계보 확정 — 연결과 지우기', () => {
+  it('연결한 것이 그대로 등록 요청에 실린다 — 경로는 `manual` 하나다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
     await addParentByPicker(NDVI_ID);
     await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
     expect(cards).toHaveLength(2);
-    await click(within(cards[0]!).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
-    expect(parents).toHaveLength(1);
-    expect(parents[0]!.parentDatasetId).toBe(NDVI_ID);
-    expect(parents[0]!.origin).toBe('manual');
+    expect(parents).toHaveLength(2);
+    expect(parents.map((p) => p.parentDatasetId)).toEqual([NDVI_ID, DEM_ID]);
+    expect(parents.map((p) => p.origin)).toEqual(['manual', 'manual']);
   });
 
-  it('거절한 것은 카드에서 빠지고 아무것도 실리지 않는다', async () => {
+  it('지운 것은 카드에서 빠지고 아무것도 실리지 않는다', async () => {
     const { sources, calls } = fakes();
     await openLineage(sources);
     await addParentByPicker(NDVI_ID);
-    await addParentByPicker(DEM_ID);
     const cards = await screen.findAllByTestId('lin-card');
-    await click(within(cards[0]!).getByTestId('lin-reject'));
-    expect(screen.queryAllByTestId('lin-card')).toHaveLength(1);
+    expect(cards).toHaveLength(1);
+    await click(within(cards[0]!).getByTestId('lin-del'));
+    expect(screen.queryAllByTestId('lin-card')).toHaveLength(0);
     await click(screen.getByTestId('reg-done'));
     expect(sentParents(calls)).toHaveLength(0);
   });
 
-  it('**수정하면 대상이 바뀌고 확인이 풀린다** — 다시 확인해야 실린다', async () => {
-    const { sources, calls } = fakes();
+  it('확인·수정·거절 버튼이 카드에 없다', async () => {
+    const { sources } = fakes();
     await openLineage(sources);
     await addParentByPicker(NDVI_ID);
-    await addParentByPicker(DEM_ID);
-    const cards = await screen.findAllByTestId('lin-card');
-    const card = cards[0]!;
-    await click(within(card).getByTestId('lin-confirm'));
-    await click(within(card).getByTestId('lin-edit'));
-    // 고른 대상을 바꾼다 — 확인은 그 순간 무효가 된다.
-    await click(await within(card).findByTestId(`lin-pick-${DEM_ID}`));
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    // **확인이 풀렸다** — 확정 건수가 1 에서 0 으로 돌아간다. 다시 확인해야 실린다.
-    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
-    expect(within(card).queryByText('확인함')).toBeNull();
-
-    await click(within(card).getByTestId('lin-confirm'));
-    await click(screen.getByTestId('reg-done'));
-    const parents = sentParents(calls);
-    expect(parents).toHaveLength(1);
-    expect(parents[0]!.parentDatasetId).toBe(DEM_ID);
-    expect(parents[0]!.origin).toBe('manual');
+    const card = await screen.findByTestId('lin-card');
+    for (const gone of ['lin-confirm', 'lin-edit', 'lin-reject']) {
+      expect(within(card).queryByTestId(gone)).toBeNull();
+    }
   });
 });
 
@@ -1966,8 +1952,6 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     expect((within(cards[1]!).getByTestId('lin-role') as HTMLSelectElement).value).toBe('주입력');
     await change(within(cards[1]!).getByTestId('lin-role'), '보조입력');
 
-    await click(within(cards[0]!).getByTestId('lin-confirm'));
-    await click(within(cards[1]!).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents).toHaveLength(2);
@@ -2021,8 +2005,7 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     const { sources, calls } = fakes();
     await openLineage(sources);
     await addParentByPicker(NDVI_ID);
-    const card = await screen.findByTestId('lin-card');
-    await click(within(card).getByTestId('lin-confirm'));
+    await screen.findByTestId('lin-card');
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents).toHaveLength(1);
@@ -2041,22 +2024,22 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     await addParentByPicker(NDVI_ID);
     const card = await screen.findByTestId('lin-card');
     await change(within(card).getByTestId('lin-method'), 'IDW 로 250 m 다운스케일');
-    await click(within(card).getByTestId('lin-confirm'));
     await click(screen.getByTestId('reg-done'));
     const parents = sentParents(calls);
     expect(parents[0]!.method).toBe('IDW 로 250 m 다운스케일');
     expect(parents[0]!.confirmedMethodText ?? null).toBeNull();
   });
 
-  it('확정 건수가 ③ 표시기로 간다 — 0건이면 건수를 붙이지 않는다', async () => {
+  // ⭑ ⟨개정 2026-09-14⟩ 연결이 곧 확정이라 건수는 연결 건수와 같다.
+  // ／ 종전 ~~`0 / 2` 에서 `확인` 을 눌러 `1 / 2` 로 올라가는 것을 쟀다~~.
+  it('연결 건수가 ③ 표시기로 간다 — 0건이면 건수를 붙이지 않는다', async () => {
     const { sources } = fakes();
     await openLineage(sources);
+    expect(stepBtn('③')).not.toHaveTextContent('/');
     await addParentByPicker(NDVI_ID);
+    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('1 / 1'));
     await addParentByPicker(DEM_ID);
-    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('0 / 2'));
-    const cards = screen.getAllByTestId('lin-card');
-    await click(within(cards[0]!).getByTestId('lin-confirm'));
-    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('1 / 2'));
+    await waitFor(() => expect(stepBtn('③')).toHaveTextContent('2 / 2'));
   });
 });
 
@@ -2098,8 +2081,7 @@ describe('③ 계보 확정 — AI 제안 버튼과 호출 경로가 없다 (기
     await click(await screen.findByTestId('lin-add'));
     await click(await screen.findByTestId(`lin-pick-${NDVI_ID}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    const card = await screen.findByTestId('lin-card');
-    await click(within(card).getByTestId('lin-confirm'));
+    await screen.findByTestId('lin-card');
     await click(screen.getByTestId('reg-done'));
     expect(calls.suggestions).toBe(0);
     expect(calls.register).toBe(1);

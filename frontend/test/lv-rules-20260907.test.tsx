@@ -183,11 +183,11 @@ const themeTokens = (dark: boolean) => {
 
 // ═══ ㈎ 자기 Lv=Lv0 — 안내 범위가 `Lv0` 하나다 ═══
 describe('PRD-07 연결 단계 안내', () => {
-  // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 후보 모달의 **가공 단계
-  //   셀렉트를 걷었다**(필터는 검색어 하나). 그래서 「좁힐 수 있다」를 재던 자리가 사라졌다 —
-  //   ⛔ **규칙을 지운 것이 아니다.** 초과 후보는 목록에 그대로 남고 못 고르는 사유가 읽히며,
-  //   그 판정은 아래 ㈏ 와 `parent-picker-20260914` 가 잰다.
-  it('자기 Lv=Lv0 이면 안내가 `Lv0` 하나이고 후보 목록에 가공 단계 필터가 없다', async () => {
+  // ⭑ ⟨개정 2026-09-14 · 기획서 rev2 `#findModal` 목업 `buildFindLv()`⟩ 가공 단계 셀렉트가
+  //   **되돌아왔고** 항목은 자기 Lv 이하만이다. ／ 종전 ~~「필터는 검색어 하나」로 셀렉트가
+  //   없다~~ — 목업에 실재하는 칸이고 PRD-08·PRD-41 이 요구한다.
+  //   ⛔ **초과 후보 규칙은 무변이다** — 목록에 그대로 남고 못 고르는 사유가 읽힌다.
+  it('자기 Lv=Lv0 이면 안내와 가공 단계 필터 항목이 둘 다 `Lv0` 하나다', async () => {
     const { sources } = fakes();
     await openLineage(sources, 'Lv0');
     expect(screen.getByTestId('lin-lv-scope').textContent).toContain(
@@ -196,7 +196,9 @@ describe('PRD-07 연결 단계 안내', () => {
 
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
-    expect(screen.queryByTestId('lin-lv-filter')).toBeNull();
+    const lvFilter = screen.getByTestId('lin-lv-filter') as HTMLSelectElement;
+    expect([...lvFilter.options].map((o) => o.value)).toEqual(['', '0']);
+    expect(lvFilter.options[0]!.textContent).toBe('연결 가능 전체 · Lv0');
     // **없는 것과 못 고르는 것은 다르다** — 초과 후보도 줄로 남는다.
     const items = within(screen.getByTestId('lin-picker')).getAllByRole('listitem');
     expect(items.length).toBeGreaterThan(1);
@@ -288,8 +290,8 @@ describe('PRD-10 불일치는 경고만이다', () => {
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV0}`));
+    // ⭑ ⟨개정 2026-09-14 · 목업 `.li-act`⟩ 연결이 곧 확정이다 — `확인` 버튼이 없다.
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
     // ⭑ ⟨정정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉲⟩ 한 줄이 **각 값의 근거**까지 말한다.
     //    ／ 종전 ~~두 값만 말하는 문장~~ — 「경고만」 규칙은 무변이고 문면만 늘었다.
     expect(screen.getByTestId('lin-lv-mismatch').textContent).toBe(
@@ -336,7 +338,6 @@ describe('PRD-09 · 파일 제거는 연결 상태까지 내린다', () => {
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV2}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
     // 자기 Lv 를 내려 사후 충돌을 만든다 — 지우는 것이 아니라 칩이 선다.
     await click(screen.getByRole('button', { name: /^①/ }));
     await change(screen.getByTestId('reg-level'), 'Lv1');
@@ -370,7 +371,7 @@ describe('PRD-14 되묻기 — 확인 전 카드도 센다', () => {
     await click(screen.getByTestId(`lin-pick-${LV2}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
-    // 확인(`lin-confirm`)을 누르지 않는다 — 승격된 카드는 언마운트로 사라지지 않으므로 셀 수 있다.
+    // 승격된 카드는 언마운트로 사라지지 않으므로 셀 수 있다.
     fireEvent.keyDown(document, { key: 'Escape' });
     await act(async () => {});
     expect(screen.getByTestId('upload-close-confirm')).toBeTruthy();

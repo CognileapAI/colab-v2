@@ -219,7 +219,7 @@ describe('PRD-27 확정 부모가 있으면 비활성이고 칸은 사라지지 
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV0}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
+    // ⭑ ⟨개정 2026-09-14 · 기획서 rev2 목업 `.li-act`⟩ 연결이 곧 확정이다 — `확인` 버튼이 없다.
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
 
     // **칸이 사라지지 않는다** — 숨기면 왜 못 고르는지가 함께 사라진다.

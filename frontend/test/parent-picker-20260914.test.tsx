@@ -1,20 +1,22 @@
 /**
- * 가공 전 데이터 후보 선택 모달 — 기획서 rev2 ＋ 기획자 2026-09-13 구두 피드백.
+ * 가공 전 데이터 후보 선택 모달 ＋ 연결 카드 — 기획서 rev2 목업 축자.
  *
- * 오라클 = `업로드_계보_260905_rev2.html` 의 `#findModal`(라디오 행 · 취소／이 데이터로 연결)
- * ＋ 기획자 피드백 「핵심 정보만」·「대표 파일명 외 N개」·「검색어 하나만」·「하단 고정 영역」.
+ * 오라클 = `업로드_계보_260905_rev2.html` 의 `#findModal`(`.findbar` 네 칸 · 라디오 행 ·
+ * 취소／이 데이터로 연결)과 `pickFind()` 가 세우는 `.lin-item`(이름·Lv·분류·기간 ·
+ * 가공 방식 칸 · `지우기` 하나).
  *
- *   ㈎ 필터는 **검색어 하나**다 — 분류·주제·가공 단계·기간 칸이 없다.
+ *   ㈎ 필터는 목업 `.findbar` 의 **네 칸**이다 — 이름 검색 · 분류 · 기간 · 가공 단계.
  *   ㈏ 후보 줄은 **라디오 단일 선택**이다.
  *   ㈐ 파일은 **대표 하나 ＋ 「외 N개」** 다 — 전체 나열이 없다.
- *   ㈑ 행이 적는 것은 **이름 · 가공 단계 · 분류 · 기간** 뿐이다.
- *   ㈒ 하단 고정 영역이 선택 요약을 갱신한다 — 고르기 전에는 「후보를 고르세요」.
- *   ㈓ 하단의 **가공 방식** 입력값이 `onPick` 으로 가고, 연결 카드의 초기값이 된다.
+ *   ㈑ 행이 적는 것은 **이름 · 가공 단계 · 분류 · 기간** 뿐이고 **Lv 가 줄마다 읽힌다**.
+ *   ㈒ 하단 고정 영역 = 선택 요약 ＋ 취소／연결. **가공 방식 칸은 여기 없다**(목업 `.modal-f`).
+ *   ㈓ 가공 방식은 **팝업을 닫은 뒤 연결 카드**에서 적는다.
  *   ㈔ 초과 후보는 **보이되 못 고른다**(회귀 — `R-21`).
+ *   ㈕ 연결 카드의 버튼은 **`지우기` 하나**다 — 확인·수정·거절이 없다(목업 `.li-act`).
  *
  * 단언마다 **대상 건수를 먼저 잰다** — 빈 집합 통과(green-by-skip)를 막는다.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ParentPicker } from '../src/components/lineage/ParentPicker';
@@ -97,25 +99,68 @@ function radios(): HTMLInputElement[] {
   return [RAIN, SOIL].map((id) => screen.getByTestId(`lin-pick-${id}`) as HTMLInputElement);
 }
 
-// ═══ ㈎ 필터는 검색어 하나 ═══
+// ═══ ㈎ 필터는 목업 `.findbar` 의 네 칸 ═══
 describe('후보 선택 모달의 필터', () => {
-  it('검색어 한 칸만 남고 분류·주제·가공 단계·기간 칸이 없다', () => {
+  it('이름 검색 · 분류 · 기간 · 가공 단계 네 칸이 선다', () => {
     openPicker();
     expect(screen.getAllByRole('searchbox')).toHaveLength(1);
-    expect(screen.queryByLabelText('분류')).toBeNull();
-    expect(screen.queryByLabelText('주제')).toBeNull();
-    expect(screen.queryByTestId('lin-lv-filter')).toBeNull();
-    expect(screen.queryByLabelText('후보 기간 시작')).toBeNull();
-    expect(screen.queryByLabelText('후보 기간 끝')).toBeNull();
-    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+    expect(screen.getAllByRole('combobox')).toHaveLength(3);
+    expect(screen.getByTestId('lin-cat-filter')).toBeInTheDocument();
+    expect(screen.getByTestId('lin-period-filter')).toBeInTheDocument();
+    expect(screen.getByTestId('lin-lv-filter')).toBeInTheDocument();
   });
 
-  it('검색어를 적으면 그 한 조건만 서버 질의로 간다', () => {
+  it('가공 단계 칸은 자기 Lv 이하만 항목으로 둔다 (목업 `buildFindLv`)', () => {
+    openPicker();
+    const lv = screen.getByTestId('lin-lv-filter') as HTMLSelectElement;
+    expect([...lv.options].map((o) => o.value)).toEqual(['', '0', '1', '2']);
+    expect(lv.options[0]!.textContent).toBe('연결 가능 전체 · Lv0~Lv2');
+  });
+
+  it('기간 칸은 후보가 실제로 가진 연도만 항목으로 둔다', () => {
+    openPicker();
+    const period = screen.getByTestId('lin-period-filter') as HTMLSelectElement;
+    expect([...period.options].map((o) => o.value)).toEqual(['', '2025']);
+    expect(period.options[0]!.textContent).toBe('기간 전체');
+  });
+
+  it('네 조건이 한 질의로 함께 간다', () => {
     const onSearch = vi.fn();
-    render(<ParentPicker {...BASE} onSearch={onSearch} onPick={vi.fn()} onClose={() => {}} />);
+    const onLevelFilterChange = vi.fn();
+    render(
+      <ParentPicker
+        {...BASE}
+        onSearch={onSearch}
+        onLevelFilterChange={onLevelFilterChange}
+        onPick={vi.fn()}
+        onClose={() => {}}
+      />,
+    );
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '강우' } });
-    expect(onSearch).toHaveBeenCalledTimes(1);
     expect(onSearch).toHaveBeenLastCalledWith({ q: '강우', limit: 25 });
+
+    fireEvent.change(screen.getByTestId('lin-cat-filter'), { target: { value: '기상·기후 인자' } });
+    expect(onSearch).toHaveBeenLastCalledWith({ q: '강우', category: '기상·기후 인자', limit: 25 });
+
+    fireEvent.change(screen.getByTestId('lin-period-filter'), { target: { value: '2025' } });
+    expect(onSearch).toHaveBeenLastCalledWith({
+      q: '강우',
+      category: '기상·기후 인자',
+      periodStart: '2025-01-01',
+      periodEnd: '2025-12-31',
+      limit: 25,
+    });
+
+    fireEvent.change(screen.getByTestId('lin-lv-filter'), { target: { value: '1' } });
+    expect(onLevelFilterChange).toHaveBeenLastCalledWith(1);
+    expect(onSearch).toHaveBeenLastCalledWith({
+      q: '강우',
+      category: '기상·기후 인자',
+      periodStart: '2025-01-01',
+      periodEnd: '2025-12-31',
+      processingLevel: 1,
+      limit: 25,
+    });
   });
 });
 
@@ -163,6 +208,14 @@ describe('후보 줄이 적는 값', () => {
     expect(row.textContent).not.toContain('강우·강수');
     expect(row.textContent).not.toContain('ERA5 재분석');
   });
+
+  it('후보 줄마다 Lv 가 읽힌다 — 한 줄도 빠지지 않는다', () => {
+    openPicker();
+    const marks = [RAIN, SOIL].map(
+      (id) => within(screen.getByTestId(`lin-row-${id}`)).getByText(/^Lv\d$/).textContent,
+    );
+    expect(marks).toEqual(['Lv1', 'Lv3']);
+  });
 });
 
 // ═══ ㈒ 하단 고정 영역의 선택 요약 ═══
@@ -177,6 +230,12 @@ describe('하단 고정 영역', () => {
     );
   });
 
+  it('하단에 가공 방식 입력 칸이 없다 — 그 칸은 연결 카드에 있다', () => {
+    openPicker();
+    expect(screen.queryByTestId('lin-find-method')).toBeNull();
+    expect(screen.queryByText('가공 방식')).toBeNull();
+  });
+
   it('고르기 전에는 「이 데이터로 연결」을 누를 수 없다', () => {
     const onPick = openPicker();
     expect(screen.getByRole('button', { name: '이 데이터로 연결' })).toBeDisabled();
@@ -187,17 +246,15 @@ describe('하단 고정 영역', () => {
   });
 });
 
-// ═══ ㈓ 가공 방식이 onPick 으로 간다 ═══
-describe('하단의 가공 방식 입력', () => {
-  it('적은 값이 연결할 때 `onPick` 의 두 번째 인자로 간다', () => {
+// ═══ ㈓ 연결은 후보 한 건만 싣는다 — 가공 방식은 카드 몫이다 ═══
+describe('「이 데이터로 연결」', () => {
+  it('고른 후보 한 건만 `onPick` 으로 가고 두 번째 인자가 없다', () => {
     const onPick = openPicker();
     fireEvent.click(radios()[0]!);
-    fireEvent.change(screen.getByTestId('lin-find-method'), {
-      target: { value: '유역 클리핑 · 유역 평균' },
-    });
     fireEvent.click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     expect(onPick).toHaveBeenCalledTimes(1);
-    expect(onPick).toHaveBeenCalledWith(ROWS[0], '유역 클리핑 · 유역 평균');
+    expect(onPick).toHaveBeenCalledWith(ROWS[0]);
+    expect(onPick.mock.calls[0]).toHaveLength(1);
   });
 });
 
@@ -332,18 +389,59 @@ describe('③ 연결 단계의 문구와 모달 연동', () => {
     expect(screen.getByTestId('lin-add').textContent).toBe('+ 가공 전 데이터 추가');
     expect(screen.getByTestId('lin-hint').textContent).toBe('아직 연결한 가공 전 데이터가 없어요');
   });
+});
 
-  it('모달에서 적은 가공 방식이 연결 카드의 초기값으로 들어온다', async () => {
+// ═══ ㈕ 연결 카드 — 목업 `.lin-item` 한 벌 ═══
+async function connect(datasetId: string) {
+  await click(screen.getByTestId('lin-add'));
+  await screen.findByTestId('lin-picker');
+  await click(screen.getByTestId(`lin-pick-${datasetId}`));
+  await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
+}
+
+describe('연결 카드', () => {
+  it('버튼이 `지우기` 하나다 — 확인·수정·거절과 그 상태가 없다', async () => {
     await openLineage();
-    await click(screen.getByTestId('lin-add'));
-    await screen.findByTestId('lin-picker');
-    await click(screen.getByTestId(`lin-pick-${RAIN}`));
-    fireEvent.change(screen.getByTestId('lin-find-method'), { target: { value: '유역 평균' } });
+    await connect(RAIN);
+    const card = await screen.findByTestId('lin-card');
+    expect(within(card).getByTestId('lin-del').textContent).toBe('지우기');
+    expect(within(card).getAllByRole('button')).toHaveLength(1);
+    for (const gone of ['lin-confirm', 'lin-edit', 'lin-reject']) {
+      expect(within(card).queryByTestId(gone)).toBeNull();
+    }
+    expect(within(card).queryByText('확인함')).toBeNull();
+  });
+
+  it('카드가 이름 · Lv · 분류 · 기간을 되읽는다 (목업 `.li-top`·`.li-sub`)', async () => {
+    await openLineage();
+    await connect(RAIN);
+    const card = await screen.findByTestId('lin-card');
+    expect(within(card).getByTestId('lin-card-name').textContent).toBe('낙동강 강우');
+    expect(within(card).getByTestId('lin-card-lv').textContent).toBe('Lv1');
+    expect(within(card).getByTestId('lin-card-info').textContent).toBe(
+      '기상·기후 인자 · 2025-01-01 ~ 2025-12-31',
+    );
+  });
+
+  it('가공 방식 칸이 카드 안에 있고 빈 칸으로 시작한다', async () => {
+    await openLineage();
+    await connect(RAIN);
+    const card = await screen.findByTestId('lin-card');
+    const method = within(card).getByTestId('lin-method') as HTMLInputElement;
+    expect(method.value).toBe('');
+    fireEvent.change(method, { target: { value: '유역 클리핑 · 유역 평균' } });
     await act(async () => {});
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
-    expect((screen.getByTestId('lin-method') as HTMLInputElement).value).toBe('유역 평균');
-    // 연결이 생기면 빈 상태 한 줄은 사라진다.
+    expect((within(card).getByTestId('lin-method') as HTMLInputElement).value).toBe(
+      '유역 클리핑 · 유역 평균',
+    );
+  });
+
+  it('`지우기` 가 카드를 없애고 빈 상태 한 줄을 되돌린다', async () => {
+    await openLineage();
+    await connect(RAIN);
     expect(screen.queryByTestId('lin-hint')).toBeNull();
+    await click(within(await screen.findByTestId('lin-card')).getByTestId('lin-del'));
+    expect(screen.queryAllByTestId('lin-card')).toHaveLength(0);
+    expect(screen.getByTestId('lin-hint').textContent).toBe('아직 연결한 가공 전 데이터가 없어요');
   });
 });

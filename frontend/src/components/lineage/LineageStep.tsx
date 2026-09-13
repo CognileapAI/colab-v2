@@ -41,7 +41,7 @@ import {
 //   상세 계보 모달(`LineageFixModal`)이 **같은 컴포넌트·같은 함수**를 부른다. 종전에는 이
 //   화면 안의 `picker()`·`overReason()` 이 유일본이었고, 모달이 사본을 뜨면 PRD-07·08·09 의
 //   규칙이 두 벌이 된다.
-import { ParentPicker, parentOverReason } from './ParentPicker';
+import { ParentPicker, parentOverReason, parentPeriodLabel } from './ParentPicker';
 import { useParentCandidates } from './useParentCandidates';
 import './lineage.css';
 
@@ -168,28 +168,15 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     setParents((cur) => cur.map((p) => (p.key === key ? { ...p, ...next } : p)));
   }
 
-  /** `수정` — 이 순간부터 AI 행동이 아니다. 칩을 걷고 경로를 바꾸고 확인을 무른다. */
-  /** `method` = 후보 모달 하단에서 적은 값. 적었을 때만 덮는다 — 빈 칸이 기존 값을 지우지 않는다. */
-  function editTo(key: string, row: ParentCandidateRow, method?: string) {
-    patch(key, {
-      parentDatasetId: row.datasetId,
-      parentDatasetName: row.name,
-      confidence: null,
-      rationale: null,
-      origin: 'manual',
-      confirmed: false,
-      confirmedMethodText: null,
-      picking: false,
-      parentLevel: displayLevel(row),
-      ...(method ? { method } : {}),
-    });
-  }
-
   /**
-   * `method` = 후보 모달 하단에서 적은 **가공 방식**(기획자 2026-09-13).
-   * 카드의 **초기값**으로만 들어간다 — 카드 안의 칸은 편집용으로 그대로 남는다.
+   * ⭑ **⟨개정 2026-09-14 · 기획서 rev2 목업 `pickFind()`⟩ 고른 순간 카드가 서고 그것이 곧
+   *   확정이다** (`confirmed: true`). ／ 종전 ~~`confirmed: false` 로 세우고 카드의 `확인`
+   *   버튼이 확정했다~~ — 목업 `.li-act` 에 그 버튼이 없다.
+   * ⚠ **「사람이 확인한 것만 커밋된다」가 무너진 것이 아니다** — 고르는 행위 자체가 사람의
+   *   확인이고, 화면에는 AI 제안이 0건이다(`판정문 ㉮`).
+   * 가공 방식은 여기서 받지 않는다 — **카드 안의 칸**이 빈 값에서 시작한다.
    */
-  function addParent(row: ParentCandidateRow, method?: string) {
+  function addParent(row: ParentCandidateRow) {
     setAdding(false);
     setParents((cur) => [
       ...cur,
@@ -201,25 +188,27 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         confidence: null,
         rationale: null,
         origin: 'manual',
-        confirmed: false,
-        method: method ?? '',
+        confirmed: true,
+        method: '',
         confirmedMethodText: null,
-        picking: false,
         // 후보 줄이 들고 온 표시 Lv — 사후 충돌을 재는 값이다(PRD-09).
         // ⭑ ⟨WU-C9⟩ 표시 규칙은 네 자리와 같은 `displayLevel` 이다.
         parentLevel: displayLevel(row),
+        // 목업 `.li-sub` 가 되읽는 두 값. 후보 줄과 **같은 출처**라 문면이 갈리지 않는다.
+        parentCategory: 'category' in row ? row.category : null,
+        parentPeriod: 'period' in row ? row.period : null,
       },
     ]);
   }
 
-  function picker(onPick: (row: ParentCandidateRow, method?: string) => void, testid: string) {
+  function picker(onPick: (row: ParentCandidateRow) => void, testid: string) {
     return (
       <ParentPicker
         selfLv={ceilingLv}
         candidates={candidates}
         error={candidateError}
         onRetry={retry}
-        onClose={() => { setAdding(false); setParents(cur => cur.map(p => ({ ...p, picking: false }))); }}
+        onClose={() => setAdding(false)}
         levelFilter={levelFilter}
         onLevelFilterChange={changeLevelFilter}
         onSearch={loadCandidates}
@@ -227,7 +216,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         loadingMore={loadingMore}
         loadMoreError={loadMoreError}
         onLoadMore={loadMore}
-        onPick={(row, method) => { onPick(row, method); setAdding(false); }}
+        onPick={(row) => { onPick(row); setAdding(false); }}
         testId={testid}
       />
     );
@@ -300,11 +289,22 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
           자리가 없어져 그릴 값 자체가 없다. ⛔ 문면을 다른 자리로 옮기지 않았다 —
           제안이 돌아오면 이 넷도 함께 돌아온다. */}
       <div className="lin-cards" data-testid="lin-cards">
-        {parents.map((p) => (
+        {parents.map((p) => {
+        // 목업 `.li-sub` 한 줄 = 분류 · 기간. 둘 다 모르면 줄 자체를 세우지 않는다.
+        const info = [p.parentCategory ?? null, parentPeriodLabel(p.parentPeriod)]
+          .filter(Boolean)
+          .join(' · ');
+        return (
           <div className="lin-card" data-testid="lin-card" key={p.key}>
+            {/* ⭑ **⟨개정 2026-09-14 · 목업 `.li-top`⟩ 머리 = 종류 · 이름 · Lv · `직접 연결`.**
+                ／ 종전 ~~이름 ＋ `확인함`~~ — `확인함` 은 `확인` 버튼의 상태였고 그 버튼이 없다. */}
             <div className="lin-h">
-              <span className="lin-name">{p.parentDatasetName}</span>
-              {p.confirmed && <span className="lin-ok">확인함</span>}
+              <span className="lin-kind">가공 전 데이터</span>
+              <span className="lin-name" data-testid="lin-card-name">{p.parentDatasetName}</span>
+              {p.parentLevel !== null && (
+                <span className="lin-lv" data-testid="lin-card-lv">Lv{p.parentLevel}</span>
+              )}
+              <span className="lin-manual">직접 연결</span>
               {/* ⭑ **⟨PRD-09⟩ 사후 충돌 표시.** 연결은 남고 이 칩만 붙는다 —
                   되돌리면 칩이 사라지고 `데이터셋 만들기` 가 다시 눌린다. */}
               {ceilingLv !== null && p.parentLevel !== null && p.parentLevel > ceilingLv && (
@@ -313,6 +313,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
                 </span>
               )}
             </div>
+
+            {info && (
+              <p className="lin-card-info" data-testid="lin-card-info">{info}</p>
+            )}
 
             {/* ⭑ ⟨개정 2026-09-14⟩ 확신도 칩(`lin-confidence`)과 근거 줄(`lin-rationale`)을
                 걷었다 — **둘 다 제안만 채우던 칸**이고, 사람이 직접 고른 연결에는 값이 없다.
@@ -351,43 +355,23 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               </label>
             </div>
 
-            {/* 항목마다 셋. **묶음 승인 버튼은 없다.** */}
+            {/* ⭑ **⟨개정 2026-09-14 · 목업 `.li-act`⟩ 버튼은 `지우기` 하나다.**
+                ／ 종전 ~~`확인`·`수정`·`거절` 셋~~ — `확인` 은 연결 자체가 대신하고,
+                `수정` 의 자리는 **지우고 다시 고르기**이며, `거절` 의 이름이 `지우기` 다.
+                ⛔ **묶음 승인 버튼은 여전히 없다.** */}
             <div className="lin-a">
               <button
                 type="button"
-                className="btn btn-strong btn-sm"
-                data-testid="lin-confirm"
-                onClick={() => patch(p.key, { confirmed: true, picking: false })}
-              >
-                확인
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                data-testid="lin-edit"
-                onClick={() => {
-                  loadCandidates({
-                    ...(levelFilter !== null ? { processingLevel: levelFilter } : {}),
-                    limit: 25,
-                  });
-                  patch(p.key, { picking: !p.picking });
-                }}
-              >
-                수정
-              </button>
-              <button
-                type="button"
                 className="btn btn-ghost btn-sm"
-                data-testid="lin-reject"
+                data-testid="lin-del"
                 onClick={() => setParents((cur) => cur.filter((x) => x.key !== p.key))}
               >
-                거절
+                지우기
               </button>
             </div>
-
-            {p.picking && picker((row, method) => editTo(p.key, row, method), 'lin-edit-picker')}
           </div>
-        ))}
+        );
+        })}
 
         {/* ⭑ ⟨개정 2026-09-14⟩ 가공 방식 **제안 카드**(`lin-method-card`)를 걷었다 —
             그 카드는 제안 응답의 `가공 방식` 항목만으로 생겼다. 가공 방식 자체는 남아 있고,

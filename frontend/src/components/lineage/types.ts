@@ -3,8 +3,8 @@
 // 타입은 전부 생성물에서 온다 — 여기서 계약 스키마를 다시 선언하지 않는다
 // (`CLAUDE.md §3-6·§3-7`).
 //
-// **이 화면은 아무것도 저장하지 않는다.** 확인·수정·거절은 전부 클라이언트 상태이고,
-// 사람이 확인한 것만 `createDataset` 의 `lineageParents` 로 실린다
+// **이 화면은 아무것도 저장하지 않는다.** 연결·지우기는 전부 클라이언트 상태이고,
+// 사람이 고른 것만 `createDataset` 의 `lineageParents` 로 실린다
 // (`CLAUDE.md §3-2` — D10 → D4 쓰기 경로가 없다 · `fe-core.yaml UploadLineageParent`).
 import type { Schemas } from '../../api/client';
 
@@ -54,8 +54,19 @@ export interface ParentCard {
   method: string;
   /** 제안을 확인·수정한 가공 방식 → 요청의 `confirmedMethodText`. 둘 다 실으면 400 이다. */
   confirmedMethodText: string | null;
-  /** `수정` 을 눌러 대상을 다시 고르는 중인가. */
-  picking: boolean;
+  /**
+   * ⭑ **⟨개정 2026-09-14 · 기획서 rev2 목업 `.li-act`⟩ 쓰는 자리가 0건이다.**
+   * ／ 종전 ~~`수정` 을 눌러 대상을 다시 고르는 중인가~~ — 카드의 버튼이 `지우기` 하나가
+   * 되면서 `수정` 이 사라졌다. 대상을 바꾸는 길은 **지우고 다시 고르는 것**이다.
+   * ⛔ 열쇠 자체는 남긴다(선택) — 기존 시험 fixture 가 이 이름으로 카드를 만든다.
+   */
+  picking?: boolean;
+  /**
+   * ⭑ **⟨신설 2026-09-14 · 목업 `.li-sub`⟩ 후보 줄이 들고 온 분류·기간.**
+   * 연결 카드가 「무엇을 이었는지」를 되읽는 값이고, 모르면 그 자리를 세우지 않는다.
+   */
+  parentCategory?: string | null;
+  parentPeriod?: { start: string; end: string | null } | null;
   /**
    * ⭑ **⟨WU-B5 · PRD-09⟩ 부모의 표시 Lv.** 사후 충돌(연결 뒤 자기 Lv 내림)을 재는 값이다.
    * `null` 이면 **모른다**는 뜻이고 그때는 충돌로 세지 않는다.
