@@ -91,7 +91,7 @@ Ted 판정
 - **S3 절차** — `uploads/`·`previews/` 를 exact-key 목록으로 계획 파일(JSON ＋ sha256)에 쓰고 그 키만 지운다. `--recursive` 프리픽스 삭제를 쓰지 않는다(선례 `PLAN-SoT §9 〈354〉`). 클라이언트는 `kernel/s3.S3Client`(SigV4 자작 · boto3 미사용).
 - **진행 중 멀티파트** — `S3Client.list_multipart_uploads` 로 `uploads/` 접두사의 진행 중 업로드를 열거해 계획에 포함하고 `abort_multipart_upload` 로 중단한다. 객체 목록에 잡히지 않고 DB 원장이 사라지면 영구 중단 불가다. 두 메서드는 `services/core-api/src/colab_core/kernel/s3.py` 에 **이미 있다**(실측) — 없으면 추가한다.
 - **출력** = 실행 전/후 계수를 둘 다 찍는다. 부분 실패가 하나라도 있으면 비영 종료한다.
-- **시험** — 모델 `services/core-api/tests/test_purge_datasets_guard.py`(`importlib.util.spec_from_file_location` 로 `ops/` 파일 직접 적재 · 가드만 잰다). 새 파일 `services/core-api/tests/test_reset_dev_environment_guard.py` 최소 7건 — ⑴ `--yes-reset-dev` 부재 ⑵ 버킷 불일치 ⑶ 계획에 `_ops/` 키 ⑷ staging 식별자 ⑸ prod 식별자 ⑹ 스키마 집합 불일치 ⑺ dry-run 이 기본값이고 아무것도 지우지 않는다. 각 시험은 **RED 를 먼저 확인**한 뒤 구현한다(`CLAUDE.md §4`).
+- **시험** — 모델 `services/core-api/tests/test_purge_datasets_guard.py`(`importlib.util.spec_from_file_location` 로 `ops/` 파일 직접 적재 · 가드만 잰다). 새 파일 `services/core-api/tests/test_reset_dev_environment_guard.py` 최소 7건 — ⑴ `--yes-reset-dev` 부재 ⑵ 버킷 불일치 ⑶ 계획에 `_ops/` 키 ⑷ staging 식별자 ⑸ prod 식별자 ⑹ 스키마 집합 불일치 ⑺ ⭑ ⟨정정 2026-09-13 · WU-R1b⟩ **플래그 부재 = 거부 · `--dry-run` 명시 시 무파괴** ／ 종전 ~~dry-run 이 기본값이고 아무것도 지우지 않는다~~ — intent·구현과 어긋난 문면이었다. 실물 = `--yes-reset-dev` 는 **명시여야** 하고(`test_플래그가_없으면_거부한다` · 「기본이 파괴이면 사고가 조용해진다」), `--dry-run` 은 **옵트인 플래그**라 명시할 때만 무파괴다(`test_dry_run_은_DROP_을_내지_않는다`·`test_dry_run_은_S3_삭제를_하지_않는다`). 각 시험은 **RED 를 먼저 확인**한 뒤 구현한다(`CLAUDE.md §4`).
 - **로컬 증명**(§11 의 `DROP SCHEMA` `[미확인]` 을 닫는 자리) — 일회용 postgres 컨테이너(`--rm` ＋ tmpfs ＋ `PGDATA` · 호스트 포트 미개방) → `infra/staging/db-bootstrap.sh roles` → 두 체인 `alembic upgrade head` → `app-grants` → 있으면 `account-admin` → 픽스처 연구실·계정 1건 삽입 → 도구 실행 → `upgrade head` 재실행. **판정** = `bash gates/run.sh schema-diff` green ＋ `deploy_doctor` ⑥⑦⑧⑨ 로직 green ＋ 픽스처 행 0.
 - ⛔ 이 WU 에서 도구를 dev 실환경에 대고 돌리지 않는다. 실행은 WU-R2 다.
 - **완료 정의** — 넷을 모두 만족한다. ⑴ `service-tests-core-api` 단독 green **3회 연속** ⑵ `exec-bit` green ⑶ 새 가드 시험이 구현 전 RED 였음이 로그로 남는다 ⑷ 로컬 증명 판정 3종 green.
@@ -113,7 +113,8 @@ Ted 판정
 - 선행 = WU-R1a·R1b 가 `main` 에 병합되고 dev 에 배포됨(`docs/DEPLOY.md`) ＋ 진입조건 ㄹ 해소 ＋ Ted 명시 GO 가 `PLAN-SoT §9` 행에 기록됨.
 - 사전 = 읽기 전용 계수 1회. 경계가 실린 경로(`colab_backup` 롤 또는 API `listDatasets`)로 데이터셋·파일 행수, 운영자 키로 `uploads/`·`previews/` 객체 수를 파일에 고정한다.
 - EC2 호스트에서 **다섯 명령을 이 순서로** 낸다. **각 명령이 비영 종료하면 그 자리에서 멈춘다 — 다음 명령을 내지 않는다.**
-  1. 도구 ⑴⑵ — `ops/reset_dev_environment.py --target dev --yes-reset-dev` ＋ 계획 파일(계수 기록 · 두 스키마 재생성). **실패 시 멈춤.**
+  1. 도구 ⑴⑵ — `ops/reset_dev_environment.py --target dev --yes-reset-dev` ＋ 계획 파일(계수 기록 · 두 스키마 재생성). **실패 시 멈춤.** ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`count` 와 `s3-plan`·`s3-apply` 단계는 S3 를 부르므로 컨테이너에 AWS 자격증명 환경변수를 넘겨야 한다** — `AWS_ACCESS_KEY_ID`·`AWS_SECRET_ACCESS_KEY`(임시 자격이면 `AWS_SESSION_TOKEN` 도) ＋ `COLAB_CORE_S3_BUCKET`·`COLAB_CORE_S3_REGION`. 이름의 근거 = `services/core-api/src/colab_core/kernel/aws_credentials.py:78-82`(`deploy_doctor` ① 이 `s3_doctor.check_credentials` 를 거쳐 같은 자리를 읽는다 · `ops/s3_doctor.py:92` 축자 `(AWS_ACCESS_KEY_ID)`). 도구 머리말의 `docker run` 예시는 `-e COLAB_CORE_S3_*` 둘만 적고 있어 **그대로 쓰면 `count` 가 자격증명 부재로 선다**. ⚠ 값은 표준입력·0600 파일로만 심고 argv·로그·원장에 싣지 않는다. `schema` 단계는 S3 를 부르지 않는다.
+  1′. ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`count` 단계 보고서 파일 존재 확인** — `--report` 가 가리킨 JSON 이 실제로 서 있고 실행 전 계수가 그 안에 있는지 본다(`--report` 는 필수 인자이고 도구가 실행자 소유 0600 으로 쓴다). **없으면 다음 명령을 내지 않는다** — 실행 전 계수가 없으면 삭제 후 계수와 대조할 대상이 사라지고 「지운 것이 무엇이었는지」를 사후에 복원할 길이 없다. **실패 시 멈춤.**
   2. `bash infra/dev/db-bootstrap.sh extensions`. **실패 시 멈춤.**
   3. `bash infra/dev/up.sh` 의 ① 마이그레이션 단계(`migrate-platform`·`migrate-ai`). **실패 시 멈춤.**
   4. `bash infra/dev/db-bootstrap.sh app-grants` ＋ 같은 스크립트 `account-admin`. **실패 시 멈춤.**
@@ -260,4 +261,5 @@ Ted 판정
 - S3 고아 바이트를 치우는 주체가 없다(`dev-package/S3.md`) · 완결된 전송 원장 행이 안 지워진다.
 - HSR 격자 정본이 레포 두 자리에 다르게 적혀 있다 — 한 자리 정리.
 - `DROP SCHEMA` 권한(`colab_owner` 는 RDS 에서 진짜 슈퍼유저가 아니다) — **해소 경로 확정**(WU-R1a 「권한 근거」 = 부트스트랩이 스키마 소유를 `colab_owner` 로 옮긴다) · **로컬 증명으로 닫는다**. dev 실측 1회가 최종 확인이다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`origin/local-stage` 는 병합 경로 밖 브랜치라 정리 대상이다**(`§10` 규약 · 집행은 **오케스트레이터**). 근거 = 그 브랜치에만 사는 `0032_private_owner_access`(커밋 `75cd069b`)가 호스트 공용 적용 DB 에 찍혀 **`main` 을 포함한 모든 브랜치에서 `schema-diff` 가 준비 red** 다(`dev-package/reports/r-dev-reset/host-applied-db-diagnosis.md` · `03-HANDOFF §4` 블로커 `72`). 선택은 둘 — ⑴ `local-stage` 를 `main` 으로 병합 ⑵ 병합 경로 밖 브랜치로 처분(원격 삭제는 게이트 뒤 오케스트레이터 · 레인은 하지 않는다). ⛔ 공용 적용 DB 를 다운그레이드해 되돌리지 않는다 — 다른 세션이 쓰는 상태다.
 - `[미확인]` 비운 상태에서 `deploy_doctor` 15/15 가 서는지의 실증 — 데이터 행을 보는 항목이 없다는 것까지는 코드 실측이고, 실제 15/15 는 WU-R2 에서 처음 확인된다.
