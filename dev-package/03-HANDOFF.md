@@ -1,6 +1,6 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
-> 2026-09-13 AI 검색 최신: [ST 실측](sessions/20260913-st-search-browser-journey.md) 후 소유자 비공개 접근·품질 수치 후보 확대 결함을 수정했다. [후속 계획/결과](sessions/20260913-search-followup-plan.md): core1220·RLS 자기검사21·스키마/권한/경계 통과. 이번 수정은 미커밋·미배포이며 다음은 main 통합→ST 반영→실제 여정 재검증. 실제 Sonnet 평가는 보류, K4 open.
+> 2026-09-13 AI 검색 최신: [local-stage/ST 배포 완료와 검증](sessions/20260913-local-stage-release.md). [브랜치 전략](../docs/BRANCHING.md)에 따라 main/DEV 승격은 보류했다. 다음은 배포 도구의 환경별 원천 강제·스케줄 재설치 시 선언 보존, 운영 배포 준비다. 실제 Sonnet 평가 보류, K4 open.
 
 > **최종 갱신 2026-09-13 · 현재 단계 = 버그개선 회차 dev 배포 완료(`321bdaef1201` · 태그 `dev-20260913-1`).** `deploy_doctor --env dev` **항목 15 — ✓ 15 · ✗ 0 · ─ 0 · 한 번의 실행 · exit 0** · 대장 `BF-14`~`BF-17` 전건 `done` · 등재만 3건(`PA-T`·`LV-5`·`HE-1`) · 이슈 댓글 12건 게시(**닫기는 Ted**) · 최종 전수 **green 63 / red(판정) 0 / red(준비) 1**(트리 `a07b7ae6`) · 등재 `PLAN-SoT §9 〈385〉`~`〈394〉`.
 > **다음 = ⑴ `HE-1`**(하네스 평가 과제 4건 수리) — **별도 세션 · 별도 작업 사본 `31 CoLAB-v2`** · 프롬프트 `dev-package/sessions/HE-1-session-prompt.md`. **⑵ 이슈 닫기 = Ted.** **⑶ 배포 후속 3건 항목화 판정**(`dev.env` 소유권 표류 검사 없음 · 이송 tar 보존 정책 없음 · 디스크 여유 검사 없음 — 셋 다 `deploy_doctor` 항목 후보 · 축자 `§9 〈394〉`⑪).
