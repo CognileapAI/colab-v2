@@ -135,6 +135,9 @@ button { font-size: var(--text-body-sm); }
   background: var(--color-primary-600);
 }
 
+/* 연구실 표기 = **상태 칩**이다 (⟨개정 2026-09-13 · `D-1`⟩).
+   종전에는 `button` 이라 `cursor: pointer` 와 `:hover` 로 「누를 수 있다」를 말했는데
+   누를 것이 없었다. 누를 수 없는 표기이므로 손 모양도 눌림 반응도 두지 않는다. */
 .labswitch {
   display: inline-flex;
   align-items: center;
@@ -144,17 +147,10 @@ button { font-size: var(--text-body-sm); }
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-family: inherit;
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-text);
-  cursor: pointer;
   white-space: nowrap;
-  transition: background var(--ease), border-color var(--ease);
-}
-.labswitch:hover {
-  background: var(--color-gray-50);
-  border-color: var(--color-gray-400);
 }
 
 /* 주 내비 3개 — 남는 가로 여백은 여기서 먹는다.
@@ -245,6 +241,9 @@ button { font-size: var(--text-body-sm); }
 .gnb-upload:hover { background: var(--color-primary-700); }
 
 .avatar-wrap { position: relative; }
+/* 사용자 표기 = **표시**다 (⟨개정 2026-09-13 · `D-5`⟩ · `.labswitch` 와 같은 이유).
+   `▾` 를 걷었으므로 `.avatar .cv` 선택자도 함께 걷는다 — 없는 요소를 가리키는 선택자를
+   남기지 않는다(`〈296〉`-㉰ 가 `.labswitch .cv` 에 이미 적용한 규율). */
 .avatar {
   display: inline-flex;
   align-items: center;
@@ -254,20 +253,11 @@ button { font-size: var(--text-body-sm); }
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  cursor: pointer;
-  font-family: inherit;
   font-size: var(--text-body-sm);
   color: var(--color-text);
-  transition: background var(--ease), border-color var(--ease);
-}
-.avatar:hover {
-  background: var(--color-gray-50);
-  border-color: var(--color-border-strong);
 }
 .avatar .nm,
 .labswitch .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.avatar .cv,
-.labswitch .cv { color: var(--color-gray-500); flex: none; font-size: var(--text-caption); }
 /* 「(읽기 전용)」 — 범위 표기의 뒷말. 이름보다 약하게 두되 **화면에 보인다**
    (종전에는 `aria-label` 안에만 있었다 · `task8-realuse/results.md §1-7`). */
 .labswitch .ln-ro {
@@ -276,6 +266,65 @@ button { font-size: var(--text-body-sm); }
   font-size: var(--text-caption);
   white-space: nowrap;
 }
+
+/* ===== 「더보기」 — 좁은 폭에서 기능 이름을 글자로 되돌린다 (⟨신설 2026-09-13 · `I-9`⟩) =====
+   데스크톱에서는 업로드·계정 관리·연구실 설정이 라벨과 함께 그대로 서므로 이 자리는 숨는다.
+   접는 단은 `design-system.css` 900px — 기능 버튼의 라벨이 처음 사라지는 그 단이다. */
+.gnb-more-wrap { display: contents; }
+.gnb-more {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease);
+}
+.gnb-more:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+.gnb-more-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+/* 항목은 **그림과 이름을 함께** 낸다 — 이 목록이 있는 이유가 그 이름이다. */
+.gnb-more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.gnb-more-item:hover { background: var(--color-gray-50); }
+.gnb-more-item .lbl { white-space: nowrap; }
 
 .appmain { display: block; }
 
