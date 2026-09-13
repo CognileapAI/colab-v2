@@ -1,3 +1,5 @@
+> ⚠ **초안 · 정본은 `PLAN-SoT §9 〈397〉` 과 `dev-package/work-items.yaml` BF-18~23 이다.** 이 파일의 `〈TBD〉`·「done」 표기는 마감 전 초안 값이며 사실로 인용하지 않는다.
+
 # R-LTH-REVIEW-1 — 원장·대장 마감 기재 초안
 
 > **초안 · 미병합.** 오케스트레이터가 Task 8 에서 `dev-package/PLAN-SoT.md §9` 와 `dev-package/work-items.yaml` 에 옮긴다. 이 파일은 그 두 문서를 고치지 않는다.
