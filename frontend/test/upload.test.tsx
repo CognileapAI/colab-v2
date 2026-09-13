@@ -2090,13 +2090,18 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     //   **재는 사실은 그대로다** — 안내가 화면에 없는 컨트롤을 설명하지 않는가.
     const { sources } = fakes({ suggestions: kwraSuggestions() });
     await openLineageWithAi(sources);
+    // ⭑ ⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ⟩ 가공 단계가 계산값을 따라가는 동안에는 상한이 없어 이 안내 줄이
+    //   서지 않는다 — 안내 문면을 재려면 먼저 사람이 가공 단계를 고른다.
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv2');
+    await click(stepBtn('③'));
     const note = await screen.findByTestId('lin-lv-scope');
     expect(note.textContent).not.toMatch(/보조입력/);
     // ⚠ **Lv 숫자가 있는 것이 이제 정상이다** — 그 수는 파생값 추정이 아니라
     //   ① 에서 **사람이 고른 값**이고, 고치는 컨트롤이 실재한다(`분류에서 바꾸기`).
     //   ／ 종전 ~~「여기서 숫자를 짓지 않는다」~~ 는 레벨이 파생 전용이던 때의 규율이다.
-    //   ⭑ ⟨카드 ⑩ ⓐ⟩ 확인된 부모 0건이라 그 수는 계산값 기본값 `Lv0` 이다 ／ 종전 ~~`Lv2`~~
-    expect(note.textContent).toContain('Lv0');
+    //   ⭑ ⟨카드 ⑩ ⓐ⟩ 그 수는 위에서 사람이 고른 `Lv2` 다 ／ 종전 ~~계산값 기본값 `Lv0`~~
+    expect(note.textContent).toContain('Lv2');
     expect(screen.getByTestId('lin-goto-classify').textContent).toBe('분류에서 바꾸기');
   });
 

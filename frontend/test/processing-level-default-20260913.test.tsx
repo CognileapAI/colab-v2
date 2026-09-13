@@ -318,4 +318,22 @@ describe('㉱ 추종 중 부모 선택 상한 해제', () => {
     expect((screen.getByTestId(`lin-pick-${LV2}`) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId(`lin-over-${LV2}`)).toBeTruthy();
   });
+
+  // 추종 중에는 상한이 없으므로 상한을 말하는 안내 줄(`lin-lv-scope`)도 서지 않는다 — 대체 문면 없음.
+  it('가공 단계를 건드리지 않았으면 상한 안내 줄 `lin-lv-scope` 가 서지 않는다', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    expect(screen.queryByTestId('lin-lv-scope')).toBeNull();
+  });
+
+  it('사람이 `Lv1` 을 고르면 상한 안내 줄이 종전 문면 그대로 선다 (대조군)', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv1');
+    await click(stepBtn('③'));
+    expect(screen.getByTestId('lin-lv-scope').textContent).toContain(
+      '지금 이 데이터는 Lv1 · Lv0~Lv1 가공 전 데이터만 연결할 수 있어요.');
+    expect(screen.getByTestId('lin-goto-classify').textContent).toBe('분류에서 바꾸기');
+  });
 });

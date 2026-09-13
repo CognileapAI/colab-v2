@@ -112,7 +112,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
    * ⭑ **⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 부모 선택 상한의 기준 Lv.**
    * 자기 Lv 가 계산값을 따라가는 중이면 `null` — 상한·사후 충돌을 걸지 않는다(부모를 확인하면
    * 자기 Lv 가 최대 부모 Lv ＋ 1 로 따라간다). 사람이 고른 뒤에는 `selfLv` 그대로다.
-   * ⚠ 안내 줄(`lin-lv-scope`)·불일치 줄·「기록 없음」 표시는 `selfLv` 를 쓴다 — 여기서 바꾸지 않는다.
+   * ⚠ 불일치 줄·「기록 없음」 표시는 `selfLv` 를 쓴다 — 여기서 바꾸지 않는다. 상한 안내 줄(`lin-lv-scope`)은
+   *   추종 중에는 상한이 없으므로 서지 않는다(대체 문면 없음) — 사람이 고른 뒤에는 `selfLv` 문면 그대로다.
    */
   const ceilingLv = ctx.processingLevelFollowsDerived ? null : selfLv;
   /**
@@ -359,8 +360,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     <section className="lin" data-testid="lin-step">
       {/* ⭑ **⟨PRD-07⟩ 연결 규칙 안내 — 이 단계의 맨 위다.** 문면은 rev1 축자이고
           `분류에서 바꾸기` 는 ① 로 데려가는 길이다. ⛔ **자기 Lv 를 여기서 바꾸지 않는다.**
-          자기 Lv 를 아직 안 골랐으면(`null`) 기준값이 없어 이 줄이 서지 않는다. */}
-      {selfLv !== null && (
+          자기 Lv 를 아직 안 골랐으면(`null`) 기준값이 없어 이 줄이 서지 않는다.
+          ⭑ ⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ⟩ 계산값을 따라가는 중(`ceilingLv === null`)에도 서지 않는다 —
+          상한이 풀려 있어 「…만 연결할 수 있어요」가 없는 제한을 말하게 된다. */}
+      {selfLv !== null && ceilingLv !== null && (
         <p className="lin-scope-lv" data-testid="lin-lv-scope">
           {scopeNotice(selfLv)}{' '}
           <button type="button" className="lin-link" data-testid="lin-goto-classify"
