@@ -25,12 +25,26 @@ export function ProjectCards(props: { rows: ProjectRow[]; onOpen(projectId: stri
   return (
     <div className="pj-cards">
       {props.rows.map((row) => (
-        <article
+        // ⭑ ⟨R-LTH-REVIEW-1 · 판정 카드 ⑥ ⓐ `D-2`⟩ 카드는 **링크다** — `<article onClick>` 은
+        //    마우스에서만 열려 Tab 초점도 Enter 도 받지 못했다. 주소를 실어 두면 키보드로 열리고
+        //    새 탭으로도 열린다. 화면 안 이동은 그대로 `onOpen` 이 한다(보조 키·가운데 누름은
+        //    브라우저에 넘긴다). Enter 는 handler 가 받고 기본 동작을 막아 **한 번만** 연다.
+        <a
           key={row.projectId}
           className="pcard"
           data-testid={`project-card-${row.projectId}`}
           data-closed={row.status === '닫힘' ? 'true' : undefined}
-          onClick={() => props.onOpen(row.projectId)}
+          href={`/projects/${row.projectId}`}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            props.onOpen(row.projectId);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            props.onOpen(row.projectId);
+          }}
         >
           <div className="pc-body">
             <h3 className="pc-t">{row.name}</h3>
@@ -61,7 +75,7 @@ export function ProjectCards(props: { rows: ProjectRow[]; onOpen(projectId: stri
               →
             </span>
           </div>
-        </article>
+        </a>
       ))}
     </div>
   );
