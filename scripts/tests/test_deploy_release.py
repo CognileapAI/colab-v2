@@ -180,3 +180,11 @@ class OperatorOutboxRecoveryTests(unittest.TestCase):
   self.assertEqual(self.run_plan(retry_notification=True),0);self.assertEqual(self.calls,calls)
   actual=sorted([json.loads(p.read_text()) for p in (self.root/'operator-spool').glob('*.json')],key=lambda r:r['event_id'])
   self.assertEqual(actual,sorted(records,key=lambda r:r['event_id']));self.assertEqual(appended[0],records[0])
+
+class PrTarget(unittest.TestCase):
+  def test_pr_target_is_accepted_and_maps_to_prod(self):
+    plan={'schema':'colab-deploy/1','id':'pr-1','summary':'prod','targets':[{'name':'pr','version':'v','deploy':[['true']],'verify':[['true']]}]}
+    self.assertTrue(d.validate(plan, Path('.')))
+  def test_unknown_target_is_refused(self):
+    plan={'schema':'colab-deploy/1','id':'x-1','summary':'x','targets':[{'name':'production','version':'v','deploy':[['true']],'verify':[['true']]}]}
+    with self.assertRaises(d.ReleaseError): d.validate(plan, Path('.'))
