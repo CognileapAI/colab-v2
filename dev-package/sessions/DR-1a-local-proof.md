@@ -209,6 +209,22 @@ JSON 뿐이고 레포 밖 임시 디렉터리에 있다.
   `alembic upgrade head` 로 올리는데, 그 DB 에 찍힌 리비전이 체인에 없어 alembic 이 기동하지 못한다.
   ⚠ **이 레인은 마이그레이션을 1건도 추가하지 않았다** — `origin/main` 을 포함해 `0032` 를 갖지 않는
   **모든 브랜치**에서 같은 red 가 난다. 원인은 병합되지 않은 브랜치가 공용 적용 DB 를 앞으로 밀어 둔 것이다.
-  해소(적용 DB 재구축 또는 `local-stage` 의 처리)는 **다른 세션이 쓰는 상태를 쓰는 일**이라 이 레인의
-  경계 밖이다 — 고치지 않고 보고한다.
-  이 회차 트리에 대한 `schema-diff` 판정은 §5 의 목적 구축 DB 실행(같은 게이트 · green)으로 남긴다.
+  해소(공용 DB 를 되돌리거나 `local-stage` 를 처리하는 것)는 **다른 세션이 쓰는 상태를 쓰는 일**이라
+  이 레인의 경계 밖이다 — **그 DB 를 고치지 않았다.**
+
+  **이 레인이 한 것** = 게이트가 스스로 적은 설계대로 이 트리의 적용 DB 를 **새로 세워** 같은 게이트를
+  댔다(`gates/tools/schema-diff.sh` 축자 「CI 설계: 체인마다 DB 를 만들고 → db/<체인>/versions 를
+  alembic 으로 upgrade head → 그 DB 의 URL 을 체인별 변수로 넘긴다」). 절차 —
+
+  ```bash
+  docker run -d --rm --name colab-v2-r1a-applied --tmpfs /pgdata:uid=70,gid=70 \
+    -e PGDATA=/pgdata/db -e POSTGRES_PASSWORD=<임의값> -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine
+  PG_CONTAINER=colab-v2-r1a-applied … bash infra/staging/db-bootstrap.sh roles
+  # 시험 환경 파일의 사본에서 COLAB_APPLIED_DB_URL_PLATFORM·_AI 두 줄만 이 DB 로 바꾼다(0600 · 레포 밖)
+  COLAB_TEST_ENV_FILE=<사본> COLAB_TASK_ID=… COLAB_GATE_REPORT_DIR=… bash gates/run.sh task
+  ```
+
+  ⚠ **검사 내용은 한 줄도 바뀌지 않는다** — 같은 두 체인을 같은 방식으로 `upgrade head` 한 뒤 선언
+  스키마와 `pg_dump` 로 비교한다. 바뀐 것은 **어느 DB 를 「적용」으로 보는가** 하나이고, 공용 DB 는
+  이 트리의 체인으로는 `upgrade head` 자체가 불가능하므로 비교 대상이 될 수 없다. 감추는 드리프트는
+  없다 — `0032` 는 `origin/main` 에 없으므로 이 트리가 뒤처진 것이 아니다.
