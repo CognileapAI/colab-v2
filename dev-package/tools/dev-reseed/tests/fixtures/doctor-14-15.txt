@@ -1,0 +1,20 @@
+
+  ── 요약 ──
+  ① 운영자 자격증명                                 ✓
+  ② 데이터 버킷 설정  colab-platform-data-dev       ✓
+  ③ 웹 버킷  colab-platform-web-dev             ✓
+  ④ DB 연결 (platform)                         ✓
+  ⑤ DB 연결 (ai)                               ✓
+  ⑥ 스키마 head (platform)                      ✓
+  ⑦ 스키마 head (ai)                            ✓
+  ⑧ RLS 전수 (살아 있는 DB)                        ✓
+  ⑨ 앱 롤 속성                                   ✓
+  ⑩ 5 단위 헬스                                  ✓
+  ⑪ 앱 자격증명 출처 (core /healthz/storage)        ✓
+  ⑫ 환경 짝  dev                                ✓
+  ⑬ 진입·라우팅 (endpoint)                        ✓
+  ⑭ 백업 24h                                   ✗
+  ⑮ 실행 sha ∈ main                            ✓
+
+  항목 15 — ✓ 14 · ✗ 1 · ─ 0
+  RED (실패 1건) · 고치는 법: dev-package/S3.md §1 · infra/dev/README.md

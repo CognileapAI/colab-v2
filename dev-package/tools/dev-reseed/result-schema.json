@@ -67,7 +67,7 @@
           "seq": { "type": "string" },
           "name": { "type": "string" },
           "processingLevel": { "type": "string" },
-          "verdict": { "enum": ["성립", "미성립"] },
+          "verdict": { "enum": ["성립", "미성립", "판정불가"] },
           "elapsedMs": { "type": "integer", "minimum": 0 },
           "unsetLevel": { "type": "integer" },
           "usageCards": { "type": "integer" }

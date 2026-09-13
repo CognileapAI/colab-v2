@@ -180,7 +180,7 @@ ALL_GATES=(
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
-  seed-plan-drift-selftest
+  seed-plan-drift-selftest dev-reseed-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
@@ -221,6 +221,15 @@ case "$GATE" in
     # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 등재표 손수정 red(판정) ·
     # md 행 삭제 red(판정) · 미선언 red(준비 · 78) · 명시 면제 green(면제·미실행 노출).
     exec "$REPO_ROOT/gates/tools/seed-plan-drift-selftest.sh"
+    ;;
+  dev-reseed-selftest)
+    # `dev-package/tools/dev-reseed/` 의 **판독부**가 red fixture 로 fail-closed 임을 증명한다.
+    # 그 판독부는 종전에 어느 검사에도 걸리지 않아 `deploy_doctor` 요약줄을 한 줄도 못 잡는
+    # 파서와 「값을 못 받으면 성립」인 미리보기 판정이 dev 실행 전까지 드러나지 않았다.
+    # 픽스처 둘 — `tests/doctor-parse.sh`(실물 모양 표본 · 파일만 읽는다) ·
+    # `tests/preflight-red.sh`(조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다).
+    # dev·AWS 무접촉 = ssh·scp·docker·aws·agent-browser 를 PATH 대역으로 가린다.
+    exec "$REPO_ROOT/gates/tools/dev-reseed-selftest.sh"
     ;;
   contract-lint)
     # seam OpenAPI 린트 (spectral, 룰셋 contracts/.spectral.yaml).

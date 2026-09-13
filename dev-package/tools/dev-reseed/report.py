@@ -42,7 +42,8 @@ def _preview_rows(path: pathlib.Path) -> list[dict]:
         f = (line.split("\t") + [""] * 8)[:8]
         rows.append({
             "seq": f[0], "name": f[1], "processingLevel": f[2],
-            "verdict": f[3] if f[3] in ("성립", "미성립") else "미성립",
+            # 모르는 값을 「미성립」으로 접지 않는다 — **재지 못한 것**과 **재서 어긋난 것**은 다르다.
+            "verdict": f[3] if f[3] in ("성립", "미성립", "판정불가") else "판정불가",
             "elapsedMs": int(f[4] or 0),
             "unsetLevel": int(f[5] or 0), "usageCards": int(f[6] or 0),
         })
@@ -113,7 +114,7 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 
 - `deploy_doctor` 요약줄 축자 = `{doctor}`
 
-## 3. 미리보기 판정 표 ({preview_n} 행 · 성립 {preview_ok})
+## 3. 미리보기 판정 표 ({preview_n} 행 · 성립 {preview_ok} · 판정불가 {preview_undecided})
 
 | 순번 | 데이터셋 | 가공 단계 | 판정 | ms |
 |---|---|---|---|---|
@@ -127,6 +128,7 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 
 - 원장 등재문 · 대장 `DR-4` 상태 · `03-HANDOFF §1` 갱신은 오케스트레이터가 한다(레인·도구가 하지 않는다).
 - 판정이 필요한 미성립 항목의 원인 분류(도구 결함 / 미리보기 뒷단 `PV-2`)를 여기에 적는다.
+- **「판정불가」가 1건이라도 있으면 그 회차는 미리보기를 잰 것이 아니다** — 원인(브라우저 무응답 · 선택자 변경)을 먼저 적는다.
 """
 
 
@@ -236,6 +238,7 @@ def main() -> int:
         duration=duration, stage_rows=stage_rows, counts_block=counts_block,
         doctor=doctor or "—", preview_n=len(rows),
         preview_ok=sum(1 for r in rows if r["verdict"] == "성립"),
+        preview_undecided=sum(1 for r in rows if r["verdict"] == "판정불가"),
         preview_rows=preview_rows, blocked_n=len(blocked), blocked_block=blocked_block,
     ), encoding="utf-8")
     print("result.json · 회차 기록 뼈대 기록 · 단계 %d · 차단 %d" % (len(ran), len(blocked)))

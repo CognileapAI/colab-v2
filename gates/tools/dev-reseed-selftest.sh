@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# `dev-package/tools/dev-reseed/` 가 red fixture 로 **fail-closed** 임을 증명한다 (CLAUDE.md §4).
+#
+# 왜 게이트인가 = 이 도구의 판독부(요약줄 파싱·계수 대조·미리보기 판정)는 **어느 검사에도
+#   걸리지 않았다.** 그래서 ⑴ `deploy_doctor` 요약줄을 한 줄도 못 잡는 파서 ⑵ 계수가 맞아도
+#   미달로 떨어지는 계획 판정 ⑶ 값을 못 받으면 「성립」으로 읽는 미리보기 판정이 그대로 있었고,
+#   전부 **dev 를 한 번 돌려 보고서야** 드러날 자리였다. 검사가 사람의 실행 안에만 있으면
+#   그것은 검사가 아니다 — 이 레포의 green-by-skip 계열이다.
+#
+# 픽스처 둘 —
+#   ⓐ `tests/doctor-parse.sh`   실물 모양 표본으로 요약줄 파서를 판정한다(dev 무접촉 · 파일만 읽는다).
+#   ⓑ `tests/preflight-red.sh`  조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다.
+#      `ssh`·`scp`·`docker`·`aws`·`agent-browser` 를 PATH 대역으로 가려 **실물에 한 바이트도 나가지 않는다.**
+#
+# ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
+#   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
+#   red(준비) = 픽스처가 **못 돌았다**(실행기·재료 부재) → 종료 78 ＋ `::gate-readiness-failure::`
+set -uo pipefail
+
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+RESEED_DIR="$REPO_ROOT/dev-package/tools/dev-reseed"
+GATE=dev-reseed-selftest
+
+ready_fail() { # $1=기다린 대상 $2=상세
+  printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=-|elapsed=-|detail=%s\n' "$GATE" "$1" "$2"
+  echo "::error::$GATE red(준비) — $2" >&2
+  exit 78
+}
+
+# ── 준비 ─────────────────────────────────────────────────────────────────
+# 실행기가 없으면 **판정하지 못한 것**이다. 없는 것을 통과로 세지 않는다.
+for tool in bash python3 git; do
+  command -v "$tool" >/dev/null 2>&1 || ready_fail "실행기 $tool" "cause=실행기부재 $tool 이 PATH 에 없다"
+done
+
+# 판정 재료가 없으면 red(판정)다 — 픽스처는 이 레포가 가지고 있어야 하는 파일이다.
+CASES=(
+  "$RESEED_DIR/tests/doctor-parse.sh"
+  "$RESEED_DIR/tests/preflight-red.sh"
+)
+MATERIALS=(
+  "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
+  "$RESEED_DIR/tests/fixtures/doctor-15-15.txt" "$RESEED_DIR/tests/fixtures/doctor-14-15.txt"
+)
+for f in "${CASES[@]}" "${MATERIALS[@]}"; do
+  [ -f "$f" ] || { echo "::error::$GATE red(판정) — 판정 재료가 없다: ${f#"$REPO_ROOT/"}" >&2; exit 1; }
+done
+
+# ── 판정 ─────────────────────────────────────────────────────────────────
+PASSED=0
+FAILED=()
+READINESS=()
+
+for case_path in "${CASES[@]}"; do
+  name="$(basename "$case_path" .sh)"
+  out="$(bash "$case_path" 2>&1)"; rc=$?
+  if [ "$rc" = 78 ] || { [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q '::gate-readiness-failure::'; }; then
+    # 픽스처가 못 돌았다 — 판정된 적이 없으므로 통과로도 결함으로도 세지 않는다.
+    READINESS+=("$name (rc=$rc)")
+    printf '%s\n' "$out" | sed 's/^/     /'
+    continue
+  fi
+  if [ "$rc" -eq 0 ]; then
+    PASSED=$(( PASSED + 1 ))
+    echo "  ✓ $name"
+  else
+    FAILED+=("$name (rc=$rc)")
+    echo "  ✗ $name (rc=$rc)"
+    printf '%s\n' "$out" | sed 's/^/     /'
+  fi
+done
+
+echo
+echo "$GATE — 픽스처 ${#CASES[@]} · 통과 $PASSED · 결함 ${#FAILED[@]} · 판정 못 함 ${#READINESS[@]}"
+
+if [ "${#FAILED[@]}" -gt 0 ]; then
+  echo "::error::$GATE red(판정) — 픽스처 ${#FAILED[@]}건이 fail-closed 를 증명하지 못했다:" >&2
+  printf '  - %s\n' "${FAILED[@]}" >&2
+  exit 1
+fi
+if [ "${#READINESS[@]}" -gt 0 ]; then
+  printf '::gate-readiness-failure::gate=%s|waited_for=픽스처 실행 환경(%d건)|limit=-|elapsed=-|detail=%s\n' \
+    "$GATE" "${#READINESS[@]}" "${READINESS[*]}"
+  echo "::error::$GATE red(준비) — 아래 픽스처를 **판정하지 못했다**. 통과로 세지 않는다:" >&2
+  printf '  - %s\n' "${READINESS[@]}" >&2
+  exit 78
+fi
+# 대상 0건은 통과가 아니다.
+[ "$PASSED" -eq "${#CASES[@]}" ] || {
+  echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가)"
+exit 0

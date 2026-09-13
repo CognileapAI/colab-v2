@@ -40,6 +40,7 @@ stage_deploy() {
   local head; head="$(run_capture git -C "$REPO_ROOT" rev-parse --short=12 HEAD || true)"
   if [ "$DRY_RUN" != 1 ] && [ "$head" != "$TARGET_SHA" ]; then
     die "작업 트리 HEAD $head ≠ 배포 대상 $TARGET_SHA — build.sh 는 HEAD 를 굽는다. 먼저 체크아웃한다."
+    return 1
   fi
 
   log "① 이미지 5벌 빌드 (linux/arm64)"
@@ -70,6 +71,24 @@ stage_deploy() {
   doctor_once || return 1
 }
 
+# deploy_doctor 요약줄 파서 — 표준입력에서 **마지막 한 벌**의 요약줄을 뽑는다.
+#
+# ⚠ 실물 출력은 `print(f"\n  {text}")` 라 **요약줄 앞에 공백 2칸**이 붙는다
+#   (`deploy_doctor.py` `run()` 끝 · 표본 `tests/fixtures/doctor-15-15.txt`).
+#   앞뒤 공백을 벗기고 나서 잡는다 — `^항목` 으로 바로 잡으면 한 줄도 걸리지 않는다.
+# 「마지막 한 벌」 = 출력에 요약줄이 둘 이상이면 **가장 뒤**가 이번 실행의 결과다.
+doctor_summary_line() {
+  sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' \
+    | grep -E '^항목 [0-9]+ — ✓ [0-9]+ · ✗ [0-9]+ · ─ [0-9]+$' \
+    | tail -1
+}
+
+# 요약줄이 **15 항목 전건 통과**인가. 빈 줄·모르는 모양은 전부 미달이다(fail-closed).
+doctor_summary_full() {
+  [ -n "${1:-}" ] || return 1
+  printf '%s' "$1" | grep -qE '^항목 15 — ✓ 15 · ✗ 0 · ─ 0$'
+}
+
 # deploy_doctor 를 **한 번** 돌리고 요약줄로 판정한다.
 # 부분 실행 둘을 합쳐 15 라 하지 않는다(완료 정의 · `.claude/rules/deploy.md`).
 doctor_once() {
@@ -77,11 +96,11 @@ doctor_once() {
   local out; out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE" || true)"
   printf '%s\n' "$out" | redact >> "$STAGE_LOG"
   if [ "$DRY_RUN" = 1 ]; then return 0; fi
-  local line; line="$(printf '%s\n' "$out" | grep -E '^항목 [0-9]+ — ' | tail -1 || true)"
+  local line; line="$(printf '%s\n' "$out" | doctor_summary_line || true)"
   log "deploy_doctor 요약줄: ${line:-<없음>}"
   if [ -z "$line" ]; then blocked_add deploy_doctor "요약줄 없음 — 판정 불가"; return 1; fi
   printf '%s\n' "$line" > "$RUN_DIR/doctor-summary.txt"
-  if printf '%s' "$line" | grep -qE '^항목 15 — ✓ 15 · ✗ 0 · ─ 0$'; then
+  if doctor_summary_full "$line"; then
     log "deploy_doctor 15/15 — 한 번의 실행"
     return 0
   fi
@@ -311,11 +330,17 @@ stage_prelude() {
     RESEED_ACCOUNT_NAME="${RESEED_ACCOUNT_NAME:-<RESEED_ACCOUNT_NAME>}"
     RESEED_ACCOUNT_ID="${RESEED_ACCOUNT_ID:-<RESEED_ACCOUNT_ID · 26자 ULID>}"
   else
-    : "${RESEED_ACCOUNT_EMAIL:?RESEED_ACCOUNT_EMAIL 이 필요하다 — 첫 계정 이메일}"
-    : "${RESEED_ACCOUNT_NAME:?RESEED_ACCOUNT_NAME 이 필요하다 — 첫 계정 이름}"
-    : "${RESEED_ACCOUNT_ID:?RESEED_ACCOUNT_ID 이 필요하다 — 26자 ULID(② ③ ④ 가 같은 값을 쓴다)}"
-    [ -n "${OPERATOR_PASSWORD_FILE:-}" ] \
-      || die "--operator-password-file 이 필요하다 — 초기 비밀번호 10자 이상 0600 파일"
+    # `${VAR:?}` 는 **셸을 끝낸다** — 그러면 `stage_end`·`report` 가 돌지 못한다(`die` 와 같은 이유).
+    # 값이 없는 것도 「멈춘 자리」로 남겨야 하므로 하나씩 세어 돌아온다.
+    local want=()
+    [ -n "${RESEED_ACCOUNT_EMAIL:-}" ] || want+=("RESEED_ACCOUNT_EMAIL(첫 계정 이메일)")
+    [ -n "${RESEED_ACCOUNT_NAME:-}" ]  || want+=("RESEED_ACCOUNT_NAME(첫 계정 이름)")
+    [ -n "${RESEED_ACCOUNT_ID:-}" ]    || want+=("RESEED_ACCOUNT_ID(26자 ULID · ② ③ ④ 가 같은 값을 쓴다)")
+    [ -n "${OPERATOR_PASSWORD_FILE:-}" ] || want+=("--operator-password-file(10자 이상 0600 파일)")
+    if [ "${#want[@]}" -gt 0 ]; then
+      die "prelude 에 필요한 값 ${#want[@]} 건이 없다 — ${want[*]}"
+      return 1
+    fi
   fi
 
   log "① 연구실 — provision-lab.sql (파일이 스스로 app.current_lab 을 건다)"
@@ -416,8 +441,9 @@ REMOTE
 # 화면 경로로만 투입한다. DB 직접 쓰기는 prelude 넷뿐이다(라운드 §7).
 stage_seed() {
   log "① 계획 생성 — 정본 md 4건 → plan-manifest.yaml ＋ upload-plan.json"
-  run python3 "$REPO_ROOT/dev-package/tools/dev-seed/build_plan.py" \
-      --ref-root "$COLAB_REF_ROOT" --md-root "$MD_ROOT" --work-dir "$SEED_WORK_DIR" || return 1
+  # preflight ⑽ 이 판정한 것과 **같은 생성기**다(`BUILD_PLAN_PY`).
+  run python3 "$BUILD_PLAN_PY" \
+      --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" --work-dir "$SEED_WORK_DIR" || return 1
 
   log "② 러너 — 로그인 · 프로젝트 · 데이터셋 · 확인 · 보고"
   local extra=()
@@ -436,6 +462,22 @@ stage_seed() {
 #        core-api 가 10,02x ms 에 끊어 503 을 냈다(`dev-package/sessions/DR-3-run-2026-09-13.md §6`).
 #        뒷단 개선은 이 회차 범위 밖(`PV-2`)이라 여기서는 **판정만** 한다.
 PREVIEW_WAIT_MS="${COLAB_RESEED_PREVIEW_WAIT_MS:-45000}"
+
+# 미리보기 판정 — `preview-unavailable` 의 **계수 한 개**로 가른다.
+#   0        → 성립      (「볼 수 없다」 표시가 없다)
+#   1 이상   → 미성립    (표시가 있다)
+#   빈 값·숫자 아님 → **판정불가**
+#
+# ⚠ 종전에는 `[ "${shown:-0}" -gt 0 ]` 이라 **값을 못 받은 것이 0 과 같았다** — 브라우저가
+#   응답하지 않았거나 선택자가 바뀌어 아무 값도 안 온 회차가 「전건 성립」으로 적혔다.
+#   못 잰 것을 잰 것으로 세지 않는다(`CLAUDE.md §4` green-by-skip 과 같은 계열).
+preview_verdict() {
+  local v="${1:-}"
+  case "$v" in
+    ""|*[!0-9]*) printf '판정불가'; return ;;
+  esac
+  if [ "$v" -gt 0 ]; then printf '미성립'; else printf '성립'; fi
+}
 
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
@@ -472,12 +514,15 @@ PY
     run_capture agent-browser open "$DEV_URL/datasets/$did" >/dev/null || true
     run_capture agent-browser wait '[data-testid="dataset-preview"]' "$PREVIEW_WAIT_MS" >/dev/null 2>&1 || true
     t1="$(date +%s%3N)"; ms=$(( t1 - t0 ))
-    shown="$(run_capture agent-browser get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -dc '0-9')"
+    # `tr -dc` 로 숫자만 남기지 않는다 — 그러면 「아무 값도 못 받음」과 「0」이 같은 모양이 된다.
+    shown="$(run_capture agent-browser get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
     level="$(run_capture agent-browser get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
     unset_lv="$(run_capture agent-browser get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -dc '0-9')"
     usage="$(run_capture agent-browser get count '[data-testid="usage-card"]' 2>/dev/null | tr -dc '0-9')"
-    local verdict=성립
-    [ "${shown:-0}" -gt 0 ] && verdict=미성립
+    local verdict; verdict="$(preview_verdict "$shown")"
+    if [ "$verdict" = 판정불가 ]; then
+      blocked_add verify "seq=$seq $name" "preview-unavailable 계수를 읽지 못했다(받은 값 [$shown]) — 미리보기 판정 불가"
+    fi
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n' \
       "$seq" "$name" "${level:-?}" "$verdict" "$ms" "${unset_lv:-0}" "${usage:-0}" >> "$RUN_DIR/preview-judgment.tsv"
   done <<< "$ids"
@@ -501,6 +546,7 @@ got = {r[0]: r[2] for r in rows}
 level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
 unset = [r[0] for r in rows if r[5] not in ("0", "")]
 unlinked = [r[0] for r in rows if r[6] in ("0", "")]
+undecided = [r[0] for r in rows if r[3] == "판정불가"]
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
@@ -509,9 +555,12 @@ res = {
     "projectUnlinkedSeq": unlinked,
     "previewRows": len(rows),
     "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
+    "previewUndecidedSeq": undecided,
 }
 json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
 bad = []
+# 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
+if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
 if res["datasets"]["ui"] != int(nds): bad.append("데이터셋 계수 %s" % res["datasets"]["ui"])
 if res["edges"]["ok"] != int(nedge): bad.append("간선 계수 %s" % res["edges"]["ok"])
 if level_mismatch: bad.append("가공 단계 불일치 seq %s" % ",".join(level_mismatch))
@@ -528,8 +577,14 @@ PY
 stage_report() {
   local result="$RUN_DIR/result.json"
   # 실제 실행은 회차 기록 자리에 쓴다. dry-run 은 레포를 건드리지 않으므로 실행 자리에만 쓴다.
-  local session="$REPO_ROOT/dev-package/sessions/DR-4-run-$(date -u +%Y-%m-%d).md"
-  [ "$DRY_RUN" = 1 ] && session="$RUN_DIR/DR-4-run-$(date -u +%Y-%m-%d).md"
+  # 이름에 **`RUN_ID`(날짜＋시각)** 를 쓴다 — 날짜만 쓰면 같은 날 두 번째 실행이 첫 번째 기록을
+  # 덮어써 **멈춘 자리와 근거가 사라진다**(하루에 여러 번 도는 것이 이 도구의 전제다).
+  # 레포에 남기는 조건 = **바꾸는 단계가 실제로 돌았다**(`MUTATED`). preflight 에서 멈춘 회차와
+  # `--preflight-only`·`--dry-run` 은 dev 를 읽기만 했으므로 실행 자리에만 남긴다.
+  local session="$RUN_DIR/DR-4-run-$RUN_ID.md"
+  if [ "$DRY_RUN" != 1 ] && [ "${MUTATED:-0}" = 1 ]; then
+    session="$REPO_ROOT/dev-package/sessions/DR-4-run-$RUN_ID.md"
+  fi
   python3 "$RESEED_DIR/report.py" \
     --run-dir "$RUN_DIR" --run-id "$RUN_ID" --target-sha "${TARGET_SHA:-}" \
     --stages "$(printf '%s,' "${STAGES[@]}")" --dry-run "$DRY_RUN" \

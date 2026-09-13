@@ -9,8 +9,12 @@
 #        게이트 넷 충족 시 회차별 GO 불요. staging·prod 는 무변(매회 GO)이고 이 도구가 돌지 않는다.
 # 경계 = dev 하나. `_ops/` 무접촉. DB 직접 쓰기는 prelude 의 SQL 선행 4단계뿐이다.
 #
+# preflight 는 **언제나 돈다** — 읽기 전용이고, 배포 대상 sha 를 해석하는 자리가 거기 하나뿐이다.
+# `--from` 은 **바꾸는 단계 여덟** 중 시작 지점만 고른다.
+#
 # 사용:
 #   bash dev-package/tools/dev-reseed/reseed.sh --dry-run
+#   bash dev-package/tools/dev-reseed/reseed.sh --preflight-only
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
@@ -23,6 +27,10 @@ REPO_ROOT="$(cd "$RESEED_DIR/../../.." && pwd)"
 
 # ── 고정 값 ──────────────────────────────────────────────────────────────
 STAGES_ALL=(preflight deploy reset bootstrap up s3 prelude seed verify report)
+# 바꾸는 단계 여덟. `--from` 은 **이 중에서** 어디부터 시작할지만 고른다.
+# preflight 와 report 는 그 바깥이다 — preflight 는 읽기 전용이라 언제나 돌고,
+# report 는 결과를 적는 자리라 실패해도 돈다.
+STAGES_MUTATING=(deploy reset bootstrap up s3 prelude seed verify)
 
 # 근거: R-DEV-RESET §11-1 ⑶ — 버킷·리전은 `dev.env` 가 아니라 compose 의 리터럴이다.
 #       미지정 상태의 `s3-plan` 은 exit 2 로 아무것도 하지 않는다.
@@ -40,6 +48,10 @@ EXPECT_PROJECTS="${COLAB_RESEED_EXPECT_PROJECTS:-4}"
 
 MIN_MEM_MIB="${COLAB_RESEED_MIN_MEM_MIB:-4096}"
 MIN_DISK_GIB="${COLAB_RESEED_MIN_DISK_GIB:-20}"
+
+# 계획 생성기 자리. preflight ⑽ 과 seed ① 이 **같은 값**을 쓴다 — 둘이 갈리면 preflight 가
+# 판정한 생성기와 실제로 도는 생성기가 달라진다. 픽스처가 대역을 끼우는 자리이기도 하다.
+BUILD_PLAN_PY="${COLAB_RESEED_BUILD_PLAN:-$REPO_ROOT/dev-package/tools/dev-seed/build_plan.py}"
 
 # 정본 md 4건의 자리(참조자료 뿌리 기준 · R-DATA-CANON §2 ㈎ ⓐ).
 REF_MD_RELS=(
@@ -59,6 +71,7 @@ SECRET_FILE_NAMES=(
 # ── 인자 ─────────────────────────────────────────────────────────────────
 DRY_RUN=0
 FROM_STAGE=preflight
+PREFLIGHT_ONLY=0
 RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/main}"
 TARGET_SHA=""
@@ -69,11 +82,17 @@ MD_ROOT=""
 SEED_WORK_DIR=""
 
 usage() {
-  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 인자:
-  --from <단계>                 그 단계부터 재개(기본 preflight). 단계 이름은 위 10개.
+  --from <단계>                 **바꾸는 단계** 중 어디부터 시작할지 고른다
+                                (deploy·reset·bootstrap·up·s3·prelude·seed·verify · 기본 deploy).
+                                ⚠ preflight 는 이 인자와 무관하게 **언제나 먼저 돈다** — 읽기 전용이고,
+                                배포 대상 sha 를 해석하는 자리가 거기 하나뿐이라 건너뛰면
+                                이미지 태그·승인 기록이 빈 sha 로 선다.
+  --preflight-only              preflight 만 돌고 **바꾸는 단계는 하나도 돌지 않는다**.
+                                dev 를 읽기만 한다(ssh 조회·aws sts·docker ps·파일·계획 생성 dry-run).
   --dry-run                     실행할 명령을 전부 찍고 dev·AWS·docker 를 건드리지 않는다.
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
@@ -88,6 +107,7 @@ USAGE
 while [ $# -gt 0 ]; do
   case "$1" in
     --from) FROM_STAGE="$2"; shift 2 ;;
+    --preflight-only) PREFLIGHT_ONLY=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
@@ -100,16 +120,26 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# `--from` 부터 끝까지가 이번 실행의 단계 집합이다.
-STAGES=()
-seen=0
-for s in "${STAGES_ALL[@]}"; do
-  [ "$s" = "$FROM_STAGE" ] && seen=1
-  [ "$seen" = 1 ] && STAGES+=("$s")
-done
-if [ "${#STAGES[@]}" -eq 0 ]; then
-  echo "모르는 단계: $FROM_STAGE (${STAGES_ALL[*]})" >&2; exit 2
+# ── 단계 집합 ────────────────────────────────────────────────────────────
+# **preflight 는 언제나 돈다.** 읽기 전용이고, 배포 대상 sha 를 해석하는 자리가 거기 하나뿐이다.
+# 건너뛰면 `TARGET_SHA` 가 빈 채로 이미지 태그(`…:dev-`)·승인 기록·`--from deploy` 로 들어간다.
+# `--from` 이 고르는 것은 **바꾸는 단계 중 시작 지점** 하나다.
+STAGES=(preflight)
+if [ "$PREFLIGHT_ONLY" != 1 ]; then
+  if [ "$FROM_STAGE" = preflight ]; then
+    STAGES+=("${STAGES_MUTATING[@]}")
+  else
+    seen=0
+    for s in "${STAGES_MUTATING[@]}"; do
+      [ "$s" = "$FROM_STAGE" ] && seen=1
+      [ "$seen" = 1 ] && STAGES+=("$s")
+    done
+    if [ "$seen" != 1 ]; then
+      echo "모르는 단계: $FROM_STAGE (preflight ${STAGES_MUTATING[*]})" >&2; exit 2
+    fi
+  fi
 fi
+STAGES+=(report)
 
 stage_enabled() {
   local want="$1" s
@@ -153,9 +183,17 @@ STAGE_LOG="$RUN_DIR/logs/start.log"
 log "dev 재생성 — 단계 ${STAGES[*]}"
 log "실행 자리 = $(relpath "$RUN_DIR") · dry-run = $DRY_RUN · 대상 ref = $TARGET_REF"
 if [ "$DRY_RUN" != 1 ]; then
-  : "${COLAB_DEV_SSH:?COLAB_DEV_SSH 가 필요하다 (예: ec2-user@<IP>)}"
-  : "${COLAB_DEV_KEY_FILE:?COLAB_DEV_KEY_FILE 이 필요하다 (0600 개인키)}"
-  : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다}"
+  # ⚠ 접속 값 부재로 **셸을 끝내지 않는다**(`${VAR:?}` 를 쓰지 않는다) — 그러면 단계가 하나도
+  #   기록되지 않아 `result.json` 이 서지 않고, 무엇이 없어서 멈췄는지가 표준오류 한 줄에만 남는다.
+  #   부재는 **preflight 미달 항목**이다. 이름을 대고 그 안에서 떨어진다(`DEV_SSH_MISSING`).
+  DEV_SSH_MISSING=()
+  [ -n "${COLAB_DEV_SSH:-}" ]      || DEV_SSH_MISSING+=(COLAB_DEV_SSH)
+  [ -n "${COLAB_DEV_KEY_FILE:-}" ] || DEV_SSH_MISSING+=(COLAB_DEV_KEY_FILE)
+  # dev 주소는 **화면을 여는 단계**(seed·verify)만 쓴다. preflight 는 쓰지 않으므로
+  # `--preflight-only` 는 이 값 없이도 끝까지 검사한다.
+  if stage_enabled seed || stage_enabled verify; then
+    : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다 (seed·verify 가 화면을 연다)}"
+  fi
 else
   # dry-run 은 값이 하나도 없어도 끝까지 간다 — 빈 자리는 **이름 그대로** 찍어 무엇을 줘야 하는지 보인다.
   COLAB_DEV_SSH="${COLAB_DEV_SSH:-<COLAB_DEV_SSH>}"
@@ -164,14 +202,20 @@ else
   COLAB_REF_ROOT="${COLAB_REF_ROOT:-<COLAB_REF_ROOT>}"
   MD_ROOT="${MD_ROOT:-<COLAB_REF_ROOT>}"
   TARGET_SHA="${TARGET_SHA:-<대상 sha · preflight 가 해석>}"
+  DEV_SSH_MISSING=()
 fi
-export COLAB_DEV_SSH COLAB_DEV_KEY_FILE
+export COLAB_DEV_SSH="${COLAB_DEV_SSH:-}" COLAB_DEV_KEY_FILE="${COLAB_DEV_KEY_FILE:-}"
 
 # ── 순차 실행 ────────────────────────────────────────────────────────────
 # 단계 하나가 비영 종료하면 **그 자리에서 멈춘다** — 단계 이름과 로그 경로를 낸다.
 FAILED_STAGE=""
+# 바꾸는 단계가 **실제로 하나라도 돌았는가.** 회차 기록을 레포(`dev-package/sessions/`)에 남길지
+# 실행 자리에만 남길지를 이 값이 가른다 — preflight 에서 멈춘 회차는 dev 를 읽기만 했으므로
+# 레포에 기록을 만들지 않는다(픽스처가 레포를 더럽히던 자리이기도 하다).
+MUTATED=0
 for s in "${STAGES[@]}"; do
   [ "$s" = report ] && continue     # report 는 마지막에 한 번만 돈다
+  [ "$s" = preflight ] || MUTATED=1
   stage_begin "$s"
   rc=0
   case "$s" in

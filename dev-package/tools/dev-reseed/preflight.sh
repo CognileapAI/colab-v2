@@ -19,6 +19,15 @@ pf_dry() {
   return 0
 }
 
+# dev 접속 값이 없으면 그 항목을 **이름을 대고** 미달로 떨어뜨리고 0 을 돌려준다.
+# 값 부재로 셸을 끝내지 않는다 — 접속이 필요 없는 항목(git·qemu·ref-root·resources·build-plan)은
+# 그대로 실제로 잰다. 부재 하나가 나머지 판정을 덮지 않는다.
+pf_need_ssh() {
+  [ "${#DEV_SSH_MISSING[@]}" -gt 0 ] || return 1
+  pf_fail "$1" "dev 접속 값 미설정 — ${DEV_SSH_MISSING[*]} (예: COLAB_DEV_SSH=ec2-user@<IP> · COLAB_DEV_KEY_FILE=<0600 개인키>)"
+  return 0
+}
+
 # ⑴ git — origin/main 을 받았는가 · 배포 대상 sha 가 그 조상인가 · 작업 트리가 깨끗한가.
 pf_git() {
   pf_dry git "git fetch origin main · rev-parse $TARGET_REF · merge-base --is-ancestor · status --porcelain" && return
@@ -42,6 +51,7 @@ pf_git() {
 #    다르면 deploy 단계가 **필수**이고, 그 단계가 꺼져 있으면 거부한다.
 pf_dev_sha() {
   pf_dry dev-sha "ssh <dev> cat /opt/colab-v2/CURRENT_SHA · 대상 sha 와 대조 · 불일치 시 deploy 단계 필수" && return
+  pf_need_ssh dev-sha && return
   local cur; cur="$(ssh_dev_capture 'cat /opt/colab-v2/CURRENT_SHA 2>/dev/null | tr -d "\r\n"' || true)"
   if [ -z "$cur" ]; then pf_fail dev-sha "dev 의 CURRENT_SHA 를 읽지 못했다 — ssh·경로 확인"; return; fi
   if [ "$cur" = "${TARGET_SHA:-}" ]; then
@@ -101,9 +111,18 @@ pf_qemu() {
 #    ⓑ EC2 에 임시 컨테이너가 남아 있는가(`colab-ops-*` · 이 도구가 쓰는 `colab_reseed_*`)
 pf_leftovers() {
   pf_dry leftovers "<git-common-dir>/deploy-releases/*/state.json 진행 중 · ssh <dev> docker ps -a 이름 대조" && return
+  pf_need_ssh leftovers && return
   local names=""
-  local common; common="$(run_capture git -C "$REPO_ROOT" rev-parse --git-common-dir || true)"
-  if [ -n "$common" ] && [ -d "$common/deploy-releases" ]; then
+  # ⚠ `--git-common-dir` 단독은 **호출한 자리 기준 상대경로**를 돌려준다(워크트리에서는 `../..`
+  #   사슬). 이 함수는 `$REPO_ROOT` 밖에서 그 값을 다시 쓰므로 절대경로로 받아야 한다 —
+  #   상대경로면 `[ -d "$common/deploy-releases" ]` 가 언제나 거짓이고 진행 중 배포를
+  #   **보지 못한 채 「0 건」으로 통과**시킨다(fail-open).
+  local common
+  common="$(run_capture git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir || true)"
+  if [ -z "$common" ]; then
+    pf_fail leftovers "git 공통 디렉터리를 절대경로로 풀지 못했다 — 진행 중 배포 판정 불가"; return
+  fi
+  if [ -d "$common/deploy-releases" ]; then
     names="$(grep -rl '"status"[[:space:]]*:[[:space:]]*"running"' "$common/deploy-releases" 2>/dev/null || true)"
   fi
   local remote rc=0
@@ -159,6 +178,7 @@ pf_agent_browser() {
 #    목록의 출처 = `infra/dev/README.md` 시크릿 파일 표 ＋ 런북 §3·§5 가 마운트하는 파일.
 pf_secrets() {
   pf_dry secrets "ssh <dev> stat -c '%n %a' \$COLAB_DEV_SECRETS_DIR/<이름 9건> — 모드 0600 만 판정" && return
+  pf_need_ssh secrets && return
   local dir="${COLAB_DEV_SECRETS_DIR:-/etc/colab}"
   local listing; listing="$(ssh_dev_capture "sudo stat -c '%n %a' $(printf "'%s/%s' " "$dir" "${SECRET_FILE_NAMES[@]}") 2>&1" || true)"
   local bad=() name mode
@@ -199,22 +219,33 @@ pf_resources() {
 }
 
 # ⑽ 계획 생성기 — 정본 md 에서 28/18 이 나오는가. 여기서 어긋나면 seed 가 틀린 계획으로 돈다.
+#
+# ⚠ 생성기의 요약줄은 **두 모양**이다 — `--dry-run` 경로는 `datasets 28 edges 18`,
+#   `--check-manifest` 경로는 뒤에 ` data_bytes N` 이 더 붙는다
+#   (`dev-package/tools/dev-seed/build_plan.py` `check_manifest`). `grep -qx` 는 뒤 모양을
+#   한 글자도 잡지 못한다 — 계수가 맞아도 미달로 떨어지는 자리라 앞머리 일치로 바꾼다.
 pf_build_plan() {
-  pf_dry build-plan "python3 dev-package/tools/dev-seed/build_plan.py --dry-run — exit 0 ＋ 「datasets 28 edges 18」" && return
+  pf_dry build-plan "python3 $(relpath "$BUILD_PLAN_PY") --dry-run — exit 0 ＋ 「datasets $EXPECT_DATASETS edges $EXPECT_EDGES」" && return
   # 표준오류까지 읽어야 미달 사유가 남는다 — `run_capture` 는 stderr 를 로그로 보낸다.
   local tmp; tmp="$(mktemp)"
   local out rc=0
-  python3 "$REPO_ROOT/dev-package/tools/dev-seed/build_plan.py" \
-    --dry-run --ref-root "$COLAB_REF_ROOT" --md-root "$MD_ROOT" > "$tmp" 2>&1 || rc=$?
+  python3 "$BUILD_PLAN_PY" \
+    --dry-run --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" > "$tmp" 2>&1 || rc=$?
   out="$(cat "$tmp")"; rm -f "$tmp"
   printf '%s\n' "$out" | redact >> "$STAGE_LOG"
   if [ "$rc" -ne 0 ]; then
     pf_fail build-plan "비영 종료 $rc — $(printf '%s' "$out" | tail -2 | tr '\n' ' ')"; return
   fi
-  if printf '%s\n' "$out" | grep -qx "datasets $EXPECT_DATASETS edges $EXPECT_EDGES"; then
-    pf_pass build-plan "datasets $EXPECT_DATASETS edges $EXPECT_EDGES"
+  # 요약줄은 `datasets <n> edges <n>` 으로 시작하고 뒤에 아무것도 없거나 공백이 온다.
+  # 계수 자리에 다른 수가 오면 잡히지 않는다 — 접두 일치가 아니라 **낱말 경계**로 끊는다.
+  local summary; summary="$(printf '%s\n' "$out" | grep -E '^datasets [0-9]+ edges [0-9]+( |$)' | head -1 || true)"
+  if [ -z "$summary" ]; then
+    pf_fail build-plan "요약줄(datasets … edges …)이 출력에 없다 — 판정 불가"; return
+  fi
+  if printf '%s\n' "$summary" | grep -qE "^datasets $EXPECT_DATASETS edges $EXPECT_EDGES( |$)"; then
+    pf_pass build-plan "$summary"
   else
-    pf_fail build-plan "계수 불일치 — $(printf '%s\n' "$out" | grep -E '^datasets ' | head -1)"
+    pf_fail build-plan "계수 불일치(기대 datasets $EXPECT_DATASETS edges $EXPECT_EDGES) — $summary"
   fi
 }
 

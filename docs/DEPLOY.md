@@ -286,7 +286,11 @@ docker run --rm --network host --env-file /tmp/op.env \
 
 ### 6-1-2. dev 전면 재생성 — `dev-package/tools/dev-reseed/reseed.sh`
 
-⭑ ⟨신설 2026-09-14 · `R-DATA-CANON` WU-C3⟩ dev 를 **초기화하고 정본 자료로 다시 채우는** 무인 진입점이다. 10단계(`preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report`) · `--from` 재개 · `--dry-run` 무접촉. 승인은 **dev 한정 상시 승인**(`.claude/rules/deploy.md` 11번 증보 문단)이고 staging·prod 는 무변(매회 GO). 절차의 근거 = `dev-package/sessions/DR-2-runbook.md` · 스킬 = `/dev-reseed`.
+⭑ ⟨신설 2026-09-14 · `R-DATA-CANON` WU-C3⟩ dev 를 **초기화하고 정본 자료로 다시 채우는** 무인 진입점이다. 10단계(`preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report`) · `--from` 재개 · `--dry-run` 무접촉 · `--preflight-only` 검사만. 승인은 **dev 한정 상시 승인**(`.claude/rules/deploy.md` 11번 증보 문단)이고 staging·prod 는 무변(매회 GO). 절차의 근거 = `dev-package/sessions/DR-2-runbook.md` · 스킬 = `/dev-reseed`.
+
+⭑ ⟨증보 2026-09-14 · 검토 반영⟩ **preflight 는 `--from` 과 무관하게 언제나 먼저 돈다** — 읽기 전용이고, 배포 대상 sha 를 해석하는 자리가 거기 하나뿐이라 건너뛰면 이미지 태그(`…:dev-`)와 승인 기록이 빈 sha 로 선다. `--from` 이 고르는 것은 **바꾸는 단계 여덟** 중 시작 지점 하나다.
+
+⭑ **이 도구의 deploy 단계는 `build.sh → ship.sh → 트리 동기화 → up.sh → 프런트 번들 → `deploy_web.py` 를 직접 이어 붙이고, 릴리스 계획 실행기(`ops/deploy_release.py`)를 부르지 않는다.** 이유 둘 — ⑴ 이 회차는 「배포 한 번」이 아니라 **초기화·재투입까지 열 단계**이고, 단계별 로그·`result.json`·차단 항목을 한 벌로 모아야 한다(계획 실행기의 상태 파일은 그 열 단계를 모르는 별도 사슬이다) ⑵ 계획 실행기의 잠금은 **작업 사본을 넘지 못해**(이슈 #48) 다른 사본의 진행 중 배포를 이 도구가 직접 preflight ⑸(`leftovers`)에서 판정한다. 판정 기준은 같다 — `ship.sh` 안의 조상 게이트(비조상 65 · origin 조회 실패 78)와 `deploy_doctor` **15/15 한 번의 실행**을 그대로 쓴다.
 
 ### 6-2. 재배포 · 되돌리기
 
