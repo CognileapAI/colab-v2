@@ -186,15 +186,6 @@ section.lin {
   color: var(--lin-over-ink);
 }
 
-/* 찾기 모달의 가공 단계 셀렉트 */
-.lin-lvfilter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
 .lin-lv {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -206,8 +197,10 @@ section.lin {
   border-radius: 6px;
   padding: 4px 6px;
 }
-.lin-picker li.is-over > button[disabled] {
+.lin-picker li.is-over .lin-name {
   color: var(--lin-over-name);
+}
+.lin-picker li.is-over .lin-cand {
   cursor: not-allowed;
 }
 .lin-picker li.is-over .lin-lv {
@@ -301,17 +294,50 @@ section.lin {
 .lin-findbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 .lin-findbar > label { flex: 1 1 140px; display: grid; gap: 8px; }
 .lin-findbar > label:first-child { flex-grow: 2; }
-.lin-picker button[aria-pressed="true"] { background: var(--color-surface-hover); outline: 2px solid var(--color-primary); }
+.lin-picker li.is-picked { background: var(--color-surface-hover); outline: 2px solid var(--color-primary); }
 .lin-candidate-info { margin: 0; font-size: var(--text-caption); color: var(--color-text-muted); }
 .lin-picker li { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.lin-picker li button { text-align: left; }
+
+/* ⭑ ⟨2026-09-14 · 기획자 9/13⟩ 후보 목록은 **고정 높이 ＋ 세로 스크롤**이다 —
+   목록이 길어져도 하단 고정 영역(요약·가공 방식·버튼)이 화면 밖으로 밀리지 않는다. */
+.lin-picker ul.lin-cand-list {
+  height: 320px;
+  max-height: 42vh;
+  overflow-y: auto;
+  gap: 8px;
+  padding: 2px;
+  margin-top: 12px;
+}
+
+/* 후보 한 줄 = 라디오 ＋ 본문. 줄 전체가 라디오의 라벨이라 어디를 눌러도 고를 수 있다. */
+.lin-cand { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.lin-cand > input[type='radio'] { margin: 3px 0 0; flex: none; }
+.lin-cand-b { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lin-cand-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.lin-cand .lin-name { font-weight: 600; overflow-wrap: anywhere; }
+
+/* 하단 고정 영역 — 고른 후보 요약 · 가공 방식 · 취소／연결이 한 묶음으로 바닥에 남는다 */
+.lin-find-f { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.lin-find-sum {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.lin-find-method { display: grid; gap: 6px; font-size: var(--text-caption); }
+.lin-find-method .inp { width: 100%; box-sizing: border-box; }
+.lin-find-btns { display: flex; justify-content: flex-end; gap: 8px; }
 
 .lin-relation-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .lin-relation-actions label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 .lin-fix { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; box-shadow: none; }
 .lin-find .lin-over-why, .lin-fix .lin-over-why, .lin-findbar label, .lin-fix-method-l { font-size: var(--text-caption); }
-.lin-picker li button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 /* Live audit: the disabled state must not make the dataset identity unreadable. */
 .lin-picker .lin-lv { font-size: var(--text-caption); }
-.lin-picker li.is-over > button[disabled], .lin-picker li.is-over .lin-lv { color: var(--color-text-muted); opacity: 1; }
+.lin-picker li.is-over .lin-name, .lin-picker li.is-over .lin-lv { color: var(--color-text-muted); opacity: 1; }
+.lin-candidate-files { margin: 0; font-size: var(--text-caption); color: var(--color-text-muted); overflow-wrap: anywhere; }
+
+/* 연결 0건 빈 상태 한 줄 (기획서 rev2 `#linHint`) */
+.lin-hint { margin: 0; font-size: var(--text-caption); color: var(--color-text-muted); }

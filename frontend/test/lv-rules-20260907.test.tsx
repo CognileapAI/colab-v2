@@ -183,8 +183,12 @@ const themeTokens = (dark: boolean) => {
 
 // ═══ ㈎ 자기 Lv=Lv0 — 안내 범위가 `Lv0` 하나다 ═══
 describe('PRD-07 연결 단계 안내', () => {
-  it('자기 Lv=Lv0 이면 안내가 `Lv0` 하나이고 후보를 Lv0 으로 좁힐 수 있다', async () => {
-    const { sources, calls } = fakes();
+  // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 후보 모달의 **가공 단계
+  //   셀렉트를 걷었다**(필터는 검색어 하나). 그래서 「좁힐 수 있다」를 재던 자리가 사라졌다 —
+  //   ⛔ **규칙을 지운 것이 아니다.** 초과 후보는 목록에 그대로 남고 못 고르는 사유가 읽히며,
+  //   그 판정은 아래 ㈏ 와 `parent-picker-20260914` 가 잰다.
+  it('자기 Lv=Lv0 이면 안내가 `Lv0` 하나이고 후보 목록에 가공 단계 필터가 없다', async () => {
+    const { sources } = fakes();
     await openLineage(sources, 'Lv0');
     expect(screen.getByTestId('lin-lv-scope').textContent).toContain(
       '지금 이 데이터는 Lv0 · Lv0 가공 전 데이터만 연결할 수 있어요.');
@@ -192,11 +196,11 @@ describe('PRD-07 연결 단계 안내', () => {
 
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
-    await change(screen.getByTestId('lin-lv-filter'), '0');
-    expect(calls.levels).toContain(0);
+    expect(screen.queryByTestId('lin-lv-filter')).toBeNull();
+    // **없는 것과 못 고르는 것은 다르다** — 초과 후보도 줄로 남는다.
     const items = within(screen.getByTestId('lin-picker')).getAllByRole('listitem');
-    expect(items).toHaveLength(1);
-    expect(items[0]?.textContent).toContain('원자료 강우');
+    expect(items.length).toBeGreaterThan(1);
+    expect(items.map((li) => li.textContent).join(' ')).toContain('원자료 강우');
   });
 
   it('자기 Lv=Lv2 이면 범위가 `Lv0~Lv2` 다', async () => {

@@ -270,7 +270,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   }
 
   /** `수정` — 이 순간부터 AI 행동이 아니다. 칩을 걷고 경로를 바꾸고 확인을 무른다. */
-  function editTo(key: string, row: ParentCandidateRow) {
+  /** `method` = 후보 모달 하단에서 적은 값. 적었을 때만 덮는다 — 빈 칸이 기존 값을 지우지 않는다. */
+  function editTo(key: string, row: ParentCandidateRow, method?: string) {
     patch(key, {
       parentDatasetId: row.datasetId,
       parentDatasetName: row.name,
@@ -281,10 +282,15 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       confirmedMethodText: null,
       picking: false,
       parentLevel: displayLevel(row),
+      ...(method ? { method } : {}),
     });
   }
 
-  function addParent(row: ParentCandidateRow) {
+  /**
+   * `method` = 후보 모달 하단에서 적은 **가공 방식**(기획자 2026-09-13).
+   * 카드의 **초기값**으로만 들어간다 — 카드 안의 칸은 편집용으로 그대로 남는다.
+   */
+  function addParent(row: ParentCandidateRow, method?: string) {
     setAdding(false);
     setParents((cur) => [
       ...cur,
@@ -297,7 +303,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         rationale: null,
         origin: 'manual',
         confirmed: false,
-        method: '',
+        method: method ?? '',
         confirmedMethodText: null,
         picking: false,
         // 후보 줄이 들고 온 표시 Lv — 사후 충돌을 재는 값이다(PRD-09).
@@ -312,7 +318,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     setMethods((cur) => cur.map((x) => (x.key === m.key ? { ...x, confirmed: true } : x)));
   }
 
-  function picker(onPick: (row: ParentCandidateRow) => void, testid: string) {
+  function picker(onPick: (row: ParentCandidateRow, method?: string) => void, testid: string) {
     return (
       <ParentPicker
         selfLv={ceilingLv}
@@ -327,7 +333,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
         loadingMore={loadingMore}
         loadMoreError={loadMoreError}
         onLoadMore={loadMore}
-        onPick={(row) => { onPick(row); setAdding(false); }}
+        onPick={(row, method) => { onPick(row, method); setAdding(false); }}
         testId={testid}
       />
     );
@@ -338,6 +344,15 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   /** 직접 연결 — **누르기 전에는 이 자리가 기본**이라 AI 영역보다 위에 선다(완료 정의 ⓑ). */
   const addBlock = (
     <div className="lin-add">
+      {/**
+        * 연결 0건 빈 상태 — 기획서 rev2 `#linHint` 축자. **버튼 바로 위**다.
+        * ⚠ **AI 제안 0건 문구(`lin-empty`)와 다른 자리다.** 그쪽은 「살펴봤는데 없었다」를
+        * 말하고, 이 줄은 **아직 아무것도 잇지 않았다**는 사실만 말한다 — 묻지 않은 것을
+        * 「없다」로 접지 않는다.
+        */}
+      {parents.length === 0 && (
+        <p className="lin-hint" data-testid="lin-hint">아직 연결한 가공 전 데이터가 없어요</p>
+      )}
       <button
         type="button"
         className="btn btn-secondary btn-sm"
@@ -350,7 +365,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
           setAdding((v) => !v);
         }}
       >
-        앞 데이터 직접 추가
+        + 가공 전 데이터 추가
       </button>
       {adding && picker(addParent, 'lin-picker')}
     </div>
@@ -513,7 +528,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               </button>
             </div>
 
-            {p.picking && picker((row) => editTo(p.key, row), 'lin-edit-picker')}
+            {p.picking && picker((row, method) => editTo(p.key, row, method), 'lin-edit-picker')}
           </div>
         ))}
 
