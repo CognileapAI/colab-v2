@@ -64,10 +64,10 @@
 - **비밀 취급 4 (축자)** —
   > - 초기 비밀번호는 0600 전달 파일에서 셸 변수로만 읽고 표준입력으로 넘겼다. `cat`·`echo` 로 화면에 내지 않았고 레포·서버 어느 파일에도 쓰지 않았다.
   > - 확인 뒤 `shred -u` 했다. 사후 `ls` = `No such file or directory`.
-  > - 확인용으로 발급된 세션 1건이 남는다 — 회수 토큰을 보관하지 않았으므로 손으로 끊지 않았다. **Ted 의 첫 비밀번호 변경이 `session_version` 을 +1 하면 그 시점에 무효가 된다**(`db_credentials.change_password`).
+  > - 확인용으로 발급된 세션 1건이 남는다 — `expires 2026-09-12 17:04:20Z` · `revoked NULL`. 회수 토큰을 보관하지 않았으므로 손으로 끊지 않았다. **Ted 의 첫 비밀번호 변경이 `session_version` 을 +1 하면 그 시점에 무효가 된다**(`db_credentials.change_password`).
 - **초기 비밀번호는 10자 이상으로 정한다.** 축자: 「전달 파일은 **9자**이고 제품 하한은 **10자**다(`accounts.py` `initialPassword: Field(min_length=10)` · `frontend/src/auth/passwordRules.ts` `length >= 10`). DB·로그인 경로에는 길이 하한이 없어 심기·로그인 모두 성립했고 실측으로 확인했다. 다만 **같은 비밀번호를 `POST /admin/accounts` 로는 발급할 수 없다.**」 ⟹ 9자로 심으면 로그인은 되지만 첫 변경 화면이 막는다.
 - **집행 뒤 확인할 열 (선례 실측표의 열 그대로)** — `account_id` · `login_name` · `lab_id`/`role` · `kdf`/`n`/`r`/`p` = `scrypt`/`16384`/`8`/`1` · `must_change_password` = `true` · `session_version` = `1`.
-- **알려진 잡음 — 판정 red 가 아니다.** 축자: 「집행 스크립트의 **사후 조회**가 `permission denied for table d2_member_role` 로 죽었다. INSERT 트랜잭션은 이미 커밋된 뒤였고, 원인은 `ops/account-admin-role.sql` 이 `d2_member_role` 에 **`INSERT` 만 주고 `SELECT` 를 주지 않는 것**이다.」 ⟹ 역할 행 확인은 소유자 롤로 대신한다.
+- **알려진 잡음 — 판정 red 가 아니다.** 축자: 「집행 스크립트의 **사후 조회**가 `permission denied for table d2_member_role` 로 죽었다. INSERT 트랜잭션은 이미 커밋된 뒤였고, 원인은 `ops/account-admin-role.sql` 이 `d2_member_role` 에 **`INSERT` 만 주고 `SELECT` 를 주지 않는 것**이다(축자 확인).」 ⟹ 역할 행 확인은 소유자 롤로 대신한다.
 - **상태 코드 확인** = `POST /api/v1/sessions` **201** · `GET /api/v1/me` **200** `mustChangePassword=true`. ⚠ 401 이 5건 쌓이면 **429**(시도 제한 창 900초 · 한도 5)가 나므로 창이 지난 뒤 다시 낸다(`§8` 실측).
 - 기대 결과 = `account_admin.login_credential` 1행 · `must_change_password = true` · `session_version = 1`.
 - 실패 시 멈춤.
