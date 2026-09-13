@@ -24,6 +24,9 @@ from ...kernel.ids import Ulid
 from ...kernel.scope import read_only_scope
 from ...ports.lineage import LV_CAP
 from .. import dataset_search, search_conditions, search_evidence_conditions
+from ...domains import d3_search_annotations
+from ...domains import d3_client_search
+from .. import client_search
 from ..deps import current_subject, scoped_db
 
 router = APIRouter()
@@ -134,8 +137,8 @@ def _query_datetime(value: str | None, label: str) -> dt.datetime | None:
     return parsed
 
 
-def _compose(db: Session) -> list[dict]:
-    cores = d3_catalog.list_dataset_cores(db)
+def _compose(db: Session, dataset_ids: list[str] | None = None) -> list[dict]:
+    cores = d3_catalog.list_dataset_cores(db, dataset_ids)
     ids = [Ulid(c.dataset_id) for c in cores]
     lineage = d4_lineage.LineageSummaryAdapter(db).summaries(ids)
     # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다.**
@@ -430,7 +433,7 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     · **AI 가 얹어 보낸 식별자를 읽지 않는다** (중계가 이미 버린다).
     """
     payload = body if isinstance(body, dict) else {}
-    unknown = sorted(set(payload) - {"query", "limit", "cursor", "verified"})
+    unknown = sorted(set(payload) - {"query", "limit", "cursor", "verified", "context"})
     if unknown:
         raise errors.bad_request(f"요청에 계약에 없는 필드가 있다: {unknown}")
     query = payload.get("query")
@@ -455,6 +458,12 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     lab_name = ("" if lab is None else lab["name"]) or "연구실"
     # **뒤진 범위를 먼저 밝힌다** — 세는 것은 D3 이고, 그것이 이쪽 도메인이다.
     searched_count = d3_catalog.count_datasets(db)
+
+    context = client_search.validate_context(payload.get('context'))
+    plan = client_search.plan_query(query, context=context)
+    if plan['recognized']:
+        return _client_search(request, subject, db, plan, context, lab_name, searched_count,
+                              limit, cursor, verified_only)
 
     answer = request.app.state.searches.interpret(
         lab_id=str(subject.lab_id), lab_name=lab_name,
@@ -522,7 +531,9 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             matches, total = d3_catalog.search_datasets(
                 ro, terms=answer["terms"], topic=search_topic,
                 limit=fetch_limit, offset=fetch_offset,
-                evidence_ids=tuple(include_ids), excluded_ids=tuple(exclude_ids))
+                evidence_ids=tuple(include_ids), excluded_ids=tuple(exclude_ids),
+                include_ontology=True)
+            concept_matches=d3_search_annotations.matching(ro,terms=answer['terms'],dataset_ids=[m.dataset_id for m in matches])
         hits, next_cursor = dataset_search.compose(
             matches, lab_name=lab_name, searched=searched_count, topic=search_topic,
             # 해석이 모델에서 오지 않았으면 근거 한 줄이 그 사실을 밝힌다.
@@ -548,6 +559,9 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
                     '기록되지 않은 조건과 자료 품질은 보장하지 않아요')
                 enriched['rationale'] = search_evidence_conditions.explain(
                     base, criteria, evidence_by_dataset[hit['datasetId']])
+            if concept_matches.get(hit['datasetId']):
+                labels=', '.join(dict.fromkeys(r['label'] for r in concept_matches[hit['datasetId']]))
+                enriched['rationale'] += re.sub(r'\s+', ' ', f' 자료에 적힌 {labels}의 온톨로지 연결을 확인했어요.')
             if source_notes.get(hit['datasetId']):
                 names = ', '.join(dict.fromkeys(source_notes[hit['datasetId']]))
                 enriched['rationale'] += re.sub(r'\s+', ' ', f' {names}가 속한 자료의 직접 부모 관계로 확인했어요.')
@@ -594,6 +608,73 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
     if answer.get("degradedReason"):
         out["degradedReason"] = answer["degradedReason"]
     return out
+
+
+def _client_search(request, subject, db, plan, context, lab_name, searched_count,
+                   limit, cursor, verified_only):
+    offset = dataset_search.decode_cursor(cursor)
+    with read_only_scope(request.app.state.session_factory, subject,
+                         operator_read=subject.operator) as ro:
+        if plan['intent'] == 'reference_match' and context.get('referenceFileId'):
+            ref = d3_client_search.reference(ro, context['referenceFileId'])
+            if ref is None:
+                raise errors.not_found()
+            facts = ref['facts'] or {}
+            if plan.get('referenceVariable') and client_search.canonical(facts.get('variable',''),'variables') != plan['referenceVariable']:
+                plan['questions'].append('선택한 기준 파일이 질문의 관측 변수 자료인지 현재 근거로 확인할 수 없습니다.')
+            if not facts.get('period') or not facts.get('region'):
+                plan['questions'].append('기준 파일의 현재 검토된 지역·기간 근거가 필요합니다.')
+            else:
+                region = client_search.canonical(facts['region'],'regions')
+                if plan['conditions'].get('region') not in (None,region):
+                    plan['questions'].append('선택한 기준 파일과 질문의 지역이 다릅니다.')
+                plan['conditions']['region'] = region
+                plan['conditions']['exactPeriod'] = facts['period']
+        candidates, truncated = ([],False) if plan['questions'] else d3_client_search.candidates(
+            ro,plan['conditions'],verified_ids=d2_access.verified_dataset_ids(ro) if verified_only else None)
+        matches = []
+        unknown_count = 0
+        for candidate in candidates:
+            verdict = client_search.evaluate(plan,candidate,[candidate['evidence']])
+            if verdict['status'] == 'supported':
+                matches.append({'datasetId':candidate['dataset_id'],'name':candidate['name'], **verdict})
+            elif verdict['status'] == 'unknown':
+                unknown_count += 1
+        # Assemble only the bounded match IDs and use the same read-only scope.
+        rows = {r['datasetId']:r for r in _compose(ro,[r['datasetId'] for r in matches])}
+        valid_files = d3_client_search.current_receipts(ro,[c['receipt'] for c in candidates])
+        changed_during_read = any(r['fileId'] not in valid_files for r in matches)
+        matches = [r for r in matches if r['datasetId'] in rows and rows[r['datasetId']]['bodyAccessible']
+                   and r['fileId'] in valid_files and (not verified_only or rows[r['datasetId']]['verified'])]
+        if plan['intent'] == 'finest':
+            matches.sort(key=lambda r:(r['facts'].get('nativeResolutionM',float('inf')),r['datasetId']))
+        elif plan['intent'] != 'latest':
+            matches.sort(key=lambda r:(not rows[r['datasetId']]['verified'],r['datasetId']))
+        assessment = client_search.respond(plan,matches,truncated=truncated)
+        if changed_during_read:
+            assessment['status'] = 'partial'
+            assessment['text'] = '조회 중 자료 또는 접근 상태가 바뀌어 이전 근거를 제외했습니다. 다시 검색해 주세요.'
+        assessment['unknownCount'] = unknown_count
+        if unknown_count:
+            assessment['text'] += f' 후보 중 {unknown_count}건은 필요한 근거가 부족하여 적합 여부를 확정하지 못했습니다.'
+        selected = matches[offset:offset+limit]
+        # The answer's comparison details follow the page; count is for all tested matches.
+        assessment['comparisons'] = selected
+        items = []
+        for match in selected:
+            row = rows[match['datasetId']]
+            out = {k:v for k,v in row.items() if not k.startswith('_')}
+            out.update(relevanceBar=1.0, rationale='현재 파일의 검토된 근거에서 해석된 조건을 함께 확인했습니다. 기록되지 않은 품질은 미확인입니다.',
+                       summary=row['_summary'],period=None)
+            if match['facts'].get('period'):
+                # Evidence days are represented at the start of each Seoul calendar day.
+                out['period'] = {k:v+'T00:00:00+09:00' for k,v in match['facts']['period'].items()}
+                out['period']['granularity'] = '일'
+            items.append(out)
+    return {'scope':{'labId':str(subject.lab_id),'labName':lab_name,'searchedCount':searched_count},
+            'isDataQuery':True,'degraded':False,'items':items,'totalCount':len(matches),
+            'nextCursor':dataset_search.encode_cursor(offset+len(items)) if offset+len(items)<len(matches) else None,
+            'assessment':assessment}
 
 
 @router.get("/datasets/{datasetId}/files", name="listDatasetFiles")

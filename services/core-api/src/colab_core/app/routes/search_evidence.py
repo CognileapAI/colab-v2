@@ -51,6 +51,13 @@ class EvidenceFacts(BaseModel):
     directObservation: StrictBool | None = None
     nativeResolutionM: float | None = Field(default=None, gt=0, strict=True, allow_inf_nan=False)
     interpolated: StrictBool | None = None
+    representation: Literal['spatial_grid','point_observations','table','array'] | None = None
+    platform: Literal['satellite','ground','model','mixed'] | None = None
+    format: Literal['npy','csv','netcdf','tif','hdf5'] | None = None
+    provider: str | None = Field(default=None,min_length=1,max_length=200)
+    unit: str | None = Field(default=None,min_length=1,max_length=100)
+    statistics: list[Literal['instantaneous','daily_mean','daily_max','daily_min','monthly_mean',
+                            'monthly_mean_daily_max','monthly_mean_daily_min']] | None = Field(default=None,min_length=1,max_length=7)
 
     @model_validator(mode="after")
     def has_fact(self):
@@ -60,7 +67,7 @@ class EvidenceFacts(BaseModel):
             raise ValueError("roles must be non-empty and unique")
         return self
 
-    @field_validator("region", "model", "variable")
+    @field_validator("region", "model", "variable", "provider", "unit")
     @classmethod
     def optional_text_not_blank(cls, value: str | None) -> str | None:
         if value is not None and not value.strip():

@@ -169,13 +169,17 @@ def test_upload_metadata_download_and_approval_snapshots(p2_client, live_client,
     from conftest import DS_A2, TOKEN_PROF
     client=p2_client(session_secret='operator-test')
     target,_=_dataset(client,name='업로드 감사')
+    audit_query="SELECT source_id,before_snapshot,after_snapshot FROM d3_operator_audit WHERE target_id=:id AND action='dataset.updated'"
+    before_ids={row['source_id'] for row in sql(audit_query,{'id':target})}
     changed=client.patch(API_PREFIX+'/datasets/'+target,json={'name':'변경된 이름','summary':'새 요약'},headers=auth(TOKEN_RES))
     assert changed.status_code==200,changed.text
     ticket=client.get(API_PREFIX+'/datasets/'+target+'/download',headers=auth(TOKEN_RES))
     assert ticket.status_code==200
-    updated=sql("SELECT before_snapshot,after_snapshot FROM d3_operator_audit WHERE target_id=:id AND action='dataset.updated'",{'id':target})
-    assert updated[-1]['before_snapshot']['name']=='업로드 감사'
-    assert updated[-1]['after_snapshot']['name']=='변경된 이름'
+    updated=[row for row in sql(audit_query,{'id':target}) if row['source_id'] not in before_ids]
+    assert len(updated)==1
+    assert updated[0]['before_snapshot']['name']=='업로드 감사'
+    assert updated[0]['after_snapshot']['name']=='변경된 이름'
+    assert updated[0]['after_snapshot']['summary']=='새 요약'
     assert sql("SELECT source_id FROM d8_operator_export WHERE payload->>'target_id'=:id AND payload->>'action'='download.ticket_issued'",{'id':target})
     requested=live_client.post(API_PREFIX+f'/datasets/{DS_A2}/access-requests',headers=auth(TOKEN_RES))
     assert requested.status_code==201,requested.text

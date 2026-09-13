@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import pathlib
+from functools import lru_cache
 import sys
 
 SRC = pathlib.Path(__file__).resolve().parents[1] / "src"
@@ -344,13 +346,21 @@ def sql(session_factory):
         s.close()
 
 
+@lru_cache(maxsize=4)
+def _cleanup_primary_keys(engine):
+    from sqlalchemy import inspect
+
+    inspector = inspect(engine)
+    return {table: inspector.get_pk_constraint(table)["constrained_columns"]
+            for table, _, _ in _CLEANUP}
+
+
 @pytest.fixture(autouse=True)
 def _rollback_p2_rows(request, session_factory):
     """시험이 만든 행을 **시험이 끝날 때 되돌린다.**
 
-    시각 기준으로 지운다 — 시드 행은 전부 이 시각보다 앞이라 남고, 시험이 만든 행만 사라진다.
-    (ID 접두사로 가르려 했으나 시드 ULID 와 생성 ULID 가 **둘 다 `0` 으로 시작한다** — 확인하고
-    버린 방법이다. 확장자로 역할을 가르려다 실파일 14건을 삼킨 `M-1` 과 같은 무늬라서 안 쓴다.)
+    시작 전 기본키와 시각을 함께 비교한다. 새 행의 시각이 과거여도 정리하고,
+    기존 시드 보호 조건과 복원은 유지한다. 앱 롤의 같은 연구실 경계 안에서만 동작한다.
     """
     # `live_client` 도 훑는다 — `test_cross_tenant.py` 의 쓰기 경계 증명이 `createProject` 로
     # 실제 행을 만들고 되돌리지 않았다. 목록 op 이 열리기 전에는 보이지 않던 누출이다 (WU-P5).
@@ -363,11 +373,21 @@ def _rollback_p2_rows(request, session_factory):
     from colab_core.kernel.ids import Ulid
     from colab_core.kernel.scope import apply_scope
 
-    # **시각은 DB 에게 묻는다** — 호스트 시계와 DB 시계를 섞으면 몇 밀리초 차이로 시험이
-    # 자기가 만든 행을 못 지운다. 그 실패는 다음 시험에서야 드러나서 원인을 못 찾는다.
     marker = session_factory()
     try:
+        apply_scope(marker, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
         started = marker.execute(text("SELECT now()")).scalar_one()
+        primary_keys = _cleanup_primary_keys(marker.get_bind())
+        assert all(primary_keys.values()), "cleanup tables must have primary keys"
+        # 표/열 이름은 고정 목록과 DB 메타데이터에서만 가져온다. 복합 키도 보존한다.
+        baseline_sql = " UNION ALL ".join(
+            f"SELECT '{table}' AS table_name, "
+            f"coalesce(jsonb_agg(jsonb_build_array({', '.join(primary_keys[table])})), "
+            f"'[]'::jsonb) AS keys FROM {table}"
+            for table, _, _ in _CLEANUP
+        )
+        baseline = {row.table_name: json.dumps(row.keys)
+                    for row in marker.execute(text(baseline_sql))}
     finally:
         marker.close()
     yield
@@ -378,8 +398,12 @@ def _rollback_p2_rows(request, session_factory):
         apply_scope(session, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
         session.execute(text(_CLEANUP_VARIABLES))
         for table, column, keep in _CLEANUP:
-            session.execute(text(f"DELETE FROM {table} WHERE {column} >= :t{keep}"),
-                            {"t": started})
+            key = ", ".join(f"{table}.{name}" for name in primary_keys[table])
+            session.execute(text(
+                f"DELETE FROM {table} WHERE ({column} >= :t OR NOT EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements(CAST(:baseline AS jsonb)) AS seen(key) "
+                f"WHERE seen.key = jsonb_build_array({key}))){keep}"
+            ), {"t": started, "baseline": baseline[table]})
         for statement in _RESTORE:
             session.execute(text(statement))
         session.commit()

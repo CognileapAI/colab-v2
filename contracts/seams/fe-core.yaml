@@ -4987,6 +4987,8 @@ components:
       required: [query]
       additionalProperties: false
       properties:
+        context:
+          $ref: "#/components/schemas/SearchContext"
         query:
           description: 자연어 한 문장 (`Policy_데이터_찾기 §5 검색 질문 — 1~200자`).
           type: string
@@ -5025,6 +5027,8 @@ components:
         - type: object
           required: [scope, isDataQuery, degraded, items]
           properties:
+            assessment:
+              $ref: "#/components/schemas/SearchAssessment"
             scope:
               allOf: [{ $ref: "../schemas/common.json#/$defs/AiSearchScope" }]
               description: |
@@ -5047,6 +5051,75 @@ components:
             items:
               type: array
               items: { $ref: "#/components/schemas/SearchResultRow" }
+
+    SearchContext:
+      description: "사용자가 이번 요청에서 명시한 연구 조건 또는 기준 파일. 개인 이력이나 권한을 대신하지 않는다."
+      type: object
+      additionalProperties: false
+      properties:
+        referenceFileId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+        research:
+          type: object
+          minProperties: 1
+          additionalProperties: false
+          properties:
+            variable: { type: string, enum: [land_surface_temperature, air_temperature, precipitation, wind_speed, water_quality, particulate_matter] }
+            region: { type: string, enum: [seoul, jeju, korean_peninsula] }
+            period:
+              type: object
+              required: [start, end]
+              additionalProperties: false
+              properties:
+                start: { type: string, format: date }
+                end: { type: string, format: date }
+            statistics:
+              type: array
+              minItems: 1
+              maxItems: 7
+              uniqueItems: true
+              items: { type: string, enum: [instantaneous, daily_mean, daily_max, daily_min, monthly_mean, monthly_mean_daily_max, monthly_mean_daily_min] }
+            maxResolutionM: { type: number, exclusiveMinimum: 0 }
+
+    SearchAssessment:
+      description: "클라이언트 핵심 검색의 조건별 근거 판정. 모델 생성 답안을 사실로 사용하지 않는다."
+      type: object
+      required: [status, text, questions, intent, conditions, asOf, semanticVersion, scope, candidateLimitReached, comparisons, unknownCount]
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [clarification, partial, answered] }
+        text: { type: string }
+        questions: { type: array, items: { type: string } }
+        intent: { type: string, enum: [discover, recommend, compare, reference_match, latest, finest] }
+        conditions: { type: object, additionalProperties: true }
+        asOf: { type: string, format: date-time }
+        semanticVersion: { type: string, pattern: "^[0-9a-f]{64}$" }
+        scope: { type: string }
+        candidateLimitReached: { type: boolean }
+        unknownCount: { type: integer, minimum: 0 }
+        comparisons:
+          type: array
+          items:
+            type: object
+            required: [datasetId, name, status, checks, fileId, fileName, facts, source]
+            additionalProperties: false
+            properties:
+              datasetId: { $ref: "../schemas/common.json#/$defs/Ulid" }
+              name: { type: string }
+              status: { type: string, enum: [supported, unknown, contradicted] }
+              checks: { type: object, additionalProperties: { type: string, enum: [supported, unknown, contradicted] } }
+              fileId:
+                oneOf:
+                  - $ref: "../schemas/common.json#/$defs/Ulid"
+                  - type: "null"
+              fileName: { type: [string, "null"] }
+              facts: { type: object, additionalProperties: true }
+              source:
+                type: [object, "null"]
+                additionalProperties: false
+                properties:
+                  label: { type: string }
+                  locator: { type: string }
+                  sha256: { type: string }
 
     SearchResultRow:
       description: |
@@ -5477,6 +5550,16 @@ components:
       minProperties: 1
       additionalProperties: false
       properties:
+        representation: { type: string, enum: [spatial_grid, point_observations, table, array] }
+        platform: { type: string, enum: [satellite, ground, model, mixed] }
+        format: { type: string, enum: [npy, csv, netcdf, tif, hdf5] }
+        provider: { type: string, minLength: 1, maxLength: 200 }
+        unit: { type: string, minLength: 1, maxLength: 100 }
+        statistics:
+          type: array
+          minItems: 1
+          maxItems: 7
+          items: { type: string, enum: [instantaneous, daily_mean, daily_max, daily_min, monthly_mean, monthly_mean_daily_max, monthly_mean_daily_min] }
         roles:
           type: array
           minItems: 1

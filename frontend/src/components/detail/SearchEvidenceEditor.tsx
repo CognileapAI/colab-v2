@@ -21,6 +21,7 @@ const ROLE_OPTIONS = [
 
 type TriState = '' | 'yes' | 'no';
 type FormState = {
+  typed: SearchEvidenceFacts;
   roles: SearchEvidenceFacts['roles'];
   periodStart: string;
   periodEnd: string;
@@ -39,6 +40,7 @@ type FormState = {
 function formFrom(item: SearchEvidenceItem): FormState {
   const evidence = item.evidence;
   return {
+    typed: Object.fromEntries(Object.entries(evidence?.facts ?? {}).filter(([key]) => ['representation','platform','format','provider','unit','statistics'].includes(key))),
     roles: evidence?.facts.roles ?? [],
     periodStart: evidence?.facts.period?.start ?? '',
     periodEnd: evidence?.facts.period?.end ?? '',
@@ -56,7 +58,7 @@ function formFrom(item: SearchEvidenceItem): FormState {
 }
 
 function factsFrom(form: FormState): SearchEvidenceFacts {
-  const facts: SearchEvidenceFacts = {};
+  const facts: SearchEvidenceFacts = { ...form.typed };
   if (form.roles?.length) facts.roles = form.roles;
   if (form.periodStart && form.periodEnd) facts.period = { start: form.periodStart, end: form.periodEnd };
   if (form.region.trim()) facts.region = form.region.trim();
@@ -163,6 +165,14 @@ export function SearchEvidenceEditor(props: {
     set('roles', roles.includes(role) ? roles.filter((candidate) => candidate !== role) : [...roles, role]);
   }
 
+  function setTyped<K extends keyof SearchEvidenceFacts>(key: K, value: SearchEvidenceFacts[K]) {
+    if (!form) return;
+    const next = { ...form.typed };
+    if (value === undefined || value === '' || Array.isArray(value) && value.length === 0) delete next[key];
+    else next[key] = value;
+    set('typed', next);
+  }
+
   async function save(status: SearchEvidenceWrite['status']) {
     if (!item || !form) return;
     setSaving(true);
@@ -228,6 +238,11 @@ export function SearchEvidenceEditor(props: {
                 <dt>주기</dt><dd>{item.evidence.facts.cadence ?? '미상'}</dd>
                 <dt>모델</dt><dd>{item.evidence.facts.model ?? '미상'}</dd>
                 <dt>변수</dt><dd>{item.evidence.facts.variable ?? '미상'}</dd>
+                <dt>자료 형태</dt><dd>{item.evidence.facts.representation ?? '미상'}</dd>
+                <dt>관측 기반</dt><dd>{item.evidence.facts.platform ?? '미상'}</dd>
+                <dt>제공 기관</dt><dd>{item.evidence.facts.provider ?? '미상'}</dd>
+                <dt>단위</dt><dd>{item.evidence.facts.unit ?? '미상'}</dd>
+                <dt>통계 유형</dt><dd>{item.evidence.facts.statistics?.join(', ') || '미상'}</dd>
                 <dt>직접 관측</dt><dd>{item.evidence.facts.directObservation === undefined ? '미상' : item.evidence.facts.directObservation ? '예' : '아니요'}</dd>
                 <dt>원 관측 해상도</dt><dd>{item.evidence.facts.nativeResolutionM === undefined ? '미상' : `${item.evidence.facts.nativeResolutionM} m`}</dd>
                 <dt>보간</dt><dd>{item.evidence.facts.interpolated === undefined ? '미상' : item.evidence.facts.interpolated ? '예' : '아니요'}</dd>
@@ -266,6 +281,19 @@ export function SearchEvidenceEditor(props: {
           <div className="de-row"><label className="de-k" htmlFor={`se-cadence-${props.fileId}`}>주기</label><select className="de-v" id={`se-cadence-${props.fileId}`} value={form.cadence} onChange={(e) => set('cadence', e.target.value as FormState['cadence'])}><option value="">미상</option><option value="15min">15분</option><option value="daily">매일</option><option value="weekly">매주</option><option value="monthly">매월</option></select></div>
           <div className="de-row"><label className="de-k" htmlFor={`se-model-${props.fileId}`}>모델</label><input className="de-v" id={`se-model-${props.fileId}`} maxLength={500} value={form.model} onChange={(e) => set('model', e.target.value)} /></div>
           <div className="de-row"><label className="de-k" htmlFor={`se-variable-${props.fileId}`}>변수</label><input className="de-v" id={`se-variable-${props.fileId}`} maxLength={500} value={form.variable} onChange={(e) => set('variable', e.target.value)} /></div>
+          <p className="fieldnote">지표면 온도와 기온은 다릅니다. 파일 형식만으로 공간자료 여부를 판단하지 말고 출처를 확인해 주세요.</p>
+          {([
+            ['representation','자료 형태',[['spatial_grid','공간 격자'],['point_observations','공간 좌표가 있는 점 관측'],['table','표'],['array','배열']]],
+            ['platform','관측 기반',[['satellite','위성'],['ground','지상'],['model','모델'],['mixed','혼합']]],
+            ['format','파일 형식',[['npy','NPY'],['csv','CSV'],['netcdf','NetCDF'],['tif','TIFF'],['hdf5','HDF5']]],
+          ] as const).map(([key,label,options]) => <div className="de-row" key={key}><label className="de-k" htmlFor={`se-${key}-${props.fileId}`}>{label}</label><select className="de-v" id={`se-${key}-${props.fileId}`} value={form.typed[key] ?? ''} onChange={e => setTyped(key,e.target.value as SearchEvidenceFacts[typeof key])}><option value="">미상</option>{options.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></div>)}
+          {([['provider','제공 기관',200],['unit','단위',100]] as const).map(([key,label,max]) => <div className="de-row" key={key}><label className="de-k" htmlFor={`se-${key}-${props.fileId}`}>{label}</label><input className="de-v" id={`se-${key}-${props.fileId}`} maxLength={max} value={form.typed[key] ?? ''} onChange={e => setTyped(key,e.target.value)} /></div>)}
+          <fieldset><legend>통계 유형</legend>{([
+            ['instantaneous','순간값'],['daily_mean','일평균'],['daily_max','일최고'],['daily_min','일최저'],['monthly_mean','월평균'],['monthly_mean_daily_max','일최고값의 월평균'],['monthly_mean_daily_min','일최저값의 월평균'],
+          ] as const).map(([value,label]) => <label key={value}><input type="checkbox" checked={form.typed.statistics?.includes(value) ?? false} onChange={() => {
+            const values=form.typed.statistics ?? [];
+            setTyped('statistics',values.includes(value) ? values.filter(v => v!==value) : [...values,value]);
+          }} />{label}</label>)}</fieldset>
           <div className="de-row"><label className="de-k" htmlFor={`se-observed-${props.fileId}`}>직접 관측</label><select className="de-v" id={`se-observed-${props.fileId}`} value={form.directObservation} onChange={(e) => set('directObservation', e.target.value as TriState)}><option value="">미상</option><option value="yes">예</option><option value="no">아니요</option></select></div>
           <div className="de-row"><label className="de-k" htmlFor={`se-resolution-${props.fileId}`}>원 관측 해상도 (m)</label><input className="de-v" id={`se-resolution-${props.fileId}`} type="number" min="0.000001" step="any" value={form.nativeResolutionM} onChange={(e) => set('nativeResolutionM', e.target.value)} /></div>
           {!resolutionValid ? <p role="alert">원 관측 해상도는 0보다 큰 값으로 입력해 주세요.</p> : null}

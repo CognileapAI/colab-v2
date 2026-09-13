@@ -1665,6 +1665,119 @@ CREATE POLICY operator_read ON d6_project_dataset              FOR SELECT USING 
 CREATE POLICY operator_read ON d8_activity                     FOR SELECT USING (is_operator_read());
 CREATE POLICY operator_read ON d8_download                     FOR SELECT USING (is_operator_read());
 
+-- Transactional, coalescing source pointers. No source FK: tombstones must survive deletion.
+CREATE TABLE d3_search_change (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  source_kind text NOT NULL CHECK (source_kind IN ('metadata', 'file', 'evidence')),
+  source_id ulid NOT NULL,
+  dataset_id ulid NOT NULL,
+  requested_version bigint NOT NULL DEFAULT 1 CHECK (requested_version > 0),
+  processed_version bigint NOT NULL DEFAULT 0,
+  deleted boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  lease_generation bigint NOT NULL DEFAULT 0 CHECK (lease_generation >= 0),
+  claimed_version bigint,
+  lease_until timestamptz,
+  attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  retry_after timestamptz NOT NULL DEFAULT clock_timestamp(),
+  last_error_code text CHECK (last_error_code IN ('source_unavailable', 'processing_failed', 'transient')),
+  PRIMARY KEY (lab_id, source_kind, source_id),
+  CHECK (processed_version >= 0 AND processed_version <= requested_version),
+  CHECK ((claimed_version IS NULL) = (lease_until IS NULL)),
+  CHECK (claimed_version IS NULL OR (claimed_version > processed_version AND claimed_version <= requested_version))
+);
+CREATE INDEX d3_search_change_pending_idx ON d3_search_change (lab_id, retry_after, updated_at)
+  WHERE requested_version > processed_version;
+ALTER TABLE d3_search_change ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_change FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_change FOR ALL
+  USING (lab_id = current_lab_id()) WITH CHECK (lab_id = current_lab_id());
+
+CREATE FUNCTION record_d3_search_change() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  source_row jsonb;
+  kind text := TG_ARGV[0];
+  source_key ulid;
+  dataset_key ulid;
+  is_deleted boolean;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN RETURN NEW; END IF;
+  IF TG_OP = 'DELETE' THEN source_row := to_jsonb(OLD);
+  ELSE source_row := to_jsonb(NEW); END IF;
+  IF TG_TABLE_NAME = 'd3_dataset' THEN dataset_key := source_row->>'id';
+  ELSE dataset_key := source_row->>'dataset_id'; END IF;
+  IF kind = 'metadata' THEN
+    source_key := dataset_key;
+    SELECT NOT EXISTS (SELECT 1 FROM d3_dataset WHERE id=dataset_key AND deleted_at IS NULL)
+      INTO is_deleted;
+  ELSE
+    source_key := coalesce(source_row->>'file_id', source_row->>'id');
+    is_deleted := TG_OP = 'DELETE';
+  END IF;
+  INSERT INTO d3_search_change (lab_id, source_kind, source_id, dataset_id, deleted)
+    VALUES ((source_row->>'lab_id')::ulid, kind, source_key, dataset_key, is_deleted)
+  ON CONFLICT (lab_id, source_kind, source_id) DO UPDATE
+    SET requested_version=d3_search_change.requested_version+1,
+        dataset_id=EXCLUDED.dataset_id, deleted=EXCLUDED.deleted, updated_at=clock_timestamp();
+  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END $$;
+CREATE CONSTRAINT TRIGGER d3_dataset_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_dataset
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('metadata');
+CREATE CONSTRAINT TRIGGER d3_dataset_description_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_description
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('metadata');
+CREATE CONSTRAINT TRIGGER d3_dataset_autometa_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_autometa
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('metadata');
+CREATE CONSTRAINT TRIGGER d3_dataset_variable_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_variable
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('metadata');
+CREATE CONSTRAINT TRIGGER d3_dataset_grid_profile_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_dataset_grid_profile
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('metadata');
+CREATE CONSTRAINT TRIGGER d3_file_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_file
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('file');
+CREATE CONSTRAINT TRIGGER d3_search_evidence_search_change AFTER INSERT OR UPDATE OR DELETE ON d3_search_evidence
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION record_d3_search_change('evidence');
+
+-- D3 source facts retain provenance; they never write the common D9 ontology.
+CREATE TABLE d3_search_fact_snapshot (
+  id ulid PRIMARY KEY,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  dataset_id ulid NOT NULL,
+  source_kind text NOT NULL CHECK (source_kind IN ('metadata','file','evidence')),
+  source_id ulid NOT NULL,
+  source_version bigint NOT NULL CHECK (source_version > 0),
+  file_revision integer CHECK (file_revision > 0),
+  evidence_revision integer CHECK (evidence_revision > 0),
+  source_sha256 text NOT NULL CHECK (source_sha256 ~ '^[0-9a-f]{64}$'),
+  extractor_version text NOT NULL CHECK (length(btrim(extractor_version)) BETWEEN 1 AND 100),
+  ontology_snapshot_id text CHECK (ontology_snapshot_id IS NULL),
+  status text NOT NULL CHECK (status IN ('candidate','ready')),
+  facts jsonb NOT NULL CHECK (jsonb_typeof(facts) = 'array'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  UNIQUE (lab_id,source_kind,source_id,source_version,extractor_version),
+  CHECK ((source_kind='metadata') = (file_revision IS NULL)),
+  CHECK ((source_kind='evidence') = (evidence_revision IS NOT NULL))
+);
+CREATE INDEX d3_search_fact_snapshot_source_idx ON d3_search_fact_snapshot
+  (lab_id,dataset_id,source_kind,source_id,source_version);
+ALTER TABLE d3_search_fact_snapshot ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_fact_snapshot FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_fact_snapshot FOR ALL
+USING (
+  lab_id=current_lab_id()
+  AND EXISTS (SELECT 1 FROM d3_dataset d WHERE d.id=d3_search_fact_snapshot.dataset_id
+    AND d.lab_id=d3_search_fact_snapshot.lab_id AND d.deleted_at IS NULL)
+  AND EXISTS (SELECT 1 FROM d3_search_change q WHERE q.lab_id=d3_search_fact_snapshot.lab_id
+    AND q.source_kind=d3_search_fact_snapshot.source_kind AND q.source_id=d3_search_fact_snapshot.source_id
+    AND q.dataset_id=d3_search_fact_snapshot.dataset_id AND NOT q.deleted
+    AND q.requested_version=d3_search_fact_snapshot.source_version)
+  AND (source_kind='metadata' OR EXISTS (SELECT 1 FROM d3_file f
+    WHERE f.id=d3_search_fact_snapshot.source_id AND f.dataset_id=d3_search_fact_snapshot.dataset_id
+      AND f.lab_id=d3_search_fact_snapshot.lab_id AND f.content_revision=d3_search_fact_snapshot.file_revision))
+  AND (source_kind<>'evidence' OR EXISTS (SELECT 1 FROM d3_search_evidence e
+    WHERE e.file_id=d3_search_fact_snapshot.source_id AND e.lab_id=d3_search_fact_snapshot.lab_id
+      AND e.revision=d3_search_fact_snapshot.evidence_revision
+      AND e.file_revision=d3_search_fact_snapshot.file_revision))
+);
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 8. 마이그레이션 체인 상태 테이블
 --    alembic 이 만드는 것과 **같은 형태**를 여기 선언해 둔다 — 그래야 선언 = 적용이 성립한다.
@@ -1674,4 +1787,112 @@ CREATE POLICY operator_read ON d8_download                     FOR SELECT USING 
 CREATE TABLE alembic_version_platform (
   version_num character varying(32) NOT NULL,
   CONSTRAINT alembic_version_platform_pkc PRIMARY KEY (version_num)
+);
+
+-- Lab-local receipts and read dependencies. The common ontology remains read-only.
+CREATE TABLE d3_search_ontology_release (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  version text NOT NULL CHECK (version ~ '^[0-9a-f]{64}$'),
+  manifest jsonb NOT NULL CHECK (jsonb_typeof(manifest)='object'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY (lab_id,version)
+);
+CREATE TABLE d3_search_ontology_head (
+  lab_id ulid PRIMARY KEY REFERENCES d1_lab(id),
+  version text NOT NULL,
+  FOREIGN KEY (lab_id,version) REFERENCES d3_search_ontology_release(lab_id,version)
+);
+CREATE TABLE d3_search_ontology_binding (
+  id ulid PRIMARY KEY,
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  fact_snapshot_id ulid NOT NULL REFERENCES d3_search_fact_snapshot(id),
+  ontology_version text NOT NULL,
+  expected_dependencies jsonb NOT NULL CHECK (jsonb_typeof(expected_dependencies)='object' AND expected_dependencies ? 'discovery'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY (lab_id,ontology_version) REFERENCES d3_search_ontology_release(lab_id,version),
+  UNIQUE (lab_id,fact_snapshot_id,ontology_version)
+);
+CREATE TABLE d3_search_ontology_dependency (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  binding_id ulid NOT NULL REFERENCES d3_search_ontology_binding(id),
+  dependency_key text NOT NULL,
+  digest text NOT NULL CHECK (digest ~ '^[0-9a-f]{64}$'),
+  PRIMARY KEY (lab_id,binding_id,dependency_key)
+);
+CREATE INDEX d3_search_ontology_dependency_lookup_idx ON d3_search_ontology_dependency
+  (lab_id,dependency_key,digest,binding_id);
+ALTER TABLE d3_search_ontology_release ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_ontology_release FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_ontology_release FOR ALL USING (lab_id=current_lab_id());
+ALTER TABLE d3_search_ontology_head ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_ontology_head FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_ontology_head FOR ALL USING (lab_id=current_lab_id());
+ALTER TABLE d3_search_ontology_binding ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_ontology_binding FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_ontology_binding FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (
+    SELECT 1 FROM d3_search_fact_snapshot f WHERE f.id=fact_snapshot_id
+      AND f.lab_id=d3_search_ontology_binding.lab_id AND f.status='ready')
+);
+ALTER TABLE d3_search_ontology_dependency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_ontology_dependency FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_ontology_dependency FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (
+    SELECT 1 FROM d3_search_ontology_binding b WHERE b.id=binding_id
+      AND b.lab_id=d3_search_ontology_dependency.lab_id)
+);
+
+-- Selected search connections are derived facts, never writes to the D9 dictionary.
+CREATE TABLE d3_search_concept_match (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  binding_id ulid NOT NULL REFERENCES d3_search_ontology_binding(id) ON DELETE CASCADE,
+  dataset_id ulid NOT NULL,
+  concept_id text NOT NULL,
+  label text NOT NULL CHECK (length(label) BETWEEN 1 AND 120),
+  quote text NOT NULL CHECK (length(quote) BETWEEN 1 AND 500),
+  source_locator text NOT NULL CHECK (length(source_locator)>0),
+  terms text[] NOT NULL CHECK (cardinality(terms) BETWEEN 1 AND 65),
+  PRIMARY KEY (lab_id,binding_id,concept_id)
+);
+CREATE INDEX d3_search_concept_match_terms_idx ON d3_search_concept_match USING gin(terms);
+ALTER TABLE d3_search_concept_match ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_concept_match FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_concept_match FOR ALL USING (
+  lab_id=current_lab_id() AND dataset_id=(
+    SELECT f.dataset_id FROM d3_search_fact_snapshot f WHERE f.id=(
+      SELECT b.fact_snapshot_id FROM d3_search_ontology_binding b
+      WHERE b.id=d3_search_concept_match.binding_id AND b.lab_id=d3_search_concept_match.lab_id))
+);
+CREATE TABLE d3_search_refresh_run (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  account_id ulid NOT NULL REFERENCES d1_account(id),
+  generation bigint NOT NULL DEFAULT 0,
+  lease_until timestamptz,
+  next_run timestamptz NOT NULL DEFAULT clock_timestamp(),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','running','complete','failed')),
+  bootstrap jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(bootstrap)='object'),
+  manifest_checked_at timestamptz,
+  summary jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(summary)='object'),
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY (lab_id,account_id)
+);
+ALTER TABLE d3_search_refresh_run ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_refresh_run FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_refresh_run FOR ALL USING (
+  lab_id=current_lab_id() AND account_id=current_account_id() AND EXISTS (
+    SELECT 1 FROM d1_account a WHERE a.id=account_id AND a.lab_id=d3_search_refresh_run.lab_id)
+);
+
+-- Zero selections and never-run selection are different states.
+CREATE TABLE d3_search_selection_receipt (
+  lab_id ulid NOT NULL REFERENCES d1_lab(id),
+  binding_id ulid NOT NULL REFERENCES d3_search_ontology_binding(id) ON DELETE CASCADE,
+  selector_version text NOT NULL CHECK (length(selector_version) BETWEEN 1 AND 100),
+  PRIMARY KEY (lab_id,binding_id)
+);
+ALTER TABLE d3_search_selection_receipt ENABLE ROW LEVEL SECURITY;
+ALTER TABLE d3_search_selection_receipt FORCE ROW LEVEL SECURITY;
+CREATE POLICY lab_boundary ON d3_search_selection_receipt FOR ALL USING (
+  lab_id=current_lab_id() AND EXISTS (SELECT 1 FROM d3_search_ontology_binding b
+    WHERE b.id=binding_id AND b.lab_id=d3_search_selection_receipt.lab_id)
 );

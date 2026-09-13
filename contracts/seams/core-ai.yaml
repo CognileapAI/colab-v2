@@ -61,6 +61,67 @@ security:
   - serviceToken: []
 
 paths:
+  /search-concept-proposals:
+    post:
+      tags: [search]
+      operationId: proposeSearchConcepts
+      summary: 출처의 사실과 제한된 온톨로지 후보에서 근거 있는 개념을 고른다
+      description: 서비스 인증을 요구하며 Sonnet 모델의 결과를 실행 없이 검증해 최대 6건 반환한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConceptProposalRequest" }
+      responses:
+        "200":
+          description: 출처 인용이 포함된 개념 선택
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConceptProposalResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /ontology-concepts:
+    post:
+      tags: [search]
+      operationId: lookupOntologyConcepts
+      summary: 고정된 온톨로지 버전에서 관련 개념 내용을 제한 조회한다
+      description: 서비스 인증을 요구하며 한 번에 최대 6개 개념과 각 1홉 내용 증명을 반환한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [query, expected_version]
+              properties:
+                query: {type: string, maxLength: 16000}
+                expected_version: {type: string, pattern: '^[0-9a-f]{64}$'}
+      responses:
+        "200":
+          description: 조회한 개념의 버전과 내용 증명
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OntologyLookup'}
+        "400": {$ref: '#/components/responses/Error'}
+        "401": {$ref: '#/components/responses/Error'}
+        "409": {$ref: '#/components/responses/Error'}
+        "503": {$ref: '#/components/responses/Error'}
+  /ontology-manifest:
+    get:
+      tags: [search]
+      operationId: getOntologyManifest
+      summary: 지속 검색 갱신을 위한 온톨로지 내용 버전을 읽는다
+      description: 내부 갱신 도구용 읽기 전용 표면. 서비스 토큰 필수이며 장애를 빈 지식으로 반환하지 않는다.
+      responses:
+        "200":
+          description: 내용 해시와 개념별 의존 해시
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OntologyManifest" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
   /lineage-suggestions:
     post:
       tags: [lineage-suggestion]
@@ -158,6 +219,83 @@ components:
           schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
 
   schemas:
+    ConceptProposalRequest:
+      type: object
+      additionalProperties: false
+      required: [source, concepts]
+      properties:
+        source:
+          type: object
+          additionalProperties: false
+          required: [facts]
+          properties:
+            facts:
+              type: array
+              maxItems: 100
+              items: {type: object, additionalProperties: true}
+        concepts:
+          type: array
+          maxItems: 6
+          items: {type: object, additionalProperties: true}
+
+    ConceptProposalResponse:
+      type: object
+      additionalProperties: false
+      required: [selections]
+      properties:
+        selections:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [concept_id, predicate, quote]
+            patternProperties:
+              '^concept_id$': {type: string, minLength: 1}
+            properties:
+              predicate: {type: string}
+              quote: {type: string}
+
+    OntologyLookup:
+      type: object
+      additionalProperties: false
+      required: [version, concepts]
+      properties:
+        version: {type: string, pattern: '^[0-9a-f]{64}$'}
+        concepts:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [node, edges, neighbors]
+            properties:
+              node: {type: object, additionalProperties: true}
+              edges: {type: array, maxItems: 64, items: {type: object, additionalProperties: true}}
+              neighbors: {type: array, maxItems: 65, items: {type: object, additionalProperties: true}}
+
+    OntologyManifest:
+      type: object
+      additionalProperties: false
+      required: [protocol, entries, version]
+      properties:
+        protocol:
+          type: string
+          const: ontology-manifest-v1
+        entries:
+          type: object
+          minProperties: 1
+          maxProperties: 100000
+          required: [discovery]
+          propertyNames:
+            maxLength: 68
+            pattern: '^(discovery|concept:[a-z0-9]+(-[a-z0-9]+)*)$'
+          additionalProperties:
+            type: string
+            pattern: '^[0-9a-f]{64}$'
+        version:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
 
     # ---- 공통 ---------------------------------------------------------------
 

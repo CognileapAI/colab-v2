@@ -11,7 +11,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchHitCard } from '../components/search/SearchHitCard';
 import { defaultSearchSource } from '../components/search/searchSource';
 import { useSearch } from '../components/search/useSearch';
-import type { AiSearchScope, SearchSource } from '../components/search/types';
+import type { AiSearchScope, SearchSource, SearchContext } from '../components/search/types';
+import { AssessmentPanel } from '../components/search/SearchAssessment';
 import '../components/search/search.css';
 
 function ScopeLine(props: { scope: AiSearchScope }) {
@@ -47,6 +48,7 @@ function ResultHead(props: {
   found: number;
   verifiedOnly: boolean;
   onToggle(): void;
+  typed?: boolean;
 }) {
   const { found, verifiedOnly } = props;
   return (
@@ -62,7 +64,7 @@ function ResultHead(props: {
         <span className="vsw" aria-hidden="true" />
         Verified만 보기
       </button>
-      <span className="sortby">Verified 우선 · 관련도 순</span>
+      <span className="sortby">{props.typed ? '확인된 조건 기준' : 'Verified 우선 · 관련도 순'}</span>
     </div>
   );
 }
@@ -76,7 +78,9 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
   // 조건이 맡으므로 이 상태를 그쪽과 공유하지 않는다.
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   // ⭑ **⟨16차 해제 · `〈298〉`⟩ 토글이 질의로 들어간다** — 걸름은 서버가 `limit` 앞에서 건다.
-  const state = useSearch(source, query, verifiedOnly);
+  const [contextState, setContext] = useState<{ query:string; value:SearchContext }>();
+  const context = contextState?.query === query ? contextState.value : undefined;
+  const state = useSearch(source, query, verifiedOnly, context);
   // **받은 것을 다시 거르지 않는다.** 여기서 한 번 더 거르면 「서버가 걸렀나」를 아무도
   // 못 재고, 서버 걸름이 깨져도 화면이 그 사실을 덮는다.
   const shown = state.status === 'ready' ? state.results.items : [];
@@ -108,7 +112,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
       {state.status === 'ready' && (
         <>
           {/* 뒤진 범위가 먼저다 — 0건이어도, degraded 여도 이 줄이 맨 앞이다 (정본 §3.3) */}
-          <ScopeLine scope={state.results.scope} />
+          {state.results.assessment ? <AssessmentPanel assessment={state.results.assessment} onContext={value => setContext({query,value})} /> : <ScopeLine scope={state.results.scope} />}
 
           {state.results.degraded && (
             <div className="notice notice--degraded" data-testid="search-degraded">
@@ -117,7 +121,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
             </div>
           )}
 
-          {!state.results.isDataQuery ? (
+          {state.results.assessment && shown.length === 0 ? null : !state.results.isDataQuery ? (
             <div className="notice" data-testid="search-not-data-query">
               <p>이 검색은 데이터를 찾는 질문에 답해요.</p>
               <p className="hint">
@@ -159,6 +163,7 @@ export function SearchResultsPage(props: { source?: SearchSource } = {}) {
             <>
               {/* 건수·토글·정렬 기준 한 줄. **0건 상태에는 두지 않는다** — 켜고 끌 것이 없다 */}
               <ResultHead
+                typed={!!state.results.assessment}
                 found={shown.length}
                 verifiedOnly={verifiedOnly}
                 onToggle={() => setVerifiedOnly((v) => !v)}

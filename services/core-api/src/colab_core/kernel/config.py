@@ -151,6 +151,7 @@ class Settings:
     viz_base_url: str | None = None
     viz_service_token: str | None = None
     ai_base_url: str | None = None
+    ai_service_token: str | None = dataclasses.field(default=None, repr=False)
 
 
 def _positive_int(name: str, raw: str | None, fallback: int) -> int:
@@ -236,4 +237,5 @@ def load_settings() -> Settings:
         viz_base_url=os.environ.get(ENV_VIZ_BASE_URL) or None,
         viz_service_token=resolve_env_or_file(os.environ, ENV_VIZ_SERVICE_TOKEN),
         ai_base_url=os.environ.get(ENV_AI_BASE_URL) or None,
+        ai_service_token=resolve_env_or_file(os.environ,"COLAB_AI_SERVICE_TOKEN"),
     )

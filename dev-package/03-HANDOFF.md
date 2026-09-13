@@ -1,5 +1,17 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-14 AI 검색 최신 작업: [클라이언트 핵심 골든셋과 유형 기반 검색](sessions/20260914-ai-search-client.md). 실무자 7문항 및 CSV/NPY·공간 표현 분리 확인을 반영했다. 기존 지속 갱신과 D9 보호는 유지하며 실제 Sonnet 평가 보류·K4 open이다. 구현/검증 상태와 다음 경계는 링크된 기록을 따른다.
+
+> 2026-09-13 AI 검색 전체 연속 실행: 개념 조회·Sonnet 제안·일일 처리·검색 연결의 [계획/검증 기록](sessions/20260913-ai-search-continuous.md)을 우선한다. 로컬 개발·검증 완료, K4 open. 실제 모델 평가·운영 활성화·배포는 미실행이며 운영 전 확인 사항은 위 기록을 따른다.
+
+> 2026-09-13 AI 검색 갱신 도구: 인증 전송·작업 핸들·원자적 완료 기반. 검증과 다음 단계는 [인계](sessions/20260913-ai-search-tools.md). K4 open, 실제 LLM/일일 가동·배포 미실행.
+
+> 2026-09-13 AI 검색 후속: 온톨로지 내용 버전·해석 의존 기반. 검증과 다음 진입점은 [인계](sessions/20260913-ai-search-ontology.md)를 따른다. K4 open, 실제 agent/일일 가동·배포 미실행.
+
+> 2026-09-13 지속 갱신: 자료별 사실·출처/버전 저장과 현재 권한 검증 구현. K4 open. [인계](sessions/20260913-ai-search-facts.md)와 [실행 계획](prd/rounds/R-AI-SEARCH-FACTS.md)를 먼저 확인한다. 다음은 온톨로지 내용 버전·의존 연결. 실제 agent/일일 실행·배포는 미실행.
+
+> 2026-09-13 AI 검색 증분 단계①: `codex/ai-search-next`에서 변경 기록·처리 버전 구현. K4 open 유지. 검증과 다음 단계② 자료별 KG·출처 계약은 [인계](sessions/20260913-ai-search-delta.md)와 [실행 계획](prd/rounds/R-AI-SEARCH-DELTA.md)를 우선한다. 배포 정책은 별도 브랜치이며 이번 변경은 미배포.
+
 > 현재 작업 분리: AI 검색은 `codex/ai-search-next`에서 [검색 계획](prd/rounds/R-STAGE3-AI-SEARCH.md)을 따른다. 배포 정책·권한 분리 후속은 `codex/deployment-policy`의 `dev-package/sessions/20260913-deployment-policy-handoff.md`에 별도 인계했다. 아래 배포 후속 안내는 이 AI 작업의 선행 조건으로 사용하지 않는다.
 
 > 2026-09-13 온톨로지 보호: [ST 적용·검증과 미완료 경계](sessions/20260913-ontology-protection.md). 일반 앱/배포 자격의 DB·테이블 삭제를 차단했다. 다음은 에이전트의 관리자/Docker 접근 분리와 AWS 보호이며 ONTO-PROTECT open.

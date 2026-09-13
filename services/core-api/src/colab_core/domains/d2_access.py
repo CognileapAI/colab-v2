@@ -571,6 +571,11 @@ def decide_access_request(session: Session, *, request_id: str, decider_id: Ulid
     return result
 
 
+def verified_dataset_ids(session: Session) -> list[str]:
+    """Read the current scoped verification set for composition before pagination."""
+    return list(session.execute(text('SELECT dataset_id FROM d2_verified WHERE verified')).scalars())
+
+
 def verified_state(session: Session, dataset_id: Ulid) -> bool | None:
     return session.execute(_VERIFIED_STATE, {"dataset_id": str(dataset_id)}).scalar_one_or_none()
 

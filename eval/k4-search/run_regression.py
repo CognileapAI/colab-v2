@@ -62,6 +62,9 @@ def validate_golden_inputs() -> int:
 
 def main() -> int:
     golden_count = validate_golden_inputs()
+    client_cases = json.loads((HERE / 'client-golden.json').read_text())['cases']
+    if not client_cases or len({c['id'] for c in client_cases}) != len(client_cases) or any(not c['query'].strip() for c in client_cases):
+        raise ValueError('클라이언트 핵심 골든 문항이 비었거나 중복됐다')
     helpers = helper_suite()
     helper_count = helpers.countTestCases()
     rc = run_suite(helpers)
@@ -76,7 +79,7 @@ def main() -> int:
     )
     if completed.returncode:
         return completed.returncode
-    print(f"검색 public API 골든 회귀 green — {golden_count}문항")
+    print(f"검색 public API 골든 회귀 green — 클라이언트 핵심 {len(client_cases)}문항 + 기존 참조 {golden_count}문항")
     return 0
 
 

@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "environment": "disposable fixture DB + real core/frontend + agent-browser; synthetic evidence; no model",
+  "checks": [
+    "evidence edit",
+    "review save",
+    "reload preserves spatial CSV",
+    "research clarification without false empty",
+    "research form submission",
+    "source comparison",
+    "locked file non-disclosure",
+    "detail navigation",
+    "detail reload"
+  ]
+}
