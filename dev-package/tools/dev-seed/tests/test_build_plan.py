@@ -2,7 +2,8 @@
 
 - 의존 = 표준 라이브러리 ＋ `yaml` 뿐(`pytest` 로 실행).
 - 시험 뿌리는 `tmp_path` 안에 참조자료 나무와 md 4건을 직접 만든다. 실물 참조자료를 읽지 않는다.
-- 판정 = 종료코드. 0 green · 2 나무 대조 실패·계수 불일치 · 3 표↔블록 불일치.
+- 판정 = 종료코드. 0 green · 2 나무 대조 실패·계수 불일치 · 3 표↔블록 불일치 ·
+  4 기본값 아닌 기대값으로 생성물을 쓰려 함.
 """
 
 import importlib.util
@@ -87,7 +88,8 @@ def run(tmp_path, ref_root, md_root, extra=None):
     manifest = tmp_path / "plan-manifest.yaml"
     argv = ["--ref-root", str(ref_root), "--md-root", str(md_root),
             "--out", str(out), "--manifest-out", str(manifest)]
-    argv += extra if extra is not None else ["--expect-datasets", "4", "--expect-edges", "0"]
+    argv += extra if extra is not None else [
+        "--expect-datasets", "4", "--expect-edges", "0", "--allow-nondefault-expect"]
     return build_plan.main(argv), out, manifest
 
 
@@ -130,6 +132,29 @@ def test_총계가_28_18_이_아니면_2로_끝난다(tmp_path, capsys):
     printed = capsys.readouterr().out
     assert rc == 2, printed
     assert "28" in printed and "18" in printed
+
+
+def test_기본값_아닌_기대값으로_쓰려_하면_4로_막힌다(tmp_path, capsys):
+    """기대값을 낮춰 짧은 계획을 통과시키는 길을 막는다 — 빗장 없이는 아무것도 쓰지 않는다."""
+    ref_root, md_root = build_tree(tmp_path)
+    rc, out, manifest = run(tmp_path, ref_root, md_root,
+                            extra=["--expect-datasets", "4", "--expect-edges", "0"])
+    printed = capsys.readouterr().out
+    assert rc == 4, printed
+    assert "--allow-nondefault-expect" in printed
+    assert not out.exists()
+    assert not manifest.exists()
+
+
+def test_기본값_아닌_기대값도_dry_run_이면_판정만_한다(tmp_path, capsys):
+    """`--dry-run` 은 아무것도 쓰지 않으므로 빗장 대상이 아니다 — 픽스처 나무 판정이 여기서 난다."""
+    ref_root, md_root = build_tree(tmp_path)
+    rc, out, manifest = run(tmp_path, ref_root, md_root,
+                            extra=["--expect-datasets", "4", "--expect-edges", "0", "--dry-run"])
+    printed = capsys.readouterr().out
+    assert rc == 0, printed
+    assert not out.exists()
+    assert not manifest.exists()
 
 
 if __name__ == "__main__":

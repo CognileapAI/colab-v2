@@ -14,7 +14,8 @@
 - 판정 = ⑴ 표↔블록(이름·건수·바이트) ⑵ 블록↔실물 나무(글롭이 맞힌 파일 수·바이트) ⑶ 총계.
   어긋나면 그 행 이름을 적고 비영 종료한다(조용히 진행하지 않는다).
 
-종료코드 — 0 정상 · 2 나무 대조 실패·파일 부재·총계 불일치 · 3 표↔블록 불일치.
+종료코드 — 0 정상 · 2 나무 대조 실패·파일 부재·총계 불일치 · 3 표↔블록 불일치 ·
+  4 기본값 아닌 기대값으로 생성물을 쓰려 함(`--allow-nondefault-expect` 참조).
 """
 
 import argparse
@@ -69,6 +70,37 @@ def repo_root():
         return common.parent
     except Exception:
         return TOOL_DIR.parents[2]
+
+
+def inside_tool_dir(path):
+    """생성물이 도구 폴더(`dev-package/tools/dev-seed/`) 안을 가리키는가."""
+    p = Path(path).expanduser().resolve()
+    return p == TOOL_DIR or TOOL_DIR in p.parents
+
+
+def guard_nondefault_expect(args):
+    """기대값을 기본값에서 낮춘 채 **생성물을 쓰는** 길을 막는다.
+
+    막는 이유 — `--expect-datasets`·`--expect-edges` 는 총계 오라클이다. 부르는 쪽이 이 둘을
+    낮추면 짧은 계획이 총계 검사를 그대로 통과하고, 그렇게 만들어진 `plan-manifest.yaml` 이
+    커밋되면 **검사기가 아무것도 검사하지 않은 채 통과를 보고한다**(`CLAUDE.md §4`).
+    판정만 하는 `--dry-run` 은 아무것도 쓰지 않으므로 이 빗장의 대상이 아니다.
+
+    반환 = 막을 사유 목록(빈 목록이면 통과).
+    """
+    if args.dry_run:
+        return []
+    if args.expect_datasets == EXPECT_DATASETS and args.expect_edges == EXPECT_EDGES:
+        return []
+    bad = []
+    if not args.allow_nondefault_expect:
+        bad.append("--allow-nondefault-expect 가 없다")
+    if not args.out:
+        bad.append("--out 이 없다 — 기본 작업 자리에 쓰지 않는다")
+    for label, value in (("--out", args.out), ("--manifest-out", args.manifest_out)):
+        if value and inside_tool_dir(value):
+            bad.append("%s 가 도구 폴더 안을 가리킨다: %s" % (label, value))
+    return bad
 
 
 def resolve_ref_root(arg):
@@ -228,9 +260,22 @@ def main(argv=None):
                     help="총 데이터셋 수 기대값")
     ap.add_argument("--expect-edges", type=int, default=EXPECT_EDGES,
                     help="총 계보 간선 수 기대값")
+    ap.add_argument("--allow-nondefault-expect", action="store_true",
+                    help="기대값을 기본값에서 바꾼 채 생성물을 쓰는 것을 허용한다. "
+                         "도구 폴더 밖을 가리키는 --out 과 함께 줘야 한다")
     ap.add_argument("--dry-run", action="store_true",
                     help="파일을 쓰지 않고 계수만 출력. 뿌리가 없으면 블록 계수만 센다")
     args = ap.parse_args(argv)
+
+    guard_bad = guard_nondefault_expect(args)
+    if guard_bad:
+        print("기대값이 기본값(datasets=%d edges=%d)과 다르다 — 생성물을 쓰지 않는다."
+              % (EXPECT_DATASETS, EXPECT_EDGES))
+        for b in guard_bad:
+            print("EXPECT-GUARD " + b)
+        print("판정만 하려면 --dry-run 을, 정말로 쓰려면 --allow-nondefault-expect 와 "
+              "도구 폴더 밖의 --out(·--manifest-out)을 함께 준다.")
+        return 4
 
     ref_root = resolve_ref_root(args.ref_root)
     md_root = Path(args.md_root).expanduser() if args.md_root else ref_root
