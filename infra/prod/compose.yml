@@ -33,15 +33,20 @@ x-logging: &logging
   options: { max-size: "20m", max-file: "3" }
 
 services:
-  # 작업 디렉터리 주인 맞추기 — 컨테이너 유저(uid 10001)가 쓰는 자리. 없으면 워커·viz 가 EACCES 로 죽는다.
+  # 작업 디렉터리와 이벤트 버스 주인 맞추기 — 컨테이너 유저(uid 10001)가 쓰는 자리.
+  # 소유권 장부(`/srv/ownership-ledger`)는 **root 소유 0550** 이다 — 쓰는 쪽은 호스트 cron 이고
+  # viz 는 그 그룹으로 읽기만 한다. 모드가 느슨하면 viz 가 스냅샷을 거절한다(소유·모드 검사).
   volume-init:
     image: alpine:3.20
     container_name: colab_v2_prod_volume_init
     user: "0:0"
-    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /var/lib/colab/events && chown -R 10001:10001 /var/lib/colab/work /var/lib/colab/events && chmod 0755 /var/lib/colab/work /var/lib/colab/events"]
+    environment:
+      OWNERSHIP_READER_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
+    command: ["sh", "-c", "mkdir -p /var/lib/colab/work/worker /var/lib/colab/work/viz /var/lib/colab/work/viz-previews /var/lib/colab/events /srv/ownership-ledger && chown -R 10001:10001 /var/lib/colab/work /var/lib/colab/events && chmod 0755 /var/lib/colab/work /var/lib/colab/events && chown -R 0:$${OWNERSHIP_READER_GID} /srv/ownership-ledger && chmod 0550 /srv/ownership-ledger"]
     volumes:
       - work:/var/lib/colab/work
       - events:/var/lib/colab/events
+      - ownership-ledger:/srv/ownership-ledger
     restart: "no"
 
   core-api:
@@ -56,6 +61,9 @@ services:
       - "0.0.0.0:8000:8000"
     environment:
       COLAB_CORE_DATABASE_URL_FILE: /etc/colab/core-database.url
+      # 계정 관리(백오피스)는 앱 롤과 자격을 공유하지 않는다 — 전용 롤 `colab_account_admin`.
+      # 빠뜨리면 로그인·계정 목록 라우트가 런타임 500 이고, `deploy_doctor` 는 그것을 보지 않는다.
+      COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE: /etc/colab/account-admin-database.url
       COLAB_CORE_SUBJECTS_FILE: /etc/colab/subjects.json
       COLAB_CORE_CREDENTIALS_FILE: /etc/colab/credentials.json
       COLAB_CORE_SESSION_SECRET: ${COLAB_CORE_SESSION_SECRET:?COLAB_CORE_SESSION_SECRET 이 필요하다 — 없으면 로그인과 다운로드가 서지 않는다}
@@ -71,6 +79,7 @@ services:
       - ${COLAB_SECRETS_DIR:?COLAB_SECRETS_DIR 이 필요하다 — EC2 의 시크릿 디렉터리(0600·uid 10001)}/core-database.url:/etc/colab/core-database.url:ro
       - ${COLAB_SECRETS_DIR}/subjects.json:/etc/colab/subjects.json:ro
       - ${COLAB_SECRETS_DIR}/credentials.json:/etc/colab/credentials.json:ro
+      - ${COLAB_SECRETS_DIR}/account-admin-database.url:/etc/colab/account-admin-database.url:ro
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).status==200 else 1)\""]
       interval: 10s
@@ -93,6 +102,9 @@ services:
       COLAB_WORKER_S3_BUCKET: colab-platform-data-prod
       COLAB_WORKER_S3_REGION: ap-northeast-2
       COLAB_WORKER_WORKDIR: /var/lib/colab/work/worker
+      # Stage 2 전체 배포: 파일 분석과 격자 프로필을 생성하고 viz와 같은 COG 자리를 쓴다.
+      COLAB_WORKER_STAGE2: "on"
+      COLAB_WORKER_PREVIEW_DIR: /var/lib/colab/work/viz-previews
       # D5가 낸 미리보기 stale 이벤트를 viz와 공유한다. 양쪽 모두 publish/ack 때문에 쓰기다(dev 와 동일 · 〈361〉).
       COLAB_WORKER_EVENT_SPOOL: /var/lib/colab/events
       # `COLAB_WORKER_LAB_ID` 를 걸지 않는다 — 연구실마다 제 스코프로 돈다(Ted 2026-08-26 ㈑).
@@ -145,9 +157,16 @@ services:
       COLAB_VIZ_PREVIEW_URL_BASE: /previews
       # 트리거 drain 과 자동 회수 루프는 같은 스레드에서 돈다(dev 와 동일 · 〈361〉).
       COLAB_VIZ_TRIGGER_SPOOL: /var/lib/colab/events
+      # 소유권 스냅샷 — 호스트 cron 이 매시 적고 viz 는 읽기만 한다. 소유 uid·그룹 gid·나이 상한이
+      # 전부 맞아야 쓴다(어긋나면 거절이 정상 동작이다). 값은 `prod.env` 가 준다 — 기본값 없음.
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT: /srv/ownership-ledger/current.json
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_MAX_AGE_SECONDS:-7200}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID:?실제 publisher uid가 필요하다}
+      COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID: ${COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID:?실제 viz gid가 필요하다}
     volumes:
       - work:/var/lib/colab/work
       - events:/var/lib/colab/events
+      - ownership-ledger:/srv/ownership-ledger:ro
     depends_on:
       volume-init:
         condition: service_completed_successfully
@@ -205,3 +224,4 @@ services:
 volumes:
   work: {}
   events: {}
+  ownership-ledger: {}
