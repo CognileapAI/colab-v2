@@ -191,3 +191,24 @@ JSON 뿐이고 레포 밖 임시 디렉터리에 있다.
   이미 문서화해 두었다(라운드 §5 WU-R3 ④).
 - **`--phase count` 의 표별 계수가 `d1_lab` 을 경계 없이 읽는다.** `d1_lab` 에만 RLS 가 없어 성립하는
   경로이고, 그 성질이 바뀌면 계수가 조용히 0 이 된다. 지금은 맞지만 검사가 없다.
+
+- ⛔ **공용 적용 DB 가 병합되지 않은 리비전에 찍혀 있어 `schema-diff` 가 선다.** 실측 —
+
+      ::error::schema-diff red — db/platform 적용 DB 를 alembic upgrade head 로 올리지 못했다.
+           FAILED: Can't locate revision identified by '0032_private_owner_access'
+
+  | 측정 | 값 |
+  |---|---|
+  | 공용 적용 DB(`colab_platform_applied` · 시험 환경 파일이 가리키는 자리)의 stamp | `0032_private_owner_access` |
+  | `origin/main` 의 `db/platform/versions/` 마지막 | `0031_search_evidence` |
+  | 이 레인(`integration/r-dev-reset`)의 마지막 | `0031_search_evidence` |
+  | `0032_private_owner_access` 가 사는 자리 | 커밋 `75cd069b` · **`origin/local-stage` 하나뿐** |
+  | `75cd069b` 이 `origin/main` 의 조상인가 | **아니다** |
+
+  **어느 검사에 걸리는가** = `gates/run.sh schema-diff`. 게이트의 준비 단계가 적용 DB 를
+  `alembic upgrade head` 로 올리는데, 그 DB 에 찍힌 리비전이 체인에 없어 alembic 이 기동하지 못한다.
+  ⚠ **이 레인은 마이그레이션을 1건도 추가하지 않았다** — `origin/main` 을 포함해 `0032` 를 갖지 않는
+  **모든 브랜치**에서 같은 red 가 난다. 원인은 병합되지 않은 브랜치가 공용 적용 DB 를 앞으로 밀어 둔 것이다.
+  해소(적용 DB 재구축 또는 `local-stage` 의 처리)는 **다른 세션이 쓰는 상태를 쓰는 일**이라 이 레인의
+  경계 밖이다 — 고치지 않고 보고한다.
+  이 회차 트리에 대한 `schema-diff` 판정은 §5 의 목적 구축 DB 실행(같은 게이트 · green)으로 남긴다.
