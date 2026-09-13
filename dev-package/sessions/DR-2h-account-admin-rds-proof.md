@@ -126,11 +126,21 @@ exit=3 (as postgres · account-admin-role.sql)
 
 - `NOSUPERUSER` 를 ALTER 에서 뺐어도 **superuser 인 채로 지나가지 않는다.**
 
-## 5. 게이트 — 이 레인에서 돌리지 않았다
+## 5. 게이트
 
-- 범위 축소 지시(오케스트레이터 2026-09-13)로 `service-tests-core-api`·`exec-bit`·`work-item-consistency` 는
-  **마감 때 오케스트레이터가 돌린다.** 이 레인이 낸 계수는 없다 — **돌리지 않은 게이트를 green 으로 적지 않는다.**
-- 같은 지시로 대장 `DR-2h` 블록과 라운드 §11 줄도 이 레인 밖이다(§6 에 넘길 값이 있다).
+**한 번의 실행**(`gates/run.sh task`) · 3계수 = **green 3 / red(판정) 0 / red(준비) 0**.
+
+| 게이트 | 요약줄(축자) |
+|---|---|
+| `service-tests-core-api` | `선택자 «not e2e» · 수집 1221 · 실행 1221 · skipped 0 · deselected 6 · failed 0 · errors 0 · 소요 87.7초` |
+| `exec-bit` | `exec-bit green — .sh 212건 전부 인덱스 모드 100755 (100644 = 0건).` |
+| `work-item-consistency` | `green — 대장과 산문의 불일치 0` (대장 201건 · ㈕ CLAUDE.md stage 3 대조 25건) |
+
+- 배출처 = `dev-package/reports/r-dev-reset/wu-dr2h/`.
+- `service-tests-core-api` 는 이 SQL 을 태우는 시험을 따로 갖지 않는다 — `tests/fixtures/setup-db.sh` 가
+  같은 파일을 **슈퍼유저(`postgres`)로** 먹이므로 1,221건 전부가 §4 ⑥ 의 「슈퍼유저 경로」를 간접 통과한다.
+  **비슈퍼유저 경로를 보는 자리는 이 문서의 로컬 증명뿐이고 게이트에는 없다**(§6).
+- 범위 축소 지시(오케스트레이터 2026-09-13)로 대장 `DR-2h` 블록과 라운드 §11 줄은 이 레인 밖이다(§7).
 
 ## 6. 후속 항목 (이 레인이 고치지 않는다)
 
