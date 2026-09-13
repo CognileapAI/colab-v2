@@ -157,14 +157,14 @@ def test_file_count_comes_from_the_meta_column_not_from_counting_rows(client: Te
         conn.execute(text("SELECT set_config('app.current_lab', :l, true)"),
                      {"l": "0000000000000000000000000A"})
         conn.execute(text("SELECT set_config('app.current_account', :a, true)"),
-                     {"a": ACC_A_PROF})
+                     {"a": ACC_A_RES})
         counted = conn.execute(
             text("SELECT count(*) FROM d3_file WHERE dataset_id = :d"), {"d": DS_A2}
         ).scalar_one()
     assert counted == 0, "본체 정책 아래에서 잠긴 데이터의 파일 행은 0 이어야 한다."
     # 그런데도 조각 수는 1 이다 — 그것이 메타 층의 존재 이유다.
     from colab_core.kernel.ids import Ulid  # noqa: F401
-    body = get(client, DS_A2, "a1-prof-token").json()
+    body = get(client, DS_A2, "a1-res-token").json()
     assert body["bodyAccessible"] is False
     assert body["basicInfo"] is None      # 잠긴 상세는 기본 정보를 통째로 비운다 (P1.md §2-④)
 
@@ -172,7 +172,7 @@ def test_file_count_comes_from_the_meta_column_not_from_counting_rows(client: Te
 # ── 잠김 ────────────────────────────────────────────────────────────────────
 def test_locked_dataset_is_200_with_header_only(client: TestClient) -> None:
     """403 을 쓰면 접근 요청 흐름이 죽는다 (P-13 · Policy_승인_처리 §8)."""
-    r = get(client, DS_A2, "a1-prof-token")
+    r = get(client, DS_A2, "a1-res-token")
     assert r.status_code == 200
     b = r.json()
     assert b["name"] == "A 강우 격자화"
@@ -187,7 +187,7 @@ def test_locked_dataset_is_200_with_header_only(client: TestClient) -> None:
 
 
 def test_locked_dataset_offers_access_request_and_nothing_else(client: TestClient) -> None:
-    a = get(client, DS_A2, "a1-prof-token").json()["actions"]
+    a = get(client, DS_A2, "a1-res-token").json()["actions"]
     assert a["canRequestAccess"] is True
     assert a["canDownload"] is False
     assert a["canEditLineage"] is False

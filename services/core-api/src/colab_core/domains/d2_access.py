@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..kernel.ids import Ulid
-from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions
+from ..ports.access import DatasetAccess, DatasetVerification, MemberPermissions, DatasetOwnershipPort
 from .d2_audit import append_snapshot as append_operator_snapshot
 
 #: 권한 스위치는 정확히 넷이고 다섯 번째를 만들지 않는다 (common.json#/$defs/PermissionSwitch).
@@ -130,8 +130,9 @@ def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict
 class DatasetAccessAdapter:
     """`ports.DatasetAccessPort` 의 D2 쪽 구현. 조립은 app 이 한다."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, ownership: DatasetOwnershipPort) -> None:
         self._session = session
+        self._ownership = ownership
 
     def verification(self, dataset_ids: list[Ulid]) -> dict[str, DatasetVerification]:
         if not dataset_ids:
@@ -155,6 +156,7 @@ class DatasetAccessAdapter:
         if not dataset_ids:
             return {}
         rows = self._session.execute(_ACCESS, {"ids": [str(i) for i in dataset_ids]}).mappings()
+        owned = self._ownership.owned_dataset_ids(dataset_ids)
         out: dict[str, DatasetAccess] = {}
         for r in rows:
             open_ = r["state"] == "열림"
@@ -162,7 +164,7 @@ class DatasetAccessAdapter:
                 access_state=r["state"],
                 verified=bool(r["verified"]),
                 # 잠겨 있어도 허용 목록에 있으면 본체에 닿는다 (P-25 만료 포함).
-                body_accessible=bool(open_ or r["granted"]),
+                body_accessible=bool(open_ or r["granted"] or r["dataset_id"] in owned),
             )
         return out
 

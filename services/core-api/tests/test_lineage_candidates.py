@@ -3,15 +3,15 @@ from __future__ import annotations
 
 from sqlalchemy import event
 
-from conftest import DS_A1, DS_A2, DS_B1, LAB_A, TOKEN_PROF, auth
+from conftest import DS_A1, DS_A2, DS_B1, LAB_A, TOKEN_PROF, TOKEN_RES, auth
 from test_dataset_registration import make_upload, register
 
 from colab_core.app.main import API_PREFIX
 
 
-def _get(client, **params):
+def _get(client, *, token=TOKEN_PROF, **params):
     return client.get(f"{API_PREFIX}/lineage-candidates", params=params,
-                      headers=auth(TOKEN_PROF))
+                      headers=auth(token))
 
 
 def test_candidate_contains_lineage_facts_and_searches_name_or_accessible_file(p2_client, sql) -> None:
@@ -54,12 +54,12 @@ def test_filters_are_anded_and_period_means_overlap_with_open_end(p2_client, sql
 def test_locked_candidate_keeps_public_metadata_but_hides_body_names(p2_client) -> None:
     """잠긴 후보를 없애거나 본체 파일명을 노출하는 두 회귀를 함께 잡는다."""
     client = p2_client()
-    response = _get(client, q="A 강우 격자화")
+    response = _get(client, token=TOKEN_RES, q="A 강우 격자화")
     assert response.status_code == 200, response.text
     item = response.json()["items"][0]
     assert item["datasetId"] == DS_A2 and item["bodyAccessible"] is False
     assert item["fileNames"] == [] and item["fileExtensions"] == []
-    assert _get(client, q="a2-body.nc").json()["items"] == []
+    assert _get(client, token=TOKEN_RES, q="a2-body.nc").json()["items"] == []
     assert all(x["datasetId"] != DS_B1 for x in _get(client).json()["items"])
 
 

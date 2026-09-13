@@ -1474,6 +1474,12 @@ CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
       (SELECT p.default_visibility FROM d1_lab_profile p WHERE p.lab_id = d3_file.lab_id)
     ) = '열림'
     OR EXISTS (
+      SELECT 1 FROM d3_dataset owner_dataset
+      WHERE owner_dataset.id = d3_file.dataset_id
+        AND owner_dataset.lab_id = current_lab_id()
+        AND owner_dataset.owner_account_id = current_account_id()
+    )
+    OR EXISTS (
       SELECT 1 FROM d2_dataset_access_grant g
       WHERE g.dataset_id = d3_file.dataset_id
         AND g.grantee_account_id = current_account_id()
@@ -1485,6 +1491,12 @@ CREATE POLICY body_access ON d3_file AS RESTRICTIVE FOR ALL
       (SELECT a.state FROM d2_dataset_access a WHERE a.dataset_id = d3_file.dataset_id),
       (SELECT p.default_visibility FROM d1_lab_profile p WHERE p.lab_id = d3_file.lab_id)
     ) = '열림'
+    OR EXISTS (
+      SELECT 1 FROM d3_dataset owner_dataset
+      WHERE owner_dataset.id = d3_file.dataset_id
+        AND owner_dataset.lab_id = current_lab_id()
+        AND owner_dataset.owner_account_id = current_account_id()
+    )
     OR EXISTS (
       SELECT 1 FROM d2_dataset_access_grant g
       WHERE g.dataset_id = d3_file.dataset_id

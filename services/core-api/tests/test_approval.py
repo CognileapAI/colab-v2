@@ -168,12 +168,13 @@ def test_a_decided_request_cannot_be_decided_again(live_client):
                             headers=auth(TOKEN_PROF), json={"reason": "늦었다"}).status_code == 409
 
 
-def test_the_pending_list_is_oldest_first_and_only_for_approvers(live_client):
+def test_the_pending_list_is_oldest_first_and_only_for_approvers(live_client, sql):
     """받은 접근 요청 — **오래된 순**(§1.3 「방치를 막기 위해서다」)이고 처리 권한자만 받는다 (§6)."""
     first = live_client.post(f"{PREFIX}/datasets/{DS_A2}/access-requests",
                              headers=auth(TOKEN_RES)).json()["requestId"]
-    second = live_client.post(f"{PREFIX}/datasets/{DS_A2}/access-requests",
-                              headers=auth(TOKEN_PROF)).json()["requestId"]
+    sql("UPDATE d2_dataset_access SET state='잠김' WHERE dataset_id=:id", {"id": DS_A1})
+    second = live_client.post(f"{PREFIX}/datasets/{DS_A1}/access-requests",
+                              headers=auth(TOKEN_RES)).json()["requestId"]
 
     listed = live_client.get(f"{PREFIX}/access-requests/pending", headers=auth(TOKEN_PROF))
     assert listed.status_code == 200, listed.text

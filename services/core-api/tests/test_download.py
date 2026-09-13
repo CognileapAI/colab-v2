@@ -36,7 +36,7 @@ import pathlib
 import urllib.parse
 import zipfile
 
-from conftest import ACC_A_RES, DS_A1, DS_A2, LAB_A, TOKEN_B, TOKEN_RES, auth
+from conftest import ACC_A_RES, DS_A1, DS_A2, LAB_A, TOKEN_B, TOKEN_PROF, TOKEN_RES, auth
 from test_upload_transfers import FakeS3
 
 from colab_core.app.main import API_PREFIX
@@ -280,8 +280,8 @@ def test_access_revoked_after_issue_makes_the_bytes_404(p2_client, sql) -> None:
     RLS `body_access` 가 행을 지우므로 라우트가 잠금을 따로 묻지 않아도 그렇다."""
     client = _client(p2_client)
     dataset_id, files = _dataset(client)
-    file_url = _ticket(client, dataset_id, files["a.csv"]["fileId"]).json()["url"]
-    bundle_url = _ticket(client, dataset_id).json()["url"]
+    file_url = _ticket(client, dataset_id, files["a.csv"]["fileId"], token=TOKEN_PROF).json()["url"]
+    bundle_url = _ticket(client, dataset_id, token=TOKEN_PROF).json()["url"]
     assert client.get(file_url).status_code == 200      # 대조 — 잠그기 전에는 산다
     sql("INSERT INTO d2_dataset_access (dataset_id, lab_id, state)"
         " VALUES (:d, current_lab_id(), '잠김')", {"d": dataset_id})

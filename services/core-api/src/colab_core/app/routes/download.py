@@ -29,6 +29,7 @@ import io
 import logging
 import posixpath
 import zipfile
+from ..dataset_access import dataset_access_adapter
 from collections.abc import Callable, Iterator
 
 from fastapi import APIRouter, Depends, Path, Request
@@ -85,7 +86,7 @@ def _accessible_dataset(db: Session, dataset_id: Ulid) -> d3_catalog.DatasetCore
     if core is None:
         # 경계 밖이면 RLS 가 이미 행을 지웠고(P-9·P-10), 묘비면 상세 화면이 없다(§7).
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(str(dataset_id))
+    access = dataset_access_adapter(db).dataset_access([dataset_id]).get(str(dataset_id))
     if access is not None and not access.body_accessible:
         # 메타는 상세에서 보이지만 바이트는 본체 쪽이라 막힌다 (P-34). 그 자리가 `접근 요청` 이다.
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")

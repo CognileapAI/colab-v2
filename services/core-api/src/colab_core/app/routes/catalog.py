@@ -10,6 +10,7 @@ import binascii
 import datetime as dt
 import logging
 import re
+from ..dataset_access import dataset_access_adapter
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request
@@ -140,7 +141,7 @@ def _compose(db: Session) -> list[dict]:
     # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다.**
     #    행마다 `is_unknown` 을 부르면 목록 길이만큼 질의가 열린다(N+1).
     unknown = d4_lineage.unknown_dataset_ids(db, ids)
-    access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    access = dataset_access_adapter(db).dataset_access(ids)
     links = d6_project.ProjectLinkAdapter(db).projects_of(ids)
     map_states = d3_grid_convenience.map_states(db, ids)
 
@@ -475,6 +476,7 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
             503, SEARCH_UNAVAILABLE,
             f"검색이 지금 동작하지 않는다 — 없다는 뜻이 아니다: {reason}")
 
+    answer["terms"] = search_conditions.candidate_terms(query, answer["terms"])
     items: list[dict] = []
     next_cursor = None
     if answer["isDataQuery"] and answer["terms"]:
@@ -602,7 +604,7 @@ def list_dataset_files(datasetId: str, db: Session = Depends(scoped_db)) -> dict
     # 경계 밖이면 RLS 가 이미 행을 지웠다 → 존재를 알리지 않는 404 다 (P-9·P-10).
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(datasetId)
+    access = dataset_access_adapter(db).dataset_access([dataset_id]).get(datasetId)
     if access is not None and not access.body_accessible:
         # 메타는 상세에서 보이지만 파일 목록은 본체 쪽이라 막힌다 (P-34).
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
@@ -636,7 +638,7 @@ def require_body_access(db: Session, dataset_id: Ulid) -> None:
 def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(str(dataset_id))
+    access = dataset_access_adapter(db).dataset_access([dataset_id]).get(str(dataset_id))
     if access is not None and not access.body_accessible:
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
 
@@ -1390,7 +1392,7 @@ def list_lineage_candidates(
     ids = [Ulid(c.dataset_id) for c in cores]
     summaries = ({} if level_filter is not None
                  else d4_lineage.LineageSummaryAdapter(db).summaries(ids))
-    accesses = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    accesses = dataset_access_adapter(db).dataset_access(ids)
     periods = d3_catalog.periods_of(db, ids)
     accessible_ids = [Ulid(c.dataset_id) for c in cores
                       if accesses.get(c.dataset_id) and accesses[c.dataset_id].body_accessible]
@@ -1468,7 +1470,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         raise errors.not_found()
 
     ids = [dataset_id]
-    access_adapter = d2_access.DatasetAccessAdapter(db)
+    access_adapter = dataset_access_adapter(db)
     access = access_adapter.dataset_access(ids).get(datasetId)
     verification = access_adapter.verification(ids).get(datasetId)
     summary = d4_lineage.LineageSummaryAdapter(db).summaries(ids).get(datasetId)

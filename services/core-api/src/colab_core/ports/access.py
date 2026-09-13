@@ -43,3 +43,9 @@ class DatasetAccessPort(Protocol):
     def dataset_access(self, dataset_ids: list[Ulid]) -> dict[str, DatasetAccess]: ...
 
     def verification(self, dataset_ids: list[Ulid]) -> dict[str, DatasetVerification]: ...
+
+
+class DatasetOwnershipPort(Protocol):
+    """D3 exposes ownership facts within the current lab and account scope."""
+
+    def owned_dataset_ids(self, dataset_ids: list[Ulid]) -> set[str]: ...

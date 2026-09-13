@@ -181,7 +181,7 @@ END $$;
 -- ═══ ① 본체 음성 — 허용자 아님 · 만료됨 ══════════════════════════════════════
 BEGIN;
 SELECT set_config('app.current_lab',     :'LAB_A',  true);
-SELECT set_config('app.current_account', :'A_PROF', true);
+SELECT set_config('app.current_account', :'A_RES', true);
 
 DO $$
 DECLARE n int;
@@ -228,12 +228,12 @@ BEGIN
   SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
   IF n <> 1 THEN RAISE EXCEPTION '[①-대조] 유효한 허용 줄인데 검색 근거가 %행 (1 이어야 한다).', n; END IF;
 
-  -- 허용은 **사람마다** 다르다 — 같은 트랜잭션에서 주체만 바꾸면 다시 0.
+  -- 소유자는 본인 grant 없이도 파일과 검색 근거를 읽어야 한다.
   PERFORM set_config('app.current_account', '00000000000000000000000AP1', true);
   SELECT count(*) INTO n FROM d3_file WHERE dataset_id = '0000000000000000000000DSA2';
-  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 본체를 봤다 (%행).', n; END IF;
+  IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 비공개 본체 접근이 막혔다 (%행).', n; END IF;
   SELECT count(*) INTO n FROM d3_search_evidence WHERE dataset_id = '0000000000000000000000DSA2';
-  IF n <> 0 THEN RAISE EXCEPTION '[①-ⓑ] 남의 허용 줄로 다른 사람이 검색 근거를 봤다 (%행).', n; END IF;
+  IF n <> 1 THEN RAISE EXCEPTION '[①-소유자] 소유자의 검색 근거 접근이 막혔다 (%행).', n; END IF;
 END $$;
 ROLLBACK;
 \echo '# ① 본체 음성 — 허용자 아님 0행 · 만료됨 0행 (유효 줄 대조 1행)'

@@ -29,7 +29,7 @@ def test_a_non_grantee_gets_zero_body_rows(session_factory) -> None:
     red 만드는 법 — `DROP POLICY body_access ON d3_file`
     (경계 정책만 남으면 같은 연구실이라는 이유로 본체가 열린다).
     """
-    with scoped_ro(session_factory, ACC_A_PROF, LAB_A) as db:
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as db:
         assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 0
         # 잠금이 통째로 막는 것이 아니라는 대조 — 열린 데이터셋은 그대로 보인다.
         assert db.execute(_FILES_OF, {"d": DS_A1}).scalar_one() == 2
@@ -61,15 +61,15 @@ def test_an_expired_grant_is_the_same_as_no_grant(session_factory) -> None:
         assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 1, \
             "유효한 허용 줄인데도 본체가 안 보인다 — 정책이 과하게 닫혔다."
 
-        # 허용은 **사람마다** 다르다. 같은 트랜잭션의 다른 주체에게는 여전히 0 이다.
+        # 소유자는 grant 없이도 본체를 읽는다. 업로더인 연구원은 위의 유효 grant가 필요하다.
         db.execute(text("SELECT set_config('app.current_account', :a, true)"), {"a": ACC_A_PROF})
-        assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 0
+        assert db.execute(_FILES_OF, {"d": DS_A2}).scalar_one() == 1
 
 
 def test_the_body_layer_holds_at_the_http_layer(live_client) -> None:
     """HTTP 층 — 잠긴 데이터셋의 파일 목록은 403 이다. 404 가 아니다(존재는 인정한다)."""
     from colab_core.app.main import API_PREFIX
-    h = {"Authorization": "Bearer a1-prof-token"}
+    h = {"Authorization": "Bearer a1-res-token"}
     assert live_client.get(f"{API_PREFIX}/datasets/{DS_A1}/files", headers=h).status_code == 200
     assert live_client.get(f"{API_PREFIX}/datasets/{DS_A2}/files", headers=h).status_code == 403
 
@@ -134,7 +134,7 @@ def test_locked_dataset_still_appears_in_the_catalog(live_client) -> None:
     """HTTP 층 — 잠긴 데이터셋도 목록에 서고, 그 자리가 `접근 요청` 버튼이 된다 (P-13)."""
     from colab_core.app.main import API_PREFIX
     rows = {r["datasetId"]: r for r in live_client.get(
-        f"{API_PREFIX}/datasets", headers={"Authorization": "Bearer a1-prof-token"}).json()["items"]}
+        f"{API_PREFIX}/datasets", headers={"Authorization": "Bearer a1-res-token"}).json()["items"]}
     assert DS_A2 in rows, "잠긴 데이터셋이 목록에서 사라졌다 — E-06 승인 흐름이 죽는다."
     assert rows[DS_A2]["name"] and rows[DS_A2]["topic"]
     assert rows[DS_A2]["accessState"] == "잠김"

@@ -97,7 +97,7 @@ def test_child_rows_of_another_labs_parent_are_invisible(session_factory) -> Non
     red 만드는 법 — `ALTER POLICY lab_boundary ON d3_file USING (true) WITH CHECK (true)`
     (자식 테이블에서만 경계를 빠뜨린 형태. 부모는 여전히 안 보이므로 목록 테스트로는 안 잡힌다).
     """
-    with scoped_ro(session_factory, ACC_A_PROF, LAB_A) as db:
+    with scoped_ro(session_factory, ACC_A_RES, LAB_A) as db:
         def count(sql: str, **kw) -> int:
             return db.execute(text(sql), kw).scalar_one()
 

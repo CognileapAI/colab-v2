@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from ..dataset_access import dataset_access_adapter
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Response
@@ -235,7 +236,7 @@ def _dataset_facts(db: Session, dataset_ids: list[str]) -> dict[str, dict]:
     summaries = d4_lineage.LineageSummaryAdapter(db).summaries(ids)
     # ⭑ **⟨PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다** (카탈로그 목록과 같은 규율).
     unknown = d4_lineage.unknown_dataset_ids(db, ids)
-    access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    access = dataset_access_adapter(db).dataset_access(ids)
 
     out: dict[str, dict] = {}
     for dataset_id in dataset_ids:

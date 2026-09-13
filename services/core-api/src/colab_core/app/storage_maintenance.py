@@ -6,6 +6,7 @@ import dataclasses
 import datetime as dt
 import hashlib
 import json
+from .dataset_access import dataset_access_adapter
 from typing import Any
 
 from sqlalchemy import text
@@ -254,7 +255,7 @@ def _d3_ownership(session: Session) -> tuple[bool, set[str], set[str], set[str]]
     snapshot = d3_catalog.reclaim_ownership_snapshot(session)
     dataset_ids = list(snapshot.dataset_file_counts)
     try:
-        access = d2_access.DatasetAccessAdapter(session).dataset_access(
+        access = dataset_access_adapter(session).dataset_access(
             [Ulid(dataset_id) for dataset_id in dataset_ids])
     except Exception:  # DB/Port 실패는 소유권 없음이 아니라 unknown이다.
         return False, set(), set(), set()

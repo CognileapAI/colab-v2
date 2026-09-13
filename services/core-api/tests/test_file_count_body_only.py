@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from conftest import DS_A1, DS_A2, TOKEN_PROF, auth
+from conftest import DS_A1, DS_A2, TOKEN_PROF, TOKEN_RES, auth
 
 from colab_core.app.main import API_PREFIX
 
@@ -26,8 +26,8 @@ DS_A1_STORED = 2
 DS_A2_BODY = 1
 
 
-def _catalog_row(client: TestClient, dataset_id: str) -> dict:
-    r = client.get(f"{API_PREFIX}/datasets", headers=auth(TOKEN_PROF))
+def _catalog_row(client: TestClient, dataset_id: str, token=TOKEN_PROF) -> dict:
+    r = client.get(f"{API_PREFIX}/datasets", headers=auth(token))
     assert r.status_code == 200, r.text
     return next(x for x in r.json()["items"] if x["datasetId"] == dataset_id)
 
@@ -82,6 +82,6 @@ def test_locked_dataset_falls_back_to_the_stored_total(live_client: TestClient) 
     `DS_A2` 는 격자가 0건이라 두 값이 같다. 이 시험이 못 박는 것은 **경로**다 —
     잠김에서도 0 이 나오지 않는다(㊼ 가 메타 열을 둔 이유).
     """
-    row = _catalog_row(live_client, DS_A2)
+    row = _catalog_row(live_client, DS_A2, token=TOKEN_RES)
     assert row["bodyAccessible"] is False
     assert row["fileCount"] == DS_A2_BODY and row["fileCount"] >= 1
