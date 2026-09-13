@@ -3565,28 +3565,43 @@ items:
     sources: ["dev-package/reports/r-login-backoffice/task1-deploy/operator.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-1b-provision-lab-proof.md"]
   - id: DR-2
     name: "dev 초기화 1회 실행"
-    status: open
+    status: done
     stage: after_stage2
     owner: "오케스트레이터 ＋ Ted"
     entry_conditions: ["DR-1a·DR-1b 가 main 에 병합됐다", "그 sha 가 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다 — 수령 완료(축자 「순차적으로 다 이어서해 3의 초기화도 진행하고」 2026-09-13 · PLAN-SoT §9 〈396〉-㉲)", "실행 명령 정본이 레포에 있다 — dev-package/sessions/DR-2-runbook.md(배포 → 초기화 → 재적용 → SQL 선행 → 확인)", "deploy_doctor 15/15 기준선이 기록돼 있다 — dev-package/sessions/DR-2-tree-sync-2026-09-13.md"]
     depends_on: [DR-1a, DR-1b]
     completion_def: "데이터셋 0건(경계 실린 경로 확인) ＋ uploads/·previews/ 객체 0 ＋ 진행 중 멀티파트 0 ＋ _ops/ 객체 수 무변 ＋ deploy_doctor 15/15 한 번의 실행 ＋ 원장 행 1건."
-    evidence: "실행 전 준비분만 있다 — 명령 런북 `dev-package/sessions/DR-2-runbook.md`(단계별 기대출력·정지점·미해소 [미확인] 6건) ＋ `deploy_doctor` 15/15 기준선 `dev-package/sessions/DR-2-tree-sync-2026-09-13.md`(2026-09-13 실측 · 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 · 직전 실행 sha 기준). 실행 결과는 미기록 — 이 항목은 아직 open 이다."
-    deadline: null
-    note: "비가역. 승인은 1회 소진이다 — Ted GO 는 수령했으나 main 병합·dev 배포가 남아 있어 아직 실행하지 않는다. 다섯 명령을 순서대로 내고 각 명령이 비영 종료하면 그 자리에서 멈춘다. 버저닝 탓에 삭제 후에도 이전 판이 30일 남는다."
-    sources: ["dev-package/prd/rounds/R-DEV-RESET.md"]
-  - id: DR-3
-    name: "화면 투입 시나리오 문서와 dev 실투입"
-    status: open
-    stage: after_stage2
-    owner: "문서 레인 ＋ 사람 실행"
     entry_conditions: ["DR-2 완료", "원천 드라이브 03 Reference-Data 연결"]
     depends_on: [DR-2]
     completion_def: "dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며, 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 시나리오 문서가 단계·입력값·기대 화면 3열로 레포에 있다."
-    evidence: "문서 초안 = `dev-package/scenarios/dev-minimal-data-setup.md`(선행 4건 ＋ 로그인 ＋ 프로젝트 4 ＋ 데이터셋 28 ＋ 계보 18 ＋ 미리보기 5종 ＋ deploy_doctor). 실투입은 DR-2 뒤 사람 실행이라 미착수다."
+    evidence: "2026-09-13 done — 실행 sha `81784897ec74` · 배포 기록 `dev-package/sessions/DR-2-deploy-2026-09-13.md` · 실행 기록 `dev-package/sessions/DR-2-run-2026-09-13.md`. ⓵ 배포 = 3회 시도 중 3차 완주(1차 호스트 QEMU 미등록 · 2차 개발 기계 자격증명 공급자 불일치 · 계획 id `dr2-dev-81784897ec74-3` `verified`) · `deploy_doctor` 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 **한 번의 실행** · exit 0 · ⑮ `81784897ec74 ∈ main`. ⓶ 실행 전 계수 = `d3_dataset` **27** · `d3_file` **450** · `d6_project` **6** · `d4_lineage_edge` **9** · 연구실 **2** · S3 `uploads/` **840** · `previews/` **437** · 진행 중 멀티파트 **0**. ⓷ 절차 = 앱 4단위 정지 → 두 체인 스키마 재생성 → `extensions` → 마이그레이션 2체인(head `alembic_version_platform` = `0031_search_evidence` · `alembic_version_ai` = `0007_merge_vocab_and_category`) → `app-grants` exit 0 → `account-admin`(`DR-2h` 수정 뒤 exit 0 · 축자 「account admin role: ok」) → `up.sh` 4단위 healthy(저장 모드 `s3`) → `deploy_doctor` 15/15. ⓸ S3 = `s3-plan` 계획 키 **1277**(`uploads/` 840 ＋ `previews/` 437 · 계획 sha256 `658884b2740e…` · 두 접두사 밖 키 0) → `s3-apply` exit 0 · `failures` **[] 0건** · 미삭제 키 0 · `_ops/` **66 — 실행 전과 무변** · 버킷 전체 객체 66. ⓹ 실행 후 계수 = `d3_dataset`·`d3_file`·`d6_project`·`d4_lineage_edge`·연구실 **전건 0** · `uploads/` 0 · `previews/` 0 · 멀티파트 0. ⓺ SQL 선행 4단계 = 연구실 「고려대학교 수문학연구실」 1행 · 계정 「전창현」(역할 `교수`) 1행 · 로그인 자격 1행(`login_name` `pi@hymets.invalid` · `kdf` `scrypt` · `n`/`r`/`p` = `16384`/`8`/`1` · `must_change_password` **true** · `session_version` **1** · 초기 비밀번호는 표준입력 한 줄로만 전달했고 argv·환경변수·로그·문서에 0건) · `account_admin.service_operator` 1행. `services/core-api/ops/provision-account.sql` 은 연구실 SQL 이 같은 계정을 이미 심어 **건너뛰었다**(같은 연구실 두 번째 계정 방지). ⓻ 마감 확인 = `deploy_doctor` 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 **두 번째 한 번의 실행**(초기화 뒤 · exit 0 · ⑭ 백업 0.9시간 전 · 객체 63건) ＋ 외부 진입 CloudFront `/api/v1/me` **401**(미인증 거절 · API 생존). ⓼ 승인 = `PLAN-SoT §9 〈396〉`-㊲ Ted 명시 GO **1회 소진 완료** · 파괴적 단계 재시도 0 · 부분 실행 합산 0 · staging 무접촉 · `_ops/` 무접촉 · 다른 버킷 무접촉. ⓽ 릴리스 태그(로컬) = `dev-20260913-3` → `81784897ec747709906717a96e27ede75a0c832b`(미push). 원장 `PLAN-SoT §9 〈396〉`-㊸."
     deadline: null
-    note: "화면 조작만 쓴다 — load-seed.py·API 직접 호출을 쓰지 않는다. 화면 밖 선행은 SQL 4건뿐이고 그것이 결정 ⑸ 의 등재된 예외다. 파일 전건이라 화면 업로드 총량 ≈ 6.1 GB."
-    sources: ["dev-package/reports/reference-data/2026-09-13-inventory-v2.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+    note: "비가역 · 승인 1회 소진(소진 완료 — 다시 돌리려면 새 GO 와 새 §9 행이 필요하다). 실행 중 런북 정정거리 **6건**이 나왔고 런북 본문은 이 회차에서 고치지 않았다 — 라운드 `dev-package/prd/rounds/R-DEV-RESET.md` §11 에 후속으로 적었다. ⚠ `migrate-platform` 을 2회 냈다 — 1회차 직후 검증 질의가 체인별 버전 표 이름을 틀려(`alembic_version` · 정본은 `alembic_version_platform`) 미적용으로 오판한 것이고, 2회차는 `upgrade head` 멱등 재실행이라 상태 변화 0 이다(파괴적 단계 재시도 아님). 버저닝 탓에 삭제한 객체의 이전 판이 30일 남는다."
+    sources: ["dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/sessions/DR-2-deploy-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-2h
+    name: "계정 관리자 롤 SQL 을 RDS 마스터에서 실행 가능하게 고친다 (hotfix)"
+    status: done
+    stage: after_stage2
+    owner: "운영 / core-api ops"
+    entry_conditions: ["DR-2 A 단계에서 account-admin 이 exit 3 으로 멈춘 실물이 기록됐다", "고칠 자리가 services/core-api/ops/account-admin-role.sql 한 파일로 좁혀졌다"]
+    depends_on: [DR-2]
+    completion_def: "일회용 postgres 로컬 증명에서 RED/GREEN 이 둘 다 실측된다 — 원본이 비슈퍼유저로 exit 3 ＋ 고친 판이 exit 0 ＋ 멱등 ＋ 권한 14행 ＋ 조건부 문 발화 확인 ＋ 슈퍼유저 경로 회귀 0 ＋ fail-closed 유지. service-tests-core-api·exec-bit·work-item-consistency 가 한 번의 실행으로 green."
+    evidence: "2026-09-13 done — 레인 `lane/wu-dr2h-account-admin-rds` · 증명 `dev-package/sessions/DR-2h-account-admin-rds-proof.md` · 대상 파일 `services/core-api/ops/account-admin-role.sql` 한 개. ⓵ 결함 = `infra/dev/db-bootstrap.sh account-admin` → `infra/staging/db-bootstrap.sh` 가 그 SQL 을 RDS 마스터로 돌리다 **exit 3** · 축자 「`ERROR:  permission denied to alter role` / `DETAIL:  Only roles with the SUPERUSER attribute may change the SUPERUSER attribute.`」. 원인 = PostgreSQL 16 의 `AlterRole` 은 `SUPERUSER`/`NOSUPERUSER` 를 **적었다는 사실만으로** 거절하고, RDS 마스터는 `rds_superuser` 의 멤버일 뿐 `rolsuper=f` 다. 그 문이 **모든 GRANT 앞**이라 실패 시 계정 관리자 롤의 표 권한이 **0건**이고 로그인 경로가 동작하지 않는다. ⓶ 수정 = 한 문을 둘로 — 비밀번호는 무조건(`ALTER ROLE %I PASSWORD %L`) · 나머지 속성은 실제로 어긋났을 때만(`pg_roles` 조건부). `NOSUPERUSER` 는 어느 `ALTER ROLE` 에도 남기지 않았고 `CREATE ROLE … WHERE NOT EXISTS` 분기는 무수정이다. fail-closed 는 파일 끝의 기존 superuser 검사가 그대로 맡는다. ⓷ 로컬 증명(일회용 `postgres:16-alpine` 16.15 · `--rm` ＋ tmpfs · 호스트 포트 미공개 · dev·staging·공용 DB 무접촉 · AWS 호출 0건) = ① **RED** 원본을 비슈퍼유저 `bootstrapper` 로 → dev 와 **같은 문 · 같은 메시지 · 같은 exit 3** · 직후 표 권한 0건 ② **GREEN** 고친 판 같은 롤 → exit 0 · `ALTER ROLE` 1회만 발화(조건부 문 미발화) ③ 멱등 2회차 exit 0 ④ 권한 실측 = 6표 14행(`account_admin.login_credential`·`login_session` INSERT·SELECT·UPDATE · `service_operator` DELETE·INSERT·SELECT · `d1_account` INSERT·SELECT · `d1_lab` SELECT · `d2_member_role` INSERT·SELECT) · 롤 속성 `rolsuper=f rolcreatedb=f rolcreaterole=f rolinherit=f rolbypassrls=t rolcanlogin=t` ⑤ 조건부 문 발화 확인 = `NOINHERIT` 를 일부러 어긋낸 뒤 슈퍼유저로 exit 0 · `rolinherit=false` 복구 ⑥ 슈퍼유저 경로 회귀 0 = 롤을 지운 자리에서 `CREATE ROLE` 분기까지 태워 exit 0 · 권한 14행 복원 ⑦ fail-closed 유지 = 롤을 `SUPERUSER` 로 만든 뒤 재실행 시 축자 「`ERROR:  계정 관리자 롤이 superuser다`」 exit 3. ⓸ 게이트 = `service-tests-core-api`(수집 1221 · 실행 1221 · skipped 0 · failed 0 · errors 0) · `exec-bit`(`.sh` 212건 전부 100755) · `work-item-consistency`(불일치 0) — **한 번의 실행 · green 3 / red(판정) 0 / red(준비) 0** · 배출처 `dev-package/reports/r-dev-reset/wu-dr2h/`. ⓹ dev 적용 = `DR-2` A 단계 재개에서 배포 트리 동기화 후 `account-admin` exit 0(md5 대조 개발 기계 = EC2 `7b868431a1b83562dc5aa2f8337bc130`). 원장 `PLAN-SoT §9 〈396〉`-㊸."
+    deadline: null
+    note: "발견 자리 = `DR-2` A 단계(dev 초기화 실행 2026-09-13) · 성격 = 이번 초기화가 만든 결함이 아니라 **RDS 경로에서 그 스크립트가 통과할 수 없는 구조**다. 로컬·staging 에서 잠복한 이유 = 그 경로의 실행자가 진짜 슈퍼유저(`postgres`)라 같은 문이 통과한다. ⚠ **후속(이 항목이 고치지 않았다)** — 조건부 속성 `ALTER ROLE` 은 RDS 마스터에서 여전히 못 돈다(축자 `Only roles with the BYPASSRLS attribute may change the BYPASSRLS attribute.`). 지금 dev 는 속성이 이미 맞아 그 문이 발화하지 않으므로 이번 초기화는 막히지 않았다. **어느 검사에 걸리는가** = 게이트에 없다 — `infra/staging/db-bootstrap.sh account-admin` 의 종료코드 하나뿐이고 속성이 어긋난 뒤에야 울린다. 계정 관리자 롤의 속성 드리프트를 정기적으로 보는 자리도 없다(`deploy_doctor` 15 항목에 없고 `db-bootstrap.sh verify` 는 `colab_app`·`colab_owner` 두 롤만 본다). 라운드 §11 후속."
+    sources: ["dev-package/sessions/DR-2h-account-admin-rds-proof.md", "dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-3
+    name: "화면 투입 시나리오 문서와 dev 실투입"
+    status: in_progress
+    stage: after_stage2
+    owner: "에이전트 러너(agent-browser) ＋ 오케스트레이터"
+    entry_conditions: ["DR-2 완료", "원천 드라이브 03 Reference-Data 연결"]
+    depends_on: [DR-2]
+    completion_def: "dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며, 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 시나리오 문서가 단계·입력값·기대 화면 3열로 레포에 있다."
+    evidence: "⓵ 시나리오 문서 = `dev-package/scenarios/dev-minimal-data-setup.md`(선행 4건 ＋ 로그인 ＋ 프로젝트 4 ＋ 데이터셋 28 ＋ 계보 18 ＋ 미리보기 5종 ＋ `deploy_doctor`). ⓶ 선행 충족 = `DR-2` done — dev 계수 전건 0 · 연구실 1 · 계정 1(교수) · 로그인 자격 1(첫 비밀번호 변경 강제) · 서비스 운영자 1 · `deploy_doctor` 15/15. ⓷ 투입 도구 실측 = `dev-package/reports/r-dev-reset/agent-browser-capability.md` — `agent-browser` 0.27.0 전역 설치 · Chrome for Testing 152 자동 수령 · `doctor` 10 pass / 0 fail · CDP 직결(Playwright·Puppeteer 의존 0) · 명령 `open`·`snapshot -i`·`click`·`fill`·`upload <선택자> <파일...>`·`wait`·`screenshot`·`find testid` 실재 · 외부 드라이브 경로 접근 성립(실측 `surface.grib` 149,514,336 B) · 도구 쪽 파일 크기·건수 상한 기재 0 · dev 로그인 화면 200 ＋ 문면 일치. ⓸ 실투입 결과(목록 화면 데이터셋 28건 · 계보 간선 18건 · 미리보기 5종)는 **미기록** — 러너 실행 중이다."
+    deadline: null
+    note: "⭐ ⟨개정 2026-09-13 · Ted 결정⟩ **투입 주체 = 에이전트**(브라우저 자동화 도구 `agent-browser` 로 실제 화면을 조작한다) · 축자 「b로하자 b로 해야지, 그리고 playwright 가 아니라 agent browser가 더빠르지않냐 이걸로하자」 · 등재 `PLAN-SoT §9 〈396〉`-㊹. ／ 종전 ~~사람 실행 · 체크리스트 문서 · 자동화는 후속~~ — 종전 `〈396〉`-㊷ ⓑ 「화면 투입의 브라우저 자동화」를 **이번 회차로 당겼다**. ⭐ **화면단 원칙은 유지된다** — 백엔드 시딩·DB 삽입·API 직접 호출·`load-seed.py` 를 쓰지 않는다. 화면 밖 선행은 SQL 4건뿐이고 그것은 `DR-2` 에서 끝났다. ⭐ **전건 유지 재확인** — 축자 「업로드는 다하고, 줄이지 말고, 나머진 권고대로 해」 · 파일 구성 전건(화면 업로드 총량 ≈ 6.1 GB) · 건수 축소 0. 러너 산출물(갈무리·로그·초기 비밀번호)은 **세션 스크래치**에 두고 레포에 싣지 않는다."
+    sources: ["dev-package/reports/r-dev-reset/agent-browser-capability.md", "dev-package/reports/reference-data/2026-09-13-inventory-v2.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
   - id: DR-1c
     name: "platform 0031_search_evidence 의 마이그레이션 드리프트 오라클 신설"
     status: done

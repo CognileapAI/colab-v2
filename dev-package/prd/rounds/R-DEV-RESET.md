@@ -271,3 +271,15 @@ Ted 판정
 - ⭑ ⟨증보 2026-09-13 · Ted 후속 지정⟩ 축자 「**이건 후속작업으로보자**」 세 건 — ⓐ **dev 초기화 상시 승인**(회차마다 GO 를 받지 않는 형태) ⓑ **화면 투입 브라우저 자동화** ⓒ **WSL 메모리 확장**(`.wslconfig` **24GB** · 시점 = `main` 병합 **직후**). 등재 = `PLAN-SoT §9 〈396〉`-㉷. **이번 회차 밖이다.**
 - ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`gates/config/migration-drift.toml` 의 platform `min = 15` 가 실측 23 보다 8 낮다.** 그 파일 자체가 「`min = 0` 은 쓰지 않는다 — 대상 0건은 통과가 아니다」로 green-by-skip 을 막는데, 바닥이 실측보다 낮으면 **오라클 8벌이 사라져도 green** 이다. 같은 성격의 바닥이 `db/ai` `min = 3`(실측 3 · 일치)다. 고칠 자리 = 그 toml 한 줄. 이 회차는 고치지 않았다.
 - ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`service-tests-core-api` 가 워커 12 개에 DB 를 나눠 주지 못해 전수에서 오염된다.** 실측 = 전수 1회차 core-api red 4건이 단독 실행에서는 **1,221건 전건 통과**(`dev-package/reports/r-dev-reset/full-gate-diagnosis.md`). 고칠 자리 = `gates/tools/service-tests.sh` — `--dist loadfile` ＋ **worker 당 격리 DB 1개**가 서야 한다(현 배선은 `PYTEST_PARALLEL=(-n "$JOBS" --dist loadfile)` ＋ `xdist_core_db` 플러그인 경로). **어느 검사에 걸리는가** = 전수 게이트에서 판정 red 로 유입되고, 그것이 이번 회차 전수 예외(`〈396〉`-㉶)의 주된 근거였다. 이 회차는 고치지 않았다.
+- ⭑ ⟨증보 2026-09-13 · `DR-2h`⟩ **조건부 속성 `ALTER ROLE` 은 RDS 마스터에서 여전히 못 돈다.** 실측 축자 `Only roles with the BYPASSRLS attribute may change the BYPASSRLS attribute.` — PostgreSQL 16 은 `CREATEDB`·`CREATEROLE`·`BYPASSRLS`·`REPLICATION` 에도 `SUPERUSER` 와 같은 규칙(그 속성을 가진 롤만 그 속성을 바꾼다)을 걸고 RDS 마스터는 `rolbypassrls=f` 다. **지금 dev 는 속성이 이미 맞아 그 문이 발화하지 않으므로 이번 초기화는 막히지 않았다.** **어느 검사에 걸리는가** = 게이트에 없다 — `infra/staging/db-bootstrap.sh account-admin` 의 종료코드 하나뿐이고 **속성이 어긋난 뒤에야** 울린다. 고칠 자리 = 같은 문을 속성별로 쪼개거나 드리프트 시 `ALTER ROLE` 대신 RAISE 로 사람에게 넘기는 것. 계정 관리자 롤의 속성 드리프트를 정기적으로 보는 자리도 없다(`deploy_doctor` 15 항목에 없고 `db-bootstrap.sh verify` 는 `colab_app`·`colab_owner` 두 롤만 본다). 발견 자리 = `DR-2` A 단계 · 증명 `dev-package/sessions/DR-2h-account-admin-rds-proof.md` §6.
+
+### 11-1. 런북 정정 6건 (⟨증보 2026-09-13 · `DR-2` 실행 실측⟩ · 대상 `dev-package/sessions/DR-2-runbook.md` · **이 회차에서 본문을 고치지 않았다**)
+
+- ⑴ **psql 은 스킴 `postgresql` 이 필요하다.** URL 파일 셋의 스킴이 `postgresql+psycopg` 라 psql 이 URI 로 읽지 않고 로컬 소켓으로 붙어 **exit 2** 다. 스킴을 치환한 뒤 exit 0.
+- ⑵ **psql 컨테이너에 `--user 0` 이 필요하다.** URL 파일이 uid 10001 소유 0600 이라 기본 사용자로는 읽지 못한다.
+- ⑶ **`COLAB_CORE_S3_BUCKET`·`COLAB_CORE_S3_REGION` 은 `dev.env` 가 아니라 `compose.yml` 의 리터럴이다.** 미지정 상태의 `s3-plan` 은 **exit 2** 로 아무것도 하지 않는다(실측 값 `colab-platform-data-dev` · `ap-northeast-2`).
+- ⑷ **core-api 이미지에 `psql` 이 없다.** SQL 선행은 `postgres:16-alpine`(`--network host --user 0` · URL 파일 읽기 전용 마운트)로 실행한다.
+- ⑸ **`db-bootstrap.sh` 는 어느 단계를 부르든 비밀번호 환경변수 네 이름을 전부 요구한다** — `COLAB_OWNER_PASSWORD`·`COLAB_APP_PASSWORD`·`COLAB_AI_APP_PASSWORD`·`COLAB_ACCOUNT_ADMIN_PASSWORD`. 부족하면 **DB 접촉 0 · 파괴 단계 미진입**으로 exit 1 이다(머리에서 검사한다).
+- ⑹ ⭑ **체인별 버전 표는 `alembic_version_platform`·`alembic_version_ai` 다.** `alembic_version` 을 보면 **적용된 것을 미적용으로 오판한다** — 이 회차에 `migrate-platform` 을 멱등 1회 더 낸 원인이 그것이다(상태 변화 0 · 파괴적 단계 재시도 아님). 런북의 검증 질의를 체인별 표 이름으로 고친다.
+
+- 등재 = `PLAN-SoT §9 〈396〉`-㉺ · 실행 기록 `dev-package/sessions/DR-2-run-2026-09-13.md`.
