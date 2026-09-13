@@ -372,6 +372,15 @@ DEFAULT_SEARCH_LIMIT = 20
 #: 않으려고 값을 코드에 드러내 둔다. 조립은 어차피 `_compose` 로 경계 안 데이터셋 전부를
 #: 이미 들고 있어, 이 창이 새로 만드는 비용은 D3 질의 한 번의 폭뿐이다.
 VERIFIED_SCAN_LIMIT = 1000
+#: ⭑ **⟨`R-LTH-REVIEW-1` Task 2 · spec §6 ㉰⟩ 운영자 검색의 범위 표기.**
+#: 운영자는 전 연구실을 **읽기 전용**으로 뒤지므로(`deps._operator_read` · `kernel/scope.py`
+#: `GUC_OPERATOR_READ`) 소속 연구실 이름 하나로 적으면 화면이 뒤진 범위를 거짓으로 말한다.
+#: 상단 셸 칩(`frontend/src/shell/Gnb.tsx` 앵커 `연구실 전환 · 전체 연구실 (읽기 전용)`)과
+#: **같은 말**이다 — 같은 범위를 두 이름으로 부르지 않는다.
+#: ⚠ `AiSearchScope.labId` 는 필수 `Ulid` 로 **남는다**(계약 무변 · `additionalProperties: false`).
+#: 운영자 응답에도 소속 연구실 id 가 실리고 `labName` 만 집합을 말한다 — 이 의미 불일치는
+#: spec §6 ㉰ 에 명시돼 있고, `scopeKind` 류 열쇠 신설은 계약 개정을 요한다.
+OPERATOR_SCOPE_LABEL = "전체 연구실 (읽기 전용)"
 
 
 #: 자동완성 후보 상한. 계약 `limit` 과 같은 값이다.
@@ -452,8 +461,21 @@ def search_datasets(request: Request, body: dict | None = Body(default=None),
 
     lab = d1_identity.find_lab(db)
     lab_name = ("" if lab is None else lab["name"]) or "연구실"
+    # ⭑ **⟨`R-LTH-REVIEW-1` Task 2 · spec §6 ㉰⟩ 범위 줄이 실제로 뒤진 범위를 말한다.**
+    # 운영자의 결과는 아래 `read_only_scope(..., operator_read=subject.operator)` 에서 오는데,
+    # 이름과 분모는 요청 트랜잭션(`scoped_db`)에서 왔다 — 검색은 `POST` 라 거기서는 운영자
+    # 확장이 **꺼진다**(`deps._operator_read` 는 `GET`·`HEAD` 만 연다). 그래서 종전에는
+    # 「전 연구실을 뒤지고 자기 연구실 건수를 말하는」 줄이 섰다.
+    if subject.operator:
+        lab_name = OPERATOR_SCOPE_LABEL
     # **뒤진 범위를 먼저 밝힌다** — 세는 것은 D3 이고, 그것이 이쪽 도메인이다.
-    searched_count = d3_catalog.count_datasets(db)
+    # 세기용 스코프를 **한 번 더 연다**(spec §6 ㉰ 갈래 ㈏). 아래 결과 블록 안으로 옮기지
+    # 않은 이유 둘 — ⑴ 이 값이 `interpret()` 인자라 결과 블록보다 먼저 필요하다 ⑵ 결과
+    # 블록은 `isDataQuery` 조건부라 거기서만 채우면 데이터 질문이 아닌 갈래에서 값이 빈다.
+    # 인자는 결과 블록과 **글자까지 같다** — 두 스코프가 갈리면 이 정합이 다시 깨진다.
+    with read_only_scope(request.app.state.session_factory, subject,
+                         operator_read=subject.operator) as counting:
+        searched_count = d3_catalog.count_datasets(counting)
 
     answer = request.app.state.searches.interpret(
         lab_id=str(subject.lab_id), lab_name=lab_name,
