@@ -133,3 +133,17 @@ frontend-typecheck green — tsc --noEmit(frontend/tsconfig.json · include=src�
    쥐고 있어 타입은 green 이다. prop 을 걷을지는 `LineageFixModal` 소유 레인과 함께 판정 필요.
 4. **상세 계보 모달과 등록 ③ 의 후보 줄 모양이 갈렸다** — 인라인 모드는 하단 영역이 없고 고르는
    즉시 확정된다. 같은 `ParentPicker` 한 벌이지만 확정 지점이 둘이다. 통일 여부 판정 필요.
+
+## 10. 레인 F2 후속 3건 (수용 검토 지적 처리)
+
+- **PRD-08 개정 표시 — 완료.** `dev-package/prd/PRD-260905-적용전기획.md` 세 자리에 A1 형식 그대로
+  표시(제목 · 「변경 — 프론트」 · §3 등록 3단계 요약 ③ 연결). 원문은 `~~취소선~~` 으로 존치.
+  「초과 후보 규칙」과 「계약·서버 `processingLevel` 파라미터」는 **무변**임을 개정문에 명시.
+- **죽은 코드 삭제 — 하지 않음(실측이 지시 전제와 어긋남).** `lineagePeriodStart`/`lineagePeriodEnd` 의
+  `frontend/src` 호출부는 **0건이 아니라 2건**(`components/lineage/lineageSource.ts:31`·`:32` 의
+  `candidateQuery`). 그 경로는 계약 `listLineageCandidates` 의 `periodStart`·`periodEnd` 질의
+  파라미터(`src/generated/fe-core.ts:6283-6284`)가 살아 있는 동안 유효하고, 시험
+  `frontend/test/lineage-continuation.test.tsx:153`(URL 질의 전송)이 그 변환을 직접 잰다.
+  삭제하려면 생성물 계약 필드까지 걷어야 하므로 **판정 대상**이다. `test/lineage-continuation.test.tsx`
+  ①(UTC 변환) 시험도 그래서 존치.
+- **`onLevelFilterChange`/`levelFilter` — 무접촉.** PRD-08 Ted 재판정 뒤에 판정한다(위 9절 3항).
