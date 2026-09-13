@@ -1405,8 +1405,8 @@ export function UploadModal(props: {
           {mixedGlobal && <Toast message={MIXED_EXTENSION_NOTICE} testId="up-mixed-global" onDismiss={() => setMixedGlobal(false)} />}
           {status?.failure && (
             <div className="warn" role="alert" data-testid="up-analysis-failure">
-              <p>파일 분석을 마치지 못했어요 · {status.failure.reason}</p>
-              <p>파일과 기준 격자를 확인한 뒤 다시 시도해 주세요.</p>
+              <p>파일 분석을 마치지 못했어요 · {status.failure.reason} — 지도로 못 그려요 · 등록은 됩니다</p>
+              <p>지금 그대로 등록해도 되고, 파일과 기준 격자를 확인한 뒤 다시 분석해도 돼요.</p>
               <button type="button" className="btn btn-secondary" onClick={() => setRetryArm((n) => n + 1)}>다시 올려 분석</button>
             </div>
           )}
@@ -1573,7 +1573,12 @@ export function UploadModal(props: {
                     type="button"
                     className="btn btn-strong"
                     data-testid="reg-open"
-                    disabled={gridReuseBusy || !uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
+                    // ⭑ ⟨`#40`⟩ **분석 실패는 등록을 막지 않는다** (정본 `Policy:192` ·
+                    // 서버 `test_a_failed_pipeline_does_not_block_registration` = 201).
+                    // 「분석이 끝났다」는 `ready || failure` 다 — 워커가 실패에 `ready=False` 를
+                    // 함께 쓰므로(`d5_ingestion.py` `_fail`) `failure` 항만 빼면 `ready:false` 가
+                    // 그대로 막는다. 격자·접수 갈래의 항은 무변이다.
+                    disabled={gridReuseBusy || !uploadId || !(status?.ready || status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
                     title={analyzeBlocksNext ? REG_OPEN_ANALYZING_REASON : undefined}
                     aria-describedby={analyzeBlocksNext ? REG_OPEN_WHY_ID : undefined}
                     onClick={() => {

@@ -2688,11 +2688,15 @@ describe('rev2 후속 오류와 복구', () => {
     await openModal(sources);
     await dropFiles([makeFile('a.bin.gz')]);
     expect(await screen.findByTestId('up-analysis-failure')).toHaveTextContent('좌표계 변환 실패');
-    expect(screen.getByTestId('reg-open')).toBeDisabled();
+    // ⭑ ⟨`#40`⟩ 종전에는 여기서 `다음 →` 이 **비활성**이라고 쟀다 — 그것이 정본 `Policy:192`
+    // 「감지 실패·그릴 수 없음·헤더 못 읽음은 등록을 막지 않는다」 위반이었다. 재분석은
+    // **선택지**이고 막다른 길이 아니다. 실패 갈래의 등록 가능 판정은
+    // `test/upload-register-on-analysis-failure.test.tsx` 가 따로 잰다.
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
     sources.upload.status = async () => ({ uploadId: UPLOAD_ID, ready: true, renderable: false, metadataComplete: false, files: [], failure: null });
     await click(screen.getByRole('button', { name: '다시 올려 분석' }));
-    await waitFor(() => expect(screen.getByTestId('reg-open')).toBeEnabled());
-    expect(screen.queryByTestId('up-analysis-failure')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('up-analysis-failure')).toBeNull());
+    expect(screen.getByTestId('reg-open')).toBeEnabled();
   });
   it('모달 본문에 혼합 파일을 떨어뜨려도 첫 확장자만 남고 제외 안내를 보인다', async () => {
     const { sources } = fakes();
