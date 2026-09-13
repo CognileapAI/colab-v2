@@ -48,6 +48,19 @@ paths:
     **고정 id 목록 ＋ `--yes-delete`** 이고 ⛔ **`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다**
     (선례 `〈365〉`·`〈366〉`). 제품에 삭제 op 을 여는 것이 아니다 — `CLAUDE.md §5` 「범위 늘리기」다.
 
+    ⭑ **⟨증보 2026-09-13 · `〈N〉`⟩ dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.**
+    11번 문면은 무변이다 — **데이터셋 행 단위 삭제의 유일한 자리는 그대로 `purge_datasets.py` 이고**
+    이 도구가 그 자리를 대신하지 않는다. 이 도구는 **접두사 비우기 ＋ 두 체인 스키마 재생성**이라
+    성격이 다르고, **dev 밖에서는 어느 조건으로도 돌지 않는다.**
+    **게이트 넷을 모두 만족해야 실행된다**(하나라도 어긋나면 아무것도 지우지 않고 비영 종료) —
+    ⑴ `--target dev` ＋ `--yes-reset-dev` ⑵ `COLAB_CORE_S3_BUCKET` 이 `colab-platform-data-dev` 와
+    **정확히** 일치 ⑶ 두 DB URL 의 **호스트**에 `-dev` 포함(**DB 이름 단독은 판별력 0** — `colab_platform` 은
+    staging 과 같은 값이다) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다.
+    **S3 는 exact-key 계획 ＋ sha256 대조로만 지운다** — 접두사·`--recursive` 삭제를 쓰지 않는다(선례 `〈354〉`).
+    ⛔ **`_ops/` 는 무접촉이다** — 계획에 그 접두사 키가 **1건이라도** 있으면 전체를 거부한다(지우면
+    `deploy_doctor` ⑭(백업 24h)가 red 다). staging·prod 식별자에서는 거부한다.
+    ⛔ **`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — 승인은 1회 소진이다.**
+
 ## 고치기 전에 돌릴 것
 
 `cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev …` — 15 항목 중 어디가

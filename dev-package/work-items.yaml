@@ -3407,3 +3407,51 @@ items:
     note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0029_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다) · 관리자의 타 연구실 **반출** — intent 문면이 연 것은 읽기뿐이라 `app/deps.py::_operator_read` 가 경로 마지막 칸이 `download` 인 op 을 스코프에서 제외한다. ⚠ `[미확인]` = 로그인한 상태의 관리자 토글·전 연구실 열람 실동작(Ted 실사용 확인 대기) · 운영자 판정(`_require_operator`) 통과 자체. ⚠ `0029` 의 표 목록은 정적 열거라 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다(그 8표는 `lab_boundary` 만으로 닫혀 있다 · 후속)."
     sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
 
+  - id: DR-1a
+    name: "dev 전용 초기화 도구 — fail-closed 가드와 로컬 증명"
+    status: done
+    stage: after_stage2
+    owner: "운영 / core-api ops"
+    entry_conditions: ["intent 2026-09-13 dev 초기화·재적재가 확정 상태다", "integration/r-dev-reset 이 main tip 기점으로 서 있다"]
+    depends_on: []
+    completion_def: "넷을 모두 만족한다. ⑴ service-tests-core-api 단독 green 3회 연속 ⑵ exec-bit green ⑶ 가드 시험이 구현 전 RED 였음이 로그로 남는다 ⑷ 일회용 postgres 로컬 증명에서 schema-diff green ＋ deploy_doctor ⑥⑦⑧⑨ 로직 green ＋ 픽스처 행 0."
+    evidence: "2026-09-13 done — 레인 `lane/wu-r1a-reset-tool`(커밋 `e01bf3d1`·`e3b027ec`·`e9e29906`·`559b7ef8`). ⑴ 도구 = `services/core-api/ops/reset_dev_environment.py` — 단계 `count`·`schema`·`s3-plan`·`s3-apply` · 접속 문자열은 파일 경로로만(`--platform-url-file`·`--ai-url-file`) · `allow_abbrev=False`. ⑵ 가드 시험 = `services/core-api/tests/test_reset_dev_environment_guard.py` **25건**(파일 실측 `grep -c '^def test'`). 구현 전 RED 축자 = `dev-package/sessions/DR-1a-local-proof.md §0` ㄴ `24 failed in 6.05s`(전건 `NotImplementedError`) ＋ ㄹ 회귀 1건 RED 뒤 `25 passed`. ⑶ 로컬 증명 = `dev-package/sessions/DR-1a-local-proof.md` — 일회용 postgres(`--rm` ＋ tmpfs ＋ `PGDATA` · 호스트 포트 미개방) · `schema-diff` green(두 체인 드리프트 0) · `deploy_doctor` ⑥⑦ head `0031_search_evidence`/`0007_merge_vocab_and_category` · ⑧ `rls_coverage.py` rc 0(표 50건) · ⑨ `db-bootstrap.sh verify` `rolsuper=f rolbypassrls=f` · 픽스처 행 0 전건. dev 실환경 무접촉 · AWS 호출 0건. ⑷ `service-tests-core-api` 3회 연속 green(3/0/0)·`exec-bit` green 은 **DR-1a 레인 최종 보고로 회수한 값이고 레포 파일에는 3계수 기록이 없다** — DR-1b 레인은 재측정하지 않았다(후속 = 레인 3계수를 `dev-package/reports/<회차>/<레인>/` 에 배출처로 남기는 규약). 원장 `PLAN-SoT §9 〈N〉`."
+    deadline: null
+    note: "도구를 실환경에 대고 돌리지 않았다 — 실행은 DR-2 다. 파이썬 도구는 계수·스키마 재생성·S3 만 하고 extensions·마이그레이션·app-grants 는 기존 스크립트를 부른다(앱 이미지에 alembic 이 없다). 첫 실행에서 나온 결함 1건 = 재생성이 `public` 스키마 주석을 지워 `schema-diff` 가 드리프트로 읽은 것 — 재생성 DDL 끝에 주석을 되돌리고 회귀 시험을 더했다. 남은 `[미확인]` = RDS 에서의 `DROP SCHEMA`·`CREATE EXTENSION` 권한(WU-R2 실측 1회가 최종 확인)."
+    sources: ["dev-package/intent/2026-09-13-dev-reset-reference-scenario.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-1a-local-proof.md"]
+  - id: DR-1b
+    name: "dev 초기화 규칙 예외·원장·대장 등재와 첫 자격 삽입 절차 실측"
+    status: done
+    stage: after_stage2
+    owner: "운영 / 문서"
+    entry_conditions: ["DR-1a 가 통합 브랜치에 얹혔다"]
+    depends_on: [DR-1a]
+    completion_def: "work-item-consistency green ＋ 원장 게이트 3종 green ＋ .claude/rules/deploy.md 예외 문단과 PLAN-SoT §9 행의 문면이 같은 값을 말한다 ＋ 첫 로그인 자격 삽입 절차가 축자로 적혔다."
+    evidence: "2026-09-13 done — 레인 `lane/wu-r1b-ledger`. ⑴ 규칙 예외 = `.claude/rules/deploy.md` 「깨뜨리면 안 되는 것」 11번 **뒤**에 증보 문단(11번 문면 0글자 수정) — 게이트 넷·`_ops/` 무접촉·exact-key 계획·승인 1회 소진. ⑵ 원장 = `PLAN-SoT §9` 2행(dev 한정 예외 ＋ 회차) · 번호는 병합 직전 재실측(`dev-package/prd/tools/max-decision.sh`). ⑶ 두 문면 대조 = 게이트 넷·무접촉 접두사·불변(`purge_datasets.py`)·승인 1회 소진이 규칙과 원장에 같은 값으로 있다. ⑷ 첫 로그인 자격 삽입 절차 = `dev-package/scenarios/dev-minimal-data-setup.md` ③ 에 `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 「## 3. 계정 생성 — 제품과 같은 경로」를 축자로 옮겼다(비밀번호는 표준입력 한 줄 · argv·파일·로그 미기재). ⑸ `infra/staging/provision-lab.sql` 결함 1건 수정 — `BEGIN;` 직후 `SET LOCAL app.current_lab` 추가 · 증명 `dev-package/sessions/DR-1b-provision-lab-proof.md`. 원장 `PLAN-SoT §9 〈N〉`·`〈N+1〉`."
+    deadline: null
+    note: "DR-1a 와 직렬. 〈N〉 을 하드코딩하지 않는다 — 병합 직전 재실측한다. 이 레인은 dev 실환경·공용 DB 를 건드리지 않았고 AWS 호출 0건이다."
+    sources: ["dev-package/reports/r-login-backoffice/task1-deploy/operator.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-1b-provision-lab-proof.md"]
+  - id: DR-2
+    name: "dev 초기화 1회 실행"
+    status: open
+    stage: after_stage2
+    owner: "오케스트레이터 ＋ Ted"
+    entry_conditions: ["DR-1a·DR-1b 가 main 에 병합됐다", "그 sha 가 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다 — 수령 완료(축자 「순차적으로 다 이어서해 3의 초기화도 진행하고」 2026-09-13 · PLAN-SoT §9 〈N+1〉-㉲)"]
+    depends_on: [DR-1a, DR-1b]
+    completion_def: "데이터셋 0건(경계 실린 경로 확인) ＋ uploads/·previews/ 객체 0 ＋ 진행 중 멀티파트 0 ＋ _ops/ 객체 수 무변 ＋ deploy_doctor 15/15 한 번의 실행 ＋ 원장 행 1건."
+    evidence: ""
+    deadline: null
+    note: "비가역. 승인은 1회 소진이다 — Ted GO 는 수령했으나 main 병합·dev 배포가 남아 있어 아직 실행하지 않는다. 다섯 명령을 순서대로 내고 각 명령이 비영 종료하면 그 자리에서 멈춘다. 버저닝 탓에 삭제 후에도 이전 판이 30일 남는다."
+    sources: ["dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-3
+    name: "화면 투입 시나리오 문서와 dev 실투입"
+    status: open
+    stage: after_stage2
+    owner: "문서 레인 ＋ 사람 실행"
+    entry_conditions: ["DR-2 완료", "원천 드라이브 03 Reference-Data 연결"]
+    depends_on: [DR-2]
+    completion_def: "dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며, 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 시나리오 문서가 단계·입력값·기대 화면 3열로 레포에 있다."
+    evidence: "문서 초안 = `dev-package/scenarios/dev-minimal-data-setup.md`(선행 4건 ＋ 로그인 ＋ 프로젝트 4 ＋ 데이터셋 28 ＋ 계보 18 ＋ 미리보기 5종 ＋ deploy_doctor). 실투입은 DR-2 뒤 사람 실행이라 미착수다."
+    deadline: null
+    note: "화면 조작만 쓴다 — load-seed.py·API 직접 호출을 쓰지 않는다. 화면 밖 선행은 SQL 4건뿐이고 그것이 결정 ⑸ 의 등재된 예외다. 파일 전건이라 화면 업로드 총량 ≈ 6.1 GB."
+    sources: ["dev-package/reports/reference-data/2026-09-13-inventory-v2.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
