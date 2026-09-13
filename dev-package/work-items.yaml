@@ -3407,3 +3407,16 @@ items:
     note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0029_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다) · 관리자의 타 연구실 **반출** — intent 문면이 연 것은 읽기뿐이라 `app/deps.py::_operator_read` 가 경로 마지막 칸이 `download` 인 op 을 스코프에서 제외한다. ⚠ `[미확인]` = 로그인한 상태의 관리자 토글·전 연구실 열람 실동작(Ted 실사용 확인 대기) · 운영자 판정(`_require_operator`) 통과 자체. ⚠ `0029` 의 표 목록은 정적 열거라 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다(그 8표는 `lab_boundary` 만으로 닫혀 있다 · 후속)."
     sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
 
+
+  - id: ONTO-PROTECT
+    name: "온톨로지 삭제 보호와 관리자 권한 분리"
+    status: open
+    stage: backlog
+    owner: "배포·DB 운영"
+    entry_conditions: ["사용자 2026-09-13 온톨로지 DB 삭제 금지와 기계적 차단 지시"]
+    depends_on: []
+    completion_def: "ST 일반 앱/배포 자격 삭제 거부 및 실제 적용 확인, 관리자·Docker/PGDATA 접근 분리, AWS 보호 적용 검증. 우회 권한이 남으면 전체 완료로 닫지 않는다."
+    evidence: "ST DB 권한 보호 실제 적용: 5표103행 전후 hash 동일, 삭제 등57검사·복원44·AI168 통과, 전후 백업 정상. 관리자/Docker 권한 분리와 AWS 보호 미완료. sessions/20260913-ontology-protection.md 참조."
+    deadline: null
+    note: "현재 작업은 local-stage/ST에 적용한다. main/DEV/PR 승격은 하지 않는다. 관리자 권한 분리와 AWS 경로는 미완료이며 ST 보호를 전체 환경의 절대 삭제 불가로 해석하지 않는다."
+    sources: ["dev-package/sessions/20260913-ontology-protection.md"]

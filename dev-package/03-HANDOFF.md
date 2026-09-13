@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 2026-09-13 온톨로지 보호: [ST 적용·검증과 미완료 경계](sessions/20260913-ontology-protection.md). 일반 앱/배포 자격의 DB·테이블 삭제를 차단했다. 다음은 에이전트의 관리자/Docker 접근 분리와 AWS 보호이며 ONTO-PROTECT open.
+
 > 2026-09-13 AI 검색 최신: [local-stage/ST 배포 완료와 검증](sessions/20260913-local-stage-release.md). [브랜치 전략](../docs/BRANCHING.md)에 따라 main/DEV 승격은 보류했다. 다음은 배포 도구의 환경별 원천 강제·스케줄 재설치 시 선언 보존, 운영 배포 준비다. 실제 Sonnet 평가 보류, K4 open.
 
 > **최종 갱신 2026-09-13 · 현재 단계 = 버그개선 회차 dev 배포 완료(`321bdaef1201` · 태그 `dev-20260913-1`).** `deploy_doctor --env dev` **항목 15 — ✓ 15 · ✗ 0 · ─ 0 · 한 번의 실행 · exit 0** · 대장 `BF-14`~`BF-17` 전건 `done` · 등재만 3건(`PA-T`·`LV-5`·`HE-1`) · 이슈 댓글 12건 게시(**닫기는 Ted**) · 최종 전수 **green 63 / red(판정) 0 / red(준비) 1**(트리 `a07b7ae6`) · 등재 `PLAN-SoT §9 〈385〉`~`〈394〉`.

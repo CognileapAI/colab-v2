@@ -224,3 +224,15 @@ python3 infra/staging/load-seed-test.py      # 시험 16건 — staging 에 접�
 - 비밀·환경값은 홈의 `.colab-v2-staging.env`(0600) 하나에 모인다 — 터널 토큰 · Cloudflare 3종 ·
   DB 비밀 3종 · postgres 데이터 디렉터리 경로.
 - 호스트가 WSL2 머신 1대다. 재부팅·업데이트가 곧 중단이다.
+
+## 온톨로지 삭제 보호 — ST
+
+`db-bootstrap.sh roles/app-grants`는 colab_ai DB·public 스키마·D9 테이블 소유권을 멤버십 없는 NOLOGIN `colab_ontology_guardian`으로 분리한다. 배포 계정은 SELECT/INSERT/UPDATE, 앱은 SELECT만 갖는다. DELETE/TRUNCATE/DROP/ALTER 및 보호 역할로 SET ROLE을 허용하지 않는다. Alembic 버전 표는 배포 역할이 계속 관리한다.
+
+기존 ST 설치: 정상 백업 뒤 관리자 접속으로 `ontology-protection.sql` 적용, `bash infra/staging/verify/verify-ontology.sh`로 읽기 전용 검증한다. `db-bootstrap.sh protect-ontology`도 같은 설치 경로다. 자동 배포는 앱 교체 전에 보호 검사를 반드시 통과해야 한다.
+
+검증은 `python3 infra/staging/ontology-protection-selftest.py`로 수행한다. 항상 새 tmpfs DB만 만들며 실제 ST에서 삭제 명령을 시험하지 않는다. 검사기를 훼손하는 음성 사례도 포함한다. AI 시험 초기화 도구는 영구 PGDATA를 거부한다.
+
+기존 보호 테이블의 DDL 또는 구버전 AI DB의 ALTER TABLE 마이그레이션은 일반 배포 자격으로 거부된다. 이는 자동 우회하지 않으며 별도 관리자 검토가 필요하다. 현재 ST head의 재배포는 버전 표를 읽는 no-op이다. SQL 스키마 변경이 아니라 소유권/권한 정책이라 새 제품 migration은 만들지 않는다.
+
+한계: UPDATE로 내용 변경은 허용한다. 데이터 내용 보존은 백업과 함께 관리한다. Docker/호스트 root/PostgreSQL superuser는 소유권을 다시 바꿀 수 있어 관리자 권한 분리가 별도로 필요하다. ST PGDATA는 platform과 ai 공용 bind mount이며 파일 직접 삭제를 이 DB 정책으로 막지 못한다. AWS 공용 bootstrap은 기존 동작을 유지하고 이 ST 정책을 적용하지 않는다. AWS 보호는 별도 적용·검증 전까지 미적용이다.

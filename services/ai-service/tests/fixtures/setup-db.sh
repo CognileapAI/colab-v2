@@ -26,6 +26,24 @@ REPO="$(cd "$AI_SERVICE/../.." && pwd)"
 psql_su() { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" "$@"; }
 psql_owner() { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U "$OWNER" -d "$DB" "$@"; }
 
+# A test fixture must never clear a persistent ontology database, even when its
+# container name was accidentally supplied through CONTAINER.
+if ! docker inspect "$CONTAINER" | python3 -c '
+import json,posixpath,sys
+try:
+    c=json.load(sys.stdin)[0]
+    mounts=c["HostConfig"].get("Tmpfs") or {}
+    env=dict(v.split("=",1) for v in c["Config"]["Env"] if "=" in v)
+    data=posixpath.normpath(env.get("PGDATA",""))
+    safe="/var/lib/postgresql/data" in mounts and (data=="/var/lib/postgresql/data" or data.startswith("/var/lib/postgresql/data/"))
+except (ValueError,KeyError,TypeError,IndexError):
+    safe=False
+sys.exit(0 if safe else 1)
+'; then
+  echo "ONTOLOGY_PROTECTED: test setup requires disposable tmpfs PGDATA" >&2
+  exit 65
+fi
+
 # ① 소유자 롤 · 스키마
 psql_su -q -c "SET client_min_messages=warning; DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null 2>&1
 psql_su -c "DO \$\$BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${OWNER}') THEN CREATE ROLE ${OWNER} LOGIN NOSUPERUSER NOBYPASSRLS; END IF; END\$\$;" >/dev/null

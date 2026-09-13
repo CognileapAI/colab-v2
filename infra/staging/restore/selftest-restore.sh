@@ -566,22 +566,22 @@ mk_dump "$W/plat-cut.sql.gz"       5  60   # 표 5 · 행 300 — platform 합�
 rdb() { env COLAB_BACKUP_CONFIG="$W/floors.env" COLAB_RESTORE_PRE_BACKUP="$W/pre-backup.sql.gz" \
         "$HERE/restore-db.sh" "$@" --yes-drop-schema 2>&1; }
 
-RAN=$((RAN+1)); echo "──────── SR24 ⓐ 온전한 ai 덤프(표 6)는 **합격선 검사를 통과한다** — 거짓 RED 가 걷혔다"
-O="$(rdb --db colab_ai --owner owner --dump "$W/ai-intact.sql.gz")"
-if echo "$O" | grep -q '합격선 프로파일 = ai' && echo "$O" | grep -q 'PASS  C4' \
-   && ! echo "$O" | grep -q '덤프가 RED 다'; then
-  echo "  → 기대대로 — ai 합격선(표 4)이 걸렸다. 표 6 이 20 에 걸려 죽지 않는다"
-  echo "$O" | grep -E '합격선 프로파일|C0|C4|C5' | sed 's/^/    /'
-else echo "  → ✗ 온전한 ai 덤프가 여전히 막힌다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
-# ⚠ 이 fixture 는 docker 없이 도는 자리까지만 본다 — 합격선 판정 다음 줄(커넥션 세기)에서 선다.
-#    그 뒤는 살아 있는 스택에서 `verify-restored.sh` 가 센다.
+# The ontology can no longer be replaced in place. Keep testing artifact floors
+# directly; a valid backup is still required for restoration into a new database.
+RAN=$((RAN+1)); echo "──────── SR24 intact ai backup passes its profile floors"
+O="$(COLAB_BACKUP_MIN_TABLES=4 COLAB_BACKUP_MIN_ROWS=45 "$HERE/../backup/verify-artifact.sh" "$W/ai-intact.sql.gz" --skip-age 2>&1)"; RC=$?
+if [ "$RC" -eq 0 ]; then echo "  → intact ai artifact accepted"
+else echo "$O"; BAD=$((BAD+1)); fi
 
-RAN=$((RAN+1)); echo "──────── SR25 ⓑ **진짜 잘린 ai 덤프(표 2)는 여전히 RED** — 합격선을 낮춘 것이 아니다"
-O="$(rdb --db colab_ai --owner owner --dump "$W/ai-truncated.sql.gz")"
-if echo "$O" | grep -q '덤프가 RED 다' && echo "$O" | grep -q 'FAIL  C4 CREATE TABLE 2개 < 4'; then
-  echo "  → 기대대로 RED — 표 2 는 ai 합격선 4 에 걸린다"
-  echo "$O" | grep -E 'FAIL|덤프가 RED' | sed 's/^/    /'
-else echo "  → ✗ 잘린 덤프를 통과시켰다"; echo "$O" | sed 's/^/    /'; BAD=$((BAD+1)); fi
+RAN=$((RAN+1)); echo "──────── SR25 truncated ai backup still fails"
+O="$(COLAB_BACKUP_MIN_TABLES=4 COLAB_BACKUP_MIN_ROWS=45 "$HERE/../backup/verify-artifact.sh" "$W/ai-truncated.sql.gz" --skip-age 2>&1)"; RC=$?
+if [ "$RC" -ne 0 ] && echo "$O" | grep -q 'FAIL  C4 CREATE TABLE 2개 < 4'; then echo "  → truncated ai artifact rejected"
+else echo "$O"; BAD=$((BAD+1)); fi
+
+RAN=$((RAN+1)); echo "──────── SR25b ontology restore is forbidden even with intact backup"
+O="$(rdb --db colab_ai --owner owner --dump "$W/ai-intact.sql.gz")"; RC=$?
+if [ "$RC" -ne 0 ] && echo "$O" | grep -q ONTOLOGY_PROTECTED; then echo "  → protected ontology refused"
+else echo "$O"; BAD=$((BAD+1)); fi
 
 RAN=$((RAN+1)); echo "──────── SR26 ⓑ′ 중간에서 끊긴 platform 덤프(표 5)도 여전히 RED — 프로파일별로 따로 선다"
 O="$(rdb --db colab_platform --owner owner --dump "$W/plat-cut.sql.gz")"

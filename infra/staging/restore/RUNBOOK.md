@@ -1,3 +1,5 @@
+> 2026-09-13 온톨로지 보호 변경: `restore-db.sh --db colab_ai`는 확인 플래그가 있어도 거부한다. 아래 과거 AI 제자리 복원 명령은 더 이상 실행 경로가 아니다. AI 백업은 별도의 빈 DB에 복원·검증하며 살아 있는 온톨로지를 지우지 않는다. 보호 역할·한계는 `infra/staging/README.md`의 온톨로지 삭제 보호 절을 따른다.
+
 # staging 제자리 복원 런북 (실행본)
 
 > **설계 근거와 판정은 `dev-package/sessions/R1-RESTORE-DRAFT.md` 에 있다. 여기는 「무엇을 어떤 순서로 치는가」다.**
