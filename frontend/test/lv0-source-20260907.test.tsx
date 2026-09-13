@@ -259,7 +259,12 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
   it('㈎-b ① 에서 Lv 를 바꾸면 ③ 의 블록이 **즉시** 열리고 닫힌다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
-    // Lv2(기본값) → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘. 세 번을 한 흐름에서 잰다.
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 부모 0건 기본값이 `Lv0` 이라 흐름이 한 단 늘었다 —
+    //   Lv0(기본값) → 열림 → Lv2 → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘.
+    //   ／ 종전 ~~Lv2(기본값) → 닫힘 → Lv0 → 열림 → Lv3 → 닫힘~~
+    await goStep('③');
+    expect(screen.getByTestId('reg-source-lv0')).toBeTruthy();
+    await pickLevel('Lv2');
     await goStep('③');
     expect(screen.queryByTestId('reg-source-lv0')).toBeNull();
     await pickLevel(LV0);

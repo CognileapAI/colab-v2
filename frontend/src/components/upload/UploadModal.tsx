@@ -18,6 +18,14 @@ import { LineageStep } from '../lineage/LineageStep';
 import type { ParentCard } from '../lineage/types';
 // ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 기본값이 ③ 미리보기와 **같은 식**을 쓴다.
 import { derivedLevelFromParents } from '../common/processingLevel';
+
+/**
+ * 계산값 → ① 기본 선택 코드. 계산값이 없으면(부모 Lv 미상) `Lv2` 유지(spec §6 ㉱).
+ * 부모 0건은 계산값 `0` 이라 `Lv0` 이다(카드 ⑩ ⓐ).
+ */
+function autoLevelCode(derived: number | null): string {
+  return derived === null ? DEFAULT_PROCESSING_LEVEL : `Lv${derived}`;
+}
 import { Toast } from '../common/Toast';
 import { type AccessState } from '../common/accessState';
 import {
@@ -205,7 +213,8 @@ export function UploadModal(props: {
   // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 셋을 세지 않는다.
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
-  const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
+  // ⭑ ⟨카드 ⑩ ⓐ⟩ 첫 값도 계산값이다 — 부모 0건이면 `Lv0`(한 프레임이라도 `Lv2` 를 그리지 않는다).
+  const [level, setLevel] = useState(() => autoLevelCode(derivedLevelFromParents([])));
   /**
    * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 가공 단계를 사람이 한 번이라도 골랐는가.**
    *
@@ -656,6 +665,15 @@ export function UploadModal(props: {
    * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
    * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
    */
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱ · 카드 ⑩ ⓐ⟩ ① 가공 단계 기본값 = ③ 의 계산값.**
+   *
+   * 식은 ③ 미리보기와 **같은 함수**다(`derivedLevelFromParents`). 확정 부모 0건이면 `Lv0`,
+   * 부모 Lv 를 하나라도 모르면 `null` → 기본값 `Lv2` 유지(`autoLevelCode`).
+   * `hasHumanInput` 이 이 값을 기준으로 세므로 그보다 먼저 선언한다.
+   */
+  const derivedFromParents = derivedLevelFromParents(lineageCards);
+  const autoLevel = autoLevelCode(derivedFromParents);
   const hasHumanInput =
     (name.trim() !== '' && name !== nameDraft) ||
     topic.trim() !== '' ||
@@ -682,7 +700,8 @@ export function UploadModal(props: {
     //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
     category !== DEFAULT_CATEGORY ||
     dataType !== DEFAULT_DATA_TYPE ||
-    level !== DEFAULT_PROCESSING_LEVEL ||
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 기준은 계산값 기본값이다 — 파일만 올린 사람의 자동 `Lv0` 을 세지 않는다.
+    level !== autoLevel ||
     // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
     accessState !== null ||
     lineageParents.length > 0 ||
@@ -727,18 +746,16 @@ export function UploadModal(props: {
   /**
    * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 가공 단계 기본값이 ③ 의 계산값을 따라간다.**
    *
-   * 식은 ③ 미리보기와 **같은 함수**다(`derivedLevelFromParents`) — 확정 부모가 0건이거나
-   * 부모 Lv 를 하나라도 모르면 `null` 이고, 그때 기본값은 `Lv2` 로 **유지**된다.
-   * ⛔ 부모 0건을 Lv0 으로 보지 않는다 — 부모 없는 등록은 정상 중간 상태다(㉱ 축자).
+   * 값은 위 `autoLevel` 이다 — 확정 부모 0건이면 `Lv0`(카드 ⑩ ⓐ), 부모 Lv 미상이면 `Lv2`.
+   * ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ ／ 종전 ~~부모 0건을 Lv0 으로 보지 않는다~~.
    * ⛔ 사람이 한 번 고른 뒤에는 추종을 멈춘다(`levelTouched`).
    */
-  const derivedFromParents = derivedLevelFromParents(lineageCards);
   useEffect(() => {
     // 보낸 뒤에는 화면 값을 움직이지 않는다 — 다른 등록 입력과 같은 규율(`editRegistration`).
     if (submitLock.current || committedDatasetIdRef.current) return;
-    if (levelTouched || derivedFromParents === null) return;
-    setLevel(`Lv${derivedFromParents}`);
-  }, [levelTouched, derivedFromParents]);
+    if (levelTouched) return;
+    setLevel(autoLevel);
+  }, [levelTouched, autoLevel]);
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => {
     if (submitLock.current || committedDatasetIdRef.current) return;
@@ -850,7 +867,8 @@ export function UploadModal(props: {
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
     setCategory(DEFAULT_CATEGORY);
     setDataType(DEFAULT_DATA_TYPE);
-    setLevel(DEFAULT_PROCESSING_LEVEL);
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 연결도 함께 내리므로 되돌릴 값은 부모 0건의 계산값(`Lv0`)이다.
+    setLevel(autoLevelCode(derivedLevelFromParents([])));
     // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 「사람이 고른 적 있다」도 함께 내린다 — 안 내리면 새 파일의
     //   계산값 추종이 옛 손길 때문에 멈춘다.
     setLevelTouched(false);

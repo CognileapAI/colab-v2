@@ -34,9 +34,11 @@ export interface ParentLevelBearing {
 /**
  * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 확정 부모로 만드는 파생 Lv — 규칙 한 자리.**
  *
- * 주입력 부모 중 **최대 Lv ＋ 1**, 상한 `LV_CAP`. 다음 둘은 `null` 이다:
- *  · 확정 부모 **0건** — 부모 없는 등록은 정상 중간 상태이고 Lv0 으로 바꾸지 않는다(㉱ 축자).
- *  · 부모 Lv 를 **하나라도 모름** — 모르는 값으로 미리보기를 만들지 않는다.
+ * 주입력 부모 중 **최대 Lv ＋ 1**, 상한 `LV_CAP`.
+ *  · 확정 부모 **0건** → `0`(`Lv0`). ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ 축자 「부모 0건이면 Lv0 ·
+ *    그 경우 등록 화면에도 경고가 선다」⟩ ／ 종전 ~~0건이면 `null`(Lv0 으로 바꾸지 않는다)~~ —
+ *    서버 `level_view` 의 `processingLevelDerived`(부모 0이면 `0`)와 같은 값이다.
+ *  · 부모 Lv 를 **하나라도 모름** → `null` — 모르는 값으로 미리보기를 만들지 않는다.
  *
  * ⚠ **판정이 아니다.** 등록 전에는 서버가 계산한 값이 없어 화면이 같은 식으로 미리 보여 줄
  *   뿐이고, 저장 뒤의 정본은 응답의 `processingLevelDerived` 다.
@@ -46,7 +48,8 @@ export function derivedLevelFromParents(
   parents: readonly ParentLevelBearing[],
 ): number | null {
   const known = parents.filter((p) => p.confirmed).map((p) => p.parentLevel);
-  if (known.length === 0 || known.some((v) => v === null)) return null;
+  if (known.length === 0) return 0;
+  if (known.some((v) => v === null)) return null;
   return Math.min(Math.max(...(known as number[])) + 1, LV_CAP);
 }
 

@@ -4,7 +4,8 @@
  * 오라클 = 라운드 파일 `dev-package/prd/rounds/R-LTH-REVIEW-1.md ### Task 3` 목적 ⑴ ＋
  * spec `2026-09-13-lth-review-1.md` §6 ㉱ 축자 넷 —
  *   ㈎ 확인된 부모 ≥1 이고 부모 Lv 를 모두 알면 기본 선택값 = **계산값**(최대 부모 Lv ＋ 1 · 상한 Lv3)
- *   ㈏ 부모 **0건**이면 기본값 `Lv2` **유지**이고 Lv0 경고를 세우지 않는다(정상 중간 상태)
+ *   ㈏ 부모 **0건**이면 계산값 `Lv0` → 기본 선택값 `Lv0`. 다른 단계를 고르면 등록 화면에도
+ *      불일치 줄이 선다(카드 ⑩ ⓐ 축자 「부모 0건이면 Lv0 · 그 경우 등록 화면에도 경고가 선다」)
  *   ㈐ 사람이 한 번 고르면 **추종을 멈춘다**(고른 값을 덮지 않는다)
  *   ㈑ 불일치 상태에서도 등록이 **성공한다**(미결-2 ⓐ 「경고만」 회귀)
  *
@@ -18,6 +19,7 @@ import { UploadEntry } from '../src/components/upload/UploadEntry';
 import type { DatasetRow, LineageSource, LineageSuggestionResponse } from '../src/components/lineage/types';
 import type { PreviewSource, ProjectSource, UploadSource, UploadSources } from '../src/components/upload/types';
 import type { CurrentAccount, Schemas } from '../src/api/client';
+import { levelMismatchNotice } from '../src/components/common/processingLevel';
 
 const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
 const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
@@ -135,25 +137,33 @@ async function confirmParent(datasetId: string) {
   await screen.findByTestId('lin-picker');
   await click(screen.getByTestId(`lin-pick-${datasetId}`));
   await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-  await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
+  // 방금 붙인 카드는 목록 끝이다 — 앞서 확인한 카드는 확인 단추가 없다.
+  const confirms = screen.getAllByTestId('lin-confirm');
+  await click(confirms[confirms.length - 1] as HTMLElement);
 }
 
 // ═══ ㈎ 확정 부모가 있으면 기본값이 계산값으로 선다 ═══
 describe('㉱ 기본 선택값 = 계산값 추종', () => {
-  it('부모 1건(Lv2)을 확인하면 기본값이 계산값 `Lv3` 로 선다', async () => {
+  // ⚠ 부모 0건 기본값이 `Lv0` 이라(카드 ⑩ ⓐ) 첫 연결은 `Lv0` 부모만 허용된다 — 자기 Lv 를
+  //   넘는 부모는 고를 수 없다(PRD-09 · `ParentPicker.valid`). 그래서 확정 부모를 한 단씩 쌓아
+  //   계산값이 **최대 부모 Lv ＋ 1** 로 따라가는지 잰다.
+  it('부모 Lv0·Lv1 을 차례로 확인하면 기본값이 계산값 `Lv2` 로 선다 (spec §8-2 19)', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
-    await confirmParent(LV2);
-    await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv3');
-  });
-
-  it('부모 1건(Lv1)을 확인하면 기본값이 계산값 `Lv2` 로 선다 (spec §8-2 19 축자)', async () => {
-    const { sources } = fakes();
-    await openLineageUntouched(sources);
+    await confirmParent(LV0);
     await confirmParent(LV1);
     await click(stepBtn('①'));
     expect(levelValue()).toBe('Lv2');
+  });
+
+  it('부모 Lv0·Lv1·Lv2 를 차례로 확인하면 기본값이 계산값 `Lv3` 로 선다', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await confirmParent(LV0);
+    await confirmParent(LV1);
+    await confirmParent(LV2);
+    await click(stepBtn('①'));
+    expect(levelValue()).toBe('Lv3');
   });
 
   it('부모 1건(Lv0)을 확인하면 기본값이 계산값 `Lv1` 로 선다', async () => {
@@ -169,25 +179,59 @@ describe('㉱ 기본 선택값 = 계산값 추종', () => {
     await openLineageUntouched(sources);
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
-    await click(screen.getByTestId(`lin-pick-${LV2}`));
+    await click(screen.getByTestId(`lin-pick-${LV0}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    // 카드 1건이 서 있으나 `확인` 을 누르지 않았다.
+    // 카드 1건이 서 있으나 `확인` 을 누르지 않았다 — 셌다면 계산값 `Lv1` 이 선다.
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
     await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv2');
+    expect(levelValue()).toBe('Lv0');
   });
 });
 
-// ═══ ㈏ 부모 0건 대조군 — `Lv2` 유지 ＋ Lv0 경고 0건 ═══
-describe('㉱ 부모 0건은 정상 중간 상태다', () => {
-  it('부모를 한 건도 연결하지 않으면 기본값 `Lv2` 가 그대로이고 불일치 경고가 0건이다', async () => {
+// ═══ ㈏ 부모 0건 = 계산값 `Lv0` (카드 ⑩ ⓐ) ═══
+describe('㉱ 부모 0건이면 계산값 `Lv0` 이 기본값이다', () => {
+  it('부모를 한 건도 연결하지 않으면 기본값이 `Lv0` 이고 불일치 줄이 0건이다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
     expect(screen.queryAllByTestId('lin-card')).toHaveLength(0);
-    // Lv0 경고를 세우지 않는다 — 파생 미리보기를 0 으로 바꾸지 않는다.
     expect(screen.queryByTestId('lin-lv-mismatch')).toBeNull();
     await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv2');
+    expect(levelValue()).toBe('Lv0');
+  });
+
+  it('부모 0건에서 `Lv2` 를 고르면 등록 ③ 에 불일치 줄과 사유가 선다', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv2');
+    await click(stepBtn('③'));
+    const notice = screen.getByTestId('lin-lv-mismatch').textContent ?? '';
+    expect(notice).toBe(levelMismatchNotice(2, 0));
+    expect(notice).toContain('부모가 없으면 Lv0');
+  });
+
+  it('부모 0건에서 `Lv0` 을 그대로 두면 불일치 줄이 0건이다 (대조군)', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv0');
+    await click(stepBtn('③'));
+    expect(screen.queryByTestId('lin-lv-mismatch')).toBeNull();
+  });
+
+  it('부모 0건 · `Lv2` 불일치 상태에서도 등록이 성공하고 고른 값이 실린다', async () => {
+    const { sources, calls } = fakes();
+    await openLineageUntouched(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv2');
+    await click(stepBtn('②'));
+    await change(screen.getByTestId('reg-name'), '부모 없음 시험');
+    await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+    await click(stepBtn('③'));
+    expect(screen.getByTestId('lin-lv-mismatch')).toBeTruthy();
+    await click(screen.getByTestId('reg-done'));
+    expect(calls.registered).toHaveLength(1);
+    expect(calls.registered[0]?.processingLevelUserSet).toBe('Lv2');
   });
 });
 

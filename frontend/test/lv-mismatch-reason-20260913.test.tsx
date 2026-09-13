@@ -195,6 +195,24 @@ describe('㉲ 사유 한 줄 — 상세와 등록이 한 문장이다', () => {
   });
 });
 
+// ═══ 부모 0건 = 계산값 `Lv0` (카드 ⑩ ⓐ) — 상세도 같은 규칙이다 ═══
+describe('㉲ 부모 0건 상세 — 계산값 `Lv0` 과 다르면 사유 줄이 선다', () => {
+  it('사람 `Lv2` · 파생 `Lv0`(부모 0건) 상세에 공용 함수 문장이 그대로 선다', async () => {
+    await mountDetail({
+      ...BASE,
+      basicInfo: {
+        ...BASE.basicInfo!,
+        processingLevelUserSet: 'Lv2',
+        processingLevelDerived: 0,
+        processingLevelMismatch: true,
+      },
+    } as DatasetDetail);
+    const inDetail = screen.getByTestId('dh-lv-mismatch').textContent ?? '';
+    expect(inDetail).toBe(levelMismatchNotice(2, 0));
+    expect(inDetail).toContain('부모가 없으면 Lv0');
+  });
+});
+
 // ═══ ㈏ 대조군 — 불일치가 아니면 두 자리 모두 0건 ═══
 describe('㉲ 대조군 — 불일치가 아니면 줄이 서지 않는다', () => {
   it('`processingLevelMismatch=false` 상세에는 사유 줄이 0건이다', async () => {

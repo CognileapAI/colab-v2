@@ -1063,7 +1063,8 @@ describe('§8 ② 메타데이터 입력', () => {
   // ⭑ **⟨WU-B3 · PRD-03 · 미결-2 ⓐ⟩ 가공 단계는 읽기 전용 칸이 아니라 ① 의 셀렉트다.**
   //   사람이 고르고(`processingLevelUserSet`) 계보 계산값과 어긋나면 **경고만** 낸다.
   //   값·정의·기본 선택값의 정밀 시험은 `test/register-steps-20260907.test.tsx` 가 진다.
-  it('가공 단계는 ① 분류의 셀렉트이고 기본값이 `Lv2` 다', async () => {
+  // ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ 기본값 = 계산값 · 부모 0건이면 `Lv0` ／ 종전 ~~기본값 `Lv2`~~
+  it('가공 단계는 ① 분류의 셀렉트이고 부모 0건 기본값이 `Lv0` 이다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
@@ -1071,7 +1072,7 @@ describe('§8 ② 메타데이터 입력', () => {
     await click(stepBtn('①'));
     const lv = screen.getByTestId('reg-level') as HTMLSelectElement;
     expect(lv.tagName).toBe('SELECT');
-    expect(lv.value).toBe('Lv2');
+    expect(lv.value).toBe('Lv0');
   });
 
   it('주제는 고정 목록이고 **미정 상태를 표현할 수 있다** (〈359〉 로 4값 → 6값)', async () => {
@@ -2094,7 +2095,8 @@ describe('③ 계보 확정 — 부모 역할 2값 · 직접 추가 · 가공 �
     // ⚠ **Lv 숫자가 있는 것이 이제 정상이다** — 그 수는 파생값 추정이 아니라
     //   ① 에서 **사람이 고른 값**이고, 고치는 컨트롤이 실재한다(`분류에서 바꾸기`).
     //   ／ 종전 ~~「여기서 숫자를 짓지 않는다」~~ 는 레벨이 파생 전용이던 때의 규율이다.
-    expect(note.textContent).toContain('Lv2');
+    //   ⭑ ⟨카드 ⑩ ⓐ⟩ 확인된 부모 0건이라 그 수는 계산값 기본값 `Lv0` 이다 ／ 종전 ~~`Lv2`~~
+    expect(note.textContent).toContain('Lv0');
     expect(screen.getByTestId('lin-goto-classify').textContent).toBe('분류에서 바꾸기');
   });
 

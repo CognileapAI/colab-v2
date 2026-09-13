@@ -19,7 +19,6 @@ import {
   DATA_TYPES,
   DEFAULT_CATEGORY,
   DEFAULT_DATA_TYPE,
-  DEFAULT_PROCESSING_LEVEL,
   PROCESSING_LEVELS,
   bilingual,
 } from '../src/components/upload/axisDict';
@@ -347,9 +346,9 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     await openRegister(sources);
     expect((screen.getByTestId('reg-category') as HTMLSelectElement).value).toBe(DEFAULT_CATEGORY);
     expect((screen.getByTestId('reg-datatype') as HTMLSelectElement).value).toBe(DEFAULT_DATA_TYPE);
-    expect((screen.getByTestId('reg-level') as HTMLSelectElement).value).toBe(
-      DEFAULT_PROCESSING_LEVEL,
-    );
+    // ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ 가공 단계 기본값 = 계산값 · 부모 0건이면 `Lv0`
+    //   ／ 종전 ~~`DEFAULT_PROCESSING_LEVEL`(`Lv2`)~~ — 그 상수는 부모 Lv 미상일 때만 선다.
+    expect((screen.getByTestId('reg-level') as HTMLSelectElement).value).toBe('Lv0');
     // 표시는 병기, 저장은 국문 단일.
     const opt = within(screen.getByTestId('reg-datatype')).getByRole('option', {
       name: '재분석자료 (Reanalysis Data)',
@@ -381,7 +380,8 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     const body = calls.registered[0]!;
     expect(body.category).toBe(DEFAULT_CATEGORY);
     expect(body.dataType).toBe(DEFAULT_DATA_TYPE);
-    expect(body.processingLevelUserSet).toBe(DEFAULT_PROCESSING_LEVEL);
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 부모 0건 계산값 `Lv0` 이 실린다 ／ 종전 ~~`DEFAULT_PROCESSING_LEVEL`~~
+    expect(body.processingLevelUserSet).toBe('Lv0');
   });
 });
 
