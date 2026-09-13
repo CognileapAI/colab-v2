@@ -1,5 +1,7 @@
 # 03 · HANDOFF — 진행 상태 추적기 (단일 진실원)
 
+> 현재 작업 분리: AI 검색은 `codex/ai-search-next`에서 [검색 계획](prd/rounds/R-STAGE3-AI-SEARCH.md)을 따른다. 배포 정책·권한 분리 후속은 `codex/deployment-policy`의 `dev-package/sessions/20260913-deployment-policy-handoff.md`에 별도 인계했다. 아래 배포 후속 안내는 이 AI 작업의 선행 조건으로 사용하지 않는다.
+
 > 2026-09-13 온톨로지 보호: [ST 적용·검증과 미완료 경계](sessions/20260913-ontology-protection.md). 일반 앱/배포 자격의 DB·테이블 삭제를 차단했다. 다음은 에이전트의 관리자/Docker 접근 분리와 AWS 보호이며 ONTO-PROTECT open.
 
 > 2026-09-13 AI 검색 최신: [local-stage/ST 배포 완료와 검증](sessions/20260913-local-stage-release.md). [브랜치 전략](../docs/BRANCHING.md)에 따라 main/DEV 승격은 보류했다. 다음은 배포 도구의 환경별 원천 강제·스케줄 재설치 시 선언 보존, 운영 배포 준비다. 실제 Sonnet 평가 보류, K4 open.
