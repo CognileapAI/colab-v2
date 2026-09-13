@@ -44,6 +44,29 @@ cat > "$TMP/bin/agent-browser" <<'STUB'
 [ "${1:-}" = doctor ] && { echo "8 pass · 0 warn · 2 fail"; exit 0; }
 exit 0
 STUB
+# `git` 는 실물을 그대로 쓰되 **`fetch` 만 막는다.**
+# 왜 = 이 픽스처는 한 번 돌 때 `reseed.sh` 를 7회 부르고, 그때마다 preflight ⑴ 이
+#   공용 체크아웃에서 `git fetch -q origin main` 을 실제로 냈다(원격 접촉 ＋ ref 갱신 부작용).
+# 기대 판정은 그대로다 — preflight ⑴ 은 fetch 실패를 「origin/main 조회 실패」 미달로 읽으므로
+#   미달 항목 이름에 `git` 이 그대로 선다(종전에는 대상 ref 해석 실패로 같은 자리에 섰다).
+REAL_GIT="$(command -v git)"
+cat > "$TMP/bin/git" <<STUB
+#!/usr/bin/env bash
+# 앞머리 옵션을 건너뛰고 **첫 하위명령**만 본다 — \`git -C <경로> fetch …\` 도 잡는다.
+args=("\$@"); i=0; cmd=""
+while [ "\$i" -lt "\${#args[@]}" ]; do
+  case "\${args[\$i]}" in
+    -C|-c|--git-dir|--work-tree|--namespace|--exec-path) i=\$(( i + 2 )) ;;
+    -*) i=\$(( i + 1 )) ;;
+    *) cmd="\${args[\$i]}"; break ;;
+  esac
+done
+if [ "\$cmd" = fetch ]; then
+  echo "fatal: 픽스처 대역 — 원격 접촉 금지" >&2
+  exit 1
+fi
+exec "$REAL_GIT" "\$@"
+STUB
 chmod +x "$TMP/bin"/*
 
 # ── 실행 ─────────────────────────────────────────────────────────────────
@@ -164,6 +187,9 @@ grep -q '단계 preflight 시작' "$PO_OUT" || note "ⓛ′ --preflight-only 인
 for s in deploy reset bootstrap up s3 prelude seed verify; do
   grep -q "단계 $s 시작" "$PO_OUT" && note "ⓛ″ --preflight-only 인데 $s 단계가 시작됐다"
 done
+# 승인 기록은 **바꾸는 단계의 산출물**이다 — 검사만 한 회차가 그것을 남기면
+# `report.py` 의 `approvalRecord` 가 서고, 아무것도 바꾸지 않은 회차가 승인된 회차로 읽힌다.
+[ ! -f "$TMP/run-po/approval-record.json" ] || note "ⓛ‴ --preflight-only 인데 approval-record.json 이 섰다"
 
 # ── dev 접속 값이 없을 때 ────────────────────────────────────────────────
 # 종전에는 `${COLAB_DEV_SSH:?}` 로 **셸이 그 자리에서 끝났다** — 단계가 하나도 기록되지 않아
@@ -185,6 +211,7 @@ for item in dev-sha secrets leftovers; do
 done
 # 접속 값이 없어도 **접속이 필요 없는 항목은 실제로 잰다** — 부재 하나로 전부를 덮지 않는다.
 grep -qE "  (✓|✗) build-plan — " "$NOSSH_OUT" || note "ⓞ‴ 접속 값 부재로 build-plan 판정까지 멈췄다"
+[ ! -f "$TMP/run-nossh/approval-record.json" ] || note "ⓞ⁗ --preflight-only 인데 approval-record.json 이 섰다"
 
 # ── `die` 는 프로세스를 죽이지 않는다 ────────────────────────────────────
 # 죽이면 `stage_end`·`report` 가 돌지 못해 위 ⓙ 가 성립하지 않는다.
@@ -206,13 +233,36 @@ printf '%s' "$PV_OUT" | grep -q '^\[x\]=판정불가' || note "ⓝ′ 숫자가 
 printf '%s' "$PV_OUT" | grep -q '^\[0\]=성립'     || note "ⓝ″ 0 을 「성립」으로 읽지 않았다: $PV_OUT"
 printf '%s' "$PV_OUT" | grep -q '^\[2\]=미성립'   || note "ⓝ‴ 2 를 「미성립」으로 읽지 않았다: $PV_OUT"
 
+# ── 계수 판정 — 빈 칸은 「미지정 0건」이 아니다 ──────────────────────────
+# 종전에는 계수를 `tr -dc '0-9'` 로 받아 **아무 값도 못 받은 것과 「0」이 같은 모양**이 됐고,
+# 표에도 `${unset_lv:-0}` 로 0 이 박혀 「미지정 0건 · 전건 연결」로 통과했다(fail-open).
+# 여기서는 표를 직접 만들어 네 값을 판정한다 — 빈 칸·숫자 아님은 **판정불가**여야 한다.
+cv_case() { # $1=「미지정」 칸 값 → 판정 줄은 $TMP/cv-out.txt · 종료코드는 count_verdict 의 것
+  local tsv="$TMP/cv.tsv" out="$TMP/cv.json"
+  printf '7\t표본\t레벨 2\t성립\t100\t%s\t1\t\n' "$1" > "$tsv"
+  DRY_RUN=0 STAGE_LOG=/dev/null RUN_DIR="$TMP/run" \
+    bash -c '. "$1"; . "$2"; count_verdict "$3" "$4"' _ "$HERE/../lib.sh" "$HERE/../stages.sh" "$tsv" "$out" \
+    > "$TMP/cv-out.txt" 2>&1
+}
+
+for v in "" "x"; do
+  cv_case "$v"; CV_RC=$?; CV_OUT="$(cat "$TMP/cv-out.txt")"
+  [ "$CV_RC" -ne 0 ] || note "ⓠ 계수 칸 [$v] 을 통과로 읽었다 — fail-open: $CV_OUT"
+  printf '%s' "$CV_OUT" | grep -q '판정불가' || note "ⓠ′ 계수 칸 [$v] 을 「판정불가」로 적지 않았다: $CV_OUT"
+done
+cv_case 0; CV_RC=$?; CV_OUT="$(cat "$TMP/cv-out.txt")"
+[ "$CV_RC" -eq 0 ] || note "ⓠ″ 계수 칸 [0] 을 미달로 읽었다: $CV_OUT"
+cv_case 2; CV_RC=$?; CV_OUT="$(cat "$TMP/cv-out.txt")"
+[ "$CV_RC" -ne 0 ] || note "ⓠ‴ 계수 칸 [2] 를 통과로 읽었다 — 「미지정」 2건이 통과했다: $CV_OUT"
+printf '%s' "$CV_OUT" | grep -q '미지정' || note "ⓠ⁗ 계수 칸 [2] 판정 줄에 「미지정」이 없다: $CV_OUT"
+
 # ── 픽스처가 레포를 더럽히지 않는가 ──────────────────────────────────────
 # 위 실행들은 전부 preflight 에서 멈췄다(바꾸는 단계 0건) — 회차 기록은 실행 자리에만 선다.
 STRAY="$(find "$HERE/../../../sessions" -maxdepth 1 -name 'DR-4-run-*.md' -newer "$TMP" 2>/dev/null | wc -l | tr -d ' ')"
 [ "$STRAY" = 0 ] || note "ⓟ 픽스처가 dev-package/sessions/ 에 회차 기록 $STRAY 건을 남겼다"
 
 if [ "$fail" -eq 0 ]; then
-  echo "preflight-red — green (미달 10 항목 · 계획 요약줄 4 · result.json · --from 이 preflight 를 돈다 · --preflight-only · die 복귀 · 미리보기 판정불가 · 레포 무변)"
+  echo "preflight-red — green (미달 10 항목 · 계획 요약줄 4 · result.json · --from 이 preflight 를 돈다 · --preflight-only · die 복귀 · 미리보기 판정불가 · 계수 판정 4 · 레포 무변)"
   exit 0
 fi
 echo "preflight-red — red" >&2

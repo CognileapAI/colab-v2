@@ -479,6 +479,38 @@ preview_verdict() {
   if [ "$v" -gt 0 ]; then printf '미성립'; else printf '성립'; fi
 }
 
+# 순회 표(`preview-judgment.tsv`)의 계수 칸을 판정한다.
+# **빈 칸·숫자 아닌 값은 0 이 아니라 「재지 못한 것」이다** — 둘을 같은 모양으로 접으면
+# 화면에서 한 값도 못 받은 회차가 「미지정 0건 · 프로젝트 전건 연결」로 통과한다(fail-open).
+# 판정불가는 성립도 미성립도 아니므로 미지정에도 미연결에도 세지 않고 **따로 미달로 낸다.**
+# $1 = preview-judgment.tsv · $2 = 판정 JSON 출력 경로 · 종료 1 = 계수 판정 미달
+count_verdict() {
+  python3 - "$1" "$2" <<'CVPY'
+import json, sys
+tsv, out = sys.argv[1:3]
+rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
+def cnt(s):
+    s = s.strip()
+    return int(s) if s.isdigit() else None
+# r[2]=가공 단계 · r[5]=「미지정」 계수 · r[6]=usage-card 계수
+res = {
+    "countUndecidedSeq": [r[0] for r in rows if cnt(r[5]) is None or cnt(r[6]) is None],
+    "levelUndecidedSeq": [r[0] for r in rows if not r[2].strip() or r[2].strip() == "?"],
+    "unsetSeq": [r[0] for r in rows if (cnt(r[5]) or 0) > 0],
+    "unlinkedSeq": [r[0] for r in rows if cnt(r[6]) == 0],
+    "unsetCount": sum(cnt(r[5]) or 0 for r in rows),
+}
+json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
+bad = []
+if res["countUndecidedSeq"]: bad.append("계수 판정불가 seq %s" % ",".join(res["countUndecidedSeq"]))
+if res["levelUndecidedSeq"]: bad.append("가공 단계 판정불가 seq %s" % ",".join(res["levelUndecidedSeq"]))
+if res["unsetSeq"]: bad.append("「미지정」 %d건 seq %s" % (res["unsetCount"], ",".join(res["unsetSeq"])))
+if res["unlinkedSeq"]: bad.append("프로젝트 미연결 seq %s" % ",".join(res["unlinkedSeq"]))
+print("계수 판정 — " + ("전건 일치" if not bad else " · ".join(bad)))
+raise SystemExit(1 if bad else 0)
+CVPY
+}
+
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 러너 verify.json 계수 대조(데이터셋 $EXPECT_DATASETS · 프로젝트 $EXPECT_PROJECTS · 간선 $EXPECT_EDGES)"
@@ -507,7 +539,7 @@ PY
     [ -n "$seq" ] || continue
     if [ -z "$did" ]; then
       printf '%s\t%s\t?\t미성립\t0\t?\t?\t데이터셋 id 미확보\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
-      blocked_add verify "seq=$seq $name" "데이터셋 id 미확보"
+      blocked_add verify "seq=$seq $name — 데이터셋 id 미확보"
       continue
     fi
     t0="$(date +%s%3N)"
@@ -517,41 +549,56 @@ PY
     # `tr -dc` 로 숫자만 남기지 않는다 — 그러면 「아무 값도 못 받음」과 「0」이 같은 모양이 된다.
     shown="$(run_capture agent-browser get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
     level="$(run_capture agent-browser get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
-    unset_lv="$(run_capture agent-browser get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -dc '0-9')"
-    usage="$(run_capture agent-browser get count '[data-testid="usage-card"]' 2>/dev/null | tr -dc '0-9')"
+    # 계수도 같은 이유로 `tr -dc` 를 쓰지 않는다 — 숫자만 남기면 「못 받음」이 「0」이 된다.
+    unset_lv="$(run_capture agent-browser get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
+    usage="$(run_capture agent-browser get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
     local verdict; verdict="$(preview_verdict "$shown")"
     if [ "$verdict" = 판정불가 ]; then
-      blocked_add verify "seq=$seq $name" "preview-unavailable 계수를 읽지 못했다(받은 값 [$shown]) — 미리보기 판정 불가"
+      blocked_add verify "seq=$seq $name — preview-unavailable 계수를 읽지 못했다(받은 값 [$shown]) · 미리보기 판정 불가"
     fi
+    # 받은 값을 **그대로** 적는다. `:-0`·`:-?` 로 기본값을 박으면 표만 보고는
+    # 「0 을 받았다」와 「아무 값도 못 받았다」를 가를 수 없다.
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n' \
-      "$seq" "$name" "${level:-?}" "$verdict" "$ms" "${unset_lv:-0}" "${usage:-0}" >> "$RUN_DIR/preview-judgment.tsv"
+      "$seq" "$name" "$level" "$verdict" "$ms" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
   done <<< "$ids"
 
   log "② 계수 대조 — 러너 verify.json ＋ 순회 결과 ＋ 정본 등재표"
+  # 계수 칸 판정을 먼저 따로 낸다(판정불가 포함). 아래 대조가 그 결과를 그대로 읽는다.
+  count_verdict "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/count-verdict.json" || true
   python3 - "$verify" "$manifest" "$RUN_DIR/preview-judgment.tsv" "$RUN_DIR/counts.json" \
-      "$EXPECT_DATASETS" "$EXPECT_PROJECTS" "$EXPECT_EDGES" <<'PY' || return 1
+      "$EXPECT_DATASETS" "$EXPECT_PROJECTS" "$EXPECT_EDGES" "$RUN_DIR/count-verdict.json" <<'PY' || return 1
 import json, sys
 try:
     import yaml
 except ImportError:
     raise SystemExit("PyYAML 이 없다 — 등재표 대조 불가")
-verify, manifest, tsv, out, nds, nproj, nedge = sys.argv[1:8]
+verify, manifest, tsv, out, nds, nproj, nedge, cvpath = sys.argv[1:9]
 v = json.load(open(verify))
 m = yaml.safe_load(open(manifest))
+cv = json.load(open(cvpath))
 rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
 want = {}
 for d in m.get("datasets", []):
     want[str(d.get("seq"))] = str(d.get("processing_level") or d.get("level") or "")
 got = {r[0]: r[2] for r in rows}
 level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
-unset = [r[0] for r in rows if r[5] not in ("0", "")]
-unlinked = [r[0] for r in rows if r[6] in ("0", "")]
+# 등재표 쪽 가공 단계가 비어 있으면 **대조할 것이 없었던 것**이다.
+# 종전에는 `if w and …` 로 그 행을 건너뛰어, 양쪽이 다 비면 통과로 접혔다(fail-open).
+manifest_level_missing = sorted((s for s, w in want.items() if not w), key=lambda x: int(x) if x.isdigit() else 0)
+# 계수 칸 판정은 count_verdict 가 낸 것을 그대로 쓴다 — 빈 칸은 0 이 아니다.
+unset = cv["unsetSeq"]
+unlinked = cv["unlinkedSeq"]
+count_undecided = cv["countUndecidedSeq"]
+level_undecided = cv["levelUndecidedSeq"]
 undecided = [r[0] for r in rows if r[3] == "판정불가"]
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
     "edges": {"expected": int(nedge), "ok": v.get("edges_ok"), "missing": v.get("edges_missing")},
-    "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset},
+    "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset,
+                        "undecidedSeq": level_undecided},
+    "usageUndecidedSeq": count_undecided,
+    "manifestLevelMissingSeq": manifest_level_missing,
     "projectUnlinkedSeq": unlinked,
     "previewRows": len(rows),
     "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
@@ -561,6 +608,10 @@ json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
 bad = []
 # 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
 if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
+# 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
+if count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(count_undecided))
+if level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(level_undecided))
+if manifest_level_missing: bad.append("등재표 가공 단계 부재 seq %s" % ",".join(manifest_level_missing))
 if res["datasets"]["ui"] != int(nds): bad.append("데이터셋 계수 %s" % res["datasets"]["ui"])
 if res["edges"]["ok"] != int(nedge): bad.append("간선 계수 %s" % res["edges"]["ok"])
 if level_mismatch: bad.append("가공 단계 불일치 seq %s" % ",".join(level_mismatch))

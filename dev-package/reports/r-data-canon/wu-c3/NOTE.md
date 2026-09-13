@@ -26,3 +26,12 @@
 - 게이트 `dev-reseed-selftest` 신설(`gates/run.sh` ＋ `gates/tools/dev-reseed-selftest.sh` ＋ `gates/README.md` 행). 이 판독부가 **걸리던 검사는 0건**이다 — 게이트에도 Dockerfile 에도 배포 스크립트에도 없었고 dev 를 한 번 돌려야만 드러났다.
 - 실모드 증명 = `--preflight-only` 1회. 통과 4(qemu · agent-browser · resources · **build-plan `datasets 28 edges 18`**) · 미달 6(git 작업 트리 미정리 · dev-sha/secrets/leftovers = `COLAB_DEV_SSH`·`COLAB_DEV_KEY_FILE` 미설정 · aws 자격 미해석 · ref-root = `COLAB_REF_ROOT` 미설정). 출력·로그·`result.json` 에 접속 문자열·비밀번호·키 **0건**.
 - 이번에도 하지 않은 것 — dev 전 단계 실행(접속 값 부재) · `dev-seed/**` 수정 · 원장·HANDOFF·대장 편집 · `deploy_release.py` 연동.
+
+## 2차 수정 — 계수 판독 fail-closed ＋ 3건
+
+- ⑧ `stage_verify` 계수 판독 — 「미지정」·usage-card 계수를 `tr -dc '0-9'` 로 받아 **부재와 「0」이 같은 모양**이 됐고, 표에 `${unset_lv:-0}`·`${level:-?}` 로 기본값까지 박아 **한 값도 못 받은 회차가 「미지정 0건 · 전건 연결」로 통과**했다(fail-open). 고침 = `tr -d ' \t\r\n'` 로 받고 받은 값을 그대로 적는다.
+- ⑨ 판정을 `count_verdict()` 로 떼어냈다 — `cnt()` 가 숫자 아닌 값을 `None` 으로 내고, `None` 은 **연결로도 미연결로도 세지 않고** 「판정불가」로 따로 미달을 낸다. `미지정 = (cnt or 0) > 0` · `미연결 = cnt == 0`. 등재표 쪽 가공 단계가 빈 행도 종전에는 `if w and …` 로 건너뛰어 양쪽이 다 비면 통과했다 — `manifestLevelMissingSeq` 로 미달. `counts.json` 에 `processingLevel.undecidedSeq`·`usageUndecidedSeq`·`manifestLevelMissingSeq` 세 자리 신설.
+- ⑩ 픽스처 `tests/preflight-red.sh` 에 계수 판정 4케이스(ⓠ) 추가 — `""`·`x` → 판정불가 ＋ 비영 · `0` → 통과 · `2` → 「미지정」 2건 ＋ 비영. 구현 전 red 확인(`count_verdict: command not found` · 4건 미달).
+- ⑪ `blocked_add` 인자 수 — `lib.sh` 는 2인자(이름·사유)인데 `stage_verify` 가 2자리에서 3인자로 불러 **사유가 통째로 버려졌다**. `blocked_add verify "seq=… — <사유>"` 한 인자로 병합.
+- ⑫ 픽스처가 `git fetch -q origin main` 을 회당 7회 실제로 냈다(공용 체크아웃 · 원격 접촉 ＋ ref 부작용). `$TMP/bin/git` 대역을 PATH 앞에 두어 `fetch` 만 비영으로 막고 나머지는 실물에 위임 — 기대 판정 무변(`✗ git` 은 그대로 서고 사유만 「origin/main 조회 실패」로 바뀐다). 실측 9.5s → 4.9s.
+- ⑬ `--preflight-only` 두 케이스(ⓛ·ⓞ)에 `approval-record.json` 부재 단언 추가 — 검사만 한 회차가 승인 기록을 남기면 `report.py` 의 `approvalRecord` 가 서서 승인된 회차로 읽힌다.
