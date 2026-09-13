@@ -128,7 +128,7 @@ failed 217 의 오류형이 `ProgrammingError` 31 · `InsufficientPrivilege` 27 
 `IntegrityError`/`UniqueViolation` 각 10 · `UndefinedColumn` 4 로 전부 스키마·롤 드리프트다.
 드리프트 위에서 잰 두 값을 빼서 「기여분 0」이라고 말하지 않는다.
 
-- **재구성 뒤 재측정의 자리** = 오케스트레이터 로그 **`core-pytest-dl2`**(값은 그쪽 보고).
+- **재구성 뒤 재측정(오케스트레이터)** = 재구성 DB(표 45 · 시드) 위 단독 전수 1회 = **1 failed / 1220 passed / 6 deselected**(2026-09-13 · 실패 1 = `test_ownership_snapshot_publisher` — 로컬 컨테이너 `postgres` 인증 방식 · 게이트/CI 는 trust 컨테이너로 전제를 세움 · 레인 무관). ⚠ 같은 시험 DB 로 전수를 **반복**하면 잔여 행(업로드·프로젝트 이름) 때문에 회차마다 다른 5~12건이 흔들린다 — 판정은 재구성 직후 1회만.
   시험 DB 는 그쪽이 재구성했다(표 45) — 이 레인은 재구성하지 않았고 재측정도 하지 않는다.
 - **이 레인의 판정값 = 단독 실행 계수.**
 

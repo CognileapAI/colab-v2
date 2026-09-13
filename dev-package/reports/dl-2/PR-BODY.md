@@ -73,7 +73,7 @@
 (순수 가산)이다.
 
 ⚠ **core-api 전수 계수는 이 PR 본문에 적지 않는다** — 레인이 잰 값은 낡은 로컬 시험 DB 위에서
-나온 것이라 무효이고, 재구성 뒤 재측정은 별도 로그(`core-pytest-dl2`)가 든다.
+나온 것이라 무효이고, 재구성 뒤 재측정 = 재구성 DB(표 45 · 시드) 위 단독 전수 1회 = **1 failed / 1220 passed / 6 deselected**(2026-09-13 · 실패 1 = `test_ownership_snapshot_publisher` — 로컬 컨테이너 `postgres` 인증 방식 · 게이트/CI 는 trust 컨테이너로 전제를 세움 · 레인 무관). ⚠ 같은 시험 DB 로 전수를 **반복**하면 잔여 행(업로드·프로젝트 이름) 때문에 회차마다 다른 5~12건이 흔들린다 — 판정은 재구성 직후 1회만.
 **dev 실측(⑹)은 이 PR 에 포함되지 않는다** — 병합 뒤 배포 창에서 잰다.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
