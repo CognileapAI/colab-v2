@@ -6,6 +6,31 @@
 
 ---
 
+## 현재 규칙 — 2026-09-13 사용자 승인
+
+승인 정본: [환경별 브랜치 intent](../dev-package/intent/2026-09-13-environment-branches.md). 아래 과거 규칙과 충돌하는 부분은 이 절이 우선한다.
+
+| 브랜치 | 배포 대상 | 수명과 승격 |
+|---|---|---|
+| `codex/<작업명>` | 없음 | 작업별 생성, 검증 후 local-stage에 통합 |
+| `local-stage` | ST(local-srv) | 영구 통합 브랜치, 특정 커밋을 배포·검증 |
+| `main` | DEV(AWS) | ST 통과 변경만 승격, 배포는 별도 명시 지시 |
+| `production` | PR(AWS 실제 운영) | DEV 통과 커밋만 명시 승인으로 승격·배포 |
+
+- 기본 흐름은 작업 → local-stage → ST 검증 → main → DEV 검증 → production → PR이다.
+- 미검증 작업이 섞인 local-stage 전체를 main에 합치지 않는다. 승격할 변경 묶음과 검증 커밋을 고정한다.
+- 장기 브랜치는 rebase/force-push하지 않는다. main의 다른 변경은 local-stage에 병합 후 다시 검증한다.
+- 운영은 DEV에서 검증한 동일 산출물을 승격하고 버전 태그·배포 커밋을 기록한다. production 직접 수정은 금지한다.
+- 긴급 수정은 production에서 분기하고 운영 반영 후 main/local-stage에도 병합한다.
+- production은 첫 운영 릴리스 때 DEV 검증·운영 승인된 커밋에서 생성한다. 브랜치 생성이나 문서 승인은 AWS 운영 자원 생성·배포 승인이 아니다.
+- ST 자동 감시는 `COLAB_PIPELINE_BRANCH=local-stage`를 명시한다. 전용 배포 worktree의 기술 브랜치 이름은 달라도 원천은 origin/local-stage이며 fast-forward만 허용한다.
+- 현재 AWS 도구는 DEV의 origin/main 검사를 유지한다. PR 배포 도구와 protection 설정은 첫 운영 릴리스 전에 production 원천 검사·동일 산출물 검증을 구현해야 한다. 아직 구현/설정 완료로 주장하지 않는다.
+- 이번 실행은 local-stage 반영·ST 배포만 승인됐다. 진행 기록은 [ST 전환 기록](../dev-package/sessions/20260913-local-stage-release.md).
+
+## 이전 규칙과 사고 기록 — 역사 보존
+
+다음 내용은 2026-09-08 정책과 실측이며, 현재 브랜치 대응은 위 표가 대체한다.
+
 ## 1. 규칙 6 (intent 축자 — 병합 뒤 정본 = 이 파일 · 개정은 새 intent ＋ 이 파일 동시, 축자 대조는 그 intent 로 옮긴다)
 
 <!-- rule6:begin -->

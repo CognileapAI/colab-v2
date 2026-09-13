@@ -176,12 +176,12 @@ git log --oneline -10
 
 ⭑ ⟨신설 2026-09-08 · `WU-D1`⟩ 정본은 **`docs/BRANCHING.md`**(규칙 6 축자 · 브랜치 수명 표 · 「하지 말 것」 · 창 9 사례). 여기는 요지뿐이다.
 
-1. `main` 이 **유일한 배포 원천** — dev·prod sha 는 `origin/main` 의 조상이어야 하고 아니면 반입이 거절된다.
-2. staging 은 예외 — `integration/*` HEAD 를 굽되 원장 행에 **브랜치 이름**을 같이 적는다.
-3. `integration/r-N` 은 `main` tip 기점 · `main` 으로는 **ff-only 한 줄** · 병합 뒤 삭제.
-4. `lane/wu-*` 는 `integration` 기점 · **rebase ＋ ff** 로 복귀 · 통합에 얹힌 즉시 삭제.
-5. 마이그레이션은 **한 라운드 = 한 체인 구간** · 형제가 생기면 `00NN_merge` ＋ 두 순서 drift 오라클 의무.
-6. 릴리스 = 태그 — dev 실적용 `dev-YYYYMMDD-N` · prod `prod-YYYYMMDD` · 원장 〈N〉 행이 태그를 가리킨다.
+1. `codex/<작업명>` → `local-stage` → `main` → `production` 순서로 검증한 변경을 승격한다.
+2. `local-stage` = ST(local-srv), `main` = DEV(AWS), `production` = PR(AWS 실제 운영).
+3. ST 자동 감시는 `COLAB_PIPELINE_BRANCH=local-stage`를 명시한다. 배포 커밋·원천 브랜치·검증 결과를 기록한다.
+4. main·production 승격과 배포는 별도 승인 범위를 따른다. 이번 검색 후속은 local-stage/ST까지다.
+5. 마이그레이션 형제가 생기면 merge revision과 두 순서 drift 검증은 유지한다.
+6. 운영은 DEV 검증 산출물을 승격한다. production 생성·배포 도구 준비 상태는 `docs/BRANCHING.md` 참조.
 
 - **정리 대상(WU-D4 류 · 병합 경로 밖 브랜치)** 의 원격 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지) — 병합된 `lane/*`·`integration/*` 는 즉시 삭제(`.claude/rules/colab-rules.md §2-1`).
 
