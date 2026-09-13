@@ -10,6 +10,14 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
+-- 경계를 **먼저** 건다. `d1_lab` 에는 RLS 가 없지만 `d1_lab_profile`·`d1_account`·`d2_member_role` 은
+-- FORCE RLS 아래의 `lab_boundary` 정책에 걸리고 그 정책은 `current_lab_id()` = 이 GUC 를 읽는다.
+-- 안 걸면 두 번째 문장에서 축자 `new row violates row-level security policy for table "d1_lab_profile"`
+-- 로 멈춘다. staging 에서 통했던 것은 실행기 `provision-lab.sh` 가 psql 을 **`postgres` 슈퍼유저**로
+-- 불렀기 때문이고, dev(RDS)에는 그 롤이 없다 — 소유자 롤 `colab_owner` 는 `NOBYPASSRLS` 다.
+-- `SET LOCAL` 이라 이 트랜잭션이 끝나면 함께 풀린다 (`ops/purge_datasets.py` 와 같은 규율).
+SET LOCAL app.current_lab = '00000000000000000000HYMETS';
+
 -- 연구실 C. 표시명 = `SEED-DATA.md:5` · `PLAN-SoT §9 〈52〉`.
 -- `opened_at` 은 **[원천 무근거]** — 정본·원천에 개설일 기재가 없다. NOT NULL 이라 비울 수 없어
 -- **v2 에 신설한 날**을 적는다. 연구실의 실제 개설일이 아니라 **원장 등재일**이다.
@@ -38,6 +46,12 @@ INSERT INTO d2_member_role (account_id, lab_id, role) VALUES
 ON CONFLICT (account_id) DO NOTHING;
 
 COMMIT;
+
+-- 계수도 경계 안에서 읽는다. `SET LOCAL` 은 위 `COMMIT` 과 함께 풀리므로, 여기서 다시 걸지 않으면
+-- `d1_lab_profile`·`d1_account`·`d2_member_role` 이 **행이 있는데도 0 으로 보인다**(`colab_owner` 는
+-- `NOBYPASSRLS`). 「없다」는 경계가 실린 경로로만 판정한다 — `.claude/rules/deploy.md` 「깨뜨리면 안 되는 것」 10번.
+-- 세션 단위 `SET` 이라 psql 이 끝나면 사라진다.
+SET app.current_lab = '00000000000000000000HYMETS';
 
 \echo '-- 삽입 후 계수 (연구실 C 한정)'
 SELECT 'd1_lab' AS 표, count(*) AS 행 FROM d1_lab WHERE id = '00000000000000000000HYMETS'
