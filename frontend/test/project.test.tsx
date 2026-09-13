@@ -345,7 +345,10 @@ describe('§5 소속 데이터셋 표 — 행에서 판단이 끝난다', () => 
     /* ⭑ ⟨개정 2026-09-03 · 검수 #8⟩ 종전 기대값은 `—` 였다. 카탈로그는 같은 상태를
        취소선 `Verified` 로 그리고 있어 **같은 상태가 두 화면에서 두 표기**였다.
        `〈282〉`-㉮ 규칙을 이 표로 확장한다 — 표기는 `Verified` 취소선·비활성이다. */
-    expect(within(no).getByTestId('dataset-verified').textContent?.trim()).toBe('Verified');
+    /* ⭑ ⟨개정 2026-09-13 · R-LTH-REVIEW-1 Task 5⟩ 종전 기대값은 `Verified` 였다.
+       두 표의 칩 글자를 한국어 상태말 한 표기로 모은다 — 취소선·회색·꺼진 모양과
+       클래스 `verified--pending` 은 그대로다. */
+    expect(within(no).getByTestId('dataset-verified').textContent?.trim()).toBe('승인 전');
   });
 
   it('행을 누르면 데이터셋 상세로 간다 (§2 규칙 맵)', async () => {

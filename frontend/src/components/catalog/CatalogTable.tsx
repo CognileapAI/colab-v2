@@ -34,6 +34,25 @@ const DL = (
   </svg>
 );
 
+/**
+ * 승인 처리가 아직 도착하지 않은 칸의 글자. **열 제목 `Verified` 는 무변**이고 칸만
+ * 한국어 상태말로 모은다 — 종전에는 제목과 칸이 같은 말이라 「이 행이 승인됐다」로
+ * 읽혔다(검증 `I-3`). 같은 말의 선례는 `columns.ts` 앵커 `if (column === 'Verified')`
+ * 의 필터 값이다.
+ */
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const VERIFIED_PENDING_LABEL = '승인 전';
+
+/**
+ * 가공 단계가 계보 계산값과 갈린 행의 표식. **알림이지 차단이 아니다** —
+ * 정렬·조건은 한 글자도 바뀌지 않고 서버도 무변이다(`d3_catalog.level_view` 가 이미
+ * `processingLevelMismatch` 를 목록 응답에 싣는다 · spec §6 ㉳).
+ */
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const LEVEL_MISMATCH_LABEL = '계산값과 다름';
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const LEVEL_MISMATCH_A11Y = '가공 단계가 계보로 계산한 값과 다릅니다';
+
 function lineageTitle(row: DatasetRow): string | undefined {
   // 확정한 날과 바뀐 날은 마우스를 올렸을 때 알린다 (`§8` 계보 열). 칸 안에는 숫자를 넣지 않는다
   if (row.lineageState !== '확인 필요' || !row.lineageConfirmedAt) return undefined;
@@ -166,6 +185,19 @@ export function CatalogTable(props: {
                 {displayLevel(row) === null ? null : (
                   <span className={`lvl lvl-${displayLevel(row)}`}>Lv{displayLevel(row)}</span>
                 )}
+                {/* ⭑ ⟨R-LTH-REVIEW-1 Task 5 · spec §6 ㉳⟩ 고른 값과 계산값이 갈린 행만
+                    표식을 단다. 값(`lvl`)은 그대로 서고 표식이 옆에 붙을 뿐이다 —
+                    ⛔ 여기서 Lv 를 바꾸거나 행을 감추지 않는다(경고이지 차단이 아니다). */}
+                {row.processingLevelMismatch ? (
+                  <span
+                    className="lvl-mismatch"
+                    data-testid="lvl-mismatch"
+                    aria-label={LEVEL_MISMATCH_A11Y}
+                    title={LEVEL_MISMATCH_A11Y}
+                  >
+                    {LEVEL_MISMATCH_LABEL}
+                  </span>
+                ) : null}
               </td>
               <td className="muted" title={row.projects.names.join(' · ')}>
                 {row.projects.representative?.name ?? ''}{' '}
@@ -197,7 +229,7 @@ export function CatalogTable(props: {
                     aria-disabled="true"
                     title="승인 처리가 아직 도착하지 않았다"
                   >
-                    Verified
+                    {VERIFIED_PENDING_LABEL}
                   </span>
                 )}
                 {!row.bodyAccessible && <span className="chip chip--warning">잠김</span>}

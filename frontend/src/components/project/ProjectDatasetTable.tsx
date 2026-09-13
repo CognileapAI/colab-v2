@@ -12,6 +12,14 @@ import { displayLevel } from '../common/processingLevel';
 import { dataPeriod } from './format';
 import type { ProjectDatasetRow } from './types';
 
+/**
+ * 승인 대기 칸의 글자 — **카탈로그 표와 같은 말**이다(`CatalogTable.tsx` 앵커
+ * `VERIFIED_PENDING_LABEL`). 두 표가 같은 상태를 다른 글자로 말하지 않게 맞춘다.
+ * 열 제목 `Verified` 와 승인된 행의 「승인됨」은 무변이다.
+ */
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const VERIFIED_PENDING_LABEL = '승인 전';
+
 export function ProjectDatasetTable(props: {
   rows: ProjectDatasetRow[];
   canManage: boolean;
@@ -78,7 +86,7 @@ export function ProjectDatasetTable(props: {
                   aria-disabled="true"
                   title="승인 처리가 아직 도착하지 않았다"
                 >
-                  Verified
+                  {VERIFIED_PENDING_LABEL}
                 </span>
               )}
             </td>

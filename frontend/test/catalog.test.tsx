@@ -407,7 +407,11 @@ describe('§5 Verified 열 — 승인 처리 도착 전의 정직한 상태 (Ted
     const pending = screen.getAllByTestId('verified-pending');
     expect(pending.length).toBeGreaterThan(0);
     for (const cell of pending) {
-      expect(cell.textContent?.trim()).toBe('Verified');
+      /* ⭑ ⟨개정 2026-09-13 · R-LTH-REVIEW-1 Task 5 · 판정 카드 ⑨ ⓐ⟩ 종전 기대값은
+         영어 `Verified` 였다. 열 제목과 칸 글자가 같은 말이라 「이 행이 승인됐다」로
+         읽혔다. 한국어 상태말로 모은다 — 근거는 `columns.ts` 앵커
+         `if (column === 'Verified')` 의 필터 값(`승인 전`)이다. 열 제목은 무변. */
+      expect(cell.textContent?.trim()).toBe('승인 전');
       expect(cell.className).toContain('verified--pending');
       expect(cell).toHaveAttribute('aria-disabled', 'true');
     }
