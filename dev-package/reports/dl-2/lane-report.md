@@ -209,3 +209,24 @@ failed 217 의 오류형이 `ProgrammingError` 31 · `InsufficientPrivilege` 27 
    dev dry-run 계수는 이 레인이 재지 않았다(`[미측정]`).
 5. `pyhdf` 가 이 맥에서 빌드되지 않는다(`fatal error: 'hdf.h' file not found`) — viz venv 는
    그 패키지만 빼고 구성했다. HDF4 경로를 쓰는 시험은 §3-1 의 준비 red 41 에 포함된다.
+
+---
+
+## 11. 재리베이스 — `origin/main` `8178489` 위로 (2026-09-13)
+
+- **기점 이동** `7446eb7d` → **`8178489`**(그 사이 29 커밋). 끝 sha **`7b5ed451`** · **커밋 18 유지**
+  (skip·squash 0 · `merge-base --is-ancestor origin/main HEAD` 참).
+- **충돌은 원장·HANDOFF 뿐이고 레인 파일은 0건.** `dev-package/work-items.yaml` **8사건**
+  (C0·C4·C6·C8·C10·D0·D5·D6·D7 에서 중단) — 규칙 `§4-2` 로 해소했다. 병합 드라이버가
+  「PyYAML 이 없어 결과를 검증할 수 없다」며 손을 떼므로, 매번 `--ours` 를 취한 뒤 그 커밋의
+  diff 를 3-way 로 얹고 **`yaml.safe_load` ＋ id 유일성**으로 확인했다(최종 항목 **207 · 중복 0**).
+  `dev-package/03-HANDOFF.md` **1사건** — `origin/main` 이 블로커 번호 **72** 를 선점해 레인 두 행을
+  **73·74** 로 밀었다(직전 리베이스의 71→72·73 과 같은 선례).
+- **재검증(좁은 게이트)** `work-item-consistency` green · `contract-lint green — seam 3건, 룰 위반 0.` ·
+  `contract-breaking green — 기준 origin/main (       3건) 대비 파괴적 변경 없음.` ·
+  `generated-up-to-date green — 등기부 13건 전부 재생성 일치` ⟹ **green 4 / red(판정) 0 / red(준비) 0.**
+  시험 = viz DL-2 6파일 **60 passed / 0 failed** · core `test_dataset_deletion.py` ＋
+  `test_preview_relay.py` **45 passed / 0 failed**(전수 병행이 끝나 §5 의 흔들림이 사라졌다 —
+  시험 DB 는 재구성하지 않았다).
+- 잔여 마커 **0**(`03-HANDOFF.md` 산문 속 `'<<<<<<<'` 인용 2곳은 마커가 아니다).
+
