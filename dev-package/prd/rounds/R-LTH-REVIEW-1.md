@@ -118,8 +118,8 @@
 ### Task 3: 가공 단계 기본값 ＋ 사유 ＋ 편집 칸 (`lane/lth-processing-level`)
 
 - 목적 = 등록 흐름에서 ⑴ 부모를 연결하면 가공 단계 기본값이 **계산값**으로 서고 ⑵ 계산값과 다른 값을 고르면 두 값 ＋ **각 값의 근거** 한 줄이 뜨며 저장은 계속 성공하고 ⑶ 데이터셋 상세 편집에서 가공 단계를 고쳐 저장하면 표시값이 바뀐다.
-- 실패 시험(spec §8-2 19~22) — `frontend/test/processing-level-default-20260913.test.tsx` **신설**(부모 1건 Lv1 → 기본값이 계산값으로 선다 · 부모 0건 → `Lv2` 유지 ＋ Lv0 경고 0건 · 불일치 상태 제출 성공 회귀) · `frontend/test/lv-mismatch-reason-20260913.test.tsx` **신설**(상세·등록 두 자리 문장이 동일하고 근거 구절을 포함) · `frontend/test/detail-edit.test.tsx` **확장**(편집 칸에 가공 단계 ＋ 저장 본문에 `processingLevelUserSet`).
-- 최소 구현 = `RegisterArea.tsx` 앵커 `data-testid="reg-level"` 의 기본값을 `LineageStep.tsx` 앵커 `const derivedPreview =` 규칙으로 추종(부모 Lv 를 하나라도 모르면 `Lv2` 유지 · 사람이 한 번 고른 뒤에는 추종 중단) · 사유 문장 생성 함수 1개를 `components/common/processingLevel.ts` 에 두고 앵커 `data-testid="dh-lv-mismatch"`·`data-testid="lin-lv-mismatch"` 두 자리가 같은 함수를 부른다 · `detail/editFields.ts` 에 가공 단계 칸 1개(값 집합 `Lv0`~`Lv3`) ＋ 폼·훅이 기존 계약 열쇠 `DatasetUpdate.processingLevelUserSet` 로 전송.
+- 실패 시험(spec §8-2 19~22) — `frontend/test/processing-level-default-20260913.test.tsx` **신설**(부모 1건 Lv1 → 기본값이 계산값으로 선다 · ⟨개정 2026-09-14 · 카드 ⑩ ⓐ 축자와 불일치 정정⟩ 주입력 부모 0건 → 기본값 `Lv0` ＋ 다른 단계 선택 시 불일치 안내·사유 한 줄 존재 ／ 종전 ~~부모 0건 → `Lv2` 유지 ＋ Lv0 경고 0건~~ · 불일치 상태 제출 성공 회귀) · `frontend/test/lv-mismatch-reason-20260913.test.tsx` **신설**(상세·등록 두 자리 문장이 동일하고 근거 구절을 포함) · `frontend/test/detail-edit.test.tsx` **확장**(편집 칸에 가공 단계 ＋ 저장 본문에 `processingLevelUserSet`).
+- 최소 구현 = `RegisterArea.tsx` 앵커 `data-testid="reg-level"` 의 기본값을 `LineageStep.tsx` 앵커 `const derivedPreview =` 규칙으로 추종(부모 Lv 를 하나라도 모르면 `Lv2` 유지 · ⟨개정 2026-09-14 · 카드 ⑩ ⓐ 축자와 불일치 정정⟩ 주입력 부모 0건이면 계산값 `Lv0` · 사람이 한 번 고른 뒤에는 추종 중단) · 사유 문장 생성 함수 1개를 `components/common/processingLevel.ts` 에 두고 앵커 `data-testid="dh-lv-mismatch"`·`data-testid="lin-lv-mismatch"` 두 자리가 같은 함수를 부른다 · `detail/editFields.ts` 에 가공 단계 칸 1개(값 집합 `Lv0`~`Lv3`) ＋ 폼·훅이 기존 계약 열쇠 `DatasetUpdate.processingLevelUserSet` 로 전송.
 - 차단 0건 · 사유 입력 요구 0건 · 「경고만」 유지(판정 축자). 파생값·사유를 테이블에 저장하지 않는다.
 - green-by-skip 방지 = 불일치 `false` **대조군**과 부모 0건 대조군을 함께 둔다 · 불일치 상태 제출 성공 회귀 단언을 같은 파일에 둔다(§8-6 ⑶).
 - 단독 게이트 = `bash gates/run.sh frontend-test`(연속 2회) · `bash gates/run.sh frontend-typecheck`(1회).
@@ -140,7 +140,7 @@
 
 - 목적 = ⑴ 데이터셋 목록·프로젝트 상세 표의 승인 대기 칸 글자가 한 표기(제안값 「승인 전」)로 모이고 취소선·회색·꺼진 모양과 열 제목 `Verified` 는 그대로다 ⑵ 목록 가공 단계 칸이 불일치 행에 표식 ＋ 보조기기용 이름을 그린다.
 - 선행 = **Task 4 병합 뒤 착수**(`ProjectDatasetTable.tsx`·`project.css` 공유).
-- 실패 시험(spec §8-2 16~18) — `frontend/test/catalog.test.tsx` **정정**(승인 대기 칸 텍스트 = 제안값 ＋ 클래스 `verified--pending` 유지) · `frontend/test/qa-20260903.test.tsx` · `frontend/test/search-verified-20260903.test.tsx` **정정**(같은 칩 규칙 · 검색 카드에는 칩 부재 유지 회귀) · `frontend/test/catalog-level-mismatch-20260913.test.tsx` **신설**(`processingLevelMismatch=true` 행에 표식 ＋ 보조기기 이름 · `false` 행에 0건 대조군).
+- 실패 시험(spec §8-2 16~18) — `frontend/test/catalog.test.tsx` **정정**(승인 대기 칸 텍스트 = 제안값 ＋ 클래스 `verified--pending` 유지) · `frontend/test/qa-20260903.test.tsx` · `frontend/test/project.test.tsx` ⟨개정 2026-09-14 · 집행 실측⟩ ／ 종전 ~~`frontend/test/search-verified-20260903.test.tsx`~~ — 검색 카드 칩 부재 회귀라 무수정 통과 **정정**(같은 칩 규칙 · 검색 카드에는 칩 부재 유지 회귀) · `frontend/test/catalog-level-mismatch-20260913.test.tsx` **신설**(`processingLevelMismatch=true` 행에 표식 ＋ 보조기기 이름 · `false` 행에 0건 대조군).
 - 최소 구현 = `CatalogTable.tsx` 앵커 `className="verified verified--pending"` 의 글자만 교체(`data-testid`·`aria-disabled`·`title` 유지) · `ProjectDatasetTable.tsx` 앵커 `data-testid="dataset-verified"` 같은 교체 · `CatalogTable.tsx` 가공 단계 칸이 `row.processingLevelMismatch` 를 읽어 표식. **서버 무변**(열쇠가 이미 응답에 실린다).
 - 손대지 않는 것 = `approval/VerifiedBadge.tsx` · `search/SearchHitCard.tsx`(두 파일의 반대 규칙은 의도된 것) · 열 제목 `Verified` · 프로젝트 상세 표·계보 노드의 `level_pair`.
 - green-by-skip 방지 = 불일치 `false` 대조군 ＋ 검색 카드 칩 부재 회귀를 함께 둔다 · 수집 건수 전후 기록.
@@ -229,7 +229,7 @@
 
 - 상태 투영 롤 권한 `[미확인]` — Task 7 선행 대조에서 닫는다. 열리지 않으면 Task 7 의 구성원 절반이 정지하고 제목 절반만 남는다.
 - 실제 초점 링·390px 실화면은 jsdom 으로 재지 않는다 — `frontend-visual` 은 로그인 필요 화면을 잴 수 없다(spec §8-1). `[미확인]` 으로 남기고 사람 확인 몫으로 둔다.
-- 기존 시험 정정 7파일(`shell`·`recs-20260903`·`auth`·`catalog`·`qa-20260903`·`search-verified-20260903`·`detail-edit`) — 수집 건수 감소가 곧 red 다.
+- 기존 시험 정정 7파일(`shell`·`recs-20260903`·`auth`·`catalog`·`qa-20260903`·`detail-edit`(⟨개정 2026-09-14⟩ `search-verified-20260903` 은 무수정 통과 · `project` 추가)) — 수집 건수 감소가 곧 red 다.
 
 ## spec 추적 및 작업 종료 기준
 

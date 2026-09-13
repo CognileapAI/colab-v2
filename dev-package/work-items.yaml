@@ -3509,7 +3509,7 @@ items:
       ⑴ 승인 대기 행의 칸 글자가 한 표기로 고정된다(제안값 「승인 전」 · 선례 1자리 `frontend/src/components/catalog/columns.ts` 앵커 `if (column === 'Verified')` · Ted 가 문면을 바꾸면 문면만 교체)
       ⑵ 칸을 비우지 않는다는 기존 이유가 유지된다 — `verified--pending` 의 취소선·회색·꺼진 모양과 `data-testid`·`aria-disabled`·`title` 무변
       ⑶ 같은 상태의 두 자리가 같은 값을 말한다(`CatalogTable.tsx` ＋ `ProjectDatasetTable.tsx` 앵커 `data-testid="dataset-verified"`)
-      ⑷ 현 표기를 고정한 시험 4건(`frontend/test/catalog.test.tsx` 2건 · `qa-20260903.test.tsx` · `search-verified-20260903.test.tsx`)이 고른 표기에 맞춰 green 이고 검색 카드 칩 부재 회귀가 유지된다
+      ⑷ ⟨개정 2026-09-14 · 집행 커밋 `0427ac91` 실물과 불일치 정정⟩ 현 표기를 고정한 시험이 고른 표기에 맞춰 green 이다 — 정정 3건(catalog · qa-20260903 · project) ＋ search-verified-20260903 은 무수정 통과(검색 카드 칩 부재 회귀) ／ 종전 ~~현 표기를 고정한 시험 4건(`frontend/test/catalog.test.tsx` 2건 · `qa-20260903.test.tsx` · `search-verified-20260903.test.tsx`)이 고른 표기에 맞춰 green 이고 검색 카드 칩 부재 회귀가 유지된다~~
       ⑸ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
     evidence: null
     deadline: null
@@ -3527,7 +3527,7 @@ items:
       - "개정 표시 대상 = `dev-package/prd/PRD-260905-적용전기획.md` 앵커 `미결-2 ⓐ`(기본 선택값만) ＋ 원장 반전 기재 자리 `PLAN-SoT §9 〈194〉` — `〈N〉` 은 병합 직전 재실측"
     depends_on: []
     completion_def: >-
-      ⑴ 확인된 부모가 1건 이상이고 부모 Lv 를 모두 알면 등록 가공 단계 기본 선택값이 계산값(주입력 부모 최대 Lv ＋ 1)으로 선다 — 부모 0건 또는 부모 Lv 미지 시 `Lv2` 유지 ＋ Lv0 경고 0건 · 사람이 한 번 고른 값은 덮어쓰지 않는다
+      ⑴ 확인된 부모가 1건 이상이고 부모 Lv 를 모두 알면 등록 가공 단계 기본 선택값이 계산값(주입력 부모 최대 Lv ＋ 1)으로 선다 — ⟨개정 2026-09-14 · 카드 ⑩ ⓐ 축자와 불일치 정정⟩ 주입력 부모 0건이면 계산값 `Lv0` 이 기본 선택값 · 부모 Lv 미지 시 `Lv2` 유지 · 사용자가 계산값과 다른 단계를 고르면(부모 0건 포함) 등록 화면·상세에 불일치 안내와 사유 한 줄이 선다 · 막지 않는다 ／ 종전 ~~부모 0건 또는 부모 Lv 미지 시 `Lv2` 유지 ＋ Lv0 경고 0건~~ · 사람이 한 번 고른 값은 덮어쓰지 않는다
       ⑵ 불일치 안내 한 줄이 두 값 ＋ 각 값의 근거를 말하고 상세와 등록 두 자리가 같은 문장을 쓴다(공용 함수 1개 · `frontend/src/components/common/processingLevel.ts`)
       ⑶ 데이터셋 목록의 가공 단계 칸이 불일치 행에 표식 ＋ 보조기기용 이름을 그린다 — 서버 무변 · `false` 행은 0건(대조군)
       ⑷ 상세 편집에 가공 단계 칸이 있고(`frontend/src/components/detail/editFields.ts` · 값 집합 `Lv0`~`Lv3`) 저장 후 상세 표시값이 바뀌며 불일치 줄이 재평가된다
