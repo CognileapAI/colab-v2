@@ -32,6 +32,13 @@ DESCRIPTION = {
     "instants": {"count": 3, "first": "2026-06-01T00:00:00Z", "last": "2026-06-02T00:00:00Z"},
     "default": {"variable": "LST", "instant": "2026-06-01T00:00:00Z"},
 }
+#: ⭑ ⟨22차 해제 · `DL-2`⟩ viz-render 가 돌려줄 `PreviewReclaimResult`.
+#: **core-api 는 이 모양을 재선언하지 않는다** — `core-viz.yaml#PreviewReclaimResult` 가 정본이다.
+RECLAIM_TARGET = "01ARZ3NDEKTSV4RRFFQ69G5FB0"
+UNREACHABLE_TARGET = "01ARZ3NDEKTSV4RRFFQ69G5FB9"
+RECLAIM_FILE_IDS = ["01ARZ3NDEKTSV4RRFFQ69G5FB1", "01ARZ3NDEKTSV4RRFFQ69G5FB2"]
+RECLAIM_RESULT = {"targetId": RECLAIM_TARGET, "stale": 2, "kept": 1, "unindexed": 1,
+                  "removed": ["abc.webp", "abc.png"]}
 JOB_DONE = {
     "renderId": RENDER_ID, "status": "완료",
     "result": {"tileUrlTemplate": "https://tiles.example/{z}/{x}/{y}.png",
@@ -70,6 +77,15 @@ class _FakeViz(BaseHTTPRequestHandler):
         #   아닌 것이 이 op 이 읽기 전용이라는 사실의 표현이다.
         if self.path.endswith("/target-descriptions"):
             self._send(200, DESCRIPTION)
+            return
+        # ⭑ ⟨22차 해제 · `DL-2`⟩ 회수도 **200 이고 작업이 아니다.** `targetId` 가
+        #   `UNREACHABLE_TARGET` 이면 저쪽이 못 답한 자리를 재현한다(503 매핑 시험).
+        if self.path.endswith("/reclaims"):
+            payload = json.loads(body)
+            if payload.get("targetId") == UNREACHABLE_TARGET:
+                self._send(503, {"code": "SERVICE_UNAVAILABLE", "message": "지금 못 한다"})
+                return
+            self._send(200, RECLAIM_RESULT)
             return
         self._send(202, JOB_RUNNING)
 
@@ -340,3 +356,37 @@ def test_core_does_not_build_the_variable_list(p2_client) -> None:
     preview = (src / "app" / "routes" / "preview.py").read_text(encoding="utf-8")
     for invented in ("netCDF4", "rasterio", "xarray", "band1", "drawable"):
         assert invented not in preview, f"core-api 가 파일을 해석하고 있다: {invented}"
+
+
+# ═══════════════ 회수 중계 (`DL-2` · 22차 해제 ㉯) ═══════════════════════════
+def _relay(base: str):
+    from colab_core.app.relay import HttpPreviewRelay
+
+    return HttpPreviewRelay(f"{base}/viz/v1", service_token="test-viz-service-token")
+
+
+def test_reclaim_previews_sends_the_ids_and_passes_the_result_untouched(fake_viz) -> None:
+    """**요청도 응답도 가공하지 않는다** — 경계 두 헤더와 자격 증명이 실리고 200 이 그대로 온다."""
+    base, fake = fake_viz
+    got = _relay(base).reclaim_previews(lab_id="0000000000000000000000000A",
+                                        account_id="0000000000000000000000000B",
+                                        target_id=RECLAIM_TARGET,
+                                        file_ids=RECLAIM_FILE_IDS)
+    assert got == RECLAIM_RESULT, "중계가 결과를 가공했다 — PreviewReclaimResult 는 그대로 지나가야 한다."
+    sent = fake.received[-1]
+    assert sent["path"].endswith("/reclaims")
+    assert sent["body"] == {"targetId": RECLAIM_TARGET, "fileIds": RECLAIM_FILE_IDS}
+    assert sent["lab"] == "0000000000000000000000000A"
+
+
+def test_reclaim_previews_raises_when_viz_cannot_answer(fake_viz) -> None:
+    """**503 을 결과로 접지 않는다.** 「지울 것이 없었다」와 「못 물어봤다」가 같은 값이 되면
+    삭제가 미리보기를 남긴 채 성공한다 — 부르는 쪽은 이 예외로 삭제를 되돌린다."""
+    from colab_core.app.relay import RelayUnavailable
+
+    base, _ = fake_viz
+    with pytest.raises(RelayUnavailable):
+        _relay(base).reclaim_previews(lab_id="0000000000000000000000000A",
+                                      account_id="0000000000000000000000000B",
+                                      target_id=UNREACHABLE_TARGET,
+                                      file_ids=RECLAIM_FILE_IDS)

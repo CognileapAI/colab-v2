@@ -748,6 +748,110 @@ def test_deleting_appends_one_operator_audit_snapshot(p2_client, planted, sql):
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# ⑯ 미리보기 회수 — **삭제가 그 산출물까지 지운다** (`DL-2` · 22차 ㉯)
+#
+# 계약 산문 축자는 「파일과 **미리보기**만 지워져요」인데 `DL-1` 까지의 실물은 파일만
+# 지웠다. 여기서 재는 것은 **부르는가·언제 부르는가·못 부르면 어떻게 되는가** 셋이고,
+# 무엇을 지울지의 판정은 viz 쪽(`tests/test_reclaim_on_delete.py`)이 잰다 — core 는
+# 해석하지 않는다.
+# ════════════════════════════════════════════════════════════════════════════
+
+class _RecordingPreviews:
+    """`app.state.previews` 자리의 기록 대역. `reclaim_previews` 만 쓴다."""
+
+    def __init__(self, *, explode: bool = False) -> None:
+        self.calls: list[dict] = []
+        self.explode = explode
+
+    def reclaim_previews(self, *, lab_id, account_id, target_id, file_ids) -> dict:
+        self.calls.append({"lab_id": lab_id, "account_id": account_id,
+                           "target_id": target_id, "file_ids": list(file_ids)})
+        if self.explode:
+            from colab_core.app.relay import RelayUnavailable
+
+            raise RelayUnavailable("viz-render 에 못 닿았다")
+        return {"targetId": target_id, "stale": len(self.calls), "kept": 0,
+                "unindexed": 0, "removed": []}
+
+
+def test_deleting_calls_reclaim_once_with_exactly_the_deleted_file_ids(p2_client, planted, sql,
+                                                                       tmp_path):
+    """ⓐ **한 번** 부르고, `fileIds` 는 ③ 이 읽은 원장 행의 id 집합 **그대로**다.
+
+    ⚠ 순서는 무관하다 — 집합이 같은가만 본다. 여기서 순서를 잠그면 `files_for_download`
+    의 `ORDER BY` 가 이 시험의 오라클이 되고, 그것은 이 op 이 약속한 것이 아니다.
+    """
+    client = p2_client()
+    dataset_id, keys = planted(owner=ACC_A_PROF, files=3)
+    _write_bytes(tmp_path, keys)
+    expected = {r["id"] for r in sql("SELECT id FROM d3_file WHERE dataset_id = :id",
+                                     {"id": dataset_id})}
+    assert len(expected) == 3
+
+    previews = _RecordingPreviews()
+    client.app.state.previews = previews
+    r = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+    assert r.status_code == 204, r.text
+    assert len(previews.calls) == 1, previews.calls
+    call = previews.calls[0]
+    assert call["target_id"] == dataset_id
+    assert set(call["file_ids"]) == expected, "지워진 파일 집합과 회수 입력이 갈렸다."
+
+
+def test_a_failed_reclaim_is_a_500_that_rolls_everything_back_and_a_retry_succeeds(
+        p2_client, planted, sql, tmp_path):
+    """ⓑ 회수가 못 돌면 **삭제 전체가 되돌아간다** — 묘비도, 파일 행도, 바이트도 그대로다.
+
+    ⑨(바이트 삭제)가 **회수 뒤**라는 것도 여기서 증명된다 — 회수가 터졌을 때 저장소 키가
+    남아 있다면 그 루프는 아직 돌지 않은 것이다.
+    """
+    client = p2_client()
+    dataset_id, keys = planted(owner=ACC_A_PROF, files=2)
+    _write_bytes(tmp_path, keys)
+
+    client.app.state.previews = _RecordingPreviews(explode=True)
+    boom = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+    assert boom.status_code == 500, boom.text
+    assert boom.json()["code"] == "PREVIEW_RECLAIM_FAILED", boom.text
+
+    assert sql("SELECT deleted_at FROM d3_dataset WHERE id = :id",
+               {"id": dataset_id})[0]["deleted_at"] is None, "500 인데 묘비가 됐다."
+    assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
+               {"id": dataset_id})[0]["n"] == 2, "500 인데 파일 행이 사라졌다."
+    # ⓓ **릴레이가 ⑨ 앞이다** — 뒤였다면 바이트가 먼저 사라졌을 것이다.
+    assert sorted(_present(tmp_path, keys)) == sorted(keys), \
+        "회수 실패인데 바이트가 지워졌다 — 릴레이 호출이 저장소 삭제 뒤에 있다."
+
+    client.app.state.previews = _RecordingPreviews()
+    again = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+    assert again.status_code == 204, again.text
+    assert _present(tmp_path, keys) == []
+
+
+def test_without_a_viz_relay_the_delete_still_succeeds_and_logs_one_line(p2_client, planted,
+                                                                        tmp_path, caplog):
+    """ⓒ viz 가 배선되지 않은 배포(로컬 개발·시험)는 **건너뛰고 한 줄 남긴다.**
+
+    500 으로 내면 싱크가 없는 곳에서 삭제 자체가 불가능해진다 — 그런 배포에는 지울
+    산출물도 없다. 다만 **조용히 넘어가지 않는다**: 건너뛴 사실이 로그에 남는다.
+    """
+    import logging
+
+    client = p2_client()
+    assert client.app.state.previews is None, "이 시험은 중계가 없는 앱을 전제한다."
+    dataset_id, keys = planted(owner=ACC_A_PROF, files=1)
+    _write_bytes(tmp_path, keys)
+
+    with caplog.at_level(logging.INFO):
+        r = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+    assert r.status_code == 204, r.text
+    skipped = [rec for rec in caplog.records
+               if "PREVIEWS_UNCONFIGURED" in rec.getMessage()]
+    assert len(skipped) == 1, [rec.getMessage() for rec in caplog.records]
+    assert dataset_id in skipped[0].getMessage()
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # 시드 보호 — 이 파일이 시드를 만지지 않았음을 스스로 잰다
 # ════════════════════════════════════════════════════════════════════════════
 
