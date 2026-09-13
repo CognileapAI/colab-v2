@@ -5,7 +5,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNNER="${COLAB_NOTIFICATION_RUNTIME_RUNNER:-$HERE/run-runtime-job.sh}"
 CRON="${COLAB_NOTIFICATION_CRON_FILE:-/etc/cron.d/colab-operator-notifications}"
 ENVIRONMENT=""; CONFIG=""; ACTION=""
-usage() { echo '사용: install-runtime-cron.sh --environment dev|staging --config <0600 env> render|install|verify|remove' >&2; exit 2; }
+usage() { echo '사용: install-runtime-cron.sh --environment dev|prod|staging --config <0600 env> render|install|verify|remove' >&2; exit 2; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --environment) ENVIRONMENT="${2:-}"; shift 2 ;;
@@ -14,7 +14,10 @@ while [ "$#" -gt 0 ]; do
     *) usage ;;
   esac
 done
-case "$ENVIRONMENT" in dev|staging) ;; *) usage ;; esac
+# ⭑ ⟨2026-09-13⟩ prod 를 더한다 — 일정은 **벌 이름이 아니라 갈래**로 갈린다:
+#   연결(dev·prod) = export·spool·retry·probe 3·daily · relay(staging) = stage-relay·probe 3.
+#   ⛔ 아무 값이나 받지 않는다(`production` 같은 오타는 그대로 exit 2 다).
+case "$ENVIRONMENT" in dev|prod|staging) ;; *) usage ;; esac
 [ -n "$CONFIG" ] && [ -n "$ACTION" ] || usage
 case "$CONFIG:$CRON:$RUNNER" in /*:/*:/*) ;; *) echo 'cron 준비 실패 — 절대경로가 필요하다' >&2; exit 78 ;; esac
 [[ "$CONFIG$CRON$RUNNER" != *%* && "$CONFIG$CRON$RUNNER" != *$'\n'* && "$CONFIG$CRON$RUNNER" != *$'\r'* ]] \
@@ -24,7 +27,7 @@ quote() { local value="${1//\'/\'\\\'\'}"; printf "'%s'" "$value"; }
 RUN_Q="$(quote "$RUNNER")"; CONFIG_Q="$(quote "$CONFIG")"
 expected() {
   printf '%s\n' '# CoLAB operator notifications — generated; cron timezone is UTC.' 'SHELL=/bin/bash' 'PATH=/usr/local/bin:/usr/bin:/bin' ''
-  if [ "$ENVIRONMENT" = dev ]; then
+  if [ "$ENVIRONMENT" = dev ] || [ "$ENVIRONMENT" = prod ]; then
     printf '* * * * * root %s --config %s export\n' "$RUN_Q" "$CONFIG_Q"
     printf '* * * * * root %s --config %s spool\n' "$RUN_Q" "$CONFIG_Q"
     printf '* * * * * root %s --config %s retry\n' "$RUN_Q" "$CONFIG_Q"

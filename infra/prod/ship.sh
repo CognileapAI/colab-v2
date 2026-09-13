@@ -92,9 +92,9 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 #    scp 는 모드를 보존하므로 레포가 `100755` 인 것이 그대로 실행 가능하게 간다.
 # ⚠ `deploy-doctor.sh` 도 함께 싣는다 — 판정 진입점이 EC2 에 없으면 「판정을 못 한 채 배포 완료」가 된다.
 "${SCP[@]}" "$HERE/compose.yml" "$HERE/up.sh" "$HERE/backup.sh" "$HERE/install-cron.sh" \
-  "$HERE/deploy-doctor.sh" \
+  "$HERE/deploy-doctor.sh" "$HERE/publish-ownership-hourly.sh" \
   "$COLAB_PROD_SSH:/opt/colab-v2/"
-"${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh /opt/colab-v2/deploy-doctor.sh /opt/colab-v2/set-image-tag.sh'   # 파일시스템이 모드를 잃는 경우 대비
+"${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh /opt/colab-v2/deploy-doctor.sh /opt/colab-v2/set-image-tag.sh /opt/colab-v2/publish-ownership-hourly.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
   sudo tar xzf /opt/colab-v2/images/$(basename "$REPO_TGZ") -C /opt/colab-repo --overwrite && \

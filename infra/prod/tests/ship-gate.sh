@@ -60,7 +60,7 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 prod 적재 스크립트 ＋ �
   mkdir -p "$work/infra/ops"
   cp "$REPO/infra/ops/build-source-bundle.sh" "$work/infra/ops/build-source-bundle.sh"
   chmod +x "$work/infra/ops/build-source-bundle.sh"
-  for f in compose.yml up.sh backup.sh install-cron.sh deploy-doctor.sh; do : > "$work/infra/prod/$f"; done
+  for f in compose.yml up.sh backup.sh install-cron.sh deploy-doctor.sh publish-ownership-hourly.sh; do : > "$work/infra/prod/$f"; done
   chmod +x "$work/infra/prod/ship.sh"
   # 번들이 요구하는 자리표 ＋ 레포 tar 가 싣는 자리 — **디렉터리는 파일 하나를 넣어야 git 이 담는다.**
   for p in "${OPS_BUNDLE_PATHS[@]}" "${REPO_SYNC_PATHS[@]}"; do
@@ -175,6 +175,8 @@ run_ship "$W" COLAB_SHIP_UNUSED=1
 check "ⓖ 반입 단계" "exit" "$RC" 0
 LOG="$(cat "$SSHLOG")"
 has "ⓖ 반입 단계" "deploy-doctor.sh 를 싣는다" "$LOG" "infra/prod/deploy-doctor.sh"
+has "ⓖ 반입 단계" "publish-ownership-hourly.sh 를 싣는다" "$LOG" "infra/prod/publish-ownership-hourly.sh"
+has "ⓖ 반입 단계" "소유권 스냅샷 스크립트에 실행 비트를 준다" "$LOG" "chmod +x /opt/colab-v2/"
 has "ⓖ 반입 단계" "레포 tar 를 싣는다" "$LOG" "colab-repo-$ANC.tgz"
 has "ⓖ 반입 단계" "/opt/colab-repo 에 --overwrite 로 푼다" "$LOG" "-C /opt/colab-repo --overwrite"
 has "ⓖ 반입 단계" "ops 번들 tar 를 싣는다" "$LOG" "colab-ops-source-$ANC.tar.gz"

@@ -130,10 +130,7 @@ prod 호스트에 그대로 올리면 **prod DB 를 덤프해 dev 버킷에 올�
 ⟹ 지금은 **버킷·벌 이름이 필수**(`:?`)이고 **크론이 값을 싣는다**(`install-cron.sh`). 양쪽에서 막는다.
 `install-cron.sh` 는 `COLAB_ENV`·`COLAB_BACKUP_BUCKET` 를 요구하고 cron 파일도 `/etc/cron.d/colab-<벌>` 로 갈린다.
 
-```bash
-# prod EC2 에서
-sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod /opt/colab-v2/install-cron.sh
-```
+⭑ **⟨증보 2026-09-13⟩ `install-cron.sh` 가 이제 크론 넷을 전부 건다** — §7 을 본다.
 
 ## 6. 완료 판정
 
@@ -148,6 +145,39 @@ ops/deploy_doctor.py --env prod --endpoint https://<prod>.cloudfront.net …
 `main` 재빌드 ＋ `prod-YYYYMMDD` 태그 ＋ `ship.sh` 반입으로만 지운다(`docs/DEPLOY.md §5-9`).
 ＋ **브라우저 실물** — 로그인 → 업로드 한 바퀴 → 파일 목록 → 다운로드 → 미리보기.
 ＋ **시점 복구를 되감아 본다**(`〈383〉`-㉯) — 「설정했다」는 관문이 아니다.
+
+## 7. 크론 넷 — 한 스크립트가 전부 건다
+
+```bash
+# prod EC2 에서 · 멱등 · 필요한 파일이 하나라도 없으면 크론을 한 줄도 쓰지 않고 exit 2
+sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod \
+     COLAB_OWNERSHIP_COMPOSE_PROJECT=<docker compose ls 로 잰 값> \
+     COLAB_OWNERSHIP_CORE_IMAGE=colab-v2/core-api:prod-<sha> \
+     COLAB_OWNERSHIP_VIZ_GID=<docker exec colab_v2_prod_viz_render id -g> \
+     COLAB_NOTIFICATION_ROOT=/opt/colab-ops/versions/<sha> \
+     COLAB_NOTIFICATION_CONFIG=/etc/colab/operator-runtime.env \
+     /opt/colab-v2/install-cron.sh
+```
+
+| # | 잡 | 주기(UTC) | 자리 |
+|---|---|---|---|
+| ① | DB 백업 → `s3://…/_ops/backups/prod/` | `0 19 * * *` | `/etc/cron.d/colab-prod` |
+| ② | 만료 전송 지연 정리 깨우기(읽기 전용 op 하나) | `20 19 * * *` | 같은 파일 |
+| ③ | 소유권 장부 스냅샷 | `17 * * * *` | `/etc/cron.d/colab-ownership-snapshot` |
+| ④ | 운영자 알림(export·spool·retry 매분 · probe 3 ＋ daily 5분) | — | `/etc/cron.d/colab-operator-notifications` |
+
+- **③ 의 값은 크론 줄이 싣는다.** `publish-ownership-hourly.sh` 는 기본값을 갖지 않으므로
+  빠뜨리면 매시 exit 78 로 죽고 `/var/log/colab-v2-prod-ownership.log` 에 남는다 —
+  **조용히 옛 스냅샷이 남지 않는다**(viz 가 나이 상한으로 거절한다).
+  ⚠ `COLAB_OWNERSHIP_COMPOSE_PROJECT` 는 **컨테이너 이름과 다를 수 있다**(`colab_v2_prod_*` 는
+  compose 가 고정한 이름이다). `docker volume ls | grep ownership-ledger` 로 실측해 적는다.
+- **④ 는 `install-runtime-cron.sh` 가 관리한다.** 일정 정본이 그 스크립트의 `expected()` 하나이고
+  `verify` 가 자기 출력과 설치본을 대조한다 — 여기서 cron 줄을 베껴 쓰면 그 대조가 무의미해진다.
+  ⭑ **⟨2026-09-13⟩ 그 설치기가 `prod` 를 받는다** ／ 종전 ~~`dev|staging` 만~~ — 갈래는 둘이고
+  (연결 = dev·prod, relay = staging) prod 는 dev 와 같은 **연결** 일정이다.
+  ⛔ 아무 값이나 받게 한 것은 아니다 — `production` 같은 오타는 그대로 거절한다.
+- 설치 뒤 **첫 매시 17분의 로그와 `current.json` 의 시각·건수**를 눈으로 확인한다.
+  「설치 성공」은 「매시 발행 성공」이 아니다.
 
 ## 8. 한 번만 vs 재배포 때마다
 
