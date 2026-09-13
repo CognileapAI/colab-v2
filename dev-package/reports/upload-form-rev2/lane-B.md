@@ -111,6 +111,14 @@
 1. `service-tests-core-api` 게이트 green — **이 호스트에서 미판정**(§7). 다른 호스트(브리지 라우팅이 있는
    리눅스/WSL) 또는 후속 ①이 선행돼야 한다. 대체 증거는 위 `18 passed` 와 전수 `1211 passed / 12 failed`.
 2. 인계 토큰(`COLAB_HANDOFF`) 미발급 — 아래 8-b.
+3. `service-tests-core-api` 판정처 = PR CI 의 `service-tests` 매트릭스
+   (`.github/workflows/ci.yml` 의 `service-tests:` 잡 — `matrix: service: [core-api, …]` ·
+   같은 잡의 마지막 스텝이 `./gates/run.sh service-tests-${{ matrix.service }}` 를 실행) ·
+   이 맥 호스트의 값은 **준비 red**(도커 브리지 IP 미라우팅 · §7) — 게이트 밖 검사가 아니라 CI 에서 판정된다.
+4. 잔여 지적 1건 처리 — `GridRejection.fileName`(위 §9 후속 ③)을 표시 이름 맵으로 돌렸다(레인 F1).
+   `jobs.display_file_name` 한 자리가 `missingParts[].fileName` 과 `GridRejection.fileName` 둘을 모두 고르고,
+   힌트가 없으면 종전대로 디스크 이름이다. 시험 `test_grid_rejection_and_layer_urls.py`
+   `test_거절당한_파일_이름은_fileNames_가_준_원래_이름이다` 1건 신설(red → green).
 
 ## 8-b. 인계 토큰이 발급되지 않는다 (하네스 교착)
 

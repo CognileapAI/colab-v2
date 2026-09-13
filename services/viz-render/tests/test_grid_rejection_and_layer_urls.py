@@ -148,6 +148,27 @@ def test_비지도형_성공에도_썸네일_URL_이_실린다(client, put_targe
         "②가 주 화면인 갈래다 — 같은 자리를 가리키는 것이 정상이다"
 
 
+def test_거절당한_파일_이름은_fileNames_가_준_원래_이름이다(client, put_target):
+    """`gridRejection.fileName` 은 **표시용 이름**이다 — 디스크 이름은 `fileId`(ULID) 다.
+
+    저장 배치가 본체를 `fileId` 로 이름 붙이므로(`kernel/storage_layout`), 디스크 이름을
+    그대로 내면 화면의 「어느 파일이 거절됐는가」 자리에 `01J…` 26자가 선다. 원래 이름은
+    `core-viz.yaml#RenderTarget.fileNames` 가 **식별자와 같은 자리에** 싣고,
+    `missingParts[].fileName` 과 **같은 함수**가 그 하나를 고른다.
+    """
+    file_id = "01JQ0000000000000000000001"
+    tid = put_target({file_id: _npy_bytes(np.arange(64, dtype="float32").reshape(8, 8))},
+                     grid={"LAT_x.npy": np.linspace(30.0, 40.0, 100).reshape(10, 10),
+                           "LON_x.npy": np.linspace(120.0, 130.0, 100).reshape(10, 10)})
+    job = _render(client, {"datasetId": tid,
+                           "fileNames": [{"fileId": file_id, "fileName": "LST.npy"}]})
+
+    rej = job.get("gridRejection")
+    assert rej is not None, "형상 불일치이므로 거절 사실이 나와야 한다"
+    assert rej["fileName"] == "LST.npy", \
+        "힌트가 있으면 원래 이름이다 — 디스크 이름(ULID)을 그대로 내면 화면이 파일을 지목하지 못한다"
+
+
 def _npy_bytes(arr: np.ndarray) -> bytes:
     import io
     buf = io.BytesIO()
