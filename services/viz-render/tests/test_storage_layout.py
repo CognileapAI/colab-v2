@@ -166,3 +166,45 @@ def test_storage_key_refuses_preview_kind(tmp_path):
     assert body != _PREVIEW_EXPECTED
     got = storage_layout.preview_path(tmp_path, _PREVIEW_CONTENT_KEY, ".png")
     assert got == tmp_path / _PREVIEW_EXPECTED
+
+
+# ── 미리보기 **역인덱스** 표식의 자리 (`DL-2` ⓓ7) ────────────────────────────
+# 산출물 키는 내용 주소라 fileId 가 들어 있지 않다. 「이 파일에서 나온 산출물이
+# 무엇인가」를 되묻는 길이 그래서 없었고, 그 결손이 `DL-2` 의 출발점이다.
+# ⚠ `previews/` **아래가 아니다** — 그 접두는 flat 이어야 한다
+# (`legacy_preview_observation.observe` 가 하위 경로를 보면 red 를 낸다).
+
+def test_preview_index_key_is_a_sibling_prefix_not_under_previews():
+    """표식은 **형제 접두**에 산다 — `previews/` 아래로 새지 않는다."""
+    key = storage_layout.preview_index_key("01J000000000000000000FILE",
+                                           _PREVIEW_CONTENT_KEY)
+    assert key == (f"preview-index/by-file/01J000000000000000000FILE/"
+                   f"{_PREVIEW_CONTENT_KEY}")
+    assert storage_layout.PREVIEW_INDEX_PREFIX == "preview-index"
+    assert storage_layout.PREVIEW_INDEX_KEY_TEMPLATE == (
+        "{previewIndexPrefix}/by-file/{fileId}/{contentKey}")
+    # 산출물 키와 섞이지 않는다 — 접두가 다르고, 접수분 루트도 타지 않는다.
+    assert not key.startswith(storage_layout.UPLOADS_PREFIX)
+    assert not key.startswith("previews/")
+    assert key != _PREVIEW_EXPECTED
+
+
+def test_preview_index_key_is_stable_and_splits_by_file():
+    """같은 입력이면 같은 자리 · fileId 가 다르면 자리가 갈린다."""
+    a = storage_layout.preview_index_key("F1", _PREVIEW_CONTENT_KEY)
+    assert a == storage_layout.preview_index_key("F1", _PREVIEW_CONTENT_KEY)
+    assert a != storage_layout.preview_index_key("F2", _PREVIEW_CONTENT_KEY)
+    assert a != storage_layout.preview_index_key("F1", "1" * 64)
+
+
+@pytest.mark.parametrize("file_id", ["", "  ", ".", "..", "a/b", "a\\b"])
+def test_preview_index_key_refuses_unsafe_file_id(file_id):
+    """**`preview_key` 와 같은 거절**이다 — 조용히 고쳐 쓰지 않는다."""
+    with pytest.raises(ValueError):
+        storage_layout.preview_index_key(file_id, _PREVIEW_CONTENT_KEY)
+
+
+@pytest.mark.parametrize("content_key", ["", "  ", ".", "..", "a/b", "a\\b"])
+def test_preview_index_key_refuses_unsafe_content_key(content_key):
+    with pytest.raises(ValueError):
+        storage_layout.preview_index_key("F1", content_key)
