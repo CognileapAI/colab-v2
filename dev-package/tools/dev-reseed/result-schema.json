@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "colab-reseed-result/1",
+  "title": "dev 재생성 1회의 결과",
+  "description": "reseed.sh 실행 1회가 남기는 값. 비밀 값(접속 문자열·비밀번호·키·토큰)은 어떤 필드에도 들어오지 않는다.",
+  "type": "object",
+  "required": ["schema", "runId", "startedAt", "endedAt", "durationSec", "dryRun", "targetSha", "stages", "counts", "blocked", "approvalRecord", "outcome"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "colab-reseed-result/1" },
+    "runId": { "type": "string", "description": "실행 식별자 = 실행 자리 폴더 이름(UTC 시각)." },
+    "startedAt": { "type": "string" },
+    "endedAt": { "type": "string" },
+    "durationSec": { "type": "integer", "minimum": 0 },
+    "dryRun": { "type": "boolean" },
+    "targetSha": { "type": "string", "description": "배포 대상 sha 12자리. dry-run 에서는 빈 문자열일 수 있다." },
+    "runDir": { "type": "string", "description": "실행 자리 — 레포 뿌리 기준 상대경로 또는 레포 밖 자리 이름." },
+    "stages": {
+      "type": "array",
+      "description": "고정 순서 10단계. 실행하지 않은 단계는 status 가 skipped 다.",
+      "items": {
+        "type": "object",
+        "required": ["stage", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "stage": { "enum": ["preflight", "deploy", "reset", "bootstrap", "up", "s3", "prelude", "seed", "verify", "report"] },
+          "status": { "enum": ["ok", "failed", "skipped"] },
+          "exitCode": { "type": "integer" },
+          "startedAt": { "type": "string" },
+          "endedAt": { "type": "string" },
+          "durationSec": { "type": "integer", "minimum": 0 },
+          "log": { "type": "string", "description": "실행 자리 기준 상대경로." }
+        }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "description": "10 항목 판정. 미달 항목은 이름으로 남는다.",
+      "properties": {
+        "dryRun": { "type": "boolean" },
+        "passed": { "type": "array", "items": { "type": "string" } },
+        "failed": { "type": "array", "items": { "type": "string" } },
+        "passedCount": { "type": "integer" },
+        "failedCount": { "type": "integer" }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "description": "verify 단계의 읽기 전용 계수. 쓰기는 한 건도 내지 않는다.",
+      "properties": {
+        "datasets": { "type": "object" },
+        "projects": { "type": "object" },
+        "edges": { "type": "object" },
+        "processingLevel": { "type": "object" },
+        "projectUnlinkedSeq": { "type": "array", "items": { "type": "string" } },
+        "previewRows": { "type": "integer" },
+        "previewEstablished": { "type": "integer" }
+      }
+    },
+    "previewJudgment": {
+      "type": "array",
+      "description": "데이터셋 1건당 1행. 뒷단 개선은 범위 밖(PV-2)이고 여기서는 판정만 한다.",
+      "items": {
+        "type": "object",
+        "required": ["seq", "name", "verdict", "elapsedMs"],
+        "properties": {
+          "seq": { "type": "string" },
+          "name": { "type": "string" },
+          "processingLevel": { "type": "string" },
+          "verdict": { "enum": ["성립", "미성립"] },
+          "elapsedMs": { "type": "integer", "minimum": 0 },
+          "unsetLevel": { "type": "integer" },
+          "usageCards": { "type": "integer" }
+        }
+      }
+    },
+    "doctorSummary": { "type": "string", "description": "deploy_doctor 요약줄 축자. 한 번의 실행 결과만 싣는다." },
+    "blocked": {
+      "type": "array",
+      "description": "차단 항목 — 이름과 사유(라운드 §5 WU-C4 ⑹).",
+      "items": {
+        "type": "object",
+        "required": ["stage", "name", "reason"],
+        "properties": {
+          "stage": { "type": "string" },
+          "name": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "approvalRecord": {
+      "type": ["string", "null"],
+      "description": "승인 기록 파일의 실행 자리 기준 상대경로. reset 단계를 돌지 않았으면 null."
+    },
+    "outcome": { "enum": ["ok", "failed", "dry-run"] },
+    "failedStage": { "type": ["string", "null"] }
+  }
+}
