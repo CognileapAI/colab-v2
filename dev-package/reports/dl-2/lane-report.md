@@ -88,12 +88,16 @@
 
 ### 3-2. core-api
 
-- `tests/test_dataset_deletion.py` = **26 passed / 0 failed**(신설 3 포함).
-  red 먼저 확인 = `3 failed`(`assert 0 == 1` · `PREVIEW_RECLAIM_FAILED` 부재 · 호출 0회).
+- `tests/test_dataset_deletion.py` 신설 **4건** — ⓐ 호출 1회 ＋ `fileIds` 집합 일치 ·
+  ⓑ `RelayUnavailable` → 500 ＋ 묘비·행·바이트 무변 ＋ 재시도 204 · ⓒ 중계 미배선 204 ＋ 로그 1 ·
+  ⓔ **`RelayRefused` → 500 ＋ 재시도 유도 없는 문구 ＋ `details.reason`**(D6).
+  red 먼저 확인 = 앞 3건 `3 failed`(`assert 0 == 1` · `PREVIEW_RECLAIM_FAILED` 부재 · 호출 0회) ·
+  ⓔ `1 failed`(축자 `- 미리보기 산출물 회수 요청이 거절되어 삭제를 되돌렸어요. / + 미리보기
+  산출물을 지우지 못해 삭제를 되돌렸어요. 잠시 뒤 다시 시도해 주세요.`).
 - `tests/test_preview_relay.py` 신설 2건 — **구현 뒤에 쓴 시험이라 red 선행이 없다.**
   대신 **변이 증명**: 중계의 `/reclaims` 경로를 `/renders` 로 바꾸면 `1 failed`
   (`src/colab_core/app/relay.py:241: RelayUnavailable`) — 단언이 공허하지 않다.
-- 전수(`-m "not e2e"`) 계수는 §5 에 있다.
+- 전수(`-m "not e2e"`) 계수를 이 레인의 판정에 쓰지 않는 이유는 §5.
 
 ---
 
@@ -116,32 +120,33 @@
 
 ---
 
-## 5. core-api 전수 계수 — 기준선 대조
+## 5. core-api 계수 — 전수는 이 레인의 판정값이 아니다
 
-같은 호스트·같은 DB·같은 명령(`pytest -q -m "not e2e" -p no:randomly`)으로 **두 번** 돌렸다.
+⛔ **레인이 잰 전수 계수(기준선 `998 passed / 217 failed` → 이 레인 `1003 / 217`)는 무효로 걷는다.**
+그때의 로컬 시험 DB 가 선언 스키마보다 낡아 있었고(§4) **그 드리프트가 계수를 지배했다** —
+failed 217 의 오류형이 `ProgrammingError` 31 · `InsufficientPrivilege` 27 ·
+`IntegrityError`/`UniqueViolation` 각 10 · `UndefinedColumn` 4 로 전부 스키마·롤 드리프트다.
+드리프트 위에서 잰 두 값을 빼서 「기여분 0」이라고 말하지 않는다.
 
-| 트리 | passed | failed | errors |
-|---|---|---|---|
-| 기준선 = `6a5860d7` 의 `services/core-api`(＝ DL-2 착수 전) | **998** | **217** | 26 |
-| 이 레인 = `86defbbf` | **1003** | **217** | 26 |
+- **재구성 뒤 재측정의 자리** = 오케스트레이터 로그 **`core-pytest-dl2`**(값은 그쪽 보고).
+  시험 DB 는 그쪽이 재구성했다(표 45) — 이 레인은 재구성하지 않았고 재측정도 하지 않는다.
+- **이 레인의 판정값 = 단독 실행 계수.**
 
-- **failed 집합이 글자까지 같다** — 두 실행의 `FAILED` 줄을 정렬해 `diff` 한 결과 차이 0.
-- **passed 차이 ＋5 = 이 레인이 신설한 시험 5건**(삭제 3 ＋ 중계 2).
-- ⟹ **이 레인이 만든 red 는 0건**이다. 「main 과 같다」로 넘기지 않고 **다시 재서** 그렇게 말한다.
+| 대상 | 계수 |
+|---|---|
+| `tests/test_dataset_deletion.py` ＋ `tests/test_preview_relay.py` 의 DL-2 대상 6건<br>(`-k "reclaim or viz_relay or refused"`) | **6 passed / 0 failed** |
 
-### 5-1. 그 217 은 무엇인가 — 그리고 **어느 검사에 걸리는가**
+- ⚠ **두 파일 전건 동시 실행은 판정에 쓰지 않는다** — 오케스트레이터의 전수가 같은 시험 DB 를
+  함께 쓰는 동안에는 회차마다 **다른** 2~5건이 흔들린다(실측: 1회차 `test_after_deletion_it_is_gone…`·
+  `test_deletion_impact_reports…` 2건 / 2회차 `test_a_childs_lineage…`·`test_deleting_records_one_activity_row`·
+  `test_without_a_viz_relay…` 등 5건 — **매번 다른 이름**이고 단독 재실행은 전건 pass).
+  이것은 `.claude/rules/colab-rules.md §3-4` 「한 워크트리에 전수 두 벌 동시 실행 배제」의 실물이다.
 
-- 원인 = §4 와 **같은 계열**의 로컬 시험 DB 드리프트다. 오류형 분포 =
-  `sqlalchemy.exc.ProgrammingError` 31 · `psycopg.errors.InsufficientPrivilege` 27 ·
-  `IntegrityError`/`UniqueViolation` 각 10 · `UndefinedColumn` 4 — 전부 스키마·롤 드리프트이고
-  코드 결함의 모양이 아니다. 걸린 파일도 이 레인과 무관하다(`test_operator_designation` 26 ·
-  `test_storage_maintenance` 16 · `test_search_relay` 12 · `test_approval` 10 …).
-  `tests/test_dataset_deletion.py`(26/26)·`tests/test_preview_relay.py`(18/18) 는 **둘 다 0 failed** 다.
+### 5-1. 낡은 시험 DB 를 **어느 검사가 보는가**
+
 - **걸리는 검사** = `service-tests-core-api` 게이트 하나뿐이고, 그 게이트는 이 맥에서 무판정
   매달림이라(대장 `gate-pg-reach`) **실제로는 아무도 안 본다.** `schema-diff` 는 적용
   DB(dev·staging)만 보므로 시험 DB 를 보지 않는다. ⟹ 후속 항목 ①.
-- ⚠ **이 계수를 「전수 green」으로 바꿔 적지 않는다** — 판정에 쓸 수 있는 것은 이 레인이
-  바꾼 두 파일의 계수(26/26 · 18/18)와 위의 기준선 대조뿐이다.
 
 ---
 
@@ -156,7 +161,7 @@
 | ⑶ | 싱크 `remove`·`index` ＋ 발행 순서 | **충족**(레인 A) |
 | ⑷ | core 가 커밋 전 릴레이를 부르고 실패 시 500·무변경 · 미설정 갈래 로그 | **충족** — §3-2 |
 | ⑸ | dev compose 기배선 · prod 는 이 PR 범위 밖 | **충족**(코드 변경 0) |
-| ⑹ | **dev 실측** | **미달 — 이 레인의 범위 밖**(오케스트레이터 별건 · 배포 창) |
+| ⑹ | **dev 실측** | **미달 — 이 레인의 범위 밖**(오케스트레이터 별건 · 배포 창). 착수 순서 = 백필 **dry-run 계수** → **Ted ⓓ5 GO** → `--apply` |
 
 ### 초과분 (요청되지 않은 변경)
 
@@ -199,7 +204,8 @@
    20차 행 바로 뒤에 붙였고 빈 줄은 건드리지 않았다(범위 밖).
 3. **21차(`〈376〉`)·19차(`〈346〉`)가 §1 표에 행이 없다** — 회차의 정본 발급처는 `PLAN-SoT §9`
    이지만 §1 표가 회차 이력으로 인용되므로 결번이 계속 쌓인다.
-4. **표식 백필의 `--apply` 는 아직 안 돌렸다** — Ted ⓓ5 GO 전제. dev dry-run 계수도 이 레인이
-   재지 않았다(`[미측정]`).
+4. **표식 백필의 `--apply` 는 아직 안 돌렸다** — **순서 고정** = ⓐ dev `--apply` 없이 dry-run
+   으로 계수(사이드카·표식·건너뜀·타일) → ⓑ 그 계수를 근거로 **Ted ⓓ5 GO** → ⓒ `--apply`.
+   dev dry-run 계수는 이 레인이 재지 않았다(`[미측정]`).
 5. `pyhdf` 가 이 맥에서 빌드되지 않는다(`fatal error: 'hdf.h' file not found`) — viz venv 는
    그 패키지만 빼고 구성했다. HDF4 경로를 쓰는 시험은 §3-1 의 준비 red 41 에 포함된다.

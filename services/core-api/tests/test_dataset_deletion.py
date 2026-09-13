@@ -759,13 +759,20 @@ def test_deleting_appends_one_operator_audit_snapshot(p2_client, planted, sql):
 class _RecordingPreviews:
     """`app.state.previews` 자리의 기록 대역. `reclaim_previews` 만 쓴다."""
 
-    def __init__(self, *, explode: bool = False) -> None:
+    def __init__(self, *, explode: bool = False, refuse: int | None = None) -> None:
         self.calls: list[dict] = []
         self.explode = explode
+        #: viz 가 **읽어 보고 물리친** 상태코드. 못 닿은 것(`explode`)과 **다른 사실**이다.
+        self.refuse = refuse
 
     def reclaim_previews(self, *, lab_id, account_id, target_id, file_ids) -> dict:
         self.calls.append({"lab_id": lab_id, "account_id": account_id,
                            "target_id": target_id, "file_ids": list(file_ids)})
+        if self.refuse is not None:
+            from colab_core.app.relay import RelayRefused
+
+            raise RelayRefused(self.refuse, {"code": "BAD_REQUEST",
+                                             "message": "요청 값이 규칙에 맞지 않는다."})
         if self.explode:
             from colab_core.app.relay import RelayUnavailable
 
@@ -826,6 +833,36 @@ def test_a_failed_reclaim_is_a_500_that_rolls_everything_back_and_a_retry_succee
     again = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
     assert again.status_code == 204, again.text
     assert _present(tmp_path, keys) == []
+
+
+def test_a_refused_reclaim_is_a_500_that_does_not_tell_the_user_to_retry(p2_client, planted,
+                                                                          sql, tmp_path):
+    """ⓔ **거절과 장애를 가른다** — viz 가 **읽어 보고 물리친** 4xx 는 재시도해도 같은 답이다.
+
+    「잠시 뒤 다시 시도해 주세요」를 이 갈래에 붙이면 사용자가 고칠 수 없는 것을 반복하게
+    만든다. 고칠 사람은 우리이고, 그 단서는 `details.reason` 의 저쪽 상태·본문이다.
+    ⚠ **롤백은 같다** — 미리보기를 남긴 채 삭제가 성공하는 자리를 만들지 않는다.
+    """
+    client = p2_client()
+    dataset_id, keys = planted(owner=ACC_A_PROF, files=2)
+    _write_bytes(tmp_path, keys)
+
+    client.app.state.previews = _RecordingPreviews(refuse=400)
+    r = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+    assert r.status_code == 500, r.text
+    body = r.json()
+    assert body["code"] == "PREVIEW_RECLAIM_FAILED", body
+    assert body["message"] == "미리보기 산출물 회수 요청이 거절되어 삭제를 되돌렸어요."
+    assert "다시 시도" not in body["message"], "거절 갈래에 재시도 유도가 붙었다."
+    # **단서를 남긴다** — 저쪽이 낸 상태와 본문 요지가 없으면 고칠 사람이 아무것도 못 본다.
+    assert "400" in str(body["details"]["reason"]), body["details"]
+    assert "BAD_REQUEST" in str(body["details"]["reason"]), body["details"]
+
+    assert sql("SELECT deleted_at FROM d3_dataset WHERE id = :id",
+               {"id": dataset_id})[0]["deleted_at"] is None, "500 인데 묘비가 됐다."
+    assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
+               {"id": dataset_id})[0]["n"] == 2, "500 인데 파일 행이 사라졌다."
+    assert sorted(_present(tmp_path, keys)) == sorted(keys), "500 인데 바이트가 지워졌다."
 
 
 def test_without_a_viz_relay_the_delete_still_succeeds_and_logs_one_line(p2_client, planted,

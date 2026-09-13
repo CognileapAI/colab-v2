@@ -62,10 +62,20 @@ FORBIDDEN_MESSAGE = "데이터셋 삭제는 소유자 또는 교수만 할 수 �
 
 #: 미리보기 회수 실패 봉투 (`DL-2`). **503 이 아니라 500 이다** — 저쪽이 못 답한 것이
 #: 사실이지만 사용자에게 일어난 일은 「삭제가 되돌아갔다」이고, 그것이 이 응답이 말해야 하는
-#: 것이다. 문구는 재시도가 안전함을 알린다(회수는 멱등이고 삭제 재호출도 멱등이다).
+#: 것이다. 봉투 코드는 하나이고 **문구가 둘**이다 — 아래 두 상수를 보라.
 PREVIEW_RECLAIM_FAILED = "PREVIEW_RECLAIM_FAILED"
-PREVIEW_RECLAIM_FAILED_MESSAGE = (
+
+#: ⓐ **못 닿았다**(`RelayUnavailable` · 미도달·5xx). 재시도가 유효하다 — 회수도 삭제 재호출도
+#: 멱등이라 다시 눌러도 안전하고, 그 사실을 문구가 알린다.
+PREVIEW_RECLAIM_UNAVAILABLE_MESSAGE = (
     "미리보기 산출물을 지우지 못해 삭제를 되돌렸어요. 잠시 뒤 다시 시도해 주세요.")
+
+#: ⓑ **읽어 보고 물리쳤다**(`RelayRefused` · viz 4xx). ⛔ **재시도를 권하지 않는다** —
+#: 같은 요청은 같은 답을 받는다. 고칠 사람은 사용자가 아니라 우리이고, 그 단서는
+#: `details.reason` 의 저쪽 상태·본문이다. 두 갈래에 같은 문구를 쓰면 사용자가 고칠 수 없는
+#: 것을 반복하게 만들고, 그 반복이 운영자에게는 「간헐 장애」로 보인다.
+PREVIEW_RECLAIM_REFUSED_MESSAGE = (
+    "미리보기 산출물 회수 요청이 거절되어 삭제를 되돌렸어요.")
 
 #: viz-render 가 배선되지 않은 배포에서 회수를 건너뛴 사실의 **기계가 긁을 이름**
 #: (선례 `app/relay.py SUGGEST_UNAVAILABLE` · `routes/catalog.py::_search_log`).
@@ -157,6 +167,10 @@ def delete_dataset(request: Request, datasetId: str,
        ⭑ **⑨ 보다 앞이다.** 회수가 실패하면 500 이고 전체가 롤백되는데, 바이트를 먼저
          지워 두면 되돌아간 원장이 **행 있고 객체 없음**을 가리킨다. 순서를 바꾸면 재시도가
          복구가 아니라 손실 확정이 된다.
+       ⚠ **실패는 두 갈래이고 문구가 다르다** — `RelayUnavailable`(못 닿음·5xx)은 재시도를
+         권하고, `RelayRefused`(viz 4xx · 읽어 보고 물리침)는 **권하지 않는다.** 같은 요청은
+         같은 답을 받으므로 재시도 유도는 사용자가 고칠 수 없는 것을 반복하게 만든다.
+         **롤백과 봉투 코드는 둘 다 같다**(500 `PREVIEW_RECLAIM_FAILED`).
        ⚠ **중계가 없으면(`app.state.previews is None`) 건너뛰고 한 줄 남긴다.** 싱크 없는
          배포에는 지울 산출물이 없고(dev·prod 는 토큰이 `:?` 필수라 미설정이 곧 기동 거부),
          500 으로 내면 로컬·시험에서 삭제 자체가 불가능해진다. 규율 6(관대한 기본값)과의
@@ -229,10 +243,18 @@ def delete_dataset(request: Request, datasetId: str,
                                                account_id=str(subject.account_id),
                                                target_id=str(dataset_id),
                                                file_ids=file_ids)
-        except (RelayUnavailable, RelayRefused) as e:
+        except RelayRefused as e:
+            # **거절과 장애를 가른다**(선례 `app/relay._refuse_if_client_error`). 4xx 는 우리
+            # 요청이 저쪽 계약에 안 맞는다는 뜻이라 **재시도가 무의미**하다 — 문구에 재시도를
+            # 붙이지 않고, 고칠 단서(저쪽 상태·본문)를 `details.reason` 에 남긴다.
+            # ⚠ **롤백은 ⓐ 와 같다** — 미리보기를 남긴 채 성공하는 자리를 만들지 않는다.
+            raise errors.ApiError(500, PREVIEW_RECLAIM_FAILED,
+                                  PREVIEW_RECLAIM_REFUSED_MESSAGE,
+                                  {"reason": f"viz-render {e.status}: {e.body}"}) from None
+        except RelayUnavailable as e:
             # **전체 롤백이다.** 미리보기를 남긴 채 204 를 내면 확인 창의 문구가 거짓이 된다.
             raise errors.ApiError(500, PREVIEW_RECLAIM_FAILED,
-                                  PREVIEW_RECLAIM_FAILED_MESSAGE,
+                                  PREVIEW_RECLAIM_UNAVAILABLE_MESSAGE,
                                   {"reason": str(e)}) from None
         # 계수는 남긴다 — 「지웠다」와 「지울 것이 없었다」를 나중에 가를 유일한 자리다.
         _deletion_log.info(

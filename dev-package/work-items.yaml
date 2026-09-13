@@ -4107,7 +4107,11 @@ items:
       트리거 루프·회수 요약 확인은 그 브랜치의 배포 창에서 잰다(`〈353〉` 실측 역전)
       ⑹ dev 실측 — 검증 데이터셋 삭제 뒤 그 산출물 키가 로컬·S3 에서 부재
       (`previews/{key}` 4확장자 ＋ `preview-index/by-file/{fileId}/`) · 다른 데이터셋의
-      산출물 잔존 · `tile-` 잔존 · CloudFront 300초 뒤 404
+      산출물 잔존 · `tile-` 잔존 · CloudFront 300초 뒤 404 ·
+      **착수 순서 고정** = ⓐ `ops/backfill_preview_index.py` **dry-run** 으로 dev 계수를 먼저 낸다
+      (쓰기 0건 · 사이드카·표식·건너뜀·타일 네 계수) → ⓑ 그 계수를 근거로 **Ted ⓓ5 GO** →
+      ⓒ `--apply`(표식 PUT · 삭제 0건). ⛔ 순서를 바꾸지 않는다 — 얼마나 쓸지 모르는 채로
+      쓰기 시작하면 GO 판정의 입력이 사라진다
     evidence: >-
       2026-09-13 레인 `lane/wu-dl-2` 커밋 6 — D0 `f7a433c0`(회부문 ⓓ1~ⓓ7 ＋ 대장 문면) ·
       D1 `b1235a16`(`preview-index/` 계약 등재 ＋ 생성물 3 ＋ 싱크 `index`·`remove`) ·
@@ -4129,9 +4133,14 @@ items:
       `work-item-consistency`·`exec-bit`.
       viz pytest 전수 **490 passed / 41 failed** — 41 은 전부 **준비 red**(축자 `Failed:
       COLAB_REFERENCE_DATA 가 원천 디렉터리를 가리키지 않는다`) · 레인 A 와 같은 집합.
-      core pytest 전수(`-m "not e2e"`)는 **로컬 시험 DB 드리프트**로 판정에 못 쓴다 —
-      `tests/test_dataset_deletion.py` 26/26 ＋ `test_preview_relay.py` 18/18 ＋ 기준선 대조(전수 failed 217 이 착수 전과 **집합까지 동일** · passed 998 → 1003 = 신설 5)가 이 회차의 판정값이다
-      (근거·전수 계수 대조 `dev-package/reports/dl-2/lane-report.md §4·§5`).
+      ⛔ **레인이 잰 core 전수 계수(`998/217` → `1003/217`)는 무효다** — 그때의 로컬 시험 DB 가
+      선언 스키마보다 낡아 있었고(`d3_search_evidence` 부재 등) 그 드리프트가 계수를 지배했다.
+      **재구성 뒤 재측정은 오케스트레이터 로그 `core-pytest-dl2` 가 든다(값은 그쪽 보고).**
+      이 레인의 판정값은 **단독 실행 계수**다 — `tests/test_dataset_deletion.py` ＋
+      `tests/test_preview_relay.py` 의 DL-2 대상 6건 **6 passed / 0 failed**(`-k "reclaim or
+      viz_relay or refused"`). ⚠ 두 파일 **전건** 동시 실행은 오케스트레이터의 전수가 같은
+      시험 DB 를 함께 쓰는 동안에는 회차마다 다른 2~5건이 흔들린다(`colab-rules §3-4`
+      「한 워크트리에 전수 두 벌 동시 실행 배제」의 실물) — 그 계수를 판정에 쓰지 않는다.
       **⑹ dev 실측은 이 레인 범위 밖** — 오케스트레이터 별건(배포 창).
     deadline: null
     note: >-
