@@ -345,6 +345,56 @@ paths:
               schema: { $ref: "../schemas/common.json#/$defs/ErrorEnvelope" }
         "503": { $ref: "#/components/responses/Error" }
 
+  /reclaims:
+    post:
+      tags: [render]
+      operationId: reclaimPreviews
+      parameters:
+        - $ref: "#/components/parameters/LabScope"
+        - $ref: "#/components/parameters/AccountScope"
+      summary: 지워진 파일의 미리보기 산출물을 회수한다
+      description: |
+        **⟨동결 22회 해제 · 등급 ㉯(op 신설) — Ted 승인 대기 · 회부문
+        `dev-package/sessions/DL-2-TED-RULING.md` ⓓ1⟩**
+
+        `deleteDataset`(`fe-core.yaml`)의 계약 산문은 「파일과 **미리보기**만 지워져요」인데
+        **미리보기를 지우는 자리가 어디에도 없었다** — 배경 회수 루프(`tile_reclaim`)는
+        「어느 데이터셋도 못 닿는 지도 타일」만 보고, 묘비 데이터셋의 `fileId` 는
+        `d5_upload_file` 이 남아 있어 **고아로 읽히지 않는다.** 그래서 삭제를 누른 사람만이
+        아는 사실 — **방금 지워진 `fileId` 집합** — 을 입력으로 받는 문을 하나 연다.
+
+        **대상을 해석하지 않는다.** 부르는 시점에 데이터셋은 이미 묘비이고 `d3_file` 행도
+        지워진 뒤다 — viz 가 `targetId` 로 무엇을 되묻는 순간 그 조회는 항상 빈손이다.
+        `targetId` 는 **기록·응답 대조용**이고 판정에 쓰이지 않는다.
+
+        **판정 입력은 둘뿐이다** — 파일별 표식(`preview-index/by-file/{fileId}/`)과
+        산출물 사이드카(`sources`). `sources ⊆ fileIds` 인 벌만 지운다. 일부만 지워진
+        파일에서 나온 벌은 **남긴다**(살아 있는 파일의 미리보기다). 사이드카가 없거나
+        구판이면 남긴다 — **못 읽은 것은 「지워도 된다」가 아니다.**
+
+        ⛔ **지도 타일(`tile-`)에는 닿지 않는다.** 그쪽 회수는 배경 루프의 몫이고 이 문의
+        S3 삭제와 **범위가 갈려 있다**(자동 루프의 삭제 0건은 그대로 참이다).
+
+        **멱등이다** — 두 번째 호출은 표식도 파일도 없어 `stale 0` 이다. core 가 삭제를
+        재시도해도 같은 답이 나온다.
+
+        ⚠ **CloudFront `/previews/*` 는 300초 캐시다** — 객체를 지운 뒤에도 그 시간만큼
+        이미지가 보일 수 있다. 무효화를 부르지 않는다(선례 0건 · 잔상 수용).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PreviewReclaimRequest" }
+      responses:
+        "200":
+          description: 한 바퀴의 결과. **계수와 이름을 함께** 낸다.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PreviewReclaimResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
 components:
 
   securitySchemes:
@@ -986,3 +1036,60 @@ components:
         width: { type: integer, minimum: 1, maximum: 4096 }
         height: { type: integer, minimum: 1, maximum: 4096 }
         bounds: { $ref: "#/components/schemas/Bounds" }
+
+    PreviewReclaimRequest:
+      type: object
+      description: |
+        회수 한 바퀴의 입력. **지워진 파일 집합이 판정의 전부다** — 렌더 파라미터도
+        대상 해석용 값도 싣지 않는다.
+        근거 = `dev-package/sessions/DL-2-TED-RULING.md` ⓓ3(판정 입력을 원장 등급이 아니라
+        「지워진 `fileId` 집합」으로 바꾼다) · `fe-core.yaml#deleteDataset` 산문 축자
+        「파일과 **미리보기**만 지워져요」.
+      required: [targetId, fileIds]
+      additionalProperties: false
+      properties:
+        targetId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+          description: |
+            지워진 데이터셋. **해석하지 않는다** — 부르는 시점에 그 행은 묘비이고
+            조회하면 빈손이다. 기록과 응답 대조에만 쓴다.
+        fileIds:
+          type: array
+          description: |
+            **방금 지워진 `d3_file.id` 전부.** 비어 있으면 400 이다 — 빈 집합에 대해
+            「모든 원천이 포함된다」가 참이 되어 **전건이 회수 대상**이 된다.
+          minItems: 1
+          items: { $ref: "../schemas/common.json#/$defs/Ulid" }
+
+    PreviewReclaimResult:
+      type: object
+      description: |
+        한 바퀴의 결과. **계수만으로는 무엇이 남았는지 모른다** — 지운 이름을 함께 낸다.
+        근거 = `dev-package/sessions/DL-2-TED-RULING.md` ⓓ3(로컬 훑기 합집합과 `unindexed`
+        계수) · ⓓ7(표식 자리 `preview-index/` · `contracts/storage/layout.json` 등재).
+      required: [targetId, stale, kept, unindexed, removed]
+      additionalProperties: false
+      properties:
+        targetId:
+          $ref: "../schemas/common.json#/$defs/Ulid"
+          description: 요청이 말한 대상 그대로다.
+        stale:
+          type: integer
+          minimum: 0
+          description: 회수한 **벌** 수 (한 벌 = 같은 내용 키의 그림·사이드카 묶음).
+        kept:
+          type: integer
+          minimum: 0
+          description: |
+            후보였으나 남긴 벌 수 — 원천 중 살아 있는 파일이 있거나, 사이드카가 없거나
+            구판이거나, 지도 타일이라 닿지 않는 벌이다.
+        unindexed:
+          type: integer
+          minimum: 0
+          description: |
+            **표식 밖에서 찾아낸 벌 수.** 표식은 이 회차부터 찍히므로 그 전에 구운 산출물은
+            로컬 자리를 훑어 보충한다 — 세지 않으면 옛 산출물이 얼마나 남았는지 아무도 모른다.
+        removed:
+          type: array
+          description: 서빙 자리에서 걷어낸 **파일 이름**(경로가 아니다).
+          items: { type: string, minLength: 1 }
