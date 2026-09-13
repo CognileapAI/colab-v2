@@ -98,14 +98,14 @@ Ted 판정
 
 ### WU-R1b — 규칙 예외·원장·대장 등재 (직렬 · WU-R1a 뒤)
 
-- `PLAN-SoT §9 〈N〉` 1행 신설(초안 §9-A). `〈N〉` 을 하드코딩하지 않는다 — 병합 직전 `bash dev-package/prd/tools/max-decision.sh` 로 재실측해 최대값 +1.
+- `PLAN-SoT §9 〈395〉` 1행 신설(초안 §9-A). `〈395〉` 을 하드코딩하지 않는다 — 병합 직전 `bash dev-package/prd/tools/max-decision.sh` 로 재실측해 최대값 +1.
 - `.claude/rules/deploy.md` 의 11번 항목 뒤에 예외 문단을 붙인다(11번 문면은 무수정). 제안 문안 —
-  > ⭑ ⟨증보 2026-09-13 · `〈N〉`⟩ **dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.** 조건 넷을 모두 만족해야 실행된다 — ⑴ `--target dev` ＋ `--yes-reset-dev` ⑵ 버킷 이름이 `colab-platform-data-dev` 와 일치 ⑶ 두 DB URL 의 **호스트**에 `-dev` 포함(DB 이름 단독은 판별력 0) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다. **`_ops/` 는 무접촉이다**(지우면 `deploy_doctor` ⑭ 가 red 다). staging·prod 식별자에서는 거부한다. 데이터셋 행 단위 삭제는 그대로 `purge_datasets.py` 뿐이고 이 도구가 그 자리를 대신하지 않는다. ⛔ `PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — **승인은 1회 소진이다.**
+  > ⭑ ⟨증보 2026-09-13 · `〈395〉`⟩ **dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.** 조건 넷을 모두 만족해야 실행된다 — ⑴ `--target dev` ＋ `--yes-reset-dev` ⑵ 버킷 이름이 `colab-platform-data-dev` 와 일치 ⑶ 두 DB URL 의 **호스트**에 `-dev` 포함(DB 이름 단독은 판별력 0) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다. **`_ops/` 는 무접촉이다**(지우면 `deploy_doctor` ⑭ 가 red 다). staging·prod 식별자에서는 거부한다. 데이터셋 행 단위 삭제는 그대로 `purge_datasets.py` 뿐이고 이 도구가 그 자리를 대신하지 않는다. ⛔ `PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — **승인은 1회 소진이다.**
 - `dev-package/work-items.yaml` 에 항목 블록 4건 추가(§9-C 붙여넣기용). `stage: after_stage2`.
 - `CLAUDE.md` 의 `<!-- work-items:after_stage2 -->` 괄호에 새 id 를 사전순으로 넣는다 — 게이트 `work-item-consistency` ㈕ 가 대조한다.
 - `dev-package/03-HANDOFF.md §1` 갱신 5줄 이내.
 - **첫 자격 삽입 절차 실측 1건** — 전면 초기화 뒤 `account_admin.login_credential` 0행이라 `POST /admin/accounts` 를 쓸 수 없고(운영자 0명 · 자기 자신을 만들지 못한다) `login_credential` 을 만드는 ops SQL 도 없다. 선례 = `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 앵커 「## 3. 계정 생성 — 제품과 같은 경로」 = `accounts.py::create_account` 의 트랜잭션을 core-api 컨테이너 안에서 그대로 실행(해시·정규화·잠금·INSERT 가 제품과 동일 · 비밀번호는 표준입력 한 줄 · argv·파일·로그 미기재). R1b 가 그 절차를 실측해 WU-R3 문서 선행 ③ 에 축자로 옮겨 적는다.
-- **완료 정의** — `work-item-consistency` green ＋ 원장 게이트 3종 green ＋ `.claude/rules/deploy.md` 예외 문단과 `PLAN-SoT §9 〈N〉` 행의 문면이 서로 같은 값을 말한다.
+- **완료 정의** — `work-item-consistency` green ＋ 원장 게이트 3종 green ＋ `.claude/rules/deploy.md` 예외 문단과 `PLAN-SoT §9 〈395〉` 행의 문면이 서로 같은 값을 말한다.
 
 ### WU-R2 — dev 초기화 실행
 
@@ -151,7 +151,7 @@ Ted 판정
 - 레인 시작은 `git checkout -B <lane> origin/integration/r-dev-reset`. 워크트리 기본 기준이 `origin/main` 이라 ff-only 가 실패한다.
 - 반복 검증은 `service-tests-core-api` 단독 게이트. 전수는 병합 직전 1회.
 - 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋(게이트 `exec-bit`).
-- `〈N〉` 을 하드코딩하지 않는다 — 병합 직전 재실측.
+- `〈395〉` 을 하드코딩하지 않는다 — 병합 직전 재실측.
 - 최종 메시지에 `WORKTREE=… BRANCH=…` 를 적는다. 병합·원격 삭제·태그 push 는 레인이 하지 않는다.
 - **지시가 실물과 어긋나면 멈추고 보고한다.** 우회하지 않는다.
 - **기존 오류를 발견하면 「기존」이라 적지 말고 그 오류가 어느 검사(게이트·Dockerfile·배포)에 걸리는지 적는다.** 「main 과 동일」은 수용 근거가 아니다.
@@ -176,9 +176,9 @@ Ted 판정
 
 ## 9. 붙여넣기용 초안
 
-### 9-A. `PLAN-SoT §9 〈N〉` 등재문 초안 (dev 한정 예외)
+### 9-A. `PLAN-SoT §9 〈395〉` 등재문 초안 (dev 한정 예외)
 
-> **〈N〉 dev 환경 전면 초기화 도구 신설 — 접두사 삭제·스키마 재생성의 dev 한정 예외 (2026-09-13)**
+> **〈395〉 dev 환경 전면 초기화 도구 신설 — 접두사 삭제·스키마 재생성의 dev 한정 예외 (2026-09-13)**
 > ㉮ **문제** — 규칙은 데이터셋 행의 목록 고정 삭제만 허용하고(`.claude/rules/deploy.md` 11번), 접두사 비우기·DB 재생성 경로가 없다. `d8_activity`·`d8_download` 는 `deny_update_delete` 트리거가 DELETE 를 막아 행 삭제로는 비워지지 않는다.
 > ㉯ **결정** — dev 한정으로 `services/core-api/ops/reset_dev_environment.py` 하나를 신설한다. 조건 넷(`--target dev` ＋ `--yes-reset-dev` · 버킷 이름 일치 · DB 식별자 일치 · 계획 키가 `uploads/`·`previews/` 안)을 모두 만족할 때만 실행되고, 하나라도 어긋나면 아무것도 지우지 않고 비영 종료한다.
 > ㉰ **무접촉** — `_ops/`(백업). 지우면 `deploy_doctor` ⑭ 가 red 다.
@@ -188,7 +188,7 @@ Ted 판정
 
 ### 9-B. 회차 등재문 초안
 
-> **〈N+1〉 R-DEV-RESET 회차 — dev 전면 초기화와 참조 데이터 화면 재적재 (2026-09-13)**
+> **〈396〉 R-DEV-RESET 회차 — dev 전면 초기화와 참조 데이터 화면 재적재 (2026-09-13)**
 > ㉮ WU-R1a(도구·가드·로컬 증명) → WU-R1b(규칙 예외·원장·대장) → WU-R2(초기화 실행 · Ted GO) → WU-R3(시나리오 문서 ＋ 화면 실투입) 순서.
 > ㉯ 목표 계수 = 프로젝트 4 · 데이터셋 28 · 계보 간선 18(정본 `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5-6).
 > ㉰ 완료 판정 = dev `deploy_doctor` 15/15 한 번의 실행 ＋ 목록 화면 28건 ＋ 미리보기 5종 결과 기록.
@@ -219,7 +219,7 @@ Ted 판정
     completion_def: "work-item-consistency green ＋ 원장 게이트 3종 green ＋ .claude/rules/deploy.md 예외 문단과 PLAN-SoT §9 행의 문면이 같은 값을 말한다 ＋ 첫 로그인 자격 삽입 절차가 축자로 적혔다."
     evidence: ""
     deadline: null
-    note: "DR-1a 와 직렬. 〈N〉 은 병합 직전 재실측한다."
+    note: "DR-1a 와 직렬. 〈395〉 은 병합 직전 재실측한다."
     sources: ["dev-package/reports/r-login-backoffice/task1-deploy/operator.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
   - id: DR-2
     name: "dev 초기화 1회 실행"

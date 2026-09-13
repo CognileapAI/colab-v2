@@ -136,4 +136,4 @@
 - 등록표 정본: `dev-package/reports/reference-data/2026-09-13-inventory-v2.md`(원천 폴더 재목록 v2 · §5 등록표 ＋ §5-6 판정 반영)
 - 레포 실측 기록: `dev-package/DATA-REFERENCE.md`(포맷·격자·매직) · `dev-package/S3.md`(버킷 규약) · `dev-package/SEED-DATA.md`(적재 순서·초기 계정)
 - 규칙: `.claude/rules/deploy.md`(삭제 자리·계수 판정) · `.claude/rules/s3-upload.md`(원장이 아는 것만)
-- 결정: 〈N〉 (병합 시 기입 · 병합 직전 재실측)
+- 결정: 〈395〉 (병합 시 기입 · 병합 직전 재실측)

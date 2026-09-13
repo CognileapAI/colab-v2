@@ -48,7 +48,7 @@ paths:
     **고정 id 목록 ＋ `--yes-delete`** 이고 ⛔ **`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다**
     (선례 `〈365〉`·`〈366〉`). 제품에 삭제 op 을 여는 것이 아니다 — `CLAUDE.md §5` 「범위 늘리기」다.
 
-    ⭑ **⟨증보 2026-09-13 · `〈N〉`⟩ dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.**
+    ⭑ **⟨증보 2026-09-13 · `〈395〉`⟩ dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.**
     11번 문면은 무변이다 — **데이터셋 행 단위 삭제의 유일한 자리는 그대로 `purge_datasets.py` 이고**
     이 도구가 그 자리를 대신하지 않는다. 이 도구는 **접두사 비우기 ＋ 두 체인 스키마 재생성**이라
     성격이 다르고, **dev 밖에서는 어느 조건으로도 돌지 않는다.**
