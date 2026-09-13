@@ -965,13 +965,14 @@ describe('§8 ② 메타데이터 입력', () => {
     expect(labels).toHaveLength(1);
     expect(labels[0]!.textContent).toBe('좌표계선택');
     expect(labels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
-    // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 라벨은 **입력 하나를 가리키지 않는다** — 표 전체의 이름이라
-    // `for` 가 없다. 선택 표시 규율은 그대로다.
-    const varLabels = Array.from(document.querySelectorAll('label')).filter(
-      (l) => l.textContent === '변수선택' && !l.hasAttribute('for'),
-    );
-    expect(varLabels).toHaveLength(1);
-    expect(varLabels[0]!.querySelectorAll('.opttag')).toHaveLength(1);
+    // ⭑ ⟨WU-B2 · PRD-16⟩ 변수 이름표는 **입력 하나를 가리키지 않는다** — 표 전체의 이름이다.
+    // ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 그래서 `label` 이 아니라 섹션 제목(`fieldlbl`)이다** —
+    //    ／ 종전 ~~`for` 없는 `label` ＋ `선택` 배지~~. rev2 목업이 이 자리를 제목 한 줄로
+    //    그리고, 괄호 안 문면이 「여러 개」와 「대표 하나」를 이미 말해 배지가 겹친다.
+    expect(document.querySelectorAll('label[data-testid="reg-variables-label"]')).toHaveLength(0);
+    const varTitle = screen.getByTestId('reg-variables-label');
+    expect(varTitle.className).toContain('fieldlbl');
+    expect(varTitle.textContent).toBe('변수 (여러 개 · 대표 변수 하나를 골라요)');
   });
 
   it('짧은 값 한 줄에서 **사람이 적는 칸**의 라벨이 전부 배지를 단다', async () => {
@@ -988,7 +989,9 @@ describe('§8 ② 메타데이터 입력', () => {
       expect(l.querySelectorAll('.reqtag, .opttag')).toHaveLength(1);
       expect(l.textContent ?? '').not.toContain('(선택)');
     }
-    // ⭑ ⟨개정 2026-09-14⟩ 기간은 이 줄에서 **필수**다 — 좌표계·격자 둘만 선택이다.
+    // ⭑ ⟨개정 2026-09-14 · 레인 A4⟩ 이 줄에서 **필수**는 관측 간격이다 ／ 종전 ~~기간~~ —
+    //    기간은 제 행으로 올라갔고 좌표계·격자 둘은 종전대로 선택이다.
+    expect(row.contains(screen.getByTestId('reg-interval-value'))).toBe(true);
     expect(row.querySelectorAll('.reqtag')).toHaveLength(1);
     expect(row.querySelectorAll('.opttag')).toHaveLength(2);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));

@@ -727,32 +727,44 @@ describe('#31 등록 카드 안내 문단은 컨트롤 뒤에 온다', () => {
     expect(['유형', noteFollowsControl(control, note)]).toEqual(['유형', true]);
   });
 
-  it('② 기간·격자 설명·공개 범위 — 안내 문단 3건이 각자 컨트롤 뒤다', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ ② 에 남은 안내 문단은 공개 범위 한 건이다.**
+  //    ／ 종전 ~~기간·격자 설명·공개 범위 3건~~ — rev2 목업에서 기간 안내는 **종료 반쪽의
+  //    빈 값 표기**이고 격자 칸에는 안내 문단이 아예 없다. 규칙(라벨 → 컨트롤 → 설명문)은
+  //    그대로이고 **대상 건수만** 줄었다. 자리가 옮겨간 두 건은 아래에서 따로 잰다.
+  it('② 공개 범위 — 남은 안내 문단이 컨트롤 뒤다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
     const pairs: [string, Element, Element][] = [
-      [
-        '기간',
-        screen.getByTestId('reg-period-open'),
-        screen.getByTestId('reg-period-single-hint'),
-      ],
-      [
-        '격자 설명',
-        screen.getByTestId('reg-grid-description'),
-        screen.getByText('자동 판독과 별도로 연구자가 설명을 남겨요.'),
-      ],
       [
         '공개 범위',
         screen.getByTestId('reg-visibility'),
         screen.getByTestId('reg-visibility-note'),
       ],
     ];
-    expect(pairs).toHaveLength(3);
+    expect(pairs).toHaveLength(1);
     for (const [name, control, note] of pairs) {
       expect(note.textContent?.trim()).not.toBe('');
       expect([name, noteFollowsControl(control, note)]).toEqual([name, true]);
     }
+  });
+
+  it('② 기간 안내는 문단이 아니라 종료 반쪽의 값 자리다 (문면 유지 · 자리 이동)', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    const hint = screen.getByTestId('reg-period-single-hint');
+    expect(hint.tagName).not.toBe('P');
+    expect(hint.closest('.dr-half')).not.toBeNull();
+    expect(screen.getByTestId('reg-period-open').contains(hint)).toBe(true);
+  });
+
+  it('② 격자 칸에는 안내 문단이 없다 (rev2 목업에 그 문단이 없다)', async () => {
+    const { sources } = fakes();
+    await openRegister(sources);
+    await click(stepBtn('②'));
+    expect(screen.getByTestId('reg-grid-description')).toBeInTheDocument();
+    expect(screen.queryByText('자동 판독과 별도로 연구자가 설명을 남겨요.')).toBeNull();
   });
 
   it('기간 안내 문면이 종전 그대로다 (문면 삭제 아님)', async () => {
