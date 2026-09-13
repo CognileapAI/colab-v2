@@ -90,16 +90,26 @@ EXPECTED_SCHEMAS: dict[str, frozenset[str]] = {
 }
 
 #: 재생성 DDL. 소유자 롤이 슈퍼유저 없이 낸다(부트스트랩 `roles` 가 스키마 소유를 옮겨 둔다).
+#
+# ⭑ 마지막 줄(`COMMENT ON SCHEMA`)이 없으면 `schema-diff` 가 red 다 — 실측(로컬 증명).
+#   `initdb` 가 만든 `public` 은 주석 `standard public schema` 를 달고 있고, DROP·CREATE 하면
+#   그 주석이 NULL 이 된다. `pg_dump` 는 그 차이를 `COMMENT ON SCHEMA public IS '';` 한 줄로
+#   뽑고, 게이트는 선언 스키마와의 드리프트로 읽는다. 되돌려 놓는 것이 맞다 —
+#   초기화 뒤 상태는 「마이그레이션을 처음 올린 DB」와 같아야 한다.
+_PUBLIC_COMMENT = "COMMENT ON SCHEMA public IS 'standard public schema'"
+
 RECREATE_DDL: dict[str, tuple[str, ...]] = {
     "platform": (
         "DROP SCHEMA public, account_admin CASCADE",
         "CREATE SCHEMA public AUTHORIZATION colab_owner",
         "REVOKE CREATE ON SCHEMA public FROM PUBLIC",
+        _PUBLIC_COMMENT,
     ),
     "ai": (
         "DROP SCHEMA public CASCADE",
         "CREATE SCHEMA public AUTHORIZATION colab_owner",
         "REVOKE CREATE ON SCHEMA public FROM PUBLIC",
+        _PUBLIC_COMMENT,
     ),
 }
 

@@ -402,6 +402,22 @@ def test_스키마_단계는_두_체인을_재생성하고_다음_명령을_찍�
     assert "db-bootstrap.sh app-grants" in out
 
 
+def test_재생성은_public_스키마_주석을_되돌린다(dev_env, url_files, tmp_path) -> None:
+    """`initdb` 의 `public` 은 주석 'standard public schema' 를 달고 있다.
+
+    `DROP SCHEMA public` ＋ `CREATE SCHEMA public` 하면 그 주석이 NULL 이 되고, `pg_dump` 는
+    그 차이를 `COMMENT ON SCHEMA public IS '';` 로 뽑는다 ⟹ `schema-diff` 가 red 다.
+    로컬 증명에서 실제로 두 체인 다 이 한 줄로 red 였다(`dev-package/sessions/DR-1a-local-proof.md`).
+    """
+    factory = FakeConnFactory(FakeConn(_rows(["public", "account_admin"])),
+                              FakeConn(_rows(["public"])))
+    rc = reset.main(_argv("schema", url_files(), tmp_path / "r.json"), connect=factory)
+    assert rc == 0
+    for conn in (factory.platform, factory.ai):
+        joined = " ".join(conn.cur.executed).lower()
+        assert "comment on schema public is 'standard public schema'" in joined
+
+
 def test_s3_계획_단계는_exact_key_목록과_sha256_을_쓴다(dev_env, url_files, tmp_path) -> None:
     s3 = FakeS3({"uploads/a.bin": 3, "previews/p.png": 4, "_ops/backups/dev/z": 5},
                 [("uploads/m.bin", "UP1")])
