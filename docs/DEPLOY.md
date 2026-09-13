@@ -284,6 +284,10 @@ docker run --rm --network host --env-file /tmp/op.env \
 ⚠ **경계를 먼저 건다** — `colab_owner` 는 `NOBYPASSRLS` 이고 표는 FORCE RLS 라
 `set_config('app.current_lab', …, true)` 가 없으면 **DELETE 가 0행에 조용히 성공**한다.
 
+### 6-1-2. dev 전면 재생성 — `dev-package/tools/dev-reseed/reseed.sh`
+
+⭑ ⟨신설 2026-09-14 · `R-DATA-CANON` WU-C3⟩ dev 를 **초기화하고 정본 자료로 다시 채우는** 무인 진입점이다. 10단계(`preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report`) · `--from` 재개 · `--dry-run` 무접촉. 승인은 **dev 한정 상시 승인**(`.claude/rules/deploy.md` 11번 증보 문단)이고 staging·prod 는 무변(매회 GO). 절차의 근거 = `dev-package/sessions/DR-2-runbook.md` · 스킬 = `/dev-reseed`.
+
 ### 6-2. 재배포 · 되돌리기
 
 재배포 = 1) 절. 되돌리기 = `dev.env` 의 `COLAB_IMAGE_TAG=dev-<직전 sha>` 로 바꾸고 `up.sh`. **마이그레이션은 되돌리지 않는다**(`0009` 처럼 백필이 든 판은 downgrade 가 값을 잃는다).

@@ -1,5 +1,7 @@
 # DR-2 — `main` 병합 뒤 연속 실행 창 명령 런북 (배포 → 초기화 → 재적용 → SQL 선행 → 확인)
 
+⭑ ⟨증보 2026-09-14 · `R-DATA-CANON` WU-C3⟩ **이 절차의 실행형은 `dev-package/tools/dev-reseed/reseed.sh` 다**(10단계 · `--from` 재개 · `--dry-run`). 본문은 무수정 — 이 문서가 절차의 근거이고 스크립트가 그 집행이다. 스크립트에는 런북 정정 6건(`dev-package/prd/rounds/R-DEV-RESET.md §11-1`)이 자리마다 반영돼 있다.
+
 - 작성 2026-09-13 · 역할 `researcher` · 성격 = **미승인 초안 · 레포 읽기 전용으로 작성.** 이 문서 작성 중 dev·AWS 접촉 0.
 - 적용 범위 = `DR-1a`·`DR-1b`·`DR-1c` 가 `main` 에 ff-only 로 올라간 **직후 한 번의 연속 창**.
 - 근거 = 라운드 `dev-package/prd/rounds/R-DEV-RESET.md §5 WU-R2` · 정찰 `dev-package/reports/r-dev-reset/dev-access-recon.md` ·
