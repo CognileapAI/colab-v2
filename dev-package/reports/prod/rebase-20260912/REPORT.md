@@ -1,3 +1,7 @@
+> ⛔ **낡았다 — 이 회차의 문서는 `dev-package/reports/prod/rebase-20260913/REPORT.md` 다.**
+> 기준 `main` 이 `a8a1653` → `aa8bee98` 로 옮겨졌고 커밋도 13 → 22 로 늘었다.
+> 아래는 2026-09-12 시점의 기록이고 그대로 둔다(고치지 않는다).
+
 # prod 브랜치 리베이스 ＋ 새 배포 규약 반영 — 2026-09-12
 
 - 브랜치 `feature/rtf400_deploy_prod` · 기준 `origin/main` `a8a1653`
