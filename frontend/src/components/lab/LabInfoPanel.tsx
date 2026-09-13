@@ -123,7 +123,9 @@ export function LabInfoPanel(props: { source?: LabSource | undefined }) {
   return (
     <div className="card labinfo-card" data-panel="연구실 정보">
       <div className="card-h">
-        <h3>연구실 정보</h3>
+        {/* 탭 본체 제목은 `h2` 다 — 화면 `h1`(「연구실 설정」) 바로 아래 단계.
+            글자 크기는 `members.css` 의 `.card-h h2` 가 종전 `h3` 와 같게 고정한다. */}
+        <h2>연구실 정보</h2>
         {/* 편집 버튼만 권한자에게 — 읽기는 전 구성원이다 (E-01 나-1·나-2) */}
         {lab !== null && (
           <PermissionGate requires="연구실 설정">
