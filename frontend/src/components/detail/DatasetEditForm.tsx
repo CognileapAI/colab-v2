@@ -19,9 +19,12 @@ import {
   LINEAGE_LINK_ACTION,
   LINEAGE_LINK_LABEL,
   PERIOD_LABEL,
+  PROCESSING_LEVEL_LABEL,
   TEXT_FIELDS,
   type DatasetEditDraft,
 } from './editFields';
+// ⭑ ⟨R-LTH-REVIEW-1 · ㉴⟩ 값 집합의 집은 Lv 규칙 파일 하나다 — 폼이 따로 적지 않는다.
+import { LV_CODES } from '../common/processingLevel';
 
 /**
  * ⭑ **⟨WU-A3R · PRD-22 각주 2⟩ `취소`/`저장` 은 폼 밖 — 다운로드가 있던 행에 선다.**
@@ -173,6 +176,33 @@ export function DatasetEditForm(props: {
               ))}
             </select>
             <span className="de-note muted"> {ACCESS_NOTE[draft.accessState]}</span>
+          </span>
+        </div>
+        ) : null}
+        {/* ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉴⟩ 가공 단계 — 셀렉트 한 칸.**
+            계약 열쇠(`DatasetUpdate.processingLevelUserSet`)가 이미 있어 계약 무변이다.
+            ⛔ **불일치를 여기서 막지 않는다** — 파생값과 어긋나도 저장은 성공하고
+               상세 헤더가 사유 한 줄을 낼 뿐이다(미결-2 ⓐ 「경고만」). */}
+        {visible('processingLevelUserSet') ? (
+        <div className="de-row" data-testid="edit-processing-level-row">
+          <span className="de-k">{PROCESSING_LEVEL_LABEL}</span>
+          <span className="de-v">
+            <select
+              aria-label={PROCESSING_LEVEL_LABEL}
+              data-testid="edit-processing-level"
+              value={draft.processingLevelUserSet}
+              onChange={(e) => set('processingLevelUserSet', e.target.value)}
+            >
+              {/* 아직 안 고른 기존 행에만 선다 — 없는 값을 `Lv0` 으로 지어내지 않는다. */}
+              {draft.processingLevelUserSet === '' ? (
+                <option value="">아직 고르지 않음</option>
+              ) : null}
+              {LV_CODES.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
           </span>
         </div>
         ) : null}

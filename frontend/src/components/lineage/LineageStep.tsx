@@ -26,9 +26,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LineageStepContext } from '../upload/types';
 import {
-  LV_VALUES,
   levelOf,
   displayLevel,
+  derivedLevelFromParents,
+  levelMismatchNotice,
   PARENT_ROLES,
   type AiConfidence,
   type ParentCandidateRow,
@@ -249,13 +250,11 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
    * ⚠ **판정이 아니다.** 등록 전에는 서버가 계산한 값이 없어(데이터셋이 아직 없다)
    *   화면이 같은 식으로 미리 보여 줄 뿐이고, 저장 뒤의 정본은 응답의
    *   `processingLevelDerived` 다. 부모 Lv 를 하나라도 모르면 미리보기를 만들지 않는다.
+   *
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 식의 자리가 `common/processingLevel.ts` 로 옮겨졌다** —
+   *   ① 분류의 **기본 선택값**이 같은 식을 따르므로(`UploadModal`) 두 자리가 한 함수를 부른다.
    */
-  const known = parents.filter((p) => p.confirmed).map((p) => p.parentLevel);
-  const derivedPreview =
-    known.length === 0 || known.some((v) => v === null)
-      ? null
-      // 상한은 `LV_VALUES` 의 마지막 값이다 — 목록을 넓히면 여기가 따라 넓어진다.
-      : Math.min(Math.max(...(known as number[])) + 1, LV_VALUES[LV_VALUES.length - 1] as number);
+  const derivedPreview = derivedLevelFromParents(parents);
   const mismatch = selfLv !== null && derivedPreview !== null && derivedPreview !== selfLv;
 
   function patch(key: string, next: Partial<ParentCard>) {
@@ -374,7 +373,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       {/* ⭑ **⟨PRD-10⟩ 불일치는 경고만이다 — 저장을 막지 않는다.** */}
       {mismatch && (
         <p className="lin-note" data-testid="lin-lv-mismatch">
-          {`고른 가공 단계는 Lv${selfLv}이고, 연결한 데이터로 계산하면 Lv${derivedPreview}이에요. 그대로 두어도 등록돼요.`}
+          {/* ⭑ ⟨R-LTH-REVIEW-1 · ㉲⟩ 문면은 공용 함수 하나다 — 상세 헤더가 같은 것을 부른다. */}
+          {levelMismatchNotice(selfLv as number, derivedPreview as number)}
         </p>
       )}
 

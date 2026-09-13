@@ -204,8 +204,12 @@ function StepClassify(props: {
             가공 단계
             <span className="reqtag">필수</span>
           </label>
-          {/* ⚠ 빈 선택지가 없다 — 기본값 `Lv2` 가 늘 서 있어 「비어 있음」이 성립하지 않는다.
-              계보에서 나온 파생값(`processingLevel`)과 **다른 칸**이다(미결-2 ⓐ). */}
+          {/* ⚠ 빈 선택지가 없다 — 값이 늘 서 있어 「비어 있음」이 성립하지 않는다.
+              계보에서 나온 파생값(`processingLevel`)과 **다른 칸**이다(미결-2 ⓐ).
+              ⭑ **⟨개정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉱⟩ 서 있는 값은 ③ 에서 확정한
+                 부모의 **계산값**이다**(부모 0건·부모 Lv 미상이면 `Lv2` 유지).
+                 ／ 종전 ~~기본값 `Lv2` 가 늘 서 있어~~ — 판정은 `UploadModal` 이 쥔다
+                 (이 칸은 값을 그리고 고른 것을 올려 보낼 뿐이다). */}
           <select
             id="reg-level"
             className="sel"

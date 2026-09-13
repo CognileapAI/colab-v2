@@ -59,6 +59,15 @@ export type DatasetEditDraft = {
    * 기본값이 그 자리를 채워 내려온다). 그래서 「비운다」가 이 칸에는 없다.
    */
   accessState: AccessState;
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉴⟩ 사람이 고른 가공 단계.**
+   *
+   * 계약 열쇠(`DatasetUpdate.processingLevelUserSet`)가 **이미 있어** 계약·스키마 무변이다.
+   * 값 집합은 `Lv0`~`Lv3`(DB `CHECK` 와 같다)이고, 빈 문자열은 **아직 안 고른 기존 행**이다 —
+   * 그때만 폼에 빈 선택지가 서고, 화면이 값을 지어내지 않는다.
+   * ⛔ 파생값(`processingLevelDerived`)·불일치는 이 칸이 아니다 — 저장 칸이 없다.
+   */
+  processingLevelUserSet: string;
 };
 
 /** 관측 간격의 단위 6값 · 기간 최소 단위 6값. **정본은 DB CHECK** 다 (`M-6`·`M-7`). */
@@ -108,6 +117,12 @@ export const LINEAGE_LINK_ACTION = '계보 수정 · 추가';
 /** 기간 칸의 라벨 — 두 칸이 한 값이라 표에서 따로 선다. */
 export const PERIOD_LABEL = '기간';
 
+/**
+ * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉴⟩ 가공 단계 칸의 라벨.** 상세 기본 정보의 칸 이름과 같다 —
+ * 그 셀 안에서 값이 입력으로 바뀌므로 두 이름이 갈리면 같은 칸이 둘로 보인다.
+ */
+export const PROCESSING_LEVEL_LABEL = '가공 단계';
+
 /** 관측 간격 칸의 라벨 — 두 칸이 한 값이라 표에서 따로 선다 (PRD-17). */
 export const INTERVAL_LABEL = '관측 간격';
 
@@ -149,6 +164,8 @@ export function toDraft(detail: DatasetDetail): DatasetEditDraft {
     intervalUnit: b?.observationInterval?.unit ?? '',
     // 상세가 내려준 값이 그대로 초기값이다 — 화면이 기본값을 덮어씌우지 않는다.
     accessState: detail.accessState ?? DEFAULT_ACCESS_STATE,
+    // ⭑ ⟨R-LTH-REVIEW-1 · ㉴⟩ 안 고른 기존 행은 `''` 로 열린다 — 지어내지 않는다.
+    processingLevelUserSet: orBlank(b?.processingLevelUserSet),
   };
 }
 
@@ -226,6 +243,11 @@ export function toPatch(detail: DatasetDetail, draft: DatasetEditDraft): Dataset
   // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 바뀐 때만 싣는다 — 안 건드린 칸을 보내면 서버가
   //   `잠김` 내림 경로(유효 grant 전부 만료)를 뜻 없이 다시 탄다.
   if (draft.accessState !== before.accessState) patch.accessState = draft.accessState;
+  // ⭑ ⟨R-LTH-REVIEW-1 · ㉴⟩ 바뀐 때만 싣는다 — 안 건드린 칸을 보내면 서버가 같은 값을
+  //   다시 쓰고, 상세의 불일치 판정이 뜻 없이 재계산된다. 빈 값은 「비우라」(`null`)다.
+  if (draft.processingLevelUserSet !== before.processingLevelUserSet) {
+    patch.processingLevelUserSet = draft.processingLevelUserSet || null;
+  }
   return patch;
 }
 
@@ -253,6 +275,9 @@ export function applyDraft(detail: DatasetDetail, draft: DatasetEditDraft): Data
           gridDescription: blank(draft.gridDescription),
           period: periodOf(draft),
           observationInterval: intervalOf(draft),
+          // ⭑ ⟨R-LTH-REVIEW-1 · ㉴⟩ 사람이 고른 칸이라 낙관 갱신 대상이다.
+          //   ⛔ 파생값(`processingLevelDerived`)·불일치는 서버 몫이라 건드리지 않는다.
+          processingLevelUserSet: draft.processingLevelUserSet || null,
         }
       : null,
   };

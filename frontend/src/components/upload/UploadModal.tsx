@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import type { ParentCard } from '../lineage/types';
+// ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 기본값이 ③ 미리보기와 **같은 식**을 쓴다.
+import { derivedLevelFromParents } from '../common/processingLevel';
 import { Toast } from '../common/Toast';
 import { type AccessState } from '../common/accessState';
 import {
@@ -204,6 +206,14 @@ export function UploadModal(props: {
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
   const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 가공 단계를 사람이 한 번이라도 골랐는가.**
+   *
+   * 기본 선택값은 ③ 에서 확정한 부모의 **계산값을 따라간다**. 다만 사람이 고른 값은
+   * **덮지 않는다** — 고른 값이 사라지면 선택 칸이 무의미해진다(㉱ 축자).
+   * ⛔ 이것은 「사람이 적은 값」 계수(`hasHumanInput`)와 다른 축이다 — 추종은 자동 채움이다.
+   */
+  const [levelTouched, setLevelTouched] = useState(false);
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** `sourceLabel` 옆에 두되 **다른 축**이다 —
@@ -714,6 +724,21 @@ export function UploadModal(props: {
    */
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 가공 단계 기본값이 ③ 의 계산값을 따라간다.**
+   *
+   * 식은 ③ 미리보기와 **같은 함수**다(`derivedLevelFromParents`) — 확정 부모가 0건이거나
+   * 부모 Lv 를 하나라도 모르면 `null` 이고, 그때 기본값은 `Lv2` 로 **유지**된다.
+   * ⛔ 부모 0건을 Lv0 으로 보지 않는다 — 부모 없는 등록은 정상 중간 상태다(㉱ 축자).
+   * ⛔ 사람이 한 번 고른 뒤에는 추종을 멈춘다(`levelTouched`).
+   */
+  const derivedFromParents = derivedLevelFromParents(lineageCards);
+  useEffect(() => {
+    // 보낸 뒤에는 화면 값을 움직이지 않는다 — 다른 등록 입력과 같은 규율(`editRegistration`).
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    if (levelTouched || derivedFromParents === null) return;
+    setLevel(`Lv${derivedFromParents}`);
+  }, [levelTouched, derivedFromParents]);
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => {
     if (submitLock.current || committedDatasetIdRef.current) return;
@@ -826,6 +851,9 @@ export function UploadModal(props: {
     setCategory(DEFAULT_CATEGORY);
     setDataType(DEFAULT_DATA_TYPE);
     setLevel(DEFAULT_PROCESSING_LEVEL);
+    // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 「사람이 고른 적 있다」도 함께 내린다 — 안 내리면 새 파일의
+    //   계산값 추종이 옛 손길 때문에 멈춘다.
+    setLevelTouched(false);
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -1593,7 +1621,11 @@ export function UploadModal(props: {
                 dataType={dataType}
                 onDataType={(value) => editRegistration(() => setDataType(value))}
                 level={level}
-                onLevel={(value) => editRegistration(() => setLevel(value))}
+                onLevel={(value) => editRegistration(() => {
+                  // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 사람이 고른 순간부터 계산값 추종을 멈춘다.
+                  setLevelTouched(true);
+                  setLevel(value);
+                })}
                 accessState={accessState}
                 onAccessState={(value) => editRegistration(() => setAccessState(value))}
                 nameError={nameError}

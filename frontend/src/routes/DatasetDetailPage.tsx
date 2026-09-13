@@ -318,6 +318,8 @@ export function DatasetDetailPage(
                   datasetId={datasetId}
                   filesSource={filesSource}
                   editors={edit.editing ? {
+                    // ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉴⟩ 가공 단계 칸이 기본 정보 그 자리에서 열린다.
+                    '가공 단계': inlineFields(['processingLevelUserSet']),
                     '좌표계': inlineFields(['crs']),
                     '격자': inlineFields(['gridDescription']),
                     '기간': inlineFields(['period', ...(shown.basicInfo.period || !shown.basicInfo.observationInterval ? ['interval'] : [])]),
