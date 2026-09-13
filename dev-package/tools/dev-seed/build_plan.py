@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
-"""등재표(`plan-manifest.yaml`) → 업로드 계획(`upload-plan.json`).
+"""참조자료 폴더의 `DATASETS.md` 4건 → 등재표(`plan-manifest.yaml`) ＋ 업로드 계획(`upload-plan.json`).
 
-- 입력 = 같은 폴더의 `plan-manifest.yaml`(데이터셋 28 · 간선 18 · 상대 glob).
-  그 등재표의 출처는 `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5·§5-6 이다.
-- 참조자료 뿌리 = `--ref-root` · 환경변수 `COLAB_REF_ROOT` · 기본값(레포 상위의 `03 Reference-Data`) 순.
-  ⛔ 코드·등재표에 절대경로를 적지 않는다 — glob 은 전부 그 뿌리 기준 상대 경로다.
-- 출력 = `<work-dir>/upload-plan.json`. 러너가 읽는 파일이고 그 안의 경로는 실행 자리의 절대경로다
-  (작업 자리는 `.gitignore` 로 제외된다).
-- 판정 = 데이터셋 수 · 간선 수 · glob 이 맞힌 파일 수 · 총 바이트를 등재표의 `expected` 와 대조한다.
-  어긋나면 MISMATCH 로 적고 비영 종료한다(조용히 진행하지 않는다).
+- **원본은 md 4건이다.** 각 md 의 ```yaml 블록(첫 줄에 `colab-datasets v1`)이 생성기의 입력이고,
+  같은 파일의 마크다운 표는 사람이 읽는 자리다. 둘이 어긋나면 종료코드 3 으로 멈춘다.
+- 읽는 자리 = `--md-root`(기본값 = 참조자료 뿌리)의 넷 —
+  `01.level-data/01.precipitation` · `01.level-data/02.vegetation` · `01.level-data/03.drought` ·
+  `02.File-format` 각각의 `DATASETS.md`.
+- 참조자료 뿌리 = `--ref-root` · 환경변수 `COLAB_REF_ROOT` · 기본값(본 체크아웃과 나란한
+  `03 Reference-Data`) 순. 워크트리에서도 본 체크아웃 기준으로 풀린다.
+  ⛔ 코드·md 에 절대경로를 적지 않는다 — 글롭은 전부 블록의 `folder` 기준 상대 경로다.
+- 출력 둘 — `plan-manifest.yaml`(생성물 · 손으로 고치지 않는다) · `<work-dir>/upload-plan.json`
+  (러너가 읽는 파일이고 그 안의 경로는 실행 자리의 절대경로다. 작업 자리는 `.gitignore` 로 제외된다).
+- 판정 = ⑴ 표↔블록(이름·건수·바이트) ⑵ 블록↔실물 나무(글롭이 맞힌 파일 수·바이트) ⑶ 총계.
+  어긋나면 그 행 이름을 적고 비영 종료한다(조용히 진행하지 않는다).
+
+종료코드 — 0 정상 · 2 나무 대조 실패·파일 부재·총계 불일치 · 3 표↔블록 불일치.
 """
 
 import argparse
 import glob
 import json
 import os
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -27,11 +34,41 @@ except ImportError:  # 표준 라이브러리 밖 의존은 이것 하나다.
     raise SystemExit(2)
 
 TOOL_DIR = Path(__file__).resolve().parent
-REPO_ROOT = TOOL_DIR.parents[2]
-DEFAULT_MANIFEST = TOOL_DIR / "plan-manifest.yaml"
+DEFAULT_MANIFEST_OUT = TOOL_DIR / "plan-manifest.yaml"
 DEFAULT_WORK_DIR = TOOL_DIR / ".work"
-# 기본 뿌리 = 레포와 나란한 `03 Reference-Data`. 자리가 다르면 `COLAB_REF_ROOT` 로 준다.
-DEFAULT_REF_ROOT = REPO_ROOT.parent / "03 Reference-Data"
+
+# md 4건의 자리. 순서가 계획의 프로젝트 순서이고 seq 순서와 같다.
+MD_RELATIVE = [
+    "01.level-data/01.precipitation/DATASETS.md",
+    "01.level-data/02.vegetation/DATASETS.md",
+    "01.level-data/03.drought/DATASETS.md",
+    "02.File-format/DATASETS.md",
+]
+BLOCK_MARKER = "colab-datasets v1"
+LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+EXPECT_DATASETS = 28
+EXPECT_EDGES = 18
+
+MANIFEST_HEADER = """# 생성물 · 손으로 고치지 않는다 · 원본 = 참조자료 폴더의 DATASETS.md 4건.
+#
+# - 만드는 것 = `dev-package/tools/dev-seed/build_plan.py`. 값을 고치려면 md 를 고치고 다시 돌린다.
+# - 경로는 전부 **참조자료 뿌리로부터의 상대 글롭** 이다. 뿌리는 `COLAB_REF_ROOT` 로 준다.
+# - `expect_files`·`expect_bytes` = 그 글롭이 맞혀야 하는 파일 수·바이트(md 블록 값).
+# - `level` = 제품 값(`Lv0`~`Lv3`). 화면·계획의 `processing_level` 과 같은 값이다.
+"""
+
+
+def repo_root():
+    """워크트리에서도 본 체크아웃을 가리킨다 — `--git-common-dir` 의 부모."""
+    try:
+        out = subprocess.run(["git", "rev-parse", "--git-common-dir"],
+                             cwd=str(TOOL_DIR), capture_output=True, text=True, check=True)
+        common = Path(out.stdout.strip())
+        if not common.is_absolute():
+            common = (TOOL_DIR / common).resolve()
+        return common.parent
+    except Exception:
+        return TOOL_DIR.parents[2]
 
 
 def resolve_ref_root(arg):
@@ -40,47 +77,101 @@ def resolve_ref_root(arg):
     env = os.environ.get("COLAB_REF_ROOT")
     if env:
         return Path(env).expanduser()
-    return DEFAULT_REF_ROOT
+    return repo_root().parent / "03 Reference-Data"
 
 
-def load_manifest(path):
-    doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(doc, dict) or not doc.get("datasets"):
-        raise SystemExit("등재표를 읽지 못했다: " + str(path))
-    return doc
+def extract_block(text, where):
+    """첫 줄에 `colab-datasets v1` 이 있는 ```yaml 블록 하나를 꺼낸다."""
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        if lines[i].strip().startswith("```yaml"):
+            body, j = [], i + 1
+            while j < len(lines) and not lines[j].strip().startswith("```"):
+                body.append(lines[j])
+                j += 1
+            if body and BLOCK_MARKER in body[0]:
+                doc = yaml.safe_load("\n".join(body))
+                if not isinstance(doc, dict) or not doc.get("datasets"):
+                    raise SystemExit("기계 블록을 읽지 못했다: " + str(where))
+                return doc
+            i = j
+        i += 1
+    raise SystemExit("기계 블록(`%s`)이 없다: %s" % (BLOCK_MARKER, where))
 
 
-def resolve_rows(doc, ref_root, resolve_files=True):
-    """등재표 행 → 계획 행. 반환 = (데이터셋 · 어긋난 glob · 없는 파일)."""
+def parse_table(text):
+    """마크다운 표에서 (이름 · 건수 · 바이트)만 최소로 꺼낸다."""
+    rows, idx, width = [], None, None
+    for line in text.splitlines():
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if idx is None:
+            if "이름" in cells and "건수" in cells and "바이트" in cells:
+                idx = (cells.index("이름"), cells.index("건수"), cells.index("바이트"))
+                width = len(cells)
+            continue
+        if len(cells) != width or not cells[0].isdigit():
+            continue
+        rows.append((cells[idx[0]],
+                     int(cells[idx[1]].replace(",", "")),
+                     int(cells[idx[2]].replace(",", ""))))
+    return rows
+
+
+def cross_check(block, table, where):
+    """표 ↔ 블록 — 행 수 · 이름 · 건수 · 바이트. 어긋난 행 이름을 돌려준다."""
+    bad = []
+    b_rows = [(str(d.get("name")), int(d["file_count"]), int(d["bytes"]))
+              for d in block["datasets"]]
+    if len(b_rows) != len(table):
+        bad.append("%s 행 수 표=%d 블록=%d" % (where, len(table), len(b_rows)))
+    for i, brow in enumerate(b_rows):
+        if i >= len(table):
+            bad.append("%s 표에 없는 행: %s" % (where, brow[0]))
+            continue
+        trow = table[i]
+        if brow != trow:
+            bad.append("%s 표=%s 블록=%s" % (brow[0], trow, brow))
+    return bad
+
+
+def resolve_rows(blocks, ref_root, resolve_files=True):
+    """블록 행 → 계획 행. 반환 = (데이터셋 · 어긋난 행 · 없는 파일)."""
     mismatch, missing, datasets = [], [], []
-    for row in doc["datasets"]:
-        files = []
-        grids = []
-        nbytes = 0
-        gbytes = 0
-        if resolve_files:
-            for pat in row.get("globs") or []:
-                files += glob.glob(str(ref_root / pat))
-            files = sorted(set(x for x in files
-                               if os.path.basename(x) != "desktop.ini"))
-            if len(files) != int(row["expect_files"]):
-                mismatch.append((row["seq"], row["name"],
-                                 row["expect_files"], len(files)))
-            grids = [str(ref_root / g) for g in (row.get("grid_files") or [])]
-            for f in files + grids:
-                if not os.path.exists(f):
-                    missing.append(f)
-            nbytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+    for block in blocks:
+        project = block.get("project_name") or block["project"]
+        base = ref_root / block["folder"]
+        for row in block["datasets"]:
+            level = str(row.get("level") or "")
+            if level not in LEVELS:
+                raise SystemExit("제품 레벨 값이 아니다(seq %s · %s): %r"
+                                 % (row.get("seq"), row.get("name"), level))
+            files, nbytes = [], 0
+            grids = [str(base / g) for g in (row.get("grid_files") or [])]
+            if resolve_files:
+                for pat in row.get("files") or []:
+                    files += glob.glob(str(base / pat))
+                files = sorted(set(x for x in files
+                                   if os.path.basename(x) != "desktop.ini"))
+                nbytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+                if (len(files), nbytes) != (int(row["file_count"]), int(row["bytes"])):
+                    mismatch.append((row["seq"], row["name"], int(row["file_count"]),
+                                     len(files), int(row["bytes"]), nbytes))
+                for f in files + grids:
+                    if not os.path.exists(f):
+                        missing.append(f)
             gbytes = sum(os.path.getsize(g) for g in grids if os.path.exists(g))
-        else:
-            grids = [str(ref_root / g) for g in (row.get("grid_files") or [])]
-        datasets.append(dict(
-            seq=row["seq"], project=row["project"], name=row["name"],
-            summary=row["summary"], format=row["format"],
-            files=files, file_count=len(files), bytes=nbytes,
-            grid_files=grids, grid_bytes=gbytes,
-            grid_skip=(not (row.get("grid_files") or [])),
-            parents=list(row.get("parents") or [])))
+            datasets.append(dict(
+                seq=int(row["seq"]), project=project, name=row["name"],
+                summary=row.get("summary") or "", format=row.get("format") or "",
+                processing_level=level,
+                files=files, file_count=len(files), bytes=nbytes,
+                grid_files=grids, grid_bytes=gbytes,
+                grid_skip=(not (row.get("grid_files") or [])),
+                parents=list(row.get("parents") or [])))
     return datasets, mismatch, missing
 
 
@@ -96,42 +187,91 @@ def check_order(datasets):
         seen[d["name"]] = d["seq"]
 
 
-def main():
-    ap = argparse.ArgumentParser(description="등재표 → 업로드 계획")
-    ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST), help="등재표 YAML")
+def build_manifest(blocks, datasets, edges, total_bytes):
+    """사람이 읽는 등재표(생성물). 글롭은 참조자료 뿌리 기준으로 되돌려 적는다."""
+    rows = []
+    for block in blocks:
+        project = block.get("project_name") or block["project"]
+        folder = block["folder"]
+        for row in block["datasets"]:
+            rows.append(dict(
+                seq=int(row["seq"]), project=project, name=row["name"],
+                summary=row.get("summary") or "", format=row.get("format") or "",
+                level=row["level"],
+                globs=["%s/%s" % (folder, g) for g in (row.get("files") or [])],
+                expect_files=int(row["file_count"]), expect_bytes=int(row["bytes"]),
+                grid_files=["%s/%s" % (folder, g) for g in (row.get("grid_files") or [])],
+                parents=list(row.get("parents") or [])))
+    return dict(
+        version=1,
+        expected=dict(datasets=len(datasets), edges=len(edges), data_bytes=total_bytes),
+        projects=[dict(key=b.get("project_name") or b["project"],
+                       name=b.get("project_name") or b["project"],
+                       description=b.get("project_description") or "")
+                  for b in blocks],
+        datasets=rows)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="DATASETS.md 4건 → 등재표 ＋ 업로드 계획")
+    ap.add_argument("--md-root", default=None,
+                    help="DATASETS.md 4건의 뿌리. 기본값 = 참조자료 뿌리")
     ap.add_argument("--ref-root", default=None,
                     help="참조자료 뿌리. 환경변수 COLAB_REF_ROOT 로도 준다")
     ap.add_argument("--work-dir", default=os.environ.get("COLAB_SEED_WORK_DIR"),
                     help="출력 자리. 기본값 = 이 폴더의 .work/")
     ap.add_argument("--out", default=None,
-                    help="출력 파일. 기본값 = <work-dir>/upload-plan.json")
+                    help="업로드 계획 파일. 기본값 = <work-dir>/upload-plan.json")
+    ap.add_argument("--manifest-out", default=str(DEFAULT_MANIFEST_OUT),
+                    help="등재표 생성물 자리")
+    ap.add_argument("--expect-datasets", type=int, default=EXPECT_DATASETS,
+                    help="총 데이터셋 수 기대값")
+    ap.add_argument("--expect-edges", type=int, default=EXPECT_EDGES,
+                    help="총 계보 간선 수 기대값")
     ap.add_argument("--dry-run", action="store_true",
-                    help="파일을 쓰지 않고 계수만 출력. 뿌리가 없으면 등재표 계수만 센다")
-    args = ap.parse_args()
+                    help="파일을 쓰지 않고 계수만 출력. 뿌리가 없으면 블록 계수만 센다")
+    args = ap.parse_args(argv)
 
-    doc = load_manifest(args.manifest)
     ref_root = resolve_ref_root(args.ref_root)
+    md_root = Path(args.md_root).expanduser() if args.md_root else ref_root
+
+    blocks, table_bad = [], []
+    for rel in MD_RELATIVE:
+        path = md_root / rel
+        if not path.exists():
+            print("DATASETS.md 가 없다: " + str(path), file=sys.stderr)
+            return 2
+        text = path.read_text(encoding="utf-8")
+        block = extract_block(text, rel)
+        table_bad += cross_check(block, parse_table(text), rel)
+        blocks.append(block)
+
+    if table_bad:
+        print("표와 기계 블록이 어긋난다 — 계획을 쓰지 않는다")
+        for b in table_bad:
+            print("TABLE-MISMATCH " + b)
+        return 3
+
     resolve_files = ref_root.exists()
     if not resolve_files:
         msg = "참조자료 뿌리 없음: " + str(ref_root) + " — COLAB_REF_ROOT 로 준다"
         if not args.dry_run:
             print(msg, file=sys.stderr)
             return 2
-        print("! " + msg + " (dry-run: 파일 해석 없이 등재표 계수만 센다)")
+        print("! " + msg + " (dry-run: 파일 해석 없이 블록 계수만 센다)")
 
-    datasets, mismatch, missing = resolve_rows(doc, ref_root, resolve_files)
+    datasets, mismatch, missing = resolve_rows(blocks, ref_root, resolve_files)
     check_order(datasets)
     edges = []
     for d in datasets:
         for pn in d["parents"]:
             edges.append(dict(child=d["name"], parent=pn))
 
-    exp = doc.get("expected") or dict()
     print("datasets %d edges %d" % (len(datasets), len(edges)))
-    print("expected datasets %s edges %s" % (exp.get("datasets"), exp.get("edges")))
-    print("missing_files %d glob_mismatches %d" % (len(missing), len(mismatch)))
+    print("expected datasets %s edges %s" % (args.expect_datasets, args.expect_edges))
+    print("missing_files %d row_mismatches %d" % (len(missing), len(mismatch)))
     for m in mismatch:
-        print("MISMATCH seq=%s %s expected=%s found=%s" % m)
+        print("MISMATCH seq=%s %s files expected=%s found=%s bytes expected=%s found=%s" % m)
 
     agg = defaultdict(lambda: [0, 0, 0, 0, 0])
     tot = [0, 0, 0, 0, 0]
@@ -142,20 +282,18 @@ def main():
         a[2] += d["bytes"]
         a[3] += d["grid_bytes"]
         a[4] += len(d["parents"])
-    for pk in [p["key"] for p in doc["projects"]]:
+    for pk in [b.get("project_name") or b["project"] for b in blocks]:
         n, fc, b, gb, e = agg[pk]
         print("%s datasets=%d files=%d bytes=%d grid_bytes=%d edges=%d" % (pk, n, fc, b, gb, e))
         for i, v in enumerate((n, fc, b, gb, e)):
             tot[i] += v
     print("TOTAL datasets=%d files=%d bytes=%d grid_bytes=%d edges=%d load_sum=%d"
           % (tot[0], tot[1], tot[2], tot[3], tot[4], tot[2] + tot[3]))
-    if resolve_files and exp.get("data_bytes") is not None:
-        print("inventory_data_bytes_match", tot[2] == int(exp["data_bytes"]))
 
     bad = False
-    if exp.get("datasets") is not None and len(datasets) != int(exp["datasets"]):
-        bad = True
-    if exp.get("edges") is not None and len(edges) != int(exp["edges"]):
+    if len(datasets) != args.expect_datasets or len(edges) != args.expect_edges:
+        print("COUNT-MISMATCH datasets=%d/%d edges=%d/%d"
+              % (len(datasets), args.expect_datasets, len(edges), args.expect_edges))
         bad = True
     if resolve_files and (mismatch or missing):
         bad = True
@@ -167,12 +305,23 @@ def main():
         print("계수 불일치 — 계획을 쓰지 않는다", file=sys.stderr)
         return 2
 
+    manifest_out = Path(args.manifest_out).expanduser()
+    manifest_out.parent.mkdir(parents=True, exist_ok=True)
+    manifest_out.write_text(
+        MANIFEST_HEADER + yaml.safe_dump(
+            build_manifest(blocks, datasets, edges, tot[2]),
+            allow_unicode=True, sort_keys=False, width=120),
+        encoding="utf-8")
+    print("등재표 기록 = " + str(manifest_out))
+
     work_dir = Path(args.work_dir).expanduser() if args.work_dir else DEFAULT_WORK_DIR
     out = Path(args.out).expanduser() if args.out else work_dir / "upload-plan.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     plan = dict(
-        projects=[dict(key=p["key"], name=p["name"], description=p["description"])
-                  for p in doc["projects"]],
+        projects=[dict(key=b.get("project_name") or b["project"],
+                       name=b.get("project_name") or b["project"],
+                       description=b.get("project_description") or "")
+                  for b in blocks],
         datasets=datasets, edges=edges)
     out.write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
     print("계획 기록 = " + str(out))

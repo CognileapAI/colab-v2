@@ -6,12 +6,19 @@
 
 | 파일 | 하는 일 |
 |---|---|
-| `plan-manifest.yaml` | 등재표(데이터셋 28 · 간선 18 · 참조자료 뿌리 기준 상대 glob · 기준 격자 짝 · 부모) |
-| `build_plan.py` | 등재표 + 참조자료 뿌리 → `upload-plan.json`(러너 입력) |
+| `plan-manifest.yaml` | 등재표 **생성물**(데이터셋 28 · 간선 18 · 상대 glob · 기준 격자 짝 · 부모 · 제품 레벨). **손으로 고치지 않는다** |
+| `build_plan.py` | `DATASETS.md` 4건 + 참조자료 뿌리 → `plan-manifest.yaml` ＋ `upload-plan.json`(러너 입력) |
 | `runner.py` | 로그인 · 프로젝트 · 데이터셋 · 확인 · 보고 다섯 단계를 화면에서 실행 |
 | `watch.py` | 러너 진행을 20초 간격으로 읽어 새 줄만 출력 |
 
-- 등재표의 출처 = `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5(등재표 28행) · §5-6(기준 격자 짝).
+- **정본 사슬 = `DATASETS.md` 4건 → `build_plan.py` → `plan-manifest.yaml` ＋ `upload-plan.json`.**
+  값을 고칠 자리는 md 하나뿐이고, 뒤의 둘은 생성물이다.
+- md 4건의 자리(참조자료 뿌리 기준) = `01.level-data/01.precipitation/DATASETS.md` ·
+  `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` ·
+  `02.File-format/DATASETS.md`. 레포 안 거울 사본은 `dev-package/reports/reference-data/datasets-md/`.
+- 각 md 는 사람이 읽는 표와 기계가 읽는 ```yaml 블록(첫 줄 `colab-datasets v1`)을 함께 담는다.
+  블록의 `seq` 1~28 은 러너 상태 파일의 키라서 **바꾸지 않는다**.
+- 등재표 계수의 출처 = `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5(등재표 28행) · §5-6(기준 격자 짝).
 - 시나리오 = `dev-package/scenarios/dev-minimal-data-setup.md` 2·4·5·6·7 절.
 - 능력문(지목점) = `dev-package/reports/r-dev-reset/agent-browser-capability.md` 6 절.
 
@@ -19,7 +26,8 @@
 
 | 값 | 주는 법 | 기본값 |
 |---|---|---|
-| 참조자료 뿌리 | `--ref-root` · 환경변수 `COLAB_REF_ROOT` | 레포와 나란한 `03 Reference-Data` |
+| 참조자료 뿌리 | `--ref-root` · 환경변수 `COLAB_REF_ROOT` | 본 체크아웃과 나란한 `03 Reference-Data`(워크트리에서도 본 체크아웃 기준) |
+| `DATASETS.md` 뿌리 | `--md-root` | 참조자료 뿌리와 같은 자리 |
 | 작업 자리 | `--work-dir` · 환경변수 `COLAB_SEED_WORK_DIR` | 이 폴더의 `.work/`(레포 `.gitignore` 제외) |
 | 대상 주소 | `--base-url` · 환경변수 `COLAB_DEV_URL` | **없음** — 안 주면 러너가 멈춘다. dev 주소의 원본은 `docs/DEPLOY.md` |
 
@@ -35,13 +43,25 @@
 
 ```
 python3 build_plan.py --dry-run          # 파일을 쓰지 않고 계수만 센다
-python3 build_plan.py                    # <work-dir>/upload-plan.json 기록
+python3 build_plan.py                    # plan-manifest.yaml ＋ <work-dir>/upload-plan.json 기록
+
+# 레포 거울 사본으로 돌릴 때
+python3 build_plan.py --md-root dev-package/reports/reference-data/datasets-md --dry-run
 ```
 
-- `--dry-run` 은 등재표 계수(28 · 18) · glob 이 맞힌 파일 수 · 총 바이트를 찍고 **아무것도 쓰지 않는다.**
-  계수가 등재표의 `expected` 와 어긋나면 비영 종료한다(조용히 진행하지 않는다).
-- 참조자료 뿌리가 없으면 `--dry-run` 은 파일 해석을 건너뛰고 등재표 계수만 센다. 기록 실행은 거절한다.
-- 등재표를 고치면 `expected` 도 같이 고친다 — 그 대조가 이 도구의 오라클이다.
+- `--dry-run` 은 계수(28 · 18) · glob 이 맞힌 파일 수 · 총 바이트를 찍고 **아무것도 쓰지 않는다.**
+- 참조자료 뿌리가 없으면 `--dry-run` 은 파일 해석을 건너뛰고 블록 계수만 센다. 기록 실행은 거절한다.
+- **판정 3단 · 종료코드** —
+
+| 코드 | 뜻 | 무엇이 어긋났는가 |
+|---|---|---|
+| 0 | 정상 | 표 = 블록 = 실물 나무 · 총계 28/18 |
+| 3 | 표 ↔ 블록 불일치 | 같은 md 안에서 표의 이름·건수·바이트가 블록과 다르다. 어긋난 행 이름을 찍는다 |
+| 2 | 블록 ↔ 실물 불일치 · 총계 불일치 · md 부재 · 뿌리 부재 | glob 이 맞힌 파일 수·바이트가 블록과 다르거나 총계가 28/18 이 아니다 |
+
+- 총계 기대값은 `--expect-datasets`·`--expect-edges` 로 바꾼다(기본 28 · 18 · 시험용).
+- **실물 폴더가 정본이다** — 2 가 나오면 md 의 값을 실측값으로 고친다(폴더를 고치지 않는다).
+- 시험 = `python3 -m pytest dev-package/tools/dev-seed/tests -q`(표준 라이브러리 ＋ `yaml` ＋ `pytest`).
 
 4. 자격 파일 2개를 작업 자리에 둔다 — `initial-password.txt`(초기 비밀번호 1줄),
    `new-password.txt`(첫 로그인 변경용. 없으면 러너가 20자로 만들고 0600 으로 적는다).
