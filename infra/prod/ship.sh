@@ -47,7 +47,9 @@ if [ "${#MISSING[@]}" -gt 0 ]; then
 fi
 REPO_TGZ="$DIST/colab-repo-$SHA.tgz"
 mkdir -p "$DIST"
-tar czf "$REPO_TGZ" -C "$REPO" \
+# macOS 에서 만든 tar 에는 AppleDouble(`._*`·xattr) 이 섞인다 — 원격 `deploy_doctor` ⑥⑦ 이 `._0031_….py` 를
+# 파싱하다 「null bytes」 로 죽었다(2026-09-13 prod 실측 · 15,353 파일). 만들 때 빼고, 받는 쪽도 지운다.
+COPYFILE_DISABLE=1 tar czf "$REPO_TGZ" --exclude='._*' --exclude='.DS_Store' --exclude='__pycache__' -C "$REPO" \
   --exclude='.venv' --exclude='node_modules' --exclude='__pycache__' --exclude='*.pyc' \
   "${REPO_SYNC_PATHS[@]}"
 
@@ -98,6 +100,7 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
   sudo tar xzf /opt/colab-v2/images/$(basename "$REPO_TGZ") -C /opt/colab-repo --overwrite && \
+  sudo find /opt/colab-repo -name '._*' -delete && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:prod-$SHA colab-v2/\$u:prod; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
   printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
