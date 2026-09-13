@@ -4060,7 +4060,8 @@ items:
       **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
       있고 라우트만 501)에서 왔다. **계약 개정 0**(선례 `〈229〉`-㉰) · **마이그레이션 0**.
       ⚠ **미리보기는 지우지 않는다** — 계약 산문 「파일·미리보기만 지우고」와의 차이이고
-      형제 `DL-2` 가 닫는다. ⚠ **연구원도 자기가 올린 데이터셋은 지울 수 있다**(사용자 결정 ②
+      형제 `DL-2` 가 **같은 PR(`lane/wu-dl-2`)에서 닫는다**(사용자 결정 2026-09-13 ·
+      `lane/wu-dl-2` = DL-1 커밋 10 ＋ DL-2 커밋). ⚠ **연구원도 자기가 올린 데이터셋은 지울 수 있다**(사용자 결정 ②
       「계약대로 소유자 또는 교수」). `.claude/rules/deploy.md` 11 산문(「제품에 삭제 op 을
       여는 것 = `§5` 범위 늘리기」)은 병합 커밋에서 「제품 op 은 `〈N〉` 으로 열렸다」로 갱신한다.
       프로젝트 상세는 묘비를 조용히 뺀다(계수 불일치 가능 · 사용자 고지).
@@ -4074,26 +4075,37 @@ items:
     stage: stage2
     owner: "D7 viz-render ＋ core-api 중계 ＋ infra compose"
     entry_conditions:
-      - "Ted 판정 ⓓ1 — `core-viz.yaml` 동결 해제(`reclaimPreviews` 신설 · 등급 ㉯)"
-      - "Ted 판정 ⓓ2 — `PreviewSinkPort` 에 `remove` 를 얹는가 / Port 를 하나 더하는가"
-      - "Ted 판정 ⓓ3 — 삭제 회수를 원장 등급이 아니라 「지워진 fileId 집합 D」 래퍼로 판정 · `tile-` 무접촉 · CloudFront 300초 수용"
-      - "`DL-1` 병합"
-      - "prod 브랜치 병합 (prod compose 가 그 브랜치에 있다)"
+      - "Ted 판정 ⓓ1~ⓓ7 회수 (`sessions/DL-2-TED-RULING.md` · **병합 게이트**이지 착수 조건이 아니다) — ⓓ1 `core-viz.yaml` 동결 해제 22차 ㉯(`reclaimPreviews` 신설 · 직전 21차 `PLAN-SoT §9 〈376〉`) · ⓓ2 `PreviewSinkPort` 에 `index`·`remove` · ⓓ3 「지워진 fileId 집합 D」 래퍼 ＋ `tile-` 무접촉 ＋ CloudFront 300초 수용 ＋ 로컬 scan 합집합·`unindexed` 계수 · ⓓ4 viz 미설정 = 건너뜀＋로그 · ⓓ5 백필 GO(dev dry-run 계수 먼저) · ⓓ6 S3 삭제 잠금 문면 범위 분리(시험 2건 유지) · ⓓ7 표식 자리 `preview-index/by-file/{fileId}/{contentKey}` 계약 등재"
+      - "`DL-1` 과 같은 PR — `lane/wu-dl-2` 가 DL-1 커밋 10 을 이어받는다(사용자 결정 2026-09-13). 별도 병합 대기 0"
+      - "⑤ **prod compose 스풀 배선 = prod 브랜치(`feature/rtf400_deploy_prod`) 몫 · 이 PR 범위 밖** ／ 종전 표기 ~~prod 브랜치 병합~~ — dev compose 는 `COLAB_VIZ_TRIGGER_SPOOL` 이 **이미 배선돼 있다**(2026-09-13 실측)"
     depends_on: [DL-1]
     completion_def: >-
-      ⑴ `core-viz.yaml` 에 `reclaimPreviews`(POST `/reclaims` · 요청 `{targetId, fileIds[]}` ·
-      응답 `{stale, kept, removed[]}` · 서비스 토큰)이 동결 해제 회차(㉯ · Ted 승인 필드)로
-      등재되고 생성물이 재생성된다(`generated-up-to-date`)
-      ⑵ `invalidation.deletion_plan` 이 `reclaim_plan` 과 같은 모양(계산기 신설 0)이며 viz 단위
-      시험 — D 전부 포함 → stale · 일부만 → kept · `tile-` → kept · 사이드카 부재/구판 → kept ·
-      `apply` 뒤 싱크 `remove` 가 **지운 이름만** 받는다
-      ⑶ `S3PreviewSink.remove` 가 `delete_objects([prefix/name…])` 를 부르고
-      `LocalPreviewSink.remove` 는 no-op — 대역 시험
-      ⑷ core-api `deleteDataset` 이 커밋 전 릴레이를 부르고 실패 시 500 · 무변경(pytest 대역)
-      ⑸ dev·prod compose 스풀 배선 ＋ `volume-init` — 기동 뒤 viz 로그에 트리거 루프·회수
-      요약이 **난다**(`〈353〉` 실측 역전)
-      ⑹ dev 실측 — 검증 데이터셋 삭제 뒤 그 산출물 키가 로컬·S3 에서 부재 · 다른 데이터셋의
-      산출물 잔존 · `tile-` 잔존
+      ⑴ `core-viz.yaml` 에 `reclaimPreviews`(POST `/reclaims` · 요청
+      `PreviewReclaimRequest{targetId, fileIds[] minItems 1}` · 200
+      `PreviewReclaimResult{targetId, stale, kept, unindexed, removed[]}` · 서비스 토큰)이
+      동결 해제 22차(㉯ · Ted 승인 필드)로 등재되고 생성물이 재생성된다(`generated-up-to-date`) ·
+      **응답 집합 = 200/400/401/503 넷으로 닫힌다** — viz 는 `RequestValidationError` 를 400 으로
+      바꾸고(`app/main.py`) `require_caller` 는 401 만 낸다 ⟹ **422 를 계약에 적지 않는다**
+      ⑵ `invalidation.deletion_plan` 이 `reclaim_plan` 과 같은 모양(계산기 신설 0 · `GRADES` 무변)이며
+      viz 단위 시험 — D 전부 포함 → stale · 일부만 → kept(partial) · `tile-` → kept ·
+      사이드카 부재/구판 → kept · `D = ∅` → `OutOfScope` · `apply` 뒤 싱크 `remove` 가
+      **지운 이름만** 받는다 · **`unindexed` 계수** 가 응답에 실린다(표식 없이 로컬 scan 으로만
+      잡힌 벌 수 — 이 회차 이전 산출물) · 후보 = 인덱스 contentKey **∪** 로컬 `ownership.scan` 중
+      규칙 충족 벌
+      ⑶ `S3PreviewSink.remove` 가 산출물 이름과 표식 키를 **한 번의** `delete_objects` 로 부르고
+      `LocalPreviewSink.remove` 는 no-op · `S3PreviewSink.index` 가 표식(0바이트 ·
+      `application/json`)을 PUT 하며 `_run` 에서 **`index` 뒤 `publish`**(인덱스 실패 = 렌더 실패) —
+      대역 시험
+      ⑷ core-api `deleteDataset` 이 커밋 전 릴레이를 부르고 실패 시 500 · 무변경(pytest 대역) ·
+      `app.state.previews is None`(viz 미설정) 갈래는 **건너뛰고 로그**
+      (`event=dataset.previews_skipped code=PREVIEWS_UNCONFIGURED`)
+      ⑸ **dev compose 는 `COLAB_VIZ_TRIGGER_SPOOL` 이 기배선**(2026-09-13 실측) ·
+      **prod compose 스풀 배선은 prod 브랜치(`feature/rtf400_deploy_prod`) 몫으로 이 PR 범위 밖**
+      ／ 종전 표기 ~~dev·prod compose 스풀 배선 ＋ `volume-init`~~ — 기동 뒤 viz 로그의
+      트리거 루프·회수 요약 확인은 그 브랜치의 배포 창에서 잰다(`〈353〉` 실측 역전)
+      ⑹ dev 실측 — 검증 데이터셋 삭제 뒤 그 산출물 키가 로컬·S3 에서 부재
+      (`previews/{key}` 4확장자 ＋ `preview-index/by-file/{fileId}/`) · 다른 데이터셋의
+      산출물 잔존 · `tile-` 잔존 · CloudFront 300초 뒤 404
     evidence: null
     deadline: null
     note: >-
@@ -4102,9 +4114,24 @@ items:
       ⚠ **스풀 seam 에 못 얹는다** — 이벤트 봉투의 집계 루트가 `uploadId` 라 `datasetId` 가
       구조적으로 없고 발신자가 D5 로 고정돼 있다. 그래서 HTTP op 신설이고, 그것이 `㉯`
       동결 해제를 부르는 이유다(선례 `〈231〉`·`〈294〉`).
-      열린 값 `[미확인]` — 동결 해제 등급 확정(`X2-FREEZE-PROTOCOL.md §5`) ·
-      `U-2` ⓓ 「버킷 스캔 금지」의 `previews/` 적용 범위.
-    sources: ["dev-package/sessions/DL-1-TED-RULING.md"]
+      ⭑ **⟨증보 2026-09-13 · 레인 `lane/wu-dl-2` 조사⟩ 회부문 = `sessions/DL-2-TED-RULING.md`(ⓓ1~ⓓ7).**
+      ⑴ 동결 해제 등급 = **22차 · ㉯**(직전 21차 `PLAN-SoT §9 〈376〉` · 근거 `§5-㉯` 축자
+      「**op 신설** — 501 표·op 총계가 움직인다」) ／ 종전 `[미확인]`.
+      ⑵ `U-2` ⓓ 「버킷 스캔 금지」의 `previews/` 적용 범위 = **접두 전체 스캔 0건**으로 닫는다 —
+      회수는 지워진 fileId 마다 `preview-index/by-file/{fileId}/` **목록 1회**이고 비용이
+      |D| 에만 비례한다. 기각한 대안 = 사이드카 전수 열거(삭제마다 `previews/` 전건 GET).
+      ⑶ 표식 자리가 `previews/` **아래가 아닌** 이유 = `legacy_preview_observation.observe` 가
+      그 접두 아래 하위 경로를 보면 「flat 구조가 아니다」로 red 를 낸다 ⟹ **형제 접두**
+      `preview-index/`(CloudFront 는 `/previews/*` 만 노출하므로 표식 비노출).
+      ⑷ 계약 `contracts/storage/layout.json` 에 **별도 top-level `previewIndex`** 로 등재한다 —
+      `keys`/`roots` 표에 넣지 않는 이유 = 생성기 자기검증이 「미리보기 루트에 사는 종류 1개」를
+      고정으로 확인한다(`contracts/codegen/gen_storage_layout.py`).
+      ⑸ **배경 회수 루프로는 영원히 회수되지 않는다** — `ownership.grade()` 가 묘비 데이터셋의
+      fileId 를 `d5_upload_file` 잔존 때문에 「접수분에만 닿는다」로 읽고, 그것은 고아가 아니다.
+      ⑹ 「S3 삭제 금지」 잠금은 **범위 분리**로 처리한다(ⓓ6) — `tile_reclaim.py` 독스트링 3곳을
+      「자동 회수 루프는 …」으로 한정하고 `tests/test_s3_tile_reclaim.py` 시험 2건은 **무수정 유지** ·
+      새 음성 시험이 「`delete_objects`·`.remove(` 호출자 = `reclaim_on_delete.py` 하나」를 잠근다.
+    sources: ["dev-package/sessions/DL-1-TED-RULING.md", "dev-package/sessions/DL-2-TED-RULING.md", "contracts/storage/layout.json"]
 
   - id: gate-pg-reach
     name: "게이트 `_pg.sh` 일회용 postgres 에 호스트가 못 닿으면 준비 red 로 선다(도달성 확인 ＋ `PGCONNECT_TIMEOUT`) — 지금은 판정 없이 매달린다"
