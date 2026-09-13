@@ -282,3 +282,16 @@ failed 217 의 오류형이 `ProgrammingError` 31 · `InsufficientPrivilege` 27 
 - **고아 표식은 삭제를 한 번 더 눌러야 걷힌다** — 이 문의 방아쇠는 사람의 삭제 하나뿐이라,
   이미 지워진 데이터셋의 고아 표식(실측 10개)은 백필·수동 정리가 따로 필요하다.
 
+---
+
+## 13. prod 임시 검증 (2026-09-13 · 요지 3줄)
+
+- **1차 `fc75de17` 21:35** — `LON_crop` 묘비·파일 0·키 부재·감사 2 ✓. 여기서 결함 3건(렌더-삭제 경합 ·
+  고아 표식 10 · 회수 계수 로그 0줄)이 드러났고 **D9 가 그 셋을 고쳤다**(§12).
+- **2차 `55df17b0` 22:05** — `LAT_HSR` 삭제가 `dataset.previews_reclaimed stale=4 kept=0
+  orphanIndex=0 removed=16` 을 냈고 그 이름이 **S3 실존 객체와 일치**했다. 이어진 삭제까지 합쳐
+  `previews/` −28 · `preview-index/` −12 · **지운 데이터셋 소유 잔여물 0**.
+- ⛔ **완료 판정이 아니다** — 레인 커밋을 `COLAB_SHIP_ALLOW_NONMAIN=1` 로 명시 우회해 구운 것이라
+  `deploy_doctor` **⑮ ✗ 가 정답**이다. 실측·우회 근거·되돌림 계획은
+  `dev-package/reports/dl-2/prod-test-20260913.md`.
+

@@ -4047,7 +4047,12 @@ items:
       vitest 1270/0 · 계약 개정 0 · 마이그레이션 0 유지 — `lane-report.md §10` ·
       **C9**(`301183c`) `frontend-test` 간헐 red 해소(초과 · 별도 커밋) ·
       **C10** 어드바이저 ② 정정 5건 — 삭제 버튼 다크 토큰 · 감사 action 분리 · 계수 실행별 표기 ·
-      purge 머리말 · 후속 WU 3 등재 — `lane-report.md §10-7`
+      purge 머리말 · 후속 WU 3 등재 — `lane-report.md §10-7` ·
+      ⭑ **⟨prod 임시 검증 2026-09-13 · 완료 판정 아님⟩** 1차(`fc75de17` 21:35) `LON_crop` 실삭제 —
+      묘비 ✓ · `d3_file` 0 · S3 원장 키 부재 · 운영자 감사 2행 ✓. ⛔ **완료 정의 ⑻ 을 닫지 않는다** —
+      이 회차는 **dev 가 아니라 prod** 이고 병합 전 레인 커밋을 `COLAB_SHIP_ALLOW_NONMAIN=1` 로
+      **명시 우회**해 구웠다(`MAIN_SHA ancestor=bypass` · `deploy_doctor` **⑮ ✗ 가 정답**).
+      값·우회 근거·되돌림 = `dev-package/reports/dl-2/prod-test-20260913.md`
     deadline: null
     note: >-
       ⭑ **⟨결정 2026-09-12 · 오케스트레이터 · Ted 개정 가능⟩ 묘비 전환의 감사 행위 문자열은
@@ -4142,6 +4147,19 @@ items:
       시험 DB 를 함께 쓰는 동안에는 회차마다 다른 2~5건이 흔들린다(`colab-rules §3-4`
       「한 워크트리에 전수 두 벌 동시 실행 배제」의 실물) — 그 계수를 판정에 쓰지 않는다.
       **⑹ dev 실측은 이 레인 범위 밖** — 오케스트레이터 별건(배포 창).
+      ⭑ **⟨prod 임시 검증 2026-09-13 · 완료 판정 아님 · 완료 정의 ⑹ 을 닫지 않는다⟩**
+      1차(`fc75de17` 21:35) 가 **결함 3건**을 드러냈고(렌더-삭제 경합 `RENDER_UNKNOWN_ERROR` ＋
+      `FileNotFoundError …webp` · 고아 표식 10 · 회수 계수 로그 0줄) **D9(`55df17b0`)** 가 셋을 닫았다 —
+      `orphanIndex` 첨가(계약) · `RENDER_ARTIFACT_MISSING` · `structured_event` 배선.
+      2차(`55df17b0` 22:05) `LAT_HSR` 삭제 = `dataset.previews_reclaimed stale=4 kept=0
+      orphanIndex=0 removed=16`(**이름이 S3 실존 객체와 일치** · 표식 12 삭제) · 이어진 삭제
+      `removed=48`(12벌) · 파일 행 −4 · 키 −4 · `previews/` 36→16(−28 · 새 렌더 +8) ·
+      `preview-index/` 23→46(−12 · +35) · **지운 데이터셋 소유 잔여물 0**.
+      잔여 = 미등록 업로드(15 파일) 소유 6벌·표식 28(데이터셋이 아니라 이 문의 대상이 아니다) ＋
+      `DL-2` 이전 고아 2벌·표식 18 ＋ `uploads/` +14(`U-2`).
+      ⛔ **완료 판정이 아니다** — prod 이고 조상 검사를 명시 우회했다(`deploy_doctor` ⑮ ✗ 가 정답).
+      값·우회 근거·되돌림 계획 = `dev-package/reports/dl-2/prod-test-20260913.md` ·
+      요지 3줄 = `dev-package/reports/dl-2/lane-report.md §13`.
     deadline: null
     note: >-
       **신설 2026-09-06** — `DL-1` 이 남긴 차이(계약 산문 「파일·미리보기만 지우고」)를 닫는
