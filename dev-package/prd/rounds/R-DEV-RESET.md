@@ -110,6 +110,7 @@ Ted 판정
 
 ### WU-R2 — dev 초기화 실행
 
+- ⭑ ⟨증보 2026-09-13⟩ **실행 정본 = `dev-package/sessions/DR-2-runbook.md`** — 배포 → 초기화 → 재적용 → SQL 선행 → 확인의 명령·기대출력·정지점이 그 문서에 있고, 이 절은 요지다.
 - **레인 작업이 아니다.** 오케스트레이터가 절차를 밟고 Ted 가 GO 를 준다.
 - 선행 = WU-R1a·R1b 가 `main` 에 병합되고 dev 에 배포됨(`docs/DEPLOY.md`) ＋ 진입조건 ㄹ 해소 ＋ Ted 명시 GO 가 `PLAN-SoT §9` 행에 기록됨.
 - 사전 = 읽기 전용 계수 1회. 경계가 실린 경로(`colab_backup` 롤 또는 API `listDatasets`)로 데이터셋·파일 행수, 운영자 키로 `uploads/`·`previews/` 객체 수를 파일에 고정한다.
@@ -267,3 +268,6 @@ Ted 판정
 - ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ **드리프트 오라클 일부가 일회용 postgres 기동 실패를 red(준비)가 아니라 red(판정)으로 낸다.** 실측 = `migration-drift` 3회 실행 중 2회에서 **서로 다른 오라클 1벌**이 기동 때문에 죽었다(3회차는 `green — 오라클 26 · 실행 26 · 실패 0` · 1회차 `0025-drift` 축자 `createdb: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory` · 2회차 `0008-drift` 축자 `::error::0008-drift red — postgres 가 60초 안에 뜨지 않았다.`). 원인 둘 — ⑴ `db/platform/tests/0008-drift.sh` 는 60초 대기 뒤 `red`(exit 1)를 부른다(`ready` 함수 자체가 없다) ⑵ `db/platform/tests/0025-drift.sh` 는 대기 뒤 확인이 아예 없어 `createdb` 로 그냥 넘어간다. **어느 검사에 걸리는가** = `gates/run.sh migration-drift` 가 그것을 red(판정) 로 센다 — 그래서 3계수의 「판정/준비」 구분이 이 자리에서 무너진다(`.claude/rules/colab-rules.md §3-4`). 고칠 자리 = 두 파일의 기동 확인 한 줄씩(`0029-drift.sh` 도 같은 모양). 이 레인은 0031 오라클 하나가 범위라 고치지 않았다. ⚠ 호스트 동시 부하(다른 세션의 `service-tests-core-api`)가 있는 동안 재발한다.
 - ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ `db/platform/tests/0027-operator-audit-drift.sh` 의 출력 이름표가 `[0025-drift]` 다(축자 `[0025-drift] 감사 3표·내보내기 5표·RLS·pending index 확인 → OK`). 판정에는 영향이 없고 로그 판독만 어긋난다 — 어느 검사도 이름표를 대조하지 않는다.
 - `[미확인]` 비운 상태에서 `deploy_doctor` 15/15 가 서는지의 실증 — 데이터 행을 보는 항목이 없다는 것까지는 코드 실측이고, 실제 15/15 는 WU-R2 에서 처음 확인된다.
+- ⭑ ⟨증보 2026-09-13 · Ted 후속 지정⟩ 축자 「**이건 후속작업으로보자**」 세 건 — ⓐ **dev 초기화 상시 승인**(회차마다 GO 를 받지 않는 형태) ⓑ **화면 투입 브라우저 자동화** ⓒ **WSL 메모리 확장**(`.wslconfig` **24GB** · 시점 = `main` 병합 **직후**). 등재 = `PLAN-SoT §9 〈396〉`-㉷. **이번 회차 밖이다.**
+- ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`gates/config/migration-drift.toml` 의 platform `min = 15` 가 실측 23 보다 8 낮다.** 그 파일 자체가 「`min = 0` 은 쓰지 않는다 — 대상 0건은 통과가 아니다」로 green-by-skip 을 막는데, 바닥이 실측보다 낮으면 **오라클 8벌이 사라져도 green** 이다. 같은 성격의 바닥이 `db/ai` `min = 3`(실측 3 · 일치)다. 고칠 자리 = 그 toml 한 줄. 이 회차는 고치지 않았다.
+- ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`service-tests-core-api` 가 워커 12 개에 DB 를 나눠 주지 못해 전수에서 오염된다.** 실측 = 전수 1회차 core-api red 4건이 단독 실행에서는 **1,221건 전건 통과**(`dev-package/reports/r-dev-reset/full-gate-diagnosis.md`). 고칠 자리 = `gates/tools/service-tests.sh` — `--dist loadfile` ＋ **worker 당 격리 DB 1개**가 서야 한다(현 배선은 `PYTEST_PARALLEL=(-n "$JOBS" --dist loadfile)` ＋ `xdist_core_db` 플러그인 경로). **어느 검사에 걸리는가** = 전수 게이트에서 판정 red 로 유입되고, 그것이 이번 회차 전수 예외(`〈396〉`-㉶)의 주된 근거였다. 이 회차는 고치지 않았다.

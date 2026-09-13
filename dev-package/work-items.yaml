@@ -3568,10 +3568,10 @@ items:
     status: open
     stage: after_stage2
     owner: "오케스트레이터 ＋ Ted"
-    entry_conditions: ["DR-1a·DR-1b 가 main 에 병합됐다", "그 sha 가 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다 — 수령 완료(축자 「순차적으로 다 이어서해 3의 초기화도 진행하고」 2026-09-13 · PLAN-SoT §9 〈396〉-㉲)"]
+    entry_conditions: ["DR-1a·DR-1b 가 main 에 병합됐다", "그 sha 가 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다 — 수령 완료(축자 「순차적으로 다 이어서해 3의 초기화도 진행하고」 2026-09-13 · PLAN-SoT §9 〈396〉-㉲)", "실행 명령 정본이 레포에 있다 — dev-package/sessions/DR-2-runbook.md(배포 → 초기화 → 재적용 → SQL 선행 → 확인)", "deploy_doctor 15/15 기준선이 기록돼 있다 — dev-package/sessions/DR-2-tree-sync-2026-09-13.md"]
     depends_on: [DR-1a, DR-1b]
     completion_def: "데이터셋 0건(경계 실린 경로 확인) ＋ uploads/·previews/ 객체 0 ＋ 진행 중 멀티파트 0 ＋ _ops/ 객체 수 무변 ＋ deploy_doctor 15/15 한 번의 실행 ＋ 원장 행 1건."
-    evidence: ""
+    evidence: "실행 전 준비분만 있다 — 명령 런북 `dev-package/sessions/DR-2-runbook.md`(단계별 기대출력·정지점·미해소 [미확인] 6건) ＋ `deploy_doctor` 15/15 기준선 `dev-package/sessions/DR-2-tree-sync-2026-09-13.md`(2026-09-13 실측 · 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 · 직전 실행 sha 기준). 실행 결과는 미기록 — 이 항목은 아직 open 이다."
     deadline: null
     note: "비가역. 승인은 1회 소진이다 — Ted GO 는 수령했으나 main 병합·dev 배포가 남아 있어 아직 실행하지 않는다. 다섯 명령을 순서대로 내고 각 명령이 비영 종료하면 그 자리에서 멈춘다. 버저닝 탓에 삭제 후에도 이전 판이 30일 남는다."
     sources: ["dev-package/prd/rounds/R-DEV-RESET.md"]
