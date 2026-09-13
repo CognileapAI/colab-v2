@@ -12,6 +12,7 @@
 """
 
 import argparse
+import getpass
 import json
 import os
 import re
@@ -78,6 +79,36 @@ ULID_RE = re.compile(r"/datasets/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 ANALYZE_DONE_CSS = '[data-testid="up-analyze"][data-stage="3"]'
 PROJECT_ULID_RE = re.compile(r"/projects/([0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32})")
 
+# ── 「가공 단계」(Lv) ────────────────────────────────────────────────────────
+# 저장값 4값의 원본 = frontend/src/components/upload/axisDict.ts `PROCESSING_LEVELS`.
+# 러너는 **계획값을 매 행 명시 지정**한다 — 화면 기본값(`Lv2`)에도, 계보 자동 채움에도
+# 기대지 않는다. 선택지가 빈 값으로 시작하도록 바뀌어도 같은 동작이 선다.
+LEVEL_CSS = '[data-testid="reg-level"]'
+PROCESSING_LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+
+# 등록이 성립한 상태값. `done` 은 옛 상태 파일의 값이라 그대로 센다(하위 호환).
+REGISTERED_STATUSES = ("done", "registered", "registered_no_preview")
+
+SECRET_MARK = "***"
+
+# ── 계정 관리 화면 = frontend/src/routes/AccountAdminPage.tsx · 경로 `/account-admin` ──
+# ⚠ 칸에는 `data-testid` 가 없다. 구역만 `account-create` 이고 칸은 form `name` 이다.
+#    `name` 은 화면이 FormData 로 직접 읽는 계약값이라 문면 변경에 흔들리지 않는다.
+#    칸별 testid 부재는 후속 항목으로 올린다(NOTE 참조).
+ACCOUNT_PATH = "/account-admin"
+ACCOUNT_SECTION_CSS = '[data-testid="account-create"]'
+ACCOUNT_CSS = {
+    "name": ACCOUNT_SECTION_CSS + ' input[name="name"]',
+    "email": ACCOUNT_SECTION_CSS + ' input[name="email"]',
+    "lab": ACCOUNT_SECTION_CSS + ' select[name="labId"]',
+    "role": ACCOUNT_SECTION_CSS + ' select[name="role"]',
+    "password": ACCOUNT_SECTION_CSS + ' input[name="initialPassword"]',
+    "admin": ACCOUNT_SECTION_CSS + ' input[name="operator"]',
+    "submit": ACCOUNT_SECTION_CSS + ' button[type="submit"]',
+    "status": ACCOUNT_SECTION_CSS + ' [role="status"]',
+}
+ACCOUNT_ROLES = ("교수", "연구원")
+
 CFG = None
 LOG_FH = None
 
@@ -97,7 +128,12 @@ def log(msg, echo=True):
 
 def load_state():
     if STATE_PATH.exists():
-        return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        # 옛 상태 파일(version 1 · `accounts` 없음)도 그대로 읽는다 — 빠진 칸만 채운다.
+        st = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        for key in ["steps", "projects", "datasets", "selectors", "accounts"]:
+            if not isinstance(st.get(key), dict):
+                st[key] = dict()
+        return st
     st = dict()
     st["version"] = 1
     st["created"] = now()
@@ -109,6 +145,7 @@ def load_state():
     st["projects"] = dict()
     st["datasets"] = dict()
     st["selectors"] = dict()
+    st["accounts"] = dict()
     return st
 
 
@@ -136,6 +173,156 @@ class Fail(Exception):
 
 class Blocked(Exception):
     """등록 불가 — 이 순번만 기록하고 다음 순번으로 간다(중단하지 않는다)."""
+
+
+# ══════════════ 판정 함수 — 브라우저 없이 도는 자리(단위 시험 대상) ══════════════
+# 시험 = tests/test_runner_plan_mapping.py. 화면을 부르지 않으므로 `CFG` 도 쓰지 않는다.
+
+
+def is_registered(status):
+    """등록이 성립한 상태값인가. 옛 상태 파일의 `done` 도 센다."""
+    return str(status or "") in REGISTERED_STATUSES
+
+
+def level_action(ds, options=None):
+    """계획 한 행 → 「가공 단계」 선택 동작 한 개.
+
+    `options` = 화면 select 가 실제로 가진 값들. 계획값이 그 안에 없으면
+    **이름을 실어** 그 행만 실패시킨다(다른 행으로 옮겨 붙이지 않는다).
+    """
+    name = str(ds.get("name") or ("순번 " + str(ds.get("seq"))))
+    value = str(ds.get("processing_level") or "").strip()
+    if not value:
+        raise Fail("가공 단계 값이 계획에 없다: " + name)
+    if value not in PROCESSING_LEVELS:
+        raise Fail("가공 단계 값이 정본 4값 밖이다: " + name + " · " + value)
+    if options is not None and value not in list(options):
+        raise Fail("가공 단계 선택지에 없는 값: " + name + " · " + value
+                   + " · 화면 선택지 = " + ",".join(str(o) for o in options))
+    return ["select", LEVEL_CSS, value]
+
+
+def failure_path(reg_open_exists, reg_open_enabled, reason):
+    """분석 실패 자리의 갈림. 반환 = (결정 · 사유).
+
+    ⭑ 2026-09-14 개정 — 종전에는 「보기만 할게요」(reg-viewonly)로 모달을 닫아
+    **데이터셋이 아예 생기지 않았다.** 화면이 분석 실패에서도 등록을 허용하도록
+    바뀌었으므로(배너 축자 「등록은 됩니다」) 등록 결정 게이트가 열리면 그대로 등록한다.
+    `blocked` 은 대기 뒤에도 `reg-open` 이 비활성인 자리에만 남는다.
+    """
+    text = str(reason or "")
+    if not reg_open_exists:
+        return "blocked", text + " · 등록 결정 게이트(reg-open)가 화면에 없다"
+    if not reg_open_enabled:
+        return "blocked", text + " · reg-open 이 대기 뒤에도 비활성으로 남았다"
+    return "register", text
+
+
+def read_secret_file(path, what):
+    """0600 자격 파일 한 줄. 권한이 느슨하면 **고치지 않고 거절한다.**
+
+    (`read_password_file` 은 옛 자격 파일용이라 0600 으로 조여 주고 잇는다 — 이쪽은
+    사람이 만들어 넣는 파일이라 조용히 고치지 않는다.)
+    """
+    path = Path(path)
+    if not path.exists():
+        raise Fail(what + " 파일 없음: " + path.name + " (0600 으로 만들어 둔다)")
+    mode = stat.S_IMODE(path.stat().st_mode)
+    if mode & 0o077:
+        raise Fail(what + " 파일 권한이 0600 이 아니다: " + path.name
+                   + " · 현재 " + oct(mode) + " · `chmod 600` 후 다시 실행한다")
+    value = path.read_text(encoding="utf-8").strip()
+    if not value:
+        raise Fail(what + " 파일이 비었다: " + path.name)
+    return value
+
+
+def load_accounts_file(path):
+    """계정 목록 파일(0600 · JSON) → 항목 목록.
+
+    항목 = {email · name · role · admin(불)} ＋ 선택 `lab`(연구실 이름).
+    **비밀번호는 이 파일에 두지 않는다** — 별도 0600 파일 또는 표준입력이다.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise Fail("계정 파일 없음: " + path.name)
+    mode = stat.S_IMODE(path.stat().st_mode)
+    if mode & 0o077:
+        raise Fail("계정 파일 권한이 0600 이 아니다: " + path.name
+                   + " · 현재 " + oct(mode) + " · `chmod 600` 후 다시 실행한다")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, dict):
+        raw = raw.get("accounts")
+    if not isinstance(raw, list) or not raw:
+        raise Fail("계정 파일이 목록이 아니거나 비었다: " + path.name)
+    out = []
+    for i, item in enumerate(raw):
+        who = str((item or dict()).get("email") if isinstance(item, dict) else "") \
+            or ("항목 " + str(i + 1))
+        if not isinstance(item, dict):
+            raise Fail("계정 항목이 객체가 아니다: " + who)
+        if "initialPassword" in item or "password" in item:
+            raise Fail("계정 파일에 비밀번호를 두지 않는다(별도 0600 파일 · 표준입력): " + who)
+        entry = dict()
+        for key in ["email", "name", "role"]:
+            val = str(item.get(key) or "").strip()
+            if not val:
+                raise Fail("계정 항목에 " + key + " 가 없다: " + who)
+            entry[key] = val
+        if entry["role"] not in ACCOUNT_ROLES:
+            raise Fail("계정 역할이 정본 2값 밖이다: " + who + " · " + entry["role"])
+        admin = item.get("admin")
+        if not isinstance(admin, bool):
+            raise Fail("계정 항목의 admin 이 불 값이 아니다: " + who + " · " + repr(admin))
+        entry["admin"] = admin
+        lab = item.get("lab")
+        if lab:
+            entry["lab"] = str(lab).strip()
+        out.append(entry)
+    return out
+
+
+def account_form_actions(entry):
+    """계정 추가 한 건의 동작 목록.
+
+    ⚠ 비밀번호는 **자리(`secret`)만** 싣고 값은 싣지 않는다 — 이 목록은 기록·상태
+    파일로 흘러갈 수 있다. 값은 실행 시점에 `fill_secret`(표준입력 경로)이 넣는다.
+    「첫 로그인 비밀번호 변경 강제」는 화면에 칸이 없다 — 서버가 늘 강제하므로 건드리지 않는다.
+    """
+    actions = [
+        ["fill", ACCOUNT_CSS["name"], entry["name"]],
+        ["fill", ACCOUNT_CSS["email"], entry["email"]],
+        ["select", ACCOUNT_CSS["role"], entry["role"]],
+    ]
+    if entry.get("lab"):
+        actions.append(["select-label", ACCOUNT_CSS["lab"], entry["lab"]])
+    if entry.get("admin"):
+        actions.append(["check", ACCOUNT_CSS["admin"]])
+    actions.append(["secret", ACCOUNT_CSS["password"]])
+    actions.append(["activate", ACCOUNT_CSS["submit"]])
+    return actions
+
+
+def account_state_row(entry, status, message=""):
+    """상태 파일에 남길 한 행. 비밀번호 칸이 없다."""
+    row = dict()
+    row["email"] = entry["email"]
+    row["name"] = entry["name"]
+    row["role"] = entry["role"]
+    row["admin"] = bool(entry.get("admin"))
+    if entry.get("lab"):
+        row["lab"] = entry["lab"]
+    row["status"] = status
+    row["message"] = str(message or "")[:200]
+    row["at"] = now()
+    return row
+
+
+def account_log_line(entry):
+    """기록 한 줄. 비밀번호 자리는 자리표뿐이다."""
+    return ("계정 " + entry["email"] + " · " + entry["name"] + " · " + entry["role"]
+            + " · 관리자 " + ("예" if entry.get("admin") else "아니오")
+            + " · 초기 비밀번호 " + SECRET_MARK)
 
 
 def ab_env():
@@ -746,6 +933,47 @@ def open_register(st):
     spot(st, "reg-open", [("testid", "reg-open")])
 
 
+LEVEL_READ_JS = """
+(() => {
+  const el = document.querySelector(__SEL__);
+  if (!el) return JSON.stringify(null);
+  return JSON.stringify({
+    value: el.value,
+    options: Array.from(el.options).map((o) => o.value).filter((v) => v !== ""),
+  });
+})()
+"""
+
+
+def level_state():
+    """화면 select 의 현재 값과 선택지. 못 읽으면 None."""
+    got = js(LEVEL_READ_JS.replace("__SEL__", json.dumps(LEVEL_CSS)), default=None)
+    if isinstance(got, dict) and isinstance(got.get("options"), list):
+        return got
+    return None
+
+
+def select_level(st, ds):
+    """「가공 단계」를 **계획값으로 명시 지정**한다. 반환 = 넣은 값.
+
+    화면 기본값에도, 계보에서 나온 자동 채움에도 기대지 않는다 — 러너가 매 행 직접 넣는다.
+    (등록 카드 ① 단계에만 있는 칸이다 · RegisterArea.tsx `StepClassify`.)
+    """
+    if not wait_css(LEVEL_CSS, 60, "가공 단계 선택 칸"):
+        raise Fail("「가공 단계」 선택 칸이 없다: " + str(ds.get("name")))
+    before = level_state()
+    options = (before or dict()).get("options") if before else None
+    action = level_action(ds, options)
+    ab(list(action))
+    after = level_state()
+    if after is not None and after.get("value") != action[2]:
+        raise Fail("가공 단계가 들어가지 않았다: " + str(ds.get("name"))
+                   + " · 기대 " + action[2] + " · 화면 " + str(after.get("value")))
+    st.setdefault("selectors", dict())["reg-level"] = ["testid", "reg-level"]
+    log("  · 가공 단계 = " + action[2] + " (계획값 명시 지정)")
+    return action[2]
+
+
 def activate(css, label=""):
     """단추를 확실히 누른다 — 보이는 자리로 옮기고 초점을 준 뒤 Enter.
 
@@ -910,13 +1138,14 @@ def do_lineage(st, ds):
 
 
 def handle_analysis_failure(st, ds, outcome):
-    """분석 실패 자리의 갈림 — 멈추거나, 등록을 포기하고 다음 순번으로 간다.
+    """분석 실패 자리 — **등록으로 잇는다.** 반환 = 실패 사유 문면(등록은 이어감).
 
-    ⚠ 2026-09-13 실측 — `.gpkg` 2건(seq 13·14)이 「파일 분석을 마치지 못했어요 ·
-    형식 인식 실패」를 내고 「다음 →」(reg-open)이 비활성으로 굳었다. 그 자리에서 멈추면
-    남은 14건이 같이 막힌다. 그래서 **미리보기 렌더를 판정하는 5순번만 멈추고**
-    나머지는 「보기만 할게요」(reg-viewonly)로 모달을 닫고 `blocked` 로 적은 뒤 잇는다.
-    「보기만 할게요」는 등록하지 않고 닫는 길이다(UploadModal.tsx `viewOnly`).
+    ⭑ 2026-09-14 개정 — 종전에는 「보기만 할게요」(reg-viewonly)로 모달을 닫아
+    데이터셋이 **아예 생기지 않았다**(2026-09-13 실측 · `.gpkg` 2건). 화면이
+    분석 실패에서도 등록을 허용하도록 바뀌었으므로(배너 축자 「등록은 됩니다」)
+    등록 결정 게이트가 열릴 때까지 기다렸다가 정상 경로와 똑같이 등록한다.
+    `blocked` 은 대기 뒤에도 `reg-open` 이 비활성인 자리에만 남긴다.
+    갈림 자체는 `failure_path` 가 판정한다(브라우저 없이 시험된다).
     """
     seq = str(ds["seq"])
     reason = "분석 완료 표시를 받지 못했다. 결과 = " + str(outcome)
@@ -928,20 +1157,34 @@ def handle_analysis_failure(st, ds, outcome):
     if screen:
         reason = reason + " · 화면 = 「" + screen + "」"
     dump_failure(seq.zfill(2) + "-analysis", reason)
-    if ds["seq"] in PREVIEW_FORMAT_SEQS:
-        raise Fail(reason + " · 미리보기 렌더 판정 대상이라 멈춘다.")
-    if count('[data-testid="reg-viewonly"]') > 0:
-        spot(st, "reg-viewonly", [("testid", "reg-viewonly"), ("text", "보기만 할게요")],
-             must=False)
+
+    exists = count('[data-testid="reg-open"]') > 0
+    ready = False
+    if exists:
+        limit = time.time() + 600
+        while time.time() < limit:
+            if enabled('[data-testid="reg-open"]'):
+                ready = True
+                break
+            time.sleep(2)
+    decision, detail = failure_path(exists, ready, reason)
+
     row = st["datasets"].get(seq) or dict()
     row["seq"] = ds["seq"]
     row["name"] = ds["name"]
+    if decision == "register":
+        row["analysis_failed"] = True
+        row["analysis_failure_reason"] = screen or reason
+        st["datasets"][seq] = row
+        save_state(st)
+        log("  · 분석 실패 — 미리보기 없이 등록으로 잇는다: " + (screen or reason))
+        return screen or reason
     row["status"] = "blocked"
-    row["blocked_reason"] = screen or reason
+    row["blocked_reason"] = detail
     row["blocked_at"] = now()
     st["datasets"][seq] = row
     save_state(st)
-    raise Blocked(reason)
+    raise Blocked(detail)
 
 
 def do_dataset(st, ds):
@@ -977,13 +1220,18 @@ def do_dataset(st, ds):
             or count('[data-testid="up-status-error"]') > 0],
         ["done", lambda: count(ANALYZE_DONE_CSS) > 0],
     ], limit, label="분석 완료", dry="done")
+    no_preview = None
     if outcome != "done":
-        handle_analysis_failure(st, ds, outcome)
-    log("  · 분석 완료 표시 확인")
+        no_preview = handle_analysis_failure(st, ds, outcome)
+    else:
+        log("  · 분석 완료 표시 확인")
 
     # 등록 결정 게이트를 먼저 열어 미리보기 렌더를 부른다 —
     # 격자 블록은 렌더 결과(「좀표 없음」)에서만 붙는다(PreviewPanel.tsx · gridFlow.ts).
     open_register(st)
+    # 「가공 단계」는 계획값을 **매 행 명시 지정**한다(등록 카드 ① 단계).
+    st["datasets"][seq]["processing_level"] = select_level(st, ds)
+    save_state(st)
     do_grid(st, ds)
     ensure_step_two(st)
 
@@ -1028,12 +1276,15 @@ def do_dataset(st, ds):
     elapsed = round(time.time() - started, 1)
     SHOT_DIR.mkdir(parents=True, exist_ok=True)
     ab(["screenshot", str(SHOT_DIR / (seq.zfill(2) + ".png"))], expect_ok=False)
-    st["datasets"][seq]["status"] = "done"
+    st["datasets"][seq]["status"] = "registered_no_preview" if no_preview else "done"
+    if no_preview:
+        st["datasets"][seq]["analysis_failure_reason"] = no_preview
     st["datasets"][seq]["dataset_id"] = did
     st["datasets"][seq]["finished"] = now()
     st["datasets"][seq]["elapsed_s"] = elapsed
     save_state(st)
-    log("  + seq " + seq + " 완료 · id=" + str(did) + " · " + str(elapsed) + "s")
+    log("  + seq " + seq + " 완료(" + st["datasets"][seq]["status"] + ") · id="
+        + str(did) + " · " + str(elapsed) + "s")
 
 
 def phase_datasets(st, plan):
@@ -1045,8 +1296,8 @@ def phase_datasets(st, plan):
     for ds in rows:
         seq = str(ds["seq"])
         cur = st["datasets"].get(seq) or dict()
-        if cur.get("status") == "done" and not CFG.force:
-            log("· seq " + seq + " 이미 완료 — 건너뜀")
+        if is_registered(cur.get("status")) and not CFG.force:
+            log("· seq " + seq + " 이미 등록됨(" + str(cur.get("status")) + ") — 건너뜀")
             continue
         if cur.get("status") == "blocked" and not CFG.force:
             log("· seq " + seq + " 등록 불가로 기록됨 — 건너뜀 ("
@@ -1071,10 +1322,140 @@ def phase_datasets(st, plan):
             sys.exit(2)
     done = 0
     for v in st["datasets"].values():
-        if v.get("status") == "done":
+        if is_registered(v.get("status")):
             done = done + 1
     status = "done" if done >= len(plan["datasets"]) else "partial"
     mark_step(st, "datasets", status, done=done)
+
+
+SELECT_BY_LABEL_JS = """
+(() => {
+  const el = document.querySelector(__SEL__);
+  if (!el) return JSON.stringify(null);
+  const want = __VAL__;
+  const hit = Array.from(el.options).find((o) => (o.textContent || "").trim() === want);
+  return JSON.stringify(hit ? hit.value : null);
+})()
+"""
+
+CHECKED_JS = """
+(() => {
+  const el = document.querySelector(__SEL__);
+  if (!el) return JSON.stringify(null);
+  return JSON.stringify(!!el.checked);
+})()
+"""
+
+
+def select_by_label(css, label, what):
+    """보이는 이름으로 option 을 고른다 — option 의 value 는 id 라 이름으로 짚는다."""
+    script = SELECT_BY_LABEL_JS.replace("__SEL__", json.dumps(css))
+    script = script.replace("__VAL__", json.dumps(label))
+    value = js(script, default="DRY")
+    if not value:
+        raise Fail(what + " 선택지에 없는 이름: " + label)
+    ab(["select", css, str(value)])
+
+
+def set_checkbox(css, want, what):
+    """체크 상태를 원하는 값으로 맞춘다. 이미 그 값이면 누르지 않는다."""
+    script = CHECKED_JS.replace("__SEL__", json.dumps(css))
+    cur = js(script, default=(not want))
+    if cur is None:
+        raise Fail(what + " 칸이 화면에 없다: " + css)
+    if bool(cur) == bool(want):
+        return
+    ab(["click", css], expect_ok=False)
+    after = js(script, default=want)
+    if bool(after) != bool(want):
+        raise Fail(what + " 체크 상태를 바꾸지 못했다: " + css)
+
+
+def account_initial_password():
+    """초기 비밀번호 — 0600 파일 또는 표준입력. **argv 로는 받지 않는다.**"""
+    if CFG.accounts_password_file:
+        return read_secret_file(Path(CFG.accounts_password_file).expanduser(),
+                                "계정 초기 비밀번호")
+    if CFG.dry_run:
+        return "DRY-RUN-PLACEHOLDER"
+    if sys.stdin.isatty():
+        value = getpass.getpass("계정 초기 비밀번호(입력은 보이지 않는다): ").strip()
+    else:
+        value = sys.stdin.readline().strip()
+    if not value:
+        raise Fail("계정 초기 비밀번호를 받지 못했다"
+                   "(--accounts-password-file 0600 파일 또는 표준입력).")
+    return value
+
+
+def create_account(st, entry, secret):
+    """계정 한 건을 **계정 관리 화면으로** 만든다. API·DB 직접 쓰기 없음."""
+    for action in account_form_actions(entry):
+        kind = action[0]
+        css = action[1]
+        if kind == "secret":
+            fill_secret(css, secret, "초기 비밀번호")
+        elif kind == "activate":
+            activate(css, "계정 추가")
+        elif kind == "check":
+            set_checkbox(css, True, "관리자로 등록")
+        elif kind == "select-label":
+            select_by_label(css, action[2], "연구실")
+        else:
+            ab(list(action))
+    if CFG.dry_run:
+        return "created", "(dry-run)"
+    if not wait_css(ACCOUNT_CSS["status"], 60, "계정 추가 결과 문면"):
+        raise Fail("계정 추가 결과 문면이 뜨지 않았다: " + entry["email"])
+    message = el_text(ACCOUNT_CSS["status"])
+    if "계정을 추가했어요" in message:
+        return "created", message
+    return "failed", message
+
+
+def phase_accounts(st, plan):
+    """선택 단계 — dev 초기화로 지워진 운영자·사용자 계정을 화면으로 되만든다.
+
+    ⛔ 「첫 로그인 비밀번호 변경 강제」는 화면에 칸이 없다 — 서버가 늘 강제한다.
+       화면이 정하는 대로 두고 러너가 건드리지 않는다(AccountAdminPage.tsx 도움말 축자).
+    """
+    if not CFG.accounts_file:
+        log("· 계정 단계 건너뜀 — --accounts-file 미지정")
+        mark_step(st, "accounts", "skipped")
+        return
+    entries = load_accounts_file(Path(CFG.accounts_file).expanduser())
+    secret = account_initial_password()
+    log("· 계정 " + str(len(entries)) + "건 · 초기 비밀번호 " + SECRET_MARK + "(값 미기록)")
+
+    open_url(ACCOUNT_PATH)
+    if not wait_css(ACCOUNT_SECTION_CSS, 60, "계정 추가 화면"):
+        raise Fail("계정 관리 화면(account-create)이 열리지 않았다 — "
+                   "관리자 권한 계정으로 로그인했는지 확인한다.")
+    rows = st.setdefault("accounts", dict())
+    made = 0
+    for entry in entries:
+        prev = rows.get(entry["email"]) or dict()
+        if prev.get("status") == "created" and not CFG.force:
+            log("· " + entry["email"] + " 이미 생성됨 — 건너뜀")
+            made = made + 1
+            continue
+        log("  · " + account_log_line(entry))
+        try:
+            status, message = create_account(st, entry, secret)
+        except Fail as exc:
+            status = "failed"
+            message = str(exc)
+        rows[entry["email"]] = account_state_row(entry, status, message)
+        save_state(st)
+        if status == "created":
+            made = made + 1
+            log("  + " + entry["email"] + " 추가됨")
+        else:
+            log("  x " + entry["email"] + " 추가 실패: " + str(message))
+        open_url(ACCOUNT_PATH)
+        wait_css(ACCOUNT_SECTION_CSS, 60, "계정 추가 화면")
+    mark_step(st, "accounts", "done" if made >= len(entries) else "partial",
+              made=made, planned=len(entries))
 
 
 CATALOG_COUNT_RE = re.compile(r"(\d[\d,]*)\s*건")
@@ -1121,7 +1502,7 @@ def phase_verify(st, plan):
     state_done = 0
     by_project = dict()
     for v in st["datasets"].values():
-        if v.get("status") == "done":
+        if is_registered(v.get("status")):
             state_done = state_done + 1
             key = v.get("project")
             by_project[key] = by_project.get(key, 0) + 1
@@ -1210,7 +1591,7 @@ def phase_verify(st, plan):
 
 def phase_report(st, plan):
     """순번 · 이름 · 상태 · 데이터셋 id · 소요 · 바이트 표."""
-    head = ["순번", "이름", "상태", "데이터셋 id", "소요(s)", "바이트"]
+    head = ["순번", "이름", "Lv", "상태", "데이터셋 id", "소요(s)", "바이트"]
     rows = []
     for ds in sorted(plan["datasets"], key=lambda d: d["seq"]):
         row = st["datasets"].get(str(ds["seq"])) or dict()
@@ -1219,6 +1600,7 @@ def phase_report(st, plan):
         rows.append([
             str(ds["seq"]),
             ds["name"][:34],
+            str(row.get("processing_level") or ds.get("processing_level") or "-"),
             row.get("status") or "미착수",
             str(row.get("dataset_id") or "-"),
             (str(elapsed) if elapsed else "-"),
@@ -1243,14 +1625,14 @@ def phase_report(st, plan):
         print(fmt(r))
     done = 0
     for r in rows:
-        if r[2] == "done":
+        if is_registered(r[3]):
             done = done + 1
     total = 0
     for d in plan["datasets"]:
         total = total + int(d.get("bytes", 0)) + int(d.get("grid_bytes", 0))
     print("")
     print("완료 " + str(done) + " / " + str(len(rows)) + " · 계획 총량 " + format(total, ",") + " B")
-    for name in ["login", "projects", "datasets", "verify"]:
+    for name in ["login", "accounts", "projects", "datasets", "verify"]:
         s = st["steps"].get(name) or dict()
         print("단계 " + name + ": " + str(s.get("status") or "미착수") + " " + str(s.get("at") or ""))
     if VERIFY_PATH.exists():
@@ -1267,7 +1649,8 @@ def main():
     global CFG, LOG_FH
     ap = argparse.ArgumentParser(description="dev 실투입 러너(agent-browser)")
     ap.add_argument("--phase", required=True,
-                    choices=["login", "projects", "datasets", "verify", "report", "all"])
+                    choices=["login", "accounts", "projects", "datasets",
+                             "verify", "report", "all"])
     ap.add_argument("--base-url", default=os.environ.get("COLAB_DEV_URL", DEFAULT_URL),
                     help="대상 주소. 환경변수 COLAB_DEV_URL 로도 준다. 기본값 없음")
     ap.add_argument("--work-dir", default=os.environ.get("COLAB_SEED_WORK_DIR"),
@@ -1284,6 +1667,10 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                     help="실행 없이 agent-browser 명령만 출력")
     ap.add_argument("--force", action="store_true", help="완료 표시된 순번도 다시 실행")
+    ap.add_argument("--accounts-file", default=None,
+                    help="계정 목록 JSON(0600). 주면 accounts 단계가 동작한다")
+    ap.add_argument("--accounts-password-file", default=None,
+                    help="계정 초기 비밀번호 파일(0600). 없으면 표준입력으로 받는다")
     ap.add_argument("--allow-argv-secret", action="store_true",
                     help="비밀번호 argv 폴백 허용(프로세스 목록 노출)")
     ap.add_argument("--verbose", action="store_true")
@@ -1321,12 +1708,14 @@ def main():
 
     table = dict()
     table["login"] = phase_login
+    table["accounts"] = phase_accounts
     table["projects"] = phase_projects
     table["datasets"] = phase_datasets
     table["verify"] = phase_verify
     table["report"] = phase_report
     if CFG.phase == "all":
-        order = ["login", "projects", "datasets", "verify", "report"]
+        # `accounts` 는 `--accounts-file` 을 준 실행에서만 실질 동작한다(없으면 건너뜀).
+        order = ["login", "accounts", "projects", "datasets", "verify", "report"]
     else:
         order = [CFG.phase]
 
