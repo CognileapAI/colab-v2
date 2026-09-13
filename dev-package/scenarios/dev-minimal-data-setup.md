@@ -35,7 +35,8 @@
   ```
 - 심는 값(파일 축자) = `d1_lab` `00000000000000000000HYMETS` 「고려대학교 수문학연구실」 ＋ `d1_lab_profile`(`고려대학교` · `전창현` · `수문학` · `열림`) ＋ 교수 계정 ＋ `d2_member_role`.
 - 파일 이름이 `staging` 이지만 내용은 환경 무관이다. 전 문장 `ON CONFLICT DO NOTHING` — 재실행해도 행이 늘지 않는다.
-- 기대 결과 = `d1_lab` 1행 · `d1_lab_profile` 1행.
+- ⭑ **소유자 롤(`NOBYPASSRLS`)로 돌아간다** — 파일이 `BEGIN;` 직후 `SET LOCAL app.current_lab` 을 스스로 건다. 종전 판은 `d1_lab_profile` 에서 축자 `new row violates row-level security policy` 로 멈췄고, staging 에서 통한 것은 실행기가 psql 을 `postgres` 슈퍼유저로 불렀기 때문이다(dev·RDS 에는 그 롤이 없다). 증명 = `dev-package/sessions/DR-1b-provision-lab-proof.md`.
+- 기대 결과 = `d1_lab` 1행 · `d1_lab_profile` 1행. 파일 끝의 계수표가 5행(`d1_account` 1 · `d1_lab` 1 · `d1_lab_profile` 1 · `d2_member_role` 1 · `d2_permission_switch` 0)을 찍는다.
 - 실패 시 멈춤 = 오류 출력을 그대로 기록하고 ② 로 넘어가지 않는다.
 
 ### ② 첫 계정 — `services/core-api/ops/provision-account.sql`
@@ -46,21 +47,29 @@
 - 기대 결과 = `d1_account` 1행 ＋ `d2_member_role` 1행.
 - 실패 시 멈춤.
 
-### ③ 첫 로그인 자격 — 절차 축자
+### ③ 첫 로그인 자격 — 절차 축자 (선례 실측본)
 
-- 근거 = `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 「## 3. 계정 생성 — 제품과 같은 경로」.
-- 요지 = `POST /admin/accounts` 를 쓸 수 없다(운영자 0명 · 자기 자신을 만들지 못한다). `login_credential` 을 만드는 ops SQL 도 없다. 그래서 `accounts.py::create_account` 의 트랜잭션을 **core-api 컨테이너 안에서 그대로** 실행한다.
-- 같은 문서가 적은 동일성 조건 —
-  > 해시 = `colab_core.kernel.password.hash_password` (`scrypt` · `n=16384 r=8 p=1`)
-  > 로그인 이름 정규화 = `colab_core.kernel.db_credentials.normalize_login_name`
-  > ID = `colab_core.kernel.ids.Ulid.generate()`
-  > 같은 `pg_advisory_xact_lock(1131379081)` · 같은 이메일 중복 검사 2종 · 한 트랜잭션
-  > `must_change_password`·`session_version` 은 **INSERT 에서 생략** — 제품과 같이 DB 기본값(`true` · `1`)을 받는다
-  > 접속 = 컨테이너에 마운트된 `/etc/colab/account-admin-database.url`(`colab_account_admin` 롤)
-- **비밀번호는 표준입력 한 줄로만 넘긴다.** argv·파일·로그에 적지 않는다.
-- 초기 비밀번호는 **10자 이상**으로 정한다 — 제품 하한이 10자이고 9자는 첫 변경 화면에서 막힌다(같은 문서 §7).
-- 기대 결과 = `login_credential` 1행 · `must_change_password = true` · `session_version = 1`.
-- 알려진 잡음(판정 red 아님) = 사후 조회가 `permission denied for table d2_member_role` 로 죽을 수 있다. INSERT 는 이미 커밋된 뒤다(같은 문서 §3-1).
+- 근거 = `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 「## 3. 계정 생성 — 제품과 같은 경로」(＋ `§6` 비밀 취급 · `§7` 남은 것 · `§8` 재설정 1회). 아래는 그 절의 축자 이관이다.
+- **왜 화면·API 가 아닌가** — 축자: 「`POST /admin/accounts` 를 쓸 수 없다(운영자 0명 → 자기 자신을 만들지 못한다). ops SQL 중 `login_credential` 을 만드는 것도 없다 — `provision-account.sql` 은 `d1_account`·`d2_member_role`·스위치까지이고, `set-password.py` 는 **DB 가 아니라 자격 파일**에 심는다.」
+- **무엇을 하는가** — 축자: 「그래서 `accounts.py::create_account` 의 트랜잭션을 **그대로** core-api 컨테이너 안에서 실행했다. 같은 모듈을 import 했으므로 해시·정규화·잠금·INSERT 가 제품과 동일하다.」
+- **동일성 조건 6 (축자)** —
+  > - 해시 = `colab_core.kernel.password.hash_password` (`scrypt` · `n=16384 r=8 p=1`)
+  > - 로그인 이름 정규화 = `colab_core.kernel.db_credentials.normalize_login_name`
+  > - ID = `colab_core.kernel.ids.Ulid.generate()`
+  > - 같은 `pg_advisory_xact_lock(1131379081)` · 같은 이메일 중복 검사 2종 · 한 트랜잭션
+  > - `must_change_password`·`session_version` 은 **INSERT 에서 생략** — 제품과 같이 DB 기본값(`true` · `1`)을 받는다
+  > - 접속 = 컨테이너에 마운트된 `/etc/colab/account-admin-database.url`(`colab_account_admin` 롤)
+  > - 비밀번호는 **표준입력 한 줄**로만 넘겼다. argv·파일·로그에 적지 않았다.
+- **실행 자리** = dev core-api 컨테이너(`§8` 실측 이름 `colab_v2_dev_core_api`) 안. 임시 실행 스크립트는 **레포에 남기지 않는다** — 축자: 「임시 실행 스크립트는 레포에 남기지 않았다(커밋 0 · 작업 종료 시 삭제).」
+- **비밀 취급 4 (축자)** —
+  > - 초기 비밀번호는 0600 전달 파일에서 셸 변수로만 읽고 표준입력으로 넘겼다. `cat`·`echo` 로 화면에 내지 않았고 레포·서버 어느 파일에도 쓰지 않았다.
+  > - 확인 뒤 `shred -u` 했다. 사후 `ls` = `No such file or directory`.
+  > - 확인용으로 발급된 세션 1건이 남는다 — 회수 토큰을 보관하지 않았으므로 손으로 끊지 않았다. **Ted 의 첫 비밀번호 변경이 `session_version` 을 +1 하면 그 시점에 무효가 된다**(`db_credentials.change_password`).
+- **초기 비밀번호는 10자 이상으로 정한다.** 축자: 「전달 파일은 **9자**이고 제품 하한은 **10자**다(`accounts.py` `initialPassword: Field(min_length=10)` · `frontend/src/auth/passwordRules.ts` `length >= 10`). DB·로그인 경로에는 길이 하한이 없어 심기·로그인 모두 성립했고 실측으로 확인했다. 다만 **같은 비밀번호를 `POST /admin/accounts` 로는 발급할 수 없다.**」 ⟹ 9자로 심으면 로그인은 되지만 첫 변경 화면이 막는다.
+- **집행 뒤 확인할 열 (선례 실측표의 열 그대로)** — `account_id` · `login_name` · `lab_id`/`role` · `kdf`/`n`/`r`/`p` = `scrypt`/`16384`/`8`/`1` · `must_change_password` = `true` · `session_version` = `1`.
+- **알려진 잡음 — 판정 red 가 아니다.** 축자: 「집행 스크립트의 **사후 조회**가 `permission denied for table d2_member_role` 로 죽었다. INSERT 트랜잭션은 이미 커밋된 뒤였고, 원인은 `ops/account-admin-role.sql` 이 `d2_member_role` 에 **`INSERT` 만 주고 `SELECT` 를 주지 않는 것**이다.」 ⟹ 역할 행 확인은 소유자 롤로 대신한다.
+- **상태 코드 확인** = `POST /api/v1/sessions` **201** · `GET /api/v1/me` **200** `mustChangePassword=true`. ⚠ 401 이 5건 쌓이면 **429**(시도 제한 창 900초 · 한도 5)가 나므로 창이 지난 뒤 다시 낸다(`§8` 실측).
+- 기대 결과 = `account_admin.login_credential` 1행 · `must_change_password = true` · `session_version = 1`.
 - 실패 시 멈춤.
 
 ### ④ 서비스 운영자 등록 — `services/core-api/ops/provision-service-operator.sql`
