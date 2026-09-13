@@ -5,7 +5,7 @@
 > **최종 갱신 2026-09-13 · 현재 단계 = 버그개선 회차 dev 배포 완료(`321bdaef1201` · 태그 `dev-20260913-1`).** `deploy_doctor --env dev` **항목 15 — ✓ 15 · ✗ 0 · ─ 0 · 한 번의 실행 · exit 0** · 대장 `BF-14`~`BF-17` 전건 `done` · 등재만 3건(`PA-T`·`LV-5`·`HE-1`) · 이슈 댓글 12건 게시(**닫기는 Ted**) · 최종 전수 **green 63 / red(판정) 0 / red(준비) 1**(트리 `a07b7ae6`) · 등재 `PLAN-SoT §9 〈385〉`~`〈394〉`.
 > **다음 = ⑴ `HE-1`**(하네스 평가 과제 4건 수리) — **별도 세션 · 별도 작업 사본 `31 CoLAB-v2`** · 프롬프트 `dev-package/sessions/HE-1-session-prompt.md`. **⑵ 이슈 닫기 = Ted.** **⑶ 배포 후속 3건 항목화 판정**(`dev.env` 소유권 표류 검사 없음 · 이송 tar 보존 정책 없음 · 디스크 여유 검사 없음 — 셋 다 `deploy_doctor` 항목 후보 · 축자 `§9 〈394〉`⑪).
 > **진입조건** = `main` tip ≥ `321bdaef` · dev 실적용 sha `321bdaef1201`(`CURRENT_SHA`·`MAIN_SHA` `ancestor=yes`) · 자격 3종 `~/.config/colab-platform/{dev-key.pem,dev.env,dev-operator.env}` 존재 — 축자는 `§4.5` 맨 위 블록. ⭑ **이번 회차 프런트 수정이 dev 에 반영됐다**(`index.html` md5 = CloudFront 본문 일치) ／ 종전 ~~dev 는 백오피스 회차 sha 를 돌고 있어 미반영~~.
-> ⭑ **⟨2026-09-13 · R-DEV-RESET `DR-1b`⟩ 최종 갱신 2026-09-13 · 현재 단계 = dev 전면 초기화 준비**(통합 `integration/r-dev-reset` · `main` 미병합). **`DR-1a`·`DR-1b` ✅** — dev 한정 초기화 도구 ＋ 규칙 예외·원장·대장 등재. **다음 WU = `DR-2`(dev 초기화 1회 실행)** — **Ted 명시 GO 는 수령했고**(축자 `§9 〈N+1〉`-㉲ · 승인 1회 소진) **선행은 `main` 병합 ＋ dev 배포**다. 그 뒤 `DR-3`(화면 투입 시나리오 ＋ 실투입). **진입조건** = `main` 에 `DR-1a`·`DR-1b` 반영 · 그 sha 가 dev 실적용 · `deploy_doctor` ⑥ 서버 저장소 트리 동기화. ⛔ **새 블로커 `§4` `72`** — 공용 적용 DB 가 미병합 `0032_private_owner_access` 에 찍혀 표준 환경 `schema-diff` 가 준비 red(담당 오케스트레이터).
+> ⭑ **⟨2026-09-13 · R-DEV-RESET `DR-1b`⟩ 최종 갱신 2026-09-13 · 현재 단계 = dev 전면 초기화 준비**(통합 `integration/r-dev-reset` · `main` 미병합). **`DR-1a`·`DR-1b` ✅** — dev 한정 초기화 도구 ＋ 규칙 예외·원장·대장 등재. **다음 WU = `DR-2`(dev 초기화 1회 실행)** — **Ted 명시 GO 는 수령했고**(축자 `§9 〈396〉`-㉲ · 승인 1회 소진) **선행은 `main` 병합 ＋ dev 배포**다. 그 뒤 `DR-3`(화면 투입 시나리오 ＋ 실투입). **진입조건** = `main` 에 `DR-1a`·`DR-1b` 반영 · 그 sha 가 dev 실적용 · `deploy_doctor` ⑥ 서버 저장소 트리 동기화. ⛔ **새 블로커 `§4` `72`** — 공용 적용 DB 가 미병합 `0032_private_owner_access` 에 찍혀 표준 환경 `schema-diff` 가 준비 red(담당 오케스트레이터).
 > **로그인·백오피스 회차 잔여는 그대로다** — Ted 실사용 확인(첫 비밀번호 변경 뒤 백오피스 화면 전부) · 후속 7건(`〈384〉`-⑨) · 태그 `dev-20260912-1`·`dev-20260912-2` **미push**(원격 반영은 오케스트레이터 몫).
 > ⛔ **블로커 `§4` `71` 은 상태 그대로다** — staging 자동배포 파이프라인이 매 회차 `exit 78`(배포·검증은 green · 원인은 운영자 알림 스풀 부재). ⭑ **⟨개정 2026-09-13⟩ 전수 게이트 3계수 = green 63 / red(판정) 0 / red(준비) 1** ／ 종전 ~~`[미확인]`~~ — `〈392〉` 의 red(판정) 2 는 커밋 `41617a43`·`c4802aa2` 로 정정됐고, red(준비) 1 = `harness-eval` 미선언(판정은 `〈391〉` 단독 실측). 근거 `dev-package/reports/bugfix-260912/`.
 
@@ -319,13 +319,13 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 | **HE-1** 하네스 평가 과제 4건 설계 수리 (H14·H15·H16·H18) | ⬜ | 2026-09-12 등재만 · 미착수 · `stage: backlog`(완료 집계 제외) · Ted 판정 ⓐ「red 를 안고 병합·배포 · 수리는 별도 세션」 · 등재 `§9 〈391〉` · 세션 프롬프트 `dev-package/sessions/HE-1-session-prompt.md` · 실행처 = 별도 체크아웃 `31 CoLAB-v2` |
 | **G10** 단독 선언 게이트 8개 안의 시험 병렬화 | ✅ | **2026-09-11 수용 완료** — `reports/stage12-release-acceptance/acceptance.md`. 이전 이력: **2026-09-11 로컬 부분 구현.** 네 pytest 서비스 jobs=1/4 계수 동일(core 1040/6, pipeline 268/48, ai 137/26, viz 387/42), core 157.44→49.74초·viz 27.99→14.03초. worker별 core DB, xdist/입력 준비 실패 78, selftest fail-closed green. db-selftest 독립 2절·preview selftest 독립 5케이스 병렬화. **남음** = frontend/실 render-latency 실측과 같은 트리 `all -j4` 전후 판정·시간 대조. 게이트 사이 `serial`은 유지한다. |
 
-### T-DR dev 초기화·참조 데이터 재적재 (`DR-` · 2026-09-13 R-DEV-RESET 회차 · 라운드 `prd/rounds/R-DEV-RESET.md` · 등재 `§9 〈N〉`·`〈N+1〉`)
+### T-DR dev 초기화·참조 데이터 재적재 (`DR-` · 2026-09-13 R-DEV-RESET 회차 · 라운드 `prd/rounds/R-DEV-RESET.md` · 등재 `§9 〈395〉`·`〈396〉`)
 
 | WU | 상태 | 비고 |
 |---|---|---|
 | **DR-1a** dev 전용 초기화 도구 ＋ 가드 시험 ＋ 로컬 증명 | ✅ | 2026-09-13 · `ops/reset_dev_environment.py` · 가드 시험 25건(구현 전 RED 로그) · 로컬 증명 `sessions/DR-1a-local-proof.md`(일회용 postgres · dev 무접촉) |
 | **DR-1b** 규칙 예외·원장·대장 등재 ＋ 첫 자격 삽입 절차 축자 | ✅ | 2026-09-13 · `.claude/rules/deploy.md` 11번 뒤 증보(11번 문면 무수정) · `infra/staging/provision-lab.sql` `SET LOCAL app.current_lab` 1줄 ＋ 증명 `sessions/DR-1b-provision-lab-proof.md` |
-| **DR-2** dev 초기화 1회 실행 | ⬜ | **Ted 명시 GO 수령**(축자 `§9 〈N+1〉`-㉲ · 승인 1회 소진) · **선행이 남았다** — `DR-1a`·`DR-1b` 의 `main` 병합 ＋ dev 배포 뒤 오케스트레이터가 실행 |
+| **DR-2** dev 초기화 1회 실행 | ⬜ | **Ted 명시 GO 수령**(축자 `§9 〈396〉`-㉲ · 승인 1회 소진) · **선행이 남았다** — `DR-1a`·`DR-1b` 의 `main` 병합 ＋ dev 배포 뒤 오케스트레이터가 실행 |
 | **DR-3** 화면 투입 시나리오 ＋ 실투입 | ⬜ | `DR-2` 뒤 사람 실행 · 문서 초안 `scenarios/dev-minimal-data-setup.md` · 목표 계수 프로젝트 4 · 데이터셋 28 · 계보 간선 18 |
 
 ## 2. 현재 상태 스냅샷
