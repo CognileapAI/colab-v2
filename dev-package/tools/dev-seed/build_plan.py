@@ -15,10 +15,12 @@
   어긋나면 그 행 이름을 적고 비영 종료한다(조용히 진행하지 않는다).
 
 종료코드 — 0 정상 · 2 나무 대조 실패·파일 부재·총계 불일치 · 3 표↔블록 불일치 ·
-  4 기본값 아닌 기대값으로 생성물을 쓰려 함(`--allow-nondefault-expect` 참조).
+  4 기본값 아닌 기대값으로 생성물을 쓰려 함(`--allow-nondefault-expect` 참조) ·
+  5 `--check-manifest` 에서 커밋된 등재표가 md 재생성본과 다름.
 """
 
 import argparse
+import difflib
 import glob
 import json
 import os
@@ -244,6 +246,57 @@ def build_manifest(blocks, datasets, edges, total_bytes):
         datasets=rows)
 
 
+def md_declared_bytes(blocks):
+    """md 블록이 선언한 총 바이트.
+
+    생성기가 쓴 등재표의 `expected.data_bytes` 와 **같은 값이다** — 실물 합계가 블록 선언과
+    다르면 생성기가 `MISMATCH` 로 비영 종료해 애초에 쓰지 않기 때문이다(`resolve_rows`).
+    그래서 참조자료가 없는 자리에서도 등재표를 되만들어 대조할 수 있다.
+    """
+    return sum(int(row["bytes"]) for b in blocks for row in b["datasets"])
+
+
+def render_manifest(blocks, datasets, edges, total_bytes):
+    """등재표 파일 본문 — 쓰는 자리와 대조하는 자리가 **같은 한 줄**을 쓴다."""
+    return MANIFEST_HEADER + yaml.safe_dump(
+        build_manifest(blocks, datasets, edges, total_bytes),
+        allow_unicode=True, sort_keys=False, width=120)
+
+
+def check_manifest(blocks, manifest_path, expect_datasets, expect_edges, diff_lines=40):
+    """커밋된 등재표가 md 재생성본과 같은가 — 참조자료 없이 판정한다. 아무것도 쓰지 않는다."""
+    datasets, _, _ = resolve_rows(blocks, Path("."), resolve_files=False)
+    check_order(datasets)
+    edges = [dict(child=d["name"], parent=pn) for d in datasets for pn in d["parents"]]
+    total_bytes = md_declared_bytes(blocks)
+    print("datasets %d edges %d data_bytes %d" % (len(datasets), len(edges), total_bytes))
+    print("expected datasets %s edges %s" % (expect_datasets, expect_edges))
+
+    if len(datasets) != expect_datasets or len(edges) != expect_edges:
+        print("COUNT-MISMATCH datasets=%d/%d edges=%d/%d"
+              % (len(datasets), expect_datasets, len(edges), expect_edges))
+        return 2
+    if not manifest_path.exists():
+        print("MANIFEST-MISSING " + str(manifest_path))
+        return 5
+
+    want = render_manifest(blocks, datasets, edges, total_bytes)
+    have = manifest_path.read_text(encoding="utf-8")
+    if want != have:
+        print("MANIFEST-DRIFT " + str(manifest_path))
+        diff = list(difflib.unified_diff(
+            have.splitlines(), want.splitlines(),
+            fromfile="등재표(커밋된 것)", tofile="md 로 다시 만든 것", lineterm="", n=1))
+        for line in diff[:diff_lines]:
+            print(line)
+        if len(diff) > diff_lines:
+            print("... 다른 줄 %d 개 더 있다" % (len(diff) - diff_lines))
+        return 5
+
+    print("등재표가 md 와 같다: " + str(manifest_path))
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="DATASETS.md 4건 → 등재표 ＋ 업로드 계획")
     ap.add_argument("--md-root", default=None,
@@ -260,6 +313,9 @@ def main(argv=None):
                     help="총 데이터셋 수 기대값")
     ap.add_argument("--expect-edges", type=int, default=EXPECT_EDGES,
                     help="총 계보 간선 수 기대값")
+    ap.add_argument("--check-manifest", action="store_true",
+                    help="md 만으로 등재표를 되만들어 --manifest-out 의 것과 대조한다. "
+                         "참조자료가 없어도 돌고 아무것도 쓰지 않는다")
     ap.add_argument("--allow-nondefault-expect", action="store_true",
                     help="기대값을 기본값에서 바꾼 채 생성물을 쓰는 것을 허용한다. "
                          "도구 폴더 밖을 가리키는 --out 과 함께 줘야 한다")
@@ -296,6 +352,10 @@ def main(argv=None):
         for b in table_bad:
             print("TABLE-MISMATCH " + b)
         return 3
+
+    if args.check_manifest:
+        return check_manifest(blocks, Path(args.manifest_out).expanduser(),
+                              args.expect_datasets, args.expect_edges)
 
     resolve_files = ref_root.exists()
     if not resolve_files:

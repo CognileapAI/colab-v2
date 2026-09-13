@@ -170,7 +170,7 @@ ALL_GATES=(
   planning-freshness agent-bridge operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
-  rls-coverage rls-effect work-item-consistency stage2-markers autometa-loss
+  rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
   frontend-typecheck frontend-test frontend-fixture-reach frontend-visual
   preview-tile-slot artifact-ownership e2e-format-coverage render-latency
   backup-cron-streak ops-observability exec-bit harness-eval
@@ -180,6 +180,7 @@ ALL_GATES=(
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
+  seed-plan-drift-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
@@ -203,6 +204,23 @@ case "$GATE" in
     # 기획 정본 패키지 HTML의 임베드 md ↔ 원본 md 일치 검사.
     # 정본이 마운트되지 않으면 skip이 아니라 red다 (CLAUDE.md §4 green-by-skip 금지).
     exec python3 "$REPO_ROOT/dev-package/tools/check-package-freshness.py"
+    ;;
+  seed-plan-drift)
+    # 참조자료 정본 md 4건 ↔ **커밋된 등재표**(`dev-package/tools/dev-seed/plan-manifest.yaml`).
+    # `build_plan.py` 는 아무 게이트도 부르지 않는 생성기였고, 그 생성물은 커밋돼 러너가 읽는다.
+    # md 를 고치고 생성기를 다시 돌리지 않으면 **낡은 등재표가 그대로 통과한다** — 대조하는
+    # 자리가 「사람이 기억해서 다시 돌리는 것」 안에만 있었다(green-by-skip 의 한 갈래).
+    # 판정부는 `build_plan.py --check-manifest` 를 그대로 돈다 — 게이트가 자기 사본을 만들지 않는다.
+    # 총계 28/18 은 **md 에서 센 값**이고 플래그로 낮출 수 없다(생성기가 종료코드 4 로 막는다).
+    # 입력의 세 상태 — `COLAB_REF_ROOT` 가 실재하면 실물 파일까지 대조 · `COLAB_SEED_PLAN_NO_FILES=1`
+    # 이면 명시 면제(미실행 사실을 요약에 드러낸 채 md→등재표 대조만) · 둘 다 없으면
+    # red(준비 · 입력미선언 · 78). 침묵은 통과가 아니다.
+    exec "$REPO_ROOT/gates/tools/seed-plan-drift.sh"
+    ;;
+  seed-plan-drift-selftest)
+    # 위 게이트가 red fixture 로 fail-closed 임을 증명한다 — 등재표 손수정 red(판정) ·
+    # md 행 삭제 red(판정) · 미선언 red(준비 · 78) · 명시 면제 green(면제·미실행 노출).
+    exec "$REPO_ROOT/gates/tools/seed-plan-drift-selftest.sh"
     ;;
   contract-lint)
     # seam OpenAPI 린트 (spectral, 룰셋 contracts/.spectral.yaml).
