@@ -172,6 +172,7 @@ sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod \
   ⚠ `COLAB_OWNERSHIP_COMPOSE_PROJECT` 는 **컨테이너 이름과 다를 수 있다**(`colab_v2_prod_*` 는
   compose 가 고정한 이름이다). `docker volume ls | grep ownership-ledger` 로 실측해 적는다.
 - **④ 는 세 상태다** — 선언(`COLAB_NOTIFICATION_ROOT`＋설정 파일)되면 건다 · `COLAB_NOTIFICATION_SKIP=1` 로 **명시** 면제하면 건수를 드러낸 채 넘어간다(알림 런타임이 기대는 SQS 큐 2·Secrets Manager 웹훅 ARN 2·CloudWatch 알람이 그 벌에 아직 없을 때 — 2026-09-13 prod 첫 재배포가 이 갈래) · 아무 말도 없으면 exit 2.
+- ⭑ **⟨실측 2026-09-13 · prod 첫 재배포⟩ ①②③ 설치 · ④ `COLAB_NOTIFICATION_SKIP=1` 로 명시 면제**(prod 에 SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람 없음 · 운영자 런타임 venv 미구성) · ③ 값 = 프로젝트 `colab-v2-prod` · gid 999 · 수동 1회 → `current.json`(d3_file 4 · d5_upload_file 4). ④ 의 AWS 자원을 만들지는 **Ted 판정**.
 - **④ 는 `install-runtime-cron.sh` 가 관리한다.** 일정 정본이 그 스크립트의 `expected()` 하나이고
   `verify` 가 자기 출력과 설치본을 대조한다 — 여기서 cron 줄을 베껴 쓰면 그 대조가 무의미해진다.
   ⭑ **⟨2026-09-13⟩ 그 설치기가 `prod` 를 받는다** ／ 종전 ~~`dev|staging` 만~~ — 갈래는 둘이고
@@ -191,7 +192,7 @@ sudo COLAB_ENV=prod COLAB_BACKUP_BUCKET=colab-platform-data-prod \
 | `db-bootstrap.sh prep`·`roles`·`extensions` (소유자 롤·DB 2) | **한 번** | 마이그레이션이 붙을 롤이 없다 |
 | `/etc/colab` 시크릿 11 (§4-b) | **한 번** · 자격 회전 때 다시 | 기동 실패 또는 런타임 500 |
 | `db-bootstrap.sh app-grants`·`backup-role` | **한 번** · 새 표가 생긴 회차에 다시 | 앱 롤이 새 표를 못 읽는다 |
-| `db-bootstrap.sh account-admin`·`operator` | **새 롤 권한이 바뀐 회차에 다시**(`0025`·`0027` 계열 마이그레이션이 낀 회차) | 로그인·백오피스·운영자 내보내기가 런타임 500. **걸리는 검사 없음** |
+| `db-bootstrap.sh account-admin`·`operator` | **새 롤 권한이 바뀐 회차에 다시**(`0025`·`0027` 계열 마이그레이션이 낀 회차). ⚠ **순서 = `up.sh`(마이그레이션) 뒤다** — GRANT 가 `account_admin` 스키마·운영자 표를 전제하므로 마이그레이션 전에 돌리면 「schema does not exist」로 실패한다(2026-09-13 실측 · 1차 실패). 롤·비밀번호·접속 파일(`/etc/colab/*.url`)만 먼저 만들어도 되고, GRANT 는 `up.sh` 뒤 재실행한다(멱등). `app-grants`·`verify` 도 같은 자리 | 로그인·백오피스·운영자 내보내기가 런타임 500. **걸리는 검사 없음** |
 | 운영자 런타임 venv (§4-d) | **반입한 sha 마다** | 옛 sha 의 코드로 알림이 돈다 |
 | `build.sh` → `tag-release.sh prod` → `ship.sh` | **매 배포** | — |
 | `/opt/colab-repo` 동기화 (`ship.sh` 안) | **매 배포** | `deploy_doctor` ⑥⑦ 이 **옛 alembic head 를 정답으로 삼아 조용히 틀린다** |

@@ -10,11 +10,14 @@
 | 벌 | 주소 | 상태 |
 |---|---|---|
 | dev | `https://d31zgpff2091oh.cloudfront.net` | 배포 창 집행 중 · 태그 `dev-YYYYMMDD-N` |
-| prod | `https://d1aje00ns2hjsl.cloudfront.net` | 개통 완료(§5 P1~P8) · 실행 이미지 `prod-3922d01750d0` · **다음 배포부터 `prod-YYYYMMDD` 태그에서만**(§5-9) |
+| prod | `https://d1aje00ns2hjsl.cloudfront.net` | ⭑ **⟨개정 2026-09-13⟩ 첫 정기 재배포 완료** — 태그 `prod-20260913` → `origin/main` `aa8bee981ff5` · 실행 이미지 `prod-aa8bee981ff5` · `deploy_doctor --env prod` **15/15 한 번의 실행**(§4-1c) ／ 종전 ~~개통 완료(§5 P1~P8) · 실행 이미지 `prod-3922d01750d0` · 다음 배포부터 `prod-YYYYMMDD` 태그에서만(§5-9)~~ |
 
-⚠ **prod 는 규칙 6 이 생기기 전에 개통됐다.** 지금 돌고 있는 `prod-3922d01750d0` 은
-`prod-*` 태그에서 나온 것이 아니고 `/opt/colab-v2/MAIN_SHA` 도 없다 — ⟹ **`deploy_doctor` ⑮ 는
-지금 ✗ 다**(「파일 없음」). 다음 prod 배포는 `main` 재빌드 ＋ 태그가 선행이다(§5-9).
+⭑ **⟨개정 2026-09-13⟩ prod 가 규칙 6 안으로 들어왔다** — `ship.sh` 반입 게이트 통과(`MAIN_SHA main=aa8bee981ff5
+candidate=aa8bee981ff5 ancestor=yes`) · `deploy_doctor` ⑮ ✓. 배포 원장은 §4-0b, 판정은 §4-1c, 순서 교훈은 §3-1.
+⚠ 태그 `prod-20260913` 은 **로컬에만** 있다(push 안 함 · 규칙 문면 「태그 주체 = Ted」와의 차이 · Ted 통보 예정 · §5-9).
+／ 종전 ~~⚠ prod 는 규칙 6 이 생기기 전에 개통됐다. 지금 돌고 있는 `prod-3922d01750d0` 은
+`prod-*` 태그에서 나온 것이 아니고 `/opt/colab-v2/MAIN_SHA` 도 없다 — ⟹ `deploy_doctor` ⑮ 는
+지금 ✗ 다(「파일 없음」). 다음 prod 배포는 `main` 재빌드 ＋ 태그가 선행이다(§5-9).~~
 
 ---
 
@@ -110,7 +113,10 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | `/etc/colab/<파일>` **Permission denied** — 소유자는 맞는데 | 디렉터리 모드 | 디렉터리가 `700 root` 면 안의 파일을 못 연다. 컨테이너(uid 10001)에는 **파일 단위로** 마운트한다 |
 | **`pg_dump` 가 `query would be affected by row-level security policy`** | RLS FORCE | 소유자도 정책에 걸린다. **백업 전용 `colab_backup`(BYPASSRLS) 롤로 뜬다** — 7) 절 |
 | **원격 스크립트의 뒷부분이 조용히 사라진다** | `ssh 'bash -s' <<EOF` | 스크립트 안의 `docker run -i` 가 **heredoc 의 나머지를 stdin 으로 먹는다.** 파일로 `scp` 해서 실행한다 |
-| `ast.parse: source code string cannot contain null bytes` | 맥에서 보낸 `*.py` | 맥 `tar` 가 **AppleDouble(`._*`)** 을 딸려 보낸다(점 파일이라 `ls` 에 안 보이는데 `*.py` 글롭에 걸린다) → `COPYFILE_DISABLE=1 tar` 또는 `find -name '._*' -delete` |
+| `ast.parse: source code string cannot contain null bytes` | 맥에서 보낸 `*.py` | 맥 `tar` 가 **AppleDouble(`._*`)** 을 딸려 보낸다(점 파일이라 `ls` 에 안 보이는데 `*.py` 글롭에 걸린다) → `COPYFILE_DISABLE=1 tar` 또는 `find -name '._*' -delete`. ⭑ **⟨재발 2026-09-13 prod⟩ 판정 레포 tar 에 `._*.py` 15,353 파일 → `deploy_doctor` ⑥⑦ ✗** → 호스트에서 `find -delete` ＋ `infra/prod/ship.sh` 가 tar 에서 `._*`·`__pycache__` 를 뺀다(커밋 「AppleDouble 제외」) |
+| **`db-bootstrap.sh account-admin` 이 「schema account_admin does not exist」** | prod alembic head | **순서다.** `account-admin`·`operator` 의 GRANT 는 마이그레이션 `0025`·`0027` 이 만든 스키마·표를 전제한다 → 롤·비밀번호·접속 파일까지만 먼저, **GRANT 는 `up.sh` 뒤 재실행**(2026-09-13 실측 · `infra/prod/README.md §8`) |
+| **`ship.sh` 의 scp 가 `/opt/colab-v2/*.sh` 에서 Permission denied** | `ls -ln /opt/colab-v2` | 앞 회차가 `sudo` 로 놓아 **root 소유**다. scp 는 `ec2-user` 로 붙는다 → `sudo chown -R ec2-user /opt/colab-v2`(2026-09-13 실측 · 1차 실패 → 2차 성공) |
+| **`deploy_doctor` ③ 웹 버킷이 403 — 운영자 키로 돌렸는데** | `--env-file` 이 가리키는 파일의 **크기** | env-file 이 **빈 파일**이면 컨테이너가 IMDS(앱 역할)로 떨어지고 prod 앱 역할은 진단 권한이 없다 → 403. 로컬 키 파일 경로 착오였다(2026-09-13 실측) · `wc -c` 로 먼저 잰다 |
 | **vite 빌드가 `styleText` 없음으로 죽는다** | `node -v` | **Node 22 미만.** 기계에 Node 가 둘일 수 있다 — `PATH` 의 것과 brew Cellar 의 것 |
 | `npm` 자체가 모듈을 못 찾고 죽는다 | `NODE_OPTIONS` | 없는 파일을 preload 하고 있다 → `env -u NODE_OPTIONS npm …` |
 | **RDS 생성이 「backup retention exceeds free tier」** | 백업 보존 기간 | Free Plan 상한이었다. ⭑ **⟨해소 2026-09-06⟩ 유료 전환으로 풀렸다** — **7일 선택 가능**(콘솔 실측). prod 는 7일로 세운다(`〈395〉`-㉯ — 이것이 시점 복구 관문의 열쇠다). ／ 종전 ~~`1`일로 낮춘다~~ |
@@ -210,7 +216,17 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | RDS 안의 것 | 롤 4 · DB 2 · 연구실 1 · 계정 2 | ✅ P6 · 아래 §4-1b |
 | CloudFront 배포 | `colab-platform-prod` · `E1HUNU140VL6BK` · `d1aje00ns2hjsl.cloudfront.net` | ✅ P7 · 오리진 3 · 동작 3 · **무료 플랜** · WAF **감시 모드** |
 | CloudFront 함수 | `colab-platform-prod-spa-rewrite` | ✅ P7 · 기본 동작 뷰어 요청 · 태그 `Environment=prod` |
-| 백업 cron | `/etc/cron.d/colab-prod` | ✅ P7 · **한 번 돌려 GREEN 확인** — `_ops/backups/prod/` |
+| 백업 cron | `/etc/cron.d/colab-prod` | ✅ P7 · **한 번 돌려 GREEN 확인** — `_ops/backups/prod/` · ⭑ ⟨2026-09-13⟩ `install-cron.sh` 로 재설치(①②) |
+| 소유권 스냅샷 cron | `/etc/cron.d/colab-ownership-snapshot` | ✅ 2026-09-13 · 매시 17분 · compose 프로젝트 `colab-v2-prod` · gid 999 · 수동 1회 → `current.json`(d3_file 4 · d5_upload_file 4) |
+| 운영자 알림 cron | `/etc/cron.d/colab-operator-notifications` | ⏸ **명시 면제**(`COLAB_NOTIFICATION_SKIP=1` · 2026-09-13) — prod 에 SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람이 없다(dev 에만) · 운영자 런타임 venv 도 미구성 · **Ted 판정 자리**(§10) |
+| RDS 안의 것(재배포 뒤) | 롤 **8** · `/etc/colab` **11** · `prod.env` 키 **9** | ✅ 2026-09-13 · 롤 신설 4(`colab_account_admin`(login) · `colab_operator_runtime`(login) · `colab_operator_reporter` · `colab_operator_exporter`) · 시크릿 신설 4(`account-admin-database.url`(10001) · `operator-database.url` · `ownership-platform-db.url`(`colab_backup` 자격) · `ops-slack-webhook.url`(dev 와 같은 수신처) — 셋은 root) · 키 신설 3(`COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID=0` · `_GROUP_GID=999` · `_MAX_AGE_SECONDS=7200`) |
+
+**prod 배포 원장** — 한 행 = 한 회차. 판정은 `deploy_doctor --env prod` **한 번의 실행**만 센다.
+
+| 회차 | 태그 → sha | 마이그레이션 | doctor | 시각(KST) | 비고 |
+|---|---|---|---|---|---|
+| 개통 (2026-09-06) | (태그 없음) → 기능 브랜치 `3922d01750d0` | platform `0012` · ai `0005` | **14/14**(당시 항목 14) | 2026-09-06 | 규칙 6 이전 · `MAIN_SHA` 없음 |
+| **1차 재배포 (2026-09-13)** | `prod-20260913` → `origin/main` **`aa8bee981ff5`**(로컬 태그 · 미push) | platform `0012_merge_lv1_and_transfer` → `0031_search_evidence` **19** · ai `0005_k2b_concept_graph_seed` → `0007_merge_vocab_and_category` **3** | **15/15** ✓ 15 · ✗ 0 · ─ 0 · exit 0 | **19:54** (백업 19:38 GREEN) | 반입 게이트 `ancestor=yes` · 실행 이미지 5 전부 `prod-aa8bee981ff5` · 웹 `index-DuCCGbNb.js` 로컬=CloudFront 일치 · 스모크(로그인 201 · `/me` · 데이터셋 목록 200 · 검색 200 · 미리보기 400 빈 본문) · doctor 1차 11/15(✗③⑥⑦⑩) → 원인 셋 제거 뒤 최종 — §3-1 |
 
 **⭑ prod 는 CloudFront 「무료 플랜」이다**(2026-09-06 신설 · dev 도 같은 날 맞췄다).
 필요한 것이 다 들어간다 — 동작 **3**(한도 5) · 도메인 **1**(한도 1) · Edge compute.
@@ -236,17 +252,27 @@ be an IP address`). dev 의 `ec2-core-api` 는 그 제한 **전에** 만들어�
 CloudFront 로는 401 JSON). ⛔ `0.0.0.0/0` 으로 두면 CloudFront 를 건너뛰어 **WAF·로그·
 오리진 정책이 통째로 우회**된다.
 
-### 4-1c. prod 완료 판정 (2026-09-06)
+### 4-1c. prod 완료 판정 (2026-09-06 · 재판정 2026-09-13)
 
 ```
-항목 14 — ✓ 14 · ✗ 0 · ─ 0     전 항목 통과 · exit 0 · 한 번의 실행으로
+항목 15 — ✓ 15 · ✗ 0 · ─ 0     전 항목 통과 · exit 0 · 한 번의 실행으로     (2026-09-13 19:54 KST · prod-aa8bee981ff5 · 실행기 기록 pr.verify.1.log)
 ```
+
+⭑ **⟨재판정 2026-09-13⟩ 위 줄이 현재 판정이다** — 첫 정기 재배포(`prod-20260913` → `aa8bee981ff5`) 뒤
+`deploy_release.py run --plan`(대상 `pr`)이 웹 배포 → 검증을 한 실행으로 돌렸다. ⑮ 는 ✓ 다(`MAIN_SHA`
+`ancestor=yes`). 실행기 종료코드 **78** 은 배포·검증 exit 0 **뒤** Slack 비밀 파일(`~/.config/colab/slack-webhook`)
+부재로 알림 단계 준비가 실패한 것이다 — 완료 판정과 무관하고 사실로 적는다.
+1차 실행은 **11/15** 였다(✗③ 운영자 키 env-file 이 빈 파일 → IMDS 403 · ✗⑥⑦ 판정 레포 tar 의 AppleDouble
+`._*.py` 15,353 파일 → ast 「null bytes」 · ✗⑩ 웹 미배포). 셋 다 원인을 지운 뒤 다시 돌린 것이고, **부분
+결과를 합치지 않았다.** 원인별 조치는 §3-1.
+
+／ 종전 판정 ~~항목 14 — ✓ 14 · ✗ 0 · ─ 0 · 전 항목 통과 · exit 0 · 한 번의 실행으로 (2026-09-06)~~
 
 ⭑ **⟨개정 2026-09-12⟩ 위 줄은 2026-09-06 의 실측이고 그때 점검기는 14 항목이었다.**
 `deploy_doctor` 는 이제 **15 항목**이다(⑮ 실행 sha ∈ main · `〈379〉`). `infra/prod/deploy-doctor.sh`
 가 `-v /opt/colab-v2:/state:ro` 를 넘기도록 고쳤으므로 다음 실행부터 ⑮ 가 판정된다.
 ⚠ **지금 다시 돌리면 ⑮ 는 ✗ 다** — `/opt/colab-v2/MAIN_SHA` 가 없다(규칙 6 이전에 실린 이미지).
-⟹ **prod 의 「15/15 한 번의 실행」은 아직 성립하지 않았다.** 성립 경로는 §5-9 다.
+~~⟹ prod 의 「15/15 한 번의 실행」은 아직 성립하지 않았다. 성립 경로는 §5-9 다.~~ ⭑ ⟨2026-09-13⟩ **성립했다** — 위 판정 줄.
 
 실행은 `infra/prod/deploy-doctor.sh` 다. **혼자서는 못 맞히는 조건이 넷** 있고 넷 다 red 를
 하나씩 내며 드러났다 — 컨테이너 안에서 돌 것 · **레포를 통째로** 마운트할 것(⑥⑦ 은
@@ -262,9 +288,13 @@ CloudFront 로 로그인 **201** → 그 토큰으로 `/me` **200**(⟹ `AllView
 의 `viz-render` 주석에 있다(dev 커널 OOM 4건 실측 · 전부 cgroup 상한). 루트 30 GiB 도 실측 근거다 —
 dev 는 20 GiB 에 65% 이고 불변 태그라 배포마다 이미지가 쌓인다.
 
-**⚠ 지금 도는 이미지는 `main` 이 아니라 기능 브랜치에서 빌드한 것이다** — 태그 `prod-3922d01750d0`.
-정본 `〈335〉`-㉳ 는 「`main` 커밋에 찍은 `prod-YYYYMMDD` 태그에서만」이므로, **PR 병합 뒤
-`main` 에서 다시 빌드·전송해 그 규율로 돌아온다.** 그때까지는 「브랜치에서 세운 prod」다.
+⭑ **⟨개정 2026-09-13⟩ 지금 도는 이미지는 `origin/main` `aa8bee981ff5` 에서 빌드한 것이다** — 태그 `prod-aa8bee981ff5`.
+빌드 방식 = 그 커밋의 워크트리에 브랜치의 배포 도구(`infra/prod` · `infra/_lib` · `infra/dev/tag-release.sh` ·
+`infra/notifications/{install-runtime-cron,run-runtime-job}.sh` · `services/core-api/ops/{deploy_doctor,s3_doctor}.py`)를
+**미추적 복사**해 돌렸다 — 실행 이미지의 코드는 `main` 이고, 도구만 브랜치 판이다(PR 병합 뒤 둘이 같아진다).
+／ 종전 ~~⚠ 지금 도는 이미지는 `main` 이 아니라 기능 브랜치에서 빌드한 것이다 — 태그 `prod-3922d01750d0`.
+정본 `〈335〉`-㉳ 는 「`main` 커밋에 찍은 `prod-YYYYMMDD` 태그에서만」이므로, PR 병합 뒤
+`main` 에서 다시 빌드·전송해 그 규율로 돌아온다. 그때까지는 「브랜치에서 세운 prod」다.~~
 
 ### 4-1b. prod DB 안에 든 것
 
@@ -404,17 +434,22 @@ DB 부트스트랩: `prep` → `roles` → (마이그레이션) → `app-grants`
    한 줄. `deploy_doctor` ⑮ 가 `CURRENT_SHA` 와 대조한다(§6-1). `infra/prod/deploy-doctor.sh`
    가 `-v /opt/colab-v2:/state:ro` 를 넘겨야 읽힌다 — 빼면 ⑮ 는 항상 ✗ 다.
 
-⚠ **지금 prod 에서 돌고 있는 `prod-3922d01750d0` 은 이 규칙 이전 판이다.**
-`prod-*` 태그 0건 · `/opt/colab-v2/MAIN_SHA` 없음 ⟹ 현재 `deploy_doctor` 는 **⑮ 가 ✗** 다.
+⭑ **⟨실측 2026-09-13⟩ 이 경로를 처음 끝까지 밟았다** — `build.sh`(5 이미지 arm64 · tar 1.0GB) → `tag-release.sh prod`
+→ `ship.sh`(반입 게이트 `MAIN_SHA main=aa8bee981ff5 candidate=aa8bee981ff5 ancestor=yes` · ops 소스 번들 green ·
+이미지 5 적재 · `prod.env COLAB_IMAGE_TAG=prod-aa8bee981ff5` · 판정 레포 동기화) → `up.sh` exit 0 → ⑮ ✓.
+⚠ **문면과의 차이 1건** — 태그 `prod-20260913` 은 Ted 가 아니라 배포 세션이 **로컬에서** 찍었고 push 하지 않았다.
+반입 게이트 ⑵ 는 로컬 태그로 통과한다(원격 미조회 · 우회 변수 없음). 문면을 고칠지 이번만 예외로 둘지 = **Ted 판정**.
+／ 종전 ~~⚠ 지금 prod 에서 돌고 있는 `prod-3922d01750d0` 은 이 규칙 이전 판이다.
+`prod-*` 태그 0건 · `/opt/colab-v2/MAIN_SHA` 없음 ⟹ 현재 `deploy_doctor` 는 ⑮ 가 ✗ 다.~~
 ⛔ 그 자리를 ─ 로 접거나 파일을 손으로 만들어 채우지 않는다 — **`main` 재빌드 ＋ 태그 ＋
 `ship.sh` 반입**으로만 지운다. 손으로 채운 `MAIN_SHA` 는 반입 게이트를 거쳤다는 거짓 증거다.
 
-### 5-10. prod 마이그레이션 격차 — 배포 전 선행 조건 (2026-09-12 실측)
+### 5-10. prod 마이그레이션 격차 — 배포 전 선행 조건 (2026-09-12 실측 · 2026-09-13 적용 완료)
 
 | 체인 | prod 현재 | `main` head | 적용 대기 |
 |---|---|---|---|
-| platform | `0012_merge_lv1_and_transfer` | `0027_operator_audit` | **15** (`0013`~`0027`) |
-| ai | `0005_k2b_concept_graph_seed` | `0007_merge_topic_vocab_and_rc7_category` | **3** (`0006_rc7_synonym_category` · `0006_topic_vocab_six` · `0007_merge…`) |
+| platform | `0012_merge_lv1_and_transfer` | `0031_search_evidence` ／ 종전 ~~`0027_operator_audit`~~ | **19** (`0013`~`0031`) ／ 종전 ~~15 (`0013`~`0027`)~~ — ⭑ **2026-09-13 적용 완료**(`up.sh` 한 실행 · prod 현재 = `0031_search_evidence`) |
+| ai | `0005_k2b_concept_graph_seed` | `0007_merge_vocab_and_category`(파일명 `0007_merge_topic_vocab_and_rc7_category.py`) | **3** (`0006_rc7_synonym_category` · `0006_topic_vocab_six` · `0007_merge…`) — ⭑ **2026-09-13 적용 완료** |
 
 ⚠ **ai 는 형제 둘 ＋ merge 다**(`0006` 이 두 개). 적용 순서가 갈릴 수 있는 자리이므로
 두 순서 drift 오라클이 붙어 있다(`docs/BRANCHING.md` 규칙 5 · 선례 `〈378〉` ⑧).
@@ -422,15 +457,22 @@ DB 부트스트랩: `prep` → `roles` → (마이그레이션) → `app-grants`
 배포 전 선행 조건 넷 —
 
 1. **백업이 먼저다.** `backup.sh` 한 번 ＋ `_ops/backups/prod/` 에 객체가 생긴 것을 확인한다.
-   RDS 는 보존 7일이라 시점 복구도 가능하지만, **되감기는 15건을 되돌리는 값싼 수단이 아니다.**
+   RDS 는 보존 7일이라 시점 복구도 가능하지만, **되감기는 19건을 되돌리는 값싼 수단이 아니다.**（종전 ~~15건~~）
 2. **롤 둘을 prod 에 만든다** — `0025_stage3_accounts`·`0027_operator_audit` 계열이 요구하는
    `account-admin`·`operator`. prod RDS 는 P6-c 시점의 롤 4 벌이라 그 뒤 신설분이 없다.
 3. **시크릿을 prod 자리에 배치한다** — 신설 설정값이 있으면 `/etc/colab` 에 **파일 단위**로
    넣는다(디렉터리째 마운트 금지 — `700 root` 라 컨테이너 uid 가 못 지난다).
 4. **마이그레이터 이미지를 먼저 올린다** — `infra/prod/migrator/Dockerfile` · `up.sh` 가 부른다.
 
-⛔ **이 넷 중 하나라도 못 하면 배포를 시작하지 않는다.** 마이그레이션 15건을 반쯤 적용한
+⛔ **이 넷 중 하나라도 못 하면 배포를 시작하지 않는다.** 마이그레이션 19건(종전 ~~15건~~)을 반쯤 적용한
 prod 는 되돌릴 자리가 없다.
+
+⭑ **⟨실측 2026-09-13⟩ 넷 다 밟았고 순서 교훈이 하나 남았다** — 백업 19:38 GREEN(`_ops/backups/prod/2026-09-13T103842Z-*`)
+→ 롤·시크릿·`prod.env` 키(§4-0b 표) → `ship.sh`(migrator 이미지 포함) → `up.sh`(19＋3 적용 · 볼륨 `events`·`ownership-ledger`
+생성 · 4 유닛 healthy · `/healthz` 8000/8100/8200 200). ⚠ **`db-bootstrap.sh account-admin` 은 마이그레이션 `0025` 뒤여야 한다** —
+`account_admin` 스키마가 없어 1차 실패했고, 롤·비밀번호·접속 파일만 먼저 만든 뒤 GRANT 는 `up.sh` 뒤 재실행으로 풀었다.
+`operator`·`app-grants`·`verify` 도 `up.sh` 뒤에 돌렸다(전부 ok · `account-admin` 은 RDS `ALTER ROLE` 우회 갈래 · 자기 점검 통과).
+정본 순서는 `infra/prod/README.md §8`.
 
 ---
 
@@ -662,7 +704,7 @@ ssh -i <키> ec2-user@<IP> '
 | **S3 고아 바이트** | ⛔ 치우는 주체 없음 — **실측 3건 · 25.3 MB**(2026-09-02) | 워커 만료가 DB 행만 지운다. 워커의 `UploadBlobPort` 는 **읽기 Port** 라 삭제를 얹으면 정체가 바뀐다(로컬 모드는 소유 경계도 넘는다) → **별도 WU**. 판별식 = `d3_dataset`·`d5_upload`·열린 전송 **셋 다** 없어야 고아 |
 | **본체 전송 진행률 「문구」** | 🟧 **막대는 섰다**(`§D.7 ①` 근거 · 문구 없음). `§E.2` 의 상태 문구 행은 정본 개정 대기 | Ted 판정 뒤 문구를 붙인다 |
 | **미리보기(previews) 실검증** | ⛔ **한 번도 안 돌았다.** `previews/` 객체 0건 | 배선은 다 서 있다(CloudFront 동작 · 버킷 정책 · viz `previewSink=s3` · 역할 `PreviewsPut` · 프로브 왕복 200 — **사람이 놓은 객체로만** 확인). 미리보기 개발이 끝난 뒤 ⑴ 업로드→렌더→객체 생성 ⑵ 화면 표시 ⑶ **큰 래스터 렌더 메모리 실측**(남은 유일한 사이징 미지수) |
-| **prod 배포 회차** | 🟧 개통은 끝(§5) · **정기 배포 경로는 아직 한 번도 안 밟았다** ／ 종전 ~~⏸ 정본 `㊻` — Ted 판정 선행~~ | ⑴ Ted 가 `main` 커밋에 `prod-YYYYMMDD` 태그 ⑵ `infra/prod/build.sh` → `ship.sh`(조상＋태그 게이트) ⑶ 마이그레이션 격차 15건 적용(§5-10) ⑷ `deploy-doctor.sh` **15/15 한 번의 실행** |
+| **prod 배포 회차** | ⭑ **⟨개정 2026-09-13⟩ 🟧 정기 배포 경로를 한 번 끝까지 밟았다**(태그 `prod-20260913` → `aa8bee981ff5` · 마이그레이션 19＋3 · doctor 15/15 · §4-0b 원장) ／ 종전 ~~🟧 개통은 끝(§5) · 정기 배포 경로는 아직 한 번도 안 밟았다~~ ／ ~~⏸ 정본 `㊻` — Ted 판정 선행~~ | 남은 것 = ⑴ 태그 push ＋ **태그 주체 문면 판정**(Ted · §5-9) ⑵ 운영자 알림 ④ 의 prod AWS 자원(SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람) ＋ 런타임 venv — **만들지 말지 Ted 판정** ⑶ 브랜치 `feature/rtf400_deploy_prod` PR 병합(배포 도구를 `main` 에 합친다) ⑷ `deploy_release.py` 알림 단계의 Slack 비밀 파일 배치(종료코드 78 해소) |
 | **동료(hsw) SSH 규칙** | 없음 | 보안그룹 22번에 규칙 추가 · 설명에 `hsw` |
 | **가격 분류** | 전체 엣지 | `PriceClass_200` 으로 낮출 수 있다 |
 | **소스맵** | dev 는 올린다 | **prod 는 빼는 쪽이 기본** — Ted 판정 |

@@ -1,7 +1,8 @@
 # prod 브랜치 정비 — 리베이스 2회 ＋ 반입 도구 ＋ compose·부트스트랩 ＋ 운영 기능 (2026-09-13)
 
 - 레인 = 코드·시험·문서만. **AWS·EC2·RDS·S3·dev·prod·staging 무접촉** · push 0 · 태그 0.
-- 브랜치 `feature/rtf400_deploy_prod` · 기준 `origin/main` **`aa8bee98`** · 커밋 = **기존 18 ＋ 신규 A~E**.
+- 브랜치 `feature/rtf400_deploy_prod` · 기준 `origin/main` **`aa8bee98`** · 커밋 = **기존 18 ＋ 신규 A~E** ＋ ⭑ 배포 중 정정 F~H ＋ 등재(§10).
+- ⭑ **⟨2026-09-13 저녁⟩ 「무접촉」은 정비 레인(§1~§9)의 조건이다.** 그 뒤 별도 배포 세션이 prod 를 실제로 재배포했다 — §10.
 - ⚠ **끝 sha 는 여기 적지 않는다** — 이 보고서를 담은 커밋 뒤에도 문서 정정이 붙으면 낡는다.
   값은 레인 최종 메시지와 `git rev-parse HEAD` 가 준다.
 
@@ -37,6 +38,10 @@
 | `6c2e84ad` | **C. 운영 기능 prod 이식** |
 | `c208b052` | **D. 결정 번호 재발급 〈383〉 → 〈395〉** |
 | `192936e1` | **E. 회차 보고서 ＋ PR 본문 ＋ 대장 `I5` 증보** |
+| `ad1ee84a` | E 정정 — sha 표 |
+| `09a0039b` | **F. `install-cron.sh` 운영자 알림 cron 세 상태**(선언 · 명시 면제 `COLAB_NOTIFICATION_SKIP=1` · 미선언 exit 2) — 배포 중 |
+| `1f20e570` | **G. `ship.sh` 판정 레포 tar 에서 AppleDouble·`__pycache__` 제외** — doctor ⑥⑦ 실측 |
+| `6d47315c` | **H. 배포 실행기 `deploy_release.py` 대상 `pr`(prod)** — 웹 배포 ＋ 검증 한 실행 |
 
 ⚠ A·B·C 의 sha 는 2차 리베이스로 바뀌었다(여기 적은 것이 그 뒤의 값이다). E 뒤에 문서 정정 커밋이 더 붙을 수 있다.
 
@@ -195,3 +200,83 @@ green 12 = `exec-bit` · `db-boundary` · `work-item-consistency` · `contract-l
    이번에 prod 쪽만 넣었다 — dev 도 같은 구멍이고 dev 에서 실제로 2회 밟았다.
 7. **compose 프로젝트 이름 실측**(`[미확인]`) — prod 호스트에서 `docker volume ls` 로 잰다.
 8. **`COLAB_VIZ_OWNERSHIP_SNAPSHOT_GROUP_GID`(viz 실제 gid) 실측**(`[미확인]` · dev 는 999).
+
+## 10. 배포 실측 (2026-09-13)
+
+배포 세션(정비 레인과 별도)이 밟은 순서 그대로. 시각은 KST. **비밀값·호스트 주소·RDS 엔드포인트는 적지 않는다.**
+
+### 10-1. 대상과 태그
+
+- 배포 대상 = `origin/main` **`aa8bee981ff5`**(브랜치 tip 이 아니다). 그 커밋의 워크트리에 브랜치의 배포 도구
+  (`infra/prod` · `infra/_lib` · `infra/dev/tag-release.sh` · `infra/notifications/{install-runtime-cron,run-runtime-job}.sh` ·
+  `services/core-api/ops/{deploy_doctor,s3_doctor}.py`)를 **미추적 복사**해 빌드했다 — 이미지의 코드는 `main`, 도구만 브랜치 판.
+- 태그 **`prod-20260913` → `aa8bee981ff5` · 로컬만**(push 안 함). 규칙 문면 「태그 주체 = Ted」와 다르다 — **Ted 통보 예정**.
+  반입 게이트 ⑵ 는 로컬 태그로 통과한다(원격 미조회 · 우회 변수 없음).
+
+### 10-2. P2 — 백업 · 롤 · 시크릿 · 키
+
+- **19:38 백업 GREEN** — `_ops/backups/prod/2026-09-13T103842Z-*`.
+- 롤 신설 4 → 총 8: `colab_account_admin`(login) · `colab_operator_runtime`(login) · `colab_operator_reporter` · `colab_operator_exporter`.
+- `/etc/colab` 신설 4 → 총 11: `account-admin-database.url`(uid 10001) · `operator-database.url`(root) ·
+  `ownership-platform-db.url`(root · `colab_backup` 자격) · `ops-slack-webhook.url`(root · dev 와 같은 수신처).
+- `prod.env` 키 6 → 9: `COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID=0` · `_GROUP_GID=999` · `_MAX_AGE_SECONDS=7200`.
+- ⚠ **순서 교훈** — `db-bootstrap.sh account-admin` 은 마이그레이션 `0025` **뒤**여야 한다. `account_admin` 스키마 부재로
+  1차 실패 → 롤·비밀번호·접속 파일만 먼저 만들고 GRANT 는 `up.sh` 뒤 재실행으로 해결. `infra/prod/README.md §8` 에 명기.
+
+### 10-3. P3 — 빌드 · 태그 · 반입
+
+- `build.sh` 5 이미지 arm64(tar 1.0GB) · `tag-release.sh prod`.
+- `ship.sh` **1차 실패** — `/opt/colab-v2/*.sh` 가 root 소유라 scp 거절 → `chown -R ec2-user` 로 해결.
+- `ship.sh` **2차 성공** — 반입 게이트 통과(`MAIN_SHA main=aa8bee981ff5 candidate=aa8bee981ff5 ancestor=yes`) ·
+  ops 소스 번들 green · 이미지 5 적재 · `prod.env COLAB_IMAGE_TAG=prod-aa8bee981ff5` · 판정 레포 동기화.
+
+### 10-4. P4 — 마이그레이션 · 기동 · 롤 권한
+
+- `up.sh` exit 0 — platform `0012_merge_lv1_and_transfer` → `0031_search_evidence` **19건** ·
+  ai `0005_k2b_concept_graph_seed` → `0007_merge_vocab_and_category` **3건** · 볼륨 `events`·`ownership-ledger` 생성 ·
+  4 유닛 healthy · `/healthz` 8000/8100/8200 = 200 · 실행 이미지 5 전부 `prod-aa8bee981ff5`.
+  - 단위 주의 — 19 는 번호 범위 `0013`~`0031` 기준이다. `db/platform/versions` 파일 수로는 그 범위가 **20**(`0013` 형제 둘 —
+    `0013_ra1_ext_interval_period`·`0013_topic_vocab_six`). `up.sh` 적용 로그의 리비전 수는 이 등재에서 재지 않았다(`[미확인]` ·
+    푸는 법 = prod `alembic_version_platform` 과 로그 대조).
+- 그 뒤 `db-bootstrap.sh account-admin`(RDS `ALTER ROLE` 우회 갈래 · 자기 점검 통과) · `operator` · `app-grants` · `verify` **ok**.
+
+### 10-5. cron — 셋 설치 · 하나 면제
+
+- 설치기를 세 상태로 고쳤다(커밋 F). ① 백업 ② 만료 전송 정리 ③ 소유권 스냅샷(매시 17분 · 프로젝트 `colab-v2-prod` · gid 999) 설치.
+- **④ 운영자 알림은 명시 면제**(`COLAB_NOTIFICATION_SKIP=1`) — prod 에 SQS 큐 2 · Secrets Manager 웹훅 ARN 2 ·
+  CloudWatch 알람이 없다(dev 에만). 운영자 런타임 venv 도 미구성.
+- 소유권 스냅샷 수동 1회 → `current.json`(d3_file 4 · d5_upload_file 4). §9 의 `[미확인]` 7·8 이 이것으로 닫혔다
+  (프로젝트 이름 `colab-v2-prod` · gid 999).
+
+### 10-6. doctor — 1차 11/15 → 최종 15/15
+
+| 실행 | 결과 | ✗ 의 원인 | 조치 |
+|---|---|---|---|
+| 1차 | **11/15** | ③ 웹 버킷 — 운영자 키 env-file 이 빈 파일 → IMDS(앱 역할) 403 · 로컬 키 파일 경로 착오 | 올바른 키 파일로 |
+| | | ⑥⑦ — 판정 레포 tar 의 macOS AppleDouble `._*.py` **15,353** 파일 → ast 「null bytes」 | 호스트 `find -delete` ＋ `ship.sh` 정정(커밋 G) |
+| | | ⑩ — 웹 미배포(`index.html`) | 웹 배포(아래) |
+| **최종** | **항목 15 — ✓ 15 · ✗ 0 · ─ 0** · exit 0 · **19:54** | — | 실행기 기록 `pr.verify.1.log` |
+
+- 웹 배포 = 실행기 `deploy_release.py run --plan`(대상 `pr` · 커밋 H) · `npm run build` → `deploy_web.py` → `colab-platform-web-prod`.
+  검증 = CloudFront `index-DuCCGbNb.js` 로컬=원격 일치 ＋ `deploy_doctor --env prod` 한 실행(위 최종 줄).
+- 실행기 종료코드 **78** = 배포·검증 exit 0 **뒤** Slack 비밀 파일(`~/.config/colab/slack-webhook`) 부재로 알림 단계 준비 실패.
+  완료 판정과 무관 · 사실 기재.
+- 부분 결과를 합치지 않았다 — 판정은 최종 한 실행뿐.
+
+### 10-7. 스모크(CloudFront)
+
+admin 로그인 **201** · `/me` 연구원 · `mustChangePassword=false` · 데이터셋 1건 목록 **200** · 검색 **200** · 미리보기 라우트 **400**(빈 본문 — 요청 형식 거절 · 서비스 응답 확인용).
+
+### 10-8. 문서 반영 (이 커밋)
+
+`docs/DEPLOY.md`(§4-0b 배포 원장 · §4-1c 재판정 · §5-9 · §5-10 19건 · §3-1 증상 3행＋1행 증보 · §10) ·
+`infra/prod/README.md`(§7 ④ 면제 실측 · §8 `account-admin`·`operator` 순서) · `PR-BODY.md`(배포 실측 · Ted 판정 표) ·
+대장 `I5` evidence(status 무변) · `03-HANDOFF.md`.
+
+### 10-9. 열린 것 (배포 뒤)
+
+1. **태그 push ＋ 태그 주체 문면 판정** — Ted.
+2. **④ 운영자 알림의 prod AWS 자원**(SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람) ＋ 런타임 venv — 만들지 말지 Ted.
+3. **`〈395〉` 재발급** — 병합 직전 재실측(규칙 4-1). 이번 배포 실측의 원장 행은 `PLAN-SoT §9 〈N〉(병합 직전 발급)` 자리.
+4. `deploy_release.py` 알림 단계의 Slack 비밀 파일 배치(종료코드 78).
+5. `up.sh` 적용 리비전 수 실측(19 vs 파일 20 — 위 단위 주의).
