@@ -773,6 +773,9 @@ export function UploadModal(props: {
       topic: topic || null,
       // ⭑ **⟨WU-B5 · PRD-07⟩ ① 이 고른 자기 Lv 가 연결 규칙의 기준값이다.**
       processingLevelUserSet: level,
+      // ⭑ ⟨카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 추종 중에는 ③ 이 부모 선택 상한을 걸지 않는다.
+      //   부모 Lv 미상(계산값 없음 · 기본값 `Lv2`)은 추종이 아니므로 상한이 선다.
+      processingLevelFollowsDerived: !levelTouched && derivedFromParents !== null,
       onGoToClassify,
       onLineageProgress,
       onLineageParentsChange,
@@ -782,7 +785,7 @@ export function UploadModal(props: {
       lineageUnknown,
       onLineageUnknownChange,
     }),
-    [uploadId, name, topic, level, lineageCards, lineageUnknown, onGoToClassify,
+    [uploadId, name, topic, level, levelTouched, derivedFromParents, lineageCards, lineageUnknown, onGoToClassify,
      onLineageProgress, onLineageParentsChange, onLineageConflictChange, onLineageCardsChange,
      onLineageUnknownChange],
   );

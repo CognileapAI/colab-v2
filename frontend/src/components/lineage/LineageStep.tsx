@@ -109,6 +109,13 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   /** ① 에서 고른 자기 Lv. **기준값**이고, 안 골랐으면 `null` 이라 규칙이 서지 않는다. */
   const selfLv = levelOf(ctx.processingLevelUserSet);
   /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 부모 선택 상한의 기준 Lv.**
+   * 자기 Lv 가 계산값을 따라가는 중이면 `null` — 상한·사후 충돌을 걸지 않는다(부모를 확인하면
+   * 자기 Lv 가 최대 부모 Lv ＋ 1 로 따라간다). 사람이 고른 뒤에는 `selfLv` 그대로다.
+   * ⚠ 안내 줄(`lin-lv-scope`)·불일치 줄·「기록 없음」 표시는 `selfLv` 를 쓴다 — 여기서 바꾸지 않는다.
+   */
+  const ceilingLv = ctx.processingLevelFollowsDerived ? null : selfLv;
+  /**
    * ⭑ **⟨PRD-27 · WU-B8⟩ 「기록 없음」 체크박스의 두 성질.**
    *  · **확정 부모 ≥1 → 비활성 ＋ 사유 한 줄.** 칸은 **사라지지 않고** 연결도 지우지 않는다.
    *  · **자기 Lv 가 `Lv0` → 보이지 않는다.** 판정 ⑷ 가 이미 `원천` 으로 가르므로 물을 것이
@@ -238,7 +245,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
    * **연결을 지우지 않는다** — 세기만 하고, 막는 것은 `데이터셋 만들기` 버튼 하나다.
    */
   const conflicts = parents.filter(
-    (p) => selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv,
+    (p) => ceilingLv !== null && p.parentLevel !== null && p.parentLevel > ceilingLv,
   );
 
   useEffect(() => {
@@ -307,7 +314,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   function picker(onPick: (row: ParentCandidateRow) => void, testid: string) {
     return (
       <ParentPicker
-        selfLv={selfLv}
+        selfLv={ceilingLv}
         candidates={candidates}
         error={candidateError}
         onRetry={retry}
@@ -420,7 +427,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               {p.confirmed && <span className="lin-ok">확인함</span>}
               {/* ⭑ **⟨PRD-09⟩ 사후 충돌 표시.** 연결은 남고 이 칩만 붙는다 —
                   되돌리면 칩이 사라지고 `데이터셋 만들기` 가 다시 눌린다. */}
-              {selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv && (
+              {ceilingLv !== null && p.parentLevel !== null && p.parentLevel > ceilingLv && (
                 <span className="chip chip--warning" data-testid="lin-need-check">
                   확인 필요
                 </span>

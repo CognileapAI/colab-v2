@@ -270,3 +270,52 @@ describe('미결-2 ⓐ — 불일치는 경고만이고 등록은 성공한다',
     expect(calls.registered[0]?.processingLevelUserSet).toBe('Lv3');
   });
 });
+
+// ═══ ㈒ 계산값 추종 중에는 부모 선택 상한을 걸지 않는다 (카드 ⑩ ⓐ 「차단은 늘지 않는다」) ═══
+//
+// 부모 0건 기본값이 계산값 `Lv0` 이 된 뒤로, 가공 단계를 건드리지 않은 사람은 자기 Lv 상한 때문에
+// `Lv0` 부모만 고를 수 있었다 — 차단이 늘었다. 추종 중에는 상한을 풀고, 부모를 확인하면 자기 Lv 가
+// 최대 부모 Lv ＋ 1 로 따라가 계보가 어긋나지 않는다. 사람이 고른 뒤에는 상한이 그대로다(대조군).
+describe('㉱ 추종 중 부모 선택 상한 해제', () => {
+  it('가공 단계를 건드리지 않았으면 부모 0건에서도 Lv1·Lv2 후보를 고를 수 있다', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    expect((screen.getByTestId(`lin-pick-${LV1}`) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId(`lin-pick-${LV2}`) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByTestId(`lin-over-${LV1}`)).toBeNull();
+    expect(screen.queryByTestId(`lin-over-${LV2}`)).toBeNull();
+  });
+
+  it('건드리지 않은 채 Lv1 부모를 연결·확인하면 자기 Lv 가 `Lv2` 로 따라가고 불일치·충돌 줄이 0건이다', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    await click(screen.getByTestId(`lin-pick-${LV1}`));
+    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
+    // 확인 전 대기 카드도 추종 중에는 충돌로 세지 않는다 — 등록 버튼을 막지 않는다.
+    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
+    expect(screen.queryByTestId('lin-need-check')).toBeNull();
+    expect(screen.queryByTestId('lin-conflict-note')).toBeNull();
+    await click(screen.getByTestId('lin-confirm'));
+    expect(screen.queryByTestId('lin-lv-mismatch')).toBeNull();
+    expect(screen.queryByTestId('lin-need-check')).toBeNull();
+    await click(stepBtn('①'));
+    expect(levelValue()).toBe('Lv2');
+  });
+
+  it('사람이 `Lv1` 을 고르면 상한이 그대로 서서 Lv2 후보가 막히고 사유가 읽힌다 (대조군)', async () => {
+    const { sources } = fakes();
+    await openLineageUntouched(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv1');
+    await click(stepBtn('③'));
+    await click(screen.getByTestId('lin-add'));
+    await screen.findByTestId('lin-picker');
+    expect((screen.getByTestId(`lin-pick-${LV1}`) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId(`lin-pick-${LV2}`) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId(`lin-over-${LV2}`)).toBeTruthy();
+  });
+});
