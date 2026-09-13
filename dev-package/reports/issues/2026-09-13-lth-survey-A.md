@@ -162,6 +162,8 @@
     새 칸(`scopeKind` 류) 추가는 `additionalProperties: false` 때문에 `contracts/schemas/common.json` 개정 필요 — 추가 칸이므로 소비자 파괴는 아니다.
   - 크기 = **M**.
 - 검색창 옆 사전 표기안(기획자 권고) = `frontend/src/components/search/SearchHero.tsx` 에 범위 문구 추가. 건수를 미리 보이려면 별도 조회 필요 · **M**.
+- ⟨보정 2026-09-13⟩ `searched_count` 는 `interpret()` 의 인자로 **`with read_only_scope(...)` 블록보다 먼저** 계산된다(그 블록은 `isDataQuery` 조건부다) — 「같은 스코프에서 계산」은 읽기 전용 스코프를 한 번 더 열거나 계산 순서를 바꿔야 성립한다(크기 **M** 유지).
+- ⟨보정 2026-09-13⟩ `AiSearchScope` 의 `labId` 는 필수 `Ulid` 다 — 운영자에게도 소속 연구실 id 가 그대로 실려 나가고 `labName` 만 「전체 연구실」을 말한다. 계약은 무변경이나 이 의미 불일치를 intent 본문에 적는다.
 
 ### 5. 판정 질문
 - 사용자가 보는 것 = 관리자로 검색하면 ⓐ 「전체 연구실 데이터 26건을 뒤졌어요」로 상단 표기와 같아진다 ⓑ 「우리 연구실 25건에서 검색」으로 좁혀지고 전체를 보려면 따로 고른다.
