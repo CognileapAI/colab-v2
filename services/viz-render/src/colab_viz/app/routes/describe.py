@@ -59,9 +59,12 @@ def describe_target(body: RenderTarget, request: Request) -> dict:
         raise errors.ApiError(413, errors.RENDER_TOO_LARGE, TOO_LARGE_MESSAGE,
                               {"limitBytes": settings.max_render_bytes, "reason": str(e)}) from e
 
+    # **이름은 `read_field` 와 같은 함수가 고른다**(규율 ②) — 힌트 map 도 같은 자리에서 온다.
+    display_names = body.display_names()
     for part in target.parts:
         try:
-            _fmt, variables, instants = describe_field(part.path)
+            _fmt, variables, instants = describe_field(
+                part.path, display_name=display_names.get(part.file_id))
         except (NotRenderableError, FieldReadError):
             continue
         if not variables:

@@ -42,6 +42,15 @@ JOB_DONE = {
 }
 
 
+def _without_file_names(target: dict) -> dict:
+    """`RenderTarget.fileNames` 는 중계가 **덧붙이는** 표시용 값이다 — 가공 검사에서 뺀다.
+
+    원래 파일 이름은 원장(core-api)에만 있고 viz-render 는 그것을 읽을 길이 없다
+    (불변규칙 1). 나머지가 그대로인지는 이 하나를 뺀 뒤 그대로 대조한다.
+    """
+    return {k: v for k, v in target.items() if k != "fileNames"}
+
+
 class _FakeViz(BaseHTTPRequestHandler):
     received: list = []
 
@@ -96,7 +105,10 @@ def test_create_preview_render_relays_the_request_untouched(p2_client, fake_viz)
     r = client.post(f"{API_PREFIX}/previews", json=request, headers=auth(TOKEN_RES))
     assert r.status_code == 202, r.text
     assert r.json() == JOB_RUNNING, "중계가 응답을 가공했다 — RenderJob 은 그대로 지나가야 한다."
-    assert fake.received[0]["body"] == request, "중계가 요청을 가공했다."
+    # **덧붙는 것은 표시용 이름 하나뿐이다** — 나머지는 한 글자도 안 바뀐다.
+    relayed = fake.received[0]["body"]
+    assert {**relayed, "target": _without_file_names(relayed["target"])} == request, \
+        "중계가 요청을 가공했다."
     # **경계는 중계에도 실린다** — 저쪽에는 주체가 없다.
     assert fake.received[0]["lab"] == "0000000000000000000000000A"
 
@@ -241,7 +253,7 @@ def test_describe_target_relays_request_and_response_untouched(p2_client, fake_v
     r = client.post(f"{API_PREFIX}{_DESCRIBE}", json=target, headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     assert r.json() == DESCRIPTION, "중계가 응답을 가공했다 — TargetDescription 은 그대로 지나가야 한다."
-    assert fake.received[0]["body"] == target, "중계가 요청을 가공했다."
+    assert _without_file_names(fake.received[0]["body"]) == target, "중계가 요청을 가공했다."
     assert fake.received[0]["path"].endswith("/target-descriptions")
     # **경계는 중계에도 실린다** — 저쪽에는 주체가 없다.
     assert fake.received[0]["lab"] == "0000000000000000000000000A"
@@ -279,6 +291,47 @@ def test_describe_target_when_render_server_is_unreachable_is_503(p2_client) -> 
                                           json={"datasetId": DS_A1}, headers=auth(TOKEN_RES))
     assert r.status_code == 503
     assert r.json()["code"] == "RENDER_UNAVAILABLE"
+
+
+# ═══════ `RenderTarget.fileNames` — 표시용 원래 파일 이름 ═══════
+#
+# `.npy` 는 파일 안에 변수 이름이 없어 viz-render 가 **파일 이름의 stem** 을 쓴다.
+# 디스크 배치가 본체를 `fileId`(ULID)로 이름 붙이므로 그대로 두면 화면의 변수 이름이
+# ULID 가 된다. 원래 이름은 **core-api 의 원장에만** 있으므로 중계가 그것을 싣는다 —
+# 목록을 해석하지도 만들지도 않는다(파일을 열지 않는다 · `CLAUDE.md §3-4`).
+#: `.npy` 매직 — **바이트는 이 시험의 관심사가 아니다.** core-api 는 파일을 열지 않고
+#: (`CLAUDE.md §3-4`) 원장의 이름만 싣는다. 그리는 쪽의 판정은 viz-render 시험이 잰다.
+_NPY_MAGIC = b"\x93NUMPY\x01\x00"
+
+
+def _npy_body(name="LST.npy"):
+    return [("files", (name, _NPY_MAGIC, "application/octet-stream"))]
+
+
+def test_describe_target_carries_the_original_file_names(p2_client, fake_viz) -> None:
+    base, fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    receipt = make_upload(client, files=_npy_body())
+    file_id = receipt["files"][0]["fileId"]
+
+    r = client.post(f"{API_PREFIX}{_DESCRIBE}", json={"uploadId": receipt["uploadId"]},
+                    headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert fake.received[0]["body"]["fileNames"] == [{"fileId": file_id, "fileName": "LST.npy"}]
+
+
+def test_create_preview_render_carries_the_original_file_names(p2_client, fake_viz) -> None:
+    base, fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    receipt = make_upload(client, files=_npy_body())
+    file_id = receipt["files"][0]["fileId"]
+
+    r = client.post(f"{API_PREFIX}/previews",
+                    json={"target": {"uploadId": receipt["uploadId"]},
+                          "style": {"palette": "blues"}}, headers=auth(TOKEN_RES))
+    assert r.status_code == 202, r.text
+    assert fake.received[0]["body"]["target"]["fileNames"] == [
+        {"fileId": file_id, "fileName": "LST.npy"}]
 
 
 def test_core_does_not_build_the_variable_list(p2_client) -> None:
