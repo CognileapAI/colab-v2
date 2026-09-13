@@ -42,12 +42,16 @@
 3. 계획 만들기 —
 
 ```
-python3 build_plan.py --dry-run          # 파일을 쓰지 않고 계수만 센다
-python3 build_plan.py                    # plan-manifest.yaml ＋ <work-dir>/upload-plan.json 기록
-
-# 레포 거울 사본으로 돌릴 때
+# ⓐ 레포 쪽 대조 — 레포에 실린 정본 md 사본으로 표↔블록↔실물을 먼저 본다
 python3 build_plan.py --md-root dev-package/reports/reference-data/datasets-md --dry-run
+
+# ⓑ 실투입 기록 — md 뿌리를 주지 않는다(기본값 = 참조자료 뿌리의 md 가 정본)
+python3 build_plan.py                    # plan-manifest.yaml ＋ <work-dir>/upload-plan.json 기록
 ```
+
+- **ⓐ 와 ⓑ 는 읽는 md 가 다르다** — ⓐ 는 레포 사본(`dev-package/reports/reference-data/datasets-md`),
+  ⓑ 는 참조자료 뿌리(`--ref-root` · `COLAB_REF_ROOT`). 실투입에 쓰는 계획은 **ⓑ 다.**
+  ⓐ 는 참조자료가 없는 자리에서도 도는 대조용이고, 여기서 종료코드가 0 이 아니면 md 부터 고친다.
 
 - `--dry-run` 은 계수(28 · 18) · glob 이 맞힌 파일 수 · 총 바이트를 찍고 **아무것도 쓰지 않는다.**
 - 참조자료 뿌리가 없으면 `--dry-run` 은 파일 해석을 건너뛰고 블록 계수만 센다. 기록 실행은 거절한다.
@@ -59,6 +63,7 @@ python3 build_plan.py --md-root dev-package/reports/reference-data/datasets-md -
 | 3 | 표 ↔ 블록 불일치 | 같은 md 안에서 표의 이름·건수·바이트가 블록과 다르다. 어긋난 행 이름을 찍는다 |
 | 2 | 블록 ↔ 실물 불일치 · 총계 불일치 · md 부재 · 뿌리 부재 | glob 이 맞힌 파일 수·바이트가 블록과 다르거나 총계가 28/18 이 아니다 |
 
+- 계획 행은 **`processing_level`(`Lv0`~`Lv3`)을 싣는다** — 러너가 「가공 단계」에 그대로 넣는다(§2-1).
 - 총계 기대값은 `--expect-datasets`·`--expect-edges` 로 바꾼다(기본 28 · 18 · 시험용).
 - **실물 폴더가 정본이다** — 2 가 나오면 md 의 값을 실측값으로 고친다(폴더를 고치지 않는다).
 - 시험 = `python3 -m pytest dev-package/tools/dev-seed/tests -q`(표준 라이브러리 ＋ `yaml` ＋ `pytest`).
@@ -70,31 +75,81 @@ python3 build_plan.py --md-root dev-package/reports/reference-data/datasets-md -
 
 ```
 python3 runner.py --phase login    --account <이메일> --base-url <주소>
+python3 runner.py --phase accounts --accounts-file <0600 JSON> --base-url <주소>   # 선택
 python3 runner.py --phase projects --base-url <주소>
 python3 runner.py --phase datasets --base-url <주소>
 python3 runner.py --phase verify   --base-url <주소>
 python3 runner.py --phase report   --base-url <주소>
 ```
 
-- `--phase all` = 위 다섯을 순서대로.
+- `--phase all` = 위 여섯을 순서대로. `accounts` 는 `--accounts-file` 을 주지 않으면 건너뛴다.
 - `--dry-run` = 브라우저를 건드리지 않고 실행될 `agent-browser` 명령만 출력. 상태도 쓰지 않는다.
 - `--only-seq 3,5` = 그 순번만. `--from-seq 12` = 그 순번부터.
 - `--force` = 이미 `done`·`blocked` 인 순번도 다시 실행(중복 등록이 생기므로 기본은 금지).
 - `--project-type` = 프로젝트 유형(기본 `국가과제`). 정본에 지정이 없어 4건을 하나로 통일하고 `state.json` 에 적는다.
 - `--plan` = 계획 파일 자리(기본 `<work-dir>/upload-plan.json`).
+- `--accounts-file` = 계정 목록 JSON(0600). 주면 `accounts` 단계가 동작한다(§2-2).
+- `--accounts-password-file` = 계정 초기 비밀번호 파일(0600). 없으면 **표준입력**으로 받는다.
 - `--allow-argv-secret` = 비밀번호를 `fill` argv 로 넘기는 폴백 허용. 프로세스 목록에 노출되므로 기본 금지.
+
+### 2-1. 「가공 단계」는 계획값을 매 행 명시 지정한다
+
+- 러너는 등록 카드 ① 단계에서 `reg-level`(「가공 단계」)에 계획의 `processing_level` 을 **직접 넣는다.**
+- **화면 기본값에 기대지 않는다** — 2026-09-13 회차는 이 칸을 한 번도 건드리지 않아 26건이 전부 `Lv2` 로 저장됐다.
+  선택지가 빈 값으로 시작하도록 바뀌어도, 계보에서 자동으로 채우도록 바뀌어도 같은 동작이 선다.
+- 계획값이 화면 선택지에 없으면 **그 순번만 이름을 실어 실패**시킨다(다른 행으로 옮겨 붙이지 않는다).
+- 넣은 값은 `state.json` 의 그 행 `processing_level` 에 적히고 `--phase report` 표의 `Lv` 열에 나온다.
+- 계보 부모가 자기 Lv 규칙 때문에 비활성이면 **우회하지 않는다** — 기존 실패 문면(부모 이름 포함)으로 멈춘다.
+
+### 2-2. `accounts` — dev 초기화로 지워진 계정을 화면으로 되만든다
+
+- 계정은 **계정 관리 화면**(`/account-admin` · `account-create`)으로만 만든다. API·DB 직접 쓰기 없음.
+- 목록 파일 = JSON 배열. **권한이 0600 이 아니면 거절한다**(고쳐 주지 않는다).
+
+```json
+[
+ {"email": "someone@example.com", "name": "홍길동", "role": "교수", "admin": true},
+ {"email": "other@example.com",   "name": "김연구", "role": "연구원", "admin": false, "lab": "A 연구실"}
+]
+```
+
+| 칸 | 필수 | 뜻 |
+|---|---|---|
+| `email` · `name` | 필수 | 화면의 「이메일」·「이름」 |
+| `role` | 필수 | `교수` 또는 `연구원` 2값. 그 밖의 값은 거절 |
+| `admin` | 필수 · 불 값 | 참이면 「관리자로 등록」 체크. 문자열 `"yes"` 는 거절 |
+| `lab` | 선택 | 「연구실」 선택지의 **보이는 이름**. 없으면 화면이 고른 것을 그대로 둔다 |
+
+- **비밀번호는 이 파일에 두지 않는다** — 파일에 `password`·`initialPassword` 칸이 있으면 거절한다.
+  값은 `--accounts-password-file`(0600) 또는 표준입력으로 받고, argv·로그·`state.json`·JSON 어디에도 남지 않는다.
+- 「첫 로그인 비밀번호 변경 강제」는 **화면에 칸이 없다** — 서버가 늘 강제한다. 러너는 건드리지 않는다.
+- 결과는 `state.json` 의 `accounts.<이메일>` 에 `{email·name·role·admin·status·message·at}` 로 적힌다.
+  `status` = `created` · `failed`. `created` 인 항목은 재실행에서 건너뛴다(`--force` 로만 다시 만든다).
 - 진행 관찰 = `python3 watch.py`(같은 `--work-dir` 을 준다).
 
 ## 3. 상태 · 로그 · 갈무리
 
 | 자리(작업 자리 아래) | 내용 |
 |---|---|
-| `state.json` | 단계별 status · 프로젝트 id · 데이터셋 id · 시각 · 소요 · 통한 선택자 |
+| `state.json` | 단계별 status · 프로젝트 id · 데이터셋 id · 시각 · 소요 · 통한 선택자 · 계정 결과 |
 | `logs/run-<시각>.log` | 실행된 명령과 판정 줄. 비밀번호는 `stdin = 비밀 스크립트` 로만 남는다 |
 | `shots/<순번>.png` | 순번별 등록 직후 화면 |
 | `shots/verify-preview-<순번>-<포맷>.png` | 미리보기 렌더 확인 5장 |
 | `fail/<순번>-failed.png` · `.txt` | 실패 자리 화면 ＋ `snapshot -i` ＋ 본문 문자열 |
 | `verify.json` | 데이터셋 계수 · 간선 계수 · 미리보기 판정 · 미달 목록 |
+
+`state.json` 의 데이터셋 한 행 —
+
+| 칸 | 값 |
+|---|---|
+| `processing_level` | 화면에 넣은 「가공 단계」(`Lv0`~`Lv3`). 넣기 전 행에는 없다 |
+| `status` | `running` · `done` · `registered_no_preview` · `blocked` · `failed` |
+| `analysis_failed` · `analysis_failure_reason` | 분석 실패에서 등록으로 이은 행에만 붙는다(화면 축자) |
+| `blocked_reason` | `blocked` 인 행의 사유. `reg-open` 이 비활성으로 남은 자리만 여기 온다 |
+
+- **`done` 과 `registered_no_preview` 는 둘 다 「등록됨」으로 센다**(계수·건너뛰기·`verify`).
+  `done` 은 옛 상태 파일의 값이라 그대로 읽는다 — 옛 `state.json` 을 그대로 이어 써도 된다.
+  `accounts` 칸이 없는 옛 파일도 그대로 읽는다(빠진 칸만 채운다).
 
 ## 4. 재개
 
@@ -163,19 +218,31 @@ python3 runner.py --phase datasets --from-seq <실패 순번> --base-url <주소
 - 기준 격자 불일치(`up-grid-mismatch`) · 형상·축·짝 불일치 — 판정이 필요하다.
 - 「데이터셋 만들기」가 비활성 — 자기 Lv 를 넘는 연결이 남았다는 뜻이다.
 - 로그인 거절(`login-error`) — 자격 행부터 다시 본다. 401 이 5건 쌓이면 429(창 900초 · 한도 5).
-- **미리보기 렌더를 판정하는 5순번(grib·nc·bin·tif·hdf4)의 분석 실패** — 그 순번이 판정 대상이다.
+- 「가공 단계」 계획값이 화면 선택지에 없다 — 그 순번만 이름을 실어 멈춘다.
+
+분석이 실패해도 **등록은 잇는다**(⭑ 2026-09-14 개정) —
+
+- 분석 실패 표시(`up-analysis-failure` 등)를 받으면 실패 자리를 `fail/` 에 갈무리한 뒤
+  **`reg-open` 이 활성이 될 때까지 기다렸다가 정상 경로와 똑같이 등록한다.**
+  상태는 `registered_no_preview` 이고 실패 문면은 `analysis_failure_reason` 에 남는다.
+- ⛔ 「보기만 할게요」(`reg-viewonly`)는 **쓰지 않는다** — 등록하지 않고 닫는 길이라 데이터셋이 생기지 않는다.
+  2026-09-13 회차는 그 길로 가서 `.gpkg` 2건이 아예 만들어지지 않았다(§9).
+  화면은 그 뒤 분석 실패에서도 등록을 허용하도록 바뀌었다(배너 축자 「등록은 됩니다」).
+- 미리보기 렌더를 판정하는 5순번도 같다 — 등록해 두어야 `verify` 가 그 데이터셋을 볼 수 있다.
 
 건너뛴다(`blocked` 로 적고 다음 순번으로) —
 
-- 그 밖의 순번에서 분석이 실패하면 「보기만 할게요」(`reg-viewonly`)로 모달을 닫고 잇는다.
-  「보기만 할게요」는 **등록하지 않고 닫는 길**이다(`UploadModal.tsx` `viewOnly`).
-- 근거 = 2026-09-13 실측. 그 자리에서 멈추면 남은 14건이 같이 막혔다(아래 §9).
+- 기다린 뒤에도 `reg-open` 이 비활성으로 남은 자리 **하나뿐이다.** 사유를 `blocked_reason` 에 적는다.
 
 ## 8. 비밀 취급
 
 - 비밀번호는 `agent-browser` 의 표준입력 경로로만 들어간다(페이지 안에서 입력칸 값을 직접 설정).
   argv·로그·화면 갈무리 어디에도 값이 남지 않는다.
 - 표준입력 경로가 실패하면 러너는 멈춘다. `--allow-argv-secret` 를 준 경우에만 `fill` 로 넘어간다.
+- `accounts` 단계의 초기 비밀번호도 같다 — `--accounts-password-file`(0600) 또는 표준입력이고,
+  동작 목록·로그 줄·`state.json` 에는 자리표 `***` 만 남는다(시험 = `tests/test_runner_plan_mapping.py`).
+- 자격 파일 권한 판정이 두 갈래다 — 옛 `initial-password.txt`·`new-password.txt` 는 0600 으로 **조여 주고** 잇고,
+  `--accounts-file`·`--accounts-password-file` 은 **거절한다**(사람이 만들어 넣는 파일이라 조용히 고치지 않는다).
 
 ## 9. 오늘 실측 (2026-09-13 dev 초기화 회차)
 
@@ -188,11 +255,27 @@ python3 runner.py --phase datasets --from-seq <실패 순번> --base-url <주소
 | 투입량 | 파일 543건 · 자료 3,641,736,593 B ＋ 기준 격자 1,534,685,472 B |
 | 미리보기 | 5포맷 중 `nc` 만 그려짐. `grib`·`bin`·`tif`·`hdf4` 는 안 그려짐 — **원인 미진단** |
 
-실행 중에 고친 것 3 —
+실행 중에 고친 것 3 — **코드 대조 결과**(2026-09-14 · `runner.py` 실물과 맞춰 봤다) —
 
 1. **기준 격자 순서** — 격자 칸을 먼저 찾다가 못 찾았다. 등록 결정 게이트를 먼저 열어야 격자 블록이 붙는다(§6-3).
-2. **`.gpkg` 차단** — 분석 실패에서 전체를 멈추던 것을 「보기만 할게요」로 닫고 건너뛰도록 바꿨다(§7).
+   → **이미 반영** · `do_dataset` 이 `open_register` → `do_grid` 순서로 부른다.
+2. **`.gpkg` 차단** — 분석 실패에서 전체를 멈추던 것을 「보기만 할게요」로 닫고 건너뛰도록 바꿨다.
+   → **2026-09-14 에 되돌렸다** · 그 길은 등록하지 않고 닫는 길이라 데이터셋이 생기지 않았다.
+   지금은 `reg-open` 을 기다렸다가 등록으로 잇는다(`registered_no_preview` · §7).
 3. **대기 상한** — 바이트만으로 재던 상한에 파일 수(5초/건)를 더했다. 작은 파일 수십~백여 건 묶음이 끊겼다(§5).
+   → **이미 반영** · `analyze_timeout(nbytes, nfiles)` = `60 + 10/MB + 5/파일` · 상한 6시간.
+
+⚠ `R-DEV-RESET.md §12` 는 「실행 중 정정 **7건** 반영 완료」로 적는다. 위 3건은 이 README 가
+적어 둔 세 가지이고, 7 과 3 은 **기준이 다른 계수**다(§12 는 회차 전체의 정정 수).
+
+이 회차(2026-09-14 · WU-C1b)에서 바뀐 것 3 —
+
+1. **「가공 단계」 명시 지정** — 26건이 전부 `Lv2` 로 저장된 원인은 러너가 그 칸을 한 번도 건드리지 않은 것이었다(§2-1).
+2. **분석 실패 → 등록** — 「보기만 할게요」를 걷어내고 `reg-open` 을 기다려 등록으로 잇는다(§7).
+3. **`accounts` 단계** — dev 초기화로 지워지는 계정을 화면으로 되만든다(§2-2).
+
+⚠ **브라우저 실행 증명은 이 회차에 없다.** 위 3건은 단위 시험(`tests/test_runner_plan_mapping.py` 17건)과
+`--dry-run` 까지만 확인했다. 실화면 확인은 다음 dev 실투입 회차가 진다.
 
 확인 단계에서 드러난 것 1 — 목록 표 행을 세면 26건을 넣고도 20 이 나온다(쪽 잘림). 계수는 머리의 「N건」으로 읽는다(§6-2).
 
