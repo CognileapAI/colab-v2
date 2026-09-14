@@ -53,3 +53,11 @@
 - ㉓ 이중 기록 제거 — `psql_master_query`·`stage_s3` ① 의 `>> $STAGE_LOG` 재기록 삭제(`ssh_script` 가 이미 `tee` 한다). 오류 한 건이 로그에 한 번만 보인다.
 - ㉔ `reseed.sh --rehearse` 신설 — 부수기 **전에** 원격 원시동작 10 을 실모드로 한 번씩 내 보고 기대와 대조한다(psql:master 따옴표 SQL · `ssh_script` 되받기 · compose `ps` · 마이그레이터 `alembic current` 두 체인 · 초기화 도구 `--phase s3-plan` 임시 폴더 **적용 없음** · `postgres:16-alpine` 소유자 URL `select 1` · `deploy_doctor` 1회 `doctor_summary_line` · 러너 `--phase report` · `agent-browser` 제목). 어긋나면 **이름을 대고** 비영. 바꾸는 단계 0건 · `--dry-run` 은 무접촉. 왜 = 실모드 정지가 세 회차 내리 「한 번도 실행된 적 없는 원격 줄」에서 났다.
 - ㉕ 픽스처 `tests/remote-transport.sh` 신설 — ssh 대역이 받은 원격 스크립트를 **로컬 bash 로 실제 실행**해 원격 셸의 읽기를 재현한다. 구현 전 red 6건 확인(축자 `받은 것 [… datname in (colab_platform,colab_ai) …]` — 따옴표가 사라진 채 도착). `dev-reseed-selftest` 픽스처 **3 → 4**.
+
+## 5차 수정 — `s3` ② 계획 검토를 컨테이너 안으로
+
+- ㉖ `stages.sh` `stage_s3` ② — 검토가 호스트 ssh 사용자(uid 1000)로 돌면서 초기화 도구 컨테이너(`--user 0`)가 쓴 uid 0 · 0600 계획에 `st.st_uid == os.getuid()` 를 걸어 **실모드에서 통과할 수 없었다**(DR-4 §7 · 3회차 정지 축자 `AssertionError: 계획 파일 소유자가 실행자가 아니다`). 고침 = 검토 본문을 **같은 컨테이너 안**에서 낸다(`reset_docker_prefix` 로 플래그·마운트·이미지를 도구와 공유). 계획을 호스트 사용자에게 chown 하지 않는다 — 그러면 `s3-apply` 의 `_private_file`(`services/core-api/ops/reset_dev_environment.py:203`)이 대신 깨진다.
+- ㉗ 검사는 줄지 않았다 — 모드 0600 · 소유자 일치 · `_ops/` 0건 · 접두사 ⊆ {`uploads/`,`previews/`} 그대로이고, 멀티파트 키도 같은 두 검사에 넣고 sha256 기재 여부를 더했다. `assert` → `SystemExit` 로 바꿔 `python -O` 로도 검사가 사라지지 않는다.
+- ㉘ 검토 본문을 `s3_review_py`·`s3_review_script` 한 벌로 모으고 **리허설 ⑸ 에 편입** — `--rehearse` 가 임시 폴더의 실제 계획에 같은 본문을 돌린다(계획까지 · `--phase s3-apply` 0건). 종전 ⑸ 는 계획만 내고 지워 ② 는 리허설로도 밟히지 않았다. 원시동작 수는 10 그대로이고 ⑸ 의 기대가 sha256 한 줄에서 **검토 판정줄(키·멀티파트·sha256)** 로 좁아졌다.
+- ㉙ 호스트 쪽에서 컨테이너가 쓴 파일을 여는 자리는 0건이다 — 잔여 `test -s $REMOTE_OUT/count-before.json`(`stages.sh:223`)은 `stat(2)` 만 쓰므로 0600·root 소유라도 성립하고 폴더(700 · ssh 사용자)가 통과를 준다.
+- ㉚ 픽스처 `tests/s3-review.sh` 신설 — 컨테이너 대역이 `-v` 마운트를 풀고 `FIXTURE_CONTAINER_UID` 로 `--user 0` 의 uid 를 흉내 낸다(픽스처는 root 가 아니라 chown 으로 재현 불가). 구현 전 red 확인(`ⓞ 공용 계획 검토 본문(s3_review_script)이 없다`) · 소유자 검사를 지우면 ⓑ 가, 리허설 편입을 지우면 ⓖ·ⓗ′ 가 각각 red 로 돌아온다. `dev-reseed-selftest` 픽스처 **4 → 5**.

@@ -19,6 +19,10 @@
 #      재현된다. 왜 = `psql_master_query` 가 SQL 을 `export SQL='<값>'` 로 실어 값 속 작은따옴표가
 #      바깥을 닫았고(`column "colab_platform" does not exist`) 그 경로는 **실모드로 돈 적이
 #      없었다**(DR-4 §6). 함께 판정 = 정지 뒤 실패의 자동 재기동 · 오류 1회 기록 · 리허설.
+#   ⓔ `tests/s3-review.sh` **계획 검토 본문**을 판정한다. 계획은 초기화 도구 컨테이너(`--user 0`)가
+#      uid 0 · 0600 으로 쓰고 검토도 같은 컨테이너 안에서 돈다 — 두 uid 가 갈리면 red 다.
+#      왜 = 호스트 ssh 사용자(uid 1000)로 돌던 종전 검토는 **실모드에서 통과할 수 없었고**
+#      `--dry-run`·`--rehearse` 어느 쪽도 그 본문을 밟지 않아 검사 밖이었다(DR-4 §7).
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -47,6 +51,7 @@ CASES=(
   "$RESEED_DIR/tests/preflight-red.sh"
   "$RESEED_DIR/tests/preflight-secrets.sh"
   "$RESEED_DIR/tests/remote-transport.sh"
+  "$RESEED_DIR/tests/s3-review.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -98,5 +103,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사)"
 exit 0

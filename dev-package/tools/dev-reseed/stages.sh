@@ -28,17 +28,84 @@ compose_cmd() {
 # 초기화 도구 공통 마운트 — URL 파일은 읽기 전용, 보고서 자리는 도구가 0600 으로 쓴다.
 # 근거: R-DEV-RESET §11-1 ⑶ — 버킷·리전은 compose 의 리터럴이라 여기서 명시하지 않으면
 #       `s3-plan` 이 exit 2 로 아무것도 하지 않는다.
+#
+# 앞머리(플래그·마운트·이미지)를 따로 둔다 — **초기화 도구와 계획 검토가 같은 한 벌로 돈다.**
+# 왜 = 도구가 쓰는 파일(계획·보고서)은 이 컨테이너의 uid(`--user 0`)와 0600 으로 서고,
+#   그 파일에 소유자 검사를 거는 쪽은 **같은 uid 로 돌아야** 한다. 호스트 ssh 사용자는 uid 가
+#   다르고 0600 파일을 읽지도 못한다(DR-4 §7 · 실모드에서 통과할 수 없던 검사).
 # $1 = 보고서를 받을 원격 폴더(기본 `$REMOTE_OUT`). 리허설은 임시 폴더를 준다.
-reset_docker_cmd() {
-  local out_dir="${1:-$REMOTE_OUT}"
+# $2 = 덧붙일 docker 플래그 한 줄(계획 검토가 검토 본문을 읽기 전용으로 더 건다). 비워도 된다.
+reset_docker_prefix() {
+  local out_dir="${1:-$REMOTE_OUT}" extra="${2:-}"
   printf 'docker run --rm --network host --user 0 \\\n'
   printf '  -v %s/platform-owner-db.url:/s/platform.url:ro \\\n' "$EC2_SECRETS_DIR"
   printf '  -v %s/ai-owner-db.url:/s/ai.url:ro \\\n' "$EC2_SECRETS_DIR"
   printf '  -v %s:/tmp/reset.py:ro \\\n' "$RESET_TOOL"
   printf '  -v %s:/out \\\n' "$out_dir"
+  [ -z "$extra" ] || printf '  %s \\\n' "$extra"
   printf '  -e COLAB_CORE_S3_BUCKET=%s -e COLAB_CORE_S3_REGION=%s \\\n' "$S3_BUCKET" "$S3_REGION"
-  printf '  %s python /tmp/reset.py --target dev --yes-reset-dev \\\n' "$(core_image)"
+  printf '  %s' "$(core_image)"
+}
+
+reset_docker_cmd() {
+  printf '%s python /tmp/reset.py --target dev --yes-reset-dev \\\n' "$(reset_docker_prefix "${1:-}")"
   printf '    --platform-url-file /s/platform.url --ai-url-file /s/ai.url'
+}
+
+# ── 계획 검토 본문 ────────────────────────────────────────────────────────
+# `stage_s3` ② 와 리허설 ⑸ 가 **이 한 벌**을 쓴다. 두 자리가 갈리면 리허설이 검토를 밟지 못한다.
+#
+# 검사 다섯 — 모드 0600 · 소유자 = 실행자 · `_ops/` 0건 · 접두사 ⊆ {uploads/, previews/} · sha256 기재.
+# `assert` 대신 `SystemExit` 를 낸다 — `python -O` 로 돌아도 검사가 사라지지 않는다.
+# 소유자 검사는 초기화 도구 자신이 적용 때 거는 것과 같은 모양이다
+# (`services/core-api/ops/reset_dev_environment.py` `_private_file`) — 계획을 호스트 사용자에게
+# chown 하면 그 검사가 대신 깨진다. 그래서 검토 쪽을 컨테이너 안으로 옮긴다.
+s3_review_py() {
+  cat <<'REVIEW_BODY'
+import json, os, stat, sys
+
+def refuse(msg):
+    raise SystemExit("계획 검토 미달 — " + msg)
+
+p = sys.argv[1]
+st = os.stat(p)
+if stat.S_IMODE(st.st_mode) != 0o600:
+    refuse("계획 파일 모드가 0600 이 아니다 (%o)" % stat.S_IMODE(st.st_mode))
+if st.st_uid != os.getuid():
+    refuse("계획 파일 소유자가 실행자가 아니다 (파일 %d · 실행자 %d)" % (st.st_uid, os.getuid()))
+with open(p, encoding="utf-8") as f:
+    plan = json.load(f)
+keys = plan.get("keys") or []
+mp = plan.get("multipartUploads") or []
+mp_keys = [str(u[0]) for u in mp if u]
+bad = [k for k in keys + mp_keys if k.startswith("_ops/")]
+if bad:
+    refuse("_ops/ 키 %d 건" % len(bad))
+pre = sorted({k.split("/", 1)[0] + "/" for k in keys + mp_keys})
+if not set(pre) <= {"uploads/", "previews/"}:
+    refuse("허용 밖 접두사 %s" % pre)
+sha = plan.get("sha256") or ""
+if len(sha) != 64:
+    refuse("계획에 sha256 이 없다 — 적용에 넘길 값이 없다")
+print("계획 검토 ok — 키 %d 건 · 멀티파트 %d 건 · 접두사 %s · sha256 %s"
+      % (len(keys), len(mp), pre, sha))
+REVIEW_BODY
+}
+
+# 검토를 **초기화 도구와 같은 컨테이너 안**에서 낸다.
+# 본문은 원격 임시 파일에 적어 읽기 전용으로 건다 — `docker run -i` 를 쓰지 않는다.
+# 왜 = `-i` 를 달면 컨테이너가 원격 셸(`bash -s`)의 남은 표준입력을 먹는다.
+# $1 = 계획이 있는 원격 폴더(기본 `$REMOTE_OUT`).
+s3_review_script() {
+  local out_dir="${1:-$REMOTE_OUT}"
+  cat <<EOF
+rev="\$(mktemp)"
+trap 'rm -f "\$rev"' EXIT
+cat > "\$rev" <<'REVIEW_PY'
+$(s3_review_py)
+REVIEW_PY
+$(reset_docker_prefix "$out_dir" '-v "$rev":/tmp/review.py:ro') python /tmp/review.py /out/plan.json
+EOF
 }
 
 # ── deploy ───────────────────────────────────────────────────────────────
@@ -327,7 +394,7 @@ stage_s3() {
     # 이 단계의 명령은 출력을 되받아 판정하므로 `ssh_script` 의 DRY 줄이 변수로 들어간다.
     # dry-run 에서는 네 걸음을 여기서 그대로 찍는다.
     log "DRY ① ssh <dev> — $(reset_docker_cmd | tr -d '\\\n') --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json"
-    log "DRY ② ssh <dev> python3 — 계획 검토(_ops/ 0 건 · 접두사 uploads/·previews/ · 모드 0600 · 소유자 일치)"
+    log "DRY ② ssh <dev> — 같은 컨테이너(--user 0) 안에서 계획 검토(_ops/ 0 건 · 접두사 uploads/·previews/ · 모드 0600 · 소유자 일치 · sha256 기재)"
     log "DRY ③ ssh <dev> — 같은 도구 --phase s3-apply --apply-plan /out/plan.json --plan-sha256 <① 출력값> --report /out/s3-apply.json"
     log "DRY ④ ssh <dev> — 같은 도구 --phase count --report /out/count-after.json"
     return 0
@@ -342,23 +409,13 @@ EOF
   local sha256; sha256="$(printf '%s\n' "$out" | grep -Eo '\b[0-9a-f]{64}\b' | tail -1 || true)"
   [ -n "$sha256" ] || { blocked_add s3-plan "계획 sha256 을 읽지 못했다"; return 1; }
 
-  log "② 계획 검토 — _ops/ 0 건 · 접두사 uploads/·previews/ 둘뿐 · 소유자 0600"
+  # ⚠ 검토는 **초기화 도구와 같은 컨테이너 안**에서 돈다. 계획 파일은 그 컨테이너가 uid 0 · 0600
+  #   으로 쓰므로 호스트 ssh 사용자(uid 1000)로는 소유자가 어긋나고 읽지도 못한다 — 2026-09-14
+  #   3회차가 그 자리에서 멈췄다(DR-4 §7). 계획을 호스트 사용자에게 chown 하는 쪽으로 풀지 않는다.
+  log "② 계획 검토 — 같은 컨테이너 안(소유자·모드) · _ops/ 0 건 · 접두사 uploads/·previews/ 둘뿐 · sha256 기재"
   ssh_script "s3:review" <<EOF || { blocked_add s3-plan "계획 검토 미달"; return 1; }
 set -euo pipefail
-python3 - "$REMOTE_OUT/plan.json" <<'PY'
-import json, os, stat, sys
-p = sys.argv[1]
-st = os.stat(p)
-assert stat.S_IMODE(st.st_mode) == 0o600, "계획 파일 모드가 0600 이 아니다"
-assert st.st_uid == os.getuid(), "계획 파일 소유자가 실행자가 아니다"
-plan = json.load(open(p))
-keys = plan.get("keys") or []
-bad = [k for k in keys if k.startswith("_ops/")]
-assert not bad, "_ops/ 키 %d 건" % len(bad)
-pre = sorted({k.split("/", 1)[0] + "/" for k in keys})
-assert set(pre) <= {"uploads/", "previews/"}, "허용 밖 접두사 %s" % pre
-print("계획 검토 ok — 키 %d 건 · 접두사 %s" % (len(keys), pre))
-PY
+$(s3_review_script "$REMOTE_OUT")
 EOF
 
   log "③ s3-apply — 멀티파트를 객체보다 먼저 중단한다(도구가 그 순서를 강제한다)"
@@ -752,7 +809,7 @@ stage_rehearse() {
 
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 리허설 원시동작 10 — psql:master(따옴표 든 SQL) · ssh_script(따옴표·\$·백틱 되받기)"
-    log "DRY   · compose ps · 마이그레이터 alembic current 두 체인 · s3-plan(임시 폴더 · 적용 없음)"
+    log "DRY   · compose ps · 마이그레이터 alembic current 두 체인 · s3-plan ＋ 계획 검토(임시 폴더 · 적용 없음)"
     log "DRY   · postgres:16-alpine 소유자 URL SELECT 1 · deploy_doctor 1회 · 러너 --phase report · agent-browser 제목"
     log "DRY 아무것도 바꾸지 않는다 — dry-run 에서는 원격에 한 바이트도 내지 않는다"
     return 0
@@ -797,14 +854,17 @@ EOF
   reh_re migrator_ai '\(head\)' "$got"
 
   # ⑸ 초기화 도구 — **계획만** 낸다. 임시 폴더에 쓰고 지운다. `--phase s3-apply` 는 부르지 않는다.
+  #   계획을 낸 뒤 `stage_s3` ② 와 **같은 검토 본문**을 그 계획에 돌린다 — 바꾸는 것은 없다.
+  #   왜 = 종전 ⑸ 는 계획만 내고 지워 ② 검토는 실모드로 돈 적이 없었다(DR-4 §7).
   got="$(ssh_script "rehearse:s3-plan" <<EOF
 set -euo pipefail
 mkdir -p $reh_out && chmod 700 $reh_out
 $(reset_docker_cmd "$reh_out") --phase s3-plan --plan-out /out/plan.json --report /out/s3-plan.json
+$(s3_review_script "$reh_out")
 rm -rf $reh_out
 EOF
 )"
-  reh_re reset_tool_s3_plan '[0-9a-f]{64}' "$got"
+  reh_re reset_tool_s3_plan '계획 검토 ok — 키 [0-9]+ 건 · 멀티파트 [0-9]+ 건 · 접두사 .* · sha256 [0-9a-f]{64}' "$got"
 
   # ⑹ postgres:16-alpine — 읽기 전용 마운트 ＋ 스킴 치환 ＋ SELECT 1.
   got="$(ssh_script "rehearse:psql-owner" <<EOF
