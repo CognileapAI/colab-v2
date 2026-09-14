@@ -293,14 +293,8 @@
           "kind": "direct",
           "command": [
             "python",
-            "-m",
-            "unittest",
-            "discover",
-            "-s",
-            "scripts/tests",
-            "-p",
-            "test_planning_gate.py",
-            "-v"
+            "scripts/harness/run_unittest.py",
+            "scripts/tests/test_planning_gate.py"
           ]
         }
       }
@@ -376,34 +370,7 @@
             "selftest"
           ],
           "gates": [
-            "operator-notifications-selftest",
-            "contract-selftest",
-            "event-selftest",
-            "boundary-selftest",
-            "db-boundary-selftest",
-            "db-selftest",
-            "rls-effect-selftest",
-            "seam-consistency-selftest",
-            "generated-selftest",
-            "work-item-selftest",
-            "autometa-loss-selftest",
-            "preview-tile-slot-selftest",
-            "artifact-ownership-selftest",
-            "seed-plan-drift-selftest",
-            "dev-reseed-selftest",
-            "e2e-format-coverage-selftest",
-            "render-latency-selftest",
-            "backup-cron-streak-selftest",
-            "ops-observability-selftest",
-            "is4-recovery-selftest",
-            "exec-bit-selftest",
-            "migration-drift-selftest",
-            "frontend-typecheck-selftest",
-            "frontend-test-selftest",
-            "frontend-fixture-reach-selftest",
-            "frontend-visual-selftest",
-            "harness-eval-selftest",
-            "harness-contract-selftest"
+            "selftest"
           ]
         }
       }

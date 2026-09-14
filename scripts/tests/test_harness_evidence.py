@@ -23,6 +23,44 @@ class HarnessEvidenceTests(unittest.TestCase):
         cls.module = importlib.util.module_from_spec(SPEC)
         SPEC.loader.exec_module(cls.module)
 
+    def test_actual_single_gate_wrapper_matches_selftest_registry(self):
+        # Execute the real outer wrapper. Only its child is a controlled exit fixture;
+        # this proves producer format/exit propagation, not the 28 inner tests.
+        spec = self.module.load_registry()['gate-selftest']['checks']['selftest']
+        commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], cwd=ROOT, text=True).strip()
+        for code in (0, 78):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                child = root / 'child-fixture.sh'
+                child.write_text('if [ "${COLAB_GATE_SUMMARY_CHILD:-}" = 1 ]; then exit ' + str(code) + '; fi\n')
+                env = dict(os.environ, BASH_ENV=str(child), COLAB_GATE_REPORT_DIR=str(root / 'report'))
+                env.pop('COLAB_TASK_ID', None); env.pop('COLAB_GATE_SUMMARY_CHILD', None)
+                result = subprocess.run(spec['command'], cwd=ROOT, env=env, text=True, capture_output=True)
+                self.assertEqual(result.returncode, code, result.stdout + result.stderr)
+                summary = json.loads((root / 'report/gate-summary.json').read_text())
+                if code == 0:
+                    self.module.verify_gate_summary(summary, commit, spec['gates'], tree)
+                else:
+                    with self.assertRaises(self.module.EvidenceError):
+                        self.module.verify_gate_summary(summary, commit, spec['gates'], tree)
+
+    def test_unittest_runner_rejects_missing_empty_and_skipped_tests(self):
+        runner = ROOT / 'scripts/harness/run_unittest.py'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            empty = root / 'test_empty.py'; empty.write_text('# no tests\n')
+            skipped = root / 'test_skipped.py'
+            skipped.write_text('import unittest\nclass Tests(unittest.TestCase):\n @unittest.skip("fixture")\n def test_skip(self): pass\n')
+            for file in (root / 'missing.py', empty, skipped):
+                result = subprocess.run([sys.executable, str(runner), str(file)], cwd=ROOT, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 78, result.stderr)
+            passing = root / 'test_pass.py'
+            passing.write_text('import unittest\nclass Tests(unittest.TestCase):\n def test_pass(self): self.assertEqual(1, 1)\n')
+            result = subprocess.run([sys.executable, str(runner), str(passing)], cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('executed=1', result.stdout)
+
     def test_ci_success_requires_exact_producers_and_real_evidence(self):
         # A green needs result cannot substitute for missing gate artifacts.
         registry = json.loads((ROOT / ".agents/ci-producers.json").read_text())["producers"]

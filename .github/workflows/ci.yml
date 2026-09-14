@@ -535,7 +535,7 @@ jobs:
         run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "seed-plan-drift" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh seed-plan-drift
       - name: 기획 검사기 회귀 (합성 fixture · 실제 원본 검사는 로컬 필수)
         run: |
-          python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "planning-regression" --artifact-root "$RUNNER_TEMP/gate-evidence" -- python -m unittest discover -s scripts/tests -p test_planning_gate.py -v
+          python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "planning-regression" --artifact-root "$RUNNER_TEMP/gate-evidence" -- python scripts/harness/run_unittest.py scripts/tests/test_planning_gate.py
           echo "::notice::기획 원본 대조 미실행(CI에 원본 없음). 병합·배포 전 로컬 gates/run.sh planning-freshness 실행 결과가 별도로 필요하다."
 
   # ─────────────────────────────────────────────────────────────
