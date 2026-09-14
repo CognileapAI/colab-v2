@@ -3660,3 +3660,215 @@ items:
     deadline: null
     note: "⚠ **이 항목이 서기 전에는 dev 의 그 1건을 고칠 수단이 SQL 뿐이고 그것은 Ted 판정 대상이다**(`03-HANDOFF §4` 블로커). 데이터셋 삭제 화면도 없어(`deleteDataset` 501) 지우고 다시 올리는 경로도 막혀 있다. ⚠ 범위 = 연관 프로젝트 변경 하나이고, 데이터셋 삭제 화면 신설은 이 항목이 아니다(`〈396〉`-㉵ 범위 밖)."
     sources: ["dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: GT-1
+    name: "검사 판독 결함 묶음"
+    status: open
+    stage: backlog
+    owner: "gates (dev tooling)"
+    entry_conditions:
+      - "Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」 — 다음 회차 착수 항목으로 지정"
+      - "레포 WSL 이전 뒤 새 위치에서 착수(B9 원인 일부 해소 전제)"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend-test` 가 vitest fork worker 기동 시간초과를, `service-tests-viz-render` 가 가상환경 패키지 설치 누락(`ModuleNotFoundError: colab_viz`)을
+      red(준비)로 계수하고 각각 red fixture 로 selftest 가 증명한다
+      ⑵ `tests/fixtures/setup-db.sh` 를 같은 DB 에 2회 연속 실행해도 준비 단계가 실패하지 않는다.
+      B2·B3·B9 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "다음 회차 착수 — Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」. 출처 = B1(vitest fork worker 기동 시간초과를 red(판정)으로 계수) · 추가(최종 트리 `a07e87a4` 전수 — viz-render 가상환경 패키지 설치 누락을 red(판정)으로 계수) · B2(`lineage-unknown-20260907.test.tsx` 전역 스캔 5000ms 예산이 부하 시 red) · B4(`tests/fixtures/setup-db.sh` 비멱등 — `schema \"account_admin\" already exists` · 부르는 게이트 이름 `[미확인]`) · B3(호스트 `CLOCK_REALTIME` 역행 탐지 게이트 없음 · 시험 되돌리기는 기본키 스냅숏으로 교체 완료 `1e48a64b` · 다른 시각 오라클 시험 영향 `[미확인]`) · B9(동시 레인 수 규칙 · drvfs I/O — 폴더 30·31·32 WSL 이전으로 원인 일부 해소 중 · 이전 뒤 env 파일·픽스처 경로·설정 바인딩 재점검)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/full-a07e87a4/"]
+  - id: LF-1
+    name: "운영자 검색 카드 타 연구실 결과 누락 조사"
+    status: open
+    stage: backlog
+    owner: "core-api (운영자 검색 카드 조립) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 운영자 검색 카드 조립 `_compose(db)` 가 요청 트랜잭션(소속 연구실) 때문에 타 연구실 매치를 `row is None → continue` 로 건너뛰는지 실측으로 확정한다.
+      수정 형태는 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = B5. 결과 항목이 소리 없이 빠지는 green-by-skip 형태 · 범위 줄 건수와 카드 수가 갈릴 가능성 `[미확인]` · 걸리는 검사 = 검사 없음 · 파일 경로 `[미확인]`(앵커 `_compose(`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-2
+    name: "연구실 고르개 ＋ 검색 범위 고르개"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계약) — 착수 시점은 Ted"
+    entry_conditions:
+      - "「경계는 요청에서 오지 않는다」 규칙 재판정 선행 — 두 고르개 모두 요청이 조회 범위를 지정하는 구조 변경"
+      - "두 고르개는 한 자리에서 결정(카드 ⑧ ⓑ)"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = A1(연구실 고르개 — 관리자가 한 연구실만 골라 보는 전환 · 읽기 창구 연구실 인자 ＋ 계약 판정 · 카드 ① ⓑ · L) · A2(검색창 옆 전체 / 우리 연구실 · 카드 ⑧ ⓑ · M~L). 이번 회차는 연구실 표기를 누를 수 없는 표시로만 바꿈. 대장 `BO-3` `note:` 참조."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-shell-header.md", "dev-package/intent/2026-09-13-lth-search-scope.md"]
+  - id: LF-3
+    name: "내 계정 메뉴"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 사용자 이름 버튼이 내 계정·로그아웃 메뉴를 연다
+      ⑵ 그 메뉴가 휴대전화 「더보기」 목록과 같은 부품을 쓴다.
+    evidence: null
+    deadline: null
+    note: "출처 = A3(카드 ② ⓑ · 카드 ③ ⓒ · M). 이번 회차는 화살표만 지움."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-shell-header.md"]
+  - id: LF-4
+    name: "가공 단계 사유 입력·확인 절차와 추종 중 안내"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(D4 계보) — 착수 시점은 Ted"
+    entry_conditions:
+      - "부모 후붙임 흐름의 확인 2회 문제 설계 선행(A4)"
+      - "추종 중 안내 문구와 「분류에서 바꾸기」 링크 배치는 Ted 문면 판정 대상"
+    depends_on: []
+    completion_def: >-
+      ⑴ 계산값과 다른 가공 단계를 유지할 때 사유가 저장 칸에 기록된다(마이그레이션 1건 ＋ 계약 열쇠).
+      추종 중 안내·링크·부모 Lv 미상 처리의 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A4(사유 입력 ＋ 한 번 더 확인 절차 · 카드 ⑩ ⓑ · L) · 추가 3건(Task 3b 보고) — 추종 중 안내 줄 문면 · 「분류에서 바꾸기」 링크(`lin-goto-classify`)가 제한 안내 줄과 함께 숨음(`c10acf6a`) · 확정 부모 중 Lv 미상이 있으면 기본 Lv2 로 돌아가고 상한 재적용되는 것의 의도 여부."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-processing-level-mismatch.md"]
+  - id: LF-5
+    name: "표 줄 3자리 키보드 열기"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ `ProjectTable`·`CatalogTable`·`ProjectDatasetTable` 의 줄에서 마우스 없이 키보드로 상세를 연다.
+      빠른 작업 버튼·초점 순서 재설계 범위는 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A5(카드 ⑥ · M)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-a11y-empty-states.md"]
+  - id: LF-6
+    name: "승인 상태 3값"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(목록 계약) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "목록이 승인 상태를 승인됨 / 검토 대기 / 요청 없음 3값으로 구분해 보여 준다(목록 계약 열쇠 1 ＋ 묶음 질의 1)."
+    evidence: null
+    deadline: null
+    note: "출처 = A6(카드 ⑨ ⓑ · M). 승인 요청이 들어온 줄이 목록에서 구분되지 않음."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-verified-chip.md"]
+  - id: LF-7
+    name: "접근성 검사기 게이트"
+    status: open
+    stage: backlog
+    owner: "gates (dev tooling) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 키보드 접근·제목 단계 결함을 판정하는 게이트가 `gates/run.sh` 에 등록된다
+      ⑵ red fixture 로 fail-closed 를 증명한다(`selftest`).
+    evidence: null
+    deadline: null
+    note: "출처 = A7(카드 ⑦ ⓒ). 걸리는 검사 = 검사 없음 · 검사 부재 자체가 결함(`colab-rules §3-3`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-a11y-empty-states.md"]
+  - id: LF-8
+    name: "대표 제목 규약 나머지 화면"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 연구실 설정 화면에 집행한 대표 제목 규약이 나머지 화면(연구실 홈 등 10+)에 적용된다.
+      대상 화면 목록은 착수 intent 에서 확정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A8(카드 ⑦ ⓑ · SUMMARY §4 ⑦ · M)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-lth-review-1-SUMMARY.md"]
+  - id: LF-9
+    name: "본인 비활성화 확장 ＋ 상태를 모르는 구성원 잠금"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계정·구성원) — 착수 시점은 Ted"
+    entry_conditions:
+      - "활성 관리자 0명 상태 발생 여부 확인 선행(A9 `[미확인]`)"
+      - "계정 자격 행이 없는 구성원을 비활성과 같게 잠글지 Ted 판정 대상(B10)"
+    depends_on: []
+    completion_def: >-
+      ⑴ 본인 비활성화가 계정명 재입력과 활성 관리자 셈을 거친다.
+      상태를 모르는 구성원 잠금의 완료 정의 미작성 — Ted 판정 뒤 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A9(카드 ⑤ ⓑ · M) · B10(Task 7 수용 검토 · 닫는 비용 = `services/core-api/src/colab_core/app/routes/members.py` 앵커 `def _editable_permissions(` 1행)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-account-members.md"]
+  - id: LF-10
+    name: "계정·구성원 화면 기술부채"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계정·구성원) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 구성원 표의 계정 상태 조회 수가 구성원 수에 비례하지 않는다
+      ⑵ `accounts.py` 주석이 운영자 지정 화면 실물과 일치한다.
+      `login.css` 기반 재구성·이메일 열 고정·모바일 카드의 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = B6(구성원마다 `status_for_account` 1회 조회 · Task 7 구성원 절) · B7(`services/core-api/src/colab_core/app/routes/accounts.py` 「SQL 수동」 주석) · B8(계정 관리 화면이 `frontend/src/auth/login.css` 위에 구성 · `b3ff16e9`) · C1(계정 표 이메일 열 고정 ＋ 모바일 카드 목록 · 이번 회차는 좁은 폭 좌우 이동 안내까지). 걸리는 검사 = B6·B7·B8 검사 없음."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-11
+    name: "프로젝트 표·계보 노드 가공 단계 표시 확장"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "가공 단계 불일치 표식이 데이터셋 목록 두 표 외에 프로젝트 표·계보 노드에도 선다(`level_pair` → `level_view` 확장)."
+    evidence: null
+    deadline: null
+    note: "출처 = C2(커밋 `0427ac91`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-12
+    name: "dev 실화면 대비·글자 크기 계측"
+    status: open
+    stage: backlog
+    owner: "frontend (계측) — 착수 시점은 Ted"
+    entry_conditions:
+      - "dev 재생성 회차 뒤 — 다른 회차가 dev 재투입 중이면 dev 접촉 금지"
+    depends_on: []
+    completion_def: "dev 에서 `COLAB_VISUAL_URLS` 로 로그인 화면·주요 화면의 대비·글자 크기를 1회 계측하고 결과를 기록한다."
+    evidence: null
+    deadline: null
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수 · 게이트 ③ 지적). 이번 회차는 `frontend-visual` 명시 면제 · 프런트 11개 영역 변경."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
+  - id: LF-13
+    name: "EC2 반입 파일·env 백업 잔존물 정리 판정"
+    status: open
+    stage: backlog
+    owner: "infra (dev EC2) — 판정은 Ted"
+    entry_conditions:
+      - "삭제는 파괴적 조작 — Ted 판정 뒤 `.claude/rules/deploy.md` 를 편 뒤 집행"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
+  - id: LF-14
+    name: "기획자 회신 대기 2건(조건부)"
+    status: open
+    stage: backlog
+    owner: "기획 회신 ＋ frontend — 착수 시점은 Ted"
+    entry_conditions:
+      - "기획자 회신 수신 — 「할 일 함」 표기는 기획자가 변경을 원할 때만 · 이메일 칸 관측은 재현될 때만"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md"]

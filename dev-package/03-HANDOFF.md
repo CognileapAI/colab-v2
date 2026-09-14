@@ -10,8 +10,11 @@
 > **로그인·백오피스 회차 잔여는 그대로다** — Ted 실사용 확인(첫 비밀번호 변경 뒤 백오피스 화면 전부) · 후속 7건(`〈384〉`-⑨) · 태그 `dev-20260912-1`·`dev-20260912-2` **미push**(원격 반영은 오케스트레이터 몫).
 > ⛔ **블로커 `§4` `71` 은 상태 그대로다** — staging 자동배포 파이프라인이 매 회차 `exit 78`(배포·검증은 green · 원인은 운영자 알림 스풀 부재). ⭑ **⟨개정 2026-09-13⟩ 전수 게이트 3계수 = green 63 / red(판정) 0 / red(준비) 1** ／ 종전 ~~`[미확인]`~~ — `〈392〉` 의 red(판정) 2 는 커밋 `41617a43`·`c4802aa2` 로 정정됐고, red(준비) 1 = `harness-eval` 미선언(판정은 `〈391〉` 단독 실측). 근거 `dev-package/reports/bugfix-260912/`.
 
-> **2026-09-14 이태헌 1차 검증 반영 dev 배포 완료** — 태그 `dev-20260914-1`(`e9ca26b1`) · `deploy_doctor` 15/15 1회 · 원장 〈397〉 · **다음** = 기획자 회신 발송(Ted 확인 대기) · 문면 6건 확정(회신 없으면 유지) · dev 실화면 대비 계측 후속 · 레포 폴더 31 WSL 이전.
 > ⭑ **⟨증보 2026-09-14 · R-DATA-CANON `WU-C0`⟩ 최종 갱신 2026-09-14 · 현재 단계 = 데이터 정본화＋반복 재생성 회차 착수**(통합 `integration/r-data-canon` · `main` 미병합). **`DR-4` 🟦 착수** — intent `intent/2026-09-14-data-canon-and-reseed.md` 판정 8건 확정(㈎~㈕ · Ted 2026-09-14) · dev 초기화 승인을 **dev 한정 상시**로 개정(`.claude/rules/deploy.md` · 〈398〉 · staging·prod 매회 GO 무변). **다음 WU = `WU-C1`(정본 md 4건) ∥ `WU-C2a`(등록 활성 조건) → `WU-C1b` ∥ `WU-C2b` ∥ `WU-C3` → `WU-C4`(dev 재생성 1회).** **진입조건** = 라운드 `prd/rounds/R-DATA-CANON.md §3` · 참조자료 드라이브 연결 · `COLAB_REF_ROOT` 지정 · C4 는 전건 병합＋dev 배포 뒤.
+
+> **2026-09-14 회차 마감 · 다음 = 검사 판독 결함 묶음(`GT-1`)** — 후속 29건 대장 등재(`GT-1`·`LF-1`~`LF-14`) · **진입조건(새 WSL 세션)** = ① 레포 위치 `~/workspace/00_Project/00 CoLAB/31 CoLAB-v2` 에서 `git fetch origin && git merge --ff-only origin/main && git worktree prune` ② `bash gates/run.sh work-item-consistency` green ③ dev 는 다른 회차(데이터 정본화·재생성)가 재투입 중이면 dev 접촉 금지 · ⚠ `/mnt/f` 31 원본은 새 위치 확인 뒤 정리.
+
+> **2026-09-14 이태헌 1차 검증 반영 dev 배포 완료** — 태그 `dev-20260914-1`(`e9ca26b1`) · `deploy_doctor` 15/15 1회 · 원장 〈397〉 · **다음** = 기획자 회신 발송(Ted 확인 대기) · 문면 6건 확정(회신 없으면 유지) · dev 실화면 대비 계측 후속 · 레포 폴더 31 WSL 이전.
 
 > **2026-09-14 이태헌 1차 검증 반영 코드 완료** — BF-18~23 done · 최종 트리 a07e87a4 전수 green 61 ＋ 재실행 3(viz-render green · 면제 2) · 원장 〈397〉 · **다음** = dev 배포(Ted 허락 대기) → 기획자 회신 발송 → 회차 마감 뒤 레포 ext4 이전.
 
