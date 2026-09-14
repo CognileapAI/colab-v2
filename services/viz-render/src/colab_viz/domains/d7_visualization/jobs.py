@@ -245,6 +245,18 @@ class PreviewArtifacts:
     sidecar: preview.Artifact | None = None
     world_file: preview.Artifact | None = None
     geometry: preview.MapGeometry | None = None
+    #: ⭑ ⟨증보 2026-09-13 · `DL-2` ⓓ7⟩ 이 벌을 그린 조각 전부의 `fileId`. 사이드카가
+    #: 이미 싣는 값이지만(`sources`), **발행 전에** 표식을 놓으려면 파일을 열지 않고도
+    #: 손에 있어야 한다 — 사이드카를 다시 읽으면 같은 사실의 출처가 둘이 된다.
+    sources: tuple[str, ...] = ()
+
+    def index_pairs(self) -> list[tuple[str, str]]:
+        """표식 자리 `(fileId, contentKey)` — 한 벌의 캐시 키는 **한 번만** 센다."""
+        keys: list[str] = []
+        for a in self.all():
+            if a.cache_key not in keys:
+                keys.append(a.cache_key)
+        return [(file_id, key) for key in keys for file_id in self.sources]
 
     def all(self) -> list[preview.Artifact]:
         return [a for a in (self.thumbnail, self.detail,
@@ -478,7 +490,8 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
         url_base=spec.preview_url_base, key_params=key_params,
         source=source_ids[0], sources=source_ids, owner=owner)
     artifacts = PreviewArtifacts(thumbnail=thumb, detail=detail,
-                                 thumbnail_sidecar=thumb_sc, detail_sidecar=detail_sc)
+                                 thumbnail_sidecar=thumb_sc, detail_sidecar=detail_sc,
+                                 sources=source_ids)
 
     coords = _map_coordinates(reads, merged if not isinstance(merged, _ValuesOnly) else None)
     if coords is None:
@@ -594,8 +607,21 @@ def _run(job: RenderJob) -> None:
             job.rendered = merged
             job.artifacts = _build_artifacts(job, reads, merged, color_range)
             job.badge = _badge_for(reads, job.artifacts.map_image is not None)
+        # ⭑ ⟨2026-09-13 · `DL-2` ⓓ7⟩ **표식이 산출물보다 먼저다.** 표식 없이 놓인 산출물은
+        # 삭제 회수 때 목록 조회로 찾을 수 없고, 그 실패는 에러가 아니라 「지울 것이 없다」로
+        # 위장한다. 그래서 표식 실패는 **렌더 실패**이고, 그 경우 `publish` 는 부르지 않는다 —
+        # 그림은 서빙 중인데 되찾을 길이 없는 반쪽 상태를 만들지 않는다.
+        spec.preview_sink.index(job.artifacts.index_pairs())
         # 산출물이 디스크에 다 놓인 뒤 서빙 자리로 — 실패는 렌더 실패다(반쪽 미리보기를 「완료」로 내지 않는다).
-        spec.preview_sink.publish(job.artifacts.all())
+        try:
+            spec.preview_sink.publish(job.artifacts.all())
+        except FileNotFoundError as e:
+            # ⭑ ⟨2026-09-13 · prod 임시 검증 실측 · D9⟩ **방금 구운 산출물이 사라졌다.**
+            #   같은 데이터셋의 삭제 회수가 `invalidation.apply()` 로 unlink 한 직후 이
+            #   `read_bytes()` 가 그것을 읽으면 이 예외다. 아래 포괄 처리기가 받으면
+            #   `RENDER_UNKNOWN_ERROR` 로 접히는데, 그것은 **원인도 복구도 분명한 실패**를
+            #   「알 수 없다」로 바꾼다 — 화면의 「다시 그리기」가 정확히 맞는 자리다.
+            raise RenderError(RenderFailure.ARTIFACT_MISSING, str(e)) from None
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),

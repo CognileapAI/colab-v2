@@ -1,0 +1,15 @@
+test_every_detailed_action_has_a_name (scripts.tests.test_operator_digest.DigestActionVocabularyTests.test_every_detailed_action_has_a_name) ... ok
+test_tombstoning_a_dataset_has_a_report_name (scripts.tests.test_operator_digest.DigestActionVocabularyTests.test_tombstoning_a_dataset_has_a_report_name) ... FAIL
+
+======================================================================
+FAIL: test_tombstoning_a_dataset_has_a_report_name (scripts.tests.test_operator_digest.DigestActionVocabularyTests.test_tombstoning_a_dataset_has_a_report_name)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/parkhongjin/Src/colab-v2/.claude/worktrees/agent-af600bd99d66c0d31/scripts/tests/test_operator_digest.py", line 17, in test_tombstoning_a_dataset_has_a_report_name
+    self.assertIn('dataset.tombstoned', LABELS)
+AssertionError: 'dataset.tombstoned' not found in {'upload.accepted': '업로드 접수', 'upload.registered': '등록', 'dataset.registered': '등록', 'dataset.updated': '데이터 변경', 'dataset.deleted': '데이터 삭제', 'project.created': '프로젝트 생성', 'project.deleted': '프로젝트 삭제', 'download.ticket_issued': '다운로드 요청/티켓 발급', 'access.requested': '접근 요청', 'access.approved': '접근 승인', 'access.rejected': '접근 거절', 'permission.changed': '권한 변경'}
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.001s
+
+FAILED (failures=1)

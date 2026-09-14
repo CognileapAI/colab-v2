@@ -1,9 +1,10 @@
-"""viz-render 앱 — `core-viz.yaml` 의 표면 **7 op**.
+"""viz-render 앱 — `core-viz.yaml` 의 표면 **8 op**.
 
 등록된 것 — `createRender` · `getRender` · `getRenderTile` · `listPalettes`,
 **`createScreenshot`**(P3 · `WORK-UNITS §10.2` 말미가 완료 정의로 올렸다),
 **`lookupValue`**(`V-2` 값 조회 · `PLAN-SoT §9 〈294〉` · 15차 해제),
-그리고 **`describeTarget`**(대상 기술 · 21차 해제 · 읽기 전용).
+**`describeTarget`**(대상 기술 · 21차 해제 · 읽기 전용),
+그리고 **`reclaimPreviews`**(지운 데이터셋의 미리보기 회수 · `DL-2` · 22차 해제).
 없는 경로는 라우트 표에 없는 것이 정직하다 — 501 로 자리만 잡아 두지 않는다:
 이 seam 에는 「미구현 표」 규약이 없다(그것은 `fe-core` 쪽 장치다).
 """
@@ -25,7 +26,7 @@ from ..kernel.preview_sinks import LocalPreviewSink, S3PreviewSink
 from ..ports.source import FilesystemSourcePort, S3SourcePort
 from .trigger_bus import SpoolTriggerPort
 from .trigger_loop import TriggerDrainLoop
-from .routes import describe, renders, screenshots, style, values
+from .routes import describe, reclaims, renders, screenshots, style, values
 
 API_PREFIX = "/viz/v1"
 
@@ -115,6 +116,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(TraceMiddleware, service_name="viz-render")
     app.state.settings = settings
     client = _s3_client(settings) if "s3" in (settings.source_mode, settings.preview_sink) else None
+    # **회수 라우트가 표식을 되묻는 자리**(`DL-2`). 여기 두는 이유 — 라우트가 자기 클라이언트를
+    # 세우면 버킷·리전을 읽는 자리가 둘이 되고, `main` 을 import 하면 순환이 된다.
+    # 저장 모드가 `local` 이면 `None` 이고 그때 회수는 로컬 디렉터리만 본다.
+    app.state.s3_client = client
     if settings.source_mode == "s3":
         assert settings.workdir is not None and settings.work_max_bytes is not None  # validate 가 보장
         app.state.source = S3SourcePort(client, workdir=settings.workdir,
@@ -153,7 +158,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     for router in (renders.router, renders.tile_router,
                    screenshots.router, style.router, values.router,
-                   describe.router):
+                   describe.router, reclaims.router):
         app.include_router(router, prefix=API_PREFIX)
 
     @app.exception_handler(HTTPException)

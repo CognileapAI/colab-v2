@@ -134,6 +134,37 @@ def representative_image_key(dataset_id: str, image_id: str) -> str:
         datasetId=dataset_id, imageId=image_id)
 
 
+#: 미리보기 산출물의 **파일별 역인덱스** 표식이 사는 접두. **`previews/` 의 형제다** —
+#: 그 접두는 flat 이어야 하고(관측이 하위 경로를 red 로 낸다) CloudFront 는 `previews/*`
+#: 만 노출한다. 사유 전문은 `layout.json` `previewIndex.why`.
+PREVIEW_INDEX_PREFIX = 'preview-index'
+PREVIEW_INDEX_KEY_TEMPLATE = '{previewIndexPrefix}/by-file/{fileId}/{contentKey}'
+
+
+def preview_index_key(file_id: str, content_key: str) -> str:
+    """산출물 하나가 **어느 파일에서 나왔는가**를 적는 표식의 자리. 본문은 0바이트다.
+
+    산출물 키(`preview_key`)는 내용 주소라 `fileId` 를 담지 않는다. 그래서 「이 파일에서
+    나온 산출물」을 되묻는 길이 없었고, 데이터셋을 지워도 산출물이 남았다. 발행 시점에
+    이 자리에 표식 하나를 놓으면 회수 때 `fileId` 접두 목록 **1회**로 되찾는다 —
+    **버킷 전체 스캔을 하지 않는다.**
+
+    위생은 `preview_key` 와 **같다** — 경로 조각 하나가 아니면 거절한다. 조용히 고쳐 쓰면
+    표식이 엉뚱한 자리에 놓이고, 그 실패는 에러가 아니라 「산출물 없음」으로 위장한다.
+
+    돌려주는 것은 **미리보기 산출물과 같은 저장소** 기준 상대 키다(루트가 아니라 접두가 갈린다).
+    """
+    parts = {}
+    for label, value in (("fileId", file_id), ("contentKey", content_key)):
+        part = str(value).strip()
+        if not part or "/" in part or "\\" in part or part in (".", ".."):
+            raise ValueError(f"미리보기 역인덱스 {label} 로 쓸 수 없다: {value!r}")
+        parts[label] = part
+    return PREVIEW_INDEX_KEY_TEMPLATE.format(
+        previewIndexPrefix=PREVIEW_INDEX_PREFIX,
+        fileId=parts["fileId"], contentKey=parts["contentKey"])
+
+
 #: 지도 타일의 내용 키 접두사. **한 슬롯 안에서 두 규칙을 눈으로도 가른다** —
 #: 렌더 산출물은 접두사가 없고, 지도 타일은 이것으로 시작한다.
 MAP_TILE_KEY_PREFIX = 'tile-'

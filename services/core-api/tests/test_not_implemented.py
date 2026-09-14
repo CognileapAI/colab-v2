@@ -113,8 +113,20 @@ C22_REAL = {
     "createServiceAccount": "tests/test_admin_account_flow.py",
     "changeOwnPassword": "tests/test_admin_account_flow.py",
 }
+#: **`DL-1` 이 표에서 뺀 둘** (4 → 2 · 2026-09-06). 두 op 은 `NOT_IMPLEMENTED_P1`(= v2 밖)
+#: 이었고 그 배정이 **계약 실물과 어긋나 있었다** — 계약은 처음부터 둘을 들었고(204 묘비 ·
+#: `DeletionImpact` 세 칸) 서버는 이미 `actions.canDelete` 를 판정해 내려보내고 있었다
+#: (소비처 0건). **계약 개정 0건 · 마이그레이션 0건**이고 없던 것은 라우트 하나였다.
+#: 선례 = `〈229〉`-㉯(낡은 `P1` 표기를 정본 인용으로 뒤집는다) · Ted 판정 ⓐ 가 병합의 선행조건.
+#: **뺀 자리에 실동작 시험이 있다** — `tests/test_dataset_deletion.py` 가 잠긴 데이터셋의
+#: `body_access` 함정(소유자·교수에게도 파일이 0행)까지 함께 잰다. 그 함정을 안 재면
+#: 삭제가 **에러 없이 0건**으로 성공하는 자리가 그대로 남는다.
+DL_REAL = {
+    "deleteDataset":              "tests/test_dataset_deletion.py",
+    "getDatasetDeletionImpact":   "tests/test_dataset_deletion.py",
+}
 P2_REAL = {**P2_REAL, **S1_REAL, **P5_REAL, **P3_REAL, **P6_REAL, **P7_REAL, **C2_REAL,
-           **C21_REAL, **C22_REAL}
+           **C21_REAL, **C22_REAL, **DL_REAL}
 REAL = P1_REAL | set(P2_REAL)
 #: **비었다 — 그리고 그것이 사실이다.**
 #: ⭑ 승인 요청 여섯이 빠졌다 (`P6` · 마이그레이션 `0010` 이 저장처를 만들었다).
@@ -136,7 +148,7 @@ def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=False)
 
 
-def test_the_4_unimplemented_operations_are_exactly_these() -> None:
+def test_the_2_unimplemented_operations_are_exactly_these() -> None:
     """**목록이 줄어드는 것이 진척의 계측이다** (P2.md §2-19). 25 → 36 → 24 → 21 → **23**.
 
     ⭑ **이번에는 늘었고, 그것이 옳다** (`PLAN-SoT §9-〈88〉` 묶음 5·6 · 4차 동결 해제).
@@ -196,8 +208,14 @@ def test_the_4_unimplemented_operations_are_exactly_these() -> None:
     op 이 같아 합쳐도 4 다.** 다만 **집행판은 하나만 남는다** — `〈334〉`-㉳-⑥ Ted 판정
     「다운로드 = 200 티켓 ＋ 바이트 op」에 따라 **`routes/download.py`(200 `DownloadTicket`)**
     가 정본이고, `main` 의 302 판(`routes/catalog.py`)은 걷었다. 병합된 계약도 200 이다.
+
+    ⭑ **4 → 2 — `DL-1` 이 삭제 둘을 걷었다** (2026-09-06). `deleteDataset` ·
+    `getDatasetDeletionImpact`. **계약 개정 0건 · 마이그레이션 0건**이다 — 계약은 처음부터
+    두 op 을 들고 있었고 라우트만 없었다(`routes/deletion.py` 가 그 자리다).
+    범위 편입은 Ted 판정 ⓐ 가 병합의 선행조건이다(`dev-package/sessions/DL-1-TED-RULING.md`).
+    **줄어드는 것이 진척의 계측이다** (`P2.md §2-19`).
     """
-    assert len(OPERATIONS) == 4
+    assert len(OPERATIONS) == 2
     assert REAL & {op.operation_id for op in OPERATIONS} == set()
 
 
@@ -232,7 +250,11 @@ def test_codes_are_the_two_kinds() -> None:
     #  4 →  6: `〈339〉`-(다) 다운로드 둘의 **임시 등재**(C2 가 뺀다). `NO_STORE` 가 아닌 이유 —
     #          저장 자리는 `0009`(`d8_download.file_id`)가 이미 만들었다. ⚠ 같은 이유로
     #          `downloadDataset` 의 `NO_STORE` 도 낡았다 — C2 가 셋을 함께 걷는다.
-    assert len(p1) == 4
+    #  4 →  2: `DL-1` 이 `deleteDataset`·`getDatasetDeletionImpact` 를 가져갔다.
+    #          **둘 다 저장 자리가 이미 있었다** — `d3_dataset.deleted_at`·
+    #          `deleted_by_account_id` 는 P0 이 세웠고 제품 쓰기가 0건이었을 뿐이다.
+    #          그래서 `NO_STORE` 가 아니라 `P1` 계열이었고, 그 `P1` 배정이 계약과 어긋났다.
+    assert len(p1) == 2
     assert no_store & p1 == set()
 
 

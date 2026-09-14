@@ -1,0 +1,11 @@
+../Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/tempfile.py:936: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/tmp4s5mal00'>
+  _warnings.warn(warn_message, ResourceWarning)
+./Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/tempfile.py:936: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/tmpe_424zf7'>
+  _warnings.warn(warn_message, ResourceWarning)
+./Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/tempfile.py:936: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/tmpkxwinbg2'>
+  _warnings.warn(warn_message, ResourceWarning)
+.
+----------------------------------------------------------------------
+Ran 5 tests in 0.180s
+
+OK

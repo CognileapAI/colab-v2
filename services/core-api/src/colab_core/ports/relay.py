@@ -59,6 +59,20 @@ class PreviewRenderPort(Protocol):
         빈 목록은 「고를 것이 없다」는 답이지 「물어보지 못했다」가 아니다."""
         ...
 
+    def reclaim_previews(self, *, lab_id: str, account_id: str, target_id: str,
+                         file_ids: list[str]) -> dict[str, Any]:
+        """`reclaimPreviews` 중계 (`DL-2` · 22차 해제 ㉯).
+
+        **core 는 무엇을 지울지 고르지 않는다.** 넘기는 것은 방금 지워진 `d3_file.id`
+        전부이고, `sources ⊆ fileIds` 판정도 산출물 자리도 viz-render 안이다 — 여기서
+        키를 짓는 순간 D7 의 사실이 D3 코드로 옮겨 앉는다.
+
+        ⚠ **못 닿으면 예외다.** 「지울 것이 없었다」와 「물어보지 못했다」를 같은 값으로
+        접으면 삭제가 미리보기를 남긴 채 204 로 끝난다 — 계약 산문(「파일과 미리보기만
+        지워져요」)이 거짓이 되는 자리다. 호출자는 그 예외에 삭제 전체를 되돌린다.
+        """
+        ...
+
 
 class LineageSuggestionPort(Protocol):
     """ai-service 중계. **못 찾으면 정직한 빈 상태**다 — 억지 제안을 만들지 않는다

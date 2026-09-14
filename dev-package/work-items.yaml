@@ -3980,3 +3980,317 @@ items:
     deadline: null
     note: "⬜ 진입조건 미충족(회신 전) — 착수하지 않는다. 계약을 좁히는 변경이라 Ted 서명 없이 `main` 에 올리지 않는다(`.claude/rules/colab-rules.md §8`). ⚠ **어느 검사에도 걸리지 않는 결함이 이 항목의 본체다** — 관측 간격·Lv0 출처는 `UF-1` 이 **화면만** 막고 서버는 저장하므로 API 직접 호출 경로가 뚫린 채 남는다. 같은 데이터셋 종류인데 등록 경로에 따라 데이터 품질이 갈리고, 그 비대칭을 재는 게이트·Dockerfile·배포 검사가 0건이다. 이 비대칭 자체를 요구로 볼지 결함으로 볼지도 판정 대상(판정문 `## 미해결 질문`). 세 건(㉯·㉱·㉲)은 묶이지만 개별 승인·기각이 가능하다. 범위 밖 = `DatasetEditForm` 의 필수 판정 정렬 · 기존 행 backfill · 계보 추천 서비스의 개발 순서."
     sources: ["dev-package/intent/2026-09-13-upload-form-rev2.md", "dev-package/reports/upload-form-rev2/lane-A1.md", "dev-package/reports/upload-form-rev2/lane-A2.md"]
+  - id: DL-1
+    name: "데이터셋 삭제 — 묘비 전환 · 파일 바이트 회수 · 대기 접근 요청 자동 닫힘 · 상세 삭제 버튼"
+    status: open
+    stage: stage2
+    owner: "D3·D2·D4 / core-api ＋ S-05 frontend"
+    entry_conditions:
+      - "Ted 판정 ⓐ~ⓕ 회수 (`sessions/DL-1-TED-RULING.md` · **병합 게이트**이지 착수 조건이 아니다)"
+      - "`~/.colab-v2-test.env`"
+      - "`origin/main` 에서 갈라진 레인"
+      - "배포는 prod 브랜치 병합 ＋ main 재빌드 뒤"
+    depends_on: [F-3, P6, P3]
+    completion_def: >-
+      ⑴ `deleteDataset`·`getDatasetDeletionImpact` 가 501 표에서 빠지고
+      (`routes/not_implemented.py` 4 → 2) `tests/test_not_implemented.py` 의 `DL_REAL` 이
+      `tests/test_dataset_deletion.py` 를 가리키며 그 파일이 두 op 을 실제로 부른다
+      ⑵ 판정 순서 400 → 404 → 403 · 소유자 연구원 204 · 비소유 연구원 403 · 교수 204 ·
+      두 번째 DELETE 404 · 삭제 뒤 내 연구실 `getDataset` 410 (타 연구실 404)
+      ⑶ 묘비 뒤 **남는 것 5**(`d3_dataset` 행 · `d3_dataset_description.name` ·
+      `d4_lineage_edge` · `d6_project_dataset` · `d2_verified`) · **사라지는 것 2**
+      (`d3_file` 0행 · 원장이 알던 저장 키 전건 저장소 부재) · **닫히는 것 1**
+      (그 데이터셋의 `검토 대기` 접근 요청 전건 → `거절됨` ＋ 고정 사유 · 처리된 행 무변경) ·
+      목록·검색·프로젝트 상세에서 부재
+      ⑷ **잠긴(`잠김`) 데이터셋도 ⑶ 과 같다** — 잠금 우회 단계를 빼면 `d3_file` 잔존으로 red ·
+      우회 뒤 `d2_dataset_access` 는 종전 값(또는 부재)으로 원복됐음이 시험된다
+      ⑸ 저장소 예외 → 500 ＋ DB 무변경(묘비 아님 · 파일 행 잔존) ＋ 같은 DELETE 재호출 204
+      ⑹ 자식의 `getDatasetLineage` 가 묘비 노드를 `kind="묘비"` · `deletedAt` 값 ·
+      `navigable false` · `bodyAccessible false` · `name "(지워진 데이터)"` 로 낸다
+      ⑺ FE — 「삭제」 진입점이 `actions.canDelete` 로만 켜지고(꺼지면 DOM 부재) · 모달이
+      계약 산문 낱말(파생 N건 「자리가 남아요」 · 「교수 승인이 붙은 데이터예요」 ·
+      「대기 중인 접근 요청 N건이 자동으로 닫혀요」) ＋ 파생 데이터 이름을 말하며 ·
+      성공 시 `/datasets` 이동(토스트 없음) · 실패 시 서버 문장 또는 「데이터를 지우지 못했어요.」 ·
+      파급 조회 실패 시 삭제 비활성 — vitest
+      ⑻ dev 배포 뒤 **검증이 올린 일회용 데이터셋 1건** 실삭제 — 410 첫 실측 ·
+      사전 스냅샷 키의 S3 부재(원장 키 목록 기준 · 접두 스캔 아님) · 계보 상대의 묘비 노드 ·
+      승인함 대기 0 ＋ `deploy_doctor` 15/15 한 실행 ＋ 게이트 전종 green (`CLAUDE.md §0`)
+      ／ 종전 표기 ~~14/14~~ — R-D `WU-D3` 가 ⑮(실행 sha ∈ main · `MAIN_SHA` 대조)를 더했다
+      ⑼ **운영자 감사 스냅샷** — 삭제 뒤 `d3_operator_audit` 에 그 데이터셋 행 **1건**
+      (`action='dataset.tombstoned'` · `before.name` 있음 · `after_snapshot IS NULL`)
+      ＋ 일일 운영자 보고에 그 이름이 뜬다(`infra/notifications/digest.py` `LABELS`).
+      `0027_operator_audit` 가 데이터셋 쓰기에 건 규약이고 `d3_catalog.update_dataset` 이 선례다 —
+      활동 한 줄(`d8_activity`)은 이름·요약을 안 들어 그 자리를 대신하지 못한다.
+      시험 `tests/test_dataset_deletion.py::test_deleting_appends_one_operator_audit_snapshot`
+    evidence: >-
+      2026-09-06 레인 `lane-dl1-dataset-delete` C0~C3(`36fc8c2`·`60b3e00`·`a9b571b`·`a4a48e1`) ·
+      게이트 3계수 = green 13 / red(판정) 1(`service-tests-core-api` · 원인 = 호스트 도달성 ·
+      판정 미도달 · 게이트 축자 `exit 1` · 사람이 죽임) / red(준비) 1(`schema-diff`) ·
+      pytest 신설 21(red 18/1 → green) · core-api 전수 843/0(손 실행 · 보조) · vitest 17 ·
+      FE 전수 809 · 병합 조건 = Ted ⓐ ＋ CI `service-tests` 1회 green · ⑻ 미집행 —
+      근거 `dev-package/reports/dl-1/lane-report.md` ·
+      **리베이스 `origin/main` `d969f34`(2026-09-08 · 110 커밋 · 0015~0019)** — 충돌 3파일
+      (대장·HANDOFF·`DatasetDetailPage.tsx` import 1행) 해소 · `0017` 3값 정합 =
+      `open_access_for_deletion` 이 WU-B4 `set_access_state("열림")` 재사용 ＋ `지정 공개`
+      원복 시험 1(red 1 → green) · 재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1
+      (`schema-diff`) · pytest 948/0(신설 파일 22) · vitest 1013/0 · `service-tests` 게이트 미실행
+      (이 맥 무판정 매달림 · 직접 pytest 로 갈음) — `lane-report.md §9` ·
+      **재리베이스 `origin/main` `a8a1653`(2026-09-12 · 192 커밋 · platform 0020~0027 ·
+      ai 0006 형제 둘 ＋ 0007 merge)** — 브랜치 `lane/wu-dl-1`(`docs/BRANCHING.md` 규칙 4) ·
+      커밋 C0~C4(`088c59d`·`7a7e56e`·`555bda8`·`6d3f297`·`8bd7023`) ＋ C6(`17b0b95` · 옛 C5) ＋
+      C7(`5527408`) ＋ C8 · 충돌 5파일 7사건 해소(대장 3 · `main.py` · `test_not_implemented.py` ·
+      `DatasetDetailPage.tsx` · `03-HANDOFF.md` 블로커 행 71 선점 → 72·73 재번호) ·
+      **C7 = `0027` 운영자 감사 스냅샷 정합**(완료 정의 ⑼ · red 먼저 `assert 0 == 1` → green) ·
+      재검증 = 게이트 14 중 green 13 / red(판정) 0 / red(준비) 1(`schema-diff`) ·
+      pytest 1145 passed / 1 failed(`test_ownership_snapshot_publisher` — 호스트 `postgres` 암호
+      전제 미선언 · 레인 기여분 0 · `lane-report.md §10-5 ⓒ`) · `tests/test_dataset_deletion.py` 23 ·
+      vitest 1270/0 · 계약 개정 0 · 마이그레이션 0 유지 — `lane-report.md §10` ·
+      **C9**(`301183c`) `frontend-test` 간헐 red 해소(초과 · 별도 커밋) ·
+      **C10** 어드바이저 ② 정정 5건 — 삭제 버튼 다크 토큰 · 감사 action 분리 · 계수 실행별 표기 ·
+      purge 머리말 · 후속 WU 3 등재 — `lane-report.md §10-7` ·
+      ⭑ **⟨prod 임시 검증 2026-09-13 · 완료 판정 아님⟩** 1차(`fc75de17` 21:35) `LON_crop` 실삭제 —
+      묘비 ✓ · `d3_file` 0 · S3 원장 키 부재 · 운영자 감사 2행 ✓. ⛔ **완료 정의 ⑻ 을 닫지 않는다** —
+      이 회차는 **dev 가 아니라 prod** 이고 병합 전 레인 커밋을 `COLAB_SHIP_ALLOW_NONMAIN=1` 로
+      **명시 우회**해 구웠다(`MAIN_SHA ancestor=bypass` · `deploy_doctor` **⑮ ✗ 가 정답**).
+      값·우회 근거·되돌림 = `dev-package/reports/dl-2/prod-test-20260913.md`
+    deadline: null
+    note: >-
+      ⭑ **⟨결정 2026-09-12 · 오케스트레이터 · Ted 개정 가능⟩ 묘비 전환의 감사 행위 문자열은
+      `dataset.tombstoned` 다 — 물리 삭제(`ops/purge_datasets.py` → `d3_audit.append_deletion_snapshots`)의
+      `dataset.deleted` 와 **분리한다.** 근거 = 한 데이터셋이 묘비가 된 뒤 물리 삭제될 수 있어 같은
+      `target_id` 에 같은 이름이 2행 쌓이고, 「대상당 1행」을 전제하는 질의
+      (`tests/test_operator_notifications_e2e.py:136`)가 깨진다. 되돌릴 수 있는 정도도 다르다.
+      ⚠ 값을 늘리면 `infra/notifications/digest.py` 의 `LABELS`·`DETAIL_ACTIONS` 도 함께 늘린다 —
+      `LABELS[action]` 이 직접 첨자라 빠지면 그날 보고가 `KeyError` 로 죽는다(`:195`·`:200`).
+      **신설 2026-09-06** — 사용자 요구(상세에 삭제 길이 없다)와 계약 실물(두 op 이 처음부터
+      있고 라우트만 501)에서 왔다. **계약 개정 0**(선례 `〈229〉`-㉰) · **마이그레이션 0**.
+      ⭑ **⟨개정 2026-09-13 · 레인 `lane/wu-dl-2` D4⟩ 미리보기도 이제 이 삭제가 지운다 —
+      `DL-2` 로 미리보기 회수를 연결했다**(`routes/deletion.py` ⑧-c · `reclaimPreviews` 중계 ·
+      커밋 `86defbbf`). ／ 종전 표기 ~~⚠ 미리보기는 지우지 않는다 — 계약 산문
+      「파일·미리보기만 지우고」와의 차이이고 형제 `DL-2` 가 닫는다~~ — **그 차이는 닫혔다.**
+      같은 PR(`lane/wu-dl-2` = DL-1 커밋 10 ＋ DL-2 커밋 6 · 사용자 결정 2026-09-13). ⚠ **연구원도 자기가 올린 데이터셋은 지울 수 있다**(사용자 결정 ②
+      「계약대로 소유자 또는 교수」). `.claude/rules/deploy.md` 11 산문(「제품에 삭제 op 을
+      여는 것 = `§5` 범위 늘리기」)은 병합 커밋에서 「제품 op 은 `〈N〉` 으로 열렸다」로 갱신한다.
+      프로젝트 상세는 묘비를 조용히 뺀다(계수 불일치 가능 · 사용자 고지).
+      ⛔ **Ted 판정 ⓐ(`NOT_IMPLEMENTED_P1` → v2 편입)가 병합의 선행조건**이다 —
+      회부문 `dev-package/sessions/DL-1-TED-RULING.md`.
+    sources: ["contracts/seams/fe-core.yaml#deleteDataset", "contracts/seams/fe-core.yaml#getDatasetDeletionImpact", "dev-package/sessions/DL-1-TED-RULING.md"]
+
+  - id: DL-2
+    name: "미리보기 산출물 회수 — `reclaimPreviews`(core-viz) · viz `deletion_plan` ＋ 싱크 `remove` · compose 스풀 배선"
+    status: partial
+    stage: stage2
+    owner: "D7 viz-render ＋ core-api 중계 ＋ infra compose"
+    entry_conditions:
+      - "Ted 판정 ⓓ1~ⓓ7 회수 (`sessions/DL-2-TED-RULING.md` · **병합 게이트**이지 착수 조건이 아니다) — ⓓ1 `core-viz.yaml` 동결 해제 22차 ㉯(`reclaimPreviews` 신설 · 직전 21차 `PLAN-SoT §9 〈376〉`) · ⓓ2 `PreviewSinkPort` 에 `index`·`remove` · ⓓ3 「지워진 fileId 집합 D」 래퍼 ＋ `tile-` 무접촉 ＋ CloudFront 300초 수용 ＋ 로컬 scan 합집합·`unindexed` 계수 · ⓓ4 viz 미설정 = 건너뜀＋로그 · ⓓ5 백필 GO(dev dry-run 계수 먼저) · ⓓ6 S3 삭제 잠금 문면 범위 분리(시험 2건 유지) · ⓓ7 표식 자리 `preview-index/by-file/{fileId}/{contentKey}` 계약 등재"
+      - "`DL-1` 과 같은 PR — `lane/wu-dl-2` 가 DL-1 커밋 10 을 이어받는다(사용자 결정 2026-09-13). 별도 병합 대기 0"
+      - "⑤ **prod compose 스풀 배선 = prod 브랜치(`feature/rtf400_deploy_prod`) 몫 · 이 PR 범위 밖** ／ 종전 표기 ~~prod 브랜치 병합~~ — dev compose 는 `COLAB_VIZ_TRIGGER_SPOOL` 이 **이미 배선돼 있다**(2026-09-13 실측)"
+    depends_on: [DL-1]
+    completion_def: >-
+      ⑴ `core-viz.yaml` 에 `reclaimPreviews`(POST `/reclaims` · 요청
+      `PreviewReclaimRequest{targetId, fileIds[] minItems 1}` · 200
+      `PreviewReclaimResult{targetId, stale, kept, unindexed, removed[]}` · 서비스 토큰)이
+      동결 해제 22차(㉯ · Ted 승인 필드)로 등재되고 생성물이 재생성된다(`generated-up-to-date`) ·
+      **응답 집합 = 200/400/401/503 넷으로 닫힌다** — viz 는 `RequestValidationError` 를 400 으로
+      바꾸고(`app/main.py`) `require_caller` 는 401 만 낸다 ⟹ **422 를 계약에 적지 않는다**
+      ⑵ `invalidation.deletion_plan` 이 `reclaim_plan` 과 같은 모양(계산기 신설 0 · `GRADES` 무변)이며
+      viz 단위 시험 — D 전부 포함 → stale · 일부만 → kept(partial) · `tile-` → kept ·
+      사이드카 부재/구판 → kept · `D = ∅` → `OutOfScope` · `apply` 뒤 싱크 `remove` 가
+      **지운 이름만** 받는다 · **`unindexed` 계수** 가 응답에 실린다(표식 없이 로컬 scan 으로만
+      잡힌 벌 수 — 이 회차 이전 산출물) · 후보 = 인덱스 contentKey **∪** 로컬 `ownership.scan` 중
+      규칙 충족 벌
+      ⑶ `S3PreviewSink.remove` 가 산출물 이름과 표식 키를 **한 번의** `delete_objects` 로 부르고
+      `LocalPreviewSink.remove` 는 no-op · `S3PreviewSink.index` 가 표식(0바이트 ·
+      `application/json`)을 PUT 하며 `_run` 에서 **`index` 뒤 `publish`**(인덱스 실패 = 렌더 실패) —
+      대역 시험
+      ⑷ core-api `deleteDataset` 이 커밋 전 릴레이를 부르고 실패 시 500 · 무변경(pytest 대역) ·
+      `app.state.previews is None`(viz 미설정) 갈래는 **건너뛰고 로그**
+      (`event=dataset.previews_skipped code=PREVIEWS_UNCONFIGURED`)
+      ⑸ **dev compose 는 `COLAB_VIZ_TRIGGER_SPOOL` 이 기배선**(2026-09-13 실측) ·
+      **prod compose 스풀 배선은 prod 브랜치(`feature/rtf400_deploy_prod`) 몫으로 이 PR 범위 밖**
+      ／ 종전 표기 ~~dev·prod compose 스풀 배선 ＋ `volume-init`~~ — 기동 뒤 viz 로그의
+      트리거 루프·회수 요약 확인은 그 브랜치의 배포 창에서 잰다(`〈353〉` 실측 역전)
+      ⑹ dev 실측 — 검증 데이터셋 삭제 뒤 그 산출물 키가 로컬·S3 에서 부재
+      (`previews/{key}` 4확장자 ＋ `preview-index/by-file/{fileId}/`) · 다른 데이터셋의
+      산출물 잔존 · `tile-` 잔존 · CloudFront 300초 뒤 404 ·
+      **착수 순서 고정** = ⓐ `ops/backfill_preview_index.py` **dry-run** 으로 dev 계수를 먼저 낸다
+      (쓰기 0건 · 사이드카·표식·건너뜀·타일 네 계수) → ⓑ 그 계수를 근거로 **Ted ⓓ5 GO** →
+      ⓒ `--apply`(표식 PUT · 삭제 0건). ⛔ 순서를 바꾸지 않는다 — 얼마나 쓸지 모르는 채로
+      쓰기 시작하면 GO 판정의 입력이 사라진다
+    evidence: >-
+      2026-09-13 레인 `lane/wu-dl-2` 커밋 6 — D0 `f7a433c0`(회부문 ⓓ1~ⓓ7 ＋ 대장 문면) ·
+      D1 `b1235a16`(`preview-index/` 계약 등재 ＋ 생성물 3 ＋ 싱크 `index`·`remove`) ·
+      D2 `6a5860d7`(`deletion_plan` ＋ `reclaim_on_delete.run` ＋ 발행 시 표식 ＋ 잠금 문면 범위 분리) ·
+      **D3 `10ad5115`**(계약 22차 `reclaimPreviews` `POST /reclaims` ＋ viz 라우트 ＋ `main.py` 8 op) ·
+      **D4 `86defbbf`**(core Port·중계 ＋ 삭제 트랜잭션 ⑧-c) · D5(백필 ops ＋ 이 evidence ＋ 보고서).
+      **red 선확인** = viz 라우트 시험 10건 `10 failed`(축자 `AssertionError: {"detail":"Not Found"}` ·
+      `assert 404 == 200`) → 구현 → `10 passed` · core 삭제 시험 3건 `3 failed`
+      (`assert 0 == 1` · `PREVIEW_RECLAIM_FAILED` 부재) → `26 passed`(파일 전건) ·
+      백필 시험 3건 `ModuleNotFoundError: No module named 'colab_viz.ops'` → `3 passed`.
+      `tests/test_preview_relay.py` 신설 2건은 **구현 뒤에 썼다** — red 선행 대신 **변이 증명**
+      (중계 경로 `/reclaims`→`/renders` 로 바꾸면 `1 failed` · `relay.py:241 RelayUnavailable`).
+      **3계수 = green 9 / red(판정) 0 / red(준비) 0** — `contract-lint`·`contract-breaking`
+      (`COLAB_BREAKING_BASE_REF=origin/main` · 축자 `contract-breaking green — 기준 origin/main
+      (       3건) 대비 파괴적 변경 없음.` · oasdiff `No breaking changes to report, but the specs
+      are different.` = 순수 가산)·`seam-consistency`(`green — G-e 503건 · G-b 10건 · ㉠ 10건 ·
+      ㉡ 18건.`)·`generated-up-to-date`(`green — 등기부 13건 전부 재생성 일치` · core-viz 는
+      등기부 밖이라 TS 생성물 무변)·`import-boundary`·`banned-import`·`db-boundary`·
+      `work-item-consistency`·`exec-bit`.
+      viz pytest 전수 **490 passed / 41 failed** — 41 은 전부 **준비 red**(축자 `Failed:
+      COLAB_REFERENCE_DATA 가 원천 디렉터리를 가리키지 않는다`) · 레인 A 와 같은 집합.
+      ⛔ **레인이 잰 core 전수 계수(`998/217` → `1003/217`)는 무효다** — 그때의 로컬 시험 DB 가
+      선언 스키마보다 낡아 있었고(`d3_search_evidence` 부재 등) 그 드리프트가 계수를 지배했다.
+      **재구성 뒤 재측정(오케스트레이터)** = 재구성 DB(표 45 · 시드) 위 단독 전수 1회 = **1 failed / 1220 passed / 6 deselected**(2026-09-13 · 실패 1 = `test_ownership_snapshot_publisher` — 로컬 컨테이너 `postgres` 인증 방식 · 게이트/CI 는 trust 컨테이너로 전제를 세움 · 레인 무관). ⚠ 같은 시험 DB 로 전수를 **반복**하면 잔여 행(업로드·프로젝트 이름) 때문에 회차마다 다른 5~12건이 흔들린다 — 판정은 재구성 직후 1회만.
+      이 레인의 판정값은 **단독 실행 계수**다 — `tests/test_dataset_deletion.py` ＋
+      `tests/test_preview_relay.py` 의 DL-2 대상 6건 **6 passed / 0 failed**(`-k "reclaim or
+      viz_relay or refused"`). ⚠ 두 파일 **전건** 동시 실행은 오케스트레이터의 전수가 같은
+      시험 DB 를 함께 쓰는 동안에는 회차마다 다른 2~5건이 흔들린다(`colab-rules §3-4`
+      「한 워크트리에 전수 두 벌 동시 실행 배제」의 실물) — 그 계수를 판정에 쓰지 않는다.
+      **⑹ dev 실측은 이 레인 범위 밖** — 오케스트레이터 별건(배포 창).
+      ⭑ **⟨prod 임시 검증 2026-09-13 · 완료 판정 아님 · 완료 정의 ⑹ 을 닫지 않는다⟩**
+      1차(`fc75de17` 21:35) 가 **결함 3건**을 드러냈고(렌더-삭제 경합 `RENDER_UNKNOWN_ERROR` ＋
+      `FileNotFoundError …webp` · 고아 표식 10 · 회수 계수 로그 0줄) **D9(`55df17b0`)** 가 셋을 닫았다 —
+      `orphanIndex` 첨가(계약) · `RENDER_ARTIFACT_MISSING` · `structured_event` 배선.
+      2차(`55df17b0` 22:05) `LAT_HSR` 삭제 = `dataset.previews_reclaimed stale=4 kept=0
+      orphanIndex=0 removed=16`(**이름이 S3 실존 객체와 일치** · 표식 12 삭제) · 이어진 삭제
+      `removed=48`(12벌) · 파일 행 −4 · 키 −4 · `previews/` 36→16(−28 · 새 렌더 +8) ·
+      `preview-index/` 23→46(−12 · +35) · **지운 데이터셋 소유 잔여물 0**.
+      잔여 = 미등록 업로드(15 파일) 소유 6벌·표식 28(데이터셋이 아니라 이 문의 대상이 아니다) ＋
+      `DL-2` 이전 고아 2벌·표식 18 ＋ `uploads/` +14(`U-2`).
+      ⛔ **완료 판정이 아니다** — prod 이고 조상 검사를 명시 우회했다(`deploy_doctor` ⑮ ✗ 가 정답).
+      값·우회 근거·되돌림 계획 = `dev-package/reports/dl-2/prod-test-20260913.md` ·
+      요지 3줄 = `dev-package/reports/dl-2/lane-report.md §13`.
+    deadline: null
+    note: >-
+      **신설 2026-09-06** — `DL-1` 이 남긴 차이(계약 산문 「파일·미리보기만 지우고」)를 닫는
+      형제 항목이다. 사용자 결정 ④·⑤ = 「이번에 같이 — 단 별도 WU 로 바로 이어서」.
+      ⚠ **스풀 seam 에 못 얹는다** — 이벤트 봉투의 집계 루트가 `uploadId` 라 `datasetId` 가
+      구조적으로 없고 발신자가 D5 로 고정돼 있다. 그래서 HTTP op 신설이고, 그것이 `㉯`
+      동결 해제를 부르는 이유다(선례 `〈231〉`·`〈294〉`).
+      ⭑ **⟨증보 2026-09-13 · 레인 `lane/wu-dl-2` 조사⟩ 회부문 = `sessions/DL-2-TED-RULING.md`(ⓓ1~ⓓ7).**
+      ⑴ 동결 해제 등급 = **22차 · ㉯**(직전 21차 `PLAN-SoT §9 〈376〉` · 근거 `§5-㉯` 축자
+      「**op 신설** — 501 표·op 총계가 움직인다」) ／ 종전 `[미확인]`.
+      ⑵ `U-2` ⓓ 「버킷 스캔 금지」의 `previews/` 적용 범위 = **접두 전체 스캔 0건**으로 닫는다 —
+      회수는 지워진 fileId 마다 `preview-index/by-file/{fileId}/` **목록 1회**이고 비용이
+      |D| 에만 비례한다. 기각한 대안 = 사이드카 전수 열거(삭제마다 `previews/` 전건 GET).
+      ⑶ 표식 자리가 `previews/` **아래가 아닌** 이유 = `legacy_preview_observation.observe` 가
+      그 접두 아래 하위 경로를 보면 「flat 구조가 아니다」로 red 를 낸다 ⟹ **형제 접두**
+      `preview-index/`(CloudFront 는 `/previews/*` 만 노출하므로 표식 비노출).
+      ⑷ 계약 `contracts/storage/layout.json` 에 **별도 top-level `previewIndex`** 로 등재한다 —
+      `keys`/`roots` 표에 넣지 않는 이유 = 생성기 자기검증이 「미리보기 루트에 사는 종류 1개」를
+      고정으로 확인한다(`contracts/codegen/gen_storage_layout.py`).
+      ⑸ **배경 회수 루프로는 영원히 회수되지 않는다** — `ownership.grade()` 가 묘비 데이터셋의
+      fileId 를 `d5_upload_file` 잔존 때문에 「접수분에만 닿는다」로 읽고, 그것은 고아가 아니다.
+      ⑹ 「S3 삭제 금지」 잠금은 **범위 분리**로 처리한다(ⓓ6) — `tile_reclaim.py` 독스트링 3곳을
+      「자동 회수 루프는 …」으로 한정하고 `tests/test_s3_tile_reclaim.py` 시험 2건은 **무수정 유지** ·
+      새 음성 시험이 「`delete_objects`·`.remove(` 호출자 = `reclaim_on_delete.py` 하나」를 잠근다.
+      ⭑ **⟨상태 2026-09-13 · `open` → `partial`⟩ 「닫는다」 = `done` 이고, `partial` 은 **닫지 않았다는
+      기록**이다.** 이 대장에서 `partial` 은 「완료 정의 일부가 실측으로 충족됐고 나머지가 이름으로
+      열거돼 있으며 **그래서 닫지 않는다**」를 뜻한다 — 선례 셋이 그 문면을 스스로 적고 있다:
+      `T-I`(축자 「⛔ 그래서 닫지 않는다 — `status: partial` 유지. 「부분 완료로 닫지 않는다」」) ·
+      `R-1`(축자 「⟹ **부분 충족으로 닫지 않는다.**」 · `conflict` → `partial` 로 갈아 온 이력) ·
+      `P5`(`partial` 로 서 있다가 Ted 판정 뒤 `done`). ⟹ `CLAUDE.md §5` 「WU 는 부분 완료로 닫지
+      않는다」와 **양립한다** — 그 규율이 금지하는 것은 `done` 이고, `partial` 은 그 금지를 지키는
+      표기다. **이 회차의 열린 것** = 완료 정의 ⑹ dev 실측(오케스트레이터 별건) ＋ Ted ⓓ1~ⓓ7.
+      충족분 ⑴~⑸ 는 `evidence` 에 계수로 있다.
+    sources: ["dev-package/sessions/DL-1-TED-RULING.md", "dev-package/sessions/DL-2-TED-RULING.md", "contracts/storage/layout.json"]
+
+  - id: gate-pg-reach
+    name: "게이트 `_pg.sh` 일회용 postgres 에 호스트가 못 닿으면 준비 red 로 선다(도달성 확인 ＋ `PGCONNECT_TIMEOUT`) — 지금은 판정 없이 매달린다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 컨테이너가 떴는데 호스트에서 5432 에 못 닿으면 `::gate-readiness-failure::` ＋ exit 78
+      ⑵ psycopg 접속에 상한(초)이 걸린다
+      ⑶ 셀프테스트 red fixture(도달 불가 주소)로 fail-closed 증명
+    evidence: "2026-09-06 맥 호스트 실측 — 14분 무판정 대기 · `dev-package/reports/dl-1/gate-service-tests-core-api.log`"
+    deadline: null
+    note: >-
+      **신설 2026-09-07** — `DL-1` 레인이 `service-tests-core-api` 를 돌리다 발견. `_pg.sh` 는 컨테이너가
+      **뜨지 않는** 경우만 red(준비)로 가르고, 「떴는데 호스트에서 못 닿는다」 갈래가 없다. psycopg 에
+      connect 타임아웃이 없어 게이트는 표식도 종료코드도 없이 매달리고, 사람이 죽여야 `red(판정)`
+      (exit 1 · junit 부재)이 난다 — 자동 실행에서는 「도는 중」과 구별되지 않는다. 고치는 자리 =
+      `gates/tools/_pg.sh`(도달성 확인) 또는 `service-tests.sh`(`PGCONNECT_TIMEOUT`).
+      정밀도를 올리는 수정이지 범위 축소가 아니다 — red fixture 로 증명한다(⑶).
+    sources: ["dev-package/reports/dl-1/lane-report.md", "dev-package/reports/dl-1/lane-report.md#3"]
+
+  - id: fe-test-order-dependence
+    name: "`frontend-test` 가 같은 트리에서 red/green 으로 갈리는 자리 — 시험이 비동기 결과를 기다리지 않고 재는 곳을 없앤다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend-test` 를 연속 3회 돌려 같은 판정이 나온다
+      ⑵ 단언이 비동기 결과(라우터 이동·재렌더)를 보는 자리는 전부 `waitFor`/`findBy` 안에 있다
+      ⑶ 재는 값·단언 수는 그대로다(검사 축소 0)
+    evidence: >-
+      2026-09-12 `DL-1` 레인 실측 — 같은 커밋·같은 node 5회에 red 3 / green 2 ·
+      갈린 것은 늘 `frontend/test/account-admin.test.tsx` 의 첫 시험 ·
+      축자 `Expected element to have text content: /lab  Received: /account-admin` ·
+      그 한 건은 `lane/wu-dl-1` C9 가 고쳤고(C9 뒤 연속 3회 `105 files / 1270 tests` green)
+      **같은 무늬가 남아 있는지는 전수로 재지 않았다** — 이 항목이 그 전수다
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `DL-1` 레인의 어드바이저 ② 정정에서 분리. 원인은 제품이 아니라 시험의 경주다:
+      `await waitFor(()=>expect(fetch).toHaveBeenCalled())` 는 「fetch 가 불렸다」까지만 기다리는데
+      제품은 응답이 온 **뒤에** `setSession` ＋ `navigate` 를 한다. 「fetch 가 불렸다」는 「이동이 끝났다」보다
+      항상 이르므로 라우터 재렌더가 단언 뒤로 밀리면 red 가 된다. **판정이 재현되지 않는 게이트는
+      그 파일에 대해 근거가 되지 못한다**(`rules §3-3` 계열). 같은 무늬를 `frontend/test/` 전수로 훑는 것이 이 항목이다.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]
+
+  - id: gate-work-item-pyyaml
+    name: "`work-item-consistency` 가 PyYAML 없는 인터프리터에서 준비 실패를 `red(판정)` 으로 낸다 — 갈래를 바로잡는다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 도구 의존(PyYAML)이 없으면 `::gate-readiness-failure::` ＋ exit 78 로 선다(판정 red 아님)
+      ⑵ 또는 게이트가 `gates/tools/_venv.sh` 의 `GATE_PY`(핀 `gates/requirements.txt` `PyYAML==6.0.2`)를 쓴다
+      ⑶ 셀프테스트 red fixture(의존 부재)로 그 갈래를 증명
+    evidence: >-
+      2026-09-12 맥 호스트 실측 — `bash gates/run.sh work-item-consistency` 축자
+      `::error::work-item-consistency — pyyaml 이 없다 (검사 불가는 통과가 아니다)` · `red(판정) · exit 1` ·
+      이 호스트의 `python3` 셋(3.12 프레임워크 · 3.10 · `/usr/local`) 어디에도 PyYAML 이 없다 ·
+      `PATH` 앞에 `gates/.venv/bin` 을 세우면 같은 스크립트가 green
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `gate-pg-reach` 와 같은 계열이다(준비 실패를 판정 red 로 낸다). 부르는 자리 =
+      `gates/run.sh` 의 `exec python3 gates/tools/work_item_consistency.py`. 같은 무늬가 다른 게이트에도
+      있는지 함께 훑는다 — 실측된 것 둘 더: `contract-lint`(`gates/tools/contract-lint.sh:51` 의 `mapfile` 은
+      bash 4+ 내장이라 macOS 기본 `bash` 3.2 에서 `SPECS[@]: unbound variable`) · `_pg.sh:181`
+      (`netarg[@]: unbound variable`). 셋 다 **검사 내용과 무관한 실행 환경 의존**이고 게이트가 원인을 말하지 않는다.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]
+
+  - id: ownership-snapshot-test-precondition
+    name: "`test_ownership_snapshot_publisher` 가 게이트 밖에서 `postgres` 무암호 접속을 전제한다 — 준비/판정을 가른다"
+    status: open
+    stage: stage1
+    owner: null
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 소유자 접속을 못 만들면 시험이 **준비 실패로 갈라져 선다**(판정 red 아님) 또는 접속값이 시험 환경 선언에서 온다
+      ⑵ 게이트·CI 의 판정은 지금과 같다(일회용 postgres 에서 전건 통과)
+      ⑶ 상시 로컬 컨테이너(공개 포트 · `scram-sha-256`)에서 손 실행해도 판정 red 가 아니다
+    evidence: >-
+      2026-09-12 맥 호스트 실측 — `pytest -m "not e2e"` 에서 1건 실패 · 축자
+      `psycopg.OperationalError ... password authentication failed for user "postgres"` ·
+      시험은 `services/core-api/tests/test_ownership_snapshot_publisher.py:66` 에서
+      `make_url(app_db_url).set(username="postgres",password=None)` 로 붙는다 ·
+      **게이트·CI 안에서는 전제가 선언돼 있다** — `gates/tools/_pg.sh:180` 이
+      `POSTGRES_HOST_AUTH_METHOD=trust` 컨테이너를 세우고 `setup-db.sh` 가 그 URL 을 주입한다
+    deadline: null
+    note: >-
+      **신설 2026-09-12** — `DL-1` 레인이 `service-tests-core-api` 를 이 맥에서 못 돌려(`gate-pg-reach`)
+      직접 pytest 로 갈음하다 발견. 결함은 「전제가 없다」가 아니라 **「게이트 밖에서는 그 전제가 서지 않는데
+      시험이 그것을 준비 실패로 가르지 않는다」**이다. 상시 컨테이너는 공개 포트로 들어오는 접속을
+      `scram-sha-256` 으로 받는다(`pg_hba` 의 `trust` 줄은 컨테이너 내부 `127.0.0.1/32` 전용).
+      제품 코드는 한 줄도 돌지 않고 접속 단계에서 죽는다 — `DL-1` 기여분 0.
+    sources: ["dev-package/reports/dl-1/lane-report.md#10-5"]

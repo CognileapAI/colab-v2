@@ -1,0 +1,503 @@
+FFFFFFFFFFFFFFFFFF.                                                      [100%]
+=================================== FAILURES ===================================
+____________ test_the_two_delete_ops_are_no_longer_in_the_501_table ____________
+
+p2_client = <function p2_client.<locals>.build at 0x110d41300>
+planted = <function planted.<locals>.plant at 0x111e4e660>
+
+    def test_the_two_delete_ops_are_no_longer_in_the_501_table(p2_client, planted):
+        """501 을 200 으로 바꾼 것이 아니라 **표에서 뺐다**는 것을 여기서 한 번 더 못 박는다.
+    
+        `test_not_implemented.py` 는 표를 세고, 이 시험은 **실제 호출이 501 이 아님**을 잰다.
+        두 자리가 다 있어야 「표만 고치고 라우트는 501」이 안 지나간다.
+        """
+        from colab_core.app.routes.not_implemented import OPERATIONS
+    
+        names = {op.operation_id for op in OPERATIONS}
+>       assert "deleteDataset" not in names
+E       AssertionError: assert 'deleteDataset' not in {'addUploadFile', 'deleteDataset', 'getDatasetDeletionImpact', 'replaceUploadGridFile'}
+
+tests/test_dataset_deletion.py:144: AssertionError
+___________________ test_a_malformed_id_is_a_400_on_both_ops ___________________
+
+p2_client = <function p2_client.<locals>.build at 0x1122945e0>
+
+    def test_a_malformed_id_is_a_400_on_both_ops(p2_client):
+        """모양이 틀린 것은 **경계 밖이 아니라 400** 이다 (`routes/access.py::_living_dataset` 축자).
+    
+        404 로 접으면 「없다」와 「그런 모양은 없다」가 같은 답이 되어 화면이 오타를 못 고친다.
+        """
+        client = p2_client()
+        for method, url in (("DELETE", f"{PREFIX}/datasets/not-a-ulid"),
+                            ("GET", f"{PREFIX}/datasets/not-a-ulid/deletion-impact")):
+            r = client.request(method, url, headers=auth(TOKEN_PROF))
+>           assert r.status_code == 400, f"{method} {url} → {r.status_code}"
+E           AssertionError: DELETE /api/v1/datasets/not-a-ulid → 501
+E           assert 501 == 400
+E            +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:168: AssertionError
+____________ test_out_of_lab_missing_and_tombstone_are_the_same_404 ____________
+
+p2_client = <function p2_client.<locals>.build at 0x11238d940>
+planted = <function planted.<locals>.plant at 0x11238dbc0>
+
+    def test_out_of_lab_missing_and_tombstone_are_the_same_404(p2_client, planted):
+        """존재를 알리지 않는다 (P-9·P-10). 계약에 410 이 없으므로 묘비도 404 다.
+    
+        ⚠ **본문까지 같아야 한다** — 문구가 갈리면 세 경우가 응답에서 구별된다.
+        """
+        client = p2_client()
+        living, _ = planted(owner=ACC_A_PROF, files=0)
+        tomb, _ = planted(owner=ACC_A_PROF, files=0)
+>       assert client.delete(f"{PREFIX}/datasets/{tomb}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYBT8QFZK8HWRSXQR70TV', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x1123a4a40>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:184: AssertionError
+________________________ test_a_second_delete_is_a_404 _________________________
+
+p2_client = <function p2_client.<locals>.build at 0x112443600>
+planted = <function planted.<locals>.plant at 0x112443d80>
+
+    def test_a_second_delete_is_a_404(p2_client, planted):
+        """되돌리는 전이가 없다 — 두 번째 DELETE 는 **204 가 아니라 404** 다 (관문 안에서 이미 묘비)."""
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=0)
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYBYNPYQ09ZTACDF28YRY', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x1124886b0>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:204: AssertionError
+_____ test_a_researcher_who_is_not_the_owner_gets_403_and_nothing_changes ______
+
+p2_client = <function p2_client.<locals>.build at 0x112443e20>
+planted = <function planted.<locals>.plant at 0x112552660>
+sql = <function sql.<locals>.run at 0x112551760>
+tmp_path = PosixPath('/private/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/pytest-of-parkhongjin/pytest-73/test_a_researcher_who_is_not_t0')
+
+    def test_a_researcher_who_is_not_the_owner_gets_403_and_nothing_changes(p2_client, planted, sql,
+                                                                            tmp_path):
+        """계약 산문 「소유자 또는 교수만」. **403 이고 아무것도 안 바뀐다.**
+    
+        ⚠ 이 연구원은 `업로드·편집` 이 켜져 있다(seed) — 그래도 못 지운다. 삭제는 그 스위치와
+        **다른 축**이다 (`PERMISSION-PRINCIPLES §2` 새 행 · Ted 판정 ⓑ).
+        """
+        client = p2_client()
+        dataset_id, keys = planted(owner=ACC_A_PROF, files=2)
+        _write_bytes(tmp_path, keys)
+    
+        r = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_RES))
+>       assert r.status_code == 403, r.text
+E       AssertionError: {"code":"NOT_IMPLEMENTED_P1","message":"아직 구현하지 않았다 — P1 범위다.","details":{"operationId":"deleteDataset"}}
+E       assert 501 == 403
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:226: AssertionError
+________________ test_the_owner_even_as_a_researcher_can_delete ________________
+
+p2_client = <function p2_client.<locals>.build at 0x112617ba0>
+planted = <function planted.<locals>.plant at 0x112617d80>
+
+    def test_the_owner_even_as_a_researcher_can_delete(p2_client, planted):
+        """**연구원도 자기가 올린 데이터셋은 지운다** (사용자 결정 ② · 계약 「소유자 또는 교수」)."""
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_RES, files=1)
+        r = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_RES))
+>       assert r.status_code == 204, r.text
+E       AssertionError: {"code":"NOT_IMPLEMENTED_P1","message":"아직 구현하지 않았다 — P1 범위다.","details":{"operationId":"deleteDataset"}}
+E       assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:241: AssertionError
+______________ test_a_professor_can_delete_someone_elses_dataset _______________
+
+p2_client = <function p2_client.<locals>.build at 0x112716a20>
+planted = <function planted.<locals>.plant at 0x1127179c0>
+
+    def test_a_professor_can_delete_someone_elses_dataset(p2_client, planted):
+        """교수는 소유자가 아니어도 지운다 — **자기 연구실 안에서만**(타 연구실은 위 404 가 잡는다)."""
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_RES, files=1)
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYCAFWE2TVRNJZCFDKZXM', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x112721a60>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:249: AssertionError
+_______________ test_can_delete_flag_agrees_with_the_delete_gate _______________
+
+p2_client = <function p2_client.<locals>.build at 0x1127e7a60>
+planted = <function planted.<locals>.plant at 0x1127e7e20>
+
+    def test_can_delete_flag_agrees_with_the_delete_gate(p2_client, planted):
+        """상세가 내려보내는 `actions.canDelete` 와 실제 관문이 **세 주체에서 일치한다.**
+    
+        `routes/catalog.py` 의 인라인 식은 이 회차에 손대지 않는다 — 대신 이 시험이 두 자리를
+        묶는다. 갈리면 화면이 버튼을 보여 주고 서버가 403 을 내는(또는 그 반대의) 자리가 된다.
+        """
+        client = p2_client()
+        cases = [
+            # (소유자, 부르는 사람 토큰, 기대)
+            (ACC_A_RES, TOKEN_RES, True),    # 소유자 연구원
+            (ACC_A_PROF, TOKEN_RES, False),  # 비소유 연구원
+            (ACC_A_PROF, TOKEN_PROF, True),  # 교수
+        ]
+        assert len(cases) == 3
+        for owner, token, expected in cases:
+            dataset_id, _ = planted(owner=owner, files=0)
+            detail = client.get(f"{PREFIX}/datasets/{dataset_id}", headers=auth(token))
+            assert detail.status_code == 200, detail.text
+            assert detail.json()["actions"]["canDelete"] is expected
+            removed = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(token))
+>           assert (removed.status_code == 204) is expected, \
+                f"canDelete={expected} 인데 DELETE 가 {removed.status_code} 다."
+E           AssertionError: canDelete=True 인데 DELETE 가 501 다.
+E           assert (501 == 204) is True
+E            +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:277: AssertionError
+__________ test_after_deletion_my_lab_sees_410_and_other_labs_see_404 __________
+
+p2_client = <function p2_client.<locals>.build at 0x1128e2520>
+planted = <function planted.<locals>.plant at 0x1128e2980>
+
+    def test_after_deletion_my_lab_sees_410_and_other_labs_see_404(p2_client, planted):
+        """`getDataset` 만 **내 연구실 묘비에 410** 을 낸다 (17차 해제 · Ted 판정 ② · `〈296〉`-㉰).
+    
+        그 행은 지워지기 전에 이미 내 목록에 있었으므로 「지워졌다」가 **새로 알리는 사실이 0** 이다.
+        남의 연구실에는 그 사실조차 없다 — 404.
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1)
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYCP6ZYP6JAN62YEH0FD1', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x112903080>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:293: AssertionError
+______ test_after_deletion_it_is_gone_from_list_search_and_project_detail ______
+
+p2_client = <function p2_client.<locals>.build at 0x1127e6700>
+planted = <function planted.<locals>.plant at 0x1127e6480>
+sql = <function sql.<locals>.run at 0x1127e6660>
+
+    def test_after_deletion_it_is_gone_from_list_search_and_project_detail(p2_client, planted, sql):
+        """목록·검색·프로젝트 상세에서 **조용히 빠진다** — 세 자리 전부 `deleted_at IS NULL` 이다."""
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1, name="지울 강우 자료")
+        sql("""INSERT INTO d6_project_dataset (id, lab_id, project_id, dataset_id, usage_note)
+               VALUES (:pd, current_lab_id(), '0000000000000000000000PRJA', :id, '삭제 시험')""",
+            {"pd": str(Ulid.generate()), "id": dataset_id})
+    
+        listed = client.get(f"{PREFIX}/datasets", headers=auth(TOKEN_PROF)).json()
+        before_ids = {row["datasetId"] for row in listed["items"]}
+        assert dataset_id in before_ids, "심은 데이터가 목록에 없다 — 이 시험은 오라클이 아니다."
+        project_before = client.get(f"{PREFIX}/projects/0000000000000000000000PRJA",
+                                    headers=auth(TOKEN_PROF)).json()
+        assert dataset_id in {d["datasetId"] for d in project_before["datasets"]}
+    
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYCSYPZEGG7569Y1VJ12C', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x1128b0920>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:317: AssertionError
+________________________ test_what_stays_and_what_goes _________________________
+
+p2_client = <function p2_client.<locals>.build at 0x1127e60c0>
+planted = <function planted.<locals>.plant at 0x1127179c0>
+sql = <function sql.<locals>.run at 0x112714900>
+tmp_path = PosixPath('/private/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/pytest-of-parkhongjin/pytest-73/test_what_stays_and_what_goes0')
+
+    def test_what_stays_and_what_goes(p2_client, planted, sql, tmp_path):
+        """계약 산문 축자 — 「파일·미리보기만 지우고 **이름·주제·Lv·계보 관계·프로젝트 연결·
+        Verified 는 남긴다**」.
+    
+        남는 것 5 = `d3_dataset` 행 · `d3_dataset_description.name` · `d4_lineage_edge` ·
+                    `d6_project_dataset` · `d2_verified`
+        사라지는 것 2 = `d3_file` 0행 · **원장이 알던 저장 키 전건**의 저장소 부재
+        """
+        client = p2_client()
+        parent, _ = planted(owner=ACC_A_PROF, files=0, name="부모")
+        dataset_id, keys = planted(owner=ACC_A_PROF, files=2, verified=True, name="지울 자료")
+        _write_bytes(tmp_path, keys)
+        assert _present(tmp_path, keys) == keys and len(keys) == 2
+    
+        sql("""INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id,
+                                            parent_role, method, origin, confirmed_by_account_id,
+                                            confirmed_at)
+               VALUES (:eid, current_lab_id(), :child, :parent, '주입력', '격자화', 'manual',
+                       :actor, now())""",
+            {"eid": str(Ulid.generate()), "child": dataset_id, "parent": parent,
+             "actor": ACC_A_PROF})
+        sql("""INSERT INTO d6_project_dataset (id, lab_id, project_id, dataset_id, usage_note)
+               VALUES (:pd, current_lab_id(), '0000000000000000000000PRJA', :id, '삭제 시험')""",
+            {"pd": str(Ulid.generate()), "id": dataset_id})
+    
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYD056RYHSEXQJGHJSW5D', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x1127c18b0>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:359: AssertionError
+____ test_pending_access_requests_are_closed_and_decided_ones_are_untouched ____
+
+p2_client = <function p2_client.<locals>.build at 0x11238ee80>
+planted = <function planted.<locals>.plant at 0x11238ea20>
+sql = <function sql.<locals>.run at 0x11238efc0>
+
+    def test_pending_access_requests_are_closed_and_decided_ones_are_untouched(p2_client, planted,
+                                                                               sql):
+        """계약 산문 「**대기 중인 접근 요청은 자동으로 닫힌다** (§9)」.
+    
+        상태 3값(`검토 대기`·`승인됨`·`거절됨`)에 「닫힘」이 없고, `(state='거절됨') =
+        (rejection_reason IS NOT NULL)` CHECK 가 사유를 강제한다 — 그래서 **`거절됨` ＋ 고정 사유**다
+        (Ted 판정 ⓕ). **이미 처리된 행은 건드리지 않는다.**
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1, locked=True)
+    
+        pending_id = str(Ulid.generate())
+        sql("""INSERT INTO d2_dataset_access_request
+                 (id, lab_id, dataset_id, requester_account_id, reason)
+               VALUES (:rid, current_lab_id(), :id, :who, '보고 싶다')""",
+            {"rid": pending_id, "id": dataset_id, "who": ACC_A_RES})
+        decided_id = str(Ulid.generate())
+        sql("""INSERT INTO d2_dataset_access_request
+                 (id, lab_id, dataset_id, requester_account_id, reason, state,
+                  decided_by_account_id, decided_at, rejection_reason)
+               VALUES (:rid, current_lab_id(), :id, :who, '전에 냈다', '거절됨',
+                       :actor, now(), '이번엔 아니다')""",
+            {"rid": decided_id, "id": dataset_id, "who": ACC_A_PROF, "actor": ACC_A_PROF})
+    
+        impact = client.get(f"{PREFIX}/datasets/{dataset_id}/deletion-impact",
+                            headers=auth(TOKEN_PROF)).json()
+>       assert impact["pendingAccessRequestCount"] == 1, "처리된 행까지 셌다."
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'pendingAccessRequestCount'
+
+tests/test_dataset_deletion.py:416: KeyError
+________________ test_deletion_impact_reports_the_three_values _________________
+
+p2_client = <function p2_client.<locals>.build at 0x112956fc0>
+planted = <function planted.<locals>.plant at 0x112957740>
+sql = <function sql.<locals>.run at 0x112956e80>
+
+    def test_deletion_impact_reports_the_three_values(p2_client, planted, sql):
+        """`DeletionImpact` 세 칸 — 파생 **생존만** · Verified · 대기 요청 수.
+    
+        묘비 자식은 계보 화면이 없어 「자리가 남아요」의 대상이 아니다. 그래서 파생 2 중 1 이
+        묘비면 **1** 이다.
+        """
+        client = p2_client()
+        parent, _ = planted(owner=ACC_A_PROF, files=0, verified=True, name="부모")
+        alive, _ = planted(owner=ACC_A_PROF, files=0, name="살아 있는 자식")
+        doomed, _ = planted(owner=ACC_A_PROF, files=0, name="지울 자식")
+        for child in (alive, doomed):
+            sql("""INSERT INTO d4_lineage_edge (id, lab_id, child_dataset_id, parent_dataset_id,
+                                                parent_role, method, origin,
+                                                confirmed_by_account_id, confirmed_at)
+                   VALUES (:eid, current_lab_id(), :child, :parent, '주입력', '격자화', 'manual',
+                           :actor, now())""",
+                {"eid": str(Ulid.generate()), "child": child, "parent": parent,
+                 "actor": ACC_A_PROF})
+        sql("""INSERT INTO d2_dataset_access_request
+                 (id, lab_id, dataset_id, requester_account_id)
+               VALUES (:rid, current_lab_id(), :id, :who)""",
+            {"rid": str(Ulid.generate()), "id": parent, "who": ACC_A_RES})
+    
+        both = client.get(f"{PREFIX}/datasets/{parent}/deletion-impact",
+                          headers=auth(TOKEN_PROF)).json()
+>       assert both == {"derivedDatasetCount": 2, "verified": True,
+                        "pendingAccessRequestCount": 1}
+E       AssertionError: assert {'code': 'NOT...았다 — P1 범위다.'} == {'derivedData...rified': True}
+E         
+E         Left contains 3 more items:
+E         {'code': 'NOT_IMPLEMENTED_P1',
+E          'details': {'operationId': 'getDatasetDeletionImpact'},
+E          'message': '아직 구현하지 않았다 — P1 범위다.'}
+E         Right contains 3 more items:
+E         {'derivedDatasetCount': 2, 'pendingAccessRequestCount': 1, 'verified': True}
+E         Use -v to get more diff
+
+tests/test_dataset_deletion.py:459: AssertionError
+_____________ test_deletion_impact_is_gated_the_same_way_as_delete _____________
+
+p2_client = <function p2_client.<locals>.build at 0x1126af420>
+planted = <function planted.<locals>.plant at 0x1126af600>
+
+    def test_deletion_impact_is_gated_the_same_way_as_delete(p2_client, planted):
+        """파급 조회도 **같은 관문**을 지난다 — 비소유 연구원은 403 이다.
+    
+        관문이 갈리면 「지우지는 못하는데 파급은 읽는다」가 되고, 그 값은 접근 요청 건수라
+        남의 데이터의 대기줄 길이가 새어 나간다.
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=0)
+        r = client.get(f"{PREFIX}/datasets/{dataset_id}/deletion-impact", headers=auth(TOKEN_RES))
+>       assert r.status_code == 403, r.text
+E       AssertionError: {"code":"NOT_IMPLEMENTED_P1","message":"아직 구현하지 않았다 — P1 범위다.","details":{"operationId":"getDatasetDeletionImpact"}}
+E       assert 501 == 403
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:478: AssertionError
+_____________ test_a_locked_dataset_loses_its_files_and_bytes_too ______________
+
+p2_client = <function p2_client.<locals>.build at 0x1126623e0>
+planted = <function planted.<locals>.plant at 0x112662340>
+sql = <function sql.<locals>.run at 0x112662020>
+tmp_path = PosixPath('/private/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/pytest-of-parkhongjin/pytest-73/test_a_locked_dataset_loses_it0')
+
+    def test_a_locked_dataset_loses_its_files_and_bytes_too(p2_client, planted, sql, tmp_path):
+        """⭑ **이 시험이 이 회차의 중심이다.**
+    
+        `body_access` RESTRICTIVE 정책에는 **소유자·역할 조항이 없다** — 조건은 「접근 상태(없으면
+        연구실 기본값)가 `열림`」 또는 「그 계정에 만료 안 된 허용 줄이 있다」뿐이다
+        (`db/platform/schema.sql`). 그래서 잠긴 데이터셋의 `d3_file` 은 **소유자에게도 교수에게도
+        0행**이고, 잠금 우회 단계를 빼면 삭제가 키를 못 읽고 행도 못 지운 채 **조용히 0건**으로
+        성공한다 — 에러 없이 깨지는 자리다.
+    
+        그리고 「열림」 창은 **트랜잭션 안에서만** 존재해야 한다 — 끝난 뒤 접근 상태가 종전 값으로
+        돌아와 있는지까지 잰다.
+        """
+        client = p2_client()
+        dataset_id, keys = planted(owner=ACC_A_PROF, files=2, locked=True)
+        _write_bytes(tmp_path, keys)
+        assert len(keys) == 2 and _present(tmp_path, keys) == keys
+        # 전제 확인 — 앱 롤에게 이 데이터셋의 파일은 **지금 0행으로 보인다**
+        assert sql("SELECT count(*) AS n FROM d3_file WHERE dataset_id = :id",
+                   {"id": dataset_id})[0]["n"] == 0, \
+            "잠긴 데이터셋의 파일이 보인다 — 이 시험의 전제가 깨졌다."
+    
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYDGJB5WSMQCCZS7FZDAW', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x1122cc500>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:506: AssertionError
+_________ test_an_open_dataset_without_an_access_row_stays_without_one _________
+
+p2_client = <function p2_client.<locals>.build at 0x112417920>
+planted = <function planted.<locals>.plant at 0x1124176a0>
+sql = <function sql.<locals>.run at 0x112417a60>
+
+    def test_an_open_dataset_without_an_access_row_stays_without_one(p2_client, planted, sql):
+        """접근 상태 행이 **없던** 데이터셋은 삭제 뒤에도 없어야 한다 (`restore` 는 부재도 되돌린다).
+    
+        행을 남겨 두면 연구실 기본값을 따르던 데이터가 조용히 명시값으로 바뀐다.
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1, locked=False)
+        assert sql("SELECT count(*) AS n FROM d2_dataset_access WHERE dataset_id = :id",
+                   {"id": dataset_id})[0]["n"] == 0
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYDMG63ZNZT0R0VCPX8SE', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x112501ee0>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:533: AssertionError
+_______ test_storage_failure_rolls_everything_back_and_a_retry_succeeds ________
+
+p2_client = <function p2_client.<locals>.build at 0x112a16d40>
+planted = <function planted.<locals>.plant at 0x112a16ca0>
+sql = <function sql.<locals>.run at 0x112a16980>
+tmp_path = PosixPath('/private/var/folders/jp/ts5vt1y152dbf1l_8f5r53br0000gn/T/pytest-of-parkhongjin/pytest-73/test_storage_failure_rolls_eve0')
+
+    def test_storage_failure_rolls_everything_back_and_a_retry_succeeds(p2_client, planted, sql,
+                                                                        tmp_path):
+        """바이트를 못 지웠으면 **행도 남는다** — 500 이고 DB 는 무변경이다.
+    
+        선례 `delete_dataset_grid_file` 과 같은 태도이고 `U-2` ⓑ(「실패하면 행이 남는다 — 재시도」)와
+        같은 성질이다. `discard` 는 없는 키에 조용하므로 재호출이 멱등이다.
+        """
+        client = p2_client()
+        dataset_id, keys = planted(owner=ACC_A_PROF, files=2)
+        _write_bytes(tmp_path, keys)
+        pending_id = str(Ulid.generate())
+        sql("""INSERT INTO d2_dataset_access_request
+                 (id, lab_id, dataset_id, requester_account_id)
+               VALUES (:rid, current_lab_id(), :id, :who)""",
+            {"rid": pending_id, "id": dataset_id, "who": ACC_A_RES})
+    
+        exploding = _ExplodingDiscard()
+        client.app.state.upload_storage = exploding
+        boom = client.delete(f"{PREFIX}/datasets/{dataset_id}", headers=auth(TOKEN_PROF))
+>       assert boom.status_code == 500, boom.text
+E       AssertionError: {"code":"NOT_IMPLEMENTED_P1","message":"아직 구현하지 않았다 — P1 범위다.","details":{"operationId":"deleteDataset"}}
+E       assert 501 == 500
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+
+tests/test_dataset_deletion.py:562: AssertionError
+____________________ test_deleting_records_one_activity_row ____________________
+
+p2_client = <function p2_client.<locals>.build at 0x112abbc40>
+planted = <function planted.<locals>.plant at 0x112aec180>
+sql = <function sql.<locals>.run at 0x112abbd80>
+
+    def test_deleting_records_one_activity_row(p2_client, planted, sql):
+        """지운 일도 활동이다 (계약 `listActivities` 산문 · 선례 `프로젝트 지움`).
+    
+        `d8_activity` 는 append-only 트리거가 걸려 있어 정리가 안 된다 — 그래서 **절대 개수가
+        아니라 자기가 부르기 전후의 차이**를 센다 (`conftest._CLEANUP` 주석).
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1)
+        before = sql("SELECT count(*) AS n FROM d8_activity WHERE action = :a",
+                     {"a": ACTION_DELETED})[0]["n"]
+    
+>       assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+E       AssertionError: assert 501 == 204
+E        +  where 501 = <Response [501 Not Implemented]>.status_code
+E        +    where <Response [501 Not Implemented]> = delete('/api/v1/datasets/01M1VCYDWJ596WXJEM02JJFEZ4', headers={'Authorization': 'Bearer a1-prof-token'})
+E        +      where delete = <starlette.testclient.TestClient object at 0x112b0d670>.delete
+E        +      and   {'Authorization': 'Bearer a1-prof-token'} = auth('a1-prof-token')
+
+tests/test_dataset_deletion.py:594: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_dataset_deletion.py::test_the_two_delete_ops_are_no_longer_in_the_501_table
+FAILED tests/test_dataset_deletion.py::test_a_malformed_id_is_a_400_on_both_ops
+FAILED tests/test_dataset_deletion.py::test_out_of_lab_missing_and_tombstone_are_the_same_404
+FAILED tests/test_dataset_deletion.py::test_a_second_delete_is_a_404 - Assert...
+FAILED tests/test_dataset_deletion.py::test_a_researcher_who_is_not_the_owner_gets_403_and_nothing_changes
+FAILED tests/test_dataset_deletion.py::test_the_owner_even_as_a_researcher_can_delete
+FAILED tests/test_dataset_deletion.py::test_a_professor_can_delete_someone_elses_dataset
+FAILED tests/test_dataset_deletion.py::test_can_delete_flag_agrees_with_the_delete_gate
+FAILED tests/test_dataset_deletion.py::test_after_deletion_my_lab_sees_410_and_other_labs_see_404
+FAILED tests/test_dataset_deletion.py::test_after_deletion_it_is_gone_from_list_search_and_project_detail
+FAILED tests/test_dataset_deletion.py::test_what_stays_and_what_goes - Assert...
+FAILED tests/test_dataset_deletion.py::test_pending_access_requests_are_closed_and_decided_ones_are_untouched
+FAILED tests/test_dataset_deletion.py::test_deletion_impact_reports_the_three_values
+FAILED tests/test_dataset_deletion.py::test_deletion_impact_is_gated_the_same_way_as_delete
+FAILED tests/test_dataset_deletion.py::test_a_locked_dataset_loses_its_files_and_bytes_too
+FAILED tests/test_dataset_deletion.py::test_an_open_dataset_without_an_access_row_stays_without_one
+FAILED tests/test_dataset_deletion.py::test_storage_failure_rolls_everything_back_and_a_retry_succeeds
+FAILED tests/test_dataset_deletion.py::test_deleting_records_one_activity_row
+18 failed, 1 passed in 4.11s
