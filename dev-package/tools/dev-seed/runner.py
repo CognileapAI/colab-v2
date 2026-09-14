@@ -1358,14 +1358,19 @@ def select_by_label(css, label, what):
 
 
 def set_checkbox(css, want, what):
-    """체크 상태를 원하는 값으로 맞춘다. 이미 그 값이면 누르지 않는다."""
+    """체크 상태를 원하는 값으로 맞춘다. 이미 그 값이면 건드리지 않는다.
+
+    ⭑ 2026-09-14 개정 — `click` 이 아니라 `check`/`uncheck` 를 쓴다. 계정 관리 화면의 「관리자로 등록」은
+    `<label>` 이 `<input type="checkbox">` 를 감싸고 있어 `click` 이 상태를 바꾸지 못했다
+    (4회차 `20260914T024138Z` 계정 단계 실측 — click ✓ Done 뒤에도 checked=false · `check` 는 true).
+    """
     script = CHECKED_JS.replace("__SEL__", json.dumps(css))
     cur = js(script, default=(not want))
     if cur is None:
         raise Fail(what + " 칸이 화면에 없다: " + css)
     if bool(cur) == bool(want):
         return
-    ab(["click", css], expect_ok=False)
+    ab(["check" if want else "uncheck", css], expect_ok=False)
     after = js(script, default=want)
     if bool(after) != bool(want):
         raise Fail(what + " 체크 상태를 바꾸지 못했다: " + css)

@@ -627,6 +627,12 @@ stage_seed() {
 #        뒷단 개선은 이 회차 범위 밖(`PV-2`)이라 여기서는 **판정만** 한다.
 PREVIEW_WAIT_MS="${COLAB_RESEED_PREVIEW_WAIT_MS:-45000}"
 
+# 브라우저 세션 — 러너(`dev-seed/runner.py` `DEFAULT_SESSION`)가 로그인해 둔 **그 세션**을 이름으로 쓴다.
+# ⚠ `AGENT_BROWSER_SESSION_NAME` 환경변수는 agent-browser 가 읽지 않는다(4회차 `20260914T035058Z` 실측 —
+#   env 만 준 호출은 `default` 세션으로 가 로그인 화면을 27번 열었다). 세션은 **`--session` 인자로만** 고른다.
+AB_SESSION="${COLAB_RESEED_BROWSER_SESSION:-colab-dev}"
+ab_dev() { run_capture agent-browser --session "$AB_SESSION" "$@"; }
+
 # 미리보기 판정 — `preview-unavailable` 의 **계수 한 개**로 가른다.
 #   0        → 성립      (「볼 수 없다」 표시가 없다)
 #   1 이상   → 미성립    (표시가 있다)
@@ -689,35 +695,49 @@ stage_verify() {
     [ -f "$f" ] || { blocked_add verify "$(basename "$f") 부재 — seed 단계 산출물이 없다"; return 1; }
   done
 
-  log "① 상세 화면 순회 — $EXPECT_DATASETS 건 · 한 건당 최대 ${PREVIEW_WAIT_MS}ms"
+  log "① 상세 화면 순회 — $EXPECT_DATASETS 건 · 한 건당 최대 ${PREVIEW_WAIT_MS}ms · 브라우저 세션 $AB_SESSION"
+  # id 가 없는 행은 `-` 로 찍는다 — 탭이 연달아 오면 `read` 가 빈 칸을 접어 **이름이 id 자리로 밀린다**
+  # (4회차 `20260914T035058Z` 실측 · seq 13 이 `/datasets/SPI-4weeks` 를 열었다).
   local ids; ids="$(python3 - "$state" <<'PY'
 import json, sys
 st = json.load(open(sys.argv[1]))
 for seq, row in sorted(st.get("datasets", {}).items(), key=lambda kv: int(kv[0])):
-    print("%s\t%s\t%s" % (seq, row.get("dataset_id") or "", row.get("name") or ""))
+    print("%s\t%s\t%s" % (seq, row.get("dataset_id") or "-", row.get("name") or "-"))
 PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
-  local seq did name t0 t1 ms shown level unset_lv usage
+  local seq did name t0 t1 ms shown level unset_lv usage login_n info_n
   while IFS=$'\t' read -r seq did name; do
     [ -n "$seq" ] || continue
-    if [ -z "$did" ]; then
+    [ "$name" = - ] && name=""
+    if [ "$did" = - ] || [ -z "$did" ]; then
       printf '%s\t%s\t?\t미성립\t0\t?\t?\t데이터셋 id 미확보\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
       blocked_add verify "seq=$seq $name — 데이터셋 id 미확보"
       continue
     fi
     t0="$(date +%s%3N)"
-    run_capture agent-browser open "$DEV_URL/datasets/$did" >/dev/null || true
-    run_capture agent-browser wait '[data-testid="dataset-preview"]' "$PREVIEW_WAIT_MS" >/dev/null 2>&1 || true
+    ab_dev open "$DEV_URL/datasets/$did" >/dev/null || true
+    ab_dev wait '[data-testid="dataset-preview"]' "$PREVIEW_WAIT_MS" >/dev/null 2>&1 || true
     t1="$(date +%s%3N)"; ms=$(( t1 - t0 ))
+    # ⚠ 화면이 **상세 화면인지 먼저** 잰다 — 로그인 화면·빈 화면에서도 `preview-unavailable` 계수는 0 이라
+    #   그대로 읽으면 「성립」이 된다(4회차 `20260914T035058Z` 실측 · 27건 전건이 로그인 화면이었다).
+    #   로그인 화면(`login-submit` ≥ 1) 이거나 기본 정보 격자(`basic-info`)가 없으면 **판정불가**다.
+    login_n="$(ab_dev get count '[data-testid="login-submit"]' 2>/dev/null | tr -d ' \t\r\n')"
+    info_n="$(ab_dev get count '[data-testid="basic-info"]' 2>/dev/null | tr -d ' \t\r\n')"
     # `tr -dc` 로 숫자만 남기지 않는다 — 그러면 「아무 값도 못 받음」과 「0」이 같은 모양이 된다.
-    shown="$(run_capture agent-browser get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
-    level="$(run_capture agent-browser get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
+    shown="$(ab_dev get count '[data-testid="preview-unavailable"]' 2>/dev/null | tr -d ' \t\r\n')"
+    level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
     # 계수도 같은 이유로 `tr -dc` 를 쓰지 않는다 — 숫자만 남기면 「못 받음」이 「0」이 된다.
-    unset_lv="$(run_capture agent-browser get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
-    usage="$(run_capture agent-browser get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
+    unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
+    usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
     local verdict; verdict="$(preview_verdict "$shown")"
-    if [ "$verdict" = 판정불가 ]; then
+    if [ "${login_n:-x}" != 0 ]; then
+      verdict=판정불가; level=""; unset_lv=""; usage=""
+      blocked_add verify "seq=$seq $name — 로그인 화면이다(login-submit 계수 [$login_n]) · 브라우저 세션 $AB_SESSION 미로그인 · 판정 불가"
+    elif [ "${info_n:-x}" != 1 ]; then
+      verdict=판정불가; level=""; unset_lv=""; usage=""
+      blocked_add verify "seq=$seq $name — 상세 화면이 서지 않았다(basic-info 계수 [$info_n]) · 판정 불가"
+    elif [ "$verdict" = 판정불가 ]; then
       blocked_add verify "seq=$seq $name — preview-unavailable 계수를 읽지 못했다(받은 값 [$shown]) · 미리보기 판정 불가"
     fi
     # 받은 값을 **그대로** 적는다. `:-0`·`:-?` 로 기본값을 박으면 표만 보고는

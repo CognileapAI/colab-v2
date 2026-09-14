@@ -23,6 +23,10 @@
 #      uid 0 · 0600 으로 쓰고 검토도 같은 컨테이너 안에서 돈다 — 두 uid 가 갈리면 red 다.
 #      왜 = 호스트 ssh 사용자(uid 1000)로 돌던 종전 검토는 **실모드에서 통과할 수 없었고**
 #      `--dry-run`·`--rehearse` 어느 쪽도 그 본문을 밟지 않아 검사 밖이었다(DR-4 §7).
+#   ⓕ `tests/verify-session.sh` **상세 화면 순회**를 판정한다 — agent-browser 호출이 `--session` 을 싣고,
+#      로그인 화면·빈 화면은 「성립」이 아니라 「판정불가」이며, id 없는 행은 이름을 지킨다.
+#      왜 = 4회차 `20260914T035058Z` 의 verify 가 로그인 화면 27건을 전건 「성립」으로 적었다
+#      (환경변수 세션 미반영 · 계수 0 = 성립 · 탭 접힘). 셋 다 실모드로 돈 적이 없었다.
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -52,6 +56,7 @@ CASES=(
   "$RESEED_DIR/tests/preflight-secrets.sh"
   "$RESEED_DIR/tests/remote-transport.sh"
   "$RESEED_DIR/tests/s3-review.sh"
+  "$RESEED_DIR/tests/verify-session.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -103,5 +108,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면)"
 exit 0
