@@ -13,6 +13,16 @@ class ReleaseTests(unittest.TestCase):
   self.assertEqual(self.run_plan(),0);self.assertEqual(self.calls,[['deploy','dv'],['deploy','st'],['verify','dv'],['verify','st']]);self.assertEqual(len(self.sent),1);self.assertIn('DV',self.sent[0]);self.assertIn('ST',self.sent[0]);self.assertEqual(self.status()['notification'],'sent')
  def test_repeat_does_not_redeploy_or_send(self):
   self.run_plan();self.calls.clear();self.assertEqual(self.run_plan(),0);self.assertEqual(self.calls,[]);self.assertEqual(len(self.sent),1)
+ def test_notification_off_is_explicit_and_never_calls_sender(self):
+  self.assertEqual(self.run_plan(notification_mode='off'),0);self.calls.clear();self.assertEqual(self.run_plan(notification_mode='off'),0);self.assertEqual(self.calls,[]);self.assertEqual(self.sent,[]);self.assertEqual(self.status()['notification'],'disabled')
+ def test_candidate_sha_is_passed_to_each_managed_child(self):
+  self.plan['candidate_sha']='a'*40;seen=[]
+  def execute(argv,cwd,env,log):seen.append(env.get('COLAB_PRODUCT_CANDIDATE_SHA'));return 0
+  self.assertEqual(self.run_plan(execute=execute,notification_mode='off'),0);self.assertEqual(seen,['a'*40]*4)
+ def test_notification_off_failure_does_not_queue_operator_message(self):
+  self.plan['operator_notifications']={'spool_directory':str(self.root/'operator-spool')}
+  self.assertEqual(self.run_plan(execute=lambda *a:1,notification_mode='off'),1)
+  self.assertFalse((self.root/'operator-spool').exists());self.assertEqual(self.sent,[])
  def test_failed_verification_never_announces_success(self):
   def execute(a,*rest):self.calls.append(a);return 1 if a==['verify','st'] else 0
   self.assertEqual(self.run_plan(execute=execute),1);self.assertEqual(self.sent,[]);self.assertEqual(self.status()['deployment'],'verification_failed')
@@ -55,11 +65,50 @@ class ReleaseTests(unittest.TestCase):
   with self.assertRaises(KeyboardInterrupt):self.run_plan(sender=send)
   self.assertEqual(self.status()['notification'],'sending');self.assertEqual(self.run_plan(retry_notification=True),20);self.assertEqual(self.sent,[])
  def test_crash_during_deploy_requires_manual_resolution(self):
+  self.plan['resume_checks']={'dv.deploy.0':['check','dv']}
   def execute(*a):raise KeyboardInterrupt()
   with self.assertRaises(KeyboardInterrupt):self.run_plan(execute=execute)
   self.calls.clear()
   with self.assertRaises(d.ReleaseError):self.run_plan()
   self.assertEqual(self.calls,[])
+  self.assertEqual(self.run_plan(notification_mode='off',resume_failed=True),0)
+  self.assertIn(['check','dv'],self.calls)
+ def test_failed_deploy_can_only_resume_explicitly_and_reverifies(self):
+  self.plan['resume_checks']={'dv.deploy.0':['check','dv']}
+  attempts={'deploy':0}
+  def execute(argv,*rest):
+   self.calls.append(argv);attempts['deploy']+=argv[0]=='deploy';return 1 if argv[0]=='deploy' and attempts['deploy']==1 else 0
+  self.assertEqual(self.run_plan(execute=execute,notification_mode='off'),1);before=list(self.calls)
+  with self.assertRaises(d.ReleaseError):self.run_plan(execute=execute,notification_mode='off')
+  self.assertEqual(self.calls,before)
+  self.assertEqual(self.run_plan(execute=execute,notification_mode='off',resume_failed=True),0)
+  self.assertEqual(self.calls[len(before):],[['check','dv'],['deploy','st'],['verify','dv'],['verify','st']])
+ def test_resume_never_repeats_passed_or_uncertain_mutation_without_check(self):
+  self.plan['targets']=[{'name':'dv','version':'v','deploy':[['deploy','a'],['deploy','b']],'verify':[['verify']]}]
+  calls=[]
+  def execute(argv,*rest):calls.append(argv);return 1 if argv==['deploy','b'] else 0
+  self.assertEqual(self.run_plan(execute=execute,notification_mode='off'),1)
+  with self.assertRaises(d.ReleaseError):self.run_plan(execute=lambda *a:0,notification_mode='off',resume_failed=True)
+  self.assertEqual(calls,[['deploy','a'],['deploy','b']])
+ def test_failed_resume_check_can_be_retried_without_repeating_mutation(self):
+  self.plan['resume_checks']={'dv.deploy.0':['check','dv']}
+  self.assertEqual(self.run_plan(execute=lambda *args:1,notification_mode='off'),1)
+  with self.assertRaises(d.ReleaseError):self.run_plan(execute=lambda *args:1,notification_mode='off',resume_failed=True)
+  self.calls.clear()
+  self.assertEqual(self.run_plan(notification_mode='off',resume_failed=True),0)
+  self.assertNotIn(['deploy','dv'],self.calls)
+ def test_resume_between_completed_commands_does_not_repeat_completed_work(self):
+  original=d.save
+  def interrupted(path,value):
+   original(path,value)
+   if value.get('completed_commands')==['dv.deploy.0'] and value.get('current_command') is None:
+    raise KeyboardInterrupt()
+  from unittest.mock import patch
+  with patch.object(d,'save',interrupted):
+   with self.assertRaises(KeyboardInterrupt):self.run_plan(notification_mode='off')
+  self.calls.clear()
+  self.assertEqual(self.run_plan(notification_mode='off',resume_failed=True),0)
+  self.assertNotIn(['deploy','dv'],self.calls)
  def test_retry_never_invokes_failing_verification(self):
   self.secret.unlink();self.run_plan();self.secret.write_text('https://hooks.slack.com/services/T/B/test');self.assertEqual(self.run_plan(retry_notification=True,execute=lambda *a:1),0);self.assertEqual(len(self.sent),1)
  def test_release_ids_cannot_overwrite_another_release_state(self):

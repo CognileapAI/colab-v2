@@ -23,11 +23,12 @@ SHA_FILE="$DIST/colab-v2-$MODE.sha"
 SHA="$(cat "$SHA_FILE")"
 [ -n "$SHA" ] || { echo "sha 파일이 비었다: $SHA_FILE" >&2; exit 65; }
 
-# 태그도 `main` 조상만 가리킨다 — 반입 게이트와 같은 판정기준(규칙 1).
-git -C "$REPO" fetch -q origin main \
+# 태그도 환경별 배포 원천의 조상만 가리킨다.
+case "$MODE" in dev) SOURCE_REF=develop ;; prod) SOURCE_REF=product ;; esac
+git -C "$REPO" fetch -q origin "+refs/heads/$SOURCE_REF:refs/remotes/origin/$SOURCE_REF" \
   || { echo "origin 조회 실패 — 진행 금지" >&2; exit 78; }
-git -C "$REPO" merge-base --is-ancestor "$SHA" origin/main \
-  || { echo "sha 가 origin/main 조상이 아니다: $SHA — 태그는 배포 원천만 가리킨다" >&2; exit 65; }
+git -C "$REPO" merge-base --is-ancestor "$SHA" "origin/$SOURCE_REF" \
+  || { echo "sha 가 origin/$SOURCE_REF 조상이 아니다: $SHA — 태그는 배포 원천만 가리킨다" >&2; exit 65; }
 
 DAY="$(date +%Y%m%d)"
 case "$MODE" in

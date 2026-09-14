@@ -17,15 +17,16 @@ SHA="$(cat "$DIST/colab-v2-prod.sha")"
 # ⭑ ⟨2026-09-12⟩ prod 에는 종전에 이 게이트가 **없었다.** dev 만 막고 prod 를 열어 두면
 #   규칙 1 의 구멍이 prod 쪽에 그대로 남는다 — 창 9 가 dev 에서 낸 사고를 prod 에서 다시 낸다.
 # ⚠ **prod 는 조건이 하나 더 있다** — 규칙 6 은 「prod 는 `prod-YYYYMMDD` 태그에서만 배포」다.
-#   태그 검사에는 **우회 선언이 없다**(조상 검사와 다르다). 태그 주체는 Ted 다.
+#   원천·태그 검사 모두 우회가 없다. 승인된 사람 병합에서 후보 태그를 생성한다.
 # shellcheck source=../_lib/ship-gate.sh
 . "$REPO/infra/_lib/ship-gate.sh"
 # ⭑ 운영 소스 번들 사슬도 dev 와 한 벌이다 (`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
-ship_gate_main_ancestor "$REPO" "$SHA"
+ship_gate_source_ancestor "$REPO" "$SHA" prod
 ship_gate_require_prod_tag "$REPO" "$SHA"
-MAIN_SHA="$SHIP_GATE_MAIN_SHA"
+SOURCE_REF="$SHIP_GATE_SOURCE_REF"
+SOURCE_SHA="$SHIP_GATE_SOURCE_SHA"
 ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-prod-$SHA.tar"
@@ -103,7 +104,7 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
   sudo find /opt/colab-repo -name '._*' -delete && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:prod-$SHA colab-v2/\$u:prod; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
-  printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
+  printf 'source_ref=%s source_sha=%s candidate=%s ancestor=%s\n' $SOURCE_REF $SOURCE_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
   echo 'loaded: prod-$SHA'"
 # ⚠ `COLAB_IMAGE_TAG` 는 **불변 태그**로 적는다 — 움직이는 `:prod` 를 적으면 되돌리기 세대가 사라진다.
 "${SSH[@]}" "bash /opt/colab-v2/set-image-tag.sh prod-$SHA"

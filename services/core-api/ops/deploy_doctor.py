@@ -2,7 +2,7 @@
 
 `s3_doctor` 가 「버킷 설정이 맞는가」 하나를 본다면, 이 스크립트는 **배포 한 벌이 서 있는가**를
 15 항목으로 본다 — 운영자 자격증명 · 버킷 둘 · DB 둘 · 스키마 head 둘 · RLS 전수 · 앱 롤 ·
-5 단위 헬스 · 앱 자격증명 출처 · 환경 짝 · 진입 라우팅 · 백업 · 실행 sha ∈ main.
+5 단위 헬스 · 앱 자격증명 출처 · 환경 짝 · 진입 라우팅 · 백업 · 실행 sha ∈ 환경별 원천.
 읽기만 한다 — 쓰지도 지우지도 않는다.
 
     (services/core-api 에서)
@@ -76,7 +76,8 @@ HTTP_TIMEOUT = 10.0
 STATE_DIR_DEFAULT = "/state"
 STATE_MOUNT_HINT = "-v /opt/colab-v2:/state:ro"
 #: `infra/dev/ship.sh` 가 반입할 때 적는 한 줄. 형식이 갈리면 이 정규식이 「형식 불일치」로 잡는다.
-MAIN_SHA_RE = re.compile(r"^main=(\S+) candidate=(\S+) ancestor=(yes|no|bypass)$")
+SOURCE_SHA_RE = re.compile(r"^source_ref=(develop|product) source_sha=(\S+) candidate=(\S+) ancestor=(yes|no|bypass)$")
+LEGACY_MAIN_SHA_RE = re.compile(r"^main=(\S+) candidate=(\S+) ancestor=(yes|no|bypass)$")
 
 _CRED_IN_URL = re.compile(r"(://)[^/@\s]+@")
 _AMZ_SIGNED = re.compile(r"(X-Amz-(?:Signature|Credential|Security-Token)=)[^&\s]+")
@@ -696,11 +697,11 @@ def check_backups(ctx: Ctx, rep: DeployReport) -> None:
              f"{hours:.1f}시간 전 · 객체 {count}건" + ("" if age <= BACKUP_MAX_AGE else " — 24h 를 넘겼다"))
 
 
-def check_main_ancestry(ctx: Ctx, rep: DeployReport) -> None:
-    """⑮ 실행 sha ∈ main — 반입 게이트를 거친 sha 인가 (WU-D3 · 설계트리 Q1).
+def check_source_ancestry(ctx: Ctx, rep: DeployReport) -> None:
+    """⑮ 실행 sha ∈ 환경별 원천 — 반입 게이트를 거친 sha 인가.
 
     EC2 에 git 이 없다. 그래서 대조는 **문자열**이다 — `infra/dev/ship.sh` 가 반입할 때
-    `/opt/colab-v2/MAIN_SHA` 에 적어 둔 `main=… candidate=… ancestor=…` 한 줄을
+    `/opt/colab-v2/MAIN_SHA` 호환 파일에 적어 둔 `source_ref=… source_sha=… candidate=… ancestor=…` 한 줄을
     `CURRENT_SHA` 와 맞춰 본다. 창 9(2026-09-06)는 `main` 밖 sha 를 dev 에 실었고
     그 마이그레이션이 dev 에만 남았다 — 이 항목이 그 사후를 잡는 자리다.
 
@@ -721,26 +722,36 @@ def check_main_ancestry(ctx: Ctx, rep: DeployReport) -> None:
             return
         values[name] = f.read_text(encoding="utf-8", errors="replace").strip()
 
-    m = MAIN_SHA_RE.match(values["MAIN_SHA"])
+    m = SOURCE_SHA_RE.match(values["MAIN_SHA"])
     if not m:
+        if LEGACY_MAIN_SHA_RE.match(values["MAIN_SHA"]):
+            rep.line(BAD, "구형 기록", "main 원천 기록은 develop/product 전환 뒤 통과 증거가 아니다")
+            return
         rep.line(BAD, "형식 불일치", f"MAIN_SHA 를 읽을 수 없다: {values['MAIN_SHA'][:80]!r} — "
-                                     "형식은 `main=<sha> candidate=<sha> ancestor=yes|no|bypass` 다")
+                                     "형식은 `source_ref=develop|product source_sha=<sha> candidate=<sha> ancestor=yes|no|bypass` 다")
         return
-    main_sha, candidate, ancestor = m.group(1), m.group(2), m.group(3)
+    source_ref, source_sha, candidate, ancestor = m.groups()
     current = values["CURRENT_SHA"]
+    expected_ref = {"dev": "develop", "prod": "product"}.get(ctx.env)
+    if expected_ref is None:
+        rep.line(BAD, "환경 부재", "--env dev|prod 가 있어야 배포 원천을 판정한다")
+        return
+    if source_ref != expected_ref:
+        rep.line(BAD, "원천 불일치", f"{ctx.env} 환경 기록의 source_ref={source_ref} — {expected_ref} 이어야 한다")
+        return
 
     if candidate != current:
         rep.line(BAD, "후보 불일치", f"MAIN_SHA 의 candidate={candidate} 인데 CURRENT_SHA={current} 다 — "
                                      "반입 뒤에 다른 이미지가 올라갔다")
         return
     if ancestor == "bypass":
-        rep.line(BAD, "우회 반입", f"{current} 는 COLAB_SHIP_ALLOW_NONMAIN 선언으로 실렸다 (main={main_sha}) — "
+        rep.line(BAD, "우회 반입", f"{current} 는 비조상 우회로 실렸다 (source_ref={source_ref} source_sha={source_sha}) — "
                                    "선언된 우회도 통과가 아니다")
         return
     if ancestor != "yes":
-        rep.line(BAD, "조상 아님", f"{current} 는 origin/main({main_sha}) 의 조상이 아니라고 적혀 있다")
+        rep.line(BAD, "조상 아님", f"{current} 는 origin/{source_ref}({source_sha}) 의 조상이 아니라고 적혀 있다")
         return
-    rep.line(OK, "일치", f"{current} ∈ main (origin/main={main_sha} · 반입 시 조상 확인됨)")
+    rep.line(OK, "일치", f"{current} ∈ {source_ref} (origin/{source_ref}={source_sha} · 반입 시 조상 확인됨)")
 
 
 # ── 진행 ────────────────────────────────────────────────────────────────────
@@ -776,8 +787,8 @@ def run(ctx: Ctx) -> int:
         check_routing(ctx, rep)
     with rep.item(14, "백업 24h"):
         check_backups(ctx, rep)
-    with rep.item(15, "실행 sha ∈ main"):
-        check_main_ancestry(ctx, rep)
+    with rep.item(15, "실행 sha ∈ 환경별 원천"):
+        check_source_ancestry(ctx, rep)
     for conn in ctx.conns.values():
         with contextlib.suppress(Exception):
             conn.close()

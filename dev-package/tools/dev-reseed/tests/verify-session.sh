@@ -40,12 +40,22 @@ cat > "$TMP/bin/agent-browser" <<'STUB'
 if [ "${1:-}" = "--session" ]; then shift 2; fi
 page="${FIXTURE_PAGE:-detail}"
 case "${1:-}" in
-  open|wait) exit 0 ;;
+  open) rm -f "$FIXTURE_AB_LOG.waited"; exit "${FIXTURE_OPEN_FAIL:-0}" ;;
+  wait)
+    case "${2:-}" in *dt-preview-slot*) : > "$FIXTURE_AB_LOG.waited" ;; esac
+    exit 0 ;;
   get)
     case "${2:-} ${3:-}" in
       'count [data-testid="login-submit"]')        [ "$page" = login ] && echo 1 || echo 0 ;;
       'count [data-testid="basic-info"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
-      'count [data-testid="preview-unavailable"]') [ "$page" = detail ] && echo "${FIXTURE_UNAVAIL:-0}" || echo 0 ;;
+      'count [data-testid="preview-unavailable"]')
+        if [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ] && [ -f "$FIXTURE_AB_LOG.waited" ]; then echo 1
+        elif [ "$page" = detail ]; then echo "${FIXTURE_UNAVAIL:-0}"; else echo 0; fi ;;
+      'attr [data-testid="dt-preview-slot"]')
+        if [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ]; then
+          if [ -f "$FIXTURE_AB_LOG.waited" ]; then echo failed
+          else : > "$FIXTURE_AB_LOG.waited"; echo drawing; fi
+        else echo "${FIXTURE_TERMINAL:-done}"; fi ;;
       'text [data-testid="ig-가공 단계"]')          [ "$page" = detail ] && echo "가공 단계 Lv0" || { echo "Element not found" >&2; exit 1; } ;;
       'count [data-testid="ig-unset-가공 단계"]')   echo 0 ;;
       'count [data-testid="usage-card"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
@@ -79,7 +89,7 @@ BUILD_PLAN_PY="$TMP/build_plan_stub.py"; : > "$BUILD_PLAN_PY"
 COLAB_DEV_SSH='ec2-user@<대역>'
 COLAB_DEV_KEY_FILE="$TMP/no-such-key"
 EXPECT_DATASETS=1; EXPECT_PROJECTS=1; EXPECT_EDGES=0
-COLAB_RESEED_PREVIEW_WAIT_MS=1
+COLAB_RESEED_PREVIEW_WAIT_MS=200
 export FIXTURE_AB_LOG="$TMP/ab.log"
 
 relpath() { printf '%s' "$1"; }
@@ -122,6 +132,22 @@ n_calls="$(grep -c '^AB' "$FIXTURE_AB_LOG")"
 n_sess="$(grep -c $'^AB\t--session\tcolab-dev\t' "$FIXTURE_AB_LOG")"
 [ "$n_calls" -gt 0 ] || note "ⓐ agent-browser 호출이 0건이다 — 순회가 돌지 않았다"
 [ "$n_calls" = "$n_sess" ] || note "ⓐ′ --session colab-dev 없이 나간 agent-browser 호출이 $(( n_calls - n_sess ))건이다(전체 $n_calls) — 환경변수는 세션을 고르지 않는다"
+
+# Rendering can fail after its container appears: wait for the final slot state.
+reset_run; export FIXTURE_TERMINAL=delayed-failed
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "지연 미리보기 실패를 성공으로 판정했다"
+[ "$(verdict_of 1)" = 미성립 ] || note "최종 실패 상태를 기다려 미성립으로 기록하지 않았다"
+reset_run; export FIXTURE_TERMINAL=drawing
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "렌더 중 상태를 성공으로 판정했다"
+[ "$(verdict_of 1)" = 판정불가 ] || note "최종 상태 부재를 판정불가로 기록하지 않았다"
+unset FIXTURE_TERMINAL
+reset_run; export FIXTURE_OPEN_FAIL=1
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "페이지 이동 실패 뒤 이전 화면을 성공으로 판정했다"
+[ "$(verdict_of 1)" = 판정불가 ] || note "페이지 이동 실패를 판정불가로 기록하지 않았다"
+unset FIXTURE_OPEN_FAIL
 
 # ── ⓒ 로그인 화면 → 판정불가 · 비영 ──────────────────────────────────────
 write_state 0; reset_run

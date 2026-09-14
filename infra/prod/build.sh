@@ -7,10 +7,8 @@
 #
 # 사용: infra/prod/build.sh [dist 디렉터리]   (기본 ./dist, 레포 밖에 두려면 인자로)
 #
-# ⚠ **태그의 근거는 `git HEAD` 다.** 정본 `〈335〉`-㉳ 는 prod 를 「`main` 커밋에 찍은
-#   `prod-YYYYMMDD` 태그에서만」 배포하라고 정했다. 최초 구축 회차는 기능 브랜치 HEAD 로
-#   세우되, **PR 병합 뒤 `main` 에서 다시 빌드·전송해 그 규율로 돌아온다.** 그 전까지
-#   돌고 있는 것은 「브랜치에서 세운 prod」이고, 그 사실을 자산 대장에 적는다.
+# 태그의 근거는 git HEAD다. 승격 실행기는 승인된 develop → product 병합 SHA를
+# checkout한 뒤 빌드한다. 반입은 origin/product 조상과 해당 후보의 prod 태그를 검사한다.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
