@@ -133,7 +133,7 @@ v1 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 구조
 - **실행 산출물(gitignored 상태 파일 · 회전 비밀번호 유일 사본)을 워크트리 안에 두고 워크트리를 지워 유실** → 실행 자리는 워크트리 밖(`$COLAB_JOB_DIR/tmp` 또는 홈)으로 둔다 · 비밀 사본은 실행 직후 0600 으로 복사 (2026-09-14 · R-DATA-CANON `WU-C4` 4→5회차 · `OPS-PI-PW`)
 - **아래 셋은 이미 규칙에 있다 — 여기서 중복하지 않고 그 자리를 본다**:
   「지시가 실물과 어긋나면 멈춘다」·「행 번호 대신 앵커」·「미병합 값을 사실로 적지 않는다」
-  → `.agents/skills/colab-v2-work/SKILL.md §1` · `.claude/rules/colab-rules.md §1`
+  → `.agents/skills/colab-v2-work/SKILL.md §1` · `.agents/rules/colab-rules.md §1`
 
 ## 6. 세션 종료 규약 (예외 없음)
 
@@ -172,8 +172,8 @@ git log --oneline -10
 ⭑ ⟨개정 2026-09-06 · 하네스 재설계 P-S⟩ 두 운영 절의 본문은 **`paths` 프런트매터가 붙은 규칙 파일**로 옮겼다.
 ／ 종전 ~~이 파일에 절 두 개로 상주~~ — 문면·규약은 **한 글자도 바뀌지 않았고** 로딩 시점만 바뀌었다(해당 파일을 열 때 지연 로딩).
 
-- **업로드(S3)** = `.claude/rules/s3-upload.md` (`services/core-api/**`) — 저장 모드 분기 · SigV4 자작 · 에뮬레이터 검증 금지 · ListParts 정본 · 200 티켓 다운로드. 운영 정본은 `dev-package/S3.md`.
-- **배포** = `.claude/rules/deploy.md` (`infra/**`·`docs/DEPLOY*.md`·`services/core-api/ops/**`) — 깨뜨리면 안 되는 것 11 · `deploy_doctor` 15 항목 · 확장 자리. 운영 문서는 `docs/DEPLOY.md`.
+- **업로드(S3)** = `.agents/rules/s3-upload.md` (`services/core-api/**`) — 저장 모드 분기 · SigV4 자작 · 에뮬레이터 검증 금지 · ListParts 정본 · 200 티켓 다운로드. 운영 정본은 `dev-package/S3.md`.
+- **배포** = `.agents/rules/deploy.md` (`infra/**`·`docs/DEPLOY*.md`·`services/core-api/ops/**`) — 깨뜨리면 안 되는 것 11 · `deploy_doctor` 15 항목 · 확장 자리. 운영 문서는 `docs/DEPLOY.md`.
 - ⛔ **데이터셋 행 삭제·`main` 배포 태그 같은 비가역 조작은 그 규칙 파일을 편 뒤에 한다** — 여기 요약만 보고 실행하지 않는다.
 
 ## 10. 브랜치·배포 원천
@@ -187,4 +187,4 @@ git log --oneline -10
 5. 마이그레이션은 **한 라운드 = 한 체인 구간** · 형제가 생기면 `00NN_merge` ＋ 두 순서 drift 오라클 의무.
 6. 릴리스 = 태그 — dev 실적용 `dev-YYYYMMDD-N` · prod `prod-YYYYMMDD` · 원장 〈N〉 행이 태그를 가리킨다.
 
-- **정리 대상(WU-D4 류 · 병합 경로 밖 브랜치)** 의 원격 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지) — 병합된 `lane/*`·`integration/*` 는 즉시 삭제(`.claude/rules/colab-rules.md §2-1`).
+- **정리 대상(WU-D4 류 · 병합 경로 밖 브랜치)** 의 원격 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지) — 병합된 `lane/*`·`integration/*` 는 즉시 삭제(`.agents/rules/colab-rules.md §2-1`).

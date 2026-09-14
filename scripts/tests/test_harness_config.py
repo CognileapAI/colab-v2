@@ -51,11 +51,36 @@ class HarnessConfigTests(unittest.TestCase):
             ["missing required adapter: .codex/missing.toml"],
         )
 
+    def test_rejects_missing_or_forked_rule_and_role_sources(self):
+        value = self.module.load_contract(ROOT / ".agents/harness.yaml")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (".claude", ".agents", ".codex/agents", "scripts/harness/hooks"):
+                shutil.copytree(ROOT / relative, root / relative)
+            value["adapters"]["required_files"] = []
+            value["paths"]["required"] = []
+            self.assertEqual(self.module.check_contract(root, value), [])
+            for relative in (".claude/rules/deploy.md", ".claude/agents/advisor.md"):
+                adapter = root / relative
+                original = adapter.read_text()
+                adapter.write_text(original + "\nIndependent policy body.\n")
+                self.assertTrue(self.module.check_contract(root, value), "forked body must fail")
+                adapter.write_text(original)
+            for relative in (".agents/rules/deploy.md", ".agents/roles/advisor.md"):
+                source = root / relative
+                original = source.read_text()
+                source.unlink()
+                self.assertTrue(self.module.check_contract(root, value), "missing source must fail")
+                source.write_text(original)
+            adapter = root / ".codex/agents/advisor.toml"
+            adapter.write_text(adapter.read_text().replace(".agents/roles/advisor.md", ".agents/roles/researcher.md"))
+            self.assertTrue(self.module.check_contract(root, value), "wrong Codex source must fail")
+
     def test_rejects_missing_judge_wrong_adapter_and_duplicated_body(self):
         value = self.module.load_contract(ROOT / ".agents/harness.yaml")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for relative in (".claude/hooks", "scripts/harness/hooks"):
+            for relative in (".claude", ".agents", ".codex/agents", "scripts/harness/hooks"):
                 shutil.copytree(ROOT / relative, root / relative)
             value["adapters"]["required_files"] = []
             value["paths"]["required"] = []

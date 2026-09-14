@@ -55,7 +55,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 
 ## 승인
 
-- **dev 한정 상시 승인**이다 — `.claude/rules/deploy.md` 11번 증보 문단(2026-09-14 개정). 회차별 Ted GO 가 필요 없다.
+- **dev 한정 상시 승인**이다 — `.agents/rules/deploy.md` 11번 증보 문단(2026-09-14 개정). 회차별 Ted GO 가 필요 없다.
 - 조건 = 게이트 넷 충족(`--target dev`＋`--yes-reset-dev` · 버킷 정확 일치 · 두 DB URL 호스트에 `-dev` ·
   계획 키가 `uploads/`·`previews/` 안). 하나라도 어긋나면 아무것도 지우지 않고 비영 종료한다.
 - `reset` 단계 직전에 `approval-record.json`(누가·언제·어느 sha·어느 게이트)이 실행 자리에 먼저 선다.

@@ -38,6 +38,8 @@
   "sources": {
     "policy_entrypoint": "AGENTS.md",
     "skills": ".agents/skills",
+    "rules": ["colab-rules", "deploy", "s3-upload"],
+    "roles": ["advisor", "gate-runner", "lane-worker", "researcher"],
     "config": ".agents/harness.yaml",
     "judges": "scripts/harness",
     "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],

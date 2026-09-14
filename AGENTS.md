@@ -19,9 +19,9 @@ Codex 연결 문서는 제품 요구사항이나 승인된 결정을 변경하�
   지정이 없으면 최근 Git 이력과 대장을 대조한다. 파일 수정 시각만으로 다음 작업을 선택하지 않는다.
 - 큰 문서는 해당 제목·앵커 주변만 읽는다. 규칙·스킬 본문을 양쪽에 복제하지 않는다.
 - 공통 개발 절차는 `.agents/skills/colab-v2-work/SKILL.md`에서 연결한다.
-- `.claude/rules/colab-rules.md`는 공통 규칙이다. 작업에 필요한 절을 읽는다.
-  `infra/**`, `docs/DEPLOY*.md`, `services/core-api/ops/**` 변경 전에는 `.claude/rules/deploy.md`,
-  `services/core-api/**` 변경 전에는 `.claude/rules/s3-upload.md`를 읽는다.
+- `.agents/rules/colab-rules.md`는 공통 규칙이다. 작업에 필요한 절을 읽는다.
+  `infra/**`, `docs/DEPLOY*.md`, `services/core-api/ops/**` 변경 전에는 `.agents/rules/deploy.md`,
+  `services/core-api/**` 변경 전에는 `.agents/rules/s3-upload.md`를 읽는다.
   Claude의 paths 메타데이터가 Codex에서 자동 적용된다고 가정하지 않는다.
 - 브라우저 작업은 `.agents/skills/agent-browser/SKILL.md`를 읽고 agent-browser를 사용한다.
   `frontend-visual`의 읽기 전용 시각 검사는 사용자 여정 E2E를 대신하지 않는다.

@@ -109,7 +109,7 @@
 
 - [ ] checker 시험으로 중복 본문과 adapter의 잘못된 target을 red로 고정한다.
 - [x] 스킬 본문을 `.agents`로 이동하고 Claude adapter를 생성한다. 인접 resources의 기준 경로를 명시한다.
-- [ ] 공통 규칙·역할 본문과 skill 인접 resources를 `.agents`로 이동하고 AGENTS/CLAUDE 및 양쪽 역할 adapter를 갱신한다.
+- [x] 공통 규칙·역할 본문과 skill 인접 resources를 `.agents`로 이동하고 AGENTS/CLAUDE 및 양쪽 역할 adapter를 갱신한다.
 - [x] hook judge를 `scripts/harness/hooks`로 이동하고 `.claude/hooks`를 실행 adapter로 바꾼다.
 - [ ] bridge와 설정의 mapping을 공통 config 기반으로 바꾸고 기존 payload 음성 시험을 유지한다.
 - [ ] `agent-bridge`, `harness-contract`, `exec-bit` green 뒤 커밋한다.
@@ -149,7 +149,8 @@ exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff
 - [ ] checkout 밖 실행 산출물을 거절하는 현 결함과 stale/different-SHA 인계를 실패 시험으로 고정한다.
 - [ ] task state가 외부 산출물·gate report를 명시적으로 허용하되 경로·hash·run id를 검증하게 한다.
 - [ ] PR template와 checker가 필수 절·Plan-Ref·head SHA·CI/gate 증거를 검증하게 한다.
-- [ ] work-item consistency, planning freshness, seam consistency, Slack completion, `gates/run.sh task`가 PR/task evidence를 소비하게 바꾸고 음성 fixture를 유지한다.
+- [ ] work-item consistency의 작업 상태·의존·완료 판정을 PR/Issue/task evidence로 이전하고 결정 ID 중복 검사는 보존한다. Slack completion·`gates/run.sh task`도 같은 증거를 소비한다.
+- [ ] planning freshness의 HTML/MD·적용 사본 실물 대조와 seam consistency의 ge/gb/flow 검사는 유지한다. 적용 상태·병합 근거와 citation 허용 링크만 전환하고 기존 음성 fixture를 유지한다.
 - [ ] 유효 결정은 변경 불가 archive+생성 색인으로 보존한다. 기존 sessions/reports 입력은 임시 compatibility read만 허용하고 신규 task 기본값에서는 쓰지 않는다.
 - [ ] 임시 호환 입력 허용→외부 PR #35/#38 해소 확인→기존 소비자 0 계측→전환 종료 순서를 checker에 선언한다. 공통 본문 중복 수와 역사 기록 보존 수를 별도 계수로 낸다.
 - [ ] 단위 시험·`agent-bridge`·`harness-contract` green 뒤 커밋한다.

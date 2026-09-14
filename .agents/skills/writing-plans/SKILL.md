@@ -11,7 +11,7 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
-**Context:** If working in an isolated worktree, it should have been created via `Agent(isolation: "worktree")` at execution time (`.claude/rules/colab-rules.md §2-3`).
+**Context:** If working in an isolated worktree, it should have been created via `Agent(isolation: "worktree")` at execution time (`.agents/rules/colab-rules.md §2-3`).
 
 **Save plans to:** `dev-package/prd/rounds/R-*.md` — 이 레포의 라운드 파일이다. 상한 **≤300행**.
 - **첫 줄에 출처 spec 을 링크한다** — `> spec: dev-package/prd/specs/<회차>.md`. 두 문서가 어긋나면 spec 이 우선한다.

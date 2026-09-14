@@ -88,6 +88,6 @@ Exception: if a prototype produced a snippet that encodes a decision more precis
 
 **시험 결정** — what makes a good test (only test external behavior, not implementation details), which modules will be tested, prior art for the tests (i.e. similar types of tests in the codebase).
 
-**우려 항목** — 항목번호·WU 코드·내부 약어를 쓰지 않는다. 기능과 코드로 풀어 쓰고, 고르면 달라지는 것을 각 선택지에 적는다(`.claude/rules/colab-rules.md §5-2`).
+**우려 항목** — 항목번호·WU 코드·내부 약어를 쓰지 않는다. 기능과 코드로 풀어 쓰고, 고르면 달라지는 것을 각 선택지에 적는다(`.agents/rules/colab-rules.md §5-2`).
 
 Before reporting, check each claim against this session's tool results.

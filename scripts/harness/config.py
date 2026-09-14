@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path, PurePosixPath
+import tomllib
 
 
 SCHEMA = "colab-harness/1"
@@ -88,6 +89,40 @@ def load_contract(path: Path) -> dict:
 
 def check_contract(root: Path, value: dict) -> list[str]:
     errors: list[str] = []
+    for kind, adapter_dir in (("rules", "rules"), ("roles", "agents")):
+        names = value["sources"].get(kind)
+        if not isinstance(names, list) or not names:
+            errors.append(f"missing shared {kind} mappings")
+            continue
+        for name in names:
+            if not isinstance(name, str) or not name or PurePosixPath(name).name != name:
+                errors.append(f"invalid shared {kind} name")
+                continue
+            relative = f".agents/{kind}/{name}.md"
+            source = root / relative
+            if not source.is_file() or not source.read_text(encoding="utf-8").strip():
+                errors.append(f"missing shared source: {relative}")
+            adapter = root / f".claude/{adapter_dir}/{name}.md"
+            expected = (
+                "# Claude adapter\n\n"
+                f"공통 본문은 저장소 루트 기준 `{relative}`를 읽고 따른다.\n"
+                "이 파일의 Claude frontmatter는 도구별 등록 정보이며 공통 본문을 복제하지 않는다."
+            )
+            try:
+                body = adapter.read_text(encoding="utf-8")
+                if body.startswith("---\n"):
+                    body = body.split("\n---\n", 1)[1]
+                if body.strip() != expected:
+                    errors.append(f"invalid Claude source adapter: {adapter.relative_to(root)}")
+            except (OSError, IndexError):
+                errors.append(f"missing or malformed Claude source adapter: {adapter.relative_to(root)}")
+            if kind == "roles":
+                try:
+                    config = tomllib.loads((root / f".codex/agents/{name}.toml").read_text(encoding="utf-8"))
+                    if config.get("name") != name or relative not in config.get("developer_instructions", ""):
+                        errors.append(f"invalid Codex role source: {name}")
+                except (OSError, tomllib.TOMLDecodeError):
+                    errors.append(f"missing or malformed Codex role adapter: {name}")
     names = value["sources"].get("hook_names")
     if not isinstance(names, list) or not names:
         errors.append("missing shared hook mappings")

@@ -34,6 +34,6 @@ The session is done when the frontier is empty: every branch of the design tree 
 - Ted 에게 가는 질문은 **한 라운드 단위로 묶어** 낸다. 한 건씩 왕복하지 않는다. 각 질문에 선택지를
   **ⓐ/ⓑ** 로 제시하고 권고 하나를 표시한다(원문의 recommended answer = Ted 의 ⓐ/ⓑ 문법).
 - 질문문에 항목번호·WU 코드·내부 약어를 노출하지 않는다. 기능과 코드로 서술한다
-  (`.claude/rules/colab-rules.md §5-2`·`§5-4`).
+  (`.agents/rules/colab-rules.md §5-2`·`§5-4`).
 
 Before reporting, check each claim against this session's tool results.

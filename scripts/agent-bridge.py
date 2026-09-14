@@ -82,7 +82,7 @@ def check() -> None:
         for field in ("name", "description", "developer_instructions"):
             if not isinstance(config.get(field), str) or not config[field]:
                 raise ValueError(f"{role}: missing {field}")
-        source = f".claude/agents/{role}.md"
+        source = f".agents/roles/{role}.md"
         if config["name"] != role or source not in config["developer_instructions"] or not (ROOT / source).is_file():
             raise ValueError(f"{role}: invalid source mapping")
         if role == "advisor" and config.get("sandbox_mode") != "read-only":
