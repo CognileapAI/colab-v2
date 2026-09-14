@@ -63,3 +63,5 @@
 ## 추가 (2026-09-14 · 최종 트리 `a07e87a4` 전수)
 
 - `service-tests-viz-render` 가 가상환경의 패키지 설치 누락(`ModuleNotFoundError: colab_viz`)을 판정 red 로 셈 — 준비 red 로 분류돼야 함 · 근거 = 전수 `dev-package/reports/lth-review-260913/full-a07e87a4/`
+- dev 실화면 대비·글자 크기 계측 — 이번 회차는 frontend-visual 을 명시 면제로 넘겼고 프런트가 11개 영역 바뀌었다 · dev 배포 뒤 `COLAB_VISUAL_URLS` 로 로그인 화면·주요 화면 1회 계측 · 근거 = 게이트 ③ 지적
+- EC2 에 반입 파일(285M)·`dev.env.bak-before-e9ca26b15bd1` 잔존 — 디스크 여유 4.8G · 정리 여부 판정 대상(삭제는 파괴적 조작)
