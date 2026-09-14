@@ -17,6 +17,8 @@ type Options = Schemas['AccountOptions'];
 type Filters = { labId: string; status: string; role: string; email: string };
 const EMPTY: Filters = { labId: '', status: '', role: '', email: '' };
 const STATUS_LABEL: Record<string, string> = { active: '사용 중', inactive: '비활성' };
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const SELF_STATUS_REASON = '자기 계정은 비활성화할 수 없어요';
 const day = (ts: string | null) => (ts ? ts.slice(0, 10) : '기록 없음');
 
 /** 새 초기 비밀번호 두 칸. 값은 대화상자 밖으로 나가지 않고 성공하면 그 자리에서 사라진다. */
@@ -149,7 +151,9 @@ export function AccountAdminPage() {
   }, [operator]);
   useEffect(() => { if (operator) void load(); }, [operator, load]);
 
-  if (!operator) return <main><h1>계정 관리</h1><p>서비스 운영자만 사용할 수 있어요.</p></main>;
+  // 본문 영역은 셸(`AppLayout` 의 `<main className="appmain">`)것 하나다 — 화면이 또 만들면
+  // 보조기기가 본문을 둘로 읽는다. 이 화면은 `div`/`section` 으로만 구역을 나눈다.
+  if (!operator) return <div><h1>계정 관리</h1><p>서비스 운영자만 사용할 수 있어요.</p></div>;
 
   const pick = (key: keyof Filters) => (e: { target: { value: string } }) =>
     setFilters(current => ({ ...current, [key]: e.target.value }));
@@ -173,7 +177,7 @@ export function AccountAdminPage() {
   }
 
   return (
-    <main className="login">
+    <div className="login">
       <section className="login-card account-card" data-testid="account-create">
         <span className="login-brand">Co-Lab</span>
         <h1 className="login-title">서비스 계정 추가</h1>
@@ -204,7 +208,7 @@ export function AccountAdminPage() {
           <label className="login-label">이메일<input className="login-input" name="email" type="email" required /></label>
           <label className="login-label">연구실<select className="login-input" name="labId" required>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
           <label className="login-label">역할<select className="login-input" name="role" required>{options?.roles.map(r => <option key={r}>{r}</option>)}</select></label>
-          <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" required /></label>
+          <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" autoComplete="new-password" required /></label>
           <label className="login-label account-operator-check">
             <input type="checkbox" name="operator" /> 관리자로 등록
           </label>
@@ -244,7 +248,11 @@ export function AccountAdminPage() {
         </fieldset>
 
         {listError ? <p className="account-status" role="alert">{listError}</p> : null}
-        <div className="account-table-scroll">
+        {/* 표 좌우 이동 안내 ＋ 키보드 초점 래퍼 = 다른 표 3자리와 같은 공용 패턴
+            (`CatalogTable`·`ProjectTable`·`ProjectDatasetTable`). 안내는 1100px 이하에서만
+            보인다(`design-system.css` 의 `.table-scroll-hint`) — 규칙을 이 화면에 다시 쓰지 않는다. */}
+        <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
+        <div className="account-table-scroll" role="region" aria-label="계정 목록 표 스크롤" tabIndex={0}>
           <table className="account-table" aria-label="계정 목록">
             <thead>
               <tr>
@@ -255,7 +263,9 @@ export function AccountAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {rows?.map(row => (
+              {rows?.map(row => {
+                const self = row.accountId === account?.accountId;
+                return (
                 <tr key={row.accountId}>
                   <td>{row.email}</td>
                   <td>{row.name}</td>
@@ -270,19 +280,23 @@ export function AccountAdminPage() {
                         「마지막 한 명」은 화면이 셀 수 없다(목록이 필터로 좁혀져 있을 수 있다) —
                         그 판정은 서버가 하고 화면은 그 문구를 그대로 보여 준다. */}
                     <button type="button" className="btn btn-secondary"
-                            disabled={rowBusy || row.accountId === account?.accountId}
+                            disabled={rowBusy || self}
                             onClick={() => setOperatorRow(row)}>
                       {row.operator ? '관리자 해제' : '관리자 지정'}
                     </button>
                     <button type="button" className="btn btn-secondary" disabled={rowBusy}
                             onClick={() => setResetRow(row)}>비밀번호 재설정</button>
-                    <button type="button" className="btn btn-secondary" disabled={rowBusy}
+                    {/* 자기 줄 비활성화도 관리자 해제와 같은 꼴로 막는다 — 서버가 거절하는 것을
+                        눌리게 두면 그 거절이 사고처럼 보인다. 서버 가드(`accounts.py`)는 그대로 둔다. */}
+                    <button type="button" className="btn btn-secondary" disabled={rowBusy || self}
                             onClick={() => setStatusRow(row)}>
                       {row.status === 'inactive' ? '재활성화' : '비활성화'}
                     </button>
+                    {self ? <span className="account-row-note">{SELF_STATUS_REASON}</span> : null}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -320,6 +334,6 @@ export function AccountAdminPage() {
               .then(ok => { if (ok) setStatusRow(null); });
           }} />
       ) : null}
-    </main>
+    </div>
   );
 }

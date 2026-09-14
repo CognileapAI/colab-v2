@@ -2590,6 +2590,17 @@ export interface components {
             role: components["schemas"]["Role"];
             permissions: components["schemas"]["PermissionSwitchSet"];
             /**
+             * @description **그 계정이 지금 쓰이는 계정인가.** 계정 관리 화면과 같은 말을 쓴다 — 거기서
+             *     「비활성」인 사람이 이 표에서 현역으로 보이던 자리를 닫는다 (`D-4`).
+             *
+             *     **선택 열쇠다.** 상태를 아는 자리(계정 자격 저장소)가 서 있지 않거나 그 계정의
+             *     자격 행이 없으면 **열쇠 자체를 싣지 않는다** — 「모른다」를 「활성」으로 접지 않는다.
+             *     화면은 이 값으로 편집 가능을 계산하지 않는다. 편집 가능의 정본은 그대로
+             *     `editablePermissions` 이고(P-31), 서버가 비활성 행에는 빈 배열을 싣는다.
+             * @enum {string}
+             */
+            accountStatus?: "active" | "inactive";
+            /**
              * @description **이 요청자가 이 행에서 고칠 수 있는 열.** 재위임 금지의 계약 쪽 표현이다 (P-31) —
              *     `연구실 설정` 위임자에게는 `업로드·편집`·`프로젝트 생성` 둘만 담기고,
              *     교수 행에는 빈 배열이 담긴다(교수 행 고정, P-5).

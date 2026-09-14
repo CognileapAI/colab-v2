@@ -286,8 +286,10 @@ describe('PRD-10 불일치는 경고만이다', () => {
     await click(screen.getByTestId(`lin-pick-${LV0}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
     await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
+    // ⭑ ⟨정정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉲⟩ 한 줄이 **각 값의 근거**까지 말한다.
+    //    ／ 종전 ~~두 값만 말하는 문장~~ — 「경고만」 규칙은 무변이고 문면만 늘었다.
     expect(screen.getByTestId('lin-lv-mismatch').textContent).toBe(
-      '고른 가공 단계는 Lv3이고, 연결한 데이터로 계산하면 Lv1이에요. 그대로 두어도 등록돼요.');
+      '고른 가공 단계는 Lv3이고, 연결한 데이터로 계산하면 Lv1이에요(사람이 고른 값 / 주입력 부모 중 최대 Lv＋1 · 부모가 없으면 Lv0). 그대로 두어도 등록돼요.');
     // **막지 않는다** — 버튼이 살아 있고 요청이 나간다.
     expect((screen.getByTestId('reg-done') as HTMLButtonElement).disabled).toBe(false);
     await click(screen.getByRole('button', { name: /^②/ }));

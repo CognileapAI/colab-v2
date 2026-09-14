@@ -122,6 +122,8 @@
 .account-table th { color: var(--color-text-muted); font-weight: 600; }
 .account-table td { color: var(--color-text-body); }
 .account-row-actions { display: flex; gap: 8px; }
+/* 자기 줄에서만 나오는 잠금 이유 한 줄 — 눌리지 않는 버튼 옆에 그 까닭을 적는다. */
+.account-row-note { align-self: center; font-size: var(--text-caption); color: var(--color-text-muted); }
 
 .account-modal-back {
   position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px;

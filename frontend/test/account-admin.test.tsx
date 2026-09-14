@@ -249,3 +249,53 @@ test('계정 추가 폼의 관리자 체크박스가 요청에 실린다',async(
  const request=fetch.mock.calls.map(call=>call[0] as Request).find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts'))!;
  expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',operator:true});
 });
+
+// ═══════════════ 이태헌 1차 검증 4건 — 본문 영역 · 표 안내 · 자동완성 · 자기 줄 가드 ═══════════════
+// 계획 = dev-package/prd/rounds/R-LTH-REVIEW-1.md Task 1 (spec §8-2 5~8)
+test('운영자 화면이 본문 영역을 스스로 만들지 않는다',async()=>{
+ routedFetch();
+ const view=renderAdmin();
+ await screen.findByRole('table',{name:'계정 목록'});
+ expect(view.container.querySelectorAll('main')).toHaveLength(0);
+ expect(screen.queryAllByRole('main')).toHaveLength(0);
+});
+
+test('비운영자 안내도 본문 영역을 새로 만들지 않는다',async()=>{
+ routedFetch();
+ const view=render(<SessionProvider account={{...OPERATOR,canManageServiceAccounts:false}}><AccountAdminPage/></SessionProvider>);
+ expect(await screen.findByText('서비스 운영자만 사용할 수 있어요.')).toBeInTheDocument();
+ expect(view.container.querySelectorAll('main')).toHaveLength(0);
+});
+
+test('계정 목록 표에 좌우 이동 안내와 키보드 초점을 받는 래퍼가 있다',async()=>{
+ routedFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ // 공용 패턴 = CatalogTable·ProjectTable·ProjectDatasetTable 과 같은 클래스·같은 축자.
+ const wrap=screen.getByRole('region',{name:'계정 목록 표 스크롤'});
+ expect(wrap).toHaveAttribute('tabindex','0');
+ expect(wrap).toContainElement(table);
+ const hint=document.querySelector('.table-scroll-hint');
+ expect(hint).not.toBeNull();
+ expect(hint).toHaveTextContent('표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.');
+});
+
+test('초기 비밀번호 칸을 비밀번호 관리 도구가 새 비밀번호로 읽는다',async()=>{
+ routedFetch();
+ renderAdmin();
+ const form=within(await screen.findByTestId('account-create'));
+ expect(form.getByLabelText('초기 비밀번호')).toHaveAttribute('autocomplete','new-password');
+});
+
+test('자기 줄 비활성화는 처음부터 눌리지 않고 이유가 화면에 적혀 있다',async()=>{
+ operatorFetch();
+ renderAdmin();
+ const table=await screen.findByRole('table',{name:'계정 목록'});
+ const self=await within(table).findByRole('row',{name:/op@example\.com/});
+ expect(within(self).getByRole('button',{name:'비활성화'})).toBeDisabled();
+ expect(within(self).getByText('자기 계정은 비활성화할 수 없어요')).toBeInTheDocument();
+ // 대조군 — 남의 줄은 그대로 눌리고 이유 문면도 없다. 대상 0건 통과를 가른다(spec §8-6 ⑶).
+ const other=await within(table).findByRole('row',{name:/one@example\.com/});
+ expect(within(other).getByRole('button',{name:'비활성화'})).toBeEnabled();
+ expect(within(other).queryByText('자기 계정은 비활성화할 수 없어요')).toBeNull();
+});

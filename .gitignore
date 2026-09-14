@@ -38,6 +38,15 @@ desktop.ini
 # 임시 사본에는 원천 데이터 바이트가 들어오므로 **추적하지 않는다**.
 .playwright-mcp/
 
+# dev 화면 자동 투입 러너의 작업 자리 — 상태·로그·화면 갈무리·자격 파일이 쌓인다.
+# `state.json` 에 세션·계정이, `initial-password.txt`·`new-password.txt` 에 자격이,
+# `upload-plan.json` 에 실행 자리의 절대경로가 들어온다. **추적하지 않는다**.
+dev-package/tools/dev-seed/.work/
+
+# dev 재생성(`reseed.sh`)의 실행 자리 — 실행마다 로그·단계 JSON·결과·승인 기록이 쌓인다.
+# 로그에 접속 문자열·원격 경로가 들어오므로 **추적하지 않는다**(`COLAB_JOB_DIR` 이 있으면 그쪽으로 간다).
+dev-package/reports/dev-reseed-runs/
+
 # 생성물 — 커밋 대상이다. 무시하지 않는다.
 # (generated-up-to-date 게이트가 diff로 검증하므로 반드시 추적해야 한다)
 

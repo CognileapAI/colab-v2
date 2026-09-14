@@ -13,6 +13,7 @@ import {
   diffOf,
   draftOf,
   isEditable,
+  isInactive,
   roleLabel,
   type Draft,
   type LabMember,
@@ -117,7 +118,9 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
   return (
     <div className="card memgrid">
       <div className="card-h">
-        <h3>구성원 · 권한</h3>
+        {/* 탭 본체 제목은 `h2` 다 — 화면 `h1`(「연구실 설정」) 바로 아래 단계.
+            글자 크기는 `members.css` 의 `.card-h h2` 가 종전 `h3` 와 같게 고정한다. */}
+        <h2>구성원 · 권한</h2>
         <div className="memact">
           {/* 편집 중이 아닐 때만 `권한 편집`, 편집 중일 때만 `취소`·`저장` — 목업 그대로 */}
           {!editing && (
@@ -148,6 +151,13 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
           {notice}
         </p>
       )}
+      {/* 편집을 시작해야 「왜 이 줄만 안 눌리는가」가 질문이 된다 — 그때만 답한다. */}
+      {editing && members.some(isInactive) && (
+        <p className="memlock" data-testid="members-inactive-hint">
+          {/* Ted 문면 확정 대기 · R-LTH-REVIEW-1 */}
+          비활성 계정은 권한을 바꿀 수 없어요
+        </p>
+      )}
 
       <div className="card-b">
         <table className={`tbl memtbl${editing ? ' is-editing' : ''}`}>
@@ -172,6 +182,10 @@ export function MemberPermissionGrid(props: { port: MembersPort }) {
                 </td>
                 <td>
                   <span className="chip chip--neutral">{roleLabel(m)}</span>
+                  {/* 계정 관리 화면과 **같은 말**이다 — 두 화면이 같은 사람을 같게 부른다 (D-4).
+                      잠금 자체는 서버가 실어 준 `editablePermissions` 가 이미 했고(P-31),
+                      이 칩은 「왜 잠겼는가」를 표에서 보이게 하는 표기 하나다. */}
+                  {isInactive(m) && <span className="chip chip--off">비활성</span>}
                 </td>
                 {PERMISSION_SWITCHES.map((sw) => {
                   const value = draft[m.accountId]?.[sw] === true;

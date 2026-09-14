@@ -173,7 +173,9 @@ describe('#8 프로젝트 상세 표 Verified — 카탈로그와 같은 표기 
     );
     const cells = await screen.findAllByTestId('dataset-verified');
     expect(cells.length).toBeGreaterThan(0);
-    const pending = cells.filter((c) => c.textContent?.trim() === 'Verified');
+    /* ⭑ ⟨개정 2026-09-13 · R-LTH-REVIEW-1 Task 5⟩ 종전 기준 글자는 `Verified` 였다.
+       칩 글자만 한국어 상태말로 바뀌고 취소선·`aria-disabled` 규칙은 무변이다. */
+    const pending = cells.filter((c) => c.textContent?.trim() === '승인 전');
     expect(pending.length).toBeGreaterThan(0);
     for (const c of pending) {
       expect(c.querySelector('.verified--pending')).not.toBeNull();

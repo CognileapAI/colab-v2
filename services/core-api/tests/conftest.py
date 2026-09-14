@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import pathlib
-from functools import lru_cache
 import sys
 
 SRC = pathlib.Path(__file__).resolve().parents[1] / "src"
@@ -115,14 +113,18 @@ TOKEN_RES = "a1-res-token"
 TOKEN_PROF = "a1-prof-token"
 TOKEN_B = "b1-prof-token"
 
-#: 시험이 만든 행을 되돌릴 때 훑는 표와 그 시각 열. 자식부터 지운다(FK 순서).
+#: 시험이 만든 행을 되돌릴 때 훑는 표. 자식부터 지운다(FK 순서).
 #: **`d8_activity` 는 없다** — append-only 트리거가 DELETE 를 거부한다(그것이 그 표의 요점이다).
 #: 그래서 활동 시험은 절대 개수가 아니라 **자기가 부르기 전후의 차이**를 센다.
-#: 세 번째 칸은 **시드 행을 지키는 조건**이다. 시드 행도 시험이 만지면 `updated_at` 이
-#: 밀리므로, 시각만 보고 지우면 **시드가 시험 도중에 사라진다**(실제로 그렇게 깨졌다).
+#:
+#: ⭑ **⟨2026-09-13 · 시계 의존 제거⟩ 시각 열로 가르지 않는다.** 종전에는 표마다 시각 열을
+#: 적어 두고 「기준 시각 이후 행만 지운다」로 골랐는데, 호스트(WSL2)의 실시간 시계가 이따금
+#: **뒤로 점프해서**(실측 151 ms · `tests/test_cleanup_purge.py` 머리글) 점프 뒤에 만들어진
+#: 행이 기준 시각보다 앞선 시각을 달고 태어나 삭제에서 빠졌다. 그래서 **시험 전 기본키 집합**
+#: 을 떠 두고 **그 집합에 없는 행**을 지운다 — 시계가 어느 방향으로 흔들려도 같은 답이 나온다.
+#: 시드 행을 지키는 조건도 이제 필요 없다(시드 키는 스냅숏 안에 있다).
 _SEED_DATASETS = ("'0000000000000000000000DSA1'", "'0000000000000000000000DSA2'",
                   "'0000000000000000000000DSB1'")
-_KEEP_DATASETS = f" AND dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
 #: ⭑ **⟨WU-B2 · PRD-16⟩ 변수 행에는 시각 열이 없다** — 아래 `_CLEANUP` 루프가 쓰는
 #: 「시각 이후 행만 지운다」를 쓸 수 없어 **문장 하나로 뺀다**. 데이터셋에 딸린 행이라
 #: 시드 데이터셋 것만 남기면 그것으로 충분하고, 시드 세 데이터셋의 행은 아래 `_RESTORE` 가
@@ -131,42 +133,58 @@ _CLEANUP_VARIABLES = (
     f"DELETE FROM d3_dataset_variable WHERE dataset_id NOT IN ({', '.join(_SEED_DATASETS)})"
 )
 
-_CLEANUP: tuple[tuple[str, str, str], ...] = (
+_CLEANUP: tuple[str, ...] = (
     # **WU-P6 가 더한 셋.** 승인 시험은 요청 행과 **그 요청이 만든 허용 줄**을 함께 남긴다 —
     # 허용 줄을 안 지우면 다음 회차에서 `DSA2` 가 이미 열린 채로 시작해 잠금 시험이 통째로
     # 거짓 green 이 된다(`test_body_access.py` 가 제일 먼저 무너진다).
-    ("d2_dataset_access_request", "requested_at", ""),
+    "d2_dataset_access_request",
     # ⭑ **⟨WU-B4 · PRD-11⟩ 등록이 공개 범위를 쓰면서 이 표에 시험 행이 생긴다.**
     # 안 지우면 `d3_dataset` DELETE 가 FK 로 막히는 것이 아니라(bare 컬럼이다) **행이
     # 쌓여** cross-tenant 셈이 회차마다 는다. 시드 두 행은 아래 `_RESTORE` 가 되돌린다.
-    ("d2_dataset_access", "updated_at", _KEEP_DATASETS),
-    ("d2_verification_request", "requested_at", ""),
-    ("d2_dataset_access_grant", "approved_at", ""),
-    ("d6_project_dataset", "created_at", ""),
+    "d2_dataset_access",
+    "d2_verification_request",
+    "d2_dataset_access_grant",
+    "d6_project_dataset",
     # **`d6_project` 는 WU-P5 에서 들어왔다.** `listProjects` 가 생기기 전에는 시험이 만든
     # 프로젝트가 남아도 아무도 세지 않아 드러나지 않았다 — `createProject` 시험이 회차마다
     # 한 건씩 쌓아 두고 있었고, 목록 op 이 열리자마자 그 누적이 셈을 틀리게 했다(실측).
     # 자식(`d6_project_dataset`)을 먼저 지우므로 FK 순서는 위 줄이 지킨다.
-    ("d6_project", "created_at", ""),
-    ("d4_lineage_edge", "confirmed_at", ""),
-    ("d4_lineage_unknown", "marked_at", ""),
-    ("d5_pipeline_event", "occurred_at", ""),
-    ("d5_upload_grid_profile", "created_at", ""),
-    ("d5_upload_file", "created_at", ""),
-    ("d5_upload", "created_at", ""),
-    ("d3_search_evidence", "updated_at", ""),
-    # **`d3_file` 만은 시드 데이터셋의 행도 지운다** — 후주입 시험이 시드 데이터셋에 조각을
-    # 더하고, 그 행을 남기면 `d3_dataset.file_count`(메타 열)가 시험마다 1씩 늘어난다.
-    # 지운 뒤 아래 `_RESTORE` 가 시드 두 행을 되돌리므로 셈이 제자리로 온다.
-    ("d3_file", "created_at", ""),
-    ("d3_representative_image_cleanup", "created_at", ""),
-    ("d3_dataset_representative_image", "created_at", ""),
-    ("d3_lab_default_grid", "updated_at", ""),
-    ("d3_dataset_grid_profile", "created_at", _KEEP_DATASETS),
-    ("d3_dataset_autometa", "updated_at", _KEEP_DATASETS),
-    ("d3_dataset_description", "updated_at", _KEEP_DATASETS),
-    ("d3_dataset", "uploaded_at", f" AND id NOT IN ({', '.join(_SEED_DATASETS)})"),
+    "d6_project",
+    "d4_lineage_edge",
+    "d4_lineage_unknown",
+    "d5_pipeline_event",
+    "d5_upload_grid_profile",
+    "d5_upload_file",
+    "d5_upload",
+    "d3_search_evidence",
+    # **`d3_file` 은 시험이 시드 데이터셋에 더한 조각까지 지운다** — 그 행을 남기면
+    # `d3_dataset.file_count`(메타 열)가 시험마다 1씩 늘어난다. 시드 두 행은 스냅숏에 있어
+    # 남고, 시험이 값만 바꿨다면 아래 `_RESTORE` 가 되돌리므로 셈이 제자리로 온다.
+    "d3_file",
+    "d3_representative_image_cleanup",
+    "d3_dataset_representative_image",
+    "d3_lab_default_grid",
+    "d3_dataset_grid_profile",
+    "d3_dataset_autometa",
+    "d3_dataset_description",
+    "d3_dataset",
 )
+
+#: 표의 **기본키 열은 DB 에게 묻는다.** 여기에 손으로 적어 두면 스키마가 바뀔 때 조용히
+#: 갈라지고, 갈라진 쪽은 「지웠다고 보고했는데 아무것도 안 지운」 자리가 된다.
+_PK_SQL = f"""
+SELECT c.relname AS table_name, a.attname AS column_name
+  FROM pg_constraint con
+  JOIN pg_class c ON c.oid = con.conrelid
+  JOIN unnest(con.conkey) WITH ORDINALITY AS k(attnum, ord) ON true
+  JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+ WHERE con.contype = 'p'
+   AND c.relname IN ({', '.join(f"'{t}'" for t in _CLEANUP)})
+ ORDER BY c.relname, k.ord
+"""
+
+#: 기본키 열 → 한 줄짜리 키 식. 복합키도 한 값으로 접는다(`d3_dataset_variable` 같은 자리).
+_KEY_EXPR: dict[str, str] = {}
 
 #: 시드 행 되돌리기. **시각으로 지우는 것만으로는 부족하다** — 교체·삭제·확인 시험은
 #: 시드 행 자체를 바꾸거나 지우므로, 그 상태가 다음 시험으로 새면 오라클이 오라클이 아니게 된다
@@ -178,9 +196,11 @@ _RESTORE: tuple[str, ...] = (
          ('00000000000000000000000FA1', current_lab_id(), '0000000000000000000000DSA1',
           '본체', 'a1-body.csv', 50, 'k/a1', false, false),
          ('00000000000000000000000FA2', current_lab_id(), '0000000000000000000000DSA1',
-          '기준 격자 파일', 'a1-grid.nc', 50, 'k/a1g', true, true)
-       -- **`DSA2`(잠김)의 파일은 여기서 되돌리지 않는다** — `body_access` RESTRICTIVE 가
-       -- 앱 롤의 INSERT 를 막는다(그게 그 정책의 요점이다). 시험도 그 행을 건드리지 않는다.
+          '기준 격자 파일', 'a1-grid.nc', 50, 'k/a1g', true, true),
+         ('00000000000000000000000FA3', current_lab_id(), '0000000000000000000000DSA2',
+          '본체', 'a2-body.nc', 200, 'k/a2', false, false)
+       -- `0032_private_owner_access` 이후 이 복구 주체(A 교수)는 DSA2 소유자라 잠긴 본체도
+       -- 읽고 쓸 수 있다. 따라서 잠긴 시드 파일도 같은 스냅숏/복구 규율로 되돌린다.
        ON CONFLICT (id) DO UPDATE
          SET file_name = EXCLUDED.file_name, size_bytes = EXCLUDED.size_bytes,
              storage_key = EXCLUDED.storage_key""",
@@ -271,6 +291,64 @@ _RESTORE: tuple[str, ...] = (
 )
 
 
+def _cleanup_scope(session) -> None:
+    """되돌리기가 서는 자리 — A 연구실 교수. 스냅숏과 삭제가 **같은 경계**여야 한다."""
+    from colab_core.kernel.auth import Subject
+    from colab_core.kernel.ids import Ulid
+    from colab_core.kernel.scope import apply_scope
+
+    apply_scope(session, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
+
+
+def _key_exprs(session) -> dict[str, str]:
+    """표별 기본키 식. 한 번 읽어 두고 재사용한다 — 스키마는 한 회차 안에서 바뀌지 않는다."""
+    from sqlalchemy import text
+
+    if not _KEY_EXPR:
+        columns: dict[str, list[str]] = {}
+        for table, column in session.execute(text(_PK_SQL)).all():
+            columns.setdefault(table, []).append(column)
+        missing = [t for t in _CLEANUP if t not in columns]
+        if missing:
+            raise AssertionError(
+                f"기본키를 못 읽은 표가 있다: {missing}. 키를 모르는 표는 되돌릴 수 없고, "
+                "되돌리지 못한 행은 다음 시험의 개수 오라클을 틀리게 한다.")
+        for table, names in columns.items():
+            _KEY_EXPR[table] = " || '\\x1f' || ".join(f"{name}::text" for name in names)
+    return _KEY_EXPR
+
+
+def snapshot_test_rows(session) -> dict[str, list[str]]:
+    """시험 전 **기본키 집합**을 뜬다. `purge_test_rows` 와 짝이다.
+
+    ⚠ 스냅숏은 되돌리기와 **같은 경계**(`_cleanup_scope`)에서 떠야 한다 — 보이지 않는 행은
+    스냅숏에도 없고 DELETE 에도 안 걸리므로, 경계가 다르면 남을 행을 지우게 된다.
+    """
+    from sqlalchemy import text
+
+    exprs = _key_exprs(session)
+    union = " UNION ALL ".join(
+        f"SELECT '{table}' AS t, ({exprs[table]}) AS k FROM {table}" for table in _CLEANUP)
+    snapshot: dict[str, list[str]] = {table: [] for table in _CLEANUP}
+    for table, key in session.execute(text(union)).all():
+        snapshot[table].append(key)
+    return snapshot
+
+
+def purge_test_rows(session, snapshot: dict[str, list[str]]) -> None:
+    """스냅숏에 **없는** 행을 지우고 시드를 되돌린다. FK 순서는 `_CLEANUP` 이 쥔다."""
+    from sqlalchemy import text
+
+    exprs = _key_exprs(session)
+    session.execute(text(_CLEANUP_VARIABLES))
+    for table in _CLEANUP:
+        session.execute(
+            text(f"DELETE FROM {table} WHERE ({exprs[table]}) <> ALL(:keys)"),
+            {"keys": list(snapshot.get(table, ()))})
+    for statement in _RESTORE:
+        session.execute(text(statement))
+
+
 def auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
@@ -346,66 +424,39 @@ def sql(session_factory):
         s.close()
 
 
-@lru_cache(maxsize=4)
-def _cleanup_primary_keys(engine):
-    from sqlalchemy import inspect
-
-    inspector = inspect(engine)
-    return {table: inspector.get_pk_constraint(table)["constrained_columns"]
-            for table, _, _ in _CLEANUP}
-
-
 @pytest.fixture(autouse=True)
 def _rollback_p2_rows(request, session_factory):
     """시험이 만든 행을 **시험이 끝날 때 되돌린다.**
 
-    시작 전 기본키와 시각을 함께 비교한다. 새 행의 시각이 과거여도 정리하고,
-    기존 시드 보호 조건과 복원은 유지한다. 앱 롤의 같은 연구실 경계 안에서만 동작한다.
+    **기본키 집합 기준으로 지운다** — 시험 전에 있던 키는 남고, 그 사이에 생긴 행만 사라진다.
+    (ID 접두사로 가르려 했으나 시드 ULID 와 생성 ULID 가 **둘 다 `0` 으로 시작한다** — 확인하고
+    버린 방법이다. 확장자로 역할을 가르려다 실파일 14건을 삼킨 `M-1` 과 같은 무늬라서 안 쓴다.)
+
+    ⭑ **⟨2026-09-13⟩ 종전에는 시각 기준이었다** — 「기준 시각 이후 행만 지운다」. 호스트 시계가
+    뒤로 점프하면 그 뒤에 태어난 행이 기준보다 앞선 시각을 달아 삭제에서 빠졌고, 남은
+    `d4_lineage_edge` 한 줄이 `d3_dataset` DELETE 를 FK 로 막아 **되돌리기 트랜잭션 전체**가
+    무효가 됐다(삭제도 `_RESTORE` 도 함께 사라진다). 오라클은 `tests/test_cleanup_purge.py`.
     """
     # `live_client` 도 훑는다 — `test_cross_tenant.py` 의 쓰기 경계 증명이 `createProject` 로
     # 실제 행을 만들고 되돌리지 않았다. 목록 op 이 열리기 전에는 보이지 않던 누출이다 (WU-P5).
     if not {"p2_client", "sql", "live_client"} & set(request.fixturenames):
         yield
         return
-    from sqlalchemy import text
-
-    from colab_core.kernel.auth import Subject
-    from colab_core.kernel.ids import Ulid
-    from colab_core.kernel.scope import apply_scope
-
     marker = session_factory()
     try:
-        apply_scope(marker, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
-        started = marker.execute(text("SELECT now()")).scalar_one()
-        primary_keys = _cleanup_primary_keys(marker.get_bind())
-        assert all(primary_keys.values()), "cleanup tables must have primary keys"
-        # 표/열 이름은 고정 목록과 DB 메타데이터에서만 가져온다. 복합 키도 보존한다.
-        baseline_sql = " UNION ALL ".join(
-            f"SELECT '{table}' AS table_name, "
-            f"coalesce(jsonb_agg(jsonb_build_array({', '.join(primary_keys[table])})), "
-            f"'[]'::jsonb) AS keys FROM {table}"
-            for table, _, _ in _CLEANUP
-        )
-        baseline = {row.table_name: json.dumps(row.keys)
-                    for row in marker.execute(text(baseline_sql))}
+        marker.begin()
+        _cleanup_scope(marker)
+        snapshot = snapshot_test_rows(marker)
     finally:
+        marker.rollback()
         marker.close()
     yield
 
     session = session_factory()
     try:
         session.begin()
-        apply_scope(session, Subject(account_id=Ulid(ACC_A_PROF), lab_id=Ulid(LAB_A)))
-        session.execute(text(_CLEANUP_VARIABLES))
-        for table, column, keep in _CLEANUP:
-            key = ", ".join(f"{table}.{name}" for name in primary_keys[table])
-            session.execute(text(
-                f"DELETE FROM {table} WHERE ({column} >= :t OR NOT EXISTS ("
-                "SELECT 1 FROM jsonb_array_elements(CAST(:baseline AS jsonb)) AS seen(key) "
-                f"WHERE seen.key = jsonb_build_array({key}))){keep}"
-            ), {"t": started, "baseline": baseline[table]})
-        for statement in _RESTORE:
-            session.execute(text(statement))
+        _cleanup_scope(session)
+        purge_test_rows(session, snapshot)
         session.commit()
     finally:
         session.close()

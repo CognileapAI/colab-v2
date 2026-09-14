@@ -48,7 +48,7 @@ items:
     completion_def: "셋을 모두 만족한다. ⑴ 운영자 백오피스에 계정 목록이 있다 — 전 연구실 한 목록 · 열 6개(이메일·이름·역할·연구실·상태·최근 로그인) · 열 필터. ⑵ 운영자가 특정 계정의 비밀번호를 재설정할 수 있다 — 새 초기 비밀번호를 직접 입력하면 첫 로그인 변경이 다시 강제되고 그 계정의 기존 로그인(모든 기기)이 즉시 종료된다. 비밀번호 원문은 응답·로그에 남지 않는다. ⑶ 운영자가 계정을 비활성화/재활성화할 수 있다 — 비활성화 즉시 로그인 거절 ＋ 기존 로그인 전부 종료. 데이터·소유권은 유지된다."
     evidence: "⑴ 목록 = `GET /admin/accounts`(`services/core-api/src/colab_core/app/routes/accounts.py` `listServiceAccounts`) ＋ 화면 `frontend/src/routes/AccountAdminPage.tsx`(열 6개·필터 4종 · 최근 로그인은 `login_session` 의 `MAX(issued_at)` 집계). ⑵ 재설정 = `POST /admin/accounts/{accountId}/password-reset` — 기존 scrypt 경로 저장 ＋ `must_change_password=true` ＋ `session_version` +1 ＋ 같은 트랜잭션에서 그 계정 `login_session.revoked_at`(다른 계정 세션 불변 · 증가폭 정확히 1 · 응답·로그에 비밀번호 0). ⑶ 비활성화/재활성화 = 열 `login_credential.status`(`db/platform/versions/0028_account_status.py` · 기본 `active`) ＋ `POST /admin/accounts/{accountId}/status` — 비활성 로그인 401 이 계정 존재 여부를 구분하지 않고 실패 제한 버킷도 오염시키지 않는다. 시험 = `services/core-api/tests/test_account_backoffice.py` · `test_account_status.py` · `frontend/test/account-admin.test.tsx`. 파일 자격(`TrackedPasswordIssuer`)·접속 코드(`TrackedPlantedCodeIssuer`) 경로의 비활성 거절은 커밋 `47fe20bb`(RED 2건 실측 → 401). dev 반영 = `71ee15757737` · 태그 `dev-20260912-2` · `deploy_doctor` 15/15 한 번의 실행(2026-09-12 14:25:03Z) · 근거 `dev-package/reports/r-login-backoffice/task5/deploy-2.md` · 원장 `PLAN-SoT §9 〈384〉`."
     deadline: null
-    note: "전 기기 종료는 기존 `session_version` 대조를 재사용한다(새 세션 저장 방식 도입 없음). 범위 밖 = 메일 발송 전반 · 역할·연구실 변경 UI · 운영자 지정 UI · 모든 기기 로그아웃 버튼. ⚠ `[미확인]` = **로그인한 상태의 제품 동작**(목록 표가 실제로 그려지는가 · 재설정·비활성화가 200 을 내는가). Ted 의 비밀번호가 없어 배포 레인에서 닫히지 않았고 닿은 자리는 무자격 라우트 표(401/405 · 대조군 404)와 롤 권한까지다 — Ted 실사용 확인이 남았다. ⚠ 목록·지정 경로는 `services/core-api/ops/account-admin-role.sql` 의 GRANT(`d2_member_role` SELECT)에 의존하는데 그 파일이 RDS 에서 통째로 실패하는 결함은 어느 게이트·`deploy_doctor` 항목에도 걸리지 않는다(`〈384〉`-⑨ⓐ)."
+    note: "전 기기 종료는 기존 `session_version` 대조를 재사용한다(새 세션 저장 방식 도입 없음). 범위 밖 = 메일 발송 전반 · 역할·연구실 변경 UI · 운영자 지정 UI · 모든 기기 로그아웃 버튼. ⚠ `[미확인]` = **로그인한 상태의 제품 동작**(목록 표가 실제로 그려지는가 · 재설정·비활성화가 200 을 내는가). Ted 의 비밀번호가 없어 배포 레인에서 닫히지 않았고 닿은 자리는 무자격 라우트 표(401/405 · 대조군 404)와 롤 권한까지다 — Ted 실사용 확인이 남았다. ⚠ 목록·지정 경로는 `services/core-api/ops/account-admin-role.sql` 의 GRANT(`d2_member_role` SELECT)에 의존하는데 그 파일이 RDS 에서 통째로 실패하는 결함은 어느 게이트·`deploy_doctor` 항목에도 걸리지 않는다(`〈384〉`-⑨ⓐ). ⭑ **⟨증보 2026-09-14 · `DR-3` 회차 발견 · 등재만⟩ 계정 목록에 「초기 비밀번호 변경 필요」 열이 없다.** 계약 `contracts/seams/fe-core.yaml` `ServiceAccountSummary` 의 열은 여섯(`email`·`name`·`role`·`labName`·`status`·`lastLoginAt`)이고 `mustChangePassword` 필드가 **0건**이다(`additionalProperties: false`) ⟹ 운영자가 목록에서 「이 계정이 아직 초기 비밀번호인가」를 볼 수 없다. 발견 자리 = `ttlhi10@gmail.com` 계정을 계정 관리 화면으로 만든 뒤 목록에서 그 상태를 찾지 못한 것(`dev-package/sessions/DR-3-run-2026-09-13.md §10`). ⚠ **이 항목의 상태는 `done` 그대로다** — 완료 정의 ⑴ 의 열 6개는 그대로 서 있고, 이 열은 그 정의에 없던 것이다. 등재만 하고 이 회차에서 고치지 않았다. 원장 `PLAN-SoT §9 〈396〉`-㉽."
     sources: ["dev-package/intent/2026-09-12-login-backoffice-closeout.md", "dev-package/prd/specs/login-backoffice-closeout.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
 
   - id: R0
@@ -3406,8 +3406,6 @@ items:
     deadline: null
     note: "읽기 스코프는 경계 해제가 아니라 명시적 읽기 스코프다 — `operator_read` 정책은 FOR SELECT · PERMISSIVE 이고 쓰기 정책에는 걸리지 않는다(`db/platform/versions/0029_operator_read_policy.py`). 스위치(`app.operator_read`)는 커널이 관리자의 읽기 요청에만 켠다. 범위 밖 = 특정 연구실 하나로 좁히는 전환 동작(읽기 op 이 연구실 인자를 받아야 하므로 계약 판정이 선행한다) · 관리자의 타 연구실 **반출** — intent 문면이 연 것은 읽기뿐이라 `app/deps.py::_operator_read` 가 경로 마지막 칸이 `download` 인 op 을 스코프에서 제외한다. ⚠ `[미확인]` = 로그인한 상태의 관리자 토글·전 연구실 열람 실동작(Ted 실사용 확인 대기) · 운영자 판정(`_require_operator`) 통과 자체. ⚠ `0029` 의 표 목록은 정적 열거라 감사·내보내기 8표에는 `operator_read` 가 붙지 않는다(그 8표는 `lab_boundary` 만으로 닫혀 있다 · 후속)."
     sources: ["dev-package/intent/2026-09-12-operator-designation.md", "dev-package/prd/rounds/R-LOGIN-BACKOFFICE.md"]
-
-
   - id: ONTO-PROTECT
     name: "온톨로지 삭제 보호와 관리자 권한 분리"
     status: open
@@ -3420,3 +3418,469 @@ items:
     deadline: null
     note: "현재 작업은 local-stage/ST에 적용한다. main/DEV/PR 승격은 하지 않는다. 관리자 권한 분리와 AWS 경로는 미완료이며 ST 보호를 전체 환경의 절대 삭제 불가로 해석하지 않는다."
     sources: ["dev-package/sessions/20260913-ontology-protection.md"]
+  - id: BF-18
+    name: "상단 셸 3건 — 연구실 표기 칩화 ＋ 사용자 이름 `▾` 제거 ＋ 휴대전화 상단 「더보기」 목록 (D-1 · D-5 · I-9)"
+    status: done
+    stage: stage1
+    owner: "frontend (상단 셸)"
+    entry_conditions:
+      - "Ted 판정 카드 ① ⓐ · ② ⓐ · ③ ⓒ(2026-09-13 · `dev-package/reports/issues/2026-09-13-ted-decisions.md`) — 동작이 없는 자리는 누를 수 없는 상태 표시로만 둔다"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-shell-header.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 6"
+      - "계약·서버 변경 0 — `frontend/src/shell/**` ＋ `frontend/src/components/upload/UploadEntry.tsx` 한정"
+    depends_on: []
+    completion_def: >-
+      ⑴ 「전체 연구실 (읽기 전용)」이 `button` 이 아니고 `▾` 가 없으며 키보드 초점을 받지 않는다(`frontend/src/shell/Gnb.tsx` 앵커 `data-testid="lab-switcher"`)
+      ⑵ 사용자 이름 자리에 `▾` 가 없다(앵커 `data-testid="gnb-avatar"` 하위 `.cv` 0건)
+      ⑶ 390px 에서 업로드·계정 관리·연구실 설정의 이름이 글자로 확인된다(「더보기」 목록 · 권한 없는 항목은 목록에 서지 않는다)
+      ⑷ `frontend/test/shell-lth-20260913.test.tsx` 신설 3건이 red 선실측 뒤 green ＋ `shell.test.tsx`·`recs-20260903.test.tsx`·`auth.test.tsx` 정정분 green ⟨개정 2026-09-14 · 집행 실측⟩ 기존 시험 무수정 통과 · 새 시험 파일 shell-lth-20260913 로 대체
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green · 수집 건수 감소 0.
+    evidence: "2026-09-14 커밋 `89021538`(상단 셸 3건 — 연구실 표기 상태 표시 ＋ 사용자 이름 `▾` 제거 ＋ 휴대전화 「더보기」 목록). red 선실측 = `frontend/test/shell-lth-20260913.test.tsx` 새 시험 20건 중 15 red — `expected 'BUTTON' not to be 'BUTTON'` · 기존 `shell.test.tsx`·`recs-20260903.test.tsx`·`auth.test.tsx` 무수정 통과. 게이트 = `89021538` `frontend-test` 117/117 파일 · 1397건 · 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2(`frontend-test`·`frontend-typecheck` green 포함) → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 6. 범위 밖 = 연구실 전환(특정 연구실 하나로 좁히는 읽기) 구현 전체 · 관리자의 타 연구실 반출 · 상단 셸 레이아웃 재설계와 주 내비 3탭 구성 변경 · 휴대전화에서 아바타를 다시 보이게 하는 변경 · 상단 사용자 메뉴 부품(카드 ② ⓑ · 후속). ⚠ 실제 초점 링·390px 실화면은 jsdom 으로 재지 않는다 — `[미확인]` 유지(`frontend-visual` 은 로그인 필요 화면을 잴 수 없다)."
+    sources: ["dev-package/intent/2026-09-13-lth-shell-header.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-19
+    name: "계정 관리 4건 ＋ 구성원 권한 표의 비활성 계정 — 본문 중첩 · 표 좌우 이동 안내 · 초기 비밀번호 자동완성 · 자기 줄 가드 · 상태 칩 ＋ 행 잠금 (D-3 · I-4 · I-8 · I-5 · D-4)"
+    status: done
+    stage: stage1
+    owner: "frontend (계정 관리 · 구성원) · D1 / core-api (상태 투영)"
+    entry_conditions:
+      - "판정 불필요 3건(SUMMARY §3 · `D-3`·`I-4`·`I-8`) ＋ Ted 판정 카드 ⑤ ⓐ(화면 가드 최소안) ＋ 카드 ④ ⓐ ＋ 경계 처리 권고 ⓐ-1(상태를 D1 로 투영) · 2026-09-13"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-account-members.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 1(계정 관리) ＋ Task 7(구성원)"
+      - "서버 가드 실재 — `services/core-api/src/colab_core/app/routes/accounts.py` 앵커 `def set_account_status(` 가 자기 계정 비활성화를 400 으로 거절한다(화면 가드만 더한다)"
+      - "⚠ 구성원 절 착수 전 대조 필수 — 상태 투영에 롤 권한 한 칸이 필요한지 `[미확인]`. 해소 = `services/core-api/src/colab_core/kernel/db_credentials.py` 현 조회가 쓰는 롤과 `GET /lab/members` 의 `scoped_db` 롤 대조 ＋ `ops/account-admin-role.sql` 적용 상태 확인(선례 실패 `PLAN-SoT §9 〈384〉` ⑨ⓐ). 롤 신설이 필요하면 구현을 멈추고 보고한다"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend/src/routes/AccountAdminPage.tsx` 의 `<main>` 0건(조기 반환 자리 포함)
+      ⑵ 1100px 이하에서 계정 표 위에 좌우 이동 안내가 보이고 표 래퍼가 키보드 초점을 받는다(공용 패턴 `table-scroll-hint` ＋ `tblwrap` ＋ `role="region"` ＋ `tabIndex={0}` 경유)
+      ⑶ 초기 비밀번호 입력(앵커 `name="initialPassword"`)에 `autoComplete="new-password"` 가 있다
+      ⑷ 자기 줄의 「비활성화」가 처음부터 눌리지 않고 그 이유가 화면에 적혀 있다 — 남의 줄은 눌린다(대조군)
+      ⑸ 계정 관리에서 「비활성」인 사람이 구성원 권한 표에서도 「비활성」 상태 칩으로 보이고 그 줄 권한 스위치가 전부 잠기며 잠긴 이유 한 줄이 보인다 — 활성 행은 편집 가능(대조군)
+      ⑹ 화면 단독 판정을 두지 않는다 — 서버가 비활성 행의 `editablePermissions` 를 빈 배열로 내리고(`services/core-api/src/colab_core/app/routes/members.py` 앵커 `def _grid(`·`def _editable_permissions(`) 저장 경로(앵커 `def save_lab_member_permissions(`)가 상태 검사로 거절한다
+      ⑺ 계약은 additive 1건 — `contracts/seams/fe-core.yaml` 앵커 `LabMember:` 에 선택 열쇠 `accountStatus` 추가(`required` 무변) ＋ 생성물 재생성(손수정 0) · 마이그레이션 0건(`d1_account` 에 상태 열 신설 0 · 조회 시점 투영)
+      ⑻ `frontend/test/account-admin.test.tsx` 확장 4건 ＋ `frontend/test/members-inactive-20260913.test.tsx` 신설 ＋ `services/core-api/tests/test_lab_members.py` 확장(저장 요청 400)이 red 선실측 뒤 green
+      ⑼ 단독 게이트 — 계정 관리 절 `frontend-test` 연속 2회 ＋ `frontend-typecheck` 1회 green · 구성원 절 `frontend-test` · `frontend-typecheck` · `contract-lint` · `contract-breaking` · `generated-up-to-date` · `seam-consistency` · `service-tests-core-api` 각 green.
+    evidence: "2026-09-14 커밋 `b3ff16e9`(계정 관리 4건 — 본문 영역 중첩·표 좌우 이동 안내·초기 비밀번호 자동완성·자기 줄 가드) ＋ `7224d68c`(구성원 권한 표 비활성 상태 칩·행 잠금). red 선실측 = 계정 관리 5건 red — `expected <main class=\"login\">… to have a length of +0 but got 1` · `getByRole('region',{name:'계정 목록 표 스크롤'})` 조회 실패 · `toHaveAttribute(\"autocomplete\",\"new-password\") … Received: null` · `toBeDisabled() — Received element is not disabled` · 비활성 구성원 core-api 3건(표시·잠금 · 저장 400 · 연구실 경계). 수용 검토 go(경계 유지 · 생성물 재생성 diff 0 · 마이그레이션 0건 — 기존 계정 자격 저장소 상태 조회 재사용 · 앱 롤 권한 무변). 게이트 = `7224d68c` `service-tests-core-api` 1232/1232 · 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2 → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 1 ＋ Task 7(구성원 절). 범위 밖 = 계정 표 이메일 열 고정과 모바일용 카드 목록 · 역할·연구실 변경 UI와 메일 발송 전반과 모든 기기 로그아웃 버튼(`BO-2` `note:` 가 범위 밖으로 명시) · 계정 관리 화면을 `frontend/src/auth/login.css` 계열에서 공용 디자인 시스템으로 옮기는 재구성(후속) · `accounts.py` 「운영자 지정은 아직 SQL 수동이다」 주석 정정(후속) · 본인 비활성화 확장(계정명 재입력 ＋ 활성 관리자 셈 · 카드 ⑤ ⓑ · 후속) · 앱 롤이 `account_admin` 스키마를 직접 읽는 경로 · 접근성 검사 게이트 신설. ⚠ 「활성 관리자 0명 불가」는 보장된 성질로 인용하지 않는다 — `set_status` 의 잠금은 대상 행 `FOR UPDATE` 하나다 `[미확인]`."
+    sources: ["dev-package/intent/2026-09-13-lth-account-members.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-20
+    name: "접근성·빈 상태 3건 — 프로젝트 카드 링크화 ＋ 빈 소속 데이터셋 표 문면 ＋ 대표 제목 규약(`/lab-settings` 집행) (D-2 · I-6 · D-6)"
+    status: done
+    stage: stage1
+    owner: "frontend (프로젝트 · 연구실 설정)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑥ ⓐ(카드 한 자리만) ＋ 카드 ⑦(ⓑ 규약 확정 ＋ 이번 회차 ⓐ 범위 집행) · 2026-09-13"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-a11y-empty-states.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 4 ＋ Task 7(제목 절)"
+      - "판정 정본 `[불일치]` 해소 = 카드 ⓐ 를 따른다(표 3자리는 후속) — 기재 자리 = 라운드 파일 「판정 정본의 `[불일치]` 2건 처리」"
+    depends_on: []
+    completion_def: >-
+      ⑴ 프로젝트 카드가 Tab 초점을 받고 Enter 로 상세가 열리며 초점 표시가 보인다(`frontend/src/components/project/ProjectCards.tsx` 링크 역할 ＋ `project.css` 에 `.pcard:focus-visible` 규칙)
+      ⑵ 카드 안에 두 번째 클릭 대상을 세우지 않는다(같은 파일 앵커 `data-testid="card-cta"` 주석 규칙 유지)
+      ⑶ 소속 데이터셋 0건이면 표 대신 안내 문면과 연결 방법이 보이고 0행에 좌우 이동 안내가 출력되지 않는다 — 1건 대조군에서는 안내가 출력된다
+      ⑷ `/lab-settings` 제목 단계가 1단계에서 시작하고 탭 본체 제목이 2단계다 · 단계 변경이 글자 크기를 바꾸지 않는다(주석 제거 후 CSS 원문 계측)
+      ⑸ 대표 제목 규약(화면당 `h1` 1개 · 탭 본체 `h2` · 그 아래 `h3` · 대화상자는 별도 계수)이 `frontend/README.md` `## 규칙` 절에 한 줄로 적힌다
+      ⑹ `frontend/test/project-cards-a11y-20260913.test.tsx` · `project-detail-empty-20260913.test.tsx` · `lab-settings-headings-20260913.test.tsx` 신설분이 red 선실측 뒤 green
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: "2026-09-14 커밋 `67803d24`(프로젝트 카드 링크화 ＋ 소속 데이터셋 0건 빈 상태) ＋ `7224d68c`(`/lab-settings` 제목 단계). red 선실측 시험 신설 = `frontend/test/project-cards-a11y-20260913.test.tsx` · `frontend/test/project-detail-empty-20260913.test.tsx`(카드 링크·빈 상태 2파일) ＋ 제목 단계 `lab-settings-headings-20260913`. 게이트 = 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2(`frontend-test`·`frontend-typecheck` green 포함) → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 4 ＋ Task 7(제목 절). 범위 밖 = 행 전체를 누르는 패턴 표 3자리(`ProjectTable`·`CatalogTable`·`ProjectDatasetTable` · 카드 ⑥ ⓑ · 후속) · 전 화면 대표 제목 규약 적용 잔여분(`/lab` 등 10+ · 카드 ⑦ ⓑ · 후속) · 접근성 검사 게이트 신설(카드 ⑦ ⓒ · 후보 등재만) · 「할 일 함」 표기 변경(정본 용어 유지 · 기획자 회신 · 작업 0) · 로그인 실패 후 이메일 보존(코드가 이미 권고대로 · 관측 1건 대기 · 작업 0). ⚠ `[미확인]` = S-07 목업이 `h3` 를 지정했는지(해소 = `40 COLAB-기획/10_적용전/` 읽기 전용 확인) · 연결 방법 문장의 실제 경로 축자(구현 레인이 확인)."
+    sources: ["dev-package/intent/2026-09-13-lth-a11y-empty-states.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-21
+    name: "검색 범위 줄이 실제 조회 스코프와 다른 연구실·건수를 말한다 — 분모를 같은 스코프에서 계산 (I-2)"
+    status: done
+    stage: stage1
+    owner: "D3 / core-api · frontend (검색)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑧ ⓐ(2026-09-13) — 머리줄 정합을 선행 집행하고 범위 고르개는 카드 ① 과 한 자리에서 결정한다"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-search-scope.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 2"
+      - "계약 무변경 확인 — `contracts/schemas/common.json` 앵커 `AiSearchScope` 의 `labName` 은 `minLength: 1` 문자열이고 `labId` 는 필수 `Ulid` 다"
+    depends_on: []
+    completion_def: >-
+      ⑴ 관리자 검색 응답의 범위 줄 연구실 표기가 그 검색이 실제로 조회한 스코프와 같다(운영자 = 「전체 연구실 (읽기 전용)」 · 일반 구성원 = 소속 연구실 이름)
+      ⑵ 범위 줄 건수가 같은 스코프의 데이터셋 목록 건수와 같다 — `searched_count` 를 `services/core-api/src/colab_core/app/routes/catalog.py` 앵커 `with read_only_scope(` 블록 안(또는 뒤)에서 계산하고 `isDataQuery` 가 거짓인 갈래에서도 값이 채워진다
+      ⑶ `services/core-api/tests/test_search_scope.py` 신설이 연구실 2개 ＋ 양쪽 데이터셋으로 두 스코프 갈림을 재현하고 red 선실측 뒤 green
+      ⑷ `frontend/test/search-scope-line-20260913.test.tsx` 신설이 범위 줄 문자열·건수 일치를 고정하고 0건에도 범위 줄이 먼저 선다
+      ⑸ 계약 무변경 — `labId` 는 필수 `Ulid` 로 남고 스코프 종류 열쇠를 신설하지 않는다
+      ⑹ 단독 게이트 `service-tests-core-api` green ＋ `frontend-test` green.
+    evidence: "2026-09-14 커밋 `ad2e40f8`(검색 범위 줄을 실제로 뒤진 스코프에 맞춤) ＋ 시험 청소 `1e48a64b`(시험 간 되돌리기를 시각 기준에서 기본키 스냅숏 기준으로 변경). red 선실측 = `AssertionError: 운영자가 뒤진 범위는 3건인데 범위 줄은 2건을 말한다` · `assert 'A 연구실' == '전체 연구실 (읽기 전용)'`. 게이트 = `7224d68c` `service-tests-core-api` 1232/1232 · 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2 → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회."
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 2. 범위 밖 = 범위 고르개(전체 / 우리 연구실) 구현과 읽기 창구의 연구실 인자 추가(카드 ⑧ ⓑ · 카드 ① ⓑ 와 한 자리 · 후속) · 검색 품질·순위·평가셋 · 상단 연구실 전환 버튼의 동작 변경 · 범위 객체에 스코프 종류 칸을 더하는 계약 개정 · 검색창 옆 범위 미리 표기. ⚠ 의미 불일치 존속 = 운영자 응답에도 소속 연구실 `labId` 가 실리고 `labName` 만 집합을 말한다(스펙 명시). ⚠ `[미확인]` = 실데이터 25 대 26 의 내역(해소 = dev DB `SELECT lab_id, count(*) FROM d3_dataset WHERE deleted_at IS NULL GROUP BY 1`) · 이 불일치를 자연어 검색 항목의 완료 정의에 포함하는지."
+    sources: ["dev-package/intent/2026-09-13-lth-search-scope.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-22
+    name: "승인 대기 칸 표기를 한국어 상태말로 통일한다 — 취소선·회색·열 제목 유지 (I-3)"
+    status: done
+    stage: stage1
+    owner: "frontend (카탈로그 표)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑨ ⓐ(2026-09-13) — 한국어 상태말로 표기 3종을 하나로 모으고 열 제목은 무변경"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-verified-chip.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 5"
+      - "선행 = 같은 파일군(`ProjectDatasetTable.tsx`·`project.css`)을 만지는 `BF-20` 의 카드·빈 표 절이 통합에 얹힌 뒤 착수(직렬 고정)"
+      - "개정 표시 대상 = `dev-package/PLAN-SoT.md` 앵커 `〈282〉-㉮`(칸 글자 문안만 · 취소선·회색·열 제목 유지) — 원장 기재의 `〈N〉` 은 병합 직전 재실측"
+    depends_on: [BF-20]
+    completion_def: >-
+      ⑴ 승인 대기 행의 칸 글자가 한 표기로 고정된다(제안값 「승인 전」 · 선례 1자리 `frontend/src/components/catalog/columns.ts` 앵커 `if (column === 'Verified')` · Ted 가 문면을 바꾸면 문면만 교체)
+      ⑵ 칸을 비우지 않는다는 기존 이유가 유지된다 — `verified--pending` 의 취소선·회색·꺼진 모양과 `data-testid`·`aria-disabled`·`title` 무변
+      ⑶ 같은 상태의 두 자리가 같은 값을 말한다(`CatalogTable.tsx` ＋ `ProjectDatasetTable.tsx` 앵커 `data-testid="dataset-verified"`)
+      ⑷ ⟨개정 2026-09-14 · 집행 커밋 `0427ac91` 실물과 불일치 정정⟩ 현 표기를 고정한 시험이 고른 표기에 맞춰 green 이다 — 정정 3건(catalog · qa-20260903 · project) ＋ search-verified-20260903 은 무수정 통과(검색 카드 칩 부재 회귀) ／ 종전 ~~현 표기를 고정한 시험 4건(`frontend/test/catalog.test.tsx` 2건 · `qa-20260903.test.tsx` · `search-verified-20260903.test.tsx`)이 고른 표기에 맞춰 green 이고 검색 카드 칩 부재 회귀가 유지된다~~
+      ⑸ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+    evidence: "2026-09-14 커밋 `0427ac91`(승인 대기 칸 글자를 한국어 「승인 전」 한 표기로 통일 ＋ 목록 가공 단계 불일치 표식). red 선실측 = `expected 'Verified' to be '승인 전'` 2건 · `Unable to find an element by: [data-testid=\"lvl-mismatch\"]` 2건. 개정 표시 `〈282〉`-㉮(칸 글자만 · 취소선·회색·열 제목 유지). 게이트 = 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2(`frontend-test`·`frontend-typecheck` green 포함) → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 5(앞절). 범위 밖 = 열 제목 `Verified` 변경(계약 파괴) · 검색 결과 카드·상세 헤더의 배지 규칙 변경(`approval/VerifiedBadge.tsx`·`search/SearchHitCard.tsx` 의 반대 규칙은 의도된 것) · 승인 요청·취소 흐름 자체의 동작 변경 · 상세 응답 승인 한 벌의 구조 변경 · 승인 상태 3값(승인됨 / 검토 대기 / 요청 없음 · 카드 ⑨ ⓑ · 목록 계약 열쇠 ＋ 묶음 질의 · 후속). ⚠ 문면은 Ted 확정 대기 — 레인은 제안값으로 구현하고 상수 위에 대기 주석을 붙인다."
+    sources: ["dev-package/intent/2026-09-13-lth-verified-chip.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+  - id: BF-23
+    name: "가공 단계 4건 — 기본값 계산값 추종 ＋ 사유 한 줄 ＋ 목록 불일치 표식 ＋ 상세 편집 칸 (I-1)"
+    status: done
+    stage: stage1
+    owner: "frontend (등록 · 데이터셋 상세 · 카탈로그 표)"
+    entry_conditions:
+      - "Ted 판정 카드 ⑩ ⓐ(2026-09-13) — 기본값만 이번 회차이고 사유 입력 절차는 다음 회차 판정"
+      - "승인 intent `dev-package/intent/2026-09-13-lth-processing-level-mismatch.md`(승인 2026-09-13) · 실행 계획 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` Task 3 ＋ Task 5(목록 표식)"
+      - "계약 무변 확인 — `contracts/seams/fe-core.yaml` 앵커 `DatasetUpdate:` 의 `processingLevelUserSet` 실재 · 목록 응답에 세 값이 이미 실린다(`routes/catalog.py` 앵커 `**d3_catalog.level_view(core, summary),`)"
+      - "개정 표시 대상 = `dev-package/prd/PRD-260905-적용전기획.md` 앵커 `미결-2 ⓐ`(기본 선택값만) ＋ 원장 반전 기재 자리 `PLAN-SoT §9 〈194〉` — `〈N〉` 은 병합 직전 재실측"
+    depends_on: []
+    completion_def: >-
+      ⑴ 확인된 부모가 1건 이상이고 부모 Lv 를 모두 알면 등록 가공 단계 기본 선택값이 계산값(주입력 부모 최대 Lv ＋ 1)으로 선다 — ⟨개정 2026-09-14 · 카드 ⑩ ⓐ 축자와 불일치 정정⟩ 주입력 부모 0건이면 계산값 `Lv0` 이 기본 선택값 · 부모 Lv 미지 시 `Lv2` 유지 · 사용자가 계산값과 다른 단계를 고르면(부모 0건 포함) 등록 화면·상세에 불일치 안내와 사유 한 줄이 선다 · 막지 않는다 ／ 종전 ~~부모 0건 또는 부모 Lv 미지 시 `Lv2` 유지 ＋ Lv0 경고 0건~~ · 사람이 한 번 고른 값은 덮어쓰지 않는다
+      ⑵ 불일치 안내 한 줄이 두 값 ＋ 각 값의 근거를 말하고 상세와 등록 두 자리가 같은 문장을 쓴다(공용 함수 1개 · `frontend/src/components/common/processingLevel.ts`)
+      ⑶ 데이터셋 목록의 가공 단계 칸이 불일치 행에 표식 ＋ 보조기기용 이름을 그린다 — 서버 무변 · `false` 행은 0건(대조군)
+      ⑷ 상세 편집에 가공 단계 칸이 있고(`frontend/src/components/detail/editFields.ts` · 값 집합 `Lv0`~`Lv3`) 저장 후 상세 표시값이 바뀌며 불일치 줄이 재평가된다
+      ⑸ 차단 0건 · 사유 입력 요구 0건 — 불일치 상태에서 등록·저장이 계속 성공한다(기존 판정 유지 회귀 단언)
+      ⑹ `frontend/test/processing-level-default-20260913.test.tsx` · `lv-mismatch-reason-20260913.test.tsx` · `catalog-level-mismatch-20260913.test.tsx` 신설 ＋ `detail-edit.test.tsx` 확장이 red 선실측 뒤 green
+      ⑺ 단독 게이트 `frontend-test` 연속 2회 green ＋ `frontend-typecheck` 1회 green.
+      ⟨증보 2026-09-14⟩ 계산값 추종 중에는 부모 선택 상한 미적용 · 사람이 단계를 고른 뒤에만 적용(카드 ⑩ ⓐ 「차단은 늘지 않는다」)
+    evidence: "2026-09-14 커밋 `09876f24`(기본값 계산값 추종 ＋ 사유 한 줄 ＋ 상세 편집 칸) · `1eb8715d`(부모 0건 기본값 계산값 Lv0 ＋ 등록 화면 불일치 줄 · 스펙 오기 정정) · `14d3e063`(추종 중 부모 선택 상한 해제) · `a07e87a4`(추종 중 상한 안내 줄 숨김) · 문서 `e85f38f0`·`b936c1b5`·`5604fec3`·`de030f33` · 목록 표식 `0427ac91`. red 선실측 = `AssertionError: expected 'Lv2' to be 'Lv0'` · `Unable to find an element by: [data-testid=\"lin-lv-mismatch\"]` · 상한 해제 `Tests 2 failed | 11 passed` · 안내 줄 `expected <p class=\"lin-scope-lv\" …> to be null`. 개정 표시 PRD `미결-2` 행 ＋ `기본 선택값 = **Lv2**` 문장 ＋ `〈194〉`. 게이트 = 최종 커밋 `a07e87a4`(트리 `4af8a5bb`) 전수 1회 `-j 4` green 61 / red(판정) 1 / red(준비) 2(`frontend-test`·`frontend-typecheck` green 포함) → 재실행 `service-tests-viz-render` green 444/444(준비 원인 `-e .` 누락) · `frontend-visual`·`harness-eval` 면제(green 계수 제외) · 보고 `dev-package/reports/lth-review-260913/full-a07e87a4/`. 원장 `〈397〉`. dev 반영 dev-20260914-1 · deploy_doctor 15/15 1회. · frontend-test 연속 2회 green = 최종 트리 a07e87a4 에서 전수 내 1회 ＋ 단독 1회(117파일 · 1399건 · 실패 0 · 보고 dev-package/reports/lth-review-260913/final-a07e87a4-frontend-test-2)"
+    deadline: null
+    note: "라운드 R-LTH-REVIEW-1 Task 3 ＋ Task 5(목록 표식). 범위 밖 = 불일치 상태에서 등록·저장을 차단하는 동작(판정이 금지) · 사유 입력 ＋ 한 번 더 확인 절차와 사유 저장 칸 ＋ 마이그레이션 1건(카드 ⑩ ⓑ · 다음 회차 판정 · 후속) · 파생값·불일치 결과를 테이블에 저장하는 구조 변경 · 분류 3축 편집 칸 신설 · 검색 결과 카드의 불일치 표기 · 프로젝트 상세 표·계보 노드의 `level_pair` → `level_view` 확장 · 「CoLAB에서 가공됨」 표식과 계보 삭제 시 부모 이름 보존(`stage: after_stage2` 별 항목). ⚠ 사유 한 줄 문면은 Ted 확정 대기 — 레인은 제안 축자로 구현한다. ⚠ `[미확인]` = 사례 데이터셋 `TEST Stage12 Preview HDF5 20260911` 의 실제 저장값(dev DB 조회로 닫는다)."
+    sources: ["dev-package/intent/2026-09-13-lth-processing-level-mismatch.md", "dev-package/prd/specs/2026-09-13-lth-review-1.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md"]
+
+  - id: DR-1a
+    name: "dev 전용 초기화 도구 — fail-closed 가드와 로컬 증명"
+    status: done
+    stage: after_stage2
+    owner: "운영 / core-api ops"
+    entry_conditions: ["intent 2026-09-13 dev 초기화·재적재가 확정 상태다", "integration/r-dev-reset 이 main tip 기점으로 서 있다"]
+    depends_on: []
+    completion_def: "넷을 모두 만족한다. ⑴ service-tests-core-api 단독 green 3회 연속 ⑵ exec-bit green ⑶ 가드 시험이 구현 전 RED 였음이 로그로 남는다 ⑷ 일회용 postgres 로컬 증명에서 schema-diff green ＋ deploy_doctor ⑥⑦⑧⑨ 로직 green ＋ 픽스처 행 0."
+    evidence: "2026-09-13 done — 레인 `lane/wu-r1a-reset-tool`(커밋 `e01bf3d1`·`e3b027ec`·`e9e29906`·`559b7ef8`). ⑴ 도구 = `services/core-api/ops/reset_dev_environment.py` — 단계 `count`·`schema`·`s3-plan`·`s3-apply` · 접속 문자열은 파일 경로로만(`--platform-url-file`·`--ai-url-file`) · `allow_abbrev=False`. ⑵ 가드 시험 = `services/core-api/tests/test_reset_dev_environment_guard.py` **25건**(파일 실측 `grep -c '^def test'`). 구현 전 RED 축자 = `dev-package/sessions/DR-1a-local-proof.md §0` ㄴ `24 failed in 6.05s`(전건 `NotImplementedError`) ＋ ㄹ 회귀 1건 RED 뒤 `25 passed`. ⑶ 로컬 증명 = `dev-package/sessions/DR-1a-local-proof.md` — 일회용 postgres(`--rm` ＋ tmpfs ＋ `PGDATA` · 호스트 포트 미개방) · `schema-diff` green(두 체인 드리프트 0) · `deploy_doctor` ⑥⑦ head `0031_search_evidence`/`0007_merge_vocab_and_category` · ⑧ `rls_coverage.py` rc 0(표 50건) · ⑨ `db-bootstrap.sh verify` `rolsuper=f rolbypassrls=f` · 픽스처 행 0 전건. dev 실환경 무접촉 · AWS 호출 0건. ⑷ `service-tests-core-api` 3회 연속 green(3/0/0)·`exec-bit` green 은 **DR-1a 레인 최종 보고로 회수한 값이고 레포 파일에는 3계수 기록이 없다** — DR-1b 레인은 재측정하지 않았다(후속 = 레인 3계수를 `dev-package/reports/<회차>/<레인>/` 에 배출처로 남기는 규약). 원장 `PLAN-SoT §9 〈395〉`."
+    deadline: null
+    note: "도구를 실환경에 대고 돌리지 않았다 — 실행은 DR-2 다. 파이썬 도구는 계수·스키마 재생성·S3 만 하고 extensions·마이그레이션·app-grants 는 기존 스크립트를 부른다(앱 이미지에 alembic 이 없다). 첫 실행에서 나온 결함 1건 = 재생성이 `public` 스키마 주석을 지워 `schema-diff` 가 드리프트로 읽은 것 — 재생성 DDL 끝에 주석을 되돌리고 회귀 시험을 더했다. 남은 `[미확인]` = RDS 에서의 `DROP SCHEMA`·`CREATE EXTENSION` 권한(WU-R2 실측 1회가 최종 확인)."
+    sources: ["dev-package/intent/2026-09-13-dev-reset-reference-scenario.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-1a-local-proof.md"]
+  - id: DR-1b
+    name: "dev 초기화 규칙 예외·원장·대장 등재와 첫 자격 삽입 절차 실측"
+    status: done
+    stage: after_stage2
+    owner: "운영 / 문서"
+    entry_conditions: ["DR-1a 가 통합 브랜치에 얹혔다"]
+    depends_on: [DR-1a]
+    completion_def: "work-item-consistency green ＋ 원장 게이트 3종 green ＋ .claude/rules/deploy.md 예외 문단과 PLAN-SoT §9 행의 문면이 같은 값을 말한다 ＋ 첫 로그인 자격 삽입 절차가 축자로 적혔다."
+    evidence: "2026-09-13 done — 레인 `lane/wu-r1b-ledger`. ⑴ 규칙 예외 = `.claude/rules/deploy.md` 「깨뜨리면 안 되는 것」 11번 **뒤**에 증보 문단(11번 문면 0글자 수정) — 게이트 넷·`_ops/` 무접촉·exact-key 계획·승인 1회 소진. ⑵ 원장 = `PLAN-SoT §9` 2행(dev 한정 예외 ＋ 회차) · 번호는 병합 직전 재실측(`dev-package/prd/tools/max-decision.sh`). ⑶ 두 문면 대조 = 게이트 넷·무접촉 접두사·불변(`purge_datasets.py`)·승인 1회 소진이 규칙과 원장에 같은 값으로 있다. ⑷ 첫 로그인 자격 삽입 절차 = `dev-package/scenarios/dev-minimal-data-setup.md` ③ 에 `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 「## 3. 계정 생성 — 제품과 같은 경로」를 축자로 옮겼다(비밀번호는 표준입력 한 줄 · argv·파일·로그 미기재). ⑸ `infra/staging/provision-lab.sql` 결함 1건 수정 — `BEGIN;` 직후 `SET LOCAL app.current_lab` ＋ `COMMIT` 뒤 계수 블록 앞 세션 `SET` · RED(psql exit 3 · 축자 `new row violates row-level security policy for table d1_lab_profile`) → GREEN(exit 0 · `d1_lab` 1 · `d1_lab_profile` 1 · 재실행 `INSERT 0 0` 멱등) · 증명 `dev-package/sessions/DR-1b-provision-lab-proof.md`. ⑹ 게이트 = `work-item-consistency`·`work-item-selftest`·`planning-freshness`·`exec-bit` 한 실행 **green 4 / red(판정) 0 / red(준비) 0**(대장 194건 · ㈕ stage 3 대조 24건 · `.sh` 211건 전부 100755). ⚠ **`work-item-consistency` ㈐ 는 `DR-1a`·`DR-1b` 를 「검사 대상 밖」으로 넘긴다** — 식별자 정규식이 「글자-숫자소문자」를 못 읽는다(라운드 §11 후속). 원장 `PLAN-SoT §9 〈395〉`·`〈396〉`."
+    deadline: null
+    note: "DR-1a 와 직렬. 〈395〉 을 하드코딩하지 않는다 — 병합 직전 재실측한다. 이 레인은 dev 실환경·공용 DB 를 건드리지 않았고 AWS 호출 0건이다."
+    sources: ["dev-package/reports/r-login-backoffice/task1-deploy/operator.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-1b-provision-lab-proof.md"]
+  - id: DR-2
+    name: "dev 초기화 1회 실행"
+    status: done
+    stage: after_stage2
+    owner: "오케스트레이터 ＋ Ted"
+    entry_conditions: ["DR-1a·DR-1b 가 main 에 병합됐다", "그 sha 가 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다 — 수령 완료(축자 「순차적으로 다 이어서해 3의 초기화도 진행하고」 2026-09-13 · PLAN-SoT §9 〈396〉-㉲)", "실행 명령 정본이 레포에 있다 — dev-package/sessions/DR-2-runbook.md(배포 → 초기화 → 재적용 → SQL 선행 → 확인)", "deploy_doctor 15/15 기준선이 기록돼 있다 — dev-package/sessions/DR-2-tree-sync-2026-09-13.md"]
+    depends_on: [DR-1a, DR-1b]
+    completion_def: "데이터셋 0건(경계 실린 경로 확인) ＋ uploads/·previews/ 객체 0 ＋ 진행 중 멀티파트 0 ＋ _ops/ 객체 수 무변 ＋ deploy_doctor 15/15 한 번의 실행 ＋ 원장 행 1건."
+    evidence: "2026-09-13 done — 실행 sha `81784897ec74` · 배포 기록 `dev-package/sessions/DR-2-deploy-2026-09-13.md` · 실행 기록 `dev-package/sessions/DR-2-run-2026-09-13.md`. ⓵ 배포 = 3회 시도 중 3차 완주(1차 호스트 QEMU 미등록 · 2차 개발 기계 자격증명 공급자 불일치 · 계획 id `dr2-dev-81784897ec74-3` `verified`) · `deploy_doctor` 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 **한 번의 실행** · exit 0 · ⑮ `81784897ec74 ∈ main`. ⓶ 실행 전 계수 = `d3_dataset` **27** · `d3_file` **450** · `d6_project` **6** · `d4_lineage_edge` **9** · 연구실 **2** · S3 `uploads/` **840** · `previews/` **437** · 진행 중 멀티파트 **0**. ⓷ 절차 = 앱 4단위 정지 → 두 체인 스키마 재생성 → `extensions` → 마이그레이션 2체인(head `alembic_version_platform` = `0031_search_evidence` · `alembic_version_ai` = `0007_merge_vocab_and_category`) → `app-grants` exit 0 → `account-admin`(`DR-2h` 수정 뒤 exit 0 · 축자 「account admin role: ok」) → `up.sh` 4단위 healthy(저장 모드 `s3`) → `deploy_doctor` 15/15. ⓸ S3 = `s3-plan` 계획 키 **1277**(`uploads/` 840 ＋ `previews/` 437 · 계획 sha256 `658884b2740e…` · 두 접두사 밖 키 0) → `s3-apply` exit 0 · `failures` **[] 0건** · 미삭제 키 0 · `_ops/` **66 — 실행 전과 무변** · 버킷 전체 객체 66. ⓹ 실행 후 계수 = `d3_dataset`·`d3_file`·`d6_project`·`d4_lineage_edge`·연구실 **전건 0** · `uploads/` 0 · `previews/` 0 · 멀티파트 0. ⓺ SQL 선행 4단계 = 연구실 「고려대학교 수문학연구실」 1행 · 계정 「전창현」(역할 `교수`) 1행 · 로그인 자격 1행(`login_name` `pi@hymets.invalid` · `kdf` `scrypt` · `n`/`r`/`p` = `16384`/`8`/`1` · `must_change_password` **true** · `session_version` **1** · 초기 비밀번호는 표준입력 한 줄로만 전달했고 argv·환경변수·로그·문서에 0건) · `account_admin.service_operator` 1행. `services/core-api/ops/provision-account.sql` 은 연구실 SQL 이 같은 계정을 이미 심어 **건너뛰었다**(같은 연구실 두 번째 계정 방지). ⓻ 마감 확인 = `deploy_doctor` 축자 「항목 15 — ✓ 15 · ✗ 0 · ─ 0」 **두 번째 한 번의 실행**(초기화 뒤 · exit 0 · ⑭ 백업 0.9시간 전 · 객체 63건) ＋ 외부 진입 CloudFront `/api/v1/me` **401**(미인증 거절 · API 생존). ⓼ 승인 = `PLAN-SoT §9 〈396〉`-㉲ Ted 명시 GO **1회 소진 완료** · 파괴적 단계 재시도 0 · 부분 실행 합산 0 · staging 무접촉 · `_ops/` 무접촉 · 다른 버킷 무접촉. ⓽ 릴리스 태그(로컬) = `dev-20260913-3` → `81784897ec747709906717a96e27ede75a0c832b`(미push). 원장 `PLAN-SoT §9 〈396〉`-㉸."
+    deadline: null
+    note: "비가역 · 승인 1회 소진(소진 완료 — 다시 돌리려면 새 GO 와 새 §9 행이 필요하다). 실행 중 런북 정정거리 **6건**이 나왔고 런북 본문은 이 회차에서 고치지 않았다 — 라운드 `dev-package/prd/rounds/R-DEV-RESET.md` §11 에 후속으로 적었다. ⚠ `migrate-platform` 을 2회 냈다 — 1회차 직후 검증 질의가 체인별 버전 표 이름을 틀려(`alembic_version` · 정본은 `alembic_version_platform`) 미적용으로 오판한 것이고, 2회차는 `upgrade head` 멱등 재실행이라 상태 변화 0 이다(파괴적 단계 재시도 아님). 버저닝 탓에 삭제한 객체의 이전 판이 30일 남는다."
+    sources: ["dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/sessions/DR-2-deploy-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-2h
+    name: "계정 관리자 롤 SQL 을 RDS 마스터에서 실행 가능하게 고친다 (hotfix)"
+    status: done
+    stage: after_stage2
+    owner: "운영 / core-api ops"
+    entry_conditions: ["DR-2 A 단계에서 account-admin 이 exit 3 으로 멈춘 실물이 기록됐다", "고칠 자리가 services/core-api/ops/account-admin-role.sql 한 파일로 좁혀졌다"]
+    depends_on: [DR-2]
+    completion_def: "일회용 postgres 로컬 증명에서 RED/GREEN 이 둘 다 실측된다 — 원본이 비슈퍼유저로 exit 3 ＋ 고친 판이 exit 0 ＋ 멱등 ＋ 권한 14행 ＋ 조건부 문 발화 확인 ＋ 슈퍼유저 경로 회귀 0 ＋ fail-closed 유지. service-tests-core-api·exec-bit·work-item-consistency 가 한 번의 실행으로 green."
+    evidence: "2026-09-13 done — 레인 `lane/wu-dr2h-account-admin-rds` · 증명 `dev-package/sessions/DR-2h-account-admin-rds-proof.md` · 대상 파일 `services/core-api/ops/account-admin-role.sql` 한 개. ⓵ 결함 = `infra/dev/db-bootstrap.sh account-admin` → `infra/staging/db-bootstrap.sh` 가 그 SQL 을 RDS 마스터로 돌리다 **exit 3** · 축자 「`ERROR:  permission denied to alter role` / `DETAIL:  Only roles with the SUPERUSER attribute may change the SUPERUSER attribute.`」. 원인 = PostgreSQL 16 의 `AlterRole` 은 `SUPERUSER`/`NOSUPERUSER` 를 **적었다는 사실만으로** 거절하고, RDS 마스터는 `rds_superuser` 의 멤버일 뿐 `rolsuper=f` 다. 그 문이 **모든 GRANT 앞**이라 실패 시 계정 관리자 롤의 표 권한이 **0건**이고 로그인 경로가 동작하지 않는다. ⓶ 수정 = 한 문을 둘로 — 비밀번호는 무조건(`ALTER ROLE %I PASSWORD %L`) · 나머지 속성은 실제로 어긋났을 때만(`pg_roles` 조건부). `NOSUPERUSER` 는 어느 `ALTER ROLE` 에도 남기지 않았고 `CREATE ROLE … WHERE NOT EXISTS` 분기는 무수정이다. fail-closed 는 파일 끝의 기존 superuser 검사가 그대로 맡는다. ⓷ 로컬 증명(일회용 `postgres:16-alpine` 16.15 · `--rm` ＋ tmpfs · 호스트 포트 미공개 · dev·staging·공용 DB 무접촉 · AWS 호출 0건) = ① **RED** 원본을 비슈퍼유저 `bootstrapper` 로 → dev 와 **같은 문 · 같은 메시지 · 같은 exit 3** · 직후 표 권한 0건 ② **GREEN** 고친 판 같은 롤 → exit 0 · `ALTER ROLE` 1회만 발화(조건부 문 미발화) ③ 멱등 2회차 exit 0 ④ 권한 실측 = 6표 14행(`account_admin.login_credential`·`login_session` INSERT·SELECT·UPDATE · `service_operator` DELETE·INSERT·SELECT · `d1_account` INSERT·SELECT · `d1_lab` SELECT · `d2_member_role` INSERT·SELECT) · 롤 속성 `rolsuper=f rolcreatedb=f rolcreaterole=f rolinherit=f rolbypassrls=t rolcanlogin=t` ⑤ 조건부 문 발화 확인 = `NOINHERIT` 를 일부러 어긋낸 뒤 슈퍼유저로 exit 0 · `rolinherit=false` 복구 ⑥ 슈퍼유저 경로 회귀 0 = 롤을 지운 자리에서 `CREATE ROLE` 분기까지 태워 exit 0 · 권한 14행 복원 ⑦ fail-closed 유지 = 롤을 `SUPERUSER` 로 만든 뒤 재실행 시 축자 「`ERROR:  계정 관리자 롤이 superuser다`」 exit 3. ⓸ 게이트 = `service-tests-core-api`(수집 1221 · 실행 1221 · skipped 0 · failed 0 · errors 0) · `exec-bit`(`.sh` 212건 전부 100755) · `work-item-consistency`(불일치 0) — **한 번의 실행 · green 3 / red(판정) 0 / red(준비) 0** · 배출처 `dev-package/reports/r-dev-reset/wu-dr2h/`. ⓹ dev 적용 = `DR-2` A 단계 재개에서 배포 트리 동기화 후 `account-admin` exit 0(md5 대조 개발 기계 = EC2 `7b868431a1b83562dc5aa2f8337bc130`). 원장 `PLAN-SoT §9 〈396〉`-㉸."
+    deadline: null
+    note: "발견 자리 = `DR-2` A 단계(dev 초기화 실행 2026-09-13) · 성격 = 이번 초기화가 만든 결함이 아니라 **RDS 경로에서 그 스크립트가 통과할 수 없는 구조**다. 로컬·staging 에서 잠복한 이유 = 그 경로의 실행자가 진짜 슈퍼유저(`postgres`)라 같은 문이 통과한다. ⚠ **후속(이 항목이 고치지 않았다)** — 조건부 속성 `ALTER ROLE` 은 RDS 마스터에서 여전히 못 돈다(축자 `Only roles with the BYPASSRLS attribute may change the BYPASSRLS attribute.`). 지금 dev 는 속성이 이미 맞아 그 문이 발화하지 않으므로 이번 초기화는 막히지 않았다. **어느 검사에 걸리는가** = 게이트에 없다 — `infra/staging/db-bootstrap.sh account-admin` 의 종료코드 하나뿐이고 속성이 어긋난 뒤에야 울린다. 계정 관리자 롤의 속성 드리프트를 정기적으로 보는 자리도 없다(`deploy_doctor` 15 항목에 없고 `db-bootstrap.sh verify` 는 `colab_app`·`colab_owner` 두 롤만 본다). 라운드 §11 후속."
+    sources: ["dev-package/sessions/DR-2h-account-admin-rds-proof.md", "dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-3
+    name: "화면 투입 시나리오 문서와 dev 실투입"
+    status: done
+    stage: after_stage2
+    owner: "에이전트 러너(agent-browser) ＋ 오케스트레이터"
+    entry_conditions: ["DR-2 완료", "원천 드라이브 03 Reference-Data 연결"]
+    depends_on: [DR-2]
+    completion_def: "dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며, 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 시나리오 문서가 단계·입력값·기대 화면 3열로 레포에 있다."
+    evidence: "⓵ 시나리오 문서 = `dev-package/scenarios/dev-minimal-data-setup.md`(선행 4건 ＋ 로그인 ＋ 프로젝트 4 ＋ 데이터셋 28 ＋ 계보 18 ＋ 미리보기 5종 ＋ `deploy_doctor`). ⓶ 선행 충족 = `DR-2` done — dev 계수 전건 0 · 연구실 1 · 계정 1(교수) · 로그인 자격 1(첫 비밀번호 변경 강제) · 서비스 운영자 1 · `deploy_doctor` 15/15. ⓷ 투입 도구 실측 = `dev-package/reports/r-dev-reset/agent-browser-capability.md` — `agent-browser` 0.27.0 전역 설치 · Chrome for Testing 152 자동 수령 · `doctor` 10 pass / 0 fail · CDP 직결(Playwright·Puppeteer 의존 0) · 명령 `open`·`snapshot -i`·`click`·`fill`·`upload <선택자> <파일...>`·`wait`·`screenshot`·`find testid` 실재 · 외부 드라이브 경로 접근 성립(실측 `surface.grib` 149,514,336 B) · 도구 쪽 파일 크기·건수 상한 기재 0 · dev 로그인 화면 200 ＋ 문면 일치. ⓸ 실투입 결과(목록 화면 데이터셋 28건 · 계보 간선 18건 · 미리보기 5종)는 **미기록** — 러너 실행 중이다. ⓹ 러너 정본 = `dev-package/tools/dev-seed/`(2026-09-13 회차에 실제로 dev 를 채운 도구를 레포에 들였다) — `runner.py`(화면 5단계) · `build_plan.py`(등재표 → 계획) · `plan-manifest.yaml`(데이터셋 28 · 간선 18 · 참조자료 뿌리 기준 상대 glob) · `watch.py` · `README.md`. 자리값은 전부 인자·환경변수다(`COLAB_REF_ROOT` · `--work-dir` · `--base-url`) · 레포 안 절대경로 0 · 자격·상태·갈무리는 `.work/`(`.gitignore` 제외). 실측 = `python3 build_plan.py --dry-run` 이 데이터셋 28 · 간선 18 · 파일 543건 · 자료 3,641,736,593 B(재고 조사 값과 일치)를 낸다. ⭑ **⟨실행 완료 2026-09-13 22:32 ~ 2026-09-14 00:35 KST · 기록 `dev-package/sessions/DR-3-run-2026-09-13.md`⟩ ⓸ 의 「미기록」이 채워졌다 — 원문은 지우지 않는다.** **⓺ 실투입 실측** = 로그인 1(첫 비밀번호 변경 강제를 화면에서 소진) · 프로젝트 **4/4**(`precipitation` `01M2DFGX8A4GZR7QFFGC1WYVKM` · `vegetation` `01M2DFMWRP37TN7SB27SQBW46X` · `drought` `01M2DFN11E49CNKWG5FAW88VWR` · `포멧테스트` `01M2DFN5VJK7W40J46ZQ23Q047`) · 데이터셋 **26/28**(파일 541건 · 5,126,827,697 B ＝ 4.77 GB · 소요 2시간 03분) · 계보 간선 **18/18**(`edges_missing` 0건) · 미리보기 5종 **3패스 기록 완료**. **⓻ 완료 정의 대조 — 미달 항목을 그대로 적는다.** ⑴ 「데이터셋 28건」 → **26건**(미달 2 · 사유는 ⓼). ⑵ 「계보 간선 18건」 → **18건 충족**. ⑶ 「미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거)」 → **충족** — 기록 조건이지 렌더 조건이 아니다. 실측 렌더 성립 **2/5**(`grib` 3패스 중 1회 · `nc` 1패스 중 1회) · **미렌더 3종 = `bin`·`tif`·`hdf4`**. ⑷ 「시나리오 문서가 단계·입력값·기대 화면 3열」 → `dev-package/scenarios/dev-minimal-data-setup.md` 로 충족. **⓼ 차단 2건 — 제품이 GeoPackage 를 받지 않는다.** 대상 = `SPI-4weeks`·`SPEI-4weeks`(순번 13·14 · `.gpkg` · 합 49,594,368 B · `drought` 프로젝트). 화면 축자 = 「이 확장자는 지도로 못 그려요」 · 「파일 분석을 마치지 못했어요 · 형식 인식 실패」. 분석 단계에서 `up-analysis-failure` 가 서고 **등록 단추(`reg-open`)가 비활성**이라 다음 단계로 갈 수 없다 — 사람이 같은 화면을 조작해도 같은 자리에서 멈춘다. ⟹ `drought` 프로젝트 데이터셋 **0건**. 우회(API·백엔드 삽입) **0건**(`〈396〉`-㉯ ⑸ 화면단 원칙). 후속 = `FMT-GPKG`. **⓽ 데이터 결함 1건** = 순번 1 `HSR 레이더 반사도 원자료`(`01M2DGEMD7ESC35R55C7VDAP1Q`)가 **어느 프로젝트에도 연결되지 않은 채** 등록됐다(첫 실행 회차에서 연관 프로젝트 담기 조작이 발화하지 않았다 · 러너 로그 축자 `! 연관 프로젝트 표(reg-proj-table) 미확인`). ⛔ **화면에 고칠 자리가 없다** — 이미 등록된 데이터셋을 프로젝트에 붙이는 동작이 제품에 없다. 후속 = `DS-ATTACH` ＋ `03-HANDOFF §4` 판정 대기. **⓾ 미리보기 뒷단 한계**(별도 진단 · 읽기 전용 `dev-package/reports/r-dev-reset/preview-diagnosis.md`) = 중계 타임아웃 **10초 고정**(`relay.py:28` `RELAY_TIMEOUT_SECONDS = 10`)인데 viz-render 실소요 **20,037~38,391 ms** 라 core-api 가 **503** 을 낸다 · viz-render **OOM kill 2회**(`anon-rss` 1.5 GB · 한도 `COLAB_MEM_VIZ=1536m` · `RestartCount=3`) · **413 4회**(두 상한 중 어느 쪽인지 응답 본문이 로그에 없어 `[미확인]`). ⚠ **S3 실물이 화면 관측과 반대다** — 「그려짐」인 `nc` 는 산출물 0건이고 「안 그려짐」인 `tif`·`hdf4` 는 판정 시점에 이미 3층 산출물이 있었다 ⟹ 미표시의 원인은 산출물 부재가 아니라 그 순간의 요청이 끊긴 것이다(`[추론]`). 후속 = `PV-2`. **⑪ 러너 정정 7건**(분석 완료 표시 지목점 · 계수는 화면 머리말 「N건」 · 프로젝트 id 는 상세 URL · 단계 이동은 `reg-next` · 「＋ 추가」는 focus＋Enter · 격자 재확인 재수행 · 대기를 파일 건수에 비례 ＋ 격자 경계 위생 실패는 등록을 멈추지 않는다)은 전부 `dev-package/tools/dev-seed/` 정본에 반영됐다. **⑫ 무접촉** = staging·prod 접촉 0 · AWS 쓰기 0 · dev DB 직접 쓰기 0. 원장 `PLAN-SoT §9 〈396〉`-㉼~㉿."
+    deadline: null
+    note: "⭐ ⟨개정 2026-09-13 · Ted 결정⟩ **투입 주체 = 에이전트**(브라우저 자동화 도구 `agent-browser` 로 실제 화면을 조작한다) · 축자 「b로하자 b로 해야지, 그리고 playwright 가 아니라 agent browser가 더빠르지않냐 이걸로하자」 · 등재 `PLAN-SoT §9 〈396〉`-㉹. ／ 종전 ~~사람 실행 · 체크리스트 문서 · 자동화는 후속~~ — 종전 `〈396〉`-㊷ ⓑ 「화면 투입의 브라우저 자동화」를 **이번 회차로 당겼다**. ⭐ **화면단 원칙은 유지된다** — 백엔드 시딩·DB 삽입·API 직접 호출·`load-seed.py` 를 쓰지 않는다. 화면 밖 선행은 SQL 4건뿐이고 그것은 `DR-2` 에서 끝났다. ⭐ **전건 유지 재확인** — 축자 「업로드는 다하고, 줄이지 말고, 나머진 권고대로 해」 · 파일 구성 전건(화면 업로드 총량 ≈ 6.1 GB) · 건수 축소 0. 러너 산출물(갈무리·로그·초기 비밀번호)은 **세션 스크래치**에 두고 레포에 싣지 않는다. ⭑ **⟨마감 2026-09-14⟩ 완료 정의의 「데이터셋 28건」은 26건으로 닫는다 — 부분 완료를 숨기지 않는다.** 남은 2건은 러너가 못 한 것이 아니라 **제품이 `.gpkg` 를 받지 않아 화면에서 성립하지 않는 것**이고, 그 차단 해제는 `CLAUDE.md §5`(축자 「차단이면 차단 해제를 WU 로 만든다」)대로 별도 항목 `FMT-GPKG` 가 진다. 같은 방식으로 `DS-ATTACH`(프로젝트 연결 화면 부재)·`PV-2`(미리보기 뒷단 한계)가 각각 결함 1건과 미렌더 3종을 진다. ⚠ **이 항목을 「28건 달성」으로 읽지 않는다** — 값은 **26/28** 이고 미달 2 의 사유는 evidence ⓼ 에 있다."
+    sources: ["dev-package/reports/r-dev-reset/agent-browser-capability.md", "dev-package/reports/reference-data/2026-09-13-inventory-v2.md", "dev-package/prd/rounds/R-DEV-RESET.md", "dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/reports/r-dev-reset/preview-diagnosis.md", "dev-package/tools/dev-seed/README.md"]
+  - id: DR-1c
+    name: "platform 0031_search_evidence 의 마이그레이션 드리프트 오라클 신설"
+    status: done
+    stage: after_stage2
+    owner: "플랫폼 개발"
+    entry_conditions: ["0031_search_evidence 와 db/platform/schema.sql 이 통합 브랜치에 있다"]
+    depends_on: [DR-1b]
+    completion_def: "`0031-drift.sh` 가 `migration-drift` 실행 안에서 green ＋ 그 오라클이 0030 판·downgrade 판에서 실패한다(되돌리면 red) ＋ `0030-drift.sh` ㈑ 가 같은 실행에서 green ＋ exec-bit green ＋ work-item-consistency green."
+    evidence: "2026-09-13 done — 레인 `lane/wu-r1c-drift-0031`. ⑴ 결함 = `0031_search_evidence`(main `77b7c606`)와 `db/platform/schema.sql`(`dee33683`)이 오라클 없이 들어왔고, `0030-drift.sh` ㈑ 가 머지 지점 DB 와 head 까지 재생성된 `schema.sql` 을 견주어 red 였다. RED 축자 = `[0030-drift] ㈑ schema.sql 과 order_a 가 갈렸다 ✗` ＋ `::error::0030-drift red — 실패 2건:`(차분 = `increment_d3_file_content_revision()` 외 0031 전량). ⑵ 신설 = `db/platform/tests/0031-drift.sh` ＋ `db/platform/tests/0031-assertions.sql` — ㈎ head 적용 뒤 오라클 통과 · ㈏ 0030 판에서 실패 · ㈐ downgrade 실물 동작 ＋ 0030 shape 복원(pg_dump 차이 0줄) · ㈑ 선언 정본 = 체인 head. 오라클 본체는 카탈로그만 보지 않는다 — 내용 리비전 트리거가 `storage_key`·`size_bytes` 교체에만 오르고 이름만 바꿀 때는 안 오르는 것 · CHECK 5종이 실제로 막는 것 · 복합 FK 의 CASCADE · RLS 켜짐·FORCE·`body_access` RESTRICTIVE 까지 행으로 확인한다. GREEN 축자 = `0031-drift green — head 오라클 통과 · 0030·downgrade 판에서 실패 · 0030 shape 복원 · 선언 = 체인 head.` ⑶ `0030-drift.sh` ㈑ 는 견주는 상대를 **체인 head** 로 올렸다 — 선례 `db/ai/tests/0004-0005-drift.sh`(WU-C7)·`db/ai/tests/0006-drift.sh`(WU-C13) 가 같은 이유(`schema.sql` 은 체인 전체의 선언 정본이라 뒤 회차가 서면 반드시 갈린다)로 이미 head 를 견준다. ㈎㈏㈐ 두 순서 수렴은 무수정. GREEN 축자 = `0030-drift green — 머지 차분 0 · 두 순서 스키마 수렴(차이 0줄) · 선언 = 체인 head.` ⑷ 오라클 수 실측 = `db/platform/tests` 23벌(＋1) · `db/ai/tests` 3벌. ⑸ `migration-drift` 3회 실행 실측 — 3회차 축자 **`migration-drift green — 오라클 26 · 실행 26 · 실패 0.`**(한 번의 실행 · `db/platform/tests` 23벌 실패 0 · `db/ai/tests` 3벌 실패 0). 1·2회차는 각각 실패 1이었고 **둘 다 다른 오라클이며 원인은 일회용 postgres 기동이다**(1회차 `0025-drift` 축자 `createdb: error: connection to server on socket \"/var/run/postgresql/.s.PGSQL.5432\" failed: No such file or directory` · 2회차 `0008-drift` 축자 `::error::0008-drift red — postgres 가 60초 안에 뜨지 않았다.` · 그 동안 호스트에서 다른 세션의 `service-tests-core-api` 가 돌고 있었다). `0030-drift`·`0031-drift` 는 **3회 모두 green** 이다. ⑹ 같은 실행의 나머지 = `exec-bit green — .sh 212건 전부 인덱스 모드 100755` · `work-item-consistency: green — 대장과 산문의 불일치 0`(대장 195건 · ㈕ stage 3 대조 25건). 3계수·요약줄 배출 = `dev-package/reports/r-dev-reset/wu-r1c-drift-0031/`."
+    deadline: null
+    note: "main 선재 결함이다 — 이 레인이 만든 것이 아니라 0031 이 오라클 없이 들어온 것이고, 잡는 자리는 `migration-drift` 하나뿐이다(`schema-diff` 는 green · `deploy_doctor` ⑥⑦ 은 `schema.sql` 을 읽지 않는다). 이 회차의 완료 조건 「한 번의 실행으로」 때문에 선행으로 닫는다. ⚠ **`migration-drift` 는 호스트 부하에서 간헐 red 다** — 기동 실패를 `ready()`(exit 78) 아닌 `red()`(exit 1)로 내는 오라클이 그것을 red(판정)으로 위장한다(후속 항목 · 라운드 §11). 이 레인 기여분은 아니고 고치지도 않았다. dev 실환경·공용 DB 무접촉 · AWS 호출 0건."
+    sources: ["dev-package/reports/r-dev-reset/full-gate-diagnosis.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-4
+    name: "dev 초기화→재셋팅 워크플로우 — 한 명령으로 되돌리고 다시 채운다"
+    status: in_progress
+    stage: after_stage2
+    owner: "운영 / 오케스트레이터"
+    entry_conditions: ["DR-2·DR-3 가 done 이고 두 회차의 실행 기록이 레포에 있다 — 충족(2026-09-14)", "intent 판정 5건이 먼저 닫힌다 — 승인 형태(회차별 GO ↔ 상시) · 화면단 원칙 유지 범위 · 실패 시 재개 지점 · 러너 산출물 보존 자리 · 차단 포맷 처리 — ⭑ 닫힘(2026-09-14 · intent `dev-package/intent/2026-09-14-data-canon-and-reseed.md` 판정 8건 ㈎~㈕ 확정 · 승인 = dev 한정 상시 ㈒ ⓑ · 화면단 원칙 유지 · 재개 = 10단계 `--from` · 산출물 = 결과 JSON ＋ `dev-package/sessions/` · 차단 포맷 = 미리보기 없이 등록 ㈏ ⓐ · GeoPackage 판독은 `FMT-GPKG`)", "WU-C4(dev 재생성 실행)만의 추가 진입조건 = C1·C1b·C2a·C2b·C3 가 `main` 에 병합되고 그 sha 가 dev 에 배포됨 · 참조자료 드라이브 연결 · `COLAB_REF_ROOT` 지정"]
+    depends_on: [DR-2, DR-3]
+    completion_def: "「데이터 전체 초기화하고 다시 셋팅해줘」 한 마디가 사람의 손조작 없이 끝까지 간다. ⑴ 진입점 하나(`reseed.sh` 또는 그에 준하는 실행기)가 초기화(`DR-2` 절차)와 재투입(`DR-3` 러너)을 이어 부른다 ⑵ 중단 지점에서 재개할 수 있다(상태 파일 기준 · 이미 끝난 순번을 다시 올리지 않는다) ⑶ 승인 게이트가 절차 안에 있다 — ⭑ ⟨개정 2026-09-14 · intent ㈒ ⓑ⟩ dev 한정 상시 승인(근거 〈398〉 · 실행마다 결과 JSON＋세션 기록 · Ted 철회 시 소멸) · staging·prod 는 매회 GO ／ 종전 ~~파괴 단계 전 명시 GO · 1회 소진 규약 유지~~ ⑷ 화면단 원칙 유지 — 재투입은 브라우저 화면 조작이고 백엔드 시딩으로 대체하지 않는다 ⑸ 실행 결과가 계수표 한 장으로 나온다(프로젝트·데이터셋·간선·미리보기 · 차단 건은 이름으로 열거)."
+    evidence: "⭑ 착수 2026-09-14 · intent `dev-package/intent/2026-09-14-data-canon-and-reseed.md` 확정(판정 8건 ㈎~㈕ ＋ advisor 파생 4건 ＋ 정본 md 열린 질문 14건) · 이슈 #40 #44 #48 #49 #50 (관련 #41 #42) · 라운드 `dev-package/prd/rounds/R-DATA-CANON.md` · 작업 단위 C0(등재)·C1·C1b·C2a·C2b·C3·C4 · 등재 〈398〉. ⭑ ⟨개정 2026-09-14 · Ted ⓐ⟩ C2b 폐기(계산값 표시 유지 · 〈397〉 유지 · 〈398〉-㉾) · 통합 브랜치를 `origin/main` e9ca26b1 위로 리베이스한 tip 5792068d 에서 게이트 7종 green. ／ 종전 ~~미착수 — 2026-09-14 등재만~~. 입력 = intent `dev-package/intent/2026-09-14-dev-reseed-workflow.md`(초안 · 커밋 `de3485b6` · 새 intent 가 흡수) · 초기화 절차 실측 `dev-package/sessions/DR-2-run-2026-09-13.md` · 재투입 절차 실측 `dev-package/sessions/DR-3-run-2026-09-13.md` · 러너 정본 `dev-package/tools/dev-seed/`. Ted 요청 축자 2건 = 「데이터 전체 초기화하고 다시 셋팅해줘 하면 이렇게 해줬으면 하는데 어떻게 해야 워크플로우를 api처럼 만들수있을까?」 · 「이거 완료한다음에, 작업을 워크플로우로 만들어두기위한 작업을해보자 일단 이번작업끝내는것부터」. 원장 `PLAN-SoT §9 〈396〉`-㉾."
+    deadline: null
+    note: "⭑ ⟨개정 2026-09-14⟩ 판정 5건은 닫혔다(intent 8건 확정 · 승인 형태 = dev 한정 상시 ㈒ ⓑ · 형태 = `reseed.sh` 본체 ＋ 스킬 껍데기 ㈓ ⓒ). **`DR-4` 가 이슈 #40 #44 #48 #49 #50 을 포섭한다**(관련 #41 부분 · #42 판정만) — 별도 대장 항목을 만들지 않는다. ／ 종전 ⚠ **착수 전에 intent 판정 5건이 먼저 닫힌다** — 특히 승인 형태(`〈396〉`-㉷ ⓐ 「dev 초기화 상시 승인」과 같은 자리)는 파괴적 절차의 안전장치라 판정 없이 코드로 굳히지 않는다. ⚠ **「api처럼」을 HTTP API 신설로 읽지 않는다** — 요청의 뜻은 「한 번의 호출로 끝까지 가는 재현 가능한 절차」이고, 형태(셸 실행기 · 스킬 · 둘 다)는 intent 판정 대상이다. 범위 밖 = staging·prod 적용(`〈395〉`-㉲ 그대로)."
+    sources: ["dev-package/intent/2026-09-14-data-canon-and-reseed.md", "dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/intent/2026-09-14-dev-reseed-workflow.md", "dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: PV-2
+    name: "미리보기 요청 경로의 뒷단 한계 — 중계 타임아웃·viz-render 메모리·413 사유"
+    status: open
+    stage: after_stage2
+    owner: "D7 / viz-render ＋ core-api(중계)"
+    entry_conditions: ["없음 — 지금 착수 가능", "입력 = dev 실데이터 실측 진단 `dev-package/reports/r-dev-reset/preview-diagnosis.md`"]
+    depends_on: [PV-1]
+    completion_def: "실데이터 5종(grib·nc·bin·tif·hdf4)이 **한 번의 요청으로** 화면에 그려진다. ⑴ 중계 타임아웃이 렌더 실소요를 덮거나, `materialize`＋`detect_format` 이 202 앞에서 빠져 진짜 비동기가 된다 ⑵ viz-render 가 149 MB 단일 파일 1건에서 OOM 으로 죽지 않는다(메모리 상향 또는 동시 렌더 수 제한 — 값은 판정) ⑶ 413 응답이 어느 상한에 걸렸는지 로그로 가려진다(`limitBytes`·`reason`) ⑷ 렌더 작업 상태가 프로세스 재시작을 견딘다 ⑸ 위 넷이 회귀 시험으로 잠긴다."
+    evidence: "미착수 — 2026-09-14 등재만. 실측(dev · 읽기 전용 · 2026-09-13~14) = 중계 타임아웃 **10초 고정**(`services/core-api/src/colab_core/app/relay.py:28` `RELAY_TIMEOUT_SECONDS = 10`) ↔ viz-render 실소요 **20,037 · 26,766 · 29,440 · 33,391 · 33,567 · 35,602 · 38,391 ms**(전부 202 로 끝남) ⟹ core-api 가 10,02x ms 에 끊고 **503**. 창 계수(15:04~15:08Z) = `POST /api/v1/previews` **202 9 · 503 10 · 413 3 · 500 1**. OOM kill **2회**(`anon-rss:1518944kB`·`anon-rss:1562976kB` · 한도 `COLAB_MEM_VIZ=1536m` · `RestartCount=3`) · 렌더 작업 상태는 DB 에 없고 프로세스 메모리에만 있다(`information_schema.tables` 15행 중 preview/render 표 **0건**). 413 은 두 상한(`max_render_bytes` 500 MiB · `COLAB_VIZ_WORK_MAX_BYTES` 1 GiB) 중 어느 쪽인지 **응답 본문이 로그에 없어 `[미확인]`**. 화면 쪽 실측 = `DR-3` 3패스에서 렌더 성립 **2/5**(미렌더 `bin`·`tif`·`hdf4`). 근거 `dev-package/reports/r-dev-reset/preview-diagnosis.md` · `dev-package/sessions/DR-3-run-2026-09-13.md §6`. 원장 `PLAN-SoT §9 〈396〉`-㉽."
+    deadline: null
+    note: "⚠ **`PV-1`(미리보기 뒷단 — 헤더 파싱·좌표계 통일·지도용 영상 변환)과 다른 항목이다** — `PV-1` 은 pipeline-worker 가 산출물을 만드는 자리이고 `done` 이며, 이 항목은 **그 산출물을 화면이 받아 가는 요청 경로**(core-api 중계 ＋ viz-render 동기 구간)다. `PV-1` 을 다시 열지 않는다. ⚠ **산출물 부재가 원인이 아니다** — S3 실물 대조에서 「안 그려짐」인 `tif`·`hdf4` 는 판정 시점에 이미 3층 산출물이 있었고, 「그려짐」인 `nc` 는 산출물 0건이었다(`[추론]` — 화면 미표시는 그 순간의 요청이 끊긴 결과다). ⚠ **`d5/renderable.py:32` `NOT_RENDERABLE_FORMATS = []` 와 같은 파일 독스트링(「GRIB 은 미리보기 대상이 아니다」)이 갈려 있다** — 어느 쪽이 정본인지 판정이 이 항목 안에 있다."
+    sources: ["dev-package/reports/r-dev-reset/preview-diagnosis.md", "dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: FMT-GPKG
+    name: "GeoPackage(.gpkg) 업로드 형식 지원 여부 판정"
+    status: open
+    stage: after_stage2
+    owner: "D5 / pipeline-worker ＋ 기획 판정"
+    entry_conditions: ["없음 — 지금 착수 가능(판정이 먼저다)", "입력 = DR-3 실투입에서 차단된 2건의 화면 축자"]
+    depends_on: []
+    completion_def: "판정이 먼저 선다 — ⓐ 받는다(감지·파싱·등록 경로를 열고 렌더 가능 여부는 별도로 표기) ⓑ 받지 않는다(화면 문면을 「지원하지 않는 형식」으로 바로잡고 목록에 명시). 어느 쪽이든 **선언과 구현이 같은 값을 말하는 것**이 완료 조건이고, 그 대조를 기계가 본다(선례 `tests/test_format_declaration_parity.py`)."
+    evidence: "미착수 — 2026-09-14 등재만. 발견 자리 = `DR-3` 실투입 순번 13·14(`SPI-4weeks`·`SPEI-4weeks` · `.gpkg` · 합 49,594,368 B · `drought` 프로젝트). 화면 축자 2종 = 「이 확장자는 지도로 못 그려요」 · 「파일 분석을 마치지 못했어요 · 형식 인식 실패」. 실물 = 분석 단계에서 `up-analysis-failure` 가 서고 **등록 단추(`reg-open`)가 비활성** ⟹ 등록 자체가 성립하지 않는다. 결과 = 계획 28건 중 2건 미달 · `drought` 프로젝트 데이터셋 **0건**. 근거 `dev-package/sessions/DR-3-run-2026-09-13.md §3`. 원장 `PLAN-SoT §9 〈396〉`-㉽."
+    deadline: null
+    note: "⚠ **두 문면이 서로 다른 것을 말한다** — 「지도로 못 그려요」는 렌더 불가이고 「형식 인식 실패」는 등록 불가다. 제품은 둘을 갈라 왔다(선례 = 「그릴 수 없는 것과 등록할 수 없는 것은 다르다」 · `D5` evidence). 지금 `.gpkg` 는 **렌더 불가가 아니라 등록 불가**로 걸린다 — 그 갈림이 의도된 것인지가 판정의 핵심이다. ⚠ 범위 = 형식 하나의 판정이고, 화면 문면 정정이 딸려 온다. 화면 우회(API 직접 등록)는 이 항목의 해답이 아니다."
+    sources: ["dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DS-ATTACH
+    name: "이미 등록된 데이터셋을 프로젝트에 붙이는 화면이 없다"
+    status: open
+    stage: after_stage2
+    owner: "D6 / frontend ＋ core-api"
+    entry_conditions: ["없음 — 지금 착수 가능", "입력 = DR-3 실투입에서 프로젝트에 연결되지 않은 채 등록된 데이터셋 1건"]
+    depends_on: []
+    completion_def: "등록이 끝난 데이터셋의 연관 프로젝트를 화면에서 **바꿀 수 있다**(붙이기·떼기). ⑴ 그 조작에 연구실 경계가 자동 주입된다 ⑵ 남의 연구실 데이터셋에는 걸리지 않는다(음성 시험) ⑶ 등록 시점에 프로젝트를 고르지 못한 데이터셋이 고아로 남지 않는다."
+    evidence: "미착수 — 2026-09-14 등재만. 발견 자리 = `DR-3` 실투입 순번 1 `HSR 레이더 반사도 원자료`(`01M2DGEMD7ESC35R55C7VDAP1Q`) — 파일 10건 · 70,124,548 B 로 **정상 등록**됐으나 **어느 프로젝트에도 속하지 않는다**(첫 실행 회차에서 연관 프로젝트 담기 조작이 발화하지 않았다 · 러너 로그 축자 `! 연관 프로젝트 표(reg-proj-table) 미확인`). 확인 = 화면 목록에서 `precipitation` 프로젝트의 데이터셋은 **4건**이고 러너 계획값 5 와 어긋난다. ⛔ **화면에 고칠 자리가 없다** — 다시 올리면 같은 파일의 데이터셋이 하나 더 생기고, SQL 수정은 화면단 원칙 밖이라 `DR-3` 회차가 하지 않았다. 근거 `dev-package/sessions/DR-3-run-2026-09-13.md §4`. 원장 `PLAN-SoT §9 〈396〉`-㉽."
+    deadline: null
+    note: "⚠ **이 항목이 서기 전에는 dev 의 그 1건을 고칠 수단이 SQL 뿐이고 그것은 Ted 판정 대상이다**(`03-HANDOFF §4` 블로커). 데이터셋 삭제 화면도 없어(`deleteDataset` 501) 지우고 다시 올리는 경로도 막혀 있다. ⚠ 범위 = 연관 프로젝트 변경 하나이고, 데이터셋 삭제 화면 신설은 이 항목이 아니다(`〈396〉`-㉵ 범위 밖)."
+    sources: ["dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: GT-1
+    name: "검사 판독 결함 묶음"
+    status: open
+    stage: backlog
+    owner: "gates (dev tooling)"
+    entry_conditions:
+      - "Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」 — 다음 회차 착수 항목으로 지정"
+      - "레포 WSL 이전 뒤 새 위치에서 착수(B9 원인 일부 해소 전제)"
+    depends_on: []
+    completion_def: >-
+      ⑴ `frontend-test` 가 vitest fork worker 기동 시간초과를, `service-tests-viz-render` 가 가상환경 패키지 설치 누락(`ModuleNotFoundError: colab_viz`)을
+      red(준비)로 계수하고 각각 red fixture 로 selftest 가 증명한다
+      ⑵ `tests/fixtures/setup-db.sh` 를 같은 DB 에 2회 연속 실행해도 준비 단계가 실패하지 않는다.
+      B2·B3·B9 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "다음 회차 착수 — Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」. 출처 = B1(vitest fork worker 기동 시간초과를 red(판정)으로 계수) · 추가(최종 트리 `a07e87a4` 전수 — viz-render 가상환경 패키지 설치 누락을 red(판정)으로 계수) · B2(`lineage-unknown-20260907.test.tsx` 전역 스캔 5000ms 예산이 부하 시 red) · B4(`tests/fixtures/setup-db.sh` 비멱등 — `schema \"account_admin\" already exists` · 부르는 게이트 이름 `[미확인]`) · B3(호스트 `CLOCK_REALTIME` 역행 탐지 게이트 없음 · 시험 되돌리기는 기본키 스냅숏으로 교체 완료 `1e48a64b` · 다른 시각 오라클 시험 영향 `[미확인]`) · B9(동시 레인 수 규칙 · drvfs I/O — 폴더 30·31·32 WSL 이전으로 원인 일부 해소 중 · 이전 뒤 env 파일·픽스처 경로·설정 바인딩 재점검)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/full-a07e87a4/"]
+  - id: LF-1
+    name: "운영자 검색 카드 타 연구실 결과 누락 조사"
+    status: open
+    stage: backlog
+    owner: "core-api (운영자 검색 카드 조립) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 운영자 검색 카드 조립 `_compose(db)` 가 요청 트랜잭션(소속 연구실) 때문에 타 연구실 매치를 `row is None → continue` 로 건너뛰는지 실측으로 확정한다.
+      수정 형태는 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = B5. 결과 항목이 소리 없이 빠지는 green-by-skip 형태 · 범위 줄 건수와 카드 수가 갈릴 가능성 `[미확인]` · 걸리는 검사 = 검사 없음 · 파일 경로 `[미확인]`(앵커 `_compose(`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-2
+    name: "연구실 고르개 ＋ 검색 범위 고르개"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계약) — 착수 시점은 Ted"
+    entry_conditions:
+      - "「경계는 요청에서 오지 않는다」 규칙 재판정 선행 — 두 고르개 모두 요청이 조회 범위를 지정하는 구조 변경"
+      - "두 고르개는 한 자리에서 결정(카드 ⑧ ⓑ)"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = A1(연구실 고르개 — 관리자가 한 연구실만 골라 보는 전환 · 읽기 창구 연구실 인자 ＋ 계약 판정 · 카드 ① ⓑ · L) · A2(검색창 옆 전체 / 우리 연구실 · 카드 ⑧ ⓑ · M~L). 이번 회차는 연구실 표기를 누를 수 없는 표시로만 바꿈. 대장 `BO-3` `note:` 참조."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-shell-header.md", "dev-package/intent/2026-09-13-lth-search-scope.md"]
+  - id: LF-3
+    name: "내 계정 메뉴"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 사용자 이름 버튼이 내 계정·로그아웃 메뉴를 연다
+      ⑵ 그 메뉴가 휴대전화 「더보기」 목록과 같은 부품을 쓴다.
+    evidence: null
+    deadline: null
+    note: "출처 = A3(카드 ② ⓑ · 카드 ③ ⓒ · M). 이번 회차는 화살표만 지움."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-shell-header.md"]
+  - id: LF-4
+    name: "가공 단계 사유 입력·확인 절차와 추종 중 안내"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(D4 계보) — 착수 시점은 Ted"
+    entry_conditions:
+      - "부모 후붙임 흐름의 확인 2회 문제 설계 선행(A4)"
+      - "추종 중 안내 문구와 「분류에서 바꾸기」 링크 배치는 Ted 문면 판정 대상"
+    depends_on: []
+    completion_def: >-
+      ⑴ 계산값과 다른 가공 단계를 유지할 때 사유가 저장 칸에 기록된다(마이그레이션 1건 ＋ 계약 열쇠).
+      추종 중 안내·링크·부모 Lv 미상 처리의 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A4(사유 입력 ＋ 한 번 더 확인 절차 · 카드 ⑩ ⓑ · L) · 추가 3건(Task 3b 보고) — 추종 중 안내 줄 문면 · 「분류에서 바꾸기」 링크(`lin-goto-classify`)가 제한 안내 줄과 함께 숨음(`c10acf6a`) · 확정 부모 중 Lv 미상이 있으면 기본 Lv2 로 돌아가고 상한 재적용되는 것의 의도 여부."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-processing-level-mismatch.md"]
+  - id: LF-5
+    name: "표 줄 3자리 키보드 열기"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ `ProjectTable`·`CatalogTable`·`ProjectDatasetTable` 의 줄에서 마우스 없이 키보드로 상세를 연다.
+      빠른 작업 버튼·초점 순서 재설계 범위는 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A5(카드 ⑥ · M)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-a11y-empty-states.md"]
+  - id: LF-6
+    name: "승인 상태 3값"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(목록 계약) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "목록이 승인 상태를 승인됨 / 검토 대기 / 요청 없음 3값으로 구분해 보여 준다(목록 계약 열쇠 1 ＋ 묶음 질의 1)."
+    evidence: null
+    deadline: null
+    note: "출처 = A6(카드 ⑨ ⓑ · M). 승인 요청이 들어온 줄이 목록에서 구분되지 않음."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-verified-chip.md"]
+  - id: LF-7
+    name: "접근성 검사기 게이트"
+    status: open
+    stage: backlog
+    owner: "gates (dev tooling) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 키보드 접근·제목 단계 결함을 판정하는 게이트가 `gates/run.sh` 에 등록된다
+      ⑵ red fixture 로 fail-closed 를 증명한다(`selftest`).
+    evidence: null
+    deadline: null
+    note: "출처 = A7(카드 ⑦ ⓒ). 걸리는 검사 = 검사 없음 · 검사 부재 자체가 결함(`colab-rules §3-3`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-a11y-empty-states.md"]
+  - id: LF-8
+    name: "대표 제목 규약 나머지 화면"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 연구실 설정 화면에 집행한 대표 제목 규약이 나머지 화면(연구실 홈 등 10+)에 적용된다.
+      대상 화면 목록은 착수 intent 에서 확정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A8(카드 ⑦ ⓑ · SUMMARY §4 ⑦ · M)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/issues/2026-09-13-lth-review-1-SUMMARY.md"]
+  - id: LF-9
+    name: "본인 비활성화 확장 ＋ 상태를 모르는 구성원 잠금"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계정·구성원) — 착수 시점은 Ted"
+    entry_conditions:
+      - "활성 관리자 0명 상태 발생 여부 확인 선행(A9 `[미확인]`)"
+      - "계정 자격 행이 없는 구성원을 비활성과 같게 잠글지 Ted 판정 대상(B10)"
+    depends_on: []
+    completion_def: >-
+      ⑴ 본인 비활성화가 계정명 재입력과 활성 관리자 셈을 거친다.
+      상태를 모르는 구성원 잠금의 완료 정의 미작성 — Ted 판정 뒤 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = A9(카드 ⑤ ⓑ · M) · B10(Task 7 수용 검토 · 닫는 비용 = `services/core-api/src/colab_core/app/routes/members.py` 앵커 `def _editable_permissions(` 1행)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/intent/2026-09-13-lth-account-members.md"]
+  - id: LF-10
+    name: "계정·구성원 화면 기술부채"
+    status: open
+    stage: backlog
+    owner: "frontend ＋ core-api(계정·구성원) — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: >-
+      ⑴ 구성원 표의 계정 상태 조회 수가 구성원 수에 비례하지 않는다
+      ⑵ `accounts.py` 주석이 운영자 지정 화면 실물과 일치한다.
+      `login.css` 기반 재구성·이메일 열 고정·모바일 카드의 완료 정의 미작성 — 착수 intent 에서 정한다.
+    evidence: null
+    deadline: null
+    note: "출처 = B6(구성원마다 `status_for_account` 1회 조회 · Task 7 구성원 절) · B7(`services/core-api/src/colab_core/app/routes/accounts.py` 「SQL 수동」 주석) · B8(계정 관리 화면이 `frontend/src/auth/login.css` 위에 구성 · `b3ff16e9`) · C1(계정 표 이메일 열 고정 ＋ 모바일 카드 목록 · 이번 회차는 좁은 폭 좌우 이동 안내까지). 걸리는 검사 = B6·B7·B8 검사 없음."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-11
+    name: "프로젝트 표·계보 노드 가공 단계 표시 확장"
+    status: open
+    stage: backlog
+    owner: "frontend — 착수 시점은 Ted"
+    entry_conditions: []
+    depends_on: []
+    completion_def: "가공 단계 불일치 표식이 데이터셋 목록 두 표 외에 프로젝트 표·계보 노드에도 선다(`level_pair` → `level_view` 확장)."
+    evidence: null
+    deadline: null
+    note: "출처 = C2(커밋 `0427ac91`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md"]
+  - id: LF-12
+    name: "dev 실화면 대비·글자 크기 계측"
+    status: open
+    stage: backlog
+    owner: "frontend (계측) — 착수 시점은 Ted"
+    entry_conditions:
+      - "dev 재생성 회차 뒤 — 다른 회차가 dev 재투입 중이면 dev 접촉 금지"
+    depends_on: []
+    completion_def: "dev 에서 `COLAB_VISUAL_URLS` 로 로그인 화면·주요 화면의 대비·글자 크기를 1회 계측하고 결과를 기록한다."
+    evidence: null
+    deadline: null
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수 · 게이트 ③ 지적). 이번 회차는 `frontend-visual` 명시 면제 · 프런트 11개 영역 변경."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
+  - id: LF-13
+    name: "EC2 반입 파일·env 백업 잔존물 정리 판정"
+    status: open
+    stage: backlog
+    owner: "infra (dev EC2) — 판정은 Ted"
+    entry_conditions:
+      - "삭제는 파괴적 조작 — Ted 판정 뒤 `.claude/rules/deploy.md` 를 편 뒤 집행"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
+  - id: LF-14
+    name: "기획자 회신 대기 2건(조건부)"
+    status: open
+    stage: backlog
+    owner: "기획 회신 ＋ frontend — 착수 시점은 Ted"
+    entry_conditions:
+      - "기획자 회신 수신 — 「할 일 함」 표기는 기획자가 변경을 원할 때만 · 이메일 칸 관측은 재현될 때만"
+    depends_on: []
+    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    evidence: null
+    deadline: null
+    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`)."
+    sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md"]

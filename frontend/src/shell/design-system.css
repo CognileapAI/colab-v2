@@ -145,13 +145,19 @@ body:is(.colab-ui, .design-preview):has(.pj-modal-back) { overflow: hidden; }
   .colab-ui .gnb .mainnav a { flex: 1; justify-content: center; min-height: 44px; }
   .colab-ui .gnb .labswitch { margin-right: auto; }
   .colab-ui .gnb .avatar-wrap { margin-left: 0; }
-  .colab-ui .gnb-settings .lbl { display: none; }
+  /* ⭑ ⟨개정 2026-09-13 · `I-9` · 카드 ③ ⓒ⟩ **라벨만 감추던 자리를 「더보기」로 바꾼다.**
+     종전 `.gnb-settings .lbl { display: none }` 은 버튼을 그림 하나로 남겼고, 390px 에서
+     업로드·계정 관리·연구실 설정이 **무엇인지 글자로 확인할 길이 없었다**. 기능 셋을 목록
+     하나로 접고 목록 안에서 그림과 이름을 함께 낸다. */
+  .colab-ui .gnb :is(.gnb-upload, .gnb-settings) { display: none; }
+  .colab-ui .gnb .gnb-more-wrap { position: relative; display: inline-flex; }
+  .colab-ui .gnb .gnb-more { display: inline-flex; }
 }
 @media (max-width: 640px) {
   :is(.colab-ui, .design-preview) :is(.inp, .sel, .login-input, .pv-control select) { font-size: 16px; }
   .theme-switcher { min-height: 44px; max-width: 92px; }
   .colab-ui .gnb { gap: 6px; padding-inline: 12px; }
-  .colab-ui .gnb :is(.labswitch, .gnb-settings, .gnb-upload, .avatar) { min-height: 44px; min-width: 36px; padding-inline: 6px; }
+  .colab-ui .gnb :is(.labswitch, .gnb-settings, .gnb-upload, .gnb-more, .avatar) { min-height: 44px; min-width: 36px; padding-inline: 6px; }
   .colab-ui .gnb .avatar { display: none; }
   .colab-ui .gnb .gnb-logout { min-height: 44px; }
   :is(.colab-ui, .design-preview) .pv-basic-grid { grid-template-columns: minmax(0, 1fr); }

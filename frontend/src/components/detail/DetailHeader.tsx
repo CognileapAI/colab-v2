@@ -5,7 +5,7 @@ import { VerifiedBadge } from '../approval/VerifiedBadge';
 import { accessLabel } from '../common/accessState';
 import { VerificationAction } from '../approval/VerificationAction';
 import type { ApprovalSource } from '../approval/types';
-import { displayLevel, levelOf } from '../common/processingLevel';
+import { displayLevel, levelMismatchNotice, levelOf } from '../common/processingLevel';
 import type { DatasetDetail } from './types';
 
 /**
@@ -134,7 +134,13 @@ export function DetailHeader(props: {
             이 줄이 서지 않는다(그 화면에는 그 사실이 없다). */}
         {d.basicInfo?.processingLevelMismatch ? (
           <p className="dh-lv-mismatch" data-testid="dh-lv-mismatch">
-            {`고른 가공 단계는 Lv${levelOf(d.basicInfo.processingLevelUserSet)}이고, 연결한 데이터로 계산하면 Lv${d.basicInfo.processingLevelDerived}이에요. 그대로 두어도 등록돼요.`}
+            {/* ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉲⟩ 두 값 ＋ **각 값의 근거**를 말한다.
+                문면은 `common/processingLevel.ts` 한 자리이고 등록 ③ 이 같은 것을 부른다 —
+                두 곳에 적으면 언젠가 한쪽만 고쳐진다. */}
+            {levelMismatchNotice(
+              levelOf(d.basicInfo.processingLevelUserSet) as number,
+              d.basicInfo.processingLevelDerived as number,
+            )}
           </p>
         ) : null}
       </div>

@@ -19,6 +19,9 @@ export function LabSettingsPage(props: { port?: MembersPort; labSource?: LabSour
 
   return (
     <div className="settings-page" data-screen="S-07">
+      {/* 화면당 `h1` 하나 — 그 화면의 이름이다 (대표 제목 규약 · frontend/README `## 규칙`).
+          탭 이름은 제목이 아니라 조작이라 `h1` 이 탭 위에 선다. 탭 본체 제목이 `h2` 다. */}
+      <h1>연구실 설정</h1>
       <div className="settabs" role="tablist" aria-label="연구실 설정 탭">
         <button
           type="button"

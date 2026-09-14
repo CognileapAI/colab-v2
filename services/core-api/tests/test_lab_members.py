@@ -209,3 +209,92 @@ def test_a_delegate_edits_only_two_columns_and_is_blocked_on_the_other_two(
                                                     "업로드·편집": True,
                                                     "프로젝트 생성": True}}])
     assert switch_state(client, ACC_A_RES, "연구실 설정") is False
+
+
+# ── 비활성 계정 (D-4 · 카드 ④ ⓐ-1) ──────────────────────────────────────────
+# 상태의 원본은 `account_admin.login_credential.status` 이고 그 스키마는 앱 롤이 읽지 못한다
+# (`db/platform/schema.sql` 앵커 `REVOKE ALL ON SCHEMA account_admin FROM PUBLIC;`).
+# 그래서 구성원 라우트는 **계정 상태 조회 경로**(`kernel/db_credentials.py` 앵커
+# `def status_for_account(`)를 거쳐 응답에 싣는다 — `scoped_db` 롤 권한은 그대로다.
+#
+# 상태를 바꾸는 것도 **제품 경로**(`POST /admin/accounts/{id}/status`)로만 한다.
+# 되돌리기는 앱 롤이 자기 연구실 행을 지우는 것으로 끝난다 — `login_credential` 은
+# `d1_account` 에 `ON DELETE CASCADE` 로 달려 있고(schema.sql:135), 계정 관리자 롤에는
+# 애초에 DELETE 권한이 없다(`ops/account-admin-role.sql`).
+LAB_A = "0000000000000000000000000A"
+
+
+def _make_inactive_member(client, *, inactive: bool) -> str:
+    """A 연구실에 계정 하나를 만들고 상태를 정한다. 반환값은 그 계정 ID."""
+    import uuid
+
+    email = f"member-status-{uuid.uuid4().hex[:12]}@example.com"
+    made = client.post(f"{API_PREFIX}/admin/accounts", headers=auth("a1-prof-token"), json={
+        "email": email, "name": "상태 시험 구성원", "labId": LAB_A,
+        "role": "연구원", "initialPassword": "시험용-구성원-상태-암호-123",
+    })
+    assert made.status_code == 201, made.text
+    account_id = made.json()["accountId"]
+    if inactive:
+        turned = client.post(f"{API_PREFIX}/admin/accounts/{account_id}/status",
+                             headers=auth("a1-prof-token"), json={"status": "inactive"})
+        assert turned.status_code == 200, turned.text
+    return account_id
+
+
+def _purge_member(sql, account_id: str) -> None:
+    sql("DELETE FROM d2_permission_switch WHERE account_id = :id", {"id": account_id},
+        account_id=ACC_A_PROF, lab_id=LAB_A)
+    sql("DELETE FROM d2_member_role WHERE account_id = :id", {"id": account_id},
+        account_id=ACC_A_PROF, lab_id=LAB_A)
+    sql("DELETE FROM d1_account WHERE id = :id", {"id": account_id},
+        account_id=ACC_A_PROF, lab_id=LAB_A)
+
+
+def test_an_inactive_account_is_marked_and_locked(p2_client, sql) -> None:
+    """비활성 계정 행은 `accountStatus='inactive'` 이고 고칠 수 있는 열이 하나도 없다.
+
+    대조군 = **같은 표의 활성 계정 행**. 대상 0건 통과를 가른다(spec §8-6 ⑶).
+    """
+    client = p2_client()
+    active_id = _make_inactive_member(client, inactive=False)
+    inactive_id = _make_inactive_member(client, inactive=True)
+    try:
+        rows = members(client, "a1-prof-token")
+
+        active = rows[active_id]
+        assert active["accountStatus"] == "active"
+        assert active["editablePermissions"] == SWITCHES, "활성 행은 그대로 편집 가능하다."
+
+        row = rows[inactive_id]
+        assert row["accountStatus"] == "inactive"
+        assert row["editablePermissions"] == [], "비활성 행은 서버가 편집 가능 열을 안 싣는다."
+        assert list(row["permissions"]) == SWITCHES, "값은 그대로 보인다 — 열을 지우지 않는다."
+    finally:
+        _purge_member(sql, active_id)
+        _purge_member(sql, inactive_id)
+
+
+def test_saving_a_permission_of_an_inactive_account_is_refused(p2_client, sql) -> None:
+    """화면 `disabled` 만으로 막지 않는다 — 저장 경로에도 상태 검사가 있다 (P-11 · §8-6 ⑹)."""
+    client = p2_client()
+    inactive_id = _make_inactive_member(client, inactive=True)
+    try:
+        refused = save(client, "a1-prof-token",
+                       [{"accountId": inactive_id, "changes": {"승인 위임": True}}])
+        assert refused.status_code == 400, refused.text
+
+        after = members(client, "a1-prof-token")[inactive_id]
+        assert after["permissions"]["승인 위임"] is False, "거절이면 한 칸도 쓰이지 않는다."
+    finally:
+        _purge_member(sql, inactive_id)
+
+
+def test_an_inactive_account_never_crosses_the_lab_boundary(p2_client, sql) -> None:
+    """상태 투영이 열려도 연구실 경계는 그대로다 (`CLAUDE.md §3` 규칙 5) — 회귀."""
+    client = p2_client()
+    inactive_id = _make_inactive_member(client, inactive=True)
+    try:
+        assert set(members(client, "b1-prof-token")) == {ACC_B_PROF}
+    finally:
+        _purge_member(sql, inactive_id)

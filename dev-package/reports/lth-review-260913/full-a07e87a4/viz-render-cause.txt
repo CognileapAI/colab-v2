@@ -1,0 +1,2 @@
+   E         ModuleNotFoundError: No module named 'colab_viz'
+   E        +  where 1 = CompletedProcess(args=['/mnt/f/00_Project/00 CoLAB/31 CoLAB-v2/.claude/worktrees/lth-review-260913/services/viz-render...most recent call last):\n  File "<string>", line 9, in <module>\nModuleNotFoundError: No module named \'colab_viz\'\n').returncode

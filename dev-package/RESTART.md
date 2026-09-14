@@ -295,6 +295,35 @@ docker inspect colab_v2_staging_pg --format '{{range .NetworkSettings.Networks}}
   `COLAB_ARTIFACT_OWNER_DB_URL` 은 앞엣것을 참조하므로 함께 따라온다. **키 이름만 적는다 — 값은 적지 않는다.**
 
 
+#### ⭑ ⟨신설 2026-09-13 · Ted 판정 「이 폴더에서 하는 건 구분」⟩ ㉳ **체크아웃 폴더별 시험 DB 분리**
+
+- 배경 = 한 호스트에 체크아웃이 셋(`30`·`31`·`32`). 시험 DB 이름이 같으면 한 폴더의 게이트가 다른 폴더의 표를 지운다.
+- 규약 = **폴더 번호를 접미로 단다.** 환경파일 `~/.colab-v2-test-<번호>.env`(`0600`) · DB 이름 `_<번호>` · 일회용 컨테이너 `a2_pg_<번호>`·`ai_pg_<번호>`.
+- 결합 = 폴더의 `.claude/settings.local.json` 에 `env.COLAB_TEST_ENV_FILE` 로 그 파일 경로를 적는다(주 체크아웃·워크트리 양쪽). `gates/run.sh` 가 그 값을 읽어 source 한다(기본값은 `~/.colab-v2-test.env`).
+- 접미를 다는 값 = `COLAB_CORE_TEST_DATABASE_URL`·`COLAB_PIPELINE_DB_URL`·`COLAB_AI_TEST_DICT_DB_URL`·`COLAB_APPLIED_DB_URL_PLATFORM`·`COLAB_APPLIED_DB_URL_AI` 다섯 줄의 **DB 이름**. 호스트는 그 폴더 전용 컨테이너 IP 로 바꾼다.
+- 접미를 달지 않는 값 = staging 실물 읽기 전용 세 줄(`COLAB_AUTOMETA_STAGING_DB_URL`·`COLAB_PREVIEW_TILE_DB_URL`·`COLAB_ARTIFACT_OWNER_DB_URL`) · 경로 세 줄(`COLAB_REFERENCE_DATA`·`COLAB_PREVIEW_TILE_DIR`·`COLAB_ARTIFACT_OWNER_DIR`) · 롤 이름. **쓰기가 없어 공유해도 표가 갈리지 않는다.**
+- `COLAB_CORE_TEST_SUBJECTS_FILE` 은 **그 폴더의 레포 픽스처**를 가리킨다 — 형제 폴더 경로가 남아 있으면 고친다.
+- 짓는 줄 (`<번호>` 를 갈아 끼운다 · 값은 `~/.colab-v2-test.env` 에서 읽고 어디에도 옮겨 적지 않는다) —
+
+```
+# ① 일회용 컨테이너 둘 (§2-④ 와 같은 규약 · tmpfs · PGDATA · 호스트 포트 미공개)
+docker run -d --name ai_pg_<번호> --tmpfs /var/lib/postgresql/data:rw,size=512m \
+  -e PGDATA=/var/lib/postgresql/data/pg -e POSTGRES_PASSWORD=<수퍼유저 비번> \
+  -e POSTGRES_DB=colab_ai_<번호> postgres:16-alpine
+docker run -d --name a2_pg_<번호> ... -e POSTGRES_DB=colab_platform_<번호> postgres:16-alpine
+
+# ② 체인별 부트스트랩 (setup-db.sh 는 DB 이름을 인자로 받는다)
+CONTAINER=ai_pg_<번호> DB=colab_ai_<번호> APP_PASSWORD=<ai 앱 비번> services/ai-service/tests/fixtures/setup-db.sh
+CONTAINER=a2_pg_<번호> DB=colab_platform_<번호> APP_PASSWORD=<앱 비번> services/core-api/tests/fixtures/setup-db.sh
+
+# ③ 게이트용 적용 DB (빈 DB 로 둔다 — schema-diff 가 alembic upgrade head 를 스스로 돈다)
+docker exec a2_pg_<번호> createdb -U postgres colab_platform_applied_<번호>
+docker exec ai_pg_<번호> createdb -U postgres colab_ai_applied_<번호>
+```
+
+- ⚠ **두 컨테이너의 `postgres` 비밀번호는 하나로 맞춘다.** 원본 `~/.colab-v2-test.env` 는 `COLAB_APPLIED_DB_URL_PLATFORM` 과 `_AI` 에 **서로 다른 비밀번호**가 적혀 있었다(둘이 같은 호스트를 가리키므로 한쪽이 낡은 값). 맞추지 않으면 `schema-diff` 가 ai 체인에서만 `password authentication failed for user "postgres"` 로 red 를 낸다.
+- 확인 = `COLAB_TEST_ENV_FILE=~/.colab-v2-test-<번호>.env ./gates/run.sh schema-diff` green · 컨테이너의 `pg_database` 목록에 접미 없는 이름이 없을 것.
+
 ### ⑤ Remote Control 다시 띄우기 — **시한이 있다**
 
 **staging 이 안 뜨는 것과 뿌리가 같다.** WSL2 가 접히면 안에서 돌던 장기 연결이 조용히 끊기고,

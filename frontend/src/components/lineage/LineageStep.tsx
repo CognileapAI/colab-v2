@@ -26,9 +26,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LineageStepContext } from '../upload/types';
 import {
-  LV_VALUES,
   levelOf,
   displayLevel,
+  derivedLevelFromParents,
+  levelMismatchNotice,
   PARENT_ROLES,
   type AiConfidence,
   type ParentCandidateRow,
@@ -107,6 +108,14 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const setParents = ctx.onParentsChange;
   /** ① 에서 고른 자기 Lv. **기준값**이고, 안 골랐으면 `null` 이라 규칙이 서지 않는다. */
   const selfLv = levelOf(ctx.processingLevelUserSet);
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 부모 선택 상한의 기준 Lv.**
+   * 자기 Lv 가 계산값을 따라가는 중이면 `null` — 상한·사후 충돌을 걸지 않는다(부모를 확인하면
+   * 자기 Lv 가 최대 부모 Lv ＋ 1 로 따라간다). 사람이 고른 뒤에는 `selfLv` 그대로다.
+   * ⚠ 불일치 줄·「기록 없음」 표시는 `selfLv` 를 쓴다 — 여기서 바꾸지 않는다. 상한 안내 줄(`lin-lv-scope`)은
+   *   추종 중에는 상한이 없으므로 서지 않는다(대체 문면 없음) — 사람이 고른 뒤에는 `selfLv` 문면 그대로다.
+   */
+  const ceilingLv = ctx.processingLevelFollowsDerived ? null : selfLv;
   /**
    * ⭑ **⟨PRD-27 · WU-B8⟩ 「기록 없음」 체크박스의 두 성질.**
    *  · **확정 부모 ≥1 → 비활성 ＋ 사유 한 줄.** 칸은 **사라지지 않고** 연결도 지우지 않는다.
@@ -237,7 +246,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
    * **연결을 지우지 않는다** — 세기만 하고, 막는 것은 `데이터셋 만들기` 버튼 하나다.
    */
   const conflicts = parents.filter(
-    (p) => selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv,
+    (p) => ceilingLv !== null && p.parentLevel !== null && p.parentLevel > ceilingLv,
   );
 
   useEffect(() => {
@@ -249,13 +258,11 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
    * ⚠ **판정이 아니다.** 등록 전에는 서버가 계산한 값이 없어(데이터셋이 아직 없다)
    *   화면이 같은 식으로 미리 보여 줄 뿐이고, 저장 뒤의 정본은 응답의
    *   `processingLevelDerived` 다. 부모 Lv 를 하나라도 모르면 미리보기를 만들지 않는다.
+   *
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 식의 자리가 `common/processingLevel.ts` 로 옮겨졌다** —
+   *   ① 분류의 **기본 선택값**이 같은 식을 따르므로(`UploadModal`) 두 자리가 한 함수를 부른다.
    */
-  const known = parents.filter((p) => p.confirmed).map((p) => p.parentLevel);
-  const derivedPreview =
-    known.length === 0 || known.some((v) => v === null)
-      ? null
-      // 상한은 `LV_VALUES` 의 마지막 값이다 — 목록을 넓히면 여기가 따라 넓어진다.
-      : Math.min(Math.max(...(known as number[])) + 1, LV_VALUES[LV_VALUES.length - 1] as number);
+  const derivedPreview = derivedLevelFromParents(parents);
   const mismatch = selfLv !== null && derivedPreview !== null && derivedPreview !== selfLv;
 
   function patch(key: string, next: Partial<ParentCard>) {
@@ -308,7 +315,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   function picker(onPick: (row: ParentCandidateRow) => void, testid: string) {
     return (
       <ParentPicker
-        selfLv={selfLv}
+        selfLv={ceilingLv}
         candidates={candidates}
         error={candidateError}
         onRetry={retry}
@@ -353,8 +360,10 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
     <section className="lin" data-testid="lin-step">
       {/* ⭑ **⟨PRD-07⟩ 연결 규칙 안내 — 이 단계의 맨 위다.** 문면은 rev1 축자이고
           `분류에서 바꾸기` 는 ① 로 데려가는 길이다. ⛔ **자기 Lv 를 여기서 바꾸지 않는다.**
-          자기 Lv 를 아직 안 골랐으면(`null`) 기준값이 없어 이 줄이 서지 않는다. */}
-      {selfLv !== null && (
+          자기 Lv 를 아직 안 골랐으면(`null`) 기준값이 없어 이 줄이 서지 않는다.
+          ⭑ ⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ⟩ 계산값을 따라가는 중(`ceilingLv === null`)에도 서지 않는다 —
+          상한이 풀려 있어 「…만 연결할 수 있어요」가 없는 제한을 말하게 된다. */}
+      {selfLv !== null && ceilingLv !== null && (
         <p className="lin-scope-lv" data-testid="lin-lv-scope">
           {scopeNotice(selfLv)}{' '}
           <button type="button" className="lin-link" data-testid="lin-goto-classify"
@@ -374,7 +383,8 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
       {/* ⭑ **⟨PRD-10⟩ 불일치는 경고만이다 — 저장을 막지 않는다.** */}
       {mismatch && (
         <p className="lin-note" data-testid="lin-lv-mismatch">
-          {`고른 가공 단계는 Lv${selfLv}이고, 연결한 데이터로 계산하면 Lv${derivedPreview}이에요. 그대로 두어도 등록돼요.`}
+          {/* ⭑ ⟨R-LTH-REVIEW-1 · ㉲⟩ 문면은 공용 함수 하나다 — 상세 헤더가 같은 것을 부른다. */}
+          {levelMismatchNotice(selfLv as number, derivedPreview as number)}
         </p>
       )}
 
@@ -420,7 +430,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               {p.confirmed && <span className="lin-ok">확인함</span>}
               {/* ⭑ **⟨PRD-09⟩ 사후 충돌 표시.** 연결은 남고 이 칩만 붙는다 —
                   되돌리면 칩이 사라지고 `데이터셋 만들기` 가 다시 눌린다. */}
-              {selfLv !== null && p.parentLevel !== null && p.parentLevel > selfLv && (
+              {ceilingLv !== null && p.parentLevel !== null && p.parentLevel > ceilingLv && (
                 <span className="chip chip--warning" data-testid="lin-need-check">
                   확인 필요
                 </span>

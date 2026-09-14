@@ -5,10 +5,11 @@ import type { ReactNode } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { MAIN_NAV, LAB_SETTINGS_PATH, ownerTabOf } from './nav';
 import { useAccount } from '../permission/session';
-import { PermissionGate } from '../permission/PermissionGate';
+import { PermissionGate, useHasPermission } from '../permission/PermissionGate';
 import { UploadEntry } from '../components/upload/UploadEntry';
 import { useLogout } from '../auth/AuthGate';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { GnbMoreMenu } from './GnbMoreMenu';
 
 // 좁은 화면에서는 라벨을 감추고 이 아이콘만 남긴다 (shell.css `@media (max-width: 640px)`).
 // 인라인 SVG 만 쓴다 — 아이콘 라이브러리를 들이지 않는다. 모양은 카탈로그 표의 인라인 SVG 와 같은 결이다.
@@ -43,12 +44,31 @@ const NAV_ICON: Record<string, ReactNode> = {
   ),
 };
 
+/** 계정 관리·연구실 설정 아이콘 — 데스크톱 버튼과 「더보기」 목록이 **같은 그림**을 쓴다. */
+const ACCOUNT_ADMIN_ICON = (
+  <>
+    <circle cx="12" cy="8" r="3" />
+    <path d="M5 21v-3a7 7 0 0 1 14 0v3" />
+  </>
+);
+const LAB_SETTINGS_ICON = (
+  <>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.3-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 3 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z" />
+  </>
+);
+
 export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: string } | undefined } = {}) {
   const account = useAccount();
   // 관리자는 전 연구실을 읽는다 — 표기가 그 사실을 따라간다(승인 intent 2026-09-12).
   const operator = account?.canManageServiceAccounts === true;
   const logout = useLogout();
   const activeTab = ownerTabOf(useLocation().pathname);
+  // 「더보기」 목록의 항목 유무 — **기존 권한 분기를 그대로 승계한다**(`PermissionGate` 와 같은 판정).
+  // 셋 다 없으면 목록 자체를 세우지 않는다: 열어도 비어 있는 자리를 새로 만들지 않는다.
+  const canUpload = useHasPermission('업로드·편집');
+  const canLabSettings = useHasPermission('연구실 설정');
+  const hasMoreItems = canUpload || operator || canLabSettings;
 
   return (
     <header className="gnb">
@@ -71,10 +91,15 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
           ⚠ **특정 연구실 하나로 좁히는 동작은 아직 없다.** 좁히려면 읽기 op 들이 연구실 인자를
              받아야 하고, 그것은 「경계는 요청에서 오지 않는다」(CLAUDE.md §3-5)를 건드리는
              계약 판정이다 — 그래서 여기서 `▾` 를 달지 않는다. 달면 없는 동작을 약속하게 된다. */}
-      <button type="button" className="labswitch" data-testid="lab-switcher"
-              aria-label={operator
-                ? '연구실 전환 · 전체 연구실 (읽기 전용)'
-                : `연구실 전환 · ${account?.labName ?? ''}`}>
+      {/* ⭑ **⟨개정 2026-09-13 · 이태헌 1차 검증 `D-1` · 카드 ① ⓐ⟩ `button` 을 걷는다.**
+          종전에는 `onClick` 이 없는 `button` 이라 **눌리는데 아무 일도 일어나지 않았다** —
+          키보드 초점까지 받아 「여기서 무언가 할 수 있다」를 두 번 약속했다. 지금 이 자리가
+          말하는 것은 동작이 아니라 **범위**(어느 연구실을 보는 중인가)이므로 누를 수 없는
+          상태 표시로 둔다. 전환 동작이 돌아오는 회차에 `button` 도 같이 돌아온다. */}
+      <div className="labswitch" data-testid="lab-switcher"
+           aria-label={operator
+             ? '연구실 전환 · 전체 연구실 (읽기 전용)'
+             : `연구실 전환 · ${account?.labName ?? ''}`}>
         <Icon><path d="M3 21V9l6-4 6 4v12M9 21v-5h3v5M15 12h6v9h-6" /></Icon>
         {/* ⭑ **⟨개정 2026-09-13⟩ 「(읽기 전용)」을 눈에 보이는 글자로 적는다.**
             종전에는 그 다섯 글자가 `aria-label` 안에만 있어 **화면에는 `전체 연구실` 만** 보였다
@@ -82,7 +107,7 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
             보조기술 전용 사실이 아니라 **모든 사람이 알아야 하는 범위 표기**다. */}
         <span className="ln">{operator ? '전체 연구실' : (account?.labName ?? '')}</span>
         {operator ? <span className="ln-ro">(읽기 전용)</span> : null}
-      </button>
+      </div>
 
       {/* 주 내비 3개 — 전원 공통. 남는 가로 여백은 여기서 먹는다 (Policy §1) */}
       <nav className="mainnav" aria-label="주 내비">
@@ -108,8 +133,8 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
       <PermissionGate requires="업로드·편집">
         <UploadEntry openRequest={props.openRequest} />
       </PermissionGate>
-      {account?.canManageServiceAccounts ? (
-        <Link className="gnb-settings" to="/account-admin" data-testid="gnb-account-admin" aria-label="계정 관리"><Icon><circle cx="12" cy="8" r="3" /><path d="M5 21v-3a7 7 0 0 1 14 0v3" /></Icon><span className="lbl">계정 관리</span></Link>
+      {operator ? (
+        <Link className="gnb-settings" to="/account-admin" data-testid="gnb-account-admin" aria-label="계정 관리"><Icon>{ACCOUNT_ADMIN_ICON}</Icon><span className="lbl">계정 관리</span></Link>
       ) : null}
 
       {/* 연구실 설정 — `연구실 설정` 스위치가 켜진 사람에게만 보인다 (P-12) */}
@@ -120,25 +145,64 @@ export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: strin
           data-testid="gnb-lab-settings"
           aria-label="연구실 설정"
         >
-          <Icon>
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.3-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 3 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1Z" />
-          </Icon>
+          <Icon>{LAB_SETTINGS_ICON}</Icon>
           <span className="lbl">연구실 설정</span>
         </Link>
       </PermissionGate>
 
+      {/* ⭑ **⟨신설 2026-09-13 · `I-9` · 카드 ③ ⓒ⟩ 좁은 폭에서 기능 이름을 글자로 되돌린다.**
+          위 세 자리는 반응형 사다리에서 라벨을 잃고 그림만 남는다 — 그 폭에서는 이 목록이
+          대신 서고(`design-system.css` 900px 단) 항목마다 그림과 이름을 함께 낸다.
+          데스크톱에서는 이 버튼이 숨는다(`shell.css` `.gnb-more`). */}
+      {hasMoreItems ? (
+        <GnbMoreMenu>
+          {(close) => (
+            <>
+              <UploadEntry variant="menu" />
+              {operator ? (
+                <Link
+                  className="gnb-more-item"
+                  to="/account-admin"
+                  data-testid="gnb-more-account-admin"
+                  aria-label="계정 관리"
+                  onClick={close}
+                >
+                  <Icon>{ACCOUNT_ADMIN_ICON}</Icon>
+                  <span className="lbl">계정 관리</span>
+                </Link>
+              ) : null}
+              <PermissionGate requires="연구실 설정">
+                <Link
+                  className="gnb-more-item"
+                  to={LAB_SETTINGS_PATH}
+                  data-testid="gnb-more-lab-settings"
+                  aria-label="연구실 설정"
+                  onClick={close}
+                >
+                  <Icon>{LAB_SETTINGS_ICON}</Icon>
+                  <span className="lbl">연구실 설정</span>
+                </Link>
+              </PermissionGate>
+            </>
+          )}
+        </GnbMoreMenu>
+      ) : null}
+
       <ThemeSwitcher />
-      {/* 아바타 — 현재 사용자·역할·계정. 드롭다운 내용은 P0 범위 밖 */}
+      {/* 아바타 — 현재 사용자 표기.
+          ⭑ **⟨개정 2026-09-13 · 이태헌 1차 검증 `D-5` · 카드 ② ⓐ⟩ `▾` 와 `button` 을 걷는다.**
+             펼침 화살표는 「누르면 메뉴가 열린다」를 표기로 약속하는 것이고, 메뉴는 이번에도
+             만들지 않는다. 같은 파일이 연구실 표기에는 이미 그 규칙을 적어 두었다 —
+             「달면 없는 동작을 약속하게 된다」. 아바타에만 예외를 두지 않는다.
+             계정 동작은 로그아웃 버튼 하나로 남는다(`PLAN-SoT §9 〈90〉-㉳`). */}
       <div className="avatar-wrap">
-        <button type="button" className="avatar" data-testid="gnb-avatar" aria-label={`내 계정 · ${account?.name ?? ''}`}>
+        <div className="avatar" data-testid="gnb-avatar" aria-label={`내 계정 · ${account?.name ?? ''}`}>
           <Icon>
             <circle cx="12" cy="8" r="3.5" />
             <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
           </Icon>
           <span className="nm">{account?.name ?? ''}</span>
-          <span className="cv" aria-hidden="true">▾</span>
-        </button>
+        </div>
         {/* 로그아웃 — 아바타 드롭다운이 서기 전까지 자리를 여기 둔다 (`PLAN-SoT §9 〈90〉-㉳`).
             들어온 길이 있으면 나가는 길도 있어야 한다. */}
         <button type="button" className="gnb-logout" onClick={logout} data-testid="gnb-logout">

@@ -458,6 +458,14 @@ jobs:
         run: python -c 'import yaml'
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
         run: ./gates/run.sh work-item-consistency
+      # 참조자료 드라이브는 CI 에 없다. 그래서 **명시 면제**로 돈다 — md 4건 ↔ 커밋된 등재표
+      # 대조(표↔블록 · 재생성 동일성 · 총계 28/18)는 그대로 판정하고, 글롭이 실물 파일과
+      # 맞는지만 재지 않는다. 미선언으로 두면 red(준비 · 78)이고, 그것을 통과로 세지 않기
+      # 위해 「재지 않았다」를 선언으로 남긴다(`harness-eval` 과 같은 규약).
+      - name: 참조자료 정본 md ↔ 등재표 드리프트 (실물 대조는 CI 에 없어 명시 면제)
+        env:
+          COLAB_SEED_PLAN_NO_FILES: '1'
+        run: ./gates/run.sh seed-plan-drift
       - name: 기획 검사기 회귀 (합성 fixture · 실제 원본 검사는 로컬 필수)
         run: |
           python -m unittest discover -s scripts/tests -p test_planning_gate.py -v

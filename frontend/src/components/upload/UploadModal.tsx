@@ -16,6 +16,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from '../../permission/session';
 import { LineageStep } from '../lineage/LineageStep';
 import type { ParentCard } from '../lineage/types';
+// ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 기본값이 ③ 미리보기와 **같은 식**을 쓴다.
+import { derivedLevelFromParents } from '../common/processingLevel';
+
+/**
+ * 계산값 → ① 기본 선택 코드. 계산값이 없으면(부모 Lv 미상) `Lv2` 유지(spec §6 ㉱).
+ * 부모 0건은 계산값 `0` 이라 `Lv0` 이다(카드 ⑩ ⓐ).
+ */
+function autoLevelCode(derived: number | null): string {
+  return derived === null ? DEFAULT_PROCESSING_LEVEL : `Lv${derived}`;
+}
 import { Toast } from '../common/Toast';
 import { type AccessState } from '../common/accessState';
 import {
@@ -203,7 +213,16 @@ export function UploadModal(props: {
   // ⛔ 기본값은 「사람이 적은 값」이 아니다 — `hasHumanInput` 이 이 셋을 세지 않는다.
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [dataType, setDataType] = useState(DEFAULT_DATA_TYPE);
-  const [level, setLevel] = useState(DEFAULT_PROCESSING_LEVEL);
+  // ⭑ ⟨카드 ⑩ ⓐ⟩ 첫 값도 계산값이다 — 부모 0건이면 `Lv0`(한 프레임이라도 `Lv2` 를 그리지 않는다).
+  const [level, setLevel] = useState(() => autoLevelCode(derivedLevelFromParents([])));
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ 가공 단계를 사람이 한 번이라도 골랐는가.**
+   *
+   * 기본 선택값은 ③ 에서 확정한 부모의 **계산값을 따라간다**. 다만 사람이 고른 값은
+   * **덮지 않는다** — 고른 값이 사라지면 선택 칸이 무의미해진다(㉱ 축자).
+   * ⛔ 이것은 「사람이 적은 값」 계수(`hasHumanInput`)와 다른 축이다 — 추종은 자동 채움이다.
+   */
+  const [levelTouched, setLevelTouched] = useState(false);
   const [summary, setSummary] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   // ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** `sourceLabel` 옆에 두되 **다른 축**이다 —
@@ -646,6 +665,15 @@ export function UploadModal(props: {
    * 사람이 고르지 않은 기본값은 「잃을 것」이 아니다 — 그것까지 세면 파일만 올린 사람이
    * 매번 되묻히고, 그것이 고치려던 바로 그 증상이다.
    */
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱ · 카드 ⑩ ⓐ⟩ ① 가공 단계 기본값 = ③ 의 계산값.**
+   *
+   * 식은 ③ 미리보기와 **같은 함수**다(`derivedLevelFromParents`). 확정 부모 0건이면 `Lv0`,
+   * 부모 Lv 를 하나라도 모르면 `null` → 기본값 `Lv2` 유지(`autoLevelCode`).
+   * `hasHumanInput` 이 이 값을 기준으로 세므로 그보다 먼저 선언한다.
+   */
+  const derivedFromParents = derivedLevelFromParents(lineageCards);
+  const autoLevel = autoLevelCode(derivedFromParents);
   const hasHumanInput =
     (name.trim() !== '' && name !== nameDraft) ||
     topic.trim() !== '' ||
@@ -672,7 +700,8 @@ export function UploadModal(props: {
     //   (파일만 올린 사람을 되묻지 않는다), 기본값에서 바꾼 순간부터 「잃을 것」이 된다.
     category !== DEFAULT_CATEGORY ||
     dataType !== DEFAULT_DATA_TYPE ||
-    level !== DEFAULT_PROCESSING_LEVEL ||
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 기준은 계산값 기본값이다 — 파일만 올린 사람의 자동 `Lv0` 을 세지 않는다.
+    level !== autoLevel ||
     // ⭑ ⟨WU-B4 · PRD-11⟩ 공개 범위도 같은 규율이다 — 고른 순간부터 「잃을 것」이다.
     accessState !== null ||
     lineageParents.length > 0 ||
@@ -714,6 +743,19 @@ export function UploadModal(props: {
    */
   const lineageUnknownEffective =
     lineageUnknown && lineageParents.length === 0 && level !== 'Lv0';
+  /**
+   * ⭑ **⟨R-LTH-REVIEW-1 · spec §6 ㉱⟩ ① 가공 단계 기본값이 ③ 의 계산값을 따라간다.**
+   *
+   * 값은 위 `autoLevel` 이다 — 확정 부모 0건이면 `Lv0`(카드 ⑩ ⓐ), 부모 Lv 미상이면 `Lv2`.
+   * ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ ／ 종전 ~~부모 0건을 Lv0 으로 보지 않는다~~.
+   * ⛔ 사람이 한 번 고른 뒤에는 추종을 멈춘다(`levelTouched`).
+   */
+  useEffect(() => {
+    // 보낸 뒤에는 화면 값을 움직이지 않는다 — 다른 등록 입력과 같은 규율(`editRegistration`).
+    if (submitLock.current || committedDatasetIdRef.current) return;
+    if (levelTouched) return;
+    setLevel(autoLevel);
+  }, [levelTouched, autoLevel]);
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => {
     if (submitLock.current || committedDatasetIdRef.current) return;
@@ -731,6 +773,9 @@ export function UploadModal(props: {
       topic: topic || null,
       // ⭑ **⟨WU-B5 · PRD-07⟩ ① 이 고른 자기 Lv 가 연결 규칙의 기준값이다.**
       processingLevelUserSet: level,
+      // ⭑ ⟨카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 추종 중에는 ③ 이 부모 선택 상한을 걸지 않는다.
+      //   부모 Lv 미상(계산값 없음 · 기본값 `Lv2`)은 추종이 아니므로 상한이 선다.
+      processingLevelFollowsDerived: !levelTouched && derivedFromParents !== null,
       onGoToClassify,
       onLineageProgress,
       onLineageParentsChange,
@@ -740,7 +785,7 @@ export function UploadModal(props: {
       lineageUnknown,
       onLineageUnknownChange,
     }),
-    [uploadId, name, topic, level, lineageCards, lineageUnknown, onGoToClassify,
+    [uploadId, name, topic, level, levelTouched, derivedFromParents, lineageCards, lineageUnknown, onGoToClassify,
      onLineageProgress, onLineageParentsChange, onLineageConflictChange, onLineageCardsChange,
      onLineageUnknownChange],
   );
@@ -825,7 +870,11 @@ export function UploadModal(props: {
     //   사라져요」이고, 사람이 고른 분류가 남으면 화면이 고지와 다른 말을 한다.
     setCategory(DEFAULT_CATEGORY);
     setDataType(DEFAULT_DATA_TYPE);
-    setLevel(DEFAULT_PROCESSING_LEVEL);
+    // ⭑ ⟨카드 ⑩ ⓐ⟩ 연결도 함께 내리므로 되돌릴 값은 부모 0건의 계산값(`Lv0`)이다.
+    setLevel(autoLevelCode(derivedLevelFromParents([])));
+    // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 「사람이 고른 적 있다」도 함께 내린다 — 안 내리면 새 파일의
+    //   계산값 추종이 옛 손길 때문에 멈춘다.
+    setLevelTouched(false);
     // 고지 문면이 「입력하던 내용은 사라져요」다 — 등록 ②③ 의 사람 입력도 함께 내린다.
     // 남겨 두면 파일을 빼고 등록을 다시 열었을 때 지운 파일의 기간·프로젝트·계보가 남아
     // 화면이 고지와 다른 말을 한다.
@@ -1356,8 +1405,8 @@ export function UploadModal(props: {
           {mixedGlobal && <Toast message={MIXED_EXTENSION_NOTICE} testId="up-mixed-global" onDismiss={() => setMixedGlobal(false)} />}
           {status?.failure && (
             <div className="warn" role="alert" data-testid="up-analysis-failure">
-              <p>파일 분석을 마치지 못했어요 · {status.failure.reason}</p>
-              <p>파일과 기준 격자를 확인한 뒤 다시 시도해 주세요.</p>
+              <p>파일 분석을 마치지 못했어요 · {status.failure.reason} — 지도로 못 그려요 · 등록은 됩니다</p>
+              <p>지금 그대로 등록해도 되고, 파일과 기준 격자를 확인한 뒤 다시 분석해도 돼요.</p>
               <button type="button" className="btn btn-secondary" onClick={() => setRetryArm((n) => n + 1)}>다시 올려 분석</button>
             </div>
           )}
@@ -1524,7 +1573,12 @@ export function UploadModal(props: {
                     type="button"
                     className="btn btn-strong"
                     data-testid="reg-open"
-                    disabled={gridReuseBusy || !uploadId || !status?.ready || Boolean(status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
+                    // ⭑ ⟨`#40`⟩ **분석 실패는 등록을 막지 않는다** (정본 `Policy:192` ·
+                    // 서버 `test_a_failed_pipeline_does_not_block_registration` = 201).
+                    // 「분석이 끝났다」는 `ready || failure` 다 — 워커가 실패에 `ready=False` 를
+                    // 함께 쓰므로(`d5_ingestion.py` `_fail`) `failure` 항만 빼면 `ready:false` 가
+                    // 그대로 막는다. 격자·접수 갈래의 항은 무변이다.
+                    disabled={gridReuseBusy || !uploadId || !(status?.ready || status?.failure) || Boolean(statusIssue) || Boolean(intakeError)}
                     title={analyzeBlocksNext ? REG_OPEN_ANALYZING_REASON : undefined}
                     aria-describedby={analyzeBlocksNext ? REG_OPEN_WHY_ID : undefined}
                     onClick={() => {
@@ -1593,7 +1647,11 @@ export function UploadModal(props: {
                 dataType={dataType}
                 onDataType={(value) => editRegistration(() => setDataType(value))}
                 level={level}
-                onLevel={(value) => editRegistration(() => setLevel(value))}
+                onLevel={(value) => editRegistration(() => {
+                  // ⭑ ⟨R-LTH-REVIEW-1 · ㉱⟩ 사람이 고른 순간부터 계산값 추종을 멈춘다.
+                  setLevelTouched(true);
+                  setLevel(value);
+                })}
                 accessState={accessState}
                 onAccessState={(value) => editRegistration(() => setAccessState(value))}
                 nameError={nameError}

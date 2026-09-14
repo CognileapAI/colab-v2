@@ -32,7 +32,14 @@ export function UploadEntry(props: {
   sources?: UploadSources | undefined;
   /** ③ 계보 확정 자리를 바깥에서 갈아 끼우고 싶을 때만 넘긴다. 없으면 모달이 집 안의 것을 세운다. */
   lineageStep?: LineageStepRender | undefined;
+  /**
+   * ⭑ **⟨신설 2026-09-13 · `I-9` · 카드 ③ ⓒ⟩ 어느 자리에 서는가.**
+   * `gnb`(기본) = 상단 1급 버튼. `menu` = 좁은 폭 「더보기」 목록 항목(그림 ＋ 이름).
+   * 여는 모달은 같다 — 버튼 모양만 다르고 열림 상태·모달 본체는 한 벌이다.
+   */
+  variant?: 'gnb' | 'menu' | undefined;
 }) {
+  const inMenu = props.variant === 'menu';
   const [open, setOpen] = useState(false);
   const [sources] = useState<UploadSources>(() => props.sources ?? defaultSources());
   // 바깥 요청으로 열기 — `seq` 가 바뀔 때만 연다(같은 값으로 다시 열지 않는다).
@@ -53,13 +60,14 @@ export function UploadEntry(props: {
     <PermissionGate requires="업로드·편집">
       <button
         type="button"
-        className="gnb-upload"
-        data-testid="gnb-upload"
+        className={inMenu ? 'gnb-more-item' : 'gnb-upload'}
+        data-testid={inMenu ? 'gnb-more-upload' : 'gnb-upload'}
         aria-label="업로드"
         onClick={() => setOpen(true)}
       >
         {/* 좁은 화면에서는 `.lbl` 이 숨고 이 아이콘만 남는다 (`shell.css` 640px).
-            아이콘이 없으면 버튼이 빈 칸이 된다 — main 의 모바일 반응형 병합에서 실제로 그럴 뻔했다. */}
+            아이콘이 없으면 버튼이 빈 칸이 된다 — main 의 모바일 반응형 병합에서 실제로 그럴 뻔했다.
+            ⭑ `menu` 자리에서는 `.lbl` 을 감추지 않는다 — 이름을 글자로 돌려주려고 만든 자리다. */}
         <svg
           className="ico"
           width="16"

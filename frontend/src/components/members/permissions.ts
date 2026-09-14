@@ -39,6 +39,17 @@ export function isEditable(member: LabMember, sw: PermissionSwitch): boolean {
   return member.editablePermissions.includes(sw);
 }
 
+/**
+ * 지금 쓰이지 않는 계정인가 — 계정 관리 화면과 **같은 말**을 쓰는 자리 (`D-4`).
+ *
+ * ⚠ **이 값으로 편집 가능을 계산하지 않는다.** 편집 가능의 정본은 위 `isEditable` 이고,
+ * 서버가 비활성 행에 빈 배열을 실어 그 자리에서 이미 잠긴다. 여기 쓰임은 **표기 하나**다 —
+ * 상태 칩과 잠금 이유 한 줄. 상태를 실어 주지 않는 응답에서는 `false` 다(모른다 ≠ 비활성).
+ */
+export function isInactive(member: LabMember): boolean {
+  return member.accountStatus === 'inactive';
+}
+
 export type Draft = Record<string, PermissionSwitchSet>;
 
 export function draftOf(members: readonly LabMember[]): Draft {

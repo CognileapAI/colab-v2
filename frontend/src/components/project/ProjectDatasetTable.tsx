@@ -12,6 +12,14 @@ import { displayLevel } from '../common/processingLevel';
 import { dataPeriod } from './format';
 import type { ProjectDatasetRow } from './types';
 
+/**
+ * 승인 대기 칸의 글자 — **카탈로그 표와 같은 말**이다(`CatalogTable.tsx` 앵커
+ * `VERIFIED_PENDING_LABEL`). 두 표가 같은 상태를 다른 글자로 말하지 않게 맞춘다.
+ * 열 제목 `Verified` 와 승인된 행의 「승인됨」은 무변이다.
+ */
+// Ted 문면 확정 대기 · R-LTH-REVIEW-1
+const VERIFIED_PENDING_LABEL = '승인 전';
+
 export function ProjectDatasetTable(props: {
   rows: ProjectDatasetRow[];
   canManage: boolean;
@@ -19,10 +27,21 @@ export function ProjectDatasetTable(props: {
   /** 소속 해제 — **연결 기록만** 지운다. 데이터셋은 카탈로그에 그대로 있다 (`§7`). */
   onUnlink(datasetId: string): Promise<void>;
 }) {
+  // ⭑ ⟨R-LTH-REVIEW-1 · `I-6`⟩ 0행에서는 밀 것이 없다 — 좌우 이동 안내도, 초점만 받는
+  //    빈 스크롤 영역도 세우지 않는다. 표 자체는 남기고 빈 상태를 표 **안**에서 말한다.
+  const hasRows = props.rows.length > 0;
+
   return (
     <>
-    <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
-    <div className="pj-ds-scroll" role="region" aria-label="소속 데이터셋 표" tabIndex={0}>
+    {hasRows ? (
+      <p className="table-scroll-hint">표를 좌우로 밀면 나머지 항목과 작업을 볼 수 있어요.</p>
+    ) : null}
+    <div
+      className="pj-ds-scroll"
+      role={hasRows ? 'region' : undefined}
+      aria-label={hasRows ? '소속 데이터셋 표' : undefined}
+      tabIndex={hasRows ? 0 : undefined}
+    >
     <table className="pj-ds" data-testid="project-datasets">
       <thead>
         <tr>
@@ -35,6 +54,17 @@ export function ProjectDatasetTable(props: {
         </tr>
       </thead>
       <tbody>
+        {/* 0행 — 「없다」로 끝내지 않고 **담는 자리**를 말한다. 데이터셋을 프로젝트에 담는
+            자리는 등록 `③ 연결` 의 `연관 프로젝트·논문` 하나다(`upload/RegisterArea.tsx`).
+            선례 = `CatalogTable.tsx` 의 `<td colSpan={9} className="empty">`. */}
+        {hasRows ? null : (
+          <tr>
+            <td colSpan={6} className="empty" data-testid="pds-empty">
+              연결된 데이터셋이 없어요. 데이터셋을 올릴 때 ③ 연결 단계의 「연관 프로젝트·논문」에서
+              이 프로젝트를 고르면 여기에 보여요.
+            </td>
+          </tr>
+        )}
         {props.rows.map((row) => (
           <tr
             key={row.datasetId}
@@ -78,7 +108,7 @@ export function ProjectDatasetTable(props: {
                   aria-disabled="true"
                   title="승인 처리가 아직 도착하지 않았다"
                 >
-                  Verified
+                  {VERIFIED_PENDING_LABEL}
                 </span>
               )}
             </td>

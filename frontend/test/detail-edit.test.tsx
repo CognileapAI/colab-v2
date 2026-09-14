@@ -225,9 +225,10 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
                       'edit-period-start', 'edit-period-end', 'edit-interval-value']) {
       expect(within(form).getAllByTestId(id)).toHaveLength(1);
     }
-    // 셀렉트는 **셋**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17) ·
-    // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위.
-    expect(form.querySelectorAll('.de-inline select')).toHaveLength(3);
+    // 셀렉트는 **넷**이다 — 기간 최소 단위(PRD-18) · 관측 간격 단위(PRD-17) ·
+    // ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 ·
+    // ⭑ ⟨정정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉴⟩ 가공 단계 ／ 종전 ~~셋~~.
+    expect(form.querySelectorAll('.de-inline select')).toHaveLength(4);
   });
 
   it('`주제` 는 상세에 **표시되지만** 편집 칸이 없다', async () => {
@@ -245,7 +246,9 @@ describe('§2 WU-A3 — 여는 칸은 다섯뿐이다 (topic 읽기 전용 · R-
     //   칸」이 아니라 **이 회차가 세운 칸**이다(PRD-17).
     // ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ `공개 범위` 도 빠졌다** — 이 회차가 세웠다.
     //   나머지 넷은 그대로 R-B 의 다른 WU 몫이다.
-    for (const label of ['분류', '유형', '가공 단계', '변수']) {
+    // ⭑ **⟨정정 2026-09-13 · R-LTH-REVIEW-1 · spec §6 ㉴⟩ `가공 단계` 도 빠졌다** — 이 회차가
+    //   세운 칸이다(계약 열쇠는 기존). ／ 종전 ~~넷(분류·유형·가공 단계·변수)~~.
+    for (const label of ['분류', '유형', '변수']) {
       for (const editor of form.querySelectorAll<HTMLElement>('.de-inline')) {
         expect(within(editor).queryByRole('textbox', { name: label })).toBeNull();
         expect(within(editor).queryByRole('combobox', { name: label })).toBeNull();
@@ -440,4 +443,59 @@ it('수정 중에도 정보 셀을 유지하고 지원 필드만 원래 자리�
   await click(screen.getByTestId('detail-edit-cancel'));
   expect(screen.getByTestId('ig-좌표계')).not.toHaveTextContent('EPSG:9999');
   expect(screen.getByTestId('basic-info')).toBeInTheDocument();
+});
+
+// ── R-LTH-REVIEW-1 Task 3 · ㉴ 상세 편집 가공 단계 칸 (spec §6 ㉴ · §8-2 22) ──────
+//
+// 오라클 = intent `2026-09-13-lth-processing-level-mismatch.md` 검증 가능 문장 ⑶
+//   「상세 편집에 가공 단계 칸이 있고, 저장 후 상세 표시값이 바뀐다.」
+// 계약은 **무변**이다 — `DatasetUpdate.processingLevelUserSet` 이 이미 있다(§4-6).
+// green-by-skip 방지 = 값을 **안 바꾼** 대조군에서 그 열쇠가 실리지 않음을 함께 잰다.
+
+describe('㉴ 상세 편집 — 가공 단계 칸', () => {
+  it('편집 폼의 가공 단계 칸이 `가공 단계` 셀 안에 서고 현재 값으로 열린다', async () => {
+    await openForm();
+    const cell = screen.getByTestId('ig-가공 단계');
+    const select = within(cell).getByTestId('edit-processing-level') as HTMLSelectElement;
+    expect(select.tagName).toBe('SELECT');
+    expect(select.value).toBe(BASE.basicInfo!.processingLevelUserSet);
+    // Lv0~Lv3 네 값 — DB `CHECK` 와 같은 집합이다.
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['Lv0', 'Lv1', 'Lv2', 'Lv3']);
+  });
+
+  it('값을 고쳐 저장하면 요청 본문에 `processingLevelUserSet` 이 실리고 표시값이 바뀐다', async () => {
+    // 서버가 돌려주는 상세도 같은 값이다 — 왕복 뒤 표시값을 재려면 필요하다.
+    const saved: DatasetDetail = {
+      ...BASE,
+      basicInfo: { ...BASE.basicInfo!, processingLevelUserSet: 'Lv1' },
+    };
+    const dep = deferredUpdateSource(saved);
+    await openForm({ updateSource: dep.source });
+    // 재기 전에 종전 표시값을 확인한다 — 대상 0건 통과를 막는다.
+    expect(BASE.basicInfo!.processingLevelUserSet).toBe('Lv2');
+    await type(screen.getByTestId('edit-processing-level'), 'Lv1');
+    await click(screen.getByTestId('detail-edit-save'));
+    expect(dep.calls).toHaveLength(1);
+    expect(dep.calls[0]!.patch.processingLevelUserSet).toBe('Lv1');
+    await dep.settle();
+    const cell = screen.getByTestId('ig-가공 단계');
+    expect(cell).toHaveTextContent('Lv1');
+    expect(cell.textContent).not.toContain('Lv2');
+  });
+
+  it('`applyDraft` 낙관 갱신이 기본 정보의 사람 값을 바꾼다', () => {
+    const next = applyDraft(BASE, { ...toDraft(BASE), processingLevelUserSet: 'Lv1' });
+    expect(next.basicInfo!.processingLevelUserSet).toBe('Lv1');
+    // 파생값은 건드리지 않는다 — 사람이 적은 칸만이다.
+    expect(next.processingLevel).toBe(BASE.processingLevel);
+  });
+
+  it('대조군 — 가공 단계를 안 건드리면 그 열쇠가 실리지 않는다', async () => {
+    const dep = deferredUpdateSource();
+    await openForm({ updateSource: dep.source });
+    await type(screen.getByTestId('edit-crs') as HTMLInputElement, 'EPSG:9999');
+    await click(screen.getByTestId('detail-edit-save'));
+    expect(dep.calls).toHaveLength(1);
+    expect('processingLevelUserSet' in dep.calls[0]!.patch).toBe(false);
+  });
 });

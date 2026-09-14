@@ -95,5 +95,12 @@ export interface LineageSource {
 // ⭑ **⟨WU-C9 · 질의 27·41⟩ Lv 표시 규칙의 집은 `common/processingLevel.ts` 하나다.**
 //    여기서 다시 선언하지 않고 **그대로 다시 내보낸다** — 종전 수입 경로
 //    (`import { levelOf } from '../lineage/types'`)를 끊으면 네 자리가 각자 고쳐진다.
-export { LV_VALUES, levelOf, displayLevel } from '../common/processingLevel';
-export type { LevelBearing } from '../common/processingLevel';
+export {
+  LV_VALUES,
+  levelOf,
+  displayLevel,
+  // ⭑ ⟨R-LTH-REVIEW-1 · spec §6 ㉱·㉲⟩ 파생 미리보기 식과 불일치 문면도 같은 집이다.
+  derivedLevelFromParents,
+  levelMismatchNotice,
+} from '../common/processingLevel';
+export type { LevelBearing, ParentLevelBearing } from '../common/processingLevel';

@@ -5,6 +5,8 @@
 """
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -103,9 +105,29 @@ def update_lab(session: Session, changes: dict) -> None:
             f"ON CONFLICT (lab_id) DO UPDATE SET {updates}"), profile)
 
 
-def list_members(session: Session) -> list[dict]:
-    """연구실 구성원 전원. 질의가 연구실을 직접 고른다(위 `_MEMBERS` 주석 — 0028)."""
-    return [dict(r) for r in session.execute(_MEMBERS).mappings().all()]
+def list_members(session: Session,
+                 *, status_of: Callable[[str], str | None] | None = None) -> list[dict]:
+    """연구실 구성원 전원. 질의가 연구실을 직접 고른다(위 `_MEMBERS` 주석 — 0028).
+
+    ⭑ ⟨2026-09-13 · `D-4`⟩ `status_of` 를 주면 각 행에 **계정 상태를 투영한다.**
+
+    **이 도메인은 상태를 직접 읽지 않는다.** 상태의 원본은 `account_admin.login_credential`
+    이고 그 스키마는 앱 롤 접근이 차단돼 있다(`schema.sql` 앵커
+    `REVOKE ALL ON SCHEMA account_admin FROM PUBLIC;`). 그래서 **읽는 방법을 호출자가 넣어
+    준다** — 여기 SQL(`_MEMBERS`)은 한 글자도 늘지 않고, `d1_account` 에 상태 열을 신설하지
+    않는다(마이그레이션 0건). 투영은 조회 시점에만 있다.
+
+    `status_of` 가 `None` 을 돌려주면 **그 열쇠를 싣지 않는다** — 「의견 없음」이지 「활성」이
+    아니다(`kernel/db_credentials.py` 앵커 `def status_for_account(` 의 같은 규율).
+    """
+    rows = [dict(r) for r in session.execute(_MEMBERS).mappings().all()]
+    if status_of is None:
+        return rows
+    for row in rows:
+        status = status_of(str(row["id"]).strip())
+        if status is not None:
+            row["account_status"] = status
+    return rows
 
 
 def member_exists(session: Session, account_id: Ulid) -> bool:

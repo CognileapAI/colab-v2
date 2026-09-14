@@ -20,8 +20,14 @@ SELECT 'DO $check$ BEGIN RAISE EXCEPTION ''계정 관리자 롤이 현재 DB 객
    UNION ALL
    SELECT 1 FROM pg_namespace n JOIN pg_roles r ON r.oid=n.nspowner WHERE r.rolname=:'admin')
 \gexec
-SELECT format('ALTER ROLE %I NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS PASSWORD %L',
-              :'admin', :'admin_password')
+-- 2026-09-13 — RDS 마스터는 `rds_superuser` 이지 진짜 슈퍼유저가 아니고, PostgreSQL 16 은 값이 그대로여도
+-- `NOSUPERUSER` 를 적은 ALTER ROLE 을 슈퍼유저 아닌 실행자에게 거절한다. 그래서 둘로 나눈다 —
+-- 비밀번호는 항상, 나머지 속성은 실제로 어긋났을 때만. 아래 마지막 검사가 fail-closed 를 유지한다.
+SELECT format('ALTER ROLE %I PASSWORD %L', :'admin', :'admin_password')
+\gexec
+SELECT format('ALTER ROLE %I NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS', :'admin')
+  FROM pg_roles WHERE rolname=:'admin'
+   AND (rolcreatedb OR rolcreaterole OR rolinherit OR NOT rolbypassrls)
 \gexec
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM :"admin";
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA account_admin FROM :"admin";

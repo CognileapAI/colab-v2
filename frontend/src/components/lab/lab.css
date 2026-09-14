@@ -2,7 +2,9 @@
    전역 `.modal`·`.card` 이름을 새로 정의하지 않는다(members.css 의 `.modal` 이 업로드 모달을
    덮은 사고와 같은 모양을 만들지 않기 위해서다). 골격만 project.css 의 `pj-modal` 선례를 따른다. */
 
-.labinfo-card .card-h h3 { margin: 0; }
+/* 탭 본체 제목은 `h2` 다 (대표 제목 규약). 크기는 `members.css` 의 `.card-h h2` 가 쥔다 —
+   단계가 바뀌어도 보이는 크기는 종전 `h3` 와 같다. */
+.labinfo-card .card-h h2 { margin: 0; }
 .labinfo-card .card-h .btn { margin-left: auto; }
 
 .labinfo-error {

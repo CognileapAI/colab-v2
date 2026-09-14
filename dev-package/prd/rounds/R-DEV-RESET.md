@@ -1,0 +1,309 @@
+# R-DEV-RESET — dev 전면 초기화와 참조 데이터 화면 재적재
+
+입력 intent: `dev-package/intent/2026-09-13-dev-reset-reference-scenario.md` · 확정 2026-09-13(Ted 판정 9 ＋ 에이전트 확정 8 · §2).
+등록표 정본: `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5 ＋ §5-6.
+기점: `integration/r-dev-reset` tip(커밋 sha 는 레인 스폰 시 실측 · 하드코딩하지 않는다).
+이 파일은 부트스트랩에서 읽는 유일한 문서다(`CLAUDE.md §1`). 다른 문서는 상대경로 ＋ 앵커 문자열로만 따라간다.
+
+## 1. 회차 목적
+
+- dev 에 쌓인 검증용 데이터를 전면 제거하고, 시나리오의 시작 상태를 「초기화 도구 1회 실행 직후」 한 지점으로 고정한다.
+- 실물 참조 데이터를 화면 조작으로 재적재해 프로젝트 4 · 데이터셋 28 · 계보 간선 18 을 dev 에 세운다.
+- 그 조작 절차를 단계·입력값·기대 화면이 적힌 체크리스트 문서로 레포에 남겨 재실행 가능하게 한다.
+
+## 2. 확정 결정 요약 (intent 원본에 근거 · 재개봉 금지 `.claude/rules/colab-rules.md §8`)
+
+Ted 판정
+1. dev 기존 데이터는 검증용이므로 전부 삭제한다.
+2. 최소 구성 = 프로젝트 4개(precipitation · vegetation · drought · 포멧테스트).
+3. 소유 = 고려대학교 수문학 연구실(전창현 교수).
+4. 투입 경로 = 브라우저 화면 조작. 백엔드 시딩·DB 삽입·API 직접 호출을 쓰지 않는다.
+5. 그 과정을 재실행 가능한 시나리오로 남긴다.
+6. 사전 백업을 하지 않는다 — 임시 데이터다.
+7. 클린 수준 ⓑ 완전 초기화 — 두 DB 스키마 재생성 ＋ 버킷 접두사 2개 비우기.
+8. 가뭄 자료 = 데이터셋 2건(SPI-4weeks · SPEI-4weeks) · 계보 0간선.
+9. ⭑ ⟨확정 2026-09-13 「파일은 전건」⟩ **파일 구성 = 전건(포멧테스트 포함)** — 전 데이터셋이 후보 실물의 파일을 전건으로 싣는다(intent `## 판정 결과` ㈏ ⓑ). ／ 종전 ~~포멧테스트는 데이터셋당 파일 1건만~~. 데이터셋 28 · 계보 간선 18 은 무변이고 화면 업로드 총량이 ≈ 6.1 GB 로 는다.
+
+에이전트 확정(근거는 intent 「판정 결과」 절)
+10. hdf5 폴더의 실물은 hdf4 — 데이터셋 이름 `hdf4` ＋ 설명란에 폴더명 병기.
+11. 학회 발표 자료 폴더는 적재하지 않는다.
+12. 삭제 수단 = dev 전용 초기화 도구 1회 실행(화면 삭제는 501 이라 불가).
+13. ⭑ ⟨개정 2026-09-13 · 계획 검토⟩ **연구실은 운영 SQL 로 새로 만든다** ／ 종전 ~~기존 행 이름이 일치하면 재사용~~ — 결정 7(스키마 재생성)이 연구실·계정 행을 0 으로 만들어 재사용 갈래가 성립하지 않는다. 화면 밖 선행은 WU-R3 의 4건뿐이다.
+14. 시나리오는 사람 체크리스트 문서 — 브라우저 자동화 도입은 별도 대장 항목.
+15. 원본 다건은 데이터셋 1건에 파일 여러 개로 묶는다.
+16. HSR 격자 정본은 npy 위경도 쌍.
+17. 타일별 분리(tif 2 · hdf 2)는 데이터셋당 기준 격자 파일 2건 상한에 따른 분리다.
+
+## 3. 진입조건
+
+| # | 조건 | 닫는 법 |
+|---|---|---|
+| ㄱ | `integration/r-dev-reset` 이 `main` tip 기점으로 서 있고 intent·계획 커밋이 그 위에 있다 | 오케스트레이터가 브랜치를 만든다(§8) |
+| ㄴ | 레인 시작 전 `service-tests-core-api` 단독 green 1회 | `bash gates/run.sh service-tests-core-api` |
+| ㄷ | `[미확인]` dev 현재 데이터셋·파일·S3 객체 계수 | 읽기 전용 계수 1회(§5 WU-R2 1단계) — `colab_backup` 롤 또는 API `listDatasets` |
+| ㄹ | `[미확인]` 마지막 배포의 `deploy_doctor` ⑥(스키마 head · 서버 저장소 트리)이 ✗ 로 남아 있다 | EC2 `/opt/colab-repo` 를 배포 sha 로 민다 — `infra/dev/README.md` 앵커 「⟨선행 단계 · `〈361〉`-㉯⟩」 축자 `tar czf /tmp/repo.tgz --exclude=__pycache__ --exclude=.venv db gates services/core-api/ops infra` → `scp -i "$COLAB_DEV_KEY_FILE" /tmp/repo.tgz "$COLAB_DEV_SSH":/tmp/` → `ssh -i "$COLAB_DEV_KEY_FILE" "$COLAB_DEV_SSH" 'sudo tar xzf /tmp/repo.tgz -C /opt/colab-repo --overwrite'`. 판정 = 양쪽 `deploy_doctor.py` md5 일치. 담당 = 오케스트레이터 · WU-R1a·R1b 병합 뒤 dev 배포 시 |
+| ㅁ | 원천 드라이브 `03 Reference-Data` 가 붙어 있다(WU-R3 만 해당) | 사람이 연결 확인 |
+
+- ㄷ·ㄹ 은 WU-R1a·R1b(코드·문서 작업)의 진입조건이 아니고 WU-R2 실행의 진입조건이다.
+- ㄹ 이 닫히지 않으면 WU-R2 의 완료 정의(15/15 한 번의 실행)가 성립하지 않는다.
+
+## 4. 실측 근거 (레인이 다시 재지 않는다)
+
+- 마이그레이션 head — platform `db/platform/versions/0031_search_evidence.py` · ai `db/ai/versions/0007_merge_topic_vocab_and_rc7_category.py`(리비전 그래프 계산 실측 2026-09-13).
+- 마이그레이션 적용 자리 — EC2 위 `infra/dev/up.sh` 의 ① 단계. 축자 「`dc --profile migrate run --rm migrate-platform`」 ＋ 같은 줄의 `migrate-ai`. 앱 이미지에 alembic 이 없고 `infra/dev/migrator/Dockerfile` 의 별도 이미지가 소유자 롤로 돈다.
+- 스키마의 정본 — `infra/dev/db-bootstrap.sh` 머리말 축자 「스키마는 여기서 만들지 않는다 — alembic 체인이 정본이다.」 ⟹ **RLS 정책은 마이그레이션이 만든다.**
+- 부트스트랩이 만드는 것 — 롤·DB·GRANT 뿐. `infra/staging/db-bootstrap.sh` 의 `app-grants` 가 `services/core-api/ops/app-role.sql` 을 먹이고 `colab_ai_app` 에 `GRANT SELECT ON ALL TABLES` ＋ `ALTER DEFAULT PRIVILEGES` 를 건다. ⟹ **스키마 재생성 뒤 `app-grants` ＋ `account-admin` 재실행이 필수다**(`GRANT ON ALL TABLES` 는 그 시점의 표에만 걸린다).
+- 접속 — 소유자 롤 접속 문자열은 EC2 `$COLAB_DEV_SECRETS_DIR` 의 `platform-owner-db.url` · `ai-owner-db.url`(각 0600). 값은 argv·로그에 싣지 않고 **파일 경로로만** 받는다.
+- S3 클라이언트 — `services/core-api/src/colab_core/kernel/s3.py` 의 `S3Client`. SigV4 는 표준 라이브러리 자작(`kernel/sigv4.py`)이고 boto3 를 쓰지 않는다(`.claude/rules/s3-upload.md` 축자 「SigV4 는 표준 라이브러리 자작이다」). **새 도구도 같은 클라이언트를 쓴다.**
+- 승인 계획 패턴 — `services/core-api/src/colab_core/app/storage_maintenance_cli.py` 가 `--apply-approved` ＋ `--plan` ＋ `--plan-sha256` ＋ `--expected-bucket`·`--expected-region`·`--expected-code-sha`·`--expected-image-config-id` 를 요구하고, 계획 파일이 실행자 소유 mode 0600 인지 `_private_plan` 이 검사한다.
+- `deploy_doctor` 15 항목 — ① 운영자 자격증명 ② 데이터 버킷 설정 ③ 웹 버킷 ④ DB 연결(platform) ⑤ DB 연결(ai) ⑥ 스키마 head(platform) ⑦ 스키마 head(ai) ⑧ RLS 전수(살아 있는 DB) ⑨ 앱 롤 속성 ⑩ 5 단위 헬스 ⑪ 앱 자격증명 출처 ⑫ 환경 짝 ⑬ 진입·라우팅 ⑭ 백업 24h ⑮ 실행 sha ∈ main. **데이터 행을 보는 항목이 없고 ⑭ 만 `_ops/backups/` 객체에 걸린다.**
+- 삭제 규칙 축자 — `.claude/rules/deploy.md` 「깨뜨리면 안 되는 것」 11번: 「**데이터셋 행을 지우는 유일한 자리는 `services/core-api/ops/purge_datasets.py` 다.** **고정 id 목록 ＋ `--yes-delete`** 이고 ⛔ **`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다**」.
+- 같은 절 10번 축자 — 「**「없다」는 경계가 실린 경로로만 판정한다.**」 · 「`ops/purge_datasets.py` 는 트랜잭션 안에서 `app.current_lab` 을 먼저 걸고, 안 걸면 **DELETE 가 0행에 조용히 성공**한다」.
+- 버킷·접두사 — 데이터 버킷 `colab-platform-data-dev` · 접두사 `uploads/` · `previews/` · `_ops/backups/dev/`. 환경변수 이름은 `COLAB_CORE_S3_BUCKET`·`COLAB_CORE_S3_REGION`·`COLAB_CORE_STORAGE_MODE`.
+- 화면 삭제 부재 — `deleteDataset` 은 서버가 501(`services/core-api/src/colab_core/app/routes/not_implemented.py`), 화면 호출 자리 0건.
+- 연구실 행 2건 — `0000000000000000000000000A` 고려대학교 수문학연구실 · `…B`. 계정은 연구실이 먼저 있어야 붙는다(`services/core-api/ops/provision-account.sql`).
+
+## 5. WU 표
+
+| WU | 이름 | 성격 | 선행 |
+|---|---|---|---|
+| WU-R1a | dev 전용 초기화 도구 ＋ 가드 시험 ＋ 로컬 증명 | 레인 1개(`lane-worker`) | 없음 |
+| WU-R1b | 규칙 예외·원장·대장 등재 ＋ 첫 자격 삽입 절차 실측 | 레인 1개(`lane-worker`) · 직렬 | WU-R1a |
+| WU-R1c | `0031_search_evidence` 드리프트 오라클 신설 (hotfix · 대장 `DR-1c`) | 레인 1개(`lane-worker`) · 직렬 | WU-R1b |
+| WU-R2 | dev 초기화 실행 | 오케스트레이터 ＋ Ted · 레인 작업 아님 | WU-R1a·R1b 병합·dev 배포 ＋ Ted 명시 GO |
+| WU-R3 | 화면 투입 시나리오 ＋ 실투입 | 문서 레인 1개 ＋ 사람 실행 | WU-R2 |
+
+### WU-R1a — 초기화 도구 `services/core-api/ops/reset_dev_environment.py`
+
+- 이름 근거 = 기존 `ops/` 관례(`purge_datasets.py`·`deploy_doctor.py`·`s3_doctor.py`) = `동사_명사.py` snake_case. 배포 이미지에 실리지 않는 제품 패키지 밖 자리.
+- **도구 경계** — 앱 이미지에 alembic 이 없다(`infra/dev/migrator/Dockerfile` 의 별도 이미지가 소유자 롤로 돈다) ⟹ 파이썬 도구는 ⑴⑵⑸ 만 수행하고 ⑵′⑶⑷ 는 기존 스크립트를 호출한다.
+- **순서**(이 순서를 바꾸지 않는다) —
+  ⑴ 계수 — 표별 행수 · 접두사별 객체 수 · 진행 중 멀티파트 수.
+  ⑵ 스키마 삭제·재생성(도구) — platform `DROP SCHEMA public, account_admin CASCADE; CREATE SCHEMA public AUTHORIZATION colab_owner; REVOKE CREATE ON SCHEMA public FROM PUBLIC;` · ai 는 `public` 하나.
+  ⑵′ `infra/dev/db-bootstrap.sh extensions` — 멱등 · `pg_trgm` 재생성. RDS 에서 `colab_owner` 로 되는지는 `[미확인 — G6]`(스크립트 머리말에 같은 표기) · 로컬 증명 ＋ dev 1회 실측으로 닫는다.
+  ⑶ 마이그레이션 — `infra/dev/up.sh` 의 ① 단계(`migrate-platform`·`migrate-ai`).
+  ⑷ `infra/dev/db-bootstrap.sh app-grants` ＋ `account-admin`. **재실행이 필수다** — 기본 권한은 `pg_default_acl.defaclnamespace` 로 스키마에 매달려 있고(`services/core-api/ops/app-role.sql` 의 `ALTER DEFAULT PRIVILEGES … IN SCHEMA public`) 스키마와 함께 사라진다.
+  ⑸ S3 접두사 계획·적용(도구).
+- **`account_admin` 을 같이 지우는 이유** — `db/platform/versions/0025_stage3_accounts.py` 가 `CREATE SCHEMA account_admin` 을 `IF NOT EXISTS` 없이 낸다 ⟹ 남겨 두면 재-upgrade 가 0025 에서 죽고 시험 계정·세션 행도 그대로 남는다. `alembic downgrade base` 는 대안이 아니다 — 같은 파일의 downgrade 가 자격 행이 있으면 `RAISE EXCEPTION` 한다.
+- **권한 근거** — 부트스트랩 `roles` 단계가 `CREATE DATABASE … OWNER colab_owner` ＋ `ALTER SCHEMA public OWNER TO colab_owner` 를 한다(`infra/staging/db-bootstrap.sh`) ⟹ 소유자 롤이 슈퍼유저 없이 DROP/CREATE 한다.
+- **도구 선조건** — `pg_namespace` 의 비시스템 스키마 집합을 먼저 조회하고, platform 이 정확히 `{public, account_admin}` · ai 가 정확히 `{public}` 이 아니면 거부한다.
+- **dev 식별자 정의**(셋 모두 만족해야 dev 다) — ⓐ 버킷 이름 `== colab-platform-data-dev` ⓑ DB URL 의 **호스트**에 `-dev` 포함(`deploy_doctor` ⑫ `env_pair_findings` 규약 · URL 은 `$COLAB_DEV_SECRETS_DIR/*.url` **파일 경로**로만 받고 argv·로그에 싣지 않는다) ⓒ 플래그 `--yes-reset-dev`. **DB 이름 단독은 판별력 0** — staging 과 같은 값이다.
+- **거부 조건**(하나라도 어긋나면 비영 종료 · 아무것도 지우지 않는다) — `--target dev` 부재 · `--yes-reset-dev` 부재 · 버킷 이름 불일치 · DB URL 호스트에 `-dev` 없음 · staging·prod 식별자 · 스키마 집합 불일치 · 계획 파일에 `_ops/` 접두사 키 1건이라도 포함 · 계획 파일 sha256 불일치 · 계획 파일이 실행자 소유 0600 아님.
+- **S3 절차** — `uploads/`·`previews/` 를 exact-key 목록으로 계획 파일(JSON ＋ sha256)에 쓰고 그 키만 지운다. `--recursive` 프리픽스 삭제를 쓰지 않는다(선례 `PLAN-SoT §9 〈354〉`). 클라이언트는 `kernel/s3.S3Client`(SigV4 자작 · boto3 미사용).
+- **진행 중 멀티파트** — `S3Client.list_multipart_uploads` 로 `uploads/` 접두사의 진행 중 업로드를 열거해 계획에 포함하고 `abort_multipart_upload` 로 중단한다. 객체 목록에 잡히지 않고 DB 원장이 사라지면 영구 중단 불가다. 두 메서드는 `services/core-api/src/colab_core/kernel/s3.py` 에 **이미 있다**(실측) — 없으면 추가한다.
+- **출력** = 실행 전/후 계수를 둘 다 찍는다. 부분 실패가 하나라도 있으면 비영 종료한다.
+- **시험** — 모델 `services/core-api/tests/test_purge_datasets_guard.py`(`importlib.util.spec_from_file_location` 로 `ops/` 파일 직접 적재 · 가드만 잰다). 새 파일 `services/core-api/tests/test_reset_dev_environment_guard.py` 최소 7건 — ⑴ `--yes-reset-dev` 부재 ⑵ 버킷 불일치 ⑶ 계획에 `_ops/` 키 ⑷ staging 식별자 ⑸ prod 식별자 ⑹ 스키마 집합 불일치 ⑺ ⭑ ⟨정정 2026-09-13 · WU-R1b⟩ **플래그 부재 = 거부 · `--dry-run` 명시 시 무파괴** ／ 종전 ~~dry-run 이 기본값이고 아무것도 지우지 않는다~~ — intent·구현과 어긋난 문면이었다. 실물 = `--yes-reset-dev` 는 **명시여야** 하고(`test_플래그가_없으면_거부한다` · 「기본이 파괴이면 사고가 조용해진다」), `--dry-run` 은 **옵트인 플래그**라 명시할 때만 무파괴다(`test_dry_run_은_DROP_을_내지_않는다`·`test_dry_run_은_S3_삭제를_하지_않는다`). 각 시험은 **RED 를 먼저 확인**한 뒤 구현한다(`CLAUDE.md §4`).
+- **로컬 증명**(§11 의 `DROP SCHEMA` `[미확인]` 을 닫는 자리) — 일회용 postgres 컨테이너(`--rm` ＋ tmpfs ＋ `PGDATA` · 호스트 포트 미개방) → `infra/staging/db-bootstrap.sh roles` → 두 체인 `alembic upgrade head` → `app-grants` → 있으면 `account-admin` → 픽스처 연구실·계정 1건 삽입 → 도구 실행 → `upgrade head` 재실행. **판정** = `bash gates/run.sh schema-diff` green ＋ `deploy_doctor` ⑥⑦⑧⑨ 로직 green ＋ 픽스처 행 0.
+- ⛔ 이 WU 에서 도구를 dev 실환경에 대고 돌리지 않는다. 실행은 WU-R2 다.
+- **완료 정의** — 넷을 모두 만족한다. ⑴ `service-tests-core-api` 단독 green **3회 연속** ⑵ `exec-bit` green ⑶ 새 가드 시험이 구현 전 RED 였음이 로그로 남는다 ⑷ 로컬 증명 판정 3종 green.
+
+### WU-R1b — 규칙 예외·원장·대장 등재 (직렬 · WU-R1a 뒤)
+
+- `PLAN-SoT §9 〈395〉` 1행 신설(초안 §9-A). `〈395〉` 을 하드코딩하지 않는다 — 병합 직전 `bash dev-package/prd/tools/max-decision.sh` 로 재실측해 최대값 +1.
+- `.claude/rules/deploy.md` 의 11번 항목 뒤에 예외 문단을 붙인다(11번 문면은 무수정). 제안 문안 —
+  > ⭑ ⟨증보 2026-09-13 · `〈395〉`⟩ **dev 한정 예외 — 환경 전면 초기화는 `services/core-api/ops/reset_dev_environment.py` 하나다.** 조건 넷을 모두 만족해야 실행된다 — ⑴ `--target dev` ＋ `--yes-reset-dev` ⑵ 버킷 이름이 `colab-platform-data-dev` 와 일치 ⑶ 두 DB URL 의 **호스트**에 `-dev` 포함(DB 이름 단독은 판별력 0) ⑷ 계획 파일의 키가 `uploads/`·`previews/` 접두사 안에만 있다. **`_ops/` 는 무접촉이다**(지우면 `deploy_doctor` ⑭ 가 red 다). staging·prod 식별자에서는 거부한다. 데이터셋 행 단위 삭제는 그대로 `purge_datasets.py` 뿐이고 이 도구가 그 자리를 대신하지 않는다. ⛔ `PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — **승인은 1회 소진이다.**
+- `dev-package/work-items.yaml` 에 항목 블록 4건 추가(§9-C 붙여넣기용). `stage: after_stage2`.
+- `CLAUDE.md` 의 `<!-- work-items:after_stage2 -->` 괄호에 새 id 를 사전순으로 넣는다 — 게이트 `work-item-consistency` ㈕ 가 대조한다.
+- `dev-package/03-HANDOFF.md §1` 갱신 5줄 이내.
+- **첫 자격 삽입 절차 실측 1건** — 전면 초기화 뒤 `account_admin.login_credential` 0행이라 `POST /admin/accounts` 를 쓸 수 없고(운영자 0명 · 자기 자신을 만들지 못한다) `login_credential` 을 만드는 ops SQL 도 없다. 선례 = `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 앵커 「## 3. 계정 생성 — 제품과 같은 경로」 = `accounts.py::create_account` 의 트랜잭션을 core-api 컨테이너 안에서 그대로 실행(해시·정규화·잠금·INSERT 가 제품과 동일 · 비밀번호는 표준입력 한 줄 · argv·파일·로그 미기재). R1b 가 그 절차를 실측해 WU-R3 문서 선행 ③ 에 축자로 옮겨 적는다.
+- **완료 정의** — `work-item-consistency` green ＋ 원장 게이트 3종 green ＋ `.claude/rules/deploy.md` 예외 문단과 `PLAN-SoT §9 〈395〉` 행의 문면이 서로 같은 값을 말한다.
+
+### WU-R2 — dev 초기화 실행
+
+- ⭑ ⟨증보 2026-09-13⟩ **실행 정본 = `dev-package/sessions/DR-2-runbook.md`** — 배포 → 초기화 → 재적용 → SQL 선행 → 확인의 명령·기대출력·정지점이 그 문서에 있고, 이 절은 요지다.
+- **레인 작업이 아니다.** 오케스트레이터가 절차를 밟고 Ted 가 GO 를 준다.
+- 선행 = WU-R1a·R1b 가 `main` 에 병합되고 dev 에 배포됨(`docs/DEPLOY.md`) ＋ 진입조건 ㄹ 해소 ＋ Ted 명시 GO 가 `PLAN-SoT §9` 행에 기록됨.
+- 사전 = 읽기 전용 계수 1회. 경계가 실린 경로(`colab_backup` 롤 또는 API `listDatasets`)로 데이터셋·파일 행수, 운영자 키로 `uploads/`·`previews/` 객체 수를 파일에 고정한다.
+- EC2 호스트에서 **다섯 명령을 이 순서로** 낸다. **각 명령이 비영 종료하면 그 자리에서 멈춘다 — 다음 명령을 내지 않는다.**
+  1. 도구 ⑴⑵ — `ops/reset_dev_environment.py --target dev --yes-reset-dev` ＋ 계획 파일(계수 기록 · 두 스키마 재생성). **실패 시 멈춤.** ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`count` 와 `s3-plan`·`s3-apply` 단계는 S3 를 부르므로 컨테이너에 AWS 자격증명 환경변수를 넘겨야 한다** — `AWS_ACCESS_KEY_ID`·`AWS_SECRET_ACCESS_KEY`(임시 자격이면 `AWS_SESSION_TOKEN` 도) ＋ `COLAB_CORE_S3_BUCKET`·`COLAB_CORE_S3_REGION`. 이름의 근거 = `services/core-api/src/colab_core/kernel/aws_credentials.py:78-82`(`deploy_doctor` ① 이 `s3_doctor.check_credentials` 를 거쳐 같은 자리를 읽는다 · `ops/s3_doctor.py:92` 축자 `(AWS_ACCESS_KEY_ID)`). 도구 머리말의 `docker run` 예시는 `-e COLAB_CORE_S3_*` 둘만 적고 있어 **그대로 쓰면 `count` 가 자격증명 부재로 선다**. ⚠ 값은 표준입력·0600 파일로만 심고 argv·로그·원장에 싣지 않는다. `schema` 단계는 S3 를 부르지 않는다.
+  1′. ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`count` 단계 보고서 파일 존재 확인** — `--report` 가 가리킨 JSON 이 실제로 서 있고 실행 전 계수가 그 안에 있는지 본다(`--report` 는 필수 인자이고 도구가 실행자 소유 0600 으로 쓴다). **없으면 다음 명령을 내지 않는다** — 실행 전 계수가 없으면 삭제 후 계수와 대조할 대상이 사라지고 「지운 것이 무엇이었는지」를 사후에 복원할 길이 없다. **실패 시 멈춤.**
+  2. `bash infra/dev/db-bootstrap.sh extensions`. **실패 시 멈춤.**
+  3. `bash infra/dev/up.sh` 의 ① 마이그레이션 단계(`migrate-platform`·`migrate-ai`). **실패 시 멈춤.**
+  4. `bash infra/dev/db-bootstrap.sh app-grants` ＋ 같은 스크립트 `account-admin`. **실패 시 멈춤.**
+  5. 도구 ⑸ — 계획 파일의 키만 삭제 ＋ 진행 중 멀티파트 중단. **실패 시 멈춤.**
+- 확인 = 실행 후 계수 0 을 같은(경계 실린) 경로로 보고, `deploy_doctor` 15/15 를 **한 번의 실행**으로 확인한다(부분 실행 둘을 합치지 않는다). **실패 시 멈춤.**
+- 기록 = `PLAN-SoT §9` 에 실행 sha · 삭제 계수 · doctor 결과.
+- **완료 정의** — 데이터셋 0건(경계 실린 경로 확인) ＋ `uploads/`·`previews/` 객체 0 ＋ 진행 중 멀티파트 0 ＋ `_ops/` 객체 수 무변 ＋ `deploy_doctor` 15/15 한 번의 실행 ＋ 원장 행 1건.
+- 버저닝 탓에 삭제 후에도 이전 판이 30일 남는다(즉시 소멸 아님 · `dev-package/S3.md`).
+
+### WU-R3 — 화면 투입 시나리오 ＋ 실투입
+
+- 산출 = `dev-package/scenarios/dev-minimal-data-setup.md`(신설 · 레포에 `scenarios` 디렉터리 부재를 실측 확인).
+- **화면 밖 선행 4건** — 전면 초기화 뒤 연구실 0 · 계정 0 · 자격 0 이라 화면 단계보다 먼저 SQL 로 세운다. 결정 4(화면 조작)의 **등재된 예외이고 이 넷뿐이다**.
+  ① 연구실 행 생성 — `infra/staging/provision-lab.sql`. 실측 = `d1_lab` `00000000000000000000HYMETS` 「고려대학교 수문학연구실」 ＋ 프로필(전창현) ＋ 교수 계정 ＋ `d2_member_role` 을 전 문장 `ON CONFLICT DO NOTHING` 으로 심는다. 파일 이름이 `staging` 이지만 내용은 환경 무관이다.
+  ② 첫 계정 — `services/core-api/ops/provision-account.sql`(`-v account_id -v lab_id -v name -v email -v role` · 연구실이 없으면 멈춘다).
+  ③ 첫 로그인 자격 삽입 — 절차 축자는 **WU-R1b 가 실측해 여기 옮겨 적는다**. 근거 앵커 = `dev-package/reports/r-login-backoffice/task1-deploy/operator.md` 「## 3. 계정 생성 — 제품과 같은 경로」(`accounts.py::create_account` 트랜잭션을 core-api 컨테이너 안에서 실행 · 비밀번호는 표준입력 한 줄).
+  ④ 서비스 운영자 등록 — `services/core-api/ops/provision-service-operator.sql`. ⚠ FORCE RLS 아래라 `app.current_lab` 을 먼저 걸지 않으면 `INSERT 0 0` 뒤 가드가 예외를 낸다(같은 보고 §7).
+- 문서 구성 = 단계 · 입력값 · 기대 화면 3열. 화면 순서 —
+  1. 로그인 — 첫 로그인은 비밀번호 변경을 강제한다(`mustChangePassword`).
+  2. 프로젝트 4건 생성 — precipitation · vegetation · drought · 포멧테스트.
+  3. 데이터셋 28건 — 행마다 프로젝트 · 데이터셋 이름 · **파일 glob ＋ 건수** · 격자 쌍 · 부모. 값의 정본은 `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5 표이고 계수(28 / 18)와 포멧테스트 14건 구성은 §5-6 이다.
+  4. 계보 설정 18간선 — precipitation 4 · vegetation 7 · drought 0 · 포멧테스트 7.
+  5. 미리보기 확인 5종(grib · nc · bin · tif · hdf4) — 그려지지 않는 포맷은 이름으로 남긴다. 조용히 넘기지 않는다.
+  6. `deploy_doctor` 15/15 한 번의 실행.
+- **파일 전건**(결정 9) — 화면 업로드 총량 ≈ **6.1 GB** = 데이터 3,641,736,593 B ＋ 격자 부착 2,489,512,224 B(데이터셋마다 위경도 쌍을 다시 붙이는 계수 · 재목록 v2 §5-5). 업로드는 화면에서 1건씩이라 소요가 파일 수·바이트에 비례한다. 16 MiB 이상은 멀티파트로 갈린다.
+- 원천 = 외부 드라이브 `03 Reference-Data`(읽기 전용 · 무수정). 문서에는 드라이브 안 상대경로만 적는다.
+- 투입은 화면 조작이다 — 위 선행 4건 밖에서 백엔드 시딩·DB 삽입·API 직접 호출을 쓰지 않는다(결정 4). `infra/staging/load-seed.py` 를 쓰지 않는다.
+- ⭑ ⟨증보 2026-09-14⟩ **러너 정본 = `dev-package/tools/dev-seed/`** — 실투입에 쓴 도구를 레포에 들였다(`runner.py` · `build_plan.py` · `plan-manifest.yaml` · `watch.py` · `README.md` · 자리값은 전부 인자·환경변수 · 작업 자리 `.work/` 는 `.gitignore` 제외).
+- **완료 정의** — dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 되돌리는 수단은 WU-R2 도구뿐이므로 오입력은 그대로 남는다.
+
+## 6. 레인 규약
+
+- 레인은 `Agent(subagent_type: "lane-worker", isolation: "worktree")` 로 스폰한다. 손으로 만든 형제 워크트리를 쓰지 않는다.
+- **레인 하나 = 작업 하나.** 리베이스·조건 수정·구현·전수를 한 지시문에 싣지 않는다(`CLAUDE.md §5-b`).
+- 레인 시작은 `git checkout -B <lane> origin/integration/r-dev-reset`. 워크트리 기본 기준이 `origin/main` 이라 ff-only 가 실패한다.
+- 반복 검증은 `service-tests-core-api` 단독 게이트. 전수는 병합 직전 1회.
+- 새 `.sh` 를 만들면 `git update-index --chmod=+x <파일>` 후 커밋(게이트 `exec-bit`).
+- `〈395〉` 을 하드코딩하지 않는다 — 병합 직전 재실측.
+- 최종 메시지에 `WORKTREE=… BRANCH=…` 를 적는다. 병합·원격 삭제·태그 push 는 레인이 하지 않는다.
+- **지시가 실물과 어긋나면 멈추고 보고한다.** 우회하지 않는다.
+- **기존 오류를 발견하면 「기존」이라 적지 말고 그 오류가 어느 검사(게이트·Dockerfile·배포)에 걸리는지 적는다.** 「main 과 동일」은 수용 근거가 아니다.
+- 새 워크트리는 `node_modules`·`.venv` 를 승계하지 않는다 — `services/core-api` 는 `uv venv .venv && uv pip install -r requirements.txt -r requirements-dev.txt` 뒤 `uv pip install -e .` 까지 한다. 시험 환경 파일은 `gates/run.sh` 가 스스로 source 한다.
+- 작업 시작 전 `python3 scripts/agent-bridge.py lifecycle begin --role lane-worker …`, 종료 시 `handoff`(`docs/development/lifecycle-evidence.md`).
+
+## 7. 운영 경계
+
+- DB 접촉은 읽기 전용이 기본이다. 쓰기·삭제는 승인된 WU 안에서만.
+- 비밀 값(접속 문자열 · 키 · 토큰)을 출력·문서·커밋에 싣지 않는다. 파일 경로로만 받는다.
+- **거부가 올바른 동작이다** — 조건이 어긋나면 부분 실행하지 않고 멈춘다.
+- 삭제 대상은 조건문이 아니라 목록으로 고정한 뒤 실행한다.
+- 비가역·파괴적·사용자 노출 행동 앞에 advisor 게이트 ③ 를 붙인다.
+- staging 에서 완료 판정을 하지 않는다. prod 는 범위 밖이다.
+
+## 8. 브랜치 처리 (오케스트레이터가 한다)
+
+- intent 커밋과 계획 검토 반영 커밋이 `worktree-intent-dev-reset-scenario` 위에 있다. sha 는 여기 박지 않고 브랜치 생성 시 실측한다.
+- 조치 = 그 HEAD 에서 `integration/r-dev-reset` 을 만들어 push 하고, 레인은 그 브랜치를 기점으로 삼는다(`docs/BRANCHING.md` 축자 「`integration/r-N` 은 `main` tip 에서 따고, `main` 으로는 **ff-only 한 줄**」).
+- 병합 = `main` 으로 ff-only 한 줄. 병합 뒤 `integration/r-dev-reset` 과 `worktree-intent-dev-reset-scenario` 를 로컬·원격에서 삭제한다.
+- 레인 브랜치 `lane/wu-r1a-*`·`lane/wu-r1b-*` 는 통합에 rebase ＋ ff 로 얹은 즉시 삭제한다.
+
+## 9. 붙여넣기용 초안
+
+### 9-A. `PLAN-SoT §9 〈395〉` 등재문 초안 (dev 한정 예외)
+
+> **〈395〉 dev 환경 전면 초기화 도구 신설 — 접두사 삭제·스키마 재생성의 dev 한정 예외 (2026-09-13)**
+> ㉮ **문제** — 규칙은 데이터셋 행의 목록 고정 삭제만 허용하고(`.claude/rules/deploy.md` 11번), 접두사 비우기·DB 재생성 경로가 없다. `d8_activity`·`d8_download` 는 `deny_update_delete` 트리거가 DELETE 를 막아 행 삭제로는 비워지지 않는다.
+> ㉯ **결정** — dev 한정으로 `services/core-api/ops/reset_dev_environment.py` 하나를 신설한다. 조건 넷(`--target dev` ＋ `--yes-reset-dev` · 버킷 이름 일치 · DB 식별자 일치 · 계획 키가 `uploads/`·`previews/` 안)을 모두 만족할 때만 실행되고, 하나라도 어긋나면 아무것도 지우지 않고 비영 종료한다.
+> ㉰ **무접촉** — `_ops/`(백업). 지우면 `deploy_doctor` ⑭ 가 red 다.
+> ㉱ **불변** — 데이터셋 행 단위 삭제의 유일한 자리는 `purge_datasets.py` 그대로다. staging·prod 에는 적용하지 않는다.
+> ㉲ **승인** — 도구 신설과 실행은 별개다. 실행은 Ted 의 명시 GO 와 이 §9 행이 있어야 하고 **승인은 1회 소진이다**(선례 `〈354〉`·`〈365〉`·`〈366〉`).
+> ㉳ **근거** — intent `dev-package/intent/2026-09-13-dev-reset-reference-scenario.md` · 라운드 `dev-package/prd/rounds/R-DEV-RESET.md`.
+
+### 9-B. 회차 등재문 초안
+
+> **〈396〉 R-DEV-RESET 회차 — dev 전면 초기화와 참조 데이터 화면 재적재 (2026-09-13)**
+> ㉮ WU-R1a(도구·가드·로컬 증명) → WU-R1b(규칙 예외·원장·대장) → WU-R2(초기화 실행 · Ted GO) → WU-R3(시나리오 문서 ＋ 화면 실투입) 순서.
+> ㉯ 목표 계수 = 프로젝트 4 · 데이터셋 28 · 계보 간선 18(정본 `dev-package/reports/reference-data/2026-09-13-inventory-v2.md` §5-6).
+> ㉰ 완료 판정 = dev `deploy_doctor` 15/15 한 번의 실행 ＋ 목록 화면 28건 ＋ 미리보기 5종 결과 기록.
+> ㉱ 통합 브랜치 `integration/r-dev-reset` · `main` 으로 ff-only.
+
+### 9-C. 대장 블록 (`dev-package/work-items.yaml` 끝에 덧붙임 · 값은 착수 시 갱신)
+
+```yaml
+  - id: DR-1a
+    name: "dev 전용 초기화 도구 — fail-closed 가드와 로컬 증명"
+    status: open
+    stage: after_stage2
+    owner: "운영 / core-api ops"
+    entry_conditions: ["intent 2026-09-13 dev 초기화·재적재가 확정 상태다", "integration/r-dev-reset 이 main tip 기점으로 서 있다"]
+    depends_on: []
+    completion_def: "넷을 모두 만족한다. ⑴ service-tests-core-api 단독 green 3회 연속 ⑵ exec-bit green ⑶ 가드 시험이 구현 전 RED 였음이 로그로 남는다 ⑷ 일회용 postgres 로컬 증명에서 schema-diff green ＋ deploy_doctor ⑥⑦⑧⑨ 로직 green ＋ 픽스처 행 0."
+    evidence: ""
+    deadline: null
+    note: "도구를 실환경에 대고 돌리지 않는다 — 실행은 DR-2 다. 파이썬 도구는 계수·스키마 재생성·S3 만 하고 extensions·마이그레이션·app-grants 는 기존 스크립트를 부른다."
+    sources: ["dev-package/intent/2026-09-13-dev-reset-reference-scenario.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-1b
+    name: "dev 초기화 규칙 예외·원장·대장 등재와 첫 자격 삽입 절차 실측"
+    status: open
+    stage: after_stage2
+    owner: "운영 / 문서"
+    entry_conditions: ["DR-1a 가 통합 브랜치에 얹혔다"]
+    depends_on: [DR-1a]
+    completion_def: "work-item-consistency green ＋ 원장 게이트 3종 green ＋ .claude/rules/deploy.md 예외 문단과 PLAN-SoT §9 행의 문면이 같은 값을 말한다 ＋ 첫 로그인 자격 삽입 절차가 축자로 적혔다."
+    evidence: ""
+    deadline: null
+    note: "DR-1a 와 직렬. 〈395〉 은 병합 직전 재실측한다."
+    sources: ["dev-package/reports/r-login-backoffice/task1-deploy/operator.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-2
+    name: "dev 초기화 1회 실행"
+    status: open
+    stage: after_stage2
+    owner: "오케스트레이터 ＋ Ted"
+    entry_conditions: ["DR-1a·DR-1b 가 main 에 병합되고 dev 에 배포됐다", "deploy_doctor ⑥ 의 서버 저장소 트리 동기화가 끝났다", "Ted 명시 GO 가 PLAN-SoT §9 행에 있다"]
+    depends_on: [DR-1a, DR-1b]
+    completion_def: "데이터셋 0건(경계 실린 경로 확인) ＋ uploads/·previews/ 객체 0 ＋ 진행 중 멀티파트 0 ＋ _ops/ 객체 수 무변 ＋ deploy_doctor 15/15 한 번의 실행 ＋ 원장 행 1건."
+    evidence: ""
+    deadline: null
+    note: "비가역. 승인은 1회 소진이다."
+    sources: ["dev-package/prd/rounds/R-DEV-RESET.md"]
+  - id: DR-3
+    name: "화면 투입 시나리오 문서와 dev 실투입"
+    status: open
+    stage: after_stage2
+    owner: "문서 레인 ＋ 사람 실행"
+    entry_conditions: ["DR-2 완료", "원천 드라이브 03 Reference-Data 연결"]
+    depends_on: [DR-2]
+    completion_def: "dev 목록 화면에서 데이터셋 28건이 보이고 계보 간선 18건이 서며, 미리보기 5종의 렌더 결과가 기록된다(미렌더 포맷은 이름으로 열거). 시나리오 문서가 단계·입력값·기대 화면 3열로 레포에 있다."
+    evidence: ""
+    deadline: null
+    note: "화면 조작만 쓴다 — load-seed.py·API 직접 호출을 쓰지 않는다."
+    sources: ["dev-package/reports/reference-data/2026-09-13-inventory-v2.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
+```
+
+## 10. 범위 밖 (명시 제외)
+
+- 학회 발표 자료 폴더 적재 · prod 배포 · staging 에서의 완료 판정.
+- 새 기능 개발 — 데이터셋 삭제 화면 · 연구실 생성 화면 · 브라우저 자동화 도입.
+- 화면에 없는 기능을 API 직접 호출로 대신하기.
+- staging·prod 에 대한 초기화 도구 적용.
+- 「기준 격자 파일 다건 허용」(데이터셋당 2건 상한 완화) — 별도 항목 후보.
+
+## 11. 후속 항목 (이 회차에서 고치지 않는다)
+
+- 서버 저장소 트리 동기화를 강제하는 자리가 없다 — `deploy_doctor` ⑥ ✗ 의 반복 원인.
+- S3 고아 바이트를 치우는 주체가 없다(`dev-package/S3.md`) · 완결된 전송 원장 행이 안 지워진다.
+- HSR 격자 정본이 레포 두 자리에 다르게 적혀 있다 — 한 자리 정리.
+- `DROP SCHEMA` 권한(`colab_owner` 는 RDS 에서 진짜 슈퍼유저가 아니다) — **해소 경로 확정**(WU-R1a 「권한 근거」 = 부트스트랩이 스키마 소유를 `colab_owner` 로 옮긴다) · **로컬 증명으로 닫는다**. dev 실측 1회가 최종 확인이다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`work-item-consistency` ㈐ 가 `DR-1a`·`DR-1b` 의 상태를 실제로 대조하지 못한다.** 게이트는 **green** 인데 그 둘은 「검사 대상 밖 11건」에 들어간다(축자 `㈐ 식별자로 시작하지 않는 행 — 대조 대상 밖`). 원인 = 식별자 정규식 `gates/tools/work_item_consistency.py` `ID_RE`(`[A-Z]{1,3}(?:-[A-Z0-9]+|\d+[a-z]?)`)가 **「글자-숫자소문자」 모양을 못 읽는다** — `DR-1` 까지 맞고 뒤의 `a` 에서 `\b` 가 깨진다. ⚠ **새 결함이 아니라 드러난 사각지대다** — `OP-NOTIFY-1`·`C3·C4`·`WU-UPV-20260909` 등 기존 항목 9건이 이미 같은 자리에 있다. ⚠ **`㈕ CLAUDE.md` 대조는 대장 id 를 직접 쓰므로 네 항목 모두 정상 대조된다**(24건) — 못 보는 것은 `03-HANDOFF §1` 표 한 자리다. 고칠 자리 = 그 정규식 하나. 이 레인은 도구 코드를 고치지 않았다(범위 밖).
+- ⭑ ⟨증보 2026-09-13 · WU-R1b⟩ **`origin/local-stage` 는 병합 경로 밖 브랜치라 정리 대상이다**(`§10` 규약 · 집행은 **오케스트레이터**). 근거 = 그 브랜치에만 사는 `0032_private_owner_access`(커밋 `75cd069b`)가 호스트 공용 적용 DB 에 찍혀 **`main` 을 포함한 모든 브랜치에서 `schema-diff` 가 준비 red** 다(`dev-package/reports/r-dev-reset/host-applied-db-diagnosis.md` · `03-HANDOFF §4` 블로커 `72`). 선택은 둘 — ⑴ `local-stage` 를 `main` 으로 병합 ⑵ 병합 경로 밖 브랜치로 처분(원격 삭제는 게이트 뒤 오케스트레이터 · 레인은 하지 않는다). ⛔ 공용 적용 DB 를 다운그레이드해 되돌리지 않는다 — 다른 세션이 쓰는 상태다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ **드리프트 오라클 일부가 일회용 postgres 기동 실패를 red(준비)가 아니라 red(판정)으로 낸다.** 실측 = `migration-drift` 3회 실행 중 2회에서 **서로 다른 오라클 1벌**이 기동 때문에 죽었다(3회차는 `green — 오라클 26 · 실행 26 · 실패 0` · 1회차 `0025-drift` 축자 `createdb: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory` · 2회차 `0008-drift` 축자 `::error::0008-drift red — postgres 가 60초 안에 뜨지 않았다.`). 원인 둘 — ⑴ `db/platform/tests/0008-drift.sh` 는 60초 대기 뒤 `red`(exit 1)를 부른다(`ready` 함수 자체가 없다) ⑵ `db/platform/tests/0025-drift.sh` 는 대기 뒤 확인이 아예 없어 `createdb` 로 그냥 넘어간다. **어느 검사에 걸리는가** = `gates/run.sh migration-drift` 가 그것을 red(판정) 로 센다 — 그래서 3계수의 「판정/준비」 구분이 이 자리에서 무너진다(`.claude/rules/colab-rules.md §3-4`). 고칠 자리 = 두 파일의 기동 확인 한 줄씩(`0029-drift.sh` 도 같은 모양). 이 레인은 0031 오라클 하나가 범위라 고치지 않았다. ⚠ 호스트 동시 부하(다른 세션의 `service-tests-core-api`)가 있는 동안 재발한다.
+- ⭑ ⟨증보 2026-09-13 · WU-R1c⟩ `db/platform/tests/0027-operator-audit-drift.sh` 의 출력 이름표가 `[0025-drift]` 다(축자 `[0025-drift] 감사 3표·내보내기 5표·RLS·pending index 확인 → OK`). 판정에는 영향이 없고 로그 판독만 어긋난다 — 어느 검사도 이름표를 대조하지 않는다.
+- `[미확인]` 비운 상태에서 `deploy_doctor` 15/15 가 서는지의 실증 — 데이터 행을 보는 항목이 없다는 것까지는 코드 실측이고, 실제 15/15 는 WU-R2 에서 처음 확인된다.
+- ⭑ ⟨증보 2026-09-13 · Ted 후속 지정⟩ 축자 「**이건 후속작업으로보자**」 세 건 — ⓐ **dev 초기화 상시 승인**(회차마다 GO 를 받지 않는 형태) ⓑ **화면 투입 브라우저 자동화** ⓒ **WSL 메모리 확장**(`.wslconfig` **24GB** · 시점 = `main` 병합 **직후**). 등재 = `PLAN-SoT §9 〈396〉`-㉷. **이번 회차 밖이다.**
+- ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`gates/config/migration-drift.toml` 의 platform `min = 15` 가 실측 23 보다 8 낮다.** 그 파일 자체가 「`min = 0` 은 쓰지 않는다 — 대상 0건은 통과가 아니다」로 green-by-skip 을 막는데, 바닥이 실측보다 낮으면 **오라클 8벌이 사라져도 green** 이다. 같은 성격의 바닥이 `db/ai` `min = 3`(실측 3 · 일치)다. 고칠 자리 = 그 toml 한 줄. 이 회차는 고치지 않았다.
+- ⭑ ⟨증보 2026-09-13 · advisor 지적⟩ **`service-tests-core-api` 가 워커 12 개에 DB 를 나눠 주지 못해 전수에서 오염된다.** 실측 = 전수 1회차 core-api red 4건이 단독 실행에서는 **1,221건 전건 통과**(`dev-package/reports/r-dev-reset/full-gate-diagnosis.md`). 고칠 자리 = `gates/tools/service-tests.sh` — `--dist loadfile` ＋ **worker 당 격리 DB 1개**가 서야 한다(현 배선은 `PYTEST_PARALLEL=(-n "$JOBS" --dist loadfile)` ＋ `xdist_core_db` 플러그인 경로). **어느 검사에 걸리는가** = 전수 게이트에서 판정 red 로 유입되고, 그것이 이번 회차 전수 예외(`〈396〉`-㉶)의 주된 근거였다. 이 회차는 고치지 않았다.
+- ⭑ ⟨증보 2026-09-13 · `DR-2h`⟩ **조건부 속성 `ALTER ROLE` 은 RDS 마스터에서 여전히 못 돈다.** 실측 축자 `Only roles with the BYPASSRLS attribute may change the BYPASSRLS attribute.` — PostgreSQL 16 은 `CREATEDB`·`CREATEROLE`·`BYPASSRLS`·`REPLICATION` 에도 `SUPERUSER` 와 같은 규칙(그 속성을 가진 롤만 그 속성을 바꾼다)을 걸고 RDS 마스터는 `rolbypassrls=f` 다. **지금 dev 는 속성이 이미 맞아 그 문이 발화하지 않으므로 이번 초기화는 막히지 않았다.** **어느 검사에 걸리는가** = 게이트에 없다 — `infra/staging/db-bootstrap.sh account-admin` 의 종료코드 하나뿐이고 **속성이 어긋난 뒤에야** 울린다. 고칠 자리 = 같은 문을 속성별로 쪼개거나 드리프트 시 `ALTER ROLE` 대신 RAISE 로 사람에게 넘기는 것. 계정 관리자 롤의 속성 드리프트를 정기적으로 보는 자리도 없다(`deploy_doctor` 15 항목에 없고 `db-bootstrap.sh verify` 는 `colab_app`·`colab_owner` 두 롤만 본다). 발견 자리 = `DR-2` A 단계 · 증명 `dev-package/sessions/DR-2h-account-admin-rds-proof.md` §6.
+
+### 11-1. 런북 정정 6건 (⟨증보 2026-09-13 · `DR-2` 실행 실측⟩ · 대상 `dev-package/sessions/DR-2-runbook.md` · **이 회차에서 본문을 고치지 않았다**)
+
+- ⑴ **psql 은 스킴 `postgresql` 이 필요하다.** URL 파일 셋의 스킴이 `postgresql+psycopg` 라 psql 이 URI 로 읽지 않고 로컬 소켓으로 붙어 **exit 2** 다. 스킴을 치환한 뒤 exit 0.
+- ⑵ **psql 컨테이너에 `--user 0` 이 필요하다.** URL 파일이 uid 10001 소유 0600 이라 기본 사용자로는 읽지 못한다.
+- ⑶ **`COLAB_CORE_S3_BUCKET`·`COLAB_CORE_S3_REGION` 은 `dev.env` 가 아니라 `compose.yml` 의 리터럴이다.** 미지정 상태의 `s3-plan` 은 **exit 2** 로 아무것도 하지 않는다(실측 값 `colab-platform-data-dev` · `ap-northeast-2`).
+- ⑷ **core-api 이미지에 `psql` 이 없다.** SQL 선행은 `postgres:16-alpine`(`--network host --user 0` · URL 파일 읽기 전용 마운트)로 실행한다.
+- ⑸ **`db-bootstrap.sh` 는 어느 단계를 부르든 비밀번호 환경변수 네 이름을 전부 요구한다** — `COLAB_OWNER_PASSWORD`·`COLAB_APP_PASSWORD`·`COLAB_AI_APP_PASSWORD`·`COLAB_ACCOUNT_ADMIN_PASSWORD`. 부족하면 **DB 접촉 0 · 파괴 단계 미진입**으로 exit 1 이다(머리에서 검사한다).
+- ⑹ ⭑ **체인별 버전 표는 `alembic_version_platform`·`alembic_version_ai` 다.** `alembic_version` 을 보면 **적용된 것을 미적용으로 오판한다** — 이 회차에 `migrate-platform` 을 멱등 1회 더 낸 원인이 그것이다(상태 변화 0 · 파괴적 단계 재시도 아님). 런북의 검증 질의를 체인별 표 이름으로 고친다.
+
+- 등재 = `PLAN-SoT §9 〈396〉`-㉺ · 실행 기록 `dev-package/sessions/DR-2-run-2026-09-13.md`.
+
+### 11-2. 화면 투입 실측 후속 5건 (⟨증보 2026-09-14 · `DR-3` 실행 실측⟩ · **전건 대장 등재만 · 이 회차에서 고치지 않았다**)
+
+- ⓐ **제품이 GeoPackage(`.gpkg`)를 받지 않는다** — `SPI-4weeks`·`SPEI-4weeks`(합 49,594,368 B · `drought` 프로젝트)가 분석 단계에서 멈춘다. 화면 축자 2종 = 「이 확장자는 지도로 못 그려요」·「파일 분석을 마치지 못했어요 · 형식 인식 실패」 · `up-analysis-failure` ＋ **등록 단추 비활성**. 실측 = `gpkg` 문자열이 `services/`·`contracts/`·`frontend/src/`·`gates/` 어디에도 **0건**이다 — 받지 않겠다는 선언도, 받는 구현도 없다. 두 문면이 서로 다른 것(렌더 불가 ↔ 등록 불가)을 말하는 것이 판정의 핵심이다. 대장 `FMT-GPKG`.
+- ⓑ **이미 등록된 데이터셋을 프로젝트에 붙이는 화면이 없다** — 순번 1 `HSR 레이더 반사도 원자료`가 프로젝트 미연결로 남았다. 재업로드는 중복 데이터셋을 만들고 삭제 화면도 없다(`deleteDataset` 501). 대장 `DS-ATTACH` ＋ 블로커 `03-HANDOFF §4` `74`(dev 1행 정정 허용 여부는 Ted 판정).
+- ⓒ **미리보기 요청 경로의 뒷단 한계** — 중계 타임아웃 10초 고정 ↔ viz-render 실소요 20,037~38,391 ms ⟹ **503** · OOM kill 2회 · 413 4회(사유 `[미확인]`) · 렌더 작업 상태가 DB 에 없다. 대장 `PV-2` · 진단 `dev-package/reports/r-dev-reset/preview-diagnosis.md`.
+- ⓓ **계정 목록에 「초기 비밀번호 변경 필요」 열이 없다** — 계약 `contracts/seams/fe-core.yaml` `ServiceAccountSummary` 에 `mustChangePassword` 필드 0건(`additionalProperties: false`). 대장 `BO-2` note 증보(상태 `done` 무변 — 완료 정의의 열 6개는 서 있다).
+- ⓔ **`services/pipeline-worker` `d5/renderable.py` 의 `NOT_RENDERABLE_FORMATS = []` 와 바로 위 주석(「정본이 미리보기 대상을 `bin·nc·tif·HDF` 로 못 박았으므로 `GRIB` 이 여기 들어온다」)이 갈려 있다** — 주석은 `GRIB` 을 미렌더로 적고 목록은 비어 있다. 어느 쪽이 정본인지의 판정은 `PV-2` 안에 있다.
+
+- 등재 = `PLAN-SoT §9 〈396〉`-㉽ · 실행 기록 `dev-package/sessions/DR-3-run-2026-09-13.md`.
+
+## 12. 회차 마감 (2026-09-14)
+
+**결과 계수** — 프로젝트 **4/4** · 데이터셋 **26/28**(파일 541건 · 5,126,827,697 B ＝ 4.77 GB) · 계보 간선 **18/18**(`edges_missing` 0건) · 미리보기 5종 **3패스 기록 완료 · 렌더 성립 2/5**(`grib`·`nc` / 미렌더 `bin`·`tif`·`hdf4`) · 실행 창 2026-09-13 22:32 → 2026-09-14 00:35 KST(2시간 03분).
+
+- **완료 판정** = `DR-1a`·`DR-1b`·`DR-1c`·`DR-2`·`DR-2h` ✅ · **`DR-3` ✅(26/28)**. 미달 2 는 러너 결함이 아니라 **제품이 `.gpkg` 를 받지 않아 화면에서 성립하지 않는 것**이고, 차단 해제는 별도 항목이 진다(`CLAUDE.md §5` 축자 「차단이면 차단 해제를 WU 로 만든다」). **「28건 달성」으로 읽지 않는다.**
+- **신설 4건(전건 열림 · 등재만 · 미착수)** = `DR-4`(dev 초기화→재셋팅 워크플로우) · `FMT-GPKG` · `DS-ATTACH` · `PV-2`. `CLAUDE.md` stage 3 표지 = **30항목**(종전 26).
+- **화면단 원칙 유지 실적** = 백엔드 시딩·DB 삽입·API 직접 호출·`load-seed.py` **0건** · 차단 2건 우회 투입 **0건** · staging·prod 접촉 0 · AWS 쓰기 0 · dev DB 직접 쓰기 0.
+- **러너 정본** = `dev-package/tools/dev-seed/`(실행 중 정정 7건 반영 완료). 갈무리·로그·초기 비밀번호는 세션 스크래치에 두고 레포에 싣지 않았다.
+- **별건** = 운영자 계정 `ttlhi10@gmail.com` 을 **계정 관리 화면**으로 생성(교수 · 관리자 지정 · 첫 로그인 비밀번호 변경 강제 · 2026-09-14). 그 자리에서 §11-2 ⓓ 가 나왔다.
+- **다음 = `DR-4` 새 세션.** 진입조건 = intent `dev-package/intent/2026-09-14-dev-reseed-workflow.md` 의 **판정 5건 선행**(승인 형태 · 화면단 원칙 유지 범위 · 실패 시 재개 지점 · 러너 산출물 보존 자리 · 차단 포맷 처리). ⚠ 「api처럼」을 HTTP API 신설로 읽지 않는다.
+- **열린 블로커 2건** = `03-HANDOFF §4` `73`(호스트 진단 중 대화 기록에 노출된 토큰 2건의 회전 판정 — 레포 파일·커밋 0건) · `74`(순번 1 데이터셋의 프로젝트 미연결 — 화면 수단 없음).
+- 등재 = `PLAN-SoT §9 〈396〉`-㉼~㉿ · 대장 `dev-package/work-items.yaml` · 기록 `dev-package/sessions/DR-3-run-2026-09-13.md`.
