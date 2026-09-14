@@ -23,9 +23,24 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - dev 접속 값(`COLAB_DEV_SSH`·`COLAB_DEV_KEY_FILE`)이 없으면 **셸이 죽지 않는다** —
   `dev-sha`·`secrets`·`leftovers` 가 그 변수 이름을 대고 미달로 떨어지고, 접속이 필요 없는 항목은 그대로 잰다.
 - 절차의 원본 = `dev-package/sessions/DR-2-runbook.md`(사람이 실제로 밟은 순서). 이 스크립트가 그 실행형이다.
-- 값은 환경변수로 준다 — `COLAB_DEV_SSH` · `COLAB_DEV_KEY_FILE` · `COLAB_DEV_SECRETS_DIR` ·
+- 값은 환경변수로 준다 — `COLAB_DEV_SSH` · `COLAB_DEV_KEY_FILE` · `COLAB_RESEED_EC2_SECRETS_DIR` ·
   `COLAB_REF_ROOT` · `COLAB_DEV_URL` · `RESEED_ACCOUNT_ID`/`_EMAIL`/`_NAME`.
   비밀번호는 `--operator-password-file`(0600 · 10자 이상)로만 받는다. argv·로그·결과 JSON 에 값이 0건이다.
+- ⛔ **`COLAB_DEV_SECRETS_DIR` 를 이 도구에 주지 않는다 — 읽지도 않는다.** 한 이름이 두 뜻이다:
+  운영자 기계의 `~/.config/colab-platform/dev-operator.env` 에서는 **개발 기계의 로컬 폴더**,
+  `infra/dev/README.md` 의 `dev.env` 안에서는 **EC2 경로**(`/etc/colab`). 그 값이 실린 채 `reset`·`prelude`
+  가 돌면 EC2 에 없는 호스트 경로를 `docker -v` 로 마운트한다(DR-4 회차 §5 ⑴ 실측).
+  원격 경로의 출처는 **`COLAB_RESEED_EC2_SECRETS_DIR`(기본 `/etc/colab`) 하나**다.
+  `--preflight-only` 가 **마운트할 그 경로를 한 줄로 찍는다**(경로만 · 파일 값은 읽지 않는다).
+- 계정 신원(`RESEED_ACCOUNT_ID`/`_EMAIL`/`_NAME`)을 주지 않으면 prelude ① 이 실행하는
+  `infra/staging/provision-lab.sql` 의 `INSERT INTO d1_account` 값을 **실행 때 읽어** 쓴다
+  (사본을 두지 않는다 · 자리는 `COLAB_RESEED_PROVISION_LAB_SQL`). `--preflight-only` 가 그 신원도 찍는다.
+  - 왜 = `d1_account` 에 `UNIQUE (lab_id, email)` 이 있어 **새 ULID** 를 주면 prelude ② 가
+    유일성 위반으로 죽는다(DR-4 회차 §4 실측).
+  - id 가 ① 의 값과 같으면 **prelude ② 를 건너뛴다** — 2026-09-13 회차가 밟은 순서다
+    (`DR-2-run-2026-09-13.md` §5 ② 「미실행(건너뜀)」 · 계수표 `d2_permission_switch` **0**).
+    ② 를 돌리면 `d2_permission_switch` **4행**이 새로 서서 그 기준선과 갈린다(교수는 네 스위치가
+    항상 켜진 것으로 판정되므로 행이 없는 것이 정상이다). 다른 id 를 주면 ② 를 돌린다.
 
 ## 승인
 

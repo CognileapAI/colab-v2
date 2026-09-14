@@ -24,8 +24,8 @@ core_image() { printf 'colab-v2/core-api:dev-%s' "$TARGET_SHA"; }
 #       `s3-plan` 이 exit 2 로 아무것도 하지 않는다.
 reset_docker_cmd() {
   printf 'docker run --rm --network host --user 0 \\\n'
-  printf '  -v %s/platform-owner-db.url:/s/platform.url:ro \\\n' "$SECRETS_DIR"
-  printf '  -v %s/ai-owner-db.url:/s/ai.url:ro \\\n' "$SECRETS_DIR"
+  printf '  -v %s/platform-owner-db.url:/s/platform.url:ro \\\n' "$EC2_SECRETS_DIR"
+  printf '  -v %s/ai-owner-db.url:/s/ai.url:ro \\\n' "$EC2_SECRETS_DIR"
   printf '  -v %s:/tmp/reset.py:ro \\\n' "$RESET_TOOL"
   printf '  -v %s:/out \\\n' "$REMOTE_OUT"
   printf '  -e COLAB_CORE_S3_BUCKET=%s -e COLAB_CORE_S3_REGION=%s \\\n' "$S3_BUCKET" "$S3_REGION"
@@ -172,7 +172,7 @@ psql_master_query() {
 set -euo pipefail
 export SQL='$sql'
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/master.url:/s/master.url:ro \\
+  -v $EC2_SECRETS_DIR/master.url:/s/master.url:ro \\
   -e SQL \\
   $PSQL_IMAGE sh -c 'psql -tA "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/master.url)" -c "\$SQL"'
 EOF
@@ -189,7 +189,7 @@ EOF
 # 근거: R-DEV-RESET §11-1 ⑸ — db-bootstrap.sh 는 어느 단계를 부르든 이름 넷을 전부 요구한다.
 stage_bootstrap() {
   log "① extensions — pg_trgm (멱등)"
-  ssh_dev "sudo COLAB_PG_MASTER_URL_FILE=$SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh extensions" || return 1
+  ssh_dev "sudo COLAB_PG_MASTER_URL_FILE=$EC2_SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh extensions" || return 1
 
   log "② 마이그레이션 두 체인 — up.sh ① 만 떼어 낸다(⑤ 의 GRANT 가 표를 요구한다)"
   ssh_dev "sudo docker compose -f $DEV_STATE_DIR/compose.yml --env-file $DEV_STATE_DIR/dev.env --profile migrate run --rm -T migrate-platform < /dev/null" || return 1
@@ -202,8 +202,8 @@ stage_bootstrap() {
   ssh_script "bootstrap:chain-heads" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/platform-owner-db.url:/s/platform.url:ro \\
-  -v $SECRETS_DIR/ai-owner-db.url:/s/ai.url:ro \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/platform.url:ro \\
+  -v $EC2_SECRETS_DIR/ai-owner-db.url:/s/ai.url:ro \\
   $PSQL_IMAGE sh -c '
     p=\$(psql -tA "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/platform.url)" \\
       -c "select version_num from alembic_version_platform")
@@ -218,10 +218,10 @@ EOF
 set -euo pipefail
 # URL 파일의 비밀번호 필드만 꺼낸다 — 값은 이 셸 밖으로 나가지 않는다.
 pw() { sudo sed -E 's#^[a-z+]+://[^:]+:([^@]+)@.*#\1#' "\$1"; }
-COLAB_OWNER_PASSWORD="\$(pw $SECRETS_DIR/platform-owner-db.url)"
-COLAB_APP_PASSWORD="\$(pw $SECRETS_DIR/core-database.url)"
-COLAB_AI_APP_PASSWORD="\$(pw $SECRETS_DIR/ai-db.url)"
-COLAB_ACCOUNT_ADMIN_PASSWORD="\$(pw $SECRETS_DIR/account-admin-database.url)"
+COLAB_OWNER_PASSWORD="\$(pw $EC2_SECRETS_DIR/platform-owner-db.url)"
+COLAB_APP_PASSWORD="\$(pw $EC2_SECRETS_DIR/core-database.url)"
+COLAB_AI_APP_PASSWORD="\$(pw $EC2_SECRETS_DIR/ai-db.url)"
+COLAB_ACCOUNT_ADMIN_PASSWORD="\$(pw $EC2_SECRETS_DIR/account-admin-database.url)"
 export COLAB_OWNER_PASSWORD COLAB_APP_PASSWORD COLAB_AI_APP_PASSWORD COLAB_ACCOUNT_ADMIN_PASSWORD
 # account-admin 단계의 문자 집합 가드(base64url) — 어긋나면 값을 찍지 않고 멈춘다.
 case "\$COLAB_ACCOUNT_ADMIN_PASSWORD" in
@@ -230,8 +230,8 @@ esac
 for n in \$(bash $DEV_REPO_DIR/infra/staging/db-bootstrap.sh required-env); do
   eval "v=\\\${\$n:-}"; [ -n "\$v" ] || { echo "필수 환경변수 미설정: \$n" >&2; exit 1; }
 done
-sudo -E COLAB_PG_MASTER_URL_FILE=$SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh app-grants
-sudo -E COLAB_PG_MASTER_URL_FILE=$SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh account-admin
+sudo -E COLAB_PG_MASTER_URL_FILE=$EC2_SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh app-grants
+sudo -E COLAB_PG_MASTER_URL_FILE=$EC2_SECRETS_DIR/master.url bash $DEV_REPO_DIR/infra/dev/db-bootstrap.sh account-admin
 unset COLAB_OWNER_PASSWORD COLAB_APP_PASSWORD COLAB_AI_APP_PASSWORD COLAB_ACCOUNT_ADMIN_PASSWORD
 EOF
 
@@ -239,9 +239,9 @@ EOF
   ssh_script "bootstrap:verify-roles" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/core-database.url:/s/core.url:ro \\
-  -v $SECRETS_DIR/ai-db.url:/s/ai.url:ro \\
-  -v $SECRETS_DIR/account-admin-database.url:/s/aa.url:ro \\
+  -v $EC2_SECRETS_DIR/core-database.url:/s/core.url:ro \\
+  -v $EC2_SECRETS_DIR/ai-db.url:/s/ai.url:ro \\
+  -v $EC2_SECRETS_DIR/account-admin-database.url:/s/aa.url:ro \\
   $PSQL_IMAGE sh -c '
     for f in /s/core.url /s/ai.url /s/aa.url; do
       psql -tA "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" \$f)" -c "select 1" >/dev/null || exit 1
@@ -258,7 +258,7 @@ stage_up() {
   ssh_script "up:ai-seed" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/ai-owner-db.url:/s/ai.url:ro \\
+  -v $EC2_SECRETS_DIR/ai-owner-db.url:/s/ai.url:ro \\
   $PSQL_IMAGE sh -c '
     n=\$(psql -tA "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/ai.url)" \\
       -c "select least((select count(*) from d9_method_term),(select count(*) from d9_topic_synonym),(select count(*) from d9_place_alias))")
@@ -347,16 +347,26 @@ stage_prelude() {
   ssh_script "prelude:lab" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
   -v $DEV_REPO_DIR/infra/staging/provision-lab.sql:/s/lab.sql:ro \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/lab.sql'
 EOF
 
+  # ② 는 ① 이 심지 않은 계정일 때만 돈다. 같은 id 면 **건너뛴다** — 2026-09-13 회차가 밟은 순서다
+  # (`DR-2-run-2026-09-13.md` §5 ② 축자 「미실행(건너뜀)」 · 계수표 `d2_permission_switch` 0).
+  # 왜 = ⑴ ① 이 같은 id·이메일로 `d1_account`＋`d2_member_role`(교수)을 이미 심는다.
+  #      ⑵ ② 를 그대로 내면 `d2_permission_switch` **4행**이 새로 선다(① 은 0행 — 교수는 네 스위치가
+  #         항상 켜진 것으로 판정되므로 행을 두지 않는다). 건너뛰지 않으면 09-13 기준선과 갈린다.
+  #      ⑶ **다른 id** 를 주면 ② 를 돌린다. 그때 ① 과 같은 이메일이면 `UNIQUE (lab_id, email)` 에
+  #         걸려 멈추는 것이 옳다 — 같은 사람에게 계정 두 개를 만들지 않는다.
+  if [ -n "${PROVISION_LAB_ACCOUNT_ID:-}" ] && [ "$RESEED_ACCOUNT_ID" = "$PROVISION_LAB_ACCOUNT_ID" ]; then
+    log "② 첫 계정 — 건너뜀 · ① provision-lab.sql 이 같은 id($RESEED_ACCOUNT_ID)로 이미 심었다(d2_permission_switch 0행 유지 · DR-2 회차와 같은 순서)"
+  else
   log "② 첫 계정 — provision-account.sql (id 는 ③ ④ 가 그대로 재사용한다)"
   ssh_script "prelude:account" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
   -v $DEV_REPO_DIR/services/core-api/ops/provision-account.sql:/s/acct.sql:ro \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 \\
     -v account_id="'"'"'$RESEED_ACCOUNT_ID'"'"'" -v lab_id="'"'"'$LAB_ID'"'"'" \\
@@ -364,6 +374,7 @@ docker run --rm --network host --user 0 \\
     -v role="'"'"'$RESEED_ACCOUNT_ROLE'"'"'" \\
     "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/acct.sql'
 EOF
+  fi
 
   log "③ 첫 로그인 자격 — account_admin.login_credential INSERT 1건 (제품과 같은 두 함수로 해싱)"
   prelude_login_credential || return 1
@@ -372,7 +383,7 @@ EOF
   ssh_script "prelude:operator" <<EOF || return 1
 set -euo pipefail
 docker run --rm --network host --user 0 \\
-  -v $SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
+  -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
   -v $DEV_REPO_DIR/services/core-api/ops/provision-service-operator.sql:/s/op.sql:ro \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 -v account_id="'"'"'$RESEED_ACCOUNT_ID'"'"'" \\
     -c "SET app.current_lab = '"'"'$LAB_ID'"'"'" \\

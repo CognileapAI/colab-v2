@@ -7,10 +7,13 @@
 #   전부 **dev 를 한 번 돌려 보고서야** 드러날 자리였다. 검사가 사람의 실행 안에만 있으면
 #   그것은 검사가 아니다 — 이 레포의 green-by-skip 계열이다.
 #
-# 픽스처 둘 —
+# 픽스처 셋 —
 #   ⓐ `tests/doctor-parse.sh`   실물 모양 표본으로 요약줄 파서를 판정한다(dev 무접촉 · 파일만 읽는다).
 #   ⓑ `tests/preflight-red.sh`  조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다.
 #      `ssh`·`scp`·`docker`·`aws`·`agent-browser` 를 PATH 대역으로 가려 **실물에 한 바이트도 나가지 않는다.**
+#   ⓒ `tests/preflight-secrets.sh` preflight ⑻ `secrets` 가 **통과할 수 있는 항목**임을 증명한다.
+#      ⓑ 는 ssh 가 안 붙는 상태만 재서 「붙었을 때 무엇을 묻는가」가 검사 밖이었고, 그 사이
+#      `printf` 짝짓기 결함으로 9건 중 1건만 물어 이 항목이 green 이 된 적이 없었다(DR-4 §5 ⑵).
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -37,6 +40,7 @@ done
 CASES=(
   "$RESEED_DIR/tests/doctor-parse.sh"
   "$RESEED_DIR/tests/preflight-red.sh"
+  "$RESEED_DIR/tests/preflight-secrets.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"

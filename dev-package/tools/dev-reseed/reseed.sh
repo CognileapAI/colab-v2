@@ -18,8 +18,15 @@
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
-#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_DEV_SECRETS_DIR · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
+#
+# ⚠ **`COLAB_DEV_SECRETS_DIR` 를 읽지 않는다.** 그 이름은 운영자 기계의 `dev-operator.env` 에서
+#   **개발 기계의 로컬 폴더**를 가리키고, `infra/dev/README.md` 의 같은 이름은 EC2 의 `dev.env`
+#   안에서 **EC2 경로**를 가리킨다 — 한 이름이 두 뜻이다. 이 도구가 그 값을 원격 경로로 읽으면
+#   EC2 에 없는 호스트 경로를 `docker -v` 로 마운트한다(DR-4 회차 §5 ⑴ 실측).
+#   그래서 원격 경로의 출처를 `COLAB_RESEED_EC2_SECRETS_DIR` 하나로 분리했다.
 set -euo pipefail
 
 RESEED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,9 +45,45 @@ S3_BUCKET="${COLAB_CORE_S3_BUCKET:-colab-platform-data-dev}"
 S3_REGION="${COLAB_CORE_S3_REGION:-ap-northeast-2}"
 WEB_BUCKET="${COLAB_WEB_S3_BUCKET:-colab-platform-web-dev}"
 
-SECRETS_DIR="${COLAB_DEV_SECRETS_DIR:-/etc/colab}"
+# EC2 위 시크릿 폴더. `preflight` ⑻ 이 `stat` 하는 자리이자 `reset`·`prelude` 가 `docker -v` 로
+# 마운트하는 자리다 — **이름 하나가 원격 경로만 가리킨다**(머리말 ⚠ 참조).
+EC2_SECRETS_DIR="${COLAB_RESEED_EC2_SECRETS_DIR:-/etc/colab}"
 LAB_ID="${RESEED_LAB_ID:-00000000000000000000HYMETS}"
-RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-연구원}"
+
+# 첫 계정 신원. 기본값의 원본은 **prelude ① 이 실행하는 SQL** 이다 — 사본을 두지 않고 실행 때 읽는다.
+# 왜 = ① `provision-lab.sql` 이 고정 id 로 `d1_account` 를 이미 심고 `d1_account` 에는
+#   `UNIQUE (lab_id, email)` 이 있다(`db/platform/schema.sql`). ② `provision-account.sql` 에
+#   **새 ULID** 를 주면 id 충돌이 안 나 삽입이 진행되고 그 유일성에 걸려 prelude 가 죽는다
+#   (DR-4 회차 §4 실측 · 그래서 그 회차는 새 ULID 를 버리고 ① 의 값을 썼다).
+#   같은 id 를 주면 ② 의 `ON CONFLICT (id) DO NOTHING` 이 먼저 걸려 **멱등**이다.
+# 값을 여기에 다시 적지 않는다 — 두 벌이 되면 SQL 이 바뀔 때 갈린다.
+PROVISION_LAB_SQL="${COLAB_RESEED_PROVISION_LAB_SQL:-$REPO_ROOT/infra/staging/provision-lab.sql}"
+# 못 읽으면 **빈 값으로 둔다**(지어내지 않는다). 빈 값은 prelude 의 값 점검에서 이름을 대고 멈춘다.
+_lab_account_row="$(python3 - "$PROVISION_LAB_SQL" <<'PY' 2>/dev/null || true
+import re, sys
+try:
+    src = open(sys.argv[1], encoding="utf-8").read()
+except OSError:
+    raise SystemExit(1)
+m = re.search(
+    r"INSERT\s+INTO\s+d1_account\s*\(\s*id\s*,\s*lab_id\s*,\s*name\s*,\s*email\s*\)\s*VALUES\s*"
+    r"\(\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)", src)
+if not m:
+    raise SystemExit(1)
+# 역할도 같은 파일에서 읽는다 — ② 를 건너뛰면 ① 이 심은 역할이 실물이므로, 다른 값을 찍으면
+# `--preflight-only` 가 사실과 다른 신원을 보고하게 된다.
+r = re.search(
+    r"INSERT\s+INTO\s+d2_member_role\s*\(\s*account_id\s*,\s*lab_id\s*,\s*role\s*\)\s*VALUES\s*"
+    r"\(\s*'%s'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*\)" % re.escape(m.group(1)), src)
+print("\t".join(m.groups()) + "\t" + (r.group(1) if r else ""))
+PY
+)"
+IFS=$'\t' read -r PROVISION_LAB_ACCOUNT_ID _sql_lab_id _sql_account_name _sql_account_email _sql_account_role \
+  <<<"${_lab_account_row:-$'\t\t\t\t'}"
+RESEED_ACCOUNT_ID="${RESEED_ACCOUNT_ID:-$PROVISION_LAB_ACCOUNT_ID}"
+RESEED_ACCOUNT_NAME="${RESEED_ACCOUNT_NAME:-$_sql_account_name}"
+RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-$_sql_account_email}"
+RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-${_sql_account_role:-연구원}}"
 
 EXPECT_DATASETS="${COLAB_RESEED_EXPECT_DATASETS:-28}"
 EXPECT_EDGES="${COLAB_RESEED_EXPECT_EDGES:-18}"
@@ -82,8 +125,17 @@ MD_ROOT=""
 SEED_WORK_DIR=""
 
 usage() {
-  sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,29p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
+
+계정 신원 기본값:
+  RESEED_ACCOUNT_ID · _EMAIL · _NAME · _ROLE 을 주지 않으면 prelude ① 이 실행하는
+  infra/staging/provision-lab.sql 의 `INSERT INTO d1_account`(＋ d2_member_role 의 역할)
+  값을 **실행 때 읽어** 쓴다
+  (자리는 COLAB_RESEED_PROVISION_LAB_SQL 로 바꾼다). 사본을 두지 않는 이유 =
+  d1_account 에 UNIQUE (lab_id, email) 이 있어 새 ULID 를 주면 prelude ② 가 유일성 위반으로
+  죽는다. id 가 ① 의 값과 같으면 prelude ② 는 **건너뛴다**(2026-09-13 회차와 같은 순서 ·
+  d2_permission_switch 0행 유지). 다른 id 를 주면 ② 를 돌린다.
 
 인자:
   --from <단계>                 **바꾸는 단계** 중 어디부터 시작할지 고른다

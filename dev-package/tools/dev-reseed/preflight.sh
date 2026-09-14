@@ -176,11 +176,18 @@ pf_agent_browser() {
 
 # ⑻ 시크릿 — 이름과 모드만 본다. **값은 읽지 않는다.**
 #    목록의 출처 = `infra/dev/README.md` 시크릿 파일 표 ＋ 런북 §3·§5 가 마운트하는 파일.
+#    자리의 출처 = `$EC2_SECRETS_DIR`(＝ `COLAB_RESEED_EC2_SECRETS_DIR` · 기본 `/etc/colab`).
+#    운영자 기계의 `COLAB_DEV_SECRETS_DIR` 는 **로컬 폴더**라 여기서 읽지 않는다(`reseed.sh` 머리말 ⚠).
+#
+# ⚠ 경로는 **이름마다 한 개**씩 만든다. 종전 `printf "'%s/%s' " "$dir" "${이름[@]}"` 은 서식이
+#   인자를 **둘씩** 삼켜 `'<dir>/master.url' 'platform-owner-db.url/ai-owner-db.url' …` 5개를 냈고,
+#   9건 중 `master.url` 하나만 실제로 물었다. 나머지 8건은 구조적으로 「부재」라
+#   **이 항목이 green 이 된 적이 없다**(DR-4 회차 §5 ⑵). 서식 하나에 인자 하나로 고정한다.
 pf_secrets() {
-  pf_dry secrets "ssh <dev> stat -c '%n %a' \$COLAB_DEV_SECRETS_DIR/<이름 9건> — 모드 0600 만 판정" && return
+  pf_dry secrets "ssh <dev> stat -c '%n %a' \$COLAB_RESEED_EC2_SECRETS_DIR/<이름 9건> — 모드 0600 만 판정" && return
   pf_need_ssh secrets && return
-  local dir="${COLAB_DEV_SECRETS_DIR:-/etc/colab}"
-  local listing; listing="$(ssh_dev_capture "sudo stat -c '%n %a' $(printf "'%s/%s' " "$dir" "${SECRET_FILE_NAMES[@]}") 2>&1" || true)"
+  local dir="$EC2_SECRETS_DIR"
+  local listing; listing="$(ssh_dev_capture "sudo stat -c '%n %a' $(printf "'%s' " "${SECRET_FILE_NAMES[@]/#/$dir/}") 2>&1" || true)"
   local bad=() name mode
   local n
   for n in "${SECRET_FILE_NAMES[@]}"; do
@@ -249,8 +256,20 @@ pf_build_plan() {
   fi
 }
 
+# 판정 전에 **무엇을 쓸 것인지** 두 줄로 밝힌다(`--preflight-only` 의 산출물이기도 하다).
+# 비밀은 없다 — 마운트할 폴더 **경로 하나**와 레포에 이미 적혀 있는 계정 신원뿐이다.
+pf_announce() {
+  log "  · 마운트 자리 — EC2 시크릿 폴더 = $EC2_SECRETS_DIR (reset·prelude 가 docker -v 로 잡는 자리 · 값은 읽지 않는다)"
+  if [ -n "${RESEED_ACCOUNT_ID:-}" ]; then
+    log "  · 계정 신원 — id=$RESEED_ACCOUNT_ID · email=${RESEED_ACCOUNT_EMAIL:-} · name=${RESEED_ACCOUNT_NAME:-} · role=${RESEED_ACCOUNT_ROLE:-} (출처 $(relpath "$PROVISION_LAB_SQL"))"
+  else
+    log "  · 계정 신원 — 판정불가 · $(relpath "$PROVISION_LAB_SQL") 의 d1_account INSERT 를 읽지 못했다 (RESEED_ACCOUNT_ID/_EMAIL/_NAME 을 직접 준다)"
+  fi
+}
+
 stage_preflight() {
   PF_PASS=(); PF_FAIL=(); PF_NOTE=()
+  pf_announce
   pf_git
   pf_dev_sha
   pf_aws
