@@ -153,13 +153,20 @@ exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff
 - PR contract: 목적, 범위, 계획 참조, 결정, head SHA, gate 3계수, CI run, 남은 제약.
 
 - [ ] checkout 밖 실행 산출물을 거절하는 현 결함과 stale/different-SHA 인계를 실패 시험으로 고정한다.
-- [ ] task state가 외부 산출물·gate report를 명시적으로 허용하되 경로·hash·run id를 검증하게 한다.
+- [x] task state가 외부 산출물·gate report를 명시적으로 허용하되 경로·hash·run id를 검증하게 한다.
 - [ ] PR template와 checker가 필수 절·Plan-Ref·head SHA·CI/gate 증거를 검증하게 한다.
 - [ ] work-item consistency의 작업 상태·의존·완료 판정을 PR/Issue/task evidence로 이전하고 결정 ID 중복 검사는 보존한다. Slack completion·`gates/run.sh task`도 같은 증거를 소비한다.
 - [ ] planning freshness의 HTML/MD·적용 사본 실물 대조와 seam consistency의 ge/gb/flow 검사는 유지한다. 적용 상태·병합 근거와 citation 허용 링크만 전환하고 기존 음성 fixture를 유지한다.
 - [ ] 유효 결정은 변경 불가 archive+생성 색인으로 보존한다. 기존 sessions/reports 입력은 임시 compatibility read만 허용하고 신규 task 기본값에서는 쓰지 않는다.
 - [ ] 임시 호환 입력 허용→외부 PR #35/#38 해소 확인→기존 소비자 0 계측→전환 종료 순서를 checker에 선언한다. 공통 본문 중복 수와 역사 기록 보존 수를 별도 계수로 낸다.
 - [ ] 단위 시험·`agent-bridge`·`harness-contract` green 뒤 커밋한다.
+
+부분 증거(2026-09-15): 신규 schema2 작업은 common-dir/checkout/task/run에 보고서와 로그를 쓴다.
+기존 schema1은 호환 읽기하며 신규 legacy 생성은 명시 `--legacy`로만 가능하다.
+일반 외부 경로 보호는 유지하고 선언·task/agent 식별이 있는 runtime 경로만 예외로 해석한다.
+실제 사본의 begin→단독 harness-contract→runtime report/log→complete handoff exit 0 확인.
+직접 apply_patch 이벤트의 task/agent 식별 정보 공급은 미확인이다. CLI 경로 검증과 구분한다.
+PR 계약·기존 상태/결정 이전·호환 종료 검사는 아직 남아 있다.
 
 ### Task 6: 배포 전 SHA·CI 판정과 원격 적용안
 

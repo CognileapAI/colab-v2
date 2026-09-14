@@ -40,6 +40,17 @@ if [ -n "${COLAB_TASK_ID:-}" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}" ]; then
     exit 78
   fi
   export COLAB_GATE_TASK_BEFORE
+  # New task runs select their exact common-dir report after binding the run ID.
+  runtime_report="$(python3 -c 'import json,os; print(json.loads(os.environ["COLAB_GATE_TASK_BEFORE"]).get("report", ""))')"
+  if [ -n "$runtime_report" ]; then
+    if [ -n "${COLAB_GATE_REPORT_DIR:-}" ] && [ "$COLAB_GATE_REPORT_DIR/gate-summary.json" != "$runtime_report" ]; then
+      echo '::gate-readiness-failure:: explicit report directory differs from current task run' >&2
+      exit 78
+    fi
+    # The task runner keeps report and logs together without starting another run.
+    cd "$REPO_ROOT"
+    exec python3 scripts/harness/hooks/lifecycle_contract.py run-bound-gate --task "$COLAB_TASK_ID" --gate "$GATE"
+  fi
 fi
 
 
@@ -192,7 +203,7 @@ ALL_GATES=(
 case "$GATE" in
   agent-bridge)
     # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
-    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py
     ;;
   harness-contract)
     exec python3 "$REPO_ROOT/scripts/harness/check.py"

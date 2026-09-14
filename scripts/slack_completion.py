@@ -35,16 +35,34 @@ def snapshot(root):
         path=Path(root)/rel
         if path.is_file(): h.update(rel.encode("utf-8",errors="surrogateescape")); h.update(path.read_bytes())
     return h.hexdigest()
-def verify_evidence(root,task_id,path):
+def lifecycle(root):
     source=Path(root)/"scripts/harness/hooks/lifecycle_contract.py"
     spec=importlib.util.spec_from_file_location("colab_lifecycle_contract",source)
     module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module
+def verify_evidence(root,task_id,path):
+    module=lifecycle(root)
     task=module.load_task(Path(root),task_id); module.verify_task_report(Path(root),task,str(path))
+def validate_notice_paths(root,report,evidence):
+    external_report = root not in report.parents or '.git' in report.relative_to(root).parts
+    matched = not external_report
+    for task_id,path in evidence:
+        if root not in path.parents or external_report:
+            module=lifecycle(root); task=module.load_task(root,task_id)
+            if module.resolve_task_path(root,task,str(path)) != path:
+                raise CompletionError('completion evidence path differs')
+            if external_report:
+                try:
+                    module.resolve_task_path(root,task,str(report),artifact_only=True)
+                    matched=True
+                except ValueError:
+                    pass
+    if not matched: raise CompletionError('completion report is not a declared runtime artifact')
 def prepare(root,session,report,evidence,whole_scope_complete,pending_work,verifier=verify_evidence):
     root=checkout(root); report=Path(report).resolve(); evidence=[(t,Path(p).resolve()) for t,p in evidence]
     if not whole_scope_complete or pending_work: raise CompletionError("whole scope is not complete")
     if not evidence or not report.is_file() or not report.read_text(encoding="utf-8").strip(): raise CompletionError("completion inputs missing")
-    if any(root not in p.parents for p in [report,*[p for _,p in evidence]]): raise CompletionError("completion inputs must be in this checkout")
+    validate_notice_paths(root,report,evidence)
     [verifier(root,t,p) for t,p in evidence]
     session=safe_session(session)
     task_ids=[t for t,_ in evidence]
@@ -94,6 +112,7 @@ def _load_notice(path,root,session,verifier):
     d=json.loads(path.read_text(encoding="utf-8"))
     if d.get("schema")!=SCHEMA or d.get("session_id")!=session or d.get("root")!=str(root) or not d.get("whole_scope_complete") or d.get("pending_work")!=[]: raise CompletionError("invalid completion notice")
     report=Path(d["report"]["path"]); evidence=d["evidence"]
+    validate_notice_paths(root,report,[(item['task_id'],Path(item['path'])) for item in evidence])
     material=json.dumps(sorted(x["task_id"] for x in evidence),separators=(",",":")).encode()
     if d.get("completion_id")!=hashlib.sha256(material).hexdigest()[:24]: raise CompletionError("invalid completion identity")
     if digest(report)!=d["report"]["sha256"] or snapshot(root)!=d["snapshot"]: raise CompletionError("stale completion notice")

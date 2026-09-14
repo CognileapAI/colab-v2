@@ -24,6 +24,29 @@ WATCH = ('dev-package/sessions/', 'dev-package/reports/', 'dev-package/intent/')
 STATES = ('green', 'red_판정', 'red_준비')
 
 
+def runtime():
+    # File-based lazy load also works in isolated hook hosts; no bridge import changes.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('colab_task_state', Path(__file__).resolve().parents[1] / 'task_state.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def resolve_task_path(root, task, name, artifact_only=False):
+    if task['schema'] == 'colab-task/2':
+        return runtime().resolve(root, task, name, artifact_only=artifact_only)
+    return inside(root, name)
+
+
+def task_snapshot(root, task):
+    return snapshot(root, task['report'] if task['schema'] == 'colab-task/1' else None)
+
+
+def head_identity(root):
+    return dict(commit=git(root, 'rev-parse', 'HEAD'), tree=git(root, 'rev-parse', 'HEAD^{tree}'))
+
+
 def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args]).decode('utf-8').strip()
 
@@ -78,14 +101,19 @@ def snapshot_hash(files):
 def task_path(root, task_id):
     if not isinstance(task_id, str) or not re.fullmatch(r'[a-f0-9]{32}', task_id):
         raise ValueError('invalid or missing task_id')
+    current = runtime().record_path(root, task_id)
+    if current.exists():
+        return current
     gitdir = Path(git(root, 'rev-parse', '--absolute-git-dir'))
     return gitdir / 'colab-lifecycle' / (task_id + '.json')
 
 
 def load_task(root, task_id):
     task = json.loads(task_path(root, task_id).read_text(encoding='utf-8'))
-    if task.get('schema') != 'colab-task/1' or task.get('task_id') != task_id or task.get('checkout') != str(root):
+    if task.get('schema') not in ('colab-task/1', 'colab-task/2') or task.get('task_id') != task_id or task.get('checkout') != str(root):
         raise ValueError('task identity or assigned checkout differs')
+    if task['schema'] == 'colab-task/2':
+        runtime().run_directory(root, task)
     return task
 
 
@@ -115,13 +143,30 @@ def archive_report(source, destination):
             temporary.unlink(missing_ok=True)
 
 
-def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None):
+def begin(root, role, artifacts=None, gates=None, report=None, agent_id=None, legacy=False):
     root = checkout(root)
     artifacts, gates = artifacts or [], gates or []
     if role not in ('researcher', 'lane-worker'):
         raise ValueError('unsupported task role')
     if len(set(artifacts)) != len(artifacts) or len(set(gates)) != len(gates):
         raise ValueError('duplicate task declaration')
+    if not legacy:
+        if report is not None:
+            raise ValueError('new tasks use runtime reports; old paths require explicit --legacy')
+        if role == 'lane-worker' and (not gates or any(not isinstance(g, str) or not g for g in gates)):
+            raise ValueError('lane requires explicit gates')
+        if role == 'researcher' and gates:
+            raise ValueError('research task must not declare implementation gates')
+        for name in artifacts:
+            runtime().relative_artifact(name)
+        _, _, key = runtime().identity(root)
+        task = dict(schema='colab-task/2', task_id=uuid.uuid4().hex, run_id=uuid.uuid4().hex,
+                    checkout=str(root), checkout_id=key, role=role, agent_id=agent_id,
+                    artifact_declarations=artifacts, gates=gates, baseline=snapshot(root),
+                    started_identity=head_identity(root))
+        runtime().bind_paths(root, task)
+        runtime().save(root, task)
+        return task
     for name in artifacts:
         if inside(root, name).relative_to(root).as_posix() != name or not name.startswith(WATCH):
             raise ValueError('artifact must be a repository-relative research output')
@@ -180,18 +225,25 @@ def gate_evidence(root, task_id):
     task = load_task(root, task_id)
     if task['role'] != 'lane-worker':
         raise ValueError('gate evidence requires lane-worker task')
-    return dict(task_id=task_id, run_id=task.get('run_id'), checkout=str(root), files=snapshot_hash(snapshot(root, task['report'])))
+    evidence = dict(task_id=task_id, run_id=task.get('run_id'), checkout=str(root), files=snapshot_hash(task_snapshot(root, task)))
+    if task['schema'] == 'colab-task/2':
+        evidence.update(head_identity(root), checkout_id=task['checkout_id'], report=task['report'])
+    return evidence
 
 
 def verify_task_report(root, task, report=None):
-    path = inside(root, report or task['report'])
-    if path != inside(root, task['report']):
+    path = resolve_task_path(root, task, report or task['report'])
+    if path != resolve_task_path(root, task, task['report']):
         raise ValueError('report path differs from declared task report')
     if not task.get('run_id'):
         raise ValueError('gate execution has not started for this task')
     data = json.loads(path.read_text(encoding='utf-8'))
     validate_report(data, task['gates'])
     expected = gate_evidence(root, task['task_id'])
+    if task['schema'] == 'colab-task/2':
+        runtime().verify_outputs(root, task)
+        if any(data.get(key) != expected[key] for key in ('commit', 'tree')):
+            raise ValueError('report commit/tree differs from current checkout')
     evidence = data.get('task_evidence')
     if not isinstance(evidence, dict) or evidence.get('before') != expected or evidence.get('after') != expected:
         raise ValueError('missing, stale, changed-during-run or other-task evidence')
@@ -212,13 +264,22 @@ def stop(data, expected_role):
         raise ValueError('one final COLAB_HANDOFF JSON is required')
     handoff = json.loads(markers[0])
     task = load_task(root, handoff.get('task_id'))
+    if task['schema'] == 'colab-task/2':
+        if handoff.get('run_id') != task['run_id']:
+            raise ValueError('handoff run differs from current task')
+        runtime().verify_outputs(root, task)
+        expected_artifacts = {name: digest(resolve_task_path(root, task, name, artifact_only=True)) for name in task['artifacts']}
+        if handoff.get('artifacts') != expected_artifacts:
+            raise ValueError('runtime artifact handoff is missing or changed')
     if task['role'] != expected_role or (task.get('agent_id') and task['agent_id'] != data.get('agent_id')):
         raise ValueError('task role or agent identity differs')
     if not isinstance(handoff.get('summary'), str) or not handoff['summary'].strip():
         raise ValueError('handoff requires actual findings or result')
     mode = handoff.get('mode')
     if expected_role == 'researcher':
-        now = snapshot(root, task['report'])
+        now = task_snapshot(root, task)
+        if task['schema'] == 'colab-task/2' and head_identity(root) != task['started_identity']:
+            raise ValueError('research checkout commit/tree changed')
         changed = {p for p in set(now) | set(task['baseline']) if now.get(p) != task['baseline'].get(p)}
         if mode in ('read-only', 'draft-return'):
             if changed or task['artifacts'] or handoff.get('artifacts') != {}:
@@ -228,7 +289,7 @@ def stop(data, expected_role):
                 raise ValueError('researcher changed files outside output scope or omitted artifacts')
             if not changed.issubset(set(task['artifacts'])):
                 raise ValueError('this task has unhanded output: ' + ', '.join(sorted(changed - set(task['artifacts']))))
-            expected = {p: digest(inside(root, p)) for p in task['artifacts']}
+            expected = {p: digest(resolve_task_path(root, task, p, artifact_only=True)) for p in task['artifacts']}
             if handoff.get('artifacts') != expected:
                 raise ValueError('missing or changed task artifact handoff')
         else:
@@ -244,6 +305,12 @@ def gate_start(root, task_id):
     task = load_task(root, task_id)
     if task['role'] != 'lane-worker':
         raise ValueError('gate execution requires lane-worker task')
+    if task['schema'] == 'colab-task/2':
+        runtime().verify_outputs(root, task)
+        task['run_id'] = uuid.uuid4().hex
+        runtime().bind_paths(root, task)
+        runtime().save(root, task)
+        return gate_evidence(root, task_id)
     path = task_path(root, task_id)
     report = inside(root, task['report'])
     previous = task.get('run_id') or 'unbound'
@@ -257,12 +324,16 @@ def gate_start(root, task_id):
     return gate_evidence(root, task_id)
 
 
-def run_gates(root, task_id):
+def run_gates(root, task_id, before=None):
     """One invocation of exactly the declared gate set, with one execution identity."""
-    before = gate_start(root, task_id)
+    if before is None:
+        before = gate_start(root, task_id)
+    elif before != gate_evidence(root, task_id):
+        raise ValueError('bound gate run differs from current task')
     task = load_task(root, task_id)
     rows = []
-    logs = task_path(root, task_id).parent / 'runs' / task_id / task['run_id']
+    logs = (runtime().run_directory(root, task) / 'logs' if task['schema'] == 'colab-task/2'
+            else task_path(root, task_id).parent / 'runs' / task_id / task['run_id'])
     logs.mkdir(parents=True, exist_ok=True)
     for index, gate in enumerate(task['gates']):
         if gate in ('all', 'task'):
@@ -272,7 +343,10 @@ def run_gates(root, task_id):
         env = dict(os.environ, COLAB_TASK_ID=task_id, COLAB_GATE_SUMMARY_CHILD='1')
         result = subprocess.run(['bash', str(root/'gates/run.sh'), gate], cwd=root,
                                 env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        (logs / (str(index) + '.log')).write_text(result.stdout, encoding='utf-8')
+        log = logs / (str(index) + '.log')
+        if task['schema'] == 'colab-task/2':
+            log = resolve_task_path(root, task, str(log))
+        log.write_text(result.stdout, encoding='utf-8')
         print(result.stdout, end='', flush=True)
         readiness = next((line for line in result.stdout.splitlines() if line.startswith('::gate-readiness-failure::')), '')
         state = 'green' if result.returncode == 0 else ('red_준비' if result.returncode == 78 or readiness else 'red_판정')
@@ -282,9 +356,13 @@ def run_gates(root, task_id):
     doc = dict(schema='colab-gate-summary/1', gates=rows, counts=counts,
                targets=dict(requested='task', selected=task['gates']),
                task_evidence=dict(before=before, after=after))
-    report = inside(root, task['report'])
+    if task['schema'] == 'colab-task/2':
+        doc.update(commit=before['commit'], tree=before['tree'])
+    report = resolve_task_path(root, task, task['report'])
     report.parent.mkdir(parents=True, exist_ok=True)
     temporary = report.with_suffix('.tmp')
+    if task['schema'] == 'colab-task/2':
+        runtime().confined(runtime().run_directory(root, task), temporary)
     temporary.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding='utf-8')
     os.replace(temporary, report)
     print('── 계 : green {green} / red(판정) {red_판정} / red(준비) {red_준비}'.format(**counts))
@@ -308,13 +386,26 @@ def validate_input(data, field):
     data['cwd'] = str(Path(data['cwd']).resolve())
     if field == 'file_path':
         root = checkout(data['cwd'])
-        target = inside(root, str(Path(data['cwd']) / ti[field]))
+        target = resolve_edit(root, data, str(Path(data['cwd']) / ti[field]))
         ti['file_path'] = str(target)
-        if target.relative_to(root).as_posix() == 'dev-package/PLAN-SoT.md':
+        if target.is_relative_to(root) and target.relative_to(root).as_posix() == 'dev-package/PLAN-SoT.md':
             content = 'new_string' if data['tool_name'] == 'Edit' else 'content'
             if not isinstance(ti.get(content), str):
                 raise ValueError('decision guard requires tool_input.' + content)
     return data
+
+
+def resolve_edit(root, data, name):
+    try:
+        return inside(root, name)
+    except ValueError:
+        task_id = data.get('task_id') or os.environ.get('COLAB_TASK_ID')
+        task = load_task(root, task_id)
+        if task['schema'] != 'colab-task/2' or not task.get('agent_id') or task['agent_id'] != data.get('agent_id'):
+            raise ValueError('external edit requires assigned task and agent identity')
+        if data.get('run_id') != task['run_id']:
+            raise ValueError('external edit requires current task run')
+        return resolve_task_path(root, task, name, artifact_only=True)
 
 
 def main():
@@ -326,6 +417,15 @@ def main():
     start.add_argument('--gate', action='append', default=[])
     start.add_argument('--report')
     start.add_argument('--agent-id')
+    start.add_argument('--legacy', action='store_true', help='explicit legacy repository-output compatibility')
+    write = commands.add_parser('write-artifact')
+    write.add_argument('--task', required=True)
+    write.add_argument('--run-id', required=True)
+    write.add_argument('--agent-id', required=True)
+    write.add_argument('--artifact', required=True)
+    bound = commands.add_parser('run-bound-gate')
+    bound.add_argument('--task', required=True)
+    bound.add_argument('--gate', required=True)
     for name in ('gate-snapshot', 'gate-start', 'run-gates'):
         snap = commands.add_parser(name)
         snap.add_argument('--task', required=True)
@@ -347,7 +447,7 @@ def main():
         else:
             root = checkout(Path.cwd())
             if args.command == 'begin':
-                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id)
+                task = begin(root, args.role, args.artifact, args.gate, args.report, args.agent_id, args.legacy)
                 print(json.dumps({k: v for k, v in task.items() if k != 'baseline'}, ensure_ascii=False))
             elif args.command == 'gate-snapshot':
                 print(json.dumps(gate_evidence(root, args.task)))
@@ -355,10 +455,24 @@ def main():
                 print(json.dumps(gate_start(root, args.task)))
             elif args.command == 'run-gates':
                 return run_gates(root, args.task)
+            elif args.command == 'run-bound-gate':
+                task = load_task(root, args.task)
+                if task['gates'] != [args.gate]:
+                    raise ValueError('single gate differs from declared task set; use gates/run.sh task')
+                return run_gates(root, args.task, json.loads(os.environ['COLAB_GATE_TASK_BEFORE']))
+            elif args.command == 'write-artifact':
+                task = load_task(root, args.task)
+                target = resolve_task_path(root, task, args.artifact, artifact_only=True)
+                resolve_edit(root, dict(task_id=args.task, run_id=args.run_id, agent_id=args.agent_id), str(target))
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(sys.stdin.read(), encoding='utf-8')
+                print(json.dumps(dict(path=str(target), sha256=digest(target))))
             else:
                 task = load_task(root, args.task)
                 handoff = dict(task_id=args.task, mode=args.mode, summary=args.summary,
-                               artifacts={p: digest(inside(root, p)) for p in task['artifacts']})
+                               artifacts={p: digest(resolve_task_path(root, task, p, artifact_only=True)) for p in task['artifacts']})
+                if task['schema'] == 'colab-task/2':
+                    handoff['run_id'] = task['run_id']
                 marker = 'COLAB_HANDOFF ' + json.dumps(handoff, ensure_ascii=False)
                 stop(dict(cwd=str(root), agent_type=task['role'], agent_id=task.get('agent_id'),
                           last_assistant_message=marker), task['role'])

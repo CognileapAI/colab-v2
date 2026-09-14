@@ -33,7 +33,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 ## 작업 증거 시작
 
 수정 전에 `docs/development/lifecycle-evidence.md`의 `begin --role lane-worker`를 실행해
-필수 `--gate`와 이 작업 전용 `--report`를 선언한다. 받은 task_id를 실제 게이트 명령의
+필수 `--gate`를 선언한다. 새 보고서는 작업별 Git common runtime에 자동 배치된다. 받은 task_id를 실제 게이트 명령의
 `COLAB_TASK_ID`로 전달한다. 복수 필수 게이트는 `gates/run.sh task` 한 번으로 선언된 집합을 실행한다. 사용자 승인 없는 커밋은 하지 않는다.
 
 ## 순서 (`CLAUDE.md §4`)

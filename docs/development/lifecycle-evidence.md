@@ -1,6 +1,6 @@
 # 작업별 시작·검증·인계 증거
 
-Claude와 Codex는 `.claude/hooks/lifecycle_contract.py`의 같은 판정을 사용한다.
+Claude와 Codex는 `scripts/harness/hooks/lifecycle_contract.py`의 같은 판정을 사용한다.
 이 계약은 작업 증거 검증이다. OS 쓰기 차단이나 증거 서명을 제공하지 않는다.
 기존 H6의 모든 미추적 파일 차단과 H7의 mtime 선택·깨진 JSON/준비 실패 허용은
 2026-09-09 승인된 동등성 수용 기준에 따라 아래 계약으로 대체한다.
@@ -13,12 +13,16 @@ Claude와 Codex는 `.claude/hooks/lifecycle_contract.py`의 같은 판정을 사
 제한되며 specs를 추가해 통과시키지 않는다. 부모의 spec 인계는 승인 범위·파일 경로·실제 내용 hash를 확인한다.
 Windows에서는 `scripts/dev.ps1 bridge lifecycle <인자>`로 같은 WSL 경로를 쓴다.
 Linux에서는 `python3 scripts/agent-bridge.py lifecycle <인자>`다.
-시작 기록은 해당 checkout의 private Git 디렉터리에 보관하므로 제품 파일이나 승인 문서를 쓰지 않는다.
+신규 `colab-task/2` 기록과 산출물은 Git common 디렉터리의
+`colab-harness/<checkout-id>/<task-id>/<run-id>/`에 보관한다. checkout-id는 사본 경로와 private Git 경로에 결합된다.
+작업 기록 `task.json`은 task-id 디렉터리에 두며, 제품 파일을 만들지 않는다.
+기존 private Git의 `colab-task/1` 기록은 명시 호환 읽기를 유지한다.
+기존 저장소 출력 방식의 새 호출이 꼭 필요하면 `begin --legacy`를 명시한다. 자동 fallback은 없다.
 
 ```bash
 python3 scripts/agent-bridge.py lifecycle begin --role researcher
-python3 scripts/agent-bridge.py lifecycle begin --role researcher --artifact dev-package/intent/new-draft.md
-python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate contract-lint --report dev-package/reports/<회차>/<레인>/gate-summary.json
+python3 scripts/agent-bridge.py lifecycle begin --role researcher --agent-id <실제-agent-id> --artifact runtime:artifacts/new-draft.md
+python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate contract-lint
 ```
 
 위 명령은 서로 다른 작업 예시다. 자신의 작업에 맞는 명령 하나를 실행하고 반환된 `task_id`를 보존한다.
@@ -31,20 +35,22 @@ python3 scripts/agent-bridge.py lifecycle begin --role lane-worker --gate contra
 ## 게이트
 
 ```bash
-COLAB_TASK_ID=<task_id> COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> bash gates/run.sh contract-lint
-python3 scripts/agent-bridge.py verify-report --task <task_id> --report dev-package/reports/<회차>/<레인>/gate-summary.json --gate contract-lint
+COLAB_TASK_ID=<task_id> bash gates/run.sh contract-lint
+python3 scripts/agent-bridge.py verify-report --task <task_id> --report <현재-run의-report-절대경로> --gate contract-lint
 ```
 
-복수 필수 게이트는 `begin --gate A --gate B --report ...`로 선언하고
+복수 필수 게이트는 `begin --gate A --gate B`로 선언하고
 `COLAB_TASK_ID=<task_id> bash gates/run.sh task` 한 명령으로 실행한다.
 Windows에서는 환경값을 설정한 뒤 `scripts/dev.ps1 gate task`다. 이 실행은 선언된 게이트를 각각 한 번만 실행하고 한 run_id 아래 전수 결과를 낸다.
 독립된 부분 실행들을 사후 합산하지 않는다. 기존 `gates/run.sh <게이트>`와 `all` 인터페이스도 유지한다.
 
-보고서는 시작 시 선언한 새 디렉터리에만 쓴다. 다른 보고서를 찾아서 쓰지 않는다.
-매 실행 시작에 새 run_id를 기록하고 이전 보고서는 private Git 디렉터리에 보존하며 활성 위치에서 제거한다.
+보고서와 로그는 현재 run 디렉터리에만 쓴다. 매 실행 시작에 새 run_id와 출력 경로를 결합한다.
+이전 runtime 보고서는 기존 run 디렉터리에 그대로 보존한다. 현재 경로는 `lifecycle gate-snapshot --task <task_id>`로 조회한다.
+legacy 기록만 이전 보고서를 private Git history로 옮긴다.
 배출이 실패해도 이전 green을 읽을 수 없고, 옛 JSON을 되돌려 놓아도 run_id 불일치로 차단한다.
 실행기는 게이트 시작 전과 종료 후의 추적/미추적 비무시 파일 전체를 hash로 묶는다.
-지정 보고서 디렉터리와 Git이 무시하는 런타임 의존·생성물은 입력에서 제외한다.
+신규 runtime 출력 때문에 제품 파일의 검사 제외 범위를 넓히지 않는다.
+legacy에서만 지정 보고서 디렉터리를 제외하며 Git이 무시하는 런타임 의존·생성물은 기존대로 취급한다.
 검사 코드·fixture는 제외하지 않는다. 최대 8개 파일을 병렬로 읽되 매 검사마다 전체 내용 hash를 다시 계산한다. 숨겨진 외부 입력·실행 도구 버전의 동일성을 이 hash만으로 주장하지 않는다.
 파일이 검사 중 또는 검사 후 바뀌었거나 필수 게이트·유효한 3계수·성공 종료코드가 없으면 H7은 차단한다.
 미커밋 작업도 실제 파일 내용으로 검증되므로 검사를 위해 임의 커밋할 필요가 없다.
@@ -66,3 +72,15 @@ python3 scripts/agent-bridge.py lifecycle handoff --task <task_id> --mode comple
 파일 인계는 승인이나 커밋이 아니다. 다음 사본에 파일을 복사하면 부모가 hash를 대조한다.
 `complete`는 lane-worker의 현재 작업 게이트 증거를 요구한다.
 시험 fixture의 승인 응답은 시험 데이터다. 실제 제품 승인 기록으로 옮기지 않는다.
+
+## Runtime 산출물 쓰기와 경계
+
+신규 산출물은 `runtime:artifacts/<파일>`로 정확히 선언한다. begin은 실제 절대경로를 반환한다.
+일반 checkout 밖 편집 보호는 유지한다. 직접 편집 예외는 현재 task-id·run-id·실제 agent-id와 선언 경로가 모두 일치할 때만 적용한다.
+다른 사본·다른 작업·이전 run·미선언 파일·symlink 이탈은 거절한다. 인계는 현재 내용 hash와 미선언 출력까지 검사한다.
+이벤트가 이 식별 정보를 주지 않으면 직접 apply_patch를 허용했다고 주장하지 않는다.
+명령문 안 `COLAB_TASK_ID=...`는 앞서 실행되는 훅 프로세스의 환경을 바꾸지 않는다.
+실제 owner 정보를 확보한 작업은 `lifecycle write-artifact --task <id> --run-id <run> --agent-id <owner> --artifact runtime:artifacts/<파일>`의 stdin으로 내용을 전달할 수 있다.
+이 CLI도 같은 resolver를 사용한다. task 등록은 OS 접근 통제나 에이전트 신원 서명이 아니다.
+신규 handoff에는 run-id가 포함된다. Slack 준비는 같은 task resolver·현재 run·파일 hash를 재검증하며,
+외부 완료 본문은 증거로 지정한 task에 선언된 artifact만 허용한다. 준비나 검증이 실제 전송 권한을 부여하지 않는다.
