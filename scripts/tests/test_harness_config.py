@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -49,6 +50,25 @@ class HarnessConfigTests(unittest.TestCase):
             self.module.check_contract(ROOT, value),
             ["missing required adapter: .codex/missing.toml"],
         )
+
+    def test_rejects_missing_judge_wrong_adapter_and_duplicated_body(self):
+        value = self.module.load_contract(ROOT / ".agents/harness.yaml")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (".claude/hooks", "scripts/harness/hooks"):
+                shutil.copytree(ROOT / relative, root / relative)
+            value["adapters"]["required_files"] = []
+            value["paths"]["required"] = []
+            self.assertEqual(self.module.check_contract(root, value), [])
+            adapter = root / ".claude/hooks/git-guard.sh"
+            original = adapter.read_text()
+            adapter.write_text(original.replace("hooks/git-guard.sh", "hooks/migration-guard.sh"))
+            self.assertTrue(self.module.check_contract(root, value), "wrong judge must fail")
+            adapter.write_text((root / "scripts/harness/hooks/git-guard.sh").read_text())
+            self.assertTrue(self.module.check_contract(root, value), "duplicated body must fail")
+            adapter.write_text(original)
+            (root / "scripts/harness/hooks/git-guard.sh").unlink()
+            self.assertTrue(self.module.check_contract(root, value), "missing judge must fail")
 
     def run_check(self, contract):
         return subprocess.run(

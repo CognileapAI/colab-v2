@@ -39,7 +39,9 @@
     "policy_entrypoint": "AGENTS.md",
     "skills": ".agents/skills",
     "config": ".agents/harness.yaml",
-    "judges": "scripts/harness"
+    "judges": "scripts/harness",
+    "hook_names": ["bootstrap-diet.sh", "css-edit-audit.sh", "decision-number-guard.sh", "git-guard.sh", "lane-gate-summary.sh", "migration-guard.sh", "test-file-guard.sh", "uncommitted-artifacts.sh", "worktree-setup.sh"],
+    "codex_only_skills": ["slack-completion"]
   },
   "adapters": {
     "required_files": [

@@ -11,19 +11,21 @@
 
 ## 원본과 도구별 연결
 
-이번 변경은 기존 Claude 실행 설정을 유지하면서 Codex 진입점을 추가한다.
-공통 원본을 새 폴더로 전부 이동하지 않는다. 기존 경로를 유지해야 스크립트·상대 링크가 끊기지 않는다.
+현재 전환 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.
+스킬과 훅의 공통 본문은 공통 경로에 두고 기존 Claude 진입점은 어댑터로 유지한다.
+실행 중인 훅 이전은 원본 복사 → 소비자 경로 전환 → 기존 진입점 어댑터화 순서로 한다.
+기존 진입점을 먼저 없애면 PreToolUse 자체가 실패하여 복구 도구까지 차단된다.
 
 | 대상 | 편집할 원본 | Codex 연결 |
 |---|---|---|
 | 제품 규칙 | `CLAUDE.md`, `.claude/rules/colab-rules.md` | `AGENTS.md`에서 필요한 절만 참조 |
-| 작업 절차 | `.claude/skills/colab-v2-work/SKILL.md` | `.agents/skills/colab-v2-work/SKILL.md` |
-| 브라우저 CLI | `.claude/skills/agent-browser/SKILL.md`와 그 옆 리소스 | `.agents/skills/agent-browser/SKILL.md` |
+| 작업 절차 | `.agents/skills/colab-v2-work/SKILL.md` | `.claude/skills/colab-v2-work/SKILL.md` adapter |
+| 브라우저 CLI | `.agents/skills/agent-browser/SKILL.md`와 그 옆 리소스 | `.claude/skills/agent-browser/SKILL.md` adapter |
 | 구현·조사·검토·게이트 역할 | `.claude/agents/*.md` 본문 | `.codex/agents/*.toml`에서 원본을 읽고 도구 차이 적용 |
-| 검사 로직 | `.claude/hooks/*.sh`, `gates/` | `scripts/agent-bridge.py`와 기존 게이트 명령 |
+| 검사 로직 | `scripts/harness/hooks/`, `gates/` | `.claude/hooks/` 어댑터와 `scripts/agent-bridge.py` |
 
-`.agents`와 `.codex` 파일은 연결과 환경 차이만 담는다. 공통 본문 수정은 원본에서 한 번만 한다.
-기존 12개 스킬 모두 `.agents/skills/<이름>/SKILL.md`로 등록한다.
+`.agents/skills`가 공통 본문을 소유하고 `.claude/skills`와 `.codex` 파일은 연결과 환경 차이만 담는다. 공통 본문 수정은 원본에서 한 번만 한다.
+공통 스킬 13개와 Codex 전용 완료 알림 스킬을 `.agents/skills/<이름>/SKILL.md`로 등록한다.
 `grill-me`와 `to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
 Codex에서는 `$grill-me`, `$to-spec`로 호출한다. 개인 `$intent`는 grill-me의 별칭이다.
 각 스킬을 읽으면 **그 원본 디렉터리**를 기준으로 상대 링크·스크립트 경로를 해석한다.
@@ -45,7 +47,7 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
   병렬 레인은 사본을 분리한다. 테스트 작성이 필요한 fix는 승인된 시험 작성 단계에서 RED를 확인한 뒤
   `COLAB_FIX_LANE=1`의 구현 단계로 진행한다. 보호된 fix 단계에서 테스트 수정 우회 값을 켜지 않는다.
 - agent-browser의 `references/` 8개와 `templates/` 3개는 원본 스킬 옆에 복원했다.
-  확보 경로와 출처는 `.claude/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
+  확보 경로와 출처는 `.agents/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
 - `/eli5`, `explain-visually`는 쉬운 설명과 현재 사용 가능한 시각화 도구로 목적을 수행한다.
   `/graphify`는 현재 설치된 기능이 아니므로 그래프 생성 완료를 주장하지 않는다.
 - deploy_doctor 검사 수 등 오래된 숫자는 실행 시 정본과 실측으로 확인한다. 게이트 병렬도는

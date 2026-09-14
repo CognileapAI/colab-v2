@@ -26,7 +26,7 @@ Claude/Codex를 함께 사용할 때의 도구별 연결은 `docs/development/du
 ⭑ ⟨개정 2026-09-06 · 하네스 재설계 P-E⟩ **읽을 것은 `dev-package/prd/rounds/` 의 최신 `R-*.md` 한 개다.**
 ／ 종전 ~~문서 5개(03-HANDOFF · DOMAINS · WORK-UNITS · PLAN-SoT · sessions/<WU>)를 순서대로~~ —
 그 다섯의 합이 **2.4MB** 였고, 컨텍스트가 요약되면서 규칙이 유실됐다(세션 느려짐 · 지시 누락).
-훅 `.claude/hooks/bootstrap-diet.sh`(H1)가 세션 시작에 그 파일 이름을 찍는다.
+Claude adapter 훅 `.claude/hooks/bootstrap-diet.sh`(H1)가 세션 시작에 그 파일 이름을 찍는다.
 
 - **나머지는 링크로만 따라간다.** 라운드 파일이 가리키는 곳만, 필요한 값만 꺼낸다.
 - **대형 문서는 통독하지 않는다** — `03-HANDOFF.md`·`PLAN-SoT.md`·`DOMAINS.md`·`WORK-UNITS.md`·
@@ -133,7 +133,7 @@ v1 CI가 DB 없이 돌아 RLS 테스트를 green-by-skip 했던 실패를 구조
 - **실행 산출물(gitignored 상태 파일 · 회전 비밀번호 유일 사본)을 워크트리 안에 두고 워크트리를 지워 유실** → 실행 자리는 워크트리 밖(`$COLAB_JOB_DIR/tmp` 또는 홈)으로 둔다 · 비밀 사본은 실행 직후 0600 으로 복사 (2026-09-14 · R-DATA-CANON `WU-C4` 4→5회차 · `OPS-PI-PW`)
 - **아래 셋은 이미 규칙에 있다 — 여기서 중복하지 않고 그 자리를 본다**:
   「지시가 실물과 어긋나면 멈춘다」·「행 번호 대신 앵커」·「미병합 값을 사실로 적지 않는다」
-  → `.claude/skills/colab-v2-work/SKILL.md §1` · `.claude/rules/colab-rules.md §1`
+  → `.agents/skills/colab-v2-work/SKILL.md §1` · `.claude/rules/colab-rules.md §1`
 
 ## 6. 세션 종료 규약 (예외 없음)
 
@@ -188,4 +188,3 @@ git log --oneline -10
 6. 릴리스 = 태그 — dev 실적용 `dev-YYYYMMDD-N` · prod `prod-YYYYMMDD` · 원장 〈N〉 행이 태그를 가리킨다.
 
 - **정리 대상(WU-D4 류 · 병합 경로 밖 브랜치)** 의 원격 삭제·태그 push·PR close 는 **게이트 ③ 뒤 오케스트레이터**가 한다(레인은 표와 로컬 태그까지 · `git push origin --tags` 금지) — 병합된 `lane/*`·`integration/*` 는 즉시 삭제(`.claude/rules/colab-rules.md §2-1`).
-

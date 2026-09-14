@@ -29,13 +29,13 @@ GATE_SUMMARY_NAME="gate-summary.json"
 if [ "$GATE" = "task" ]; then
   [ -n "${COLAB_TASK_ID:-}" ] || { echo '::gate-readiness-failure:: COLAB_TASK_ID required' >&2; exit 78; }
   cd "$REPO_ROOT"
-  exec python3 .claude/hooks/lifecycle_contract.py run-gates --task "$COLAB_TASK_ID"
+  exec python3 scripts/harness/hooks/lifecycle_contract.py run-gates --task "$COLAB_TASK_ID"
 fi
 
 # Bind evidence before the outer execution, including dirty sources and fixtures.
 # Child gate processes inherit this identity; they never overwrite the baseline.
 if [ -n "${COLAB_TASK_ID:-}" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}" ]; then
-  if ! COLAB_GATE_TASK_BEFORE="$(cd "$REPO_ROOT" && python3 .claude/hooks/lifecycle_contract.py gate-start --task "$COLAB_TASK_ID")"; then
+  if ! COLAB_GATE_TASK_BEFORE="$(cd "$REPO_ROOT" && python3 scripts/harness/hooks/lifecycle_contract.py gate-start --task "$COLAB_TASK_ID")"; then
     echo '::gate-readiness-failure:: task evidence preparation failed' >&2
     exit 78
   fi
@@ -192,7 +192,7 @@ ALL_GATES=(
 case "$GATE" in
   agent-bridge)
     # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
-    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py
     ;;
   harness-contract)
     exec python3 "$REPO_ROOT/scripts/harness/check.py"

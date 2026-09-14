@@ -88,6 +88,28 @@ def load_contract(path: Path) -> dict:
 
 def check_contract(root: Path, value: dict) -> list[str]:
     errors: list[str] = []
+    names = value["sources"].get("hook_names")
+    if not isinstance(names, list) or not names:
+        errors.append("missing shared hook mappings")
+    else:
+        for name in names:
+            if not isinstance(name, str) or PurePosixPath(name).name != name or not name.endswith(".sh"):
+                errors.append("invalid shared hook name")
+                continue
+            source = root / "scripts/harness/hooks" / name
+            adapter = root / ".claude/hooks" / name
+            if not source.is_file():
+                errors.append(f"missing shared hook: {name}")
+            expected = f'exec bash "$(dirname "${{BASH_SOURCE[0]}}")/../../scripts/harness/hooks/{name}" "$@"'
+            try:
+                statements = [line.strip() for line in adapter.read_text().splitlines()
+                              if line.strip() and not line.lstrip().startswith("#")]
+                if statements != [expected]:
+                    errors.append(f"invalid hook adapter: {name}")
+            except OSError:
+                errors.append(f"missing hook adapter: {name}")
+        if not (root / "scripts/harness/hooks/lifecycle_contract.py").is_file():
+            errors.append("missing shared lifecycle contract")
     for name in value["adapters"]["required_files"]:
         if not (root / name).exists():
             errors.append(f"missing required adapter: {name}")

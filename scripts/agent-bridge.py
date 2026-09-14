@@ -14,8 +14,10 @@ import sys
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / ".claude/hooks"))
+sys.path.insert(0, str(ROOT / "scripts/harness/hooks"))
 from lifecycle_contract import validate_report, load_task, verify_task_report
+sys.path.insert(0, str(ROOT /"scripts"))
+from harness.config import check_contract, load_contract
 
 
 def tool_environment() -> dict[str, str]:
@@ -85,16 +87,25 @@ def check() -> None:
             raise ValueError(f"{role}: invalid source mapping")
         if role == "advisor" and config.get("sandbox_mode") != "read-only":
             raise ValueError("advisor must be read-only")
-    skills = sorted(p.parent.name for p in (ROOT / ".claude/skills").glob("*/SKILL.md"))
+    contract = load_contract(ROOT / ".agents/harness.yaml")
+    errors = check_contract(ROOT, contract)
+    if errors:
+        raise ValueError("; ".join(errors))
+    codex_only = set(contract["sources"].get("codex_only_skills", []))
+    skills = sorted(p.parent.name for p in (ROOT / ".agents/skills").glob("*/SKILL.md"))
     if not skills:
         raise ValueError("no source skills")
     for skill in skills:
         body = (ROOT / f".agents/skills/{skill}/SKILL.md").read_text(encoding="utf-8")
         if not body.startswith("---\n") or f"name: {skill}\n" not in body or "description:" not in body:
             raise ValueError(f"invalid skill metadata: {skill}")
-        for source in re.findall(r"`([^`]+/SKILL\.md)`", body):
-            if not (ROOT / source).is_file():
-                raise ValueError(f"missing skill source: {source}")
+        if skill not in codex_only:
+            adapter_path = ROOT / f".claude/skills/{skill}/SKILL.md"
+            if not adapter_path.is_file():
+                raise ValueError(f"missing Claude skill adapter: {skill}")
+            adapter = adapter_path.read_text(encoding="utf-8")
+            if f".agents/skills/{skill}/SKILL.md" not in adapter or len(adapter) >= len(body):
+                raise ValueError(f"invalid Claude skill adapter: {skill}")
     for tool in ("Bash", "Edit"):
         registered_hooks(tool)
     settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
@@ -117,7 +128,8 @@ def check() -> None:
         for entry in entries:
             probe = entry["matcher"].split("|")[0]
             count += len(registered_hooks(probe, event))
-    print(f"green: 4 role mappings, {len(skills)} skill adapters, {count} hook mappings / {len(codex['hooks'])} events")
+    adapters = len(skills) - len(codex_only)
+    print(f"green: 4 role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
 
 
 def run_registered(payload: dict) -> int:
@@ -348,7 +360,7 @@ def main() -> int:
         if args.action == "codex-event":
             return codex_event()
         if args.action == "lifecycle":
-            return subprocess.run([sys.executable, str(ROOT / ".claude/hooks/lifecycle_contract.py"), *args.args], cwd=ROOT).returncode
+            return subprocess.run([sys.executable, str(ROOT / "scripts/harness/hooks/lifecycle_contract.py"), *args.args], cwd=ROOT).returncode
         if args.action == "run-tool":
             return run_tool(args.tool, args.args)
         if args.action == "check":

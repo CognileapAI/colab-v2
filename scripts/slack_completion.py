@@ -36,7 +36,7 @@ def snapshot(root):
         if path.is_file(): h.update(rel.encode("utf-8",errors="surrogateescape")); h.update(path.read_bytes())
     return h.hexdigest()
 def verify_evidence(root,task_id,path):
-    source=Path(root)/".claude/hooks/lifecycle_contract.py"
+    source=Path(root)/"scripts/harness/hooks/lifecycle_contract.py"
     spec=importlib.util.spec_from_file_location("colab_lifecycle_contract",source)
     module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     task=module.load_task(Path(root),task_id); module.verify_task_report(Path(root),task,str(path))

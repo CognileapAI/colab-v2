@@ -22,7 +22,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / ".claude/hooks"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts/harness/hooks"))
 from lifecycle_contract import gate_evidence, load_task, inside
 
 SCHEMA = "colab-gate-summary/1"

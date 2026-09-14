@@ -108,11 +108,20 @@
 - Common hook input schema is produced by Claude wrappers and Codex bridge; both invoke the same judge file.
 
 - [ ] checker 시험으로 중복 본문과 adapter의 잘못된 target을 red로 고정한다.
-- [ ] 스킬 본문을 `.agents`로 이동하고 Claude adapter를 생성한다. 인접 resources의 기준 경로를 명시한다.
+- [x] 스킬 본문을 `.agents`로 이동하고 Claude adapter를 생성한다. 인접 resources의 기준 경로를 명시한다.
 - [ ] 공통 규칙·역할 본문과 skill 인접 resources를 `.agents`로 이동하고 AGENTS/CLAUDE 및 양쪽 역할 adapter를 갱신한다.
-- [ ] hook judge를 `scripts/harness/hooks`로 이동하고 `.claude/hooks`를 실행 adapter로 바꾼다.
+- [x] hook judge를 `scripts/harness/hooks`로 이동하고 `.claude/hooks`를 실행 adapter로 바꾼다.
 - [ ] bridge와 설정의 mapping을 공통 config 기반으로 바꾸고 기존 payload 음성 시험을 유지한다.
 - [ ] `agent-bridge`, `harness-contract`, `exec-bit` green 뒤 커밋한다.
+
+진행 증거(2026-09-14): 훅 원본을 먼저 이동하면서 PreToolUse import/진입점이 끊겼다.
+사용자가 기존 진입점 복사본을 복원한 뒤, 소비자 경로부터 바꾸고 기존 파일을 어댑터화했다.
+복구 후 agent-bridge 103 tests(93 pass, Windows 10 skipped), harness-contract exit 0,
+exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff whitespace 검사 exit 0.
+이 결과는 공통 규칙·역할 이전, config mapping, 실제 양쪽 모델/인계 검증 완료를 뜻하지 않는다.
+추가로 훅 호스트의 import 경로 누락을 복구했고, 저장소 밖 cwd와 Python 격리 모드에서
+파일명으로 bridge를 로드하는 회귀 검사를 등록했다. 어댑터 오대상·본문 중복·원본 누락은
+공통 계약 검사기가 거절하며 해당 음성 fixture를 포함한 6개 selftest가 통과했다.
 
 ### Task 5: 로컬 task 상태와 PR 중심 인계
 
