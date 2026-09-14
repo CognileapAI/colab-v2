@@ -60,6 +60,7 @@
     "required": [
       "AGENTS.md",
       ".agents/skills",
+      ".agents/ci-producers.json",
       "gates/run.sh",
       "gates/README.md",
       "scripts/harness"

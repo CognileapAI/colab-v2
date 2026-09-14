@@ -66,8 +66,14 @@
 - [ ] 현재 `event-breaking`의 base env 누락을 잡는 실패 시험을 먼저 red로 확인한다.
 - [ ] contract/event breaking에 pull request event의 고정 base SHA를 전달하고 PR head, merge 시험, push before/after SHA를 구분한다.
 - [ ] 누락·다른 SHA·준비 red·중복 gate를 거절하는 evidence 시험을 red로 추가한다.
-- [ ] CI가 적용 대상 필수 gate 집합을 검증하고 gate summary를 실행 event SHA와 함께 업로드하며 job summary에 3계수를 기록하게 한다.
-- [ ] 단위 시험과 workflow 정적 검사를 green으로 만든 뒤 커밋한다.
+- [x] CI가 적용 대상 필수 gate 집합을 검증하고 gate summary를 실행 event SHA와 함께 업로드하며 job summary에 3계수를 기록하게 한다.
+- [x] 단위 시험과 workflow 정적 검사를 green으로 만든 뒤 커밋한다.
+
+보완 검증(2026-09-15): 기존 needs 성공만 집계하던 결함을 음성 시험으로 재현한 뒤
+14개 논리 생산자/38개 명령을 정본 등록하고 명령별 artifact를 대조하도록 교체했다.
+누락·다른 SHA·계수/행 불일치·미선언 집합은 거절한다. 실패 집계도 계수 단위를 명시한 JSON을 남긴다.
+메인 재실행: harness-contract-selftest 18 tests exit 0, ci-filter-check exit 0.
+실제 GitHub Actions는 미실행이며 원격 게시 승인 뒤 검증한다.
 
 ### Task 3: 세션 문서 시험 입력 선이전
 
@@ -168,8 +174,9 @@ exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff
 - Produces: tag/deployment 전 로컬 allow/deny 판정과 승인 후 적용할 required `required-gates` ruleset 문서.
 
 - [ ] 알려진 CI 실패 SHA, main 비조상, SHA 불일치, doctor 15/15 아님을 각각 거절하는 시험을 red로 확인한다.
-- [ ] 배포 전 판정기가 같은 full SHA의 main 조상·필수 CI 성공·doctor 단일 실행을 요구하게 한다.
-- [ ] deployment와 annotated dev tag 생성은 판정 뒤에만 가능하도록 dry-run 명령을 제공한다.
+- [ ] 배포 전 판정기는 full SHA의 main 조상·병합 PR 연결·같은 SHA의 필수 CI 성공을 요구한다. 첫 배포 이전에는 doctor 결과를 요구하지 않는다.
+- [ ] deploy 뒤 verify에서 같은 환경·release ID·full target SHA의 신규 doctor 15항목 통과를 요구한다. 이전 run·다른 SHA·면제된 검사를 성공으로 수용하지 않는다.
+- [ ] annotated dev tag와 성공 확정은 사후 검증 뒤에만 가능하도록 dry-run 명령을 제공한다. 태그 실패와 배포 검증 성공을 구분한다.
 - [ ] required PR+`required-gates`+admin 적용을 담은 ruleset JSON과 읽기 전용 검증 명령을 작성한다. 원격 적용은 하지 않는다.
 - [ ] 단위 시험·관련 정적 게이트 green 뒤 커밋한다.
 

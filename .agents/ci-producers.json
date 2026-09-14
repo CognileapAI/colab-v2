@@ -1,0 +1,528 @@
+{
+  "schema": "colab-ci-producers/1",
+  "producers": {
+    "search-golden": {
+      "job": "search-golden",
+      "filters": [
+        "search-golden"
+      ],
+      "checks": {
+        "search-runner-tests": {
+          "kind": "direct",
+          "command": [
+            "services/core-api/.venv/bin/python",
+            "-m",
+            "pytest",
+            "-q",
+            "eval/k4-search/test_run_regression.py"
+          ]
+        },
+        "search-regression": {
+          "kind": "direct",
+          "command": [
+            "services/core-api/.venv/bin/python",
+            "eval/k4-search/run_regression.py"
+          ]
+        }
+      }
+    },
+    "contract-gates": {
+      "job": "contract-gates",
+      "filters": [
+        "contracts"
+      ],
+      "checks": {
+        "contract-lint": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "contract-lint"
+          ],
+          "gates": [
+            "contract-lint"
+          ]
+        },
+        "contract-breaking": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "contract-breaking"
+          ],
+          "gates": [
+            "contract-breaking"
+          ]
+        },
+        "event-lint": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "event-lint"
+          ],
+          "gates": [
+            "event-lint"
+          ]
+        },
+        "event-breaking": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "event-breaking"
+          ],
+          "gates": [
+            "event-breaking"
+          ]
+        },
+        "seam-consistency": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "seam-consistency"
+          ],
+          "gates": [
+            "seam-consistency"
+          ]
+        },
+        "generated-up-to-date": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "generated-up-to-date"
+          ],
+          "gates": [
+            "generated-up-to-date"
+          ]
+        }
+      }
+    },
+    "frontend-gates": {
+      "job": "frontend-gates",
+      "filters": [
+        "frontend",
+        "contracts"
+      ],
+      "checks": {
+        "frontend-typecheck": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "frontend-typecheck"
+          ],
+          "gates": [
+            "frontend-typecheck"
+          ]
+        },
+        "frontend-test": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "frontend-test"
+          ],
+          "gates": [
+            "frontend-test"
+          ]
+        },
+        "frontend-fixture-reach": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "frontend-fixture-reach"
+          ],
+          "gates": [
+            "frontend-fixture-reach"
+          ]
+        }
+      }
+    },
+    "boundary-gates": {
+      "job": "boundary-gates",
+      "filters": [
+        "core-api",
+        "ai-service",
+        "viz-render",
+        "pipeline-worker",
+        "infra",
+        "contracts"
+      ],
+      "checks": {
+        "import-boundary": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "import-boundary"
+          ],
+          "gates": [
+            "import-boundary"
+          ]
+        },
+        "banned-import": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "banned-import"
+          ],
+          "gates": [
+            "banned-import"
+          ]
+        },
+        "ai-no-lineage-write": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "ai-no-lineage-write"
+          ],
+          "gates": [
+            "ai-no-lineage-write"
+          ]
+        },
+        "db-boundary": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "db-boundary"
+          ],
+          "gates": [
+            "db-boundary"
+          ]
+        }
+      }
+    },
+    "schema-gates": {
+      "job": "schema-gates",
+      "filters": [
+        "db",
+        "core-api"
+      ],
+      "checks": {
+        "migration-single-head": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "migration-single-head"
+          ],
+          "gates": [
+            "migration-single-head"
+          ]
+        },
+        "schema-diff": {
+          "kind": "gate",
+          "command": [
+            "bash",
+            "gates/tools/ci-schema-diff.sh"
+          ],
+          "gates": [
+            "schema-diff"
+          ]
+        },
+        "rls-coverage": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "rls-coverage"
+          ],
+          "gates": [
+            "rls-coverage"
+          ]
+        },
+        "rls-effect": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "rls-effect"
+          ],
+          "gates": [
+            "rls-effect"
+          ]
+        }
+      }
+    },
+    "dormant-tests": {
+      "job": "dormant-tests",
+      "filters": [
+        "pipeline-worker"
+      ],
+      "checks": {
+        "stage2-markers-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "stage2-markers-selftest"
+          ],
+          "gates": [
+            "stage2-markers-selftest"
+          ]
+        },
+        "stage2-markers": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "stage2-markers"
+          ],
+          "gates": [
+            "stage2-markers"
+          ]
+        }
+      }
+    },
+    "planning-gates": {
+      "job": "planning-gates",
+      "filters": [
+        "dev-package"
+      ],
+      "checks": {
+        "work-item-consistency": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "work-item-consistency"
+          ],
+          "gates": [
+            "work-item-consistency"
+          ]
+        },
+        "seed-plan-drift": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "seed-plan-drift"
+          ],
+          "gates": [
+            "seed-plan-drift"
+          ]
+        },
+        "planning-regression": {
+          "kind": "direct",
+          "command": [
+            "python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "scripts/tests",
+            "-p",
+            "test_planning_gate.py",
+            "-v"
+          ]
+        }
+      }
+    },
+    "repo-hygiene": {
+      "job": "repo-hygiene",
+      "filters": [],
+      "checks": {
+        "exec-bit-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "exec-bit-selftest"
+          ],
+          "gates": [
+            "exec-bit-selftest"
+          ]
+        },
+        "exec-bit": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "exec-bit"
+          ],
+          "gates": [
+            "exec-bit"
+          ]
+        }
+      }
+    },
+    "harness-eval": {
+      "job": "harness-eval",
+      "filters": [
+        "harness"
+      ],
+      "checks": {
+        "harness-eval": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "harness-eval"
+          ],
+          "gates": [
+            "harness-eval"
+          ]
+        },
+        "harness-runner-selftest": {
+          "kind": "direct",
+          "command": [
+            "bash",
+            "eval/harness/tests/run-selftest.sh"
+          ]
+        },
+        "harness-judge-selftest": {
+          "kind": "direct",
+          "command": [
+            "bash",
+            "gates/tools/harness-eval-selftest.sh"
+          ]
+        }
+      }
+    },
+    "gate-selftest": {
+      "job": "gate-selftest",
+      "filters": [
+        "contracts"
+      ],
+      "checks": {
+        "selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "selftest"
+          ],
+          "gates": [
+            "operator-notifications-selftest",
+            "contract-selftest",
+            "event-selftest",
+            "boundary-selftest",
+            "db-boundary-selftest",
+            "db-selftest",
+            "rls-effect-selftest",
+            "seam-consistency-selftest",
+            "generated-selftest",
+            "work-item-selftest",
+            "autometa-loss-selftest",
+            "preview-tile-slot-selftest",
+            "artifact-ownership-selftest",
+            "seed-plan-drift-selftest",
+            "dev-reseed-selftest",
+            "e2e-format-coverage-selftest",
+            "render-latency-selftest",
+            "backup-cron-streak-selftest",
+            "ops-observability-selftest",
+            "is4-recovery-selftest",
+            "exec-bit-selftest",
+            "migration-drift-selftest",
+            "frontend-typecheck-selftest",
+            "frontend-test-selftest",
+            "frontend-fixture-reach-selftest",
+            "frontend-visual-selftest",
+            "harness-eval-selftest",
+            "harness-contract-selftest"
+          ]
+        }
+      }
+    },
+    "service-tests-core-api": {
+      "job": "service-tests",
+      "filters": [
+        "core-api",
+        "contracts"
+      ],
+      "checks": {
+        "service-tests-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-selftest"
+          ],
+          "gates": [
+            "service-tests-selftest"
+          ]
+        },
+        "service-tests-core-api": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-core-api"
+          ],
+          "gates": [
+            "service-tests-core-api"
+          ]
+        }
+      }
+    },
+    "service-tests-ai-service": {
+      "job": "service-tests",
+      "filters": [
+        "ai-service",
+        "contracts"
+      ],
+      "checks": {
+        "service-tests-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-selftest"
+          ],
+          "gates": [
+            "service-tests-selftest"
+          ]
+        },
+        "service-tests-ai-service": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-ai-service"
+          ],
+          "gates": [
+            "service-tests-ai-service"
+          ]
+        }
+      }
+    },
+    "service-tests-viz-render": {
+      "job": "service-tests",
+      "filters": [
+        "viz-render",
+        "contracts"
+      ],
+      "checks": {
+        "service-tests-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-selftest"
+          ],
+          "gates": [
+            "service-tests-selftest"
+          ]
+        },
+        "service-tests-viz-render": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-viz-render"
+          ],
+          "gates": [
+            "service-tests-viz-render"
+          ]
+        }
+      }
+    },
+    "service-tests-pipeline-worker": {
+      "job": "service-tests",
+      "filters": [
+        "pipeline-worker",
+        "contracts"
+      ],
+      "checks": {
+        "service-tests-selftest": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-selftest"
+          ],
+          "gates": [
+            "service-tests-selftest"
+          ]
+        },
+        "service-tests-pipeline-worker": {
+          "kind": "gate",
+          "command": [
+            "./gates/run.sh",
+            "service-tests-pipeline-worker"
+          ],
+          "gates": [
+            "service-tests-pipeline-worker"
+          ]
+        }
+      }
+    }
+  }
+}
