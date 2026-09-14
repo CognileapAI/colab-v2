@@ -249,3 +249,9 @@ advisor 파생 확정
 - 기록 5건 = `dev-package/sessions/DR-4-run-20260914T010023Z.md`(1회차) · `…T012505Z.md`(2회차) · `…T020005Z.md`(3회차) · `…T022417Z.md`(4회차) · `…T050442Z.md`(5회차).
 - 원장 = `dev-package/PLAN-SoT.md §9 〈398〉`-㉿(새 번호 없음). 대장 `DR-4` evidence 는 위 요약과 같은 값.
 - 마감 초안(researcher · 미승인 원문) = `dev-package/reports/r-data-canon/closing-draft.md`. 초안과 이 절이 갈리는 자리 = 후속 8건 → 신설 5 ＋ 합침 3 · 「계정 2」에 5회차 재측정 없음 표기 · `[미병합]` 표시는 5회차 기록이 `main` 에 반입되어 해제.
+
+### 13-8. 마감 뒤 Ted 판정 3건 (2026-09-14)
+
+- Ted 판정 3건 = ⓐ PI 비밀번호 재설정 완료(운영자 계정 → 계정 관리 화면 · 값 미기록 · 운영자 초기 비밀번호 파일은 첫 로그인 변경 뒤 실행 기계에서 삭제 · 대장 `OPS-PI-PW` done) ⓑ 다음 회차 = `GT-1`(검사 판독 결함 묶음 · `DR-4b` 는 그 뒤) ⓒ EC2 잔존물 「예 · 지운다」.
+- EC2 정리 실측(`WU-C6` · dev EC2 한정) = 삭제 26건 1,531,330,806 B(≈1.43 GiB) — `dev.env.bak-*` 7 · `images/` tar 17(실행 태그 `d5cd6ca971df`·직전 태그 `b955bece7384` 각 2건 유지) · `/tmp/repo*.tgz` 2 · 고정 목록 `xargs rm -f` · 여유 6.1G(70%)→7.5G(63%) · docker 이미지 무삭제(colab-v2 20) · 앱 4 `dev-d5cd6ca971df` healthy · 잔여(글롭 밖) = `.manifest` 고아 10 · `repo-42cffb328b1e.tgz` 31 MB(대장 `LF-13` note).
+- 블로커 `03-HANDOFF.md §4` **75** 해소 — HANDOFF 마감 문단의 다음 WU 를 `GT-1` 로 갱신 · 원장 `〈398〉`-㉿′.
