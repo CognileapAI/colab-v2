@@ -1,0 +1,81 @@
+{
+  "schema": "colab-harness/1",
+  "project": {
+    "name": "CoLAB v2",
+    "default_branch": "main",
+    "deployment_branch": "main",
+    "package_roots": ["contracts", "db", "frontend", "services", "infra"]
+  },
+  "commands": {
+    "gate": "bash gates/run.sh",
+    "bridge_check": "python3 scripts/agent-bridge.py check",
+    "harness_check": "python3 scripts/harness/check.py"
+  },
+  "gates": {
+    "required": [
+      "rls-effect",
+      "migration-single-head",
+      "contract-lint",
+      "event-lint",
+      "generated-up-to-date",
+      "import-boundary",
+      "service-tests-core-api",
+      "frontend-test",
+      "seed-plan-drift",
+      "agent-bridge",
+      "harness-contract"
+    ],
+    "states": {"green": 0, "red_judgment": 1, "red_readiness": 78},
+    "report_schema": "colab-gate-summary/1"
+  },
+  "evidence": {
+    "task_runtime": "git-common-dir:colab-harness/<checkout-id>/<task-id>/<run-id>",
+    "pull_request_sha": ["base_sha", "head_sha", "merge_sha"],
+    "push_sha": ["before_sha", "after_sha"],
+    "required_counts": ["green", "red_judgment", "red_readiness"],
+    "required_pr_sections": ["목적", "범위", "계획", "결정", "검증", "남은 제약"]
+  },
+  "sources": {
+    "policy_entrypoint": "AGENTS.md",
+    "skills": ".agents/skills",
+    "config": ".agents/harness.yaml",
+    "judges": "scripts/harness"
+  },
+  "adapters": {
+    "required_files": [
+      "CLAUDE.md",
+      ".claude/settings.json",
+      ".codex/config.toml",
+      ".codex/hooks.json",
+      "scripts/agent-bridge.py"
+    ],
+    "claude": ["CLAUDE.md", ".claude/settings.json"],
+    "codex": ["AGENTS.md", ".codex/config.toml", ".codex/hooks.json", "scripts/agent-bridge.py"]
+  },
+  "paths": {
+    "required": [
+      "AGENTS.md",
+      ".agents/skills",
+      "gates/run.sh",
+      "gates/README.md",
+      "scripts/harness"
+    ],
+    "compatibility_read_roots": [
+      "dev-package/03-HANDOFF.md",
+      "dev-package/PLAN-SoT.md",
+      "dev-package/work-items.yaml",
+      "dev-package/sessions",
+      "dev-package/reports"
+    ],
+    "retired_roots": []
+  },
+  "publication": {
+    "push": "approval-required",
+    "pull_request": "approval-required",
+    "issue": "approval-required",
+    "ruleset": "approval-required",
+    "merge": "separate-approval-required",
+    "deployment": "separate-approval-required",
+    "record_deletion": "separate-approval-required"
+  }
+}

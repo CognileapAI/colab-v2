@@ -6,6 +6,8 @@ v1(PoC)에서 터진 버그는 전부 **"관례로 지키기로 했던 것"** �
 |---|---|
 | `contract-lint` | seam 스펙 오류 |
 | `agent-bridge` | Codex/Claude 연결, 완료 훅 및 배포 자동 알림의 진입점·상태·중복 방지 |
+| `harness-contract` | `.agents/harness.yaml`의 공통 원본·adapter·필수 gate·0/1/78 계약 누락과 경로 이탈 |
+| `harness-contract-selftest` | malformed config·빈 필수 gate·누락 adapter를 조용히 통과시키는 회귀 |
 | `operator-notifications` | 운영자 사건 20개 선언과 영속 전달·일일 보고·AWS 정규화·두 loopback Slack 수신처 검증 |
 | `operator-notifications-selftest` | 필수 사건 manifest 누락을 판정 실패로 거부하는 음성 검사 |
 | `contract-breaking` | emit된 스펙이 frozen seam과 충돌 |
@@ -193,6 +195,7 @@ COLAB_GATE_REPORT_DIR=dev-package/reports/<회차>/<레인> ./gates/run.sh all -
 
 | 셋 | 케이스 | 의존 |
 |---|---|---|
+| `harness-contract-selftest` | **5** | 없음(Python 표준 라이브러리). malformed config는 red(준비·78), 누락 adapter는 red(판정·1), 정상 계약은 green을 증명 |
 | `contract-selftest` | **15** | docker(oasdiff) · spectral |
 | `event-selftest` | **33** | node + ajv (`gates/tools/node`) |
 | `boundary-selftest` | **37** | python venv |
