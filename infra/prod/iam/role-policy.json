@@ -1,0 +1,15 @@
+{
+  "_comment": "EC2 인스턴스 프로파일 정책 colab-platform-app-prod-role — S3.md §1 의 업로드 조작·멀티파트 + previews PUT. ⛔ **Diagnostics 문이 없다** — dev 의 `DiagnosticsDevOnly` 는 이름이 말하듯 dev 전용이고 prod 는 뺀다(`〈342〉`-㉯). 앱은 버킷 설정을 읽을 일이 없다 — 그 조회는 운영자 도구(`s3_doctor`)의 몫이고, 서버에 그 권한을 주면 털렸을 때 구성이 함께 샌다. Resource 는 prod 데이터 버킷 하나 — 웹 버킷 권한을 서버에 주지 않는다.",
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "UploadObjects", "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::colab-platform-data-prod", "arn:aws:s3:::colab-platform-data-prod/*"] },
+    { "Sid": "Multipart", "Effect": "Allow",
+      "Action": ["s3:AbortMultipartUpload", "s3:ListMultipartUploadParts", "s3:ListBucketMultipartUploads"],
+      "Resource": ["arn:aws:s3:::colab-platform-data-prod", "arn:aws:s3:::colab-platform-data-prod/*"] },
+    { "Sid": "PreviewsPut", "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": "arn:aws:s3:::colab-platform-data-prod/previews/*" }
+  ]
+}

@@ -31,6 +31,9 @@
 > **2026-09-14 이태헌 1차 검증 반영 코드 완료** — BF-18~23 done · 최종 트리 a07e87a4 전수 green 61 ＋ 재실행 3(viz-render green · 면제 2) · 원장 〈397〉 · **다음** = dev 배포(Ted 허락 대기) → 기획자 회신 발송 → 회차 마감 뒤 레포 ext4 이전.
 
 > **2026-09-14 이태헌 1차 검증 반영 회차 실행 중** — 통합 브랜치 `integration/r-lth-1`(main tip 기점 · push) · 반영 완료 = Task 2 검색 범위 · Task 1 계정 관리 화면 · 시험 청소 수정(호스트 시계 역행으로 `conftest.py` 시각 기준 청소가 행을 남기던 결함 → 기본키 스냅숏 기준 · `service-tests-core-api` 3연속 green) · 레인 진행 중 = Task 3(코드 push · 게이트 재검증 대기) · Task 4·5·6·7. 환경 = 폴더 30·31·32 시험 DB 격리(`RESTART.md §2-④-㉳` · 통합 브랜치에 있음). **배포 보류** — 전수 green ＋ `main` ff 뒤 Ted 허락. 회차 마감 뒤 결정 = 레포 30·31·32 를 WSL ext4 로 이전(drvfs I/O ≈450배 느림 실측). 진행 값의 원본 = `dev-package/reports/issues/2026-09-13-ted-decisions.md` 「추가 확인 (2026-09-14)」(통합 브랜치). **다음** = 레인 회수 → rebase＋ff → 전수 1회 → `main` ff → 배포 허락 요청.
+> ⭑ **2026-09-13 prod 첫 정기 재배포 완료(브랜치 `feature/rtf400_deploy_prod` · 미병합)**: 태그 `prod-20260913` → `origin/main` **`aa8bee981ff5`**(로컬 태그 · 미push) · 백업 GREEN → `ship.sh` 반입 `ancestor=yes` → `up.sh` 마이그레이션 platform **19**(`0012`→`0031_search_evidence`)＋ai **3** → 4 유닛 healthy → `deploy_doctor --env prod` **항목 15 — ✓ 15 · ✗ 0 · ─ 0 · 한 번의 실행 · 19:54 KST** · cron ①②③ 설치 · ④ 운영자 알림 명시 면제(prod AWS 자원 없음). 대장 `I5` evidence 증보(status 무변). 근거 `dev-package/reports/prod/rebase-20260913/REPORT.md §10` · `docs/DEPLOY.md §4-0b`.
+> **Ted 판정 3건** = 태그 주체 문면(로컬 태그 → push) · ④ 알림 AWS 자원 생성 여부 · `〈400〉` 재발급(병합 직전). **다음** = PR 병합(배포 도구를 `main` 에 합친다) — 진입조건 `work-item-consistency` green ＋ 결정 번호 재실측.
+
 > **2026-09-13 이태헌 1차 검증 반영 계획 확정(미착수)** — 브랜치 `worktree-lth-review-260913`(**미병합**) · intent 6건 · 라운드 `dev-package/prd/rounds/R-LTH-REVIEW-1.md` · 스펙 `dev-package/prd/specs/2026-09-13-lth-review-1.md` · 판정 `dev-package/reports/issues/2026-09-13-ted-decisions.md`. **다음 WU** = `R-LTH-REVIEW-1` Task 1(계정 관리 화면 · `BF-19` 일부) — 진입조건 ① 이 브랜치 병합 ② `integration/r-lth-1` 을 `main` tip 에서 생성 ③ 워크트리 게이트 환경 구성(`worktree-setup.sh`). ⚠ 위 「최종 갱신」 문단(버그개선 회차 dev 배포)은 `main` 실물과 동일해 그대로 두었다 — 병합 시 이 문단과 조정 필요.
 
 > 2026-09-13 작업 5 dev 배포 3차 **사후 검증(읽기 전용 · 배포 0)**: 동시 배포가 넣은 `6ff0eecd2cba` 가 dev 에 실적용 상태 — `CURRENT_SHA`·`MAIN_SHA` `ancestor=yes` · 4 단위 healthy · 상세 읽기 전용 수정(`d538a064`)이 CloudFront 번들에 실재(`assets/index-DuCCGbNb.js` 에 축자 `다른 연구실 데이터 — 읽기 전용` 1건 · `전체 연구실` 2건) · 무자격 `GET /api/v1/admin/accounts` **401**. ⛔ **`deploy_doctor --env dev` 한 번의 실행 = `항목 15 — ✓ 14 · ✗ 1 · ─ 0`(exit 1)** — `✗` 는 **⑥ 스키마 head(platform)** 하나이고 원인은 **EC2 `/opt/colab-repo` 가 `0030` 세대로 낡은 것**(살아 있는 DB·실행 코드는 `0031_search_evidence`)이라 **완료 조건 15/15 미충족**. 후속 2건 = ⑴ 배포 레포 트리 동기화를 강제하는 자리가 없다(`ship.sh` 단계 부재 · 게이트 부재) ⑵ `core_api`·`viz_render` 가 태그 없는 이미지 ID 로 동작하는데 **이를 잡는 검사가 `deploy_doctor` 에도 게이트에도 없다**. 근거 `dev-package/reports/r-login-backoffice/task5/deploy-3-verify.md`.
@@ -144,6 +147,7 @@
 대장 신규 6건 = `WU-A13R`·`WU-A12R`·`WU-A7R`·`WU-A9R`·`WU-A3R`·`WU-A4R`(`status: open` · id 규칙 = 부모 id ＋ 접미 `R` · **`done` 항목 재개봉 0**) · `work-item-consistency`·`planning-freshness` green.
 범위 = 계약 0 · 스키마 0 · 마이그레이션 0. A6 달력 팝오버·PRD-39 ⑤ 확장보기는 **R-B `WU-B3` 이관**. 결정 번호 〈N〉 은 병합 직전 재실측(현 최대 371).
 **착수 조건** = 레포 루트 `30 CoLAB-v2` 에서 `claude --add-dir "../40 COLAB-기획"` 로 새 세션을 열고 `dev-package/prd/rounds/R-A2.md` 하나만 읽는다.
+⭑ **⟨증보 2026-09-06 · prod 개통 · 브랜치 `feature/rtf400_deploy_prod`⟩ prod 를 연다 — `㊻` 보류 해제. 등재 = `PLAN-SoT §9 〈400〉`** — 값과 근거는 거기 있다. ⑴ **Ted 출시 결정**(전언 phj) — 어제 `〈335〉`-㉲ 가 「prod 는 추후」를 확정했으므로 **그것을 뒤집는 새 판정**이고, 원문은 지우지 않고 개정 표시를 붙였다 ⑵ ⭑ **앞선 보고를 정정한다** — 「미리보기 실검증 0회」는 **8월 말 값이었다.** 2026-09-06 실측 = dev `previews/` **객체 22건** · CloudFront 경유 **HTTP 200** · `PV-1`·`P3`·`V-1`·`V-2` 전부 `done` ⟹ **`I-D` 의 `partial` 은 기능 부재가 아니라 대장이 낡은 것**이었다 ⑶ **`I-D` ✅ · `I0`·`I1`·`I5` ⬜ 로 열었다** ⑷ **유료 전환이 시점 복구 관문(`〈256〉`)을 여는 열쇠다** — RDS 보존이 Free Plan 상한 1일에 막혀 있었고(`DEPLOY.md:120` 실제 거부), 보존 **7일**(사용자 결정)이면 PITR 이 딸려 온다. ⛔ **「설정했다」가 관문이 아니다 — 되감아 봐야 닫힌다** ⑸ **예산을 다시 세운다** — 종전 둘은 **크레딧을 제외**해 「크레딧이 얼마나 탔나」를 쟀고 그 전제가 사라진다 ⟹ 실지출 월간 **셋**(dev·prod·전체) ⑹ ⚠ **착수 전 고칠 결함 넷**(`〈400〉`-㉳ · 전부 실물 대조) — **`backup.sh` 의 dev 기본값**(prod 백업이 dev 버킷으로 가며 GREEN 보고) · **`deploy_doctor` 의 prod CORS 모순**(정본대로 하면 red) · **실행 비트 없음**(백업이 안 걸린 채 배포 완료) · **`target.sh:19` 한 줄이 셀프테스트 둘을 뒤집는다**(그 시험을 지우지 않는다) ⑺ 집행 정본 = **`docs/DEPLOY.md §5`** — 계획서를 새로 쓰지 않는다. 브랜치 `feature/rtf400_deploy_prod`
 **19차 Ted 승인 = 2026-09-06 · ㉯(파괴)** — 계약 변경 5(미리보기 403 선언 · `DataPeriod.granularity` · `ObservationInterval` 3자리 · `summary` 필수화 · `fileExtension` ＋ `DatasetBasicInfo` required 2키) · **승인 범위 축자는 `〈346〉`-⑦ 한 자리**에만 있다.
 R-A-1(DB) 완료 — WU-A5·A6 · 병합 `69d916a`·`364ffce`(리베이스 전 `f722662`·`faa1e55`) · 마이그레이션 **1 파일 head 1**(`0013_ra1_ext_interval_period` · M-9·M-6·M-7 · `down_revision` `0012` · drop 0) · 등재 `〈346〉`
 R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b215f7`)로 실었다 · 파괴 출력 5건(POST·PATCH `/datasets` 의 `summary`) 축자는 `〈347〉`-④ · 소비자 286건 · 마이그레이션 0 · 등재 `〈347〉`
@@ -214,16 +218,16 @@ R-A-2(서버) 전건 완료 — 남은 WU-A4 를 `a32e580`(리베이스 전 `2b2
 
 | WU | 상태 | 비고 |
 |---|---|---|
-| I0 계정·결제·리전·예산 알람 | ⏸ | **보류 — 출시 결정 대기** (`㊻`). staging 은 IS1 이 대신한다. ⬜ 가 아닌 이유 = ⬜ 는 "곧 할 것"으로 읽혀 매 세션 착수 후보에 오른다 |
+| I0 계정·결제·리전·예산 알람 | ⬜ | ⭑ **⟨열림 2026-09-06 · `〈400〉`⟩ ⏸ → ⬜ — 출시 결정이 났다.** **이 항목의 실체 = 유료 전환 ＋ 예산 셋 재설계**(dev · prod · 계정 전체 · 비용 할당 태그로 가른다). ⚠ 예산 **필터가 정반대가 된다** — 종전은 크레딧을 **제외**해 「크레딧이 얼마나 탔나」를 쟀고, 유료 전환으로 그 전제가 사라진다 ／ 종전 ~~⏸ 보류 — 출시 결정 대기(`㊻`)~~ |
 || **IS1 staging 호스트 구성** | ✅ | 상세 → `archive/HANDOFF-DETAIL-2026-09.md` (원 L68) |
 || **IS2 터널 라우팅 IaC화** | ✅ | 상세 → `archive/HANDOFF-DETAIL-2026-09.md` (원 L69) |
 || IS3 staging 백업 체계 | ✅ | 상세 → `archive/HANDOFF-DETAIL-2026-09.md` (원 L70) |
 || **IS4 terraform state 보관** | ✅ | 새 state 복구·승인 plan 적용·후속 no-change/health 확인. `sessions/20260911-stage12-execution.md` |
-| I1 토폴로지 + IaC (`plan`까지) | ⏸ | I0 후 — **보류** (`㊻`) |
+| I1 토폴로지 + IaC (`plan`까지) | ⬜ | ⭑ **⟨열림 2026-09-06 · `〈400〉`⟩ ⏸ → ⬜.** I0 후. prod 는 dev 와 **같은 구조를 이름만 바꿔** 세운다 — 집행 정본 `docs/DEPLOY.md §5-3` ／ 종전 ~~⏸ 보류(`㊻`)~~ |
 | **I2 walking skeleton 배포** | ✅ | **2026-08-23 — 분수령 통과.** 5개 단위 전부 헬스 green(`/healthz/{core-api,frontend,pipeline-worker,viz-render,ai-service}`), 컨테이너 7/7 healthy, 호스트 노출 `127.0.0.1` 하나뿐 **`0.0.0.0` 0건**. **롤백 증명에서 방법을 고쳤다 — 상태 코드만으로는 판정할 수 없다**(자리표시가 모든 경로에 200 을 준다). 본문까지 대조했다: `<!doctype html>` ↔ `{"unit":"core-api"}` · `/api/v1/me` 200↔401. 배포→롤백→재배포 4구간 **530 없이 무중단**. postgres 2체인 분리 유지(`colab_platform` 20표 · `colab_ai` 시드 22행). 앱 롤 staging 실측 `rolsuper=f·rolbypassrls=f·소유 0` — P0 숫자와 동일. 터널 선언 무수정(`plan` = No changes). 산출 `sessions/I2.md` | **+ 2026-08-25 — 배선이 실제로 이어졌다**(`c5a2fbf`). I2 당시 green 이던 헬스 6종 뒤에 **제품이 잠겨 있었다** — viz env 0건 · relay 미구성 · `COLAB_AI_DB_URL` 부재 · 주체 표 공백 · named volume 소유권. 헬스 골격 판정으로서 ✅ 는 유지하고, 그 위의 배선은 `W7` 이 닫았다.
 || **I3** 배포 자동화 | ✅ | 실제5분 dirty 차단→동일후보 정상배포 수용. `sessions/20260911-stage12-execution.md` |
 | I4 운영 준비 (추적·알람·복구 리허설) | ✅ | **stage 2 경로에 편입**(`§9 〈167〉-㉲` · 정본 = `WORK-UNITS §10.2-b`). 진입조건 = `I3` |
-| I5 prod 전환 | ⏸ | I4 + P7 — **보류** (`㊻`). v2 개발의 종점은 여기가 아니라 **staging 전체 green** 이다 |
+| I5 prod 전환 | ⬜ | ⭑ **⟨실측 2026-09-13⟩ 첫 정기 재배포 완료 — `prod-20260913` → `aa8bee981ff5` · doctor 15/15 한 실행 · 마이그레이션 19＋3**(대장 evidence · 완료 정의의 「롤백 경로 증명」은 미실측이라 상태 무변) · ⭑ **⟨열림 2026-09-06 · `〈400〉`⟩ ⏸ → ⬜ 착수 후보** — `㊻`-③ 세 조건 충족((가) dev 실측 · (나) Ted 출시 결정 · (다)는 이 회차가 닫는다). **유료 전환 → RDS 보존 7일 → 복원 리허설**이 시점 복구 관문(`〈256〉`)을 여는 길이다. 집행 정본 = `docs/DEPLOY.md §5`. ⚠ 착수 전 고칠 결함 넷 = `〈400〉`-㉳ ／ 종전 ~~⏸ I4 + P7 — 보류(`㊻`) · v2 개발의 종점은 staging 전체 green~~ |
 
 ### T-G 게이트
 | WU | 상태 | 비고 |

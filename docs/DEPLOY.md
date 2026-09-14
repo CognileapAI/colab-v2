@@ -4,7 +4,20 @@
 >
 > **기계적 절차의 정본은 `infra/dev/README.md`**(스크립트와 같은 자리에 있어 함께 낡는다). 이 문서는 **왜·무엇이·어디가 고장 나면 어디를 보는가**를 맡는다. 값과 근거는 `dev-package/PLAN-SoT.md §9`.
 
-**지금 서 있는 것** — dev 환경 하나. 주소 `https://d31zgpff2091oh.cloudfront.net`. **prod 는 아직 없다**(정본 `㊻` 가 ⏸, Ted 판정 선행).
+**지금 서 있는 것** — ⭑ **⟨개정 2026-09-12⟩ dev ＋ prod 두 벌.**
+／ 종전 ~~dev 환경 하나 · **prod 는 아직 없다**(정본 `㊻` 가 ⏸, Ted 판정 선행)~~ — `㊻` 보류는 `〈400〉` 로 해제됐고 prod 는 §5 대로 실재한다.
+
+| 벌 | 주소 | 상태 |
+|---|---|---|
+| dev | `https://d31zgpff2091oh.cloudfront.net` | 배포 창 집행 중 · 태그 `dev-YYYYMMDD-N` |
+| prod | `https://d1aje00ns2hjsl.cloudfront.net` | ⭑ **⟨개정 2026-09-13⟩ 첫 정기 재배포 완료** — 태그 `prod-20260913` → `origin/main` `aa8bee981ff5` · 실행 이미지 `prod-aa8bee981ff5` · `deploy_doctor --env prod` **15/15 한 번의 실행**(§4-1c) ／ 종전 ~~개통 완료(§5 P1~P8) · 실행 이미지 `prod-3922d01750d0` · 다음 배포부터 `prod-YYYYMMDD` 태그에서만(§5-9)~~ |
+
+⭑ **⟨개정 2026-09-13⟩ prod 가 규칙 6 안으로 들어왔다** — `ship.sh` 반입 게이트 통과(`MAIN_SHA main=aa8bee981ff5
+candidate=aa8bee981ff5 ancestor=yes`) · `deploy_doctor` ⑮ ✓. 배포 원장은 §4-0b, 판정은 §4-1c, 순서 교훈은 §3-1.
+⚠ 태그 `prod-20260913` 은 **로컬에만** 있다(push 안 함 · 규칙 문면 「태그 주체 = Ted」와의 차이 · Ted 통보 예정 · §5-9).
+／ 종전 ~~⚠ prod 는 규칙 6 이 생기기 전에 개통됐다. 지금 돌고 있는 `prod-3922d01750d0` 은
+`prod-*` 태그에서 나온 것이 아니고 `/opt/colab-v2/MAIN_SHA` 도 없다 — ⟹ `deploy_doctor` ⑮ 는
+지금 ✗ 다(「파일 없음」). 다음 prod 배포는 `main` 재빌드 ＋ 태그가 선행이다(§5-9).~~
 
 ---
 
@@ -100,10 +113,13 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | `/etc/colab/<파일>` **Permission denied** — 소유자는 맞는데 | 디렉터리 모드 | 디렉터리가 `700 root` 면 안의 파일을 못 연다. 컨테이너(uid 10001)에는 **파일 단위로** 마운트한다 |
 | **`pg_dump` 가 `query would be affected by row-level security policy`** | RLS FORCE | 소유자도 정책에 걸린다. **백업 전용 `colab_backup`(BYPASSRLS) 롤로 뜬다** — 7) 절 |
 | **원격 스크립트의 뒷부분이 조용히 사라진다** | `ssh 'bash -s' <<EOF` | 스크립트 안의 `docker run -i` 가 **heredoc 의 나머지를 stdin 으로 먹는다.** 파일로 `scp` 해서 실행한다 |
-| `ast.parse: source code string cannot contain null bytes` | 맥에서 보낸 `*.py` | 맥 `tar` 가 **AppleDouble(`._*`)** 을 딸려 보낸다(점 파일이라 `ls` 에 안 보이는데 `*.py` 글롭에 걸린다) → `COPYFILE_DISABLE=1 tar` 또는 `find -name '._*' -delete` |
+| `ast.parse: source code string cannot contain null bytes` | 맥에서 보낸 `*.py` | 맥 `tar` 가 **AppleDouble(`._*`)** 을 딸려 보낸다(점 파일이라 `ls` 에 안 보이는데 `*.py` 글롭에 걸린다) → `COPYFILE_DISABLE=1 tar` 또는 `find -name '._*' -delete`. ⭑ **⟨재발 2026-09-13 prod⟩ 판정 레포 tar 에 `._*.py` 15,353 파일 → `deploy_doctor` ⑥⑦ ✗** → 호스트에서 `find -delete` ＋ `infra/prod/ship.sh` 가 tar 에서 `._*`·`__pycache__` 를 뺀다(커밋 「AppleDouble 제외」) |
+| **`db-bootstrap.sh account-admin` 이 「schema account_admin does not exist」** | prod alembic head | **순서다.** `account-admin`·`operator` 의 GRANT 는 마이그레이션 `0025`·`0027` 이 만든 스키마·표를 전제한다 → 롤·비밀번호·접속 파일까지만 먼저, **GRANT 는 `up.sh` 뒤 재실행**(2026-09-13 실측 · `infra/prod/README.md §8`) |
+| **`ship.sh` 의 scp 가 `/opt/colab-v2/*.sh` 에서 Permission denied** | `ls -ln /opt/colab-v2` | 앞 회차가 `sudo` 로 놓아 **root 소유**다. scp 는 `ec2-user` 로 붙는다 → `sudo chown -R ec2-user /opt/colab-v2`(2026-09-13 실측 · 1차 실패 → 2차 성공) |
+| **`deploy_doctor` ③ 웹 버킷이 403 — 운영자 키로 돌렸는데** | `--env-file` 이 가리키는 파일의 **크기** | env-file 이 **빈 파일**이면 컨테이너가 IMDS(앱 역할)로 떨어지고 prod 앱 역할은 진단 권한이 없다 → 403. 로컬 키 파일 경로 착오였다(2026-09-13 실측) · `wc -c` 로 먼저 잰다 |
 | **vite 빌드가 `styleText` 없음으로 죽는다** | `node -v` | **Node 22 미만.** 기계에 Node 가 둘일 수 있다 — `PATH` 의 것과 brew Cellar 의 것 |
 | `npm` 자체가 모듈을 못 찾고 죽는다 | `NODE_OPTIONS` | 없는 파일을 preload 하고 있다 → `env -u NODE_OPTIONS npm …` |
-| **RDS 생성이 「backup retention exceeds free tier」** | 백업 보존 기간 | Free Plan 상한. `1`일로 낮춘다 — 30일치는 자체 백업이 맡는다(7) 절) |
+| **RDS 생성이 「backup retention exceeds free tier」** | 백업 보존 기간 | Free Plan 상한이었다. ⭑ **⟨해소 2026-09-06⟩ 유료 전환으로 풀렸다** — **7일 선택 가능**(콘솔 실측). prod 는 7일로 세운다(`〈400〉`-㉯ — 이것이 시점 복구 관문의 열쇠다). ／ 종전 ~~`1`일로 낮춘다~~ |
 | 콘솔 목록과 S3 실물이 다르다(수명 주기) | API | **판정은 콘솔 화면이 아니라 실호출로만 한다** |
 | **폴더를 올리려는데 눌러도 아무 일이 없다** | 드롭존 | **폴더는 드래그 앤 드롭으로만 받는다.** 파일 선택창으로는 못 고른다(인풋에 `webkitdirectory` 를 붙이면 낱개 선택이 죽는다) — 화면 문구가 그 말을 한다 |
 | 업로드가 실패했는데 **아무 메시지가 없다** | — | 2026-09-01 이전 판의 증상. 접수 실패가 무음이었다 → 지금은 드롭 카드 아래 배너 + [다시 시도] |
@@ -137,6 +153,12 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 
 **리전은 전부 `ap-northeast-2`(서울).**
 
+⭑ **⟨증보 2026-09-06 · `〈400〉`⟩ 두 벌이 됐다 — 아래 표는 dev 이고, prod 는 그 아래 절이다.**
+이름 규칙이 **접미사로만 갈린다**(`-dev` / `-prod`) — `deploy_doctor` 의 「환경 짝」 검사(⑫)가
+그 접미사로 「다른 환경의 벌을 보고 있지 않은가」를 판정하므로 **규칙을 깨지 않는다.**
+
+### 4-0. dev 한 벌
+
 | 자원 | 이름 | 의존 |
 |---|---|---|
 | CloudFront 배포 | `colab-platform-dev` · ID `E7J6EMHMYCTSK` · `d31zgpff2091oh.cloudfront.net` | 오리진 3 · 함수 1 |
@@ -144,7 +166,7 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 | S3 데이터 버킷 | `colab-platform-data-dev` | 버킷 정책이 배포 ARN 을 가리킨다 |
 | S3 웹 버킷 | `colab-platform-web-dev` | OAC |
 | EC2 | `colab-platform-app-dev` · `i-0bf4fad1ead85071d` (`t4g.medium`, arm64 · ⭑ ⟨정정 2026-09-08 · WU-D4 실측⟩ 종전 ~~`t4g.small`~~ — IMDSv2 실물 조회 `dev-package/reports/R-D/d4-judgment-facts-20260908.md` §1 · 출처 `archive/feature/rtf400_dev_scale_up` 809f311 · 그 브랜치의 나머지 22행(`dev.env` 메모리 상한 · OOM · 이미지 수)은 미실측이라 미반입) | 서브넷·SG·역할·EIP |
-| 탄력적 IP | `54.116.191.208` | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
+| 탄력적 IP | (값은 레포 밖 — 콘솔 EC2 → 탄력적 IP · 로컬 `~/.config/colab-platform/prod-ssh.env`) | ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
 | RDS | `colab-platform-dev-db` (PG16, `db.t4g.micro`) | 서브넷 그룹·SG · **삭제 방지 ON** |
 | DB 서브넷 그룹 | `colab-platform-dev-db-subnet-group` | 프라이빗 서브넷 2 |
 | VPC | `colab-platform-dev-vpc` · `vpc-010f7840e476df2ae` (`10.0.0.0/16`) | 서브넷 4 · IGW · 라우트 테이블 · S3 게이트웨이 엔드포인트 |
@@ -174,6 +196,145 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 12. 예산 삭제
 ```
 
+### 4-0b. prod 한 벌 (2026-09-06 ~ · `〈400〉`)
+
+| 자원 | 이름 | 상태 |
+|---|---|---|
+| S3 데이터 버킷 | `colab-platform-data-prod` | ✅ 버저닝 · SSE-S3+Bucket Key · `DenyInsecureTransport` · 수명 주기 3 · 태그 `Environment=prod` |
+| S3 웹 버킷 | `colab-platform-web-prod` | ✅ 퍼블릭 차단 4 · 버저닝/CORS/수명 주기 **없음**(정본대로) · 태그 `Environment=prod` |
+| IAM 정책(운영자) | `colab-platform-s3-prod-policy` | ✅ ⭑ dev 와 달리 **`s3:GetBucketTagging` 포함** — 없으면 태그를 도구로 못 잰다(2026-09-06 실측 403) |
+| IAM 사용자 | `colab-platform-s3-uploader-prod` + 키 1 | ✅ 콘솔 로그인 없음 · 키는 `~/.config/colab-platform/prod.env`(0600) · **로컬 도구 전용** |
+| IAM 정책(앱) | `colab-platform-app-prod-policy` | ✅ ⭑ dev 의 `DiagnosticsDevOnly` 문을 **뺐다** — 앱은 버킷 설정을 읽을 일이 없고, 서버가 털렸을 때 구성까지 새지 않게 한다 |
+| IAM 역할 | `colab-platform-app-prod-role` | ✅ 신뢰 주체 EC2 · 인스턴스 프로파일로 P6 에서 붙인다 |
+| VPC | `colab-platform-prod-vpc` (`10.1.0.0/16`) | ✅ P4 · 서브넷 4(public 2 · private 2) · IGW · S3 게이트웨이 엔드포인트 · **NAT 없음** · 태그 `Environment=prod` |
+| DB 서브넷 그룹 | `colab-platform-prod-db-subnet-group` | ✅ P4 · 프라이빗 2 (⚠ AZ 만 고르면 안 된다 — **서브넷까지** 골라야 「Subnet IDs are required」가 안 난다) |
+| 보안그룹 | `colab-platform-app-prod-sg` · `colab-platform-db-prod-sg` | ✅ P4 · db 가 app 을 **이름으로** 참조 |
+| RDS | `colab-platform-prod-db` (PG16, `db.t4g.small`) | ✅ P5 · **보존 7일** ⭐ · 퍼블릭 액세스 **아니오** · 스토리지 자동 조정 최대 100 GiB · 암호화 · 삭제 방지 ON · 단일 AZ. 엔드포인트는 **레포에 안 적는다**(dev 도 그렇다) — `~/.config/colab-platform/prod.env`(0600) |
+| EC2 | `colab-platform-app-prod` · `i-07e7b2b740bb79619` (`t4g.medium`, arm64) | ✅ P6 · RAM 3.7 GiB · 루트 30 GiB gp3 · 스왑 4 GB(fstab) · IMDSv2 홉 **2** 실측 확인 · 태그 인스턴스＋**볼륨** |
+| 탄력적 IP | (값은 레포 밖 — 콘솔 EC2 → 탄력적 IP · 로컬 `~/.config/colab-platform/prod-ssh.env`) | ✅ P6 · ⚠ **EC2 를 종료해도 남는다 — 따로 반환한다** |
+| 키 페어 | `colab-platform-prod-key` | ✅ P6 · ⚠ 내려받은 직후 권한이 `0644` 였다(macOS 기본) — `600` 이 아니면 ssh 가 거부한다 |
+| RDS 안의 것 | 롤 4 · DB 2 · 연구실 1 · 계정 2 | ✅ P6 · 아래 §4-1b |
+| CloudFront 배포 | `colab-platform-prod` · `E1HUNU140VL6BK` · `d1aje00ns2hjsl.cloudfront.net` | ✅ P7 · 오리진 3 · 동작 3 · **무료 플랜** · WAF **감시 모드** |
+| CloudFront 함수 | `colab-platform-prod-spa-rewrite` | ✅ P7 · 기본 동작 뷰어 요청 · 태그 `Environment=prod` |
+| 백업 cron | `/etc/cron.d/colab-prod` | ✅ P7 · **한 번 돌려 GREEN 확인** — `_ops/backups/prod/` · ⭑ ⟨2026-09-13⟩ `install-cron.sh` 로 재설치(①②) |
+| 소유권 스냅샷 cron | `/etc/cron.d/colab-ownership-snapshot` | ✅ 2026-09-13 · 매시 17분 · compose 프로젝트 `colab-v2-prod` · gid 999 · 수동 1회 → `current.json`(d3_file 4 · d5_upload_file 4) |
+| 운영자 알림 cron | `/etc/cron.d/colab-operator-notifications` | ⏸ **명시 면제**(`COLAB_NOTIFICATION_SKIP=1` · 2026-09-13) — prod 에 SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람이 없다(dev 에만) · 운영자 런타임 venv 도 미구성 · **Ted 판정 자리**(§10) |
+| RDS 안의 것(재배포 뒤) | 롤 **8** · `/etc/colab` **11** · `prod.env` 키 **9** | ✅ 2026-09-13 · 롤 신설 4(`colab_account_admin`(login) · `colab_operator_runtime`(login) · `colab_operator_reporter` · `colab_operator_exporter`) · 시크릿 신설 4(`account-admin-database.url`(10001) · `operator-database.url` · `ownership-platform-db.url`(`colab_backup` 자격) · `ops-slack-webhook.url`(dev 와 같은 수신처) — 셋은 root) · 키 신설 3(`COLAB_VIZ_OWNERSHIP_SNAPSHOT_OWNER_UID=0` · `_GROUP_GID=999` · `_MAX_AGE_SECONDS=7200`) |
+
+**prod 배포 원장** — 한 행 = 한 회차. 판정은 `deploy_doctor --env prod` **한 번의 실행**만 센다.
+
+| 회차 | 태그 → sha | 마이그레이션 | doctor | 시각(KST) | 비고 |
+|---|---|---|---|---|---|
+| 개통 (2026-09-06) | (태그 없음) → 기능 브랜치 `3922d01750d0` | platform `0012` · ai `0005` | **14/14**(당시 항목 14) | 2026-09-06 | 규칙 6 이전 · `MAIN_SHA` 없음 |
+| **1차 재배포 (2026-09-13)** | `prod-20260913` → `origin/main` **`aa8bee981ff5`**(로컬 태그 · 미push) | platform `0012_merge_lv1_and_transfer` → `0031_search_evidence` **19** · ai `0005_k2b_concept_graph_seed` → `0007_merge_vocab_and_category` **3** | **15/15** ✓ 15 · ✗ 0 · ─ 0 · exit 0 | **19:54** (백업 19:38 GREEN) | 반입 게이트 `ancestor=yes` · 실행 이미지 5 전부 `prod-aa8bee981ff5` · 웹 `index-DuCCGbNb.js` 로컬=CloudFront 일치 · 스모크(로그인 201 · `/me` · 데이터셋 목록 200 · 검색 200 · 미리보기 400 빈 본문) · doctor 1차 11/15(✗③⑥⑦⑩) → 원인 셋 제거 뒤 최종 — §3-1 |
+
+**⭑ prod 는 CloudFront 「무료 플랜」이다**(2026-09-06 신설 · dev 도 같은 날 맞췄다).
+필요한 것이 다 들어간다 — 동작 **3**(한도 5) · 도메인 **1**(한도 1) · Edge compute.
+⚠ 「Custom cache policies 는 Business」 배너가 뜨지만 그건 **새로 만드는** 정책 얘기이고,
+**관리형 `CachingDisabled`·`AllViewer` 는 무료에서 쓴다**(실측으로 확인 — 아래).
+⭑ 고른 이유는 용량이 아니라 **상한**이다 — flat-rate 는 초과 과금이 없고 pay-as-you-go 는
+「no max monthly spend cap」이다. 크레딧 $140 에 예산 경보를 세운 방향과 맞다.
+
+**⚠ WAF 는 감시 모드다.** 무료 플랜에 WAF 가 **포함이고 끄는 선택지가 없다**(옛 콘솔에서
+「비활성화」였던 것과 다르다). 차단 모드면 `/api/*` 의 정상 요청이 오탐으로 막힐 수 있고
+**그 증상이 앱 버그처럼 보인다** — 개통 판정과 브라우저 한 바퀴를 오염시킨다.
+⟹ 감시 모드로 세어 두고, **막았을 요청이 0 이거나 전부 진짜 공격일 때** 차단으로 돌린다.
+측정 안 한 차단 장치를 먼저 켜지 않는다. ⬜ **그 전환은 아직 안 했다.**
+
+**⚠ CloudFront 가 원시 IP 오리진을 더는 받지 않는다**(2026-09-06 실측 · `Origin domain cannot
+be an IP address`). dev 의 `ec2-core-api` 는 그 제한 **전에** 만들어져 DNS 이름으로 들어가 있다
+(`ec2-54-116-191-208.ap-northeast-2.compute.amazonaws.com`). prod 도 같은 형태로 넣었다 —
+**EC2 는 오리진 드롭다운에 안 나온다**(CloudFront 가 열거하지 못한다). 직접 타이핑한다.
+`Origin type: EC2` 는 고르는 것이 아니라 **도메인 패턴을 보고 붙는다.**
+
+**⚠ 앱 SG 8000 은 CloudFront 에서만 연다** — 소스 = 관리형 접두사 목록
+`com.amazonaws.global.cloudfront.origin-facing`. dev 도 같다(실측: 밖에서 `000`,
+CloudFront 로는 401 JSON). ⛔ `0.0.0.0/0` 으로 두면 CloudFront 를 건너뛰어 **WAF·로그·
+오리진 정책이 통째로 우회**된다.
+
+### 4-1c. prod 완료 판정 (2026-09-06 · 재판정 2026-09-13)
+
+```
+항목 15 — ✓ 15 · ✗ 0 · ─ 0     전 항목 통과 · exit 0 · 한 번의 실행으로     (2026-09-13 19:54 KST · prod-aa8bee981ff5 · 실행기 기록 pr.verify.1.log)
+```
+
+⭑ **⟨재판정 2026-09-13⟩ 위 줄이 현재 판정이다** — 첫 정기 재배포(`prod-20260913` → `aa8bee981ff5`) 뒤
+`deploy_release.py run --plan`(대상 `pr`)이 웹 배포 → 검증을 한 실행으로 돌렸다. ⑮ 는 ✓ 다(`MAIN_SHA`
+`ancestor=yes`). 실행기 종료코드 **78** 은 배포·검증 exit 0 **뒤** Slack 비밀 파일(`~/.config/colab/slack-webhook`)
+부재로 알림 단계 준비가 실패한 것이다 — 완료 판정과 무관하고 사실로 적는다.
+1차 실행은 **11/15** 였다(✗③ 운영자 키 env-file 이 빈 파일 → IMDS 403 · ✗⑥⑦ 판정 레포 tar 의 AppleDouble
+`._*.py` 15,353 파일 → ast 「null bytes」 · ✗⑩ 웹 미배포). 셋 다 원인을 지운 뒤 다시 돌린 것이고, **부분
+결과를 합치지 않았다.** 원인별 조치는 §3-1.
+
+／ 종전 판정 ~~항목 14 — ✓ 14 · ✗ 0 · ─ 0 · 전 항목 통과 · exit 0 · 한 번의 실행으로 (2026-09-06)~~
+
+⭑ **⟨개정 2026-09-12⟩ 위 줄은 2026-09-06 의 실측이고 그때 점검기는 14 항목이었다.**
+`deploy_doctor` 는 이제 **15 항목**이다(⑮ 실행 sha ∈ main · `〈379〉`). `infra/prod/deploy-doctor.sh`
+가 `-v /opt/colab-v2:/state:ro` 를 넘기도록 고쳤으므로 다음 실행부터 ⑮ 가 판정된다.
+⚠ **지금 다시 돌리면 ⑮ 는 ✗ 다** — `/opt/colab-v2/MAIN_SHA` 가 없다(규칙 6 이전에 실린 이미지).
+~~⟹ prod 의 「15/15 한 번의 실행」은 아직 성립하지 않았다. 성립 경로는 §5-9 다.~~ ⭑ ⟨2026-09-13⟩ **성립했다** — 위 판정 줄.
+
+실행은 `infra/prod/deploy-doctor.sh` 다. **혼자서는 못 맞히는 조건이 넷** 있고 넷 다 red 를
+하나씩 내며 드러났다 — 컨테이너 안에서 돌 것 · **레포를 통째로** 마운트할 것(⑥⑦ 은
+`alembic.ini`, ⑧ 은 `rls_coverage.py` 를 읽는다) · `/etc/colab` 을 **파일 단위로** 줄 것
+(700 root 라 uid 10001 이 못 지난다) · **운영자 키로** 돌 것(IMDS 로 돌면 ③ 이 403 —
+prod 앱 역할은 진단 권한을 일부러 뺐다). 그 넷이 그 스크립트 머리말에 있다.
+
+함께 실측 — `s3_doctor --bucket colab-platform-data-prod` **10/10**(CORS 포함) ·
+CloudFront 로 로그인 **201** → 그 토큰으로 `/me` **200**(⟹ `AllViewer` 가 `Authorization` 을
+넘긴다) · 반복 요청에도 **`x-cache: Miss`**(⟹ `CachingDisabled` 가 실제로 캐시를 막는다).
+
+**⭑ prod EC2 사이징이 dev 와 다르다** — `t4g.medium`(dev 는 `t4g.small`). 근거는 `infra/prod/compose.yml`
+의 `viz-render` 주석에 있다(dev 커널 OOM 4건 실측 · 전부 cgroup 상한). 루트 30 GiB 도 실측 근거다 —
+dev 는 20 GiB 에 65% 이고 불변 태그라 배포마다 이미지가 쌓인다.
+
+⭑ **⟨개정 2026-09-13⟩ 지금 도는 이미지는 `origin/main` `aa8bee981ff5` 에서 빌드한 것이다** — 태그 `prod-aa8bee981ff5`.
+빌드 방식 = 그 커밋의 워크트리에 브랜치의 배포 도구(`infra/prod` · `infra/_lib` · `infra/dev/tag-release.sh` ·
+`infra/notifications/{install-runtime-cron,run-runtime-job}.sh` · `services/core-api/ops/{deploy_doctor,s3_doctor}.py`)를
+**미추적 복사**해 돌렸다 — 실행 이미지의 코드는 `main` 이고, 도구만 브랜치 판이다(PR 병합 뒤 둘이 같아진다).
+／ 종전 ~~⚠ 지금 도는 이미지는 `main` 이 아니라 기능 브랜치에서 빌드한 것이다 — 태그 `prod-3922d01750d0`.
+정본 `〈335〉`-㉳ 는 「`main` 커밋에 찍은 `prod-YYYYMMDD` 태그에서만」이므로, PR 병합 뒤
+`main` 에서 다시 빌드·전송해 그 규율로 돌아온다. 그때까지는 「브랜치에서 세운 prod」다.~~
+
+### 4-1b. prod DB 안에 든 것
+
+| | |
+|---|---|
+| 롤 | `colab_owner`(소유자·마이그레이션) · `colab_app` · `colab_ai_app` · **`colab_backup`**(유일하게 `bypassrls=t`) — 나머지 셋은 전부 `f` 실측 |
+| 데이터베이스 | `colab_platform`(표 27 · head `0012_merge_lv1_and_transfer`) · `colab_ai`(head `0005_k2b_concept_graph_seed`) |
+| FORCE RLS | 27개 중 **25개** 켜짐 (`verify` 통과) |
+| 연구실 | `00000000000000000000HYMETS` 고려대학교 수문학연구실 (`〈52〉` 정본값) |
+| 계정 | `전창현`(PI · 정본 SQL 이 심는다) · **`admin`** `01M1TPA0JBQGND6ZJN47NHPXP7` |
+| 로그인 | ⚠ **`admin` 하나만 만들었다**(사용자 판정 2026-09-06). 비밀번호·주체 토큰은 32자 난수 · `~/.config/colab-platform/prod-secrets/`(0600) |
+
+**P6 검증 실측 (2026-09-06)** — 4 단위 healthy · `storageMode`·`sourceMode`·`previewSink` 전부 **`s3`** ·
+로그인 **201** · 틀린 비밀번호 **401** · 무자격 `/me` **401** · 토큰으로 `/me` **200**(역할 `연구원` ·
+`승인 위임: false` — 최소 권한 그대로).
+
+⚠ **`subjects.json`·`credentials.json` 을 만들기 전에 `up.sh` 를 돌리면 도커가 그 자리에 디렉터리를
+만든다** — `IsADirectoryError` 로 core-api 만 unhealthy 가 되고 나머지 셋은 healthy 다.
+`rmdir` 로 지우고 파일을 놓은 뒤 다시 올린다. **살아 있는 쪽이 속이는** 그 모양이다.
+
+⚠ **`db.t3.small` 로 한 번 잘못 만들었다가 「수정 → 즉시 적용」으로 바꿨다**(2026-09-06).
+기능 문제는 없었다 — **RDS 의 CPU 아키텍처는 클라이언트에게 안 보인다.** 값이 더 비쌌을 뿐이고,
+레포의 나머지가 전부 t4g 라 여기만 x86 으로 남으면 다음 사람이 이유를 못 찾는다.
+⛔ **`:39` 의 「x86 이미지는 t4g 에서 안 뜬다」와 헷갈리지 않는다** — 그건 **EC2 의 도커 이미지** 이야기다.
+
+**P5 가 여는 것 — 시점 복구(PITR)**
+보존 7일이 걸리면 그 기간 안의 **어느 시점으로도** 되감을 수 있다. 별도 WAL 기구를 짜지 않는다.
+⛔ **다만 「설정했다」는 관문이 아니다** — 실제로 되감아 보는 것이 `〈256〉` 이 요구한 것이고, P8 이다.
+
+**P3 검증 실측 (2026-09-06)**
+- `ops/s3_doctor.py` **9/10** — 유일한 ✗ 가 **CORS** 이고 **그것이 지금 옳은 상태다**:
+  AllowedOrigins 에 넣을 **배포 주소가 아직 없다**(CloudFront 는 P7). dev 때도 같은 순서였다.
+  ⛔ **통과시키려고 임시값을 넣지 않는다** — 배포가 생기면 그 주소로 채운다.
+  ⭑ **⟨해소 2026-09-06 · P7⟩** CloudFront 가 선 뒤 `infra/prod/iam/cors-data.json` 의
+  `AllowedOrigins` 에 `https://d1aje00ns2hjsl.cloudfront.net` 한 값을 넣었다(와일드카드·localhost 0).
+  `deploy_doctor` 는 `--env dev` 면 `localhost:5173` 을, 그 밖의 벌이면 `--endpoint` 의 오리진을 찾는다.
+- `ops/s3_smoke.py` **전 항목 통과** — 프리사인드 PUT(ASCII·**한글·공백 키**) · CreateMultipartUpload ·
+  파트 2개(5MiB+1KiB) · ListParts→Complete→Head · Abort→소멸 · DeleteObjects 뒷정리(남은 객체 0).
+  ⟹ **자작 SigV4 가 prod 에서도 옳게 서명한다**(에뮬레이터가 아니라 진짜 S3 로 쟀다).
+
 ### 4-1. dev DB 안에 든 것
 
 로컬과 같은 시드다 — **연구실 2**(`고려대학교 수문학연구실` · `B 연구실`) · 프로필 2 · **계정 4**
@@ -194,12 +355,34 @@ ST 기존 `infra/staging/deploy.sh --target staging`도 실행기를 자동 경�
 
 ### 5-1. 예산 (자원을 켜기 전에)
 
-**⚠ 새 프리 티어(Free Plan) 계정이면 크레딧이 소진될 때 「청구」가 아니라 「계정 정지」다.** 실지출 예산으로는 아무것도 못 잡는다.
+⭑ **⟨개정 2026-09-06 · `〈400〉`-㉱ · 유료 전환 뒤 실측⟩** ／ 종전 ~~Free Plan 전제의 누적·월간 두 벌~~
 
-- **누적 예산** — 기간 `연별` · 금액 = 크레딧 총액 · **범위 옵션 → 특정 AWS 비용 차원 필터링 → 차원 `요금 유형` → `Excludes` → `Credit, Refund`** · 알림 50/80/90%
-  - **크레딧을 제외해야 「쓴 금액」이 보인다.** 포함하면 차감되어 $0 이 되고 알림이 영영 안 온다
-- **월간 예산** — 급증 감지용. 같은 필터
-- 「작업 연결」(자동 정지)은 걸지 않는다 — 알림만 받고 판단은 사람이 한다
+**⚠ 크레딧이 남아 있는 동안 실제 청구는 계속 `$0` 이다.** 요금 유형이 `Credit`·`Tax`·`Usage`
+셋으로 갈리고(2026-09-06 콘솔 실측), 필터를 안 걸면 크레딧이 사용액을 덮어 **알림이 영영 안 온다.**
+Free Plan 이든 유료든 이 함정은 같다 — 달라진 것은 **크레딧이 다 탄 뒤**다:
+Free Plan 은 **계정 정지**였고, 유료는 **청구로 넘어간다**(서비스가 안 멈춘다).
+
+**⟹ 예산은 `Usage` 만 본다.**
+- **범위 옵션 → 특정 AWS 비용 차원 필터링 → 차원 `요금 유형` → `Usage` 만 포함**
+  - 종전엔 `Excludes: Credit, Refund` 였다. 요금 유형이 셋뿐이니 **포함할 것 하나를 고르는 쪽이 명확하다.**
+  - `Tax` 는 뺀다 — 사용량 급증을 보려는 것이지 세금을 보려는 것이 아니다.
+- **예산 갱신 유형 = `기본 예산`** — 매달 자동 갱신된다. `만료 예산` 은 정한 달 뒤로 **아무것도 안 잰다.**
+- 「작업 연결」(자동 정지)은 걸지 않는다 — 알림만 받고 판단은 사람이 한다.
+
+**서 있는 예산 (2026-09-06 실측)**
+
+| 이름 | 기간·금액 | 필터 | 왜 |
+|---|---|---|---|
+| `colab-platform-monthly-all` | 월 **$150** | `Usage` | 계정 전체 급증 감지 |
+| `colab-platform-monthly-dev` | 월 **$60** | `Usage` ＋ 태그 `Environment=dev` | dev 실측이 $32~44 — 정상 운전에선 안 울리고 늘면 운다 |
+| `colab-platform-monthly-prod` | 월 **$60** | `Usage` ＋ 태그 `Environment=prod` | 같음 |
+| `colab-platform-credit-burn` | 연 **$140** | `Usage` | 크레딧 잔액 감시. 2026-09-06 실측 **$140 중 $0.44 사용** · 만료 2027-08-20 |
+
+⚠ **뒤 둘(dev·prod)은 비용 할당 태그가 활성화된 뒤에만 만들 수 있다.**
+태그는 **그 태그를 쓴 자원이 하나라도 있어야** 「비용 할당 태그」 목록에 나타난다 —
+자원 생성(`§5-2` 이후)에서 `Environment` 태그를 붙인 뒤 콘솔에서 **활성화**한다.
+⛔ **활성화는 소급되지 않는다** — 활성화 시점부터의 비용만 갈린다. 그래서 **자원을 만들 때 붙인다.**
+⚠ 콘솔이 개편돼 「사용자 정의 비용 할당 태그」 **탭이 없다** — 한 목록에 합쳐졌다(2026-09-06).
 
 ### 5-2. S3 (계획서 G4-c)
 
@@ -236,6 +419,60 @@ DB 부트스트랩: `prep` → `roles` → (마이그레이션) → `app-grants`
 ### 5-7. 백업·정리 (G10)
 
 `backup.sh` + `install-cron.sh`. **복원 실습까지 해야 끝이다** — 6) 절.
+
+### 5-9. prod 배포는 `prod-YYYYMMDD` 태그에서만 (규칙 6 · 2026-09-12)
+
+정본 = `docs/BRANCHING.md` §1 규칙 6 ＋ §2 수명 표. 요지 셋 —
+
+1. **태그를 찍는 주체는 Ted 다.** 대상 = dev 배포 창 N회를 green 으로 넘긴 `main` 커밋.
+   도구는 `infra/dev/tag-release.sh prod`(태그 생성 ＋ push 명령 **출력만** · push 는 사람).
+2. **`infra/prod/ship.sh` 가 두 검사를 한다** — ⑴ 후보 sha ∈ `origin/main`(비조상 exit 65 ·
+   `origin` 조회 실패 exit 78 · 선언 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`) ⑵ 후보 sha 에
+   `prod-*` 태그(없으면 exit 65 · ⛔ **우회 변수 없음**). 게이트 본문은 dev 와 **같은 한 벌**
+   (`infra/_lib/ship-gate.sh`)이고, prod 만 ⑵ 를 더 부른다.
+3. **`MAIN_SHA` 를 적는다** — `/opt/colab-v2/MAIN_SHA` 에 `main=… candidate=… ancestor=…`
+   한 줄. `deploy_doctor` ⑮ 가 `CURRENT_SHA` 와 대조한다(§6-1). `infra/prod/deploy-doctor.sh`
+   가 `-v /opt/colab-v2:/state:ro` 를 넘겨야 읽힌다 — 빼면 ⑮ 는 항상 ✗ 다.
+
+⭑ **⟨실측 2026-09-13⟩ 이 경로를 처음 끝까지 밟았다** — `build.sh`(5 이미지 arm64 · tar 1.0GB) → `tag-release.sh prod`
+→ `ship.sh`(반입 게이트 `MAIN_SHA main=aa8bee981ff5 candidate=aa8bee981ff5 ancestor=yes` · ops 소스 번들 green ·
+이미지 5 적재 · `prod.env COLAB_IMAGE_TAG=prod-aa8bee981ff5` · 판정 레포 동기화) → `up.sh` exit 0 → ⑮ ✓.
+⚠ **문면과의 차이 1건** — 태그 `prod-20260913` 은 Ted 가 아니라 배포 세션이 **로컬에서** 찍었고 push 하지 않았다.
+반입 게이트 ⑵ 는 로컬 태그로 통과한다(원격 미조회 · 우회 변수 없음). 문면을 고칠지 이번만 예외로 둘지 = **Ted 판정**.
+／ 종전 ~~⚠ 지금 prod 에서 돌고 있는 `prod-3922d01750d0` 은 이 규칙 이전 판이다.
+`prod-*` 태그 0건 · `/opt/colab-v2/MAIN_SHA` 없음 ⟹ 현재 `deploy_doctor` 는 ⑮ 가 ✗ 다.~~
+⛔ 그 자리를 ─ 로 접거나 파일을 손으로 만들어 채우지 않는다 — **`main` 재빌드 ＋ 태그 ＋
+`ship.sh` 반입**으로만 지운다. 손으로 채운 `MAIN_SHA` 는 반입 게이트를 거쳤다는 거짓 증거다.
+
+### 5-10. prod 마이그레이션 격차 — 배포 전 선행 조건 (2026-09-12 실측 · 2026-09-13 적용 완료)
+
+| 체인 | prod 현재 | `main` head | 적용 대기 |
+|---|---|---|---|
+| platform | `0012_merge_lv1_and_transfer` | `0031_search_evidence` ／ 종전 ~~`0027_operator_audit`~~ | **19** (`0013`~`0031`) ／ 종전 ~~15 (`0013`~`0027`)~~ — ⭑ **2026-09-13 적용 완료**(`up.sh` 한 실행 · prod 현재 = `0031_search_evidence`) |
+| ai | `0005_k2b_concept_graph_seed` | `0007_merge_vocab_and_category`(파일명 `0007_merge_topic_vocab_and_rc7_category.py`) | **3** (`0006_rc7_synonym_category` · `0006_topic_vocab_six` · `0007_merge…`) — ⭑ **2026-09-13 적용 완료** |
+
+⚠ **ai 는 형제 둘 ＋ merge 다**(`0006` 이 두 개). 적용 순서가 갈릴 수 있는 자리이므로
+두 순서 drift 오라클이 붙어 있다(`docs/BRANCHING.md` 규칙 5 · 선례 `〈378〉` ⑧).
+
+배포 전 선행 조건 넷 —
+
+1. **백업이 먼저다.** `backup.sh` 한 번 ＋ `_ops/backups/prod/` 에 객체가 생긴 것을 확인한다.
+   RDS 는 보존 7일이라 시점 복구도 가능하지만, **되감기는 19건을 되돌리는 값싼 수단이 아니다.**（종전 ~~15건~~）
+2. **롤 둘을 prod 에 만든다** — `0025_stage3_accounts`·`0027_operator_audit` 계열이 요구하는
+   `account-admin`·`operator`. prod RDS 는 P6-c 시점의 롤 4 벌이라 그 뒤 신설분이 없다.
+3. **시크릿을 prod 자리에 배치한다** — 신설 설정값이 있으면 `/etc/colab` 에 **파일 단위**로
+   넣는다(디렉터리째 마운트 금지 — `700 root` 라 컨테이너 uid 가 못 지난다).
+4. **마이그레이터 이미지를 먼저 올린다** — `infra/prod/migrator/Dockerfile` · `up.sh` 가 부른다.
+
+⛔ **이 넷 중 하나라도 못 하면 배포를 시작하지 않는다.** 마이그레이션 19건(종전 ~~15건~~)을 반쯤 적용한
+prod 는 되돌릴 자리가 없다.
+
+⭑ **⟨실측 2026-09-13⟩ 넷 다 밟았고 순서 교훈이 하나 남았다** — 백업 19:38 GREEN(`_ops/backups/prod/2026-09-13T103842Z-*`)
+→ 롤·시크릿·`prod.env` 키(§4-0b 표) → `ship.sh`(migrator 이미지 포함) → `up.sh`(19＋3 적용 · 볼륨 `events`·`ownership-ledger`
+생성 · 4 유닛 healthy · `/healthz` 8000/8100/8200 200). ⚠ **`db-bootstrap.sh account-admin` 은 마이그레이션 `0025` 뒤여야 한다** —
+`account_admin` 스키마가 없어 1차 실패했고, 롤·비밀번호·접속 파일만 먼저 만든 뒤 GRANT 는 `up.sh` 뒤 재실행으로 풀었다.
+`operator`·`app-grants`·`verify` 도 `up.sh` 뒤에 돌렸다(전부 ok · `account-admin` 은 RDS `ALTER ROLE` 우회 갈래 · 자기 점검 통과).
+정본 순서는 `infra/prod/README.md §8`.
 
 ---
 
@@ -298,7 +535,7 @@ docker run --rm --network host --env-file /tmp/op.env \
 
 ### 6-3. 백업과 복원
 
-- **두 겹이다** — ⑴ RDS 자동 백업 **1일**(Free Plan 상한) ⑵ **`backup.sh` 가 하루 1회 `pg_dump` → S3 `_ops/backups/dev/`, 30일 보관**(수명 주기가 강제)
+- **두 겹이다** — ⑴ RDS 자동 백업 — dev **1일**(Free Plan 때의 값 그대로) · **prod 7일**(`〈400〉`-㉯ · 그 기간 안에서 **임의 시점으로 되감을 수 있다**) ⑵ **`backup.sh` 가 하루 1회 `pg_dump` → S3 `_ops/backups/<벌>/`, 30일 보관**(수명 주기가 강제)
 - 손으로: `sudo /opt/colab-v2/backup.sh` · 로그 `/var/log/colab-backup.log`
 - **복원 실습(정기적으로 한다 — 해보지 않은 백업은 백업이 아니다)**
 
@@ -313,6 +550,42 @@ docker rm -f restore_probe
 ```
 
 > ⚠ **일회용 인스턴스는 `--rm` + tmpfs + `PGDATA` 지정 + 호스트 포트 미공개.** 이 호스트는 `--tmpfs` 와 `PGDATA` 가 없으면 `initdb` 가 죽는다.
+
+### 6-3-0. 시점 복구(PITR) — 되감아 본 기록 (`〈256〉` 관문 · 2026-09-06)
+
+⭑ **관문이 요구한 것은 기능이 아니라 증명이다.** 「보존 7일로 설정했다」는 관문이 아니다.
+실제로 되감아 본 회차 —
+
+| 시각(KST) | 한 것 |
+|---|---|
+| 17:37:57 | `colab_platform` 에 표식 한 행을 심는다 (`_ops_pitr.probe`) |
+| 17:45:20 | **그 행을 지운다** |
+| 17:42:00 | ← **복원 목표**(심은 뒤 · 지우기 전). 「특정 시점으로 복원」 → 새 인스턴스 `-pitr` |
+| — | **복원본에 그 행이 있다** · **원본에는 0건** · 복원본에 운영 데이터도 함께(계정 2·연구실 1·head `0012`) |
+
+⟹ 되감기가 **일어났고**, **원본을 건드리지 않았다.** 둘 다 확인해야 증명이다.
+
+**여기서 배운 것 넷 — 사고 때 이걸 모르면 「복구가 안 된다」고 오판한다**
+
+⓵ **「최신 복원 가능 시간」은 지금보다 5분쯤 뒤처진다.** RDS 가 WAL 을 밀어내는 주기 때문이다.
+   ⛔ **「방금 전」으로는 못 되감는다.** 심은 직후에 지우면 되감을 자리가 없다 — 표식을 심고
+   그 시각이 「최신 복원 가능 시간」을 넘을 때까지 기다린 뒤에 지워야 한다.
+⓶ **가장 이른 복원 시점은 인스턴스 생성 시각**이다(실측 `2026-09-06T03:12:45Z`). 그 이전을
+   지정하면 `no older backups available` 로 거부된다.
+⓷ **원본을 되돌리는 것이 아니다 — 새 인스턴스가 선다.** 엔드포인트가 다르다.
+   진짜 사고 때의 갈아타기는 **이름 바꿔치기**다: 원본 → `-broken`, 복원본 → 원래 이름.
+   엔드포인트가 식별자를 따라오므로 `/etc/colab/*.url` 을 **안 고쳐도 된다**.
+   ⭑ **롤·비밀번호도 함께 되감긴다** — 복원본이 원본과 같은 자격으로 붙는 것을 실측했다.
+⓸ ⛔ **S3 는 같이 안 돌아간다.** DB 를 되감아도 버킷의 객체는 그대로다 —
+   복원 시점 이후에 올린 파일은 **DB 에 행이 없고 S3 에 객체만 남는다**(고아 객체).
+   반대 방향(행은 있는데 객체가 없음)이 아닌 것이 그나마 다행이다. **시점 복구는 「DB 사고」의
+   수단이지 「전체 롤백」이 아니다.** 되감은 뒤 고아 객체 정리는 사람이 판단한다.
+
+**⛔ 표식은 반드시 지운다.** `deploy_doctor ⑧` 의 facts SQL 은 `pg_catalog`·`information_schema` 를
+뺀 **모든 스키마**를 훑는다 — `_ops_pitr` 를 남기면 RLS 미적용으로 **red** 다.
+실측: 지운 뒤 표 27개 · 비표준 스키마 0 · **`deploy_doctor` 14/14 ─ 0 재확인**.
+
+**리허설 인스턴스는 삭제 방지를 끄고 만든다** — 켜면 끝에 못 지운다. 단일 AZ 로 만든다(요금 2배 방지).
 
 ### 6-3-1. 만료 전송 정리 — 무엇이 지워지나
 
@@ -380,7 +653,7 @@ ssh -i <키> ec2-user@<IP> '
 | **IAM 역할(인스턴스 프로파일)** | 서버에 액세스 키를 두지 않는다. 서버가 털려도 키가 새지 않는다. env 에 `AWS_ACCESS_KEY_ID` 를 두면 공급자 순서상 키가 먼저 잡혀 역할이 무의미해진다 |
 | **IMDSv2 홉 제한 2** | 앱이 컨테이너 안에서 도니 네트워크를 한 번 더 건넌다. 1 이면 자격증명을 못 받고 **권한 문제처럼 보이는 고장**이 된다 |
 | **비밀은 값이 아니라 `_FILE` 경로** | `docker inspect` 로 값이 샜던 사고 |
-| **백업이 두 겹** | RDS 자동 백업은 Free Plan 에서 1일뿐이다. 30일치는 자체 잡이 든다 |
+| **백업이 두 겹** | RDS 자동 백업은 **되감기**(시점 복구)를 주고 자체 잡은 **길이**(30일)를 준다. dev 는 Free Plan 때 1일에 막혀 있었고, ⭑ **⟨2026-09-06⟩ 유료 전환 뒤 prod 는 7일**이다 |
 | **백업 전용 `colab_backup`(BYPASSRLS) 롤** | RLS 가 **FORCE** 라 소유자도 정책에 걸리고, 경계가 없으면 `current_lab_id()` 가 NULL 이라 **어떤 롤도 전수를 못 읽는다**(RDS 마스터조차). 백업은 본질적으로 전수를 읽어야 하므로, 그 예외를 **이름 붙은 읽기 전용 롤 하나로 드러내 놓고** 만들었다. ⚠ **이 자격 파일이 새면 연구실 경계가 통째로 뚫린다** — EC2 `root` 소유 0600 |
 | **워커·viz 가 S3 를 「내려받아」 읽는다** | 감지·파싱이 로컬 경로와 랜덤 액세스를 전제한다. 작업 디렉터리는 **캐시이지 상태가 아니다** |
 | **arm64(t4g)** | 같은 값에 더 싸다. `pyhdf` 만 휠이 없어 2단계 빌드로 소스 컴파일한다 |
@@ -397,7 +670,7 @@ ssh -i <키> ec2-user@<IP> '
 | 백업을 연구실별로 나눠 뜨면 BYPASSRLS 가 필요 없지 않나 | 연구실별 분할 덤프 | **새 연구실이 목록에서 빠지면 조용히 누락된다** — 백업에서 가장 나쁜 실패 모양. 복원 절차도 복잡해진다 |
 | RDS 스냅샷으로 대체하면? | 스냅샷 | `deploy_doctor` ⑭ 를 만족 못 해 **검사를 무르게 된다.** 복원이 「새 인스턴스 생성」이라 무겁다 |
 | WAF 를 켜는 게 안전하지 않나 | WAF | 요청이 없어도 월 $5~10 이 고정으로 나간다. 크레딧이 $120 뿐이다. **prod 에서는 다시 판단한다** |
-| 인스턴스를 크게 잡는 게 낫지 않나 | `t4g.medium` | Free Plan 이 막았다. **실측으로 충분함이 확인됐다**(55 MB·8파일 처리에 컨테이너 4 합 268 MiB · 스왑 사용 0). **렌더 부하는 아직 안 재봤다** |
+| 인스턴스를 크게 잡는 게 낫지 않나 | `t4g.medium` | Free Plan 이 막았다. ⭑ **⟨2026-09-06⟩ 그 제약은 풀렸다** — 그래도 **올리지 않는다**: 실측으로 충분함이 확인됐고(55 MB·8파일 처리에 컨테이너 4 합 268 MiB · 스왑 사용 0) **재지 않은 것을 근거로 키우지 않는다.** ⚠ **렌더 부하는 아직 안 재봤다** — 그것을 재고 나서 판단한다 |
 | 미리보기까지 확인해야 인수 아닌가 | 지금 검증 | **추가 개발이 예정돼 있어 지금 검증하면 곧 무효가 된다.** 다음 회차로 이월 — 9) 절 |
 | 콘솔이 준 버킷 정책을 그냥 붙이면? | 「정책 복사」 그대로 | **기존 `DenyInsecureTransport` 가 사라지고 `Resource` 가 버킷 전체가 된다** — 미리보기만 열려던 구멍으로 업로드 원본까지 나간다 |
 | 로컬 비밀번호를 dev 에도 쓰면 편하지 않나 | 재사용 | G8 에서 CloudFront 가 붙으면 이 환경이 **인터넷에 열린다** |
@@ -431,7 +704,7 @@ ssh -i <키> ec2-user@<IP> '
 | **S3 고아 바이트** | ⛔ 치우는 주체 없음 — **실측 3건 · 25.3 MB**(2026-09-02) | 워커 만료가 DB 행만 지운다. 워커의 `UploadBlobPort` 는 **읽기 Port** 라 삭제를 얹으면 정체가 바뀐다(로컬 모드는 소유 경계도 넘는다) → **별도 WU**. 판별식 = `d3_dataset`·`d5_upload`·열린 전송 **셋 다** 없어야 고아 |
 | **본체 전송 진행률 「문구」** | 🟧 **막대는 섰다**(`§D.7 ①` 근거 · 문구 없음). `§E.2` 의 상태 문구 행은 정본 개정 대기 | Ted 판정 뒤 문구를 붙인다 |
 | **미리보기(previews) 실검증** | ⛔ **한 번도 안 돌았다.** `previews/` 객체 0건 | 배선은 다 서 있다(CloudFront 동작 · 버킷 정책 · viz `previewSink=s3` · 역할 `PreviewsPut` · 프로브 왕복 200 — **사람이 놓은 객체로만** 확인). 미리보기 개발이 끝난 뒤 ⑴ 업로드→렌더→객체 생성 ⑵ 화면 표시 ⑶ **큰 래스터 렌더 메모리 실측**(남은 유일한 사이징 미지수) |
-| **prod** | ⏸ 정본 `㊻` — **Ted 판정 선행** | 5) 절만 보고 세운다. 그것이 이 문서의 인수 시험이다 |
+| **prod 배포 회차** | ⭑ **⟨개정 2026-09-13⟩ 🟧 정기 배포 경로를 한 번 끝까지 밟았다**(태그 `prod-20260913` → `aa8bee981ff5` · 마이그레이션 19＋3 · doctor 15/15 · §4-0b 원장) ／ 종전 ~~🟧 개통은 끝(§5) · 정기 배포 경로는 아직 한 번도 안 밟았다~~ ／ ~~⏸ 정본 `㊻` — Ted 판정 선행~~ | 남은 것 = ⑴ 태그 push ＋ **태그 주체 문면 판정**(Ted · §5-9) ⑵ 운영자 알림 ④ 의 prod AWS 자원(SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람) ＋ 런타임 venv — **만들지 말지 Ted 판정** ⑶ 브랜치 `feature/rtf400_deploy_prod` PR 병합(배포 도구를 `main` 에 합친다) ⑷ `deploy_release.py` 알림 단계의 Slack 비밀 파일 배치(종료코드 78 해소) |
 | **동료(hsw) SSH 규칙** | 없음 | 보안그룹 22번에 규칙 추가 · 설명에 `hsw` |
 | **가격 분류** | 전체 엣지 | `PriceClass_200` 으로 낮출 수 있다 |
 | **소스맵** | dev 는 올린다 | **prod 는 빼는 쪽이 기본** — Ted 판정 |
@@ -440,9 +713,13 @@ ssh -i <키> ec2-user@<IP> '
 
 ## ⏰ 이 계정의 마감
 
-**Free Plan 이다. 먼저 오는 쪽에서 무료 이용이 끝나고 dev 가 정지된다.**
+⭑ **⟨개정 2026-09-06 · `〈400〉`-㉰⟩ 유료로 전환했다 — 「어느 날 그냥 멈춘다」는 사라졌다.**
 
-- **크레딧 소진** — 추정 **2026-11~12월** (예산 `colab-platform-credit-burn` 이 50/80/90% 에서 알린다)
-- **무료 플랜 기간 만료 — 2027-02-22** (날짜라 **예산이 못 잡는다. 달력으로 챙긴다**)
+- **크레딧** — 2026-09-06 실측 **$140 중 $0.44 사용** · 만료 **2027-08-20**. 다 타면 **청구로 넘어간다**
+  (Free Plan 때처럼 **계정이 정지되지 않는다**). `colab-platform-credit-burn`(연 $140)이 그 소진을 알린다
+- ~~무료 플랜 기간 만료 2027-02-22~~ — **사라졌다.** 유료 전환이 이 날짜를 없앴다
+- **이제 챙길 것은 「멈추는 날」이 아니라 「얼마 나가는가」다** — 월간 예산 셋이 그 자리다(`§5-1`)
 
-**유료 전환 시점을 미리 정해 두지 않으면 어느 날 그냥 멈춘다.**
+／ 종전 ~~Free Plan 이다. 먼저 오는 쪽에서 무료 이용이 끝나고 dev 가 정지된다 ·
+크레딧 소진 추정 2026-11~12월 · 무료 플랜 만료 2027-02-22(날짜라 예산이 못 잡는다) ·
+유료 전환 시점을 미리 정해 두지 않으면 어느 날 그냥 멈춘다~~

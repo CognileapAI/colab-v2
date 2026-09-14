@@ -13,7 +13,11 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 MODE="${1:?인자가 필요하다: dev | prod}"
 DIST="${2:-$REPO/dist}"
-SHA_FILE="$DIST/colab-v2-dev.sha"
+case "$MODE" in dev|prod) ;; *) echo "인자는 dev | prod 다: $MODE" >&2; exit 64 ;; esac
+# ⭑ ⟨2026-09-13⟩ **sha 파일은 모드별이다.** 종전에는 `prod` 도 `colab-v2-dev.sha` 를 읽었고
+#   (`build.sh` 는 `colab-v2-<모드>.sha` 를 쓴다), 그래서 prod 만 빌드한 회차는 태그를 못 찍거나
+#   **dev 의 sha 에 prod 태그가 붙었다.** 태그가 가리키는 커밋이 배포 원천 판정의 입력이다.
+SHA_FILE="$DIST/colab-v2-$MODE.sha"
 
 [ -f "$SHA_FILE" ] || { echo "반입한 sha 를 모른다: $SHA_FILE 이 없다 — build.sh 먼저" >&2; exit 65; }
 SHA="$(cat "$SHA_FILE")"
@@ -30,11 +34,21 @@ case "$MODE" in
   # `wc -l` 로 센다 — `grep -c .` 는 0건일 때 exit 1 이라 `set -e` 가 첫 태그를 막는다.
   dev)  N=$(( $(git -C "$REPO" tag -l "dev-$DAY-*" | wc -l) + 1 )); TAG="dev-$DAY-$N" ;;
   prod) TAG="prod-$DAY" ;;
-  *)    echo "인자는 dev | prod 다: $MODE" >&2; exit 64 ;;
 esac
 
 if git -C "$REPO" rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-  echo "태그가 이미 있다: $TAG" >&2
+  # ⭑ ⟨2026-09-13⟩ prod 이름에는 회차 번호가 없다(`prod-YYYYMMDD`) — 같은 날 다시 부르면
+  #   반드시 여기로 온다. **같은 sha 를 가리키면 그 태그를 그대로 쓴다**(반입 게이트 ②는
+  #   `git tag --points-at` 로 태그 존재만 본다 — 재실행이 막힐 이유가 없다).
+  #   ⛔ **다른 sha 면 거절한다** — 태그를 옮기면 그날의 배포 원천 기록이 사라진다.
+  EXISTING="$(git -C "$REPO" rev-parse --short=12 "refs/tags/$TAG^{commit}")"
+  if [ "$EXISTING" = "$SHA" ]; then
+    echo "태그가 이미 있다(같은 sha — 재사용): $TAG → $SHA"
+    echo "원격 반영은 사람이 한 줄로 — git push origin $TAG"
+    exit 0
+  fi
+  echo "태그가 이미 있다: $TAG → $EXISTING (지금 후보는 다른 sha 다: $SHA)" >&2
+  echo "  태그를 옮기지 않는다 — 그날의 배포 원천 기록이 사라진다" >&2
   exit 65
 fi
 

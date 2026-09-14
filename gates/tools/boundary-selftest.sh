@@ -4,6 +4,7 @@
 # "게이트가 red 를 낼 줄 아는가"를 위반 fixture 로 확인한다.
 # 실제 services/ · db/ · contracts/ 에는 **한 글자도 쓰지 않는다** — 전부 임시 디렉터리다.
 set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/_fixture.sh"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IB="$REPO_ROOT/gates/tools/import-boundary.sh"
@@ -142,15 +143,16 @@ R="$(mkai ai-clean)"
 expect green "ai-no-lineage: 제안만 있는 기준 fixture" runai "$R"
 
 R="$(mkai ai-put)"
-sed -i 's|^  /searches:|  /lineages/{id}:\n    put:\n      operationId: replaceThing\n      responses: { "200": { description: ok } }\n  /searches:|' "$R/seams/core-ai.yaml"
+fx_replace "$R/seams/core-ai.yaml" '\n  /searches:' \
+  '\n  /lineages/{id}:\n    put:\n      operationId: replaceThing\n      responses: { "200": { description: ok } }\n  /searches:'
 expect red "ai-no-lineage ①: 계보 경로의 PUT" runai "$R"
 
 R="$(mkai ai-commitop)"
-sed -i 's|operationId: searchDatasets|operationId: commitLineage|' "$R/seams/core-ai.yaml"
+fx_replace "$R/seams/core-ai.yaml" 'operationId: searchDatasets' 'operationId: commitLineage'
 expect red "ai-no-lineage ②: 확정 동사 operationId" runai "$R"
 
 R="$(mkai ai-schema)"
-sed -i 's|    LineageSuggestion: { type: object }|    LineageCommitRequest: { type: object }|' "$R/seams/core-ai.yaml"
+fx_replace "$R/seams/core-ai.yaml" '    LineageSuggestion: { type: object }' '    LineageCommitRequest: { type: object }'
 expect red "ai-no-lineage ③: 계보 확정 스키마" runai "$R"
 
 R="$(mkai ai-noseam)"; rm -f "$R/seams/core-ai.yaml"
@@ -218,8 +220,8 @@ echo '# db/ai 와 함께 올리지 않는다' >> "$R/db/platform/versions/0001_i
 expect green "ai-no-lineage ⑩: db/platform 주석 안의 언급" runai "$R"
 
 R="$(mkai ai-same-vt)"
-sed -i 's/alembic_version_ai/alembic_version/' "$R/db/ai/alembic.ini"
-sed -i 's/alembic_version_platform/alembic_version/' "$R/db/platform/alembic.ini"
+fx_replace "$R/db/ai/alembic.ini" 'alembic_version_ai' 'alembic_version'
+fx_replace "$R/db/platform/alembic.ini" 'alembic_version_platform' 'alembic_version'
 expect red "ai-no-lineage ⑪: 두 체인의 version_table 동일" runai "$R"
 
 R="$(mkai ai-no-vt)"
