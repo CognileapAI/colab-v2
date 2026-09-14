@@ -1,0 +1,26 @@
+name: Product promotion
+
+on:
+  pull_request:
+    branches: [product]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  product-promotion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout reviewed promotion checker
+        uses: actions/checkout@v4
+        with:
+          # Preparation only: immutable tooling, independent of the empty product base.
+          ref: 1899505de2affe2c006361dd726e04f8c9750214
+          persist-credentials: false
+      - name: Require same-repository develop to product PR
+        env:
+          EVENT_PATH: ${{ github.event_path }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/product_promotion.py --event "$EVENT_PATH" --repository "$REPOSITORY"
