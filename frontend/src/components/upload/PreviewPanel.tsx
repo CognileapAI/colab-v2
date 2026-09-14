@@ -543,6 +543,10 @@ export function PreviewPanel(props: {
           disabled={drawing}
           fallbackPiece={fallbackPiece}
           onPick={onPick}
+          /* ⭑ ⟨2026-09-13⟩ **업로드 화면만** 후보가 하나뿐인 변수·시각 고르개를 그리지 않는다.
+             근거 = 기획서 rev2(업로드 좌측은 「첫 변수·기간 평균 한 장」). 아래 확장보기
+             오버레이와 데이터셋 상세는 이 값을 넘기지 않는다 — 그 두 자리는 무변이다. */
+          hideSingleChoice
         />}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}

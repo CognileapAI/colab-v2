@@ -34,17 +34,34 @@ tile_router = APIRouter(tags=["tile"],
 _Ulid = Annotated[str, Field(pattern=r"^[0-9A-HJKMNP-TV-Z]{26}$")]
 
 
+class FileNameHint(BaseModel):
+    """`fileId` 의 **표시용 원래 이름** (`core-viz.yaml#RenderTarget.fileNames`).
+
+    원장은 core-api 가 소유하므로 D7 은 이름을 읽을 길이 없다(불변규칙 1) — 식별자와
+    같은 자리에 이름도 실려 온다. **표시에만 쓴다** — 바이트·배치·캐시 키에 닿지 않는다.
+    """
+    model_config = ConfigDict(extra="forbid")
+    fileId: _Ulid
+    fileName: str = Field(min_length=1)
+
+
 class RenderTarget(BaseModel):
     model_config = ConfigDict(extra="forbid")
     datasetId: _Ulid | None = None
     uploadId: _Ulid | None = None
     fileIds: list[_Ulid] | None = Field(default=None, min_length=1)
+    #: **선택**이다 — 없으면 종전 동작 그대로다(계약 산문 축자).
+    fileNames: list[FileNameHint] | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def _exactly_one(self):
         if (self.datasetId is None) == (self.uploadId is None):
             raise ValueError("datasetId 와 uploadId 중 정확히 하나를 넣는다")
         return self
+
+    def display_names(self) -> dict[str, str]:
+        """`fileId → 표시 이름`. 힌트가 없으면 빈 map 이고, 그때 읽기는 디스크 이름을 쓴다."""
+        return {h.fileId: h.fileName for h in (self.fileNames or [])}
 
 
 class RenderStyle(BaseModel):
@@ -118,6 +135,8 @@ def create_render(body: RenderRequest, request: Request) -> dict:
     spec = jobs.RenderSpec(
         target=target, palette=body.style.palette, class_count=body.style.classCount,
         variable=body.variable, instant=body.instant,
+        # **표시용 이름만 넘어간다** — 캐시 키(`source_digest`)는 디스크 이름 그대로다.
+        display_names=body.target.display_names(),
         without_reference_grid=body.withoutReferenceGrid,
         max_preview_side=settings.max_preview_side,
         deadline_seconds=settings.render_deadline_seconds,

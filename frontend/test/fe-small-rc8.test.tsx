@@ -233,8 +233,21 @@ async function openRegister(sources: UploadSources) {
 }
 
 /** ② 에서 필수 칸을 채우고 ③ 까지 넘어가 `데이터셋 만들기` 를 누른다. */
-async function submitRegister() {
+async function submitRegister(opts: { period?: boolean } = {}) {
   await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+  // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격도
+  //   등록 게이트다 — 이 파일이 재는 것은 그 둘이 아니라 거절 갈래·팝오버 형상이다.
+  //   `period: false` 는 **시험이 제 기간을 이미 적었다**는 뜻이다(덧쓰지 않는다).
+  if (opts.period !== false) {
+    await click(screen.getByTestId('reg-period-open'));
+    await click(screen.getByTestId('reg-period-unit-일'));
+    await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+    await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+    await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+    await click(screen.getByTestId('reg-period-apply'));
+  }
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
   await click(screen.getByTestId('reg-next'));
   await click(screen.getByTestId('reg-done'));
 }
@@ -328,7 +341,7 @@ describe('㈐ §5-14 — 기간 인라인 칸 0개 · 달력 팝오버 1개', ()
     await change(screen.getByTestId('reg-period-pop-start-month'), '05');
     await change(screen.getByTestId('reg-period-pop-start-day'), '01');
     await click(screen.getByTestId('reg-period-apply'));
-    await submitRegister();
+    await submitRegister({ period: false });
     // ⭑ ⟨PRD-40 판정 ⓐ⟩ 종료를 비우면 저장은 `period_end = period_start` 다 — 무변이다.
     expect(sent).not.toBeNull();
     expect(sent!.period).toEqual({

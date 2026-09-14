@@ -3,8 +3,8 @@
 // 타입은 전부 생성물에서 온다 — 여기서 계약 스키마를 다시 선언하지 않는다
 // (`CLAUDE.md §3-6·§3-7`).
 //
-// **이 화면은 아무것도 저장하지 않는다.** 확인·수정·거절은 전부 클라이언트 상태이고,
-// 사람이 확인한 것만 `createDataset` 의 `lineageParents` 로 실린다
+// **이 화면은 아무것도 저장하지 않는다.** 연결·지우기는 전부 클라이언트 상태이고,
+// 사람이 고른 것만 `createDataset` 의 `lineageParents` 로 실린다
 // (`CLAUDE.md §3-2` — D10 → D4 쓰기 경로가 없다 · `fe-core.yaml UploadLineageParent`).
 import type { Schemas } from '../../api/client';
 
@@ -44,7 +44,6 @@ export interface ParentCard {
   key: string;
   parentDatasetId: string;
   parentDatasetName: string;
-  role: ParentRole;
   /** 제안에서 온 확신도. **사람이 수정하면 `null` 이 된다** — AI 행동이 아니게 되므로. */
   confidence: AiConfidence | null;
   rationale: string | null;
@@ -54,8 +53,19 @@ export interface ParentCard {
   method: string;
   /** 제안을 확인·수정한 가공 방식 → 요청의 `confirmedMethodText`. 둘 다 실으면 400 이다. */
   confirmedMethodText: string | null;
-  /** `수정` 을 눌러 대상을 다시 고르는 중인가. */
-  picking: boolean;
+  /**
+   * ⭑ **⟨개정 2026-09-14 · 기획서 rev2 목업 `.li-act`⟩ 쓰는 자리가 0건이다.**
+   * ／ 종전 ~~`수정` 을 눌러 대상을 다시 고르는 중인가~~ — 카드의 버튼이 `지우기` 하나가
+   * 되면서 `수정` 이 사라졌다. 대상을 바꾸는 길은 **지우고 다시 고르는 것**이다.
+   * ⛔ 열쇠 자체는 남긴다(선택) — 기존 시험 fixture 가 이 이름으로 카드를 만든다.
+   */
+  picking?: boolean;
+  /**
+   * ⭑ **⟨신설 2026-09-14 · 목업 `.li-sub`⟩ 후보 줄이 들고 온 분류·기간.**
+   * 연결 카드가 「무엇을 이었는지」를 되읽는 값이고, 모르면 그 자리를 세우지 않는다.
+   */
+  parentCategory?: string | null;
+  parentPeriod?: { start: string; end: string | null } | null;
   /**
    * ⭑ **⟨WU-B5 · PRD-09⟩ 부모의 표시 Lv.** 사후 충돌(연결 뒤 자기 Lv 내림)을 재는 값이다.
    * `null` 이면 **모른다**는 뜻이고 그때는 충돌로 세지 않는다.
@@ -67,8 +77,15 @@ export interface ParentCard {
   parentLevel: number | null;
 }
 
-/** 부모 역할 2값 (`common.json#ParentRole`). 화면이 목록을 지어내지 않는다. */
-export const PARENT_ROLES: ParentRole[] = ['주입력', '보조입력'];
+/**
+ * ⭑ **⟨신설 2026-09-14 · 레인 A6 · 사용자 결정⟩ 계약 기본값 하나.**
+ * ／ 종전 ~~`PARENT_ROLES` 2값 배열 — 카드의 셀렉트가 목록으로 그렸다~~ —
+ * 목업 `.li-f` 에 그 셀렉트가 없다. **업로드 화면은 부모 역할을 묻지 않고** 이 값을
+ * 고정해 싣는다(`common.json#ParentRole` 의 `default` 축자).
+ * ⛔ **enum 2값 자체는 계약에 그대로 있다** — 고르는 자리가 **상세의 계보 수정**
+ * (`LineageFixModal`)로만 남은 것이고, 계약·DB 는 무변이다.
+ */
+export const DEFAULT_PARENT_ROLE: ParentRole = '주입력';
 
 export interface LineageSource {
   /**
