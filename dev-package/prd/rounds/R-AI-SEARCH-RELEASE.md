@@ -1,7 +1,7 @@
 # AI 검색 릴리스 실행 계획
 
 > 상태: 최신 main 통합과 로컬 전수 검증 완료. `local-stage`/ST, `main`, DEV 배포는 아직 실행하지 않았다.
-> 기준 작업: `codex/ai-search-next` `86aaf22b` 와 `origin/main` `c7504875` 비-rebase merge.
+> 기준 작업: `codex/ai-search-next` `86aaf22b` 와 최신 `origin/main` `4cb5c397`까지 비-rebase merge.
 > 최신 인계: `dev-package/sessions/20260914-ai-search-client.md`.
 
 ## 목표와 비목표
@@ -50,6 +50,6 @@
 
 ## 현재 인계
 
-로컬 최종 `all`은 67/67 green이다. 실제 참조자료 실물 대조를 수행했고, 실제 Sonnet 평가는 `COLAB_HARNESS_EVAL_EXEMPT=1`로 보류를 드러냈다. 종합 실행의 시각 항목은 앱 프로세스와 core 전수 테스트의 간섭을 피하려고 명시 면제했으며, 직전 일회용 인증 스택의 별도 `frontend-visual`에서 검색·상세 2페이지, 13px 미만 0건, 대비 미달 0건, 스크린샷 4장을 확인했다. core 전수는 앱 정리 후 1,383/1,383 green으로 재확인했다. 근거는 `dev-package/reports/ai-search-release/`에 있다.
+최신 제품 코드 HEAD의 종합 실행은 66개 green과 `migration-drift` red 1개를 냈고, 같은 commit/tree에서 그 항목을 즉시 단독 재실행해 오라클 26/26 green으로 확인했다. 최초 red와 재검사 green을 함께 보존하며 이를 단일 67/67 실행으로 확대해 적지 않는다. 이후 main에서 합쳐진 문서·대장 전용 변경은 `planning-freshness`와 `work-item-consistency`를 최신 HEAD에서 다시 통과했다. 실제 참조자료 실물 대조를 수행했고, 실제 Sonnet 평가는 `COLAB_HARNESS_EVAL_EXEMPT=1`로 보류를 드러냈다. 종합 실행의 시각 항목은 앱 프로세스와 core 전수 테스트의 간섭을 피하려고 명시 면제했으며, 직전 일회용 인증 스택의 별도 `frontend-visual`에서 검색·상세 2페이지, 13px 미만 0건, 대비 미달 0건, 스크린샷 4장을 확인했다. core 전수는 앱 정리 후 1,383/1,383 green으로 재확인했다. 근거는 `dev-package/reports/ai-search-release/`에 있다.
 
 다음 단계는 `local-stage` 원격 tip·ST 배포 잠금·백업/복구 근거를 다시 확인하고, go/no-go 검토가 승인되면 ST 승격을 집행하는 것이다. ST·main·DEV는 아직 실행하지 않았다.
