@@ -25,7 +25,7 @@
 - [ ] 구현·로컬 시험 진행 중. 환경별 ref·PR 승인 artifact·상위 배포 복구·최초 실행·reset·점검 adapter·dev 프로젝트/미리보기 수정 통합. product-release 74건/product-reseed 87건 통과. 실제 단계 명령 연결·운영자 쓰기 중지 검사·백업 수집/복원 리허설은 운영 연결 의존으로 남는다. 전체 배포 가능 판정은 아직 없다.
 - [ ] dev 10단계 단일 완주.
 - [x] 운영 설정 파일 수령 및 파일 내부 대상 비교. `transition-inventory.md`에 누락 입력 기록.
-- [x] 배포 비활성 브랜치 전환: 기본 develop, 동일 SHA product 및 PR·필수 검사·강제 push/삭제 금지 ruleset 적용. [실측과 남은 연결](../../reports/develop-product/cutover.md). 승격 검사 원격 설치·정상/다른 head 거부 확인, 준비 PR 61 초안. frontend CI 실패와 최초 배포용 artifact 연결은 미완료.
+- [x] 배포 비활성 브랜치 전환: 기본 develop, 동일 SHA product 및 PR·필수 검사·강제 push/삭제 금지 ruleset 적용. [실측과 남은 연결](../../reports/develop-product/cutover.md). 승격 검사 원격 설치·정상/다른 head 거부 확인, 준비 PR 61 초안. frontend CI는 기존 등록 필수화 미승인으로 판정 대기, 최초 배포용 artifact 연결은 미완료.
 - [ ] 첫 배포 PR 사람 병합·운영 초기화·후속 일반 배포 검증.
 - 대장: `DEVELOP-PRODUCT` open. 선행 결함은 `DR-4b`·`DR-4-TOOLING`과 대조하며 기존 항목을 일괄 완료 처리하지 않는다.
 - 의존: 작업 1 → 작업 2·3·4 로컬 구현 → 작업 5의 배포 비활성 브랜치 전환 → 작업 4 dev 실환경 완주 → 작업 5 첫 PR 준비 → 작업 6. dev preflight가 실제 origin/develop을 요구하므로 원격 전환 전에 dev 완주를 선행 조건으로 두지 않는다. 병렬 작성은 격리 사본에서만 한다.

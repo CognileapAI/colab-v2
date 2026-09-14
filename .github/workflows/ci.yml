@@ -631,6 +631,8 @@ jobs:
         run: ./gates/run.sh selftest
 
   ci-required:
+    name: ${{ github.event_name == 'pull_request' && 'ci-required' || 'ci-push-summary' }}
+    # Push checks cannot satisfy the PR-only required context.
     # Path-filtered skips are explicit; failures, cancellations and missing results block promotion.
     if: ${{ always() }}
     needs: ['product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest']

@@ -19,9 +19,16 @@
 - 준비 PR: https://github.com/CognileapAI/colab-v2/pull/61 (develop → product, 초안).
 - promotion run 34909164276 성공. product-safety도 push/PR 모두 성공.
 - 잘못된 head 시험 PR 62 / run 34909205702는 출처 오류로 exit 1. PR은 미병합 종료하고 이번 시험용 branch만 삭제했다.
-- PR CI run 34909164280은 frontend-gates 실패로 전체 failure. 기존 등록 시험이 승인된 필수 입력·부모 즉시 연결 동작과 어긋난 것으로 조사됐다. 제품 가드를 완화하지 않고 승인 사양을 대조한다.
+- PR CI run 34909164280은 frontend-gates 실패로 전체 failure. 처음에는 오래된 시험 준비로 판단했으나, 독립 재검토에서 관측 간격·Lv0 출처의 필수화가 미승인임을 확인했다. 해당 필수화에 맞춰 시험을 수정하는 접근을 중단했다.
 - 다른 CI job은 성공, dormant-tests는 기존 변경 경로 조건으로 skipped. compatibility 성공.
 - 전체 CI 실패도 병합 차단에 반영하도록 ci-required를 추가한다. 기존 두 필수 검사는 유지한다.
 - ci-required의 실제 run 명령에 실패·취소·누락·skip 결과를 넣는 3개 시험 RED→GREEN, 기존 CI 정책 2개 회귀 통과.
 
 최종 원격 CI 통과 전에는 준비 PR을 병합 가능 완료로 보고하지 않는다.
+
+## 사양 판정 대기
+- 기준: `dev-package/intent/2026-09-13-upload-form-rev2.md`의 미승인·Ted 판정 필요 표기, UF-1 blocked/UF-3 회신 전 착수 금지. R-B의 Lv0 게이팅은 표시 조건이며 두 칸 필수·400 판정은 폐기됐다.
+- 사용자 결정 필요: 새 등록의 관측 간격 값·단위, 새 Lv0 등록의 출처 주소·내려받은 날을 선택 입력으로 유지할지 화면/API 모두 필수로 바꿀지.
+- 격리 사본의 시험 변경 실험은 원본 복원했다. 42→4 실험은 수용/통과 증거가 아니며 부모 브랜치에 반영하지 않았다.
+- CI 출처·안전 검사 연결은 완료했지만, 준비 PR 전체 CI는 실패하므로 초안을 유지한다. product 보호를 완화하지 않는다.
+- `ci-required` 이름은 PR에만 사용하고 push는 `ci-push-summary`로 분리한다. 좁은 push 차분의 성공이 전체 PR 검사 결과를 대체하지 않도록 한다.
