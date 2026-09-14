@@ -84,15 +84,20 @@ class TaskRuntimeTests(unittest.TestCase):
         for relative in ('scripts/harness/hooks/lifecycle_contract.py', 'scripts/harness/task_state.py'):
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(ROOT / relative, target)
-        task = contract.begin(self.root, 'lane-worker', gates=['check'], artifacts=['runtime:artifacts/completion.md'])
+        task = contract.begin(self.root, 'lane-worker', gates=['check'], artifacts=['runtime:artifacts/completion.md', 'runtime:artifacts/findings.md'])
         self.assertEqual(contract.run_gates(self.root, task['task_id']), 0)
         task = contract.load_task(self.root, task['task_id'])
         note = Path(task['artifacts'][0]); note.parent.mkdir(parents=True); note.write_text('검증 완료')
+        with self.assertRaises(ValueError): contract.verify_task_report(self.root, task)
+        findings = Path(task['artifacts'][1]); findings.write_text('required findings')
         contract.verify_task_report(self.root, task)
         spec = importlib.util.spec_from_file_location('runtime_slack', ROOT / 'scripts/slack_completion.py')
         slack = importlib.util.module_from_spec(spec); spec.loader.exec_module(slack)
         pending = slack.prepare(self.root, 'runtime-test', note, [(task['task_id'], task['report'])], True, [])
         self.assertEqual(slack._load_notice(pending,self.root,'runtime-test',slack.verify_evidence)[0], '검증 완료')
+        findings.write_text('changed findings')
+        with self.assertRaises(ValueError): slack._load_notice(pending,self.root,'runtime-test',slack.verify_evidence)
+        findings.write_text('required findings')
         note.write_text('changed')
         with self.assertRaises(ValueError): slack._load_notice(pending,self.root,'runtime-test',slack.verify_evidence)
         # Changing only the commit is stale even when working-file hashes match.

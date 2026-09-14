@@ -242,6 +242,9 @@ def verify_task_report(root, task, report=None):
     expected = gate_evidence(root, task['task_id'])
     if task['schema'] == 'colab-task/2':
         runtime().verify_outputs(root, task)
+        for name in task['artifacts']:
+            if not resolve_task_path(root, task, name, artifact_only=True).is_file():
+                raise ValueError('required runtime artifact is missing')
         if any(data.get(key) != expected[key] for key in ('commit', 'tree')):
             raise ValueError('report commit/tree differs from current checkout')
     evidence = data.get('task_evidence')
