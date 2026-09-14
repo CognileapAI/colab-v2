@@ -745,8 +745,8 @@ def check_main_ancestry(ctx: Ctx, rep: DeployReport) -> None:
 
 # ── 진행 ────────────────────────────────────────────────────────────────────
 
-def run(ctx: Ctx) -> int:
-    rep = DeployReport()
+def run(ctx: Ctx, report: DeployReport | None = None) -> int:
+    rep = report if report is not None else DeployReport()
     print()
     with rep.item(1, "운영자 자격증명"):
         check_operator_credentials(ctx, rep)

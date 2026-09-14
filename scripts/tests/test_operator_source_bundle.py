@@ -23,3 +23,6 @@ class SourceBundleTests(unittest.TestCase):
    code="import pathlib,sys;sys.path.insert(0,sys.argv[1]);import infra.notifications.cli as c;assert pathlib.Path(c.__file__).is_relative_to(sys.argv[1]);c.main(['--help'])"
    result=subprocess.run([sys.executable,'-I','-c',code,str(unpack)],cwd=base,capture_output=True,text=True)
    self.assertEqual(result.returncode,0,result.stderr);self.assertIn('drain-spool',result.stdout)
+   doctor_code="import pathlib,sys;sys.path[:0]=[sys.argv[1]+'/services/core-api/ops',sys.argv[1]+'/services/core-api/src'];import deploy_doctor_evidence,deploy_doctor;assert pathlib.Path(deploy_doctor_evidence.__file__).is_relative_to(sys.argv[1]);assert pathlib.Path(deploy_doctor.__file__).is_relative_to(sys.argv[1])"
+   result=subprocess.run([sys.executable,'-I','-c',doctor_code,str(unpack)],cwd=base,capture_output=True,text=True)
+   self.assertEqual(result.returncode,0,result.stderr)

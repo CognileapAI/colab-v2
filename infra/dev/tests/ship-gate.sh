@@ -10,6 +10,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 
 PASS=0; FAIL=0
+# This suite isolates the historical transport/tag boundary. The evidence validator
+# is mocked below; its real producer/bundle validation has separate Python tests.
+export COLAB_RELEASE_PRE_EVIDENCE=fixture-pre COLAB_RELEASE_POST_EVIDENCE=fixture-post
 ok()   { PASS=$((PASS + 1)); printf '  ✓ %s\n' "$1"; }
 bad()  { FAIL=$((FAIL + 1)); printf '  ✗ %s — %s\n' "$1" "$2"; }
 check(){ # $1=이름 $2=조건설명 $3=실제 $4=기대
@@ -50,6 +53,8 @@ OPS_BUNDLE_PATHS=(infra/__init__.py infra/ops infra/notifications
 new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸림, 표준출력 = 저장소 경로
   local root="$TMP/$1" work="$TMP/$1/repo" p
   mkdir -p "$work/infra/dev" "$work/infra/_lib" "$work/infra/ops" "$work/dist"
+  mkdir -p "$work/scripts/harness"
+  printf '%s\n' '# fixture: evidence boundary mocked; transport assertions only' 'raise SystemExit(0)' > "$work/scripts/harness/release_evidence.py"
   # `ship.sh` 는 `REPO="$HERE/../.."` 로 저장소를 잡는다(`infra/dev/ship.sh:10`) —
   # 같은 상대 배치로 복사해야 픽스처 저장소가 `$REPO` 가 되고, 게이트 본문
   # `infra/_lib/ship-gate.sh`(dev·prod 공용)가 그 밑에서 읽힌다.

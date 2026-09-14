@@ -4,6 +4,8 @@ SPEC=importlib.util.spec_from_file_location('deploy_release',Path(__file__).pare
 d=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(d)
 class ReleaseTests(unittest.TestCase):
  def setUp(self):
+  from unittest.mock import patch
+  boundary=patch.object(d,'check_release_evidence');boundary.start();self.addCleanup(boundary.stop)
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name);self.state=self.root/'state';self.secret=self.root/'secret';self.secret.write_text('https://hooks.slack.com/services/T/B/test');self.calls=[];self.sent=[]
   self.plan={'schema':'colab-deploy/1','id':'release-1','summary':'디자인 배포','targets':[{'name':n,'version':'sha-'+n,'deploy':[['deploy',n]],'verify':[['verify',n]]} for n in ['dv','st']]}
  def execute(self,argv,cwd,env,log):self.calls.append(argv);return 0
@@ -110,13 +112,14 @@ class EntryPointTests(unittest.TestCase):
  def call(self,*args):
   env=dict(os.environ,COLAB_OPERATOR_SPOOL_DIRECTORY=str(self.spool));env.pop('COLAB_DEPLOY_MANAGED',None);env.pop('PYTHONPATH',None)
   return subprocess.run([os.sys.executable,str(self.root/'scripts/deploy_release.py'),*args],cwd=self.root,env=env,capture_output=True,text=True)
- def test_real_cli_groups_targets_and_deduplicates_without_stop(self):
+ def test_real_cli_refuses_dev_without_release_evidence_before_commands(self):
   def cmd(value):return [os.sys.executable,'-c',"from pathlib import Path; p=Path('events'); p.open('a').write("+repr(value+'\n')+")"]
   plan={'schema':'colab-deploy/1','id':'cli-release','targets':[{'name':n,'version':'abc123','deploy':[cmd('deploy-'+n)],'verify':[cmd('verify-'+n)]} for n in ['dv','st']]}
   (self.root/'release.json').write_text(json.dumps(plan))
-  r=self.call('run','--plan','release.json');self.assertEqual(r.returncode,0,r.stdout+r.stderr)
-  self.assertEqual((self.root/'events').read_text().splitlines(),['deploy-dv','deploy-st','verify-dv','verify-st'])
-  self.assertEqual(self.call('run','--plan','release.json').returncode,0);self.assertEqual(len(list(self.spool.glob('*.json'))),2)
+  import shutil
+  shutil.copytree(self.repo/'scripts/harness',self.root/'scripts/harness')
+  r=self.call('run','--plan','release.json');self.assertEqual(r.returncode,78,r.stdout+r.stderr)
+  self.assertFalse((self.root/'events').exists())
  def test_staging_direct_entry_wraps_and_queues_operator_event(self):
   folder=self.root/'infra/staging';(folder/'verify').mkdir(parents=True,exist_ok=True)
   original=(self.repo/'infra/staging/deploy.sh').read_text();prefix=original.split('. "$HERE/pipeline/lib.sh"')[0]
