@@ -87,7 +87,7 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 "${SCP[@]}" "$OPS_TAR" "$OPS_MANIFEST" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$REPO_TGZ" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$SETTER" "$COLAB_PROD_SSH:/opt/colab-v2/set-image-tag.sh"
-# ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈395〉`-㉳-⑶).
+# ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈400〉`-㉳-⑶).
 #    종전에는 `compose.yml`·`up.sh` **둘만** 실었고, `backup.sh`·`install-cron.sh` 를 올리는 절차가
 #    README 어디에도 없었다. 그 둘은 실행 비트도 없어서 `install-cron.sh:21` 의 `[ -x ]` 검사에
 #    그대로 걸렸다 — ⟹ **백업이 아예 안 걸린 채 「배포 완료」가 될 수 있는 구멍**이었다.

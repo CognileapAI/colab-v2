@@ -36,7 +36,7 @@
 | `fd7cbeb3` | **A. prod 반입 도구 결함 정정** |
 | `9e00a706` | **B. prod compose·부트스트랩을 dev 현재판에 맞춤** |
 | `6c2e84ad` | **C. 운영 기능 prod 이식** |
-| `c208b052` | **D. 결정 번호 재발급 〈383〉 → 〈395〉** |
+| `c208b052` | **D. 결정 번호 재발급 〈383〉 → 〈400〉** |
 | `192936e1` | **E. 회차 보고서 ＋ PR 본문 ＋ 대장 `I5` 증보** |
 | `ad1ee84a` | E 정정 — sha 표 |
 | `09a0039b` | **F. `install-cron.sh` 운영자 알림 cron 세 상태**(선언 · 명시 면제 `COLAB_NOTIFICATION_SKIP=1` · 미선언 exit 2) — 배포 중 |
@@ -56,7 +56,7 @@
 3. 판정 레포 `/opt/colab-repo` 동기화 단계 부재 → `deploy_doctor` ⑥ 이 **옛 alembic head 를 정답표로
    삼아 조용히 틀린다**(dev 2회 실측 · `dev-package/reports/r-login-backoffice/task5/deploy-3-verify.md`).
 4. `prod.env` 의 `COLAB_IMAGE_TAG` 를 사람이 손으로 고쳤다 → 빠뜨리면 **옛 migrator 이미지로
-   마이그레이션이 돈다**(dev 실측 · `〈395〉`-⑨ⓔ 와 같은 구멍).
+   마이그레이션이 돈다**(dev 실측 · `〈400〉`-⑨ⓔ 와 같은 구멍).
 
 덧붙여 ops 소스 번들 사슬을 **`infra/_lib/ops-bundle.sh` 한 벌**로 뽑아 dev·prod 가 같은 함수를 부른다.
 
@@ -175,7 +175,7 @@ green 12 = `exec-bit` · `db-boundary` · `work-item-consistency` · `contract-l
 ## 8. 결정 번호
 
 `main` 이 그 사이 `〈383〉` 을 백오피스 회차에 썼다 → 게이트 축자 「두 회차가 같은 번호를 집었다.
-**뒤에 온 쪽이 새 번호를 받는다**」. `origin/main`(`aa8bee98`) 최대 394 ＋1 = **`〈395〉`**(25 파일 · 52곳).
+**뒤에 온 쪽이 새 번호를 받는다**」. `origin/main`(`aa8bee98`) 최대 394 ＋1 = **`〈400〉`**(25 파일 · 52곳).
 옮긴 기준 = 그 줄이 `origin/main` 의 같은 파일에 있는가 — `main` 쪽 인용 4자리는 무수정(규칙 4-1).
 ⛔ **이 번호도 임시다.** 발급은 병합하는 쪽이 병합 직전에 재실측한다.
 
@@ -277,6 +277,6 @@ admin 로그인 **201** · `/me` 연구원 · `mustChangePassword=false` · 데�
 
 1. **태그 push ＋ 태그 주체 문면 판정** — Ted.
 2. **④ 운영자 알림의 prod AWS 자원**(SQS 큐 2 · Secrets Manager 웹훅 ARN 2 · CloudWatch 알람) ＋ 런타임 venv — 만들지 말지 Ted.
-3. **`〈395〉` 재발급** — 병합 직전 재실측(규칙 4-1). 이번 배포 실측의 원장 행은 `PLAN-SoT §9 〈N〉(병합 직전 발급)` 자리.
+3. **`〈400〉` 재발급** — 병합 직전 재실측(규칙 4-1). 이번 배포 실측의 원장 행은 `PLAN-SoT §9 〈N〉(병합 직전 발급)` 자리.
 4. `deploy_release.py` 알림 단계의 Slack 비밀 파일 배치(종료코드 78).
 5. `up.sh` 적용 리비전 수 실측(19 vs 파일 20 — 위 단위 주의).

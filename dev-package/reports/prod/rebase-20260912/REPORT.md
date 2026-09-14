@@ -126,14 +126,14 @@ green 12 = `exec-bit` · `db-boundary` · `work-item-consistency` · `contract-l
   `㈔ 결정 번호 〈372〉 이 PLAN-SoT §9 에 2번 나온다 — 두 회차가 같은 번호를 집었다. 뒤에 온 쪽이 새 번호를 받는다`
 - 실물 — 이 브랜치의 `〈372〉` = 「prod 를 연다 — `㊻` 보류 해제」 / `origin/main` 의 `〈372〉` = 「R-A′ rev2 증분 5 WU 병합」.
   브랜치가 개번(커밋 12)했을 때 main 최대는 `〈342〉` 였고 그 뒤 main 이 `〈343〉`~`〈382〉` 를 썼다.
-- **조치 = `〈372〉` → `〈395〉`**(현 `origin/main` 최대 `〈382〉` ＋1 · `colab-rules §4-1`). 22 파일 · 47곳.
+- **조치 = `〈372〉` → `〈400〉`**(현 `origin/main` 최대 `〈382〉` ＋1 · `colab-rules §4-1`). 22 파일 · 47곳.
   치환은 **이 회차 소유분만** — `03-HANDOFF.md` 1줄 · `PLAN-SoT.md` 2줄의 main 인용과
   `prd/`·`sessions/`·`reports/R-D/` 의 인용은 무수정. 남은 `〈372〉` 집합이 `origin/main` 집합과
   **정확히 같은 것**을 실측했다.
 - ⚠ **지시문과의 차이** — 지시는 「임시 번호 그대로 두고 병합 직전 오케스트레이터가 재발급」이었다.
   그대로 두면 `work-item-consistency` 가 red 로 남고 **레인 종료 계약(`lifecycle_contract.py:176`
   「gate failures remain」)이 handoff 를 거부**해 회차가 닫히지 않는다. 번호는 병합 직전 다시 재는 것이
-  규칙이므로 `〈395〉` 도 임시다 — **오케스트레이터의 재실측 권한은 그대로**이고, 이 커밋이 한 일은
+  규칙이므로 `〈400〉` 도 임시다 — **오케스트레이터의 재실측 권한은 그대로**이고, 이 커밋이 한 일은
   「한 트리에 같은 번호 둘이 없게」까지다.
 - 재실행 `work-item-consistency` **green**(불일치 0 · `work-item-consistency-after-renumber.log`).
 
