@@ -21,4 +21,25 @@ describe('client research search', () => {
     fireEvent.click(screen.getByText('이 연구 조건으로 다시 찾기'));
     await waitFor(() => expect(search).toHaveBeenLastCalledWith(expect.objectContaining({context:{research:{variable:'land_surface_temperature',region:'seoul',period:{start:'2025-01-01',end:'2025-12-31'}}}})));
   });
+
+  it('shows a comparison period from start through end regardless of response key order', async () => {
+    const assessment:SearchAssessment = {
+      status:'answered', text:'조건을 확인했습니다.', questions:[], intent:'finest', conditions:{},
+      asOf:'2026-09-14T12:00:00+09:00', semanticVersion:'b'.repeat(64), scope:'등록 자료',
+      candidateLimitReached:false, unknownCount:0,
+      comparisons:[{
+        datasetId:'01M2BF9P79K1APP13JZAZE3J61', name:'합성 강우', status:'supported', checks:{},
+        fileId:'01M2BF8BGDKDNY7W8XNH0DJN5N', fileName:'rain.tif',
+        facts:{ period:{ end:'2025-12-31', start:'2025-01-01' } }, source:null,
+      }],
+    };
+    const result:SearchResults = {
+      scope:{labId:'L',labName:'연구실',searchedCount:1}, isDataQuery:true, degraded:false,
+      items:[], totalCount:0, nextCursor:null, assessment,
+    };
+    render(<MemoryRouter initialEntries={['/search?q=강수량']}><SearchResultsPage source={{search:vi.fn().mockResolvedValue(result)}} /></MemoryRouter>);
+
+    expect(await screen.findByText('2025-01-01 ~ 2025-12-31')).toBeInTheDocument();
+    expect(screen.queryByText('2025-12-31 ~ 2025-01-01')).toBeNull();
+  });
 });

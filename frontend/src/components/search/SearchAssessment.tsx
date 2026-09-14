@@ -15,6 +15,10 @@ function display(key: string, value: unknown): string {
   if (key === 'variable') return variables[value as keyof typeof variables] ?? String(value);
   if (key === 'region') return regions[value as keyof typeof regions] ?? String(value);
   if (key === 'statistics' && Array.isArray(value)) return value.map(v => statistics[v as keyof typeof statistics] ?? v).join(', ');
+  if (key === 'period' && typeof value === 'object') {
+    const period = value as { start?: unknown; end?: unknown };
+    if (typeof period.start === 'string' && typeof period.end === 'string') return `${period.start} ~ ${period.end}`;
+  }
   if (typeof value === 'object') return Object.values(value).join(' ~ ');
   if (typeof value === 'boolean') return value ? '예' : '아니요';
   const terms:Record<string,string> = {spatial:'공간자료',spatial_grid:'공간 격자',point_observations:'공간 좌표가 있는 점 관측',table:'표',array:'배열',satellite:'위성',ground:'지상',model:'모델',mixed:'혼합',daily:'일별',monthly:'월별',weekly:'주별','15min':'15분'};
