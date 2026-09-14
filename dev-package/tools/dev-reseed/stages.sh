@@ -525,7 +525,7 @@ EOF
 # 해시는 제품과 같은 두 함수를 그대로 부른다(`hash_password` · `normalize_login_name`).
 prelude_login_credential() {
   if [ "$DRY_RUN" = 1 ]; then
-    log "DRY ssh <dev> docker exec -i colab_v2_dev_core_api python -  # login_credential INSERT (비밀번호 = 표준입력 1줄)"
+    log "DRY ssh <dev> docker exec -i colab_v2_dev_core_api python -c  # login_credential INSERT (본문 = RESEED_PY 환경변수 · 비밀번호 = 표준입력 1줄)"
     return 0
   fi
   local py; py="$(cat <<'PY'
@@ -551,27 +551,32 @@ print("login_credential 1행 · must_change_password 는 DB 기본값 true")
 PY
 )"
   # 표준입력 한 줄기에 파이썬 본문 ＋ `__PW__` 구분줄 ＋ 비밀번호 한 줄을 실어 보낸다.
-  # 원격에서 둘로 갈라 파이썬은 파일로, 비밀번호는 컨테이너 표준입력으로만 넣는다.
-  # argv·환경변수·로그 어디에도 값이 남지 않는다(런북 §5 ③ 축자 조건).
-  log "RUN ssh <dev> docker exec -i colab_v2_dev_core_api python  # login_credential INSERT"
+  # 원격에서 둘로 갈라 파이썬 본문은 **환경변수**(`RESEED_PY`)로, 비밀번호는 컨테이너 표준입력으로만 넣는다.
+  # 비밀번호는 argv·환경변수·로그 어디에도 남지 않는다(런북 §5 ③ 축자 조건) — 본문에는 비밀이 없다.
+  #
+  # ⚠ 본문을 컨테이너 안 **파일**로 나르지 않는다(종전 `docker cp … :/tmp/reseed_cred.py`).
+  #   왜 = `docker cp` 는 호스트 쪽 소유자(ssh 사용자 uid 1000 · 0600)를 그대로 옮기고 컨테이너의
+  #   앱 사용자는 uid 10001(`colab`)이라 `python /tmp/reseed_cred.py` 가 `Permission denied` 로 죽고
+  #   sticky `/tmp` 의 남의 파일이라 `rm -f` 도 실패한다(DR-4 4회차 `20260914T022417Z` 실측 · prelude ③).
+  #   그 줄은 **실모드로 돈 적이 없었고** `--dry-run`·`--rehearse` 어느 쪽도 밟지 않았다.
+  #   환경변수로 실으면 파일·소유자·모드·뒷정리가 전부 사라진다 — `python -c` 가 `exec` 로 읽는다.
+  log "RUN ssh <dev> docker exec -i colab_v2_dev_core_api python -c  # login_credential INSERT (본문 = RESEED_PY 환경변수 · 비밀번호 = 표준입력 1줄)"
   local remote; remote=$(cat <<REMOTE
 set -euo pipefail
 $(remote_assign RESEED_ACCOUNT_ID "$RESEED_ACCOUNT_ID")
 $(remote_assign RESEED_ACCOUNT_EMAIL "$RESEED_ACCOUNT_EMAIL")
 export RESEED_ACCOUNT_ID RESEED_ACCOUNT_EMAIL
 all=\$(mktemp); chmod 600 "\$all"; cat > "\$all"
-body=\$(mktemp); chmod 600 "\$body"; sed '/^__PW__\$/,\$d' "\$all" > "\$body"
+RESEED_PY=\$(sed '/^__PW__\$/,\$d' "\$all")
 pwf=\$(mktemp); chmod 600 "\$pwf"; sed -n '/^__PW__\$/,\$p' "\$all" | tail -n +2 > "\$pwf"
 rm -f "\$all"
-sudo docker cp "\$body" colab_v2_dev_core_api:/tmp/reseed_cred.py
 rc=0
 # 값은 **원격 셸 변수**에서만 꺼낸다 — sudo 는 환경을 비우므로 자기 인자로 넘기고(큰따옴표 한 겹),
 # docker 로는 이름만 준다. heredoc 에 값을 박지 않으므로 따옴표를 품은 이름도 쪼개지지 않는다.
-sudo RESEED_ACCOUNT_ID="\$RESEED_ACCOUNT_ID" RESEED_ACCOUNT_EMAIL="\$RESEED_ACCOUNT_EMAIL" \\
-  docker exec -i -e RESEED_ACCOUNT_ID -e RESEED_ACCOUNT_EMAIL \\
-  colab_v2_dev_core_api python /tmp/reseed_cred.py < "\$pwf" || rc=\$?
-sudo docker exec colab_v2_dev_core_api rm -f /tmp/reseed_cred.py
-shred -u "\$body" "\$pwf" 2>/dev/null || rm -f "\$body" "\$pwf"
+sudo RESEED_ACCOUNT_ID="\$RESEED_ACCOUNT_ID" RESEED_ACCOUNT_EMAIL="\$RESEED_ACCOUNT_EMAIL" RESEED_PY="\$RESEED_PY" \\
+  docker exec -i -e RESEED_ACCOUNT_ID -e RESEED_ACCOUNT_EMAIL -e RESEED_PY \\
+  colab_v2_dev_core_api python -c 'import os; exec(os.environ["RESEED_PY"])' < "\$pwf" || rc=\$?
+shred -u "\$pwf" 2>/dev/null || rm -f "\$pwf"
 exit \$rc
 REMOTE
 )

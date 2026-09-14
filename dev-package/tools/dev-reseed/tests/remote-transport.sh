@@ -13,6 +13,12 @@
 #   ⓓ `stage_rehearse` 가 `--dry-run` 에서 원격에 **한 바이트도** 내지 않는다.
 #   ⓔ 원시동작의 응답이 기대와 어긋나면 **이름을 대고** 비영 종료한다(fail-closed).
 #   ⓕ 값을 `='<값>'` 한 겹으로 싣는 자리가 `stages.sh` 에 0건이다(정적 대조).
+#   ⓖ prelude ③ `login_credential` — 파이썬 본문은 **환경변수**로, 비밀번호는 **표준입력 한 줄**로
+#      컨테이너에 닿고(둘 다 한 바이트도 바뀌지 않는다), 비밀번호가 원격 스크립트·단계 로그에 0건이며,
+#      컨테이너 안에 파일을 두는 자리(`docker cp`)가 `stages.sh` 에 0건이다. 컨테이너가 비영이면 red.
+#      왜 = 2026-09-14 4회차(`20260914T022417Z`)가 여기서 멈췄다 — `docker cp` 가 호스트 소유자
+#      (uid 1000 · 0600)를 그대로 옮겨 앱 사용자(uid 10001)가 `/tmp/reseed_cred.py` 를 열지 못했다.
+#      그 줄도 실모드로 돈 적이 없었고 `--dry-run`·`--rehearse` 어느 쪽도 밟지 않았다.
 #
 # 실물 무접촉 = `ssh`·`docker`·`sudo`·`agent-browser` 를 PATH 대역으로 가린다.
 set -uo pipefail
@@ -47,21 +53,29 @@ printf 'CMD %s\n' "$last" >> "$FIXTURE_SSH_LOG"
 if [ -n "${FIXTURE_FAIL_MATCH:-}" ]; then
   case "$last" in *"$FIXTURE_FAIL_MATCH"*) echo "대역 실패 — 명령 일치" >&2; exit 7 ;; esac
 fi
+# 원격 스크립트가 **argv** 로 오는 자리(prelude ③) — `FIXTURE_EXEC_CMD=1` 이면 표준입력을 물려 로컬 bash 로 실행한다.
+if [ "${FIXTURE_EXEC_CMD:-0}" = 1 ]; then bash -c "$last"; exit $?; fi
 exit 0
 STUB
 # docker 대역 = `-e SQL` 로 받은 값을 **있는 그대로** 파일에 적고 정해진 답을 낸다.
+#   `-e RESEED_PY` 로 받은 파이썬 본문과 표준입력(비밀번호)도 그대로 적는다(ⓖ).
 cat > "$TMP/bin/docker" <<'STUB'
 #!/usr/bin/env bash
 if [ -n "${FIXTURE_SQL_OUT:-}" ] && [ -n "${SQL:-}" ]; then
   printf '%s' "$SQL" > "$FIXTURE_SQL_OUT"
 fi
+if [ -n "${FIXTURE_PY_OUT:-}" ] && [ -n "${RESEED_PY:-}" ]; then
+  printf '%s' "$RESEED_PY" > "$FIXTURE_PY_OUT"
+  cat > "$FIXTURE_PY_OUT.stdin"
+fi
 printf '%s\n' "${FIXTURE_DOCKER_STDOUT:-0}"
 if [ -n "${FIXTURE_DOCKER_STDERR:-}" ]; then printf '%s\n' "$FIXTURE_DOCKER_STDERR" >&2; fi
 exit "${FIXTURE_DOCKER_RC:-0}"
 STUB
+# sudo 대역 = `VAR=값` 인자를 실물 sudo 처럼 환경으로 넘긴다(`-e VAR` 이름 전달이 성립하는 조건).
 cat > "$TMP/bin/sudo" <<'STUB'
 #!/usr/bin/env bash
-while [ $# -gt 0 ]; do case "$1" in -E|-n) shift ;; *=*) shift ;; *) break ;; esac; done
+while [ $# -gt 0 ]; do case "$1" in -E|-n) shift ;; *=*) export "$1"; shift ;; *) break ;; esac; done
 exec "$@"
 STUB
 cat > "$TMP/bin/agent-browser" <<'STUB'
@@ -188,8 +202,43 @@ bad="$(grep -nE "(export [A-Za-z_]+|-e [A-Za-z_]+)='\\\$" "$RESEED_DIR/stages.sh
 [ -z "$bad" ] || note "ⓕ 값을 작은따옴표 한 겹으로 싣는 자리가 남아 있다:
 $(printf '%s' "$bad" | sed 's/^/       /')"
 
+# ── ⓖ prelude ③ — 본문은 환경변수 · 비밀번호는 표준입력 한 줄 ─────────────
+# 원격 스크립트는 argv 로 가고 표준입력이 「파이썬 본문 ＋ __PW__ ＋ 비밀번호」다. ssh 대역이 그
+# 스크립트를 로컬 bash 로 실제로 돌리므로 원격 셸의 갈라내기·sudo 환경 전달·docker 표준입력이 재현된다.
+reset_logs
+CURRENT_STAGE=prelude; STAGE_LOG="$RUN_DIR/logs/prelude.log"; : > "$STAGE_LOG"
+PW_HARD="pw'quote\"dq \$HOME \`id\` 12345"            # 10자 이상 · 셸이 싫어하는 글자 전부
+OPERATOR_PASSWORD_FILE="$TMP/pw.txt"
+printf '%s\n' "$PW_HARD" > "$OPERATOR_PASSWORD_FILE"; chmod 600 "$OPERATOR_PASSWORD_FILE"
+export FIXTURE_EXEC_CMD=1 FIXTURE_PY_OUT="$TMP/py.out" FIXTURE_DOCKER_STDOUT='login_credential 1행'
+rm -f "$TMP/py.out" "$TMP/py.out.stdin"
+if prelude_login_credential >/dev/null 2>&1; then :; else
+  note "ⓖ prelude_login_credential 이 비영 종료했다 — 원격 스크립트가 로컬 bash 에서 죽었다"
+fi
+if [ -f "$TMP/py.out" ]; then
+  grep -q 'INSERT INTO account_admin.login_credential' "$TMP/py.out" \
+    || note "ⓖ′ 컨테이너가 받은 파이썬 본문에 login_credential INSERT 가 없다"
+  got_pw="$(cat "$TMP/py.out.stdin" 2>/dev/null)"
+  [ "$got_pw" = "$PW_HARD" ] || note "ⓖ″ 컨테이너 표준입력의 비밀번호가 원본과 다르다:
+       보낸 것 [$PW_HARD]
+       받은 것 [$got_pw]"
+else
+  note "ⓖ‴ 컨테이너가 파이썬 본문을 받지 못했다 — RESEED_PY 가 docker 에 닿지 않았다"
+fi
+grep -qF "$PW_HARD" "$FIXTURE_SSH_LOG" && note "ⓖ⁗ 비밀번호가 원격 스크립트(argv)에 실렸다"
+grep -qF "$PW_HARD" "$STAGE_LOG" && note "ⓖ⁗′ 비밀번호가 단계 로그에 남았다"
+# 주석을 걷어낸 뒤 잰다 — 정적 대조가 주석을 코드로 읽는 오탐을 막는다(`CLAUDE.md §5-b`).
+grep -vE '^[[:space:]]*#' "$RESEED_DIR/stages.sh" | grep -q 'docker cp' \
+  && note "ⓖ⁗″ 컨테이너 안에 파일을 두는 자리(docker cp)가 stages.sh 에 남아 있다 — 소유자 결함이 되살아날 자리다"
+# 컨테이너가 비영이면 prelude ③ 도 비영이다(fail-closed).
+export FIXTURE_DOCKER_RC=1
+prelude_login_credential >/dev/null 2>&1 \
+  && note "ⓖ⁗‴ 컨테이너 python 이 비영인데 prelude_login_credential 이 0 으로 끝났다 — fail-open"
+unset FIXTURE_DOCKER_RC FIXTURE_EXEC_CMD FIXTURE_PY_OUT
+export FIXTURE_DOCKER_STDOUT=0
+
 if [ "$fail" -eq 0 ]; then
-  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0)"
+  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0 · prelude ③ 환경변수·표준입력 왕복)"
   exit 0
 fi
 echo "remote-transport — red" >&2
