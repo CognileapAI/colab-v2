@@ -15,11 +15,19 @@
 # 사용:
 #   bash dev-package/tools/dev-reseed/reseed.sh --dry-run
 #   bash dev-package/tools/dev-reseed/reseed.sh --preflight-only
+#   bash dev-package/tools/dev-reseed/reseed.sh --rehearse
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
-#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_DEV_SECRETS_DIR · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
+#
+# ⚠ **`COLAB_DEV_SECRETS_DIR` 를 읽지 않는다.** 그 이름은 운영자 기계의 `dev-operator.env` 에서
+#   **개발 기계의 로컬 폴더**를 가리키고, `infra/dev/README.md` 의 같은 이름은 EC2 의 `dev.env`
+#   안에서 **EC2 경로**를 가리킨다 — 한 이름이 두 뜻이다. 이 도구가 그 값을 원격 경로로 읽으면
+#   EC2 에 없는 호스트 경로를 `docker -v` 로 마운트한다(DR-4 회차 §5 ⑴ 실측).
+#   그래서 원격 경로의 출처를 `COLAB_RESEED_EC2_SECRETS_DIR` 하나로 분리했다.
 set -euo pipefail
 
 RESEED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,9 +46,45 @@ S3_BUCKET="${COLAB_CORE_S3_BUCKET:-colab-platform-data-dev}"
 S3_REGION="${COLAB_CORE_S3_REGION:-ap-northeast-2}"
 WEB_BUCKET="${COLAB_WEB_S3_BUCKET:-colab-platform-web-dev}"
 
-SECRETS_DIR="${COLAB_DEV_SECRETS_DIR:-/etc/colab}"
+# EC2 위 시크릿 폴더. `preflight` ⑻ 이 `stat` 하는 자리이자 `reset`·`prelude` 가 `docker -v` 로
+# 마운트하는 자리다 — **이름 하나가 원격 경로만 가리킨다**(머리말 ⚠ 참조).
+EC2_SECRETS_DIR="${COLAB_RESEED_EC2_SECRETS_DIR:-/etc/colab}"
 LAB_ID="${RESEED_LAB_ID:-00000000000000000000HYMETS}"
-RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-연구원}"
+
+# 첫 계정 신원. 기본값의 원본은 **prelude ① 이 실행하는 SQL** 이다 — 사본을 두지 않고 실행 때 읽는다.
+# 왜 = ① `provision-lab.sql` 이 고정 id 로 `d1_account` 를 이미 심고 `d1_account` 에는
+#   `UNIQUE (lab_id, email)` 이 있다(`db/platform/schema.sql`). ② `provision-account.sql` 에
+#   **새 ULID** 를 주면 id 충돌이 안 나 삽입이 진행되고 그 유일성에 걸려 prelude 가 죽는다
+#   (DR-4 회차 §4 실측 · 그래서 그 회차는 새 ULID 를 버리고 ① 의 값을 썼다).
+#   같은 id 를 주면 ② 의 `ON CONFLICT (id) DO NOTHING` 이 먼저 걸려 **멱등**이다.
+# 값을 여기에 다시 적지 않는다 — 두 벌이 되면 SQL 이 바뀔 때 갈린다.
+PROVISION_LAB_SQL="${COLAB_RESEED_PROVISION_LAB_SQL:-$REPO_ROOT/infra/staging/provision-lab.sql}"
+# 못 읽으면 **빈 값으로 둔다**(지어내지 않는다). 빈 값은 prelude 의 값 점검에서 이름을 대고 멈춘다.
+_lab_account_row="$(python3 - "$PROVISION_LAB_SQL" <<'PY' 2>/dev/null || true
+import re, sys
+try:
+    src = open(sys.argv[1], encoding="utf-8").read()
+except OSError:
+    raise SystemExit(1)
+m = re.search(
+    r"INSERT\s+INTO\s+d1_account\s*\(\s*id\s*,\s*lab_id\s*,\s*name\s*,\s*email\s*\)\s*VALUES\s*"
+    r"\(\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)", src)
+if not m:
+    raise SystemExit(1)
+# 역할도 같은 파일에서 읽는다 — ② 를 건너뛰면 ① 이 심은 역할이 실물이므로, 다른 값을 찍으면
+# `--preflight-only` 가 사실과 다른 신원을 보고하게 된다.
+r = re.search(
+    r"INSERT\s+INTO\s+d2_member_role\s*\(\s*account_id\s*,\s*lab_id\s*,\s*role\s*\)\s*VALUES\s*"
+    r"\(\s*'%s'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*\)" % re.escape(m.group(1)), src)
+print("\t".join(m.groups()) + "\t" + (r.group(1) if r else ""))
+PY
+)"
+IFS=$'\t' read -r PROVISION_LAB_ACCOUNT_ID _sql_lab_id _sql_account_name _sql_account_email _sql_account_role \
+  <<<"${_lab_account_row:-$'\t\t\t\t'}"
+RESEED_ACCOUNT_ID="${RESEED_ACCOUNT_ID:-$PROVISION_LAB_ACCOUNT_ID}"
+RESEED_ACCOUNT_NAME="${RESEED_ACCOUNT_NAME:-$_sql_account_name}"
+RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-$_sql_account_email}"
+RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-${_sql_account_role:-연구원}}"
 
 EXPECT_DATASETS="${COLAB_RESEED_EXPECT_DATASETS:-28}"
 EXPECT_EDGES="${COLAB_RESEED_EXPECT_EDGES:-18}"
@@ -72,6 +116,7 @@ SECRET_FILE_NAMES=(
 DRY_RUN=0
 FROM_STAGE=preflight
 PREFLIGHT_ONLY=0
+REHEARSE=0
 RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/main}"
 TARGET_SHA=""
@@ -82,8 +127,17 @@ MD_ROOT=""
 SEED_WORK_DIR=""
 
 usage() {
-  sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
+
+계정 신원 기본값:
+  RESEED_ACCOUNT_ID · _EMAIL · _NAME · _ROLE 을 주지 않으면 prelude ① 이 실행하는
+  infra/staging/provision-lab.sql 의 `INSERT INTO d1_account`(＋ d2_member_role 의 역할)
+  값을 **실행 때 읽어** 쓴다
+  (자리는 COLAB_RESEED_PROVISION_LAB_SQL 로 바꾼다). 사본을 두지 않는 이유 =
+  d1_account 에 UNIQUE (lab_id, email) 이 있어 새 ULID 를 주면 prelude ② 가 유일성 위반으로
+  죽는다. id 가 ① 의 값과 같으면 prelude ② 는 **건너뛴다**(2026-09-13 회차와 같은 순서 ·
+  d2_permission_switch 0행 유지). 다른 id 를 주면 ② 를 돌린다.
 
 인자:
   --from <단계>                 **바꾸는 단계** 중 어디부터 시작할지 고른다
@@ -93,6 +147,16 @@ usage() {
                                 이미지 태그·승인 기록이 빈 sha 로 선다.
   --preflight-only              preflight 만 돌고 **바꾸는 단계는 하나도 돌지 않는다**.
                                 dev 를 읽기만 한다(ssh 조회·aws sts·docker ps·파일·계획 생성 dry-run).
+  --rehearse                    preflight ＋ **리허설**만 돌고 바꾸는 단계는 하나도 돌지 않는다.
+                                리허설 = 원격 원시동작 10 을 실모드로 한 번씩 내 보고 응답을 판정한다 —
+                                psql:master(작은따옴표 든 SQL) · ssh_script(따옴표·$·백틱 되받기) ·
+                                compose ps · 마이그레이터 `alembic current` 두 체인 ·
+                                초기화 도구 `--phase s3-plan`(임시 폴더 · **적용 없음**) ·
+                                postgres:16-alpine 로 소유자 URL `select 1` · deploy_doctor 1회 ·
+                                러너 `--phase report` · agent-browser 제목 읽기.
+                                ⚠ 쓰기·정지·삭제·적용은 0건이다. 어긋난 원시동작이 있으면
+                                **그 이름을 대고** 비영 종료한다. 파괴 단계 **앞에** 둔다 —
+                                실모드 정지가 매번 「한 번도 실행된 적 없는 원격 줄」에서 났다.
   --dry-run                     실행할 명령을 전부 찍고 dev·AWS·docker 를 건드리지 않는다.
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
@@ -108,6 +172,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --from) FROM_STAGE="$2"; shift 2 ;;
     --preflight-only) PREFLIGHT_ONLY=1; shift ;;
+    --rehearse) REHEARSE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
@@ -125,7 +190,10 @@ done
 # 건너뛰면 `TARGET_SHA` 가 빈 채로 이미지 태그(`…:dev-`)·승인 기록·`--from deploy` 로 들어간다.
 # `--from` 이 고르는 것은 **바꾸는 단계 중 시작 지점** 하나다.
 STAGES=(preflight)
-if [ "$PREFLIGHT_ONLY" != 1 ]; then
+# 리허설은 **바꾸는 단계가 아니다** — preflight 와 함께 읽기 전용으로 돌고 거기서 끝난다.
+if [ "$REHEARSE" = 1 ]; then
+  STAGES+=(rehearse)
+elif [ "$PREFLIGHT_ONLY" != 1 ]; then
   if [ "$FROM_STAGE" = preflight ]; then
     STAGES+=("${STAGES_MUTATING[@]}")
   else
@@ -191,7 +259,7 @@ if [ "$DRY_RUN" != 1 ]; then
   [ -n "${COLAB_DEV_KEY_FILE:-}" ] || DEV_SSH_MISSING+=(COLAB_DEV_KEY_FILE)
   # dev 주소는 **화면을 여는 단계**(seed·verify)만 쓴다. preflight 는 쓰지 않으므로
   # `--preflight-only` 는 이 값 없이도 끝까지 검사한다.
-  if stage_enabled seed || stage_enabled verify; then
+  if stage_enabled seed || stage_enabled verify || stage_enabled rehearse; then
     : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다 (seed·verify 가 화면을 연다)}"
   fi
 else
@@ -215,11 +283,13 @@ FAILED_STAGE=""
 MUTATED=0
 for s in "${STAGES[@]}"; do
   [ "$s" = report ] && continue     # report 는 마지막에 한 번만 돈다
-  [ "$s" = preflight ] || MUTATED=1
+  # preflight 와 rehearse 는 **읽기 전용**이다 — 레포에 회차 기록을 남기지 않는다.
+  case "$s" in preflight|rehearse) : ;; *) MUTATED=1 ;; esac
   stage_begin "$s"
   rc=0
   case "$s" in
     preflight) stage_preflight || rc=$? ;;
+    rehearse)  stage_rehearse  || rc=$? ;;
     deploy)    stage_deploy    || rc=$? ;;
     reset)     stage_reset     || rc=$? ;;
     bootstrap) stage_bootstrap || rc=$? ;;

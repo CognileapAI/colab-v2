@@ -1017,8 +1017,14 @@ export function RegisterArea(props: {
   /**
    * 분석이 아직 안 끝났는가 (① · rev1 `anNext.disabled`).
    * `status` 가 아직 없으면 **접수·분석 중**이다 — 모르는 것을 끝났다고 하지 않는다.
+   *
+   * ⭑ ⟨`#40` 두 번째 잠금⟩ **「분석이 끝났다」는 `ready || failure` 다.** 워커는 실패에
+   * `ready=False` 를 함께 쓰므로(`d5_ingestion.py` `_fail`) `ready` 만 보면 실패한 업로드가
+   * 여기서 영영 ① 에 선다. 서버는 실패분의 등록을 201 로 받는다
+   * (`test_dataset_registration.py` `test_a_failed_pipeline_does_not_block_registration`).
+   * ⛔ 미리보기·격자 감지처럼 **분석 산출물이 실제로 필요한 자리는 `ready` 단독으로 남긴다.**
    */
-  const analyzing = !props.status?.ready;
+  const analyzing = !(props.status?.ready || props.status?.failure);
   /**
    * ① 의 **분류·유형이 비어 있으면 `다음` 이 막힌다** (수용 기준 2).
    *

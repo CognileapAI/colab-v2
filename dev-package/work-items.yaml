@@ -3626,13 +3626,13 @@ items:
     sources: ["dev-package/reports/r-dev-reset/full-gate-diagnosis.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
   - id: DR-4
     name: "dev 초기화→재셋팅 워크플로우 — 한 명령으로 되돌리고 다시 채운다"
-    status: in_progress
+    status: partial
     stage: after_stage2
     owner: "운영 / 오케스트레이터"
     entry_conditions: ["DR-2·DR-3 가 done 이고 두 회차의 실행 기록이 레포에 있다 — 충족(2026-09-14)", "intent 판정 5건이 먼저 닫힌다 — 승인 형태(회차별 GO ↔ 상시) · 화면단 원칙 유지 범위 · 실패 시 재개 지점 · 러너 산출물 보존 자리 · 차단 포맷 처리 — ⭑ 닫힘(2026-09-14 · intent `dev-package/intent/2026-09-14-data-canon-and-reseed.md` 판정 8건 ㈎~㈕ 확정 · 승인 = dev 한정 상시 ㈒ ⓑ · 화면단 원칙 유지 · 재개 = 10단계 `--from` · 산출물 = 결과 JSON ＋ `dev-package/sessions/` · 차단 포맷 = 미리보기 없이 등록 ㈏ ⓐ · GeoPackage 판독은 `FMT-GPKG`)", "WU-C4(dev 재생성 실행)만의 추가 진입조건 = C1·C1b·C2a·C2b·C3 가 `main` 에 병합되고 그 sha 가 dev 에 배포됨 · 참조자료 드라이브 연결 · `COLAB_REF_ROOT` 지정"]
     depends_on: [DR-2, DR-3]
     completion_def: "「데이터 전체 초기화하고 다시 셋팅해줘」 한 마디가 사람의 손조작 없이 끝까지 간다. ⑴ 진입점 하나(`reseed.sh` 또는 그에 준하는 실행기)가 초기화(`DR-2` 절차)와 재투입(`DR-3` 러너)을 이어 부른다 ⑵ 중단 지점에서 재개할 수 있다(상태 파일 기준 · 이미 끝난 순번을 다시 올리지 않는다) ⑶ 승인 게이트가 절차 안에 있다 — ⭑ ⟨개정 2026-09-14 · intent ㈒ ⓑ⟩ dev 한정 상시 승인(근거 〈398〉 · 실행마다 결과 JSON＋세션 기록 · Ted 철회 시 소멸) · staging·prod 는 매회 GO ／ 종전 ~~파괴 단계 전 명시 GO · 1회 소진 규약 유지~~ ⑷ 화면단 원칙 유지 — 재투입은 브라우저 화면 조작이고 백엔드 시딩으로 대체하지 않는다 ⑸ 실행 결과가 계수표 한 장으로 나온다(프로젝트·데이터셋·간선·미리보기 · 차단 건은 이름으로 열거)."
-    evidence: "⭑ 착수 2026-09-14 · intent `dev-package/intent/2026-09-14-data-canon-and-reseed.md` 확정(판정 8건 ㈎~㈕ ＋ advisor 파생 4건 ＋ 정본 md 열린 질문 14건) · 이슈 #40 #44 #48 #49 #50 (관련 #41 #42) · 라운드 `dev-package/prd/rounds/R-DATA-CANON.md` · 작업 단위 C0(등재)·C1·C1b·C2a·C2b·C3·C4 · 등재 〈398〉. ⭑ ⟨개정 2026-09-14 · Ted ⓐ⟩ C2b 폐기(계산값 표시 유지 · 〈397〉 유지 · 〈398〉-㉾) · 통합 브랜치를 `origin/main` e9ca26b1 위로 리베이스한 tip 5792068d 에서 게이트 7종 green. ／ 종전 ~~미착수 — 2026-09-14 등재만~~. 입력 = intent `dev-package/intent/2026-09-14-dev-reseed-workflow.md`(초안 · 커밋 `de3485b6` · 새 intent 가 흡수) · 초기화 절차 실측 `dev-package/sessions/DR-2-run-2026-09-13.md` · 재투입 절차 실측 `dev-package/sessions/DR-3-run-2026-09-13.md` · 러너 정본 `dev-package/tools/dev-seed/`. Ted 요청 축자 2건 = 「데이터 전체 초기화하고 다시 셋팅해줘 하면 이렇게 해줬으면 하는데 어떻게 해야 워크플로우를 api처럼 만들수있을까?」 · 「이거 완료한다음에, 작업을 워크플로우로 만들어두기위한 작업을해보자 일단 이번작업끝내는것부터」. 원장 `PLAN-SoT §9 〈396〉`-㉾."
+    evidence: "⭑ ⟨2026-09-14 · R-DATA-CANON 마감 · WU-C4 실행 5회⟩ 상태 = `partial`(🟧) — 완료 정의 ⑴(진입점 하나가 사람 손조작 없이 끝까지 간다) 미달 · ⑵~⑸ 충족. 실행 5회 = 1회차 `preflight` `secrets` 정지 · 2회차 `reset` ①″ 따옴표 결함 정지 · 3회차 `s3` ② 소유자 단언 정지 · 4회차 `--from s3` 재개(S3 옛 객체 1526 삭제 · prelude · seed 26/28 · verify · 계정 생성) · 5회차 dev `d5cd6ca9` 배포(태그 `dev-20260914-3` push) 뒤 seq 13·14 `.gpkg` 화면 등록 → **28/28**. 최종 계수(5회차 verify) = 데이터셋 **28** · 프로젝트 **4**(`drought` 2) · 간선 **18/18** · 「미지정」 **0** · 프로젝트 미연결 **0** · 가공 단계 Lv0 10 · Lv1 16 · Lv2 2(정본 분포 일치) · 계정 2(4회차 측정값 · 5회차 재측정 없음) · S3 = 옛 객체 0 → 새 28건 파일 · `deploy_doctor` 15/15 한 번의 실행. **「한 번의 실행」 = 불성립** — 배포는 release executor(도구 밖) · `--from s3`·`prelude`·`seed`·`verify` 재개 · 계정은 러너 별도 명령. 미리보기 표 「성립 28」은 **측정 결함**(순회기가 `dataset-preview` 등장 직후 계수 · 렌더 성립 미측정 · DR-3 실측 2/5) — 값으로 쓰지 않는다. 닫는 조건 = `DR-4b`(10단계 ＋ 배포·계정을 한 프로세스로 · 재개 0회 증명). 기록 = `dev-package/sessions/DR-4-run-20260914T0{10023,12505,20005,22417,50442}Z.md` · 마감 `dev-package/prd/rounds/R-DATA-CANON.md §13` · 원장 〈398〉-㉿."
     deadline: null
     note: "⭑ ⟨개정 2026-09-14⟩ 판정 5건은 닫혔다(intent 8건 확정 · 승인 형태 = dev 한정 상시 ㈒ ⓑ · 형태 = `reseed.sh` 본체 ＋ 스킬 껍데기 ㈓ ⓒ). **`DR-4` 가 이슈 #40 #44 #48 #49 #50 을 포섭한다**(관련 #41 부분 · #42 판정만) — 별도 대장 항목을 만들지 않는다. ／ 종전 ⚠ **착수 전에 intent 판정 5건이 먼저 닫힌다** — 특히 승인 형태(`〈396〉`-㉷ ⓐ 「dev 초기화 상시 승인」과 같은 자리)는 파괴적 절차의 안전장치라 판정 없이 코드로 굳히지 않는다. ⚠ **「api처럼」을 HTTP API 신설로 읽지 않는다** — 요청의 뜻은 「한 번의 호출로 끝까지 가는 재현 가능한 절차」이고, 형태(셸 실행기 · 스킬 · 둘 다)는 intent 판정 대상이다. 범위 밖 = staging·prod 적용(`〈395〉`-㉲ 그대로)."
     sources: ["dev-package/intent/2026-09-14-data-canon-and-reseed.md", "dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/intent/2026-09-14-dev-reseed-workflow.md", "dev-package/sessions/DR-2-run-2026-09-13.md", "dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
@@ -3646,7 +3646,7 @@ items:
     completion_def: "실데이터 5종(grib·nc·bin·tif·hdf4)이 **한 번의 요청으로** 화면에 그려진다. ⑴ 중계 타임아웃이 렌더 실소요를 덮거나, `materialize`＋`detect_format` 이 202 앞에서 빠져 진짜 비동기가 된다 ⑵ viz-render 가 149 MB 단일 파일 1건에서 OOM 으로 죽지 않는다(메모리 상향 또는 동시 렌더 수 제한 — 값은 판정) ⑶ 413 응답이 어느 상한에 걸렸는지 로그로 가려진다(`limitBytes`·`reason`) ⑷ 렌더 작업 상태가 프로세스 재시작을 견딘다 ⑸ 위 넷이 회귀 시험으로 잠긴다."
     evidence: "미착수 — 2026-09-14 등재만. 실측(dev · 읽기 전용 · 2026-09-13~14) = 중계 타임아웃 **10초 고정**(`services/core-api/src/colab_core/app/relay.py:28` `RELAY_TIMEOUT_SECONDS = 10`) ↔ viz-render 실소요 **20,037 · 26,766 · 29,440 · 33,391 · 33,567 · 35,602 · 38,391 ms**(전부 202 로 끝남) ⟹ core-api 가 10,02x ms 에 끊고 **503**. 창 계수(15:04~15:08Z) = `POST /api/v1/previews` **202 9 · 503 10 · 413 3 · 500 1**. OOM kill **2회**(`anon-rss:1518944kB`·`anon-rss:1562976kB` · 한도 `COLAB_MEM_VIZ=1536m` · `RestartCount=3`) · 렌더 작업 상태는 DB 에 없고 프로세스 메모리에만 있다(`information_schema.tables` 15행 중 preview/render 표 **0건**). 413 은 두 상한(`max_render_bytes` 500 MiB · `COLAB_VIZ_WORK_MAX_BYTES` 1 GiB) 중 어느 쪽인지 **응답 본문이 로그에 없어 `[미확인]`**. 화면 쪽 실측 = `DR-3` 3패스에서 렌더 성립 **2/5**(미렌더 `bin`·`tif`·`hdf4`). 근거 `dev-package/reports/r-dev-reset/preview-diagnosis.md` · `dev-package/sessions/DR-3-run-2026-09-13.md §6`. 원장 `PLAN-SoT §9 〈396〉`-㉽."
     deadline: null
-    note: "⚠ **`PV-1`(미리보기 뒷단 — 헤더 파싱·좌표계 통일·지도용 영상 변환)과 다른 항목이다** — `PV-1` 은 pipeline-worker 가 산출물을 만드는 자리이고 `done` 이며, 이 항목은 **그 산출물을 화면이 받아 가는 요청 경로**(core-api 중계 ＋ viz-render 동기 구간)다. `PV-1` 을 다시 열지 않는다. ⚠ **산출물 부재가 원인이 아니다** — S3 실물 대조에서 「안 그려짐」인 `tif`·`hdf4` 는 판정 시점에 이미 3층 산출물이 있었고, 「그려짐」인 `nc` 는 산출물 0건이었다(`[추론]` — 화면 미표시는 그 순간의 요청이 끊긴 결과다). ⚠ **`d5/renderable.py:32` `NOT_RENDERABLE_FORMATS = []` 와 같은 파일 독스트링(「GRIB 은 미리보기 대상이 아니다」)이 갈려 있다** — 어느 쪽이 정본인지 판정이 이 항목 안에 있다."
+    note: "⚠ **`PV-1`(미리보기 뒷단 — 헤더 파싱·좌표계 통일·지도용 영상 변환)과 다른 항목이다** — `PV-1` 은 pipeline-worker 가 산출물을 만드는 자리이고 `done` 이며, 이 항목은 **그 산출물을 화면이 받아 가는 요청 경로**(core-api 중계 ＋ viz-render 동기 구간)다. `PV-1` 을 다시 열지 않는다. ⚠ **산출물 부재가 원인이 아니다** — S3 실물 대조에서 「안 그려짐」인 `tif`·`hdf4` 는 판정 시점에 이미 3층 산출물이 있었고, 「그려짐」인 `nc` 는 산출물 0건이었다(`[추론]` — 화면 미표시는 그 순간의 요청이 끊긴 결과다). ⚠ **`d5/renderable.py:32` `NOT_RENDERABLE_FORMATS = []` 와 같은 파일 독스트링(「GRIB 은 미리보기 대상이 아니다」)이 갈려 있다** — 어느 쪽이 정본인지 판정이 이 항목 안에 있다. ⭑ ⟨증보 2026-09-14 · R-DATA-CANON §13⟩ 입력 2건 추가 — ⑴ verify 순회기의 미리보기 「성립」은 렌더 완료가 아니라 `dataset-preview` 등장 직후 계수라 측정 결함(5회차 표 28행 「성립」 전건이 실례 · `dev-package/sessions/DR-4-run-20260914T050442Z.md §8-1`) — 순회기 대기 조건(`preview-unavailable` 또는 렌더 이미지 등장)과 형식 문면 testid 가 고쳐지기 전까지 그 표를 렌더 성립 값으로 쓰지 않는다 ⑵ 4회차 관측 `viz-render` `RestartCount` 5 · oom=false · exit=0(같은 기록 §8-2)을 진입조건 입력에 더한다."
     sources: ["dev-package/reports/r-dev-reset/preview-diagnosis.md", "dev-package/sessions/DR-3-run-2026-09-13.md", "dev-package/prd/rounds/R-DEV-RESET.md"]
   - id: FMT-GPKG
     name: "GeoPackage(.gpkg) 업로드 형식 지원 여부 판정"
@@ -3688,7 +3688,7 @@ items:
       B2·B3·B9 완료 정의 미작성 — 착수 intent 에서 정한다.
     evidence: null
     deadline: null
-    note: "다음 회차 착수 — Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」. 출처 = B1(vitest fork worker 기동 시간초과를 red(판정)으로 계수) · 추가(최종 트리 `a07e87a4` 전수 — viz-render 가상환경 패키지 설치 누락을 red(판정)으로 계수) · B2(`lineage-unknown-20260907.test.tsx` 전역 스캔 5000ms 예산이 부하 시 red) · B4(`tests/fixtures/setup-db.sh` 비멱등 — `schema \"account_admin\" already exists` · 부르는 게이트 이름 `[미확인]`) · B3(호스트 `CLOCK_REALTIME` 역행 탐지 게이트 없음 · 시험 되돌리기는 기본키 스냅숏으로 교체 완료 `1e48a64b` · 다른 시각 오라클 시험 영향 `[미확인]`) · B9(동시 레인 수 규칙 · drvfs I/O — 폴더 30·31·32 WSL 이전으로 원인 일부 해소 중 · 이전 뒤 env 파일·픽스처 경로·설정 바인딩 재점검)."
+    note: "다음 회차 착수 — Ted 2026-09-14 「다음회차는 검사 판독 결함 묶음부터」. 출처 = B1(vitest fork worker 기동 시간초과를 red(판정)으로 계수) · 추가(최종 트리 `a07e87a4` 전수 — viz-render 가상환경 패키지 설치 누락을 red(판정)으로 계수) · B2(`lineage-unknown-20260907.test.tsx` 전역 스캔 5000ms 예산이 부하 시 red) · B4(`tests/fixtures/setup-db.sh` 비멱등 — `schema \"account_admin\" already exists` · 부르는 게이트 이름 `[미확인]`) · B3(호스트 `CLOCK_REALTIME` 역행 탐지 게이트 없음 · 시험 되돌리기는 기본키 스냅숏으로 교체 완료 `1e48a64b` · 다른 시각 오라클 시험 영향 `[미확인]`) · B9(동시 레인 수 규칙 · drvfs I/O — 폴더 30·31·32 WSL 이전으로 원인 일부 해소 중 · 이전 뒤 env 파일·픽스처 경로·설정 바인딩 재점검). ⭑ ⟨증보 2026-09-14 · R-DATA-CANON §13 · 이슈 #46 흡수⟩ `migration-drift` 오라클 정비를 이 묶음에 합친다 — 일회용 postgres 기동 실패(60초 한도)를 red(판정)으로 위장 · 바닥값 미달 · 이름표 어긋남 셋을 각각 실패 픽스처로 고정 · 신규 게이트의 병렬 안전성 미선언도 같은 자리(R-DATA-CANON §11 `0015-drift` 병렬 부하성 red 1 · 직렬 26/26). ⭑ Ted 2026-09-14: 다음 회차로 확정(R-DATA-CANON 마감 판정 ⓑ · `DR-4b` 는 그 뒤)."
     sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/full-a07e87a4/"]
   - id: LF-1
     name: "운영자 검색 카드 타 연구실 결과 누락 조사"
@@ -3866,10 +3866,10 @@ items:
     entry_conditions:
       - "삭제는 파괴적 조작 — Ted 판정 뒤 `.claude/rules/deploy.md` 를 편 뒤 집행"
     depends_on: []
-    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    completion_def: "⑴ EC2 의 이번 배포 반입 파일(`colab-v2-dev-e9ca26b15bd1.tar` · 약 285M)만 삭제하고 `dev.env.bak-before-e9ca26b15bd1` 은 유지한다(Ted 2026-09-14 「반입 파일만 삭제」) ⑵ 이전 배포 반입 파일은 읽기 전용으로 목록·크기를 보고한 뒤 삭제 여부를 다시 판정받는다(「목록 보고 후 다시 결정」) ⑶ 실행 전후 `df -h /` 기록 · 이미지 prune 금지"
     evidence: null
     deadline: null
-    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준)."
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준). 실행 조건 = 데이터 재생성 회차 종료 뒤(dev 접촉 중단 요청 해제) · Ted GO 2026-09-14 ⭑ ⟨증보 2026-09-14 · R-DATA-CANON §13 · 이슈 #48 흡수⟩ 판정 대상에 R-DATA-CANON 회차 잔존물을 합친다 — `dev.env.bak-*` 전건 · 이미지 tar(회차별) · 로컬 web-backup 디렉터리 · 각각 보존/삭제를 Ted 가 정하고 값을 이 항목에 등재한다. 실행 조건(데이터 재생성 회차 종료 뒤)은 2026-09-14 R-DATA-CANON 마감으로 충족. ⭑ ⟨증보 2026-09-14 · Ted 판정 「예 · 지운다」⟩ 2026-09-14 EC2 잔존물 삭제 실행 — 목록: `dev.env.bak-*` 7건 전부 · `images/` tar 17건(ops-source tar.gz 10 · dev 이미지 tar 5 · repo tar.gz 1 · stage12 tar.gz 1 — 실행 태그 `d5cd6ca971df`·직전 태그 `b955bece7384` 의 tar 각 2건은 유지) · `/tmp/repo*.tgz` 2건 = 26건 1,531,330,806 B(≈1.43 GiB) · 파일 고정 목록에서 `xargs rm -f`(glob 미사용) · 여유 before→after = 6.1G(70%)→7.5G(63%) · docker 이미지 무삭제(colab-v2 20 그대로) · 앱 4 `dev-d5cd6ca971df` healthy 유지 · compose·dev.env 의 `images/` 참조 0. 잔여(글롭 밖 · 다음 판정) = `images/*.manifest` 고아 10건(각 ≤30 KB) · `images/repo-42cffb328b1e.tgz` 31 MB · 로컬 web-backup 디렉터리 미판정."
     sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
   - id: LF-14
     name: "기획자 회신 대기 2건(조건부)"
@@ -3879,8 +3879,68 @@ items:
     entry_conditions:
       - "기획자 회신 수신 — 「할 일 함」 표기는 기획자가 변경을 원할 때만 · 이메일 칸 관측은 재현될 때만"
     depends_on: []
-    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    completion_def: "⑴ 회신 발송 기록(일자) ⑵ 기획자 답에 따라 「할 일 함」 유지/변경 · 로그인 이메일 칸 관측 결과 · 문면 6건 확정을 각각 기록한다 ⟨개정 2026-09-14⟩ ⑵ 의 두 건은 Ted 결정으로 닫힘 — 완료 = ⑴ 회신 발송 기록 ＋ 문면 6건 확정 기록"
     evidence: null
     deadline: null
-    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`)."
+    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`). 회신 발송 = 데이터 재투입·검증 완료 뒤 Ted 발송(2026-09-14 「재투입 끝난 뒤」) · 발송본 `dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md` · 문면 6건은 회신에서 표기 의견을 받는다(「표기 의견 요청」) · ⟨2026-09-14⟩ 「할 일 함」 표기·로그인 이메일 칸 2건은 Ted 가 결정(원문 「2건은 내가 결정할게」) — 회신 1·2절은 그 결정 뒤 확정 · ⟨2026-09-14 Ted 결정⟩ 「할 일 함」 = 그대로 유지(확정) · 로그인 이메일 칸 = 코드 문제 없음으로 종결(권고 「기획자 확인 요청」과 다른 선택 · 실제 화면 결함이면 놓칠 수 있음을 수용) — 남은 일 = 회신 발송(재투입 뒤) ＋ 새 안내 글자 6개 표기 의견 수렴"
     sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md"]
+  - id: DR-4b
+    name: "reseed 배포·계정 단계 통합 ＋ 단일 실행 증명"
+    status: open
+    stage: after_stage2
+    owner: "운영 / 오케스트레이터 ＋ dev-reseed 도구"
+    entry_conditions: ["DR-4 5회차 종료 · 정본 일치 28/4/18/0 확정 — 충족(2026-09-14)", "PI 계정 비밀번호 재설정(`OPS-PI-PW`) 선행 — 러너 로그인 계정이 PI 이면 필수", "도구 결함 2건 고침 선행 — `project_index` 앵커 의존 · verify 순회기 대기 조건(`dev-package/sessions/DR-4-run-20260914T050442Z.md §7-2·§8-1`) ＋ `dev-reseed-selftest` red→green 픽스처"]
+    depends_on: [DR-4, OPS-PI-PW]
+    completion_def: "㉮ `main` 최신 tip 기준 10단계를 재개 0회 · 사람 입력 0회로 단일 프로세스가 완주한다 ㉯ 그 실행의 verify 계수가 데이터셋 28 · 프로젝트 4 · 간선 18 · 「미지정」 0 과 일치한다 ㉰ dev 배포와 계정 단계가 같은 단일 실행 안에 있다(release executor · 계정 러너 명령을 단계로 편입) ㉱ 미리보기 판정 표가 렌더 완료 기준으로 측정되거나 고치기 전까지 「측정 방식 미확정」으로 표기된다 ㉲ 결과 JSON ＋ 세션 기록 1건이 「한 번의 실행」 성립을 계수로 증명한다."
+    evidence: "미착수 — 2026-09-14 등재만 · 출처 R-DATA-CANON §13"
+    deadline: null
+    note: "DR-4 가 `partial` 로 남은 사유(완료 정의 ⑴ 미달)를 닫는 항목이다. ⚠ 실행 산출물(상태 파일 · 회전 비밀번호)은 워크트리 밖에 둔다(`DR-4-TOOLING` ⑺) — 4회차 산출물이 워크트리 삭제로 유실된 선례(`OPS-PI-PW`). 범위 밖 = staging·prod(`〈395〉`-㉲)."
+    sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md"]
+  - id: DR-4-TOOLING
+    name: "reseed 도구 잔여 결함 묶음 — 소유권·이름·기록 오염·산출물 보존 7건"
+    status: open
+    stage: after_stage2
+    owner: "dev-reseed 도구(`dev-package/tools/dev-reseed` · `dev-seed`)"
+    entry_conditions: ["없음 — DR-4b 착수 전 아무 때나(도구 코드만 · dev 실환경 무접촉)"]
+    depends_on: [DR-4]
+    completion_def: "일곱 각각이 fail-closed 픽스처 또는 실측 1건으로 닫힌다 — ⑴ dev-seed README 에 종료코드 4·5 문서화 ⑵ 계정 생성 폼 칸별 `data-testid` 신설 ⑶ `COLAB_DEV_URL` 이름 통일 ⑷ verify 세션 이름을 agent-browser 가 읽는 `--session` 으로 전달(4회차 로그인 27건 green-by-skip) ⑸ `lib.sh` 로그 `tee` 이중 기록 잔존분 점검 ⑹ `.work/new-password.txt` custody 규약 확정(Ted 판정) ⑺ 실행 산출물(gitignored 상태 파일 · 회전 비밀번호)을 워크트리 밖(`$COLAB_JOB_DIR/tmp` 또는 홈)에 두도록 실행 자리 변경 ＋ 보존 규약을 `dev-seed/README.md §3` 에 등재."
+    evidence: "미착수 — 2026-09-14 등재만 · 출처 R-DATA-CANON §13"
+    deadline: null
+    note: "출처 = 이슈 #49 · #50 ＋ 5회차 유실(⑺ · `dev-package/sessions/DR-4-run-20260914T050442Z.md §4·§11-3`). 게이트 자리 = `dev-reseed-selftest`(현 픽스처 6). 실행 산출물 유실 교훈은 `CLAUDE.md §5-b` 에도 한 줄."
+    sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md"]
+  - id: OPS-PI-PW
+    name: "PI 계정 비밀번호 재설정 — 유일 사본 유실 복구"
+    status: done
+    stage: after_stage2
+    owner: "운영(Ted) · 계정 관리 화면"
+    entry_conditions: ["즉시 착수 가능 — Ted 가 운영자 계정으로 로그인한다(초기 비밀번호 = 실행 기계의 0600 파일)"]
+    depends_on: []
+    completion_def: "⑴ Ted 가 운영자 계정으로 계정 관리 화면에서 PI 계정(`pi@hymets.invalid`)의 비밀번호를 재설정한다(대안 = prelude ③ 재실행) ⑵ 새 비밀번호를 워크트리 밖 0600 파일로 보관한다 ⑶ PI 계정 로그인 1회 성공을 기록한다(값은 기록하지 않는다)."
+    evidence: "Ted 2026-09-14 재설정 완료 — 운영자 계정으로 계정 관리 화면에서 PI 비밀번호 재설정(화면 조작 · 값 미기록) · 운영자 초기 비밀번호 파일은 첫 로그인 변경 뒤 실행 기계에서 삭제 · HANDOFF §4 블로커 75 해소 · 등재 R-DATA-CANON §13-8"
+    deadline: null
+    note: "출처 = 5회차 §4 — 4회차 러너가 회전한 PI 비밀번호의 유일 사본(`new-password.txt`)과 상태 파일이 `lane/wu-c4-run4` 워크트리 삭제로 유실(`dev-package/sessions/DR-4-run-20260914T050442Z.md §4·§7-3`). HANDOFF §4 블로커 75. ⛔ 비밀번호 값을 문서·로그·대화 기록 어디에도 적지 않는다."
+    sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md"]
+  - id: S3-PROC
+    name: "S3 계획 검토 절차 정비 — `stage_s3` ② 통합 뒤 검토 순서 문서화"
+    status: open
+    stage: after_stage2
+    owner: "dev-reseed 도구 ＋ `dev-package/S3.md`"
+    entry_conditions: ["없음 — 착수 후보"]
+    depends_on: [DR-4]
+    completion_def: "⑴ `stage_s3` ② 계획 검토가 컨테이너(`--user 0`)와 호스트(uid 1000) 사이에서 소유자 단언 없이 도는 현 구조를 기준으로 남은 검토 순서(계획 생성 → 검토 → apply → 사후 계수)를 문서에 적는다 ⑵ `--rehearse` 원시동작 목록의 S3 자리와 문서가 같은 값을 말한다 ⑶ 검토 생략 경로가 없음을 실패 픽스처 1건으로 고정한다."
+    evidence: "미착수 — 2026-09-14 등재만 · 출처 R-DATA-CANON §13"
+    deadline: null
+    note: "출처 = 이슈 #49 · 3회차 정지(`s3` ② `st_uid == getuid()` 단언 · `dev-package/sessions/DR-4-run-20260914T020005Z.md §7·§8·§10`). 운영 정본 `dev-package/S3.md` 와 갈리면 정본을 먼저 고친다(`.claude/rules/s3-upload.md`)."
+    sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md"]
+  - id: DEPLOY-PRIM
+    name: "`--rehearse` 원시동작 10종을 배포 문서의 1차 요소로 승격"
+    status: open
+    stage: after_stage2
+    owner: "infra / 배포 문서(`docs/DEPLOY.md` · `.claude/rules/deploy.md`)"
+    entry_conditions: ["없음 — 착수 후보"]
+    depends_on: []
+    completion_def: "⑴ `docs/DEPLOY.md` 와 `.claude/rules/deploy.md` 에 `reseed.sh --rehearse` 원시동작 10종을 `deploy_doctor` 15 항목과 별개 절로 등재한다 ⑵ 각 원시동작에 「실모드로 돈 적 있는가」 표시를 붙인다 ⑶ 원격 원시동작을 실모드 전에 리허설로 증명하는 규약을 규칙 파일 본문에 적는다."
+    evidence: "미착수 — 2026-09-14 등재만 · 출처 R-DATA-CANON §13"
+    deadline: null
+    note: "출처 = 5회 실행 중 정지 3건이 전부 「실모드로 돈 적 없는 원격 줄」(1회차 `secrets` · 2회차 `reset` 따옴표 · 3회차 `s3` 소유자 단언)에서 났고 `--rehearse` 신설이 그 교훈의 직접 반영. 규칙 파일 편집은 `paths` 지연 로딩 자리를 유지한다(`CLAUDE.md §9`)."
+    sources: ["dev-package/prd/rounds/R-DATA-CANON.md", "dev-package/sessions/DR-4-run-20260914T050442Z.md", "dev-package/sessions/DR-4-run-20260914T022417Z.md", "dev-package/intent/2026-09-14-data-canon-and-reseed.md"]

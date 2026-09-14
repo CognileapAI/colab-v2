@@ -7,10 +7,26 @@
 #   전부 **dev 를 한 번 돌려 보고서야** 드러날 자리였다. 검사가 사람의 실행 안에만 있으면
 #   그것은 검사가 아니다 — 이 레포의 green-by-skip 계열이다.
 #
-# 픽스처 둘 —
+# 픽스처 셋 —
 #   ⓐ `tests/doctor-parse.sh`   실물 모양 표본으로 요약줄 파서를 판정한다(dev 무접촉 · 파일만 읽는다).
 #   ⓑ `tests/preflight-red.sh`  조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다.
 #      `ssh`·`scp`·`docker`·`aws`·`agent-browser` 를 PATH 대역으로 가려 **실물에 한 바이트도 나가지 않는다.**
+#   ⓒ `tests/preflight-secrets.sh` preflight ⑻ `secrets` 가 **통과할 수 있는 항목**임을 증명한다.
+#      ⓑ 는 ssh 가 안 붙는 상태만 재서 「붙었을 때 무엇을 묻는가」가 검사 밖이었고, 그 사이
+#      `printf` 짝짓기 결함으로 9건 중 1건만 물어 이 항목이 green 이 된 적이 없었다(DR-4 §5 ⑵).
+#   ⓓ `tests/remote-transport.sh` **원격 셸로 값을 나르는 자리**를 판정한다. ssh 대역이 받은
+#      원격 스크립트를 로컬 bash 로 실제로 실행하므로 「원격 셸이 그 문장을 어떻게 읽는가」가
+#      재현된다. 왜 = `psql_master_query` 가 SQL 을 `export SQL='<값>'` 로 실어 값 속 작은따옴표가
+#      바깥을 닫았고(`column "colab_platform" does not exist`) 그 경로는 **실모드로 돈 적이
+#      없었다**(DR-4 §6). 함께 판정 = 정지 뒤 실패의 자동 재기동 · 오류 1회 기록 · 리허설.
+#   ⓔ `tests/s3-review.sh` **계획 검토 본문**을 판정한다. 계획은 초기화 도구 컨테이너(`--user 0`)가
+#      uid 0 · 0600 으로 쓰고 검토도 같은 컨테이너 안에서 돈다 — 두 uid 가 갈리면 red 다.
+#      왜 = 호스트 ssh 사용자(uid 1000)로 돌던 종전 검토는 **실모드에서 통과할 수 없었고**
+#      `--dry-run`·`--rehearse` 어느 쪽도 그 본문을 밟지 않아 검사 밖이었다(DR-4 §7).
+#   ⓕ `tests/verify-session.sh` **상세 화면 순회**를 판정한다 — agent-browser 호출이 `--session` 을 싣고,
+#      로그인 화면·빈 화면은 「성립」이 아니라 「판정불가」이며, id 없는 행은 이름을 지킨다.
+#      왜 = 4회차 `20260914T035058Z` 의 verify 가 로그인 화면 27건을 전건 「성립」으로 적었다
+#      (환경변수 세션 미반영 · 계수 0 = 성립 · 탭 접힘). 셋 다 실모드로 돈 적이 없었다.
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -37,6 +53,10 @@ done
 CASES=(
   "$RESEED_DIR/tests/doctor-parse.sh"
   "$RESEED_DIR/tests/preflight-red.sh"
+  "$RESEED_DIR/tests/preflight-secrets.sh"
+  "$RESEED_DIR/tests/remote-transport.sh"
+  "$RESEED_DIR/tests/s3-review.sh"
+  "$RESEED_DIR/tests/verify-session.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -88,5 +108,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed · 계획 검토 소유자·모드·접두사 · 상세 화면 순회 세션·로그인·빈 화면)"
 exit 0

@@ -188,3 +188,60 @@ def test_옛_상태값_done_도_등록된_것으로_센다():
     assert runner.is_registered("blocked") is False
     assert runner.is_registered("failed") is False
     assert runner.is_registered(None) is False
+
+
+# ── set_checkbox — `click` 이 아니라 `check`/`uncheck` 로 상태를 맞춘다 ──────────
+# 왜 = 계정 관리 화면의 「관리자로 등록」은 `<label>` 이 `<input type="checkbox">` 를 감싸고 있어
+#   `click` 이 상태를 바꾸지 못했다(2026-09-14 4회차 계정 단계 실측 · click 뒤에도 checked=false ·
+#   `check` 는 true). 이 시험은 그 동작 이름과 fail-closed(바뀌지 않으면 이름을 대고 멈춤)를 고정한다.
+
+def _checkbox_world(monkeypatch, initial, honors):
+    """대역 브라우저 — `honors` 에 든 동작만 체크 상태를 바꾼다. 반환 = (호출 목록, 상태 상자)."""
+    calls = []
+    box = {"checked": initial}
+
+    def fake_ab(args, **kw):
+        calls.append(list(args))
+        if args[0] in honors:
+            if args[0] == "check":
+                box["checked"] = True
+            elif args[0] == "uncheck":
+                box["checked"] = False
+            elif args[0] == "click":
+                box["checked"] = not box["checked"]
+        return (0, "", "")
+
+    def fake_js(script, default=None, **kw):
+        return box["checked"]
+
+    monkeypatch.setattr(runner, "ab", fake_ab)
+    monkeypatch.setattr(runner, "js", fake_js)
+    return calls, box
+
+
+def test_관리자_체크는_check_로_켠다(monkeypatch):
+    calls, box = _checkbox_world(monkeypatch, initial=False, honors={"check", "uncheck"})
+    runner.set_checkbox('[data-testid="account-create"] input[name="operator"]', True, "관리자로 등록")
+    assert [c[0] for c in calls] == ["check"]
+    assert box["checked"] is True
+
+
+def test_이미_켜져_있으면_건드리지_않는다(monkeypatch):
+    calls, _ = _checkbox_world(monkeypatch, initial=True, honors={"check", "uncheck"})
+    runner.set_checkbox("css", True, "관리자로 등록")
+    assert calls == []
+
+
+def test_끄는_쪽은_uncheck_다(monkeypatch):
+    calls, box = _checkbox_world(monkeypatch, initial=True, honors={"check", "uncheck"})
+    runner.set_checkbox("css", False, "관리자로 등록")
+    assert [c[0] for c in calls] == ["uncheck"]
+    assert box["checked"] is False
+
+
+def test_label_이_감싼_칸처럼_click_만_듣는_대역에서는_이름을_대고_멈춘다(monkeypatch):
+    # 실물 재현 — check 를 무시하고 click 만 듣는 세계에서는 상태가 안 바뀌고, 그때 조용히 지나가면 안 된다.
+    _checkbox_world(monkeypatch, initial=False, honors={"click"})
+    with pytest.raises(runner.Fail) as exc:
+        runner.set_checkbox("css", True, "관리자로 등록")
+    assert "체크 상태를 바꾸지 못했다" in str(exc.value)

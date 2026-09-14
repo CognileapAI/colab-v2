@@ -81,7 +81,7 @@ OUT="$TMP/out.txt"
 PATH="$TMP/bin:$PATH" \
 COLAB_DEV_SSH='ec2-user@<대역>' COLAB_DEV_KEY_FILE="$TMP/no-such-key" \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
-COLAB_DEV_SECRETS_DIR=/etc/colab \
+COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 COLAB_RESEED_MIN_MEM_MIB=99999999 COLAB_RESEED_MIN_DISK_GIB=99999999 \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
   bash "$RESEED" --target-ref refs/colab-reseed-red-fixture --run-dir "$TMP/run" > "$OUT" 2>&1
@@ -124,7 +124,7 @@ STUB
   PATH="$TMP/bin:$PATH" \
   COLAB_DEV_SSH='ec2-user@<대역>' COLAB_DEV_KEY_FILE="$TMP/no-such-key" \
   COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
-  COLAB_DEV_SECRETS_DIR=/etc/colab \
+  COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
   COLAB_RESEED_BUILD_PLAN="$stub" \
   AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
     bash "$RESEED" --target-ref refs/colab-reseed-red-fixture \
@@ -168,7 +168,7 @@ FROM_OUT="$TMP/from-out.txt"
 PATH="$TMP/bin:$PATH" \
 COLAB_DEV_SSH='ec2-user@<대역>' COLAB_DEV_KEY_FILE="$TMP/no-such-key" \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
-COLAB_DEV_SECRETS_DIR=/etc/colab \
+COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
   bash "$RESEED" --from reset --target-ref refs/colab-reseed-red-fixture \
     --run-dir "$TMP/run-from" > "$FROM_OUT" 2>&1
