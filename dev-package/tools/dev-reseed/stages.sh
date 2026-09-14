@@ -536,15 +536,18 @@ from colab_core.kernel.db_credentials import normalize_login_name
 pw = sys.stdin.readline().rstrip("\n")
 if len(pw) < 10:
     raise SystemExit("초기 비밀번호가 10자 미만이다 — 제품 하한이 10자다")
-h = hash_password(pw).as_dict()
+h = hash_password(pw).as_dict()   # 키 = kdf · salt · hash · n · r · p (열 이름 password_hash 와 다르다)
 url = open(os.environ["COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE"]).read().strip()
 eng = create_engine(url)
 with eng.begin() as c:
     c.execute(text("SELECT pg_advisory_xact_lock(1131379081)"))
+    # 바인드 이름은 제품 `routes/accounts.py` 의 문장 축자(`:hash` 가 `password_hash` 열에 들어간다).
+    # 4회차 재개(`20260914T023145Z`)가 `:password_hash` 로 적어 「A value is required for bind
+    # parameter 'password_hash'」 로 멈췄다 — 그 본문도 실모드로 돈 적이 없었다.
     c.execute(text(
         "INSERT INTO account_admin.login_credential"
         " (account_id, login_name, kdf, salt, password_hash, n, r, p)"
-        " VALUES (:account_id, :login_name, :kdf, :salt, :password_hash, :n, :r, :p)"),
+        " VALUES (:account_id, :login_name, :kdf, :salt, :hash, :n, :r, :p)"),
         dict(account_id=os.environ["RESEED_ACCOUNT_ID"],
              login_name=normalize_login_name(os.environ["RESEED_ACCOUNT_EMAIL"]), **h))
 print("login_credential 1행 · must_change_password 는 DB 기본값 true")

@@ -19,6 +19,10 @@
 #      왜 = 2026-09-14 4회차(`20260914T022417Z`)가 여기서 멈췄다 — `docker cp` 가 호스트 소유자
 #      (uid 1000 · 0600)를 그대로 옮겨 앱 사용자(uid 10001)가 `/tmp/reseed_cred.py` 를 열지 못했다.
 #      그 줄도 실모드로 돈 적이 없었고 `--dry-run`·`--rehearse` 어느 쪽도 밟지 않았다.
+#   ⓗ 컨테이너가 받은 그 파이썬 본문을 **실제로 실행**한다 — 실물 `password.py`(표준 라이브러리만) ＋
+#      sqlalchemy 대역(SQL 의 `:이름` 이 전부 params 에 있어야 한다 · 실물 `construct_params` 와 같은 조건).
+#      왜 = 4회차 재개(`20260914T023145Z`)가 `:password_hash` 바인드에 `as_dict()` 의 `hash` 키를 물려
+#      「A value is required for bind parameter 'password_hash'」 로 멈췄다. 본문이 돈 적이 없었다.
 #
 # 실물 무접촉 = `ssh`·`docker`·`sudo`·`agent-browser` 를 PATH 대역으로 가린다.
 set -uo pipefail
@@ -230,6 +234,62 @@ grep -qF "$PW_HARD" "$STAGE_LOG" && note "ⓖ⁗′ 비밀번호가 단계 로�
 # 주석을 걷어낸 뒤 잰다 — 정적 대조가 주석을 코드로 읽는 오탐을 막는다(`CLAUDE.md §5-b`).
 grep -vE '^[[:space:]]*#' "$RESEED_DIR/stages.sh" | grep -q 'docker cp' \
   && note "ⓖ⁗″ 컨테이너 안에 파일을 두는 자리(docker cp)가 stages.sh 에 남아 있다 — 소유자 결함이 되살아날 자리다"
+# ── ⓗ 받은 본문을 실제로 실행한다 — 바인드 이름 ↔ `as_dict()` 키 ────────────
+# `password.py` 는 실물을 경로로 싣는다(표준 라이브러리만 쓴다). `db_credentials.py` 는 `sqlalchemy.orm`
+# 을 끌어와 여기서 못 싣으므로 `normalize_login_name` 만 실물 축자(`strip().lower()`)로 대역한다.
+if [ -f "$TMP/py.out" ]; then
+  cat > "$TMP/run_body.py" <<'PYRUN'
+import sys, os, re, types, importlib.util, contextlib
+body_path, password_py = sys.argv[1], sys.argv[2]
+sa = types.ModuleType("sqlalchemy")
+class _Text:
+    def __init__(self, s): self.s = s
+class _Conn:
+    def execute(self, stmt, params=None):
+        names = re.findall(r"(?<![:\w]):([A-Za-z_]\w*)", stmt.s)
+        params = params or {}
+        missing = [n for n in names if n not in params]
+        if missing:
+            raise RuntimeError("A value is required for bind parameter %r" % missing[0])
+        if "INSERT INTO account_admin.login_credential" in stmt.s:
+            cols = [c.strip() for c in re.search(r"\((.*?)\)\s*VALUES", stmt.s, re.S).group(1).split(",") if c.strip()]
+            if len(cols) != len(names):
+                raise RuntimeError("열 %d · 바인드 %d" % (len(cols), len(names)))
+            for k in ("account_id", "login_name"):
+                if not params[k]:
+                    raise RuntimeError("빈 값 %s" % k)
+            print("INSERT account_admin.login_credential ok · 열 %d · login_name=%s" % (len(cols), params["login_name"]))
+class _Engine:
+    @contextlib.contextmanager
+    def begin(self):
+        yield _Conn()
+sa.text = lambda s: _Text(s)
+sa.create_engine = lambda url: _Engine()
+sys.modules["sqlalchemy"] = sa
+spec = importlib.util.spec_from_file_location("colab_core.kernel.password", password_py)
+pw_mod = importlib.util.module_from_spec(spec)
+sys.modules["colab_core.kernel.password"] = pw_mod   # dataclass 가 sys.modules[__module__] 을 본다
+spec.loader.exec_module(pw_mod)
+pkg = types.ModuleType("colab_core"); kern = types.ModuleType("colab_core.kernel")
+dbc = types.ModuleType("colab_core.kernel.db_credentials")
+dbc.normalize_login_name = lambda v: v.strip().lower()
+sys.modules.update({"colab_core": pkg, "colab_core.kernel": kern,
+                    "colab_core.kernel.password": pw_mod, "colab_core.kernel.db_credentials": dbc})
+exec(compile(open(body_path).read(), "<reseed-body>", "exec"), {"__name__": "__main__"})
+PYRUN
+  printf 'postgresql+psycopg://x:y@db-dev.invalid/colab_platform\n' > "$TMP/url"
+  if printf '%s\n' "$PW_HARD" \
+      | RESEED_ACCOUNT_ID="$RESEED_ACCOUNT_ID" RESEED_ACCOUNT_EMAIL=' PI@Hymets.invalid ' \
+        COLAB_CORE_ACCOUNT_ADMIN_DATABASE_URL_FILE="$TMP/url" \
+        python3 "$TMP/run_body.py" "$TMP/py.out" \
+        "$REPO_ROOT/services/core-api/src/colab_core/kernel/password.py" > "$TMP/body.out" 2>&1; then
+    grep -q 'INSERT account_admin.login_credential ok · 열 8 · login_name=pi@hymets.invalid' "$TMP/body.out" \
+      || note "ⓗ′ 본문이 login_credential INSERT 를 8열·정규화된 login_name 으로 내지 않았다: $(tail -1 "$TMP/body.out")"
+  else
+    note "ⓗ 컨테이너가 받은 파이썬 본문이 실행에서 죽었다: $(grep -E 'Error|error' "$TMP/body.out" | tail -1)"
+  fi
+fi
+
 # 컨테이너가 비영이면 prelude ③ 도 비영이다(fail-closed).
 export FIXTURE_DOCKER_RC=1
 prelude_login_credential >/dev/null 2>&1 \
@@ -238,7 +298,7 @@ unset FIXTURE_DOCKER_RC FIXTURE_EXEC_CMD FIXTURE_PY_OUT
 export FIXTURE_DOCKER_STDOUT=0
 
 if [ "$fail" -eq 0 ]; then
-  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0 · prelude ③ 환경변수·표준입력 왕복)"
+  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0 · prelude ③ 환경변수·표준입력 왕복 · 본문 실행 바인드 대조)"
   exit 0
 fi
 echo "remote-transport — red" >&2
