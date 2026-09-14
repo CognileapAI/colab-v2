@@ -10,6 +10,7 @@ description: dev 환경을 한 번에 초기화하고 정본 자료로 다시 �
 ```bash
 bash dev-package/tools/dev-reseed/reseed.sh --dry-run          # 명령만 찍고 아무것도 건드리지 않는다
 bash dev-package/tools/dev-reseed/reseed.sh --preflight-only    # 검사만 — dev 를 읽기만 한다
+bash dev-package/tools/dev-reseed/reseed.sh --rehearse           # 원격 원시동작 10 을 실모드로 한 번씩 — 바꾸지 않는다
 bash dev-package/tools/dev-reseed/reseed.sh                     # 10단계 무인 실행
 bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부터 재개
 ```
@@ -20,6 +21,16 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
   `--from` 이 고르는 것은 **바꾸는 단계 여덟**(`deploy`~`verify`) 중 시작 지점 하나다.
 - `--preflight-only` = preflight 만 돌고 바꾸는 단계는 **0건**. dev 를 읽기만 한다
   (ssh 조회 · `aws sts` · `docker ps` · 파일 · `agent-browser doctor` · 계획 생성 dry-run).
+- ⭑ **`--rehearse` = 부수기 전에 원격 원시동작을 전부 한 번씩 실모드로 내 본다.** 바꾸는 단계는 **0건**이다.
+  왜 = 실모드 정지가 세 회차 내리 **한 번도 실행된 적 없는 원격 줄**에서 났다(deploy ⑤ → preflight secrets →
+  reset ①″). `--dry-run` 은 명령을 찍기만 하므로 그 줄을 원격 셸이 어떻게 읽는지는 파괴 단계를 밟고 나서야
+  드러났다. 리허설이 그 순서를 끊는다. 원시동작 열 — (⑷ 는 체인 둘이라 두 벌이다)
+  ⑴ `psql:master`(작은따옴표가 든 SQL) ⑵ `ssh_script`(따옴표·`$`·백틱 되받기) ⑶ compose `ps`(정지·기동과 같은
+  compose·env 한 벌) ⑷ 마이그레이터 이미지 `alembic current` 두 체인 ⑸ 초기화 도구 `--phase s3-plan`
+  (임시 폴더 · **적용 없음**) ⑹ `postgres:16-alpine` 로 소유자 URL `select 1` ⑺ `deploy_doctor` 1회를
+  `doctor_summary_line` 으로 읽기 ⑻ 러너 `--phase report` ⑼ `agent-browser` 제목 읽기.
+  원시동작마다 한 줄을 찍고 **기대와 대조**한다 — 어긋나면 그 **이름을 대고** 비영 종료한다(fail-closed).
+  `--dry-run` 과 함께 주면 원격에 한 바이트도 내지 않는다.
 - dev 접속 값(`COLAB_DEV_SSH`·`COLAB_DEV_KEY_FILE`)이 없으면 **셸이 죽지 않는다** —
   `dev-sha`·`secrets`·`leftovers` 가 그 변수 이름을 대고 미달로 떨어지고, 접속이 필요 없는 항목은 그대로 잰다.
 - 절차의 원본 = `dev-package/sessions/DR-2-runbook.md`(사람이 실제로 밟은 순서). 이 스크립트가 그 실행형이다.
@@ -68,10 +79,14 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
   덮어쓰지 않게 시각까지 쓴다). **레포에 남는 조건 = 바꾸는 단계가 실제로 돌았다** — `--dry-run`·
   `--preflight-only`·preflight 에서 멈춘 회차는 실행 자리에만 남는다. 원장·대장·HANDOFF 갱신은 오케스트레이터가 한다.
 - 검사기 = `bash gates/run.sh dev-reseed-selftest`(요약줄 파서 · preflight fail-closed · 계획 요약줄 ·
-  `result.json` · `--from` · `--preflight-only` · `die` 복귀 · 미리보기 판정불가). dev 무접촉이다.
+  `result.json` · `--from` · `--preflight-only` · `die` 복귀 · 미리보기 판정불가 · **원격 전송로** ·
+  **정지 뒤 자동 재기동** · **리허설 fail-closed**). dev 무접촉이다.
 
 ## 멈췄을 때
 
 - 단계 하나가 비영 종료하면 그 자리에서 멈춘다. **자동 재시도는 없다** — 등록 확정과 삭제는 되돌릴 수 없다.
+- ⭑ **`reset` 이 앱을 정지(①′)한 뒤 실패하면 도구가 앱을 스스로 되살린다**(같은 compose·env 로 `start`).
+  그 사실은 `result.json` 의 `recovery` 와 회차 기록 §4-1 에 남는다. 사람이 dev 를 올리러 들어갈 일이 없다.
+  정지는 **되돌릴 수 없는 걸음(② 스키마 DROP) 직전**에만 내린다 — 읽기 전용 계수는 그보다 먼저 끝난다.
 - 출력 마지막 줄이 멈춘 단계 이름과 로그 경로를 낸다. 원인을 본 뒤 `--from <그 단계>` 로 잇는다.
 - `preflight` 미달은 이름으로 나온다. 이름을 고치기 전에 다음 단계로 넘어가지 않는다.

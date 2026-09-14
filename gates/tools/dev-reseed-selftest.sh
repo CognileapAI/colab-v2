@@ -14,6 +14,11 @@
 #   ⓒ `tests/preflight-secrets.sh` preflight ⑻ `secrets` 가 **통과할 수 있는 항목**임을 증명한다.
 #      ⓑ 는 ssh 가 안 붙는 상태만 재서 「붙었을 때 무엇을 묻는가」가 검사 밖이었고, 그 사이
 #      `printf` 짝짓기 결함으로 9건 중 1건만 물어 이 항목이 green 이 된 적이 없었다(DR-4 §5 ⑵).
+#   ⓓ `tests/remote-transport.sh` **원격 셸로 값을 나르는 자리**를 판정한다. ssh 대역이 받은
+#      원격 스크립트를 로컬 bash 로 실제로 실행하므로 「원격 셸이 그 문장을 어떻게 읽는가」가
+#      재현된다. 왜 = `psql_master_query` 가 SQL 을 `export SQL='<값>'` 로 실어 값 속 작은따옴표가
+#      바깥을 닫았고(`column "colab_platform" does not exist`) 그 경로는 **실모드로 돈 적이
+#      없었다**(DR-4 §6). 함께 판정 = 정지 뒤 실패의 자동 재기동 · 오류 1회 기록 · 리허설.
 #
 # ── red 를 두 갈래로 가른다 (`rules/colab-rules.md §3-4`) ──────────────────
 #   red(판정) = 픽스처가 「도구가 fail-closed 가 아니다」를 찾았다 → 종료 1
@@ -41,6 +46,7 @@ CASES=(
   "$RESEED_DIR/tests/doctor-parse.sh"
   "$RESEED_DIR/tests/preflight-red.sh"
   "$RESEED_DIR/tests/preflight-secrets.sh"
+  "$RESEED_DIR/tests/remote-transport.sh"
 )
 MATERIALS=(
   "$RESEED_DIR/reseed.sh" "$RESEED_DIR/lib.sh" "$RESEED_DIR/preflight.sh" "$RESEED_DIR/stages.sh"
@@ -92,5 +98,5 @@ fi
 # 대상 0건은 통과가 아니다.
 [ "$PASSED" -eq "${#CASES[@]}" ] || {
   echo "::error::$GATE red(판정) — 판정한 픽스처가 $PASSED 건뿐이다(기대 ${#CASES[@]})" >&2; exit 1; }
-echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가)"
+echo "$GATE — green (요약줄 파서 · preflight fail-closed · 계획 요약줄 · result.json · die 복귀 · 미리보기 판정불가 · 원격 전송로 · 실패 후 자동 재기동 · 리허설 fail-closed)"
 exit 0

@@ -21,6 +21,22 @@ redact() {
     -e 's/(COLAB_OWNER_PASSWORD|COLAB_APP_PASSWORD|COLAB_AI_APP_PASSWORD|COLAB_ACCOUNT_ADMIN_PASSWORD|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN)=[^[:space:]]*/\1=***/g'
 }
 
+# ── 원격으로 값을 나르는 유일한 길 ────────────────────────────────────────
+# 값을 base64 로 실어 **원격 셸 안에서** 되돌린다.
+#
+# 왜 = `export SQL='<값>'` 처럼 작은따옴표 **한 겹**에 싣는 방식은 값이 작은따옴표를 품는 순간
+#   바깥 따옴표가 닫혀 문장이 쪼개진다. 2026-09-14 회차의 `reset` ①″ 가 그 자리에서 멈췄다 —
+#   `datname in ('colab_platform','colab_ai')` 의 안쪽 따옴표가 바깥을 닫아
+#   `column "colab_platform" does not exist` 가 났다(`DR-4-run-20260914T012505Z.md §6`).
+#   이스케이프(`${v//\'/\'\\\'\'}`)로 깁지 않는다 — 겹이 하나 늘 때마다 다시 틀린다.
+# base64 출력 글자는 `A-Za-z0-9+/=` 뿐이라 따옴표·`$`·백틱·개행·공백이 원격 셸에 **노출되지 않는다.**
+# 부수 효과 = 값이 원격 `ps` 와 로그에도 원문으로 남지 않는다.
+b64_of() { printf '%s' "${1-}" | base64 | tr -d '\n'; }
+
+# 원격 스크립트 머리에 넣을 대입문 한 줄 — `NAME=$(printf %s <b64> | base64 -d)`.
+# 인용 없이 붙여도 안전하다(base64 글자 집합에 셸 메타문자가 없다).
+remote_assign() { printf '%s=$(printf %%s %s | base64 -d)\n' "$1" "$(b64_of "${2-}")"; }
+
 # ── 로그 ─────────────────────────────────────────────────────────────────
 # 단계마다 자기 로그 파일을 쓴다. 실패 보고에 그 경로를 그대로 싣는다.
 log() {

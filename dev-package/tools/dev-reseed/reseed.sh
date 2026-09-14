@@ -15,6 +15,7 @@
 # 사용:
 #   bash dev-package/tools/dev-reseed/reseed.sh --dry-run
 #   bash dev-package/tools/dev-reseed/reseed.sh --preflight-only
+#   bash dev-package/tools/dev-reseed/reseed.sh --rehearse
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
@@ -115,6 +116,7 @@ SECRET_FILE_NAMES=(
 DRY_RUN=0
 FROM_STAGE=preflight
 PREFLIGHT_ONLY=0
+REHEARSE=0
 RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/main}"
 TARGET_SHA=""
@@ -125,7 +127,7 @@ MD_ROOT=""
 SEED_WORK_DIR=""
 
 usage() {
-  sed -n '2,29p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 계정 신원 기본값:
@@ -145,6 +147,16 @@ usage() {
                                 이미지 태그·승인 기록이 빈 sha 로 선다.
   --preflight-only              preflight 만 돌고 **바꾸는 단계는 하나도 돌지 않는다**.
                                 dev 를 읽기만 한다(ssh 조회·aws sts·docker ps·파일·계획 생성 dry-run).
+  --rehearse                    preflight ＋ **리허설**만 돌고 바꾸는 단계는 하나도 돌지 않는다.
+                                리허설 = 원격 원시동작 10 을 실모드로 한 번씩 내 보고 응답을 판정한다 —
+                                psql:master(작은따옴표 든 SQL) · ssh_script(따옴표·$·백틱 되받기) ·
+                                compose ps · 마이그레이터 `alembic current` 두 체인 ·
+                                초기화 도구 `--phase s3-plan`(임시 폴더 · **적용 없음**) ·
+                                postgres:16-alpine 로 소유자 URL `select 1` · deploy_doctor 1회 ·
+                                러너 `--phase report` · agent-browser 제목 읽기.
+                                ⚠ 쓰기·정지·삭제·적용은 0건이다. 어긋난 원시동작이 있으면
+                                **그 이름을 대고** 비영 종료한다. 파괴 단계 **앞에** 둔다 —
+                                실모드 정지가 매번 「한 번도 실행된 적 없는 원격 줄」에서 났다.
   --dry-run                     실행할 명령을 전부 찍고 dev·AWS·docker 를 건드리지 않는다.
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
@@ -160,6 +172,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --from) FROM_STAGE="$2"; shift 2 ;;
     --preflight-only) PREFLIGHT_ONLY=1; shift ;;
+    --rehearse) REHEARSE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
@@ -177,7 +190,10 @@ done
 # 건너뛰면 `TARGET_SHA` 가 빈 채로 이미지 태그(`…:dev-`)·승인 기록·`--from deploy` 로 들어간다.
 # `--from` 이 고르는 것은 **바꾸는 단계 중 시작 지점** 하나다.
 STAGES=(preflight)
-if [ "$PREFLIGHT_ONLY" != 1 ]; then
+# 리허설은 **바꾸는 단계가 아니다** — preflight 와 함께 읽기 전용으로 돌고 거기서 끝난다.
+if [ "$REHEARSE" = 1 ]; then
+  STAGES+=(rehearse)
+elif [ "$PREFLIGHT_ONLY" != 1 ]; then
   if [ "$FROM_STAGE" = preflight ]; then
     STAGES+=("${STAGES_MUTATING[@]}")
   else
@@ -243,7 +259,7 @@ if [ "$DRY_RUN" != 1 ]; then
   [ -n "${COLAB_DEV_KEY_FILE:-}" ] || DEV_SSH_MISSING+=(COLAB_DEV_KEY_FILE)
   # dev 주소는 **화면을 여는 단계**(seed·verify)만 쓴다. preflight 는 쓰지 않으므로
   # `--preflight-only` 는 이 값 없이도 끝까지 검사한다.
-  if stage_enabled seed || stage_enabled verify; then
+  if stage_enabled seed || stage_enabled verify || stage_enabled rehearse; then
     : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다 (seed·verify 가 화면을 연다)}"
   fi
 else
@@ -267,11 +283,13 @@ FAILED_STAGE=""
 MUTATED=0
 for s in "${STAGES[@]}"; do
   [ "$s" = report ] && continue     # report 는 마지막에 한 번만 돈다
-  [ "$s" = preflight ] || MUTATED=1
+  # preflight 와 rehearse 는 **읽기 전용**이다 — 레포에 회차 기록을 남기지 않는다.
+  case "$s" in preflight|rehearse) : ;; *) MUTATED=1 ;; esac
   stage_begin "$s"
   rc=0
   case "$s" in
     preflight) stage_preflight || rc=$? ;;
+    rehearse)  stage_rehearse  || rc=$? ;;
     deploy)    stage_deploy    || rc=$? ;;
     reset)     stage_reset     || rc=$? ;;
     bootstrap) stage_bootstrap || rc=$? ;;

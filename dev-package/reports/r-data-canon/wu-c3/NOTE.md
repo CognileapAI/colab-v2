@@ -44,3 +44,12 @@
 - ⑰ prelude ② 멱등 — `RESEED_ACCOUNT_ID` 가 ① 의 id 와 같으면 **건너뛴다**(2026-09-13 회차와 같은 순서 · `DR-2-run-2026-09-13.md` §5 ②). ② 를 돌리면 `d2_permission_switch` **4행**이 새로 서서 그 기준선과 갈린다(① 은 0행).
 - ⑱ `--preflight-only` 가 마운트할 EC2 시크릿 폴더와 쓸 계정 신원을 각 한 줄로 찍는다(경로·신원만 · 비밀 0건).
 - ⑲ 픽스처 `tests/preflight-secrets.sh` 신설 — GREEN(9건 0600 통과 · 물어본 경로 9건 대조) ＋ RED(1건 부재 · 1건 0644) ＋ 경로 출처·표기·기본값. ssh 대역이 실물 `stat` 처럼 **받은 경로 그대로** 답해 짝짓기 결함을 잡는다. `dev-reseed-selftest` 픽스처 **2 → 3**.
+
+## 4차 수정 — 원격 전송로 ＋ 실패 순서 ＋ 리허설
+
+- ⑳ `lib.sh` `b64_of`·`remote_assign` 신설 — 원격 셸로 가는 값은 **base64 한 길**로만 나른다. 종전 `export SQL='<값>'` 는 값이 작은따옴표를 품는 순간 바깥 따옴표가 닫혀 `reset` ①″ 가 `column "colab_platform" does not exist` 로 멈췄다(DR-4 §6). 이스케이프로 깁지 않는다 — 겹이 늘 때마다 다시 틀린다.
+- ㉑ 같은 계열 전수 정리 — `psql_master_query`(전송부 `psql_master_run` 과 판정부로 분리) · `prelude` ②④ 계정 신원 다섯 · `prelude_login_credential` 의 `-e` 둘. 값은 원격 셸 변수에서만 꺼내고 SQL 리터럴은 원격 `sqlq()` 가 `''` 규칙까지 함께 지킨다. 정적 대조 = `stages.sh` 에 `='$…'` 한 겹 적재 **0건**.
+- ㉒ `stage_reset` 실패 순서 — 읽기 전용(① 계수 · ①ᵃ 활성 트랜잭션 사전 관찰)을 **정지보다 앞**에 두고, 정지(①′)는 되돌릴 수 없는 걸음(② 스키마 DROP) 직전에만 내린다. 정지 뒤 실패하면 `reset_recover_apps` 가 같은 compose·env 로 앱을 **자동 재기동**하고 `recovery.jsonl` → `result.json` `recovery` ＋ 회차 기록 §4-1 에 남긴다. 종전에는 역연산이 없어 dev 가 내려간 채 남고 사람이 손으로 올렸다(DR-4 §7·§8 ⑶). **이탈** — ①″ 활성 트랜잭션 **판정**은 정지 **뒤**에 남겼다. 정지 전에 재면 앱 자신의 질의가 세어져 「정지가 들었는가」라는 뜻이 서지 않는다. 그 자리의 실패는 자동 재기동이 받는다.
+- ㉓ 이중 기록 제거 — `psql_master_query`·`stage_s3` ① 의 `>> $STAGE_LOG` 재기록 삭제(`ssh_script` 가 이미 `tee` 한다). 오류 한 건이 로그에 한 번만 보인다.
+- ㉔ `reseed.sh --rehearse` 신설 — 부수기 **전에** 원격 원시동작 10 을 실모드로 한 번씩 내 보고 기대와 대조한다(psql:master 따옴표 SQL · `ssh_script` 되받기 · compose `ps` · 마이그레이터 `alembic current` 두 체인 · 초기화 도구 `--phase s3-plan` 임시 폴더 **적용 없음** · `postgres:16-alpine` 소유자 URL `select 1` · `deploy_doctor` 1회 `doctor_summary_line` · 러너 `--phase report` · `agent-browser` 제목). 어긋나면 **이름을 대고** 비영. 바꾸는 단계 0건 · `--dry-run` 은 무접촉. 왜 = 실모드 정지가 세 회차 내리 「한 번도 실행된 적 없는 원격 줄」에서 났다.
+- ㉕ 픽스처 `tests/remote-transport.sh` 신설 — ssh 대역이 받은 원격 스크립트를 **로컬 bash 로 실제 실행**해 원격 셸의 읽기를 재현한다. 구현 전 red 6건 확인(축자 `받은 것 [… datname in (colab_platform,colab_ai) …]` — 따옴표가 사라진 채 도착). `dev-reseed-selftest` 픽스처 **3 → 4**.

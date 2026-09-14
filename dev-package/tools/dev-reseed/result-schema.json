@@ -17,13 +17,13 @@
     "runDir": { "type": "string", "description": "실행 자리 — 레포 뿌리 기준 상대경로 또는 레포 밖 자리 이름." },
     "stages": {
       "type": "array",
-      "description": "고정 순서 10단계. 실행하지 않은 단계는 status 가 skipped 다.",
+      "description": "고정 순서 10단계 ＋ 읽기 전용 리허설. 실행하지 않은 단계는 status 가 skipped 다.",
       "items": {
         "type": "object",
         "required": ["stage", "status"],
         "additionalProperties": false,
         "properties": {
-          "stage": { "enum": ["preflight", "deploy", "reset", "bootstrap", "up", "s3", "prelude", "seed", "verify", "report"] },
+          "stage": { "enum": ["preflight", "rehearse", "deploy", "reset", "bootstrap", "up", "s3", "prelude", "seed", "verify", "report"] },
           "status": { "enum": ["ok", "failed", "skipped"] },
           "exitCode": { "type": "integer" },
           "startedAt": { "type": "string" },
@@ -85,6 +85,20 @@
           "stage": { "type": "string" },
           "name": { "type": "string" },
           "reason": { "type": "string" }
+        }
+      }
+    },
+    "recovery": {
+      "type": "array",
+      "description": "정지(reset ①′) 뒤 실패해서 앱을 자동으로 되살린 자리. 0 건이면 되살릴 일이 없었다는 뜻이다.",
+      "items": {
+        "type": "object",
+        "required": ["stage", "action", "reason"],
+        "properties": {
+          "stage": { "type": "string" },
+          "action": { "const": "apps-start" },
+          "reason": { "type": "string" },
+          "exitCode": { "type": "integer" }
         }
       }
     },

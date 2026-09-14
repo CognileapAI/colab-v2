@@ -15,7 +15,8 @@ import pathlib
 import re
 import sys
 
-STAGES = ["preflight", "deploy", "reset", "bootstrap", "up", "s3", "prelude", "seed", "verify", "report"]
+STAGES = ["preflight", "rehearse", "deploy", "reset", "bootstrap", "up", "s3",
+          "prelude", "seed", "verify", "report"]
 
 # 결과 JSON 에 절대 실리면 안 되는 것 — 접속 문자열의 비밀번호 필드와 비밀번호 환경변수 이름.
 SECRET_PATTERNS = [
@@ -124,6 +125,10 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 
 {blocked_block}
 
+## 4-1. 자동 복구 ({recovery_n} 건)
+
+{recovery_block}
+
 ## 5. 사람이 채울 자리
 
 - 원장 등재문 · 대장 `DR-4` 상태 · `03-HANDOFF §1` 갱신은 오케스트레이터가 한다(레인·도구가 하지 않는다).
@@ -167,6 +172,14 @@ def main() -> int:
             if line.strip():
                 blocked.append(json.loads(line))
 
+    # 정지 뒤 자동 재기동 기록. 없으면 되살릴 일이 없었다는 뜻이다.
+    recovery = []
+    rc = run / "recovery.jsonl"
+    if rc.exists():
+        for line in rc.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                recovery.append(json.loads(line))
+
     started = min((s["startedAt"] for s in stages if s.get("startedAt")), default="")
     ended = max((s["endedAt"] for s in stages if s.get("endedAt")), default="")
     duration = sum(int(s.get("durationSec") or 0) for s in stages)
@@ -186,6 +199,7 @@ def main() -> int:
         "stages": stages,
         "counts": _load(run / "counts.json", {}),
         "blocked": blocked,
+        "recovery": recovery,
         "approvalRecord": "approval-record.json" if (run / "approval-record.json").exists() else None,
         "outcome": "dry-run" if dry else ("failed" if failed_stage or blocked else "ok"),
         "failedStage": failed_stage,
@@ -228,6 +242,10 @@ def main() -> int:
         for r in rows) or "| — | — | — | — | — |"
     blocked_block = "\n".join(
         "- `{stage}` · **{name}** — {reason}".format(**b) for b in blocked) or "- 0 건."
+    # 앱을 되살린 자리. 0 건 = 정지 뒤 실패가 없었다(사람이 손댈 일도 없었다).
+    recovery_block = "\n".join(
+        "- `{stage}` · **앱 재기동** — {reason} (종료코드 {exitCode})".format(**r)
+        for r in recovery) or "- 0 건 — 정지 뒤 실패가 없었다."
 
     pathlib.Path(args.session_out).write_text(SESSION_TEMPLATE.format(
         date=dt.date.today().isoformat(),
@@ -240,6 +258,7 @@ def main() -> int:
         preview_ok=sum(1 for r in rows if r["verdict"] == "성립"),
         preview_undecided=sum(1 for r in rows if r["verdict"] == "판정불가"),
         preview_rows=preview_rows, blocked_n=len(blocked), blocked_block=blocked_block,
+        recovery_n=len(recovery), recovery_block=recovery_block,
     ), encoding="utf-8")
     print("result.json · 회차 기록 뼈대 기록 · 단계 %d · 차단 %d" % (len(ran), len(blocked)))
     return 0
