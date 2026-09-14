@@ -78,3 +78,12 @@
 최종 `git diff --check` 오류 0, 여정 Python 구문 정상. C1~C6의 이번 로컬 구현 범위는 검증했다.
 기존 K4 전체는 open 유지: 실제 Sonnet 평가, 연구 사전 문맥의 자동 확보, 실자료 근거 보강 및 배포·운영 검증은 이번 완료 주장에 포함하지 않는다.
 제품 온톨로지 DB의 기존 데이터를 삭제·교체하거나 main 통합·배포하지 않았다.
+
+## 2026-09-14 릴리스 후속
+
+- `origin/main` `4cb5c397`까지 비-rebase merge한 후보를 로컬 검증한 뒤 `local-stage`와 ST에 승격했다.
+- 첫 배포 `b8d53a74078f`는 헬스 15/15, 체인 2/2, 온톨로지 보호와 D9 `49/19/13/4/18` 보존을 통과했다. 실제 ST 저장→검색→상세 여정에서 비교 기간 표시 순서 결함을 발견했다.
+- `frontend/test/client-search.test.tsx`에 응답 키 순서를 뒤집은 실패 회귀를 먼저 추가해 RED를 확인했고, `SearchAssessment.tsx`가 기간을 명시적으로 `start ~ end`로 표시하도록 수정했다. 좁은 2/2, frontend 전체 119파일·1,406건, 빌드가 GREEN이었다.
+- 수정 SHA `a383510d7ded`를 ST에 재배포했다. 배포 15/15, 체인 2/2, 보호와 D9 보존을 다시 통과했고, UI에서 `2025-01-01 ~ 2025-12-31`, 출처, 상세 이동과 새로고침을 확인했다. 이 조건 검색은 core-api 200 두 건이며 같은 구간 ai-service 검색/모델 요청은 없었다.
+- 이후 `origin/main`이 `6a4ac6c4`로 이동했다. 시험 병합 트리에서 core-api 1,385건·viz-render 448건·생성물/대장/기획 게이트는 GREEN이지만 frontend 42건이 RED였다. 새 main의 업로드 폼 rev2 인계에 이미 선언된 결합 블로커와 같아 병합을 중단했다.
+- 따라서 ST는 GREEN, main/DEV는 최신 main 블로커로 미승격이다. 실제 Sonnet 평가·일일 worker는 계속 보류하고 K4·ONTO-PROTECT는 `open`이다. 상세 증거는 `dev-package/reports/ai-search-release/staging-journey/README.md`와 스크린샷 두 장에 있다.

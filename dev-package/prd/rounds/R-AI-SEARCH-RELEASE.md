@@ -1,7 +1,7 @@
 # AI 검색 릴리스 실행 계획
 
-> 상태: 최신 main 통합과 로컬 전수 검증 완료. `local-stage`/ST, `main`, DEV 배포는 아직 실행하지 않았다.
-> 기준 작업: `codex/ai-search-next` `86aaf22b` 와 최신 `origin/main` `4cb5c397`까지 비-rebase merge.
+> 상태: `local-stage`/ST 배포와 실제 사용자 여정 완료. main/DEV 승격은 최신 main의 프런트 게이트 42건 RED로 중단했다.
+> 기준 작업: `codex/ai-search-next` `a383510d`(AI 검색 `86aaf22b` + `origin/main` `4cb5c397`까지 비-rebase merge + ST 기간 표시 회귀 수정).
 > 최신 인계: `dev-package/sessions/20260914-ai-search-client.md`.
 
 ## 목표와 비목표
@@ -44,7 +44,7 @@
 
 - [x] 통합: `origin/main` 비-rebase merge, 충돌 의미 해소, 릴리스 계획 작성.
 - [x] 로컬 검증: 계약 재생성, 좁은 통합 게이트, 서비스·frontend 전수, 마이그레이션 drift/schema, 브라우저 여정.
-- [ ] `local-stage`/ST: 승인된 순서에 따라 승격·배포, 온톨로지 보호·데이터 보존·검색 여정 재검증.
+- [x] `local-stage`/ST: `a383510d7ded` 승격·배포, 온톨로지 보호·데이터 보존·검색 여정 재검증.
 - [ ] main: ST 근거와 최신 원격 tip을 대조한 뒤 승격.
 - [ ] DEV: main 포함 SHA 고정, 배포, `deploy_doctor` 15/15 단일 실행.
 
@@ -52,4 +52,6 @@
 
 최신 제품 코드 HEAD의 종합 실행은 66개 green과 `migration-drift` red 1개를 냈고, 같은 commit/tree에서 그 항목을 즉시 단독 재실행해 오라클 26/26 green으로 확인했다. 최초 red와 재검사 green을 함께 보존하며 이를 단일 67/67 실행으로 확대해 적지 않는다. 이후 main에서 합쳐진 문서·대장 전용 변경은 `planning-freshness`와 `work-item-consistency`를 최신 HEAD에서 다시 통과했다. 실제 참조자료 실물 대조를 수행했고, 실제 Sonnet 평가는 `COLAB_HARNESS_EVAL_EXEMPT=1`로 보류를 드러냈다. 종합 실행의 시각 항목은 앱 프로세스와 core 전수 테스트의 간섭을 피하려고 명시 면제했으며, 직전 일회용 인증 스택의 별도 `frontend-visual`에서 검색·상세 2페이지, 13px 미만 0건, 대비 미달 0건, 스크린샷 4장을 확인했다. core 전수는 앱 정리 후 1,383/1,383 green으로 재확인했다. 근거는 `dev-package/reports/ai-search-release/`에 있다.
 
-다음 단계는 `local-stage` 원격 tip·ST 배포 잠금·백업/복구 근거를 다시 확인하고, go/no-go 검토가 승인되면 ST 승격을 집행하는 것이다. ST·main·DEV는 아직 실행하지 않았다.
+ST는 `a383510d7ded`에서 배포 판정 15/15, migration 체인 2/2, 온톨로지 보호 GREEN을 통과했다. D9 행 수는 `49/19/13/4/18`로 배포 전과 같고, 실제 UI에서 검토 근거 저장·새로고침·서울/2025/월평균/강수량/tif 조건 입력·1건 판정·출처 비교·상세 이동·상세 새로고침을 확인했다. 첫 ST 실행 `b8d53a74078f`에서 비교 기간이 응답 키 순서대로 뒤집혀 표시되는 결함을 발견했고, 실패 회귀 테스트를 거쳐 `a383510d`에서 `시작일 ~ 종료일`로 수정·재배포했다. 해당 검색 구간의 core 요청은 200 두 건이며 ai-service의 `/searches` 또는 모델 경로 요청은 0건이다.
+
+main 직전 재fetch에서 `origin/main`이 `6a4ac6c4`로 이동했다. 이를 시험 병합한 트리 `ba12eb074ea7773e09ca117d44eb4fdf6cfc0c73`의 core-api 1,385건과 viz-render 448건, 생성물 17건, 대장 230건, 기획 임베드 15건은 GREEN이었으나 frontend는 123파일 중 8파일, 1,443건 중 42건 RED였다. 이는 새 main 인계 `§4` 블로커 76의 실패 분포(등록 약 31건 + 확인 버튼 11건)와 일치한다. 로컬 판정 JSON은 `dev-package/reports/ai-search-release/main-refresh/frontend/gate-summary.json`이며, 실패 트리를 커밋·배포하지 않고 병합을 중단했다. main/DEV 승격은 이 외부 블로커가 닫힐 때까지 보류한다. 실제 Sonnet 평가는 계속 보류하고 K4·ONTO-PROTECT는 `open`이다.
