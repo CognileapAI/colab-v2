@@ -6,6 +6,21 @@
 
 ## 출처
 
+### Ponytail 추가 — 2026-09-15
+
+- 참고 통합: `sungwooHa/ai-sdlc-harness` PR #3, merge `78b2d0f250d671d182d0ec65cea2886aa63dd08e`.
+- 원본: `https://github.com/DietrichGebert/ponytail/tree/e3ba2aa6f1e6f0bc4d69eb09c9f0d0a93af56156`.
+- 파일: `.agents/skills/ponytail/SKILL.md`, 동봉 `LICENSE`(MIT). 원본 본문과 라이선스는 무수정.
+- 본문 SHA-256: `6a15ae830f98cc2300c0204dc7f67956bbce4a4d834be7346d6a6c8a291b4fed`.
+- LICENSE SHA-256: `fb1bc6909ac3ef82d5c22106e32ef682b0cff66788fa915fb9b53b15c9d2f3ab`.
+- 개조: frontmatter에 출처·고정 SHA와 CoLAB 어댑터 경유 안내를 추가했다.
+  Codex 스킬 형식 검사에 맞춰 `argument-hint`를 `metadata.argument_hint`로 옮겼다.
+  프로젝트 경계는 `.agents/skills/colab-ponytail/SKILL.md`가 소유한다.
+- 기존 명시 호출 전용 스킬과 달리 공통 작업 스킬이 코드 작업에 어댑터를 연결한다.
+  상류 플러그인의 상시 실행·모드 추적·metrics 훅과 부가 스킬은 포함하지 않는다.
+- 갱신: 의도적으로 고른 upstream 커밋의 `skills/ponytail/SKILL.md` 본문과 `LICENSE`를
+  다시 받아 대조하고 SHA와 본 기록을 갱신한다. 이 저장소에 없는 vendor 도구를 안내하지 않는다.
+
 | 출처 | URL | 라이선스 | 판본 | 내려받은 날 |
 |---|---|---|---|---|
 | superpowers | `https://github.com/obra/superpowers` | MIT (Copyright (c) 2025 Jesse Vincent) | 플러그인 캐시 **6.3.0** (`~/.claude/plugins/cache/claude-plugins-official/superpowers/6.3.0/skills/`) | 2026-09-06 (설치본 파일 스탬프 2026-08-17) |

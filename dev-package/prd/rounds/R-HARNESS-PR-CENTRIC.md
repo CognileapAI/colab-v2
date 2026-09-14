@@ -1,6 +1,12 @@
 > spec: dev-package/prd/specs/harness-pr-centric.md
 # Claude·Codex 공통 PR 중심 하네스 실행 계획
 
+> **2026-09-15 사용자 승인에 따른 운영 범위 변경:** 전면 전환·추가 고도화는 보류한다.
+> 실제 개발 작업 하나에 적용하여 지침 확인·관련 검사·Codex 훅 허용/차단·짧은 인계를
+> 확인하고 필요한 부분만 개선한다. 아래 미달 조건은 이력으로 유지하며 일상 개발 시작을
+> 막는 조건으로 삼지 않는다. 현재 운영 기준과 다음 진입점은
+> `docs/development/harness-transition-handoff.md`의 「현재 운영 범위」를 따른다.
+
 > **For agentic workers:** 위임 원칙(글로벌 `CLAUDE.md`)과 역할별 격리를 적용한다. 현재 사용자가 지정한 `codex/harness-pr-centric` worktree의 쓰기 주체는 이 실행 세션 하나다. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** CoLAB의 공통 하네스를 도구 중립 원본과 PR·commit·CI 증거 중심 구조로 전환한다.
