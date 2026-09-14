@@ -99,7 +99,7 @@
 
 ## 판정 결과 (Ted · 2026-09-14)
 
-- 판정 경로 = 오케스트레이터 경유 · Ted 2026-09-14. 등재 = `PLAN-SoT §9` 〈N〉 (병합 시 기입). 재개봉 금지(`.claude/rules/colab-rules.md §8`).
+- 판정 경로 = 오케스트레이터 경유 · Ted 2026-09-14. 등재 = `PLAN-SoT §9` 〈398〉 (2026-09-14 병합 직전 재실측 · `origin/main` 최대 〈397〉 ＋ 1). 재개봉 금지(`.claude/rules/colab-rules.md §8`).
 - ㈎ **ⓐ — 정본 md 자리 = 참조자료 폴더 안.** 자리 4건(참조자료 뿌리 기준) = `01.level-data/01.precipitation/DATASETS.md` · `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` · `02.File-format/DATASETS.md`. 기존 파일(ppt · word · 자료) 무수정 · 추가만. 레포 안에는 사본을 `dev-package/reports/reference-data/datasets-md/` 아래 같은 트리로 둔다 — **정본은 폴더, 레포는 반영본.** 근거 = 오케스트레이터 지시로 닫힘 · Ted 확인.
 - ㈏ **ⓐ — 분석 실패라도 등록 허용.** 화면 활성 조건을 「ready 또는 failure」로 고친다. 근거(advisor 실측) = 워커 실패 경로가 `ready=False` 로 쓰므로(`services/pipeline-worker/src/colab_pipeline/domains/d5_ingestion.py` 「ready=False, failed_at」) `failure` 항 제거만으로는 열리지 않는다 — `!status?.ready` 조건이 그대로 잠근다. 안내 문면 「지도로 못 그려요 · 등록은 됩니다」. GeoPackage 판독은 `FMT-GPKG` 별도.
 - ㈐ **빈 칸 시작 ＋ 계보 규칙 자동 갱신 ＋ 규약 제약만.** Ted 축자 「상위폴더 reference 폴더 보면 거기 안에 들어가있는데 그걸 토대ㅗㄹ 유추를 해야하는데 안되나? 빈칸으로 시작하되, 다른 데이터를 계보로 연결하면 그 계보 규칙에 따라 바뀌어야 한다(제약필요, 자동으로 변경되어도된다) 그리고 이 계보 규약에 따라서만 제한을 받고 레벨은 맘대로 선택해도되게 하라.」 기록값 —
@@ -181,7 +181,7 @@ advisor 파생 확정 4건
 - 도구·규칙: `services/core-api/ops/reset_dev_environment.py` · `.claude/rules/deploy.md` · `infra/dev/README.md`
 - spec: 미작성
 - 라운드 파일: `dev-package/prd/rounds/R-DEV-RESET.md`(`§11-2` 후속 5건 · `§12` 회차 마감)
-- 결정: 〈N〉 (병합 시 기입 · 병합 직전 재실측)
+- 결정: 〈398〉 (2026-09-14 병합 직전 재실측 · `origin/main` 최대 〈397〉 ＋ 1 · `dev-package/prd/tools/max-decision.sh`)
 
 ## 관련 이슈 (GitHub · 2026-09-14 등재)
 - #40 gpkg 등록 차단(프런트 결합) · #44 가공 단계 전 건 Lv2 · #41 데이터셋-프로젝트 연결 화면 부재 · #42 미리보기 뒷단 · #50 러너 후속(정본 md 매핑) · #48 배포 절차(preflight 대상) · #49 초기화 도구 잔여.

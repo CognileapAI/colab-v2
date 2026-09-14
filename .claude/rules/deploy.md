@@ -60,7 +60,7 @@ paths:
     **S3 는 exact-key 계획 ＋ sha256 대조로만 지운다** — 접두사·`--recursive` 삭제를 쓰지 않는다(선례 `〈354〉`).
     ⛔ **`_ops/` 는 무접촉이다** — 계획에 그 접두사 키가 **1건이라도** 있으면 전체를 거부한다(지우면
     `deploy_doctor` ⑭(백업 24h)가 red 다). staging·prod 식별자에서는 거부한다.
-    ⭑ ⟨개정 2026-09-14 · `DR-4` · 〈N〉 (병합 시 기입)⟩ **dev 한정 상시 승인** — `dev-package/tools/dev-reseed/reseed.sh` 를 통해서만 ·
+    ⭑ ⟨개정 2026-09-14 · `DR-4` · 〈398〉⟩ **dev 한정 상시 승인** — `dev-package/tools/dev-reseed/reseed.sh` 를 통해서만 ·
     위 게이트 넷 충족 시 회차별 GO 불요 · 실행마다 결과 JSON ＋ `dev-package/sessions/` 기록 자동 등재 · Ted 철회 시 소멸.
     staging·prod 는 무변(매회 GO). ／ 종전 ~~`PLAN-SoT §9` 행과 Ted 의 명시 GO 없이 실행하지 않는다 — 승인은 1회 소진이다~~
 
