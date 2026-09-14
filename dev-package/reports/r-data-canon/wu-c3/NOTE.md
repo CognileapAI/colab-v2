@@ -35,3 +35,12 @@
 - ⑪ `blocked_add` 인자 수 — `lib.sh` 는 2인자(이름·사유)인데 `stage_verify` 가 2자리에서 3인자로 불러 **사유가 통째로 버려졌다**. `blocked_add verify "seq=… — <사유>"` 한 인자로 병합.
 - ⑫ 픽스처가 `git fetch -q origin main` 을 회당 7회 실제로 냈다(공용 체크아웃 · 원격 접촉 ＋ ref 부작용). `$TMP/bin/git` 대역을 PATH 앞에 두어 `fetch` 만 비영으로 막고 나머지는 실물에 위임 — 기대 판정 무변(`✗ git` 은 그대로 서고 사유만 「origin/main 조회 실패」로 바뀐다). 실측 9.5s → 4.9s.
 - ⑬ `--preflight-only` 두 케이스(ⓛ·ⓞ)에 `approval-record.json` 부재 단언 추가 — 검사만 한 회차가 승인 기록을 남기면 `report.py` 의 `approvalRecord` 가 서서 승인된 회차로 읽힌다.
+
+## 3차 수정 — preflight `secrets` 참값화 ＋ 실행 차단 2건
+
+- ⑭ `preflight.sh` `pf_secrets` — `printf "'%s/%s' " "$dir" "${SECRET_FILE_NAMES[@]}"` 이 서식 둘에 인자 10개를 **둘씩** 묶어 5개 엉뚱한 경로를 냈고, 9건 중 `master.url` 하나만 실제로 물었다. 나머지 8건은 구조적으로 「부재」라 **이 항목이 green 이 된 적이 없다**(DR-4 §5 ⑵). 고침 = `printf "'%s' " "${SECRET_FILE_NAMES[@]/#/$dir/}"`.
+- ⑮ 이름 충돌 해소 — 원격 시크릿 경로의 출처를 `COLAB_RESEED_EC2_SECRETS_DIR`(기본 `/etc/colab`) 하나로 분리. `reseed.sh`·`stages.sh`·`preflight.sh` 가 운영자 기계의 `COLAB_DEV_SECRETS_DIR`(로컬 폴더)를 더는 읽지 않는다.
+- ⑯ 계정 신원 기본값을 `infra/staging/provision-lab.sql` 의 `INSERT INTO d1_account`(＋ `d2_member_role` 역할)에서 **실행 때 읽는다**(레포에 사본 0). `d1_account` 의 `UNIQUE (lab_id, email)` 때문에 새 ULID 는 prelude ② 를 죽인다.
+- ⑰ prelude ② 멱등 — `RESEED_ACCOUNT_ID` 가 ① 의 id 와 같으면 **건너뛴다**(2026-09-13 회차와 같은 순서 · `DR-2-run-2026-09-13.md` §5 ②). ② 를 돌리면 `d2_permission_switch` **4행**이 새로 서서 그 기준선과 갈린다(① 은 0행).
+- ⑱ `--preflight-only` 가 마운트할 EC2 시크릿 폴더와 쓸 계정 신원을 각 한 줄로 찍는다(경로·신원만 · 비밀 0건).
+- ⑲ 픽스처 `tests/preflight-secrets.sh` 신설 — GREEN(9건 0600 통과 · 물어본 경로 9건 대조) ＋ RED(1건 부재 · 1건 0644) ＋ 경로 출처·표기·기본값. ssh 대역이 실물 `stat` 처럼 **받은 경로 그대로** 답해 짝짓기 결함을 잡는다. `dev-reseed-selftest` 픽스처 **2 → 3**.
