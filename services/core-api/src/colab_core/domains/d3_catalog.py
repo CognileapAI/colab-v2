@@ -1587,3 +1587,71 @@ def apply_autometa(session: Session, *, dataset_id: Ulid, format: str | None = N
     if row is None:
         return ()
     return tuple(c for c in AUTOMETA_FROM_EVENTS if row[f"has_{c}"])
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 삭제(묘비) — `DL-1`
+#
+# **행을 지우지 않는다.** 지운 데이터가 부모였다면 자식의 출처가 끊긴다
+# (`db/platform/schema.sql` `d3_dataset` 삭제 기록 주석 · 정본 §4.1).
+# 지우는 것은 **파일 행과 그 바이트**뿐이고, 바이트는 라우트가 저장 Port 로 지운다.
+# ════════════════════════════════════════════════════════════════════════════
+
+#: 묘비 전환. `deleted_at IS NULL` 을 WHERE 에 둔 것이 핵심이다 — 두 번째 DELETE 는
+#: 0행을 갱신하고 라우트가 그 0 을 404 로 읽는다(되돌리는 전이가 없다).
+#: 짝 CHECK `((deleted_at IS NULL) = (deleted_by_account_id IS NULL))` 가 두 열을 묶는다.
+_TOMBSTONE_DATASET = text("""
+    UPDATE d3_dataset
+       SET deleted_at = now(), deleted_by_account_id = :actor
+     WHERE id = :dataset_id AND deleted_at IS NULL
+    RETURNING id
+""")
+
+#: 파일 행 전건을 **한 문장으로** 지운다. statement 트리거(`sync_dataset_file_count` ·
+#: `sync_dataset_total_size`)가 한 번만 돌아 `file_count`·`total_size_bytes` 를 0 으로 민다.
+#: 한 행씩 지우면 트리거가 N 번 돌고, 그 차이가 큰 데이터셋에서 그대로 시간이 된다.
+#: ⚠ `representative_file_id` 는 FK `ON DELETE SET NULL` 이 되돌린다 — 여기서 안 만진다.
+_DELETE_FILES_OF = text("DELETE FROM d3_file WHERE dataset_id = :dataset_id")
+
+#: 묘비 표시 한 줄. **`lab_id` 조건을 적지 않는다** — RLS `lab_boundary` 가 남의 연구실 행을
+#: 이미 지워, 여기서 값이 나오는 경우는 정의상 보는 사람의 연구실 것이다
+#: (`is_own_lab_tombstone` 과 같은 규율).
+_TOMBSTONE_MARK = text("""
+    SELECT deleted_at, deleted_by_account_id FROM d3_dataset
+     WHERE id = :dataset_id AND deleted_at IS NOT NULL
+""")
+
+
+@dataclasses.dataclass(frozen=True)
+class TombstoneMark:
+    """지워진 데이터셋의 삭제 기록. 계보 그래프의 묘비 노드가 `deletedAt` 을 여기서 읽는다."""
+
+    deleted_at: object
+    deleted_by_account_id: str | None
+
+
+def tombstone_dataset(session: Session, *, dataset_id: Ulid, actor_id: Ulid) -> bool:
+    """묘비로 전환한다. **이미 묘비였으면 `False`** — 지어낸 두 번째 삭제 기록을 남기지 않는다."""
+    return session.execute(_TOMBSTONE_DATASET, {
+        "dataset_id": str(dataset_id), "actor": str(actor_id)}).first() is not None
+
+
+def delete_files_of(session: Session, dataset_id: Ulid) -> int:
+    """그 데이터셋의 파일 행 전건 삭제. 돌려주는 것은 지운 행 수다.
+
+    ⚠ **키는 여기서 짓지 않는다** — 부르는 쪽이 `files_for_download` 로 **먼저** 읽어 둔다
+    (「키는 원장이 들고 있다」). 지운 뒤에는 읽을 자리가 없다.
+
+    ⚠ 잠긴 데이터셋에서는 `body_access` RESTRICTIVE 가 이 문장을 **0행으로 만든다.**
+    부르는 쪽이 같은 트랜잭션에서 `d2_access.open_access_for_deletion` 을 먼저 건다.
+    """
+    return session.execute(_DELETE_FILES_OF, {"dataset_id": str(dataset_id)}).rowcount
+
+
+def find_tombstone(session: Session, dataset_id: Ulid) -> TombstoneMark | None:
+    """묘비면 그 삭제 기록, 아니면 `None`(살아 있거나 경계 밖이거나 없다)."""
+    row = session.execute(_TOMBSTONE_MARK, {"dataset_id": str(dataset_id)}).mappings().first()
+    if row is None:
+        return None
+    return TombstoneMark(deleted_at=row["deleted_at"],
+                         deleted_by_account_id=row["deleted_by_account_id"])

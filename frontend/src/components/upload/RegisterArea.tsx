@@ -38,7 +38,6 @@ import {
 } from './axisDict';
 
 import {
-  TOPICS,
   type LineageStepContext,
   type LineageStepRender,
   type PickedProject,
@@ -49,6 +48,37 @@ import {
 
 /** 관측 간격의 단위 6값 — **정본은 DB CHECK** 다 (PRD-17 · `M-6`). */
 export const INTERVAL_UNITS = ['초', '분', '시', '일', '월', '년'] as const;
+
+/**
+ * ⭑ **⟨2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 단위의 표시 라벨.**
+ * 기획서 rev2 의 단위 사다리 표기는 `연·월·일·시간·분·초` 다. **저장값은 위 6값 그대로**이고
+ * (계약·DB CHECK 무변) 여기서 바뀌는 것은 셀렉트에 보이는 글자뿐이다.
+ * ⛔ 라벨을 저장값으로 쓰지 않는다 — `option value` 는 `INTERVAL_UNITS` 의 값이다.
+ */
+export const INTERVAL_UNIT_LABEL: Record<(typeof INTERVAL_UNITS)[number], string> = {
+  초: '초',
+  분: '분',
+  시: '시간',
+  일: '일',
+  월: '월',
+  년: '연',
+};
+
+/**
+ * ⭑ **⟨2026-09-14⟩ 필수/선택 표시는 배지 **하나**다.**
+ *
+ * 종전에는 두 벌이었다 — 필수는 `<span class="reqtag">필수</span>` 배지이고 선택은 라벨
+ * 문자열 끝의 `(선택)` 괄호였다. 같은 뜻의 표시가 모양이 다르면 사람은 그 둘을 같은 축의
+ * 값으로 읽지 못하고, 괄호 쪽은 라벨 길이에 묻힌다. 기획서 rev2 는 라벨 옆 작은 표 하나로
+ * 통일한다 — 여기서는 `필수`/`선택` 두 값을 같은 컴포넌트가 낸다.
+ */
+export function FieldTag(props: { required?: boolean }) {
+  return props.required ? (
+    <span className="reqtag">필수</span>
+  ) : (
+    <span className="opttag">선택</span>
+  );
+}
 
 export type Step = 1 | 2 | 3;
 
@@ -83,22 +113,51 @@ export const STEP_LABELS: Record<Step, string> = {
 export const CLASSIFY_SUBTITLE = '목록 필터가 이 세 축을 그대로 받아요';
 export const METADATA_SUBTITLE = '파일에서 읽는 값은 확장자·용량뿐이에요';
 
-/** PRD-40 · 판정 ⓐ — 종료 칸의 안내 한 줄. rev2 `prVe` 자리 문면 축자. */
+/**
+ * PRD-40 · 판정 ⓐ — 종료 칸의 안내 한 줄. rev2 `prVe` 자리 문면 축자.
+ * ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 자리는 칸 **안**이다** ／ 종전 ~~컨트롤 뒤 `p.fieldnote`~~ —
+ *    rev2 목업에서 이 문면은 `#prVe` 즉 **종료 반쪽의 빈 값 표기**이고 별도 문단이 아니다.
+ */
 export const PERIOD_SINGLE_POINT_HINT = '한 시점이면 비워 둬요';
+
+/** 시작 반쪽의 빈 값 표기 — rev2 `#prVs` 축자. */
+export const PERIOD_START_PLACEHOLDER = '날짜를 골라요';
+
+/** 기간 칸 두 반쪽의 이름 — rev2 `.dr-k` 축자. */
+export const PERIOD_HALF_LABELS = { start: '시작', end: '종료' } as const;
+
+/**
+ * ⭑ **⟨2026-09-14 · 레인 A4⟩ 변수 표의 제목 한 줄 — rev2 `fieldlbl` 축자.**
+ * 표 전체의 이름이라 **입력 하나를 가리키지 않는다** — `label` 이 아니라 섹션 제목이고,
+ * 그래서 선택 배지도 달지 않는다(괄호 안 문면이 「여러 개」와 「대표 하나」를 이미 말한다).
+ */
+export const VARIABLES_FIELD_HINT = '(여러 개 · 대표 변수 하나를 골라요)';
+export const VARIABLES_FIELD_LABEL = `변수 ${VARIABLES_FIELD_HINT}`;
 
 /**
  * ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 출처 블록의 문면 — rev1 축자다.**
  *
  * 「원시 데이터라 부모가 없어요」가 이 블록이 서는 이유다: Lv0 은 부모가 없어 **계보로는
  * 출처를 말할 수 없고**, 그 자리를 두 칸이 메운다.
- * ⛔ **`필수` 배지를 붙이지 않는다** — 두 칸은 선택 입력이다. rev2 목업이 필수 배지를
- *    그렸으나 **정본은 「선택 입력」이고 목업 배지를 채택하지 않는다**(PRD-19 감사 교차 확인).
+ * ⛔ ~~**`필수` 배지를 붙이지 않는다** — 두 칸은 선택 입력이다. rev2 목업이 필수 배지를
+ *    그렸으나 **정본은 「선택 입력」이고 목업 배지를 채택하지 않는다**(PRD-19 감사 교차 확인).~~
+ * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ Lv0 이면 `출처 주소`·
+ *    `내려받은 날` 에 `필수` 배지가 선다.** 목업 배지를 채택한다 — 부모가 없는 Lv0 에서는
+ *    그 두 칸이 계보를 대신하는 **유일한 출처 기록**이라 비면 원천을 말할 방법이 없다.
  */
 export const LV0_SOURCE_NOTICE = '원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.';
 export const LV0_SOURCE_URL_PLACEHOLDER = '예: https://cds.climate.copernicus.eu/...';
 export const LV0_SOURCE_DATE_PLACEHOLDER = '예: 2026-08-20';
 /** 이 블록이 열리는 유일한 조건 — ① 이 고른 자기 Lv 다. 파생 Lv 가 아니다. */
 export const LV0 = 'Lv0';
+
+/**
+ * ⭑ **⟨2026-09-14⟩ 원천 블록의 제목 — 기획서 rev2 `srcBlock` 축자.**
+ * 「원천」이 무엇인지를 제목이 바로 말한다 — **연구실 밖 출처**다. 종전 라벨 `원천 표기` 는
+ * 칸 이름과 블록 이름을 겸해 둘 다 흐렸다.
+ */
+export const SOURCE_BLOCK_TITLE = '원천 · 연구실 밖 출처';
+export const SOURCE_NAME_PLACEHOLDER = '예: GK2A · 국가기상위성센터';
 
 /**
  * 축 값 하나의 정의 줄 (PRD-04 축자 형식) — `<b>{정의}</b> · 예: {예시}`.
@@ -151,7 +210,7 @@ function StepClassify(props: {
         <div className="form-row">
           <label htmlFor="reg-category">
             분류
-            <span className="reqtag">필수</span>
+            <FieldTag required />
           </label>
           <select
             id="reg-category"
@@ -174,7 +233,7 @@ function StepClassify(props: {
         <div className="form-row">
           <label htmlFor="reg-datatype">
             유형
-            <span className="reqtag">필수</span>
+            <FieldTag required />
           </label>
           <select
             id="reg-datatype"
@@ -202,7 +261,7 @@ function StepClassify(props: {
         <div className="form-row">
           <label htmlFor="reg-level">
             가공 단계
-            <span className="reqtag">필수</span>
+            <FieldTag required />
           </label>
           {/* ⚠ 빈 선택지가 없다 — 값이 늘 서 있어 「비어 있음」이 성립하지 않는다.
               계보에서 나온 파생값(`processingLevel`)과 **다른 칸**이다(미결-2 ⓐ).
@@ -267,8 +326,6 @@ function StepMeta(props: {
   status: UploadStatus | null;
   name: string;
   onName: (v: string) => void;
-  topic: string;
-  onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
   variables: VariableRow[];
@@ -376,7 +433,12 @@ function StepMeta(props: {
 
         <div className="fieldlbl">사람이 적어요</div>
         <div className="form-row">
-          <label htmlFor="reg-name">데이터셋 이름</label>
+          {/* ⭑ ⟨개정 2026-09-14⟩ 이름은 종전부터 등록 게이트였고 표시만 없었다 —
+              같은 배지로 그 사실을 화면에 적는다. */}
+          <label htmlFor="reg-name">
+            데이터셋 이름
+            <FieldTag required />
+          </label>
           <input
             id="reg-name"
             className="inp"
@@ -391,95 +453,179 @@ function StepMeta(props: {
             </p>
           )}
         </div>
-        <div className="form-2">
-          <div className="form-row">
-            <label htmlFor="reg-topic">주제</label>
-            {/* 고정 4값. **빈 값(미정)이 정상 상태**다 — 4값 CHECK 는 「값이 있다면 넷 중 하나」다 */}
-            <select
-              id="reg-topic"
-              className="sel"
-              data-testid="reg-topic"
-              value={props.topic}
-              onChange={(e) => props.onTopic(e.target.value)}
-            >
-              <option value="">아직 고르지 않음</option>
-              {TOPICS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* ⭑ **⟨WU-B3 · PRD-03 · 미결-2 ⓐ⟩ 가공 단계 칸은 ① 분류로 갔다.**
-              사람이 고르는 값이 됐고(`processingLevelUserSet`), 계보 계산값과 어긋나면
-              **경고만** 낸다 — 등록을 막지 않는다. 읽기 전용 안내 칸은 그래서 사라졌다. */}
+        {/* ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ `주제` 칸이 없다.**
+            기획서 rev2 우측 폼에 그 칸이 없다 — 분류 축(`category`)이 같은 일을 하고,
+            두 축을 같은 화면에서 받으면 어느 쪽으로 거를지 사람이 고를 수 없다.
+            ⛔ 읽기 쪽(목록 열·상세 칩·필터)은 **무변**이고 계약 `topic` 도 그대로 있다 —
+               등록 폼이 값을 만들지 않을 뿐이다(`topic` 은 계약에서 optional).
+            ⭑ **⟨WU-B3 · PRD-03 · 미결-2 ⓐ⟩ 가공 단계 칸은 ① 분류로 갔다.** */}
+        {/* ⭑ **⟨2026-09-14 · 레인 A4⟩ 기간이 데이터셋 이름 바로 아래다.**
+            ／ 종전 ~~짧은 값 한 줄(`form-3`)의 첫 칸~~ — rev2 목업 ② 본문의 위→아래 순서는
+            이름 → 기간 → (관측 간격·좌표계·격자) → 설명 → 변수 → 공개 범위이고,
+            사용자 지적(2026-09-14 · 스크린샷 대조)이 지목한 것이 그 순서다.
+            ⭑ ⟨advisor ② · F1⟩ `daterange` = rev2 `.daterange{position:relative}` —
+            달력 팝오버(`.dr-pop`)가 이 칸을 기준으로 뜬다. 이 클래스가 없으면
+            `position:absolute` 가 화면 전체를 기준으로 잡는다. */}
+        <div className="form-row daterange">
+          {/* ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간은 필수다 —
+              시간축을 모르면 이 자료가 언제 것인지 목록에서 가를 수 없다. */}
+          <label htmlFor="reg-period-open">
+            {periodLabel}
+            <FieldTag required />
+          </label>
+          {/* ⭑ **⟨2026-09-14 · 레인 A4⟩ 칸 자체가 rev2 `#prField` 다.**
+              ／ 종전 ~~`달력에서 고르기` 작은 버튼 ＋ 그 아래 안내 문단~~ — 넓은 칸이 두
+              반쪽으로 갈려 있어야 「시작과 끝 **두 개**를 받는다」로 읽힌다(rev2 `.dr-half`
+              주석 축자). 작은 버튼 한 개는 그 사실을 화면에 적지 않는다.
+              ⛔ **기간을 받는 길은 여전히 달력 팝오버 하나다**(WU-C8 §5-14) — 이 칸은 값을
+                 직접 받지 않고 팝오버를 여닫기만 한다. 최소 단위·시각 규칙·`적용` 무변. */}
+          <button
+            type="button"
+            id="reg-period-open"
+            className="dr-field"
+            data-testid="reg-period-open"
+            aria-haspopup="dialog"
+            aria-expanded={periodPopOpen}
+            onClick={() => setPeriodPopOpen((v) => !v)}
+          >
+            <span className="dr-half">
+              <span className="dr-ico" aria-hidden="true">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </span>
+              <span className="dr-txt">
+                <span className="dr-k">{PERIOD_HALF_LABELS.start}</span>
+                <span
+                  className={previewStart ? 'dr-v' : 'dr-v ph'}
+                  data-testid="reg-period-start-value"
+                >
+                  {previewStart || PERIOD_START_PLACEHOLDER}
+                </span>
+              </span>
+            </span>
+            <span className="dr-half">
+              <span className="dr-ico" aria-hidden="true">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+              <span className="dr-txt">
+                <span className="dr-k">{PERIOD_HALF_LABELS.end}</span>
+                {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다** — 문면은 무변이고 **자리만**
+                    칸 안으로 들어왔다. 값이 차면 그 자리에 값을 적으므로 열쇠를 가른다 —
+                    안내 열쇠(`reg-period-single-hint`)는 **빈 값일 때만** 선다. */}
+                {previewEnd ? (
+                  <span className="dr-v" data-testid="reg-period-end-value">
+                    {previewEnd}
+                  </span>
+                ) : (
+                  <span className="dr-v ph" data-testid="reg-period-single-hint">
+                    {PERIOD_SINGLE_POINT_HINT}
+                  </span>
+                )}
+              </span>
+            </span>
+          </button>
+          {periodPopOpen && (
+            <PeriodCalendarPopover
+              granularity={props.granularity}
+              startParts={props.startParts}
+              endParts={props.endParts}
+              onApply={(v) => {
+                props.onGranularity(v.granularity);
+                props.onStartParts(v.startParts);
+                props.onEndParts(v.endParts);
+              }}
+              onClear={() => {
+                props.onStartParts({ ...EMPTY_PARTS });
+                props.onEndParts({ ...EMPTY_PARTS });
+              }}
+              onClose={() => setPeriodPopOpen(false)}
+            />
+          )}
         </div>
-        {/* 변수·기간·좌표계 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
-            형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
-            파이프라인이 채울 자리가 영영 막힌다 (`UploadModal.submit`).
-            ⭑ **⟨WU-B2 · PRD-16⟩ 변수는 한 칸이 아니라 5열 표다** — 「변수 3개에 단위
-            1개면 어느 변수 것인지 알 수 없다」(rev1 축자). 표 자체는 `VariableTable`
-            하나이고 상세가 같은 것을 읽기 전용으로 그린다. */}
-        <div className="form-row">
-          <label>변수 (선택)</label>
-          <VariableTable
-            rows={props.variables}
-            onRows={props.onVariables}
-            onBlocked={props.onVariablesBlocked}
-          />
-        </div>
-        {/* ⭑ **⟨PRD-28⟩ 짧은 값 세 개가 한 줄이다** — 기간 · 좌표계 · 격자.
-            기간은 **두 칸이 한 값**이라(`DataPeriod`) 한 칸 안에서 시작~끝을 잇는다.
-            ⛔ 2+1 로 갈라 두 줄로 쓰지 않는다 — 마지막 줄이 반쯤 빈다(rev1 축자). */}
+
+        {/* ⭑ **⟨PRD-28 · 개정 2026-09-14 · 레인 A4⟩ 짧은 값 세 개가 한 줄이다** —
+            관측 간격 · 좌표계 · 격자. ／ 종전 ~~기간 · 좌표계 · 격자~~ — rev2 목업의 `form-3`
+            이 담은 셋이 이 셋이고, 기간은 두 칸이 한 값이라 위에서 제 행을 갖는다.
+            ⛔ 2+1 로 갈라 두 줄로 쓰지 않는다 — 마지막 줄이 반쯤 빈다(rev1 축자).
+            ⚠ 좁은 폭에서는 목업과 같이 2열로 접혀 `격자` 가 둘째 줄로 내려간다. */}
         <div className="form-3" data-testid="reg-short-row">
-          {/* ⭑ ⟨advisor ② · F1⟩ `daterange` = rev2 `.daterange{position:relative}` —
-              달력 팝오버(`.dr-pop`)가 이 칸을 기준으로 뜬다. 이 클래스가 없으면
-              `position:absolute` 가 화면 전체를 기준으로 잡는다. */}
-          <div className="form-row daterange">
-            {/* ⭑ ⟨WU-C8 · §5-14⟩ 값 칸이 없다 — 누르면 달력 팝오버가 뜨고 거기서만 받는다.
-                `htmlFor` 는 그 버튼을 가리킨다(라벨이 가리킬 칸이 여기 남아 있지 않다). */}
-            <label htmlFor="reg-period-open">{periodLabel} (선택)</label>
-            {/* ㈏ 달력 팝오버 (R-A′ 이관 · PRD-18 · WU-C8 §5-14) — 기간을 받는 **유일한 길**.
-                버튼 문면은 §5-15 판정이 채택한 것을 그대로 둔다. */}
-            <button
-              type="button"
-              id="reg-period-open"
-              className="btn btn-secondary btn-sm"
-              data-testid="reg-period-open"
-              aria-haspopup="dialog"
-              aria-expanded={periodPopOpen}
-              onClick={() => setPeriodPopOpen((v) => !v)}
-            >
-              달력에서 고르기
-            </button>
-            {/* ⭑ **⟨PRD-40 · 판정 ⓐ⟩ 종료는 비울 수 있다.** 필수 표시를 걷고 안내 한 줄을 둔다 —
-                저장은 `period_end = period_start` 로 채워지고(`UploadModal.humanMetadata`)
-                표시는 시작=끝이면 한 값으로 그린다(PRD-35 괄호 병기 그대로).
-                ⭑ ⟨R-BUGFIX-260912 · #31⟩ 자리는 **컨트롤 뒤**다 — 카드 안 안내 문단 4건을
-                라벨 → 입력 컨트롤 → 설명문 한 순서로 통일한다. 문면·`data-testid`·클래스 무변. */}
-            <p className="fieldnote" data-testid="reg-period-single-hint">
-              {PERIOD_SINGLE_POINT_HINT}
-            </p>
-            {periodPopOpen && (
-              <PeriodCalendarPopover
-                granularity={props.granularity}
-                startParts={props.startParts}
-                endParts={props.endParts}
-                onApply={(v) => {
-                  props.onGranularity(v.granularity);
-                  props.onStartParts(v.startParts);
-                  props.onEndParts(v.endParts);
-                }}
-                onClear={() => {
-                  props.onStartParts({ ...EMPTY_PARTS });
-                  props.onEndParts({ ...EMPTY_PARTS });
-                }}
-                onClose={() => setPeriodPopOpen(false)}
+          {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격.**
+              숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
+              접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
+              ⛔ ~~**등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다.~~
+              ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 등록 게이트다** —
+                 ~~부가 정보의 선택 입력~~ ／ 현재 **필수**다. 기간과 같은 시간축 정보이고,
+                 간격을 모르면 그 기간이 몇 장인지 읽을 수 없다. 판정은
+                 `UploadModal.submit` 한 곳에 있다(값 > 0 ∧ 단위 있음).
+              ⭑ **⟨2026-09-14 · 레인 A4⟩ 자리는 짧은 값 한 줄의 첫 칸이다** ／ 종전 ~~제 행~~ —
+                 rev2 목업이 기간 바로 아래 같은 줄에 좌표계·격자와 함께 둔다. */}
+          <div className="form-row">
+            <label htmlFor="reg-interval-value">
+              관측 간격
+              <FieldTag required />
+            </label>
+            {/* 각색(이름만) — rev2 `.itv`. 수 칸이 늘고 단위 셀렉트가 고정 폭이다. */}
+            <span className="itv">
+              <input
+                id="reg-interval-value"
+                className="inp"
+                type="text"
+                inputMode="numeric"
+                data-testid="reg-interval-value"
+                placeholder="예: 10분 · 1시간 · 1일"
+                value={props.intervalValue}
+                onChange={(e) => props.onIntervalValue(e.target.value)}
               />
-            )}
+              <select
+                className="sel"
+                aria-label="관측 간격 단위"
+                data-testid="reg-interval-unit"
+                value={props.intervalUnit}
+                onChange={(e) => props.onIntervalUnit(e.target.value)}
+              >
+                <option value="">단위</option>
+                {INTERVAL_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {INTERVAL_UNIT_LABEL[u]}
+                  </option>
+                ))}
+              </select>
+            </span>
+            {/* **반쪽은 서버가 400 이다** — 화면은 그 사실을 미리 알린다. 판정을 흉내 내
+                막지는 않는다(문구의 정본은 서버 봉투다 · WU-A4 가 세운 규율 그대로). */}
+            {half ? (
+              <p className="warn" data-testid="reg-interval-half">
+                숫자와 단위를 함께 적어 주세요
+              </p>
+            ) : null}
           </div>
           <div className="form-row">
-            <label htmlFor="reg-crs">좌표계 (선택)</label>
+            <label htmlFor="reg-crs">
+              좌표계
+              <FieldTag />
+            </label>
             <input
               id="reg-crs"
               className="inp"
@@ -489,61 +635,30 @@ function StepMeta(props: {
               onChange={(e) => props.onCrs(e.target.value)}
             />
           </div>
+          {/* ⭑ **⟨2026-09-14 · 레인 A4⟩ 라벨은 `격자` 이고 칸은 한 줄 입력이다.**
+              ／ 종전 ~~라벨 `격자 설명` ＋ `textarea rows=2` ＋ 칸 아래 안내 한 줄~~ —
+              rev2 목업의 이 칸은 `#metaGrid` **한 줄 입력**이고 안내 문단이 없다
+              (`0.05° (~5km)` 같은 짧은 값 하나를 받는다). 두 줄 칸은 「길게 적으라」는
+              신호라 목업과 어긋난다.
+              ⛔ **저장 열쇠는 무변이다** — `gridDescription` 그대로이고 계약·서버 무접촉.
+              ⚠ **종전 수용 기준과 충돌한다** — `dev-package/prd/specs/2026-09-12-issue-register-hints-parent-picker.md`
+                 의 「격자 설명 칸의 안내 위치가 종전과 같다」. 안내 문단 자체가 사라지므로
+                 **Ted 재판정 대기**로 적어 둔다(레인 보고서 「종전 판정 충돌」 절). */}
           <div className="form-row">
-            <label htmlFor="reg-grid-description">격자 설명 (선택)</label>
-            <textarea
+            <label htmlFor="reg-grid-description">
+              격자
+              <FieldTag />
+            </label>
+            <input
               id="reg-grid-description"
               className="inp"
               data-testid="reg-grid-description"
               maxLength={1000}
-              rows={2}
               value={props.gridDescription}
               onChange={(e) => props.onGridDescription(e.target.value)}
-              placeholder="예: 250m 정방 격자"
+              placeholder="예: 0.05° (~5km)"
             />
-            <p className="fieldnote">자동 판독과 별도로 연구자가 설명을 남겨요.</p>
           </div>
-        </div>
-
-        {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격 — 부가 정보의 선택 입력.**
-            숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
-            접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
-            ⛔ **등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다. */}
-        <div className="form-row">
-          <label htmlFor="reg-interval-value">관측 간격 (선택)</label>
-          <span className="pair">
-            <input
-              id="reg-interval-value"
-              className="inp"
-              type="text"
-              inputMode="numeric"
-              data-testid="reg-interval-value"
-              placeholder="예: 10분 · 1시간 · 1일"
-              value={props.intervalValue}
-              onChange={(e) => props.onIntervalValue(e.target.value)}
-            />
-            <select
-              className="sel"
-              aria-label="관측 간격 단위"
-              data-testid="reg-interval-unit"
-              value={props.intervalUnit}
-              onChange={(e) => props.onIntervalUnit(e.target.value)}
-            >
-              <option value="">단위</option>
-              {INTERVAL_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-          </span>
-          {/* **반쪽은 서버가 400 이다** — 화면은 그 사실을 미리 알린다. 판정을 흉내 내
-              막지는 않는다(문구의 정본은 서버 봉투다 · WU-A4 가 세운 규율 그대로). */}
-          {half ? (
-            <p className="warn" data-testid="reg-interval-half">
-              숫자와 단위를 함께 적어 주세요
-            </p>
-          ) : null}
         </div>
 
         {/* ⭑ **⟨19차 해제 · PRD-35⟩ 등록 미리보기** — 상세·목록과 **같은 함수**로 그린다.
@@ -559,7 +674,7 @@ function StepMeta(props: {
         <div className="form-row">
           <label htmlFor="reg-summary">
             설명
-            <span className="reqtag">필수</span>
+            <FieldTag required />
           </label>
           <textarea
             id="reg-summary"
@@ -587,6 +702,26 @@ function StepMeta(props: {
           </p>
         )}
 
+        {/* 변수 — **사람이 적는 자유 입력이다** (정본 스펙 18·19·20 · `VAL-006`).
+            형식 검사를 하지 않는다. 비면 요청에 싣지 않는다 — 빈 값을 저장하면 나중에
+            파이프라인이 채울 자리가 영영 막힌다 (`UploadModal.submit`).
+            ⭑ **⟨WU-B2 · PRD-16⟩ 변수는 한 칸이 아니라 5열 표다** — 「변수 3개에 단위
+            1개면 어느 변수 것인지 알 수 없다」(rev1 축자). 표 자체는 `VariableTable`
+            하나이고 상세가 같은 것을 읽기 전용으로 그린다.
+            ⭑ **⟨2026-09-14 · 레인 A4⟩ 자리는 설명 **뒤**이고 이름표는 `label` 이 아니라
+               섹션 제목(`fieldlbl`)이다.** ／ 종전 ~~데이터셋 이름 바로 아래 · `label` ＋
+               `선택` 배지~~ — rev2 목업이 이 표를 설명 아래에 두고 위에 제목 한 줄을 단다.
+               제목은 **입력 하나를 가리키지 않으므로** `label` 이 될 수 없고, 괄호 안 문면이
+               「여러 개」와 「대표 하나」를 이미 말해 선택 배지가 겹친다. */}
+        <div className="fieldlbl" data-testid="reg-variables-label">
+          변수 <span className="muted">{VARIABLES_FIELD_HINT}</span>
+        </div>
+        <VariableTable
+          rows={props.variables}
+          onRows={props.onVariables}
+          onBlocked={props.onVariablesBlocked}
+        />
+
         {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — WU-B3 이 세운 자리를 채운다.**
             표기 3값은 rev1 셀렉트 축자(`연구실 구성원 전체`·`나만 보기`·`지정한 사람만` ·
             미결-1 ⓐ)이고 저장은 `열림`·`잠김`·`지정 공개` 다. 대응표는 `common/accessState.ts`
@@ -595,7 +730,10 @@ function StepMeta(props: {
               연구실 **밖**이라 한 칸씩 어긋난다(PRD-11 대응표 · 미결-1 ⓐ 가 rev1 을 확정했다).
             기본 선택은 `연구실 구성원 전체` 라 대개 그대로 두고 넘어간다. */}
         <div className="form-row" data-testid="reg-visibility-slot">
-          <label htmlFor="reg-visibility">공개 범위</label>
+          <label htmlFor="reg-visibility">
+            공개 범위
+            <FieldTag />
+          </label>
           <select
             id="reg-visibility"
             className="sel"
@@ -846,8 +984,13 @@ export function StepTwo(props: {
  *    ① 이 고른 Lv 가 `Lv0` 일 때만 그린다 — 바꾸면 **즉시** 열리고 닫힌다(파생 상태가 아니라
  *    `props.ctx.processingLevelUserSet` 을 그대로 읽으므로 ① 의 변경이 그대로 반영된다).
  *    ⛔ **숨은 동안에는 값을 싣지 않는다** — 그 판정은 `UploadModal.submit` 이 같은 조건으로 한다.
- * ⚠ 원천 표기(`sourceLabel`)는 **Lv 무관 상시 노출**이고 그것은 이 블록 밖에 있다(미결-11 ⓐ) —
- *    Lv 로 갈리는 것은 아래 두 칸의 표시뿐이다.
+ * ⚠ ~~원천 표기(`sourceLabel`)는 **Lv 무관 상시 노출**이고 그것은 이 블록 밖에 있다(미결-11 ⓐ) —
+ *    Lv 로 갈리는 것은 아래 두 칸의 표시뿐이다.~~
+ * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 세 칸이 한 블록이다.**
+ *    ／ 종전 ~~`원천 표기` 한 칸은 상시 · Lv0 두 칸만 조건부~~ — **원천 = 직접 상류가 연구실
+ *    밖일 때만 묻는다.** 조건은 `Lv0` **또는** 연결 0건(`ctx.parents.length === 0`)이고,
+ *    부모가 붙어 있으면 원천은 **부모 쪽 계보가 말하므로** 블록 전체가 사라진다.
+ *    `내려받은 날` 은 그 안에서 다시 `Lv0` 일 때만 선다(기획서 `srcLv0` 축자).
  */
 function StepThree(props: {
   sourceLabel: string;
@@ -865,6 +1008,13 @@ function StepThree(props: {
   projects: PickedProject[];
   onProjects: (v: PickedProject[]) => void;
 }) {
+  const lv0 = props.ctx.processingLevelUserSet === LV0;
+  /**
+   * ⭑ **⟨개정 2026-09-14⟩ 원천 블록이 서는 조건 — 직접 상류가 연구실 밖일 때.**
+   * `Lv0`(원시 수집) **또는** 연결 0건. 부모가 붙어 있으면 원천은 부모 쪽 계보가 말한다.
+   * ⛔ 숨은 동안의 값은 전송되지 않는다 — 그 판정은 `UploadModal` 이 **같은 식**으로 한다.
+   */
+  const sourceVisible = lv0 || props.ctx.parents.length === 0;
   return (
     <div data-testid="reg-s3">
     <div className="card is-on">
@@ -872,19 +1022,6 @@ function StepThree(props: {
         <h3>{STEP_LABELS[3]}</h3>
       </div>
       <div className="card-b">
-        {/* 원천 표기 칸은 ③ 과 같은 단계에 함께 보인다 (§8 등록 단계 배치) */}
-        <div className="form-row">
-          <label htmlFor="reg-source">원천 표기 (선택)</label>
-          <input
-            id="reg-source"
-            className="inp"
-            data-testid="reg-source"
-            maxLength={60}
-            value={props.sourceLabel}
-            onChange={(e) => props.onSourceLabel(e.target.value)}
-          />
-        </div>
-
         {/* ③ 계보 확정이 얹히는 자리. 모달이 기본으로 `LineageStep` 을 넘긴다 */}
         <div className="lineage-slot" data-testid="reg-lineage-slot">
           {props.lineageStep ? (
@@ -893,45 +1030,75 @@ function StepThree(props: {
             <p className="muted">계보 확정을 열 수 없어요.</p>
           )}
         </div>
-        {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 두 칸.** 슬롯 자체는 늘 있고 Lv0 이 아니면
-            **안이 비었다** — 자리를 없애면 시험이 「블록이 없다」와 「Lv0 이 아니다」를 못 가른다. */}
-        <div className="form-row" data-testid="reg-source-lv0-slot">
-          {props.ctx.processingLevelUserSet === LV0 ? (
-            <div data-testid="reg-source-lv0">
-              <div className="form-row">
-                <label htmlFor="reg-source-url">출처 주소 (선택)</label>
-                <input
-                  id="reg-source-url"
-                  className="inp"
-                  data-testid="reg-source-url"
-                  placeholder={LV0_SOURCE_URL_PLACEHOLDER}
-                  value={props.sourceUrl}
-                  onChange={(e) => props.onSourceUrl(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="reg-source-downloaded-on">내려받은 날 (선택)</label>
-                <input
-                  id="reg-source-downloaded-on"
-                  className="inp"
-                  data-testid="reg-source-downloaded-on"
-                  placeholder={LV0_SOURCE_DATE_PLACEHOLDER}
-                  value={props.sourceDownloadedOn}
-                  onChange={(e) => props.onSourceDownloadedOn(e.target.value)}
-                />
-                {/* ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸 바로 아래에 선다 — 서버 400 문면을 그대로 쓴다. */}
-                {props.sourceDownloadedOnError ? (
-                  <p className="warn" role="alert" data-testid="reg-source-downloaded-on-error">
-                    {props.sourceDownloadedOnError}
-                  </p>
-                ) : null}
-              </div>
-              <p className="muted" data-testid="reg-source-lv0-notice">
-                {LV0_SOURCE_NOTICE}
-              </p>
+        {/* ⭑ **⟨개정 2026-09-14⟩ 원천 블록 — 계보 도구 **뒤**에 선다(기획서 `srcBlock` 자리).**
+            앞에 두면 「부모를 붙이면 안 물어본다」는 규칙을 읽기 전에 칸부터 보게 된다. */}
+        {sourceVisible ? (
+          <div data-testid="reg-source-block" style={{ marginTop: 16 }}>
+            <div className="fieldlbl" data-testid="reg-source-block-title">
+              {SOURCE_BLOCK_TITLE}
             </div>
-          ) : null}
-        </div>
+            <div className="form-row">
+              <label htmlFor="reg-source">출처 이름</label>
+              <input
+                id="reg-source"
+                className="inp"
+                data-testid="reg-source"
+                maxLength={60}
+                placeholder={SOURCE_NAME_PLACEHOLDER}
+                value={props.sourceLabel}
+                onChange={(e) => props.onSourceLabel(e.target.value)}
+              />
+            </div>
+            <div className="form-row">
+              {/* ⭑ ⟨개정 2026-09-14⟩ `필수` 는 **Lv0 일 때만** 선다 — Lv1 이상에서 연결이
+                  0건인 상태는 「아직 안 붙였다」일 수 있고, 그때까지 막지 않는다. */}
+              <label htmlFor="reg-source-url">
+                출처 주소
+                {lv0 ? <FieldTag required /> : null}
+              </label>
+              <input
+                id="reg-source-url"
+                className="inp"
+                data-testid="reg-source-url"
+                placeholder={LV0_SOURCE_URL_PLACEHOLDER}
+                value={props.sourceUrl}
+                onChange={(e) => props.onSourceUrl(e.target.value)}
+              />
+            </div>
+            {/* ⭑ **⟨WU-B6 · PRD-19⟩ Lv0 전용 칸.** 슬롯 자체는 블록 안에 늘 있고 Lv0 이
+                아니면 **안이 비었다** — 자리를 없애면 시험이 「블록이 없다」와
+                「Lv0 이 아니다」를 못 가른다. */}
+            <div className="form-row" data-testid="reg-source-lv0-slot">
+              {lv0 ? (
+                <div data-testid="reg-source-lv0">
+                  <div className="form-row">
+                    <label htmlFor="reg-source-downloaded-on">
+                      내려받은 날
+                      <FieldTag required />
+                    </label>
+                    <input
+                      id="reg-source-downloaded-on"
+                      className="inp"
+                      data-testid="reg-source-downloaded-on"
+                      placeholder={LV0_SOURCE_DATE_PLACEHOLDER}
+                      value={props.sourceDownloadedOn}
+                      onChange={(e) => props.onSourceDownloadedOn(e.target.value)}
+                    />
+                    {/* ⭑ ⟨advisor ② F1 · WU-B6⟩ 칸 바로 아래에 선다 — 서버 400 문면을 그대로 쓴다. */}
+                    {props.sourceDownloadedOnError ? (
+                      <p className="warn" role="alert" data-testid="reg-source-downloaded-on-error">
+                        {props.sourceDownloadedOnError}
+                      </p>
+                    ) : null}
+                  </div>
+                  <p className="muted" data-testid="reg-source-lv0-notice">
+                    {LV0_SOURCE_NOTICE}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
 
@@ -956,8 +1123,6 @@ export function RegisterArea(props: {
   projectSource: ProjectSource;
   name: string;
   onName: (v: string) => void;
-  topic: string;
-  onTopic: (v: string) => void;
   summary: string;
   onSummary: (v: string) => void;
   variables: VariableRow[];
@@ -1083,8 +1248,6 @@ export function RegisterArea(props: {
             status={props.status}
             name={props.name}
             onName={props.onName}
-            topic={props.topic}
-            onTopic={props.onTopic}
             summary={props.summary}
             onSummary={props.onSummary}
             variables={props.variables}

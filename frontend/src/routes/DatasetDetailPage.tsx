@@ -28,9 +28,11 @@ import { DatasetEditActions, DatasetEditForm } from '../components/detail/Datase
 import { RepresentativeImageSection } from '../components/detail/RepresentativeImageSection';
 import { apiRepresentativeImageSource } from '../components/detail/representativeImageSource';
 import type { RepresentativeImageSource } from '../components/detail/representativeImageSource';
+import { DatasetDeleteEntry } from '../components/detail/DatasetDeleteEntry';
+import { defaultDeletionSource } from '../components/detail/deletionSource';
 import { defaultDatasetUpdateSource } from '../components/detail/updateSource';
 import type { DatasetUpdateSource } from '../components/detail/updateSource';
-import type { DetailSource, FileSource } from '../components/detail/types';
+import type { DatasetDeletionSource, DetailSource, FileSource } from '../components/detail/types';
 import { LineageSection } from '../components/lineage/LineageSection';
 import { defaultLineageSource } from '../components/lineage/graphSource';
 import { useDatasetLineage } from '../components/lineage/useDatasetLineage';
@@ -70,6 +72,8 @@ export function DatasetDetailPage(
     /** 상세 수정 저장(WU-A3 · 계약 op `updateDataset`). 시험이 대역을 꽂는 자리다. */
     updateSource?: DatasetUpdateSource | undefined;
     representativeImageSource?: RepresentativeImageSource | undefined;
+    /** 삭제 둘(`DL-1` · `getDatasetDeletionImpact`·`deleteDataset`). 시험이 대역을 꽂는 자리다. */
+    deletionSource?: DatasetDeletionSource | undefined;
   } = {},
 ) {
   const { datasetId = '' } = useParams();
@@ -112,6 +116,11 @@ export function DatasetDetailPage(
   const representativeImageSource = useMemo(
     () => props.representativeImageSource ?? apiRepresentativeImageSource(),
     [props.representativeImageSource],
+  );
+  // 삭제도 **쓰기 경로라 픽스처 폴백이 없다** (`deletionSource.ts` 머리말).
+  const deletionSource = useMemo(
+    () => props.deletionSource ?? defaultDeletionSource(),
+    [props.deletionSource],
   );
   const edit = useDatasetEdit(updateSource, detail.status === 'ready' ? detail.detail : null);
   // 저장 중에는 낙관값이, 저장 뒤에는 **서버가 돌려준 상세**가 여기 선다.
@@ -245,7 +254,19 @@ export function DatasetDetailPage(
                 accessEditor={shown.basicInfo ? inlineFields(['accessState']) : null}
                 approvalSource={approvalSource}
                 onChanged={() => setReloadToken((n) => n + 1)}
-                editAction={<DatasetEditEntry onOpen={edit.open} disabled={edit.editing} />}
+                // 슬롯 하나에 진입점 둘. 헤더는 조건을 알지 못하고, 각 진입점이 스스로
+                // `null` 이 된다 — 수정은 `업로드·편집` 스위치, 삭제는 `actions.canDelete`
+                // (다른 축이다 · `PERMISSION-PRINCIPLES §2`). `DetailHeader` 는 터치 0.
+                editAction={
+                  <>
+                    <DatasetEditEntry onOpen={edit.open} disabled={edit.editing} />
+                    <DatasetDeleteEntry
+                      detail={shown}
+                      source={deletionSource}
+                      lineage={lineage}
+                    />
+                  </>
+                }
               />
               {/* 수정 폼은 헤더 **바로 아래 제 자리**에 편다 — 탭·패널로 갈아 끼우지 않는다
                   (`§1.3-1` 한 페이지 스크롤 · 미결-9 ⓑ). 다른 구역은 그대로 보인다. */}

@@ -79,10 +79,10 @@ def validate(plan, root):
         raise ReleaseError('고정된 배포 id가 필요합니다.')
     targets = plan.get('targets')
     if not isinstance(targets, list) or not targets or len(targets) > 2:
-        raise ReleaseError('배포 대상 dv/st를 선언하세요.')
+        raise ReleaseError('배포 대상 dv/st/pr를 선언하세요.')
     names = set()
     for target in targets:
-        if not isinstance(target, dict) or target.get('name') not in ('dv', 'st') or target['name'] in names:
+        if not isinstance(target, dict) or target.get('name') not in ('dv', 'st', 'pr') or target['name'] in names:
             raise ReleaseError('알 수 없거나 중복된 배포 대상입니다.')
         names.add(target['name'])
         if not isinstance(target.get('version'), str) or not target['version'].strip():
@@ -199,7 +199,7 @@ def run_plan(root, plan, *, state_dir=None, secret_path=slack.DEFAULT_SECRET,
                         operator = plan.get('operator_notifications')
                         if operator:
                             from infra.notifications.producers import release_result
-                            environment = {'dv': 'dev', 'st': 'staging'}[name]
+                            environment = {'dv': 'dev', 'st': 'staging', 'pr': 'prod'}[name]
                             event = release_result(plan['id'], environment, phase, code,
                                                    target['version'], datetime.datetime.now(datetime.timezone.utc))
                             return persist_operator_outbox(plan, state, path, [event])
@@ -217,7 +217,7 @@ def run_plan(root, plan, *, state_dir=None, secret_path=slack.DEFAULT_SECRET,
             from infra.notifications.producers import release_result
             events = []
             for target in plan['targets']:
-                environment = {'dv': 'dev', 'st': 'staging'}[target['name']]
+                environment = {'dv': 'dev', 'st': 'staging', 'pr': 'prod'}[target['name']]
                 event = release_result(plan['id'], environment, 'verify', 0, target['version'],
                                        datetime.datetime.now(datetime.timezone.utc))
                 events.append(event)

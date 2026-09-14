@@ -222,6 +222,25 @@ class HttpPreviewRelay:
             raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
         return body
 
+    def reclaim_previews(self, *, lab_id: str, account_id: str, target_id: str,
+                         file_ids: list[str]) -> dict[str, Any]:
+        """`reclaimPreviews` 중계 (`DL-2` · 22차 해제 ㉯).
+
+        **`palettes`·`describe_target` 과 같은 규율이다** — 200 이 아니면 예외이고
+        기본값을 끼워 넣지 않는다. 여기서 「못 닿았으니 지울 것이 없었던 것으로 친다」를
+        하면 삭제가 미리보기를 남긴 채 성공한다.
+
+        ⚠ **4xx 도 `RelayRefused` 로 갈라 올린다** — 400(모양 밖)과 503(못 닿음)은 다른
+        사실이고, 부르는 쪽(삭제 트랜잭션)은 둘 다 롤백하되 원인을 로그에서 가른다.
+        """
+        status, body = _request(f"{self._base}/reclaims", method="POST",
+                                headers=_scope_headers(lab_id, account_id, self._token),
+                                body={"targetId": target_id, "fileIds": list(file_ids)})
+        _refuse_if_client_error(status, body)
+        if status != 200 or body is None:
+            raise RelayUnavailable(f"viz-render 가 {status} 로 답했다.")
+        return body
+
     def lookup_value(self, *, lab_id: str, account_id: str,
                      request: dict[str, Any]) -> dict[str, Any]:
         """`lookupValue` 중계 (`〈294〉` · 15차 해제).

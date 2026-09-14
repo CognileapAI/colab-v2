@@ -23,7 +23,11 @@ set -a
 set +a
 
 valid_absolute() { [[ "${1:-}" = /* && "$1" != *$'\n'* && "$1" != *$'\r'* ]]; }
-case "${COLAB_NOTIFICATION_ENVIRONMENT:-}" in dev|staging) ;; *) echo 'runtime 준비 실패 — environment' >&2; exit 78 ;; esac
+# ⭑ ⟨2026-09-13⟩ prod 를 더한다. 갈래는 둘뿐이다 — **연결(connected)** 은 자기 호스트에서 직접 돌고,
+#   **relay** 는 staging 이 dev 로 넘긴다. prod 는 운영 호스트이므로 dev 와 같은 연결 갈래다.
+#   ⛔ 아무 값이나 받지 않는다(예: `production` 은 그대로 78 이다).
+case "${COLAB_NOTIFICATION_ENVIRONMENT:-}" in dev|prod|staging) ;; *) echo 'runtime 준비 실패 — environment' >&2; exit 78 ;; esac
+connected() { [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || [ "$COLAB_NOTIFICATION_ENVIRONMENT" = prod ]; }
 for required in COLAB_NOTIFICATION_ROOT COLAB_NOTIFICATION_PYTHON COLAB_OPERATOR_MANIFEST COLAB_OPERATOR_SPOOL; do
   valid_absolute "${!required:-}" || { echo "runtime 준비 실패 — $required" >&2; exit 78; }
 done
@@ -40,26 +44,26 @@ STATE="${COLAB_OPERATOR_STATE:-/var/lib/colab/operator}"
 
 case "$JOB" in
   export)
-    [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || exit 78
+    connected || exit 78
     exec "${PY[@]}" services/core-api/ops/operator_audit_export.py sync --manifest "$COLAB_OPERATOR_MANIFEST" ;;
   daily)
-    [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || exit 78
+    connected || exit 78
     exec "${CLI[@]}" daily "${MANIFEST[@]}" --profile connected ;;
   spool)
-    [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || exit 78
+    connected || exit 78
     exec "${CLI[@]}" drain-spool --profile connected --spool "$COLAB_OPERATOR_SPOOL" ;;
   retry)
-    [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || exit 78
+    connected || exit 78
     exec "${CLI[@]}" publish-pending "${MANIFEST[@]}" --profile connected ;;
   receive)
-    [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ] || exit 78
+    connected || exit 78
     exec "${PY[@]}" -m infra.notifications.relay receive ;;
   stage-relay)
     [ "$COLAB_NOTIFICATION_ENVIRONMENT" = staging ] || exit 78 ;;
   probe-*) ;;
 esac
 
-if [ "$COLAB_NOTIFICATION_ENVIRONMENT" = dev ]; then
+if connected; then
   TARGET="${JOB#probe-}"
   exec "${CLI[@]}" probe "${MANIFEST[@]}" --profile connected --target "$TARGET" \
     --state "$STATE/$TARGET.json" --spool "$COLAB_OPERATOR_SPOOL"

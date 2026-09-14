@@ -1,0 +1,37 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_deleting_appends_one_operator_audit_snapshot _______________
+
+p2_client = <function p2_client.<locals>.build at 0x10ec54ea0>
+planted = <function planted.<locals>.plant at 0x10fd1a200>
+sql = <function sql.<locals>.run at 0x10fcf31a0>
+
+    def test_deleting_appends_one_operator_audit_snapshot(p2_client, planted, sql):
+        """데이터셋 쓰기는 `d3_operator_audit` 에 스냅샷을 남긴다 (`0027` · 선례
+        `d3_catalog.update_dataset` 의 `dataset.updated`). 삭제도 데이터셋 쓰기다 —
+        남기지 않으면 **무엇이 지워졌는지가 감사 기록에 0건**이고, 활동 한 줄(`d8_activity`)은
+        이름·요약을 들지 않아 그 자리를 대신하지 못한다.
+    
+        `d3_operator_audit` 는 append-only 트리거가 걸려 정리가 안 된다 — `d8_activity` 와 같은
+        규칙으로 **자기가 심은 `target_id` 로만** 센다.
+        """
+        client = p2_client()
+        dataset_id, _ = planted(owner=ACC_A_PROF, files=1, name="감사 대상")
+    
+        assert client.delete(f"{PREFIX}/datasets/{dataset_id}",
+                             headers=auth(TOKEN_PROF)).status_code == 204
+    
+        rows = sql("""SELECT actor_id, action, before_snapshot, after_snapshot
+                        FROM d3_operator_audit WHERE target_id = :id""",
+                   {"id": dataset_id})
+>       assert len(rows) == 1, "삭제가 운영자 감사 스냅샷을 1행 남기지 않았다."
+E       AssertionError: 삭제가 운영자 감사 스냅샷을 1행 남기지 않았다.
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_dataset_deletion.py:742: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"duration_ms":75.557,"event":"http.server.request","level":"INFO","method":"DELETE","path":"/api/v1/datasets/01M2AK96G661G280VT6AYRECZZ","schema":"colab.ops.v1","service":"core-api","span_id":"38e8463b8380e3ed","status":204,"timestamp":"2026-09-12T10:40:47.758Z","trace_id":"f0c30fc8c7df47cf005d2a3a6f284ae4"}
+=========================== short test summary info ============================
+FAILED tests/test_dataset_deletion.py::test_deleting_appends_one_operator_audit_snapshot
+1 failed, 22 deselected in 1.61s

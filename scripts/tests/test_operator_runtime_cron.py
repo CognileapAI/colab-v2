@@ -64,6 +64,49 @@ class RuntimeCronTests(unittest.TestCase):
             self.assertIn('publish-pending --manifest', calls)
             self.assertIn('relay receive', calls)
 
+    def test_prod_wrapper_runs_the_connected_jobs_like_dev(self):
+        """prod 는 dev 와 같은 **연결(connected)** 갈래다 — staging 만 relay 다.
+
+        prod 를 거절하면 운영 호스트에서 알림이 아예 안 돈다(exit 78 = 준비 실패).
+        그것을 「설치했는데 조용하다」로 읽게 되는 자리라 여기서 값으로 잰다.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); config = self.config(root, 'prod')
+            for job in ('export', 'probe-service-health', 'daily', 'spool', 'retry', 'receive'):
+                result = self.invoke(RUNNER, '--config', config, job)
+                self.assertEqual(result.returncode, 0, (job, result.stderr))
+                self.assertNotIn('must-not-be-printed', result.stdout + result.stderr)
+            calls = (root / 'calls').read_text()
+            self.assertIn('operator_audit_export.py sync', calls)
+            self.assertIn('probe --manifest', calls)
+            self.assertIn('--profile connected', calls)
+            self.assertNotIn('--profile relay', calls)
+            self.assertNotIn('relay send', calls)
+
+    def test_prod_schedule_is_the_connected_schedule_and_installs_idempotently(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); config = self.config(root, 'prod'); cron = root / 'cron'
+            env = dict(os.environ, COLAB_NOTIFICATION_CRON_FILE=str(cron))
+            rendered = self.invoke(INSTALLER, '--environment', 'prod', '--config', config, 'render', env=env)
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            self.assertEqual(rendered.stdout.count('probe-'), 3)
+            self.assertIn(' export', rendered.stdout)
+            self.assertIn(' daily', rendered.stdout)
+            self.assertNotIn('stage-relay', rendered.stdout)
+            first = self.invoke(INSTALLER, '--environment', 'prod', '--config', config, 'install', env=env)
+            second = self.invoke(INSTALLER, '--environment', 'prod', '--config', config, 'install', env=env)
+            self.assertEqual((first.returncode, second.returncode), (0, 0))
+
+    def test_unknown_environment_is_still_refused(self):
+        """벌 이름을 넓힌 것이지 아무 값이나 받게 한 것이 아니다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); config = self.config(root, 'production'); cron = root / 'cron'
+            env = dict(os.environ, COLAB_NOTIFICATION_CRON_FILE=str(cron))
+            rendered = self.invoke(INSTALLER, '--environment', 'production', '--config', config, 'render', env=env)
+            self.assertEqual(rendered.returncode, 2)
+            runner = self.invoke(RUNNER, '--config', config, 'check')
+            self.assertEqual(runner.returncode, 78)
+
     def test_stage_probe_records_completion_time_then_relays_spool(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); config = self.config(root, 'staging')

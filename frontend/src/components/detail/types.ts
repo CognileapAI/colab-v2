@@ -76,3 +76,23 @@ export interface FileSource {
   /** 삭제. 마지막 본체면 `LastBodyFile`. */
   remove(datasetId: string, fileId: string): Promise<void>;
 }
+
+// ── 데이터셋 삭제(묘비) — `DL-1` ────────────────────────────────────────────
+
+/**
+ * 확인 모달이 말해야 하는 파급 세 칸 (계약 `DeletionImpact`).
+ * 값의 뜻은 계약 산문 축자다 — 「이 데이터로 만든 데이터 N건의 **계보에 자리가 남아요**」 ·
+ * 「교수 승인이 붙은 데이터예요」 · 「대기 중인 접근 요청 N건이 자동으로 닫혀요」.
+ */
+export type DeletionImpact = S['DeletionImpact'];
+
+/**
+ * 삭제가 서버와 만나는 얼굴 (`getDatasetDeletionImpact` · `deleteDataset`).
+ * **픽스처 폴백이 없다** — 되돌리는 전이가 없는 경로다 (`deletionSource.ts` 머리말).
+ */
+export interface DatasetDeletionSource {
+  /** 모달이 열릴 때 한 번. 못 읽으면 삭제 버튼이 서지 않는다. */
+  impact(datasetId: string): Promise<DeletionImpact>;
+  /** 묘비로 전환. 204 면 성공이고 **되돌리는 전이가 없다.** */
+  remove(datasetId: string): Promise<void>;
+}

@@ -1,4 +1,7 @@
-"""아직 구현하지 않은 **4 개** 오퍼레이션 — **501 + ErrorEnvelope**.
+"""아직 구현하지 않은 **2 개** 오퍼레이션 — **501 + ErrorEnvelope**.
+
+⭑ **⟨`DL-1` 2026-09-06⟩ 4 → 2** — `deleteDataset`·`getDatasetDeletionImpact` 를 걷었다.
+아래 `OPERATIONS` 머리의 주석이 이유를 적었고, `tests/test_not_implemented.py` 가 오라클이다.
 
 ⚠ **이 줄이 「23 개」였다** (`CODE-REVIEW-20260903` 부록). 아래 문단들이 23 → 22 → 20 →
 19 → 16 → 9 → 12 → 4 를 한 줄씩 적어 내려가는 동안 **첫 줄만 안 따라갔다.** 계수는
@@ -112,9 +115,14 @@ class Op:
 #:    ⭑ 병합(창 8-a) 뒤 `downloadDataset` 의 진짜 핸들러는 `routes/download.py` 다.)
 #: 이 표와 계약의 대조는 `tests/test_route_table.py` 가 오라클로 검사한다.
 OPERATIONS: tuple[Op, ...] = (
-    Op("deleteDataset", "DELETE", "/datasets/{datasetId}", "NOT_IMPLEMENTED_P1"),
-    Op("getDatasetDeletionImpact", "GET", "/datasets/{datasetId}/deletion-impact",
-       "NOT_IMPLEMENTED_P1"),
+    # ── ⟨`DL-1` 2026-09-06⟩ **4 → 2** — `deleteDataset`·`getDatasetDeletionImpact` 를 걷었다.
+    #    두 op 은 `NOT_IMPLEMENTED_P1`(= v2 밖) 이었고, 그 배정이 **계약 실물과 어긋나 있었다**:
+    #    계약은 처음부터 둘을 들었고(204 묘비 · `DeletionImpact` 세 칸) 서버는 이미
+    #    `actions.canDelete` 를 판정해 내려보내고 있었다(소비처 0건). **계약 개정 0건 ·
+    #    마이그레이션 0건** — 없던 것은 라우트 하나였다(`routes/deletion.py`).
+    #    선례 = `〈229〉`-㉯(낡은 `P1` 표기를 정본 인용으로 뒤집는다) · Ted 판정 ⓐ
+    #    (`dev-package/sessions/DL-1-TED-RULING.md` — **병합의 선행조건**).
+    #    걷은 자리의 실동작 시험 = `tests/test_dataset_deletion.py`.
     # ── D2c 신설 11 중 P2 가 안 가져간 둘 (윗 문단이 이유를 적었다) ──
     # ── ⟨동결 4회 해제 · `PLAN-SoT §9-〈88〉` 묶음 5·6⟩ 등록 **전** 세계의 파일 조작 둘 ──
     #    **표가 21 → 23 으로 는다. 퇴행이 아니다** — 두 op 은 지금 화면이 필요로 하는데

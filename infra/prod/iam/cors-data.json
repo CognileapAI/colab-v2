@@ -1,0 +1,10 @@
+[
+  {
+    "_comment": "S3.md §1 값 그대로. AllowedOrigins = **그 환경의 실오리진만**. ⛔ prod 는 와일드카드 금지이고 **localhost 를 넣지 않는다**(dev 판에는 있다) — 개발 기계 오리진을 운영 버킷에 여는 자리다. 도메인을 붙이면 그 오리진을 여기 **추가**한다(안 하면 업로드가 조용히 죽는다).",
+    "AllowedOrigins": ["https://d1aje00ns2hjsl.cloudfront.net"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Range", "Accept-Ranges", "x-amz-request-id", "x-amz-id-2"],
+    "MaxAgeSeconds": 3000
+  }
+]

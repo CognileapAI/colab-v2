@@ -4375,6 +4375,26 @@ export interface components {
              *     여기로 온다 (`Policy_데이터셋_상세 §8 — 파일이 너무 큼`).
              */
             fileIds?: components["schemas"]["Ulid"][];
+            /**
+             * @description **표시용 원래 파일 이름** — 선택이다. 생략하면 종전 동작 그대로다.
+             *
+             *     **왜 필요한가** — **파일 안에 변수 이름이 없는 포맷**(`.npy`)은 viz-render 가
+             *     파일 이름의 stem 을 변수 이름으로 쓴다(`readers._read_numpy`). 그런데 저장 배치가
+             *     본체를 `fileId` 로 이름 붙이므로(`contracts/storage/layout.json`) 디스크의 이름은
+             *     ULID 이고, 그대로 두면 화면의 변수 고르개에 `01J…` 26자가 선다.
+             *
+             *     **왜 core 가 싣는가** — 원래 이름은 **원장(core-api)에만** 있다. viz-render 가
+             *     그것을 읽으려면 D3·D5 의 표에 닿아야 하고 그 순간 불변규칙 1 이 깨진다.
+             *     그래서 식별자와 같은 자리에 **이름도 식별자처럼** 넘긴다.
+             *
+             *     ⛔ **바이트·배치·캐시 키에 닿지 않는다** — 이 값은 표시에만 쓰이고
+             *     `source_digest`(캐시 키의 재료)는 종전대로 디스크 이름을 쓴다.
+             *     ⚠ 대상에 없는 `fileId` 는 무시한다. 없는 조각은 **오류가 아니라 힌트 없음**이다.
+             */
+            fileNames?: {
+                fileId: components["schemas"]["Ulid"];
+                fileName: string;
+            }[];
         } & (unknown | unknown);
         /**
          * @description 시각을 **건수·처음·마지막**으로 말한다 (`Policy_데이터셋_상세 §8 층의 시각` ·
@@ -4630,6 +4650,11 @@ export interface components {
             /** @description 못 읽은 조각. 화면은 이름과 시각을 그대로 밝힌다. */
             missingParts: {
                 fileId?: components["schemas"]["Ulid"];
+                /**
+                 * @description `RenderTarget.fileNames` 가 이 `fileId` 의 이름을 줬으면 **그 이름**이고,
+                 *     없으면 저장 배치의 이름(ULID)이다 — 같은 자리를 두 규칙이 쓰지 않도록
+                 *     이름 결정은 `RenderTarget.fileNames` 한 곳으로 모은다.
+                 */
                 fileName: string;
                 instant?: components["schemas"]["Timestamp"];
             }[];

@@ -214,10 +214,14 @@
 .up-steps { display: flex; flex-direction: column; gap: 16px; }
 .form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 720px) { .form-2 { grid-template-columns: 1fr; } }
-/* ⭑ ⟨19차 · PRD-28⟩ **짧은 값 세 개가 한 줄**이다 — 기간·좌표계·격자.
-   rev1 축자 = 「2+1 로 갈리면 마지막 줄이 반쯤 빈다」. 그래서 2칸 격자에 셋을 넣지 않는다. */
+/* ⭑ ⟨19차 · PRD-28⟩ **짧은 값 세 개가 한 줄**이다 — ⭑ ⟨개정 2026-09-14 · 레인 A4⟩
+   관측 간격·좌표계·격자 ／ 종전 ~~기간·좌표계·격자~~.
+   rev1 축자 = 「2+1 로 갈리면 마지막 줄이 반쯤 빈다」. 그래서 2칸 격자에 셋을 넣지 않는다.
+   ⭑ 접히는 폭은 rev2 축자 — 1100px 에서 **2열**로 먼저 접히고(그때 격자가 둘째 줄),
+      더 좁아지면 한 열이 된다. 사용자 스크린샷이 잡은 2+1 모양이 이 구간이다. */
 .form-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 900px) { .form-3 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .form-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .form-3 { grid-template-columns: minmax(0, 1fr); } }
 .form-3 > .form-row { min-width: 0; }
 .form-3 :is(input, textarea, select) { width: 100%; max-width: 100%; }
 /* 기간은 두 칸이 한 값이라(`DataPeriod`) 한 셀 안에서 붙는다 — 셀을 둘로 세지 않는다. */
@@ -227,15 +231,29 @@
 .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .form-row label { font-size:13px; color: var(--up-muted); display: flex; gap: 6px; align-items: center; }
 .autotag { font-size:13px; border: 1px solid var(--up-line); border-radius: 9999px; padding: 1px 6px; }
-/* ⭑ ⟨19차 · PRD-15⟩ `필수` 배지. `자동` 과 같은 모양이되 **강조가 반대**다 —
-   자동은 「손대지 마세요」이고 필수는 「여기를 적어 주세요」다. */
+/* ⭑ ⟨19차 · PRD-15⟩ `필수` 표시. 「여기를 적어 주세요」를 색이 아니라 **글자로도** 적는다.
+   ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 모양은 알약 배지가 아니라 라벨 옆 붉은 작은 글자다** —
+      rev2 `.req` 축자(`font-weight:700` ＋ `--color-danger-600`).
+      ／ 종전 ~~테두리 ＋ 배경 ＋ 좌우 여백의 알약~~ — 알약은 값(상태 칩)처럼 읽혀 라벨의
+      일부로 붙지 않고, 한 화면에 네 개가 서면 칸 이름보다 배지가 먼저 눈에 든다.
+   ⚠ **사용처와 `data-testid`·클래스 이름은 무변이다** — 바뀐 것은 스타일뿐이다.
+   ⚠ 색은 `--fg-danger` 를 직접 읽는다 — 이 파일 `:root` 의 `--color-danger-600` 은
+      라이트 값 고정이라 다크에서 대비가 떨어진다(후속 항목). */
 .reqtag {
-  font-size:13px;
-  border: 1px solid var(--up-ink);
-  border-radius: 9999px;
-  padding: 1px 6px;
-  background: var(--color-surface-alt);
-  color: var(--color-text);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--fg-danger);
+  letter-spacing: 0;
+}
+/* ⭑ ⟨2026-09-14⟩ `선택` 표시 — `필수` 와 같은 자리이고 **강조만 낮다**.
+   rev2 목업은 이 자리를 `<span class="muted" style="font-weight:400">(선택)</span>` 으로
+   그린다 — 흐린 회색 · 보통 굵기다. 문면은 배지 컴포넌트가 쥔 `선택` 을 그대로 쓴다
+   (괄호 문자열로 되돌리지 않는다 — `(선택)` 괄호 부재는 rev2 시험 두 건의 판정이다). */
+.opttag {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
 }
 .inp, .sel { padding: 8px 10px; border: 1px solid var(--up-line); border-radius: 8px; font: inherit; }
 textarea.inp { resize: vertical; line-height: 1.5; }
@@ -455,6 +473,29 @@ textarea.inp { resize: vertical; line-height: 1.5; }
 
 /* ── ㈏ 기간 달력 팝오버 (rev2 `.daterange`·`.dr-*`) ────────────────────── */
 .daterange{position:relative;}
+/* ⭑ ⟨2026-09-14 · 레인 A4⟩ 기간 칸 — rev2 `#prField`(`.dr-field` ＋ `.dr-half` 둘) 축자.
+   두 칸으로 나눠 보인다 — 넓은 폭이 「시작과 끝 두 개를 받는다」는 뜻으로 읽힌다(rev2 주석). */
+.dr-field{display:flex;align-items:stretch;width:100%;padding:0;
+  border:1px solid var(--color-border-control);border-radius:var(--radius-md);background:var(--color-surface);
+  font-family:inherit;font-size:var(--text-body-sm);color:var(--color-text);
+  cursor:pointer;text-align:left;overflow:hidden;
+  transition:border-color var(--ease),box-shadow var(--ease);}
+.dr-field:hover{border-color:var(--color-gray-400);}
+.dr-field[aria-expanded="true"]{border-color:var(--color-primary-600);box-shadow:0 0 0 3px var(--color-primary-100);}
+.dr-half{flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:8px 12px;}
+.dr-half + .dr-half{border-left:1px solid var(--color-border);}
+.dr-ico{flex:none;color:var(--color-text-muted);display:flex;align-items:center;}
+.dr-txt{min-width:0;}
+.dr-k{display:block;font-size:var(--text-caption);color:var(--color-text-muted);line-height:1.3;}
+.dr-v{display:block;font-family:var(--font-data);font-variant-numeric:tabular-nums;
+  font-size:var(--text-body-sm);font-weight:600;color:var(--color-text);line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* 빈 값 표기 — 값과 **굵기·색으로** 갈린다. 「한 시점이면 비워 둬요」가 여기 앉는다. */
+.dr-v.ph{font-weight:400;color:var(--color-text-subtle);}
+/* ⭑ ⟨2026-09-14 · 레인 A4⟩ 관측 간격 — rev2 `.itv` 축자. 수 칸이 늘고 단위는 고정 폭이다. */
+.itv{display:flex;gap:6px;}
+.itv .inp{flex:1;min-width:0;}
+.itv .sel{flex:none;width:78px;}
 /* 각색 — rev2 는 `display:none` ＋ `.dr-pop.open{display:block}` 로 여닫는다.
    여기서는 React 가 열렸을 때만 그리므로 그 두 줄을 걷는다. 나머지는 축자다. */
 .dr-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:60;

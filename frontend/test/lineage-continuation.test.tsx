@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ParentPicker } from '../src/components/lineage/ParentPicker';
 import { LineageFixModal } from '../src/components/lineage/LineageFixModal';
+import { lineagePeriodEnd, lineagePeriodStart } from '../src/components/lineage/lineageSource';
 import type { LineageCandidate, LineageCandidateQuery } from '../src/components/lineage/types';
 const rows = [
   { datasetId: 'rain', name: 'Rain', fileNames: ['Rain.nc'], fileExtensions: ['nc'], category: '기상·기후 인자', period: { start: '2025-01-01T00:00:00Z', end: null }, source: { label: 'ERA5', url: null, downloadedOn: null }, processingLevel: 1, topic: '강우', bodyAccessible: true },
@@ -21,20 +22,14 @@ describe('계보 직접 찾기 복구와 선택', () => {
     expect(screen.getByText('Rain.nc')).toBeInTheDocument();
     expect(screen.queryByText(/Soil\.nc/)).toBeNull();
   });
-  it('날짜 입력은 UTC 하루의 시작과 끝을 포함하는 시간대 있는 조건으로 보낸다', () => {
-    const onSearch = vi.fn();
-    render(<ParentPicker {...props} onSearch={onSearch} onPick={vi.fn()} onClose={() => {}} />);
-
-    fireEvent.change(screen.getByLabelText('후보 기간 시작'), { target: { value: '2025-01-01' } });
-    expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({
-      periodStart: '2025-01-01T00:00:00.000Z',
-    }));
-
-    fireEvent.change(screen.getByLabelText('후보 기간 끝'), { target: { value: '2025-12-31' } });
-    expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({
-      periodStart: '2025-01-01T00:00:00.000Z',
-      periodEnd: '2025-12-31T23:59:59.999999Z',
-    }));
+  // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 후보 모달의 **필터가
+  //   검색어 하나로 줄면서 기간 칸이 사라졌다.** 재는 대상(UTC 하루 경계 변환)은 그대로
+  //   `lineageSource` 에 남아 있으므로 **화면 대신 그 자리**를 잰다 — 규칙을 지우지 않는다.
+  it('날짜 조건은 UTC 하루의 시작과 끝을 포함하는 시간대 있는 값으로 바뀐다', () => {
+    expect(lineagePeriodStart('2025-01-01')).toBe('2025-01-01T00:00:00.000Z');
+    expect(lineagePeriodEnd('2025-12-31')).toBe('2025-12-31T23:59:59.999999Z');
+    // 날짜 형식이 아니면 손대지 않는다 — 서버가 준 값을 되돌려 보내는 경로다.
+    expect(lineagePeriodStart('2025-01-01T09:00:00+09:00')).toBe('2025-01-01T09:00:00+09:00');
   });
   it('후보 읽기 실패를 빈 결과와 구분하고 다시 시도한다', async () => {
     const candidates = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ items: rows, nextCursor: null });
@@ -78,7 +73,8 @@ describe('계보 직접 찾기 복구와 선택', () => {
     expect(candidates.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ cursor: 'next' }));
   });
 
-  it('다음 페이지를 읽는 중 새 필터를 고르면 옛 페이지를 무시하고 추가 로딩 상태를 초기화한다', async () => {
+  // ⭑ ⟨개정 2026-09-14⟩ 필터가 검색어 하나로 줄어, 「새 필터」의 자리를 검색어가 맡는다.
+  it('다음 페이지를 읽는 중 검색어를 바꾸면 옛 페이지를 무시하고 추가 로딩 상태를 초기화한다', async () => {
     let finishMore!: (page: { items: LineageCandidate[]; nextCursor: null }) => void;
     const candidates = vi.fn()
       .mockResolvedValueOnce({ items: [rows[0]!], nextCursor: 'next' })
@@ -87,7 +83,7 @@ describe('계보 직접 찾기 복구와 선택', () => {
     render(<LineageFixModal datasetId="self" selfLv={3} candidateSource={{ candidates }} editSource={{ addParent: vi.fn() }} onSaved={vi.fn()} requestClose={vi.fn()} />);
     await screen.findByTestId('lin-pick-rain');
     fireEvent.click(screen.getByRole('button', { name: '다음 결과 보기' }));
-    fireEvent.change(screen.getByLabelText('주제'), { target: { value: '토양' } });
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'soil' } });
     expect(await screen.findByTestId('lin-pick-soil')).toBeInTheDocument();
     await act(async () => finishMore({ items: [rows[0]!], nextCursor: null }));
     expect(screen.queryByTestId('lin-pick-rain')).not.toBeInTheDocument();

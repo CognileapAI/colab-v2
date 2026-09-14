@@ -275,3 +275,16 @@ export const FIXED_COPY: readonly string[] = [
   UPLOAD_CLOSE_CREATING, UPLOAD_CLOSE_CREATED,
   UPLOAD_CLOSE_FILE_ONLY, UPLOAD_CLOSE_INPUT_ONLY,
 ];
+
+/* ── 등록 게이트 토스트 5종 — 기획서 rev2 `makeDataset()` 축자 ──────────────
+ *
+ * ⭑ **⟨2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩** `데이터셋 만들기` 의
+ *    필수 검사를 한 곳에 모으면서 그 다섯 문면을 여기로 올린다. 문면은 rev2 목업의
+ *    `toast(...)` 인자 **축자**이고 화면이 새로 짓지 않는다.
+ * ⛔ PRD-43 표의 21행이 아니다(`AT_LEAST_ONE_VARIABLE` 과 같은 사유) — `FIXED_COPY` 에 넣지 않는다.
+ */
+export const REGISTER_NAME_REQUIRED = '데이터셋 이름을 적어 주세요';
+export const REGISTER_SUMMARY_REQUIRED = '설명을 적어 주세요';
+export const REGISTER_PERIOD_REQUIRED = '기간의 시작할 날을 골라 주세요';
+export const REGISTER_INTERVAL_REQUIRED = '관측 간격을 적어 주세요';
+export const REGISTER_LV0_SOURCE_REQUIRED = '출처 주소와 내려받은 날을 적어 주세요';

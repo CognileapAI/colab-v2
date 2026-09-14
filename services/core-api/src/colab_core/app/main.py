@@ -40,9 +40,9 @@ from ..kernel.observability import TraceMiddleware
 from ..kernel.session_token import SessionSigner
 from .relay import (HttpDatasetSearchRelay, HttpLineageSuggestionRelay,
                     HttpPreviewRelay)
-from .routes import (access, accounts, catalog, download, identity, ingestion, insight, lineage,
-                     members, not_implemented, preview, project, representative_image,
-                     search_evidence, session, upload_transfers)
+from .routes import (access, accounts, catalog, deletion, download, identity, ingestion,
+                     insight, lineage, members, not_implemented, preview, project,
+                     representative_image, search_evidence, session, upload_transfers)
 
 API_PREFIX = "/api/v1"
 
@@ -187,7 +187,10 @@ def create_app(settings: Settings | None = None, *, test_static_subjects: bool =
                    project.router,
                    upload_transfers.router,  # /uploads/transfers 가 /uploads/{uploadId} 보다 먼저
                    ingestion.router, lineage.router, preview.router, access.router,
-                   insight.router):
+                   insight.router,
+                   # ⭑ ⟨`DL-1` 2026-09-06⟩ 삭제 둘. 카탈로그와 **같은 `catalog` 태그**이지만
+                   #   파일을 가른다 — 조회와 파괴를 한 파일이 들면 두 레인이 거기서 만난다.
+                   deletion.router):
         app.include_router(router, prefix=API_PREFIX)
     not_implemented.register(app, prefix=API_PREFIX)
 

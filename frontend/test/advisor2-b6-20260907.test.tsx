@@ -185,7 +185,19 @@ describe('advisor ② F1 · WU-B6 — 등록 형상 인라인 선검사', () => 
     await pickLevel(LV0);
     await goStep('②');
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
+    // ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 기간·관측 간격·
+    //   Lv0 출처 주소가 등록 게이트가 됐다. 여기서 재는 것은 **형상 오류 한 건**이므로
+    //   앞의 게이트들은 채워 두고 `내려받은 날` 만 틀린 모양으로 남긴다.
+    await click(screen.getByTestId('reg-period-open'));
+    await click(screen.getByTestId('reg-period-unit-일'));
+    await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+    await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+    await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+    await click(screen.getByTestId('reg-period-apply'));
+    await change(screen.getByTestId('reg-interval-value'), '1');
+    await change(screen.getByTestId('reg-interval-unit'), '시');
     await goStep('③');
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
     await change(screen.getByTestId('reg-source-downloaded-on'), '2026.08.20');
     await click(screen.getByTestId('reg-done'));
 

@@ -4,7 +4,7 @@
 `CLAUDE.md` 에는 3줄 포인터만 남겼다(≤200행 상한). 규약은 무변경 — 문면이 정본이다.
 
 운영 문서 `docs/DEPLOY.md` · 변경 요약 `docs/DEPLOY_HANDOVER.md` · 기계적 절차 `infra/dev/README.md`.
-**지금 서 있는 것은 dev 하나**(`d31zgpff2091oh.cloudfront.net`). prod 는 정본 `㊻` 가 ⏸ 다.
+⭑ **⟨개정 2026-09-12⟩ 지금 서 있는 것은 dev·prod 둘**(`d31zgpff2091oh.cloudfront.net` · `d1aje00ns2hjsl.cloudfront.net`) — `㊻` 보류는 해제됐고 prod 배포는 `prod-YYYYMMDD` 태그에서만 한다(`docs/BRANCHING.md` 규칙 6 · `docs/DEPLOY.md §5-9`). ／ 종전 ~~**지금 서 있는 것은 dev 하나**(`d31zgpff2091oh.cloudfront.net`). prod 는 정본 `㊻` 가 ⏸ 다.~~
 
 ## 깨뜨리면 안 되는 것 (전부 이유가 있다)
 

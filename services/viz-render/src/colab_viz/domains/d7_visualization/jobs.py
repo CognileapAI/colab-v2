@@ -69,6 +69,10 @@ class RenderSpec:
     preview_url_base: str
     #: 산출물을 서빙 자리로 내보내는 싱크 (`〈342〉-㉮`). 기본은 로컬(no-op — nginx 가 디렉터리를 서빙).
     preview_sink: PreviewSinkPort = field(default_factory=LocalPreviewSink)
+    #: `fileId → 표시용 원래 이름` (`core-viz.yaml#RenderTarget.fileNames`). **표시에만 쓴다** —
+    #: 파일 안에 변수 이름이 없는 포맷(`.npy`)의 변수 이름과 `missingParts[].fileName` 자리다.
+    #: ⛔ 캐시 키(`source_digest`)·배치·회수 범위는 **디스크 이름 그대로**다.
+    display_names: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -241,6 +245,18 @@ class PreviewArtifacts:
     sidecar: preview.Artifact | None = None
     world_file: preview.Artifact | None = None
     geometry: preview.MapGeometry | None = None
+    #: ⭑ ⟨증보 2026-09-13 · `DL-2` ⓓ7⟩ 이 벌을 그린 조각 전부의 `fileId`. 사이드카가
+    #: 이미 싣는 값이지만(`sources`), **발행 전에** 표식을 놓으려면 파일을 열지 않고도
+    #: 손에 있어야 한다 — 사이드카를 다시 읽으면 같은 사실의 출처가 둘이 된다.
+    sources: tuple[str, ...] = ()
+
+    def index_pairs(self) -> list[tuple[str, str]]:
+        """표식 자리 `(fileId, contentKey)` — 한 벌의 캐시 키는 **한 번만** 센다."""
+        keys: list[str] = []
+        for a in self.all():
+            if a.cache_key not in keys:
+                keys.append(a.cache_key)
+        return [(file_id, key) for key in keys for file_id in self.sources]
 
     def all(self) -> list[preview.Artifact]:
         return [a for a in (self.thumbnail, self.detail,
@@ -274,10 +290,24 @@ def _decimate_grid(arr, steps: tuple[int, int]):
     return downsample.sample_centers(np.asarray(arr, dtype="f8"), steps).astype("f8")
 
 
+def display_file_name(part: SourcePart, spec: RenderSpec) -> str:
+    """화면에 낼 파일 이름 — **힌트가 있으면 원래 이름, 없으면 디스크 이름**이다.
+
+    이름을 사람에게 보여 주는 자리는 둘(`missingParts[].fileName` ·
+    `GridRejection.fileName`)이고 **둘 다 이 함수만 본다** — 규칙이 두 벌이면 한쪽만
+    고쳐지고 화면의 절반에 ULID 가 남는다. 변수 이름 쪽의 같은 규칙은
+    `readers.numpy_variable_name` 한 자리에 있다.
+
+    ⛔ **캐시 키(`source_digest`)·저장 배치·회수 범위는 디스크 이름 그대로다.**
+    """
+    return spec.display_names.get(part.file_id, part.file_name)
+
+
 def _read_part(part: SourcePart, spec: RenderSpec) -> _Read:
     """조각 하나를 읽는다. 좌표는 있으면 싣고, **없으면 없다고 말한다** — 지어내지 않는다."""
     fmt, field_ = read_field(part.path, variable=spec.variable, instant=spec.instant,
-                             max_side=spec.max_preview_side)
+                             max_side=spec.max_preview_side,
+                             display_name=spec.display_names.get(part.file_id))
 
     if field_.has_position:
         return _Read(part=part, fmt=fmt, field=field_)
@@ -301,7 +331,9 @@ def _read_part(part: SourcePart, spec: RenderSpec) -> _Read:
         # **거절 사유를 숫자·enum 으로 들려 보낸다** (`〈88〉` 묶음 1·2). 문장은 사람용으로만
         # 남는다 — 화면이 문장을 가르던 자리가 여기서 닫힌다(스윕 `C-1`).
         err = RenderError(RenderFailure.NO_REFERENCE_GRID, str(e))
-        err.grid_rejection = e.rejection(file_name=part.file_name)
+        # 이름은 **표시용**이다 — 디스크 이름은 `fileId` 라 그대로 내면 화면이 ULID 를
+        # 「거절당한 파일」로 지목한다. 힌트가 없으면 종전대로 디스크 이름이다.
+        err.grid_rejection = e.rejection(file_name=display_file_name(part, spec))
         raise err from e
     steps = field_.steps
     reference = (_decimate_grid(grid.lat, steps), _decimate_grid(grid.lon, steps))
@@ -458,7 +490,8 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
         url_base=spec.preview_url_base, key_params=key_params,
         source=source_ids[0], sources=source_ids, owner=owner)
     artifacts = PreviewArtifacts(thumbnail=thumb, detail=detail,
-                                 thumbnail_sidecar=thumb_sc, detail_sidecar=detail_sc)
+                                 thumbnail_sidecar=thumb_sc, detail_sidecar=detail_sc,
+                                 sources=source_ids)
 
     coords = _map_coordinates(reads, merged if not isinstance(merged, _ValuesOnly) else None)
     if coords is None:
@@ -508,6 +541,14 @@ def _run(job: RenderJob) -> None:
         if time.monotonic() - started >= spec.deadline_seconds:
             raise RenderError(RenderFailure.TIMEOUT)
 
+    def _missing(part) -> dict:
+        """`missingParts` 한 칸 — 이름은 `GridRejection.fileName` 과 **같은 함수**가 고른다.
+
+        디스크 이름은 `fileId` 라 그대로 내면 화면이 ULID 를 「못 읽은 파일 이름」으로 보여 준다.
+        힌트가 없으면 종전대로 디스크 이름이다(계약 `missingParts[].fileName` 산문 축자).
+        """
+        return {"fileId": part.file_id, "fileName": display_file_name(part, spec)}
+
     try:
         _stage(STAGE_READ)
         reads: list[_Read] = []
@@ -518,7 +559,7 @@ def _run(job: RenderJob) -> None:
                 reads.append(_read_part(part, spec))
             except RenderError as e:
                 first_error = first_error or e
-                missing.append({"fileId": part.file_id, "fileName": part.file_name})
+                missing.append(_missing(part))
             except NotRenderableError as e:
                 # ⭑ ⟨2026-09-03 · 레인 C 수용 검토 #2⟩ **「알 수 없는 오류」가 아니다.**
                 # `is_retry_pointless` 가 이 형으로 재시도 무의미를 판정하는데, 여기서
@@ -527,10 +568,10 @@ def _run(job: RenderJob) -> None:
                 # 실패가 돌아온다. 코드는 라우트가 415 로 내는 것과 **같은 문자열**이다.
                 first_error = first_error or RenderError(
                     RenderFailure.NOT_RENDERABLE, str(e))
-                missing.append({"fileId": part.file_id, "fileName": part.file_name})
+                missing.append(_missing(part))
             except (FieldReadError, Exception) as e:  # noqa: BLE001
                 first_error = first_error or RenderError(RenderFailure.UNKNOWN, str(e))
-                missing.append({"fileId": part.file_id, "fileName": part.file_name})
+                missing.append(_missing(part))
 
         if not reads:
             raise first_error or RenderError(RenderFailure.UNKNOWN, "읽힌 조각이 없다")
@@ -566,8 +607,21 @@ def _run(job: RenderJob) -> None:
             job.rendered = merged
             job.artifacts = _build_artifacts(job, reads, merged, color_range)
             job.badge = _badge_for(reads, job.artifacts.map_image is not None)
+        # ⭑ ⟨2026-09-13 · `DL-2` ⓓ7⟩ **표식이 산출물보다 먼저다.** 표식 없이 놓인 산출물은
+        # 삭제 회수 때 목록 조회로 찾을 수 없고, 그 실패는 에러가 아니라 「지울 것이 없다」로
+        # 위장한다. 그래서 표식 실패는 **렌더 실패**이고, 그 경우 `publish` 는 부르지 않는다 —
+        # 그림은 서빙 중인데 되찾을 길이 없는 반쪽 상태를 만들지 않는다.
+        spec.preview_sink.index(job.artifacts.index_pairs())
         # 산출물이 디스크에 다 놓인 뒤 서빙 자리로 — 실패는 렌더 실패다(반쪽 미리보기를 「완료」로 내지 않는다).
-        spec.preview_sink.publish(job.artifacts.all())
+        try:
+            spec.preview_sink.publish(job.artifacts.all())
+        except FileNotFoundError as e:
+            # ⭑ ⟨2026-09-13 · prod 임시 검증 실측 · D9⟩ **방금 구운 산출물이 사라졌다.**
+            #   같은 데이터셋의 삭제 회수가 `invalidation.apply()` 로 unlink 한 직후 이
+            #   `read_bytes()` 가 그것을 읽으면 이 예외다. 아래 포괄 처리기가 받으면
+            #   `RENDER_UNKNOWN_ERROR` 로 접히는데, 그것은 **원인도 복구도 분명한 실패**를
+            #   「알 수 없다」로 바꾼다 — 화면의 「다시 그리기」가 정확히 맞는 자리다.
+            raise RenderError(RenderFailure.ARTIFACT_MISSING, str(e)) from None
         if missing:
             # ⚠ 상태를 `실패` 로 만들지 않는다. 읽힌 조각으로 그린다.
             job.partial = {"totalParts": len(spec.target.parts),

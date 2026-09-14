@@ -70,8 +70,20 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     def node(node_id: str, kind: str) -> dict:
         c = d3_catalog.find_dataset_core(db, Ulid(node_id))
         acc = access.get(node_id)
+        # ⭑ ⟨`DL-1` 2026-09-06⟩ **`c is None` 이면 묘비다.** 종전에는 이 자리가 호출자가 준
+        # `kind`(`가공 전`·`파생`)를 그대로 내고 `deletedAt` 을 `None` 으로 **하드코딩**했다 —
+        # 계약 `LineageNode.kind` enum 에 `묘비` 가 있고 화면(`LineageSection.columnOf`)이
+        # 그 값을 이미 받는데 서버가 한 번도 내지 않았다. 그래서 지워진 이웃이 살아 있는
+        # 노드처럼 그려졌고, hover 문구(「지워진 데이터라 상세 화면이 없어요 · 날짜」)도
+        # 날짜를 못 받았다. **제품 쓰기가 0건이던 동안에는 이 결함이 드러날 수 없었다.**
+        #
+        # ⚠ `find_dataset_core` 는 묘비와 경계 밖을 **둘 다** `None` 으로 낸다. 그래서
+        # `find_tombstone` 을 한 번 더 묻는다 — 그쪽도 `lab_id` 를 안 적고 RLS 에 맡기므로,
+        # 값이 나오면 **정의상 보는 사람의 연구실 묘비**다. 경계 밖 이웃은 `deletedAt` 이
+        # `None` 으로 남는다(없는 날짜를 지어내지 않는다).
+        tomb = None if c is not None else d3_catalog.find_tombstone(db, Ulid(node_id))
         return {
-            "kind": kind,
+            "kind": "묘비" if c is None else kind,
             "datasetId": node_id,
             "name": "(지워진 데이터)" if c is None else c.name,
             # ⛔ **파생값 그대로다** — 21차가 여기에 사람 값을 덮어 쓰지 않는다.
@@ -85,8 +97,9 @@ def lineage_graph(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
             # 지워진 데이터셋은 묘비다 — **사라지지 않는다.** 지운 데이터가 부모였다면
             # 자식의 출처가 끊긴다 (schema.sql d3_dataset 주석).
             "navigable": c is not None,
-            "bodyAccessible": False if acc is None else acc.body_accessible,
-            "deletedAt": None,
+            # 묘비는 본체가 없다 — 파일 행을 지웠다. 접근 상태 행이 남아 있어도 열지 않는다.
+            "bodyAccessible": False if (acc is None or c is None) else acc.body_accessible,
+            "deletedAt": None if tomb is None else _iso(tomb.deleted_at),
         }
 
     nodes = [node(datasetId, "이 데이터")]

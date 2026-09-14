@@ -149,3 +149,51 @@ def test_그릴_수_없는_조각뿐이면_415_다(client, put_target, tmp_path)
 
 def test_대상은_datasetId_uploadId_정확히_하나다(client):
     assert _describe(client, {}).status_code == 400
+
+
+# ═══════════ ⑹ `.npy` 표시 이름 — `RenderTarget.fileNames` ═══════════
+#
+# `.npy` 는 파일 안에 변수 이름이 없어 `readers` 가 **파일 이름의 stem** 을 쓴다.
+# 디스크 배치는 본체를 `fileId`(ULID)로 이름 붙이므로(`kernel/storage_layout`),
+# 힌트가 없으면 화면의 변수 고르개에 ULID 가 선다. 그 자리를 계약의 선택 필드
+# `RenderTarget.fileNames` 가 채운다 — **없으면 현행 그대로**다.
+def _npy_bytes(arr) -> bytes:
+    import io
+
+    buf = io.BytesIO()
+    np.save(buf, arr)
+    return buf.getvalue()
+
+
+@pytest.fixture
+def npy_target(put_target):
+    """디스크 이름이 ULID 인 `.npy` 하나 — 실제 배치 그대로다."""
+    file_id = "01JQ0000000000000000000001"
+    return file_id, put_target(files={file_id: _npy_bytes(np.ones((8, 8), dtype="f4"))})
+
+
+def test_npy_변수_이름은_fileNames_가_준_원래_이름의_stem_이다(client, npy_target):
+    file_id, tid = npy_target
+    body = _describe(client, {"datasetId": tid,
+                              "fileNames": [{"fileId": file_id, "fileName": "LST.npy"}]}).json()
+    assert body["variables"] == ["LST"]
+    assert body["default"]["variable"] == "LST"
+
+
+def test_fileNames_가_없으면_현행_그대로다(client, npy_target):
+    """**선택 필드다** — 없을 때 동작이 바뀌면 그것은 계약 파괴다."""
+    file_id, tid = npy_target
+    body = _describe(client, {"datasetId": tid}).json()
+    assert body["variables"] == [file_id]
+
+
+def test_읽기가_고르는_이름도_같은_값이다(tmp_path):
+    """describe 와 read 가 **같은 함수**로 이름을 고른다 (`describe.py` 머릿말 규율 ②)."""
+    from colab_viz.domains.d7_visualization.readers import read_field
+
+    p = tmp_path / "01JQ0000000000000000000001"
+    p.write_bytes(_npy_bytes(np.ones((8, 8), dtype="f4")))
+    _fmt, field = read_field(p, display_name="LST.npy")
+    assert field.variable == "LST"
+    _fmt, plain = read_field(p)
+    assert plain.variable == "01JQ0000000000000000000001"

@@ -7,8 +7,15 @@
  * 가로가 좁으면 **표가 자기 안에서 스크롤한다** — 5열이 좁은 화면에서 서로를 밀어내면
  * 값이 줄바꿈으로 뭉개진다.
  */
-.vartable {
+/* ⭑ **⟨2026-09-14 · 레인 A4⟩ 모양은 rev2 `.vartable` 축자다 — 선 있는 표다.**
+ * ／ 종전 ~~밑줄만 있는 목록 ＋ 셀마다 테두리 있는 입력 칸~~ — 셀 안에 또 테두리가 서면
+ * 표가 「입력 칸을 늘어놓은 것」으로 읽히고, 목업(`격자선은 셀이 직접 긋는다`)과 어긋난다.
+ * 입력의 테두리를 걷고 **셀이 선을 긋는다**. 값은 셀 안에 그대로 앉는다.
+ * ⚠ 읽기 전용(상세)도 같은 규칙을 받는다 — rev2 의 상세 표(`.vt-row.vt-ro`)가 같은 격자다. */
+.vartable .vt-box {
   overflow-x: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
 }
 
 .vartable table {
@@ -19,22 +26,62 @@
 
 .vartable th,
 .vartable td {
-  padding: 6px 8px;
+  padding: 0;
   text-align: left;
+  border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
   white-space: nowrap;
 }
 
+.vartable th:last-child,
+.vartable td:last-child {
+  border-right: none;
+}
+
+.vartable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 머리행 — 값 행과 **면으로** 갈린다. 아래 선도 한 단 진하다(rev2 축자). */
 .vartable th {
-  font-weight: 600;
+  padding: 7px 9px;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-border-strong);
+  font-weight: 700;
   font-size: var(--text-caption);
-  color: var(--color-text-muted);
+  color: var(--color-gray-600);
+}
+
+/* 값 칸 — 읽기 전용(상세)일 때의 글자와 편집용 입력이 **같은 자리·같은 크기**다. */
+.vartable td {
+  padding: 7px 9px;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+}
+
+.vartable td:has(.inp),
+.vartable td:has(.vt-del),
+.vartable td:has(input[type='radio']) {
+  padding: 0;
 }
 
 .vartable td .inp {
   width: 100%;
   min-width: 88px;
+  height: 32px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+}
+
+.vartable td .inp:focus,
+.vartable td .inp:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: -2px;
 }
 
 /* 대표 칸·삭제 칸은 값이 아니라 조작이라 좁게 둔다. */
@@ -44,16 +91,44 @@
   text-align: center;
 }
 
-.vt-add,
+.vartable td:has(input[type='radio']) {
+  text-align: center;
+}
+
+.vartable td input[type='radio'] {
+  accent-color: var(--color-primary-600);
+}
+
+/* 빼기 — rev2 `.vt-del`. 한 글자짜리 칸이라 테두리를 두지 않는다. */
 .vt-del {
-  border: 1px solid var(--color-border);
-  background: transparent;
-  border-radius: 8px;
-  padding: 4px 10px;
+  width: 100%;
+  height: 32px;
+  border: none;
+  background: none;
   font: inherit;
+  font-size: var(--text-body-sm);
+  line-height: 1;
+  color: var(--color-gray-500);
   cursor: pointer;
 }
 
+.vt-del:hover {
+  color: var(--fg-danger);
+}
+
+/* 행 추가 — 표 **밖 아래**의 작은 버튼(rev2 `btn btn-secondary btn-sm` 자리). */
 .vt-add {
   margin-top: 8px;
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: var(--text-caption);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.vt-add:hover {
+  background: var(--color-surface-hover);
 }

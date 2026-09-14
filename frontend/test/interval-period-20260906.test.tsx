@@ -2,7 +2,10 @@
 //
 // 오라클 세 줄 (라운드 파일 §5 WU-A6 축자)
 //   ⑴ 단위 `분` 을 고르면 **연·월·일·시·분 다섯 칸**이 Start/End 각각 열린다 (PRD-18)
-//   ⑵ 관측 간격은 숫자 한 칸 ＋ 단위 셀렉트이고 **비운 채 등록해도 막지 않는다** (PRD-17)
+//   ⑵ 관측 간격은 숫자 한 칸 ＋ 단위 셀렉트이고 ~~**비운 채 등록해도 막지 않는다**~~ (PRD-17)
+//      ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ **필수다** —
+//      기간과 같은 시간축 정보이고, 간격을 모르면 그 기간이 몇 장인지 읽을 수 없다.
+//      받는 **모양**(숫자 ＋ 단위 · 두 칸 구조 전송)은 무변이고 게이트 여부만 갈렸다.
 //   ⑶ 기간 뒤 괄호는 **한 함수**가 조립하고 상세·목록·등록 미리보기가 그것을 쓴다 (PRD-35)
 //      — 간격이 비면 **빈 괄호가 없다**
 //
@@ -138,9 +141,21 @@ async function openRegister() {
   await click(screen.getByRole('button', { name: /^② / }));
 }
 
-/** ③ 까지 넘어가 `데이터셋 만들기` 를 누른다. */
-async function submitRegister() {
+/**
+ * ③ 까지 넘어가 `데이터셋 만들기` 를 누른다.
+ * ⭑ ⟨개정 2026-09-14⟩ 기간·관측 간격이 등록 게이트가 됐다 — **시험이 그 칸을 직접 재지
+ * 않는 자리**에서는 여기서 채운다. `period: false`·`interval: false` 는 「시험이 이미
+ * 적었다(또는 일부러 비운다)」는 뜻이다.
+ */
+async function submitRegister(opts: { period?: boolean; interval?: boolean } = {}) {
   await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+  if (opts.period !== false) {
+    await applyPeriod('일', { 'start-year': '2025', 'start-month': '06', 'start-day': '01' });
+  }
+  if (opts.interval !== false) {
+    await change(screen.getByTestId('reg-interval-value'), '1');
+    await change(screen.getByTestId('reg-interval-unit'), '시');
+  }
   // ⭑ ⟨WU-B3⟩ ② 에서 ③ 까지는 한 걸음이다 — 프로젝트 카드가 ③ 안으로 들어왔다.
   await click(screen.getByTestId('reg-next'));
   await click(screen.getByTestId('reg-done'));
@@ -261,7 +276,7 @@ describe('WU-A6 · PRD-18 — 조립', () => {
   it('등록 요청이 조립된 시각값 ＋ `granularity` 를 싣는다', async () => {
     await openRegister();
     await applyPeriod('분', { 'start-year': '2020', 'start-month': '05', 'start-day': '01' });
-    await submitRegister();
+    await submitRegister({ period: false });
     // ⭑ **⟨WU-B3 · PRD-40 판정 ⓐ⟩ 종료를 비우면 저장은 `period_end = period_start` 다.**
     //   화면에서만 비고, 「한 시점」이 `null`(무기한·진행 중)과 갈리게 된 자리다.
     expect(sent?.period).toEqual({
@@ -273,7 +288,9 @@ describe('WU-A6 · PRD-18 — 조립', () => {
 });
 
 // ═══════════════════ PRD-17 · 관측 간격 입력 ════════════════════════════════
-describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
+// ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩**
+//    ／ 종전 ~~`WU-A6 · PRD-17 — 관측 간격은 선택 입력이다`~~ — 필수로 갈렸다.
+describe('WU-A6 · PRD-17 — 관측 간격은 필수 입력이다', () => {
   it('숫자 칸의 placeholder 가 rev1 축자다', async () => {
     await openRegister();
     expect(screen.getByTestId('reg-interval-value')).toHaveAttribute(
@@ -285,6 +302,8 @@ describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
   it('단위 셀렉트가 `초·분·시·일·월·년` 6값을 연다 (＋ 안 고른 상태)', async () => {
     await openRegister();
     const sel = screen.getByTestId('reg-interval-unit') as HTMLSelectElement;
+    // **저장값은 무변**이다 — 개정된 것은 표시 라벨뿐이고 그쪽은
+    // `test/upload-form-rev2-20260914.test.tsx` 가 잰다.
     expect([...sel.options].map((o) => o.value)).toEqual(['', '초', '분', '시', '일', '월', '년']);
   });
 
@@ -292,24 +311,30 @@ describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
     await openRegister();
     await change(screen.getByTestId('reg-interval-value'), '10');
     await change(screen.getByTestId('reg-interval-unit'), '분');
-    await submitRegister();
+    await submitRegister({ interval: false });
     expect(sent?.observationInterval).toEqual({ value: 10, unit: '분' });
   });
 
-  it('비운 채 등록하면 **막지 않고** 열쇠도 싣지 않는다 (⛔ 등록 게이트가 아니다)', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「비운 채 등록하면 **막지 않고** 열쇠도 싣지 않는다
+  //    (⛔ 등록 게이트가 아니다)」~~ — 지금은 막는다. 「열쇠를 싣지 않는다」는 조립 규칙은
+  //    `humanMetadata` 에 그대로 있고, 그 상태로는 요청이 나가지 않을 뿐이다.
+  it('비운 채 등록하면 **막히고** 요청이 나가지 않는다', async () => {
     await openRegister();
-    await submitRegister();
-    expect(sent).not.toBeNull();
-    expect(sent).not.toHaveProperty('observationInterval');
+    await submitRegister({ interval: false });
+    expect(sent).toBeNull();
+    expect(screen.getByTestId('up-register-toast')).toHaveTextContent('관측 간격을 적어 주세요');
   });
 
-  it('반쪽이면 경고를 세우되 **막지는 않는다** — 400 의 문구는 서버 봉투가 갖는다', async () => {
+  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「반쪽이면 경고를 세우되 **막지는 않는다** — 400 의
+  //    문구는 서버 봉투가 갖는다」~~ — 필수가 되면서 반쪽도 같은 게이트에 걸린다. 인라인
+  //    경고(`reg-interval-half`)는 **그대로 선다** — 그것이 「어느 칸인가」를 말한다.
+  it('반쪽이면 인라인 경고가 서고 등록도 막힌다', async () => {
     await openRegister();
     await change(screen.getByTestId('reg-interval-value'), '10');
     expect(screen.getByTestId('reg-interval-half')).toBeInTheDocument();
-    await submitRegister();
-    // 화면이 조용히 버리지 않는다 — 반쪽 그대로 나가 서버가 판정한다.
-    expect(sent?.observationInterval).toEqual({ value: 10, unit: null });
+    await submitRegister({ interval: false });
+    expect(sent).toBeNull();
+    expect(screen.getByTestId('up-register-toast')).toHaveTextContent('관측 간격을 적어 주세요');
   });
 });
 
