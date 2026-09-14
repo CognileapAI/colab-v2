@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SessionProvider } from '../src/permission/session';
 import { UploadEntry } from '../src/components/upload/UploadEntry';
+import { NEXT_BLOCKED_HINT } from '../src/components/upload/RegisterArea';
 import type {
   PreviewSource,
   ProjectSource,
@@ -146,12 +147,34 @@ async function click(el: Element | null) {
   await act(async () => {});
 }
 
+async function change(el: Element | null, value: string) {
+  fireEvent.change(el as HTMLElement, { target: { value } });
+  await act(async () => {});
+}
+
+/**
+ * `fakes()` 에 등록 요청 기록만 덧댄다 — 실패 상태·응답 형상은 그대로다.
+ * 기록이 있어야 「분석 산출물 없이도 생성 요청이 실제로 나갔다」를 잴 수 있다.
+ */
+function recordingFakes() {
+  const calls: Record<string, unknown>[] = [];
+  const base = fakes();
+  const upload: UploadSource = {
+    ...base.upload,
+    async register(body) {
+      calls.push(body as unknown as Record<string, unknown>);
+      return { datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0DS1' };
+    },
+  };
+  return { sources: { ...base, upload } as UploadSources, calls };
+}
+
 /** 파일 1건을 올리고 워커가 실패로 끝낸 상태까지 간다. */
-async function dropOntoFailedUpload() {
+async function dropOntoFailedUpload(sources: UploadSources = fakes()) {
   render(
     <MemoryRouter initialEntries={['/datasets']}>
       <SessionProvider account={account()}>
-        <UploadEntry sources={fakes()} />
+        <UploadEntry sources={sources} />
       </SessionProvider>
     </MemoryRouter>,
   );
@@ -181,5 +204,53 @@ describe('`#40` — 분석 실패는 등록을 막지 않는다', () => {
     await click(screen.getByTestId('reg-open'));
     expect(await screen.findByTestId('reg-steps')).toBeInTheDocument();
     expect(screen.getByTestId('reg-area')).toBeInTheDocument();
+  });
+});
+
+// ═══ `#40` 두 번째 잠금 — 등록 카드 **안**의 단계 이동 ═══════════════════════
+//
+// WU-C2a 가 연 것은 등록 카드의 **문**(`reg-open`) 하나다. 카드 안의 단계 보내기
+// (`reg-next`)는 `RegisterArea.tsx:1021` 의 `analyzing = !props.status?.ready` 를 그대로
+// 쥐고 있어, 실패한 업로드는 카드는 열리는데 ① 에서 더 나아가지 못한다.
+//
+// green-by-skip 방지 = 걷는 단계 수를 먼저 세고(3), 매 단계에서 버튼 실물을 조회한 뒤
+// 활성 여부를 단언한다. 버튼이 사라지면 조회에서 실패한다.
+describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', () => {
+  it('① → ② → ③ 를 `다음 →` 으로 걷고 `데이터셋 만들기` 까지 눌린다', async () => {
+    const { sources, calls } = recordingFakes();
+    await dropOntoFailedUpload(sources);
+    await click(screen.getByTestId('reg-open'));
+    await screen.findByTestId('reg-steps');
+
+    const walked: number[] = [];
+    for (const step of [1, 2] as const) {
+      // 지금 서 있는 단계가 맞는지 먼저 확인한다 — 단계를 건너뛴 통과를 막는다.
+      expect(screen.getByTestId(`reg-s${step}`)).toBeTruthy();
+      // ② 에서만 필수 칸 하나(설명)를 채운다 — 나머지는 기본값이 서 있다.
+      if (step === 2) await change(screen.getByTestId('reg-summary'), '분석 실패 자료 설명 한 줄');
+      // 바닥 안내가 「분석이 끝나면…」이면 화면이 아직 분석 중이라 말하는 것이다.
+      expect(screen.getByTestId('reg-foot-hint').textContent).not.toBe(NEXT_BLOCKED_HINT);
+      const next = screen.getByTestId('reg-next') as HTMLButtonElement;
+      expect(next.disabled).toBe(false);
+      await click(next);
+      walked.push(step);
+    }
+    expect(walked).toEqual([1, 2]);
+
+    expect(screen.getByTestId('reg-s3')).toBeTruthy();
+    expect(screen.getByTestId('reg-foot-hint').textContent).not.toBe(NEXT_BLOCKED_HINT);
+    const done = screen.getByTestId('reg-done') as HTMLButtonElement;
+    expect(done.disabled).toBe(false);
+    await click(done);
+
+    // 생성 요청이 실제로 나갔고, **분석 산출물에 기대는 칸은 하나도 실리지 않는다** —
+    // 자동 메타(변수·좌표계·기간·관측 간격)는 워커가 읽어야 나오는 값이라 실패분에는 없다.
+    expect(calls).toHaveLength(1);
+    const body = calls[0]!;
+    expect(body.uploadId).toBe(UPLOAD_ID);
+    expect(body.summary).toBe('분석 실패 자료 설명 한 줄');
+    for (const key of ['variables', 'crs', 'period', 'observationInterval']) {
+      expect(key in body).toBe(false);
+    }
   });
 });
