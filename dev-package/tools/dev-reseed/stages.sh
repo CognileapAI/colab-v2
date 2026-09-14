@@ -504,18 +504,24 @@ EOF
   prelude_login_credential || return 1
 
   log "④ 서비스 운영자 — provision-service-operator.sql (FORCE RLS 아래라 경계를 먼저 건다)"
+  # ⚠ `account_id` 는 **원문 그대로** 넘긴다 — `provision-service-operator.sql` 이 `:'account_id'`
+  #   (psql 이 따옴표를 씌우는 꼴)로 읽는다. ② 의 `provision-account.sql` 은 맨 `:account_id` 라
+  #   그쪽만 `sqlq` 로 미리 감싼다. 두 파일의 변수 꼴이 다르다 — 값의 꼴은 **파일이 정한다.**
+  #   4회차 재개 2(`20260914T023537Z`)가 여기에 감싼 값을 넘겨 `'''<id>'''` 로 조회했고
+  #   `INSERT 0 0` → 「지정한 계정이 없어 운영자를 등록하지 못했다」 로 멈췄다.
+  #   `SET app.current_lab` 은 SQL 리터럴 자리라 종전대로 `sqlq` 로 감싼다.
   ssh_script "prelude:operator" <<EOF || return 1
 set -euo pipefail
 $(remote_assign ACCOUNT_ID "$RESEED_ACCOUNT_ID")
 $(remote_assign ACCOUNT_LAB_ID "$LAB_ID")
 sqlq() { printf "'%s'" "\$(printf '%s' "\$1" | sed "s/'/''/g")"; }
-ACCOUNT_ID_Q=\$(sqlq "\$ACCOUNT_ID"); ACCOUNT_LAB_ID_Q=\$(sqlq "\$ACCOUNT_LAB_ID")
-export ACCOUNT_ID_Q ACCOUNT_LAB_ID_Q
+ACCOUNT_LAB_ID_Q=\$(sqlq "\$ACCOUNT_LAB_ID")
+export ACCOUNT_ID ACCOUNT_LAB_ID_Q
 docker run --rm --network host --user 0 \\
   -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
   -v $DEV_REPO_DIR/services/core-api/ops/provision-service-operator.sql:/s/op.sql:ro \\
-  -e ACCOUNT_ID_Q -e ACCOUNT_LAB_ID_Q \\
-  $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID_Q" \\
+  -e ACCOUNT_ID -e ACCOUNT_LAB_ID_Q \\
+  $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 -v account_id="\$ACCOUNT_ID" \\
     -c "SET app.current_lab = \$ACCOUNT_LAB_ID_Q" \\
     "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/op.sql'
 EOF
@@ -544,13 +550,17 @@ with eng.begin() as c:
     # 바인드 이름은 제품 `routes/accounts.py` 의 문장 축자(`:hash` 가 `password_hash` 열에 들어간다).
     # 4회차 재개(`20260914T023145Z`)가 `:password_hash` 로 적어 「A value is required for bind
     # parameter 'password_hash'」 로 멈췄다 — 그 본문도 실모드로 돈 적이 없었다.
-    c.execute(text(
+    # 멱등 — ①·② 의 SQL 과 같은 규칙(`ON CONFLICT DO NOTHING`). prelude 를 `--from prelude` 로 다시
+    # 밟아도 이미 선 자격을 두 번 심지 않는다(PK = account_id). 0행이면 「이미 있음」이고 실패가 아니다.
+    r = c.execute(text(
         "INSERT INTO account_admin.login_credential"
         " (account_id, login_name, kdf, salt, password_hash, n, r, p)"
-        " VALUES (:account_id, :login_name, :kdf, :salt, :hash, :n, :r, :p)"),
+        " VALUES (:account_id, :login_name, :kdf, :salt, :hash, :n, :r, :p)"
+        " ON CONFLICT (account_id) DO NOTHING"),
         dict(account_id=os.environ["RESEED_ACCOUNT_ID"],
              login_name=normalize_login_name(os.environ["RESEED_ACCOUNT_EMAIL"]), **h))
-print("login_credential 1행 · must_change_password 는 DB 기본값 true")
+    n_rows = r.rowcount
+print("login_credential 삽입 %d행(0 = 이미 있음 · 그대로 둔다) · must_change_password 는 DB 기본값 true" % n_rows)
 PY
 )"
   # 표준입력 한 줄기에 파이썬 본문 ＋ `__PW__` 구분줄 ＋ 비밀번호 한 줄을 실어 보낸다.

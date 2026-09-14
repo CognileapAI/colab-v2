@@ -23,8 +23,11 @@
 #      sqlalchemy 대역(SQL 의 `:이름` 이 전부 params 에 있어야 한다 · 실물 `construct_params` 와 같은 조건).
 #      왜 = 4회차 재개(`20260914T023145Z`)가 `:password_hash` 바인드에 `as_dict()` 의 `hash` 키를 물려
 #      「A value is required for bind parameter 'password_hash'」 로 멈췄다. 본문이 돈 적이 없었다.
+#   ⓘ prelude ②④ — psql `-v` 변수 값의 꼴이 **SQL 파일의 변수 꼴**과 맞는다. `:'name'` 은 원문,
+#      맨 `:name` 은 감싼 값. stage_prelude 전체를 대역 위에서 돌리고 psql 대역이 적은 argv 를 실물
+#      SQL 과 대조한다. 왜 = 4회차 재개 2(`20260914T023537Z`)가 ④ 에 감싼 값을 넘겨 `INSERT 0 0` 으로 멈췄다.
 #
-# 실물 무접촉 = `ssh`·`docker`·`sudo`·`agent-browser` 를 PATH 대역으로 가린다.
+# 실물 무접촉 = `ssh`·`docker`·`sudo`·`psql`·`agent-browser` 를 PATH 대역으로 가린다.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -72,6 +75,15 @@ if [ -n "${FIXTURE_PY_OUT:-}" ] && [ -n "${RESEED_PY:-}" ]; then
   printf '%s' "$RESEED_PY" > "$FIXTURE_PY_OUT"
   cat > "$FIXTURE_PY_OUT.stdin"
 fi
+# `… IMAGE sh -c '<스크립트>'` 꼴이면 그 스크립트를 로컬 sh 로 실행한다(psql 대역이 argv 를 적는다 · ⓘ).
+if [ -n "${FIXTURE_PSQL_ARGS:-}" ]; then
+  prev=""
+  for a in "$@"; do
+    if [ "$prev" = "-c" ] && [ "${seen_sh:-0}" = 1 ]; then sh -c "$a"; break; fi
+    [ "$a" = "sh" ] && seen_sh=1
+    prev="$a"
+  done
+fi
 printf '%s\n' "${FIXTURE_DOCKER_STDOUT:-0}"
 if [ -n "${FIXTURE_DOCKER_STDERR:-}" ]; then printf '%s\n' "$FIXTURE_DOCKER_STDERR" >&2; fi
 exit "${FIXTURE_DOCKER_RC:-0}"
@@ -81,6 +93,12 @@ cat > "$TMP/bin/sudo" <<'STUB'
 #!/usr/bin/env bash
 while [ $# -gt 0 ]; do case "$1" in -E|-n) shift ;; *=*) export "$1"; shift ;; *) break ;; esac; done
 exec "$@"
+STUB
+# psql 대역 = 받은 argv 를 탭으로 이어 한 줄 적는다(ⓘ 변수 꼴 대조용).
+cat > "$TMP/bin/psql" <<'STUB'
+#!/usr/bin/env bash
+{ printf 'PSQL'; for a in "$@"; do printf '\t%s' "$a"; done; printf '\n'; } >> "${FIXTURE_PSQL_ARGS:-/dev/null}"
+exit 0
 STUB
 cat > "$TMP/bin/agent-browser" <<'STUB'
 #!/usr/bin/env bash
@@ -259,6 +277,7 @@ class _Conn:
                 if not params[k]:
                     raise RuntimeError("빈 값 %s" % k)
             print("INSERT account_admin.login_credential ok · 열 %d · login_name=%s" % (len(cols), params["login_name"]))
+        return types.SimpleNamespace(rowcount=1)
 class _Engine:
     @contextlib.contextmanager
     def begin(self):
@@ -297,8 +316,73 @@ prelude_login_credential >/dev/null 2>&1 \
 unset FIXTURE_DOCKER_RC FIXTURE_EXEC_CMD FIXTURE_PY_OUT
 export FIXTURE_DOCKER_STDOUT=0
 
+# ── ⓘ prelude ②④ — psql 변수 값의 꼴은 SQL 파일이 정한다 ─────────────────
+# `:'name'` 은 psql 이 따옴표를 씌우므로 **원문**을, 맨 `:name` 은 SQL 리터럴 자리라 **감싼 값**을 넘겨야 한다.
+# stage_prelude 전체를 대역 위에서 돌리고(② 는 id 를 다르게 두어 돌린다) psql 대역이 적은 argv 를
+# 실물 SQL 파일의 변수 꼴과 대조한다. 왜 = 4회차 재개 2(`20260914T023537Z`)가 ④ 에 감싼 값을 넘겨
+# `'''<id>'''` 로 조회했고 `INSERT 0 0` 으로 멈췄다. 그 줄도 실모드로 돈 적이 없었다.
+reset_logs
+CURRENT_STAGE=prelude; STAGE_LOG="$RUN_DIR/logs/prelude.log"; : > "$STAGE_LOG"
+DEV_REPO_DIR=/opt/colab-repo; PSQL_IMAGE=postgres:16-alpine
+PROVISION_LAB_ACCOUNT_ID=000000000000000000HYMETSP9     # ≠ RESEED_ACCOUNT_ID → ② 가 돈다
+export FIXTURE_EXEC=1 FIXTURE_EXEC_CMD=1 FIXTURE_PSQL_ARGS="$TMP/psql.args"
+: > "$FIXTURE_PSQL_ARGS"
+if stage_prelude >/dev/null 2>&1; then :; else
+  note "ⓘ stage_prelude 가 대역 위에서 비영 종료했다: $(tail -2 "$STAGE_LOG" | tr '\n' ' ')"
+fi
+unset FIXTURE_EXEC_CMD FIXTURE_PSQL_ARGS
+export FIXTURE_EXEC=0
+cat > "$TMP/check_psql.py" <<'PYCHK'
+import re, sys
+args_path, repo, lab_id, account_id = sys.argv[1:5]
+files = {"lab.sql": "infra/staging/provision-lab.sql",
+         "acct.sql": "services/core-api/ops/provision-account.sql",
+         "op.sql": "services/core-api/ops/provision-service-operator.sql"}
+seen = set(); bad = []
+for line in open(args_path, encoding="utf-8"):
+    if not line.startswith("PSQL\t"): continue
+    argv = line.rstrip("\n").split("\t")[1:]
+    f = argv[argv.index("-f") + 1] if "-f" in argv else ""
+    base = f.rsplit("/", 1)[-1]
+    if base not in files: bad.append("알 수 없는 SQL 파일 %r" % f); continue
+    seen.add(base)
+    sql = open("%s/%s" % (repo, files[base]), encoding="utf-8").read()
+    sql_code = "\n".join(l for l in sql.splitlines() if not l.lstrip().startswith("--"))
+    pairs =[(argv[i + 1]) for i, a in enumerate(argv) if a == "-v" and i + 1 < len(argv)]
+    for pair in pairs:
+        name, _, value = pair.partition("=")
+        if name == "ON_ERROR_STOP": continue
+        quoted_style = re.search(r":'%s'" % re.escape(name), sql_code) is not None
+        bare_style = re.search(r"(?<![:'\w]):%s\b" % re.escape(name), sql_code) is not None
+        if quoted_style and value.startswith("'"):
+            bad.append("%s :'%s' 는 psql 이 따옴표를 씌우는데 감싼 값 %r 을 넘겼다" % (base, name, value))
+        if bare_style and not quoted_style and not (len(value) >= 2 and value[0] == "'" and value[-1] == "'"):
+            bad.append("%s :%s 는 SQL 리터럴 자리인데 감싸지 않은 값 %r 을 넘겼다" % (base, name, value))
+        if not quoted_style and not bare_style:
+            bad.append("%s 에 없는 변수 %s 를 넘겼다" % (base, name))
+    if base == "op.sql":
+        c = argv[argv.index("-c") + 1] if "-c" in argv else ""
+        if c != "SET app.current_lab = '%s'" % lab_id:
+            bad.append("op.sql 의 경계 SET 이 기대와 다르다: %r" % c)
+        acct = dict(p.partition("=")[::2] for p in pairs).get("account_id")
+        if acct != account_id:
+            bad.append("op.sql account_id 가 원문 %r 이 아니다: %r" % (account_id, acct))
+    if base == "acct.sql":
+        name_v = dict(p.partition("=")[::2] for p in pairs).get("name")
+        if name_v != "'오''브라이언'":
+            bad.append("acct.sql name 의 SQL 겹따옴표 규칙이 깨졌다: %r" % name_v)
+for want in ("lab.sql", "acct.sql", "op.sql"):
+    if want not in seen: bad.append("psql 호출에 %s 가 없다 — 그 걸음이 돌지 않았다" % want)
+for b in bad: print("  ✗ ⓘ′ " + b)
+sys.exit(1 if bad else 0)
+PYCHK
+if ! python3 "$TMP/check_psql.py" "$TMP/psql.args" "$REPO_ROOT" "$LAB_ID" "$RESEED_ACCOUNT_ID"; then
+  fail=1
+fi
+unset PROVISION_LAB_ACCOUNT_ID
+
 if [ "$fail" -eq 0 ]; then
-  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0 · prelude ③ 환경변수·표준입력 왕복 · 본문 실행 바인드 대조)"
+  echo "remote-transport — green (따옴표 SQL 왕복 · 실패 후 자동 재기동 · 오류 1회 기록 · 리허설 dry-run 무접촉 · 리허설 fail-closed · 한겹 적재 0 · prelude ③ 환경변수·표준입력 왕복 · 본문 실행 바인드 대조 · ②④ psql 변수 꼴)"
   exit 0
 fi
 echo "remote-transport — red" >&2
