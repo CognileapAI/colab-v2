@@ -18,7 +18,7 @@
 Ted 판정(2026-09-14)
 1. ㈎ ⓐ 정본 md 자리 = 참조자료 폴더 안(`01.level-data/01.precipitation/DATASETS.md` · `01.level-data/02.vegetation/DATASETS.md` · `01.level-data/03.drought/DATASETS.md` · `02.File-format/DATASETS.md` · 참조자료 뿌리 기준). 기존 파일 무수정 · 추가만. 레포 사본 = `dev-package/reports/reference-data/datasets-md/` 같은 트리(정본은 폴더 · 레포는 반영본).
 2. ㈏ ⓐ 분석 실패라도 등록 허용. 활성 조건 「ready 또는 failure」. 문면 「지도로 못 그려요 · 등록은 됩니다」. GeoPackage 판독은 `FMT-GPKG` 별도.
-3. ㈐ 가공 단계 = 빈 칸 시작 ＋ 계보 규칙 자동 갱신 ＋ 규약 제약만. Ted 축자 「빈칸으로 시작하되, 다른 데이터를 계보로 연결하면 그 계보 규칙에 따라 바뀌어야 한다(제약필요, 자동으로 변경되어도된다) 그리고 이 계보 규약에 따라서만 제한을 받고 레벨은 맘대로 선택해도되게 하라.」 기록값 ⑴~⑸ 는 intent 「판정 결과」 ㈐. 제품 값 집합 `Lv0`~`Lv3` 무변.
+3. ㈐ 가공 단계 = 빈 칸 시작 ＋ 계보 규칙 자동 갱신 ＋ 규약 제약만. Ted 축자 「빈칸으로 시작하되, 다른 데이터를 계보로 연결하면 그 계보 규칙에 따라 바뀌어야 한다(제약필요, 자동으로 변경되어도된다) 그리고 이 계보 규약에 따라서만 제한을 받고 레벨은 맘대로 선택해도되게 하라.」 기록값 ⑴~⑸ 는 intent 「판정 결과」 ㈐. 제품 값 집합 `Lv0`~`Lv3` 무변. ⭑ ⟨개정 2026-09-14 · Ted ⓐ⟩ 빈 칸 시작 철회 — 계산값 표시 유지(〈397〉 유지) · WU-C2b 폐기 · 상세 §12.
 4. ㈑ ⓑ 기존 26건은 개별 수정(PATCH) 없이 재생성으로 닫는다.
 5. ㈒ ⓑ dev 한정 상시 승인 — `.claude/rules/deploy.md` 개정 선행(WU-C0 에서 집행). staging·prod 매회 GO 유지.
 6. ㈓ ⓒ `dev-package/tools/dev-reseed/reseed.sh` 본체 ＋ 스킬 `/dev-reseed` 껍데기.
@@ -55,7 +55,7 @@ advisor 파생 확정
 - 서버 부모 Lv 거절은 사람 값이 있을 때만 — `services/core-api/src/colab_core/app/routes/catalog.py` `parent_level_violations(db, *, self_level: int | None, …)`. 빈 칸(`None`) 등록은 서버 변경 0 으로 성립한다.
 - `dev-package/tools/dev-seed/build_plan.py` — `DEFAULT_REF_ROOT = REPO_ROOT.parent / "03 Reference-Data"` 는 워크트리(`.claude/worktrees/agent-*`)에서 어긋난다 ⟹ 레인은 `COLAB_REF_ROOT` 를 필수로 받는다.
 - 배경 서브에이전트는 레포 밖 쓰기가 막힌다 ⟹ 참조자료 폴더에 `DATASETS.md` 를 놓는 것은 오케스트레이터가 `cp` 로 한다. 레인은 레포 사본(`dev-package/reports/reference-data/datasets-md/`)까지가 끝이다.
-- `frontend/test/` — `reg-level` 참조 7파일 · `Lv2` 참조 22파일(합집합 22 · 2026-09-14 실측). WU-C2b 가 기본값 전제 시험을 판정값에 맞춰 고친다(검사 범위 축소 0).
+- `frontend/test/` — `reg-level` 참조 7파일 · `Lv2` 참조 22파일(합집합 22 · 2026-09-14 실측). ~~WU-C2b 가 기본값 전제 시험을 판정값에 맞춰 고친다(검사 범위 축소 0).~~ ⭑ ⟨개정 2026-09-14⟩ C2b 폐기(§12).
 - `.claude/rules/deploy.md` 의 `paths:` 에 `dev-package/tools/dev-reseed/**` 가 없었다 ⟹ WU-C0 에서 추가(WU-C3 레인이 그 파일을 열 때 규칙이 지연 로딩된다).
 - 도구 4건은 실재한다 — 초기화 `services/core-api/ops/reset_dev_environment.py` · 부트스트랩 `infra/dev/db-bootstrap.sh` · 배포 실행기(`infra/dev/README.md`) · 러너 `dev-package/tools/dev-seed/`. 넷을 잇는 진입점만 없다.
 - 런북 정정 6건은 `dev-package/prd/rounds/R-DEV-RESET.md §11-1` ⑴~⑹(스킴 · `--user 0` · 버킷·리전 리터럴 · `psql` 이미지 · 비밀번호 환경변수 4건 · 체인별 버전 표). 러너 정정 7건은 `dev-package/tools/dev-seed/README.md` 9 절.
@@ -69,11 +69,11 @@ advisor 파생 확정
 | WU-C1 | 정본 md 4건 확정 ＋ `build_plan.py` yaml 블록 생성 | 레인 1개 | 없음(C0 와 병렬) |
 | WU-C2a | 등록 활성 조건 「ready 또는 failure」 ＋ 문면 ＋ 시험 | 레인 1개 | 없음(C0·C1 과 병렬) |
 | WU-C1b | 러너 `runner.py` — 레벨 명시 선택 · 실패 시 등록 진행 · `registered(no preview)` | 레인 1개 | WU-C1 |
-| WU-C2b | 가공 단계 빈 칸 ＋ 계보 규칙 자동 갱신 ＋ 규약 제약 ＋ 시험 | 레인 1개 · C2a 와 같은 파일군이라 직렬 | WU-C2a |
+| ~~WU-C2b~~ | ~~가공 단계 빈 칸 ＋ 계보 규칙 자동 갱신 ＋ 규약 제약 ＋ 시험~~ ⭑ ⟨2026-09-14⟩ **폐기** — Ted ⓐ 계산값 표시 유지(〈397〉 유지) · 실체는 `main` R-LTH-1 구현이 충족 · 커밋 a80e0285 · 9cd69f4c 리베이스 제외 · §12 | ~~레인 1개~~ 폐기 | ~~WU-C2a~~ |
 | WU-C3 | `reseed.sh` 10단계 ＋ preflight ＋ 스킬 ＋ 문서 ＋ dry-run 증명 | 레인 1개 | WU-C0(규칙 개정) |
-| WU-C4 | dev 무인 재생성 1회 ＋ 정본 일치 검증 ＋ 등재 | 오케스트레이터 ＋ advisor 게이트 ③ · 레인 작업 아님 | C1·C1b·C2a·C2b·C3 병합 ＋ dev 배포 |
+| WU-C4 | dev 무인 재생성 1회 ＋ 정본 일치 검증 ＋ 등재 | 오케스트레이터 ＋ advisor 게이트 ③ · 레인 작업 아님 | C1·C1b·C2a·~~C2b~~·C3 병합 ＋ dev 배포 |
 
-선행 도식 = C0 ∥ C1 ∥ C2a → C1b ∥ C2b ∥ C3 → C4.
+선행 도식 = C0 ∥ C1 ∥ C2a → C1b ∥ ~~C2b~~ ∥ C3 → C4. ⭑ ⟨개정 2026-09-14⟩ C2b 폐기(§12).
 
 ### WU-C0 — 완료 정의
 - ⑴ 5개 파일(intent · `work-items.yaml` · `03-HANDOFF.md` · `.claude/rules/deploy.md` · 이 파일)이 한 커밋 ⑵ `work-item-consistency`·`planning-freshness` green ⑶ 〈N〉 하드코딩 0 ⑷ `PLAN-SoT.md` 무수정.
@@ -88,8 +88,8 @@ advisor 파생 확정
 ### WU-C2a — 완료 정의
 - ⑴ 실패 상태(`ready=false` ＋ `failure`)에서 잠기는 것을 재현하는 시험 **먼저 red** → green ⑵ 분석 실패 업로드가 화면에서 등록까지 ⑶ 문면 「지도로 못 그려요 · 등록은 됩니다」 ⑷ 계약·마이그레이션 0 ⑸ `frontend-test`·`frontend-typecheck` 단독 green.
 
-### WU-C2b — 완료 정의
-- ⑴ 초기값 빈 칸 ⑵ 손대기 전 부모 연결·해제 시 계보 규칙(부모 최대 Lv ＋ 1 · 부모 없으면 빈 칸)으로 자동 갱신 ⑶ 손댄 뒤 어떤 값이든 허용 · 부모 Lv 초과만 거절 ⑷ 빈 레벨 등록 시험 1건(`None` 저장 · 파생값 표시 · 「미지정」 필터 포착) ⑸ 각 시험 red → green ⑹ `Lv2` 기본값 전제 시험은 판정값으로 고치되 검사 범위 축소 0 ⑺ 계약·마이그레이션 0 ⑻ `frontend-test`·`frontend-typecheck` 단독 green.
+### WU-C2b — 완료 정의 ⭑ ⟨개정 2026-09-14⟩ 폐기(§12)
+- ~~⑴ 초기값 빈 칸 ⑵ 손대기 전 부모 연결·해제 시 계보 규칙(부모 최대 Lv ＋ 1 · 부모 없으면 빈 칸)으로 자동 갱신 ⑶ 손댄 뒤 어떤 값이든 허용 · 부모 Lv 초과만 거절 ⑷ 빈 레벨 등록 시험 1건(`None` 저장 · 파생값 표시 · 「미지정」 필터 포착) ⑸ 각 시험 red → green ⑹ `Lv2` 기본값 전제 시험은 판정값으로 고치되 검사 범위 축소 0 ⑺ 계약·마이그레이션 0 ⑻ `frontend-test`·`frontend-typecheck` 단독 green.~~
 
 ### WU-C3 — 완료 정의
 - ⑴ 10단계가 `--from` 으로 재개 ⑵ `--dry-run` 무접촉 · 전 단계 명령·계수 출력 · exit 0 ⑶ 런북 정정 6건 ＋ 러너 정정이 본문에 반영 · 각 자리 근거 주석 ⑷ preflight 6항목 판정 · 미달 이름 · 비영 종료(실패 픽스처 ≥1) ⑸ prelude 에 SQL 선행 4단계 ⑹ 결과 JSON 스키마 1건 ⑺ 비밀값 argv·로그·JSON 0건 ⑻ 실행비트 인덱스 기록(`git update-index --chmod=+x`) ⑼ 실행마다 `dev-package/sessions/` 기록 자동 등재 ⑽ `exec-bit` green.
@@ -145,6 +145,7 @@ advisor 파생 확정
 > ㉹ **완료 판정** — dev `deploy_doctor` 15/15 한 번의 실행 ＋ 데이터셋 28 · 프로젝트 4 · 간선 18 · 「미지정」 0 · 판정 표 1건 · 사람 입력 0회.
 > ㉺ **근거** — intent `dev-package/intent/2026-09-14-data-canon-and-reseed.md` · 라운드 `dev-package/prd/rounds/R-DATA-CANON.md` · 원인 조사 `dev-package/reports/r-dev-reset/feedback-2026-09-14.md`.
 > ㉻ **재개봉 금지** — 위 판정 전건 · 직전 회차 확정(화면단 투입 · 파일 전건 · 목적 단위 데이터셋 · 타일별 분리 · 계보 AI 제안 미사용) 유지.
+> ㉾ ⭑ ⟨개정 2026-09-14⟩ ㈐ 빈 칸 시작 철회 — Ted ⓐ 계산값 표시 유지(〈397〉 유지) · WU-C2b 폐기 · 화면 등록은 「미지정」을 만들지 않는 성질 기록 · 통합 브랜치 `origin/main` e9ca26b1 위로 리베이스(15커밋 · tip 5792068d · 게이트 7종 green). 상세 §12.
 
 ## 10. 범위 밖 (명시 제외)
 
@@ -164,3 +165,13 @@ advisor 파생 확정
 - 근거 = `dev-package/reports/r-data-canon/full-gate-final2/` · `drift-serial/`(gitignored 보고 디렉터리 · 경로만).
 - Ted 판정 2026-09-14(오케스트레이터 질의 3건) = ⑴ `main` 병합 예 ⑵ dev 재생성 첫 실행 예 ⑶ 운영자 계정은 재생성이 계정 관리 화면으로 만든다(초기 비밀번호는 실행 기계의 0600 파일에만).
 - 병합 유의 = `origin/main` 이 `3fc6ea01` 이후 27커밋 전진(R-LTH-1 · 〈397〉 행 포함). 〈398〉 행은 이 브랜치의 〈396〉 행 뒤에 있으므로 병합 시 〈397〉 행과 같은 자리에서 충돌 — 두 행을 〈397〉 → 〈398〉 순으로 둔다.
+
+## 12. 리베이스 (2026-09-14)
+
+- `origin/main` 전진 = `3fc6ea01` → `e9ca26b1`(R-LTH-1 「이태헌 1차 검증 반영」 · 〈397〉). 계수 = `git rev-list --count 3fc6ea01..e9ca26b1` **24**(비병합 23 ＋ 병합 1 · 2026-09-14 재실측). §11 의 「27커밋」은 재실측 전 값 — 기준이 다르다(값은 지우지 않고 시점만 붙임).
+- 결정 번호 = 착수 시점 기대값 〈397〉 은 R-LTH-1 이 선점 → 이 회차 〈398〉.
+- 리베이스 = 통합 브랜치 `integration/r-data-canon` 을 `e9ca26b1` 위로 재적용 · 15커밋 · tip `5792068d`. 충돌 파일 = `dev-package/PLAN-SoT.md`(〈397〉 → 〈398〉 순) · `dev-package/03-HANDOFF.md`(상단 증보 문단을 `main` 최신 문단 아래로) · `dev-package/work-items.yaml`(`DR-4` 블록만).
+- 게이트 7종 green(tip `5792068d`) = `frontend-test` · `frontend-typecheck` · `work-item-consistency` · `planning-freshness` · `agent-bridge` · `seed-plan-drift` · `dev-reseed-selftest`.
+- WU-C2b 폐기 = 커밋 `a80e0285`(실패 시험) · `9cd69f4c`(빈 칸 시작 ＋ 자동 갱신 ＋ `levelTouched`) 를 리베이스에서 제외. 통합·원격 브랜치 어디에도 없음(로컬 잔존 레인 브랜치에는 도달 가능 · 정리 대상). 사유 = R-LTH-1 이 이미 「가공 단계」 기본값을 계산값 추종으로 바꿨고(intent `dev-package/intent/2026-09-13-lth-processing-level-mismatch.md` · 커밋 09876f24 · 1eb8715d · 14d3e063 · a07e87a4) 오늘 ㈐ 판정은 그것을 모른 채 내려졌다 → 오케스트레이터 재질의 → Ted 2026-09-14 「ⓐ 계산값 표시 유지」.
+- ㈐ 실체 충족 = 계보 규칙 자동 반영 · 자유 선택 · 계보 규약만 제약 · 시딩 명시 지정(C1b) 은 `main` 구현으로 성립. 알려진 성질 = `UploadModal.tsx` 가 계산값을 사람 값으로 보내므로(「`if (level) out.processingLevelUserSet = level;`」) 화면 등록은 「미지정」을 만들지 않는다 · 필터 「미지정」은 API·기존 행으로만 도달 · 결함 아님(Ted ⓐ).
+- 이슈 #44 대응 = 편집 칸은 R-LTH-1 신설(〈397〉) · 전 건 Lv2 는 C1b(러너 명시 지정) ＋ C4(재생성)로 닫힌다. 닫기는 Ted.
