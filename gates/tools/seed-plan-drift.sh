@@ -30,7 +30,8 @@
 #   「선언했다」와 「우연히 붙어 있었다」가 같은 판정이 된다.
 #
 # 시험 seam — `COLAB_SEED_PLAN_MD_ROOT`·`COLAB_SEED_PLAN_MANIFEST`(셀프테스트가 임시 사본을
-#   가리킨다). 기본값은 레포의 정본 자리이고, 이 둘로 검사 대상을 줄이지 않는다.
+#   가리킨다). 기본값은 fail-closed selftest와 함께 버전 관리되는 green fixture이고,
+#   기존 보고서 사본과 네 파일 hash가 같은 상태에서 전환했다. 이 둘로 검사 대상을 줄이지 않는다.
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -38,7 +39,7 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 . "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
 
 GEN="$REPO_ROOT/dev-package/tools/dev-seed/build_plan.py"
-MD_ROOT="${COLAB_SEED_PLAN_MD_ROOT:-$REPO_ROOT/dev-package/reports/reference-data/datasets-md}"
+MD_ROOT="${COLAB_SEED_PLAN_MD_ROOT:-$REPO_ROOT/gates/fixtures/seed-plan-drift/green/md}"
 MANIFEST="${COLAB_SEED_PLAN_MANIFEST:-$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml}"
 
 red() { echo "::error::seed-plan-drift red(판정) — $*"; exit 1; }
