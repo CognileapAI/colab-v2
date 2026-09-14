@@ -34,6 +34,32 @@ class EvalPolicyTests(unittest.TestCase):
     def test_current_workflow(self):
         self.assertEqual(self.check(self.workflow), 0)
 
+    def test_both_breaking_gates_use_the_fixed_base_ref(self):
+        steps = self.workflow["jobs"]["contract-gates"]["steps"]
+        breaking = [step for step in steps if "breaking" in step.get("run", "")]
+        self.assertEqual(len(breaking), 2)
+        self.assertTrue(all(step.get("env", {}).get("COLAB_BREAKING_BASE_REF")
+                            == "${{ github.event.pull_request.base.sha || github.event.before }}"
+                            for step in breaking))
+
+    def test_common_and_tool_adapter_paths_trigger_harness_checks(self):
+        filters = next(
+            step["with"]["filters"] for step in self.workflow["jobs"]["changes"]["steps"]
+            if step.get("id") == "filter"
+        )
+        for path in ("AGENTS.md", ".agents/**", ".codex/**", "scripts/harness/**"):
+            self.assertIn("- '" + path + "'", filters)
+
+    def test_required_gates_aggregator_is_not_skippable(self):
+        job = self.workflow["jobs"]["required-gates"]
+        self.assertEqual(job["if"], "${{ always() }}")
+        self.assertIn("changes", job["needs"])
+        self.assertFalse(job.get("continue-on-error", False))
+        runs = "\n".join(step.get("run", "") for step in job["steps"])
+        self.assertIn("verify_evidence.py ci", runs)
+        self.assertTrue(any(step.get("uses", "").startswith("actions/upload-artifact@")
+                            for step in job["steps"]))
+
     def test_missing_exemption_secret_dependency_and_failure_masking(self):
         for mutation in ("exemption", "secret", "masking", "runner", "gate"):
             with self.subTest(mutation=mutation):

@@ -81,10 +81,15 @@ jobs:
             # 실제 모델을 부르므로 비용·시간이 붙고, 제품 경로가 이 잡을 깨우면 안 된다
             # (intent `2026-09-08-harness-evals.md` Q2). 대조부 = gates/tools/ci-filter-check.py.
             harness:
+              - 'AGENTS.md'
               - 'CLAUDE.md'
+              - '.agents/**'
+              - '.codex/**'
               - '.claude/skills/**'
               - '.claude/hooks/**'
               - '.claude/agents/**'
+              - 'scripts/harness/**'
+              - 'scripts/agent-bridge.py'
             search-golden:
               - 'services/core-api/**'
               - 'services/ai-service/**'
@@ -195,11 +200,13 @@ jobs:
         run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
         env:
-          COLAB_BREAKING_BASE_REF: origin/main
+          COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: ./gates/run.sh contract-breaking
       - name: 이벤트 계약 린트 (ajv — 스키마 + 인스턴스 픽스처)
         run: ./gates/run.sh event-lint
       - name: 이벤트 계약 파괴적 변경 탐지 ($defs 단위)
+        env:
+          COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: ./gates/run.sh event-breaking
       - name: seam ↔ 이벤트 정합 (G-e·G-b·㉠·㉡ — WU-D2c)
         run: ./gates/run.sh seam-consistency
@@ -608,3 +615,59 @@ jobs:
           agent-browser --version
       - name: 전 게이트 fail-closed 증명
         run: ./gates/run.sh selftest
+
+  required-gates:
+    needs:
+      - changes
+      - search-golden
+      - contract-gates
+      - frontend-gates
+      - boundary-gates
+      - schema-gates
+      - dormant-tests
+      - service-tests
+      - planning-gates
+      - repo-hygiene
+      - harness-eval
+      - gate-selftest
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: 적용 대상 잡·SHA·세 계수 증거 생성
+        env:
+          COLAB_CI_JOBS: >-
+            [
+              {"name":"changes","applicable":true,"result":"${{ needs.changes.result }}"},
+              {"name":"search-golden","applicable":${{ needs.changes.outputs['search-golden'] == 'true' }},"result":"${{ needs.search-golden.result }}","reason":"path filter"},
+              {"name":"contract-gates","applicable":${{ needs.changes.outputs.contracts == 'true' }},"result":"${{ needs.contract-gates.result }}","reason":"path filter"},
+              {"name":"frontend-gates","applicable":${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.contracts == 'true' }},"result":"${{ needs.frontend-gates.result }}","reason":"path filter"},
+              {"name":"boundary-gates","applicable":${{ needs.changes.outputs.core-api == 'true' || needs.changes.outputs.ai-service == 'true' || needs.changes.outputs.viz-render == 'true' || needs.changes.outputs.pipeline-worker == 'true' || needs.changes.outputs.infra == 'true' || needs.changes.outputs.contracts == 'true' }},"result":"${{ needs.boundary-gates.result }}","reason":"path filter"},
+              {"name":"schema-gates","applicable":${{ needs.changes.outputs.db == 'true' || needs.changes.outputs.core-api == 'true' }},"result":"${{ needs.schema-gates.result }}","reason":"path filter"},
+              {"name":"dormant-tests","applicable":${{ needs.changes.outputs.pipeline-worker == 'true' }},"result":"${{ needs.dormant-tests.result }}","reason":"path filter"},
+              {"name":"service-tests","applicable":${{ needs.changes.outputs.core-api == 'true' || needs.changes.outputs.ai-service == 'true' || needs.changes.outputs.viz-render == 'true' || needs.changes.outputs.pipeline-worker == 'true' || needs.changes.outputs.contracts == 'true' }},"result":"${{ needs.service-tests.result }}","reason":"path filter"},
+              {"name":"planning-gates","applicable":${{ needs.changes.outputs.dev-package == 'true' }},"result":"${{ needs.planning-gates.result }}","reason":"path filter"},
+              {"name":"repo-hygiene","applicable":true,"result":"${{ needs.repo-hygiene.result }}"},
+              {"name":"harness-eval","applicable":${{ needs.changes.outputs.harness == 'true' }},"result":"${{ needs.harness-eval.result }}","reason":"path filter"},
+              {"name":"gate-selftest","applicable":${{ needs.changes.outputs.contracts == 'true' }},"result":"${{ needs.gate-selftest.result }}","reason":"path filter"}
+            ]
+        run: >-
+          python scripts/harness/verify_evidence.py ci
+          --event-name "$GITHUB_EVENT_NAME"
+          --event-path "$GITHUB_EVENT_PATH"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --commit "$GITHUB_SHA"
+          --jobs-json "$COLAB_CI_JOBS"
+          --output ci-evidence.json
+          --summary "$GITHUB_STEP_SUMMARY"
+      - name: SHA 결합 CI 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-gates-${{ github.sha }}-${{ github.run_attempt }}
+          path: ci-evidence.json
+          if-no-files-found: error
+          retention-days: 90
