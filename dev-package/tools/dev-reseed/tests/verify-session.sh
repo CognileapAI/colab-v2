@@ -148,8 +148,29 @@ row2="$(awk -F'\t' '$1=="2" {print $2"|"$4"|"$8}' "$RUN_DIR/preview-judgment.tsv
 grep -q 'datasets/SPI-4weeks' "$FIXTURE_AB_LOG" && note "ⓔ′ 이름을 id 로 알고 /datasets/SPI-4weeks 를 열었다"
 unset FIXTURE_PAGE
 
+# ── ⓕ report.py 가 `?` 계수 행(id 미확보)에서 죽지 않고 null 로 싣는다 ───────
+# 왜 = 4회차 `20260914T041707Z` 의 report 가 seq 13 의 `?` 칸에서 `int('?')` ValueError 로 죽어
+#   result.json 이 서지 않았다 — 「실패해도 result.json 이 선다」(preflight-red ⓙ)가 이 행에서 깨졌다.
+mkdir -p "$RUN_DIR/stages"
+if python3 "$RESEED_DIR/report.py" --run-dir "$RUN_DIR" --run-id "$RUN_ID" --target-sha "$TARGET_SHA" \
+     --stages "preflight,verify,report," --dry-run 0 --schema "$RESEED_DIR/result-schema.json" \
+     --out "$RUN_DIR/result.json" --session-out "$TMP/session.md" >"$TMP/report.out" 2>&1; then
+  python3 - "$RUN_DIR/result.json" <<'PY' || note "ⓕ′ result.json 의 id 미확보 행이 [미성립 · unsetLevel null · usageCards null · note 기재] 가 아니다"
+import json, sys
+d = json.load(open(sys.argv[1]))
+rows = {r["seq"]: r for r in d.get("previewJudgment", [])}
+r = rows.get("2") or {}
+ok = (r.get("verdict") == "미성립" and r.get("unsetLevel") is None and r.get("usageCards") is None
+      and "id 미확보" in (r.get("note") or "") and r.get("name") == "SPI-4weeks")
+ok2 = rows.get("1", {}).get("usageCards") == 1 and rows.get("1", {}).get("unsetLevel") == 0
+sys.exit(0 if ok and ok2 else 1)
+PY
+else
+  note "ⓕ report.py 가 id 미확보 행(계수 칸 ?)에서 비영 종료했다: $(grep -E 'Error|error' "$TMP/report.out" | tail -1)"
+fi
+
 if [ "$fail" -eq 0 ]; then
-  echo "verify-session — green (세션 인자 · 상세 화면 성립 · 로그인 화면 판정불가 · 빈 화면 판정불가 · id 없는 행)"
+  echo "verify-session — green (세션 인자 · 상세 화면 성립 · 로그인 화면 판정불가 · 빈 화면 판정불가 · id 없는 행 · report ? 계수 null)"
   exit 0
 fi
 echo "verify-session — red" >&2

@@ -69,8 +69,9 @@
           "processingLevel": { "type": "string" },
           "verdict": { "enum": ["성립", "미성립", "판정불가"] },
           "elapsedMs": { "type": "integer", "minimum": 0 },
-          "unsetLevel": { "type": "integer" },
-          "usageCards": { "type": "integer" }
+          "unsetLevel": { "type": ["integer", "null"], "description": "「미지정」 표식 계수. null = 값을 받지 못했다(id 미확보 · 로그인 화면 · 판정불가) — 0 으로 접지 않는다" },
+          "usageCards": { "type": ["integer", "null"], "description": "usage-card 계수. null = 값을 받지 못했다" },
+          "note": { "type": "string", "description": "순회가 남긴 사유(예 「데이터셋 id 미확보」). 없으면 빈 문자열" }
         }
       }
     },

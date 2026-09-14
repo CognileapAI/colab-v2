@@ -45,10 +45,19 @@ def _preview_rows(path: pathlib.Path) -> list[dict]:
             "seq": f[0], "name": f[1], "processingLevel": f[2],
             # 모르는 값을 「미성립」으로 접지 않는다 — **재지 못한 것**과 **재서 어긋난 것**은 다르다.
             "verdict": f[3] if f[3] in ("성립", "미성립", "판정불가") else "판정불가",
-            "elapsedMs": int(f[4] or 0),
-            "unsetLevel": int(f[5] or 0), "usageCards": int(f[6] or 0),
+            "elapsedMs": _count_or_none(f[4]) or 0,
+            # 계수 칸이 `?`·빈 값(id 미확보 · 로그인 화면 · 값 못 받음)이면 **null** 로 둔다 — 0 으로 접으면
+            # 「0 을 받았다」와 「못 받았다」가 같은 모양이 되고, int() 로 읽으면 report 가 죽는다
+            # (4회차 `20260914T041707Z` 실측 · seq 13 의 `?` 행에서 `ValueError`).
+            "unsetLevel": _count_or_none(f[5]), "usageCards": _count_or_none(f[6]),
+            "note": f[7],
         })
     return rows
+
+
+def _count_or_none(raw: str):
+    s = (raw or "").strip()
+    return int(s) if s.isdigit() else None
 
 
 def validate(doc: dict, schema: dict) -> list[str]:
