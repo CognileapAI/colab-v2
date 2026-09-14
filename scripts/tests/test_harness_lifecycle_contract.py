@@ -290,7 +290,7 @@ class LifecycleRedTests(unittest.TestCase):
         self.assertNotIn('R-Z.md', result.stdout)
         payload.pop('round')
         result = subprocess.run(['bash', str(ROOT/'.claude/hooks/bootstrap-diet.sh')], input=json.dumps(payload), text=True, capture_output=True, cwd=self.root)
-        self.assertIn('추천', result.stdout)
+        self.assertIn('legacy 참고 후보', result.stdout)
         self.assertIn('Git', result.stdout)
 
     def test_lifecycle_payload_preserves_assigned_subdirectory(self):

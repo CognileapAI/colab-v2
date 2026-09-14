@@ -46,13 +46,13 @@ jobs:
           python-version: '3.12'
       - name: Validate adapters and shared source links
         run: python scripts/agent-bridge.py check
+      - name: Install workflow parser from shared dependency pins
+        run: python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
       - name: Prove the shared harness contract fails closed
         env:
           COLAB_TEST_ENV_SOURCED: '1'
         run: |
           bash gates/run.sh harness-contract-selftest
           bash gates/run.sh harness-contract
-      - name: Install workflow parser from shared dependency pins
-        run: python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
       - name: Check accepted and rejected evidence and guard calls
         run: python -m unittest discover -s scripts/tests -v

@@ -209,7 +209,7 @@ case "$GATE" in
     exec python3 "$REPO_ROOT/scripts/harness/check.py"
     ;;
   harness-contract-selftest)
-    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py
+    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py
     ;;
   operator-notifications)
     exec "$REPO_ROOT/gates/tools/operator-notifications.sh"

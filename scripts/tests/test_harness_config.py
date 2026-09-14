@@ -15,6 +15,33 @@ SPEC = importlib.util.spec_from_file_location(
 
 
 class HarnessConfigTests(unittest.TestCase):
+    def test_startup_does_not_require_legacy_round_for_new_task(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(['bash', str(ROOT/'scripts/harness/hooks/bootstrap-diet.sh')],
+                input=json.dumps({'cwd': directory}), capture_output=True, text=True, cwd=ROOT)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn('task', result.stdout)
+            self.assertNotIn('읽을 것은 **라운드 파일 하나다**', result.stdout)
+
+    def test_product_adapter_cannot_fork_or_lose_shared_body(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in ('.claude', '.agents', '.codex/agents', 'scripts/harness/hooks'):
+                shutil.copytree(ROOT / relative, root / relative)
+            shutil.copy2(ROOT / 'CLAUDE.md', root / 'CLAUDE.md')
+            value['adapters']['required_files'] = []
+            value['paths']['required'] = []
+            self.assertEqual(self.module.check_contract(root, value), [])
+            adapter = root / 'CLAUDE.md'
+            original = adapter.read_text()
+            adapter.write_text(original + '\nForked product policy.\n')
+            self.assertTrue(self.module.check_contract(root, value))
+            adapter.write_text(original)
+            source = root / '.agents/rules/product.md'
+            source.unlink()
+            self.assertTrue(self.module.check_contract(root, value))
+
     @classmethod
     def setUpClass(cls):
         cls.module = importlib.util.module_from_spec(SPEC)
@@ -59,6 +86,7 @@ class HarnessConfigTests(unittest.TestCase):
                 shutil.copytree(ROOT / relative, root / relative)
             value["adapters"]["required_files"] = []
             value["paths"]["required"] = []
+            shutil.copy2(ROOT / 'CLAUDE.md', root / 'CLAUDE.md')
             self.assertEqual(self.module.check_contract(root, value), [])
             for relative in (".claude/rules/deploy.md", ".claude/agents/advisor.md"):
                 adapter = root / relative
@@ -84,6 +112,7 @@ class HarnessConfigTests(unittest.TestCase):
                 shutil.copytree(ROOT / relative, root / relative)
             value["adapters"]["required_files"] = []
             value["paths"]["required"] = []
+            shutil.copy2(ROOT / 'CLAUDE.md', root / 'CLAUDE.md')
             self.assertEqual(self.module.check_contract(root, value), [])
             adapter = root / ".claude/hooks/git-guard.sh"
             original = adapter.read_text()

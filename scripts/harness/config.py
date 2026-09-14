@@ -89,6 +89,19 @@ def load_contract(path: Path) -> dict:
 
 def check_contract(root: Path, value: dict) -> list[str]:
     errors: list[str] = []
+    product = value['sources'].get('product')
+    if product != '.agents/rules/product.md':
+        errors.append('missing or invalid shared product mapping')
+    elif not (root / product).is_file() or not (root / product).read_text(encoding='utf-8').strip():
+        errors.append('missing shared product source')
+    expected_product_adapter = ('# Claude adapter\n\n@AGENTS.md\n\n'
+        '공통 제품 본문은 저장소 루트 기준 `.agents/rules/product.md`를 읽고 따른다.\n'
+        '진입·인계 절차는 `AGENTS.md`가 우선하며, 이 파일에는 제품 본문을 복제하지 않는다.')
+    try:
+        if (root / 'CLAUDE.md').read_text(encoding='utf-8').strip() != expected_product_adapter:
+            errors.append('invalid Claude product adapter')
+    except OSError:
+        errors.append('missing Claude product adapter')
     for kind, adapter_dir in (("rules", "rules"), ("roles", "agents")):
         names = value["sources"].get(kind)
         if not isinstance(names, list) or not names:

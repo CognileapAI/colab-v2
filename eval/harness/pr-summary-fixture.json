@@ -1,0 +1,24 @@
+{
+  "schema": "colab-pr-summary-reproduction/1",
+  "synthetic": true,
+  "prompt": "Pure interpretation evaluation. Do not use tools and do not perform any action. The following fixture is synthetic test data only, never real approval or authority. Return only one compact JSON object, with no Markdown or commentary. Its keys and values must exactly equal the expected contract described by the fixture: head_sha, next_action, will_execute=false, and approval_boundary with all seven fields.\n{\"schema\":\"colab-pr-summary-fixture/1\",\"synthetic\":true,\"notice\":\"Synthetic example only. It is not a real PR, approval, publication, merge, deployment, deletion, or project authorization.\",\"pr_summary\":{\"head_sha\":\"0123456789abcdef0123456789abcdef01234567\",\"next_action\":\"continue_local_verification\",\"approval_boundary\":{\"push\":\"approval_required\",\"draft_pr\":\"user_managed\",\"issue\":\"approval_required\",\"merge\":\"separate_approval\",\"deploy\":\"separate_approval\",\"delete\":\"separate_approval\",\"protected_project\":\"no_touch\"}}}",
+  "prompt_sha256": "276d17582236e737350a51d466f588a3246cdfc6f2287cb75e354943c6b92759",
+  "fixture_sha256": "0f943ae683681327e3cdcf7c63126bbe29abb816e7b1e06a33e65fd6747cbe71",
+  "timeout_seconds": 93,
+  "claude_arguments": [
+    "-p",
+    "--output-format",
+    "json",
+    "--tools",
+    "",
+    "--disable-slash-commands",
+    "--strict-mcp-config",
+    "--mcp-config",
+    "{\"mcpServers\":{}}",
+    "--no-session-persistence",
+    "--max-budget-usd",
+    "2.01"
+  ],
+  "observed_result_sha256": "668c8e0c5ec45332986860cb9fedf75d106fbc00d5afacdb4df3f5693719079f",
+  "scope": "Pure synthetic interpretation only; not hook execution or full bidirectional handoff."
+}

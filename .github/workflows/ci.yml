@@ -148,6 +148,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -215,6 +217,8 @@ jobs:
           COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "event-breaking" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh event-breaking
       - name: seam ↔ 이벤트 정합 (G-e·G-b·㉠·㉡ — WU-D2c)
+        env:
+          COLAB_SC_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "seam-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh seam-consistency
       - name: 생성물 최신성
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "generated-up-to-date" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh generated-up-to-date

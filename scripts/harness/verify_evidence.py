@@ -221,6 +221,39 @@ def collect_ci(run_id: str, run_attempt: int, commit: str, tree: str, registry: 
     return jobs
 
 
+def verify_ci_bundle(evidence: dict, artifact_root: Path) -> None:
+    """Recompute the verdict from registry-bound artifacts, not summary assertions.
+
+    This validates local content, not GitHub provenance or the author's authority.
+    Callers must obtain the bundle from the identified trusted Actions run.
+    """
+    if not isinstance(evidence, dict) or evidence.get('schema') != 'colab-ci-evidence/1':
+        raise EvidenceReadinessError('missing CI evidence')
+    inputs = evidence.get('inputs')
+    if not isinstance(inputs, dict) or not artifact_root.is_dir():
+        raise EvidenceReadinessError('CI input metadata/artifact bundle missing')
+    for name in ('needs', 'filters', 'event'):
+        if not isinstance(inputs.get(name), dict):
+            raise EvidenceReadinessError('missing CI inputs: ' + name)
+    commit = sha(evidence.get('commit'), 'commit')
+    tree = sha(evidence.get('tree'), 'tree')
+    run_id = _required(evidence.get('run_id'), 'run id')
+    attempt = evidence.get('run_attempt')
+    if type(attempt) is not int or attempt < 1:
+        raise EvidenceError('invalid run attempt')
+    shas = event_shas(inputs.get('event_name'), inputs['event'], commit)
+    jobs = collect_ci(run_id, attempt, commit, tree, load_registry(),
+                      inputs['needs'], inputs['filters'], artifact_root)
+    rebuilt = build_ci_evidence(run_id, attempt, commit, tree, shas, jobs)
+    if any(evidence.get(key) != value for key, value in rebuilt.items()):
+        raise EvidenceError('CI summary differs from actual producer bundle')
+    code = verdict(rebuilt)
+    if code == 78:
+        raise EvidenceReadinessError('CI bundle not ready')
+    if code:
+        raise EvidenceError('CI bundle not green')
+
+
 def record_command(args: argparse.Namespace) -> int:
     registry = load_registry()
     if args.producer not in registry or args.check not in registry[args.producer]["checks"]:
@@ -283,6 +316,8 @@ def ci_command(args: argparse.Namespace) -> int:
             args.run_id, args.run_attempt, args.commit, tree,
             shas, jobs,
         )
+        evidence['inputs'] = {'event_name': args.event_name, 'event': event,
+                              'needs': needs, 'filters': filters}
         args.output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n",
                                encoding="utf-8")
         summary = _markdown(evidence)

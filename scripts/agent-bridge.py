@@ -332,7 +332,7 @@ def dispatch_event(data: dict) -> dict:
             if result.stderr.strip():
                 messages.append(result.stderr.strip())
     if event == "SessionStart":
-        messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. The user's selected round takes precedence over the mtime suggestion above; otherwise verify Git history and work-items.yaml. Claude tools and hooks are not assumed available.")
+        messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. Use the user's explicit task, PR summary and local plan first. The user's selected round takes precedence over the mtime suggestion above. Verify Git history against the current request; consult work-items.yaml only for unmigrated product items. Claude tools and hooks are not assumed available.")
     if event == "SubagentStart":
         messages.append("Confirm the assigned checkout, branch and HEAD before writing. This hook prepares dependencies; it does not create an isolated checkout.")
     if not messages:

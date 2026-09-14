@@ -15,6 +15,7 @@
 
 - `30 CoLAB-v2`에 접근하거나 변경하지 않는다.
 - push, Draft PR, Issue/ruleset 쓰기는 대상과 내용을 먼저 제시하고 승인 후 수행한다.
+- **2026-09-15 사용자 개정:** PR 생성·게시는 사용자 담당, 에이전트는 로컬 요약·검증 근거·절차만 안내한다. 게시 대기를 이유로 독립 로컬 전환 작업을 중단하지 않는다. 이전 게시 승인 대기 기록은 이력으로 보존한다.
 - 병합, 배포, 기존 기록 삭제는 각각 별도 승인을 받는다.
 - 검사 범위 축소·비활성화·green-by-skip을 금지한다. exit 0/1/78을 그대로 보존한다.
 - 새 `.sh`는 Git index mode 100755로 등록한다.
@@ -30,17 +31,53 @@
 PR의 합의 기대/실제 결과 비교, 선택적 ADR 작성·대체·제안이다.
 기존 사용자 승인과 게시 경계는 유지한다. 과거 승인 이벤트를 소급 생성하지 않는다.
 남은 PR 인계·지속 결정 설계는 이 버전과 대조하며, 별도 중복 구현을 추가하지 않는다.
-현재 로컬 checkpoint는 `d3bde062`: CI 요약/0건 시험 및 필수 산출물 누락 수정까지 포함한다.
-부모 재검증: harness-contract-selftest 20 tests, runtime/Slack 19 tests, 모두 exit 0.
-최신 참고의 합의/ADR 기능은 아직 CoLAB에 반영하지 않았다.
+현재 커밋 checkpoint는 로컬 main 통합 `b7c05242`이며 PR/ADR/합의본과 배포 증거 연결은 미커밋 상태다.
+최신 참고의 순수 ADR·합의본 보존 로직과 PR 표현을 적용했다. 새 승인 훅이나 실제 승인 기록은 생성하지 않았다.
+PR 완료와 draft의 ‘검증됨’은 registry 기반 CI artifact bundle을 재검증한다.
+외부 합의본 폴더는 명시적인 `--repo` 설정이 필요하다. PR 기본 필수는 6절이며 추가 표현은 선택이다.
+부모 재검증: `python3 -m unittest scripts.tests.test_pr_contract scripts.tests.test_harness_config scripts.tests.test_harness_evidence`
+25 tests, 실패/오류 0, exit 0. 독립 수용 검토에서 이전 3결함의 해소를 확인했다.
+이 결과는 실제 GitHub CI·모델 행동·배포 검증을 뜻하지 않는다.
+
+### 최신 main 로컬 병합 완료 — 2026-09-15
+
+읽기 전용 원격 조회에서 PR #35와 #38은 이미 병합됐고, 원격 main은
+`6db30323a78a4e63f3e28810db0f325b69551979`다. 기준선 이후 원격 변경은 172경로다.
+우리 커밋 및 현재 변경과 겹치는 경로는 6개다:
+`.claude/rules/deploy.md`, `CLAUDE.md`, `infra/dev/ship.sh`, `infra/dev/tag-release.sh`,
+`scripts/deploy_release.py`, `scripts/tests/test_deploy_release.py`.
+이는 경로 중복 계수이며 실제 내용 충돌 판정이 아니다. open PR 0건을 충돌 0건으로 간주하지 않는다.
+사용자의 “좋아 병합 진행” 승인 후 지정 SHA를 fetch하고 현재 브랜치에 로컬 병합했다.
+병합 커밋은 `b7c05242de5da16f69dd12e0615054afb0b8851f`이며 두 부모는 `736855df`, `6db30323`이다.
+실제 충돌은 `.claude/rules/deploy.md` 1개였다. upstream 규칙을 `.agents/rules/deploy.md`로 반영하고 adapter를 유지했다.
+미커밋 tracked/untracked 변경은 stash `c11809dc6bfc51a9783e7f6ba5f93bf571493afe`로 보존 후 복원했다.
+4개 배포 파일은 자동 병합됐고 독립 검토에서 양측 변경 유실이 없음을 확인했다. stash는 삭제하지 않았다.
+복원 후 부모 실행: deploy/release/evidence/PR/config/source-layout 단위 시험 62개 통과, 셸 문법·bridge 연결 검사 exit 0.
+현재 미커밋 diff 공백 검사 exit 0. 병합으로 가져온 기존 보고서·시험 파일의 공백 오류는 보존했고 전체 cached diff 검사는 exit 2였다.
+제품 전수·실환경 검증 결과로 확대하지 않는다. rebase·push·배포·원격 main 변경은 하지 않았다.
+
+| 작업 | 현재 판정 | 남은 조건 |
+|---|---|---|
+| 공통 선언·CI 증거 | 로컬 구현·관련 검증 완료 | 실제 원격 CI 미실행 |
+| 시험 입력 이전 | 로컬 검증 완료 | 검색 helpers 43·golden 질문 12 실행, 기존 기록 보존 |
+| 공통 스킬·규칙·역할·훅 | 로컬 구현 반영 | 제품 단일 원본·얇은 연결·신규 task 시작/종료 연결; 최종 검증 회수 중 |
+| task·PR·ADR | 로컬 구현 반영 | 상태·기획·계약 소비자, 결정 색인, 호환 종료 검사 구현; 실제 Issue 이전과 호환 종료는 미완료 |
+| 배포 증거 | 로컬 구현·독립 수용 완료 | 동일 doctor 실행·실로그 hash·소스·full SHA 연결; 실배포 미실행 |
+| 실발화·모델·양방향 인계 | 미완료 | Claude 합성 해석 2회 통과만 확인. Codex 공식 실행기는 UNC unsigned 정책 차단; native hook·양방향 미확인 |
+| 전수 검사·게시 안내 | 진행 중 | 관련 시험 직접 재검증 후 고정 커밋에서 저병렬 전수 1회; PR은 사용자 게시 |
+
+부모 재검증: scripts/tests 전체 313개 중 303 통과·Windows 10 skipped·실패 0, ship mock dev 36/prod 48 통과. 독립 수용 완료.
+`ship.sh`는 전달/load만 하며 자동 기동을 추가하지 않는다. dev는 사전 PR/CI → 별도 배포 → 사후 검증 → tag, prod는 사전 PR/CI → tag → 별도 배포 → 사후 검증이다.
+staging 리허설의 기존 의미를 유지하며 dev 완료로 간주하지 않는다.
+Issue 미게시 상태에서는 compatibility만 허용 가능하며, 신구 상태의 영구 이중 쓰기를 도입하지 않는다.
 
 | 단계 | 상태 | 증거/다음 조건 |
 |---|---|---|
-| 기준선 측정 | 부분 완료 | 정적 3건 green, baseline fresh Codex 시작·훅은 WSL 공식 launcher 부재로 준비 실패 |
+| 기준선 측정 | 부분 완료 | 정적 3건 green. 실행기 부재라는 당시 판단은 정정: PowerShell은 있으나 UNC unsigned 정책으로 차단, fresh 시작·훅 미측정 |
 | 게이트·CI 재조사 | 완료 | 본 게이트 38+selftest 29, CI/SHA 결함과 문서 입력 의존 확인 |
 | 전환 표·계획·수용 기준 | 완료 | 독립 검토의 필수 누락을 반영 |
-| 구현·검증 | 진행 중 | 단계별 guard→실패 시험→구현→단독 게이트 |
-| 외부 게시 | 승인 대기 전 | 로컬 구현·검증 뒤 초안 제시 |
+| 구현·검증 | 진행 중·로컬 통합 완료 | 위 최신 상태 표 기준; 전체 완료 아님 |
+| 외부 게시 | 미실행 | PR은 사용자 직접 게시. push·Issue·ruleset은 내용·대상 승인 후 별도 수행 |
 
 ### Task 1: 공통 하네스 선언과 검사기
 
@@ -166,7 +203,7 @@ exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff
 
 - [ ] checkout 밖 실행 산출물을 거절하는 현 결함과 stale/different-SHA 인계를 실패 시험으로 고정한다.
 - [x] task state가 외부 산출물·gate report를 명시적으로 허용하되 경로·hash·run id를 검증하게 한다.
-- [ ] PR template와 checker가 필수 절·Plan-Ref·head SHA·CI/gate 증거를 검증하게 한다.
+- [x] PR template와 checker가 필수 절·Plan-Ref·head SHA·CI/gate 증거를 검증하게 한다.
 - [ ] work-item consistency의 작업 상태·의존·완료 판정을 PR/Issue/task evidence로 이전하고 결정 ID 중복 검사는 보존한다. Slack completion·`gates/run.sh task`도 같은 증거를 소비한다.
 - [ ] planning freshness의 HTML/MD·적용 사본 실물 대조와 seam consistency의 ge/gb/flow 검사는 유지한다. 적용 상태·병합 근거와 citation 허용 링크만 전환하고 기존 음성 fixture를 유지한다.
 - [ ] 유효 결정은 변경 불가 archive+생성 색인으로 보존한다. 기존 sessions/reports 입력은 임시 compatibility read만 허용하고 신규 task 기본값에서는 쓰지 않는다.
@@ -178,7 +215,7 @@ exec-bit 238개 exit 0, frontend-visual-selftest 4개 기대 판정 일치, diff
 일반 외부 경로 보호는 유지하고 선언·task/agent 식별이 있는 runtime 경로만 예외로 해석한다.
 실제 사본의 begin→단독 harness-contract→runtime report/log→complete handoff exit 0 확인.
 직접 apply_patch 이벤트의 task/agent 식별 정보 공급은 미확인이다. CLI 경로 검증과 구분한다.
-PR 계약·기존 상태/결정 이전·호환 종료 검사는 아직 남아 있다.
+PR 계약과 상태/결정 색인·호환 종료 판정부는 구현됐다. 실제 Issue 게시·HANDOFF 분류·호환 종료는 미완료다.
 
 ### Task 6: 배포 전 SHA·CI 판정과 원격 적용안
 
@@ -216,17 +253,26 @@ PR 계약·기존 상태/결정 이전·호환 종료 검사는 아직 남아 �
 
 ### Task 8: 외부 게시 초안과 후속 이전 목록
 
+2026-09-15 개정: 아래 PR 게시 항목은 사용자 직접 수행용 안내다. 에이전트가 생성·게시하지 않는다.
+
 **Files:**
 - Update: `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`
 - No external writes before approval.
 
 - [ ] push 대상 `codex/harness-pr-centric`와 exact head SHA를 제시한다.
 - [ ] Draft PR 제목·본문·필수 checks와 ruleset 적용안을 제시한다.
-- [ ] open/partial/deferred와 HANDOFF 블로커를 중복 제거한 Issue 제목·본문 요약·라벨 목록으로 제시한다. 비밀 2건은 제외한다.
+- [ ] active 57항목과 HANDOFF 분류 대상 18행을 중복 검토한 Issue 초안을 제시한다. 비밀 내용은 제외하며 과거 '2건'을 현재 제외 목록으로 사용하지 않는다.
 - [ ] 사용자 승인 전에는 push·PR·Issue·ruleset 쓰기를 하지 않는다.
 - [ ] 병합·배포·기존 기록 삭제는 후속 별도 승인으로 남긴다.
 
 ## 계획 자체 수용 기준
+
+마감 실측·사용법·사용자 게시 절차는 `docs/development/harness-transition-handoff.md`에 한 번 기록한다.
+아래 세부 체크박스는 단계별 과거 실행 기록이며, 현재 완료 범위는 위 상태표와 마감 실측을 우선한다.
+
+2026-09-15 진입점 검증: product 원문 SHA-256 보존·CLAUDE thin adapter·신규 task 우선 안내 연결.
+agent-bridge 111 tests(Windows 10 skipped), harness 자기검사27, legacy selftest19 및 대장235/stage35 대조 green.
+상태 실측235=done178/open52/partial3/deferred1/blocked1(active57). Issue 미게시·HANDOFF 검토·legacy 소비자 잔존은 호환 종료와 별도이며 로컬 구현을 멈추는 게시 대기로 삼지 않는다.
 
 - [ ] spec의 유지·교체·이전·폐기 각 행이 적어도 한 Task와 연결된다.
 - [ ] 단계마다 명시된 파일, 실패 시험, green 검증, 커밋 경계가 있다.

@@ -26,7 +26,7 @@
 | `scripts/agent-bridge.py check` | 역할 4, 스킬 연결 13, 훅 9/6; exit 0 | 통과 |
 | `gates/run.sh exec-bit` | green 1 / 판정 red 0 / 준비 red 0; exit 0 | 통과 |
 | `gates/run.sh agent-bridge` | 77 tests, skipped 10; exit 0 | 통과 |
-| fresh Codex 시작 주입·baseline 훅 실발화 | WSL에 공식 Windows 진입점 `powershell.exe` 없음. 현재 세션의 외부 checkout guard만 발화 | 준비 실패·미판정 |
+| fresh Codex 시작 주입·baseline 훅 실발화 | 당시 PATH 조회로 실행기 부재로 오판. 후속 확인에서 PowerShell은 존재하나 UNC의 unsigned `dev.ps1` 실행 정책으로 차단. baseline 실발화는 측정하지 못함 | 준비 실패·미판정 |
 | 파일 무수정 | 실행 전후 detached `2e009aef`, tracked diff 0 | 통과 |
 
 ### 제품 게이트와 CI
@@ -48,8 +48,8 @@
 | 교체 | `.claude/hooks` 판정 본문·`scripts/agent-bridge.py` 중심 구조 → `scripts/harness/` 공통 판정 + 양쪽 adapter | `harness.yaml` 스키마와 fail-closed selftest가 두 도구에서 같은 허용·차단을 낸다. |
 | 교체 | 세션/보고서 경로를 요구하는 완료 증거 → 로컬 task 상태 + 커밋 tree/SHA + CI summary/artifact + PR 요약 | 손상·부재·다른 SHA·준비 실패를 모두 거절한다. 배포는 `MAIN_SHA`와 main 조상·CI 성공을 함께 확인한다. |
 | 이전 | E-01 권한 표, seed/service/search-golden 등 시험 입력 | 코드·계약 인접 fixture로 먼저 옮기고 이전 전후 같은 시험이 green이어야 한다. |
-| 이전 | 대장 open/partial/deferred와 HANDOFF 블로커 → GitHub Issue | 중복 병합, 기존 Issue 링크 보존, 비밀 2건 제외, 게시 전 사용자 승인. |
-| 이전 | 현재 작업의 목적·계획·결정·검증·인계 → Draft PR | `Plan-Ref` trailer, head SHA, gate 3계수, CI run을 기계 검증. push/PR 게시 전 사용자 승인. |
+| 이전 | 대장 open/partial/deferred/blocked와 HANDOFF 블로커 → GitHub Issue | 중복 대조, 기존 Issue 링크 보존, 비밀 내용 제외, 게시 전 사용자 승인. 과거 비밀 2건 계수는 최신 제외 목록이 아님. |
+| 이전 | 현재 작업의 목적·계획·결정·검증·인계 → Draft PR | `Plan-Ref` trailer, head SHA, gate 3계수, CI run을 기계 검증. PR은 사용자 직접 게시, push는 사전 승인. |
 | 폐기 후보 | `dev-package/sessions/`, 실행 보고서, 대형 HANDOFF·PLAN 이력, 중복 미러 | 시험 입력 선이전, Issue 이전, 외부 PR #35/#38 충돌 해소, 새 하네스 green, 사용자 별도 삭제 승인 후에만 제거. |
 | 폐기 안 함 | 현재 유효 제품 명세·지속 결정·규칙·검사 코드, 비밀 회전 기록의 안전한 원본 | 새 정본 경로가 확정되지 않은 값은 유지한다. 비밀은 GitHub로 이전하지 않는다. |
 
@@ -76,7 +76,7 @@
 4. 로컬 task 상태와 PR 중심 인계 전환, 문서 의존 검사·Slack·task gate 소비자 교체, 이전 호환 읽기.
 5. 배포 전 PR·main SHA·CI 성공 판정기와 음성 시험, ruleset·deployment 적용안 작성.
 6. 전체 정적·실발화·모델·양방향 인계 검증.
-7. push 대상, Draft PR 본문, Issue 이전 목록·라벨, ruleset 적용안을 사용자에게 제시하고 승인 후 게시.
+7. PR 요약·절차는 사용자 직접 게시용으로 제공한다(2026-09-15 사용자 개정). push·Issue·ruleset은 내용·대상 제시 후 승인받으며, 게시 대기로 독립 로컬 구현을 멈추지 않는다.
 8. 병합·배포·기존 기록 삭제는 각각 별도 승인 후 실행.
 
 ## 수용 기준
@@ -87,9 +87,9 @@
 - tenant isolation, 권한, migration, contract/generated, boundary, service, frontend, data, harness의 관련 게이트가 green이다. `deploy_doctor`는 실제 배포 검증으로 별도 표기한다.
 - Claude와 Codex에서 정상 허용 1건·보호 편집 차단 1건을 각각 실발화하고, 모델 행동 평가를 동일 fixture/판정부에서 별도 실행한다.
 - Claude→Codex와 Codex→Claude가 PR 요약·commit SHA·CI 증거만으로 다음 행동과 승인 경계를 재현한다.
-- Issue/PR/push/ruleset 게시 전 내용·대상을 사용자에게 제시한다. 병합·배포·삭제는 수행하지 않는다.
+- PR은 사용자에게 요약·절차만 제공한다. Issue/push/ruleset 쓰기는 내용·대상 제시 후 별도 승인받는다. 병합·배포·삭제는 별도 승인 없이 수행하지 않는다.
 - 기존 기록 폐기는 이전 대상 0건, 기존 소비자 0건, 외부 PR 충돌 0건, 별도 승인 전에는 실행하지 않는다.
-- 배포 전 판정기는 대상 full SHA가 `main` 조상이고 같은 SHA의 필수 CI가 성공했을 때만 통과한다. CI 실패 SHA와 doctor 불일치는 태그·deployment 생성 전에 거절한다.
+- 배포 전 판정기는 대상 full SHA가 `main` 조상이고 병합 PR과 연결되며 같은 SHA의 필수 CI가 성공했을 때만 통과한다. doctor는 첫 배포의 선행 조건이 아니다. dev 배포 후 같은 환경·release·SHA의 새로운 doctor 15항목을 한 번의 실행으로 검증한 뒤에만 태그와 완료를 확정한다. staging 리허설은 dev 완료 근거가 아니다.
 
 ## 범위 밖
 

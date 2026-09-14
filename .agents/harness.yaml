@@ -2,6 +2,7 @@
   "schema": "colab-harness/1",
   "project": {
     "name": "CoLAB v2",
+    "repository": "CognileapAI/colab-v2",
     "default_branch": "main",
     "deployment_branch": "main",
     "package_roots": ["contracts", "db", "frontend", "services", "infra"]
@@ -36,7 +37,9 @@
     "required_pr_sections": ["목적", "범위", "계획", "결정", "검증", "남은 제약"]
   },
   "sources": {
+    "reference": "https://github.com/sungwooHa/ai-sdlc-harness/tree/fc424e8f21f5d4479a43780e41ce9883ed1dbc7f",
     "policy_entrypoint": "AGENTS.md",
+    "product": ".agents/rules/product.md",
     "skills": ".agents/skills",
     "rules": ["colab-rules", "deploy", "s3-upload"],
     "roles": ["advisor", "gate-runner", "lane-worker", "researcher"],
@@ -74,13 +77,33 @@
     ],
     "retired_roots": []
   },
+  "adr_gate": {
+    "root": "docs/decisions",
+    "statuses": ["proposed", "accepted", "superseded"],
+    "required_sections": ["배경", "결정", "검토한 대안", "결과와 감수한 비용", "재검토 조건", "근거"]
+  },
+  "agreement_snapshot": {
+    "deliverables_dir": "deliverables"
+  },
+  "pr_contract": {
+    "required_sections": [],
+    "evidence_schema": "colab-ci-evidence/1",
+    "required_counts": ["green", "red_judgment", "red_readiness"]
+  },
   "publication": {
     "push": "approval-required",
-    "pull_request": "approval-required",
+    "pull_request": "user-managed",
     "issue": "approval-required",
     "ruleset": "approval-required",
     "merge": "separate-approval-required",
     "deployment": "separate-approval-required",
     "record_deletion": "separate-approval-required"
+  },
+  "transition": {
+    "mode": "legacy-compatibility",
+    "ledger": "dev-package/work-items.yaml",
+    "consumer_paths": ["gates/tools/work_item_consistency.py", "scripts/harness/hooks/bootstrap-diet.sh"],
+    "handoff_review": "pending-local-classification",
+    "issue_publication": "not-published-user-owned"
   }
 }

@@ -72,6 +72,8 @@ elif [ -d "$RDIR" ]; then
 fi
 
 echo "── 세션 시작 안내 (bootstrap-diet · H1) ─────────────────────"
+echo "  신규 작업: 사용자 명시 task·PR 요약·로컬 계획 우선. AGENTS.md와 task runtime 인계 절차를 따른다."
+echo "  legacy 대장·라운드는 미이전 제품 상태의 읽기 호환 자료이며 신규 기록 생성의 필수조건이 아니다."
 if [ -n "$SELECTED" ]; then
   if [ -n "$ROUND" ]; then
     echo "  지정 라운드: ${ROUND#"$ROOT"/}"
@@ -79,9 +81,9 @@ if [ -n "$SELECTED" ]; then
     echo "  지정 라운드를 확인할 수 없음: 다른 라운드로 대체하지 않는다."
   fi
 elif [ -n "$ROUND" ]; then
-  echo "  추천 후보(mtime): ${ROUND#"$ROOT"/} — 선택 확정 아님. 사용자 지정, Git 이력과 work-items.yaml을 대조한다."
+  echo "  legacy 참고 후보(mtime): ${ROUND#"$ROOT"/} — 신규 task 선택 근거 아님. 명시 요청과 Git 이력을 먼저 대조한다."
 else
-  echo "  읽을 것은 **라운드 파일 하나다** : 없음 (dev-package/prd/rounds/R-*.md 가 아직 없다)"
+  echo "  legacy 라운드 후보 없음 — 신규 task·로컬 계획으로 진행한다."
 fi
 echo "  하네스 스펙(필요할 때만 · 링크로) : $SPEC"
 echo "  ⛔ 종전 §1 의 **문서 5개 순서 읽기(03-HANDOFF · DOMAINS · WORK-UNITS · PLAN-SoT · sessions/)"

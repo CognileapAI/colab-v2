@@ -156,6 +156,8 @@ class LifecycleTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess([], 0, 'mtime suggestion', '')
         result = bridge.dispatch_event(self.event('SessionStart', source='startup'))
         self.assertIn("user's selected round takes precedence", result['hookSpecificOutput']['additionalContext'])
+        self.assertIn('explicit task, PR summary and local plan first', result['hookSpecificOutput']['additionalContext'])
+        self.assertIn('only for unmigrated product items', result['hookSpecificOutput']['additionalContext'])
 
     def test_missing_selector_and_unknown_event_rejected(self):
         for event in ('SubagentStop', 'SubagentStart', 'SessionStart', 'unknown'):

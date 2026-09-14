@@ -87,6 +87,21 @@ class HarnessEvidenceTests(unittest.TestCase):
             jobs = self.module.collect_ci("1", 1, "a" * 40, "b" * 40, registry, needs, filters, root)
             self.assertEqual(sum(job["state"] == "green" for job in jobs), 1)
             self.assertEqual(sum(job["state"] == "not_applicable" for job in jobs), len(registry) - 1)
+            event = {'after': 'a' * 40, 'before': 'c' * 40}
+            evidence = self.module.build_ci_evidence('1', 1, 'a'*40, 'b'*40,
+                self.module.event_shas('push', event, 'a'*40), jobs)
+            evidence['inputs'] = {'event_name': 'push', 'event': event,
+                                  'needs': needs, 'filters': filters}
+            self.module.verify_ci_bundle(evidence, root)
+            for mutation in ('reduced-jobs', 'wrong-run', 'wrong-event', 'no-inputs', 'counts'):
+                bad = copy.deepcopy(evidence)
+                if mutation == 'reduced-jobs': bad['jobs'] = bad['jobs'][:1]
+                if mutation == 'wrong-run': bad['run_id'] = '2'
+                if mutation == 'wrong-event': bad['inputs']['event']['after'] = 'd'*40
+                if mutation == 'no-inputs': del bad['inputs']
+                if mutation == 'counts': bad['counts']['green'] += 1
+                with self.subTest(bundle=mutation), self.assertRaises(self.module.EvidenceError):
+                    self.module.verify_ci_bundle(bad, root)
             for mutation in ("missing-job", "wrong-run", "na-artifact", "na-success", "missing-filter"):
                 modified_needs, modified_filters = copy.deepcopy(needs), dict(filters)
                 record_path = root / "repo-hygiene/exec-bit/evidence.json"

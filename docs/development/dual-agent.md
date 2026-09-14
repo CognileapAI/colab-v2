@@ -2,7 +2,7 @@
 
 ## 계획 중심 실행
 
-이번 전환의 전체 실행 계획은 `dev-package/prd/rounds/R-DUAL-AGENT.md`다.
+이번 전환의 전체 실행 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.
 여러 단계의 요청은 목표·완료 조건·의존·승인 대기·검증 기준을 먼저 기록한다.
 부분 작업이 끝나면 계획을 갱신하고 다음 실행 가능한 단계로 진행한다.
 진행 보고와 최종 완료를 구분하며, 개별 오류 해결을 전체 작업의 종료 사유로 삼지 않는다.
@@ -18,13 +18,17 @@
 
 | 대상 | 편집할 원본 | Codex 연결 |
 |---|---|---|
-| 제품 규칙 | `CLAUDE.md`, `.agents/rules/colab-rules.md` | `AGENTS.md`에서 필요한 절만 참조 |
+| 제품 규칙 | `.agents/rules/product.md`, `.agents/rules/colab-rules.md` | 공통 `AGENTS.md`와 Claude thin adapter에서 필요한 절만 참조 |
 | 작업 절차 | `.agents/skills/colab-v2-work/SKILL.md` | `.claude/skills/colab-v2-work/SKILL.md` adapter |
 | 브라우저 CLI | `.agents/skills/agent-browser/SKILL.md`와 그 옆 리소스 | `.claude/skills/agent-browser/SKILL.md` adapter |
 | 구현·조사·검토·게이트 역할 | `.agents/roles/*.md` 본문 | `.codex/agents/*.toml`에서 원본을 읽고 도구 차이 적용 |
 | 검사 로직 | `scripts/harness/hooks/`, `gates/` | `.claude/hooks/` 어댑터와 `scripts/agent-bridge.py` |
 
 `.agents/rules`, `.agents/roles`, `.agents/skills`가 공통 본문을 소유한다.
+제품 본문은 이전 CLAUDE 원문과 stage 표지를 보존한다. 신규 시작·종료는 `AGENTS.md`의
+명시 task·PR 요약·로컬 계획 및 task runtime 절차를 우선하며, 원문 §1·§6의 대장 우선 절차는
+미이전 제품 항목의 호환 구획에만 적용한다. 기존 제품 게이트와 완료 기준은 축소하지 않는다.
+PR 게시는 사용자가 수행한다. 에이전트는 로컬 요약·검증 근거·게시 절차만 제공하며 원격 게시를 하지 않는다.
 `.claude/rules`, `.claude/agents`, `.claude/skills`는 기존 경로를 유지하는 어댑터다.
 Claude의 paths·모델·도구·격리 frontmatter는 해당 어댑터에 그대로 보존한다.
 Codex 역할은 `.agents/roles`를 직접 읽으며 Claude frontmatter를 적용하지 않는다.
