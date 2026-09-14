@@ -629,3 +629,32 @@ jobs:
           agent-browser --version
       - name: 전 게이트 fail-closed 증명
         run: ./gates/run.sh selftest
+
+  ci-required:
+    # Path-filtered skips are explicit; failures, cancellations and missing results block promotion.
+    if: ${{ always() }}
+    needs: ['product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest']
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require complete CI results
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, sys
+          results = json.loads(os.environ['CI_RESULTS'])
+          expected = set(['product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest'])
+          always_required = {'changes', 'product-safety', 'repo-hygiene'}
+          bad = set(results) != expected
+          skipped = []
+          for name in sorted(expected):
+              result = results.get(name, {}).get('result')
+              print(f'{name}: {result}')
+              if result == 'skipped' and name not in always_required:
+                  skipped.append(name)
+              elif result != 'success':
+                  bad = True
+          print(f'Path-filtered skips ({len(skipped)}): {skipped}')
+          sys.exit(1 if bad else 0)
+          PYCODE

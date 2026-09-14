@@ -21,7 +21,7 @@ items:
     entry_conditions: ["2026-09-15 intent 승인 및 시험 경계 확인", "운영 실행 전 대상 설정 파일 확보", "최초 운영 초기화 전 dev 단일 완주 증거"]
     depends_on: []
     completion_def: "기본 develop·운영 product 전환, 동일 저장소 develop PR의 사람 병합만 운영 배포, 첫 PR의 dev 동일 계정·비밀번호·자료 전면 reseed 및 실제 로그인·조회 검증, 후속 배포 reset 0건, 실패 시 점검 유지와 수동 재개 검증"
-    evidence: "2026-09-15 정책·환경별 원천 검사·PR 승인 결속·영속 배포/최초 초기화·점검 복구·운영 reset 경계 로컬 구현. product-release 74건, product-reseed 87건 통과(skip 0); 실환경 미검증. 제공 운영 파일 비교 및 EC2 IP 확인 완료. 기본 develop/product 생성·보호 적용 완료; 승격 검사 설치 진행 중. dev 단일 완주·운영 연결·최초/후속 배포는 미실행. 상세 dev-package/reports/develop-product/local-validation.md."
+    evidence: "2026-09-15 정책·환경별 원천 검사·PR 승인 결속·영속 배포/최초 초기화·점검 복구·운영 reset 경계 로컬 구현. product-release 74건, product-reseed 87건 통과(skip 0); 실환경 미검증. 제공 운영 파일 비교 및 EC2 IP 확인 완료. 기본 develop/product 생성·보호 적용 완료; 승격 검사 원격 설치 및 정상/다른 head 거부 검증 완료. 준비 PR 61 초안, 기존 frontend CI 실패 수정 중. dev 단일 완주·운영 연결·최초/후속 배포는 미실행. 상세 dev-package/reports/develop-product/local-validation.md."
     deadline: null
     note: "운영 설정 파일 수령은 실제 운영 실행의 의존 조건. DR-4b·DR-4-TOOLING의 관련 잔여 결함은 중복 완료 처리 없이 선행 검증에서 대조한다."
     sources: ["dev-package/intent/2026-09-15-develop-product-deployment.md", "dev-package/prd/specs/R-DEVELOP-PRODUCT.md", "dev-package/prd/rounds/R-DEVELOP-PRODUCT.md"]

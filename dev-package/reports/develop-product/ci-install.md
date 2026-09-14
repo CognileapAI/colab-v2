@@ -15,4 +15,13 @@
 - 실제 workflow의 pin에서 validator 추출 후 run 명령 실행: 정상 develop→product exit 0; 다른 head/fork/다른 base exit 1. 4/4 확인.
 - 고정 tooling 커밋에 product-deploy.yml이 없음을 Git tree로 확인.
 
-원격 CI·준비 PR 상태는 실행 후 추가한다. 로컬 결과를 GitHub 검증 완료로 해석하지 않는다.
+## 원격 확인
+- 준비 PR: https://github.com/CognileapAI/colab-v2/pull/61 (develop → product, 초안).
+- promotion run 34909164276 성공. product-safety도 push/PR 모두 성공.
+- 잘못된 head 시험 PR 62 / run 34909205702는 출처 오류로 exit 1. PR은 미병합 종료하고 이번 시험용 branch만 삭제했다.
+- PR CI run 34909164280은 frontend-gates 실패로 전체 failure. 기존 등록 시험이 승인된 필수 입력·부모 즉시 연결 동작과 어긋난 것으로 조사됐다. 제품 가드를 완화하지 않고 승인 사양을 대조한다.
+- 다른 CI job은 성공, dormant-tests는 기존 변경 경로 조건으로 skipped. compatibility 성공.
+- 전체 CI 실패도 병합 차단에 반영하도록 ci-required를 추가한다. 기존 두 필수 검사는 유지한다.
+- ci-required의 실제 run 명령에 실패·취소·누락·skip 결과를 넣는 3개 시험 RED→GREEN, 기존 CI 정책 2개 회귀 통과.
+
+최종 원격 CI 통과 전에는 준비 PR을 병합 가능 완료로 보고하지 않는다.
