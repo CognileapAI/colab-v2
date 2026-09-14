@@ -3854,10 +3854,10 @@ items:
     entry_conditions:
       - "삭제는 파괴적 조작 — Ted 판정 뒤 `.claude/rules/deploy.md` 를 편 뒤 집행"
     depends_on: []
-    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    completion_def: "⑴ EC2 의 이번 배포 반입 파일(`colab-v2-dev-e9ca26b15bd1.tar` · 약 285M)만 삭제하고 `dev.env.bak-before-e9ca26b15bd1` 은 유지한다(Ted 2026-09-14 「반입 파일만 삭제」) ⑵ 이전 배포 반입 파일은 읽기 전용으로 목록·크기를 보고한 뒤 삭제 여부를 다시 판정받는다(「목록 보고 후 다시 결정」) ⑶ 실행 전후 `df -h /` 기록 · 이미지 prune 금지"
     evidence: null
     deadline: null
-    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준)."
+    note: "출처 = 추가(최종 트리 `a07e87a4` 전수). 잔존 = 반입 파일(285M) · `dev.env.bak-before-e9ca26b15bd1` · 디스크 여유 4.8G(2026-09-14 기준). 실행 조건 = 데이터 재생성 회차 종료 뒤(dev 접촉 중단 요청 해제) · Ted GO 2026-09-14"
     sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/reports/lth-review-260913/deploy-dev-20260914-1.md"]
   - id: LF-14
     name: "기획자 회신 대기 2건(조건부)"
@@ -3867,8 +3867,8 @@ items:
     entry_conditions:
       - "기획자 회신 수신 — 「할 일 함」 표기는 기획자가 변경을 원할 때만 · 이메일 칸 관측은 재현될 때만"
     depends_on: []
-    completion_def: "완료 정의 미작성 — 착수 intent 에서 정한다"
+    completion_def: "⑴ 회신 발송 기록(일자) ⑵ 기획자 답에 따라 「할 일 함」 유지/변경 · 로그인 이메일 칸 관측 결과 · 문면 6건 확정을 각각 기록한다"
     evidence: null
     deadline: null
-    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`)."
+    note: "출처 = A10(「할 일 함」 표기 변경 · 조건부 M · 기획 정본 → 목업·계약 설명·화면 2곳을 한 회차에) · A11(로그인 실패 뒤 이메일 칸 관측 회수 · 조건부 재현 시 S · 코드와 관측이 갈림 · 미회수면 `[미확인]`). 회신 발송 = 데이터 재투입·검증 완료 뒤 Ted 발송(2026-09-14 「재투입 끝난 뒤」) · 발송본 `dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md` · 문면 6건은 회신에서 표기 의견을 받는다(「표기 의견 요청」)"
     sources: ["dev-package/sessions/R-LTH-REVIEW-1-followups-draft.md", "dev-package/reports/issues/2026-09-13-ted-decisions.md", "dev-package/prd/rounds/R-LTH-REVIEW-1.md", "dev-package/sessions/R-LTH-REVIEW-1-planner-reply-draft.md"]
