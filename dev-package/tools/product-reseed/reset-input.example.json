@@ -1,0 +1,10 @@
+{
+  "schema": "colab-product-reset-input/1",
+  "url_files": {"platform": "", "ai": ""},
+  "backup_path": "",
+  "controller_path": "",
+  "state_directory": "",
+  "maintenance_config_path": "",
+  "maintenance_config_sha256": "",
+  "quiescence": {"argv": [], "files": {}}
+}

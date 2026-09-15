@@ -7,11 +7,11 @@ push·ruleset 적용은 이 문서나 검사기가 허가하지 않는다.
 
 dev의 pre JSON은 `colab-release-evidence/1`, full `sha`, `environment: dev`,
 `release_id`, `run_id`, timezone 포함 `started_at`, `pr` 객체
-(`number`, `merged: true`, `base: main`, `merge_commit_sha`), `ci` 요약,
+(`number`, `merged: true`, 환경별 `base: develop` 또는 `base: product`, `merge_commit_sha`), `ci` 요약,
 절대 `artifact_root`를 가진다. CI 요약에는 집계기가 기록한 `inputs`
 (event_name/event/needs/filters)가 필요하며 과거 요약만 있으면 준비 실패다.
 CI 등록표의 모든 producer/check와 실제 파일·행·종료값·SHA/tree/run/attempt를 재검사한다.
-origin/main은 로컬 refs이며 승인된 별도 조회로 최신화해야 한다.
+origin/develop과 origin/product는 로컬 refs이며 승인된 별도 조회로 최신화해야 한다.
 
 `ship.sh`는 `COLAB_RELEASE_PRE_EVIDENCE`를 먼저 검사한다. 기존의 반입만 수행하며
 up.sh나 doctor를 자동 실행하지 않는다. `COLAB_RELEASE_DRY_RUN=1`은 검증 후

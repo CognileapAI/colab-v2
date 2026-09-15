@@ -69,8 +69,12 @@ esac
 
 # ── 3. `origin/main` 에 이미 있는가 ──────────────────────────────────────────
 # 있으면 그 revision 은 이미 남의 DB 에서 돌았다 — 내용 수정은 선언과 적용을 갈라놓는다.
-if git -C "$CWD" cat-file -e "origin/main:$REL" 2>/dev/null; then
-  echo "⛔ 차단(H4 migration-guard) — 계약 파괴: origin/main의 마이그레이션은 수정 불가 — 새 revision을 만든다 ($REL)." >&2
+if ! git -C "$CWD" rev-parse --verify refs/remotes/origin/develop >/dev/null 2>&1; then
+  echo "⛔ 준비 실패(H4 migration-guard) — origin/develop 부재: 기준 ref를 먼저 확보한다." >&2
+  exit 2
+fi
+if git -C "$CWD" cat-file -e "origin/develop:$REL" 2>/dev/null; then
+  echo "⛔ 차단(H4 migration-guard) — 계약 파괴: origin/develop의 마이그레이션은 수정 불가 — 새 revision을 만든다 ($REL)." >&2
   exit 2
 fi
 exit 0

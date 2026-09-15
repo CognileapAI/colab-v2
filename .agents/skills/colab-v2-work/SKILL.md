@@ -9,6 +9,10 @@ description: CoLAB v2 레포에서 무엇이든 실행할 때 쓴다. 서브에�
 
 ## 0. 시작 전 — 실물을 먼저 본다
 
+현재 개발 통합·dev 배포 원천은 `develop`, 운영 배포 원천은 `product`다(`docs/BRANCHING.md`).
+이하 과거 `main` 사례를 현재 기본 브랜치로 해석하지 않는다. develop 통합·push는 사용자 승인 범위를
+따르고 product는 같은 저장소 develop PR을 사람이 병합한다. 레인은 두 기준 브랜치에 직접 push하지 않는다.
+
 신규 작업은 `AGENTS.md`에 따라 사용자 명시 task·intent/spec·PR 요약·로컬 계획부터 읽는다.
 시작·산출물·인계 증거는 `docs/development/lifecycle-evidence.md`의 task runtime을 따른다.
 파일 수정 시각으로 작업을 선택하지 않는다. 대형 문서는 필요한 제목·앵커 주변만 읽는다.

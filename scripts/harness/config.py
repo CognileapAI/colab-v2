@@ -48,8 +48,10 @@ def validate_contract(value: object) -> dict:
     if value.get("schema") != SCHEMA:
         raise ContractError(f"schema must be {SCHEMA}")
     project = value.get("project")
-    if not isinstance(project, dict) or project.get("default_branch") != "main":
-        raise ContractError("project.default_branch must be main")
+    if not isinstance(project, dict) or project.get("default_branch") != "develop":
+        raise ContractError("project.default_branch must be develop")
+    if project.get("deployment_branch") != "product":
+        raise ContractError("project.deployment_branch must be product")
     gates = value.get("gates")
     if not isinstance(gates, dict):
         raise ContractError("gates must be an object")

@@ -490,6 +490,34 @@
           ]
         }
       }
+    },
+    "product-safety": {
+      "job": "product-safety",
+      "filters": [],
+      "checks": {
+        "product-release-selftest": {
+          "kind": "gate",
+          "command": [
+            "bash",
+            "gates/run.sh",
+            "product-release-selftest"
+          ],
+          "gates": [
+            "product-release-selftest"
+          ]
+        },
+        "product-reseed-selftest": {
+          "kind": "gate",
+          "command": [
+            "bash",
+            "gates/run.sh",
+            "product-reseed-selftest"
+          ],
+          "gates": [
+            "product-reseed-selftest"
+          ]
+        }
+      }
     }
   }
 }

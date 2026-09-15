@@ -31,14 +31,16 @@ def verify_pre(value, root):
     identity(value)
     if value.get('schema') != 'colab-release-evidence/1':
         raise ReleaseEvidenceError('invalid release schema')
-    if git(root, 'rev-parse', '--verify', 'refs/remotes/origin/main'):
-        raise ReadinessError('origin/main unavailable; refresh separately')
-    if git(root, 'merge-base', '--is-ancestor', value['sha'], 'refs/remotes/origin/main'):
-        raise ReleaseEvidenceError('release SHA is not on main')
+    branch = 'product' if value['environment'] == 'prod' else 'develop'
+    ref = 'refs/remotes/origin/' + branch
+    if git(root, 'rev-parse', '--verify', ref):
+        raise ReadinessError(ref + ' unavailable; refresh separately')
+    if git(root, 'merge-base', '--is-ancestor', value['sha'], ref):
+        raise ReleaseEvidenceError('release SHA is not on ' + branch)
     pr = value.get('pr')
     if not isinstance(pr, dict): raise ReadinessError('merged PR evidence missing')
-    if pr.get('merged') is not True or pr.get('base') != 'main' or pr.get('merge_commit_sha') != value['sha'] or type(pr.get('number')) is not int or pr['number'] < 1:
-        raise ReleaseEvidenceError('merged PR does not identify this main SHA')
+    if pr.get('merged') is not True or pr.get('base') != branch or pr.get('merge_commit_sha') != value['sha'] or type(pr.get('number')) is not int or pr['number'] < 1:
+        raise ReleaseEvidenceError('merged PR does not identify this ' + branch + ' SHA')
     spec = importlib.util.spec_from_file_location('release_ci', Path(__file__).with_name('verify_evidence.py'))
     ci = importlib.util.module_from_spec(spec); spec.loader.exec_module(ci)
     evidence = value.get('ci')

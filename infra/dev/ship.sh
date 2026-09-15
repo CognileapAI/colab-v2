@@ -32,8 +32,9 @@ SHA="$(cat "$DIST/colab-v2-dev.sha")"
 # ⭑ 운영 소스 번들 사슬도 한 벌이다 — prod 가 같은 함수를 부른다(`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
-ship_gate_main_ancestor "$REPO" "$SHA"
-MAIN_SHA="$SHIP_GATE_MAIN_SHA"
+ship_gate_source_ancestor "$REPO" "$SHA" dev
+SOURCE_REF="$SHIP_GATE_SOURCE_REF"
+SOURCE_SHA="$SHIP_GATE_SOURCE_SHA"
 ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-dev-$SHA.tar"
@@ -62,6 +63,6 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:dev-$SHA colab-v2/\$u:dev; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
   echo $FULL_SHA > /opt/colab-v2/CURRENT_FULL_SHA && \
-  printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
+  printf 'source_ref=%s source_sha=%s candidate=%s ancestor=%s\n' $SOURCE_REF $SOURCE_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
   echo 'loaded: dev-$SHA'"
 echo "── 실었다: dev-$SHA. 다음 = EC2 에서 /opt/colab-v2/up.sh"

@@ -118,7 +118,7 @@ FROM_STAGE=preflight
 PREFLIGHT_ONLY=0
 REHEARSE=0
 RUN_DIR=""
-TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/main}"
+TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/develop}"
 TARGET_SHA=""
 ACCOUNTS_FILE=""
 OPERATOR_PASSWORD_FILE="${COLAB_RESEED_OPERATOR_PASSWORD_FILE:-}"
@@ -160,7 +160,7 @@ usage() {
   --dry-run                     실행할 명령을 전부 찍고 dev·AWS·docker 를 건드리지 않는다.
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
-  --target-ref <ref>            배포 대상(기본 origin/main).
+  --target-ref <ref>            배포 대상(기본 origin/develop).
   --accounts-file <파일>        러너에 넘길 계정 파일(러너가 그 인자를 받을 때만 넘긴다).
   --operator-password-file <파일>  prelude ③ 의 초기 비밀번호(0600 · 10자 이상).
   --base-url <주소>             dev 주소(기본 $COLAB_DEV_URL).

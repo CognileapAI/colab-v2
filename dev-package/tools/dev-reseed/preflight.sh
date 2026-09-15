@@ -28,23 +28,23 @@ pf_need_ssh() {
   return 0
 }
 
-# ⑴ git — origin/main 을 받았는가 · 배포 대상 sha 가 그 조상인가 · 작업 트리가 깨끗한가.
+# ⑴ git — origin/develop 을 받았는가 · 배포 대상 sha 가 그 조상인가 · 작업 트리가 깨끗한가.
 pf_git() {
-  pf_dry git "git fetch origin main · rev-parse $TARGET_REF · merge-base --is-ancestor · status --porcelain" && return
-  if ! run_capture git -C "$REPO_ROOT" fetch -q origin main >/dev/null; then
-    pf_fail git "origin/main 조회 실패 — 진행 금지(ship.sh 와 같은 판정 · exit 78 자리)"; return
+  pf_dry git "git fetch origin develop · rev-parse $TARGET_REF · merge-base --is-ancestor · status --porcelain" && return
+  if ! run_capture git -C "$REPO_ROOT" fetch -q origin +refs/heads/develop:refs/remotes/origin/develop >/dev/null; then
+    pf_fail git "origin/develop 조회 실패 — 진행 금지(ship.sh 와 같은 판정 · exit 78 자리)"; return
   fi
   local resolved; resolved="$(run_capture git -C "$REPO_ROOT" rev-parse --short=12 "$TARGET_REF" || true)"
   if [ -z "$resolved" ]; then pf_fail git "배포 대상 ref 를 풀지 못했다: $TARGET_REF"; return; fi
   TARGET_SHA="$resolved"
-  if ! run_capture git -C "$REPO_ROOT" merge-base --is-ancestor "$TARGET_SHA" origin/main; then
-    pf_fail git "배포 대상 $TARGET_SHA 가 origin/main 의 조상이 아니다 — main 이 유일한 배포 원천(docs/BRANCHING.md 규칙 1)"; return
+  if ! run_capture git -C "$REPO_ROOT" merge-base --is-ancestor "$TARGET_SHA" origin/develop; then
+    pf_fail git "배포 대상 $TARGET_SHA 가 origin/develop 의 조상이 아니다 — dev 배포 원천은 develop"; return
   fi
   local dirty; dirty="$(run_capture git -C "$REPO_ROOT" status --porcelain || true)"
   if [ -n "$dirty" ]; then
     pf_fail git "작업 트리가 깨끗하지 않다 — $(printf '%s\n' "$dirty" | wc -l | tr -d ' ') 건"; return
   fi
-  pf_pass git "대상 $TARGET_SHA ∈ origin/main · 작업 트리 깨끗"
+  pf_pass git "대상 $TARGET_SHA ∈ origin/develop · 작업 트리 깨끗"
 }
 
 # ⑵ dev 실행 sha — `/opt/colab-v2/CURRENT_SHA` 가 정본이다(`deploy_doctor` ⑮ 가 읽는 자리).

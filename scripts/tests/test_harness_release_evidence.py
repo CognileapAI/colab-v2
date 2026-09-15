@@ -25,13 +25,26 @@ class ReleaseEvidenceTests(unittest.TestCase):
         spec.loader.exec_module(self.m)
         self.pre = {'schema': 'colab-release-evidence/1', 'sha': 'a'*40,
                     'environment': 'dev', 'release_id': 'release-1', 'run_id': 'run-1',
-                    'pr': {'merged': True, 'merge_commit_sha': 'a'*40, 'base': 'main', 'number': 1},
+                    'pr': {'merged': True, 'merge_commit_sha': 'a'*40, 'base': 'develop', 'number': 1},
                     'ci': {}, 'artifact_root': '/fixture', 'started_at': '2026-09-15T00:00:00+00:00'}
 
     def test_missing_and_nonmain_fail_before_deploy(self):
         with self.assertRaises(self.m.ReadinessError): self.m.verify_pre({}, ROOT)
         with patch.object(self.m, 'git', side_effect=[0, 1]):
             with self.assertRaises(self.m.ReleaseEvidenceError): self.m.verify_pre(self.pre, ROOT)
+
+    def test_environment_uses_its_source_branch_and_rejects_old_pr_base(self):
+        for environment, branch in [('dev','develop'), ('prod','product')]:
+            pre = copy.deepcopy(self.pre)
+            pre['environment'] = environment
+            pre['pr']['base'] = branch
+            with self.subTest(environment=environment), patch.object(self.m,'git',return_value=0) as git:
+                with self.assertRaisesRegex(self.m.ReleaseEvidenceError, 'required-gates'):
+                    self.m.verify_pre(pre, ROOT)
+                self.assertEqual(git.call_args_list[0].args[-1], 'refs/remotes/origin/'+branch)
+                pre['pr']['base'] = 'main'
+                with self.assertRaisesRegex(self.m.ReleaseEvidenceError,'merged PR'):
+                    self.m.verify_pre(pre, ROOT)
 
     def test_post_requires_same_identity_and_exact_doctor_rows(self):
         post = {**self.pre, 'phase': 'post', 'finished_at': '2026-09-15T00:01:00+00:00',
@@ -56,19 +69,20 @@ class ReleaseEvidenceTests(unittest.TestCase):
         registry = ci.load_registry()
         filters = {key: 'false' for item in registry.values() for key in item['filters']}
         needs = {item['job']: {'result': 'skipped'} for item in registry.values()}
-        needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}})
+        needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}, 'product-safety': {'result': 'success'}})
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory)
-            for name, check in registry['repo-hygiene']['checks'].items():
-                folder = bundle / name; folder.mkdir()
-                record = {'schema': 'colab-ci-check/1', 'producer': 'repo-hygiene', 'check': name,
-                          'run_id': '1', 'run_attempt': 1, 'commit': 'a'*40, 'tree': 'b'*40,
-                          'kind': check['kind'], 'command': check['command'], 'exit': 0,
-                          'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
-                (folder/'evidence.json').write_text(json.dumps(record))
-                (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
-                    'commit': 'a'*40, 'tree': 'b'*40, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
-                    'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
+            for producer in ('repo-hygiene','product-safety'):
+                for name, check in registry[producer]['checks'].items():
+                    folder = bundle / name; folder.mkdir()
+                    record = {'schema': 'colab-ci-check/1', 'producer': producer, 'check': name,
+                              'run_id': '1', 'run_attempt': 1, 'commit': 'a'*40, 'tree': 'b'*40,
+                              'kind': check['kind'], 'command': check['command'], 'exit': 0,
+                              'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
+                    (folder/'evidence.json').write_text(json.dumps(record))
+                    (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
+                        'commit': 'a'*40, 'tree': 'b'*40, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
+                        'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
             event = {'after': 'a'*40, 'before': 'c'*40}
             jobs = ci.collect_ci('1', 1, 'a'*40, 'b'*40, registry, needs, filters, bundle)
             evidence = ci.build_ci_evidence('1', 1, 'a'*40, 'b'*40, ci.event_shas('push', event, 'a'*40), jobs)
@@ -116,7 +130,7 @@ class DoctorEmitterTests(unittest.TestCase):
         self.out=self.root/'artifacts';self.out.mkdir(mode=0o700)
         self.pre={'schema':'colab-release-evidence/1','sha':'a'*40,'environment':'dev','release_id':'release-1','run_id':'run-1','started_at':'2000-01-01T00:00:00+00:00'}
         self.pre_path=self.state/'RELEASE_PRE.json';self.pre_path.write_text(json.dumps(self.pre))
-        for name,content in {'CURRENT_SHA':'a'*12,'CURRENT_FULL_SHA':'a'*40,'MAIN_SHA':'main='+('b'*12)+' candidate='+('a'*12)+' ancestor=yes'}.items():(self.state/name).write_text(content)
+        for name,content in {'CURRENT_SHA':'a'*12,'CURRENT_FULL_SHA':'a'*40,'MAIN_SHA':'source_ref=develop source_sha='+('b'*40)+' candidate='+('a'*12)+' ancestor=yes'}.items():(self.state/name).write_text(content)
         lines=['# source_sha='+'a'*12,'# source_full_sha='+'a'*40]
         for name in ('deploy_doctor.py','deploy_doctor_evidence.py','s3_doctor.py'):
             p=self.source/'services/core-api/ops'/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('fixture source')
@@ -143,6 +157,16 @@ class DoctorEmitterTests(unittest.TestCase):
         self.assertEqual((self.out/'doctor.log').stat().st_mode & 0o777,0o600)
         (self.out/'doctor.log').write_text('changed')
         with self.assertRaises(ValueError):self.m.verify_emitted(self.pre,post,self.out)
+
+    def test_old_or_wrong_source_ancestry_is_rejected(self):
+        for record in (
+            'main='+('b'*12)+' candidate='+('a'*12)+' ancestor=yes',
+            'source_ref=product source_sha='+('b'*40)+' candidate='+('a'*12)+' ancestor=yes',
+        ):
+            with self.subTest(record=record):
+                (self.state/'MAIN_SHA').write_text(record)
+                self.assertEqual(self.emit(),78)
+                self.assertEqual(self.calls,0)
 
     def test_preexisting_output_and_missing_source_fail_before_doctor(self):
         (self.out/'post.json').write_text('{}')

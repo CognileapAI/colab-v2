@@ -37,19 +37,20 @@ class HandoffContractTests(unittest.TestCase):
         registry = ci.load_registry()
         filters = {key: 'false' for item in registry.values() for key in item['filters']}
         needs = {item['job']: {'result': 'skipped'} for item in registry.values()}
-        needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}})
+        needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}, 'product-safety': {'result': 'success'}})
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory)
-            for name, check in registry['repo-hygiene']['checks'].items():
-                folder = bundle/name; folder.mkdir()
-                record = {'schema': 'colab-ci-check/1', 'producer': 'repo-hygiene', 'check': name,
-                    'run_id': '1', 'run_attempt': 1, 'commit': 'a'*40, 'tree': 'b'*40,
-                    'kind': check['kind'], 'command': check['command'], 'exit': 0,
-                    'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
-                (folder/'evidence.json').write_text(json.dumps(record))
-                (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
-                    'commit': 'a'*40, 'tree': 'b'*40, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
-                    'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
+            for producer in ('repo-hygiene','product-safety'):
+                for name, check in registry[producer]['checks'].items():
+                    folder = bundle/name; folder.mkdir()
+                    record = {'schema': 'colab-ci-check/1', 'producer': producer, 'check': name,
+                        'run_id': '1', 'run_attempt': 1, 'commit': 'a'*40, 'tree': 'b'*40,
+                        'kind': check['kind'], 'command': check['command'], 'exit': 0,
+                        'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
+                    (folder/'evidence.json').write_text(json.dumps(record))
+                    (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
+                        'commit': 'a'*40, 'tree': 'b'*40, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
+                        'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
             event = {'after': 'a'*40, 'before': 'c'*40}
             jobs = ci.collect_ci('1', 1, 'a'*40, 'b'*40, registry, needs, filters, bundle)
             evidence = ci.build_ci_evidence('1', 1, 'a'*40, 'b'*40, ci.event_shas('push', event, 'a'*40), jobs)

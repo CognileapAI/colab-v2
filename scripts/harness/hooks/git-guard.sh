@@ -127,7 +127,7 @@ IS_SUBAGENT=0
 # (worktrees 문서: "`cwd` follows Claude … Read it when a hook needs the worktree path").
 BRANCH="$(git -C "$CWD" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 on_main=0
-case "$BRANCH" in main|master) on_main=1 ;; esac
+case "$BRANCH" in main|master|develop|product) on_main=1 ;; esac
 
 # ── 3. 세그먼트로 가른다 ──────────────────────────────────────────────────────
 # `a && b`, `a ; b`, `a | b` 를 각각 한 명령으로 본다. 구분자를 개행으로 바꾸고 줄 단위로 읽는다.
@@ -138,7 +138,7 @@ is_main_ref() { # $1=refspec 토큰 — 목적지(dst)가 main/master 인가
   t="${t#+}"                       # `+main` 강제 갱신 표기
   case "$t" in *:*) dst="${t##*:}" ;; *) dst="$t" ;; esac
   dst="${dst#refs/heads/}"
-  case "$dst" in main|master) return 0 ;; *) return 1 ;; esac
+  case "$dst" in main|master|develop|product) return 0 ;; *) return 1 ;; esac
 }
 
 deny() { # $1=사유 한 줄 — stderr 한 줄이 그대로 차단 사유가 된다
@@ -186,19 +186,31 @@ while IFS= read -r seg; do
 
   case "$sub" in
     push)
-      force=0; targets_main=0; npos=0
+      force=0; targets_main=0; targets_product=0; deleting=0; bulk=0; npos=0
       for tok in "$@"; do
         case "$tok" in
           --force|-f|--force-with-lease|--force-with-lease=*|--force-if-includes) force=1 ;;
-          --delete|-d) : ;;                       # 뒤따르는 브랜치 이름은 아래 positional 로 잡힌다
+          --delete|-d) deleting=1 ;;
+          --all|--mirror) bulk=1 ;;
           -*) : ;;
           *)  npos=$((npos+1))
               # positional 1 은 원격 이름(`origin`)이다. 그것 자체가 main 이면 아래 단독 규칙이 받는다.
               if [ "$npos" -ge 2 ] && is_main_ref "$tok"; then targets_main=1; fi
               if [ "$npos" -eq 1 ] && is_main_ref "$tok"; then targets_main=1; fi
+              case "$tok" in +*) force=1 ;; esac
+              refspec="${tok#+}"
+              case "${refspec##*:}" in product|refs/heads/product) targets_product=1 ;; esac
+              case "$tok" in :*) deleting=1 ;; esac
               ;;
         esac
       done
+      # Current branch policy: product is promoted only by a human PR merge.
+      if [ "$targets_product" -eq 1 ] || [ "$bulk" -eq 1 ] || { [ "$npos" -le 1 ] && [ "$BRANCH" = product ]; }; then
+        deny "product 직접 push 및 전체 브랜치 push 금지 — develop PR을 사람이 병합한다"
+      fi
+      if [ "$deleting" -eq 1 ] && [ "$targets_main" -eq 1 ]; then
+        deny "기준 브랜치(main/master/develop/product) 원격 삭제 금지"
+      fi
       # ⑵ 강제 푸시가 main/master 를 겨눈다 — **누가 부르든 차단**(오케스트레이터 포함)
       if [ "$force" -eq 1 ] && [ "$targets_main" -eq 1 ]; then
         deny "main/master 로 강제 푸시(\`--force\`/\`-f\`/\`--force-with-lease\`) — 남의 커밋을 덮는다"
@@ -217,6 +229,7 @@ while IFS= read -r seg; do
       fi
       ;;
     merge)
+      [ "$BRANCH" != product ] || deny "product 로컬 병합 금지 — develop PR을 사람이 병합한다"
       # ⑶ **HEAD 가 main/master 이고 `--ff-only` 가 없을 때** 막는다.
       #    · 비-main 브랜치의 `git merge --ff-only <통합브랜치>`(레인 첫 줄) — 통과.
       #    · main 에서의 `git merge --ff-only <레인>`(오케스트레이터의 승인된 병합) — **통과**
@@ -236,7 +249,7 @@ while IFS= read -r seg; do
         case "$tok" in
           -D|-d|--delete) del=1 ;;
           -*) : ;;
-          main|master|refs/heads/main|refs/heads/master) hit=1 ;;
+          main|master|develop|product|refs/heads/main|refs/heads/master|refs/heads/develop|refs/heads/product) hit=1 ;;
         esac
       done
       if [ "$del" -eq 1 ] && [ "$hit" -eq 1 ]; then

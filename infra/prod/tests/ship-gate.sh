@@ -74,13 +74,13 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 prod 적재 스크립트 ＋ �
       *) mkdir -p "$work/$p"; : > "$work/$p/.keep" ;;
     esac
   done
-  git init -q -b main "$work"
+  git init -q -b product "$work"
   echo one > "$work/a.txt"
   git_q "$work" add -A >/dev/null
   git_q "$work" commit -qm "one" >/dev/null
   git init -q --bare "$root/origin.git"
   git_q "$work" remote add origin "$root/origin.git"
-  git_q "$work" push -q origin main
+  git_q "$work" push -q origin product
   printf '%s' "$work"
 }
 
@@ -111,7 +111,7 @@ dist_sha "$W" "$NONANC"
 run_ship "$W" COLAB_SHIP_UNUSED=1
 check "ⓐ 비조상" "exit" "$RC" 65
 check "ⓐ 비조상" "ssh·scp 호출 수" "$(wc -l < "$SSHLOG" | tr -d ' ')" 0
-has   "ⓐ 비조상" "사유 출력" "$OUT" "origin/main 조상이 아니다"
+has   "ⓐ 비조상" "사유 출력" "$OUT" "origin/product 조상이 아니다"
 
 # ── ⓑ 조상인데 prod 태그가 없다 → exit 65 · 반입 0회 (규칙 6) ───────────────
 W="$(new_fixture b)"
@@ -126,7 +126,7 @@ has   "ⓑ 태그 부재" "규칙 6 을 가리킨다" "$OUT" "prod-YYYYMMDD"
 # ── ⓒ 조상 ＋ prod 태그 → exit 0 · MAIN_SHA 한 줄 · ancestor=yes ────────────
 W="$(new_fixture c)"
 ANC="$(git_q "$W" rev-parse --short=12 HEAD)"
-MAIN="$(git_q "$W" rev-parse --short=12 origin/main)"
+SOURCE="$(git_q "$W" rev-parse --short=12 origin/product)"
 git_q "$W" tag "$TAGDAY" >/dev/null
 dist_sha "$W" "$ANC"
 run_ship "$W" COLAB_SHIP_UNUSED=1
@@ -134,8 +134,9 @@ check "ⓒ 통과" "exit" "$RC" 0
 LOG="$(cat "$SSHLOG")"
 has "ⓒ 통과" "태그 확인 출력" "$OUT" "prod 태그 확인: $TAGDAY"
 has "ⓒ 통과" "ssh argv 에 MAIN_SHA 기록" "$LOG" "/opt/colab-v2/MAIN_SHA"
-has "ⓒ 통과" "printf 형식 축자" "$LOG" "main=%s candidate=%s ancestor=%s"
-has "ⓒ 통과" "세 값이 yes 로 실린다" "$LOG" " $MAIN $ANC yes"
+has "ⓒ 통과" "printf 형식 축자" "$LOG" "source_ref=%s source_sha=%s candidate=%s ancestor=%s"
+has "ⓒ 통과" "source_ref 값" "$LOG" " product "
+has "ⓒ 통과" "후보와 yes 가 실린다" "$LOG" " $SOURCE $ANC yes"
 
 # ── ⓓ 비조상 ＋ 우회 선언 ＋ 태그 → exit 0 · ancestor=bypass ────────────────
 W="$(new_fixture d)"
@@ -144,9 +145,8 @@ NONANC="$(git_q "$W" rev-parse --short=12 HEAD)"
 git_q "$W" tag "$TAGDAY" >/dev/null
 dist_sha "$W" "$NONANC"
 run_ship "$W" COLAB_SHIP_ALLOW_NONMAIN=1
-check "ⓓ 우회 선언" "exit" "$RC" 0
-has   "ⓓ 우회 선언" "출력에 선언이 남는다" "$OUT" "우회 선언"
-has   "ⓓ 우회 선언" "ssh argv 에 ancestor=bypass" "$(cat "$SSHLOG")" " $NONANC bypass"
+check "ⓓ 옛 우회 차단" "exit" "$RC" 65
+check "ⓓ 옛 우회 차단" "ssh·scp 호출 수" "$(wc -l < "$SSHLOG" | tr -d ' ')" 0
 
 # ── ⓔ 태그 검사에는 우회가 없다 — 조상 ＋ 태그 부재 ＋ 우회 선언 → 여전히 65 ─
 W="$(new_fixture e)"

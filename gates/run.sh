@@ -191,7 +191,7 @@ ALL_GATES=(
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
-  seed-plan-drift-selftest dev-reseed-selftest
+  seed-plan-drift-selftest dev-reseed-selftest product-release-selftest product-reseed-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
@@ -247,6 +247,12 @@ case "$GATE" in
     # `tests/preflight-red.sh`(조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다).
     # dev·AWS 무접촉 = ssh·scp·docker·aws·agent-browser 를 PATH 대역으로 가린다.
     exec "$REPO_ROOT/gates/tools/dev-reseed-selftest.sh"
+    ;;
+  product-release-selftest)
+    exec "$REPO_ROOT/gates/tools/product-release-selftest.sh"
+    ;;
+  product-reseed-selftest)
+    exec "$REPO_ROOT/gates/tools/product-reseed-selftest.sh"
     ;;
   contract-lint)
     # seam OpenAPI 린트 (spectral, 룰셋 contracts/.spectral.yaml).

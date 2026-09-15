@@ -1,5 +1,8 @@
 # Claude와 Codex 공통 작업 연결
 
+현재 기본 브랜치는 `develop`, 운영 원천은 `product`다. `docs/BRANCHING.md`의 전환 정책과
+현재 사용자 승인 범위를 따른다. 아래 과거 `main` 실측은 이력이며 현재 ref 선택 근거가 아니다.
+
 ## 계획 중심 실행
 
 이번 전환의 전체 실행 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.

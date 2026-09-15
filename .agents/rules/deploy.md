@@ -58,6 +58,16 @@
 
 ## 고치기 전에 돌릴 것
 
+### 2026-09-15 승인 정책 — 최초 운영 교체
+
+승인 intent는 `dev-package/intent/2026-09-15-develop-product-deployment.md`다.
+dev 원천은 develop, 운영 원천은 product로 전환한다. 같은 저장소 develop PR을 사람이 직접
+병합하면 운영 배포를 시작한다. 기존 dev 전용 reset의 대상 거부 조건은 그대로 유지한다.
+첫 PR에 명시된 운영 대상·삭제 목록·정본 입력·계정 구성을 검증하는 별도 최초 실행 경계에서만
+운영을 전면 교체한다. dev와 비밀번호까지 동일하게 재현하되 비밀 값은 기록하지 않는다.
+첫 실행 기록은 삭제 대상 밖에서 영속 보관한다. 이후 배포에서 reset하지 않으며,
+실패하면 점검 상태를 유지하고 사람이 재개를 결정한다. 이 정책 개정은 실행 완료나 임의 재실행 권한이 아니다.
+
 `cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev …` — 15 항목 중 어디가
 `✗` 인지가 원인의 절반이다. 인자는 `infra/dev/README.md`. **부분 실행 둘을 합쳐 green 이라 하지
 않는다** — `─ 0` 이 나온 한 번의 결과만 근거다. 증상별 진단은 `docs/DEPLOY.md §3`.

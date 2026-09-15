@@ -71,11 +71,11 @@ COLAB_PG_MASTER_URL_FILE=/etc/colab/master.url COLAB_OWNER_PASSWORD=… COLAB_AP
 python3 scripts/deploy_release.py run --plan /absolute/reviewed/release.json
 ```
 
-⛔ **반입 전 `main` 조상 검사** — `git merge-base --is-ancestor <sha> origin/main`(exit 0 이어야 `ship.sh` 를 부른다). `main` 밖 sha 반입이 창 9 사고의 원인이다(`docs/BRANCHING.md` 규칙 1·§4). 게이트는 `ship.sh` 에 있다(exit 65/78 · 우회 선언).
+**반입 전 `develop` 조상 검사** — `git merge-base --is-ancestor <sha> origin/develop`이 성공해야 반입한다. 과거 main 기반 사고 기록은 `docs/BRANCHING.md` §4에 보존한다.
 
-- **게이트(`WU-D2` 반영 · `ship.sh` 안)** — `SHA` 를 읽은 직후 `origin/main` 을 fetch 해 조상 검사를 한다. 비조상이면 **exit 65**(거절 · ssh 0회) · `origin` 을 못 읽으면 **exit 78**(준비 실패 · 진행 금지). 손으로 재던 위 한 줄을 대신한다.
-- **우회는 선언한다** — 긴급 반입은 `COLAB_SHIP_ALLOW_NONMAIN=1 … infra/dev/ship.sh`. 거절 대신 통과하되 출력에 「비조상 반입 · 우회 선언」이 남는다. 기본값은 거절이다.
-- **`MAIN_SHA`** — 같은 ssh 가 `/opt/colab-v2/MAIN_SHA` 에 `main=<12자리> candidate=<12자리> ancestor=yes|no|bypass` 한 줄을 적는다. `CURRENT_SHA` 옆에 놓이고 `deploy_doctor` ⑮ 가 둘을 대조한다(EC2 에 git 이 없어 문자열 대조가 유일하다).
+- **게이트(`ship.sh`)** — `origin/develop`을 명시 refspec으로 받아 조상을 검사한다. 비조상은 exit 65와 SSH 0회, 원격 조회 실패는 exit 78이다.
+- **우회 없음** — 기존 `COLAB_SHIP_ALLOW_NONMAIN`으로 다른 원천을 반입할 수 없다.
+- **`MAIN_SHA`** — 호환 파일 이름은 유지하며 `source_ref=develop source_sha=… candidate=… ancestor=yes`를 기록한다. doctor가 환경과 후보를 대조하며 옛 main·bypass 기록을 통과로 인정하지 않는다.
 - **태그** — `deploy_doctor` 전건 통과 뒤 사람이 `infra/dev/tag-release.sh dev` 를 부른다(`dev-YYYYMMDD-N` · N 은 같은 날 기존 태그 수＋1 · `prod` 는 `prod-YYYYMMDD`). 대상 sha 는 로컬 `dist/colab-v2-dev.sha` 이고 EC2 를 읽지 않는다. **push 는 하지 않고 명령만 출력**한다.
 
 `ship.sh` 는 `db-bootstrap.sh` 를 싣지 않는다 — 첫 배포 때 `scp infra/dev/db-bootstrap.sh infra/staging/db-bootstrap.sh services/core-api/ops/app-role.sql` 을 같은 상대 배치로 손으로 올린다(1회).
@@ -114,7 +114,7 @@ cd services/core-api && .venv/bin/python ops/deploy_doctor.py --env dev \
 **미지정 항목이 남으면 exit 1** — 콘솔 단계 사이의 부분 실행은 `--allow-skip` 을 적어야 통과다(면제 명시).
 항목 14 = 운영자 자격증명 · 데이터 버킷 7항목 · 웹 버킷 · DB ×2 · head ×2 · RLS 전수 · 앱 롤 · 4 단위 헬스(`storageMode`/`sourceMode`=s3) ·
 앱 자격증명 출처 `imds` · 환경 짝 · 진입/API 라우팅(`/api/v1/me` 401 JSON)/previews · 백업 24h.
-항목 15 = 실행 sha ∈ main(`MAIN_SHA` 대조).
+항목 15 = 실행 sha ∈ develop(`MAIN_SHA`의 환경별 원천 기록 대조).
 
 ## 진단표 — 실제로 겪은 것만 적는다
 

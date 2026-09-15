@@ -770,7 +770,34 @@ def link_index(prefix, regex_literal):
 
 
 def project_index():
-    return link_index("/projects/", "/\\/projects\\/([^/?#]+)/")
+    # Cards contain more than the project name; table rows have no anchor.
+    # Both expose the stable project id and a dedicated name element.
+    rows = js("""
+(() => {
+  if (document.querySelector('[data-testid="project-list-error"]')) return null;
+  return JSON.stringify(Array.from(document.querySelectorAll(
+    '[data-testid^="project-card-"], [data-testid^="project-trow-"]'
+  )).map((row) => {
+    const title = row.querySelector('.pc-t, .pname');
+    const text = title ? Array.from(title.childNodes)
+      .filter((node) => node.nodeType === 3).map((node) => node.textContent).join('').trim() : '';
+    return {id: row.getAttribute('data-testid').replace(/^project-(card|trow)-/, ''), text};
+  }));
+})()
+""", default=None)
+    if rows is None:
+        if CFG is not None and CFG.dry_run:
+            return {}
+        raise Fail("프로젝트 목록을 읽지 못했다 — 빈 목록으로 처리하지 않는다.")
+    index = {}
+    for row in rows:
+        name, pid = row.get('text'), row.get('id')
+        if not name or not isinstance(pid, str) or not re.fullmatch(r'[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{20,32}', pid):
+            raise Fail("프로젝트 행의 이름 또는 id를 읽지 못했다.")
+        if name in index and index[name] != pid:
+            raise Fail("동일한 이름의 프로젝트가 여럿이다: " + name)
+        index[name] = pid
+    return index
 
 
 def dataset_index():
@@ -804,13 +831,12 @@ def phase_projects(st, plan):
     for proj in plan["projects"]:
         name = proj["name"]
         known = st["projects"].get(name) or dict()
-        if known.get("status") == "done":
+        if known.get("status") == "done" and known.get("id"):
             log("· 프로젝트 " + name + " — 이미 완료(건너뜀)")
             continue
         open_url("/projects")
         index = project_index()
-        page = body_text()
-        if name in index or (page and name in page):
+        if name in index:
             pid = index.get(name)
             log("· 프로젝트 " + name + " — 목록에 이미 있다. id=" + str(pid))
             row = dict()
@@ -856,6 +882,8 @@ def phase_projects(st, plan):
         if pid is None:
             pid = ("DRY-" + name) if CFG.dry_run else None
             log("  ! 프로젝트 id 회수 실패(" + name + ") — 목록 링크에서 찾지 못했다")
+        if pid is None:
+            raise Fail("프로젝트 id를 회수하지 못했다 — 완료로 기록하지 않는다: " + name)
         row = dict()
         row["id"] = pid
         row["status"] = "done"

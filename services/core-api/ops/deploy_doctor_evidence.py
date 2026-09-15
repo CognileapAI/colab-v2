@@ -73,8 +73,9 @@ def state_snapshot(ctx, pre_path, source):
     state = Path(ctx.state_dir)
     values = {name:regular(state/name).read_text().strip() for name in ('CURRENT_SHA','CURRENT_FULL_SHA','MAIN_SHA')}
     if values['CURRENT_SHA'] != full[:12] or values['CURRENT_FULL_SHA'] != full: raise ValueError('running SHA differs from full target')
-    match = re.fullmatch(r'main=([0-9a-f]{12,40}) candidate=([0-9a-f]{12,40}) ancestor=yes',values['MAIN_SHA'])
-    if not match or match[2] != full[:12]: raise ValueError('MAIN_SHA candidate/ancestry differs')
+    match = re.fullmatch(r'source_ref=(develop|product) source_sha=([0-9a-f]{12,40}) candidate=([0-9a-f]{12,40}) ancestor=yes',values['MAIN_SHA'])
+    expected = 'product' if ctx.env == 'prod' else 'develop'
+    if not match or match[1] != expected or match[3] != full[:12]: raise ValueError('MAIN_SHA source/candidate/ancestry differs')
     return pre, {'pre_file_sha256':sha256(raw),'state':values,'source':source_snapshot(source,full)}
 
 
@@ -93,8 +94,9 @@ def verify_emitted(pre, post, artifact_dir):
     before, after = post.get('before'),post.get('after')
     if not isinstance(before,dict) or before != after: raise ValueError('running state/source changed')
     if before.get('state',{}).get('CURRENT_FULL_SHA') != pre['sha'] or before.get('state',{}).get('CURRENT_SHA') != pre['sha'][:12]: raise ValueError('doctor running SHA differs')
-    match=re.fullmatch(r'main=([0-9a-f]{12,40}) candidate=([0-9a-f]{12,40}) ancestor=yes',before['state'].get('MAIN_SHA',''))
-    if not match or match[2]!=pre['sha'][:12]: raise ValueError('doctor ancestry differs')
+    match=re.fullmatch(r'source_ref=(develop|product) source_sha=([0-9a-f]{12,40}) candidate=([0-9a-f]{12,40}) ancestor=yes',before['state'].get('MAIN_SHA',''))
+    expected = 'product' if pre['environment'] == 'prod' else 'develop'
+    if not match or match[1]!=expected or match[3]!=pre['sha'][:12]: raise ValueError('doctor ancestry differs')
     source=before.get('source',{})
     if not re.fullmatch('[0-9a-f]{64}',source.get('manifest_sha256','')) or type(source.get('files')) is not int or source['files']<3: raise ValueError('doctor source evidence missing')
     if post.get('allow_skip') is not False or type(post.get('doctor_exit')) is not int or post['doctor_exit'] != 0 or post.get('exit') != 0: raise ValueError('doctor not fully successful')

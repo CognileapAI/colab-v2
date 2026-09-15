@@ -26,7 +26,7 @@ Make targeted edits to the region that needs changing. Do not rewrite whole file
 
 - **첫 줄** — 지시문이 지정한 통합 브랜치로 기준을 맞춘다: `git merge --ff-only <통합 브랜치>`. 워크트리 기본 기준은 `origin/<default>` 이므로 이 한 줄을 빠뜨리면 형제 레인의 선행분 위에서 작업하지 못한다. 지시문에 기대 HEAD 가 적혀 있으면 `git rev-parse HEAD` 로 대조하고, 어긋나면 **구현하지 말고 정지·보고**한다.
 - **끝** — 최종 메시지에 `WORKTREE=<경로> BRANCH=<브랜치>` 를 그대로 적는다. 오케스트레이터가 그 브랜치 이름으로 병합한다.
-- **병합·병합 순서·충돌 해소는 하지 않는다.** `main`/`master` 로 push 하지 않는다. `gh pr merge` 를 부르지 않는다. 자기 브랜치까지가 끝이다.
+- **병합·병합 순서·충돌 해소는 하지 않는다.** `develop`/`product` 및 과거 `main`/`master`로 push하지 않는다. `gh pr merge`를 부르지 않는다. 자기 브랜치까지가 끝이다.
 - **원장 번호 〈N〉 을 하드코딩하지 않는다.** `PLAN-SoT.md §9` 에 직접 쓰지 않고, 등재문은 자기 회차 파일(`dev-package/sessions/<회차>/`)에 적어 둔다. 번호 발급·등재는 오케스트레이터가 직렬로 한다(`§4-1`).
 - 손으로 만든 형제 워크트리를 쓰지 않는다. 자기 워크트리 밖 경로를 편집하지 않는다.
 

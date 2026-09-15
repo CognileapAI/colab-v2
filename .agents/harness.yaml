@@ -3,8 +3,8 @@
   "project": {
     "name": "CoLAB v2",
     "repository": "CognileapAI/colab-v2",
-    "default_branch": "main",
-    "deployment_branch": "main",
+    "default_branch": "develop",
+    "deployment_branch": "product",
     "package_roots": ["contracts", "db", "frontend", "services", "infra"]
   },
   "commands": {

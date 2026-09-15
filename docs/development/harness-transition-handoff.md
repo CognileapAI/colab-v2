@@ -1,5 +1,28 @@
 # 공통 하네스 전환 인계
 
+## develop 통합 — 2026-09-15
+
+사용자 요청에 따라 기본 개발 브랜치를 develop로 맞춘다. Ponytail 반영 커밋은
+`6d0a03ca`이며, 통합 대상 origin/develop은 `4bc50c50`이다.
+
+- [x] develop 변경과 하네스의 충돌 6곳 해소. 공통 규칙 원본과 얇은 Claude 어댑터 유지.
+- [x] develop/product 보호, 배포 증거의 브랜치·SHA, CI 필수 증거 수집을 새 정책에 맞춤.
+- [x] 실패 배포 재개 시 완료 전 post 증거를 요구하던 순서 수정 및 회귀 시험.
+- [x] 관련 로컬 검증. 원격 반영 여부는 Git ref로 확인한다.
+
+검증: harness-contract-selftest 41, product-release-selftest 75,
+product-reseed-selftest 87, service-tests-core-api 1,294 시험 통과.
+각 게이트 exit 0, green 1 / red(판정) 0 / red(준비) 0.
+로그는 `/tmp/colab-harness-develop-{contract-selftest-pass,product-release,product-reseed,core}/gate-summary.json`.
+최종 agent-bridge 121건 중 111통과·Windows 전용 10 skipped, exit 0,
+green 1 / red(판정) 0 / red(준비) 0. 로그: `/tmp/colab-harness-develop-bridge-final/gate-summary.json`.
+추가로 dev/prod ship mock 38/48건 통과, 실제 doctor와 증거 emitter에 같은 ship 기록을
+입력한 dev/prod 2건 통과. 실행 환경 없는 직접 pytest 시도는 준비 오류였으며,
+core-api 게이트가 일회용 DB를 준비한 뒤 위 1,294건을 정상 실행했다.
+
+전체 제품 게이트·실제 GitHub Actions·실제 배포·모델 행동 평가는 이번에 완료했다고 주장하지 않는다.
+product 브랜치와 운영 환경은 변경하지 않는다. 아래 이전 상태는 당시 기록이다.
+
 ## 현재 운영 범위 — 2026-09-15 사용자 승인
 
 하네스 전면 전환·추가 고도화는 보류하고 실제 개발에 사용한다. 아래 과거의 전체 수용

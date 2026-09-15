@@ -66,27 +66,28 @@ class HarnessEvidenceTests(unittest.TestCase):
         registry = json.loads((ROOT / ".agents/ci-producers.json").read_text())["producers"]
         filters = {key: "false" for item in registry.values() for key in item["filters"]}
         needs = {item["job"]: {"result": "skipped"} for item in registry.values()}
-        needs.update({"changes": {"result": "success"}, "repo-hygiene": {"result": "success"}})
+        needs.update({"changes": {"result": "success"}, "repo-hygiene": {"result": "success"}, "product-safety": {"result": "success"}})
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with self.assertRaises(self.module.EvidenceReadinessError):
                 self.module.collect_ci("1", 1, "a" * 40, "b" * 40, registry, needs, filters, root)
-            for name in ("exec-bit", "exec-bit-selftest"):
-                folder = root / "repo-hygiene" / name
-                folder.mkdir(parents=True)
-                spec = registry["repo-hygiene"]["checks"][name]
-                record = {"schema": "colab-ci-check/1", "producer": "repo-hygiene", "check": name,
-                          "run_id": "1", "run_attempt": 1, "commit": "a" * 40, "tree": "b" * 40,
-                          "kind": "gate", "command": spec["command"], "exit": 0,
-                          "counts": {"green": 1, "red_judgment": 0, "red_readiness": 0}}
-                (folder / "evidence.json").write_text(json.dumps(record))
-                summary = {"schema": "colab-gate-summary/1", "commit": "a" * 40, "tree": "b" * 40,
-                           "counts": {"green": 1, "red_판정": 0, "red_준비": 0},
-                           "gates": [{"name": name, "status": "green", "state": "green", "exit": 0}]}
-                (folder / "gate-summary.json").write_text(json.dumps(summary))
+            for producer in ("repo-hygiene", "product-safety"):
+                for name in registry[producer]["checks"]:
+                    folder = root / producer / name
+                    folder.mkdir(parents=True)
+                    spec = registry[producer]["checks"][name]
+                    record = {"schema": "colab-ci-check/1", "producer": producer, "check": name,
+                              "run_id": "1", "run_attempt": 1, "commit": "a" * 40, "tree": "b" * 40,
+                              "kind": "gate", "command": spec["command"], "exit": 0,
+                              "counts": {"green": 1, "red_judgment": 0, "red_readiness": 0}}
+                    (folder / "evidence.json").write_text(json.dumps(record))
+                    summary = {"schema": "colab-gate-summary/1", "commit": "a" * 40, "tree": "b" * 40,
+                               "counts": {"green": 1, "red_판정": 0, "red_준비": 0},
+                               "gates": [{"name": name, "status": "green", "state": "green", "exit": 0}]}
+                    (folder / "gate-summary.json").write_text(json.dumps(summary))
             jobs = self.module.collect_ci("1", 1, "a" * 40, "b" * 40, registry, needs, filters, root)
-            self.assertEqual(sum(job["state"] == "green" for job in jobs), 1)
-            self.assertEqual(sum(job["state"] == "not_applicable" for job in jobs), len(registry) - 1)
+            self.assertEqual(sum(job["state"] == "green" for job in jobs), 2)
+            self.assertEqual(sum(job["state"] == "not_applicable" for job in jobs), len(registry) - 2)
             event = {'after': 'a' * 40, 'before': 'c' * 40}
             evidence = self.module.build_ci_evidence('1', 1, 'a'*40, 'b'*40,
                 self.module.event_shas('push', event, 'a'*40), jobs)

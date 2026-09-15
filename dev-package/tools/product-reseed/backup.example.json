@@ -1,0 +1,7 @@
+{
+  "schema": "colab-product-backup/1",
+  "files": [
+    {"source": "platform", "path": "", "sha256": ""},
+    {"source": "ai", "path": "", "sha256": ""}
+  ]
+}

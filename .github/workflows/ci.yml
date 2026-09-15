@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [develop, product]
   pull_request:
   workflow_dispatch:
 
@@ -14,6 +14,34 @@ permissions:
   contents: read
 
 jobs:
+  product-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 운영 배포 경계 시험 의존 설치
+        run: |
+          python -m venv services/core-api/.venv
+          services/core-api/.venv/bin/python -m pip install -q --disable-pip-version-check -r services/core-api/requirements-dev.txt
+          npm ci --prefix frontend --no-audit --no-fund
+      - name: product-release-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "product-safety" --check "product-release-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/run.sh product-release-selftest
+      - name: product-reseed-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "product-safety" --check "product-reseed-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/run.sh product-reseed-selftest
+      - name: 운영 경계 검사 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-product-safety-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/product-safety
+          if-no-files-found: error
+          retention-days: 90
+
   # 어떤 경로가 바뀌었는지 판정한다. 모노레포지만 배포는 5개 단위로 독립이므로
   # 영향받은 것만 빌드·검증한다. contracts 변경은 전체를 깨울 수 있는 유일한 경로다.
   changes:
@@ -194,18 +222,12 @@ jobs:
           test -x frontend/node_modules/.bin/openapi-typescript
       - name: seam 스펙 린트
         run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "contract-lint" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh contract-lint
-      # `contract-breaking` 의 기준(frozen seam)은 파일이 아니라 **ref** 다.
-      # 기본값 `HEAD` 를 CI 에서 그대로 두면 PR 이 자기 자신과 비교돼 차분이 0 이다 —
-      # 조용히 green 이 되는 게이트라 판정을 못 한다. 기준을 `origin/main` 으로 옮긴다.
-      #   push(main) — `origin/main` 이 그 push 의 커밋이다.
-      #   pull_request — checkout 이 merge ref 를 받고, 그 merge 커밋의 부모가 `origin/main` 이다.
-      #                  즉 `origin/main` 이 곧 merge-base 이며 PR 의 실제 차분이 비교된다.
-      # ⚠ checkout 은 `fetch-depth` 무지정(＝1)이고 **요청한 ref 하나만** 받는다.
-      #   pull_request 문맥에는 `origin/main` 이 아예 없어 게이트가 「기준 ref 를 찾을 수 없다」로
-      #   red 를 낸다. 그래서 비교 직전에 그 ref 하나를 명시적으로 받아 둔다.
-      #   게이트는 `git archive <ref> contracts` 로 트리만 꺼내므로 depth 1 로 충분하다.
-      - name: 비교 기준 ref 확보 (origin/main — contract-breaking 용)
-        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+      - name: 고정 이벤트 비교 SHA 확보
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          test -n "$BASE_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
         env:
           COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -714,7 +736,7 @@ jobs:
           retention-days: 90
 
   required-gates:
-    needs: [changes, search-golden, contract-gates, frontend-gates, boundary-gates, schema-gates, dormant-tests, service-tests, planning-gates, repo-hygiene, harness-eval, gate-selftest]
+    needs: [changes, product-safety, search-golden, contract-gates, frontend-gates, boundary-gates, schema-gates, dormant-tests, service-tests, planning-gates, repo-hygiene, harness-eval, gate-selftest]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
@@ -751,3 +773,33 @@ jobs:
           path: ci-evidence.json
           if-no-files-found: error
           retention-days: 90
+  ci-required:
+    name: ${{ github.event_name == 'pull_request' && 'ci-required' || 'ci-push-summary' }}
+    # Push checks cannot satisfy the PR-only required context.
+    # Path-filtered skips are explicit; failures, cancellations and missing results block promotion.
+    if: ${{ always() }}
+    needs: ['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest']
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require complete CI results
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, sys
+          results = json.loads(os.environ['CI_RESULTS'])
+          expected = set(['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest'])
+          always_required = {'required-gates', 'changes', 'product-safety', 'repo-hygiene'}
+          bad = set(results) != expected
+          skipped = []
+          for name in sorted(expected):
+              result = results.get(name, {}).get('result')
+              print(f'{name}: {result}')
+              if result == 'skipped' and name not in always_required:
+                  skipped.append(name)
+              elif result != 'success':
+                  bad = True
+          print(f'Path-filtered skips ({len(skipped)}): {skipped}')
+          sys.exit(1 if bad else 0)
+          PYCODE

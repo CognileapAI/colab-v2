@@ -82,18 +82,19 @@ class WorkStateTests(unittest.TestCase):
             commit, tree = identity['commit'], identity['tree']
             filters = {key: 'false' for item in registry.values() for key in item['filters']}
             needs = {item['job']: {'result': 'skipped'} for item in registry.values()}
-            needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}})
+            needs.update({'changes': {'result': 'success'}, 'repo-hygiene': {'result': 'success'}, 'product-safety': {'result': 'success'}})
             bundle = root/'.git/ci-fixture'; bundle.mkdir()
-            for name, check in registry['repo-hygiene']['checks'].items():
-                folder = bundle/name; folder.mkdir()
-                record = {'schema': 'colab-ci-check/1', 'producer': 'repo-hygiene', 'check': name,
-                    'run_id': '1', 'run_attempt': 1, 'commit': commit, 'tree': tree,
-                    'kind': check['kind'], 'command': check['command'], 'exit': 0,
-                    'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
-                (folder/'evidence.json').write_text(json.dumps(record))
-                (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
-                    'commit': commit, 'tree': tree, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
-                    'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
+            for producer in ('repo-hygiene','product-safety'):
+                for name, check in registry[producer]['checks'].items():
+                    folder = bundle/name; folder.mkdir()
+                    record = {'schema': 'colab-ci-check/1', 'producer': producer, 'check': name,
+                        'run_id': '1', 'run_attempt': 1, 'commit': commit, 'tree': tree,
+                        'kind': check['kind'], 'command': check['command'], 'exit': 0,
+                        'counts': {'green': 1, 'red_judgment': 0, 'red_readiness': 0}}
+                    (folder/'evidence.json').write_text(json.dumps(record))
+                    (folder/'gate-summary.json').write_text(json.dumps({'schema': 'colab-gate-summary/1',
+                        'commit': commit, 'tree': tree, 'counts': {'green': len(check['gates']), 'red_판정': 0, 'red_준비': 0},
+                        'gates': [{'name': g, 'status': 'green', 'state': 'green', 'exit': 0} for g in check['gates']]}))
             event = {'after': commit, 'before': commit}
             jobs = ci.collect_ci('1', 1, commit, tree, registry, needs, filters, bundle)
             evidence = ci.build_ci_evidence('1', 1, commit, tree, ci.event_shas('push', event, commit), jobs)
@@ -107,9 +108,9 @@ class WorkStateTests(unittest.TestCase):
             record = {'schema': 'colab-github-pr-record/1',
                 'source': {'repository': 'CognileapAI/colab-v2', 'number': 1, 'endpoint': 'repos/CognileapAI/colab-v2/pulls/1', 'transport': 'gh-api', 'fetched_at': '2026-09-15T01:00:00+00:00'},
                 'record': {'number': 1, 'state': 'closed', 'merged': True, 'merged_at': '2026-09-15T00:00:00+00:00',
-                    'head': {'sha': commit}, 'merge_commit_sha': commit, 'base': {'ref': 'main', 'repo': {'full_name': 'CognileapAI/colab-v2'}}}}
+                    'head': {'sha': commit}, 'merge_commit_sha': commit, 'base': {'ref': 'develop', 'repo': {'full_name': 'CognileapAI/colab-v2'}}}}
             record_path = root/'.git/pr-record.json'; record_path.write_text(json.dumps(record))
-            issue['pr'].update(number=1, repository='CognileapAI/colab-v2', base_ref='main',
+            issue['pr'].update(number=1, repository='CognileapAI/colab-v2', base_ref='develop',
                 record={'path': str(record_path), 'sha256': self.m.digest(record_path.read_bytes())})
             self.m.validate(completed, root)
             for key, value in [('number', 2), ('repository', 'other/repo'), ('head_sha', 'b'*40), ('merge_sha', 'b'*40)]:
@@ -203,7 +204,7 @@ class WorkStateTests(unittest.TestCase):
                     'source': {'repository': 'CognileapAI/colab-v2', 'number': number, 'endpoint': f'repos/CognileapAI/colab-v2/pulls/{number}', 'transport': 'gh-api', 'fetched_at': '2026-09-15T01:00:00+00:00'},
                     'record': {'number': number, 'state': 'closed', 'merged': True, 'merged_at': '2026-09-15T00:00:00+00:00',
                         'head': {'sha': 'a'*40}, 'merge_commit_sha': 'b'*40,
-                        'base': {'ref': 'main', 'repo': {'full_name': 'CognileapAI/colab-v2'}}}}))
+                        'base': {'ref': 'develop', 'repo': {'full_name': 'CognileapAI/colab-v2'}}}}))
             cfg['closure_evidence'] = {
                 'mapping': record('mapping.json', {'schema': 'colab-work-mapping/1', 'ledger_sha256': self.m.digest((root/'ledger.yaml').read_bytes()),
                     'mappings': [{'id': 'local-1', 'kind': 'issue', 'issue_number': 1, 'source_sha256': self.m.digest(json.dumps({'id':'local-1','status':'open'},sort_keys=True,ensure_ascii=False).encode())}]}),

@@ -66,6 +66,16 @@ class HarnessConfigTests(unittest.TestCase):
         with self.assertRaises(self.module.ContractError):
             self.module.validate_contract(value)
 
+    def test_current_branch_policy_rejects_obsolete_main(self):
+        value = self.module.load_contract(ROOT / '.agents/harness.yaml')
+        value['project'].update(default_branch='develop', deployment_branch='product')
+        self.module.validate_contract(value)
+        for field in ('default_branch', 'deployment_branch'):
+            bad = json.loads(json.dumps(value))
+            bad['project'][field] = 'main'
+            with self.subTest(field=field), self.assertRaises(self.module.ContractError):
+                self.module.validate_contract(bad)
+
     def test_repository_contract_and_declared_paths_are_valid(self):
         value = self.module.load_contract(ROOT / ".agents/harness.yaml")
         self.assertEqual(self.module.check_contract(ROOT, value), [])
