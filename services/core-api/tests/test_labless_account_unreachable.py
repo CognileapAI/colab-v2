@@ -93,22 +93,11 @@ def test_the_operator_flag_defaults_to_false_so_omitting_it_is_also_refused(p2_c
 
 
 # ═════════════ ⓑ 이미 선 계정을 그 상태로 내리는 경로도 없다 ═══════════════════
-def test_a_labless_operator_cannot_be_demoted_into_that_state(
-    p2_client, _remove_created_accounts: list[str],
-) -> None:
-    """무소속 관리자의 **권한 해제**가 곧 「무소속 비운영자 만들기」다 — 거절된다."""
-    client = p2_client(session_secret=SECRET)
-    made = client.post("/api/v1/admin/accounts-v2", headers=auth(TOKEN_PROF), json={
-        "email": _email("labless-demote"), "name": "무소속 관리자",
-        "initialPassword": INITIAL, "operator": True,
-    })
-    assert made.status_code == 201, made.text
-    account_id = made.json()["accountId"]
-    _remove_created_accounts.append(account_id)
-    refused = client.post(f"/api/v1/admin/accounts/{account_id}/operator",
-                          headers=auth(TOKEN_PROF), json={"operator": False})
-    assert refused.status_code == 400, refused.text
-    assert "소속" in refused.json()["message"]
+#
+# ⓝ **여기에 시험을 새로 두지 않는다.** 무소속 관리자의 권한 해제가 거절되는 것은
+#    `tests/test_operator_designation.py::test_labless_operator_full_login_cycle_and_demotion_guard`
+#    가 이미 잰다(400 ＋ 「소속」). 같은 사실을 두 번 재면 무소속 계정 행이 회차마다 두 개씩
+#    남고, 그 행은 **소유자 롤이 없으면 지울 수 없다**(`_remove_created_accounts` 주석).
 
 
 # ═════════════ ⓒ 소속을 사후에 비우는 경로가 없다 (정적 오라클) ═══════════════
@@ -187,8 +176,8 @@ def test_the_401_branch_still_fires_if_the_state_is_forced(
         assert denied.status_code == 401, \
             f"무소속 비운영자가 로그인했다 — 마지막 방어선이 없다: {denied.text}"
     finally:
-        with engine.begin() as db:
-            db.execute(text(
-                "INSERT INTO account_admin.service_operator(account_id) VALUES (:id)"
-                " ON CONFLICT (account_id) DO NOTHING"), {"id": account_id})
         engine.dispose()
+    # ⛔ **운영자 행을 되돌리지 않는다.** 되돌리면 이 계정이 운영자로 남고, 운영자를 **집합으로**
+    # 재는 시험(`test_operator_designation.py::test_two_concurrent_revokes_leave_exactly_one_operator`)
+    # 이 그 한 줄 때문에 red 가 된다 — 소유자 롤이 없는 자리에서는 계정 행을 지울 수 없어
+    # 그 운영자가 다음 시험까지 살아남는다. 지운 채로 두면 운영자 집합은 시험 전과 같다.
