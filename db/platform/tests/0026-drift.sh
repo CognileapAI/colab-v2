@@ -3,6 +3,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN="$(cd "$HERE/.." && pwd)"
 ALEMBIC="${COLAB_ALEMBIC:-alembic}"
+command -v "$ALEMBIC" >/dev/null 2>&1 || { echo "::error::0026-drift red(준비) — alembic이 없다"; exit 78; }
 TMP="$(mktemp -d -p "${TMPDIR:-/tmp}" colab-0026-XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT INT TERM
 export COLAB_PLATFORM_DB_URL=postgresql+psycopg://offline/offline

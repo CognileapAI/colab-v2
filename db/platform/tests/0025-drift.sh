@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
+# 준비 판정만 재사용하며 컨테이너 생성·cleanup은 이 오라클이 소유한다.
+. "$(dirname "${BASH_SOURCE[0]}")/../../../gates/tools/_pg.sh"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; CHAIN="$(cd "$HERE/.." && pwd)"
 ALEMBIC="${COLAB_ALEMBIC:-alembic}"; IMAGE="${COLAB_PG_IMAGE:-postgres:16-alpine}"
 red(){ echo "::error::0025-drift red — $*"; exit 1; }
@@ -19,7 +21,7 @@ for token in account_admin login_credential service_operator session_version; do
 done
 docker image inspect "$IMAGE" >/dev/null 2>&1 || ready "postgres 이미지가 없다"
 PGC="colab_0025_$$_${RANDOM}"; docker run -d --rm --name "$PGC" --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db -e POSTGRES_PASSWORD=x -e POSTGRES_HOST_AUTH_METHOD=trust "$IMAGE" >/dev/null || ready "postgres 기동 실패"
-for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q && break; sleep 1; done
+pg_wait_ready "$PGC" 60 || ready "postgres 실서버가 60초 안에 준비되지 않았다."
 apply(){ docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" <"$2"; }
 for db in head prev down; do docker exec "$PGC" createdb -U postgres "$db" >/dev/null; done
 apply head "$TMP/head.sql" || red "head 적용 실패"
