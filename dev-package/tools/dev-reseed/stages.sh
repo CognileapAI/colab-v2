@@ -613,9 +613,9 @@ stage_seed() {
   local extra=()
   # `--accounts-file` 은 러너 레인(WU-C1b)이 붙이는 인자다. 이 기준에는 아직 없으므로
   # 값이 주어졌을 때만 넘긴다 — 없는 인자를 무조건 넘겨 러너를 죽이지 않는다.
-  if [ -n "$ACCOUNTS_FILE" ]; then extra+=(--accounts-file "$ACCOUNTS_FILE"); fi
+  if [ -n "$ACCOUNTS_FILE" ]; then extra+=(--accounts-file "$ACCOUNTS_FILE" --accounts-password-file "$ACCOUNTS_PASSWORD_FILE"); fi
   run python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" \
-      --phase all --base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" \
+      --phase all --base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" \
       --account "$RESEED_ACCOUNT_EMAIL" "${extra[@]}" || return 1
 }
 

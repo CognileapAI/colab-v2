@@ -105,7 +105,7 @@ ACCOUNT_CSS = {
     "password": ACCOUNT_SECTION_CSS + ' input[name="initialPassword"]',
     "admin": ACCOUNT_SECTION_CSS + ' input[name="operator"]',
     "submit": ACCOUNT_SECTION_CSS + ' button[type="submit"]',
-    "status": ACCOUNT_SECTION_CSS + ' [role="status"]',
+    "status": '.login > [role="status"]',
 }
 ACCOUNT_ROLES = ("교수", "연구원")
 
@@ -264,12 +264,13 @@ def load_accounts_file(path):
         if "initialPassword" in item or "password" in item:
             raise Fail("계정 파일에 비밀번호를 두지 않는다(별도 0600 파일 · 표준입력): " + who)
         entry = dict()
-        for key in ["email", "name", "role"]:
+        for key in ["email", "name"]:
             val = str(item.get(key) or "").strip()
             if not val:
                 raise Fail("계정 항목에 " + key + " 가 없다: " + who)
             entry[key] = val
-        if entry["role"] not in ACCOUNT_ROLES:
+        entry["role"] = str(item.get("role") or "").strip()
+        if entry["role"] and entry["role"] not in ACCOUNT_ROLES:
             raise Fail("계정 역할이 정본 2값 밖이다: " + who + " · " + entry["role"])
         admin = item.get("admin")
         if not isinstance(admin, bool):
@@ -278,6 +279,10 @@ def load_accounts_file(path):
         lab = item.get("lab")
         if lab:
             entry["lab"] = str(lab).strip()
+        if bool(entry.get("lab")) != bool(entry["role"]):
+            raise Fail("연구실과 역할을 함께 지정하거나 함께 비운다: " + who)
+        if not admin and not entry.get("lab"):
+            raise Fail("일반 사용자는 연구실과 역할이 필요하다: " + who)
         out.append(entry)
     return out
 
@@ -296,8 +301,7 @@ def account_form_actions(entry):
     ]
     if entry.get("lab"):
         actions.append(["select-label", ACCOUNT_CSS["lab"], entry["lab"]])
-    if entry.get("admin"):
-        actions.append(["check", ACCOUNT_CSS["admin"]])
+    actions.append(["check", ACCOUNT_CSS["admin"], entry["admin"]])
     actions.append(["secret", ACCOUNT_CSS["password"]])
     actions.append(["activate", ACCOUNT_CSS["submit"]])
     return actions
@@ -1421,8 +1425,24 @@ def account_initial_password():
     return value
 
 
+def open_account_form():
+    """목록 기본 탭에서 등록 탭으로 이동하고 실제 표시를 확인한다."""
+    tab = '[role="tablist"][aria-label="계정 관리 탭"] [role="tab"]:last-child'
+    if not wait_css(tab, 60, "계정 관리 탭"):
+        raise Fail("계정 관리 탭이 열리지 않았다")
+    activate(tab, "관리자 등록 탭")
+    if not CFG.dry_run:
+        def visible():
+            return js("JSON.stringify((() => { const e = document.querySelector("
+                     + json.dumps(ACCOUNT_SECTION_CSS)
+                     + "); return !!e && e.getClientRects().length > 0; })())")
+        if wait_any([["visible", visible]], 60, label="계정 등록 양식 표시") != "visible":
+            raise Fail("계정 등록 양식이 보이지 않는다")
+
+
 def create_account(st, entry, secret):
     """계정 한 건을 **계정 관리 화면으로** 만든다. API·DB 직접 쓰기 없음."""
+    open_account_form()
     for action in account_form_actions(entry):
         kind = action[0]
         css = action[1]
@@ -1431,7 +1451,7 @@ def create_account(st, entry, secret):
         elif kind == "activate":
             activate(css, "계정 추가")
         elif kind == "check":
-            set_checkbox(css, True, "관리자로 등록")
+            set_checkbox(css, action[2], "관리자로 등록")
         elif kind == "select-label":
             select_by_label(css, action[2], "연구실")
         else:
@@ -1485,6 +1505,8 @@ def phase_accounts(st, plan):
             log("  + " + entry["email"] + " 추가됨")
         else:
             log("  x " + entry["email"] + " 추가 실패: " + str(message))
+            mark_step(st, "accounts", "partial", made=made, planned=len(entries))
+            raise Fail("계정 생성 실패로 후속 단계를 중단한다: " + entry["email"])
         open_url(ACCOUNT_PATH)
         wait_css(ACCOUNT_SECTION_CSS, 60, "계정 추가 화면")
     mark_step(st, "accounts", "done" if made >= len(entries) else "partial",

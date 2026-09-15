@@ -121,6 +121,7 @@ RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/develop}"
 TARGET_SHA=""
 ACCOUNTS_FILE=""
+ACCOUNTS_PASSWORD_FILE=""
 OPERATOR_PASSWORD_FILE="${COLAB_RESEED_OPERATOR_PASSWORD_FILE:-}"
 DEV_URL="${COLAB_DEV_URL:-}"
 MD_ROOT=""
@@ -161,7 +162,8 @@ usage() {
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
   --target-ref <ref>            배포 대상(기본 origin/develop).
-  --accounts-file <파일>        러너에 넘길 계정 파일(러너가 그 인자를 받을 때만 넘긴다).
+  --accounts-file <파일>        계정 목록 JSON(0600 · 비밀번호는 별도 파일).
+  --accounts-password-file <파일> 계정 생성 비밀번호(계정 파일 지정 시 필수 · 0600).
   --operator-password-file <파일>  prelude ③ 의 초기 비밀번호(0600 · 10자 이상).
   --base-url <주소>             dev 주소(기본 $COLAB_DEV_URL).
   --md-root <자리>              정본 md 뿌리(기본 = 참조자료 뿌리).
@@ -177,6 +179,7 @@ while [ $# -gt 0 ]; do
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
     --accounts-file) ACCOUNTS_FILE="$2"; shift 2 ;;
+    --accounts-password-file) ACCOUNTS_PASSWORD_FILE="$2"; shift 2 ;;
     --operator-password-file) OPERATOR_PASSWORD_FILE="$2"; shift 2 ;;
     --base-url) DEV_URL="$2"; shift 2 ;;
     --md-root) MD_ROOT="$2"; shift 2 ;;

@@ -92,8 +92,8 @@ def test_reg_open_이_아예_없으면_사유가_실린_blocked_다():
 # ── ⑶ 계정 파일 · 비밀 취급 ───────────────────────────────────────────────
 
 ACCOUNTS = [
-    {"email": "op@example.com", "name": "운영자", "role": "교수", "admin": True},
-    {"email": "one@example.com", "name": "한 사람", "role": "연구원", "admin": False},
+    {"email": "op@example.com", "name": "운영자", "role": "교수", "lab": "연구실 A", "admin": True},
+    {"email": "one@example.com", "name": "한 사람", "role": "연구원", "lab": "연구실 A", "admin": False},
 ]
 
 
@@ -245,3 +245,15 @@ def test_label_이_감싼_칸처럼_click_만_듣는_대역에서는_이름을_�
     with pytest.raises(runner.Fail) as exc:
         runner.set_checkbox("css", True, "관리자로 등록")
     assert "체크 상태를 바꾸지 못했다" in str(exc.value)
+
+
+def test_account_creation_unchecks_default_admin_for_regular_user(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(runner, 'CFG', SimpleNamespace(dry_run=False))
+    calls, box = _checkbox_world(monkeypatch, initial=True, honors={"check", "uncheck"})
+    for name in ('open_account_form', 'fill_secret', 'activate', 'select_by_label'):
+        monkeypatch.setattr(runner, name, lambda *args: None)
+    monkeypatch.setattr(runner, 'wait_css', lambda *args: True)
+    monkeypatch.setattr(runner, 'el_text', lambda *args: '계정을 추가했어요.')
+    runner.create_account({}, ACCOUNTS[1], 'fixture-secret')
+    assert box['checked'] is False

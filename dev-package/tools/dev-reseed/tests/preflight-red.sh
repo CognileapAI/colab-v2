@@ -261,6 +261,64 @@ printf '%s' "$CV_OUT" | grep -q '미지정' || note "ⓠ⁗ 계수 칸 [2] 판�
 STRAY="$(find "$HERE/../../../sessions" -maxdepth 1 -name 'DR-4-run-*.md' -newer "$TMP" 2>/dev/null | wc -l | tr -d ' ')"
 [ "$STRAY" = 0 ] || note "ⓟ 픽스처가 dev-package/sessions/ 에 회차 기록 $STRAY 건을 남겼다"
 
+# 입력 검증과 최초 비밀번호 준비는 원격 접촉 없이 실행한다.
+python3 - "$HERE/.." "$TMP" <<'PWTEST'
+import json, os, pathlib, subprocess, sys
+base, tmp = map(pathlib.Path, sys.argv[1:])
+repo = base.resolve().parents[2]
+pw = tmp / 'operator-pw'; pw.write_text('fixture-secret-123'); pw.chmod(0o600)
+accounts = tmp / 'accounts'; accounts.write_text(json.dumps([dict(email='x@example.org', name='X', role='', admin=True)])); accounts.chmod(0o600)
+work = tmp / 'seed-password-work'
+env = dict(os.environ, REPO_ROOT=str(repo), OPERATOR_PASSWORD_FILE=str(pw), ACCOUNTS_FILE=str(accounts), ACCOUNTS_PASSWORD_FILE=str(pw), SEED_WORK_DIR=str(work), DRY_RUN='0')
+def call(command, **overrides):
+    return subprocess.run(['bash', '-c', '. "$1/preflight.sh"; '+command, '_', str(base)], env=dict(env, **overrides), capture_output=True, text=True)
+assert call('validate_seed_inputs').returncode == 0
+assert not work.exists(), 'validation must be read-only'
+for overrides in ({'ACCOUNTS_PASSWORD_FILE':''}, {'OPERATOR_PASSWORD_FILE':''}):
+    assert call('validate_seed_inputs', **overrides).returncode != 0
+pw.chmod(0o644); assert call('validate_seed_inputs').returncode != 0; pw.chmod(0o600)
+pw.write_text(''); assert call('validate_seed_inputs').returncode != 0; pw.write_text('fixture-secret-123')
+assert call('prepare_seed_password').returncode == 0
+saved = work / 'initial-password.txt'
+assert saved.read_text() == 'fixture-secret-123' and saved.stat().st_mode & 0o777 == 0o600
+assert call('validate_seed_inputs 1').returncode == 0
+for stale_name in ('state.json', 'new-password.txt'):
+    stale = work / stale_name
+    stale.write_text('{}' if stale_name == 'state.json' else 'rotated-fixture-secret')
+    assert call('validate_seed_inputs 1').returncode != 0, 'reset must reject existing state: '+stale_name
+    assert call('validate_seed_inputs 0').returncode == 0, 'resume preserves existing state'
+    assert stale.exists()
+    stale.unlink()
+saved.write_text('existing-secret-456')
+assert call('validate_seed_inputs 1').returncode != 0, 'reset must reject mismatching initial password'
+assert call('validate_seed_inputs 0').returncode == 0, 'resume preserves initial password'
+assert call('prepare_seed_password').returncode == 0 and saved.read_text() == 'existing-secret-456'
+other = tmp / 'dry-secret-work'
+assert call('prepare_seed_password', DRY_RUN='1', SEED_WORK_DIR=str(other), OPERATOR_PASSWORD_FILE='/not-present').returncode == 0
+assert not other.exists()
+# 실제 stage_seed argv가 보호 파일 경로를 전달하는지 본다. 프로세스 대역이며 브라우저 접촉 없음.
+script = '. "$1/stages.sh"; run() { printf "%s\n" "$@"; }; stage_seed'
+r = subprocess.run(['bash','-c',script,'_',str(base)], env=dict(env, DEV_URL='https://fixture.invalid', RESEED_ACCOUNT_EMAIL='x@example.org', COLAB_RESEED_BROWSER_SESSION='fixture-reseed-session'), capture_output=True, text=True)
+assert r.returncode == 0 and '--accounts-password-file\n'+str(pw) in r.stdout
+assert '--session\nfixture-reseed-session' in r.stdout
+assert 'fixture-secret-123' not in r.stdout+r.stderr
+# stage_preflight의 읽기 전용 모드는 보호 파일을 만들지 않는다.
+stubs = '; '.join(name+'() { :; }' for name in ['pf_announce','pf_git','pf_dev_sha','pf_aws','pf_qemu','pf_leftovers','pf_ref_root','pf_agent_browser','pf_secrets','pf_resources','pf_build_plan','log','blocked_add']) + '; stage_enabled() { return 1; }'
+for mode in ('PREFLIGHT_ONLY','REHEARSE'):
+    target = tmp / mode
+    r = call(stubs+'; stage_preflight', **{mode:'1', 'RUN_DIR':str(tmp), 'SEED_WORK_DIR':str(target)})
+    assert r.returncode == 0 and not target.exists(), mode
+# 입력 실패는 준비 파일 생성에 이르지 않는다.
+r = call(stubs+'; stage_preflight', RUN_DIR=str(tmp), SEED_WORK_DIR=str(other), ACCOUNTS_PASSWORD_FILE='')
+assert r.returncode != 0 and not other.exists()
+r = call(stubs+'; prepare_seed_password() { return 1; }; stage_preflight', RUN_DIR=str(tmp), SEED_WORK_DIR=str(other))
+assert r.returncode != 0
+report = json.loads((tmp / 'preflight.json').read_text())
+assert report['failedCount'] == 1 and 'seed-password-preparation' in report['failed']
+print('seed input validation, preservation, read-only modes, and argv: passed')
+PWTEST
+[ "$?" -eq 0 ] || note "비밀번호 입력/준비/전달 회귀 실패"
+
 if [ "$fail" -eq 0 ]; then
   echo "preflight-red — green (미달 10 항목 · 계획 요약줄 4 · result.json · --from 이 preflight 를 돈다 · --preflight-only · die 복귀 · 미리보기 판정불가 · 계수 판정 4 · 레포 무변)"
   exit 0
