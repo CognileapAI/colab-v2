@@ -2,10 +2,8 @@
 //
 // 오라클 세 줄 (라운드 파일 §5 WU-A6 축자)
 //   ⑴ 단위 `분` 을 고르면 **연·월·일·시·분 다섯 칸**이 Start/End 각각 열린다 (PRD-18)
-//   ⑵ 관측 간격은 숫자 한 칸 ＋ 단위 셀렉트이고 ~~**비운 채 등록해도 막지 않는다**~~ (PRD-17)
-//      ⭑ ⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ **필수다** —
-//      기간과 같은 시간축 정보이고, 간격을 모르면 그 기간이 몇 장인지 읽을 수 없다.
-//      받는 **모양**(숫자 ＋ 단위 · 두 칸 구조 전송)은 무변이고 게이트 여부만 갈렸다.
+//   ⑵ 관측 간격은 숫자 한 칸 ＋ 단위 셀렉트이고 **비운 채 등록해도 막지 않는다** (PRD-17)
+//      값을 제공하면 두 칸 구조로 보내며, 반쪽 값의 오류 판단은 서버 계약이 맡는다.
 //   ⑶ 기간 뒤 괄호는 **한 함수**가 조립하고 상세·목록·등록 미리보기가 그것을 쓴다 (PRD-35)
 //      — 간격이 비면 **빈 괄호가 없다**
 //
@@ -288,9 +286,7 @@ describe('WU-A6 · PRD-18 — 조립', () => {
 });
 
 // ═══════════════════ PRD-17 · 관측 간격 입력 ════════════════════════════════
-// ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩**
-//    ／ 종전 ~~`WU-A6 · PRD-17 — 관측 간격은 선택 입력이다`~~ — 필수로 갈렸다.
-describe('WU-A6 · PRD-17 — 관측 간격은 필수 입력이다', () => {
+describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
   it('숫자 칸의 placeholder 가 rev1 축자다', async () => {
     await openRegister();
     expect(screen.getByTestId('reg-interval-value')).toHaveAttribute(
@@ -315,26 +311,19 @@ describe('WU-A6 · PRD-17 — 관측 간격은 필수 입력이다', () => {
     expect(sent?.observationInterval).toEqual({ value: 10, unit: '분' });
   });
 
-  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「비운 채 등록하면 **막지 않고** 열쇠도 싣지 않는다
-  //    (⛔ 등록 게이트가 아니다)」~~ — 지금은 막는다. 「열쇠를 싣지 않는다」는 조립 규칙은
-  //    `humanMetadata` 에 그대로 있고, 그 상태로는 요청이 나가지 않을 뿐이다.
-  it('비운 채 등록하면 **막히고** 요청이 나가지 않는다', async () => {
+  it('비운 채 등록하면 막지 않고 요청 열쇠도 싣지 않는다', async () => {
     await openRegister();
     await submitRegister({ interval: false });
-    expect(sent).toBeNull();
-    expect(screen.getByTestId('up-register-toast')).toHaveTextContent('관측 간격을 적어 주세요');
+    expect(sent).not.toBeNull();
+    expect(sent).not.toHaveProperty('observationInterval');
   });
 
-  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「반쪽이면 경고를 세우되 **막지는 않는다** — 400 의
-  //    문구는 서버 봉투가 갖는다」~~ — 필수가 되면서 반쪽도 같은 게이트에 걸린다. 인라인
-  //    경고(`reg-interval-half`)는 **그대로 선다** — 그것이 「어느 칸인가」를 말한다.
-  it('반쪽이면 인라인 경고가 서고 등록도 막힌다', async () => {
+  it('반쪽이면 인라인 경고를 보이고 서버가 판정할 계약 형상으로 보낸다', async () => {
     await openRegister();
     await change(screen.getByTestId('reg-interval-value'), '10');
     expect(screen.getByTestId('reg-interval-half')).toBeInTheDocument();
     await submitRegister({ interval: false });
-    expect(sent).toBeNull();
-    expect(screen.getByTestId('up-register-toast')).toHaveTextContent('관측 간격을 적어 주세요');
+    expect(sent?.observationInterval).toEqual({ value: 10, unit: null });
   });
 });
 

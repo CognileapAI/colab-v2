@@ -574,17 +574,14 @@ function StepMeta(props: {
           {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격.**
               숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
               접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
-              ⛔ ~~**등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다.~~
-              ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 등록 게이트다** —
-                 ~~부가 정보의 선택 입력~~ ／ 현재 **필수**다. 기간과 같은 시간축 정보이고,
-                 간격을 모르면 그 기간이 몇 장인지 읽을 수 없다. 판정은
-                 `UploadModal.submit` 한 곳에 있다(값 > 0 ∧ 단위 있음).
+              **등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다. 반쪽 값은
+              서버가 400으로 거절하고 화면은 바로 아래에서 미리 알린다.
               ⭑ **⟨2026-09-14 · 레인 A4⟩ 자리는 짧은 값 한 줄의 첫 칸이다** ／ 종전 ~~제 행~~ —
                  rev2 목업이 기간 바로 아래 같은 줄에 좌표계·격자와 함께 둔다. */}
           <div className="form-row">
             <label htmlFor="reg-interval-value">
               관측 간격
-              <FieldTag required />
+              <FieldTag />
             </label>
             {/* 각색(이름만) — rev2 `.itv`. 수 칸이 늘고 단위 셀렉트가 고정 폭이다. */}
             <span className="itv">
@@ -1050,11 +1047,10 @@ function StepThree(props: {
               />
             </div>
             <div className="form-row">
-              {/* ⭑ ⟨개정 2026-09-14⟩ `필수` 는 **Lv0 일 때만** 선다 — Lv1 이상에서 연결이
-                  0건인 상태는 「아직 안 붙였다」일 수 있고, 그때까지 막지 않는다. */}
+              {/* 출처 주소는 Lv와 무관하게 선택 입력이다. */}
               <label htmlFor="reg-source-url">
                 출처 주소
-                {lv0 ? <FieldTag required /> : null}
+                <FieldTag />
               </label>
               <input
                 id="reg-source-url"
@@ -1074,7 +1070,7 @@ function StepThree(props: {
                   <div className="form-row">
                     <label htmlFor="reg-source-downloaded-on">
                       내려받은 날
-                      <FieldTag required />
+                      <FieldTag />
                     </label>
                     <input
                       id="reg-source-downloaded-on"

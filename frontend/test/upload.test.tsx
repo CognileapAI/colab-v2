@@ -989,11 +989,10 @@ describe('§8 ② 메타데이터 입력', () => {
       expect(l.querySelectorAll('.reqtag, .opttag')).toHaveLength(1);
       expect(l.textContent ?? '').not.toContain('(선택)');
     }
-    // ⭑ ⟨개정 2026-09-14 · 레인 A4⟩ 이 줄에서 **필수**는 관측 간격이다 ／ 종전 ~~기간~~ —
-    //    기간은 제 행으로 올라갔고 좌표계·격자 둘은 종전대로 선택이다.
+    // 관측 간격·좌표계·격자는 모두 선택 입력이다. 기간은 제 행에서 필수로 받는다.
     expect(row.contains(screen.getByTestId('reg-interval-value'))).toBe(true);
-    expect(row.querySelectorAll('.reqtag')).toHaveLength(1);
-    expect(row.querySelectorAll('.opttag')).toHaveLength(2);
+    expect(row.querySelectorAll('.reqtag')).toHaveLength(0);
+    expect(row.querySelectorAll('.opttag')).toHaveLength(3);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));
     expect(auto).toHaveLength(0);
   });

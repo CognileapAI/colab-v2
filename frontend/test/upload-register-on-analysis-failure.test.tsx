@@ -227,7 +227,15 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
       // 지금 서 있는 단계가 맞는지 먼저 확인한다 — 단계를 건너뛴 통과를 막는다.
       expect(screen.getByTestId(`reg-s${step}`)).toBeTruthy();
       // ② 에서만 필수 칸 하나(설명)를 채운다 — 나머지는 기본값이 서 있다.
-      if (step === 2) await change(screen.getByTestId('reg-summary'), '분석 실패 자료 설명 한 줄');
+      if (step === 2) {
+        await change(screen.getByTestId('reg-summary'), '분석 실패 자료 설명 한 줄');
+        await click(screen.getByTestId('reg-period-open'));
+        await click(screen.getByTestId('reg-period-unit-일'));
+        await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+        await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+        await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+        await click(screen.getByTestId('reg-period-apply'));
+      }
       // 바닥 안내가 「분석이 끝나면…」이면 화면이 아직 분석 중이라 말하는 것이다.
       expect(screen.getByTestId('reg-foot-hint').textContent).not.toBe(NEXT_BLOCKED_HINT);
       const next = screen.getByTestId('reg-next') as HTMLButtonElement;
@@ -243,13 +251,15 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
     expect(done.disabled).toBe(false);
     await click(done);
 
-    // 생성 요청이 실제로 나갔고, **분석 산출물에 기대는 칸은 하나도 실리지 않는다** —
-    // 자동 메타(변수·좌표계·기간·관측 간격)는 워커가 읽어야 나오는 값이라 실패분에는 없다.
+    // 생성 요청이 실제로 나갔다. 사람이 필수로 적은 기간은 실리고, 분석 산출물은 실리지 않는다.
     expect(calls).toHaveLength(1);
     const body = calls[0]!;
     expect(body.uploadId).toBe(UPLOAD_ID);
     expect(body.summary).toBe('분석 실패 자료 설명 한 줄');
-    for (const key of ['variables', 'crs', 'period', 'observationInterval']) {
+    expect(body.period).toEqual({
+      start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: '일',
+    });
+    for (const key of ['variables', 'crs', 'observationInterval']) {
       expect(key in body).toBe(false);
     }
   });

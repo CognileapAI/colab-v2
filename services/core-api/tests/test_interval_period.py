@@ -68,6 +68,14 @@ def test_interval_unit_outside_the_six_values_is_400_not_500(p2_client) -> None:
     assert r.status_code == 400, r.text
 
 
+def test_non_positive_interval_is_rejected_with_400(p2_client) -> None:
+    """선택 입력이어도 제공한 간격은 양수여야 한다."""
+    client = p2_client()
+    for value in (0, -1):
+        r = _register(client, observationInterval={"value": value, "unit": "분"})
+        assert r.status_code == 400, (value, r.text)
+
+
 def test_registering_without_interval_succeeds(p2_client) -> None:
     """⑶ **선택 항목이다** — 비운 채 등록하면 성공하고 `null` 로 내려온다.
 

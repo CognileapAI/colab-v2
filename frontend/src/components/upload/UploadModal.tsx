@@ -35,8 +35,6 @@ import {
   analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
-  REGISTER_INTERVAL_REQUIRED,
-  REGISTER_LV0_SOURCE_REQUIRED,
   REGISTER_NAME_REQUIRED,
   REGISTER_PERIOD_REQUIRED,
   REGISTER_SUMMARY_REQUIRED,
@@ -1172,29 +1170,8 @@ export function UploadModal(props: {
       window.setTimeout(() => document.getElementById('reg-period-open')?.focus(), 0);
       return;
     }
-    // ⑸ 관측 간격 — 숫자와 단위가 **둘 다** 있어야 하고 숫자는 0 보다 커야 한다.
-    //    ⚠ 반쪽(숫자만·단위만)도 여기서 걸린다 — 종전에는 반쪽을 그대로 보내 서버 400 을
-    //      받았고, 지금은 필수라 그 앞에서 같은 문면 하나로 막는다.
-    const submitInterval = Number(intervalValue.trim());
-    if (!intervalValue.trim() || !intervalUnit || !Number.isFinite(submitInterval) || submitInterval <= 0) {
-      setStep(2);
-      setRegisterToast(REGISTER_INTERVAL_REQUIRED);
-      window.setTimeout(() => document.getElementById('reg-interval-value')?.focus(), 0);
-      return;
-    }
-    // ⑹ Lv0 두 칸 — 부모가 없는 Lv0 에서는 그 둘이 계보를 대신하는 유일한 출처 기록이다.
-    if (level === LV0 && (!sourceUrl.trim() || !sourceDownloadedOn.trim())) {
-      setStep(3);
-      setRegisterToast(REGISTER_LV0_SOURCE_REQUIRED);
-      window.setTimeout(
-        () =>
-          document
-            .getElementById(sourceUrl.trim() ? 'reg-source-downloaded-on' : 'reg-source-url')
-            ?.focus(),
-        0,
-      );
-      return;
-    }
+    // 관측 간격과 Lv0 출처 두 칸은 선택 입력이다. 비어 있으면 요청에서 빠지고,
+    // 반쪽 관측 간격과 제공된 날짜의 형상 오류만 아래 조립·검증 경로에서 거절된다.
     // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 여기서 막는다 — 서버 400 이 화면에 닿지 않고
     //   일반 실패 문구(`catch`)로 덮이던 자리다(재시도로 해소되지 않는 원인을 재시도하라는
     //   안내가 되므로 사용자를 막다른 길로 보낸다). 값이 있고(칸이 비었으면 선택이라 넘어간다)

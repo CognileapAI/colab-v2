@@ -130,7 +130,6 @@ async function registerNotice(): Promise<string> {
   await screen.findByTestId('lin-picker');
   await click(screen.getByTestId(`lin-pick-${LV0}`));
   await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-  await click(screen.getAllByTestId('lin-confirm')[0] as HTMLElement);
   return screen.getByTestId('lin-lv-mismatch').textContent ?? '';
 }
 

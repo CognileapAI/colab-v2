@@ -224,7 +224,7 @@ async function submitRegister() {
 
 // ═══════════ 수용 기준 ㈎㈏ — 표시·숨김과 `선택` 표기 ═══════════
 describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
-  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`필수` 배지**가 붙는다', async () => {
+  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`선택` 배지**가 붙는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
@@ -240,12 +240,11 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     expect(LV0_SOURCE_URL_PLACEHOLDER).toBe('예: https://cds.climate.copernicus.eu/...');
     expect(LV0_SOURCE_DATE_PLACEHOLDER).toBe('예: 2026-08-20');
 
-    // ⭑ ⟨개정 2026-09-14⟩ 두 칸에 `필수` 배지가 선다 — 목업 배지를 채택한 것의 회귀 시험이다.
-    expect(source.querySelectorAll('.reqtag')).toHaveLength(2);
+    expect(source.querySelectorAll('.opttag')).toHaveLength(2);
     for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
-      expect(within(label!).getByText('필수')).toBeInTheDocument();
+      expect(within(label!).getByText('선택')).toBeInTheDocument();
     }
     // ⛔ 괄호 문구는 남지 않는다 — 표시는 배지 하나다.
     expect(source.textContent).not.toContain('(선택)');
@@ -300,19 +299,16 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
 
 // ═══════════ 수용 기준 ㈐㈑㈒ — 무엇이 전송되는가 ═══════════
 describe('WU-B6 · PRD-19 전송 규율', () => {
-  // ⭑ **⟨개정 2026-09-14⟩** ／ 종전 ~~「㈐ Lv0 이고 출처 주소가 비어도 등록이 **성공**한다
-  //    (선택 입력)」~~ — 필수가 되면서 막힌다. 「안 적은 것은 싣지 않는다」는 조립 규칙은
-  //    `humanMetadata` 에 그대로 있고, 그 상태로는 요청이 나가지 않을 뿐이다.
-  it('㈐ Lv0 이고 두 칸이 비면 등록이 **막히고** ③ 으로 데려간다', async () => {
+  it('㈐ Lv0 이고 두 칸이 비어도 등록되고 선택 필드는 요청에서 빠진다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await submitRegister();
 
-    expect(calls.registered).toHaveLength(0);
-    expect(screen.getByTestId('up-register-toast'))
-      .toHaveTextContent('출처 주소와 내려받은 날을 적어 주세요');
-    expect(screen.getByTestId('reg-s3')).toBeTruthy();
+    expect(calls.registered).toHaveLength(1);
+    const body = calls.registered[0] as Record<string, unknown>;
+    expect('sourceUrl' in body).toBe(false);
+    expect('sourceDownloadedOn' in body).toBe(false);
   });
 
   it('㈐-b Lv0 에서 두 칸을 채우면 그 값이 그대로 실린다', async () => {
