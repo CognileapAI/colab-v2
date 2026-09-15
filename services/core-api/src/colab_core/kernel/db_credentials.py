@@ -37,8 +37,8 @@ class ServiceAccountRow:
     account_id: str
     email: str
     name: str
-    lab_id: str
-    lab_name: str
+    lab_id: str | None
+    lab_name: str | None
     role: str | None
     status: str
     last_login_at: dt.datetime | None
@@ -70,7 +70,8 @@ class DatabaseCredentialStore:
         if row is None:
             return None
         return DatabaseCredential(
-            subject=Subject(Ulid(row["account_id"]), Ulid(row["lab_id"])),
+            subject=Subject(Ulid(row["account_id"]),
+                            Ulid(row["lab_id"]) if row["lab_id"] is not None else None),
             login_name=row["login_name"],
             password=PasswordHash(kdf=row["kdf"], salt=row["salt"],
                                   digest=row["password_hash"], n=row["n"],
@@ -168,7 +169,7 @@ class DatabaseCredentialStore:
                        (o.account_id IS NOT NULL) AS operator
                   FROM account_admin.login_credential c
                   JOIN d1_account a ON a.id = c.account_id
-                  JOIN d1_lab l ON l.id = a.lab_id
+                  LEFT JOIN d1_lab l ON l.id = a.lab_id
                   LEFT JOIN d2_member_role m
                     ON m.account_id = a.id AND m.lab_id = a.lab_id
                   LEFT JOIN (SELECT account_id, max(issued_at) AS last_login_at
@@ -235,6 +236,12 @@ class DatabaseCredentialStore:
                 # 같은 상태를 다시 고르는 것은 변경이 아니다 — 남의 세션을 공짜로 끊지 않는다.
                 return operator
             if not operator:
+                affiliated = db.execute(text(
+                    "SELECT lab_id FROM d1_account WHERE id=:id"),
+                    {"id": account_id}).scalar_one()
+                if affiliated is None:
+                    raise OperatorChangeRefused(
+                        "소속 없는 관리자는 권한을 해제할 수 없다. 먼저 연구실과 역할을 지정한다.")
                 if account_id == actor_account_id:
                     raise OperatorChangeRefused(
                         "자기 자신의 관리자 권한은 해제할 수 없다. 다른 관리자에게 요청한다.")

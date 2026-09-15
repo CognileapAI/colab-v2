@@ -101,6 +101,7 @@
 .account-card { max-width: 520px; }
 .account-form { display: grid; gap: 14px; }
 .account-form .login-label { display: grid; gap: 6px; margin: 0; }
+.account-form .account-operator-check { display: flex; align-items: center; gap: 8px; }
 .account-form .login-submit { margin-top: 4px; }
 .account-status { margin: 16px 0 0; color: var(--color-text-body); }
 

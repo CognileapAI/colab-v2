@@ -92,6 +92,57 @@ def _set_operator(client, token: str, account_id: str, operator: bool):
                        headers=auth(token), json={"operator": operator})
 
 
+def test_labless_operator_full_login_cycle_and_demotion_guard(p2_client) -> None:
+    client = p2_client(session_secret=SECRET)
+    email = _email("labless")
+    made = client.post("/api/v1/admin/accounts", headers=auth(TOKEN_PROF), json={
+        "email": email, "name": "무소속 관리자", "initialPassword": INITIAL,
+        "operator": True,
+    })
+    assert made.status_code == 201, made.text
+    assert made.json()["labId"] is None and made.json()["role"] is None
+
+    login = client.post("/api/v1/sessions", json={"accountName": email, "password": INITIAL})
+    assert login.status_code == 201, login.text
+    changed = client.put("/api/v1/me/password", headers=auth(login.json()["token"]),
+                         json={"newPassword": NEW})
+    assert changed.status_code == 200, changed.text
+    relogin = client.post("/api/v1/sessions", json={"accountName": email, "password": NEW})
+    assert relogin.status_code == 201, relogin.text
+    token = relogin.json()["token"]
+    me = client.get("/api/v1/me", headers=auth(token))
+    assert me.status_code == 200, me.text
+    assert me.json()["labId"] is None and me.json()["role"] is None
+    assert me.json()["canManageServiceAccounts"] is True
+    listed = client.get("/api/v1/admin/accounts", headers=auth(token))
+    assert listed.status_code == 200, listed.text
+    row = next(row for row in listed.json()["accounts"]
+               if row["accountId"] == made.json()["accountId"])
+    assert row["labId"] is None and row["labName"] is None and row["role"] is None
+
+    write = client.post("/api/v1/projects", headers=auth(token),
+                        json={"type": "논문", "name": "무소속 쓰기 거부"})
+    assert write.status_code in (403, 404), write.text
+
+    refused = _set_operator(client, TOKEN_PROF, made.json()["accountId"], False)
+    assert refused.status_code == 400
+    assert "소속" in refused.json()["message"]
+
+
+@pytest.mark.parametrize("body", [
+    {"operator": False},
+    {"operator": True, "labId": LAB_C},
+    {"operator": True, "role": "교수"},
+])
+def test_account_creation_rejects_missing_or_partial_affiliation(p2_client, body: dict) -> None:
+    client = p2_client(session_secret=SECRET)
+    response = client.post("/api/v1/admin/accounts", headers=auth(TOKEN_PROF), json={
+        "email": _email("affiliation"), "name": "소속 검증", "initialPassword": INITIAL,
+        **body,
+    })
+    assert response.status_code in (400, 422), response.text
+
+
 # ═══════════════════════ ㈎ 지정 · 해제 ═══════════════════════
 
 def test_setServiceAccountOperator_designates_and_revokes(p2_client, admin_db_url: str) -> None:

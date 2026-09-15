@@ -20,7 +20,7 @@ from .ids import Ulid
 @dataclasses.dataclass(frozen=True)
 class Subject:
     account_id: Ulid
-    lab_id: Ulid
+    lab_id: Ulid | None
     must_change_password: bool = False
     credential_version: int | None = None
     #: 서비스 운영자인가. **권한이 아니라 사실 하나**다 — 이 값이 하는 일은 전 연구실

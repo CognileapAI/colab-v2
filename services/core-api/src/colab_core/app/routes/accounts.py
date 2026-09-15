@@ -23,8 +23,8 @@ router = APIRouter()
 class AccountCreate(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     name: str = Field(min_length=1, max_length=128)
-    labId: str
-    role: str
+    labId: str | None = None
+    role: str | None = None
     initialPassword: str = Field(min_length=10, max_length=512)
     #: 발급과 동시에 관리자로 등록할지. **생략하면 아니다** — 기본값이 관대한 쪽으로
     #: 떨어지지 않게 한다. 기존 호출자는 이 칸을 몰라도 그대로 돈다(추가만).
@@ -96,9 +96,14 @@ def create_account(body: AccountCreate, request: Request,
     email = normalize_login_name(body.email)
     if re.fullmatch(r"[^@\s]+@(?:[^@\s.]+\.)+[^@\s.]+", email) is None:
         raise errors.bad_request("이메일 형식이 맞지 않는다.")
-    if not Ulid.is_valid(body.labId):
+    affiliated = body.labId is not None or body.role is not None
+    if not body.operator and not affiliated:
+        raise errors.bad_request("일반 계정은 연구실과 역할이 필요하다.")
+    if (body.labId is None) != (body.role is None):
+        raise errors.bad_request("연구실과 역할은 함께 지정하거나 함께 비워야 한다.")
+    if body.labId is not None and not Ulid.is_valid(body.labId):
         raise errors.bad_request("연구실 ID가 정규 ID가 아니다.")
-    if body.role not in ("교수", "연구원"):
+    if body.role is not None and body.role not in ("교수", "연구원"):
         raise errors.bad_request("역할은 교수 또는 연구원이다.")
     account_id = Ulid.generate()
     made = hash_password(body.initialPassword)
@@ -107,7 +112,7 @@ def create_account(body: AccountCreate, request: Request,
     try:
         with _admin(request).begin() as db:
             db.execute(text("SELECT pg_advisory_xact_lock(1131379081)"))
-            if db.execute(text("SELECT 1 FROM d1_lab WHERE id=:id"),
+            if body.labId is not None and db.execute(text("SELECT 1 FROM d1_lab WHERE id=:id"),
                           {"id": body.labId}).first() is None:
                 raise errors.not_found("연구실을 찾지 못했다.")
             if db.execute(text("SELECT 1 FROM d1_account WHERE lower(btrim(email))=:email"),
@@ -116,8 +121,9 @@ def create_account(body: AccountCreate, request: Request,
             db.execute(text("INSERT INTO d1_account(id,lab_id,name,email) VALUES (:id,:lab,:name,:email)"),
                        {"id": str(account_id), "lab": body.labId,
                         "name": body.name.strip(), "email": email})
-            db.execute(text("INSERT INTO d2_member_role(account_id,lab_id,role) VALUES (:id,:lab,:role)"),
-                       {"id": str(account_id), "lab": body.labId, "role": body.role})
+            if body.labId is not None:
+                db.execute(text("INSERT INTO d2_member_role(account_id,lab_id,role) VALUES (:id,:lab,:role)"),
+                           {"id": str(account_id), "lab": body.labId, "role": body.role})
             db.execute(text("""
                 INSERT INTO account_admin.login_credential
                   (account_id,login_name,kdf,salt,password_hash,n,r,p)

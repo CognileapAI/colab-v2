@@ -22,14 +22,14 @@ def get_current_account(request: Request,
         # 주체가 가리키는 계정이 이 연구실에 없다 — RLS 가 이미 지운 뒤다.
         raise errors.unauthorized("주체에 해당하는 계정이 경계 안에 없다.")
     role = d2_access.role_of(db, subject.account_id)
-    if role is None:
+    if role is None and not subject.operator:
         raise errors.unauthorized("역할이 배정되지 않은 계정이다.")
     return {
         "accountId": account["id"],
         "name": account["name"],
         "email": account["email"],
         "role": role,
-        "permissions": d2_access.permissions_of(db, subject.account_id, role),
+        "permissions": d2_access.permissions_of(db, subject.account_id, role) if role else {},
         "labId": account["lab_id"],
         "labName": account["lab_name"],
         "mustChangePassword": subject.must_change_password,

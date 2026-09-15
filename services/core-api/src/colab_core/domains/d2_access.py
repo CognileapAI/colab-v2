@@ -122,6 +122,8 @@ def role_of(session: Session, account_id: Ulid) -> str | None:
 
 def permissions_of(session: Session, account_id: Ulid, role: str | None) -> dict[str, bool]:
     """교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6)."""
+    if role is None:
+        return {s: False for s in SWITCHES}
     if role == "교수":
         return {s: True for s in SWITCHES}
     stored = {r.switch: r.enabled for r in

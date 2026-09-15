@@ -48,11 +48,16 @@ def apply_scope(session: Session, subject: Subject, *, operator_read: bool = Fal
     ⚠ 요청은 이 값을 보낼 수 없다. 헤더·쿼리·바디 어디에도 통로가 없고, 이 함수의 인자는
     서버가 주체에서 도출한 값뿐이다 (CLAUDE.md §3-5 · P-9·P-10).
     """
-    if not Ulid.is_valid(subject.lab_id) or not Ulid.is_valid(subject.account_id):
+    if not Ulid.is_valid(subject.account_id):
         raise ValueError("주체의 ID 가 정규 ID 가 아니다 — 경계를 심지 않는다.")
+    if subject.lab_id is None and not subject.operator:
+        raise ValueError("소속 없는 일반 주체에는 경계를 심지 않는다.")
+    if subject.lab_id is not None and not Ulid.is_valid(subject.lab_id):
+        raise ValueError("주체의 연구실 ID 가 정규 ID 가 아니다 — 경계를 심지 않는다.")
     if operator_read and not subject.operator:
         raise ValueError("운영자가 아닌 주체에 전 연구실 읽기 스코프를 심지 않는다.")
-    session.execute(_SET_LOCAL, {"name": GUC_LAB, "value": str(subject.lab_id)})
+    session.execute(_SET_LOCAL, {"name": GUC_LAB,
+                                 "value": "" if subject.lab_id is None else str(subject.lab_id)})
     session.execute(_SET_LOCAL, {"name": GUC_ACCOUNT, "value": str(subject.account_id)})
     # 끄는 값도 **명시적으로** 쓴다. 안 쓰면 앞 트랜잭션의 값이 남을 자리가 생긴다.
     session.execute(_SET_LOCAL, {"name": GUC_OPERATOR_READ,
