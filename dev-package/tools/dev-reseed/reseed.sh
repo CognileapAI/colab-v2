@@ -19,7 +19,7 @@
 #   bash dev-package/tools/dev-reseed/reseed.sh --from reset
 #
 # 값은 환경변수로 받는다(레포에 절대경로·주소·비밀을 적지 않는다) —
-#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_URL
+#   COLAB_DEV_SSH · COLAB_DEV_KEY_FILE · COLAB_REF_ROOT · COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)
 #   COLAB_RESEED_EC2_SECRETS_DIR(기본 /etc/colab) — **EC2 위 경로**다
 #   RESEED_ACCOUNT_ID · RESEED_ACCOUNT_EMAIL · RESEED_ACCOUNT_NAME · RESEED_ACCOUNT_ROLE
 #
@@ -122,7 +122,8 @@ TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/develop}"
 TARGET_SHA=""
 ACCOUNTS_FILE=""
 OPERATOR_PASSWORD_FILE="${COLAB_RESEED_OPERATOR_PASSWORD_FILE:-}"
-DEV_URL="${COLAB_DEV_URL:-}"
+DEV_URL="${COLAB_DEV_WEB_URL:-${COLAB_DEV_URL:-}}"
+RELEASE_PLAN=""
 MD_ROOT=""
 SEED_WORK_DIR=""
 
@@ -163,7 +164,10 @@ usage() {
   --target-ref <ref>            배포 대상(기본 origin/develop).
   --accounts-file <파일>        러너에 넘길 계정 파일(러너가 그 인자를 받을 때만 넘긴다).
   --operator-password-file <파일>  prelude ③ 의 초기 비밀번호(0600 · 10자 이상).
-  --base-url <주소>             dev 주소(기본 $COLAB_DEV_URL).
+  --base-url <주소>             CLI > COLAB_DEV_WEB_URL > legacy COLAB_DEV_URL 순서.
+  --release-plan <파일>         deploy/--rehearse의 필수 dev 후보 계획.
+                                --rehearse는 --check만, deploy는 같은 보호 사본을 check한 뒤
+                                기존 executor run 1회로 배포·검증한다. --dry-run은 실행하지 않는다.
   --md-root <자리>              정본 md 뿌리(기본 = 참조자료 뿌리).
 USAGE
 }
@@ -179,6 +183,7 @@ while [ $# -gt 0 ]; do
     --accounts-file) ACCOUNTS_FILE="$2"; shift 2 ;;
     --operator-password-file) OPERATOR_PASSWORD_FILE="$2"; shift 2 ;;
     --base-url) DEV_URL="$2"; shift 2 ;;
+    --release-plan) RELEASE_PLAN="$2"; shift 2 ;;
     --md-root) MD_ROOT="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "모르는 인자: $1" >&2; usage >&2; exit 2 ;;
@@ -260,13 +265,13 @@ if [ "$DRY_RUN" != 1 ]; then
   # dev 주소는 **화면을 여는 단계**(seed·verify)만 쓴다. preflight 는 쓰지 않으므로
   # `--preflight-only` 는 이 값 없이도 끝까지 검사한다.
   if stage_enabled seed || stage_enabled verify || stage_enabled rehearse; then
-    : "${DEV_URL:?--base-url 또는 COLAB_DEV_URL 이 필요하다 (seed·verify 가 화면을 연다)}"
+    : "${DEV_URL:?--base-url 또는 COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)이 필요하다 (seed·verify 가 화면을 연다)}"
   fi
 else
   # dry-run 은 값이 하나도 없어도 끝까지 간다 — 빈 자리는 **이름 그대로** 찍어 무엇을 줘야 하는지 보인다.
   COLAB_DEV_SSH="${COLAB_DEV_SSH:-<COLAB_DEV_SSH>}"
   COLAB_DEV_KEY_FILE="${COLAB_DEV_KEY_FILE:-<COLAB_DEV_KEY_FILE>}"
-  DEV_URL="${DEV_URL:-<COLAB_DEV_URL>}"
+  DEV_URL="${DEV_URL:-<COLAB_DEV_WEB_URL>}"
   COLAB_REF_ROOT="${COLAB_REF_ROOT:-<COLAB_REF_ROOT>}"
   MD_ROOT="${MD_ROOT:-<COLAB_REF_ROOT>}"
   TARGET_SHA="${TARGET_SHA:-<대상 sha · preflight 가 해석>}"

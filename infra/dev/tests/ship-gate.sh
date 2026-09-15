@@ -49,6 +49,7 @@ OPS_BUNDLE_PATHS=(infra/__init__.py infra/ops infra/notifications
                   services/core-api/pyproject.toml services/core-api/requirements.in
                   services/core-api/requirements.txt db/platform db/ai
                   gates/tools/rls_coverage.py gates/config/rls-allowlist.toml)
+REPO_SYNC_PATHS=(db gates services/core-api/ops infra contracts)
 
 new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸림, 표준출력 = 저장소 경로
   local root="$TMP/$1" work="$TMP/$1/repo" p
@@ -61,6 +62,7 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸�
   cp "$REPO/infra/dev/ship.sh" "$work/infra/dev/ship.sh"
   cp "$REPO/infra/_lib/ship-gate.sh" "$work/infra/_lib/ship-gate.sh"
   cp "$REPO/infra/_lib/ops-bundle.sh" "$work/infra/_lib/ops-bundle.sh"
+  cp "$REPO/infra/_lib/repo-bundle.sh" "$work/infra/_lib/repo-bundle.sh"
   cp "$REPO/infra/ops/build-source-bundle.sh" "$work/infra/ops/build-source-bundle.sh"
   chmod +x "$work/infra/ops/build-source-bundle.sh"
   cp "$REPO/infra/dev/tag-release.sh" "$work/infra/dev/tag-release.sh" 2>/dev/null || true
@@ -68,13 +70,16 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸�
   cp "$REPO/infra/dev/backup.sh" "$REPO/infra/dev/install-cron.sh" "$work/infra/dev/"
   chmod +x "$work/infra/dev/"*.sh
   # 번들이 요구하는 자리표 — **디렉터리는 파일 하나를 넣어야 git 이 담는다.**
-  for p in "${OPS_BUNDLE_PATHS[@]}"; do
+  for p in "${OPS_BUNDLE_PATHS[@]}" "${REPO_SYNC_PATHS[@]}"; do
     case "$p" in
       *.py|*.toml|*.in|*.txt) mkdir -p "$work/$(dirname "$p")"; : > "$work/$p" ;;
       *) mkdir -p "$work/$p"; : > "$work/$p/.keep" ;;
     esac
   done
   git init -q -b develop "$work"
+  # tag-release invokes git itself, outside git_q's per-command identity settings.
+  git -C "$work" config user.name fixture
+  git -C "$work" config user.email fixture@invalid
   echo one > "$work/a.txt"
   git_q "$work" add -A >/dev/null
   git_q "$work" commit -qm "one" >/dev/null
@@ -137,6 +142,25 @@ has "ⓑ 조상" "source_ref 값" "$LOG" " develop "
 has "ⓑ 조상" "source_sha 값" "$LOG" "$SOURCE"
 has "ⓑ 조상" "candidate= 값(CURRENT_SHA 와 같은 문자열)" "$LOG" "$ANC"
 has "ⓑ 조상" "후보와 yes 가 실린다" "$LOG" " $SOURCE $ANC yes"
+
+# The doctor repository must come from the candidate commit, not dirty working files.
+has "ⓑ 판정 레포" "repo tar 전송" "$LOG" "colab-repo-$ANC.tgz"
+has "ⓑ 판정 레포" "manifest 전송" "$LOG" "colab-repo-$ANC.manifest"
+has "ⓑ 판정 레포" "후보 FULL_SHA 전용 설치" "$LOG" "/opt/colab-repo-releases/$(git_q "$W" rev-parse "$ANC")"
+echo dirty > "$W/contracts/.keep"
+run_ship "$W"
+REPO_TGZ="$W/dist/colab-repo-$ANC.tgz"
+REPO_MANIFEST="$W/dist/colab-repo-$ANC.manifest"
+if [ -f "$REPO_TGZ" ] && [ -f "$REPO_MANIFEST" ]; then
+  check "ⓑ 판정 레포" "dirty 워크트리가 아닌 commit 내용" "$(tar xOf "$REPO_TGZ" contracts/.keep)" ""
+  has "ⓑ 판정 레포" "manifest 후보 FULL_SHA" "$(cat "$REPO_MANIFEST")" "# source_full_sha=$(git_q "$W" rev-parse "$ANC")"
+  mkdir "$W/../unpacked"
+  tar xzf "$REPO_TGZ" -C "$W/../unpacked"
+  (cd "$W/../unpacked" && sha256sum -c "$REPO_MANIFEST" >/dev/null 2>&1)
+  check "ⓑ 판정 레포" "manifest 내용 hash 대조" "$?" 0
+else
+  bad "ⓑ 판정 레포" "repo archive 또는 manifest가 없다"
+fi
 
 # ── ⓒ origin 조회 실패 → exit 78 (준비) ────────────────────────────────────
 W="$(new_fixture c)"

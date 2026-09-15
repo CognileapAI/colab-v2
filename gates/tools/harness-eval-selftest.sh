@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # `harness-eval` 이 red fixture 로 **fail-closed** 임을 증명한다 (CLAUDE.md §4).
 #
-# ⚠ **실제 모델 호출 0회.** ⓒ 만 러너를 실제로 부르고, 그 러너가 부르는 `claude` 는
+# ⚠ **실제 모델 호출 0회.** ⓒ·ⓔ는 고정 러너를 실제로 부르고, 그 러너가 부르는 `claude` 는
 #   임시 디렉터리의 스텁으로 갈아끼워 `PATH` 앞에 둔다. 과제 뿌리도 임시 자리다
 #   (`COLAB_EVAL_TASKS_DIR` — 러너가 `tests/run-selftest.sh` 를 위해 낸 자리 그대로).
 #
-# 케이스 4 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
+# 케이스 11 — 형식은 `gates/tools/frontend-visual-selftest.sh`(임시 dir · 스텁 · exit 코드 단언).
 #   ⓐ 면제 선언 ＋ 과제 0건        → red(판정 · 1)  「대상이 없어 통과」를 만들지 않는다
 #   ⓑ 면제 선언 ＋ 과제 3건        → green ＋ 출력에 `과제 3건`(건수 노출 · 조용한 건너뛰기 금지)
 #   ⓒ 실행 선언 ＋ 스텁 sleep 4s > `COLAB_EVAL_TIMEOUT=1`
 #                                  → red(준비 · 78) 상한 초과는 skip 이 아니다 · 러너 exit 그대로 전달
 #   ⓓ 둘 다 미선언                 → red(준비 · 78 · 입력미선언) 침묵은 통과가 아니다
+#
+#   ⓔ 즉시 성공 스텁 → exit 0 + 과제 3 · 실행 6 · green 3 요약
+#   ⓕ·ⓖ 종료 0이지만 요약 누락/측정 0건 → red(판정 · 1)
 #
 # ⓐ·ⓒ·ⓓ 가 통과해 버리면 이 게이트는 아무것도 막지 않는다 — 그 셋이 존재 이유다.
 # ⓑ 는 「면제인데 건수를 안 보인다」를 잡는다(면제가 조용해지는 순간 green-by-skip 이다).
@@ -76,6 +79,30 @@ expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
       out="$(PATH="$STUB_BIN:$PATH" COLAB_EVAL_TASKS_DIR="$T_SLOW" COLAB_EVAL_RESULTS_ROOT="$results" \
              COLAB_EVAL_TIMEOUT=1 COLAB_EVAL_BUDGET=0.50 STUB_SLEEP=4 \
              COLAB_HARNESS_EVAL=1 COLAB_HARNESS_EVAL_EXEMPT= "$GATE" 2>&1)"; rc=$? ;;
+    success|selected)
+      out="$(PATH="$STUB_BIN:$PATH" COLAB_EVAL_TASKS_DIR="$T_THREE" COLAB_EVAL_RESULTS_ROOT="$results" \
+             COLAB_EVAL_ONLY="$(if [ "$key" = selected ]; then printf H02; fi)" COLAB_EVAL_TIMEOUT=5 COLAB_EVAL_BUDGET=0.50 STUB_SLEEP=0 \
+             COLAB_HARNESS_EVAL=1 COLAB_HARNESS_EVAL_EXEMPT= "$GATE" 2>&1)"; rc=$? ;;
+    missing_summary|zero_summary|wrong_runs|wrong_green|wrong_tasks)
+      # 기존 REPO_ROOT seam: 고정 경로의 러너가 exit 0만 반환하는 결함 fixture.
+      local repo="$WORK/repo-$key"
+      mkdir -p "$repo/eval/harness"
+      printf '#!/usr/bin/env bash\n' > "$repo/eval/harness/run.sh"
+      if [ "$key" = zero_summary ]; then
+        printf "echo '과제 0 · 실행 0 · green 0 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+      fi
+      if [ "$key" = wrong_tasks ]; then
+        printf "echo '과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+      fi
+      if [ "$key" = wrong_runs ]; then
+        printf "echo '과제 3 · 실행 5 · green 3 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+      fi
+      if [ "$key" = wrong_green ]; then
+        printf "echo '과제 3 · 실행 6 · green 2 · 불안정 0 · 준비 0 · 초 p50 0/p95 0 · USD 합 0 · 판정실패 관측 과제 0'\n" >> "$repo/eval/harness/run.sh"
+      fi
+      printf 'exit 0\n'  >> "$repo/eval/harness/run.sh"
+      out="$(REPO_ROOT="$repo" COLAB_EVAL_TASKS_DIR="$T_THREE" \
+             COLAB_HARNESS_EVAL=1 COLAB_HARNESS_EVAL_EXEMPT= "$GATE" 2>&1)"; rc=$? ;;
     undeclared)
       out="$(COLAB_EVAL_TASKS_DIR="$T_THREE" COLAB_HARNESS_EVAL= COLAB_HARNESS_EVAL_EXEMPT= \
              "$GATE" 2>&1)"; rc=$? ;;
@@ -88,7 +115,7 @@ expect() { # $1=기대(green|red|ready|미선언) $2=이름 $3=케이스 키
     red "$label — green 이어야 하는데 red 다(rc=$rc):
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
-  if [ "$want" = red ] && [ "$rc" -eq 0 ]; then
+  if [ "$want" = red ] && [ "$rc" -ne 1 ]; then
     red "$label — red 여야 하는데 통과했다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
@@ -102,6 +129,12 @@ $(printf '%s\n' "$out" | sed 's/^/     /')"; return
     red "$label — red 인데 「과제 0건」을 사유로 내지 않았다:
 $(printf '%s\n' "$out" | sed 's/^/     /')"; return
   fi
+  if [ "$key" = success ] && ! printf '%s\n' "$out" | grep -Eq '^과제 3 · 실행 6 · green 3 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0$'; then
+    red "$label — 성공 요약의 과제/실행/통과 계수가 다르다: $out"; return
+  fi
+  if [ "$key" = selected ] && ! printf '%s\n' "$out" | grep -Eq '^과제 1 · 실행 2 · green 1 · 불안정 0 · 준비 0 · 초 .* · 판정실패 관측 과제 0$'; then
+    red "$label — 선택 과제의 성공 요약이 다르다: $out"; return
+  fi
   echo "  ✓ $label ($want)"
 }
 
@@ -113,6 +146,15 @@ expect green  "ⓑ 면제 선언 ＋ 과제 3건(건수 노출)" exempt3
 expect ready  "ⓒ 실행 선언 ＋ 스텁 sleep 4s > 상한 1s" slow
 # ⓓ 둘 다 미선언 — 기본값으로 green 을 만들지 않는다.
 expect 미선언 "ⓓ COLAB_HARNESS_EVAL·_EXEMPT 둘 다 미선언" undeclared
+
+expect green "ⓔ 실행 선언 ＋ 즉시 성공 스텁(과제 3 · 실행 6 · green 3)" success
+expect red "ⓕ 종료 0 ＋ 요약 없음" missing_summary
+expect red "ⓖ 종료 0 ＋ 측정 0건" zero_summary
+expect red "ⓗ 종료 0 ＋ 실행 횟수 불일치" wrong_runs
+expect red "ⓘ 종료 0 ＋ 통과 건수 불일치" wrong_green
+
+expect red "ⓙ 종료 0 ＋ 선언 과제 누락" wrong_tasks
+expect green "ⓚ H02 선택 실행 ＋ 과제 1 · 실행 2 · green 1" selected
 
 # ── CI 필터 대조 — `harness` 가 지침 4경로를 잡고 제품 경로를 안 잡는가 ──────
 if [ -f "$FILTER_CHECK" ]; then
@@ -133,4 +175,4 @@ if [ "$FAILED" -ne 0 ] || [ "${#FAILURES[@]}" -ne 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict harness-eval-selftest
-echo "harness-eval-selftest green — 검사 4건 전건 기대대로 (green 1 · red(판정) 1 · red(준비) 1 · red(준비·입력미선언) 1 · 모델 호출 0회) ＋ CI 필터 대조."
+echo "harness-eval-selftest green — 검사 11건 전건 기대대로 (green 3 · red(판정) 6 · red(준비) 1 · red(준비·입력미선언) 1 · 모델 호출 0회) ＋ CI 필터 대조."

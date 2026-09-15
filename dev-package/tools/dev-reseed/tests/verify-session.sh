@@ -195,6 +195,35 @@ else
   note "ⓕ report.py 가 id 미확보 행(계수 칸 ?)에서 비영 종료했다: $(grep -E 'Error|error' "$TMP/report.out" | tail -1)"
 fi
 
+# 보고서의 실행 입력은 실제 파일을 찾되, 직렬화에는 호스트 절대경로를 남기지 않는다.
+python3 - "$RESEED_DIR" "$TMP" <<'PY' || note "보고서 portable 경로 계약이 어긋났다"
+import json, pathlib, subprocess, sys, tempfile
+tool = pathlib.Path(sys.argv[1]).resolve()
+root = tool.parents[2]
+with tempfile.TemporaryDirectory(dir=root, prefix='.report-path-') as inside:
+    for run in (pathlib.Path(inside), pathlib.Path(sys.argv[2]) / 'outside-user' / 'run'):
+        (run / 'stages').mkdir(parents=True, exist_ok=True)
+        (run / 'logs').mkdir(exist_ok=True)
+        (run / 'logs/seed.log').write_text('MARKER\n')
+        (run / 'stages/seed.json').write_text(json.dumps({'stage':'seed', 'exitCode':7, 'log':'logs/seed.log'}))
+        out = run / 'result.json'
+        session = pathlib.Path(sys.argv[2]) / 'portable-session.md'
+        subprocess.run([sys.executable,str(tool/'report.py'),'--run-dir',str(run),'--run-id','fixture-portable',
+                        '--schema',str(tool/'result-schema.json'),'--out',str(out),'--session-out',str(session)],check=True)
+        d=json.loads(out.read_text()); text=session.read_text()
+        assert d['runDir'] == '.', d['runDir']
+        assert str(run) not in text and str(root) not in text, text
+        assert str(run) not in out.read_text(), out.read_text()
+        entry=next(s for s in d['stages'] if s['stage']=='seed')
+        assert (out.parent/d['runDir']/entry['log']).read_text() == 'MARKER\n'
+        assert d['failedStage']=='seed' and d['outcome']=='failed'
+        if run.is_relative_to(root):
+            assert str(run.relative_to(root)) in text
+        else:
+            assert '<RUN_DIR>' in text and '--run-dir' in text
+print('보고서 경로 내부/외부 2 건')
+PY
+
 if [ "$fail" -eq 0 ]; then
   echo "verify-session — green (세션 인자 · 상세 화면 성립 · 로그인 화면 판정불가 · 빈 화면 판정불가 · id 없는 행 · report ? 계수 null)"
   exit 0

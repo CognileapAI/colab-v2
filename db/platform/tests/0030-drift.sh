@@ -21,6 +21,8 @@
 #   COLAB_ALEMBIC   alembic 실행 파일 (기본: PATH 의 alembic)
 #   COLAB_PG_IMAGE  기본 postgres:16-alpine
 set -uo pipefail
+# 준비 판정만 재사용하며 컨테이너 생성·cleanup은 이 오라클이 소유한다.
+. "$(dirname "${BASH_SOURCE[0]}")/../../../gates/tools/_pg.sh"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN="$(cd "$HERE/.." && pwd)"
@@ -95,8 +97,7 @@ PGC="colab_0030_$$_${RANDOM}"
 docker run -d --rm --name "$PGC" --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
   -e POSTGRES_PASSWORD=x -e POSTGRES_HOST_AUTH_METHOD=trust "$IMAGE" >/dev/null 2>&1 \
   || { PGC=""; ready "일회용 postgres 를 띄우지 못했다."; }
-for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q >/dev/null 2>&1 || ready "postgres 가 60초 안에 뜨지 않았다."
+pg_wait_ready "$PGC" 60 || ready "postgres 실서버가 60초 안에 준비되지 않았다."
 
 apply(){ docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" <"$2"; }
 mkdb(){ docker exec "$PGC" createdb -U postgres "$1" >/dev/null; }

@@ -10,12 +10,12 @@
 #   ⓕ docker 부재                       → red(준비 · 입력미선언 · 78)
 #   ⓖ 요약줄이 **센 수를 낸다**(`오라클 N · 실행 N · 실패 M`)
 #
-# ⚠ 실물 오라클을 다시 돌리지 않는다. 케이스마다 `mktemp -d` 안에 **가짜 `*-drift.sh`** 를
+# 집계 시험은 `mktemp -d` 안에 **가짜 `*-drift.sh`** 를
 #   짓고 `COLAB_MIGRATION_DRIFT_DIRS`/`_MIN` 으로 물린다 — `db/**` 에는 한 글자도 쓰지 않고
 #   도커 컨테이너도 하나 안 띄운다(진짜 판정은 `migration-drift` 가 한다).
 #   도구 확인은 게이트의 **실물 경로 그대로** 지나가야 하므로 `$TD/bin` 에 stub
 #   `alembic`·`docker` 를 두고 PATH 앞에 붙인다 — 도구 존재 확인만 통과시키고
-#   오라클은 그 stub 을 부르지 않는다.
+#   준비 경계 시험은 실물 오라클을 스텁 도구로 실행해 SQL 미실행과 cleanup을 확인한다.
 set -uo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -98,6 +98,90 @@ expect "ⓔ 실측 2벌 < 선언 최소 3벌" red "$TD/e" 3
 mk_oracle "$TD/f" 0001 0
 expect "ⓕ docker 부재" 미선언 "$TD/f" 1 COLAB_MIGRATION_DRIFT_DOCKER="$TD/bin/no-such-docker"
 
+
+# 준비 실패 단독은 78, 판정 실패와 섞이면 1. 자식 marker가 최종 분류를 덮지 못한다.
+EXTRA=0
+for kind in ready mixed; do
+  mk_oracle "$TD/$kind" 0001 78
+  sed -i '2i echo "::gate-readiness-failure::gate=fixture|detail=unavailable"' "$TD/$kind/0001-drift.sh"
+  want=78; counts='실패 0 · 준비 실패 1'
+  if [ "$kind" = mixed ]; then
+    mk_oracle "$TD/$kind" 0002 1
+    want=1; counts='실패 1 · 준비 실패 1'
+  fi
+  ec=0
+  out="$(PATH="$TD/bin:$PATH" COLAB_ALEMBIC="$TD/bin/alembic" \
+    COLAB_MIGRATION_DRIFT_DIRS="$TD/$kind" COLAB_MIGRATION_DRIFT_MIN=1 "$GATE" 2>&1)" || ec=$?
+  if [ "$ec" -ne "$want" ] || ! printf '%s\n' "$out" | grep -q "$counts" ||
+     { [ "$kind" = ready ] && printf '%s\n' "$out" | grep -q '^::gate-readiness-failure::.*cause=입력미선언'; } ||
+     { [ "$kind" = mixed ] && printf '%s\n' "$out" | grep -q '^::gate-readiness-failure::'; }; then
+    echo "::error::migration-drift-selftest red — $kind 집계: expected=$want actual=$ec / $counts"
+    printf '%s\n' "$out" | sed 's/^/      /'; rc=1
+  else
+    echo "  ✓ $kind 집계 — exit $want · $counts"
+  fi
+  EXTRA=$((EXTRA+1))
+done
+
+# 실제 오라클의 준비 경계. SQL은 실행 기록만 남기고 실패시킨다. 컨테이너는 생성하지 않는다.
+mkdir -p "$TD/pg-bin"
+cat > "$TD/pg-bin/alembic" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' 'd5_upload_transfer account_admin login_credential service_operator session_version status active inactive is_operator_read operator_read FOR SELECT app.operator_read'
+STUB
+cat > "$TD/pg-bin/docker" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  image|pull) [ "$DRIFT_STUB_MODE" != image ]; exit $? ;;
+  run) [ "$DRIFT_STUB_MODE" != run ]; exit $? ;;
+  logs) [ "$DRIFT_STUB_MODE" = temporary ] || echo 'PostgreSQL init process complete; ready for start up'; exit 0 ;;
+  rm) echo cleanup >> "$DRIFT_STUB_TRACE"; exit 0 ;;
+  exec)
+    case " $* " in
+      *' pg_isready '*) [ "$DRIFT_STUB_MODE" = temporary ]; exit $? ;;
+      *) echo sql >> "$DRIFT_STUB_TRACE"; exit 1 ;;
+    esac ;;
+esac
+exit 1
+STUB
+printf '#!/usr/bin/env bash\nexit 0\n' > "$TD/pg-bin/sleep"
+chmod +x "$TD/pg-bin/"*
+for file in "$REPO_ROOT"/db/{platform,ai}/tests/*-drift.sh; do
+  ec=0
+  out="$(PATH="$TD/pg-bin:$PATH" COLAB_ALEMBIC="$TD/missing-alembic" bash "$file" 2>&1)" || ec=$?
+  if [ "$ec" -ne 78 ]; then
+    echo "::error::migration-drift-selftest red — ${file#"$REPO_ROOT/"} alembic 부재 expected=78 actual=$ec"; rc=1
+  fi
+  EXTRA=$((EXTRA+1))
+done
+for rev in 0008 0025 0028 0029 0032; do
+  for mode in timeout temporary; do
+    trace="$TD/trace-$rev-$mode"; : > "$trace"
+    ec=0
+    out="$(PATH="$TD/pg-bin:$PATH" COLAB_ALEMBIC="$TD/pg-bin/alembic" \
+      DRIFT_STUB_MODE="$mode" DRIFT_STUB_TRACE="$trace" \
+      bash "$REPO_ROOT/db/platform/tests/$rev-drift.sh" 2>&1)" || ec=$?
+    if [ "$ec" -ne 78 ] || grep -q sql "$trace" || ! grep -q cleanup "$trace"; then
+      echo "::error::migration-drift-selftest red — $rev $mode: expected=78 actual=$ec · SQL금지/cleanup 필요"
+      printf '%s\n' "$out" | sed 's/^/      /'; rc=1
+    else
+      echo "  ✓ $rev $mode — exit78 · SQL 0회 · cleanup"
+    fi
+    EXTRA=$((EXTRA+1))
+  done
+done
+for mode in image run; do
+  trace="$TD/trace-$mode"; : > "$trace"
+  ec=0
+  out="$(PATH="$TD/pg-bin:$PATH" COLAB_ALEMBIC="$TD/pg-bin/alembic" \
+    DRIFT_STUB_MODE="$mode" DRIFT_STUB_TRACE="$trace" \
+    bash "$REPO_ROOT/db/platform/tests/0008-drift.sh" 2>&1)" || ec=$?
+  if [ "$ec" -ne 78 ] || grep -q sql "$trace"; then
+    echo "::error::migration-drift-selftest red — 0008 $mode: expected=78 actual=$ec · SQL금지"; rc=1
+  fi
+  EXTRA=$((EXTRA+1))
+done
+
 expect_readiness_verdict migration-drift-selftest "migration-drift 셀프테스트 케이스의 실행 환경"
 [ "$rc" -eq 0 ] || exit 1
-echo "migration-drift-selftest green — 케이스 7종(ⓐ 대조군 green · ⓑ 되돌린 델타 red · ⓒ 대상 0건 red · ⓓ alembic 부재 red(준비) · ⓔ 건수 미달 red · ⓕ docker 부재 red(준비) · ⓖ 요약줄 계수)."
+echo "migration-drift-selftest green — 기존 케이스 7종 + 준비 경계 ${EXTRA}건(ⓐ 대조군 green · ⓑ 되돌린 델타 red · ⓒ 대상 0건 red · ⓓ alembic 부재 red(준비) · ⓔ 건수 미달 red · ⓕ docker 부재 red(준비) · ⓖ 요약줄 계수)."

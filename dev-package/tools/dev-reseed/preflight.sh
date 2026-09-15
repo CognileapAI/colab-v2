@@ -68,7 +68,7 @@ pf_dev_sha() {
 # ⑶ AWS 자격 사슬 — 계정 식별자는 **끝 4자리만** 찍는다.
 #    갈래 둘을 따로 잰다.
 #      ⓐ 환경변수 키 — 배포 9단계 `services/core-api/ops/deploy_web.py` 가 자작 SigV4 라
-#         `AWS_PROFILE`·`~/.aws/credentials` 를 해석하는 분기가 **없다**(이슈 #48 ⑵).
+#         `deploy_web.py`는 명시 AWS_PROFILE의 정적/session 자격도 지원한다. 이 preflight는 기존 환경 자격 검사 정책을 유지한다.
 #         deploy 단계를 켰으면 이 갈래가 필수다.
 #      ⓑ `aws sts get-caller-identity` — 있으면 사슬이 실제로 풀리는지 확인한다.
 pf_aws() {
@@ -82,7 +82,7 @@ pf_aws() {
   if [ "$env_ok" = 1 ]; then
     pf_pass aws "환경변수 갈래 성립${sts_acct:+ · 계정 …${sts_acct: -4}}"
   elif stage_enabled deploy; then
-    pf_fail aws "AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 부재 — deploy_web.py 는 AWS_PROFILE 을 해석하지 않는다(이슈 #48 ⑵)"
+    pf_fail aws "AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY 부재 — 이 preflight는 환경 자격을 요구한다(deploy_web.py의 profile 지원과 별도 정책)"
   elif [ -n "$sts_acct" ]; then
     pf_pass aws "sts 갈래 성립 · 계정 …${sts_acct: -4}(deploy 단계 없음 — 환경변수 갈래 불요)"
   else
@@ -211,17 +211,28 @@ pf_secrets() {
 #      계산에서 뺀다.
 #    값은 `COLAB_RESEED_MIN_MEM_MIB`·`COLAB_RESEED_MIN_DISK_GIB` 로 바꾼다.
 pf_resources() {
-  pf_dry resources "MemAvailable ≥ ${MIN_MEM_MIB} MiB · $REPO_ROOT 여유 ≥ ${MIN_DISK_GIB} GiB" && return
+  pf_dry resources "MemAvailable ≥ ${MIN_MEM_MIB} MiB · $REPO_ROOT 여유 ≥ ${MIN_DISK_GIB} GiB · EC2 $DEV_STATE_DIR/images 여유 ≥ 2 GiB" && return
   local mem_mib disk_gib
   mem_mib="$(awk '/^MemAvailable:/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
   disk_gib="$(df -BG --output=avail "$REPO_ROOT" 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)"
   local bad=()
   [ "${mem_mib:-0}" -ge "$MIN_MEM_MIB" ] || bad+=("메모리 ${mem_mib} MiB < ${MIN_MEM_MIB}")
   [ "${disk_gib:-0}" -ge "$MIN_DISK_GIB" ] || bad+=("디스크 ${disk_gib} GiB < ${MIN_DISK_GIB}")
+  # DR-4 5회차 §2: ship 전 정지선 2 GiB (load 후 1.5 GiB와 구분).
+  # 실제 앱 state/이미지 경로의 파일시스템을 SSH로 측정한다. df -BG 반올림은 쓰지 않는다.
+  pf_need_ssh resources && return
+  local remote_disk remote_rc=0
+  remote_disk="$(ssh_dev_capture "df -B1 --output=avail '$DEV_STATE_DIR/images'")" || remote_rc=$?
+  remote_disk="$(printf '%s\n' "$remote_disk" | tail -1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [ "$remote_rc" -ne 0 ] || [[ ! "$remote_disk" =~ ^[0-9]{1,18}$ ]]; then
+    bad+=("EC2 디스크 준비 실패 — 측정 불가 (SSH/df 종료 $remote_rc)")
+  elif [ "$remote_disk" -lt 2147483648 ]; then
+    bad+=("EC2 디스크 $remote_disk B < 2147483648 B (2 GiB)")
+  fi
   if [ "${#bad[@]}" -gt 0 ]; then
     pf_fail resources "${bad[*]}"
   else
-    pf_pass resources "메모리 ${mem_mib} MiB · 디스크 ${disk_gib} GiB"
+    pf_pass resources "메모리 ${mem_mib} MiB · 로컬 디스크 ${disk_gib} GiB · EC2 디스크 $remote_disk B"
   fi
 }
 

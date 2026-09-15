@@ -42,9 +42,15 @@ ready_red() { # $1=선언되지 않은/없는 것 $2=사유
 }
 
 count_tasks() { # stdout = `H??-*/` 디렉터리 실계수
-  local n=0 d
+  local n=0 d name
   shopt -s nullglob
-  for d in "$TASKS_DIR"/H??-*/; do n=$((n + 1)); done
+  for d in "$TASKS_DIR"/H??-*/; do
+    if [ "${1:-}" = selected ] && [ -n "${COLAB_EVAL_ONLY:-}" ]; then
+      name="${d%/}"; name="${name##*/}"
+      case "$name" in "$COLAB_EVAL_ONLY"|"$COLAB_EVAL_ONLY"-*) ;; *) continue ;; esac
+    fi
+    n=$((n + 1))
+  done
   printf '%s' "$n"
 }
 
@@ -59,9 +65,20 @@ if [ "$DECL_RUN" = "1" ]; then
   fi
   [ -f "$RUNNER" ] || ready_red "$RUNNER" \
     "과제를 돌릴 러너가 이 체크아웃에 없다. 자리 = eval/harness/run.sh (WU-D5)."
-  echo "harness-eval — 실행 선언(COLAB_HARNESS_EVAL=1). 과제 뿌리 $TASKS_DIR · 과제 $(count_tasks)건 · 러너 ${RUNNER#"$REPO_ROOT/"}"
-  bash "$RUNNER"
+  expected_tasks="$(count_tasks selected)"
+  echo "harness-eval — 실행 선언(COLAB_HARNESS_EVAL=1). 과제 뿌리 $TASKS_DIR · 과제 ${expected_tasks}건 · 러너 ${RUNNER#"$REPO_ROOT/"}"
+  output="$(bash "$RUNNER")"
   rc=$?
+  printf '%s\n' "$output"
+  if [ "$rc" -eq 0 ]; then
+    # exit 0만으로는 실측 증거가 아니다. 러너의 단일 요약과 2회 통과 계수를 대조한다.
+    summary="$(printf '%s\n' "$output" | grep '^과제 ')"
+    pattern='^과제 ([0-9]+) · 실행 ([0-9]+) · green ([0-9]+) · 불안정 0 · 준비 0 · 초 [^[:cntrl:]]+ · 판정실패 관측 과제 0$'
+    [[ "$summary" =~ $pattern ]] || red "러너 종료 0인데 유효한 과제/실행/통과 요약이 없다."
+    tasks="${BASH_REMATCH[1]}"; runs="${BASH_REMATCH[2]}"; passed="${BASH_REMATCH[3]}"
+    (( tasks > 0 && tasks == expected_tasks && runs == tasks * 2 && passed == tasks )) || \
+      red "러너 종료 0인데 측정 0건 또는 계수가 맞지 않는다: $summary"
+  fi
   echo "harness-eval — 러너 종료코드 $rc 를 그대로 전달한다 (0 green · 1 red(판정) · 78 red(준비))."
   exit "$rc"
 fi

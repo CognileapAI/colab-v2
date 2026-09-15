@@ -62,6 +62,7 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 prod 적재 스크립트 ＋ �
   cp "$REPO/infra/prod/ship.sh" "$work/infra/prod/ship.sh"
   cp "$REPO/infra/_lib/ship-gate.sh" "$work/infra/_lib/ship-gate.sh"
   cp "$REPO/infra/_lib/ops-bundle.sh" "$work/infra/_lib/ops-bundle.sh"
+  cp "$REPO/infra/_lib/repo-bundle.sh" "$work/infra/_lib/repo-bundle.sh"
   mkdir -p "$work/infra/ops"
   cp "$REPO/infra/ops/build-source-bundle.sh" "$work/infra/ops/build-source-bundle.sh"
   chmod +x "$work/infra/ops/build-source-bundle.sh"

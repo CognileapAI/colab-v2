@@ -256,6 +256,51 @@ cv_case 2; CV_RC=$?; CV_OUT="$(cat "$TMP/cv-out.txt")"
 [ "$CV_RC" -ne 0 ] || note "ⓠ‴ 계수 칸 [2] 를 통과로 읽었다 — 「미지정」 2건이 통과했다: $CV_OUT"
 printf '%s' "$CV_OUT" | grep -q '미지정' || note "ⓠ⁗ 계수 칸 [2] 판정 줄에 「미지정」이 없다: $CV_OUT"
 
+# EC2 disk는 로컬 자원이 넉넉해도 독립 판정한다. 실제 SSH는 호출하지 않는다.
+disk_case() (
+  . "$HERE/../preflight.sh"
+  DRY_RUN=0 REPO_ROOT="$TMP" MIN_MEM_MIB=0 MIN_DISK_GIB=0
+  DEV_STATE_DIR=/opt/colab-v2 DEV_SSH_MISSING=()
+  log() { :; }; blocked_add() { :; }
+  # Keep stdout and exit status independent, including a valid reading with SSH failure.
+  ssh_dev_capture() {
+    printf '%s' "$1" > "$TMP/disk-command"
+    printf '%s\n' "$DISK_REPLY"
+    return "$DISK_RC"
+  }
+  pf_resources
+  [ "${#PF_FAIL[@]}" = 0 ]
+)
+disk_cases=0
+for DISK_REPLY in 2147483648 2147483649 2147483647 1610612736 0 '' garbage '2147 483648'; do
+  DISK_RC=0
+  disk_case; rc=$?
+  case "$DISK_REPLY" in 2147483648|2147483649) expected=0 ;; *) expected=1 ;; esac
+  [ "$rc" = "$expected" ] || note "EC2 disk [$DISK_REPLY] rc=$rc expected=$expected"
+  disk_cases=$((disk_cases + 1))
+done
+for DISK_RC in 255 1; do
+  DISK_REPLY=2147483648 disk_case && note "EC2 SSH/df 실패 $DISK_RC 를 유효 계수로 통과시켰다"
+  disk_cases=$((disk_cases + 1))
+done
+DISK_REPLY=$'    Avail\n 2147483648' DISK_RC=0 disk_case || note "정상 df 헤더/공백 응답을 거절했다"
+disk_cases=$((disk_cases + 1))
+grep -q '/opt/colab-v2/images' "$TMP/disk-command" 2>/dev/null || note "EC2 실제 image 파일시스템을 측정하지 않았다"
+echo "EC2 disk 경계 $disk_cases 건"
+
+# 실제 CLI가 runner에 넘기는 주소 우선순위 (dry-run, 외부 효과 없음).
+url_cases=0
+for mode in web cli legacy; do
+  extra=(); web=https://web.invalid
+  [ "$mode" != cli ] || extra=(--base-url https://cli.invalid)
+  [ "$mode" != legacy ] || web=''
+  COLAB_DEV_WEB_URL="$web" COLAB_DEV_URL=https://legacy.invalid \
+    bash "$RESEED" --dry-run --from seed --run-dir "$TMP/url-$mode" "${extra[@]}" > "$TMP/url.out" 2>&1
+  grep -q -- "--base-url https://$mode.invalid" "$TMP/url.out" || note "reseed 주소 우선순위 $mode 실패"
+  url_cases=$((url_cases + 1))
+done
+echo "reseed 주소 우선순위 $url_cases 건"
+
 # ── 픽스처가 레포를 더럽히지 않는가 ──────────────────────────────────────
 # 위 실행들은 전부 preflight 에서 멈췄다(바꾸는 단계 0건) — 회차 기록은 실행 자리에만 선다.
 STRAY="$(find "$HERE/../../../sessions" -maxdepth 1 -name 'DR-4-run-*.md' -newer "$TMP" 2>/dev/null | wc -l | tr -d ' ')"

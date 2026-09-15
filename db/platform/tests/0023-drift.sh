@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 0023 드리프트 — head green, 0022와 downgrade는 red, downgrade shape는 0022와 동일.
 set -uo pipefail
+# 준비 판정만 재사용하며 컨테이너 생성·cleanup은 이 오라클이 소유한다.
+. "$(dirname "${BASH_SOURCE[0]}")/../../../gates/tools/_pg.sh"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN_DIR="$(cd "$HERE/.." && pwd)"
 ALEMBIC="${COLAB_ALEMBIC:-alembic}"
@@ -28,8 +30,7 @@ docker image inspect "$PG_IMAGE" >/dev/null 2>&1 || docker pull -q "$PG_IMAGE" >
 PGC="colab_0023_$$_${RANDOM}"
 docker run -d --rm --name "$PGC" --tmpfs /pgdata:uid=70,gid=70 -e PGDATA=/pgdata/db \
  -e POSTGRES_PASSWORD=x -e POSTGRES_HOST_AUTH_METHOD=trust "$PG_IMAGE" >/dev/null || unready "postgres 기동 실패"
-for _ in $(seq 1 60); do docker exec "$PGC" pg_isready -U postgres -q && break; sleep 1; done
-docker exec "$PGC" pg_isready -U postgres -q || unready "postgres 준비 실패"
+pg_wait_ready "$PGC" 60 || unready "postgres 실서버가 60초 안에 준비되지 않았다."
 mkdb(){ docker exec "$PGC" createdb -U postgres "$1" >/dev/null; }
 apply(){ docker exec -i "$PGC" psql -q -v ON_ERROR_STOP=1 -U postgres -d "$1" <"$2"; }
 oracle(){
