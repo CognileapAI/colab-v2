@@ -77,6 +77,9 @@ new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸�
     esac
   done
   git init -q -b develop "$work"
+  # tag-release invokes git itself, outside git_q's per-command identity settings.
+  git -C "$work" config user.name fixture
+  git -C "$work" config user.email fixture@invalid
   echo one > "$work/a.txt"
   git_q "$work" add -A >/dev/null
   git_q "$work" commit -qm "one" >/dev/null

@@ -35,10 +35,19 @@ open(os.environ['CHECK_TRACE'], 'a').write('check\n')
 raise SystemExit(int(os.environ.get('CHECK_RC','0')))
 PY
 export CHECK_TRACE="$TMP/check.trace"
+# A shallow checkout has no HEAD^. Build both real comparison commits in a local fixture.
+wrong_head_repo="$TMP/wrong-head"
+git init -q -b fixture "$wrong_head_repo"
+git -C "$wrong_head_repo" -c user.name=fixture -c user.email=fixture@invalid -c commit.gpgsign=false commit --allow-empty -qm first
+wrong_head_sha="$(git -C "$wrong_head_repo" rev-parse HEAD)"
+git -C "$wrong_head_repo" -c user.name=fixture -c user.email=fixture@invalid -c commit.gpgsign=false commit --allow-empty -qm second
 for mode in match wrong-sha wrong-env rejected recursive wrong-head; do
   RELEASE_PLAN="$TMP/plan.json"; export PLAN_INPUT="$RELEASE_PLAN"
   fixture_sha="$FULL_SHA"
-  [ "$mode" != wrong-head ] || fixture_sha="$(git -C "$ROOT" rev-parse HEAD^)"
+  comparison_repo="$ROOT"
+  if [ "$mode" = wrong-head ]; then
+    fixture_sha="$wrong_head_sha"; comparison_repo="$wrong_head_repo"
+  fi
   python3 - "$RELEASE_PLAN" "$mode" "$fixture_sha" <<'PY'
 import json,sys
 p,mode,sha=sys.argv[1:]
@@ -49,7 +58,7 @@ PY
   : > "$CHECK_TRACE"
   export CHECK_RC=0; [ "$mode" != rejected ] || CHECK_RC=78
   # The root remains a real checkout for candidate resolution; only executor script location is isolated.
-  ( REPO_ROOT="$TMP/repo"; TARGET_SHA="$fixture_sha"; git() { command git -C "$ROOT" "${@:3}"; }; rehearse_release_plan ) > "$TMP/$mode.out" 2>&1
+  ( REPO_ROOT="$TMP/repo"; TARGET_SHA="$fixture_sha"; git() { command git -C "$comparison_repo" "${@:3}"; }; rehearse_release_plan ) > "$TMP/$mode.out" 2>&1
   rc=$?
   case "$mode" in match) want=0; calls=1 ;; rejected) want=78; calls=1 ;; *) want=1; calls=0 ;; esac
   check "$rc" "$want" "plan-$mode"
@@ -223,8 +232,10 @@ check "$(find "$RUN_DIR" -maxdepth 1 -name 'release-plan.*' | wc -l | tr -d ' ')
 
 # Existing entrypoint fixtures use local repositories and docker/transport stubs.
 bash "$ROOT/infra/dev/tests/build-platform.sh" > "$TMP/build.out" 2>&1
-check "$?" 0 real-build-entrypoints
+rc=$?; check "$rc" 0 real-build-entrypoints
+[ "$rc" = 0 ] || cat "$TMP/build.out"
 bash "$ROOT/infra/dev/tests/ship-gate.sh" > "$TMP/ship.out" 2>&1
-check "$?" 0 real-ship-entrypoint
+rc=$?; check "$rc" 0 real-ship-entrypoint
+[ "$rc" = 0 ] || cat "$TMP/ship.out"
 echo "deploy-rehearsal — local cases $cases · external effects $(wc -l < "$EFFECTS" | tr -d ' ') · candidate readiness NOT measured"
 [ "$fail" = 0 ]
