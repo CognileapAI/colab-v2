@@ -169,6 +169,7 @@ export function UploadModal(props: {
    * `seq` 는 진입 컴포넌트의 기존 규약 그대로다 — 그 값이 바뀔 때만 다시 무장한다.
    */
   resumeRequest?: { seq: number; uploadId: string } | undefined;
+  registerRequest?: { seq: number; uploadId: string } | undefined;
   onClose: () => void;
 }) {
   const account = useAccount();
@@ -194,6 +195,7 @@ export function UploadModal(props: {
   const gridReuseGeneration = useRef(0);
   const [gridRevision, setGridRevision] = useState(0);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerRestoring, setRegisterRestoring] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [confirmClose, setConfirmClose] = useState(false);
   /** 실제 그림은 데이터셋 등록 뒤 별도 PUT할 때까지 모달이 보존한다. */
@@ -339,6 +341,7 @@ export function UploadModal(props: {
   const resumeFromRef = useRef<'banner' | 'failure' | null>(null);
   /** 실패로 재개를 무장한 시점의 파일 서명 — 이것과 달라지면 그 무장은 무효다. */
   const armedSignatureRef = useRef<string>('');
+  const restoredRegistrationRef = useRef(false);
   // ⭑ ⟨advisor ② · F3⟩ 배경 클릭의 **눌린 자리**. 모달 안에서 눌러 배경에서 뗀 드래그는
   //   click.target 이 공통 조상(배경)이 되므로, 눌린 자리까지 배경일 때만 닫는다.
   const downOnBackdrop = useRef(false);
@@ -398,6 +401,48 @@ export function UploadModal(props: {
     setResumeArm((n) => n + 1);
   }, [resumeRequestSeq, resumeRequestId]);
 
+  const registerRequestSeq = props.registerRequest?.seq ?? 0;
+  const registerRequestId = props.registerRequest?.uploadId ?? '';
+  useEffect(() => {
+    if (registerRequestSeq <= 0 || !registerRequestId) return;
+    let alive = true;
+    setRegisterRestoring(true);
+    void upload.status(registerRequestId).then((s) => {
+      if (!alive) return;
+      setRegisterRestoring(false);
+      if (s.registered === true) {
+        if (account?.labId) forgetPending(account.labId, registerRequestId);
+        setStatusIssue({ message: '이미 등록된 업로드예요.', retrying: false });
+        return;
+      }
+      const files = s.files.map((f) => ({
+        file: new File([''], f.fileName),
+        kind: f.kind,
+      })) as PickedFile[];
+      restoredRegistrationRef.current = true;
+      setPicked(files);
+      setUploadId(registerRequestId);
+      setStatus(s);
+      setName((current) => current || (files[0]?.file.name.replace(/\.[^.]+$/, '') ?? ''));
+      if (s.ready || s.failure) setRegisterOpen(true);
+    }).catch((e) => {
+      if (!alive) return;
+      setRegisterRestoring(false);
+      if (e instanceof UploadGone && account?.labId) forgetPending(account.labId, registerRequestId);
+      setStatusIssue({
+        message: e instanceof UploadGone ? '이 파일은 더 이상 없어요. 다시 올려 주세요.' : '업로드 상태를 읽지 못했어요.',
+        retrying: false,
+        ...(e instanceof UploadGone ? { gone: true } : {}),
+      });
+    });
+    return () => { alive = false; };
+  }, [registerRequestSeq, registerRequestId, upload, account?.labId]);
+  useEffect(() => {
+    if (registerRequestId && uploadId === registerRequestId && (status?.ready || status?.failure)) {
+      setRegisterOpen(true);
+    }
+  }, [registerRequestId, uploadId, status?.ready, status?.failure]);
+
   // 놓은 파일(이름·종류)이 바뀌면 접수를 다시 한다. 파일 종류는 접수 시점에 정해져 있어야 한다
   // (이벤트 `FileRef.kind` 가 required 다). **축은 보내지 않는다** — 서버가 파일에서 판별한다.
   // 폴더 드롭에서는 다른 폴더의 같은 이름·같은 크기가 실재하므로 상대 경로가 정체성에 든다
@@ -413,6 +458,10 @@ export function UploadModal(props: {
       setEarlyUploadId(null);
       setPreviewFinalNotice(false);
       setStatus(null);
+      return;
+    }
+    if (restoredRegistrationRef.current) {
+      restoredRegistrationRef.current = false;
       return;
     }
     let alive = true;
@@ -1352,7 +1401,9 @@ export function UploadModal(props: {
             </aside>
           )}
           {/* 뷰어 — 등록과 무관하게 여기까지 된다 */}
-          {!registerOpen && <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />}
+          {!registerOpen && (registerRestoring ? (
+            <div data-testid="up-register-restoring" aria-busy="true">등록 정보를 불러오는 중</div>
+          ) : <FileDropCard picked={picked} onPick={pick} onKind={setKind} onRemove={removeFile} />)}
 
 
           {/* 접수 실패 — **방금 놓은 파일**에 대한 것이라 드롭 카드 바로 아래다.

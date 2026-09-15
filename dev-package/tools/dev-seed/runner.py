@@ -1519,6 +1519,33 @@ def catalog_total():
     return rows, "table.catalog tbody tr.clk (쪽 잘림 가능)", rows
 
 
+def classify_preview_measurement(slot_state, image_count, decoded_count, unavailable):
+    """상자 존재가 아니라 terminal 상태와 실제 decode된 주 영상을 판정한다."""
+    if slot_state == "failed" or unavailable:
+        return "안 그려짐", "미리보기 실패"
+    if slot_state != "done":
+        return "미확인", "terminal 상태에 도달하지 않음"
+    if image_count < 1:
+        return "안 그려짐", "완료 슬롯에 주 이미지가 없음"
+    if decoded_count < 1:
+        return "안 그려짐", "완료 슬롯의 주 이미지가 아직 decode되지 않음"
+    return "그려짐", ""
+
+
+def _preview_measurement():
+    return js("""(() => {
+      const slot = document.querySelector('[data-testid="dt-preview-slot"]');
+      const images = Array.from(document.querySelectorAll(
+        '[data-testid="preview-single-image"], [data-testid="preview-tile"]'));
+      return {
+        slotState: slot?.getAttribute('data-preview-slot-state') || '',
+        imageCount: images.length,
+        decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
+        unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
+      };
+    })()""", default={}) or {}
+
+
 def phase_verify(st, plan):
     """7 절 — 데이터셋 계수 · 계보 간선 · 미리보기 렌더 5포맷."""
     result = dict()
@@ -1585,19 +1612,30 @@ def phase_verify(st, plan):
             previews.append(entry)
             continue
         open_url("/datasets/" + str(did))
-        ok = wait_css('[data-testid="dataset-preview"]', 120, "미리보기")
-        time.sleep(6)
-        bad = count('[data-testid="preview-unavailable"]')
-        imgs = count('[data-testid="dataset-preview"] img')
-        entry["preview_section"] = 1 if ok else 0
+        wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+        outcome = wait_any([
+            ["done", lambda: _preview_measurement().get("slotState") == "done"],
+            ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
+        ], 120, label="미리보기 terminal slot")
+        measured = _preview_measurement()
+        slot_state = measured.get("slotState") or outcome or ""
+        bad = int(measured.get("unavailable") or 0)
+        imgs = int(measured.get("imageCount") or 0)
+        decoded = int(measured.get("decodedCount") or 0)
+        entry["preview_section"] = count('[data-testid="dataset-preview"]')
+        entry["slot_state"] = slot_state
         entry["unavailable"] = bad
         entry["images"] = imgs
+        entry["decoded_images"] = decoded
         entry["status_text"] = ""
         if bad > 0:
             rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
                              expect_ok=False, quiet=True)
             entry["status_text"] = ((data or dict()).get("text") or "")[:400]
-        entry["render"] = "그려짐" if (ok and bad == 0 and imgs > 0) else "안 그려짐"
+        entry["render"], measured_reason = classify_preview_measurement(
+            slot_state, imgs, decoded, bad)
+        if measured_reason and not entry["status_text"]:
+            entry["status_text"] = measured_reason
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
         shot = SHOT_DIR / ("verify-preview-" + str(seq).zfill(2) + "-" + fmt + ".png")
         ab(["screenshot", str(shot)], expect_ok=False)

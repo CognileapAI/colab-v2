@@ -64,6 +64,8 @@ export interface ProjectSource {
   remove(projectId: string): Promise<void>;
   /** 소속 해제 — **연결 기록만** 지운다. 데이터셋은 카탈로그에 남는다 (`§7`). */
   unlink(projectId: string, datasetId: string): Promise<void>;
+  /** 기존 데이터셋을 프로젝트에 붙인다. */
+  link?(projectId: string, datasetId: string): Promise<void>;
 }
 
 export type ProjectCreate = S['ProjectCreate'];

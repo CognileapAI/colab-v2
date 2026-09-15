@@ -53,19 +53,15 @@ def test_렌더_상한을_넘으면_413(source_root, put_target):
     assert r.json()["details"]["targetBytes"] > 1024
 
 
-def test_그릴_수_없는_포맷은_415_이고_그릴_수_있는_형식을_함께_말한다(client, put_target):
-    """안 되는 것만 말하면 무엇을 올려야 하는지 모른 채 떠난다 (정본 §8·계약 산문)."""
+def test_접수뒤_그릴_수_없는_포맷은_작업실패로_형식을_함께_말한다(client, put_target):
+    """형식 탐지는 worker 읽기 단계이며, 실패 본문이 가능한 형식을 말한다."""
     tid = put_target(files={"메모.txt": "이건 래스터가 아니다\n".encode()})
     r = _post(client, {"datasetId": tid})
-    assert r.status_code == 415
+    assert r.status_code == 202
     body = r.json()
-    assert set(body) >= {"code", "message"}
-    # ⭑ ⟨18차 해제 2026-09-05⟩ 같은 이유로 415 의 코드 문자열도 직접 잰다.
-    assert body["code"] == "NOT_RENDERABLE", r.text
-    formats = body["details"]["renderableFormats"]
-    # 〈51〉·〈77〉 — 숫자가 아니라 목록이다. GRIB 은 v2 범위 밖이고 HDF 는 버전이 다르며,
-    # `NumPy` 가 **독립 포맷**으로 들어왔다(Ted 판정 — 「nc 랑은 다른 파일이다」).
-    assert formats == ["NetCDF", "Binary", "HDF4", "GeoTIFF", "NumPy", "GRIB", "HDF5"]
+    assert body["status"] == "실패"
+    assert body["failure"]["code"] == "NOT_RENDERABLE", r.text
+    assert body["failure"]["message"] == "이 형식은 아직 지도로 못 그려요."
 
 
 def test_실패_3종은_failure_code_로_갈린다():

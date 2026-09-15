@@ -87,6 +87,14 @@ export function apiProjectSource(): ProjectSource {
       if (r.response.status === 404) throw new ProjectGone();
       if (r.response.status !== 204) throw new Error('소속을 해제하지 못했어요.');
     },
+    async link(projectId, datasetId) {
+      const r = await api.PUT('/projects/{projectId}/datasets/{datasetId}', {
+        params: { path: { projectId, datasetId } },
+        body: { usageNote: null },
+      });
+      if (r.response.status === 404) throw new ProjectGone();
+      if (r.response.status !== 204) throw new Error('프로젝트에 담지 못했어요.');
+    },
   };
 }
 

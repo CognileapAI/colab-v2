@@ -898,7 +898,7 @@ export function StepTwo(props: {
                 </option>
               ))}
             </select>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={add}>
+            <button type="button" className="btn btn-secondary btn-sm" data-testid="reg-proj-add" onClick={add}>
               + 추가
             </button>
           </div>

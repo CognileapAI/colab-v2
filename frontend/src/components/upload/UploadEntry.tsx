@@ -16,6 +16,7 @@ import { apiProjectSource } from './projectSource';
 import { apiUploadSource } from './uploadSource';
 import type { LineageStepRender, UploadSources } from './types';
 import './upload.css';
+import type { SequencedOpenUploadRequest } from './openUpload';
 
 function defaultSources(): UploadSources {
   return {
@@ -28,7 +29,7 @@ function defaultSources(): UploadSources {
 
 export function UploadEntry(props: {
   /** 바깥(메인 카드 등)에서 「이 전송을 이어서」 열라고 보낸 신호. 값이 바뀔 때마다 연다. */
-  openRequest?: { seq: number; resumeUploadId?: string } | undefined;
+  openRequest?: SequencedOpenUploadRequest | undefined;
   sources?: UploadSources | undefined;
   /** ③ 계보 확정 자리를 바깥에서 갈아 끼우고 싶을 때만 넘긴다. 없으면 모달이 집 안의 것을 세운다. */
   lineageStep?: LineageStepRender | undefined;
@@ -48,10 +49,13 @@ export function UploadEntry(props: {
   //   빈 모달만 열었다. `seq` 를 함께 실어 **같은 항목을 다시 눌러도 다시 무장**하게 한다 —
   //   식별자만 넘기면 값이 안 바뀌어 이미 열린 모달이 재무장하지 않는다.
   const [resumeRequest, setResumeRequest] = useState<{ seq: number; uploadId: string } | null>(null);
+  const [registerRequest, setRegisterRequest] = useState<{ seq: number; uploadId: string } | null>(null);
   useEffect(() => {
     if (seq <= 0) return;
     const resumeUploadId = props.openRequest?.resumeUploadId;
+    const registerUploadId = props.openRequest?.registerUploadId;
     setResumeRequest(resumeUploadId ? { seq, uploadId: resumeUploadId } : null);
+    setRegisterRequest(registerUploadId ? { seq, uploadId: registerUploadId } : null);
     setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seq]);
@@ -89,6 +93,7 @@ export function UploadEntry(props: {
           sources={sources}
           lineageStep={props.lineageStep}
           resumeRequest={resumeRequest ?? undefined}
+          registerRequest={registerRequest ?? undefined}
           onClose={() => setOpen(false)}
         />
       )}

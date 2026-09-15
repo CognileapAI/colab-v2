@@ -16,13 +16,14 @@
 //
 // ⚠ **`§5` 표는 「이름·유형·기간·담당」을 적지만 계약 `DatasetProjectUse` 에 담당이 없다.**
 //    없는 값을 지어내지 않는다 — 이 자리는 비운 채 두고 그 사실을 대장에 적었다.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { downloadDataset } from '../../api/download';
 import { projectPeriod } from '../project/format';
 import { accessLabel, accessNote } from '../common/accessState';
 import { formatBytes } from './format';
 import type { DatasetDetail } from './types';
+import { ALL, DEFAULT_QUERY, type ProjectRow, type ProjectSource } from '../project/types';
 
 /**
  * 접근 값의 **출처 문장** (PRD-39 ⑩ · rev1 접근·다운로드 카드 축자).
@@ -47,10 +48,34 @@ export function UsageSection(props: {
    * 값의 출처 문장도 그 버튼에 딸린 줄이라 함께 접힌다.
    */
   downloadHidden?: boolean;
+  projectSource?: ProjectSource;
+  canManage?: boolean;
+  onChanged?: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const uses = props.detail.projects ?? [];
   const files = props.detail.basicInfo?.files ?? null;
+  const [candidates, setCandidates] = useState<ProjectRow[]>([]);
+  const [selected, setSelected] = useState('');
+  const [projectError, setProjectError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!props.canManage || !props.projectSource) return;
+    let alive = true;
+    void props.projectSource.list({ ...DEFAULT_QUERY, status: ALL }).then(({ items }) => {
+      if (!alive) return;
+      const linked = new Set(uses.map((u) => u.projectId));
+      const available = items.filter((row) => !linked.has(row.projectId));
+      setCandidates(available);
+      setSelected(available[0]?.projectId ?? '');
+    }).catch(() => { if (alive) setProjectError('프로젝트 목록을 불러오지 못했어요.'); });
+    return () => { alive = false; };
+  }, [props.canManage, props.projectSource, props.detail.projects]);
+
+  async function changeMembership(action: () => Promise<void>) {
+    setProjectError(null);
+    try { await action(); props.onChanged?.(); }
+    catch { setProjectError('프로젝트 연결을 바꾸지 못했어요.'); }
+  }
 
   return (
     <section className="dsec use-sec" id="sec-usage" data-testid="usage-section">
@@ -75,10 +100,31 @@ export function UsageSection(props: {
               </div>
               {/* 의미 문장은 **연결마다 따로**다 — 같은 데이터라도 과제마다 쓰임이 다르다 (§5) */}
               {u.usageNote ? <p className="use-note">{u.usageNote}</p> : null}
+              {props.canManage && props.projectSource ? (
+                <button type="button" className="btn btn-ghost btn-sm"
+                  data-testid={`usage-project-unlink-${u.projectId}`}
+                  aria-label={`${u.name} 해제`}
+                  onClick={() => void changeMembership(() => props.projectSource!.unlink(u.projectId, props.detail.datasetId))}>
+                  해제
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>
       )}
+
+      {props.canManage && props.projectSource?.link && candidates.length > 0 ? (
+        <div className="projpick">
+          <select data-testid="usage-project-select" value={selected} onChange={(e) => setSelected(e.target.value)}>
+            {candidates.map((row) => <option key={row.projectId} value={row.projectId}>{row.name}</option>)}
+          </select>
+          <button type="button" className="btn btn-secondary btn-sm" data-testid="usage-project-add"
+            onClick={() => void changeMembership(() => props.projectSource!.link!(selected, props.detail.datasetId))}>
+            + 추가
+          </button>
+        </div>
+      ) : null}
+      {projectError ? <p className="warn" role="alert">{projectError}</p> : null}
 
       {/* ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 값과 그 범위를 함께 적는다.**
           ⚠ **다운로드 권한과 무관하게 보인다** — 잠긴 데이터를 만난 사람에게도 「왜 못 받나」가

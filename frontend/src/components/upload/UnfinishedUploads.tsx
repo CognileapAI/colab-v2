@@ -99,7 +99,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
             type="button"
             className="ub-btn"
             data-testid={`unfinished-register-${p.uploadId}`}
-            onClick={() => openUpload({ resumeUploadId: p.uploadId })}
+            onClick={() => openUpload({ registerUploadId: p.uploadId })}
           >
             이어서 하기
           </button>

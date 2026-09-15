@@ -11,13 +11,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
+import os
+import queue
 import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 
@@ -25,7 +29,8 @@ from ...kernel import signing
 from ...kernel.ids import new_ulid
 from ...kernel.preview_sinks import LocalPreviewSink
 from ...ports.preview_sink import PreviewSinkPort
-from ...ports.source import ResolvedTarget, SourcePart
+from ...ports.source import (ResolvedTarget, SizeMismatch, SourcePart,
+                             WorkspaceExceeded)
 from . import colormap, downsample, invalidation, palettes, preview, raster, scale
 from .source_digest import source_digest
 from .failures import FAILURE_MESSAGES, NotRenderableError, RenderError, RenderFailure
@@ -67,6 +72,8 @@ class RenderSpec:
     deadline_seconds: float
     preview_dir: Path
     preview_url_base: str
+    max_render_bytes: int = 500 * 1024 * 1024
+    materialize: Callable[[ResolvedTarget], ResolvedTarget] | None = None
     #: 산출물을 서빙 자리로 내보내는 싱크 (`〈342〉-㉮`). 기본은 로컬(no-op — nginx 가 디렉터리를 서빙).
     preview_sink: PreviewSinkPort = field(default_factory=LocalPreviewSink)
     #: `fileId → 표시용 원래 이름` (`core-viz.yaml#RenderTarget.fileNames`). **표시에만 쓴다** —
@@ -122,6 +129,7 @@ class RenderJob:
     #: `to_dict` 가 보지 않으므로 계약 표면에 나가지 않는다.
     done: threading.Event = field(default_factory=threading.Event, repr=False,
                                   compare=False)
+    persisted_body: dict | None = field(default=None, repr=False, compare=False)
 
     @property
     def tile_branch(self) -> bool:
@@ -146,6 +154,8 @@ class RenderJob:
 
     def to_dict(self) -> dict:
         """`RenderJob` 스키마 그대로. **없는 것은 키째 뺀다** — null 을 넣지 않는다."""
+        if self.persisted_body is not None:
+            return self.persisted_body
         body: dict = {"renderId": self.render_id, "status": self.status}
         if self.status == STATUS_DRAWING and self.stage:
             body["stage"] = self.stage
@@ -507,7 +517,8 @@ def _build_artifacts(job: RenderJob, reads: list[_Read], merged,
     return artifacts
 
 
-def _failure(code: str, detail: str, job: RenderJob, message: str | None = None) -> dict:
+def _failure(code: str, detail: str, job: RenderJob, message: str | None = None,
+             structured: dict | None = None) -> dict:
     """실패 봉투. **값 미리보기가 이미 있으면 그 자리를 함께 말한다.**
 
     ⚠ **좌표 없는 렌더는 더 이상 여기 오지 않는다** — `〈85〉` 로 계약이 ②비지도형을
@@ -517,7 +528,9 @@ def _failure(code: str, detail: str, job: RenderJob, message: str | None = None)
     그중에도 ①②가 이미 구워졌으면 그 자리를 함께 말한다 — 있는 것을 감추지 않는다.
     """
     details: dict = {}
-    if detail:
+    if structured:
+        details.update(structured)
+    if detail and not structured:
         details["detail"] = detail
     if job.artifacts is not None:
         details["thumbnailUrl"] = job.artifacts.thumbnail.url
@@ -551,6 +564,19 @@ def _run(job: RenderJob) -> None:
 
     try:
         _stage(STAGE_READ)
+        if spec.materialize is not None:
+            try:
+                spec.target = spec.materialize(spec.target)
+            except (SizeMismatch, WorkspaceExceeded) as e:
+                err = RenderError(RenderFailure.TOO_LARGE, str(e))
+                err.size_details = {
+                    "reason": "workspace_limit" if isinstance(e, WorkspaceExceeded)
+                    else "materialized_size",
+                    "limitBytes": getattr(e, "limit_bytes", None) or spec.max_render_bytes,
+                    "targetBytes": getattr(e, "target_bytes", None) or sum(
+                        p.size_bytes for p in spec.target.parts + spec.target.grid_parts),
+                }
+                raise err from e
         reads: list[_Read] = []
         missing: list[dict] = []
         first_error: RenderError | None = None
@@ -647,7 +673,8 @@ def _run(job: RenderJob) -> None:
         job.status = STATUS_FAILED
         job.grid_rejection = getattr(e, "grid_rejection", None)
         job.failure = _failure(e.code, e.detail, job,
-                               message=FAILURE_MESSAGES.get(e.code, e.message))
+                               message=FAILURE_MESSAGES.get(e.code, e.message),
+                               structured=getattr(e, "size_details", None))
     except Exception as e:                       # noqa: BLE001 — 마지막 그물
         job.stage = None
         job.status = STATUS_FAILED
@@ -666,6 +693,10 @@ _COMPLETION_GRACE_SECONDS = 10.0
 _MAX_TOMBSTONES = 4096
 
 
+class QueueFull(Exception):
+    pass
+
+
 class JobStore:
     """렌더 작업 보관 — 프로세스 안 메모리다.
 
@@ -678,7 +709,8 @@ class JobStore:
     def __init__(self, *, execution: str, tile_url_base: str, ttl_seconds: int,
                  tile_signing_secret: str | None = None,
                  signature_ttl_seconds: int | None = None,
-                 tile_branch_enabled: bool = False) -> None:
+                 tile_branch_enabled: bool = False, queue_size: int = 8,
+                 journal_dir: Path | None = None) -> None:
         self._jobs: dict[str, RenderJob] = {}
         #: 수명이 붙은 작업의 (만료시각, id). **넣는 순서가 곧 만료 순서**다(TTL 이
         #: 상수라서). 그래서 앞에서만 보면 되고, 축출이 전체 스캔이 되지 않는다.
@@ -701,15 +733,249 @@ class JobStore:
         self._sig_ttl = ttl_seconds if signature_ttl_seconds is None else signature_ttl_seconds
         # **기본값은 꺼짐이다** (`〈240〉`) — 부르는 자리가 아무 말도 안 하면 한 장이다.
         self._tile_branch_enabled = tile_branch_enabled
+        self._journal_path = journal_dir / ".render-journal.json" if journal_dir else None
+        self._journal_records: dict[str, dict] = {}
+        self._journal_lock = None
+        if self._journal_path is not None:
+            import fcntl
+            self._journal_path.parent.mkdir(parents=True, exist_ok=True)
+            self._journal_lock = (self._journal_path.parent / ".render-journal.lock").open("a+")
+            try:
+                fcntl.flock(self._journal_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as e:
+                self._journal_lock.close()
+                raise RuntimeError("viz-render journal은 단일 프로세스만 소유할 수 있다") from e
+            if self._journal_path.exists():
+                try:
+                    loaded = json.loads(self._journal_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    log.exception("render journal을 읽지 못해 빈 상태로 시작한다")
+                    loaded = {}
+                if isinstance(loaded, dict):
+                    self._journal_records = loaded
+        self._work_queue: "queue.Queue[tuple[RenderJob | None, object | None]]" = queue.Queue(
+            maxsize=queue_size)
+        self._worker_thread: threading.Thread | None = None
+        if execution == "thread":
+            self._worker_thread = threading.Thread(
+                target=self._worker, name="viz-render-worker", daemon=True)
+            self._worker_thread.start()
+
+    def close(self) -> None:
+        if self._worker_thread is not None and self._worker_thread.is_alive():
+            self._work_queue.join()
+            self._work_queue.put((None, None))
+            self._worker_thread.join()
+        if self._journal_lock is not None and not self._journal_lock.closed:
+            self._journal_lock.close()
+
+    def _write_journal(self) -> None:
+        if self._journal_path is None:
+            return
+        tmp = self._journal_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self._journal_records, ensure_ascii=False,
+                                  separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, self._journal_path)
+
+    def _save_rendered(self, job: RenderJob) -> dict | None:
+        if self._journal_path is None or job.rendered is None:
+            return None
+        state_dir = self._journal_path.parent / ".render-state"
+        state_dir.mkdir(exist_ok=True)
+        final = state_dir / f"{job.render_id}.npy"
+        temporary = state_dir / f".{job.render_id}.tmp"
+        with temporary.open("wb") as fh:
+            np.save(fh, job.rendered.values, allow_pickle=False)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temporary, final)
+        r = job.rendered
+        return {"file": final.name, "bounds": r.bounds, "breaks": r.breaks,
+                "colors": r.colors, "palette": r.palette,
+                "variable": r.variable, "unit": r.unit}
+
+    def _load_rendered(self, record: dict) -> raster.Rendered | None:
+        meta = record.get("rendered")
+        if not meta or self._journal_path is None:
+            return None
+        path = self._journal_path.parent / ".render-state" / meta["file"]
+        try:
+            values = np.load(path, mmap_mode="r", allow_pickle=False)
+        except (OSError, ValueError):
+            log.warning("render snapshot을 복원하지 못했다 renderId=%s", record["renderId"])
+            return None
+        return raster.Rendered(values=values, bounds=tuple(meta["bounds"]),
+                               breaks=[tuple(v) for v in meta["breaks"]],
+                               colors=list(meta["colors"]), palette=meta["palette"],
+                               variable=meta["variable"], unit=meta.get("unit"))
+
+    @staticmethod
+    def _artifact_record(artifact: preview.Artifact, root: Path) -> dict:
+        return {"layer": artifact.layer, "kind": artifact.kind,
+                "path": str(artifact.path.relative_to(root)), "url": artifact.url,
+                "cacheKey": artifact.cache_key, "sizeBytes": artifact.size_bytes,
+                "variantKey": artifact.variant_key}
+
+    def _save_artifacts(self, job: RenderJob) -> dict | None:
+        if job.artifacts is None:
+            return None
+        root = Path(job.spec.preview_dir)
+        a = job.artifacts
+        def saved(item):
+            return self._artifact_record(item, root) if item is not None else None
+        geometry = None
+        if a.geometry is not None:
+            geometry = {"bbox3857": a.geometry.bbox_3857,
+                        "bbox4326": a.geometry.bbox_4326,
+                        "width": a.geometry.width, "height": a.geometry.height,
+                        "pixelSizeM": a.geometry.pixel_size_m}
+        return {"thumbnail": saved(a.thumbnail), "detail": saved(a.detail),
+                "thumbnailSidecar": saved(a.thumbnail_sidecar),
+                "detailSidecar": saved(a.detail_sidecar),
+                "mapImage": saved(a.map_image), "sidecar": saved(a.sidecar),
+                "worldFile": saved(a.world_file), "geometry": geometry,
+                "sources": a.sources}
+
+    def _load_artifacts(self, record: dict) -> PreviewArtifacts | None:
+        saved = record.get("artifacts")
+        if not saved or self._journal_path is None:
+            return None
+        root = self._journal_path.parent
+        def loaded(item):
+            if item is None:
+                return None
+            return preview.Artifact(layer=item["layer"], kind=item["kind"],
+                                    path=root / item["path"], url=item["url"],
+                                    cache_key=item["cacheKey"], size_bytes=item["sizeBytes"],
+                                    variant_key=item.get("variantKey", ""))
+        geometry = saved.get("geometry")
+        geom = (preview.MapGeometry(bbox_3857=tuple(geometry["bbox3857"]),
+                                    bbox_4326=tuple(geometry["bbox4326"]),
+                                    width=geometry["width"], height=geometry["height"],
+                                    pixel_size_m=tuple(geometry["pixelSizeM"]))
+                if geometry else None)
+        return PreviewArtifacts(
+            thumbnail=loaded(saved["thumbnail"]), detail=loaded(saved["detail"]),
+            thumbnail_sidecar=loaded(saved["thumbnailSidecar"]),
+            detail_sidecar=loaded(saved["detailSidecar"]),
+            map_image=loaded(saved.get("mapImage")), sidecar=loaded(saved.get("sidecar")),
+            world_file=loaded(saved.get("worldFile")), geometry=geom,
+            sources=tuple(saved.get("sources", ())))
+
+    def _remember_pending(self, job: RenderJob, temporary: bool) -> None:
+        target = job.spec.target
+        self._journal_records[job.render_id] = {
+            "state": "pending", "renderId": job.render_id, "lab": job.lab,
+            "account": job.account, "temporary": temporary,
+            "targetKind": "uploadId" if target.is_upload else "datasetId",
+            "targetId": target.target_id,
+            "fileIds": [part.file_id for part in target.parts],
+            "palette": job.spec.palette, "classCount": job.spec.class_count,
+            "variable": job.spec.variable, "instant": job.spec.instant,
+            "withoutReferenceGrid": job.spec.without_reference_grid,
+            "expiresAt": (job.expires_at.isoformat().replace("+00:00", "Z")
+                          if job.expires_at else None),
+        }
+        self._write_journal()
+
+    def _placeholder_spec(self, record: dict) -> RenderSpec:
+        target = ResolvedTarget(target_id=record["targetId"],
+                                is_upload=record["targetKind"] == "uploadId",
+                                parts=(), grid_dir=None)
+        return RenderSpec(target=target, palette=record["palette"],
+                          class_count=record["classCount"], variable=record.get("variable"),
+                          instant=record.get("instant"),
+                          without_reference_grid=record.get("withoutReferenceGrid", False),
+                          max_preview_side=1, deadline_seconds=1,
+                          preview_dir=self._journal_path.parent if self._journal_path else Path("."),
+                          preview_url_base="")
+
+    def restore(self, make_spec: Callable[[dict], RenderSpec]) -> None:
+        records = list(self._journal_records.values())
+        for record in records:
+            if record.get("state") == "final":
+                spec = self._placeholder_spec(record)
+                body = record["body"]
+                expires_text = body.get("expiresAt")
+                expires_at = (datetime.fromisoformat(expires_text.replace("Z", "+00:00"))
+                              if expires_text else None)
+                job = RenderJob(render_id=record["renderId"], spec=spec,
+                                lab=record["lab"], account=record["account"],
+                                status=body["status"], persisted_body=body,
+                                expires_at=expires_at, rendered=self._load_rendered(record),
+                                artifacts=self._load_artifacts(record))
+                if body["status"] == STATUS_DONE and record.get("rendered") and job.rendered is None:
+                    job.status = STATUS_FAILED
+                    job.failure = _failure(RenderFailure.ARTIFACT_MISSING, "snapshot unavailable", job)
+                    job.persisted_body = None
+                job.done.set()
+                self._jobs[job.render_id] = job
+                self._remember_produced(job)
+                if expires_at is not None:
+                    self._expiring.append((expires_at, job.render_id))
+            else:
+                expires_text = record.get("expiresAt")
+                expires_at = (datetime.fromisoformat(expires_text.replace("Z", "+00:00"))
+                              if expires_text else None)
+                try:
+                    spec = make_spec(record)
+                except Exception as e:  # source가 사라진 한 작업이 앱 전체 기동을 막지 않는다
+                    spec = self._placeholder_spec(record)
+                    job = RenderJob(render_id=record["renderId"], spec=spec,
+                                    lab=record["lab"], account=record["account"],
+                                    status=STATUS_FAILED, expires_at=expires_at)
+                    job.failure = _failure(RenderFailure.UNKNOWN, type(e).__name__, job)
+                    job.done.set()
+                    self._jobs[job.render_id] = job
+                    self._journal_records[job.render_id] = {
+                        **record, "state": "final", "body": job.to_dict()}
+                    self._write_journal()
+                    if expires_at is not None:
+                        self._expiring.append((expires_at, job.render_id))
+                    continue
+                try:
+                    self.submit(record["renderId"], spec, temporary=record["temporary"],
+                                lab=record["lab"], account=record["account"],
+                                restored_expires_at=expires_at)
+                except QueueFull:
+                    body = {"renderId": record["renderId"], "status": STATUS_FAILED,
+                            "failure": {"code": "PREVIEW_QUEUE_FULL",
+                                        "message": "재시작 뒤 대기열이 가득 차 다시 요청해야 해요."}}
+                    if expires_at is not None:
+                        body["expiresAt"] = expires_at.isoformat().replace("+00:00", "Z")
+                    job = RenderJob(render_id=record["renderId"], spec=spec,
+                                    lab=record["lab"], account=record["account"],
+                                    status=STATUS_FAILED, persisted_body=body,
+                                    expires_at=expires_at)
+                    job.done.set()
+                    self._jobs[job.render_id] = job
+                    self._journal_records[job.render_id] = {**record, "state": "final", "body": body}
+                    self._write_journal()
+                    if expires_at is not None:
+                        self._expiring.append((expires_at, job.render_id))
+        self._expiring = deque(sorted(self._expiring))
+
+    def _worker(self) -> None:
+        while True:
+            job, event = self._work_queue.get()
+            try:
+                if job is None:
+                    return
+                self._run_and_plan(job, event)
+            finally:
+                self._work_queue.task_done()
 
     def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool,
                event: "invalidation.InvalidationEvent | None" = None,
-               lab: str = "", account: str = "") -> RenderJob:
+               lab: str = "", account: str = "",
+               restored_expires_at: datetime | None = None) -> RenderJob:
         """`event` 가 없으면 **사람이 부른 경로**다 — 둘 다 같은 계산기를 지난다(ⓒ)."""
         job = RenderJob(render_id=render_id, spec=spec, lab=lab, account=account,
                         tile_branch_enabled=self._tile_branch_enabled)
         now = datetime.now(timezone.utc)
-        if temporary:
+        if restored_expires_at is not None:
+            job.expires_at = restored_expires_at
+        elif temporary:
             # 등록 전 업로드의 미리보기 결과는 서버에 임시로만 둔다 (정본 §8 ③ · `NB-2`)
             job.expires_at = now + timedelta(seconds=self._ttl)
         job.tile_url_template = self._tile_url(render_id, job.expires_at, now)
@@ -719,6 +985,7 @@ class JobStore:
             self._jobs[render_id] = job
             if job.expires_at is not None:
                 self._expiring.append((job.expires_at, render_id))
+            self._remember_pending(job, temporary)
 
         # **완료 경로는 하나다**(`CODE-REVIEW-20260903` #2). 실행기마다 「끝난 뒤에 할 일」을
         # 따로 적으면 그중 하나가 빠지고, 빠진 쪽이 하필 운영 기본값이었다.
@@ -728,7 +995,14 @@ class JobStore:
             self._pending.append(job)
             self._pending_events[job.render_id] = event
         else:
-            threading.Thread(target=self._run_and_plan, args=(job, event), daemon=True).start()
+            try:
+                self._work_queue.put_nowait((job, event))
+            except queue.Full as e:
+                with self._lock:
+                    self._jobs.pop(render_id, None)
+                    self._journal_records.pop(render_id, None)
+                    self._write_journal()
+                raise QueueFull from e
         return job
 
     def _run_and_plan(self, job: RenderJob,
@@ -793,7 +1067,27 @@ class JobStore:
             # 이 자리를 지나도 상태가 안 바뀐다.
             if job.render_succeeded:
                 job.status = STATUS_DONE
-            job.done.set()
+            target_key = "uploadId" if job.spec.target.is_upload else "datasetId"
+            level = log.warning if job.status == STATUS_FAILED else log.info
+            level("render_%s lab=%s account=%s %s=%s renderId=%s reason=%s",
+                  "failed" if job.status == STATUS_FAILED else "completed",
+                  job.lab, job.account, target_key, job.spec.target.target_id,
+                  job.render_id,
+                  (job.failure or {}).get("details", {}).get("reason", "none"))
+            try:
+                with self._lock:
+                    if job.render_id in self._journal_records:
+                        self._journal_records[job.render_id] = {
+                            **self._journal_records[job.render_id],
+                            "state": "final", "body": job.to_dict(),
+                            "rendered": self._save_rendered(job),
+                            "artifacts": self._save_artifacts(job),
+                        }
+                        self._write_journal()
+            except Exception:  # journal 장애가 유일한 렌더 worker를 죽이면 안 된다
+                log.exception("render journal final 기록 실패 renderId=%s", job.render_id)
+            finally:
+                job.done.set()
 
     def _tile_url(self, render_id: str, expires_at: datetime | None,
                   now: datetime) -> str:
@@ -846,6 +1140,16 @@ class JobStore:
             job.artifacts = None
             job.partial = None
             job.invalidation = None
+            record = self._journal_records.pop(render_id, None)
+            if record and self._journal_path is not None:
+                rendered = record.get("rendered")
+                if rendered:
+                    snapshot = self._journal_path.parent / ".render-state" / rendered["file"]
+                    invalidation.apply(invalidation.InvalidationPlan(
+                        trigger=None, target_id=job.spec.target.target_id,
+                        stale=(snapshot,), kept=(), regenerate=False),
+                        previews_root=self._journal_path.parent)
+                self._write_journal()
             if len(self._tombstones) >= self._max_tombstones:
                 self._jobs.pop(self._tombstones.popleft(), None)
             self._tombstones.append(render_id)

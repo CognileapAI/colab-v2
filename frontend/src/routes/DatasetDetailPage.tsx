@@ -47,6 +47,8 @@ import { ActionGate, ReadOnlyScopeProvider } from '../permission/PermissionGate'
 import { useAccount } from '../permission/session';
 import { recordVisit } from '../components/dashboard/visits';
 import '../components/detail/detail.css';
+import { defaultProjectSource } from '../components/project/projectSource';
+import type { ProjectSource } from '../components/project/types';
 
 /** 되돌아가기 기본값. 들어온 곳이 프로젝트면 그 프로젝트 이름을 부른다 (`§8` · WU-P5 가 실어 준다). */
 const DEFAULT_BACK = { label: '데이터셋 목록', to: '/datasets' };
@@ -74,6 +76,7 @@ export function DatasetDetailPage(
     representativeImageSource?: RepresentativeImageSource | undefined;
     /** 삭제 둘(`DL-1` · `getDatasetDeletionImpact`·`deleteDataset`). 시험이 대역을 꽂는 자리다. */
     deletionSource?: DatasetDeletionSource | undefined;
+    projectSource?: ProjectSource | undefined;
   } = {},
 ) {
   const { datasetId = '' } = useParams();
@@ -122,6 +125,7 @@ export function DatasetDetailPage(
     () => props.deletionSource ?? defaultDeletionSource(),
     [props.deletionSource],
   );
+  const projectSource = useMemo(() => props.projectSource ?? defaultProjectSource(), [props.projectSource]);
   const edit = useDatasetEdit(updateSource, detail.status === 'ready' ? detail.detail : null);
   // 저장 중에는 낙관값이, 저장 뒤에는 **서버가 돌려준 상세**가 여기 선다.
   // ⭑ **⟨WU-A3R⟩ 판정도 이 값에서 읽는다** — 종전에는 다운로드 관문·파일 목록이 처음 읽은
@@ -415,7 +419,9 @@ export function DatasetDetailPage(
           {/* 활용 · 가져가기 — 판단 순서의 마지막 칸(`§4`)이고 계보 배지 `#sec-usage` 의 목적지다.
               잠기면 `LockedContent` 가 여기까지 오지 않는다 — 접근 요청 자리는 `LockedNotice`
               한 곳뿐이다 (`§3.3`·`§7`). */}
-          <UsageSection detail={shown} downloadHidden={edit.editing} />
+          <UsageSection detail={shown} downloadHidden={edit.editing} projectSource={projectSource}
+            canManage={!readOnlyForeignLab && account?.permissions?.['업로드·편집'] === true}
+            onChanged={() => setReloadToken((n) => n + 1)} />
           </div>
         </LockedContent>
         </ReadOnlyScopeProvider>

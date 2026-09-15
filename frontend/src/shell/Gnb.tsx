@@ -10,6 +10,7 @@ import { UploadEntry } from '../components/upload/UploadEntry';
 import { useLogout } from '../auth/AuthGate';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { GnbMoreMenu } from './GnbMoreMenu';
+import type { SequencedOpenUploadRequest } from '../components/upload/openUpload';
 
 // 좁은 화면에서는 라벨을 감추고 이 아이콘만 남긴다 (shell.css `@media (max-width: 640px)`).
 // 인라인 SVG 만 쓴다 — 아이콘 라이브러리를 들이지 않는다. 모양은 카탈로그 표의 인라인 SVG 와 같은 결이다.
@@ -58,7 +59,7 @@ const LAB_SETTINGS_ICON = (
   </>
 );
 
-export function Gnb(props: { openRequest?: { seq: number; resumeUploadId?: string } | undefined } = {}) {
+export function Gnb(props: { openRequest?: SequencedOpenUploadRequest | undefined } = {}) {
   const account = useAccount();
   // 관리자는 전 연구실을 읽는다 — 표기가 그 사실을 따라간다(승인 intent 2026-09-12).
   const operator = account?.canManageServiceAccounts === true;

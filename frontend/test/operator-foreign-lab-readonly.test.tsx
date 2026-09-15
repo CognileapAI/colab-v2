@@ -24,6 +24,7 @@ import { FIXTURE_DETAILS, FIXTURE_LAB_ID } from '../src/components/detail/fixtur
 import type { CurrentAccount, PermissionSwitchSet } from '../src/api/client';
 import type { DatasetDetail, DetailSource } from '../src/components/detail/types';
 import type { LineageGraph, LineageGraphSource } from '../src/components/lineage/graphTypes';
+import type { ProjectSource } from '../src/components/project/types';
 
 const OPEN_ID = '01JYZ9K7WQ3N8V4M2X6C5B0AA1'; // 목업 기본 장면 — 열린 데이터 · 기본 정보 전부
 const BASE = FIXTURE_DETAILS[OPEN_ID] as DatasetDetail;
@@ -88,6 +89,7 @@ async function mount(opts: { labId: string; operator: boolean }) {
               <DatasetDetailPage
                 source={staticSource({ ...BASE, labId: opts.labId })}
                 lineageSource={graphSource(editableGraph())}
+                projectSource={{ list: async () => ({ items: [{ projectId: 'P1', name: '후보', type: '국가과제' }], totalCount: 1 }), link: async () => {} } as unknown as ProjectSource}
               />
             }
           />
@@ -109,6 +111,7 @@ const WRITE_CONTROLS: readonly [string, string][] = [
   ['대표 그림 고르기', 'detail-representative-input'],
   ['계보 수정 · 추가', 'lin-edit'],
   ['계보 채우기', 'lin-fill'],
+  ['프로젝트 연결', 'usage-project-add'],
 ];
 
 describe('관리자 전 연구실 열람 — 남의 연구실 상세는 읽기 전용 (승인 intent 2026-09-12)', () => {

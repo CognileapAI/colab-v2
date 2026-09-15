@@ -60,6 +60,8 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
     if (!current) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const unavailableDeadline = Date.now() + 30_000;
+    let unavailableAttempts = 0;
 
     const step = async () => {
       try {
@@ -111,7 +113,12 @@ export function usePreviewRender({ source, renderId, pollMs }: UsePreviewRenderI
             message: e.message,
             renderableFormats: e.renderableFormats,
           });
-        else if (e instanceof PreviewUnavailable)
+        else if (e instanceof PreviewUnavailable && Date.now() < unavailableDeadline) {
+          // 중계 503은 배포·재기동 중 잠깐 생길 수 있다. 같은 renderId를 다시 조회하면
+          // 서버 작업을 중복 생성하지 않고 최종 상태를 그대로 받을 수 있다.
+          const delay = Math.min(pollMs * 2 ** unavailableAttempts++, 2_000);
+          timer = setTimeout(step, delay);
+        } else if (e instanceof PreviewUnavailable)
           setState({ phase: '만들 수 없음', message: e.message });
         else
           setState({
