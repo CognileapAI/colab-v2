@@ -290,6 +290,32 @@ describe('§8 상세 — 돌아가기는 제목 위 한 줄', () => {
 });
 
 describe('§1.2·§8 연결 주소 — 설명·기간과 다른 묶음', () => {
+  it.each([
+    ['naver.com', 'https://naver.com'],
+    ['www.naver.com/path?q=1', 'https://www.naver.com/path?q=1'],
+    ['example.com:8080/path', 'https://example.com:8080/path'],
+    ['  naver.com  ', 'https://naver.com'],
+    ['//example.com/path', 'https://example.com/path'],
+    ['http://example.com/path', 'http://example.com/path'],
+    ['https://example.com/path', 'https://example.com/path'],
+  ])('외부 주소 %s는 %s로 열고 표시값을 유지한다', async (value, href) => {
+    renderDetail('p1', sourceReturning({ ...detailOf('p1'), link: value }));
+    const anchor = await screen.findByTestId('project-link-url');
+    expect(anchor).toHaveAttribute('href', href);
+    expect(anchor.textContent).toBe(value);
+  });
+
+  it.each([
+    'javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'data:text/html,<script>alert(1)</script>',
+    '/projects/p1', '../project', 'not a domain.com', 'https://exam\tple.com', '   ',
+  ])('안전한 외부 주소가 아닌 %s는 표시하되 링크로 열지 않는다', async (value) => {
+    renderDetail('p1', sourceReturning({ ...detailOf('p1'), link: value }));
+    const shown = await screen.findByTestId('project-link-url');
+    expect(shown.textContent).toBe(value);
+    expect(shown).not.toHaveAttribute('href');
+    expect(within(screen.getByTestId('project-link-card')).queryByRole('link')).toBeNull();
+  });
+
   it('개요와 다른 카드에 서고 `계보` 표시가 붙는다', async () => {
     renderDetail('p1');
     const link = await screen.findByTestId('project-link-card');
