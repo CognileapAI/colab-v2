@@ -358,7 +358,7 @@ def test_healthz_storage_는_1초를_넘기지_않는다(p2_client, no_ambient_c
     assert body["credentialSource"] is None and body["error"]
 
 
-# ── ⑮ 실행 sha ∈ main — `MAIN_SHA` 대조 (WU-D3) ─────────────────────────────
+# ── ⑮ 실행 sha ∈ 환경별 원천 — `MAIN_SHA` 호환 파일 대조 ───────────────────
 # EC2 에 git 이 없다. 그래서 판정은 **문자열 대조**다 — `ship.sh` 가 반입할 때 적어 둔
 # `MAIN_SHA` 한 줄과 `CURRENT_SHA` 를 맞춰 본다. 파일이 없다는 것은 반입 게이트를 거치지
 # 않았다는 뜻이라 ─(준비)가 아니라 **✗** 다(spec 우려 4 ⓐ — ─ 로 두면 옛 반입이 영원히 통과한다).
@@ -382,35 +382,49 @@ def item15(*args: str) -> tuple[str, list[str]]:
     return summary_statuses(done.stdout).get("⑮", ""), item_lines(done.stdout, "⑮")
 
 
-def test_반입_sha_가_main_조상이고_후보가_일치하면_15번째_항목이_통과다(tmp_path) -> None:
-    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=yes")
-    status, body = item15("--state-dir", d)
+def test_반입_sha_가_product_조상이고_후보가_일치하면_15번째_항목이_통과다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"source_ref=product source_sha={ANC_B} candidate={ANC_A} ancestor=yes")
+    status, body = item15("--env", "prod", "--state-dir", d)
     assert status == "✓", body
 
 
+def test_prod는_구형_main_기록을_통과_증거로_재해석하지_않는다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=yes")
+    status, body = item15("--env", "prod", "--state-dir", d)
+    assert status == "✗", body
+    assert any("구형" in ln or "형식" in ln for ln in body), body
+
+
+def test_환경과_source_ref가_다르면_실패한다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"source_ref=develop source_sha={ANC_B} candidate={ANC_A} ancestor=yes")
+    status, body = item15("--env", "prod", "--state-dir", d)
+    assert status == "✗", body
+    assert any("원천" in ln for ln in body), body
+
+
 def test_우회_반입은_실패이고_사유가_남는다(tmp_path) -> None:
-    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=bypass")
-    status, body = item15("--state-dir", d)
+    d = state_dir(tmp_path, ANC_A, f"source_ref=develop source_sha={ANC_B} candidate={ANC_A} ancestor=bypass")
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✗", body
     assert any("우회" in ln for ln in body), body
 
 
 def test_조상이_아니라고_적힌_반입은_실패다(tmp_path) -> None:
-    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=no")
-    status, body = item15("--state-dir", d)
+    d = state_dir(tmp_path, ANC_A, f"source_ref=develop source_sha={ANC_B} candidate={ANC_A} ancestor=no")
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✗", body
 
 
 def test_MAIN_SHA_파일이_없으면_실패이고_사유는_파일_없음이다(tmp_path) -> None:
     d = state_dir(tmp_path, ANC_A, None)
-    status, body = item15("--state-dir", d)
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✗", body
     assert any("파일 없음" in ln for ln in body), body
     assert not any("마운트 없음" in ln for ln in body), "마운트 부재와 파일 부재는 사유가 달라야 한다"
 
 
 def test_state_디렉터리가_마운트되지_않으면_실패이고_사유는_마운트_없음이다(tmp_path) -> None:
-    status, body = item15("--state-dir", str(tmp_path / "없는자리"))
+    status, body = item15("--env", "dev", "--state-dir", str(tmp_path / "없는자리"))
     assert status == "✗", body
     assert any("마운트 없음" in ln for ln in body), body
     assert any("/opt/colab-v2:/state:ro" in ln for ln in body), "고치는 법이 사유에 있어야 한다"
@@ -418,21 +432,21 @@ def test_state_디렉터리가_마운트되지_않으면_실패이고_사유는_
 
 def test_MAIN_SHA_형식이_다르면_실패이고_사유는_형식_불일치다(tmp_path) -> None:
     d = state_dir(tmp_path, ANC_A, "nonmain:a1b2c3d4e5f6")   # 폐기된 옛 표기
-    status, body = item15("--state-dir", d)
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✗", body
     assert any("형식" in ln for ln in body), body
 
 
 def test_후보가_실행_sha_와_다르면_실패다(tmp_path) -> None:
-    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_B} ancestor=yes")
-    status, body = item15("--state-dir", d)
+    d = state_dir(tmp_path, ANC_A, f"source_ref=develop source_sha={ANC_B} candidate={ANC_B} ancestor=yes")
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✗", body
     assert any("불일치" in ln for ln in body), body
 
 
 def test_요약줄이_항목_15_를_말하고_MARKS_가_15_다(tmp_path) -> None:
-    d = state_dir(tmp_path, ANC_A, f"main={ANC_B} candidate={ANC_A} ancestor=yes")
-    done = run_doctor("--state-dir", d)
+    d = state_dir(tmp_path, ANC_A, f"source_ref=develop source_sha={ANC_B} candidate={ANC_A} ancestor=yes")
+    done = run_doctor("--env", "dev", "--state-dir", d)
     assert "항목 15" in done.stdout, done.stdout
     assert len(load_doctor().MARKS) == 15
 
@@ -449,8 +463,70 @@ def test_ship_sh_가_적는_형식을_점검기가_그대로_읽는다(tmp_path)
     m = re.search(r"printf '([^']*)'.*MAIN_SHA", ship)
     assert m, "ship.sh 에서 MAIN_SHA 를 적는 printf 형식을 찾지 못했다"
     fmt = m.group(1).replace("\\n", "")
-    assert fmt.count("%s") == 3, fmt
-    line = fmt.replace("%s", "{}", 3).format(ANC_B, ANC_A, "yes")
+    assert fmt.count("%s") == 4, fmt
+    line = fmt.replace("%s", "{}", 4).format("develop", ANC_B, ANC_A, "yes")
     d = state_dir(tmp_path, ANC_A, line)
-    status, body = item15("--state-dir", d)
+    status, body = item15("--env", "dev", "--state-dir", d)
     assert status == "✓", f"ship.sh 형식 「{line}」 을 점검기가 읽지 못한다 · {body}"
+
+
+# ── ⑮ prod 갈래 — 같은 항목이 prod 에서도 판정된다 (2026-09-12 · 규칙 6) ──────
+# dev 만 반입 게이트를 갖고 prod 는 안 갖는 상태가 규칙 1 의 구멍이다. ⑮ 는 **벌과 무관하게**
+# 같은 파일 두 개를 읽으므로, prod 에서 빠지는 자리는 검사기가 아니라 **호출부 둘**이다 —
+# ⑴ `infra/prod/ship.sh` 가 `MAIN_SHA` 를 안 적으면 ⑮ 는 「파일 없음」으로 영원히 ✗
+# ⑵ `infra/prod/deploy-doctor.sh` 가 `/state` 를 안 걸면 ⑮ 는 「마운트 없음」으로 영원히 ✗
+
+PROD_SHIP_SH = REPO_ROOT / "infra" / "prod" / "ship.sh"
+PROD_DOCTOR_SH = REPO_ROOT / "infra" / "prod" / "deploy-doctor.sh"
+SHIP_GATE_LIB = REPO_ROOT / "infra" / "_lib" / "ship-gate.sh"
+
+
+def test_prod_ship_sh_가_적는_형식을_점검기가_그대로_읽는다(tmp_path) -> None:
+    """생산자·소비자 한 계약 — prod 쪽도 dev 와 **같은 한 줄**이어야 ⑮ 가 읽는다."""
+    ship = PROD_SHIP_SH.read_text(encoding="utf-8")
+    m = re.search(r"printf '([^']*)'.*MAIN_SHA", ship)
+    assert m, "infra/prod/ship.sh 에서 MAIN_SHA 를 적는 printf 형식을 찾지 못했다"
+    fmt = m.group(1).replace("\\n", "")
+    assert fmt.count("%s") == 4, fmt
+    line = fmt.replace("%s", "{}", 4).format("product", ANC_B, ANC_A, "yes")
+    d = state_dir(tmp_path, ANC_A, line)
+    status, body = item15("--env", "prod", "--state-dir", d)
+    assert status == "✓", f"prod ship.sh 형식 「{line}」 을 점검기가 읽지 못한다 · {body}"
+
+
+def test_prod_에서도_우회_반입은_15번째_항목의_실패다(tmp_path) -> None:
+    d = state_dir(tmp_path, ANC_A, f"source_ref=product source_sha={ANC_B} candidate={ANC_A} ancestor=bypass")
+    status, body = item15("--env", "prod", "--state-dir", d)
+    assert status == "✗", body
+    assert any("우회" in ln for ln in body), body
+
+
+def test_prod_deploy_doctor_스크립트가_state_를_읽기_전용으로_마운트한다() -> None:
+    """마운트가 없으면 prod 의 ⑮ 는 영원히 ✗ 다 — 호출부가 그 자리를 말해야 한다."""
+    s = PROD_DOCTOR_SH.read_text(encoding="utf-8")
+    assert "-v /opt/colab-v2:/state:ro" in s
+
+
+def test_prod_deploy_doctor_스크립트가_14_가_아니라_15_항목을_말한다() -> None:
+    """머리말이 14 로 남아 있으면 ⑮ 를 안 센 판정을 전건이라 부르게 된다."""
+    s = PROD_DOCTOR_SH.read_text(encoding="utf-8")
+    assert "15 항목" in s, s.splitlines()[1]
+    assert "14 항목" not in s
+
+
+def test_반입_게이트는_한_벌이고_dev_prod_가_그것을_부른다() -> None:
+    """복사본 둘은 한쪽만 고쳐져 갈린다 — 게이트 본문은 `infra/_lib/ship-gate.sh` 하나다."""
+    assert SHIP_GATE_LIB.is_file(), "infra/_lib/ship-gate.sh 가 없다"
+    lib = SHIP_GATE_LIB.read_text(encoding="utf-8")
+    assert "ship_gate_source_ancestor" in lib
+    for ship in (SHIP_SH, PROD_SHIP_SH):
+        s = ship.read_text(encoding="utf-8")
+        assert "_lib/ship-gate.sh" in s, f"{ship.name} 이 공통 게이트를 부르지 않는다"
+        assert "ship_gate_source_ancestor" in s, f"{ship.name} 이 조상 검사를 부르지 않는다"
+        assert "merge-base --is-ancestor" not in s, f"{ship.name} 에 게이트 본문이 복사돼 있다"
+
+
+def test_prod_만_prod_태그_검사를_부른다() -> None:
+    """규칙 6 — prod 는 `prod-YYYYMMDD` 태그에서만 배포한다. dev 에는 그 검사가 없다."""
+    assert "ship_gate_require_prod_tag" in PROD_SHIP_SH.read_text(encoding="utf-8")
+    assert "ship_gate_require_prod_tag" not in SHIP_SH.read_text(encoding="utf-8")

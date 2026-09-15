@@ -38,7 +38,8 @@ def facts_for_file(key, filename, condition, role):
 def build_packet(root, reference_root):
     here=Path(__file__).resolve().parent
     reports=root/'dev-package/reports/stage3-ai-search-plan'
-    snapshot=json.loads((reports/'dev-data-snapshot.json').read_text())
+    snapshot_path=root/'eval/k4-search/fixtures/reference/dev-data-snapshot.json'
+    snapshot=json.loads(snapshot_path.read_text())
     provenance=json.loads((reports/'source-provenance-01.json').read_text())
     from reference_evidence import verify_sources
     if verify_sources(reference_root,provenance): raise ValueError('source document changed; review collection again')
@@ -69,7 +70,7 @@ def build_packet(root, reference_root):
                 facts=facts,source={'label':name,'locator':'처리 단계·자료 설명 본문 (수집 문단 전체)','text':text},
                 source_document_sha256=source['sha256']))
     if not result: raise ValueError('no evidence inputs')
-    inputs=[here/'condition-evidence.json',here/'file-role-evidence.json',reports/'source-provenance-01.json',reports/'dev-data-snapshot.json',Path(__file__)]
+    inputs=[here/'condition-evidence.json',here/'file-role-evidence.json',reports/'source-provenance-01.json',snapshot_path,Path(__file__)]
     return dict(kind='reference evidence preparation; no target IDs or automatic review',items=result,
                 hashes={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs})
 

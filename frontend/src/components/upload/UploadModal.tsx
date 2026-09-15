@@ -35,6 +35,9 @@ import {
   analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
+  REGISTER_NAME_REQUIRED,
+  REGISTER_PERIOD_REQUIRED,
+  REGISTER_SUMMARY_REQUIRED,
   SOURCE_DOWNLOADED_ON_INVALID,
   UPLOAD_CLOSE_FORGET,
   UPLOAD_CLOSE_FORGET_NOTE,
@@ -206,7 +209,6 @@ export function UploadModal(props: {
   // 파일명에서 만든 **자동 초안**. 종료 확인 판정에서 이름 칸을 「사람이 적은 값」으로 세려면
   // 초안과 견줄 자리가 필요하다 — 초안 그대로면 사람은 아직 아무것도 적지 않은 것이다 (WU-A9).
   const [nameDraft, setNameDraft] = useState('');
-  const [topic, setTopic] = useState('');
   // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 분류 3축 — 기본 선택값이 있고 그대로 실려 나간다.**
   // 계약 `DatasetCreate.required` 에 `category`·`dataType` 이 올라(20차 ㉯) 서버가 400
   // 「분류를 골라 주세요」를 내므로, 화면은 **늘 값을 실어 보낸다**.
@@ -287,6 +289,12 @@ export function UploadModal(props: {
   //: 서버가 400 을 내지만, 사람을 왕복시키지 않고 **적을 칸으로 먼저 데려간다**.
   const [summaryError, setSummaryError] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  /**
+   * ⭑ **⟨개정 2026-09-14⟩ 등록 게이트의 첫 실패 한 줄.** 인라인 `.warn` 과 **겸한다** —
+   * 인라인은 그 칸 옆에 남아 「여기다」를 말하고, 토스트는 단계를 옮기는 순간 **무엇 때문에
+   * 옮겨졌는지**를 말한다. 스스로 사라지는 쪽은 토스트뿐이다(PRD-43 공통 컴포넌트).
+   */
+  const [registerToast, setRegisterToast] = useState<string | null>(null);
   // 접수(create) 실패. **`registerError` 와 섞지 않는다** — 그 자리는 등록 카드 안이라
   // 접수 시점엔 닫혀 있고, `submit()` 이 그것을 null 로 지운다. 수명이 다른 두 사실이다.
   const [intakeError, setIntakeError] = useState<string | null>(null);
@@ -338,7 +346,7 @@ export function UploadModal(props: {
   const statusTimer = useRef(0);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sessionEpoch = useSyncExternalStore(subscribe, getSessionEpoch, getSessionEpoch);
-  const hasDraft = picked.length > 0 || Boolean(name || topic || summary || sourceLabel ||
+  const hasDraft = picked.length > 0 || Boolean(name || summary || sourceLabel ||
     sourceUrl || sourceDownloadedOn || crs || gridDescription || intervalValue ||
     intervalUnit || projects.length || lineageCards.length || representativeFile);
   // ⭑ ⟨#34⟩ 지울 「이 브라우저의 기억」이 실제로 있을 때만 세 번째 선택지를 낸다 —
@@ -676,7 +684,6 @@ export function UploadModal(props: {
   const autoLevel = autoLevelCode(derivedFromParents);
   const hasHumanInput =
     (name.trim() !== '' && name !== nameDraft) ||
-    topic.trim() !== '' ||
     summary.trim() !== '' ||
     variables.some((v) => v.name.trim() !== '') ||
     crs.trim() !== '' ||
@@ -756,6 +763,12 @@ export function UploadModal(props: {
     if (levelTouched) return;
     setLevel(autoLevel);
   }, [levelTouched, autoLevel]);
+  /**
+   * ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 원천 블록이 서는가.**
+   * `RegisterArea.StepThree` 와 **같은 식**이다 — `Lv0` 또는 연결 0건. 화면이 숨긴 값을
+   * 요청에 싣지 않으려면 표시 조건과 전송 조건이 한 식이어야 한다(WU-B6 이 세운 규율).
+   */
+  const sourceVisible = level === LV0 || lineageCards.length === 0;
   /** 안내 줄의 `분류에서 바꾸기` — **자리로 보낼 뿐 값을 고치지 않는다**(PRD-07 축자). */
   const onGoToClassify = useCallback(() => {
     if (submitLock.current || committedDatasetIdRef.current) return;
@@ -770,7 +783,8 @@ export function UploadModal(props: {
     () => ({
       uploadId: uploadId ?? '',
       datasetNameDraft: name,
-      topic: topic || null,
+      // ⭑ ⟨개정 2026-09-14⟩ 등록 폼에 `주제` 칸이 없다 — 넘길 단서 자체가 없다.
+      topic: null,
       // ⭑ **⟨WU-B5 · PRD-07⟩ ① 이 고른 자기 Lv 가 연결 규칙의 기준값이다.**
       processingLevelUserSet: level,
       // ⭑ ⟨카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 추종 중에는 ③ 이 부모 선택 상한을 걸지 않는다.
@@ -785,7 +799,7 @@ export function UploadModal(props: {
       lineageUnknown,
       onLineageUnknownChange,
     }),
-    [uploadId, name, topic, level, levelTouched, derivedFromParents, lineageCards, lineageUnknown, onGoToClassify,
+    [uploadId, name, level, levelTouched, derivedFromParents, lineageCards, lineageUnknown, onGoToClassify,
      onLineageProgress, onLineageParentsChange, onLineageConflictChange, onLineageCardsChange,
      onLineageUnknownChange],
   );
@@ -844,7 +858,6 @@ export function UploadModal(props: {
     // 파일에서 온 것은 파일과 함께 내린다. 접수·상태는 `signature` effect 가 다시 세운다.
     setName('');
     setNameDraft('');
-    setTopic('');
     setSummary('');
     setSourceLabel('');
     setVariables([emptyVariableRow()]);
@@ -1069,9 +1082,14 @@ export function UploadModal(props: {
     //   **화면이 숨긴 값을 안 보낸다**는 화면 쪽 규율이고, 서버의 거절 규칙이 아니다.
     // ⛔ 빈 문자열을 `null` 로 실어 보내지 않는다 — 안 적은 것과 비우라는 것은 다르고,
     //    등록은 「안 적었다」뿐이다(수정 경로가 비우는 자리를 따로 가진다).
-    if (level === LV0) {
+    // ⭑ **⟨개정 2026-09-14⟩ 조건이 `sourceVisible` 로 넓어졌다** ／ 종전 ~~`level === LV0`~~ —
+    //   화면에서 `출처 주소` 는 원천 블록이 보이는 동안 늘 서고, `내려받은 날` 만 그 안에서
+    //   다시 Lv0 조건을 탄다. **표시 조건과 전송 조건은 같은 식**이라는 규율은 그대로다.
+    if (sourceVisible) {
       if (sourceUrl.trim()) out.sourceUrl = sourceUrl.trim();
-      if (sourceDownloadedOn.trim()) out.sourceDownloadedOn = sourceDownloadedOn.trim();
+      if (level === LV0 && sourceDownloadedOn.trim()) {
+        out.sourceDownloadedOn = sourceDownloadedOn.trim();
+      }
     }
     return out;
   }
@@ -1109,11 +1127,18 @@ export function UploadModal(props: {
       setRegisterError(intakeError ?? '올리다가 끊겼어요. 다시 시도해 주세요.');
       return;
     }
+    // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ 필수 검사는
+    //   여기 한 곳에 모여 순서대로 돈다** — 기획서 rev2 `makeDataset()` 순서 축자.
+    //   **첫 실패 하나만** 알린다(전부 나열하면 사람은 어디부터 고칠지 못 고른다):
+    //   ⑴ 이름 → ⑵ 설명 → ⑶ 분류·유형 → ⑷ 기간 시작 → ⑸ 관측 간격 → ⑹ Lv0 출처 두 칸.
+    //   각 실패는 **토스트 ＋ 그 칸이 있는 단계로 이동 ＋ 초점**으로 끝난다.
+    //   ⛔ 인라인 `.warn` 을 걷지 않는다 — 토스트는 스스로 사라지고, 칸 옆 표시는 남는다.
     if (!name.trim()) {
       // §9 이름 없이 데이터셋 만들기 — 이름 칸으로 초점을 옮긴다
       setNameError(true);
       // ⭑ ⟨WU-B3⟩ 이름 칸은 ② 메타데이터 입력에 있다 — 적을 칸으로 데려간다.
       setStep(2);
+      setRegisterToast(REGISTER_NAME_REQUIRED);
       window.setTimeout(() => document.getElementById('reg-name')?.focus(), 0);
       return;
     }
@@ -1122,6 +1147,7 @@ export function UploadModal(props: {
       // PRD-15 — 설명이 필수다. 계약 `DatasetCreate.required` 와 같은 판정을 화면이 먼저 한다.
       setSummaryError(true);
       setStep(2);
+      setRegisterToast(REGISTER_SUMMARY_REQUIRED);
       window.setTimeout(() => document.getElementById('reg-summary')?.focus(), 0);
       return;
     }
@@ -1132,9 +1158,20 @@ export function UploadModal(props: {
     if (!category || !dataType) {
       setStep(1);
       setRegisterError(MISSING_CATEGORY_MESSAGE);
+      setRegisterToast(MISSING_CATEGORY_MESSAGE);
       window.setTimeout(() => document.getElementById('reg-category')?.focus(), 0);
       return;
     }
+    // ⑷ 기간 — **시작 시점이 있어야 성립한다.** 종료는 없어도 「그 시점 하나」로 읽힌다
+    //    (PRD-40 판정 ⓐ). 받는 길이 달력 팝오버 하나라 그 버튼으로 데려간다.
+    if (!granularity || !assemble(startParts, granularity)) {
+      setStep(2);
+      setRegisterToast(REGISTER_PERIOD_REQUIRED);
+      window.setTimeout(() => document.getElementById('reg-period-open')?.focus(), 0);
+      return;
+    }
+    // 관측 간격과 Lv0 출처 두 칸은 선택 입력이다. 비어 있으면 요청에서 빠지고,
+    // 반쪽 관측 간격과 제공된 날짜의 형상 오류만 아래 조립·검증 경로에서 거절된다.
     // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 여기서 막는다 — 서버 400 이 화면에 닿지 않고
     //   일반 실패 문구(`catch`)로 덮이던 자리다(재시도로 해소되지 않는 원인을 재시도하라는
     //   안내가 되므로 사용자를 막다른 길로 보낸다). 값이 있고(칸이 비었으면 선택이라 넘어간다)
@@ -1151,6 +1188,7 @@ export function UploadModal(props: {
     }
     setSourceDownloadedOnError(null);
     setRegisterError(null);
+    setRegisterToast(null);
     const lifecycle = mutationLifecycle.current;
     submitLock.current = true;
     setSubmitting(true);
@@ -1158,12 +1196,16 @@ export function UploadModal(props: {
       const made = await upload.register({
         uploadId,
         name: name.trim(),
-        // **미정을 표현할 수 있어야 한다** — 4값 CHECK 는 「값이 있다면 넷 중 하나」다
-        topic: topic || null,
+        // ⭑ **⟨개정 2026-09-14 · 기획자 9/13 구두 피드백 · Ted 재판정 대기⟩ `topic` 을
+        //   싣지 않는다** ／ 종전 ~~`topic: topic || null`~~ — 등록 폼에 그 칸이 없어졌고,
+        //   계약에서 `topic` 은 optional 이다. **열쇠를 생략한다**(「비우라」가 아니다).
+        //   ⛔ 읽기 쪽·컬럼·필터는 무변이다.
         // ⭑ **⟨19차 해제 · PRD-15⟩ `null` 이 아니다** — 계약이 `type: string` 으로 닫았고
         // 위에서 빈 값을 이미 걸렀다.
         summary: summary.trim(),
-        sourceLabel: sourceLabel.trim() || null,
+        // ⭑ ⟨개정 2026-09-14⟩ 원천 블록이 숨은 동안의 값은 나가지 않는다 — 부모가 붙으면
+        //   원천은 부모 쪽 계보가 말한다(`sourceVisible` · `RegisterArea` 와 같은 식).
+        sourceLabel: sourceVisible ? sourceLabel.trim() || null : null,
         // ⭑ **⟨WU-B3 · 20차 ㉯⟩ 계약 `required` 라 열쇠를 **명시**한다** — `humanMetadata()` 의
         // 펼침은 `Record<string, unknown>` 이라 타입 검사가 이 둘을 못 본다.
         category,
@@ -1402,6 +1444,15 @@ export function UploadModal(props: {
             />
           )}
 
+          {/* ⭑ ⟨개정 2026-09-14⟩ 등록 게이트의 첫 실패 한 줄 — 같은 공통 토스트다. */}
+          {registerToast && (
+            <Toast
+              message={registerToast}
+              testId="up-register-toast"
+              onDismiss={() => setRegisterToast(null)}
+            />
+          )}
+
           {mixedGlobal && <Toast message={MIXED_EXTENSION_NOTICE} testId="up-mixed-global" onDismiss={() => setMixedGlobal(false)} />}
           {status?.failure && (
             <div className="warn" role="alert" data-testid="up-analysis-failure">
@@ -1607,8 +1658,6 @@ export function UploadModal(props: {
                 projectSource={props.sources.projects}
                 name={name}
                 onName={(value) => editRegistration(() => setName(value))}
-                topic={topic}
-                onTopic={(value) => editRegistration(() => setTopic(value))}
                 summary={summary}
                 onSummary={(value) => editRegistration(() => setSummary(value))}
                 variables={variables}

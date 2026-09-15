@@ -229,18 +229,22 @@ describe('WU-A4 · PRD-28 — 미리보기 2 : 입력 3, 짧은 값 세 개는 �
     expect(gridColumnsOf('.up-split')).toBe('2fr 3fr');
   });
 
-  it('기간·좌표계·격자가 한 줄 **세 칸**으로 선다', async () => {
+  // ⭑ **⟨개정 2026-09-14 · 레인 A4⟩ 세 칸의 내용물이 바뀌었다** ／ 종전 ~~기간·좌표계·격자~~
+  //    — rev2 목업의 `form-3` 이 담은 셋은 **관측 간격·좌표계·격자**이고, 기간은 두 칸이
+  //    한 값이라 바로 위에서 제 행을 갖는다. **요구는 무변이다** — 짧은 값 세 개가 한 줄이고
+  //    2+1 로 갈리지 않는다(PRD-28). 재는 대상만 옮긴다.
+  it('관측 간격·좌표계·격자가 한 줄 **세 칸**으로 선다', async () => {
     await openRegister();
     const row = screen.getByTestId('reg-short-row');
     expect(row.className).toContain('form-3');
     // 세 칸이다 — 2+1 로 갈리면 마지막 줄이 반쯤 빈다.
     expect(row.querySelectorAll(':scope > .form-row').length).toBe(3);
+    expect(row.textContent).toContain('관측 간격');
     expect(row.textContent).toContain('좌표계');
     expect(row.textContent).toContain('격자');
-    // ⭑ ⟨R-C · WU-C8 · §5-14⟩ 기간 칸의 자리는 그대로이고, 값을 받는 길이 **달력 팝오버
-    //    하나**로 줄었다 — 세 칸 줄이라는 이 시험의 요구는 무변이다.
-    expect(row.textContent).toContain('기간');
-    expect(within(row).getByTestId('reg-period-open')).toBeInTheDocument();
+    // 기간은 이 줄 **밖**이고 바로 위 제 행에 선다 — 빈 집합 통과 방지로 둘 다 잰다.
+    expect(within(row).queryByTestId('reg-period-open')).toBeNull();
+    expect(screen.getByTestId('reg-period-open')).toBeInTheDocument();
   });
 
   it('`.form-3` 은 세 칸 격자로 선언돼 있다', () => {

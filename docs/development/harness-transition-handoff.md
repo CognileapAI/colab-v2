@@ -1,0 +1,195 @@
+# 공통 하네스 전환 인계
+
+## develop 통합 — 2026-09-15
+
+사용자 요청에 따라 기본 개발 브랜치를 develop로 맞춘다. Ponytail 반영 커밋은
+`6d0a03ca`이며, 통합 대상 origin/develop은 `4bc50c50`이다.
+
+- [x] develop 변경과 하네스의 충돌 6곳 해소. 공통 규칙 원본과 얇은 Claude 어댑터 유지.
+- [x] develop/product 보호, 배포 증거의 브랜치·SHA, CI 필수 증거 수집을 새 정책에 맞춤.
+- [x] 실패 배포 재개 시 완료 전 post 증거를 요구하던 순서 수정 및 회귀 시험.
+- [x] 관련 로컬 검증. 원격 반영 여부는 Git ref로 확인한다.
+
+검증: harness-contract-selftest 41, product-release-selftest 75,
+product-reseed-selftest 87, service-tests-core-api 1,294 시험 통과.
+각 게이트 exit 0, green 1 / red(판정) 0 / red(준비) 0.
+로그는 `/tmp/colab-harness-develop-{contract-selftest-pass,product-release,product-reseed,core}/gate-summary.json`.
+최종 agent-bridge 121건 중 111통과·Windows 전용 10 skipped, exit 0,
+green 1 / red(판정) 0 / red(준비) 0. 로그: `/tmp/colab-harness-develop-bridge-final/gate-summary.json`.
+추가로 dev/prod ship mock 38/48건 통과, 실제 doctor와 증거 emitter에 같은 ship 기록을
+입력한 dev/prod 2건 통과. 실행 환경 없는 직접 pytest 시도는 준비 오류였으며,
+core-api 게이트가 일회용 DB를 준비한 뒤 위 1,294건을 정상 실행했다.
+
+전체 제품 게이트·실제 GitHub Actions·실제 배포·모델 행동 평가는 이번에 완료했다고 주장하지 않는다.
+product 브랜치와 운영 환경은 변경하지 않는다. 아래 이전 상태는 당시 기록이다.
+
+## 현재 운영 범위 — 2026-09-15 사용자 승인
+
+하네스 전면 전환·추가 고도화는 보류하고 실제 개발에 사용한다. 아래 과거의 전체 수용
+미달은 보존하되 일상 개발 시작 조건으로 삼지 않는다. 작은 실제 개발 작업 하나에서
+다음 흐름을 확인하고, 그 작업을 막거나 반복 실수를 만드는 부분만 고친다.
+
+1. 사용자 목적·수정 범위와 적용 지침을 확인한다.
+2. 해당 변경에 필요한 검사만 실행하고 실패·미실행을 그대로 보고한다.
+3. Codex의 정상 허용과 보호 편집 차단을 실제 훅으로 확인한다. 차단 확인은 제품 파일을
+   훼손하지 않는 격리된 시험 대상으로 한다. 확인 전에는 필요한 guard를 명시적으로 실행하며,
+   명시 guard 결과를 자동 훅 검증으로 주장하지 않는다.
+4. 변경 내용·검사 결과·남은 일을 짧게 기록하고 다음 작업에서 이어받는다.
+
+이 흐름을 실제 작업 한 번으로 확인하면 일상 개발 운영 기준을 충족한 것으로 본다.
+전체 모델 비교·양방향 인계 평가·기존 대장 전면 이전은 당장 수행하지 않는다.
+기존 제품 실패는 관련 변경·릴리스 판단 시 다루며, 배포에 필요한 검증 기준은 유지한다.
+원격 게시·배포·기록 삭제 권한을 이번 운영 범위 변경으로 확대하지 않는다.
+
+이번 대화의 실행기 확인: Windows PowerShell의 CurrentUser 정책은 RemoteSigned였다.
+동일 SHA-256의 dev.ps1이 `\\wsl.localhost\Ubuntu\…`에서는 서명 오류로 차단됐지만
+`\\wsl$\Ubuntu\…`에서는 Codex 0.154.0 실행과 bridge check가 exit 0이었다.
+정책은 변경하지 않았다. 이 결과는 실제 훅·모델 행동 검증을 뜻하지 않는다.
+
+다음 진입점: 사용자가 지정하는 실제 개발 작업 하나. 현재 별도 제품 수정은 선택하지 않았다.
+
+### 최소 자동 훅 실측 — 2026-09-15
+
+현재 Codex 앱 작업의 실행 위치인 저장소 루트(main, 8da27769)에서 실제 도구 호출로 확인했다.
+수동 guard 호출을 자동 실행 근거로 사용하지 않았다.
+
+- 정상 허용: `git status --short` 실행 exit 0. bridge check와 공통 계약 검사도 exit 0.
+- 명령 차단: `git push --force --dry-run /tmp/colab-hook-probe-no-remote HEAD:refs/heads/main`
+  호출이 Git 실행 전에 PreToolUse의 git-guard.sh(exit 2)로 거부됐다. 로컬의 존재하지 않는
+  목적지와 dry-run을 사용했으며 원격 쓰기는 없었다.
+- 편집 차단: `db/platform/versions/0001_p0_platform.py`의 실제 apply_patch 호출이
+  PreToolUse의 migration-guard.sh(exit 2)로 거부됐다. 존재하지 않는 고유 문맥을 지정해
+  훅이 없더라도 patch 자체가 적용되지 않는 시험이었다. 파일 내용은 변경하지 않았다.
+- 첫 강제 push 시험은 일반 브랜치를 지정하여 정상 허용됐다. 차단 규칙은 main/master 대상이므로
+  이 시험을 훅 실패로 해석한 초기 판단은 정정한다. 별도 CLI도 이 일반 브랜치 시험만 수행했다.
+
+따라서 현재 앱·루트 사본의 정상 명령 허용과 두 보호 동작은 확인됐다. 모든 훅 이벤트,
+별도 worktree·Windows CLI·Claude에서 같은 결과를 확인했다는 뜻은 아니다.
+당시 등록 목록과 저장소/개인 스킬 경로에서 ponytail은 발견하지 못했다.
+이후 사용자가 참고 저장소 PR #3을 지정하여 아래 반영을 완료했다.
+
+## Ponytail 반영 — 2026-09-15
+
+사용자 요청: 참고 저장소 ai-sdlc-harness PR #3의 Ponytail 추가분을 반영한다.
+범위: 고정 원본·MIT 라이선스, CoLAB 어댑터, 양 도구의 스킬 연결과 기존 검사에 파일 선언.
+별도 상시 훅·모드 추적·부가 스킬·전면 전환은 추가하지 않는다.
+
+- [x] PR #3과 원본 고정 SHA를 대조하고 합의·검사·권한 보존 경계를 확인했다.
+- [x] 원본과 어댑터를 추가하고 공통 구현 진입점에 연결했다.
+- [x] 원문/라이선스 일치·누락 파일 거절·agent-bridge/harness-contract 검사를 확인했다.
+
+수용 기준: 코드 단순화는 합의한 기능 안에서만 적용하고 기존 검사·승인·사용자 요청 산출물은 유지한다.
+코드량 감소 효과는 첫 실제 기능 작업에서 확인한다. 이번 작업은 설치·연결 검증이다.
+
+실측: 원본 본문·MIT LICENSE 대조 2건 일치, Codex 스킬 형식 2건 통과.
+파일 생성 전 harness-contract는 필수 파일 3개 누락으로 exit 1을 반환했다.
+agent-bridge는 기존 스킬 수 14 고정과 어댑터 표지 누락으로 실패했고, 16개로 갱신하고
+기존 어댑터 형식을 맞춘 뒤 111시험 중 101통과·Windows 전용 10 skipped, 실패 0, exit 0.
+최종 게이트별 green 1 / red(판정) 0 / red(준비) 0:
+`/tmp/colab-ponytail-20260915-bridge-final/gate-summary.json`,
+`/tmp/colab-ponytail-20260915-contract-final/gate-summary.json`.
+독립 어댑터 검토에서 요청 대비 미달·초과 없음. 실제 모델 행동 평가는 수행하지 않았다.
+변경은 codex/harness-pr-centric 작업 사본에 있으며 커밋·main 반영·push는 하지 않았다.
+
+## 이전 전환 마감 기록
+
+2026-09-15. 작업 브랜치 `codex/harness-pr-centric`, 대상 저장소 `CognileapAI/colab-v2`.
+로컬 구현·단위 수용은 마쳤다. 통합 검증 실패와 미확인 검증이 남아 **전체 전환 수용은 미달**이다.
+이 문서는 배포 승인이나 원격 게시 완료를 의미하지 않는다.
+
+종료 결정: 사용자의 후속 지시에 따라 제품 시험 수정·DB 준비로 범위를 넓히지 않고,
+이번 작업은 **로컬 하네스 전환 구현·인계 완료로 종료**한다. 아래 실패·미확인·호환 잔존
+기록은 보존하며 통과로 바꾸지 않는다. PR은 사용자 담당이고 원격 게시·배포·기록 삭제는 미실행이다.
+
+## 달라진 사용법
+
+Claude와 Codex 모두 저장소 루트의 `AGENTS.md`에서 시작한다. 규칙·스킬·역할 원본은
+`.agents/`, 검사 코드는 `scripts/harness/`다. `.claude/`와 `.codex/`는 각 도구 연결을 맡는다.
+새 작업은 명시한 목적·범위·로컬 계획을 사용한다. 기존 대장·세션에 새 상태를 중복 작성하지 않는다.
+
+```sh
+python3 scripts/agent-bridge.py check
+python3 scripts/harness/check.py
+```
+
+작업별 gate·산출물은 [작업 증거 절차](lifecycle-evidence.md)를 따른다.
+실제 역할과 필수 게이트로 begin하고 반환된 task ID를 보존한다. 검사 생략·다른 SHA·이전 run의
+보고서를 완료로 사용할 수 없다. 파일이 바뀌면 이전 검증은 그 파일의 새 근거가 아니다.
+
+PR 요약은 목적·범위·계획·결정·검증·남은 제약의 6절을 작성한다.
+기본 틀은 `.github/pull_request_template.md`, 지속 결정은 `docs/decisions/`를 사용한다.
+미검증 draft를 허용하지만 '검증됨' 또는 완료 주장은 실제 CI artifact bundle을 요구한다.
+CLI 인자는 `python3 scripts/harness/pr_contract.py --help`에서 확인한다.
+합의본 snapshot이나 ADR 파일을 생성한 것 자체는 사용자의 승인으로 간주하지 않는다.
+
+## 기존 상태와 배포
+
+[작업 상태 증거](work-state.md)는 명시한 Issue/PR/task 자료를 검증한다.
+기존 제품 대장은 아직 `legacy-compatibility`로 읽는다. 기존 기록은 이동·삭제하지 않았다.
+최신 조사: 대장 235항목(done 178, open 52, partial 3, deferred 1, blocked 1), active 57.
+HANDOFF 18행은 별도 분류 대상이며 미해결 건수나 대장과 합산한 건수가 아니다.
+Issue 게시·HANDOFF 분류·기존 소비자 제거 전에는 호환 종료를 주장할 수 없다.
+
+[배포 증거 절차](release-evidence.md)는 PR/main/CI 사전 증거와 동일 실행 doctor 사후 증거를 연결한다.
+dev 태그는 사후 검증 후, prod 태그는 배포 전 사전 검증 후다. prod 성공 확정은 사후 검증이 필요하다.
+이번 작업은 실제 배포·태그 생성·운영 doctor 실행을 하지 않는다. 로컬 JSON 정합은 GitHub 서명 인증이 아니다.
+
+## 검증 결과
+
+- 검증 대상 코드 커밋: `d76b0eb18b6cb55d8e76549edbab8d976584ba8c`, tree `2347ce4e0dfb74d82f0b37495b832fac127395c7`.
+  전수 실행 전후 clean/HEAD 동일을 확인했다. 이후 변경은 이 결과와 계획 상태를 기록하는 문서뿐이다.
+- `COLAB_GATE_INNER_JOBS=2 ... bash gates/run.sh all -j 2` 1회, 재시도 0회.
+  KST 2026-09-15 01:50:48–02:00:40(9분 52초), exit 1, **green 67 / red(판정) 2 / red(준비) 0**.
+  실패는 `frontend-test`, `schema-diff`다. 원본 계수를 임의로 재분류하지 않았다.
+  `harness-eval`의 green은 **20과제 명시 면제·미실행**이다. 병렬 안전성 미선언 8개는 단독 실행됐다.
+- `frontend-test`: 123파일 중 115 통과/8 실패, 1,457시험 중 1,415 통과/42 실패.
+  등록 요청과 부모 연결 관련 실패다. 일부 로그의 직접 차단은 '출처 주소와 내려받은 날' 필수 입력 안내다.
+  전체 원인은 미확정이며 제품 동작·시험 기대값을 변경하거나 재시도로 덮지 않았다.
+- `schema-diff`: 지정 DB `colab_platform_applied` 부재로 연결 실패. 검사기는 exit 1로 판정 실패를 기록했다.
+  입력 환경 준비 문제라는 진단을 원본 판정과 구분한다. 이 실행은 실제 스키마 정합을 증명하지 못했다.
+- 서비스 시험: core-api 1,265, ai-service 142, viz-render 500, pipeline-worker 275 실행·실패 0·skipped 0.
+  각 gate의 기존 selector로 deselected 6/26/42/50이며 이를 전체 E2E 통과로 확대하지 않는다.
+  `migration-single-head`, `migration-drift`, 공통 하네스·기획·상태·계약 연결 게이트는 green이다.
+- 부모 실행 `python3 -m unittest discover -s scripts/tests -v`: 313개 중 303 통과·Windows 전용 10 skipped, exit 0(25.046초).
+  `infra/dev/tests/ship-gate.sh` 36, `infra/prod/tests/ship-gate.sh` 48 통과. 이 둘은 명시 mock 반입 시험이다.
+  실제 release 판정부·단일 doctor 증거·번들 import 회귀는 위 unittest에 포함된다.
+  공통 계약·bridge 연결·CI 필터·diff 공백 검사 exit 0. 실환경 통과를 의미하지 않는다.
+- 기준선 `2e009aef`: 연결 검사·실행 비트·bridge 시험 완료, 파일 무수정. bridge 77 tests 중 Windows 10 skipped.
+- 당시 '실행기 없음' 진단은 정정한다. PowerShell은 존재하며, 공식 `dev.ps1`이 UNC의 unsigned-script 정책으로 차단됐다. 정책 우회는 하지 않았다.
+- Claude 합성 PR 해석 2회는 기대 객체와 일치했다. 재현 입력은 `eval/harness/pr-summary-fixture.json`이다.
+  모델 응답의 runtime 표기는 `claude-haiku-4-5-20251001`, `claude-opus-5[1m]`이다.
+  도구 없는 해석 평가이며 native hook·Codex 평가·양방향 인계의 통과 근거가 아니다.
+- 실제 GitHub Actions, Claude/Codex native hook 허용·차단, Codex 모델 평가·양방향 인계는 미확인이다.
+  Codex 호스트 검증은 정상 실행 가능한 신뢰된 공식 실행기에서 재개해야 한다.
+
+전수 원본은 OS 임시 디렉터리의 `colab-harness-final-nLYS9n/`에 보존했다(자동 정리 전 별도 보관 필요).
+`gate-summary.json` SHA-256: `443e6f4118e9b72816bae8a8b9b8ac600073a5584db33eec4277e83aec656625`.
+`all.stdout.log` SHA-256: `b9f860b8824274473e38e750de81d3e8abdb7dcda6eee57e318bdfd9949169fd`.
+검사별 `.out`/`.rc`도 같은 디렉터리에 있다. 원본 로그를 공개 PR에 통째로 복사하지 않는다.
+
+## 수용 기준 대조와 남은 제약
+
+구현 범위 초과로 확인된 항목은 없다. 남은 것은 다음과 같이 구분한다.
+
+- 검증 실패: 프런트 42시험의 원인·기대값 대조, 스키마 비교용 DB 준비 후 해당 검사.
+- 검증 미확인: 양 도구 native hook 허용/차단, Codex 실제 모델 평가, 양방향 PR 인계, 실제 Actions.
+- 이전·승인 대기: Issue 이전과 HANDOFF 분류, ruleset 적용, legacy 소비자 정리·호환 종료.
+  기존 기록 삭제와 실제 배포는 이번 로컬 마감에 포함하지 않는다.
+
+단위시험이나 부분 gate green으로 위 미달을 대체하지 않는다. '전체 전환 완료'나 '배포 가능'으로 인계하지 않는다.
+
+## 사용자 PR 게시 절차
+
+1. `git rev-parse HEAD`, `git status --short`를 확인한다. 위 검증 코드 SHA 이후 변경이
+   결과 기록 문서뿐인지 `git diff d76b0eb1..HEAD --stat`로 대조한다. 새로운 코드 변경에는 새 검증이 필요하다.
+2. `CognileapAI/colab-v2`의 base `main`, head `codex/harness-pr-centric`로 사용자가 게시한다.
+   push도 에이전트가 실행하지 않았다. 직접 게시할 때 원격 대상과 계정을 확인한다.
+3. 제목 예시: `Claude·Codex 공통 PR 중심 하네스 전환`.
+   본문에는 위 6절과 로컬 검증 결과, 원격 CI 미실행, 호환 종료 미완료를 그대로 적는다.
+4. 게시된 정확한 SHA의 `required-gates`와 producer artifacts를 확인한다.
+   로컬 시험 결과를 실제 Actions 성공으로 대체하지 않는다.
+5. Issue·ruleset 적용은 내용·대상을 별도 검토한다. 제안은 `github-ruleset.json`이며 원격 미적용이다.
+   병합·배포·기존 기록 삭제는 각각 별도 승인 대상이다.
+
+기존 변경 보존용 stash `c11809dc6bfc51a9783e7f6ba5f93bf571493afe`는 복원 후에도 삭제하지 않았다.
+`30 CoLAB-v2`는 접근·변경하지 않았다.

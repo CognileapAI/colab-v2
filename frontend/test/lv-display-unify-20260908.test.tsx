@@ -4,14 +4,20 @@
  * 오라클 = `dev-package/prd/rounds/R-C-1-contract-db.md` 「### WU-C9 수용 기준」 축자 —
  *   ① 사람 값 ≠ 파생값 픽스처에서 **네 자리**(카탈로그 · 상세 · 계보 그래프 노드 ·
  *      프로젝트 소속 데이터셋 표)의 표시 Lv 가 **같다**.
- *   ② 제안에 `parentProcessingLevel` 이 실려 오면 화면 충돌 경고가 **서버 400 전에** 뜬다.
- *   ③ 그 열쇠가 **없으면** 종전대로 조용하다 — 지어내지 않고 서버 400 이 판정한다.
+ *   ⭑ **⟨개정 2026-09-14 · 기획자 9/13 피드백 「반쪽 AI 제거」 · Ted 재판정 대기 · 판정문 ㉮⟩
+ *     수용 기준 ②③ 을 재던 블록을 걷었다.**
+ *     ／ 종전 ~~② 제안에 `parentProcessingLevel` 이 실려 오면 화면 충돌 경고가 **서버 400
+ *     전에** 뜬다 ／ ③ 그 열쇠가 **없으면** 종전대로 조용하다~~ — 등록 ③ 에서 **제안을
+ *     부르는 자리가 사라져** 제안이 실어 오는 부모 Lv 자체가 없다.
+ *     ⚠ **충돌 경고 규칙은 남아 있다** — 사람이 이어 붙인 부모의 Lv 로 같은 판정을 하고,
+ *     그 자리는 `upload.test.tsx` ③ 계보 확정 블록과 서버 `test_lv_parent_rules.py` 다.
+ *     ⛔ **판정의 정본은 여전히 서버 400 이다.**
  *
  * ⛔ **빈 집합 위에서 통과하지 않는다** — 자리 수를 먼저 세고(4) 그 다음에 값을 견준다.
  * ⚠ 서버는 두 값을 **나란히** 내려보낼 뿐이고(`d3_catalog.level_pair`) 고르는 것은
  *   화면이다(`common/processingLevel.ts` 한 자리). 파생값을 덮어 쓰면 계약 파괴(㉯)다.
  */
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -169,135 +175,3 @@ describe('WU-C9 ① 네 자리의 표시 Lv 가 같다 — 사람 값 우선', (
   });
 });
 
-// ═══ ② · ③ 등록 ③ 충돌 판정 — 제안이 실어 온 부모 Lv (질의 23 · 21차 ⑸) ═══
-//
-// 판정의 **정본은 서버 400** 이다(`test_lv_parent_rules.py`). 화면이 하는 일은 그 400 이
-// 오기 전에 같은 사실을 미리 말해 주는 것뿐이고, **값이 없으면 아무 말도 하지 않는다.**
-import { SessionProvider } from '../src/permission/session';
-import { UploadEntry } from '../src/components/upload/UploadEntry';
-import type {
-  DatasetRow as LineageCandidateRow,
-  LineageSource,
-  LineageSuggestionResponse,
-} from '../src/components/lineage/types';
-import type { PreviewSource, ProjectSource, UploadSource, UploadSources } from '../src/components/upload/types';
-import type { CurrentAccount, Schemas } from '../src/api/client';
-
-const UPLOAD_ID = '01JYZ9K7WQ3N8V4M2X6C5B0UP1';
-const FILE_ID = '01JYZ9K7WQ3N8V4M2X6C5B0FI1';
-const SUGG_ID = '01JYZ9K7WQ3N8V4M2X6C5B0SG1';
-const PARENT_ID = '01JYZ9K7WQ3N8V4M2X6C5B0D02';
-
-function account(): CurrentAccount {
-  return {
-    accountId: '01JYZ9K7WQ3N8V4M2X6C5B0AC1',
-    name: '호랑이',
-    email: 'tiger@example.ac.kr',
-    role: '연구원',
-    labId: '01JYZ9K7WQ3N8V4M2X6C5B0LB1',
-    labName: '수자원순환연구실',
-    permissions: {
-      '업로드·편집': true,
-      '프로젝트 생성': true,
-      '승인 위임': false,
-      '연구실 설정': false,
-    } as Record<Schemas['PermissionSwitch'], boolean>,
-  } as unknown as CurrentAccount;
-}
-
-/** 제안 한 장 — `parentProcessingLevel` 을 **실을 수도, 안 실을 수도** 있다. */
-function suggestionResponse(withLevel: boolean): LineageSuggestionResponse {
-  return {
-    degraded: false,
-    scope: { labId: 'l', labName: '수자원순환연구실', searchedCount: 3 },
-    rawDataLikely: false,
-    suggestions: [
-      {
-        suggestionId: SUGG_ID,
-        kind: '가공 전 데이터',
-        confidence: '높음',
-        rationale: '파일명이 같은 유역·같은 기간을 가리켜요',
-        parentDatasetId: PARENT_ID,
-        parentDatasetName: '집계 강우',
-        suggestedParentRole: '주입력',
-        // ⭑ ⟨21차 ⑸⟩ **모르면 열쇠 자체를 만들지 않는다** — `null` 을 싣지 않는다.
-        ...(withLevel ? { parentProcessingLevel: 2 } : {}),
-      },
-    ],
-  } as unknown as LineageSuggestionResponse;
-}
-
-function sourcesFor(withLevel: boolean): UploadSources {
-  const files = [{ fileId: FILE_ID, fileName: 'nakdong_precip_2025_Lv1.nc', kind: '본체',
-                   byteSize: 349_000, createdAt: '2026-09-08T00:00:00Z' }];
-  const upload = {
-    async create() { return { uploadId: UPLOAD_ID, files } as never; },
-    async status() {
-      return { uploadId: UPLOAD_ID, ready: true, failure: null, metadataComplete: true, files } as never;
-    },
-    async register() { return { datasetId: '01JYZ9K7WQ3N8V4M2X6C5B0DS1' } as never; },
-    async attachGrid() { return [] as never; },
-  } as unknown as UploadSource;
-  const preview = {
-    async palettes() { return [{ palette: 'viridis', label: '비리디스' }]; },
-    async createRender() { return { renderId: 'r', state: '실패', failure: null } as never; },
-    async getRender() { return { renderId: 'r', state: '실패', failure: null } as never; },
-  } as unknown as PreviewSource;
-  const projects = {
-    async list() { return []; },
-    async create() { return { projectId: '01JYZ9K7WQ3N8V4M2X6C5B0PR9', name: 'x', type: '국가과제' } as never; },
-  } as unknown as ProjectSource;
-  const lineage: LineageSource = {
-    async suggestions() { return suggestionResponse(withLevel); },
-    async candidates() { return [] as LineageCandidateRow[]; },
-  };
-  return { upload, preview, projects, lineage } as unknown as UploadSources;
-}
-
-async function click(el: Element | null) {
-  fireEvent.click(el as HTMLElement);
-  await act(async () => {});
-}
-
-/** ① 에서 자기 Lv 를 고르고 ③ 까지 간 뒤 **AI 제안을 부른다**. */
-async function askInStepThree(withLevel: boolean) {
-  render(
-    <MemoryRouter initialEntries={['/datasets']}>
-      <SessionProvider account={account()}>
-        <UploadEntry sources={sourcesFor(withLevel)} />
-      </SessionProvider>
-    </MemoryRouter>,
-  );
-  await click(screen.getByTestId('gnb-upload'));
-  await screen.findByTestId('upload-modal');
-  const file = new File(['x'], 'nakdong_precip_2025_Lv1.nc', { type: 'application/octet-stream' });
-  Object.defineProperty(file, 'size', { value: 349_000 });
-  fireEvent.change(screen.getByTestId('up-drop-input'), { target: { files: [file] } });
-  await act(async () => {});
-  await screen.findByTestId('up-files');
-  await click(await screen.findByTestId('reg-open'));
-  await screen.findByTestId('reg-steps');
-  // 자기 Lv = Lv1 · 제안이 실어 오는 부모 Lv = Lv2 → **초과**다.
-  fireEvent.change(screen.getByTestId('reg-level'), { target: { value: 'Lv1' } });
-  await act(async () => {});
-  await click(screen.getByRole('button', { name: /^③/ }));
-  await screen.findByTestId('lin-step');
-  await click(screen.getByTestId('lin-ask'));
-  await screen.findByTestId('lin-card');
-}
-
-describe('WU-C9 ② 제안의 `parentProcessingLevel` — 서버 400 전에 화면이 경고한다', () => {
-  it('제안이 부모 Lv 를 실어 오고 자기 Lv 를 넘으면 `확인 필요` ＋ 충돌 안내가 뜬다', async () => {
-    await askInStepThree(true);
-    expect(screen.getByTestId('lin-need-check').textContent).toBe('확인 필요');
-    expect(screen.getByTestId('lin-conflict-note').textContent).toContain('Lv1');
-  });
-
-  it('열쇠가 없으면 조용하다 — 지어내지 않고 서버 400 이 판정한다', async () => {
-    await askInStepThree(false);
-    // 카드는 그대로 선다(깨지지 않는다) — 경고만 없다.
-    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
-    expect(screen.queryByTestId('lin-need-check')).toBeNull();
-    expect(screen.queryByTestId('lin-conflict-note')).toBeNull();
-  });
-});

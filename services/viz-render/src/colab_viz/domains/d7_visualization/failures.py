@@ -31,6 +31,12 @@ class RenderFailure:
     # ⚠ 이 코드가 붙는 실패는 `is_retry_pointless` 가 True 인 자리와 **같아야 한다** —
     # 「다시 그리기」를 감출지 말지가 이 한 값에 걸려 있다.
     NOT_RENDERABLE: Final = "NOT_RENDERABLE"
+    # 일곱째 — **구운 산출물이 서빙 자리로 가기 전에 사라졌다**(`DL-2` D9 · prod 임시 검증
+    # 2026-09-13 실측). 같은 데이터셋의 삭제 회수가 `invalidation.apply()` 로 방금 구운
+    # 파일을 unlink 한 직후 `publish` 가 그것을 읽으면 `FileNotFoundError` 다.
+    # ⚠ 「알 수 없는 오류」와 섞지 않는다 — 원인도 복구도 분명하다(다시 그리면 된다).
+    # 섞으면 사용자가 자기 파일을 의심하고, 운영자는 경합인지 진짜 결함인지 못 가른다.
+    ARTIFACT_MISSING: Final = "RENDER_ARTIFACT_MISSING"
 
 
 #: 415 안내 문구. **그릴 수 있는 형식을 함께 적는다** — 안 되는 것만 말하면
@@ -48,6 +54,7 @@ FAILURE_MESSAGES: Final[dict[str, str]] = {
     # 무엇이 있는가)는 `details.detail` 에 실린다 — 라우트의 NOT_RENDERABLE 봉투와
     # 같은 배치다.
     RenderFailure.NOT_RENDERABLE: NOT_RENDERABLE_MESSAGE,
+    RenderFailure.ARTIFACT_MISSING: "미리보기 산출물이 사라져 다시 그려야 해요.",
 }
 
 #: 정본 「미리보기는 500MB까지 그려요」 [가정] — 복구 경로는 「조각 하나를 골라 그린다」.

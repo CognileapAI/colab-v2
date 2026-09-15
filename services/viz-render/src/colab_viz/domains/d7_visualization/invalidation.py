@@ -201,6 +201,81 @@ def reclaim_plan(groups, ledger, *, previews_root: Path,
                 keep_keys=keep, target_id=target_id)
 
 
+#: 삭제 회수에서 **남기는 사유** — 계수의 고정 이름이다. 회차마다 같은 이름으로 나와야
+#: 「무엇 때문에 안 지워졌는가」를 대조할 수 있다.
+DELETION_KEEP_PARTIAL = "일부만 지워졌다"
+DELETION_KEEP_NO_SIDECAR = "사이드카 부재"
+DELETION_KEEP_LEGACY = "구판 사이드카"
+DELETION_KEEP_NO_SOURCES = "사이드카에 원천이 없다"
+DELETION_KEEP_MAP_TILE = "지도 타일"
+DELETION_KEEP_REASONS: tuple[str, ...] = (
+    DELETION_KEEP_PARTIAL, DELETION_KEEP_NO_SIDECAR, DELETION_KEEP_LEGACY,
+    DELETION_KEEP_NO_SOURCES, DELETION_KEEP_MAP_TILE)
+
+
+def deletion_keep_reason(group, deleted_file_ids) -> str | None:
+    """한 벌을 **왜 남기는가.** `None` 이면 남길 이유가 없다 = 회수 대상이다.
+
+    **판정식** — 회수 대상 ⇔ ⑴ 판정 가능한 사이드카(v2) ∧ ⑵ `sources ≠ ∅` ∧
+    ⑶ `sources ⊆ D` ∧ ⑷ `tile-` 이 아니다. 그 밖은 전부 남긴다.
+
+    ⚠ **원장을 보지 않는다.** `ownership.grade()` 는 묘비 데이터셋의 `fileId` 를
+    `d5_upload_file` 잔존 때문에 「접수분에만 닿는다」로 읽어 **영원히 고아가 아니다.**
+    삭제 회수의 입력은 원장이 아니라 **사용자가 지운 파일 집합 `D`** 하나다.
+    ⚠ **`baked_for` 는 여기서도 읽지 않는다**(`ownership` 덫 ①) — 등록 전환 뒤 낡는다.
+    ⚠ **일부만 `D` 에 든 벌은 남는다.** 그 그림은 아직 살아 있는 파일에서도 왔다.
+    """
+    from . import ownership
+
+    if storage_layout.is_map_tile_key(group.cache_key):
+        return DELETION_KEEP_MAP_TILE
+    doc = group.sidecar
+    if doc is None:
+        return DELETION_KEEP_NO_SIDECAR
+    if ownership._is_legacy(doc):
+        # ⚠ **고아가 아니다.** 없는 필드를 근거로 지우면 그것이 오삭제다(덫 ②).
+        return DELETION_KEEP_LEGACY
+    fids = ownership.source_file_ids(doc)
+    if not fids:
+        # 규약 위반이다. 그러나 이 문은 **사용자 삭제 한가운데**라 예외로 끊으면 삭제가
+        # 통째로 500 이 된다 — 세어서 남기고, 규약 위반은 계수로 드러낸다.
+        return DELETION_KEEP_NO_SOURCES
+    deleted = set(deleted_file_ids)
+    if not set(fids) <= deleted:
+        return DELETION_KEEP_PARTIAL
+    return None
+
+
+def deletion_plan(groups, deleted_file_ids, *, previews_root: Path,
+                  target_id: str = "") -> InvalidationPlan:
+    """**사용자 지시 삭제 회수 계획 — 지워진 `fileId` 집합 `D` 만 본다**(`DL-2` ⓓ3).
+
+    ⭑ **계획기를 넷째로 만들지 않는다.** `reclaim_plan`·`supersede_plan`·
+    `tile_reclaim_plan` 과 같은 모양으로 **같은 계산기 `plan()`** 을 부르고, 회수 대상이
+    **아닌** 키를 전부 `keep_keys` 로 넘긴다. 그래서 다음 셋이 공짜로 따라온다:
+      · `tile-` 키는 `kept` — `plan()` 이 이미 지도 타일을 가른다(`reclaim_map_tiles` 기본 False)
+      · **미리보기 루트 밖은 `OutOfScope`** — 접수분 루트(원본·기준 격자) 무접촉(`〈247〉`)
+      · 집행은 `apply()` 한 자리 — 지우는 문은 여전히 하나다
+
+    ⚠ **`D = ∅` 이면 계획을 세우지 않는다.** 빈 집합에 대해 「전부가 부분집합」이 참이 되어
+    **전건이 회수 대상이 된다** — 그 0 을 「없다」로 읽는 것이 이 레포가 실제로 친 오판이다
+    (`DATA-REFERENCE §0 M-9`). 조용히 걸러내지 않고 멈춘다.
+    ⚠ **`GRADES` 는 무변**이다 — 등급 체계를 넓히지 않고 사유 계수만 따로 센다.
+    """
+    deleted = {str(f).strip() for f in deleted_file_ids if str(f).strip()}
+    if not deleted:
+        raise OutOfScope(
+            "지워진 파일이 0건이다 — 빈 집합은 모든 원천을 포함한 것으로 읽혀 전건이 "
+            "회수 대상이 된다. 계획을 세우지 않는다 (DATA-REFERENCE §0 M-9)")
+    groups = list(groups)
+    keep = [g.cache_key for g in groups
+            if deletion_keep_reason(g, deleted) is not None]
+    candidates = [StaleCandidate(cache_key=g.cache_key, path=p)
+                  for g in groups for p in g.paths]
+    return plan(None, produced=candidates, previews_root=previews_root,
+                keep_keys=keep, target_id=target_id)
+
+
 def supersede_plan(produced: Iterable[StaleCandidate], *, previews_root: Path,
                    variant_key: str, keep_keys: Iterable[str],
                    target_id: str = "") -> InvalidationPlan:

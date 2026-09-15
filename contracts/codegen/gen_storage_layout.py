@@ -146,6 +146,37 @@ def representative_image_key(dataset_id: str, image_id: str) -> str:
         datasetId=dataset_id, imageId=image_id)
 
 
+#: 미리보기 산출물의 **파일별 역인덱스** 표식이 사는 접두. **`previews/` 의 형제다** —
+#: 그 접두는 flat 이어야 하고(관측이 하위 경로를 red 로 낸다) CloudFront 는 `previews/*`
+#: 만 노출한다. 사유 전문은 `layout.json` `previewIndex.why`.
+PREVIEW_INDEX_PREFIX = {preview_index_prefix!r}
+PREVIEW_INDEX_KEY_TEMPLATE = {preview_index_key_template!r}
+
+
+def preview_index_key(file_id: str, content_key: str) -> str:
+    """산출물 하나가 **어느 파일에서 나왔는가**를 적는 표식의 자리. 본문은 0바이트다.
+
+    산출물 키(`preview_key`)는 내용 주소라 `fileId` 를 담지 않는다. 그래서 「이 파일에서
+    나온 산출물」을 되묻는 길이 없었고, 데이터셋을 지워도 산출물이 남았다. 발행 시점에
+    이 자리에 표식 하나를 놓으면 회수 때 `fileId` 접두 목록 **1회**로 되찾는다 —
+    **버킷 전체 스캔을 하지 않는다.**
+
+    위생은 `preview_key` 와 **같다** — 경로 조각 하나가 아니면 거절한다. 조용히 고쳐 쓰면
+    표식이 엉뚱한 자리에 놓이고, 그 실패는 에러가 아니라 「산출물 없음」으로 위장한다.
+
+    돌려주는 것은 **미리보기 산출물과 같은 저장소** 기준 상대 키다(루트가 아니라 접두가 갈린다).
+    """
+    parts = {{}}
+    for label, value in (("fileId", file_id), ("contentKey", content_key)):
+        part = str(value).strip()
+        if not part or "/" in part or "\\\\" in part or part in (".", ".."):
+            raise ValueError(f"미리보기 역인덱스 {{label}} 로 쓸 수 없다: {{value!r}}")
+        parts[label] = part
+    return PREVIEW_INDEX_KEY_TEMPLATE.format(
+        previewIndexPrefix=PREVIEW_INDEX_PREFIX,
+        fileId=parts["fileId"], contentKey=parts["contentKey"])
+
+
 #: 지도 타일의 내용 키 접두사. **한 슬롯 안에서 두 규칙을 눈으로도 가른다** —
 #: 렌더 산출물은 접두사가 없고, 지도 타일은 이것으로 시작한다.
 MAP_TILE_KEY_PREFIX = {tile_prefix!r}
@@ -296,7 +327,10 @@ def render() -> str:
                   .replace("{gridDirname}", spec["gridDirname"]))
     grid_why = "  " + spec["why"][grid_kind]
     tile = spec["contentKeys"]["지도 타일"]
+    index_spec = spec["previewIndex"]
     rendered = TEMPLATE.format(
+        preview_index_prefix=index_spec["prefix"],
+        preview_index_key_template=index_spec["keyTemplate"],
         tile_prefix=tile["prefix"],
         tile_version=tile["version"],
         tile_fields="(\n" + "".join(f"    {f!r},\n" for f in tile["fields"]) + ")",
@@ -343,6 +377,22 @@ def render() -> str:
     assert sample_preview == keys[preview_kind].format(contentKey=digest, extension=".png")
     assert not sample_preview.startswith(spec["uploadsPrefix"]), sample_preview
     assert sample_preview != sample_body
+    # 역인덱스 — ⓐ같은 입력이면 같은 자리 ⓑ**산출물 키와 섞이지 않는다**
+    #             ⓒ접수분 루트를 안 탄다 ⓓ위생은 `preview_key` 와 같다
+    sample_index = ns["preview_index_key"]("F1", digest)
+    assert sample_index == ns["preview_index_key"]("F1", digest), sample_index
+    assert sample_index == index_spec["keyTemplate"].format(
+        previewIndexPrefix=index_spec["prefix"], fileId="F1", contentKey=digest)
+    assert sample_index != ns["preview_index_key"]("F2", digest)
+    assert not sample_index.startswith(spec["uploadsPrefix"] + "/"), sample_index
+    assert sample_index != sample_preview
+    for bad in ("", "  ", ".", "..", "a/b", "a\\b"):
+        for args in ((bad, digest), ("F1", bad)):
+            try:
+                ns["preview_index_key"](*args)
+            except ValueError:
+                continue
+            raise AssertionError(f"역인덱스가 위험한 조각을 받아 버렸다: {args!r}")
     sample_representative = ns["representative_image_key"]("D1", "I1")
     assert sample_representative == spec["representativeImageKey"].format(
         representativeImagesPrefix=spec["representativeImagesPrefix"], datasetId="D1", imageId="I1")

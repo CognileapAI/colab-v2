@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [develop, product]
   pull_request:
   workflow_dispatch:
 
@@ -14,6 +14,34 @@ permissions:
   contents: read
 
 jobs:
+  product-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 운영 배포 경계 시험 의존 설치
+        run: |
+          python -m venv services/core-api/.venv
+          services/core-api/.venv/bin/python -m pip install -q --disable-pip-version-check -r services/core-api/requirements-dev.txt
+          npm ci --prefix frontend --no-audit --no-fund
+      - name: product-release-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "product-safety" --check "product-release-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/run.sh product-release-selftest
+      - name: product-reseed-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "product-safety" --check "product-reseed-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/run.sh product-reseed-selftest
+      - name: 운영 경계 검사 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-product-safety-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/product-safety
+          if-no-files-found: error
+          retention-days: 90
+
   # 어떤 경로가 바뀌었는지 판정한다. 모노레포지만 배포는 5개 단위로 독립이므로
   # 영향받은 것만 빌드·검증한다. contracts 변경은 전체를 깨울 수 있는 유일한 경로다.
   changes:
@@ -81,10 +109,15 @@ jobs:
             # 실제 모델을 부르므로 비용·시간이 붙고, 제품 경로가 이 잡을 깨우면 안 된다
             # (intent `2026-09-08-harness-evals.md` Q2). 대조부 = gates/tools/ci-filter-check.py.
             harness:
+              - 'AGENTS.md'
               - 'CLAUDE.md'
+              - '.agents/**'
+              - '.codex/**'
               - '.claude/skills/**'
               - '.claude/hooks/**'
               - '.claude/agents/**'
+              - 'scripts/harness/**'
+              - 'scripts/agent-bridge.py'
             search-golden:
               - 'services/core-api/**'
               - 'services/ai-service/**'
@@ -93,9 +126,7 @@ jobs:
               - 'db/platform/**'
               - 'db/ai/**'
               - 'eval/k4-search/**'
-              - 'dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json'
-              - 'dev-package/reports/stage3-ai-search-plan/stage-evidence-packet-02.json'
-              - 'dev-package/reports/stage3-ai-search-plan/expanded-normalized-02.json'
+              - 'eval/k4-search/fixtures/reference/**'
               - 'gates/tools/service-tests.sh'
               - 'gates/tools/_pg.sh'
               - '.github/workflows/ci.yml'
@@ -121,15 +152,23 @@ jobs:
           ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
           ./.venv/bin/pip install -q --disable-pip-version-check -e .
       - name: 검색 회귀 러너의 0건·실패 전파 확인
-        run: services/core-api/.venv/bin/python -m pytest -q eval/k4-search/test_run_regression.py
+        run: python scripts/harness/verify_evidence.py record --producer "search-golden" --check "search-runner-tests" --artifact-root "$RUNNER_TEMP/gate-evidence" -- services/core-api/.venv/bin/python -m pytest -q eval/k4-search/test_run_regression.py
       - name: 검색 helper + public API 골든 회귀
-        run: services/core-api/.venv/bin/python eval/k4-search/run_regression.py
+        run: python scripts/harness/verify_evidence.py record --producer "search-golden" --check "search-regression" --artifact-root "$RUNNER_TEMP/gate-evidence" -- services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 
   # ─────────────────────────────────────────────────────────────
   # 게이트. WU-D3에서 실제 검사를 채운다.
   # 지금은 골격이며, 각 스텝은 "아직 없음"을 명시적으로 알린다 —
   # 조용히 green이 되는 게이트는 게이트가 아니다.
   # ─────────────────────────────────────────────────────────────
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-search-golden-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/search-golden
+          if-no-files-found: error
+          retention-days: 90
 
   contract-gates:
     needs: changes
@@ -137,6 +176,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -180,31 +221,29 @@ jobs:
           test -d gates/tools/node/node_modules/ajv
           test -x frontend/node_modules/.bin/openapi-typescript
       - name: seam 스펙 린트
-        run: ./gates/run.sh contract-lint
-      # `contract-breaking` 의 기준(frozen seam)은 파일이 아니라 **ref** 다.
-      # 기본값 `HEAD` 를 CI 에서 그대로 두면 PR 이 자기 자신과 비교돼 차분이 0 이다 —
-      # 조용히 green 이 되는 게이트라 판정을 못 한다. 기준을 `origin/main` 으로 옮긴다.
-      #   push(main) — `origin/main` 이 그 push 의 커밋이다.
-      #   pull_request — checkout 이 merge ref 를 받고, 그 merge 커밋의 부모가 `origin/main` 이다.
-      #                  즉 `origin/main` 이 곧 merge-base 이며 PR 의 실제 차분이 비교된다.
-      # ⚠ checkout 은 `fetch-depth` 무지정(＝1)이고 **요청한 ref 하나만** 받는다.
-      #   pull_request 문맥에는 `origin/main` 이 아예 없어 게이트가 「기준 ref 를 찾을 수 없다」로
-      #   red 를 낸다. 그래서 비교 직전에 그 ref 하나를 명시적으로 받아 둔다.
-      #   게이트는 `git archive <ref> contracts` 로 트리만 꺼내므로 depth 1 로 충분하다.
-      - name: 비교 기준 ref 확보 (origin/main — contract-breaking 용)
-        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "contract-lint" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh contract-lint
+      - name: 고정 이벤트 비교 SHA 확보
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          test -n "$BASE_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - name: 파괴적 변경 탐지 (emit vs frozen seam)
         env:
-          COLAB_BREAKING_BASE_REF: origin/main
-        run: ./gates/run.sh contract-breaking
+          COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "contract-breaking" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh contract-breaking
       - name: 이벤트 계약 린트 (ajv — 스키마 + 인스턴스 픽스처)
-        run: ./gates/run.sh event-lint
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "event-lint" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh event-lint
       - name: 이벤트 계약 파괴적 변경 탐지 ($defs 단위)
-        run: ./gates/run.sh event-breaking
+        env:
+          COLAB_BREAKING_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "event-breaking" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh event-breaking
       - name: seam ↔ 이벤트 정합 (G-e·G-b·㉠·㉡ — WU-D2c)
-        run: ./gates/run.sh seam-consistency
+        env:
+          COLAB_SC_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "seam-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh seam-consistency
       - name: 생성물 최신성
-        run: ./gates/run.sh generated-up-to-date
+        run: python scripts/harness/verify_evidence.py record --producer "contract-gates" --check "generated-up-to-date" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh generated-up-to-date
 
   # ─────────────────────────────────────────────────────────────
   # 프런트 게이트. **`contracts` 필터 잡에서 떼어낸다** (2026-09-03 코드리뷰 #6).
@@ -215,6 +254,15 @@ jobs:
   # ⚠ 두 번 돌지 않는다 — 위 `contract-gates` 에서 같은 두 스텝을 **뺐다.**
   #   (`contract-gates` 는 `generated-up-to-date` 때문에 여전히 `npm ci --prefix frontend` 를 돈다.)
   # ─────────────────────────────────────────────────────────────
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-contract-gates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/contract-gates
+          if-no-files-found: error
+          retention-days: 90
+
   frontend-gates:
     needs: changes
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.contracts == 'true'
@@ -243,17 +291,25 @@ jobs:
       # 2026-09-02 이전에는 이 검사가 **이미지 빌드 안에만** 있어서, 깨진 `main` 이
       # staging 배포가 트일 때까지 10시간 반 동안 전 게이트 green 이었다.
       - name: 프런트 타입 검사 (tsc --noEmit · 이미지 빌드와 같은 검사)
-        run: ./gates/run.sh frontend-typecheck
+        run: python scripts/harness/verify_evidence.py record --producer "frontend-gates" --check "frontend-typecheck" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh frontend-typecheck
       # 화면 동작 시험 — frontend/package.json 의 `test`(vitest run) 와 같은 명령.
       # 2026-09-03 이전에는 frontend/test 가 게이트 밖에 있었고, 그래서 정본과 어긋난 화면이
       # 전 게이트 green 인 채로 서 있었다(화면 검수 30행). 수집된 시험 0건도 red 다.
       - name: 프런트 화면 동작 시험 (vitest run)
-        run: ./gates/run.sh frontend-test
+        run: python scripts/harness/verify_evidence.py record --producer "frontend-gates" --check "frontend-test" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh frontend-test
       # 운영 진입점(src/main.tsx)에서 실제로 닿는 모듈에 개발용 픽스처가 섞여드는가
       # (레인 E · CODE-REVIEW-20260903-E.md §5·§8). node 만 있으면 도는 zero-dependency
       # 워커라 별도 설치 스텝이 없다.
       - name: 프런트 픽스처 도달성 (운영 경로가 픽스처에 안 닿는가)
-        run: ./gates/run.sh frontend-fixture-reach
+        run: python scripts/harness/verify_evidence.py record --producer "frontend-gates" --check "frontend-fixture-reach" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh frontend-fixture-reach
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-frontend-gates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/frontend-gates
+          if-no-files-found: error
+          retention-days: 90
 
   boundary-gates:
     needs: changes
@@ -291,17 +347,25 @@ jobs:
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
       - name: 도메인 import 경계
-        run: ./gates/run.sh import-boundary
+        run: python scripts/harness/verify_evidence.py record --producer "boundary-gates" --check "import-boundary" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh import-boundary
       - name: core-api geo 라이브러리 금지
-        run: ./gates/run.sh banned-import
+        run: python scripts/harness/verify_evidence.py record --producer "boundary-gates" --check "banned-import" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh banned-import
       - name: D10 → D4 쓰기 경로 부재 (음성)
-        run: ./gates/run.sh ai-no-lineage-write
+        run: python scripts/harness/verify_evidence.py record --producer "boundary-gates" --check "ai-no-lineage-write" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh ai-no-lineage-write
       # ⭑ **2026-09-03 이전에는 이 게이트를 어느 잡도 돌리지 않았다** — `db-boundary-selftest`
       #   만 `gate-selftest` 잡에 실려 「red 를 낼 수 있다」를 증명했고 **판정 자체는 CI 에 없었다**
       #   (`work-item-consistency` 가 겪은 것과 같은 모양). 증명만 있고 판정이 없으면
       #   횡단 접속이 그대로 `main` 에 들어간다 — 2026-08-25 에 실제로 그랬다.
       - name: 배포 단위별 DB 체인 경계 (정본 = gates/config/db-boundaries.toml)
-        run: ./gates/run.sh db-boundary
+        run: python scripts/harness/verify_evidence.py record --producer "boundary-gates" --check "db-boundary" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh db-boundary
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-boundary-gates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/boundary-gates
+          if-no-files-found: error
+          retention-days: 90
 
   schema-gates:
     needs: changes
@@ -319,17 +383,26 @@ jobs:
           path: gates/.venv
           key: ${{ runner.os }}-py312-gatevenv-${{ hashFiles('gates/requirements.txt') }}
       - name: 마이그레이션 single-head (platform / ai 각각)
-        run: ./gates/run.sh migration-single-head
+        run: python scripts/harness/verify_evidence.py record --producer "schema-gates" --check "migration-single-head" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh migration-single-head
       - name: 선언 스키마 ↔ 적용 DB diff
-        run: bash gates/tools/ci-schema-diff.sh
+        run: python scripts/harness/verify_evidence.py record --producer "schema-gates" --check "schema-diff" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/tools/ci-schema-diff.sh
       - name: RLS 커버리지
-        run: ./gates/run.sh rls-coverage
+        run: python scripts/harness/verify_evidence.py record --producer "schema-gates" --check "rls-coverage" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh rls-coverage
       - name: RLS 실효 (본체 음성 · 메타 양성 · cross-tenant)
-        run: ./gates/run.sh rls-effect
+        run: python scripts/harness/verify_evidence.py record --producer "schema-gates" --check "rls-effect" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh rls-effect
 
   # 휴면(`stage2` 대기) 모듈의 시험 실행 경로.
   # 〈71〉-㉰ — 휴면은 배포 단위·화면·완료 정의에서 빠지는 것이고, 시험은 CI 에서 계속 돈다.
   # 안 돌리면 휴면은 부식한다. 수집 0 건 · skipped · failed 는 전부 red.
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-schema-gates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/schema-gates
+          if-no-files-found: error
+          retention-days: 90
+
   dormant-tests:
     needs: changes
     if: needs.changes.outputs.pipeline-worker == 'true'
@@ -348,9 +421,9 @@ jobs:
           ./.venv/bin/pip install -q --disable-pip-version-check -r requirements.txt
           ./.venv/bin/pip install -q --disable-pip-version-check -e .
       - name: 게이트가 skip 을 통과로 세지 않음을 증명 (0건 · skip · fail)
-        run: ./gates/run.sh stage2-markers-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "dormant-tests" --check "stage2-markers-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh stage2-markers-selftest
       - name: stage2 마커 시험 실행
-        run: ./gates/run.sh stage2-markers
+        run: python scripts/harness/verify_evidence.py record --producer "dormant-tests" --check "stage2-markers" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh stage2-markers
 
   # ─────────────────────────────────────────────────────────────
   # 서비스 pytest 묶음. **2026-09-03 이전에는 이 잡이 없었다** (코드리뷰 #6).
@@ -365,6 +438,15 @@ jobs:
   # ⚠ **면제를 드러낸다** — 이 회차에서 대상이 아닌 단위는 첫 스텝이 그 사실을 이름으로 찍는다.
   #   조용히 건너뛴 것과 「이 회차 대상이 아니다」는 로그에서 구분돼야 한다 (`CLAUDE.md §4`).
   # ─────────────────────────────────────────────────────────────
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-dormant-tests-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/dormant-tests
+          if-no-files-found: error
+          retention-days: 90
+
   service-tests:
     needs: changes
     if: >-
@@ -420,14 +502,14 @@ jobs:
       # 「전부 green」과 「전부 무력」을 구분하는 것이 이 스텝이다.
       - name: 게이트가 수집 0건·실행 0건·실패를 red 로 냄을 증명
         if: env.RUN == 'true'
-        run: ./gates/run.sh service-tests-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "service-tests-${{ matrix.service }}" --check "service-tests-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh service-tests-selftest
       # core-api 는 게이트가 **일회용 Postgres 를 스스로 세운다**(`_pg.sh` ＋
       # `services/core-api/tests/fixtures/setup-db.sh`). ubuntu-latest 러너에는 도커가 있고
       # 같은 배치를 `schema-gates` 의 `rls-effect` 가 이미 쓰고 있다. 포트는 하나도 공개하지
       # 않고 PGDATA 는 tmpfs 이며 `--rm` ＋ trap 으로 지운다. 접속 문자열은 출력하지 않는다.
       - name: ${{ matrix.service }} 시험 묶음 판정
         if: env.RUN == 'true'
-        run: ./gates/run.sh service-tests-${{ matrix.service }}
+        run: python scripts/harness/verify_evidence.py record --producer "service-tests-${{ matrix.service }}" --check "service-tests-${{ matrix.service }}" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh service-tests-${{ matrix.service }}
 
   # ─────────────────────────────────────────────────────────────
   # 문서 게이트. **상태 판정을 사람 기억이 아니라 여기서 한다.**
@@ -436,6 +518,15 @@ jobs:
   # **정작 판정 자체는 아무 잡도 돌리지 않았다.** 증명만 CI 에 있고 판정이 없으면
   # 상태 드리프트가 그대로 `main` 에 들어간다.
   # ─────────────────────────────────────────────────────────────
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() && env.RUN == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-service-tests-${{ matrix.service }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/service-tests-${{ matrix.service }}
+          if-no-files-found: error
+          retention-days: 90
+
   planning-gates:
     needs: changes
     if: needs.changes.outputs.dev-package == 'true'
@@ -457,7 +548,7 @@ jobs:
       - name: 설치 확인 (pyyaml 이 실물로 있는가)
         run: python -c 'import yaml'
       - name: 항목 상태 대장 ↔ 산문 정합 (정본 = dev-package/work-items.yaml)
-        run: ./gates/run.sh work-item-consistency
+        run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "work-item-consistency" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh work-item-consistency
       # 참조자료 드라이브는 CI 에 없다. 그래서 **명시 면제**로 돈다 — md 4건 ↔ 커밋된 등재표
       # 대조(표↔블록 · 재생성 동일성 · 총계 28/18)는 그대로 판정하고, 글롭이 실물 파일과
       # 맞는지만 재지 않는다. 미선언으로 두면 red(준비 · 78)이고, 그것을 통과로 세지 않기
@@ -465,10 +556,10 @@ jobs:
       - name: 참조자료 정본 md ↔ 등재표 드리프트 (실물 대조는 CI 에 없어 명시 면제)
         env:
           COLAB_SEED_PLAN_NO_FILES: '1'
-        run: ./gates/run.sh seed-plan-drift
+        run: python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "seed-plan-drift" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh seed-plan-drift
       - name: 기획 검사기 회귀 (합성 fixture · 실제 원본 검사는 로컬 필수)
         run: |
-          python -m unittest discover -s scripts/tests -p test_planning_gate.py -v
+          python scripts/harness/verify_evidence.py record --producer "planning-gates" --check "planning-regression" --artifact-root "$RUNNER_TEMP/gate-evidence" -- python scripts/harness/run_unittest.py scripts/tests/test_planning_gate.py
           echo "::notice::기획 원본 대조 미실행(CI에 원본 없음). 병합·배포 전 로컬 gates/run.sh planning-freshness 실행 결과가 별도로 필요하다."
 
   # ─────────────────────────────────────────────────────────────
@@ -480,14 +571,23 @@ jobs:
   # (v1 설계의 `exec-bit-guard` 훅을 대체한 자리 — 스펙 C 「삭제한 훅과 대체」.)
   # ⚠ 증명(selftest)과 판정을 **같은 잡**에 둔다. 증명만 있고 판정이 없으면 드리프트가
   #   그대로 `main` 에 들어간다(`planning-gates` 머리말이 적어 둔 것과 같은 실패형).
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-planning-gates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/planning-gates
+          if-no-files-found: error
+          retention-days: 90
+
   repo-hygiene:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: exec-bit 가 red 를 낼 수 있는가 (fail-closed 증명)
-        run: ./gates/run.sh exec-bit-selftest
+        run: python scripts/harness/verify_evidence.py record --producer "repo-hygiene" --check "exec-bit-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh exec-bit-selftest
       - name: .sh 실행비트가 인덱스에 있는가
-        run: ./gates/run.sh exec-bit
+        run: python scripts/harness/verify_evidence.py record --producer "repo-hygiene" --check "exec-bit" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh exec-bit
 
   # ─────────────────────────────────────────────────────────────
   # 하네스 eval — 지침·스킬·훅·에이전트가 바뀐 PR 에서만 깨어난다(필터 `harness`).
@@ -502,6 +602,15 @@ jobs:
   # 모델 평가는 로컬 러너에서 실행한다(2026-09-08 사용자 요청).
   # 이 잡은 명시 면제와 판정부 회귀만 검사하므로 모델 API 키가 필요 없다.
   # 실제 모델 미실행은 게이트 출력에 과제 건수와 함께 드러난다.
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-repo-hygiene-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/repo-hygiene
+          if-no-files-found: error
+          retention-days: 90
+
   harness-eval:
     needs: changes
     if: needs.changes.outputs.harness == 'true'
@@ -515,16 +624,25 @@ jobs:
         run: python -m pip install "$(grep -iE '^PyYAML==' gates/requirements.txt)"
       - name: 로컬 러너와 판정부 회귀 (모델 호출 없음)
         run: |
-          bash eval/harness/tests/run-selftest.sh
-          bash gates/tools/harness-eval-selftest.sh
+          python scripts/harness/verify_evidence.py record --producer "harness-eval" --check "harness-runner-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash eval/harness/tests/run-selftest.sh
+          python scripts/harness/verify_evidence.py record --producer "harness-eval" --check "harness-judge-selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- bash gates/tools/harness-eval-selftest.sh
       # 승격 전이라 면제 모드다. 게이트가 과제 건수를 출력에 찍는다(조용한 건너뛰기 금지).
       - name: 하네스 eval 게이트 (승격 전 — 면제 모드 · 과제 건수 노출)
         env:
           COLAB_HARNESS_EVAL_EXEMPT: '1'
-        run: ./gates/run.sh harness-eval
+        run: python scripts/harness/verify_evidence.py record --producer "harness-eval" --check "harness-eval" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh harness-eval
 
   # 게이트가 실제로 red를 낼 수 있는지 증명한다.
   # 이 잡이 없으면 "전부 green"이 "전부 무력"과 구분되지 않는다.
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-harness-eval-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/harness-eval
+          if-no-files-found: error
+          retention-days: 90
+
   gate-selftest:
     needs: changes
     if: needs.changes.outputs.contracts == 'true'
@@ -607,4 +725,81 @@ jobs:
           agent-browser install --with-deps
           agent-browser --version
       - name: 전 게이트 fail-closed 증명
-        run: ./gates/run.sh selftest
+        run: python scripts/harness/verify_evidence.py record --producer "gate-selftest" --check "selftest" --artifact-root "$RUNNER_TEMP/gate-evidence" -- ./gates/run.sh selftest
+      - name: 검사별 실행 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-gate-selftest-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-evidence/gate-selftest
+          if-no-files-found: error
+          retention-days: 90
+
+  required-gates:
+    needs: [changes, product-safety, search-golden, contract-gates, frontend-gates, boundary-gates, schema-gates, dormant-tests, service-tests, planning-gates, repo-hygiene, harness-eval, gate-selftest]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: 생산자별 검사 증거 수집
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gate-evidence-*-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/downloaded-gate-evidence
+          merge-multiple: false
+      - name: 적용 대상·실제 검사·SHA·세 계수 대조
+        env:
+          COLAB_CI_NEEDS: ${{ toJSON(needs) }}
+          COLAB_CI_FILTERS: ${{ toJSON(needs.changes.outputs) }}
+        run: >-
+          python scripts/harness/verify_evidence.py ci
+          --event-name "$GITHUB_EVENT_NAME"
+          --event-path "$GITHUB_EVENT_PATH"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --commit "$GITHUB_SHA"
+          --needs-json "$COLAB_CI_NEEDS"
+          --filters-json "$COLAB_CI_FILTERS"
+          --artifact-root "$RUNNER_TEMP/downloaded-gate-evidence"
+          --output ci-evidence.json
+          --summary "$GITHUB_STEP_SUMMARY"
+      - name: SHA 결합 CI 증거 보관
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-gates-${{ github.sha }}-${{ github.run_attempt }}
+          path: ci-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+  ci-required:
+    name: ${{ github.event_name == 'pull_request' && 'ci-required' || 'ci-push-summary' }}
+    # Push checks cannot satisfy the PR-only required context.
+    # Path-filtered skips are explicit; failures, cancellations and missing results block promotion.
+    if: ${{ always() }}
+    needs: ['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest']
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require complete CI results
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, sys
+          results = json.loads(os.environ['CI_RESULTS'])
+          expected = set(['required-gates', 'product-safety', 'changes', 'search-golden', 'contract-gates', 'frontend-gates', 'boundary-gates', 'schema-gates', 'dormant-tests', 'service-tests', 'planning-gates', 'repo-hygiene', 'harness-eval', 'gate-selftest'])
+          always_required = {'required-gates', 'changes', 'product-safety', 'repo-hygiene'}
+          bad = set(results) != expected
+          skipped = []
+          for name in sorted(expected):
+              result = results.get(name, {}).get('result')
+              print(f'{name}: {result}')
+              if result == 'skipped' and name not in always_required:
+                  skipped.append(name)
+              elif result != 'success':
+                  bad = True
+          print(f'Path-filtered skips ({len(skipped)}): {skipped}')
+          sys.exit(1 if bad else 0)
+          PYCODE

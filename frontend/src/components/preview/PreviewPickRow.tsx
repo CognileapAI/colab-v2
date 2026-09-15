@@ -22,6 +22,11 @@
 //     더 이상 성립하지 않는다(치수 불변은 `PreviewSlot` 이 계속 진다). 줄이 상태에 따라
 //     사라지면 세 화면에서 조작의 자리가 상태마다 달라지고, 사용자가 매번 찾아야 한다.
 //     disabled 존치 자체는 무변이다.
+//   ⭑ ⟨예외 신설 2026-09-13 · 업로드 화면 한 자리⟩ **업로드 모달 좌측 인라인**은 후보가 둘 이상일
+//     때만 변수·시각 고르개를 그린다(`hideSingleChoice`). 근거 = 기획서 rev2 — 업로드 좌측은
+//     「첫 변수·기간 평균 한 장」이고 변수·시각 선택을 그리지 않는다. 고를 것이 하나뿐인데 잠긴
+//     고르개를 세우면 등록 흐름에 조작할 수 없는 칸이 둘 늘어난다. ⛔ 데이터셋 상세·확장보기
+//     오버레이는 이 예외를 쓰지 않는다 — 그 두 자리는 위 disabled 존치 규율 그대로다.
 import {
   instantChoicesOf,
   shownInstant,
@@ -48,6 +53,12 @@ export interface PreviewPickRowProps {
    * **문면은 `TOO_LARGE_MESSAGE` 둘째 문장이고, 조각 이름은 값으로 붙는다**(새 문장 0).
    */
   fallbackPiece?: PreviewPiece | undefined;
+  /**
+   * **업로드 화면 전용 예외** — 켜면 변수 고르개는 변수가 2개 이상일 때, 시각 고르개는
+   * `instants.count` 가 2 이상일 때만 선다. 파일 고르개는 무변(하나뿐이면 잠그고 건수를 말한다).
+   * 기본값 `false` = 세 고르개가 자리를 지키는 현행 규율(상세·확장보기).
+   */
+  hideSingleChoice?: boolean;
 }
 
 export function variableLabel(id: string): string {
@@ -83,6 +94,11 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
   // 조각이 하나뿐이면 **고를 것이 없다** — 자리는 그대로 두고 잠근다(건수를 함께 말한다).
   const singleFile = files.length <= 1;
   const shownFile = props.selection.fileId ?? files[0]?.fileId ?? '';
+  // 업로드 예외의 판정 — **후보 수**로 가른다. 시각은 목록이 아니라 범위라 `count` 가 원본이다
+  // (`instantChoicesOf` 는 처음·마지막 둘만 세우므로 건수 판정에 쓰지 않는다).
+  const hideSingle = props.hideSingleChoice ?? false;
+  const showVariable = !hideSingle || variables.length >= 2;
+  const showInstant = !hideSingle || (props.description?.instants?.count ?? 0) > 1;
 
   return (
     <div className="pv-pick" data-testid={`${props.idPrefix}-pick-row`} aria-label="그릴 것 고르기">
@@ -117,6 +133,7 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
         ) : null}
       </label>
 
+      {showVariable ? (
       <label className="pv-pick-f">
         <span>변수</span>
         <select
@@ -134,7 +151,9 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
           ))}
         </select>
       </label>
+      ) : null}
 
+      {showInstant ? (
       <label className="pv-pick-f">
         <span>시각</span>
         <select
@@ -152,6 +171,7 @@ export function PreviewPickRow(props: PreviewPickRowProps) {
           ))}
         </select>
       </label>
+      ) : null}
     </div>
   );
 }

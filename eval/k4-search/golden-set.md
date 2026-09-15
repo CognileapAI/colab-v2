@@ -54,7 +54,7 @@
 
 - 질문·기대 내용: 사용자 합의 후 기록.
 - 제품 데이터셋 ID: `01M1SCGX4PFD796VX8093WQMS7`, 정답 파일 ID: `01M1SCGWEW4824ETY9VHSPN5Y5` — 2026-09-12 dev 읽기 전용 직접 조회 확인.
-- 자료 스냅샷: `dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json` (저장소 기준). 연구실 A·기존 연구원 A1 범위에서 대상 9묶음 108파일 확인. 전체 보이는 데이터셋은 25건이며 전체 후보 스냅샷은 평가 전 추가 고정한다.
+- 자료 스냅샷: `eval/k4-search/fixtures/reference/dev-data-snapshot.json` (저장소 기준). 연구실 A·기존 연구원 A1 범위에서 대상 9묶음 108파일 확인. 전체 보이는 데이터셋은 25건이며 전체 후보 스냅샷은 평가 전 추가 고정한다.
 - 실행 환경: dev. 자료 조회 주체와 실제 검색 평가 계정·후보 범위가 같은지 평가 전에 재확인한다.
 - 모델·프롬프트·검색 구현 버전: 미지정.
 - 검색 실행·각 기준 판정: 미실행. 통과 건수로 계산하지 않는다.
@@ -76,7 +76,7 @@
 
 ## 정답 연결표
 
-파일 ID는 `dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json`의 해당 dataset `files`에 있다.
+파일 ID는 `eval/k4-search/fixtures/reference/dev-data-snapshot.json`의 해당 dataset `files`에 있다.
 아래 별칭은 문항의 짧은 참조이며 제품 ID를 대체하지 않는다.
 
 | 별칭 | 매니페스트 키 | 제품 데이터셋 ID | 근거 파일/역할 |

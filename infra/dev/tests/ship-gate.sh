@@ -10,6 +10,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 
 PASS=0; FAIL=0
+# This suite isolates the historical transport/tag boundary. The evidence validator
+# is mocked below; its real producer/bundle validation has separate Python tests.
+export COLAB_RELEASE_PRE_EVIDENCE=fixture-pre COLAB_RELEASE_POST_EVIDENCE=fixture-post
 ok()   { PASS=$((PASS + 1)); printf '  ✓ %s\n' "$1"; }
 bad()  { FAIL=$((FAIL + 1)); printf '  ✗ %s — %s\n' "$1" "$2"; }
 check(){ # $1=이름 $2=조건설명 $3=실제 $4=기대
@@ -38,22 +41,48 @@ done
 
 git_q() { git -c user.email=t@t -c user.name=t -c commit.gpgsign=false -C "$1" "${@:2}"; }
 
+# `build-source-bundle.sh` 가 커밋에 있어야 한다고 요구하는 경로들(그 파일의 `PATHS` 배열 축자).
+# ⚠ 종전 픽스처는 이것을 안 심어서 `ship.sh` 가 **exit 127** 로 죽었고 ⓑⓓ 8건이 red 였다 —
+#   그리고 그 red 를 **어느 게이트도 CI 도 돌리지 않아** 아무도 못 봤다(후속 항목).
+OPS_BUNDLE_PATHS=(infra/__init__.py infra/ops infra/notifications
+                  services/core-api/ops services/core-api/src
+                  services/core-api/pyproject.toml services/core-api/requirements.in
+                  services/core-api/requirements.txt db/platform db/ai
+                  gates/tools/rls_coverage.py gates/config/rls-allowlist.toml)
+
 new_fixture() { # $1=이름 → $TMP/$1/repo 에 ship.sh 사본 ＋ origin 딸림, 표준출력 = 저장소 경로
-  local root="$TMP/$1" work="$TMP/$1/repo"
-  mkdir -p "$work/infra/dev" "$work/dist"
+  local root="$TMP/$1" work="$TMP/$1/repo" p
+  mkdir -p "$work/infra/dev" "$work/infra/_lib" "$work/infra/ops" "$work/dist"
+  mkdir -p "$work/scripts/harness"
+  printf '%s\n' '# fixture: evidence boundary mocked; transport assertions only' 'raise SystemExit(0)' > "$work/scripts/harness/release_evidence.py"
   # `ship.sh` 는 `REPO="$HERE/../.."` 로 저장소를 잡는다(`infra/dev/ship.sh:10`) —
-  # 같은 상대 배치로 복사해야 픽스처 저장소가 `$REPO` 가 된다.
+  # 같은 상대 배치로 복사해야 픽스처 저장소가 `$REPO` 가 되고, 게이트 본문
+  # `infra/_lib/ship-gate.sh`(dev·prod 공용)가 그 밑에서 읽힌다.
   cp "$REPO/infra/dev/ship.sh" "$work/infra/dev/ship.sh"
+  cp "$REPO/infra/_lib/ship-gate.sh" "$work/infra/_lib/ship-gate.sh"
+  cp "$REPO/infra/_lib/ops-bundle.sh" "$work/infra/_lib/ops-bundle.sh"
+  cp "$REPO/infra/ops/build-source-bundle.sh" "$work/infra/ops/build-source-bundle.sh"
+  chmod +x "$work/infra/ops/build-source-bundle.sh"
   cp "$REPO/infra/dev/tag-release.sh" "$work/infra/dev/tag-release.sh" 2>/dev/null || true
   cp "$REPO/infra/dev/compose.yml" "$REPO/infra/dev/up.sh" "$work/infra/dev/"
+  cp "$REPO/infra/dev/backup.sh" "$REPO/infra/dev/install-cron.sh" "$work/infra/dev/"
   chmod +x "$work/infra/dev/"*.sh
-  git init -q -b main "$work"
+  # 번들이 요구하는 자리표 — **디렉터리는 파일 하나를 넣어야 git 이 담는다.**
+  for p in "${OPS_BUNDLE_PATHS[@]}"; do
+    case "$p" in
+      *.py|*.toml|*.in|*.txt) mkdir -p "$work/$(dirname "$p")"; : > "$work/$p" ;;
+      *) mkdir -p "$work/$p"; : > "$work/$p/.keep" ;;
+    esac
+  done
+  git init -q -b develop "$work"
   echo one > "$work/a.txt"
   git_q "$work" add -A >/dev/null
   git_q "$work" commit -qm "one" >/dev/null
   git init -q --bare "$root/origin.git"
   git_q "$work" remote add origin "$root/origin.git"
-  git_q "$work" push -q origin main
+  git_q "$work" push -q origin develop
+  git_q "$work" branch product
+  git_q "$work" push -q origin product
   printf '%s' "$work"
 }
 
@@ -70,31 +99,44 @@ run_ship() { # $1=저장소 → exit 코드는 $RC · 출력은 $OUT · ssh 로�
   RC=$?
 }
 
-echo "── ship-gate.sh — 반입 게이트 6 케이스"
+echo "── ship-gate.sh — 환경별 반입·태그 검사"
+
+# A single-branch checkout must fetch the actual source into its tracking ref.
+W="$(new_fixture narrow)"
+ANC="$(git_q "$W" rev-parse --short=12 HEAD)"
+git_q "$W" config remote.origin.fetch '+refs/heads/main:refs/remotes/origin/main'
+git_q "$W" update-ref -d refs/remotes/origin/develop
+dist_sha "$W" "$ANC"
+run_ship "$W"
+check "좁은 fetch 설정" "원천을 직접 확보한 반입" "$RC" 0
+git_q "$W" update-ref -d refs/remotes/origin/develop
+NARROW_TAG="$(cd "$W" && bash infra/dev/tag-release.sh dev 2>&1)"; NARROW_RC=$?
+check "좁은 fetch 설정" "원천을 직접 확보한 태그" "$NARROW_RC" 0
 
 # ── ⓐ 비조상 sha → exit 65 · 가짜 ssh 호출 0 ────────────────────────────────
 W="$(new_fixture a)"
 echo two > "$W/b.txt"; git_q "$W" add -A >/dev/null; git_q "$W" commit -qm two >/dev/null
-NONANC="$(git_q "$W" rev-parse --short=12 HEAD)"   # origin/main 에 push 하지 않았다 → 비조상
+NONANC="$(git_q "$W" rev-parse --short=12 HEAD)"   # origin/develop 에 push 하지 않았다 → 비조상
 dist_sha "$W" "$NONANC"
 run_ship "$W"
 check "ⓐ 비조상" "exit" "$RC" 65
 check "ⓐ 비조상" "ssh·scp 호출 수" "$(wc -l < "$SSHLOG" | tr -d ' ')" 0
-has   "ⓐ 비조상" "사유 출력" "$OUT" "origin/main 조상이 아니다"
+has   "ⓐ 비조상" "사유 출력" "$OUT" "origin/develop 조상이 아니다"
 
 # ── ⓑ 조상 sha → exit 0 · ssh argv 에 MAIN_SHA 기록 ＋ ancestor=yes ─────────
 W="$(new_fixture b)"
 ANC="$(git_q "$W" rev-parse --short=12 HEAD)"
-MAIN="$(git_q "$W" rev-parse --short=12 origin/main)"
+SOURCE="$(git_q "$W" rev-parse --short=12 origin/develop)"
 dist_sha "$W" "$ANC"
 run_ship "$W"
 check "ⓑ 조상" "exit" "$RC" 0
 LOG="$(cat "$SSHLOG")"
 has "ⓑ 조상" "ssh argv 에 MAIN_SHA 기록" "$LOG" "/opt/colab-v2/MAIN_SHA"
-has "ⓑ 조상" "printf 형식 축자" "$LOG" "main=%s candidate=%s ancestor=%s"
-has "ⓑ 조상" "main= 값" "$LOG" "$MAIN"
+has "ⓑ 조상" "printf 형식 축자" "$LOG" "source_ref=%s source_sha=%s candidate=%s ancestor=%s"
+has "ⓑ 조상" "source_ref 값" "$LOG" " develop "
+has "ⓑ 조상" "source_sha 값" "$LOG" "$SOURCE"
 has "ⓑ 조상" "candidate= 값(CURRENT_SHA 와 같은 문자열)" "$LOG" "$ANC"
-has "ⓑ 조상" "세 값이 yes 로 실린다" "$LOG" " $MAIN $ANC yes"
+has "ⓑ 조상" "후보와 yes 가 실린다" "$LOG" " $SOURCE $ANC yes"
 
 # ── ⓒ origin 조회 실패 → exit 78 (준비) ────────────────────────────────────
 W="$(new_fixture c)"
@@ -115,9 +157,8 @@ SSHLOG="$W/../ssh.log"; : > "$SSHLOG"
 OUT="$(cd "$W" && PATH="$TMP/bin:$PATH" COLAB_TEST_SSHLOG="$SSHLOG" \
       COLAB_DEV_SSH=ec2-user@example.invalid COLAB_DEV_KEY_FILE=/dev/null \
       COLAB_SHIP_ALLOW_NONMAIN=1 bash "$W/infra/dev/ship.sh" 2>&1)"; RC=$?
-check "ⓓ 우회 선언" "exit" "$RC" 0
-has   "ⓓ 우회 선언" "출력에 선언이 남는다" "$OUT" "우회 선언"
-has   "ⓓ 우회 선언" "ssh argv 에 ancestor=bypass" "$(cat "$SSHLOG")" " $NONANC bypass"
+check "ⓓ 옛 우회 차단" "exit" "$RC" 65
+check "ⓓ 옛 우회 차단" "ssh·scp 호출 수" "$(wc -l < "$SSHLOG" | tr -d ' ')" 0
 
 # ── ⓔ 같은 날 tag-release.sh dev 2회 → -1 · -2 ─────────────────────────────
 W="$(new_fixture e)"
@@ -151,6 +192,44 @@ check "ⓕ 원장" "ledger_append deploy 줄 수" "$LEDGER_N" 3
 check "ⓕ 원장" "그중 브랜치= 가 붙은 줄" "$BRANCH_N" "$LEDGER_N"
 has   "ⓕ 원장" "값은 현재 브랜치명" \
   "$(grep 'ledger_append deploy ' "$REPO/infra/staging/deploy.sh" | head -1)" 'branch --show-current'
+
+# ── ⓖ tag-release.sh prod — 모드별 sha 파일 ＋ 같은 sha 재실행은 재사용 ────────
+# 종전에는 `prod` 모드도 `dist/colab-v2-dev.sha` 를 읽었다(`SHA_FILE` 하드코딩) — prod 빌드만
+# 한 회차에서는 그 파일이 없어 **태그를 못 찍고**, 있으면 **dev 의 sha 에 prod 태그가 붙었다.**
+# 그리고 재실행은 무조건 exit 65 라, 태그를 이미 찍은 회차가 `ship.sh` 앞에서 막혔다.
+W="$(new_fixture g)"
+ANC="$(git_q "$W" rev-parse --short=12 HEAD)"
+DAY="$(date +%Y%m%d)"
+printf '%s\n' "$ANC" > "$W/dist/colab-v2-prod.sha"
+# dev 쪽 sha 파일은 **다른 값**으로 심어 둔다 — prod 모드가 그것을 읽으면 여기서 갈린다.
+printf '%s\n' "0000deadbeef" > "$W/dist/colab-v2-dev.sha"
+POUT1="$(cd "$W" && bash "$W/infra/dev/tag-release.sh" prod 2>&1)"; P1=$?
+check "ⓖ prod 태그" "1회차 exit" "$P1" 0
+check "ⓖ prod 태그" "태그가 가리키는 sha" "$(git_q "$W" rev-parse --short=12 "prod-$DAY^{commit}" 2>/dev/null)" "$ANC"
+has   "ⓖ prod 태그" "push 는 사람이 한다 — 명령만 출력" "$POUT1" "git push origin prod-$DAY"
+check "ⓖ prod 태그" "원격에 push 하지 않았다" "$(git -C "$W/../origin.git" tag -l | wc -l | tr -d ' ')" 0
+# 같은 sha 로 다시 불러도 통과한다 — 태그를 먼저 찍는 절차와 `ship.sh` 재실행이 양립해야 한다.
+POUT2="$(cd "$W" && bash "$W/infra/dev/tag-release.sh" prod 2>&1)"; P2=$?
+check "ⓖ prod 태그" "같은 sha 재실행 exit" "$P2" 0
+has   "ⓖ prod 태그" "재사용이라고 말한다" "$POUT2" "이미 있다"
+check "ⓖ prod 태그" "태그 개수는 그대로" "$(git_q "$W" tag -l "prod-$DAY" | wc -l | tr -d ' ')" 1
+# 모드별 sha 파일이다 — prod sha 파일이 없으면 dev 것이 있어도 거절한다.
+rm -f "$W/dist/colab-v2-prod.sha"
+(cd "$W" && bash "$W/infra/dev/tag-release.sh" prod >/dev/null 2>&1); P3=$?
+check "ⓖ prod 태그" "prod sha 파일 부재 exit" "$P3" 65
+
+# ── ⓗ 같은 날 **다른 sha** 에 prod 태그를 다시 찍으려 하면 거절 ───────────────
+W="$(new_fixture h)"
+ANC="$(git_q "$W" rev-parse --short=12 HEAD)"
+printf '%s\n' "$ANC" > "$W/dist/colab-v2-prod.sha"
+(cd "$W" && bash "$W/infra/dev/tag-release.sh" prod >/dev/null 2>&1)
+echo two > "$W/b.txt"; git_q "$W" add -A >/dev/null; git_q "$W" commit -qm two >/dev/null
+git_q "$W" push -q origin HEAD:product
+ANC2="$(git_q "$W" rev-parse --short=12 HEAD)"
+printf '%s\n' "$ANC2" > "$W/dist/colab-v2-prod.sha"
+HOUT="$(cd "$W" && bash "$W/infra/dev/tag-release.sh" prod 2>&1)"; H1=$?
+check "ⓗ 다른 sha" "exit" "$H1" 65
+has   "ⓗ 다른 sha" "사유 출력" "$HOUT" "다른 sha"
 
 echo "── 요약 — 통과 $PASS · 실패 $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

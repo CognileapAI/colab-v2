@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.1, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/parkhongjin/Src/colab-v2/.claude/worktrees/agent-af600bd99d66c0d31/services/core-api
+configfile: pyproject.toml
+plugins: xdist-3.8.0, anyio-4.14.2
+collected 23 items / 22 deselected / 1 selected
+
+tests/test_dataset_deletion.py .                                         [100%]
+
+======================= 1 passed, 22 deselected in 1.55s =======================

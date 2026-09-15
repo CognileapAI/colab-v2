@@ -1,14 +1,63 @@
 ---
 name: executing-plans
-description: CoLAB v2의 승인된 실행 계획을 진행하고 검증 상태를 갱신한다.
+description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
 ---
 
-# Codex 연결
+# Executing Plans
 
-먼저 `AGENTS.md`와 `docs/development/dual-agent.md`를 읽고, `.claude/skills/executing-plans/SKILL.md`를 읽어 수행한다.
-원본의 상대 링크와 스크립트는 원본 디렉터리를 기준으로 해석한다. 공통 본문은 복제하지 않는다.
-Claude Skill 호출은 해당 원본 SKILL.md 읽기로, Read/Grep/Bash/Edit는 현재 Codex 도구로 대응한다.
-원본이 요구하는 역할은 연결 문서의 위임·격리 규칙을 적용한다. 현재 사용 가능한 도구와 입력 방식을 쓰고, 존재하지 않는 플러그인을 호출하지 않는다.
-사용자가 이미 제공한 답과 승인 범위를 유지한다. 원본의 제품 규칙·산출물·검증 조건은 유지하며 실제 실행하지 않은 훅이나 검사를 통과로 보고하지 않는다.
+## Overview
 
-이 SKILL.md가 속한 저장소 루트를 먼저 확인한다. `AGENTS.md`, `docs/`, `.claude/` 등의 저장소 경로는 그 루트 기준이며, 현재 셸이 하위 폴더여도 기준을 바꾸지 않는다.
+Load plan, review critically, execute all tasks, report when complete.
+
+**Note:** Prefer delegation over inline execution — 위임 원칙(글로벌 `CLAUDE.md`) ＋ `lane-worker` 에이전트로 태스크당 새 레인을 띄우는 것이 이 레포의 기본값이다. 이 스킬은 레인을 띄우지 않고 이 세션에서 직접 실행할 때 쓴다.
+
+## The Process
+
+### Step 1: Load and Review Plan
+1. Ensure an isolated workspace: `lane-worker` 는 `isolation: worktree`(자동)로 뜬다 — 이미 격리돼 있는지 확인만 한다
+2. Read plan file
+3. Review critically - identify any questions or concerns about the plan
+4. If concerns: Raise them with your human partner before starting
+5. If no concerns: Create todos for the plan items and proceed
+
+### Step 2: Execute Tasks
+
+For each task:
+1. Mark as in_progress
+2. Follow each step exactly (plan has bite-sized steps)
+3. Run verifications as specified
+4. Mark as completed
+
+### Step 3: Complete Development
+
+After all tasks complete and verified:
+- **REQUIRED:** `colab-v2-work` §병합 규약 — 병합은 오케스트레이터가 ff 로 하고 〈N〉 은 그때 발급한다
+- 레인은 브랜치 이름과 게이트 결과만 반환한다. 스스로 `main` 에 병합하지 않는다
+
+## When to Stop and Ask for Help
+
+**STOP executing immediately when:**
+- Hit a blocker (missing dependency, test fails, instruction unclear)
+- Plan has critical gaps preventing starting
+- You don't understand an instruction
+- Verification fails repeatedly
+
+**Ask for clarification rather than guessing.**
+
+## When to Revisit Earlier Steps
+
+**Return to Review (Step 1) when:**
+- Partner updates the plan based on your feedback
+- Fundamental approach needs rethinking
+
+**Don't force through blockers** - stop and ask.
+
+## Remember
+- Review plan critically first
+- Follow plan steps exactly
+- Don't skip verifications
+- Reference skills when plan says to
+- Stop when blocked, don't guess
+- Never start implementation on main/master branch without explicit user consent
+
+Before reporting, check each claim against this session's tool results.

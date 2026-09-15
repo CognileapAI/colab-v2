@@ -111,6 +111,15 @@ const stepBtn = (n: '①' | '②' | '③') =>
 
 const levelValue = () => (screen.getByTestId('reg-level') as HTMLSelectElement).value;
 
+async function fillRequiredPeriod() {
+  await click(screen.getByTestId('reg-period-open'));
+  await click(screen.getByTestId('reg-period-unit-일'));
+  await change(screen.getByTestId('reg-period-pop-start-year'), '2025');
+  await change(screen.getByTestId('reg-period-pop-start-month'), '06');
+  await change(screen.getByTestId('reg-period-pop-start-day'), '01');
+  await click(screen.getByTestId('reg-period-apply'));
+}
+
 /** 등록을 열고 **가공 단계를 건드리지 않은 채** ③ 연결 단계까지 간다. */
 async function openLineageUntouched(sources: UploadSources) {
   render(
@@ -131,15 +140,12 @@ async function openLineageUntouched(sources: UploadSources) {
   await screen.findByTestId('lin-step');
 }
 
-/** 후보 하나를 골라 **확인**까지 — 그 순간 확정 부모 1건이 된다. */
+/** 후보 하나를 골라 연결한다 — 연결 즉시 확정 부모 1건이 된다. */
 async function confirmParent(datasetId: string) {
   await click(screen.getByTestId('lin-add'));
   await screen.findByTestId('lin-picker');
   await click(screen.getByTestId(`lin-pick-${datasetId}`));
   await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-  // 방금 붙인 카드는 목록 끝이다 — 앞서 확인한 카드는 확인 단추가 없다.
-  const confirms = screen.getAllByTestId('lin-confirm');
-  await click(confirms[confirms.length - 1] as HTMLElement);
 }
 
 // ═══ ㈎ 확정 부모가 있으면 기본값이 계산값으로 선다 ═══
@@ -174,17 +180,18 @@ describe('㉱ 기본 선택값 = 계산값 추종', () => {
     expect(levelValue()).toBe('Lv1');
   });
 
-  it('확인 전(대기 카드)에는 추종하지 않는다 — 확정만 센다', async () => {
+  it('연결 즉시 확정되어 계산값을 추종한다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
     await click(screen.getByTestId(`lin-pick-${LV0}`));
     await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    // 카드 1건이 서 있으나 `확인` 을 누르지 않았다 — 셌다면 계산값 `Lv1` 이 선다.
+    // 연결 동작 자체가 확정이므로 별도 확인 버튼 없이 계산값 `Lv1` 이 선다.
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
+    expect(screen.queryByTestId('lin-confirm')).toBeNull();
     await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv0');
+    expect(levelValue()).toBe('Lv1');
   });
 });
 
@@ -227,6 +234,7 @@ describe('㉱ 부모 0건이면 계산값 `Lv0` 이 기본값이다', () => {
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-name'), '부모 없음 시험');
     await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+    await fillRequiredPeriod();
     await click(stepBtn('③'));
     expect(screen.getByTestId('lin-lv-mismatch')).toBeTruthy();
     await click(screen.getByTestId('reg-done'));
@@ -264,6 +272,7 @@ describe('미결-2 ⓐ — 불일치는 경고만이고 등록은 성공한다',
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-name'), '불일치 시험');
     await change(screen.getByTestId('reg-summary'), '설명 한 줄');
+    await fillRequiredPeriod();
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);
@@ -299,7 +308,6 @@ describe('㉱ 추종 중 부모 선택 상한 해제', () => {
     expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
     expect(screen.queryByTestId('lin-need-check')).toBeNull();
     expect(screen.queryByTestId('lin-conflict-note')).toBeNull();
-    await click(screen.getByTestId('lin-confirm'));
     expect(screen.queryByTestId('lin-lv-mismatch')).toBeNull();
     expect(screen.queryByTestId('lin-need-check')).toBeNull();
     await click(stepBtn('①'));

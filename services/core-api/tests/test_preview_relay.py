@@ -32,6 +32,13 @@ DESCRIPTION = {
     "instants": {"count": 3, "first": "2026-06-01T00:00:00Z", "last": "2026-06-02T00:00:00Z"},
     "default": {"variable": "LST", "instant": "2026-06-01T00:00:00Z"},
 }
+#: ⭑ ⟨22차 해제 · `DL-2`⟩ viz-render 가 돌려줄 `PreviewReclaimResult`.
+#: **core-api 는 이 모양을 재선언하지 않는다** — `core-viz.yaml#PreviewReclaimResult` 가 정본이다.
+RECLAIM_TARGET = "01ARZ3NDEKTSV4RRFFQ69G5FB0"
+UNREACHABLE_TARGET = "01ARZ3NDEKTSV4RRFFQ69G5FB9"
+RECLAIM_FILE_IDS = ["01ARZ3NDEKTSV4RRFFQ69G5FB1", "01ARZ3NDEKTSV4RRFFQ69G5FB2"]
+RECLAIM_RESULT = {"targetId": RECLAIM_TARGET, "stale": 2, "kept": 1, "unindexed": 1,
+                  "removed": ["abc.webp", "abc.png"]}
 JOB_DONE = {
     "renderId": RENDER_ID, "status": "완료",
     "result": {"tileUrlTemplate": "https://tiles.example/{z}/{x}/{y}.png",
@@ -40,6 +47,15 @@ JOB_DONE = {
     # **부분 실패는 `status` 를 `실패` 로 만들지 않는다** — 읽힌 조각으로 그리고 `완료` 로 남는다.
     "partialFailure": {"failedFileIds": ["01ARZ3NDEKTSV4RRFFQ69G5FAW"], "reason": "조각 하나를 못 읽음"},
 }
+
+
+def _without_file_names(target: dict) -> dict:
+    """`RenderTarget.fileNames` 는 중계가 **덧붙이는** 표시용 값이다 — 가공 검사에서 뺀다.
+
+    원래 파일 이름은 원장(core-api)에만 있고 viz-render 는 그것을 읽을 길이 없다
+    (불변규칙 1). 나머지가 그대로인지는 이 하나를 뺀 뒤 그대로 대조한다.
+    """
+    return {k: v for k, v in target.items() if k != "fileNames"}
 
 
 class _FakeViz(BaseHTTPRequestHandler):
@@ -61,6 +77,15 @@ class _FakeViz(BaseHTTPRequestHandler):
         #   아닌 것이 이 op 이 읽기 전용이라는 사실의 표현이다.
         if self.path.endswith("/target-descriptions"):
             self._send(200, DESCRIPTION)
+            return
+        # ⭑ ⟨22차 해제 · `DL-2`⟩ 회수도 **200 이고 작업이 아니다.** `targetId` 가
+        #   `UNREACHABLE_TARGET` 이면 저쪽이 못 답한 자리를 재현한다(503 매핑 시험).
+        if self.path.endswith("/reclaims"):
+            payload = json.loads(body)
+            if payload.get("targetId") == UNREACHABLE_TARGET:
+                self._send(503, {"code": "SERVICE_UNAVAILABLE", "message": "지금 못 한다"})
+                return
+            self._send(200, RECLAIM_RESULT)
             return
         self._send(202, JOB_RUNNING)
 
@@ -96,7 +121,10 @@ def test_create_preview_render_relays_the_request_untouched(p2_client, fake_viz)
     r = client.post(f"{API_PREFIX}/previews", json=request, headers=auth(TOKEN_RES))
     assert r.status_code == 202, r.text
     assert r.json() == JOB_RUNNING, "중계가 응답을 가공했다 — RenderJob 은 그대로 지나가야 한다."
-    assert fake.received[0]["body"] == request, "중계가 요청을 가공했다."
+    # **덧붙는 것은 표시용 이름 하나뿐이다** — 나머지는 한 글자도 안 바뀐다.
+    relayed = fake.received[0]["body"]
+    assert {**relayed, "target": _without_file_names(relayed["target"])} == request, \
+        "중계가 요청을 가공했다."
     # **경계는 중계에도 실린다** — 저쪽에는 주체가 없다.
     assert fake.received[0]["lab"] == "0000000000000000000000000A"
 
@@ -241,7 +269,7 @@ def test_describe_target_relays_request_and_response_untouched(p2_client, fake_v
     r = client.post(f"{API_PREFIX}{_DESCRIBE}", json=target, headers=auth(TOKEN_RES))
     assert r.status_code == 200, r.text
     assert r.json() == DESCRIPTION, "중계가 응답을 가공했다 — TargetDescription 은 그대로 지나가야 한다."
-    assert fake.received[0]["body"] == target, "중계가 요청을 가공했다."
+    assert _without_file_names(fake.received[0]["body"]) == target, "중계가 요청을 가공했다."
     assert fake.received[0]["path"].endswith("/target-descriptions")
     # **경계는 중계에도 실린다** — 저쪽에는 주체가 없다.
     assert fake.received[0]["lab"] == "0000000000000000000000000A"
@@ -281,9 +309,84 @@ def test_describe_target_when_render_server_is_unreachable_is_503(p2_client) -> 
     assert r.json()["code"] == "RENDER_UNAVAILABLE"
 
 
+# ═══════ `RenderTarget.fileNames` — 표시용 원래 파일 이름 ═══════
+#
+# `.npy` 는 파일 안에 변수 이름이 없어 viz-render 가 **파일 이름의 stem** 을 쓴다.
+# 디스크 배치가 본체를 `fileId`(ULID)로 이름 붙이므로 그대로 두면 화면의 변수 이름이
+# ULID 가 된다. 원래 이름은 **core-api 의 원장에만** 있으므로 중계가 그것을 싣는다 —
+# 목록을 해석하지도 만들지도 않는다(파일을 열지 않는다 · `CLAUDE.md §3-4`).
+#: `.npy` 매직 — **바이트는 이 시험의 관심사가 아니다.** core-api 는 파일을 열지 않고
+#: (`CLAUDE.md §3-4`) 원장의 이름만 싣는다. 그리는 쪽의 판정은 viz-render 시험이 잰다.
+_NPY_MAGIC = b"\x93NUMPY\x01\x00"
+
+
+def _npy_body(name="LST.npy"):
+    return [("files", (name, _NPY_MAGIC, "application/octet-stream"))]
+
+
+def test_describe_target_carries_the_original_file_names(p2_client, fake_viz) -> None:
+    base, fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    receipt = make_upload(client, files=_npy_body())
+    file_id = receipt["files"][0]["fileId"]
+
+    r = client.post(f"{API_PREFIX}{_DESCRIBE}", json={"uploadId": receipt["uploadId"]},
+                    headers=auth(TOKEN_RES))
+    assert r.status_code == 200, r.text
+    assert fake.received[0]["body"]["fileNames"] == [{"fileId": file_id, "fileName": "LST.npy"}]
+
+
+def test_create_preview_render_carries_the_original_file_names(p2_client, fake_viz) -> None:
+    base, fake = fake_viz
+    client = p2_client(viz_base_url=base)
+    receipt = make_upload(client, files=_npy_body())
+    file_id = receipt["files"][0]["fileId"]
+
+    r = client.post(f"{API_PREFIX}/previews",
+                    json={"target": {"uploadId": receipt["uploadId"]},
+                          "style": {"palette": "blues"}}, headers=auth(TOKEN_RES))
+    assert r.status_code == 202, r.text
+    assert fake.received[0]["body"]["target"]["fileNames"] == [
+        {"fileId": file_id, "fileName": "LST.npy"}]
+
+
 def test_core_does_not_build_the_variable_list(p2_client) -> None:
     """⛔ **core 가 NetCDF 를 열어 변수 목록을 만들지 않는다** (`CLAUDE.md §3-4`)."""
     src = pathlib.Path(__file__).resolve().parents[1] / "src" / "colab_core"
     preview = (src / "app" / "routes" / "preview.py").read_text(encoding="utf-8")
     for invented in ("netCDF4", "rasterio", "xarray", "band1", "drawable"):
         assert invented not in preview, f"core-api 가 파일을 해석하고 있다: {invented}"
+
+
+# ═══════════════ 회수 중계 (`DL-2` · 22차 해제 ㉯) ═══════════════════════════
+def _relay(base: str):
+    from colab_core.app.relay import HttpPreviewRelay
+
+    return HttpPreviewRelay(f"{base}/viz/v1", service_token="test-viz-service-token")
+
+
+def test_reclaim_previews_sends_the_ids_and_passes_the_result_untouched(fake_viz) -> None:
+    """**요청도 응답도 가공하지 않는다** — 경계 두 헤더와 자격 증명이 실리고 200 이 그대로 온다."""
+    base, fake = fake_viz
+    got = _relay(base).reclaim_previews(lab_id="0000000000000000000000000A",
+                                        account_id="0000000000000000000000000B",
+                                        target_id=RECLAIM_TARGET,
+                                        file_ids=RECLAIM_FILE_IDS)
+    assert got == RECLAIM_RESULT, "중계가 결과를 가공했다 — PreviewReclaimResult 는 그대로 지나가야 한다."
+    sent = fake.received[-1]
+    assert sent["path"].endswith("/reclaims")
+    assert sent["body"] == {"targetId": RECLAIM_TARGET, "fileIds": RECLAIM_FILE_IDS}
+    assert sent["lab"] == "0000000000000000000000000A"
+
+
+def test_reclaim_previews_raises_when_viz_cannot_answer(fake_viz) -> None:
+    """**503 을 결과로 접지 않는다.** 「지울 것이 없었다」와 「못 물어봤다」가 같은 값이 되면
+    삭제가 미리보기를 남긴 채 성공한다 — 부르는 쪽은 이 예외로 삭제를 되돌린다."""
+    from colab_core.app.relay import RelayUnavailable
+
+    base, _ = fake_viz
+    with pytest.raises(RelayUnavailable):
+        _relay(base).reclaim_previews(lab_id="0000000000000000000000000A",
+                                      account_id="0000000000000000000000000B",
+                                      target_id=UNREACHABLE_TARGET,
+                                      file_ids=RECLAIM_FILE_IDS)

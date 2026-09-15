@@ -1,0 +1,20 @@
+{
+  "schema": "colab-ui-permission-gates/1",
+  "switches": ["업로드·편집", "프로젝트 생성", "승인 위임", "연구실 설정"],
+  "sites": [
+    {"path": "frontend/src/components/dashboard/LabInfoModal.tsx", "requires": "연구실 설정"},
+    {"path": "frontend/src/components/datasetpreview/DatasetPreviewSection.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/datasetpreview/ScreenshotButton.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/detail/DatasetEditEntry.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/detail/FileList.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/detail/RepresentativeImageSection.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/lab/LabInfoPanel.tsx", "requires": "연구실 설정"},
+    {"path": "frontend/src/components/upload/GridAttachEntry.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/components/upload/RegisterArea.tsx", "requires": "프로젝트 생성"},
+    {"path": "frontend/src/components/upload/UploadEntry.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/routes/LabPage.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/routes/ProjectsPage.tsx", "requires": "프로젝트 생성"},
+    {"path": "frontend/src/shell/Gnb.tsx", "requires": "업로드·편집"},
+    {"path": "frontend/src/shell/Gnb.tsx", "requires": "연구실 설정"}
+  ]
+}

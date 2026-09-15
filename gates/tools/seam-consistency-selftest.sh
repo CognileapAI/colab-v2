@@ -26,7 +26,9 @@ FAILURES=()
 expect() { # $1=기대(green|red) $2=라벨 $3.. = 실행할 명령
   local want="$1" label="$2"; shift 2
   local out rc
-  out="$("$@" 2>&1)"; rc=$?
+  # These fixtures intentionally use local directory/HEAD baselines. CI pinning
+  # has separate process tests; do not inherit a production event into fixtures.
+  out="$(CI=false "$@" 2>&1)"; rc=$?
   # 준비 실패(78 또는 준비 표식)는 **기대한 red 가 아니다** — 판정된 적이 없다.
   if expect_intercept_readiness "$rc" "$out" "$label" "$want"; then return; fi
   local got="green"; [ $rc -eq 0 ] || got="red"
@@ -81,4 +83,5 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
 fi
 # 판정 결함이 없어도 **판정하지 못한 케이스가 있으면 통과가 아니다** (`_expect.sh`).
 expect_readiness_verdict seam-consistency-selftest
+python3 -m unittest scripts.tests.test_planning_gate || exit 1
 echo "seam-consistency-selftest green — 13 케이스 전부 기대대로 (green 4 · red 9)."

@@ -568,6 +568,7 @@ describe('F-05 닫기 확인 모달', () => {
     expect(sent).toBeNull();
     await click(screen.getByRole('button', { name: '닫기' }));
     await waitFor(() => expect(sent).toBe('닫힘'));
+    await waitFor(() => expect(screen.queryByTestId('project-close-modal')).toBeNull());
     expect(await screen.findByText('닫힘')).toBeInTheDocument();
   });
 

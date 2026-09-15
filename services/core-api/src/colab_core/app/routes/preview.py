@@ -81,6 +81,42 @@ def _require_target_access(db: Session, subject: Subject, target: dict) -> None:
         raise errors.not_found("그릴 대상이 없거나 연구실 경계 밖이다.")
 
 
+def _display_file_names(db: Session, target: dict) -> list[dict]:
+    """대상 조각의 **원래 파일 이름** — `core-viz.yaml#RenderTarget.fileNames` 를 채운다.
+
+    **왜 여기인가** — 저장 배치가 본체를 `fileId` 로 이름 붙이므로 그리는 쪽이 보는 이름은
+    ULID 다. 파일 안에 변수 이름이 없는 포맷(`.npy`)은 그 이름을 변수 이름으로 쓰고, 그래서
+    화면의 변수 고르개에 `01J…` 26자가 섰다. 원래 이름은 **원장에만** 있고, viz-render 가
+    그것을 읽으려면 D3·D5 의 표에 닿아야 한다(불변규칙 1 위반). 그래서 중계가 싣는다.
+
+    ⛔ **새 판정도 새 조회 경로도 만들지 않는다** — 내려받기가 쓰는 `files_for_download` 와
+    업로드 영수증이 쓰는 `UploadLedgerAdapter.files` 를 **그대로** 부른다. 경계 판정은
+    이 함수를 부르기 전에 `_require_target_access` 가 이미 지났다.
+    ⛔ **파일을 열지 않는다** (`CLAUDE.md §3-4`) — 이름은 원장의 값이지 파일의 값이 아니다.
+    """
+    dataset_ref, upload_ref = target.get("datasetId"), target.get("uploadId")
+    if dataset_ref is not None:
+        rows = [(str(r["id"]), r["file_name"])
+                for r in d3_catalog.files_for_download(db, Ulid(dataset_ref))
+                if r["kind"] == "본체"]
+    else:
+        rows = [(str(f.file_id), f.file_name)
+                for f in d5_ingestion.UploadLedgerAdapter(db).files(Ulid(upload_ref))
+                if f.kind == "본체"]
+    # 조각을 골라 그리는 요청이면 고른 것만 — 안 그릴 조각의 이름을 보낼 이유가 없다.
+    chosen = target.get("fileIds")
+    if isinstance(chosen, list) and chosen:
+        keep = {str(x) for x in chosen}
+        rows = [r for r in rows if r[0] in keep]
+    return [{"fileId": file_id, "fileName": file_name} for file_id, file_name in rows]
+
+
+def _target_with_file_names(db: Session, target: dict) -> dict:
+    """`target` 에 이름을 붙인 사본. **원본을 고치지 않고**, 0건이면 그대로 둔다."""
+    names = _display_file_names(db, target)
+    return {**target, "fileNames": names} if names else target
+
+
 def _with_original_file_names(db: Session, subject: Subject, job: dict) -> dict:
     """Restore display metadata, never infer filenames from internal storage keys.
 
@@ -176,7 +212,8 @@ def describe_target(request: Request, body: dict = Body(...),
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
         return relay.describe_target(lab_id=str(subject.lab_id),
-                                     account_id=str(subject.account_id), request=body)
+                                     account_id=str(subject.account_id),
+                                     request=_target_with_file_names(db, body))
     except RelayRefused as e:
         # **그릴 수 없는 파일은 장애가 아니다** — 저쪽의 상태·봉투가 그대로 화면까지 간다.
         return _refused(e)
@@ -218,8 +255,9 @@ def create_preview_render(request: Request, response: Response, body: dict = Bod
         raise errors.ApiError(503, RENDER_UNAVAILABLE,
                               "그리는 서버에 연결하지 못했다 — 미리보기 없이도 등록은 그대로 된다.")
     try:
+        # **표시용 이름만 덧붙인다** — 나머지 요청은 한 글자도 고치지 않는다.
         job = relay.create(lab_id=str(subject.lab_id), account_id=str(subject.account_id),
-                           request=body)
+                           request={**body, "target": _target_with_file_names(db, target)})
         return _with_original_file_names(db, subject, job)
     except RelayRefused as e:
         # **그릴 수 없는 파일은 장애가 아니다** — 저쪽의 상태·봉투가 그대로 화면까지 간다.

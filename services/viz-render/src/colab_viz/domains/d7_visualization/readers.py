@@ -652,7 +652,24 @@ def _read_binary(path: Path, variable: str | None, max_side: int) -> Field:
                  native_shape=native, steps=steps)
 
 
-def _read_numpy(path: Path, max_side: int) -> Field:
+def numpy_variable_name(path: Path, display_name: str | None) -> str:
+    """`.npy` 의 변수 이름 — **describe 와 read 가 같은 답을 내는 유일한 자리**다.
+
+    `.npy` 는 파일 안에 변수 이름이 없어 **파일 이름의 stem** 을 쓴다. 그런데 저장 배치가
+    본체를 `fileId` 로 이름 붙이므로(`kernel/storage_layout`) 디스크의 stem 은 ULID 다 —
+    화면의 변수 고르개에 `01J…` 26자가 서는 것이 그 때문이다.
+
+    원래 이름은 원장(core-api)에만 있고, 그것을 여기서 읽으면 D7 이 남의 표에 닿는다
+    (불변규칙 1). 그래서 `core-viz.yaml#RenderTarget.fileNames` 가 **식별자와 같은 자리에**
+    이름을 실어 보내고, 이 함수가 그 하나를 받는다.
+
+    ⚠ **이름이 없으면 종전 그대로다** — 선택 필드이고, 없을 때 답이 바뀌면 계약 파괴다.
+    ⛔ **캐시 키에 닿지 않는다** — `source_digest` 는 디스크 이름을 그대로 쓴다.
+    """
+    return Path(display_name).stem if display_name else path.stem
+
+
+def _read_numpy(path: Path, max_side: int, display_name: str | None = None) -> Field:
     """`.npy` — 배열 하나. **결측은 NaN 만이다**(`〈77〉` Ted 판정).
 
     네 포맷은 결측값이 실측으로 확정돼 있지만 `.npy` 에는 그런 규약이 **없다** —
@@ -669,12 +686,14 @@ def _read_numpy(path: Path, max_side: int) -> Field:
         raise NotRenderableError(f"{path.name}: 2차원 배열이 아니다 — shape={arr.shape}")
     native = (values.shape[0], values.shape[1])
     steps = _steps_for(native, max_side)
-    return Field(values=_decimate(values, steps).astype("f4"), variable=path.stem,
+    return Field(values=_decimate(values, steps).astype("f4"),
+                 variable=numpy_variable_name(path, display_name),
                  unit=None, native_shape=native, steps=steps, fills=())
 
 
 @serialized_netcdf
-def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
+def describe_field(path: Path, *,
+                   display_name: str | None = None) -> tuple[str, list[str], list[str]]:
     """`(포맷, 그릴 수 있는 이름들, 시각 표기들)` — **값을 읽지 않는다.**
 
     ⭑ ⟨21차 해제 · `core-viz.yaml#describeTarget`⟩ 화면의 변수 고르개·시각 고르개가
@@ -740,8 +759,8 @@ def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
             return fmt, [result.block_label(i) for i in range(len(result.blocks))], []
 
         if fmt == "NumPy":
-            # `_read_numpy` 와 같다 — 배열 하나뿐이고 이름은 파일 이름이다.
-            return fmt, [path.stem], []
+            # `_read_numpy` 와 같다 — 배열 하나뿐이고 이름은 **같은 함수**가 고른다.
+            return fmt, [numpy_variable_name(path, display_name)], []
         if fmt == "GRIB":
             return fmt, _grib_variables(path), []
         if fmt == "HDF5":
@@ -759,7 +778,8 @@ def describe_field(path: Path) -> tuple[str, list[str], list[str]]:
 
 
 def read_field(path: Path, *, variable: str | None = None, instant: str | None = None,
-               max_side: int = 1024) -> tuple[str, Field]:
+               max_side: int = 1024,
+               display_name: str | None = None) -> tuple[str, Field]:
     """(포맷, 값 하나). 위치가 파일 안에 없으면 `Field.has_position` 이 False 다."""
     path = Path(path)
     fmt = detect_format(path)
@@ -773,7 +793,7 @@ def read_field(path: Path, *, variable: str | None = None, instant: str | None =
         if fmt == "Binary":
             return fmt, _read_binary(path, variable, max_side)
         if fmt == "NumPy":
-            return fmt, _read_numpy(path, max_side)
+            return fmt, _read_numpy(path, max_side, display_name)
         if fmt == "GRIB":
             return fmt, _read_grib(path, variable, max_side)
         if fmt == "HDF5":

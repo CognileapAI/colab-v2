@@ -29,17 +29,28 @@ GATE_SUMMARY_NAME="gate-summary.json"
 if [ "$GATE" = "task" ]; then
   [ -n "${COLAB_TASK_ID:-}" ] || { echo '::gate-readiness-failure:: COLAB_TASK_ID required' >&2; exit 78; }
   cd "$REPO_ROOT"
-  exec python3 .claude/hooks/lifecycle_contract.py run-gates --task "$COLAB_TASK_ID"
+  exec python3 scripts/harness/hooks/lifecycle_contract.py run-gates --task "$COLAB_TASK_ID"
 fi
 
 # Bind evidence before the outer execution, including dirty sources and fixtures.
 # Child gate processes inherit this identity; they never overwrite the baseline.
 if [ -n "${COLAB_TASK_ID:-}" ] && [ -z "${COLAB_GATE_SUMMARY_CHILD:-}" ]; then
-  if ! COLAB_GATE_TASK_BEFORE="$(cd "$REPO_ROOT" && python3 .claude/hooks/lifecycle_contract.py gate-start --task "$COLAB_TASK_ID")"; then
+  if ! COLAB_GATE_TASK_BEFORE="$(cd "$REPO_ROOT" && python3 scripts/harness/hooks/lifecycle_contract.py gate-start --task "$COLAB_TASK_ID")"; then
     echo '::gate-readiness-failure:: task evidence preparation failed' >&2
     exit 78
   fi
   export COLAB_GATE_TASK_BEFORE
+  # New task runs select their exact common-dir report after binding the run ID.
+  runtime_report="$(python3 -c 'import json,os; print(json.loads(os.environ["COLAB_GATE_TASK_BEFORE"]).get("report", ""))')"
+  if [ -n "$runtime_report" ]; then
+    if [ -n "${COLAB_GATE_REPORT_DIR:-}" ] && [ "$COLAB_GATE_REPORT_DIR/gate-summary.json" != "$runtime_report" ]; then
+      echo '::gate-readiness-failure:: explicit report directory differs from current task run' >&2
+      exit 78
+    fi
+    # The task runner keeps report and logs together without starting another run.
+    cd "$REPO_ROOT"
+    exec python3 scripts/harness/hooks/lifecycle_contract.py run-bound-gate --task "$COLAB_TASK_ID" --gate "$GATE"
+  fi
 fi
 
 
@@ -167,7 +178,7 @@ fi
 
 # 전 게이트 목록 — `all` 이 도는 대상이다. 여기서 빠진 게이트는 `all` 이 보지 않는다.
 ALL_GATES=(
-  planning-freshness agent-bridge operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
+  planning-freshness agent-bridge harness-contract operator-notifications operator-notifications-selftest contract-lint contract-breaking event-lint event-breaking
   seam-consistency generated-up-to-date import-boundary banned-import
   ai-no-lineage-write db-boundary migration-single-head schema-diff migration-drift
   rls-coverage rls-effect work-item-consistency seed-plan-drift stage2-markers autometa-loss
@@ -180,19 +191,25 @@ ALL_GATES=(
   db-selftest rls-effect-selftest seam-consistency-selftest
   generated-selftest work-item-selftest stage2-markers-selftest
   autometa-loss-selftest preview-tile-slot-selftest artifact-ownership-selftest
-  seed-plan-drift-selftest dev-reseed-selftest
+  seed-plan-drift-selftest dev-reseed-selftest product-release-selftest product-reseed-selftest
   e2e-format-coverage-selftest render-latency-selftest backup-cron-streak-selftest
   ops-observability-selftest is4-recovery-selftest
   exec-bit-selftest migration-drift-selftest
   frontend-typecheck-selftest frontend-test-selftest frontend-fixture-reach-selftest
-  frontend-visual-selftest harness-eval-selftest
+  frontend-visual-selftest harness-eval-selftest harness-contract-selftest
   service-tests-selftest
 )
 
 case "$GATE" in
   agent-bridge)
     # Codex/Claude 연결과 완료 알림의 음성·중복방지 계약.
-    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py
+    exec python3 -m unittest scripts/tests/test_agent_bridge.py scripts/tests/test_slack_completion.py scripts/tests/test_deploy_release.py scripts/tests/test_harness_lifecycle_contract.py scripts/tests/test_harness_source_layout.py scripts/tests/test_task_runtime.py
+    ;;
+  harness-contract)
+    exec python3 "$REPO_ROOT/scripts/harness/check.py"
+    ;;
+  harness-contract-selftest)
+    exec python3 -m unittest scripts/tests/test_harness_config.py scripts/tests/test_harness_evidence.py scripts/tests/test_pr_contract.py scripts/tests/test_harness_work_state.py
     ;;
   operator-notifications)
     exec "$REPO_ROOT/gates/tools/operator-notifications.sh"
@@ -230,6 +247,12 @@ case "$GATE" in
     # `tests/preflight-red.sh`(조건을 어긋나게 두고 `reseed.sh` 를 실제로 돌린다).
     # dev·AWS 무접촉 = ssh·scp·docker·aws·agent-browser 를 PATH 대역으로 가린다.
     exec "$REPO_ROOT/gates/tools/dev-reseed-selftest.sh"
+    ;;
+  product-release-selftest)
+    exec "$REPO_ROOT/gates/tools/product-release-selftest.sh"
+    ;;
+  product-reseed-selftest)
+    exec "$REPO_ROOT/gates/tools/product-reseed-selftest.sh"
     ;;
   contract-lint)
     # seam OpenAPI 린트 (spectral, 룰셋 contracts/.spectral.yaml).

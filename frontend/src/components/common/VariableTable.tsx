@@ -104,7 +104,11 @@ export function VariableTable(props: {
 
   return (
     <div className="vartable" data-testid="variable-table">
-      <table>
+      {/* ⭑ ⟨2026-09-14 · 레인 A4⟩ 표만 테두리 안에 든다 — `+ 변수 추가` 는 rev2 에서 표
+          **밖 아래**의 버튼이라 같은 상자에 넣으면 표의 한 행처럼 읽힌다. 가로가 좁으면
+          이 상자가 자기 안에서 스크롤한다(5열이 서로를 밀어내지 않게). */}
+      <div className="vt-box">
+        <table>
         <thead>
           <tr data-testid="vt-head">
             {VARIABLE_COLUMNS.map((c) => (
@@ -160,20 +164,27 @@ export function VariableTable(props: {
               </td>
               {readOnly ? null : (
                 <td>
+                  {/* ⭑ **⟨2026-09-14 · 레인 A4⟩ 글자는 `×` 이고 이름은 `aria-label` 이 진다.**
+                      ／ 종전 ~~`삭제` 글자 버튼~~ — rev2 목업의 이 칸은 `.vt-del` 한 글자이고,
+                      열 이름 없는 34px 칸에 두 글자를 넣으면 칸이 값 열을 밀어낸다.
+                      ⚠ 이름을 없앤 것이 아니다 — 스크린리더가 읽는 이름은 그대로 남는다. */}
                   <button
                     type="button"
                     className="vt-del"
+                    aria-label={`변수 ${i + 1} 빼기`}
+                    title={`변수 ${i + 1} 빼기`}
                     data-testid={`vt-del-${i}`}
                     onClick={() => remove(i)}
                   >
-                    삭제
+                    ×
                   </button>
                 </td>
               )}
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       {readOnly ? null : (
         <button
           type="button"

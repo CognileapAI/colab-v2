@@ -6,6 +6,8 @@
 """
 from __future__ import annotations
 
+import dataclasses
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -615,3 +617,125 @@ def cancel_verification(session: Session, *, dataset_id: Ulid, actor_id: Ulid,
     result = session.execute(_CANCEL_VERIFIED, {
         "dataset_id": str(dataset_id), "actor": str(actor_id), "reason": reason})
     return result.rowcount > 0
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# 데이터셋 삭제가 D2 에게 묻는 것 (`DL-1`)
+#
+# **부르는 자리는 `routes/deletion.py` 하나다.** 아래 셋(`snapshot_access` ·
+# `open_access_for_deletion` · `restore_access`)은 **묶어서만 뜻이 있다** — 「열림」 창은
+# 그 트랜잭션 안에서만 존재해야 하고, 원복을 빠뜨리면 잠긴 데이터가 열린 채로 커밋된다.
+# ⭑ 상태 어휘는 위 `ACCESS_STATES`(3값 · `0017`)와 같은 한 벌이다 — 원복은 스냅샷 값을
+#   **그대로** 되돌리므로 `지정 공개` 도 이 창을 지나 제자리로 간다(시험 ⑪-b).
+# ════════════════════════════════════════════════════════════════════════════
+
+#: 그 데이터셋의 **검토 대기** 요청 수. 삭제 확인 모달의 「대기 중인 접근 요청 N건」이다.
+_COUNT_PENDING_ACCESS = text("""
+    SELECT count(*) FROM d2_dataset_access_request
+     WHERE dataset_id = :dataset_id AND state = '검토 대기'
+""")
+
+#: 검토 대기를 **한 문장으로** 닫는다. 상태 3값에 「닫힘」이 없고
+#: `(state='거절됨') = (rejection_reason IS NOT NULL)` CHECK 가 사유를 강제하므로
+#: **`거절됨` ＋ 고정 사유**다 (Ted 판정 ⓕ). 부분 유니크 `…_pending_key` 는 `검토 대기`
+#: 행에만 걸려 있어 충돌이 없다. 처리된 행은 `state` 조건이 이미 뺀다 — **0행이 정상**이다.
+_CLOSE_PENDING_ACCESS = text("""
+    UPDATE d2_dataset_access_request
+       SET state = '거절됨', decided_by_account_id = :decider, decided_at = now(),
+           rejection_reason = :reason
+     WHERE dataset_id = :dataset_id AND state = '검토 대기'
+""")
+
+_ACCESS_ROW = text("""
+    SELECT state, updated_at FROM d2_dataset_access WHERE dataset_id = :dataset_id
+""")
+
+#: 원복 — `updated_at` 까지 되돌린다. 상태만 되돌리면 「누가 언제 접근 상태를 바꿨나」가
+#: 삭제 때문에 밀리고, 그 밀림은 나중에 사람이 바꾼 것과 구별되지 않는다.
+_RESTORE_ACCESS = text("""
+    UPDATE d2_dataset_access SET state = :state, updated_at = :updated_at
+     WHERE dataset_id = :dataset_id
+""")
+
+_DROP_ACCESS = text("DELETE FROM d2_dataset_access WHERE dataset_id = :dataset_id")
+
+
+@dataclasses.dataclass(frozen=True)
+class AccessRow:
+    """삭제 직전의 접근 상태 한 줄. **부재도 상태다** — 그 데이터셋은 연구실 기본값을
+    따르고 있었고, 원복이 행을 남기면 그 사실이 사라진다."""
+
+    state: str | None
+    updated_at: object
+
+
+def can_delete_dataset(session: Session, *, account_id: Ulid, owner_id: str | None) -> bool:
+    """데이터셋을 지울 수 있는가 — **소유자 또는 교수** (계약 `deleteDataset` 산문 축자).
+
+    ⚠ **`업로드·편집` 스위치를 보지 않는다.** 삭제는 그 스위치와 다른 축이고
+    (`dev-package/PERMISSION-PRINCIPLES.md §2` · Ted 판정 ⓑ), 스위치로 유도하면 소유자가
+    아닌 편집자에게 삭제가 열린다. `승인 위임` 도 여기 들어오지 않는다.
+
+    같은 식이 `routes/catalog.py` 의 `actions.canDelete` 에도 인라인으로 있고,
+    `tests/test_dataset_deletion.py::test_can_delete_flag_agrees_with_the_delete_gate`
+    가 세 주체에서 두 자리를 묶는다.
+    """
+    if owner_id is not None and str(owner_id).strip() == str(account_id):
+        return True
+    return role_of(session, account_id) == "교수"
+
+
+def count_pending_access_requests(session: Session, dataset_id: Ulid) -> int:
+    """검토 대기 요청 수. 경계는 RLS 가 이미 걸었다 — `lab_id` 조건을 다시 쓰지 않는다."""
+    return int(session.execute(_COUNT_PENDING_ACCESS,
+                               {"dataset_id": str(dataset_id)}).scalar_one())
+
+
+def close_pending_access_requests(session: Session, *, dataset_id: Ulid, decider_id: Ulid,
+                                  reason: str) -> int:
+    """검토 대기 전건을 **한 문장으로** 닫는다. 돌려주는 것은 실제로 닫힌 행 수다.
+
+    ⚠ 요청자에게는 「거절」로 보인다 — 상태 집합에 「닫힘」이 없기 때문이다(스키마 CHECK).
+    그래서 사유 문장이 **왜 닫혔는지**를 대신 말한다 (P-26 · 거절 사유는 그대로 전달된다).
+    """
+    return session.execute(_CLOSE_PENDING_ACCESS, {
+        "dataset_id": str(dataset_id), "decider": str(decider_id), "reason": reason,
+    }).rowcount
+
+
+def snapshot_access(session: Session, dataset_id: Ulid) -> AccessRow | None:
+    """삭제 직전의 접근 상태. **행이 없으면 `None`** 이고 그것도 되돌릴 값이다."""
+    row = session.execute(_ACCESS_ROW, {"dataset_id": str(dataset_id)}).mappings().first()
+    return None if row is None else AccessRow(state=row["state"], updated_at=row["updated_at"])
+
+
+def open_access_for_deletion(session: Session, dataset_id: Ulid) -> None:
+    """⭑ **RLS `body_access` 아래서 `d3_file` 이 보이게 만드는 한 걸음.**
+
+    그 RESTRICTIVE 정책에는 **소유자·역할 조항이 없다**(`db/platform/schema.sql`) — 조건은
+    「접근 상태(없으면 연구실 기본값)가 `열림`」 또는 「그 계정에 만료 안 된 허용 줄이 있다」
+    뿐이다. 그래서 잠긴 데이터셋의 파일은 소유자에게도 교수에게도 **0행**이고, 이 걸음을
+    빼면 삭제가 키를 못 읽고 행도 못 지운 채 **조용히 0건**으로 성공한다.
+
+    ⛔ **반드시 같은 트랜잭션 안에서 `restore_access` 로 원복한다.** 「열림」 창이 커밋되면
+    잠긴 데이터가 열린 채로 남는다 — 그것은 삭제 실패보다 나쁘다.
+
+    ⭑ **⟨리베이스 2026-09-08 · `0017_rb4_access_state_3` 정합⟩ 쓰기 문장은 WU-B4 의
+    `set_access_state` 하나다** — 이 표의 upsert 를 두 벌 두지 않는다. `열림` 은 grant 를
+    만료시키지 않는 갈래라 그 헬퍼의 부작용은 **데이터셋 advisory 잠금 하나**뿐이고, 그 잠금이
+    겹친 승인(`decide_access_request`)과 이 삭제 트랜잭션을 직렬화한다. 행이 없을 수 있고
+    (연구실 기본값 · 3값이 된 뒤에도 `잠김`·`지정 공개` 일 수 있다) 그때도 upsert 라 닫힌다.
+    """
+    set_access_state(session, dataset_id=dataset_id, state="열림")
+
+
+def restore_access(session: Session, dataset_id: Ulid, snapshot: AccessRow | None) -> None:
+    """`snapshot_access` 가 본 그 상태로 되돌린다. **부재였으면 행을 지운다** — 남겨 두면
+    연구실 기본값을 따르던 데이터가 조용히 명시값으로 바뀐다."""
+    if snapshot is None:
+        session.execute(_DROP_ACCESS, {"dataset_id": str(dataset_id)})
+        return
+    session.execute(_RESTORE_ACCESS, {
+        "dataset_id": str(dataset_id), "state": snapshot.state,
+        "updated_at": snapshot.updated_at,
+    })

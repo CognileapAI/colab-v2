@@ -75,7 +75,7 @@ def main():
         print(json.dumps(dict(changed=changed), ensure_ascii=False))
         return int(bool(changed))
     role_path = here / 'file-role-evidence.json'
-    snapshot_path = root / 'dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json'
+    snapshot_path = root / 'eval/k4-search/fixtures/reference/dev-data-snapshot.json'
     report = collect_sources(args.reference_root, json.loads(role_path.read_text())['evidence'],
                              json.loads(snapshot_path.read_text())['datasets'])
     report['input_hashes'] = {str(p.relative_to(root)): _digest(p)
