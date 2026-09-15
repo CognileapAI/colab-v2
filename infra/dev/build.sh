@@ -14,7 +14,8 @@ SHA="$(git -C "$REPO" rev-parse --short=12 HEAD)"
 PLATFORM="${COLAB_BUILD_PLATFORM:-linux/arm64}"
 ARCH="${PLATFORM#linux/}"
 
-docker buildx version >/dev/null 2>&1 || { echo "docker buildx 가 없다 — 탈출구 = EC2 위에서 빌드(README §탈출구)" >&2; exit 2; }
+. "$REPO/infra/_lib/build-platform.sh"
+build_require_platform "$PLATFORM"
 mkdir -p "$DIST"
 
 build() { # $1=단위 $2=컨텍스트 $3=Dockerfile
