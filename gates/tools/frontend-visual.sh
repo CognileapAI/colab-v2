@@ -33,7 +33,7 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/_readiness.sh"
 
-AUDIT="${COLAB_VISUAL_AUDIT:-$REPO_ROOT/.claude/skills/design-review/scripts/live_audit.sh}"
+AUDIT="${COLAB_VISUAL_AUDIT:-$REPO_ROOT/.agents/skills/design-review/scripts/live_audit.sh}"
 ALLOW="${COLAB_VISUAL_ALLOW:-$REPO_ROOT/gates/fixtures/frontend-visual/allow.txt}"
 
 red() { echo "::error::frontend-visual red(판정) — $*"; exit 1; }

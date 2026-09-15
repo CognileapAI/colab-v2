@@ -15,7 +15,7 @@ pytestmark = pytest.mark.search_golden
 
 
 ROOT=Path(__file__).resolve().parents[3]
-REPORTS=ROOT/'dev-package/reports/stage3-ai-search-plan'
+REPORTS=ROOT/'eval/k4-search/fixtures/reference'
 
 
 def test_reference_golden_candidates_and_honest_limits_through_api(p2_client,sql,fake_ai):

@@ -36,22 +36,22 @@
 
 ## 4. 배포 규율 — dev 와 다르다
 
-`infra/README.md` 축자 — **prod 는 `main` 커밋에 태그를 찍고 태그에서만 배포한다.**
-`〈335〉`-㉳ 가 확정한 것이고, **prod 용 장기 브랜치를 만들지 않는다.**
+2026-09-15 승인 정책: **prod는 product 브랜치의 사람 병합으로 배포한다.**
+전환 상태와 최초 초기화 준비는 `docs/DEPLOY_PRODUCT.md`와 `R-DEVELOP-PRODUCT`를 따른다.
 
-  - **dev** = `main` 이 곧 배포 기준
-  - **prod** = dev 가 배포 창 N회를 green 으로 넘긴 `main` 커밋에 `prod-YYYYMMDD` 태그 → **그 태그에서만**
-  - **핫픽스** = 태그에서 브랜치 → 수정 → `main` 에 되돌려 넣는다
+  - **dev** = develop이 배포 원천이다.
+  - **prod** = 동일 저장소 develop → product PR의 허용된 사람 병합 SHA가 배포 후보이며, 그 후보의 `prod-*` 태그도 검사한다.
+  - **핫픽스** = 수정 → develop 통합 → product PR 승격 순서를 따른다.
 
 ⭑ **⟨증보 2026-09-12⟩ 위 규율은 이제 산문이 아니라 `ship.sh` 안의 검사다**(규칙 6 · `docs/BRANCHING.md` §1·§5).
 `infra/prod/ship.sh` 가 `infra/_lib/ship-gate.sh`(dev 와 **같은 한 벌**)를 불러 둘을 잰다 —
 
 | 검사 | 거절 | 우회 |
 |---|---|---|
-| 후보 sha ∈ `origin/main` | exit **65** (`origin` 조회 실패는 exit **78**) | `COLAB_SHIP_ALLOW_NONMAIN=1` **선언**(출력 ＋ `MAIN_SHA` 의 `ancestor=bypass` ＋ `deploy_doctor` ⑮ 의 ✗ 셋에 남는다) |
+| 후보 sha ∈ `origin/product` | exit **65** (`origin` 조회 실패는 exit **78**) | 없음 |
 | 후보 sha 에 `prod-*` 태그 | exit **65** | ⛔ **없다** — 태그를 먼저 찍는다 |
 
-통과하면 같은 ssh 가 `/opt/colab-v2/MAIN_SHA` 에 `main=… candidate=… ancestor=…` 한 줄을 적고,
+통과하면 같은 ssh 가 `/opt/colab-v2/MAIN_SHA` 에 `source_ref=product source_sha=… candidate=… ancestor=yes`를 적고,
 `deploy_doctor` ⑮ 가 `CURRENT_SHA` 와 대조한다. 셸 시험 = `infra/prod/tests/ship-gate.sh`(6 케이스).
 
 ## 4-b. `/etc/colab` 시크릿 파일 — 11종
@@ -139,10 +139,10 @@ prod 호스트에 그대로 올리면 **prod DB 를 덤프해 dev 버킷에 올�
 ops/deploy_doctor.py --env prod --endpoint https://<prod>.cloudfront.net …
 ```
 ⛔ **부분 실행 둘을 합쳐 green 이라 하지 않는다** — `─ 0` 이 나온 한 번의 결과만 근거다.
-⭑ **⟨증보 2026-09-12⟩ 항목 수는 15 다**(⑮ 실행 sha ∈ main). `infra/prod/deploy-doctor.sh` 가
+항목 15는 실행 sha ∈ product를 검사한다. `infra/prod/deploy-doctor.sh` 가
 `-v /opt/colab-v2:/state:ro` 를 넘긴다 — 빼면 ⑮ 는 「마운트 없음」으로 **항상 ✗** 다.
-⚠ 지금 돌고 있는 `prod-3922d01750d0` 은 규칙 6 이전 판이라 `MAIN_SHA` 가 없다 ⟹ **⑮ 는 ✗**.
-`main` 재빌드 ＋ `prod-YYYYMMDD` 태그 ＋ `ship.sh` 반입으로만 지운다(`docs/DEPLOY.md §5-9`).
+과거 `prod-3922d01750d0`의 `MAIN_SHA` 부재 기록은 당시 관측이다. 현재 버전은 원격에서 다시 확인한다.
+전환 뒤에는 product 후보 재빌드·prod 태그·반입과 doctor 전체 통과를 함께 확인한다.
 ＋ **브라우저 실물** — 로그인 → 업로드 한 바퀴 → 파일 목록 → 다운로드 → 미리보기.
 ＋ **시점 복구를 되감아 본다**(`〈400〉`-㉯) — 「설정했다」는 관문이 아니다.
 

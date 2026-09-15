@@ -9,6 +9,12 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 DIST="${1:-$REPO/dist}"
+[ -n "${COLAB_RELEASE_PRE_EVIDENCE:-}" ] || { echo 'release pre evidence required' >&2; exit 78; }
+[ -f "$DIST/colab-v2-prod.sha" ] || exit 78
+SHA="$(cat "$DIST/colab-v2-prod.sha")"
+FULL_SHA="$(git -C "$REPO" rev-parse --verify "$SHA^{commit}")" || exit 78
+python3 "$REPO/scripts/harness/release_evidence.py" pre --pre "$COLAB_RELEASE_PRE_EVIDENCE" --sha "$FULL_SHA" --environment prod --root "$REPO"
+if [ "${COLAB_RELEASE_DRY_RUN:-0}" = 1 ]; then echo 'dry-run: no ship/up/doctor/tag'; exit 0; fi
 : "${COLAB_PROD_SSH:?COLAB_PROD_SSH 가 필요하다 (예: ec2-user@<IP>)}"
 : "${COLAB_PROD_KEY_FILE:?COLAB_PROD_KEY_FILE 이 필요하다}"
 SHA="$(cat "$DIST/colab-v2-prod.sha")"
@@ -17,15 +23,16 @@ SHA="$(cat "$DIST/colab-v2-prod.sha")"
 # ⭑ ⟨2026-09-12⟩ prod 에는 종전에 이 게이트가 **없었다.** dev 만 막고 prod 를 열어 두면
 #   규칙 1 의 구멍이 prod 쪽에 그대로 남는다 — 창 9 가 dev 에서 낸 사고를 prod 에서 다시 낸다.
 # ⚠ **prod 는 조건이 하나 더 있다** — 규칙 6 은 「prod 는 `prod-YYYYMMDD` 태그에서만 배포」다.
-#   태그 검사에는 **우회 선언이 없다**(조상 검사와 다르다). 태그 주체는 Ted 다.
+#   원천·태그 검사 모두 우회가 없다. 승인된 사람 병합에서 후보 태그를 생성한다.
 # shellcheck source=../_lib/ship-gate.sh
 . "$REPO/infra/_lib/ship-gate.sh"
 # ⭑ 운영 소스 번들 사슬도 dev 와 한 벌이다 (`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
-ship_gate_main_ancestor "$REPO" "$SHA"
+ship_gate_source_ancestor "$REPO" "$SHA" prod
 ship_gate_require_prod_tag "$REPO" "$SHA"
-MAIN_SHA="$SHIP_GATE_MAIN_SHA"
+SOURCE_REF="$SHIP_GATE_SOURCE_REF"
+SOURCE_SHA="$SHIP_GATE_SOURCE_SHA"
 ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-prod-$SHA.tar"
@@ -49,9 +56,16 @@ REPO_TGZ="$DIST/colab-repo-$SHA.tgz"
 mkdir -p "$DIST"
 # macOS 에서 만든 tar 에는 AppleDouble(`._*`·xattr) 이 섞인다 — 원격 `deploy_doctor` ⑥⑦ 이 `._0031_….py` 를
 # 파싱하다 「null bytes」 로 죽었다(2026-09-13 prod 실측 · 15,353 파일). 만들 때 빼고, 받는 쪽도 지운다.
-COPYFILE_DISABLE=1 tar czf "$REPO_TGZ" --exclude='._*' --exclude='.DS_Store' --exclude='__pycache__' -C "$REPO" \
-  --exclude='.venv' --exclude='node_modules' --exclude='__pycache__' --exclude='*.pyc' \
-  "${REPO_SYNC_PATHS[@]}"
+git -C "$REPO" archive --format=tar "$FULL_SHA" "${REPO_SYNC_PATHS[@]}" | gzip -n > "$REPO_TGZ"
+REPO_MANIFEST="$DIST/colab-repo-$SHA.manifest"
+REPO_STAGE="$(mktemp -d)"
+trap 'rm -rf "$REPO_STAGE"' EXIT
+tar xzf "$REPO_TGZ" -C "$REPO_STAGE"
+{
+  echo "# source_sha=$SHA"; echo "# source_full_sha=$FULL_SHA"
+  (cd "$REPO_STAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum)
+} > "$REPO_MANIFEST"
+chmod 0600 "$REPO_MANIFEST"
 
 # ── `prod.env` 의 `COLAB_IMAGE_TAG` 갱신기 — **원격 스크립트 파일**이다 ─────────────
 # 종전에는 사람이 손으로 고쳤고, 빠뜨리면 **옛 migrator 이미지로 마이그레이션이 돈다**
@@ -86,6 +100,9 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 "${SCP[@]}" "$TAR" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$OPS_TAR" "$OPS_MANIFEST" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$REPO_TGZ" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
+"${SCP[@]}" "$REPO_MANIFEST" "$COLAB_PROD_SSH:/opt/colab-v2/images/"
+"${SCP[@]}" "$COLAB_RELEASE_PRE_EVIDENCE" "$COLAB_PROD_SSH:/opt/colab-v2/RELEASE_PRE.json"
+"${SSH[@]}" 'chmod 0600 /opt/colab-v2/RELEASE_PRE.json'
 "${SCP[@]}" "$SETTER" "$COLAB_PROD_SSH:/opt/colab-v2/set-image-tag.sh"
 # ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈400〉`-㉳-⑶).
 #    종전에는 `compose.yml`·`up.sh` **둘만** 실었고, `backup.sh`·`install-cron.sh` 를 올리는 절차가
@@ -99,11 +116,13 @@ SCP=(scp -i "$COLAB_PROD_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" 'chmod +x /opt/colab-v2/backup.sh /opt/colab-v2/install-cron.sh /opt/colab-v2/deploy-doctor.sh /opt/colab-v2/set-image-tag.sh /opt/colab-v2/publish-ownership-hourly.sh'   # 파일시스템이 모드를 잃는 경우 대비
 "${SSH[@]}" "docker load -i /opt/colab-v2/images/$(basename "$TAR") && \
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
-  sudo tar xzf /opt/colab-v2/images/$(basename "$REPO_TGZ") -C /opt/colab-repo --overwrite && \
-  sudo find /opt/colab-repo -name '._*' -delete && \
+  sudo mkdir -p /opt/colab-repo-releases/$FULL_SHA && \
+  sudo tar xzf /opt/colab-v2/images/$(basename "$REPO_TGZ") -C /opt/colab-repo-releases/$FULL_SHA --overwrite && \
+  sudo install -m 0600 /opt/colab-v2/images/$(basename "$REPO_MANIFEST") /opt/colab-repo-releases/$FULL_SHA/OPS_SOURCE_MANIFEST && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:prod-$SHA colab-v2/\$u:prod; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
-  printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
+  echo $FULL_SHA > /opt/colab-v2/CURRENT_FULL_SHA && \
+  printf 'source_ref=%s source_sha=%s candidate=%s ancestor=%s\n' $SOURCE_REF $SOURCE_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
   echo 'loaded: prod-$SHA'"
 # ⚠ `COLAB_IMAGE_TAG` 는 **불변 태그**로 적는다 — 움직이는 `:prod` 를 적으면 되돌리기 세대가 사라진다.
 "${SSH[@]}" "bash /opt/colab-v2/set-image-tag.sh prod-$SHA"

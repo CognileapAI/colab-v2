@@ -28,8 +28,6 @@ import {
   SOURCE_BLOCK_TITLE,
 } from '../src/components/upload/RegisterArea';
 import {
-  REGISTER_INTERVAL_REQUIRED,
-  REGISTER_LV0_SOURCE_REQUIRED,
   REGISTER_NAME_REQUIRED,
   REGISTER_PERIOD_REQUIRED,
   REGISTER_SUMMARY_REQUIRED,
@@ -247,12 +245,12 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
     for (const l of labels) expect(l.textContent ?? '').not.toContain('(선택)');
   });
 
-  it('이름·기간·관측 간격·설명에 `필수` 배지가 선다', async () => {
+  it('이름·기간·설명에 `필수` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
-    const required = ['reg-name', 'reg-period-open', 'reg-interval-value', 'reg-summary'];
-    expect(required).toHaveLength(4);
+    const required = ['reg-name', 'reg-period-open', 'reg-summary'];
+    expect(required).toHaveLength(3);
     for (const id of required) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
@@ -261,12 +259,12 @@ describe('rev2 등록 폼 — 필수/선택 표시는 배지 하나로 통일한
     }
   });
 
-  it('좌표계·격자 설명·공개 범위에 `선택` 배지가 선다', async () => {
+  it('관측 간격·좌표계·격자 설명·공개 범위에 `선택` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
-    const optional = ['reg-crs', 'reg-grid-description', 'reg-visibility'];
-    expect(optional).toHaveLength(3);
+    const optional = ['reg-interval-value', 'reg-crs', 'reg-grid-description', 'reg-visibility'];
+    expect(optional).toHaveLength(4);
     for (const id of optional) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
@@ -322,6 +320,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
   it('Lv2 · 연결 0건이면 블록이 보이고 `출처 주소` 는 있으나 `내려받은 날` 은 없다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
+    await change(screen.getByTestId('reg-level'), 'Lv2');
     await click(stepBtn('③'));
     expect(screen.getByTestId('reg-source-block')).toBeTruthy();
     expect(screen.getByTestId('reg-source-url')).toBeTruthy();
@@ -330,7 +329,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     expect(screen.getByTestId('reg-source-block').querySelectorAll('.reqtag')).toHaveLength(0);
   });
 
-  it('Lv0 이면 `출처 주소`·`내려받은 날` 두 칸에 `필수` 배지가 선다', async () => {
+  it('Lv0 이면 `출처 주소`·`내려받은 날` 두 칸에 `선택` 배지가 선다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await click(stepBtn('①'));
@@ -339,11 +338,11 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     const block = screen.getByTestId('reg-source-block');
     expect(within(block).getByTestId('reg-source-url')).toBeTruthy();
     expect(within(block).getByTestId('reg-source-downloaded-on')).toBeTruthy();
-    expect(block.querySelectorAll('.reqtag')).toHaveLength(2);
+    expect(block.querySelectorAll('.opttag')).toHaveLength(2);
     for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
-      expect(within(label!).getByText('필수')).toBeInTheDocument();
+      expect(within(label!).getByText('선택')).toBeInTheDocument();
     }
   });
 
@@ -419,33 +418,27 @@ describe('rev2 등록 폼 — `데이터셋 만들기` 검증 순서', () => {
     expect(calls.registered).toHaveLength(0);
   });
 
-  it('관측 간격이 비거나 0 이하면 네 번째로 잡힌다', async () => {
+  it('관측 간격을 비워도 등록되고 요청에서 선택 필드가 빠진다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await click(stepBtn('②'));
     await change(screen.getByTestId('reg-summary'), '시험용 설명 한 줄');
     await setPeriod();
     await submit();
-    expect(screen.getByTestId('up-register-toast')).toHaveTextContent(REGISTER_INTERVAL_REQUIRED);
-    expect(stepBtn('②')).toHaveAttribute('aria-current', 'step');
-
-    await change(screen.getByTestId('reg-interval-value'), '0');
-    await change(screen.getByTestId('reg-interval-unit'), '시');
-    await submit();
-    expect(screen.getByTestId('up-register-toast')).toHaveTextContent(REGISTER_INTERVAL_REQUIRED);
-    expect(calls.registered).toHaveLength(0);
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    expect('observationInterval' in (calls.registered[0] as Record<string, unknown>)).toBe(false);
   });
 
-  it('Lv0 인데 출처 주소·내려받은 날이 비면 다섯 번째로 잡히고 ③ 으로 옮긴다', async () => {
+  it('Lv0 출처 주소·내려받은 날을 비워도 등록되고 요청에서 두 선택 필드가 빠진다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await fillRequired();
-    await click(stepBtn('①'));
-    await change(screen.getByTestId('reg-level'), LV0);
     await submit();
-    expect(screen.getByTestId('up-register-toast')).toHaveTextContent(REGISTER_LV0_SOURCE_REQUIRED);
-    expect(stepBtn('③')).toHaveAttribute('aria-current', 'step');
-    expect(calls.registered).toHaveLength(0);
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    const body = calls.registered[0] as Record<string, unknown>;
+    expect(body.processingLevelUserSet).toBe(LV0);
+    expect('sourceUrl' in body).toBe(false);
+    expect('sourceDownloadedOn' in body).toBe(false);
   });
 
   it('필수를 다 채우면 등록이 성립하고 기간·관측 간격이 계약 형상으로 실린다', async () => {

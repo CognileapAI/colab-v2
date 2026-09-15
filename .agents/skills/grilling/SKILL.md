@@ -1,14 +1,39 @@
 ---
 name: grilling
-description: CoLAB v2의 미해결 의사결정을 의존 순서대로 질문해 공통 이해에 도달한다.
+description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
 
-# Codex 연결
+Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
-먼저 `AGENTS.md`와 `docs/development/dual-agent.md`를 읽고, `.claude/skills/grilling/SKILL.md`를 읽어 수행한다.
-원본의 상대 링크와 스크립트는 원본 디렉터리를 기준으로 해석한다. 공통 본문은 복제하지 않는다.
-Claude Skill 호출은 해당 원본 SKILL.md 읽기로, Read/Grep/Bash/Edit는 현재 Codex 도구로 대응한다.
-원본이 요구하는 역할은 연결 문서의 위임·격리 규칙을 적용한다. 현재 사용 가능한 도구와 입력 방식을 쓰고, 존재하지 않는 플러그인을 호출하지 않는다.
-사용자가 이미 제공한 답과 승인 범위를 유지한다. 원본의 제품 규칙·산출물·검증 조건은 유지하며 실제 실행하지 않은 훅이나 검사를 통과로 보고하지 않는다.
+Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
-이 SKILL.md가 속한 저장소 루트를 먼저 확인한다. `AGENTS.md`, `docs/`, `.claude/` 등의 저장소 경로는 그 루트 기준이며, 현재 셸이 하위 폴더여도 기준을 바꾸지 않는다.
+Format a round like so:
+
+```
+❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+➡️ <your recommended answer>
+
+---
+
+❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+➡️ <your recommended answer>
+```
+
+Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
+
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+
+The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+
+## CoLAB v2 운용 (vendored 개조)
+
+- 사실 조회는 **`researcher` 서브에이전트**로 보낸다. 조회로 닫히는 것을 Ted 에게 묻지 않는다 —
+  위 「finding facts is your job, never the user's」의 이 레포에서의 집행 방법이다.
+- Ted 에게 가는 질문은 **한 라운드 단위로 묶어** 낸다. 한 건씩 왕복하지 않는다. 각 질문에 선택지를
+  **ⓐ/ⓑ** 로 제시하고 권고 하나를 표시한다(원문의 recommended answer = Ted 의 ⓐ/ⓑ 문법).
+- 질문문에 항목번호·WU 코드·내부 약어를 노출하지 않는다. 기능과 코드로 서술한다
+  (`.agents/rules/colab-rules.md §5-2`·`§5-4`).
+
+Before reporting, check each claim against this session's tool results.

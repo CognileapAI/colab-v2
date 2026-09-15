@@ -23,6 +23,7 @@
 """
 import hashlib
 import os
+import json
 import re
 import shutil
 import subprocess
@@ -267,6 +268,19 @@ def check_applied(home, manifest_path):
         return rows, errs
 
     expected = {}          # NFC 정규화한 사본 상대경로 → 항목 id
+    explicit = os.environ.get('COLAB_WORK_STATE_MODE') == 'work-state' or bool(os.environ.get('COLAB_WORK_STATE_INPUT'))
+    state_index = {}
+    if explicit:
+        import importlib.util
+        from pathlib import Path
+        spec = importlib.util.spec_from_file_location('planning_work_state', Path(_CHECKOUT_ROOT)/'scripts/harness/work_state.py')
+        state = importlib.util.module_from_spec(spec); spec.loader.exec_module(state)
+        try:
+            evidence_path = os.environ.get('COLAB_WORK_STATE_INPUT')
+            if not evidence_path: raise ValueError('explicit work-state input required')
+            state_index = state.validate(json.loads(Path(evidence_path).read_text()), Path(_CHECKOUT_ROOT))
+        except (ValueError, OSError) as exc:
+            errors.append('work-state evidence rejected: '+str(exc))
     for i, item in enumerate(items):
         if not isinstance(item, dict):
             errors.append("항목 %d 이 매핑이 아니다" % i)
@@ -289,6 +303,10 @@ def check_applied(home, manifest_path):
 
         rel = copy_rel(item)
         if status == "merged":
+            if explicit:
+                linked = state_index.get(item.get('work_item_id'))
+                if not linked or linked.get('state') != 'closed' or not linked.get('pr'):
+                    errors.append('%s: merged requires validated work_item_id PR/task evidence' % iid)
             if not item.get("applied_date"):
                 errors.append("%s: merged 인데 `applied_date` 가 없다" % iid)
             if not rel:
@@ -339,6 +357,8 @@ def check_applied(home, manifest_path):
                     rows.append(("(미등재)", "-", "-", "UNLISTED", rel))
     elif expected:
         errors.append("사본 폴더가 없다: %s" % applied_dir)
+    if not explicit:
+        print('legacy applied compatibility: %d records; no new merge evidence claim' % len(rows))
     return rows, errors
 
 

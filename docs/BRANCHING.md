@@ -6,63 +6,52 @@
 
 ---
 
-## 1. 규칙 6 (intent 축자 — 병합 뒤 정본 = 이 파일 · 개정은 새 intent ＋ 이 파일 동시, 축자 대조는 그 intent 로 옮긴다)
+## 1. 현재 정책 — develop 개발 원천·product 운영 원천
+
+승인 근거: `dev-package/intent/2026-09-15-develop-product-deployment.md`.
+실행 계획: `dev-package/prd/rounds/R-DEVELOP-PRODUCT.md`.
+2026-09-15 정책 개정이며 **원격 전환·운영 배포 완료 기록이 아니다**. 전환 실측은 `dev-package/reports/develop-product/transition-inventory.md`로 확인한다.
 
 <!-- rule6:begin -->
-1. `main` 은 **유일한 배포 원천**. dev·prod 에 올라가는 sha 는 반드시 `origin/main` 의 조상. `ship.sh`·`up.sh`·staging `deploy.sh --target dev` 가 `git merge-base --is-ancestor` 로 검사하고 아니면 거절.
-2. staging 은 예외 — `integration/*` HEAD 를 굽는다(리허설). 단 원장 행에 **브랜치 이름**을 같이 적는다.
-3. `integration/r-N` 은 `main` tip 에서 따고, `main` 으로는 **ff-only 한 줄**. 병합 뒤 브랜치 삭제.
-4. `lane/wu-*` 는 `integration` 에서 따고 rebase＋ff 로 돌아온다. 통합에 얹힌 즉시 삭제.
-5. 마이그레이션은 **한 라운드 = 한 체인 구간**. 형제가 생기면 `00NN_merge` ＋ 두 순서 drift 오라클(0007 선례) 의무.
-6. 릴리스 = 태그. dev 실적용 때 `dev-YYYYMMDD-N`, prod 는 기존 `prod-YYYYMMDD`. 〈N〉 행이 태그를 가리킨다.
+1. 기본 브랜치 `develop`이 dev 배포 원천이며 `product`가 운영 배포 원천이다. 후보 SHA는 대상 환경의 원격 원천 브랜치에 포함되어야 한다. 이름이 없는 경우 main으로 되돌아가지 않는다.
+2. staging은 `integration/*`의 리허설 환경이다. 원장에 브랜치 이름을 함께 기록한다.
+3. `integration/r-N`은 develop tip에서 시작하고 develop으로 ff-only 통합한 뒤 삭제한다. main에서 develop으로 실제 전환되기 전 준비 작업은 현재 main tip을 기준으로 한다.
+4. `lane/wu-*`는 integration에서 시작하고 rebase＋ff로 복귀한다. product에는 같은 저장소 develop의 PR만 사람이 직접 merge commit으로 병합한다. 직접 push·force push·삭제·자동 병합과 봇 우회를 허용하지 않는다.
+5. 마이그레이션은 한 라운드 = 한 체인 구간이다. 형제가 생기면 merge revision과 두 적용 순서 drift 검증이 필요하다.
+6. 릴리스는 태그로 식별한다. dev는 `dev-YYYYMMDD-N`, 운영은 `prod-*` 태그와 실제 product 병합 SHA를 결속한다. 사람의 PR 병합 후 배포하며 추가 배포 승인 단계는 없다.
 <!-- rule6:end -->
 
-- 검사 자리는 설계트리 Q2 로 `ship.sh` 한 곳 ＋ `deploy_doctor` ⑮ 사후 대조로 확정 · `up.sh`·`deploy.sh` 이중 검사 없음(WU-D2·D3)
-- 위 6줄의 문면 대조 = 아래 한 줄(출력 0행 = 일치).
-
-```bash
-diff <(sed -n '/^\*\*축 ① 규칙 6개\*\*/,/^\*\*축 ① 산출물\*\*/p' dev-package/intent/2026-09-08-r-d.md | grep -E '^[1-6]\. ') \
-     <(sed -n '/<!-- rule6:begin -->/,/<!-- rule6:end -->/p' docs/BRANCHING.md | grep -E '^[1-6]\. ')
-```
-
-- 규칙 1 의 반입 검사는 ⭑ **⟨개정 2026-09-12⟩ `infra/_lib/ship-gate.sh` 한 벌에 있고 `infra/dev/ship.sh`·`infra/prod/ship.sh` 가 그것을 부른다** ／ 종전 ~~**`infra/dev/ship.sh` 안에 있다**(WU-D2 반영)~~ — 비조상 거절 exit 65 · `origin` 조회 실패 exit 78 · 선언 우회 `COLAB_SHIP_ALLOW_NONMAIN=1`. 사후 대조는 `deploy_doctor` ⑮(§5).
-- 규칙 6 의 **prod 태그 검사**는 `infra/prod/ship.sh` 에만 있다 — 후보 sha 에 `prod-*` 태그가 없으면 exit 65 이고 ⛔ **우회 변수가 없다**(조상 검사와 다른 점). dev 에는 이 검사가 없다.
-
----
+- 반입 검사는 공통 ship gate, 사후 대조는 deploy doctor가 담당한다. dev/prod 호출부가 기준 ref를 고정하고 환경변수로 임의 원천을 허용하지 않는다.
+- PR의 head/base SHA와 초기화 manifest digest는 병합 전에 검증한다. 실제 merge SHA는 병합 뒤 부모 관계·승인 입력을 대조하여 실행 기록과 결속한다.
+- product 기준점 생성 자체는 배포가 아니다. 첫 PR 병합 전 자동 배포 진입점·보호 규칙·영속 기록·대상 검증이 준비되어야 한다.
+- 최초 운영 reseed는 첫 배포 PR에 명시한 대상에서만 1회 실행한다. 이후 일반 배포와 재시도로 초기화를 반복하지 않는다. 실패 시 점검 상태에서 사람이 재개를 결정한다.
+- 구현 중인 검사와 실제 원격 보호 설정의 상태는 구분한다. 이 문서 자체는 GitHub 설정을 변경하거나 배포를 실행하지 않는다.
 
 ## 2. 브랜치·태그 수명 표
 
-| 이름 | 기점 | 복귀 — 어디로·어떻게 | 삭제 시점 | 누가 | 비고 |
-|---|---|---|---|---|---|
-| `main` | 없음(정본 줄기) | 해당 없음 — 도착점 | 없음 | Ted(ff 한 줄) | 유일한 배포 원천(규칙 1) · 직접 push 금지 |
-| `integration/r-N` | `main` tip(해시를 박지 않고 `git rev-parse HEAD` 로 읽는다) | `main` 으로 **ff-only 한 줄** | `main` ff 직후 | 병합 = Ted · 삭제 = 오케스트레이터 | staging 리허설 대상(규칙 2) · 원장 행에 브랜치 이름 |
-| `lane/wu-*` | 해당 `integration/r-N` | 통합으로 **rebase ＋ ff** | 통합에 얹힌 **즉시** | 생성 = `Agent(isolation:"worktree")` · 병합·삭제 = 오케스트레이터 | 레인의 끝 = 자기 브랜치 · 레인은 병합·원격 삭제 0 |
-| `plan/*` | `main` tip | 복귀 없음 — 산출(라운드 파일·spec)은 통합 브랜치 커밋으로 들어간다 | 해당 라운드가 `main` 에 ff 된 뒤 | 오케스트레이터 | 워크트리 제거 선행(`git worktree remove`) |
-| `archive/*` 태그 | 삭제 직전 브랜치 tip | 복귀 없음 — 보존 전용 | 없음(영구) | 로컬 생성 = 레인 · 원격 push = 오케스트레이터(게이트 ③ 뒤) | 배포 대상 아님 · `git push origin archive/<이름>` **개별** · `--tags` 금지 |
-| `dev-YYYYMMDD-N` 태그 | dev 실적용 sha(로컬 `dist/colab-v2-dev.sha`) | 복귀 없음 | 없음 | 사람 — `deploy_doctor` 전건 뒤 호출 | N = 같은 날 기존 태그 수 ＋1 · 도구 = `infra/dev/tag-release.sh`(push 없음 · 명령만 출력) |
-| `prod-YYYYMMDD` 태그 | dev 배포 창 N회를 green 으로 넘긴 `main` 커밋 | 복귀 없음 | 없음 | Ted | ⭑ ⟨개정 2026-09-12⟩ prod 는 **실재**하고(`〈400〉` 가 `㊻` 보류를 해제했다) **그 태그에서만 배포**한다 — 집행 자리 = `infra/prod/ship.sh` 의 태그 검사(없으면 exit 65 · **우회 변수 없음**) ／ 종전 ~~prod 는 `PLAN-SoT §9-㊻` 로 보류 · 그 태그에서만 배포~~ |
+| 이름 | 기점 | 복귀·반영 방식 | 삭제 시점 | 책임 |
+|---|---|---|---|---|
+| `develop` | 기존 main을 rename | 개발 통합 도착점·기본 브랜치 | 영구 | 사람/오케스트레이터의 승인된 통합 |
+| `product` | 전환 계획의 검토된 기준점 | 동일 저장소 develop PR의 사람 직접 merge commit | 영구 | 사람 병합, 배포 자동 실행 |
+| `integration/r-N` | develop tip | develop으로 ff-only | 통합 뒤 | 오케스트레이터 |
+| `lane/wu-*` | integration | rebase＋ff | 통합 뒤 | 구현 레인, 통합은 오케스트레이터 |
+| `lane/product-source`·`lane/product-release` | 이번 integration | 변경 검토 후 integration으로 회수 | 통합 뒤 | 이번 라운드 격리 구현 |
+| `plan/*` | develop tip | 문서를 integration에 반영 | 라운드 통합 뒤 | 오케스트레이터 |
+| `archive/*` 태그 | 보존 대상 tip | 배포 대상 아님 | 영구 | 개별 보존 승인 범위 |
+| `dev-YYYYMMDD-N` 태그 | 실제 dev 적용 SHA | 검증·원장과 연결 | 영구 | 승인된 릴리스 흐름 |
+| `prod-*` 태그 | 실제 product 병합 SHA | 검증·원장과 연결 | 영구 | 사람 병합으로 시작된 릴리스 흐름 |
 
-- 표 밖 이름은 **정본이 없다.** 새 접두어가 필요하면 이 표에 행을 먼저 추가한다.
-- 하네스가 만드는 `worktree-agent-*` 는 레인 워크트리의 기술 브랜치이고 위 수명 규칙의 대상이 아니다.
-
----
+- 새 브랜치 접두어는 이 표에 먼저 기록한다. 기술적 worktree 브랜치와 별도의 제품 배포 원천을 혼동하지 않는다.
+- 강제 push와 태그 일괄 push는 사용하지 않는다. product 승격을 squash/rebase로 바꿔 공통 이력을 끊지 않는다.
 
 ## 3. 하지 말 것
 
-| # | 하지 말 것 | 실측 예시 | 근거 |
-|---|---|---|---|
-| 1 | git-flow 계층(`develop`·`release/*`) 신설 | 없음 — 이번 라운드가 **명시 제외**로 닫았다. 사람 1 ＋ 에이전트 레인 구조에서 층만 늘고, 사고 원인(「책에 없는 층」)은 층수와 무관 | `dev-package/intent/2026-09-08-r-d.md` 「범위 밖」 |
-| 2 | 미병합 sha 배포 | 창 9(2026-09-06)가 `integration/w9-dev-deploy` `20b3715` 를 dev 에 실었다 → §4 | `dev-package/sessions/WU-D4-branches-20260908.md` §2 · `PLAN-SoT §9 〈378〉 ⑧` |
-| 3 | 병합 뒤 브랜치 존치 | `integration/r-a2` `ccd9372` · `integration/r-b` `9a4b257` — 둘 다 `main` 조상 · 밖 커밋 0 인데 로컬·원격에 잔존 | 같은 파일 §1 표 |
-| 4 | 손으로 만든 형제 워크트리 | `git worktree add` 로 만든 형제 경로에서 레인 5개가 동시 정지(2026-09-03) — Bash 가드가 형제 경로를 공유 체크아웃으로 취급 | `.claude/rules/colab-rules.md §2-3` |
-| 5 | `git push origin --tags` | `archive/*` 10건과 함께 잡태그가 원격으로 나간다. 개별 push 만 한다 | `dev-package/sessions/WU-D4-branches-20260908.md` §10 머리 |
-| 6 | 태그 없이 브랜치 삭제 | 창 9 계열 삭제 시 **태그에만 남는 실체 4종** = dev 트리거 스풀 배선(compose ＋ README) · 매니페스트 `sourceLabel` 4값 · 창 9 원장 6행 · 창 9 실행 로그 20파일. reflog 는 원격에 없다 | 같은 파일 §2 |
-| 7 | 열린 PR 의 head 를 통보 없이 삭제 | 원격 브랜치 삭제가 곧 PR close — 실측 open 3건: `feature/rtf400_deploy_prod`(#6) · `feature/rtf400_dev_scale_up`(#4) · `feature/rtf400_upload_reaper`(#5) | 같은 파일 §1 표 |
-
-- ⑺ 의 이웃 사례 — `gh-pages` 는 **가동 중인 GitHub Pages 배포 원천**(`"status":"built"` · `"source":{"branch":"gh-pages"}`)이라 삭제하면 공개 URL 이 즉시 끊긴다. 처분하려면 Pages 설정 해제가 선행이고, 그 전까지 **보류·태그 미생성**이다. 근거 = 같은 파일 §7.
-- 원격 브랜치 삭제·태그 push·PR close 는 **비가역 원격 행위**다. 레인은 표와 로컬 태그까지 하고, 집행은 게이트 ③ 뒤 오케스트레이터가 한다.
-
----
+- 다른 저장소의 develop 또는 feature 브랜치를 product에 직접 반영하기.
+- 사람 병합 없이 운영을 배포하거나 자동 병합 봇에 보호 규칙 우회 권한 주기.
+- 원격 ref 부재를 main fallback이나 비조상 허용 변수로 해결하기.
+- 최초 초기화의 실행 기록 조회 실패를 미실행으로 간주하기.
+- 계정 비밀번호·운영 비밀을 PR·문서·커밋에 기록하기.
+- 이후 절의 과거 main 배포 근거를 새 develop/product 실측으로 재사용하기.
 
 ## 4. 창 9 사례 — 규칙 1 이 없던 자리에서 난 것
 

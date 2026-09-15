@@ -1,8 +1,11 @@
 # Claude와 Codex 공통 작업 연결
 
+현재 기본 브랜치는 `develop`, 운영 원천은 `product`다. `docs/BRANCHING.md`의 전환 정책과
+현재 사용자 승인 범위를 따른다. 아래 과거 `main` 실측은 이력이며 현재 ref 선택 근거가 아니다.
+
 ## 계획 중심 실행
 
-이번 전환의 전체 실행 계획은 `dev-package/prd/rounds/R-DUAL-AGENT.md`다.
+이번 전환의 전체 실행 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.
 여러 단계의 요청은 목표·완료 조건·의존·승인 대기·검증 기준을 먼저 기록한다.
 부분 작업이 끝나면 계획을 갱신하고 다음 실행 가능한 단계로 진행한다.
 진행 보고와 최종 완료를 구분하며, 개별 오류 해결을 전체 작업의 종료 사유로 삼지 않는다.
@@ -11,19 +14,29 @@
 
 ## 원본과 도구별 연결
 
-이번 변경은 기존 Claude 실행 설정을 유지하면서 Codex 진입점을 추가한다.
-공통 원본을 새 폴더로 전부 이동하지 않는다. 기존 경로를 유지해야 스크립트·상대 링크가 끊기지 않는다.
+현재 전환 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.
+규칙·역할·스킬과 훅의 공통 본문은 공통 경로에 두고 기존 Claude 진입점은 어댑터로 유지한다.
+실행 중인 훅 이전은 원본 복사 → 소비자 경로 전환 → 기존 진입점 어댑터화 순서로 한다.
+기존 진입점을 먼저 없애면 PreToolUse 자체가 실패하여 복구 도구까지 차단된다.
 
 | 대상 | 편집할 원본 | Codex 연결 |
 |---|---|---|
-| 제품 규칙 | `CLAUDE.md`, `.claude/rules/colab-rules.md` | `AGENTS.md`에서 필요한 절만 참조 |
-| 작업 절차 | `.claude/skills/colab-v2-work/SKILL.md` | `.agents/skills/colab-v2-work/SKILL.md` |
-| 브라우저 CLI | `.claude/skills/agent-browser/SKILL.md`와 그 옆 리소스 | `.agents/skills/agent-browser/SKILL.md` |
-| 구현·조사·검토·게이트 역할 | `.claude/agents/*.md` 본문 | `.codex/agents/*.toml`에서 원본을 읽고 도구 차이 적용 |
-| 검사 로직 | `.claude/hooks/*.sh`, `gates/` | `scripts/agent-bridge.py`와 기존 게이트 명령 |
+| 제품 규칙 | `.agents/rules/product.md`, `.agents/rules/colab-rules.md` | 공통 `AGENTS.md`와 Claude thin adapter에서 필요한 절만 참조 |
+| 작업 절차 | `.agents/skills/colab-v2-work/SKILL.md` | `.claude/skills/colab-v2-work/SKILL.md` adapter |
+| 브라우저 CLI | `.agents/skills/agent-browser/SKILL.md`와 그 옆 리소스 | `.claude/skills/agent-browser/SKILL.md` adapter |
+| 구현·조사·검토·게이트 역할 | `.agents/roles/*.md` 본문 | `.codex/agents/*.toml`에서 원본을 읽고 도구 차이 적용 |
+| 검사 로직 | `scripts/harness/hooks/`, `gates/` | `.claude/hooks/` 어댑터와 `scripts/agent-bridge.py` |
 
-`.agents`와 `.codex` 파일은 연결과 환경 차이만 담는다. 공통 본문 수정은 원본에서 한 번만 한다.
-기존 12개 스킬 모두 `.agents/skills/<이름>/SKILL.md`로 등록한다.
+`.agents/rules`, `.agents/roles`, `.agents/skills`가 공통 본문을 소유한다.
+제품 본문은 이전 CLAUDE 원문과 stage 표지를 보존한다. 신규 시작·종료는 `AGENTS.md`의
+명시 task·PR 요약·로컬 계획 및 task runtime 절차를 우선하며, 원문 §1·§6의 대장 우선 절차는
+미이전 제품 항목의 호환 구획에만 적용한다. 기존 제품 게이트와 완료 기준은 축소하지 않는다.
+PR 게시는 사용자가 수행한다. 에이전트는 로컬 요약·검증 근거·게시 절차만 제공하며 원격 게시를 하지 않는다.
+`.claude/rules`, `.claude/agents`, `.claude/skills`는 기존 경로를 유지하는 어댑터다.
+Claude의 paths·모델·도구·격리 frontmatter는 해당 어댑터에 그대로 보존한다.
+Codex 역할은 `.agents/roles`를 직접 읽으며 Claude frontmatter를 적용하지 않는다.
+공통 본문 수정은 원본에서 한 번만 한다.
+공통 스킬 13개와 Codex 전용 완료 알림 스킬을 `.agents/skills/<이름>/SKILL.md`로 등록한다.
 `grill-me`와 `to-spec`의 명시 호출 정책은 원본 `agents/openai.yaml`에서 유지한다.
 Codex에서는 `$grill-me`, `$to-spec`로 호출한다. 개인 `$intent`는 grill-me의 별칭이다.
 각 스킬을 읽으면 **그 원본 디렉터리**를 기준으로 상대 링크·스크립트 경로를 해석한다.
@@ -45,11 +58,11 @@ Claude의 도구 allowlist·maxTurns·모델 이름은 Codex 설정으로 해석
   병렬 레인은 사본을 분리한다. 테스트 작성이 필요한 fix는 승인된 시험 작성 단계에서 RED를 확인한 뒤
   `COLAB_FIX_LANE=1`의 구현 단계로 진행한다. 보호된 fix 단계에서 테스트 수정 우회 값을 켜지 않는다.
 - agent-browser의 `references/` 8개와 `templates/` 3개는 원본 스킬 옆에 복원했다.
-  확보 경로와 출처는 `.claude/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
+  확보 경로와 출처는 `.agents/skills/VENDORED.md`에 기록하며, 상대 링크는 원본 디렉터리에서 해석한다.
 - `/eli5`, `explain-visually`는 쉬운 설명과 현재 사용 가능한 시각화 도구로 목적을 수행한다.
   `/graphify`는 현재 설치된 기능이 아니므로 그래프 생성 완료를 주장하지 않는다.
 - deploy_doctor 검사 수 등 오래된 숫자는 실행 시 정본과 실측으로 확인한다. 게이트 병렬도는
-  현재 `.claude/rules/colab-rules.md`의 후속 운영 규칙과 실제 자원을 따른다.
+  현재 `.agents/rules/colab-rules.md`의 후속 운영 규칙과 실제 자원을 따른다.
 
 ### 자동 훅 등록 상태
 

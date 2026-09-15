@@ -1,0 +1,24 @@
+{
+  "schema": "colab-product-release-manifest/1",
+  "reset": {
+    "environment": "prod",
+    "bucket": "colab-platform-data-prod",
+    "region": "ap-northeast-2",
+    "databases": {
+      "platform": {
+        "host": "colab-platform-prod-db.crc0aiws4t52.ap-northeast-2.rds.amazonaws.com",
+        "name": "colab_platform",
+        "schemas": ["public", "account_admin"]
+      },
+      "ai": {
+        "host": "colab-platform-prod-db.crc0aiws4t52.ap-northeast-2.rds.amazonaws.com",
+        "name": "colab_ai",
+        "schemas": ["public"]
+      }
+    },
+    "keys": [],
+    "multipartUploads": [],
+    "backup_manifest_sha256": "",
+    "operator_input_sha256": ""
+  }
+}

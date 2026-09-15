@@ -39,6 +39,7 @@ describe('진행 상태 조회 실패 복구', () => {
       createRender: () => new Promise(() => {}),
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
+    await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
     fireEvent.click(await screen.findByTestId('up-preview-draw'));
     expect(screen.getByTestId('up-preview-stage')).toHaveTextContent('미리보기 요청 중');
   });
@@ -51,6 +52,7 @@ describe('진행 상태 조회 실패 복구', () => {
       getRender: () => new Promise(() => {}),
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
+    await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
     fireEvent.click(await screen.findByTestId('up-preview-draw'));
     const img = await screen.findByTestId('up-preview-image');
     expect(screen.getByTestId('up-preview-image-loading')).toBeInTheDocument();
@@ -75,6 +77,7 @@ describe('진행 상태 조회 실패 복구', () => {
       getRender: async () => { throw new Error('temporary connection error'); },
     } as unknown as PreviewSource;
     render(<PreviewPanel source={source} uploadId={ID} hasReferenceGrid />);
+    await waitFor(() => expect(screen.getByTestId('up-style-palette')).toHaveValue('viridis'));
     fireEvent.click(await screen.findByTestId('up-preview-draw'));
     await screen.findByTestId('up-preview-error');
     expect(screen.queryByTestId('up-preview-stage')).toBeNull();

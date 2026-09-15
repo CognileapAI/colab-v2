@@ -94,8 +94,9 @@ WORKUNITS = pathlib.Path(
 PLAN = pathlib.Path(
     os.environ.get("COLAB_WORK_ITEMS_PLAN") or (REPO_ROOT / "dev-package/PLAN-SoT.md")
 )
+# Historical override name retained for existing fixtures/operators; shared source is default.
 CLAUDEMD = pathlib.Path(
-    os.environ.get("COLAB_WORK_ITEMS_CLAUDEMD") or (REPO_ROOT / "CLAUDE.md")
+    os.environ.get("COLAB_WORK_ITEMS_CLAUDEMD") or (REPO_ROOT / ".agents/rules/product.md")
 )
 
 #: `CLAUDE.md` 안의 stage 3 표지. **렌더에 보이지 않는 주석**이라 읽는 사람의 문장을 늘리지
@@ -620,6 +621,25 @@ def check_claude_md(by_id: dict[str, dict]) -> int:
 
 
 def main() -> int:
+    # Explicit evidence mode never opens legacy documents. No evidence means 78.
+    import importlib.util
+    import json
+    mode = os.environ.get('COLAB_WORK_STATE_MODE', 'legacy-compatibility')
+    if mode == 'work-state' or os.environ.get('COLAB_WORK_STATE_INPUT'):
+        spec = importlib.util.spec_from_file_location('work_state_gate', REPO_ROOT/'scripts/harness/work_state.py')
+        state = importlib.util.module_from_spec(spec); spec.loader.exec_module(state)
+        args = ['--root', str(REPO_ROOT)]
+        if os.environ.get('COLAB_WORK_STATE_INPUT'):
+            args += ['--input', os.environ['COLAB_WORK_STATE_INPUT']]
+        return state.main(args)
+    try:
+        config = json.loads((REPO_ROOT/'.agents/harness.yaml').read_text())
+        if mode != 'legacy-compatibility' or config['transition']['mode'] != 'legacy-compatibility':
+            print('::gate-readiness-failure:: explicit work-state input required; legacy compatibility not declared')
+            return 78
+    except (OSError, ValueError, KeyError):
+        print('::gate-readiness-failure:: transition compatibility config missing')
+        return 78
     items = load_ledger()
     by_id = check_schema(items)
 
@@ -639,7 +659,7 @@ def main() -> int:
         f"work-item-consistency: 대장 {len(by_id)}건 · "
         f"㈐ 진실원 대조 {n_handoff}행 · ㈏ 체크리스트 대조 {n_checklist}건 · "
         f"㈑ 착수 후보 {n_candidates}행 · ㈒ 기한 {n_deadlines}건 · ㈓ conflict {n_conflicts}건 · "
-        f"㈔ 결정 번호 {n_decisions}개 · ㈕ CLAUDE.md stage 3 대조 {n_stage3}건"
+        f"㈔ 결정 번호 {n_decisions}개 · ㈕ {CLAUDEMD.name} stage 3 대조 {n_stage3}건"
     )
     print(
         "  ── 단계 집계: "

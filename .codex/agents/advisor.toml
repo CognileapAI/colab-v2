@@ -3,7 +3,7 @@ description = "CoLAB 계획·산출물·배포 근거의 독립 검토. 구현�
 model = "gpt-6-astra"
 sandbox_mode = "read-only"
 developer_instructions = """
-Read docs/development/dual-agent.md, then the body of .claude/agents/advisor.md.
+Read docs/development/dual-agent.md, then the body of .agents/roles/advisor.md.
 Reuse that role's review criteria and concise output. Ignore its Claude model/tool frontmatter;
 use this role's configured model and the current Codex read/search tools. Do not write,
 execute gates, or spawn agents. Apply revision checks only to migration changes.

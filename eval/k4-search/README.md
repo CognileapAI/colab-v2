@@ -104,4 +104,4 @@ services/core-api/.venv/bin/python eval/k4-search/run_regression.py
 
 현재 helper 43건과 실제 core-api 공개 API를 통한 골든 12문항을 검사한다. DB는 일회용이며, 질문 해석은 고정 응답을 사용한다. Sonnet 호출·모델 품질 평가·배포 환경 데이터 변경은 하지 않는다.
 
-문항 보강은 `golden-cases.json`에서 질문·필수 결과·빈 결과 기대를 수정하고, 대응하는 고정 해석을 `dev-package/reports/stage3-ai-search-plan/expanded-normalized-02.json`의 `expansion.responses`에 같은 ID와 순서로 반영한다. 사례 수는 늘릴 수 있다. 빈 입력, ID/순서 불일치, 시험 실패는 실패로 처리한다.
+문항 보강은 `golden-cases.json`에서 질문·필수 결과·빈 결과 기대를 수정하고, 대응하는 고정 해석을 `eval/k4-search/fixtures/reference/expanded-normalized-02.json`의 `expansion.responses`에 같은 ID와 순서로 반영한다. 사례 수는 늘릴 수 있다. 빈 입력, ID/순서 불일치, 시험 실패는 실패로 처리한다.

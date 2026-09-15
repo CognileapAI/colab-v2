@@ -29,6 +29,7 @@ DR-7 은 게이트를 통과해서가 아니라 게이트가 없어서 살아남
 """
 
 import json
+import importlib.util
 import os
 import re
 import subprocess
@@ -50,6 +51,43 @@ except ImportError:
     sys.exit(1)
 
 ERRORS: list[str] = []
+
+
+class EvidenceReadiness(ValueError): pass
+
+
+def work_state_mode():
+    return os.environ.get('COLAB_WORK_STATE_MODE') == 'work-state' or bool(os.environ.get('COLAB_WORK_STATE_INPUT'))
+
+
+def citation_checker():
+    if not work_state_mode():
+        return lambda text: bool(CITATION.search(text))
+    path = os.environ.get('COLAB_WORK_STATE_INPUT')
+    if not path: raise EvidenceReadiness('explicit work-state input missing')
+    spec = importlib.util.spec_from_file_location('seam_work_state', REPO_ROOT/'scripts/harness/work_state.py')
+    state = importlib.util.module_from_spec(spec); spec.loader.exec_module(state)
+    try: index = state.validate(json.loads(Path(path).read_text()), REPO_ROOT)
+    except (state.ReadinessError, OSError) as exc: raise EvidenceReadiness(str(exc)) from exc
+    project = json.loads((REPO_ROOT/'.agents/harness.yaml').read_text())['project']
+    repository = project['repository']
+    def valid(text):
+        urls = re.findall(r'https://github\.com/([^/\s]+)/([^/\s]+)/(issues|pull)/(\d+)\b', text)
+        adr_paths = re.findall(r'docs/decisions/[0-9]+-[a-z0-9-]+\.md', text)
+        if not urls and not adr_paths: return False
+        for owner, repo, kind, number in urls:
+            if owner+'/'+repo != repository: return False
+            number = int(number)
+            if kind == 'issues' and not any(issue.get('number') == number for issue in index.values()): return False
+            if kind == 'pull' and not any(issue.get('pr', {}).get('number') == number for issue in index.values()): return False
+        if adr_paths:
+            adr = state.module('seam_adr', 'adr_gate.py')
+            if adr.validate(REPO_ROOT, all_records=True): return False
+            for relative in adr_paths:
+                path = REPO_ROOT/relative
+                if not path.is_file() or not re.search(r'^- 상태: accepted\s*$', adr.visible(path.read_text()), re.M): return False
+        return True
+    return valid
 
 
 def err(check: str, msg: str) -> None:
@@ -307,8 +345,22 @@ CITATION = re.compile(
 
 def load_baseline(reg: Registry) -> Registry | None:
     spec = os.environ.get("COLAB_SC_BASELINE", "git:HEAD")
+    if os.environ.get('CI', '').lower() == 'true':
+        pinned = os.environ.get('COLAB_SC_EVENT_BASE_SHA', '')
+        if not re.fullmatch('[0-9a-f]{40}', pinned) or pinned == '0'*40:
+            raise EvidenceReadiness('CI event base SHA missing')
+        if os.environ.get('COLAB_SC_BASELINE') not in (None, 'git:'+pinned):
+            raise ValueError('seam baseline differs from fixed CI event base')
+        spec = 'git:'+pinned
+    elif work_state_mode() and not os.environ.get('COLAB_SC_BASELINE'):
+        raise EvidenceReadiness('new work-state mode requires explicit seam baseline')
     if spec.startswith("git:"):
         ref = spec[4:]
+        if work_state_mode() or os.environ.get('CI', '').lower() == 'true':
+            baseline = subprocess.run(['git','-C',str(REPO_ROOT),'rev-parse','--verify',ref+'^{commit}'],capture_output=True,text=True)
+            if baseline.returncode: raise EvidenceReadiness('seam base commit unavailable')
+            head = subprocess.check_output(['git','-C',str(REPO_ROOT),'rev-parse','HEAD'],text=True).strip()
+            if baseline.stdout.strip() == head: raise ValueError('seam baseline cannot equal current HEAD')
         import tempfile
         tmp = Path(tempfile.mkdtemp(prefix="sc-baseline-"))
         (tmp / "seams").mkdir()
@@ -346,6 +398,7 @@ def op_node(doc: dict, op_id: str) -> dict:
 
 
 def check_citation(reg: Registry, allow: dict) -> int:
+    valid_citation = citation_checker()
     base = load_baseline(reg)
     if base is None:
         return 0
@@ -363,7 +416,7 @@ def check_citation(reg: Registry, allow: dict) -> int:
             if not desc.strip():
                 err("㉠", f"{fname}: 신설 op `{op}` 의 근거 칸이 공란이다 (description 없음). "
                           f"근거 없이 들어오는 op 은 red 다 (㉠-1).")
-            elif not CITATION.search(desc):
+            elif not valid_citation(desc):
                 err("㉠", f"{fname}: 신설 op `{op}` 의 description 에 정본 인용도 "
                           f"`[정본 무근거]`/`[사용자 승인]` 표기도 없다 (㉠-1).")
         for section in ("schemas", "parameters"):
@@ -373,11 +426,11 @@ def check_citation(reg: Registry, allow: dict) -> int:
                 checked += 1
                 node = cur.get(name) or {}
                 sdesc = str(node.get("description", "") or "")
-                if not CITATION.search(sdesc):
+                if not valid_citation(sdesc):
                     # 스키마 자체 근거가 없으면, 필드 전수가 각자 근거를 들어야 한다
                     props = node.get("properties", {}) or {}
                     field_ok = props and all(
-                        CITATION.search(str((p or {}).get("description", "") or ""))
+                        valid_citation(str((p or {}).get("description", "") or ""))
                         for p in props.values())
                     if not field_ok:
                         err("㉠", f"{fname}: 신설 {section[:-1]} `{name}` 의 근거 칸이 "
@@ -387,11 +440,12 @@ def check_citation(reg: Registry, allow: dict) -> int:
                         checked += 1
                         pdesc = str((p or {}).get("description", "") or "")
                         # 필드는 자기 인용 또는 스키마 인용을 승계한다 — 둘 다 없으면 red
-                        if pdesc.strip() and not CITATION.search(pdesc) \
-                                and not CITATION.search(sdesc):
+                        if pdesc.strip() and not valid_citation(pdesc) \
+                                and not valid_citation(sdesc):
                             err("㉠", f"{fname}: 신설 필드 `{name}.{pname}` 근거 공란 (㉠-2)")
     print(f"# ㉠ — 기준선 대비 신설 검사 대상 {checked}건 "
           f"(신설 0건이면 대조할 것이 없어 green 이다 — 기준선이 곧 현재라는 뜻)")
+    if not work_state_mode(): print(f'# legacy citation compatibility: {checked} targets; no new approval claim')
     return checked
 
 
@@ -506,7 +560,11 @@ def main() -> int:
     if which in ("all", "gb"):
         counts["G-b"] = check_gb(reg, allow)
     if which in ("all", "citation"):
-        counts["㉠"] = check_citation(reg, allow)
+        try: counts["㉠"] = check_citation(reg, allow)
+        except EvidenceReadiness as exc:
+            print('::gate-readiness-failure:: '+str(exc)); return 78
+        except (ValueError, OSError) as exc:
+            print('::error::seam-consistency '+str(exc)); return 1
     if which in ("all", "flow"):
         counts["㉡"] = check_flow(reg, allow)
     if not counts:

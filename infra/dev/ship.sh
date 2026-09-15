@@ -9,6 +9,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 DIST="${1:-$REPO/dist}"
+if [ -z "${COLAB_RELEASE_PRE_EVIDENCE:-}" ]; then
+  echo "COLAB_RELEASE_PRE_EVIDENCE required (merged PR / same-SHA CI bundle)" >&2; exit 78
+fi
+[ -f "$DIST/colab-v2-dev.sha" ] || { echo "build SHA missing" >&2; exit 78; }
+SHA="$(cat "$DIST/colab-v2-dev.sha")"
+FULL_SHA="$(git -C "$REPO" rev-parse --verify "$SHA^{commit}")" || exit 78
+python3 "$REPO/scripts/harness/release_evidence.py" pre --pre "$COLAB_RELEASE_PRE_EVIDENCE" --sha "$FULL_SHA" --environment dev --root "$REPO"
+if [ "${COLAB_RELEASE_DRY_RUN:-0}" = 1 ]; then
+  echo "dry-run: evidence checked; ship only, no up.sh/doctor/tag executed"; exit 0
+fi
 : "${COLAB_DEV_SSH:?COLAB_DEV_SSH 가 필요하다 (예: ec2-user@<IP>)}"
 : "${COLAB_DEV_KEY_FILE:?COLAB_DEV_KEY_FILE 이 필요하다}"
 SHA="$(cat "$DIST/colab-v2-dev.sha")"
@@ -22,8 +32,9 @@ SHA="$(cat "$DIST/colab-v2-dev.sha")"
 # ⭑ 운영 소스 번들 사슬도 한 벌이다 — prod 가 같은 함수를 부른다(`infra/_lib/ops-bundle.sh`).
 # shellcheck source=../_lib/ops-bundle.sh
 . "$REPO/infra/_lib/ops-bundle.sh"
-ship_gate_main_ancestor "$REPO" "$SHA"
-MAIN_SHA="$SHIP_GATE_MAIN_SHA"
+ship_gate_source_ancestor "$REPO" "$SHA" dev
+SOURCE_REF="$SHIP_GATE_SOURCE_REF"
+SOURCE_SHA="$SHIP_GATE_SOURCE_SHA"
 ANCESTOR="$SHIP_GATE_ANCESTOR"
 
 TAR="$DIST/colab-v2-dev-$SHA.tar"
@@ -37,6 +48,8 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
 "${SSH[@]}" "$(ops_bundle_prepare_cmd)"
 "${SCP[@]}" "$TAR" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
 "${SCP[@]}" "$OPS_TAR" "$OPS_MANIFEST" "$COLAB_DEV_SSH:/opt/colab-v2/images/"
+"${SCP[@]}" "$COLAB_RELEASE_PRE_EVIDENCE" "$COLAB_DEV_SSH:/opt/colab-v2/RELEASE_PRE.json"
+"${SSH[@]}" 'chmod 0600 /opt/colab-v2/RELEASE_PRE.json'
 # ⚠ **백업·크론 스크립트도 함께 싣는다** (2026-09-06 · `〈400〉`-㉳-⑶).
 #    종전에는 `compose.yml`·`up.sh` **둘만** 실었고, `backup.sh`·`install-cron.sh` 를 올리는 절차가
 #    README 어디에도 없었다. 그 둘은 실행 비트도 없어서 `install-cron.sh:21` 의 `[ -x ]` 검사에
@@ -49,6 +62,7 @@ SCP=(scp -i "$COLAB_DEV_KEY_FILE" -o IdentitiesOnly=yes)
   $(ops_bundle_remote_snippet "$SHA" "$(basename "$OPS_TAR")" "$(basename "$OPS_MANIFEST")") && \
   for u in core-api pipeline-worker viz-render ai-service migrator; do docker tag colab-v2/\$u:dev-$SHA colab-v2/\$u:dev; done && \
   echo $SHA > /opt/colab-v2/CURRENT_SHA && \
-  printf 'main=%s candidate=%s ancestor=%s\n' $MAIN_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
+  echo $FULL_SHA > /opt/colab-v2/CURRENT_FULL_SHA && \
+  printf 'source_ref=%s source_sha=%s candidate=%s ancestor=%s\n' $SOURCE_REF $SOURCE_SHA $SHA $ANCESTOR > /opt/colab-v2/MAIN_SHA && \
   echo 'loaded: dev-$SHA'"
 echo "── 실었다: dev-$SHA. 다음 = EC2 에서 /opt/colab-v2/up.sh"

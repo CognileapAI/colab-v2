@@ -1,4 +1,4 @@
-# CoLAB v2 — Codex 진입점
+# CoLAB v2 — 공통 작업 진입점
 
 개발 루트는 이 Git 저장소다. 상위 작업공간의 과거 프로젝트는 기본 탐색 대상이 아니다.
 이 문서의 모든 저장소 상대 경로는 **이 AGENTS.md가 있는 저장소 루트 기준**이다.
@@ -8,20 +8,29 @@
 경로에서 세 디렉터리 위를 저장소 후보로 찾아 AGENTS.md와 `.git` 존재를 파일 조회로 확인한다.
 하위 폴더에 문서가 없다는 이유로 저장소 지침이 없다고 판단하지 않는다.
 먼저 `docs/development/dual-agent.md`를 읽는다. 기존 제품 규칙의 원본은
-`CLAUDE.md`이며 §0·§3·§5·§6·§10을 필요한 범위에서 확인한다.
+`.agents/rules/product.md`이며 §0·§3·§5·§6·§10을 필요한 범위에서 확인한다.
+`CLAUDE.md`는 이 진입점을 읽는 얇은 어댑터다. 제품 본문은 원문과 stage 표지를 보존했다.
+그 안의 과거 세션 시작·종료 절차(§1·§6)와 공통 스킬의 legacy 기록 안내는
+아래 신규 작업 절차를 대체하지 않는다. 제품 요구·완료 조건·검사 범위는 그대로 유지한다.
 Codex 연결 문서는 제품 요구사항이나 승인된 결정을 변경하지 않는다.
 
 여러 단계 작업은 전체 계획을 먼저 확인하고 단계·의존·검증 상태를 갱신하며 진행한다.
-이번 Claude/Codex 전환의 실행 계획은 `dev-package/prd/rounds/R-DUAL-AGENT.md`다.
+이번 Claude/Codex 전환의 실행 계획은 `dev-package/prd/rounds/R-HARNESS-PR-CENTRIC.md`다.
 개별 수정이 끝났다는 이유로 전체 작업을 종료하지 않는다. 승인 대기와 독립인 작업은 계속한다.
 
-- 작업 상태 정본은 `dev-package/work-items.yaml`. 사용자가 지정한 intent/spec/라운드가 우선이다.
-  지정이 없으면 최근 Git 이력과 대장을 대조한다. 파일 수정 시각만으로 다음 작업을 선택하지 않는다.
+- 신규 작업은 사용자가 명시한 task·intent/spec·PR 요약·로컬 계획을 우선한다.
+  시작·인계 증거는 `docs/development/lifecycle-evidence.md`의 task runtime에 둔다.
+  지정이 없으면 최근 Git 이력과 현재 요청을 대조하며 mtime으로 다음 작업을 결정하지 않는다.
+  `dev-package/work-items.yaml`·HANDOFF·세션 문서는 미이전 제품 상태의 읽기 호환 자료다.
+  해당 legacy 제품 항목을 실제로 변경할 때만 기존 대조 게이트와 기록 정합을 유지한다.
+  신규 task를 만들었다는 이유만으로 legacy 대장·세션·결정번호를 추가하지 않는다.
+- PR 게시는 사용자가 수행한다. 에이전트는 로컬 PR 요약·실제 검증 근거·게시 절차를 제공한다.
+  PR 미게시를 로컬 전환 구현의 미완료와 혼동하지 않으며 게시 완료를 주장하지 않는다.
 - 큰 문서는 해당 제목·앵커 주변만 읽는다. 규칙·스킬 본문을 양쪽에 복제하지 않는다.
 - 공통 개발 절차는 `.agents/skills/colab-v2-work/SKILL.md`에서 연결한다.
-- `.claude/rules/colab-rules.md`는 공통 규칙이다. 작업에 필요한 절을 읽는다.
-  `infra/**`, `docs/DEPLOY*.md`, `services/core-api/ops/**` 변경 전에는 `.claude/rules/deploy.md`,
-  `services/core-api/**` 변경 전에는 `.claude/rules/s3-upload.md`를 읽는다.
+- `.agents/rules/colab-rules.md`는 공통 규칙이다. 작업에 필요한 절을 읽는다.
+  `infra/**`, `docs/DEPLOY*.md`, `services/core-api/ops/**` 변경 전에는 `.agents/rules/deploy.md`,
+  `services/core-api/**` 변경 전에는 `.agents/rules/s3-upload.md`를 읽는다.
   Claude의 paths 메타데이터가 Codex에서 자동 적용된다고 가정하지 않는다.
 - 브라우저 작업은 `.agents/skills/agent-browser/SKILL.md`를 읽고 agent-browser를 사용한다.
   `frontend-visual`의 읽기 전용 시각 검사는 사용자 여정 E2E를 대신하지 않는다.

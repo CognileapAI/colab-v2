@@ -156,6 +156,8 @@ class LifecycleTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess([], 0, 'mtime suggestion', '')
         result = bridge.dispatch_event(self.event('SessionStart', source='startup'))
         self.assertIn("user's selected round takes precedence", result['hookSpecificOutput']['additionalContext'])
+        self.assertIn('explicit task, PR summary and local plan first', result['hookSpecificOutput']['additionalContext'])
+        self.assertIn('only for unmigrated product items', result['hookSpecificOutput']['additionalContext'])
 
     def test_missing_selector_and_unknown_event_rejected(self):
         for event in ('SubagentStop', 'SubagentStart', 'SessionStart', 'unknown'):
@@ -433,10 +435,50 @@ class HookIntegrationTests(unittest.TestCase):
         result = self.run_guard("guard-command", "--worker", "--command", "git push origin main")
         self.assertEqual(result.returncode, 2, result.stderr)
 
+    def test_develop_and_product_pushes_preserve_branch_policy(self):
+        for command, worker, expected in (
+            ('git push origin develop', False, 0),
+            ('git push origin develop', True, 2),
+            ('git push --force origin develop', False, 2),
+            ('git push origin product', False, 2),
+            ('git push origin +product', False, 2),
+            ('git push origin +refs/heads/product', False, 2),
+            ('git push origin +develop', False, 2),
+            ('git push origin HEAD:refs/heads/product', False, 2),
+            ('git push origin --delete develop', False, 2),
+            ('git push origin --delete product', False, 2),
+            ('git branch -D develop', False, 2),
+            ('git branch -D product', False, 2),
+        ):
+            with self.subTest(command=command, worker=worker):
+                args = ['guard-command', '--command', command]
+                if worker:
+                    args.append('--worker')
+                result = self.run_guard(*args)
+                self.assertEqual(result.returncode, expected, result.stderr)
+
     def test_fix_cannot_edit_test(self):
         result = self.run_guard("guard-edit", "--path", "frontend/test/example.test.ts",
                                 extra_env={"COLAB_FIX_LANE": "1"})
         self.assertEqual(result.returncode, 2, result.stderr)
+
+    def test_migration_guard_uses_develop_and_rejects_missing_ref(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(['git','init','-q',str(root)],check=True)
+            revision = root/'db/platform/versions/old.py'
+            revision.parent.mkdir(parents=True); revision.write_text('# applied\n')
+            subprocess.run(['git','-C',directory,'add','.'],check=True)
+            subprocess.run(['git','-C',directory,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','fixture'],check=True)
+            hook = bridge.ROOT/'scripts/harness/hooks/migration-guard.sh'
+            def inspect(name):
+                payload={'cwd':directory,'tool_name':'Edit','tool_input':{'file_path':str(revision.parent/name)}}
+                return subprocess.run(['bash',str(hook)],input=json.dumps(payload),text=True,
+                    env=dict(os.environ,COLAB_HOOKS='1'),capture_output=True).returncode
+            self.assertEqual(inspect('new.py'),2)
+            subprocess.run(['git','-C',directory,'update-ref','refs/remotes/origin/develop','HEAD'],check=True)
+            self.assertEqual(inspect('old.py'),2)
+            self.assertEqual(inspect('new.py'),0)
 
     def test_outside_path_and_disabled_guard_rejected(self):
         self.assertEqual(self.run_guard("guard-edit", "--path", "../outside.md").returncode, 1)

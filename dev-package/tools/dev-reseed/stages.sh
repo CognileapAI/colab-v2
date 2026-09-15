@@ -706,7 +706,7 @@ for seq, row in sorted(st.get("datasets", {}).items(), key=lambda kv: int(kv[0])
 PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
-  local seq did name t0 t1 ms shown level unset_lv usage login_n info_n
+  local seq did name t0 t1 ms shown level unset_lv usage login_n info_n slot_state
   while IFS=$'\t' read -r seq did name; do
     [ -n "$seq" ] || continue
     [ "$name" = - ] && name=""
@@ -716,8 +716,21 @@ PY
       continue
     fi
     t0="$(date +%s%3N)"
-    ab_dev open "$DEV_URL/datasets/$did" >/dev/null || true
-    ab_dev wait '[data-testid="dataset-preview"]' "$PREVIEW_WAIT_MS" >/dev/null 2>&1 || true
+    if ! ab_dev open "$DEV_URL/datasets/$did" >/dev/null 2>&1; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t페이지 이동 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 페이지 이동 실패 · 이전 화면을 판정하지 않는다"
+      continue
+    fi
+    # Container presence is not completion: its slot starts in idle/drawing.
+    # Poll the existing state attribute, keeping missing values undecidable.
+    slot_state=""
+    while :; do
+      slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
+      case "$slot_state" in done|failed) break ;; esac
+      t1="$(date +%s%3N)"
+      [ "$((t1 - t0))" -lt "$PREVIEW_WAIT_MS" ] || break
+      sleep 0.05
+    done
     t1="$(date +%s%3N)"; ms=$(( t1 - t0 ))
     # ⚠ 화면이 **상세 화면인지 먼저** 잰다 — 로그인 화면·빈 화면에서도 `preview-unavailable` 계수는 0 이라
     #   그대로 읽으면 「성립」이 된다(4회차 `20260914T035058Z` 실측 · 27건 전건이 로그인 화면이었다).
@@ -737,6 +750,12 @@ PY
     elif [ "${info_n:-x}" != 1 ]; then
       verdict=판정불가; level=""; unset_lv=""; usage=""
       blocked_add verify "seq=$seq $name — 상세 화면이 서지 않았다(basic-info 계수 [$info_n]) · 판정 불가"
+    elif [ "$slot_state" = failed ]; then
+      verdict=미성립
+      blocked_add verify "seq=$seq $name — 미리보기 최종 상태가 failed다"
+    elif [ "$slot_state" != done ]; then
+      verdict=판정불가
+      blocked_add verify "seq=$seq $name — 미리보기 최종 상태를 확인하지 못했다"
     elif [ "$verdict" = 판정불가 ]; then
       blocked_add verify "seq=$seq $name — preview-unavailable 계수를 읽지 못했다(받은 값 [$shown]) · 미리보기 판정 불가"
     fi
@@ -775,6 +794,7 @@ unlinked = cv["unlinkedSeq"]
 count_undecided = cv["countUndecidedSeq"]
 level_undecided = cv["levelUndecidedSeq"]
 undecided = [r[0] for r in rows if r[3] == "판정불가"]
+unestablished = [r[0] for r in rows if r[3] == "미성립"]
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
@@ -787,11 +807,13 @@ res = {
     "previewRows": len(rows),
     "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
     "previewUndecidedSeq": undecided,
+    "previewUnestablishedSeq": unestablished,
 }
 json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
 bad = []
 # 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
 if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
+if unestablished: bad.append("미리보기 미성립 seq %s" % ",".join(unestablished))
 # 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
 if count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(count_undecided))
 if level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(level_undecided))

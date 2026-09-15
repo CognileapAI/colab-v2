@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     root = here.parents[1]
-    snapshot = root / 'dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json'
+    snapshot = root / 'eval/k4-search/fixtures/reference/dev-data-snapshot.json'
     datasets = json.loads(snapshot.read_text())['datasets']
     roles = json.loads((here / 'file-role-evidence.json').read_text())['evidence']
     facts = json.loads((here / 'condition-evidence.json').read_text())['datasets']

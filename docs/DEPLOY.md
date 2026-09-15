@@ -1,5 +1,11 @@
 # DEPLOY — CoLAB v2 배포 운영 문서
 
+> 2026-09-15 승인 변경: [develop·product 실행 계획](../dev-package/prd/rounds/R-DEVELOP-PRODUCT.md).
+> 사람의 동일 저장소 develop → product PR 병합을 운영 배포 시작점으로 연결하며 첫 PR에만 운영 전체 reseed를 포함한다.
+> 현재 구현 중이며 아래 과거 배포 실적은 이번 전환의 성공 증거가 아니다. 실제 원격 상태는 [전환 조사](../dev-package/reports/develop-product/transition-inventory.md)에 기록한다.
+> 첫 운영 교체는 dev 단일 완주·운영 입력 확인·삭제 목록·영속 실행 기록·점검/재개 검증 뒤 진행한다.
+> 이 라운드의 자동 배포는 외부 알림을 보내지 않는 실행 경로를 사용한다. 기존 완료 알림 규약은 별도 승인 없는 전송 권한을 부여하지 않는다.
+
 > **이 문서가 배포의 정문이다.** 반년 뒤 「배포가 안 되는데」로 돌아왔을 때, 이것 하나로 원인을 찾고 고칠 수 있어야 한다.
 >
 > **기계적 절차의 정본은 `infra/dev/README.md`**(스크립트와 같은 자리에 있어 함께 낡는다). 이 문서는 **왜·무엇이·어디가 고장 나면 어디를 보는가**를 맡는다. 값과 근거는 `dev-package/PLAN-SoT.md §9`.

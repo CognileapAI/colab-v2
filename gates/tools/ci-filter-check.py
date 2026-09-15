@@ -9,8 +9,8 @@
 
 무엇을 재나 (일곱):
   ㈎ `changes` 잡의 필터 블록에 `harness` 가 있다
-  ㈏ `harness` 패턴 집합이 정본과 축자 일치 — CLAUDE.md · .claude/skills/** · hooks/** · agents/**
-  ㈐ 잡히는 것 — `CLAUDE.md` · `.claude/skills/x/SKILL.md` · `.claude/hooks/h.sh` · `.claude/agents/a.md`
+  ㈏ `harness` 패턴 집합이 정본과 축자 일치 — 공통 원본 + Claude/Codex adapter
+  ㈐ 잡히는 것 — `AGENTS.md` · `.agents/**` · `scripts/harness/**` · `.claude/**` · `.codex/**`
   ㈑ 안 잡히는 것 — `frontend/src/a.tsx` · `services/core-api/x.py` (제품 경로가 하네스를 깨우지 않는다)
   ㈒ `changes` 잡 `outputs` 에 `harness` 항목이 있다(필터만 있고 출력이 없으면 소비처가 못 읽는다)
   ㈓ 잡 `harness-eval` 이 `needs.changes.outputs.harness == 'true'` 로 걸린다
@@ -33,18 +33,28 @@ CI_PATH = os.environ.get("COLAB_CI_WORKFLOW") or os.path.join(
     REPO_ROOT, ".github", "workflows", "ci.yml"
 )
 
-# 정본 = intent Q2 축자(트리거 4경로). 여기서 늘리거나 줄이지 않는다.
+# 정본 = 공통 원본과 두 도구 adapter. 제품 경로는 포함하지 않는다.
 WANT_PATTERNS = {
+    "AGENTS.md",
     "CLAUDE.md",
+    ".agents/**",
+    ".codex/**",
     ".claude/skills/**",
     ".claude/hooks/**",
     ".claude/agents/**",
+    "scripts/harness/**",
+    "scripts/agent-bridge.py",
 }
 MUST_MATCH = [
+    "AGENTS.md",
     "CLAUDE.md",
+    ".agents/harness.yaml",
+    ".codex/hooks.json",
     ".claude/skills/colab-v2-work/SKILL.md",
     ".claude/hooks/bootstrap-diet.sh",
     ".claude/agents/lane-worker.md",
+    "scripts/harness/check.py",
+    "scripts/agent-bridge.py",
 ]
 MUST_NOT_MATCH = [
     "frontend/src/a.tsx",

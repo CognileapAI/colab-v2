@@ -18,6 +18,9 @@ rc=0
 
 red() { echo "::error::frontend-test-selftest red — $*"; exit 1; }
 [ -x "$GATE" ] || red "판정 재료가 없다: gates/tools/frontend-test.sh"
+if grep -q 'dev-package/sessions' "$FE/vite.config.ts"; then
+  red "vite 시험 설정이 세션 문서 경로를 런타임 입력으로 허용한다"
+fi
 [ -d "$FE/node_modules" ] || {
   printf '::gate-readiness-failure::gate=%s|waited_for=%s|limit=%s|elapsed=%s|detail=%s\n' \
     frontend-test-selftest "frontend/node_modules" "대기 없음" "0초" "의존 트리 부재"

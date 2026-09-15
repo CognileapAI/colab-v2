@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "eval" / "k4-search"
-REPORTS = ROOT / "dev-package" / "reports" / "stage3-ai-search-plan"
+REPORTS = HERE / "fixtures" / "reference"
 HELPER_FILES = (
     "test_condition_assessment.py",
     "test_golden_baseline.py",
