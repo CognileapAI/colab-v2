@@ -12,7 +12,7 @@ import { validNewPassword } from '../auth/passwordRules';
 import { useWorkProtection } from '../auth/useWorkProtection';
 import { useDialogFocus } from '../components/common/useDialogFocus';
 
-type Row = Schemas['ServiceAccountSummary'];
+type Row = Schemas['ServiceAccountSummaryV2'];
 type Options = Schemas['AccountOptions'];
 type Filters = { labId: string; status: string; role: string; email: string };
 const EMPTY: Filters = { labId: '', status: '', role: '', email: '' };
@@ -141,7 +141,7 @@ export function AccountAdminPage() {
     if (filters.role) query.role = filters.role;
     if (filters.email) query.email = filters.email;
     try {
-      const { data, error } = await api.GET('/admin/accounts', { params: { query } });
+      const { data, error } = await api.GET('/admin/accounts-v2', { params: { query } });
       if (data) { setRows(data.accounts); setListError(null); }
       else setListError(error?.message ?? '계정 목록을 불러오지 못했어요.');
     } catch { setListError('서버에 연결하지 못했어요. 잠시 뒤에 다시 시도해 주세요.'); }
@@ -210,7 +210,7 @@ export function AccountAdminPage() {
           if (!createOperator && !labId) { setMessage('일반 사용자는 연구실과 역할을 지정해 주세요.'); return; }
           setBusy(true);
           try {
-            const { data, error } = await api.POST('/admin/accounts', { body: {
+            const { data, error } = await api.POST('/admin/accounts-v2', { body: {
               email: String(f.get('email')), name: String(f.get('name')),
               initialPassword,
               ...(createOperator ? { operator: true } : {}),

@@ -51,8 +51,8 @@ test('서비스 운영자가 기존 연구실과 역할로 관리자를 등록�
  const fetch=vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
   const request=input as Request; const url=new URL(request.url);
   if(url.pathname.endsWith('/admin/account-options'))return json({labs:[{labId:LAB,name:'A 연구실'}],roles:['교수','연구원']});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:[]});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='POST')return json({accountId:'000000000000000000000000A2',email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:[]});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='POST')return json({accountId:'000000000000000000000000A2',email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
   return json({message:'모의하지 않은 경로'},500);
  });
  render(<SessionProvider account={{accountId:'00000000000000000000000AP1',name:'운영자',email:'op@example.com',role:'교수',permissions:{},labId:LAB,labName:'A 연구실',canManageServiceAccounts:true,mustChangePassword:false}}><AccountAdminPage/></SessionProvider>);
@@ -88,7 +88,7 @@ function routedFetch(over?:(url:URL,request:Request)=>Response|undefined){
   const request=input as Request; const url=new URL(request.url);
   const custom=over?.(url,request); if(custom)return custom;
   if(url.pathname.endsWith('/admin/account-options'))return json(OPTIONS);
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:ACCOUNTS});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:ACCOUNTS});
   if(url.pathname.endsWith('/password-reset'))return json({accountId:ACC_1,mustChangePassword:true});
   if(url.pathname.endsWith('/status'))return json({accountId:ACC_2,status:'active'});
   return json({message:'모의하지 않은 경로'},500);
@@ -97,7 +97,7 @@ function routedFetch(over?:(url:URL,request:Request)=>Response|undefined){
 function renderAdmin(){return render(<SessionProvider account={OPERATOR}><AccountAdminPage/></SessionProvider>);}
 const listUrls=(fetch:ReturnType<typeof routedFetch>)=>fetch.mock.calls
  .map(call=>new URL((call[0] as Request).url))
- .filter(url=>url.pathname.endsWith('/admin/accounts')&&!url.pathname.includes('password'));
+ .filter(url=>url.pathname.endsWith('/admin/accounts-v2')&&!url.pathname.includes('password'));
 
 test('계정 관리 화면은 사용자 목록 탭만 기본으로 보여 준다',async()=>{
  routedFetch();
@@ -119,7 +119,7 @@ test('관리자 등록 탭은 목록을 숨기고 무소속 관리자 요청을 
  fireEvent.click(form.getByRole('button',{name:'관리자 등록'}));
  await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
  const request=fetch.mock.calls.map(call=>call[0] as Request)
-  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts'))!;
+  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
  expect(JSON.parse(await request.clone().text())).toEqual({
   email:'admin@example.com',name:'무소속 관리자',initialPassword:'initial-password',operator:true,
  });
@@ -140,7 +140,7 @@ test('관리자 선택을 끄면 기존 일반 사용자 등록 요청을 유지
  fireEvent.click(form.getByRole('button',{name:'사용자 등록'}));
  await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
  const request=fetch.mock.calls.map(call=>call[0] as Request)
-  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts'))!;
+  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
  expect(JSON.parse(await request.clone().text())).toEqual({
   email:'user@example.com',name:'일반 사용자',labId:LAB,role:'연구원',initialPassword:'initial-password',
  });
@@ -265,8 +265,8 @@ function operatorFetch(onOperator?:(request:Request)=>Response){
   const request=input as Request; const url=new URL(request.url);
   if(url.pathname.endsWith('/admin/account-options'))return json(OPTIONS);
   if(url.pathname.endsWith('/operator'))return onOperator?onOperator(request):json({accountId:ACC_1,operator:true});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:ACCOUNTS_WITH_OPERATOR});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='POST')return json({accountId:ACC_1,email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:ACCOUNTS_WITH_OPERATOR});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='POST')return json({accountId:ACC_1,email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
   return json({message:'모의하지 않은 경로'},500);
  });
 }

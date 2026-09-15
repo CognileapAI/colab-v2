@@ -92,11 +92,24 @@ def account_options(request: Request, subject: Subject = Depends(current_subject
 @router.post("/admin/accounts", name="createServiceAccount", status_code=201)
 def create_account(body: AccountCreate, request: Request,
                    subject: Subject = Depends(current_subject)) -> dict:
+    return _create_account(body, request, subject, allow_labless=False)
+
+
+@router.post("/admin/accounts-v2", name="createServiceAccountV2", status_code=201)
+def create_account_v2(body: AccountCreate, request: Request,
+                      subject: Subject = Depends(current_subject)) -> dict:
+    return _create_account(body, request, subject, allow_labless=True)
+
+
+def _create_account(body: AccountCreate, request: Request, subject: Subject,
+                    *, allow_labless: bool) -> dict:
     _require_operator(request, subject)
     email = normalize_login_name(body.email)
     if re.fullmatch(r"[^@\s]+@(?:[^@\s.]+\.)+[^@\s.]+", email) is None:
         raise errors.bad_request("이메일 형식이 맞지 않는다.")
     affiliated = body.labId is not None or body.role is not None
+    if not allow_labless and not affiliated:
+        raise errors.bad_request("이 API에서는 연구실과 역할이 필요하다. 무소속 관리자는 v2 API를 사용한다.")
     if not body.operator and not affiliated:
         raise errors.bad_request("일반 계정은 연구실과 역할이 필요하다.")
     if (body.labId is None) != (body.role is None):
@@ -149,15 +162,33 @@ def list_accounts(request: Request,
     """전 연구실 한 목록. **운영자 전용 경로의 등재된 경계 예외**다 — 이 목록이 연구실로
     좁혀지면 운영자가 다른 연구실 계정을 되살릴 길이 없다.
     """
+    return _list_accounts(request, labId, status, role, email, subject, allow_labless=False)
+
+
+@router.get("/admin/accounts-v2", name="listServiceAccountsV2")
+def list_accounts_v2(request: Request,
+                     labId: str | None = Query(default=None),
+                     status: str | None = Query(default=None),
+                     role: str | None = Query(default=None),
+                     email: str | None = Query(default=None, max_length=320),
+                     subject: Subject = Depends(current_subject)) -> dict:
+    return _list_accounts(request, labId, status, role, email, subject, allow_labless=True)
+
+
+def _list_accounts(request: Request, lab_id: str | None, status: str | None,
+                   role: str | None, email: str | None, subject: Subject,
+                   *, allow_labless: bool) -> dict:
     _require_operator(request, subject)
-    if labId is not None and not Ulid.is_valid(labId):
+    if lab_id is not None and not Ulid.is_valid(lab_id):
         raise errors.bad_request("연구실 ID가 정규 ID가 아니다.")
     if status is not None and status not in ("active", "inactive"):
         raise errors.bad_request("상태는 active 또는 inactive 다.")
     if role is not None and role not in ("교수", "연구원"):
         raise errors.bad_request("역할은 교수 또는 연구원이다.")
     rows = _credentials(request).list_accounts(
-        lab_id=labId, status=status, role=role, email=email)
+        lab_id=lab_id, status=status, role=role, email=email)
+    if not allow_labless and any(row.lab_id is None or row.lab_name is None for row in rows):
+        raise errors.conflict("조회 결과에 무소속 관리자가 있다. v2 API를 사용한다.")
     return {"accounts": [_as_json(row) for row in rows]}
 
 

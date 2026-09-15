@@ -72,13 +72,13 @@ describe('문지기 — 인증 세부는 한 곳에만 있다', () => {
   it('토큰이 없으면 /me 를 부르지 않는다', () => {
     stubFetch(() => json(401, { code: 'UNAUTHORIZED', message: '없다' }));
     renderApp();
-    expect(calls.filter((c) => c.url.endsWith('/me'))).toHaveLength(0);
+    expect(calls.filter((c) => c.url.endsWith('/me-v2'))).toHaveLength(0);
   });
 
   it('토큰이 있으면 /me 응답으로 앱을 그린다', async () => {
     setToken(TOKEN);
     stubFetch((url) =>
-      url.endsWith('/me') ? json(200, account()) : json(200, {}),
+      url.endsWith('/me-v2') ? json(200, account()) : json(200, {}),
     );
     renderApp();
     expect(await screen.findByTestId('gnb-avatar')).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('요청 첨부 — 화면이 헤더를 손으로 붙이지 않는다', 
   it('토큰이 있으면 모든 요청에 Bearer 가 붙는다', async () => {
     setToken(TOKEN);
     stubFetch(() => json(200, account()));
-    await api.GET('/me');
+    await api.GET('/me-v2');
     expect(calls.at(-1)?.auth).toBe(`Bearer ${TOKEN}`);
   });
 
@@ -111,7 +111,7 @@ describe('요청 첨부 — 화면이 헤더를 손으로 붙이지 않는다', 
 
   it('토큰이 없으면 헤더를 만들어 내지 않는다', async () => {
     stubFetch(() => json(401, { code: 'UNAUTHORIZED', message: '없다' }));
-    await api.GET('/me');
+    await api.GET('/me-v2');
     expect(calls.at(-1)?.auth).toBeNull();
   });
 });
@@ -123,7 +123,7 @@ describe('요청 첨부 — 화면이 헤더를 손으로 붙이지 않는다', 
 describe('세션 만료 — 화면이 갇히지 않는다', () => {
   it('재인증 중에도 기존 앱 트리를 유지한 채 입력만 막는다', async () => {
     setToken(TOKEN);
-    stubFetch((url) => url.endsWith('/me') ? json(200, account()) : json(200, {}));
+    stubFetch((url) => url.endsWith('/me-v2') ? json(200, account()) : json(200, {}));
     renderApp();
     expect(await screen.findByTestId('gnb-avatar')).toBeInTheDocument();
     clearIfCurrent(TOKEN);
@@ -266,7 +266,7 @@ describe('첫 비밀번호 변경 복구', () => {
         passwordCalls += 1;
         return Promise.reject(new TypeError('network lost'));
       }
-      if (path.endsWith('/me')) {
+      if (path.endsWith('/me-v2')) {
         return Promise.resolve(json(200, { ...account(), mustChangePassword: true }));
       }
       return Promise.resolve(new Response(null, { status: 204 }));

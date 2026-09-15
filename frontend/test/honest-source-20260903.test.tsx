@@ -232,7 +232,7 @@ describe('화면은 못 읽은 것을 없는 것으로 말하지 않는다', () 
     // 잠그려는 것은 「목록 요청의 401 이 만료로 읽힌다」쪽이다 (`CODE-REVIEW-20260903-E` 수용 검토).
     vi.stubGlobal('fetch', (input: Request | string) => {
       const url = typeof input === 'string' ? input : input.url;
-      return new URL(url, 'http://localhost').pathname.endsWith('/me')
+      return new URL(url, 'http://localhost').pathname.endsWith('/me-v2')
         ? Promise.resolve(json(200, account()))
         : Promise.resolve(json(401, { code: 'UNAUTHORIZED', message: '만료' }));
     });
@@ -269,7 +269,7 @@ describe('AuthGate — 확인하지 못한 것과 통하지 않는 것을 가른
     let attempts = 0;
     vi.stubGlobal('fetch', (input: Request | string) => {
       const url = typeof input === 'string' ? input : input.url;
-      if (!url.endsWith('/me')) return Promise.resolve(json(200, {}));
+      if (!url.endsWith('/me-v2')) return Promise.resolve(json(200, {}));
       attempts += 1;
       return attempts === 1
         ? Promise.reject(new TypeError('Failed to fetch'))

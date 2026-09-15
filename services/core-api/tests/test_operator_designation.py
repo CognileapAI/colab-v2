@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import threading
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from conftest import (
@@ -21,6 +22,7 @@ from conftest import (
 )
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
+from colab_core.app.routes import accounts as account_routes
 
 SECRET = "test-operator-designation-secret"
 LAB_C = "0000000000000000000000000C"
@@ -95,10 +97,13 @@ def _set_operator(client, token: str, account_id: str, operator: bool):
 def test_labless_operator_full_login_cycle_and_demotion_guard(p2_client) -> None:
     client = p2_client(session_secret=SECRET)
     email = _email("labless")
-    made = client.post("/api/v1/admin/accounts", headers=auth(TOKEN_PROF), json={
+    body = {
         "email": email, "name": "무소속 관리자", "initialPassword": INITIAL,
         "operator": True,
-    })
+    }
+    legacy_made = client.post("/api/v1/admin/accounts", headers=auth(TOKEN_PROF), json=body)
+    assert legacy_made.status_code == 400
+    made = client.post("/api/v1/admin/accounts-v2", headers=auth(TOKEN_PROF), json=body)
     assert made.status_code == 201, made.text
     assert made.json()["labId"] is None and made.json()["role"] is None
 
@@ -110,11 +115,17 @@ def test_labless_operator_full_login_cycle_and_demotion_guard(p2_client) -> None
     relogin = client.post("/api/v1/sessions", json={"accountName": email, "password": NEW})
     assert relogin.status_code == 201, relogin.text
     token = relogin.json()["token"]
-    me = client.get("/api/v1/me", headers=auth(token))
+    assert client.get("/api/v1/me", headers=auth(token)).status_code == 401
+    me = client.get("/api/v1/me-v2", headers=auth(token))
     assert me.status_code == 200, me.text
     assert me.json()["labId"] is None and me.json()["role"] is None
     assert me.json()["canManageServiceAccounts"] is True
-    listed = client.get("/api/v1/admin/accounts", headers=auth(token))
+    assert client.get("/api/v1/admin/accounts", headers=auth(token)).status_code == 409
+    affiliated_only = client.get("/api/v1/admin/accounts", headers=auth(token),
+                                 params={"labId": LAB_C})
+    assert affiliated_only.status_code == 200, affiliated_only.text
+    assert all(row["labId"] == LAB_C for row in affiliated_only.json()["accounts"])
+    listed = client.get("/api/v1/admin/accounts-v2", headers=auth(token))
     assert listed.status_code == 200, listed.text
     row = next(row for row in listed.json()["accounts"]
                if row["accountId"] == made.json()["accountId"])
@@ -160,7 +171,7 @@ def test_setServiceAccountOperator_designates_and_revokes(p2_client, admin_db_ur
     # 지정으로 기존 로그인이 끝났으므로 다시 로그인한다 — 그 토큰으로는 목록이 열린다.
     promoted = client.post("/api/v1/sessions",
                            json={"accountName": email, "password": NEW}).json()["token"]
-    assert client.get("/api/v1/admin/accounts", headers=auth(promoted)).status_code == 200
+    assert client.get("/api/v1/admin/accounts-v2", headers=auth(promoted)).status_code == 200
 
     gone = _set_operator(client, TOKEN_PROF, account_id, False)
     assert gone.status_code == 200, gone.text
@@ -292,7 +303,7 @@ def test_createServiceAccount_can_mark_the_new_account_as_an_operator(
 
     assert plain_id not in _operators(admin_db_url), "operator 를 생략했는데 운영자가 됐다."
     assert boss_id in _operators(admin_db_url)
-    assert client.get("/api/v1/admin/accounts",
+    assert client.get("/api/v1/admin/accounts-v2",
                       headers=auth(_normal_token(client, boss))).status_code == 200
 
 
@@ -308,10 +319,22 @@ def test_the_operator_path_is_operator_only(p2_client) -> None:
 def test_the_account_list_carries_the_operator_flag(p2_client) -> None:
     client = p2_client(session_secret=SECRET)
     account_id = _create(client, _email("listed"), operator=True)
-    listed = client.get("/api/v1/admin/accounts", headers=auth(TOKEN_PROF))
+    listed = client.get("/api/v1/admin/accounts-v2", headers=auth(TOKEN_PROF))
     assert listed.status_code == 200, listed.text
     rows = {row["accountId"]: row for row in listed.json()["accounts"]}
     assert rows[account_id]["operator"] is True
+
+
+def test_legacy_account_list_keeps_affiliated_roleless_rows(monkeypatch) -> None:
+    row = SimpleNamespace(account_id=ACC_A_PROF, email="roleless@example.com", name="역할 없음",
+                          lab_id=LAB_A, lab_name="연구실 A", role=None, status="active",
+                          last_login_at=None, operator=False)
+    monkeypatch.setattr(account_routes, "_require_operator", lambda request, subject: None)
+    monkeypatch.setattr(account_routes, "_credentials",
+                        lambda request: SimpleNamespace(list_accounts=lambda **kwargs: [row]))
+    listed = account_routes._list_accounts(SimpleNamespace(), None, None, None, None,
+                                           SimpleNamespace(), allow_labless=False)
+    assert listed["accounts"][0]["role"] is None
 
 
 # ═══════════════════════ ㈐ 전 연구실 읽기 ═══════════════════════
