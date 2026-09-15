@@ -1,0 +1,46 @@
+{
+  "session": "colab-login-7a44b6665a",
+  "source": "e2e-geotiff.tif",
+  "sourceBytes": 360666,
+  "sourceSha256": "caca59d22c5b6cc8362ceadb2fdfdd879d94f6d32c11cc903bcfedbe7a5d990e",
+  "steps": [
+    {
+      "step": "actual GeoTIFF upload reached completed analysis before registration",
+      "uploadId": "01M2HZP9A98WZM376VN6PRF9KT"
+    },
+    {
+      "step": "registration step 1 restored after reload without re-upload",
+      "uploadId": "01M2HZP9A98WZM376VN6PRF9KT"
+    },
+    {
+      "step": "registration project add button added a row by pointer click",
+      "projectId": "0000000000000000000000PRJA"
+    },
+    {
+      "step": "recovered uploadId became exactly the opened dataset",
+      "datasetId": "01M2HZPK5FJEBRHSFV4VA7NFKC"
+    },
+    {
+      "step": "registered dataset preview reached a decoded terminal image"
+    },
+    {
+      "step": "registration project click persisted after registration and reload",
+      "projectId": "0000000000000000000000PRJA"
+    },
+    {
+      "step": "registration project was removed through dataset detail",
+      "projectId": "0000000000000000000000PRJA"
+    },
+    {
+      "step": "project attachment persisted after detail reload",
+      "projectId": "0000000000000000000000PRJA"
+    },
+    {
+      "step": "project removal persisted after detail reload",
+      "projectId": "0000000000000000000000PRJA"
+    }
+  ],
+  "productCommit": "8f966563cc35a4d0863c98fda9485a36b3bd1afa",
+  "environment": "local disposable stack",
+  "browserTool": "agent-browser"
+}
