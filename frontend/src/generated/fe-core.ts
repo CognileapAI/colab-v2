@@ -277,6 +277,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/login-throttle/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그인 잠금 해제 — 한 계정의 시도 셈을 지운다
+         * @description 잠긴 계정이 기다리지 않고 다시 로그인할 수 있게 한다. **이 op 이 유일한 길이다** —
+         *     시도 제한은 서버 프로세스 메모리에 있어(`kernel/throttle.py`) 프로세스 밖의
+         *     스크립트·SQL 로는 닿지 못하고, 종전의 해제 수단은 **웹 서버 재시작**뿐이었다.
+         *     재시작은 다른 모든 사용자의 셈까지 지운다.
+         *
+         *     **운영자 전용**이다. 본문은 계정 이메일 하나이고 **원시 버킷 열쇠를 받지 않는다** —
+         *     받으면 클라이언트 버킷까지 지울 수 있어 제한을 끄는 스위치가 된다.
+         *
+         *     ⚠ **없는 계정도 204** 다. 「없다」·「잠겨 있지 않았다」를 가르면 이 자리가 계정 열거
+         *     통로가 된다 — 로그인이 401 하나로 접어 둔 것을 옆문으로 여는 셈이다.
+         *
+         *     ⓝ 여러 워커로 뜨면 셈도 해제도 그 프로세스 안에서만 유효하다. 그 한계의 자리는
+         *     시도 제한 자체이고(`PLAN-SoT §9 〈108〉-㉲`) 이 op 이 새로 만드는 한계가 아니다.
+         */
+        post: operations["clearLoginThrottle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lab": {
         parameters: {
             query?: never;
@@ -2409,6 +2441,27 @@ export interface components {
         /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 관리자 지정·해제 요청. 켜고 끄는 것 하나뿐이라 값도 하나다. */
         ServiceAccountOperatorChange: {
             operator: boolean;
+        };
+        /**
+         * @description 429 의 오류 봉투. 공통 `ErrorEnvelope`(`code`·`message`·`details`)에 **선택 칸 하나**를
+         *     더한 것이고 필수 칸은 그대로다 — 추가만이라 기존 소비자는 그대로 돈다.
+         *
+         *     ⚠ 공통 봉투가 `additionalProperties: false` 라 이 칸을 그쪽에 얹을 수 없다. 얹으면
+         *     **모든 4xx/5xx** 가 대기 시간을 가질 수 있는 모양이 되고, 그것은 사실이 아니다.
+         */
+        TooManyAttemptsEnvelope: {
+            code: string;
+            message: string;
+            details?: Record<string, never>;
+            /** @description 다시 시도해도 되는 시각까지 남은 초. `Retry-After` 헤더와 같은 값이다. */
+            retryAfterSeconds?: number;
+        };
+        /**
+         * @description 로그인 잠금을 풀 **계정 하나**. 열쇠는 서버가 이 이메일에서 만든다 —
+         *     원시 버킷 열쇠를 받으면 클라이언트 버킷까지 지울 수 있어 제한을 끄는 스위치가 된다.
+         */
+        LoginThrottleClear: {
+            email: string;
         };
         /** @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 바뀐 뒤의 관리자 여부. */
         ServiceAccountOperatorResult: {
@@ -4971,13 +5024,20 @@ export interface components {
         /**
          * @description 로그인 시도가 창 안에서 너무 잦다 (`PLAN-SoT §9 〈108〉-㉰`). 사전 추측을 느리게 만드는
          *     최소 보완이며, 시행 범위의 한계는 그 판정문이 적어 두었다.
+         *
+         *     ⭑ **대기 시간을 함께 말한다** — `Retry-After` 헤더와 본문 `retryAfterSeconds` 가 같은
+         *     정수 초다. 「잠시 뒤」가 몇 초인지 서버만 알고 있으면 화면은 그 값을 지어내고 사람은
+         *     새로고침을 반복한다. **어느 버킷이 걸렸는지는 여전히 말하지 않는다** — 수 하나로는
+         *     자격 버킷과 클라이언트 버킷이 갈리지 않는다.
          */
         TooManyAttempts: {
             headers: {
+                /** @description 다시 시도해도 되는 시각까지 남은 초. 본문 `retryAfterSeconds` 와 같은 값이다. */
+                "Retry-After"?: number;
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
+                "application/json": components["schemas"]["TooManyAttemptsEnvelope"];
             };
         };
         /** @description 서버 오류. */
@@ -5473,6 +5533,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    clearLoginThrottle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginThrottleClear"];
+            };
+        };
+        responses: {
+            /** @description 셈을 지웠다 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             500: components["responses"]["ServerError"];
             503: components["responses"]["ServerError"];
         };
