@@ -3453,12 +3453,18 @@ components:
       description: "[사용자 승인] dev-package/intent/stage3-login-hardening.md — 운영자 발급 및 최초 비밀번호 변경 정책."
       type: object
       additionalProperties: false
-      required: [email, name, labId, role, initialPassword]
+      required: [email, name, initialPassword]
       properties:
         email: { type: string, format: email, maxLength: 320 }
         name: { type: string, minLength: 1, maxLength: 128 }
-        labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
-        role: { $ref: "../schemas/common.json#/$defs/Role" }
+        labId:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        role:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Role"
+            - type: "null"
         initialPassword: { type: string, minLength: 10, maxLength: 512 }
         operator:
           description: |
@@ -3478,8 +3484,14 @@ components:
         accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         email: { type: string, format: email }
         name: { type: string }
-        labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
-        role: { $ref: "../schemas/common.json#/$defs/Role" }
+        labId:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        role:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Role"
+            - type: "null"
 
     ServiceAccountStatus:
       description: "[사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 계정 상태는 둘뿐이다. 비활성은 삭제가 아니라 로그인 거절이며 데이터·소유권은 남는다."
@@ -3495,8 +3507,11 @@ components:
         accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         email: { type: string }
         name: { type: string }
-        labId: { $ref: "../schemas/common.json#/$defs/Ulid" }
-        labName: { type: string }
+        labId:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        labName: { type: [string, "null"] }
         # 역할 행이 없는 계정이 실재할 수 있다 — 없는 것을 지어내지 않고 null 로 낸다.
         role:
           oneOf:
@@ -3862,15 +3877,20 @@ components:
         accountId: { $ref: "../schemas/common.json#/$defs/Ulid" }
         name: { type: string, minLength: 1 }
         email: { type: string, format: email }
-        role: { $ref: "../schemas/common.json#/$defs/Role" }
+        role:
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Role"
+            - type: "null"
         permissions:
           description: |
             교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6).
           $ref: "../schemas/common.json#/$defs/PermissionSwitchSet"
         labId:
           description: 서버가 정한 현재 연구실. 요청으로 바꿀 수 없다 (P-9·P-10).
-          $ref: "../schemas/common.json#/$defs/Ulid"
-        labName: { type: string, minLength: 1 }
+          oneOf:
+            - $ref: "../schemas/common.json#/$defs/Ulid"
+            - type: "null"
+        labName: { type: [string, "null"], minLength: 1 }
         mustChangePassword: { type: boolean }
         canManageServiceAccounts: { type: boolean }
 

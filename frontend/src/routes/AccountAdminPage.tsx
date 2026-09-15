@@ -126,6 +126,8 @@ export function AccountAdminPage() {
   const [resetRow, setResetRow] = useState<Row | null>(null);
   const [statusRow, setStatusRow] = useState<Row | null>(null);
   const [operatorRow, setOperatorRow] = useState<Row | null>(null);
+  const [tab, setTab] = useState<'list' | 'create'>('list');
+  const [createOperator, setCreateOperator] = useState(true);
 
   useWorkProtection('account-admin', {
     dirty, inFlight: busy || rowBusy,
@@ -178,10 +180,22 @@ export function AccountAdminPage() {
 
   return (
     <div className="login">
+      <h1>계정 관리</h1>
+      <div className="settabs" role="tablist" aria-label="계정 관리 탭">
+        <button type="button" role="tab" aria-selected={tab === 'list'}
+                className={`st${tab === 'list' ? ' on' : ''}`} onClick={() => setTab('list')}>
+          사용자 목록
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'create'}
+                className={`st${tab === 'create' ? ' on' : ''}`} onClick={() => setTab('create')}>
+          관리자 등록
+        </button>
+      </div>
+      <div hidden={tab !== 'create'}>
       <section className="login-card account-card" data-testid="account-create">
         <span className="login-brand">Co-Lab</span>
-        <h1 className="login-title">서비스 계정 추가</h1>
-        <p className="login-lead">기존 연구실과 역할을 지정하고 초기 비밀번호를 사용자에게 전달하세요.</p>
+        <h2 className="login-title">관리자 등록</h2>
+        <p className="login-lead">소속이 있으면 연구실과 역할을 함께 지정하세요. 둘 다 비우면 무소속 관리자로 등록돼요.</p>
         <form ref={formRef} className="account-form" onInput={() => setDirty(true)} onSubmit={async e => {
           e.preventDefault();
           if (busy) return;
@@ -190,14 +204,20 @@ export function AccountAdminPage() {
           const f = new FormData(form);
           const initialPassword = String(f.get('initialPassword'));
           if (!validNewPassword(initialPassword)) { setMessage('초기 비밀번호는 10~512자로 입력해 주세요.'); return; }
+          const labId = String(f.get('labId') ?? '');
+          const role = String(f.get('role') ?? '');
+          if (Boolean(labId) !== Boolean(role)) { setMessage('연구실과 역할을 함께 지정하거나 함께 비워 주세요.'); return; }
+          if (!createOperator && !labId) { setMessage('일반 사용자는 연구실과 역할을 지정해 주세요.'); return; }
           setBusy(true);
           try {
             const { data, error } = await api.POST('/admin/accounts', { body: {
               email: String(f.get('email')), name: String(f.get('name')),
-              labId: String(f.get('labId')), role: String(f.get('role')) as '교수' | '연구원',
               initialPassword,
-              // 체크하지 않으면 아예 보내지 않는다 — 서버 기본값(아니다)을 화면이 덮어쓰지 않는다.
-              ...(f.get('operator') ? { operator: true } : {}),
+              ...(createOperator ? { operator: true } : {}),
+              ...(labId ? {
+                labId,
+                role: role as '교수' | '연구원',
+              } : {}),
             } });
             setMessage(data ? data.email + ' 계정을 추가했어요.' : (error?.message ?? '계정을 추가하지 못했어요.'));
             if (data) { form.reset(); setDirty(false); void load(); }
@@ -206,19 +226,20 @@ export function AccountAdminPage() {
         }}>
           <label className="login-label">이름<input className="login-input" name="name" required /></label>
           <label className="login-label">이메일<input className="login-input" name="email" type="email" required /></label>
-          <label className="login-label">연구실<select className="login-input" name="labId" required>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
-          <label className="login-label">역할<select className="login-input" name="role" required>{options?.roles.map(r => <option key={r}>{r}</option>)}</select></label>
+          <label className="login-label">연구실<select className="login-input" name="labId"><option value="">소속 없음</option>{options?.labs.map(l => <option key={l.labId} value={l.labId}>{l.name}</option>)}</select></label>
+          <label className="login-label">역할<select className="login-input" name="role"><option value="">신분 없음</option>{options?.roles.map(r => <option key={r}>{r}</option>)}</select></label>
           <label className="login-label">초기 비밀번호<input className="login-input" name="initialPassword" aria-describedby="initial-password-help" type="password" autoComplete="new-password" required /></label>
           <label className="login-label account-operator-check">
-            <input type="checkbox" name="operator" /> 관리자로 등록
+            <input type="checkbox" name="operator" checked={createOperator}
+                   onChange={e => setCreateOperator(e.target.checked)} /> 관리자로 등록
           </label>
           <p className="login-label">관리자는 계정을 관리하고 모든 연구실 자료를 읽기 전용으로 볼 수 있어요.</p>
           <p id="initial-password-help" className="login-label">10~512자로 입력하세요. 영문·숫자·특수문자 조합은 필수가 아니에요. 사용자는 첫 로그인 때 비밀번호를 변경해야 해요.</p>
-          <button className="login-submit" type="submit" disabled={busy}>{busy ? '추가하는 중…' : '계정 추가'}</button>
+          <button className="login-submit" type="submit" disabled={busy}>{busy ? '등록하는 중…' : (createOperator ? '관리자 등록' : '사용자 등록')}</button>
         </form>
-        {message ? <p className="account-status" role="status">{message}</p> : null}
       </section>
-
+      </div>
+      <div hidden={tab !== 'list'}>
       <section className="login-card account-list-card" data-testid="account-list">
         <h2 className="login-title">계정 목록</h2>
         <p className="login-lead">전 연구실 계정을 한 목록으로 봐요. 비밀번호 분실·퇴소를 여기서 처리해요.</p>
@@ -270,7 +291,7 @@ export function AccountAdminPage() {
                   <td>{row.email}</td>
                   <td>{row.name}</td>
                   <td>{row.role ?? '없음'}</td>
-                  <td>{row.labName}</td>
+                  <td>{row.labName ?? '없음'}</td>
                   <td>{STATUS_LABEL[row.status] ?? row.status}</td>
                   <td>{row.operator ? '관리자' : '아니요'}</td>
                   <td>{day(row.lastLoginAt)}</td>
@@ -302,6 +323,8 @@ export function AccountAdminPage() {
         </div>
         {rows && rows.length === 0 ? <p className="account-status" role="status">조건에 맞는 계정이 없어요.</p> : null}
       </section>
+      </div>
+      {message ? <p className="account-status" role="status">{message}</p> : null}
 
       {resetRow ? (
         <ResetDialog row={resetRow} busy={rowBusy} onClose={() => setResetRow(null)}

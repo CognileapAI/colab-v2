@@ -118,7 +118,7 @@ CREATE TABLE d1_lab_profile (
 -- 계정 (정본 §3). 역할·권한 스위치는 D2 가 소유한다 — 여기 두지 않는다.
 CREATE TABLE d1_account (
   id          ulid        PRIMARY KEY,
-  lab_id      ulid        NOT NULL REFERENCES d1_lab(id),
+  lab_id      ulid        REFERENCES d1_lab(id),
   name        text        NOT NULL CHECK (length(btrim(name)) > 0),
   email       text        NOT NULL CHECK (length(btrim(email)) > 0),
   created_at  timestamptz NOT NULL DEFAULT now(),
@@ -159,7 +159,7 @@ CREATE TABLE account_admin.service_operator (
 CREATE TABLE account_admin.login_session (
   id ulid PRIMARY KEY,
   account_id ulid NOT NULL REFERENCES d1_account(id) ON DELETE CASCADE,
-  lab_id ulid NOT NULL REFERENCES d1_lab(id) ON DELETE CASCADE,
+  lab_id ulid REFERENCES d1_lab(id) ON DELETE CASCADE,
   issued_at timestamptz NOT NULL,
   expires_at timestamptz NOT NULL CHECK (expires_at > issued_at),
   revoked_at timestamptz,

@@ -2279,8 +2279,8 @@ export interface components {
             /** Format: email */
             email: string;
             name: string;
-            labId: components["schemas"]["Ulid"];
-            role: components["schemas"]["Role"];
+            labId?: components["schemas"]["Ulid"] | null;
+            role?: components["schemas"]["Role"] | null;
             initialPassword: string;
             /**
              * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 발급과 동시에
@@ -2297,8 +2297,8 @@ export interface components {
             /** Format: email */
             email: string;
             name: string;
-            labId: components["schemas"]["Ulid"];
-            role: components["schemas"]["Role"];
+            labId: components["schemas"]["Ulid"] | null;
+            role: components["schemas"]["Role"] | null;
         };
         /**
          * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 계정 상태는 둘뿐이다. 비활성은 삭제가 아니라 로그인 거절이며 데이터·소유권은 남는다.
@@ -2310,8 +2310,8 @@ export interface components {
             accountId: components["schemas"]["Ulid"];
             email: string;
             name: string;
-            labId: components["schemas"]["Ulid"];
-            labName: string;
+            labId: components["schemas"]["Ulid"] | null;
+            labName: string | null;
             role: components["schemas"]["Role"] | null;
             status: components["schemas"]["ServiceAccountStatus"];
             lastLoginAt: components["schemas"]["Timestamp"] | null;
@@ -2548,12 +2548,12 @@ export interface components {
             name: string;
             /** Format: email */
             email: string;
-            role: components["schemas"]["Role"];
+            role: components["schemas"]["Role"] | null;
             /** @description 교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6). */
             permissions: components["schemas"]["PermissionSwitchSet"];
             /** @description 서버가 정한 현재 연구실. 요청으로 바꿀 수 없다 (P-9·P-10). */
-            labId: components["schemas"]["Ulid"];
-            labName: string;
+            labId: components["schemas"]["Ulid"] | null;
+            labName: string | null;
             mustChangePassword?: boolean;
             canManageServiceAccounts?: boolean;
         };
