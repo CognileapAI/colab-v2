@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import pathlib
 import re
 import sys
@@ -109,7 +110,8 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 
 - 성격 = `dev-package/tools/dev-reseed/reseed.sh` 1회 실행의 **생성물**. 값의 원본은 `result.json` 이다.
 - 승인 = dev 한정 상시 승인(`.claude/rules/deploy.md` 11번 증보 문단). 회차별 GO 불요 · 승인 기록 = `{approval}`.
-- 실행 자리 = `{run_dir}` · 실행 식별자 `{run_id}` · 배포 대상 sha `{sha}`.
+- 실행 자리 = {run_dir} · 실행 식별자 `{run_id}` · 배포 대상 sha `{sha}`.
+- 단계 로그와 승인 기록의 상대경로 기준은 실행 폴더다. `result.json`의 `runDir`는 JSON 파일 위치 기준이다.
 - 결과 = **{outcome}**{failed_note} · 총 소요 {duration}초.
 
 ## 1. 단계별 소요
@@ -159,6 +161,12 @@ def main() -> int:
     args = ap.parse_args()
 
     run = pathlib.Path(args.run_dir)
+    # 실제 입력 경로는 그대로 읽고, 공개 기록에 직렬화하는 경로만 바꾼다.
+    root = pathlib.Path(__file__).resolve().parents[3]
+    try:
+        session_run = f"`{run.resolve().relative_to(root)}` (레포 뿌리 기준)"
+    except ValueError:
+        session_run = "`<RUN_DIR>` (`--run-dir` 입력으로 지정한 실행 폴더; `result.json` 포함)"
     ran = [s for s in args.stages.split(",") if s]
     dry = args.dry_run == "1"
 
@@ -204,7 +212,7 @@ def main() -> int:
         "durationSec": duration,
         "dryRun": dry,
         "targetSha": args.target_sha,
-        "runDir": args.run_dir,
+        "runDir": os.path.relpath(run.resolve(), pathlib.Path(args.out).resolve().parent),
         "stages": stages,
         "counts": _load(run / "counts.json", {}),
         "blocked": blocked,
@@ -259,7 +267,7 @@ def main() -> int:
     pathlib.Path(args.session_out).write_text(SESSION_TEMPLATE.format(
         date=dt.date.today().isoformat(),
         approval=doc["approvalRecord"] or "없음(reset 단계 미실행)",
-        run_dir=args.run_dir, run_id=args.run_id, sha=args.target_sha or "—",
+        run_dir=session_run, run_id=args.run_id, sha=args.target_sha or "—",
         outcome=doc["outcome"],
         failed_note=f"(멈춘 단계 `{failed_stage}`)" if failed_stage else "",
         duration=duration, stage_rows=stage_rows, counts_block=counts_block,

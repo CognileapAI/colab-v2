@@ -53,10 +53,22 @@ if [ "$last" = "bash -s" ]; then
     case "$body" in *"$FIXTURE_FAIL_MATCH"*) echo "대역 실패 — 본문 일치" >&2; exit 7 ;; esac
   fi
   if [ "${FIXTURE_EXEC:-0}" = 1 ]; then bash -s <<<"$body"; exit $?; fi
-  case "$body" in *master.url*) echo 0 ;; esac
+  case "$body" in *master.url*)
+    if [ -n "${FIXTURE_TX_SEQUENCE:-}" ]; then
+      n=$(cat "$FIXTURE_TX_SEQUENCE"); echo $((n + 1)) > "$FIXTURE_TX_SEQUENCE"
+      [ "$n" = 0 ] && echo 0 || echo 1
+    else
+      printf '%s\n' "${FIXTURE_TX_REPLY:-0}"
+    fi
+    exit "${FIXTURE_TX_RC:-0}"
+  ;; esac
   exit 0
 fi
 printf 'CMD %s\n' "$last" >> "$FIXTURE_SSH_LOG"
+if [ -n "${FIXTURE_DOCTOR_FILE:-}" ]; then
+  cat "$FIXTURE_DOCTOR_FILE"
+  exit "${FIXTURE_DOCTOR_RC:-0}"
+fi
 if [ -n "${FIXTURE_FAIL_MATCH:-}" ]; then
   case "$last" in *"$FIXTURE_FAIL_MATCH"*) echo "대역 실패 — 명령 일치" >&2; exit 7 ;; esac
 fi
@@ -146,6 +158,8 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+# Remote primitive isolation; deploy-rehearsal.sh covers the real release-plan boundary.
+rehearse_release_plan() { return 0; }
 
 reset_logs() { : > "$FIXTURE_SSH_LOG"; : > "$STAGE_LOG"; rm -f "$RUN_DIR/recovery.jsonl" "$RUN_DIR/blocked.jsonl"; }
 
@@ -171,6 +185,30 @@ grep -q "colab_platform" "$FIXTURE_SSH_LOG" \
   && note "ⓐ‴ 원격 스크립트 본문에 SQL 원문이 그대로 실렸다 — 따옴표 결함이 되살아날 자리다"
 
 # ── ⓒ 실패 한 건이 로그에 한 번만 ─────────────────────────────────────────
+reset_logs
+got="$(psql_master_run "$SQL_HARD")"
+[ "$got" = 0 ] || note "기계 질의 stdout에 RUN 진단이 섞였다"
+reset_logs
+export FIXTURE_DOCKER_STDOUT=UNIQUE_REMOTE_PAYLOAD
+got="$(psql_master_run "$SQL_HARD")"
+reh_re payload '^UNIQUE_REMOTE_' "$got" >/dev/null 2>&1
+[ "$(grep -c UNIQUE_REMOTE_PAYLOAD "$STAGE_LOG")" = 1 ] || note "리허설이 저장된 응답을 다시 로그에 썼다"
+[ "$(grep -c 'RUN ssh <dev>' "$STAGE_LOG")" = 1 ] || note "리허설이 RUN 진단을 다시 로그에 썼다"
+export FIXTURE_DOCKER_RC=7
+got="$(psql_master_run "$SQL_HARD")"; rc=$?
+[ "$rc" = 7 ] || note "capture가 원격 실패 종료코드를 잃었다"
+unset FIXTURE_DOCKER_RC
+export FIXTURE_DOCKER_STDOUT=0
+for FIXTURE_DOCTOR_RC in 0 7; do
+  reset_logs
+  export FIXTURE_DOCTOR_RC FIXTURE_DOCTOR_FILE="$HERE/fixtures/doctor-15-15.txt"
+  doctor_once >/dev/null 2>&1; rc=$?
+  [ "$rc" = "$FIXTURE_DOCTOR_RC" ] || note "doctor 종료코드 $FIXTURE_DOCTOR_RC 를 $rc 로 바꿨다"
+  [ "$(grep -c '항목 15 — ✓ 15 · ✗ 0 · ─ 0' "$STAGE_LOG")" = 1 ] || note "doctor 요약을 두 번 기록했다"
+done
+unset FIXTURE_DOCTOR_FILE FIXTURE_DOCTOR_RC
+echo "로그/capture 경계 5 건"
+
 reset_logs
 export FIXTURE_DOCKER_RC=1 FIXTURE_DOCKER_STDOUT="" \
   FIXTURE_DOCKER_STDERR='ERROR:  column "colab_platform" does not exist'
@@ -200,6 +238,35 @@ case "$first" in
   *) note "ⓑ⁗ 읽기 전용 계수보다 앱 정지가 먼저다: ${first:-<없음>}" ;;
 esac
 unset FIXTURE_FAIL_MATCH
+
+# 정지 전 active/idle-in-transaction(둘 다 count=1), 미측정, 질의 실패는 stop/schema 0회.
+for tx_case in active idle-in-transaction missing query-failed; do
+  reset_logs
+  export FIXTURE_TX_REPLY=1 FIXTURE_TX_RC=0
+  case "$tx_case" in
+    missing) FIXTURE_TX_REPLY=invalid ;;
+    query-failed) FIXTURE_TX_REPLY=0; FIXTURE_TX_RC=7 ;;
+  esac
+  stage_reset >/dev/null 2>&1; rc=$?
+  [ "$rc" -ne 0 ] || note "정지 전 $tx_case 를 통과시켰다"
+  grep -qE 'stop core-api|phase schema|start core-api' "$FIXTURE_SSH_LOG" \
+    && note "정지 전 $tx_case 에 앱/스키마 변경을 실행했다"
+done
+unset FIXTURE_TX_REPLY FIXTURE_TX_RC
+reset_logs
+stage_reset >/dev/null 2>&1; rc=$?
+[ "$rc" = 0 ] || note "정상 idle 계수 0을 거절했다"
+grep -q 'phase schema' "$FIXTURE_SSH_LOG" || note "정상 idle에서 schema 단계에 도달하지 않았다"
+reset_logs
+export FIXTURE_TX_SEQUENCE="$TMP/tx-sequence"
+echo 0 > "$FIXTURE_TX_SEQUENCE"
+stage_reset >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "정지 후 활성 트랜잭션을 통과시켰다"
+order="$(grep -oE 'stop core-api|start core-api|phase schema' "$FIXTURE_SSH_LOG" | tr '\n' '>')"
+[ "$order" = 'stop core-api>start core-api>' ] || note "정지 후 판정 실패 복구 순서 [$order]"
+[ -s "$RUN_DIR/recovery.jsonl" ] || note "정지 후 판정 실패 복구 기록 없음"
+unset FIXTURE_TX_SEQUENCE
+echo "reset 트랜잭션 경계 6 건"
 
 # ── ⓓ 리허설 dry-run 은 원격에 한 바이트도 내지 않는다 ────────────────────
 reset_logs

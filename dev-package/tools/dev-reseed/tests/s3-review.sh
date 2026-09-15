@@ -163,6 +163,8 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+# S3 primitive isolation; deploy-rehearsal.sh covers the real release-plan boundary.
+rehearse_release_plan() { return 0; }
 
 # 원격 자리를 픽스처 폴더로 돌린다 — 실물 `/tmp/colab-reseed-out` 을 건드리지 않는다.
 REMOTE_OUT="$TMP/remote-out"
@@ -232,8 +234,8 @@ STAGE_LOG="$RUN_DIR/logs/rehearse.log"; : > "$STAGE_LOG"
 out="$(stage_rehearse 2>&1)"
 printf '%s' "$out" | grep -qE '✓ reset_tool_s3_plan' \
   || note "ⓖ 리허설 ⑸ 가 검토 판정줄을 내지 않았다: $(printf '%s' "$out" | grep -m1 'reset_tool_s3_plan' || echo '<줄 없음>')"
-printf '%s' "$out" | grep -q '계획 검토 ok' \
-  || note "ⓖ′ 리허설 ⑸ 응답에 검토 본문의 판정줄이 없다 — 같은 길을 타지 않았다"
+[ "$(grep -c '계획 검토 ok' "$STAGE_LOG")" = 1 ] \
+  || note "ⓖ′ 리허설 ⑸ 원문 로그에 검토 본문의 판정줄이 정확히 한 번 있지 않다"
 grep -q 's3-apply' "$FIXTURE_SSH_LOG" \
   && note "ⓖ″ 리허설이 s3-apply 를 냈다 — 리허설은 계획까지다"
 

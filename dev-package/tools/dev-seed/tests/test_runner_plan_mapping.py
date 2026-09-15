@@ -20,6 +20,32 @@ _spec.loader.exec_module(runner)
 LEVEL_OPTIONS = ["Lv0", "Lv1", "Lv2", "Lv3"]
 
 
+@pytest.mark.parametrize('web,legacy,cli,expected', [
+    ('https://web.invalid', 'https://legacy.invalid', None, 'https://web.invalid'),
+    ('https://web.invalid', 'https://legacy.invalid', 'https://cli.invalid', 'https://cli.invalid'),
+    ('', 'https://legacy.invalid', None, 'https://legacy.invalid'),
+    ('https://web.invalid', '', None, 'https://web.invalid'),
+    ('', '', None, None),
+])
+def test_base_url_cli_and_environment_precedence(monkeypatch, tmp_path, web, legacy, cli, expected):
+    monkeypatch.setenv('COLAB_DEV_WEB_URL', web)
+    monkeypatch.setenv('COLAB_DEV_URL', legacy)
+    (tmp_path / 'upload-plan.json').write_text('{}')
+    argv = ['runner.py', '--phase', 'report', '--work-dir', str(tmp_path)]
+    if cli:
+        argv += ['--base-url', cli]
+    monkeypatch.setattr('sys.argv', argv)
+    seen = []
+    monkeypatch.setattr(runner, 'phase_report', lambda *_: seen.append(runner.CFG.base_url))
+    try:
+        assert runner.main() == (0 if expected else 2)
+        assert seen == ([expected] if expected else [])
+    finally:
+        if runner.LOG_FH:
+            runner.LOG_FH.close()
+            runner.LOG_FH = None
+
+
 def row(seq, name, level):
     ds = dict()
     ds["seq"] = seq

@@ -109,41 +109,9 @@ EOF
 }
 
 # ── deploy ───────────────────────────────────────────────────────────────
-# 정본 = `infra/dev/README.md` 「올리기」 ＋ 런북 §1. 사람 입력을 요구하는 자리는 없다.
-# 트리 동기화는 배포 절차 밖의 별도 1회다 — `ship.sh` 가 /opt/colab-repo 를 밀지 않는다(이슈 #48 ⑴).
+# 배포 명령과 검증은 release executor 한 번이 소유한다. reset 이후 stage_up은 별도 단계다.
 stage_deploy() {
-  local head; head="$(run_capture git -C "$REPO_ROOT" rev-parse --short=12 HEAD || true)"
-  if [ "$DRY_RUN" != 1 ] && [ "$head" != "$TARGET_SHA" ]; then
-    die "작업 트리 HEAD $head ≠ 배포 대상 $TARGET_SHA — build.sh 는 HEAD 를 굽는다. 먼저 체크아웃한다."
-    return 1
-  fi
-
-  log "① 이미지 5벌 빌드 (linux/arm64)"
-  run bash "$REPO_ROOT/infra/dev/build.sh" "$REPO_ROOT/dist" || return 1
-
-  log "② 반입 — ship.sh 안의 조상 게이트가 판정한다(비조상 65 · origin 조회 실패 78)"
-  run env COLAB_DEV_SSH="$COLAB_DEV_SSH" COLAB_DEV_KEY_FILE="$COLAB_DEV_KEY_FILE" \
-      bash "$REPO_ROOT/infra/dev/ship.sh" "$REPO_ROOT/dist" || return 1
-
-  log "③ 배포 레포 트리 동기화 — deploy_doctor ⑥⑦ 이 옛 head 를 정답으로 삼는 것을 막는다"
-  local tgz="$RUN_DIR/repo-$TARGET_SHA.tgz"
-  run bash -c "git -C \"$REPO_ROOT\" archive '$TARGET_SHA' -- db gates services/core-api/ops infra | gzip > \"$tgz\"" || return 1
-  run scp -o BatchMode=yes -o IdentitiesOnly=yes -i "$COLAB_DEV_KEY_FILE" \
-      "$tgz" "$COLAB_DEV_SSH:/tmp/repo.tgz" || return 1
-  ssh_dev "sudo tar xzf /tmp/repo.tgz -C $DEV_REPO_DIR --overwrite && rm -f /tmp/repo.tgz" || return 1
-
-  log "④ 기동 — up.sh (마이그레이션 두 체인 → 4 단위 healthy · fail-closed)"
-  ssh_dev "sudo bash $DEV_STATE_DIR/up.sh" || return 1
-
-  log "⑤ 프런트 정적 번들"
-  run bash -c "cd \"$REPO_ROOT/frontend\" && npm ci && npm run build" || return 1
-  # deploy_web.py 는 자작 SigV4 라 AWS_PROFILE 을 해석하지 않는다(이슈 #48 ⑵) —
-  # preflight ⑶ 이 환경변수 갈래를 이미 판정했다.
-  run python3 "$REPO_ROOT/services/core-api/ops/deploy_web.py" \
-      --dist "$REPO_ROOT/frontend/dist" --bucket "$WEB_BUCKET" --region "$S3_REGION" || return 1
-
-  log "⑥ deploy_doctor 기준선 1회"
-  doctor_once || return 1
+  release_plan_execute run
 }
 
 # deploy_doctor 요약줄 파서 — 표준입력에서 **마지막 한 벌**의 요약줄을 뽑는다.
@@ -168,11 +136,11 @@ doctor_summary_full() {
 # 부분 실행 둘을 합쳐 15 라 하지 않는다(완료 정의 · `.claude/rules/deploy.md`).
 doctor_once() {
   # 표준오류를 되받지 않는다 — `run_capture` 가 그쪽으로 DRY 줄과 실행 로그를 낸다.
-  local out; out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE" || true)"
+  local out rc=0; out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE")" || rc=$?
   printf '%s\n' "$out" | redact >> "$STAGE_LOG"
   if [ "$DRY_RUN" = 1 ]; then return 0; fi
+  if [ "$rc" -ne 0 ]; then blocked_add deploy_doctor "비영 종료 $rc"; return "$rc"; fi
   local line; line="$(printf '%s\n' "$out" | doctor_summary_line || true)"
-  log "deploy_doctor 요약줄: ${line:-<없음>}"
   if [ -z "$line" ]; then blocked_add deploy_doctor "요약줄 없음 — 판정 불가"; return 1; fi
   printf '%s\n' "$line" > "$RUN_DIR/doctor-summary.txt"
   if doctor_summary_full "$line"; then
@@ -223,11 +191,11 @@ $(reset_docker_cmd) --phase count --report /out/count-before.json
 test -s $REMOTE_OUT/count-before.json
 EOF
 
-  # ①ᵃ 정지 **전** 관찰. 앱이 아직 도는 중이라 0 이 아닐 수 있으므로 **판정하지 않고 기록만** 한다.
-  #    판정은 정지 뒤 ①″ 가 한다 — 그때 0 이 아니면 「정지가 듣지 않았다」는 뜻이고,
-  #    정지 전에 재면 그 뜻이 서지 않는다(앱 자신의 질의가 그대로 세어진다).
-  log "①ᵃ 활성 트랜잭션 사전 관찰 — 기록만 한다(앱이 아직 돈다 · 읽기 전용)"
-  psql_master_run "$ACTIVE_TX_SQL" >/dev/null || warn "①ᵃ 사전 관찰 질의가 비영 종료했다 — 판정에는 쓰지 않는다"
+  # 사전 질의가 실패하거나 진행 중 작업이 있으면 앱을 내리기 전에 중단한다.
+  # 이후 생긴 작업은 정지 뒤 ①″에서 다시 확인한다.
+  log "①ᵃ 정지 전 활성 트랜잭션 0 확인 — 마스터 롤 · 읽기 전용"
+  psql_master_query "$ACTIVE_TX_SQL" "0" \
+    || { blocked_add reset "정지 전 활성 트랜잭션 0 확인 실패"; return 1; }
 
   # ── 보호 구간 시작 ── 아래에서 실패하면 앱을 **자동으로 되살리고** 돌아온다.
   log "①′ 앱 4 단위 정지 — 되돌릴 수 없는 걸음(② 스키마 DROP) 직전에만 내린다"
@@ -296,7 +264,7 @@ psql_master_query() {
   local sql="$1" expect="$2"
   # ⚠ 출력을 `STAGE_LOG` 에 **다시 적지 않는다** — `ssh_script` 가 이미 `tee` 로 적는다.
   #   두 번 적으면 같은 오류 줄이 두 벌 보여 실행 2회로 오독된다(DR-4 §6 부수 관찰).
-  local out; out="$(psql_master_run "$sql")"
+  local out; out="$(psql_master_run "$sql")" || return 1
   [ "$DRY_RUN" = 1 ] && return 0
   local val; val="$(printf '%s\n' "$out" | grep -E '^[0-9]+$' | tail -1 || true)"
   log "질의 결과 = ${val:-<없음>} (기대 $expect)"
@@ -850,18 +818,74 @@ reh() { _reh_judge "$1" "$2" -F "${3-}"; }
 reh_re() { _reh_judge "$1" "$2" -E "${3-}"; }
 
 _reh_judge() {
-  local name="$1" want="$2" mode="$3" got="${4-}" one
-  one="$(printf '%s' "$got" | tr '\n\t' '  ' | sed -E 's/  +/ /g; s/^ //; s/ $//')"
-  one="${one:0:180}"
+  local name="$1" want="$2" mode="$3" got="${4-}"
   if printf '%s\n' "$got" | grep -q "$mode" -- "$want"; then
     REH_OK=$(( REH_OK + 1 ))
-    log "  ✓ $name — 기대 [$want] · 받은 것 [$one]"
+    log "  ✓ $name — 기대 응답과 일치"
   else
     REH_BAD+=("$name")
-    log "  ✗ $name — 기대 [$want] 가 응답에 없다 · 받은 것 [${one:-<빈 응답>}]"
+    log "  ✗ $name — 기대 응답 미검출 (원문은 단계 로그)"
     blocked_add "rehearse:$name" "기대 [$want] 미검출"
   fi
 }
+
+# 같은 보호 사본을 후보 검사·executor --check·실행에 쓴다. 원본 변경은 실행에 섞이지 않는다.
+release_plan_execute() (
+  local mode="$1"
+  if [ "$DRY_RUN" = 1 ]; then
+    log "DRY release executor $mode — plan=${RELEASE_PLAN:-<release-plan>} · 외부 실행 0"
+    return 0
+  fi
+  if [ -z "${RELEASE_PLAN:-}" ] || [ ! -f "$RELEASE_PLAN" ]; then
+    blocked_add release-plan "--release-plan 입력 부재 — 배포 계획 미검증"
+    log "✗ release-plan — 입력 부재·미검증"
+    return 78
+  fi
+  local full head rc=0 out plan source snapshot_dir
+  source="$(python3 -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve())' "$RELEASE_PLAN")" || return 78
+  full="$(run_capture git -C "$REPO_ROOT" rev-parse --verify "$TARGET_SHA^{commit}")" || return 78
+  head="$(run_capture git -C "$REPO_ROOT" rev-parse --verify HEAD)" || return 78
+  if [ "$head" != "$full" ]; then
+    blocked_add release-plan "작업 HEAD와 배포 후보 SHA 불일치"
+    return 1
+  fi
+  snapshot_dir="$(mktemp -d "$(cd "$RUN_DIR" && pwd)/release-plan.XXXXXX")" || return 78
+  plan="$snapshot_dir/plan.json"
+  trap 'rm -f "$plan"; rmdir "$snapshot_dir"' EXIT
+  umask 077
+  cp -- "$source" "$plan" || return 78
+  chmod 600 "$plan" || return 78
+  python3 - "$plan" "$full" <<'PYPLAN' || { blocked_add release-plan "dev 대상/후보 SHA 불일치·재귀 호출 또는 계획 손상"; return 1; }
+import json,sys
+try:
+    plan=json.load(open(sys.argv[1]))
+    targets=plan['targets']
+    if len(targets)!=1 or targets[0]['name']!='dv' or targets[0]['version']!=sys.argv[2]:
+        raise ValueError()
+    # argv에 명시된 reseed.sh 재진입을 거절한다. 임의 shell 코드 전체를 분석하지는 않는다.
+    if any('reseed.sh' in arg for cmd in targets[0].get('deploy',[]) for arg in cmd):
+        raise ValueError()
+except (OSError,ValueError,KeyError,TypeError):
+    print('release-plan: dev 단일 대상/현재 후보 SHA가 일치하고 reseed 재귀 호출이 없어야 한다',file=sys.stderr)
+    raise SystemExit(1)
+PYPLAN
+  out="$(cd "$REPO_ROOT" && run_capture python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan" --check)" || rc=$?
+  printf '%s\n' "$out" | redact >> "$STAGE_LOG"
+  if [ "$rc" -ne 0 ]; then
+    blocked_add release-plan "executor --check 실패 $rc — 배포 계획 미검증"
+    return "$rc"
+  fi
+  if [ "$mode" = check ]; then
+    log "✓ executor --check — 후보 계획·pre-evidence 통과; build/ship/tree 실제 실행 준비성 미측정"
+    return 0
+  fi
+  log "release executor — 검증한 동일 계획으로 배포·검증 1회 (알림 범위는 배포 결과)"
+  (cd "$REPO_ROOT" && run python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan") || rc=$?
+  if [ "$rc" -ne 0 ]; then blocked_add release-plan "executor run 실패 $rc"; fi
+  return "$rc"
+)
+
+rehearse_release_plan() { release_plan_execute check; }
 
 stage_rehearse() {
   REH_OK=0; REH_BAD=()
@@ -875,6 +899,7 @@ stage_rehearse() {
     return 0
   fi
 
+  rehearse_release_plan || return $?
   local got
 
   # ⑴ psql_master_query 의 전송로 — 작은따옴표가 든 SQL 이 그대로 닿아야 한다.
@@ -937,10 +962,11 @@ EOF
   reh_re psql_owner_url '^1$' "$got"
 
   # ⑺ deploy_doctor — **한 번** 돌리고 `doctor_summary_line` 으로 읽는다(완료 정의와 같은 파서).
-  local doctor_out
-  doctor_out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE" || true)"
+  local doctor_out doctor_rc=0
+  doctor_out="$(ssh_dev_capture "sudo bash $DOCTOR_PROBE")" || doctor_rc=$?
   printf '%s\n' "$doctor_out" | redact >> "$STAGE_LOG"
   got="$(printf '%s\n' "$doctor_out" | doctor_summary_line || true)"
+  [ "$doctor_rc" = 0 ] || got=""
   reh doctor_summary_line '항목 15 — ✓ 15 · ✗ 0 · ─ 0' "$got"
 
   # ⑻ 러너 `--phase report` — 읽기 전용이다. 계획은 **임시 자리**에 새로 만들고 공유 작업 자리를 건드리지 않는다.
@@ -950,11 +976,13 @@ EOF
       --work-dir "$rw" --out "$rw/upload-plan.json" --manifest-out "$rw/plan-manifest.yaml" >/dev/null 2>&1
   got="$(run_capture python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" \
       --phase report --base-url "$DEV_URL" --work-dir "$rw" 2>&1 || true)"
+  printf '%s\n' "$got" | redact >> "$STAGE_LOG"
   reh_re runner_phase_report "완료 [0-9]+ / $EXPECT_DATASETS" "$got"
 
   # ⑼ agent-browser — dev 첫 화면을 열고 제목을 읽는다(쓰기 0).
   run_capture agent-browser open "$DEV_URL" >/dev/null 2>&1 || true
   got="$(run_capture agent-browser get title 2>/dev/null || true)"
+  printf '%s\n' "$got" | redact >> "$STAGE_LOG"
   reh_re agent_browser_title '[^[:space:]]' "$got"
 
   log "리허설 — 원시동작 $(( REH_OK + ${#REH_BAD[@]} )) · 통과 $REH_OK · 어긋남 ${#REH_BAD[@]}"

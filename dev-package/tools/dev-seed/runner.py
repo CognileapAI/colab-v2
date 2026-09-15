@@ -58,7 +58,7 @@ def set_work_dir(work_dir, plan=None):
     NEW_PW_PATH = WORK_DIR / "new-password.txt"
 
 
-# 주소는 자리값을 코드에 두지 않는다 — `--base-url` 또는 `COLAB_DEV_URL`.
+# 주소는 자리값을 코드에 두지 않는다 — CLI > COLAB_DEV_WEB_URL > 호환 COLAB_DEV_URL.
 # dev 주소의 원본은 `docs/DEPLOY.md` · `.claude/rules/deploy.md` 다.
 DEFAULT_URL = None
 DEFAULT_SESSION = "colab-dev"
@@ -1722,8 +1722,8 @@ def main():
     ap.add_argument("--phase", required=True,
                     choices=["login", "accounts", "projects", "datasets",
                              "verify", "report", "all"])
-    ap.add_argument("--base-url", default=os.environ.get("COLAB_DEV_URL", DEFAULT_URL),
-                    help="대상 주소. 환경변수 COLAB_DEV_URL 로도 준다. 기본값 없음")
+    ap.add_argument("--base-url", default=os.environ.get("COLAB_DEV_WEB_URL") or os.environ.get("COLAB_DEV_URL") or DEFAULT_URL,
+                    help="대상 주소. CLI > COLAB_DEV_WEB_URL > legacy COLAB_DEV_URL. 기본값 없음")
     ap.add_argument("--work-dir", default=os.environ.get("COLAB_SEED_WORK_DIR"),
                     help="상태·로그·갈무리·자격 파일 자리. 기본값 = 이 폴더의 .work/")
     ap.add_argument("--plan", default=None,
@@ -1748,7 +1748,7 @@ def main():
     CFG = ap.parse_args()
     set_work_dir(CFG.work_dir or DEFAULT_WORK_DIR, CFG.plan)
     if not CFG.base_url:
-        print("대상 주소가 없다 — --base-url 또는 COLAB_DEV_URL 을 준다"
+        print("대상 주소가 없다 — --base-url 또는 COLAB_DEV_WEB_URL (호환 COLAB_DEV_URL)을 준다"
               "(dev 주소의 원본 = docs/DEPLOY.md).", file=sys.stderr)
         return 2
     CFG.base_url = CFG.base_url.rstrip("/")
