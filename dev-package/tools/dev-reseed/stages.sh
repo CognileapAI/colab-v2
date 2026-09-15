@@ -335,6 +335,9 @@ docker run --rm --network host --user 0 \\
     done
     echo "역할 접속 3/3 ok"'
 EOF
+  log "⑤ 기존 정적 인증 파일 보호 백업 후 비우기 — 앱 기동 전"
+  run python3 "$RESEED_DIR/accounts.py" clear-legacy --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR" || return 1
 }
 
 # ── up ───────────────────────────────────────────────────────────────────
@@ -421,11 +424,19 @@ stage_prelude() {
   fi
 
   log "① 연구실 — provision-lab.sql (파일이 스스로 app.current_lab 을 건다)"
+  local lab_sql
+  lab_sql="$(python3 "$RESEED_DIR/accounts.py" sql --profile "$ACCOUNTS_FILE" --sql "$PROVISION_LAB_SQL")" || return 1
   ssh_script "prelude:lab" <<EOF || return 1
 set -euo pipefail
+umask 077
+lab_sql=\$(mktemp)
+trap 'rm -f "\$lab_sql"' EXIT
+cat > "\$lab_sql" <<'COLAB_CANONICAL_LAB_SQL'
+$lab_sql
+COLAB_CANONICAL_LAB_SQL
 docker run --rm --network host --user 0 \\
   -v $EC2_SECRETS_DIR/platform-owner-db.url:/s/owner.url:ro \\
-  -v $DEV_REPO_DIR/infra/staging/provision-lab.sql:/s/lab.sql:ro \\
+  -v "\$lab_sql":/s/lab.sql:ro \\
   $PSQL_IMAGE sh -c 'psql -v ON_ERROR_STOP=1 "\$(sed -E "s#^postgresql\\+psycopg://#postgresql://#" /s/owner.url)" -f /s/lab.sql'
 EOF
 
@@ -577,18 +588,22 @@ stage_seed() {
   run python3 "$BUILD_PLAN_PY" \
       --ref-root "${COLAB_REF_ROOT:-}" --md-root "${MD_ROOT:-}" --work-dir "$SEED_WORK_DIR" || return 1
 
-  log "② 러너 — 로그인 · 프로젝트 · 데이터셋 · 확인 · 보고"
-  local extra=()
-  # `--accounts-file` 은 러너 레인(WU-C1b)이 붙이는 인자다. 이 기준에는 아직 없으므로
-  # 값이 주어졌을 때만 넘긴다 — 없는 인자를 무조건 넘겨 러너를 죽이지 않는다.
-  if [ -n "$ACCOUNTS_FILE" ]; then extra+=(--accounts-file "$ACCOUNTS_FILE"); fi
-  run python3 "$REPO_ROOT/dev-package/tools/dev-seed/runner.py" \
-      --phase all --base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" \
-      --account "$RESEED_ACCOUNT_EMAIL" "${extra[@]}" || return 1
+  log "② 러너 — 교수 로그인 · 무소속 운영자 4명 · 프로젝트 · 데이터셋 · 확인 · 보고"
+  local runner="$REPO_ROOT/dev-package/tools/dev-seed/runner.py" i phase
+  local args=(--base-url "$DEV_URL" --work-dir "$SEED_WORK_DIR" --session "$AB_SESSION" --account "$RESEED_ACCOUNT_EMAIL")
+  run python3 "$runner" --phase login "${args[@]}" || return 1
+  for i in 0 1 2 3; do
+    run python3 "$runner" --phase accounts "${args[@]}" --accounts-file "$ACCOUNTS_WORK_DIR/operator-$i.json" \
+      --accounts-password-file "$ACCOUNTS_WORK_DIR/initial-$i.txt" || return 1
+  done
+  run python3 "$RESEED_DIR/accounts.py" check-created --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+  for phase in projects datasets verify report; do
+    run python3 "$runner" --phase "$phase" "${args[@]}" || return 1
+  done
 }
 
 # ── verify ───────────────────────────────────────────────────────────────
-# 읽기 전용이다. 쓰기는 한 건도 내지 않는다.
+# 자료 상세 검증 후 계정 초기 비밀번호 복원·임시 운영자 해제와 로그인 검증을 수행한다.
 # 한 번의 상세 화면 순회로 넷을 함께 잰다 — 가공 단계 · 「미지정」 · 프로젝트 연결 · 미리보기 판정.
 # 대기 = 45,000 ms. 근거 = DR-3 실측에서 viz-render 실소요가 20,037~38,391 ms 였고
 #        core-api 가 10,02x ms 에 끊어 503 을 냈다(`dev-package/sessions/DR-3-run-2026-09-13.md §6`).
@@ -649,6 +664,31 @@ raise SystemExit(1 if bad else 0)
 CVPY
 }
 
+account_finalize() {
+  local binding
+  binding="$(python3 "$RESEED_DIR/accounts.py" check-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" --target-sha "$TARGET_SHA")" || return 1
+  python3 "$RESEED_DIR/accounts.py" finalize --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --binding "$binding" --base-url "$DEV_URL" --ssh "$COLAB_DEV_SSH" --key "$COLAB_DEV_KEY_FILE" --secrets-dir "$EC2_SECRETS_DIR"
+}
+
+verify_seed_contract() {
+  python3 - "$1" "$EXPECT_DATASETS" "$EXPECT_EDGES" <<'PY'
+import json, sys
+path, nds, nedge = sys.argv[1:4]
+v = json.load(open(path))
+nds, nedge = int(nds), int(nedge)
+bad = []
+if v.get("dataset_count_state") != nds: bad.append("상태 데이터셋 계수 %s" % v.get("dataset_count_state"))
+if v.get("periods_expected") != nds: bad.append("기간 기대 계수 %s" % v.get("periods_expected"))
+if v.get("periods_ok") != nds or v.get("periods_missing"): bad.append("저장 기간 %s/%s" % (v.get("periods_ok"), nds))
+if v.get("model_input_descriptions_ok") != 2 or v.get("model_input_descriptions_missing"):
+    bad.append("모델 입력 설명 %s/2" % v.get("model_input_descriptions_ok"))
+if v.get("edges_ok") != nedge or v.get("edges_missing"): bad.append("간선·역할 %s/%s" % (v.get("edges_ok"), nedge))
+print("러너 검증 — " + ("기간·설명·간선 전건 일치" if not bad else " · ".join(bad)))
+raise SystemExit(1 if bad else 0)
+PY
+}
+
 stage_verify() {
   if [ "$DRY_RUN" = 1 ]; then
     log "DRY 러너 verify.json 계수 대조(데이터셋 $EXPECT_DATASETS · 프로젝트 $EXPECT_PROJECTS · 간선 $EXPECT_EDGES)"
@@ -658,6 +698,20 @@ stage_verify() {
   fi
 
   local state="$SEED_WORK_DIR/state.json" verify="$SEED_WORK_DIR/verify.json"
+  [ -f "$verify" ] || { blocked_add verify "verify.json 부재 — seed 단계 산출물이 없다"; return 1; }
+  verify_seed_contract "$verify" || { blocked_add verify "러너 기간·설명·간선 검증 미달"; return 1; }
+
+  if [ -f "$ACCOUNTS_WORK_DIR/details-verified.json" ]; then
+    log "같은 자료 검증 증거를 확인하고 계정 최종화·로그인 검증만 재개"
+    account_finalize || return 1
+    python3 - "$ACCOUNTS_WORK_DIR/details-verified.json" "$RUN_DIR" <<'ACCOUNT_RESUME'
+import json,pathlib,shutil,sys
+source=pathlib.Path(json.loads(pathlib.Path(sys.argv[1]).read_text())['run_dir']);target=pathlib.Path(sys.argv[2])
+for name in ('counts.json','preview-judgment.tsv'):
+ if source.resolve()!=target.resolve():shutil.copyfile(source/name,target/name)
+ACCOUNT_RESUME
+    return $?
+  fi
   local manifest="$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml"
   for f in "$state" "$verify" "$manifest"; do
     [ -f "$f" ] || { blocked_add verify "$(basename "$f") 부재 — seed 단계 산출물이 없다"; return 1; }
@@ -767,6 +821,10 @@ res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
     "edges": {"expected": int(nedge), "ok": v.get("edges_ok"), "missing": v.get("edges_missing")},
+    "periods": {"expected": int(nds), "reportedExpected": v.get("periods_expected"),
+                "ok": v.get("periods_ok"), "missing": v.get("periods_missing")},
+    "modelInputDescriptions": {"expected": 2, "ok": v.get("model_input_descriptions_ok"),
+                               "missing": v.get("model_input_descriptions_missing")},
     "processingLevel": {"mismatchSeq": level_mismatch, "unsetSeq": unset,
                         "undecidedSeq": level_undecided},
     "usageUndecidedSeq": count_undecided,
@@ -795,6 +853,10 @@ if len(rows) != int(nds): bad.append("판정 표 %d 행" % len(rows))
 print("대조 결과 — " + ("전건 일치" if not bad else " · ".join(bad)))
 raise SystemExit(1 if bad else 0)
 PY
+  [ "$?" -eq 0 ] || return 1
+  python3 "$RESEED_DIR/accounts.py" record-details --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" \
+    --run-dir "$RUN_DIR" --target-sha "$TARGET_SHA" >/dev/null || return 1
+  account_finalize
 }
 
 # ── rehearse ─────────────────────────────────────────────────────────────
@@ -880,7 +942,7 @@ PYPLAN
     return 0
   fi
   log "release executor — 검증한 동일 계획으로 배포·검증 1회 (알림 범위는 배포 결과)"
-  (cd "$REPO_ROOT" && run python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan") || rc=$?
+  (cd "$REPO_ROOT" && run python3 "$REPO_ROOT/scripts/deploy_release.py" run --plan "$plan" --notification-off) || rc=$?
   if [ "$rc" -ne 0 ]; then blocked_add release-plan "executor run 실패 $rc"; fi
   return "$rc"
 )
@@ -1009,6 +1071,7 @@ stage_report() {
   python3 "$RESEED_DIR/report.py" \
     --run-dir "$RUN_DIR" --run-id "$RUN_ID" --target-sha "${TARGET_SHA:-}" \
     --stages "$(printf '%s,' "${STAGES[@]}")" --dry-run "$DRY_RUN" \
+    --accounts-work "$ACCOUNTS_WORK_DIR" --accounts-profile "$ACCOUNTS_FILE" \
     --schema "$RESEED_DIR/result-schema.json" --out "$result" --session-out "$session" || return 1
   log "결과 JSON = $(relpath "$result")"
   log "회차 기록 뼈대 = $(relpath "$session")"

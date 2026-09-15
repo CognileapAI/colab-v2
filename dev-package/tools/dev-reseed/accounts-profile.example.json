@@ -1,0 +1,44 @@
+[
+  {
+    "email": "operator1@example.invalid",
+    "name": "운영자 1",
+    "admin": true,
+    "role": "",
+    "lab": "",
+    "initial_password_strategy": "email"
+  },
+  {
+    "email": "operator2@example.invalid",
+    "name": "운영자 2",
+    "admin": true,
+    "role": "",
+    "lab": "",
+    "initial_password_strategy": "email"
+  },
+  {
+    "email": "operator3@example.invalid",
+    "name": "운영자 3",
+    "admin": true,
+    "role": "",
+    "lab": "",
+    "initial_password_strategy": "email"
+  },
+  {
+    "email": "operator4@example.invalid",
+    "name": "운영자 4",
+    "admin": true,
+    "role": "",
+    "lab": "",
+    "initial_password_strategy": "email"
+  },
+  {
+    "email": "professor@example.invalid",
+    "name": "전창현",
+    "admin": false,
+    "role": "교수",
+    "lab": "고려대학교 수문학연구실",
+    "account_id": "000000000000000000HYMETSP1",
+    "lab_id": "00000000000000000000HYMETS",
+    "initial_password_strategy": "email"
+  }
+]

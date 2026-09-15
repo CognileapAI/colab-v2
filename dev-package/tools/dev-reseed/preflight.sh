@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# preflight — 10 항목 판정. 하나라도 어긋나면 **이름을 대고** 비영 종료한다.
+# preflight — 환경 10 항목과 계정 입력 판정. 하나라도 어긋나면 **이름을 대고** 비영 종료한다.
 #
 # 성격 = 거부가 올바른 동작이다(라운드 §7). 부분 실행으로 넘어가지 않는다.
 # 근거 = R-DATA-CANON §2 판정 ㈔ ⓐ(6항목) ＋ 이슈 #48(QEMU · AWS 자격) ＋ 지시 4항목 추가.
@@ -278,6 +278,60 @@ pf_announce() {
   fi
 }
 
+# 비밀번호 값은 stdout/상태/명령 인자로 내보내지 않는다.
+validate_seed_inputs() {
+  [ "${ACCOUNT_IDENTITY_INVALID:-0}" = 0 ] || { echo '교수 신원 override가 지정 프로필과 다릅니다' >&2; return 1; }
+  [ -z "${ACCOUNTS_PASSWORD_FILE:-}" ] || { echo '공통 비밀번호는 사용할 수 없습니다: 각 이메일 초기값 정책' >&2; return 1; }
+  python3 "$RESEED_DIR/accounts.py" validate --profile "$ACCOUNTS_FILE" || return 1
+  python3 "$RESEED_DIR/accounts.py" sql --profile "$ACCOUNTS_FILE" --sql "$PROVISION_LAB_SQL" >/dev/null || return 1
+  python3 - "${OPERATOR_PASSWORD_OVERRIDE:-}" "$RESEED_ACCOUNT_EMAIL" "$SEED_WORK_DIR" "${1:-0}" <<'PYINPUT'
+import pathlib,sys
+password,email,work,reset=sys.argv[1:]
+if password:
+ p=pathlib.Path(password)
+ if p.is_symlink() or not p.is_file() or p.stat().st_mode&0o777!=0o600 or p.read_text().strip()!=email:
+  raise SystemExit('교수 초기 비밀번호 파일이 지정 이메일 정책과 다릅니다')
+if reset=='1' and any((pathlib.Path(work)/n).exists() for n in ('state.json','new-password.txt','initial-password.txt','accounts')):
+ raise SystemExit('새 초기화에는 새 seed 작업 폴더가 필요합니다')
+PYINPUT
+}
+
+prepare_seed_password() {
+  [ "$DRY_RUN" != 1 ] || return 0
+  python3 "$RESEED_DIR/accounts.py" prepare --profile "$ACCOUNTS_FILE" --work "$ACCOUNTS_WORK_DIR" || return 1
+  python3 - "$OPERATOR_PASSWORD_FILE" "$SEED_WORK_DIR" <<'PYPREP'
+import os, pathlib, sys
+source, work = map(pathlib.Path, sys.argv[1:])
+work.mkdir(parents=True, exist_ok=True, mode=0o700)
+path = work / 'initial-password.txt'
+try:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+except FileExistsError:
+    if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o777 != 0o600 or not path.read_text().strip():
+        sys.exit('기존 초기 비밀번호 파일이 안전한 0600 일반 파일이 아니다')
+else:
+    with os.fdopen(fd, 'wb') as output:
+        output.write(source.read_bytes())
+PYPREP
+}
+
+pf_seed_inputs() {
+  pf_dry seed-inputs '계정·비밀번호 파일 검증 (값 미기록)' && return
+  if [ "${PREFLIGHT_ONLY:-0}" = 1 ] || [ "${REHEARSE:-0}" = 1 ]; then
+    if [ -z "${OPERATOR_PASSWORD_FILE:-}${ACCOUNTS_FILE:-}${ACCOUNTS_PASSWORD_FILE:-}" ]; then
+      pf_note seed-inputs '읽기 전용 실행 · 계정 입력 미지정 · 초기화 입력 판정 제외'
+      return
+    fi
+  fi
+  local reset=0
+  stage_enabled reset && reset=1
+  if validate_seed_inputs "$reset"; then
+    pf_pass seed-inputs '계정·비밀번호 입력 검증 완료 (값 미기록)'
+  else
+    pf_fail seed-inputs '계정·비밀번호 입력이 유효하지 않다'
+  fi
+}
+
 stage_preflight() {
   PF_PASS=(); PF_FAIL=(); PF_NOTE=()
   pf_announce
@@ -291,6 +345,11 @@ stage_preflight() {
   pf_secrets
   pf_resources
   pf_build_plan
+  pf_seed_inputs
+  if [ "$DRY_RUN" != 1 ] && [ "${#PF_FAIL[@]}" = 0 ] &&
+      [ "${PREFLIGHT_ONLY:-0}" != 1 ] && [ "${REHEARSE:-0}" != 1 ]; then
+    prepare_seed_password || pf_fail seed-password-preparation '초기 비밀번호 파일 준비 실패 (기존 파일 덮어쓰기 없음)'
+  fi
 
   python3 - "$RUN_DIR/preflight.json" "$DRY_RUN" "${#PF_PASS[@]}" "${#PF_FAIL[@]}" \
       "$(printf '%s,' "${PF_PASS[@]}")" "$(printf '%s,' "${PF_FAIL[@]}")" <<'PY'
@@ -303,7 +362,7 @@ json.dump({"dryRun": dry == "1", "passed": split(passed), "failed": split(failed
 PY
 
   if [ "$DRY_RUN" = 1 ]; then
-    log "preflight — dry-run · 10 항목 판정 없음"
+    log "preflight — dry-run · 11 항목 판정 없음"
     return 0
   fi
   log "preflight — 통과 ${#PF_PASS[@]} · 미달 ${#PF_FAIL[@]}"

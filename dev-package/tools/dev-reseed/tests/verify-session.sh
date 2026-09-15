@@ -98,13 +98,22 @@ relpath() { printf '%s' "$1"; }
 . "$RESEED_DIR/lib.sh"
 # shellcheck source=../stages.sh
 . "$RESEED_DIR/stages.sh"
+ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
+ACCOUNTS_FILE="$TMP/approved-profile.json"
+cp "$RESEED_DIR/accounts-profile.example.json" "$ACCOUNTS_FILE"
+chmod 600 "$ACCOUNTS_FILE"
+export COLAB_RESEED_ACCOUNTS_PROFILE="$ACCOUNTS_FILE"
+TARGET_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# This fixture isolates detail traversal. Account store/login behavior is tested in test_accounts.py.
+account_finalize() { :; }
+
 
 cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
 datasets:
   - {seq: 1, name: "HSR 레이더 반사도 원자료", processing_level: Lv0}
 YAML
 cat > "$SEED_WORK_DIR/verify.json" <<'JSON'
-{"dataset_count_ui": 1, "dataset_count_state": 1, "by_project": {"radar": 1}, "edges_ok": 0, "edges_missing": []}
+{"dataset_count_ui": 1, "dataset_count_state": 1, "by_project": {"radar": 1}, "edges_ok": 0, "edges_missing": [], "periods_expected": 1, "periods_ok": 1, "periods_missing": [], "model_input_descriptions_ok": 2, "model_input_descriptions_missing": []}
 JSON
 
 write_state() { # $1 = id 없는 행을 넣는가(1/0)
@@ -119,7 +128,7 @@ JSON
 JSON
   fi
 }
-reset_run() { : > "$FIXTURE_AB_LOG"; rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
+reset_run() { rm -f "$ACCOUNTS_WORK_DIR/details-verified.json"; : > "$FIXTURE_AB_LOG"; rm -f "$RUN_DIR/blocked.jsonl" "$RUN_DIR/preview-judgment.tsv"; CURRENT_STAGE=verify; STAGE_LOG="$RUN_DIR/logs/verify.log"; : > "$STAGE_LOG"; }
 verdict_of() { awk -F'\t' -v s="$1" '$1==s {print $4}' "$RUN_DIR/preview-judgment.tsv"; }
 
 # ── ⓐ·ⓑ 상세 화면 · 세션 인자 ────────────────────────────────────────────
@@ -132,6 +141,27 @@ n_calls="$(grep -c '^AB' "$FIXTURE_AB_LOG")"
 n_sess="$(grep -c $'^AB\t--session\tcolab-dev\t' "$FIXTURE_AB_LOG")"
 [ "$n_calls" -gt 0 ] || note "ⓐ agent-browser 호출이 0건이다 — 순회가 돌지 않았다"
 [ "$n_calls" = "$n_sess" ] || note "ⓐ′ --session colab-dev 없이 나간 agent-browser 호출이 $(( n_calls - n_sess ))건이다(전체 $n_calls) — 환경변수는 세션을 고르지 않는다"
+
+# 러너가 재어 둔 저장 기간·모델 입력 설명이 빠지거나 미달이면 상세 화면이 멀쩡해도 차단한다.
+cp "$SEED_WORK_DIR/verify.json" "$TMP/verify-good.json"
+python3 - "$SEED_WORK_DIR/verify.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["periods_ok"] = 0; d["periods_missing"] = [{"name": "HSR 레이더 반사도 원자료"}]
+json.dump(d, open(p, "w"))
+PY
+reset_run
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "저장 기간 검증 미달을 성공으로 판정했다"
+cp "$TMP/verify-good.json" "$SEED_WORK_DIR/verify.json"
+python3 - "$SEED_WORK_DIR/verify.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["model_input_descriptions_ok"] = 1; d["model_input_descriptions_missing"] = [{"name": "Aspect"}]
+json.dump(d, open(p, "w"))
+PY
+reset_run
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "모델 입력 설명 검증 미달을 성공으로 판정했다"
+cp "$TMP/verify-good.json" "$SEED_WORK_DIR/verify.json"
 
 # Rendering can fail after its container appears: wait for the final slot state.
 reset_run; export FIXTURE_TERMINAL=delayed-failed
