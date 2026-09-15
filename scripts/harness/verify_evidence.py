@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -37,7 +39,28 @@ def _required(value: object, name: str) -> str:
     return value
 
 
-def event_shas(event_name: str, event: dict, checkout_sha: str) -> dict[str, str]:
+def _verify_merge_commit(commit: str, commit_object: object, base: str, head: str,
+                         tree: str | None = None) -> None:
+    content = _required(commit_object, "checkout commit object")
+    try:
+        raw = base64.b64decode(content, validate=True)
+    except (ValueError, base64.binascii.Error) as exc:
+        raise EvidenceError("invalid checkout commit object encoding") from exc
+    actual = hashlib.sha1(f"commit {len(raw)}\0".encode() + raw).hexdigest()
+    if actual != commit:
+        raise EvidenceError("checkout commit object differs from checkout SHA")
+    headers = raw.split(b"\n\n", 1)[0].splitlines()
+    trees = [line.removeprefix(b"tree ") for line in headers if line.startswith(b"tree ")]
+    if tree is not None and trees != [tree.encode("ascii")]:
+        raise EvidenceError("PR merge commit tree differs from evidence tree")
+    parents = [line.removeprefix(b"parent ") for line in headers if line.startswith(b"parent ")]
+    if parents != [base.encode("ascii"), head.encode("ascii")]:
+        raise EvidenceError("PR merge commit parents differ from event base/head")
+
+
+def event_shas(event_name: str, event: dict, checkout_sha: str,
+               commit_object: str | None = None,
+               checkout_tree: str | None = None) -> dict[str, str]:
     sha(checkout_sha, "checkout sha")
     if event_name == "pull_request":
         pull = event.get("pull_request") if isinstance(event, dict) else None
@@ -46,9 +69,8 @@ def event_shas(event_name: str, event: dict, checkout_sha: str) -> dict[str, str
         head = pull.get("head") if isinstance(pull.get("head"), dict) else {}
         result = {"base_sha": sha(base.get("sha"), "pull_request.base.sha"),
                   "head_sha": sha(head.get("sha"), "pull_request.head.sha"),
-                  "merge_sha": sha(pull.get("merge_commit_sha"), "pull_request.merge_commit_sha")}
-        if result["merge_sha"] != checkout_sha:
-            raise EvidenceError("PR merge commit differs from checkout")
+                  "merge_sha": checkout_sha}
+        _verify_merge_commit(checkout_sha, commit_object, result["base_sha"], result["head_sha"], checkout_tree)
         return result
     if event_name == "push":
         result = {"before_sha": sha(event.get("before"), "push.before"),
@@ -241,7 +263,8 @@ def verify_ci_bundle(evidence: dict, artifact_root: Path) -> None:
     attempt = evidence.get('run_attempt')
     if type(attempt) is not int or attempt < 1:
         raise EvidenceError('invalid run attempt')
-    shas = event_shas(inputs.get('event_name'), inputs['event'], commit)
+    shas = event_shas(inputs.get('event_name'), inputs['event'], commit,
+                      inputs.get('commit_object'), tree)
     jobs = collect_ci(run_id, attempt, commit, tree, load_registry(),
                       inputs['needs'], inputs['filters'], artifact_root)
     rebuilt = build_ci_evidence(run_id, attempt, commit, tree, shas, jobs)
@@ -310,14 +333,20 @@ def ci_command(args: argparse.Namespace) -> int:
         actual_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         if actual_commit != args.commit:
             raise EvidenceError("aggregator checkout differs from event SHA")
-        shas = event_shas(args.event_name, event, args.commit)
+        commit_object = None
+        if args.event_name == "pull_request":
+            commit_object = base64.b64encode(subprocess.check_output(
+                ["git", "cat-file", "commit", args.commit]
+            )).decode("ascii")
+        shas = event_shas(args.event_name, event, args.commit, commit_object, tree)
         jobs = collect_ci(args.run_id, args.run_attempt, args.commit, tree, load_registry(), needs, filters, args.artifact_root)
         evidence = build_ci_evidence(
             args.run_id, args.run_attempt, args.commit, tree,
             shas, jobs,
         )
         evidence['inputs'] = {'event_name': args.event_name, 'event': event,
-                              'needs': needs, 'filters': filters}
+                              'needs': needs, 'filters': filters,
+                              'commit_object': commit_object}
         args.output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n",
                                encoding="utf-8")
         summary = _markdown(evidence)

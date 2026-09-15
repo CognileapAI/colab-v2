@@ -44,3 +44,15 @@
 - 소유 11파일을 합류하기 전후 SHA256과 부모 복사본을 대조해 동일함을 확인했다. API 제품 코드는 변경하지 않았고 0/음수 간격의 400 거부 시험을 추가했다.
 - 직접 API 시험의 환경 입력 부재는 준비 실패로 분리한다. 일회용 시험 DB 게이트 및 GitHub core-api 검사 결과가 나오기 전 API 통과를 주장하지 않는다.
 - 원격 최종 CI 재검증 대기. 준비 PR은 아직 초안이다.
+
+## 최신 통합 버전의 CI 증거 검사 수정
+- 선택 입력 복원 커밋 `e65ae6289f1eb877d114ae562684e4cee7237388`의 GitHub core-api는 1295 passed / skipped 0 / E2E 6 deselected였다. 준비 실패였던 로컬 직접 실행과 구분한다.
+- 다른 작업의 공통 하네스가 develop `84d0e9f5b165a0bc03c79568568e9f31062abdd3`에 합류했다. 선택 입력 수정 11파일의 SHA256은 그대로다.
+- PR CI run `34911726733`: 제품·개별 검사 job은 성공했으나 `required-gates`는 `PR merge commit differs from checkout`으로 판정 실패했다. 전체 CI 통과나 병합 가능으로 판정하지 않는다.
+- 실제 Actions checkout은 `76c15d58330199877aa1ce53303628a0592e8125`이며 GitHub commit API의 부모는 순서대로 product `6db30323a78a4e63f3e28810db0f325b69551979`, develop `84d0e9f5b165a0bc03c79568568e9f31062abdd3`다.
+- 해당 run에서 내려받은 생산자 증거 40건은 모두 같은 commit/tree이며 exit 0이다. 집계 실패를 이 성공으로 덮지 않는다.
+- 수정 범위: webhook의 merge SHA 단순 동일 검사 대신 실제 Git commit 객체의 base/head 부모를 검증한다. 실제 checkout·생산자 SHA/tree/run/attempt·오프라인 재검증 결속은 유지한다. 잘못된 부모와 변조 증거의 거부 회귀를 확인한 뒤 최신 원격 CI를 다시 실행한다.
+- 최초 배포 연결과 운영 reseed는 여전히 미실행이다. 이 준비 PR은 배포 workflow나 승인 artifact를 포함하지 않는다.
+- 수정 통합 후 `harness-contract-selftest` 42 tests / exit 0 / green 1 / red(판정) 0 / red(준비) 0. 부모가 worker 보고서의 task·파일 hash도 직접 검증했다.
+- 실제 다운로드한 증거와 재구성한 PR 이벤트 fixture(null merge SHA)를 함께 로컬 재검증해 생산자 15건 green / 판정 0 / 준비 0 / N/A 0을 확인했다. 원래 GitHub run의 실패를 성공으로 변경한 것이 아니며, 수정 버전의 실제 원격 CI는 별도로 확인한다.
+- 커밋 객체가 없는 과거 PR 증거는 새 검증에서 준비 실패다. 이를 새 성공 증거로 재사용하지 않는다.

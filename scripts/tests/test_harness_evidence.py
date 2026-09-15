@@ -1,6 +1,8 @@
 import importlib.util
 import copy
 import argparse
+import base64
+import hashlib
 import os
 import subprocess
 import sys
@@ -22,6 +24,17 @@ class HarnessEvidenceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = importlib.util.module_from_spec(SPEC)
         SPEC.loader.exec_module(cls.module)
+
+    @staticmethod
+    def merge_commit(base, head=None, tree="d" * 40):
+        content = (
+            f"tree {tree}\nparent {base}\n" + (f"parent {head}\n" if head else "") +
+            "author CI <ci@example.com> 0 +0000\n"
+            "committer CI <ci@example.com> 0 +0000\n\nmerge\n"
+        )
+        raw = content.encode()
+        commit = hashlib.sha1(f"commit {len(raw)}\0".encode() + raw).hexdigest()
+        return commit, base64.b64encode(raw).decode("ascii")
 
     def test_actual_single_gate_wrapper_matches_selftest_registry(self):
         # Execute the real outer wrapper. Only its child is a controlled exit fixture;
@@ -121,13 +134,54 @@ class HarnessEvidenceTests(unittest.TestCase):
                 record_path.write_text(original)
                 if extra.exists(): extra.unlink()
 
+            merge, commit_object = self.merge_commit("a" * 40, "b" * 40, "b" * 40)
+            for path in root.rglob("*.json"):
+                record = json.loads(path.read_text())
+                if record.get("commit") == "a" * 40:
+                    record["commit"] = merge
+                    path.write_text(json.dumps(record))
+            jobs = self.module.collect_ci("1", 1, merge, "b" * 40, registry, needs, filters, root)
+            event = {"pull_request": {"base": {"sha": "a" * 40}, "head": {"sha": "b" * 40},
+                                      "merge_commit_sha": None}}
+            evidence = self.module.build_ci_evidence("1", 1, merge, "b" * 40,
+                self.module.event_shas("pull_request", event, merge, commit_object, "b" * 40), jobs)
+            evidence["inputs"] = {"event_name": "pull_request", "event": event,
+                                  "needs": needs, "filters": filters, "commit_object": commit_object}
+            self.module.verify_ci_bundle(evidence, root)
+            del evidence["inputs"]["commit_object"]
+            with self.assertRaises(self.module.EvidenceReadinessError):
+                self.module.verify_ci_bundle(evidence, root)
+
     def test_pull_request_and_push_shas_are_distinct(self):
+        merge, commit_object = self.merge_commit("a" * 40, "b" * 40)
         pr = self.module.event_shas("pull_request", {
             "pull_request": {"base": {"sha": "a" * 40}, "head": {"sha": "b" * 40}, "merge_commit_sha": "c" * 40}
-        }, "c" * 40)
-        self.assertEqual(pr, {"base_sha": "a" * 40, "head_sha": "b" * 40, "merge_sha": "c" * 40})
+        }, merge, commit_object)
+        self.assertEqual(pr, {"base_sha": "a" * 40, "head_sha": "b" * 40, "merge_sha": merge})
         push = self.module.event_shas("push", {"before": "a" * 40, "after": "b" * 40}, "b" * 40)
         self.assertEqual(push, {"before_sha": "a" * 40, "after_sha": "b" * 40})
+
+    def test_pull_request_merge_object_binds_checkout_to_ordered_event_parents(self):
+        merge, commit_object = self.merge_commit("a" * 40, "b" * 40)
+        event = {"pull_request": {"base": {"sha": "a" * 40}, "head": {"sha": "b" * 40},
+                                  "merge_commit_sha": "c" * 40}}
+        self.assertEqual(self.module.event_shas("pull_request", event, merge, commit_object)["merge_sha"], merge)
+        for checkout, base, head, raw in [
+            ("c" * 40, "a" * 40, "b" * 40, commit_object),
+            (merge, "b" * 40, "a" * 40, commit_object),
+            (merge, "a" * 40, "c" * 40, commit_object),
+            (merge, "a" * 40, "b" * 40, self.merge_commit("a" * 40, "c" * 40)[1]),
+        ]:
+            bad = {"pull_request": {"base": {"sha": base}, "head": {"sha": head},
+                                    "merge_commit_sha": "d" * 40}}
+            with self.subTest(checkout=checkout, base=base, head=head), self.assertRaises(self.module.EvidenceError):
+                self.module.event_shas("pull_request", bad, checkout, raw)
+        one_parent_sha, one_parent = self.merge_commit("a" * 40)
+        with self.assertRaises(self.module.EvidenceError):
+            self.module.event_shas("pull_request", event, one_parent_sha, one_parent)
+
+        with self.assertRaises(self.module.EvidenceError):
+            self.module.event_shas("pull_request", event, merge, commit_object, "e" * 40)
 
     def test_direct_check_records_actual_exit_and_counts(self):
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
