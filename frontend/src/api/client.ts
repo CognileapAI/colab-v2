@@ -84,6 +84,6 @@ api.use({
 // 로그인 op(`POST /sessions`)은 제외한다 — 거기서의 401 은 「자격이 틀렸다」이지 만료가
 // 아니고, 버릴 토큰도 없다. 그 문구는 `LoginPage` 가 자기 자리에서 말한다.
 export type Schemas = components['schemas'];
-export type CurrentAccount = Schemas['CurrentAccount'];
+export type CurrentAccount = Schemas['CurrentAccountV2'];
 export type PermissionSwitch = Schemas['PermissionSwitch'];
 export type PermissionSwitchSet = Schemas['PermissionSwitchSet'];

@@ -94,6 +94,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me-v2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 현재 사용자 · 역할 · 권한 스위치 — 무소속 관리자 지원
+         * @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 — 실제 null 소속과 역할을 그대로 내린다.
+         */
+        get: operations["getCurrentAccountV2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/password": {
         parameters: {
             query?: never;
@@ -143,9 +163,8 @@ export interface paths {
         };
         /**
          * 서비스 계정 목록
-         * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자 백오피스의
-         *     계정 목록이다. **전 연구실 한 벌**이며 이 경로에만 연구실 경계를 걸지 않는다(운영자 전용).
-         *     최근 로그인은 로그인 세션 원장의 집계이고 새 열을 만들지 않는다. 필터 네 가지는 서버가 건다.
+         * @description 구형 응답은 소속이 항상 있다. 조회 결과에 무소속 관리자가 있으면 409로
+         *     새 API 사용을 알리며 행을 조용히 제외하거나 값을 지어내지 않는다.
          */
         get: operations["listServiceAccounts"];
         put?: never;
@@ -154,6 +173,30 @@ export interface paths {
          * @description [사용자 승인] dev-package/intent/stage3-login-hardening.md — 기존 이메일을 덮어쓰지 않고 계정·역할·해시 자격을 한 트랜잭션에 만든다.
          */
         post: operations["createServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts-v2": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 서비스 계정 목록 — 무소속 관리자 지원
+         * @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 — 실제 null 소속과 역할을 목록에 포함한다.
+         */
+        get: operations["listServiceAccountsV2"];
+        put?: never;
+        /**
+         * 서비스 운영자가 계정 발급 — 무소속 관리자 지원
+         * @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 — 소속과 역할을 모두 비운 관리자 생성을 지원한다.
+         */
+        post: operations["createServiceAccountV2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2279,8 +2322,8 @@ export interface components {
             /** Format: email */
             email: string;
             name: string;
-            labId: components["schemas"]["Ulid"];
-            role: components["schemas"]["Role"];
+            labId?: components["schemas"]["Ulid"] | null;
+            role?: components["schemas"]["Role"] | null;
             initialPassword: string;
             /**
              * @description [사용자 승인] dev-package/intent/2026-09-12-operator-designation.md — 발급과 동시에
@@ -2299,6 +2342,15 @@ export interface components {
             name: string;
             labId: components["schemas"]["Ulid"];
             role: components["schemas"]["Role"];
+        };
+        /** @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 응답. */
+        ServiceAccountV2: {
+            accountId: components["schemas"]["Ulid"];
+            /** Format: email */
+            email: string;
+            name: string;
+            labId: components["schemas"]["Ulid"] | null;
+            role: components["schemas"]["Role"] | null;
         };
         /**
          * @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 계정 상태는 둘뿐이다. 비활성은 삭제가 아니라 로그인 거절이며 데이터·소유권은 남는다.
@@ -2324,6 +2376,22 @@ export interface components {
         /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 전 연구실 한 벌. */
         ServiceAccountList: {
             accounts: components["schemas"]["ServiceAccountSummary"][];
+        };
+        /** @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 목록 행. */
+        ServiceAccountSummaryV2: {
+            accountId: components["schemas"]["Ulid"];
+            email: string;
+            name: string;
+            labId: components["schemas"]["Ulid"] | null;
+            labName: string | null;
+            role: components["schemas"]["Role"] | null;
+            status: components["schemas"]["ServiceAccountStatus"];
+            lastLoginAt: components["schemas"]["Timestamp"] | null;
+            operator: boolean;
+        };
+        /** @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 목록. */
+        ServiceAccountListV2: {
+            accounts: components["schemas"]["ServiceAccountSummaryV2"][];
         };
         /** @description [사용자 승인] dev-package/intent/2026-09-12-login-backoffice-closeout.md — 운영자가 직접 입력하는 새 초기 비밀번호. 길이 규칙은 발급 때와 같다. */
         ServiceAccountPasswordReset: {
@@ -2551,9 +2619,21 @@ export interface components {
             role: components["schemas"]["Role"];
             /** @description 교수는 네 스위치가 항상 켜진 것으로 내려간다 — 화면이 역할로 다시 판정하지 않는다 (P-5·P-6). */
             permissions: components["schemas"]["PermissionSwitchSet"];
-            /** @description 서버가 정한 현재 연구실. 요청으로 바꿀 수 없다 (P-9·P-10). */
             labId: components["schemas"]["Ulid"];
             labName: string;
+            mustChangePassword?: boolean;
+            canManageServiceAccounts?: boolean;
+        };
+        /** @description [사용자 승인] 이슈 #36 무소속 관리자 등록 요구의 호환성 보완 현재 계정 응답. */
+        CurrentAccountV2: {
+            accountId: components["schemas"]["Ulid"];
+            name: string;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["Role"] | null;
+            permissions: components["schemas"]["PermissionSwitchSet"];
+            labId: components["schemas"]["Ulid"] | null;
+            labName: string | null;
             mustChangePassword?: boolean;
             canManageServiceAccounts?: boolean;
         };
@@ -5103,6 +5183,28 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    getCurrentAccountV2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 현재 사용자. 무소속 관리자의 소속·역할은 null이다. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentAccountV2"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     changeOwnPassword: {
         parameters: {
             query?: never;
@@ -5159,11 +5261,9 @@ export interface operations {
     listServiceAccounts: {
         parameters: {
             query?: {
-                /** @description 연구실로 좁힌다. 생략하면 전 연구실이다. */
                 labId?: components["schemas"]["Ulid"];
                 status?: components["schemas"]["ServiceAccountStatus"];
                 role?: components["schemas"]["Role"];
-                /** @description 이메일 부분 일치. 대소문자를 가리지 않는다. */
                 email?: string;
             };
             header?: never;
@@ -5172,7 +5272,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 계정 목록. **0건도 여기로 온다** — 정직한 빈 상태. */
+            /** @description 소속 계정 목록. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5184,6 +5284,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
             503: components["responses"]["ServerError"];
         };
@@ -5208,6 +5309,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceAccount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    listServiceAccountsV2: {
+        parameters: {
+            query?: {
+                labId?: components["schemas"]["Ulid"];
+                status?: components["schemas"]["ServiceAccountStatus"];
+                role?: components["schemas"]["Role"];
+                email?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 무소속 관리자를 포함한 계정 목록. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountListV2"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["ServerError"];
+        };
+    };
+    createServiceAccountV2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description 발급된 계정. 무소속 관리자의 소속·역할은 null이다. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAccountV2"];
                 };
             };
             400: components["responses"]["BadRequest"];

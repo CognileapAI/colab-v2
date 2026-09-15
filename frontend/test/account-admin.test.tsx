@@ -46,25 +46,28 @@ test('비밀번호 변경 응답이 끊기면 자동 재전송 없이 결과 불
  expect(fetch).toHaveBeenCalledTimes(1);
  expect(screen.getByTestId('change-password')).toBeEnabled();
 });
-test('서비스 운영자가 기존 연구실과 역할로 계정을 추가한다',async()=>{
+test('서비스 운영자가 기존 연구실과 역할로 관리자를 등록한다',async()=>{
  // 화면이 목록도 함께 부르므로 **호출 순서가 아니라 경로**로 답한다.
  const fetch=vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
   const request=input as Request; const url=new URL(request.url);
   if(url.pathname.endsWith('/admin/account-options'))return json({labs:[{labId:LAB,name:'A 연구실'}],roles:['교수','연구원']});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:[]});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='POST')return json({accountId:'000000000000000000000000A2',email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:[]});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='POST')return json({accountId:'000000000000000000000000A2',email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
   return json({message:'모의하지 않은 경로'},500);
  });
  render(<SessionProvider account={{accountId:'00000000000000000000000AP1',name:'운영자',email:'op@example.com',role:'교수',permissions:{},labId:LAB,labName:'A 연구실',canManageServiceAccounts:true,mustChangePassword:false}}><AccountAdminPage/></SessionProvider>);
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
  const form=within(await screen.findByTestId('account-create'));
  await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
+ fireEvent.change(form.getByLabelText('연구실'),{target:{value:LAB}});
+ fireEvent.change(form.getByLabelText('역할'),{target:{value:'교수'}});
  fireEvent.change(form.getByLabelText('이름'),{target:{value:'새 사용자'}});
  fireEvent.change(form.getByLabelText('이메일'),{target:{value:'new@example.com'}});
  fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.click(form.getByRole('button',{name:'계정 추가'}));
+ fireEvent.click(form.getByRole('button',{name:'관리자 등록'}));
  await screen.findByText('new@example.com 계정을 추가했어요.');
  const request=fetch.mock.calls.map(call=>call[0] as Request).find(call=>call.method==='POST')!;
- expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',labId:LAB,role:'교수'});
+ expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',labId:LAB,role:'교수',operator:true});
  expect(screen.queryByText('initial-password')).not.toBeInTheDocument();
 });
 
@@ -85,7 +88,7 @@ function routedFetch(over?:(url:URL,request:Request)=>Response|undefined){
   const request=input as Request; const url=new URL(request.url);
   const custom=over?.(url,request); if(custom)return custom;
   if(url.pathname.endsWith('/admin/account-options'))return json(OPTIONS);
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:ACCOUNTS});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:ACCOUNTS});
   if(url.pathname.endsWith('/password-reset'))return json({accountId:ACC_1,mustChangePassword:true});
   if(url.pathname.endsWith('/status'))return json({accountId:ACC_2,status:'active'});
   return json({message:'모의하지 않은 경로'},500);
@@ -94,7 +97,79 @@ function routedFetch(over?:(url:URL,request:Request)=>Response|undefined){
 function renderAdmin(){return render(<SessionProvider account={OPERATOR}><AccountAdminPage/></SessionProvider>);}
 const listUrls=(fetch:ReturnType<typeof routedFetch>)=>fetch.mock.calls
  .map(call=>new URL((call[0] as Request).url))
- .filter(url=>url.pathname.endsWith('/admin/accounts')&&!url.pathname.includes('password'));
+ .filter(url=>url.pathname.endsWith('/admin/accounts-v2')&&!url.pathname.includes('password'));
+
+test('계정 관리 화면은 사용자 목록 탭만 기본으로 보여 준다',async()=>{
+ routedFetch();
+ renderAdmin();
+ expect(await screen.findByRole('table',{name:'계정 목록'})).toBeInTheDocument();
+ expect(screen.getByRole('tab',{name:'사용자 목록'})).toHaveAttribute('aria-selected','true');
+ expect(screen.getByTestId('account-create')).not.toBeVisible();
+});
+
+test('관리자 등록 탭은 목록을 숨기고 무소속 관리자 요청을 보낸다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
+ const form=within(await screen.findByTestId('account-create'));
+ expect(screen.getByRole('table',{name:'계정 목록',hidden:true})).not.toBeVisible();
+ fireEvent.change(form.getByLabelText('이름'),{target:{value:'무소속 관리자'}});
+ fireEvent.change(form.getByLabelText('이메일'),{target:{value:'admin@example.com'}});
+ fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
+ fireEvent.click(form.getByRole('button',{name:'관리자 등록'}));
+ await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
+ const request=fetch.mock.calls.map(call=>call[0] as Request)
+  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
+ expect(JSON.parse(await request.clone().text())).toEqual({
+  email:'admin@example.com',name:'무소속 관리자',initialPassword:'initial-password',operator:true,
+ });
+});
+
+test('관리자 선택을 끄면 기존 일반 사용자 등록 요청을 유지한다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
+ const form=within(screen.getByTestId('account-create'));
+ await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
+ fireEvent.click(form.getByLabelText('관리자로 등록'));
+ fireEvent.change(form.getByLabelText('이름'),{target:{value:'일반 사용자'}});
+ fireEvent.change(form.getByLabelText('이메일'),{target:{value:'user@example.com'}});
+ fireEvent.change(form.getByLabelText('연구실'),{target:{value:LAB}});
+ fireEvent.change(form.getByLabelText('역할'),{target:{value:'연구원'}});
+ fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
+ fireEvent.click(form.getByRole('button',{name:'사용자 등록'}));
+ await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
+ const request=fetch.mock.calls.map(call=>call[0] as Request)
+  .find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts-v2'))!;
+ expect(JSON.parse(await request.clone().text())).toEqual({
+  email:'user@example.com',name:'일반 사용자',labId:LAB,role:'연구원',initialPassword:'initial-password',
+ });
+});
+
+test('관리자 소속은 연구실과 역할 중 하나만 고르면 보내지 않는다',async()=>{
+ const fetch=operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
+ const form=within(screen.getByTestId('account-create'));
+ await within(form.getByLabelText('역할')).findByRole('option',{name:'교수'});
+ fireEvent.change(form.getByLabelText('이름'),{target:{value:'부분 소속'}});
+ fireEvent.change(form.getByLabelText('이메일'),{target:{value:'partial@example.com'}});
+ fireEvent.change(form.getByLabelText('역할'),{target:{value:'교수'}});
+ fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
+ fireEvent.submit(form.getByRole('button',{name:'관리자 등록'}).closest('form')!);
+ expect(await screen.findByRole('status')).toHaveTextContent('연구실과 역할을 함께');
+ expect(fetch.mock.calls.filter(call=>(call[0] as Request).method==='POST')).toHaveLength(0);
+});
+
+test('등록 탭에 입력한 값은 목록 탭을 다녀와도 유지된다',()=>{
+ operatorFetch();
+ renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
+ fireEvent.change(screen.getByLabelText('이름'),{target:{value:'작성 중 관리자'}});
+ fireEvent.click(screen.getByRole('tab',{name:'사용자 목록'}));
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
+ expect(screen.getByLabelText('이름')).toHaveValue('작성 중 관리자');
+});
 
 test('운영자가 전 연구실 계정 목록을 일곱 열로 본다',async()=>{
  routedFetch();
@@ -190,8 +265,8 @@ function operatorFetch(onOperator?:(request:Request)=>Response){
   const request=input as Request; const url=new URL(request.url);
   if(url.pathname.endsWith('/admin/account-options'))return json(OPTIONS);
   if(url.pathname.endsWith('/operator'))return onOperator?onOperator(request):json({accountId:ACC_1,operator:true});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='GET')return json({accounts:ACCOUNTS_WITH_OPERATOR});
-  if(url.pathname.endsWith('/admin/accounts')&&request.method==='POST')return json({accountId:ACC_1,email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='GET')return json({accounts:ACCOUNTS_WITH_OPERATOR});
+  if(url.pathname.endsWith('/admin/accounts-v2')&&request.method==='POST')return json({accountId:ACC_1,email:'new@example.com',name:'새 사용자',labId:LAB,role:'교수'},201);
   return json({message:'모의하지 않은 경로'},500);
  });
 }
@@ -235,21 +310,6 @@ test('마지막 관리자 해제 거절은 서버 문구 그대로 보인다',as
  expect(await screen.findByText('마지막 관리자는 해제할 수 없다. 먼저 다른 관리자를 지정한다.')).toBeInTheDocument();
 });
 
-test('계정 추가 폼의 관리자 체크박스가 요청에 실린다',async()=>{
- const fetch=operatorFetch();
- renderAdmin();
- const form=within(await screen.findByTestId('account-create'));
- await within(form.getByLabelText('연구실')).findByRole('option',{name:'A 연구실'});
- fireEvent.change(form.getByLabelText('이름'),{target:{value:'새 사용자'}});
- fireEvent.change(form.getByLabelText('이메일'),{target:{value:'new@example.com'}});
- fireEvent.change(form.getByLabelText('초기 비밀번호'),{target:{value:'initial-password'}});
- fireEvent.click(form.getByLabelText('관리자로 등록'));
- fireEvent.click(form.getByRole('button',{name:'계정 추가'}));
- await waitFor(()=>expect(fetch.mock.calls.some(call=>(call[0] as Request).method==='POST')).toBe(true));
- const request=fetch.mock.calls.map(call=>call[0] as Request).find(call=>call.method==='POST'&&call.url.endsWith('/admin/accounts'))!;
- expect(JSON.parse(await request.clone().text())).toMatchObject({email:'new@example.com',operator:true});
-});
-
 // ═══════════════ 이태헌 1차 검증 4건 — 본문 영역 · 표 안내 · 자동완성 · 자기 줄 가드 ═══════════════
 // 계획 = dev-package/prd/rounds/R-LTH-REVIEW-1.md Task 1 (spec §8-2 5~8)
 test('운영자 화면이 본문 영역을 스스로 만들지 않는다',async()=>{
@@ -283,6 +343,7 @@ test('계정 목록 표에 좌우 이동 안내와 키보드 초점을 받는 �
 test('초기 비밀번호 칸을 비밀번호 관리 도구가 새 비밀번호로 읽는다',async()=>{
  routedFetch();
  renderAdmin();
+ fireEvent.click(screen.getByRole('tab',{name:'관리자 등록'}));
  const form=within(await screen.findByTestId('account-create'));
  expect(form.getByLabelText('초기 비밀번호')).toHaveAttribute('autocomplete','new-password');
 });

@@ -50,7 +50,7 @@ export function LoginPage() {
       });
       if (data) {
         candidate = data;
-        const verified = await api.GET('/me', {
+        const verified = await api.GET('/me-v2', {
           headers: { Authorization: 'Bearer ' + data.token },
         });
         if (!verified.data) {

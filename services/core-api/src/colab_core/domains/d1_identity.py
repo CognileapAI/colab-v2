@@ -15,7 +15,7 @@ from ..kernel.ids import Ulid
 _ACCOUNT = text("""
     SELECT a.id, a.name, a.email, a.lab_id, l.name AS lab_name
       FROM d1_account a
-      JOIN d1_lab l ON l.id = a.lab_id
+      LEFT JOIN d1_lab l ON l.id = a.lab_id
      WHERE a.id = :account_id
 """)
 

@@ -87,7 +87,7 @@ class SessionSigner:
         now = now or dt.datetime.now(dt.timezone.utc)
         expires_at = (now + self._ttl).replace(microsecond=0)
         body = json.dumps(
-            {"sub": str(subject.account_id), "lab": str(subject.lab_id),
+            {"sub": str(subject.account_id), "lab": str(subject.lab_id) if subject.lab_id else None,
              "exp": int(expires_at.timestamp())},
             separators=(",", ":"), sort_keys=True,
         )
@@ -145,7 +145,7 @@ class SessionSigner:
         body = {
             "sid": str(session_id),
             "sub": str(subject.account_id),
-            "lab": str(subject.lab_id),
+            "lab": str(subject.lab_id) if subject.lab_id else None,
             "exp": int(expires_at.timestamp()),
             "generation": generation,
             "credential_kind": credential_kind,
@@ -197,10 +197,14 @@ class SessionSigner:
             return None
         if version is not None and version < 1:
             return None
-        if not all(Ulid.is_valid(value) for value in (account_id, lab_id, sid)):
+        if not Ulid.is_valid(account_id) or not Ulid.is_valid(sid):
+            return None
+        if lab_id is not None and not Ulid.is_valid(lab_id):
+            return None
+        if lab_id is None and not operator:
             return None
         return TrackedSessionClaims(
-            subject=Subject(Ulid(account_id), Ulid(lab_id)),
+            subject=Subject(Ulid(account_id), Ulid(lab_id) if lab_id is not None else None),
             session_id=Ulid(sid),
             expires_at=dt.datetime.fromtimestamp(exp, tz=dt.timezone.utc),
             generation=generation,
@@ -219,7 +223,7 @@ class DatabaseSessionSigner(SessionSigner):
         expires_at = (now + self._ttl).replace(microsecond=0)
         body = json.dumps({
             "sub": str(credential.subject.account_id),
-            "lab": str(credential.subject.lab_id),
+            "lab": str(credential.subject.lab_id) if credential.subject.lab_id else None,
             "exp": int(expires_at.timestamp()),
             "purpose": "password-change" if credential.must_change_password else "session",
             "version": credential.session_version,
