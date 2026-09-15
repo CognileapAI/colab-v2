@@ -11,6 +11,8 @@ description: 수정 전 문제를 agent-browser로 재현하고 스크린샷과 
 
 ## 실행
 
+브라우저 검증 전에 [환경·계정 선택](../verification-before-completion/SKILL.md)을 적용한다. 특정 계정이나 dev 로그인을 모든 작업에 일괄 요구하지 않는다.
+
 1. 대화에서 이슈 URL과 대상 환경을 확인하고 이슈 본문·기존 댓글을 읽는다. 대상이 여러 개라 식별할 수 없으면 필요한 정보만 묻는다. 같은 재현 건의 현상 댓글이 이미 있으면 링크와 증거를 확인해 재사용한다.
 2. [agent-browser](../agent-browser/SKILL.md)를 읽고 사용한다. CoLAB에서는 [작업 규율](../colab-v2-work/SKILL.md)도 적용한다. Linux 실행은 저장소 루트에서 `python3 scripts/agent-bridge.py run-tool browser -- <인자>`를 사용한다.
 3. 테스트 URL, 확인 시각, 대상 버전(SHA 또는 확인 불가), 화면 크기, 격리 계정·데이터, 재현 순서, 기대 결과, 정리 범위를 기록한다. 로컬 HEAD를 배포 버전으로 간주하지 않는다. 같은 조건을 수정 후에도 쓸 수 있도록 작업의 증거 디렉터리에 저장한다.

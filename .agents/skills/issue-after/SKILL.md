@@ -11,6 +11,8 @@ description: 수정 후 원인과 어떻게 고쳤는지 설명하고 agent-brow
 
 ## 실행
 
+브라우저 검증 전에 [환경·계정 선택](../verification-before-completion/SKILL.md)을 적용한다. 특정 계정이나 dev 로그인을 모든 작업에 일괄 요구하지 않는다.
+
 1. 이슈 본문과 댓글을 읽고 [issue-before](../issue-before/SKILL.md)가 남긴 문제 현상 댓글·재현 조건·스크린샷을 찾는다. 같은 수정 버전의 해결 결과 댓글이 이미 있으면 확인해 재사용한다. 이전 댓글을 해결 결과로 덮어쓰지 않는다.
 2. 실제 변경 diff와 관련 코드·검증 근거를 읽는다. ‘무엇이 원인이었는지 → 어떤 처리를 어떻게 바꿨는지 → 그 변경이 왜 증상을 해결하는지’를 쉬운 한국어로 설명한다. 파일명만 나열하거나 ‘버그 수정’으로 대신하지 않는다. 원인 미확정은 그대로 표시한다.
 3. [agent-browser](../agent-browser/SKILL.md)를 읽고 사용한다. CoLAB에서는 [작업 규율](../colab-v2-work/SKILL.md)도 적용한다. Linux에서는 저장소 루트의 `python3 scripts/agent-bridge.py run-tool browser -- <인자>`를 쓴다.
