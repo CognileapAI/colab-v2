@@ -21,6 +21,7 @@ from conftest import (
     ACC_A_PROF, DS_A1, DS_B1, FILE_B1, LAB_A, LAB_B, PRJ_B, TOKEN_PROF, auth,
 )
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ProgrammingError
 from colab_core.app.routes import accounts as account_routes
 
@@ -53,6 +54,22 @@ def _restore_operators(admin_db_url: str):
                     {"id": account_id})
     finally:
         engine.dispose()
+
+
+@pytest.fixture
+def _remove_created_accounts(admin_db_url: str):
+    """이 시험이 등록한 계정 ID만 실패 여부와 무관하게 일회용 DB에서 지운다."""
+    account_ids: list[str] = []
+    try:
+        yield account_ids
+    finally:
+        engine = create_engine(make_url(admin_db_url).set(username="postgres", password=None))
+        try:
+            with engine.begin() as db:
+                for account_id in account_ids:
+                    db.execute(text("DELETE FROM d1_account WHERE id=:id"), {"id": account_id})
+        finally:
+            engine.dispose()
 
 
 def _email(tag: str = "op") -> str:
@@ -94,7 +111,9 @@ def _set_operator(client, token: str, account_id: str, operator: bool):
                        headers=auth(token), json={"operator": operator})
 
 
-def test_labless_operator_full_login_cycle_and_demotion_guard(p2_client) -> None:
+def test_labless_operator_full_login_cycle_and_demotion_guard(
+    p2_client, _remove_created_accounts: list[str],
+) -> None:
     client = p2_client(session_secret=SECRET)
     email = _email("labless")
     body = {
@@ -105,6 +124,7 @@ def test_labless_operator_full_login_cycle_and_demotion_guard(p2_client) -> None
     assert legacy_made.status_code == 400
     made = client.post("/api/v1/admin/accounts-v2", headers=auth(TOKEN_PROF), json=body)
     assert made.status_code == 201, made.text
+    _remove_created_accounts.append(made.json()["accountId"])
     assert made.json()["labId"] is None and made.json()["role"] is None
 
     login = client.post("/api/v1/sessions", json={"accountName": email, "password": INITIAL})
