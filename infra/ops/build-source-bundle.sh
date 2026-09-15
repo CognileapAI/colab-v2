@@ -13,7 +13,7 @@ ARCHIVE="$OUT/colab-ops-source-$SHA.tar.gz"; MANIFEST="$OUT/colab-ops-source-$SH
 git -C "$REPO" archive --format=tar "$FULL" "${PATHS[@]}" | gzip -n > "$ARCHIVE"
 tar xzf "$ARCHIVE" -C "$TMP"
 {
-  echo "# colab-ops-source-manifest/1"; echo "# source_sha=$SHA"; echo "# archive_sha256=$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
+  echo "# colab-ops-source-manifest/1"; echo "# source_sha=$SHA"; echo "# source_full_sha=$FULL"; echo "# archive_sha256=$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
   (cd "$TMP" && find . -type f -print0 | sort -z | xargs -0 sha256sum)
 } > "$MANIFEST"
 chmod 0600 "$MANIFEST"

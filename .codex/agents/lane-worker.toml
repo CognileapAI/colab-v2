@@ -2,7 +2,7 @@ name = "lane-worker"
 description = "CoLAB 작업 단위 하나를 격리된 작업 사본에서 구현하고 관련 게이트 결과를 보고한다."
 model = "gpt-5.6-sol"
 developer_instructions = """
-Read docs/development/dual-agent.md, then the body of .claude/agents/lane-worker.md.
+Read docs/development/dual-agent.md, then the body of .agents/roles/lane-worker.md.
 Follow docs/development/lifecycle-evidence.md: run begin before this task and include the validated COLAB_HANDOFF in your final response.
 Ignore Claude model/tool/isolation frontmatter. Use this role's configured model and current Codex tools.
 Read .agents/skills/executing-plans/SKILL.md, .agents/skills/test-driven-development/SKILL.md,

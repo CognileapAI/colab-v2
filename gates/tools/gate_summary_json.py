@@ -22,8 +22,8 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / ".claude/hooks"))
-from lifecycle_contract import gate_evidence, load_task, inside
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts/harness/hooks"))
+from lifecycle_contract import gate_evidence, load_task, resolve_task_path
 
 SCHEMA = "colab-gate-summary/1"
 STATES = ("green", "red_판정", "red_준비")
@@ -112,8 +112,13 @@ def main() -> int:
         root = Path(__file__).resolve().parents[2]
         task_id = os.environ["COLAB_TASK_ID"]
         task = load_task(root, task_id)
-        if inside(root, task["report"]) not in [Path(p).resolve() for p in outs]:
+        declared = resolve_task_path(root, task, task["report"])
+        if declared not in [Path(p).resolve() for p in outs]:
             raise ValueError("gate output does not include declared task report")
+        if task['schema'] == 'colab-task/2':
+            for name in outs:
+                if resolve_task_path(root, task, str(Path(name).absolute())) != declared:
+                    raise ValueError('runtime report producer has undeclared output')
         before = json.loads(os.environ["COLAB_GATE_TASK_BEFORE"])
         after = gate_evidence(root, task_id)
         doc["task_evidence"] = {"before": before, "after": after}

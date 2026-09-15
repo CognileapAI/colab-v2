@@ -14,8 +14,10 @@ import sys
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / ".claude/hooks"))
+sys.path.insert(0, str(ROOT / "scripts/harness/hooks"))
 from lifecycle_contract import validate_report, load_task, verify_task_report
+sys.path.insert(0, str(ROOT /"scripts"))
+from harness.config import check_contract, load_contract
 
 
 def tool_environment() -> dict[str, str]:
@@ -80,21 +82,30 @@ def check() -> None:
         for field in ("name", "description", "developer_instructions"):
             if not isinstance(config.get(field), str) or not config[field]:
                 raise ValueError(f"{role}: missing {field}")
-        source = f".claude/agents/{role}.md"
+        source = f".agents/roles/{role}.md"
         if config["name"] != role or source not in config["developer_instructions"] or not (ROOT / source).is_file():
             raise ValueError(f"{role}: invalid source mapping")
         if role == "advisor" and config.get("sandbox_mode") != "read-only":
             raise ValueError("advisor must be read-only")
-    skills = sorted(p.parent.name for p in (ROOT / ".claude/skills").glob("*/SKILL.md"))
+    contract = load_contract(ROOT / ".agents/harness.yaml")
+    errors = check_contract(ROOT, contract)
+    if errors:
+        raise ValueError("; ".join(errors))
+    codex_only = set(contract["sources"].get("codex_only_skills", []))
+    skills = sorted(p.parent.name for p in (ROOT / ".agents/skills").glob("*/SKILL.md"))
     if not skills:
         raise ValueError("no source skills")
     for skill in skills:
         body = (ROOT / f".agents/skills/{skill}/SKILL.md").read_text(encoding="utf-8")
         if not body.startswith("---\n") or f"name: {skill}\n" not in body or "description:" not in body:
             raise ValueError(f"invalid skill metadata: {skill}")
-        for source in re.findall(r"`([^`]+/SKILL\.md)`", body):
-            if not (ROOT / source).is_file():
-                raise ValueError(f"missing skill source: {source}")
+        if skill not in codex_only:
+            adapter_path = ROOT / f".claude/skills/{skill}/SKILL.md"
+            if not adapter_path.is_file():
+                raise ValueError(f"missing Claude skill adapter: {skill}")
+            adapter = adapter_path.read_text(encoding="utf-8")
+            if f".agents/skills/{skill}/SKILL.md" not in adapter or len(adapter) >= len(body):
+                raise ValueError(f"invalid Claude skill adapter: {skill}")
     for tool in ("Bash", "Edit"):
         registered_hooks(tool)
     settings = json.loads((ROOT / ".claude/settings.json").read_text(encoding="utf-8"))
@@ -117,7 +128,8 @@ def check() -> None:
         for entry in entries:
             probe = entry["matcher"].split("|")[0]
             count += len(registered_hooks(probe, event))
-    print(f"green: 4 role mappings, {len(skills)} skill adapters, {count} hook mappings / {len(codex['hooks'])} events")
+    adapters = len(skills) - len(codex_only)
+    print(f"green: 4 role mappings, {len(skills)} source skills / {adapters} Claude adapters, {count} hook mappings / {len(codex['hooks'])} events")
 
 
 def run_registered(payload: dict) -> int:
@@ -145,14 +157,20 @@ def guard(args: argparse.Namespace) -> int:
     else:
         target = (ROOT / args.path).resolve()
         if not target.is_relative_to(ROOT):
-            raise ValueError("edit path outside this checkout")
+            from lifecycle_contract import resolve_edit
+            target = resolve_edit(ROOT, {"task_id": os.environ.get("COLAB_TASK_ID"),
+                                         "run_id": os.environ.get("COLAB_RUN_ID"),
+                                         "agent_id": os.environ.get("COLAB_AGENT_ID")}, str(target))
         ti = {"file_path": str(target)}
         if args.new_string is not None:
             ti["new_string"] = args.new_string
     payload = {"cwd": str(ROOT), "tool_name": tool, "tool_input": ti,
                "hook_event_name": "PreToolUse"}
+    for key, env in (("task_id", "COLAB_TASK_ID"), ("run_id", "COLAB_RUN_ID"), ("agent_id", "COLAB_AGENT_ID")):
+        if os.environ.get(env):
+            payload[key] = os.environ[env]
     if args.worker:
-        payload["agent_id"] = "codex-worker"
+        payload.setdefault("agent_id", "codex-worker")
     rc = run_registered(payload)
     if rc:
         return rc
@@ -207,7 +225,7 @@ def patch_new_text(patch: str) -> dict[str, str]:
     return result
 
 
-def event_path(value: str, cwd: Path) -> Path:
+def event_path(value: str, cwd: Path, task_event: dict | None = None) -> Path:
     if not isinstance(value, str) or not value or "\x00" in value:
         raise ValueError("invalid event path")
     if os.name != "nt" and re.match(r"^[A-Za-z]:[\\/]", value):
@@ -215,6 +233,9 @@ def event_path(value: str, cwd: Path) -> Path:
         value = str(Path("/mnt") / win.drive[0].lower() / Path(*win.parts[1:]))
     path = (cwd / value).resolve()
     if not path.is_relative_to(ROOT):
+        if task_event is not None:
+            from lifecycle_contract import resolve_edit
+            return resolve_edit(ROOT, task_event, str((cwd / value).absolute()))
         raise ValueError("event path outside this checkout")
     return path
 
@@ -231,13 +252,14 @@ def codex_payloads(data: dict) -> list[dict]:
     if not isinstance(command, str) or not command.strip():
         raise ValueError("missing tool_input.command")
     base = {"cwd": str(cwd), "hook_event_name": data["hook_event_name"]}
-    if data.get("agent_id"):
-        base["agent_id"] = data["agent_id"]
+    for key in ("agent_id", "task_id", "run_id"):
+        if data.get(key):
+            base[key] = data[key]
     if tool == "Bash":
         return [dict(base, tool_name="Bash", tool_input={"command": command})]
     # Resolve every path before invoking any guard, including a move's destination.
     texts = patch_new_text(command)
-    paths = [(path, event_path(path, cwd)) for path in patch_paths(command)]
+    paths = [(path, event_path(path, cwd, base)) for path in patch_paths(command)]
     return [dict(base, tool_name="Edit", tool_input={"file_path": str(path), "new_string": texts.get(raw, '')})
             for raw, path in paths]
 
@@ -310,7 +332,7 @@ def dispatch_event(data: dict) -> dict:
             if result.stderr.strip():
                 messages.append(result.stderr.strip())
     if event == "SessionStart":
-        messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. The user's selected round takes precedence over the mtime suggestion above; otherwise verify Git history and work-items.yaml. Claude tools and hooks are not assumed available.")
+        messages.append("Codex: read AGENTS.md and docs/development/dual-agent.md. Use the user's explicit task, PR summary and local plan first. The user's selected round takes precedence over the mtime suggestion above. Verify Git history against the current request; consult work-items.yaml only for unmigrated product items. Claude tools and hooks are not assumed available.")
     if event == "SubagentStart":
         messages.append("Confirm the assigned checkout, branch and HEAD before writing. This hook prepares dependencies; it does not create an isolated checkout.")
     if not messages:
@@ -348,7 +370,7 @@ def main() -> int:
         if args.action == "codex-event":
             return codex_event()
         if args.action == "lifecycle":
-            return subprocess.run([sys.executable, str(ROOT / ".claude/hooks/lifecycle_contract.py"), *args.args], cwd=ROOT).returncode
+            return subprocess.run([sys.executable, str(ROOT / "scripts/harness/hooks/lifecycle_contract.py"), *args.args], cwd=ROOT).returncode
         if args.action == "run-tool":
             return run_tool(args.tool, args.args)
         if args.action == "check":

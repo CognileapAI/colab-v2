@@ -1,5 +1,5 @@
 {
-  "snapshot": "dev-package/reports/stage3-ai-search-plan/dev-data-snapshot.json",
+  "snapshot": "eval/k4-search/fixtures/reference/dev-data-snapshot.json",
   "oracle": "golden-set.md",
   "cases": [
     {

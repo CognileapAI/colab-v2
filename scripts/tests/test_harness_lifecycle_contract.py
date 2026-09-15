@@ -75,20 +75,20 @@ class LifecycleRedTests(unittest.TestCase):
 
     def test_unrelated_preexisting_output_allows_read_only_and_draft_return(self):
         self.put('dev-package/sessions/other-task.md', 'untracked before this task')
-        task = contract.begin(self.root, 'researcher')
+        task = contract.begin(self.root, 'researcher', legacy=True)
         for mode in ('read-only', 'draft-return'):
             self.assert_routes('researcher', self.marker(task, mode), 0)
         self.assertEqual(self.put('dev-package/sessions/other-task.md', 'untracked before this task').read_text(), 'untracked before this task')
 
     def test_this_task_output_without_handoff_blocks(self):
-        task = contract.begin(self.root, 'researcher')
+        task = contract.begin(self.root, 'researcher', legacy=True)
         self.put('dev-package/intent/new.md', 'unapproved draft')
         self.assert_routes('researcher', self.marker(task, 'read-only'), 2)
         self.assert_routes('researcher', '', 2)
 
     def test_declared_untracked_artifact_can_be_handed_off_without_commit(self):
         name = 'dev-package/intent/new.md'
-        task = contract.begin(self.root, 'researcher', artifacts=[name])
+        task = contract.begin(self.root, 'researcher', legacy=True, artifacts=[name])
         path = self.put(name, 'approval: pending')
         msg = self.marker(task, 'artifacts', {name: contract.digest(path)})
         self.assert_routes('researcher', msg, 0)
@@ -99,14 +99,14 @@ class LifecycleRedTests(unittest.TestCase):
         self.assert_routes('researcher', msg, 2)
 
     def test_research_product_edit_is_rejected(self):
-        task = contract.begin(self.root, 'researcher', artifacts=['dev-package/sessions/new.md'])
+        task = contract.begin(self.root, 'researcher', legacy=True, artifacts=['dev-package/sessions/new.md'])
         path = self.put('dev-package/sessions/new.md', 'findings')
         self.put('product.py', 'unauthorized edit')
         self.assert_routes('researcher', self.marker(task, 'artifacts', {'dev-package/sessions/new.md': contract.digest(path)}), 2)
 
     def lane(self):
         self.put('product.py', 'dirty working content')
-        task = contract.begin(self.root, 'lane-worker', gates=['contract-lint'],
+        task = contract.begin(self.root, 'lane-worker', legacy=True, gates=['contract-lint'],
                               report='dev-package/reports/current/lane/gate-summary.json')
         evidence = contract.gate_start(self.root, task['task_id'])
         task = contract.load_task(self.root, task['task_id'])
@@ -147,7 +147,7 @@ class LifecycleRedTests(unittest.TestCase):
 
     def test_actual_summary_producer_binds_task_and_rejects_changed_during_gate(self):
         self.put('product.py', 'before execution')
-        task = contract.begin(self.root, 'lane-worker', gates=['contract-lint'],
+        task = contract.begin(self.root, 'lane-worker', legacy=True, gates=['contract-lint'],
                               report='dev-package/reports/producer/lane/gate-summary.json')
         before = contract.gate_start(self.root, task['task_id'])
         task = contract.load_task(self.root, task['task_id'])
@@ -234,7 +234,7 @@ class LifecycleRedTests(unittest.TestCase):
 
     def test_declared_multiple_gates_complete_in_one_run_and_failure_is_not_hidden(self):
         runner = self.put('gates/run.sh', '#!/usr/bin/env bash\nprintf "ran %s\\n" "$1"\nif [ "$1" = "second" ]; then exit "${FIXTURE_GATE_EXIT:-0}"; fi\n')
-        task = contract.begin(self.root, 'lane-worker', gates=['first', 'second'],
+        task = contract.begin(self.root, 'lane-worker', legacy=True, gates=['first', 'second'],
                               report='dev-package/reports/group/lane/gate-summary.json')
         for code in (0, 1, 78):
             with patch.dict(os.environ, {'FIXTURE_GATE_EXIT':str(code)}):
@@ -277,7 +277,7 @@ class LifecycleRedTests(unittest.TestCase):
             self.assertEqual(result.returncode,2,result.stdout+result.stderr)
 
     def test_agent_identity_mismatch_blocks(self):
-        task = contract.begin(self.root, 'researcher', agent_id='assigned-agent')
+        task = contract.begin(self.root, 'researcher', legacy=True, agent_id='assigned-agent')
         self.assert_routes('researcher', self.marker(task, 'read-only'), 2)
 
     def test_bootstrap_explicit_round_and_unselected_candidate(self):
@@ -290,7 +290,7 @@ class LifecycleRedTests(unittest.TestCase):
         self.assertNotIn('R-Z.md', result.stdout)
         payload.pop('round')
         result = subprocess.run(['bash', str(ROOT/'.claude/hooks/bootstrap-diet.sh')], input=json.dumps(payload), text=True, capture_output=True, cwd=self.root)
-        self.assertIn('추천', result.stdout)
+        self.assertIn('legacy 참고 후보', result.stdout)
         self.assertIn('Git', result.stdout)
 
     def test_lifecycle_payload_preserves_assigned_subdirectory(self):

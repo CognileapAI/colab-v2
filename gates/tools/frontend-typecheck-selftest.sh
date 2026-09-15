@@ -37,10 +37,9 @@ mk_tree() { # $1 = 만들 자리
   local d="$1"; mkdir -p "$d"
   cp "$FE/package.json" "$FE/tsconfig.json" "$FE/vite.config.ts" "$FE/Dockerfile" "$d/"
   cp -r "$FE/src" "$FE/test" "$d/"
+  mkdir -p "$d/../contracts/ui"
+  cp "$REPO_ROOT/contracts/ui/e01-permission-gates.json" "$d/../contracts/ui/"
   ln -s "$(cd "$FE/node_modules" && pwd)" "$d/node_modules"
-  # 초안 md 를 `?raw` 로 읽는 시험이 있다 — 사본에서도 그 상대 경로가 살아 있어야 한다.
-  mkdir -p "$d/../dev-package"
-  [ -e "$d/../dev-package/sessions" ] || ln -s "$REPO_ROOT/dev-package/sessions" "$d/../dev-package/sessions"
 }
 
 expect() { # $1=기대(red|red-ready|green) $2=이름 $3=트리

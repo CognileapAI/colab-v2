@@ -13,6 +13,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 
 PASS=0; FAIL=0
+# Evidence validity is independently exercised by test_harness_release_evidence;
+# this suite isolates existing transport/ancestor/tag behavior.
+export COLAB_RELEASE_PRE_EVIDENCE=fixture-pre
 ok()   { PASS=$((PASS + 1)); printf '  ✓ %s\n' "$1"; }
 bad()  { FAIL=$((FAIL + 1)); printf '  ✗ %s — %s\n' "$1" "$2"; }
 check(){ # $1=이름 $2=조건설명 $3=실제 $4=기대
@@ -52,6 +55,8 @@ REPO_SYNC_PATHS=(db gates services/core-api/ops infra contracts)
 new_fixture() { # $1=이름 → $TMP/$1/repo 에 prod 적재 스크립트 ＋ 공통 게이트 ＋ origin
   local root="$TMP/$1" work="$TMP/$1/repo" p
   mkdir -p "$work/infra/prod" "$work/infra/_lib" "$work/dist"
+  mkdir -p "$work/scripts/harness"
+  printf '%s\n' '# fixture: evidence boundary mocked; transport assertions only' 'raise SystemExit(0)' > "$work/scripts/harness/release_evidence.py"
   # `ship.sh` 는 `REPO="$HERE/../.."` 로 저장소를 잡는다 — 같은 상대 배치로 복사해야
   # 픽스처 저장소가 `$REPO` 가 되고 `infra/_lib/ship-gate.sh` 가 그 밑에서 읽힌다.
   cp "$REPO/infra/prod/ship.sh" "$work/infra/prod/ship.sh"
@@ -178,7 +183,7 @@ has "ⓖ 반입 단계" "deploy-doctor.sh 를 싣는다" "$LOG" "infra/prod/depl
 has "ⓖ 반입 단계" "publish-ownership-hourly.sh 를 싣는다" "$LOG" "infra/prod/publish-ownership-hourly.sh"
 has "ⓖ 반입 단계" "소유권 스냅샷 스크립트에 실행 비트를 준다" "$LOG" "chmod +x /opt/colab-v2/"
 has "ⓖ 반입 단계" "레포 tar 를 싣는다" "$LOG" "colab-repo-$ANC.tgz"
-has "ⓖ 반입 단계" "/opt/colab-repo 에 --overwrite 로 푼다" "$LOG" "-C /opt/colab-repo --overwrite"
+has "ⓖ 반입 단계" "SHA 전용 디렉터리에 푼다" "$LOG" "-C /opt/colab-repo-releases/$(git_q "$W" rev-parse "$ANC") --overwrite"
 has "ⓖ 반입 단계" "ops 번들 tar 를 싣는다" "$LOG" "colab-ops-source-$ANC.tar.gz"
 has "ⓖ 반입 단계" "ops 번들 manifest 를 싣는다" "$LOG" "colab-ops-source-$ANC.manifest"
 has "ⓖ 반입 단계" "ops 버전 자리" "$LOG" "/opt/colab-ops/versions/$ANC"

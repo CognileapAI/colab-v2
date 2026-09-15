@@ -29,6 +29,42 @@ class ReleaseBusy(ReleaseError):
     pass
 
 
+class ReleaseEvidenceFailure(ReleaseError):
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
+
+
+def check_release_evidence(root, plan, phase, *, started_at=None):
+    """Dev release boundary; staging retains its separate rehearsal checks."""
+    import importlib.util
+    for target in plan['targets']:
+        if target['name'] not in ('dv', 'pr'):
+            continue
+        spec = importlib.util.spec_from_file_location('deploy_release_evidence', Path(__file__).parent / 'harness/release_evidence.py')
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        try:
+            refs = target.get('release_evidence', {})
+            if not refs.get('pre') or not refs.get('post'):
+                raise module.ReadinessError('dev release requires pre and post evidence paths')
+            pre = json.loads((root / refs['pre']).read_text())
+            if pre.get('environment') != {'dv':'dev','pr':'prod'}[target['name']] or pre.get('release_id') != plan['id'] or pre.get('sha') != target['version']:
+                raise module.ReleaseEvidenceError('plan and release evidence identity differ')
+            module.verify_pre(pre, root)
+            post_path = root / refs['post']
+            if phase == 'fresh' and post_path.exists():
+                raise module.ReleaseEvidenceError('post evidence already exists before deployment')
+            if phase == 'post':
+                post = json.loads(post_path.read_text())
+                module.verify_post(pre, post, post_path.parent)
+                if started_at and datetime.datetime.fromisoformat(post['finished_at']) <= datetime.datetime.fromisoformat(started_at):
+                    raise module.ReleaseEvidenceError('post evidence predates this deployment')
+        except (module.ReadinessError, OSError) as exc:
+            raise ReleaseEvidenceFailure(str(exc), 78) from exc
+        except (module.ReleaseEvidenceError, ValueError, TypeError) as exc:
+            raise ReleaseEvidenceFailure(str(exc), 1) from exc
+
+
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -150,6 +186,7 @@ def run_plan(root, plan, *, state_dir=None, secret_path=slack.DEFAULT_SECRET,
              notification_mode='legacy', resume_failed=False):
     root = Path(root).resolve()
     fingerprint = validate(plan, root)
+    check_release_evidence(root, plan, 'pre')
     directory = Path(state_dir) if state_dir is not None else state_directory(root)
     with release_lock(directory) as lock_fd:
         record_dir = directory / plan['id']
@@ -157,10 +194,14 @@ def run_plan(root, plan, *, state_dir=None, secret_path=slack.DEFAULT_SECRET,
         path = record_dir / 'state.json'
         previous = path.exists()
         resume_phase = None
+        if not previous:
+            check_release_evidence(root, plan, 'fresh')
         if previous:
             state = json.loads(path.read_text())
             if state.get('plan_hash') != fingerprint or state.get('root') != str(root):
                 raise ReleaseError('같은 배포 id의 계획/버전/작업 사본이 변경됐습니다.')
+            if state.get('deployment') == 'verified':
+                check_release_evidence(root, plan, 'post', started_at=state['started_at'])
             if notification_mode == 'off':
                 if state['deployment'] == 'verified':
                     state['notification'] = 'disabled'; save(path,state); return 0
@@ -256,6 +297,7 @@ def run_plan(root, plan, *, state_dir=None, secret_path=slack.DEFAULT_SECRET,
                 save(path, state)
         if not all(t['deploy'] == 'passed' and t['verify'] == 'passed' for t in state['targets'].values()):
             raise ReleaseError('모든 배포와 검증이 끝나지 않았습니다.')
+        check_release_evidence(root, plan, 'post', started_at=state['started_at'])
         state['deployment'] = 'verified'
         state['verified_at'] = now()
         state['notification'] = 'pending'
@@ -340,6 +382,7 @@ def cli(argv=None):
         plan.setdefault('operator_notifications', {'spool_directory': os.environ.get('COLAB_OPERATOR_SPOOL_DIRECTORY','/var/lib/colab/operator-spool')})
         if args.command == 'run' and args.check:
             validate(plan, root)
+            check_release_evidence(root, plan, 'pre')
             print('배포 계획 확인 완료 — 실행·전송 없음')
             return 0
         code = run_plan(root, plan, state_dir=getattr(args, 'state_dir', None),
@@ -352,6 +395,9 @@ def cli(argv=None):
     except ReleaseBusy as error:
         print(str(error), file=sys.stderr)
         return 75
+    except ReleaseEvidenceFailure as error:
+        print(str(error), file=sys.stderr)
+        return error.code
     except (ReleaseError, OSError, ValueError, subprocess.SubprocessError):
         print('배포 준비 실패 — 계획·입력·기존 실행 기록을 확인하세요.', file=sys.stderr)
         return 78

@@ -39,18 +39,26 @@
 #    `CLAUDE.md` 배포 절 2번이 금지하는 「EC2 에 AWS 키」와 같은 모양이 된다.
 # ⛔ **부분 실행 둘을 합쳐 green 이라 하지 않는다** — `─ 0` 이 나온 한 번의 결과만 근거다.
 set -uo pipefail
+ARTIFACTS="${COLAB_RELEASE_ARTIFACT_DIR:-}"
+[ -n "$ARTIFACTS" ] && [ -d "$ARTIFACTS" ] && [ ! -L "$ARTIFACTS" ] || { echo 'dedicated release artifact directory required' >&2; exit 78; }
 TAG=$(sed -n 's/^COLAB_IMAGE_TAG=//p' /opt/colab-v2/prod.env | tail -1)
+FULL_SHA=$(tr -d '\r\n' < /opt/colab-v2/CURRENT_FULL_SHA)
+[[ "$FULL_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'full release SHA required' >&2; exit 78; }
+SOURCE="/opt/colab-repo-releases/$FULL_SHA"
+[ -d "$SOURCE" ] && [ ! -L "$SOURCE" ] || { echo 'SHA-specific source required' >&2; exit 78; }
 # ⚠ 레포를 **통째로** 마운트한다 — ⑥⑦ 은 db/*/alembic.ini 를, ⑧ 은 gates/tools/rls_coverage.py 를 읽는다.
 # ⚠ /etc/colab 은 700 root 라 디렉터리째 마운트하면 uid 10001 이 못 지난다 → 파일 단위로.
 # ⚠ 자격은 **운영자 키**다. IMDS(앱 역할)로 돌면 ③ 웹 버킷이 403 이다 — prod 앱 역할은 진단 권한을 일부러 뺐다.
 # ⚠ /opt/colab-v2 를 /state 로 건다 — ⑮ 가 CURRENT_SHA·MAIN_SHA 를 읽는다. 빼면 ⑮ 는 항상 ✗ 다.
-docker run --rm --network host --env-file /root/colab-boot/ops.env \
-  -v /opt/colab-repo:/repo:ro \
+docker run --rm --user 0 --network host --env-file /root/colab-boot/ops.env \
+  -v "$SOURCE:/repo:ro" -e PYTHONDONTWRITEBYTECODE=1 \
   -v /opt/colab-v2:/state:ro \
+  -v "$ARTIFACTS:/artifacts:rw" \
   -v /etc/colab/platform-owner-db.url:/secrets/platform-owner-db.url:ro \
   -v /etc/colab/ai-owner-db.url:/secrets/ai-owner-db.url:ro \
   "colab-v2/core-api:$TAG" \
-  python /repo/services/core-api/ops/deploy_doctor.py --env prod \
+  python /repo/services/core-api/ops/deploy_doctor_evidence.py \
+    --pre /state/RELEASE_PRE.json --output /artifacts/post.json --source /repo -- --env prod \
     --endpoint https://d1aje00ns2hjsl.cloudfront.net \
     --app-base http://127.0.0.1:8000 --worker-base http://127.0.0.1:8001 \
     --viz-base http://127.0.0.1:8100 --ai-base http://127.0.0.1:8200 \
