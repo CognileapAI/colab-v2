@@ -1,12 +1,12 @@
 /**
- * R-LTH-REVIEW-1 Task 3 — 등록 가공 단계 **기본값이 계산값을 따른다** (spec §6 ㉱ · §8-2 19·20).
+ * 이슈 #80 — 등록 가공 단계는 계보 연결과 무관하게 사람이 고른 값을 유지한다.
  *
  * 오라클 = 라운드 파일 `dev-package/prd/rounds/R-LTH-REVIEW-1.md ### Task 3` 목적 ⑴ ＋
  * spec `2026-09-13-lth-review-1.md` §6 ㉱ 축자 넷 —
  *   ㈎ 확인된 부모 ≥1 이고 부모 Lv 를 모두 알면 기본 선택값 = **계산값**(최대 부모 Lv ＋ 1 · 상한 Lv3)
  *   ㈏ 부모 **0건**이면 계산값 `Lv0` → 기본 선택값 `Lv0`. 다른 단계를 고르면 등록 화면에도
  *      불일치 줄이 선다(카드 ⑩ ⓐ 축자 「부모 0건이면 Lv0 · 그 경우 등록 화면에도 경고가 선다」)
- *   ㈐ 사람이 한 번 고르면 **추종을 멈춘다**(고른 값을 덮지 않는다)
+ *   ㈐ 사람이 고른 값을 계보 연결이 덮지 않는다
  *   ㈑ 불일치 상태에서도 등록이 **성공한다**(미결-2 ⓐ 「경고만」 회귀)
  *
  * green-by-skip 방지 = ㈏ 와 ㈐ 가 대조군이고, ㈑ 이 회귀 단언이다(§8-6 ⑶).
@@ -149,50 +149,15 @@ async function confirmParent(datasetId: string) {
 }
 
 // ═══ ㈎ 확정 부모가 있으면 기본값이 계산값으로 선다 ═══
-describe('㉱ 기본 선택값 = 계산값 추종', () => {
-  // ⚠ 부모 0건 기본값이 `Lv0` 이라(카드 ⑩ ⓐ) 첫 연결은 `Lv0` 부모만 허용된다 — 자기 Lv 를
-  //   넘는 부모는 고를 수 없다(PRD-09 · `ParentPicker.valid`). 그래서 확정 부모를 한 단씩 쌓아
-  //   계산값이 **최대 부모 Lv ＋ 1** 로 따라가는지 잰다.
-  it('부모 Lv0·Lv1 을 차례로 확인하면 기본값이 계산값 `Lv2` 로 선다 (spec §8-2 19)', async () => {
-    const { sources } = fakes();
-    await openLineageUntouched(sources);
-    await confirmParent(LV0);
-    await confirmParent(LV1);
-    await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv2');
-  });
-
-  it('부모 Lv0·Lv1·Lv2 를 차례로 확인하면 기본값이 계산값 `Lv3` 로 선다', async () => {
-    const { sources } = fakes();
-    await openLineageUntouched(sources);
-    await confirmParent(LV0);
-    await confirmParent(LV1);
-    await confirmParent(LV2);
-    await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv3');
-  });
-
-  it('부모 1건(Lv0)을 확인하면 기본값이 계산값 `Lv1` 로 선다', async () => {
+describe('이슈 #80 — 기본 Lv0 유지', () => {
+  it('부모 1건(Lv0)을 확인해도 표시 단계는 `Lv0` 으로 남는다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
     await confirmParent(LV0);
     await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv1');
+    expect(levelValue()).toBe('Lv0');
   });
 
-  it('연결 즉시 확정되어 계산값을 추종한다', async () => {
-    const { sources } = fakes();
-    await openLineageUntouched(sources);
-    await click(screen.getByTestId('lin-add'));
-    await screen.findByTestId('lin-picker');
-    await click(screen.getByTestId(`lin-pick-${LV0}`));
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    // 연결 동작 자체가 확정이므로 별도 확인 버튼 없이 계산값 `Lv1` 이 선다.
-    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
-    expect(screen.queryByTestId('lin-confirm')).toBeNull();
-    await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv1');
-  });
 });
 
 // ═══ ㈏ 부모 0건 = 계산값 `Lv0` (카드 ⑩ ⓐ) ═══
@@ -244,7 +209,7 @@ describe('㉱ 부모 0건이면 계산값 `Lv0` 이 기본값이다', () => {
 });
 
 // ═══ ㈐ 사람이 고른 값은 덮지 않는다 (대조군) ═══
-describe('㉱ 사람이 고른 뒤에는 추종을 멈춘다', () => {
+describe('㉱ 사람이 고른 값은 그대로 둔다', () => {
   it('`Lv3` 를 직접 고른 뒤 부모(Lv0)를 확인해도 값이 `Lv3` 로 남고 불일치 줄이 선다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
@@ -280,38 +245,17 @@ describe('미결-2 ⓐ — 불일치는 경고만이고 등록은 성공한다',
   });
 });
 
-// ═══ ㈒ 계산값 추종 중에는 부모 선택 상한을 걸지 않는다 (카드 ⑩ ⓐ 「차단은 늘지 않는다」) ═══
-//
-// 부모 0건 기본값이 계산값 `Lv0` 이 된 뒤로, 가공 단계를 건드리지 않은 사람은 자기 Lv 상한 때문에
-// `Lv0` 부모만 고를 수 있었다 — 차단이 늘었다. 추종 중에는 상한을 풀고, 부모를 확인하면 자기 Lv 가
-// 최대 부모 Lv ＋ 1 로 따라가 계보가 어긋나지 않는다. 사람이 고른 뒤에는 상한이 그대로다(대조군).
-describe('㉱ 추종 중 부모 선택 상한 해제', () => {
-  it('가공 단계를 건드리지 않았으면 부모 0건에서도 Lv1·Lv2 후보를 고를 수 있다', async () => {
+// ═══ ㈒ 표시된 값은 기본값인지 직접 선택값인지와 무관하게 연결 상한이다 ═══
+describe('이슈 #80 — 표시 단계가 연결 상한이다', () => {
+  it('기본 Lv0에서도 Lv1·Lv2 후보가 보이되 연결할 수 없다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
     await click(screen.getByTestId('lin-add'));
     await screen.findByTestId('lin-picker');
-    expect((screen.getByTestId(`lin-pick-${LV1}`) as HTMLButtonElement).disabled).toBe(false);
-    expect((screen.getByTestId(`lin-pick-${LV2}`) as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.queryByTestId(`lin-over-${LV1}`)).toBeNull();
-    expect(screen.queryByTestId(`lin-over-${LV2}`)).toBeNull();
-  });
-
-  it('건드리지 않은 채 Lv1 부모를 연결·확인하면 자기 Lv 가 `Lv2` 로 따라가고 불일치·충돌 줄이 0건이다', async () => {
-    const { sources } = fakes();
-    await openLineageUntouched(sources);
-    await click(screen.getByTestId('lin-add'));
-    await screen.findByTestId('lin-picker');
-    await click(screen.getByTestId(`lin-pick-${LV1}`));
-    await click(screen.getByRole('button', { name: '이 데이터로 연결' }));
-    // 확인 전 대기 카드도 추종 중에는 충돌로 세지 않는다 — 등록 버튼을 막지 않는다.
-    expect(screen.getAllByTestId('lin-card')).toHaveLength(1);
-    expect(screen.queryByTestId('lin-need-check')).toBeNull();
-    expect(screen.queryByTestId('lin-conflict-note')).toBeNull();
-    expect(screen.queryByTestId('lin-lv-mismatch')).toBeNull();
-    expect(screen.queryByTestId('lin-need-check')).toBeNull();
-    await click(stepBtn('①'));
-    expect(levelValue()).toBe('Lv2');
+    expect((screen.getByTestId(`lin-pick-${LV1}`) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId(`lin-pick-${LV2}`) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId(`lin-over-${LV1}`)).toBeTruthy();
+    expect(screen.getByTestId(`lin-over-${LV2}`)).toBeTruthy();
   });
 
   it('사람이 `Lv1` 을 고르면 상한이 그대로 서서 Lv2 후보가 막히고 사유가 읽힌다 (대조군)', async () => {
@@ -327,11 +271,11 @@ describe('㉱ 추종 중 부모 선택 상한 해제', () => {
     expect(screen.getByTestId(`lin-over-${LV2}`)).toBeTruthy();
   });
 
-  // 추종 중에는 상한이 없으므로 상한을 말하는 안내 줄(`lin-lv-scope`)도 서지 않는다 — 대체 문면 없음.
-  it('가공 단계를 건드리지 않았으면 상한 안내 줄 `lin-lv-scope` 가 서지 않는다', async () => {
+  it('기본 Lv0에도 상한 안내 줄이 선다', async () => {
     const { sources } = fakes();
     await openLineageUntouched(sources);
-    expect(screen.queryByTestId('lin-lv-scope')).toBeNull();
+    expect(screen.getByTestId('lin-lv-scope').textContent).toContain(
+      '지금 이 데이터는 Lv0 · Lv0 가공 전 데이터만 연결할 수 있어요.');
   });
 
   it('사람이 `Lv1` 을 고르면 상한 안내 줄이 종전 문면 그대로 선다 (대조군)', async () => {
