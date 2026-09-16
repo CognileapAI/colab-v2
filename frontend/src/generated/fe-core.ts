@@ -2657,8 +2657,8 @@ export interface components {
             representative: boolean;
         };
         /**
-         * @description 프로젝트 기간. 시작·종료 각각 **연·월까지**이고, 진행 중이면 종료가 비어 있다
-         *     (`Policy_프로젝트 §5`).
+         * @description 프로젝트 시작·종료 날짜. 새 입력은 `YYYY-MM-DD`이고, 기존
+         *     `YYYY-MM` 입력도 해당 달 1일로 읽는다. 진행 중이면 종료가 비어 있다.
          */
         ProjectPeriod: {
             start: string | null;

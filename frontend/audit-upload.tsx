@@ -31,7 +31,11 @@ const sources = {
     createRender: async () => ({ renderId: id, status: '그리는 중', stage: '지도 그리는 중' }),
     getRender: async () => { throw new Error('시각 검수 전용 모의 오류'); },
   },
-  projects: { list: async () => [] },
+  projects: { list: async () => [{
+    projectId: id,
+    type: '국가과제',
+    name: '긴 프로젝트 제목이 필터 너비를 넘어가더라도 선택 버튼을 밀어내지 않는지 확인하는 시각 검수용 과제',
+  }] },
 } as unknown as UploadSources;
 const account = { accountId: id, labId: id, name: '검수', labName: '수자원순환연구실',
   permissions: { '업로드·편집': true } } as unknown as CurrentAccount;

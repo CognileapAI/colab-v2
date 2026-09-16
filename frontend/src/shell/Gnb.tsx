@@ -1,7 +1,7 @@
 // 하나의 셸 · GNB (전원 공통, 항상 노출)
 // 정본: Policy_공통_기반 v1.4 §1 · IA_사이트맵 §3 · mockups/제품_260817.html (.gnb)
 // 목업을 임의로 변형하지 않는다 — 요소·순서·클래스 이름을 목업에서 그대로 가져왔다.
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { MAIN_NAV, LAB_SETTINGS_PATH, ownerTabOf } from './nav';
 import { useAccount } from '../permission/session';
@@ -60,6 +60,7 @@ const LAB_SETTINGS_ICON = (
 );
 
 export function Gnb(props: { openRequest?: SequencedOpenUploadRequest | undefined } = {}) {
+  const rootRef = useRef<HTMLElement>(null);
   const account = useAccount();
   // 관리자는 전 연구실을 읽는다 — 표기가 그 사실을 따라간다(승인 intent 2026-09-12).
   const operator = account?.canManageServiceAccounts === true;
@@ -71,8 +72,20 @@ export function Gnb(props: { openRequest?: SequencedOpenUploadRequest | undefine
   const canLabSettings = useHasPermission('연구실 설정');
   const hasMoreItems = canUpload || operator || canLabSettings;
 
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    const syncHeight = () => {
+      document.documentElement.style.setProperty('--shell-gnb-offset', `${Math.ceil(root.getBoundingClientRect().height)}px`);
+    };
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <header className="gnb">
+    <header ref={rootRef} className="gnb">
       {/* 브랜드 마크 — 누르면 연구실 화면으로 */}
       <Link className="brand" to="/lab" aria-label="Co-Lab">
         <span className="logo" aria-hidden="true" />

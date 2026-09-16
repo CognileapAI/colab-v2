@@ -19,8 +19,12 @@ import type { ProjectCreate, ProjectDetail, ProjectType, ProjectUpdate } from '.
 
 const TYPES: ProjectType[] = ['국가과제', '논문'];
 
-/** `YYYY-MM` 두 칸. 계약 `ProjectPeriod` 는 연·월까지다 — 일자를 받지 않는다 (`§5`). */
+/** `YYYY-MM-DD` 두 칸. 예전 `YYYY-MM` 응답은 해당 달 1일로 표시한다. */
 type Period = { start: string; end: string };
+
+function dateInput(value: string | null | undefined): string {
+  return value && value.length === 7 ? `${value}-01` : value ?? '';
+}
 
 type PeriodBody = { start: string | null; end: string | null } | null;
 
@@ -45,16 +49,16 @@ export function ProjectFormModal(props: {
   const [name, setName] = useState(editing?.name ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
   const [period, setPeriod] = useState<Period>({
-    start: editing?.period?.start ?? '',
-    end: editing?.period?.end ?? '',
+    start: dateInput(editing?.period?.start),
+    end: dateInput(editing?.period?.end),
   });
   const [link, setLink] = useState(editing?.link ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const initial = {
     type: editing?.type ?? '국가과제', name: editing?.name ?? '',
-    description: editing?.description ?? '', start: editing?.period?.start ?? '',
-    end: editing?.period?.end ?? '', link: editing?.link ?? '',
+    description: editing?.description ?? '', start: dateInput(editing?.period?.start),
+    end: dateInput(editing?.period?.end), link: editing?.link ?? '',
   };
   const dirty = type !== initial.type || name !== initial.name || description !== initial.description ||
     period.start !== initial.start || period.end !== initial.end || link !== initial.link;
@@ -144,6 +148,7 @@ export function ProjectFormModal(props: {
             <label htmlFor={`${titleId}-name`}>이름</label>
             <input
               id={`${titleId}-name`}
+              data-testid="project-name"
               className="pj-inp"
               value={name}
               maxLength={100}
@@ -161,7 +166,7 @@ export function ProjectFormModal(props: {
           )}
 
           <div className="pj-row">
-            <label htmlFor={`${titleId}-desc`}>설명</label>
+            <label htmlFor={`${titleId}-desc`}>설명 (최대 500자)</label>
             <textarea
               id={`${titleId}-desc`}
               className="pj-tarea"
@@ -177,16 +182,18 @@ export function ProjectFormModal(props: {
             <div className="pj-2col">
               <input
                 id={`${titleId}-start`}
+                data-testid="project-period-start"
                 className="pj-inp"
-                type="month"
+                type="date"
                 value={period.start}
                 onChange={(e) => setPeriod((p) => ({ ...p, start: e.target.value }))}
               />
               <span className="pj-tilde">~</span>
               <input
                 className="pj-inp"
-                type="month"
+                type="date"
                 aria-label="종료"
+                data-testid="project-period-end"
                 value={period.end}
                 onChange={(e) => setPeriod((p) => ({ ...p, end: e.target.value }))}
               />

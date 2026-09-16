@@ -499,8 +499,12 @@ describe('F-03 새 프로젝트 모달', () => {
     renderList();
     await click(screen.getByRole('button', { name: '+ 새 프로젝트' }));
     fireEvent.change(screen.getByLabelText('이름'), { target: { value: '가' } });
-    fireEvent.change(screen.getByLabelText('기간'), { target: { value: '2026-05' } });
-    fireEvent.change(screen.getByLabelText('종료'), { target: { value: '2026-01' } });
+    const start = screen.getByLabelText('기간');
+    const end = screen.getByLabelText('종료');
+    expect(start).toHaveAttribute('type', 'date');
+    expect(end).toHaveAttribute('type', 'date');
+    fireEvent.change(start, { target: { value: '2026-05-02' } });
+    fireEvent.change(end, { target: { value: '2026-01-31' } });
     await click(screen.getByRole('button', { name: '만들기' }));
     expect((await screen.findByTestId('project-form-error')).textContent).toBe(
       '종료가 시작보다 앞서요. 다시 골라 주세요.',

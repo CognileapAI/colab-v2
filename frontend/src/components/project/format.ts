@@ -2,15 +2,14 @@
 import type { ProjectDatasetRow, ProjectRow } from './types';
 
 /**
- * 프로젝트 기간 — 목업 표기 그대로다. 같은 해면 종료의 연도를 접고(`2025.03~12`),
- * 해가 다르면 둘 다 편다(`2024.06~2025.02`). **진행 중이면 종료가 비어 있다** (§5).
+ * 프로젝트 기간. 일자를 보존하고 같은 해의 종료는 연도만 접는다.
  */
 export function projectPeriod(period: ProjectRow['period']): string {
   if (!period || (!period.start && !period.end)) return '';
-  const start = period.start ? period.start.replace('-', '.') : '';
+  const start = period.start ? period.start.replaceAll('-', '.') : '';
   if (!period.end) return `${start}~`;
   const sameYear = period.start?.slice(0, 4) === period.end.slice(0, 4);
-  return `${start}~${sameYear ? period.end.slice(5, 7) : period.end.replace('-', '.')}`;
+  return `${start}~${sameYear ? period.end.slice(5).replace('-', '.') : period.end.replaceAll('-', '.')}`;
 }
 
 /**

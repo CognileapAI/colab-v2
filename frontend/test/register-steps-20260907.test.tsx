@@ -366,6 +366,8 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     await openRegister(sources);
     expect((screen.getByTestId('reg-category') as HTMLSelectElement).value).toBe(DEFAULT_CATEGORY);
     expect((screen.getByTestId('reg-datatype') as HTMLSelectElement).value).toBe(DEFAULT_DATA_TYPE);
+    expect(within(screen.getByTestId('reg-category')).queryByRole('option', { name: '아직 고르지 않음' })).toBeNull();
+    expect(within(screen.getByTestId('reg-datatype')).queryByRole('option', { name: '아직 고르지 않음' })).toBeNull();
     // ⭑ ⟨개정 2026-09-14 · 카드 ⑩ ⓐ⟩ 가공 단계 기본값 = 계산값 · 부모 0건이면 `Lv0`
     //   ／ 종전 ~~`DEFAULT_PROCESSING_LEVEL`(`Lv2`)~~ — 그 상수는 부모 Lv 미상일 때만 선다.
     expect((screen.getByTestId('reg-level') as HTMLSelectElement).value).toBe('Lv0');

@@ -21,6 +21,8 @@
   --color-border-strong: #dfe3e8; /* CG110 */
   /* 셸 전용 — GNB 밑줄만 한 단 진하게. 셸 외에는 쓰지 않는다 */
   --color-border-shell: #bfc6cc;
+  --shell-gnb-height: 64px;
+  --shell-gnb-offset: var(--shell-gnb-height);
 
   --color-text: #121619; /* label.normal */
   --color-text-body: #21272ae0; /* label.neutral */
@@ -41,6 +43,10 @@
 
   --shadow-sm: 0px 1px 2px -1px #1717171a;
   --ease: 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 900px) {
+  :root { --shell-gnb-offset: 110px; }
 }
 
 /* 승인 intent 2026-09-12: 대표 화면에서 확인한 공통 디자인 기준. */
