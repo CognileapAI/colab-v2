@@ -1,3 +1,4 @@
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 /**
  * WU-A12 — rev1 유지 항목 회귀 방어선 (PRD-39 · `R-A-4-verify.md` §A).
  *
@@ -59,6 +60,8 @@ const DONE: RenderJob = {
 function previewSource(): DatasetPreviewSource {
   return {
     palettes: vi.fn(async () => [{ palette: 'viridis' }]),
+    files: vi.fn(async () => [{ fileId: 'fixture-file', fileName: 'fixture.nc', renderable: true }]),
+    describe: vi.fn(async () => ({ variables: ['fixture'], instants: null, default: { variable: 'fixture', instant: null } })),
     create: vi.fn(async () => DONE),
     get: vi.fn(async () => DONE),
     probeTile: vi.fn(async () => 'ok' as const),
@@ -88,6 +91,8 @@ function scaleOf(): number {
 }
 
 function renderDetailPreview() {
+  drawDatasetPreviewWhenReady();
+  drawDatasetPreviewWhenReady();
   return render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>

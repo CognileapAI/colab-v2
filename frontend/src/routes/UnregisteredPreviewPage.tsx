@@ -50,7 +50,7 @@ export function UnregisteredPreviewPage(props: { source?: PreviewSource; pollMs?
     () => props.source ?? apiPreviewSource(uploadId),
     [props.source, uploadId],
   );
-  const { state, rerender } = usePreviewRender({
+  const { state, rerender, resume } = usePreviewRender({
     source,
     renderId: renderId ?? undefined,
     pollMs: props.pollMs ?? 1000,
@@ -119,6 +119,15 @@ export function UnregisteredPreviewPage(props: { source?: PreviewSource; pollMs?
         ) : null}
 
         {state.phase === '만들 수 없음' ? <RenderFailureNotice message={state.message} /> : null}
+
+        {state.phase === '결과 불명' ? (
+          <div className="pv-failure" data-testid="preview-unknown" role="alert">
+            <p>{state.message}</p>
+            <button type="button" className="btn" data-testid="preview-resume" onClick={resume}>
+              상태 다시 확인
+            </button>
+          </div>
+        ) : null}
 
         {state.phase === '만료됨' ? <ExpiredNotice message={EXPIRED_MESSAGE} /> : null}
 

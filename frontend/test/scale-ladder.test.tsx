@@ -19,6 +19,7 @@ import { PreviewPanel } from '../src/components/upload/PreviewPanel';
 import type { RenderJob, RenderResult } from '../src/components/preview/types';
 import type { PreviewSource } from '../src/components/upload/types';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
+import { drawDatasetPreviewWhenReady, withDatasetPreviewFixture } from './datasetPreviewTest';
 import {
   KM_PER_DEG_LON_EQUATOR,
   SCALE_LADDER_KM,
@@ -71,18 +72,20 @@ function makeSource(bounds?: GeoBounds): DatasetPreviewSource {
 }
 
 function renderDetail(previewSource: DatasetPreviewSource) {
-  return render(
+  const view = render(
     <MemoryRouter initialEntries={[`/datasets/${OPEN_ID}`]}>
       <Routes>
         <Route
           path="/datasets/:datasetId"
           element={
-            <DatasetDetailPage source={fixtureDetailSource()} previewSource={previewSource} />
+            <DatasetDetailPage source={fixtureDetailSource()} previewSource={withDatasetPreviewFixture(previewSource)} />
           }
         />
       </Routes>
     </MemoryRouter>,
   );
+  drawDatasetPreviewWhenReady();
+  return view;
 }
 
 function scaleOf(testId = 'preview-layers'): number {

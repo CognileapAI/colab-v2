@@ -25,7 +25,7 @@ from typing import Callable
 
 import numpy as np
 
-from ...kernel import signing
+from ...kernel import observability, signing
 from ...kernel.ids import new_ulid
 from ...kernel.preview_sinks import LocalPreviewSink
 from ...ports.preview_sink import PreviewSinkPort
@@ -130,6 +130,8 @@ class RenderJob:
     done: threading.Event = field(default_factory=threading.Event, repr=False,
                                   compare=False)
     persisted_body: dict | None = field(default=None, repr=False, compare=False)
+    queued_at: float | None = field(default=None, repr=False, compare=False)
+    queue_observation: str = field(default="measured", repr=False, compare=False)
 
     @property
     def tile_branch(self) -> bool:
@@ -936,7 +938,7 @@ class JobStore:
                 try:
                     self.submit(record["renderId"], spec, temporary=record["temporary"],
                                 lab=record["lab"], account=record["account"],
-                                restored_expires_at=expires_at)
+                                restored_expires_at=expires_at, restored=True)
                 except QueueFull:
                     body = {"renderId": record["renderId"], "status": STATUS_FAILED,
                             "failure": {"code": "PREVIEW_QUEUE_FULL",
@@ -968,10 +970,13 @@ class JobStore:
     def submit(self, render_id: str, spec: RenderSpec, *, temporary: bool,
                event: "invalidation.InvalidationEvent | None" = None,
                lab: str = "", account: str = "",
-               restored_expires_at: datetime | None = None) -> RenderJob:
+               restored_expires_at: datetime | None = None,
+               restored: bool = False) -> RenderJob:
         """`event` 가 없으면 **사람이 부른 경로**다 — 둘 다 같은 계산기를 지난다(ⓒ)."""
         job = RenderJob(render_id=render_id, spec=spec, lab=lab, account=account,
-                        tile_branch_enabled=self._tile_branch_enabled)
+                        tile_branch_enabled=self._tile_branch_enabled,
+                        queued_at=None if restored else time.monotonic(),
+                        queue_observation="unknown_restored" if restored else "measured")
         now = datetime.now(timezone.utc)
         if restored_expires_at is not None:
             job.expires_at = restored_expires_at
@@ -1002,8 +1007,39 @@ class JobStore:
                     self._jobs.pop(render_id, None)
                     self._journal_records.pop(render_id, None)
                     self._write_journal()
+                self._emit_timing(job, worker_started_at=None, finished_at=time.monotonic(),
+                                  failure_code="PREVIEW_QUEUE_FULL", status="failed")
                 raise QueueFull from e
         return job
+
+    @staticmethod
+    def _emit_timing(job: RenderJob, *, worker_started_at: float | None,
+                     finished_at: float, failure_code: str | None = None,
+                     status: str | None = None) -> None:
+        queue_ms = None
+        processing_ms = None
+        if job.queued_at is not None and worker_started_at is not None:
+            queue_ms = round((worker_started_at - job.queued_at) * 1000)
+        if worker_started_at is not None:
+            processing_ms = round((finished_at - worker_started_at) * 1000)
+        if status is None:
+            status = {
+                STATUS_DONE: "success",
+                STATUS_FAILED: "failed",
+            }.get(job.status, "unknown")
+        try:
+            observability.structured_event(
+                service="viz-render", event="render.timing",
+                render_id=job.render_id, target_id=job.spec.target.target_id,
+                file_ids=[part.file_id for part in job.spec.target.parts],
+                variable=job.spec.variable, instant=job.spec.instant,
+                queue_ms=queue_ms, processing_ms=processing_ms,
+                status=status,
+                failure_code=failure_code,
+                queue_observation=job.queue_observation,
+            )
+        except Exception:  # 관측 장애가 유일한 렌더 worker를 죽이면 안 된다
+            log.exception("render timing 기록 실패 renderId=%s", job.render_id)
 
     def _run_and_plan(self, job: RenderJob,
                       event: "invalidation.InvalidationEvent | None") -> None:
@@ -1021,6 +1057,7 @@ class JobStore:
         ⚠ **실패한 렌더는 지우지 않는다** — 「새 것이 선 뒤에 낡은 것을 치운다」의
         나머지 절반이다. 새 것이 못 섰는데 치우면 볼 그림이 하나도 안 남는다.
         """
+        worker_started_at = time.monotonic()
         try:
             _run(job)
             # **색인이 먼저다** — 방금 구운 것도 후보에 들어야 `keep_keys` 가 그것을
@@ -1074,6 +1111,11 @@ class JobStore:
                   job.lab, job.account, target_key, job.spec.target.target_id,
                   job.render_id,
                   (job.failure or {}).get("details", {}).get("reason", "none"))
+            self._emit_timing(
+                job, worker_started_at=worker_started_at, finished_at=time.monotonic(),
+                failure_code=(job.failure or {}).get("code")
+                if job.status == STATUS_FAILED else None,
+            )
             try:
                 with self._lock:
                     if job.render_id in self._journal_records:

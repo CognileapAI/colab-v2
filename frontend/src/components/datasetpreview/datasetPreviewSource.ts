@@ -72,9 +72,9 @@ export function apiDatasetPreviewSource(datasetId: string): DatasetPreviewSource
     },
 
     /** WU-C3 — 변수·시각 후보와 서버 기본값. **읽기 전용이다** — 렌더를 만들지 않는다. */
-    async describe(): Promise<TargetDescription> {
+    async describe(fileId?: string): Promise<TargetDescription> {
       const r = await api.POST('/preview-target-descriptions', {
-        body: { datasetId } as never,
+        body: { datasetId, ...(fileId ? { fileIds: [fileId] } : {}) } as never,
       });
       if (isRenderTooLarge(r.response.status, r.error)) {
         throw new RenderTooLarge(messageOf(r.error, TOO_LARGE_MESSAGE));

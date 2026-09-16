@@ -1,5 +1,5 @@
 /**
- * WU-C3 — **500MB 조각 폴백 ＋ 파일·변수·시각 고르개** (축 ①-③④).
+ * WU-C3 — 업로드의 **500MB 조각 폴백**과 두 화면의 파일·변수·시각 고르개.
  *
  * **red 를 먼저 봤다** (2026-09-08 · 이 파일을 세우기 전):
  *  ⑴ `createRender` 는 413 을 일반 실패로 접었다 — 조각 폴백이 **없었다**(호출 1회에서 끝).
@@ -67,6 +67,10 @@ function drawingJob(renderId = RENDER_ID) {
   return { renderId, status: '그리는 중', stage: '지도 그리는 중' } as never;
 }
 
+function failedJob(renderId = RENDER_ID) {
+  return { renderId, status: '실패', failure: { code: 'NO_DATA', message: 'fixture' } } as never;
+}
+
 /** 요청 인자에서 조각 목록을 꺼낸다 — 업로드는 `target.fileIds`, 상세는 입력 평면이다. */
 function fileIdsOf(arg: unknown): string[] | undefined {
   const a = arg as { target?: { fileIds?: string[] }; fileIds?: string[] };
@@ -109,9 +113,9 @@ function detailSource(opts: { tooLargeFirst: boolean }) {
     create: vi.fn(async () => {
       created += 1;
       if (opts.tooLargeFirst && created === 1) throw new RenderTooLarge();
-      return drawingJob();
+      return failedJob();
     }),
-    get: vi.fn(async () => drawingJob()),
+    get: vi.fn(async () => failedJob()),
     probeTile: vi.fn(async () => 'ok' as const),
     mapGeometry: vi.fn(async () => undefined),
     screenshot: vi.fn(async () => new Blob()),
@@ -147,9 +151,12 @@ const SCREENS = [
     name: '상세(S-05)',
     prefix: 'dt',
     make: detailSource,
-    /** 상세는 **열자마자** 그린다. */
+    /** 상세도 사람이 명시적으로 「보기」를 눌러야 그린다. */
     async start(source: ReturnType<typeof detailSource>) {
       render(<DatasetPreviewSection datasetId={DATASET_ID} source={source} pollMs={100000} />);
+      const draw = await screen.findByTestId('dt-preview-draw');
+      await waitFor(() => expect((draw as HTMLButtonElement).disabled).toBe(false), WAIT);
+      fireEvent.click(draw);
     },
     renderSpy: (s: ReturnType<typeof detailSource>) => s.create,
   },
@@ -172,7 +179,13 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
     await sc.start(source);
     const spy = sc.renderSpy(source as never);
 
-    // 상한을 유지한 채 **첫 renderable 조각으로 자동 재요청**한다 — 호출은 정확히 2회다.
+    if (sc.prefix === 'dt') {
+      await waitFor(() => expect(spy.mock.calls.length).toBe(1), WAIT);
+      expect((source as { files: { mock: { calls: unknown[] } } }).files.mock.calls.length).toBe(1);
+      expect(screen.queryByTestId('dt-piece-notice')).toBeNull();
+      return;
+    }
+    // 업로드는 기존 조각 폴백 계약을 유지한다.
     await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
     expect((source as { files: { mock: { calls: unknown[] } } }).files.mock.calls.length).toBe(1);
 
@@ -224,8 +237,13 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
 
     fireEvent.change(select, { target: { value: longVariable } });
     const spy = sc.renderSpy(source as never);
-    await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
-    expect(variableOf(spy.mock.calls[1]?.[0])).toBe(longVariable);
+    if (sc.prefix === 'dt') {
+      await waitFor(() => expect(select.value).toBe(longVariable), WAIT);
+      expect(spy.mock.calls.length).toBe(1);
+    } else {
+      await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
+      expect(variableOf(spy.mock.calls[1]?.[0])).toBe(longVariable);
+    }
     expect(fullValues.textContent).toContain(variableLabel(longVariable));
     expect(fullValues.textContent).toContain('hsr_2024_01.nc');
     expect(fullValues.textContent).toContain(DESCRIBE.default.instant);
@@ -240,12 +258,13 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
     fireEvent.change(await screen.findByTestId(`${sc.prefix}-pick-variable`), {
       target: { value: 'temperature' },
     });
+    if (sc.prefix === 'dt') fireEvent.click(screen.getByTestId('dt-preview-draw'));
 
     await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
     const arg = spy.mock.calls[1]?.[0];
     expect(variableOf(arg)).toBe('temperature');
-    // 한 번에 값 하나 — 시각은 실리지 않는다(겹쳐 그리기 0).
-    expect(instantOf(arg)).toBeUndefined();
+    if (sc.prefix === 'dt') expect(instantOf(arg)).toBe(DESCRIBE.default.instant);
+    else expect(instantOf(arg)).toBeUndefined();
   });
 
   it('시각을 바꾸면 `instant` 를 실어 다시 그린다', async () => {
@@ -257,6 +276,7 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
     fireEvent.change(await screen.findByTestId(`${sc.prefix}-pick-instant`), {
       target: { value: DESCRIBE.instants!.last },
     });
+    if (sc.prefix === 'dt') fireEvent.click(screen.getByTestId('dt-preview-draw'));
 
     await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
     expect(instantOf(spy.mock.calls[1]?.[0])).toBe(DESCRIBE.instants!.last);
@@ -271,6 +291,10 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
     fireEvent.change(await screen.findByTestId(`${sc.prefix}-pick-file`), {
       target: { value: PIECE_B },
     });
+    if (sc.prefix === 'dt') {
+      await waitFor(() => expect((screen.getByTestId('dt-preview-draw') as HTMLButtonElement).disabled).toBe(false), WAIT);
+      fireEvent.click(screen.getByTestId('dt-preview-draw'));
+    }
 
     await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
     expect(fileIdsOf(spy.mock.calls[1]?.[0])).toEqual([PIECE_B]);

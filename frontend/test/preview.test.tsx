@@ -164,6 +164,19 @@ describe('§8.1 미리보기 — 업로드 모달에서 그린 것을 그대로 
     await screen.findByTestId('preview-none');
     expect(calls).toHaveLength(0);
   });
+
+  it('조회 결과 불명은 빈 화면이 되지 않고 같은 renderId만 다시 확인한다', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(31_000);
+    const get = vi.fn().mockRejectedValueOnce(new SyntaxError('bad response')).mockResolvedValueOnce(DONE);
+    const { source } = makeSource({ get });
+    renderPage(source);
+    expect(await screen.findByTestId('preview-unknown')).toHaveTextContent('요청 결과를 확인할 수 없어요.');
+    fireEvent.click(screen.getByTestId('preview-resume'));
+    await screen.findByTestId('preview-map');
+    expect(get).toHaveBeenNthCalledWith(1, RENDER_ID);
+    expect(get).toHaveBeenNthCalledWith(2, RENDER_ID);
+    expect(source.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('진행 단계 — 정본 3값 그대로 · 한 덩어리 「로딩 중」으로 두지 않는다', () => {

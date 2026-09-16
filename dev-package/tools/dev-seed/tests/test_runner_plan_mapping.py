@@ -156,6 +156,35 @@ def test_dataset_without_auxiliary_does_not_call_lineage_api(monkeypatch):
     assert runner.reconcile_auxiliary_lineage(st, ds, "CHILD-ID") == 0
 
 
+def test_lineage_checks_radio_then_connects_confirmed_card(monkeypatch):
+    ds = {"seq": 3, "name": "child", "parents": ["parent"]}
+    st = {"datasets": {"2": {"name": "parent", "dataset_id": "PARENT-ID"}}}
+    actions = []
+    checked = set()
+
+    def browser(args, **_kwargs):
+        actions.append(args)
+        if args[0] == "check":
+            checked.add(args[1])
+        if args[:2] == ["is", "checked"]:
+            return 0, {"checked": args[2] in checked}, ""
+        return 0, {}, ""
+
+    monkeypatch.setattr(runner, "ab", browser)
+    monkeypatch.setattr(runner, "activate", lambda css, label="": actions.append(["activate", css]))
+    monkeypatch.setattr(runner, "wait_css", lambda *_: True)
+    monkeypatch.setattr(runner, "enabled", lambda *_: True)
+    monkeypatch.setattr(runner, "count", lambda _css: 1)
+
+    runner.do_lineage(st, ds)
+
+    radio = '[data-testid="lin-pick-PARENT-ID"]'
+    assert ["check", radio] in actions
+    assert ["is", "checked", radio] in actions
+    assert ["activate", ".lin-find .modal-f .btn-primary"] in actions
+    assert not any("lin-confirm" in str(action) for action in actions)
+
+
 def test_stored_period_verification_preserves_month_granularity():
     expected = {"start": "2023-05", "end": "2023-05", "granularity": "월"}
     stored = {"start": "2023-05-01T00:00:00Z", "end": "2023-05-01T00:00:00Z",

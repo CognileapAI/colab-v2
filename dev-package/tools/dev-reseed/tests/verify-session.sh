@@ -40,27 +40,49 @@ cat > "$TMP/bin/agent-browser" <<'STUB'
 if [ "${1:-}" = "--session" ]; then shift 2; fi
 page="${FIXTURE_PAGE:-detail}"
 case "${1:-}" in
-  open) rm -f "$FIXTURE_AB_LOG.waited"; exit "${FIXTURE_OPEN_FAIL:-0}" ;;
+  open) rm -f "$FIXTURE_AB_LOG.waited" "$FIXTURE_AB_LOG.selected" "$FIXTURE_AB_LOG.drawn" "$FIXTURE_AB_LOG.unsupported-seen"; exit "${FIXTURE_OPEN_FAIL:-0}" ;;
+  select)
+    [ "${2:-}" = '[data-testid="dt-pick-file"]' ] || exit 1
+    [ "${3:-}" = 'FILE-1' ] || exit 1
+    : > "$FIXTURE_AB_LOG.selected" ;;
+  click)
+    [ "${2:-}" = '[data-testid="dt-preview-draw"]' ] || exit 1
+    [ -f "$FIXTURE_AB_LOG.selected" ] || exit 1
+    : > "$FIXTURE_AB_LOG.drawn" ;;
   wait)
     case "${2:-}" in *dt-preview-slot*) : > "$FIXTURE_AB_LOG.waited" ;; esac
     exit 0 ;;
   get)
     case "${2:-} ${3:-}" in
+      'value [data-testid="dt-pick-file"]')       [ "${FIXTURE_UNSUPPORTED:-0}" = 1 ] || echo FILE-1 ;;
+      'text [data-testid="dt-preview-total"]')    [ -f "$FIXTURE_AB_LOG.drawn" ] && [ "${FIXTURE_TERMINAL:-done}" = done ] && echo '총 10ms' ;;
       'count [data-testid="login-submit"]')        [ "$page" = login ] && echo 1 || echo 0 ;;
       'count [data-testid="basic-info"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
       'count [data-testid="preview-unavailable"]')
         if [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ] && [ -f "$FIXTURE_AB_LOG.waited" ]; then echo 1
         elif [ "$page" = detail ]; then echo "${FIXTURE_UNAVAIL:-0}"; else echo 0; fi ;;
       'attr [data-testid="dt-preview-slot"]')
-        if [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ]; then
+        if [ ! -f "$FIXTURE_AB_LOG.drawn" ]; then echo idle
+        elif [ "${FIXTURE_TERMINAL:-done}" = delayed-failed ]; then
           if [ -f "$FIXTURE_AB_LOG.waited" ]; then echo failed
           else : > "$FIXTURE_AB_LOG.waited"; echo drawing; fi
         else echo "${FIXTURE_TERMINAL:-done}"; fi ;;
       'text [data-testid="ig-가공 단계"]')          [ "$page" = detail ] && echo "가공 단계 Lv0" || { echo "Element not found" >&2; exit 1; } ;;
       'count [data-testid="ig-unset-가공 단계"]')   echo 0 ;;
       'count [data-testid="usage-card"]')          [ "$page" = detail ] && echo 1 || echo 0 ;;
+      'count [data-testid="dt-preview-unsupported"]')
+        if [ "${FIXTURE_UNSUPPORTED:-0}" != 1 ]; then echo 0
+        elif [ "${FIXTURE_UNSUPPORTED_DELAY:-0}" = 1 ] && [ ! -f "$FIXTURE_AB_LOG.unsupported-seen" ]; then
+          : > "$FIXTURE_AB_LOG.unsupported-seen"; echo 0
+        else echo 1; fi ;;
       *) echo 0 ;;
     esac ;;
+  is)
+    if [ "${2:-} ${3:-}" = 'enabled [data-testid="dt-preview-draw"]' ]; then
+      echo "${FIXTURE_DRAW_ENABLED:-true}"
+      exit 0
+    fi
+    exit 1 ;;
   *) echo ok ;;
 esac
 exit 0
@@ -110,7 +132,7 @@ account_finalize() { :; }
 
 cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
 datasets:
-  - {seq: 1, name: "HSR 레이더 반사도 원자료", processing_level: Lv0}
+  - {seq: 1, name: "HSR 레이더 반사도 원자료", processing_level: Lv0, preview_expected: "미측정"}
 YAML
 cat > "$SEED_WORK_DIR/verify.json" <<'JSON'
 {"dataset_count_ui": 1, "dataset_count_state": 1, "by_project": {"radar": 1}, "edges_ok": 0, "edges_missing": [], "periods_expected": 1, "periods_ok": 1, "periods_missing": [], "model_input_descriptions_ok": 2, "model_input_descriptions_missing": []}
@@ -141,6 +163,15 @@ n_calls="$(grep -c '^AB' "$FIXTURE_AB_LOG")"
 n_sess="$(grep -c $'^AB\t--session\tcolab-dev\t' "$FIXTURE_AB_LOG")"
 [ "$n_calls" -gt 0 ] || note "ⓐ agent-browser 호출이 0건이다 — 순회가 돌지 않았다"
 [ "$n_calls" = "$n_sess" ] || note "ⓐ′ --session colab-dev 없이 나간 agent-browser 호출이 $(( n_calls - n_sess ))건이다(전체 $n_calls) — 환경변수는 세션을 고르지 않는다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tselect\t\[data-testid="dt-pick-file"\]\tFILE-1$' "$FIXTURE_AB_LOG")" -eq 1 ] || note "ⓑ″ 파일을 정확히 한 번 명시 선택하지 않았다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t\[data-testid="dt-preview-draw"\]$' "$FIXTURE_AB_LOG")" -eq 1 ] || note "ⓑ‴ 보기를 정확히 한 번 명시 클릭하지 않았다"
+
+# `is enabled`가 false를 출력해도 종료 0인 CLI 계약을 true로 오인하지 않는다.
+reset_run; export FIXTURE_DRAW_ENABLED=false
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "보기 버튼 false 출력을 활성 상태로 오인했다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\tclick\t' "$FIXTURE_AB_LOG")" -eq 0 ] || note "보기 버튼 비활성인데 클릭했다"
+unset FIXTURE_DRAW_ENABLED
 
 # 러너가 재어 둔 저장 기간·모델 입력 설명이 빠지거나 미달이면 상세 화면이 멀쩡해도 차단한다.
 cp "$SEED_WORK_DIR/verify.json" "$TMP/verify-good.json"
@@ -169,10 +200,57 @@ stage_verify >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] || note "지연 미리보기 실패를 성공으로 판정했다"
 [ "$(verdict_of 1)" = 미성립 ] || note "최종 실패 상태를 기다려 미성립으로 기록하지 않았다"
 reset_run; export FIXTURE_TERMINAL=drawing
+cat > "$SEED_WORK_DIR/state.json" <<'JSON'
+{"datasets": {"1": {"seq": 1, "name": "첫 자료", "status": "done", "dataset_id": "ID-1"},
+              "2": {"seq": 2, "name": "둘째 자료", "status": "done", "dataset_id": "ID-2"}}}
+JSON
+cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
+datasets:
+  - {seq: 1, name: "첫 자료", processing_level: Lv0, preview_expected: "미측정"}
+  - {seq: 2, name: "둘째 자료", processing_level: Lv0, preview_expected: "미측정"}
+YAML
+cat > "$SEED_WORK_DIR/verify.json" <<'JSON'
+{"dataset_count_ui": 2, "dataset_count_state": 2, "by_project": {"radar": 2}, "edges_ok": 0, "edges_missing": [], "periods_expected": 2, "periods_ok": 2, "periods_missing": [], "model_input_descriptions_ok": 2, "model_input_descriptions_missing": []}
+JSON
+EXPECT_DATASETS=2
 stage_verify >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] || note "렌더 중 상태를 성공으로 판정했다"
 [ "$(verdict_of 1)" = 판정불가 ] || note "최종 상태 부재를 판정불가로 기록하지 않았다"
+[ "$(grep -c $'^AB\t--session\tcolab-dev\topen\t' "$FIXTURE_AB_LOG")" -eq 1 ] || note "terminal/display 미확인 뒤 다음 자료 요청을 실행했다"
+EXPECT_DATASETS=1
 unset FIXTURE_TERMINAL
+
+# 정본이 정확히 허용한 GeoPackage 두 이름의 미성립만 성공한다.
+for expected_name in SPI-4weeks SPEI-4weeks; do
+  cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<YAML
+datasets:
+  - {seq: 1, name: "$expected_name", processing_level: Lv0, preview_expected: "미성립(포맷 미지원 · 판정 표에 이름으로)"}
+YAML
+  cat > "$SEED_WORK_DIR/state.json" <<JSON
+{"datasets": {"1": {"seq": 1, "name": "$expected_name", "status": "registered_no_preview", "dataset_id": "NO-PREVIEW-ID"}}}
+JSON
+  cp "$TMP/verify-good.json" "$SEED_WORK_DIR/verify.json"
+  reset_run; export FIXTURE_UNAVAIL=1 FIXTURE_UNSUPPORTED=1 FIXTURE_UNSUPPORTED_DELAY=1
+  stage_verify >/dev/null 2>&1; rc=$?
+  [ "$rc" -eq 0 ] || note "정본이 허용한 $expected_name 미리보기 미성립을 실패로 판정했다"
+done
+unset FIXTURE_UNAVAIL FIXTURE_UNSUPPORTED FIXTURE_UNSUPPORTED_DELAY
+
+# 기대 증거가 빠지면 실제 화면이 성립이어도 fail closed다.
+write_state 0
+cp "$TMP/verify-good.json" "$SEED_WORK_DIR/verify.json"
+cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
+datasets:
+  - {seq: 1, name: "HSR 레이더 반사도 원자료", processing_level: Lv0}
+YAML
+reset_run
+stage_verify >/dev/null 2>&1; rc=$?
+[ "$rc" -ne 0 ] || note "미리보기 기대 증거 누락을 성공으로 판정했다"
+
+cat > "$REPO_ROOT/dev-package/tools/dev-seed/plan-manifest.yaml" <<'YAML'
+datasets:
+  - {seq: 1, name: "HSR 레이더 반사도 원자료", processing_level: Lv0, preview_expected: "미측정"}
+YAML
 reset_run; export FIXTURE_OPEN_FAIL=1
 stage_verify >/dev/null 2>&1; rc=$?
 [ "$rc" -ne 0 ] || note "페이지 이동 실패 뒤 이전 화면을 성공으로 판정했다"

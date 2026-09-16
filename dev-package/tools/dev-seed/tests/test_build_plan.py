@@ -33,7 +33,7 @@ MD = """# {pid} 시험용 정본
 
 | # | 이름 | 레벨 | 부모 | 파일 글롭 | 건수 | 바이트 | 기준 격자(쌍) | 포맷 | 미리보기 기대 | 비고 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | {name} | {level} | — | `{glob}` | {t_count} | {t_bytes} | 없음 | bin | 미측정 | 없음 |
+| 1 | {name} | {level} | — | `{glob}` | {t_count} | {t_bytes} | 없음 | bin | {t_preview} | 없음 |
 
 ## 기계 블록 (생성기 입력)
 
@@ -54,7 +54,7 @@ datasets:
     bytes: {b_bytes}
     grid_files: []
     format: "bin"
-    preview_expected: "미측정"
+    preview_expected: "{b_preview}"
     description: "시험용 설명"
     note: "시험용 비고"
 ```
@@ -75,6 +75,7 @@ def build_tree(tmp_path, overrides=None):
             pid=pid, folder=folder, glob=glob, seq=seq, level="Lv0",
             name="%s-표본" % pid,
             t_count=1, t_bytes=size, b_count=1, b_bytes=size,
+            t_preview="미측정", b_preview="미측정",
         )
         values.update(overrides.get(pid) or dict())
         md_path = md_root / folder / "DATASETS.md"
@@ -105,6 +106,8 @@ def test_블록과_나무가_맞으면_계획을_쓴다(tmp_path, capsys):
     for key in ("seq", "project", "name", "summary", "files", "file_count",
                 "bytes", "grid_files", "grid_bytes", "grid_skip", "parents"):
         assert key in row, key
+    assert row["preview_expected"] == "미측정"
+    assert "preview_expected: 미측정" in manifest.read_text(encoding="utf-8")
     assert manifest.read_text(encoding="utf-8").startswith("# 생성물")
 
 
@@ -124,6 +127,21 @@ def test_표가_블록과_다르면_3으로_끝난다(tmp_path, capsys):
     printed = capsys.readouterr().out
     assert rc == 3, printed
     assert "vegetation-표본" in printed
+
+
+def test_미리보기_기대가_표와_블록에서_다르면_3으로_끝난다(tmp_path, capsys):
+    ref_root, md_root = build_tree(
+        tmp_path, overrides={"drought": dict(t_preview="성립", b_preview="미측정")})
+    rc, _, _ = run(tmp_path, ref_root, md_root)
+    assert rc == 3, capsys.readouterr().out
+
+
+def test_미리보기_기대_누락은_거절한다(tmp_path):
+    blocks = [dict(project="one", folder=".", datasets=[dict(
+        seq=1, name="one", level="Lv0", files=[], file_count=0, bytes=0,
+        grid_files=[], parents=[], preview_expected="")])]
+    with pytest.raises(SystemExit, match="미리보기 기대"):
+        build_plan.resolve_rows(blocks, tmp_path, resolve_files=False)
 
 
 def test_총계가_28_18_이_아니면_2로_끝난다(tmp_path, capsys):
@@ -168,12 +186,14 @@ def test_declared_grid_cannot_be_body_in_any_row(tmp_path, cross_row):
     (folder / 'lon2d.npy').write_bytes(b'grid')
     (folder / 'body.bin').write_bytes(b'body')
     body = dict(seq=1, name='body', level='Lv0', files=['lon2d.npy'],
-                file_count=1, bytes=4, grid_files=[] if cross_row else ['lon2d.npy'])
+                file_count=1, bytes=4, grid_files=[] if cross_row else ['lon2d.npy'],
+                preview_expected='미측정')
     blocks = [dict(project='one', folder='data', datasets=[body])]
     if cross_row:
         blocks.append(dict(project='two', folder='data', datasets=[dict(
             seq=2, name='owner', level='Lv0', files=['body.bin'],
-            file_count=1, bytes=4, grid_files=['../data/lon2d.npy'])]))
+            file_count=1, bytes=4, grid_files=['../data/lon2d.npy'],
+            preview_expected='미측정')]))
     with pytest.raises(SystemExit, match='보조 격자.*본문'):
         build_plan.resolve_rows(blocks, tmp_path)
 
@@ -183,7 +203,8 @@ def test_grid_body_guard_preserves_distinct_body_and_shared_grid(tmp_path):
     (tmp_path / 'lon2d.npy').write_bytes(b'grid')
     blocks = [dict(project='one', folder='.', datasets=[dict(
         seq=i, name='row'+str(i), level='Lv0', files=['body.bin'],
-        file_count=1, bytes=4, grid_files=['lon2d.npy']) for i in range(1,29)])]
+        file_count=1, bytes=4, grid_files=['lon2d.npy'],
+        preview_expected='미측정') for i in range(1,29)])]
     rows, mismatch, missing = build_plan.resolve_rows(blocks, tmp_path)
     assert len(rows) == 28
     assert mismatch == missing == []

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { usePreviewRender } from '../src/components/preview/usePreviewRender';
 import { PreviewUnavailable, type PreviewSource, type RenderJob } from '../src/components/preview/types';
@@ -11,8 +11,8 @@ const DONE = {
 } as unknown as RenderJob;
 
 function Harness({ source }: { source: PreviewSource }) {
-  const { state } = usePreviewRender({ source, renderId: ID, pollMs: 5 });
-  return <div data-testid="phase">{state.phase}</div>;
+  const { state, resume } = usePreviewRender({ source, renderId: ID, pollMs: 5 });
+  return <><div data-testid="phase">{state.phase}</div><button onClick={resume}>resume</button></>;
 }
 
 function sourceWith(get: PreviewSource['get']): PreviewSource {
@@ -34,12 +34,40 @@ describe('미리보기 일시 503 재조회', () => {
     expect(get).toHaveBeenCalledTimes(2);
   });
 
-  it('권한·유효성 계열 일반 오류는 재조회하지 않는다', async () => {
-    const get = vi.fn().mockRejectedValue(new Error('forbidden'));
-    render(<Harness source={sourceWith(get)} />);
+  it('일반 조회 예외도 deadline 안에서는 같은 renderId를 재조회한다', async () => {
+    const get = vi.fn().mockRejectedValueOnce(new SyntaxError('bad json')).mockResolvedValueOnce(DONE);
+    const source = sourceWith(get);
+    render(<Harness source={source} />);
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('완료'));
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(source.create).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('만들 수 없음'));
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(get).toHaveBeenCalledTimes(1);
+  it('deadline 뒤 결과 불명은 같은 renderId만 수동 재조회한다', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(31_000);
+    const get = vi.fn().mockRejectedValueOnce(new PreviewUnavailable('unknown')).mockResolvedValueOnce(DONE);
+    const source = sourceWith(get);
+    render(<Harness source={source} />);
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('결과 불명'));
+    expect(source.create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'resume' }));
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('완료'));
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenNthCalledWith(1, ID);
+    expect(get).toHaveBeenNthCalledWith(2, ID);
+    expect(source.create).not.toHaveBeenCalled();
+  });
+
+  it('deadline 뒤 일반 예외도 새 create 없이 같은 renderId만 재개한다', async () => {
+    vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(31_000);
+    const get = vi.fn().mockRejectedValueOnce(new Error('unknown response')).mockResolvedValueOnce(DONE);
+    const source = sourceWith(get);
+    render(<Harness source={source} />);
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('결과 불명'));
+    fireEvent.click(screen.getByRole('button', { name: 'resume' }));
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('완료'));
+    expect(get).toHaveBeenNthCalledWith(1, ID);
+    expect(get).toHaveBeenNthCalledWith(2, ID);
+    expect(source.create).not.toHaveBeenCalled();
   });
 });
