@@ -86,6 +86,95 @@ def test_정본_4값_밖의_값은_실패다():
     assert "NDVI 변형" in str(exc.value)
 
 
+def test_월_기간은_연월까지만_화면입력동작을_낸다():
+    ds = {"name": "DEM", "period": {"start": "2023-05", "end": "2023-05",
+                                          "granularity": "월"}}
+    assert runner.period_form_actions(ds) == [
+        ["click", '[data-testid="reg-period-open"]'],
+        ["click", '[data-testid="reg-period-unit-월"]'],
+        ["fill", '[data-testid="reg-period-pop-start-year"]', "2023"],
+        ["fill", '[data-testid="reg-period-pop-start-month"]', "05"],
+        ["fill", '[data-testid="reg-period-pop-end-year"]', "2023"],
+        ["fill", '[data-testid="reg-period-pop-end-month"]', "05"],
+        ["click", '[data-testid="reg-period-apply"]'],
+    ]
+
+
+def test_기간_누락과_월을_일값으로_바꾼_계획은_거절한다():
+    with pytest.raises(runner.Fail, match="기간.*DEM"):
+        runner.period_form_actions({"name": "DEM"})
+    with pytest.raises(runner.Fail, match="정밀도"):
+        runner.period_form_actions({"name": "DEM", "period": {
+            "start": "2023-05-01", "end": "2023-05-31", "granularity": "월"}})
+    with pytest.raises(runner.Fail, match="정밀도"):
+        runner.period_form_actions({"name": "bad", "period": {
+            "start": "2023-02-31", "end": "2023-02-31", "granularity": "일"}})
+
+
+def test_prediction_registration_excludes_auxiliary_parents_then_api_adds_them():
+    ds = {"name": "Prediction (공간상세화)",
+          "parents": ["GK2A_NDVI_mean_202305", "DEM", "Aspect"],
+          "parent_roles": {"DEM": "보조입력", "Aspect": "보조입력"}}
+    registration, auxiliary = runner.split_lineage_parents(ds)
+    assert registration == ["GK2A_NDVI_mean_202305"]
+    assert auxiliary == ["DEM", "Aspect"]
+
+
+def test_auxiliary_resume_only_requests_missing_links():
+    desired = [("DEM-ID", "보조입력"), ("ASPECT-ID", "보조입력")]
+    graph = {"edges": [
+        {"childDatasetId": "PRED-ID", "parentDatasetId": "DEM-ID", "parentRole": "보조입력"},
+        {"childDatasetId": "OTHER-ID", "parentDatasetId": "ASPECT-ID", "parentRole": "주입력"},
+    ]}
+    assert runner.missing_auxiliary_links(desired, graph, "PRED-ID") == [("ASPECT-ID", "보조입력")]
+    wrong = {"edges": [{"childDatasetId": "PRED-ID", "parentDatasetId": "DEM-ID",
+                         "parentRole": "주입력"}]}
+    with pytest.raises(runner.Fail, match="역할"):
+        runner.missing_auxiliary_links(desired, wrong, "PRED-ID")
+
+
+def test_pending_auxiliary_resume_does_not_upload_again(monkeypatch):
+    ds = {"seq": 12, "name": "Prediction (공간상세화)", "project": "vegetation",
+          "bytes": 1, "grid_bytes": 0, "file_count": 1,
+          "parents": ["DEM"], "parent_roles": {"DEM": "보조입력"}}
+    st = {"datasets": {"12": {"seq": 12, "name": ds["name"],
+                                 "status": "registered_pending_auxiliary",
+                                 "dataset_id": "PRED-ID"}}}
+    monkeypatch.setattr(runner, "reconcile_auxiliary_lineage", lambda *_: 1)
+    monkeypatch.setattr(runner, "save_state", lambda *_: None)
+    monkeypatch.setattr(runner, "open_url", lambda *_: pytest.fail("resume must not upload"))
+    runner.do_dataset(st, ds)
+    assert st["datasets"]["12"]["status"] == "done"
+    assert st["datasets"]["12"]["auxiliary_verified"] == 1
+    assert not runner.is_registered("registered_pending_auxiliary")
+
+
+def test_dataset_without_auxiliary_does_not_call_lineage_api(monkeypatch):
+    ds = {"name": "ordinary", "parents": ["source"]}
+    st = {"datasets": {"1": {"name": "source", "dataset_id": "SOURCE-ID"}}}
+    monkeypatch.setattr(runner, "lineage_api", lambda *_: pytest.fail("no auxiliary API call"))
+    assert runner.reconcile_auxiliary_lineage(st, ds, "CHILD-ID") == 0
+
+
+def test_stored_period_verification_preserves_month_granularity():
+    expected = {"start": "2023-05", "end": "2023-05", "granularity": "월"}
+    stored = {"start": "2023-05-01T00:00:00Z", "end": "2023-05-01T00:00:00Z",
+              "granularity": "월"}
+    assert runner.stored_period_matches(expected, stored)
+    assert not runner.stored_period_matches(expected, dict(stored, granularity="일"))
+
+
+def test_verify_contract_rejects_missing_period_or_model_input_description():
+    good = {"dataset_count_ui": 28, "dataset_count_expected": 28,
+            "periods_ok": 28, "periods_expected": 28,
+            "model_input_descriptions_ok": 2, "edges_ok": 18, "edges_expected": 18,
+            "previews": [{"render": "그려짐"}]}
+    assert runner.verify_result_passes(good)
+    assert not runner.verify_result_passes(dict(good, periods_ok=27))
+    assert not runner.verify_result_passes(dict(good, model_input_descriptions_ok=1))
+    assert not runner.verify_result_passes(dict(good, periods_missing=[{"name": "DEM"}]))
+
+
 # ── ⑵ 분석 실패 자리의 갈림 ───────────────────────────────────────────────
 
 
@@ -118,8 +207,8 @@ def test_reg_open_이_아예_없으면_사유가_실린_blocked_다():
 # ── ⑶ 계정 파일 · 비밀 취급 ───────────────────────────────────────────────
 
 ACCOUNTS = [
-    {"email": "op@example.com", "name": "운영자", "role": "교수", "admin": True},
-    {"email": "one@example.com", "name": "한 사람", "role": "연구원", "admin": False},
+    {"email": "op@example.com", "name": "운영자", "role": "교수", "lab": "연구실 A", "admin": True},
+    {"email": "one@example.com", "name": "한 사람", "role": "연구원", "lab": "연구실 A", "admin": False},
 ]
 
 
@@ -144,6 +233,20 @@ def test_0600_계정_파일은_수용한다(tmp_path):
     assert [e["email"] for e in entries] == ["op@example.com", "one@example.com"]
     assert entries[0]["admin"] is True
     assert entries[1]["admin"] is False
+
+
+def test_labless_operator_profile_is_accepted(tmp_path):
+    entry = {"email": "operator@example.com", "name": "운영자", "admin": True}
+    rows = runner.load_accounts_file(write_accounts(tmp_path, 0o600, [entry]))
+    assert rows[0]["role"] == ""
+    assert not rows[0].get("lab")
+    assert rows[0]["admin"] is True
+
+
+def test_lab_and_role_must_be_supplied_together(tmp_path):
+    entry = {"email": "operator@example.com", "name": "운영자", "admin": True, "role": "교수"}
+    with pytest.raises(runner.Fail):
+        runner.load_accounts_file(write_accounts(tmp_path, 0o600, [entry]))
 
 
 def test_admin_이_불_값이_아니면_이메일이_실린_실패다(tmp_path):
@@ -271,3 +374,15 @@ def test_label_이_감싼_칸처럼_click_만_듣는_대역에서는_이름을_�
     with pytest.raises(runner.Fail) as exc:
         runner.set_checkbox("css", True, "관리자로 등록")
     assert "체크 상태를 바꾸지 못했다" in str(exc.value)
+
+
+def test_account_creation_unchecks_default_admin_for_regular_user(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(runner, 'CFG', SimpleNamespace(dry_run=False))
+    calls, box = _checkbox_world(monkeypatch, initial=True, honors={"check", "uncheck"})
+    for name in ('open_account_form', 'fill_secret', 'activate', 'select_by_label'):
+        monkeypatch.setattr(runner, name, lambda *args: None)
+    monkeypatch.setattr(runner, 'wait_css', lambda *args: True)
+    monkeypatch.setattr(runner, 'el_text', lambda *args: '계정을 추가했어요.')
+    runner.create_account({}, ACCOUNTS[1], 'fixture-secret')
+    assert box['checked'] is False

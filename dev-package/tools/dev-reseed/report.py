@@ -148,6 +148,26 @@ SESSION_TEMPLATE = """# DR-4 — dev 무인 재생성 실행 기록 ({date})
 """
 
 
+def check_accounts(work,profile,target):
+    import importlib.util
+    spec=importlib.util.spec_from_file_location("reseed_accounts",pathlib.Path(__file__).with_name("accounts.py"))
+    accounts=importlib.util.module_from_spec(spec);spec.loader.exec_module(accounts)
+    try:
+        work=pathlib.Path(work)
+        entries=json.loads(accounts.private(profile).read_text())
+        expected=json.loads(accounts.private(accounts.DEFAULT_PROFILE).read_text());accounts.validate(entries,expected)
+        entries=sorted(entries,key=lambda e:[v['email'] for v in expected].index(e['email']))
+        binding=accounts.proof(entries,work,None,target)
+        final=json.loads(accounts.private(work/'finalization.json').read_text())
+        checked=json.loads(accounts.private(work/'verification.json').read_text())
+        identity={'profile':accounts.fingerprint(entries),'binding':binding}
+        if final.get('state')!='complete' or any(final.get(k)!=v or checked.get(k)!=v for k,v in identity.items()):raise ValueError()
+        required={'accounts':5,'operators':4,'professors':1,'must_change_password':True,'password_changed_by_check':False}
+        if any(checked.get(k)!=v for k,v in required.items()):raise ValueError()
+    except Exception as exc:
+        raise ValueError('required account verification evidence missing or changed') from exc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
@@ -158,6 +178,8 @@ def main() -> int:
     ap.add_argument("--schema", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--session-out", required=True)
+    ap.add_argument("--accounts-work")
+    ap.add_argument("--accounts-profile",default=os.environ.get("COLAB_RESEED_ACCOUNTS_PROFILE",str(pathlib.Path.home()/".config/colab-platform/dev-reseed-accounts-approved.json")))
     args = ap.parse_args()
 
     run = pathlib.Path(args.run_dir)
@@ -188,6 +210,13 @@ def main() -> int:
         for line in bl.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 blocked.append(json.loads(line))
+
+    if not dry and not failed_stage and not blocked and (not ran or any(s not in ('preflight','rehearse','report') for s in ran)):
+        try:
+            check_accounts(args.accounts_work,args.accounts_profile,args.target_sha)
+        except ValueError:
+            failed_stage='verify'
+            blocked.append({'name':'accounts','stage':'verify','reason':'필수 5계정 최종화·로그인 검증 증거 없음 또는 변경'})
 
     # 정지 뒤 자동 재기동 기록. 없으면 되살릴 일이 없었다는 뜻이다.
     recovery = []
@@ -278,7 +307,7 @@ def main() -> int:
         recovery_n=len(recovery), recovery_block=recovery_block,
     ), encoding="utf-8")
     print("result.json · 회차 기록 뼈대 기록 · 단계 %d · 차단 %d" % (len(ran), len(blocked)))
-    return 0
+    return 1 if failed_stage == "verify" and any("5계정" in b.get("reason", "") for b in blocked) else 0
 
 
 if __name__ == "__main__":

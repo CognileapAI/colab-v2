@@ -159,3 +159,102 @@ def test_기본값_아닌_기대값도_dry_run_이면_판정만_한다(tmp_path,
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+@pytest.mark.parametrize('cross_row', [False, True])
+def test_declared_grid_cannot_be_body_in_any_row(tmp_path, cross_row):
+    folder = tmp_path / 'data'
+    folder.mkdir()
+    (folder / 'lon2d.npy').write_bytes(b'grid')
+    (folder / 'body.bin').write_bytes(b'body')
+    body = dict(seq=1, name='body', level='Lv0', files=['lon2d.npy'],
+                file_count=1, bytes=4, grid_files=[] if cross_row else ['lon2d.npy'])
+    blocks = [dict(project='one', folder='data', datasets=[body])]
+    if cross_row:
+        blocks.append(dict(project='two', folder='data', datasets=[dict(
+            seq=2, name='owner', level='Lv0', files=['body.bin'],
+            file_count=1, bytes=4, grid_files=['../data/lon2d.npy'])]))
+    with pytest.raises(SystemExit, match='보조 격자.*본문'):
+        build_plan.resolve_rows(blocks, tmp_path)
+
+
+def test_grid_body_guard_preserves_distinct_body_and_shared_grid(tmp_path):
+    (tmp_path / 'body.bin').write_bytes(b'body')
+    (tmp_path / 'lon2d.npy').write_bytes(b'grid')
+    blocks = [dict(project='one', folder='.', datasets=[dict(
+        seq=i, name='row'+str(i), level='Lv0', files=['body.bin'],
+        file_count=1, bytes=4, grid_files=['lon2d.npy']) for i in range(1,29)])]
+    rows, mismatch, missing = build_plan.resolve_rows(blocks, tmp_path)
+    assert len(rows) == 28
+    assert mismatch == missing == []
+    assert all([pathlib.Path(p).name for p in r['files']] == ['body.bin'] for r in rows)
+    assert all([pathlib.Path(p).name for p in r['grid_files']] == ['lon2d.npy'] for r in rows)
+
+
+def metadata_file(tmp_path, rows, auxiliary=None):
+    path = tmp_path / "canonical-metadata.json"
+    path.write_text(json.dumps({
+        "schema": "colab-dev-seed-metadata/1",
+        "datasets": rows,
+        "auxiliaryParents": auxiliary or [],
+    }, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def test_canonical_metadata_requires_a_period_for_every_dataset(tmp_path):
+    datasets = [{"seq": 1, "name": "one", "parents": []},
+                {"seq": 2, "name": "two", "parents": []}]
+    path = metadata_file(tmp_path, [
+        {"seq": 1, "name": "one", "start": "2023-05", "end": "2023-05",
+         "granularity": "월", "basis": "fixture"},
+    ])
+    with pytest.raises(SystemExit, match="기간.*two"):
+        build_plan.bind_canonical_metadata(datasets, path)
+
+
+def test_dem_and_aspect_keep_user_month_precision(tmp_path):
+    datasets = [{"seq": 9, "name": "DEM", "parents": []},
+                {"seq": 10, "name": "Aspect", "parents": ["DEM"]},
+                {"seq": 12, "name": "Prediction (공간상세화)",
+                 "parents": ["DEM", "Aspect"]}]
+    rows = [{"seq": seq, "name": name, "start": "2023-05", "end": "2023-05",
+             "granularity": "월", "basis": "사용자 제공 맥락",
+             **({"registrationNote": "기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음"}
+                if name in ("DEM", "Aspect") else {})}
+            for seq, name in [(9, "DEM"), (10, "Aspect"),
+                              (12, "Prediction (공간상세화)")]]
+    path = metadata_file(tmp_path, rows, [
+        {"child": "Prediction (공간상세화)", "parent": "DEM", "role": "보조입력"},
+        {"child": "Prediction (공간상세화)", "parent": "Aspect", "role": "보조입력"},
+    ])
+    build_plan.bind_canonical_metadata(datasets, path)
+    assert [(d["period"]["start"], d["period"]["granularity"])
+            for d in datasets[:2]] == [("2023-05", "월"), ("2023-05", "월")]
+    assert datasets[2]["parent_roles"] == {"DEM": "보조입력", "Aspect": "보조입력"}
+    assert "파일 내부 날짜 정보는 없음" in datasets[0]["summary"]
+
+
+def test_auxiliary_role_rejects_the_wrong_ndvi_target(tmp_path):
+    datasets = [{"seq": 9, "name": "DEM", "parents": []},
+                {"seq": 10, "name": "Aspect", "parents": ["DEM"]},
+                {"seq": 12, "name": "다른 결과", "parents": ["DEM", "Aspect"]}]
+    rows = [{"seq": d["seq"], "name": d["name"], "start": "2023-05",
+             "end": "2023-05", "granularity": "월", "basis": "fixture"}
+            for d in datasets]
+    path = metadata_file(tmp_path, rows, [
+        {"child": "다른 결과", "parent": "DEM", "role": "보조입력"},
+    ])
+    with pytest.raises(SystemExit, match="보조입력 대상"):
+        build_plan.bind_canonical_metadata(datasets, path)
+
+
+def test_canonical_metadata_rejects_duplicate_rows_and_impossible_dates(tmp_path):
+    datasets = [{"seq": 1, "name": "one", "parents": []}]
+    duplicate = {"seq": 1, "name": "one", "start": "2023-05", "end": "2023-05",
+                 "granularity": "월", "basis": "fixture"}
+    with pytest.raises(SystemExit, match="중복"):
+        build_plan.bind_canonical_metadata(
+            datasets, metadata_file(tmp_path, [duplicate, dict(duplicate)]))
+    impossible = dict(duplicate, start="2023-02-31", end="2023-02-31", granularity="일")
+    with pytest.raises(SystemExit, match="정밀도"):
+        build_plan.bind_canonical_metadata(datasets, metadata_file(tmp_path, [impossible]))
