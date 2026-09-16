@@ -219,8 +219,6 @@ function StepClassify(props: {
             value={props.category}
             onChange={(e) => props.onCategory(e.target.value)}
           >
-            {/* 빈 값은 「아직 안 골랐다」이고 그때 `다음` 이 막힌다(수용 기준 2). */}
-            <option value="">아직 고르지 않음</option>
             {CATEGORIES.map((v) => (
               <option key={v.value} value={v.value}>
                 {bilingual(v)}
@@ -242,7 +240,6 @@ function StepClassify(props: {
             value={props.dataType}
             onChange={(e) => props.onDataType(e.target.value)}
           >
-            <option value="">아직 고르지 않음</option>
             {DATA_TYPES.map((v) => (
               <option key={v.value} value={v.value}>
                 {bilingual(v)}

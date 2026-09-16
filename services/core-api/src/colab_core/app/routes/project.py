@@ -27,7 +27,7 @@ from ..deps import current_subject, scoped_db
 
 router = APIRouter()
 
-_YEAR_MONTH = re.compile(r"^[0-9]{4}-(0[1-9]|1[0-2])$")
+_PROJECT_DATE = re.compile(r"^[0-9]{4}-(0[1-9]|1[0-2])(?:-([0-2][0-9]|3[0-1]))?$")
 _TYPES = ("국가과제", "논문")
 _STATUSES = ("진행 중", "닫힘")
 
@@ -40,7 +40,7 @@ _ALL = "전체"
 
 
 def _period(value: object) -> tuple[dt.date | None, dt.date | None]:
-    """기간은 **연·월까지**다 (Policy_프로젝트 §5). 일자는 계약에 없으므로 1일로 저장한다."""
+    """새 입력은 일자를 보존하고 기존 `YYYY-MM`은 해당 달 1일로 읽는다."""
     if value is None:
         return None, None
     if not isinstance(value, dict):
@@ -51,14 +51,19 @@ def _period(value: object) -> tuple[dt.date | None, dt.date | None]:
         if v is None:
             out.append(None)
             continue
-        if not isinstance(v, str) or not _YEAR_MONTH.match(v):
-            raise errors.bad_request(f"period.{key} 는 YYYY-MM 이어야 한다.")
-        out.append(dt.date(int(v[:4]), int(v[5:7]), 1))
+        if not isinstance(v, str) or not _PROJECT_DATE.match(v):
+            raise errors.bad_request(f"period.{key} 는 YYYY-MM-DD 또는 YYYY-MM 이어야 한다.")
+        try:
+            out.append(dt.date.fromisoformat(v if len(v) == 10 else f"{v}-01"))
+        except ValueError:
+            raise errors.bad_request(f"period.{key} 는 실제 날짜여야 한다.") from None
+    if out[0] is not None and out[1] is not None and out[1] < out[0]:
+        raise errors.bad_request("종료가 시작보다 앞서요. 다시 골라 주세요.")
     return out[0], out[1]
 
 
-def _year_month(value: dt.date | None) -> str | None:
-    return None if value is None else f"{value.year:04d}-{value.month:02d}"
+def _project_date(value: dt.date | None) -> str | None:
+    return None if value is None else value.isoformat()
 
 
 #: `ProjectUpdate` 가 받는 열쇠. **`type` 은 없다** — 「만든 뒤에는 바꾸지 않는다」
@@ -178,8 +183,8 @@ def create_project(response: Response, body: dict = Body(...),
         "type": row["type"],
         "status": row["status"],
         "period": (None if row["period_start"] is None and row["period_end"] is None
-                   else {"start": _year_month(row["period_start"]),
-                         "end": _year_month(row["period_end"])}),
+                   else {"start": _project_date(row["period_start"]),
+                         "end": _project_date(row["period_end"])}),
         "description": row["description"],
         "link": row["link_url"],
         "datasets": [],   # 담는 동작은 이 seam 에 없다 — 업로드 화면(E-04)이 맡는다
@@ -208,7 +213,7 @@ def _can_manage(db: Session, subject: Subject) -> bool:
 def _period_out(record) -> dict | None:
     if record.period_start is None and record.period_end is None:
         return None
-    return {"start": _year_month(record.period_start), "end": _year_month(record.period_end)}
+    return {"start": _project_date(record.period_start), "end": _project_date(record.period_end)}
 
 
 def _data_period(value: tuple | None) -> dict | None:
