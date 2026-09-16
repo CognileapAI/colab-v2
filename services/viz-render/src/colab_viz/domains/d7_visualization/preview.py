@@ -33,6 +33,8 @@ from .scale import ColorRange
 #: 긴 변 (`§2` 결론 표). **썸네일만 stride 다**(`§10-6`).
 THUMBNAIL_SIDE = 128
 DETAIL_SIDE = 1024
+WEB_MERCATOR_MAX_LAT = 85.0511287798066
+MAP_WARP_METHOD = "warp+nearest-v2"
 
 LAYER_THUMBNAIL = "썸네일"
 LAYER_DETAIL = "비지도형"
@@ -158,6 +160,44 @@ def _nearest_seed(seed: np.ndarray, limit2: float) -> np.ndarray:
     return np.where((best_i >= 0) & (cost <= limit2), best_i, np.int64(-1))
 
 
+def _reproject_regular_grid(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
+                            bbox_3857: tuple[float, float, float, float],
+                            width: int, height: int) -> np.ndarray | None:
+    """축이 곧은 위경도 격자는 rasterio의 역방향 재투영을 재사용한다."""
+    lat_axis = lat[:, 0]
+    lon_axis = lon[0, :]
+    if (lat_axis.size < 2 or lon_axis.size < 2
+            or not np.isfinite(lat_axis).all() or not np.isfinite(lon_axis).all()
+            or not np.allclose(lat, lat_axis[:, None], rtol=0.0, atol=1e-10)
+            or not np.allclose(lon, lon_axis[None, :], rtol=0.0, atol=1e-10)):
+        return None
+    lat_step = np.diff(lat_axis)
+    lon_step = np.diff(lon_axis)
+    if (not (lat_step < 0).all() or not (lon_step > 0).all()
+            or not np.allclose(lat_step, lat_step[0], rtol=0.0, atol=1e-10)
+            or not np.allclose(lon_step, lon_step[0], rtol=0.0, atol=1e-10)):
+        return None
+
+    from rasterio.transform import from_bounds
+    from rasterio.warp import Resampling, reproject
+
+    dy = abs(float(np.median(lat_step)))
+    dx = abs(float(np.median(lon_step)))
+    src_transform = from_bounds(
+        float(lon_axis.min()) - dx / 2, float(lat_axis.min()) - dy / 2,
+        float(lon_axis.max()) + dx / 2, float(lat_axis.max()) + dy / 2,
+        values.shape[1], values.shape[0],
+    )
+    dst = np.full((height, width), np.nan, dtype="f4")
+    reproject(
+        values, dst,
+        src_transform=src_transform, src_crs="EPSG:4326",
+        dst_transform=from_bounds(*bbox_3857, width, height), dst_crs="EPSG:3857",
+        src_nodata=np.nan, dst_nodata=np.nan, resampling=Resampling.nearest,
+    )
+    return dst
+
+
 def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                  max_side: int = DETAIL_SIDE) -> tuple[np.ndarray, MapGeometry]:
     """곡선 격자 + 값 → EPSG:3857 규칙 격자. **출력 주도(역방향) 리샘플**이다.
@@ -196,6 +236,11 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     if v.shape != la.shape or la.shape != lo.shape:
         raise BboxSanityError(f"값과 좌표의 형상이 다르다: {v.shape} / {la.shape} / {lo.shape}")
 
+    # 범위 밖 값이 블록평균에 먼저 섞이면 유효 위도 경계의 값까지 오염된다.
+    projectable = (np.isfinite(la) & np.isfinite(lo)
+                   & (np.abs(la) <= WEB_MERCATOR_MAX_LAT))
+    v = np.where(projectable, v, np.float32(np.nan)).astype("f4", copy=False)
+
     # ① 촘촘한 원본을 먼저 내린다 — 최근접이 값을 골라 버리기 **전에** 평균한다.
     steps = downsample.steps_for(v.shape, int(max_side))
     if steps != (1, 1):
@@ -203,10 +248,13 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
         la = downsample.sample_centers(la, steps)
         lo = downsample.sample_centers(lo, steps)
 
-    geo = np.isfinite(la) & np.isfinite(lo)          # 좌표가 있는 자리 — **값 결측을 포함한다**
+    # Web Mercator가 표현할 수 없는 극점은 경계와 리샘플 씨앗 모두에서 제외한다.
+    # 좌표만 clamp하면 ±90° 값이 유효 경계로 몰려 배열과 bbox가 갈린다.
+    geo = (np.isfinite(la) & np.isfinite(lo)
+           & (np.abs(la) <= WEB_MERCATOR_MAX_LAT))  # **값 결측을 포함한다**
     ok = geo & np.isfinite(v)                        # 경계는 값까지 있는 자리에서만 나온다
     if not ok.any():
-        raise BboxSanityError("좌표와 값이 함께 유효한 자리가 없다")
+        raise BboxSanityError("Web Mercator 범위에서 좌표와 값이 함께 유효한 자리가 없다")
     # 위생 검사를 **warp 전에도** 한 번 — 축이 뒤바뀐 격자는 여기서 걸린다
     src_bbox = (float(lo[ok].min()), float(la[ok].min()),
                 float(lo[ok].max()), float(la[ok].max()))
@@ -232,30 +280,33 @@ def warp_to_3857(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
     px = span_x / width
     py = span_y / height
 
-    # ② 출력 격자에 씨앗을 놓는다 — 한 픽셀에 여럿이면 **픽셀 중심에 가장 가까운** 것이 이긴다
-    fr = (maxy - ys) / py
-    fc = (xs - minx) / px
-    rows = np.floor(fr).astype("i8")
-    cols = np.floor(fc).astype("i8")
-    keep = (rows >= 0) & (rows <= height) & (cols >= 0) & (cols <= width)
-    rows = np.clip(rows[keep], 0, height - 1)
-    cols = np.clip(cols[keep], 0, width - 1)
-    d2 = (fr[keep] - (rows + 0.5)) ** 2 + (fc[keep] - (cols + 0.5)) ** 2
-    flat = rows * width + cols
-    nearest = np.full(width * height, np.inf)
-    np.minimum.at(nearest, flat, d2)
-    seed = np.full(width * height, np.int64(-1))
-    wins = d2 <= nearest[flat]
-    seed[flat[wins]] = src_idx[keep][wins]
-    seed = seed.reshape(height, width)
+    out = _reproject_regular_grid(
+        v, la, lo, bbox_3857=(minx, miny, maxx, maxy), width=width, height=height)
+    if out is None:
+        # ② 곡선 격자의 씨앗을 출력 격자에 놓는다 — 한 픽셀에 여럿이면 중심 최근접이 이긴다
+        fr = (maxy - ys) / py
+        fc = (xs - minx) / px
+        rows = np.floor(fr).astype("i8")
+        cols = np.floor(fc).astype("i8")
+        keep = (rows >= 0) & (rows <= height) & (cols >= 0) & (cols <= width)
+        rows = np.clip(rows[keep], 0, height - 1)
+        cols = np.clip(cols[keep], 0, width - 1)
+        d2 = (fr[keep] - (rows + 0.5)) ** 2 + (fc[keep] - (cols + 0.5)) ** 2
+        flat = rows * width + cols
+        nearest = np.full(width * height, np.inf)
+        np.minimum.at(nearest, flat, d2)
+        seed = np.full(width * height, np.int64(-1))
+        wins = d2 <= nearest[flat]
+        seed[flat[wins]] = src_idx[keep][wins]
+        seed = seed.reshape(height, width)
 
-    # ③ 씨앗이 없는 픽셀이 씨앗을 찾아간다. 한계는 **원본 간격**이다 — 그보다 멀면 발자국 밖이다
-    seeded = int((seed >= 0).sum())
-    spacing = np.sqrt(width * height / max(1, seeded))
-    limit2 = float(max(2.0, 1.5 * spacing)) ** 2
-    picked = _nearest_seed(seed, limit2)
-    out = np.where(picked >= 0, v.ravel()[np.maximum(picked, 0)],
-                   np.float32(np.nan)).astype("f4")
+        # ③ 곡선 격자의 발자국 밖은 채우지 않도록 원본 간격으로 탐색을 제한한다.
+        seeded = int((seed >= 0).sum())
+        spacing = np.sqrt(width * height / max(1, seeded))
+        limit2 = float(max(2.0, 1.5 * spacing)) ** 2
+        picked = _nearest_seed(seed, limit2)
+        out = np.where(picked >= 0, v.ravel()[np.maximum(picked, 0)],
+                       np.float32(np.nan)).astype("f4")
 
     corner_x = np.array([minx, maxx, minx, maxx])
     corner_y = np.array([miny, miny, maxy, maxy])
@@ -442,10 +493,10 @@ def build_map_layer(values: np.ndarray, lat: np.ndarray, lon: np.ndarray, *,
                     owner: BakeOwner) -> tuple[Artifact, Artifact, Artifact, MapGeometry]:
     """③지도형 — PNG + 사이드카 JSON + `.pgw`. **좌표가 없으면 여기 오지 않는다.**"""
     warped, geom = warp_to_3857(values, lat, lon, max_side=DETAIL_SIDE)
-    key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample="warp+nearest",
+    key = cache.render_cache_key(long_side=DETAIL_SIDE, downsample=MAP_WARP_METHOD,
                                  crs=cache.MAP_CRS, color_range=color_range,
                                  grid_digest=grid_digest, **key_params)
-    variant = cache.render_variant_key(long_side=DETAIL_SIDE, downsample="warp+nearest",
+    variant = cache.render_variant_key(long_side=DETAIL_SIDE, downsample=MAP_WARP_METHOD,
                                        crs=cache.MAP_CRS, color_range=color_range,
                                        grid_digest=grid_digest, **key_params)
     rgba = colormap.to_rgba(warped, vmin=color_range.vmin, vmax=color_range.vmax, lut=lut)

@@ -205,6 +205,32 @@ describe.each(SCREENS)('WU-C3 · $name', (sc) => {
     expect(instant.querySelectorAll('option').length).toBe(2);
   });
 
+  it('긴 변수 선택값은 원본 ID로 동작하고 전체 라벨을 title로 확인할 수 있다', async () => {
+    const longVariable = 'grib:15:TMP|1767247200|50000[Pa]|Temperature with a deliberately long description|regular_ll';
+    const source = sc.make({ tooLargeFirst: false }) as never;
+    (source as { describe: { mockImplementation(fn: () => Promise<TargetDescription>): void } }).describe
+      .mockImplementation(async () => ({
+        ...DESCRIBE,
+        variables: [DESCRIBE.variables[0]!, longVariable],
+      }));
+    await sc.start(source);
+
+    const select = await screen.findByTestId(`${sc.prefix}-pick-variable`) as HTMLSelectElement;
+    const option = Array.from(select.options).find((item) => item.value === longVariable);
+    expect(option?.title).toBe(variableLabel(longVariable));
+    const fullValues = screen.getByTestId(`${sc.prefix}-pick-values`);
+    expect(within(fullValues).getByText('선택값 전체 보기')).toBeTruthy();
+    expect(fullValues.textContent).toContain(variableLabel(DESCRIBE.variables[0]!));
+
+    fireEvent.change(select, { target: { value: longVariable } });
+    const spy = sc.renderSpy(source as never);
+    await waitFor(() => expect(spy.mock.calls.length).toBe(2), WAIT);
+    expect(variableOf(spy.mock.calls[1]?.[0])).toBe(longVariable);
+    expect(fullValues.textContent).toContain(variableLabel(longVariable));
+    expect(fullValues.textContent).toContain('hsr_2024_01.nc');
+    expect(fullValues.textContent).toContain(DESCRIBE.default.instant);
+  });
+
   it('변수를 바꾸면 `variable` 을 실어 다시 그린다', async () => {
     const source = sc.make({ tooLargeFirst: false }) as never;
     await sc.start(source);

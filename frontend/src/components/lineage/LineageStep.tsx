@@ -58,15 +58,6 @@ function scopeNotice(selfLv: number): string {
  */
 export const LINEAGE_UNKNOWN_LABEL = '가공 전 데이터를 못 찾았어요 — 기록 없이 등록할게요';
 
-/**
- * 확정 부모가 1건 이상일 때 체크박스에 붙는 **사유 한 줄** (미결-6 ⓐ).
- * ⛔ 숨기지 않고, 연결을 지우지도 않는다 — docx `D-6-1` 「가공 전 데이터가 있는데 저
- * 체크박스가 나타나는게 이상하다」를 **비활성 ＋ 사유**로 해소한다.
- */
-export const LINEAGE_UNKNOWN_DISABLED_REASON =
-  '가공 전 데이터를 이어 붙였어요. 연결을 지우면 다시 고를 수 있어요.';
-
-
 export function LineageStep(props: { source: LineageSource; ctx: LineageStepContext }) {
   const { source, ctx } = props;
   // ⭑ ⟨개정 2026-09-14⟩ `uploadId` 를 더 쓰지 않는다 — **제안 조회의 인자였고** 그 조회가
@@ -78,23 +69,14 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
   const setParents = ctx.onParentsChange;
   /** ① 에서 고른 자기 Lv. **기준값**이고, 안 골랐으면 `null` 이라 규칙이 서지 않는다. */
   const selfLv = levelOf(ctx.processingLevelUserSet);
+  const ceilingLv = selfLv;
   /**
-   * ⭑ **⟨R-LTH-REVIEW-1 · 카드 ⑩ ⓐ 「차단은 늘지 않는다」⟩ 부모 선택 상한의 기준 Lv.**
-   * 자기 Lv 가 계산값을 따라가는 중이면 `null` — 상한·사후 충돌을 걸지 않는다(부모를 확인하면
-   * 자기 Lv 가 최대 부모 Lv ＋ 1 로 따라간다). 사람이 고른 뒤에는 `selfLv` 그대로다.
-   * ⚠ 불일치 줄·「기록 없음」 표시는 `selfLv` 를 쓴다 — 여기서 바꾸지 않는다. 상한 안내 줄(`lin-lv-scope`)은
-   *   추종 중에는 상한이 없으므로 서지 않는다(대체 문면 없음) — 사람이 고른 뒤에는 `selfLv` 문면 그대로다.
-   */
-  const ceilingLv = ctx.processingLevelFollowsDerived ? null : selfLv;
-  /**
-   * ⭑ **⟨PRD-27 · WU-B8⟩ 「기록 없음」 체크박스의 두 성질.**
-   *  · **확정 부모 ≥1 → 비활성 ＋ 사유 한 줄.** 칸은 **사라지지 않고** 연결도 지우지 않는다.
-   *  · **자기 Lv 가 `Lv0` → 보이지 않는다.** 판정 ⑷ 가 이미 `원천` 으로 가르므로 물을 것이
-   *    없다 — 물으면 「원시 데이터인데 왜 못 찾았냐고 묻나」가 된다.
+   * ⭑ **⟨개정 2026-09-16 · issue #82 intent⟩ 「기록 없음」 체크박스.**
+   * 확정 부모가 있으면 선언 행 전체를 숨긴다. 종전의 비활성＋사유 표시는 연결 실패로
+   * 읽혔다. 부모를 모두 지우면 상태를 초기화하지 않고 다시 보여 준다.
    */
   const confirmedParentCount = parents.filter((p) => p.confirmed).length;
-  const unknownDisabled = confirmedParentCount > 0;
-  const unknownVisible = selfLv !== 0;
+  const unknownVisible = selfLv !== 0 && confirmedParentCount === 0;
 
   const {
     candidates,
@@ -400,7 +382,7 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
           부모가 0건이면 서버가 자동으로 표시를 붙여 둘이 한 값으로 접혔다. 체크하지 않고
           등록하면 계보 상태는 `확인 필요` 이고, 체크해야 `기록 없음` 이다.
           ⛔ **Lv0 이면 칸 자체가 없다** — 판정 ⑷ 가 이미 `원천` 으로 가른다.
-          ⛔ **확정 부모가 있으면 비활성이되 사라지지 않는다** — 사유 한 줄이 왜인지 말한다. */}
+          ⛔ **확정 부모가 있으면 숨긴다** — 선언 상태는 보존하고 연결을 모두 지우면 다시 보인다. */}
       {unknownVisible && (
         <div className="lin-unknown" data-testid="lin-unknown">
           <label htmlFor="lin-unknown-check">
@@ -408,17 +390,11 @@ export function LineageStep(props: { source: LineageSource; ctx: LineageStepCont
               id="lin-unknown-check"
               type="checkbox"
               data-testid="lin-unknown-check"
-              checked={ctx.lineageUnknown && !unknownDisabled}
-              disabled={unknownDisabled}
+              checked={ctx.lineageUnknown}
               onChange={(e) => ctx.onLineageUnknownChange(e.target.checked)}
             />
             {LINEAGE_UNKNOWN_LABEL}
           </label>
-          {unknownDisabled && (
-            <p className="lin-unknown-why muted" data-testid="lin-unknown-why">
-              {LINEAGE_UNKNOWN_DISABLED_REASON}
-            </p>
-          )}
         </div>
       )}
     </section>

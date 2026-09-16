@@ -346,7 +346,7 @@ describe('rev2 등록 폼 — 원천 블록', () => {
     }
   });
 
-  it('연결이 1건 이상이면 블록이 사라지고 적어 둔 값이 전송되지 않는다', async () => {
+  it('기본 Lv0을 유지한 채 같은 단계 부모를 연결하면 원천 블록과 적어 둔 값을 유지한다', async () => {
     const { sources, calls } = fakes();
     const m = await openRegister(sources);
     await click(stepBtn('③'));
@@ -364,14 +364,39 @@ describe('rev2 등록 폼 — 원천 블록', () => {
       method: '절단',
       confirmedMethodText: null,
       picking: false,
-      parentLevel: 1,
+      parentLevel: 0,
     };
     await act(async () => {
       m.ctx().onParentsChange([parent]);
     });
-    expect(screen.queryByTestId('reg-source-block')).toBeNull();
-    expect(screen.queryByTestId('reg-source')).toBeNull();
+    expect(screen.getByTestId('reg-source-block')).toBeTruthy();
+    expect(screen.getByTestId('reg-source')).toHaveValue('ERA5 · 유럽중기예보센터');
 
+    await fillRequired();
+    await submit();
+    await waitFor(() => expect(calls.registered).toHaveLength(1));
+    const body = calls.registered[0] as Record<string, unknown>;
+    expect(body.sourceLabel).toBe('ERA5 · 유럽중기예보센터');
+    expect(body.sourceUrl).toBe('https://example.org/era5');
+  });
+
+  it('Lv1을 고른 뒤 유효한 부모를 연결하면 원천 블록이 사라지고 적어 둔 값이 전송되지 않는다', async () => {
+    const { sources, calls } = fakes();
+    const m = await openRegister(sources);
+    await click(stepBtn('①'));
+    await change(screen.getByTestId('reg-level'), 'Lv1');
+    await click(stepBtn('③'));
+    await change(screen.getByTestId('reg-source'), 'ERA5 · 유럽중기예보센터');
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await act(async () => {
+      m.ctx().onParentsChange([{
+        key: 'k2', parentDatasetId: '01JYZ9K7WQ3N8V4M2X6C5B0PA2',
+        parentDatasetName: 'Lv0 부모', confidence: null, rationale: null,
+        origin: 'manual', confirmed: true, method: '절단', confirmedMethodText: null,
+        picking: false, parentLevel: 0,
+      }]);
+    });
+    expect(screen.queryByTestId('reg-source-block')).toBeNull();
     await fillRequired();
     await submit();
     await waitFor(() => expect(calls.registered).toHaveLength(1));
