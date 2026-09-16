@@ -248,14 +248,20 @@ SEED_WORK_DIR="${COLAB_SEED_WORK_DIR:-$REPO_ROOT/dev-package/tools/dev-seed/.wor
 
 # Exact account profile is a required input; explicit identity overrides must match.
 ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
-ACCOUNT_IDENTITY_INVALID=0
-_profile_row="$(python3 "$RESEED_DIR/accounts.py" professor)" || ACCOUNT_IDENTITY_INVALID=1
+ACCOUNT_PROFILE_INVALID=0
+ACCOUNT_OVERRIDE_INVALID=0
+_profile_row="$(python3 "$RESEED_DIR/accounts.py" professor --profile "$ACCOUNTS_FILE")" || ACCOUNT_PROFILE_INVALID=1
 IFS=$'\t' read -r _profile_id _profile_email _profile_name _profile_role _profile_lab <<<"$_profile_row"
-for field in ID EMAIL NAME ROLE; do
-  var="RESEED_ACCOUNT_$field"; lower="_profile_$(printf '%s' "$field" | tr '[:upper:]' '[:lower:]')"
-  if [ -n "${!var:-}" ] && [ "${!var}" != "${!lower}" ]; then ACCOUNT_IDENTITY_INVALID=1; fi
-  printf -v "$var" '%s' "${!lower}"
+for value in "$_profile_id" "$_profile_email" "$_profile_name" "$_profile_role" "$_profile_lab"; do
+  [ -n "$value" ] || ACCOUNT_PROFILE_INVALID=1
 done
+if [ "$ACCOUNT_PROFILE_INVALID" = 0 ]; then
+  for field in ID EMAIL NAME ROLE; do
+    var="RESEED_ACCOUNT_$field"; lower="_profile_$(printf '%s' "$field" | tr '[:upper:]' '[:lower:]')"
+    if [ -n "${!var:-}" ] && [ "${!var}" != "${!lower}" ]; then ACCOUNT_OVERRIDE_INVALID=1; fi
+    printf -v "$var" '%s' "${!lower}"
+  done
+fi
 OPERATOR_PASSWORD_OVERRIDE="$OPERATOR_PASSWORD_FILE"
 OPERATOR_PASSWORD_FILE="$ACCOUNTS_WORK_DIR/initial-4.txt"
 
