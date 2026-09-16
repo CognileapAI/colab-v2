@@ -110,8 +110,8 @@ export const STEP_LABELS: Record<Step, string> = {
 };
 
 /** 카드 부제 두 줄 — rev2 `card-h .sub` 축자. */
-export const CLASSIFY_SUBTITLE = '목록 필터가 이 세 축을 그대로 받아요';
-export const METADATA_SUBTITLE = '파일에서 읽는 값은 확장자·용량뿐이에요';
+export const CLASSIFY_SUBTITLE = '어떤 자료인지 고르고, 가공 단계에 맞는 데이터를 연결해요.';
+export const METADATA_SUBTITLE = '확장자·용량을 확인하고 아래 정보를 입력해 주세요.';
 
 /**
  * PRD-40 · 판정 ⓐ — 종료 칸의 안내 한 줄. rev2 `prVe` 자리 문면 축자.
@@ -401,7 +401,7 @@ function StepMeta(props: {
         </span>
       </div>
       <div className="card-b">
-        <div className="fieldlbl">파일에서 자동으로 읽었어요</div>
+        <div className="fieldlbl">파일 정보</div>
         <div className="form-2" data-testid="reg-auto">
           {/* ⭑ 2026-09-02 · `#62` — 변수·기간·좌표계가 여기서 빠지고 아래 `사람이 적어요`
               로 내려갔다. 정본 `VAL-006` = 「변수·기간·좌표계는 자유 입력 · 선택 입력」이고
@@ -431,7 +431,6 @@ function StepMeta(props: {
           </p>
         )}
 
-        <div className="fieldlbl">사람이 적어요</div>
         <div className="form-row">
           {/* ⭑ ⟨개정 2026-09-14⟩ 이름은 종전부터 등록 게이트였고 표시만 없었다 —
               같은 배지로 그 사실을 화면에 적는다. */}
@@ -546,6 +545,7 @@ function StepMeta(props: {
               </span>
             </span>
           </button>
+          <p className="fieldnote">자료가 다루는 시작과 종료 시점이에요. 한 시점이면 종료는 비워 두세요.</p>
           {periodPopOpen && (
             <PeriodCalendarPopover
               granularity={props.granularity}
@@ -574,14 +574,14 @@ function StepMeta(props: {
           {/* ⭑ **⟨19차 해제 · PRD-17 · 미결-4 ⓐ⟩ 관측 간격.**
               숫자 한 칸 ＋ 단위 셀렉트로 받는다. **저장은 두 칸 구조화**이고(자유 텍스트로
               접으면 「1시간 이하」 같은 조건 검색이 영영 안 선다) 화면이 `10분` 을 조립한다.
-              **등록 게이트가 아니다** — 비운 채 만들기를 눌러도 등록된다. 반쪽 값은
-              서버가 400으로 거절하고 화면은 바로 아래에서 미리 알린다.
+              #78 승인으로 신규 등록에서 필수다. 2026-09-15 선택 입력 판정은 개정됐다.
+              숫자와 단위를 모두 받고 서버에서도 누락을 거절한다.
               ⭑ **⟨2026-09-14 · 레인 A4⟩ 자리는 짧은 값 한 줄의 첫 칸이다** ／ 종전 ~~제 행~~ —
                  rev2 목업이 기간 바로 아래 같은 줄에 좌표계·격자와 함께 둔다. */}
           <div className="form-row">
             <label htmlFor="reg-interval-value">
               관측 간격
-              <FieldTag />
+              <FieldTag required />
             </label>
             {/* 각색(이름만) — rev2 `.itv`. 수 칸이 늘고 단위 셀렉트가 고정 폭이다. */}
             <span className="itv">
@@ -591,7 +591,7 @@ function StepMeta(props: {
                 type="text"
                 inputMode="numeric"
                 data-testid="reg-interval-value"
-                placeholder="예: 10분 · 1시간 · 1일"
+                placeholder="예: 10"
                 value={props.intervalValue}
                 onChange={(e) => props.onIntervalValue(e.target.value)}
               />
@@ -614,9 +614,9 @@ function StepMeta(props: {
                 막지는 않는다(문구의 정본은 서버 봉투다 · WU-A4 가 세운 규율 그대로). */}
             {half ? (
               <p className="warn" data-testid="reg-interval-half">
-                숫자와 단위를 함께 적어 주세요
+                숫자를 입력하고 단위를 선택해주세요
               </p>
-            ) : null}
+            ) : <p className="fieldnote">숫자를 입력하고 단위를 선택해주세요</p>}
           </div>
           <div className="form-row">
             <label htmlFor="reg-crs">
@@ -627,7 +627,7 @@ function StepMeta(props: {
               id="reg-crs"
               className="inp"
               data-testid="reg-crs"
-              placeholder="EPSG:5179"
+              placeholder="예: EPSG:5179"
               value={props.crs}
               onChange={(e) => props.onCrs(e.target.value)}
             />
@@ -713,6 +713,7 @@ function StepMeta(props: {
         <div className="fieldlbl" data-testid="reg-variables-label">
           변수 <span className="muted">{VARIABLES_FIELD_HINT}</span>
         </div>
+        <p className="fieldnote">변수마다 단위·값 범위·결측률을 적고, 자료를 대표할 변수 하나를 골라요.</p>
         <VariableTable
           rows={props.variables}
           onRows={props.onVariables}
@@ -1034,8 +1035,9 @@ function StepThree(props: {
             <div className="fieldlbl" data-testid="reg-source-block-title">
               {SOURCE_BLOCK_TITLE}
             </div>
+            <p className="fieldnote">연구실의 가공 전 데이터는 위에서 연결하고, 연구실 밖 출처는 아래에 적어요.</p>
             <div className="form-row">
-              <label htmlFor="reg-source">출처 이름</label>
+              <label htmlFor="reg-source">출처 이름<FieldTag /></label>
               <input
                 id="reg-source"
                 className="inp"
@@ -1047,10 +1049,10 @@ function StepThree(props: {
               />
             </div>
             <div className="form-row">
-              {/* 출처 주소는 Lv와 무관하게 선택 입력이다. */}
+              {/* #78: 신규 등록의 Lv0 출처 주소는 필수다. */}
               <label htmlFor="reg-source-url">
                 출처 주소
-                <FieldTag />
+                <FieldTag required={lv0} />
               </label>
               <input
                 id="reg-source-url"
@@ -1070,7 +1072,7 @@ function StepThree(props: {
                   <div className="form-row">
                     <label htmlFor="reg-source-downloaded-on">
                       내려받은 날
-                      <FieldTag />
+                      <FieldTag required />
                     </label>
                     <input
                       id="reg-source-downloaded-on"

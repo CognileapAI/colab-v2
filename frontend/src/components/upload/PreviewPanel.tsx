@@ -78,13 +78,6 @@ export function PreviewPanel(props: {
   hasReferenceGrid: boolean;
   /** 격자 업로드 흐름. 없으면 블록을 열지 않는다 — 화면이 사라지는 것이 아니라 안 열린다. */
   grid?: GridFlowProps | undefined;
-  /**
-   * 그리기를 **시작한 사실**을 바깥(S-04 모달)에 알린다.
-   * 「보기만 할게요」로 S-08 에 갈 때 그 화면이 **다시 그리지 않고 이어서 보게** 하려면
-   * `renderId` 가 모달 손에 있어야 한다 (정본 §8.1 미리보기 — 「그대로 이어서 보여준다」).
-   * 짝 파일 없이 그렸는지도 **여기서만 아는 사실**이라 함께 넘긴다.
-   */
-  onRender?: ((info: { renderId: string; withoutReferenceGrid: boolean }) => void) | undefined;
   onResult?: ((result: RenderResult) => void) | undefined;
   /** 대표 그림 실제 파일은 등록 수명과 함께 모달이 쥔다. */
   representativeFile?: File | null | undefined;
@@ -233,7 +226,6 @@ export function PreviewPanel(props: {
       setRequesting(false);
       if (piece) setFallbackPiece(piece);
       setJob(started);
-      props.onRender?.({ renderId: started.renderId, withoutReferenceGrid });
       poll(started.renderId, gen);
     } catch {
       if (pollGen.current !== gen) return;

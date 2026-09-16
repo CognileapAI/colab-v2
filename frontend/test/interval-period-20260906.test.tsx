@@ -2,8 +2,8 @@
 //
 // 오라클 세 줄 (라운드 파일 §5 WU-A6 축자)
 //   ⑴ 단위 `분` 을 고르면 **연·월·일·시·분 다섯 칸**이 Start/End 각각 열린다 (PRD-18)
-//   ⑵ 관측 간격은 숫자 한 칸 ＋ 단위 셀렉트이고 **비운 채 등록해도 막지 않는다** (PRD-17)
-//      값을 제공하면 두 칸 구조로 보내며, 반쪽 값의 오류 판단은 서버 계약이 맡는다.
+//   ⑵ #78 승인으로 신규 등록은 관측 간격 숫자와 단위가 모두 필요하다.
+//      누락·반쪽 값은 화면에서 막고, 완성한 값은 두 칸 구조로 보낸다.
 //   ⑶ 기간 뒤 괄호는 **한 함수**가 조립하고 상세·목록·등록 미리보기가 그것을 쓴다 (PRD-35)
 //      — 간격이 비면 **빈 괄호가 없다**
 //
@@ -156,6 +156,8 @@ async function submitRegister(opts: { period?: boolean; interval?: boolean } = {
   }
   // ⭑ ⟨WU-B3⟩ ② 에서 ③ 까지는 한 걸음이다 — 프로젝트 카드가 ③ 안으로 들어왔다.
   await click(screen.getByTestId('reg-next'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
   await click(screen.getByTestId('reg-done'));
 }
 
@@ -286,12 +288,12 @@ describe('WU-A6 · PRD-18 — 조립', () => {
 });
 
 // ═══════════════════ PRD-17 · 관측 간격 입력 ════════════════════════════════
-describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
-  it('숫자 칸의 placeholder 가 rev1 축자다', async () => {
+describe('WU-A6 · PRD-17 — 관측 간격은 신규 등록 필수 입력이다', () => {
+  it('숫자 칸에는 숫자만 예시로 안내한다', async () => {
     await openRegister();
     expect(screen.getByTestId('reg-interval-value')).toHaveAttribute(
       'placeholder',
-      '예: 10분 · 1시간 · 1일',
+      '예: 10',
     );
   });
 
@@ -311,19 +313,20 @@ describe('WU-A6 · PRD-17 — 관측 간격은 선택 입력이다', () => {
     expect(sent?.observationInterval).toEqual({ value: 10, unit: '분' });
   });
 
-  it('비운 채 등록하면 막지 않고 요청 열쇠도 싣지 않는다', async () => {
+  it('비운 채 등록하면 요청을 보내지 않는다', async () => {
     await openRegister();
     await submitRegister({ interval: false });
-    expect(sent).not.toBeNull();
-    expect(sent).not.toHaveProperty('observationInterval');
+    expect(sent).toBeNull();
+    expect(screen.getByTestId('reg-interval-value')).toHaveFocus();
   });
 
-  it('반쪽이면 인라인 경고를 보이고 서버가 판정할 계약 형상으로 보낸다', async () => {
+  it('반쪽이면 인라인 경고를 보이고 요청을 보내지 않는다', async () => {
     await openRegister();
     await change(screen.getByTestId('reg-interval-value'), '10');
     expect(screen.getByTestId('reg-interval-half')).toBeInTheDocument();
     await submitRegister({ interval: false });
-    expect(sent?.observationInterval).toEqual({ value: 10, unit: null });
+    expect(sent).toBeNull();
+    expect(screen.getByTestId('reg-interval-unit')).toHaveFocus();
   });
 });
 

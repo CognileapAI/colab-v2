@@ -5,7 +5,7 @@
   PRD-17 · 관측 간격 (`M-6` · `d3_dataset_description` 두 칸)
     ⑴ 단위 `분` ＋ `10` 저장 후 재조회 → `value=10` · `unit='분'`
     ⑵ 숫자만 채우고 단위를 비우면 `createDataset` **400** (반쪽이 저장되지 않는다)
-    ⑶ 값을 비운 채 등록하면 **성공** — 선택 항목이고 ⛔ 등록 게이트가 아니다
+    ⑶ 값을 비우거나 열쇠를 생략하면 **400** — 신규 등록 필수다
     ⑷ 기존 행(= 안 적은 행)은 `observationInterval: null` 이고 상세가 **200** 이다
 
   PRD-18 · 기간의 최소 단위 (`M-7` · `d3_dataset_autometa` 한 칸)
@@ -76,33 +76,48 @@ def test_non_positive_interval_is_rejected_with_400(p2_client) -> None:
         assert r.status_code == 400, (value, r.text)
 
 
-def test_registering_without_interval_succeeds(p2_client) -> None:
-    """⑶ **선택 항목이다** — 비운 채 등록하면 성공하고 `null` 로 내려온다.
-
-    ⛔ 관측 간격을 등록 게이트에 올리지 않는다 (PRD-17 축자 · 미결-4 ⓐ).
-    """
+def test_registering_with_null_interval_is_rejected_without_side_effects(p2_client, sql) -> None:
+    """⑶ 신규 등록에서 `null` 은 400이고 업로드 전환·D3 저장도 일어나지 않는다."""
     client = p2_client()
-    r = _register(client)
-    assert r.status_code == 201, r.text
-    basic = _read(client, r.json()["datasetId"])["basicInfo"]
-    assert basic["observationInterval"] is None, basic
+    receipt = make_upload(client)
+    before = sql("SELECT count(*) AS n FROM d3_dataset")[0]["n"]
+    r = register(client, receipt, observationInterval=None)
+    assert r.status_code == 400, r.text
+    assert sql("SELECT count(*) AS n FROM d3_dataset")[0]["n"] == before
+    assert sql("SELECT registered_at FROM d5_upload WHERE id = :u",
+               {"u": receipt["uploadId"]})[0]["registered_at"] is None
 
 
-def test_empty_interval_object_is_treated_as_not_written(p2_client) -> None:
-    """폼 기본값(`{value: null, unit: null}`)이 그대로 실려 와도 **등록은 성공**한다.
+def test_empty_interval_object_is_rejected(p2_client) -> None:
+    """폼 기본값(`{value: null, unit: null}`)도 사람이 입력한 관측 간격이 아니므로 400이다."""
+    r = _register(p2_client(), observationInterval={"value": None, "unit": None})
+    assert r.status_code == 400, r.text
 
-    「폼 기본값 통과 ≠ 사람이 적었다」 — 두 칸이 다 비면 안 적은 것이다.
-    """
+
+def test_missing_interval_key_is_rejected(p2_client) -> None:
+    """정상 fixture의 기본값에 가려지지 않게 실제 열쇠 누락 요청을 보낸다."""
     client = p2_client()
-    r = _register(client, observationInterval={"value": None, "unit": None})
-    assert r.status_code == 201, r.text
-    assert _read(client, r.json()["datasetId"])["basicInfo"]["observationInterval"] is None
+    receipt = make_upload(client)
+    r = client.post(
+        f"{API_PREFIX}/datasets",
+        json={"uploadId": receipt["uploadId"], "name": "간격 누락", "summary": "시험",
+              "category": "기상·기후 인자", "dataType": "재분석자료"},
+        headers=auth(TOKEN_RES),
+    )
+    assert r.status_code == 400, r.text
 
 
 def test_existing_row_without_interval_reads_200(p2_client) -> None:
     """⑷ 안 적은 행의 상세는 **200 이고 `null`** 이다 — 화면이 안 깨지고 재선택도 없다."""
     client = p2_client()
     dataset_id = _register(client).json()["datasetId"]
+    cleared = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                           json={"observationInterval": None}, headers=auth(TOKEN_RES))
+    assert cleared.status_code == 200, cleared.text
+    edited = client.patch(f"{API_PREFIX}/datasets/{dataset_id}",
+                          json={"name": "기존 간격 없는 자료", "summary": "설명만 수정"},
+                          headers=auth(TOKEN_RES))
+    assert edited.status_code == 200, edited.text
     detail = _read(client, dataset_id)
     assert detail["basicInfo"]["observationInterval"] is None
     # 열쇠 자체는 **있다** — 계약 `required` 라, 없으면 화면이 undefined 를 그린다.

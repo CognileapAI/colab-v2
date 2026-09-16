@@ -249,6 +249,8 @@ async function submitRegister(opts: { period?: boolean } = {}) {
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
   await click(screen.getByTestId('reg-next'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
   await click(screen.getByTestId('reg-done'));
 }
 

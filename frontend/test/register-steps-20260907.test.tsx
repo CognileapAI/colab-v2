@@ -195,6 +195,10 @@ async function fillRegisterGates() {
   await click(screen.getByTestId('reg-period-apply'));
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  await click(stepBtn('②'));
 }
 
 // ═══ 요구 본체 ①~⑥ — 단계 구성과 이동 규칙 (PRD-12 · rev1 UI-003 · PRD-13) ═══
@@ -373,15 +377,15 @@ describe('PRD-04 · PRD-33 값 안내', () => {
     expect(bilingual(DATA_TYPES[2]!)).toBe('재분석자료 (Reanalysis Data)');
   });
 
-  it('카드 부제 두 줄이 rev1 축자다', async () => {
+  it('카드 부제가 분류와 입력할 내용을 안내한다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     expect(screen.getByTestId('reg-s1-sub').textContent).toBe(
-      '목록 필터가 이 세 축을 그대로 받아요',
+      '어떤 자료인지 고르고, 가공 단계에 맞는 데이터를 연결해요.',
     );
     await click(stepBtn('②'));
     expect(screen.getByTestId('reg-s2-sub').textContent).toBe(
-      '파일에서 읽는 값은 확장자·용량뿐이에요',
+      '확장자·용량을 확인하고 아래 정보를 입력해 주세요.',
     );
   });
 
@@ -608,6 +612,10 @@ describe('㈒ PRD-40 종료 비움', () => {
     // ⭑ ⟨개정 2026-09-14⟩ 관측 간격도 등록 게이트다 — 여기서 재는 것은 기간뿐이라 채워 둔다.
     await change(screen.getByTestId('reg-interval-value'), '1');
     await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+  await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  await click(stepBtn('②'));
     await click(stepBtn('③'));
     await click(screen.getByTestId('reg-done'));
     expect(calls.registered).toHaveLength(1);

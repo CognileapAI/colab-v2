@@ -224,7 +224,7 @@ async function submitRegister() {
 
 // ═══════════ 수용 기준 ㈎㈏ — 표시·숨김과 `선택` 표기 ═══════════
 describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
-  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`선택` 배지**가 붙는다', async () => {
+  it('㈎ ① 에서 Lv0 을 고르면 ③ 에 두 칸이 보이고 **`필수` 배지**가 붙는다', async () => {
     const { sources } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
@@ -240,11 +240,12 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
     expect(LV0_SOURCE_URL_PLACEHOLDER).toBe('예: https://cds.climate.copernicus.eu/...');
     expect(LV0_SOURCE_DATE_PLACEHOLDER).toBe('예: 2026-08-20');
 
-    expect(source.querySelectorAll('.opttag')).toHaveLength(2);
+    expect(source.querySelectorAll('.reqtag')).toHaveLength(2);
+    expect(source.querySelectorAll('.opttag')).toHaveLength(1);
     for (const id of ['reg-source-url', 'reg-source-downloaded-on']) {
       const label = document.querySelector(`label[for="${id}"]`) as HTMLElement | null;
       expect(label).toBeTruthy();
-      expect(within(label!).getByText('선택')).toBeInTheDocument();
+      expect(within(label!).getByText('필수')).toBeInTheDocument();
     }
     // ⛔ 괄호 문구는 남지 않는다 — 표시는 배지 하나다.
     expect(source.textContent).not.toContain('(선택)');
@@ -299,16 +300,14 @@ describe('WU-B6 · PRD-19 등록 ③ Lv0 출처 블록', () => {
 
 // ═══════════ 수용 기준 ㈐㈑㈒ — 무엇이 전송되는가 ═══════════
 describe('WU-B6 · PRD-19 전송 규율', () => {
-  it('㈐ Lv0 이고 두 칸이 비어도 등록되고 선택 필드는 요청에서 빠진다', async () => {
+  it('㈐ Lv0 출처 두 칸이 비면 등록 요청을 보내지 않는다', async () => {
     const { sources, calls } = fakes();
     await openRegister(sources);
     await pickLevel(LV0);
     await submitRegister();
 
-    expect(calls.registered).toHaveLength(1);
-    const body = calls.registered[0] as Record<string, unknown>;
-    expect('sourceUrl' in body).toBe(false);
-    expect('sourceDownloadedOn' in body).toBe(false);
+    expect(calls.registered).toHaveLength(0);
+    expect(screen.getByTestId('reg-source-url')).toHaveFocus();
   });
 
   it('㈐-b Lv0 에서 두 칸을 채우면 그 값이 그대로 실린다', async () => {
@@ -454,7 +453,7 @@ describe('WU-B6 · PRD-19 수정 폼 — 안내가 실행 가능한가', () => {
     const day = TEXT_FIELDS.find((f) => f.key === 'sourceDownloadedOn');
     expect(url?.label).toBe('출처 주소');
     expect(day?.label).toBe('내려받은 날');
-    // ⛔ 두 칸은 선택 입력이다 — 목업 필수 배지를 채택하지 않는다.
+    // #78 신규 등록 필수화와 별개로 기존 데이터 수정의 선택 규칙은 유지한다.
     expect(url?.required).toBeFalsy();
     expect(day?.required).toBeFalsy();
   });

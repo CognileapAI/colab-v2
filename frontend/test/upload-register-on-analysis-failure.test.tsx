@@ -235,6 +235,8 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
         await change(screen.getByTestId('reg-period-pop-start-month'), '06');
         await change(screen.getByTestId('reg-period-pop-start-day'), '01');
         await click(screen.getByTestId('reg-period-apply'));
+        await change(screen.getByTestId('reg-interval-value'), '1');
+        await change(screen.getByTestId('reg-interval-unit'), '시');
       }
       // 바닥 안내가 「분석이 끝나면…」이면 화면이 아직 분석 중이라 말하는 것이다.
       expect(screen.getByTestId('reg-foot-hint').textContent).not.toBe(NEXT_BLOCKED_HINT);
@@ -249,6 +251,8 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
     expect(screen.getByTestId('reg-foot-hint').textContent).not.toBe(NEXT_BLOCKED_HINT);
     const done = screen.getByTestId('reg-done') as HTMLButtonElement;
     expect(done.disabled).toBe(false);
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/data');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
     await click(done);
 
     // 생성 요청이 실제로 나갔다. 사람이 필수로 적은 기간은 실리고, 분석 산출물은 실리지 않는다.
@@ -259,7 +263,8 @@ describe('`#40` — 분석 실패해도 등록 단계를 끝까지 걷는다', (
     expect(body.period).toEqual({
       start: '2025-06-01T00:00:00Z', end: '2025-06-01T00:00:00Z', granularity: '일',
     });
-    for (const key of ['variables', 'crs', 'observationInterval']) {
+    expect(body.observationInterval).toEqual({ value: 1, unit: '시' });
+    for (const key of ['variables', 'crs']) {
       expect(key in body).toBe(false);
     }
   });

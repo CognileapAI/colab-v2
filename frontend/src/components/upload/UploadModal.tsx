@@ -25,6 +25,8 @@ import {
   analyzeElapsed,
   FILE_REMOVED_NOTICE,
   isValidSourceDownloadedOnShape,
+  REGISTER_INTERVAL_REQUIRED,
+  REGISTER_LV0_SOURCE_REQUIRED,
   REGISTER_NAME_REQUIRED,
   REGISTER_PERIOD_REQUIRED,
   REGISTER_SUMMARY_REQUIRED,
@@ -52,7 +54,6 @@ import {
   type VariableRow,
 } from '../common/VariableTable';
 import { EMPTY_PARTS, assemble, type PeriodParts } from './periodParts';
-import { previewNavigation } from '../preview/handoff';
 import { durationMedian, recordDuration } from '../preview/durationSamples';
 import { forgetPending, rememberPending } from './pendingStore';
 import { RepresentativeImageUploadError } from './uploadSource';
@@ -302,13 +303,9 @@ export function UploadModal(props: {
 
   function editRegistration(action: () => void) {
     if (submitLock.current || committedDatasetIdRef.current) return;
+    setRegisterError(null);
     action();
   }
-  // S-08 로 넘길 짐 중 **이 모달만 아는 것** — 어느 렌더를 이어 보게 할지와, 짝 파일 없이 그렸는지.
-  const [rendered, setRendered] = useState<{
-    renderId: string;
-    withoutReferenceGrid: boolean;
-  } | null>(null);
   // 미완결 프리사인드 전송 (〈338〉) — 저장 모드 s3 에서만 값이 온다 (local 은 빈 배열)
   const [incomplete, setIncomplete] = useState<IncompleteTransferItem[]>([]);
   // 재개 대상: 표시용 상태 + 접수 effect 가 읽는 ref. **성공 시에만 비운다** — 상태를
@@ -454,7 +451,6 @@ export function UploadModal(props: {
     earlyBounds.current = null;
     convergenceReported.current = false;
     setStatus(null);
-    setRendered(null);
     setIntakeError(null);
     // ⚠ **실패로 무장한 재개는 파일이 바뀌면 버린다.** 안 버리면 파일을 바꿔 다시 하려는
     //    사람에게 「이어올리려면 같은 파일을 다시 골라야 해요」가 뜬다 — 그는 바꾸려던 것이다.
@@ -686,8 +682,6 @@ export function UploadModal(props: {
   const gridRejection = status?.gridRejections?.[0] ?? null;
   const bodyName =
     picked.find((p) => p.kind === '본체')?.file.name ?? picked[0]?.file.name ?? '';
-  // 헤더에서 읽은 값 중 FE 표면이 실제로 실어 주는 것은 `byteSize` 하나다 (`preview/types.ts`)
-  const bodyByteSize = (status?.files.find((f) => f.kind === '본체') ?? status?.files[0])?.byteSize;
 
   /**
    * **사람이 입력한 값이 하나라도 있나** — 종료 확인의 판정식이다 (WU-A9 · PRD-14 · 미결-15 ⓐ).
@@ -879,7 +873,6 @@ export function UploadModal(props: {
     setStep(1);
     setRegisterError(null);
     setIntakeError(null);
-    setRendered(null);
     setGridSkipped(false);
     setRepresentativeFile(null);
     setRepresentativeRetryBlocked(false);
@@ -933,30 +926,6 @@ export function UploadModal(props: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultKind, picked]);
-
-  /**
-   * 「보기만 할게요」 — **등록하지 않겠다는 선택**이고, 정본 §7.2 전이표가 이 선택의 도착지를
-   * `미등록 파일 미리보기(S-08)` 로 못 박았다. 모달만 닫으면 파일이 그냥 버려져 그 전이가
-   * 제품에 없는 것이 된다(Ted 2026-08-28 완료 정의 ①). 여기서 만드는 사실은 **없다** —
-   * `createDataset` 을 부르지 않고, 이미 접수된 업로드의 주소로 이동할 뿐이다.
-   */
-  function viewOnly() {
-    if (!uploadId) {
-      // 접수가 아직/못 됐으면 보낼 주소가 없다. **주소를 지어내지 않는다** — 닫기만 한다.
-      props.onClose();
-      return;
-    }
-    const nav = previewNavigation({
-      uploadId,
-      ...(rendered ? { renderId: rendered.renderId } : {}),
-      ...(rendered ? { withoutReferenceGrid: rendered.withoutReferenceGrid } : {}),
-      // 헤더에서 읽은 값만 넘긴다 — 사람이 붙인 이름·주제는 등록 전이라 자리 자체가 없다
-      basicInfo: { ...(bodyByteSize !== undefined ? { byteSize: bodyByteSize } : {}) },
-      files: status?.files ?? [],
-    });
-    props.onClose();
-    navigate(nav.to, { state: nav.state });
-  }
 
   function requestClose() {
     // 생성 전에는 사람이 적거나 확인한 것이 있을 때만 묻는다(WU-A9 · PRD-14).
@@ -1055,16 +1024,6 @@ export function UploadModal(props: {
         end: assembled.end || assembled.start,
         // `''` 은 「미지정」이고 계약은 그것을 `null` 로 말한다 — 빈 문자열을 보내지 않는다.
         granularity: granularity || null,
-      };
-    }
-    // ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 두 칸이 **다 차야** 싣는다.**
-    // 반쪽이면 아예 안 실어 보내는 것이 아니라 **그대로 보내 서버 400 을 받는다** —
-    // 화면이 조용히 버리면 사용자는 적었다고 믿고 떠난다(문구의 정본은 서버 봉투다).
-    const rawInterval = intervalValue.trim();
-    if (rawInterval || intervalUnit) {
-      out.observationInterval = {
-        value: rawInterval ? Number(rawInterval) : null,
-        unit: intervalUnit || null,
       };
     }
     // ⭑ **⟨WU-B3 · PRD-01·02·03⟩ 세 축은 늘 실린다.** 계약 `required` 가 앞의 둘을
@@ -1170,12 +1129,24 @@ export function UploadModal(props: {
       window.setTimeout(() => document.getElementById('reg-period-open')?.focus(), 0);
       return;
     }
-    // 관측 간격과 Lv0 출처 두 칸은 선택 입력이다. 비어 있으면 요청에서 빠지고,
-    // 반쪽 관측 간격과 제공된 날짜의 형상 오류만 아래 조립·검증 경로에서 거절된다.
-    // ⭑ ⟨advisor ② F1 · WU-B6⟩ 형상 오류는 여기서 막는다 — 서버 400 이 화면에 닿지 않고
-    //   일반 실패 문구(`catch`)로 덮이던 자리다(재시도로 해소되지 않는 원인을 재시도하라는
-    //   안내가 되므로 사용자를 막다른 길로 보낸다). 값이 있고(칸이 비었으면 선택이라 넘어간다)
-    //   형상이 틀렸을 때만 막는다 — `humanMetadata()` 와 같은 조건(`level === LV0`)이다.
+    // #78: 신규 등록은 관측 간격과 Lv0 출처를 필수로 받는다. 기존 데이터 수정에는 적용하지 않는다.
+    if (!intervalValue.trim() || !intervalUnit) {
+      setStep(2);
+      setRegisterError(REGISTER_INTERVAL_REQUIRED);
+      setRegisterToast(REGISTER_INTERVAL_REQUIRED);
+      window.setTimeout(() => document.querySelector<HTMLElement>(intervalValue.trim()
+        ? '[data-testid="reg-interval-unit"]' : '#reg-interval-value')?.focus(), 0);
+      return;
+    }
+    if (level === LV0 && (!sourceUrl.trim() || !sourceDownloadedOn.trim())) {
+      setStep(3);
+      setRegisterError(REGISTER_LV0_SOURCE_REQUIRED);
+      setRegisterToast(REGISTER_LV0_SOURCE_REQUIRED);
+      window.setTimeout(() => document.getElementById(sourceUrl.trim()
+        ? 'reg-source-downloaded-on' : 'reg-source-url')?.focus(), 0);
+      return;
+    }
+    // 제공된 날짜는 기존 형식 검사로 거절하고 칸 옆에 원인을 표시한다.
     if (
       level === LV0 &&
       sourceDownloadedOn.trim() &&
@@ -1223,6 +1194,7 @@ export function UploadModal(props: {
         // **빈 칸은 싣지 않는다** — 폼 기본값이 지나간 것을 「사람이 적었다」로 저장하면
         // 파이프라인이 나중에 채울 자리가 영영 막힌다 (서버 `_human_metadata` 와 같은 규율).
         ...humanMetadata(),
+        observationInterval: { value: Number(intervalValue.trim()), unit: intervalUnit },
       });
       if (lifecycle !== mutationLifecycle.current) return;
       // 데이터셋은 이 시점에 이미 생겼다. 뒤의 그림 PUT이 실패해도 같은 ID를 재사용한다.
@@ -1505,7 +1477,6 @@ export function UploadModal(props: {
                 renderable={status?.ready ? status.renderable ?? undefined : undefined}
                 uploadId={previewUploadId}
                 hasReferenceGrid={hasReferenceGrid}
-                onRender={setRendered}
                 onResult={onPreviewResult}
                 representativeFile={representativeFile}
                 representativeOnly={Boolean(createdDatasetId)}
@@ -1595,7 +1566,7 @@ export function UploadModal(props: {
                 </p>
               ) : null}
 
-              {/* 등록 결정 게이트 — 미리보기 아래 **상시**. 등록이 의무가 아님이 화면에서 읽힌다 */}
+              {/* #79: 보기 전용 선택은 제거하고 기존 등록 진입을 유지한다 */}
               {!attach && !registerOpen ? (
               <div className="reggate" data-testid="reg-gate">
                 <div>
@@ -1610,18 +1581,6 @@ export function UploadModal(props: {
                   ) : null}
                 </div>
                 <div className="rg-a">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    data-testid="reg-viewonly"
-                    // **등록하지 않겠다는 선택**이다 — 여기서 `submit()` 을 부르면 등록을
-                    // 거절한 사람에게 데이터셋이 생긴다. `submit()` 이 `onClose()` 도 부르는 탓에
-                    // 모달이 정상으로 닫혀 눈에 안 띄었다 (`S1-PLAN §5.2` — `S1-fe` 가 닫는다).
-                    // 모달을 닫고 **S-08 로 보낸다** — 정본 §7.2 전이표의 도착지다.
-                    onClick={viewOnly}
-                  >
-                    보기만 할게요
-                  </button>
                   <button
                     type="button"
                     className="btn btn-strong"
