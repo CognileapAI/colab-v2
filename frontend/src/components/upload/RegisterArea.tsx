@@ -754,7 +754,7 @@ function StepMeta(props: {
           {/* 고른 값의 **범위**를 한 줄로 적는다 — `지정한 사람만` 은 허용 목록 0건으로
               시작해 사실상 `나만 보기` 와 같다는 사실이 여기서 드러난다(PRD-11 ⚠). */}
           <p className="fieldnote" data-testid="reg-visibility-note">
-            {props.accessState === null ? LAB_DEFAULT_NOTE : ACCESS_NOTE[props.accessState]}
+            {props.accessState === null ? LAB_DEFAULT_NOTE : ACCESS_NOTE[props.accessState]} 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.
           </p>
         </div>
       </div>

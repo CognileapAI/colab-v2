@@ -101,7 +101,7 @@ describe('D-1 — 「전체 연구실 (읽기 전용)」은 누를 수 없는 �
     renderGnb(fullAccount());
     const chip = screen.getByTestId('lab-switcher');
     expect(chip).toHaveTextContent('전체 연구실');
-    expect(chip.querySelector('.ln-ro')).toHaveTextContent('읽기 전용');
+    expect(chip.querySelector('.ln-ro')).toBeNull();
   });
 });
 

@@ -27,6 +27,7 @@
 //  · **스크린샷** — 중계 op `createPreviewScreenshot`(11차 동결 해제 `〈231〉`)에 닿는다.
 //    정본 `§6` 이 **편집 권한자 컨트롤**로 두므로 보기 전용에는 자리째 없다(`§3.2`).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PreviewRequestRejected } from '../preview/requestError';
 import { PermissionGate } from '../../permission/PermissionGate';
 import { CLASS_COUNTS } from '../preview/PreviewControls';
 import {
@@ -78,6 +79,7 @@ type StartState =
 
 export function DatasetPreviewSection(props: {
   datasetId: string;
+  targetLabId?: string | undefined;
   source?: DatasetPreviewSource | undefined;
   pollMs?: number | undefined;
   /**
@@ -96,8 +98,8 @@ export function DatasetPreviewSection(props: {
   gridResolution?: string | null | undefined;
 }) {
   const source = useMemo(
-    () => props.source ?? apiDatasetPreviewSource(props.datasetId),
-    [props.source, props.datasetId],
+    () => props.source ?? apiDatasetPreviewSource(props.datasetId, props.targetLabId),
+    [props.source, props.datasetId, props.targetLabId],
   );
   const [start, setStart] = useState<StartState>({ phase: '고르는 중' });
   const [palettes, setPalettes] = useState<PaletteOption[]>([]);
@@ -111,6 +113,9 @@ export function DatasetPreviewSection(props: {
     undefined,
   );
   // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영). 선택만 바꿀 때는 그리지 않는다.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [describing, setDescribing] = useState(false);
   const [pieces, setPieces] = useState<PreviewPiece[]>([]);
   const [selectionOwner, setSelectionOwner] = useState({ source, datasetId: props.datasetId });
   const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
@@ -121,7 +126,7 @@ export function DatasetPreviewSection(props: {
   // 파일 후보는 같은 상세 화면 안에서 한 번만 조회한다.
   const loadFiles = useMemo(
     () => (source.files ? onceFiles(() => source.files!()) : undefined),
-    [source],
+    [source, loadAttempt],
   );
 
   useEffect(() => {
@@ -150,8 +155,8 @@ export function DatasetPreviewSection(props: {
           if (renderablePieces(list).length === 0)
             setStart({ phase: '그릴 수 없음', message: '미리보기를 지원하는 파일이 없어요.', renderableFormats: [] });
         }
-      } catch {
-        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 보기·다운로드는 그대로다. */
+      } catch (e) {
+        if (alive) setLoadError(e instanceof Error ? e.message : '파일 목록을 불러오지 못했어요.');
       }
     })();
     return () => {
@@ -168,12 +173,14 @@ export function DatasetPreviewSection(props: {
     }
     let alive = true;
     setDescription(undefined);
+    setLoadError(null);
+    setDescribing(true);
     setPick((current) => ({ fileId: current.fileId ?? selectedFileId }));
     void source.describe?.(selectedFileId).then((desc) => {
-      if (alive) setDescription(desc);
-    }).catch(() => undefined);
+      if (alive) { setDescription(desc); setDescribing(false); }
+    }).catch((e) => { if (alive) { setDescribing(false); setLoadError(e instanceof Error ? e.message : '변수·시각을 불러오지 못했어요.'); } });
     return () => { alive = false; };
-  }, [source, selectedFileId]);
+  }, [source, selectedFileId, loadAttempt]);
 
   useEffect(() => {
     if (!props.datasetId) return;
@@ -211,7 +218,7 @@ export function DatasetPreviewSection(props: {
     return () => {
       alive = false;
     };
-  }, [source, props.datasetId]);
+  }, [source, props.datasetId, loadAttempt]);
 
   const drawing = start.phase === '시작하는 중' || start.phase === '결과 불명' || (start.phase === '시작함' && startedSlot === 'drawing');
   const draw = useCallback(() => {
@@ -239,6 +246,7 @@ export function DatasetPreviewSection(props: {
       if (requestGeneration.current !== generation) return;
       if (e instanceof NotRenderableError) setStart({ phase: '그릴 수 없음', message: e.message, renderableFormats: e.renderableFormats });
       else if (e instanceof PreviewGone) setStart({ phase: '만들 수 없음', message: UNAVAILABLE_MESSAGE });
+      else if (e instanceof PreviewRequestRejected) setStart({ phase: '만들 수 없음', message: e.message });
       else setStart({ phase: '결과 불명', message: '요청 결과를 확인할 수 없어요. 다시 실행하기 전에 작업 상태를 확인해 주세요.' });
     });
   }, [drawing, selectedFileId, description, palettes, chosenPalette, pick, source, props.datasetId, classCount]);
@@ -328,7 +336,9 @@ export function DatasetPreviewSection(props: {
            ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 업로드 화면과 **같은 이음매**(`PreviewSlot` 의 `controls`)로
               올렸다. `.dt-preview` 에는 CSS 규칙이 없어 이 화면의 줄 간격을 줄 주체가 없으므로,
               여백은 이음매가 만드는 컨테이너가 gap 으로 갖는다(spec v2 §5-2). */
-        controls={<><PreviewPickRow
+        controls={<>{describing ? <p role="status">변수·시각을 불러오는 중이에요…</p> : null}
+        {loadError ? <div role="alert"><p>{loadError}</p><button type="button" className="btn" onClick={() => { setLoadError(null); setLoadAttempt(n => n + 1); }}>다시 불러오기</button></div> : null}
+        <PreviewPickRow
           idPrefix="dt"
           pieces={pieces}
           description={description}
@@ -356,7 +366,7 @@ export function DatasetPreviewSection(props: {
         /></div>
       ) : null}
 
-      {start.phase === '만들 수 없음' ? <UnavailableNotice message={start.message} /> : null}
+      {start.phase === '만들 수 없음' ? <><UnavailableNotice message={start.message} /><button type="button" className="btn" onClick={() => { setStart({ phase: '고르는 중' }); setLoadAttempt(n => n + 1); }}>다시 불러오기</button></> : null}
       {start.phase === '결과 불명' ? <UnavailableNotice message={start.message} /> : null}
 
       {/* **렌더가 시작된 뒤에야 마운트한다.** `usePreviewRender` 는 `renderId` 를 마운트 시점에

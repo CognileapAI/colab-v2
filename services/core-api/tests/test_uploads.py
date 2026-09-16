@@ -40,7 +40,7 @@ def test_create_upload_issues_upload_id_and_file_id(p2_client) -> None:
     r = _upload(client, files=one_body())
     assert r.status_code == 201, r.text
     body = r.json()
-    assert set(body) == {"uploadId", "files"}
+    assert set(body) == {"uploadId", "labId", "files"}
     assert len(body["uploadId"]) == 26
     assert len(body["files"]) == 1
     assert set(body["files"][0]) == {"fileId", "fileName", "kind", "byteSize"}

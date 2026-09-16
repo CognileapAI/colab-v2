@@ -4,6 +4,7 @@
 합쳐야 그려진다. **도메인끼리 붙이지 않고 이 조립 루트가 Port 로 받아 합친다.**
 """
 from __future__ import annotations
+from ..access import dataset_access
 
 import base64
 import binascii
@@ -140,7 +141,7 @@ def _compose(db: Session) -> list[dict]:
     # ⭑ **⟨20차 해제 · PRD-27 · WU-B8⟩ 판정 ⑶ 의 입력을 한 번에 읽는다.**
     #    행마다 `is_unknown` 을 부르면 목록 길이만큼 질의가 열린다(N+1).
     unknown = d4_lineage.unknown_dataset_ids(db, ids)
-    access = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    access = dataset_access(db).dataset_access(ids)
     links = d6_project.ProjectLinkAdapter(db).projects_of(ids)
     map_states = d3_grid_convenience.map_states(db, ids)
 
@@ -372,15 +373,8 @@ DEFAULT_SEARCH_LIMIT = 20
 #: 않으려고 값을 코드에 드러내 둔다. 조립은 어차피 `_compose` 로 경계 안 데이터셋 전부를
 #: 이미 들고 있어, 이 창이 새로 만드는 비용은 D3 질의 한 번의 폭뿐이다.
 VERIFIED_SCAN_LIMIT = 1000
-#: ⭑ **⟨`R-LTH-REVIEW-1` Task 2 · spec §6 ㉰⟩ 운영자 검색의 범위 표기.**
-#: 운영자는 전 연구실을 **읽기 전용**으로 뒤지므로(`deps._operator_read` · `kernel/scope.py`
-#: `GUC_OPERATOR_READ`) 소속 연구실 이름 하나로 적으면 화면이 뒤진 범위를 거짓으로 말한다.
-#: 상단 셸 칩(`frontend/src/shell/Gnb.tsx` 앵커 `연구실 전환 · 전체 연구실 (읽기 전용)`)과
-#: **같은 말**이다 — 같은 범위를 두 이름으로 부르지 않는다.
-#: ⚠ `AiSearchScope.labId` 는 필수 `Ulid` 로 **남는다**(계약 무변 · `additionalProperties: false`).
-#: 운영자 응답에도 소속 연구실 id 가 실리고 `labName` 만 집합을 말한다 — 이 의미 불일치는
-#: spec §6 ㉰ 에 명시돼 있고, `scopeKind` 류 열쇠 신설은 계약 개정을 요한다.
-OPERATOR_SCOPE_LABEL = "전체 연구실 (읽기 전용)"
+#: 시스템 관리자의 검색 범위는 소속 연구실과 무관하게 전체 연구실이다.
+OPERATOR_SCOPE_LABEL = "전체 연구실"
 
 
 #: 자동완성 후보 상한. 계약 `limit` 과 같은 값이다.
@@ -624,7 +618,7 @@ def list_dataset_files(datasetId: str, db: Session = Depends(scoped_db)) -> dict
     # 경계 밖이면 RLS 가 이미 행을 지웠다 → 존재를 알리지 않는 404 다 (P-9·P-10).
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(datasetId)
+    access = dataset_access(db).dataset_access([dataset_id]).get(datasetId)
     if access is not None and not access.body_accessible:
         # 메타는 상세에서 보이지만 파일 목록은 본체 쪽이라 막힌다 (P-34).
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
@@ -658,7 +652,7 @@ def require_body_access(db: Session, dataset_id: Ulid) -> None:
 def _dataset_for_download(db: Session, dataset_id: Ulid) -> None:
     if not d3_catalog.dataset_exists(db, dataset_id):
         raise errors.not_found()
-    access = d2_access.DatasetAccessAdapter(db).dataset_access([dataset_id]).get(str(dataset_id))
+    access = dataset_access(db).dataset_access([dataset_id]).get(str(dataset_id))
     if access is not None and not access.body_accessible:
         raise errors.forbidden("잠긴 데이터이고 허용 목록 밖이다.")
 
@@ -757,7 +751,7 @@ def list_dataset_facets(
 
 
 def _account_ref(account_id: str | None, name: str | None) -> dict | None:
-    return None if account_id is None or name is None else {"accountId": account_id, "name": name}
+    return None if account_id is None else {"accountId": account_id, "name": name or account_id}
 
 
 def _variables_payload(db, dataset_id, meta) -> list[dict]:
@@ -1096,7 +1090,8 @@ def require_owner_for_downgrade(db, dataset_id, subject, changes: dict) -> None:
     if d2_access.ACCESS_WIDTH.get(after, 2) >= d2_access.ACCESS_WIDTH.get(before, 2):
         return                                   # 넓히거나 그대로 — 종전 규칙이 판정한다
     core = d3_catalog.find_dataset_core(db, dataset_id)
-    if core is None or core.owner_id != str(subject.account_id):
+    if core is None or (core.owner_id != str(subject.account_id)
+                        and not d2_access.is_manager(db, subject.account_id)):
         raise errors.forbidden(NOT_OWNER_DOWNGRADE_MESSAGE)
 
 
@@ -1412,7 +1407,7 @@ def list_lineage_candidates(
     ids = [Ulid(c.dataset_id) for c in cores]
     summaries = ({} if level_filter is not None
                  else d4_lineage.LineageSummaryAdapter(db).summaries(ids))
-    accesses = d2_access.DatasetAccessAdapter(db).dataset_access(ids)
+    accesses = dataset_access(db).dataset_access(ids)
     periods = d3_catalog.periods_of(db, ids)
     accessible_ids = [Ulid(c.dataset_id) for c in cores
                       if accesses.get(c.dataset_id) and accesses[c.dataset_id].body_accessible]
@@ -1490,7 +1485,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         raise errors.not_found()
 
     ids = [dataset_id]
-    access_adapter = d2_access.DatasetAccessAdapter(db)
+    access_adapter = dataset_access(db)
     access = access_adapter.dataset_access(ids).get(datasetId)
     verification = access_adapter.verification(ids).get(datasetId)
     summary = d4_lineage.LineageSummaryAdapter(db).summaries(ids).get(datasetId)
@@ -1504,7 +1499,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
     pending_requests = d2_access.datasets_with_pending_request(db, ids)
     verification_pending = d2_access.pending_verification_of(db, dataset_id) is not None
     viewer = str(subject.account_id)
-    is_professor = role == "교수"
+    is_professor = d2_access.is_manager(db, subject.account_id)
     is_owner = core.owner_id == viewer
     is_uploader = core.uploader_id == viewer
     verified = False if verification is None else verification.verified
@@ -1654,7 +1649,7 @@ def dataset_detail(db: Session, subject: Subject, dataset_id: Ulid) -> dict:
         "actions": {
             # ① 미승인 + 올린 사람·소유자 → `✓ 승인 요청`
             "canRequestVerification": bool(body_accessible and not verified
-                                           and (is_owner or is_uploader)),
+                                           and (is_owner or is_uploader or is_professor)),
             # ② 검토 대기 + 교수 → `승인`. ⭑ **`P6` 이 검토 대기 표를 세워 참이 될 수 있게 됐다.**
             #    종전 기재 「대기 건이 존재할 수 없으므로 지금 참이 될 수 없다」는 해소됐다.
             #    **교수라는 이유만으로 켜지 않는다** — 대기 건이 실제로 있을 때만이다.

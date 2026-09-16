@@ -7,6 +7,7 @@
 // 그 아래는 **두 구획**이다 (§1.3-1) — 왼쪽 `우리 연구실`(연구실이 어떤 상태인가) ·
 // 오른쪽 `내 일`(내가 뭘 해야 하는가). 구획 라벨은 카드가 아니라 **층을 나누는 표식**이라
 // 배경·보더를 두지 않는다 (§4 용어 · §8). 최근 활동은 주 내용이 연구실 전체 활동이라 왼쪽이다.
+import { TargetLabSelect } from '../components/common/TargetLabSelect';
 import { useMemo, useState } from 'react';
 import { SearchHero } from '../components/search/SearchHero';
 import { DataMapCard } from '../components/dashboard/DataMapCard';
@@ -29,7 +30,8 @@ import '../components/search/search.css';
 import '../components/dashboard/dashboard.css';
 
 export function LabPage(props: { source?: DashboardSource } = {}) {
-  const source = useMemo(() => props.source ?? apiDashboardSource(), [props.source]);
+  const [targetLabId, setTargetLabId] = useState('');
+  const source = useMemo(() => props.source ?? apiDashboardSource(targetLabId || undefined), [props.source, targetLabId]);
   const state = useDashboard(source);
   const account = useAccount();
   const [labInfoOpen, setLabInfoOpen] = useState(false);
@@ -41,6 +43,7 @@ export function LabPage(props: { source?: DashboardSource } = {}) {
   return (
     <div className="lab-page" data-screen="S-01" data-fills-in="WU-P7">
       <SearchHero />
+      {account?.canManageServiceAccounts ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId}/> : null}
 
       {/* ⚠ **올리다 만 업로드는 할 일 함이 아니다.** 아래 두 구획 중 `내 일` 은 정본이 그룹 셋으로
           열거한 P7 의 자리이고, 이 절은 그 **위의 별도 절**이다 — 침범하지 않는다.
@@ -56,6 +59,7 @@ export function LabPage(props: { source?: DashboardSource } = {}) {
           <button
             type="button"
             className="dash-section-label dash-section-label--opens"
+            disabled={account?.canManageServiceAccounts === true && !targetLabId}
             onClick={() => setLabInfoOpen(true)}
           >
             우리 연구실 <span aria-hidden="true">›</span>

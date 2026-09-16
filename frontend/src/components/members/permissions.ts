@@ -29,7 +29,7 @@ export const MEMBER_COLUMNS = ['구성원', '역할'] as const;
  * [정본 무근거] 한쪽 위임만 받은 연구원의 표기.
  */
 export function roleLabel(member: LabMember): string {
-  if (member.role === '교수') return '교수';
+  if (member.role === '교수') return '교수 관리자';
   const both = member.permissions['승인 위임'] === true && member.permissions['연구실 설정'] === true;
   return both ? '연구원 · 승인·설정 위임' : '연구원';
 }

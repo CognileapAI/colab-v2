@@ -12,6 +12,8 @@
 //    「만들기 직전이 이 경계가 필요한 유일한 순간이다」. 목록 설명에 섞지 않는다.
 //  · **연결 주소는 설명·기간과 다른 묶음**이다 (`§1.2`·`§8`). `계보` 표시를 붙인 카드로 뗀다.
 //  · 주소 모양이 아니어도 **막지 않는다** (`§9`) — 논문 고유 번호처럼 주소가 아닌 값도 받는다.
+import { useAccount } from '../../permission/session';
+import { TargetLabSelect } from '../common/TargetLabSelect';
 import { useId, useState } from 'react';
 import { useWorkProtection } from '../../auth/useWorkProtection';
 import { useDialogFocus } from '../common/useDialogFocus';
@@ -35,9 +37,11 @@ export type ProjectFormMode =
 
 export function ProjectFormModal(props: {
   mode: ProjectFormMode;
-  onSubmit(input: ProjectCreate | ProjectUpdate): Promise<void>;
+  onSubmit(input: ProjectCreate | ProjectUpdate, targetLabId?: string): Promise<void>;
   onClose(): void;
 }) {
+  const account = useAccount();
+  const [targetLabId, setTargetLabId] = useState('');
   const editing = props.mode.kind === '정보 수정' ? props.mode.detail : null;
   const titleId = useId();
 
@@ -75,6 +79,7 @@ export function ProjectFormModal(props: {
       setError('종료가 시작보다 앞서요. 다시 골라 주세요.');
       return;
     }
+    if (!editing && account?.canManageServiceAccounts && !targetLabId) { setError('대상 연구실을 선택해 주세요.'); return; }
     setError(null);
     setBusy(true);
     try {
@@ -86,7 +91,7 @@ export function ProjectFormModal(props: {
       };
       // **`type` 은 수정 본문에 넣지 않는다** — 계약이 그 열쇠를 갖고 있지 않고,
       // 서버는 계약에 없는 필드를 400 으로 되돌린다 (`routes/project.py::update_project`).
-      await props.onSubmit(editing ? common : { ...common, type });
+      await props.onSubmit(editing ? common : { ...common, type }, !editing && account?.canManageServiceAccounts ? targetLabId : undefined);
       props.onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장하지 못했어요.');
@@ -106,6 +111,7 @@ export function ProjectFormModal(props: {
         </div>
 
         <div className="pj-modal-b">
+          {!editing && account?.canManageServiceAccounts ? <TargetLabSelect value={targetLabId} onChange={setTargetLabId} disabled={busy}/> : null}
           {/* F-04 대상 블록 — 무엇을 고치고 있는지가 폼 위에 먼저 보인다 (목업 `target`) */}
           {editing ? (
             <div className="pj-target" data-testid="project-form-target">

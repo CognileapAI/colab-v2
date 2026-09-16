@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from sqlalchemy import event
 
-from conftest import DS_A1, DS_A2, DS_B1, LAB_A, TOKEN_PROF, auth
+from conftest import DS_A1, DS_A2, DS_B1, LAB_A, TOKEN_PROF, TOKEN_RES, auth
 from test_dataset_registration import make_upload, register
 
 from colab_core.app.main import API_PREFIX
@@ -11,7 +11,7 @@ from colab_core.app.main import API_PREFIX
 
 def _get(client, **params):
     return client.get(f"{API_PREFIX}/lineage-candidates", params=params,
-                      headers=auth(TOKEN_PROF))
+                      headers=auth(TOKEN_RES))
 
 
 def test_candidate_contains_lineage_facts_and_searches_name_or_accessible_file(p2_client, sql) -> None:

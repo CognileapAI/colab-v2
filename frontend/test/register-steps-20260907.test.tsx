@@ -681,12 +681,12 @@ describe('WU-B4 · PRD-11 공개 범위 3값', () => {
     const select = screen.getByTestId('reg-visibility') as HTMLSelectElement;
     expect(select.value).toBe('');
     expect(screen.getByTestId('reg-visibility-note').textContent)
-      .toBe('연구실 설정의 데이터 공개 범위를 그대로 따른다');
+      .toBe('연구실 설정의 데이터 공개 범위를 그대로 따른다 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.');
     await change(select, '지정 공개');
     expect((screen.getByTestId('reg-visibility') as HTMLSelectElement).value).toBe('지정 공개');
     // `지정한 사람만` 은 허용 목록 0건으로 시작해 사실상 `나만 보기` 와 같다 — 그 사실이 뜬다.
     expect(screen.getByTestId('reg-visibility-note').textContent)
-      .toBe('허용 목록에 오른 사람만. 만료 = 승인일 + 6개월');
+      .toBe('허용 목록에 오른 사람만. 만료 = 승인일 + 6개월 시스템 관리자와 이 연구실 교수 관리자는 관리 목적으로 접근할 수 있어요.');
   });
 
   it('셀렉트를 건드리지 않으면 등록 요청에 `accessState` 열쇠가 **없다**', async () => {

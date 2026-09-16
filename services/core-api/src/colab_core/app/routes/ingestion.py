@@ -32,6 +32,7 @@ from ...kernel.s3 import S3Client
 from ...kernel.storage_backends import LocalFilesystemStorage, S3UploadStorage
 from ...ports.storage import UploadStoragePort
 from ...kernel.ids import Ulid
+from ...kernel.scope import target_lab
 from ...ports.ingestion import UploadFileRecord
 from ..deps import current_subject, scoped_db
 from .catalog import (EMPTY_SUMMARY_MESSAGE, dataset_detail, enforce_parent_level_rule,
@@ -266,7 +267,7 @@ def create_upload(request: Request, response: Response,
                   files=records)
     ledger.publish_accepted(upload_id=upload_id, actor_account_id=subject.account_id,
                             files=records)
-    return {"uploadId": str(upload_id), "files": _file_records(records)}
+    return {"labId": target_lab(db), "uploadId": str(upload_id), "files": _file_records(records)}
 
 
 # ══════════════════════════════ getUploadStatus ═════════════════════════════
@@ -286,6 +287,7 @@ def get_upload_status(uploadId: str,
     files = ledger.files(upload_id)
     return {
         "uploadId": record.upload_id,
+        "labId": target_lab(db),
         "files": _file_records(files),
         # **거절된 격자는 `files` 에 못 선다** — 행이 없기 때문이다. 사라진 이유를
         # 말하는 자리가 이것이다 (`〈88〉` 묶음 7 · 스윕 `B-2`).
@@ -473,7 +475,7 @@ def reuse_dataset_grid(request: Request, uploadId: str, body: dict = None,
 def set_lab_default_grid(body: dict = None,
                          subject: Subject = Depends(current_subject),
                          db: Session = Depends(scoped_db)) -> dict:
-    if d2_access.role_of(db, subject.account_id) != "교수":
+    if not d2_access.is_manager(db, subject.account_id):
         raise errors.forbidden("연구실 기본 격자는 교수만 지정한다.")
     if not isinstance(body, dict) or set(body) != {"datasetId"}:
         raise errors.bad_request("datasetId 하나만 보낸다.")
@@ -555,7 +557,7 @@ def list_upload_lineage_suggestions(
     searched = d3_catalog.count_datasets(db)
     # **계약이 요구하는 것은 식별자가 아니라 읽은 값이다** — `_uploaded_file_meta` 참조.
     return request.app.state.suggestions.suggest(
-        lab_id=str(subject.lab_id), lab_name=("" if lab is None else lab["name"]) or "연구실",
+        lab_id=target_lab(db), lab_name=("" if lab is None else lab["name"]) or "연구실",
         account_id=str(subject.account_id),
         file_meta=_uploaded_file_meta(_ledger(db), Ulid(uploadId)),
         searched_count=searched, dataset_name_draft=datasetNameDraft, subject=subject_q,

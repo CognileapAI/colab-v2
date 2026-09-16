@@ -7,7 +7,7 @@ import { account } from './factories';
 
 const palettes = [{ palette: 'server-a', label: '서버 A' }, { palette: 'server-b', label: '서버 B' }, { palette: 'server-c', label: '서버 C' }];
 function source(): DatasetPreviewSource {
-  const job = { renderId: 'R1', status: '실패' as const, failure: { code: 'NO_DATA', message: '그릴 자료 없음' } };
+  const job = { target: { datasetId: 'test-dataset' }, renderId: 'R1', status: '실패' as const, failure: { code: 'NO_DATA', message: '그릴 자료 없음' } };
   return {
     palettes: async () => palettes,
     files: async () => [{ fileId: 'F1', fileName: 'fixture.nc', renderable: true }],

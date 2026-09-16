@@ -51,7 +51,7 @@ class _FakeViz(BaseHTTPRequestHandler):
         if self.path.endswith(FOREIGN_RENDER_ID):
             self._json(404, {"code": "NOT_FOUND", "message": "없다"})
             return
-        self._json(200, {"renderId": RENDER_ID, "status": "완료"})
+        self._json(200, {"renderId": RENDER_ID, "status": "완료", "target": {"datasetId": "0000000000000000000000DSA1"}})
 
     def do_POST(self) -> None:                                    # noqa: N802
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))

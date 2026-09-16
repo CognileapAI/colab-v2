@@ -15,12 +15,13 @@ import { useEffect, useState } from 'react';
 import { UPLOAD_CLOSE_FORGET } from '../common/toastCopy';
 import { useAccount } from '../../permission/session';
 import { useOpenUpload } from './openUpload';
-import { forgetPending, listPending } from './pendingStore';
+import { forgetPending, listPending, pendingLabs } from './pendingStore';
 import type { IncompleteTransferItem, UploadSource } from './types';
 import './upload.css';
 
 /** 등록만 남은 업로드 한 건 — 표시에 필요한 것만 든다. */
 interface PendingRow {
+  labId: string;
   uploadId: string;
   label: string;
 }
@@ -34,7 +35,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
   const { upload } = props;
 
   useEffect(() => {
-    if (!labId) return;
+    if (!labId && !account?.canManageServiceAccounts) return;
     let alive = true;
 
     // ㉠ 전송 원장 — 서버 목록. 저장 모드 local 이면 빈 배열이 온다(전송 개념이 없다).
@@ -43,7 +44,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
 
     // ㉡ 접수했는데 등록 안 한 것 — 기억해 둔 id 를 **한 건씩** 확인한다.
     //    404(만료·소멸)면 조용히 잊는다. **오류를 띄우지 않는다** — 사람이 한 일이 아니다.
-    void Promise.all(listPending(labId).map(async (id) => {
+    void Promise.all((account?.canManageServiceAccounts ? pendingLabs() : [labId]).flatMap(lab => listPending(lab).map(id => ({lab, id}))).map(async ({lab, id}) => {
       try {
         const s = await upload.status(id);
         // **이미 등록됐으면 잊는다.** 등록 직후 탭이 죽으면 브라우저 기억만 남고, 그때
@@ -52,13 +53,13 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
         // ⚠ `undefined` 는 「모른다」다 — 구판 서버와 섞이면 **판단을 미루고** 그대로 보여준다.
         //    없는 것을 등록됐다고 단정해 사람이 되찾을 길을 지우는 쪽이 더 나쁘다.
         if (s.registered === true) {
-          forgetPending(labId, id);
+          forgetPending(lab, id);
           return null;
         }
         const first = s.files[0];
-        return { uploadId: id, label: first ? first.fileName : id } as PendingRow;
+        return { labId: s.labId ?? lab, uploadId: id, label: first ? first.fileName : id } as PendingRow;
       } catch {
-        forgetPending(labId, id);
+        forgetPending(lab, id);
         return null;
       }
     })).then((rows) => {
@@ -66,7 +67,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
     });
 
     return () => { alive = false; };
-  }, [labId, upload]);
+  }, [labId, account?.canManageServiceAccounts, upload]);
 
   // **빈 카드를 두지 않는다** — 없으면 자리 자체가 없다.
   if (transfers.length === 0 && pending.length === 0) return null;
@@ -84,7 +85,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
             type="button"
             className="ub-btn"
             data-testid={`unfinished-resume-${t.uploadId}`}
-            onClick={() => openUpload({ resumeUploadId: t.uploadId })}
+            onClick={() => openUpload({ resumeUploadId: t.uploadId, ...(t.labId ? { targetLabId: t.labId } : {}) })}
           >
             이어서 올리기
           </button>
@@ -99,7 +100,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
             type="button"
             className="ub-btn"
             data-testid={`unfinished-register-${p.uploadId}`}
-            onClick={() => openUpload({ registerUploadId: p.uploadId })}
+            onClick={() => openUpload({ registerUploadId: p.uploadId, ...(account?.canManageServiceAccounts ? { targetLabId: p.labId } : {}) })}
           >
             이어서 하기
           </button>
@@ -113,7 +114,7 @@ export function UnfinishedUploads(props: { upload: UploadSource }) {
             className="ub-btn"
             data-testid={`unfinished-discard-${p.uploadId}`}
             onClick={() => {
-              forgetPending(labId, p.uploadId);
+              forgetPending(p.labId, p.uploadId);
               setPending((rows) => rows.filter((r) => r.uploadId !== p.uploadId));
             }}
           >

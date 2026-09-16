@@ -72,10 +72,10 @@ export function ProjectsPage(props: { source?: ProjectSource } = {}) {
         <ProjectFormModal
           mode={{ kind: '새 프로젝트' }}
           onClose={() => setCreating(false)}
-          onSubmit={async (input) => {
+          onSubmit={async (input, targetLabId) => {
             // 만든 것을 **바로 그 상세로** 데려간다 — 목록으로 돌려보내면 방금 만든 것을
             // 다시 찾아야 한다. 목업의 `createProj()` 도 같은 자리로 간다.
-            const made = await source.create(input as ProjectCreate);
+            const made = await source.create(input as ProjectCreate, targetLabId);
             navigate(`/projects/${made.projectId}`);
           }}
         />

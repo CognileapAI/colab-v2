@@ -28,7 +28,7 @@ const TILE_TEMPLATE =
   'https://viz.example/renders/01JYZ9K7WQ3N8V4M2X6C5B0RN1/tiles/{z}/{x}/{y}.png?exp=1766000000&sig=abc.def';
 
 const DONE: RenderJob = {
-  renderId: RENDER_ID,
+  target: { datasetId: 'test-dataset' }, renderId: RENDER_ID,
   status: '완료',
   result: {
     tileUrlTemplate: TILE_TEMPLATE,
@@ -182,9 +182,9 @@ describe('§8.1 미리보기 — 업로드 모달에서 그린 것을 그대로 
 describe('진행 단계 — 정본 3값 그대로 · 한 덩어리 「로딩 중」으로 두지 않는다', () => {
   it('`그리는 중` 일 때만 단계가 있고 문구가 정본 그대로다', async () => {
     const seq: RenderJob[] = [
-      { renderId: RENDER_ID, status: '그리는 중', stage: '파일 읽는 중' },
-      { renderId: RENDER_ID, status: '그리는 중', stage: '지도 그리는 중' },
-      { renderId: RENDER_ID, status: '그리는 중', stage: '범례 만드는 중' },
+      { target: { datasetId: 'test-dataset' }, renderId: RENDER_ID, status: '그리는 중', stage: '파일 읽는 중' },
+      { target: { datasetId: 'test-dataset' }, renderId: RENDER_ID, status: '그리는 중', stage: '지도 그리는 중' },
+      { target: { datasetId: 'test-dataset' }, renderId: RENDER_ID, status: '그리는 중', stage: '범례 만드는 중' },
       DONE,
     ];
     // 조회 응답을 시험이 한 걸음씩 푼다 — 단계가 실제로 셋 다 화면을 지나간다
@@ -216,7 +216,7 @@ describe('진행 단계 — 정본 3값 그대로 · 한 덩어리 「로딩 중
     const { source } = makeSource({
       get: vi.fn(
         async () =>
-          ({ renderId: RENDER_ID, status: '그리는 중', stage: '파일 읽는 중' }) as RenderJob,
+          ({ target: { datasetId: 'test-dataset' }, renderId: RENDER_ID, status: '그리는 중', stage: '파일 읽는 중' }) as RenderJob,
       ),
     });
     renderPage(source);
@@ -228,7 +228,7 @@ describe('진행 단계 — 정본 3값 그대로 · 한 덩어리 「로딩 중
 describe('실패는 200 + `failure` 다 — HTTP 오류가 아니다', () => {
   it('status=실패 면 서버가 준 정본 문구를 그대로 말한다', async () => {
     const failed: RenderJob = {
-      renderId: RENDER_ID,
+      target: { datasetId: 'test-dataset' }, renderId: RENDER_ID,
       status: '실패',
       failure: {
         code: 'RENDER_TIMEOUT',

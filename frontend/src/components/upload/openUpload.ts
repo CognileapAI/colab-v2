@@ -7,6 +7,7 @@
 import { createContext, useContext } from 'react';
 
 export interface OpenUploadRequest {
+  targetLabId?: string;
   /** 이 전송을 이어서 올린다. 없으면 빈 모달을 연다. */
   resumeUploadId?: string;
   /** 전송은 끝났고 같은 접수 건의 등록 화면을 복원한다. */

@@ -117,6 +117,8 @@ export function PreviewPanel(props: {
   // 색 범위가 **조용히** 바뀌지 않게, 앞서 본 잠정 범위를 들고 있는다 (`§D.4`)
   const seenRange = useRef<{ stage: string; key: string } | null>(null);
   // WU-C3 — 고르개 셋. **컴포넌트 상태다**(URL 미반영 · 판정 축자).
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [pieces, setPieces] = useState<PreviewPiece[]>([]);
   const [description, setDescription] = useState<TargetDescription | undefined>(undefined);
   const [pick, setPick] = useState<PickSelection>({});
@@ -124,31 +126,29 @@ export function PreviewPanel(props: {
   // 고르개 후보와 413 폴백이 **같은 한 번의 조회**를 쓴다 (수용 기준 「files 조회 1회」).
   const loadFiles = useMemo(
     () => (source.files ? onceFiles(() => source.files!(uploadId ?? '')) : undefined),
-    [source, uploadId],
+    [source, uploadId, loadAttempt],
   );
 
   // 후보는 **서버가 준 값뿐이다.** 못 받으면 자리는 서고 잠긴다 — 지어내지 않는다.
   useEffect(() => {
     if (!uploadId) return;
     let alive = true;
+    setDescription(undefined);
+    setLoadError(null);
     void (async () => {
       try {
         const list = await loadFiles?.();
         if (alive && list) setPieces(list);
-      } catch {
-        /* 조각 목록이 없으면 파일 고르개가 잠긴다. 등록은 막지 않는다. */
-      }
+      } catch (e) { if (alive) setLoadError(e instanceof Error ? e.message : '파일 목록을 불러오지 못했어요.'); }
       try {
         const desc = await source.describe?.(uploadId);
         if (alive && desc) setDescription(desc);
-      } catch {
-        /* 변수·시각 후보가 없으면 그 둘이 잠긴다. 기본값은 서버가 고른다. */
-      }
+      } catch (e) { if (alive) setLoadError(e instanceof Error ? e.message : '변수·시각을 불러오지 못했어요.'); }
     })();
     return () => {
       alive = false;
     };
-  }, [source, uploadId, loadFiles]);
+  }, [source, uploadId, loadFiles, loadAttempt]);
 
   // 팔레트 값의 **유일한 출처는 서버**다. 화면이 목록을 지어내지 않는다.
   useEffect(() => {
@@ -527,7 +527,7 @@ export function PreviewPanel(props: {
            한 번에 값 하나만 바뀌고, 바꾸는 즉시 **바꿔 그리기**가 돈다.
            ⭑ ⟨R-BUGFIX-260912 `#25`⑵⟩ 틀 안에 있던 자리를 틀 밖으로 올렸다 — 그림이 그려지면
               틀 안 스크롤 위로 밀려 화면에서 빠지던 자리다. */
-        controls={<PreviewPickRow
+        controls={<>{loadError ? <div role="alert"><p>{loadError}</p><button type="button" className="btn" onClick={() => setLoadAttempt(n => n + 1)}>다시 불러오기</button></div> : null}<PreviewPickRow
           idPrefix="up"
           pieces={pieces}
           description={description}
@@ -539,7 +539,7 @@ export function PreviewPanel(props: {
              근거 = 기획서 rev2(업로드 좌측은 「첫 변수·기간 평균 한 장」). 아래 확장보기
              오버레이와 데이터셋 상세는 이 값을 넘기지 않는다 — 그 두 자리는 무변이다. */
           hideSingleChoice
-        />}
+        /></>}
       >
       {/* 진행을 **단계로** 말한다. `stage` 는 `그리는 중` 일 때만 있다 */}
       {drawing && (

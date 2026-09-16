@@ -62,3 +62,11 @@ export function forgetPending(labId: string, uploadId: string): void {
 export function listPending(labId: string): string[] {
   return read(labId);
 }
+
+/** All remembered uploads for this account; the server still authorizes each status request. */
+export function pendingLabs(): string[] {
+  try {
+    const prefix = `${KEY}.${getCurrentAccountId() ?? 'unbound'}.`;
+    return Object.keys(window.localStorage).filter(key => key.startsWith(prefix)).map(key => key.slice(prefix.length));
+  } catch { return []; }
+}
