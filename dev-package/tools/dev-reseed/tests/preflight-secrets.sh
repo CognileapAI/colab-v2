@@ -175,7 +175,8 @@ SQL_ID="$(grep -A1 'INSERT INTO d1_account' "$LAB_SQL" | grep -oE "'[0-9A-Z]{26}
 SQL_EMAIL="$(grep -A1 'INSERT INTO d1_account' "$LAB_SQL" | grep -oE "'[^']*@[^']*'" | head -1 | tr -d "'")"
 [ -n "$SQL_ID" ] && [ -n "$SQL_EMAIL" ] || note "ⓕ 픽스처가 SQL 에서 계정 값을 읽지 못했다"
 grep -q "$SQL_ID" "$TMP/green.txt"    || note "ⓕ′ 계정 id 기본값이 provision-lab.sql 값($SQL_ID)이 아니다"
-grep -q "$SQL_EMAIL" "$TMP/green.txt" || note "ⓕ″ 계정 email 기본값이 provision-lab.sql 값이 아니다"
+PROFILE_EMAIL="$(python3 "$HERE/../accounts.py" professor | cut -f2)"
+grep -q "$PROFILE_EMAIL" "$TMP/green.txt" || note "ⓕ″ 계정 email 기본값이 지정 프로필 값이 아니다"
 
 # ── 비밀 무유출 ──────────────────────────────────────────────────────────
 for f in "$TMP"/*.txt; do

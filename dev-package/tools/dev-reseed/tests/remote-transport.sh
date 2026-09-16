@@ -391,6 +391,11 @@ export FIXTURE_DOCKER_STDOUT=0
 reset_logs
 CURRENT_STAGE=prelude; STAGE_LOG="$RUN_DIR/logs/prelude.log"; : > "$STAGE_LOG"
 DEV_REPO_DIR=/opt/colab-repo; PSQL_IMAGE=postgres:16-alpine
+ACCOUNTS_FILE="$TMP/approved-profile.json"
+cp "$RESEED_DIR/accounts-profile.example.json" "$ACCOUNTS_FILE"
+chmod 600 "$ACCOUNTS_FILE"
+export COLAB_RESEED_ACCOUNTS_PROFILE="$ACCOUNTS_FILE"
+PROVISION_LAB_SQL="$REPO_ROOT/infra/staging/provision-lab.sql"
 PROVISION_LAB_ACCOUNT_ID=000000000000000000HYMETSP9     # ≠ RESEED_ACCOUNT_ID → ② 가 돈다
 export FIXTURE_EXEC=1 FIXTURE_EXEC_CMD=1 FIXTURE_PSQL_ARGS="$TMP/psql.args"
 : > "$FIXTURE_PSQL_ARGS"

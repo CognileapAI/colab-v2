@@ -185,7 +185,7 @@ mode='check' if '--check' in sys.argv else 'run'
 p=pathlib.Path(sys.argv[sys.argv.index('--plan')+1])
 raw=p.read_bytes()
 with open(os.environ['CHECK_TRACE'],'a') as log:
-    log.write(json.dumps({'mode':mode,'path':str(p),'hash':hashlib.sha256(raw).hexdigest(),'permissions':stat.S_IMODE(p.stat().st_mode),'directory_permissions':stat.S_IMODE(p.parent.stat().st_mode)})+'\n')
+    log.write(json.dumps({'mode':mode,'path':str(p),'hash':hashlib.sha256(raw).hexdigest(),'permissions':stat.S_IMODE(p.stat().st_mode),'directory_permissions':stat.S_IMODE(p.parent.stat().st_mode),'notification_off':'--notification-off' in sys.argv})+'\n')
 if mode=='check' and os.environ.get('MUTATE_INPUT')=='1':
     pathlib.Path(os.environ['PLAN_INPUT']).write_text('changed after validation')
 raise SystemExit(int(os.environ.get('CHECK_RC' if mode=='check' else 'RUN_RC','0')))
@@ -223,6 +223,7 @@ if rows:
     assert all(row['permissions']==0o600 for row in rows)
     assert all(row['directory_permissions']==0o700 for row in rows)
     assert len({(row['path'],row['hash']) for row in rows})==1
+    assert all(row['notification_off'] for row in rows if row['mode']=='run')
 PYTRACE
 )"; check "$?" 0 "execute-$mode-same-private-snapshot"
   check "$got" "$expected" "execute-$mode-once"

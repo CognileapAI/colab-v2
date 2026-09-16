@@ -1,0 +1,43 @@
+{
+  "schema": "colab-dev-seed-metadata/1",
+  "sources": [
+    {"datasets": [1, 2, 3, 4, 5], "document": "01.level-data/01.precipitation/DATASETS.md", "note": "문서의 자료 전달 기간과 HSR 헤더 조사"},
+    {"datasets": [6, 7, 8, 9, 10, 11, 12], "document": "01.level-data/02.vegetation/DATASETS.md", "note": "파일명·설명 문서·사용자 제공 DEM/Aspect 맥락"},
+    {"datasets": [13, 14], "document": "01.level-data/03.drought/DATASETS.md", "note": "실물 시간축 범위를 문서 끝 날짜보다 우선"},
+    {"datasets": [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28], "document": "02.File-format/DATASETS.md", "note": "파일 내부 메타데이터와 변환 계보"}
+  ],
+  "datasets": [
+    {"seq": 1, "name": "HSR 레이더 반사도 원자료", "start": "2019-07-28", "end": "2024-07-09", "granularity": "일", "basis": "10개 불연속 표본의 첫날~끝날; 연속 관측 아님; 원문 시간대 미명시"},
+    {"seq": 2, "name": "rn15 15분 누적강수", "start": "2019-07-28", "end": "2024-07-09", "granularity": "일", "basis": "같은 10개 불연속 표본 범위; 연속 관측 아님; 원문 시간대 미명시"},
+    {"seq": 3, "name": "hsr_sample", "start": "2019-07-28", "end": "2024-07-09", "granularity": "일", "basis": "메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시"},
+    {"seq": 4, "name": "rn15_sample", "start": "2019-07-28", "end": "2024-07-09", "granularity": "일", "basis": "메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시"},
+    {"seq": 5, "name": "pred_sample", "start": "2019-07-28", "end": "2024-07-09", "granularity": "일", "basis": "메인 처리 10개 불연속 표본 범위; 배열별 날짜 대응 미확정; 원문 시간대 미명시"},
+    {"seq": 6, "name": "GK-2A 일 단위 식생자료", "start": "2023-05-01", "end": "2023-05-31", "granularity": "일", "basis": "파일명 전월 범위"},
+    {"seq": 7, "name": "GK2A_NDVI_mean_202305", "start": "2023-05", "end": "2023-05", "granularity": "월", "basis": "파일명 월과 정본 설명"},
+    {"seq": 8, "name": "HLS_S30_NDVI_mean_202305", "start": "2023-05", "end": "2023-05", "granularity": "월", "basis": "파일명 월과 정본 설명"},
+    {"seq": 9, "name": "DEM", "start": "2023-05", "end": "2023-05", "granularity": "월", "basis": "2026-09-16 사용자 제공 맥락; 파일 내부 날짜 없음", "registrationNote": "기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음"},
+    {"seq": 10, "name": "Aspect", "start": "2023-05", "end": "2023-05", "granularity": "월", "basis": "2026-09-16 사용자 제공 맥락; 파일 내부 날짜 없음", "registrationNote": "기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음"},
+    {"seq": 11, "name": "LULC_2023", "start": "2023", "end": "2023", "granularity": "년", "basis": "파일명 연도와 정본 설명"},
+    {"seq": 12, "name": "Prediction (공간상세화)", "start": "2023-05-01", "end": "2023-05-31", "granularity": "일", "basis": "파일명 일 범위"},
+    {"seq": 13, "name": "SPI-4weeks", "start": "2000-01-01", "end": "2025-12-20", "granularity": "일", "basis": "실물 파일 시간 범위; 문서의 12-31보다 실물 우선"},
+    {"seq": 14, "name": "SPEI-4weeks", "start": "2000-01-01", "end": "2025-12-20", "granularity": "일", "basis": "실물 파일 시간 범위; 문서의 12-31보다 실물 우선"},
+    {"seq": 15, "name": "surface (ERA5 GRIB 원자료)", "start": "2025-09-01", "end": "2025-09-01", "granularity": "일", "basis": "GRIB 내부 valid_time"},
+    {"seq": 16, "name": "ERA5 변환 결과", "start": "2025-09-01", "end": "2025-09-01", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 17, "name": "GK-2A LST 원자료", "start": "2020-05-01", "end": "2020-05-01", "granularity": "일", "basis": "NetCDF 내부 관측시각"},
+    {"seq": 18, "name": "GK-2A LST 변환 결과", "start": "2020-05-01", "end": "2020-05-01", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 19, "name": "HSR 레이더합성 원자료", "start": "2025-08-13", "end": "2025-08-13", "granularity": "일", "basis": "12개 파일의 압축 해제 HSR 헤더 시각 10:00~10:55; 일 단위"},
+    {"seq": 20, "name": "HSR 레이더합성 변환 결과", "start": "2025-08-13", "end": "2025-08-13", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 21, "name": "HLS S30 T51SYB 원자료", "start": "2025-12-25", "end": "2025-12-25", "granularity": "일", "basis": "GeoTIFF SENSING_TIME"},
+    {"seq": 22, "name": "HLS S30 T52SCE 원자료", "start": "2025-12-27", "end": "2025-12-27", "granularity": "일", "basis": "GeoTIFF SENSING_TIME"},
+    {"seq": 23, "name": "HLS S30 T51SYB 변환 결과", "start": "2025-12-25", "end": "2025-12-25", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 24, "name": "HLS S30 T52SCE 변환 결과", "start": "2025-12-27", "end": "2025-12-27", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 25, "name": "hdf4 MOD15A2H h27v05 원자료", "start": "2019-09-30", "end": "2019-10-31", "granularity": "일", "basis": "HDF4 내부 RANGEDATETIME"},
+    {"seq": 26, "name": "hdf4 MOD15A2H h28v05 원자료", "start": "2019-09-30", "end": "2019-10-31", "granularity": "일", "basis": "HDF4 내부 RANGEDATETIME"},
+    {"seq": 27, "name": "hdf4 MOD15A2H h27v05 변환 결과", "start": "2019-09-30", "end": "2019-10-31", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"},
+    {"seq": 28, "name": "hdf4 MOD15A2H h28v05 변환 결과", "start": "2019-09-30", "end": "2019-10-31", "granularity": "일", "basis": "원자료 계보와 같은 파일 어간"}
+  ],
+  "auxiliaryParents": [
+    {"child": "Prediction (공간상세화)", "parent": "DEM", "role": "보조입력"},
+    {"child": "Prediction (공간상세화)", "parent": "Aspect", "role": "보조입력"}
+  ]
+}

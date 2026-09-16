@@ -1,11 +1,51 @@
 ---
 name: dev-reseed
-description: dev 환경을 한 번에 초기화하고 정본 자료로 다시 채운다. 「데이터 전체 초기화하고 다시 셋팅해줘」·「dev 초기화하고 재셋팅」·「/dev-reseed」 처럼 **명시적으로 요구할 때만** 쓴다. 실행 대상은 `dev-package/tools/dev-reseed/reseed.sh` 하나이고 10단계(preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report)를 순서대로 밟는다. 제외 — staging·prod 는 이 스킬이 다루지 않는다(매회 Ted GO 가 따로 필요하다). 배포만 하거나 게이트만 돌리는 일, dev 상태를 읽기만 하는 조회에는 발동하지 않는다.
+description: 명시적으로 요청한 dev 전체 초기화와 정본 재적재를 수행한다. product(pr)의 운영 시작 전 최초 초기화 요청은 별도 운영용 실행 경로로 연결한다. 배포만 하거나 상태 조회만 하는 요청에는 적용하지 않는다.
 ---
 
 # dev 재생성
 
-## 무엇을 실행하는가
+## 대상부터 구분한다
+
+- dev 초기화는 아래 dev 실행기를 사용한다.
+- product(pr) 운영 시작 전 청소·최초 재적재는 [product 최초 초기화](references/product-first-reset.md)를 읽고 운영용 실행기를 사용한다. `pr`을 pull request로 단정하지 않고 현재 대화의 환경 의미를 따른다.
+- 서비스 운영 중 product 또는 staging 초기화는 해당 환경의 승인된 계획을 따른다. 운영 전이라는 가정을 자동 적용하지 않는다.
+- 현재 대화의 삭제·계정 구성 승인은 유지한다. 대상이 product라고 해서 추가 dev 초기화나 새 PR을 자동 요구하지 않는다.
+- 기존 자료 수정·reseed 도구 개선 요청만으로 전체 초기화를 실행하지 않는다. 실제 변경 범위를 먼저 고정한다.
+
+## 본체와 보조격자
+
+- 정본의 `files`는 관측 본체, `grid_files`는 그 본체에 붙이는 LAT/LON 보조격자다.
+  초기화 전 계획 생성에서 전체 정본의 보조격자 경로가 어느 자료의 본체 목록에도 포함되지 않는지 검사한다.
+  혼입은 자동 제외하지 않고 입력 오류로 중단한다.
+- `lon2d` 같은 이름만으로 파일 역할을 단정하지 않는다. 원본 배열·정본 경로·연결을 확인한다.
+  EPSG 좌표계 입력은 LAT/LON 파일 첨부를 대신하지 않으며, 다른 관측 자료의 격자를 붙이지 않는다.
+- 재적재 후에는 자료 수뿐 아니라 본체/격자 역할과 대상 자료 연결도 확인한다.
+  보조격자가 독립 본체로 등록되면 성공으로 보고하지 않는다.
+- 기간은 원본 헤더·파일명·설명 문서의 근거를 사용한다. 등록일이나 파일 수정일을 관측일로 대체하지 않는다.
+  근거가 없고 현재 등록 화면이 날짜를 요구하면 초기화 전에 미확정 입력으로 보고한다.
+
+## 식생 모델 입력 DEM·Aspect
+
+- 사용자 결정(2026-09-16): `01.level-data/02.vegetation/02.vegetation/Lv.1_(Model_Input_Data)/`
+  아래 `DEM.tif`와 `Aspect.tif`의 등록 기준 시점은 **2023년 5월, 월 단위**다.
+  이는 사용자가 알려준 자료 맥락에 따른 등록값이며, 파일에서 확인한 관측일이나 제작일이 아니다.
+  설명에 “기준 시점은 사용자 제공 맥락에 따른 2023년 5월이며, 파일 내부 날짜 정보는 없음”을 남긴다.
+  월의 내부 저장값에 일자가 필요해도 5월 1일을 실제 관측일로 표현하거나 정밀도를 일 단위로 바꾸지 않는다.
+- 두 파일은 각각 독립 데이터셋의 본체로 등록한다. LAT/LON 기준 격자나 일반 첨부로 넣지 않는다.
+  동봉 `#readme/#processing_description_NDVI.docx`의 모델 학습 설명에 따라 해당 NDVI Lv.2
+  산출물에 부모 자료로 연결하며, 역할은 `보조입력`이다. 다른 NDVI 단계에 일괄 연결하지 않는다.
+- 실제 화면 개발은 추후 작업이다. 현재 화면의 `주입력` 고정값을 그대로 수용하지 말고,
+  재적재에서는 기존 공식 계보 API의 `parentRole: "보조입력"`을 사용해 연결한다.
+  기존 연결이 같은 역할이면 중복 생성 없이 재사용한다. 같은 부모가 `주입력`으로 이미 연결돼 있으면
+  공식 PATCH가 역할 변경을 받지 않으므로 자동 삭제·재생성하지 않고 중단해 수동 정정을 요구한다.
+  DB 직접 수정은 하지 않는다.
+- 초기화 전 실행 경로가 월 단위 기간 입력과 보조입력 연결을 지원하는지 확인한다.
+  스킬에 적었다는 이유로 러너 구현이 완료됐다고 간주하지 않는다. 미지원이면 삭제 전에 중단한다.
+  적재 후 두 자료의 기간·정밀도·설명·본체와 NDVI 대상/역할을 조회해 확인한다.
+  기존 간선 수와 달라지면 승인된 계획의 대상별 연결 목록에 맞춰 기대값을 갱신하고 검증한다.
+
+## dev에서 무엇을 실행하는가
 
 ```bash
 bash dev-package/tools/dev-reseed/reseed.sh --dry-run          # 명령만 찍고 아무것도 건드리지 않는다
@@ -14,6 +54,25 @@ bash dev-package/tools/dev-reseed/reseed.sh --rehearse           # 원격 원시
 bash dev-package/tools/dev-reseed/reseed.sh                     # 10단계 무인 실행
 bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부터 재개
 ```
+
+### 기본 계정 5개
+
+- 계정 목록의 원본은 비공개 `~/.config/colab-platform/dev-reseed-accounts-approved.json`(0600)이다.
+  `COLAB_RESEED_ACCOUNTS_PROFILE`로 승인된 보호 파일 위치를 지정할 수 있다. 저장소에는 실제 계정을 넣지 않고
+  `accounts-profile.example.json`의 가상 예시만 둔다. 예시를 실제 실행의 기본값으로 사용하지 않는다.
+  `--accounts-file`로 다른 파일을 지정해도 이번 승인된 5명·역할·소속과 일치해야 한다.
+  파일 누락·중복·구성 불일치는 초기화 전에 실패하며, 일반 seed 러너의 선택 계정 모드와 구분한다.
+- 최종 구성은 연구실 미소속 서비스 운영자 4명과 정본 연구실 교수 1명이다.
+  서비스 운영자 권한을 모든 연구실의 자료 접근 권한으로 해석하지 않는다.
+- 초기 비밀번호는 각 계정의 이메일이며 첫 로그인에서 변경해야 한다.
+  개별 보호 파일을 실행 자리에서 만들고, 비밀번호를 명령 인자나 보고서에 남기지 않는다.
+- 교수는 자료 적재·검증 동안만 임시 운영자로 사용한다. 자료 검증 후 초기 비밀번호로 돌리고
+  임시 운영자 권한을 해제한다. 최종화 재개 때 완료한 비밀번호 초기화를 반복하거나 권한을 다시 부여하지 않는다.
+- 기존 파일 기반 인증 계정은 앱 기동 전에 보호 백업 후 비우고, 새 DB 계정 외의 로그인이 남지 않게 확인한다.
+- 5명 모두 실제 초기 로그인·신원·역할·소속·비밀번호 변경 요구를 검사하고 로그아웃한다.
+  검증 중 비밀번호를 변경하지 않는다. 계정 생성 수만으로 완료를 판정하지 않는다.
+
+### 실행 구성
 
 - 10단계 = `preflight → deploy → reset → bootstrap → up → s3 → prelude → seed → verify → report`.
 - ⭑ **`preflight` 는 `--from` 과 무관하게 언제나 먼저 돈다.** 읽기 전용이고, **배포 대상 sha 를 해석하는
@@ -34,24 +93,20 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - dev 접속 값(`COLAB_DEV_SSH`·`COLAB_DEV_KEY_FILE`)이 없으면 **셸이 죽지 않는다** —
   `dev-sha`·`secrets`·`leftovers` 가 그 변수 이름을 대고 미달로 떨어지고, 접속이 필요 없는 항목은 그대로 잰다.
 - 절차의 원본 = `dev-package/sessions/DR-2-runbook.md`(사람이 실제로 밟은 순서). 이 스크립트가 그 실행형이다.
-- 값은 환경변수로 준다 — `COLAB_DEV_SSH` · `COLAB_DEV_KEY_FILE` · `COLAB_RESEED_EC2_SECRETS_DIR` ·
-  `COLAB_REF_ROOT` · `COLAB_DEV_URL` · `RESEED_ACCOUNT_ID`/`_EMAIL`/`_NAME`.
-  비밀번호는 `--operator-password-file`(0600 · 10자 이상)로만 받는다. argv·로그·결과 JSON 에 값이 0건이다.
+- 접속·참조 경로는 환경변수로 준다 — `COLAB_DEV_SSH` · `COLAB_DEV_KEY_FILE` ·
+  `COLAB_RESEED_EC2_SECRETS_DIR` · `COLAB_REF_ROOT` · `COLAB_DEV_URL`.
+  계정 신원은 기본 프로필을 따르며 다른 `RESEED_ACCOUNT_ID`/`_EMAIL`/`_NAME` 지정은 거부한다.
+  `--operator-password-file`을 별도 지정하면 0600 파일과 승인된 이메일 초기값의 일치를 검사한다.
+  계정별 초기 비밀번호 값은 argv·로그·결과 JSON에 쓰지 않는다.
 - ⛔ **`COLAB_DEV_SECRETS_DIR` 를 이 도구에 주지 않는다 — 읽지도 않는다.** 한 이름이 두 뜻이다:
   운영자 기계의 `~/.config/colab-platform/dev-operator.env` 에서는 **개발 기계의 로컬 폴더**,
   `infra/dev/README.md` 의 `dev.env` 안에서는 **EC2 경로**(`/etc/colab`). 그 값이 실린 채 `reset`·`prelude`
   가 돌면 EC2 에 없는 호스트 경로를 `docker -v` 로 마운트한다(DR-4 회차 §5 ⑴ 실측).
   원격 경로의 출처는 **`COLAB_RESEED_EC2_SECRETS_DIR`(기본 `/etc/colab`) 하나**다.
   `--preflight-only` 가 **마운트할 그 경로를 한 줄로 찍는다**(경로만 · 파일 값은 읽지 않는다).
-- 계정 신원(`RESEED_ACCOUNT_ID`/`_EMAIL`/`_NAME`)을 주지 않으면 prelude ① 이 실행하는
-  `infra/staging/provision-lab.sql` 의 `INSERT INTO d1_account` 값을 **실행 때 읽어** 쓴다
-  (사본을 두지 않는다 · 자리는 `COLAB_RESEED_PROVISION_LAB_SQL`). `--preflight-only` 가 그 신원도 찍는다.
-  - 왜 = `d1_account` 에 `UNIQUE (lab_id, email)` 이 있어 **새 ULID** 를 주면 prelude ② 가
-    유일성 위반으로 죽는다(DR-4 회차 §4 실측).
-  - id 가 ① 의 값과 같으면 **prelude ② 를 건너뛴다** — 2026-09-13 회차가 밟은 순서다
-    (`DR-2-run-2026-09-13.md` §5 ② 「미실행(건너뜀)」 · 계수표 `d2_permission_switch` **0**).
-    ② 를 돌리면 `d2_permission_switch` **4행**이 새로 서서 그 기준선과 갈린다(교수는 네 스위치가
-    항상 켜진 것으로 판정되므로 행이 없는 것이 정상이다). 다른 id 를 주면 ② 를 돌린다.
+- 교수 bootstrap은 `infra/staging/provision-lab.sql`의 정본 계정·연구실 ID를 유지하고,
+  이메일은 계정 프로필과 일치시킨다. 실제 원격 실행 SQL과 로그인 신원을 함께 검사한다.
+  환경변수의 이메일만 바꾸거나 새 ID의 교수 계정을 덧붙이지 않는다.
 
 ## 승인
 
@@ -61,7 +116,7 @@ bash dev-package/tools/dev-reseed/reseed.sh --from s3           # 그 단계부�
 - `reset` 단계 직전에 `approval-record.json`(누가·언제·어느 sha·어느 게이트)이 실행 자리에 먼저 선다.
 - ⛔ **에이전트가 몰아서 실행할 때는 `reset` 앞에 advisor 게이트 ③(go/no-go)을 붙인다.**
   상시 승인은 회차별 Ted GO 를 대체하지 advisor 판정을 대체하지 않는다(`R-DATA-CANON §7`).
-- staging·prod 는 무변 — 매회 GO 이고 이 도구는 dev 식별자 밖에서 어느 조건으로도 돌지 않는다.
+- dev 실행기는 dev 식별자 밖에서 어느 조건으로도 돌지 않는다. product 최초 초기화는 위의 별도 경로와 현재 대화의 명시 승인을 따른다. staging에는 dev 상시 승인을 적용하지 않는다.
 
 ## 결과를 읽는 법
 

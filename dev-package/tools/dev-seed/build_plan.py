@@ -20,10 +20,12 @@
 """
 
 import argparse
+import datetime
 import difflib
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -39,6 +41,7 @@ except ImportError:  # 표준 라이브러리 밖 의존은 이것 하나다.
 TOOL_DIR = Path(__file__).resolve().parent
 DEFAULT_MANIFEST_OUT = TOOL_DIR / "plan-manifest.yaml"
 DEFAULT_WORK_DIR = TOOL_DIR / ".work"
+DEFAULT_METADATA = TOOL_DIR / "canonical-metadata.json"
 
 # md 4건의 자리. 순서가 계획의 프로젝트 순서이고 seq 순서와 같다.
 MD_RELATIVE = [
@@ -51,6 +54,16 @@ BLOCK_MARKER = "colab-datasets v1"
 LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
 EXPECT_DATASETS = 28
 EXPECT_EDGES = 18
+PERIOD_PATTERNS = {
+    "년": r"\d{4}", "월": r"\d{4}-(0[1-9]|1[0-2])",
+    "일": r"\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])",
+    "시": r"\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3])",
+    "분": r"\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d",
+    "초": r"\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d",
+}
+PERIOD_FORMATS = {"년": "%Y", "월": "%Y-%m", "일": "%Y-%m-%d",
+                  "시": "%Y-%m-%dT%H", "분": "%Y-%m-%dT%H:%M",
+                  "초": "%Y-%m-%dT%H:%M:%S"}
 
 MANIFEST_HEADER = """# 생성물 · 손으로 고치지 않는다 · 원본 = 참조자료 폴더의 DATASETS.md 4건.
 #
@@ -114,6 +127,59 @@ def resolve_ref_root(arg):
     return repo_root().parent / "03 Reference-Data"
 
 
+def bind_canonical_metadata(datasets, path=DEFAULT_METADATA):
+    """Bind checked-in period and special lineage roles to every plan row."""
+    try:
+        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit("정본 기간 파일을 읽지 못했다: %s" % path) from exc
+    if doc.get("schema") != "colab-dev-seed-metadata/1":
+        raise SystemExit("정본 기간 스키마가 아니다: %s" % path)
+    metadata_rows = doc.get("datasets") or []
+    by_key = {(x.get("seq"), x.get("name")): x for x in metadata_rows}
+    if len(by_key) != len(metadata_rows):
+        raise SystemExit("기간 정본에 seq/name 중복이 있다")
+    expected = {(d["seq"], d["name"]) for d in datasets}
+    if set(by_key) != expected:
+        missing = sorted(name for key, name in expected - set(by_key))
+        extra = sorted(name for key, name in set(by_key) - expected)
+        raise SystemExit("기간 정본과 계획이 다르다: 누락=%s 초과=%s" % (missing, extra))
+    for d in datasets:
+        row = by_key[(d["seq"], d["name"])]
+        unit, start, end = row.get("granularity"), row.get("start"), row.get("end")
+        pattern = PERIOD_PATTERNS.get(unit)
+        try:
+            dates_valid = (datetime.datetime.strptime(start, PERIOD_FORMATS[unit]).strftime(PERIOD_FORMATS[unit]) == start
+                           and datetime.datetime.strptime(end, PERIOD_FORMATS[unit]).strftime(PERIOD_FORMATS[unit]) == end)
+        except (KeyError, TypeError, ValueError):
+            dates_valid = False
+        if not pattern or not isinstance(start, str) or not isinstance(end, str) \
+                or not re.fullmatch(pattern, start) or not re.fullmatch(pattern, end) or not dates_valid:
+            raise SystemExit("기간 정밀도가 잘못됐다: %s" % d["name"])
+        if end < start or not str(row.get("basis") or "").strip():
+            raise SystemExit("기간 범위·근거가 잘못됐다: %s" % d["name"])
+        d["period"] = {"start": start, "end": end, "granularity": unit,
+                       "basis": row["basis"]}
+        note = str(row.get("registrationNote") or "").strip()
+        if note:
+            d["summary"] = (str(d.get("summary") or "").strip() + " · " + note).strip(" ·")
+
+    expected_aux = {
+        ("Prediction (공간상세화)", "DEM", "보조입력"),
+        ("Prediction (공간상세화)", "Aspect", "보조입력"),
+    }
+    got_aux = {(x.get("child"), x.get("parent"), x.get("role"))
+               for x in doc.get("auxiliaryParents") or []}
+    if got_aux != expected_aux:
+        raise SystemExit("보조입력 대상은 Prediction (공간상세화)의 DEM·Aspect 두 건이어야 한다")
+    by_name = {d["name"]: d for d in datasets}
+    for child, parent, role in got_aux:
+        if child not in by_name or parent not in by_name[child].get("parents", []):
+            raise SystemExit("보조입력 부모가 계획 계보에 없다: %s <- %s" % (child, parent))
+        by_name[child].setdefault("parent_roles", {})[parent] = role
+    return datasets
+
+
 def extract_block(text, where):
     """첫 줄에 `colab-datasets v1` 이 있는 ```yaml 블록 하나를 꺼낸다."""
     lines = text.splitlines()
@@ -175,6 +241,9 @@ def cross_check(block, table, where):
 def resolve_rows(blocks, ref_root, resolve_files=True):
     """블록 행 → 계획 행. 반환 = (데이터셋 · 어긋난 행 · 없는 파일)."""
     mismatch, missing, datasets = [], [], []
+    grid_paths = {(ref_root / b["folder"] / g).resolve()
+                  for b in blocks for row in b["datasets"]
+                  for g in (row.get("grid_files") or [])}
     for block in blocks:
         project = block.get("project_name") or block["project"]
         base = ref_root / block["folder"]
@@ -190,6 +259,10 @@ def resolve_rows(blocks, ref_root, resolve_files=True):
                     files += glob.glob(str(base / pat))
                 files = sorted(set(x for x in files
                                    if os.path.basename(x) != "desktop.ini"))
+                mixed = [f for f in files if Path(f).resolve() in grid_paths]
+                if mixed:
+                    raise SystemExit("보조 격자를 본문으로 등록할 수 없다: seq=%s · %s · %s"
+                                     % (row.get("seq"), row["name"], ", ".join(mixed)))
                 nbytes = sum(os.path.getsize(f) for f in files if os.path.exists(f))
                 if (len(files), nbytes) != (int(row["file_count"]), int(row["bytes"])):
                     mismatch.append((row["seq"], row["name"], int(row["file_count"]),
@@ -276,6 +349,8 @@ def check_manifest(blocks, manifest_path, expect_datasets, expect_edges, diff_li
         print("COUNT-MISMATCH datasets=%d/%d edges=%d/%d"
               % (len(datasets), expect_datasets, len(edges), expect_edges))
         return 2
+    if expect_datasets == EXPECT_DATASETS and expect_edges == EXPECT_EDGES:
+        bind_canonical_metadata(datasets)
     if not manifest_path.exists():
         print("MANIFEST-MISSING " + str(manifest_path))
         return 5
@@ -371,6 +446,9 @@ def main(argv=None):
     for d in datasets:
         for pn in d["parents"]:
             edges.append(dict(child=d["name"], parent=pn))
+    if (len(datasets) == args.expect_datasets and len(edges) == args.expect_edges
+            and args.expect_datasets == EXPECT_DATASETS and args.expect_edges == EXPECT_EDGES):
+        bind_canonical_metadata(datasets)
 
     print("datasets %d edges %d" % (len(datasets), len(edges)))
     print("expected datasets %s edges %s" % (args.expect_datasets, args.expect_edges))

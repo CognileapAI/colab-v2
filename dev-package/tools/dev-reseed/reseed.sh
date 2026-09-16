@@ -83,7 +83,7 @@ IFS=$'\t' read -r PROVISION_LAB_ACCOUNT_ID _sql_lab_id _sql_account_name _sql_ac
   <<<"${_lab_account_row:-$'\t\t\t\t'}"
 RESEED_ACCOUNT_ID="${RESEED_ACCOUNT_ID:-$PROVISION_LAB_ACCOUNT_ID}"
 RESEED_ACCOUNT_NAME="${RESEED_ACCOUNT_NAME:-$_sql_account_name}"
-RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-$_sql_account_email}"
+RESEED_ACCOUNT_EMAIL="${RESEED_ACCOUNT_EMAIL:-}"
 RESEED_ACCOUNT_ROLE="${RESEED_ACCOUNT_ROLE:-${_sql_account_role:-연구원}}"
 
 EXPECT_DATASETS="${COLAB_RESEED_EXPECT_DATASETS:-28}"
@@ -120,7 +120,8 @@ REHEARSE=0
 RUN_DIR=""
 TARGET_REF="${COLAB_RESEED_TARGET_REF:-origin/develop}"
 TARGET_SHA=""
-ACCOUNTS_FILE=""
+ACCOUNTS_FILE="${COLAB_RESEED_ACCOUNTS_PROFILE:-$HOME/.config/colab-platform/dev-reseed-accounts-approved.json}"
+ACCOUNTS_PASSWORD_FILE=""
 OPERATOR_PASSWORD_FILE="${COLAB_RESEED_OPERATOR_PASSWORD_FILE:-}"
 DEV_URL="${COLAB_DEV_WEB_URL:-${COLAB_DEV_URL:-}}"
 RELEASE_PLAN=""
@@ -162,8 +163,9 @@ usage() {
   --run-dir <자리>              실행 자리. 기본 = $COLAB_JOB_DIR/tmp/dev-reseed/<시각>
                                 또는 dev-package/reports/dev-reseed-runs/<시각>(무시 대상).
   --target-ref <ref>            배포 대상(기본 origin/develop).
-  --accounts-file <파일>        러너에 넘길 계정 파일(러너가 그 인자를 받을 때만 넘긴다).
-  --operator-password-file <파일>  prelude ③ 의 초기 비밀번호(0600 · 10자 이상).
+  --accounts-file <파일>        지정 5계정 프로필(기본 비공개 dev-reseed-accounts-approved.json).
+  --accounts-password-file <파일> 사용 불가: 각 계정의 이메일을 초기 비밀번호로 설정한다.
+  --operator-password-file <파일>  선택 입력. 교수 이메일과 같은 내용의 0600 파일만 허용.
   --base-url <주소>             CLI > COLAB_DEV_WEB_URL > legacy COLAB_DEV_URL 순서.
   --release-plan <파일>         deploy/--rehearse의 필수 dev 후보 계획.
                                 --rehearse는 --check만, deploy는 같은 보호 사본을 check한 뒤
@@ -181,6 +183,7 @@ while [ $# -gt 0 ]; do
     --run-dir) RUN_DIR="$2"; shift 2 ;;
     --target-ref) TARGET_REF="$2"; shift 2 ;;
     --accounts-file) ACCOUNTS_FILE="$2"; shift 2 ;;
+    --accounts-password-file) ACCOUNTS_PASSWORD_FILE="$2"; shift 2 ;;
     --operator-password-file) OPERATOR_PASSWORD_FILE="$2"; shift 2 ;;
     --base-url) DEV_URL="$2"; shift 2 ;;
     --release-plan) RELEASE_PLAN="$2"; shift 2 ;;
@@ -242,6 +245,19 @@ print(p if r.startswith("..") else r)' "$1" "$REPO_ROOT"
 # 참조자료·작업 자리 기본값.
 MD_ROOT="${MD_ROOT:-${COLAB_REF_ROOT:-}}"
 SEED_WORK_DIR="${COLAB_SEED_WORK_DIR:-$REPO_ROOT/dev-package/tools/dev-seed/.work}"
+
+# Exact account profile is a required input; explicit identity overrides must match.
+ACCOUNTS_WORK_DIR="$SEED_WORK_DIR/accounts"
+ACCOUNT_IDENTITY_INVALID=0
+_profile_row="$(python3 "$RESEED_DIR/accounts.py" professor)" || ACCOUNT_IDENTITY_INVALID=1
+IFS=$'\t' read -r _profile_id _profile_email _profile_name _profile_role _profile_lab <<<"$_profile_row"
+for field in ID EMAIL NAME ROLE; do
+  var="RESEED_ACCOUNT_$field"; lower="_profile_$(printf '%s' "$field" | tr '[:upper:]' '[:lower:]')"
+  if [ -n "${!var:-}" ] && [ "${!var}" != "${!lower}" ]; then ACCOUNT_IDENTITY_INVALID=1; fi
+  printf -v "$var" '%s' "${!lower}"
+done
+OPERATOR_PASSWORD_OVERRIDE="$OPERATOR_PASSWORD_FILE"
+OPERATOR_PASSWORD_FILE="$ACCOUNTS_WORK_DIR/initial-4.txt"
 
 # shellcheck source=lib.sh
 . "$RESEED_DIR/lib.sh"
