@@ -280,7 +280,8 @@ pf_announce() {
 
 # 비밀번호 값은 stdout/상태/명령 인자로 내보내지 않는다.
 validate_seed_inputs() {
-  [ "${ACCOUNT_IDENTITY_INVALID:-0}" = 0 ] || { echo '교수 신원 override가 지정 프로필과 다릅니다' >&2; return 1; }
+  [ "${ACCOUNT_PROFILE_INVALID:-0}" = 0 ] || { echo '실행 계정 프로필이 승인 기준과 일치하지 않거나 안전하지 않습니다' >&2; return 1; }
+  [ "${ACCOUNT_OVERRIDE_INVALID:-0}" = 0 ] || { echo '계정 신원 override가 실행 후보와 다릅니다' >&2; return 1; }
   [ -z "${ACCOUNTS_PASSWORD_FILE:-}" ] || { echo '공통 비밀번호는 사용할 수 없습니다: 각 이메일 초기값 정책' >&2; return 1; }
   python3 "$RESEED_DIR/accounts.py" validate --profile "$ACCOUNTS_FILE" || return 1
   python3 "$RESEED_DIR/accounts.py" sql --profile "$ACCOUNTS_FILE" --sql "$PROVISION_LAB_SQL" >/dev/null || return 1

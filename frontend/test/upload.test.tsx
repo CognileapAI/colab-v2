@@ -27,8 +27,6 @@ import {
   UPLOAD_CLOSE_LEAVE,
   analyzeElapsed,
 } from '../src/components/common/toastCopy';
-import { PREVIEW_STATE_KEY, previewPath } from '../src/components/preview/handoff';
-import type { PreviewHandoff } from '../src/components/preview/types';
 import { TransferInterrupted, UploadGone } from '../src/components/upload/types';
 import type {
   LineageStepContext,
@@ -418,6 +416,12 @@ async function openRegister() {
   await setPeriod({ unit: '일', start: '2025-06-01' });
   await change(screen.getByTestId('reg-interval-value'), '1');
   await change(screen.getByTestId('reg-interval-unit'), '시');
+  await click(stepBtn('③'));
+  if (screen.queryByTestId('reg-source-downloaded-on')) {
+    await change(screen.getByTestId('reg-source-url'), 'https://example.org/era5');
+    await change(screen.getByTestId('reg-source-downloaded-on'), '2025-06-01');
+  }
+  await click(stepBtn('②'));
 }
 
 const stepBtn = (n: '①' | '②' | '③') => screen.getByRole('button', { name: new RegExp(`^${n}`) });
@@ -728,13 +732,13 @@ describe('§8 미리보기 — 서버가 그리고, 진행을 **세 단계**로 
   });
 });
 
-describe('§8 등록 결정 게이트 — 등록이 의무가 아님이 화면에서 읽힌다', () => {
-  it('미리보기 아래에 두 행동이 나란히 상시로 있다', async () => {
+describe('#79 등록 결정 게이트 — 다음으로 등록을 이어간다', () => {
+  it('미리보기 아래에 다음만 있고 보기 전용 선택이 없다', async () => {
     const { sources } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
     const gate = await screen.findByTestId('reg-gate');
-    expect(within(gate).getByTestId('reg-viewonly')).toHaveTextContent('보기만 할게요');
+    expect(within(gate).queryByTestId('reg-viewonly')).toBeNull();
     expect(within(gate).getByTestId('reg-open')).toBeEnabled();
     expect(
       screen.getByTestId('up-preview').compareDocumentPosition(gate) &
@@ -742,13 +746,14 @@ describe('§8 등록 결정 게이트 — 등록이 의무가 아님이 화면�
     ).toBeTruthy();
   });
 
-  it('`보기만 할게요` 는 아무것도 등록하지 않는다 — `createDataset` 0회', async () => {
+  it('다음을 눌러도 아직 데이터셋을 생성하지 않고 등록 폼을 연다', async () => {
     const { sources, calls } = fakes();
     await openModal(sources);
     await dropFiles([makeFile('a.nc')]);
-    await click(await screen.findByTestId('reg-viewonly'));
+    await click(await screen.findByTestId('reg-open'));
     expect(calls.register).toBe(0);
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
+    expect(screen.getByTestId('reg-s1')).toBeInTheDocument();
+    expect(screen.getByTestId('up-preview')).toBeInTheDocument();
   });
 });
 
@@ -989,10 +994,10 @@ describe('§8 ② 메타데이터 입력', () => {
       expect(l.querySelectorAll('.reqtag, .opttag')).toHaveLength(1);
       expect(l.textContent ?? '').not.toContain('(선택)');
     }
-    // 관측 간격·좌표계·격자는 모두 선택 입력이다. 기간은 제 행에서 필수로 받는다.
+    // 관측 간격은 필수이고 좌표계·격자는 선택 입력이다.
     expect(row.contains(screen.getByTestId('reg-interval-value'))).toBe(true);
-    expect(row.querySelectorAll('.reqtag')).toHaveLength(0);
-    expect(row.querySelectorAll('.opttag')).toHaveLength(3);
+    expect(row.querySelectorAll('.reqtag')).toHaveLength(1);
+    expect(row.querySelectorAll('.opttag')).toHaveLength(2);
     const auto = Array.from(row.querySelectorAll('label:not([for])'));
     expect(auto).toHaveLength(0);
   });
@@ -1593,7 +1598,7 @@ describe('§7.1 등록 결정 게이트 전에는 아무것도 저장되지 않�
       // ⭑ **⟨개정 2026-09-14⟩ `topic` 이 빠지고 `period`·`observationInterval` 이 들어왔다** —
       //   `주제` 칸은 폼에서 사라졌고, 기간·관측 간격은 등록 게이트라 늘 실린다.
       ['category', 'dataType', 'observationInterval', 'period', 'processingLevelUserSet',
-       'lineageParents', 'name', 'projectIds', 'sourceLabel', 'summary', 'uploadId'].sort(),
+       'lineageParents', 'name', 'projectIds', 'sourceLabel', 'sourceUrl', 'sourceDownloadedOn', 'summary', 'uploadId'].sort(),
     );
     expect('accessState' in body).toBe(false);
     expect('topic' in body).toBe(false);
@@ -2222,42 +2227,18 @@ async function openModalWithProbe(sources: UploadSources) {
   return view;
 }
 
-describe('§7.2 전이 — `보기만 할게요` 는 S-08 로 보낸다', () => {
-  it('모달이 닫히고 주소가 미등록 미리보기 화면으로 바뀐다', async () => {
+describe('#79 등록 진입은 주소와 미리보기를 유지한다', () => {
+  it('다음은 같은 모달의 분류 입력으로 이동하고 데이터셋을 만들지 않는다', async () => {
     const { sources, calls } = fakes();
     await openModalWithProbe(sources);
     await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
     await screen.findByTestId('up-preview');
-    await click(await screen.findByTestId('reg-viewonly'));
-
-    const loc = screen.getByTestId('loc');
-    expect(loc.getAttribute('data-path')).toBe(previewPath(UPLOAD_ID).split('?')[0]);
-    expect(screen.queryByTestId('upload-modal')).toBeNull();
-    // **아무것도 등록하지 않는다** — 이동은 사실을 만드는 것이 아니다 (§7.1)
+    expect(screen.queryByRole('button', { name: '보기만 할게요' })).toBeNull();
+    await click(await screen.findByTestId('reg-open'));
+    expect(screen.getByTestId('loc').getAttribute('data-path')).toBe('/datasets');
+    expect(screen.getByTestId('reg-s1')).toBeInTheDocument();
+    expect(screen.getByTestId('up-preview')).toBeInTheDocument();
     expect(calls.register).toBe(0);
-  });
-
-  it('그리던 미리보기를 짐으로 넘긴다 — S-08 이 다시 그리지 않고 이어 본다 (§8.1)', async () => {
-    const { sources, calls } = fakes();
-    await openModalWithProbe(sources);
-    await dropFiles([makeFile('nakdong_precip_2025_Lv2.nc')]);
-    await screen.findByTestId('up-preview');
-    await click(await screen.findByTestId('up-preview-draw'));
-    await waitFor(() => expect(calls.createRender.length).toBeGreaterThan(0));
-    await click(await screen.findByTestId('reg-viewonly'));
-
-    const loc = screen.getByTestId('loc');
-    expect(loc.getAttribute('data-search')).toBe(`?render=${RENDER_ID}`);
-    const state = JSON.parse(loc.getAttribute('data-state') ?? 'null') as Record<
-      string,
-      PreviewHandoff
-    >;
-    const handoff = state[PREVIEW_STATE_KEY]!;
-    expect(handoff.uploadId).toBe(UPLOAD_ID);
-    expect(handoff.renderId).toBe(RENDER_ID);
-    // 헤더에서 읽은 값만 간다 — 사람이 붙이는 이름·주제는 자리 자체가 없다
-    expect(handoff.basicInfo).toEqual({ byteSize: 148_000_000 });
-    expect(handoff.files.map((f) => f.fileName)).toEqual(['nakdong_precip_2025_Lv2.nc']);
   });
 });
 

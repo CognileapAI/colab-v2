@@ -50,7 +50,8 @@ def _fresh_dataset(client, *, name: str = "후주입 대상") -> str:
     upload_id = _upload(client, names=["body.nc"], kinds=[BODY])
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name, "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 201, r.text
     return r.json()["datasetId"]
@@ -102,7 +103,8 @@ def test_registering_a_grid_only_upload_is_400(p2_client) -> None:
     upload_id = _upload(client, names=["lat.npy"], kinds=[GRID])
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "격자만", "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(TOKEN_RES))
     assert r.status_code == 400, r.text
 
@@ -278,7 +280,8 @@ def test_an_attached_upload_cannot_be_registered(p2_client, sql) -> None:
                        headers=auth(TOKEN_RES)).status_code == 201
     r = client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": "x", "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                     headers=auth(TOKEN_RES))
     assert r.status_code in (400, 409), r.text
 

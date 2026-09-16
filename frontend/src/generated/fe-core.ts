@@ -3213,16 +3213,14 @@ export interface components {
             /** @description 원천 표기 — 데이터셋이 아니라 표기다 (`Policy §4 용어` · 계보 그래프의 점선 노드). */
             sourceLabel?: string | null;
             /**
-             * @description ⭑ **⟨20차 해제 · PRD-19 · WU-B6⟩ 출처 주소 — Lv0 전용 칸이지만 서버는 Lv 를 보지 않는다.**
+             * @description ⭑ **2026-09-16 · #78** 출처 주소 — 신규 Lv0 등록에서 필수다.
              *
              *     rev1 축자 = 「원시 데이터라 부모가 없어요. 대신 어디서 언제 받았는지를 남겨요.」
              *     원시 데이터는 부모가 없어 계보로는 출처를 말할 수 없다 — 그 자리를 이 두 칸이 메운다.
              *
-             *     ⭑ **선택 입력이다.** 비어도 등록되고, **`Lv1` 이상에서 값이 와도 거절하지 않고
-             *     저장한다.** ⛔ 종전 문면(「Lv0 이면 두 칸 필수·비면 400」·「Lv1 이상에서 오면
-             *     400」)은 **폐기됐다**(PRD-19 · 미결-11 ⓐ) — 목업 배지를 근거로 400 을 세우지 않는다.
-             *     **Lv 로 갈리는 것은 두 칸의 화면 표시뿐이다** — 화면은 ① 이 고른 Lv 가 `Lv0` 일
-             *     때만 이 칸을 그리고, 숨은 동안에는 열쇠를 **싣지 않는다**.
+             *     `processingLevelUserSet` 이 `Lv0`이면 공백이 아닌 값이 필요하다. `Lv1` 이상에서
+             *     값이 와도 거절하지 않고 저장한다. DatasetUpdate에서는 계속 선택 입력이며 기존
+             *     데이터의 `null`도 유효하다. 화면에서 칸이 숨은 비Lv0 등록은 이 열쇠를 싣지 않는다.
              *
              *     ⚠ **원천 표기(`sourceLabel`)와 다른 축이다** — 그쪽은 출처의 **이름**(계보 그래프의
              *     점선 노드)이고 **Lv 무관 상시 노출**이다(미결-11 ⓐ). 이 칸이 그 값을 대신하지 않는다.
@@ -3236,8 +3234,8 @@ export interface components {
              *     저장 열은 `d3_dataset.source_downloaded_on date` 이고, 「올린 날」(`uploadedAt`)과
              *     **다른 축**이다 — 남의 저장소에서 받은 날을 적는 자리다.
              *
-             *     `sourceUrl` 과 같은 규율이다: **선택 입력** · **한쪽만 채워도 정상**(pdf 축자가
-             *     「출처**나** URL」로 택일까지 적었다) · **Lv 로 갈리지 않는다.**
+             *     신규 Lv0 등록에서는 `sourceUrl`과 함께 필수다. 비Lv0 등록과 DatasetUpdate에서는
+             *     계속 선택 입력이며, 비Lv0에서 값이 와도 저장한다.
              *     ⚠ 날짜가 아닌 문자열은 **서버가 400** 으로 되돌린다 — 검사 없이 내려가면 `date`
              *     캐스트가 DB 에서 죽어 사용자의 오타가 **500** 이 된다.
              */
@@ -3289,10 +3287,14 @@ export interface components {
             /** @description 기간 — **자유 입력** (`VAL-006`). 최소 단위는 `DataPeriod.granularity` 다 (PRD-18). */
             period?: components["schemas"]["DataPeriod"] | null;
             /**
-             * @description ⭑ **⟨19차 해제 · PRD-17⟩ 관측 간격 — 선택 입력이다.** 비우면 `null` 이고
-             *     그대로 등록된다. ⛔ 등록을 막는 칸이 아니다.
+             * @description ⭑ **2026-09-16 · #78** 관측 간격 — 신규 등록 필수다. 숫자와 단위를 모두
+             *     보내야 한다. DatasetUpdate와 조회의 공용 `ObservationInterval` nullable 계약은
+             *     그대로 유지한다.
              */
-            observationInterval?: components["schemas"]["ObservationInterval"] | null;
+            observationInterval: components["schemas"]["ObservationInterval"] & {
+                value: number;
+                unit: string;
+            };
             /**
              * @description ⭑ **⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위 — 업로드에서 받는다.**
              *     값은 `AccessState` 3값(`열림`·`잠김`·`지정 공개`)이고 화면 표기는
@@ -3309,7 +3311,7 @@ export interface components {
              *     (`[정본 무근거]` — E04-step-op-map Q2) 등록 후 `linkProjectDataset` 으로 적는다.
              */
             projectIds?: components["schemas"]["Ulid"][];
-        };
+        } & unknown;
         /**
          * @description 사람이 적는 정보만 (`DATAMODEL-BASELINE.md` D3 · `sessions/D2c.md §2-7`).
          *

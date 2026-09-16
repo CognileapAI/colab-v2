@@ -20,6 +20,12 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/bin" "$TMP/empty-ref-root" "$TMP/run"
+APPROVED="$TMP/approved.json"
+CANDIDATE="$TMP/candidate.json"
+cp "$HERE/../accounts-profile.example.json" "$APPROVED"
+cp "$HERE/../accounts-profile.example.json" "$CANDIDATE"
+chmod 600 "$APPROVED" "$CANDIDATE"
+export COLAB_RESEED_ACCOUNTS_PROFILE="$APPROVED"
 
 # ── 대역 ─────────────────────────────────────────────────────────────────
 cat > "$TMP/bin/ssh" <<'STUB'
@@ -84,7 +90,7 @@ COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 COLAB_RESEED_MIN_MEM_MIB=99999999 COLAB_RESEED_MIN_DISK_GIB=99999999 \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --target-ref refs/colab-reseed-red-fixture --run-dir "$TMP/run" > "$OUT" 2>&1
+  bash "$RESEED" --accounts-file "$CANDIDATE" --target-ref refs/colab-reseed-red-fixture --run-dir "$TMP/run" > "$OUT" 2>&1
 RC=$?
 
 echo "── 픽스처 출력 (미달 판정 줄)"
@@ -113,8 +119,9 @@ grep -qE '://[^:/@[:space:]]+:[^@[:space:]*]+@' "$OUT" && note "출력에 접속
 #   더 붙는다(`dev-package/tools/dev-seed/build_plan.py`). `grep -qx "datasets 28 edges 18"` 은
 #   뒤 모양을 **한 글자도** 잡지 못하므로 계수가 맞아도 미달로 떨어진다.
 #   여기서는 생성기를 대역으로 바꿔 두 모양과 계수 불일치를 각각 판정한다.
-plan_case() { # $1=대역이 찍을 요약줄 → stdout: 「미달」 또는 「통과」
-  local summary="$1" out="$TMP/plan-out.txt" stub="$TMP/build_plan_stub.py"
+plan_case() { # $1=대역이 찍을 요약줄 → stdout: 미달/통과/판정불가
+  local summary="$1" out="$TMP/plan-out.txt" stub="$TMP/build_plan_stub.py" rc=0
+  rm -rf "$TMP/run-plan"
   cat > "$stub" <<STUB
 import sys
 print("$summary")
@@ -127,9 +134,27 @@ STUB
   COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
   COLAB_RESEED_BUILD_PLAN="$stub" \
   AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-    bash "$RESEED" --target-ref refs/colab-reseed-red-fixture \
-      --run-dir "$TMP/run-plan" > "$out" 2>&1 || true
-  if grep -qE '  ✗ build-plan — ' "$out"; then printf '미달'; else printf '통과'; fi
+    bash "$RESEED" --accounts-file "$CANDIDATE" --target-ref refs/colab-reseed-red-fixture \
+      --run-dir "$TMP/run-plan" > "$out" 2>&1 || rc=$?
+  local passed failed closed=0
+  passed="$(grep -cE '  ✓ build-plan — ' "$out" || true)"
+  failed="$(grep -cE '  ✗ build-plan — ' "$out" || true)"
+  if [ "$rc" = 1 ] && python3 - "$TMP/run-plan" <<'PY'
+import json,pathlib,sys
+run=pathlib.Path(sys.argv[1]);pf=json.loads((run/'preflight.json').read_text())
+assert len(pf['passed'])==len(set(pf['passed']))==pf['passedCount']
+assert len(pf['failed'])==len(set(pf['failed']))==pf['failedCount']
+assert not set(pf['passed'])&set(pf['failed'])
+assert json.loads((run/'stages/preflight.json').read_text())['exitCode']==1
+assert json.loads((run/'stages/report.json').read_text())['exitCode']==0
+r=json.loads((run/'result.json').read_text())
+assert r['outcome']=='failed' and r['failedStage']=='preflight'
+PY
+  then closed=1; fi
+  if [ "$closed" = 1 ] && [ "$failed" = 1 ] && [ "$passed" = 0 ]; then printf '미달'
+  elif [ "$closed" = 1 ] && [ "$passed" = 1 ] && [ "$failed" = 0 ]; then printf '통과'
+  else printf '판정불가'
+  fi
   rm -rf "$TMP/run-plan"
 }
 
@@ -170,7 +195,7 @@ COLAB_DEV_SSH='ec2-user@<대역>' COLAB_DEV_KEY_FILE="$TMP/no-such-key" \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 COLAB_RESEED_EC2_SECRETS_DIR=/etc/colab \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --from reset --target-ref refs/colab-reseed-red-fixture \
+  bash "$RESEED" --accounts-file "$CANDIDATE" --from reset --target-ref refs/colab-reseed-red-fixture \
     --run-dir "$TMP/run-from" > "$FROM_OUT" 2>&1
 FROM_RC=$?
 [ "$FROM_RC" -ne 0 ] || note "ⓚ --from reset 이 0 으로 끝났다 — preflight 미달을 지나쳤다"
@@ -180,7 +205,7 @@ grep -q '단계 reset 시작' "$FROM_OUT" && note "ⓚ″ preflight 미달인데
 # ── `--preflight-only` — 검사만 하고 바꾸는 단계는 하나도 돌지 않는다 ────
 PO_OUT="$TMP/po-out.txt"
 PATH="$TMP/bin:$PATH" \
-  bash "$RESEED" --preflight-only --dry-run --run-dir "$TMP/run-po" > "$PO_OUT" 2>&1
+  bash "$RESEED" --accounts-file "$CANDIDATE" --preflight-only --dry-run --run-dir "$TMP/run-po" > "$PO_OUT" 2>&1
 PO_RC=$?
 [ "$PO_RC" -eq 0 ] || note "ⓛ --preflight-only --dry-run 이 비영으로 끝났다(rc=$PO_RC)"
 grep -q '단계 preflight 시작' "$PO_OUT" || note "ⓛ′ --preflight-only 인데 preflight 가 돌지 않았다"
@@ -200,7 +225,7 @@ PATH="$TMP/bin:$PATH" \
 COLAB_DEV_SSH= COLAB_DEV_KEY_FILE= \
 COLAB_DEV_URL='https://<대역>' COLAB_REF_ROOT="$TMP/empty-ref-root" \
 AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= \
-  bash "$RESEED" --preflight-only --target-ref refs/colab-reseed-red-fixture \
+  bash "$RESEED" --accounts-file "$CANDIDATE" --preflight-only --target-ref refs/colab-reseed-red-fixture \
     --run-dir "$TMP/run-nossh" > "$NOSSH_OUT" 2>&1
 NOSSH_RC=$?
 [ "$NOSSH_RC" -ne 0 ] || note "ⓞ 접속 값이 없는데 0 으로 끝났다"
@@ -295,7 +320,7 @@ for mode in web cli legacy; do
   [ "$mode" != cli ] || extra=(--base-url https://cli.invalid)
   [ "$mode" != legacy ] || web=''
   COLAB_DEV_WEB_URL="$web" COLAB_DEV_URL=https://legacy.invalid \
-    bash "$RESEED" --dry-run --from seed --run-dir "$TMP/url-$mode" "${extra[@]}" > "$TMP/url.out" 2>&1
+    bash "$RESEED" --accounts-file "$CANDIDATE" --dry-run --from seed --run-dir "$TMP/url-$mode" "${extra[@]}" > "$TMP/url.out" 2>&1
   grep -q -- "--base-url https://$mode.invalid" "$TMP/url.out" || note "reseed 주소 우선순위 $mode 실패"
   url_cases=$((url_cases + 1))
 done
@@ -321,7 +346,7 @@ def call(command, **overrides):
     return subprocess.run(['bash', '-c', '. "$1/preflight.sh"; '+command, '_', str(base)], env=dict(env, **overrides), capture_output=True, text=True)
 assert call('validate_seed_inputs 1').returncode == 0
 assert not work.exists(), 'validation must be read-only'
-for overrides in ({'ACCOUNTS_PASSWORD_FILE':str(pw)}, {'ACCOUNTS_FILE':'/missing'}, {'ACCOUNT_IDENTITY_INVALID':'1'}):
+for overrides in ({'ACCOUNTS_PASSWORD_FILE':str(pw)}, {'ACCOUNTS_FILE':'/missing'}, {'ACCOUNT_PROFILE_INVALID':'1'}, {'ACCOUNT_OVERRIDE_INVALID':'1'}):
     assert call('validate_seed_inputs', **overrides).returncode != 0
 pw.chmod(0o644); assert call('validate_seed_inputs').returncode != 0; pw.chmod(0o600)
 pw.write_text(''); assert call('validate_seed_inputs').returncode != 0; pw.write_text(email)

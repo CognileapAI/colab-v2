@@ -94,7 +94,8 @@ def test_격자와_본체가_같은_디렉터리에서_섞이지_않는다(p2_cl
 def _register(client, upload_id: str, *, name: str = "배치 시험 데이터셋"):
     return client.post(f"{API_PREFIX}/datasets", json={"uploadId": upload_id, "name": name, "summary": "시험용 설명 한 줄",
             # ⭑ ⟨WU-B3 · 20차 ㉯⟩ `category`·`dataType` 이 `DatasetCreate.required` 다.
-            "category": "기상·기후 인자", "dataType": "재분석자료"},
+            "category": "기상·기후 인자", "dataType": "재분석자료",
+            "observationInterval": {"value": 10, "unit": "분"}},
                        headers=auth(TOKEN_RES))
 
 

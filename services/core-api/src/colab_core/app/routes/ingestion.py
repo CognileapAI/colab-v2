@@ -605,6 +605,21 @@ _HUMAN_METADATA_FIELDS = ("variables", "crs", "period", "observationInterval",
                           "sourceUrl", "sourceDownloadedOn", "gridDescription")
 
 
+def _validate_create_required_metadata(metadata: dict) -> None:
+    """신규 등록에서만 필수인 메타데이터를 검사한다."""
+    interval = metadata.get("observationInterval")
+    if not isinstance(interval, dict) \
+            or interval.get("value") is None or interval.get("unit") is None:
+        raise errors.bad_request("관측 간격의 숫자와 단위를 입력해 주세요.")
+
+    if metadata.get("processingLevelUserSet") == "Lv0":
+        for key, label in (("sourceUrl", "출처 주소"),
+                           ("sourceDownloadedOn", "내려받은 날")):
+            value = metadata.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise errors.bad_request(f"Lv0 등록에는 {label}이 필요하다.")
+
+
 def _extension_of(file_name: str) -> str:
     """확장자 — **소문자 기준**이다 (`.NC` 와 `.nc` 는 같은 종류다 · PRD-32).
 
@@ -749,6 +764,7 @@ def create_dataset(request: Request, body: dict = None,
     # 세 자유 입력 칸의 형상 — **수정 경로와 같은 함수다.** 두 벌을 두지 않는다 (`#62`).
     human_metadata = _human_metadata(body)
     validate_human_metadata(human_metadata)
+    _validate_create_required_metadata(human_metadata)
     # ⭑ ⟨20차 해제 · PRD-11 · WU-B4⟩ 공개 범위는 **D2 의 값**이라 `_human_metadata`(D3 저장
     # 경로)에 섞지 않고 여기서 따로 잰다. 값 집합 밖은 **400**(IntegrityError 500 이 아니다).
     validate_access_state(body)

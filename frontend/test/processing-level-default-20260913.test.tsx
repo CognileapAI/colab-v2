@@ -118,6 +118,8 @@ async function fillRequiredPeriod() {
   await change(screen.getByTestId('reg-period-pop-start-month'), '06');
   await change(screen.getByTestId('reg-period-pop-start-day'), '01');
   await click(screen.getByTestId('reg-period-apply'));
+  await change(screen.getByTestId('reg-interval-value'), '1');
+  await change(screen.getByTestId('reg-interval-unit'), '시');
 }
 
 /** 등록을 열고 **가공 단계를 건드리지 않은 채** ③ 연결 단계까지 간다. */

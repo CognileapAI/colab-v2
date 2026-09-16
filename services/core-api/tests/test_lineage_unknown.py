@@ -28,6 +28,9 @@ from test_dataset_registration import make_upload, register
 
 from colab_core.app.main import API_PREFIX
 
+LV0_SOURCE = {"sourceUrl": "https://example.test/source",
+              "sourceDownloadedOn": "2026-09-16"}
+
 
 def _make(client, **extra):
     return register(client, make_upload(client), **extra)
@@ -64,13 +67,13 @@ def test_no_parents_checked_is_no_record(p2_client) -> None:
 
 def test_no_parents_unchecked_at_lv0_is_origin(p2_client) -> None:
     """⑶ 판정 ⑷ — Lv0 제외 조항. 이 조항이 없으면 Lv0 전부가 `확인 필요` 로 뜬다."""
-    made = _created(p2_client(), processingLevelUserSet="Lv0")
+    made = _created(p2_client(), processingLevelUserSet="Lv0", **LV0_SOURCE)
     assert made["lineageState"] == "원천"
 
 
 def test_a_declaration_beats_lv0(p2_client) -> None:
     """판정 순서 — ⑶ 이 ⑷ 보다 위다. Lv0 이어도 선언했으면 `기록 없음` 이다."""
-    made = _created(p2_client(), processingLevelUserSet="Lv0", lineageUnknown=True)
+    made = _created(p2_client(), processingLevelUserSet="Lv0", lineageUnknown=True, **LV0_SOURCE)
     assert made["lineageState"] == "기록 없음"
 
 
@@ -145,7 +148,7 @@ def test_the_parent_path_is_unchanged(p2_client) -> None:
 
 def test_the_parent_path_ignores_lv0_and_the_source_label(p2_client) -> None:
     """부모가 있으면 ⑷⑸ 는 아예 닿지 않는다 — 위 두 항이 먼저 이긴다."""
-    made = _created(p2_client(), processingLevelUserSet="Lv0", sourceLabel="기상청",
+    made = _created(p2_client(), processingLevelUserSet="Lv0", sourceLabel="기상청", **LV0_SOURCE,
                     lineageParents=_parent(DS_A1))
     assert made["lineageState"] == "확정"
 
