@@ -422,6 +422,13 @@ def enabled(css):
     return True
 
 
+def checked(css):
+    if CFG and CFG.dry_run:
+        return True
+    rc, data, _ = ab(["is", "checked", css], expect_ok=False, quiet=True)
+    return rc == 0 and isinstance(data, dict) and bool(data.get("checked"))
+
+
 def cur_url():
     if CFG.dry_run:
         return CFG.base_url + "/lab"
@@ -1179,11 +1186,10 @@ def do_grid(st, ds):
 def do_lineage(st, ds):
     """6 절 — 부모를 사람이 직접 고른다. AI 제안(lin-ask)은 누르지 않는다.
 
-    화면 순서가 네 계단이다(LineageStep.tsx · ParentPicker.tsx 실물) —
+    화면 순서가 세 계단이다(LineageStep.tsx · ParentPicker.tsx 실물) —
       ① `lin-add`            「앞 데이터 직접 추가」 → `lin-picker` 개방
-      ② `lin-pick-<id>`      행을 고를 뿐 — **이것만으로는 부모가 붙지 않는다**
-      ③ 「이 데이터로 연결」   고르개의 확정 단추(testid 없음 · 역할+이름으로 지목)
-      ④ `lin-confirm`        카드의 「확인」 — **확인된 것만 서버로 간다**
+      ② `lin-pick-<id>`      radio를 고르고 실제 checked 상태를 확인
+      ③ 「이 데이터로 연결」   `confirmed: true` 카드를 만드는 확정 단추
     """
     parents, _ = split_lineage_parents(ds)
     if not parents:
@@ -1209,14 +1215,14 @@ def do_lineage(st, ds):
                 raise Fail("부모 행 미발견: lin-pick-" + str(pid) + " (" + pname + ")")
         if not enabled(row_css):
             raise Fail("부모 행이 비활성(자기 Lv 를 넘는 부모): " + pname)
-        activate(row_css, "부모 행 " + str(pid))
-        # ③ 고르개는 모달이라 행 클릭이 곧 부모 추가가 아니다(ParentPicker.tsx `onClose` 분기).
+        ab(["check", row_css])
+        if not checked(row_css):
+            raise Fail("부모 행 선택이 반영되지 않았다: " + pname)
+        # ③ 고르개 확정이 confirmed 카드를 바로 만든다(LineageStep.tsx `addParent`).
         activate(".lin-find .modal-f .btn-primary", "이 데이터로 연결")
         card_css = ".lin-cards .lin-card:nth-child(" + str(idx + 1) + ")"
         if not wait_css(card_css, 30, "계보 카드 " + str(idx + 1)):
             raise Fail("계보 카드가 붙지 않았다: " + pname)
-        # ④ 확인된 관계만 서버로 간다(LineageStep.tsx `confirmed` 거르개).
-        activate(card_css + ' [data-testid="lin-confirm"]', "계보 확인 " + str(idx + 1))
     made = count(".lin-cards .lin-card")
     log("  · 계보 카드 " + str(made) + "건 · 계획 " + str(len(parents)) + "건")
     if made < len(parents):
@@ -1725,7 +1731,7 @@ def catalog_total():
     return rows, "table.catalog tbody tr.clk (쪽 잘림 가능)", rows
 
 
-def classify_preview_measurement(slot_state, image_count, decoded_count, unavailable):
+def classify_preview_measurement(slot_state, image_count, decoded_count, unavailable, total_text):
     """상자 존재가 아니라 terminal 상태와 실제 decode된 주 영상을 판정한다."""
     if slot_state == "failed" or unavailable:
         return "안 그려짐", "미리보기 실패"
@@ -1735,6 +1741,10 @@ def classify_preview_measurement(slot_state, image_count, decoded_count, unavail
         return "안 그려짐", "완료 슬롯에 주 이미지가 없음"
     if decoded_count < 1:
         return "안 그려짐", "완료 슬롯의 주 이미지가 아직 decode되지 않음"
+    if decoded_count < image_count:
+        return "안 그려짐", "완료 슬롯의 표시 이미지가 모두 decode되지 않음"
+    if not str(total_text or "").strip():
+        return "안 그려짐", "화면 표시 시간 관측이 끝나지 않음"
     return "그려짐", ""
 
 
@@ -1742,14 +1752,46 @@ def _preview_measurement():
     return js("""(() => {
       const slot = document.querySelector('[data-testid="dt-preview-slot"]');
       const images = Array.from(document.querySelectorAll(
-        '[data-testid="preview-single-image"], [data-testid="preview-tile"]'));
+        '[data-testid="preview-single-image"], [data-testid="preview-tile"]')).filter((img) => {
+          const box = img.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0
+            && box.top < window.innerHeight && box.left < window.innerWidth;
+        });
       return {
         slotState: slot?.getAttribute('data-preview-slot-state') || '',
         imageCount: images.length,
         decodedCount: images.filter((img) => img.complete && img.naturalWidth > 0).length,
         unavailable: document.querySelectorAll('[data-testid="preview-unavailable"]').length,
+        totalText: document.querySelector('[data-testid="dt-preview-total"]')?.textContent || '',
       };
     })()""", default={}) or {}
+
+
+def request_selected_preview():
+    """현재 파일을 명시 선택한 뒤 사용자와 같은 `보기` 요청 한 건을 만든다."""
+    deadline = time.time() + 30
+    selected = {}
+    while time.time() < deadline:
+        selected = js("""(() => {
+          const picker = document.querySelector('[data-testid="dt-pick-file"]');
+          const draw = document.querySelector('[data-testid="dt-preview-draw"]');
+          return {fileId: picker?.value || '', drawEnabled: !!draw && !draw.disabled};
+        })()""", default={"fileId": "dry-run-file", "drawEnabled": True}) or {}
+        if str(selected.get("fileId") or "").strip() and selected.get("drawEnabled") is True:
+            break
+        time.sleep(0.1)
+    file_id = str(selected.get("fileId") or "").strip()
+    if not file_id or selected.get("drawEnabled") is not True:
+        raise Fail("미리보기 파일 후보 또는 보기 버튼이 준비되지 않았다")
+    ab(["select", '[data-testid="dt-pick-file"]', file_id])
+    ab(["click", '[data-testid="dt-preview-draw"]'])
+    return file_id
+
+
+def require_preview_outcome(outcome):
+    if outcome is None:
+        raise Fail("미리보기 terminal/display 시간 초과 — 후속 요청을 중단한다")
+    return outcome
 
 
 def verify_result_passes(result):
@@ -1871,27 +1913,34 @@ def phase_verify(st, plan):
             continue
         open_url("/datasets/" + str(did))
         wait_css('[data-testid="dataset-preview"]', 30, "미리보기 구역")
+        entry["file_id"] = request_selected_preview()
         outcome = wait_any([
-            ["done", lambda: _preview_measurement().get("slotState") == "done"],
+            ["displayed", lambda: (lambda m: m.get("slotState") == "done"
+             and int(m.get("imageCount") or 0) > 0
+             and int(m.get("decodedCount") or 0) == int(m.get("imageCount") or 0)
+             and bool(str(m.get("totalText") or "").strip()))(_preview_measurement())],
             ["failed", lambda: _preview_measurement().get("slotState") == "failed"],
-        ], 120, label="미리보기 terminal slot")
+        ], 120, label="미리보기 terminal/display")
+        require_preview_outcome(outcome)
         measured = _preview_measurement()
         slot_state = measured.get("slotState") or outcome or ""
         bad = int(measured.get("unavailable") or 0)
         imgs = int(measured.get("imageCount") or 0)
         decoded = int(measured.get("decodedCount") or 0)
+        total_text = str(measured.get("totalText") or "")
         entry["preview_section"] = count('[data-testid="dataset-preview"]')
         entry["slot_state"] = slot_state
         entry["unavailable"] = bad
         entry["images"] = imgs
         entry["decoded_images"] = decoded
+        entry["display_total"] = total_text
         entry["status_text"] = ""
         if bad > 0:
             rc, data, _ = ab(["get", "text", '[data-testid="preview-unavailable"]'],
                              expect_ok=False, quiet=True)
             entry["status_text"] = ((data or dict()).get("text") or "")[:400]
         entry["render"], measured_reason = classify_preview_measurement(
-            slot_state, imgs, decoded, bad)
+            slot_state, imgs, decoded, bad, total_text)
         if measured_reason and not entry["status_text"]:
             entry["status_text"] = measured_reason
         SHOT_DIR.mkdir(parents=True, exist_ok=True)

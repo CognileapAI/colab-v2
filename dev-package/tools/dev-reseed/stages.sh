@@ -720,16 +720,20 @@ ACCOUNT_RESUME
   log "① 상세 화면 순회 — $EXPECT_DATASETS 건 · 한 건당 최대 ${PREVIEW_WAIT_MS}ms · 브라우저 세션 $AB_SESSION"
   # id 가 없는 행은 `-` 로 찍는다 — 탭이 연달아 오면 `read` 가 빈 칸을 접어 **이름이 id 자리로 밀린다**
   # (4회차 `20260914T035058Z` 실측 · seq 13 이 `/datasets/SPI-4weeks` 를 열었다).
-  local ids; ids="$(python3 - "$state" <<'PY'
+  local ids; ids="$(python3 - "$state" "$manifest" <<'PY'
 import json, sys
+import yaml
 st = json.load(open(sys.argv[1]))
+manifest = yaml.safe_load(open(sys.argv[2]))
+expected = {str(row.get("seq")): str(row.get("preview_expected") or "")
+            for row in manifest.get("datasets", [])}
 for seq, row in sorted(st.get("datasets", {}).items(), key=lambda kv: int(kv[0])):
-    print("%s\t%s\t%s" % (seq, row.get("dataset_id") or "-", row.get("name") or "-"))
+    print("%s\t%s\t%s\t%s" % (seq, row.get("dataset_id") or "-", row.get("name") or "-", expected.get(seq, "-")))
 PY
 )"
   : > "$RUN_DIR/preview-judgment.tsv"
-  local seq did name t0 t1 ms shown level unset_lv usage login_n info_n slot_state
-  while IFS=$'\t' read -r seq did name; do
+  local seq did name expected t0 t1 ms shown level unset_lv usage login_n info_n slot_state preview_file display_total unsupported_n
+  while IFS=$'\t' read -r seq did name expected; do
     [ -n "$seq" ] || continue
     [ "$name" = - ] && name=""
     if [ "$did" = - ] || [ -z "$did" ]; then
@@ -737,23 +741,68 @@ PY
       blocked_add verify "seq=$seq $name — 데이터셋 id 미확보"
       continue
     fi
-    t0="$(date +%s%3N)"
     if ! ab_dev open "$DEV_URL/datasets/$did" >/dev/null 2>&1; then
       printf '%s\t%s\t?\t판정불가\t0\t?\t?\t페이지 이동 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
       blocked_add verify "seq=$seq $name — 페이지 이동 실패 · 이전 화면을 판정하지 않는다"
       continue
     fi
+    if [ "$expected" = "미성립(포맷 미지원 · 판정 표에 이름으로)" ]; then
+      unsupported_n=""; t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+      while [ "$(date +%s%3N)" -lt "$t1" ]; do
+        unsupported_n="$(ab_dev get count '[data-testid="dt-preview-unsupported"]' 2>/dev/null | tr -d ' \t\r\n')"
+        [ "$unsupported_n" = 1 ] && break
+        sleep 0.05
+      done
+      login_n="$(ab_dev get count '[data-testid="login-submit"]' 2>/dev/null | tr -d ' \t\r\n')"
+      info_n="$(ab_dev get count '[data-testid="basic-info"]' 2>/dev/null | tr -d ' \t\r\n')"
+      level="$(ab_dev get text '[data-testid="ig-가공 단계"]' 2>/dev/null | tr '\n' ' ')"
+      unset_lv="$(ab_dev get count '[data-testid="ig-unset-가공 단계"]' 2>/dev/null | tr -d ' \t\r\n')"
+      usage="$(ab_dev get count '[data-testid="usage-card"]' 2>/dev/null | tr -d ' \t\r\n')"
+      if [ "$login_n" = 0 ] && [ "$info_n" = 1 ] && [ "$unsupported_n" = 1 ]; then
+        printf '%s\t%s\t%s\t미성립\t0\t%s\t%s\t정본상 포맷 미지원\n' "$seq" "$name" "$level" "$unset_lv" "$usage" >> "$RUN_DIR/preview-judgment.tsv"
+      else
+        printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미지원 상태 미확인\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+        blocked_add verify "seq=$seq $name — 승인된 미지원 표시를 확인하지 못했다"
+      fi
+      continue
+    fi
+    preview_file=""; local draw_enabled=""
+    t1=$(( $(date +%s%3N) + PREVIEW_WAIT_MS ))
+    while [ "$(date +%s%3N)" -lt "$t1" ]; do
+      preview_file="$(ab_dev get value '[data-testid="dt-pick-file"]' 2>/dev/null | tr -d '\r\n')"
+      draw_enabled="$(ab_dev is enabled '[data-testid="dt-preview-draw"]' 2>/dev/null | tr -d ' \t\r\n')"
+      [ -n "$preview_file" ] && [ "$draw_enabled" = true ] && break
+      sleep 0.05
+    done
+    if [ -z "$preview_file" ] || [ "$draw_enabled" != true ] \
+      || ! ab_dev select '[data-testid="dt-pick-file"]' "$preview_file" >/dev/null 2>&1; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 미리보기 파일 명시 선택 실패"
+      continue
+    fi
+    t0="$(date +%s%3N)"
+    if ! ab_dev click '[data-testid="dt-preview-draw"]' >/dev/null 2>&1; then
+      printf '%s\t%s\t?\t판정불가\t0\t?\t?\t미리보기 명시 실행 실패\n' "$seq" "$name" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — 미리보기 보기 명시 실행 실패"
+      continue
+    fi
     # Container presence is not completion: its slot starts in idle/drawing.
     # Poll the existing state attribute, keeping missing values undecidable.
-    slot_state=""
+    slot_state=""; display_total=""
     while :; do
       slot_state="$(ab_dev get attr '[data-testid="dt-preview-slot"]' data-preview-slot-state 2>/dev/null | tr -d ' \t\r\n')"
-      case "$slot_state" in done|failed) break ;; esac
+      display_total="$(ab_dev get text '[data-testid="dt-preview-total"]' 2>/dev/null | tr -d '\r\n')"
+      case "$slot_state" in failed) break ;; done) [ -n "$display_total" ] && break ;; esac
       t1="$(date +%s%3N)"
       [ "$((t1 - t0))" -lt "$PREVIEW_WAIT_MS" ] || break
       sleep 0.05
     done
     t1="$(date +%s%3N)"; ms=$(( t1 - t0 ))
+    if [ "$slot_state" != failed ] && { [ "$slot_state" != done ] || [ -z "$display_total" ]; }; then
+      printf '%s\t%s\t?\t판정불가\t%s\t?\t?\t표시 완료 미확인\n' "$seq" "$name" "$ms" >> "$RUN_DIR/preview-judgment.tsv"
+      blocked_add verify "seq=$seq $name — terminal/display 완료를 확인하지 못해 후속 요청을 중단한다"
+      break
+    fi
     # ⚠ 화면이 **상세 화면인지 먼저** 잰다 — 로그인 화면·빈 화면에서도 `preview-unavailable` 계수는 0 이라
     #   그대로 읽으면 「성립」이 된다(4회차 `20260914T035058Z` 실측 · 27건 전건이 로그인 화면이었다).
     #   로그인 화면(`login-submit` ≥ 1) 이거나 기본 정보 격자(`basic-info`)가 없으면 **판정불가**다.
@@ -803,8 +852,10 @@ m = yaml.safe_load(open(manifest))
 cv = json.load(open(cvpath))
 rows = [l.rstrip("\n").split("\t") for l in open(tsv) if l.strip()]
 want = {}
+preview_expected = {}
 for d in m.get("datasets", []):
     want[str(d.get("seq"))] = str(d.get("processing_level") or d.get("level") or "")
+    preview_expected[str(d.get("seq"))] = str(d.get("preview_expected") or "").strip()
 got = {r[0]: r[2] for r in rows}
 level_mismatch = [s for s, w in want.items() if w and w not in (got.get(s) or "")]
 # 등재표 쪽 가공 단계가 비어 있으면 **대조할 것이 없었던 것**이다.
@@ -817,6 +868,16 @@ count_undecided = cv["countUndecidedSeq"]
 level_undecided = cv["levelUndecidedSeq"]
 undecided = [r[0] for r in rows if r[3] == "판정불가"]
 unestablished = [r[0] for r in rows if r[3] == "미성립"]
+no_preview_text = "미성립(포맷 미지원 · 판정 표에 이름으로)"
+allowed_no_preview_names = {"SPI-4weeks", "SPEI-4weeks"}
+manifest_preview_missing = sorted((s for s, value in preview_expected.items() if not value), key=int)
+invalid_no_preview = sorted((str(d.get("seq")) for d in m.get("datasets", [])
+                             if str(d.get("preview_expected") or "").strip() == no_preview_text
+                             and d.get("name") not in allowed_no_preview_names), key=int)
+expected_unestablished = sorted((s for s, value in preview_expected.items()
+                                 if value == no_preview_text), key=int)
+unexpected_unestablished = sorted(set(unestablished) - set(expected_unestablished), key=int)
+missing_unestablished = sorted(set(expected_unestablished) - set(unestablished), key=int)
 res = {
     "datasets": {"expected": int(nds), "ui": v.get("dataset_count_ui"), "state": v.get("dataset_count_state")},
     "projects": {"expected": int(nproj), "byProject": len(v.get("by_project") or {})},
@@ -834,12 +895,16 @@ res = {
     "previewEstablished": sum(1 for r in rows if r[3] == "성립"),
     "previewUndecidedSeq": undecided,
     "previewUnestablishedSeq": unestablished,
+    "previewExpectedUnestablishedSeq": expected_unestablished,
 }
 json.dump(res, open(out, "w"), ensure_ascii=False, indent=2)
 bad = []
 # 「판정불가」는 성립도 미성립도 아니다 — **재지 못한 것**이고 통과로 세지 않는다.
 if undecided: bad.append("미리보기 판정불가 seq %s" % ",".join(undecided))
-if unestablished: bad.append("미리보기 미성립 seq %s" % ",".join(unestablished))
+if manifest_preview_missing: bad.append("등재표 미리보기 기대 부재 seq %s" % ",".join(manifest_preview_missing))
+if invalid_no_preview: bad.append("미리보기 없음 기대 대상 오류 seq %s" % ",".join(invalid_no_preview))
+if unexpected_unestablished: bad.append("예상 밖 미리보기 미성립 seq %s" % ",".join(unexpected_unestablished))
+if missing_unestablished: bad.append("기대와 달리 미리보기 성립 seq %s" % ",".join(missing_unestablished))
 # 계수·가공 단계·등재표도 같다 — **재지 못한 것**을 0 으로 접지 않는다.
 if count_undecided: bad.append("계수 판정불가 seq %s" % ",".join(count_undecided))
 if level_undecided: bad.append("가공 단계 판정불가 seq %s" % ",".join(level_undecided))

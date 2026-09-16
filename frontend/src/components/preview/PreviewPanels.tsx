@@ -1,6 +1,6 @@
 // S-08 의 조각들. **화면 글자는 전부 정본 §8.1·§9 에서 그대로 온다** — 여기서 새 한국어를
 // 만들지 않는다. 문구를 바꾸고 싶으면 정본을 먼저 고친다 (`CLAUDE.md §5`).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { PartialFailure, PreviewBasicInfo, RenderResult, RenderStage } from './types';
 import { legendValue } from './format';
@@ -230,6 +230,8 @@ export function PreviewMap(props: {
   /** 값 조회 (`〈294〉`). 주지 않으면 자리째 없다 — 좌표 없는 결과가 그 경우다. */
   onPickPoint?: ((point: { lat: number; lon: number }) => void) | undefined;
   valuePanel?: ReactNode;
+  /** 실제 이미지 또는 최초 화면 타일이 decode 된 뒤 한 번 알린다. */
+  onDisplayed?: (() => void) | undefined;
 }) {
   const { result, zoom } = props;
   /** 커서 위경도 HUD 의 상태. `null` = 아직 지도 위가 아니다 · `'밖'` = 경계 밖이다. */
@@ -330,7 +332,8 @@ export function PreviewMap(props: {
                 경계가 없는 결과(②비지도형)에는 자리째 없다. 외부 요청 0(정적 import). */}
             {result.bounds ? <BasemapLayer bounds={result.bounds} /> : null}
             {tiled && zoom && result.tileUrlTemplate && result.bounds ? (
-              <TileMosaic template={result.tileUrlTemplate} bounds={result.bounds} zoom={zoom} />
+              <TileMosaic template={result.tileUrlTemplate} bounds={result.bounds} zoom={zoom}
+                onDisplayed={props.onDisplayed} />
             ) : null}
             {zoom?.showBoundsOutline ? <BoundsOutline /> : null}
             {src ? (
@@ -339,7 +342,12 @@ export function PreviewMap(props: {
                 data-testid="preview-single-image"
                 src={src}
                 alt=""
-                {...(zoom ? { onLoad: zoom.onImageLoad } : {})}
+                onLoad={(event) => {
+                  zoom?.onImageLoad(event);
+                  const image = event.currentTarget;
+                  void (typeof image.decode === 'function' ? image.decode() : Promise.resolve())
+                    .then(() => props.onDisplayed?.()).catch(() => undefined);
+                }}
               />
             ) : null}
           </div>
@@ -400,12 +408,25 @@ function TileMosaic(props: {
   template: string;
   bounds: { west: number; south: number; east: number; north: number };
   zoom: ZoomPan;
+  onDisplayed?: (() => void) | undefined;
 }) {
   const { template, bounds, zoom } = props;
   const box = zoom.box;
+  const [decoded, setDecoded] = useState<Set<string>>(() => new Set());
+  const level = box ? levelFor(baseLevel(bounds, box.width), zoom.scale, zoom.maxScale) : 0;
+  const pieces = box ? visibleTiles(bounds, box, level, { scale: zoom.scale, x: zoom.x, y: zoom.y }) : [];
+  const urls = pieces.map((t) => new URL(tileUrl(template, t.z, t.x, t.y), document.baseURI).href);
+  const urlKey = urls.join('\n');
+  useEffect(() => {
+    if (urls.length > 0 && urls.every((candidate) => decoded.has(candidate))) props.onDisplayed?.();
+  }, [decoded, urlKey, props.onDisplayed]);
   if (!box) return null;
-  const level = levelFor(baseLevel(bounds, box.width), zoom.scale, zoom.maxScale);
-  const pieces = visibleTiles(bounds, box, level, { scale: zoom.scale, x: zoom.x, y: zoom.y });
+  const markDecoded = (url: string) => {
+    setDecoded((current) => {
+      if (current.has(url)) return current;
+      return new Set(current).add(url);
+    });
+  };
   return (
     <div className="pv-mosaic" data-testid="preview-mosaic">
       {pieces.map((t) => (
@@ -416,6 +437,11 @@ function TileMosaic(props: {
           alt=""
           // **템플릿은 불투명 문자열이다** — `{z}`·`{x}`·`{y}` 셋만 바꾼다(`〈68〉`)
           src={tileUrl(template, t.z, t.x, t.y)}
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            void (typeof image.decode === 'function' ? image.decode() : Promise.resolve())
+              .then(() => markDecoded(image.currentSrc || image.src)).catch(() => undefined);
+          }}
           style={{
             position: 'absolute',
             left: `${t.left}px`,

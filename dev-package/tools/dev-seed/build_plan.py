@@ -52,6 +52,8 @@ MD_RELATIVE = [
 ]
 BLOCK_MARKER = "colab-datasets v1"
 LEVELS = ("Lv0", "Lv1", "Lv2", "Lv3")
+NO_PREVIEW_EXPECTATION = "미성립(포맷 미지원 · 판정 표에 이름으로)"
+NO_PREVIEW_DATASETS = {"SPI-4weeks", "SPEI-4weeks"}
 EXPECT_DATASETS = 28
 EXPECT_EDGES = 18
 PERIOD_PATTERNS = {
@@ -201,7 +203,7 @@ def extract_block(text, where):
 
 
 def parse_table(text):
-    """마크다운 표에서 (이름 · 건수 · 바이트)만 최소로 꺼낸다."""
+    """마크다운 표에서 이름 · 건수 · 바이트 · 미리보기 기대를 꺼낸다."""
     rows, idx, width = [], None, None
     for line in text.splitlines():
         s = line.strip()
@@ -209,22 +211,25 @@ def parse_table(text):
             continue
         cells = [c.strip() for c in s.strip("|").split("|")]
         if idx is None:
-            if "이름" in cells and "건수" in cells and "바이트" in cells:
-                idx = (cells.index("이름"), cells.index("건수"), cells.index("바이트"))
+            if all(x in cells for x in ("이름", "건수", "바이트", "미리보기 기대")):
+                idx = (cells.index("이름"), cells.index("건수"), cells.index("바이트"),
+                       cells.index("미리보기 기대"))
                 width = len(cells)
             continue
         if len(cells) != width or not cells[0].isdigit():
             continue
         rows.append((cells[idx[0]],
                      int(cells[idx[1]].replace(",", "")),
-                     int(cells[idx[2]].replace(",", ""))))
+                     int(cells[idx[2]].replace(",", "")),
+                     cells[idx[3]]))
     return rows
 
 
 def cross_check(block, table, where):
     """표 ↔ 블록 — 행 수 · 이름 · 건수 · 바이트. 어긋난 행 이름을 돌려준다."""
     bad = []
-    b_rows = [(str(d.get("name")), int(d["file_count"]), int(d["bytes"]))
+    b_rows = [(str(d.get("name")), int(d["file_count"]), int(d["bytes"]),
+               str(d.get("preview_expected") or "").strip())
               for d in block["datasets"]]
     if len(b_rows) != len(table):
         bad.append("%s 행 수 표=%d 블록=%d" % (where, len(table), len(b_rows)))
@@ -252,6 +257,13 @@ def resolve_rows(blocks, ref_root, resolve_files=True):
             if level not in LEVELS:
                 raise SystemExit("제품 레벨 값이 아니다(seq %s · %s): %r"
                                  % (row.get("seq"), row.get("name"), level))
+            preview_expected = str(row.get("preview_expected") or "").strip()
+            if not preview_expected:
+                raise SystemExit("미리보기 기대가 없다(seq %s · %s)"
+                                 % (row.get("seq"), row.get("name")))
+            if preview_expected == NO_PREVIEW_EXPECTATION and row.get("name") not in NO_PREVIEW_DATASETS:
+                raise SystemExit("GeoPackage 미리보기 없음 기대를 다른 자료에 선언했다: %s"
+                                 % row.get("name"))
             files, nbytes = [], 0
             grids = [str(base / g) for g in (row.get("grid_files") or [])]
             if resolve_files:
@@ -275,6 +287,7 @@ def resolve_rows(blocks, ref_root, resolve_files=True):
                 seq=int(row["seq"]), project=project, name=row["name"],
                 summary=row.get("summary") or "", format=row.get("format") or "",
                 processing_level=level,
+                preview_expected=preview_expected,
                 files=files, file_count=len(files), bytes=nbytes,
                 grid_files=grids, grid_bytes=gbytes,
                 grid_skip=(not (row.get("grid_files") or [])),
@@ -305,6 +318,7 @@ def build_manifest(blocks, datasets, edges, total_bytes):
                 seq=int(row["seq"]), project=project, name=row["name"],
                 summary=row.get("summary") or "", format=row.get("format") or "",
                 level=row["level"],
+                preview_expected=str(row["preview_expected"]).strip(),
                 globs=["%s/%s" % (folder, g) for g in (row.get("files") or [])],
                 expect_files=int(row["file_count"]), expect_bytes=int(row["bytes"]),
                 grid_files=["%s/%s" % (folder, g) for g in (row.get("grid_files") or [])],

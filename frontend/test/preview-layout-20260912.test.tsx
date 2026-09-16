@@ -18,6 +18,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PreviewPanel } from '../src/components/upload/PreviewPanel';
 import type { PreviewSource, RenderJob } from '../src/components/upload/types';
 import { DatasetPreviewSection } from '../src/components/datasetpreview/DatasetPreviewSection';
+import { drawDatasetPreviewWhenReady } from './datasetPreviewTest';
 import type { DatasetPreviewSource } from '../src/components/datasetpreview/types';
 import type { PreviewPiece, TargetDescription } from '../src/components/preview/pick';
 
@@ -157,6 +158,7 @@ describe('㈀ 고르개 줄은 4:3 틀 밖 · 틀보다 앞선 형제다 — 데
 
   it('④ 상세도 렌더 전·후로 고르개 줄의 부모가 같다', async () => {
     render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(doneJob())} pollMs={100000} />);
+    drawDatasetPreviewWhenReady();
     const before = (await screen.findByTestId('dt-pick-row')).parentElement;
     await waitFor(() => expect(screen.getByTestId('preview-viewport')).toBeTruthy(), WAIT);
     expect(screen.getByTestId('dt-pick-row').parentElement).toBe(before);
@@ -253,6 +255,7 @@ describe('㈃ 진행 표시 — 세 화면이 「동작 중」을 말한다 (단
 
   it('13 상세 그리는 중 상태에서 진행 문면이 있다 (회귀)', async () => {
     render(<DatasetPreviewSection datasetId={DATASET_ID} source={detailSource(DRAWING_JOB)} pollMs={100000} />);
+    drawDatasetPreviewWhenReady();
     expect((await screen.findAllByTestId('render-stage')).length).toBeGreaterThan(0);
   });
 });
@@ -272,6 +275,15 @@ describe('㈅ CSS 원문 계측 — 확대 줄의 접힘·가림 (단계 ④)', 
     expect(canvas).toContain('min-height: 0');
     // 그림 자리만 줄어든다.
     expect(block(PREVIEW_CSS, '.pv-frame .pv-viewport {')).toContain('flex: 1 1 auto');
+  });
+
+  it('18a 절대 배치 타일만 있어도 지도와 열이 4:3 틀의 실제 높이를 받는다', () => {
+    const map = block(PREVIEW_CSS, '.pv-frame .pv-map {');
+    const column = block(PREVIEW_CSS, '.pv-frame .pv-mapcol {');
+    expect(map).toContain('flex: 1 1 auto');
+    expect(map).toContain('min-height: 0');
+    expect(column).toContain('align-self: stretch');
+    expect(column).toContain('min-height: 0');
   });
 
   it('19 확대 줄에 줄바꿈 금지와 「줄지 않음」 선언이 있다', () => {

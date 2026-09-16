@@ -362,6 +362,18 @@
   min-width: 0;
 }
 
+/* 타일은 전부 absolute라 내용 높이를 만들지 않는다. 4:3 틀이 이미 가진 높이를 지도 행과
+   열에 전달해 viewport 측정과 최초 타일 선택이 0px에서 멈추지 않게 한다. */
+.pv-frame .pv-map {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pv-frame .pv-mapcol {
+  align-self: stretch;
+  min-height: 0;
+}
+
 /* 확대/이동 자리도 같은 틀 안에서 비율을 지킨다(`useZoomPan` 동작 무변). */
 .pv-frame .pv-viewport {
   flex: 1 1 auto;
